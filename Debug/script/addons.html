@@ -1,0 +1,32 @@
+<html>
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta http-equiv="MSThemeCompatible" content="Yes" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Tablcus Explorer Add-ons</title>
+    <link rel="stylesheet" type="text/css" href="options.css" />
+    <script type="text/javascript" charset="utf-8" src="consts.js">
+    </script>
+    <script type="text/javascript" charset="utf-8" src="common.js">
+    </script>
+    <script type="text/javascript" charset="utf-8" src="addons.js">
+    </script>
+  </head>
+  <body>
+    <div id="bar">
+      <form name="F" style="display: inline" onsubmit="AddonsSearch(); return false">
+        <input type="text" name="q" style="width: 400px" />
+        <input type="button" name="b" value="Search" onclick="AddonsSearch()" />
+      </form>
+    </div>
+    <div class="panel" id="panel0" style="display: block; width: 100%">
+      <table id="addons" style="width: 100%; border: 1px;">
+        <tr>
+          <td>
+            <label>Please wait.</label>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </body>
+</html>

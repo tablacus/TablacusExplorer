@@ -1,0 +1,33 @@
+<html>
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta http-equiv="MSThemeCompatible" content="Yes" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Tablcus Explorer</title>
+    <link rel="stylesheet" type="text/css" href="index.css" />
+    <script type="text/javascript" charset="utf-8" src="consts.js">
+    </script>
+    <script type="text/javascript" charset="utf-8" src="common.js">
+    </script>
+    <script type="text/javascript" charset="utf-8" src="options.js">
+    </script>
+  </head>
+  <body onload="InitDialog()">
+    <form name="F">
+      <div class="panel" id="panel0" style="border: 1px solid #898C95; overflow-y: auto;">
+        <label id="Content">Please wait.</label>
+        <!-- - - - - - - - - - - -->
+      </div>
+      <!--panel_end-->
+      <table id="buttons" width="97%">
+        <tr>
+          <td align="right">
+            <span id="Selected"></span>
+            <input id="ButtonOk" type="button" value="OK" style="width: 96px;" onclick="window.close();" disabled="true" />
+            <input type="button" value="Cancel" style="width: 96px;" onclick="returnValue=null;window.close();" />
+          </td>
+        </tr>
+      </table>
+    </form>
+  </body>
+</html>

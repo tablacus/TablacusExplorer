@@ -1,0 +1,135 @@
+/* Tag */
+
+body {
+	overflow: hidden;
+	background-color: buttonface;
+	box-sizing: border-box;
+	-ms-box-sizing: border-box;
+}
+
+td {
+	border: none;
+	padding: 0px;
+	margin: 0px;
+	font-size: 13px;
+	box-sizing: border-box;
+	-ms-box-sizing: border-box;
+}
+
+div, input, textarea, select {
+	box-sizing: border-box;
+	-ms-box-sizing: border-box;
+}
+
+form {
+	display: inline;
+}
+
+table {
+	border: none;
+	padding: 0px;
+	margin: 0px;
+}
+
+/* Class */
+
+.tab {
+	border-top: 1px solid #898C95;
+	border-left: 1px solid #898C95;
+	border-right: 1px solid #898C95;
+	border-bottom: 0px solid #898C95;
+	background-color: #dddddd;
+	outline-style: none;
+	height: 24px;
+	filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#cccccc);
+	background: linear-gradient(to bottom, #ffffff, #cccccc);
+}
+.activetab {
+	border-top: 1px solid #898C95;
+	border-left: 1px solid #898C95;
+	border-right: 1px solid #898C95;
+	border-bottom: 0px solid #898C95;
+	background-color: #ffffff;
+	height: 26px;
+	outline-style: none;
+}
+
+.panel {
+	border: 1px solid #898C95;
+	padding: 4px;
+	display: none;
+	font-size: 80%;
+	line-height: 150%;
+	overflow-y: auto;
+	clear:both;
+}
+.color {
+	border: 1px solid #7F9DB9;
+	width: 24px;
+}
+.block {
+	padding: 8px;
+	border: 1px solid gray;
+	margin-bottom: 8px;
+	display: block;
+}
+.group {
+	padding: 8px;
+	border-left: 1px solid gray;
+	border-right: 1px solid gray;
+	border-bottom: 1px solid gray;
+	margin-bottom: 8px;
+	display: none;
+}
+.groupbutton {
+	width: 100%;
+}
+.oddline {
+	background-color: #dddddd;
+}
+.layout {
+	width: 100%;
+	padding: 0px;
+	margin: 0px;
+	border: none;
+	border-collapse: collapse;
+	overflow: hidden;
+	border-spacing: 0;
+}
+.input {
+	font-size: 13px;
+	height: 22px;
+}
+.color {
+	border-radius: 2px;
+}
+.window {
+	border: 1px solid #898C95;
+}
+.window td {
+	border: 1px solid #898C95;
+}
+
+.button {
+	display: inline-block;
+	padding: 1px 1px;
+	text-decoration: none;
+	color: black;
+	cursor: default;
+	outline-style: none;
+	white-space: nowrap;
+	vertical-align: middle;
+}
+.hoverbutton {
+	display: inline-block;
+	text-decoration: none;
+	color: black;
+	cursor: default;
+	background-color: #E5EBEF;
+	border: 1px solid #7F9DB9;
+	padding: 0px;
+	outline-style: none;
+	white-space: nowrap;
+	vertical-align: middle;
+	border-radius: 2px;
+}

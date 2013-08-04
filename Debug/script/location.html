@@ -1,0 +1,442 @@
+<html>
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta http-equiv="MSThemeCompatible" content="Yes" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Tablcus Add-ons</title>
+    <link rel="stylesheet" type="text/css" href="options.css" />
+    <script type="text/javascript" charset="utf-8" src="consts.js">
+    </script>
+    <script type="text/javascript" charset="utf-8" src="common.js">
+    </script>
+    <script type="text/javascript" charset="utf-8" src="options.js">
+    </script>
+  </head>
+  <body onload="InitLocation();">
+    <div>
+      <input type="button" id="tab0" class="tab" onmousedown="ClickTab(this, 1);" hidefocus="true" style="display: none" /><!--
+      --><input type="button" id="tab1" class="tab" onmousedown="ClickTab(this, 1);" hidefocus="true" style="display: none" /><!--
+      --><input type="button" id="tab2" class="tab" onmousedown="ClickTab(this, 1);" hidefocus="true" style="display: none" /><!--
+      --><input type="button" id="tab3" class="tab" onmousedown="ClickTab(this, 1);" hidefocus="true" style="display: none" /><!--
+      --><input type="button" id="tab4" class="tab" onmousedown="ClickTab(this, 1);" hidefocus="true" style="display: none" /><!--
+      --><input type="button" id="tab5" value="Icon" class="tab" onmousedown="ClickTab(this, 1);" hidefocus="true" style="display: none" /><!--
+      --><input type="button" id="tab6" value="Location" class="tab" onmousedown="ClickTab(this, 1);" hidefocus="true" style="display: none" /><!--
+      --><input type="button" id="tab7" value="Menus" class="tab" onmousedown="ClickTab(this, 1);" hidefocus="true" style="display: none" /><!--
+      --><input type="button" id="tab8" value="Key" class="tab" onmousedown="ClickTab(this, 1);" hidefocus="true" style="display: none" /><!--
+      --><input type="button" id="tab9" value="Mouse" class="tab" onmousedown="ClickTab(this, 1);" hidefocus="true" style="display: none" /><!--
+    --></div>
+
+    <div class="panel" id="panel6">
+      <form name="L">
+        <table class="window" border="1" style="width: 100%">
+          <tr>
+            <td colspan="3" style="color: white; background-color: #316AC5">
+              <label>Title Bar</label>
+            </td>
+          </tr>
+          <tr>
+            <td style="width: 33%">
+              <input name="Location" type="radio" value="ToolBar1Left" />
+              <span id="_ToolBar1Left">
+                <label>Tool Bar</label> 1 <label>Left</label>
+              </span>
+            </td>
+            <td style="width: 33%">
+              <input name="Location" type="radio" value="ToolBar1Center" />
+              <span id="_ToolBar1Center">
+                <label>Tool Bar</label> 1 <label>Center</label>
+              </span>
+            </td>
+            <td style="width: 33%">
+              <input name="Location" type="radio" value="ToolBar1Right" />
+              <span id="_ToolBar1Right">
+                <label>Tool Bar</label> 1 <label>Right</label>
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <input name="Location" type="radio" value="ToolBar2Left" />
+              <span id="_ToolBar2Left">
+                <label>Tool Bar</label> 2 <label>Left</label>
+              </span>
+            </td>
+            <td>
+              <input name="Location" type="radio" value="ToolBar2Center" />
+              <span id="_ToolBar2Center">
+                <label>Tool Bar</label> 2 <label>Center</label>
+              </span>
+            </td>
+            <td>
+              <input name="Location" type="radio" value="ToolBar2Right" />
+              <span id="_ToolBar2Right">
+                <label>Tool Bar</label> 2 <label>Right</label>
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <input name="Location" type="radio" value="ToolBar3Left" />
+              <span id="_ToolBar3Left">
+                <label>Tool Bar</label> 3 <label>Left</label>
+              </span>
+            </td>
+            <td>
+              <input name="Location" type="radio" value="ToolBar3Center" />
+              <span id="_ToolBar3Center">
+                <label>Tool Bar</label> 3 <label>Center</label>
+              </span>
+            </td>
+            <td>
+              <input name="Location" type="radio" value="ToolBar3Right" />
+              <span id="_ToolBar3Right">
+                <label>Tool Bar</label> 3 <label>Right</label>
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <input name="Location" type="radio" value="ToolBar4Left" />
+              <span id="_ToolBar4Left">
+                <label>Tool Bar</label> 4 <label>Left</label>
+              </span>
+            </td>
+            <td>
+              <input name="Location" type="radio" value="ToolBar4Center" />
+              <span id="_ToolBar4Center">
+                <label>Tool Bar</label> 4 <label>Center</label>
+              </span>
+            </td>
+            <td>
+              <input name="Location" type="radio" value="ToolBar4Right" />
+              <span id="_ToolBar4Right">
+                <label>Tool Bar</label> 4 <label>Right</label>
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <input name="Location" type="radio" value="ToolBar5Left" />
+              <span id="_ToolBar5Left">
+                <label>Tool Bar</label> 5 <label>Left</label>
+              </span>
+            </td>
+            <td>
+              <input name="Location" type="radio" value="ToolBar5Center" />
+              <span id="_ToolBar5Center">
+                <label>Tool Bar</label> 5 <label>Center</label>
+              </span>
+            </td>
+            <td>
+              <input name="Location" type="radio" value="ToolBar5Right" />
+              <span id="_ToolBar5Right">
+                <label>Tool Bar</label> 5 <label>Right</label>
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <input name="Location" type="radio" value="LeftBar1" />
+              <span id="_LeftBar1">
+                <label>Left Bar</label> 1
+              </span>
+            </td>
+            <td rowspan="3" style="background-color: white">
+              <input name="Location" type="radio" value="Background" />
+              <Label>Background</label>
+            </td>
+            <td>
+              <input name="Location" type="radio" value="RightBar1" />
+              <span id="_RightBar1">
+                <label>Right Bar</label> 1
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <input name="Location" type="radio" value="LeftBar2" />
+              <span id="_LeftBar2">
+                <label>Left Bar</label> 2
+              </span>
+            </td>
+            <td>
+              <input name="Location" type="radio" value="RightBar2" />
+              <span id="_RightBar2">
+                <label>Right Bar</label> 2
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <input name="Location" type="radio" value="LeftBar3" />
+              <span id="_LeftBar3">
+                <label>Left Bar</label> 3
+              </span>
+            </td>
+            <td>
+              <input name="Location" type="radio" value="RightBar3" />
+              <span id="_RightBar3">
+                <label>Right Bar</label> 3
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <input name="Location" type="radio" value="BottomBar1Left" />
+              <span id="_BottomBar1Left">
+                <label>Bottom Bar</label> 1 <label>Left</label>
+              </span>
+            </td>
+            <td>
+              <input name="Location" type="radio" value="BottomBar1Center" />
+              <span id="_BottomBar1Center">
+                <label>Bottom Bar</label> 1 <label>Center</label>
+              </span>
+            </td>
+            <td>
+              <input name="Location" type="radio" value="BottomBar1Right" />
+              <span id="_BottomBar1Right">
+                <label>Bottom Bar</label> 1 <label>Right</label>
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <input name="Location" type="radio" value="BottomBar2Left" />
+              <span id="_BottomBar2Left">
+                <label>Bottom Bar</label> 2 <label>Left</label>
+              </span>
+            </td>
+            <td>
+              <input name="Location" type="radio" value="BottomBar2Center" />
+              <span id="_BottomBar2Center">
+                <label>Bottom Bar</label> 2 <label>Center</label>
+              </span>
+            </td>
+            <td>
+              <input name="Location" type="radio" value="BottomBar2Right" />
+              <span id="_BottomBar2Right">
+                <label>Bottom Bar</label> 2 <label>Right</label>
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <input name="Location" type="radio" value="BottomBar3Left" />
+              <span id="_BottomBar3Left">
+                <label>Bottom Bar</label> 3 <label>Left</label>
+              </span>
+            </td>
+            <td>
+              <input name="Location" type="radio" value="BottomBar3Center" />
+              <span id="_BottomBar3Center">
+                <label>Bottom Bar</label> 3 <label>Center</label>
+              </span>
+            </td>
+            <td>
+              <input name="Location" type="radio" value="BottomBar3Right" />
+              <span id="_BottomBar3Right">
+                <label>Bottom Bar</label> 3 <label>Right</label>
+              </span>
+            </td>
+          </tr>
+        </table>
+        <input name="Location" type="radio" value="None" />
+        <Label>None</label>&nbsp;<span id="_None"></span>
+        </form>
+    </div>
+    <!--panel_end-->
+
+    <form name="F">
+      <div class="panel" id="panel0">
+      </div>
+      <!--panel_end-->
+
+      <div class="panel" id="panel1">
+      </div>
+      <!--panel_end-->
+
+      <div class="panel" id="panel2">
+      </div>
+      <!--panel_end-->
+
+      <div class="panel" id="panel3">
+      </div>
+      <!--panel_end-->
+
+      <div class="panel" id="panel4">
+      </div>
+      <!--panel_end-->
+
+      <div class="panel" id="panel5">
+        <div id="_Icon"></div>
+        <table style="width: 100%">
+          <tr>
+            <td>
+              <label>Icon</label>
+            </td>
+          </tr>
+          <tr>
+            <td style="width: 100%">
+              <input type="text" name="Icon" onchange="SetImage();" style="width: 100%" />
+            </td>
+            <td style="white-space: nowrap">
+              <input type="button" value="File" onclick="RefX('Icon', false, null, 'ChangeX(\'List\');SetImage();'); SetImage();" />
+              <input type="button" value="Reference..." onclick="ShowIcon();" />
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <label>Size</label>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <input type="text" name="IconSize" size="4" onchange="SetImage();" />px
+            </td>
+            <td>
+              <input type="button" value="Default" onclick="document.F.IconSize.value='';SetImage();" />
+            </td>
+          </tr>
+        </table>
+      </div>
+      <!--panel_end-->
+
+      <div class="panel" id="panel7">
+        <input type="checkbox" id="MenuExec" />
+        <label for="MenuExec">Exec</label>
+        <br />
+        <select name="Menu" style="width: 150px"></select>
+        <br />
+        <label>Name</label>
+        <br />
+        <table class="layout">
+          <tr>
+            <td>
+              <input type="text" name="MenuName" style="display: none" />
+              <input type="text" name="_MenuName" style="width: 100%" />
+            </td>
+            <td style="width: 80px">
+              <input type="text" name="_MenuKey" style="width: 100%" />
+            </td>
+          </tr>
+        </table>
+        <label>Position</label>
+        <br />
+        <input type="text" name="MenuPos" size="2" />
+        <select onchange="SelectPos(this, 'MenuPos');">
+          <option value="">
+            Select
+            <option value="0">
+              Add before
+              <option value="-1">Add after
+</select>
+      </div>
+      <!--panel_end-->
+
+      <div class="panel" id="panel8">
+        <input type="checkbox" id="KeyExec" />
+        <label for="KeyExec">Exec</label>
+        <br />
+        <select name="KeyOn" style="width: 150px">
+        </select>
+        <br />
+        <label>Key</label>
+        <input type="text" name="Key" onchange="SetKeyShift()" style="width: 100%" />
+        <span id="_KeyState"></span>
+        <select id="_KeySelect" onchange="KeySelect(this)"></select>
+        <input type="button" value="Input" onclick="InputKey();" />
+      </div>
+      <!--panel_end-->
+
+      <div class="panel" id="panel9">
+        <input type="checkbox" id="MouseExec" />
+        <label for="MouseExec">Exec</label>
+        <br />
+        <select name="MouseOn" style="width: 150px">
+        </select>
+        <br />
+        <table width="100%" cellspacing="0" cellpadding="0">
+          <tr>
+            <td width="100%" colspan="3">
+              <table width="100%" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td>
+                    <label>Mouse</label>
+                  </td>
+                  <td>
+                    <input type="button" value="Input" onclick="InputMouse();" />
+                  </td>
+                  <td align="right">
+                    <script type="text/javascript">
+                      document.write('<input type="button" value="' + MainWindow.g_KeyState[0][0] + '" title="S" onclick="AddMouse(this)" />');
+                      document.write('<input type="button" value="' + MainWindow.g_KeyState[1][0] + '" title="C" onclick="AddMouse(this)" />');
+                      document.write('<input type="button" value="' + MainWindow.g_KeyState[2][0] + '" title="A" onclick="AddMouse(this)" />');
+                    </script>
+                  </td>
+                </tr>
+              </table>
+            </td>
+            <td align="center">
+              <input type="button" value="LB" title="1" onclick="AddMouse(this)" />
+            </td>
+            <td align="center">
+              <input type="button" value="WB" title="3" onclick="AddMouse(this)" />
+            </td>
+            <td align="center">
+              <input type="button" value="RB" title="2" onclick="AddMouse(this)" />
+            </td>
+            </td>
+          </tr>
+          <tr>
+            <td width="100%">
+              <input type="text" name="Mouse" style="width: 100%" />
+            </td>
+            <td align="center">
+              <input type="button" value="X1" title="4" onclick="AddMouse(this)" />
+            </td>
+            <td align="center">
+              <input type="button" value="WU" title="8" onclick="AddMouse(this)" />
+            </td>
+            <td align="right" rowspan="2">
+              <input type="button" value=" L " title="L" onclick="AddMouse(this)" />
+            </td>
+            <td align="center" rowspan="2">
+              <input type="button" value=" U " title="U" onclick="AddMouse(this)" />
+              <br />
+              <input type="button" value=" D " title="D" onclick="AddMouse(this)" width="100%" />
+            </td>
+            <td align="left" rowspan="2">
+              <input type="button" value=" R " title="R" onclick="AddMouse(this)" />
+            </td>
+            </td>
+          </tr>
+          <tr>
+            <td></td>
+            <td align="center">
+              <input type="button" value="X2" title="5" onclick="AddMouse(this)" />
+            </td>
+            <td align="center">
+              <input type="button" value="WD" title="9" onclick="AddMouse(this)" />
+            </td>
+          </tr>
+        </table>
+      </div>
+      <!--panel_end-->
+      <input type="hidden" name="Set" value="1" />
+    </form>
+
+    <table style="width: 97%">
+      <tr>
+        <td align="right">
+          <input type="button" value="OK" style="width: 96px;" onclick="SetLocation();" />
+          <input type="button" value="Cancel" style="width: 96px;" onclick="window.close();" />
+        </td>
+      </tr>
+    </table>
+    <script type="text/javascript"><!--
+document.write('<'+ 'script type="text/javascript" src="../addons/' + dialogArguments.Data.id + '/script.js"></' + 'script>');
+//-->
+    </script>
+  </body>
+</html>

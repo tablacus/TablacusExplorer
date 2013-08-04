@@ -1,0 +1,203 @@
+/* Tag */
+
+html {
+	height: 100%;
+}
+
+body {
+	overflow: hidden;
+	margin: 0px;
+	padding: 0px;
+	border: none;
+	font-size: 12px;
+	background-color: buttonface;
+	height: 100%;
+	box-sizing: border-box;
+}
+
+table {
+	border-collapse: collapse;
+	border-spacing: 0;
+	border: none;
+	padding: 0px;
+	margin: 0px;
+}
+
+td, tr {
+	vertical-align: top;
+	font-size: 12px;
+	border: none;
+	padding: 0px;
+	margin: 0px;
+	box-sizing: border-box;
+}
+
+img {
+	vertical-align: middle;
+	border: none;
+}
+
+div, input, textarea, select {
+	box-sizing: border-box;
+}
+
+form {
+	display: inline;
+}
+
+/* Class */
+
+.button {
+	display: inline-block;
+	padding: 1px 1px;
+	text-decoration: none;
+	color: black;
+	cursor: default;
+	outline-style: none;
+	white-space: nowrap;
+	vertical-align: middle;
+}
+.hoverbutton {
+	display: inline-block;
+	text-decoration: none;
+	color: black;
+	cursor: default;
+	background-color: #E5EBEF;
+	border: 1px solid #7F9DB9;
+	padding: 0px;
+	outline-style: none;
+	white-space: nowrap;
+	vertical-align: middle;
+	border-radius: 2px;
+}
+a:hover.button {
+	display: inline-block;
+	background-color: #E5EBEF;
+	border: 1px solid #7F9DB9;
+	padding: 0px;
+	outline-style: none;
+	border-radius: 2px;
+}
+a:active.button {
+	display: inline-block;
+	background-color: #E5EBEF;
+	border: 1px solid #7F9DB9;
+	padding: 0px;
+	outline-style: none;
+}
+.menu {
+	display: inline-block;
+	margin: 1px 5px;
+	text-decoration: none;
+	color: black;
+	cursor: default;
+	white-space: nowrap;
+}
+.hovermenu {
+	display: inline-block;
+	color: black;
+	cursor: default;
+	text-decoration: none;
+	white-space: nowrap;
+	background-color: #E5EBEF;
+	border: 1px solid #7F9DB9;
+	padding: 0px 4px;
+	border-radius: 2px;
+}
+a:hover.menu {
+	display: inline-block;
+	background-color: #E5EBEF;
+	border: 1px solid #7F9DB9;
+	padding: 0px 4px;
+	border-radius: 2px;
+}
+a:active.menu {
+	display: inline-block;
+	background-color:;
+	border: none;
+	padding: 1px 5px;
+}
+
+.toolbar1 {
+	display: none;
+	margin: 1px 1px 1px 0px;
+	padding: 1px 1px 1px 0px;
+	white-space: nowrap;
+	vertical-align: middle;
+}
+.toolbar2 {
+	display: none;
+	margin: 1px 1px 1px 0px;
+	padding: 1px 1px 1px 0px;
+	width: 100%
+}
+.toolbar3 {
+	display: none;
+	margin: 1px 1px 1px 0px;
+	padding: 1px 1px 1px 0px;
+	text-align: right;
+	white-space: nowrap;
+	vertical-align: middle;
+}
+.layout {
+	width: 100%;
+	padding: 0px;
+	margin: 0px;
+	border: none;
+	border-collapse: collapse;
+	overflow: hidden;
+}
+.sidebar {
+	margin: 0px;
+	padding: 0px;
+	border: none;
+	overflow: hidden;
+}
+.sidebar1 {
+	display: none;
+	word-break: break-all;
+	word-wrap: break-word;
+	overflow: hidden;
+	font-size: 12px;
+	margin: 0px;
+	padding: 0px;
+}
+.sidebar2 {
+	display: none;
+	word-break: break-all;
+	word-wrap: break-word;
+	min-height: 100px;
+	overflow: hidden;
+	font-size: 12px;
+	margin: 0px;
+	padding: 0px;
+}
+.sidebar3 {
+	display: none;
+	word-break: break-all;
+	word-wrap: break-word;
+	overflow: hidden;
+	vertical-align: bottom;
+	font-size: 12px;
+	margin: 0px;
+	padding: 0px;
+}
+
+.tab {
+	border: 1px solid #898C95;
+	background-color: #dddddd;
+	outline-style: none;
+	height: 24px;
+	filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#cccccc);
+	background: linear-gradient(to bottom, #ffffff, #cccccc);
+	font-size: 12px;
+	vertical-align: bottom;
+}
+.activetab {
+	border: 1px solid #898C95;
+	background-color: #ffffff;
+	height: 26px;
+	outline-style: none;
+	font-size: 12px;
+	vertical-align: bottom;
+}
