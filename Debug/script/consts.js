@@ -278,7 +278,6 @@ WM_QUEUESYNC       = 0x0023;
 WM_GETMINMAXINFO   = 0x0024;
 WM_SETFONT         = 0x0030;
 WM_GETFONT         = 0x0031;
-WM_POWER           = 0x0048;
 WM_NOTIFY          = 0x004E;
 WM_CONTEXTMENU     = 0x007B;
 WM_GETICON         = 0x007F;

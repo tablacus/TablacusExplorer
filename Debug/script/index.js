@@ -1097,6 +1097,17 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 			}
 			break;
 	}
+	if (msg == WM_POWERBROADCAST && wParam == 18) {
+		setTimeout(function ()
+		{
+			var cFV = te.Ctrls(CTRL_FV);
+			for (var i in cFV) {
+				if (cFV[i].Items && cFV[i].Items.Count == 0) {
+					cFV[i].Refresh();
+				}
+			}
+		}, 500);
+	}
 	return 0; 
 };
 

@@ -1,11 +1,12 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <resources>
-	<text s="&amp;File">&amp;File</text>
-	<text s="&amp;Edit">&amp;Edit</text>
-	<text s="&amp;View">&amp;View</text>
-	<text s="F&amp;avorites">F&amp;avorites</text>
-	<text s="&amp;Tools">&amp;Tools</text>
-	<text s="&amp;Help">&amp;Help</text>
+	<Creator>Your name</Creator>
+	<text s="&amp;File">&amp;Archivo</text>
+	<text s="&amp;Edit">&amp;Edición</text>
+	<text s="&amp;View">&amp;Ver</text>
+	<text s="F&amp;avorites">&amp;Favoritos</text>
+	<text s="&amp;Tools">&amp;Herramientas</text>
+	<text s="&amp;Help">&amp;Ayuda</text>
 	<text s="Back">Back</text>
 	<text s="Forward">Forward</text>
 	<text s="Up">Up</text>

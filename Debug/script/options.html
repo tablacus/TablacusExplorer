@@ -14,577 +14,571 @@
   </head>
   <body onload="InitOptions();" onresize="ClickTab();">
     <form name="F">
-      <div style="float: left" onmousewheel="WheelTab(this);">
-        <input type="button" value="General" id="tab0" class="tab" onmousedown="ClickTab(this);" hidefocus="true" /><!--
-        --><input type="button" value="Add-ons" id="tab1" class="tab" onmousedown="ClickTab(this);" hidefocus="true" /><!--
-        --><input type="button" value="Menus" id="tab2" class="tab" onmousedown="ClickTab(this);" hidefocus="true" /><!--
-        --><input type="button" value="Tabs" id="tab3" class="tab" onmousedown="ClickTab(this);" hidefocus="true" /><!--
-        --><input type="button" value="Tree" id="tab4" class="tab" onmousedown="ClickTab(this);" hidefocus="true" /><!--
-        --><input type="button" value="List" id="tab5" class="tab" onmousedown="ClickTab(this);" hidefocus="true" /><!--
-        --><input type="button" value="Init" id="tab6" class="tab" onmousedown="ClickTab(this);" hidefocus="true" />
-      </div>
-      <div style="float: right;"><input type="text" name="q" style="width: 160px" onkeydown="FindKeyEvent(this)"><span onmouseover="MouseOver(this)" onmouseout="MouseOut()" onclick="FindText(document.F.q.value)" class="button" style="vertical-align: middle"><img bitmap="ieframe.dll,216,16,17" hidefocus="true" style="vertical-align: middle; width: 16px; height: 16px" /></span>
-</div>
-      <!--panel_start-->
-      <div class="panel" id="panel0" style="display: block;">
-        <input type="button" value="Load Layout..." style="width: 100%" onclick="setTimeout(LoadLayout, 100)" />
-        <input type="button" value="Save Layout..." style="width: 100%" onclick="setTimeout(SaveLayout, 100)" />
-
-        <div>
-          <input type="button" value="Language" class="groupbutton" onclick='OpenGroup("_Language")' />
-        </div>
-        <div class="group" id="_Language">
-          <label>LanguageID</label>
-          <input type="text" name="Conf_Lang" size="3" /><select id="SelLangID" onchange="SetValue(Conf_Lang, this)"></select>
-          <label>Default LanguageID</label>:
-          <span id="DefaultLangID"></span>&nbsp;<input type="button" value="Set Default" onclick="SetDefaultLangID()" /><br />
-        </div>
-
-        <div>
-          <input type="button" value="View" class="groupbutton" onclick='OpenGroup("_ViewB")' />
-        </div>
-        <div class="group" id="_ViewB">
-          <label>Left Bar</label><br />
-          <label>Width</label><input type="text" id="Conf_LeftBarWidth" align="right" size="4" />px<br />
-          <label>Right Bar</label><br />
-          <label>Width</label><input type="text" id="Conf_RightBarWidth" align="right" size="4" />px<br />
-          <label>Tool Bar</label> <label>Icon</label><br />
-          <label>Size</label><input type="text" id="Conf_IconSize" align="right" size="4" />px
-          <input type="button" value="Default" onclick="document.F.Conf_IconSize.value='';" />
-        </div>
-
-        <div>
-          <input type="button" value="Mouse" class="groupbutton" onclick='OpenGroup("_Mouse")' />
-        </div>
-        <div class="group" id="_Mouse">
-          <label>Gestures</label><br />
-          <input type="text" name="Conf_Gestures" style="display: none" />
-          <input type="radio" name="Conf_Gestures_" id="Conf_Gestures=0" onclick="SetRadio(this)" />
-          <label for="Conf_Gestures=0">None</label>
-          <input type="radio" name="Conf_Gestures_" id="Conf_Gestures=1" onclick="SetRadio(this)" />
-          <label for="Conf_Gestures=1">Wheel</label>
-          <input type="radio" name="Conf_Gestures_" id="Conf_Gestures=2" onclick="SetRadio(this)" />
-          <label for="Conf_Gestures=2">Normal</label>
-          <input type="radio" name="Conf_Gestures_" id="Conf_Gestures=3" onclick="SetRadio(this)" />
-          <label for="Conf_Gestures=3">Priority</label>
-          <br />
-          <label>Timeout</label><br />
-          <input type="text" id="Conf_GestureTimeout" size="6" style="text-align:right" />ms
-          <br />
-          <label>Trails</label><br />
-          <label>Color</label>
-          <input id="Color_Conf_TrailColor" type="button" value=" " class="color" onclick="ChooseColor1(this)" />
-          <input type="text" id="Conf_TrailColor" style="display: none" />
-          <label>Size</label><input type="text" name="Conf_TrailSize" size="2" style="text-align:right" />px
-          <input type="button" value="-" onclick="AddValue('Conf_TrailSize', -1, 0, 16)" />
-          <input type="button" value="+" onclick="AddValue('Conf_TrailSize', 1, 0, 16)" />
-        </div>
-
-      </div>
-      <!--panel_end-->
-
-      <div class="panel" id="panel1">
-        <table id="Addons" style="width: 100%; border: 1px solid gray">
-        </table>
-      </div>
-      <!--panel_end-->
-
-      <div class="panel" id="panel2">
-        <table style="width: 100%">
-          <tr>
-            <td width="150px" valign="top">
-              <select name="Menus" style="width: 150px" onchange="SwitchMenus(this)">
-              </select>
-              <div id="Menus_List">
+      <table class="layout" style="width: 100%">
+        <tr>
+          <td style="vertical-align: top">
+            <table class="layout">
+              <tr>
+                <td>
+                  <input type="text" name="q" style="width: 100%" onkeydown="FindKeyEvent(this)" />
+                </td>
+                <td onmouseover="MouseOver(this)" onmouseout="MouseOut()" onclick="FindText(document.F.q.value)" class="button" style="vertical-align: middle">
+                  <img bitmap="ieframe.dll,216,16,17" hidefocus="true" style="vertical-align: middle; width: 16px; height: 16px" />
+                </td>
+              </tr>
+            </table>
+            <div id="tab_" class="panel" style="display: block; width: 150px; background-color: window">
+              <tt class="treebutton" onclick="ClickTree(this, 0);">-</tt>
+              <label id="tab0" class="button" onmousedown="ClickTab(this);">General</label>
+              <br />
+              <div id="tab0_" style="margin-left: 20px">
+                <label id="tab0_1" class="button" onmousedown="ClickTab(this);">Mouse</label>
+                <br />
               </div>
-            </td>
-            <td valign="top">
+              <tt class="treebutton" style="visibility: hidden">-</tt>
+              <label id="tab1" class="button" onmousedown="ClickTab(this);">Add-ons</label>
+              <br />
+              <tt class="treebutton" onclick="ClickTree(this, 2);">-</tt>
+              <label id="tab2" class="button" onmousedown="ClickTab(document.getElementById('tab2_0'));">Menus</label>
+              <br />
+              <div id="tab2_" style="margin-left: 20px">
+              </div>
+              <tt class="treebutton" onclick="ClickTree(this, 3);">-</tt>
+              <label id="tab3" class="button" onmousedown="ClickTab(this);">Tabs</label>
+              <br />
+              <div id="tab3_" style="margin-left: 20px">
+                <label id="tab3_1" class="button" onmousedown="ClickTab(this);">Advanced</label>
+                <br />
+              </div>
+              <tt class="treebutton" onclick="ClickTree(this, 4);">-</tt>
+              <label id="tab4" class="button" onmousedown="ClickTab(this);">Tree</label>
+              <br />
+              <div id="tab4_" style="margin-left: 20px">
+                <label id="tab4_1" class="button" onmousedown="ClickTab(this);">Root</label>
+                <br />
+                <label id="tab4_2" class="button" onmousedown="ClickTab(this);">EnumFlags</label>
+                <br />
+              </div>
+              <tt class="treebutton" onclick="ClickTree(this, 5);">-</tt>
+              <label id="tab5" class="button" onmousedown="ClickTab(this);">List</label>
+              <br />
+              <div id="tab5_" style="margin-left: 20px">
+                <label id="tab5_1" class="button" onmousedown="ClickTab(this);">Advanced</label>
+                <br />
+              </div>
+            </div>
+          </td>
+          <td style="width: 100%">
+            <!--panel_start-->
+            <div class="panel" id="panel0">
+              <label>Language</label><br />
+              <input type="text" name="Conf_Lang" size="3" /><select id="SelLangID" onchange="SetValue(Conf_Lang, this)"></select><br />
+              <label>Default LanguageID</label>:
+              <span id="DefaultLangID"></span>&nbsp;<input type="button" value="Set Default" onclick="SetDefaultLangID()" /><br />
+              <br />
+              <label>Left Bar</label><br />
+              <label>Width</label><input type="text" id="Conf_LeftBarWidth" align="right" size="4" />px<br /><br />
+              <label>Right Bar</label><br />
+              <label>Width</label><input type="text" id="Conf_RightBarWidth" align="right" size="4" />px<br /><br />
+              <label>Tool Bar</label> <label>Icon</label><br />
+              <label>Size</label><input type="text" id="Conf_IconSize" align="right" size="4" />px
+              <input type="button" value="Set Default" onclick="document.F.Conf_IconSize.value='';" />
+              <br /><br />
+              <div class="block">
+                <input type="button" name="ButtonInitConfig" value="Initialize config folder" onclick="InitConfig(this);" />
+                <br />
+                <label>If you installed Tablacus Explorer to the Program Files directory, please press this button.</label>
+              </div>
+            </div>
+            <!--panel_end-->
+
+            <!--panel_start-->
+            <div class="panel" id="panel0_1">
+              <label>Gestures</label><br />
+              <input type="text" name="Conf_Gestures" style="display: none" />
+              <input type="radio" name="Conf_Gestures_" id="Conf_Gestures=0" onclick="SetRadio(this)" />
+              <label for="Conf_Gestures=0">None</label>
+              <input type="radio" name="Conf_Gestures_" id="Conf_Gestures=1" onclick="SetRadio(this)" />
+              <label for="Conf_Gestures=1">Wheel</label>
+              <input type="radio" name="Conf_Gestures_" id="Conf_Gestures=2" onclick="SetRadio(this)" />
+              <label for="Conf_Gestures=2">Normal</label>
+              <input type="radio" name="Conf_Gestures_" id="Conf_Gestures=3" onclick="SetRadio(this)" />
+              <label for="Conf_Gestures=3">Priority</label>
+              <br /><br />
+              <label>Timeout</label><br />
+              <input type="text" id="Conf_GestureTimeout" size="6" style="text-align:right" />ms
+              <br /><br />
+              <label>Trails</label><br />
+              <label>Color</label>
+              <input id="Color_Conf_TrailColor" type="button" value=" " class="color" onclick="ChooseColor1(this)" />
+              <input type="text" id="Conf_TrailColor" style="display: none" />
+              <label>Size</label><input type="text" name="Conf_TrailSize" size="2" style="text-align:right" />px
+              <input type="button" value="-" onclick="AddValue('Conf_TrailSize', -1, 0, 16)" />
+              <input type="button" value="+" onclick="AddValue('Conf_TrailSize', 1, 0, 16)" />
+            </div>
+            <!--panel_end-->
+
+            <div class="panel" id="panel1">
+              <table id="Addons" style="width: 100%; border: 1px solid gray">
+              </table>
+            </div>
+            <!--panel_end-->
+
+            <div class="panel" id="panel2">
               <table style="width: 100%">
                 <tr>
-                  <td valign="bottom">
-                    <label>Name</label>
+                  <td width="150px" valign="top">
+                    <select name="Menus" style="display: none">
+                    </select>
+                    <div id="Menus_List">
+                    </div>
                   </td>
-                  <td align="right">
-                    <label>Base</label>
-                    <select name="Menus_Base" onchange="SwitchMenus();">
-                      <option value="Normal" />Normal
-                      <option value="Exec" />Exec
-                      <option value="Context" />Context
-                      <option value="ViewContext" />ViewContext
-                      <option value="File" />File
-                      <option value="Edit" />Edit
-                      <option value="View" />View
-                      <option value="Help" />Help
-                      <option value="Favorites" />Favorites
+                  <td valign="top">
+                    <table style="width: 100%">
+                      <tr>
+                        <td valign="bottom" style="white-space: nowrap">
+                          <label>Name</label>
+                        </td>
+                        <td align="right">
+                          <label>Base</label>
+                          <select name="Menus_Base" onchange="SwitchMenus();">
+                            <option value="Normal" />Normal
+                            <option value="Exec" />Exec
+                            <option value="Context" />Context
+                            <option value="ViewContext" />ViewContext
+                            <option value="File" />File
+                            <option value="Edit" />Edit
+                            <option value="View" />View
+                            <option value="Help" />Help
+                            <option value="Favorites" />Favorites
+                          </select>
+                        </td>
+                      </tr>
+                    </table>
+                    <table class="layout">
+                      <tr>
+                        <td>
+                          <input type="text" name="Menus_Name" style="width: 100%" onchange="ChangeX('Menus')" />
+                        </td>
+                        <td style="width: 80px">
+                          <input type="text" name="Menus_Key" style="width: 100%" onchange="ChangeX('Menus')" />
+                        </td>
+                      </tr>
+                    </table>
+
+                    <table style="width: 100%">
+                      <tr>
+                        <td valign="bottom" style="white-space: nowrap">
+                          <label>Filter</label>
+                        </td>
+                        <td align="right">
+                          <label>Position</label>
+                          <input type="text" name="Menus_Pos" size="2" onchange="SwitchMenus();" />
+                          <select onchange="SelectPos(this, 'Menus_Pos');SwitchMenus();">
+                            <option value="" />Select
+                            <option value="0" />Add before
+                            <option value="-1" />Add after
+                          </select>
+                        </td>
+                      </tr>
+                    </table>
+                    <input type="text" name="Menus_Filter" style="width: 100%" onchange="ChangeX('Menus')" />
+                    <label>Type</label>
+                    <br />
+                    <select name="Menus_Type" style="width: 100%" onchange="ChangeX('Menus')">
                     </select>
-                    <label>Position</label>
-                    <input type="text" name="Menus_Pos" size="2" onchange="SwitchMenus();" />
-                    <select onchange="SelectPos(this, 'Menus_Pos');SwitchMenus();">
-                      <option value="" />Select
-                      <option value="0" />Add before
-                      <option value="-1" />Add after
-                    </select>
+                    <table class="layout">
+                      <tr>
+                        <td>
+                          <label>Options</label>
+                        </td>
+                        <td align="right">
+                          <input type="button" value="Reference..." onclick="RefX('Menus_Path', true, this)" style="width: 128px" />
+                        </td>
+                      </tr>
+                    </table>
+                    <textarea name="Menus_Path" style="width: 100%; height: 228px" onchange="ChangeX('Menus')">
+                    </textarea>
                   </td>
                 </tr>
               </table>
-              <table class="layout">
+
+              <table width="100%">
                 <tr>
                   <td>
-                    <input type="text" name="Menus_Name" style="width: 100%" onchange="ChangeX('Menus')" />
-                  </td>
-                  <td style="width: 80px">
-                    <input type="text" name="Menus_Key" style="width: 100%" onchange="ChangeX('Menus')" />
-                  </td>
-                </tr>
-              </table>
-              <label>Filter</label>
-              <br />
-              <input type="text" name="Menus_Filter" style="width: 100%" onchange="ChangeX('Menus')" />
-              <label>Type</label>
-              <br />
-              <select name="Menus_Type" style="width: 100%" onchange="ChangeX('Menus')">
-              </select>
-              <table class="layout">
-                <tr>
-                  <td>
-                    <label>Options</label>
+                    <input type="button" value="Remove" onclick="RemoveMenus()" />
+                    <input type="button" value="Up" onclick="MoveMenus(-1)" />
+                    <input type="button" value="Down" onclick="MoveMenus(1)" />
+                    <input type="button" value="Edit" onclick="EditMenus()" />
+                    &nbsp;<input type="button" value="Test" onclick="TestX('Menus_')" />
                   </td>
                   <td align="right">
-                    <input type="button" value="Reference..." onclick="RefX('Menus_Path', true, this)" style="width: 128px" />
+                    <input type="button" value="Add" onclick="AddMenus()" />
+                    <input type="button" value="Replace" onclick="ReplaceMenus()" />
                   </td>
                 </tr>
               </table>
-              <textarea name="Menus_Path" style="width: 100%; height: 180px" onchange="ChangeX('Menus')">
-              </textarea>
-            </td>
-          </tr>
-        </table>
 
-        <table width="100%">
-          <tr>
-            <td>
-              <input type="button" value="Remove" onclick="RemoveMenus()" />
-              <input type="button" value="Up" onclick="MoveMenus(-1)" />
-              <input type="button" value="Down" onclick="MoveMenus(1)" />
-              <input type="button" value="Edit" onclick="EditMenus()" />
-              &nbsp;<input type="button" value="Test" onclick="TestX('Menus_')" />
-            </td>
-            <td align="right">
-              <input type="button" value="Add" onclick="AddMenus()" />
-              <input type="button" value="Replace" onclick="ReplaceMenus()" />
-            </td>
-          </tr>
-        </table>
+            </div>
+            <!--panel_end-->
 
-      </div>
-      <!--panel_end-->
+            <div class="panel" id="panel3">
+              <input type="hidden" name="Tab_Style"/>TCS_...<br />
+              <input type="checkbox" id="Tab_Style:0x100" onclick="SetCheckbox(this)" />
+              <label for="Tab_Style:0x100">BUTTONS</label>
+              <input type="checkbox" id="Tab_Style:0x8" onclick="SetCheckbox(this)" />
+              <label for="Tab_Style:0x8">FLATBUTTONS</label>
+              <input type="checkbox" id="Tab_Style:0x1" onclick="SetCheckbox(this)" />
+              <label for="Tab_Style:0x1">SCROLLOPPOSITE</label>
+              <br />
+              <input type="checkbox" id="Tab_Style:0x200" onclick="SetCheckbox(this)" />
+              <label for="Tab_Style:0x200">MULTILINE</label>
+              <input type="checkbox" id="Tab_Style:0x400" onclick="SetCheckbox(this)" />
+              <label for="Tab_Style:0x400">FIXEDWIDTH</label>
+              <input type="checkbox" id="Tab_Style:0x800" onclick="SetCheckbox(this)" />
+              <label for="Tab_Style:0x800">RAGGEDRIGHT</label>
+              <br />
+              <input type="checkbox" id="Tab_Style:0x2" onclick="SetCheckbox(this)" />
+              <label for="Tab_Style:0x2">RIGHT/BOTTOM</label>
+              <input type="checkbox" id="Tab_Style:0x80" onclick="SetCheckbox(this)" />
+              <label for="Tab_Style:0x80">VERTICAL</label>
+              <input type="checkbox" id="Tab_Style:0x40" onclick="SetCheckbox(this)" />
+              <label for="Tab_Style:0x40">HOTTRACK</label>
+              <br />
+              <input type="checkbox" id="Tab_Style:0x4000" onclick="SetCheckbox(this)" />
+              <label for="Tab_Style:0x4000">TOOLTIPS</label>
+              <input type="checkbox" id="Tab_Style:0x10" onclick="SetCheckbox(this)" />
+              <label for="Tab_Style:0x10">FORCEICONLEFT</label>
+              <input type="checkbox" id="Tab_Style:0x20" onclick="SetCheckbox(this)" />
+              <label for="Tab_Style:0x20">FORCELABELLEFT</label><br /><br />
+              <div>
+                <label>Align</label>
+              </div>
+              <input type="hidden" name="Tab_Align" />
+              <input type="radio" name="Tab_Align_" id="Tab_Align=0" onclick="SetRadio(this)" />
+              <label for="Tab_Align=0">None</label>
+              <input type="radio" name="Tab_Align_" id="Tab_Align=1" onclick="SetRadio(this)" />
+              <label for="Tab_Align=1">Auto</label>
+              <input type="radio" name="Tab_Align_" id="Tab_Align=2" onclick="SetRadio(this)" />
+              <label for="Tab_Align=2">Top</label>
+              <input type="radio" name="Tab_Align_" id="Tab_Align=3" onclick="SetRadio(this)" />
+              <label for="Tab_Align=3">Bottom</label>
+              <input type="radio" name="Tab_Align_" id="Tab_Align=4" onclick="SetRadio(this)" />
+              <label for="Tab_Align=4">Left</label>
+              <input type="radio" name="Tab_Align_" id="Tab_Align=5" onclick="SetRadio(this)" />
+              <label for="Tab_Align=5">Right</label><br /><br />
+              <div>
+                <Label>
+                  Size</label>
+                </div>
+              <label>Width</label>
+              <input type="text" name="Tab_TabWidth" size="4" />
+              <label>Height</label>
+              <input type="text" name="Tab_TabHeight" size="4" />
+            </div>
+            <!--panel_end-->
 
-      <div class="panel" id="panel3">
-        <div>
-          <input type="button" value="Style" class="groupbutton" onclick='OpenGroup("_Tab_Style")' />
-        </div>
-        <div class="group" id="_Tab_Style">
-          <input type="hidden" name="Tab_Style"/>TCS_...<br />
-          <input type="checkbox" id="Tab_Style:0x100" onclick="SetCheckbox(this)" />
-          <label for="Tab_Style:0x100">BUTTONS</label>
-          <input type="checkbox" id="Tab_Style:0x8" onclick="SetCheckbox(this)" />
-          <label for="Tab_Style:0x8">FLATBUTTONS</label>
-          <input type="checkbox" id="Tab_Style:0x1" onclick="SetCheckbox(this)" />
-          <label for="Tab_Style:0x1">SCROLLOPPOSITE</label>
-          <br />
-          <input type="checkbox" id="Tab_Style:0x200" onclick="SetCheckbox(this)" />
-          <label for="Tab_Style:0x200">MULTILINE</label>
-          <input type="checkbox" id="Tab_Style:0x400" onclick="SetCheckbox(this)" />
-          <label for="Tab_Style:0x400">FIXEDWIDTH</label>
-          <input type="checkbox" id="Tab_Style:0x800" onclick="SetCheckbox(this)" />
-          <label for="Tab_Style:0x800">RAGGEDRIGHT</label>
-          <br />
-          <input type="checkbox" id="Tab_Style:0x2" onclick="SetCheckbox(this)" />
-          <label for="Tab_Style:0x2">RIGHT/BOTTOM</label>
-          <input type="checkbox" id="Tab_Style:0x80" onclick="SetCheckbox(this)" />
-          <label for="Tab_Style:0x80">VERTICAL</label>
-          <input type="checkbox" id="Tab_Style:0x40" onclick="SetCheckbox(this)" />
-          <label for="Tab_Style:0x40">HOTTRACK</label>
-          <br />
-          <input type="checkbox" id="Tab_Style:0x4000" onclick="SetCheckbox(this)" />
-          <label for="Tab_Style:0x4000">TOOLTIPS</label>
-          <input type="checkbox" id="Tab_Style:0x10" onclick="SetCheckbox(this)" />
-          <label for="Tab_Style:0x10">FORCEICONLEFT</label>
-          <input type="checkbox" id="Tab_Style:0x20" onclick="SetCheckbox(this)" />
-          <label for="Tab_Style:0x20">FORCELABELLEFT</label>
-        </div>
-        <div>
-          <input type="button" value="Align" class="groupbutton" onclick='OpenGroup("_Tab_Align")' />
-        </div>
-        <div class="group" id="_Tab_Align">
-          <input type="hidden" name="Tab_Align" />
-          <input type="radio" name="Tab_Align_" id="Tab_Align=0" onclick="SetRadio(this)" />
-          <label for="Tab_Align=0">None</label>
-          <input type="radio" name="Tab_Align_" id="Tab_Align=1" onclick="SetRadio(this)" />
-          <label for="Tab_Align=1">Auto</label>
-          <input type="radio" name="Tab_Align_" id="Tab_Align=2" onclick="SetRadio(this)" />
-          <label for="Tab_Align=2">Top</label>
-          <input type="radio" name="Tab_Align_" id="Tab_Align=3" onclick="SetRadio(this)" />
-          <label for="Tab_Align=3">Bottom</label>
-          <input type="radio" name="Tab_Align_" id="Tab_Align=4" onclick="SetRadio(this)" />
-          <label for="Tab_Align=4">Left</label>
-          <input type="radio" name="Tab_Align_" id="Tab_Align=5" onclick="SetRadio(this)" />
-          <label for="Tab_Align=5">Right</label>
-        </div>
-        <div>
-          <input type="button" value="Size" class="groupbutton" onclick='OpenGroup("_Tab_Size")' />
-        </div>
-        <div class="group" id="_Tab_Size">
-          <label>Width</label>
-          <input type="text" name="Tab_TabWidth" size="4" />
-          <label>Height</label>
-          <input type="text" name="Tab_TabHeight" size="4" />
-        </div>
-        <div>
-          <input type="button" value="Position" class="groupbutton" onclick='OpenGroup("_Tab_Position")' />
-        </div>
-        <div class="group" id="_Tab_Position">
-          <label>Left</label>
-          <input type="text" name="Tab_Left" size="4" />
-          <label>Top</label>
-          <input type="text" name="Tab_Top" size="4" />
-          <label>Width</label>
-          <input type="text" name="Tab_Width" size="4" />
-          <label>Height</label>
-          <input type="text" name="Tab_Height" size="4" />
-          <br />
-          <input type="button" value="Get the current tab control" onclick="GetTabControl();" />
-          <input type="button" value="Move the current tab control" onclick="MoveTabControl();" />
-        </div>
-        <div>
-          <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Tab_Advanced")' />
-        </div>
-        <div class="group" id="_Tab_Advanced">
-          <input type="button" value="Add a tab control" onclick="AddTabControl();" />
-          <input type="button" value="Remove the current tab control" onclick="DelTabControl();" />
-          <br />
-        </div>
-      </div>
-      <!--panel_end-->
+            <div class="panel" id="panel3_1">
+              <label>Position</label>
+              <br />
+              <label>Left</label>
+              <input type="text" name="Tab_Left" size="4" />
+              <label>Top</label>
+              <input type="text" name="Tab_Top" size="4" />
+              <label>Width</label>
+              <input type="text" name="Tab_Width" size="4" />
+              <label>Height</label>
+              <input type="text" name="Tab_Height" size="4" />
+              <br />
+              <input type="button" value="Get the current tab control" onclick="GetTabControl();" />
+              <input type="button" value="Move the current tab control" onclick="MoveTabControl();" />
+              <br />
+              <input type="button" value="Add a tab control" onclick="AddTabControl();" />
+              <input type="button" value="Remove the current tab control" onclick="DelTabControl();" />
+            </div>
+            <!--panel_end-->
 
-      <div class="panel" id="panel4">
-        <div>
-          <input type="button" value="Style" class="groupbutton" onclick='OpenGroup("_Tree_Style")' />
-        </div>
-        <div class="group" id="_Tree_Style">
-          <input type="hidden" name="Tree_Style" />NSTCS_...<br />
-          <input type="checkbox" id="Tree_Style:1" onclick="SetCheckbox(this)" />
-          <label for="Tree_Style:1">HASEXPANDOS</label>
-          <input type="checkbox" id="Tree_Style:2" onclick="SetCheckbox(this)" />
-          <label for="Tree_Style:2">HASLINES</label>
-          <input type="checkbox" id="Tree_Style:0x10000" onclick="SetCheckbox(this)" />
-          <label for="Tree_Style:0x10000">NOEDITLABELS</label>
-          <br />
-          <input type="checkbox" id="Tree_Style:0x1000" onclick="SetCheckbox(this)" />
-          <label for="Tree_Style:0x1000">DISABLEDRAGDROP</label>
-          <input type="checkbox" id="Tree_Style:0x200" onclick="SetCheckbox(this)" />
-          <label for="Tree_Style:0x200">NOINFOTIP</label>
-          <br />
-          <input type="checkbox" id="Tree_Style:4" onclick="SetCheckbox(this)" />
-          <label for="Tree_Style:4">SINGLECLICKEXPAND</label>
-          <input type="checkbox" id="Tree_Style:0x10" onclick="SetCheckbox(this)" />
-          <label for="Tree_Style:0x10">SPRINGEXPAND</label>
-          <br />
-          <input type="checkbox" id="Tree_Style:8" onclick="SetCheckbox(this)" />
-          <label for="Tree_Style:8">FULLROWSELECT</label>
-          <input type="checkbox" id="Tree_Style:0x80" onclick="SetCheckbox(this)" />
-          <label for="Tree_Style:0x80">SHOWSELECTIONALWAYS</label>
-          <br />
-          <input type="checkbox" id="Tree_Style:0x20" onclick="SetCheckbox(this)" />
-          <label for="Tree_Style:0x20">HORIZONTALSCROLL</label>
-          <input type="checkbox" id="Tree_Style:0x8000" onclick="SetCheckbox(this)" />
-          <label for="Tree_Style:0x8000">BORDER</label>
+            <div class="panel" id="panel4">
+              <Label>
+                View</label><br />
+                <input type="hidden" name="Tree_Align" />
+                <input type="checkbox" id="Tree_Align:2" onclick="SetCheckbox(this)" />
+                <label for="Tree_Align:2">View</label>
+                <input type="checkbox" id="Tree_Align:4" onclick="SetCheckbox(this)" />
+                <label for="Tree_Align:4">Left</label>
+                <br />
+                <label>Width</label>
+                <input type="text" name="Tree_Width" size="4" />
+                <br /><br />
+                <label>
+                  Style
+                </label><br />
+                <input type="hidden" name="Tree_Style" />
+                <input type="checkbox" id="Tree_Style:1" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:1">HASEXPANDOS</label>
+                <input type="checkbox" id="Tree_Style:2" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:2">HASLINES</label>
+                <input type="checkbox" id="Tree_Style:0x10000" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:0x10000">NOEDITLABELS</label>
+                <br />
+                <input type="checkbox" id="Tree_Style:0x1000" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:0x1000">DISABLEDRAGDROP</label>
+                <input type="checkbox" id="Tree_Style:0x200" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:0x200">NOINFOTIP</label>
+                <br />
+                <input type="checkbox" id="Tree_Style:4" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:4">SINGLECLICKEXPAND</label>
+                <input type="checkbox" id="Tree_Style:0x10" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:0x10">SPRINGEXPAND</label>
+                <br />
+                <input type="checkbox" id="Tree_Style:8" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:8">FULLROWSELECT</label>
+                <input type="checkbox" id="Tree_Style:0x80" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:0x80">SHOWSELECTIONALWAYS</label>
+                <br />
+                <input type="checkbox" id="Tree_Style:0x20" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:0x20">HORIZONTALSCROLL</label>
+                <input type="checkbox" id="Tree_Style:0x8000" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:0x8000">BORDER</label>
 
-          <div>
-            <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_Tree_Style")' />
-          </div>
-          <div class="group" id="_Advanced_Tree_Style">
+                <div>
+                  <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_Tree_Style")' />
+                </div>
+                <div class="group" id="_Advanced_Tree_Style">
 
-            <input type="checkbox" id="Tree_Style:0x40" onclick="SetCheckbox(this)" />
-            <label for="Tree_Style:0x40">ROOTHASEXPANDO</label>(*)
-            <input type="checkbox" id="Tree_Style:0x400" onclick="SetCheckbox(this)" />
-            <label for="Tree_Style:0x400">EVENHEIGHT</label>
-            <br />
-            <input type="checkbox" id="Tree_Style:0x800" onclick="SetCheckbox(this)" />
-            <label for="Tree_Style:0x800">NOREPLACEOPEN</label>(*)
-            <input type="checkbox" id="Tree_Style:0x2000" onclick="SetCheckbox(this)" />
-            <label for="Tree_Style:0x2000">NOORDERSTREAM</label>(*)
-            <input type="checkbox" id="Tree_Style:0x4000" onclick="SetCheckbox(this)" />
-            <label for="Tree_Style:0x4000">RICHTOOLTIP</label>(*)
-            <br />
-            <input type="checkbox" id="Tree_Style:0x20000" onclick="SetCheckbox(this)" />
-            <label for="Tree_Style:0x20000">TABSTOP</label>
-            <input type="checkbox" id="Tree_Style:0x40000" onclick="SetCheckbox(this)" />
-            <label for="Tree_Style:0x40000">FAVORITESMODE</label>
-            <input type="checkbox" id="Tree_Style:0x100000" onclick="SetCheckbox(this)" />
-            <label for="Tree_Style:0x100000">AUTOHSCROLL</label>
-            <br />
-            <input type="checkbox" id="Tree_Style:0x200000" onclick="SetCheckbox(this)" />
-            <label for="Tree_Style:0x200000">FADEINOUTEXPANDOS</label>(*)
-            <input type="checkbox" id="Tree_Style:0x400000" onclick="SetCheckbox(this)" />
-            <label for="Tree_Style:0x400000">EMPTYTEXT</label>(*)
-            <input type="checkbox" id="Tree_Style:0x800000" onclick="SetCheckbox(this)" />
-            <label for="Tree_Style:0x800000">CHECKBOXES</label>
-            <br />
-            <input type="checkbox" id="Tree_Style:0x1000000" onclick="SetCheckbox(this)" />
-            <label for="Tree_Style:0x1000000">PARTIALCHECKBOXES</label>
-            <input type="checkbox" id="Tree_Style:0x2000000" onclick="SetCheckbox(this)" />
-            <label for="Tree_Style:0x2000000">EXCLUSIONCHECKBOXES</label>(*)
-            <br />
-            <input type="checkbox" id="Tree_Style:0x4000000" onclick="SetCheckbox(this)" />
-            <label for="Tree_Style:0x4000000">DIMMEDCHECKBOXES</label>(*)
-            <input type="checkbox" id="Tree_Style:0x8000000" onclick="SetCheckbox(this)" />
-            <label for="Tree_Style:0x8000000">NOINDENTCHECKS</label>(*)
-            <br />
-            <input type="checkbox" id="Tree_Style:0x10000000" onclick="SetCheckbox(this)" />
-            <label for="Tree_Style:0x10000000">ALLOWJUNCTIONS</label>(*)
-            <input type="checkbox" id="Tree_Style:0x20000000" onclick="SetCheckbox(this)" />
-            <label for="Tree_Style:0x20000000">SHOWTABSBUTTON</label>(*)
-            <br />
-            <input type="checkbox" id="Tree_Style:0x40000000" onclick="SetCheckbox(this)" />
-            <label for="Tree_Style:0x40000000">SHOWDELETEBUTTON</label>(*)
-            <input type="checkbox" id="Tree_Style:0x80000000" onclick="SetCheckbox(this)" />
-            <label for="Tree_Style:0x80000000">SHOWREFRESHBUTTON</label>(*)
-          </div>
-        </div>
-        <div>
-          <input type="button" value="EnumFlags" class="groupbutton" onclick='OpenGroup("_Tree_EnumFlags")' />
-        </div>
-        <div class="group" id="_Tree_EnumFlags">
-          SHCONTF_...<br />
-          <input type="hidden" name="Tree_EnumFlags" />
-          <input type="checkbox" id="Tree_EnumFlags:0x20" onclick="SetCheckbox(this)" />
-          <label for="Tree_EnumFlags:0x20">FOLDERS</label>
-          <input type="checkbox" id="Tree_EnumFlags:0x40" onclick="SetCheckbox(this)" />
-          <label for="Tree_EnumFlags:0x40">NONFOLDERS</label>
-          <input type="checkbox" id="Tree_EnumFlags:0x80" onclick="SetCheckbox(this)" />
-          <label for="Tree_EnumFlags:0x80">INCLUDEHIDDEN</label>
+                  <input type="checkbox" id="Tree_Style:0x40" onclick="SetCheckbox(this)" />
+                  <label for="Tree_Style:0x40">ROOTHASEXPANDO</label>(*)
+                  <input type="checkbox" id="Tree_Style:0x400" onclick="SetCheckbox(this)" />
+                  <label for="Tree_Style:0x400">EVENHEIGHT</label>
+                  <br />
+                  <input type="checkbox" id="Tree_Style:0x800" onclick="SetCheckbox(this)" />
+                  <label for="Tree_Style:0x800">NOREPLACEOPEN</label>(*)
+                  <input type="checkbox" id="Tree_Style:0x2000" onclick="SetCheckbox(this)" />
+                  <label for="Tree_Style:0x2000">NOORDERSTREAM</label>(*)
+                  <input type="checkbox" id="Tree_Style:0x4000" onclick="SetCheckbox(this)" />
+                  <label for="Tree_Style:0x4000">RICHTOOLTIP</label>(*)
+                  <br />
+                  <input type="checkbox" id="Tree_Style:0x20000" onclick="SetCheckbox(this)" />
+                  <label for="Tree_Style:0x20000">TABSTOP</label>
+                  <input type="checkbox" id="Tree_Style:0x40000" onclick="SetCheckbox(this)" />
+                  <label for="Tree_Style:0x40000">FAVORITESMODE</label>
+                  <input type="checkbox" id="Tree_Style:0x100000" onclick="SetCheckbox(this)" />
+                  <label for="Tree_Style:0x100000">AUTOHSCROLL</label>
+                  <br />
+                  <input type="checkbox" id="Tree_Style:0x200000" onclick="SetCheckbox(this)" />
+                  <label for="Tree_Style:0x200000">FADEINOUTEXPANDOS</label>(*)
+                  <input type="checkbox" id="Tree_Style:0x400000" onclick="SetCheckbox(this)" />
+                  <label for="Tree_Style:0x400000">EMPTYTEXT</label>(*)
+                  <input type="checkbox" id="Tree_Style:0x800000" onclick="SetCheckbox(this)" />
+                  <label for="Tree_Style:0x800000">CHECKBOXES</label>
+                  <br />
+                  <input type="checkbox" id="Tree_Style:0x1000000" onclick="SetCheckbox(this)" />
+                  <label for="Tree_Style:0x1000000">PARTIALCHECKBOXES</label>
+                  <input type="checkbox" id="Tree_Style:0x2000000" onclick="SetCheckbox(this)" />
+                  <label for="Tree_Style:0x2000000">EXCLUSIONCHECKBOXES</label>(*)
+                  <br />
+                  <input type="checkbox" id="Tree_Style:0x4000000" onclick="SetCheckbox(this)" />
+                  <label for="Tree_Style:0x4000000">DIMMEDCHECKBOXES</label>(*)
+                  <input type="checkbox" id="Tree_Style:0x8000000" onclick="SetCheckbox(this)" />
+                  <label for="Tree_Style:0x8000000">NOINDENTCHECKS</label>(*)
+                  <br />
+                  <input type="checkbox" id="Tree_Style:0x10000000" onclick="SetCheckbox(this)" />
+                  <label for="Tree_Style:0x10000000">ALLOWJUNCTIONS</label>(*)
+                  <input type="checkbox" id="Tree_Style:0x20000000" onclick="SetCheckbox(this)" />
+                  <label for="Tree_Style:0x20000000">SHOWTABSBUTTON</label>(*)
+                  <br />
+                  <input type="checkbox" id="Tree_Style:0x40000000" onclick="SetCheckbox(this)" />
+                  <label for="Tree_Style:0x40000000">SHOWDELETEBUTTON</label>(*)
+                  <input type="checkbox" id="Tree_Style:0x80000000" onclick="SetCheckbox(this)" />
+                  <label for="Tree_Style:0x80000000">SHOWREFRESHBUTTON</label>(*)
+                </div>
+                <br />
+                <div>
+                  (*)Windows Vista <label>or higher.</label>
+                  (*7)Windows 7 <label>or higher.</label>
+                </div>
+              </div>
+            <!--panel_end-->
 
-          <div>
-            <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_Tree_EnumFlags")' />
-          </div>
-          <div class="group" id="_Advanced_Tree_EnumFlags">
+            <div class="panel" id="panel4_1">
+              <label>Root</label><br />
+              <input type="text" name="Tree_Root" style="width: 100%" /><br /><br />
+              <label>RootStyle</label><br />
+              <input type="hidden" name="Tree_RootStyle" />NSTCRS_...<br />
+              <input type="radio" name="Tree_RootStyle_" id="Tree_RootStyle=0" onclick="SetRadio(this)" />
+              <label for="Tree_RootStyle=0">VISIBLE</label>
+              <input type="radio" name="Tree_RootStyle_" id="Tree_RootStyle=1" onclick="SetRadio(this)" />
+              <label for="Tree_RootStyle=1">HIDDEN</label>
+              <input type="radio" name="Tree_RootStyle_" id="Tree_RootStyle=2" onclick="SetRadio(this)" />
+              <label for="Tree_RootStyle=2">EXPANDED</label>
+            </div>
+            <!--panel_end-->
 
-            <input type="checkbox" id="Tree_EnumFlags:0x10" onclick="SetCheckbox(this)" />
-            <label for="Tree_EnumFlags:0x10">CHECKING_FOR_CHILDREN</label>(*7)
-            <input type="checkbox" id="Tree_EnumFlags:0x100" onclick="SetCheckbox(this)" />
-            <label for="Tree_EnumFlags:0x100">INIT_ON_FIRST_NEXT</label>
-            <input type="checkbox" id="Tree_EnumFlags:0x200" onclick="SetCheckbox(this)" />
-            <label for="Tree_EnumFlags:0x200">NETPRINTERSRCH</label>
-            <br />
-            <input type="checkbox" id="Tree_EnumFlags:0x400" onclick="SetCheckbox(this)" />
-            <label for="Tree_EnumFlags:0x400">SHAREABLE</label>
-            <input type="checkbox" id="Tree_EnumFlags:0x800" onclick="SetCheckbox(this)" />
-            <label for="Tree_EnumFlags:0x800">STORAGE</label>
-            <input type="checkbox" id="Tree_EnumFlags:0x1000" onclick="SetCheckbox(this)" />
-            <label for="Tree_EnumFlags:0x1000">NAVIGATION_ENUM</label>(*7)
-            <br />
-            <input type="checkbox" id="Tree_EnumFlags:0x2000" onclick="SetCheckbox(this)" />
-            <label for="Tree_EnumFlags:0x2000">FASTITEMS</label>(*)
-            <input type="checkbox" id="Tree_EnumFlags:0x4000" onclick="SetCheckbox(this)" />
-            <label for="Tree_EnumFlags:0x2000">FLATLIST</label>(*)
-            <input type="checkbox" id="Tree_EnumFlags:0x8000" onclick="SetCheckbox(this)" />
-            <label for="Tree_EnumFlags:0x2000">ENABLE_ASYNC</label>(*)
-            <br />
-            <input type="checkbox" id="Tree_EnumFlags:0x10000" onclick="SetCheckbox(this)" />
-            <label for="Tree_EnumFlags:0x2000">INCLUDESUPERHIDDEN</label>(*7)
-          </div>
-        </div>
-        <div>
-          <input type="button" value="RootStyle" class="groupbutton" onclick='OpenGroup("_Tree_RootStyle")' />
-        </div>
-        <div class="group" id="_Tree_RootStyle">
-          <input type="hidden" name="Tree_RootStyle" />NSTCRS_...<br />
-          <input type="radio" name="Tree_RootStyle_" id="Tree_RootStyle=0" onclick="SetRadio(this)" />
-          <label for="Tree_RootStyle=0">VISIBLE</label>
-          <input type="radio" name="Tree_RootStyle_" id="Tree_RootStyle=1" onclick="SetRadio(this)" />
-          <label for="Tree_RootStyle=1">HIDDEN</label>
-          <input type="radio" name="Tree_RootStyle_" id="Tree_RootStyle=2" onclick="SetRadio(this)" />
-          <label for="Tree_RootStyle=2">EXPANDED</label>
-        </div>
-        <div>
-          <input type="button" value="Root" class="groupbutton" onclick='OpenGroup("_Tree_Root")' />
-        </div>
-        <div class="group" id="_Tree_Root">
-          <input type="text" name="Tree_Root" style="width: 100%" />
-        </div>
+            <div class="panel" id="panel4_2">
+              <label>EnumFlags</label><br />
+              SHCONTF_...<br />
+              <input type="hidden" name="Tree_EnumFlags" />
+              <input type="checkbox" id="Tree_EnumFlags:0x20" onclick="SetCheckbox(this)" />
+              <label for="Tree_EnumFlags:0x20">FOLDERS</label>
+              <input type="checkbox" id="Tree_EnumFlags:0x40" onclick="SetCheckbox(this)" />
+              <label for="Tree_EnumFlags:0x40">NONFOLDERS</label>
+              <input type="checkbox" id="Tree_EnumFlags:0x80" onclick="SetCheckbox(this)" />
+              <label for="Tree_EnumFlags:0x80">INCLUDEHIDDEN</label>
 
-        <div>
-          <input type="button" value="View" class="groupbutton" onclick='OpenGroup("_Tree_View")' />
-        </div>
-        <div class="group" id="_Tree_View">
-          <input type="hidden" name="Tree_Align" />
-          <input type="checkbox" id="Tree_Align:2" onclick="SetCheckbox(this)" />
-          <label for="Tree_Align:2">View</label>
-          <input type="checkbox" id="Tree_Align:4" onclick="SetCheckbox(this)" />
-          <label for="Tree_Align:4">Left</label>
-          <br />
-          <label>Width</label>
-          <input type="text" name="Tree_Width" size="4" />
-        </div>
-        <br />
-        <div>
-          (*)<label>
-            Windows Vista<label> or higher.</label>
-          </label>
-          (*7)<label>
-            Windows 7<label> or higher.</label>
-          </label>
-        </div>
-      </div>
-      <!--panel_end-->
+              <div>
+                <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_Tree_EnumFlags")' />
+              </div>
+              <div class="group" id="_Advanced_Tree_EnumFlags">
 
-      <div class="panel" id="panel5">
-        <div>
-          <input type="button" value="Type" class="groupbutton" onclick='OpenGroup("_View_Type")' />
-        </div>
-        <div class="group" id="_View_Type">
-          <input type="hidden" name="View_Type" />
-          <input type="radio" name="View_Type_" id="View_Type=1" onclick="SetRadio(this)" /><label for="View_Type=1">Shell Browser</label>
-          <input type="radio" name="View_Type_" id="View_Type=2" onclick="SetRadio(this)" /><label for="View_Type=2">Explorer Browser</label>(*)
-        </div>
-        <div>
-          <input type="button" value="Style" class="groupbutton" onclick='OpenGroup("_View_Style")' />
-        </div>
-        <div class="group" id="_View_Style">
-          <input type="hidden" name="View_fFlags" />FWF_...<br />
-          <input type="checkbox" id="View_fFlags:0x1" onclick="SetCheckbox(this)" />
-          <label for="View_fFlags:0x1">AUTOARRANGE</label>
-          <input type="checkbox" id="View_fFlags:0x40" onclick="SetCheckbox(this)" />
-          <label for="View_fFlags:0x40">SINGLESEL</label>
-          <input type="checkbox" id="View_fFlags:0x200" onclick="SetCheckbox(this)" />
-          <label for="View_fFlags:0x200">NOCLIENTEDGE</label>
-          <br />
-          <input type="checkbox" id="View_fFlags:0x2000" onclick="SetCheckbox(this)" />
-          <label for="View_fFlags:0x2000">SHOWSELALWAYS</label>
-          <input type="checkbox" id="View_fFlags:0x8000" onclick="SetCheckbox(this)" />
-          <label for="View_fFlags:0x8000">SINGLECLICKACTIVATE</label>
-          <input type="checkbox" id="View_fFlags:0x200000" onclick="SetCheckbox(this)" />
-          <label for="View_fFlags:0x200000">FULLROWSELECT</label>
+                <input type="checkbox" id="Tree_EnumFlags:0x10" onclick="SetCheckbox(this)" />
+                <label for="Tree_EnumFlags:0x10">CHECKING_FOR_CHILDREN</label>(*7)
+                <input type="checkbox" id="Tree_EnumFlags:0x100" onclick="SetCheckbox(this)" />
+                <label for="Tree_EnumFlags:0x100">INIT_ON_FIRST_NEXT</label>
+                <input type="checkbox" id="Tree_EnumFlags:0x200" onclick="SetCheckbox(this)" />
+                <label for="Tree_EnumFlags:0x200">NETPRINTERSRCH</label>
+                <br />
+                <input type="checkbox" id="Tree_EnumFlags:0x400" onclick="SetCheckbox(this)" />
+                <label for="Tree_EnumFlags:0x400">SHAREABLE</label>
+                <input type="checkbox" id="Tree_EnumFlags:0x800" onclick="SetCheckbox(this)" />
+                <label for="Tree_EnumFlags:0x800">STORAGE</label>
+                <input type="checkbox" id="Tree_EnumFlags:0x1000" onclick="SetCheckbox(this)" />
+                <label for="Tree_EnumFlags:0x1000">NAVIGATION_ENUM</label>(*7)
+                <br />
+                <input type="checkbox" id="Tree_EnumFlags:0x2000" onclick="SetCheckbox(this)" />
+                <label for="Tree_EnumFlags:0x2000">FASTITEMS</label>(*)
+                <input type="checkbox" id="Tree_EnumFlags:0x4000" onclick="SetCheckbox(this)" />
+                <label for="Tree_EnumFlags:0x2000">FLATLIST</label>(*)
+                <input type="checkbox" id="Tree_EnumFlags:0x8000" onclick="SetCheckbox(this)" />
+                <label for="Tree_EnumFlags:0x2000">ENABLE_ASYNC</label>(*)
+                <br />
+                <input type="checkbox" id="Tree_EnumFlags:0x10000" onclick="SetCheckbox(this)" />
+                <label for="Tree_EnumFlags:0x2000">INCLUDESUPERHIDDEN</label>(*7)
+              </div>
 
-          <div>
-            <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_FWF")' />
-          </div>
-          <div class="group" id="_Advanced_FWF">
+            </div>
+            <!--panel_end-->
 
-            <input type="checkbox" id="View_fFlags:0x80" onclick="SetCheckbox(this)" />
-            <label for="View_fFlags:0x80">NOSUBFOLDERS</label>
-            <input type="checkbox" id="View_fFlags:0x800" onclick="SetCheckbox(this)" />
-            <label for="View_fFlags:0x800">ALIGNLEFT</label>
-            <input type="checkbox" id="View_fFlags:0x20000" onclick="SetCheckbox(this)" />
-            <label for="View_fFlags:0x20000">HIDEFILENAMES</label>
-            <br />
-            <input type="checkbox" id="View_fFlags:0x40000" onclick="SetCheckbox(this)" />
-            <label for="View_fFlags:0x40000">CHECKSELECT</label>
-            <input type="checkbox" id="View_fFlags:0x80000" onclick="SetCheckbox(this)" />
-            <label for="View_fFlags:0x80000">NOENUMREFRESH</label>(*)
-            <input type="checkbox" id="View_fFlags:0x100000" onclick="SetCheckbox(this)" />
-            <label for="View_fFlags:0x100000">NOGROUPING</label>(*)
-            <br />
-            <input type="checkbox" id="View_fFlags:0x400000" onclick="SetCheckbox(this)" />
-            <label for="View_fFlags:0x400000">NOFILTERS</label>(*)
-            <input type="checkbox" id="View_fFlags:0x800000" onclick="SetCheckbox(this)" />
-            <label for="View_fFlags:0x800000">NOCOLUMNHEADER</label>(*)
-            <input type="checkbox" id="View_fFlags:0x1000000" onclick="SetCheckbox(this)" />
-            <label for="View_fFlags:0x1000000">NOHEADERINALLVIEWS</label>(*)
-            <br />
-            <input type="checkbox" id="View_fFlags:0x2000000" onclick="SetCheckbox(this)" />
-            <label for="View_fFlags:0x2000000">EXTENDEDTILES</label>(*)
-            <input type="checkbox" id="View_fFlags:0x8000000" onclick="SetCheckbox(this)" />
-            <label for="View_fFlags:0x8000000">AUTOCHECKSELECT</label>(*)
-            <input type="checkbox" id="View_fFlags:0x10000000" onclick="SetCheckbox(this)" />
-            <label for="View_fFlags:0x10000000">NOBROWSERVIEWSTATE</label>(*)
-            <br />
-            <input type="checkbox" id="View_fFlags:0x20000000" onclick="SetCheckbox(this)" />
-            <label for="View_fFlags:0x20000000">SUBSETGROUPS</label>(*)
-            <input type="checkbox" id="View_fFlags:0x40000000" onclick="SetCheckbox(this)" />
-            <label for="View_fFlags:0x40000000">USESEARCHFOLDER</label>(*)
-            <input type="checkbox" id="View_fFlags:0x80000000" onclick="SetCheckbox(this)" />
-            <label for="View_fFlags:0x80000000">ALLOWRTLREADING</label>(*)
-          </div>
-        </div>
-        <div>
-          <input type="button" value="Explorer Browser" class="groupbutton" onclick='OpenGroup("_View_EBO")' />
-        </div>
-        <div class="group" id="_View_EBO">
-          <input type="hidden" name="View_Options" />EBO_...(*)<br />
-          <input type="checkbox" id="View_Options:0x2" onclick="SetCheckbox(this)" />
-          <label for="View_Options:0x2">SHOWFRAMES</label>
-          <input type="checkbox" id="View_Options:0x1" onclick="SetCheckbox(this)" />
-          <label for="View_Options:0x1">NAVIGATEONCE</label>
-          <input type="checkbox" id="View_Options:0x4" onclick="SetCheckbox(this)" />
-          <label for="View_Options:0x4">ALWAYSNAVIGATE</label><br />
-          <input type="checkbox" id="View_Options:0x10" onclick="SetCheckbox(this)" />
-          <label for="View_Options:0x10">NOWRAPPERWINDOW</label>
-          <input type="checkbox" id="View_Options:0x20" onclick="SetCheckbox(this)" />
-          <label for="View_Options:0x20">HTMLSHAREPOINTVIEW</label>
-        </div>
-        <div>
-          <input type="button" value="ViewFlags" class="groupbutton" onclick='OpenGroup("_View_ViewFlags")' />
-        </div>
-        <div class="group" id="_View_ViewFlags">
-          <input type="hidden" name="View_ViewFlags" />CDB2GVF_...<br />
-          <input type="checkbox" id="View_ViewFlags:0x1" onclick="SetCheckbox(this)" />
-          <label for="View_ViewFlags:0x1">SHOWALLFILES</label>
-        </div>
-        <div>
-          <input type="button" value="ViewMode" class="groupbutton" onclick='OpenGroup("_View_ViewMode")' />
-        </div>
-        <div class="group" id="_View_ViewMode">
-          <input type="hidden" name="View_ViewMode" />FVM_...<br />
-          <input type="radio" name="View_ViewMode_" id="View_ViewMode=1" onclick="SetRadio(this)" />
-          <label for="View_ViewMode=1">ICON</label>
-          <input type="radio" name="View_ViewMode_" id="View_ViewMode=2" onclick="SetRadio(this)" />
-          <label for="View_ViewMode=2">SMALLICON</label>
-          <input type="radio" name="View_ViewMode_" id="View_ViewMode=3" onclick="SetRadio(this)" />
-          <label for="View_ViewMode=3">LIST</label>
-          <input type="radio" name="View_ViewMode_" id="View_ViewMode=4" onclick="SetRadio(this)" />
-          <label for="View_ViewMode=4">DETAILS</label>
-          <input type="radio" name="View_ViewMode_" id="View_ViewMode=5" onclick="SetRadio(this)" />
-          <label for="View_ViewMode=5">THUMBNAIL</label>
-          <br />
-          <input type="radio" name="View_ViewMode_" id="View_ViewMode=6" onclick="SetRadio(this)" />
-          <label for="View_ViewMode=6">TILE</label>(*X)
-          <input type="radio" name="View_ViewMode_" id="View_ViewMode=7" onclick="SetRadio(this)" />
-          <label for="View_ViewMode=7">THUMBSTRIP</label>(*)
-          <input type="radio" name="View_ViewMode_" id="View_ViewMode=8" onclick="SetRadio(this)" />
-          <label for="View_ViewMode=8">CONTENT</label>(*7)
-        </div>
-        <br />
-        <div>
-          (*X)<label>
-            Windows XP<label> or higher.</label>
-          </label>
-          (*)<label>
-            Windows Vista<label> or higher.</label>
-          </label>
-          (*7)<label>
-            Windows 7<label> or higher.</label>
-          </label>
-        </div>
-      </div>
-      <!--panel_end-->
+            <div class="panel" id="panel5">
+              <label>Type</label><br />
+              <input type="hidden" name="View_Type" />
+              <input type="radio" name="View_Type_" id="View_Type=1" onclick="SetRadio(this)" /><label for="View_Type=1">Shell Browser</label>
+              <input type="radio" name="View_Type_" id="View_Type=2" onclick="SetRadio(this)" /><label for="View_Type=2">Explorer Browser</label>(*)
+              <br /><br />
+              <label>ViewFlags</label><br />
+              <input type="hidden" name="View_ViewFlags" />
+              <input type="checkbox" id="View_ViewFlags:0x1" onclick="SetCheckbox(this)" />
+              <label for="View_ViewFlags:0x1">SHOWALLFILES</label>
+              <br /><br />
+              <label>ViewMode</label><br />
+              <input type="hidden" name="View_ViewMode" />FVM_...<br />
+              <input type="radio" name="View_ViewMode_" id="View_ViewMode=1" onclick="SetRadio(this)" />
+              <label for="View_ViewMode=1">ICON</label>
+              <input type="radio" name="View_ViewMode_" id="View_ViewMode=2" onclick="SetRadio(this)" />
+              <label for="View_ViewMode=2">SMALLICON</label>
+              <input type="radio" name="View_ViewMode_" id="View_ViewMode=3" onclick="SetRadio(this)" />
+              <label for="View_ViewMode=3">LIST</label>
+              <input type="radio" name="View_ViewMode_" id="View_ViewMode=4" onclick="SetRadio(this)" />
+              <label for="View_ViewMode=4">DETAILS</label>
+              <input type="radio" name="View_ViewMode_" id="View_ViewMode=5" onclick="SetRadio(this)" />
+              <label for="View_ViewMode=5">THUMBNAIL</label>
+              <br />
+              <input type="radio" name="View_ViewMode_" id="View_ViewMode=6" onclick="SetRadio(this)" />
+              <label for="View_ViewMode=6">TILE</label>(*X)
+              <input type="radio" name="View_ViewMode_" id="View_ViewMode=7" onclick="SetRadio(this)" />
+              <label for="View_ViewMode=7">THUMBSTRIP</label>(*)
+              <input type="radio" name="View_ViewMode_" id="View_ViewMode=8" onclick="SetRadio(this)" />
+              <label for="View_ViewMode=8">CONTENT</label>(*7)
 
-      <div class="panel" id="panel6">
-        <div class="block">
-          <input type="button" name="ButtonInitConfig" value="Initialize config folder" onclick="InitConfig(this);" />
-          <br />
-          <label>If you installed Tablacus Explorer to the Program Files directory, please press this button.</label>
-        </div>
-      </div>
-      <!--panel_end-->
+              <br /><br />
+              <label>Style</label><br />
+              <input type="hidden" name="View_fFlags" />FWF_...<br />
+              <input type="checkbox" id="View_fFlags:0x1" onclick="SetCheckbox(this)" />
+              <label for="View_fFlags:0x1">AUTOARRANGE</label>
+              <input type="checkbox" id="View_fFlags:0x40" onclick="SetCheckbox(this)" />
+              <label for="View_fFlags:0x40">SINGLESEL</label>
+              <input type="checkbox" id="View_fFlags:0x200" onclick="SetCheckbox(this)" />
+              <label for="View_fFlags:0x200">NOCLIENTEDGE</label>
+              <br />
+              <input type="checkbox" id="View_fFlags:0x2000" onclick="SetCheckbox(this)" />
+              <label for="View_fFlags:0x2000">SHOWSELALWAYS</label>
+              <input type="checkbox" id="View_fFlags:0x8000" onclick="SetCheckbox(this)" />
+              <label for="View_fFlags:0x8000">SINGLECLICKACTIVATE</label>
+              <input type="checkbox" id="View_fFlags:0x200000" onclick="SetCheckbox(this)" />
+              <label for="View_fFlags:0x200000">FULLROWSELECT</label>
 
-      <!-- - - - - - - - - - -  -->
+              <div>
+                <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_FWF")' />
+              </div>
+              <div class="group" id="_Advanced_FWF">
 
+                <input type="checkbox" id="View_fFlags:0x80" onclick="SetCheckbox(this)" />
+                <label for="View_fFlags:0x80">NOSUBFOLDERS</label>
+                <input type="checkbox" id="View_fFlags:0x800" onclick="SetCheckbox(this)" />
+                <label for="View_fFlags:0x800">ALIGNLEFT</label>
+                <input type="checkbox" id="View_fFlags:0x20000" onclick="SetCheckbox(this)" />
+                <label for="View_fFlags:0x20000">HIDEFILENAMES</label>
+                <br />
+                <input type="checkbox" id="View_fFlags:0x40000" onclick="SetCheckbox(this)" />
+                <label for="View_fFlags:0x40000">CHECKSELECT</label>
+                <input type="checkbox" id="View_fFlags:0x80000" onclick="SetCheckbox(this)" />
+                <label for="View_fFlags:0x80000">NOENUMREFRESH</label>(*)
+                <input type="checkbox" id="View_fFlags:0x100000" onclick="SetCheckbox(this)" />
+                <label for="View_fFlags:0x100000">NOGROUPING</label>(*)
+                <br />
+                <input type="checkbox" id="View_fFlags:0x400000" onclick="SetCheckbox(this)" />
+                <label for="View_fFlags:0x400000">NOFILTERS</label>(*)
+                <input type="checkbox" id="View_fFlags:0x800000" onclick="SetCheckbox(this)" />
+                <label for="View_fFlags:0x800000">NOCOLUMNHEADER</label>(*)
+                <input type="checkbox" id="View_fFlags:0x1000000" onclick="SetCheckbox(this)" />
+                <label for="View_fFlags:0x1000000">NOHEADERINALLVIEWS</label>(*)
+                <br />
+                <input type="checkbox" id="View_fFlags:0x2000000" onclick="SetCheckbox(this)" />
+                <label for="View_fFlags:0x2000000">EXTENDEDTILES</label>(*)
+                <input type="checkbox" id="View_fFlags:0x8000000" onclick="SetCheckbox(this)" />
+                <label for="View_fFlags:0x8000000">AUTOCHECKSELECT</label>(*)
+                <input type="checkbox" id="View_fFlags:0x10000000" onclick="SetCheckbox(this)" />
+                <label for="View_fFlags:0x10000000">NOBROWSERVIEWSTATE</label>(*)
+                <br />
+                <input type="checkbox" id="View_fFlags:0x20000000" onclick="SetCheckbox(this)" />
+                <label for="View_fFlags:0x20000000">SUBSETGROUPS</label>(*)
+                <input type="checkbox" id="View_fFlags:0x40000000" onclick="SetCheckbox(this)" />
+                <label for="View_fFlags:0x40000000">USESEARCHFOLDER</label>(*)
+                <input type="checkbox" id="View_fFlags:0x80000000" onclick="SetCheckbox(this)" />
+                <label for="View_fFlags:0x80000000">ALLOWRTLREADING</label>(*)
+              </div>
+              <br />
+              <div>
+                (*X)Windows XP <label>or higher.</label>
+                (*)Windows Vista <label>or higher.</label>
+                (*7)Windows 7 <label>or higher.</label>
+              </div>
+            </div>
+            <!--panel_end-->
+
+            <div class="panel" id="panel5_1">
+              <label>Explorer Browser</label><br />
+              <input type="hidden" name="View_Options" />EBO_...(*)<br />
+              <input type="checkbox" id="View_Options:0x2" onclick="SetCheckbox(this)" />
+              <label for="View_Options:0x2">SHOWFRAMES</label>
+              <input type="checkbox" id="View_Options:0x1" onclick="SetCheckbox(this)" />
+              <label for="View_Options:0x1">NAVIGATEONCE</label>
+              <input type="checkbox" id="View_Options:0x4" onclick="SetCheckbox(this)" />
+              <label for="View_Options:0x4">ALWAYSNAVIGATE</label><br />
+              <input type="checkbox" id="View_Options:0x10" onclick="SetCheckbox(this)" />
+              <label for="View_Options:0x10">NOWRAPPERWINDOW</label>
+              <input type="checkbox" id="View_Options:0x20" onclick="SetCheckbox(this)" />
+              <label for="View_Options:0x20">HTMLSHAREPOINTVIEW</label>
+            </div>
+            <!--panel_end-->
+
+            <!-- - - - - - - - - - -  -->
+          </td>
+        </tr>
+      </table>
       <table style="width: 97%">
         <tr>
           <td>
-            &nbsp;<input type="button" value="Get Add-ons..." onclick="GetAddons()" />
+            <input type="button" value="Get Add-ons..." onclick="GetAddons()" />
           </td>
           <td align="right">
             <input type="button" value="OK" style="width: 96px;" onclick="SetOptions(); return true;" />

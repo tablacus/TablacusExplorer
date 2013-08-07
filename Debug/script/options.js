@@ -1,7 +1,6 @@
 //Tablacus Explorer
 
-var nTabIndex = 0;
-var nTabMax = 0;
+var TabIndex = -1;
 var g_x = {Menu: null, Addons: null};
 var g_Chg = {Menus: false, Addons: false, Tab: false, Tree: false, View: false, Data: null};
 var g_arMenuTypes = ["Default", "Context", "ViewContext", "Tabs", "Tree", "File", "Edit", "View", "Favorites", "Tools", "Help", "TaskTray", "System", "Alias"];
@@ -10,7 +9,8 @@ var g_dlgAddons;
 var g_tdDown;
 var g_bDrag;
 var g_nFind = 0;
-var g_pt = api.Memory("POINT");
+var g_pt = {x: 0, y: 0};
+var g_Gesture;
 
 function SetDefaultLangID()
 {
@@ -25,30 +25,6 @@ function OpenGroup(id)
 			g_Chg[RegExp.$1] = true;
 		}
 		o.style.display = "block";
-		if (id == "_Language") {
-			document.getElementById("DefaultLangID").innerHTML = navigator.userLanguage.replace(/\-.*/,"");
-			var o = document.F.SelLangID;
-			o.length = 1;
-			o.options[o.length - 1].text = GetText("Select");
-			o.options[o.length - 1].value = "!";
-
-			var Langs = new Array();
-			var FindData = api.Memory("WIN32_FIND_DATA");
-			var hFind = api.FindFirstFile(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "lang\\*.xml"), FindData);
-			var bFind = hFind != INVALID_HANDLE_VALUE;
-			while (bFind) {
-				Langs.push(FindData.cFileName.replace(/\..*$/, ""));
-				bFind = api.FindNextFile(hFind, FindData);
-			}
-			api.FindClose(hFind);
-
-			Langs.sort();
-			o.length = Langs.length + 1;
-			for (i = 0; i < Langs.length; i++) {
-				o.options[i + 1].text = Langs[i];
-				o.options[i + 1].value = Langs[i];
-			}
-		}
 	}
 	else {
 		o.style.display = "none";
@@ -140,14 +116,17 @@ function ResetForm()
 function ClickTab(o, nMode)
 {
 	nMode = api.LowPart(nMode);
-	if (o && o.id) {
-		nTabIndex = o.id.replace(new RegExp('tab', 'g'), '') - 0;
+	var newTab = TabIndex != -1 ? TabIndex : 0;
+	if (o && o.id && o.id.match(/tab([^_]+)(.*)/)) {
+		newTab = RegExp.$1 + RegExp.$2;
 		if (nMode == 0) {
-			switch (nTabIndex) {
+			switch (RegExp.$1 - 0) {
 				case 1:
 					document.body.style.cursor = "wait";
-					LoadAddons();
-					document.body.style.cursor = "auto";
+					setTimeout(function () {
+						LoadAddons();
+						document.body.style.cursor = "auto";
+					}, 100);
 					break;
 				case 2:
 					LoadMenus();
@@ -155,42 +134,77 @@ function ClickTab(o, nMode)
 			}
 		}
 	}
-	var i = 0;
-	var ovTab;
-	while (ovTab = document.getElementById('tab' + i)) {
-		ovPanel = document.getElementById('panel' + i);
-		if (i == nTabIndex) {
-			try {
-				ovTab.focus();
-			} catch (e) {}
-			ovTab.className = 'activetab';
+	if (newTab != TabIndex) {
+		if (newTab == "0") {
+			var o = document.getElementById("DefaultLangID");
+			if (o.innerHTML == "") {
+				o.innerHTML = navigator.userLanguage.replace(/\-.*/,"");
+				o = document.F.SelLangID;
+				o.length = 1;
+				o.options[o.length - 1].text = GetText("Select");
+				o.options[o.length - 1].value = "!";
+
+				var Langs = new Array();
+				var FindData = api.Memory("WIN32_FIND_DATA");
+				var hFind = api.FindFirstFile(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "lang\\*.xml"), FindData);
+				var bFind = hFind != INVALID_HANDLE_VALUE;
+				while (bFind) {
+					Langs.push(FindData.cFileName.replace(/\..*$/, ""));
+					bFind = api.FindNextFile(hFind, FindData);
+				}
+				api.FindClose(hFind);
+
+				Langs.sort();
+				o.length = Langs.length + 1;
+				for (i = 0; i < Langs.length; i++) {
+					o.options[i + 1].text = Langs[i];
+					o.options[i + 1].value = Langs[i];
+				}
+			}
+		}
+		var ovTab = document.getElementById('tab' + TabIndex);
+		if (ovTab) {
+			var ovPanel = document.getElementById('panel' + TabIndex) || document.getElementById('panel' + TabIndex.replace(/_\d+/, ""));
+			ovTab.className = 'button';
+			ovPanel.style.display = 'none';
+		}
+		TabIndex = newTab;
+		ovTab = document.getElementById('tab' + TabIndex);
+		if (ovTab) {
+			ovPanel = document.getElementById('panel' + TabIndex) || document.getElementById('panel' + TabIndex.replace(/_\d+/, ""));
+			if ((TabIndex + "").match(/2_(.+)/)) {
+				document.F.Menus.selectedIndex = RegExp.$1;
+				setTimeout("SwitchMenus(document.F.Menus);", 100);
+			}
+			ovTab.className = 'hoverbutton';
 			ovPanel.style.display = 'block';
 			var h = document.documentElement.clientHeight || document.body.clientHeight;
-			h -= 60;
+			h -= 40;
 			if (h > 0) {
 				ovPanel.style.height = h + 'px';
 				ovPanel.style.height = 2 * h - ovPanel.offsetHeight + "px";
 			}
+			var o = document.getElementById("tab_");
+			h -= o.offsetTop;
+			if (h > 0) {
+				o.style.height = h + 'px';
+				o.style.height = 2 * h - o.offsetHeight + "px";
+			}
 		}
-		else {
-			ovTab.className = 'tab';
-			ovPanel.style.display = 'none';
-		}
-		i++;
 	}
-	nTabMax = i;
 }
 
-function WheelTab()
+function ClickTree(o, n)
 {
-	nTabIndex += event.wheelDelta > 0 ? -1 : 1;
-	while (nTabIndex < 0) {
-		nTabIndex += nTabMax;
+	var op = document.getElementById("tab" + n + "_");
+	if (o.innerText == '-') {
+		o.innerText = '+';
+		op.style.display = "none";
 	}
-	while (nTabIndex >= nTabMax) {
-		nTabIndex -= nTabMax;
+	else {
+		o.innerText = '-';
+		op.style.display = "block";
 	}
-	ClickTab();
 }
 
 function SetRadio(o)
@@ -614,11 +628,13 @@ function LoadMenus()
 				o.value = arFunc[i];
 				o.innerText = GetText(arFunc[i]);
 			}
+
 			oa = document.F.Menus;
 			oa.length = 0;
+
 			var nSelected = 0;
 			for (j in g_arMenuTypes) {
-				document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", '<select name="Menus_' + g_arMenuTypes[j] + '" size="17" style="width: 150px; height: 320px; display: none; font-family:' + document.F.elements["Menus_Pos"].style.fontFamily + '" ondblclick="EditMenus()"></select>');
+				document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", '<select name="Menus_' + g_arMenuTypes[j] + '" size="17" style="width: 150px; height: 400px; display: none; font-family:' + document.F.elements["Menus_Pos"].style.fontFamily + '" ondblclick="EditMenus()"></select>');
 				var menus = te.Data.xmlMenus.getElementsByTagName(g_arMenuTypes[j]);
 				if (menus && menus.length) {
 					oa[++oa.length - 1].value = g_arMenuTypes[j] + "," + menus[0].getAttribute("Base") + "," + menus[0].getAttribute("Pos");
@@ -929,11 +945,11 @@ function SetAddon(td, Id, Enable)
 		s.push(" disabled");
 	}
 	s.push('>');
-	s.push('<input type="button" value="' + GetText('Visit website') + '" onclick="AddonWebsite(\'' + Id + '\')" title="' + info.URL + '"');
-	if (!info.URL) {
-		s.push(" disabled");
-	}
-	s.push('>');
+//	s.push('<input type="button" value="' + GetText('Visit website') + '" onclick="AddonWebsite(\'' + Id + '\')" title="' + info.URL + '"');
+//	if (!info.URL) {
+//		s.push(" disabled");
+//	}
+//	s.push('>');
 	s.push('<input type="button" value="' + GetText('Up') + '" onclick="AddonMove(\'' + Id + '\', -1)">');
 	s.push('<input type="button" value="' + GetText('Down') + '" onclick="AddonMove(\'' + Id + '\', 1)">');
 	td.innerHTML = s.join("");
@@ -1103,6 +1119,11 @@ InitOptions = function ()
 	}
 
 	ResetForm();
+	var s = [];
+	for (var i in g_arMenuTypes) {
+		s.push('<label id="tab2_' + i + '" class="button" onmousedown="ClickTab(this);">' + GetText(g_arMenuTypes[i]) + '</label><br />');
+	}
+	document.getElementById("tab2_").innerHTML = s.join("");
 	SetTab(dialogArguments.Data);
 }
 
@@ -1183,7 +1204,7 @@ InitDialog = function ()
 		returnValue = false;
 		var s = [];
 		s.push('<input type="text" name="q" style="width: 100%" onkeydown="setTimeout(\'returnValue=document.F.q.value\',100)" />');
-		s.push('<div id="Gesture" style="width: 100%; height: 350px; border: 1px gray solid; text-align: center" onmousedown="return MouseDown()" onmousemove="return MouseMove()" ondblclick="MouseDbl()" onmousewheel="return MouseWheel()"></div>');
+		s.push('<div id="Gesture" style="width: 100%; height: 350px; border: 1px gray solid; text-align: center" onmousedown="return MouseDown()" onmouseup="return MouseUp()" onmousemove="return MouseMove()" ondblclick="MouseDbl()" onmousewheel="return MouseWheel()"></div>');
 		document.getElementById("Content").innerHTML = s.join("");
 	}
 	if (api.strcmpi(location.search, "?key") == 0) {
@@ -1193,7 +1214,7 @@ InitDialog = function ()
 		document.getElementById("Content").innerHTML = s.join("");
 		document.body.onkeydown = function ()
 		{
-			returnValue = GetKeyName(api.sprintf(10, "$%x", (api.MapVirtualKey(event.keyCode, 0) | GetKeyShift())));
+			returnValue = GetKeyName(api.sprintf(10, "$%x", (api.MapVirtualKey(event.keyCode, 0) | (event.keyCode > 32 && event.keyCode < 96 ? 256 : 0) | GetKeyShift())));
 			document.F.q.value = returnValue;
 			document.F.ButtonOk.disabled = false;
 			return false;
@@ -1204,9 +1225,22 @@ InitDialog = function ()
 
 MouseDown = function ()
 {
-	returnValue = GetGestureKey() + GetGestureButton();
+	if (g_Gesture) {
+		var c = returnValue.charAt(returnValue.length - 1);
+		var n = 1;
+		for (i = 1; i < 4; i++) {
+			if (event.button & n && g_Gesture.indexOf(i + "") < 0) {
+				returnValue += i + "";
+			}
+			n *= 2;
+		}
+	}
+	else {
+		returnValue = GetGestureKey() + GetGestureButton();
+	}
 	document.F.q.value = returnValue;
-	api.GetCursorPos(g_pt);
+	g_Gesture = returnValue;
+	g_pt = {x: event.screenX, y: event.screenY};
 	document.F.ButtonOk.disabled = false;
 	var o = document.getElementById("Gesture");
 	var s = o.style.height;
@@ -1215,11 +1249,20 @@ MouseDown = function ()
 	return false;
 }
 
+MouseUp = function ()
+{
+	g_Gesture = GetGestureButton();
+	return false;
+}
+
 MouseMove = function ()
 {
-	if (document.F.q.value.length && (api.GetKeyState(VK_RBUTTON) < 0) || (te.Data.Conf_Gestures && (api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_XBUTTON1) < 0 || api.GetKeyState(VK_XBUTTON2) < 0))) {
-		var pt = api.Memory("POINT");
-		api.GetCursorPos(pt);
+	if (api.GetKeyState(VK_XBUTTON1) < 0 || api.GetKeyState(VK_XBUTTON2) < 0) {
+		returnValue = GetGestureKey() + GetGestureButton();
+		document.F.q.value = returnValue;
+	}
+	if (document.F.q.value.length && (api.GetKeyState(VK_RBUTTON) < 0 || (te.Data.Conf_Gestures && (api.GetKeyState(VK_MBUTTON) < 0)))) {
+		var pt = {x: event.screenX, y: event.screenY};
 		var x = (pt.x - g_pt.x);
 		var y = (pt.y - g_pt.y);
 		if (Math.abs(x) + Math.abs(y) >= 20) {
@@ -1567,7 +1610,7 @@ function SetTab(s)
 			var s = GetText(ar[1]);
 			var ovTab;
 			for (var j = 0; ovTab = document.getElementById('tab' + j); j++) {
-				if (api.strcmpi(s, ovTab.value) == 0) {
+				if (api.strcmpi(s, ovTab.innerText) == 0) {
 					o = ovTab;
 					break;
 				}

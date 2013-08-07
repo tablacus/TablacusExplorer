@@ -179,7 +179,7 @@
 	<text s="TILE">並べて表示</text>
 	<text s="THUMBSTRIP">スライド表示</text>
 	<text s="CONTENT">コンテンツ</text>
-	<text s=" or higher.">以降 </text>
+	<text s="or higher.">以降 </text>
 	<text s="Input">入力</text>
 	<text s="Icon">アイコン</text>
 	<text s="Check for updates">最新版の確認</text>

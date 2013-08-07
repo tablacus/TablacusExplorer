@@ -11,7 +11,6 @@ td {
 	border: none;
 	padding: 0px;
 	margin: 0px;
-	font-size: 13px;
 	box-sizing: border-box;
 	-ms-box-sizing: border-box;
 }
@@ -132,4 +131,11 @@ table {
 	white-space: nowrap;
 	vertical-align: middle;
 	border-radius: 2px;
+}
+.treebutton {
+	border: 1px solid gray;
+	font-size: 8px;
+	margin-right: 3px;
+	filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#dddddd);
+	background: linear-gradient(to bottom, #ffffff, #dddddd);
 }
