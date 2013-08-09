@@ -392,7 +392,7 @@ GetCommandId = function (hMenu, s)
 		var mii = api.Memory("MENUITEMINFO");
 		mii.cbSize = mii.Size;
 		mii.fMask = MIIM_SUBMENU | MIIM_ID;
-		for (var i = api.GetMenuItemCount(hMenu) - 1; i >= 0; i--) {
+		for (var i = api.GetMenuItemCount(hMenu); i--;) {
 			var title = api.GetMenuString(hMenu, i, MF_BYPOSITION);
 			if (title) {
 				api.GetMenuItemInfo(hMenu, i, true, mii);
@@ -1327,9 +1327,9 @@ AddEventEx(window, "load", function ()
 		root = te.Data.xmlMenus.documentElement;
 		if (root) {
 			menus = root.childNodes;
-			for (i = menus.length - 1; i >= 0; i--) {
+			for (i = menus.length; i--;) {
 				items = menus[i].getElementsByTagName("Item");
-				for (j = items.length - 1; j >= 0; j--) {
+				for (j = items.length; j--;) {
 					a = items[j].getAttribute("Name").split(/\\t/);
 					if (a.length > 1) {
 						SetKeyExec("List", a[1], items[j].text, items[j].getAttribute("Type"), true);
@@ -1832,7 +1832,7 @@ g_basic =
 					if (FV) {
 						var TC = FV.Parent;
 						var nIndex = GetFolderView(Ctrl, pt, true) ? FV.Index : -1;
-						for (var i = TC.Count - 1; i >= 0; i--) {
+						for (var i = TC.Count; i--;) {
 							if (i != nIndex) {
 								TC[i].Close();
 							}
@@ -1844,7 +1844,7 @@ g_basic =
 					var FV = GetFolderView(Ctrl, pt, true);
 					if (FV) {
 						var TC = FV.Parent;
-						for (var i = FV.Index - 1; i >= 0; i--) {
+						for (var i = FV.Index; i--;) {
 							TC[i].Close();
 						}
 					}
@@ -1855,7 +1855,7 @@ g_basic =
 					if (FV) {
 						var TC = FV.Parent;
 						var nIndex = FV.Index;
-						for (var i = TC.Count - 1; i > nIndex; i--) {
+						for (var i = TC.Count; --i > nIndex;) {
 							TC.Item(i).Close();
 						}
 					}
@@ -2137,7 +2137,7 @@ g_basic =
 	PopupMenu: function (hMenu, ContextMenu, pt)
 	{
 		var Verb;
-		for (var i = api.GetMenuItemCount(hMenu) - 1; i >= 0; i--) {
+		for (var i = api.GetMenuItemCount(hMenu); i--;) {
 			if (api.GetMenuString(hMenu, i, MF_BYPOSITION)) {
 				api.EnableMenuItem(hMenu, i, MF_ENABLED | MF_BYPOSITION);
 			}

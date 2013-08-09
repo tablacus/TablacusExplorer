@@ -1,5 +1,6 @@
 //Tablacus Explorer
 
+var nTabMax = 0;
 var TabIndex = -1;
 var g_x = {Menu: null, Addons: null};
 var g_Chg = {Menus: false, Addons: false, Tab: false, Tree: false, View: false, Data: null};
@@ -20,15 +21,7 @@ function SetDefaultLangID()
 function OpenGroup(id)
 {
 	var o = document.getElementById(id);
-	if (o.style.display != "block") {
-		if (id.match(/_([TV][^_]*)_/)) {
-			g_Chg[RegExp.$1] = true;
-		}
-		o.style.display = "block";
-	}
-	else {
-		o.style.display = "none";
-	}
+	o.style.display = api.strcmpi(o.style.display, "block") ? "block" : "none";
 }
 
 SetOptions = function ()
@@ -116,6 +109,41 @@ function ResetForm()
 function ClickTab(o, nMode)
 {
 	nMode = api.LowPart(nMode);
+	if (o && o.id) {
+		nTabIndex = o.id.replace(new RegExp('tab', 'g'), '') - 0;
+	}
+	var i = 0;
+	var ovTab;
+	while (ovTab = document.getElementById('tab' + i)) {
+		ovPanel = document.getElementById('panel' + i);
+		if (i == nTabIndex) {
+			try {
+				ovTab.focus();
+			} catch (e) {}
+			ovTab.className = 'activetab';
+			ovPanel.style.display = 'block';
+			var h = document.documentElement.clientHeight || document.body.clientHeight;
+			h -= 60;
+			if (h > 0) {
+				ovPanel.style.height = h + 'px';
+				ovPanel.style.height = 2 * h - ovPanel.offsetHeight + "px";
+			}
+		}
+		else {
+			ovTab.className = 'tab';
+			ovPanel.style.display = 'none';
+		}
+		i++;
+	}
+	nTabMax = i;
+}
+
+function ClickTree(o, nMode, strChg)
+{
+	if (strChg) {
+		g_Chg[strChg] = true;
+	}
+	nMode = api.LowPart(nMode);
 	var newTab = TabIndex != -1 ? TabIndex : 0;
 	if (o && o.id && o.id.match(/tab([^_]+)(.*)/)) {
 		newTab = RegExp.$1 + RegExp.$2;
@@ -137,7 +165,7 @@ function ClickTab(o, nMode)
 	if (newTab != TabIndex) {
 		if (newTab == "0") {
 			var o = document.getElementById("DefaultLangID");
-			if (o.innerHTML == "") {
+			if (o && o.innerHTML == "") {
 				o.innerHTML = navigator.userLanguage.replace(/\-.*/,"");
 				o = document.F.SelLangID;
 				o.length = 1;
@@ -185,16 +213,17 @@ function ClickTab(o, nMode)
 				ovPanel.style.height = 2 * h - ovPanel.offsetHeight + "px";
 			}
 			var o = document.getElementById("tab_");
-			h -= o.offsetTop;
-			if (h > 0) {
-				o.style.height = h + 'px';
-				o.style.height = 2 * h - o.offsetHeight + "px";
-			}
+			o.style.height = h + 'px';
+			o.style.height = 2 * h - o.offsetHeight + "px";
 		}
 	}
 }
 
-function ClickTree(o, n)
+
+
+
+
+function ClickButton(o, n)
 {
 	var op = document.getElementById("tab" + n + "_");
 	if (o.innerText == '-') {
@@ -893,6 +922,7 @@ function LoadAddons()
 	api.FindClose(hFind);
 
 	var table = document.getElementById("Addons");
+	table.deleteRow(0);
 	var root = te.Data.Addons.documentElement;
 	if (root) {
 		var items = root.childNodes;
@@ -993,7 +1023,7 @@ function SetAddon(td, Id, Enable)
 function AddonRowIndex (td)
 {
 	var table = document.getElementById("Addons");
-	for (var i = table.rows.length - 1; i >= 0; i--) {
+	for (var i = table.rows.length; i--;) {
 		if (api.strcmpi(table.rows(i).cells(0).innerText, td.innerText) == 0) {
 			return i;
 		}
@@ -1121,7 +1151,7 @@ InitOptions = function ()
 	ResetForm();
 	var s = [];
 	for (var i in g_arMenuTypes) {
-		s.push('<label id="tab2_' + i + '" class="button" onmousedown="ClickTab(this);">' + GetText(g_arMenuTypes[i]) + '</label><br />');
+		s.push('<label id="tab2_' + i + '" class="button" onmousedown="ClickTree(this, null, \'Menus\');">' + GetText(g_arMenuTypes[i]) + '</label><br />');
 	}
 	document.getElementById("tab2_").innerHTML = s.join("");
 	SetTab(dialogArguments.Data);
@@ -1317,7 +1347,7 @@ InitLocation = function ()
 		if (!Location) {
 			Location = window.Default;
 		}
-		for (var i = document.L.elements.length - 1; i >= 0; i--) {
+		for (var i = document.L.elements.length; i--;) {
 			if (api.strcmpi(Location, document.L.elements[i].value) == 0) {
 				document.L.elements[i].checked = true;
 			}
@@ -1364,7 +1394,7 @@ InitLocation = function ()
 	}
 	if (item) {
 		var ele = document.F.elements;
-		for (var i = ele.length - 1; i >= 0; i--) {
+		for (var i = ele.length; i--;) {
 			var n = ele[i].id || ele[i].name;
 			if (n) {
 				s = item.getAttribute(n);
@@ -1409,7 +1439,7 @@ SetLocation = function()
 	if (items.length) {
 		var item = items[0];
 		item.removeAttribute("Location");
-		for (var i = document.L.elements.length - 1; i >= 0; i--) {
+		for (var i = document.L.elements.length; i--;) {
 			if (document.L.elements[i].checked) {
 				item.setAttribute("Location", document.L.elements[i].value);
 				te.Data.bSaveAddons = true;
@@ -1429,7 +1459,7 @@ SetLocation = function()
 		if (dialogArguments.Data.show == "6") {
 			ele.Set.value = "";
 		}
-		for (var i = ele.length - 1; i >= 0; i--) {
+		for (var i = ele.length; i--;) {
 			var n = ele[i].id || ele[i].name;
 			if (n && n.charAt(0) != "_") {
 				if (n == "Key") {
@@ -1620,7 +1650,7 @@ function SetTab(s)
 			g_MenuType = ar[1];
 		}
 	}
-	ClickTab(o);
+	ClickTree(o);
 }
 
 function AddMouse(o)
@@ -1640,7 +1670,7 @@ function InitAddonOptions()
 	if (items.length) {
 		var item = items[0];
 		var ele = document.F.elements;
-		for (var i = ele.length - 1; i >= 0; i--) {
+		for (var i = ele.length; i--;) {
 			var n = ele[i].id || ele[i].name;
 			if (n) {
 				GetAttribEx(item, document.F, n);
@@ -1661,7 +1691,7 @@ function SetAddonOptions()
 	if (items.length) {
 		var item = items[0];
 		var ele = document.F.elements;
-		for (var i = ele.length - 1; i >= 0; i--) {
+		for (var i = ele.length; i--;) {
 			var n = ele[i].id || ele[i].name;
 			if (n) {
 				if (SetAttribEx(item, document.F, n)) {

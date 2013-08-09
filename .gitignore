@@ -49,6 +49,10 @@ build/
 [Bb]in/
 [Oo]bj/
 
+# Debug folder
+[Dd]ebug/config/
+*.exe
+
 # MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*

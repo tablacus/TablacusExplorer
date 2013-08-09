@@ -175,7 +175,7 @@ function ApplyLang(doc)
 	var Lang = MainWindow.Lang;
 	var o = doc.getElementsByTagName("a");
 	if (o) {
-		for (i = 0; i < o.length; i++) {
+		for (i = o.length; i--;) {
 			var s = Lang[o[i].innerHTML.replace(/&amp;/ig, "&")];
 			if (!s) {
 				s = o[i].innerHTML;
@@ -191,9 +191,13 @@ function ApplyLang(doc)
 			}
 		}
 	}
+	var h = 0;
 	var o = doc.getElementsByTagName("input");
 	if (o) {
-		for (i = 0; i < o.length; i++) {
+		for (i = o.length; i--;) {
+			if (!h && o[i].type == "text") {
+				h = o[i].offsetHeight;
+			}
 			var s = Lang[o[i].title];
 			if (s) {
 				o[i].title = s;
@@ -220,7 +224,7 @@ function ApplyLang(doc)
 	}
 	var o = doc.getElementsByTagName("img");
 	if (o) {
-		for (i = 0; i < o.length; i++) {
+		for (i = o.length; i--;) {
 			var s = Lang[o[i].title];
 			if (s) {
 				o[i].title = delamp(s);
@@ -237,7 +241,7 @@ function ApplyLang(doc)
 	}
 	var o = doc.getElementsByTagName("select");
 	if (o) {
-		for (i = 0; i < o.length; i++) {
+		for (i = o.length; i--;) {
 			o[i].style.fontFamily = FaceName;
 			for (var j = 0; j < o[i].length; j++) {
 				var s = Lang[o[i][j].text.replace(/^\n/, "").replace(/\n$/, "")];
@@ -249,7 +253,7 @@ function ApplyLang(doc)
 	}
 	var o = doc.getElementsByTagName("label");
 	if (o) {
-		for (i = 0; i < o.length; i++) {
+		for (i = o.length; i--;) {
 			var s = Lang[o[i].innerHTML.replace(/&amp;/ig, "&")];
 			if (!s) {
 				s = o[i].innerHTML;
@@ -267,7 +271,7 @@ function ApplyLang(doc)
 	}
 	var o = doc.getElementsByTagName("button");
 	if (o) {
-		for (i = 0; i < o.length; i++) {
+		for (i = o.length; i--;) {
 			o[i].style.fontFamily = FaceName;
 			var s = Lang[o[i].innerHTML.replace(/&amp;/ig, "&")];
 			if (!s) {
@@ -286,14 +290,14 @@ function ApplyLang(doc)
 	}
 	var o = doc.getElementsByTagName("textarea");
 	if (o) {
-		for (i = 0; i < o.length; i++) {
+		for (i = o.length; i--;) {
 			o[i].style.fontFamily = FaceName;
 		}
 	}
 
 	var o = doc.getElementsByTagName("form");
 	if (o) {
-		for (i = 0; i < o.length; i++) {
+		for (i = o.length; i--;) {
 			o[i].onsubmit = function () { return false };
 		}
 	}
@@ -1241,7 +1245,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 							var mii = api.Memory("MENUITEMINFO");
 							mii.cbSize = mii.Size;
 							mii.fMask = MIIM_FTYPE | MIIM_SUBMENU;
-							for (var i = api.GetMenuItemCount(hMenu) - 1; i >= 0; i--) {
+							for (var i = api.GetMenuItemCount(hMenu); i--;) {
 								api.GetMenuItemInfo(hMenu, 0, true, mii);
 								if (mii.hSubMenu || mii.fType & MFT_SEPARATOR) {
 									api.DeleteMenu(hMenu, 0, MF_BYPOSITION);
@@ -1327,7 +1331,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 				var mii = api.Memory("MENUITEMINFO");
 				mii.cbSize = mii.Size;
 				mii.fMask = MIIM_FTYPE;
-				for (var i = api.GetMenuItemCount(hMenu) - 1; i >= 0; i--) {
+				for (var i = api.GetMenuItemCount(hMenu); i--;) {
 					api.GetMenuItemInfo(hMenu, i, true, mii);
 					if (mii.fType & MFT_SEPARATOR) {
 						api.RemoveMenu(hMenu, i, MF_BYPOSITION);
@@ -1420,7 +1424,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 
 MenuDbInit = function (hMenu, oMenu)
 {
-	for (var i = api.GetMenuItemCount(hMenu) - 1; i >= 0; i--) {
+	for (var i = api.GetMenuItemCount(hMenu); i--;) {
 		var mii = api.Memory("MENUITEMINFO");
 		mii.cbSize = mii.Size;
 		mii.fMask  = MIIM_ID | MIIM_BITMAP | MIIM_SUBMENU | MIIM_DATA | MIIM_FTYPE | MIIM_STATE;
@@ -1484,7 +1488,7 @@ SetDisableMenu = function (hMenu, Selected, strAccel)
 	if (!Selected || Selected.Count == 0) {
 		var mii = api.Memory("MENUITEMINFO");
 		var strMenu;
-		for (var i = api.GetMenuItemCount(hMenu) - 1; i >= 0; i--) {
+		for (var i = api.GetMenuItemCount(hMenu); i--;) {
 			strMenu = api.GetMenuString(hMenu, i, MF_BYPOSITION);
 			if (strMenu && strAccel.indexOf(GetAccelerator(strMenu)) < 0) {
 				mii.cbSize = mii.Size;
@@ -2052,7 +2056,7 @@ function SetKeyShift()
 		key = key.replace(s + "+", "");
 	}
 	o = document.getElementById("_KeySelect");
-	for (var i = o.length - 1; i >= 0; i--) {
+	for (var i = o.length; i--;) {
 		if (api.strcmpi(key, o[i].value) == 0) {
 			o.selectedIndex = i;
 			break;

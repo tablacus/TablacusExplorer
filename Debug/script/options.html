@@ -12,58 +12,51 @@
     <script type="text/javascript" charset="utf-8" src="options.js">
     </script>
   </head>
-  <body onload="InitOptions();" onresize="ClickTab();">
+  <body onload="InitOptions();" onresize="ClickTree();">
     <form name="F">
       <table class="layout" style="width: 100%">
         <tr>
           <td style="vertical-align: top">
-            <table class="layout">
-              <tr>
-                <td>
-                  <input type="text" name="q" style="width: 100%" onkeydown="FindKeyEvent(this)" />
-                </td>
-                <td onmouseover="MouseOver(this)" onmouseout="MouseOut()" onclick="FindText(document.F.q.value)" class="button" style="vertical-align: middle">
-                  <img bitmap="ieframe.dll,216,16,17" hidefocus="true" style="vertical-align: middle; width: 16px; height: 16px" />
-                </td>
-              </tr>
-            </table>
             <div id="tab_" class="panel" style="display: block; width: 150px; background-color: window">
-              <tt class="treebutton" onclick="ClickTree(this, 0);">-</tt>
-              <label id="tab0" class="button" onmousedown="ClickTab(this);">General</label>
+              <tt class="treebutton" onclick="ClickButton(this, 0);">-</tt>
+              <label id="tab0" class="button" onmousedown="ClickTree(this);">General</label>
               <br />
               <div id="tab0_" style="margin-left: 20px">
-                <label id="tab0_1" class="button" onmousedown="ClickTab(this);">Mouse</label>
+                <label id="tab0_1" class="button" onmousedown="ClickTree(this);">Mouse</label>
                 <br />
               </div>
-              <tt class="treebutton" style="visibility: hidden">-</tt>
-              <label id="tab1" class="button" onmousedown="ClickTab(this);">Add-ons</label>
+              <tt class="treebutton" onclick="ClickButton(this, 1, 1, 'Addons');">-</tt>
+              <label id="tab1" class="button" onmousedown="ClickTree(this);">Add-ons</label>
               <br />
-              <tt class="treebutton" onclick="ClickTree(this, 2);">-</tt>
-              <label id="tab2" class="button" onmousedown="ClickTab(document.getElementById('tab2_0'));">Menus</label>
+              <div id="tab1_" style="margin-left: 20px">
+                <label class="button" onmousedown="GetAddons();">Get Add-ons...</label>
+              </div>
+              <tt class="treebutton" onclick="ClickButton(this, 2);">-</tt>
+              <label id="tab2" class="button" onmousedown="ClickTree(document.getElementById('tab2_0'), null, 'Menus');">Menus</label>
               <br />
               <div id="tab2_" style="margin-left: 20px">
               </div>
-              <tt class="treebutton" onclick="ClickTree(this, 3);">-</tt>
-              <label id="tab3" class="button" onmousedown="ClickTab(this);">Tabs</label>
+              <tt class="treebutton" onclick="ClickButton(this, 3);">-</tt>
+              <label id="tab3" class="button" onmousedown="ClickTree(this, null, 'Tab');">Tabs</label>
               <br />
               <div id="tab3_" style="margin-left: 20px">
-                <label id="tab3_1" class="button" onmousedown="ClickTab(this);">Advanced</label>
+                <label id="tab3_1" class="button" onmousedown="ClickTree(this, null, 'Tab');">Advanced</label>
                 <br />
               </div>
-              <tt class="treebutton" onclick="ClickTree(this, 4);">-</tt>
-              <label id="tab4" class="button" onmousedown="ClickTab(this);">Tree</label>
+              <tt class="treebutton" onclick="ClickButton(this, 4);">-</tt>
+              <label id="tab4" class="button" onmousedown="ClickTree(this, null, 'Tree');">Tree</label>
               <br />
               <div id="tab4_" style="margin-left: 20px">
-                <label id="tab4_1" class="button" onmousedown="ClickTab(this);">Root</label>
+                <label id="tab4_1" class="button" onmousedown="ClickTree(this, null, 'Tree');">Root</label>
                 <br />
-                <label id="tab4_2" class="button" onmousedown="ClickTab(this);">EnumFlags</label>
+                <label id="tab4_2" class="button" onmousedown="ClickTree(this, null, 'Tree');">EnumFlags</label>
                 <br />
               </div>
-              <tt class="treebutton" onclick="ClickTree(this, 5);">-</tt>
-              <label id="tab5" class="button" onmousedown="ClickTab(this);">List</label>
+              <tt class="treebutton" onclick="ClickButton(this, 5);">-</tt>
+              <label id="tab5" class="button" onmousedown="ClickTree(this, null, 'View');">List</label>
               <br />
               <div id="tab5_" style="margin-left: 20px">
-                <label id="tab5_1" class="button" onmousedown="ClickTab(this);">Advanced</label>
+                <label id="tab5_1" class="button" onmousedown="ClickTree(this, null, 'View');">Advanced</label>
                 <br />
               </div>
             </div>
@@ -120,6 +113,11 @@
 
             <div class="panel" id="panel1">
               <table id="Addons" style="width: 100%; border: 1px solid gray">
+                <tr>
+                  <th style="height: 420px">
+                    <label>Please wait.</label>
+                  </th>
+                </tr>
               </table>
             </div>
             <!--panel_end-->
@@ -197,8 +195,7 @@
                         </td>
                       </tr>
                     </table>
-                    <textarea name="Menus_Path" style="width: 100%; height: 228px" onchange="ChangeX('Menus')">
-                    </textarea>
+                    <textarea name="Menus_Path" style="width: 100%; height: 228px" onchange="ChangeX('Menus')"></textarea>
                   </td>
                 </tr>
               </table>
@@ -299,105 +296,105 @@
             <!--panel_end-->
 
             <div class="panel" id="panel4">
-              <Label>
-                View</label><br />
-                <input type="hidden" name="Tree_Align" />
-                <input type="checkbox" id="Tree_Align:2" onclick="SetCheckbox(this)" />
-                <label for="Tree_Align:2">View</label>
-                <input type="checkbox" id="Tree_Align:4" onclick="SetCheckbox(this)" />
-                <label for="Tree_Align:4">Left</label>
-                <br />
-                <label>Width</label>
-                <input type="text" name="Tree_Width" size="4" />
-                <br /><br />
-                <label>
-                  Style
-                </label><br />
-                <input type="hidden" name="Tree_Style" />
-                <input type="checkbox" id="Tree_Style:1" onclick="SetCheckbox(this)" />
-                <label for="Tree_Style:1">HASEXPANDOS</label>
-                <input type="checkbox" id="Tree_Style:2" onclick="SetCheckbox(this)" />
-                <label for="Tree_Style:2">HASLINES</label>
-                <input type="checkbox" id="Tree_Style:0x10000" onclick="SetCheckbox(this)" />
-                <label for="Tree_Style:0x10000">NOEDITLABELS</label>
-                <br />
-                <input type="checkbox" id="Tree_Style:0x1000" onclick="SetCheckbox(this)" />
-                <label for="Tree_Style:0x1000">DISABLEDRAGDROP</label>
-                <input type="checkbox" id="Tree_Style:0x200" onclick="SetCheckbox(this)" />
-                <label for="Tree_Style:0x200">NOINFOTIP</label>
-                <br />
-                <input type="checkbox" id="Tree_Style:4" onclick="SetCheckbox(this)" />
-                <label for="Tree_Style:4">SINGLECLICKEXPAND</label>
-                <input type="checkbox" id="Tree_Style:0x10" onclick="SetCheckbox(this)" />
-                <label for="Tree_Style:0x10">SPRINGEXPAND</label>
-                <br />
-                <input type="checkbox" id="Tree_Style:8" onclick="SetCheckbox(this)" />
-                <label for="Tree_Style:8">FULLROWSELECT</label>
-                <input type="checkbox" id="Tree_Style:0x80" onclick="SetCheckbox(this)" />
-                <label for="Tree_Style:0x80">SHOWSELECTIONALWAYS</label>
-                <br />
-                <input type="checkbox" id="Tree_Style:0x20" onclick="SetCheckbox(this)" />
-                <label for="Tree_Style:0x20">HORIZONTALSCROLL</label>
-                <input type="checkbox" id="Tree_Style:0x8000" onclick="SetCheckbox(this)" />
-                <label for="Tree_Style:0x8000">BORDER</label>
+              <label>View</label>
+              <br />
+              <input type="hidden" name="Tree_Align" />
+              <input type="checkbox" id="Tree_Align:2" onclick="SetCheckbox(this)" />
+              <label for="Tree_Align:2">View</label>
+              <input type="checkbox" id="Tree_Align:4" onclick="SetCheckbox(this)" />
+              <label for="Tree_Align:4">Left</label>
+              <br />
+              <label>Width</label>
+              <input type="text" name="Tree_Width" size="4" />
+              <br />
+              <br />
+              <label>Style</label>
+              <br />
+              <input type="hidden" name="Tree_Style" />
+              <input type="checkbox" id="Tree_Style:1" onclick="SetCheckbox(this)" />
+              <label for="Tree_Style:1">HASEXPANDOS</label>
+              <input type="checkbox" id="Tree_Style:2" onclick="SetCheckbox(this)" />
+              <label for="Tree_Style:2">HASLINES</label>
+              <input type="checkbox" id="Tree_Style:0x10000" onclick="SetCheckbox(this)" />
+              <label for="Tree_Style:0x10000">NOEDITLABELS</label>
+              <br />
+              <input type="checkbox" id="Tree_Style:0x1000" onclick="SetCheckbox(this)" />
+              <label for="Tree_Style:0x1000">DISABLEDRAGDROP</label>
+              <input type="checkbox" id="Tree_Style:0x200" onclick="SetCheckbox(this)" />
+              <label for="Tree_Style:0x200">NOINFOTIP</label>
+              <br />
+              <input type="checkbox" id="Tree_Style:4" onclick="SetCheckbox(this)" />
+              <label for="Tree_Style:4">SINGLECLICKEXPAND</label>
+              <input type="checkbox" id="Tree_Style:0x10" onclick="SetCheckbox(this)" />
+              <label for="Tree_Style:0x10">SPRINGEXPAND</label>
+              <br />
+              <input type="checkbox" id="Tree_Style:8" onclick="SetCheckbox(this)" />
+              <label for="Tree_Style:8">FULLROWSELECT</label>
+              <input type="checkbox" id="Tree_Style:0x80" onclick="SetCheckbox(this)" />
+              <label for="Tree_Style:0x80">SHOWSELECTIONALWAYS</label>
+              <br />
+              <input type="checkbox" id="Tree_Style:0x20" onclick="SetCheckbox(this)" />
+              <label for="Tree_Style:0x20">HORIZONTALSCROLL</label>
+              <input type="checkbox" id="Tree_Style:0x8000" onclick="SetCheckbox(this)" />
+              <label for="Tree_Style:0x8000">BORDER</label>
 
-                <div>
-                  <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_Tree_Style")' />
-                </div>
-                <div class="group" id="_Advanced_Tree_Style">
-
-                  <input type="checkbox" id="Tree_Style:0x40" onclick="SetCheckbox(this)" />
-                  <label for="Tree_Style:0x40">ROOTHASEXPANDO</label>(*)
-                  <input type="checkbox" id="Tree_Style:0x400" onclick="SetCheckbox(this)" />
-                  <label for="Tree_Style:0x400">EVENHEIGHT</label>
-                  <br />
-                  <input type="checkbox" id="Tree_Style:0x800" onclick="SetCheckbox(this)" />
-                  <label for="Tree_Style:0x800">NOREPLACEOPEN</label>(*)
-                  <input type="checkbox" id="Tree_Style:0x2000" onclick="SetCheckbox(this)" />
-                  <label for="Tree_Style:0x2000">NOORDERSTREAM</label>(*)
-                  <input type="checkbox" id="Tree_Style:0x4000" onclick="SetCheckbox(this)" />
-                  <label for="Tree_Style:0x4000">RICHTOOLTIP</label>(*)
-                  <br />
-                  <input type="checkbox" id="Tree_Style:0x20000" onclick="SetCheckbox(this)" />
-                  <label for="Tree_Style:0x20000">TABSTOP</label>
-                  <input type="checkbox" id="Tree_Style:0x40000" onclick="SetCheckbox(this)" />
-                  <label for="Tree_Style:0x40000">FAVORITESMODE</label>
-                  <input type="checkbox" id="Tree_Style:0x100000" onclick="SetCheckbox(this)" />
-                  <label for="Tree_Style:0x100000">AUTOHSCROLL</label>
-                  <br />
-                  <input type="checkbox" id="Tree_Style:0x200000" onclick="SetCheckbox(this)" />
-                  <label for="Tree_Style:0x200000">FADEINOUTEXPANDOS</label>(*)
-                  <input type="checkbox" id="Tree_Style:0x400000" onclick="SetCheckbox(this)" />
-                  <label for="Tree_Style:0x400000">EMPTYTEXT</label>(*)
-                  <input type="checkbox" id="Tree_Style:0x800000" onclick="SetCheckbox(this)" />
-                  <label for="Tree_Style:0x800000">CHECKBOXES</label>
-                  <br />
-                  <input type="checkbox" id="Tree_Style:0x1000000" onclick="SetCheckbox(this)" />
-                  <label for="Tree_Style:0x1000000">PARTIALCHECKBOXES</label>
-                  <input type="checkbox" id="Tree_Style:0x2000000" onclick="SetCheckbox(this)" />
-                  <label for="Tree_Style:0x2000000">EXCLUSIONCHECKBOXES</label>(*)
-                  <br />
-                  <input type="checkbox" id="Tree_Style:0x4000000" onclick="SetCheckbox(this)" />
-                  <label for="Tree_Style:0x4000000">DIMMEDCHECKBOXES</label>(*)
-                  <input type="checkbox" id="Tree_Style:0x8000000" onclick="SetCheckbox(this)" />
-                  <label for="Tree_Style:0x8000000">NOINDENTCHECKS</label>(*)
-                  <br />
-                  <input type="checkbox" id="Tree_Style:0x10000000" onclick="SetCheckbox(this)" />
-                  <label for="Tree_Style:0x10000000">ALLOWJUNCTIONS</label>(*)
-                  <input type="checkbox" id="Tree_Style:0x20000000" onclick="SetCheckbox(this)" />
-                  <label for="Tree_Style:0x20000000">SHOWTABSBUTTON</label>(*)
-                  <br />
-                  <input type="checkbox" id="Tree_Style:0x40000000" onclick="SetCheckbox(this)" />
-                  <label for="Tree_Style:0x40000000">SHOWDELETEBUTTON</label>(*)
-                  <input type="checkbox" id="Tree_Style:0x80000000" onclick="SetCheckbox(this)" />
-                  <label for="Tree_Style:0x80000000">SHOWREFRESHBUTTON</label>(*)
-                </div>
-                <br />
-                <div>
-                  (*)Windows Vista <label>or higher.</label>
-                  (*7)Windows 7 <label>or higher.</label>
-                </div>
+              <div>
+                <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_Tree_Style")' />
               </div>
+              <div class="group" id="_Advanced_Tree_Style">
+
+                <input type="checkbox" id="Tree_Style:0x40" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:0x40">ROOTHASEXPANDO</label>(*)
+                <input type="checkbox" id="Tree_Style:0x400" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:0x400">EVENHEIGHT</label>
+                <br />
+                <input type="checkbox" id="Tree_Style:0x800" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:0x800">NOREPLACEOPEN</label>(*)
+                <input type="checkbox" id="Tree_Style:0x2000" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:0x2000">NOORDERSTREAM</label>(*)
+                <input type="checkbox" id="Tree_Style:0x4000" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:0x4000">RICHTOOLTIP</label>(*)
+                <br />
+                <input type="checkbox" id="Tree_Style:0x20000" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:0x20000">TABSTOP</label>
+                <input type="checkbox" id="Tree_Style:0x40000" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:0x40000">FAVORITESMODE</label>
+                <input type="checkbox" id="Tree_Style:0x100000" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:0x100000">AUTOHSCROLL</label>
+                <br />
+                <input type="checkbox" id="Tree_Style:0x200000" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:0x200000">FADEINOUTEXPANDOS</label>(*)
+                <input type="checkbox" id="Tree_Style:0x400000" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:0x400000">EMPTYTEXT</label>(*)
+                <input type="checkbox" id="Tree_Style:0x800000" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:0x800000">CHECKBOXES</label>
+                <br />
+                <input type="checkbox" id="Tree_Style:0x1000000" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:0x1000000">PARTIALCHECKBOXES</label>
+                <input type="checkbox" id="Tree_Style:0x2000000" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:0x2000000">EXCLUSIONCHECKBOXES</label>(*)
+                <br />
+                <input type="checkbox" id="Tree_Style:0x4000000" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:0x4000000">DIMMEDCHECKBOXES</label>(*)
+                <input type="checkbox" id="Tree_Style:0x8000000" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:0x8000000">NOINDENTCHECKS</label>(*)
+                <br />
+                <input type="checkbox" id="Tree_Style:0x10000000" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:0x10000000">ALLOWJUNCTIONS</label>(*)
+                <input type="checkbox" id="Tree_Style:0x20000000" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:0x20000000">SHOWTABSBUTTON</label>(*)
+                <br />
+                <input type="checkbox" id="Tree_Style:0x40000000" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:0x40000000">SHOWDELETEBUTTON</label>(*)
+                <input type="checkbox" id="Tree_Style:0x80000000" onclick="SetCheckbox(this)" />
+                <label for="Tree_Style:0x80000000">SHOWREFRESHBUTTON</label>(*)
+              </div>
+              <br />
+              <div>
+                (*)Windows Vista <label>or higher.</label>
+                (*7)Windows 7 <label>or higher.</label>
+              </div>
+            </div>
             <!--panel_end-->
 
             <div class="panel" id="panel4_1">
@@ -578,7 +575,16 @@
       <table style="width: 97%">
         <tr>
           <td>
-            <input type="button" value="Get Add-ons..." onclick="GetAddons()" />
+            <table style="width: 150px">
+              <tr>
+                <td>
+                  <input type="text" name="q" style="width: 100%" onkeydown="FindKeyEvent(this)" />
+                </td>
+                <td onmouseover="MouseOver(this)" onmouseout="MouseOut()" onclick="FindText(document.F.q.value)" class="button" style="vertical-align: middle">
+                  <img bitmap="ieframe.dll,216,16,17" hidefocus="true" style="vertical-align: middle; width: 16px; height: 16px" />
+                </td>
+              </tr>
+            </table>
           </td>
           <td align="right">
             <input type="button" value="OK" style="width: 96px;" onclick="SetOptions(); return true;" />
