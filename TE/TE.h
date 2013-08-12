@@ -467,6 +467,7 @@ public:
 	VOID RedrawUpdate();
 	VOID Show(BOOL bVisible);
 	VOID GetItem(int i, VARIANT *pVarResult);
+	DWORD GetStyle();
 public:
 	int		m_nIndex;
 	HWND	m_hwnd;
@@ -595,7 +596,6 @@ public:
 	void InitializeMenuItem(HMENU hmenu, LPTSTR lpszItemName, int nId, HMENU hmenuSub);
 	VOID GetSort(BSTR* pbs);
 	VOID SetSort(BSTR bs);
-	VOID SetViewMenu(WCHAR wc, LPWSTR lpstr);
 	HRESULT SetRedraw(BOOL bRedraw);
 	HRESULT CreateViewWindowEx(IShellView *pPreviusView);
 	BSTR GetColumnsStr();
@@ -606,9 +606,6 @@ public:
 	VOID GetVariantPath(FolderItem **ppFolderItem, FolderItems **ppFolderItems, VARIANT *pv);
 	VOID HookDragDrop(int nMode);
 	VOID Error(int *pnDog);
-#ifdef _2000XP
-	HRESULT SetSort2(LPWSTR lpstr);
-#endif
 public:
 	BOOL		m_bEmpty, m_bInit, m_bNoRowSelect;
 	BOOL		m_bVisible;

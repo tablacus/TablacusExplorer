@@ -30,11 +30,11 @@ Resource.h
     This is the standard header file, which defines new resource IDs.
     Microsoft Visual C++ reads and updates this file.
 
-TE.ico
-    This is an icon file, which is used as the application's icon (32x32).
+te.ico
+    This is an icon file, which is used as the application's icon (48x48).
     This icon is included by the main resource file TE.rc.
 
-small.ico
+te16.ico
     This is an icon file, which contains a smaller version (16x16)
     of the application's icon. This icon is included by the main resource
     file TE.rc.

@@ -145,8 +145,8 @@ function ClickTree(o, nMode, strChg)
 	}
 	nMode = api.LowPart(nMode);
 	var newTab = TabIndex != -1 ? TabIndex : 0;
-	if (o && o.id && o.id.match(/tab([^_]+)(.*)/)) {
-		newTab = RegExp.$1 + RegExp.$2;
+	if (o && o.id && o.id.match(/tab([^_]+)(_?)(.*)/)) {
+		newTab = RegExp.$1 + RegExp.$2 + RegExp.$3;
 		if (nMode == 0) {
 			switch (RegExp.$1 - 0) {
 				case 1:
@@ -157,7 +157,7 @@ function ClickTree(o, nMode, strChg)
 					}, 100);
 					break;
 				case 2:
-					LoadMenus();
+					LoadMenus(RegExp.$3 - 0);
 					break;
 			}
 		}
@@ -219,20 +219,16 @@ function ClickTree(o, nMode, strChg)
 	}
 }
 
-
-
-
-
-function ClickButton(o, n)
+function ClickButton(o, n, f)
 {
 	var op = document.getElementById("tab" + n + "_");
-	if (o.innerText == '-') {
-		o.innerText = '+';
-		op.style.display = "none";
-	}
-	else {
+	if (f || o.innerText != '-') {
 		o.innerText = '-';
 		op.style.display = "block";
+	}
+	else {
+		o.innerText = '+';
+		op.style.display = "none";
 	}
 }
 
@@ -642,54 +638,50 @@ function SetMenus(sel, a)
 	sel.text =  [GetText(a2[0]), a[1]].join(" ");
 }
 
-function LoadMenus()
+function LoadMenus(nSelected)
 {
 	if (!g_x.Menus) {
-		setTimeout(function ()
-		{
-			var arFunc = [];
-			for (var i in MainWindow.eventTE.AddType) {
-				MainWindow.eventTE.AddType[i](arFunc);
-			}
-			var oa = document.F.Menus_Type;
-			for (var i = 0; i < arFunc.length; i++) {
-				var o = oa[++oa.length - 1];
-				o.value = arFunc[i];
-				o.innerText = GetText(arFunc[i]);
-			}
+		var arFunc = [];
+		for (var i in MainWindow.eventTE.AddType) {
+			MainWindow.eventTE.AddType[i](arFunc);
+		}
+		var oa = document.F.Menus_Type;
+		for (var i = 0; i < arFunc.length; i++) {
+			var o = oa[++oa.length - 1];
+			o.value = arFunc[i];
+			o.innerText = GetText(arFunc[i]);
+		}
 
-			oa = document.F.Menus;
-			oa.length = 0;
+		oa = document.F.Menus;
+		oa.length = 0;
 
-			var nSelected = 0;
-			for (j in g_arMenuTypes) {
-				document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", '<select name="Menus_' + g_arMenuTypes[j] + '" size="17" style="width: 150px; height: 400px; display: none; font-family:' + document.F.elements["Menus_Pos"].style.fontFamily + '" ondblclick="EditMenus()"></select>');
-				var menus = te.Data.xmlMenus.getElementsByTagName(g_arMenuTypes[j]);
-				if (menus && menus.length) {
-					oa[++oa.length - 1].value = g_arMenuTypes[j] + "," + menus[0].getAttribute("Base") + "," + menus[0].getAttribute("Pos");
-					var o = document.F.elements["Menus_" + g_arMenuTypes[j]];
-					var items = menus[0].getElementsByTagName("Item");
-					if (items) {
-						var i = items.length;
-						o.length = i;
-						while (--i >= 0) {
-							var item = items[i];
-							SetMenus(o[i], new Array(item.getAttribute("Name"), item.getAttribute("Filter"), item.text, item.getAttribute("Type")));
-						}
+		for (j in g_arMenuTypes) {
+			document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", '<select name="Menus_' + g_arMenuTypes[j] + '" size="17" style="width: 150px; height: 400px; display: none; font-family:' + document.F.elements["Menus_Pos"].style.fontFamily + '" ondblclick="EditMenus()"></select>');
+			var menus = te.Data.xmlMenus.getElementsByTagName(g_arMenuTypes[j]);
+			if (menus && menus.length) {
+				oa[++oa.length - 1].value = g_arMenuTypes[j] + "," + menus[0].getAttribute("Base") + "," + menus[0].getAttribute("Pos");
+				var o = document.F.elements["Menus_" + g_arMenuTypes[j]];
+				var items = menus[0].getElementsByTagName("Item");
+				if (items) {
+					var i = items.length;
+					o.length = i;
+					while (--i >= 0) {
+						var item = items[i];
+						SetMenus(o[i], new Array(item.getAttribute("Name"), item.getAttribute("Filter"), item.text, item.getAttribute("Type")));
 					}
 				}
-				else {
-					oa[++oa.length - 1].value = g_arMenuTypes[j];
-				}
-				oa[oa.length - 1].text = GetText(g_arMenuTypes[j]);
-				if (g_MenuType && api.strcmpi(g_MenuType, g_arMenuTypes[j]) == 0) {
-					nSelected = oa.length - 1;
-					oa[nSelected].selected = true;
-					g_MenuType = undefined;
-				}
 			}
-			SwitchMenus(oa[nSelected]);
-		}, 100);
+			else {
+				oa[++oa.length - 1].value = g_arMenuTypes[j];
+			}
+			oa[oa.length - 1].text = GetText(g_arMenuTypes[j]);
+			if (g_MenuType && api.strcmpi(g_MenuType, g_arMenuTypes[j]) == 0) {
+				nSelected = oa.length - 1;
+				oa[nSelected].selected = true;
+				g_MenuType = undefined;
+			}
+		}
+		SwitchMenus(oa[nSelected]);
 	}
 }
 

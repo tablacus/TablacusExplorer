@@ -1155,10 +1155,10 @@ int tePos(WCHAR wc, WCHAR *sz)
 
 VOID ToMinus(BSTR *pbs)
 {
-	int nLen = SysStringLen(*pbs) + 1;
-	LPWSTR szCol = new WCHAR[nLen + 1];
+	int nLen = SysStringByteLen(*pbs) + sizeof(WCHAR);
+	LPWSTR szCol = (LPWSTR)new CHAR[nLen + sizeof(WCHAR)];
 	szCol[0] = '-';
-	::CopyMemory(&szCol[1], *pbs, nLen * sizeof(WCHAR));
+	::CopyMemory(&szCol[1], *pbs, nLen);
 	::SysReAllocString(pbs, szCol);
 	delete [] szCol;
 }
@@ -3021,30 +3021,20 @@ void teCalcClientRect(int *param, LPRECT rc, LPRECT rcClient)
 	if (param[TE_Left] & 0x3fff) {
 		rc->left = (param[TE_Left] * (rcClient->right - rcClient->left)) / 10000 + rcClient->left;
 	}
-	else if (param[TE_Left] >= 0) {
-		rc->left = param[TE_Left] / 0x4000 + rcClient->left;
-	}
 	else {
-		rc->left = param[TE_Left] / 0x4000 + rcClient->right;
+		rc->left = param[TE_Left] / 0x4000 + (param[TE_Left] >= 0 ? rcClient->left : rcClient->right);
 	}
-
 	if (param[TE_Top] & 0x3fff) {
 		rc->top = (param[TE_Top] * (rcClient->bottom - rcClient->top)) / 10000 + rcClient->top;
 	}
-	else if (param[TE_Top] >= 0) {
-		rc->top = param[TE_Top] / 0x4000 + rcClient->top;
-	}
 	else {
-		rc->top = param[TE_Top] / 0x4000 + rcClient->bottom;
+		rc->top = param[TE_Top] / 0x4000 + (param[TE_Top] >= 0 ? rcClient->top : rcClient->bottom);
 	}
 	if (param[TE_Width] & 0x3fff) {
 		rc->right = param[TE_Width] * (rcClient->right - rcClient->left) / 10000 + rc->left;
 	}
-	else if (param[TE_Width] >= 0) {
-		rc->right = param[TE_Width] / 0x4000 + rc->left;
-	}
 	else {
-		rc->right = param[TE_Width] / 0x4000 + rcClient->right;
+		rc->right = param[TE_Width] / 0x4000 + (param[TE_Width] >= 0 ? rc->left : rcClient->right);
 	}
 
 	if (rc->right > rcClient->right) {
@@ -3053,11 +3043,8 @@ void teCalcClientRect(int *param, LPRECT rc, LPRECT rcClient)
 	if (param[TE_Height] & 0x3fff) {
 		rc->bottom = param[TE_Height] * (rcClient->bottom - rcClient->top) / 10000 + rc->top;
 	}
-	else if (param[TE_Height] >= 0) {
-		rc->bottom = param[TE_Height] / 0x4000 + rc->top;
-	}
 	else {
-		rc->bottom = param[TE_Height] / 0x4000 + rcClient->bottom;
+		rc->bottom = param[TE_Height] / 0x4000 + (param[TE_Height] >= 0 ? rc->top : rcClient->bottom);
 	}
 	if (rc->bottom > rcClient->bottom) {
 		rc->bottom = rcClient->bottom;
@@ -3161,7 +3148,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 							int nAlign = g_pTE->m_param[TE_Tab] ? pTC->m_param[TE_Align] : 0;
 							if (pSB && (pSB->m_param[SB_TreeAlign] == (TE_TV_Use | TE_TV_View | TE_TV_Left) ||
 							   (nAlign == 0 && pSB->m_param[SB_TreeAlign] == (TE_TV_Use | TE_TV_View)))) {
-								ArrangeTree(pSB, &rc);//, 0, 0);TODO
+								ArrangeTree(pSB, &rc);
 							}
 							MoveWindow(pTC->m_hwndStatic, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, TRUE);
 							int left = rc.left;
@@ -3175,7 +3162,18 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 								if (nAlign == 4 || nAlign == 5) {
 									rc.right = pTC->m_param[TC_TabWidth];
 								}
-								TabCtrl_AdjustRect(pTC->m_hwnd, FALSE, &rc);
+								DWORD dwStyle = pTC->GetStyle();
+								if ((dwStyle & (TCS_BOTTOM | TCS_BUTTONS)) == (TCS_BOTTOM | TCS_BUTTONS)) {
+									SetWindowLong(pTC->m_hwnd, GWL_STYLE, dwStyle & ~TCS_BOTTOM);
+									TabCtrl_AdjustRect(pTC->m_hwnd, FALSE, &rc);
+									SetWindowLong(pTC->m_hwnd, GWL_STYLE, dwStyle);
+									int i = rcTab.bottom - rc.bottom;
+									rc.bottom -= rc.top - i;
+									rc.top = i;
+								}
+								else {
+									TabCtrl_AdjustRect(pTC->m_hwnd, FALSE, &rc);
+								}
 								h = rcTab.bottom - (rc.bottom - rc.top) - 4;
 								switch (nAlign) {
 									case 0:						//none
@@ -3239,7 +3237,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 									pTC->m_si.nTrackPos = 0;
 									pTC->m_si.nPos = 0;
 								}
-								if (teSetRect(pTC->m_hwnd, 0, -pTC->m_si.nPos, rcTab.right, rcTab.bottom + pTC->m_si.nPos)) {
+								if (teSetRect(pTC->m_hwnd, 0, -pTC->m_si.nPos, rcTab.right, (rcTab.bottom - rcTab.top) + pTC->m_si.nPos)) {
 									ArrangeWindow();
 								}
 								if (pSB) {
@@ -3746,7 +3744,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case WM_FONTCHANGE:
 		case WM_ENABLE:
 		case WM_NOTIFY:
-		case WM_POWER:
 		case WM_SETCURSOR:
 		case WM_SETTINGCHANGE:
 		case WM_SYSCOLORCHANGE:
@@ -5609,7 +5606,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			return S_OK;
 		//Items
 		case 0x10000202:
-			if (pVarResult && m_pShellView && m_bVisible) {
+			if (pVarResult && m_pShellView/* && m_bVisible*/) {
 				IDataObject *pDataObj;
 				if (FAILED(m_pShellView->GetItemObject(SVGIO_ALLVIEW | SVGIO_FLAG_VIEWORDER, IID_PPV_ARGS(&pDataObj)))) {
 					pDataObj = NULL;
@@ -6543,18 +6540,10 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 		::SysFreeString(bs1);
 		return;
 	}
-	int dir1 = 0;
+	int dir = (bs[0] == '-') ? 1 : 0;
+	int dir1;
 	if (bs1) {
-		if (bs1[0] == '-') {
-			dir1 = 1;
-		}
-	}
-	int dir = 0;
-	if (bs[0] == '-') {
-		dir = 1;
-	}
-	if (bs1) {
-		dir1 = lstrcmpi(&bs[dir], &bs1[dir1]);
+		dir1 = lstrcmpi(&bs[dir], &bs1[(bs1 && bs1[0] == '-')]) ? 1 : 0;
 		::SysFreeString(bs1);
 	}
 	else {
@@ -6593,43 +6582,29 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 	}
 #endif
 #ifdef _2000XP
-	if SUCCEEDED(SetSort2(&bs[dir])) {
-		if (dir && dir1) {
-			SetSort2(&bs[dir]);
-		}
-		return;
-	}
-	SetViewMenu('I', &bs[dir]);
-	if (dir && dir1) {
-		SetViewMenu('I', &bs[dir]);
-	}
-#endif
-}
-#ifdef _2000XP
-HRESULT CteShellBrowser::SetSort2(LPWSTR lpstr)
-{
-	HRESULT hr = E_FAIL;
 	IShellFolderView *pSFV;
 	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pSFV))) {
 		IShellFolder2 *pSF2;
 		if SUCCEEDED(QueryInterface(IID_PPV_ARGS(&pSF2))) {
 			SHELLDETAILS sd;
+			HRESULT hr = E_FAIL;
 			for (int i = 0; (pSF2->GetDetailsOf(NULL, i, &sd) == S_OK && FAILED(hr)); i++) {
-				BSTR bs;
-				if SUCCEEDED(StrRetToBSTR(&sd.str, NULL, &bs)) {
-					if (lstrcmpi(bs, lpstr) == 0) {
+				if SUCCEEDED(StrRetToBSTR(&sd.str, NULL, &bs1)) {
+					if (lstrcmpi(bs1, &bs[dir]) == 0) {
 						hr = pSFV->Rearrange(i);
+						if (dir && dir1) {
+							hr = pSFV->Rearrange(i);
+						}
 					}
-					::SysFreeString(bs);
+					::SysFreeString(bs1);
 				}
 			}
 			pSF2->Release();
 		}
 		pSFV->Release();
 	}
-	return hr;
-}
 #endif
+}
 
 HRESULT CteShellBrowser::SetRedraw(BOOL bRedraw)
 {
@@ -6654,65 +6629,6 @@ HRESULT CteShellBrowser::SetRedraw(BOOL bRedraw)
 		}
 	}
 	return hr;
-}
-
-VOID CteShellBrowser::SetViewMenu(WCHAR wc, LPWSTR lpstr)
-{
-#ifdef _2000XP
-	IContextMenu *pCM;
-	if SUCCEEDED(m_pShellView->GetItemObject(SVGIO_BACKGROUND, IID_PPV_ARGS(&pCM))) {
-		HMENU hMenu = CreatePopupMenu();
-		try {
-			if SUCCEEDED(pCM->QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_DEFAULTONLY)) {
-				int i = GetMenuItemCount(hMenu);
-				while (--i >= 0) {
-					LPWSTR lpMenu = teGetMenuString(hMenu, i, TRUE);
-					if (lpMenu) {
-						int nPos = tePos('&', lpMenu);
-						if (nPos > 0) {
-							if (lpMenu[nPos + 1] != wc) {
-								nPos = -1;
-							}
-						}
-						delete [] lpMenu;
-						if (nPos >= 0) {
-							HMENU hMenu2 = GetSubMenu(hMenu, i);
-							int j = GetMenuItemCount(hMenu2);
-							while (--j >= 0) {
-								lpMenu = teGetMenuString(hMenu2, j, TRUE);
-								if (lpMenu) {
-									try {
-										teMenuText(lpMenu);
-										if (lstrcmpi(lpstr, lpMenu) == 0) {
-											UINT uCommand = GetMenuItemID(hMenu2, j);
-											if (uCommand) {
-												CMINVOKECOMMANDINFO cmi;
-												::ZeroMemory(&cmi, sizeof(cmi));
-												cmi.cbSize = sizeof(cmi);
-												cmi.hwnd = g_hwndMain;
-												cmi.nShow = SW_SHOWNORMAL;
-												cmi.lpVerb = (LPCSTR)MAKEINTRESOURCE(uCommand - 1);
-												pCM->InvokeCommand(&cmi);
-												break;
-											}
-										}
-									}
-									catch (...) {}
-									delete [] lpMenu;
-								}
-							}
-							DestroyMenu(hMenu2);
-							break;
-						}
-					}
-				}
-			}
-		}
-		catch (...) {}
-		DestroyMenu(hMenu);
-		pCM->Release();
-	}
-#endif
 }
 
 HRESULT CteShellBrowser::CreateViewWindowEx(IShellView *pPreviusView)
@@ -8091,17 +8007,27 @@ void CteTabs::Close(BOOL bForce)
 	}
 }
 
-VOID CteTabs::CreateTC()
+DWORD CteTabs::GetStyle()
 {
 	DWORD dwStyle = WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | TCS_FOCUSNEVER | m_param[TE_Flags];
-	if ((dwStyle & (TCS_BUTTONS | TCS_SCROLLOPPOSITE)) == (TCS_BUTTONS | TCS_SCROLLOPPOSITE)) {
-		dwStyle -= TCS_SCROLLOPPOSITE;
+	if (dwStyle & TCS_BUTTONS) {
+		if (dwStyle & TCS_SCROLLOPPOSITE) {
+			dwStyle &= ~TCS_SCROLLOPPOSITE;
+		}
+		if (dwStyle & TCS_BOTTOM && m_param[TE_Align] > 1) {
+			dwStyle &= ~TCS_BOTTOM;
+		}
 	}
+	return dwStyle;
+}
+
+VOID CteTabs::CreateTC()
+{
 	m_hwnd = CreateWindowEx(
 		WS_EX_CONTROLPARENT, //Extended style
 		WC_TABCONTROL, // Class Name
 		NULL, // Window Name
-		dwStyle, // Window Style
+		GetStyle(), // Window Style
 		CW_USEDEFAULT,    // X coordinate
 		CW_USEDEFAULT,    // Y coordinate
 		CW_USEDEFAULT,    // Width
@@ -8404,9 +8330,6 @@ STDMETHODIMP CteTabs::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD w
 							TabCtrl_SetCurSel(m_hwnd, nSel);
 							DoFunc(TE_OnViewCreated, this, E_NOTIMPL);
 						}
-						else {
-							SetWindowLong(m_hwnd, GWL_STYLE,  WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | TCS_FOCUSNEVER | m_param[TE_Flags]);
-						}
 					}
 				}
 				else if (dispIdMember == TE_OFFSET + TC_TabWidth || dispIdMember == TE_OFFSET + TC_TabHeight) {
@@ -8416,15 +8339,11 @@ STDMETHODIMP CteTabs::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD w
 						m_dwSize = dwSize;
 					}
 				}
+				SetWindowLong(m_hwnd, GWL_STYLE, GetStyle());
 				ArrangeWindow();
 			}
 		}
 		if (pVarResult) {
-/*					if (m_hwnd) {
-				if (dispIdMember == TE_OFFSET + TE_Flags) {
-					m_param[TE_Flags] = GetWindowLong(m_hwnd, GWL_STYLE);
-				}
-			}*/
 			int i = m_param[dispIdMember - TE_OFFSET];
 			if (dispIdMember >= TE_OFFSET + TE_Left && dispIdMember <= TE_OFFSET + TE_Height) {
 				if (i & 0x3fff) {															
