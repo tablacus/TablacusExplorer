@@ -68,7 +68,6 @@ form {
 	outline-style: none;
 	white-space: nowrap;
 	vertical-align: middle;
-	border-radius: 2px;
 }
 a:hover.button {
 	display: inline-block;
@@ -76,7 +75,6 @@ a:hover.button {
 	border: 1px solid #7F9DB9;
 	padding: 0px;
 	outline-style: none;
-	border-radius: 2px;
 }
 a:active.button {
 	display: inline-block;
@@ -102,14 +100,12 @@ a:active.button {
 	background-color: #E5EBEF;
 	border: 1px solid #7F9DB9;
 	padding: 0px 4px;
-	border-radius: 2px;
 }
 a:hover.menu {
 	display: inline-block;
 	background-color: #E5EBEF;
 	border: 1px solid #7F9DB9;
 	padding: 0px 4px;
-	border-radius: 2px;
 }
 a:active.menu {
 	display: inline-block;

@@ -35,6 +35,13 @@ using namespace Gdiplus;
   publicKeyToken='6595b64144ccf1df' \
   language='*'\"") 
 
+#ifndef _WIN64
+#define _2000XP
+#define _W2000
+#endif
+#define _VISTA7
+//#define _USE_TESTOBJECT
+
 //Undefined function
 typedef VOID (WINAPI * LPFNSHRunDialog)(HWND hwnd, HICON hIcon, LPWSTR pszPath, LPWSTR pszTitle, LPWSTR pszPrompt, DWORD dwFlags);
 
@@ -50,13 +57,6 @@ typedef HRESULT (STDAPICALLTYPE * LPFNSHCreateItemFromIDList)(__in PCIDLIST_ABSO
 
 //Tablacus DLL Add-ons
 typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
-
-#ifndef _WIN64
-#define _2000XP
-#define _W2000
-#endif
-#define _VISTA7
-//#define _USE_TESTOBJECT
 
 #define WINDOW_CLASS			L"TablacusExplorer"
 #define MAX_LOADSTRING			100
@@ -201,8 +201,6 @@ typedef struct tagTEColumn
 
 #ifdef _2000XP
 const CLSID CLSID_ShellShellNameSpace = {0x2F2F1F96, 0x2BC1, 0x4b1c, { 0xBE, 0x28, 0xEA, 0x37, 0x74, 0xF4, 0x67, 0x6A}};
-//const CLSID CLSID_ShellShellNameSpace = {2F2F1F96-2BC1-4b1c-BE28-EA3774F4676A};
-//{ 0x112143a6, 0x62c1, 0x4478, { 0x9e, 0x8f, 0x87, 0x26, 0x99, 0x25, 0x5e, 0x2e } };
 //const CLSID CLSID_Explorer =            {0xC08AFD90, 0xF2A1, 0x11D1, { 0x84, 0x55, 0x00, 0xA0, 0xC9, 0x1F, 0x38, 0x80}};
 #endif
 
@@ -490,10 +488,14 @@ private:
 };
 
 class CteShellBrowser : public IShellBrowser, public ICommDlgBrowser2, 
-	public IServiceProvider, public IShellFolderViewDual, public IExplorerBrowserEvents,
+	public IServiceProvider, public IShellFolderViewDual,
+#ifdef _VISTA7
+	public IExplorerBrowserEvents, public IExplorerPaneVisibility,
+#endif
+#ifdef _2000XP
 	public IShellFolder2, public IShellFolderViewCB,
-	public IDropTarget, public IPersistFolder2,
-	public IExplorerPaneVisibility
+#endif
+	public IDropTarget, public IPersistFolder2
 //	public IOleInPlaceFrame
 {
 public:
@@ -541,6 +543,7 @@ public:
 	STDMETHODIMP PopupItemMenu(FolderItem *pfi, VARIANT vx, VARIANT vy, BSTR *pbs);
 	STDMETHODIMP get_Script(IDispatch **ppDisp);
     STDMETHODIMP get_ViewOptions(long *plViewOptions);
+#ifdef _VISTA7
 	//IExplorerBrowserEvents
 	STDMETHODIMP OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder);
 	STDMETHODIMP OnViewCreated(IShellView *psv);
@@ -548,6 +551,8 @@ public:
 	STDMETHODIMP OnNavigationFailed(PCIDLIST_ABSOLUTE pidlFolder);
 	//IExplorerPaneVisibility
 	STDMETHODIMP GetPaneState(REFEXPLORERPANE ep, EXPLORERPANESTATE *peps);
+#endif
+#ifdef _2000XP
 	//IShellFolder
 	STDMETHODIMP ParseDisplayName(HWND hwnd, IBindCtx *pbc, LPWSTR pszDisplayName, ULONG *pchEaten, PIDLIST_RELATIVE *ppidl, ULONG *pdwAttributes);
 	STDMETHODIMP EnumObjects(HWND hwndOwner, SHCONTF grfFlags, IEnumIDList **ppenumIDList);
@@ -569,6 +574,7 @@ public:
 	STDMETHODIMP MapColumnToSCID(UINT iColumn, SHCOLUMNID *pscid);
 	//IShellFolderViewCB
 	STDMETHODIMP MessageSFVCB(UINT uMsg, WPARAM wParam, LPARAM lParam);
+#endif
 	//IDropTarget
 	STDMETHODIMP DragEnter(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
 	STDMETHODIMP DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
@@ -586,7 +592,6 @@ public:
 
 	void Init(CteTabs *pTabs, BOOL bNew);
 	void Show(BOOL bShow);
-	LPITEMIDLIST GetNameSpace();
 	int GetTabIndex();
 	VOID Close(BOOL bForce);
 	VOID DestroyView(int nFlags);
@@ -606,6 +611,7 @@ public:
 	VOID GetVariantPath(FolderItem **ppFolderItem, FolderItems **ppFolderItems, VARIANT *pv);
 	VOID HookDragDrop(int nMode);
 	VOID Error(int *pnDog);
+	VOID Refresh();
 public:
 	BOOL		m_bEmpty, m_bInit, m_bNoRowSelect;
 	BOOL		m_bVisible;
@@ -732,8 +738,13 @@ private:
 	LPITEMIDLIST m_pidl;
 };
 
-class CteTreeView : public IDispatch, public INameSpaceTreeControlEvents,
-	public IOleClientSite, public IOleInPlaceSite, public IContextMenu,
+class CteTreeView : public IDispatch, /*public IContextMenu,*/
+#ifdef _VISTA7
+	public INameSpaceTreeControlEvents,
+#endif
+#ifdef _2000XP
+	public IOleClientSite, public IOleInPlaceSite,
+#endif
 	public IDropTarget
 {
 public:
@@ -745,6 +756,7 @@ public:
 	STDMETHODIMP GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo);
 	STDMETHODIMP GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId);
 	STDMETHODIMP Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr);
+#ifdef _VISTA7
 	//INameSpaceTreeControlEvents
 	STDMETHODIMP OnItemClick(IShellItem *psi, NSTCEHITTEST nstceHitTest, NSTCSTYLE nsctsFlags);
 	STDMETHODIMP OnPropertyItemCommit(IShellItem *psi);
@@ -764,6 +776,8 @@ public:
 	STDMETHODIMP OnAfterContextMenu(IShellItem *psi, IContextMenu *pcmIn, REFIID riid, void **ppv);
 	STDMETHODIMP OnBeforeStateImageChange(IShellItem *psi);
 	STDMETHODIMP OnGetDefaultIconIndex(IShellItem *psi, int *piDefaultIcon, int *piOpenIcon);
+#endif
+#ifdef _2000XP
 	//IOleClientSite
 	STDMETHODIMP SaveObject();
 	STDMETHODIMP GetMoniker(DWORD dwAssign, DWORD dwWhichMoniker, IMoniker **ppmk);
@@ -784,10 +798,11 @@ public:
 	STDMETHODIMP DiscardUndoState();
 	STDMETHODIMP DeactivateAndUndo();
 	STDMETHODIMP OnPosRectChange(LPCRECT lprcPosRect);
+#endif
 	//IContextMenu
-	STDMETHODIMP QueryContextMenu(HMENU hmenu, UINT indexMenu, UINT idCmdFirst, UINT idCmdLast, UINT uFlags);
+/*	STDMETHODIMP QueryContextMenu(HMENU hmenu, UINT indexMenu, UINT idCmdFirst, UINT idCmdLast, UINT uFlags);
 	STDMETHODIMP GetCommandString(UINT_PTR idCmd, UINT uFlags, UINT *pwReserved, LPSTR pszName, UINT cchMax);
-	STDMETHODIMP InvokeCommand(LPCMINVOKECOMMANDINFO pici);
+	STDMETHODIMP InvokeCommand(LPCMINVOKECOMMANDINFO pici);*/
 	//IDropTarget
 	STDMETHODIMP DragEnter(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
 	STDMETHODIMP DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
@@ -800,19 +815,18 @@ public:
 	void Init();
 	void Close();
 	BOOL Create();
-	VOID QuickActivate();
-	BOOL SetEventSink();
+#ifdef _2000XP
 	VOID SetChildren();
 	HRESULT NSInvoke(LPWSTR szVerb, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult);
+#endif
 	HRESULT getSelected(IDispatch **pItem);
 	HRESULT SetRoot();
 	HWND GetParentWindow();
 public:
 	BOOL		m_bSetRoot;
-	INameSpaceTreeControl	*m_pNameSpaceTreeControl;
-	IShellNameSpace			*m_pShellNameSpace;
 	HWND             m_hwnd;
-	IOleObject       *m_pOleObject;
+	INameSpaceTreeControl	*m_pNameSpaceTreeControl;
+	IShellNameSpace *m_pShellNameSpace;
 	CteShellBrowser	*m_pFV;
 	WNDPROC		m_DefProc;
 	WNDPROC		m_DefProc2;
@@ -822,15 +836,18 @@ public:
 private:
 	LONG	m_cRef;
 	VARIANT m_Data;
-	DWORD	m_dwCookie;
-	int			m_nType, m_nOpenedType;
-	DWORD            m_dwEventCookie;
-	IConnectionPoint *m_pConnectionPoint;
-	LPWSTR lplpVerbs;
-	VARIANT m_vSelected;
+	int		m_nType, m_nOpenedType;
+	LPWSTR	lplpVerbs;
 	CteFolderItems *m_pDragItems;
-	DWORD m_grfKeyState;
+	DWORD	m_grfKeyState;
 	HRESULT m_DragLeave;
+#ifdef _VISTA7
+	DWORD	m_dwCookie;
+#endif
+//	DWORD   m_dwEventCookie;
+#ifdef _W2000
+	VARIANT m_vSelected;
+#endif
 };
 
 class CteCommonDialog : public IDispatch

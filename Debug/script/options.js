@@ -16,6 +16,7 @@ var g_Gesture;
 function SetDefaultLangID()
 {
 	document.F.Conf_Lang.value = navigator.userLanguage.replace(/\-.*/,"");
+	document.F.SelLangID.selectedIndex = 0;
 }
 
 function OpenGroup(id)
@@ -433,11 +434,13 @@ function SwitchMenus(o)
 		}
 	}
 	if (o) {
-		var a = o.value.split(",");
-		g_x.Menus = document.F.elements["Menus_" + a[0]];
-		g_x.Menus.style.display = "inline";
-		document.F.elements["Menus_Base"].selectedIndex = a[1];
-		document.F.elements["Menus_Pos"].value = api.LowPart(a[2]);
+		(function (a) { setTimeout(function ()
+		{
+			g_x.Menus = document.F.elements["Menus_" + a[0]];
+			g_x.Menus.style.display = "inline";
+			document.F.elements["Menus_Base"].selectedIndex = a[1];
+			document.F.elements["Menus_Pos"].value = api.LowPart(a[2]);
+		}, 100);}) (o.value.split(","));
 	}
 }
 
@@ -1195,7 +1198,8 @@ OpenIcon = function (o)
 
 InitDialog = function ()
 {
-	if (api.strcmpi(location.search, "?icon") == 0) {
+	var Query = dialogArguments.Query || location.search.replace(/\?/, "");
+	if (api.strcmpi(Query, "icon") == 0) {
 		var h = document.documentElement.clientHeight || document.body.clientHeight;
 		h -= 60;
 		if (h > 0) {
@@ -1222,14 +1226,14 @@ InitDialog = function ()
 		}
 		document.getElementById("Content").innerHTML = s.join("");
 	}
-	if (api.strcmpi(location.search, "?mouse") == 0) {
+	if (api.strcmpi(Query, "mouse") == 0) {
 		returnValue = false;
 		var s = [];
 		s.push('<input type="text" name="q" style="width: 100%" onkeydown="setTimeout(\'returnValue=document.F.q.value\',100)" />');
-		s.push('<div id="Gesture" style="width: 100%; height: 350px; border: 1px gray solid; text-align: center" onmousedown="return MouseDown()" onmouseup="return MouseUp()" onmousemove="return MouseMove()" ondblclick="MouseDbl()" onmousewheel="return MouseWheel()"></div>');
+		s.push('<div id="Gesture" style="width: 100%; height: 340px; border: 1px gray solid; text-align: center" onmousedown="return MouseDown()" onmouseup="return MouseUp()" onmousemove="return MouseMove()" ondblclick="MouseDbl()" onmousewheel="return MouseWheel()"></div>');
 		document.getElementById("Content").innerHTML = s.join("");
 	}
-	if (api.strcmpi(location.search, "?key") == 0) {
+	if (api.strcmpi(Query, "key") == 0) {
 		returnValue = false;
 		var s = [];
 		s.push('<div style="padding: 8px;" style="display: block;"><label>Key</label><br /><input type="text" name="q" style="width: 100%" /></div>');
@@ -1750,7 +1754,7 @@ SetImage = function ()
 
 ShowIcon = function ()
 {
-	var s = showModalDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\dialog.html?icon"), dialogArguments, 'dialogWidth: 640px; dialogHeight: 480px; resizable: yes; status: 0;');
+	var s = showModalDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\dialog.html"), {MainWindow: MainWindow, Query: "icon"}, 'dialogWidth: 640px; dialogHeight: 480px; resizable: yes; status: 0;');
 	if (s) {
 		document.F.Icon.value = s;
 		SetImage();

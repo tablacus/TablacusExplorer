@@ -90,7 +90,7 @@ function ArrangeAddon(xml, Id, td, ts)
 {
 	var s = [];
 	if (Search(xml)) {
-		var info = new Array();
+		var info = [];
 		GetAddonInfo2(xml, info, "General");
 		GetAddonInfo2(xml, info, "en");
 		GetAddonInfo2(xml, info, GetLangId());
