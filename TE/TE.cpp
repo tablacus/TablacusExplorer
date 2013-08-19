@@ -28,7 +28,7 @@ LPFNSHRunDialog lpfnSHRunDialog = NULL;
 LPFNCryptBinaryToStringW lpfnCryptBinaryToStringW = NULL;
 DWORD	g_dragdrop = 0;
 UINT	*g_pCrcTable = NULL;
-LPITEMIDLIST g_pidlDesktop;
+LPITEMIDLIST g_pidls[MAX_CSIDL];
 DWORD		g_paramFV[SB_Count];
 
 int	g_nTCCount = 0;
@@ -787,22 +787,22 @@ void GetVarPathFromPidl(VARIANT *pVarResult, LPITEMIDLIST pidl, int uFlags)
 
 	if (uFlags & SHGDN_FORPARSINGEX) {
 		for (i = 0; i < MAX_CSIDL; i ++) {
-			if SUCCEEDED(SHGetSpecialFolderLocation(NULL, i, &pidl2)) {
-				if (ILIsEqual(pidl, pidl2)) {
-					::CoTaskMemFree(pidl2);
+			if (pidl2 = g_pidls[i]) {
+				if (::ILIsEqual(pidl, pidl2)) {
 					pidl2 = NULL;
 					WCHAR szPath[MAX_PATH];
 					if (SHGetPathFromIDList(pidl, (LPWSTR)&szPath)) {
 						pidl2 = SHSimpleIDListFromPath((LPCWSTR)&szPath);
 					}
-					if (!ILIsEqual(pidl, pidl2)) {
+					if (!::ILIsEqual(pidl, pidl2)) {
 						pVarResult->lVal = i;
 						pVarResult->vt = VT_I4;
 					}
-					::CoTaskMemFree(pidl2);
+					if (pidl2) {
+						::CoTaskMemFree(pidl2);
+					}
 					break;
 				}
-				::CoTaskMemFree(pidl2);
 			}
 		}
 	}
@@ -1082,15 +1082,14 @@ LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath)
 			return pidl;
 		}
 		for (int i = 0; i < MAX_CSIDL; i ++) {
-			if SUCCEEDED(SHGetSpecialFolderLocation(NULL, i, &pidl)) {
+			if (pidl = g_pidls[i]) {
 				if SUCCEEDED(GetDisplayNameFromPidl(&bstr, pidl, SHGDN_FORADDRESSBAR)) {
 					n = lstrcmpi(const_cast<LPCWSTR>(pszPath), (LPCWSTR)bstr);
 					::SysFreeString(bstr);
 					if (n == 0) {
-						return pidl;
+						return ILClone(pidl);
 					}
 				}
-				::CoTaskMemFree(pidl);
 			}
 		}
 		return teILCreateFromPath2(g_pDesktopFolder, pszPath, SHGDN_FORPARSING | SHGDN_FORADDRESSBAR);
@@ -1682,7 +1681,7 @@ BOOL GetFolderItemFromFolderItems(FolderItem **ppFolderItem, FolderItems *pFolde
 	if (pFolderItems->Item(v, ppFolderItem) == S_OK) {
 		return true;
 	}
-	GetFolderItemFromPidl(ppFolderItem, g_pidlDesktop);
+	GetFolderItemFromPidl(ppFolderItem, g_pidls[CSIDL_DESKTOP]);
 	return true;
 }
 
@@ -2905,7 +2904,10 @@ VOID Finalize()
 			delete [] g_maps[i];
 		}
 		lpfnSHCreateItemFromIDList = NULL;
-		::CoTaskMemFree(g_pidlDesktop);
+		for (int i = MAX_CSIDL; i--;) {
+			::CoTaskMemFree(g_pidls[i]);
+			g_pidls[i] = NULL;
+		}
 		if (g_hShell32) {
 			FreeLibrary(g_hShell32);
 		}
@@ -3421,7 +3423,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	if (g_hCrypt32) {
 		lpfnCryptBinaryToStringW = (LPFNCryptBinaryToStringW)GetProcAddress(g_hCrypt32, "CryptBinaryToStringW");
 	}
-	SHGetSpecialFolderLocation(0, CSIDL_DESKTOP, &g_pidlDesktop);
+	for (int i = MAX_CSIDL; i--;) {
+		SHGetSpecialFolderLocation(NULL, i, &g_pidls[i]);
+	}
 	Initlize();
 	::OleInitialize(NULL);
 	osInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO); 
@@ -4471,12 +4475,14 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 
 BOOL CteShellBrowser::GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, FolderItem *pid, UINT wFlags)
 {
-	if (wFlags & SBSP_PARENT && m_pidl) {
-		if (ILIsEmpty(m_pidl)) {
-			SHGetSpecialFolderLocation(m_hwnd, CSIDL_DESKTOP, pidlOut);
+	if (wFlags & SBSP_PARENT) {
+		if (!m_pidl || ILIsEmpty(m_pidl)) {
+			SHGetSpecialFolderLocation(NULL, CSIDL_DESKTOP, pidlOut);
 		}
-		*pidlOut = ::ILClone(m_pidl);
-		ILRemoveLastID(*pidlOut);
+		else {
+			*pidlOut = ::ILClone(m_pidl);
+			::ILRemoveLastID(*pidlOut);
+		}
 		GetFolderItemFromPidl(ppid, *pidlOut);
 		return true;
 	}
@@ -4505,7 +4511,7 @@ BOOL CteShellBrowser::GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, Folde
 		else {
 			*pidlOut = ILClone(m_pidl);
 		}
-		GetFolderItemFromPidl(ppid, pidl);
+		GetFolderItemFromPidl(ppid, *pidlOut);
 		::CoTaskMemFree(pidl);
 		return true;
 	}
@@ -12545,14 +12551,14 @@ HRESULT CteTreeView::SetRoot()
 		if (lpfnSHCreateItemFromIDList) {
 			LPITEMIDLIST pidl;
 			if (!GetPidlFromVariant(&pidl, &m_pFV->m_vRoot)) {
-				SHGetSpecialFolderLocation(m_hwnd, CSIDL_DESKTOP, &pidl);
+				SHGetSpecialFolderLocation(NULL, CSIDL_DESKTOP, &pidl);
 			}
 			if SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(&pShellItem))) {
 				m_pNameSpaceTreeControl->RemoveAllRoots();
 				hr = m_pNameSpaceTreeControl->AppendRoot(pShellItem, m_pFV->m_param[SB_EnumFlags], m_pFV->m_param[SB_RootStyle], NULL);
 				pShellItem->Release();
 			}
-			ILFree(pidl);
+			::CoTaskMemFree(pidl);
 		}
 	}
 #endif
@@ -12580,7 +12586,7 @@ HRESULT CteTreeView::SetRoot()
 				}
 				::SysFreeString(bs);
 			}
-			ILFree(pidl);
+			::CoTaskMemFree(pidl);
 		}
 		if (hr != S_OK) {
 			if (m_pFV->m_vRoot.vt == VT_BSTR) {
@@ -12749,7 +12755,7 @@ LPITEMIDLIST CteFolderItem::GetPidl()
 			}
 		}
 	}
-	return m_pidl ? m_pidl : g_pidlDesktop;
+	return m_pidl ? m_pidl : g_pidls[CSIDL_DESKTOP];
 }
 
 HRESULT CteFolderItem::GetFolderItem(FolderItem **ppid)
