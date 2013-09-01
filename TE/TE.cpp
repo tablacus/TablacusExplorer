@@ -7913,6 +7913,7 @@ void CteWebBrowser::Close()
 {
 	IConnectionPointContainer *pCPC;
 	if (m_pWebBrowser) {
+		m_pWebBrowser->Quit();
 		if SUCCEEDED(m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&pCPC))) {
 			IConnectionPoint *pCP;
 			if (SUCCEEDED(pCPC->FindConnectionPoint(DIID_DWebBrowserEvents2, &pCP))) {
@@ -13812,7 +13813,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 					case 50145:
 						if (nArg >= 1) {
 							pszName = new WCHAR[4095 + 1];
-							int i = LoadString((HINSTANCE)param[0], param[1], pszName, 4095);
+							int i = LoadString((HINSTANCE)param[0], (UINT)param[1], pszName, 4095);
 							pszName[i + 1] = 0;
 						}
 						break;

@@ -292,6 +292,7 @@ function ApplyLang(doc)
 	if (o) {
 		for (i = o.length; i--;) {
 			o[i].style.fontFamily = FaceName;
+			o[i].onkeydown = InsertTab;
 		}
 	}
 
@@ -828,14 +829,20 @@ SaveLayout = function ()
 	}
 }
 
-GetPos = function (o, bScreen, bAbs)
+GetPos = function (o, bScreen, bAbs, bPanel)
 {
 	var x = (bScreen ? screenLeft : 0);
 	var y = (bScreen ? screenTop : 0);
+
 	while (o) {
-		x += o.offsetLeft - (bAbs ? 0 : o.scrollLeft);
-		y += o.offsetTop - (bAbs ? 0 : o.scrollTop);
-		o = o.offsetParent;
+		if (bAbs || !bPanel || api.strcmpi(o.style.position, "absolute")) {
+			x += o.offsetLeft - (bAbs ? 0 : o.scrollLeft);
+			y += o.offsetTop - (bAbs ? 0 : o.scrollTop);
+			o = o.offsetParent;
+		}
+		else {
+			break;
+		}
 	}
 	var pt = api.Memory("POINT");
 	pt.x = x;
@@ -1161,11 +1168,16 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 	if (menus && menus.length) {
 		items = menus[0].getElementsByTagName("Item");
 	}
-	var Selected = null;
-	var SelItem = null;
-	var FV = null;
+	var uCMF = Ctrl.Type != CTRL_TV ? CMF_NORMAL | CMF_CANRENAME : CMF_EXPLORE | CMF_CANRENAME;
+	if (api.GetKeyState(VK_SHIFT) < 0) {
+		uCMF |= CMF_EXTENDEDVERBS;
+	}
+	var ar = GetSelectedArray(Ctrl, pt);
+	var Selected = ar.shift();
+	var SelItem = ar.shift();
+	var FV = ar.shift();
+
 	var bSel = true;
-	var uCMF = CMF_NORMAL | CMF_CANRENAME;
 	switch(Ctrl.Type) {
 		case CTRL_SB:
 		case CTRL_EB:
@@ -1185,9 +1197,6 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 		default:
 			FV = te.Ctrl(CTRL_FV);
 			break;
-	}
-	if (api.GetKeyState(VK_SHIFT) < 0) {
-		uCMF |= CMF_EXTENDEDVERBS;
 	}
 	if (FV) {
 		if (bSel) {
@@ -1342,10 +1351,10 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 			MakeMenus(hMenu, menus, arMenu, items);
 			var nPos = arMenu.length;
 			for (var i in eventTE[Name]) {
-				nPos = eventTE[Name][i](Ctrl, hMenu, nPos);
+				nPos = eventTE[Name][i](Ctrl, hMenu, nPos, Selected, SelItem);
 			}
 			if (ExtraMenus[Name]) {
-				ExtraMenus[Name](Ctrl, hMenu, nPos);
+				ExtraMenus[Name](Ctrl, hMenu, nPos, Selected, SelItem);
 			}
 			if (!pt) {
 				pt = api.Memory("POINT");
@@ -2117,6 +2126,51 @@ GetFolderView = function (Ctrl, pt, bStrict)
 	}
 }
 
+GetSelectedArray = function (Ctrl, pt, bPlus)
+{
+	var Selected = null;
+	var SelItem = null;
+	var FV = null;
+	var bSel = true;
+	switch(Ctrl.Type) {
+		case CTRL_SB:
+		case CTRL_EB:
+			FV = Ctrl;
+			break;
+		case CTRL_TC:
+			FV = Ctrl.Item(Ctrl.HitTest(pt, TCHT_ONITEM));
+			bSel = false;
+			break;
+		case CTRL_TV:
+			SelItem = Ctrl.SelectedItem;
+			break;
+		case CTRL_WB:
+			SelItem = window.Input;
+			break;
+		default:
+			FV = te.Ctrl(CTRL_FV);
+			break;
+	}
+	if (FV) {
+		if (bSel) {
+	 		Selected = FV.SelectedItems();
+		}
+		if (Selected && Selected.Count) {
+			SelItem = Selected.Item(0);
+		}
+		else {
+			SelItem = FV.FolderItem;
+		}
+	}
+	if (!Selected || Selected.Count == 0) {
+		Selected = te.FolderItems();
+		if (bPlus) {
+			Selected.AddItem(SelItem);
+		}
+	}
+	return [Selected, SelItem, FV];
+}
+
 StripAmp = function (s)
 {
 	return s.replace(/\(&\w\)|&/, "").replace(/\.\.\.$/, "");
@@ -2216,7 +2270,7 @@ function MouseOver(o)
 			MouseOut();
 		}
 		var pt = api.Memory("POINT");
-		api.GetCursorPos(pt);
+		api.GetCursorPos(pt, true);
 		if (HitTest(o, pt)) {
 			objHover = o;
 			o.className = 'hover' + o.className;
@@ -2239,3 +2293,41 @@ function MouseOut(s)
 	}
 }
 
+
+InsertTab = function(e)
+{
+	var ot = (e || event).srcElement;
+	if (event.keyCode == VK_TAB) {
+		ot.focus();
+		if (document.all && document.selection) {
+			var selection = document.selection.createRange();
+			if (selection) {
+				selection.text += "\t";
+				return false;
+			}
+		}
+		var i = ot.selectionEnd || s.length;
+		var s = ot.value;
+		ot.value = s.substr(0, i) + "\t" + s.substr(i, s.length);
+		ot.selectionStart = ++i;
+		ot.selectionEnd = i;
+		return false;
+	}
+	return true;
+}
+
+RegEnumKey = function(hKey, Name)
+{
+	var locator = te.CreateObject("WbemScripting.SWbemLocator");
+	var server = locator.ConnectServer(null, "root\\default");
+	var reg = server.Get("StdRegProv");
+
+	var method = reg.Methods_.Item("EnumKey");
+	var iParams = method.InParameters.SpawnInstance_();
+
+	iParams.hDefKey = hKey;
+	iParams.sSubKeyName = Name; 
+
+	var result = reg.ExecMethod_(method.Name, iParams);
+	return result.sNames.toArray();
+}
