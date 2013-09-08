@@ -1225,11 +1225,11 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 				case 2:
 				case 4:
 					var Items = Selected;
-					if (!Items) {
+					if (!FV && (!Items || !Items.Count)) {
 						Items = SelItem;
 					}
 					hMenu = api.CreatePopupMenu();
-					if (nBase == 2 || Items && Items.Count) {
+					if (nBase == 2 || Items) {
 						ContextMenu = api.ContextMenu(Items);
 						if (ContextMenu) {
 							ContextMenu.QueryContextMenu(hMenu, 0, 0x1001, 0x6FFF, uCMF);

@@ -1008,19 +1008,6 @@ te.OnItemClick = function (Ctrl, Item, HitTest, Flags)
 	return S_FALSE;
 }
 
-te.OnCopyData = function (Ctrl, strData, wParam, dwData)
-{
-	for (var i in eventTE.CopyData) {
-		var hr = eventTE.CopyData[i](Ctrl, strData, wParam, dwData);
-		if (isFinite(hr)) {
-			return hr; 
-		}
-	}
-	RestoreFromTray();
-	RunCommandLine(strData);
-	return S_OK;
-}
-
 te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 {
 	if (msg == WM_KILLFOCUS && Ctrl.Type == CTRL_TE) {
@@ -1084,6 +1071,21 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 								}
 							}
 						}
+					}
+					break;
+				case WM_COPYDATA:
+					var cd = api.Memory("COPYDATASTRUCT", 1, lParam);
+					for (var i in eventTE.CopyData) {
+						var hr = eventTE.CopyData[i](Ctrl, cd, wParam);
+						if (isFinite(hr)) {
+							return hr; 
+						}
+					}
+					if (cd.dwData == 0 && cd.cbData) {
+						var strData = api.SysAllocStringByteLen(cd.lpData, cd.cbData);
+						RestoreFromTray();
+						RunCommandLine(strData);
+						return S_OK;
 					}
 					break;
 			}
@@ -1373,7 +1375,7 @@ function InitMenus()
 
 function ArrangeAddons()
 {
-	te.Data.Locations = {};
+	te.Data.Locations = te.Object();
 	window.IconSize = te.Data.Conf_IconSize;
 	var InstalledFolder = fso.GetParentFolderName(api.GetModuleFileName(null));
 	var xml = OpenXml("addons.xml", false, true);
@@ -1428,7 +1430,7 @@ function SetAddon(strName, Location, Tag)
 	if (Tag) {
 		if (strName) {
 			if (!te.Data.Locations[Location]) {
-				te.Data.Locations[Location] = [];
+				te.Data.Locations[Location] = te.Array();
 			}
 			te.Data.Locations[Location].push(strName);
 		}

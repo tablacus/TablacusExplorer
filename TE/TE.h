@@ -42,7 +42,7 @@ using namespace Gdiplus;
 #define _VISTA7
 //#define _USE_TESTOBJECT
 
-//Undefined function
+//Unnamed function
 typedef VOID (WINAPI * LPFNSHRunDialog)(HWND hwnd, HICON hIcon, LPWSTR pszPath, LPWSTR pszTitle, LPWSTR pszPrompt, DWORD dwFlags);
 
 //XP or higher.
@@ -65,6 +65,7 @@ typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
 #define MAX_FORMATS				1024
 #define MAX_TC					128
 #define MAX_FV					1024
+#define MAX_PATHEX				32768
 
 #define TEM_BrowseObject		WM_APP - 1
 
@@ -94,7 +95,7 @@ typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
 #define TE_OnShowContextMenu	14
 #define TE_OnSelectionChanged	15
 #define TE_OnClose				16
-#define TE_OnCopyData			17
+#define TE_OnVisibleChanged		17
 #define TE_OnAppMessage			18
 #define TE_OnStatusText			19
 #define TE_OnToolTip			20
@@ -106,8 +107,7 @@ typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
 #define TE_OnInvokeCommand		26
 #define TE_OnArrange			27
 #define TE_OnHitTest			28
-#define TE_OnVisibleChanged		29
-#define Count_OnFunc			30
+#define Count_OnFunc			29
 
 #define SB_OnIncludeObject		0
 
