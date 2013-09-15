@@ -1008,14 +1008,42 @@ Exec = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop
 
 ExecScriptEx = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop)
 {
-	if (api.StrCmpI(type, "JScript") == 0) {
-		var r = (new Function(s))(Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop);
-		return isFinite(r) ? r : window.Handled;
+	var fn = null;
+	try {
+		if (api.StrCmpI(type, "JScript") == 0) {
+			fn = {Handled: new Function(s)};
+		}
+		else if (api.StrCmpI(type, "VBScript") == 0) {
+			fn = api.GetScriptDispatch('Function Handled(Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop)\n' + s + '\nEnd Function', type, true);
+		}
+		if (fn) {
+			var r = fn.Handled(Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop);
+			return isFinite(r) ? r : window.Handled;
+		}
 	}
-	execScript(s, type);
+	catch (e) {
+		wsh.Popup(e.description + "\n" + s, 0, TITLE, MB_ICONSTOP);
+		return window.Handled;
+	}
+
+	api.ExecScript(s, type,
+		{
+			window: window,
+			Ctrl: Ctrl,
+			pt: pt,
+			hwnd: hwnd,
+			dataObj: dataObj,
+			grfKeyState: grfKeyState,
+			pdwEffect: pdwEffect,
+			bDrop: bDrop
+		},
+		function (ei, SourceLineText, dwSourceContext, lLineNumber, CharacterPosition)
+		{
+			wsh.Popup(api.SysAllocString(ei.bstrDescription) + api.sprintf(16, "\n%X\n", ei.scode) + api.SysAllocString(ei.bstrSource), 0, TITLE, MB_ICONSTOP);
+		}
+	);
 	return window.Handled;
 }
-
 DropScript = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop)
 {
 	if (!pdwEffect) {
@@ -1229,7 +1257,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 						Items = SelItem;
 					}
 					hMenu = api.CreatePopupMenu();
-					if (nBase == 2 || Items) {
+					if (nBase == 2 || Items && Items.Count) {
 						ContextMenu = api.ContextMenu(Items);
 						if (ContextMenu) {
 							ContextMenu.QueryContextMenu(hMenu, 0, 0x1001, 0x6FFF, uCMF);
@@ -2318,16 +2346,16 @@ InsertTab = function(e)
 
 RegEnumKey = function(hKey, Name)
 {
-	var locator = te.CreateObject("WbemScripting.SWbemLocator");
-	var server = locator.ConnectServer(null, "root\\default");
-	var reg = server.Get("StdRegProv");
-
-	var method = reg.Methods_.Item("EnumKey");
-	var iParams = method.InParameters.SpawnInstance_();
-
-	iParams.hDefKey = hKey;
-	iParams.sSubKeyName = Name; 
-
-	var result = reg.ExecMethod_(method.Name, iParams);
-	return result.sNames.toArray();
+	try {
+		var locator = te.CreateObject("WbemScripting.SWbemLocator");
+		var server = locator.ConnectServer(null, "root\\default");
+		var reg = server.Get("StdRegProv");
+		var Params = api.Memory("VARIANT", 3);
+		Params[2] = hKey;
+		Params[1] = Name;
+		api.ExecMethod(reg, "EnumKey", Params);
+		return new VBArray(Params[0]).toArray();
+	} catch (e) {}
+	return [];
 }
+

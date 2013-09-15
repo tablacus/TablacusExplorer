@@ -148,6 +148,7 @@ function ClickTree(o, nMode, strChg)
 	var newTab = TabIndex != -1 ? TabIndex : 0;
 	if (o && o.id && o.id.match(/tab([^_]+)(_?)(.*)/)) {
 		newTab = RegExp.$1 + RegExp.$2 + RegExp.$3;
+		document.getElementById("AddonButton").style.display = RegExp.$1 == 1 ? "inline-block" : "none";
 		if (nMode == 0) {
 			switch (RegExp.$1 - 0) {
 				case 1:
@@ -155,7 +156,7 @@ function ClickTree(o, nMode, strChg)
 					setTimeout(function () {
 						LoadAddons();
 						document.body.style.cursor = "auto";
-					}, 100);
+					}, 10);
 					break;
 				case 2:
 					LoadMenus(RegExp.$3 - 0);
@@ -275,7 +276,7 @@ function ChooseColor1(o)
 			o2.value = c;
 			o.style.backgroundColor = GetWebColor(c);
 		}
-	}, 10);
+	}, 100);
 }
 
 function SetTreeControls()
@@ -902,7 +903,7 @@ function LoadAddons()
 	}
 	g_x.Addons = true;
 
-	var AddonId = new Array();
+	var AddonId = [];
 	var FindData = api.Memory("WIN32_FIND_DATA");
 	var path = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\");
 	var hFind = api.FindFirstFile(path + "*", FindData);
@@ -957,7 +958,7 @@ function SetAddon(td, Id, Enable)
 	var s = [];
 	s.push('<div Id="Addon2_' + Id + '" style="color: ');
 	s.push((Enable == "Enable") ? "gray" : "black");
-	s.push('"><b>' + info.Name + "</b>&nbsp;" + info.Version + "&nbsp;" + info.Creator + "<br>" + info.Description + "</div>");
+	s.push('"><input type="radio" name="AddonId" id="_'+ Id + '"><label for="_'+ Id + '"><b>' + info.Name + "</b>&nbsp;" + info.Version + "&nbsp;" + info.Creator + "<br>" + info.Description + "</div>");
 	s.push('<input type="button" value="' + GetText('Remove') + '" onclick="AddonRemove(\'' + Id + '\')">');
 	s.push('<input type="button" value="' + GetText(Enable) + '" onclick="AddonEnable(\'' + Id + '\', this)"');
 	if (info.MinVersion && te.Version < CalcVersion(info.MinVersion)) {
@@ -969,14 +970,7 @@ function SetAddon(td, Id, Enable)
 	if (!info.Options) {
 		s.push(" disabled");
 	}
-	s.push('>');
-//	s.push('<input type="button" value="' + GetText('Visit website') + '" onclick="AddonWebsite(\'' + Id + '\')" title="' + info.URL + '"');
-//	if (!info.URL) {
-//		s.push(" disabled");
-//	}
-//	s.push('>');
-	s.push('<input type="button" value="' + GetText('Up') + '" onclick="AddonMove(\'' + Id + '\', -1)">');
-	s.push('<input type="button" value="' + GetText('Down') + '" onclick="AddonMove(\'' + Id + '\', 1)">');
+	s.push('></label>');
 	td.innerHTML = s.join("");
 
 	td.onmousedown = function (e)
@@ -1058,11 +1052,19 @@ function AddonEnable(Id, o)
 	g_Chg.Addons = true;
 }
 
-function AddonMove(Id, dir)
+function AddonMove(dir)
 {
-	var tr = document.getElementById("Addon_" + Id);
-	var src = tr.rowIndex;
-	AddonMoveEx(src, src + dir);
+	var r = document.F.AddonId;
+	for (i = 0; i < r.length; i++) {
+		if (r[i].checked) {
+			try {
+				var move = document.getElementById("Addons").rows(i).offsetHeight * dir;
+				AddonMoveEx(i, i + dir);
+				document.getElementById("panel1").scrollTop += move;
+			} catch (e) {}
+ 			break;
+		}
+	}
 }
 
 function AddonMoveEx(src, dist)
@@ -1096,6 +1098,7 @@ function AddonMoveEx(src, dist)
 		table.rows(i).className = (i & 1) ? "oddline" : "";
 		i--;
 	}
+	document.F.AddonId[dist].checked = true;
 	g_Chg.Addons = true;
 	return false;
 }
@@ -1562,7 +1565,7 @@ function RefX(Id, bMultiLine, oButton, fn)
 					MainWindow.OptionDecode(o[o.selectedIndex].value, p);
 					GetElement(Id).value = p.s;
 					if (fn) {
-						execScript(fn, "JScript");
+						ExecScriptEx(te, fn, "JScript");
 					}
 					return;
 				}
@@ -1592,7 +1595,7 @@ function RefX(Id, bMultiLine, oButton, fn)
 				GetElement(Id).value = path;
 			}
 			if (fn) {
-				execScript(fn, "JScript");
+				ExecScriptEx(te, fn, "JScript");
 			}
 		}
 	}, 100);

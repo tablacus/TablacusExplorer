@@ -13,7 +13,7 @@
 HINSTANCE hInst;								// current instance
 WCHAR g_szTE[MAX_LOADSTRING];
 HWND g_hwndMain = NULL;
-HWND g_hBrowser = NULL;
+HWND g_hwndBrowser = NULL;
 LONG g_nSize = MAXWORD;
 LONG g_nLockUpdate = 0;
 CteTabs *g_pTabs = NULL;
@@ -50,7 +50,8 @@ GUID		g_ClsIdFI;
 IDispatch			*g_pOnFunc[Count_OnFunc];
 IShellDispatch		*g_psha = NULL;
 IShellWindows		*g_pSW = NULL;
-IHTMLDocument2		*g_pHtmlDoc = NULL;
+//IHTMLDocument2		*g_pHtmlDoc = NULL;
+IDispatch			*g_pJS = NULL;
 IDispatch			*g_pObject  = NULL;
 IDispatch			*g_pArray   = NULL;
 
@@ -98,6 +99,7 @@ method structSize[] = {
 	{ sizeof(DIBSECTION), L"DIBSECTION" },
 	{ sizeof(EncoderParameter), L"EncoderParameter" },
 	{ sizeof(EncoderParameter), L"EncoderParameters" },
+	{ sizeof(EXCEPINFO), L"EXCEPINFO" },
 	{ sizeof(FINDREPLACE), L"FINDREPLACE" },
 	{ sizeof(FOLDERSETTINGS), L"FOLDERSETTINGS" },
 	{ sizeof(GUID), L"GUID" },
@@ -216,9 +218,9 @@ method methodAPI[] = {
 	{ 1142, L"HighPart" },
 	{ 1154, L"QuadPart" },
 	{ 1163, L"pvData" },
+	{ 1170, L"ExecMethod" },
 	{ 2063, L"FindWindow" },
 	{ 2073, L"FindWindowEx" },
-//	{ 2083, L"FindBrowserWindow" },
 	{ 2111, L"PathMatchSpec" },
 	{ 2230, L"CommandLineToArgv" },
 	{ 2431, L"ILIsEqual" },
@@ -378,6 +380,9 @@ method methodAPI[] = {
 	{ 35052, L"GetAttributesOf" },
 	{ 35062, L"DoDragDrop" },
 	{ 35072, L"CompareIDs" },
+	{ 35082, L"ExecScript" },
+	{ 35080, L"GetScriptDispatch" },
+	{ 35090, L"GetDispatch" },
 	//Handle
 	{ 40003, L"ImageList_GetIcon" },
 	{ 40013, L"ImageList_Create" },
@@ -483,7 +488,6 @@ method methodWB[] = {
 	{ 0x10000004, L"TranslateAccelerator" },
 	{ 0x10000005, L"Application" },
 	{ 0x10000006, L"Document" },
-//	{ 0x10000007, L"ShowBrowserBar" },
 };
 
 method methodTC[] = {
@@ -655,6 +659,7 @@ VOID ArrangeWindow();
 BOOL GetIDListFromObject(IUnknown *punk, LPITEMIDLIST *ppidl);
 
 //Unit
+
 int CalcCrc32(BYTE *pc, int nLen, UINT c)
 {
 	c ^= MAXUINT;
@@ -700,15 +705,17 @@ VOID tePathAppend(LPWSTR *ppszPath, LPWSTR pszPath, LPWSTR pszFile)
 	PathAppend(*ppszPath, pszFile);
 }
 
-BOOL teSetObject(VARIANT *pv, IUnknownPtr punk)
+BOOL teSetObject(VARIANT *pv, PVOID pObj)
 {
-	if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pv->pdispVal))) {
-		pv->vt = VT_DISPATCH;
-		return true;
-	}
-	if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pv->punkVal))) {
-		pv->vt = VT_UNKNOWN;
-		return true;
+	if (pObj) {
+		if SUCCEEDED(static_cast<IUnknown *>(pObj)->QueryInterface(IID_PPV_ARGS(&pv->pdispVal))) {
+			pv->vt = VT_DISPATCH;
+			return true;
+		}
+		if SUCCEEDED(static_cast<IUnknown *>(pObj)->QueryInterface(IID_PPV_ARGS(&pv->punkVal))) {
+			pv->vt = VT_UNKNOWN;
+			return true;
+		}
 	}
 	return false;
 }
@@ -759,29 +766,30 @@ VARIANTARG* GetNewVARIANT(int n)
 	return pv;
 }
 
-BOOL GetUnknown(VARIANT *pv, IUnknown **ppdisp)
+BOOL FindUnknown(VARIANT *pv, IUnknown **ppunk)
 {
-	if (pv->vt == VT_DISPATCH || pv->vt == VT_UNKNOWN) {
-		*ppdisp = pv->punkVal;
-		return *ppdisp != NULL;
+	if (pv) {
+		if (pv->vt == VT_DISPATCH || pv->vt == VT_UNKNOWN) {
+			*ppunk = pv->punkVal;
+			return *ppunk != NULL;
+		}
+		if (pv->vt == (VT_VARIANT | VT_BYREF)) {
+			return FindUnknown(pv->pvarVal, ppunk);
+		}
+		if (pv->vt == (VT_DISPATCH | VT_BYREF) || pv->vt == (VT_UNKNOWN | VT_BYREF)) {
+			*ppunk = *pv->ppunkVal;
+			return *ppunk != NULL;
+		}
 	}
-	if (pv->vt == (VT_VARIANT | VT_BYREF)) {
-		return GetUnknown(pv->pvarVal, ppdisp);
-	}
-	if (pv->vt == (VT_DISPATCH | VT_BYREF) || pv->vt == (VT_UNKNOWN | VT_BYREF)) {
-		*ppdisp = *pv->ppdispVal;
-		return *ppdisp != NULL;
-	}
+	*ppunk = NULL;
 	return false;
 }
 
 BOOL GetDispatch(VARIANT *pv, IDispatch **ppdisp)
 {
 	IUnknown *punk;
-	if (GetUnknown(pv, &punk)) {
-		HRESULT hr = punk->QueryInterface(IID_PPV_ARGS(ppdisp));
-		punk->Release();
-		return SUCCEEDED(hr);
+	if (FindUnknown(pv, &punk)) {
+		return SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(ppdisp)));
 	}
 	return false;
 }
@@ -889,7 +897,7 @@ void GetVarPathFromPidl(VARIANT *pVarResult, LPITEMIDLIST pidl, int uFlags)
 BOOL GetMemFormVariant(VARIANT *pv, CteMemory **ppMem)
 {
 	IUnknown *punk;
-	if (GetUnknown(pv, &punk)) {
+	if (FindUnknown(pv, &punk)) {
 		return SUCCEEDED(punk->QueryInterface(g_ClsIdStruct, (LPVOID *)ppMem));
 	}
 	return FALSE;
@@ -909,8 +917,12 @@ LONGLONG GetLLFromVariant(VARIANT *pv)
 		}
 		if (pv->vt == (VT_ARRAY | VT_I4)) {
 			LONGLONG ll = 0;
-			::CopyMemory(&ll, pv->parray->pvData, sizeof(LONGLONG));
-			return ll;
+			PVOID pvData;
+			if (::SafeArrayAccessData(pv->parray, &pvData) == S_OK) {
+				::CopyMemory(&ll, pvData, sizeof(LONGLONG));
+				::SafeArrayUnaccessData(pv->parray);
+				return ll;
+			}
 		}
 		if (pv->vt == VT_I8) {
 			return pv->llVal;
@@ -1713,10 +1725,14 @@ BOOL GetVarArrayFromPidl(VARIANT *vaPidl, LPITEMIDLIST pidl)
 	cbData = ILGetSize(pidl);
 	psa = SafeArrayCreateVector(VT_UI1, 0, cbData);
 	if (psa) {
-		::CopyMemory(psa->pvData, pidl, cbData);
-		vaPidl->vt = VT_ARRAY | VT_UI1;
-		vaPidl->parray = psa;
-		return true;
+		PVOID pvData;
+		if (::SafeArrayAccessData(psa, &pvData) == S_OK) {
+			::CopyMemory(pvData, pidl, cbData);
+			::SafeArrayUnaccessData(psa);
+			vaPidl->vt = VT_ARRAY | VT_UI1;
+			vaPidl->parray = psa;
+			return true;
+		}
 	}
 	return false;
 }
@@ -1775,7 +1791,7 @@ BOOL GetDataObjFromVariant(IDataObject **ppDataObj, VARIANT *pv)
 {
 	*ppDataObj = NULL;
 	IUnknown *punk;
-	if (GetUnknown(pv, &punk)) {
+	if (FindUnknown(pv, &punk)) {
 		if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(ppDataObj))) {
 			return true;
 		}
@@ -1895,9 +1911,13 @@ VOID SetVariantLL(VARIANT *pv, LONGLONG ll)
 		SAFEARRAY *psa;
 		psa = SafeArrayCreateVector(VT_I4, 0, sizeof(LONGLONG) / sizeof(int));
 		if (psa) {
-			::CopyMemory(psa->pvData, &ll, sizeof(LONGLONG));
-			pv->vt = VT_ARRAY | VT_I4;
-			pv->parray = psa;
+			PVOID pvData;
+			if (::SafeArrayAccessData(psa, &pvData) == S_OK) {
+				::CopyMemory(pvData, &ll, sizeof(LONGLONG));
+				::SafeArrayUnaccessData(psa);
+				pv->vt = VT_ARRAY | VT_I4;
+				pv->parray = psa;
+			}
 		}
 	}
 }
@@ -2036,8 +2056,16 @@ LPWSTR GetSubStruct(BSTR bs)
 	return bs;
 }
 
+int GetVTOfStruct(BSTR bs)
+{
+	return lstrcmpi(bs, L"VARIANT") ? VT_NULL : VT_VARIANT;
+}
+
 int GetOffsetOfStruct(BSTR bs)
 {
+	return lstrcmpi(bs, L"EncoderParameters") ? 0 : sizeof(UINT);
+}
+/*
 	struct
 	{
 		LONG   size;
@@ -2051,7 +2079,7 @@ int GetOffsetOfStruct(BSTR bs)
 		}
 	}
 	return 0;
-}
+}*/
 
 
 int GetSizeOf(VARIANT *pv)
@@ -2186,14 +2214,12 @@ HRESULT Invoke5(IDispatch *pdisp, DISPID dispid, WORD wFlags, VARIANT *pvResult,
 		hr = E_FAIL;
 	}
 	// VARIANT Clean-up of an array
-	if (nArgs >= 0) {
+	if (pvArgs && nArgs >= 0) {
 		for (i = nArgs - 1; i >=  0; i--){
 			VariantClear(&pvArgs[i]);
 		}
-		if(pvArgs != NULL){
-			delete[] pvArgs;
-			pvArgs = NULL;
-		}
+		delete[] pvArgs;
+		pvArgs = NULL;
 	}
 	return hr;
 }
@@ -2201,6 +2227,82 @@ HRESULT Invoke5(IDispatch *pdisp, DISPID dispid, WORD wFlags, VARIANT *pvResult,
 HRESULT Invoke4(IDispatch *pdisp, VARIANT *pvResult, int nArgs, VARIANTARG *pvArgs)
 {
 	return Invoke5(pdisp, DISPID_VALUE, DISPATCH_METHOD, pvResult, nArgs, pvArgs);
+}
+
+HRESULT ParseScript(LPOLESTR lpScript, LPOLESTR lpLang, VARIANT *pv, IUnknown *pOnError, IDispatch **ppdisp)
+{
+	HRESULT hr = E_FAIL;
+	CLSID clsid;
+	IActiveScript *pas = NULL;
+	if (PathMatchSpec(lpLang, L"J*Script")) {
+		CoCreateInstance(CLSID_JScriptChakra, NULL, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER, IID_PPV_ARGS(&pas));
+	}
+	if (pas == NULL && teCLSIDFromProgID(lpLang, &clsid) == S_OK) {
+		CoCreateInstance(clsid, NULL, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER, IID_PPV_ARGS(&pas));
+	}
+	if (pas) {
+		IActiveScriptProperty *paspr;
+		if SUCCEEDED(pas->QueryInterface(IID_PPV_ARGS(&paspr))) {
+			VARIANT v;
+			VariantInit(&v);
+			v.vt = VT_I4;
+			v.lVal = 0;
+			while (++v.lVal <= 256 && paspr->SetProperty(SCRIPTPROP_INVOKEVERSIONING, NULL, &v) == S_OK) {
+			}
+		}
+		IUnknown *punk = NULL;
+		FindUnknown(pv, &punk);
+		CteActiveScriptSite *pass = new CteActiveScriptSite(punk, pOnError);
+		pas->SetScriptSite(pass);
+		pass->Release();
+		IActiveScriptParse *pasp;
+		if SUCCEEDED(pas->QueryInterface(IID_PPV_ARGS(&pasp))) {
+			hr = pasp->InitNew();
+			if (punk) {
+				IDispatchEx *pdex;
+				if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pdex))) {
+					DISPID dispid;
+					HRESULT hr = pdex->GetNextDispID(fdexEnumAll, DISPID_STARTENUM, &dispid);
+					while (hr == NOERROR) {
+						BSTR bs;
+						if (pdex->GetMemberName(dispid, &bs) == S_OK) {
+							pas->AddNamedItem(bs, SCRIPTITEM_ISVISIBLE | SCRIPTITEM_ISSOURCE | SCRIPTITEM_GLOBALMEMBERS);
+							::SysFreeString(bs);
+						}
+						hr = pdex->GetNextDispID(fdexEnumAll, dispid, &dispid);
+					}
+					pdex->Release();
+				}
+			}
+			else if (pv && pv->boolVal) {
+				pas->AddNamedItem(L"window", SCRIPTITEM_ISVISIBLE | SCRIPTITEM_ISSOURCE | SCRIPTITEM_GLOBALMEMBERS);
+			}
+			VARIANT v;
+			VariantInit(&v);
+			hr = pasp->ParseScriptText(lpScript, NULL, NULL, NULL, 0, 1, SCRIPTTEXT_ISPERSISTENT | SCRIPTTEXT_ISVISIBLE, &v, NULL);
+			if (hr == S_OK) {
+				pas->SetScriptState(SCRIPTSTATE_CONNECTED);
+				if (ppdisp) {
+					IDispatch *pdisp;
+					if (pas->GetScriptDispatch(NULL, &pdisp) == S_OK) {
+						CteDispatch *odisp = new CteDispatch(pdisp, 2);
+						pdisp->Release();
+						if SUCCEEDED(pas->QueryInterface(IID_PPV_ARGS(&odisp->m_pActiveScript))) {
+							odisp->QueryInterface(IID_PPV_ARGS(ppdisp));
+						}
+						odisp->Release();
+					}
+				}
+			}
+			pasp->Release();
+		}
+		if (!ppdisp || !*ppdisp) {
+			pas->SetScriptState(SCRIPTSTATE_CLOSED);
+			pas->Close();
+		}
+		pas->Release();
+	}
+	return hr;
 }
 
 HRESULT tePropertyGet(IDispatch *pdisp, LPOLESTR sz, VARIANT *pv)
@@ -2213,13 +2315,13 @@ HRESULT tePropertyGet(IDispatch *pdisp, LPOLESTR sz, VARIANT *pv)
 	return hr;
 }
 
-HRESULT DoFunc(int nFunc, IUnknownPtr punk, HRESULT hr)
+HRESULT DoFunc(int nFunc, PVOID pObj, HRESULT hr)
 {
 	if (g_pOnFunc[nFunc]) {
 		VARIANT vResult;
 		VariantInit(&vResult);
 		VARIANTARG *pv = GetNewVARIANT(1);
-		teSetObject(&pv[0], punk);
+		teSetObject(&pv[0], pObj);
 		Invoke4(g_pOnFunc[nFunc], &vResult, 1, pv);
 		return GetIntFromVariant(&vResult);
 	}
@@ -2231,14 +2333,12 @@ VOID GetNewArray(IDispatch **ppArray)
 	VARIANT v;
 	VariantInit(&v);
 	if (Invoke4(g_pArray, &v, 0, NULL) == S_OK) {
-		if (GetDispatch(&v, ppArray)) {
-			v.vt = VT_EMPTY;
-		}
+		GetDispatch(&v, ppArray);
 		VariantClear(&v);
 	}
 }
 
-HRESULT DoStatusText(IUnknownPtr punk, LPCWSTR lpszStatusText, int iPart)
+HRESULT DoStatusText(PVOID pObj, LPCWSTR lpszStatusText, int iPart)
 {
 	HRESULT hr = E_NOTIMPL;
 	if (g_pOnFunc[TE_OnStatusText]) {
@@ -2246,7 +2346,7 @@ HRESULT DoStatusText(IUnknownPtr punk, LPCWSTR lpszStatusText, int iPart)
 		VARIANT vResult;
 		VariantInit(&vResult);
 		pv = GetNewVARIANT(3);
-		teSetObject(&pv[2], punk);
+		teSetObject(&pv[2], pObj);
 		pv[1].vt = VT_BSTR;
 		pv[1].bstrVal = SysAllocString(lpszStatusText);
 		pv[0].vt = VT_I4;
@@ -2257,14 +2357,14 @@ HRESULT DoStatusText(IUnknownPtr punk, LPCWSTR lpszStatusText, int iPart)
 	return hr;
 }
 
-LONGLONG DoHitTest(IUnknownPtr punk, POINT pt, UINT flags)
+LONGLONG DoHitTest(PVOID pObj, POINT pt, UINT flags)
 {
 	if (g_pOnFunc[TE_OnHitTest]) {
 		VARIANT vResult;
 		VariantInit(&vResult);
 		VARIANTARG *pv = GetNewVARIANT(3);
-		teSetObject(&pv[2], punk);
-		CteMemory *pstPt = new CteMemory(2 * sizeof(int), NULL, VT_VARIANT, 1, L"POINT");
+		teSetObject(&pv[2], pObj);
+		CteMemory *pstPt = new CteMemory(2 * sizeof(int), NULL, VT_NULL, 1, L"POINT");
 		pstPt->SetLong(0, pt.x);
 		pstPt->SetLong(1, pt.y);
 		teSetObject(&pv[1], pstPt);
@@ -2277,7 +2377,7 @@ LONGLONG DoHitTest(IUnknownPtr punk, POINT pt, UINT flags)
 	return -1;
 }
 
-HRESULT DragSub(int nFunc, IUnknownPtr punk, CteFolderItems *pDragItems, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect)
+HRESULT DragSub(int nFunc, PVOID pObj, CteFolderItems *pDragItems, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect)
 {
 	HRESULT hr = E_FAIL;
 	VARIANT vResult;
@@ -2289,19 +2389,19 @@ HRESULT DragSub(int nFunc, IUnknownPtr punk, CteFolderItems *pDragItems, DWORD g
 		try {
 			if (InterlockedIncrement(&g_nProcDrag) < 10) {
 				pv = GetNewVARIANT(5);
-				teSetObject(&pv[4], punk);
+				teSetObject(&pv[4], pObj);
 				teSetObject(&pv[3], pDragItems);
 
 				pv[2].lVal = grfKeyState;
 				pv[2].vt = VT_I4;
 
-				pstPt = new CteMemory(2 * sizeof(int), NULL, VT_VARIANT, 1, L"POINT");
+				pstPt = new CteMemory(2 * sizeof(int), NULL, VT_NULL, 1, L"POINT");
 				pstPt->SetLong(0, pt.x);
 				pstPt->SetLong(1, pt.y);
 				teSetObject(&pv[1], pstPt);
 				pstPt->Release();
 
-				pstEffect = new CteMemory(sizeof(int), (char *)pdwEffect, VT_VARIANT, 1, L"DWORD");
+				pstEffect = new CteMemory(sizeof(int), (char *)pdwEffect, VT_NULL, 1, L"DWORD");
 				teSetObject(&pv[0], pstEffect);
 				pstEffect->Release();
 
@@ -2316,24 +2416,24 @@ HRESULT DragSub(int nFunc, IUnknownPtr punk, CteFolderItems *pDragItems, DWORD g
 	return hr;
 }
 
-HRESULT DragLeaveSub(IUnknownPtr punk, CteFolderItems **ppDragItems)
+HRESULT DragLeaveSub(PVOID pObj, CteFolderItems **ppDragItems)
 {
 	if (ppDragItems && *ppDragItems) {
 		CteFolderItems *pDragItems = *ppDragItems;
 		pDragItems->Release();
 		*ppDragItems = NULL;
 	}
-	return DoFunc(TE_OnDragLeave, punk, E_NOTIMPL);
+	return DoFunc(TE_OnDragLeave, pObj, E_NOTIMPL);
 }
 
-HRESULT MessageSub(int nFunc, IUnknownPtr punk, MSG *pMsg, HRESULT hrDefault)
+HRESULT MessageSub(int nFunc, PVOID pObj, MSG *pMsg, HRESULT hrDefault)
 {
 	VARIANT vResult;
 	VARIANTARG *pv;
 
 	if (g_pOnFunc[nFunc]) {
 		pv = GetNewVARIANT(5);
-		teSetObject(&pv[4], punk);
+		teSetObject(&pv[4], pObj);
 		SetVariantLL(&pv[3], (LONGLONG)pMsg->hwnd);
 		pv[2].lVal = (long)pMsg->message;
 		pv[2].vt = VT_I4;
@@ -2346,19 +2446,19 @@ HRESULT MessageSub(int nFunc, IUnknownPtr punk, MSG *pMsg, HRESULT hrDefault)
 	return hrDefault;
 }
 
-HRESULT MessageSubPt(int nFunc, IUnknownPtr punk, MSG *pMsg)
+HRESULT MessageSubPt(int nFunc, PVOID pObj, MSG *pMsg)
 {
 	VARIANT vResult;
 
 	if (g_pOnFunc[nFunc]) {
 		VARIANTARG *pv = GetNewVARIANT(5);
-		teSetObject(&pv[4], punk);
+		teSetObject(&pv[4], pObj);
 		SetVariantLL(&pv[3], (LONGLONG)pMsg->hwnd); 
 		pv[2].lVal = (long)pMsg->message;
 		pv[2].vt = VT_I4;
 		SetVariantLL(&pv[1], pMsg->wParam);
 
-		CteMemory *pMem = new CteMemory(2 * sizeof(int), NULL, VT_VARIANT, 1, L"POINT");
+		CteMemory *pMem = new CteMemory(2 * sizeof(int), NULL, VT_NULL, 1, L"POINT");
 		pMem->SetLong(0, pMsg->pt.x);
 		pMem->SetLong(1, pMsg->pt.y);
 		teSetObject(&pv[0], pMem);
@@ -2527,7 +2627,7 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 							pv[3].lVal = pmse->mouseData;
 							pv[3].vt = VT_I4;
 							CteMemory *pMem;
-							pMem = new CteMemory(2 * sizeof(int), NULL, VT_VARIANT, 1, L"POINT");
+							pMem = new CteMemory(2 * sizeof(int), NULL, VT_NULL, 1, L"POINT");
 							pMem->SetLong(0, pmse->pt.x);
 							pMem->SetLong(1, pmse->pt.y);
 							teSetObject(&pv[2], pMem);
@@ -3007,7 +3107,8 @@ VOID Finalize()
 		g_pObject && g_pObject->Release();
 	} catch (...) {}
 	try {
-		g_pHtmlDoc && g_pHtmlDoc->Release();
+		g_pJS && g_pJS->Release();
+//		g_pHtmlDoc && g_pHtmlDoc->Release();
 	} catch (...) {}
 	try {
 		g_pSW && g_pSW->Release();
@@ -3131,9 +3232,9 @@ void teCalcClientRect(int *param, LPRECT rc, LPRECT rcClient)
 	}
 }
 
-BOOL CanClose(IUnknownPtr punk)
+BOOL CanClose(PVOID pObj)
 {
-	return DoFunc(TE_OnClose, punk, S_OK) != S_FALSE;
+	return DoFunc(TE_OnClose, pObj, S_OK) != S_FALSE;
 }
 
 VOID ArrangeTree(CteShellBrowser *pSB, LPRECT rc)
@@ -3220,7 +3321,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 							teSetObject(&pv[1], pTC);
 
 							CteMemory *pstR;
-							pstR = new CteMemory(sizeof(RECT), (char *)&rc, VT_VARIANT, 1, L"RECT");
+							pstR = new CteMemory(sizeof(RECT), (char *)&rc, VT_NULL, 1, L"RECT");
 							teSetObject(&pv[0], pstR);
 							pstR->Release();
 
@@ -3564,12 +3665,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	InitCommonControls();
 	SHGetDesktopFolder(&g_pDesktopFolder);
 	MSG msg;
-	CLSID clsid;
-	CLSIDFromProgID(L"Shell.Application", &clsid);
-	CoCreateInstance(clsid, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&g_psha));
-	//Get JScript Object
-	CLSIDFromProgID(L"htmlfile", &clsid);
-	if SUCCEEDED(CoCreateInstance(clsid, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&g_pHtmlDoc))) {
+	CoCreateInstance(CLSID_Shell, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&g_psha));
+
+	/*Get JScript Object
+	if SUCCEEDED(CoCreateInstance(CLSID_HTMLDocument, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&g_pHtmlDoc))) {
 		SAFEARRAY *psa = SafeArrayCreateVector(VT_VARIANT, 0, 1);
 		if (psa) {
 			VARIANT *pv;
@@ -3598,6 +3697,28 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 				pEle->Release();
 			}
 			SafeArrayDestroy(psa);
+		}
+	}*/
+
+	//Get JScript Object
+	LPOLESTR lp = L"function o(){return {}};function a(){return []};";
+	if (ParseScript(lp, L"JScript", NULL, NULL, &g_pJS) == S_OK) {
+		lp = L"o";
+		VARIANT v;
+		VariantInit(&v);
+		DISPID dispid;
+		if (g_pJS->GetIDsOfNames(IID_NULL, &lp, 1, LOCALE_USER_DEFAULT, &dispid) == S_OK) {
+			if (Invoke5(g_pJS, dispid, DISPATCH_PROPERTYGET, &v, 0, NULL) == S_OK) {
+				g_pObject = v.pdispVal;
+				v.vt = VT_EMPTY;
+			}
+		}
+		lp = L"a";
+		if (g_pJS->GetIDsOfNames(IID_NULL, &lp, 1, LOCALE_USER_DEFAULT, &dispid) == S_OK) {
+			if (Invoke5(g_pJS, dispid, DISPATCH_PROPERTYGET, &v, 0, NULL) == S_OK) {
+				g_pArray = v.pdispVal;
+				v.vt = VT_EMPTY;
+			}
 		}
 	}
 
@@ -3672,6 +3793,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 			pCPC->Release();
 		}
 	}
+
 	// Main message loop:
 	for (;;) {
 		try {
@@ -4322,7 +4444,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 			pv = GetNewVARIANT(4);
 			teSetObject(&pv[3], this);
 
-			pMem = new CteMemory(4 * sizeof(int), (char *)&m_param[SB_ViewMode], VT_VARIANT, 1, L"FOLDERSETTINGS");
+			pMem = new CteMemory(4 * sizeof(int), (char *)&m_param[SB_ViewMode], VT_NULL, 1, L"FOLDERSETTINGS");
 			pMem->QueryInterface(IID_PPV_ARGS(&pv[2].punkVal));
 			teSetObject(&pv[2], pMem);
 			pMem->Release();
@@ -4682,7 +4804,7 @@ VOID CteShellBrowser::Refresh()
 VOID CteShellBrowser::GetVariantPath(FolderItem **ppFolderItem, FolderItems **ppFolderItems, VARIANT *pv)
 {
 	IUnknown *punk;
-	if (GetUnknown(pv, &punk)) {
+	if (FindUnknown(pv, &punk)) {
 		if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(ppFolderItems))) {
 			VARIANT v;
 			GetFolderItemFromFolderItems(ppFolderItem, *ppFolderItems, (Invoke5(*ppFolderItems, DISPID_TE_INDEX, DISPATCH_PROPERTYGET, &v, 0, NULL) == S_OK) ? GetIntFromVariantClear(&v) : 0);
@@ -5895,7 +6017,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						m_pOnFunc[dispIdMember - START_OnFunc] = NULL;
 					}
 					IUnknown *punk;
-					if (GetUnknown(&pDispParams->rgvarg[nArg], &punk)) {
+					if (FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
 						punk->QueryInterface(IID_PPV_ARGS(&m_pOnFunc[dispIdMember - START_OnFunc]));
 					}
 				}
@@ -6121,7 +6243,7 @@ STDMETHODIMP CteShellBrowser::GetPaneState(REFEXPLORERPANE ep, EXPLORERPANESTATE
 	if (g_pOnFunc[TE_OnGetPaneState]) {
 		VARIANTARG *pv = GetNewVARIANT(3);
 		CteMemory *pstEps;
-		pstEps = new CteMemory(sizeof(int), (char *)peps, VT_VARIANT, 1, L"DWORD");
+		pstEps = new CteMemory(sizeof(int), (char *)peps, VT_NULL, 1, L"DWORD");
 		if SUCCEEDED(pstEps->QueryInterface(IID_PPV_ARGS(&pv[0].pdispVal))) {
 			pv[0].vt = VT_DISPATCH;
 		}
@@ -6841,7 +6963,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 	}
 	if (dispIdMember >= TE_METHOD && wFlags == DISPATCH_PROPERTYGET) {
 		if (pVarResult) {
-			CteDispatch *pClone = new CteDispatch(this);
+			CteDispatch *pClone = new CteDispatch(this, 0);
 			pClone->m_dispIdMember = dispIdMember;
 			teSetObject(pVarResult, pClone);
 			pClone->Release();
@@ -6951,7 +7073,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 									break;
 								}
 							}
-							pMem = new CteMemory(nCount * sizeof(IDispatch *), NULL, VT_UNKNOWN, nCount, NULL);
+							pMem = new CteMemory(nCount * sizeof(IDispatch *), NULL, VT_DISPATCH, nCount, NULL);
 							ppDisp = (IDispatch **)pMem->m_pc;
 							nCount = 0;
 							i = MAX_FV;
@@ -6983,7 +7105,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 									break;
 								}
 							}
-							pMem = new CteMemory(nCount * sizeof(IDispatch *), NULL, VT_UNKNOWN, nCount, NULL);
+							pMem = new CteMemory(nCount * sizeof(IDispatch *), NULL, VT_DISPATCH, nCount, NULL);
 							ppDisp = (IDispatch **)pMem->m_pc;
 							nCount = 0;
 							i = MAX_TC;
@@ -6999,13 +7121,13 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 							}
 							break;
 						case CTRL_WB:
-							pMem = new CteMemory(sizeof(IDispatch *), NULL, VT_UNKNOWN, 1, NULL);
+							pMem = new CteMemory(sizeof(IDispatch *), NULL, VT_DISPATCH, 1, NULL);
 							ppDisp = (IDispatch **)pMem->m_pc;
 							g_pWebBrowser->QueryInterface(IID_PPV_ARGS(&ppDisp[0]));
 							break;
 					}
 					if (!pMem) {
-						pMem = new CteMemory(0, NULL, VT_UNKNOWN, 0, NULL);
+						pMem = new CteMemory(0, NULL, VT_DISPATCH, 0, NULL);
 					}
 					teSetObject(pVarResult, pMem);
 					pMem->Release();
@@ -7117,9 +7239,8 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 		//Collection
 		case TE_METHOD + 1136:
 			if (pVarResult && nArg >= 0 && GetDispatch(&pDispParams->rgvarg[nArg], &pdisp)) {
-				CteDispatch *pObj = new CteDispatch(pdisp);
-				pObj->m_bVB = TRUE;
-				pObj->m_dispIdMember = DISPID_UNKNOWN;
+				CteDispatch *pObj = new CteDispatch(pdisp, 1);
+				pdisp->Release();
 				teSetObject(pVarResult, pObj);
 				pObj->Release();
 			}
@@ -7231,15 +7352,15 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 		//LockUpdate
 		case TE_METHOD + 1080:
 			if (::InterlockedIncrement(&g_nLockUpdate) == 1) {
-				SendMessage(g_hBrowser, WM_SETREDRAW, FALSE, 0);
+				SendMessage(g_hwndBrowser, WM_SETREDRAW, FALSE, 0);
 			}
 			return S_OK;
 		//UnlockUpdate
 		case TE_METHOD + 1090:
 			if (::InterlockedDecrement(&g_nLockUpdate) <= 0) {
 				g_nLockUpdate = 0;
-				SendMessage(g_hBrowser, WM_SETREDRAW, TRUE, 0);
-				RedrawWindow(g_hBrowser, NULL, 0, RDW_INVALIDATE | RDW_ALLCHILDREN);
+				SendMessage(g_hwndBrowser, WM_SETREDRAW, TRUE, 0);
+				RedrawWindow(g_hwndBrowser, NULL, 0, RDW_INVALIDATE | RDW_ALLCHILDREN);
 
 				int i = MAX_TC;
 				while (--i >= 0) {
@@ -7293,7 +7414,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 						g_pOnFunc[dispIdMember - START_OnFunc]->Release();
 						g_pOnFunc[dispIdMember - START_OnFunc] = NULL;
 					}
-					if (GetUnknown(&pDispParams->rgvarg[nArg], &punk)) {
+					if (FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
 						punk->QueryInterface(IID_PPV_ARGS(&g_pOnFunc[dispIdMember - START_OnFunc]));
 					}
 				}
@@ -7405,10 +7526,10 @@ CteWebBrowser::CteWebBrowser(HWND hwnd, WCHAR *szPath)
 			IConnectionPoint *pCP;
 			hr = pCPC->FindConnectionPoint(DIID_DWebBrowserEvents2, &pCP);
 			if (SUCCEEDED(hr)) {
-				IUnknown *pUnk;
-				QueryInterface(IID_PPV_ARGS(&pUnk));
-				hr = pCP->Advise(pUnk, &m_dwCookie);
-				pUnk->Release();
+				IUnknown *punk;
+				QueryInterface(IID_PPV_ARGS(&punk));
+				hr = pCP->Advise(punk, &m_dwCookie);
+				punk->Release();
 				pCP->Release();
 			}
 			pCPC->Release();
@@ -7626,7 +7747,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 		case DISPID_DOCUMENTCOMPLETE:
 			IOleWindow *pOleWindow;
 			if SUCCEEDED(m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&pOleWindow))) {
-				pOleWindow->GetWindow(&g_hBrowser);
+				pOleWindow->GetWindow(&g_hwndBrowser);
 				pOleWindow->Release();
 			}
 			if (g_bInit) {
@@ -8242,7 +8363,7 @@ STDMETHODIMP CteTabs::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD w
 				int nSrc, nDest;
 				nDest = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
 				CteShellBrowser *pSB;
-				if (GetUnknown(&pDispParams->rgvarg[nArg], &punk)) {
+				if (FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
 					if SUCCEEDED(punk->QueryInterface(g_ClsIdSB, (LPVOID *)&pSB)) {
 						pSB->m_pTabs->Move(pSB->GetTabIndex(), nDest, this);
 						pSB->Release();
@@ -8251,7 +8372,7 @@ STDMETHODIMP CteTabs::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD w
 				}
 				nSrc = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 				if (nArg >= 2) {
-					if (GetUnknown(&pDispParams->rgvarg[nArg - 2], &punk)) {
+					if (FindUnknown(&pDispParams->rgvarg[nArg - 2], &punk)) {
 						CteTabs *pTC;
 						if SUCCEEDED(punk->QueryInterface(g_ClsIdTC, (LPVOID *)&pTC)) {
 							Move(nSrc, nDest, pTC);
@@ -8267,7 +8388,7 @@ STDMETHODIMP CteTabs::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD w
 		case 8:
 			if (nArg >= 0) {
 				int nIndex = -1;
-				if (GetUnknown(&pDispParams->rgvarg[nArg], &punk)) {
+				if (FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
 					CteShellBrowser *pSB;
 					if SUCCEEDED(punk->QueryInterface(g_ClsIdSB, (LPVOID *)&pSB)) {
 						nIndex = pSB->GetTabIndex();
@@ -8333,7 +8454,7 @@ STDMETHODIMP CteTabs::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD w
 		//_NewEnum
 		case DISPID_NEWENUM:
 			if (pVarResult) {
-				CteDispatch *pid = new CteDispatch(this);
+				CteDispatch *pid = new CteDispatch(this, 0);
 				teSetObject(pVarResult, pid);
 				pid->Release();
 				return S_OK;
@@ -8524,7 +8645,7 @@ VOID CteTabs::LockUpdate()
 {
 	if (InterlockedIncrement(&m_nLockUpdate) == 1) {
 		SendMessage(m_hwndStatic, WM_SETREDRAW, FALSE, 0);
-		SendMessage(g_hBrowser, WM_SETREDRAW, FALSE, 0);
+		SendMessage(g_hwndBrowser, WM_SETREDRAW, FALSE, 0);
 	}
 }
 
@@ -8542,13 +8663,13 @@ VOID CteTabs::RedrawUpdate()
 	if (m_bRedraw && g_nLockUpdate == 0) {
 		m_bRedraw = false;
 		SendMessage(m_hwndStatic, WM_SETREDRAW, TRUE, 0);
-		SendMessage(g_hBrowser, WM_SETREDRAW, TRUE, 0);
+		SendMessage(g_hwndBrowser, WM_SETREDRAW, TRUE, 0);
 		CteShellBrowser *pSB = GetShellBrowser(m_nIndex);
 		if (pSB) {
 			pSB->SetRedraw(TRUE);
 		}
 		RedrawWindow(m_hwndStatic, NULL, 0, RDW_INVALIDATE | RDW_ALLCHILDREN);
-		RedrawWindow(g_hBrowser, NULL, 0, RDW_INVALIDATE | RDW_ALLCHILDREN);
+		RedrawWindow(g_hwndBrowser, NULL, 0, RDW_INVALIDATE | RDW_ALLCHILDREN);
 	}
 }
 
@@ -8715,7 +8836,7 @@ VOID CteFolderItems::ItemEx(int nIndex, VARIANT *pVarResult, VARIANT *pVarNew)
 			pv[0].punkVal = NULL;
 			IUnknown *punk;
 			CteFolderItem *pid = NULL;
-			if (GetUnknown(pVarNew, &punk)) {
+			if (FindUnknown(pVarNew, &punk)) {
 				punk->QueryInterface(g_ClsIdFI, (LPVOID *)&pid);
 			}
 			if (pid == NULL) {
@@ -8918,7 +9039,7 @@ STDMETHODIMP CteFolderItems::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 		//pdwEffect
 		case 0x10000002:
 			if (pVarResult) {
-				CteMemory *pMem = new CteMemory(sizeof(int), (char *)&m_dwEffect, VT_VARIANT, 1, L"DWORD");
+				CteMemory *pMem = new CteMemory(sizeof(int), (char *)&m_dwEffect, VT_NULL, 1, L"DWORD");
 				teSetObject(pVarResult, pMem);
 				pMem->Release();
 			}
@@ -8999,7 +9120,7 @@ STDMETHODIMP CteFolderItems::Item(VARIANT index, FolderItem **ppid)
 			teVariantChangeType(&v, &index, VT_BSTR);
 			tePropertyGet(m_oFolderItems, v.bstrVal, &v);
 			IUnknown *punk;
-			if (GetUnknown(&v, &punk)) {
+			if (FindUnknown(&v, &punk)) {
 				HRESULT hr = punk->QueryInterface(IID_PPV_ARGS(ppid));
 				VariantClear(&v);
 				return hr;
@@ -9039,7 +9160,7 @@ STDMETHODIMP CteFolderItems::_NewEnum(IUnknown **ppunk)
 	if (m_pFolderItems) {
 		return m_pFolderItems->_NewEnum(ppunk);
 	}
-	*ppunk = reinterpret_cast<IUnknown *>(new CteDispatch(reinterpret_cast<IDispatch *>(this)));
+	*ppunk = reinterpret_cast<IUnknown *>(new CteDispatch(reinterpret_cast<IDispatch *>(this), 0));
 	return S_OK;
 }
 
@@ -9407,13 +9528,18 @@ CteMemory::CteMemory(int nSize, char *pc, int nMode, int nCount, LPWSTR lpStruct
 	if (nSize > 0) {
 		m_nSize = nSize;
 		if (pc == NULL) {
-			m_pc = new char[nSize];
-			if (m_pc) {
-				::ZeroMemory(m_pc, nSize);
-				m_nAlloc = 1;
+			if (nMode == VT_VARIANT) {
+				m_pc = (char *)GetNewVARIANT(nCount);
+				if (m_pc) {
+					m_nAlloc = 3;
+				}
 			}
 			else {
-				::MessageBox(0, 0, 0, 0);
+				m_pc = new char[nSize];
+				if (m_pc) {
+					::ZeroMemory(m_pc, nSize);
+					m_nAlloc = 1;
+				}
 			}
 		}
 		if (pc == (char *)1) {
@@ -9439,8 +9565,7 @@ void CteMemory::Free()
 	switch (m_nMode) {
 		case VT_BSTR:
 			if (m_nCount > 0) {
-				BSTR *lpBSTRData;
-				lpBSTRData = (BSTR*)m_pc;
+				BSTR *lpBSTRData = (BSTR*)m_pc;
 				while (--m_nCount >= 0) {
 					if (lpBSTRData[m_nCount]) {
 						::SysFreeString(lpBSTRData[m_nCount]);
@@ -9448,15 +9573,13 @@ void CteMemory::Free()
 				}
 			}
 			break;
-
 		case VT_DISPATCH:
 		case VT_UNKNOWN:
 			if (m_nCount > 0) {
-				IUnknown **ppUnk;
-				ppUnk = (IUnknown **)m_pc;
+				IUnknown **ppunk = (IUnknown **)m_pc;
 				while (--m_nCount >= 0) {
-					if (ppUnk[m_nCount]) {
-						ppUnk[m_nCount]->Release();
+					if (ppunk[m_nCount]) {
+						ppunk[m_nCount]->Release();
 					}
 				}
 			}
@@ -9469,6 +9592,13 @@ void CteMemory::Free()
 			break;
 		case 2:
 			::CoTaskMemFree((LPVOID)m_pc);
+			break;
+		case 3:
+			VARIANT *pv = (VARIANT *)m_pc;
+			while (--m_nCount >= 0) {
+				VariantInit(&pv[m_nCount]);
+			}
+			delete [] pv;
 			break;
 	}
 	if (m_bsStruct) {
@@ -9564,7 +9694,7 @@ STDMETHODIMP CteMemory::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD
 		//_NewEnum
 		case DISPID_NEWENUM:
 			if (pVarResult) {
-				CteDispatch *pid = new CteDispatch(this);
+				CteDispatch *pid = new CteDispatch(this, 0);
 				teSetObject(pVarResult, pid);
 				pid->Release();
 				return S_OK;
@@ -9713,11 +9843,11 @@ STDMETHODIMP CteMemory::GetDispID(BSTR bstrName, DWORD grfdex, DISPID *pid)
 			return S_OK;
 		}
 		if (lstrcmpi(bstrName, L"bmPlanes") == 0) {
-			*pid = (VT_I2 << TE_VT) + (DWORD)(UINT_PTR)&p->bmPlanes;
+			*pid = (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&p->bmPlanes;
 			return S_OK;
 		}
 		if (lstrcmpi(bstrName, L"bmBitsPixel") == 0) {
-			*pid = (VT_I2 << TE_VT) + (DWORD)(UINT_PTR)&p->bmBitsPixel;
+			*pid = (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&p->bmBitsPixel;
 			return S_OK;
 		}
 		if (lstrcmpi(bstrName, L"bmBits") == 0) {
@@ -9844,6 +9974,46 @@ STDMETHODIMP CteMemory::GetDispID(BSTR bstrName, DWORD grfdex, DISPID *pid)
 		}
 		if (lstrcmpi(bstrName, L"lpData") == 0) {
 			*pid = (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&p->lpData;
+			return S_OK;
+		}
+	}
+
+	if (lstrcmpi(m_bsStruct, L"EXCEPINFO") == 0) {
+		EXCEPINFO *p = NULL;
+		if (lstrcmpi(bstrName, L"wCode") == 0) {
+			*pid = (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&p->wCode;
+			return S_OK;
+		}
+		if (lstrcmpi(bstrName, L"wReserved") == 0) {
+			*pid = (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&p->wReserved;
+			return S_OK;
+		}
+		if (lstrcmpi(bstrName, L"bstrSource") == 0) {
+			*pid = (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&p->bstrSource;
+			return S_OK;
+		}
+		if (lstrcmpi(bstrName, L"bstrDescription") == 0) {
+			*pid = (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&p->bstrDescription;
+			return S_OK;
+		}
+		if (lstrcmpi(bstrName, L"bstrHelpFile") == 0) {
+			*pid = (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&p->bstrHelpFile;
+			return S_OK;
+		}
+		if (lstrcmpi(bstrName, L"dwHelpContext") == 0) {
+			*pid = (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&p->dwHelpContext;
+			return S_OK;
+		}
+		if (lstrcmpi(bstrName, L"pvReserved") == 0) {
+			*pid = (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&p->pvReserved;
+			return S_OK;
+		}
+		if (lstrcmpi(bstrName, L"pfnDeferredFillIn") == 0) {
+			*pid = (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&p->pfnDeferredFillIn;
+			return S_OK;
+		}
+		if (lstrcmpi(bstrName, L"scode") == 0) {
+			*pid = (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&p->scode;
 			return S_OK;
 		}
 	}
@@ -10929,28 +11099,34 @@ VOID CteMemory::ItemEx(int i, VARIANT *pVarResult, VARIANT *pVarNew)
 	if (i >= 0 && i < m_nCount) {
 		if (pVarNew) {
 			if (m_nCount) {
-				int nSize = m_nSize / m_nCount;
-				if (nSize >= 1 && nSize <= 8) {
-					LARGE_INTEGER ll;
-					ll.QuadPart = GetLLFromVariant(pVarNew);
-					if (ll.QuadPart == 0 && pVarNew->vt == VT_BSTR && pVarNew->bstrVal &&
-					(lstrcmpi(m_bsStruct, L"BSTR") == 0 || lstrcmpi(m_bsStruct, L"LPWSTR") == 0)) {
-						ll.QuadPart = (LONGLONG)AddBSTR(pVarNew->bstrVal);
-					}
-					if (nSize == 1) {//BYTE
-						m_pc[i] = ll.LowPart & 0xff;
-					}
-					else if (nSize == 2) {//WORD
-						WORD *p = (WORD *)m_pc;
-						p[i] = LOWORD(ll.LowPart);
-					}
-					else if (nSize == 4) {//DWORD
-						int *p = (int *)m_pc;
-						p[i] = ll.LowPart;
-					}
-					else if (nSize == 8) {//LONGLONG
-						LONGLONG *p = (LONGLONG *)m_pc;
-						p[i] = ll.QuadPart;
+				if (m_nMode == VT_VARIANT) {
+					VARIANT *p = (VARIANT *)m_pc;
+					VariantCopy(&p[i], pVarNew);
+				}
+				else {
+					int nSize = m_nSize / m_nCount;
+					if (nSize >= 1 && nSize <= 8) {
+						LARGE_INTEGER ll;
+						ll.QuadPart = GetLLFromVariant(pVarNew);
+						if (ll.QuadPart == 0 && pVarNew->vt == VT_BSTR && pVarNew->bstrVal &&
+						(lstrcmpi(m_bsStruct, L"BSTR") == 0 || lstrcmpi(m_bsStruct, L"LPWSTR") == 0)) {
+							ll.QuadPart = (LONGLONG)AddBSTR(pVarNew->bstrVal);
+						}
+						if (nSize == 1) {//BYTE
+							m_pc[i] = ll.LowPart & 0xff;
+						}
+						else if (nSize == 2) {//WORD
+							WORD *p = (WORD *)m_pc;
+							p[i] = LOWORD(ll.LowPart);
+						}
+						else if (nSize == 4) {//DWORD
+							int *p = (int *)m_pc;
+							p[i] = ll.LowPart;
+						}
+						else if (nSize == 8) {//LONGLONG
+							LONGLONG *p = (LONGLONG *)m_pc;
+							p[i] = ll.QuadPart;
+						}
 					}
 				}
 			}
@@ -10958,9 +11134,7 @@ VOID CteMemory::ItemEx(int i, VARIANT *pVarResult, VARIANT *pVarNew)
 		if (pVarResult) {
 			switch (m_nMode) {
 				case VT_BSTR:
-					BSTR *lpBSTRdata;
-					lpBSTRdata = (BSTR*)m_pc;
-					pVarResult->bstrVal = SysAllocString(lpBSTRdata[i]);
+					pVarResult->bstrVal = SysAllocString(((BSTR*)m_pc)[i]);
 					pVarResult->vt = VT_BSTR;
 					break;
 				case VT_UNKNOWN:
@@ -10970,6 +11144,11 @@ VOID CteMemory::ItemEx(int i, VARIANT *pVarResult, VARIANT *pVarNew)
 					if (ppUnk[i]) {
 						teSetObject(pVarResult, ppUnk[i]);
 					}
+					break;
+				case VT_VARIANT:
+					VARIANT *p;
+					p = (VARIANT *)m_pc;
+					VariantCopy(pVarResult, &p[i]);
 					break;
 				default:
 					if (m_nCount) {
@@ -11032,8 +11211,12 @@ VOID CteMemory::Read(int nIndex, int nLen, VARIANT *pVarResult)
 			if (nLen > 0) {
 				SAFEARRAY *psa = SafeArrayCreateVector(vt, 0, nLen);
 				if (psa) {
-					::CopyMemory(psa->pvData, &m_pc[nIndex], nLen * nSize);
-					pVarResult->parray = psa;
+					PVOID pvData;
+					if (::SafeArrayAccessData(psa, &pvData) == S_OK) {
+						::CopyMemory(pvData, &m_pc[nIndex], nLen * nSize);
+						::SafeArrayUnaccessData(psa);
+						pVarResult->parray = psa;
+					}
 				}
 			}
 		}
@@ -11107,14 +11290,14 @@ VOID CteMemory::Read(int nIndex, int nLen, VARIANT *pVarResult)
 			break;
 		case VT_CY:
 			CteMemory *pstPt;
-			pstPt = new CteMemory(sizeof(POINT), NULL, VT_VARIANT, 1, L"POINT");
+			pstPt = new CteMemory(sizeof(POINT), NULL, VT_NULL, 1, L"POINT");
 			::CopyMemory(pstPt->m_pc, &m_pc[nIndex], 2 * sizeof(int));	
 			teSetObject(pVarResult, pstPt);
 			pstPt->Release();
 			break;
 		case VT_CARRAY:
 			CteMemory *pstR;
-			pstR = new CteMemory(sizeof(RECT), NULL, VT_VARIANT, 1, L"RECT");
+			pstR = new CteMemory(sizeof(RECT), NULL, VT_NULL, 1, L"RECT");
 			::CopyMemory(pstR->m_pc, &m_pc[nIndex], 4 * sizeof(int));	
 			teSetObject(pVarResult, pstR);
 			pstR->Release();
@@ -11127,7 +11310,8 @@ VOID CteMemory::Read(int nIndex, int nLen, VARIANT *pVarResult)
 			pVarResult->vt = VT_BSTR;
 			break;
 		case VT_VARIANT:
-			VariantCopy(pVarResult, (VARIANT *)m_pc[nIndex]);
+			VariantCopy(pVarResult, (VARIANT *)&m_pc[nIndex]);
+//			*pVarResult = *(VARIANT *)&m_pc[nIndex];
 			break;
 		default:
 			pVarResult->vt = VT_EMPTY;
@@ -11145,7 +11329,11 @@ VOID CteMemory::Write(int nIndex, int nLen, VARTYPE vt, VARIANT *pv)
 				nLen = (m_nSize - nIndex) / nSize;
 			}
 			if (nLen > 0) {
-				::CopyMemory(&m_pc[nIndex], pv->parray->pvData, nLen * nSize);
+				PVOID pvData;
+				if (::SafeArrayAccessData(pv->parray, &pvData) == S_OK) {
+					::CopyMemory(&m_pc[nIndex], pvData, nLen * nSize);
+					::SafeArrayUnaccessData(pv->parray);
+				}
 			}
 		}
 		return;
@@ -11244,7 +11432,7 @@ VOID CteMemory::Write(int nIndex, int nLen, VARTYPE vt, VARIANT *pv)
 			}
 			break;
 		case VT_VARIANT:
-			VariantCopy((VARIANT *)m_pc[nIndex], pv);
+			VariantCopy((VARIANT *)&m_pc[nIndex], pv);
 			break;
 	}
 }
@@ -13774,7 +13962,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 	if (wFlags == DISPATCH_PROPERTYGET) {
 		if (dispIdMember != DISPID_VALUE) {
 			if (pVarResult) {
-				CteDispatch *pClone = new CteDispatch(this);
+				CteDispatch *pClone = new CteDispatch(this, 0);
 				pClone->m_dispIdMember = dispIdMember;
 				teSetObject(pVarResult, pClone);
 				pClone->Release();
@@ -13840,7 +14028,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 					case 50065: //GetDisplayNameOf
 						if (nArg >= 1) {
 							int i = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
-							if (i & (SHGDN_FORPARSING | SHGDN_FORPARSINGEX) && (GetUnknown(&pDispParams->rgvarg[nArg], &punk))) {
+							if (i & (SHGDN_FORPARSING | SHGDN_FORPARSINGEX) && (FindUnknown(&pDispParams->rgvarg[nArg], &punk))) {
 								CteFolderItem *pFI = NULL;
 								if SUCCEEDED(punk->QueryInterface(g_ClsIdFI, (LPVOID *)&pFI)) {
 									if (pFI->m_v.vt == VT_BSTR) {
@@ -14174,7 +14362,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 					if (nArg >= 4) {
 						VARIANT vPath;
 						BSTR bs = NULL;
-						if (GetUnknown(&pDispParams->rgvarg[nArg], &punk)) {
+						if (FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
 							GetPidlFromVariant((LPITEMIDLIST *)&bs, &pDispParams->rgvarg[nArg]);
 						}
 						else {
@@ -14184,7 +14372,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 						*phResult = (HANDLE)SHGetFileInfo(bs, (DWORD)param[1], 
 							(SHFILEINFO *)GetpcFormVariant(&pDispParams->rgvarg[nArg - 2]), 
 							(UINT)param[3], (UINT)param[4]);
-						if (GetUnknown(&pDispParams->rgvarg[nArg], &punk)) {
+						if (FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
 							::CoTaskMemFree(bs);
 						}
 						else {
@@ -14349,7 +14537,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				case 35002://TrackPopupMenuEx
 					if (nArg >= 5) {
 						if (nArg >= 6) {
-							if (GetUnknown(&pDispParams->rgvarg[nArg - 6], &punk)) {
+							if (FindUnknown(&pDispParams->rgvarg[nArg - 6], &punk)) {
 								punk->QueryInterface(g_ClsIdContextMenu, (LPVOID *)&g_pCCM);
 							}
 						}
@@ -14447,6 +14635,50 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 						}
 					}
 					break;
+				//GetScriptDispatch
+				case 35080:
+				//ExecScript
+				case 35082:
+					if (nArg >= 1) {
+						VARIANT v[2];
+						for (int i = 1; i >= 0; i--) {
+							teVariantChangeType(&v[i], &pDispParams->rgvarg[nArg - i], VT_BSTR);
+						}
+						VARIANT *pv = NULL;
+						if (nArg >= 2) {
+							pv = &pDispParams->rgvarg[nArg - 2];
+						}
+						IUnknown *pOnError = NULL;
+						if (nArg >= 3) {
+							FindUnknown(&pDispParams->rgvarg[nArg - 3], &pOnError);
+						}
+						IDispatch *pdisp = NULL;
+						IDispatch **ppdisp = pVarResult && (dispIdMember == 35080) ? &pdisp : NULL;
+						*plResult = ParseScript(v[0].bstrVal, v[1].bstrVal, pv, pOnError, ppdisp);
+						if (pdisp) {
+							teSetObject(pVarResult, pdisp);
+							pdisp->Release();
+						}
+					}
+					break;
+				//GetDispatch
+				case 35090:
+					if (nArg >= 1 && pVarResult) {
+						IDispatch *pdisp;
+						if (GetDispatch(&pDispParams->rgvarg[nArg], &pdisp)) {
+							VARIANT v;
+							teVariantChangeType(&v, &pDispParams->rgvarg[nArg - 1], VT_BSTR);
+							DISPID dispid = DISPID_UNKNOWN;
+							if (pdisp->GetIDsOfNames(IID_NULL, &v.bstrVal, 1, LOCALE_USER_DEFAULT, &dispid) == S_OK) {
+								CteDispatch *oDisp = new CteDispatch(pdisp, 0);
+								oDisp->m_dispIdMember = dispid;
+								teSetObject(pVarResult, oDisp);
+								oDisp->Release();
+							}
+							pdisp->Release();
+						}
+					}
+					return S_OK;
 				default:
 					return DISP_E_MEMBERNOTFOUND;
 			}
@@ -15110,7 +15342,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 							pc = (char *)GetLLFromVariant(&pDispParams->rgvarg[nArg - 2]);
 						}
 					}
-					pMem = new CteMemory(i * nCount + GetOffsetOfStruct(sz), pc, VT_VARIANT, nCount, sz);
+					pMem = new CteMemory(i * nCount + GetOffsetOfStruct(sz), pc, GetVTOfStruct(sz), nCount, sz);
 					if (bs) {
 						::CopyMemory(pMem->m_pc, bs, nCount * 2);
 					}
@@ -15256,6 +15488,31 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				*phResult = (HANDLE)pDispParams->rgvarg[nArg].parray->pvData;
 			}
 			break;
+		//ExecMethod
+		case 1170:
+			if (nArg >= 2) {
+				IDispatch *pdisp;
+				if (GetDispatch(&pDispParams->rgvarg[nArg], &pdisp)) {
+					VARIANT v;
+					teVariantChangeType(&v, &pDispParams->rgvarg[nArg - 1], VT_BSTR);
+					DISPID dispid;
+					if (pdisp->GetIDsOfNames(IID_NULL, &v.bstrVal, 1, LOCALE_USER_DEFAULT, &dispid) != S_OK) {
+						dispid = DISPID_VALUE;
+					}
+					VariantClear(&v);
+					VARIANTARG *pv = &pDispParams->rgvarg[nArg - 2];
+					int nCount = 1;
+					CteMemory *pMem;
+					if (GetMemFormVariant(&pDispParams->rgvarg[nArg - 2], &pMem)) {
+						pv = (VARIANTARG *)pMem->m_pc;
+						nCount = pMem->m_nCount;
+						pMem->Release();
+					}
+					Invoke5(pdisp, dispid, DISPATCH_METHOD, pVarResult, -nCount, pv);
+					pdisp->Release();
+				}
+			}
+			break;
 		//FindWindow
 		case 2063:
 			if (nArg >= 0) {
@@ -15279,30 +15536,6 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				VariantClear(&vWindow);
 			}
 			break;
-/*		//FindBrowserWindow(document) Did not work on modeless dialog
-		case 2083:
-			if (nArg >= 0) {
-				if (pDispParams->rgvarg[nArg].vt == VT_DISPATCH) {
-					IServiceProvider *pSP1;
-					if (pDispParams->rgvarg[nArg].pdispVal->QueryInterface(IID_PPV_ARGS(&pSP1)) == S_OK) {
-						IServiceProvider *pSP2;
-						if (pSP1->QueryService(SID_STopLevelBrowser, IID_IServiceProvider, reinterpret_cast<void**>(&pSP2)) == S_OK) {
-							SHDocVw::IWebBrowser *pIE;
-							if (pSP1->QueryService(SID_SWebBrowserApp, IID_IWebBrowser2, reinterpret_cast<void **>(&pIE)) == S_OK) {
-								IOleWindow * pOleWindow;
-								if SUCCEEDED(pIE->QueryInterface(IID_PPV_ARGS(&pOleWindow))) {
-									pOleWindow->GetWindow((HWND *)phResult);
-									pOleWindow->Release();
-								}
-								pIE->Release();
-							}
-							pSP2->Release();
-						}
-						pSP1->Release();
-					}
-				}
-			}
-			break;*/
 		//PathMatchSpec
 		case 2111:
 			if (nArg >= 1) {
@@ -15539,12 +15772,14 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 
 //CteDispatch
 
-CteDispatch::CteDispatch(IDispatch *pDispatch)
+CteDispatch::CteDispatch(IDispatch *pDispatch, int nMode)
 {
 	m_cRef = 1;
 	m_pDispatch = pDispatch;
 	m_pDispatch->AddRef();
-	m_bVB = FALSE;
+	m_nMode = nMode;
+	m_dispIdMember = DISPID_UNKNOWN;
+	m_pActiveScript = NULL;
 	m_nIndex = 0;
 }
 
@@ -15552,6 +15787,11 @@ CteDispatch::~CteDispatch()
 {
 	if (m_pDispatch) {
 		m_pDispatch->Release();
+	}
+	if (m_pActiveScript) {
+		m_pActiveScript->SetScriptState(SCRIPTSTATE_CLOSED);
+		m_pActiveScript->Close();
+		m_pActiveScript->Release();
 	}
 }
 
@@ -15565,11 +15805,13 @@ STDMETHODIMP CteDispatch::QueryInterface(REFIID riid, void **ppvObject)
 	else if (IsEqualIID(riid, IID_IEnumVARIANT)) {
 		*ppvObject = static_cast<IEnumVARIANT *>(this);
 	}
+	else if (m_nMode) {
+		return m_pDispatch->QueryInterface(riid, ppvObject);
+	}
 	else {
 		return E_NOINTERFACE;
 	}
 	AddRef();
-
 	return S_OK;
 }
 
@@ -15601,10 +15843,12 @@ STDMETHODIMP CteDispatch::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInf
 
 STDMETHODIMP CteDispatch::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	if (m_bVB) {
-		if (lstrcmp(*rgszNames, L"Item") == 0) {
-			*rgDispId = DISPID_VALUE;
-			return S_OK;
+	if (m_nMode) {
+		if (m_nMode == 2) {
+			if (lstrcmp(*rgszNames, L"Item") == 0) {
+				*rgDispId = DISPID_VALUE;
+				return S_OK;
+			}
 		}
 		return m_pDispatch->GetIDsOfNames(riid, rgszNames, cNames, lcid, rgDispId);
 	}
@@ -15616,7 +15860,7 @@ STDMETHODIMP CteDispatch::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 	if (pVarResult) {
 		VariantInit(pVarResult);
 	}
-	if (m_bVB) {
+	if (m_nMode) {
 		if (dispIdMember == DISPID_NEWENUM) {
 			if (pVarResult) {
 				teSetObject(pVarResult, this);
@@ -15661,7 +15905,7 @@ STDMETHODIMP CteDispatch::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 STDMETHODIMP CteDispatch::Next(ULONG celt, VARIANT *rgVar, ULONG *pCeltFetched)
 {
 	if (rgVar) {
-		if (m_bVB) {
+		if (m_nMode) {
 			IDispatchEx *pdex = NULL;
 			if SUCCEEDED(m_pDispatch->QueryInterface(IID_PPV_ARGS(&pdex))) {
 				HRESULT hr;
@@ -15707,11 +15951,181 @@ STDMETHODIMP CteDispatch::Reset(void)
 STDMETHODIMP CteDispatch::Clone(IEnumVARIANT **ppEnum)
 {
 	if (ppEnum) {
-		*ppEnum = new CteDispatch(m_pDispatch);
+		CteDispatch *pdisp = new CteDispatch(m_pDispatch, m_nMode);
+		pdisp->m_dispIdMember = m_dispIdMember;
+		pdisp->m_nMode = m_nMode;
+		*ppEnum = static_cast<IEnumVARIANT *>(pdisp);
 		return S_OK;
 	}
 	return E_POINTER;
 }
+
+//CteActiveScriptSite
+CteActiveScriptSite::CteActiveScriptSite(IUnknown *punk, IUnknown *pOnError)
+{
+	m_cRef = 1;
+	m_pDispatchEx = NULL;
+	m_pOnError = NULL;
+	if (punk) {
+		punk->QueryInterface(IID_PPV_ARGS(&m_pDispatchEx));
+	}
+	if (pOnError) {
+		pOnError->QueryInterface(IID_PPV_ARGS(&m_pOnError));
+	}
+}
+
+CteActiveScriptSite::~CteActiveScriptSite()
+{
+	m_pOnError && m_pOnError->Release();
+	m_pDispatchEx && m_pDispatchEx->Release();
+}
+
+STDMETHODIMP CteActiveScriptSite::QueryInterface(REFIID riid, void **ppvObject)
+{
+	*ppvObject = NULL;
+
+	if (IsEqualIID(riid, IID_IUnknown) || IsEqualIID(riid, IID_IActiveScriptSite)) {
+		*ppvObject = static_cast<IActiveScriptSite *>(this);
+	}
+	else if (IsEqualIID(riid, IID_IActiveScriptSiteWindow)) {
+		*ppvObject = static_cast<IActiveScriptSiteWindow *>(this);
+	}
+	else {
+		return E_NOINTERFACE;
+	}
+	AddRef();
+	return S_OK;
+}
+
+STDMETHODIMP_(ULONG) CteActiveScriptSite::AddRef()
+{
+	return ::InterlockedIncrement(&m_cRef);
+}
+
+STDMETHODIMP_(ULONG) CteActiveScriptSite::Release()
+{
+	if (::InterlockedDecrement(&m_cRef) == 0) {
+		delete this;
+		return 0;
+	}
+
+	return m_cRef;
+}
+
+STDMETHODIMP CteActiveScriptSite::GetLCID(LCID *plcid)
+{
+	return E_NOTIMPL;
+}
+
+STDMETHODIMP CteActiveScriptSite::GetItemInfo(LPCOLESTR pstrName,
+                   DWORD dwReturnMask,
+                   IUnknown **ppiunkItem,
+                   ITypeInfo **ppti)
+{
+	HRESULT hr = TYPE_E_ELEMENTNOTFOUND;
+	if (dwReturnMask & SCRIPTINFO_IUNKNOWN) {
+		if (m_pDispatchEx) {
+			BSTR bs = ::SysAllocString(pstrName);
+			DISPID dispid;
+			if (m_pDispatchEx->GetDispID(bs, 0, &dispid) == S_OK) {
+				DISPPARAMS noargs = { NULL, NULL, 0, 0 };
+				VARIANT v;
+				VariantInit(&v);
+				if (m_pDispatchEx->InvokeEx(dispid, LOCALE_USER_DEFAULT, DISPATCH_PROPERTYGET, &noargs, &v, NULL, NULL) == S_OK) {
+					if (FindUnknown(&v, ppiunkItem)) {
+						hr = S_OK;
+					}
+					else {
+						VariantClear(&v);
+					}
+				}
+			}
+			::SysFreeString(bs);
+		}
+		else if (g_pWebBrowser && lstrcmpi(pstrName, L"window") == 0) {
+			IDispatch *pdisp;
+			if (g_pWebBrowser->m_pWebBrowser->get_Document(&pdisp) == S_OK) {
+				IHTMLDocument2 *pdoc;
+				if SUCCEEDED(pdisp->QueryInterface(IID_PPV_ARGS(&pdoc))) {
+					IHTMLWindow2 *pwin;
+					if SUCCEEDED(pdoc->get_parentWindow(&pwin)) {
+						pwin->QueryInterface(IID_PPV_ARGS(ppiunkItem));
+						pwin->Release();
+					}
+					pdoc->Release();
+				}
+				pdisp->Release();
+			}
+			return S_OK;
+		}
+	}
+	return hr;
+}
+
+STDMETHODIMP CteActiveScriptSite::GetDocVersionString(BSTR *pbstrVersion)
+{
+	return E_NOTIMPL;
+}
+
+STDMETHODIMP CteActiveScriptSite::OnScriptError(IActiveScriptError *pscripterror)
+{
+	if (!pscripterror) {
+		return E_POINTER;
+	}
+	HRESULT hr = E_NOTIMPL;
+	if (m_pOnError) {
+		EXCEPINFO ei;
+		hr = pscripterror->GetExceptionInfo(&ei);
+		CteMemory *pei = new CteMemory(sizeof(EXCEPINFO), NULL, VT_NULL, 1, L"EXCEPINFO");
+		::CopyMemory(pei->m_pc, &ei, sizeof(EXCEPINFO));
+		VARIANTARG *pv = GetNewVARIANT(5);
+		teSetObject(&pv[4], pei);
+		pei->Release();
+		pv[3].vt = VT_BSTR;
+		if (pscripterror->GetSourceLineText(&pv[3].bstrVal) != S_OK) {
+			pv[3].bstrVal = NULL;
+		}
+		if (pscripterror->GetSourcePosition(&pv[2].ulVal, &pv[1].ulVal, &pv[0].lVal) == S_OK) {
+			pv[2].vt = VT_I4;
+			pv[1].vt = VT_I4;
+			pv[0].vt = VT_I4;
+		}
+		Invoke4(m_pOnError, NULL, 5, pv);
+	}
+	return hr;
+}
+
+STDMETHODIMP CteActiveScriptSite::OnStateChange(SCRIPTSTATE ssScriptState)
+{
+	return S_OK;
+}
+
+STDMETHODIMP CteActiveScriptSite::OnScriptTerminate(const VARIANT *pvarResult,const EXCEPINFO *pexcepinfo)
+{
+	return S_OK;
+}
+
+STDMETHODIMP CteActiveScriptSite::OnEnterScript(void)
+{
+	return S_OK;
+}
+
+STDMETHODIMP CteActiveScriptSite::OnLeaveScript(void)
+{
+	return S_OK;
+}
+
+STDMETHODIMP CteActiveScriptSite::GetWindow(HWND *phwnd)
+{
+	*phwnd = g_pWebBrowser->get_HWND();
+	return S_OK;
+}
+
+STDMETHODIMP CteActiveScriptSite::EnableModeless(BOOL fEnable)
+{
+	return E_NOTIMPL;
+}
+
 
 #ifdef _USE_TESTOBJECT
 //CteTest

@@ -3,7 +3,7 @@
 te.ClearEvents();
 var g_Bar = "";
 var Addon = 1;
-var Addons = {};
+var Addons = {"_stack": []};
 var Init = false;
 var OpenMode = SBSP_SAMEBROWSER;
 var ExtraMenus = {};
@@ -1130,7 +1130,7 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 					if (s && s.match(/^\tJScript\t|\tVBScript\t/i)) {
 						var ar = s.split("\t");
 						api.DeleteMenu(hSubMenu, 0, MF_BYPOSITION);
-						execScript(ar[2], ar[1]);
+						ExecScriptEx(Ctrl, ar[2], ar[1], hwnd);
 					}
 					window.g_menu_handle = lParam;
 					window.g_menu_pos = (wParam & 0xffff);
@@ -1377,7 +1377,6 @@ function ArrangeAddons()
 {
 	te.Data.Locations = te.Object();
 	window.IconSize = te.Data.Conf_IconSize;
-	var InstalledFolder = fso.GetParentFolderName(api.GetModuleFileName(null));
 	var xml = OpenXml("addons.xml", false, true);
 	te.Data.Addons = xml;
 	if (api.GetKeyState(VK_SHIFT) < 0 && api.GetKeyState(VK_CONTROL) < 0) {
@@ -1392,6 +1391,7 @@ function ArrangeAddons()
 	if (root) {
 		var items = root.childNodes;
 		if (items) {
+			var arError = [];
 			for (var i = 0; i < items.length; i++) {
 				var item = items[i];
 				var Id = item.nodeName;
@@ -1401,15 +1401,50 @@ function ArrangeAddons()
 						LoadLang2(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\" + Id + "\\lang\\" + GetLangId() + ".xml"));
 					}
 					if (Enabled & 8) {
-						document.write('<script type="text/vbscript" src="'+ fso.BuildPath(InstalledFolder, "addons") + "\\" + Id + '\\script.vbs" charset="UTF-8"></script>');
+						LoadAddon("vbs", Id, arError);
 					}
 					if (Enabled & 1) {
-						document.write('<script type="text/javascript" src="'+ fso.BuildPath(InstalledFolder, "addons") + "\\" + Id + '\\script.js" charset="UTF-8"></script>');
+						LoadAddon("js", Id, arError);
 					}
 					AddonId[Id] = true;
 				}
 			}
+			if (arError.length) {
+				setTimeout(function () {
+					wsh.Popup(arError.join("\n\n"), 9, TITLE, MB_ICONSTOP);
+				}, 500);
+			}
 		}
+	}
+}
+
+LoadAddon = function(ext, Addon_Id, arError)
+{
+	try {
+		var ado = te.CreateObject("Adodb.Stream");
+		ado.CharSet = "utf-8";
+		ado.Open();
+		var fname = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons") + "\\" + Addon_Id + "\\script." + ext;
+		ado.LoadFromFile(fname);
+		var s = ado.ReadText();
+		ado.Close();
+		if (api.strcmpi(ext, "js") == 0) {
+			(new Function(s))(Addon_Id);
+		}
+		else if (api.strcmpi(ext, "vbs") == 0) {
+			var fn = api.GetScriptDispatch(s, "VBScript", {"_Addon_Id": {"Addon_Id": Addon_Id}, window: window},
+				function (ei, SourceLineText, dwSourceContext, lLineNumber, CharacterPosition)
+				{
+					arError.push(api.SysAllocString(ei.bstrDescription) + "\n" + fname);
+				}
+			);
+			if (fn) {
+				Addons["_stack"].push(fn);
+			}
+		}
+	}
+	catch (e) {
+		arError.push(e.description + "\n" + fname);
 	}
 }
 

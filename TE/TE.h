@@ -18,6 +18,7 @@
 #include <propkey.h>
 #include <process.h>
 #include <Wincrypt.h>
+#include <ActivScp.h>
 
 using namespace Gdiplus;
 
@@ -203,6 +204,7 @@ typedef struct tagTEColumn
 const CLSID CLSID_ShellShellNameSpace = {0x2F2F1F96, 0x2BC1, 0x4b1c, { 0xBE, 0x28, 0xEA, 0x37, 0x74, 0xF4, 0x67, 0x6A}};
 //const CLSID CLSID_Explorer =            {0xC08AFD90, 0xF2A1, 0x11D1, { 0x84, 0x55, 0x00, 0xA0, 0xC9, 0x1F, 0x38, 0x80}};
 #endif
+const CLSID CLSID_JScriptChakra       = {0x16d51579, 0xa30b, 0x4c8b, { 0xa2, 0x76, 0x0f, 0xf4, 0xdc, 0x41, 0xe7, 0x55}}; 
 
 class CteShellBrowser;
 class CteTreeView;
@@ -685,11 +687,11 @@ public:
 public:
 	char	*m_pc;
 	int		m_nSize;
+	int		m_nCount;
 private:
 	LONG	m_cRef;
 	int		m_nAlloc;
 	int		m_nMode;
-	int		m_nCount;
 	BSTR	m_bsStruct;
 	BSTR	*m_ppbs;
 	int		m_nbs;
@@ -923,15 +925,47 @@ public:
 	STDMETHODIMP Reset(void);
 	STDMETHODIMP Clone(IEnumVARIANT **ppEnum);
 
-	CteDispatch(IDispatch *pDispatch);
+	CteDispatch(IDispatch *pDispatch, int nMode);
 	~CteDispatch();
 
 	DISPID		m_dispIdMember;
 	int			m_nIndex;
-	BOOL		m_bVB;
+	IActiveScript *m_pActiveScript;
 private:
 	LONG		m_cRef;
 	IDispatch	*m_pDispatch;
+	int			m_nMode;//0: Clone 1:collection 2:ScriptDispatch
+};
+
+class CteActiveScriptSite : public IActiveScriptSite, public IActiveScriptSiteWindow
+{
+public:
+	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
+	STDMETHODIMP_(ULONG) AddRef();
+	STDMETHODIMP_(ULONG) Release();
+
+	CteActiveScriptSite(IUnknown *punk, IUnknown *pOnError);
+	~CteActiveScriptSite();
+	//ActiveScriptSite
+	STDMETHODIMP GetLCID(LCID *plcid);
+	STDMETHODIMP GetItemInfo(LPCOLESTR pstrName,
+                           DWORD dwReturnMask,
+                           IUnknown **ppiunkItem,
+                           ITypeInfo **ppti);
+	STDMETHODIMP GetDocVersionString(BSTR *pbstrVersion);
+	STDMETHODIMP OnScriptError(IActiveScriptError *pscripterror);
+	STDMETHODIMP OnStateChange(SCRIPTSTATE ssScriptState);
+	STDMETHODIMP OnScriptTerminate(const VARIANT *pvarResult,const EXCEPINFO *pexcepinfo);
+	STDMETHODIMP OnEnterScript(void);
+	STDMETHODIMP OnLeaveScript(void);
+	//IActiveScriptSiteWindow
+	STDMETHODIMP GetWindow(HWND *phwnd);
+	STDMETHODIMP EnableModeless(BOOL fEnable);
+
+public:
+	LONG		m_cRef;
+	IDispatchEx	*m_pDispatchEx;
+	IDispatch *m_pOnError;
 };
 
 #ifdef _USE_TESTOBJECT
