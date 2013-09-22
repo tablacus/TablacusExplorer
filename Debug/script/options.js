@@ -9,7 +9,6 @@ var g_MenuType = null;
 var g_dlgAddons;
 var g_tdDown;
 var g_bDrag;
-var g_nFind = 0;
 var g_pt = {x: 0, y: 0};
 var g_Gesture;
 
@@ -1764,39 +1763,3 @@ ShowIcon = function ()
 	}
 }
 
-FindText = function (s)
-{
-	if (s) {
-		var bFound = true;
-		var rng = document.body.createTextRange();
-
-		while (bFound) {
-			for (var i = 0; i <= g_nFind && (bFound = rng.findText(s)) != false; i++) {
-				rng.moveStart("character", 1);
-				rng.moveEnd("textedit");
-			}
-			if (bFound) {
-				rng.moveStart("character", -1);
-				rng.findText(s);
-				try {
-					rng.select();
-					bFound = false;
-				} catch (e) {}
-				rng.scrollIntoView();
-				g_nFind++;
-			}
-			else {
-				g_nFind = 0;
-			}
-		}
-	}
-}
-
-FindKeyEvent = function (o)
-{
-	if (event.keyCode == 13) {
-		FindText(o.value);
-		return false;
-	}
-	g_nFind = 0;
-}

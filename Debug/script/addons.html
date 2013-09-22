@@ -15,8 +15,9 @@
   <body>
     <div id="bar">
       <form name="F" style="display: inline" onsubmit="AddonsSearch(); return false">
-        <input type="text" name="q" style="width: 400px" />
-        <input type="button" name="b" value="Search" onclick="AddonsSearch()" />
+        <input type="text" name="q" style="width: 400px" onkeydown="FindKeyEvent(this)" />
+        <input type="button" value="Search" onclick="FindText(document.F.q.value)" />
+        <input type="button" name="b" value="Filter" onclick="AddonsSearch()" />
       </form>
     </div>
     <div class="panel" id="panel0" style="display: block; width: 100%">

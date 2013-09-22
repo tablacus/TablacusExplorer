@@ -16,6 +16,7 @@ var g_dlgOptions;
 var eventTE = {};
 var g_ptDrag = api.Memory("POINT");
 var objHover = null;
+var g_nFind = 0;
 
 FolderMenu = 
 {
@@ -1125,6 +1126,15 @@ AddEvent("ReplaceMacro", [/%Installed%/ig, function(Ctrl)
 	return fso.GetDriveName(api.GetModuleFileName(null));
 }]);
 
+PathMatchEx = function (path, s)
+{
+	if (s.charAt(0) != '/') {
+		return api.PathMatchSpec(path, s);
+	}
+	var i = s.lastIndexOf("/");
+	return (i > 1 && path.match(new RegExp(s.substr(1, i - 1), s.substr(i + 1))));
+}
+
 OpenMenu = function (items, SelItem)
 {
 	var arMenu;
@@ -1153,17 +1163,8 @@ OpenMenu = function (items, SelItem)
 	var i = items.length;
 	while (--i >= 0) {
 		if (SelItem) {
-			var s = items[i].getAttribute("Filter");
-			if (s.charAt(0) != '/') {
-				if (api.PathMatchSpec(path, s)) {
-					arMenu.unshift(i);
-				}
-			}
-			else {
-				var j = s.lastIndexOf("/");
-				if (j > 1 && path.match(new RegExp(s.substr(1, j - 1), s.substr(j + 1)))) {
-					arMenu.unshift(i);
-				}
+			if (PathMatchEx(path, items[i].getAttribute("Filter"))) {
+				arMenu.unshift(i);
 			}
 		}
 		else if (items[i].getAttribute("Filter") == "") {
@@ -1309,6 +1310,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 								mii.fMask  = MIIM_SUBMENU;
 								var s = api.GetMenuString(hMenu2, i, MF_BYPOSITION);
 								if (s) {
+									s = s.replace(/[&\\(\\)]/g, "");
 									api.GetMenuItemInfo(hMenu2, i, true, mii);
 									oMenu2[s] = mii.hSubMenu;
 								}
@@ -1466,6 +1468,7 @@ MenuDbInit = function (hMenu, oMenu, oMenu2)
 		var s = api.GetMenuString(hMenu, i, MF_BYPOSITION);
 		api.GetMenuItemInfo(hMenu, i, true, mii);
 		if (s) {
+			s = s.replace(/[&\\(\\)]/g, "");
 			oMenu[s] = mii;
 			if (s.match(/[^\t]+(\t.*)/)) {
 				oMenu[RegExp.$1] = mii;
@@ -1483,18 +1486,24 @@ MenuDbInit = function (hMenu, oMenu, oMenu2)
 
 MenuDbReplace = function (hMenu, oMenu, hMenu2)
 {
-	var mii;
 	var nCount = api.GetMenuItemCount(hMenu2);
 	for (var i = 0; i < nCount; i++) {
 		var s = api.GetMenuString(hMenu2, 0, MF_BYPOSITION);
+		var mii = null;
+		var s2 = null;
 		if (s) {
-			mii = oMenu[s] || oMenu[s.replace(/\t.*/, "")];
+			s2 = s.replace(/[&\\(\\)]/g, "");
+			mii = oMenu[s2];
+			if (!mii) {
+				s2 = s.replace(/\t.*/, "");
+				mii = oMenu[s2];
+			}
 		}
 		if (mii) {
 			api.DeleteMenu(hMenu2, 0, MF_BYPOSITION);
 		}
 		else {
-			delete oMenu[s];
+			delete oMenu[s2];
 			mii = api.Memory("MENUITEMINFO");
 			mii.cbSize = mii.Size;
 			mii.fMask = MIIM_ID | MIIM_BITMAP | MIIM_SUBMENU | MIIM_DATA | MIIM_FTYPE | MIIM_STATE;
@@ -1832,8 +1841,11 @@ createHttpRequest = function ()
 	}
 }
 
-InputDialog = function (text, defaultText)
+InputDialog = function (text, defaultText, title)
 {
+	if (title) {
+		text = title + "\n\n" + text;
+	}
 	return prompt(text, defaultText);
 }
 
@@ -2359,3 +2371,39 @@ RegEnumKey = function(hKey, Name)
 	return [];
 }
 
+FindText = function (s)
+{
+	if (s) {
+		var bFound = true;
+		var rng = document.body.createTextRange();
+
+		while (bFound) {
+			for (var i = 0; i <= g_nFind && (bFound = rng.findText(s)) != false; i++) {
+				rng.moveStart("character", 1);
+				rng.moveEnd("textedit");
+			}
+			if (bFound) {
+				rng.moveStart("character", -1);
+				rng.findText(s);
+				try {
+					rng.select();
+					bFound = false;
+				} catch (e) {}
+				rng.scrollIntoView();
+				g_nFind++;
+			}
+			else {
+				g_nFind = 0;
+			}
+		}
+	}
+}
+
+FindKeyEvent = function (o)
+{
+	if (event.keyCode == 13) {
+		FindText(o.value);
+		return false;
+	}
+	g_nFind = 0;
+}

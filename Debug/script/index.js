@@ -1893,7 +1893,7 @@ g_basic =
 						var TC = FV.Parent;
 						var nIndex = FV.Index;
 						for (var i = TC.Count; --i > nIndex;) {
-							TC.Item(i).Close();
+							TC[i].Close();
 						}
 					}
 				},
@@ -2222,6 +2222,11 @@ AddEvent("AddType", function (arFunc)
 		arFunc.push(i);
 	}
 });
+
+AddType = function (strType, o)
+{
+	g_basic.Func[strType] = o;
+};
 
 AddTypeEx = function (strType, strTitle, fn)
 {

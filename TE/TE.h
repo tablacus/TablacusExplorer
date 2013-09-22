@@ -48,6 +48,7 @@ typedef VOID (WINAPI * LPFNSHRunDialog)(HWND hwnd, HICON hIcon, LPWSTR pszPath, 
 
 //XP or higher.
 typedef BOOL (WINAPI * LPFNCryptBinaryToStringW)(__in_bcount(cbBinary) CONST BYTE *pbBinary, __in DWORD cbBinary, __in DWORD dwFlags, __out_ecount_part_opt(*pcchString, *pcchString) LPWSTR pszString, __inout DWORD *pcchString);
+typedef HRESULT (WINAPI * LPFNSHParseDisplayName)(LPCWSTR pszName, IBindCtx *pbc, PIDLIST_ABSOLUTE *ppidl, SFGAOF sfgaoIn, SFGAOF *psfgaoOut);
 
 //XP SP1 or higher.
 typedef BOOL (WINAPI * LPFNSetDllDirectoryW)(__in_opt LPCWSTR lpPathName);
@@ -200,6 +201,21 @@ typedef struct tagTEColumn
 	int		nWidth;
 } TEColumn;
 
+typedef struct tagTEInvoke
+{
+	IDispatch *pdisp;
+	DISPID dispid;
+	int	cArgs;
+	VARIANT *pv;
+	PVOID	pResult;
+} TEInvoke, *lpTEInvoke;
+
+typedef struct tagTEBrowse
+{
+	int	nSB;
+	LPITEMIDLIST pidl;
+} TEBrowse, *lpTEBrowse;
+
 #ifdef _2000XP
 const CLSID CLSID_ShellShellNameSpace = {0x2F2F1F96, 0x2BC1, 0x4b1c, { 0xBE, 0x28, 0xEA, 0x37, 0x74, 0xF4, 0x67, 0x6A}};
 //const CLSID CLSID_Explorer =            {0xC08AFD90, 0xF2A1, 0x11D1, { 0x84, 0x55, 0x00, 0xA0, 0xC9, 0x1F, 0x38, 0x80}};
@@ -252,11 +268,9 @@ public:
 	HRESULT GetAttibute(VARIANT_BOOL *pb, DWORD dwFlag);
 
 	VARIANT			m_v;
+	LPITEMIDLIST	m_pidl;
 private:
 	LONG			m_cRef;
-	LPITEMIDLIST	m_pidl;
-	DWORD			m_dwTick;
-
 };
 
 class CteFolderItems : public FolderItems, public IDispatchEx, public IDataObject
@@ -598,8 +612,9 @@ public:
 	VOID Close(BOOL bForce);
 	VOID DestroyView(int nFlags);
 	HWND GetListHandle(HWND *hList);
+	BOOL Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItems *pFolderItems, LPITEMIDLIST pidlPrevius);
+	HRESULT Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *param, FolderItems *pFolderItems, LPITEMIDLIST pidlPrevius);
 	HRESULT Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *param, CteShellBrowser **ppSB, FolderItems *pFolderItems);
-	HRESULT Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *param, CteShellBrowser **ppSB, FolderItems *pFolderItems, LPITEMIDLIST pidlFocus);
 	void InitializeMenuItem(HMENU hmenu, LPTSTR lpszItemName, int nId, HMENU hmenuSub);
 	VOID GetSort(BSTR* pbs);
 	VOID SetSort(BSTR bs);
@@ -607,7 +622,7 @@ public:
 	HRESULT CreateViewWindowEx(IShellView *pPreviusView);
 	BSTR GetColumnsStr();
 	VOID GetDefaultColumns();
-	BOOL GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, FolderItem *pid, UINT wFlags);
+	BOOL GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, FolderItem *pid, UINT wFlags, FolderItems *pFolderItems, LPITEMIDLIST pidlPrevius);
 	VOID EBNavigate();
 	VOID SetHistory(FolderItems *pFolderItems, UINT wFlags);
 	VOID GetVariantPath(FolderItem **ppFolderItem, FolderItems **ppFolderItems, VARIANT *pv);
