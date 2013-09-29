@@ -38,10 +38,16 @@ ChangeView = function (Ctrl)
 {
 	te.Data.bSaveConfig = true;
 	ChangeTabName(Ctrl);
-	if (Ctrl.hwndView) {
-		for (var i in eventTE.ChangeView) {
-			eventTE.ChangeView[i](Ctrl);
-		}
+	if (Ctrl.Data.bSuspend) {
+		Ctrl.Data.bSuspend = false;
+		setTimeout(function () {
+			if (Ctrl.Items && Ctrl.Items.Count == 0) {
+				Ctrl.Refresh();
+			}
+		}, 500);
+	}
+	for (var i in eventTE.ChangeView) {
+		eventTE.ChangeView[i](Ctrl);
 	}
 }
 
@@ -493,7 +499,7 @@ EnableDragDrop = function ()
 DisableImage = function (img, bDisable)
 {
 	if (img) {
-		if (api.LowPart(document.documentMode) < 10) {
+		if (api.QuadPart(document.documentMode) < 10) {
 			img.style.filter = bDisable ? "gray(); alpha(style=0,opacity=48);": "";
 		}
 		else {
@@ -1104,8 +1110,13 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 		{
 			var cFV = te.Ctrls(CTRL_FV);
 			for (var i in cFV) {
-				if (cFV[i].Items && cFV[i].Items.Count == 0) {
-					cFV[i].Refresh();
+				if (api.PathIsNetworkPath(cFV[i].Path)) {
+					if (cFV[i].Items && cFV[i].Items.Count == 0) {
+						cFV[i].Refresh();
+					}
+					else {
+						cFV[i].Data.bSuspend = true;
+					}
 				}
 			}
 		}, 500);
@@ -1228,8 +1239,8 @@ te.OnArrange = function (Ctrl, rc)
 		var w2 = 0;
 		var x = '';
 		for (i = 0; i <= 1; i++) {
-			w1 += api.LowPart(document.getElementById("Inner" + x + "Left_" + Ctrl.Id).style.width.replace(/\D/g, ""));
-			w2 += api.LowPart(document.getElementById("Inner" + x + "Right_" + Ctrl.Id).style.width.replace(/\D/g, ""));
+			w1 += api.QuadPart(document.getElementById("Inner" + x + "Left_" + Ctrl.Id).style.width.replace(/\D/g, ""));
+			w2 += api.QuadPart(document.getElementById("Inner" + x + "Right_" + Ctrl.Id).style.width.replace(/\D/g, ""));
 			x = '2';
 		}
 		rc.Left += w1;
@@ -1260,6 +1271,9 @@ te.OnVisibleChanged = function (Ctrl)
 		}
 		if (Ctrl.Visible && Ctrl.SelectedIndex >= 0) {
 			ChangeView(Ctrl.Selected);
+			for (var i = Ctrl.Count; i--;) {
+				ChangeTabName(Ctrl.Item(i))
+			}
 		}
 	}
 	for (var i in eventTE.VisibleChanged) {
@@ -1396,7 +1410,7 @@ function ArrangeAddons()
 				var item = items[i];
 				var Id = item.nodeName;
 				if (!AddonId[Id]) {
-					var Enabled = api.LowPart(item.getAttribute("Enabled"));
+					var Enabled = api.QuadPart(item.getAttribute("Enabled"));
 					if (Enabled & 6) {
 						LoadLang2(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\" + Id + "\\lang\\" + GetLangId() + ".xml"));
 					}

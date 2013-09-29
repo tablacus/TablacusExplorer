@@ -69,8 +69,6 @@ typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
 #define MAX_FV					1024
 #define MAX_PATHEX				32768
 
-#define TEM_BrowseObject		WM_APP - 1
-
 #define TET_Create				1
 #define TET_Reload				2
 #define TET_Size				3
@@ -210,12 +208,6 @@ typedef struct tagTEInvoke
 	PVOID	pResult;
 } TEInvoke, *lpTEInvoke;
 
-typedef struct tagTEBrowse
-{
-	int	nSB;
-	LPITEMIDLIST pidl;
-} TEBrowse, *lpTEBrowse;
-
 #ifdef _2000XP
 const CLSID CLSID_ShellShellNameSpace = {0x2F2F1F96, 0x2BC1, 0x4b1c, { 0xBE, 0x28, 0xEA, 0x37, 0x74, 0xF4, 0x67, 0x6A}};
 //const CLSID CLSID_Explorer =            {0xC08AFD90, 0xF2A1, 0x11D1, { 0x84, 0x55, 0x00, 0xA0, 0xC9, 0x1F, 0x38, 0x80}};
@@ -260,15 +252,18 @@ public:
     STDMETHODIMP get_Type(BSTR *pbs);
     STDMETHODIMP Verbs(FolderItemVerbs **ppfic);
     STDMETHODIMP InvokeVerb(VARIANT vVerb);
-
+/*	//FolderItem2
+    STDMETHODIMP InvokeVerbEx(VARIANT vVerb, VARIANT vArgs);
+	STDMETHODIMP ExtendedProperty(BSTR bstrPropName, VARIANT *pvRet);
+*/
 	CteFolderItem(VARIANT *pv);
 	~CteFolderItem();
 	LPITEMIDLIST GetPidl();
-	HRESULT GetFolderItem(FolderItem **ppid);
-	HRESULT GetAttibute(VARIANT_BOOL *pb, DWORD dwFlag);
+	BOOL GetFolderItem();
 
 	VARIANT			m_v;
 	LPITEMIDLIST	m_pidl;
+	FolderItem		*m_pFolderItem;
 private:
 	LONG			m_cRef;
 };
@@ -512,7 +507,6 @@ class CteShellBrowser : public IShellBrowser, public ICommDlgBrowser2,
 	public IShellFolder2, public IShellFolderViewCB,
 #endif
 	public IDropTarget, public IPersistFolder2
-//	public IOleInPlaceFrame
 {
 public:
 	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
@@ -602,12 +596,18 @@ public:
     STDMETHODIMP Initialize(PCIDLIST_ABSOLUTE pidl);
 	//IPersistFolder2
     STDMETHODIMP GetCurFolder(PIDLIST_ABSOLUTE *ppidl);
-
+/*	//IContextMenu
+	STDMETHODIMP QueryContextMenu(HMENU hmenu, UINT indexMenu, UINT idCmdFirst, UINT idCmdLast, UINT uFlags);
+	STDMETHODIMP GetCommandString(UINT_PTR idCmd, UINT uFlags, UINT *pwReserved, LPSTR pszName, UINT cchMax);
+	STDMETHODIMP InvokeCommand(LPCMINVOKECOMMANDINFO pici);
+*/
 	CteShellBrowser(CteTabs *pTabs);
 	~CteShellBrowser();
 
 	void Init(CteTabs *pTabs, BOOL bNew);
 	void Show(BOOL bShow);
+	VOID SetPropEx();
+	VOID ResetPropEx();
 	int GetTabIndex();
 	VOID Close(BOOL bForce);
 	VOID DestroyView(int nFlags);
@@ -615,6 +615,7 @@ public:
 	BOOL Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItems *pFolderItems, LPITEMIDLIST pidlPrevius);
 	HRESULT Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *param, FolderItems *pFolderItems, LPITEMIDLIST pidlPrevius);
 	HRESULT Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *param, CteShellBrowser **ppSB, FolderItems *pFolderItems);
+	HRESULT OnBeforeNavigate(FolderItem *pPrevius, UINT wFlags);
 	void InitializeMenuItem(HMENU hmenu, LPTSTR lpszItemName, int nId, HMENU hmenuSub);
 	VOID GetSort(BSTR* pbs);
 	VOID SetSort(BSTR bs);
@@ -630,13 +631,16 @@ public:
 	VOID Error(int *pnDog);
 	VOID Refresh();
 public:
-	BOOL		m_bEmpty, m_bInit, m_bNoRowSelect;
+	BOOL		m_bEmpty, m_bInit;
+	BOOL		m_bNoRowSelect;
 	BOOL		m_bVisible;
 	DWORD		m_nOpenedType;
 	HWND		m_hwnd;
+	HWND		m_hwndDV;
+	HWND		m_hwndLV;
 	CteTabs		*m_pTabs;
 	CteTreeView	*m_pTV;
-	LONG_PTR	m_DefProc[2];
+	LONG_PTR	m_DefProc;
 	IShellView  *m_pShellView;
 	int			m_nSB;
 	DWORD		m_param[SB_Count];
@@ -648,6 +652,7 @@ public:
 	FolderItem *m_pFolderItem;
 	int			m_nUnload;
 	IExplorerBrowser *m_pExplorerBrowser;
+	IServiceProvider *m_pServiceProvider;
 private:
 	LONG		m_cRef;
 	VARIANT m_Data;
@@ -730,6 +735,7 @@ public:
 	IContextMenu *m_pContextMenu;
 	IContextMenu2 *m_pContextMenu2;
 	IContextMenu3 *m_pContextMenu3;
+	CteShellBrowser *m_pShellBrowser;
 private:
 	LONG	m_cRef;
 	IDataObject *m_pDataObj;
@@ -755,7 +761,7 @@ private:
 	LPITEMIDLIST m_pidl;
 };
 
-class CteTreeView : public IDispatch, /*public IContextMenu,*/
+class CteTreeView : public IDispatch,
 #ifdef _VISTA7
 	public INameSpaceTreeControlEvents,
 #endif
@@ -816,10 +822,6 @@ public:
 	STDMETHODIMP DeactivateAndUndo();
 	STDMETHODIMP OnPosRectChange(LPCRECT lprcPosRect);
 #endif
-	//IContextMenu
-/*	STDMETHODIMP QueryContextMenu(HMENU hmenu, UINT indexMenu, UINT idCmdFirst, UINT idCmdLast, UINT uFlags);
-	STDMETHODIMP GetCommandString(UINT_PTR idCmd, UINT uFlags, UINT *pwReserved, LPSTR pszName, UINT cchMax);
-	STDMETHODIMP InvokeCommand(LPCMINVOKECOMMANDINFO pici);*/
 	//IDropTarget
 	STDMETHODIMP DragEnter(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
 	STDMETHODIMP DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
@@ -841,7 +843,8 @@ public:
 	HWND GetParentWindow();
 public:
 	BOOL		m_bSetRoot;
-	HWND             m_hwnd;
+	HWND        m_hwnd;
+	HWND        m_hwndTV;
 	INameSpaceTreeControl	*m_pNameSpaceTreeControl;
 	IShellNameSpace *m_pShellNameSpace;
 	CteShellBrowser	*m_pFV;

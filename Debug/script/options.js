@@ -374,20 +374,24 @@ function SetFolderViews()
 			SetFolderView(cFV.Item(i));
 		}
 	}
+	FV = te.Ctrl(CTRL_FV);
+	if (FV) {
+		FV.CurrentViewMode = document.F.View_ViewMode.value;
+	}
 }
 
 function SetFolderView(FV)
 {
 	if (FV) {
-		FV.Type = document.F.View_Type.value;
 		FV.FolderFlags = document.F.View_fFlags.value;
 		FV.Options = document.F.View_Options.value;
 		FV.ViewFlags = document.F.View_ViewFlags.value;
-		FV.Navigate(FV.FolderItem, SBSP_SAMEBROWSER);
-	}
-	FV = te.Ctrl(CTRL_FV);
-	if (FV) {
-		FV.CurrentViewMode = document.F.View_ViewMode.value;
+		if (FV.Type != document.F.View_Type.value) {
+			FV.Type = document.F.View_Type.value;
+		}
+		else {
+			FV.Refresh();
+		}
 	}
 }
 

@@ -306,20 +306,8 @@ function ApplyLang(doc)
 
 	setTimeout(function ()
 	{
-		var hwnd = 0;
-		do {
-			hwnd = api.FindWindowEx(null, hwnd, "Internet Explorer_TridentDlgFrame", null);
-			if (hwnd) {
-				var hwnd2 = hwnd;
-				do {
-					hwnd2 = api.GetWindow(hwnd2, GW_OWNER);
-					if (te.hwnd == hwnd2) {
-						api.SetWindowText(hwnd, GetText(api.GetWindowText(hwnd).replace(/ \-\- .*$/, "")));
-						break;
-					}
-				} while (hwnd2);
-			}
-		} while (hwnd);
+		var hwnd = api.GetParent(api.GetWindow(doc));
+		api.SetWindowText(hwnd, GetText(api.GetWindowText(hwnd).replace(/ \-+ .*$/, "")));
 	}, 500);
 }
 
@@ -402,7 +390,7 @@ function MakeImgData(src, index, h, strBitmap, strIcon)
 		var icon = value.split(",");
 		var hModule = LoadImgDll(icon, index);
 		if (hModule) {
-			var himl = api.ImageList_LoadImage(hModule, isFinite(icon[index * 4 + 1]) ? api.LowPart(icon[index * 4 + 1]) : icon[index * 4 + 1], icon[index * 4 + 2], 0, CLR_DEFAULT, IMAGE_BITMAP, LR_CREATEDIBSECTION);
+			var himl = api.ImageList_LoadImage(hModule, isFinite(icon[index * 4 + 1]) ? api.QuadPart(icon[index * 4 + 1]) : icon[index * 4 + 1], icon[index * 4 + 2], 0, CLR_DEFAULT, IMAGE_BITMAP, LR_CREATEDIBSECTION);
 			if (himl) {
 				var hIcon = api.ImageList_GetIcon(himl, icon[index * 4 + 3], ILD_NORMAL);
 				if (hIcon) {
@@ -516,7 +504,7 @@ LoadXml = function (filename)
 		switch(item.getAttribute("Type") - 0) {
 			case CTRL_TC:
 				var TC = te.CreateCtrl(CTRL_TC, item.getAttribute("Left"), item.getAttribute("Top"), item.getAttribute("Width"), item.getAttribute("Height"), item.getAttribute("Style"), item.getAttribute("Align"), item.getAttribute("TabWidth"), item.getAttribute("TabHeight"));
-				TC.Data.Group = api.LowPart(item.getAttribute("Group"));
+				TC.Data.Group = api.QuadPart(item.getAttribute("Group"));
 				var tabs = item.getElementsByTagName('Ctrl');
 				for (var i2 = 0; i2 < tabs.length; i2++) {
 					var tab = tabs[i2];
@@ -531,12 +519,11 @@ LoadXml = function (filename)
 						Path.Index = tab.getAttribute("LogIndex");
 					}
 					var FV = TC.Selected.Navigate2(Path, SBSP_NEWBROWSER, tab.getAttribute("Type"), tab.getAttribute("ViewMode"), tab.getAttribute("FolderFlags"), tab.getAttribute("Options"), tab.getAttribute("ViewFlags"), tab.getAttribute("IconSize"), tab.getAttribute("Align"), tab.getAttribute("Width"), tab.getAttribute("Flags"), tab.getAttribute("EnumFlags"), tab.getAttribute("RootStyle"), tab.getAttribute("Root"));
-					ChangeTabName(FV);
-					FV.Data.Lock = api.LowPart(tab.getAttribute("Lock")) != 0;
+					FV.Data.Lock = api.QuadPart(tab.getAttribute("Lock")) != 0;
 					Lock(TC, i2, false);
 				}
 				TC.SelectedIndex = item.getAttribute("SelectedIndex");
-				TC.Visible = api.LowPart(item.getAttribute("Visible"));
+				TC.Visible = api.QuadPart(item.getAttribute("Visible"));
 				break;
 		}
 	}
@@ -580,8 +567,8 @@ SaveXml = function (filename, all)
 		item.setAttribute("TabWidth", Ctrl.TabWidth);
 		item.setAttribute("TabHeight", Ctrl.TabHeight);
 		item.setAttribute("SelectedIndex", Ctrl.SelectedIndex);
-		item.setAttribute("Visible", api.LowPart(Ctrl.Visible));
-		item.setAttribute("Group", api.LowPart(Ctrl.Data.Group));
+		item.setAttribute("Visible", api.QuadPart(Ctrl.Visible));
+		item.setAttribute("Group", api.QuadPart(Ctrl.Data.Group));
 
 		var bEmpty = true;
 		var nCount2 = Ctrl.Count;
@@ -601,7 +588,7 @@ SaveXml = function (filename, all)
 				item2.setAttribute("IconSize", FV.IconSize);
 				item2.setAttribute("Options", FV.Options);
 				item2.setAttribute("ViewFlags", FV.ViewFlags);
-				item2.setAttribute("Lock", api.LowPart(FV.Data.Lock));
+				item2.setAttribute("Lock", api.QuadPart(FV.Data.Lock));
 				var TV = FV.TreeView;
 				if (TV) {
 					item2.setAttribute("Align", FV.TreeView.Align);
@@ -1237,6 +1224,9 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 		else {
 			SelItem = FV.FolderItem;
 		}
+		try {
+			wsh.CurrentDirectory = FV.FolderItem.Path;
+		} catch (e) {}
 	}
 	ExtraMenuCommand = [];
 	var arMenu;
@@ -1246,7 +1236,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 		if (arMenu.length) {
 			item = items[arMenu[0]];
 		}
-		var nBase = api.LowPart(menus[0].getAttribute("Base"));
+		var nBase = api.QuadPart(menus[0].getAttribute("Base"));
 		if (arMenu.length > 1 || nBase != 1) {
 			var hMenu;
 			var ContextMenu = null;
@@ -1470,9 +1460,6 @@ MenuDbInit = function (hMenu, oMenu, oMenu2)
 		if (s) {
 			s = s.replace(/[&\\(\\)]/g, "");
 			oMenu[s] = mii;
-			if (s.match(/[^\t]+(\t.*)/)) {
-				oMenu[RegExp.$1] = mii;
-			}
 			api.RemoveMenu(hMenu, i, MF_BYPOSITION);
 			if (oMenu2 && mii.hSubMenu && !oMenu2[s]) {
 				MenuDbInit(mii.hSubMenu, oMenu, null)
@@ -1748,7 +1735,7 @@ function CheckUpdate()
 	s = s.replace(/Download/i, "").replace(/<[^>]*>/ig, "");
 	var ver = 0;
 	if (file.match(/(\d+)/)) {
-		ver = 20000000 + api.LowPart(RegExp.$1)
+		ver = 20000000 + api.QuadPart(RegExp.$1)
 	}
 	if (ver <= te.Version) {
 		wsh.Popup(te.About + "\n" + GetText("the latest version"), 0, TITLE, MB_ICONINFORMATION);
@@ -1761,7 +1748,7 @@ function CheckUpdate()
 	if (!IsExists(temp)) {
 		CreateFolder(temp);
 	}
-	api.SetCurrentDirectory(temp);
+	wsh.CurrentDirectory = temp;
 	var InstalledFolder = fso.GetParentFolderName(api.GetModuleFileName(null));
 	var zipfile = fso.BuildPath(temp, file);
 	temp += "\\explorer";
@@ -1919,7 +1906,7 @@ function CalcVersion(s)
 {
 	var r = 0;
 	if (s.match(/(\d+)\.(\d+)\.(\d+)/)) {
-		r =  api.LowPart(RegExp.$1) * 10000 + api.LowPart(RegExp.$2) * 100 + api.LowPart(RegExp.$3);
+		r =  api.QuadPart(RegExp.$1) * 10000 + api.QuadPart(RegExp.$2) * 100 + api.QuadPart(RegExp.$3);
 	}
 	if (r < 2000 * 10000) {
 		r += 2000 * 10000;
@@ -1978,7 +1965,7 @@ GetAddonOption = function (strAddon, strTag)
 
 GetAddonOptionEx = function (strAddon, strTag)
 {
-	return api.LowPart(GetAddonOption (strAddon, strTag));
+	return api.QuadPart(GetAddonOption (strAddon, strTag));
 }
 
 GetInnerFV = function (id)
