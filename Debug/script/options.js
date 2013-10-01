@@ -692,7 +692,7 @@ function LoadMenus(nSelected)
 	}
 }
 
-function LoadX(mode)
+function LoadX(mode, fn)
 {
 	if (!g_x[mode]) {
 		setTimeout(function ()
@@ -754,6 +754,7 @@ function LoadX(mode)
 				}
 				xml = null;
 			}
+			fn && fn();
 		}, 100);
 	}
 }

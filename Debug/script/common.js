@@ -1836,7 +1836,7 @@ InputDialog = function (text, defaultText, title)
 	return prompt(text, defaultText);
 }
 
-AddonOptions = function (Id, fn)
+AddonOptions = function (Id, fn, Data)
 {
 	LoadLang2(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\" + Id + "\\lang\\" + GetLangId() + ".xml"));
 	var items = te.Data.Addons.getElementsByTagName(Id);
@@ -1848,7 +1848,10 @@ AddonOptions = function (Id, fn)
 	}
 	var info = GetAddonInfo(Id);
 	var sURL = "../addons/" + Id + "/options.html";
-	var Data = {id: Id};
+	if (!Data) {
+		Data = {};
+	}
+	Data.id = Id;
 	var sFeatures = info.Options;
 	if (sFeatures.match(/Common:([\d,]+):(\d)/i)) {
 		sURL = "location.html";

@@ -2132,7 +2132,7 @@ g_basic =
 				return g_basic.Popup(g_basic.Func.Options.List, s, pt);
 			},
 
-			List: ["General", "Add-ons", "Menus", "Tabs", "Tree", "List", "Init"]
+			List: ["General", "Add-ons", "Menus", "Tabs", "Tree", "List"]
 		},
 		"Add-ons":
 		{
