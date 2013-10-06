@@ -53,8 +53,14 @@ typedef HRESULT (WINAPI * LPFNSHParseDisplayName)(LPCWSTR pszName, IBindCtx *pbc
 //XP SP1 or higher.
 typedef BOOL (WINAPI * LPFNSetDllDirectoryW)(__in_opt LPCWSTR lpPathName);
 
+//XP SP2 or higher.
+typedef HRESULT (STDAPICALLTYPE * LPFNPSPropertyKeyFromString)(__in LPCWSTR pszString,  __out PROPERTYKEY *pkey);
+typedef HRESULT (STDAPICALLTYPE * LPFNPSGetPropertyKeyFromName)(__in PCWSTR pszName, __out PROPERTYKEY *ppropkey);
+typedef HRESULT (STDAPICALLTYPE * LPFNPSGetPropertyDescription)(__in REFPROPERTYKEY propkey, __in REFIID riid,  __deref_out void **ppv);
+
 //Vista or higher.
 typedef HRESULT (STDAPICALLTYPE * LPFNSHCreateItemFromIDList)(__in PCIDLIST_ABSOLUTE pidl, __in REFIID riid, __deref_out void **ppv);
+//typedef HRESULT (STDAPICALLTYPE * LPFNPSFormatForDisplayAlloc)(__in REFPROPERTYKEY key, __in REFPROPVARIANT propvar, __in PROPDESC_FORMAT_FLAGS pdff, __deref_out PWSTR *ppszDisplay);
 //typedef BOOL (WINAPI * LPFNChangeWindowMessageFilter)(UINT message, DWORD dwFlag);
 
 //Tablacus DLL Add-ons
@@ -68,7 +74,7 @@ typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
 #define MAX_TC					128
 #define MAX_FV					1024
 #define MAX_PATHEX				32768
-
+#define MAX_PROP				4096
 #define TET_Create				1
 #define TET_Reload				2
 #define TET_Size				3

@@ -38,14 +38,6 @@ ChangeView = function (Ctrl)
 {
 	te.Data.bSaveConfig = true;
 	ChangeTabName(Ctrl);
-	if (Ctrl.Data.bSuspend) {
-		Ctrl.Data.bSuspend = false;
-		setTimeout(function () {
-			if (Ctrl.Items && Ctrl.Items.Count == 0) {
-				Ctrl.Refresh();
-			}
-		}, 500);
-	}
 	for (var i in eventTE.ChangeView) {
 		eventTE.ChangeView[i](Ctrl);
 	}
@@ -1105,22 +1097,6 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 			}
 			break;
 	}
-	if (msg == WM_POWERBROADCAST && wParam == 18) {
-		setTimeout(function ()
-		{
-			var cFV = te.Ctrls(CTRL_FV);
-			for (var i in cFV) {
-				if (api.PathIsNetworkPath(cFV[i].Path)) {
-					if (cFV[i].Items && cFV[i].Items.Count == 0) {
-						cFV[i].Refresh();
-					}
-					else {
-						cFV[i].Data.bSuspend = true;
-					}
-				}
-			}
-		}, 500);
-	}
 	return 0; 
 };
 
@@ -1272,7 +1248,7 @@ te.OnVisibleChanged = function (Ctrl)
 		if (Ctrl.Visible && Ctrl.SelectedIndex >= 0) {
 			ChangeView(Ctrl.Selected);
 			for (var i = Ctrl.Count; i--;) {
-				ChangeTabName(Ctrl.Item(i))
+				ChangeTabName(Ctrl[i])
 			}
 		}
 	}

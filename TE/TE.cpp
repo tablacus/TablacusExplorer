@@ -2,7 +2,7 @@
 // Tablacus Explorer (C)2011- Gaku
 // MIT Lisence
 // Visual C++ 2008 Express Edition
-// Windows SDK v7.0 
+// Windows SDK v7.0
 // http://www.eonet.ne.jp/~gakana/tablacus/
 
 #include "stdafx.h"
@@ -22,11 +22,18 @@ IShellFolder *g_pDesktopFolder = NULL;
 HINSTANCE	g_hShell32 = NULL;
 HINSTANCE	g_hKernel32 = NULL;
 HINSTANCE	g_hCrypt32 = NULL;
+HINSTANCE	g_hPropsys = NULL;
+
 LPFNSHCreateItemFromIDList lpfnSHCreateItemFromIDList = NULL;
 LPFNSetDllDirectoryW lpfnSetDllDirectoryW = NULL;
 LPFNSHParseDisplayName lpfnSHParseDisplayName = NULL;
 LPFNSHRunDialog lpfnSHRunDialog = NULL;
 LPFNCryptBinaryToStringW lpfnCryptBinaryToStringW = NULL;
+LPFNPSPropertyKeyFromString lpfnPSPropertyKeyFromString = NULL;
+LPFNPSGetPropertyKeyFromName lpfnPSGetPropertyKeyFromName = NULL;
+LPFNPSPropertyKeyFromString lpfnPSPropertyKeyFromStringEx = NULL;
+LPFNPSGetPropertyDescription lpfnPSGetPropertyDescription = NULL;
+
 DWORD	g_dragdrop = 0;
 UINT	*g_pCrcTable = NULL;
 LPITEMIDLIST g_pidls[MAX_CSIDL];
@@ -55,6 +62,9 @@ IShellWindows		*g_pSW = NULL;
 IDispatch			*g_pJS = NULL;
 IDispatch			*g_pObject  = NULL;
 IDispatch			*g_pArray   = NULL;
+#ifdef _2000XP
+IPropertyUI			*g_pPUI = NULL;
+#endif
 
 FORMATETC HDROPFormat  = {CF_HDROP, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
 FORMATETC IDLISTFormat = {0, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
@@ -255,6 +265,9 @@ method methodAPI[] = {
 	{ 6015, L"PathUnquoteSpaces"},
 	{ 6025, L"GetShortPathName"},
 	{ 6035, L"PathCreateFromUrl"},
+	//(string)string TaskMemory
+	{ 6006, L"PSFormatForDisplay"},
+	{ 6016, L"PSGetDisplayName"},
 	//(mem) bool
 	{ 7001, L"GetCursorPos" },
 	{ 7011, L"GetKeyboardState" },
@@ -652,6 +665,20 @@ VOID ArrangeWindow();
 BOOL GetIDListFromObject(IUnknown *punk, LPITEMIDLIST *ppidl);
 
 //Unit
+
+#ifdef _2000XP
+HRESULT STDAPICALLTYPE tePSPropertyKeyFromString(__in LPCWSTR pszString,  __out PROPERTYKEY *pkey)
+{
+	ULONG chEaten = 0;
+	return g_pPUI->ParsePropertyName(pszString, &pkey->fmtid, &pkey->pid, &chEaten);
+}
+#endif
+
+HRESULT STDAPICALLTYPE tePSPropertyKeyFromStringEx(__in LPCWSTR pszString,  __out PROPERTYKEY *pkey)
+{
+	HRESULT hr =lpfnPSPropertyKeyFromString(pszString, pkey);
+	return SUCCEEDED(hr) ? hr : lpfnPSGetPropertyKeyFromName(pszString, pkey);
+}
 
 int CalcCrc32(BYTE *pc, int nLen, UINT c)
 {
@@ -3087,6 +3114,9 @@ VOID Finalize()
 		if (g_hCrypt32) {
 			FreeLibrary(g_hCrypt32);
 		}
+		if (g_hPropsys) {
+			FreeLibrary(g_hPropsys);
+		}
 		if (g_bsCmdLine) {
 			SysFreeString(g_bsCmdLine);
 		}
@@ -3119,6 +3149,11 @@ VOID Finalize()
 		g_pDesktopFolder && g_pDesktopFolder->Release();
 	} catch (...) {}
 	g_pDesktopFolder = NULL;
+#ifdef _2000XP
+	try {
+		g_pPUI && g_pPUI->Release();
+	} catch (...) {}
+#endif
 	try {
 		::OleUninitialize();
 	}
@@ -3643,7 +3678,26 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		lpfnCryptBinaryToStringW = (LPFNCryptBinaryToStringW)GetProcAddress(g_hCrypt32, "CryptBinaryToStringW");
 	}
 	delete [] pszPath;
+
+	tePathAppend(&pszPath, bsPath, L"propsys.dll");
+	g_hPropsys = LoadLibrary(pszPath);
+	if (g_hPropsys) {
+		lpfnPSPropertyKeyFromString = (LPFNPSPropertyKeyFromString)GetProcAddress(g_hPropsys, "PSPropertyKeyFromString");
+		lpfnPSGetPropertyKeyFromName = (LPFNPSGetPropertyKeyFromName)GetProcAddress(g_hPropsys, "PSGetPropertyKeyFromName");
+		lpfnPSGetPropertyDescription = (LPFNPSGetPropertyDescription)GetProcAddress(g_hPropsys, "PSGetPropertyDescription");
+		lpfnPSPropertyKeyFromStringEx = tePSPropertyKeyFromStringEx;
+	}
+#ifdef _2000XP
+	else {
+		if SUCCEEDED(CoCreateInstance(CLSID_PropertiesUI, NULL, CLSCTX_INPROC, IID_PPV_ARGS(&g_pPUI))) {
+			lpfnPSPropertyKeyFromStringEx = tePSPropertyKeyFromString;
+		}
+	}
+#endif
+	delete [] pszPath;
+
 	::SysFreeString(bsPath);
+
 
 	Initlize();
 	osInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO); 
@@ -3962,6 +4016,34 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			break;
 		//System
 		case WM_POWERBROADCAST:
+			if (wParam == PBT_APMRESUMEAUTOMATIC) {
+				for (int i = MAX_FV; i--;) {
+					CteShellBrowser *pSB = g_pSB[i];
+					if (pSB) {
+						if (!pSB->m_bEmpty && pSB->m_nUnload == 0 && pSB->m_pidl && pSB->m_pFolderItem) {
+							VARIANT v;
+							::VariantInit(&v);
+							v.vt = VT_BSTR;
+							if SUCCEEDED(GetDisplayNameFromPidl(&v.bstrVal, pSB->m_pidl, SHGDN_FORPARSING)) {
+								if (PathIsNetworkPath(v.bstrVal)) {
+									pSB->m_pFolderItem->Release();
+									pSB->m_pFolderItem = new CteFolderItem(&v);
+									::CoTaskMemFree(pSB->m_pidl);
+									pSB->m_pidl = NULL;
+									pSB->m_nUnload = 9;
+									if (pSB->m_bVisible) {
+										pSB->Show(TRUE);
+									}
+								}
+								::VariantClear(&v);
+							}
+						}
+					}
+					else {
+						break;
+					}
+				}				
+			}
 		case WM_SETFOCUS:
 		case WM_KILLFOCUS:
 		case WM_DROPFILES:
@@ -4402,7 +4484,7 @@ BOOL CteShellBrowser::Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItem
 				if (PathIsNetworkPath(pid->m_v.bstrVal)) {
 					TEInvoke *pInvoke = new TEInvoke[1];
 					QueryInterface(IID_PPV_ARGS(&pInvoke->pdisp));
-					pInvoke->dispid = 0x20000000;//Navigate2Ex
+					pInvoke->dispid = 0x20000007;//Navigate2Ex
 					pInvoke->cArgs = 4;
 					pInvoke->pv = GetNewVARIANT(4);
 					::VariantCopy(&pInvoke->pv[3], &pid->m_v); 
@@ -4824,11 +4906,12 @@ VOID CteShellBrowser::HookDragDrop(int nMode)
 VOID CteShellBrowser::Error(int *pnDog)
 {
 	ILRemoveLastID(m_pidl);
-	WCHAR szPath[MAX_PATH];//OK
-	if (SHGetPathFromIDList(m_pidl, szPath)) {
-		if (PathIsNetworkPath(szPath)) {
+	BSTR bs;
+	if SUCCEEDED(GetDisplayNameFromPidl(&bs, m_pidl, SHGDN_FORPARSING)) {
+		if (PathIsNetworkPath(bs)) {
 			*pnDog = 1;
 		}
+		::SysFreeString(bs);
 	}
 	else {
 		*pnDog = 1;
@@ -4846,12 +4929,12 @@ VOID CteShellBrowser::Refresh()
 	if (m_pShellView) {
 		if (m_bVisible) {
 			m_pShellView->Refresh();
-			if (m_nUnload == 3) {
+			if (m_nUnload == 4) {
 				m_nUnload = 0;
 			}
 		}
 		else if (m_nUnload == 0) {
-			m_nUnload = 3;
+			m_nUnload = 4;
 		}
 	}
 }
@@ -5283,7 +5366,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			return S_OK;	
 		//Navigate2Ex
-		case 0x20000000:
+		case 0x20000007:
 			if (nArg >= 3) {
 				FolderItem *pFolderItem = NULL;
 				IUnknown *punk;
@@ -5307,6 +5390,9 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						GetIDListFromObject(punk, &pidl);
 					}
 					Navigate2(pFolderItem, GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]), param, pFolderItems, pidl);
+					if (m_bVisible) {
+						Show(TRUE);
+					}
 				}
 			}
 			return S_OK;	
@@ -5917,6 +6003,24 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			return S_OK;
 		//Refresh
 		case 0x10000206:
+			BSTR bs;
+			if SUCCEEDED(GetDisplayNameFromPidl(&bs, m_pidl, SHGDN_FORPARSING)) {
+				if (PathIsNetworkPath(bs)) {
+					TEInvoke *pInvoke = new TEInvoke[1];
+					QueryInterface(IID_PPV_ARGS(&pInvoke->pdisp));
+					pInvoke->dispid = 0x20000206;//Refresh2Ex
+					pInvoke->cArgs = 1;
+					pInvoke->pv = GetNewVARIANT(1);
+					VariantInit(&pInvoke->pv[0]);
+					pInvoke->pv[0].bstrVal = bs;
+					pInvoke->pv[0].vt = VT_BSTR;
+					_beginthread(&threadParseDisplayName, 0, pInvoke);
+					return S_OK;
+				}
+				::SysFreeString(bs);
+			}
+		//Refresh2Ex
+		case 0x20000206:
 			Refresh();
 			return S_OK;
 		//ViewMenu
@@ -6612,10 +6716,16 @@ void CteShellBrowser::Show(BOOL bShow)
 		if (!m_pTabs->m_bVisible) {
 			return;
 		}
-		if (m_nUnload == 1 && !g_nLockUpdate) {
-			m_nUnload = 2;
-			BrowseObject(NULL, SBSP_RELATIVE | SBSP_SAMEBROWSER);
-			m_nUnload = 0;
+		if (!g_nLockUpdate) { 
+			if (m_nUnload == 1) {
+				m_nUnload = 2;
+				BrowseObject(NULL, SBSP_RELATIVE | SBSP_SAMEBROWSER);
+				m_nUnload = 0;
+			}
+			if (m_nUnload == 9) {
+				m_nUnload = 0;
+				Navigate1(m_pFolderItem, SBSP_SAMEBROWSER, NULL, NULL);
+			}
 		}
 	}
 	m_bVisible = bShow;
@@ -6630,7 +6740,7 @@ void CteShellBrowser::Show(BOOL bShow)
 			m_pShellView->UIActivate(SVUIA_ACTIVATE_FOCUS);
 			BringWindowToTop(m_hwnd);
 			ArrangeWindow();
-			if (m_nUnload == 3) {
+			if (m_nUnload == 4) {
 				Refresh();
 			}
 		}
@@ -6704,28 +6814,19 @@ VOID CteShellBrowser::GetSort(BSTR* pbs)
 	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
 		SORTCOLUMN col;
 		if SUCCEEDED(pFV2->GetSortColumns(&col, 1)) {
-			IColumnManager *pColumnManager;
-			if SUCCEEDED(pFV2->QueryInterface(IID_PPV_ARGS(&pColumnManager))) {
-				UINT uCount;
-				if SUCCEEDED(pColumnManager->GetColumnCount(CM_ENUM_VISIBLE, &uCount)) {
-					PROPERTYKEY *propKey = new PROPERTYKEY[uCount];
-					if SUCCEEDED(pColumnManager->GetColumns(CM_ENUM_VISIBLE, propKey, uCount)) {
-						for (UINT i = 0; i < uCount; i++) {
-							if (col.propkey.pid == propKey[i].pid && IsEqualGUID(col.propkey.fmtid, propKey[i].fmtid)) {
-								CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_NAME };
-								if SUCCEEDED(pColumnManager->GetColumnInfo(propKey[i], &cmci)) {
-									*pbs = SysAllocString(cmci.wszName);
-									if (col.direction < 0) {
-										ToMinus(pbs);
-									}
-									break;
-								}
-							}
-						}
+			if (lpfnPSGetPropertyDescription) {
+				IPropertyDescription *pdesc;
+				if SUCCEEDED(lpfnPSGetPropertyDescription(col.propkey, IID_PPV_ARGS(&pdesc))) {
+					LPWSTR pszName;
+					if SUCCEEDED(pdesc->GetDisplayName(&pszName)) {
+						*pbs = SysAllocString(pszName);
+						::CoTaskMemFree(pszName);
 					}
-					delete [] propKey;
+					pdesc->Release();
+					if (col.direction < 0) {
+						ToMinus(pbs);
+					}
 				}
-				pColumnManager->Release();
 			}
 		}
 		pFV2->Release();
@@ -7421,7 +7522,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 					if (pTC) {
 						if (pTC->m_bVisible) {
 							CteShellBrowser *pSB = pTC->GetShellBrowser(pTC->m_nIndex);
-							if (pSB && !pSB->m_bEmpty && pSB->m_nUnload & 1) {
+							if (pSB && !pSB->m_bEmpty && pSB->m_nUnload & 5) {
 								pSB->Show(true);
 							}
 						}
@@ -15179,7 +15280,6 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 						pszResult[nLen] = NULL;
 					}
 					break;
-				//{ 6035, L"PathCreateFromUrl"},
 				case 6035:
 					if (v.bstrVal) {
 						pszResult = new WCHAR[MAX_PATH];
@@ -15190,17 +15290,69 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 						}
 					}
 					break;
+				//PSFormatForDisplay
+				case 6006:
+					if (nArg >= 2 && lpfnPSPropertyKeyFromStringEx) {
+						if (v.bstrVal) {
+							PROPERTYKEY propKey;
+							if SUCCEEDED(lpfnPSPropertyKeyFromStringEx(v.bstrVal, &propKey)) {
+								if (lpfnPSGetPropertyDescription) {
+									IPropertyDescription *pdesc;
+									if SUCCEEDED(lpfnPSGetPropertyDescription(propKey, IID_PPV_ARGS(&pdesc))) {
+										pdesc->FormatForDisplay(*((PROPVARIANT *)&pDispParams->rgvarg[nArg - 1]), (PROPDESC_FORMAT_FLAGS)GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]), &pszResult);
+										pdesc->Release();
+									}
+								}
+#ifdef _2000XP
+								else {
+									pszResult = new WCHAR[MAX_PROP];
+									g_pPUI->FormatForDisplay(propKey.fmtid, propKey.pid, (PROPVARIANT *)&pDispParams->rgvarg[nArg - 1], GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]), pszResult, MAX_PROP);
+									dispIdMember = 5;
+								}
+#endif
+							}
+						}
+					}
+					break;
+				//PSGetPropertyDescription
+				case 6016:
+					if (v.bstrVal && lpfnPSPropertyKeyFromStringEx) {
+						PROPERTYKEY propKey;
+						if SUCCEEDED(lpfnPSPropertyKeyFromStringEx(v.bstrVal, &propKey)) {
+							if (lpfnPSGetPropertyDescription) {
+								IPropertyDescription *pdesc;
+								if SUCCEEDED(lpfnPSGetPropertyDescription(propKey, IID_PPV_ARGS(&pdesc))) {
+									pdesc->GetDisplayName(&pszResult);
+									pdesc->Release();
+								}
+							}
+#ifdef _2000XP
+							else {
+								pszResult = new WCHAR[MAX_PROP];
+								g_pPUI->GetDisplayName(propKey.fmtid, propKey.pid, PUIFNF_DEFAULT, pszResult, MAX_PROP);
+								dispIdMember = 5;
+							}
+#endif
+						}
+					}
+					break;
 				default:
 					VariantClear(&v);
 					return DISP_E_MEMBERNOTFOUND;
 			}
 			VariantClear(&v);
 		}
-		if ((dispIdMember % 10) == 5) {
+		int nMode = dispIdMember % 10;
+		if (nMode >= 5) {
 			if (pszResult) {
 				pVarResult->vt = VT_BSTR;
 				pVarResult->bstrVal = SysAllocString(pszResult);
-				delete [] pszResult;
+				if (nMode == 5) {
+					delete [] pszResult;
+				}
+				else {
+					::CoTaskMemFree(pszResult);
+				}
 			}
 		}
 		else {
