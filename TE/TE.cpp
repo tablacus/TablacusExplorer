@@ -18,6 +18,7 @@ LONG g_nSize = MAXWORD;
 LONG g_nLockUpdate = 0;
 CteTabs *g_pTabs = NULL;
 CteTabs *g_pTC[MAX_TC];
+int g_x = MAXINT;
 IShellFolder *g_pDesktopFolder = NULL;
 HINSTANCE	g_hShell32 = NULL;
 HINSTANCE	g_hKernel32 = NULL;
@@ -45,6 +46,7 @@ LONG nUpdate = 0;
 HWND			g_hDefLV = 0;
 WNDPROC			g_DefTCProc = NULL;
 WNDPROC			g_DefBTProc = NULL;
+WNDPROC			g_DefBTProc2 = NULL;
 CTE *g_pTE;
 CteWebBrowser *g_pWebBrowser;
 CteShellBrowser *g_pSB[MAX_FV];
@@ -293,6 +295,7 @@ method methodAPI[] = {
 	{ 10050, L"DragAcceptFiles" },
 	{ 10060, L"DragFinish" },
 	{ 10070, L"mouse_event" },
+	{ 10080, L"keybd_event" },
 	//BOOL
 	{ 20001, L"DrawIcon" },
 	{ 20011, L"DestroyMenu" },
@@ -386,6 +389,7 @@ method methodAPI[] = {
 	{ 30192, L"WaitForSingleObject" },
 	{ 30202, L"GetMenuDefaultItem" },
 	{ 30212, L"CRC32" },
+	{ 30222, L"SHEmptyRecycleBin" },
 	//+other
 	{ 35002, L"TrackPopupMenuEx" },
 	{ 35012, L"ExtractIconEx" },
@@ -427,6 +431,7 @@ method methodAPI[] = {
 	{ 40253, L"GetTopWindow" },
 	{ 40263, L"OpenProcess" },
 	{ 40273, L"GetParent" },
+	{ 40283, L"GetCapture" },
 	//+other
 	{ 45003, L"LoadMenu" },
 	{ 45013, L"LoadIcon" },
@@ -561,8 +566,10 @@ method methodTV[] = {
 	{ 0x10000002, L"Type" },
 	{ 0x10000003, L"hwnd" },
 	{ 0x10000004, L"Close" },
+	{ 0x10000005, L"hwndTree" },
 	{ 0x10000007, L"FolderView" },
 	{ 0x10000008, L"Align" },
+	{ 0x10000009, L"Visible" },
 	{ 0x10000105, L"Focus" },
 	{ 0x10000106, L"HitTest" },
 	{ TE_OFFSET + SB_TreeWidth, L"Width" },
@@ -2859,6 +2866,60 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
+VOID teSetTreeWidth(HWND hwnd, LPARAM lParam)
+{
+	CteTabs *pTC = TCfromhwnd(hwnd);
+	if (pTC) {
+		CteShellBrowser	*pSB = pTC->GetShellBrowser(pTC->m_nIndex);
+		if (pSB) {
+			int nWidth = pSB->m_param[SB_TreeWidth] + SHORT(lParam) - g_x;
+			RECT rc;
+			GetWindowRect(hwnd, &rc);
+			int nMax = rc.right - rc.left - 1;
+			if (nWidth > nMax) {
+				nWidth = nMax;
+			}
+			else if (nWidth < 1) {
+				nWidth = 1;
+			}
+			else {
+				g_x = SHORT(lParam);
+			}
+			if (pSB->m_param[SB_TreeWidth] != nWidth) {
+				pSB->m_param[SB_TreeWidth] = nWidth;
+				ArrangeWindow();
+			}
+		}
+	}
+}
+
+LRESULT CALLBACK TEBTProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	LRESULT Result = 1;
+	switch (msg) {
+		case WM_MOUSEMOVE:
+			if (g_x == MAXINT) {
+				SetCursor(LoadCursor(NULL, IDC_SIZEWE));
+			}
+			else {
+				teSetTreeWidth(hwnd, lParam);
+			}
+			break;
+		case WM_LBUTTONDOWN:
+			SetCapture(hwnd);
+			g_x = SHORT(lParam);
+			SetCursor(LoadCursor(NULL, IDC_SIZEWE)); 
+			break;
+		case WM_LBUTTONUP:
+			SetCursor(NULL);
+			ReleaseCapture();
+			teSetTreeWidth(hwnd, lParam);
+			g_x = MAXINT;
+			break;
+	}//end_switch
+	return Result ? CallWindowProc(g_DefBTProc2, hwnd, msg, wParam, lParam) : 0;
+}
+
 LRESULT CALLBACK TEBTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	LRESULT Result = 1;
@@ -3274,20 +3335,18 @@ BOOL CanClose(PVOID pObj)
 VOID ArrangeTree(CteShellBrowser *pSB, LPRECT rc)
 {
 	RECT rcTree = *rc;
-	rcTree.right = rc->left + pSB->m_param[SB_TreeWidth] - 1;
+	rcTree.right = rc->left + pSB->m_param[SB_TreeWidth] - 2;
 	CteTreeView *pTV = pSB->m_pTV;
 	if (pTV) {
-		CopyRect(&pSB->m_pTV->m_rc, &rcTree);
+		MoveWindow(pTV->m_hwnd, rcTree.left, rcTree.top,
+			rcTree.right - rcTree.left, rcTree.bottom - rcTree.top,	true);
 		if (pTV->m_pShellNameSpace) {
+			GetClientRect(pTV->m_hwnd, &rcTree);
 			IOleInPlaceObject *pOleInPlaceObject;
 			pTV->m_pShellNameSpace->QueryInterface(IID_PPV_ARGS(&pOleInPlaceObject));
 			pOleInPlaceObject->SetObjectRects(&rcTree, &rcTree);
 			pOleInPlaceObject->Release();
 		}
-		else {
-			MoveWindow(pTV->m_hwnd, rcTree.left, rcTree.top,
-				rcTree.right - rcTree.left, rcTree.bottom - rcTree.top,	true);
-		}	
 		rc->left += pSB->m_param[SB_TreeWidth];
 	}
 }
@@ -3363,10 +3422,6 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 						}
 						if (!pTC->m_bEmpty && pTC->m_bVisible) {
 							int nAlign = g_pTE->m_param[TE_Tab] ? pTC->m_param[TE_Align] : 0;
-							if (pSB && (pSB->m_param[SB_TreeAlign] == (TE_TV_Use | TE_TV_View | TE_TV_Left) ||
-							   (nAlign == 0 && pSB->m_param[SB_TreeAlign] == (TE_TV_Use | TE_TV_View)))) {
-								ArrangeTree(pSB, &rc);
-							}
 							if (rc.left) {
 								rc.left++;
 							}
@@ -3398,7 +3453,8 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 								switch (nAlign) {
 									case 0:						//none
 										CopyRect(&rc, &rcTab);
-										SetRect(&rcTab, 0, 0, 0, 0);
+										rcTab.top = rcTab.bottom;
+										rcTab.left = rcTab.right;
 										break;
 									case 2:						//top
 										CopyRect(&rc, &rcTab);
@@ -3422,7 +3478,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 							}
 							MoveWindow(pTC->m_hwndButton, rcTab.left, rcTab.top,
 								rcTab.right - rcTab.left, rcTab.bottom - rcTab.top, true);
-							if (nCount && rcTab.bottom) {
+							if (true) {
 								if (nAlign == 4 || nAlign == 5) {
 									if (h <= rcTab.bottom) {
 										rcTab.bottom = h;
@@ -3461,33 +3517,18 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 									ArrangeWindow();
 								}
 								if (pSB) {
-									if (pSB->m_param[SB_TreeAlign] == (TE_TV_Use | TE_TV_View)) {
+									if (pSB->m_param[SB_TreeAlign]) {
 										ArrangeTree(pSB, &rc);
 									}
 									if (pSB->m_bVisible) {
-										teSetParent(pSB->m_pTV->m_hwnd, pSB->m_pTV->GetParentWindow());
-										ShowWindow(pSB->m_pTV->m_hwnd, ((pSB->m_param[SB_TreeAlign] & TE_TV_View) ? SW_SHOW : SW_HIDE));
+										teSetParent(pSB->m_pTV->m_hwnd, pSB->m_pTabs->m_hwndStatic);
+										ShowWindow(pSB->m_pTV->m_hwnd, pSB->m_param[SB_TreeAlign] ? SW_SHOW : SW_HIDE);
 									}
 									else {
 										pSB->Show(TRUE);
 									}
 									MoveWindow(pSB->m_hwnd, rc.left, rc.top, rc.right - rc.left, 
 										rc.bottom - rc.top, true);
-								}
-							}
-							else {
-								MoveWindow(pTC->m_hwndButton, 0, 0, 1, 1, true);
-								pSB = pTC->GetShellBrowser(pTC->m_nIndex);
-								if (pSB) {
-									MoveWindow(pSB->m_hwnd, rc.left, rc.top, rc.right - rc.left, 
-										rc.bottom - rc.top, true);
-									if (!pSB->m_bVisible) {
-										pSB->Show(true);
-									}
-									if (pSB->m_bVisible) {
-										teSetParent(pSB->m_pTV->m_hwnd, g_hwndMain);
-										ShowWindow(pSB->m_pTV->m_hwnd, ((pSB->m_param[SB_TreeAlign] & TE_TV_View) ? SW_SHOW : SW_HIDE));
-									}
 								}
 							}
 						}
@@ -3773,7 +3814,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	g_paramFV[SB_Options] = EBO_SHOWFRAMES | EBO_ALWAYSNAVIGATE;
 	g_paramFV[SB_ViewFlags] = 0;
 
-	g_paramFV[SB_TreeAlign] = TE_TV_Use;
+	g_paramFV[SB_TreeAlign] = 0;
 	g_paramFV[SB_TreeWidth] = 200;
 	g_paramFV[SB_TreeFlags] = NSTCS_HASEXPANDOS | NSTCS_SHOWSELECTIONALWAYS | NSTCS_BORDER | NSTCS_HASLINES | NSTCS_HORIZONTALSCROLL;
 	g_paramFV[SB_EnumFlags] = SHCONTF_FOLDERS;
@@ -4827,12 +4868,18 @@ HRESULT CteShellBrowser::OnBeforeNavigate(FolderItem *pPrevius, UINT wFlags)
 BOOL CteShellBrowser::GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, FolderItem *pid, UINT wFlags, FolderItems *pFolderItems, LPITEMIDLIST pidlPrevius)
 {
 	if (wFlags & SBSP_PARENT) {
-		if (!pidlPrevius || ILIsEmpty(pidlPrevius)) {
-			*pidlOut = ::ILClone(g_pidls[CSIDL_DESKTOP]);
+		if (pidlPrevius && !ILIsEmpty(pidlPrevius)) {
+			*pidlOut = ::ILClone(pidlPrevius);
+			if (m_bsFilter) {
+				::SysFreeString(m_bsFilter);
+				m_bsFilter = NULL;
+			}
+			else {
+				::ILRemoveLastID(*pidlOut);
+			}
 		}
 		else {
-			*pidlOut = ::ILClone(pidlPrevius);
-			::ILRemoveLastID(*pidlOut);
+			*pidlOut = ::ILClone(g_pidls[CSIDL_DESKTOP]);
 		}
 		GetFolderItemFromPidl(ppid, *pidlOut);
 		return TRUE;
@@ -6396,7 +6443,7 @@ STDMETHODIMP CteShellBrowser::OnNavigationComplete(PCIDLIST_ABSOLUTE pidlFolder)
 	}
 #endif
 	m_bIconSize = TRUE;
-	if ((m_param[SB_TreeAlign] & TE_TV_View) && m_pTV->m_bSetRoot) {
+	if (m_param[SB_TreeAlign] && m_pTV->m_bSetRoot) {
 		if (m_pTV->Create()) {
 			m_pTV->SetRoot();
 		}
@@ -6692,7 +6739,7 @@ VOID CteShellBrowser::SetPropEx()
 				}
 			}
 			else if (!(m_param[SB_FolderFlags] & FWF_NOCLIENTEDGE)) {
-				SetWindowLong(m_hwndLV, GWL_STYLE, GetWindowLong(m_hwndLV, GWL_STYLE) | WS_BORDER);
+				SetWindowLong(m_hwndLV, GWL_EXSTYLE, GetWindowLong(m_hwndLV, GWL_EXSTYLE) | WS_EX_CLIENTEDGE);
 			}
 		}
 	}
@@ -6724,7 +6771,7 @@ void CteShellBrowser::Show(BOOL bShow)
 			}
 			if (m_nUnload == 9) {
 				m_nUnload = 0;
-				Navigate1(m_pFolderItem, SBSP_SAMEBROWSER, NULL, NULL);
+				Navigate1(m_pFolderItem, SBSP_SAMEBROWSER | SBSP_WRITENOHISTORY, NULL, NULL);
 			}
 		}
 	}
@@ -6733,7 +6780,7 @@ void CteShellBrowser::Show(BOOL bShow)
 		if (bShow) {
 			ShowWindow(m_hwnd, SW_SHOW);
 			SetRedraw(TRUE);
-			if (m_param[SB_TreeAlign] & TE_TV_View) {
+			if (m_param[SB_TreeAlign]) {
 				ShowWindow(m_pTV->m_hwnd, SW_SHOW);
 				BringWindowToTop(m_pTV->m_hwnd);
 			}
@@ -6749,6 +6796,7 @@ void CteShellBrowser::Show(BOOL bShow)
 			m_pShellView->UIActivate(SVUIA_DEACTIVATE);
 			MoveWindow(m_hwnd, -1, -1, 0, 0, false);
 			ShowWindow(m_hwnd, SW_HIDE);
+			MoveWindow(m_pTV->m_hwnd, -1, -1, 0, 0, false);
 			ShowWindow(m_pTV->m_hwnd, SW_HIDE);
 		}
 	}
@@ -8320,6 +8368,7 @@ void CteTabs::Close(BOOL bForce)
 		DestroyWindow(m_hwndButton);
 		m_hwndButton = NULL;
 
+		SetWindowLongPtr(m_hwndStatic, GWLP_WNDPROC, (LONG_PTR)g_DefBTProc2);
 		DestroyWindow(m_hwndStatic);
 		m_hwndStatic = NULL;
 		m_bEmpty = true;
@@ -8383,13 +8432,14 @@ VOID CteTabs::CreateTC()
 BOOL CteTabs::Create()
 {
 	m_hwndStatic = CreateWindowEx(
-		0, L"STATIC", NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN /*| BS_OWNERDRAW*/,
+		0, WC_BUTTON, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | BS_CHECKBOX,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 
 		g_hwndMain, (HMENU)0, hInst, NULL); 
+	g_DefBTProc2 = (WNDPROC)SetWindowLongPtr(m_hwndStatic, GWLP_WNDPROC, (LONG_PTR)TEBTProc2);
 	BringWindowToTop(m_hwndStatic);
 
 	m_hwndButton = CreateWindowEx(
-		0, L"BUTTON", NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | BS_OWNERDRAW, // | WS_VSCROLL,
+		0, WC_BUTTON, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | BS_OWNERDRAW | BS_CHECKBOX,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 
 		m_hwndStatic, (HMENU)0, hInst, NULL);
 
@@ -8790,6 +8840,10 @@ VOID CteTabs::Move(int nSrc, int nDest, CteTabs *pDestTab)
 		}
 		delete [] pszText;
 		if (bOtherTab) {
+			pSB = pDestTab->GetShellBrowser(pDestTab->m_nIndex);
+			if (pSB) {
+				pSB->Show(FALSE);
+			}
 			pDestTab->m_nIndex = nDest;
 			TabCtrl_SetCurSel(pDestTab->m_hwnd, nDest);
 			ArrangeWindow();
@@ -12068,6 +12122,7 @@ void CteTreeView::Close()
 			pOleObject->Close(OLECLOSE_NOSAVE);
 			pOleObject->SetClientSite(NULL);
 			pOleObject->Release();
+			DestroyWindow(m_hwnd);
 		}
 		m_pShellNameSpace->Release();
 		m_pShellNameSpace = NULL;
@@ -12083,7 +12138,7 @@ BOOL CteTreeView::Create()
 		SUCCEEDED(CoCreateInstance(CLSID_NamespaceTreeControl, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&m_pNameSpaceTreeControl)))) {
 		RECT rc;
 		SetRectEmpty(&rc);
-		if SUCCEEDED(m_pNameSpaceTreeControl->Initialize(GetParentWindow(), &rc, m_pFV->m_param[SB_TreeFlags])) {
+		if SUCCEEDED(m_pNameSpaceTreeControl->Initialize(m_pFV->m_pTabs->m_hwndStatic, &rc, m_pFV->m_param[SB_TreeFlags])) {
 			m_pNameSpaceTreeControl->TreeAdvise(static_cast<INameSpaceTreeControlEvents *>(this), &m_dwCookie);
 			IOleWindow *pOleWindow;
 			if SUCCEEDED(m_pNameSpaceTreeControl->QueryInterface(IID_PPV_ARGS(&pOleWindow))) {
@@ -12104,6 +12159,10 @@ BOOL CteTreeView::Create()
 	}
 #endif
 #ifdef _2000XP
+	m_hwnd = CreateWindowEx(
+		WS_EX_CLIENTEDGE, WC_EDIT, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 
+		m_pFV->m_pTabs->m_hwndStatic, (HMENU)0, hInst, NULL); 
 	if FAILED(CoCreateInstance(CLSID_ShellShellNameSpace, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&m_pShellNameSpace))) {
 		if FAILED(CoCreateInstance(CLSID_ShellNameSpace, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&m_pShellNameSpace))) {
 			return FALSE;
@@ -12162,14 +12221,15 @@ BOOL CteTreeView::Create()
 	if FAILED(m_pShellNameSpace->QueryInterface(IID_PPV_ARGS(&pOleObject))) {
 		return FALSE;
 	}
-	pOleObject->DoVerb(OLEIVERB_INPLACEACTIVATE, NULL, static_cast<IOleClientSite *>(this), 0, g_hwndMain, &rc);
+	pOleObject->DoVerb(OLEIVERB_INPLACEACTIVATE, NULL, static_cast<IOleClientSite *>(this), 0, m_pFV->m_pTabs->m_hwndStatic, &rc);
 	pOleObject->Release();
 
 	IOleWindow *pOleWindow;
 	if SUCCEEDED(m_pShellNameSpace->QueryInterface(IID_PPV_ARGS(&pOleWindow))) {
-		if (pOleWindow->GetWindow(&m_hwnd) == S_OK) {
+		HWND hwnd;
+		if (pOleWindow->GetWindow(&hwnd) == S_OK) {
 			m_pShellNameSpace->put_Flags(m_pFV->m_param[SB_TreeFlags] & NSTCS_FAVORITESMODE);
-			m_hwndTV = FindTreeWindow(m_hwnd);
+			m_hwndTV = FindTreeWindow(hwnd);
 			if (m_hwndTV) {
 				m_DefProc = (WNDPROC)SetWindowLongPtr(GetParent(m_hwndTV), GWLP_WNDPROC, (LONG_PTR)TETVProc);
 				m_DefProc2 = (WNDPROC)SetWindowLongPtr(m_hwndTV, GWLP_WNDPROC, (LONG_PTR)TETVProc2);
@@ -12214,7 +12274,15 @@ BOOL CteTreeView::Create()
 					}
 				}
 				dwStyle ^= (TVS_NOHSCROLL | TVS_INFOTIP | TVS_NONEVENHEIGHT | TVS_EDITLABELS);
-				SetWindowLongPtr(m_hwndTV, GWL_STYLE, dwStyle);
+				SetWindowLongPtr(m_hwndTV, GWL_STYLE, dwStyle & ~WS_BORDER);
+				DWORD dwExStyle = GetWindowLong(m_hwnd, GWL_EXSTYLE);
+				if (dwStyle & WS_BORDER) {
+					dwExStyle |= WS_EX_CLIENTEDGE;
+				}
+				else {
+					dwExStyle &= ~WS_EX_CLIENTEDGE;
+				}
+				SetWindowLong(m_hwnd, GWL_EXSTYLE, dwExStyle);
 			}
 			BringWindowToTop(m_hwnd);
 			ArrangeWindow();
@@ -12316,7 +12384,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 	}
 
 	if (dispIdMember >= 0x10000101 && dispIdMember < TE_OFFSET) {
-		if (m_pFV->m_param[SB_TreeAlign] & TE_TV_View) {
+		if (m_pFV->m_param[SB_TreeAlign]) {
 			if (!m_pNameSpaceTreeControl && !m_pShellNameSpace) {
 				Create();
 			}
@@ -12353,10 +12421,14 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 			return S_OK;
 		//Close
 		case 0x10000004:
-			m_pFV->m_param[SB_TreeAlign] &= ~TE_TV_View;
+			m_pFV->m_param[SB_TreeAlign] = 0;//todo
 			ArrangeWindow();
 			return S_OK;
 
+		//hwnd
+		case 0x10000005:
+			SetVariantLL(pVarResult, (LONGLONG)m_hwndTV);
+			return S_OK;
 		//FolderView
 		case 0x10000007:
 			if (pVarResult) {
@@ -12367,9 +12439,29 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 		//Align
 		case 0x10000008:
 			if (nArg >= 0) {
-				m_pFV->m_param[SB_TreeAlign] = GetIntFromVariant(&pDispParams->rgvarg[nArg]) | TE_TV_Use;
+				m_pFV->m_param[SB_TreeAlign] = (GetIntFromVariant(&pDispParams->rgvarg[nArg]) & 6);
 				if (!m_pNameSpaceTreeControl && !m_pShellNameSpace) {
-					if (m_pFV->m_param[SB_TreeAlign] & TE_TV_View) {
+					if (m_pFV->m_param[SB_TreeAlign]) {
+						if (Create()) {
+							if (m_bSetRoot) {
+								SetRoot();
+							}
+						}
+					}
+				}
+				ArrangeWindow();
+			}
+			if (pVarResult) {
+				pVarResult->lVal = m_pFV->m_param[SB_TreeAlign] ? 3 : 1;
+				pVarResult->vt = VT_I4;
+			}
+			return S_OK;
+		//Visible
+		case 0x10000009:
+			if (nArg >= 0) {
+				m_pFV->m_param[SB_TreeAlign] = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+				if (!m_pNameSpaceTreeControl && !m_pShellNameSpace) {
+					if (m_pFV->m_param[SB_TreeAlign]) {
 						if (Create()) {
 							if (m_bSetRoot) {
 								SetRoot();
@@ -12381,7 +12473,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 			}
 			if (pVarResult) {
 				pVarResult->lVal = m_pFV->m_param[SB_TreeAlign];
-				pVarResult->vt = VT_I4;
+				pVarResult->vt = VT_BOOL;
 			}
 			return S_OK;
 		//Focus
@@ -12731,7 +12823,7 @@ STDMETHODIMP CteTreeView::RequestNewObjectLayout()
 //IOleInPlaceSite
 STDMETHODIMP CteTreeView::GetWindow(HWND *phwnd)
 {
-	*phwnd = GetParentWindow();
+	*phwnd = m_hwnd;
 	return S_OK;
 }
 
@@ -12759,9 +12851,8 @@ STDMETHODIMP CteTreeView::GetWindowContext(IOleInPlaceFrame **ppFrame, IOleInPla
 {
 	*ppFrame = NULL;
 	*ppDoc = NULL;
-
-	CopyRect(lprcClipRect, &m_rc);
-	CopyRect(lprcPosRect, &m_rc);
+	GetClientRect(m_hwnd, lprcClipRect);
+	CopyRect(lprcPosRect, lprcClipRect);
 	return S_OK;
 }
 
@@ -12969,16 +13060,6 @@ HRESULT CteTreeView::SetRoot()
 		DoFunc(TE_OnViewCreated, this, E_NOTIMPL);
 	}
 	return hr;
-}
-
-HWND CteTreeView::GetParentWindow()
-{
-	if (m_pFV->m_param[SB_TreeAlign] & TE_TV_Left && g_pTE->m_param[TE_Tab] && m_pFV->m_pTabs->m_param[TE_Align]) {
-		return g_hwndMain;
-	}
-	else {
-		return m_pFV->m_pTabs->m_hwndStatic;
-	}
 }
 
 HRESULT CteTreeView::getSelected(IDispatch **ppid)
@@ -14311,6 +14392,9 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 						*phResult = (HANDLE)GetParent((HWND)param[0]);
 					}
 					break;
+				case 40283:
+					*phResult = (HANDLE)GetCapture();
+					break;
 				//other
 				case 45003:
 					if (nArg >= 1) {
@@ -14540,6 +14624,11 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 						int nLen;
 						GetpDataFromVariant(&pc, &nLen, &pDispParams->rgvarg[nArg]);
 						*plResult = CalcCrc32(pc, nLen, ((nArg >= 1) ? (UINT)param[1] : 0));
+					}
+					break;
+				case 30222:
+					if (nArg >= 2) {
+						*plResult = SHEmptyRecycleBin((HWND)param[0], GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]), (DWORD)param[2]);
 					}
 					break;
 				case 35002://TrackPopupMenuEx
@@ -15107,6 +15196,11 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			case 10070:
 				if (nArg >= 1) {
 					mouse_event((DWORD)param[0], (DWORD)param[1], (DWORD)param[2], (DWORD)param[3], (ULONG_PTR)param[4]); 
+				}
+				break;
+			case 10080:
+				if (nArg >= 3) {
+					keybd_event((BYTE)param[0], (BYTE)param[1], (DWORD)param[2], (ULONG_PTR)param[3]); 
 				}
 				break;
 			default:

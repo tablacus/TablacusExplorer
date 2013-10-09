@@ -1368,8 +1368,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 					}
 				}
 			}
-			MakeMenus(hMenu, menus, arMenu, items);
-			var nPos = arMenu.length;
+			var nPos = MakeMenus(hMenu, menus, arMenu, items);
 			for (var i in eventTE[Name]) {
 				nPos = eventTE[Name][i](Ctrl, hMenu, nPos, Selected, SelItem);
 			}
@@ -1531,6 +1530,7 @@ MakeMenus = function (hMenu, menus, arMenu, items)
 	var hMenus = [hMenu];
 	var nPos = menus[0].getAttribute("Pos");
 	var nLen = api.GetMenuItemCount(hMenu);
+	var nResult = 0;
 	if (nPos > nLen || nPos < 0) {
 		nPos = nLen;
 	}
@@ -1574,12 +1574,14 @@ MakeMenus = function (hMenu, menus, arMenu, items)
 					api.InsertMenu(hMenus[hMenus.length - 1], nPos++, uFlags | MF_BYPOSITION | MF_SEPARATOR, 0, null);
 				}
 				else {
-					api.InsertMenu(hMenus[hMenus.length - 1], nPos++, uFlags | MF_BYPOSITION | MF_STRING, arMenu[i] + 1, ar.join("\t"));
+					nResult = arMenu[i] + 1;
+					api.InsertMenu(hMenus[hMenus.length - 1], nPos++, uFlags | MF_BYPOSITION | MF_STRING, nResult, ar.join("\t"));
 				}
 			}
 			uFlags = 0;
 		}
 	}
+	return nResult;
 }
 
 SaveXmlEx = function (filename, xml, bAppData)
@@ -1680,7 +1682,7 @@ Extract = function (Src, Dest)
 		}
 	}
 	catch (e) {
-		wsh.Popup(GetText("Extract Error"), 0, "Tablacus Explorer", MB_ICONSTOP);
+		wsh.Popup(GetText("Extract Error"), 0, TITLE, MB_ICONSTOP);
 	}
 	return E_FAIL;
 }
@@ -1830,9 +1832,6 @@ createHttpRequest = function ()
 
 InputDialog = function (text, defaultText, title)
 {
-	if (title) {
-		text = title + "\n\n" + text;
-	}
 	return prompt(text, defaultText);
 }
 
@@ -1986,13 +1985,16 @@ OpenInExplorer = function (FV)
 		var exp = te.CreateObject("new:{C08AFD90-F2A1-11D1-8455-00A0C91F3880}");
 		exp.Navigate2(FV.FolderItem);
     	exp.Visible = true;
-		exp.Document.CurrentViewMode = FV.CurrentViewMode;
-		do {
-			api.Sleep(100);
-		} while (exp.Busy || exp.ReadyState < 4);
-		var doc = exp.Document;
-		doc.CurrentViewMode = FV.CurrentViewMode;
 		try {
+			exp.Document.CurrentViewMode = FV.CurrentViewMode;
+		} catch (e) {
+		}
+		try {
+			do {
+				api.Sleep(100);
+			} while (exp.Busy || exp.ReadyState < 4);
+			var doc = exp.Document;
+			doc.CurrentViewMode = FV.CurrentViewMode;
 			if (doc.IconSize) {
 				doc.IconSize = FV.IconSize;
 			}

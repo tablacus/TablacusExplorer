@@ -13,7 +13,6 @@
 #include <Shlwapi.h>
 #include <exdispid.h> //DISPID_*
 #include <Commdlg.h>
-#include <gdiplus.h>
 #include <Dbt.h>
 #include <propkey.h>
 #include <process.h>
@@ -169,10 +168,6 @@ typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
 
 #define	SB_DoFunc	12
 #define	SB_Count	13
-
-#define TE_TV_Use	1
-#define TE_TV_View	2
-#define TE_TV_Left	4
 
 #define	TVVERBS 16
 
@@ -846,7 +841,6 @@ public:
 #endif
 	HRESULT getSelected(IDispatch **pItem);
 	HRESULT SetRoot();
-	HWND GetParentWindow();
 public:
 	BOOL		m_bSetRoot;
 	HWND        m_hwnd;
@@ -857,7 +851,6 @@ public:
 	WNDPROC		m_DefProc;
 	WNDPROC		m_DefProc2;
 	BOOL		m_bMain;
-	RECT		m_rc;
 	IDropTarget *m_pDropTarget;
 private:
 	LONG	m_cRef;

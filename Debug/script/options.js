@@ -11,6 +11,7 @@ var g_tdDown;
 var g_bDrag;
 var g_pt = {x: 0, y: 0};
 var g_Gesture;
+var g_tid = null;
 
 function SetDefaultLangID()
 {
@@ -140,6 +141,9 @@ function ClickTab(o, nMode)
 
 function ClickTree(o, nMode, strChg)
 {
+	if (g_tid) {
+		return;
+	}
 	if (strChg) {
 		g_Chg[strChg] = true;
 	}
@@ -438,12 +442,13 @@ function SwitchMenus(o)
 		}
 	}
 	if (o) {
-		(function (a) { setTimeout(function ()
+		(function (a) { g_tid = setTimeout(function ()
 		{
 			g_x.Menus = document.F.elements["Menus_" + a[0]];
 			g_x.Menus.style.display = "inline";
 			document.F.elements["Menus_Base"].selectedIndex = a[1];
 			document.F.elements["Menus_Pos"].value = api.LowPart(a[2]);
+			g_tid = null;
 		}, 100);}) (o.value.split(","));
 	}
 }
