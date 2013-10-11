@@ -478,6 +478,7 @@ public:
 	VOID Show(BOOL bVisible);
 	VOID GetItem(int i, VARIANT *pVarResult);
 	DWORD GetStyle();
+	VOID SetItemSize();
 public:
 	int		m_nIndex;
 	HWND	m_hwnd;
@@ -489,6 +490,7 @@ public:
 	SCROLLINFO m_si;
 	int		m_nTC;
 	BOOL	m_bVisible;
+	int		m_nScrollWidth;
 private:
 	LONG	m_cRef;
 	VARIANT m_Data;

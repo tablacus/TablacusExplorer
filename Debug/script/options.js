@@ -285,9 +285,17 @@ function ChooseColor1(o)
 function SetTreeControls()
 {
 	if (g_Chg.Tree) {
-		var cTV = te.Ctrls(CTRL_TV);
-		for (i = 0; i < cTV.Count; i++) {
-			SetTreeControl(cTV.Item(i));
+		if (document.getElementById("Default_Tree").checked) {
+			var cTV = te.Ctrls(CTRL_TV);
+			for (i = 0; i < cTV.Count; i++) {
+				SetTreeControl(cTV.Item(i));
+			}
+		}
+		else {
+			var TV = te.Ctrl(CTRL_TV);
+			if (TV) {
+				SetTreeControl(TV);
+			}
 		}
 	}
 }
@@ -329,9 +337,17 @@ function DelTabControl()
 function SetTabControls()
 {
 	if (g_Chg.Tab) {
-		var cTC = te.Ctrls(CTRL_TC);
-		for (i = 0; i < cTC.Count; i++) {
-			SetTabControl(cTC.Item(i));
+		if (document.getElementById("Default_Tab").checked) {
+			var cTC = te.Ctrls(CTRL_TC);
+			for (i = 0; i < cTC.Count; i++) {
+				SetTabControl(cTC.Item(i));
+			}
+		}
+		else {
+			var TC = te.Ctrl(CTRL_TC);
+			if (TC) {
+				SetTabControl(TC);
+			}
 		}
 	}
 }
@@ -372,13 +388,18 @@ function MoveTabControl()
 
 function SetFolderViews()
 {
+	FV = te.Ctrl(CTRL_FV);
 	if (g_Chg.View) {
-		var cFV = te.Ctrls(CTRL_FV);
-		for (i = 0; i< cFV.Count; i++) {
-			SetFolderView(cFV.Item(i));
+		if (document.getElementById("Default_List").checked) {
+			var cFV = te.Ctrls(CTRL_FV);
+			for (i = 0; i< cFV.Count; i++) {
+				SetFolderView(cFV.Item(i));
+			}
+		}
+		else if (FV) {
+			SetFolderView(FV);
 		}
 	}
-	FV = te.Ctrl(CTRL_FV);
 	if (FV) {
 		FV.CurrentViewMode = document.F.View_ViewMode.value;
 	}

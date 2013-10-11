@@ -769,7 +769,9 @@ NavigateFV = function (FV, Path, wFlags)
 IsDrag = function (pt1, pt2)
 {
 	if (pt1 && pt2) {
-		return (Math.abs(pt1.x - pt2.x) > api.GetSystemMetrics(SM_CXDRAG) | Math.abs(pt1.y - pt2.y) > api.GetSystemMetrics(SM_CYDRAG));
+		try {
+			return (Math.abs(pt1.x - pt2.x) > api.GetSystemMetrics(SM_CXDRAG) | Math.abs(pt1.y - pt2.y) > api.GetSystemMetrics(SM_CYDRAG));
+		} catch (e) {}
 	}
 	return false;
 }
@@ -1528,9 +1530,12 @@ GetAccelerator = function (s)
 MakeMenus = function (hMenu, menus, arMenu, items)
 {
 	var hMenus = [hMenu];
-	var nPos = menus[0].getAttribute("Pos");
+	var nPos = api.QuadPart(menus[0].getAttribute("Pos"));
 	var nLen = api.GetMenuItemCount(hMenu);
 	var nResult = 0;
+	if (nPos < 0) {
+		nPos += nLen + 1;
+	}
 	if (nPos > nLen || nPos < 0) {
 		nPos = nLen;
 	}
