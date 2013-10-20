@@ -151,7 +151,7 @@ function ClickTree(o, nMode, strChg)
 	var newTab = TabIndex != -1 ? TabIndex : 0;
 	if (o && o.id && o.id.match(/tab([^_]+)(_?)(.*)/)) {
 		newTab = RegExp.$1 + RegExp.$2 + RegExp.$3;
-		document.getElementById("AddonButton").style.display = RegExp.$1 == 1 ? "inline-block" : "none";
+		document.getElementById("MoveButton").style.display = RegExp.$1 == 1 || RegExp.$1 == 2 ? "inline-block" : "none";
 		if (nMode == 0) {
 			switch (RegExp.$1 - 0) {
 				case 1:
@@ -630,23 +630,6 @@ function RemoveX(mode)
 	g_Chg[mode] = true;
 }
 
-function MoveMenus(n)
-{
-	if (g_x.Menus.selectedIndex < 0 || g_x.Menus.selectedIndex + n < 0 || g_x.Menus.selectedIndex + n >= g_x.Menus.length) {
-		return;
-	}
-	var src = g_x.Menus[g_x.Menus.selectedIndex];
-	var dist = g_x.Menus[g_x.Menus.selectedIndex + n];
-	var text = dist.text;
-	var value = dist.value;
-	dist.text = src.text;
-	dist.value = src.value;
-	src.text = text;
-	src.value = value;
-	g_x.Menus.selectedIndex += n;
-	g_Chg.Menus = true;
-}
-
 function MoveX(mode, n)
 {
 	if (g_x[mode].selectedIndex < 0 || g_x[mode].selectedIndex + n < 0 || g_x[mode].selectedIndex + n >= g_x[mode].length) {
@@ -911,7 +894,12 @@ function GetAddons()
 		g_dlgAddons = null;
 	}
 	g_dlgAddons = showModelessDialog("addons.html", window, "dialogWidth: 640px; dialogHeight: 480px; resizable: yes; status=0");
-	while (!g_dlgAddons.window.document.body) {
+	for (;;) {
+		try {
+			if (g_dlgAddons.window.document.body) {
+				break;
+			}
+		} catch (e) {}
 		api.Sleep(100);
 	}
 	g_dlgAddons.window.UpdateAddon = function (Id, o)
@@ -1082,18 +1070,35 @@ function AddonEnable(Id, o)
 	g_Chg.Addons = true;
 }
 
-function AddonMove(dir)
+function OptionMove(dir)
 {
-	var r = document.F.AddonId;
-	for (i = 0; i < r.length; i++) {
-		if (r[i].checked) {
-			try {
-				var move = document.getElementById("Addons").rows(i).offsetHeight * dir;
-				AddonMoveEx(i, i + dir);
-				document.getElementById("panel1").scrollTop += move;
-			} catch (e) {}
- 			break;
+	if (TabIndex.match(/^1/)) {
+		var r = document.F.AddonId;
+		for (i = 0; i < r.length; i++) {
+			if (r[i].checked) {
+				try {
+					var move = document.getElementById("Addons").rows(i).offsetHeight * dir;
+					AddonMoveEx(i, i + dir);
+					document.getElementById("panel1").scrollTop += move;
+				} catch (e) {}
+	 			break;
+			}
 		}
+	}
+	else if (TabIndex.match(/^2/)) {
+		if (g_x.Menus.selectedIndex < 0 || g_x.Menus.selectedIndex + dir < 0 || g_x.Menus.selectedIndex + dir >= g_x.Menus.length) {
+			return;
+		}
+		var src = g_x.Menus[g_x.Menus.selectedIndex];
+		var dist = g_x.Menus[g_x.Menus.selectedIndex + dir];
+		var text = dist.text;
+		var value = dist.value;
+		dist.text = src.text;
+		dist.value = src.value;
+		src.text = text;
+		src.value = value;
+		g_x.Menus.selectedIndex += dir;
+		g_Chg.Menus = true;
 	}
 }
 
@@ -1593,42 +1598,42 @@ function RefX(Id, bMultiLine, oButton, fn)
 				if (typeof r == "string") {
 					var p = { s: r };
 					MainWindow.OptionDecode(o[o.selectedIndex].value, p);
-					GetElement(Id).value = p.s;
+					if (bMultiLine && api.GetKeyState(VK_CONTROL) < 0 && api.ILCreateFromPath(p.s)) {
+						AddPath(Id, p.s);
+					}
+					else {
+						GetElement(Id).value = p.s;
+					}
 					if (fn) {
 						ExecScriptEx(te, fn, "JScript");
 					}
-					return;
-				}
-				if (r == 1) {
-					return;
-				}
-				if (r == 2) {
-					bMultiLine = false;
 				}
 			}
+			return;
 		}
-		var commdlg = te.CommonDialog;
-		var path = GetElement(Id).value;
-		var te_path = fso.GetParentFolderName(api.GetModuleFileName(null));
-		if (path.substr(0, 3) == "../") {
-			path = te_path + (path.substr(2, MAXINT).replace(/\//g, "\\"));
+
+		var path = OpenDialog(GetElement(Id).value);
+		if (bMultiLine) {
+			AddPath(Id, path);
 		}
-		commdlg.InitDir = path;
-		commdlg.Filter = "All Files|*.*";
-		commdlg.Flags = OFN_FILEMUSTEXIST;
-		if (commdlg.ShowOpen()) {
-			path = api.PathQuoteSpaces(commdlg.FileName);
-			if (bMultiLine) {
-				AddPath(Id, path);
-			}
-			else {
-				GetElement(Id).value = path;
-			}
-			if (fn) {
-				ExecScriptEx(te, fn, "JScript");
-			}
+		else {
+			GetElement(Id).value = path;
 		}
+		if (fn) {
+			ExecScriptEx(te, fn, "JScript");
+		}
+
 	}, 100);
+}
+
+function PortableX(Id)
+{
+	if (!confirmYN(GetText("Are you sure?"))) {
+		return;
+	}
+	var o = GetElement(Id);
+	var s = fso.GetDriveName(api.GetModuleFileName(null));
+	o.value = o.value.replace(new RegExp('^("?)' + s, "igm"), "$1%Installed%").replace(new RegExp('( "?)' + s, "igm"), "$1%Installed%");
 }
 
 function GetElement(Id)

@@ -883,10 +883,13 @@ te.OnDrop = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect)
 	var dwEffect = pdwEffect[0];
 	for (var i in eventTE.Drop) {
 		pdwEffect[0] = dwEffect;
-		hr = eventTE.Drop[i](Ctrl, dataObj, grfKeyState, pt, pdwEffect);
-		if (isFinite(hr)) {
-			return hr;
+		try {
+			var hr = eventTE.Drop[i](Ctrl, dataObj, grfKeyState, pt, pdwEffect);
+			if (isFinite(hr)) {
+				return hr;
+			}
 		}
+		catch (e) {}
 	}
 	return E_NOTIMPL; 
 }
@@ -1434,7 +1437,7 @@ LoadAddon = function(ext, Addon_Id, arError)
 		}
 	}
 	catch (e) {
-		arError.push(e.description + "\n" + fname);
+		arError.push((e.description || e.toString()) + "\n" + fname);
 	}
 }
 
@@ -1712,14 +1715,54 @@ g_basic =
 {
 	Func:
 	{
-		"Open":
+		"":
+		{
+			Exec: function (Ctrl, s, type, hwnd, pt)
+			{
+				var lines = s.split(/\r?\n/);
+				for (var i in lines) {
+					var cmd = lines[i].split(",");
+					var Id = cmd.shift();
+					var hr = Exec(Ctrl, cmd.join(","), Id, hwnd, pt);
+					if (hr != S_OK) {
+						break;
+					}
+				}
+				return S_OK;
+			},
+
+			Ref: function (s, pt)
+			{
+				var lines = s.split(/\r?\n/);
+				var last = lines.length ? lines[lines.length - 1] : "";
+				if (last.match(/^([^,]+),$/)) {
+					var Id = GetSourceText(RegExp.$1);
+					var r = OptionRef(Id, "", pt);
+					if (typeof r == "string") {
+						return s + r + "\n";
+					}
+					return r;
+				}
+				else {
+					var arFunc = [];
+					for (var i in eventTE.AddType) {
+						eventTE.AddType[i](arFunc);
+					}
+					var r = g_basic.Popup(arFunc, s, pt);
+					return r == 1 ? 1 : s + (s.length && !s.match(/\n$/) ? "\n" : "") + r + ",";
+				}
+			}
+		},
+
+		Open:
 		{
 			Exec: function (Ctrl, s, type, hwnd, pt)
 			{
 				return ExecOpen(Ctrl, s, type, hwnd, pt, OpenMode);
 			},
 
-			Drop: DropOpen
+			Drop: DropOpen,
+			Ref: ChooseFolder
 		},
 
 		"Open in New Tab":
@@ -1729,7 +1772,8 @@ g_basic =
 				return ExecOpen(Ctrl, s, type, hwnd, pt, SBSP_NEWBROWSER);
 			},
 
-			Drop: DropOpen
+			Drop: DropOpen,
+			Ref: ChooseFolder
 		},
 
 		"Open in Background":
@@ -1739,16 +1783,20 @@ g_basic =
 				return ExecOpen(Ctrl, s, type, hwnd, pt, SBSP_NEWBROWSER | SBSP_ACTIVATE_NOFOCUS);
 			},
 
-			Drop: DropOpen
+			Drop: DropOpen,
+			Ref: ChooseFolder
 		},
 
-		"Exec":
+		Exec:
 		{
 			Exec: function (Ctrl, s, type, hwnd, pt)
 			{
+				s = ExtractMacro(Ctrl, s);
 				try {
-					wsh.Run(ExtractMacro(Ctrl, s));
-				} catch (e) {}
+					wsh.Run(s);
+				} catch (e) {
+					wsh.Popup((e.description || e.toString()) + "\n" + s, 0, TITLE, MB_ICONSTOP);
+				}
 				return S_OK;
 			},
 
@@ -1774,19 +1822,23 @@ g_basic =
 					pdwEffect[0] = DROPEFFECT_NONE;
 					return S_OK;
 				}
-			}
+			},
+
+			Ref: OpenDialog
 		},
 
-		"JScript":
+		JScript:
 		{
 			Exec: ExecScriptEx,
-			Drop: DropScript
+			Drop: DropScript,
+			Ref: OpenDialog
 		},
 
-		"VBScript":
+		VBScript:
 		{
 			Exec: ExecScriptEx,
-			Drop: DropScript
+			Drop: DropScript,
+			Ref: OpenDialog
 		},
 
 		"Selected Items": 
@@ -1821,7 +1873,13 @@ g_basic =
 					}
 					return 1;
 				}
-				return api.strcmpi(r, GetText("Open with...")) ? r : 2;
+				if (api.strcmpi(r, GetText("Open with...")) == 0) {
+					r = OpenDialog(s);
+					if (!r) {
+						r = 1;
+					}
+				}
+				return r;
 			},
 
 			Cmd:
@@ -2150,7 +2208,9 @@ g_basic =
 		}
 		var hMenu = api.CreatePopupMenu();
 		for (i = 0; i < ar.length; i++) {
-			api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, i + 1, GetText(ar[i]));
+			if (ar[i]) {
+				api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, i + 1, GetText(ar[i]));
+			}
 		}
 		var nVerb = api.TrackPopupMenuEx(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, null);
 		s = api.GetMenuString(hMenu, nVerb, MF_BYCOMMAND);
@@ -2230,6 +2290,7 @@ AddEvent("OptionRef", function (Id, s, pt)
 {
 	var fn = g_basic.Func[Id];
 	if (fn) {
+		var r;
 		if (fn.Ref) {
 			return fn.Ref(s, pt);
 		}
@@ -2241,14 +2302,42 @@ AddEvent("OptionRef", function (Id, s, pt)
 
 AddEvent("OptionEncode", function (Id, p)
 {
+	if (Id === "") {
+		var lines = p.s.split(/\r?\n/);
+		for (var i in lines) {
+			if (lines[i].match(/^([^,]+),(.*)$/)) {
+				var p2 = { s: RegExp.$2 };
+				Id = GetSourceText(RegExp.$1);
+				OptionEncode(Id, p2);
+				lines[i] = [Id, p2.s].join(",");
+			}
+		}
+		p.s = lines.join("\n");
+		return S_OK;
+	}
 	if (g_basic.Func[Id]) {
 		p.s = GetSourceText(p.s);
 		return S_OK;
 	}
+
+
 });
 
 AddEvent("OptionDecode", function (Id, p)
 {
+	if (Id === "") {
+		var lines = p.s.split(/\r?\n/);
+		for (var i in lines) {
+			if (lines[i].match(/^([^,]+),(.*)$/)) {
+				var p2 = { s: RegExp.$2 };
+				Id = RegExp.$1;
+				OptionDecode(Id, p2);
+				lines[i] = [GetText(Id), p2.s].join(",");
+			}
+		}
+		p.s = lines.join("\n");
+		return S_OK;
+	}
 	if (g_basic.Func[Id]) {
 		var s = GetText(p.s);
 		if (GetSourceText(s) == p.s) {

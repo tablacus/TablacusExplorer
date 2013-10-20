@@ -181,21 +181,29 @@
                       </tr>
                     </table>
                     <input type="text" name="Menus_Filter" style="width: 100%" onchange="ChangeX('Menus')" />
-                    <label>Type</label>
-                    <br />
+                    <table class="layout">
+                      <tr>
+                        <td valign="bottom">
+                          <label>Type</label>
+                        </td>
+                        <td align="right">
+                          <input type="button" value="Portable" onclick="PortableX('Menus_Path')" />
+                        </td>
+                      </tr>
+                    </table>
                     <select name="Menus_Type" style="width: 100%" onchange="ChangeX('Menus')">
                     </select>
                     <table class="layout">
                       <tr>
-                        <td>
+                        <td valign="bottom">
                           <label>Options</label>
                         </td>
                         <td align="right">
-                          <input type="button" value="Reference..." onclick="RefX('Menus_Path', true, this)" style="width: 128px" />
+                          <input type="button" value="Reference..." onclick="RefX('Menus_Path', true, this)" style="width: 160px" />
                         </td>
                       </tr>
                     </table>
-                    <textarea name="Menus_Path" style="width: 100%; height: 228px" onchange="ChangeX('Menus')"></textarea>
+                    <textarea name="Menus_Path" style="width: 100%; height: 220px" onchange="ChangeX('Menus')"></textarea>
                   </td>
                 </tr>
               </table>
@@ -204,10 +212,10 @@
                 <tr>
                   <td>
                     <input type="button" value="Remove" onclick="RemoveMenus()" />
-                    <input type="button" value="Up" onclick="MoveMenus(-1)" />
-                    <input type="button" value="Down" onclick="MoveMenus(1)" />
                     <input type="button" value="Edit" onclick="EditMenus()" />
-                    &nbsp;<input type="button" value="Test" onclick="TestX('Menus_')" />
+                  </td>
+                  <td align="center">
+                    <input type="button" value="Test" onclick="TestX('Menus_')" />
                   </td>
                   <td align="right">
                     <input type="button" value="Add" onclick="AddMenus()" />
@@ -585,10 +593,10 @@
           </td>
         </tr>
       </table>
-      <table style="width: 97%">
+      <table style="width: 100%">
         <tr>
-          <td>
-            <table style="width: 150px">
+          <td style="width: 150px">
+            <table style="width: 100%">
               <tr>
                 <td>
                   <input type="text" name="q" style="width: 100%" onkeydown="FindKeyEvent(this)" />
@@ -599,13 +607,13 @@
               </tr>
             </table>
           </td>
-          <td id="AddonButton" align="left" style="display: none">
-            <input type="button" value="Up" onclick="AddonMove(-1)"/>
-            <input type="button" value="Down" onclick="AddonMove(1)"/>
+          <td id="MoveButton" align="left" style="display: none;">
+            <input type="button" value="Up" onclick="OptionMove(-1)"/>
+            <input type="button" value="Down" onclick="OptionMove(1)"/>
           </td>
           <td align="right">
             <input type="button" value="OK" style="width: 96px;" onclick="SetOptions(); return true;" />
-            <input type="button" value="Cancel" style="width: 96px;" onclick="window.close(); return true;" />
+            <input type="button" value="Cancel" style="width: 96px;" onclick="window.close(); return true;" />&nbsp;&nbsp;
           </td>
         </tr>
       </table>

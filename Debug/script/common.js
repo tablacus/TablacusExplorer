@@ -44,7 +44,13 @@ FolderMenu =
 
 	OpenMenu: function (hMenu, FolderItem, hParent, wID)
 	{
-		if (!FolderItem || FolderItem.IsBrowsable) {
+		if (!FolderItem) {
+			return;
+		}
+		if (api.strcmpi(typeof(FolderItem), "object")) {
+			FolderItem = api.ILCreateFromPath(FolderItem);
+		}
+		if (FolderItem.IsBrowsable) {
 			return;
 		}
 		var bSep = false;
@@ -723,7 +729,7 @@ function SendShortcutKeyFV(Key)
 CreateTab = function ()
 {
 	var FV = te.Ctrl(CTRL_FV);
-	Navigate(FV ? FV.FolderItem : HOME_PATH, SBSP_NEWBROWSER);
+	Navigate(HOME_PATH ? HOME_PATH : FV, SBSP_NEWBROWSER);
 }
 
 Navigate = function (Path, wFlags)
@@ -741,13 +747,13 @@ NavigateFV = function (FV, Path, wFlags)
 	if (FV) {
 		var Focus = null;
 		if (typeof(Path) == "string") {
+			if (Path.match(/%([^%]+)%/)) {
+				Path = ExtractMacro(FV, Path);
+			}
 			if (Path.match(/\?|\*/) && !Path.match(/^::{/)) {
 				FV.FilterView = Path;
 				FV.Refresh();
 				return;
-			}
-			if (Path.match(/%([^%]+)%/)) {
-				Path = wsh.ExpandEnvironmentStrings(Path);
 			}
 			if (Path.length > 3 && Path.match(/\\$/)) {
 				Focus = Path.replace(/\\$/, '');
@@ -1012,7 +1018,7 @@ ExecScriptEx = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffec
 		}
 	}
 	catch (e) {
-		wsh.Popup(e.description + "\n" + s, 0, TITLE, MB_ICONSTOP);
+		wsh.Popup((e.description || e.toString()) + "\n" + s, 0, TITLE, MB_ICONSTOP);
 		return window.Handled;
 	}
 
@@ -1054,30 +1060,36 @@ ExtractPath = function (Ctrl, s)
 ExtractMacro = function (Ctrl, s)
 {
 	if (typeof(s) == "string") {
-		for (var i in eventTE.ReplaceMacro) {
-			var re = eventTE.ReplaceMacro[i][0];
-			if (s.match(re)) {
-				s = s.replace(re, eventTE.ReplaceMacro[i][1](Ctrl));
+		for (var j = 10; j--;) {
+			for (var i in eventTE.ReplaceMacro) {
+				var re = eventTE.ReplaceMacro[i][0];
+				if (s.match(re)) {
+					var r = eventTE.ReplaceMacro[i][1](Ctrl);
+					if (typeof(r) == "string") {
+						s = s.replace(re, r);
+					}
+				}
 			}
-		}
-		for (var i in eventTE.ExtractMacro) {
-			var re = eventTE.ExtractMacro[i][0];
-			if (s.match(re)) {
-				s = eventTE.ExtractMacro[i][1](Ctrl, s, re);
+			for (var i in eventTE.ExtractMacro) {
+				var re = eventTE.ExtractMacro[i][0];
+				if (s.match(re)) {
+					s = eventTE.ExtractMacro[i][1](Ctrl, s, re);
+				}
+			}
+			if (!s.match(/%[^%]+%/)) {
+				break;
 			}
 		}
 	}
-	return s;
+	return wsh.ExpandEnvironmentStrings(s);
 }
 
 AddEvent("ReplaceMacro", [/%Selected%/ig, function(Ctrl)
 {
 	var ar = [];
-	if (!Ctrl || (Ctrl.Type != CTRL_SB && Ctrl.Type != CTRL_EB)) {
-		Ctrl = te.Ctrl(CTRL_FV);
-	}
-	if (Ctrl) {
-		var Selected = Ctrl.SelectedItems();
+	var FV = GetFolderView(Ctrl);
+	if (FV) {
+		var Selected = FV.SelectedItems();
 		if (Selected) {
 			for (var i = Selected.Count; i > 0; ar.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(Selected.Item(--i), SHGDN_FORPARSING)))) {
 			}
@@ -1089,11 +1101,9 @@ AddEvent("ReplaceMacro", [/%Selected%/ig, function(Ctrl)
 AddEvent("ReplaceMacro", [/%Current%/ig, function(Ctrl)
 {
 	var strSel = "";
-	if (!Ctrl || (Ctrl.Type != CTRL_SB && o.Type != CTRL_EB)) {
-		Ctrl = te.Ctrl(CTRL_FV);
-	}
-	if (Ctrl) {
-		strSel = api.PathQuoteSpaces(api.GetDisplayNameOf(Ctrl, SHGDN_FORPARSING));
+	var FV = GetFolderView(Ctrl);
+	if (FV) {
+		strSel = api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORPARSING));
 	}
 	return strSel;
 }]);
@@ -1207,7 +1217,6 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 			break;
 		case CTRL_TV:
 			SelItem = Ctrl.SelectedItem;
-			uCMF = CMF_EXPLORE | CMF_CANRENAME;
 			break;
 		case CTRL_WB:
 			SelItem = window.Input;
@@ -1239,7 +1248,12 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 			item = items[arMenu[0]];
 		}
 		var nBase = api.QuadPart(menus[0].getAttribute("Base"));
-		if (arMenu.length > 1 || nBase != 1) {
+		if (nBase == 1) {
+			if (api.QuadPart(menus[0].getAttribute("Pos")) < 0) {
+				item = items[arMenu[arMenu.length - 1]];
+			}
+		}
+		else {
 			var hMenu;
 			var ContextMenu = null;
 			switch (nBase) {
@@ -1830,7 +1844,7 @@ createHttpRequest = function ()
 {
 	try {
 		return te.CreateObject("Msxml2.XMLHTTP");
-	} catch(e) {
+	} catch (e) {
 		return te.CreateObject("Microsoft.XMLHTTP");
 	}
 }
@@ -2014,6 +2028,7 @@ OpenInExplorer = function (FV)
 		if (FV.TreeView.Align & 2) {
 			exp.ShowBrowserBar("{EFA24E64-B078-11D0-89E4-00C04FC9E26E}", true);
 		}
+		exp.Visible = true;
 	}
 }
 
@@ -2129,9 +2144,9 @@ GetLangId = function ()
 
 GetSourceText = function (s)
 {
-	var Lang = MainWindow.Lang;
-	for (var i in Lang) {
-		if (s == Lang[i]) {
+	var Lang1 = MainWindow.Lang || Lang;
+	for (var i in Lang1) {
+		if (s == Lang1[i]) {
 			return i;
 		}
 	}
@@ -2403,4 +2418,31 @@ FindKeyEvent = function (o)
 		return false;
 	}
 	g_nFind = 0;
+}
+
+OpenDialog = function (path)
+{
+	var commdlg = te.CommonDialog;
+	var te_path = fso.GetParentFolderName(api.GetModuleFileName(null));
+	if (path.substr(0, 3) == "../") {
+		path = te_path + (path.substr(2, MAXINT).replace(/\//g, "\\"));
+	}
+	commdlg.InitDir = path;
+	commdlg.Filter = "All Files|*.*";
+	commdlg.Flags = OFN_FILEMUSTEXIST;
+	if (commdlg.ShowOpen()) {
+		return api.PathQuoteSpaces(commdlg.FileName);
+	}
+}
+
+ChooseFolder = function (path, pt)
+{
+	if (!pt) {
+		pt = api.GetCursorPos(pt);
+	}
+	var FolderItem = api.ILCreateFromPath(path);
+	FolderItem = FolderMenu.Open(FolderItem.IsFolder ? FolderItem : ssfDRIVES, pt.x, pt.y);
+	if (FolderItem) {
+		return api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
+	}
 }

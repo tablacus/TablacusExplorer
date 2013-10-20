@@ -65,6 +65,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkIncremental="2"
+				AdditionalManifestDependencies=""
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				EntryPointSymbol=""
@@ -398,6 +399,10 @@
 			>
 			<File
 				RelativePath=".\te.ico"
+				>
+			</File>
+			<File
+				RelativePath=".\TE.manifest"
 				>
 			</File>
 			<File

@@ -28,14 +28,10 @@ using namespace Gdiplus;
 #pragma comment(lib, "gdiplus.lib") 
 #pragma comment(lib, "Urlmon.lib") 
 
-#pragma comment(linker,"/manifestdependency:\"type='win32' \
-  name='Microsoft.Windows.Common-Controls' \
-  version='6.0.0.0' \
-  processorArchitecture='*' \
-  publicKeyToken='6595b64144ccf1df' \
-  language='*'\"") 
-
-#ifndef _WIN64
+#ifdef _WIN64
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#else
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #define _2000XP
 #define _W2000
 #endif
@@ -59,6 +55,8 @@ typedef HRESULT (STDAPICALLTYPE * LPFNPSGetPropertyDescription)(__in REFPROPERTY
 
 //Vista or higher.
 typedef HRESULT (STDAPICALLTYPE * LPFNSHCreateItemFromIDList)(__in PCIDLIST_ABSOLUTE pidl, __in REFIID riid, __deref_out void **ppv);
+typedef HRESULT (STDAPICALLTYPE * LPFNSHGetIDListFromObject)(__in IUnknown *punk, __deref_out PIDLIST_ABSOLUTE *ppidl);
+
 //typedef HRESULT (STDAPICALLTYPE * LPFNPSFormatForDisplayAlloc)(__in REFPROPERTYKEY key, __in REFPROPVARIANT propvar, __in PROPDESC_FORMAT_FLAGS pdff, __deref_out PWSTR *ppszDisplay);
 //typedef BOOL (WINAPI * LPFNChangeWindowMessageFilter)(UINT message, DWORD dwFlag);
 
@@ -209,10 +207,7 @@ typedef struct tagTEInvoke
 	PVOID	pResult;
 } TEInvoke, *lpTEInvoke;
 
-#ifdef _2000XP
 const CLSID CLSID_ShellShellNameSpace = {0x2F2F1F96, 0x2BC1, 0x4b1c, { 0xBE, 0x28, 0xEA, 0x37, 0x74, 0xF4, 0x67, 0x6A}};
-//const CLSID CLSID_Explorer =            {0xC08AFD90, 0xF2A1, 0x11D1, { 0x84, 0x55, 0x00, 0xA0, 0xC9, 0x1F, 0x38, 0x80}};
-#endif
 const CLSID CLSID_JScriptChakra       = {0x16d51579, 0xa30b, 0x4c8b, { 0xa2, 0x76, 0x0f, 0xf4, 0xdc, 0x41, 0xe7, 0x55}}; 
 
 class CteShellBrowser;
@@ -503,6 +498,7 @@ private:
 
 class CteShellBrowser : public IShellBrowser, public ICommDlgBrowser2, 
 	public IServiceProvider, public IShellFolderViewDual,
+//	public IFolderFilter,
 #ifdef _VISTA7
 	public IExplorerBrowserEvents, public IExplorerPaneVisibility,
 #endif
@@ -539,6 +535,9 @@ public:
     STDMETHODIMP Notify(IShellView *ppshv, DWORD dwNotifyType);
     STDMETHODIMP GetDefaultMenuText(IShellView *ppshv, LPWSTR pszText, int cchMax);
     STDMETHODIMP GetViewFlags(DWORD *pdwFlags);
+	/*IFolderFilter
+	STDMETHODIMP ShouldShow(IShellFolder *psf, PCIDLIST_ABSOLUTE pidlFolder, PCUITEMID_CHILD pidlItem);
+	STDMETHODIMP GetEnumFlags(IShellFolder *psf, PCIDLIST_ABSOLUTE pidlFolder, HWND *phwnd, DWORD *pgrfFlags);*/
 	//IServiceProvider
 	STDMETHODIMP QueryService(REFGUID guidService, REFIID riid, void **ppv);
 	//IDispatch
@@ -609,6 +608,7 @@ public:
 
 	void Init(CteTabs *pTabs, BOOL bNew);
 	void Show(BOOL bShow);
+	VOID Suspend(BOOL bTree);
 	VOID SetPropEx();
 	VOID ResetPropEx();
 	int GetTabIndex();
@@ -830,6 +830,12 @@ public:
 	STDMETHODIMP DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
 	STDMETHODIMP DragLeave();
 	STDMETHODIMP Drop(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
+	//IPersist
+    STDMETHODIMP GetClassID(CLSID *pClassID);
+	//IPersistFolder
+    STDMETHODIMP Initialize(PCIDLIST_ABSOLUTE pidl);
+	//IPersistFolder2
+    STDMETHODIMP GetCurFolder(PIDLIST_ABSOLUTE *ppidl);
 
 	CteTreeView();
 	~CteTreeView();
@@ -838,7 +844,6 @@ public:
 	void Close();
 	BOOL Create();
 #ifdef _2000XP
-	VOID SetChildren();
 	HRESULT NSInvoke(LPWSTR szVerb, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult);
 #endif
 	HRESULT getSelected(IDispatch **pItem);
@@ -848,12 +853,14 @@ public:
 	HWND        m_hwnd;
 	HWND        m_hwndTV;
 	INameSpaceTreeControl	*m_pNameSpaceTreeControl;
-	IShellNameSpace *m_pShellNameSpace;
 	CteShellBrowser	*m_pFV;
 	WNDPROC		m_DefProc;
 	WNDPROC		m_DefProc2;
 	BOOL		m_bMain;
 	IDropTarget *m_pDropTarget;
+#ifdef _2000XP
+	IShellNameSpace *m_pShellNameSpace;
+#endif
 private:
 	LONG	m_cRef;
 	VARIANT m_Data;
