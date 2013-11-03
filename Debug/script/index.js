@@ -1845,7 +1845,7 @@ g_basic =
 		{
 			Exec: function (Ctrl, s, type, hwnd, pt)
 			{
-				var fn = g_basic.Func["Selected Items"].Cmd[s];
+				var fn = g_basic.Func[type].Cmd[s];
 				if (fn) {
 					return fn(Ctrl);
 				}
@@ -1904,6 +1904,27 @@ g_basic =
 
 		Tabs:
 		{
+			Exec: function (Ctrl, s, type, hwnd, pt)
+			{
+				var fn = g_basic.Func[type].Cmd[s];
+				if (fn) {
+					return fn(Ctrl);
+				}
+				else {
+					var FV = GetFolderView(Ctrl, pt, true);
+					if (FV) {
+						var TC = FV.Parent;
+						if (s.match(/^\d/)) {
+							TC.SelectedIndex = api.QuadPart(s);
+						}
+						else if (s.match(/^\-/)) {
+							TC.SelectedIndex = TC.Count + api.QuadPart(s);
+						}
+					}
+				}
+				return S_OK;
+			},
+
 			Cmd:
 			{
 				"Close Tab": function (Ctrl, pt)

@@ -1762,7 +1762,7 @@ function CheckUpdate()
 		wsh.Popup(te.About + "\n" + GetText("the latest version"), 0, TITLE, MB_ICONINFORMATION);
 		return;
 	}
-	if (!confirmYN(GetText("Update available") + "\n" + s + "\n" + GetText("Do you want to install it now?"), 0, TITLE, MB_ICONQUESTION | MB_YESNO)) {
+	if (!confirmYN("Update available" + "\n" + s + "\n" + GetText("Do you want to install it now?"), 0, TITLE, MB_ICONQUESTION | MB_YESNO)) {
 		return;
 	}
 	var temp = fso.BuildPath(wsh.ExpandEnvironmentStrings("%TEMP%"), "tablacus");
@@ -1837,7 +1837,7 @@ function EscapeUpdateFile(s)
 
 confirmYN = function (s)
 {
-	return wsh.Popup(s, 0, TITLE, MB_ICONQUESTION | MB_YESNO) == IDYES;
+	return wsh.Popup(GetText(s), 0, TITLE, MB_ICONQUESTION | MB_YESNO) == IDYES;
 }
 
 createHttpRequest = function ()

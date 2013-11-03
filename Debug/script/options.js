@@ -27,8 +27,9 @@ function OpenGroup(id)
 
 SetOptions = function ()
 {
-	ConfirmMenus();
-
+	if (!ConfirmMenus()) {
+		return;
+	}
 	for (var i in document.F.elements) {
 		if (!i.match(/=|:/)) {
 			if (i.match(/^Tab_|^Tree_|^View_|^Conf_/)) {
@@ -486,6 +487,11 @@ function ClearX(mode)
 	g_Chg.Data = null;
 }
 
+function CancelX(mode)
+{
+	g_x[mode].selectedIndex = -1;
+}
+
 ChangeX = function (mode)
 {
 	g_Chg.Data = mode;
@@ -493,24 +499,44 @@ ChangeX = function (mode)
 
 function ConfirmMenus()
 {
-	if (g_Chg.Data && g_x.Menus.selectedIndex >= 0) {
-		if (confirmYN(GetText("Do you want to replace?"))) {
-			ReplaceMenus();
+	if (g_Chg.Data) {
+		switch (wsh.Popup(GetText("Do you want to replace?"), 0, TITLE, MB_ICONQUESTION | MB_YESNOCANCEL)) {
+			case IDYES:
+				if (g_x.Menus.selectedIndex >= 0) {
+					ReplaceMenus();
+				}
+				else {
+					AddMenus();
+				}
+			case IDNO:
+				ClearX(g_Chg.Data);
+				return true;
 		}
-		ClearX(g_Chg.Data);
+		return false;
 	}
+	return true;
 }
 
-function ConfirmX()
+function ConfirmX(bCancel)
 {
 	try {
-		if (g_Chg.Data && g_x[g_Chg.Data].selectedIndex >= 0) {
-			if (confirm(GetText("Do you want to replace?"))) {
-				ReplaceX(g_Chg.Data);
+		if (g_Chg.Data) {
+			switch (wsh.Popup(GetText("Do you want to replace?"), 0, TITLE, bCancel ? MB_ICONQUESTION | MB_YESNOCANCEL : MB_ICONQUESTION | MB_YESNO)) {
+				case IDYES:
+					if (g_x[g_Chg.Data].selectedIndex >= 0) {
+						ReplaceX(g_Chg.Data);
+					}
+					else {
+						AddX(g_Chg.Data);
+					}
+				case IDNO:
+					ClearX(g_Chg.Data);
+					return true;
 			}
-			ClearX(g_Chg.Data);
+			return false;
 		}
 	} catch (e) {}
+	return true;
 }
 
 function EditMenus()
@@ -531,7 +557,7 @@ function EditMenus()
 	SetType(document.F.Menus_Type, a[3]);
 }
 
-function EditX(mode)
+EditX = function (mode)
 {
 	if (g_x[mode].selectedIndex < 0) {
 		return;
@@ -672,7 +698,7 @@ function LoadMenus(nSelected)
 		oa.length = 0;
 
 		for (j in g_arMenuTypes) {
-			document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", '<select name="Menus_' + g_arMenuTypes[j] + '" size="17" style="width: 150px; height: 400px; display: none; font-family:' + document.F.elements["Menus_Pos"].style.fontFamily + '" ondblclick="EditMenus()"></select>');
+			document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", '<select name="Menus_' + g_arMenuTypes[j] + '" size="17" style="width: 150px; height: 400px; display: none; font-family:' + document.F.elements["Menus_Pos"].style.fontFamily + '" ondblclick="EditMenus()" oncontextmenu="CancelX(\'Menus\')"></select>');
 			var menus = te.Data.xmlMenus.getElementsByTagName(g_arMenuTypes[j]);
 			if (menus && menus.length) {
 				oa[++oa.length - 1].value = g_arMenuTypes[j] + "," + menus[0].getAttribute("Base") + "," + menus[0].getAttribute("Pos");
@@ -1057,6 +1083,9 @@ function AddonEnable(Id, o)
 {
 	var div = document.getElementById("Addon2_" + Id);
 	if (o.value != GetText('Enable')) {
+		for (var i in MainWindow.eventTE.AddonDisabled) {
+			MainWindow.eventTE.AddonDisabled[i](Id);
+		}
 		o.value = GetText('Enable');
 		div.style.color = "gray";
 	}
@@ -1144,6 +1173,9 @@ function AddonRemove(Id)
 		return;
 	}
 
+	for (var i in MainWindow.eventTE.AddonDisabled) {
+		MainWindow.eventTE.AddonDisabled[i](Id);
+	}
 	sf = api.Memory("SHFILEOPSTRUCT");
 	sf.hwnd = te.hwnd;
 	sf.wFunc = FO_DELETE;
@@ -1578,7 +1610,7 @@ function GetAttribEx(item, f, n)
 	}
 }
 
-function RefX(Id, bMultiLine, oButton, fn)
+function RefX(Id, bMultiLine, oButton)
 {
 	setTimeout(function () {
 		if (Id.match(/Path/)) {
@@ -1604,9 +1636,7 @@ function RefX(Id, bMultiLine, oButton, fn)
 					else {
 						GetElement(Id).value = p.s;
 					}
-					if (fn) {
-						ExecScriptEx(te, fn, "JScript");
-					}
+					o.onchange();
 				}
 			}
 			return;
@@ -1634,6 +1664,7 @@ function PortableX(Id)
 	var o = GetElement(Id);
 	var s = fso.GetDriveName(api.GetModuleFileName(null));
 	o.value = o.value.replace(new RegExp('^("?)' + s, "igm"), "$1%Installed%").replace(new RegExp('( "?)' + s, "igm"), "$1%Installed%");
+	o.onchange();
 }
 
 function GetElement(Id)

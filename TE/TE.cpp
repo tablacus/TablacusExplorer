@@ -2864,9 +2864,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		}
 		if (msg == WM_COMMAND || pSB->m_bNoRowSelect) {
 			pSB->m_bNoRowSelect = FALSE;
-			if (!(pSB->m_param[SB_FolderFlags] & FWF_FULLROWSELECT)) {
-				PostMessage(pSB->m_hwndLV, LVM_SETEXTENDEDLISTVIEWSTYLE, 0, SendMessage(pSB->m_hwndLV, LVM_GETEXTENDEDLISTVIEWSTYLE, 0, 0) & (~LVS_EX_FULLROWSELECT));
-			}
+			PostMessage(pSB->m_hwndLV, LVM_SETEXTENDEDLISTVIEWSTYLE, LVS_EX_FULLROWSELECT, (pSB->m_param[SB_FolderFlags] & FWF_FULLROWSELECT) ? LVS_EX_FULLROWSELECT : 0);
 		}
 		return (lResult && hwnd == pSB->m_hwndDV) ? CallWindowProc((WNDPROC)pSB->m_DefProc, hwnd, msg, wParam, lParam) : 0;
 	} catch (...) {}
@@ -4622,7 +4620,6 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 {
 	RECT rc;
 	LPITEMIDLIST pidl;
-	IFolderView2 *pFV2;
 	FolderItem *pFolderItem1 = NULL;
 	LPITEMIDLIST pidlFocus = NULL;
 
@@ -4644,7 +4641,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 #ifdef _VISTA7
 	//ExplorerBrowser
 	if (m_param[SB_Type] == 2 && m_pExplorerBrowser) {
-		m_pExplorerBrowser->BrowseToIDList(pidl, wFlags & ~SBSP_NEWBROWSER);
+		m_pExplorerBrowser->BrowseToIDList(pidl, SBSP_ABSOLUTE);
 		IOleWindow *pOleWindow;
 		if SUCCEEDED(m_pExplorerBrowser->QueryInterface(IID_PPV_ARGS(&pOleWindow))) {
 			pOleWindow->GetWindow(&m_hwnd);
@@ -4675,27 +4672,6 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	}
 	//Previous display
 	IShellView *pPreviusView = m_pShellView;
-	if (param[SB_DoFunc]) {
-		if (pPreviusView) {
-#ifdef _VISTA7
-			if SUCCEEDED(pPreviusView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
-				pFV2->GetViewModeAndIconSize((FOLDERVIEWMODE *)&m_param[SB_ViewMode], (int *)&m_param[SB_IconSize]);
-				pFV2->Release();
-			}
-			else
-#endif
-			{
-				FOLDERSETTINGS fs;
-				pPreviusView->GetCurrentInfo(&fs);
-				m_param[SB_ViewMode] = fs.ViewMode;
-			}
-#ifdef _VISTA7
-			if (m_pExplorerBrowser) {
-				m_pExplorerBrowser->GetOptions((EXPLORER_BROWSER_OPTIONS *)&m_param[SB_Options]);
-			}
-#endif
-		}
-	}
 	EXPLORER_BROWSER_OPTIONS dwflag;
 	dwflag = static_cast<EXPLORER_BROWSER_OPTIONS>(m_param[SB_Options]);
 
@@ -4909,6 +4885,27 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 HRESULT CteShellBrowser::OnBeforeNavigate(FolderItem *pPrevius, UINT wFlags)
 {
 	HRESULT hr = S_OK;
+	if (m_pShellView) {
+#ifdef _VISTA7
+		IFolderView2 *pFV2;
+		if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
+			pFV2->GetViewModeAndIconSize((FOLDERVIEWMODE *)&m_param[SB_ViewMode], (int *)&m_param[SB_IconSize]);
+			int i = m_param[SB_IconSize];
+			pFV2->Release();
+		}
+		else
+#endif
+		{
+			FOLDERSETTINGS fs;
+			m_pShellView->GetCurrentInfo(&fs);
+			m_param[SB_ViewMode] = fs.ViewMode;
+		}
+#ifdef _VISTA7
+		if (m_pExplorerBrowser) {
+			m_pExplorerBrowser->GetOptions((EXPLORER_BROWSER_OPTIONS *)&m_param[SB_Options]);
+		}
+#endif
+	}
 	if (g_pOnFunc[TE_OnBeforeNavigate]) {
 		VARIANT vResult;
 		VariantInit(&vResult);
@@ -5608,15 +5605,18 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 		case 0x10000009:
 			if (nArg >= 0) {
 				m_param[SB_FolderFlags] = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
-#ifdef _VISTA7
 				if (m_pShellView) {
 					IFolderView2 *pFV2;
 					if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
 						pFV2->SetCurrentFolderFlags(MAXDWORD32, m_param[SB_FolderFlags]);
 						pFV2->Release();
 					}
-				}
+#ifdef _2000XP
+					else {
+						PostMessage(m_hwndLV, LVM_SETEXTENDEDLISTVIEWSTYLE, LVS_EX_CHECKBOXES, (m_param[SB_FolderFlags] & FWF_CHECKSELECT) ? LVS_EX_CHECKBOXES : 0);
+					}
 #endif
+				}
 				m_bNoRowSelect = TRUE;
 			}
 			if (pVarResult) {
@@ -6555,15 +6555,10 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 STDMETHODIMP CteShellBrowser::OnNavigationComplete(PCIDLIST_ABSOLUTE pidlFolder)
 {
 #ifdef _VISTA7
-	if (m_pExplorerBrowser) {
-		GetIDListFromObject(m_pShellView, &m_pidl);
-		if (m_param[SB_IconSize] && m_param[SB_ViewMode] == FVM_ICON) {
-			IFolderView2 *pFV2;
-			if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
-				pFV2->SetViewModeAndIconSize(static_cast<FOLDERVIEWMODE>(m_param[SB_ViewMode]), m_param[SB_IconSize]);
-				pFV2->Release();
-			}
-		}
+	IFolderView2 *pFV2;
+	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
+		pFV2->SetViewModeAndIconSize(static_cast<FOLDERVIEWMODE>(m_param[SB_ViewMode]), m_param[SB_IconSize]);
+		pFV2->Release();
 	}
 #endif
 	m_bIconSize = TRUE;
@@ -11944,10 +11939,15 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 				VARIANTARG *pv = GetNewVARIANT(3);
 				WCHAR **ppwc = new WCHAR*[3];
 				char **ppc = new char*[3];
+				BOOL bExec = TRUE;
 				for (int i = 0; i <= 2; i++) {
 					if (pDispParams->rgvarg[nArg - i - 2].vt == VT_I4) {
-						ppwc[i] = (WCHAR *)(UINT_PTR)pDispParams->rgvarg[nArg - i - 2].lVal;
-						ppc[i] = (char *)(UINT_PTR)pDispParams->rgvarg[nArg - i - 2].lVal;
+						UINT_PTR nVerb = (UINT_PTR)pDispParams->rgvarg[nArg - i - 2].lVal;
+						ppwc[i] = (WCHAR *)nVerb;
+						ppc[i] = (char *)nVerb;
+						if (nVerb > MAXWORD) {
+							bExec = FALSE;
+						}
 					}
 					else {
 						teVariantChangeType(&pv[i], &pDispParams->rgvarg[nArg - i - 2], VT_BSTR);
@@ -11964,23 +11964,25 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 						}
 					}
 				}
-				::ZeroMemory(&cmi, sizeof(cmi));
-				cmi.cbSize = sizeof(cmi);
-				cmi.fMask = (DWORD)GetIntFromVariant(&pDispParams->rgvarg[nArg]) | CMIC_MASK_UNICODE;
-				cmi.hwnd  = (HWND)GetLLFromVariant(&pDispParams->rgvarg[nArg - 1]);
-				cmi.lpVerbW = ppwc[0];
-				cmi.lpVerb = ppc[0];
-				cmi.lpParametersW = ppwc[1];
-				cmi.lpParameters = ppc[1];
-				cmi.lpDirectoryW = ppwc[2];
-				cmi.lpDirectory = ppc[2];
-				cmi.nShow = GetIntFromVariant(&pDispParams->rgvarg[nArg - 5]);
-				cmi.dwHotKey = (DWORD)GetIntFromVariant(&pDispParams->rgvarg[nArg - 6]);
-				cmi.hIcon =(HANDLE)GetLLFromVariant(&pDispParams->rgvarg[nArg - 7]);
-				try {
-					hr = m_pContextMenu->InvokeCommand((LPCMINVOKECOMMANDINFO)&cmi);
-				} catch (...) {
-					hr = E_UNEXPECTED;
+				if (bExec) {
+					::ZeroMemory(&cmi, sizeof(cmi));
+					cmi.cbSize = sizeof(cmi);
+					cmi.fMask = (DWORD)GetIntFromVariant(&pDispParams->rgvarg[nArg]) | CMIC_MASK_UNICODE;
+					cmi.hwnd  = (HWND)GetLLFromVariant(&pDispParams->rgvarg[nArg - 1]);
+					cmi.lpVerbW = ppwc[0];
+					cmi.lpVerb = ppc[0];
+					cmi.lpParametersW = ppwc[1];
+					cmi.lpParameters = ppc[1];
+					cmi.lpDirectoryW = ppwc[2];
+					cmi.lpDirectory = ppc[2];
+					cmi.nShow = GetIntFromVariant(&pDispParams->rgvarg[nArg - 5]);
+					cmi.dwHotKey = (DWORD)GetIntFromVariant(&pDispParams->rgvarg[nArg - 6]);
+					cmi.hIcon =(HANDLE)GetLLFromVariant(&pDispParams->rgvarg[nArg - 7]);
+					try {
+						hr = m_pContextMenu->InvokeCommand((LPCMINVOKECOMMANDINFO)&cmi);
+					} catch (...) {
+						hr = E_UNEXPECTED;
+					}
 				}
 				if (pVarResult) {
 					pVarResult->lVal = hr;
@@ -14860,9 +14862,9 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 									pSF->Release();
 								}
 							}
-							while (--nCount >= 0) {
+							do {
 								::CoTaskMemFree(ppidllist[nCount]);
-							}
+							} while (--nCount >= 0);
 							delete [] ppidllist;
 							pDataObj->Release();
 						}
@@ -15692,6 +15694,27 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 							IShellFolder *pSF;
 							if (GetShellFolder(&pSF, ppidllist[0])) {
 								IContextMenu *pCM;
+/*
+								DEFCONTEXTMENU dcm;
+								dcm.hwnd = g_hwndMain;
+								dcm.pcmcb = NULL;
+								dcm.pidlFolder = NULL;
+								dcm.psf = pSF;
+								dcm.cidl = nCount;
+								dcm.apidl = (LPCITEMIDLIST *)&ppidllist[1];
+								dcm.punkAssociationInfo = NULL;
+								dcm.cKeys = 0;
+								dcm.aKeys = NULL;
+
+								if SUCCEEDED(SHCreateDefaultContextMenu(&dcm, IID_PPV_ARGS(&pCM))) {
+									CteContextMenu *pCCM;
+									pCCM = new CteContextMenu(pCM, pDataObj);
+									pDataObj = NULL;
+									teSetObject(pVarResult, pCCM);
+									pCCM->Release();
+									pCM->Release();
+								}
+								else*/
 								if SUCCEEDED(pSF->GetUIObjectOf(g_hwndMain, nCount, (LPCITEMIDLIST *)&ppidllist[1], IID_IContextMenu, NULL, (LPVOID*)&pCM)) {
 									CteContextMenu *pCCM;
 									pCCM = new CteContextMenu(pCM, pDataObj);
@@ -15701,9 +15724,9 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 									pCM->Release();
 								}
 							}
-							while (--nCount >= 0) {
+							do {
 								::CoTaskMemFree(ppidllist[nCount]);
-							}
+							} while (--nCount >= 0);
 							delete [] ppidllist;
 						}
 						if (pDataObj) {
