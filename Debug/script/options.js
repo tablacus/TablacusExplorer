@@ -27,7 +27,7 @@ function OpenGroup(id)
 
 SetOptions = function ()
 {
-	if (!ConfirmMenus()) {
+	if (!ConfirmX(false, "Menus")) {
 		return;
 	}
 	for (var i in document.F.elements) {
@@ -497,26 +497,6 @@ ChangeX = function (mode)
 	g_Chg.Data = mode;
 }
 
-function ConfirmMenus()
-{
-	if (g_Chg.Data) {
-		switch (wsh.Popup(GetText("Do you want to replace?"), 0, TITLE, MB_ICONQUESTION | MB_YESNOCANCEL)) {
-			case IDYES:
-				if (g_x.Menus.selectedIndex >= 0) {
-					ReplaceMenus();
-				}
-				else {
-					AddMenus();
-				}
-			case IDNO:
-				ClearX(g_Chg.Data);
-				return true;
-		}
-		return false;
-	}
-	return true;
-}
-
 function ConfirmX(bCancel)
 {
 	try {
@@ -524,10 +504,10 @@ function ConfirmX(bCancel)
 			switch (wsh.Popup(GetText("Do you want to replace?"), 0, TITLE, bCancel ? MB_ICONQUESTION | MB_YESNOCANCEL : MB_ICONQUESTION | MB_YESNO)) {
 				case IDYES:
 					if (g_x[g_Chg.Data].selectedIndex >= 0) {
-						ReplaceX(g_Chg.Data);
+						(fn || ReplaceX)(g_Chg.Data);
 					}
 					else {
-						AddX(g_Chg.Data);
+						AddX(g_Chg.Data, fn);
 					}
 				case IDNO:
 					ClearX(g_Chg.Data);
@@ -591,16 +571,10 @@ function SetType(o, value)
 	}
 }
 
-function AddMenus()
-{
-	g_x.Menus.selectedIndex = ++g_x.Menus.length - 1;
-	ReplaceMenus();
-}
-
-function AddX(mode)
+function AddX(mode, fn)
 {
 	g_x[mode].selectedIndex = ++g_x[mode].length - 1;
-	ReplaceX(mode);
+	(fn || ReplaceX)(mode);
 }
 
 function ReplaceMenus()
@@ -677,7 +651,7 @@ function SetMenus(sel, a)
 {
 	sel.value = PackData(a);
 	var a2 = a[0].split(/\\t/);
-	sel.text =  [GetText(a2[0]), a[1]].join(" ");
+	sel.text =  [GetText(a2[0]), a[1]].join(" ").replace(/[\r\n].*/, "");
 }
 
 function LoadMenus(nSelected)
@@ -1643,16 +1617,14 @@ function RefX(Id, bMultiLine, oButton)
 		}
 
 		var path = OpenDialog(GetElement(Id).value);
-		if (bMultiLine) {
-			AddPath(Id, path);
+		if (path) {
+			if (bMultiLine) {
+				AddPath(Id, path);
+			}
+			else {
+				GetElement(Id).value = path;
+			}
 		}
-		else {
-			GetElement(Id).value = path;
-		}
-		if (fn) {
-			ExecScriptEx(te, fn, "JScript");
-		}
-
 	}, 100);
 }
 

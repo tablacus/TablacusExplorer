@@ -1,7 +1,7 @@
 ﻿// TE.cpp
 // Tablacus Explorer (C)2011- Gaku
 // MIT Lisence
-// Visual C++ 2008 Express Edition
+// Visual C++ 2008 Express Edition SP1
 // Windows SDK v7.0
 // http://www.eonet.ne.jp/~gakana/tablacus/
 

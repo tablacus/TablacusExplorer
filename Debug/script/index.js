@@ -453,7 +453,7 @@ OpenSelected = function (Ctrl, NewTab)
 				var hMenu = api.CreatePopupMenu();
 				ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_NORMAL);
 				var nCommand = api.GetMenuDefaultItem(hMenu, MF_BYCOMMAND, GMDI_USEDISABLED);
-				ContextMenu.InvokeCommand(0, external.hwnd, nCommand - 1, null, null, SW_SHOWNORMAL, 0, 0);
+				ContextMenu.InvokeCommand(0, te.hwnd, nCommand - 1, null, null, SW_SHOWNORMAL, 0, 0);
 				api.DestroyMenu(hMenu);
 			}
 
@@ -1895,6 +1895,21 @@ g_basic =
 				"Open in Background": function (Ctrl)
 				{
 					return OpenSelected(Ctrl, SBSP_NEWBROWSER | SBSP_ACTIVATE_NOFOCUS);
+				},
+				Exec: function (Ctrl)
+				{
+					if (Ctrl.Type <= CTRL_EB) {
+						var Selected = Ctrl.SelectedItems();
+						var ContextMenu = api.ContextMenu(Selected);
+						if (ContextMenu) {
+							var hMenu = api.CreatePopupMenu();
+							ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_NORMAL);
+							var nCommand = api.GetMenuDefaultItem(hMenu, MF_BYCOMMAND, GMDI_USEDISABLED);
+							ContextMenu.InvokeCommand(0, te.hwnd, nCommand - 1, null, null, SW_SHOWNORMAL, 0, 0);
+							api.DestroyMenu(hMenu);
+						}
+					}
+					return S_OK;
 				},
 				"Open with...": undefined,
 				"Send to...": undefined
