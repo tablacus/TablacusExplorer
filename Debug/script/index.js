@@ -7,7 +7,7 @@ var Addons = {"_stack": []};
 var Init = false;
 var OpenMode = SBSP_SAMEBROWSER;
 var ExtraMenus = {};
-var ExtraMenuCommand = {};
+var ExtraMenuCommand = [];
 
 var GetAddress = null;
 var ShowContextMenu = null;
@@ -50,15 +50,17 @@ ChangeTabName = function (Ctrl)
 
 GetTabName = function (Ctrl)
 {
-	if (Ctrl.FolderItem) {
-		for (var i in eventTE.GetTabName) {
-			var s = eventTE.GetTabName[i](Ctrl);
-			if (s) {
-				return s;
+	try {
+		if (Ctrl.FolderItem) {
+			for (var i in eventTE.GetTabName) {
+				var s = eventTE.GetTabName[i](Ctrl);
+				if (s) {
+					return s;
+				}
 			}
+			return Ctrl.FolderItem.Name;
 		}
-		return Ctrl.FolderItem.Name;
-	}
+	} catch (e) {}
 }
 
 CloseView = function (Ctrl)
@@ -187,6 +189,9 @@ LoadConfig = function ()
 
 SaveConfig = function ()
 {
+	for (var i in eventTE.SaveConfig) {
+		eventTE.SaveConfig[i]();
+	}
 	if (te.Data.bSaveMenus) {
 		te.Data.bSaveMenus = false;
 		SaveXmlEx("menus.xml", te.Data.xmlMenus);
@@ -197,9 +202,6 @@ SaveConfig = function ()
 	}
 	if (te.Data.bSaveConfig) {
 		te.Data.bChanged = false;
-		for (var i in eventTE.SaveConfig) {
-			eventTE.SaveConfig[i]();
-		}
 		SaveXml(fso.BuildPath(te.Data.DataFolder, "config\\window.xml"), true);
 	}
 }
@@ -421,21 +423,16 @@ OpenSelected = function (Ctrl, NewTab)
 		var Selected = Ctrl.SelectedItems();
 		for (var i in Selected) {
 			var Item = Selected[i];
-			var path = Item.Path;
-			if (Item.IsFolder) {
+			var bFolder = Item.IsFolder;
+			if (!bFolder) {
+				if (Item.IsLink) {
+				var path = Item.GetLink.Path;
+					bFolder = path == "" || fso.FolderExists(path);
+				}
+			}
+			if (bFolder) {
 			 	Ctrl.Navigate(Item, NewTab);
 			 	NewTab |= SBSP_NEWBROWSER;
-			}
-			else if (api.PathMatchSpec(path, "*.lnk")) {
-				var lnk = wsh.CreateShortcut(path)
-				path = lnk.TargetPath;
-				if (fso.FolderExists(path)) {
-					Ctrl.Navigate(path, NewTab);
-					NewTab |= SBSP_NEWBROWSER;
-				}
-				else {
-					Exec.push(Item);
-				}
 			}
 			else {
 				Exec.push(Item);
@@ -448,15 +445,7 @@ OpenSelected = function (Ctrl, NewTab)
 					Selected.AddItem(Exec[i]);
 				}
 			}
-			var ContextMenu = api.ContextMenu(Selected);
-			if (ContextMenu) {
-				var hMenu = api.CreatePopupMenu();
-				ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_NORMAL);
-				var nCommand = api.GetMenuDefaultItem(hMenu, MF_BYCOMMAND, GMDI_USEDISABLED);
-				ContextMenu.InvokeCommand(0, te.hwnd, nCommand - 1, null, null, SW_SHOWNORMAL, 0, 0);
-				api.DestroyMenu(hMenu);
-			}
-
+			InvokeCommand(Selected, 0, te.hwnd, null, null, null, SW_SHOWNORMAL, 0, 0);
 		}
 	}
 	return S_OK;
@@ -711,9 +700,17 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, mouseData, pt, wHitTestCode, dwEx
 		if (g_mouse.GetButton(msg, mouseData) == g_mouse.str.charAt(0)) {
 			var hr = S_FALSE;
 			var bButton = false;
-			if (g_mouse.RButton >= 0 && msg == WM_RBUTTONUP) {
-				g_mouse.RButtonDown(true);
-				bButton = api.strcmpi(g_mouse.str, "2") == 0;
+			if (msg == WM_RBUTTONUP) {
+				if (g_mouse.RButton >= 0) {
+					g_mouse.RButtonDown(true);
+					bButton = api.strcmpi(g_mouse.str, "2") == 0;
+				}
+				else if (Ctrl.Type == CTRL_SB || Ctrl.Type == CTRL_EB) {
+					var iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
+					if (iItem < 0 && !IsDrag(pt, te.Data.pt)) {
+						Ctrl.SelectItem(null, SVSI_DESELECTOTHERS);
+					}
+				}
 			}
 			if (g_mouse.str.length >= 2 || !IsDrag(pt, te.Data.pt)) {
 				hr = g_mouse.Exec(te.CtrlFromWindow(g_mouse.hwndGesture), g_mouse.hwndGesture, pt);
@@ -1613,7 +1610,7 @@ g_mouse =
 			if (!(item.state & LVIS_SELECTED)) {
 				if (mode) {
 					var Ctrl = te.CtrlFromWindow(this.hwndGesture);
-					Ctrl.SelectItem(Ctrl.Items.Item(this.RButton), SVSI_SELECT | SVSI_DESELECTOTHERS);
+					Ctrl.SelectItem(Ctrl.Items.Item(this.RButton), SVSI_SELECT | SVSI_FOCUSED | SVSI_DESELECTOTHERS);
 				}
 				else {
 					var ptc = api.Memory("POINT");
@@ -1899,15 +1896,7 @@ g_basic =
 				Exec: function (Ctrl)
 				{
 					if (Ctrl.Type <= CTRL_EB) {
-						var Selected = Ctrl.SelectedItems();
-						var ContextMenu = api.ContextMenu(Selected);
-						if (ContextMenu) {
-							var hMenu = api.CreatePopupMenu();
-							ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_NORMAL);
-							var nCommand = api.GetMenuDefaultItem(hMenu, MF_BYCOMMAND, GMDI_USEDISABLED);
-							ContextMenu.InvokeCommand(0, te.hwnd, nCommand - 1, null, null, SW_SHOWNORMAL, 0, 0);
-							api.DestroyMenu(hMenu);
-						}
+						InvokeCommand(Ctrl.SelectedItems(), 0, te.hwnd, null, null, null, SW_SHOWNORMAL, 0, 0);
 					}
 					return S_OK;
 				},
@@ -1923,7 +1912,7 @@ g_basic =
 			{
 				var fn = g_basic.Func[type].Cmd[s];
 				if (fn) {
-					return fn(Ctrl);
+					return fn(Ctrl, pt);
 				}
 				else {
 					var FV = GetFolderView(Ctrl, pt, true);
@@ -1984,7 +1973,12 @@ g_basic =
 				"New Tab": function (Ctrl, pt)
 				{
 					var FV = GetFolderView(Ctrl, pt);
-					FV && FV.Navigate(null, SBSP_RELATIVE | SBSP_NEWBROWSER);
+					if (HOME_PATH) {
+						NavigateFV(FV, HOME_PATH, SBSP_NEWBROWSER);
+					}
+					else {
+						NavigateFV(FV, null, SBSP_RELATIVE | SBSP_NEWBROWSER);
+					}
 				},
 				Lock: function (Ctrl, pt)
 				{
@@ -2087,12 +2081,7 @@ g_basic =
 						var hMenu = api.CreatePopupMenu();
 						ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_NORMAL);
 						var nVerb = GetCommandId(hMenu, s);
-						if (nVerb) {
-							ContextMenu.InvokeCommand(0, te.hwnd, nVerb - 1, null, null, SW_SHOWNORMAL, 0, 0);
-						}
-						else {
-							ContextMenu.InvokeCommand(0, te.hwnd, s, null, null, SW_SHOWNORMAL, 0, 0);
-						}
+						ContextMenu.InvokeCommand(0, te.hwnd, nVerb ? nVerb - 1 : s, null, null, SW_SHOWNORMAL, 0, 0);
 					}
 				}
 				return S_OK;

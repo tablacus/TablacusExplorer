@@ -88,7 +88,7 @@ WCHAR g_szText[MAX_PATH];
 int			g_nAvgWidth = 7;
 BOOL		g_bAvgWidth = true;
 OSVERSIONINFO osInfo;
-BOOL	g_bReload = false;
+BOOL	g_nReload = 0;
 BSTR	g_bsCmdLine = NULL;
 
 int *g_maps[MAP_LENGTH];
@@ -3427,7 +3427,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 			ShowWindow(hwnd, g_nCmdShow);
 			break;
 		case TET_Reload:
-			if (g_bReload) {
+			if (g_nReload) {
 				PostMessage(hwnd, WM_CLOSE, 0, 0);
 				LPWSTR pszPath, pszQuoted;
 				int i = teGetModuleFileName(NULL, &pszPath);
@@ -4637,6 +4637,31 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 			::CoTaskMemFree(pidlPrevius);
 		}
 		return S_OK;
+	}
+	if (pidl) {
+		IShellFolder *pSF;
+		LPCITEMIDLIST ItemID;
+		if SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &ItemID)) {
+			SFGAOF sfAttr = SFGAO_LINK;
+			if SUCCEEDED(pSF->GetAttributesOf(1, (LPCITEMIDLIST *)&ItemID, &sfAttr)) {
+				if (sfAttr & SFGAO_LINK) {
+					IShellLink *pSL;
+					if SUCCEEDED(pSF->GetUIObjectOf(NULL, 1, (LPCITEMIDLIST *)&ItemID, IID_IShellLink, NULL, (LPVOID *)&pSL)) {
+						if (pSL->Resolve(NULL, SLR_NO_UI) == S_OK) {
+							::CoTaskMemFree(pidl);
+							if (pSL->GetIDList(&pidl) == S_OK) {
+								if (pFolderItem1) {
+									pFolderItem1->Release();
+									GetFolderItemFromPidl(&pFolderItem1, pidl);
+								}
+							}
+						}
+						pSL->Release();
+					}
+				}
+			}
+			pSF->Release();
+		}
 	}
 #ifdef _VISTA7
 	//ExplorerBrowser
@@ -7483,15 +7508,14 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 		//ClearEvents
 		case TE_METHOD + 1008:
 			ClearEvents();
-			g_bReload = false;
+			g_nReload = 0;
 			return S_OK;
 		//Reload
 		case TE_METHOD + 1009:
 			g_nLockUpdate = 0;
-			g_bReload = true;
+			g_nReload = 1;
 			ClearEvents();
 			g_pWebBrowser->m_pWebBrowser->Refresh();
-			SetTimer(g_hwndMain, TET_Reload, 2000, teTimerProc);
 			return S_OK;
 		case DISPID_WINDOWREGISTERED:
 			if (g_pOnFunc[TE_OnWindowRegistered]) {
@@ -7666,7 +7690,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 					mii.fMask  = MIIM_SUBMENU;
 					GetMenuItemInfo(g_hMenu, GetIntFromVariant(&pDispParams->rgvarg[nArg]), FALSE, &mii);
 
-					HMENU menu = CreatePopupMenu();
+					HMENU hMenu = CreatePopupMenu();
 					UINT fState = MFS_DISABLED;
 					if (g_pTabs) {
 						CteShellBrowser *pSB = g_pTabs->GetShellBrowser(g_pTabs->m_nIndex);
@@ -7674,8 +7698,8 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 							fState = MFS_ENABLED;
 						}
 					}
-					teCopyMenu(menu, mii.hSubMenu, fState);
-					SetVariantLL(pVarResult, (LONGLONG)menu);
+					teCopyMenu(hMenu, mii.hSubMenu, fState);
+					SetVariantLL(pVarResult, (LONGLONG)hMenu);
 				}
 			}
 			return S_OK;
@@ -8057,17 +8081,21 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 		hr = m_pWebBrowser->Navigate(L"c:\\", NULL, NULL, NULL, NULL);
 		m_pWebBrowser->ShowBrowserBar((VARIANT *)&v1, &v2, &v3);
 */
-		case DISPID_STATUSTEXTCHANGE:
-/*			if (nArg >= 0) {
+/*		case DISPID_STATUSTEXTCHANGE:
+			if (nArg >= 0) {
 				if (pDispParams->rgvarg[nArg].vt == VT_BSTR) {
 					DoStatusText(this, (LPCWSTR)pDispParams->rgvarg[nArg].bstrVal, 0);
 				}
 			}*/
-			return E_NOTIMPL;
 /*		case DISPID_COMMANDSTATECHANGE:
-			return E_NOTIMPL;
+		case DISPID_SETSECURELOCKICON:
+			return E_NOTIMPL;*/
 		case DISPID_DOWNLOADCOMPLETE:
-			return S_OK;*/
+			if (g_nReload == 1) {
+				g_nReload = 2;
+				SetTimer(g_hwndMain, TET_Reload, 2000, teTimerProc);
+			}
+			return S_OK;
 		case DISPID_NAVIGATECOMPLETE:
 			VARIANT vURL;
 			teVariantChangeType(&vURL, &pDispParams->rgvarg[nArg - 1], VT_BSTR);		
@@ -8077,12 +8105,9 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			if (nArg >= 6) {
 				if (pDispParams->rgvarg[nArg - 6].vt == (VT_BYREF | VT_BOOL)) {
 					VARIANT vURL;
-					teVariantChangeType(&vURL, &pDispParams->rgvarg[nArg - 1], VT_BSTR);		
-					for (int i = SysStringLen(vURL.bstrVal); i-- > 0;) {
-						if (vURL.bstrVal[i] == '/') {
-							*pDispParams->rgvarg[nArg - 6].pboolVal = true;
-							break;
-						}
+					teVariantChangeType(&vURL, &pDispParams->rgvarg[nArg - 1], VT_BSTR);
+					if (StrChrW(vURL.bstrVal, '/')) {
+						*pDispParams->rgvarg[nArg - 6].pboolVal = VARIANT_TRUE;
 					}
 					VariantClear(&vURL);
 				}
@@ -8138,7 +8163,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			}
 			return S_OK;
 	}
-//	int i = dispIdMember;
+	int i = dispIdMember;
 	return DISP_E_MEMBERNOTFOUND;
 }
 //IOleClientSite
@@ -14853,19 +14878,21 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 							LPITEMIDLIST *ppidllist;
 							long nCount;
 							ppidllist = IDListFormDataObj(pDataObj, &nCount);
-							AdjustIDList(ppidllist, nCount);
-							if (nCount >= 1) {
-								IShellFolder *pSF;
-								if (GetShellFolder(&pSF, ppidllist[0])) {
-									pSF->GetAttributesOf(nCount, (LPCITEMIDLIST *)&ppidllist[1], (SFGAOF *)(plResult));
-									*plResult &= (ULONG)param[1]; 
-									pSF->Release();
+							if (ppidllist) {
+								AdjustIDList(ppidllist, nCount);
+								if (nCount >= 1) {
+									IShellFolder *pSF;
+									if (GetShellFolder(&pSF, ppidllist[0])) {
+										pSF->GetAttributesOf(nCount, (LPCITEMIDLIST *)&ppidllist[1], (SFGAOF *)(plResult));
+										*plResult &= (ULONG)param[1]; 
+										pSF->Release();
+									}
 								}
+								do {
+									::CoTaskMemFree(ppidllist[nCount]);
+								} while (--nCount >= 0);
+								delete [] ppidllist;
 							}
-							do {
-								::CoTaskMemFree(ppidllist[nCount]);
-							} while (--nCount >= 0);
-							delete [] ppidllist;
 							pDataObj->Release();
 						}
 					}
@@ -14950,7 +14977,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			SetReturnValue(pVarResult, dispIdMember, &Result);
 			return S_OK;
 		}
-		if (dispIdMember == 29002) {//ShFileOperation
+		if (dispIdMember == 29002) {//SHFileOperation
 			if (nArg >= 4) {
 				LPSHFILEOPSTRUCT pFO = new SHFILEOPSTRUCT[1];
 				::ZeroMemory(pFO, sizeof(SHFILEOPSTRUCT));
