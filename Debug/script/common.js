@@ -750,6 +750,9 @@ NavigateFV = function (FV, Path, wFlags)
 			if (Path.match(/%([^%]+)%/)) {
 				Path = ExtractMacro(FV, Path);
 			}
+			if (Path.match(/^[a-z]$/i)) {
+				Path += ":\\";
+			}
 			if (Path.match(/\?|\*/) && !Path.match(/^::{/)) {
 				FV.FilterView = Path;
 				FV.Refresh();
@@ -880,7 +883,7 @@ CreateNew = function (path, fn)
 			fn(path);
 		} catch (e) {
 			if (path.match(/^[A-Z]:\\|^\\/i)) {
-				var s = fso.BuildPath(wsh.ExpandEnvironmentStrings("%TEMP%"), fso.GetFileName(path));
+				var s = fso.BuildPath(fso.GetSpecialFolder(2).Path, fso.GetFileName(path));
 				DeleteItem(s);
 				fn(s);
 				sha.NameSpace(fso.GetParentFolderName(path)).MoveHere(s, FOF_SILENT | FOF_NOCONFIRMATION);
@@ -1061,6 +1064,7 @@ ExtractMacro = function (Ctrl, s)
 {
 	if (typeof(s) == "string") {
 		for (var j = 10; j--;) {
+			var s1 = s;
 			for (var i in eventTE.ReplaceMacro) {
 				var re = eventTE.ReplaceMacro[i][0];
 				if (s.match(re)) {
@@ -1076,7 +1080,7 @@ ExtractMacro = function (Ctrl, s)
 					s = eventTE.ExtractMacro[i][1](Ctrl, s, re);
 				}
 			}
-			if (!s.match(/%[^%]+%/)) {
+			if (s == s1) {
 				break;
 			}
 		}
@@ -1134,6 +1138,18 @@ PathMatchEx = function (path, s)
 	return (i > 1 && path.match(new RegExp(s.substr(1, i - 1), s.substr(i + 1))));
 }
 
+IsFolderEx = function (Item)
+{
+	var FindData = api.Memory("WIN32_FIND_DATA");
+	api.SHGetDataFromIDList(Item, SHGDFIL_FINDDATA, FindData, FindData.Size);
+	if (Item.IsFolder) {
+		if ((FindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) || !Item.IsFileSystem || api.strcmpi(Item.Path.replace(/\\$/, ""), fso.GetDriveName(Item.Path)) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
 OpenMenu = function (items, SelItem)
 {
 	var arMenu;
@@ -1148,19 +1164,17 @@ OpenMenu = function (items, SelItem)
 			if (arMenu.length) {
 				return arMenu;
 			}
-			if (!SelItem.IsFolder) {
-				var FindData = api.Memory("WIN32_FIND_DATA");
-				api.SHGetDataFromIDList(SelItem, SHGDFIL_FINDDATA, FindData, FindData.Size);
-				if ((FindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
-					return arMenu;
-				}
+			var FindData = api.Memory("WIN32_FIND_DATA");
+			if (IsFolderEx(SelItem)) {
+				path += ".folder";
 			}
-			path += ".folder";
+			else  {
+				return arMenu;
+			}
 		}
 	}
 	arMenu = [];
-	var i = items.length;
-	while (--i >= 0) {
+	for (var i = items.length; i-- > 0;) {
 		if (SelItem) {
 			if (PathMatchEx(path, items[i].getAttribute("Filter"))) {
 				arMenu.unshift(i);
@@ -1243,6 +1257,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 		} catch (e) {}
 	}
 	ExtraMenuCommand = [];
+	eventTE.MenuCommand = [];
 	var arMenu;
 	var item;
 	if (items) {
@@ -1302,6 +1317,15 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 			if (ExtraMenuCommand[nVerb]) {
 				ExtraMenuCommand[nVerb](Ctrl, pt, Name, nVerb);
 				nVerb = 0;
+			}
+			if (nVerb) {
+				for (var i in eventTE.MenuCommand) {
+					var hr = eventTE.MenuCommand[i](Ctrl, pt, Name, nVerb);
+					if (isFinite(hr) && hr == S_OK) {
+						nVerb = 0;
+						break;
+					}
+				}
 			}
 			if (nVerb > 0x1000 && nVerb < 0x7000) {
 				if (ContextMenu) {
@@ -1446,17 +1470,20 @@ GetBaseMenu = function (nBase, FV, Selected, uCMF, Mode)
 					if (s) {
 						api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, i + 0x1001, s);
 					}
-					ExtraMenuCommand[i + 0x1001] = function (Ctrl, pt, Name, nVerb)
-					{
-						var s = GetHelpMenu(false)[nVerb - 0x1001];
-						if (api.strcmpi(typeof s, "function")) {
-							Navigate(s, SBSP_NEWBROWSER);
-							return;
-						}
-						s(Ctrl, pt, Name, nVerb);
-					};
 				}
 			}
+			AddEvent("MenuCommand", function (Ctrl, pt, Name, nVerb)
+			{
+				var s = GetHelpMenu(false)[nVerb - 0x1001];
+				if (s) {
+					if (api.strcmpi(typeof s, "function")) {
+						Navigate(s, SBSP_NEWBROWSER);
+						return;
+					}
+					s(Ctrl, pt, Name, nVerb);
+					return S_OK;
+				}
+			});
 			break;
 		case 8:
 			hMenu = api.CreatePopupMenu();
@@ -1477,7 +1504,7 @@ GetHelpMenu = function (bTitle)
 	if (api.sizeof("HANDLE") > 4) {
 		dir.push(ssfPROGRAMFILESx86);
 	}
-	dir = dir.concat([wsh.ExpandEnvironmentStrings("%TEMP%"), ssfPERSONAL, ssfSTARTMENU, ssfPROGRAMS, ssfSTARTUP, ssfSENDTO, ssfAPPDATA, ssfFAVORITES, ssfRECENT, ssfHISTORY, ssfDESKTOPDIRECTORY, ssfCONTROLS, ssfTEMPLATES, ssfFONTS, ssfPRINTERS, ssfBITBUCKET]);
+	dir = dir.concat([fso.GetSpecialFolder(2).Path, ssfPERSONAL, ssfSTARTMENU, ssfPROGRAMS, ssfSTARTUP, ssfSENDTO, ssfAPPDATA, ssfFAVORITES, ssfRECENT, ssfHISTORY, ssfDESKTOPDIRECTORY, ssfCONTROLS, ssfTEMPLATES, ssfFONTS, ssfPRINTERS, ssfBITBUCKET]);
 	if (bTitle) {
 		for (var i = dir.length; i--;) {
 			dir[i] = api.GetDisplayNameOf(dir[i], SHGDN_INFOLDER);
@@ -1788,7 +1815,7 @@ function CheckUpdate()
 	if (!confirmYN("Update available" + "\n" + s + "\n" + GetText("Do you want to install it now?"), 0, TITLE, MB_ICONQUESTION | MB_YESNO)) {
 		return;
 	}
-	var temp = fso.BuildPath(wsh.ExpandEnvironmentStrings("%TEMP%"), "tablacus");
+	var temp = fso.BuildPath(fso.GetSpecialFolder(2).Path, "tablacus");
 	if (!IsExists(temp)) {
 		CreateFolder(temp);
 	}

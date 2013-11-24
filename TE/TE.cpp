@@ -454,6 +454,7 @@ method methodAPI[] = {
 	{ 50125, L"sprintf"},
 	{ 50135, L"base64_encode"},
 	{ 50145, L"LoadString"},
+	{ 50155, L"AssocQueryString"},
 };
 
 method methodSB[] = {
@@ -2871,30 +2872,24 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-VOID teSetTreeWidth(HWND hwnd, LPARAM lParam)
+VOID teSetTreeWidth(CteShellBrowser	*pSB, HWND hwnd, LPARAM lParam)
 {
-	CteTabs *pTC = TCfromhwnd(hwnd);
-	if (pTC) {
-		CteShellBrowser	*pSB = pTC->GetShellBrowser(pTC->m_nIndex);
-		if (pSB) {
-			int nWidth = pSB->m_param[SB_TreeWidth] + SHORT(lParam) - g_x;
-			RECT rc;
-			GetWindowRect(hwnd, &rc);
-			int nMax = rc.right - rc.left - 1;
-			if (nWidth > nMax) {
-				nWidth = nMax;
-			}
-			else if (nWidth < 1) {
-				nWidth = 1;
-			}
-			else {
-				g_x = SHORT(lParam);
-			}
-			if (pSB->m_param[SB_TreeWidth] != nWidth) {
-				pSB->m_param[SB_TreeWidth] = nWidth;
-				ArrangeWindow();
-			}
-		}
+	int nWidth = pSB->m_param[SB_TreeWidth] + SHORT(lParam) - g_x;
+	RECT rc;
+	GetWindowRect(hwnd, &rc);
+	int nMax = rc.right - rc.left - 1;
+	if (nWidth > nMax) {
+		nWidth = nMax;
+	}
+	else if (nWidth < 1) {
+		nWidth = 1;
+	}
+	else {
+		g_x = SHORT(lParam);
+	}
+	if (pSB->m_param[SB_TreeWidth] != nWidth) {
+		pSB->m_param[SB_TreeWidth] = nWidth;
+		ArrangeWindow();
 	}
 }
 
@@ -2925,27 +2920,33 @@ LRESULT CALLBACK TESTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	LRESULT Result = 1;
 
-	switch (msg) {
-		case WM_MOUSEMOVE:
-			if (g_x == MAXINT) {
-				SetCursor(LoadCursor(NULL, IDC_SIZEWE));
-			}
-			else {
-				teSetTreeWidth(hwnd, lParam);
-			}
-			break;
-		case WM_LBUTTONDOWN:
-			SetCapture(hwnd);
-			g_x = SHORT(lParam);
-			SetCursor(LoadCursor(NULL, IDC_SIZEWE)); 
-			break;
-		case WM_LBUTTONUP:
-			SetCursor(NULL);
-			ReleaseCapture();
-			teSetTreeWidth(hwnd, lParam);
-			g_x = MAXINT;
-			break;
-	}//end_switch
+	CteTabs *pTC = TCfromhwnd(hwnd);
+	if (pTC) {
+		CteShellBrowser	*pSB = pTC->GetShellBrowser(pTC->m_nIndex);
+		if (pSB && pSB->m_pTV && pSB->m_pidl) {
+			switch (msg) {
+				case WM_MOUSEMOVE:
+					if (g_x == MAXINT) {
+						SetCursor(LoadCursor(NULL, IDC_SIZEWE));
+					}
+					else {
+						teSetTreeWidth(pSB, hwnd, lParam);
+					}
+					break;
+				case WM_LBUTTONDOWN:
+					SetCapture(hwnd);
+					g_x = SHORT(lParam);
+					SetCursor(LoadCursor(NULL, IDC_SIZEWE)); 
+					break;
+				case WM_LBUTTONUP:
+					SetCursor(NULL);
+					ReleaseCapture();
+					teSetTreeWidth(pSB, hwnd, lParam);
+					g_x = MAXINT;
+					break;
+			}//end_switch
+		}
+	}
 	return Result ? CallWindowProc(g_DefSTProc, hwnd, msg, wParam, lParam) : 0;
 }
 
@@ -4154,6 +4155,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					}
 				}
 			}
+		case WM_COPYDATA:
+			if (g_nReload) {
+				return E_FAIL;
+			}
 		case WM_SETFOCUS:
 		case WM_KILLFOCUS:
 		case WM_DROPFILES:
@@ -4167,7 +4172,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case WM_SYSCOMMAND:
 		case WM_THEMECHANGED:
 		case WM_USERCHANGED:
-		case WM_COPYDATA:
 			if (g_pOnFunc[TE_OnSystemMessage]) {
 				msg1.hwnd = hWnd;
 				msg1.message = message;
@@ -4585,33 +4589,49 @@ HRESULT CteShellBrowser::Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	return hr;
 }
 
-BOOL CteShellBrowser::Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItems *pFolderItems, LPITEMIDLIST pidlPrevius)
+BOOL CteShellBrowser::Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItems *pFolderItems, LPITEMIDLIST pidlPrevius, LPITEMIDLIST *ppidl)
 {
 	CteFolderItem *pid = NULL;
 	if (pFolderItem) {
 		if SUCCEEDED(pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
-			if (!pid->m_pidl && pid->m_v.vt == VT_BSTR) {
-				if (PathIsNetworkPath(pid->m_v.bstrVal)) {
-					TEInvoke *pInvoke = new TEInvoke[1];
-					QueryInterface(IID_PPV_ARGS(&pInvoke->pdisp));
-					pInvoke->dispid = 0x20000007;//Navigate2Ex
-					pInvoke->cArgs = 4;
-					pInvoke->pv = GetNewVARIANT(4);
-					::VariantCopy(&pInvoke->pv[3], &pid->m_v); 
-					pInvoke->pv[2].lVal = wFlags;
-					pInvoke->pv[2].vt = VT_I4;
-					teSetObject(&pInvoke->pv[1], pFolderItems);
-					FolderItem *pFI;
-					GetFolderItemFromPidl(&pFI, pidlPrevius);
-					teSetObject(&pInvoke->pv[0], pFI);
-					pFI && pFI->Release();
-					_beginthread(&threadParseDisplayName, 0, pInvoke);
-					pid->Release();
-					return TRUE;
+			if (!pid->m_pidl) {
+				if (pid->m_v.vt == VT_BSTR) {
+					if (PathIsNetworkPath(pid->m_v.bstrVal)) {
+						TEInvoke *pInvoke = new TEInvoke[1];
+						QueryInterface(IID_PPV_ARGS(&pInvoke->pdisp));
+						pInvoke->dispid = 0x20000007;//Navigate2Ex
+						pInvoke->cArgs = 4;
+						pInvoke->pv = GetNewVARIANT(4);
+						::VariantCopy(&pInvoke->pv[3], &pid->m_v); 
+						pInvoke->pv[2].lVal = wFlags;
+						pInvoke->pv[2].vt = VT_I4;
+						teSetObject(&pInvoke->pv[1], pFolderItems);
+						FolderItem *pFI;
+						GetFolderItemFromPidl(&pFI, pidlPrevius);
+						teSetObject(&pInvoke->pv[0], pFI);
+						pFI && pFI->Release();
+						_beginthread(&threadParseDisplayName, 0, pInvoke);
+						pid->Release();
+						return TRUE;
+					}
+					if (ppidl) {
+						pid->GetCurFolder(ppidl);
+						if (!pid->m_pidl && m_pidl) {
+							::CoTaskMemFree(*ppidl);
+							*ppidl = NULL;
+							pid->Release();
+							return TRUE;
+						}
+						pid->Release();
+						return FALSE;
+					}
 				}
 			}
 			pid->Release();
 		}
+	}
+	if (pFolderItem && ppidl) {
+		GetIDListFromObject(pFolderItem, ppidl);
 	}
 	return FALSE;
 }
@@ -4981,7 +5001,7 @@ BOOL CteShellBrowser::GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, Folde
 	if (wFlags & SBSP_NAVIGATEBACK) {
 		if (m_nLogIndex > 0 && GetIDListFromObjectEx(m_ppLog[--m_nLogIndex], pidlOut)) {
 			m_ppLog[m_nLogIndex]->QueryInterface(IID_PPV_ARGS(ppid));
-			if (Navigate1(*ppid, wFlags, pFolderItems, pidlPrevius)) {
+			if (Navigate1(*ppid, wFlags, pFolderItems, pidlPrevius, NULL)) {
 				(*ppid)->Release();
 				return FALSE;
 			}
@@ -4992,7 +5012,7 @@ BOOL CteShellBrowser::GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, Folde
 	if (wFlags & SBSP_NAVIGATEFORWARD) {
 		if (m_nLogIndex < m_nLogCount - 1 && GetIDListFromObjectEx(m_ppLog[++m_nLogIndex], pidlOut)) {
 			m_ppLog[m_nLogIndex]->QueryInterface(IID_PPV_ARGS(ppid));
-			if (Navigate1(*ppid, wFlags, pFolderItems, pidlPrevius)) {
+			if (Navigate1(*ppid, wFlags, pFolderItems, pidlPrevius, NULL)) {
 				(*ppid)->Release();
 				return FALSE;
 			}
@@ -5000,12 +5020,9 @@ BOOL CteShellBrowser::GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, Folde
 		}
 		return FALSE;
 	}
-	if (Navigate1(pid, wFlags, pFolderItems, pidlPrevius)) {
-		return FALSE;
-	}
 	LPITEMIDLIST pidl = NULL;
-	if (pid) {
-		GetIDListFromObject(pid, &pidl);
+	if (Navigate1(pid, wFlags, pFolderItems, pidlPrevius, &pidl)) {
+		return FALSE;
 	}
 	if (wFlags & SBSP_RELATIVE) {
 		if (pidlPrevius && pidl) {
@@ -5026,8 +5043,7 @@ BOOL CteShellBrowser::GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, Folde
 		}
 	}
 	if (*ppid) {
-		GetFolderItemFromPidl(ppid, *pidlOut);
-		return TRUE;
+		return GetIDListFromObject(*ppid, pidlOut);
 	}
 	return FALSE;
 }
@@ -6933,7 +6949,7 @@ void CteShellBrowser::Show(BOOL bShow)
 			}
 			if (m_nUnload == 9) {
 				m_nUnload = 0;
-				Navigate1(m_pFolderItem, SBSP_SAMEBROWSER | SBSP_WRITENOHISTORY, NULL, NULL);
+				Navigate1(m_pFolderItem, SBSP_SAMEBROWSER | SBSP_WRITENOHISTORY, NULL, NULL, NULL);
 			}
 		}
 	}
@@ -8163,7 +8179,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			}
 			return S_OK;
 	}
-	int i = dispIdMember;
+//	int i = dispIdMember;
 	return DISP_E_MEMBERNOTFOUND;
 }
 //IOleClientSite
@@ -13354,6 +13370,7 @@ CteFolderItem::CteFolderItem(VARIANT *pv)
 	m_cRef = 1;
 	m_pidl = NULL;
 	m_pFolderItem = NULL;
+	m_bStrict = FALSE;
 	VariantInit(&m_v);
 	if (pv) {
 		VariantCopy(&m_v, pv);
@@ -14428,6 +14445,18 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 									}
 								}
 							}
+						}
+						break;
+					//AssocQueryString
+					case 50155:
+						if (nArg >= 3) {
+							DWORD cch = 0;
+							LPWSTR lp2 = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 2]);
+							LPWSTR lp3 = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 3]);
+							AssocQueryString((ASSOCF)param[0], (ASSOCSTR)param[1], lp2 , lp3, NULL, &cch);
+							pszName = new WCHAR[cch + 1];
+							AssocQueryString((ASSOCF)param[0], (ASSOCSTR)param[1], lp2 , lp3, pszName, &cch);
+							pszName[cch] = NULL;
 						}
 						break;
 					default:				

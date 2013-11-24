@@ -260,6 +260,7 @@ public:
 	VARIANT			m_v;
 	LPITEMIDLIST	m_pidl;
 	FolderItem		*m_pFolderItem;
+	BOOL			m_bStrict;
 private:
 	LONG			m_cRef;
 };
@@ -615,7 +616,7 @@ public:
 	VOID Close(BOOL bForce);
 	VOID DestroyView(int nFlags);
 	HWND GetListHandle(HWND *hList);
-	BOOL Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItems *pFolderItems, LPITEMIDLIST pidlPrevius);
+	BOOL Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItems *pFolderItems, LPITEMIDLIST pidlPrevius, LPITEMIDLIST *ppidl);
 	HRESULT Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *param, FolderItems *pFolderItems, LPITEMIDLIST pidlPrevius);
 	HRESULT Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *param, CteShellBrowser **ppSB, FolderItems *pFolderItems);
 	HRESULT OnBeforeNavigate(FolderItem *pPrevius, UINT wFlags);

@@ -422,12 +422,16 @@ OpenSelected = function (Ctrl, NewTab)
 		var Exec = [];
 		var Selected = Ctrl.SelectedItems();
 		for (var i in Selected) {
-			var Item = Selected[i];
+			var Item = Selected.Item(i);
 			var bFolder = Item.IsFolder;
 			if (!bFolder) {
 				if (Item.IsLink) {
-				var path = Item.GetLink.Path;
-					bFolder = path == "" || fso.FolderExists(path);
+					try {
+						var path = Item.GetLink.Path;
+						bFolder = path == "" || fso.FolderExists(path);
+					} catch (e) {
+						bFolder = api.PathMatchSpec(Item.Path, "*.lnk");
+					}
 				}
 			}
 			if (bFolder) {
@@ -588,13 +592,15 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev)
 	return S_OK;
 }
 
-te.OnStatusText = function (Ctrl, Text, iPart)
+ShowStatusText = function (Ctrl, Text, iPart)
 {
 	for (var i in eventTE.StatusText) {
 		eventTE.StatusText[i](Ctrl, Text, iPart);
 	}
 	return S_OK; 
 }
+
+te.OnStatusText = ShowStatusText;
 
 te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 {
@@ -611,7 +617,7 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 			case CTRL_SB:
 			case CTRL_EB:
 				var strClass = api.GetClassName(hwnd);
-				if (api.strcmpi(strClass, WC_LISTVIEW) == 0 || api.strcmpi(strClass, "DirectUIHWND") == 0) {
+				if (api.PathMatchSpec(strClass, WC_LISTVIEW + ";DirectUIHWND")) {
 					var cmd = eventTE.Key.List[nKey];
 					if (cmd) {
 						return Exec(Ctrl, cmd[0], cmd[1], hwnd, null);
@@ -784,6 +790,9 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, mouseData, pt, wHitTestCode, dwEx
 	}
 
 	if (msg == WM_MOUSEMOVE) {
+		if (api.GetKeyState(VK_ESCAPE) < 0) {
+			g_mouse.EndGesture(false);
+		}
 		if (g_mouse.str.length && (te.Data.Conf_Gestures > 1 && api.GetKeyState(VK_RBUTTON) < 0) || (te.Data.Conf_Gestures && (api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_XBUTTON1) < 0 || api.GetKeyState(VK_XBUTTON2) < 0))) {
 			var x = (pt.x - g_mouse.ptGesture.x);
 			var y = (pt.y - g_mouse.ptGesture.y);
@@ -843,6 +852,50 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 			return hr; 
 		}
 	}
+	var Items = ContextMenu.Items();
+	var Exec = [];
+	if (isFinite(Verb)) {
+		Verb = ContextMenu.GetCommandString(Verb, GCS_VERB);
+	}
+	NewTab = SBSP_SAMEBROWSER;
+	for (var i = 0; i < Items.Count; i++) {
+		if (Verb && !api.PathMatchSpec(Verb, "runas")) {
+			var path = Items.Item(i).Path;
+			var cmd = api.AssocQueryString(ASSOCF_NONE, ASSOCSTR_COMMAND, path, api.strcmpi(Verb, "Default") ? Verb : null).replace(/"?%1"?|%L/g, api.PathQuoteSpaces(path)).replace(/%\*|%I/g, "");
+			if (cmd) {
+				ShowStatusText(te, Verb + ":" + cmd, 1);
+				if (api.PathMatchSpec(Verb, "open") && api.PathMatchSpec(cmd, "*\Explorer.exe /idlist,*;rundll32.exe *fldr.dll,RouteTheCall*")) {
+					Navigate(Items.Item(i), NewTab);
+				 	NewTab |= SBSP_NEWBROWSER;
+					continue;
+				}
+				if (cmd.indexOf("%") < 0) {
+					var cmd2 = ExtractMacro(te, cmd);
+					if (api.strcmpi(cmd, cmd2)) {
+						wsh.Run(cmd2, nShow, false);
+						continue;
+					}
+				}
+			}
+			if (api.PathMatchSpec(Verb, "open") && IsFolderEx(Items.Item(i))) {
+				Navigate(Items.Item(i), NewTab);
+			 	NewTab |= SBSP_NEWBROWSER;
+				continue;
+			}
+		}
+		Exec.push(Items.Item(i));
+	}
+	if (Items.Count != Exec.length) {
+		if (Exec.length) {
+			var Selected = te.FolderItems();
+			for (var i = 0; i < Exec.length; i++) {
+				Selected.AddItem(Exec[i]);
+			}
+			InvokeCommand(Selected, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon);
+		}
+		return S_OK;
+	}
+	ShowStatusText(te, (Verb || "") + ":" + (Items.Count == 1 ? Items.Item(0).Path : Items.Count), 1);
 	return S_FALSE; 
 }
 
@@ -979,6 +1032,7 @@ te.OnShowContextMenu = function (Ctrl, hwnd, msg, wParam, pt)
 				var arMenu = OpenMenu(items, null);
 				MakeMenus(hMenu, menus, arMenu, items);
 			}
+			api.DestroyMenu(hMenu);
 			break;
 	}
 	return S_FALSE;
@@ -992,7 +1046,10 @@ te.OnDefaultCommand = function (Ctrl)
 			return hr; 
 		}
 	}
-	return ExecMenu(Ctrl, "Default", null, 2);
+	if (ExecMenu(Ctrl, "Default", null, 2) != S_OK) {
+		InvokeCommand(Ctrl.SelectedItems(), 0, te.hwnd, null, null, null, SW_SHOWNORMAL, 0, 0);
+	}
+	return S_OK;
 }
 
 te.OnItemClick = function (Ctrl, Item, HitTest, Flags)
@@ -1353,7 +1410,7 @@ AddEventEx(window, "beforeunload", Finalize);
 document.body.onselectstart = function (e)
 {
 	var s = (e || event).srcElement.tagName;
-	return api.strcmpi(s, "input") == 0 || api.strcmpi(s, "textarea") == 0;
+	return api.PathMatchSpec(s, "input;textarea");
 };
 
 //
@@ -2082,6 +2139,7 @@ g_basic =
 						ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_NORMAL);
 						var nVerb = GetCommandId(hMenu, s);
 						ContextMenu.InvokeCommand(0, te.hwnd, nVerb ? nVerb - 1 : s, null, null, SW_SHOWNORMAL, 0, 0);
+						api.DestroyMenu(hMenu);
 					}
 				}
 				return S_OK;
@@ -2119,6 +2177,7 @@ g_basic =
 						if (nVerb) {
 							ContextMenu.InvokeCommand(0, te.hwnd, nVerb - 1, null, null, SW_SHOWNORMAL, 0, 0);
 						}
+						api.DestroyMenu(hMenu);
 					}
 				}
 				return S_OK;
@@ -2406,7 +2465,7 @@ if (!te.Data) {
 	for (var i = 0; i < x; i++) {
 		var s = api.GetDisplayNameOf(pf[i], SHGDN_FORPARSING);
 		var l = s.replace(/\s*\(x86\)$/i, "").length;
-		if (api.StrCmpI(s.substr(0, l), DataFolder.substr(0, l)) == 0) {
+		if (api.StrCmpNI(s, DataFolder, l) == 0) {
 			DataFolder = fso.BuildPath(api.GetDisplayNameOf(ssfAPPDATA, SHGDN_FORPARSING), "Tablacus\\Explorer");
 			var ParentFolder = fso.GetParentFolderName(DataFolder);
 			if (!fso.FolderExists(ParentFolder)) {
