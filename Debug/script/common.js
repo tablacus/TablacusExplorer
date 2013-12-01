@@ -1272,7 +1272,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 			}
 		}
 		else {
-			var ar = GetBaseMenu(nBase, FV, Selected, uCMF, Mode)
+			var ar = GetBaseMenu(nBase, FV, Selected, uCMF, Mode, SelItem)
 			var hMenu = ar.shift();
 			var ContextMenu = ar.shift();
 			if (nBase < 5) {
@@ -1281,12 +1281,11 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 				mii.fMask = MIIM_FTYPE;
 				for (var i = api.GetMenuItemCount(hMenu); i--;) {
 					api.GetMenuItemInfo(hMenu, i, true, mii);
-					if (mii.fType & MFT_SEPARATOR) {
-						api.RemoveMenu(hMenu, i, MF_BYPOSITION);
+					if ((mii.fType & MFT_SEPARATOR) || api.GetMenuString(hMenu, i, MF_BYPOSITION).charAt(0) == '{') {
+						api.DeleteMenu(hMenu, i, MF_BYPOSITION);
+						continue;
 					}
-					else {
-						break;
-					}
+					break;
 				}
 			}
 			var nPos = MakeMenus(hMenu, menus, arMenu, items);
@@ -1333,16 +1332,6 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 					if (ContextMenu.InvokeCommand(0, te.hwnd, nVerb - 0x1001, null, null, SW_SHOWNORMAL, 0, 0) == S_OK) {
 						nVerb = 0;
 					}
-					else if (nVerb == CommandID_RENAME + 0x1000) {
-						setTimeout(function () {
-							if (FV) {
-								FV.SelectItem(FV.FocusedItem, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_EDIT);
-							}
-							else {
-								wsh.SendKeys("{F2}");
-							}
-						}, 100);
-					}
 				}
 			}
 			api.DestroyMenu(hMenu);
@@ -1375,10 +1364,10 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 	return S_FALSE;
 }
 
-GetBaseMenu = function (nBase, FV, Selected, uCMF, Mode)
+GetBaseMenu = function (nBase, FV, Selected, uCMF, Mode, SelItem)
 {
 	for (var i in eventTE.GetBaseMenu) {
-		var ar = eventTE.GetBaseMenu[i](nBase, FV, Selected, uCMF, Mode);
+		var ar = eventTE.GetBaseMenu[i](nBase, FV, Selected, uCMF, Mode, SelItem);
 		if (ar && ar[0]) {
 			return ar; 
 		}
@@ -1397,6 +1386,7 @@ GetBaseMenu = function (nBase, FV, Selected, uCMF, Mode)
 				ContextMenu = api.ContextMenu(Items);
 				if (ContextMenu) {
 					ContextMenu.QueryContextMenu(hMenu, 0, 0x1001, 0x6FFF, uCMF);
+					SetRenameMenu(0x1001);
 				}
 			}
 			else if (FV) {
@@ -1408,12 +1398,11 @@ GetBaseMenu = function (nBase, FV, Selected, uCMF, Mode)
 					mii.fMask = MIIM_FTYPE | MIIM_SUBMENU;
 					for (var i = api.GetMenuItemCount(hMenu); i--;) {
 						api.GetMenuItemInfo(hMenu, 0, true, mii);
-						if (mii.hSubMenu || mii.fType & MFT_SEPARATOR) {
+						if (mii.hSubMenu || (mii.fType & MFT_SEPARATOR)) {
 							api.DeleteMenu(hMenu, 0, MF_BYPOSITION);
+							continue;
 						}
-						else {
-							break;
-						}
+						break;
 					}
 				}
 			}
@@ -1434,18 +1423,18 @@ GetBaseMenu = function (nBase, FV, Selected, uCMF, Mode)
 				ContextMenu = FV.ViewMenu();
 				if (ContextMenu) {
 					hMenu = api.CreatePopupMenu();
-					ContextMenu.QueryContextMenu(hMenu, 0, 0x1001, 0x6FFF, uCMF);
+					ContextMenu.QueryContextMenu(hMenu, 0, 0x1001, 0x6FFF, CMF_DEFAULTONLY);
 					var hMenu2 = te.MainMenu(id);
 					var oMenu = {};
 					var oMenu2 = {};
 
-					for (var i = api.GetMenuItemCount(hMenu2); i--;) {
+					for (var i = api.GetMenuItemCount(hMenu2); i-- > 0;) {
 						var mii = api.Memory("MENUITEMINFO");
 						mii.cbSize = mii.Size;
 						mii.fMask  = MIIM_SUBMENU;
 						var s = api.GetMenuString(hMenu2, i, MF_BYPOSITION);
 						if (s) {
-							s = s.replace(/[&\\(\\)]/g, "");
+							s = s.toLowerCase().replace(/[&\(\)]/g, "");
 							api.GetMenuItemInfo(hMenu2, i, true, mii);
 							oMenu2[s] = mii.hSubMenu;
 						}
@@ -1523,7 +1512,7 @@ MenuDbInit = function (hMenu, oMenu, oMenu2)
 		var s = api.GetMenuString(hMenu, i, MF_BYPOSITION);
 		api.GetMenuItemInfo(hMenu, i, true, mii);
 		if (s) {
-			s = s.replace(/[&\\(\\)]/g, "");
+			s = s.toLowerCase().replace(/[&\(\)]/g, "");
 			oMenu[s] = mii;
 			api.RemoveMenu(hMenu, i, MF_BYPOSITION);
 			if (oMenu2 && mii.hSubMenu && !oMenu2[s]) {
@@ -1538,24 +1527,23 @@ MenuDbInit = function (hMenu, oMenu, oMenu2)
 
 MenuDbReplace = function (hMenu, oMenu, hMenu2)
 {
-	var nCount = api.GetMenuItemCount(hMenu2);
-	for (var i = 0; i < nCount; i++) {
+	for (var i = api.GetMenuItemCount(hMenu2); i-- > 0;) {
 		var s = api.GetMenuString(hMenu2, 0, MF_BYPOSITION);
 		var mii = null;
 		var s2 = null;
 		if (s) {
-			s2 = s.replace(/[&\\(\\)]/g, "");
+			s2 = s.toLowerCase().replace(/[&\(\)]/g, "");
 			mii = oMenu[s2];
 			if (!mii) {
-				s2 = s.replace(/\t.*/, "");
+				s2 = s2.replace(/\t.*/, "");
 				mii = oMenu[s2];
 			}
 		}
 		if (mii) {
+			delete oMenu[s2];
 			api.DeleteMenu(hMenu2, 0, MF_BYPOSITION);
 		}
 		else {
-			delete oMenu[s2];
 			mii = api.Memory("MENUITEMINFO");
 			mii.cbSize = mii.Size;
 			mii.fMask = MIIM_ID | MIIM_BITMAP | MIIM_SUBMENU | MIIM_DATA | MIIM_FTYPE | MIIM_STATE;
@@ -2512,4 +2500,21 @@ InvokeCommand = function (Items, fMask, hwnd, Verb, Parameters, Directory, nShow
 			api.DestroyMenu(hMenu);
 		}
 	}
+}
+
+SetRenameMenu = function (n)
+{
+	ExtraMenuCommand[CommandID_RENAME + n - 1] = function (Ctrl, pt, Name, nVerb)
+	{
+		setTimeout(function () {
+			if (Ctrl.Type != CTRL_TV) {
+				var FV = GetFolderView(Ctrl);
+				if (FV) {
+					FV.SelectItem(FV.FocusedItem, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_EDIT);
+					return;
+				}
+			}
+			wsh.SendKeys("{F2}");
+		}, 100);
+	};
 }

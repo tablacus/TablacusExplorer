@@ -425,6 +425,7 @@ method methodAPI[] = {
 	{ 40263, L"OpenProcess" },
 	{ 40273, L"GetParent" },
 	{ 40283, L"GetCapture" },
+	{ 40293, L"GetModuleHandle" },
 	//+other
 	{ 45003, L"LoadMenu" },
 	{ 45013, L"LoadIcon" },
@@ -1203,12 +1204,7 @@ LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath)
 		if (n >= 0 && DriveType(n) == DRIVE_NO_ROOT_DIR && lstrlen(pszPath) > 3) {
 			WCHAR szDrive[4];
 			lstrcpyn(szDrive, pszPath, 4);
-			if (lpfnSHParseDisplayName) {
-				lpfnSHParseDisplayName(szDrive, NULL, &pidl, 0, NULL);
-			}
-			else {
-				pidl = ILCreateFromPath(szDrive);
-			}
+			lpfnSHParseDisplayName(szDrive, NULL, &pidl, 0, NULL);
 			if (!pidl) {
 				return NULL;
 			}
@@ -1222,12 +1218,7 @@ LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath)
 			}
 			CoTaskMemFree(pidl);
 		}
-		if (lpfnSHParseDisplayName) {
-			lpfnSHParseDisplayName(pszPath, NULL, &pidl, 0, NULL);
-		}
-		else {
-			pidl = ILCreateFromPath(pszPath);
-		}
+		lpfnSHParseDisplayName(pszPath, NULL, &pidl, 0, NULL);
 		if (pidl == NULL) {
 			for (int i = 0; i < MAX_CSIDL; i++) {
 				if (pidl = g_pidls[i]) {
@@ -1611,6 +1602,12 @@ HRESULT STDAPICALLTYPE teGetIDListFromObjectXP(IUnknown *punk, PIDLIST_ABSOLUTE 
 		return *ppidl ? S_OK : E_FAIL;
 	}
 	return E_NOTIMPL;
+}
+
+HRESULT STDAPICALLTYPE teSHParseDisplayName2000(LPCWSTR pszName, IBindCtx *pbc, PIDLIST_ABSOLUTE *ppidl, SFGAOF sfgaoIn, SFGAOF *psfgaoOut)
+{
+	*ppidl = ILCreateFromPath(pszName);
+	return *ppidl ? S_OK : E_FAIL;
 }
 #endif
 
@@ -3254,17 +3251,8 @@ VOID Finalize()
 			::CoTaskMemFree(g_pidls[i]);
 			g_pidls[i] = NULL;
 		}
-		if (g_hShell32) {
-			FreeLibrary(g_hShell32);
-		}
-		if (g_hKernel32) {
-			FreeLibrary(g_hKernel32);
-		}
 		if (g_hCrypt32) {
 			FreeLibrary(g_hCrypt32);
-		}
-		if (g_hPropsys) {
-			FreeLibrary(g_hPropsys);
 		}
 		if (g_bsCmdLine) {
 			SysFreeString(g_bsCmdLine);
@@ -3760,7 +3748,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	GetDisplayNameFromPidl(&bsPath, g_pidls[CSIDL_SYSTEM], SHGDN_FORPARSING);
 
 	tePathAppend(&pszPath, bsPath, L"kernel32.dll");
-	g_hKernel32 = LoadLibrary(pszPath);
+	g_hKernel32 = GetModuleHandle(pszPath);
 	if (g_hKernel32) {
 		lpfnSetDllDirectoryW = (LPFNSetDllDirectoryW)GetProcAddress(g_hKernel32, "SetDllDirectoryW");
 		if (lpfnSetDllDirectoryW) {
@@ -3770,7 +3758,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	delete [] pszPath;
 
 	tePathAppend(&pszPath, bsPath, L"shell32.dll");
-	g_hShell32 = LoadLibrary(pszPath);
+	g_hShell32 = GetModuleHandle(pszPath);
 	if (g_hShell32) {
 		lpfnSHCreateItemFromIDList = (LPFNSHCreateItemFromIDList)GetProcAddress(g_hShell32, "SHCreateItemFromIDList");
 		lpfnSHParseDisplayName = (LPFNSHParseDisplayName)GetProcAddress(g_hShell32, "SHParseDisplayName");
@@ -3782,17 +3770,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	if (!lpfnSHGetIDListFromObject) {
 		lpfnSHGetIDListFromObject = teGetIDListFromObjectXP;
 	}
-#endif
-
-	tePathAppend(&pszPath, bsPath, L"crypt32.dll");
-	g_hCrypt32 = LoadLibrary(pszPath);
-	if (g_hCrypt32) {
-		lpfnCryptBinaryToStringW = (LPFNCryptBinaryToStringW)GetProcAddress(g_hCrypt32, "CryptBinaryToStringW");
+	if (!lpfnSHParseDisplayName) {
+		lpfnSHParseDisplayName = teSHParseDisplayName2000;
 	}
-	delete [] pszPath;
-
+#endif
 	tePathAppend(&pszPath, bsPath, L"propsys.dll");
-	g_hPropsys = LoadLibrary(pszPath);
+	g_hPropsys = GetModuleHandle(pszPath);
 	if (g_hPropsys) {
 		lpfnPSPropertyKeyFromString = (LPFNPSPropertyKeyFromString)GetProcAddress(g_hPropsys, "PSPropertyKeyFromString");
 		lpfnPSGetPropertyKeyFromName = (LPFNPSGetPropertyKeyFromName)GetProcAddress(g_hPropsys, "PSGetPropertyKeyFromName");
@@ -3808,6 +3791,13 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		}
 	}
 #endif
+	delete [] pszPath;
+
+	tePathAppend(&pszPath, bsPath, L"crypt32.dll");
+	g_hCrypt32 = LoadLibrary(pszPath);
+	if (g_hCrypt32) {
+		lpfnCryptBinaryToStringW = (LPFNCryptBinaryToStringW)GetProcAddress(g_hCrypt32, "CryptBinaryToStringW");
+	}
 	delete [] pszPath;
 
 	::SysFreeString(bsPath);
@@ -6349,20 +6339,21 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 		//GetFocusedItem
 		case 0x10000282:
 			if (pVarResult) {
+#ifdef _W2000
+				if (osInfo.dwMajorVersion == 5) {
+					//Windows 2000
+					pVarResult->lVal = ListView_GetNextItem(m_hwndLV, -1, LVNI_ALL | LVNI_FOCUSED);
+					pVarResult->vt = VT_I4;
+					return S_OK;
+				}
+#endif
 				IFolderView *pFV;
 				if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
 					if SUCCEEDED(pFV->GetFocusedItem(&pVarResult->intVal)) {
 						pVarResult->vt = VT_I4;
-#ifndef _W2000
 						return S_OK;
-#endif
 					}
 				}
-#ifdef _W2000
-				//Windows 2000
-				pVarResult->lVal = ListView_GetNextItem(m_hwndLV, -1, LVNI_ALL | LVNI_FOCUSED);
-				pVarResult->vt = VT_I4;
-#endif
 			}
 			return S_OK;
 		//
@@ -14613,6 +14604,11 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 					break;
 				case 40283:
 					*phResult = (HANDLE)GetCapture();
+					break;
+				case 40293:
+					VARIANT vFile;
+					teVariantChangeType(&vFile, &pDispParams->rgvarg[nArg], VT_BSTR);
+					*phResult = (HANDLE)GetModuleHandle(vFile.bstrVal);
 					break;
 				//other
 				case 45003:
