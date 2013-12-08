@@ -51,7 +51,6 @@ CTE *g_pTE;
 CteWebBrowser *g_pWebBrowser;
 CteShellBrowser *g_pSB[MAX_FV];
 GUID		g_ClsIdStruct;
-GUID		g_ClsIdContextMenu;
 GUID		g_ClsIdSB;
 GUID		g_ClsIdTC;
 GUID		g_ClsIdFI;
@@ -75,7 +74,7 @@ long		g_nThreads	   = 0;
 WPARAM		g_LastMsg;
 HWND		g_hwndLast;
 BOOL		g_bInit = true;
-CteContextMenu *g_pCCM = NULL;
+IContextMenu *g_pCM = NULL;
 ULONG_PTR g_Token;
 Gdiplus::GdiplusStartupInput g_StartupInput;
 HHOOK g_hHook;
@@ -327,6 +326,7 @@ method methodAPI[] = {
 	{ 20361, L"SetCursorPos" },
 	{ 20371, L"DestroyCursor" },
 	{ 20381, L"SHFreeShared" },
+	{ 20391, L"EndMenu" },
 	//+other
 	{ 25001, L"InsertMenu" },
 	{ 25011, L"SetWindowText" },
@@ -625,6 +625,8 @@ method methodCM[] = {
 	{ 2, L"InvokeCommand" },
 	{ 3, L"Items" },
 	{ 4, L"GetCommandString" },
+	{ 5, L"FolderView" },
+	{ 6, L"HandleMenuMsg" },
 };
 
 method methodCD[] = {
@@ -1561,19 +1563,6 @@ LPITEMIDLIST* IDListFormDataObj(IDataObject *pDataObj, long *pnCount)
 		}
 	}
 	return ppidllist;
-}
-
-VOID HandleMenuMessage(MSG *pMsg)
-{
-	LRESULT lResult = 0;
-	if (g_pCCM) {
-		if (g_pCCM->m_pContextMenu3) {
-			g_pCCM->m_pContextMenu3->HandleMenuMsg2(pMsg->message, pMsg->wParam, pMsg->lParam, &lResult);
-		}
-		else if (g_pCCM->m_pContextMenu2) {
-			g_pCCM->m_pContextMenu2->HandleMenuMsg(pMsg->message, pMsg->wParam, pMsg->lParam);
-		}
-	}
 }
 
 #ifdef _2000XP
@@ -3316,11 +3305,11 @@ int GetEncoderClsid(const WCHAR* pszName, CLSID* pClsid, LPWSTR pszMimeType)
 	ImageCodecInfo* pImageCodecInfo = NULL;
 
 	GetImageEncodersSize(&num, &size);
-	if(size == 0) {
+	if (size == 0) {
 		return -1;  // Failure
 	}
 	pImageCodecInfo = (ImageCodecInfo*) new char[size];
-	if(pImageCodecInfo == NULL) {
+	if (pImageCodecInfo == NULL) {
 		return -1;  // Failure
 	}
 	GetImageEncoders(num, size, pImageCodecInfo);
@@ -3881,7 +3870,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	CoCreateGuid(&g_ClsIdSB);
 	CoCreateGuid(&g_ClsIdTC);
 	CoCreateGuid(&g_ClsIdStruct);
-	CoCreateGuid(&g_ClsIdContextMenu);
 	CoCreateGuid(&g_ClsIdFI);
 	//Get JScript Object
 	IDispatch *pJS = NULL;
@@ -4118,8 +4106,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					return hr;
 				}
 			}
-			if (bDone) {
-				HandleMenuMessage(&msg1);
+			if (bDone && g_pCM) {
+				LRESULT lResult = 0;
+				IContextMenu3 *pCM3;
+				IContextMenu2 *pCM2;
+				if SUCCEEDED(g_pCM->QueryInterface(IID_PPV_ARGS(&pCM3))) {
+					pCM3->HandleMenuMsg2(message, wParam, lParam, &lResult);
+					pCM3->Release();
+					return lResult;
+				}
+				else if SUCCEEDED(g_pCM->QueryInterface(IID_PPV_ARGS(&pCM2))) {
+					pCM2->HandleMenuMsg(message, wParam, lParam);
+					pCM3->Release();
+				}
 			}
 			break;
 		//System
@@ -4327,9 +4326,6 @@ STDMETHODIMP CteShellBrowser::QueryInterface(REFIID riid, void **ppvObject)
 	else if (IsEqualIID(riid, IID_ICommDlgBrowser2)) {
 		*ppvObject = static_cast<ICommDlgBrowser2 *>(this);
 	}
-	else if (IsEqualIID(riid, IID_IServiceProvider)) {
-		*ppvObject = static_cast<IServiceProvider *>(this);
-	}
 	else if (IsEqualIID(riid, IID_IDispatch)) {
 		*ppvObject = static_cast<IDispatch *>(this);
 	}
@@ -4407,6 +4403,10 @@ STDMETHODIMP CteShellBrowser::QueryInterface(REFIID riid, void **ppvObject)
 #endif
 			return hr;
 		}
+	}
+	else if (IsEqualIID(riid, IID_IServiceProvider)) {
+		*ppvObject = static_cast<IServiceProvider *>(new CteServiceProvider(this, m_pShellView));
+		return S_OK;
 	}
 	else if (m_pShellView && IsEqualIID(riid, IID_IShellView)) {
 		return m_pShellView->QueryInterface(riid, ppvObject);
@@ -4781,8 +4781,8 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 					pOptions->Release();
 				}
 				m_pExplorerBrowser->SetOptions(static_cast<EXPLORER_BROWSER_OPTIONS>(m_param[SB_Options] | EBO_SHOWFRAMES | EBO_NOTRAVELLOG));
-				IUnknown_GetSite(m_pExplorerBrowser, IID_PPV_ARGS(&m_pServiceProvider));
-				IUnknown_SetSite(m_pExplorerBrowser, static_cast<IServiceProvider *>(this));
+				m_pServiceProvider = new CteServiceProvider(this, NULL);
+				IUnknown_SetSite(m_pExplorerBrowser, m_pServiceProvider);
 
 				int nDog = 5;
 				do {
@@ -5309,29 +5309,6 @@ STDMETHODIMP CteShellBrowser::GetEnumFlags(IShellFolder *psf, PCIDLIST_ABSOLUTE 
 	return S_OK;
 }
 */
-
-//IServiceProvider
-STDMETHODIMP CteShellBrowser::QueryService(REFGUID guidService, REFIID riid, void **ppvObject)
-{
-	*ppvObject = NULL;
-	if (IsEqualIID(riid, IID_IShellBrowser)) {
-		*ppvObject = static_cast<IShellBrowser *>(this);
-	}
-	else if (IsEqualIID(riid, IID_ICommDlgBrowser)) {
-		*ppvObject = static_cast<ICommDlgBrowser *>(this);
-	}
-	else if (IsEqualIID(riid, IID_ICommDlgBrowser2)) {
-		*ppvObject = static_cast<ICommDlgBrowser2 *>(this);
-	}
-	else if (m_pServiceProvider) {
-		return m_pServiceProvider->QueryService(guidService, riid, ppvObject);
-	}
-	else {
-		return E_NOINTERFACE;
-	}
-	AddRef();
-	return S_OK;
-}
 
 STDMETHODIMP CteShellBrowser::GetTypeInfoCount(UINT *pctinfo)
 {
@@ -6230,10 +6207,11 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			if (pVarResult) {
 				IContextMenu *pCM;
 				if SUCCEEDED(m_pShellView->GetItemObject(SVGIO_BACKGROUND, IID_PPV_ARGS(&pCM))) {
-					IDataObject *pDataObj = NULL;
-					m_pShellView->GetItemObject(SVGIO_ALLVIEW, IID_PPV_ARGS(&pDataObj));
+					CteServiceProvider *pSP = new CteServiceProvider(this, m_pShellView);
+					IUnknown_SetSite(pCM, pSP);
+					pSP->Release();
 					CteContextMenu *pCCM;
-					pCCM = new CteContextMenu(pCM, pDataObj);
+					pCCM = new CteContextMenu(pCM, NULL);
 					pCCM->m_pShellBrowser = this;
 					teSetObject(pVarResult, pCCM);
 					pCCM->Release();
@@ -6420,8 +6398,9 @@ STDMETHODIMP CteShellBrowser::SelectedItems(FolderItems **ppid)
 	FolderItems *pItems = NULL;
 /*	IShellFolderViewDual *pSFVD;			// Unstable (Windows2000)
 	if SUCCEEDED(m_pDSFV->QueryInterface(IID_PPV_ARGS(&pSFVD))) {
-		pSFVD->SelectedItems(&pItems);
+		pSFVD->SelectedItems(ppid);
 		pSFVD->Release();
+		return S_OK;
 	}*/
 	IDataObject *pDataObj;
 	if (!m_pShellView || FAILED(m_pShellView->GetItemObject(SVGIO_SELECTION, IID_PPV_ARGS(&pDataObj)))) {
@@ -6999,8 +6978,10 @@ VOID CteShellBrowser::DestroyView(int nFlags)
 			if (m_dwEventCookie) {
 			  m_pExplorerBrowser->Unadvise(m_dwEventCookie);
 			}
-			IUnknown_SetSite(m_pExplorerBrowser, m_pServiceProvider);
+//			IUnknown_SetSite(m_pExplorerBrowser, m_pServiceProvider->m_pServiceProvider);
+			m_pServiceProvider->Release();
 			m_pServiceProvider = NULL;
+			IUnknown_SetSite(m_pExplorerBrowser, NULL);
 			Show(false);
 			m_pExplorerBrowser->Destroy();
 			m_pExplorerBrowser->Release();
@@ -9900,6 +9881,59 @@ STDMETHODIMP CteFolderItems::EnumDAdvise(IEnumSTATDATA **ppenumAdvise)
 	return E_NOTIMPL;
 }
 
+//CteServiceProvider
+
+STDMETHODIMP CteServiceProvider::QueryInterface(REFIID riid, void **ppvObject)
+{
+	*ppvObject = NULL;
+
+	if (IsEqualIID(riid, IID_IUnknown) || IsEqualIID(riid, IID_IServiceProvider)) {
+		*ppvObject = static_cast<IServiceProvider *>(this);
+	}
+	else {
+		return E_NOINTERFACE;
+	}
+	AddRef();
+	return S_OK;
+}
+
+STDMETHODIMP_(ULONG) CteServiceProvider::AddRef()
+{
+	return ::InterlockedIncrement(&m_cRef);
+}
+
+STDMETHODIMP_(ULONG) CteServiceProvider::Release()
+{
+	if (::InterlockedDecrement(&m_cRef) == 0) {
+		delete this;
+		return 0;
+	}
+
+	return m_cRef;
+}
+
+STDMETHODIMP CteServiceProvider::QueryService(REFGUID guidService, REFIID riid, void **ppv)
+{
+	if (IsEqualIID(riid, IID_IShellBrowser) || IsEqualIID(riid, IID_ICommDlgBrowser) || IsEqualIID(riid, IID_ICommDlgBrowser2)) {
+		return m_pSB->QueryInterface(riid, ppv);
+	}
+	if (m_pSV) {
+		return m_pSV->QueryInterface(riid, ppv);
+	}
+	return E_NOINTERFACE;
+}
+
+CteServiceProvider::CteServiceProvider(IShellBrowser *pSB, IShellView *pSV)
+{
+	m_cRef = 1;
+	m_pSB = pSB;
+	m_pSV = pSV;
+}
+
+CteServiceProvider::~CteServiceProvider()
+{
+}
+
 //CteMemory
 
 CteMemory::CteMemory(int nSize, char *pc, int nMode, int nCount, LPWSTR lpStruct)
@@ -11847,27 +11881,16 @@ CteContextMenu::CteContextMenu(IContextMenu *pContextMenu, IDataObject *pDataObj
 {
 	m_cRef = 1;
 	m_pContextMenu = NULL;
-	m_pContextMenu2 = NULL;
-	m_pContextMenu3 = NULL;
 	m_pShellBrowser = NULL;
 	m_pDataObj = pDataObj;
 
 	if (pContextMenu) {
-		if SUCCEEDED(pContextMenu->QueryInterface(IID_PPV_ARGS(&m_pContextMenu))) {
-			pContextMenu->QueryInterface(IID_PPV_ARGS(&m_pContextMenu2));
-			pContextMenu->QueryInterface(IID_PPV_ARGS(&m_pContextMenu3));
-		}
+		pContextMenu->QueryInterface(IID_PPV_ARGS(&m_pContextMenu));
 	}
 }
 
 CteContextMenu::~CteContextMenu()
 {
-	if (m_pContextMenu3) {
-		m_pContextMenu3->Release();
-	}
-	if (m_pContextMenu2) {
-		m_pContextMenu2->Release();
-	}
 	if (m_pContextMenu) {
 		m_pContextMenu->Release();
 	}
@@ -11885,9 +11908,6 @@ STDMETHODIMP CteContextMenu::QueryInterface(REFIID riid, void **ppvObject)
 	}
 	else if (IsEqualIID(riid, IID_IContextMenu)) {
 		return m_pContextMenu->QueryInterface(IID_IContextMenu, ppvObject);
-	}
-	else if (IsEqualIID(riid, g_ClsIdContextMenu)) {
-		*ppvObject = this;
 	}
 	else {
 		return E_NOINTERFACE;
@@ -12047,16 +12067,60 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 				if (pVarResult) {
 					WCHAR szName[MAX_PATH];
 					szName[0] = NULL;
-					if SUCCEEDED(m_pContextMenu->GetCommandString(
-						(INT_PTR)GetLLFromVariant(&pDispParams->rgvarg[nArg]),
-						GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]),
-						NULL, (LPSTR)&szName, MAX_PATH))
-					{
-						pVarResult->bstrVal = SysAllocString(szName);
-						pVarResult->vt = VT_BSTR;
+					UINT idCmd = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+					if (idCmd <= MAXWORD) {
+						m_pContextMenu->GetCommandString(idCmd,
+							GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]),
+							NULL, (LPSTR)&szName, MAX_PATH);
 					}
+					pVarResult->bstrVal = SysAllocString(szName);
+					pVarResult->vt = VT_BSTR;
 				}
 			}
+			return S_OK;
+		//FolderView
+		case 5:
+			if (pVarResult) {
+				IServiceProvider *pSP;
+				if SUCCEEDED(IUnknown_GetSite(m_pContextMenu, IID_PPV_ARGS(&pSP))) {
+					IShellBrowser *pSB;		
+					if SUCCEEDED(pSP->QueryService(SID_SShellBrowser, IID_PPV_ARGS(&pSB))) {
+						IDispatch *pdisp;
+						if SUCCEEDED(pSB->QueryInterface(IID_PPV_ARGS(&pdisp))) {
+							teSetObject(pVarResult, pdisp);
+							pdisp->Release();
+						}
+						pSB->Release();
+					}
+					pSP->Release();
+				}
+			}
+			return S_OK;
+		//HandleMenuMsg
+		case 6:
+			LRESULT lResult;
+			IContextMenu3 *pCM3;
+			IContextMenu2 *pCM2;
+			lResult = 0;
+			if (nArg >= 2) {
+				if SUCCEEDED(QueryInterface(IID_PPV_ARGS(&pCM3))) {
+					pCM3->HandleMenuMsg2(
+						(UINT)GetIntFromVariant(&pDispParams->rgvarg[nArg]),
+						(WPARAM)GetLLFromVariant(&pDispParams->rgvarg[nArg - 1]),
+						(LPARAM)GetLLFromVariant(&pDispParams->rgvarg[nArg - 2]), &lResult
+					);
+					pCM3->Release();
+				}
+				else if SUCCEEDED(QueryInterface(IID_PPV_ARGS(&pCM2))) {
+					pCM2->HandleMenuMsg(
+						(UINT)GetIntFromVariant(&pDispParams->rgvarg[nArg]),
+						(WPARAM)GetLLFromVariant(&pDispParams->rgvarg[nArg - 1]),
+						(LPARAM)GetLLFromVariant(&pDispParams->rgvarg[nArg - 2])
+					);
+					pCM2->Release();
+				}
+			}
+			SetVariantLL(pVarResult, lResult);
 			return S_OK;
 
 		case DISPID_VALUE:
@@ -14106,10 +14170,30 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 		//GetThumbnailImage
 		case 120:
 			if (nArg >= 1) {
-				CteGdiplusBitmap *pGB = new CteGdiplusBitmap();
-				pGB->m_pImage = m_pImage->GetThumbnailImage(GetIntFromVariant(&pDispParams->rgvarg[nArg]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]));
-				teSetObject(pVarResult, pGB);
-				pGB->Release();
+				CLSID encoderClsid;
+				if (GetEncoderClsid(L"image/png", &encoderClsid, NULL) >= 0) {
+					IStream* oStream = NULL;
+					if SUCCEEDED(CreateStreamOnHGlobal(NULL, TRUE, (LPSTREAM*)&oStream)) {
+						GUID guid;
+						m_pImage->GetRawFormat(&guid);
+						if (guid == ImageFormatJPEG || guid == ImageFormatTIFF ||  guid == ImageFormatUndefined) {
+							HICON hIcon;
+							m_pImage->GetHICON(&hIcon);
+							delete m_pImage;
+							m_pImage = Gdiplus::Bitmap::FromHICON(hIcon);
+							DeleteObject(hIcon);
+						}
+						Gdiplus::Image *pImage = m_pImage->GetThumbnailImage(GetIntFromVariant(&pDispParams->rgvarg[nArg]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]));
+						if (pImage->Save(oStream, &encoderClsid) == 0) {
+							CteGdiplusBitmap *pGB = new CteGdiplusBitmap();
+							pGB->m_pImage = Gdiplus::Bitmap::FromStream(oStream, FALSE);
+							teSetObject(pVarResult, pGB);
+							pGB->Release();
+						}
+						delete pImage;
+						oStream->Release();
+					}
+				}
 			}
 			return S_OK;
 		//RotateFlip
@@ -14123,8 +14207,7 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 			if (pVarResult) {
 				int cl = (nArg >= 0) ? GetIntFromVariant(&pDispParams->rgvarg[nArg]) : 0;
 				HBITMAP hBM;
-				Gdiplus::Bitmap *pBitmap = dynamic_cast<Gdiplus::Bitmap*>(m_pImage);
-				if (pBitmap && pBitmap->GetHBITMAP(((cl & 0xff) << 16) + (cl & 0xff00) + ((cl & 0xff0000) >> 16), &hBM) == 0) {
+				if (m_pImage->GetHBITMAP(((cl & 0xff) << 16) + (cl & 0xff00) + ((cl & 0xff0000) >> 16), &hBM) == 0) {
 					SetVariantLL(pVarResult, (LONGLONG)hBM);
 				}
 			}
@@ -14133,8 +14216,7 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 		case 211:
 			if (pVarResult) {
 				HICON hIcon;
-				Gdiplus::Bitmap *pBitmap = dynamic_cast<Gdiplus::Bitmap*>(m_pImage);
-				if (pBitmap->GetHICON(&hIcon) == 0) {
+				if (m_pImage->GetHICON(&hIcon) == 0) {
 					SetVariantLL(pVarResult, (LONGLONG)hIcon);
 				}
 			}
@@ -14850,7 +14932,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 					if (nArg >= 5) {
 						if (nArg >= 6) {
 							if (FindUnknown(&pDispParams->rgvarg[nArg - 6], &punk)) {
-								punk->QueryInterface(g_ClsIdContextMenu, (LPVOID *)&g_pCCM);
+								punk->QueryInterface(IID_PPV_ARGS(&g_pCM));
 							}
 						}
 						g_hMenuKeyHook = g_hMenuKeyHook ? g_hMenuKeyHook : SetWindowsHookEx(WH_KEYBOARD, (HOOKPROC)MenuKeyProc, hInst, GetCurrentThreadId());
@@ -14858,9 +14940,9 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 							(HWND)param[4], (LPTPMPARAMS)GetpcFormVariant(&pDispParams->rgvarg[nArg - 5]));
 						UnhookWindowsHookEx(g_hMenuKeyHook);
 						g_hMenuKeyHook = NULL;
-						if (g_pCCM) {
-							g_pCCM->Release();
-							g_pCCM = NULL;
+						if (g_pCM) {
+							g_pCM->Release();
+							g_pCM = NULL;
 						}
 					}
 					break;
@@ -15324,6 +15406,14 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 						*pbResult = DestroyCursor((HCURSOR)param[0]);
 					}
 					break;
+				case 20381:
+					if (nArg >= 1) {
+						*pbResult = SHFreeShared((HANDLE)param[0], (DWORD)param[1]);
+					}
+					break;
+				case 20391:
+					*pbResult = EndMenu();
+					break;
 				case 25001://InsertMenu
 					if (nArg >= 4) {
 						VARIANT vNewItem;
@@ -15769,6 +15859,12 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 								else*/
 								if SUCCEEDED(pSF->GetUIObjectOf(g_hwndMain, nCount, (LPCITEMIDLIST *)&ppidllist[1], IID_IContextMenu, NULL, (LPVOID*)&pCM)) {
 									CteContextMenu *pCCM;
+									if (nArg >= 1) {
+										IUnknown *punk;
+										if (FindUnknown(&pDispParams->rgvarg[nArg - 1], &punk)) {
+											IUnknown_SetSite(pCM, punk);
+										}
+									}
 									pCCM = new CteContextMenu(pCM, pDataObj);
 									pDataObj = NULL;
 									teSetObject(pVarResult, pCCM);

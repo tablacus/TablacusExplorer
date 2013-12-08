@@ -497,8 +497,26 @@ private:
 	HRESULT m_DragLeave;
 };
 
+class CteServiceProvider : public IServiceProvider
+{
+public:
+	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
+	STDMETHODIMP_(ULONG) AddRef();
+	STDMETHODIMP_(ULONG) Release();
+	//IServiceProvider
+	STDMETHODIMP QueryService(REFGUID guidService, REFIID riid, void **ppv);
+
+	CteServiceProvider(IShellBrowser *pSB, IShellView *pSV);
+	~CteServiceProvider();
+
+public:
+	LONG	m_cRef;
+	IShellBrowser *m_pSB;
+	IShellView *m_pSV;
+};
+
 class CteShellBrowser : public IShellBrowser, public ICommDlgBrowser2, 
-	public IServiceProvider, public IShellFolderViewDual,
+	public IShellFolderViewDual,
 //	public IFolderFilter,
 #ifdef _VISTA7
 	public IExplorerBrowserEvents, public IExplorerPaneVisibility,
@@ -539,8 +557,6 @@ public:
 	/*IFolderFilter
 	STDMETHODIMP ShouldShow(IShellFolder *psf, PCIDLIST_ABSOLUTE pidlFolder, PCUITEMID_CHILD pidlItem);
 	STDMETHODIMP GetEnumFlags(IShellFolder *psf, PCIDLIST_ABSOLUTE pidlFolder, HWND *phwnd, DWORD *pgrfFlags);*/
-	//IServiceProvider
-	STDMETHODIMP QueryService(REFGUID guidService, REFIID riid, void **ppv);
 	//IDispatch
 	STDMETHODIMP GetTypeInfoCount(UINT *pctinfo);
 	STDMETHODIMP GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo);
@@ -656,7 +672,7 @@ public:
 	FolderItem *m_pFolderItem;
 	int			m_nUnload;
 	IExplorerBrowser *m_pExplorerBrowser;
-	IServiceProvider *m_pServiceProvider;
+	CteServiceProvider *m_pServiceProvider;
 private:
 	LONG		m_cRef;
 	VARIANT m_Data;
@@ -735,10 +751,10 @@ public:
 
 	CteContextMenu(IContextMenu *pContextMenu, IDataObject *pDataObj);
 	~CteContextMenu();
+
+	LRESULT HandleMenuMessage(MSG *pMsg);
 public:
 	IContextMenu *m_pContextMenu;
-	IContextMenu2 *m_pContextMenu2;
-	IContextMenu3 *m_pContextMenu3;
 	CteShellBrowser *m_pShellBrowser;
 private:
 	LONG	m_cRef;
@@ -914,7 +930,7 @@ public:
 	~CteGdiplusBitmap();
 private:
 	LONG	m_cRef;
-	Gdiplus::Image *m_pImage;
+	Gdiplus::Bitmap *m_pImage;
 };
 
 class CteWindowsAPI : public IDispatch
