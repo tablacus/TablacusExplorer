@@ -497,7 +497,7 @@ ChangeX = function (mode)
 	g_Chg.Data = mode;
 }
 
-function ConfirmX(bCancel)
+function ConfirmX(bCancel, fn)
 {
 	try {
 		if (g_Chg.Data) {
