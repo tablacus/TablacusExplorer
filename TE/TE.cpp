@@ -27,6 +27,7 @@ HINSTANCE	g_hPropsys = NULL;
 LPFNSHCreateItemFromIDList lpfnSHCreateItemFromIDList = NULL;
 LPFNSetDllDirectoryW lpfnSetDllDirectoryW = NULL;
 LPFNSHParseDisplayName lpfnSHParseDisplayName = NULL;
+LPFNSHGetImageList lpfnSHGetImageList = NULL;
 LPFNSHRunDialog lpfnSHRunDialog = NULL;
 LPFNCryptBinaryToStringW lpfnCryptBinaryToStringW = NULL;
 LPFNPSPropertyKeyFromString lpfnPSPropertyKeyFromString = NULL;
@@ -351,9 +352,9 @@ method methodAPI[] = {
 	{ 29161, L"FillRect" },
 	{ 29171, L"Shell_NotifyIcon" },
 	{ 29191, L"EndPaint" },
+	{ 29601, L"ImageList_GetIconSize" },
 	//+mem(2)
 	{ 29201, L"SystemParametersInfo" },
-	{ 29211, L"ImageList_GetIconSize" },
 	{ 29221, L"GetTextExtentPoint32" },
 	{ 29232, L"SHGetDataFromIDList" },
 	//+mem(3)
@@ -383,6 +384,8 @@ method methodAPI[] = {
 	{ 30202, L"GetMenuDefaultItem" },
 	{ 30212, L"CRC32" },
 	{ 30222, L"SHEmptyRecycleBin" },
+	{ 30232, L"GetMessagePos" },
+	{ 30242, L"ImageList_GetOverlayImage" },
 	//+other
 	{ 35002, L"TrackPopupMenuEx" },
 	{ 35012, L"ExtractIconEx" },
@@ -426,6 +429,8 @@ method methodAPI[] = {
 	{ 40273, L"GetParent" },
 	{ 40283, L"GetCapture" },
 	{ 40293, L"GetModuleHandle" },
+	{ 40303, L"SHGetImageList" },
+	{ 40313, L"CopyImage" },
 	//+other
 	{ 45003, L"LoadMenu" },
 	{ 45013, L"LoadIcon" },
@@ -1598,6 +1603,28 @@ HRESULT STDAPICALLTYPE teSHParseDisplayName2000(LPCWSTR pszName, IBindCtx *pbc, 
 	*ppidl = ILCreateFromPath(pszName);
 	return *ppidl ? S_OK : E_FAIL;
 }
+
+HRESULT STDAPICALLTYPE teSHGetImageList2000(int iImageList, REFIID riid, void **ppvObj)
+{
+	SHFILEINFO sfi;
+	UINT uFlags = 0;
+	switch (iImageList) {
+		case SHIL_LARGE:
+			uFlags = SHGFI_SYSICONINDEX | SHGFI_LARGEICON;
+			break;
+		case SHIL_SMALL:
+			uFlags = SHGFI_SYSICONINDEX | SHGFI_SMALLICON;
+			break;
+		case SHIL_SYSSMALL:
+			uFlags = SHGFI_SYSICONINDEX | SHGFI_SHELLICONSIZE;
+			break;
+		default:
+			return E_NOTIMPL;
+	}//end_switch
+	*(DWORD_PTR *)ppvObj = SHGetFileInfo(NULL, 0, &sfi, sizeof(sfi), uFlags);
+	return S_OK;
+}
+
 #endif
 
 BOOL GetIDListFromObject(IUnknown *punk, LPITEMIDLIST *ppidl)
@@ -2188,8 +2215,8 @@ VOID GetPointFormVariant(POINT *pt, VARIANT *pv)
 	}
 	int nPt;
 	nPt = GetIntFromVariant(pv);
-	pt->x = LOWORD(nPt);
-	pt->y = HIWORD(nPt);
+	pt->x = GET_X_LPARAM(nPt);
+	pt->y = GET_Y_LPARAM(nPt);
 }
 
 
@@ -2734,15 +2761,12 @@ LRESULT CALLBACK TETVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					msg1.message = WM_CONTEXTMENU;
 					msg1.wParam = (WPARAM)hwnd;
 					GetCursorPos(&msg1.pt);
-					Result = MessageSubPt(TE_OnShowContextMenu, pTV, &msg1);
+					Result = !MessageSubPt(TE_OnShowContextMenu, pTV, &msg1);
 				}
 			}
 			catch(...) {}
 			::InterlockedDecrement(&g_nProcTV);
 		}
-	}
-	if (msg == WM_CONTEXTMENU) {	//Double-clicking is the default menu.
-		Result = S_OK;				//Treated with NM_RCLICK
 	}
 	return Result ? CallWindowProc(pTV->m_DefProc, hwnd, msg, wParam, lParam) : 0;
 }
@@ -2787,15 +2811,16 @@ LRESULT CALLBACK TETVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			return 0;
 		}
 	}
+#ifdef _2000XP
 	if (msg == TVM_INSERTITEM) {
 		TVINSERTSTRUCT *pTVInsert = (TVINSERTSTRUCT *)lParam;
 		if (pTVInsert->item.cChildren == 1) {
 			pTVInsert->item.cChildren = -1;
 		}
 	}
+#endif
 	return CallWindowProc(pTV->m_DefProc2, hwnd, msg, wParam, lParam);
 }
-
 
 LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -2816,8 +2841,23 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 								msg1.hwnd = hwnd;
 								msg1.message = msg;
 								msg1.wParam = wParam;
-								msg1.pt.x = LOWORD(lParam);
-								msg1.pt.y = HIWORD(lParam);
+								if ((lParam & MAXDWORD) == MAXDWORD) {
+									HWND hwndLV = pSB->m_hwndLV;
+									msg1.pt.x = 0;
+									msg1.pt.y = 0;
+									ClientToScreen(hwndLV, &msg1.pt);
+									if (ListView_GetSelectedCount(hwndLV)) {
+										RECT rc;
+										ListView_GetItemRect(hwndLV, ListView_GetNextItem(hwndLV, -1, LVNI_ALL | LVNI_SELECTED), &rc, LVIR_ICON);
+										OffsetRect(&rc, msg1.pt.x, msg1.pt.y);
+										msg1.pt.x = (rc.left + rc.right) / 2;
+										msg1.pt.y = (rc.top + rc.bottom) / 2;
+									}
+								}
+								else {
+									msg1.pt.x = GET_X_LPARAM(lParam);
+									msg1.pt.y = GET_Y_LPARAM(lParam);
+								}
 								lResult = MessageSubPt(TE_OnShowContextMenu, pdisp, &msg1);
 							}
 							break;
@@ -3044,8 +3084,8 @@ LRESULT CALLBACK TEBTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				msg1.hwnd = pTC->m_hwnd;
 				msg1.message = msg;
 				msg1.wParam = wParam;
-				msg1.pt.x = LOWORD(lParam);
-				msg1.pt.y = HIWORD(lParam);
+				msg1.pt.x = GET_X_LPARAM(lParam);
+				msg1.pt.y = GET_Y_LPARAM(lParam);
 				MessageSubPt(TE_OnShowContextMenu, pTC, &msg1);
 				Result = 0;
 			}
@@ -3297,7 +3337,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 	return RegisterClassEx(&wcex);
 }
 
-int GetEncoderClsid(const WCHAR* pszName, CLSID* pClsid, LPWSTR pszMimeType)
+BOOL GetEncoderClsid(const WCHAR* pszName, CLSID* pClsid, LPWSTR pszMimeType)
 {
 	UINT num = 0;			// number of image encoders
 	UINT size = 0;			// size of the image encoder array in bytes
@@ -3305,31 +3345,27 @@ int GetEncoderClsid(const WCHAR* pszName, CLSID* pClsid, LPWSTR pszMimeType)
 	ImageCodecInfo* pImageCodecInfo = NULL;
 
 	GetImageEncodersSize(&num, &size);
-	if (size == 0) {
-		return -1;  // Failure
-	}
-	pImageCodecInfo = (ImageCodecInfo*) new char[size];
-	if (pImageCodecInfo == NULL) {
-		return -1;  // Failure
-	}
-	GetImageEncoders(num, size, pImageCodecInfo);
-
-	for (UINT j = 0; j < num; j++)
-	{
-		if (PathMatchSpec(pszName, pImageCodecInfo[j].FilenameExtension) ||
-				lstrcmp(pszName, pImageCodecInfo[j].MimeType) == 0) {
-			if (pClsid) {
-				*pClsid = pImageCodecInfo[j].Clsid;
-			}
-			if (pszMimeType) {
-				lstrcpyn(pszMimeType, pImageCodecInfo[j].MimeType, 16);
+	if (size) {
+		pImageCodecInfo = (ImageCodecInfo*) new char[size];
+		if (pImageCodecInfo) {
+			GetImageEncoders(num, size, pImageCodecInfo);
+			while (num--)
+			{
+				if (PathMatchSpec(pszName, pImageCodecInfo[num].FilenameExtension) || lstrcmpi(pszName, pImageCodecInfo[num].MimeType) == 0) {
+					if (pClsid) {
+						*pClsid = pImageCodecInfo[num].Clsid;
+					}
+					if (pszMimeType) {
+						lstrcpyn(pszMimeType, pImageCodecInfo[num].MimeType, 16);
+					}
+					delete [] pImageCodecInfo;
+					return TRUE;
+				}
 			}
 			delete [] pImageCodecInfo;
-			return j;  // Success
 		}
 	}
-	delete [] pImageCodecInfo;
-	return -1;  // Failure
+	return FALSE;
 }
 
 void teCalcClientRect(int *param, LPRECT rc, LPRECT rcClient) 
@@ -3751,6 +3787,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	if (g_hShell32) {
 		lpfnSHCreateItemFromIDList = (LPFNSHCreateItemFromIDList)GetProcAddress(g_hShell32, "SHCreateItemFromIDList");
 		lpfnSHParseDisplayName = (LPFNSHParseDisplayName)GetProcAddress(g_hShell32, "SHParseDisplayName");
+		lpfnSHGetImageList = (LPFNSHGetImageList)GetProcAddress(g_hShell32, "SHGetImageList");
 		lpfnSHGetIDListFromObject = (LPFNSHGetIDListFromObject)GetProcAddress(g_hShell32, "SHGetIDListFromObject");
 		lpfnSHRunDialog = (LPFNSHRunDialog)GetProcAddress(g_hShell32, MAKEINTRESOURCEA(61));
 	}
@@ -3761,6 +3798,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	}
 	if (!lpfnSHParseDisplayName) {
 		lpfnSHParseDisplayName = teSHParseDisplayName2000;
+	}
+	if (!lpfnSHGetImageList) {
+		lpfnSHGetImageList = teSHGetImageList2000;
 	}
 #endif
 	tePathAppend(&pszPath, bsPath, L"propsys.dll");
@@ -4070,8 +4110,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			msg1.hwnd = hWnd;
 			msg1.message = message;
 			msg1.wParam = wParam;
-			msg1.pt.x = LOWORD(lParam);
-			msg1.pt.y = HIWORD(lParam);
+			msg1.pt.x = GET_X_LPARAM(lParam);
+			msg1.pt.y = GET_Y_LPARAM(lParam);
 			MessageSubPt(TE_OnShowContextMenu, g_pTE, &msg1);
 			return DefWindowProc(hWnd, message, wParam, lParam);
 			break;
@@ -14095,7 +14135,7 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 				VARIANT vText;
 				teVariantChangeType(&vText, &pDispParams->rgvarg[nArg], VT_BSTR);
 				CLSID encoderClsid;
-				if (GetEncoderClsid(vText.bstrVal, &encoderClsid, NULL) >= 0) {
+				if (GetEncoderClsid(vText.bstrVal, &encoderClsid, NULL)) {
 					EncoderParameters *pEncoderParameters = NULL;
 					CteMemory *pMem = NULL;
 					if (nArg && GetMemFormVariant(&pDispParams->rgvarg[nArg - 1], &pMem)) {
@@ -14122,7 +14162,7 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 				teVariantChangeType(&vText, &pDispParams->rgvarg[nArg], VT_BSTR);
 				CLSID encoderClsid;
 				WCHAR szMime[16];
-				if (GetEncoderClsid(vText.bstrVal, &encoderClsid, szMime) >= 0) {
+				if (GetEncoderClsid(vText.bstrVal, &encoderClsid, szMime)) {
 					IStream* oStream = NULL;
 					if SUCCEEDED(CreateStreamOnHGlobal(NULL, TRUE, (LPSTREAM*)&oStream)) {
 						if (m_pImage->Save(oStream, &encoderClsid) == 0) {
@@ -14171,19 +14211,23 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 		case 120:
 			if (nArg >= 1) {
 				CLSID encoderClsid;
-				if (GetEncoderClsid(L"image/png", &encoderClsid, NULL) >= 0) {
+				if (GetEncoderClsid(L"image/png", &encoderClsid, NULL)) {
 					IStream* oStream = NULL;
 					if SUCCEEDED(CreateStreamOnHGlobal(NULL, TRUE, (LPSTREAM*)&oStream)) {
-						GUID guid;
-						m_pImage->GetRawFormat(&guid);
-						if (guid == ImageFormatJPEG || guid == ImageFormatTIFF ||  guid == ImageFormatUndefined) {
-							HICON hIcon;
-							m_pImage->GetHICON(&hIcon);
-							delete m_pImage;
-							m_pImage = Gdiplus::Bitmap::FromHICON(hIcon);
-							DeleteObject(hIcon);
+						int x = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+						int y = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
+						if (x > 96 || y > 96) {
+							GUID guid;
+							m_pImage->GetRawFormat(&guid);
+							if (guid == ImageFormatJPEG || guid == ImageFormatTIFF || guid == ImageFormatUndefined) {
+								HICON hIcon;
+								m_pImage->GetHICON(&hIcon);
+								delete m_pImage;
+								m_pImage = Gdiplus::Bitmap::FromHICON(hIcon);
+								DeleteObject(hIcon);
+							}
 						}
-						Gdiplus::Image *pImage = m_pImage->GetThumbnailImage(GetIntFromVariant(&pDispParams->rgvarg[nArg]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]));
+						Gdiplus::Image *pImage = m_pImage->GetThumbnailImage(x, y);
 						if (pImage->Save(oStream, &encoderClsid) == 0) {
 							CteGdiplusBitmap *pGB = new CteGdiplusBitmap();
 							pGB->m_pImage = Gdiplus::Bitmap::FromStream(oStream, FALSE);
@@ -14692,6 +14736,18 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 					teVariantChangeType(&vFile, &pDispParams->rgvarg[nArg], VT_BSTR);
 					*phResult = (HANDLE)GetModuleHandle(vFile.bstrVal);
 					break;
+				case 40303:
+					if (nArg >= 0) {
+						if FAILED(lpfnSHGetImageList((int)param[0], IID_IImageList, (LPVOID *)phResult)) {
+							*phResult = 0;
+						}
+					}
+					break;					
+				case 40313:
+					if (nArg >= 4) {
+						*phResult = CopyImage((HANDLE)param[0], (UINT)param[1], (int)param[2], (int)param[3], (UINT)param[4]);
+					}
+					break;					
 				//other
 				case 45003:
 					if (nArg >= 1) {
@@ -14726,23 +14782,20 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				case 45053://SHGetFileInfo
 					if (nArg >= 4) {
 						VARIANT vPath;
-						BSTR bs = NULL;
 						if (FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
-							GetPidlFromVariant((LPITEMIDLIST *)&bs, &pDispParams->rgvarg[nArg]);
+							GetPidlFromVariant((LPITEMIDLIST *)&vPath.bstrVal, &pDispParams->rgvarg[nArg]);
+							vPath.vt = VT_NULL;
 						}
 						else {
 							teVariantChangeType(&vPath, &pDispParams->rgvarg[nArg], VT_BSTR);
-							bs = vPath.bstrVal;
 						}
-						*phResult = (HANDLE)SHGetFileInfo(bs, (DWORD)param[1], 
+						*phResult = (HANDLE)SHGetFileInfo(vPath.bstrVal, (DWORD)param[1], 
 							(SHFILEINFO *)GetpcFormVariant(&pDispParams->rgvarg[nArg - 2]), 
 							(UINT)param[3], (UINT)param[4]);
-						if (FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
-							::CoTaskMemFree(bs);
+						if (vPath.vt == VT_NULL) {
+							::CoTaskMemFree(vPath.bstrVal);
 						}
-						else {
-							VariantClear(&vPath);
-						}
+						VariantClear(&vPath);
 					}
 					break;
 				case 45083://CreateWindowEx
@@ -14926,6 +14979,19 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				case 30222:
 					if (nArg >= 2) {
 						*plResult = SHEmptyRecycleBin((HWND)param[0], GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]), (DWORD)param[2]);
+					}
+					break;
+				case 30232:
+					*plResult = GetMessagePos();
+					break;
+				case 30242:
+					if (nArg >= 1) {
+						try {
+							*plResult = -1;
+							((IImageList *)param[0])->GetOverlayImage((int)param[1], (int *)plResult);
+						}
+						catch (...) {
+						}
 					}
 					break;
 				case 35002://TrackPopupMenuEx
@@ -15117,7 +15183,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			}
 		}
 		if (dispIdMember >= 29000) {//BOOL MEM()
-			int i = (dispIdMember / 100) % 10;
+			int i = (dispIdMember / 100) % 5;
 			if (nArg >= i) {
 				char *pc = GetpcFormVariant(&pDispParams->rgvarg[nArg - i]);
 				if (pc) {
@@ -15185,10 +15251,6 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 								*pbResult = SystemParametersInfo((UINT)param[0], (UINT)param[1], (PVOID)pc, (UINT)param[3]);
 							}
 							break;
-						case 29211:
-							*pbResult = ImageList_GetIconSize((HIMAGELIST)param[0], 
-								(int *)GetpcFormVariant(&pDispParams->rgvarg[nArg - 1]), (int *)pc);
-							break;
 						case 29221:
 							LPCWSTR lpString; 
 							lpString = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]); 
@@ -15211,6 +15273,16 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 							break;
 						case 29321:
 							*pbResult = SetMenuItemInfo((HMENU)param[0], (UINT)param[1], (BOOL)param[2], (LPMENUITEMINFO)pc);
+							break;
+						case 29601:
+							if (nArg >= 2) {
+								*pbResult = ImageList_GetIconSize((HIMAGELIST)param[0], 
+									(int *)pc, (int *)GetpcFormVariant(&pDispParams->rgvarg[nArg - 2]));
+							}
+							else {
+								*pbResult = ImageList_GetIconSize((HIMAGELIST)param[0], 
+									(int *)&(((LPSIZE)pc)->cx), (int *)&(((LPSIZE)pc)->cy));
+							}
 							break;
 						default:
 							return DISP_E_MEMBERNOTFOUND;

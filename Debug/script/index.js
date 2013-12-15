@@ -1014,7 +1014,8 @@ te.OnShowContextMenu = function (Ctrl, hwnd, msg, wParam, pt)
 	switch (Ctrl.Type) {
 		case CTRL_SB:
 		case CTRL_EB:
-			if (Ctrl.SelectedItems.Count) {
+			var Selected = Ctrl.SelectedItems();
+			if (Selected.Count) {
 				if (ExecMenu(Ctrl, "Context", pt, 1) == S_OK) {
 					return S_OK;
 				}

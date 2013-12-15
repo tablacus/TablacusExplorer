@@ -22,9 +22,14 @@ FolderMenu =
 {
 	Items: [],
 
-	Open: function (FolderItem, x, y)
+	Clear: function ()
 	{
 		this.Items.length = 0;
+	},
+
+	Open: function (FolderItem, x, y)
+	{
+		this.Clear;
 		var hMenu = api.CreatePopupMenu();
 		this.OpenMenu(hMenu, FolderItem);
 		window.g_menu_click = true;
@@ -32,7 +37,7 @@ FolderMenu =
 		g_popup = null;
 		api.DestroyMenu(hMenu);
 		Verb = Verb ? this.Items[Verb - 1] : null;
-		this.Items.length = 0;
+		this.Clear;
 		return Verb;
 	},
 
@@ -380,8 +385,19 @@ function MakeImgSrc(src, index, bSrc, h, strBitmap, strIcon)
 
 function MakeImgData(src, index, h, strBitmap, strIcon)
 {
-	var Result = null;
-	var image = te.GdiplusBitmap();
+	var hIcon = MakeImgIcon(src, index, h, strBitmap, strIcon);
+	if (hIcon) {
+		var image = te.GdiplusBitmap();
+		image.FromHICON(hIcon, api.GetSysColor(COLOR_BTNFACE));
+		api.DestroyIcon(hIcon);
+		return image;
+	}
+	return null;
+}
+
+function MakeImgIcon(src, index, h, strBitmap, strIcon)
+{
+	var hIcon = null;
 	var value = src.match(/^bitmap:(.*)/i) ? RegExp.$1 : strBitmap;
 	if (value) {
 		var icon = value.split(",");
@@ -389,16 +405,11 @@ function MakeImgData(src, index, h, strBitmap, strIcon)
 		if (hModule) {
 			var himl = api.ImageList_LoadImage(hModule, isFinite(icon[index * 4 + 1]) ? api.QuadPart(icon[index * 4 + 1]) : icon[index * 4 + 1], icon[index * 4 + 2], 0, CLR_DEFAULT, IMAGE_BITMAP, LR_CREATEDIBSECTION);
 			if (himl) {
-				var hIcon = api.ImageList_GetIcon(himl, icon[index * 4 + 3], ILD_NORMAL);
-				if (hIcon) {
-					image.FromHICON(hIcon, api.GetSysColor(COLOR_BTNFACE));
-					Result = image;
-					api.DestroyIcon(hIcon);
-				}
+				hIcon = api.ImageList_GetIcon(himl, icon[index * 4 + 3], ILD_NORMAL);
 				api.ImageList_Destroy(himl);
 			}
 			api.FreeLibrary(hModule);
-			return Result;
+			return hIcon;
 		}
 	}
 	value = src.match(/^icon:(.*)/i) ? RegExp.$1 : strIcon;
@@ -411,28 +422,19 @@ function MakeImgData(src, index, h, strBitmap, strIcon)
 		else {
 			api.ExtractIconEx(icon[index * 4], icon[index * 4 + 1], null, phIcon, 1);
 		}
-		var hIcon = phIcon[0];
-		if (hIcon) {
-			image.FromHICON(hIcon, api.GetSysColor(COLOR_BTNFACE));
-			api.DestroyIcon(hIcon);
-			return image;
+		if (phIcon[0]) {
+			return phIcon[0];
 		}
 	}
 	if (src && !api.PathMatchSpec(src, "*.jpg;*.jpeg;*.png;*.bmp;*.gif;*.ico;data:*")) {
 		var info = api.Memory("SHFILEINFO");
 		var pidl = api.ILCreateFromPath(api.PathUnquoteSpaces(src));
 		if (pidl) {
-			var uFlags = SHGFI_PIDL | SHGFI_ICON;
-			if (h && h <= 16) {
-				uFlags |= SHGFI_SMALLICON;
-			}
-			api.ShGetFileInfo(pidl, 0, info, info.Size, uFlags);
-			image.FromHICON(info.hIcon, api.GetSysColor(COLOR_BTNFACE));
-			Result = image;
-			api.DestroyIcon(info.hIcon);
+			api.ShGetFileInfo(pidl, 0, info, info.Size, (h && h <= 16) ? SHGFI_PIDL | SHGFI_ICON | SHGFI_SMALLICON : SHGFI_PIDL | SHGFI_ICON);
+			return info.hIcon;
 		}
 	}
-	return Result;
+	return null;
 }
 
 LoadImgDll = function (icon, index)

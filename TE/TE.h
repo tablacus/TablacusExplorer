@@ -18,6 +18,8 @@
 #include <process.h>
 #include <Wincrypt.h>
 #include <ActivScp.h>
+#include <windowsx.h>
+#include <CommonControls.h>
 
 using namespace Gdiplus;
 
@@ -44,6 +46,7 @@ typedef VOID (WINAPI * LPFNSHRunDialog)(HWND hwnd, HICON hIcon, LPWSTR pszPath, 
 //XP or higher.
 typedef BOOL (WINAPI * LPFNCryptBinaryToStringW)(__in_bcount(cbBinary) CONST BYTE *pbBinary, __in DWORD cbBinary, __in DWORD dwFlags, __out_ecount_part_opt(*pcchString, *pcchString) LPWSTR pszString, __inout DWORD *pcchString);
 typedef HRESULT (WINAPI * LPFNSHParseDisplayName)(LPCWSTR pszName, IBindCtx *pbc, PIDLIST_ABSOLUTE *ppidl, SFGAOF sfgaoIn, SFGAOF *psfgaoOut);
+typedef HRESULT (WINAPI * LPFNSHGetImageList)(__in int iImageList, __in REFIID riid, __deref_out void **ppvObj);
 
 //XP SP1 or higher.
 typedef BOOL (WINAPI * LPFNSetDllDirectoryW)(__in_opt LPCWSTR lpPathName);

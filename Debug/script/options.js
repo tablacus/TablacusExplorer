@@ -581,7 +581,7 @@ function ReplaceMenus()
 {
 	ClearX("Menus");
 	if (g_x.Menus.selectedIndex < 0) {
-		return;
+		g_x.Menus.selectedIndex = ++g_x.Menus.length - 1;
 	}
 	var sel = g_x.Menus[g_x.Menus.selectedIndex];
 	var o = document.F.Menus_Type;
@@ -600,7 +600,7 @@ function ReplaceX(mode)
 {
 	ClearX(mode);
 	if (g_x[mode].selectedIndex < 0) {
-		return;
+		g_x[mode].selectedIndex = ++g_x[mode].length - 1;
 	}
 	var sel = g_x[mode][g_x[mode].selectedIndex];
 	var o = document.F.elements[mode + "Type"];
@@ -869,7 +869,7 @@ function SaveAddons()
 function SetData(sel, a)
 {
 	sel.value = PackData(a);
-	sel.text = a[0];
+	sel.text = GetText(a[0]);
 }
 
 function PackData(a)
@@ -1626,6 +1626,7 @@ function RefX(Id, bMultiLine, oButton)
 			}
 		}
 	}, 100);
+	g_Chg.Data = true;
 }
 
 function PortableX(Id)
