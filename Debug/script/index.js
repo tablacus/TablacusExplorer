@@ -1061,6 +1061,9 @@ te.OnShowContextMenu = function (Ctrl, hwnd, msg, wParam, pt)
 
 te.OnDefaultCommand = function (Ctrl)
 {
+	if (api.GetKeyState(VK_MENU) < 0) {
+		return S_FALSE;
+	}
 	for (var i in eventTE.DefaultCommand) {
 		var hr = eventTE.DefaultCommand[i](Ctrl);
 		if (isFinite(hr)) {
@@ -1846,7 +1849,7 @@ g_basic =
 			},
 
 			Drop: DropOpen,
-			Ref: ChooseFolder
+			Ref: BrowseForFolder
 		},
 
 		"Open in New Tab":
@@ -1857,7 +1860,7 @@ g_basic =
 			},
 
 			Drop: DropOpen,
-			Ref: ChooseFolder
+			Ref: BrowseForFolder
 		},
 
 		"Open in Background":
@@ -1868,7 +1871,7 @@ g_basic =
 			},
 
 			Drop: DropOpen,
-			Ref: ChooseFolder
+			Ref: BrowseForFolder
 		},
 
 		Exec:
@@ -2303,7 +2306,7 @@ g_basic =
 	{
 		var fn = g_basic.Func[type].Cmd[s];
 		if (!pt) {
-			var pt = api.Memory("POINT");
+			pt = api.Memory("POINT");
 			api.GetCursorPos(pt);
 		}
 		fn && fn(Ctrl, pt);

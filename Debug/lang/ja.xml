@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <resources>
 	<text s="&amp;File">ファイル(&amp;F)</text>
 	<text s="&amp;Edit">編集(&amp;E)</text>
@@ -34,7 +34,7 @@
 	<text s="Key">キー</text>
 	<text s="Mouse">マウス</text>
 	<text s="Init">初期化</text>
-	<text s="Ok">Ok</text>
+	<text s="OK">OK</text>
 	<text s="Cancel">キャンセル</text>
 	<text s="Style">スタイル</text>
 	<text s="Type">タイプ</text>

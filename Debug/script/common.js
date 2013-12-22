@@ -5,7 +5,7 @@ var g_temp;
 var g_sep = "` ~";
 var Handled;
 var hwnd;
-var pt = api.Memory("POINT");;
+var pt = api.Memory("POINT");
 var dataObj = null;
 var grfKeyState;
 var pdwEffect;
@@ -1184,14 +1184,15 @@ ExecMenu3 = function (Ctrl, Name, x, y)
 {
 	window.Ctrl = Ctrl;
 	setTimeout(function () {
-		pt.x = x;
-		pt.y = y;
-		ExecMenu(Ctrl, Name, pt, 0);
+		ExecMenu2(Name, x, y);
 	}, 100);;
 }
 
 ExecMenu2 = function (Name, x, y)
 {
+	if (!pt) {
+		pt = api.Memory("POINT");
+	}
 	pt.x = x;
 	pt.y = y;
 	ExecMenu(Ctrl, Name, pt, 0);
@@ -1793,7 +1794,7 @@ function CheckUpdate()
 		wsh.Popup(te.About + "\n" + GetText("the latest version"), 0, TITLE, MB_ICONINFORMATION);
 		return;
 	}
-	if (!confirmYN("Update available" + "\n" + s + "\n" + GetText("Do you want to install it now?"), 0, TITLE, MB_ICONQUESTION | MB_YESNO)) {
+	if (!confirmYN(GetText("Update available") + "\n" + s + "\n" + GetText("Do you want to install it now?"), 0, TITLE, MB_ICONQUESTION | MB_YESNO)) {
 		return;
 	}
 	var temp = fso.BuildPath(fso.GetSpecialFolder(2).Path, "tablacus");
@@ -2453,7 +2454,7 @@ FindKeyEvent = function (o)
 	g_nFind = 0;
 }
 
-OpenDialog = function (path)
+OpenDialogEx = function (path, filter)
 {
 	var commdlg = te.CommonDialog;
 	var te_path = fso.GetParentFolderName(api.GetModuleFileName(null));
@@ -2461,11 +2462,16 @@ OpenDialog = function (path)
 		path = te_path + (path.substr(2, MAXINT).replace(/\//g, "\\"));
 	}
 	commdlg.InitDir = path;
-	commdlg.Filter = "All Files|*.*";
-	commdlg.Flags = OFN_FILEMUSTEXIST;
+	commdlg.Filter = filter;
+	commdlg.Flags = OFN_FILEMUSTEXIST | OFN_EXPLORER | OFN_ENABLESIZING | OFN_ENABLEHOOK;
 	if (commdlg.ShowOpen()) {
 		return api.PathQuoteSpaces(commdlg.FileName);
 	}
+}
+
+OpenDialog = function (path)
+{
+	return OpenDialogEx(path, "All Files|*.*");
 }
 
 ChooseFolder = function (path, pt)
@@ -2478,6 +2484,11 @@ ChooseFolder = function (path, pt)
 	if (FolderItem) {
 		return api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
 	}
+}
+
+BrowseForFolder = function (path)
+{
+	return OpenDialogEx(path, "Folder|<Folder>");
 }
 
 InvokeCommand = function (Items, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon, FV, uCMF)

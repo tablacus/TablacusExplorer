@@ -23,6 +23,8 @@ HINSTANCE	g_hShell32 = NULL;
 HINSTANCE	g_hKernel32 = NULL;
 HINSTANCE	g_hCrypt32 = NULL;
 HINSTANCE	g_hPropsys = NULL;
+BOOL		g_bDialogOk = FALSE;
+HWND		g_hDialog = NULL;
 
 LPFNSHCreateItemFromIDList lpfnSHCreateItemFromIDList = NULL;
 LPFNSetDllDirectoryW lpfnSetDllDirectoryW = NULL;
@@ -386,6 +388,7 @@ method methodAPI[] = {
 	{ 30222, L"SHEmptyRecycleBin" },
 	{ 30232, L"GetMessagePos" },
 	{ 30242, L"ImageList_GetOverlayImage" },
+	{ 30252, L"ImageList_GetBkColor" },
 	//+other
 	{ 35002, L"TrackPopupMenuEx" },
 	{ 35012, L"ExtractIconEx" },
@@ -637,6 +640,7 @@ method methodCM[] = {
 method methodCD[] = {
 	{ 40, L"ShowOpen" },
 	{ 41, L"ShowSave" },
+//	{ 42, L"ShowFolder" },
 	{ 10, L"FileName" },
 	{ 13, L"Filter" },
 	{ 20, L"InitDir" },
@@ -702,20 +706,6 @@ BOOL tePathMatchSpec(LPCWSTR pszFile, LPCWSTR pszSpec)//bugfix PathMatchSpec for
 	}
 	return PathMatchSpec(pszFile, pszSpec);
 }
-
-#ifdef _2000XP
-HRESULT STDAPICALLTYPE tePSPropertyKeyFromString(__in LPCWSTR pszString,  __out PROPERTYKEY *pkey)
-{
-	HRESULT hr = E_NOTIMPL;
-	ULONG chEaten = 0;
-	IPropertyUI *pPUI;
-	if SUCCEEDED(CoCreateInstance(CLSID_PropertiesUI, NULL, CLSCTX_INPROC, IID_PPV_ARGS(&pPUI))) {
-		hr = pPUI->ParsePropertyName(pszString, &pkey->fmtid, &pkey->pid, &chEaten);
-		pPUI->Release();
-	}
-	return hr;
-}
-#endif
 
 HRESULT STDAPICALLTYPE tePSPropertyKeyFromStringEx(__in LPCWSTR pszString,  __out PROPERTYKEY *pkey)
 {
@@ -1625,6 +1615,18 @@ HRESULT STDAPICALLTYPE teSHGetImageList2000(int iImageList, REFIID riid, void **
 	return S_OK;
 }
 
+HRESULT STDAPICALLTYPE tePSPropertyKeyFromString(__in LPCWSTR pszString,  __out PROPERTYKEY *pkey)
+{
+	HRESULT hr = E_NOTIMPL;
+	ULONG chEaten = 0;
+	IPropertyUI *pPUI;
+	if SUCCEEDED(CoCreateInstance(CLSID_PropertiesUI, NULL, CLSCTX_INPROC, IID_PPV_ARGS(&pPUI))) {
+		hr = pPUI->ParsePropertyName(pszString, &pkey->fmtid, &pkey->pid, &chEaten);
+		pPUI->Release();
+	}
+	return hr;
+}
+
 #endif
 
 BOOL GetIDListFromObject(IUnknown *punk, LPITEMIDLIST *ppidl)
@@ -1957,6 +1959,15 @@ HRESULT GetFolderItemFromShellItem(FolderItem **ppid, IShellItem *psi)
 		}
 	}
 	return E_FAIL;
+}
+
+VOID teSetIDList(VARIANT *pv, LPITEMIDLIST pidl)
+{
+	FolderItem *pFI;
+	if (GetFolderItemFromPidl(&pFI, pidl)) {
+		teSetObject(pv, pFI);
+		pFI->Release();
+	}
 }
 
 BOOL GetVariantFromShellItem(VARIANT *pv, IShellItem *psi)
@@ -3653,12 +3664,12 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 
 LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
-	CWPSTRUCT *pcwp;
+	LPCWPSTRUCT pcwp;
 
 	if (nCode >= 0) {
 		if (nCode == HC_ACTION) {
 			if (wParam == NULL) {
-				pcwp = (CWPSTRUCT *)lParam;
+				pcwp = (LPCWPSTRUCT)lParam;
 				switch (pcwp->message)
 				{
 					case WM_SETFOCUS:
@@ -3685,10 +3696,17 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 								}
 							}
 						}
+					case WM_COMMAND:
+						if (pcwp->message == WM_COMMAND && g_hDialog == pcwp->hwnd) {
+							if (LOWORD(pcwp->wParam) == IDOK) {
+								g_bDialogOk = TRUE;
+							}
+						}
+					case WM_NOTIFY:
 					case WM_ACTIVATE:
 					case WM_ACTIVATEAPP:
 					case WM_KILLFOCUS:
-					case WM_NOTIFY:
+					case WM_INITDIALOG:
 						if (g_pOnFunc[TE_OnSystemMessage]) {
 							IDispatch *pdisp;
 							if (ControlFromhwnd(&pdisp, pcwp->hwnd) == S_OK) {
@@ -3706,6 +3724,37 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 		}
 	}
 	return CallNextHookEx(g_hHook, nCode, wParam, lParam); 
+}
+
+UINT_PTR CALLBACK OFNHookProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	LPOFNOTIFY pNotify;
+    switch(msg){
+		case WM_INITDIALOG:
+			g_hDialog = GetParent(hwnd);
+			return TRUE;
+        case WM_NOTIFY:
+			pNotify = (LPOFNOTIFY)lParam;
+			if (pNotify->hdr.code == CDN_FOLDERCHANGE) {
+				if (g_bDialogOk) {
+					HWND hDlg = GetParent(hwnd);
+					LRESULT nLen = SendMessage(hDlg, CDM_GETFOLDERIDLIST, 0, NULL);
+					if (nLen) {
+						LPITEMIDLIST pidl = (LPITEMIDLIST)CoTaskMemAlloc(nLen);
+						SendMessage(hDlg, CDM_GETFOLDERIDLIST, nLen, (LPARAM)pidl);
+						BSTR bs;
+						GetDisplayNameFromPidl(&bs, pidl, SHGDN_FORPARSING);
+						::CoTaskMemFree(pidl);
+						lstrcpyn(pNotify->lpOFN->lpstrFile, bs, pNotify->lpOFN->nMaxFile);
+						::SysFreeString(bs);
+						PostMessage(GetParent(hwnd), WM_CLOSE, 0, 0);
+						return TRUE;
+					}
+				}
+            }
+            break;
+    }
+    return FALSE;
 }
 
 int APIENTRY _tWinMain(HINSTANCE hInstance,
@@ -4953,6 +5002,13 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 			}
 		}
 		ArrangeWindow();
+	}
+	IFolderView *pFV;
+	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
+		IFolderFilterSite *pRF;
+		if SUCCEEDED(pFV->QueryInterface(IID_PPV_ARGS(&pRF))) {
+			Sleep(1);
+		}
 	}
 	return S_OK;
 }
@@ -13929,11 +13985,72 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 		BOOL bResult = FALSE;
 		switch (dispIdMember) {
 			case 40:
-				bResult = GetOpenFileName(&m_ofn);
+				if (m_ofn.Flags & OFN_ENABLEHOOK) {
+					m_ofn.lpfnHook = OFNHookProc;
+				}
+				g_bDialogOk = FALSE;
+				bResult = GetOpenFileName(&m_ofn) || g_bDialogOk;
 				break;
 			case 41:
 				bResult = GetSaveFileName(&m_ofn);
 				break;
+/*			case 42:
+				{
+					IFileOpenDialog *pFileOpenDialog;
+					if (lpfnSHCreateItemFromIDList && SUCCEEDED(CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pFileOpenDialog)))) {
+						IShellItem *psi;
+						LPITEMIDLIST pidl = teILCreateFromPath(const_cast<LPWSTR>(m_ofn.lpstrInitialDir));
+						if (pidl) {
+							if SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(&psi))) {
+								pFileOpenDialog->SetFolder(psi);
+								psi->Release();
+							}
+							::CoTaskMemFree(pidl);
+						}
+						pFileOpenDialog->SetFileName(m_ofn.lpstrFile);
+						DWORD dwOptions;
+						pFileOpenDialog->GetOptions(&dwOptions);
+						pFileOpenDialog->SetOptions(dwOptions | FOS_PICKFOLDERS);
+						if SUCCEEDED(pFileOpenDialog->Show(g_hwndMain)) {
+							if SUCCEEDED(pFileOpenDialog->GetResult(&psi)) {
+								if (GetIDListFromObject(psi, &pidl)) {
+									BSTR bs;
+									GetDisplayNameFromPidl(&bs, pidl, SHGDN_FORPARSING);
+									::CoTaskMemFree(pidl);
+									lstrcpyn(m_ofn.lpstrFile, bs, m_ofn.nMaxFile);
+									bResult = TRUE;
+								}						
+								psi->Release();
+							}
+						}
+						pFileOpenDialog->Release();
+						break;
+					}
+#ifdef _2000XP
+					m_ofn.Flags |= OFN_ENABLEHOOK;
+					m_ofn.lpfnHook = OFNHookProc;
+					g_bDialogOk = FALSE;
+					bResult = GetOpenFileName(&m_ofn) || g_bDialogOk;
+					break;
+					BROWSEINFO bi;
+					bi.hwndOwner = g_hwndMain;
+					bi.pidlRoot = NULL;
+					bi.pszDisplayName =	m_ofn.lpstrFile;
+					bi.lpszTitle = m_ofn.lpstrFileTitle;
+					bi.ulFlags = BIF_EDITBOX;
+					bi.lpfn = NULL;
+					LPITEMIDLIST pidl =	SHBrowseForFolder(&bi);
+					if (pidl) {
+						BSTR bs;
+						GetDisplayNameFromPidl(&bs, pidl, SHGDN_FORPARSING);
+						::CoTaskMemFree(pidl);
+						lstrcpyn(m_ofn.lpstrFile, bs, m_ofn.nMaxFile);
+						::SysFreeString(bs);
+						bResult = TRUE;
+					}
+#endif
+				}
+				break;*/
 		}//end_switch
 		if (pVarResult) {
 			pVarResult->boolVal = bResult ? VARIANT_TRUE : VARIANT_FALSE;
@@ -14992,6 +15109,11 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 						}
 						catch (...) {
 						}
+					}
+					break;
+				case 30252:
+					if (nArg >= 0) {
+						*plResult = ImageList_GetBkColor((HIMAGELIST)param[0]);
 					}
 					break;
 				case 35002://TrackPopupMenuEx
@@ -16182,11 +16304,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			if (pVarResult && nArg >= 0) {
 				LPITEMIDLIST pidl;
 				if (GetPidlFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
-					FolderItem *pFI;
-					if (GetFolderItemFromPidl(&pFI, pidl)) {
-						teSetObject(pVarResult, pFI);
-						pFI->Release();
-					}
+					teSetIDList(pVarResult, pidl);
 					::CoTaskMemFree(pidl);
 				}
 			}
@@ -16198,11 +16316,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				if (GetPidlFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
 					if (!ILIsEmpty(pidl)) {
 						if (ILRemoveLastID(pidl)) {
-							FolderItem *pFI;
-							if (GetFolderItemFromPidl(&pFI, pidl)) {
-								teSetObject(pVarResult, pFI);
-								pFI->Release();
-							}
+							teSetIDList(pVarResult, pidl);
 						}
 					}
 					::CoTaskMemFree(pidl);
@@ -16216,11 +16330,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				if (GetPidlFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
 					pidlLast = ILFindLastID(pidl);
 					if (pidlLast) {
-						FolderItem *pFI;
-						if (GetFolderItemFromPidl(&pFI, pidlLast)) {
-							teSetObject(pVarResult, pFI);
-							pFI->Release();
-						}
+						teSetIDList(pVarResult, pidl);
 					}
 					::CoTaskMemFree(pidl);
 				}

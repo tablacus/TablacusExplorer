@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <resources>
 	<text s="&amp;File">&amp;File</text>
 	<text s="&amp;Edit">&amp;Edit</text>
@@ -34,7 +34,7 @@
 	<text s="Key">Key</text>
 	<text s="Mouse">Mouse</text>
 	<text s="Init">Init</text>
-	<text s="Ok">Ok</text>
+	<text s="OK">OK</text>
 	<text s="Cancel">Cancel</text>
 	<text s="Style">Style</text>
 	<text s="Type">Type</text>

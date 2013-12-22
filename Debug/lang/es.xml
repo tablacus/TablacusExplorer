@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <resources>
 	<Creator>Patricio M. Ros</Creator>
 	<text s="&amp;File">&amp;Archivo</text>
@@ -35,7 +35,7 @@
 	<text s="Key">Tecla</text>
 	<text s="Mouse">Ratón</text>
 	<text s="Init">Inicio</text>
-	<text s="Ok">Aceptar</text>
+	<text s="OK">Aceptar</text>
 	<text s="Cancel">Cancelar</text>
 	<text s="Style">Estilo</text>
 	<text s="Type">Tipo</text>
