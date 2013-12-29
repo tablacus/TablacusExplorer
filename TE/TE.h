@@ -51,7 +51,7 @@ typedef HRESULT (WINAPI * LPFNSHGetImageList)(__in int iImageList, __in REFIID r
 //XP SP1 or higher.
 typedef BOOL (WINAPI * LPFNSetDllDirectoryW)(__in_opt LPCWSTR lpPathName);
 
-//XP SP2 or higher.
+//XP SP2 or higher with Windos Desktop Search.
 typedef HRESULT (STDAPICALLTYPE * LPFNPSPropertyKeyFromString)(__in LPCWSTR pszString,  __out PROPERTYKEY *pkey);
 typedef HRESULT (STDAPICALLTYPE * LPFNPSGetPropertyKeyFromName)(__in PCWSTR pszName, __out PROPERTYKEY *ppropkey);
 typedef HRESULT (STDAPICALLTYPE * LPFNPSGetPropertyDescription)(__in REFPROPERTYKEY propkey, __in REFIID riid,  __deref_out void **ppv);
@@ -63,8 +63,13 @@ typedef HRESULT (STDAPICALLTYPE * LPFNSHGetIDListFromObject)(__in IUnknown *punk
 //typedef HRESULT (STDAPICALLTYPE * LPFNPSFormatForDisplayAlloc)(__in REFPROPERTYKEY key, __in REFPROPVARIANT propvar, __in PROPDESC_FORMAT_FLAGS pdff, __deref_out PWSTR *ppszDisplay);
 //typedef BOOL (WINAPI * LPFNChangeWindowMessageFilter)(UINT message, DWORD dwFlag);
 
+//DLL
+typedef HRESULT (STDAPICALLTYPE * LPFNDllGetClassObject)(REFCLSID rclsid, REFIID riid, LPVOID* ppv);
+typedef HRESULT (STDAPICALLTYPE * LPFNDllCanUnloadNow)(void);
+
 //Tablacus DLL Add-ons
 typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
+
 
 #define WINDOW_CLASS			L"TablacusExplorer"
 #define MAX_LOADSTRING			100
@@ -81,6 +86,7 @@ typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
 #define TET_Size2				4
 #define TET_Redraw				5
 #define TET_Show				6
+#define TET_Unload				7
 
 #define SHGDN_FORPARSINGEX	0x80000000
 #define START_OnFunc			5000
@@ -215,6 +221,20 @@ const CLSID CLSID_JScriptChakra       = {0x16d51579, 0xa30b, 0x4c8b, { 0xa2, 0x7
 
 class CteShellBrowser;
 class CteTreeView;
+
+class CteDll : public IUnknown
+{
+public:
+	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
+	STDMETHODIMP_(ULONG) AddRef();
+	STDMETHODIMP_(ULONG) Release();
+
+	CteDll(HMODULE hDll);
+	~CteDll();
+public:
+	LONG		m_cRef;
+	HMODULE		m_hDll;
+};
 
 class CteFolderItem : public FolderItem, public IPersistFolder2
 {
@@ -752,13 +772,14 @@ public:
 	STDMETHODIMP GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId);
 	STDMETHODIMP Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr);
 
-	CteContextMenu(IContextMenu *pContextMenu, IDataObject *pDataObj);
+	CteContextMenu(IUnknown *punk, IDataObject *pDataObj);
 	~CteContextMenu();
 
 	LRESULT HandleMenuMessage(MSG *pMsg);
 public:
 	IContextMenu *m_pContextMenu;
 	CteShellBrowser *m_pShellBrowser;
+	CteDll *m_pDll;
 private:
 	LONG	m_cRef;
 	IDataObject *m_pDataObj;

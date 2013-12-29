@@ -314,6 +314,7 @@ LoadLang = function (bAppend)
 {
 	if (!bAppend) {
 		MainWindow.Lang = {};
+		MainWindow.LangSrc = {};
 	}
 	var filename = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "lang\\" + GetLangId() + ".xml");
 	LoadLang2(filename);

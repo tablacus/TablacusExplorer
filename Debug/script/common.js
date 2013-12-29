@@ -375,8 +375,8 @@ function MakeImgSrc(src, index, bSrc, h, strBitmap, strIcon)
 		if (fn) {
 			try {
 				image.Save(fn);
-			} catch (e) {
 			}
+			catch (e) {}
 			return fn;
 		}
 	}
@@ -463,7 +463,8 @@ GetText = function (id)
 		if (s) {
 			return s;
 		}
-	} catch (e) {}
+	}
+	catch (e) {}
 	return id;
 }
 
@@ -477,9 +478,17 @@ function LoadLang2(filename)
 		var item = items[i];
 		var s = item.getAttribute("s").replace("\\t", "\t").replace("\\n", "\n");
 		var v = item.text.replace("\\t", "\t").replace("\\n", "\n");
-		MainWindow.Lang[s] = v;
-		if (s.match(/&|\.\.\.$/)) {
-			MainWindow.Lang[StripAmp(s)] = StripAmp(v);
+		if (!MainWindow.LangSrc[v]) {
+			MainWindow.Lang[s] = v;
+			MainWindow.LangSrc[v] = s;
+			if (s.match(/&|\.\.\.$/)) {
+				s = StripAmp(s);
+				v = StripAmp(v);
+				if (!MainWindow.LangSrc[v]) {
+					MainWindow.Lang[s] = v;
+					MainWindow.LangSrc[v] = s;
+				}
+			}
 		}
 	}
 }
@@ -773,7 +782,8 @@ IsDrag = function (pt1, pt2)
 	if (pt1 && pt2) {
 		try {
 			return (Math.abs(pt1.x - pt2.x) > api.GetSystemMetrics(SM_CXDRAG) | Math.abs(pt1.y - pt2.y) > api.GetSystemMetrics(SM_CYDRAG));
-		} catch (e) {}
+		}
+		catch (e) {}
 	}
 	return false;
 }
@@ -874,7 +884,8 @@ CreateNew = function (path, fn)
 	if (fn && !IsExists(path)) {
 		try {
 			fn(path);
-		} catch (e) {
+		}
+		catch (e) {
 			if (path.match(/^[A-Z]:\\|^\\/i)) {
 				var s = fso.BuildPath(fso.GetSpecialFolder(2).Path, fso.GetFileName(path));
 				DeleteItem(s);
@@ -1246,7 +1257,8 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 		}
 		try {
 			wsh.CurrentDirectory = FV.FolderItem.Path;
-		} catch (e) {}
+		}
+		catch (e) {}
 	}
 	ExtraMenuCommand = [];
 	eventTE.MenuCommand = [];
@@ -1421,11 +1433,10 @@ GetBaseMenu = function (nBase, FV, Selected, uCMF, Mode, SelItem)
 					var hMenu2 = te.MainMenu(id);
 					var oMenu = {};
 					var oMenu2 = {};
-
+					var mii = api.Memory("MENUITEMINFO");
+					mii.cbSize = mii.Size;
+					mii.fMask  = MIIM_SUBMENU;
 					for (var i = api.GetMenuItemCount(hMenu2); i-- > 0;) {
-						var mii = api.Memory("MENUITEMINFO");
-						mii.cbSize = mii.Size;
-						mii.fMask  = MIIM_SUBMENU;
 						var s = api.GetMenuString(hMenu2, i, MF_BYPOSITION);
 						if (s) {
 							s = s.toLowerCase().replace(/[&\(\)]/g, "");
@@ -1877,7 +1888,8 @@ createHttpRequest = function ()
 {
 	try {
 		return te.CreateObject("Msxml2.XMLHTTP");
-	} catch (e) {
+	}
+	catch (e) {
 		return te.CreateObject("Microsoft.XMLHTTP");
 	}
 }
@@ -1947,7 +1959,8 @@ AddonOptions = function (Id, fn, Data)
 			else {
 				g_Chg.Addons = true;
 			}
-		} catch (e) {}
+		}
+		catch (e) {}
 	}
 }
 
@@ -2040,8 +2053,8 @@ OpenInExplorer = function (FV)
     	exp.Visible = true;
 		try {
 			exp.Document.CurrentViewMode = FV.CurrentViewMode;
-		} catch (e) {
 		}
+		catch (e) {}
 		try {
 			do {
 				api.Sleep(100);
@@ -2051,14 +2064,14 @@ OpenInExplorer = function (FV)
 			if (doc.IconSize) {
 				doc.IconSize = FV.IconSize;
 			}
-		} catch (e) {
 		}
+		catch (e) {}
 		try {
 			if (doc.SortColumns) {
 				doc.SortColumns = FV.SortColumns;
 			}
-		} catch (e) {
 		}
+		catch (e) {}
 		if (FV.TreeView.Align & 2) {
 			exp.ShowBrowserBar("{EFA24E64-B078-11D0-89E4-00C04FC9E26E}", true);
 		}
@@ -2178,13 +2191,12 @@ GetLangId = function ()
 
 GetSourceText = function (s)
 {
-	var Lang1 = MainWindow.Lang || Lang;
-	for (var i in Lang1) {
-		if (s == Lang1[i]) {
-			return i;
-		}
+	try {
+		return (MainWindow.LangSrc || LangSrc)[s] || s;
 	}
-	return s;
+	catch (e) {
+		return s;
+	}
 }
 
 GetFolderView = function (Ctrl, pt, bStrict)
@@ -2413,7 +2425,8 @@ RegEnumKey = function(hKey, Name)
 		Params[1] = Name;
 		api.ExecMethod(reg, "EnumKey", Params);
 		return new VBArray(Params[0]).toArray();
-	} catch (e) {}
+	}
+	catch (e) {}
 	return [];
 }
 
@@ -2434,7 +2447,8 @@ FindText = function (s)
 				try {
 					rng.select();
 					bFound = false;
-				} catch (e) {}
+				}
+				catch (e) {}
 				rng.scrollIntoView();
 				g_nFind++;
 			}
