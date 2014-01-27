@@ -484,7 +484,7 @@ function LoadLang2(filename)
 			if (s.match(/&|\.\.\.$/)) {
 				s = StripAmp(s);
 				v = StripAmp(v);
-				if (!MainWindow.LangSrc[v]) {
+				if (!MainWindow.Lang[s] && !MainWindow.LangSrc[v]) {
 					MainWindow.Lang[s] = v;
 					MainWindow.LangSrc[v] = s;
 				}
@@ -1660,13 +1660,13 @@ RunCommandLine = function (s)
 {
 	var arg = api.CommandLineToArgv(s.replace(/\/[^,\s]*/g, ""));
 	for (var i = 1; i < arg.Count; i++) {
-		Navigate(arg.Item(i), SBSP_NEWBROWSER);
+		Navigate(arg[i], SBSP_NEWBROWSER);
 	}
 }
 
 GetAddonInfo = function (Id)
 {
-	var info = new Array();
+	var info = [];
 
 	var path = fso.GetParentFolderName(api.GetModuleFileName(null));
 	var xml = te.CreateObject("Msxml2.DOMDocument");
@@ -1744,9 +1744,11 @@ Extract = function (Src, Dest)
 		}
 	}
 	catch (e) {
-		wsh.Popup(GetText("Extract Error"), 0, TITLE, MB_ICONSTOP);
+		if (api.Extract(fso.BuildPath(system32, "zipfldr.dll"), "{E88DCCE0-B7B3-11d1-A9F0-00AA0060FA31}", Src, Dest) != S_OK) {
+			wsh.Popup(GetText("Extract Error"), 0, TITLE, MB_ICONSTOP);
+		}
 	}
-	return E_FAIL;
+	return S_OK;
 }
 
 OptionRef = function (Id, s, pt)

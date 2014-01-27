@@ -43,7 +43,7 @@
 	<text s="Size">Tamaño</text>
 	<text s="Position">Posición</text>
 	<text s="Root">Raíz</text>
-	<text s="ViewMode">Vista</text>
+	<text s="View mode">Vista</text>
 
 	<text s="Left">Izquierda</text>
 	<text s="Top">Arriba</text>
@@ -123,65 +123,64 @@
 	<text s="Background">Fondo</text>
 	<text s="Advanced">Avanzado</text>
 
-	<text s="HASEXPANDOS">Expandos</text>
-	<text s="HASLINES">Líneas</text>
-	<text s="NOEDITLABELS">Sin Líneas de Edición</text>
-	<text s="DISABLEDRAGDROP">Deshabilitar Arrastar y Soltar</text>
-	<text s="NOINFOTIP">Sin Infotip</text>
-	<text s="SINGLECLICKEXPAND">Expansión con un solo Click</text>
-	<text s="SPRINGEXPAND">Spring Expand</text>
-	<text s="FULLROWSELECT">Seleccionar Toda la Fila</text>
-	<text s="SHOWSELECTIONALWAYS">Mostrar la Selección Siempre</text>
-	<text s="BORDER">Borde</text>
-	<text s="HORIZONTALSCROLL">Desplazamiento Horizontal</text>
+	<text s="Expandos">Expandos</text>
+	<text s="Lines">Líneas</text>
+	<text s="No edit labels">Sin Líneas de Edición</text>
+	<text s="Disable Drag-and-Drop">Deshabilitar Arrastar y Soltar</text>
+	<text s="No infotip">Sin Infotip</text>
+	<text s="Single click expand">Expansión con un solo Click</text>
+	<text s="Spring expand">Spring Expand</text>
+	<text s="Full row select">Seleccionar Toda la Fila</text>
+	<text s="Show selection always">Mostrar la Selección Siempre</text>
+	<text s="Border">Borde</text>
+	<text s="Horizontal scroll">Desplazamiento Horizontal</text>
 
 	<text s="EnumFlags">Opciones</text>
-	<text s="FOLDERS">Carpetas</text>
-	<text s="NONFOLDERS">Sin Carpetas</text>
-	<text s="INCLUDEHIDDEN">Incluir Elementos Ocultos</text>
+	<text s="Folders">Carpetas</text>
+	<text s="Not folders">Sin Carpetas</text>
+	<text s="Include hidden items">Incluir Elementos Ocultos</text>
 
 	<text s="RootStyle">Estilo de la Raíz</text>
-	<text s="VISIBLE">Visible</text>
-	<text s="HIDDEN">Oculto</text>
-	<text s="EXPANDED">Expandido</text>
+	<text s="Visible">Visible</text>
+	<text s="Hidden">Oculto</text>
+	<text s="Expanded">Expandido</text>
 
-	<text s="BUTTONS">Botones</text>
-	<text s="FLATBUTTONS">Botones Planos</text>
-	<text s="SCROLLOPPOSITE">Desplazamiento Opuesto</text>
-	<text s="MULTILINE">Multilínea</text>
-	<text s="FIXEDWIDTH">Ancho Fijo</text>
-	<text s="RAGGEDRIGHT">Ragged Right</text>
-	<text s="RIGHT/BOTTOM">Derecha/Abajo</text>
-	<text s="VERTICAL">Vertical</text>
-	<text s="HOTTRACK">Hot track</text>
-	<text s="TOOLTIPS">Tooltips</text>
-	<text s="FORCEICONLEFT">Poner Icono a la Izquierda</text>
-	<text s="FORCELABELLEFT">Poner Etiqueta a la Izquierda</text>
+	<text s="Buttons">Botones</text>
+	<text s="Flat buttons">Botones Planos</text>
+	<text s="Scroll opposite">Desplazamiento Opuesto</text>
+	<text s="Multi line">Multilínea</text>
+	<text s="Fixed width">Ancho Fijo</text>
+	<text s="Ragged right">Ragged Right</text>
+	<text s="Right/Bottom">Derecha/Abajo</text>
+	<text s="Vertical">Vertical</text>
+	<text s="Hot track">Hot track</text>
+	<text s="Tooltips">Tooltips</text>
+	<text s="Force icon left">Poner Icono a la Izquierda</text>
+	<text s="Force label left">Poner Etiqueta a la Izquierda</text>
 
 	<text s="Shell Browser">Navegador Shell</text>
 	<text s="Explorer Browser">Navegador Explorer</text>
 
-	<text s="AUTOARRANGE">Organizar Automáticamente</text>
-	<text s="SINGLESEL">Selección Única</text>
-	<text s="NOCLIENTEDGE">No Client Edge</text>
-	<text s="SHOWSELALWAYS">Mostrar Siempre la Selección</text>
-	<text s="SINGLECLICKACTIVATE">Activación con único Click</text>
+	<text s="Auto arrange">Organizar Automáticamente</text>
+	<text s="Single selection">Selección Única</text>
+	<text s="No client edge">No Client Edge</text>
+	<text s="Show selection always">Mostrar Siempre la Selección</text>
+	<text s="Single click activate">Activación con único Click</text>
 
-	<text s="SHOWFRAMES">Ver Marcos</text>
+	<text s="Show frames">Ver Marcos</text>
 
-	<text s="ViewFlags">Opciones de Vista</text>
-	<text s="SHOWALLFILES">Mostrar Todos los Archivos</text>
+	<text s="View flags">Opciones de Vista</text>
+	<text s="Show all files">Mostrar Todos los Archivos</text>
 
-	<text s="ICON">Icono</text>
-	<text s="SMALLICON">Icono Pequeño</text>
-	<text s="LIST">Lista</text>
-	<text s="DETAILS">Detailles</text>
-	<text s="THUMBNAIL">Miniatura</text>
-	<text s="TILE">Mosaico</text>
-	<text s="THUMBSTRIP">Galería</text>
-	<text s="CONTENT">Contenido</text>
-	<text s="or higher.">o superior.</text>
 	<text s="Icon">Icono</text>
+	<text s="Small icon">Icono Pequeño</text>
+	<text s="List">Lista</text>
+	<text s="Details">Detailles</text>
+	<text s="Thumbnail">Miniatura</text>
+	<text s="Tile">Mosaico</text>
+	<text s="Thumbstrip">Galería</text>
+	<text s="Content">Contenido</text>
+	<text s="or higher.">o superior.</text>
 	<text s="Check for updates">Comprobar actualizaciones</text>
 	<text s="the latest version">es la última versión</text>
 	<text s="Update available">Actualización disponible</text>

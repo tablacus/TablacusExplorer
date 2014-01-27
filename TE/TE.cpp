@@ -229,7 +229,7 @@ method methodAPI[] = {
 	{ 1154, L"QuadPart" },
 	{ 1163, L"pvData" },
 	{ 1170, L"ExecMethod" },
-//	{ 1182, L"Extract" },
+	{ 1182, L"Extract" },
 	{ 2063, L"FindWindow" },
 	{ 2073, L"FindWindowEx" },
 	{ 2111, L"PathMatchSpec" },
@@ -3339,12 +3339,21 @@ VOID Finalize()
 	ReleaseMutex(g_hMutex);
 }
 
-/*
 HRESULT teExtract(IStorage *pStorage, LPWSTR lpszFolderPath)
 {
 	STATSTG statstg;
 	IEnumSTATSTG *pEnumSTATSTG;
-	
+#ifdef _2000XP
+	IShellFolder2 *pSF2;
+	LPITEMIDLIST pidl;
+	ULONG chEaten;
+	ULONG dwAttributes;
+	SYSTEMTIME SysTime;
+	SHCOLUMNID scid;
+	scid.fmtid = FMTID_Storage;
+	scid.pid = 14;
+	VARIANT v;
+#endif
 	CreateDirectory(lpszFolderPath, NULL);
 
 	HRESULT hr = pStorage->EnumElements(NULL, NULL, NULL, &pEnumSTATSTG);
@@ -3363,32 +3372,55 @@ HRESULT teExtract(IStorage *pStorage, LPWSTR lpszFolderPath)
 		}
 		else if (statstg.type == STGTY_STREAM) {
 			IStream *pStream;
-			ULARGE_INTEGER uiSize;
 			ULONG uRead;
 			DWORD dwWriteByte;
 
 			hr = pStorage->OpenStream(statstg.pwcsName, NULL, STGM_READ, NULL, &pStream);
-			IStream_Size(pStream, &uiSize);
-			LPBYTE lpData = (LPBYTE)CoTaskMemAlloc(uiSize.LowPart);	
-			hr = pStream->Read(lpData, uiSize.LowPart, &uRead);
-			HANDLE hFile = CreateFile(lpszPath, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-			if (hFile) {
-				WriteFile(hFile, lpData, uRead, &dwWriteByte, NULL);
-				SetFileTime(hFile, &statstg.ctime, &statstg.atime, &statstg.mtime);
-				CloseHandle(hFile);
+			if SUCCEEDED(hr) {
+				LPBYTE lpData = (LPBYTE)CoTaskMemAlloc(SIZE_BUFF);	
+				if (lpData) {
+					HANDLE hFile = CreateFile(lpszPath, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+					if (hFile) {
+						while (SUCCEEDED(pStream->Read(lpData, SIZE_BUFF, &uRead)) && uRead) {
+							WriteFile(hFile, lpData, uRead, &dwWriteByte, NULL);
+						}
+#ifdef _2000XP
+						if (statstg.mtime.dwLowDateTime == 0) {
+							if SUCCEEDED(pStorage->QueryInterface(IID_PPV_ARGS(&pSF2))) {
+								if SUCCEEDED(pSF2->ParseDisplayName(NULL, NULL, statstg.pwcsName, &chEaten, &pidl, &dwAttributes)) {
+									VariantInit(&v);
+									if SUCCEEDED(pSF2->GetDetailsEx(pidl, &scid, &v) && v.vt == VT_DATE) {
+										if (::VariantTimeToSystemTime(v.date, &SysTime)) {
+											::SystemTimeToFileTime(&SysTime, &statstg.mtime);
+										}
+									}
+									VariantClear(&v);
+									CoTaskMemFree(pidl);
+								}
+								pSF2->Release();
+							}
+						}
+#endif
+						SetFileTime(hFile, &statstg.ctime, &statstg.atime, &statstg.mtime);
+						CloseHandle(hFile);
+						hr = S_OK;
+					}
+					else {
+						hr = E_ACCESSDENIED;
+					}
+					CoTaskMemFree(lpData);
+				}
+				else {
+					hr = E_OUTOFMEMORY;
+				}
+				pStream->Release();
 			}
-			else {
-				hr = E_ACCESSDENIED;
-			}
-			CoTaskMemFree(lpData);
-			pStream->Release();
 		}
 		delete [] lpszPath;
 	}
 	pEnumSTATSTG->Release();
 	return hr;
 }
-*/
 
 //
 //  FUNCTION: MyRegisterClass()
@@ -5005,6 +5037,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	}
 
 	if (pPreviusView) {
+//		pPreviusView->SaveViewState();
 		pPreviusView->DestroyViewWindow();
 		pPreviusView->Release();
 		pPreviusView = NULL;
@@ -5335,9 +5368,9 @@ VOID CteShellBrowser::SetHistory(FolderItems *pFolderItems, UINT wFlags)
 
 STDMETHODIMP CteShellBrowser::GetViewStateStream(DWORD grfMode, IStream **ppStrm)
 {
+//	return SHCreateStreamOnFile(L"", STGM_READWRITE | STGM_CREATE, ppStrm);
 	return E_NOTIMPL;
 }
-
 
 STDMETHODIMP CteShellBrowser::GetControlWindow(UINT id, HWND *lphwnd)
 {
@@ -6250,6 +6283,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 							m_param[SB_ViewMode] = fs.ViewMode;
 							Show(FALSE);
 							if SUCCEEDED(CreateViewWindowEx(pPreviusView)) {
+//								pPreviusView->SaveViewState();
 								pPreviusView->DestroyViewWindow();
 								pPreviusView->Release();
 								pPreviusView = NULL;
@@ -16305,7 +16339,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			}
 			break;
 		//Extract
-/*		case 1182:
+		case 1182:
 			*plResult = E_FAIL;
 			if (nArg >= 3) {
 				IStorage *pStorage;
@@ -16327,7 +16361,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				}
 				hDll && FreeLibrary(hDll);
 			}
-			break;*/
+			break;
 		//FindWindow
 		case 2063:
 			if (nArg >= 0) {

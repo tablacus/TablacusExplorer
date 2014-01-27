@@ -1467,7 +1467,7 @@ function ArrangeAddons()
 		}
 		return;
 	}
-	var AddonId = new Array();
+	var AddonId = [];
 	var root = xml.documentElement;
 	if (root) {
 		var items = root.childNodes;

@@ -80,6 +80,7 @@ typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
 #define MAX_FV					1024
 #define MAX_PATHEX				32768
 #define MAX_PROP				4096
+#define SIZE_BUFF				32768
 #define TET_Create				1
 #define TET_Reload				2
 #define TET_Size				3

@@ -409,10 +409,6 @@
 				RelativePath=".\TE.rc"
 				>
 			</File>
-			<File
-				RelativePath=".\te16.ico"
-				>
-			</File>
 		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"

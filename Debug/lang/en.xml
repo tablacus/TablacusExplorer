@@ -42,7 +42,7 @@
 	<text s="Size">Size</text>
 	<text s="Position">Position</text>
 	<text s="Root">Root</text>
-	<text s="ViewMode">ViewMode</text>
+	<text s="View mode">View mode</text>
 
 	<text s="Left">Left</text>
 	<text s="Top">Top</text>
@@ -122,65 +122,64 @@
 	<text s="Background">Background</text>
 	<text s="Advanced">Advanced</text>
 
-	<text s="HASEXPANDOS">Expandos</text>
-	<text s="HASLINES">Lines</text>
-	<text s="NOEDITLABELS">No edit labels</text>
-	<text s="DISABLEDRAGDROP">Disable Drag-and-Drop</text>
-	<text s="NOINFOTIP">No infotip</text>
-	<text s="SINGLECLICKEXPAND">Single click expand</text>
-	<text s="SPRINGEXPAND">Spring expand</text>
-	<text s="FULLROWSELECT">Full row select</text>
-	<text s="SHOWSELECTIONALWAYS">Show selection always</text>
-	<text s="BORDER">Border</text>
-	<text s="HORIZONTALSCROLL">Horizontal scroll</text>
+	<text s="Expandos">Expandos</text>
+	<text s="Lines">Lines</text>
+	<text s="No edit labels">No edit labels</text>
+	<text s="Disable Drag-and-Drop">Disable Drag-and-Drop</text>
+	<text s="No infotip">No infotip</text>
+	<text s="Single click expand">Single click expand</text>
+	<text s="Spring expand">Spring expand</text>
+	<text s="Full row select">Full row select</text>
+	<text s="Show selection always">Show selection always</text>
+	<text s="Border">Border</text>
+	<text s="Horizontal scroll">Horizontal scroll</text>
 
 	<text s="EnumFlags">Enum flags</text>
-	<text s="FOLDERS">Folders</text>
-	<text s="NONFOLDERS">Not folders</text>
-	<text s="INCLUDEHIDDEN">Include hidden items</text>
+	<text s="Folders">Folders</text>
+	<text s="Not folders">Not folders</text>
+	<text s="Include hidden items">Include hidden items</text>
 
 	<text s="RootStyle">Root style</text>
-	<text s="VISIBLE">Visible</text>
-	<text s="HIDDEN">Hidden</text>
-	<text s="EXPANDED">Expanded</text>
+	<text s="Visible">Visible</text>
+	<text s="Hidden">Hidden</text>
+	<text s="Expanded">Expanded</text>
 
-	<text s="BUTTONS">Buttons</text>
-	<text s="FLATBUTTONS">Flat buttons</text>
-	<text s="SCROLLOPPOSITE">Scroll opposite</text>
-	<text s="MULTILINE">Multi line</text>
-	<text s="FIXEDWIDTH">Fixed width</text>
-	<text s="RAGGEDRIGHT">Ragged right</text>
-	<text s="RIGHT/BOTTOM">Right/Bottom</text>
-	<text s="VERTICAL">Vertical</text>
-	<text s="HOTTRACK">Hot track</text>
-	<text s="TOOLTIPS">Tooltips</text>
-	<text s="FORCEICONLEFT">Force icon left</text>
-	<text s="FORCELABELLEFT">Force label left</text>
+	<text s="Buttons">Buttons</text>
+	<text s="Flat buttons">Flat buttons</text>
+	<text s="Scroll opposite">Scroll opposite</text>
+	<text s="Multi line">Multi line</text>
+	<text s="Fixed width">Fixed width</text>
+	<text s="Ragged right">Ragged right</text>
+	<text s="Right/Bottom">Right/Bottom</text>
+	<text s="Vertical">Vertical</text>
+	<text s="Hot track">Hot track</text>
+	<text s="Tooltips">Tooltips</text>
+	<text s="Force icon left">Force icon left</text>
+	<text s="Force label left">Force label left</text>
 
 	<text s="Shell Browser">Shell browser</text>
 	<text s="Explorer Browser">Explorer browser</text>
 
-	<text s="AUTOARRANGE">Auto arrange</text>
-	<text s="SINGLESEL">Single selection</text>
-	<text s="NOCLIENTEDGE">No client edge</text>
-	<text s="SHOWSELALWAYS">Show selection always</text>
-	<text s="SINGLECLICKACTIVATE">Single click activate</text>
+	<text s="Auto arrange">Auto arrange</text>
+	<text s="Single selection">Single selection</text>
+	<text s="No client edge">No client edge</text>
+	<text s="Show selection always">Show selection always</text>
+	<text s="Single click activate">Single click activate</text>
 
-	<text s="SHOWFRAMES">Show frames</text>
+	<text s="Show frames">Show frames</text>
 
-	<text s="ViewFlags">View flags</text>
-	<text s="SHOWALLFILES">Show all files</text>
+	<text s="View flags">View flags</text>
+	<text s="Show all files">Show all files</text>
 
-	<text s="ICON">Icon</text>
-	<text s="SMALLICON">Small icon</text>
-	<text s="LIST">List</text>
-	<text s="DETAILS">Details</text>
-	<text s="THUMBNAIL">Thumbnail</text>
-	<text s="TILE">Tile</text>
-	<text s="THUMBSTRIP">Thumbstrip</text>
-	<text s="CONTENT">Content</text>
-	<text s="or higher.">or higher.</text>
 	<text s="Icon">Icon</text>
+	<text s="Small icon">Small icon</text>
+	<text s="List">List</text>
+	<text s="Details">Details</text>
+	<text s="Thumbnail">Thumbnail</text>
+	<text s="Tile">Tile</text>
+	<text s="Thumbstrip">Thumbstrip</text>
+	<text s="Content">Content</text>
+	<text s="or higher.">or higher.</text>
 	<text s="Check for updates">Check for updates</text>
 	<text s="the latest version">the latest version</text>
 	<text s="Update available">Update available</text>

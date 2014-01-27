@@ -42,7 +42,7 @@
 	<text s="Size">サイズ</text>
 	<text s="Position">位置</text>
 	<text s="Root">ルート</text>
-	<text s="ViewMode">表示モード</text>
+	<text s="View mode">表示モード</text>
 
 	<text s="Left">左</text>
 	<text s="Top">上</text>
@@ -122,66 +122,65 @@
 	<text s="Background">バックグラウンド</text>
 	<text s="Advanced">高度</text>
 
-	<text s="HASEXPANDOS">ボタンを表示</text>
-	<text s="HASLINES">線を表示</text>
-	<text s="NOEDITLABELS">名前の編集禁止</text>
-	<text s="DISABLEDRAGDROP">ドラッグ禁止</text>
-	<text s="NOINFOTIP">ツールチップなし</text>
-	<text s="SINGLECLICKEXPAND">トラックセレクト</text>
-	<text s="SPRINGEXPAND">スプリングエクスパンド</text>
-	<text s="FULLROWSELECT">一行選択</text>
-	<text s="SHOWSELECTIONALWAYS">常に選択を表示</text>
-	<text s="BORDER">外枠</text>
-	<text s="HORIZONTALSCROLL">水平スクロール</text>
+	<text s="Expandos">ボタンを表示</text>
+	<text s="Lines">線を表示</text>
+	<text s="No edit labels">名前の編集禁止</text>
+	<text s="Disable Drag-and-Drop">ドラッグ禁止</text>
+	<text s="No infotip">ツールチップなし</text>
+	<text s="Single click expand">トラックセレクト</text>
+	<text s="Spring expand">スプリングエクスパンド</text>
+	<text s="Full row select">一行選択</text>
+	<text s="Show selection always">常に選択を表示</text>
+	<text s="Border">外枠</text>
+	<text s="Horizontal scroll">水平スクロール</text>
 
 	<text s="EnumFlags">列挙</text>
-	<text s="FOLDERS">フォルダ</text>
-	<text s="NONFOLDERS">フォルダ以外</text>
-	<text s="INCLUDEHIDDEN">隠しオブジェクト</text>
+	<text s="Folders">フォルダ_</text>
+	<text s="Not folders">フォルダ以外</text>
+	<text s="Include hidden items">隠しオブジェクト</text>
 
 	<text s="RootStyle">ルートスタイル</text>
-	<text s="VISIBLE">表示</text>
-	<text s="HIDDEN">隠す</text>
-	<text s="EXPANDED">展開</text>
+	<text s="Visible">可視</text>
+	<text s="Hidden">隠す</text>
+	<text s="Expanded">展開</text>
 
-	<text s="BUTTONS">ボタン</text>
-	<text s="FLATBUTTONS">フラットボタン</text>
-	<text s="SCROLLOPPOSITE">選択されていないタブを反対に移動</text>
-	<text s="MULTILINE">複数行</text>
-	<text s="FIXEDWIDTH">幅固定</text>
-	<text s="RAGGEDRIGHT">左詰め</text>
-	<text s="RIGHT/BOTTOM">右・下</text>
-	<text s="VERTICAL">縦</text>
-	<text s="HOTTRACK">ホットトラック</text>
-	<text s="TOOLTIPS">ツールチップ</text>
-	<text s="FORCEICONLEFT">アイコンを左詰め</text>
-	<text s="FORCELABELLEFT">アイコンと文字を左詰め</text>
+	<text s="Buttons">ボタン</text>
+	<text s="Flat buttons">フラットボタン</text>
+	<text s="Scroll opposite">選択されていないタブを反対に移動</text>
+	<text s="Multi line">複数行</text>
+	<text s="Fixed width">幅固定</text>
+	<text s="Ragged right">左詰め</text>
+	<text s="Right/Bottom">右・下</text>
+	<text s="Vertical">縦</text>
+	<text s="Hot track">ホットトラック</text>
+	<text s="Tooltips">ツールチップ</text>
+	<text s="Force icon left">アイコンを左詰め</text>
+	<text s="Force label left">アイコンと文字を左詰め</text>
 
 	<text s="Shell Browser">シェルブラウザ</text>
 	<text s="Explorer Browser">エクスプローラブラウザ</text>
 
-	<text s="AUTOARRANGE">自動的に整列</text>
-	<text s="SINGLESEL">シングルセレクト</text>
-	<text s="NOCLIENTEDGE">エッジを隠す</text>
-	<text s="SHOWSELALWAYS">常に選択を表示</text>
-	<text s="SINGLECLICKACTIVATE">ポイントで選択、クリックで実行</text>
+	<text s="Auto arrange">自動的に整列</text>
+	<text s="Single selection">シングルセレクト</text>
+	<text s="No client edge">エッジを隠す</text>
+	<text s="Show selection always">常に選択を表示</text>
+	<text s="Single click activate">ポイントで選択、クリックで実行</text>
 
-	<text s="SHOWFRAMES">フレームを表示</text>
+	<text s="Show frames">フレームを表示</text>
 
-	<text s="ViewFlags">表示フラグ</text>
-	<text s="SHOWALLFILES">すべての項目を表示</text>
+	<text s="View flags">表示フラグ</text>
+	<text s="Show all files">すべての項目を表示</text>
 
-	<text s="ICON">アイコン</text>
-	<text s="SMALLICON">小さいアイコン</text>
-	<text s="LIST">一覧</text>
-	<text s="DETAILS">詳細</text>
-	<text s="THUMBNAIL">縮小版</text>
-	<text s="TILE">並べて表示</text>
-	<text s="THUMBSTRIP">スライド表示</text>
-	<text s="CONTENT">コンテンツ</text>
+	<text s="Icon">アイコン</text>
+	<text s="Small icon">小さいアイコン</text>
+	<text s="List">一覧</text>
+	<text s="Details">詳細</text>
+	<text s="Thumbnail">縮小版</text>
+	<text s="Tile">並べて表示</text>
+	<text s="Thumbstrip">スライド表示</text>
+	<text s="Content">コンテンツ</text>
 	<text s="or higher.">以降 </text>
 	<text s="Input">入力</text>
-	<text s="Icon">アイコン</text>
 	<text s="Check for updates">最新版の確認</text>
 	<text s="the latest version">最新バージョン</text>
 	<text s="Update available">アップデートがあります</text>
