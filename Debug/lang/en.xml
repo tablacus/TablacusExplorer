@@ -53,10 +53,8 @@
 	<text s="None">None</text>
 	<text s="Auto">Auto</text>
 
-	<text s="Load Layout...">Load layout...</text>
-	<text s="Save Layout...">Save layout...</text>
 	<text s="Action">Action</text>
-	<text s="Open in New Tab">Open in new tab</text>
+	<text s="Open in New &amp;Tab">Open in new &amp;tab</text>
 	<text s="Open in Background">Open in background</text>
 	<text s="Open with...">Open with...</text>
 	<text s="Send to...">Send to...</text>
@@ -97,7 +95,6 @@
 	<text s="Are you sure?">Are you sure?</text>
 	<text s="Do you want to replace?">Do you want to replace?</text>
 	<text s="Menus">Menus</text>
-	<text s="Open in New &amp;Tab">Open in new &amp;tab</text>
 	<text s="Context">Context</text>
 	<text s="ViewContext">ViewContext</text>
 	<text s="System">System</text>
@@ -109,7 +106,6 @@
 	<text s="Get Add-ons...">Get Add-ons...</text>
 	<text s="Enable">Enable</text>
 	<text s="Disable">Disable</text>
-	<text s="Options...">Options...</text>
 	<text s="Visit website">Visit website</text>
 	<text s="Info...">Info...</text>
 	<text s="Location">Location</text>
@@ -199,7 +195,7 @@
 	<text s="Add before">Add before</text>
 	<text s="Add after">Add after</text>
 	<text s="TaskTray">TaskTray</text>
-	<text s="Next Tab">Next Tab</text>
+	<text s="Next Tab">Next tab</text>
 	<text s="Previous Tab">Previous tab</text>
 	<text s="Run Dialog">Run dialog</text>
 	<text s="Copy Full Path">Copy full path</text>

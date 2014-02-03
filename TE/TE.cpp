@@ -265,6 +265,7 @@ method methodAPI[] = {
 	{ 6015, L"PathUnquoteSpaces"},
 	{ 6025, L"GetShortPathName"},
 	{ 6035, L"PathCreateFromUrl"},
+	{ 6045, L"PathSearchAndQualify"},
 	//(string)string TaskMemory
 	{ 6006, L"PSFormatForDisplay"},
 	{ 6016, L"PSGetDisplayName"},
@@ -1199,6 +1200,13 @@ LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath)
 			PathUnquoteSpaces(pszPath2);
 			pszPath = pszPath2;
 		}
+		LPWSTR pszPath3 = NULL;
+		if (PathMatchSpec(pszPath, L"*\\..\\*;*\\..;*\\.\\*;*\\.;*\\\\\\*;*%*%*")) {
+			UINT uLen = lstrlen(pszPath) + MAX_PATH;
+			pszPath3 = new WCHAR[uLen];
+			PathSearchAndQualify(pszPath, pszPath3, uLen);
+			pszPath = pszPath3;
+		}
 		int n = PathGetDriveNumber(pszPath);
 		if (n >= 0 && DriveType(n) == DRIVE_NO_ROOT_DIR && lstrlen(pszPath) > 3) {
 			WCHAR szDrive[4];
@@ -1238,6 +1246,9 @@ LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath)
 					pDesktopFolder->Release();
 				}
 			}
+		}
+		if (pszPath3) {
+			delete [] pszPath3;
 		}
 		if (pszPath2) {
 			delete [] pszPath2;
@@ -15995,15 +16006,22 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 					break;
 				case 6035:
 					if (v.bstrVal) {
-						pszResult = new WCHAR[MAX_PATH];
-						DWORD dwLen = MAX_PATH;
+						pszResult = new WCHAR[MAX_PATH * 4];
+						DWORD dwLen = MAX_PATH * 4;
 						if FAILED(PathCreateFromUrl(v.bstrVal, pszResult, &dwLen, NULL)) {
 							delete [] pszResult;
 							pszResult = NULL;
 						}
 					}
 					break;
-				//PSFormatForDisplay
+				case 6045:
+					if (v.bstrVal) {
+						UINT uLen = ::SysStringLen(v.bstrVal) + MAX_PATH;
+						pszResult = new WCHAR[uLen];
+						PathSearchAndQualify(v.bstrVal, pszResult, uLen);
+					}
+					break;
+		//PSFormatForDisplay
 				case 6006:
 					if (nArg >= 2 && lpfnPSPropertyKeyFromStringEx) {
 						if (v.bstrVal) {

@@ -1693,7 +1693,7 @@ GetAddonInfo2 = function (xml, info, Tag)
 	}
 }
 
-OpenXml = function (strFile, bAppData, bEmpty)
+OpenXml = function (strFile, bAppData, bEmpty, strInit)
 {
 	var xml = te.CreateObject("Msxml2.DOMDocument");
 	xml.async = false;
@@ -1707,6 +1707,9 @@ OpenXml = function (strFile, bAppData, bEmpty)
 			Dest.MoveHere(path, FOF_SILENT | FOF_NOCONFIRMATION);
 			return xml;
 		}
+	}
+	if (strInit && xml.load(fso.BuildPath(strInit, strFile))) {
+		return xml;
 	}
 	if (xml.load(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "init\\" + strFile))) {
 		return xml;

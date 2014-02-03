@@ -54,10 +54,8 @@
 	<text s="None">Ninguno</text>
 	<text s="Auto">Automático</text>
 
-	<text s="Load Layout...">Cargar Diseño...</text>
-	<text s="Save Layout...">Guardar Diseño...</text>
 	<text s="Action">Acción</text>
-	<text s="Open in New Tab">Abrir en una Pestaña Nueva</text>
+	<text s="Open in New &amp;Tab">Abrir en una &amp;Pestaña Nueva</text>
 	<text s="Open in Background">Abrir en Segundo Plano</text>
 	<text s="Open with...">Abrir con...</text>
 	<text s="Send to...">Enviar a...</text>
@@ -98,7 +96,6 @@
 	<text s="Are you sure?">¿Está seguro?</text>
 	<text s="Do you want to replace?">¿Desea remplazar?</text>
 	<text s="Menus">Menús</text>
-	<text s="Open in New &amp;Tab">Abrir en una &amp;Pestaña Nueva</text>
 	<text s="Context">Contextual</text>
 	<text s="ViewContext">Contextual de la Vista</text>
 	<text s="System">Sistema</text>
@@ -110,7 +107,6 @@
 	<text s="Get Add-ons...">Obtener Complementos...</text>
 	<text s="Enable">Activar</text>
 	<text s="Disable">Deshabilitar</text>
-	<text s="Options...">Opciones...</text>
 	<text s="Visit website">Visitar sitio web</text>
 	<text s="Info...">Información...</text>
 	<text s="Location">Posición</text>
