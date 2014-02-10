@@ -44,6 +44,13 @@ ChangeView = function (Ctrl)
 	}
 }
 
+SetAddress = function (s)
+{
+	for (var i in eventTE.SetAddress) {
+		eventTE.SetAddress[i](s);
+	}
+}
+
 ChangeTabName = function (Ctrl)
 {
 	Ctrl.Title = GetTabName(Ctrl);
@@ -77,6 +84,7 @@ CloseView = function (Ctrl)
 
 DeviceChanged = function (Ctrl)
 {
+	g_tidDevice = null;
 	for (var i in eventTE.DeviceChanged) {
 		eventTE.DeviceChanged[i](Ctrl);
 	}
@@ -562,6 +570,7 @@ AddEvent("Close", function (Ctrl)
 			if (api.GetThreadCount() && wsh.Popup(GetText("File is in operation."), 0, TITLE, MB_ICONSTOP | MB_ABORTRETRYIGNORE) != IDIGNORE) {
 				return S_FALSE;
 			}
+			api.SHChangeNotifyDeregister(te.Data.uRegisterId);
 			break;
 		case CTRL_WB:
 			break;
@@ -1237,6 +1246,36 @@ te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 		if (isFinite(hr)) {
 			return hr; 
 		}
+	}
+	if (msg == TWM_CHANGENOTIFY) {
+		var pidls = te.FolderItems();
+		var hLock = api.SHChangeNotification_Lock(wParam, lParam, pidls);
+		if (hLock) {
+			if (pidls.lEvent & (SHCNE_DRIVEREMOVED | SHCNE_MEDIAREMOVED | SHCNE_NETUNSHARE | SHCNE_RENAMEFOLDER | SHCNE_RMDIR | SHCNE_SERVERDISCONNECT)) {
+				var cFV = te.Ctrls(CTRL_FV);
+				for (var i in cFV) {
+					var FV = cFV[i];
+					if (api.ILIsEqual(FV, pidls[0])) {
+						if (pidls.lEvent == SHCNE_RENAMEFOLDER && !FV.Data.Lock) {
+							FV.Navigate(api.GetDisplayNameOf(pidls[1], SHGDN_FORPARSINGEX | SHGDN_FORPARSING), SBSP_SAMEBROWSER);
+						}
+						else {
+							FV.Suspend();
+						}
+					}
+					else if (api.ILIsParent(pidls[0], FV, true)) {
+						if (pidls.lEvent == SHCNE_RENAMEFOLDER && !FV.Data.Lock) {
+							FV.Navigate(api.GetDisplayNameOf(FV, SHGDN_FORPARSING).replace(api.GetDisplayNameOf(pidls[0], SHGDN_FORPARSING), api.GetDisplayNameOf(pidls[1], SHGDN_FORPARSING)), SBSP_SAMEBROWSER);
+						}
+						else {
+							FV.Suspend();
+						}
+					}
+				}
+			}
+			api.SHChangeNotification_Unlock(hLock);
+		}
+		return S_OK;
 	}
 	return S_FALSE;
 }
@@ -2536,6 +2575,7 @@ if (!te.Data) {
 	else {
 		LoadConfig();
 	}
+	te.Data.uRegisterId = api.SHChangeNotifyRegister(te.hwnd, SHCNRF_InterruptLevel | SHCNRF_ShellLevel | SHCNRF_NewDelivery, SHCNE_DRIVEREMOVED | SHCNE_MEDIAREMOVED | SHCNE_NETUNSHARE | SHCNE_RENAMEFOLDER | SHCNE_RMDIR | SHCNE_SERVERDISCONNECT | SHCNE_DRIVEADD | SHCNE_DRIVEADDGUI | SHCNE_MEDIAINSERTED | SHCNE_NETSHARE, TWM_CHANGENOTIFY, ssfDESKTOP, true);
 }
 
 InitCode();

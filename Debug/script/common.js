@@ -349,12 +349,12 @@ function MakeImgSrc(src, index, bSrc, h, strBitmap, strIcon)
 {
 	var fn;
 	if (!document.documentMode) {
-		var value = src.match(/^bitmap:(.*)/i) ? RegExp.$1 : strBitmap;
+		var value = /^bitmap:(.*)/i.test(src) ? RegExp.$1 : strBitmap;
 		if (value) {
 			fn = fso.BuildPath(te.Data.DataFolder, "cache\\bitmap\\" + value.replace(/[:\\\/]/g, "$") + ".png");
 		}
 		else {
-			value = src.match(/^icon:(.*)/i) ? RegExp.$1 : strIcon;
+			value = /^icon:(.*)/i.test(src) ? RegExp.$1 : strIcon;
 			if (value) {
 				fn = fso.BuildPath(te.Data.DataFolder, "cache\\icon\\" + value.replace(/[:\\\/]/g, "$") + ".png");
 			}
@@ -398,7 +398,7 @@ function MakeImgData(src, index, h, strBitmap, strIcon)
 function MakeImgIcon(src, index, h, strBitmap, strIcon)
 {
 	var hIcon = null;
-	var value = src.match(/^bitmap:(.*)/i) ? RegExp.$1 : strBitmap;
+	var value = /^bitmap:(.*)/i.test(src) ? RegExp.$1 : strBitmap;
 	if (value) {
 		var icon = value.split(",");
 		var hModule = LoadImgDll(icon, index);
@@ -412,7 +412,7 @@ function MakeImgIcon(src, index, h, strBitmap, strIcon)
 			return hIcon;
 		}
 	}
-	value = src.match(/^icon:(.*)/i) ? RegExp.$1 : strIcon;
+	value = /^icon:(.*)/i.test(src) ? RegExp.$1 : strIcon;
 	if (value) {
 		var icon = value.split(",");
 		var phIcon = api.Memory("HANDLE");
@@ -476,19 +476,20 @@ function LoadLang2(filename)
 	var items = xml.getElementsByTagName('text');
 	for (var i = 0; i < items.length; i++) {
 		var item = items[i];
-		var s = item.getAttribute("s").replace("\\t", "\t").replace("\\n", "\n");
-		var v = item.text.replace("\\t", "\t").replace("\\n", "\n");
-		if (!MainWindow.LangSrc[v]) {
-			MainWindow.Lang[s] = v;
-			MainWindow.LangSrc[v] = s;
-			if (s.match(/&|\.\.\.$/)) {
-				s = StripAmp(s);
-				v = StripAmp(v);
-				if (!MainWindow.Lang[s] && !MainWindow.LangSrc[v]) {
-					MainWindow.Lang[s] = v;
-					MainWindow.LangSrc[v] = s;
-				}
-			}
+		SetLang2(item.getAttribute("s").replace("\\t", "\t").replace("\\n", "\n"), item.text.replace("\\t", "\t").replace("\\n", "\n"));
+	}
+}
+
+SetLang2 = function(s, v)
+{
+	if (!MainWindow.Lang[s] && !MainWindow.LangSrc[v]) {
+		MainWindow.Lang[s] = v;
+		MainWindow.LangSrc[v] = s;
+		if (/&/.test(s)) {
+			SetLang2(s.replace(/\(&\w\)|&/, ""), v.replace(/\(&\w\)|&/, ""));
+		}
+		if (/\.\.\.$/.test(s)) {
+			SetLang2(StripAmp(s), StripAmp(v));
 		}
 	}
 }
@@ -636,7 +637,7 @@ SaveXml = function (filename, all)
 	}
 	if (all) {
 		for (var i in te.Data) {
-			if (i.match(/^(Tab|Tree|View|Conf)_(.*)/)) {
+			if (/^(Tab|Tree|View|Conf)_(.*)/.test(i)) {
 				var item = xml.createElement(RegExp.$1);
 				item.setAttribute("Id", RegExp.$2);
 				item.text = te.Data[i];
@@ -749,18 +750,18 @@ NavigateFV = function (FV, Path, wFlags)
 	if (FV) {
 		var Focus = null;
 		if (typeof(Path) == "string") {
-			if (Path.match(/%([^%]+)%/)) {
+			if (/%([^%]+)%/.test(Path)) {
 				Path = ExtractMacro(FV, Path);
 			}
-			if (Path.match(/^[a-z]$/i)) {
+			if (/^[a-z]$/i.test(Path)) {
 				Path += ":\\";
 			}
-			if (Path.match(/\?|\*/) && !Path.match(/^::{/)) {
+			if (/\?|\*/.test(Path) && !/^::{/.test(Path)) {
 				FV.FilterView = Path;
 				FV.Refresh();
 				return;
 			}
-			if (Path.length > 3 && Path.match(/\\$/)) {
+			if (Path.length > 3 && /\\$/.test(Path)) {
 				Focus = Path.replace(/\\$/, '');
 				Path = fso.GetParentFolderName(Path);
 			}
@@ -886,7 +887,7 @@ CreateNew = function (path, fn)
 			fn(path);
 		}
 		catch (e) {
-			if (path.match(/^[A-Z]:\\|^\\/i)) {
+			if (/^[A-Z]:\\|^\\/i.test(path)) {
 				var s = fso.BuildPath(fso.GetSpecialFolder(2).Path, fso.GetFileName(path));
 				DeleteItem(s);
 				fn(s);
@@ -1139,7 +1140,7 @@ PathMatchEx = function (path, s)
 		return api.PathMatchSpec(path, s);
 	}
 	var i = s.lastIndexOf("/");
-	return (i > 1 && path.match(new RegExp(s.substr(1, i - 1), s.substr(i + 1))));
+	return (i > 1 && new RegExp(s.substr(1, i - 1), s.substr(i + 1)).test(path));
 }
 
 IsFolderEx = function (Item)
@@ -1569,7 +1570,7 @@ MenuDbReplace = function (hMenu, oMenu, hMenu2)
 		api.InsertMenuItem(hMenu, MAXINT, false, mii);
 	}
 	for (var s in oMenu) {
-		if (!s.match(/^\t/)) {
+		if (!/^\t/.test(s)) {
 			api.InsertMenuItem(hMenu2, MAXINT, false, oMenu[s]);
 		}
 	}
@@ -1578,7 +1579,7 @@ MenuDbReplace = function (hMenu, oMenu, hMenu2)
 
 GetAccelerator = function (s)
 {
-	if (s.match(/&(.)/)) {
+	if (/&(.)/.test(s)) {
 		return RegExp.$1;
 	}
 	return "";
@@ -1793,17 +1794,17 @@ function CheckUpdate()
 	xhr.setRequestHeader('Cache-Control', 'no-cache');
 	xhr.setRequestHeader('If-Modified-Since', 'Thu, 01 Jun 1970 00:00:00 GMT');
 	xhr.send(null);
-	if (!xhr.responseText.match(/<td id="te">(.*?)<\/td>/i)) {
+	if (!/<td id="te">(.*?)<\/td>/i.test(xhr.responseText)) {
 		return;
 	}
 	var s = RegExp.$1;
-	if (!s.match(/<a href="dl\/([^"]*)/i)) {
+	if (!/<a href="dl\/([^"]*)/i.test(s)) {
 		return;
 	}
 	var file = RegExp.$1;
 	s = s.replace(/Download/i, "").replace(/<[^>]*>/ig, "");
 	var ver = 0;
-	if (file.match(/(\d+)/)) {
+	if (/(\d+)/.test(file)) {
 		ver = 20000000 + api.QuadPart(RegExp.$1)
 	}
 	if (ver <= te.Version) {
@@ -1921,7 +1922,7 @@ AddonOptions = function (Id, fn, Data)
 	}
 	Data.id = Id;
 	var sFeatures = info.Options;
-	if (sFeatures.match(/Common:([\d,]+):(\d)/i)) {
+	if (/Common:([\d,]+):(\d)/i.test(sFeatures)) {
 		sURL = "location.html";
 		Data.show = RegExp.$1;
 		Data.index = RegExp.$2;
@@ -1977,7 +1978,7 @@ IsSavePath = function (path, mode)
 function CalcVersion(s)
 {
 	var r = 0;
-	if (s.match(/(\d+)\.(\d+)\.(\d+)/)) {
+	if (/(\d+)\.(\d+)\.(\d+)/.test(s)) {
 		r =  api.QuadPart(RegExp.$1) * 10000 + api.QuadPart(RegExp.$2) * 100 + api.QuadPart(RegExp.$3);
 	}
 	if (r < 2000 * 10000) {
@@ -2072,15 +2073,17 @@ OpenInExplorer = function (FV)
 		}
 		catch (e) {}
 		try {
-			if (doc.SortColumns) {
-				doc.SortColumns = FV.SortColumns;
-			}
+			doc.SortColumns = FV.SortColumns;
 		}
 		catch (e) {}
 		if (FV.TreeView.Align & 2) {
 			exp.ShowBrowserBar("{EFA24E64-B078-11D0-89E4-00C04FC9E26E}", true);
 		}
 		exp.Visible = true;
+		try {
+			doc.FilterView(FV.FilterView);
+		}
+		catch (e) {}
 	}
 }
 
@@ -2118,7 +2121,7 @@ function MakeKeySelect()
 		var ar = [];
 		for (var i = 0; i < 4; i++) {
 			var s = MainWindow.g_KeyState[i][0];
-			ar.push('<input type="checkbox" onclick="KeyShift(this)" id="_Key' + s + '"><label for="_Key' + s + '">' + s + '&nbsp;</label>');
+			ar.push('<input type="checkbox" onclick="KeyShift(this)" id="_Key', s, '"><label for="_Key', s, '">', s, '&nbsp;</label>');
 		}
 		oa.insertAdjacentHTML("AfterBegin", ar.join(""));
 	}

@@ -657,6 +657,7 @@ public:
 	VOID DestroyView(int nFlags);
 	HWND GetListHandle(HWND *hList);
 	BOOL Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItems *pFolderItems, LPITEMIDLIST pidlPrevius, LPITEMIDLIST *ppidl);
+	VOID Navigate1Ex(LPOLESTR pstr, FolderItems *pFolderItems, UINT wFlags, LPITEMIDLIST pidlPrevius);
 	HRESULT Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *param, FolderItems *pFolderItems, LPITEMIDLIST pidlPrevius);
 	HRESULT Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *param, CteShellBrowser **ppSB, FolderItems *pFolderItems);
 	HRESULT OnBeforeNavigate(FolderItem *pPrevius, UINT wFlags);
@@ -672,7 +673,7 @@ public:
 	VOID SetHistory(FolderItems *pFolderItems, UINT wFlags);
 	VOID GetVariantPath(FolderItem **ppFolderItem, FolderItems **ppFolderItems, VARIANT *pv);
 	VOID HookDragDrop(int nMode);
-	VOID Error(int *pnDog);
+	VOID Error(FolderItem *pid, DWORD dwTick);
 	VOID Refresh();
 public:
 	BOOL		m_bEmpty, m_bInit;

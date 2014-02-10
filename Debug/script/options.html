@@ -225,7 +225,7 @@
             </div>
             <!--panel_end-->
             <div class="panel" id="panel3">
-              <input type="hidden" name="Tab_Style"/>TCS_...<br />
+              <input type="hidden" name="Tab_Style"/><label>View</label><br />
               <input type="checkbox" id="Tab_Style:0x100" onclick="SetCheckbox(this)" />
               <label for="Tab_Style:0x100">Buttons</label>
               <input type="checkbox" id="Tab_Style:0x8" onclick="SetCheckbox(this)" />
@@ -270,9 +270,7 @@
               <input type="radio" name="Tab_Align_" id="Tab_Align=5" onclick="SetRadio(this)" />
               <label for="Tab_Align=5">Right</label><br /><br />
               <div>
-                <label>
-                  Size
-                </label>
+                <label>Size</label>
               </div>
               <label>Width</label>
               <input type="text" name="Tab_TabWidth" size="4" />
@@ -352,7 +350,7 @@
                 <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_Tree_Style")' />
               </div>
               <div class="group" id="_Advanced_Tree_Style">
-
+                NSTCS_...<br />
                 <input type="checkbox" id="Tree_Style:0x40" onclick="SetCheckbox(this)" />
                 <label for="Tree_Style:0x40">ROOTHASEXPANDO</label>(*)
                 <input type="checkbox" id="Tree_Style:0x400" onclick="SetCheckbox(this)" />
@@ -362,18 +360,19 @@
                 <label for="Tree_Style:0x800">NOREPLACEOPEN</label>(*)
                 <input type="checkbox" id="Tree_Style:0x2000" onclick="SetCheckbox(this)" />
                 <label for="Tree_Style:0x2000">NOORDERSTREAM</label>(*)
+                <br />
                 <input type="checkbox" id="Tree_Style:0x4000" onclick="SetCheckbox(this)" />
                 <label for="Tree_Style:0x4000">RICHTOOLTIP</label>(*)
-                <br />
                 <input type="checkbox" id="Tree_Style:0x20000" onclick="SetCheckbox(this)" />
                 <label for="Tree_Style:0x20000">TABSTOP</label>
                 <input type="checkbox" id="Tree_Style:0x40000" onclick="SetCheckbox(this)" />
                 <label for="Tree_Style:0x40000">FAVORITESMODE</label>
+                <br />
                 <input type="checkbox" id="Tree_Style:0x100000" onclick="SetCheckbox(this)" />
                 <label for="Tree_Style:0x100000">AUTOHSCROLL</label>
-                <br />
                 <input type="checkbox" id="Tree_Style:0x200000" onclick="SetCheckbox(this)" />
                 <label for="Tree_Style:0x200000">FADEINOUTEXPANDOS</label>(*)
+                <br />
                 <input type="checkbox" id="Tree_Style:0x400000" onclick="SetCheckbox(this)" />
                 <label for="Tree_Style:0x400000">EMPTYTEXT</label>(*)
                 <input type="checkbox" id="Tree_Style:0x800000" onclick="SetCheckbox(this)" />
@@ -415,7 +414,7 @@
               <label>Root</label><br />
               <input type="text" name="Tree_Root" style="width: 100%" /><br /><br />
               <label>RootStyle</label><br />
-              <input type="hidden" name="Tree_RootStyle" />NSTCRS_...<br />
+              <input type="hidden" name="Tree_RootStyle" />
               <input type="radio" name="Tree_RootStyle_" id="Tree_RootStyle=0" onclick="SetRadio(this)" />
               <label for="Tree_RootStyle=0">Visible</label>
               <input type="radio" name="Tree_RootStyle_" id="Tree_RootStyle=1" onclick="SetRadio(this)" />
@@ -427,7 +426,6 @@
 
             <div class="panel" id="panel4_2">
               <label>EnumFlags</label><br />
-              SHCONTF_...<br />
               <input type="hidden" name="Tree_EnumFlags" />
               <input type="checkbox" id="Tree_EnumFlags:0x20" onclick="SetCheckbox(this)" />
               <label for="Tree_EnumFlags:0x20">Folders</label>
@@ -440,11 +438,12 @@
                 <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_Tree_EnumFlags")' />
               </div>
               <div class="group" id="_Advanced_Tree_EnumFlags">
-
+                SHCONTF_...<br />
                 <input type="checkbox" id="Tree_EnumFlags:0x10" onclick="SetCheckbox(this)" />
                 <label for="Tree_EnumFlags:0x10">CHECKING_FOR_CHILDREN</label>(*7)
                 <input type="checkbox" id="Tree_EnumFlags:0x100" onclick="SetCheckbox(this)" />
                 <label for="Tree_EnumFlags:0x100">INIT_ON_FIRST_NEXT</label>
+                <br />
                 <input type="checkbox" id="Tree_EnumFlags:0x200" onclick="SetCheckbox(this)" />
                 <label for="Tree_EnumFlags:0x200">NETPRINTERSRCH</label>
                 <br />
@@ -481,7 +480,7 @@
               <label for="View_ViewFlags:0x1">Show all files</label>
               <br /><br />
               <label>View mode</label><br />
-              <input type="hidden" name="View_ViewMode" />FVM_...<br />
+              <input type="hidden" name="View_ViewMode" />
               <input type="radio" name="View_ViewMode_" id="View_ViewMode=1" onclick="SetRadio(this)" />
               <label for="View_ViewMode=1">Icon</label>
               <input type="radio" name="View_ViewMode_" id="View_ViewMode=2" onclick="SetRadio(this)" />
@@ -502,7 +501,7 @@
 
               <br /><br />
               <label>Style</label><br />
-              <input type="hidden" name="View_fFlags" />FWF_...<br />
+              <input type="hidden" name="View_fFlags" />
               <input type="checkbox" id="View_fFlags:0x1" onclick="SetCheckbox(this)" />
               <label for="View_fFlags:0x1">Auto arrange</label>
               <input type="checkbox" id="View_fFlags:0x40" onclick="SetCheckbox(this)" />
@@ -521,7 +520,7 @@
                 <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_FWF")' />
               </div>
               <div class="group" id="_Advanced_FWF">
-
+                FWF_...<br />
                 <input type="checkbox" id="View_fFlags:0x80" onclick="SetCheckbox(this)" />
                 <label for="View_fFlags:0x80">NOSUBFOLDERS</label>
                 <input type="checkbox" id="View_fFlags:0x800" onclick="SetCheckbox(this)" />
