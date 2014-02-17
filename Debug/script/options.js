@@ -1206,10 +1206,12 @@ OpenIcon = function (o)
 			var dllpath = fso.BuildPath(system32, "ieframe.dll");
 			var image = te.GdiplusBitmap;
 			a[0] = fso.GetFileName(dllpath);
+			var a1 = a[1];
 			var hModule = LoadImgDll(a, 0);
 			if (hModule) {
 				var himl = api.ImageList_LoadImage(hModule, isFinite(a[1]) ? a[1] - 0 : a[1], a[2], 0, CLR_DEFAULT, IMAGE_BITMAP, LR_CREATEDIBSECTION);
 				if (himl) {
+					a[1] = a1;
 					var nCount = api.ImageList_GetImageCount(himl);
 					a[0] = fso.GetFileName(dllpath);
 					for (a[3] = 0; a[3] < nCount; a[3]++) {

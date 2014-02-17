@@ -578,6 +578,10 @@ public:
     STDMETHODIMP Notify(IShellView *ppshv, DWORD dwNotifyType);
     STDMETHODIMP GetDefaultMenuText(IShellView *ppshv, LPWSTR pszText, int cchMax);
     STDMETHODIMP GetViewFlags(DWORD *pdwFlags);
+	/*ICommDlgBrowser3
+	STDMETHODIMP OnColumnClicked(IShellView *ppshv, int iColumn);
+    STDMETHODIMP GetCurrentFilter(LPWSTR pszFileSpec, int cchFileSpec);
+    STDMETHODIMP OnPreViewCreated(IShellView *ppshv);*/
 	/*IFolderFilter
 	STDMETHODIMP ShouldShow(IShellFolder *psf, PCIDLIST_ABSOLUTE pidlFolder, PCUITEMID_CHILD pidlItem);
 	STDMETHODIMP GetEnumFlags(IShellFolder *psf, PCIDLIST_ABSOLUTE pidlFolder, HWND *phwnd, DWORD *pgrfFlags);*/

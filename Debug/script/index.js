@@ -143,6 +143,16 @@ SetGestureText = function (Ctrl, Text)
 	}
 }
 
+IsSavePath = function (path, FI)
+{
+	for (var i in eventTE.IsSavePath) {
+		if (!eventTE.IsSavePath[i](path, FI)) {
+			return false;
+		}
+	}
+	return !IsSearchPath(FI);
+}
+
 Lock = function (Ctrl, nIndex, turn)
 {
 	var FV = Ctrl[nIndex];
@@ -395,6 +405,20 @@ CreateNewFile = function (Ctrl, pt)
 	}
 }
 
+CancelFilterView = function (FV)
+{
+	if (IsSearchPath(FV) || FV.FilterView) {
+		FV.Navigate(null, SBSP_PARENT);
+		return S_OK;
+	}
+	return S_FALSE;
+}
+
+IsSearchPath = function (FI)
+{
+	return api.PathMatchSpec(api.GetDisplayNameOf(FI, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), "search-ms:*");
+}
+
 GetCommandId = function (hMenu, s, ContextMenu)
 {
 	var arMenu = [hMenu];
@@ -634,8 +658,9 @@ te.OnStatusText = ShowStatusText;
 
 te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 {
+	var hr;
 	for (var i in eventTE.KeyMessage) {
-		var hr = eventTE.KeyMessage[i](Ctrl, hwnd, msg, key, keydata);
+		hr = eventTE.KeyMessage[i](Ctrl, hwnd, msg, key, keydata);
 		if (isFinite(hr)) {
 			return hr; 
 		}
@@ -648,25 +673,22 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 			case CTRL_EB:
 				var strClass = api.GetClassName(hwnd);
 				if (api.PathMatchSpec(strClass, WC_LISTVIEW + ";DirectUIHWND")) {
-					var cmd = eventTE.Key.List[nKey];
-					if (cmd) {
-						return Exec(Ctrl, cmd[0], cmd[1], hwnd, null);
+					if (KeyExecEx(Ctrl, "List", nKey, hwnd) === S_OK) {
+						return S_OK;
 					}
 				}
 				break;
 			case CTRL_TV:
 				var strClass = api.GetClassName(hwnd);
 				if (api.strcmpi(strClass, WC_TREEVIEW) == 0) {
-					var cmd = eventTE.Key.Tree[nKey];
-					if (cmd) {
-						return Exec(Ctrl, cmd[0], cmd[1], hwnd, null);
+					if (KeyExecEx(Ctrl, "Tree", nKey, hwnd) === S_OK) {
+						return S_OK;
 					}
 				}
 				break;
 			case CTRL_WB:
-				var cmd = eventTE.Key.Browser[nKey];
-				if (cmd) {
-					return Exec(Ctrl, cmd[0], cmd[1], hwnd, null);
+				if (KeyExecEx(Ctrl, "Browser", nKey, hwnd) === S_OK) {
+					return S_OK;
 				}
 				break;
 			default:
@@ -690,9 +712,8 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 				break;
 		}
 		if (Ctrl.Type != CTRL_TE) {
-			var cmd = eventTE.Key.All[nKey];
-			if (cmd) {
-				return Exec(Ctrl, cmd[0], cmd[1], hwnd, null);
+			if (KeyExecEx(Ctrl, "All", nKey, hwnd) === S_OK) {
+				return S_OK;
 			}
 		}
 	}
@@ -1500,7 +1521,7 @@ function ArrangeAddons()
 	var xml = OpenXml("addons.xml", false, true);
 	te.Data.Addons = xml;
 	if (api.GetKeyState(VK_SHIFT) < 0 && api.GetKeyState(VK_CONTROL) < 0) {
-		IsSavePath = function (path, mode)
+		IsSavePath = function (path, FV)
 		{
 			return false;
 		}
@@ -1640,7 +1661,10 @@ SetKeyExec = function (mode, strKey, path, type, bNew)
 	if (strKey) {
 		strKey = GetKeyKey(strKey);
 		if (!bNew || !eventTE.Key[mode][strKey]) {
-			eventTE.Key[mode][strKey] = [path, type];
+			if (!eventTE.Key[mode][strKey]) {
+				eventTE.Key[mode][strKey] = [];
+			}
+			eventTE.Key[mode][strKey].push([path, type]);
 		}
 	}
 }
@@ -1648,28 +1672,40 @@ SetKeyExec = function (mode, strKey, path, type, bNew)
 SetGestureExec = function (mode, strGesture, path, type, bNew)
 {
 	if (strGesture) {
-		if (!bNew || !eventTE.Mouse[mode][strGesture.toUpperCase()]) {
-			eventTE.Mouse[mode][strGesture.toUpperCase()] = [path, type];
+		strGesture = strGesture.toUpperCase();
+		if (!bNew || !eventTE.Mouse[mode][strGesture]) {
+			if (!eventTE.Mouse[mode][strGesture]) {
+				eventTE.Mouse[mode][strGesture] = [];
+			}
+			eventTE.Mouse[mode][strGesture].push([path, type]);
 		}
 	}
 }
 
-GestureExec = function (Ctrl, mode, str, pt)
+ArExec = function (Ctrl, ar, pt, hwnd)
 {
-	var cmd = eventTE.Mouse[mode][str];
-	if (cmd) {
-		return Exec(Ctrl, cmd[0], cmd[1], hwnd, pt);
+	for (var i in ar) {
+		var cmd = ar[i];
+		if (Exec(Ctrl, cmd[0], cmd[1], hwnd, pt) === S_OK) {
+			return S_OK;
+		}
 	}
 	return S_FALSE;
 }
 
-KeyExec = function (Ctrl, mode, str)
+GestureExec = function (Ctrl, mode, str, pt, hwnd)
 {
-	var cmd = eventTE.Key[mode][GetKeyKey(str)];
-	if (cmd) {
-		return Exec(Ctrl, cmd[0], cmd[1], hwnd, null);
-	}
-	return S_FALSE;
+	return ArExec(Ctrl, eventTE.Mouse[mode][str], pt, hwnd || Ctrl.hwnd);
+}
+
+KeyExec = function (Ctrl, mode, str, hwnd)
+{
+	return KeyExecEx(Ctrl, mode, GetKeyKey(str), hwnd || Ctrl.hwnd);
+}
+
+KeyExecEx = function (Ctrl, mode, nKey, hwnd)
+{
+	return ArExec(Ctrl, eventTE.Key[mode][nKey], pt, hwnd);
 }
 
 function InitMouse()
@@ -1777,6 +1813,7 @@ g_mouse =
 
 	Exec: function (Ctrl, hwnd, pt)
 	{
+		var hr;
 		this.str = GetGestureKey() + this.str;
 		te.Data.cmdMouse = this.str;
 		if (!Ctrl) {
@@ -1823,15 +1860,15 @@ g_mouse =
 				break;
 		}
 		if (s) {
-			var cmd = eventTE.Mouse[s][this.str];
-			if (cmd) {
-				return Exec(Ctrl, cmd[0], cmd[1], hwnd, pt);
+			hr = GestureExec(Ctrl, s, this.str, pt, hwnd);
+			if (hr === S_OK) {
+				return hr;
 			}
 		}
 		if (Ctrl.Type != CTRL_TE) {
-			var cmd = eventTE.Mouse.All[this.str];
-			if (cmd) {
-				return Exec(Ctrl, cmd[0], cmd[1], hwnd, pt);
+			hr = GestureExec(Ctrl, "All", this.str, pt, hwnd);
+			if (hr === S_OK) {
+				return hr;
 			}
 		}
 		return S_FALSE;
@@ -2298,6 +2335,19 @@ g_basic =
 				{
 					var FV = GetFolderView(Ctrl, pt);
 					api.ShRunDialog(te.hwnd, 0, FV ? FV.FolderItem.Path : null, null, null, 0);
+				},
+				Search: function (Ctrl, pt)
+				{
+					var FV = GetFolderView(Ctrl, pt);
+					if (FV) {
+						var s = InputDialog(GetText("Search"), IsSearchPath(FV) ? api.GetDisplayNameOf(FV, SHGDN_INFOLDER) : "");
+						if (s) {
+							FV.FilterView(s);
+						}
+						else if (s === "") {
+							CancelFilterView(FV);
+						}
+					}
 				},
 				"Add to Favorites": AddFavorite,
 				"Reload Customize": function ()

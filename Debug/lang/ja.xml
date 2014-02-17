@@ -28,7 +28,7 @@
 	<text s="General">全般</text>
 	<text s="Tabs">タブ</text>
 	<text s="Tree">ツリー</text>
-	<text s="List">一覧</text>
+	<text s="List">リスト</text>
 	<text s="Browser">ブラウザ</text>
 	<text s="Default">既定</text>
 	<text s="Key">キー</text>
@@ -178,7 +178,7 @@
 	<text s="Input">入力</text>
 	<text s="Check for updates">最新版の確認</text>
 	<text s="the latest version">最新バージョン</text>
-	<text s="Update available">アップデートがあります</text>
+	<text s="Update available">アップデートできます</text>
 	<text s="Do you want to install it now?">インストールしますか？</text>
 	<text s="Search">検索</text>
 	<text s="Install">インストール</text>

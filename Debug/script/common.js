@@ -18,7 +18,7 @@ var g_ptDrag = api.Memory("POINT");
 var objHover = null;
 var g_nFind = 0;
 
-FolderMenu = 
+FolderMenu =
 {
 	Items: [],
 
@@ -59,7 +59,7 @@ FolderMenu =
 		}
 		var bSep = false;
 		if (!api.ILIsEmpty(FolderItem)) {
-			this.AddMenuItem(hMenu, api.ILRemoveLastID(FolderItem), "../");
+			this.AddMenuItem(hMenu, api.ILRemoveLastID(FolderItem, true), "../");
 			bSep = true;
 		}
 		var Folder = FolderItem.GetFolder;
@@ -200,6 +200,10 @@ function ApplyLang(doc)
 		for (i = o.length; i--;) {
 			if (!h && o[i].type == "text") {
 				h = o[i].offsetHeight;
+			}
+			var s = Lang[o[i].placeholder];
+			if (s) {
+				o[i].placeholder = s;
 			}
 			var s = Lang[o[i].title];
 			if (s) {
@@ -441,7 +445,10 @@ LoadImgDll = function (icon, index)
 {
 	var hModule = api.LoadLibraryEx(fso.BuildPath(system32, icon[index * 4]), 0, LOAD_LIBRARY_AS_DATAFILE);
 	if (!hModule && api.strcmpi(icon[index * 4], "ieframe.dll") == 0) {
-		if (osInfo.dwMinorVersion || osInfo.dwMajorVersion > 5) {
+		if (icon[index * 4 + 1] >= 500) {
+			hModule = api.LoadLibraryEx(fso.BuildPath(system32, "browseui.dll"), 0, LOAD_LIBRARY_AS_DATAFILE);
+		}
+		else if (osInfo.dwMinorVersion || osInfo.dwMajorVersion > 5) {
 			hModule = api.LoadLibraryEx(fso.BuildPath(system32, "shell32.dll"), 0, LOAD_LIBRARY_AS_DATAFILE);
 		}
 		else {
@@ -584,7 +591,7 @@ SaveXml = function (filename, all)
 		for (var i2 in Ctrl) {
 			var FV = Ctrl[i2];
 			var path = api.GetDisplayNameOf(FV, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
-			var bSave = !all || IsSavePath(path);
+			var bSave = !all || IsSavePath(path, FV);
 			if (bSave || (bEmpty && i2 == nCount2 - 1)) {
 				if (!bSave) {
 					path = HOME_PATH;
@@ -614,7 +621,7 @@ SaveXml = function (filename, all)
 						var nLogIndex = TL.Index;
 						for (var i3 in TL) {
 							path = api.GetDisplayNameOf(TL[i3], SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
-							if (IsSavePath(path)) {
+							if (IsSavePath(path, TL[i3])) {
 								var item3 = xml.createElement("Log");
 								item3.setAttribute("Path", path);
 								item2.appendChild(item3);
@@ -1970,11 +1977,6 @@ AddonOptions = function (Id, fn, Data)
 	}
 }
 
-IsSavePath = function (path, mode)
-{
-	return true;
-}
-
 function CalcVersion(s)
 {
 	var r = 0;
@@ -2080,10 +2082,6 @@ OpenInExplorer = function (FV)
 			exp.ShowBrowserBar("{EFA24E64-B078-11D0-89E4-00C04FC9E26E}", true);
 		}
 		exp.Visible = true;
-		try {
-			doc.FilterView(FV.FilterView);
-		}
-		catch (e) {}
 	}
 }
 
