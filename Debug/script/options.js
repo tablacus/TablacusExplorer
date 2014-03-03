@@ -904,13 +904,10 @@ function GetAddons()
 	}
 	g_dlgAddons.window.UpdateAddon = function (Id, o)
 	{
-		if (o) {
-			SetAddon(document.getElementById("Addon_" + Id).cells(0), Id, "Disable");
-		}
-		else {
+		if (!o) {
 			AddAddon(document.getElementById("Addons"), Id, "Disable");
+			g_Chg.Addons = true;
 		}
-		g_Chg.Addons = true;
 	}
 }
 

@@ -531,14 +531,13 @@
                 <input type="checkbox" id="View_fFlags:0x40000" onclick="SetCheckbox(this)" />
                 <label for="View_fFlags:0x40000">CHECKSELECT</label>
                 <input type="checkbox" id="View_fFlags:0x80000" onclick="SetCheckbox(this)" />
-                <label for="View_fFlags:0x80000">NOENUMREFRESH</label>(*)
-                <input type="checkbox" id="View_fFlags:0x100000" onclick="SetCheckbox(this)" />
                 <label for="View_fFlags:0x100000">NOGROUPING</label>(*)
                 <br />
                 <input type="checkbox" id="View_fFlags:0x400000" onclick="SetCheckbox(this)" />
                 <label for="View_fFlags:0x400000">NOFILTERS</label>(*)
                 <input type="checkbox" id="View_fFlags:0x800000" onclick="SetCheckbox(this)" />
                 <label for="View_fFlags:0x800000">NOCOLUMNHEADER</label>(*)
+                <br />
                 <input type="checkbox" id="View_fFlags:0x1000000" onclick="SetCheckbox(this)" />
                 <label for="View_fFlags:0x1000000">NOHEADERINALLVIEWS</label>(*)
                 <br />
@@ -546,6 +545,7 @@
                 <label for="View_fFlags:0x2000000">EXTENDEDTILES</label>(*)
                 <input type="checkbox" id="View_fFlags:0x8000000" onclick="SetCheckbox(this)" />
                 <label for="View_fFlags:0x8000000">AUTOCHECKSELECT</label>(*)
+                <br />
                 <input type="checkbox" id="View_fFlags:0x10000000" onclick="SetCheckbox(this)" />
                 <label for="View_fFlags:0x10000000">NOBROWSERVIEWSTATE</label>(*)
                 <br />
@@ -553,6 +553,7 @@
                 <label for="View_fFlags:0x20000000">SUBSETGROUPS</label>(*)
                 <input type="checkbox" id="View_fFlags:0x40000000" onclick="SetCheckbox(this)" />
                 <label for="View_fFlags:0x40000000">USESEARCHFOLDER</label>(*)
+                <br />
                 <input type="checkbox" id="View_fFlags:0x80000000" onclick="SetCheckbox(this)" />
                 <label for="View_fFlags:0x80000000">ALLOWRTLREADING</label>(*)
               </div>
@@ -592,16 +593,10 @@
       <table style="width: 100%">
         <tr>
           <td style="width: 150px">
-            <table style="width: 100%">
-              <tr>
-                <td>
-                  <input type="text" name="q" style="width: 100%" onkeydown="FindKeyEvent(this)" />
-                </td>
-                <td onmouseover="MouseOver(this)" onmouseout="MouseOut()" onclick="FindText(document.F.q.value)" class="button" style="vertical-align: middle; width: 16px">
-                  <img bitmap="ieframe.dll,216,16,17" hidefocus="true" style="vertical-align: middle; width: 16px; height: 16px" />
-                </td>
-              </tr>
-            </table>
+            <div style="position: relative; width: 100%">
+            <input type="text" name="q" style="width: 100%; padding-right: 16px" onkeydown="FindKeyEvent(this)" />
+              <img bitmap="ieframe.dll,216,16,17" hidefocus="true" style="vertical-align: middle; width: 16px; height: 16px; position: absolute; left: 132px; top: 2px" onclick="FindText(document.F.q.value)" />
+            </div>
           </td>
           <td id="MoveButton" align="left" style="display: none;">
             <input type="button" value="Up" onclick="OptionMove(-1)"/>

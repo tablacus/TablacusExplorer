@@ -44,21 +44,26 @@ using namespace Gdiplus;
 typedef VOID (WINAPI * LPFNSHRunDialog)(HWND hwnd, HICON hIcon, LPWSTR pszPath, LPWSTR pszTitle, LPWSTR pszPrompt, DWORD dwFlags);
 
 //XP or higher.
-typedef BOOL (WINAPI * LPFNCryptBinaryToStringW)(__in_bcount(cbBinary) CONST BYTE *pbBinary, __in DWORD cbBinary, __in DWORD dwFlags, __out_ecount_part_opt(*pcchString, *pcchString) LPWSTR pszString, __inout DWORD *pcchString);
-typedef HRESULT (WINAPI * LPFNSHParseDisplayName)(LPCWSTR pszName, IBindCtx *pbc, PIDLIST_ABSOLUTE *ppidl, SFGAOF sfgaoIn, SFGAOF *psfgaoOut);
-typedef HRESULT (WINAPI * LPFNSHGetImageList)(__in int iImageList, __in REFIID riid, __deref_out void **ppvObj);
+typedef BOOL (WINAPI* LPFNCryptBinaryToStringW)(__in_bcount(cbBinary) CONST BYTE *pbBinary, __in DWORD cbBinary, __in DWORD dwFlags, __out_ecount_part_opt(*pcchString, *pcchString) LPWSTR pszString, __inout DWORD *pcchString);
+typedef HRESULT (WINAPI* LPFNSHParseDisplayName)(LPCWSTR pszName, IBindCtx *pbc, PIDLIST_ABSOLUTE *ppidl, SFGAOF sfgaoIn, SFGAOF *psfgaoOut);
+typedef HRESULT (WINAPI* LPFNSHGetImageList)(__in int iImageList, __in REFIID riid, __deref_out void **ppvObj);
 
 //XP SP1 or higher.
-typedef BOOL (WINAPI * LPFNSetDllDirectoryW)(__in_opt LPCWSTR lpPathName);
+typedef BOOL (WINAPI* LPFNSetDllDirectoryW)(__in_opt LPCWSTR lpPathName);
 
-//XP SP2 or higher with Windos Desktop Search.
-typedef HRESULT (STDAPICALLTYPE * LPFNPSPropertyKeyFromString)(__in LPCWSTR pszString,  __out PROPERTYKEY *pkey);
-typedef HRESULT (STDAPICALLTYPE * LPFNPSGetPropertyKeyFromName)(__in PCWSTR pszName, __out PROPERTYKEY *ppropkey);
-typedef HRESULT (STDAPICALLTYPE * LPFNPSGetPropertyDescription)(__in REFPROPERTYKEY propkey, __in REFIID riid,  __deref_out void **ppv);
+//XP SP2 or higher.
+#ifndef _WIN64
+typedef BOOL (WINAPI* LPFNIsWow64Process)(HANDLE hProcess, PBOOL Wow64Process);
+#endif
+
+//XP SP2 or higher with Windows Desktop Search.
+typedef HRESULT (STDAPICALLTYPE* LPFNPSPropertyKeyFromString)(__in LPCWSTR pszString,  __out PROPERTYKEY *pkey);
+typedef HRESULT (STDAPICALLTYPE* LPFNPSGetPropertyKeyFromName)(__in PCWSTR pszName, __out PROPERTYKEY *ppropkey);
+typedef HRESULT (STDAPICALLTYPE* LPFNPSGetPropertyDescription)(__in REFPROPERTYKEY propkey, __in REFIID riid,  __deref_out void **ppv);
 
 //Vista or higher.
-typedef HRESULT (STDAPICALLTYPE * LPFNSHCreateItemFromIDList)(__in PCIDLIST_ABSOLUTE pidl, __in REFIID riid, __deref_out void **ppv);
-typedef HRESULT (STDAPICALLTYPE * LPFNSHGetIDListFromObject)(__in IUnknown *punk, __deref_out PIDLIST_ABSOLUTE *ppidl);
+typedef HRESULT (STDAPICALLTYPE* LPFNSHCreateItemFromIDList)(__in PCIDLIST_ABSOLUTE pidl, __in REFIID riid, __deref_out void **ppv);
+typedef HRESULT (STDAPICALLTYPE* LPFNSHGetIDListFromObject)(__in IUnknown *punk, __deref_out PIDLIST_ABSOLUTE *ppidl);
 
 //typedef HRESULT (STDAPICALLTYPE * LPFNPSFormatForDisplayAlloc)(__in REFPROPERTYKEY key, __in REFPROPVARIANT propvar, __in PROPDESC_FORMAT_FLAGS pdff, __deref_out PWSTR *ppszDisplay);
 //typedef BOOL (WINAPI * LPFNChangeWindowMessageFilter)(UINT message, DWORD dwFlag);
@@ -120,7 +125,8 @@ typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
 #define TE_OnInvokeCommand		26
 #define TE_OnArrange			27
 #define TE_OnHitTest			28
-#define Count_OnFunc			29
+#define TE_OnTranslatePath		29
+#define Count_OnFunc			30
 
 #define SB_OnIncludeObject		0
 
@@ -183,24 +189,19 @@ typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
 #define MAP_SB	1
 #define MAP_TC	2
 #define MAP_TV	3
-#define MAP_WB	4
+#define MAP_CD	4
 #define MAP_API	5
 #define MAP_Mem	6
 #define MAP_GB	7
 #define MAP_FIs	8
-#define MAP_FI	9
-#define MAP_DT	10
-#define MAP_CM	11
-#define MAP_CD	12
-#define MAP_SS	13
-#define MAP_M2	14
-#define MAP_LENGTH	15
+#define MAP_SS	9
+#define MAP_LENGTH	10
 
-typedef struct tagMethod
+typedef struct tagTEMethod
 {
 	LONG   id;
 	LPWSTR name;
-} method, *lpmethod;
+} TEmethod, *lpTEmethod;
 
 typedef struct tagTEColumn
 {
@@ -660,9 +661,10 @@ public:
 	VOID Close(BOOL bForce);
 	VOID DestroyView(int nFlags);
 	HWND GetListHandle(HWND *hList);
+	HRESULT BrowseObject2(FolderItem *pid, UINT wFlags);
 	BOOL Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItems *pFolderItems, LPITEMIDLIST pidlPrevius, LPITEMIDLIST *ppidl);
 	VOID Navigate1Ex(LPOLESTR pstr, FolderItems *pFolderItems, UINT wFlags, LPITEMIDLIST pidlPrevius);
-	HRESULT Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *param, FolderItems *pFolderItems, LPITEMIDLIST pidlPrevius);
+	HRESULT Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *param, FolderItems *pFolderItems, LPITEMIDLIST pidlPrevius, CteShellBrowser *pHistSB);
 	HRESULT Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *param, CteShellBrowser **ppSB, FolderItems *pFolderItems);
 	HRESULT OnBeforeNavigate(FolderItem *pPrevius, UINT wFlags);
 	void InitializeMenuItem(HMENU hmenu, LPTSTR lpszItemName, int nId, HMENU hmenuSub);
@@ -672,13 +674,14 @@ public:
 	HRESULT CreateViewWindowEx(IShellView *pPreviusView);
 	BSTR GetColumnsStr();
 	VOID GetDefaultColumns();
-	BOOL GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, FolderItem *pid, UINT wFlags, FolderItems *pFolderItems, LPITEMIDLIST pidlPrevius);
+	BOOL GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, FolderItem *pid, UINT wFlags, FolderItems *pFolderItems, LPITEMIDLIST pidlPrevius, FolderItem *pPrevious, CteShellBrowser *pHistSB);
 	VOID EBNavigate();
 	VOID SetHistory(FolderItems *pFolderItems, UINT wFlags);
 	VOID GetVariantPath(FolderItem **ppFolderItem, FolderItems **ppFolderItems, VARIANT *pv);
 	VOID HookDragDrop(int nMode);
-	VOID Error(FolderItem *pid, DWORD dwTick);
-	VOID Refresh();
+	VOID Error(FolderItem *pid);
+	VOID Refresh(BOOL bCheck);
+	VOID SetActive();
 public:
 	BOOL		m_bEmpty, m_bInit;
 	BOOL		m_bNoRowSelect;
@@ -699,6 +702,7 @@ public:
 	VARIANT		m_vRoot;
 	LPITEMIDLIST m_pidl;
 	FolderItem *m_pFolderItem;
+	FolderItem *m_pFolderItem1;
 	int			m_nUnload;
 	IExplorerBrowser *m_pExplorerBrowser;
 	CteServiceProvider *m_pServiceProvider;
@@ -709,6 +713,7 @@ private:
 	FolderItem	**m_ppLog;
 	int			m_nLogCount;
 	int			m_nLogIndex;
+	int			m_nPrevLogIndex;
 	BSTR		m_bsFilter;
 	IDispatch	*m_pDSFV;
 	IShellFolder2 *m_pSF2;
@@ -803,12 +808,12 @@ public:
 	STDMETHODIMP GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId);
 	STDMETHODIMP Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr);
 
-	CteDropTarget(IDropTarget *pDropTarget, LPITEMIDLIST pidl);
+	CteDropTarget(IDropTarget *pDropTarget, FolderItem *pFolderItem);
 	~CteDropTarget();
 private:
 	LONG	m_cRef;
 	IDropTarget *m_pDropTarget;
-	LPITEMIDLIST m_pidl;
+	FolderItem *m_pFolderItem;
 };
 
 class CteTreeView : public IDispatch,

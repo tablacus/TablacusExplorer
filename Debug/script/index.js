@@ -27,28 +27,86 @@ var g_KeyState = [
 	["Alt",    0x4000]
 ];
 var g_dlgs = {};
+var Addon_Id = "";
+
+RunEvent1 = function (en, a1, a2, a3)
+{
+	var eo = eventTE[en];
+	for (var i in eo) {
+		try {
+			eo[i](a1, a2, a3);
+		}
+		catch (e) {
+			ShowError(e, en, i);
+		}
+	}
+}
+
+RunEvent2 = function (en, a1, a2, a3, a4)
+{
+	var eo = eventTE[en];
+	for (var i in eo) {
+		try {
+			var hr = eo[i](a1, a2, a3, a4);
+			if (isFinite(hr) && hr != S_OK) {
+				return hr; 
+			}
+		}
+		catch (e) {
+			ShowError(e, en, i);
+		}
+	}
+	return S_OK; 
+}
+
+RunEvent3 = function (en, a1, a2, a3, a4, a5, a6, a7, a8, a9)
+{
+	var eo = eventTE[en];
+	var ea = eventTA[en];
+	for (var i in eo) {
+		try {
+			var hr = eo[i](a1, a2, a3, a4, a5, a6, a7, a8, a9);
+			if (isFinite(hr)) {
+				return hr; 
+			}
+		}
+		catch (e) {
+			ShowError(e, en, i);
+		}
+	}
+}
+
+RunEvent4 = function (en, a1, a2)
+{
+	var eo = eventTE[en];
+	for (var i in eo) {
+		try {
+			var r = eo[i](a1, a2);
+			if (r !== undefined) {
+				return r; 
+			}
+		}
+		catch (e) {
+			ShowError(e, en, i);
+		}
+	}
+}
 
 PanelCreated = function (Ctrl)
 {
-	for (var i in eventTE.PanelCreated) {
-		eventTE.PanelCreated[i](Ctrl);
-	}
+	RunEvent1("PanelCreated", Ctrl);
 }
 
 ChangeView = function (Ctrl)
 {
 	te.Data.bSaveConfig = true;
 	ChangeTabName(Ctrl);
-	for (var i in eventTE.ChangeView) {
-		eventTE.ChangeView[i](Ctrl);
-	}
+	RunEvent1("ChangeView", Ctrl);
 }
 
 SetAddress = function (s)
 {
-	for (var i in eventTE.SetAddress) {
-		eventTE.SetAddress[i](s);
-	}
+	RunEvent1("SetAddress", s);
 }
 
 ChangeTabName = function (Ctrl)
@@ -58,99 +116,87 @@ ChangeTabName = function (Ctrl)
 
 GetTabName = function (Ctrl)
 {
-	try {
-		if (Ctrl.FolderItem) {
-			for (var i in eventTE.GetTabName) {
-				var s = eventTE.GetTabName[i](Ctrl);
+	if (Ctrl.FolderItem) {
+		var en = "GetTabName";
+		var eo = eventTE[en];
+		for (var i in eo) {
+			try {
+				var s = eo[i](Ctrl);
 				if (s) {
 					return s;
 				}
 			}
-			return Ctrl.FolderItem.Name;
+			catch (e) {
+				ShowError(e, en, i);
+			}
 		}
-	} catch (e) {}
+		return Ctrl.FolderItem.Name;
+	}
 }
 
 CloseView = function (Ctrl)
 {
-	for (var i in eventTE.CloseView) {
-		var hr = eventTE.CloseView[i](Ctrl);
-		if (isFinite(hr) && hr != S_OK) {
-			return hr; 
-		}
-	}
-	return S_OK; 
+	return RunEvent2("CloseView", Ctrl);
 }
 
 DeviceChanged = function (Ctrl)
 {
 	g_tidDevice = null;
-	for (var i in eventTE.DeviceChanged) {
-		eventTE.DeviceChanged[i](Ctrl);
-	}
+	RunEvent1("DeviceChanged", Ctrl);
 }
 
 ListViewCreated = function (Ctrl)
 {
-	for (var i in eventTE.ListViewCreated) {
-		eventTE.ListViewCreated[i](Ctrl);
-	}
+	RunEvent1("ListViewCreated", Ctrl);
 }
 
 TabViewCreated = function (Ctrl)
 {
-	for (var i in eventTE.TabViewCreated) {
-		eventTE.TabViewCreated[i](Ctrl);
-	}
+	RunEvent1("TabViewCreated", Ctrl);
 }
 
 TreeViewCreated = function (Ctrl)
 {
-	for (var i in eventTE.TreeViewCreated) {
-		eventTE.TreeViewCreated[i](Ctrl);
-	}
+	RunEvent1("TreeViewCreated", Ctrl);
 }
 
 SetAddrss = function (s)
 {
-	for (var i in eventTE.SetAddrss) {
-		eventTE.SetAddrss[i](Ctrl);
-	}
+	RunEvent1("SetAddrss", s);
 }
 
 RestoreFromTray = function ()
 {
 	api.ShowWindow(te.hwnd, api.IsIconic(te.hwnd) ? SW_RESTORE : SW_SHOW);
-	for (var i in eventTE.RestoreFromTray) {
-		eventTE.RestoreFromTray[i]();
-	}
+	RunEvent1("RestoreFromTray");
 }
 
 Finalize = function ()
 {
-	for (var i in eventTE.Finalize) {
-		eventTE.Finalize[i]();
-	}
+	RunEvent1("Finalize");
 	SaveConfig();
 }
 
 SetGestureText = function (Ctrl, Text)
 {
-	for (var i in eventTE.SetGestureText) {
-		if (isFinite(eventTE.SetGestureText[i](Ctrl, Text))) {
-			return;
-		}
-	}
+	RunEvent3("SetGestureText", Ctrl, Text);
 }
 
-IsSavePath = function (path, FI)
+IsSavePath = function (path)
 {
-	for (var i in eventTE.IsSavePath) {
-		if (!eventTE.IsSavePath[i](path, FI)) {
-			return false;
+	var en = "IsSavePath";
+	var eo = eventTE[en];
+	for (var i in eo) {
+		try {
+			if (!eo[i](path)) {
+				return false;
+			}
+		}
+		catch (e) {
+			ShowError(e, en, i);
 		}
 	}
-	return !IsSearchPath(FI);
+	return !IsSearchPath(path);
 }
 
 Lock = function (Ctrl, nIndex, turn)
@@ -160,9 +206,7 @@ Lock = function (Ctrl, nIndex, turn)
 		if (turn) {
 			FV.Data.Lock = !FV.Data.Lock;
 		}
-		for (var i in eventTE.Lock) {
-			eventTE.Lock[i](Ctrl, nIndex, FV.Data.Lock);
-		}
+		RunEvent1("Lock", Ctrl, nIndex, FV.Data.Lock);
 	}
 }
 
@@ -208,9 +252,7 @@ LoadConfig = function ()
 
 SaveConfig = function ()
 {
-	for (var i in eventTE.SaveConfig) {
-		eventTE.SaveConfig[i]();
-	}
+	RunEvent1("SaveConfig");
 	if (te.Data.bSaveMenus) {
 		te.Data.bSaveMenus = false;
 		SaveXmlEx("menus.xml", te.Data.xmlMenus);
@@ -322,10 +364,7 @@ Resize2 = function ()
 			o.style.width = w + "px";
 		}
 	}
-
-	for (var i in eventTE.Resize) {
-		eventTE.Resize[i]();
-	}
+	RunEvent1("Resize");
 }
 
 LoadLang = function (bAppend)
@@ -365,7 +404,7 @@ AddFavorite = function (FolderItem)
 		if (s) {
 			item.setAttribute("Name", s);
 			item.setAttribute("Filter", "");
-			item.text = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSINGEX | SHGDN_FORPARSING);
+			item.text = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
 			if (fso.FileExists(item.text)) {
 				item.text = api.PathQuoteSpaces(item.text);
 				item.setAttribute("Type", "Exec");
@@ -561,9 +600,7 @@ te.OnCreate = function (Ctrl)
 	if (!Ctrl.Data && Ctrl.Type != CTRL_TE) {
 		Ctrl.Data = te.Object();
 	}
-	for (var i in eventTE.Create) {
-		eventTE.Create[i](Ctrl);
-	}
+	RunEvent1("Create", Ctrl);
 	if (Ctrl.Type == CTRL_TE) {
 		RunCommandLine(api.GetCommandLine());
 	}
@@ -577,13 +614,7 @@ te.OnClose = function (Ctrl)
 			o.style.display = "none";
 		}
 	}
-	for (var i in eventTE.Close) {
-		var hr = eventTE.Close[i](Ctrl);
-		if (isFinite(hr) && hr != S_OK) {
-			return hr; 
-		}
-	}
-	return S_OK;
+	return RunEvent2("Close", Ctrl);
 }
 
 AddEvent("Close", function (Ctrl)
@@ -624,9 +655,7 @@ te.OnViewCreated = function (Ctrl)
 			TreeViewCreated(Ctrl);
 			break;
 	}
-	for (var i in eventTE.ViewCreated) {
-		eventTE.ViewCreated[i](Ctrl);
-	}
+	RunEvent1("ViewCreated", Ctrl);
 }
 
 te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev)
@@ -634,23 +663,12 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev)
 	if (Ctrl.Data.Lock && (wFlags & SBSP_NEWBROWSER) == 0) {
 		return E_ACCESSDENIED;
 	}
-	Ctrl.OnIncludeObject = null;
-	Ctrl.FilterView = null;
-
-	for (var i in eventTE.BeforeNavigate) {
-		var hr = eventTE.BeforeNavigate[i](Ctrl, fs, wFlags, Prev);
-		if (isFinite(hr) && hr != S_OK) {
-			return hr; 
-		}
-	}
-	return S_OK;
+	return RunEvent2("BeforeNavigate", Ctrl, fs, wFlags, Prev);
 }
 
 ShowStatusText = function (Ctrl, Text, iPart)
 {
-	for (var i in eventTE.StatusText) {
-		eventTE.StatusText[i](Ctrl, Text, iPart);
-	}
+	RunEvent1("StatusText", Ctrl, Text, iPart);
 	return S_OK; 
 }
 
@@ -658,12 +676,9 @@ te.OnStatusText = ShowStatusText;
 
 te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 {
-	var hr;
-	for (var i in eventTE.KeyMessage) {
-		hr = eventTE.KeyMessage[i](Ctrl, hwnd, msg, key, keydata);
-		if (isFinite(hr)) {
-			return hr; 
-		}
+	var hr = RunEvent3("KeyMessage", Ctrl, hwnd, msg, key, keydata);
+	if (isFinite(hr)) {
+		return hr; 
 	}
 	if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) {
 		var nKey = ((keydata >> 16) & 0x17f) | GetKeyShift();
@@ -720,19 +735,16 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 	return S_FALSE; 
 }
 
-te.OnMouseMessage = function (Ctrl, hwnd, msg, mouseData, pt, wHitTestCode, dwExtraInfo)
+te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 {
-	for (var i in eventTE.MouseMessage) {
-		var hr = eventTE.MouseMessage[i](Ctrl, hwnd, msg, mouseData, pt, wHitTestCode, dwExtraInfo);
-		if (isFinite(hr)) {
-			return hr; 
-		}
+	var hr = RunEvent3("MouseMessage", Ctrl, hwnd, msg, wParam, pt);
+	if (isFinite(hr)) {
+		return hr; 
 	}
-
 	if (msg == WM_MOUSEWHEEL) {
 		var Ctrl2 = te.CtrlFromPoint(pt);
 		if (Ctrl2) {
-			g_mouse.str = GetGestureKey() + GetGestureButton() + (mouseData > 0 ? "8" : "9");
+			g_mouse.str = GetGestureKey() + GetGestureButton() + (wParam > 0 ? "8" : "9");
 			if (api.GetKeyState(VK_RBUTTON) < 0) {
 				g_mouse.CancelButton = true;
 			}
@@ -742,19 +754,19 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, mouseData, pt, wHitTestCode, dwEx
 				return hr;
 			}
 			if (Ctrl2.Type == CTRL_TC) {
-				ChangeTab(Ctrl2, mouseData > 0 ? -1 : 1)
+				ChangeTab(Ctrl2, wParam > 0 ? -1 : 1)
 				return S_OK;
 			}
 			var hwnd2 = api.WindowFromPoint(pt);
 			if (hwnd2 && hwnd != hwnd2) {
 				api.SetFocus(hwnd2);
-				api.SendMessage(hwnd2, msg, mouseData & 0xffff0000, pt.x + (pt.y << 16));
+				api.SendMessage(hwnd2, msg, wParam & 0xffff0000, pt.x + (pt.y << 16));
 				return S_OK;
 			}
 		}
 	}
 	if (msg == WM_LBUTTONUP || msg == WM_RBUTTONUP || msg == WM_MBUTTONUP || msg == WM_XBUTTONUP) {
-		if (g_mouse.GetButton(msg, mouseData) == g_mouse.str.charAt(0)) {
+		if (g_mouse.GetButton(msg, wParam) == g_mouse.str.charAt(0)) {
 			var hr = S_FALSE;
 			var bButton = false;
 			if (msg == WM_RBUTTONUP) {
@@ -789,25 +801,14 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, mouseData, pt, wHitTestCode, dwEx
 		}
 	}
 	if (msg == WM_LBUTTONDOWN || msg == WM_RBUTTONDOWN || msg == WM_MBUTTONDOWN || msg == WM_XBUTTONDOWN) {
-		clearTimeout(g_mouse.tidDblClk);
-		if (g_mouse.tidDblClk && msg == WM_LBUTTONDOWN && Ctrl.Type == CTRL_EB) {
-			g_mouse.tidDblClk = false;
-			msg = WM_LBUTTONDBLCLK;
-		}
 		if (g_mouse.str.length == 0) {
 			te.Data.pt = pt;
 			g_mouse.ptGesture.x = pt.x;
 			g_mouse.ptGesture.y = pt.y;
 			g_mouse.hwndGesture = hwnd;
-			if (msg == WM_LBUTTONDOWN && Ctrl.Type == CTRL_EB) {
-				g_mouse.tidDblClk = true;
-				g_mouse.tidDblClk = setTimeout("g_mouse.tidDblClk = false", sha.GetSystemInformation("DoubleClickTime"));
-			}
 		}
-		g_mouse.str += g_mouse.GetButton(msg, mouseData);
-		if (g_mouse.str.length > 1) {
-			g_mouse.StartGestureTimer();
-		}
+		g_mouse.str += g_mouse.GetButton(msg, wParam);
+		g_mouse.StartGestureTimer();
 		SetGestureText(Ctrl, GetGestureKey() + g_mouse.str);
 		if (msg == WM_RBUTTONDOWN) {
 			if (te.Data.Conf_Gestures >= 2) {
@@ -830,7 +831,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, mouseData, pt, wHitTestCode, dwEx
 		var strClass = api.GetClassName(hwnd);
 		if (api.strcmpi(strClass, WC_HEADER)) {
 			te.Data.pt = pt;
-			g_mouse.str = g_mouse.GetButton(msg, mouseData);
+			g_mouse.str = g_mouse.GetButton(msg, wParam);
 			g_mouse.str += g_mouse.str;
 			var hr = g_mouse.Exec(Ctrl, hwnd, pt);
 			g_mouse.EndGesture(false);
@@ -885,23 +886,16 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, mouseData, pt, wHitTestCode, dwEx
 te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam)
 {
 	te.Data.bSaveConfig = true;
-	for (var i in eventTE.Command) {
-		var hr = eventTE.Command[i](Ctrl, hwnd, msg, wParam, lParam);
-		if (isFinite(hr)) {
-			return hr; 
-		}
-	}
-	return S_FALSE; 
+	var hr = RunEvent3("Command", Ctrl, hwnd, msg, wParam, lParam);
+	return isFinite(hr) ? hr : S_FALSE; 
 }
 
 te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon)
 {
 	te.Data.bSaveConfig = true;
-	for (var i in eventTE.InvokeCommand) {
-		var hr = eventTE.InvokeCommand[i](ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon);
-		if (isFinite(hr)) {
-			return hr; 
-		}
+	var hr = RunEvent3("InvokeCommand", ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon);
+	if (isFinite(hr)) {
+		return hr; 
 	}
 	var Items = ContextMenu.Items();
 	var Exec = [];
@@ -954,11 +948,18 @@ te.OnDragEnter = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect)
 {
 	var hr = E_NOTIMPL;
 	var dwEffect = pdwEffect[0];
-	for (var i in eventTE.DragEnter) {
-		pdwEffect[0] = dwEffect;
-		var hr2 = eventTE.DragEnter[i](Ctrl, dataObj, grfKeyState, pt, pdwEffect);
-		if (isFinite(hr2) && hr != S_OK) {
-			hr = hr2;
+	var en = "DragEnter";
+	var eo = eventTE[en];
+	for (var i in eo) {
+		try {
+			pdwEffect[0] = dwEffect;
+			var hr2 = eo[i](Ctrl, dataObj, grfKeyState, pt, pdwEffect);
+			if (isFinite(hr2) && hr != S_OK) {
+				hr = hr2;
+			}
+		}
+		catch (e) {
+			ShowError(e, en, i);
 		}
 	}
 	g_mouse.str = "";
@@ -968,12 +969,18 @@ te.OnDragEnter = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect)
 te.OnDragOver = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect)
 {
 	var dwEffect = pdwEffect[0];
-	for (var i in eventTE.DragOver) {
-		pdwEffect[0] = dwEffect;
-		var hr = eventTE.DragOver[i](Ctrl, dataObj, grfKeyState, pt, pdwEffect);
-		if (isFinite(hr)) {
-			return hr;
-			break; 
+	var en = "DragOver";
+	var eo = eventTE[en];
+	for (var i in eo) {
+		try {
+			pdwEffect[0] = dwEffect;
+			var hr = eo[i](Ctrl, dataObj, grfKeyState, pt, pdwEffect);
+			if (isFinite(hr)) {
+				return hr; 
+			}
+		}
+		catch (e) {
+			ShowError(e, en, i);
 		}
 	}
 	return E_NOTIMPL; 
@@ -982,15 +989,19 @@ te.OnDragOver = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect)
 te.OnDrop = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect)
 {
 	var dwEffect = pdwEffect[0];
-	for (var i in eventTE.Drop) {
-		pdwEffect[0] = dwEffect;
+	var en = "Drop";
+	var eo = eventTE[en];
+	for (var i in eo) {
 		try {
-			var hr = eventTE.Drop[i](Ctrl, dataObj, grfKeyState, pt, pdwEffect);
+			pdwEffect[0] = dwEffect;
+			var hr = eo[i](Ctrl, dataObj, grfKeyState, pt, pdwEffect);
 			if (isFinite(hr)) {
-				return hr;
+				return hr; 
 			}
 		}
-		catch (e) {}
+		catch (e) {
+			ShowError(e, en, i);
+		}
 	}
 	return E_NOTIMPL; 
 }
@@ -998,10 +1009,17 @@ te.OnDrop = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect)
 te.OnDragleave = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect)
 {
 	var hr = E_NOTIMPL;
-	for (var i in eventTE.Dragleave) {
-		var hr2 = eventTE.Dragleave[i](Ctrl, dataObj, grfKeyState, pt, pdwEffect);
-		if (isFinite(hr2) && hr != S_OK) {
-			hr = hr2;
+	var en = "Dragleave";
+	var eo = eventTE[en];
+	for (var i in eo) {
+		try {
+			var hr2 = eo[i](Ctrl, dataObj, grfKeyState, pt, pdwEffect);
+			if (isFinite(hr2) && hr != S_OK) {
+				hr = hr2;
+			}
+		}
+		catch (e) {
+			ShowError(e, en, i);
 		}
 	}
 	g_mouse.str = "";
@@ -1010,13 +1028,8 @@ te.OnDragleave = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect)
 
 te.OnSelectionChanging = function (Ctrl)
 {
-	for (var i in eventTE.SelectionChanging) {
-		var hr = eventTE.SelectionChanging[i](Ctrl);
-		if (isFinite(hr)) {
-			return hr;
-		}
-	}
-	return S_OK;
+	var hr = RunEvent3("SelectionChanging", Ctrl);
+	return isFinite(hr) ? hr : S_OK;
 }
 
 te.OnSelectionChanged = function (Ctrl, uChange)
@@ -1024,24 +1037,16 @@ te.OnSelectionChanged = function (Ctrl, uChange)
 	if (Ctrl.Type == CTRL_TC && Ctrl.SelectedIndex >= 0) {
 		ChangeView(Ctrl.Selected);
 	}
-	for (var i in eventTE.SelectionChanged) {
-		var hr = eventTE.SelectionChanged[i](Ctrl, uChange);
-		if (isFinite(hr)) {
-			return hr;
-		}
-	}
-	return S_OK;
+	var hr = RunEvent3("SelectionChanged", Ctrl, uChange);
+	return isFinite(hr) ? hr : S_OK;
 }
 
 te.OnShowContextMenu = function (Ctrl, hwnd, msg, wParam, pt)
 {
-	for (var i in eventTE.ShowContextMenu) {
-		var hr = eventTE.ShowContextMenu[i](Ctrl, hwnd, msg, wParam, pt);
-		if (isFinite(hr)) {
-			return hr; 
-		}
+	var hr = RunEvent3("ShowContextMenu", Ctrl, hwnd, msg, wParam, pt);
+	if (isFinite(hr)) {
+		return hr; 
 	}
-
 	switch (Ctrl.Type) {
 		case CTRL_SB:
 		case CTRL_EB:
@@ -1095,11 +1100,9 @@ te.OnDefaultCommand = function (Ctrl)
 	if (api.GetKeyState(VK_MENU) < 0) {
 		return S_FALSE;
 	}
-	for (var i in eventTE.DefaultCommand) {
-		var hr = eventTE.DefaultCommand[i](Ctrl);
-		if (isFinite(hr)) {
-			return hr; 
-		}
+	var hr = RunEvent3("DefaultCommand", Ctrl);
+	if (isFinite(hr)) {
+		return hr; 
 	}
 	if (ExecMenu(Ctrl, "Default", null, 2) != S_OK) {
 		InvokeCommand(Ctrl.SelectedItems(), 0, te.hwnd, null, null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
@@ -1109,13 +1112,8 @@ te.OnDefaultCommand = function (Ctrl)
 
 te.OnItemClick = function (Ctrl, Item, HitTest, Flags)
 {
-	for (var i in eventTE.ItemClick) {
-		var hr = eventTE.ItemClick[i](Ctrl, Item, HitTest, Flags);
-		if (isFinite(hr)) {
-			return hr; 
-		}
-	}
-	return S_FALSE;
+	var hr = RunEvent3("ItemClick", Ctrl, Item, HitTest, Flags);
+	return isFinite(hr) ? hr : S_FALSE;
 }
 
 te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
@@ -1124,11 +1122,9 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 		g_mouse.str = "";
 		SetGestureText(Ctrl, "");
 	}
-	for (var i in eventTE.SystemMessage) {
-		var hr = eventTE.SystemMessage[i](Ctrl, hwnd, msg, wParam, lParam);
-		if (isFinite(hr)) {
-			return hr; 
-		}
+	var hr = RunEvent3("SystemMessage", Ctrl, hwnd, msg, wParam, lParam);
+	if (isFinite(hr)) {
+		return hr; 
 	}
 	switch (Ctrl.Type) {
 		case CTRL_WB:
@@ -1185,11 +1181,9 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 					break;
 				case WM_COPYDATA:
 					var cd = api.Memory("COPYDATASTRUCT", 1, lParam);
-					for (var i in eventTE.CopyData) {
-						var hr = eventTE.CopyData[i](Ctrl, cd, wParam);
-						if (isFinite(hr)) {
-							return hr; 
-						}
+					var hr = RunEvent3("CopyData", Ctrl, cd, wParam);
+					if (isFinite(hr)) {
+						return hr; 
 					}
 					if (cd.dwData == 0 && cd.cbData) {
 						var strData = api.SysAllocStringByteLen(cd.lpData, cd.cbData);
@@ -1214,11 +1208,9 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 
 te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 {
-	for (var i in eventTE.MenuMessage) {
-		var hr = eventTE.MenuMessage[i](Ctrl, hwnd, msg, wParam, lParam);
-		if (isFinite(hr)) {
-			return hr; 
-		}
+	var hr = RunEvent3("MenuMessage", Ctrl, hwnd, msg, wParam, lParam);
+	if (isFinite(hr)) {
+		return hr; 
 	}
 	switch (msg) {
 		case WM_INITMENUPOPUP:
@@ -1244,8 +1236,15 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 			break;
 		case WM_EXITMENULOOP:
 			window.g_menu_click = false;
-			while (eventTE.ExitMenuLoop && eventTE.ExitMenuLoop.length) {
-				eventTE.ExitMenuLoop.shift()();
+			var en = "ExitMenuLoop";
+			var eo = eventTE[en];
+			try {
+				while (eo && eo.length) {
+					eo.shift()();
+				}
+			}
+			catch (e) {
+				ShowError(e, en);
 			}
 			while (g_arBM.length) {
 				api.DeleteObject(g_arBM.pop());
@@ -1262,11 +1261,9 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 
 te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 {
-	for (var i in eventTE.AppMessage) {
-		var hr = eventTE.AppMessage[i](Ctrl, hwnd, msg, wParam, lParam);
-		if (isFinite(hr)) {
-			return hr; 
-		}
+	var hr = RunEvent3("AppMessage", Ctrl, hwnd, msg, wParam, lParam);
+	if (isFinite(hr)) {
+		return hr; 
 	}
 	if (msg == TWM_CHANGENOTIFY) {
 		var pidls = te.FolderItems();
@@ -1278,7 +1275,7 @@ te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 					var FV = cFV[i];
 					if (api.ILIsEqual(FV, pidls[0])) {
 						if (pidls.lEvent == SHCNE_RENAMEFOLDER && !FV.Data.Lock) {
-							FV.Navigate(api.GetDisplayNameOf(pidls[1], SHGDN_FORPARSINGEX | SHGDN_FORPARSING), SBSP_SAMEBROWSER);
+							FV.Navigate(api.GetDisplayNameOf(pidls[1], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX), SBSP_SAMEBROWSER);
 						}
 						else {
 							FV.Suspend();
@@ -1286,7 +1283,7 @@ te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 					}
 					else if (api.ILIsParent(pidls[0], FV, true)) {
 						if (pidls.lEvent == SHCNE_RENAMEFOLDER && !FV.Data.Lock) {
-							FV.Navigate(api.GetDisplayNameOf(FV, SHGDN_FORPARSING).replace(api.GetDisplayNameOf(pidls[0], SHGDN_FORPARSING), api.GetDisplayNameOf(pidls[1], SHGDN_FORPARSING)), SBSP_SAMEBROWSER);
+							FV.Navigate(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING).replace(api.GetDisplayNameOf(pidls[0], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), api.GetDisplayNameOf(pidls[1], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)), SBSP_SAMEBROWSER);
 						}
 						else {
 							FV.Suspend();
@@ -1303,11 +1300,9 @@ te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 
 te.OnNewWindow = function (Ctrl, dwFlags, UrlContext, Url)
 {
-	for (var i in eventTE.NewWindow) {
-		var hr = eventTE.NewWindow[i](Ctrl, dwFlags, UrlContext, Url);
-		if (isFinite(hr)) {
-			return hr; 
-		}
+	var hr = RunEvent3("NewWindow", Ctrl, dwFlags, UrlContext, Url);
+	if (isFinite(hr)) {
+		return hr; 
 	}
 	var Path = api.PathCreateFromUrl(Url);
 	var FolderItem = api.ILCreateFromPath(Path);
@@ -1320,14 +1315,12 @@ te.OnNewWindow = function (Ctrl, dwFlags, UrlContext, Url)
 
 te.OnClipboardText = function (Items)
 {
-	for (var i in eventTE.ClipboardText) {
-		var r = eventTE.ClipboardText[i](Items);
-		if (r !== undefined) {
-			return r; 
-		}
+	var r = RunEvent4("ClipboardText", Items);
+	if (r !== undefined) {
+		return r; 
 	}
 	var s = [];
-	for (var i = Items.Count; i > 0; s.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(Items.Item(--i), SHGDN_FORPARSING)))) {
+	for (var i = Items.Count; i > 0; s.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(Items.Item(--i), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)))) {
 	}
 	return s.join(" ");
 }
@@ -1374,14 +1367,12 @@ te.OnArrange = function (Ctrl, rc)
 		rc.Right -= w2;
 		rc.Bottom -= document.getElementById("InnerBottom_" + Ctrl.Id).offsetHeight;
 		o = document.getElementById("Inner2Center_" + Ctrl.Id).style;
-		try {
-			o.width = (rc.Right - rc.Left) + "px";
-			o.height = (rc.Bottom - rc.Top) + "px";
-		} catch (e) {}
+		i = rc.Right - rc.Left;
+		o.width = i > 0 ? i + "px" : "0px";
+		i = rc.Bottom - rc.Top;
+		o.height = i > 0 ? i + "px" : "0px";
 	}
-	for (var i in eventTE.Arrange) {
-		eventTE.Arrange[i](Ctrl, rc);
-	}
+	RunEvent1("Arrange", Ctrl, rc);
 }
 
 te.OnVisibleChanged = function (Ctrl)
@@ -1403,49 +1394,34 @@ te.OnVisibleChanged = function (Ctrl)
 			}
 		}
 	}
-	for (var i in eventTE.VisibleChanged) {
-		eventTE.VisibleChanged[i](Ctrl);
-	}
+	RunEvent1("VisibleChanged", Ctrl);
 }
 
 te.OnWindowRegistered = function (Ctrl)
 {
-	for (var i in eventTE.WindowRegistered) {
-		eventTE.WindowRegistered[i](Ctrl);
-	}
+	RunEvent1("WindowRegistered", Ctrl);
 }
 
 te.OnToolTip = function (Ctrl, Index)
 {
-	for (var i in eventTE.ToolTip) {
-		var r = eventTE.ToolTip[i](Ctrl, Index);
-		if (r !== undefined) {
-			return r; 
-		}
-	}
-	return "";
+	return RunEvent4("ToolTip", Ctrl, Index);
 }
 
 te.OnHitTest = function (Ctrl, pt, flags)
 {
-	for (var i in eventTE.HitTest) {
-		var hr = eventTE.HitTest[i](Ctrl, pt, flags);
-		if (isFinite(hr)) {
-			return hr;
-		}
-	}
-	return -1;
+	var hr = RunEvent3("HitTest", Ctrl, pt, flags);
+	return isFinite(hr) ? hr : -1;
 }
 
 te.OnGetPaneState = function (Ctrl, ep, peps)
 {
-	for (var i in eventTE.GetPaneState) {
-		var hr = eventTE.GetPaneState[i](Ctrl, ep, peps);
-		if (isFinite(hr)) {
-			return hr;
-		}
-	}
-	return -1;
+	var hr = RunEvent3("GetPaneState", Ctrl, ep, peps);
+	return isFinite(hr) ? hr : -1;
+}
+
+te.OnTranslatePath = function (Ctrl, Path)
+{
+	return RunEvent4("TranslatePath", Ctrl, Path);
 }
 
 // Browser Events
@@ -1456,41 +1432,41 @@ AddEventEx(window, "load", function ()
 
 	setTimeout(function ()
 	{
+		te.LockUpdate();
 		if (api.strcmpi(typeof(xmlWindow), "string") == 0) {
-			te.LockUpdate();
 			var TC = te.CreateCtrl(CTRL_TC, 0, 0, "100%", "100%", te.Data.Tab_Style, te.Data.Tab_Align, te.Data.Tab_TabWidth, te.Data.Tab_TabHeight);
 			TC.Selected.Navigate2(HOME_PATH, SBSP_NEWBROWSER, te.Data.View_Type, te.Data.View_ViewMode, te.Data.View_fFlags, te.Data.View_Options, te.Data.View_ViewFlags, te.Data.View_IconSize, te.Data.Tree_Align, te.Data.Tree_Width, te.Data.Tree_Style, te.Data.Tree_EnumFlags, te.Data.Tree_RootStyle, te.Data.Tree_Root);
-			te.UnlockUpdate();
 		}
 		else if (xmlWindow) {
 			LoadXml(xmlWindow);
 			xmlWindow = null;
 		}
-		var a, i, j, root, menus, items;
-		root = te.Data.xmlMenus.documentElement;
-		if (root) {
-			menus = root.childNodes;
-			for (i = menus.length; i--;) {
-				items = menus[i].getElementsByTagName("Item");
-				for (j = items.length; j--;) {
-					a = items[j].getAttribute("Name").split(/\\t/);
-					if (a.length > 1) {
-						SetKeyExec("List", a[1], items[j].text, items[j].getAttribute("Type"), true);
+		setTimeout(function ()
+		{
+			var a, i, j, root, menus, items;
+			root = te.Data.xmlMenus.documentElement;
+			if (root) {
+				menus = root.childNodes;
+				for (i = menus.length; i--;) {
+					items = menus[i].getElementsByTagName("Item");
+					for (j = items.length; j--;) {
+						a = items[j].getAttribute("Name").split(/\\t/);
+						if (a.length > 1) {
+							SetKeyExec("List", a[1], items[j].text, items[j].getAttribute("Type"), true);
+						}
 					}
 				}
 			}
-		}
-		DeviceChanged();
-		Resize();
-		setTimeout(function ()
-		{
+			DeviceChanged();
+			Resize();
 			var cTC = te.Ctrls(CTRL_TC);
 			for (var i in cTC) {
 				if (cTC[i].SelectedIndex >= 0) {
 					ChangeView(cTC[i].Selected);
 				}
 			}
-		}, 500);
+			te.UnlockUpdate();
+		}, 100);
 	}, 1);
 	if (api.GetKeyState(VK_SHIFT) < 0 && api.GetKeyState(VK_CONTROL) < 0) {
 		ShowOptions("Tab=Add-ons");
@@ -1521,7 +1497,7 @@ function ArrangeAddons()
 	var xml = OpenXml("addons.xml", false, true);
 	te.Data.Addons = xml;
 	if (api.GetKeyState(VK_SHIFT) < 0 && api.GetKeyState(VK_CONTROL) < 0) {
-		IsSavePath = function (path, FV)
+		IsSavePath = function (path)
 		{
 			return false;
 		}
@@ -1536,6 +1512,7 @@ function ArrangeAddons()
 			for (var i = 0; i < items.length; i++) {
 				var item = items[i];
 				var Id = item.nodeName;
+				window.Error_source = Id;
 				if (!AddonId[Id]) {
 					var Enabled = api.QuadPart(item.getAttribute("Enabled"));
 					if (Enabled & 6) {
@@ -1549,6 +1526,7 @@ function ArrangeAddons()
 					}
 					AddonId[Id] = true;
 				}
+				window.Error_source = "";
 			}
 			if (arError.length) {
 				setTimeout(function () {
@@ -1559,21 +1537,21 @@ function ArrangeAddons()
 	}
 }
 
-LoadAddon = function(ext, Addon_Id, arError)
+LoadAddon = function(ext, Id, arError)
 {
 	try {
 		var ado = te.CreateObject("Adodb.Stream");
 		ado.CharSet = "utf-8";
 		ado.Open();
-		var fname = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons") + "\\" + Addon_Id + "\\script." + ext;
+		var fname = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons") + "\\" + Id + "\\script." + ext;
 		ado.LoadFromFile(fname);
 		var s = ado.ReadText();
 		ado.Close();
 		if (api.strcmpi(ext, "js") == 0) {
-			(new Function(s))(Addon_Id);
+			(new Function(s))(Id);
 		}
 		else if (api.strcmpi(ext, "vbs") == 0) {
-			var fn = api.GetScriptDispatch(s, "VBScript", {"_Addon_Id": {"Addon_Id": Addon_Id}, window: window},
+			var fn = api.GetScriptDispatch(s, "VBScript", {"_Addon_Id": {"Addon_Id": Id}, window: window},
 				function (ei, SourceLineText, dwSourceContext, lLineNumber, CharacterPosition)
 				{
 					arError.push(api.SysAllocString(ei.bstrDescription) + "\n" + fname);
@@ -1656,28 +1634,40 @@ function InitCode()
 	}
 }
 
-SetKeyExec = function (mode, strKey, path, type, bNew)
+SetKeyExec = function (mode, strKey, path, type, bLast)
 {
 	if (strKey) {
 		strKey = GetKeyKey(strKey);
-		if (!bNew || !eventTE.Key[mode][strKey]) {
-			if (!eventTE.Key[mode][strKey]) {
-				eventTE.Key[mode][strKey] = [];
+		var KeyMode = eventTE.Key[mode];
+		if (KeyMode) {
+			if (!KeyMode[strKey]) {
+				KeyMode[strKey] = [];
 			}
-			eventTE.Key[mode][strKey].push([path, type]);
+			if (bLast) {
+				KeyMode[strKey].push([path, type]);
+			}
+			else {
+				KeyMode[strKey].unshift([path, type]);
+			}
 		}
 	}
 }
 
-SetGestureExec = function (mode, strGesture, path, type, bNew)
+SetGestureExec = function (mode, strGesture, path, type, bLast)
 {
 	if (strGesture) {
 		strGesture = strGesture.toUpperCase();
-		if (!bNew || !eventTE.Mouse[mode][strGesture]) {
-			if (!eventTE.Mouse[mode][strGesture]) {
-				eventTE.Mouse[mode][strGesture] = [];
+		var MouseMode = eventTE.Mouse[mode];
+		if (MouseMode) {
+			if (!MouseMode[strGesture]) {
+				MouseMode[strGesture] = [];
 			}
-			eventTE.Mouse[mode][strGesture].push([path, type]);
+			if (bLast) {
+				MouseMode[strGesture].push([path, type]);
+			}
+			else {
+				MouseMode[strGesture].unshift([path, type]);
+			}
 		}
 	}
 }
@@ -1734,7 +1724,6 @@ g_mouse =
 	bCapture: false,
 	RButton: -1,
 	bTrail: false,
-	tidDblClk: null,
 	bDblClk: false,
 
 	StartGestureTimer: function ()
@@ -1909,9 +1898,7 @@ g_basic =
 				}
 				else {
 					var arFunc = [];
-					for (var i in eventTE.AddType) {
-						eventTE.AddType[i](arFunc);
-					}
+					RunEvent1("AddType", arFunc);
 					var r = g_basic.Popup(arFunc, s, pt);
 					return r == 1 ? 1 : s + (s.length && !s.match(/\n$/) ? "\n" : "") + r + ",";
 				}
@@ -1958,8 +1945,9 @@ g_basic =
 				s = ExtractMacro(Ctrl, s);
 				try {
 					wsh.Run(s);
-				} catch (e) {
-					wsh.Popup((e.description || e.toString()) + "\n" + s, 0, TITLE, MB_ICONSTOP);
+				}
+				catch (e) {
+					ShowError(e, s);
 				}
 				return S_OK;
 			},
@@ -1974,7 +1962,7 @@ g_basic =
 					pdwEffect[0] = DROPEFFECT_LINK;
 					if (bDrop) {
 						var ar = [];
-						for (var i = dataObj.Count; i > 0; ar.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(dataObj.Item(--i), SHGDN_FORPARSING)))) {
+						for (var i = dataObj.Count; i > 0; ar.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(dataObj.Item(--i), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)))) {
 						}
 						s = s.replace(re, ar.join(" "));
 					}
@@ -1989,6 +1977,22 @@ g_basic =
 			},
 
 			Ref: OpenDialog
+		},
+
+		RunAs:
+		{
+			Exec: function (Ctrl, s, type, hwnd, pt)
+			{
+				s = ExtractMacro(Ctrl, s);
+				try {
+					sha.ShellExecute(s, "", "", "RunAs");
+					wsh.Run(s);
+				}
+				catch (e) {
+					ShowError(e, s);
+				}
+				return S_OK;
+			}
 		},
 
 		JScript:
@@ -2323,11 +2327,11 @@ g_basic =
 					var nCount = Selected.Count;
 					if (nCount) {
 						while (--nCount >= 0) {
-							s.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(Selected.Item(nCount), SHGDN_FORPARSING)));
+							s.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(Selected.Item(nCount), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)));
 						}
 					}
 					else {
-						s.push(api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORPARSING)));
+						s.push(api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)));
 					}
 					clipboardData.setData("text", s.join(" "));
 				},
@@ -2362,6 +2366,7 @@ g_basic =
 				}
 			}
 		},
+
 		Options:
 		{
 			Exec: function (Ctrl, s, type, hwnd, pt)
@@ -2377,10 +2382,21 @@ g_basic =
 
 			List: ["General", "Add-ons", "Menus", "Tabs", "Tree", "List"]
 		},
+
+		Key:
+		{
+			Exec: function (Ctrl, s, type, hwnd, pt)
+			{
+				wsh.SendKeys(s);
+				return S_OK;
+			}
+		},
+
 		"Add-ons":
 		{
 			Cmd:{}
 		},
+
 		Menus:
 		{
 			Ref: function (s, pt)
@@ -2592,10 +2608,10 @@ if (!te.Data) {
 	var pf = [ssfPROGRAMFILES, ssfPROGRAMFILESx86];
 	var x = api.sizeof("HANDLE") / 4;
 	for (var i = 0; i < x; i++) {
-		var s = api.GetDisplayNameOf(pf[i], SHGDN_FORPARSING);
+		var s = api.GetDisplayNameOf(pf[i], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
 		var l = s.replace(/\s*\(x86\)$/i, "").length;
 		if (api.StrCmpNI(s, DataFolder, l) == 0) {
-			DataFolder = fso.BuildPath(api.GetDisplayNameOf(ssfAPPDATA, SHGDN_FORPARSING), "Tablacus\\Explorer");
+			DataFolder = fso.BuildPath(api.GetDisplayNameOf(ssfAPPDATA, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), "Tablacus\\Explorer");
 			var ParentFolder = fso.GetParentFolderName(DataFolder);
 			if (!fso.FolderExists(ParentFolder)) {
 				if (fso.CreateFolder(ParentFolder)) {

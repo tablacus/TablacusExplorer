@@ -14,6 +14,7 @@ var Input;
 var g_tidNew = null;
 var g_dlgOptions;
 var eventTE = {};
+var eventTA = {};
 var g_ptDrag = api.Memory("POINT");
 var objHover = null;
 var g_nFind = 0;
@@ -145,11 +146,16 @@ AddEvent = function (Name, fn, priority)
 		if (!eventTE[Name]) {
 			eventTE[Name] = [];
 		}
+		if (!eventTA[Name]) {
+			eventTA[Name] = [];
+		}
 		if (priority) {
 			eventTE[Name].unshift(fn);
+			eventTA[Name].unshift(window.Error_source);
 		}
 		else {
 			eventTE[Name].push(fn);
+			eventTA[Name].push(window.Error_source);
 		}
 	}
 }
@@ -590,8 +596,8 @@ SaveXml = function (filename, all)
 		var nCount2 = Ctrl.Count;
 		for (var i2 in Ctrl) {
 			var FV = Ctrl[i2];
-			var path = api.GetDisplayNameOf(FV, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
-			var bSave = !all || IsSavePath(path, FV);
+			var path = api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
+			var bSave = !all || IsSavePath(path);
 			if (bSave || (bEmpty && i2 == nCount2 - 1)) {
 				if (!bSave) {
 					path = HOME_PATH;
@@ -620,8 +626,8 @@ SaveXml = function (filename, all)
 						var bLogSaved = false;
 						var nLogIndex = TL.Index;
 						for (var i3 in TL) {
-							path = api.GetDisplayNameOf(TL[i3], SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
-							if (IsSavePath(path, TL[i3])) {
+							path = api.GetDisplayNameOf(TL[i3], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
+							if (IsSavePath(path)) {
 								var item3 = xml.createElement("Log");
 								item3.setAttribute("Path", path);
 								item2.appendChild(item3);
@@ -760,21 +766,12 @@ NavigateFV = function (FV, Path, wFlags)
 			if (/%([^%]+)%/.test(Path)) {
 				Path = ExtractMacro(FV, Path);
 			}
-			if (/^[a-z]$/i.test(Path)) {
-				Path += ":\\";
-			}
-			if (/\?|\*/.test(Path) && !/^::{/.test(Path)) {
+			if (/\?|\*/.test(Path) && !/:|\\/.test(Path)) {
 				FV.FilterView = Path;
 				FV.Refresh();
 				return;
 			}
-			if (Path.length > 3 && /\\$/.test(Path)) {
-				Focus = Path.replace(/\\$/, '');
-				Path = fso.GetParentFolderName(Path);
-			}
 		}
-		FV.Data.Filter = null;
-		FV.OnIncludeObject = null;
 		FV.Navigate(Path, wFlags);
 		if (Focus) {
 			setTimeout(function () {
@@ -1033,7 +1030,7 @@ ExecScriptEx = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffec
 		}
 	}
 	catch (e) {
-		wsh.Popup((e.description || e.toString()) + "\n" + s, 0, TITLE, MB_ICONSTOP);
+		ShowError(e, s);
 		return window.Handled;
 	}
 
@@ -1107,7 +1104,7 @@ AddEvent("ReplaceMacro", [/%Selected%/ig, function(Ctrl)
 	if (FV) {
 		var Selected = FV.SelectedItems();
 		if (Selected) {
-			for (var i = Selected.Count; i > 0; ar.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(Selected.Item(--i), SHGDN_FORPARSING)))) {
+			for (var i = Selected.Count; i > 0; ar.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(Selected.Item(--i), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)))) {
 			}
 		}
 	}
@@ -1119,7 +1116,7 @@ AddEvent("ReplaceMacro", [/%Current%/ig, function(Ctrl)
 	var strSel = "";
 	var FV = GetFolderView(Ctrl);
 	if (FV) {
-		strSel = api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORPARSING));
+		strSel = api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
 	}
 	return strSel;
 }]);
@@ -1131,7 +1128,7 @@ AddEvent("ReplaceMacro", [/%TreeSelected%/ig, function(Ctrl)
 		Ctrl = te.Ctrl(CTRL_TV);
 	}
 	if (Ctrl) {
-		strSel = api.PathQuoteSpaces(api.GetDisplayNameOf(Ctrl.SelectedItem, SHGDN_FORPARSING));
+		strSel = api.PathQuoteSpaces(api.GetDisplayNameOf(Ctrl.SelectedItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
 	}
 	return strSel;
 }]);
@@ -1171,18 +1168,12 @@ OpenMenu = function (items, SelItem)
 			path = SelItem;	
 		}
 		else {
-			path = api.GetDisplayNameOf(SelItem, SHGDN_FORPARSINGEX | SHGDN_FORPARSING) + "";
+			path = String(api.GetDisplayNameOf(SelItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX));
 			arMenu = OpenMenu(items, path);
-			if (arMenu.length) {
+			if (arMenu.length && fso.GetExtensionName(path) && !IsFolderEx(SelItem)) {
 				return arMenu;
 			}
-			var FindData = api.Memory("WIN32_FIND_DATA");
-			if (IsFolderEx(SelItem)) {
-				path += ".folder";
-			}
-			else  {
-				return arMenu;
-			}
+			path += ".folder";
 		}
 	}
 	arMenu = [];
@@ -1215,6 +1206,33 @@ ExecMenu2 = function (Name, x, y)
 	pt.x = x;
 	pt.y = y;
 	ExecMenu(Ctrl, Name, pt, 0);
+}
+
+AdjustMenuBreak = function (hMenu)
+{
+	var mii = api.Memory("MENUITEMINFO");
+	mii.cbSize = mii.Size;
+	var uFlags = 0;
+	for (var i = api.GetMenuItemCount(hMenu); i-- > 0;) {
+		mii.fMask = MIIM_FTYPE | MIIM_SUBMENU;
+		api.GetMenuItemInfo(hMenu, i, true, mii);
+		if (mii.hSubMenu) {
+			AdjustMenuBreak(mii.hSubMenu);
+			continue;
+		}
+		if (api.strcmpi(api.GetMenuString(hMenu, i, MF_BYPOSITION), "")) {
+			mii.fType |= uFlags;
+			api.SetMenuItemInfo(hMenu, i, true, mii);
+			uFlags = 0;
+			continue;
+		}
+		var u = mii.fType & (MFT_MENUBREAK | MFT_MENUBARBREAK);
+		if (u) {
+			uFlags = u;
+			api.DeleteMenu(hMenu, i, MF_BYPOSITION);
+			i++;
+		}
+	}
 }
 
 ExecMenu = function (Ctrl, Name, pt, Mode)
@@ -1324,6 +1342,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 						break;
 				}
 			}
+			AdjustMenuBreak(hMenu);
 			var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, ContextMenu);
 			if (ExtraMenuCommand[nVerb]) {
 				ExtraMenuCommand[nVerb](Ctrl, pt, Name, nVerb);
@@ -1513,7 +1532,7 @@ GetHelpMenu = function (bTitle)
 		}
 		return [te.About, GetText("Check for updates")].concat(dir);
 	}
-	return [api.GetModuleFileName(null) + "\\", CheckUpdate].concat(dir);
+	return [api.GetModuleFileName(null) + "\\..", CheckUpdate].concat(dir);
 }
 
 MenuDbInit = function (hMenu, oMenu, oMenu2)
@@ -1605,19 +1624,13 @@ MakeMenus = function (hMenu, menus, arMenu, items)
 		nPos = nLen;
 	}
 	nLen = arMenu.length;
-	var uFlags = 0;
+
 	for (var i = 0; i < nLen; i++) {
 		var item = items[arMenu[i]];
 		var s = item.getAttribute("Name").replace(/\\t/i, "\t");
 		var strFlag = api.strcmpi(item.getAttribute("Type"), "Menus") ? "" : item.text;
 
-		if (s == "/" || api.strcmpi(strFlag, "Break") == 0) {
-			uFlags = MF_MENUBREAK;
-		}
-		else if (s == "//" || api.strcmpi(strFlag, "BarBreak") == 0) {
-			uFlags = MF_MENUBARBREAK;
-		}
-		else if (api.strcmpi(strFlag, "Close") == 0) {
+		if (api.strcmpi(strFlag, "Close") == 0) {
 			hMenus.pop();
 			if (!hMenus.length) {
 				break;
@@ -1640,15 +1653,20 @@ MakeMenus = function (hMenu, menus, arMenu, items)
 				hMenus.push(mii.hSubMenu);
 			}
 			else {
-				if (s == "-" || api.strcmpi(strFlag, "Separator") == 0) {
-					api.InsertMenu(hMenus[hMenus.length - 1], nPos++, uFlags | MF_BYPOSITION | MF_SEPARATOR, 0, null);
+				nResult = arMenu[i] + 1;
+				if (s == "/" || api.strcmpi(strFlag, "Break") == 0) {
+					api.InsertMenu(hMenus[hMenus.length - 1], nPos++, MF_BYPOSITION | MF_MENUBREAK | MF_DISABLED, 0, "");
 				}
-				else {
-					nResult = arMenu[i] + 1;
-					api.InsertMenu(hMenus[hMenus.length - 1], nPos++, uFlags | MF_BYPOSITION | MF_STRING, nResult, ar.join("\t"));
+				else if (s == "//" || api.strcmpi(strFlag, "BarBreak") == 0) {
+					api.InsertMenu(hMenus[hMenus.length - 1], nPos++, MF_BYPOSITION | MF_MENUBARBREAK | MF_DISABLED, 0, "");
+				}
+				else if (s == "-" || api.strcmpi(strFlag, "Separator") == 0) {
+					api.InsertMenu(hMenus[hMenus.length - 1], nPos++, MF_BYPOSITION | MF_SEPARATOR, 0, null);
+				}
+				else if (s) {
+					api.InsertMenu(hMenus[hMenus.length - 1], nPos++, MF_BYPOSITION | MF_STRING, nResult, ar.join("\t"));
 				}
 			}
-			uFlags = 0;
 		}
 	}
 	return nResult;
@@ -2078,9 +2096,12 @@ OpenInExplorer = function (FV)
 			doc.SortColumns = FV.SortColumns;
 		}
 		catch (e) {}
-		if (FV.TreeView.Align & 2) {
-			exp.ShowBrowserBar("{EFA24E64-B078-11D0-89E4-00C04FC9E26E}", true);
+		try {
+			if (FV.TreeView && FV.TreeView.Align & 2) {
+				exp.ShowBrowserBar("{EFA24E64-B078-11D0-89E4-00C04FC9E26E}", true);
+			}
 		}
+		catch (e) {}
 		exp.Visible = true;
 	}
 }
@@ -2469,6 +2490,7 @@ FindKeyEvent = function (o)
 {
 	if (event.keyCode == 13) {
 		FindText(o.value);
+		o.focus();
 		return false;
 	}
 	g_nFind = 0;
@@ -2502,7 +2524,7 @@ ChooseFolder = function (path, pt)
 	var FolderItem = api.ILCreateFromPath(path);
 	FolderItem = FolderMenu.Open(FolderItem.IsFolder ? FolderItem : ssfDRIVES, pt.x, pt.y);
 	if (FolderItem) {
-		return api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
+		return api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
 	}
 }
 
@@ -2533,4 +2555,14 @@ SetRenameMenu = function (n)
 	{
 		setTimeout('wsh.SendKeys("{F2}");', 100);
 	};
+}
+
+ShowError = function (e, s, i)
+{
+	if (isFinite(i)) {
+		if (eventTA[s][i]) {
+			s = eventTA[s][i] + " : " + s;
+		}
+	}
+	wsh.Popup((e.description || e.toString()) + "\n" + s, 0, TITLE, MB_ICONSTOP);
 }
