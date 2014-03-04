@@ -1873,14 +1873,6 @@ LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath)
 			if (!pidl) {
 				return NULL;
 			}
-			IShellFolder *pSF = NULL;
-			if (GetShellFolder(&pSF, pidl)) {
-				IEnumIDList *peidl = NULL;
-				if SUCCEEDED(pSF->EnumObjects(g_hwndMain, SHCONTF_FOLDERS, &peidl)) {
-					peidl->Release();
-				}
-				pSF->Release();
-			}
 			teCoTaskMemFree(pidl);
 		}
 		lpfnSHParseDisplayName(pszPath, NULL, &pidl, 0, NULL);
@@ -2177,12 +2169,12 @@ void CheckChangeTabTC(HWND hwnd, BOOL bFocusSB)
 		if (g_pTabs->m_hwnd != pTC->m_hwnd) {
 			g_pTabs = pTC;
 			pTC->TabChanged(false);
-			if (bFocusSB) {
-				CteShellBrowser *pSB;
-				pSB = pTC->GetShellBrowser(pTC->m_nIndex);
-				if (pSB) {
-					pSB->m_pShellView->UIActivate(SVUIA_ACTIVATE_FOCUS);
-				}
+		}
+		if (bFocusSB) {
+			CteShellBrowser *pSB;
+			pSB = pTC->GetShellBrowser(pTC->m_nIndex);
+			if (pSB && pSB->m_pShellView) {
+				pSB->m_pShellView->UIActivate(SVUIA_ACTIVATE_FOCUS);
 			}
 		}
 	}
@@ -6738,8 +6730,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					if (FindUnknown(&pDispParams->rgvarg[nArg - 3], &punk)) {
 						GetIDListFromObject(punk, &pidl);
 					}
-					Navigate2(pFolderItem, GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]), param, pFolderItems, pidl, this);
-					if (m_bVisible) {
+					if (SUCCEEDED(Navigate2(pFolderItem, GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]), param, pFolderItems, pidl, this)) && m_bVisible) {
 						Show(TRUE);
 					}
 				}
@@ -16307,11 +16298,10 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			break;
 		//FindWindow
 		case 2063:
-			if (nArg >= 0) {
+			if (nArg >= 1) {
 				VARIANT vClass, vWindow;
 				teVariantChangeType(&vClass, &pDispParams->rgvarg[nArg], VT_BSTR);
-				teVariantChangeType(&vWindow, &pDispParams->rgvarg[nArg], VT_BSTR);
-
+				teVariantChangeType(&vWindow, &pDispParams->rgvarg[nArg - 1], VT_BSTR);
 				*phResult = FindWindow(vClass.bstrVal, vWindow.bstrVal);
 			}
 			break;

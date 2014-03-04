@@ -62,7 +62,6 @@ RunEvent2 = function (en, a1, a2, a3, a4)
 RunEvent3 = function (en, a1, a2, a3, a4, a5, a6, a7, a8, a9)
 {
 	var eo = eventTE[en];
-	var ea = eventTA[en];
 	for (var i in eo) {
 		try {
 			var hr = eo[i](a1, a2, a3, a4, a5, a6, a7, a8, a9);
@@ -1563,7 +1562,7 @@ LoadAddon = function(ext, Id, arError)
 		}
 	}
 	catch (e) {
-		arError.push((e.description || e.toString()) + "\n" + fname);
+		arError.push([(e.description || e.toString()), fname].join("\n"));
 	}
 }
 
@@ -1685,6 +1684,9 @@ ArExec = function (Ctrl, ar, pt, hwnd)
 
 GestureExec = function (Ctrl, mode, str, pt, hwnd)
 {
+	if (hwnd && Ctrl.Type != CTRL_TC && Ctrl.Type != CTRL_WB) {
+		api.SetFocus(hwnd);
+	}
 	return ArExec(Ctrl, eventTE.Mouse[mode][str], pt, hwnd || Ctrl.hwnd);
 }
 
@@ -1986,7 +1988,6 @@ g_basic =
 				s = ExtractMacro(Ctrl, s);
 				try {
 					sha.ShellExecute(s, "", "", "RunAs");
-					wsh.Run(s);
 				}
 				catch (e) {
 					ShowError(e, s);

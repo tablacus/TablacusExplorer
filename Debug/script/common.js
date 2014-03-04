@@ -773,6 +773,7 @@ NavigateFV = function (FV, Path, wFlags)
 			}
 		}
 		FV.Navigate(Path, wFlags);
+		FV.Focus();
 		if (Focus) {
 			setTimeout(function () {
 				var FV = te.Ctrl(CTRL_FV);
@@ -2026,7 +2027,7 @@ GethwndFromPid = function (ProcessId, bDT)
 				return hwnd;
 			}
 		}
-	} while(hwnd = api.GetWindow(hwnd, GW_HWNDNEXT));
+	} while (hwnd = api.GetWindow(hwnd, GW_HWNDNEXT));
 	return null;
 }
 
@@ -2564,5 +2565,5 @@ ShowError = function (e, s, i)
 			s = eventTA[s][i] + " : " + s;
 		}
 	}
-	wsh.Popup((e.description || e.toString()) + "\n" + s, 0, TITLE, MB_ICONSTOP);
+	wsh.Popup([(e.description || e.toString()), s].join("\n"), 0, TITLE, MB_ICONSTOP);
 }
