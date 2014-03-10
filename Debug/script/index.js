@@ -645,7 +645,6 @@ te.OnViewCreated = function (Ctrl)
 		case CTRL_SB:
 		case CTRL_EB:
 			ListViewCreated(Ctrl);
-			ChangeView(Ctrl);
 			break;
 		case CTRL_TC:
 			TabViewCreated(Ctrl);
@@ -663,6 +662,13 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev)
 		return E_ACCESSDENIED;
 	}
 	return RunEvent2("BeforeNavigate", Ctrl, fs, wFlags, Prev);
+}
+
+te.OnNavigateComplete = function (Ctrl)
+{
+	RunEvent1("NavigateComplete", Ctrl);
+	ChangeView(Ctrl);
+	return S_OK;
 }
 
 ShowStatusText = function (Ctrl, Text, iPart)
@@ -1056,7 +1062,7 @@ te.OnShowContextMenu = function (Ctrl, hwnd, msg, wParam, pt)
 				}
 			}
 			else {
-				if (ExecMenu(Ctrl, "ViewContext", pt, 1) == S_OK) {
+				if (ExecMenu(Ctrl, "Background", pt, 1) == S_OK) {
 					return S_OK;
 				}
 			}
@@ -1178,19 +1184,6 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 						}
 					}
 					break;
-				case WM_COPYDATA:
-					var cd = api.Memory("COPYDATASTRUCT", 1, lParam);
-					var hr = RunEvent3("CopyData", Ctrl, cd, wParam);
-					if (isFinite(hr)) {
-						return hr; 
-					}
-					if (cd.dwData == 0 && cd.cbData) {
-						var strData = api.SysAllocStringByteLen(cd.lpData, cd.cbData);
-						RestoreFromTray();
-						RunCommandLine(strData);
-						return S_OK;
-					}
-					break;
 			}
 			break;
 		case CTRL_TC:
@@ -1201,6 +1194,19 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 				}
 			}
 			break;
+	}
+	if (msg == WM_COPYDATA) {
+		var cd = api.Memory("COPYDATASTRUCT", 1, lParam);
+		var hr = RunEvent3("CopyData", Ctrl, cd, wParam);
+		if (isFinite(hr)) {
+			return hr; 
+		}
+		if (Ctrl.Type == CTRL_TE && cd.dwData == 0 && cd.cbData) {
+			var strData = api.SysAllocStringByteLen(cd.lpData, cd.cbData);
+			RestoreFromTray();
+			RunCommandLine(strData);
+			return S_OK;
+		}
 	}
 	return 0; 
 };
@@ -2282,7 +2288,7 @@ g_basic =
 			}
 		},
 
-		ViewContext: 
+		Background: 
 		{
 			Exec: function (Ctrl, s, type, hwnd, pt)
 			{

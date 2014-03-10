@@ -4,7 +4,8 @@ var nTabMax = 0;
 var TabIndex = -1;
 var g_x = {Menu: null, Addons: null};
 var g_Chg = {Menus: false, Addons: false, Tab: false, Tree: false, View: false, Data: null};
-var g_arMenuTypes = ["Default", "Context", "ViewContext", "Tabs", "Tree", "File", "Edit", "View", "Favorites", "Tools", "Help", "TaskTray", "System", "Alias"];
+var g_arMenuTypes = ["Default", "Context", "Background", "Tabs", "Tree", "File", "Edit", "View", "Favorites", "Tools", "Help", "TaskTray", "System", "Alias"];
+//var g_arMenuTypes = ["Default", "Context", "ViewContext", "Tabs", "Tree", "File", "Edit", "View", "Favorites", "Tools", "Help", "TaskTray", "System", "Alias"];
 var g_MenuType = null;
 var g_dlgAddons;
 var g_tdDown;
@@ -673,7 +674,7 @@ function LoadMenus(nSelected)
 
 		for (j in g_arMenuTypes) {
 			document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", '<select name="Menus_' + g_arMenuTypes[j] + '" size="17" style="width: 150px; height: 400px; display: none; font-family:' + document.F.elements["Menus_Pos"].style.fontFamily + '" ondblclick="EditMenus()" oncontextmenu="CancelX(\'Menus\')"></select>');
-			var menus = te.Data.xmlMenus.getElementsByTagName(g_arMenuTypes[j]);
+			var menus = teMenuGetElementsByTagName(g_arMenuTypes[j]);
 			if (menus && menus.length) {
 				oa[++oa.length - 1].value = g_arMenuTypes[j] + "," + menus[0].getAttribute("Base") + "," + menus[0].getAttribute("Pos");
 				var o = document.F.elements["Menus_" + g_arMenuTypes[j]];

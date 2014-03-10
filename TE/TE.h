@@ -44,17 +44,15 @@ using namespace Gdiplus;
 typedef VOID (WINAPI * LPFNSHRunDialog)(HWND hwnd, HICON hIcon, LPWSTR pszPath, LPWSTR pszTitle, LPWSTR pszPrompt, DWORD dwFlags);
 
 //XP or higher.
-typedef BOOL (WINAPI* LPFNCryptBinaryToStringW)(__in_bcount(cbBinary) CONST BYTE *pbBinary, __in DWORD cbBinary, __in DWORD dwFlags, __out_ecount_part_opt(*pcchString, *pcchString) LPWSTR pszString, __inout DWORD *pcchString);
+typedef BOOL (WINAPI* LPFNCryptBinaryToStringW)(__in_bcount(cbBinary) CONST BYTE *pbBinary, DWORD cbBinary, DWORD dwFlags, __out_ecount_part_opt(*pcchString, *pcchString) LPWSTR pszString, DWORD *pcchString);
 typedef HRESULT (WINAPI* LPFNSHParseDisplayName)(LPCWSTR pszName, IBindCtx *pbc, PIDLIST_ABSOLUTE *ppidl, SFGAOF sfgaoIn, SFGAOF *psfgaoOut);
-typedef HRESULT (WINAPI* LPFNSHGetImageList)(__in int iImageList, __in REFIID riid, __deref_out void **ppvObj);
-
+typedef HRESULT (WINAPI* LPFNSHGetImageList)(int iImageList, REFIID riid, void **ppvObj);
+typedef HRESULT (WINAPI* LPFNSetWindowTheme)(HWND hwnd, LPCWSTR pszSubAppName, LPCWSTR pszSubIdList);
 //XP SP1 or higher.
 typedef BOOL (WINAPI* LPFNSetDllDirectoryW)(__in_opt LPCWSTR lpPathName);
 
 //XP SP2 or higher.
-#ifndef _WIN64
 typedef BOOL (WINAPI* LPFNIsWow64Process)(HANDLE hProcess, PBOOL Wow64Process);
-#endif
 
 //XP SP2 or higher with Windows Desktop Search.
 typedef HRESULT (STDAPICALLTYPE* LPFNPSPropertyKeyFromString)(__in LPCWSTR pszString,  __out PROPERTYKEY *pkey);
@@ -126,7 +124,8 @@ typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
 #define TE_OnArrange			27
 #define TE_OnHitTest			28
 #define TE_OnTranslatePath		29
-#define Count_OnFunc			30
+#define TE_OnNavigateComplete	30
+#define Count_OnFunc			31
 
 #define SB_OnIncludeObject		0
 
@@ -684,7 +683,6 @@ public:
 	VOID SetActive();
 public:
 	BOOL		m_bEmpty, m_bInit;
-	BOOL		m_bNoRowSelect;
 	BOOL		m_bVisible;
 	DWORD		m_nOpenedType;
 	HWND		m_hwnd;

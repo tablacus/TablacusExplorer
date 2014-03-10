@@ -20,9 +20,7 @@ CteTabs *g_pTabs = NULL;
 CteTabs *g_pTC[MAX_TC];
 int g_x = MAXINT;
 HINSTANCE	g_hShell32 = NULL;
-HINSTANCE	g_hKernel32 = NULL;
 HINSTANCE	g_hCrypt32 = NULL;
-HINSTANCE	g_hPropsys = NULL;
 BOOL		g_bDialogOk = FALSE;
 HWND		g_hDialog = NULL;
 
@@ -30,6 +28,7 @@ LPFNSHCreateItemFromIDList lpfnSHCreateItemFromIDList = NULL;
 LPFNSetDllDirectoryW lpfnSetDllDirectoryW = NULL;
 LPFNSHParseDisplayName lpfnSHParseDisplayName = NULL;
 LPFNSHGetImageList lpfnSHGetImageList = NULL;
+LPFNSetWindowTheme lpfnSetWindowTheme = NULL;
 LPFNSHRunDialog lpfnSHRunDialog = NULL;
 LPFNCryptBinaryToStringW lpfnCryptBinaryToStringW = NULL;
 LPFNPSPropertyKeyFromString lpfnPSPropertyKeyFromString = NULL;
@@ -97,8 +96,8 @@ BOOL	g_nReload = 0;
 BSTR	g_bsCmdLine = NULL;
 int		*g_maps[MAP_LENGTH];
 
-#ifndef _WIN64
 LPFNIsWow64Process lpfnIsWow64Process = NULL;
+#ifndef _WIN64
 LPITEMIDLIST g_pidlCP = NULL;
 #endif
 
@@ -114,121 +113,121 @@ TEmethod tesNULL[] =
 
 TEmethod tesBITMAP[] =
 {
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((BITMAP *)NULL)->bmType, L"bmType" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((BITMAP *)NULL)->bmWidth, L"bmWidth" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((BITMAP *)NULL)->bmHeight, L"bmHeight" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((BITMAP *)NULL)->bmWidthBytes, L"bmWidthBytes" },
-	{ (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&((BITMAP *)NULL)->bmPlanes, L"bmPlanes" },
-	{ (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&((BITMAP *)NULL)->bmBitsPixel, L"bmBitsPixel" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((BITMAP *)NULL)->bmBits, L"bmBits" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((BITMAP *)0)->bmType, L"bmType" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((BITMAP *)0)->bmWidth, L"bmWidth" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((BITMAP *)0)->bmHeight, L"bmHeight" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((BITMAP *)0)->bmWidthBytes, L"bmWidthBytes" },
+	{ (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&((BITMAP *)0)->bmPlanes, L"bmPlanes" },
+	{ (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&((BITMAP *)0)->bmBitsPixel, L"bmBitsPixel" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((BITMAP *)0)->bmBits, L"bmBits" },
 	{ 0, NULL }
 };
 
 TEmethod tesCHOOSECOLOR[] =
 {
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSECOLOR *)NULL)->lStructSize, L"lStructSize" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSECOLOR *)NULL)->hwndOwner, L"hwndOwner" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSECOLOR *)NULL)->hInstance, L"hInstance" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSECOLOR *)NULL)->rgbResult, L"rgbResult" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSECOLOR *)NULL)->lpCustColors, L"lpCustColors" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSECOLOR *)NULL)->Flags, L"Flags" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSECOLOR *)NULL)->lCustData, L"lCustData" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSECOLOR *)NULL)->lpfnHook, L"lpfnHook" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSECOLOR *)NULL)->lpTemplateName, L"lpTemplateName" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSECOLOR *)0)->lStructSize, L"lStructSize" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSECOLOR *)0)->hwndOwner, L"hwndOwner" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSECOLOR *)0)->hInstance, L"hInstance" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSECOLOR *)0)->rgbResult, L"rgbResult" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSECOLOR *)0)->lpCustColors, L"lpCustColors" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSECOLOR *)0)->Flags, L"Flags" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSECOLOR *)0)->lCustData, L"lCustData" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSECOLOR *)0)->lpfnHook, L"lpfnHook" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSECOLOR *)0)->lpTemplateName, L"lpTemplateName" },
 	{ 0, NULL }
 };
 
 TEmethod tesCHOOSEFONT[] =
 {
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)NULL)->lStructSize, L"lStructSize" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)NULL)->hwndOwner, L"hwndOwner" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)NULL)->hDC, L"hDC" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)NULL)->lpLogFont, L"lpLogFont" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)NULL)->iPointSize, L"iPointSize" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)NULL)->Flags, L"Flags" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)NULL)->rgbColors, L"rgbColors" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)NULL)->lCustData, L"lCustData" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)NULL)->lpfnHook, L"lpfnHook" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)NULL)->lpTemplateName, L"lpTemplateName" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)NULL)->hInstance, L"hInstance" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)NULL)->lpszStyle, L"lpszStyle" },
-	{ (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)NULL)->nFontType, L"nFontType" },
-	{ (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)NULL)->___MISSING_ALIGNMENT__, L"___MISSING_ALIGNMENT__" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)NULL)->nSizeMin, L"nSizeMin" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)NULL)->nSizeMax, L"nSizeMax" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)0)->lStructSize, L"lStructSize" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)0)->hwndOwner, L"hwndOwner" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)0)->hDC, L"hDC" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)0)->lpLogFont, L"lpLogFont" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)0)->iPointSize, L"iPointSize" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)0)->Flags, L"Flags" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)0)->rgbColors, L"rgbColors" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)0)->lCustData, L"lCustData" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)0)->lpfnHook, L"lpfnHook" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)0)->lpTemplateName, L"lpTemplateName" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)0)->hInstance, L"hInstance" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)0)->lpszStyle, L"lpszStyle" },
+	{ (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)0)->nFontType, L"nFontType" },
+	{ (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)0)->___MISSING_ALIGNMENT__, L"___MISSING_ALIGNMENT__" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)0)->nSizeMin, L"nSizeMin" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((CHOOSEFONT *)0)->nSizeMax, L"nSizeMax" },
 	{ 0, NULL }
 };
 
 TEmethod tesCOPYDATASTRUCT[] =
 {
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((COPYDATASTRUCT *)NULL)->dwData, L"dwData" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((COPYDATASTRUCT *)NULL)->cbData, L"cbData" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((COPYDATASTRUCT *)NULL)->lpData, L"lpData" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((COPYDATASTRUCT *)0)->dwData, L"dwData" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((COPYDATASTRUCT *)0)->cbData, L"cbData" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((COPYDATASTRUCT *)0)->lpData, L"lpData" },
 	{ 0, NULL }
 };
 
 TEmethod tesDIBSECTION[] =
 {
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((DIBSECTION *)NULL)->dsBm, L"dsBm" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((DIBSECTION *)NULL)->dsBmih, L"dsBmih" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((DIBSECTION *)NULL)->dsBitfields[0], L"dsBitfields0" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((DIBSECTION *)NULL)->dsBitfields[1], L"dsBitfields1" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((DIBSECTION *)NULL)->dsBitfields[2], L"dsBitfields2" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((DIBSECTION *)NULL)->dshSection, L"dshSection" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((DIBSECTION *)NULL)->dsOffset, L"dsOffset" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((DIBSECTION *)0)->dsBm, L"dsBm" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((DIBSECTION *)0)->dsBmih, L"dsBmih" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((DIBSECTION *)0)->dsBitfields[0], L"dsBitfields0" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((DIBSECTION *)0)->dsBitfields[1], L"dsBitfields1" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((DIBSECTION *)0)->dsBitfields[2], L"dsBitfields2" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((DIBSECTION *)0)->dshSection, L"dshSection" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((DIBSECTION *)0)->dsOffset, L"dsOffset" },
 	{ 0, NULL }
 };
 
 TEmethod tesEncoderParameter[] =
 {
-	{ (VT_CLSID << TE_VT) + (DWORD)(UINT_PTR)&((EncoderParameter *)NULL)->Guid, L"Guid" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((EncoderParameter *)NULL)->NumberOfValues, L"NumberOfValues" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((EncoderParameter *)NULL)->Type, L"Type" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((EncoderParameter *)NULL)->Value, L"Value" },
+	{ (VT_CLSID << TE_VT) + (DWORD)(UINT_PTR)&((EncoderParameter *)0)->Guid, L"Guid" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((EncoderParameter *)0)->NumberOfValues, L"NumberOfValues" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((EncoderParameter *)0)->Type, L"Type" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((EncoderParameter *)0)->Value, L"Value" },
 	{ 0, NULL }
 };
 
 TEmethod tesEncoderParameters[] =
 {
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((EncoderParameters *)NULL)->Count, L"Count" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((EncoderParameters *)0)->Count, L"Count" },
 	{ DISPID_TE_ITEM, L"Parameter" },
 	{ 0, NULL }
 };
 
 TEmethod tesEXCEPINFO[] =
 {
-	{ (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&((EXCEPINFO *)NULL)->wCode, L"wCode" },
-	{ (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&((EXCEPINFO *)NULL)->wReserved, L"wReserved" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((EXCEPINFO *)NULL)->bstrSource, L"bstrSource" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((EXCEPINFO *)NULL)->bstrDescription, L"bstrDescription" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((EXCEPINFO *)NULL)->bstrHelpFile, L"bstrHelpFile" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((EXCEPINFO *)NULL)->dwHelpContext, L"dwHelpContext" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((EXCEPINFO *)NULL)->pvReserved, L"pvReserved" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((EXCEPINFO *)NULL)->pfnDeferredFillIn, L"pfnDeferredFillIn" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((EXCEPINFO *)NULL)->scode, L"scode" },
+	{ (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&((EXCEPINFO *)0)->wCode, L"wCode" },
+	{ (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&((EXCEPINFO *)0)->wReserved, L"wReserved" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((EXCEPINFO *)0)->bstrSource, L"bstrSource" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((EXCEPINFO *)0)->bstrDescription, L"bstrDescription" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((EXCEPINFO *)0)->bstrHelpFile, L"bstrHelpFile" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((EXCEPINFO *)0)->dwHelpContext, L"dwHelpContext" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((EXCEPINFO *)0)->pvReserved, L"pvReserved" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((EXCEPINFO *)0)->pfnDeferredFillIn, L"pfnDeferredFillIn" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((EXCEPINFO *)0)->scode, L"scode" },
 	{ 0, NULL }
 };
 
 TEmethod tesFINDREPLACE[] =
 {
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((FINDREPLACE *)NULL)->lStructSize, L"lStructSize" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((FINDREPLACE *)NULL)->hwndOwner, L"hwndOwner" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((FINDREPLACE *)NULL)->hInstance, L"hInstance" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((FINDREPLACE *)NULL)->Flags, L"Flags" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((FINDREPLACE *)NULL)->lpstrFindWhat, L"lpstrFindWhat" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((FINDREPLACE *)NULL)->lpstrReplaceWith, L"lpstrReplaceWith" },
-	{ (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&((FINDREPLACE *)NULL)->wFindWhatLen, L"wFindWhatLen" },
-	{ (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&((FINDREPLACE *)NULL)->wReplaceWithLen, L"wReplaceWithLen" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((FINDREPLACE *)NULL)->lCustData, L"lCustData" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((FINDREPLACE *)NULL)->lpfnHook, L"lpfnHook" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((FINDREPLACE *)NULL)->lpTemplateName, L"lpTemplateName" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((FINDREPLACE *)0)->lStructSize, L"lStructSize" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((FINDREPLACE *)0)->hwndOwner, L"hwndOwner" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((FINDREPLACE *)0)->hInstance, L"hInstance" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((FINDREPLACE *)0)->Flags, L"Flags" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((FINDREPLACE *)0)->lpstrFindWhat, L"lpstrFindWhat" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((FINDREPLACE *)0)->lpstrReplaceWith, L"lpstrReplaceWith" },
+	{ (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&((FINDREPLACE *)0)->wFindWhatLen, L"wFindWhatLen" },
+	{ (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&((FINDREPLACE *)0)->wReplaceWithLen, L"wReplaceWithLen" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((FINDREPLACE *)0)->lCustData, L"lCustData" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((FINDREPLACE *)0)->lpfnHook, L"lpfnHook" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((FINDREPLACE *)0)->lpTemplateName, L"lpTemplateName" },
 	{ 0, NULL }
 };
 
 TEmethod tesFOLDERSETTINGS[] =
 {
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((FOLDERSETTINGS *)NULL)->ViewMode, L"ViewMode" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((FOLDERSETTINGS *)NULL)->fFlags, L"fFlags" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((FOLDERSETTINGS *)0)->ViewMode, L"ViewMode" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((FOLDERSETTINGS *)0)->fFlags, L"fFlags" },
 	{ (VT_I4 << TE_VT) + (SB_Options - 1) * 4, L"Options" },
 	{ (VT_I4 << TE_VT) + (SB_ViewFlags - 1) * 4, L"ViewFlags" },
 	{ (VT_I4 << TE_VT) + (SB_IconSize - 1) * 4, L"ImageSize" },
@@ -237,372 +236,372 @@ TEmethod tesFOLDERSETTINGS[] =
 
 TEmethod tesICONINFO[] =
 {
-	{ (VT_BOOL << TE_VT) + (DWORD)(UINT_PTR)&((ICONINFO *)NULL)->fIcon, L"fIcon" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((ICONINFO *)NULL)->xHotspot, L"xHotspot" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((ICONINFO *)NULL)->yHotspot, L"yHotspot" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((ICONINFO *)NULL)->hbmMask, L"hbmMask" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((ICONINFO *)NULL)->hbmColor, L"hbmColor" },
+	{ (VT_BOOL << TE_VT) + (DWORD)(UINT_PTR)&((ICONINFO *)0)->fIcon, L"fIcon" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((ICONINFO *)0)->xHotspot, L"xHotspot" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((ICONINFO *)0)->yHotspot, L"yHotspot" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((ICONINFO *)0)->hbmMask, L"hbmMask" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((ICONINFO *)0)->hbmColor, L"hbmColor" },
 	{ 0, NULL }
 };
 
 TEmethod tesICONMETRICS[] =
 {
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((ICONMETRICS *)NULL)->iHorzSpacing, L"iHorzSpacing" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((ICONMETRICS *)NULL)->iVertSpacing, L"iVertSpacing" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((ICONMETRICS *)NULL)->iTitleWrap, L"iTitleWrap" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((ICONMETRICS *)NULL)->lfFont, L"lfFont" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((ICONMETRICS *)0)->iHorzSpacing, L"iHorzSpacing" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((ICONMETRICS *)0)->iVertSpacing, L"iVertSpacing" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((ICONMETRICS *)0)->iTitleWrap, L"iTitleWrap" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((ICONMETRICS *)0)->lfFont, L"lfFont" },
 	{ 0, NULL }
 };
 
 TEmethod tesKEYBDINPUT[] =
 {
 	{ (VT_I4 << TE_VT), L"type" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((KEYBDINPUT *)NULL)->wVk, L"wVk" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((KEYBDINPUT *)NULL)->wScan, L"wScan" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((KEYBDINPUT *)NULL)->dwFlags, L"dwFlags" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((KEYBDINPUT *)NULL)->time, L"time" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((KEYBDINPUT *)NULL)->dwExtraInfo, L"dwExtraInfo" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((KEYBDINPUT *)0)->wVk, L"wVk" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((KEYBDINPUT *)0)->wScan, L"wScan" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((KEYBDINPUT *)0)->dwFlags, L"dwFlags" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((KEYBDINPUT *)0)->time, L"time" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((KEYBDINPUT *)0)->dwExtraInfo, L"dwExtraInfo" },
 	{ 0, NULL }
 };
 
 TEmethod tesLOGFONT[] =
 {
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)NULL)->lfHeight, L"lfHeight" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)NULL)->lfWidth, L"lfWidth" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)NULL)->lfEscapement, L"lfEscapement" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)NULL)->lfOrientation, L"lfOrientation" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)NULL)->lfWeight, L"lfWeight" },
-	{ (VT_UI1 << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)NULL)->lfItalic, L"lfItalic" },
-	{ (VT_UI1 << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)NULL)->lfUnderline, L"lfUnderline" },
-	{ (VT_UI1 << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)NULL)->lfStrikeOut, L"lfStrikeOut" },
-	{ (VT_UI1 << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)NULL)->lfCharSet, L"lfCharSet" },
-	{ (VT_UI1 << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)NULL)->lfOutPrecision, L"lfOutPrecision" },
-	{ (VT_UI1 << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)NULL)->lfClipPrecision, L"lfClipPrecision" },
-	{ (VT_UI1 << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)NULL)->lfQuality, L"lfQuality" },
-	{ (VT_UI1 << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)NULL)->lfPitchAndFamily, L"lfPitchAndFamily" },
-	{ (VT_LPWSTR << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)NULL)->lfFaceName, L"lfFaceName" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)0)->lfHeight, L"lfHeight" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)0)->lfWidth, L"lfWidth" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)0)->lfEscapement, L"lfEscapement" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)0)->lfOrientation, L"lfOrientation" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)0)->lfWeight, L"lfWeight" },
+	{ (VT_UI1 << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)0)->lfItalic, L"lfItalic" },
+	{ (VT_UI1 << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)0)->lfUnderline, L"lfUnderline" },
+	{ (VT_UI1 << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)0)->lfStrikeOut, L"lfStrikeOut" },
+	{ (VT_UI1 << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)0)->lfCharSet, L"lfCharSet" },
+	{ (VT_UI1 << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)0)->lfOutPrecision, L"lfOutPrecision" },
+	{ (VT_UI1 << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)0)->lfClipPrecision, L"lfClipPrecision" },
+	{ (VT_UI1 << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)0)->lfQuality, L"lfQuality" },
+	{ (VT_UI1 << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)0)->lfPitchAndFamily, L"lfPitchAndFamily" },
+	{ (VT_LPWSTR << TE_VT) + (DWORD)(UINT_PTR)&((LOGFONT *)0)->lfFaceName, L"lfFaceName" },
 	{ 0, NULL }
 };
 
 TEmethod tesLVBKIMAGE[] =
 {
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVBKIMAGE *)NULL)->ulFlags, L"ulFlags" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((LVBKIMAGE *)NULL)->hbm, L"hbm" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((LVBKIMAGE *)NULL)->pszImage, L"pszImage" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVBKIMAGE *)NULL)->cchImageMax, L"cchImageMax" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVBKIMAGE *)NULL)->xOffsetPercent, L"xOffsetPercent" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVBKIMAGE *)NULL)->yOffsetPercent, L"yOffsetPercent" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVBKIMAGE *)0)->ulFlags, L"ulFlags" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((LVBKIMAGE *)0)->hbm, L"hbm" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((LVBKIMAGE *)0)->pszImage, L"pszImage" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVBKIMAGE *)0)->cchImageMax, L"cchImageMax" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVBKIMAGE *)0)->xOffsetPercent, L"xOffsetPercent" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVBKIMAGE *)0)->yOffsetPercent, L"yOffsetPercent" },
 	{ 0, NULL }
 };
 
 TEmethod tesLVFINDINFO[] =
 {
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVFINDINFO *)NULL)->flags, L"flags" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((LVFINDINFO *)NULL)->psz, L"psz" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVFINDINFO *)NULL)->lParam, L"lParam" },
-	{ (VT_CY << TE_VT) + (DWORD)(UINT_PTR)&((LVFINDINFO *)NULL)->pt, L"pt" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVFINDINFO *)NULL)->vkDirection, L"vkDirection" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVFINDINFO *)0)->flags, L"flags" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((LVFINDINFO *)0)->psz, L"psz" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVFINDINFO *)0)->lParam, L"lParam" },
+	{ (VT_CY << TE_VT) + (DWORD)(UINT_PTR)&((LVFINDINFO *)0)->pt, L"pt" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVFINDINFO *)0)->vkDirection, L"vkDirection" },
 	{ 0, NULL }
 };
 
 TEmethod tesLVGROUP[] =
 {
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)NULL)->cbSize, L"cbSize" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)NULL)->mask, L"mask" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)NULL)->pszHeader, L"pszHeader" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)NULL)->cchHeader, L"cchHeader" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)NULL)->pszFooter, L"pszFooter" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)NULL)->cchFooter, L"cchFooter" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)NULL)->iGroupId, L"iGroupId" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)NULL)->stateMask, L"stateMask" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)NULL)->state, L"state" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)NULL)->uAlign, L"uAlign" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)NULL)->pszSubtitle, L"pszSubtitle" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)NULL)->cchSubtitle, L"cchSubtitle" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)NULL)->pszTask, L"pszTask" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)NULL)->cchTask, L"cchTask" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)NULL)->pszDescriptionTop, L"pszDescriptionTop" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)NULL)->cchDescriptionTop, L"cchDescriptionTop" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)NULL)->pszDescriptionBottom, L"pszDescriptionBottom" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)NULL)->cchDescriptionBottom, L"cchDescriptionBottom" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)NULL)->iTitleImage, L"iTitleImage" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)NULL)->iExtendedImage, L"iExtendedImage" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)NULL)->iFirstItem, L"iFirstItem" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)NULL)->cItems, L"cItems" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)NULL)->pszSubsetTitle, L"pszSubsetTitle" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)NULL)->cchSubsetTitle, L"cchSubsetTitle" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)0)->cbSize, L"cbSize" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)0)->mask, L"mask" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)0)->pszHeader, L"pszHeader" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)0)->cchHeader, L"cchHeader" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)0)->pszFooter, L"pszFooter" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)0)->cchFooter, L"cchFooter" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)0)->iGroupId, L"iGroupId" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)0)->stateMask, L"stateMask" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)0)->state, L"state" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)0)->uAlign, L"uAlign" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)0)->pszSubtitle, L"pszSubtitle" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)0)->cchSubtitle, L"cchSubtitle" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)0)->pszTask, L"pszTask" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)0)->cchTask, L"cchTask" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)0)->pszDescriptionTop, L"pszDescriptionTop" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)0)->cchDescriptionTop, L"cchDescriptionTop" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)0)->pszDescriptionBottom, L"pszDescriptionBottom" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)0)->cchDescriptionBottom, L"cchDescriptionBottom" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)0)->iTitleImage, L"iTitleImage" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)0)->iExtendedImage, L"iExtendedImage" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)0)->iFirstItem, L"iFirstItem" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)0)->cItems, L"cItems" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)0)->pszSubsetTitle, L"pszSubsetTitle" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVGROUP *)0)->cchSubsetTitle, L"cchSubsetTitle" },
 	{ 0, NULL }
 };
 
 TEmethod tesLVHITTESTINFO[] =
 {
-	{ (VT_CY << TE_VT) + (DWORD)(UINT_PTR)&((LVHITTESTINFO *)NULL)->pt, L"pt" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVHITTESTINFO *)NULL)->flags, L"flags" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVHITTESTINFO *)NULL)->iItem, L"iItem" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVHITTESTINFO *)NULL)->iSubItem , L"iSubItem" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVHITTESTINFO *)NULL)->iGroup, L"iGroup" },
+	{ (VT_CY << TE_VT) + (DWORD)(UINT_PTR)&((LVHITTESTINFO *)0)->pt, L"pt" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVHITTESTINFO *)0)->flags, L"flags" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVHITTESTINFO *)0)->iItem, L"iItem" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVHITTESTINFO *)0)->iSubItem , L"iSubItem" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVHITTESTINFO *)0)->iGroup, L"iGroup" },
 	{ 0, NULL }
 };
 
 TEmethod tesLVITEM[] =
 {
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)NULL)->mask, L"mask" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)NULL)->iItem, L"iItem" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)NULL)->iSubItem, L"iSubItem" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)NULL)->state, L"state" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)NULL)->stateMask, L"stateMask" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)NULL)->pszText, L"pszText" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)NULL)->cchTextMax, L"cchTextMax" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)NULL)->iImage, L"iImage" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)NULL)->lParam, L"lParam" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)NULL)->iIndent, L"iIndent" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)NULL)->iGroupId, L"iGroupId" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)NULL)->cColumns, L"cColumns" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)NULL)->puColumns, L"puColumns" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)NULL)->piColFmt, L"piColFmt" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)NULL)->iGroup, L"iGroup" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)0)->mask, L"mask" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)0)->iItem, L"iItem" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)0)->iSubItem, L"iSubItem" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)0)->state, L"state" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)0)->stateMask, L"stateMask" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)0)->pszText, L"pszText" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)0)->cchTextMax, L"cchTextMax" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)0)->iImage, L"iImage" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)0)->lParam, L"lParam" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)0)->iIndent, L"iIndent" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)0)->iGroupId, L"iGroupId" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)0)->cColumns, L"cColumns" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)0)->puColumns, L"puColumns" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)0)->piColFmt, L"piColFmt" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((LVITEM *)0)->iGroup, L"iGroup" },
 	{ 0, NULL }
 };
 
 TEmethod tesMENUITEMINFO[] =
 {
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((MENUITEMINFO *)NULL)->cbSize, L"cbSize" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((MENUITEMINFO *)NULL)->fMask, L"fMask" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((MENUITEMINFO *)NULL)->fType, L"fType" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((MENUITEMINFO *)NULL)->fState, L"fState" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((MENUITEMINFO *)NULL)->wID, L"wID" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((MENUITEMINFO *)NULL)->hSubMenu, L"hSubMenu" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((MENUITEMINFO *)NULL)->hbmpChecked, L"hbmpChecked" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((MENUITEMINFO *)NULL)->hbmpUnchecked, L"hbmpUnchecked" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((MENUITEMINFO *)NULL)->dwItemData, L"dwItemData" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((MENUITEMINFO *)NULL)->dwTypeData, L"dwTypeData" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((MENUITEMINFO *)NULL)->cch, L"cch" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((MENUITEMINFO *)NULL)->hbmpItem, L"hbmpItem" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((MENUITEMINFO *)0)->cbSize, L"cbSize" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((MENUITEMINFO *)0)->fMask, L"fMask" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((MENUITEMINFO *)0)->fType, L"fType" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((MENUITEMINFO *)0)->fState, L"fState" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((MENUITEMINFO *)0)->wID, L"wID" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((MENUITEMINFO *)0)->hSubMenu, L"hSubMenu" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((MENUITEMINFO *)0)->hbmpChecked, L"hbmpChecked" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((MENUITEMINFO *)0)->hbmpUnchecked, L"hbmpUnchecked" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((MENUITEMINFO *)0)->dwItemData, L"dwItemData" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((MENUITEMINFO *)0)->dwTypeData, L"dwTypeData" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((MENUITEMINFO *)0)->cch, L"cch" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((MENUITEMINFO *)0)->hbmpItem, L"hbmpItem" },
 	{ 0, NULL }
 };
 
 TEmethod tesMOUSEINPUT[] =
 {
 	{ (VT_I4 << TE_VT), L"type" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((MOUSEINPUT *)NULL)->dx, L"dx" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((MOUSEINPUT *)NULL)->dy, L"dy" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((MOUSEINPUT *)NULL)->mouseData, L"mouseData" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((MOUSEINPUT *)NULL)->dwFlags, L"dwFlags" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((MOUSEINPUT *)NULL)->time, L"time" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((MOUSEINPUT *)NULL)->dwExtraInfo, L"dwExtraInfo" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((MOUSEINPUT *)0)->dx, L"dx" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((MOUSEINPUT *)0)->dy, L"dy" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((MOUSEINPUT *)0)->mouseData, L"mouseData" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((MOUSEINPUT *)0)->dwFlags, L"dwFlags" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((MOUSEINPUT *)0)->time, L"time" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((MOUSEINPUT *)0)->dwExtraInfo, L"dwExtraInfo" },
 	{ 0, NULL }
 };
 
 TEmethod tesMSG[] =
 {
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((MSG *)NULL)->hwnd, L"hwnd" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((MSG *)NULL)->message, L"message" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((MSG *)NULL)->wParam, L"wParam" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((MSG *)NULL)->lParam, L"lParam" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((MSG *)NULL)->time, L"time" },
-	{ (VT_CY << TE_VT) + (DWORD)(UINT_PTR)&((MSG *)NULL)->pt, L"pt" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((MSG *)0)->hwnd, L"hwnd" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((MSG *)0)->message, L"message" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((MSG *)0)->wParam, L"wParam" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((MSG *)0)->lParam, L"lParam" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((MSG *)0)->time, L"time" },
+	{ (VT_CY << TE_VT) + (DWORD)(UINT_PTR)&((MSG *)0)->pt, L"pt" },
 	{ 0, NULL }
 };
 
 TEmethod tesNONCLIENTMETRICS[] =
 {
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)NULL)->cbSize, L"cbSize" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)NULL)->iBorderWidth, L"iBorderWidth" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)NULL)->iScrollWidth, L"iScrollWidth" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)NULL)->iScrollHeight, L"iScrollHeight" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)NULL)->iCaptionWidth, L"iCaptionWidth" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)NULL)->iCaptionHeight, L"iCaptionHeight" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)NULL)->lfCaptionFont, L"lfCaptionFont" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)NULL)->iSmCaptionWidth, L"iSmCaptionWidth" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)NULL)->iSmCaptionHeight, L"iSmCaptionHeight" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)NULL)->lfSmCaptionFont, L"lfSmCaptionFont" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)NULL)->iMenuWidth, L"iMenuWidth" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)NULL)->iMenuHeight, L"iMenuHeight" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)NULL)->lfMenuFont, L"lfMenuFont" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)NULL)->lfStatusFont, L"lfStatusFont" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)NULL)->lfMessageFont, L"lfMessageFont" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)NULL)->iPaddedBorderWidth, L"iPaddedBorderWidth" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)0)->cbSize, L"cbSize" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)0)->iBorderWidth, L"iBorderWidth" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)0)->iScrollWidth, L"iScrollWidth" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)0)->iScrollHeight, L"iScrollHeight" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)0)->iCaptionWidth, L"iCaptionWidth" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)0)->iCaptionHeight, L"iCaptionHeight" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)0)->lfCaptionFont, L"lfCaptionFont" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)0)->iSmCaptionWidth, L"iSmCaptionWidth" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)0)->iSmCaptionHeight, L"iSmCaptionHeight" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)0)->lfSmCaptionFont, L"lfSmCaptionFont" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)0)->iMenuWidth, L"iMenuWidth" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)0)->iMenuHeight, L"iMenuHeight" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)0)->lfMenuFont, L"lfMenuFont" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)0)->lfStatusFont, L"lfStatusFont" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)0)->lfMessageFont, L"lfMessageFont" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NONCLIENTMETRICS *)0)->iPaddedBorderWidth, L"iPaddedBorderWidth" },
 	{ 0, NULL }
 };
 
 TEmethod tesNOTIFYICONDATA[] =
 {
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)NULL)->cbSize, L"cbSize" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)NULL)->hWnd, L"hWnd" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)NULL)->uID, L"uID" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)NULL)->uFlags, L"uFlags" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)NULL)->uCallbackMessage, L"uCallbackMessage" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)NULL)->hIcon, L"hIcon" },
-	{ (VT_LPWSTR << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)NULL)->szTip, L"szTip" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)NULL)->dwState, L"dwState" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)NULL)->dwState, L"dwState" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)NULL)->dwStateMask, L"dwStateMask" },
-	{ (VT_LPWSTR << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)NULL)->szInfo, L"szInfo" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)NULL)->uTimeout, L"uTimeout" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)NULL)->uVersion, L"uVersion" },
-	{ (VT_LPWSTR << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)NULL)->szInfoTitle, L"szInfoTitle" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)NULL)->dwInfoFlags, L"dwInfoFlags" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)NULL)->guidItem, L"guidItem" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)NULL)->hBalloonIcon, L"hBalloonIcon" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)0)->cbSize, L"cbSize" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)0)->hWnd, L"hWnd" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)0)->uID, L"uID" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)0)->uFlags, L"uFlags" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)0)->uCallbackMessage, L"uCallbackMessage" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)0)->hIcon, L"hIcon" },
+	{ (VT_LPWSTR << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)0)->szTip, L"szTip" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)0)->dwState, L"dwState" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)0)->dwState, L"dwState" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)0)->dwStateMask, L"dwStateMask" },
+	{ (VT_LPWSTR << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)0)->szInfo, L"szInfo" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)0)->uTimeout, L"uTimeout" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)0)->uVersion, L"uVersion" },
+	{ (VT_LPWSTR << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)0)->szInfoTitle, L"szInfoTitle" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)0)->dwInfoFlags, L"dwInfoFlags" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)0)->guidItem, L"guidItem" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((NOTIFYICONDATA *)0)->hBalloonIcon, L"hBalloonIcon" },
 	{ 0, NULL }
 };
 
 TEmethod tesNMHDR[] =
 {
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((NMHDR *)NULL)->hwndFrom, L"hwndFrom" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NMHDR *)NULL)->idFrom, L"idFrom" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NMHDR *)NULL)->code, L"code" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((NMHDR *)0)->hwndFrom, L"hwndFrom" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NMHDR *)0)->idFrom, L"idFrom" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((NMHDR *)0)->code, L"code" },
 	{ 0, NULL }
 };
 
 TEmethod tesOSVERSIONINFOEX[] =
 {
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((OSVERSIONINFOEX *)NULL)->dwOSVersionInfoSize, L"dwOSVersionInfoSize" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((OSVERSIONINFOEX *)NULL)->dwMajorVersion, L"dwMajorVersion" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((OSVERSIONINFOEX *)NULL)->dwMinorVersion, L"dwMinorVersion" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((OSVERSIONINFOEX *)NULL)->dwBuildNumber, L"dwBuildNumber" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((OSVERSIONINFOEX *)NULL)->dwPlatformId, L"dwPlatformId" },
-	{ (VT_LPWSTR << TE_VT) + (DWORD)(UINT_PTR)&((OSVERSIONINFOEX *)NULL)->szCSDVersion, L"szCSDVersion" },
-	{ (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&((OSVERSIONINFOEX *)NULL)->wServicePackMajor, L"wServicePackMajor" },
-	{ (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&((OSVERSIONINFOEX *)NULL)->wServicePackMinor, L"wServicePackMinor" },
-	{ (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&((OSVERSIONINFOEX *)NULL)->wSuiteMask, L"wSuiteMask" },
-	{ (VT_UI1 << TE_VT) + (DWORD)(UINT_PTR)&((OSVERSIONINFOEX *)NULL)->wProductType, L"wProductType" },
-	{ (VT_UI1 << TE_VT) + (DWORD)(UINT_PTR)&((OSVERSIONINFOEX *)NULL)->wReserved, L"wReserved" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((OSVERSIONINFOEX *)0)->dwOSVersionInfoSize, L"dwOSVersionInfoSize" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((OSVERSIONINFOEX *)0)->dwMajorVersion, L"dwMajorVersion" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((OSVERSIONINFOEX *)0)->dwMinorVersion, L"dwMinorVersion" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((OSVERSIONINFOEX *)0)->dwBuildNumber, L"dwBuildNumber" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((OSVERSIONINFOEX *)0)->dwPlatformId, L"dwPlatformId" },
+	{ (VT_LPWSTR << TE_VT) + (DWORD)(UINT_PTR)&((OSVERSIONINFOEX *)0)->szCSDVersion, L"szCSDVersion" },
+	{ (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&((OSVERSIONINFOEX *)0)->wServicePackMajor, L"wServicePackMajor" },
+	{ (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&((OSVERSIONINFOEX *)0)->wServicePackMinor, L"wServicePackMinor" },
+	{ (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&((OSVERSIONINFOEX *)0)->wSuiteMask, L"wSuiteMask" },
+	{ (VT_UI1 << TE_VT) + (DWORD)(UINT_PTR)&((OSVERSIONINFOEX *)0)->wProductType, L"wProductType" },
+	{ (VT_UI1 << TE_VT) + (DWORD)(UINT_PTR)&((OSVERSIONINFOEX *)0)->wReserved, L"wReserved" },
 	{ 0, NULL }
 };
 
 TEmethod tesPAINTSTRUCT[] =
 {
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((PAINTSTRUCT *)NULL)->hdc, L"hdc" },
-	{ (VT_BOOL << TE_VT) + (DWORD)(UINT_PTR)&((PAINTSTRUCT *)NULL)->fErase, L"fErase" },
-	{ (VT_CARRAY << TE_VT) + (DWORD)(UINT_PTR)&((PAINTSTRUCT *)NULL)->rcPaint, L"rcPaint" },
-	{ (VT_BOOL << TE_VT) + (DWORD)(UINT_PTR)&((PAINTSTRUCT *)NULL)->fRestore, L"fRestore" },
-	{ (VT_BOOL << TE_VT) + (DWORD)(UINT_PTR)&((PAINTSTRUCT *)NULL)->fIncUpdate, L"fIncUpdate" },
-	{ (VT_UI1 << TE_VT) + (DWORD)(UINT_PTR)&((PAINTSTRUCT *)NULL)->rgbReserved, L"rgbReserved" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((PAINTSTRUCT *)0)->hdc, L"hdc" },
+	{ (VT_BOOL << TE_VT) + (DWORD)(UINT_PTR)&((PAINTSTRUCT *)0)->fErase, L"fErase" },
+	{ (VT_CARRAY << TE_VT) + (DWORD)(UINT_PTR)&((PAINTSTRUCT *)0)->rcPaint, L"rcPaint" },
+	{ (VT_BOOL << TE_VT) + (DWORD)(UINT_PTR)&((PAINTSTRUCT *)0)->fRestore, L"fRestore" },
+	{ (VT_BOOL << TE_VT) + (DWORD)(UINT_PTR)&((PAINTSTRUCT *)0)->fIncUpdate, L"fIncUpdate" },
+	{ (VT_UI1 << TE_VT) + (DWORD)(UINT_PTR)&((PAINTSTRUCT *)0)->rgbReserved, L"rgbReserved" },
 	{ 0, NULL }
 };
 
 TEmethod tesPOINT[] =
 {
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((POINT *)NULL)->x, L"x" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((POINT *)NULL)->y, L"y" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((POINT *)0)->x, L"x" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((POINT *)0)->y, L"y" },
 	{ 0, NULL }
 };
 
 TEmethod tesRECT[] =
 {
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((RECT *)NULL)->left, L"left" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((RECT *)NULL)->top, L"top" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((RECT *)NULL)->right, L"right" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((RECT *)NULL)->bottom, L"bottom" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((RECT *)0)->left, L"left" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((RECT *)0)->top, L"top" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((RECT *)0)->right, L"right" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((RECT *)0)->bottom, L"bottom" },
 	{ 0, NULL }
 };
 
 TEmethod tesSHELLEXECUTEINFO[] =
 {
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)NULL)->cbSize, L"cbSize" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)NULL)->fMask, L"fMask" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)NULL)->hwnd, L"hwnd" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)NULL)->lpVerb, L"lpVerb" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)NULL)->lpFile, L"lpFile" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)NULL)->lpParameters, L"lpParameters" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)NULL)->lpDirectory, L"lpDirectory" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)NULL)->nShow, L"nShow" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)NULL)->hInstApp, L"hInstApp" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)NULL)->lpIDList, L"lpIDList" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)NULL)->lpClass, L"lpClass" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)NULL)->hkeyClass, L"hkeyClass" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)NULL)->dwHotKey, L"dwHotKey" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)NULL)->hIcon, L"hIcon" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)NULL)->hMonitor, L"hMonitor" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)NULL)->hProcess, L"hProcess" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)0)->cbSize, L"cbSize" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)0)->fMask, L"fMask" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)0)->hwnd, L"hwnd" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)0)->lpVerb, L"lpVerb" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)0)->lpFile, L"lpFile" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)0)->lpParameters, L"lpParameters" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)0)->lpDirectory, L"lpDirectory" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)0)->nShow, L"nShow" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)0)->hInstApp, L"hInstApp" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)0)->lpIDList, L"lpIDList" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)0)->lpClass, L"lpClass" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)0)->hkeyClass, L"hkeyClass" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)0)->dwHotKey, L"dwHotKey" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)0)->hIcon, L"hIcon" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)0)->hMonitor, L"hMonitor" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((SHELLEXECUTEINFO *)0)->hProcess, L"hProcess" },
 	{ 0, NULL }
 };
 
 TEmethod tesSHFILEINFO[] =
 {
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((SHFILEINFO *)NULL)->hIcon, L"hIcon" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((SHFILEINFO *)NULL)->iIcon, L"iIcon" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((SHFILEINFO *)NULL)->dwAttributes, L"dwAttributes" },
-	{ (VT_LPWSTR << TE_VT) + (DWORD)(UINT_PTR)&((SHFILEINFO *)NULL)->szDisplayName, L"szDisplayName" },
-	{ (VT_LPWSTR << TE_VT) + (DWORD)(UINT_PTR)&((SHFILEINFO *)NULL)->szTypeName, L"szTypeName" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((SHFILEINFO *)0)->hIcon, L"hIcon" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((SHFILEINFO *)0)->iIcon, L"iIcon" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((SHFILEINFO *)0)->dwAttributes, L"dwAttributes" },
+	{ (VT_LPWSTR << TE_VT) + (DWORD)(UINT_PTR)&((SHFILEINFO *)0)->szDisplayName, L"szDisplayName" },
+	{ (VT_LPWSTR << TE_VT) + (DWORD)(UINT_PTR)&((SHFILEINFO *)0)->szTypeName, L"szTypeName" },
 	{ 0, NULL }
 };
 
 TEmethod tesSHFILEOPSTRUCT[] =
 {
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((SHFILEOPSTRUCT *)NULL)->hwnd, L"hwnd" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((SHFILEOPSTRUCT *)NULL)->wFunc, L"wFunc" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((SHFILEOPSTRUCT *)NULL)->pFrom, L"pFrom" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((SHFILEOPSTRUCT *)NULL)->pTo, L"pTo" },
-	{ (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&((SHFILEOPSTRUCT *)NULL)->fFlags, L"fFlags" },
-	{ (VT_BOOL << TE_VT) + (DWORD)(UINT_PTR)&((SHFILEOPSTRUCT *)NULL)->fAnyOperationsAborted, L"fAnyOperationsAborted" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((SHFILEOPSTRUCT *)NULL)->hNameMappings, L"hNameMappings" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((SHFILEOPSTRUCT *)NULL)->lpszProgressTitle, L"lpszProgressTitle" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((SHFILEOPSTRUCT *)0)->hwnd, L"hwnd" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((SHFILEOPSTRUCT *)0)->wFunc, L"wFunc" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((SHFILEOPSTRUCT *)0)->pFrom, L"pFrom" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((SHFILEOPSTRUCT *)0)->pTo, L"pTo" },
+	{ (VT_UI2 << TE_VT) + (DWORD)(UINT_PTR)&((SHFILEOPSTRUCT *)0)->fFlags, L"fFlags" },
+	{ (VT_BOOL << TE_VT) + (DWORD)(UINT_PTR)&((SHFILEOPSTRUCT *)0)->fAnyOperationsAborted, L"fAnyOperationsAborted" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((SHFILEOPSTRUCT *)0)->hNameMappings, L"hNameMappings" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((SHFILEOPSTRUCT *)0)->lpszProgressTitle, L"lpszProgressTitle" },
 	{ 0, NULL }
 };
 
 TEmethod tesSIZE[] =
 {
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((SIZE *)NULL)->cx, L"cx" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((SIZE *)NULL)->cy, L"cy" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((SIZE *)0)->cx, L"cx" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((SIZE *)0)->cy, L"cy" },
 	{ 0, NULL }
 };
 
 TEmethod tesTCHITTESTINFO[] =
 {
-	{ (VT_CY << TE_VT) + (DWORD)(UINT_PTR)&((TCHITTESTINFO *)NULL)->pt, L"pt" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TCHITTESTINFO *)NULL)->flags, L"flags" },
+	{ (VT_CY << TE_VT) + (DWORD)(UINT_PTR)&((TCHITTESTINFO *)0)->pt, L"pt" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TCHITTESTINFO *)0)->flags, L"flags" },
 	{ 0, NULL }
 };
 
 TEmethod tesTCITEM[] =
 {
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TCITEM *)NULL)->mask, L"mask" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TCITEM *)NULL)->dwState, L"dwState" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TCITEM *)NULL)->dwStateMask, L"dwStateMask" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((TCITEM *)NULL)->pszText, L"pszText" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TCITEM *)NULL)->cchTextMax, L"cchTextMax" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TCITEM *)NULL)->iImage, L"iImage" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((TCITEM *)NULL)->lParam, L"lParam" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TCITEM *)0)->mask, L"mask" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TCITEM *)0)->dwState, L"dwState" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TCITEM *)0)->dwStateMask, L"dwStateMask" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((TCITEM *)0)->pszText, L"pszText" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TCITEM *)0)->cchTextMax, L"cchTextMax" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TCITEM *)0)->iImage, L"iImage" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((TCITEM *)0)->lParam, L"lParam" },
 	{ 0, NULL }
 };
 
 TEmethod tesTVHITTESTINFO[] =
 {
-	{ (VT_CY << TE_VT) + (DWORD)(UINT_PTR)&((TVHITTESTINFO *)NULL)->pt, L"pt" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TVHITTESTINFO *)NULL)->flags, L"flags" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((TVHITTESTINFO *)NULL)->hItem, L"hItem" },
+	{ (VT_CY << TE_VT) + (DWORD)(UINT_PTR)&((TVHITTESTINFO *)0)->pt, L"pt" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TVHITTESTINFO *)0)->flags, L"flags" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((TVHITTESTINFO *)0)->hItem, L"hItem" },
 	{ 0, NULL }
 };
 
 TEmethod tesTVITEM[] =
 {
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TVITEM *)NULL)->mask, L"mask" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((TVITEM *)NULL)->hItem, L"hItem" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TVITEM *)NULL)->state, L"state" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TVITEM *)NULL)->stateMask, L"stateMask" },
-	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((TVITEM *)NULL)->pszText, L"pszText" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TVITEM *)NULL)->cchTextMax, L"cchTextMax" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TVITEM *)NULL)->iImage, L"iImage" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TVITEM *)NULL)->iSelectedImage, L"iSelectedImage" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TVITEM *)NULL)->cChildren, L"cChildren" },
-	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((TVITEM *)NULL)->lParam, L"lParam" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TVITEM *)0)->mask, L"mask" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((TVITEM *)0)->hItem, L"hItem" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TVITEM *)0)->state, L"state" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TVITEM *)0)->stateMask, L"stateMask" },
+	{ (VT_BSTR << TE_VT) + (DWORD)(UINT_PTR)&((TVITEM *)0)->pszText, L"pszText" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TVITEM *)0)->cchTextMax, L"cchTextMax" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TVITEM *)0)->iImage, L"iImage" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TVITEM *)0)->iSelectedImage, L"iSelectedImage" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((TVITEM *)0)->cChildren, L"cChildren" },
+	{ (VT_PTR << TE_VT) + (DWORD)(UINT_PTR)&((TVITEM *)0)->lParam, L"lParam" },
 	{ 0, NULL }
 };
 
 TEmethod tesWIN32_FIND_DATA[] =
 {
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((WIN32_FIND_DATA *)NULL)->dwFileAttributes, L"dwFileAttributes" },
-	{ (VT_FILETIME << TE_VT) + (DWORD)(UINT_PTR)&((WIN32_FIND_DATA *)NULL)->ftCreationTime, L"ftCreationTime" },
-	{ (VT_FILETIME << TE_VT) + (DWORD)(UINT_PTR)&((WIN32_FIND_DATA *)NULL)->ftLastAccessTime, L"ftLastAccessTime" },
-	{ (VT_FILETIME << TE_VT) + (DWORD)(UINT_PTR)&((WIN32_FIND_DATA *)NULL)->ftLastWriteTime, L"ftLastWriteTime" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((WIN32_FIND_DATA *)NULL)->nFileSizeHigh, L"nFileSizeHigh" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((WIN32_FIND_DATA *)NULL)->nFileSizeLow, L"nFileSizeLow" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((WIN32_FIND_DATA *)NULL)->dwReserved0, L"dwReserved0" },
-	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((WIN32_FIND_DATA *)NULL)->dwReserved1, L"dwReserved1" },
-	{ (VT_LPWSTR << TE_VT) + (DWORD)(UINT_PTR)&((WIN32_FIND_DATA *)NULL)->cFileName, L"cFileName" },
-	{ (VT_LPWSTR << TE_VT) + (DWORD)(UINT_PTR)&((WIN32_FIND_DATA *)NULL)->cAlternateFileName, L"cAlternateFileName" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((WIN32_FIND_DATA *)0)->dwFileAttributes, L"dwFileAttributes" },
+	{ (VT_FILETIME << TE_VT) + (DWORD)(UINT_PTR)&((WIN32_FIND_DATA *)0)->ftCreationTime, L"ftCreationTime" },
+	{ (VT_FILETIME << TE_VT) + (DWORD)(UINT_PTR)&((WIN32_FIND_DATA *)0)->ftLastAccessTime, L"ftLastAccessTime" },
+	{ (VT_FILETIME << TE_VT) + (DWORD)(UINT_PTR)&((WIN32_FIND_DATA *)0)->ftLastWriteTime, L"ftLastWriteTime" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((WIN32_FIND_DATA *)0)->nFileSizeHigh, L"nFileSizeHigh" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((WIN32_FIND_DATA *)0)->nFileSizeLow, L"nFileSizeLow" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((WIN32_FIND_DATA *)0)->dwReserved0, L"dwReserved0" },
+	{ (VT_I4 << TE_VT) + (DWORD)(UINT_PTR)&((WIN32_FIND_DATA *)0)->dwReserved1, L"dwReserved1" },
+	{ (VT_LPWSTR << TE_VT) + (DWORD)(UINT_PTR)&((WIN32_FIND_DATA *)0)->cFileName, L"cFileName" },
+	{ (VT_LPWSTR << TE_VT) + (DWORD)(UINT_PTR)&((WIN32_FIND_DATA *)0)->cAlternateFileName, L"cAlternateFileName" },
 	{ 0, NULL }
 };
 
@@ -791,6 +790,7 @@ TEmethod methodTE[] = {
 	{ START_OnFunc + TE_OnHitTest, L"OnHitTest" },
 	{ START_OnFunc + TE_OnVisibleChanged, L"OnVisibleChanged" },
 	{ START_OnFunc + TE_OnTranslatePath, L"OnTranslatePath" },
+	{ START_OnFunc + TE_OnNavigateComplete, L"OnNavigateComplete" },
 };
 
 TEmethod methodAPI[] = {
@@ -912,6 +912,7 @@ TEmethod methodAPI[] = {
 	{ 20391, L"EndMenu" },
 	{ 20401, L"SHChangeNotifyDeregister" },
 	{ 20411, L"SHChangeNotification_Unlock" },
+	{ 20421, L"IsWow64Process" },
 	//+other
 	{ 25001, L"InsertMenu" },
 	{ 25011, L"SetWindowText" },
@@ -971,6 +972,7 @@ TEmethod methodAPI[] = {
 	{ 30232, L"GetMessagePos" },
 	{ 30242, L"ImageList_GetOverlayImage" },
 	{ 30252, L"ImageList_GetBkColor" },
+	{ 30262, L"SetWindowTheme" },
 	//+other
 	{ 35002, L"TrackPopupMenuEx" },
 	{ 35012, L"ExtractIconEx" },
@@ -1017,6 +1019,7 @@ TEmethod methodAPI[] = {
 	{ 40293, L"GetModuleHandle" },
 	{ 40303, L"SHGetImageList" },
 	{ 40313, L"CopyImage" },
+	{ 40323, L"GetCurrentProcess" },
 	//+other
 	{ 45003, L"LoadMenu" },
 	{ 45013, L"LoadIcon" },
@@ -1271,8 +1274,18 @@ BOOL teStrSameIFree(BSTR bs, LPWSTR lpstr2)
 
 VOID teCoTaskMemFree(LPVOID pv)
 {
-	if (pv) {
-		::CoTaskMemFree(pv);
+	try {
+		if (pv) {
+			::CoTaskMemFree(pv);
+		}
+	} catch (...) {}
+}
+
+VOID teSysFreeString(BSTR *pbs)
+{
+	if (*pbs) {
+		::SysFreeString(*pbs);
+		*pbs = NULL;
 	}
 }
 
@@ -1352,7 +1365,7 @@ int teGetModuleFileName(HMODULE hModule, BSTR *pbsPath)
 VOID teDragQueryFile(HDROP hDrop, UINT iFile, BSTR *pbsPath)
 {
 	for (UINT nSize = MAX_PATH; nSize < MAX_PATHEX; nSize += MAX_PATH) {
-		*pbsPath = SysAllocStringLen(NULL, nSize);
+		*pbsPath = SysAllocStringLen(L"", nSize);
 		UINT i = DragQueryFile(hDrop, iFile, *pbsPath, nSize);
 		if (i + 1 < nSize) {
 			(*pbsPath)[i] = NULL;
@@ -1370,7 +1383,7 @@ VOID tePathAppend(BSTR *pbsPath, LPWSTR pszPath, LPWSTR pszFile)
 
 BOOL teSetObject(VARIANT *pv, PVOID pObj)
 {
-	if (pObj) {
+	if (pv && pObj) {
 		try {
 			IUnknown *punk = static_cast<IUnknown *>(pObj);
 			if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pv->pdispVal))) {
@@ -1511,7 +1524,7 @@ VOID teSetParent(HWND hwnd, HWND hwndParent)
 
 BSTR SysAllocStringLenEx(const OLECHAR *strIn, UINT uSize, UINT uOrg)
 {
-	BSTR bs = SysAllocStringLen(NULL, uSize);
+	BSTR bs = SysAllocStringLen(L"", uSize);
 	lstrcpyn(bs, strIn, uSize < uOrg ? uSize : uOrg);
 	return bs;
 }
@@ -1685,7 +1698,7 @@ LPWSTR teGetCommandLine()
 	if (!g_bsCmdLine) {
 		LPWSTR strCmdLine = GetCommandLine();
 		int nSize = lstrlen(strCmdLine) + MAX_PATH;
-		g_bsCmdLine = SysAllocStringLen(NULL, nSize);
+		g_bsCmdLine = SysAllocStringLen(L"", nSize);
 		int j = 0;
 		int i = 0;
 		while (i < nSize) {
@@ -1750,8 +1763,8 @@ static void threadFileOperation(void *args)
 	}
 	catch (...) {
 	}
-	::SysFreeString((BSTR)pFO->pTo);
-	::SysFreeString((BSTR)pFO->pFrom);
+	::SysFreeString(const_cast<BSTR>(pFO->pTo));
+	::SysFreeString(const_cast<BSTR>(pFO->pFrom));
 	delete [] pFO;
 	::InterlockedDecrement(&g_nThreads);
 	::_endthread();
@@ -1856,7 +1869,7 @@ LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath)
 		BSTR bsPath3 = NULL;
 		if (PathMatchSpec(pszPath, L"*\\..\\*;*\\..;*\\.\\*;*\\.;*\\\\\\*;*%*%*")) {
 			UINT uLen = lstrlen(pszPath) + MAX_PATH;
-			bsPath3 = ::SysAllocStringLen(NULL, uLen);
+			bsPath3 = ::SysAllocStringLen(L"", uLen);
 			PathSearchAndQualify(pszPath, bsPath3, uLen);
 			pszPath = bsPath3;
 		}
@@ -1901,12 +1914,8 @@ LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath)
 				}
 			}
 		}
-		if (bsPath3) {
-			::SysFreeString(bsPath3);
-		}
-		if (bsPath2) {
-			::SysFreeString(bsPath2);
-		}
+		teSysFreeString(&bsPath3);
+		teSysFreeString(&bsPath2);
 	}
 	return pidl;
 }
@@ -1925,7 +1934,7 @@ BOOL teILRemoveLastID(LPITEMIDLIST *ppidl)
 					WCHAR *pszUrl = &bs[i + nLoc - 5];
 					lstrcpy(pszUrl, L"file");
 					pszUrl[4] = ':';
-					BSTR bsPath = ::SysAllocStringLen(NULL, dwPath);
+					BSTR bsPath = ::SysAllocStringLen(L"", dwPath);
 					if (PathCreateFromUrl(pszUrl, bsPath, &dwPath, NULL) == S_OK) {
 						teCoTaskMemFree(*ppidl);
 						*ppidl = teILCreateFromPath(bsPath);
@@ -1963,7 +1972,7 @@ BSTR teGetMenuString(HMENU hMenu, UINT uIDItem, BOOL fByPosition)
 	mii.fMask  = MIIM_STRING;
 	GetMenuItemInfo(hMenu, uIDItem, fByPosition, &mii);
 	if (mii.cch) {
-		BSTR dwTypeData = SysAllocStringLen(NULL, ++mii.cch);
+		BSTR dwTypeData = SysAllocStringLen(L"", ++mii.cch);
 		mii.dwTypeData = dwTypeData;
 		GetMenuItemInfo(hMenu, uIDItem, fByPosition, &mii);
 		dwTypeData[mii.cch] = NULL;
@@ -2066,7 +2075,7 @@ void teCopyMenu(HMENU hDest, HMENU hSrc, UINT fState)
 		mii.cbSize = sizeof(MENUITEMINFO);
 		mii.fMask  = MIIM_STRING;
 		GetMenuItemInfo(hSrc, n, TRUE, &mii);
-		BSTR bsTypeData = SysAllocStringLen(NULL, ++mii.cch);
+		BSTR bsTypeData = SysAllocStringLen(L"", ++mii.cch);
 		mii.dwTypeData = bsTypeData;
 		mii.fMask  = MIIM_ID | MIIM_TYPE | MIIM_SUBMENU | MIIM_STATE;
 		GetMenuItemInfo(hSrc, n, TRUE, &mii);
@@ -2098,14 +2107,9 @@ HRESULT GetDataFromPidl(LPITEMIDLIST pidl, int nFormat, void *pv, int cb)
 CteShellBrowser* SBfromhwnd(HWND hwnd)
 {
 	int i = MAX_FV;
-	while (--i >= 0) {
-		if (g_pSB[i]) {
-			if (g_pSB[i]->m_hwnd == hwnd || IsChild(g_pSB[i]->m_hwnd, hwnd)) {
-				return g_pSB[i];
-			}
-		}
-		else {
-			return NULL;
+	while (--i >= 0 && g_pSB[i]) {
+		if (g_pSB[i]->m_hwnd == hwnd || IsChild(g_pSB[i]->m_hwnd, hwnd)) {
+			return g_pSB[i];
 		}
 	}
 	return NULL;
@@ -2114,14 +2118,9 @@ CteShellBrowser* SBfromhwnd(HWND hwnd)
 CteTabs* TCfromhwnd(HWND hwnd)
 {
 	int i = MAX_TC;
-	while (--i >= 0) {
-		if (g_pTC[i]) {
-			if (g_pTC[i]->m_hwnd == hwnd || g_pTC[i]->m_hwndStatic == hwnd || g_pTC[i]->m_hwndButton == hwnd) {
-				return g_pTC[i];
-			}
-		}
-		else {
-			return NULL;
+	while (--i >= 0 && g_pTC[i]) {
+		if (g_pTC[i]->m_hwnd == hwnd || g_pTC[i]->m_hwndStatic == hwnd || g_pTC[i]->m_hwndButton == hwnd) {
+			return g_pTC[i];
 		}
 	}
 	return NULL;
@@ -2130,19 +2129,12 @@ CteTabs* TCfromhwnd(HWND hwnd)
 CteTreeView* TVfromhwnd(HWND hwnd, BOOL bAll)
 {
 	int i = MAX_FV;
-	while (--i >= 0) {
-		if (g_pSB[i]) {
-			HWND hTV = g_pSB[i]->m_pTV->m_hwnd;
-			if (hTV == hwnd || IsChild(hTV, hwnd)) {
-				if (bAll || g_pSB[i]->m_pTV->m_bMain) {
-					return g_pSB[i]->m_pTV;
-				}
-				else {
-					return NULL;
-				}
+	while (--i >= 0 && g_pSB[i]) {
+		HWND hwndTV = g_pSB[i]->m_pTV->m_hwnd;
+		if (hwndTV == hwnd || IsChild(hwndTV, hwnd)) {
+			if (bAll || g_pSB[i]->m_pTV->m_bMain) {
+				return g_pSB[i]->m_pTV;
 			}
-		}
-		else {
 			return NULL;
 		}
 	}
@@ -3072,7 +3064,6 @@ VOID GetPointFormVariant(POINT *pt, VARIANT *pv)
 	pt->y = GET_Y_LPARAM(nPt);
 }
 
-
 //There is no need for SysFreeString
 BSTR GetLPWSTRFromVariant(VARIANT *pv)
 {
@@ -3680,7 +3671,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			return 0;
 		}
 		LRESULT lResult = S_FALSE;
-		if (msg == WM_CONTEXTMENU || msg == SB_SETTEXTA || msg == SB_SETTEXT || msg == WM_COMMAND) {
+		if (msg == WM_CONTEXTMENU || msg == SB_SETTEXTA || msg == SB_SETTEXT || msg == WM_COMMAND || msg == WM_COPYDATA) {
 			try {
 				if (InterlockedIncrement(&g_nProcFV) < 5) {
 					switch (msg) {
@@ -3715,7 +3706,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							int nLen;
 							nLen = MultiByteToWideChar(CP_ACP, 0, (LPCSTR)lParam, -1, NULL, NULL);
 							BSTR bsStatus;
-							bsStatus = SysAllocStringLen(NULL, nLen);
+							bsStatus = SysAllocStringLen(L"", nLen);
 							MultiByteToWideChar(CP_ACP, 0, (LPCSTR)lParam, -1, bsStatus, nLen);
 							DoStatusText(pSB, bsStatus, static_cast<int>(wParam));
 							SysFreeString(bsStatus);
@@ -3733,14 +3724,23 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 								lResult = MessageSub(TE_OnCommand, pSB, &msg1, S_FALSE);
 							}
 							break;
+						case WM_COPYDATA:
+							if (g_pOnFunc[TE_OnSystemMessage]) {
+								MSG msg1;
+								msg1.hwnd = hwnd;
+								msg1.message = msg;
+								msg1.wParam = wParam;
+								msg1.lParam = lParam;
+								lResult = MessageSub(TE_OnSystemMessage, pSB, &msg1, S_FALSE);
+							}
+							break;
 					}//end_switch
 				}
 			}
 			catch(...) {}
 			::InterlockedDecrement(&g_nProcFV);
 		}
-		if (msg == WM_COMMAND || pSB->m_bNoRowSelect) {
-			pSB->m_bNoRowSelect = FALSE;
+		if (msg == WM_WINDOWPOSCHANGED) {
 			PostMessage(pSB->m_hwndLV, LVM_SETEXTENDEDLISTVIEWSTYLE, LVS_EX_FULLROWSELECT, (pSB->m_param[SB_FolderFlags] & FWF_FULLROWSELECT) ? LVS_EX_FULLROWSELECT : 0);
 		}
 		return (lResult && hwnd == pSB->m_hwndDV) ? CallWindowProc((WNDPROC)pSB->m_DefProc, hwnd, msg, wParam, lParam) : 0;
@@ -4143,12 +4143,13 @@ VOID Finalize()
 			g_pidls[g_nPidls] = NULL;
 		}
 		teCoTaskMemFree(g_pidlResultsFolder);
+#ifndef _WIN64
+		teCoTaskMemFree(g_pidlCP);
+#endif
 		if (g_hCrypt32) {
 			FreeLibrary(g_hCrypt32);
 		}
-		if (g_bsCmdLine) {
-			SysFreeString(g_bsCmdLine);
-		}
+		teSysFreeString(&g_bsCmdLine);
 		if (g_pCrcTable) {
 			delete [] g_pCrcTable;
 		}
@@ -4718,6 +4719,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	g_nCmdShow = nCmdShow;
 	BSTR bsPath, bsLib, bsIndex;
+	HINSTANCE hDll;
 	hInst = hInstance;
 
 	::OleInitialize(NULL);
@@ -4742,7 +4744,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	g_hMutex = CreateMutex(NULL, FALSE, bsPath);
 	SysFreeString(bsPath);
 
-	if (GetLastError() == ERROR_ALREADY_EXISTS) {
+	if (WaitForSingleObject(g_hMutex, 0) == WAIT_TIMEOUT) {
 		HWND hwndTE = NULL;
 		while (hwndTE = FindWindowEx(NULL, hwndTE, WINDOW_CLASS, NULL)) {
 			if (GetWindowLongPtr(hwndTE, GWLP_USERDATA) == nCrc32) {
@@ -4773,23 +4775,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	//Late Binding
 	GetDisplayNameFromPidl(&bsPath, g_pidls[CSIDL_SYSTEM], SHGDN_FORPARSING);
 
-	tePathAppend(&bsLib, bsPath, L"kernel32.dll");
-	g_hKernel32 = GetModuleHandle(bsLib);
-	if (g_hKernel32) {
-		lpfnSetDllDirectoryW = (LPFNSetDllDirectoryW)GetProcAddress(g_hKernel32, "SetDllDirectoryW");
-		if (lpfnSetDllDirectoryW) {
-			lpfnSetDllDirectoryW(L"");
-		}
-#ifndef _WIN64
-		lpfnIsWow64Process = (LPFNIsWow64Process)GetProcAddress(g_hKernel32, "IsWow64Process");
-		g_pidlCP = ILClone(g_pidls[CSIDL_CONTROLS]);
-		ILRemoveLastID(g_pidlCP);
-#endif
-	}
-	SysFreeString(bsLib);
-
 	tePathAppend(&bsLib, bsPath, L"shell32.dll");
 	g_hShell32 = GetModuleHandle(bsLib);
+	SysFreeString(bsLib);
 	if (g_hShell32) {
 		lpfnSHCreateItemFromIDList = (LPFNSHCreateItemFromIDList)GetProcAddress(g_hShell32, "SHCreateItemFromIDList");
 		lpfnSHParseDisplayName = (LPFNSHParseDisplayName)GetProcAddress(g_hShell32, "SHParseDisplayName");
@@ -4797,7 +4785,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		lpfnSHGetIDListFromObject = (LPFNSHGetIDListFromObject)GetProcAddress(g_hShell32, "SHGetIDListFromObject");
 		lpfnSHRunDialog = (LPFNSHRunDialog)GetProcAddress(g_hShell32, MAKEINTRESOURCEA(61));
 	}
-	SysFreeString(bsLib);
 #ifdef _2000XP
 	if (!lpfnSHGetIDListFromObject) {
 		lpfnSHGetIDListFromObject = teGetIDListFromObjectXP;
@@ -4809,12 +4796,28 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		lpfnSHGetImageList = teSHGetImageList2000;
 	}
 #endif
+
+	tePathAppend(&bsLib, bsPath, L"kernel32.dll");
+	hDll = GetModuleHandle(bsLib);
+	SysFreeString(bsLib);
+	if (hDll) {
+		lpfnSetDllDirectoryW = (LPFNSetDllDirectoryW)GetProcAddress(hDll, "SetDllDirectoryW");
+		if (lpfnSetDllDirectoryW) {
+			lpfnSetDllDirectoryW(L"");
+		}
+		lpfnIsWow64Process = (LPFNIsWow64Process)GetProcAddress(hDll, "IsWow64Process");
+#ifndef _WIN64
+		g_pidlCP = ILClone(g_pidls[CSIDL_CONTROLS]);
+		ILRemoveLastID(g_pidlCP);
+#endif
+	}
+
 	tePathAppend(&bsLib, bsPath, L"propsys.dll");
-	g_hPropsys = GetModuleHandle(bsLib);
-	if (g_hPropsys) {
-		lpfnPSPropertyKeyFromString = (LPFNPSPropertyKeyFromString)GetProcAddress(g_hPropsys, "PSPropertyKeyFromString");
-		lpfnPSGetPropertyKeyFromName = (LPFNPSGetPropertyKeyFromName)GetProcAddress(g_hPropsys, "PSGetPropertyKeyFromName");
-		lpfnPSGetPropertyDescription = (LPFNPSGetPropertyDescription)GetProcAddress(g_hPropsys, "PSGetPropertyDescription");
+	hDll = GetModuleHandle(bsLib);
+	if (hDll) {
+		lpfnPSPropertyKeyFromString = (LPFNPSPropertyKeyFromString)GetProcAddress(hDll, "PSPropertyKeyFromString");
+		lpfnPSGetPropertyKeyFromName = (LPFNPSGetPropertyKeyFromName)GetProcAddress(hDll, "PSGetPropertyKeyFromName");
+		lpfnPSGetPropertyDescription = (LPFNPSGetPropertyDescription)GetProcAddress(hDll, "PSGetPropertyDescription");
 		lpfnPSPropertyKeyFromStringEx = tePSPropertyKeyFromStringEx;
 	}
 #ifdef _2000XP
@@ -4828,12 +4831,20 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 #endif
 	SysFreeString(bsLib);
 
+	tePathAppend(&bsLib, bsPath, L"uxtheme.dll");
+	hDll = GetModuleHandle(bsLib);
+	if (hDll) {
+		lpfnSetWindowTheme = (LPFNSetWindowTheme)GetProcAddress(hDll, "SetWindowTheme");
+	}
+	SysFreeString(bsLib);
+
 	tePathAppend(&bsLib, bsPath, L"crypt32.dll");
 	g_hCrypt32 = LoadLibrary(bsLib);
 	if (g_hCrypt32) {
 		lpfnCryptBinaryToStringW = (LPFNCryptBinaryToStringW)GetProcAddress(g_hCrypt32, "CryptBinaryToStringW");
 	}
 	SysFreeString(bsLib);
+
 	SysFreeString(bsPath);
 
 	Initlize();
@@ -5335,10 +5346,7 @@ CteShellBrowser::~CteShellBrowser()
 	while (--m_nLogCount >= 0) {
 		m_ppLog[m_nLogCount]->Release();
 	}
-	if (m_bsFilter) {
-		::SysFreeString(m_bsFilter);
-		m_bsFilter = NULL;
-	}
+	teSysFreeString(&m_bsFilter);
 	if (m_pDSFV) {
 		m_pDSFV->Release();
 	}
@@ -5784,14 +5792,16 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 #ifdef _VISTA7
 	//ExplorerBrowser
 	if (m_param[SB_Type] == 2 && m_pExplorerBrowser) {
-		m_pExplorerBrowser->BrowseToIDList(pidl, SBSP_ABSOLUTE);
-		IOleWindow *pOleWindow;
-		if SUCCEEDED(m_pExplorerBrowser->QueryInterface(IID_PPV_ARGS(&pOleWindow))) {
-			pOleWindow->GetWindow(&m_hwnd);
-			pOleWindow->Release();
+		if (!ILIsEqual(pidl, g_pidlResultsFolder) || !ILIsEqual(m_pidl, g_pidlResultsFolder)) {
+			m_pExplorerBrowser->BrowseToIDList(pidl, SBSP_ABSOLUTE);
+			IOleWindow *pOleWindow;
+			if SUCCEEDED(m_pExplorerBrowser->QueryInterface(IID_PPV_ARGS(&pOleWindow))) {
+				pOleWindow->GetWindow(&m_hwnd);
+				pOleWindow->Release();
+			}
+			teCoTaskMemFree(pidl);
+			return S_OK;
 		}
-		teCoTaskMemFree(pidl);
-		return S_OK;
 	}
 #endif
 	if (pidlPrevius && wFlags & SBSP_PARENT) {
@@ -5832,10 +5842,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 			return hr;
 		}
 		if (!teILIsEqual(m_pFolderItem, pPrevius)) {
-			if (m_bsFilter) {
-				SysFreeString(m_bsFilter);
-				m_bsFilter = NULL;
-			}
+			teSysFreeString(&m_bsFilter);
 			if (m_pOnFunc[SB_OnIncludeObject]) {
 				m_pOnFunc[SB_OnIncludeObject]->Release();
 				m_pOnFunc[SB_OnIncludeObject] = NULL;
@@ -6083,8 +6090,7 @@ BOOL CteShellBrowser::GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, Folde
 		if (pidlPrevius && !ILIsEmpty(pidlPrevius)) {
 			*pidlOut = ::ILClone(pidlPrevius);
 			if (m_bsFilter) {
-				::SysFreeString(m_bsFilter);
-				m_bsFilter = NULL;
+				teSysFreeString(&m_bsFilter);
 			}
 			else {
 				teILRemoveLastID(pidlOut);
@@ -6186,7 +6192,7 @@ VOID CteShellBrowser::Error(FolderItem *pid)
 		SysReAllocString(&bs, L"Shell:Desktop");
 	}
 	Navigate1Ex(bs, NULL, SBSP_SAMEBROWSER, NULL);
-	::SysFreeString(bs);
+	teSysFreeString(&bs);
 }
 
 VOID CteShellBrowser::Refresh(BOOL bCheck)
@@ -6216,6 +6222,7 @@ VOID CteShellBrowser::Refresh(BOOL bCheck)
 			}
 			if (ILIsEqual(m_pidl, g_pidlResultsFolder)) {
 				OnViewCreated(NULL);
+				OnNavigationComplete(NULL);
 				return;
 			}
 			m_pShellView->Refresh();
@@ -6234,7 +6241,7 @@ VOID CteShellBrowser::SetActive()
 			return;
 		}
 		BSTR bs;
-		bs = SysAllocStringLen(NULL, MAX_CLASS_NAME);
+		bs = SysAllocStringLen(L"", MAX_CLASS_NAME);
 		GetClassName(hwnd, bs, MAX_CLASS_NAME);
 		BOOL bFocus = !PathMatchSpec(bs, WC_TREEVIEW);
 		SysFreeString(bs);
@@ -6766,9 +6773,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				param[SB_DoFunc] = 0;
 				CteShellBrowser *pSB = NULL;
 				Navigate3(pFolderItem, wFlags, param, &pSB, pFolderItems);
-				if (pVarResult) {
-					teSetObject(pVarResult, pSB ? pSB : this);
-				}
+				teSetObject(pVarResult, pSB ? pSB : this);
 			}
 			return S_OK;	
 		//Index
@@ -6797,7 +6802,6 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					}
 #endif
 				}
-				m_bNoRowSelect = TRUE;
 			}
 			if (pVarResult) {
 				pVarResult->lVal = m_param[SB_FolderFlags];
@@ -6977,12 +6981,10 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			return S_OK;
 		//Parent
 		case 0x10000024:
-			if (pVarResult) {
-				IDispatch *pdisp;
-				if SUCCEEDED(get_Parent(&pdisp)) {
-					teSetObject(pVarResult, pdisp);
-					pdisp->Release();
-				}
+			IDispatch *pdisp;
+			if SUCCEEDED(get_Parent(&pdisp)) {
+				teSetObject(pVarResult, pdisp);
+				pdisp->Release();
 			}
 			return S_OK;
 		//Close
@@ -6993,7 +6995,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 		case 0x10000032:
 			nIndex = GetTabIndex();
 			if (nIndex >= 0) {
-				BSTR bsText = SysAllocStringLen(NULL, MAX_PATH);
+				BSTR bsText = SysAllocStringLen(L"", MAX_PATH);
 				tcItem.pszText = bsText;
 				tcItem.mask = TCIF_TEXT;
 				tcItem.cchTextMax = MAX_PATH;
@@ -7044,15 +7046,11 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			return S_OK;
 		//ShellFolderView
 		case 0x10000050:
-			if (pVarResult) {
-				teSetObject(pVarResult, m_pDSFV);
-			}
+			teSetObject(pVarResult, m_pDSFV);
 			return S_OK;			
 		//hwndList
 		case 0x10000102:
-			if (pVarResult) {
-				SetVariantLL(pVarResult, (LONGLONG)m_hwndLV);
-			}
+			SetVariantLL(pVarResult, (LONGLONG)m_hwndLV);
 			return S_OK;
 		//hwndView
 		case 0x10000103:
@@ -7101,18 +7099,16 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			return S_OK;			
 		//DropTarget
 		case 0x10000108:
-			if (pVarResult) {
-				CteDropTarget *pCDT;
-				if (m_pDropTarget) {
-					pCDT = new CteDropTarget(static_cast<IDropTarget *>(this), NULL);
-				}
-				else {
-					pCDT = new CteDropTarget(static_cast<IDropTarget *>(GetProp(m_hwndLV, L"OleDropTargetInterface")), NULL);
-				}
-				if (pCDT) {
-					teSetObject(pVarResult, pCDT);
-					pCDT->Release();
-				}
+			CteDropTarget *pCDT;
+			if (m_pDropTarget) {
+				pCDT = new CteDropTarget(static_cast<IDropTarget *>(this), NULL);
+			}
+			else {
+				pCDT = new CteDropTarget(static_cast<IDropTarget *>(GetProp(m_hwndLV, L"OleDropTargetInterface")), NULL);
+			}
+			if (pCDT) {
+				teSetObject(pVarResult, pCDT);
+				pCDT->Release();
 			}
 			return S_OK;
 		//Columns
@@ -7377,12 +7373,10 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			return S_OK;
 		//SelectedItems
 		case 0x10000203:
-			if (pVarResult) {
-				FolderItems *pFolderItems;
-				if SUCCEEDED(SelectedItems(&pFolderItems)) {
-					teSetObject(pVarResult, pFolderItems);
-					pFolderItems->Release();
-				}
+			FolderItems *pFolderItems;
+			if SUCCEEDED(SelectedItems(&pFolderItems)) {
+				teSetObject(pVarResult, pFolderItems);
+				pFolderItems->Release();
 			}
 			return S_OK;
 		//Refresh
@@ -7397,19 +7391,17 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			return S_OK;
 		//ViewMenu
 		case 0x10000207:
-			if (pVarResult) {
-				IContextMenu *pCM;
-				if SUCCEEDED(m_pShellView->GetItemObject(SVGIO_BACKGROUND, IID_PPV_ARGS(&pCM))) {
-					CteServiceProvider *pSP = new CteServiceProvider(this, m_pShellView);
-					IUnknown_SetSite(pCM, pSP);
-					pSP->Release();
-					CteContextMenu *pCCM;
-					pCCM = new CteContextMenu(pCM, NULL);
-					pCCM->m_pShellBrowser = this;
-					teSetObject(pVarResult, pCCM);
-					pCCM->Release();
-					pCM->Release();
-				}
+			IContextMenu *pCM;
+			if SUCCEEDED(m_pShellView->GetItemObject(SVGIO_BACKGROUND, IID_PPV_ARGS(&pCM))) {
+				CteServiceProvider *pSP = new CteServiceProvider(this, m_pShellView);
+				IUnknown_SetSite(pCM, pSP);
+				pSP->Release();
+				CteContextMenu *pCCM;
+				pCCM = new CteContextMenu(pCM, NULL);
+				pCCM->m_pShellBrowser = this;
+				teSetObject(pVarResult, pCCM);
+				pCCM->Release();
+				pCM->Release();
 			}
 			return S_OK;
 		//TranslateAccelerator
@@ -7480,9 +7472,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			return S_OK;
 		//TreeView
 		case 0x10000210:
-			if (pVarResult) {
-				teSetObject(pVarResult, m_pTV);
-			}
+			teSetObject(pVarResult, m_pTV);
 			return S_OK;
 		//SelectItem
 		case 0x10000280:
@@ -7492,12 +7482,10 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			return S_OK;
 		//FocusedItem
 		case 0x10000281:
-			if (pVarResult) {
-				FolderItem *pFolderItem = NULL;
-				if (get_FocusedItem(&pFolderItem) == S_OK) {
-					teSetObject(pVarResult, pFolderItem);
-					pFolderItem->Release();
-				}
+			FolderItem *pFolderItem;
+			if (get_FocusedItem(&pFolderItem) == S_OK) {
+				teSetObject(pVarResult, pFolderItem);
+				pFolderItem->Release();
 			}
 			return S_OK;
 		//GetFocusedItem
@@ -7554,15 +7542,13 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 							pFV->Release();
 						}
 						if (pidlChild) {
-							if (pVarResult) {
-								LPITEMIDLIST pidlFull = ILCombine(m_pidl, pidlChild);
-								FolderItem *pFolderItem;
-								if (GetFolderItemFromPidl(&pFolderItem, pidlFull)) {
-									teSetObject(pVarResult, pFolderItem);
-									pFolderItem->Release();
-								}
-								teCoTaskMemFree(pidlFull);
+							LPITEMIDLIST pidlFull = ILCombine(m_pidl, pidlChild);
+							FolderItem *pFolderItem;
+							if (GetFolderItemFromPidl(&pFolderItem, pidlFull)) {
+								teSetObject(pVarResult, pFolderItem);
+								pFolderItem->Release();
 							}
+							teCoTaskMemFree(pidlFull);
 							CoTaskMemFree(pidlChild);
 						}
 					}
@@ -7607,9 +7593,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			return S_OK;
 		//
 		case DISPID_VALUE:
-			if (pVarResult) {
-				teSetObject(pVarResult, this);
-			}
+			teSetObject(pVarResult, this);
 			return S_OK;
 		default:
 			if (dispIdMember >= START_OnFunc && dispIdMember < START_OnFunc + Count_SBFunc) {
@@ -7623,10 +7607,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						punk->QueryInterface(IID_PPV_ARGS(&m_pOnFunc[dispIdMember - START_OnFunc]));
 					}
 				}
-				if (pVarResult) {
-					if (m_pOnFunc[dispIdMember - START_OnFunc]) {
-						teSetObject(pVarResult, m_pOnFunc[dispIdMember - START_OnFunc]); 
-					}
+				if (m_pOnFunc[dispIdMember - START_OnFunc]) {
+					teSetObject(pVarResult, m_pOnFunc[dispIdMember - START_OnFunc]); 
 				}
 				return S_OK;
 			}
@@ -7851,6 +7833,8 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 		DoStatusText(this, NULL, 0);
 	}
 #endif
+	SetPropEx();
+
 	TC_ITEM tcItem;
 	//View Tab Name
 	int i;
@@ -7893,9 +7877,8 @@ STDMETHODIMP CteShellBrowser::OnNavigationComplete(PCIDLIST_ABSOLUTE pidlFolder)
 		}
 	}
 	SetRedraw(TRUE);
-	SetPropEx();
-	m_bNoRowSelect = TRUE;
 	SetActive();
+	DoFunc(TE_OnNavigateComplete, this, E_NOTIMPL);
 	return S_OK;
 }
 
@@ -8414,8 +8397,7 @@ VOID CteShellBrowser::GetSort(BSTR* pbs)
 		}
 	}
 	if (bEmpty) {
-		::SysFreeString(*pbs);
-		*pbs = NULL;
+		teSysFreeString(pbs);
 	}
 #endif
 }
@@ -8646,13 +8628,10 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 		VariantInit(pVarResult);
 	}
 	if (dispIdMember >= TE_METHOD && wFlags == DISPATCH_PROPERTYGET) {
-		if (pVarResult) {
-			CteDispatch *pClone = new CteDispatch(this, 0);
-			pClone->m_dispIdMember = dispIdMember;
-			teSetObject(pVarResult, pClone);
-			pClone->Release();
-			return S_OK;
-		}
+		CteDispatch *pClone = new CteDispatch(this, 0);
+		pClone->m_dispIdMember = dispIdMember;
+		teSetObject(pVarResult, pClone);
+		pClone->Release();
 		return S_OK;
 	}
 	switch(dispIdMember) {
@@ -8732,90 +8711,88 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 			return S_OK;
 		//Ctrls
 		case TE_METHOD + 1006:
-			if (pVarResult) {
-				if (nArg >= 0) {
-					int nCtrl;
-					nCtrl = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
-					CteMemory *pMem = NULL;
-					IDispatch **ppDisp;
-					int nCount = 0;
-					int i;
+			if (nArg >= 0) {
+				int nCtrl;
+				nCtrl = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+				CteMemory *pMem = NULL;
+				IDispatch **ppDisp;
+				int nCount = 0;
+				int i;
 
-					switch (nCtrl) {
-						case CTRL_FV:
-						case CTRL_SB:
-						case CTRL_EB:
-						case CTRL_TV:
-							i = MAX_FV;
-							while (--i >= 0) {
-								if (g_pSB[i]) {
-									if (!g_pSB[i]->m_bEmpty) {
-										nCount++;
-									}
-								}
-								else {
-									break;
+				switch (nCtrl) {
+					case CTRL_FV:
+					case CTRL_SB:
+					case CTRL_EB:
+					case CTRL_TV:
+						i = MAX_FV;
+						while (--i >= 0) {
+							if (g_pSB[i]) {
+								if (!g_pSB[i]->m_bEmpty) {
+									nCount++;
 								}
 							}
-							pMem = new CteMemory(nCount * sizeof(IDispatch *), NULL, VT_DISPATCH, nCount, NULL);
-							ppDisp = (IDispatch **)pMem->m_pc;
-							nCount = 0;
-							i = MAX_FV;
-							while (--i >= 0) {
-								if (g_pSB[i]) {
-									if (!g_pSB[i]->m_bEmpty) {
-										if (nCtrl == CTRL_TV) {
-											g_pSB[i]->m_pTV->QueryInterface(IID_PPV_ARGS(&ppDisp[nCount++]));
-										}
-										else {
-											g_pSB[i]->QueryInterface(IID_PPV_ARGS(&ppDisp[nCount++]));
-										}
+							else {
+								break;
+							}
+						}
+						pMem = new CteMemory(nCount * sizeof(IDispatch *), NULL, VT_DISPATCH, nCount, NULL);
+						ppDisp = (IDispatch **)pMem->m_pc;
+						nCount = 0;
+						i = MAX_FV;
+						while (--i >= 0) {
+							if (g_pSB[i]) {
+								if (!g_pSB[i]->m_bEmpty) {
+									if (nCtrl == CTRL_TV) {
+										g_pSB[i]->m_pTV->QueryInterface(IID_PPV_ARGS(&ppDisp[nCount++]));
+									}
+									else {
+										g_pSB[i]->QueryInterface(IID_PPV_ARGS(&ppDisp[nCount++]));
 									}
 								}
-								else {
-									break;
+							}
+							else {
+								break;
+							}
+						}
+						break;
+					case CTRL_TC:
+						i = MAX_TC;
+						while (--i >= 0) {
+							if (g_pTC[i]) {
+								if (!g_pTC[i]->m_bEmpty) {
+									nCount++;
 								}
 							}
-							break;
-						case CTRL_TC:
-							i = MAX_TC;
-							while (--i >= 0) {
-								if (g_pTC[i]) {
-									if (!g_pTC[i]->m_bEmpty) {
-										nCount++;
-									}
-								}
-								else {
-									break;
+							else {
+								break;
+							}
+						}
+						pMem = new CteMemory(nCount * sizeof(IDispatch *), NULL, VT_DISPATCH, nCount, NULL);
+						ppDisp = (IDispatch **)pMem->m_pc;
+						nCount = 0;
+						i = MAX_TC;
+						while (--i >= 0) {
+							if (g_pTC[i]) {
+								if (!g_pTC[i]->m_bEmpty) {
+									g_pTC[i]->QueryInterface(IID_PPV_ARGS(&ppDisp[nCount++]));
 								}
 							}
-							pMem = new CteMemory(nCount * sizeof(IDispatch *), NULL, VT_DISPATCH, nCount, NULL);
-							ppDisp = (IDispatch **)pMem->m_pc;
-							nCount = 0;
-							i = MAX_TC;
-							while (--i >= 0) {
-								if (g_pTC[i]) {
-									if (!g_pTC[i]->m_bEmpty) {
-										g_pTC[i]->QueryInterface(IID_PPV_ARGS(&ppDisp[nCount++]));
-									}
-								}
-								else {
-									break;
-								}
+							else {
+								break;
 							}
-							break;
-						case CTRL_WB:
-							pMem = new CteMemory(sizeof(IDispatch *), NULL, VT_DISPATCH, 1, NULL);
-							ppDisp = (IDispatch **)pMem->m_pc;
-							g_pWebBrowser->QueryInterface(IID_PPV_ARGS(&ppDisp[0]));
-							break;
-					}//end_switch
-					if (!pMem) {
-						pMem = new CteMemory(0, NULL, VT_DISPATCH, 0, NULL);
-					}
-					teSetObject(pVarResult, pMem);
-					pMem->Release();
+						}
+						break;
+					case CTRL_WB:
+						pMem = new CteMemory(sizeof(IDispatch *), NULL, VT_DISPATCH, 1, NULL);
+						ppDisp = (IDispatch **)pMem->m_pc;
+						g_pWebBrowser->QueryInterface(IID_PPV_ARGS(&ppDisp[0]));
+						break;
+				}//end_switch
+				if (!pMem) {
+					pMem = new CteMemory(0, NULL, VT_DISPATCH, 0, NULL);
 				}
+				teSetObject(pVarResult, pMem);
+				pMem->Release();
 			}
 			return S_OK;
 		//Version
@@ -8851,61 +8828,52 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 		//GetObject
 		case TE_METHOD + 1020:
 			if (nArg >= 0) {
-				if (pVarResult) {
-					CLSID clsid;
-					VARIANT vClass;
-					teVariantChangeType(&vClass, &pDispParams->rgvarg[nArg], VT_BSTR);
-					if SUCCEEDED(teCLSIDFromProgID(vClass.bstrVal, &clsid)) {
-						if (dispIdMember == TE_METHOD + 1010) {
-							IUnknown *punk;
-							if SUCCEEDED(CoCreateInstance(clsid, NULL, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER, IID_PPV_ARGS(&punk))) {
-								teSetObject(pVarResult, punk);
-								punk->Release();
-							}
-						}
-						else if (dispIdMember == TE_METHOD + 1020) {
-							IUnknown *punk;
-							if SUCCEEDED(GetActiveObject(clsid, NULL, &punk)) {
-								teSetObject(pVarResult, punk);
-								punk->Release();
-							}
+				CLSID clsid;
+				VARIANT vClass;
+				teVariantChangeType(&vClass, &pDispParams->rgvarg[nArg], VT_BSTR);
+				if SUCCEEDED(teCLSIDFromProgID(vClass.bstrVal, &clsid)) {
+					if (dispIdMember == TE_METHOD + 1010) {
+						IUnknown *punk;
+						if SUCCEEDED(CoCreateInstance(clsid, NULL, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER, IID_PPV_ARGS(&punk))) {
+							teSetObject(pVarResult, punk);
+							punk->Release();
 						}
 					}
-					VariantInit(&vClass);
+					else if (dispIdMember == TE_METHOD + 1020) {
+						IUnknown *punk;
+						if SUCCEEDED(GetActiveObject(clsid, NULL, &punk)) {
+							teSetObject(pVarResult, punk);
+							punk->Release();
+						}
+					}
 				}
+				VariantInit(&vClass);
 			}
 			return S_OK;
 		//WindowsAPI
 		case 1030:
-			if (pVarResult) {
-				CteWindowsAPI *pAPI = new CteWindowsAPI();
-				teSetObject(pVarResult, pAPI);
-				pAPI->Release();
-			}
+			punk = new CteWindowsAPI();
+			teSetObject(pVarResult, punk);
+			punk->Release();
 			return S_OK;
 		//CommonDialog
 		case 1131:
-			if (pVarResult) {
-				CteCommonDialog *pCD = new CteCommonDialog();
-				teSetObject(pVarResult, pCD);
-				pCD->Release();
-			}
+			punk = new CteCommonDialog();
+			teSetObject(pVarResult, punk);
+			punk->Release();
 			return S_OK;
 		//GdiplusBitmap
 		case 1132:
-			if (pVarResult) {
-				CteGdiplusBitmap *pGB = new CteGdiplusBitmap();
-				teSetObject(pVarResult, pGB);
-				pGB->Release();
-			}
+			punk = new CteGdiplusBitmap();
+			teSetObject(pVarResult, punk);
+			punk->Release();
 			return S_OK;
 		//FolderItems
 		case TE_METHOD + 1133:
-			if (pVarResult) {
-				CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL, true);
-				teSetObject(pVarResult, pFolderItems);
-				pFolderItems->Release();
-			}
+			CteFolderItems *pid;
+			pid = new CteFolderItems(NULL, NULL, true);
+			teSetObject(pVarResult, pid);
+			pid->Release();
 			return S_OK;
 		//Object
 		case TE_METHOD + 1134:
@@ -8931,24 +8899,20 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 #ifdef _USE_TESTOBJECT
 		//TestObj
 		case 1200:
-			if (pVarResult) {
-				CteTest *pO = new CteTest();
-				teSetObject(pVarResult, pO);
-				pO->Release();
-			}
+			punk = new CteTest();
+			teSetObject(pVarResult, punk);
+			punk->Release();
 			return S_OK;
 #endif
 		//CtrlFromPoint
 		case TE_METHOD + 1040:
 			if (nArg >= 0) {
-				if (pVarResult) {
-					POINT pt;
-					GetPointFormVariant(&pt, &pDispParams->rgvarg[nArg]);
-					IDispatch *pdisp;
-					if SUCCEEDED(ControlFromhwnd(&pdisp, WindowFromPoint(pt))) {
-						teSetObject(pVarResult, pdisp);
-						pdisp->Release();
-					}
+				POINT pt;
+				GetPointFormVariant(&pt, &pDispParams->rgvarg[nArg]);
+				IDispatch *pdisp;
+				if SUCCEEDED(ControlFromhwnd(&pdisp, WindowFromPoint(pt))) {
+					teSetObject(pVarResult, pdisp);
+					pdisp->Release();
 				}
 			}
 			return S_OK;
@@ -8966,9 +8930,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 							pTC->m_param[i] = GetIntFromVariantPP(&pDispParams->rgvarg[nArg - i], i);
 						}
 						if (pTC->Create()) {
-							if (pVarResult) {
-								teSetObject(pVarResult, pTC);
-							}
+							teSetObject(pVarResult, pTC);
 							g_pTabs = pTC;
 							pTC->Show(TRUE);
 						}
@@ -9026,12 +8988,10 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 		//CtrlFromWindow
 		case TE_METHOD + 1070:
 			if (nArg >= 0) {
-				if (pVarResult) {
-					IDispatch *pdisp;
-					if SUCCEEDED(ControlFromhwnd(&pdisp, (HWND)GetLLFromVariant(&pDispParams->rgvarg[nArg]))) {
-						teSetObject(pVarResult, pdisp);
-						pdisp->Release();
-					}
+				IDispatch *pdisp;
+				if SUCCEEDED(ControlFromhwnd(&pdisp, (HWND)GetLLFromVariant(&pDispParams->rgvarg[nArg]))) {
+					teSetObject(pVarResult, pdisp);
+					pdisp->Release();
 				}
 			}
 			return S_OK;
@@ -9089,9 +9049,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 			return S_OK;
 		//Value
 		case DISPID_VALUE:
-			if (pVarResult) {
-				teSetObject(pVarResult, this);
-			}
+			teSetObject(pVarResult, this);
 			return S_OK;
 		default:
 			if (dispIdMember >= START_OnFunc && dispIdMember < START_OnFunc + Count_OnFunc) {
@@ -9104,10 +9062,8 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 						punk->QueryInterface(IID_PPV_ARGS(&g_pOnFunc[dispIdMember - START_OnFunc]));
 					}
 				}
-				if (pVarResult) {
-					if (g_pOnFunc[dispIdMember - START_OnFunc]) {
-						teSetObject(pVarResult, g_pOnFunc[dispIdMember - START_OnFunc]);
-					}
+				if (g_pOnFunc[dispIdMember - START_OnFunc]) {
+					teSetObject(pVarResult, g_pOnFunc[dispIdMember - START_OnFunc]);
 				}
 				return S_OK;
 			}
@@ -9350,22 +9306,17 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			return S_OK;
 		//Application
 		case 0x10000005:
-			if (pVarResult) {
-				IDispatch *pdisp;
-				if SUCCEEDED(m_pWebBrowser->get_Application(&pdisp)) {
-					teSetObject(pVarResult, pdisp);
-					pdisp->Release();
-				}
+			IDispatch *pdisp;
+			if SUCCEEDED(m_pWebBrowser->get_Application(&pdisp)) {
+				teSetObject(pVarResult, pdisp);
+				pdisp->Release();
 			}
 			return S_OK;
 		//Document
 		case 0x10000006:
-			if (pVarResult) {
-				IDispatch *pdisp;
-				if SUCCEEDED(m_pWebBrowser->get_Document(&pdisp)) {
-					teSetObject(pVarResult, pdisp);
-					pdisp->Release();
-				}
+			if SUCCEEDED(m_pWebBrowser->get_Document(&pdisp)) {
+				teSetObject(pVarResult, pdisp);
+				pdisp->Release();
 			}
 			return S_OK;
 /*		//ShowBrowserBar
@@ -9478,9 +9429,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			}
 			return S_OK;
 		case DISPID_VALUE:
-			if (pVarResult) {
-				teSetObject(pVarResult, this);
-			}
+			teSetObject(pVarResult, this);
 			return S_OK;
 	}
 //	int i = dispIdMember;
@@ -9802,11 +9751,9 @@ void CteTabs::Init()
 
 VOID CteTabs::GetItem(int i, VARIANT *pVarResult)
 {
-	if (pVarResult) {
-		CteShellBrowser *pSB = GetShellBrowser(i);
-		if (pSB) {
-			teSetObject(pVarResult, pSB);
-		}
+	CteShellBrowser *pSB = GetShellBrowser(i);
+	if (pSB) {
+		teSetObject(pVarResult, pSB);
 	}
 }
 
@@ -10159,18 +10106,14 @@ STDMETHODIMP CteTabs::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD w
 			return S_OK;
 		//_NewEnum
 		case DISPID_NEWENUM:
-			if (pVarResult) {
-				CteDispatch *pid = new CteDispatch(this, 0);
-				teSetObject(pVarResult, pid);
-				pid->Release();
-				return S_OK;
-			}
-			return E_FAIL;
+			CteDispatch *pid;
+			pid = new CteDispatch(this, 0);
+			teSetObject(pVarResult, pid);
+			pid->Release();
+			return S_OK;
 		//this
 		case DISPID_VALUE:
-			if (pVarResult) {
-				teSetObject(pVarResult, this);
-			}
+			teSetObject(pVarResult, this);
 			return S_OK;
 	}
 	if (dispIdMember >= TE_OFFSET && dispIdMember <= TE_OFFSET + TC_TabHeight) {
@@ -10230,7 +10173,7 @@ STDMETHODIMP CteTabs::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD w
 					vs.fltVal = ((float)(m_param[dispIdMember - TE_OFFSET])) / 100;
 					teVariantChangeType(&v, &vs, VT_BSTR);
 					pVarResult->vt = VT_BSTR;
-					pVarResult->bstrVal = SysAllocStringLen(NULL, ::SysStringLen(v.bstrVal) + 1);
+					pVarResult->bstrVal = SysAllocStringLen(L"", ::SysStringLen(v.bstrVal) + 1);
 					lstrcpy(pVarResult->bstrVal, v.bstrVal);
 					lstrcat(pVarResult->bstrVal, L"%");
 					VariantClear(&v);
@@ -10651,12 +10594,10 @@ STDMETHODIMP CteFolderItems::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 	switch(dispIdMember) {
 		//Application
 		case 2:
-			if (pVarResult) {
-				IDispatch *pdisp;
-				if SUCCEEDED(get_Application(&pdisp)) {
-					teSetObject(pVarResult, pdisp);
-					pdisp->Release();
-				}
+			IDispatch *pdisp;
+			if SUCCEEDED(get_Application(&pdisp)) {
+				teSetObject(pVarResult, pdisp);
+				pdisp->Release();
 			}
 			return S_OK;
 		//Parent
@@ -10677,15 +10618,12 @@ STDMETHODIMP CteFolderItems::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 			return S_OK;
 		//_NewEnum
 		case DISPID_NEWENUM:
-			if (pVarResult) {
-				IUnknown *punk;
-				if SUCCEEDED(_NewEnum(&punk)) {
-					teSetObject(pVarResult, punk);
-					punk->Release();
-				}
-				return S_OK;
+			IUnknown *punk;
+			if SUCCEEDED(_NewEnum(&punk)) {
+				teSetObject(pVarResult, punk);
+				punk->Release();
 			}
-			return E_FAIL;
+			return S_OK;
 		//AddItem
 		case 8:
 			if (nArg >= 0) {
@@ -10724,17 +10662,13 @@ STDMETHODIMP CteFolderItems::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 			return S_OK;
 		//pdwEffect
 		case 0x10000002:
-			if (pVarResult) {
-				CteMemory *pMem = new CteMemory(sizeof(int), (char *)&m_dwEffect, VT_NULL, 1, L"DWORD");
-				teSetObject(pVarResult, pMem);
-				pMem->Release();
-			}
+			punk = new CteMemory(sizeof(int), (char *)&m_dwEffect, VT_NULL, 1, L"DWORD");
+			teSetObject(pVarResult, punk);
+			punk->Release();
 			return S_OK;
 		//this
 		case DISPID_VALUE:
-			if (pVarResult) {
-				teSetObject(pVarResult, this);
-			}
+			teSetObject(pVarResult, this);
 			return S_OK;
 	}
 	return DISP_E_MEMBERNOTFOUND;
@@ -10933,8 +10867,7 @@ HDROP CteFolderItems::GethDrop(int x, int y, BOOL fNC, BOOL bSpecial)
 				uSize += j + sizeof(WCHAR);
 			}
 			else {
-				::SysFreeString(pbslist[i]);
-				pbslist[i] = NULL;
+				teSysFreeString(&pbslist[i]);
 			}
 		}
 		else {
@@ -11330,9 +11263,7 @@ void CteMemory::Free()
 			delete [] pv;
 			break;
 	}
-	if (m_bsStruct) {
-		::SysFreeString(m_bsStruct);
-	}
+	teSysFreeString(&m_bsStruct);
 	if (m_ppbs) {
 		while (--m_nbs >= 0) {
 			::SysFreeString(m_ppbs[m_nbs]);
@@ -11422,13 +11353,11 @@ STDMETHODIMP CteMemory::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD
 			return S_OK;
 		//_NewEnum
 		case DISPID_NEWENUM:
-			if (pVarResult) {
-				CteDispatch *pid = new CteDispatch(this, 0);
-				teSetObject(pVarResult, pid);
-				pid->Release();
-				return S_OK;
-			}
-			return E_FAIL;
+			CteDispatch *pid;
+			pid = new CteDispatch(this, 0);
+			teSetObject(pVarResult, pid);
+			pid->Release();
+			return S_OK;
 		//Read
 		case 4:
 			if (pVarResult) {
@@ -11465,20 +11394,16 @@ STDMETHODIMP CteMemory::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD
 			return S_OK;
 		//Clone
 		case 8:
-			if (pVarResult) {
-				if (m_nSize) {
-					CteMemory *pmem = new CteMemory(m_nSize, NULL, m_nMode, m_nCount, m_bsStruct);
-					::CopyMemory(pmem->m_pc, m_pc, m_nSize);
-					teSetObject(pVarResult, pmem);
-					pmem->Release();
-				}
+			if (m_nSize) {
+				CteMemory *pmem = new CteMemory(m_nSize, NULL, m_nMode, m_nCount, m_bsStruct);
+				::CopyMemory(pmem->m_pc, m_pc, m_nSize);
+				teSetObject(pVarResult, pmem);
+				pmem->Release();
 			}
 			return S_OK;
 		//Value
 		case DISPID_VALUE:
-			if (pVarResult) {
-				teSetObject(pVarResult, this);
-			}
+			teSetObject(pVarResult, this);
 			return S_OK;
 		default:
 			if (dispIdMember >= DISPID_COLLECTION_MIN && dispIdMember <= DISPID_TE_MAX) {
@@ -11678,222 +11603,230 @@ BSTR CteMemory::AddBSTR(BSTR bs)
 
 VOID CteMemory::Read(int nIndex, int nLen, VARIANT *pVarResult)
 {
-	if (pVarResult->vt & VT_ARRAY) {
-		VARTYPE vt = pVarResult->vt & 0xff;
-		int nSize = SizeOfvt(vt);
-		if (nSize) {
-			if (nLen < 0) {
-				nLen = (m_nSize - nIndex) / nSize;
-			}
-			if (nLen > 0) {
-				SAFEARRAY *psa = SafeArrayCreateVector(vt, 0, nLen);
-				if (psa) {
-					PVOID pvData;
-					if (::SafeArrayAccessData(psa, &pvData) == S_OK) {
-						::CopyMemory(pvData, &m_pc[nIndex], nLen * nSize);
-						::SafeArrayUnaccessData(psa);
-						pVarResult->parray = psa;
+	try {
+		if (pVarResult->vt & VT_ARRAY) {
+			VARTYPE vt = pVarResult->vt & 0xff;
+			int nSize = SizeOfvt(vt);
+			if (nSize) {
+				if (nLen < 0) {
+					nLen = (m_nSize - nIndex) / nSize;
+				}
+				if (nLen > 0) {
+					SAFEARRAY *psa = SafeArrayCreateVector(vt, 0, nLen);
+					if (psa) {
+						PVOID pvData;
+						if (::SafeArrayAccessData(psa, &pvData) == S_OK) {
+							::CopyMemory(pvData, &m_pc[nIndex], nLen * nSize);
+							::SafeArrayUnaccessData(psa);
+							pVarResult->parray = psa;
+						}
 					}
 				}
 			}
+			return;
 		}
-		return;
-	}
-	switch (pVarResult->vt) {
-		case VT_BOOL:
-			pVarResult->boolVal = *(BOOL *)&m_pc[nIndex];
-			break;
-		case VT_I1:
-		case VT_UI1:
-			pVarResult->bVal = m_pc[nIndex];
-			break;
-		case VT_I2:
-		case VT_UI2:
-			pVarResult->iVal = *(short *)&m_pc[nIndex];
-			break;
-		case VT_I4:
-		case VT_UI4:
-			pVarResult->lVal = *(int *)&m_pc[nIndex];
-			break;
-		case VT_I8:
-		case VT_UI8:
-			SetVariantLL(pVarResult, *(LONGLONG *)&m_pc[nIndex]);
-			break;
-		case VT_R4:
-			pVarResult->fltVal = *(FLOAT *)&m_pc[nIndex];
-			break;
-		case VT_R8:
-			pVarResult->dblVal = *(DOUBLE *)&m_pc[nIndex];
-			break;
-		case VT_PTR:
-		case VT_BSTR:
-			SetVariantLL(pVarResult, *(INT_PTR *)&m_pc[nIndex]);
-			break;
-		case VT_LPWSTR:
-			if (nLen >= 0) {
-				if (nLen * (int)sizeof(WCHAR) > m_nSize) {
-					nLen = m_nSize / sizeof(WCHAR);
+		switch (pVarResult->vt) {
+			case VT_BOOL:
+				pVarResult->boolVal = *(BOOL *)&m_pc[nIndex];
+				break;
+			case VT_I1:
+			case VT_UI1:
+				pVarResult->bVal = m_pc[nIndex];
+				break;
+			case VT_I2:
+			case VT_UI2:
+				pVarResult->iVal = *(short *)&m_pc[nIndex];
+				break;
+			case VT_I4:
+			case VT_UI4:
+				pVarResult->lVal = *(int *)&m_pc[nIndex];
+				break;
+			case VT_I8:
+			case VT_UI8:
+				SetVariantLL(pVarResult, *(LONGLONG *)&m_pc[nIndex]);
+				break;
+			case VT_R4:
+				pVarResult->fltVal = *(FLOAT *)&m_pc[nIndex];
+				break;
+			case VT_R8:
+				pVarResult->dblVal = *(DOUBLE *)&m_pc[nIndex];
+				break;
+			case VT_PTR:
+			case VT_BSTR:
+				SetVariantLL(pVarResult, *(INT_PTR *)&m_pc[nIndex]);
+				break;
+			case VT_LPWSTR:
+				if (nLen >= 0) {
+					if (nLen * (int)sizeof(WCHAR) > m_nSize) {
+						nLen = m_nSize / sizeof(WCHAR);
+					}
+					pVarResult->bstrVal = SysAllocStringLenEx((WCHAR *)&m_pc[nIndex], nLen, lstrlen((WCHAR *)&m_pc[nIndex]));
 				}
-				pVarResult->bstrVal = SysAllocStringLenEx((WCHAR *)&m_pc[nIndex], nLen, lstrlen((WCHAR *)&m_pc[nIndex]));
-			}
-			else {
-				pVarResult->bstrVal = SysAllocString((WCHAR *)&m_pc[nIndex]);
-			}
-			pVarResult->vt = VT_BSTR;
-			break;
-		case VT_LPSTR:
-			int nLenW;
-			if (nLen > m_nSize) {
-				nLen = m_nSize;
-			}
-			nLenW = MultiByteToWideChar(CP_ACP, 0, (LPCSTR)&m_pc[nIndex], nLen, NULL, NULL);
-			pVarResult->bstrVal = SysAllocStringLen(NULL, nLenW);
-			MultiByteToWideChar(CP_ACP, 0, (LPCSTR)&m_pc[nIndex], nLen, pVarResult->bstrVal, nLenW);
-			pVarResult->vt = VT_BSTR;
-			break;
-		case VT_FILETIME:
-			teFileTimeToVariantTime((LPFILETIME)&m_pc[nIndex], &pVarResult->date);
-			pVarResult->vt = VT_DATE;
-			break;
-		case VT_CY:
-			CteMemory *pstPt;
-			pstPt = new CteMemory(sizeof(POINT), NULL, VT_NULL, 1, L"POINT");
-			::CopyMemory(pstPt->m_pc, &m_pc[nIndex], 2 * sizeof(int));	
-			teSetObject(pVarResult, pstPt);
-			pstPt->Release();
-			break;
-		case VT_CARRAY:
-			CteMemory *pstR;
-			pstR = new CteMemory(sizeof(RECT), NULL, VT_NULL, 1, L"RECT");
-			::CopyMemory(pstR->m_pc, &m_pc[nIndex], 4 * sizeof(int));	
-			teSetObject(pVarResult, pstR);
-			pstR->Release();
-			break;
-		case VT_CLSID:
-			LPOLESTR lpsz;
-			StringFromCLSID(*(IID *)&m_pc[nIndex], &lpsz);
-			pVarResult->bstrVal = SysAllocString(lpsz);
-			teCoTaskMemFree(lpsz);
-			pVarResult->vt = VT_BSTR;
-			break;
-		case VT_VARIANT:
-			VariantCopy(pVarResult, (VARIANT *)&m_pc[nIndex]);
-			break;
-/*		case VT_RECORD:
-			teSetIDList(pVarResult, *(LPITEMIDLIST *)&m_pc[nIndex]);
-			break;*/
-		default:
-			pVarResult->vt = VT_EMPTY;
-			break;
-	}//end_switch
+				else {
+					pVarResult->bstrVal = SysAllocString((WCHAR *)&m_pc[nIndex]);
+				}
+				pVarResult->vt = VT_BSTR;
+				break;
+			case VT_LPSTR:
+				int nLenW;
+				if (nLen > m_nSize) {
+					nLen = m_nSize;
+				}
+				nLenW = MultiByteToWideChar(CP_ACP, 0, (LPCSTR)&m_pc[nIndex], nLen, NULL, NULL);
+				pVarResult->bstrVal = SysAllocStringLen(L"", nLenW);
+				MultiByteToWideChar(CP_ACP, 0, (LPCSTR)&m_pc[nIndex], nLen, pVarResult->bstrVal, nLenW);
+				pVarResult->vt = VT_BSTR;
+				break;
+			case VT_FILETIME:
+				teFileTimeToVariantTime((LPFILETIME)&m_pc[nIndex], &pVarResult->date);
+				pVarResult->vt = VT_DATE;
+				break;
+			case VT_CY:
+				CteMemory *pstPt;
+				pstPt = new CteMemory(sizeof(POINT), NULL, VT_NULL, 1, L"POINT");
+				::CopyMemory(pstPt->m_pc, &m_pc[nIndex], 2 * sizeof(int));	
+				teSetObject(pVarResult, pstPt);
+				pstPt->Release();
+				break;
+			case VT_CARRAY:
+				CteMemory *pstR;
+				pstR = new CteMemory(sizeof(RECT), NULL, VT_NULL, 1, L"RECT");
+				::CopyMemory(pstR->m_pc, &m_pc[nIndex], 4 * sizeof(int));	
+				teSetObject(pVarResult, pstR);
+				pstR->Release();
+				break;
+			case VT_CLSID:
+				LPOLESTR lpsz;
+				StringFromCLSID(*(IID *)&m_pc[nIndex], &lpsz);
+				pVarResult->bstrVal = SysAllocString(lpsz);
+				teCoTaskMemFree(lpsz);
+				pVarResult->vt = VT_BSTR;
+				break;
+			case VT_VARIANT:
+				VariantCopy(pVarResult, (VARIANT *)&m_pc[nIndex]);
+				break;
+	/*		case VT_RECORD:
+				teSetIDList(pVarResult, *(LPITEMIDLIST *)&m_pc[nIndex]);
+				break;*/
+			default:
+				pVarResult->vt = VT_EMPTY;
+				break;
+		}//end_switch
+	}
+	catch (...) {
+	}
 }
 
 //Write
 VOID CteMemory::Write(int nIndex, int nLen, VARTYPE vt, VARIANT *pv)
 {
-	if (pv->vt & VT_ARRAY) {
-		int nSize = SizeOfvt(pv->vt);
-		if (nSize) {
-			if (nLen < 0) {
-				nLen = (m_nSize - nIndex) / nSize;
-			}
-			if (nLen > 0) {
-				PVOID pvData;
-				if (::SafeArrayAccessData(pv->parray, &pvData) == S_OK) {
-					::CopyMemory(&m_pc[nIndex], pvData, nLen * nSize);
-					::SafeArrayUnaccessData(pv->parray);
-				}
-			}
-		}
-		return;
-	}
-	LONGLONG ll;
-	ll = GetLLFromVariant(pv);
-	switch (vt) {
-		case VT_I1:
-		case VT_UI1:
-			::CopyMemory(&m_pc[nIndex], &ll, sizeof(char));
-			break;
-		case VT_I2:
-		case VT_UI2:
-			::CopyMemory(&m_pc[nIndex], &ll, sizeof(short));
-			break;
-		case VT_BOOL:
-		case VT_I4:
-		case VT_UI4:
-			::CopyMemory(&m_pc[nIndex], &ll, sizeof(int));
-			break;
-		case VT_I8:
-		case VT_UI8:
-			::CopyMemory(&m_pc[nIndex], &ll, sizeof(LONGLONG));
-			break;
-		case VT_PTR:
-		case VT_BSTR:
-			::CopyMemory(&m_pc[nIndex], &ll, sizeof(INT_PTR));
-			break;
-		case VT_LPWSTR:
-			VARIANT v;
-			teVariantChangeType(&v, pv, VT_BSTR);
-			if (v.bstrVal) {
+	try {
+		if (pv->vt & VT_ARRAY) {
+			int nSize = SizeOfvt(pv->vt);
+			if (nSize) {
 				if (nLen < 0) {
-					nLen = (::SysStringLen(v.bstrVal) + 1);
+					nLen = (m_nSize - nIndex) / nSize;
 				}
-				nLen *= sizeof(WCHAR);
-				if (nLen > m_nSize) {
-					nLen = m_nSize;
+				if (nLen > 0) {
+					PVOID pvData;
+					if (::SafeArrayAccessData(pv->parray, &pvData) == S_OK) {
+						::CopyMemory(&m_pc[nIndex], pvData, nLen * nSize);
+						::SafeArrayUnaccessData(pv->parray);
+					}
 				}
-				::CopyMemory(&m_pc[nIndex], v.bstrVal, nLen);
 			}
-			else {
-				*(WCHAR *)&m_pc[nIndex] = NULL;
-			}
-			VariantClear(&v);
-			break;
-		case VT_LPSTR:
-			teVariantChangeType(&v, pv, VT_BSTR);
-			int nLenA;
-			nLenA = 0;
-			if (v.bstrVal) {
-				nLenA = WideCharToMultiByte(CP_ACP, 0, (LPCWSTR)v.bstrVal, nLen, NULL, 0, NULL, NULL) + 1;
-				if (nLenA > m_nSize) {
-					nLenA = m_nSize;
+			return;
+		}
+		LONGLONG ll;
+		ll = GetLLFromVariant(pv);
+		switch (vt) {
+			case VT_I1:
+			case VT_UI1:
+				::CopyMemory(&m_pc[nIndex], &ll, sizeof(char));
+				break;
+			case VT_I2:
+			case VT_UI2:
+				::CopyMemory(&m_pc[nIndex], &ll, sizeof(short));
+				break;
+			case VT_BOOL:
+			case VT_I4:
+			case VT_UI4:
+				::CopyMemory(&m_pc[nIndex], &ll, sizeof(int));
+				break;
+			case VT_I8:
+			case VT_UI8:
+				::CopyMemory(&m_pc[nIndex], &ll, sizeof(LONGLONG));
+				break;
+			case VT_PTR:
+			case VT_BSTR:
+				::CopyMemory(&m_pc[nIndex], &ll, sizeof(INT_PTR));
+				break;
+			case VT_LPWSTR:
+				VARIANT v;
+				teVariantChangeType(&v, pv, VT_BSTR);
+				if (v.bstrVal) {
+					if (nLen < 0) {
+						nLen = (::SysStringLen(v.bstrVal) + 1);
+					}
+					nLen *= sizeof(WCHAR);
+					if (nLen > m_nSize) {
+						nLen = m_nSize;
+					}
+					::CopyMemory(&m_pc[nIndex], v.bstrVal, nLen);
 				}
-				WideCharToMultiByte(CP_ACP, 0, (LPCWSTR)v.bstrVal, nLen, &m_pc[nIndex], nLenA, NULL, NULL);
-			}
-			m_pc[nIndex + nLenA] = NULL;
-			VariantClear(&v);
-			break;
-		case VT_FILETIME:
-			teVariantTimeToFileTime(pv->date, (LPFILETIME)&m_pc[nIndex]);
-			break;
-		case VT_CY:
-			GetPointFormVariant((LPPOINT)&m_pc[nIndex], pv);
-			break;
-		case VT_CARRAY:
-			CteMemory *pMem;
-			if (GetMemFormVariant(pv, &pMem)) {
-				::CopyMemory(&m_pc[nIndex], pMem->m_pc, 16);
-				pMem->Release();
-			}
-			else {
-				::ZeroMemory(&m_pc[nIndex], 16);
-			}
-			break;
-		case VT_CLSID:
-			if (pv->vt == VT_BSTR) {
-				CLSIDFromString(pv->bstrVal, (LPCLSID)&m_pc[nIndex]);
-			}
-			break;
-		case VT_VARIANT:
-			VariantCopy((VARIANT *)&m_pc[nIndex], pv);
-			break;
-/*		case VT_RECORD:
-			LPITEMIDLIST *ppidl;
-			ppidl = (LPITEMIDLIST *)&m_pc[nIndex];
-			teCoTaskMemFree(*ppidl);
-			GetPidlFromVariant(ppidl, pv);
-			break;*/
-	}//end_switch
+				else {
+					*(WCHAR *)&m_pc[nIndex] = NULL;
+				}
+				VariantClear(&v);
+				break;
+			case VT_LPSTR:
+				teVariantChangeType(&v, pv, VT_BSTR);
+				int nLenA;
+				nLenA = 0;
+				if (v.bstrVal) {
+					nLenA = WideCharToMultiByte(CP_ACP, 0, (LPCWSTR)v.bstrVal, nLen, NULL, 0, NULL, NULL) + 1;
+					if (nLenA > m_nSize) {
+						nLenA = m_nSize;
+					}
+					WideCharToMultiByte(CP_ACP, 0, (LPCWSTR)v.bstrVal, nLen, &m_pc[nIndex], nLenA, NULL, NULL);
+				}
+				m_pc[nIndex + nLenA] = NULL;
+				VariantClear(&v);
+				break;
+			case VT_FILETIME:
+				teVariantTimeToFileTime(pv->date, (LPFILETIME)&m_pc[nIndex]);
+				break;
+			case VT_CY:
+				GetPointFormVariant((LPPOINT)&m_pc[nIndex], pv);
+				break;
+			case VT_CARRAY:
+				CteMemory *pMem;
+				if (GetMemFormVariant(pv, &pMem)) {
+					::CopyMemory(&m_pc[nIndex], pMem->m_pc, 16);
+					pMem->Release();
+				}
+				else {
+					::ZeroMemory(&m_pc[nIndex], 16);
+				}
+				break;
+			case VT_CLSID:
+				if (pv->vt == VT_BSTR) {
+					CLSIDFromString(pv->bstrVal, (LPCLSID)&m_pc[nIndex]);
+				}
+				break;
+			case VT_VARIANT:
+				VariantCopy((VARIANT *)&m_pc[nIndex], pv);
+				break;
+	/*		case VT_RECORD:
+				LPITEMIDLIST *ppidl;
+				ppidl = (LPITEMIDLIST *)&m_pc[nIndex];
+				teCoTaskMemFree(*ppidl);
+				GetPidlFromVariant(ppidl, pv);
+				break;*/
+		}//end_switch
+	}
+	catch (...) {
+	}
 }
 
 int CteMemory::GetLong(int nIndex)
@@ -12048,7 +11981,7 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 							int nLenA = WideCharToMultiByte(CP_ACP, 0, ppwc[i], nLenW, NULL, 0, NULL, NULL);
 							ppc[i] = new char[nLenA];
 							WideCharToMultiByte(CP_ACP, 0, ppwc[i], nLenW, ppc[i], nLenA, NULL, NULL);
-							BSTR bs = SysAllocStringLen(NULL, nLenW);
+							BSTR bs = SysAllocStringLen(L"", nLenW);
 							MultiByteToWideChar(CP_ACP, 0, ppc[i], nLenA, bs, nLenW);
 							if (lstrcmp(bs, ppwc[i])) {
 								cmi.fMask = CMIC_MASK_UNICODE;
@@ -12090,19 +12023,14 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 					}
 				}
 				delete [] pv;
-				if (m_pShellBrowser) {
-					m_pShellBrowser->m_bNoRowSelect = TRUE;
-				}
 			}
 			return S_OK;
 		//Items
 		case 3:	
-			if (pVarResult) {
-				FolderItems *pFolderItems;
-				pFolderItems = new CteFolderItems(m_pDataObj, NULL, false);
-				teSetObject(pVarResult, pFolderItems);
-				pFolderItems->Release();
-			}
+			FolderItems *pFolderItems;
+			pFolderItems = new CteFolderItems(m_pDataObj, NULL, false);
+			teSetObject(pVarResult, pFolderItems);
+			pFolderItems->Release();
 			return S_OK;
 		//GetCommandString
 		case 4:	
@@ -12123,20 +12051,18 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 			return S_OK;
 		//FolderView
 		case 5:
-			if (pVarResult) {
-				IServiceProvider *pSP;
-				if SUCCEEDED(IUnknown_GetSite(m_pContextMenu, IID_PPV_ARGS(&pSP))) {
-					IShellBrowser *pSB;		
-					if SUCCEEDED(pSP->QueryService(SID_SShellBrowser, IID_PPV_ARGS(&pSB))) {
-						IDispatch *pdisp;
-						if SUCCEEDED(pSB->QueryInterface(IID_PPV_ARGS(&pdisp))) {
-							teSetObject(pVarResult, pdisp);
-							pdisp->Release();
-						}
-						pSB->Release();
+			IServiceProvider *pSP;
+			if SUCCEEDED(IUnknown_GetSite(m_pContextMenu, IID_PPV_ARGS(&pSP))) {
+				IShellBrowser *pSB;		
+				if SUCCEEDED(pSP->QueryService(SID_SShellBrowser, IID_PPV_ARGS(&pSB))) {
+					IDispatch *pdisp;
+					if SUCCEEDED(pSB->QueryInterface(IID_PPV_ARGS(&pdisp))) {
+						teSetObject(pVarResult, pdisp);
+						pdisp->Release();
 					}
-					pSP->Release();
+					pSB->Release();
 				}
+				pSP->Release();
 			}
 			return S_OK;
 		//HandleMenuMsg
@@ -12167,9 +12093,7 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 			return S_OK;
 
 		case DISPID_VALUE:
-			if (pVarResult) {
-				teSetObject(pVarResult, this);
-			}
+			teSetObject(pVarResult, this);
 			return S_OK;
 	}
 	return DISP_E_MEMBERNOTFOUND;
@@ -12365,15 +12289,11 @@ STDMETHODIMP CteDropTarget::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			return S_OK;
 		//FolderItem
 		case 6:
-			if (pVarResult) {
-				teSetObject(pVarResult, m_pFolderItem);
-			}
+			teSetObject(pVarResult, m_pFolderItem);
 			return S_OK;
 
 		case DISPID_VALUE:
-			if (pVarResult) {
-				teSetObject(pVarResult, this);
-			}
+			teSetObject(pVarResult, this);
 			return S_OK;
 	}
 	return DISP_E_MEMBERNOTFOUND;
@@ -12772,9 +12692,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 			return S_OK;
 		//FolderView
 		case 0x10000007:
-			if (pVarResult) {
-				teSetObject(pVarResult, m_pFV);
-			}
+			teSetObject(pVarResult, m_pFV);
 			return S_OK;
 		//Align
 		case 0x10000008:
@@ -12849,13 +12767,11 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 
 		//SelectedItem
 		case 0x20000000:
-			if (pVarResult) {
-				IDispatch *pdisp;
-				if (getSelected(&pdisp) == S_OK) {
-					teSetObject(pVarResult, pdisp);
-					pdisp->Release();
-					return S_OK;
-				}
+			IDispatch *pdisp;
+			if (getSelected(&pdisp) == S_OK) {
+				teSetObject(pVarResult, pdisp);
+				pdisp->Release();
+				return S_OK;
 			}
 			break;
 		//Root
@@ -12945,9 +12861,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 			return S_OK;
 #endif
 		case DISPID_VALUE:
-			if (pVarResult) {
-				teSetObject(pVarResult, this);
-			}
+			teSetObject(pVarResult, this);
 			return S_OK;
 		default:
 			if (dispIdMember >= TE_OFFSET && dispIdMember <= TE_OFFSET + SB_RootStyle) {
@@ -13705,9 +13619,7 @@ STDMETHODIMP CteFolderItem::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			}
 			return S_OK;
 		case DISPID_VALUE:
-			if (pVarResult) {
-				teSetObject(pVarResult, this);
-			}
+			teSetObject(pVarResult, this);
 			return S_OK;
 	}
 	if (GetFolderItem()) {
@@ -13870,21 +13782,11 @@ CteCommonDialog::CteCommonDialog()
 CteCommonDialog::~CteCommonDialog()
 {
 	
-	if (m_ofn.lpstrFile) {
-		SysFreeString(m_ofn.lpstrFile);
-	}
-	if (m_ofn.lpstrInitialDir) {
-		SysFreeString(const_cast<BSTR>(m_ofn.lpstrInitialDir));
-	}
-	if (m_ofn.lpstrFilter) {
-		SysFreeString(const_cast<BSTR>(m_ofn.lpstrFilter));
-	}
-	if (m_ofn.lpstrDefExt) {
-		SysFreeString(const_cast<BSTR>(m_ofn.lpstrDefExt));
-	}
-	if (m_ofn.lpstrTitle) {
-		SysFreeString(const_cast<BSTR>(m_ofn.lpstrTitle));
-	}
+	teSysFreeString(&m_ofn.lpstrFile);
+	teSysFreeString(const_cast<BSTR *>(&m_ofn.lpstrInitialDir));
+	teSysFreeString(const_cast<BSTR *>(&m_ofn.lpstrFilter));
+	teSysFreeString(const_cast<BSTR *>(&m_ofn.lpstrDefExt));
+	teSysFreeString(const_cast<BSTR *>(&m_ofn.lpstrTitle));
 }
 
 STDMETHODIMP CteCommonDialog::QueryInterface(REFIID riid, void **ppvObject)
@@ -13964,9 +13866,7 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 		case 13:	
 			if (nArg >= 0) {
 				if (pDispParams->rgvarg[nArg].vt == VT_BSTR) {
-					if (m_ofn.lpstrFilter) {
-						SysFreeString(const_cast<BSTR>(m_ofn.lpstrFilter));
-					}
+					teSysFreeString(const_cast<BSTR *>(&m_ofn.lpstrFilter));
 					int i = ::SysStringLen(pDispParams->rgvarg[nArg].bstrVal);
 					BSTR bs = SysAllocStringLen(pDispParams->rgvarg[nArg].bstrVal, i + 1);
 					bs[i + 1] = NULL;
@@ -13985,9 +13885,7 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			return S_OK;
 		case DISPID_VALUE:
-			if (pVarResult) {
-				teSetObject(pVarResult, this);
-			}
+			teSetObject(pVarResult, this);
 			return S_OK;
 	}
 	if (dispIdMember >= 40) {
@@ -14309,7 +14207,7 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 								lpfnCryptBinaryToStringW(pBuff, ulBytesRead, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, NULL, &dwSize);
 								if (dwSize > 0) {
 									pVarResult->vt = VT_BSTR;
-									pVarResult->bstrVal = SysAllocStringLen(NULL, nDest + dwSize - 1);
+									pVarResult->bstrVal = SysAllocStringLen(L"", nDest + dwSize - 1);
 									lstrcpy(pVarResult->bstrVal, szHead);
 									lpfnCryptBinaryToStringW(pBuff, ulBytesRead, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, &pVarResult->bstrVal[nDest], &dwSize);
 								}
@@ -14380,17 +14278,13 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 			return S_OK;
 		//GetHICON
 		case 211:
-			if (pVarResult) {
-				HICON hIcon;
-				if (m_pImage->GetHICON(&hIcon) == 0) {
-					SetVariantLL(pVarResult, (LONGLONG)hIcon);
-				}
+			HICON hIcon;
+			if (m_pImage->GetHICON(&hIcon) == 0) {
+				SetVariantLL(pVarResult, (LONGLONG)hIcon);
 			}
 			return S_OK;
 		case DISPID_VALUE:
-			if (pVarResult) {
-				teSetObject(pVarResult, this);
-			}
+			teSetObject(pVarResult, this);
 			return S_OK;
 	}
 	return DISP_E_MEMBERNOTFOUND;
@@ -14464,13 +14358,11 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 
 	if (wFlags == DISPATCH_PROPERTYGET) {
 		if (dispIdMember != DISPID_VALUE) {
-			if (pVarResult) {
-				CteDispatch *pClone = new CteDispatch(this, 0);
-				pClone->m_dispIdMember = dispIdMember;
-				teSetObject(pVarResult, pClone);
-				pClone->Release();
-				return S_OK;
-			}
+			CteDispatch *pClone = new CteDispatch(this, 0);
+			pClone->m_dispIdMember = dispIdMember;
+			teSetObject(pVarResult, pClone);
+			pClone->Release();
+			return S_OK;
 		}
 	}
 	int nArg = pDispParams ? pDispParams->cArgs - 1 : -1;
@@ -14489,19 +14381,19 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 					case 50005:
 						if (nArg >= 0) {
 							int i = GetWindowTextLength((HWND)param[0]);
-							bsName = SysAllocStringLen(NULL, i);
+							bsName = SysAllocStringLen(L"", i);
 							GetWindowText((HWND)param[0], bsName, i);
 						}
 						break;
 					case 50015:
 						if (nArg >= 0) {
-							bsName = SysAllocStringLen(NULL, MAX_CLASS_NAME);
+							bsName = SysAllocStringLen(L"", MAX_CLASS_NAME);
 							GetClassName((HWND)param[0], bsName, MAX_CLASS_NAME);
 						}
 						break;
 					case 50145:
 						if (nArg >= 1) {
-							bsName = SysAllocStringLen(NULL, 4096);
+							bsName = SysAllocStringLen(L"", 4096);
 							LoadString((HINSTANCE)param[0], (UINT)param[1], bsName, 4096);
 						}
 						break;
@@ -14515,7 +14407,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 						break;
 					case 50045:
 						//use wsh.CurrentDirectory
-						bsName = SysAllocStringLen(NULL, MAX_PATH);
+						bsName = SysAllocStringLen(L"", MAX_PATH);
 						GetCurrentDirectory(MAX_PATH, bsName);
 						break;
 					case 50055:
@@ -14546,7 +14438,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 						return S_OK;
 					case 50075:
 						if (nArg >= 0) {
-							bsName = SysAllocStringLen(NULL, MAX_PATH);
+							bsName = SysAllocStringLen(L"", MAX_PATH);
 							GetKeyNameText((LONG)param[0], bsName, MAX_PATH);
 						}
 						break;
@@ -14670,7 +14562,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 									lpfnCryptBinaryToStringW(pc, nLen, CRYPT_STRING_BASE64, NULL, &dwSize);
 									if (dwSize > 0) {
 										pVarResult->vt = VT_BSTR;
-										pVarResult->bstrVal = SysAllocStringLen(NULL, dwSize - 1);
+										pVarResult->bstrVal = SysAllocStringLen(L"", dwSize - 1);
 										lpfnCryptBinaryToStringW(pc, nLen, CRYPT_STRING_BASE64, pVarResult->bstrVal, &dwSize);
 									}
 								}
@@ -14684,7 +14576,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 							LPWSTR lp2 = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 2]);
 							LPWSTR lp3 = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 3]);
 							AssocQueryString((ASSOCF)param[0], (ASSOCSTR)param[1], lp2 , lp3, NULL, &cch);
-							bsName = SysAllocStringLen(NULL, cch);
+							bsName = SysAllocStringLen(L"", cch);
 							AssocQueryString((ASSOCF)param[0], (ASSOCSTR)param[1], lp2 , lp3, bsName, &cch);
 							bsName[cch] = NULL;
 						}
@@ -14865,7 +14757,10 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 					if (nArg >= 4) {
 						*phResult = CopyImage((HANDLE)param[0], (UINT)param[1], (int)param[2], (int)param[3], (UINT)param[4]);
 					}
-					break;					
+					break;
+				case 40323:
+					*phResult = GetCurrentProcess();
+					break;
 				//other
 				case 45003:
 					if (nArg >= 1) {
@@ -15141,6 +15036,11 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 						*plResult = ImageList_GetBkColor((HIMAGELIST)param[0]);
 					}
 					break;
+				case 30262:
+					if (nArg >= 1) {
+						*plResult = lpfnSetWindowTheme((HWND)param[0], GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]), GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 2]));
+					}
+					break;
 				case 35002://TrackPopupMenuEx
 					if (nArg >= 5) {
 						if (nArg >= 6) {
@@ -15334,8 +15234,8 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 					try {
 						*plResult = ::SHFileOperation(pFO);
 					} catch (...) {}
-					::SysFreeString((BSTR)(pFO->pTo));
-					::SysFreeString((BSTR)(pFO->pFrom));
+					::SysFreeString(const_cast<BSTR>(pFO->pTo));
+					::SysFreeString(const_cast<BSTR>(pFO->pFrom));
 				}
 				SetReturnValue(pVarResult, dispIdMember, &Result);
 				return S_OK;
@@ -15655,6 +15555,11 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 						*pbResult = SHChangeNotification_Unlock((HANDLE)param[0]);
 					}
 					break;
+				case 20421:
+					if (nArg >= 0 && lpfnIsWow64Process) {
+						lpfnIsWow64Process((HANDLE)param[0], pbResult);
+					}
+					break;
 				case 25001://InsertMenu
 					if (nArg >= 4) {
 						VARIANT vNewItem;
@@ -15931,7 +15836,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				case 6025:
 					if (v.bstrVal) {
 						int nLen = GetShortPathName(v.bstrVal, NULL, 0);
-						bsResult = ::SysAllocStringLen(NULL, nLen + MAX_PATH);
+						bsResult = ::SysAllocStringLen(L"", nLen + MAX_PATH);
 						nLen = GetShortPathName(v.bstrVal, bsResult, nLen);
 						bsResult[nLen] = NULL;
 					}
@@ -15939,10 +15844,9 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				case 6035:
 					if (v.bstrVal) {
 						DWORD dwLen = ::SysStringLen(v.bstrVal) + MAX_PATH;
-						bsResult = ::SysAllocStringLen(NULL, dwLen);
+						bsResult = ::SysAllocStringLen(L"", dwLen);
 						if FAILED(PathCreateFromUrl(v.bstrVal, bsResult, &dwLen, NULL)) {
-							::SysFreeString(bsResult);
-							bsResult = NULL;
+							teSysFreeString(&bsResult);
 						}
 					}
 					break;
@@ -15972,7 +15876,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 								}
 #ifdef _2000XP
 								else {
-									bsResult = ::SysAllocStringLen(NULL, MAX_PROP);
+									bsResult = ::SysAllocStringLen(L"", MAX_PROP);
 									IPropertyUI *pPUI;
 									if SUCCEEDED(CoCreateInstance(CLSID_PropertiesUI, NULL, CLSCTX_INPROC, IID_PPV_ARGS(&pPUI))) {
 										pPUI->FormatForDisplay(propKey.fmtid, propKey.pid, (PROPVARIANT *)&pDispParams->rgvarg[nArg - 1], GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]), bsResult, MAX_PROP);
@@ -16002,7 +15906,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 							}
 #ifdef _2000XP
 							else {
-								bsResult = ::SysAllocStringLen(NULL, MAX_PROP);
+								bsResult = ::SysAllocStringLen(L"", MAX_PROP);
 								IPropertyUI *pPUI;
 								if SUCCEEDED(CoCreateInstance(CLSID_PropertiesUI, NULL, CLSCTX_INPROC, IID_PPV_ARGS(&pPUI))) {
 									pPUI->GetDisplayName(propKey.fmtid, propKey.pid, PUIFNF_DEFAULT, bsResult, MAX_PROP);
@@ -16041,143 +15945,139 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 		//Memory
 		case 1040:	
 			if (nArg >= 0) {
-				if (pVarResult) {
-					CteMemory *pMem;
-					char *pc = NULL;;
-					LPWSTR sz = NULL;
-					int nCount = 1;
-					int i = 0;
-					if (pDispParams->rgvarg[nArg].vt == VT_BSTR) {
-						sz = pDispParams->rgvarg[nArg].bstrVal;
-						i = GetSizeOfStruct(sz);
-					}
-					if (pDispParams->rgvarg[nArg].vt & VT_ARRAY) {
-						pc = (char *)pDispParams->rgvarg[nArg].parray->pvData;
-						nCount = pDispParams->rgvarg[nArg].parray->rgsabound[0].cElements;
-						i = SizeOfvt(pDispParams->rgvarg[nArg].vt);
-					}
-					if (i == 0) {
-						i = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
-						if (i == 0) {
-							return S_OK;
-						}
-					}
-					BSTR bs = NULL;
-					if (nArg >= 1) {
-						if (i == 2 && pDispParams->rgvarg[nArg - 1].vt == VT_BSTR) {
-							bs = pDispParams->rgvarg[nArg - 1].bstrVal;
-							nCount = SysStringByteLen(bs) / 2 + 1;
-						}
-						else {
-							nCount = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
-						}
-						if (nCount < 1) {
-							nCount = 1;
-						}
-						if (nArg >= 2) {
-							pc = (char *)GetLLFromVariant(&pDispParams->rgvarg[nArg - 2]);
-						}
-					}
-					pMem = new CteMemory(i * nCount + GetOffsetOfStruct(sz), pc, GetVTOfStruct(sz), nCount, sz);
-					if (bs) {
-						::CopyMemory(pMem->m_pc, bs, nCount * 2);
-					}
-					teSetObject(pVarResult, pMem);
-					pMem->Release();
+				CteMemory *pMem;
+				char *pc = NULL;;
+				LPWSTR sz = NULL;
+				int nCount = 1;
+				int i = 0;
+				if (pDispParams->rgvarg[nArg].vt == VT_BSTR) {
+					sz = pDispParams->rgvarg[nArg].bstrVal;
+					i = GetSizeOfStruct(sz);
 				}
+				if (pDispParams->rgvarg[nArg].vt & VT_ARRAY) {
+					pc = (char *)pDispParams->rgvarg[nArg].parray->pvData;
+					nCount = pDispParams->rgvarg[nArg].parray->rgsabound[0].cElements;
+					i = SizeOfvt(pDispParams->rgvarg[nArg].vt);
+				}
+				if (i == 0) {
+					i = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+					if (i == 0) {
+						return S_OK;
+					}
+				}
+				BSTR bs = NULL;
+				if (nArg >= 1) {
+					if (i == 2 && pDispParams->rgvarg[nArg - 1].vt == VT_BSTR) {
+						bs = pDispParams->rgvarg[nArg - 1].bstrVal;
+						nCount = SysStringByteLen(bs) / 2 + 1;
+					}
+					else {
+						nCount = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
+					}
+					if (nCount < 1) {
+						nCount = 1;
+					}
+					if (nArg >= 2) {
+						pc = (char *)GetLLFromVariant(&pDispParams->rgvarg[nArg - 2]);
+					}
+				}
+				pMem = new CteMemory(i * nCount + GetOffsetOfStruct(sz), pc, GetVTOfStruct(sz), nCount, sz);
+				if (bs) {
+					::CopyMemory(pMem->m_pc, bs, nCount * 2);
+				}
+				teSetObject(pVarResult, pMem);
+				pMem->Release();
 			}
 			return S_OK;
 		//ContextMenu
 		case 1061:
 			if (nArg >= 0) {
-				if (pVarResult) {
-					IDataObject *pDataObj = NULL;
-					CteContextMenu *pCCM;
-					if (nArg >= 6) {
-						IShellExtInit *pSEI;
-						HMODULE hDll = teCreateInstance(&pDispParams->rgvarg[nArg], &pDispParams->rgvarg[nArg - 1], IID_PPV_ARGS(&pSEI));
-						if (pSEI) {
-							LPITEMIDLIST pidl;
-							if (GetPidlFromVariant(&pidl, &pDispParams->rgvarg[nArg - 2])) {
-								if (GetDataObjFromVariant(&pDataObj, &pDispParams->rgvarg[nArg - 3])) {
-									VARIANT v;
-									teVariantChangeType(&v, &pDispParams->rgvarg[nArg - 5], VT_BSTR);
-									HKEY hKey;
-									if (RegOpenKeyEx((HKEY)GetLLFromVariant(&pDispParams->rgvarg[nArg - 4]), v.bstrVal, 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-										VariantClear(&v);
-										if SUCCEEDED(pSEI->Initialize(pidl, pDataObj, hKey)) {
-											IUnknown *punk;
-											if (FindUnknown(&pDispParams->rgvarg[nArg - 6], &punk)) {
-												IUnknown_SetSite(pSEI, punk);
-											}
-											pCCM = new CteContextMenu(pSEI, pDataObj);
-											pDataObj = NULL;
-											pCCM->m_pDll = new CteDll(hDll);
-											hDll = NULL;
-											teSetObject(pVarResult, pCCM);
-											pCCM->Release();
-										}
-										RegCloseKey(hKey);
-									}
+				IDataObject *pDataObj = NULL;
+				CteContextMenu *pCCM;
+				if (nArg >= 6) {
+					IShellExtInit *pSEI;
+					HMODULE hDll = teCreateInstance(&pDispParams->rgvarg[nArg], &pDispParams->rgvarg[nArg - 1], IID_PPV_ARGS(&pSEI));
+					if (pSEI) {
+						LPITEMIDLIST pidl;
+						if (GetPidlFromVariant(&pidl, &pDispParams->rgvarg[nArg - 2])) {
+							if (GetDataObjFromVariant(&pDataObj, &pDispParams->rgvarg[nArg - 3])) {
+								VARIANT v;
+								teVariantChangeType(&v, &pDispParams->rgvarg[nArg - 5], VT_BSTR);
+								HKEY hKey;
+								if (RegOpenKeyEx((HKEY)GetLLFromVariant(&pDispParams->rgvarg[nArg - 4]), v.bstrVal, 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
 									VariantClear(&v);
-								}
-								teCoTaskMemFree(pidl);
-							}
-							pSEI->Release();
-						}
-						if (hDll) {
-							FreeLibrary(hDll);
-						}
-					}
-					else if (GetDataObjFromVariant(&pDataObj, &pDispParams->rgvarg[nArg])) {
-						LPITEMIDLIST *ppidllist;
-						long nCount;
-						ppidllist = IDListFormDataObj(pDataObj, &nCount);
-#ifdef _2000XP
-						if (nCount >= 2 && osInfo.dwMajorVersion < 6 && ppidllist[0] && ILIsEmpty(ppidllist[0])) {
-							for (int i = nCount; i-- > 0;) {
-								LPITEMIDLIST pidl = ppidllist[i + 1];
-								LPITEMIDLIST pidlFull = ILCombine(ppidllist[0], pidl);
-								BSTR bs;
-								if SUCCEEDED(GetDisplayNameFromPidl(&bs, pidlFull, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)) {
-									ppidllist[i + 1] = teILCreateFromPath(bs);
-									SysFreeString(bs);
-								}
-								teCoTaskMemFree(pidlFull);
-								teCoTaskMemFree(pidl);
-							}
-							teCoTaskMemFree(ppidllist[0]);
-							ppidllist[0] = NULL;
-						}
-#endif
-						AdjustIDList(ppidllist, nCount);
-						if (nCount >= 1) {
-							IShellFolder *pSF;
-							if (GetShellFolder(&pSF, ppidllist[0])) {
-								IContextMenu *pCM;
-								if SUCCEEDED(pSF->GetUIObjectOf(g_hwndMain, nCount, const_cast<LPCITEMIDLIST *>(&ppidllist[1]), IID_IContextMenu, NULL, (LPVOID*)&pCM)) {
-									if (nArg >= 1) {
+									if SUCCEEDED(pSEI->Initialize(pidl, pDataObj, hKey)) {
 										IUnknown *punk;
-										if (FindUnknown(&pDispParams->rgvarg[nArg - 1], &punk)) {
-											IUnknown_SetSite(pCM, punk);
+										if (FindUnknown(&pDispParams->rgvarg[nArg - 6], &punk)) {
+											IUnknown_SetSite(pSEI, punk);
 										}
+										pCCM = new CteContextMenu(pSEI, pDataObj);
+										pDataObj = NULL;
+										pCCM->m_pDll = new CteDll(hDll);
+										hDll = NULL;
+										teSetObject(pVarResult, pCCM);
+										pCCM->Release();
 									}
-									pCCM = new CteContextMenu(pCM, pDataObj);
-									pDataObj = NULL;
-									teSetObject(pVarResult, pCCM);
-									pCCM->Release();
-									pCM->Release();
+									RegCloseKey(hKey);
 								}
+								VariantClear(&v);
 							}
-							do {
-								teCoTaskMemFree(ppidllist[nCount]);
-							} while (--nCount >= 0);
-							delete [] ppidllist;
+							teCoTaskMemFree(pidl);
 						}
+						pSEI->Release();
 					}
-					if (pDataObj) {
-						pDataObj->Release();
+					if (hDll) {
+						FreeLibrary(hDll);
 					}
+				}
+				else if (GetDataObjFromVariant(&pDataObj, &pDispParams->rgvarg[nArg])) {
+					LPITEMIDLIST *ppidllist;
+					long nCount;
+					ppidllist = IDListFormDataObj(pDataObj, &nCount);
+#ifdef _2000XP
+					if (nCount >= 2 && osInfo.dwMajorVersion < 6 && ppidllist[0] && ILIsEmpty(ppidllist[0])) {
+						for (int i = nCount; i-- > 0;) {
+							LPITEMIDLIST pidl = ppidllist[i + 1];
+							LPITEMIDLIST pidlFull = ILCombine(ppidllist[0], pidl);
+							BSTR bs;
+							if SUCCEEDED(GetDisplayNameFromPidl(&bs, pidlFull, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)) {
+								ppidllist[i + 1] = teILCreateFromPath(bs);
+								SysFreeString(bs);
+							}
+							teCoTaskMemFree(pidlFull);
+							teCoTaskMemFree(pidl);
+						}
+						teCoTaskMemFree(ppidllist[0]);
+						ppidllist[0] = NULL;
+					}
+#endif
+					AdjustIDList(ppidllist, nCount);
+					if (nCount >= 1) {
+						IShellFolder *pSF;
+						if (GetShellFolder(&pSF, ppidllist[0])) {
+							IContextMenu *pCM;
+							if SUCCEEDED(pSF->GetUIObjectOf(g_hwndMain, nCount, const_cast<LPCITEMIDLIST *>(&ppidllist[1]), IID_IContextMenu, NULL, (LPVOID*)&pCM)) {
+								if (nArg >= 1) {
+									IUnknown *punk;
+									if (FindUnknown(&pDispParams->rgvarg[nArg - 1], &punk)) {
+										IUnknown_SetSite(pCM, punk);
+									}
+								}
+								pCCM = new CteContextMenu(pCM, pDataObj);
+								pDataObj = NULL;
+								teSetObject(pVarResult, pCCM);
+								pCCM->Release();
+								pCM->Release();
+							}
+						}
+						do {
+							teCoTaskMemFree(ppidllist[nCount]);
+						} while (--nCount >= 0);
+						delete [] ppidllist;
+					}
+				}
+				if (pDataObj) {
+					pDataObj->Release();
 				}
 			}
 			return S_OK;
@@ -16185,26 +16085,24 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 		//DropTarget
 		case 1070:
 			if (nArg >= 0) {
-				if (pVarResult) {
-					FolderItem *pid;
-					GetFolderItemFromVariant(&pid, &pDispParams->rgvarg[nArg]);
-					LPITEMIDLIST pidl;
-					if (GetIDListFromObject(pid, &pidl)) {
-						IShellFolder *pSF;
-						LPCITEMIDLIST ItemID;
-						if SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &ItemID)) {
-							IDropTarget *pDT = NULL;
-							pSF->GetUIObjectOf(g_hwndMain, 1, &ItemID, IID_IDropTarget, NULL, (LPVOID*)&pDT);
-							CteDropTarget *pCDT = new CteDropTarget(pDT, pid);
-							teSetObject(pVarResult, pCDT);
-							pCDT->Release();
-							pDT && pDT->Release();
-							pSF->Release();
-						}
-						teCoTaskMemFree(pidl);
+				FolderItem *pid;
+				GetFolderItemFromVariant(&pid, &pDispParams->rgvarg[nArg]);
+				LPITEMIDLIST pidl;
+				if (GetIDListFromObject(pid, &pidl)) {
+					IShellFolder *pSF;
+					LPCITEMIDLIST ItemID;
+					if SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &ItemID)) {
+						IDropTarget *pDT = NULL;
+						pSF->GetUIObjectOf(g_hwndMain, 1, &ItemID, IID_IDropTarget, NULL, (LPVOID*)&pDT);
+						CteDropTarget *pCDT = new CteDropTarget(pDT, pid);
+						teSetObject(pVarResult, pCDT);
+						pCDT->Release();
+						pDT && pDT->Release();
+						pSF->Release();
 					}
-					pid->Release();
+					teCoTaskMemFree(pidl);
 				}
+				pid->Release();
 			}
 			return S_OK;
 		//sizeof
@@ -16371,36 +16269,34 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			break;
 		//CommandLineToArgv
 		case 2230:
-			if (pVarResult) {
-				if (nArg >= 0) {
-					int i = 0;
-					VARIANT vCmdLine;
-					teVariantChangeType(&vCmdLine, &pDispParams->rgvarg[nArg], VT_BSTR);
-					LPTSTR *lplpszArgs = NULL;
-					if (vCmdLine.bstrVal) {
-						lplpszArgs = CommandLineToArgvW(vCmdLine.bstrVal, &i);
-					}
-					VariantClear(&vCmdLine);
-					if (i > 0) {
-						CteMemory *pMem;
-						pMem = new CteMemory(i * sizeof(BSTR*), NULL, VT_BSTR, i, NULL);
-						if (pMem) {
-							BSTR* lpBSTRData;
-							lpBSTRData = (BSTR*)pMem->m_pc;
-							while (--i >= 0) {
-								int n = lstrlen(lplpszArgs[i]);
-								if (lplpszArgs[i][n - 1] == '"') {
-									lplpszArgs[i][n - 1] = '\\';
-								}
-								lpBSTRData[i] = SysAllocString(lplpszArgs[i]);
+			if (nArg >= 0) {
+				int i = 0;
+				VARIANT vCmdLine;
+				teVariantChangeType(&vCmdLine, &pDispParams->rgvarg[nArg], VT_BSTR);
+				LPTSTR *lplpszArgs = NULL;
+				if (vCmdLine.bstrVal) {
+					lplpszArgs = CommandLineToArgvW(vCmdLine.bstrVal, &i);
+				}
+				VariantClear(&vCmdLine);
+				if (i > 0) {
+					CteMemory *pMem;
+					pMem = new CteMemory(i * sizeof(BSTR*), NULL, VT_BSTR, i, NULL);
+					if (pMem) {
+						BSTR* lpBSTRData;
+						lpBSTRData = (BSTR*)pMem->m_pc;
+						while (--i >= 0) {
+							int n = lstrlen(lplpszArgs[i]);
+							if (lplpszArgs[i][n - 1] == '"') {
+								lplpszArgs[i][n - 1] = '\\';
 							}
-							teSetObject(pVarResult, pMem);
-							pMem->Release();
+							lpBSTRData[i] = SysAllocString(lplpszArgs[i]);
 						}
+						teSetObject(pVarResult, pMem);
+						pMem->Release();
 					}
-					if (lplpszArgs) {
-						LocalFree(lplpszArgs);
-					}
+				}
+				if (lplpszArgs) {
+					LocalFree(lplpszArgs);
 				}
 			}
 			return S_OK;
@@ -16578,9 +16474,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			break;
 		//Value
 		case DISPID_VALUE:
-			if (pVarResult) {
-				teSetObject(pVarResult, this);
-			}
+			teSetObject(pVarResult, this);
 			return S_OK;
 		default:
 			return DISP_E_MEMBERNOTFOUND;
@@ -16681,9 +16575,7 @@ STDMETHODIMP CteDispatch::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 	}
 	if (m_nMode) {
 		if (dispIdMember == DISPID_NEWENUM) {
-			if (pVarResult) {
-				teSetObject(pVarResult, this);
-			}
+			teSetObject(pVarResult, this);
 			return S_OK;
 		}
 		if (dispIdMember == DISPID_VALUE) {
@@ -16705,9 +16597,7 @@ STDMETHODIMP CteDispatch::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 				}
 				return S_OK;
 			}
-			if (pVarResult) {
-				teSetObject(pVarResult, this);
-			}
+			teSetObject(pVarResult, this);
 			return S_OK;
 		}
 		return m_pDispatch->Invoke(dispIdMember, riid, lcid, wFlags, pDispParams, pVarResult, pExcepInfo, puArgErr);
@@ -16715,9 +16605,7 @@ STDMETHODIMP CteDispatch::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 	if (wFlags & DISPATCH_METHOD) {
 		return m_pDispatch->Invoke(m_dispIdMember, riid, lcid, wFlags, pDispParams, pVarResult, pExcepInfo, puArgErr);
 	}
-	if (pVarResult) {
-		teSetObject(pVarResult, this);
-	}
+	teSetObject(pVarResult, this);
 	return S_OK;
 }
 
@@ -17056,9 +16944,7 @@ STDMETHODIMP CteTest::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD w
 	switch (dispIdMember) {
 		//this
 		case DISPID_VALUE:
-			if (pVarResult) {
-				teSetObject(pVarResult, this);
-			}
+			teSetObject(pVarResult, this);
 			return S_OK;
 	}//end_switch
 	return DISP_E_MEMBERNOTFOUND;

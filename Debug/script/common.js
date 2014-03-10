@@ -1105,7 +1105,7 @@ AddEvent("ReplaceMacro", [/%Selected%/ig, function(Ctrl)
 	if (FV) {
 		var Selected = FV.SelectedItems();
 		if (Selected) {
-			for (var i = Selected.Count; i > 0; ar.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(Selected.Item(--i), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)))) {
+			for (var i = Selected.Count; i > 0; ar.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(Selected.Item(--i), SHGDN_FORPARSING)))) {
 			}
 		}
 	}
@@ -1236,10 +1236,32 @@ AdjustMenuBreak = function (hMenu)
 	}
 }
 
+teMenuGetElementsByTagName = function (Name)
+{
+	var menus = te.Data.xmlMenus.getElementsByTagName(Name);
+	if (!menus || !menus.length) {
+		if (api.strcmpi(Name, "ViewContext") == 0) {
+			menus = te.Data.xmlMenus.getElementsByTagName("Background");
+		}
+		else if (api.strcmpi(Name, "Background") == 0) {
+			menus = te.Data.xmlMenus.getElementsByTagName("ViewContext");
+		}
+	}
+	return menus;
+}
+
 ExecMenu = function (Ctrl, Name, pt, Mode)
 {
 	var items = null;
-	var menus = te.Data.xmlMenus.getElementsByTagName(Name);
+	var menus = teMenuGetElementsByTagName(Name);
+	if (!menus) {
+		if (api.strcmpi(Name, "ViewContext") == 0) {
+			menus = teMenuGetElementsByTagName("Background");
+		}
+		if (api.strcmpi(Name, "Background") == 0) {
+			menus = teMenuGetElementsByTagName("ViewContext");
+		}
+	}
 	if (menus && menus.length) {
 		items = menus[0].getElementsByTagName("Item");
 	}
@@ -1447,6 +1469,16 @@ GetBaseMenu = function (nBase, FV, Selected, uCMF, Mode, SelItem)
 				ContextMenu = FV.ViewMenu();
 				if (ContextMenu) {
 					ContextMenu.QueryContextMenu(hMenu, 0, 0x1001, 0x6FFF, uCMF);
+					if (uCMF & CMF_EXTENDEDVERBS) {
+						var id = api.GetMenuDefaultItem(hMenu, false, 0);
+						if (id) {
+							ExtraMenuCommand[id] = function (Ctrl, pt, Name, nVerb)
+							{
+								wsh.Run("%ComSpec%");
+								return S_OK;
+							};
+						}
+					}
 				}
 			}
 			break;
@@ -2566,4 +2598,48 @@ ShowError = function (e, s, i)
 		}
 	}
 	wsh.Popup([(e.description || e.toString()), s].join("\n"), 0, TITLE, MB_ICONSTOP);
+}
+
+ApiStruct = function (oTypedef, nAli, oMemory)
+{
+	this.Size = 0;
+	this.Typedef = oTypedef;
+	for (var i in oTypedef) {
+		var ar = oTypedef[i];
+		var n = ar[1];
+		this.Size += (n - (this.Size % n)) % n;
+		ar[3] = this.Size;
+		this.Size += n * (ar[2] || 1);
+	}
+	n = api.LowPart(nAli);
+	this.Size += (n - (this.Size % n)) % n;
+	this.Memory = api.strcmpi(typeof oMemory, "object") ? api.Memory("BYTE", this.Size) : oMemory;
+	this.Read = function (Id)
+	{
+		var ar = this.Typedef[Id];
+		if (ar) {
+			return this.Memory.Read(ar[3], ar[0]);
+		}
+	};
+	this.Write = function (Id, Data)
+	{
+		var ar = this.Typedef[Id];
+		if (ar) {
+			this.Memory.Write(ar[3], ar[0], Data);
+		}
+	};
+}
+
+FindChildByClass = function (hwnd, s)
+{
+	var hwnd1, hwnd2;
+	while (hwnd1 = api.FindWindowEx(hwnd, hwnd1, null, null)) {
+		if (api.GetClassName(hwnd1) == s) {
+			return hwnd1;
+		}
+		if (hwnd2 = FindChildByClass(hwnd1, s)) {
+			return hwnd2;
+		}
+	}
+	return null;
 }
