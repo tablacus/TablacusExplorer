@@ -110,7 +110,9 @@ SetAddress = function (s)
 
 ChangeTabName = function (Ctrl)
 {
-	Ctrl.Title = GetTabName(Ctrl);
+	if (Ctrl.FolderItem) {
+		Ctrl.Title = GetTabName(Ctrl);
+	}
 }
 
 GetTabName = function (Ctrl)

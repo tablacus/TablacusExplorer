@@ -196,6 +196,10 @@ typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
 #define MAP_SS	9
 #define MAP_LENGTH	10
 
+#ifndef offsetof
+#define offsetof(type, member)	(DWORD)(UINT_PTR)&((type *)0)->member
+#endif
+
 typedef struct tagTEMethod
 {
 	LONG   id;
@@ -681,6 +685,7 @@ public:
 	VOID Error(FolderItem *pid);
 	VOID Refresh(BOOL bCheck);
 	VOID SetActive();
+	VOID SetTitle(LPOLESTR szName, int nIndex);
 public:
 	BOOL		m_bEmpty, m_bInit;
 	BOOL		m_bVisible;
