@@ -431,6 +431,7 @@ CreateNewFolder = function (Ctrl, pt)
 		}
 		CreateFolder(path);
 	}
+	return S_OK;
 }
 
 CreateNewFile = function (Ctrl, pt)
@@ -443,6 +444,7 @@ CreateNewFile = function (Ctrl, pt)
 		}
 		CreateFile(path);
 	}
+	return S_OK;
 }
 
 CancelFilterView = function (FV)
@@ -689,6 +691,9 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 	}
 	if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) {
 		var nKey = ((keydata >> 16) & 0x17f) | GetKeyShift();
+		if (nKey == 0x15d) {
+			g_mouse.CancelContextMenu = false;
+		}
 		te.Data.cmdKey = nKey;
 		switch (Ctrl.Type) {
 			case CTRL_SB:
@@ -753,7 +758,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 		if (Ctrl2) {
 			g_mouse.str = GetGestureKey() + GetGestureButton() + (wParam > 0 ? "8" : "9");
 			if (api.GetKeyState(VK_RBUTTON) < 0) {
-				g_mouse.CancelButton = true;
+				g_mouse.CancelContextMenu = true;
 			}
 			var hr = g_mouse.Exec(Ctrl2, hwnd, pt);
 			g_mouse.EndGesture(false);
@@ -797,10 +802,6 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 				api.ReleaseCapture();
 				g_mouse.bCapture = false;
 			}
-			if (g_mouse.CancelButton || hr == S_OK) {
-				g_mouse.CancelButton = false;
-				return S_OK;
-			}
 			if (bButton) {
 				api.PostMessage(g_mouse.hwndGesture, WM_CONTEXTMENU, g_mouse.hwndGesture, pt.x + (pt.y << 16));
 				return S_OK;
@@ -818,6 +819,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 		g_mouse.StartGestureTimer();
 		SetGestureText(Ctrl, GetGestureKey() + g_mouse.str);
 		if (msg == WM_RBUTTONDOWN) {
+			g_mouse.CancelContextMenu = false;
 			if (te.Data.Conf_Gestures >= 2) {
 				var iItem = -1;
 				if (Ctrl.Type == CTRL_SB || Ctrl.Type == CTRL_EB) {
@@ -877,6 +879,9 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 
 				if (s != g_mouse.str.charAt(g_mouse.str.length - 1)) {
 					g_mouse.str += s;
+					if (api.GetKeyState(VK_RBUTTON) < 0) {
+						g_mouse.CancelContextMenu = true;
+					}
 					SetGestureText(Ctrl, GetGestureKey() + g_mouse.str);
 				}
 				if (!g_mouse.bCapture) {
@@ -1050,6 +1055,9 @@ te.OnSelectionChanged = function (Ctrl, uChange)
 
 te.OnShowContextMenu = function (Ctrl, hwnd, msg, wParam, pt)
 {
+	if (g_mouse.CancelContextMenu) {
+		return S_OK;
+	}
 	var hr = RunEvent3("ShowContextMenu", Ctrl, hwnd, msg, wParam, pt);
 	if (isFinite(hr)) {
 		return hr; 
@@ -1727,7 +1735,7 @@ function InitMouse()
 g_mouse = 
 {
 	str: "",
-	CancelButton: false,
+	CancelContextMenu: false,
 	ptGesture: api.Memory("POINT"),
 	hwndGesture: null,
 	tidGesture: null,
@@ -2092,18 +2100,17 @@ g_basic =
 			{
 				var fn = g_basic.Func[type].Cmd[s];
 				if (fn) {
-					return fn(Ctrl, pt);
+					fn(Ctrl, pt);
+					return S_OK;
 				}
-				else {
-					var FV = GetFolderView(Ctrl, pt, true);
-					if (FV) {
-						var TC = FV.Parent;
-						if (s.match(/^\d/)) {
-							TC.SelectedIndex = api.QuadPart(s);
-						}
-						else if (s.match(/^\-/)) {
-							TC.SelectedIndex = TC.Count + api.QuadPart(s);
-						}
+				var FV = GetFolderView(Ctrl, pt, true);
+				if (FV) {
+					var TC = FV.Parent;
+					if (s.match(/^\d/)) {
+						TC.SelectedIndex = api.QuadPart(s);
+					}
+					else if (s.match(/^\-/)) {
+						TC.SelectedIndex = TC.Count + api.QuadPart(s);
 					}
 				}
 				return S_OK;
@@ -2343,11 +2350,13 @@ g_basic =
 						s.push(api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)));
 					}
 					clipboardData.setData("text", s.join(" "));
+					return S_OK;
 				},
 				"Run Dialog": function (Ctrl, pt)
 				{
 					var FV = GetFolderView(Ctrl, pt);
 					api.ShRunDialog(te.hwnd, 0, FV ? FV.FolderItem.Path : null, null, null, 0);
+					return S_OK;
 				},
 				Search: function (Ctrl, pt)
 				{
@@ -2361,17 +2370,20 @@ g_basic =
 							CancelFilterView(FV);
 						}
 					}
+					return S_OK;
 				},
 				"Add to Favorites": AddFavorite,
 				"Reload Customize": function ()
 				{
 					te.reload();
+					return S_OK;
 				},
 				"Load Layout": LoadLayout,
 				"Save Layout": SaveLayout,
 				"Close Application": function ()
 				{
 					api.PostMessage(te.hwnd, WM_CLOSE, 0, 0);
+					return S_OK;
 				}
 			}
 		},
@@ -2403,7 +2415,7 @@ g_basic =
 
 		"Add-ons":
 		{
-			Cmd:{}
+			Cmd: {}
 		},
 
 		Menus:

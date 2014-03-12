@@ -46,6 +46,7 @@ SHGDN_FORPARSINGEX = Ox80000000;
 HOME_PATH = 0;//Desktop
 TITLE = "Tablacus Explorer";
 ssfRESULTSFOLDER = osInfo.dwMajorVersion >= 6 ? "shell:::{2965E715-EB66-4719-B53F-1672673BBEFA}" : "::{e17d4fc0-5564-11d1-83f2-00a0c90dc849}";
+FILTER_IMAGE = "*.jpg;*.jpeg;*.png;*.bmp;*.gif;*.ico;data:*";
 
 //Windows
 

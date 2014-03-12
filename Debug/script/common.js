@@ -108,11 +108,9 @@ FolderMenu =
 		var info = api.Memory("SHFILEINFO");
 		api.ShGetFileInfo(FolderItem, 0, info, info.Size, SHGFI_ICON | SHGFI_SMALLICON | SHGFI_PIDL);
 		var hIcon = info.hIcon;
-		var cl = api.GetSysColor(COLOR_MENU);
-		image.FromHICON(hIcon, cl);
+		image.FromHICON(hIcon, api.GetSysColor(COLOR_MENU));
 		api.DestroyIcon(hIcon);
-		mii.hbmpItem = image.GetHBITMAP(cl);
-		MainWindow.g_arBM.push(mii.hbmpItem);
+		AddMenuImage(mii, image);
 		this.Items.push(FolderItem);
 		mii.wID = this.Items.length;
 		if (!bSelect && api.GetAttributesOf(FolderItem, SFGAO_HASSUBFOLDER | SFGAO_BROWSABLE) == SFGAO_HASSUBFOLDER) {
@@ -436,7 +434,7 @@ function MakeImgIcon(src, index, h, strBitmap, strIcon)
 			return phIcon[0];
 		}
 	}
-	if (src && !api.PathMatchSpec(src, "*.jpg;*.jpeg;*.png;*.bmp;*.gif;*.ico;data:*")) {
+	if (src && !api.PathMatchSpec(src, FILTER_IMAGE)) {
 		var info = api.Memory("SHFILEINFO");
 		var pidl = api.ILCreateFromPath(api.PathUnquoteSpaces(src));
 		if (pidl) {
@@ -823,6 +821,7 @@ LoadLayout = function ()
 	if (commdlg.ShowOpen()) {
 		LoadXml(commdlg.FileName);
 	}
+	return S_OK;
 }
 
 SaveLayout = function ()
@@ -835,6 +834,7 @@ SaveLayout = function ()
 	if (commdlg.ShowSave()) {
 		SaveXml(commdlg.FileName);
 	}
+	return S_OK;
 }
 
 GetPos = function (o, bScreen, bAbs, bPanel)
@@ -1171,7 +1171,7 @@ OpenMenu = function (items, SelItem)
 		else {
 			path = String(api.GetDisplayNameOf(SelItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX));
 			arMenu = OpenMenu(items, path);
-			if (arMenu.length && fso.GetExtensionName(path) && !IsFolderEx(SelItem)) {
+			if (arMenu.length || fso.GetExtensionName(path) || !IsFolderEx(SelItem)) {
 				return arMenu;
 			}
 			path += ".folder";
@@ -1644,6 +1644,32 @@ GetAccelerator = function (s)
 	return "";
 }
 
+AddMenuImage = function (mii, image)
+{
+	mii.hbmpItem = image.GetHBITMAP(osInfo.dwMajorVersion > 5 ? null : api.GetSysColor(COLOR_MENU));
+	if (mii.hbmpItem) {
+		mii.fMask = mii.fMask | MIIM_BITMAP;
+		MainWindow.g_arBM.push(mii.hbmpItem);
+	}
+}
+
+MenusIcon = function (mii, src)
+{
+	mii.cbSize = mii.Size;
+	var image = te.GdiplusBitmap();
+	if (src) {
+		if (api.PathMatchSpec(src, FILTER_IMAGE)) {
+			image.FromFile(src);
+		}
+		else {
+			var hIcon = MakeImgIcon(src, 0, 16);
+			image.FromHICON(hIcon, api.GetSysColor(COLOR_MENU));
+			api.DestroyIcon(hIcon);
+		}
+		AddMenuImage(mii, image);
+	}
+}
+
 MakeMenus = function (hMenu, menus, arMenu, items)
 {
 	var hMenus = [hMenu];
@@ -1677,11 +1703,11 @@ MakeMenus = function (hMenu, menus, arMenu, items)
 			}
 			if (api.strcmpi(strFlag, "Open") == 0) {
 				var mii = api.Memory("MENUITEMINFO");
-				mii.cbSize = mii.Size;
 				mii.fMask = MIIM_STRING | MIIM_SUBMENU | MIIM_FTYPE;
 				mii.fType = uFlags;
 				mii.dwTypeData = ar.join("\t");
 				mii.hSubMenu = api.CreatePopupMenu();
+				MenusIcon(mii, item.getAttribute("Icon"));
 				api.InsertMenuItem(hMenus[hMenus.length - 1], nPos++, true, mii);
 				hMenus.push(mii.hSubMenu);
 			}
@@ -1697,7 +1723,12 @@ MakeMenus = function (hMenu, menus, arMenu, items)
 					api.InsertMenu(hMenus[hMenus.length - 1], nPos++, MF_BYPOSITION | MF_SEPARATOR, 0, null);
 				}
 				else if (s) {
-					api.InsertMenu(hMenus[hMenus.length - 1], nPos++, MF_BYPOSITION | MF_STRING, nResult, ar.join("\t"));
+					var mii = api.Memory("MENUITEMINFO");
+					mii.fMask = MIIM_STRING | MIIM_ID;
+					mii.wId = nResult;
+					mii.dwTypeData = ar.join("\t");
+					MenusIcon(mii, item.getAttribute("Icon"));
+					api.InsertMenuItem(hMenus[hMenus.length - 1], nPos++, true, mii);
 				}
 			}
 		}

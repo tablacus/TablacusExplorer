@@ -125,7 +125,7 @@ typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
 #define TE_OnHitTest			28
 #define TE_OnTranslatePath		29
 #define TE_OnNavigateComplete	30
-#define Count_OnFunc			31
+#define Count_OnFunc			32
 
 #define SB_OnIncludeObject		0
 
@@ -677,7 +677,7 @@ public:
 	HRESULT CreateViewWindowEx(IShellView *pPreviusView);
 	BSTR GetColumnsStr();
 	VOID GetDefaultColumns();
-	BOOL GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, FolderItem *pid, UINT wFlags, FolderItems *pFolderItems, LPITEMIDLIST pidlPrevius, FolderItem *pPrevious, CteShellBrowser *pHistSB);
+	HRESULT GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, FolderItem *pid, UINT wFlags, FolderItems *pFolderItems, LPITEMIDLIST pidlPrevius, FolderItem *pPrevious, CteShellBrowser *pHistSB);
 	VOID EBNavigate();
 	VOID SetHistory(FolderItems *pFolderItems, UINT wFlags);
 	VOID GetVariantPath(FolderItem **ppFolderItem, FolderItems **ppFolderItems, VARIANT *pv);

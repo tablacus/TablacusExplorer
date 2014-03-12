@@ -76,10 +76,9 @@ long		g_nProcFV      = 0;
 long		g_nProcTV      = 0;
 long		g_nProcFI      = 0;
 long		g_nThreads	   = 0;
-/*WPARAM		g_LastMsg;
-HWND		g_hwndLast;*/
 BOOL		g_bInit = true;
 BOOL		g_bUnload = FALSE;
+BOOL		g_bSetRedraw;
 IContextMenu *g_pCM = NULL;
 ULONG_PTR g_Token;
 Gdiplus::GdiplusStartupInput g_StartupInput;
@@ -1273,6 +1272,15 @@ VOID ArrangeWindow();
 BOOL GetIDListFromObject(IUnknown *punk, LPITEMIDLIST *ppidl);
 
 //Unit
+
+VOID teSetRedraw(BOOL bSetRedraw)
+{
+	SendMessage(g_hwndBrowser, WM_SETREDRAW, bSetRedraw, 0);
+	if (bSetRedraw && !g_bSetRedraw) {
+		RedrawWindow(g_hwndBrowser, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+	}
+	g_bSetRedraw = bSetRedraw;
+}
 
 HRESULT teException(EXCEPINFO *pExcepInfo, UINT *puArgErr, LPWSTR lpszObj, TEmethod* pMethod, DISPID dispIdMember)
 {
@@ -5746,7 +5754,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	RECT rc;
 	LPITEMIDLIST pidl = NULL;
 	LPITEMIDLIST pidlFocus = NULL;
-	HRESULT hr = S_FALSE;
+	HRESULT hr;
 
 	m_pFolderItem1 && m_pFolderItem1->Release();
 	m_pFolderItem1 = NULL;
@@ -5760,19 +5768,19 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		g_paramFV[i] = param[i];
 	}
 	m_nPrevLogIndex = m_nLogIndex;
-	if (!GetAbsPidl(&pidl, &m_pFolderItem1, pFolderItem, wFlags, pFolderItems, pidlPrevius, m_pFolderItem, pHistSB)) {
+	hr = GetAbsPidl(&pidl, &m_pFolderItem1, pFolderItem, wFlags, pFolderItems, pidlPrevius, m_pFolderItem, pHistSB);
+	if (hr != S_OK) {
 		if (pidlPrevius && m_pidl != pidlPrevius) {
 			teCoTaskMemFree(pidlPrevius);
 		}
-		int i = GetTabIndex();
-		if (i >= 0) {
-			BSTR bstr;
-			if (pFolderItem && SUCCEEDED(pFolderItem->get_Name(&bstr))) {
-				SetTitle(bstr, i);
+		if (hr == S_FALSE) {
+			if (!m_pFolderItem) {
+				pFolderItem->QueryInterface(IID_PPV_ARGS(&m_pFolderItem));
 			}
 		}
-		return m_pidl ? S_OK : S_FALSE;
+		return m_pidl ? S_OK : hr;
 	}
+	hr = S_FALSE;
 #ifndef _WIN64
 	Wow64ControlPanel(&pidl, g_pidls[CSIDL_CONTROLS]);
 #endif
@@ -5903,7 +5911,12 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		}
 		if (GetShellFolder(&pShellFolder, m_pidl)) {
 			if SUCCEEDED(pShellFolder->QueryInterface(IID_PPV_ARGS(&m_pSF2))) {
-				hr = CreateViewWindowEx(pPreviusView);
+				try {
+					hr = CreateViewWindowEx(pPreviusView);
+				}
+				catch (...) {
+					hr = E_FAIL;
+				}
 			}
 			pShellFolder->Release();
 		}
@@ -6115,7 +6128,7 @@ HRESULT CteShellBrowser::OnBeforeNavigate(FolderItem *pPrevius, UINT wFlags)
 	return hr;
 }
 
-BOOL CteShellBrowser::GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, FolderItem *pid, UINT wFlags, FolderItems *pFolderItems, LPITEMIDLIST pidlPrevius, FolderItem *pPrevious, CteShellBrowser *pHistSB)
+HRESULT CteShellBrowser::GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, FolderItem *pid, UINT wFlags, FolderItems *pFolderItems, LPITEMIDLIST pidlPrevius, FolderItem *pPrevious, CteShellBrowser *pHistSB)
 {
 	if (wFlags & SBSP_PARENT) {
 		if (pidlPrevius && !ILIsEmpty(pidlPrevius)) {
@@ -6135,7 +6148,7 @@ BOOL CteShellBrowser::GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, Folde
 		}
 		else {
 			GetFolderItemFromPidl(ppid, *pidlOut);
-			return TRUE;
+			return S_OK;
 		}
 	}
 	if (wFlags & SBSP_NAVIGATEBACK) {
@@ -6147,11 +6160,11 @@ BOOL CteShellBrowser::GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, Folde
 			}
 			if (Navigate1(*ppid, wFlags, pFolderItems, pidlPrevius, NULL)) {
 				(*ppid)->Release();
-				return FALSE;
+				return E_FAIL;
 			}
-			return TRUE;
+			return S_OK;
 		}
-		return FALSE;
+		return E_FAIL;
 	}
 	if (wFlags & SBSP_NAVIGATEFORWARD) {
 		int nLogIndex = pHistSB->m_nLogIndex;
@@ -6162,15 +6175,15 @@ BOOL CteShellBrowser::GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, Folde
 			}
 			if (Navigate1(*ppid, wFlags, pFolderItems, pidlPrevius, NULL)) {
 				(*ppid)->Release();
-				return FALSE;
+				return S_FALSE;
 			}
-			return TRUE;
+			return S_OK;
 		}
-		return FALSE;
+		return E_FAIL;
 	}
 	LPITEMIDLIST pidl = NULL;
 	if (Navigate1(pid, wFlags, pFolderItems, pidlPrevius, &pidl)) {
-		return FALSE;
+		return S_FALSE;
 	}
 	if (wFlags & SBSP_RELATIVE) {
 		if (pidlPrevius && !ILIsEmpty(pidl)) {
@@ -6187,19 +6200,19 @@ BOOL CteShellBrowser::GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, Folde
 			}
 		}
 		teCoTaskMemFree(pidl);
-		return TRUE;
+		return S_OK;
 	}
 	if (pid) {
 		pid->QueryInterface(IID_PPV_ARGS(ppid));
 		if (pidl) {
 			*pidlOut = pidl;
-			return TRUE;
+			return S_OK;
 		}
 	}
 	if (*ppid) {
-		return GetIDListFromObject(*ppid, pidlOut);
+		return GetIDListFromObject(*ppid, pidlOut) ? S_OK : E_FAIL;
 	}
-	return FALSE;
+	return E_FAIL;
 }
 
 VOID CteShellBrowser::HookDragDrop(int nMode)
@@ -9033,16 +9046,14 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 			//LockUpdate
 			case TE_METHOD + 1080:
 				if (::InterlockedIncrement(&g_nLockUpdate) == 1) {
-					SendMessage(g_hwndBrowser, WM_SETREDRAW, FALSE, 0);
+					teSetRedraw(FALSE);
 				}
 				return S_OK;
 			//UnlockUpdate
 			case TE_METHOD + 1090:
 				if (::InterlockedDecrement(&g_nLockUpdate) <= 0) {
 					g_nLockUpdate = 0;
-					SendMessage(g_hwndBrowser, WM_SETREDRAW, TRUE, 0);
-					RedrawWindow(g_hwndBrowser, NULL, 0, RDW_INVALIDATE | RDW_ALLCHILDREN);
-
+					teSetRedraw(TRUE);
 					int i = MAX_TC;
 					while (--i >= 0) {
 						CteTabs *pTC = g_pTC[i];
@@ -10335,7 +10346,7 @@ VOID CteTabs::LockUpdate()
 	if (InterlockedIncrement(&m_nLockUpdate) == 1) {
 		SendMessage(m_hwndStatic, WM_SETREDRAW, FALSE, 0);
 		SendMessage(m_hwnd, WM_SETREDRAW, FALSE, 0);
-		SendMessage(g_hwndBrowser, WM_SETREDRAW, FALSE, 0);
+		teSetRedraw(FALSE);
 	}
 }
 
@@ -10354,13 +10365,12 @@ VOID CteTabs::RedrawUpdate()
 		m_bRedraw = false;
 		SendMessage(m_hwndStatic, WM_SETREDRAW, TRUE, 0);
 		SendMessage(m_hwnd, WM_SETREDRAW, TRUE, 0);
-		SendMessage(g_hwndBrowser, WM_SETREDRAW, TRUE, 0);
 		CteShellBrowser *pSB = GetShellBrowser(m_nIndex);
 		if (pSB) {
 			pSB->SetRedraw(TRUE);
 		}
 		RedrawWindow(m_hwndStatic, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
-		RedrawWindow(g_hwndBrowser, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+		teSetRedraw(TRUE);
 	}
 }
 
@@ -15665,8 +15675,13 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 						break;
 					case 25021:
 						if (nArg >= 3) {
-							*pbResult = RedrawWindow((HWND)param[0], (LPRECT)GetpcFormVariant(&pDispParams->rgvarg[nArg - 1]), 
-								(HRGN)param[2], (UINT)param[3]);
+							if (!g_bSetRedraw && g_hwndMain == (HWND)param[0]) {
+								*pbResult = FALSE;
+							}
+							else {
+								*pbResult = RedrawWindow((HWND)param[0], (LPRECT)GetpcFormVariant(&pDispParams->rgvarg[nArg - 1]), 
+									(HRGN)param[2], (UINT)param[3]);
+							}
 						}
 						break;
 					case 25031:

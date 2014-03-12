@@ -5,7 +5,6 @@ var TabIndex = -1;
 var g_x = {Menu: null, Addons: null};
 var g_Chg = {Menus: false, Addons: false, Tab: false, Tree: false, View: false, Data: null};
 var g_arMenuTypes = ["Default", "Context", "Background", "Tabs", "Tree", "File", "Edit", "View", "Favorites", "Tools", "Help", "TaskTray", "System", "Alias"];
-//var g_arMenuTypes = ["Default", "Context", "ViewContext", "Tabs", "Tree", "File", "Edit", "View", "Favorites", "Tools", "Help", "TaskTray", "System", "Alias"];
 var g_MenuType = null;
 var g_dlgAddons;
 var g_tdDown;
@@ -28,7 +27,7 @@ function OpenGroup(id)
 
 SetOptions = function ()
 {
-	if (!ConfirmX(false, "Menus")) {
+	if (!ConfirmX(false, ReplaceMenus)) {
 		return;
 	}
 	for (var i in document.F.elements) {
@@ -536,6 +535,8 @@ function EditMenus()
 	MainWindow.OptionDecode(a[3], p);
 	document.F.Menus_Path.value = p.s;
 	SetType(document.F.Menus_Type, a[3]);
+	document.F.Icon.value = a[4] || "";
+	SetImage();
 }
 
 EditX = function (mode)
@@ -593,7 +594,7 @@ function ReplaceMenus()
 	}
 	var p = { s: document.F.Menus_Path.value };
 	MainWindow.OptionEncode(o[o.selectedIndex].value, p);
-	SetMenus(sel, [s, document.F.Menus_Filter.value, p.s, o[o.selectedIndex].value]);
+	SetMenus(sel, [s, document.F.Menus_Filter.value, p.s, o[o.selectedIndex].value, document.F.Icon.value]);
 	g_Chg.Menus = true;
 }
 
@@ -684,7 +685,7 @@ function LoadMenus(nSelected)
 					o.length = i;
 					while (--i >= 0) {
 						var item = items[i];
-						SetMenus(o[i], new Array(item.getAttribute("Name"), item.getAttribute("Filter"), item.text, item.getAttribute("Type")));
+						SetMenus(o[i], [item.getAttribute("Name"), item.getAttribute("Filter"), item.text, item.getAttribute("Type"), item.getAttribute("Icon")]);
 					}
 				}
 			}
@@ -788,6 +789,7 @@ function SaveMenus()
 				item.setAttribute("Filter", a[1]);
 				item.text = a[2];
 				item.setAttribute("Type", a[3]);
+				item.setAttribute("Icon", a[4]);
 				items.appendChild(item);
 			}
 			root.appendChild(items);
@@ -877,7 +879,7 @@ function PackData(a)
 {
 	var i = a.length;
 	while (--i >= 0) {
-		a[i] = a[i].replace(g_sep, "`  ~");
+		a[i] = (a[i] || "").replace(g_sep, "`  ~");
 	}
 	return a.join(g_sep);
 }
@@ -1295,6 +1297,7 @@ InitDialog = function ()
 
 MouseDown = function ()
 {
+	var hwnd = api.GetWindow(document);
 	if (g_Gesture) {
 		var c = returnValue.charAt(returnValue.length - 1);
 		var n = 1;
@@ -1799,6 +1802,9 @@ ShowIcon = function ()
 	var s = showModalDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\dialog.html"), {MainWindow: MainWindow, Query: "icon"}, 'dialogWidth: 640px; dialogHeight: 480px; resizable: yes; status: 0;');
 	if (s) {
 		document.F.Icon.value = s;
+		if (document.F.Icon.onchange) {
+			document.F.Icon.onchange();
+		}
 		SetImage();
 	}
 }
