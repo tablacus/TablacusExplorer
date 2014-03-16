@@ -99,18 +99,12 @@ FolderMenu =
 		mii.cbSize = mii.Size;
 		mii.fMask  = MIIM_ID | MIIM_STRING | MIIM_BITMAP | MIIM_SUBMENU;
 		if (bSelect) {
-			mii.dwTypeData = ' ' + Name;
+			mii.dwTypeData = Name;
 		}
 		else {
-			mii.dwTypeData = ' ' + (Name ? Name + api.GetDisplayNameOf(FolderItem, SHGDN_INFOLDER) : api.GetDisplayNameOf(FolderItem, SHGDN_INFOLDER));
+			mii.dwTypeData = (Name ? Name + api.GetDisplayNameOf(FolderItem, SHGDN_INFOLDER) : api.GetDisplayNameOf(FolderItem, SHGDN_INFOLDER));
 		}
-		var image = te.GdiplusBitmap();
-		var info = api.Memory("SHFILEINFO");
-		api.ShGetFileInfo(FolderItem, 0, info, info.Size, SHGFI_ICON | SHGFI_SMALLICON | SHGFI_PIDL);
-		var hIcon = info.hIcon;
-		image.FromHICON(hIcon, api.GetSysColor(COLOR_MENU));
-		api.DestroyIcon(hIcon);
-		AddMenuImage(mii, image);
+		AddMenuIconFolderItem(mii, FolderItem);
 		this.Items.push(FolderItem);
 		mii.wID = this.Items.length;
 		if (!bSelect && api.GetAttributesOf(FolderItem, SFGAO_HASSUBFOLDER | SFGAO_BROWSABLE) == SFGAO_HASSUBFOLDER) {
@@ -452,7 +446,7 @@ LoadImgDll = function (icon, index)
 		if (icon[index * 4 + 1] >= 500) {
 			hModule = api.LoadLibraryEx(fso.BuildPath(system32, "browseui.dll"), 0, LOAD_LIBRARY_AS_DATAFILE);
 		}
-		else if (osInfo.dwMinorVersion || osInfo.dwMajorVersion > 5) {
+		else if (WINVER > 0x500) {
 			hModule = api.LoadLibraryEx(fso.BuildPath(system32, "shell32.dll"), 0, LOAD_LIBRARY_AS_DATAFILE);
 		}
 		else {
@@ -1171,7 +1165,7 @@ OpenMenu = function (items, SelItem)
 		else {
 			path = String(api.GetDisplayNameOf(SelItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX));
 			arMenu = OpenMenu(items, path);
-			if (arMenu.length || fso.GetExtensionName(path) || !IsFolderEx(SelItem)) {
+			if (fso.GetExtensionName(path) || !IsFolderEx(SelItem)) {
 				return arMenu;
 			}
 			path += ".folder";
@@ -1474,7 +1468,7 @@ GetBaseMenu = function (nBase, FV, Selected, uCMF, Mode, SelItem)
 						if (id) {
 							ExtraMenuCommand[id] = function (Ctrl, pt, Name, nVerb)
 							{
-								wsh.Run("%ComSpec%");
+								InvokeCommand(Ctrl, 0, te.hwnd, "cmd", null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY | CMF_EXTENDEDVERBS)
 								return S_OK;
 							};
 						}
@@ -1644,12 +1638,34 @@ GetAccelerator = function (s)
 	return "";
 }
 
-AddMenuImage = function (mii, image)
+AddMenuIconFolderItem = function (mii, FolderItem)
 {
-	mii.hbmpItem = image.GetHBITMAP(osInfo.dwMajorVersion > 5 ? null : api.GetSysColor(COLOR_MENU));
+	var image = te.GdiplusBitmap();
+	var info = api.Memory("SHFILEINFO");
+	api.ShGetFileInfo(FolderItem, 0, info, info.Size, SHGFI_ICON | SHGFI_SMALLICON | SHGFI_SYSICONINDEX | SHGFI_PIDL);
+	var id = info.iIcon;
+	mii.hbmpItem = MainWindow.g_arBM['U' + id];
 	if (mii.hbmpItem) {
 		mii.fMask = mii.fMask | MIIM_BITMAP;
-		MainWindow.g_arBM.push(mii.hbmpItem);
+		return;
+	}
+	var hIcon = info.hIcon;
+	image.FromHICON(hIcon, api.GetSysColor(COLOR_MENU));
+	api.DestroyIcon(hIcon);
+	AddMenuImage(mii, image, id);
+}
+
+AddMenuImage = function (mii, image, id)
+{
+	mii.hbmpItem = image.GetHBITMAP(WINVER >= 0x600 ? null : api.GetSysColor(COLOR_MENU));
+	if (mii.hbmpItem) {
+		mii.fMask = mii.fMask | MIIM_BITMAP;
+		if (id) {
+			MainWindow.g_arBM['U' + id] = mii.hbmpItem;
+		}
+		else {
+			MainWindow.g_arBM.push(mii.hbmpItem);
+		}
 	}
 }
 

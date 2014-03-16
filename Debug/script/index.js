@@ -476,7 +476,7 @@ GetCommandId = function (hMenu, s, ContextMenu)
 				ContextMenu.HandleMenuMsg(WM_INITMENUPOPUP, hMenu, 0);
 			}
 			var i = api.GetMenuItemCount(hMenu);
-			if (i == 1 && ContextMenu && osInfo.dwMajorVersion > 5) {
+			if (i == 1 && ContextMenu && WINVER >= 0x600) {
 				setTimeout('api.EndMenu()', 200);
 				api.TrackPopupMenuEx(hMenu, TPM_RETURNCMD, 0, 0, te.hwnd, null, ContextMenu);
 				i = api.GetMenuItemCount(hMenu);
@@ -1261,9 +1261,10 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 			catch (e) {
 				ShowError(e, en);
 			}
-			while (g_arBM.length) {
-				api.DeleteObject(g_arBM.pop());
+			for (var i in g_arBM) {
+				api.DeleteObject(g_arBM[i]);
 			}
+			g_arBM = [];
 			break;
 		case WM_MENUCHAR:
 			if (window.g_menu_click && (wParam & 0xffff) == VK_LBUTTON) {
@@ -1306,6 +1307,7 @@ te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 					}
 				}
 			}
+			RunEvent1("ChangeNotify", Ctrl, pidls);
 			api.SHChangeNotification_Unlock(hLock);
 		}
 		return S_OK;
@@ -1437,6 +1439,17 @@ te.OnGetPaneState = function (Ctrl, ep, peps)
 te.OnTranslatePath = function (Ctrl, Path)
 {
 	return RunEvent4("TranslatePath", Ctrl, Path);
+}
+
+te.OnILGetParent = function (FolderItem)
+{
+	var r = RunEvent4("ILGetParent", FolderItem);
+	if (r !== undefined) {
+		return r; 
+	}
+	if (/search\-ms:.*?&crumb=location:([^&]*)/.test(api.getDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING))) {
+		return api.PathCreateFromUrl("file:" + RegExp.$1);
+	}
 }
 
 // Browser Events
@@ -2303,7 +2316,7 @@ g_basic =
 			{
 				var FV = te.Ctrl(CTRL_FV);
 				if (FV) {
-					var ContextMenu = FV.ViewMenu();
+					var ContextMenu = api.strcmpi(s, "cmd") ? FV.ViewMenu() : api.ContextMenu(FV, FV);;
 					if (ContextMenu) {
 						var hMenu = api.CreatePopupMenu();
 						ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_EXTENDEDVERBS);
@@ -2662,7 +2675,7 @@ if (!te.Data) {
 	else {
 		LoadConfig();
 	}
-	te.Data.uRegisterId = api.SHChangeNotifyRegister(te.hwnd, SHCNRF_InterruptLevel | SHCNRF_ShellLevel | SHCNRF_NewDelivery, SHCNE_DRIVEREMOVED | SHCNE_MEDIAREMOVED | SHCNE_NETUNSHARE | SHCNE_RENAMEFOLDER | SHCNE_RMDIR | SHCNE_SERVERDISCONNECT | SHCNE_DRIVEADD | SHCNE_DRIVEADDGUI | SHCNE_MEDIAINSERTED | SHCNE_NETSHARE, TWM_CHANGENOTIFY, ssfDESKTOP, true);
+	te.Data.uRegisterId = api.SHChangeNotifyRegister(te.hwnd, SHCNRF_InterruptLevel | SHCNRF_ShellLevel | SHCNRF_NewDelivery, SHCNE_ALLEVENTS, ssfDESKTOP, true);
 }
 
 InitCode();

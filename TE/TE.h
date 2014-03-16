@@ -125,6 +125,7 @@ typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
 #define TE_OnHitTest			28
 #define TE_OnTranslatePath		29
 #define TE_OnNavigateComplete	30
+#define TE_OnILGetParent		31
 #define Count_OnFunc			32
 
 #define SB_OnIncludeObject		0
@@ -386,7 +387,8 @@ private:
 	HRESULT m_DragLeave;
 };
 
-class CteWebBrowser : public IDispatch, public IOleClientSite, public IOleInPlaceSite, public IDocHostUIHandler, public IDropTarget
+class CteWebBrowser : public IDispatch, public IOleClientSite, public IOleInPlaceSite,
+	public IDocHostUIHandler, public IDropTarget//, public IDocHostShowUI
 {
 public:
 	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
@@ -434,6 +436,9 @@ public:
 	STDMETHODIMP GetExternal(IDispatch **ppDispatch);
 	STDMETHODIMP TranslateUrl(DWORD dwTranslate, OLECHAR *pchURLIn, OLECHAR **ppchURLOut);
 	STDMETHODIMP FilterDataObject(IDataObject *pDO, IDataObject **ppDORet);
+	/*IDocHostShowUI
+	STDMETHODIMP ShowMessage(HWND hwnd, LPOLESTR lpstrText, LPOLESTR lpstrCaption, DWORD dwType, LPOLESTR lpstrHelpFile, DWORD dwHelpContext, LRESULT *plResult);
+	STDMETHODIMP ShowHelp(HWND hwnd, LPOLESTR pszHelpFile, UINT uCommand, DWORD dwData, POINT ptMouse, IDispatch *pDispatchObjectHit);//*/
 	//IDropTarget
 	STDMETHODIMP DragEnter(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
 	STDMETHODIMP DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
@@ -665,24 +670,25 @@ public:
 	VOID DestroyView(int nFlags);
 	HWND GetListHandle(HWND *hList);
 	HRESULT BrowseObject2(FolderItem *pid, UINT wFlags);
-	BOOL Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItems *pFolderItems, LPITEMIDLIST pidlPrevius, LPITEMIDLIST *ppidl);
-	VOID Navigate1Ex(LPOLESTR pstr, FolderItems *pFolderItems, UINT wFlags, LPITEMIDLIST pidlPrevius);
-	HRESULT Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *param, FolderItems *pFolderItems, LPITEMIDLIST pidlPrevius, CteShellBrowser *pHistSB);
+	VOID CheckNavigate(LPITEMIDLIST *ppidl, CteShellBrowser *pHistSB, int nLogIndex);
+	BOOL Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItems *pFolderItems, FolderItem *pPrevious, LPITEMIDLIST *ppidl);
+	VOID Navigate1Ex(LPOLESTR pstr, FolderItems *pFolderItems, UINT wFlags, FolderItem *pPrevious);
+	HRESULT Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *param, FolderItems *pFolderItems, FolderItem *pPrevious, CteShellBrowser *pHistSB);
 	HRESULT Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *param, CteShellBrowser **ppSB, FolderItems *pFolderItems);
-	HRESULT OnBeforeNavigate(FolderItem *pPrevius, UINT wFlags);
+	HRESULT OnBeforeNavigate(FolderItem *pPrevious, UINT wFlags);
 	void InitializeMenuItem(HMENU hmenu, LPTSTR lpszItemName, int nId, HMENU hmenuSub);
 	VOID GetSort(BSTR* pbs);
 	VOID SetSort(BSTR bs);
 	HRESULT SetRedraw(BOOL bRedraw);
-	HRESULT CreateViewWindowEx(IShellView *pPreviusView);
+	HRESULT CreateViewWindowEx(IShellView *pPreviousView);
 	BSTR GetColumnsStr();
 	VOID GetDefaultColumns();
-	HRESULT GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, FolderItem *pid, UINT wFlags, FolderItems *pFolderItems, LPITEMIDLIST pidlPrevius, FolderItem *pPrevious, CteShellBrowser *pHistSB);
+	HRESULT GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, FolderItem *pid, UINT wFlags, FolderItems *pFolderItems, FolderItem *pPrevious, CteShellBrowser *pHistSB);
 	VOID EBNavigate();
 	VOID SetHistory(FolderItems *pFolderItems, UINT wFlags);
 	VOID GetVariantPath(FolderItem **ppFolderItem, FolderItems **ppFolderItems, VARIANT *pv);
 	VOID HookDragDrop(int nMode);
-	VOID Error(FolderItem *pid);
+	VOID Error(BSTR *pbs);
 	VOID Refresh(BOOL bCheck);
 	VOID SetActive();
 	VOID SetTitle(LPOLESTR szName, int nIndex);
