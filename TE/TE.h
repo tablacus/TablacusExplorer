@@ -25,10 +25,11 @@ using namespace Gdiplus;
 
 #import <shdocvw.dll> exclude("OLECMDID", "OLECMDF", "OLECMDEXECOPT", "tagREADYSTATE") auto_rename
 //#import <mshtml.tlb>
-#pragma comment(lib, "comctl32.lib") 
-#pragma comment(lib, "shlwapi.lib") 
-#pragma comment(lib, "gdiplus.lib") 
-#pragma comment(lib, "urlmon.lib") 
+#pragma comment(lib, "comctl32.lib")
+#pragma comment(lib, "shlwapi.lib")
+#pragma comment(lib, "gdiplus.lib")
+#pragma comment(lib, "urlmon.lib")
+#pragma comment(lib, "imm32.lib")
 
 #ifdef _WIN64
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
@@ -345,11 +346,11 @@ public:
 
 private:
 	LPITEMIDLIST	*m_pidllist;
-	LONG			m_cRef;
 	IDataObject		*m_pDataObj;
-	long			m_nCount;
 	FolderItems		*m_pFolderItems;
 	IDispatch		*m_oFolderItems;
+	LONG			m_cRef;
+	LONG			m_nCount;
 	DWORD			m_dwTick;
 	BOOL			m_bUseILF;
 };
@@ -380,9 +381,9 @@ public:
 	int		m_param[7];
 	BOOL	m_bDrop;
 private:
-	LONG	m_cRef;
 	VARIANT m_Data;
 	CteFolderItems *m_pDragItems;
+	LONG	m_cRef;
 	DWORD m_grfKeyState;
 	HRESULT m_DragLeave;
 };
@@ -457,10 +458,10 @@ public:
 	HRESULT m_DragLeave;
 	BOOL	m_bRedraw;
 private:
-	LONG	m_cRef;
 	VARIANT m_Data;
-	DWORD	m_dwCookie;
 	CteFolderItems *m_pDragItems;
+	LONG	m_cRef;
+	DWORD	m_dwCookie;
 	DWORD	m_grfKeyState;
 };
 
@@ -509,21 +510,21 @@ public:
 	DWORD GetStyle();
 	VOID SetItemSize();
 public:
-	int		m_nIndex;
+	SCROLLINFO m_si;
 	HWND	m_hwnd;
 	HWND	m_hwndStatic;
 	HWND	m_hwndButton;
-	BOOL	m_bEmpty;
+	int		m_nIndex;
 	DWORD	m_dwSize;
 	int		m_param[9];
-	SCROLLINFO m_si;
 	int		m_nTC;
-	BOOL	m_bVisible;
 	int		m_nScrollWidth;
+	BOOL	m_bEmpty;
+	BOOL	m_bVisible;
 private:
-	LONG	m_cRef;
 	VARIANT m_Data;
 	CteFolderItems *m_pDragItems;
+	LONG	m_cRef;
 	DWORD	m_grfKeyState;
 	LONG	m_nLockUpdate;
 	BOOL	m_bRedraw;
@@ -543,9 +544,9 @@ public:
 	~CteServiceProvider();
 
 public:
-	LONG	m_cRef;
 	IShellBrowser *m_pSB;
 	IShellView *m_pSV;
+	LONG	m_cRef;
 };
 
 class CteShellBrowser : public IShellBrowser, public ICommDlgBrowser2, 
@@ -693,9 +694,7 @@ public:
 	VOID SetActive();
 	VOID SetTitle(LPOLESTR szName, int nIndex);
 public:
-	BOOL		m_bEmpty, m_bInit;
-	BOOL		m_bVisible;
-	DWORD		m_nOpenedType;
+	VARIANT		m_vRoot;
 	HWND		m_hwnd;
 	HWND		m_hwndDV;
 	HWND		m_hwndLV;
@@ -703,37 +702,44 @@ public:
 	CteTreeView	*m_pTV;
 	LONG_PTR	m_DefProc;
 	IShellView  *m_pShellView;
-	int			m_nSB;
-	DWORD		m_param[SB_Count];
 	IDispatch	*m_pOnFunc[1];
-	UINT		m_nColumns;
 	TEColumn	*m_pColumns;
-	VARIANT		m_vRoot;
-	LPITEMIDLIST m_pidl;
 	FolderItem *m_pFolderItem;
 	FolderItem *m_pFolderItem1;
-	int			m_nUnload;
 	IExplorerBrowser *m_pExplorerBrowser;
 	CteServiceProvider *m_pServiceProvider;
+	LPITEMIDLIST m_pidl;
+
+	DWORD		m_param[SB_Count];
+	int			m_nSB;
+	UINT		m_nColumns;
+	int			m_nUnload;
+	BOOL		m_bEmpty, m_bInit;
+	BOOL		m_bVisible;
+	DWORD		m_nOpenedType;
 private:
-	LONG		m_cRef;
-	VARIANT m_Data;
-	DWORD		m_dwEventCookie;
+	VARIANT		m_Data;
 	FolderItem	**m_ppLog;
+	IDispatch	*m_pDSFV;
+	IShellFolder2 *m_pSF2;
+	PROPERTYKEY *m_pDefultColumns;
+	IDropTarget *m_pDropTarget;
+	BSTR		m_bsFilter;
+
+	CteFolderItems *m_pDragItems;
+	LONG		m_cRef;
+	DWORD		m_dwEventCookie;
 	int			m_nLogCount;
 	int			m_nLogIndex;
 	int			m_nPrevLogIndex;
-	BSTR		m_bsFilter;
-	IDispatch	*m_pDSFV;
-	IShellFolder2 *m_pSF2;
 	UINT		m_nDefultColumns;
-	PROPERTYKEY *m_pDefultColumns;
-	IDropTarget *m_pDropTarget;
-	CteFolderItems *m_pDragItems;
 	DWORD m_grfKeyState;
 	HRESULT		m_DragLeave;
-	BOOL		m_bIconSize;
 	LONG		m_nCreate;
+	BOOL		m_bIconSize;
+#ifdef _2000XP
+	int			m_nFolderName;
+#endif
 };
 
 class CteMemory : public IDispatchEx
@@ -772,11 +778,11 @@ public:
 	int		m_nSize;
 	int		m_nCount;
 private:
+	BSTR	m_bsStruct;
+	BSTR	*m_ppbs;
 	LONG	m_cRef;
 	int		m_nAlloc;
 	int		m_nMode;
-	BSTR	m_bsStruct;
-	BSTR	*m_ppbs;
 	int		m_nbs;
 };
 
@@ -801,8 +807,8 @@ public:
 	CteShellBrowser *m_pShellBrowser;
 	CteDll *m_pDll;
 private:
-	LONG	m_cRef;
 	IDataObject *m_pDataObj;
+	LONG	m_cRef;
 };
 
 class CteDropTarget : public IDispatch
@@ -820,9 +826,9 @@ public:
 	CteDropTarget(IDropTarget *pDropTarget, FolderItem *pFolderItem);
 	~CteDropTarget();
 private:
-	LONG	m_cRef;
 	IDropTarget *m_pDropTarget;
 	FolderItem *m_pFolderItem;
+	LONG	m_cRef;
 };
 
 class CteTreeView : public IDispatch,
@@ -910,32 +916,31 @@ public:
 	HRESULT getSelected(IDispatch **pItem);
 	HRESULT SetRoot();
 public:
-	BOOL		m_bSetRoot;
 	HWND        m_hwnd;
 	HWND        m_hwndTV;
 	INameSpaceTreeControl	*m_pNameSpaceTreeControl;
 	CteShellBrowser	*m_pFV;
-	WNDPROC		m_DefProc;
-	WNDPROC		m_DefProc2;
-	BOOL		m_bMain;
 	IDropTarget *m_pDropTarget;
 #ifdef _2000XP
 	IShellNameSpace *m_pShellNameSpace;
 #endif
+	WNDPROC		m_DefProc;
+	WNDPROC		m_DefProc2;
+	BOOL		m_bMain;
+	BOOL		m_bSetRoot;
 private:
-	LONG	m_cRef;
 	VARIANT m_Data;
-	int		m_nType, m_nOpenedType;
 	LPWSTR	lplpVerbs;
 	CteFolderItems *m_pDragItems;
+#ifdef _W2000
+	VARIANT m_vSelected;
+#endif
+	LONG	m_cRef;
+	int		m_nType, m_nOpenedType;
 	DWORD	m_grfKeyState;
 	HRESULT m_DragLeave;
 #ifdef _VISTA7
 	DWORD	m_dwCookie;
-#endif
-//	DWORD   m_dwEventCookie;
-#ifdef _W2000
-	VARIANT m_vSelected;
 #endif
 };
 
@@ -954,8 +959,8 @@ public:
 	CteCommonDialog();
 	~CteCommonDialog();
 private:
-	LONG	m_cRef;
 	OPENFILENAME m_ofn;
+	LONG	m_cRef;
 };
 
 class CteGdiplusBitmap : public IDispatch
@@ -973,8 +978,8 @@ public:
 	CteGdiplusBitmap();
 	~CteGdiplusBitmap();
 private:
-	LONG	m_cRef;
 	Gdiplus::Bitmap *m_pImage;
+	LONG	m_cRef;
 };
 
 class CteWindowsAPI : public IDispatch
@@ -1015,13 +1020,13 @@ public:
 	CteDispatch(IDispatch *pDispatch, int nMode);
 	~CteDispatch();
 
+	IActiveScript *m_pActiveScript;
 	DISPID		m_dispIdMember;
 	int			m_nIndex;
-	IActiveScript *m_pActiveScript;
 private:
-	LONG		m_cRef;
 	IDispatch	*m_pDispatch;
-	int			m_nMode;//0: Clone 1:collection 2:ScriptDispatch
+	LONG		m_cRef;
+	int			m_nMode;//0: Clone 1:Collection 2:ScriptDispatch
 };
 
 class CteActiveScriptSite : public IActiveScriptSite, public IActiveScriptSiteWindow
@@ -1050,9 +1055,9 @@ public:
 	STDMETHODIMP EnableModeless(BOOL fEnable);
 
 public:
-	LONG		m_cRef;
 	IDispatchEx	*m_pDispatchEx;
 	IDispatch *m_pOnError;
+	LONG		m_cRef;
 };
 
 #ifdef _USE_TESTOBJECT

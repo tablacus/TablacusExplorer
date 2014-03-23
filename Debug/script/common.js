@@ -1377,7 +1377,11 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 			if (nVerb > 0x1000 && nVerb < 0x7000) {
 				if (ContextMenu) {
 					var hr = S_FALSE;
-					if (ContextMenu.InvokeCommand(0, te.hwnd, nVerb - 0x1001, null, null, SW_SHOWNORMAL, 0, 0) == S_OK) {
+					if (nBase == 3 && (uCMF & CMF_EXTENDEDVERBS) && ContextMenu.GetCommandString(nVerb - 0x1001, GCS_VERB) == "cmd") {
+						InvokeCommand(Ctrl, 0, te.hwnd, "cmd", null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY | CMF_EXTENDEDVERBS);
+						nVerb = 0;
+					}
+					else if (ContextMenu.InvokeCommand(0, te.hwnd, nVerb - 0x1001, null, null, SW_SHOWNORMAL, 0, 0) == S_OK) {
 						nVerb = 0;
 					}
 				}
@@ -1462,17 +1466,7 @@ GetBaseMenu = function (nBase, FV, Selected, uCMF, Mode, SelItem)
 			if (FV) {
 				ContextMenu = FV.ViewMenu();
 				if (ContextMenu) {
-					ContextMenu.QueryContextMenu(hMenu, 0, 0x1001, 0x6FFF, uCMF);
-					if (uCMF & CMF_EXTENDEDVERBS) {
-						var id = api.GetMenuDefaultItem(hMenu, false, 0);
-						if (id) {
-							ExtraMenuCommand[id] = function (Ctrl, pt, Name, nVerb)
-							{
-								InvokeCommand(Ctrl, 0, te.hwnd, "cmd", null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY | CMF_EXTENDEDVERBS)
-								return S_OK;
-							};
-						}
-					}
+					ContextMenu.QueryContextMenu(hMenu, 0, 0x1001, 0x6FFF, uCMF | CMF_DONOTPICKDEFAULT);
 				}
 			}
 			break;
