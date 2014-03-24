@@ -1390,7 +1390,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 			if (nVerb == 0) {
 				return S_OK;
 			}
-			if (FV && nBase >= 2) {
+			if (FV && nBase > 3 && !ContextMenu) {
 				if ((nVerb & 0xfff) == (CommandID_RENAME - 1)) {
 					setTimeout(function () {
 						FV.SelectItem(FV.FocusedItem, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_EDIT);
@@ -1438,7 +1438,7 @@ GetBaseMenu = function (nBase, FV, Selected, uCMF, Mode, SelItem)
 				ContextMenu = api.ContextMenu(Items, FV);
 				if (ContextMenu) {
 					ContextMenu.QueryContextMenu(hMenu, 0, 0x1001, 0x6FFF, uCMF);
-					if (!FV) {
+					if (!FV || nBase == 4) {
 						SetRenameMenu(0x1001);
 					}
 				}
@@ -2627,6 +2627,10 @@ SetRenameMenu = function (n)
 {
 	ExtraMenuCommand[CommandID_RENAME + n - 1] = function (Ctrl, pt, Name, nVerb)
 	{
+		if (api.IsChild(te.Ctrl(CTRL_WB).hwnd, api.GetFocus())) {
+			var FV = te.Ctrl(CTRL_FV);
+			FV && FV.Focus();
+		}
 		setTimeout('wsh.SendKeys("{F2}");', 100);
 	};
 }

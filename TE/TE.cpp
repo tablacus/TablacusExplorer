@@ -961,6 +961,7 @@ TEmethod methodAPI[] = {
 	{ 20431, L"BitBlt" },
 	{ 20441, L"ImmSetOpenStatus" },
 	{ 20451, L"ImmReleaseContext" },
+	{ 20461, L"IsChild" },
 	//+other
 	{ 25001, L"InsertMenu" },
 	{ 25011, L"SetWindowText" },
@@ -1072,6 +1073,7 @@ TEmethod methodAPI[] = {
 	{ 40313, L"CopyImage" },
 	{ 40323, L"GetCurrentProcess" },
 	{ 40333, L"ImmGetContext" },
+	{ 40343, L"GetFocus" },
 	//+other
 	{ 45003, L"LoadMenu" },
 	{ 45013, L"LoadIcon" },
@@ -15062,6 +15064,9 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 							*phResult = LoadMenu((HINSTANCE)param[0], GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]));
 						}
 						break;
+					case 40343:
+						*phResult = GetFocus();
+						break;
 					case 45013:
 						if (nArg >= 1) {
 							*phResult = LoadIcon((HINSTANCE)param[0], GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]));
@@ -15894,6 +15899,11 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 							*pbResult = InsertMenu((HMENU)param[0], (UINT)param[1], (UINT)param[2],
 								(UINT_PTR)param[3], vNewItem.bstrVal);
 							VariantClear(&vNewItem);
+						}
+						break;
+					case 20461:
+						if (nArg >= 1) {
+							*pbResult = IsChild((HWND)param[0], (HWND)param[1]);
 						}
 						break;
 					case 25011://SetWindowText
