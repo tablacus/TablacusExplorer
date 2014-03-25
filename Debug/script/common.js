@@ -1336,6 +1336,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 				}
 			}
 			var nPos = MakeMenus(hMenu, menus, arMenu, items);
+			var nBasePos = nPos;
 			for (var i in eventTE[Name]) {
 				nPos = eventTE[Name][i](Ctrl, hMenu, nPos, Selected, SelItem);
 			}
@@ -1374,35 +1375,26 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 					}
 				}
 			}
-			if (nVerb > 0x1000 && nVerb < 0x7000) {
-				if (ContextMenu) {
-					var hr = S_FALSE;
-					if (nBase == 3 && (uCMF & CMF_EXTENDEDVERBS) && ContextMenu.GetCommandString(nVerb - 0x1001, GCS_VERB) == "cmd") {
-						InvokeCommand(Ctrl, 0, te.hwnd, "cmd", null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY | CMF_EXTENDEDVERBS);
-						nVerb = 0;
-					}
-					else if (ContextMenu.InvokeCommand(0, te.hwnd, nVerb - 0x1001, null, null, SW_SHOWNORMAL, 0, 0) == S_OK) {
-						nVerb = 0;
-					}
+			if (ContextMenu && nVerb >= ContextMenu.idCmdFirst && nVerb <= ContextMenu.idCmdLast) {
+				if (nBase == 3 && (uCMF & CMF_EXTENDEDVERBS) && ContextMenu.GetCommandString(nVerb - ContextMenu.idCmdFirst, GCS_VERB) == "cmd") {
+					InvokeCommand(Ctrl, 0, te.hwnd, "cmd", null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY | CMF_EXTENDEDVERBS);
+					nVerb = 0;
+				}
+				else if (ContextMenu.InvokeCommand(0, te.hwnd, nVerb - ContextMenu.idCmdFirst, null, null, SW_SHOWNORMAL, 0, 0) == S_OK) {
+					nVerb = 0;
 				}
 			}
 			api.DestroyMenu(hMenu);
 			if (nVerb == 0) {
 				return S_OK;
 			}
-			if (FV && nBase > 3 && !ContextMenu) {
-				if ((nVerb & 0xfff) == (CommandID_RENAME - 1)) {
-					setTimeout(function () {
-						FV.SelectItem(FV.FocusedItem, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_EDIT);
-					}, 100);
-					return S_OK;
-				}
+			if (items) {
+				item = items[nVerb - 1];
+			}
+			if (!item && FV && nVerb > 0x7000) {
 				if (api.SendMessage(FV.hwndView, WM_COMMAND, nVerb, 0) == S_OK) {
 					return S_OK;
 				}
-			}
-			if (items) {
-				item = items[nVerb - 1];
 			}
 		}
 		if (item) {
@@ -1437,16 +1429,16 @@ GetBaseMenu = function (nBase, FV, Selected, uCMF, Mode, SelItem)
 			if (nBase == 2 || Items && Items.Count) {
 				ContextMenu = api.ContextMenu(Items, FV);
 				if (ContextMenu) {
-					ContextMenu.QueryContextMenu(hMenu, 0, 0x1001, 0x6FFF, uCMF);
+					ContextMenu.QueryContextMenu(hMenu, 0, 0x3001, 0x6fff, uCMF);
 					if (!FV || nBase == 4) {
-						SetRenameMenu(0x1001);
+						SetRenameMenu(ContextMenu.idCmdFirst);
 					}
 				}
 			}
 			else if (FV) {
 				ContextMenu = FV.ViewMenu();
 				if (ContextMenu) {
-					ContextMenu.QueryContextMenu(hMenu, 0, 0x1001, 0x6FFF, uCMF);
+					ContextMenu.QueryContextMenu(hMenu, 0, 0x3001, 0x6fff, uCMF);
 					var mii = api.Memory("MENUITEMINFO");
 					mii.cbSize = mii.Size;
 					mii.fMask = MIIM_FTYPE | MIIM_SUBMENU;
@@ -1466,7 +1458,7 @@ GetBaseMenu = function (nBase, FV, Selected, uCMF, Mode, SelItem)
 			if (FV) {
 				ContextMenu = FV.ViewMenu();
 				if (ContextMenu) {
-					ContextMenu.QueryContextMenu(hMenu, 0, 0x1001, 0x6FFF, uCMF | CMF_DONOTPICKDEFAULT);
+					ContextMenu.QueryContextMenu(hMenu, 0, 0x3001, 0x6fff, uCMF | CMF_DONOTPICKDEFAULT);
 				}
 			}
 			break;
@@ -1477,7 +1469,7 @@ GetBaseMenu = function (nBase, FV, Selected, uCMF, Mode, SelItem)
 				ContextMenu = FV.ViewMenu();
 				if (ContextMenu) {
 					hMenu = api.CreatePopupMenu();
-					ContextMenu.QueryContextMenu(hMenu, 0, 0x1001, 0x6FFF, CMF_DEFAULTONLY);
+					ContextMenu.QueryContextMenu(hMenu, 0, 0x3001, 0x6fff, CMF_DEFAULTONLY);
 					var hMenu2 = te.MainMenu(id);
 					var oMenu = {};
 					var oMenu2 = {};
@@ -1510,13 +1502,13 @@ GetBaseMenu = function (nBase, FV, Selected, uCMF, Mode, SelItem)
 				}
 				else {
 					if (s) {
-						api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, i + 0x1001, s);
+						api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, i + 0x3001, s);
 					}
 				}
 			}
 			AddEvent("MenuCommand", function (Ctrl, pt, Name, nVerb)
 			{
-				var s = GetHelpMenu(false)[nVerb - 0x1001];
+				var s = GetHelpMenu(false)[nVerb - 0x3001];
 				if (s) {
 					if (api.strcmpi(typeof s, "function")) {
 						Navigate(s, SBSP_NEWBROWSER);
@@ -1529,8 +1521,8 @@ GetBaseMenu = function (nBase, FV, Selected, uCMF, Mode, SelItem)
 			break;
 		case 8:
 			hMenu = api.CreatePopupMenu();
-			api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, 0x1001, GetText("&Add to Favorites..."));
-			ExtraMenuCommand[0x1001] = function (Ctrl, pt) { AddFavorite(); };
+			api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, 0x3001, GetText("&Add to Favorites..."));
+			ExtraMenuCommand[0x3001] = function (Ctrl, pt) { AddFavorite(); };
 			api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_SEPARATOR, 0, null);
 			break;
 		default:
@@ -2627,11 +2619,16 @@ SetRenameMenu = function (n)
 {
 	ExtraMenuCommand[CommandID_RENAME + n - 1] = function (Ctrl, pt, Name, nVerb)
 	{
-		if (api.IsChild(te.Ctrl(CTRL_WB).hwnd, api.GetFocus())) {
-			var FV = te.Ctrl(CTRL_FV);
-			FV && FV.Focus();
-		}
-		setTimeout('wsh.SendKeys("{F2}");', 100);
+		setTimeout(function ()
+		{
+			if (api.IsChild(te.Ctrl(CTRL_WB).hwnd, api.GetFocus())) {
+				var FV = te.Ctrl(CTRL_FV);
+				FV && FV.SelectItem(FV.FocusedItem, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_EDIT);
+			}
+			else {
+				wsh.SendKeys("{F2}");
+			}
+		}, 100);
 	};
 }
 

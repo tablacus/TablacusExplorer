@@ -809,6 +809,7 @@ public:
 private:
 	IDataObject *m_pDataObj;
 	LONG	m_cRef;
+	UINT_PTR	m_param[5];
 };
 
 class CteDropTarget : public IDispatch

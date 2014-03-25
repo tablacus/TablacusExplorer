@@ -1279,6 +1279,11 @@ TEmethod methodCM[] = {
 	{ 4, L"GetCommandString" },
 	{ 5, L"FolderView" },
 	{ 6, L"HandleMenuMsg" },
+	{ 10, L"hmenu" },
+	{ 11, L"indexMenu" },
+	{ 12, L"idCmdFirst" },
+	{ 13, L"idCmdLast" },
+	{ 14, L"uFlags" },
 	{ 0, NULL }
 };
 
@@ -12168,11 +12173,10 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 			//QueryContextMenu
 			case 1:	
 				if (nArg >= 4) {
-					hr = m_pContextMenu->QueryContextMenu((HMENU)GetLLFromVariant(&pDispParams->rgvarg[nArg]),
-						(UINT)GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]),
-						(UINT)GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]),
-						(UINT)GetIntFromVariant(&pDispParams->rgvarg[nArg - 3]),
-						(UINT)GetIntFromVariant(&pDispParams->rgvarg[nArg - 4]));
+					for (int i = 5; i--;) {
+						m_param[i] = (UINT_PTR)GetLLFromVariant(&pDispParams->rgvarg[nArg - i]);
+					}
+					hr = m_pContextMenu->QueryContextMenu((HMENU)m_param[0], (UINT)m_param[1], (UINT)m_param[2], (UINT)m_param[3], (UINT)m_param[4]);
 					if (pVarResult) {
 						pVarResult->lVal = hr;
 						pVarResult->vt = VT_I4;
@@ -12333,6 +12337,12 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 			case DISPID_VALUE:
 				teSetObject(pVarResult, this);
 				return S_OK;
+			default:
+				if (dispIdMember >= 10 && dispIdMember <= 14) {
+					SetVariantLL(pVarResult, m_param[dispIdMember - 10]);
+					return S_OK;
+				}
+				break;
 		}
 	}
 	catch (...) {
@@ -15891,7 +15901,11 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 							*pbResult = ImmReleaseContext((HWND)param[0], (HIMC)param[1]);
 						}
 						break;
-
+					case 20461:
+						if (nArg >= 1) {
+							*pbResult = IsChild((HWND)param[0], (HWND)param[1]);
+						}
+						break;
 					case 25001://InsertMenu
 						if (nArg >= 4) {
 							VARIANT vNewItem;
@@ -15899,11 +15913,6 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 							*pbResult = InsertMenu((HMENU)param[0], (UINT)param[1], (UINT)param[2],
 								(UINT_PTR)param[3], vNewItem.bstrVal);
 							VariantClear(&vNewItem);
-						}
-						break;
-					case 20461:
-						if (nArg >= 1) {
-							*pbResult = IsChild((HWND)param[0], (HWND)param[1]);
 						}
 						break;
 					case 25011://SetWindowText
