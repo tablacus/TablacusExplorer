@@ -1336,7 +1336,6 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 				}
 			}
 			var nPos = MakeMenus(hMenu, menus, arMenu, items);
-			var nBasePos = nPos;
 			for (var i in eventTE[Name]) {
 				nPos = eventTE[Name][i](Ctrl, hMenu, nPos, Selected, SelItem);
 			}

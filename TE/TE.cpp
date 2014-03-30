@@ -7575,15 +7575,29 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			//ViewMenu
 			case 0x10000207:
 				IContextMenu *pCM;
-				if SUCCEEDED(m_pShellView->GetItemObject(SVGIO_BACKGROUND, IID_PPV_ARGS(&pCM))) {
-					CteServiceProvider *pSP = new CteServiceProvider(this, m_pShellView);
-					IUnknown_SetSite(pCM, pSP);
-					pSP->Release();
-					CteContextMenu *pCCM;
-					pCCM = new CteContextMenu(pCM, NULL);
-					pCCM->m_pShellBrowser = this;
-					teSetObject(pVarResult, pCCM);
+				CteContextMenu *pCCM;
+				CteServiceProvider *pSP;
+				pCM = NULL;
+				pCCM = NULL;
+				pSP = NULL;
+				try {
+					if SUCCEEDED(m_pShellView->GetItemObject(SVGIO_BACKGROUND, IID_PPV_ARGS(&pCM))) {
+						pSP = new CteServiceProvider(this, m_pShellView);
+						IUnknown_SetSite(pCM, pSP);
+						CteContextMenu *pCCM = new CteContextMenu(pCM, NULL);
+						pCCM->m_pShellBrowser = this;
+						teSetObject(pVarResult, pCCM);
+					}
+				}
+				catch(...) {
+				}
+				if (pCCM) {
 					pCCM->Release();
+				}
+				if (pSP) {
+					pSP->Release();
+				}
+				if (pCM) {
 					pCM->Release();
 				}
 				return S_OK;
