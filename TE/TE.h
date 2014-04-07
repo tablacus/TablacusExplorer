@@ -739,6 +739,7 @@ private:
 	BOOL		m_bIconSize;
 #ifdef _2000XP
 	int			m_nFolderName;
+	IShellFolderViewCB	*m_pSFVCB;
 #endif
 };
 

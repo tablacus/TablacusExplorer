@@ -13,7 +13,7 @@ var bDrop;
 var Input;
 var g_tidNew = null;
 var g_dlgOptions;
-var eventTE = {};
+var eventTE = { Environment: {} };
 var eventTA = {};
 var g_ptDrag = api.Memory("POINT");
 var objHover = null;
@@ -160,6 +160,11 @@ AddEventEx = function (w, Name, fn)
 	else if (w.attachEvent){
 		w.attachEvent("on" + Name, fn);
 	}
+}
+
+AddEnv = function (Name, fn)
+{
+	eventTE.Environment[Name.toLowerCase()] = fn;
 }
 
 function ApplyLang(doc)
@@ -1069,6 +1074,16 @@ ExtractMacro = function (Ctrl, s)
 	if (typeof(s) == "string") {
 		for (var j = 10; j--;) {
 			var s1 = s;
+			if (/%([^%]+)%/i.test(s)) {
+				var re = RegExp.$1;
+				var fn = eventTE.Environment[re.toLowerCase()];
+				if (fn) {
+					var r = fn(Ctrl);
+					if (typeof(r) == "string") {
+						s = s.replace("%" + re + "%", r);
+					}
+				}
+			}
 			for (var i in eventTE.ReplaceMacro) {
 				var re = eventTE.ReplaceMacro[i][0];
 				if (s.match(re)) {
@@ -1084,15 +1099,16 @@ ExtractMacro = function (Ctrl, s)
 					s = eventTE.ExtractMacro[i][1](Ctrl, s, re);
 				}
 			}
+			s = wsh.ExpandEnvironmentStrings(s);
 			if (s == s1) {
 				break;
 			}
 		}
 	}
-	return wsh.ExpandEnvironmentStrings(s);
+	return s;
 }
 
-AddEvent("ReplaceMacro", [/%Selected%/ig, function(Ctrl)
+AddEnv("Selected", function(Ctrl)
 {
 	var ar = [];
 	var FV = GetFolderView(Ctrl);
@@ -1104,9 +1120,9 @@ AddEvent("ReplaceMacro", [/%Selected%/ig, function(Ctrl)
 		}
 	}
 	return ar.join(" ");
-}]);
+});
 
-AddEvent("ReplaceMacro", [/%Current%/ig, function(Ctrl)
+AddEnv("Current", function(Ctrl)
 {
 	var strSel = "";
 	var FV = GetFolderView(Ctrl);
@@ -1114,9 +1130,9 @@ AddEvent("ReplaceMacro", [/%Current%/ig, function(Ctrl)
 		strSel = api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
 	}
 	return strSel;
-}]);
+});
 
-AddEvent("ReplaceMacro", [/%TreeSelected%/ig, function(Ctrl)
+AddEnv("TreeSelected", function(Ctrl)
 {
 	var strSel = "";
 	if (!Ctrl || Ctrl.Type != CTRL_TV) {
@@ -1126,12 +1142,12 @@ AddEvent("ReplaceMacro", [/%TreeSelected%/ig, function(Ctrl)
 		strSel = api.PathQuoteSpaces(api.GetDisplayNameOf(Ctrl.SelectedItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
 	}
 	return strSel;
-}]);
+});
 
-AddEvent("ReplaceMacro", [/%Installed%/ig, function(Ctrl)
+AddEnv("Installed", function(Ctrl)
 {
 	return fso.GetDriveName(api.GetModuleFileName(null));
-}]);
+});
 
 PathMatchEx = function (path, s)
 {
@@ -1537,7 +1553,11 @@ GetHelpMenu = function (bTitle)
 	if (api.sizeof("HANDLE") > 4) {
 		dir.push(ssfPROGRAMFILESx86);
 	}
-	dir = dir.concat([fso.GetSpecialFolder(2).Path, ssfPERSONAL, ssfSTARTMENU, ssfPROGRAMS, ssfSTARTUP, ssfSENDTO, ssfAPPDATA, ssfFAVORITES, ssfRECENT, ssfHISTORY, ssfDESKTOPDIRECTORY, ssfCONTROLS, ssfTEMPLATES, ssfFONTS, ssfPRINTERS, ssfBITBUCKET]);
+	dir.push(fso.GetSpecialFolder(2).Path);
+	if (WINVER >= 0x600) {
+		dir.push("shell:libraries");
+	}
+	dir = dir.concat([ssfPERSONAL, ssfSTARTMENU, ssfPROGRAMS, ssfSTARTUP, ssfSENDTO, ssfAPPDATA, ssfFAVORITES, ssfRECENT, ssfHISTORY, ssfDESKTOPDIRECTORY, ssfCONTROLS, ssfTEMPLATES, ssfFONTS, ssfPRINTERS, ssfBITBUCKET]);
 	if (bTitle) {
 		for (var i = dir.length; i--;) {
 			dir[i] = api.GetDisplayNameOf(dir[i], SHGDN_INFOLDER);
