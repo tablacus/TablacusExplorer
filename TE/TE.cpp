@@ -3797,6 +3797,9 @@ LRESULT CALLBACK TETVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	static HWND hwndEdit = NULL;
+	static FolderItem *pidEdit = NULL;
+
 	try {
 		CteShellBrowser *pSB = SBfromhwnd(hwnd);
 		if (!pSB) {
@@ -3888,6 +3891,52 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			catch(...) {}
 			::InterlockedDecrement(&g_nProcFV);
 		}
+		if (msg	== WM_NOTIFY) {
+			NMLVDISPINFO *lpDispInfo = (NMLVDISPINFO *)lParam;
+			if (lpDispInfo->hdr.code == LVN_INSERTITEM) {
+				return 0;
+			}
+			else if (lpDispInfo->hdr.code == LVN_BEGINLABELEDIT) {
+				if (pidEdit) {
+					pidEdit->Release();
+					pidEdit = NULL;
+				}
+				BSTR bsPath;
+				if SUCCEEDED(GetDisplayNameFromPidl(&bsPath, pSB->m_pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)) {
+					if (PathIsNetworkPath(bsPath)) {
+						if SUCCEEDED(pSB->get_FocusedItem(&pidEdit)) {
+							LPITEMIDLIST pidl;
+							if (GetIDListFromObject(pidEdit, &pidl)) {
+								BSTR bs;
+								if SUCCEEDED(GetDisplayNameFromPidl(&bs, pidl, SHGDN_FOREDITING)) {
+									hwndEdit = ListView_GetEditControl(pSB->m_hwndLV);
+									SetWindowText(hwndEdit, bs);
+									LPWSTR lp = wcschr(bs, '.');
+									if (lp) {
+										SendMessage(hwndEdit, EM_SETSEL, 0, (int)(lp - bs));
+									}
+									::SysFreeString(bs);
+									return 0;
+								}
+								teCoTaskMemFree(pidl);
+							}
+						}
+					}
+					::SysFreeString(bsPath);
+				}
+			}
+			else if (lpDispInfo->hdr.code == LVN_ENDLABELEDIT) {
+				if (pidEdit) {
+					if (lpDispInfo->item.pszText) {
+						pidEdit->put_Name(lpDispInfo->item.pszText);
+					}
+					pidEdit->Release();
+					pidEdit = NULL;
+					return 1;
+				}
+			}
+		}
+
 		if (msg == WM_WINDOWPOSCHANGED || msg == WM_COMMAND) {
 			PostMessage(pSB->m_hwndLV, LVM_SETEXTENDEDLISTVIEWSTYLE, LVS_EX_FULLROWSELECT, (pSB->m_param[SB_FolderFlags] & FWF_FULLROWSELECT) ? LVS_EX_FULLROWSELECT : 0);
 		}
@@ -5345,7 +5394,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 							VARIANT v;
 							::VariantInit(&v);
 							v.vt = VT_BSTR;
-							if SUCCEEDED(GetDisplayNameFromPidl(&v.bstrVal, pSB->m_pidl, SHGDN_FORPARSING)) {
+							if SUCCEEDED(GetDisplayNameFromPidl(&v.bstrVal, pSB->m_pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)) {
 								if (PathIsNetworkPath(v.bstrVal)) {
 									pSB->Suspend(FALSE);
 								}
