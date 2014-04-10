@@ -92,6 +92,7 @@ typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
 #define TET_Redraw				5
 #define TET_Show				6
 #define TET_Unload				7
+#define TET_Status				8
 
 #define SHGDN_FORPARSINGEX	0x80000000
 #define START_OnFunc			5000
@@ -290,6 +291,7 @@ public:
 	VARIANT			m_v;
 	LPITEMIDLIST	m_pidl;
 	FolderItem		*m_pFolderItem;
+	BSTR			m_bsFocus;
 	BOOL			m_bStrict;
 private:
 	LONG			m_cRef;
@@ -693,6 +695,7 @@ public:
 	VOID Refresh(BOOL bCheck);
 	VOID SetActive();
 	VOID SetTitle(LPOLESTR szName, int nIndex);
+	VOID EnsureFocusedItem();
 public:
 	VARIANT		m_vRoot;
 	HWND		m_hwnd;
@@ -720,6 +723,7 @@ public:
 private:
 	VARIANT		m_Data;
 	FolderItem	**m_ppLog;
+	FolderItem	**m_ppFocus;
 	IDispatch	*m_pDSFV;
 	IShellFolder2 *m_pSF2;
 	PROPERTYKEY *m_pDefultColumns;

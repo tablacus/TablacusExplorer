@@ -1330,6 +1330,7 @@ LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 VOID ArrangeWindow();
 
 BOOL GetIDListFromObject(IUnknown *punk, LPITEMIDLIST *ppidl);
+VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime);
 
 //Unit
 
@@ -3795,6 +3796,12 @@ LRESULT CALLBACK TETVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return CallWindowProc(pTV->m_DefProc2, hwnd, msg, wParam, lParam);
 }
 
+VOID CALLBACK teNavigateCompleteProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+{
+	KillTimer(hwnd, idEvent);
+	((CteShellBrowser *)idEvent)->OnNavigationComplete(NULL);
+}
+
 LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static HWND hwndEdit = NULL;
@@ -3869,9 +3876,6 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							if (wParam == 0x7103) {//Refresh
 								if (ILIsEqual(pSB->m_pidl, g_pidlResultsFolder)) {
 									pSB->OnViewCreated(NULL);
-									if (!pSB->m_pExplorerBrowser) {
-										pSB->OnNavigationComplete(NULL);
-									}
 								}
 							}
 							break;
@@ -3891,52 +3895,14 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			catch(...) {}
 			::InterlockedDecrement(&g_nProcFV);
 		}
-		if (msg	== WM_NOTIFY) {
-			NMLVDISPINFO *lpDispInfo = (NMLVDISPINFO *)lParam;
-			if (lpDispInfo->hdr.code == LVN_INSERTITEM) {
-				return 0;
-			}
-			else if (lpDispInfo->hdr.code == LVN_BEGINLABELEDIT) {
-				if (pidEdit) {
-					pidEdit->Release();
-					pidEdit = NULL;
-				}
-				BSTR bsPath;
-				if SUCCEEDED(GetDisplayNameFromPidl(&bsPath, pSB->m_pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)) {
-					if (PathIsNetworkPath(bsPath)) {
-						if SUCCEEDED(pSB->get_FocusedItem(&pidEdit)) {
-							LPITEMIDLIST pidl;
-							if (GetIDListFromObject(pidEdit, &pidl)) {
-								BSTR bs;
-								if SUCCEEDED(GetDisplayNameFromPidl(&bs, pidl, SHGDN_FOREDITING)) {
-									hwndEdit = ListView_GetEditControl(pSB->m_hwndLV);
-									SetWindowText(hwndEdit, bs);
-									LPWSTR lp = wcschr(bs, '.');
-									if (lp) {
-										SendMessage(hwndEdit, EM_SETSEL, 0, (int)(lp - bs));
-									}
-									::SysFreeString(bs);
-									return 0;
-								}
-								teCoTaskMemFree(pidl);
-							}
-						}
-					}
-					::SysFreeString(bsPath);
-				}
-			}
-			else if (lpDispInfo->hdr.code == LVN_ENDLABELEDIT) {
-				if (pidEdit) {
-					if (lpDispInfo->item.pszText) {
-						pidEdit->put_Name(lpDispInfo->item.pszText);
-					}
-					pidEdit->Release();
-					pidEdit = NULL;
-					return 1;
+		if (msg == WM_NOTIFY) {
+			if (pSB->m_param[SB_Type] == CTRL_EB) {
+				NMLVDISPINFO *lpDispInfo = (NMLVDISPINFO *)lParam;
+				if (lpDispInfo->hdr.code == LVN_ITEMCHANGED) {
+					SetTimer(g_hwndMain, TET_Status, 500, teTimerProc);
 				}
 			}
 		}
-
 		if (msg == WM_WINDOWPOSCHANGED || msg == WM_COMMAND) {
 			PostMessage(pSB->m_hwndLV, LVM_SETEXTENDEDLISTVIEWSTYLE, LVS_EX_FULLROWSELECT, (pSB->m_param[SB_FolderFlags] & FWF_FULLROWSELECT) ? LVS_EX_FULLROWSELECT : 0);
 		}
@@ -4814,6 +4780,30 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 				pdisp->Release();
 			}
 			break;
+		case TET_Status:
+			pSB = g_pTabs->GetShellBrowser(g_pTabs->m_nIndex);
+			if (pSB) {
+				IFolderView *pFV;
+				if (pSB->m_pShellView && SUCCEEDED(pSB->m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV)))) {
+					int nCount;
+					UINT uID = 6477;
+					if SUCCEEDED(pFV->ItemCount(SVGIO_SELECTION, &nCount)) {
+						if (nCount == 0) {
+							pFV->ItemCount(SVGIO_ALLVIEW, &nCount);
+							uID = 6466;
+						}
+						BSTR bs = ::SysAllocStringLen(L"", 100);
+						LoadString(g_hShell32, uID, bs, 100);
+						bs[4] = _T('%');
+						bs[5] = _T('d');
+						swprintf_s(&bs[50], 50, &bs[4], nCount);
+						DoStatusText(pSB, &bs[50], 0);
+						SysFreeString(bs);
+					}
+					pFV->Release();
+				}
+			}
+			break;
 	}//end_switch
 }
 
@@ -4926,6 +4916,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	hInst = hInstance;
 
 	::OleInitialize(NULL);
+	INITCOMMONCONTROLSEX ic;	
+	ic.dwSize = sizeof(INITCOMMONCONTROLSEX);
+	ic.dwICC  = ICC_LISTVIEW_CLASSES | ICC_TAB_CLASSES | ICC_TREEVIEW_CLASSES;
+	InitCommonControlsEx(&ic);
 	//Multiple Launch
 	g_pCrcTable = new UINT[256];
 	for (UINT i = 0; i < 256; i++) {
@@ -5051,7 +5045,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	SysFreeString(bsPath);
 
 	Initlize();
-	InitCommonControls();
 	MSG msg;
 
 	/*Get JScript Object
@@ -5964,12 +5957,12 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 {
 	RECT rc;
 	LPITEMIDLIST pidl = NULL;
-	FolderItem *pFocus = NULL;
 	HRESULT hr;
 
 	m_pFolderItem1 && m_pFolderItem1->Release();
 	m_pFolderItem1 = NULL;
 
+	KillTimer(m_hwnd, (UINT_PTR)this);
 	SetRedraw(FALSE);
 	if (m_bInit) {
 		return E_FAIL;
@@ -5979,6 +5972,30 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		g_paramFV[i] = param[i];
 	}
 	m_nPrevLogIndex = m_nLogIndex;
+	if (m_nLogIndex >= 0 && m_nLogIndex < m_nLogCount && m_pShellView && m_ppLog[m_nLogIndex]) {
+		IFolderView *pFV;
+		if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
+			int i;
+			if SUCCEEDED(pFV->GetFocusedItem(&i)) {
+				LPITEMIDLIST pidl;
+				if SUCCEEDED(pFV->Item(i, &pidl)) {
+					CteFolderItem *pid1 = NULL;
+					if FAILED(m_ppLog[m_nLogIndex]->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1)) {
+						pid1 = new CteFolderItem(NULL);
+						if SUCCEEDED(pid1->Initialize(m_pidl)) {
+							m_ppLog[m_nLogIndex]->Release();
+							pid1->QueryInterface(IID_PPV_ARGS(&m_ppLog[m_nLogIndex]));
+						}
+					}
+					teSysFreeString(&pid1->m_bsFocus);
+					GetDisplayNameFromPidl(&pid1->m_bsFocus, pidl, SHGDN_INFOLDER | SHGDN_FORPARSING);
+					pid1->Release();
+					teCoTaskMemFree(pidl);
+				}
+			}
+			pFV->Release();
+		}
+	}
 	hr = GetAbsPidl(&pidl, &m_pFolderItem1, pFolderItem, wFlags, pFolderItems, pPrevious, pHistSB);
 	if (hr != S_OK) {
 		if (hr == S_FALSE) {
@@ -6056,9 +6073,6 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		}
 	}
 #endif
-	if (pPrevious && wFlags & SBSP_PARENT) {
-		pFocus = pPrevious;
-	}
 	if (!teILIsEqual(m_pFolderItem, pPrevious)) {
 		teCoTaskMemFree(m_pidl);
 	}
@@ -6248,13 +6262,6 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 			}
 		}
 	}
-	if (pFocus) {
-		LPITEMIDLIST pidl;
-		if (GetIDListFromObject(pFocus, &pidl)) {
-			m_pShellView->SelectItem(ILFindLastID(pidl), SVSI_FOCUSED | SVSI_ENSUREVISIBLE);
-			teCoTaskMemFree(pidl);
-		}
-	}
 
 	m_nOpenedType = m_param[SB_Type];
 	if (m_pTabs && GetTabIndex() == m_pTabs->m_nIndex) {
@@ -6331,6 +6338,20 @@ HRESULT CteShellBrowser::GetAbsPidl(LPITEMIDLIST *ppidlOut, FolderItem **ppid, F
 			}
 			if (teILGetParent(pPrevious, ppid)) {
 				GetIDListFromObject(*ppid, ppidlOut);
+				LPITEMIDLIST pidl;
+				if (GetIDListFromObject(pPrevious, &pidl)) {
+					VARIANT v;
+					if SUCCEEDED(ppid[0]->QueryInterface(IID_PPV_ARGS(&v.pdispVal))) {
+						v.vt = VT_DISPATCH;
+						CteFolderItem *pid1 = new CteFolderItem(&v);
+						teSysFreeString(&pid1->m_bsFocus);
+						GetDisplayNameFromPidl(&pid1->m_bsFocus, pidl, SHGDN_INFOLDER | SHGDN_FORPARSING);
+						ppid[0]->Release();
+						ppid[0] = pid1;
+						VariantClear(&v);
+					}
+					teCoTaskMemFree(pidl);
+				}
 				return S_OK;
 			}
 		}
@@ -6442,9 +6463,6 @@ VOID CteShellBrowser::Refresh(BOOL bCheck)
 			}
 			if (ILIsEqual(m_pidl, g_pidlResultsFolder)) {
 				OnViewCreated(NULL);
-				if (!m_pExplorerBrowser) {
-					OnNavigationComplete(NULL);
-				}
 				return;
 			}
 			if (g_pidlLibrary && ILIsParent(g_pidlLibrary, m_pidl, FALSE)) {
@@ -6499,6 +6517,24 @@ VOID CteShellBrowser::SetTitle(LPOLESTR szName, int nIndex)
 	TabCtrl_SetItem(m_pTabs->m_hwnd, nIndex, &tcItem);
 	SysFreeString(bsText);
 	ArrangeWindow();
+}
+
+VOID CteShellBrowser::EnsureFocusedItem()
+{
+	if (m_pSF2) {
+		CteFolderItem *pid;
+		if SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
+			if (pid->m_bsFocus) {
+				LPITEMIDLIST pidl;
+				if SUCCEEDED(m_pSF2->ParseDisplayName(g_hwndMain, NULL, pid->m_bsFocus, NULL, &pidl, NULL)) {
+					m_pShellView->SelectItem(ILFindLastID(pidl), SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
+					teCoTaskMemFree(pidl);
+				}
+				::teSysFreeString(&pid->m_bsFocus);
+			}
+			pid->Release();
+		}
+	}
 }
 
 VOID CteShellBrowser::GetVariantPath(FolderItem **ppFolderItem, FolderItems **ppFolderItems, VARIANT *pv)
@@ -7954,6 +7990,7 @@ STDMETHODIMP CteShellBrowser::SelectedItems(FolderItems **ppid)
 STDMETHODIMP CteShellBrowser::get_FocusedItem(FolderItem **ppid)
 {
 	HRESULT hr = E_NOTIMPL;
+	*ppid = NULL;
 	if (m_pDSFV) {
 		IShellFolderViewDual *pSFVD;
 		if SUCCEEDED(m_pDSFV->QueryInterface(IID_PPV_ARGS(&pSFVD))) {
@@ -8163,7 +8200,7 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 		}
 	}
 	if (!m_pExplorerBrowser) {
-		OnNavigationComplete(NULL);
+		SetTimer(m_hwnd, (UINT_PTR)this, 32, teNavigateCompleteProc);
 	}
 	return S_OK;
 }
@@ -8185,6 +8222,7 @@ STDMETHODIMP CteShellBrowser::OnNavigationComplete(PCIDLIST_ABSOLUTE pidlFolder)
 	}
 	SetRedraw(TRUE);
 	SetActive();
+	EnsureFocusedItem();
 	DoFunc(TE_OnNavigateComplete, this, E_NOTIMPL);
 	return S_OK;
 }
@@ -13785,6 +13823,7 @@ CteFolderItem::CteFolderItem(VARIANT *pv)
 	m_pidl = NULL;
 	m_pFolderItem = NULL;
 	m_bStrict = FALSE;
+	m_bsFocus = NULL;
 	VariantInit(&m_v);
 	if (pv) {
 		VariantCopy(&m_v, pv);
@@ -13796,6 +13835,7 @@ CteFolderItem::~CteFolderItem()
 	teCoTaskMemFree(m_pidl);
 	m_pFolderItem && m_pFolderItem->Release();
 	::VariantClear(&m_v);
+	teSysFreeString(&m_bsFocus);
 }
 
 LPITEMIDLIST CteFolderItem::GetPidl()
