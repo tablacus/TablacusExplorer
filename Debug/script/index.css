@@ -1,5 +1,9 @@
 /* Tag */
 
+* {
+	box-sizing: border-box;
+}
+
 html {
 	height: 100%;
 }
@@ -9,10 +13,9 @@ body {
 	margin: 0px;
 	padding: 0px;
 	border: none;
-	font-size: 12px;
+	font-size: 13px;
 	background-color: buttonface;
 	height: 100%;
-	box-sizing: border-box;
 }
 
 table {
@@ -25,11 +28,11 @@ table {
 
 td, tr {
 	vertical-align: top;
-	font-size: 12px;
+	font-size: 13px;
+	font-size: inherit;
 	border: none;
 	padding: 0px;
 	margin: 0px;
-	box-sizing: border-box;
 }
 
 img {
@@ -37,12 +40,12 @@ img {
 	border: none;
 }
 
-div, input, textarea, select {
-	box-sizing: border-box;
-}
-
 form {
 	display: inline;
+}
+
+input, select {
+	font-size: inherit;
 }
 
 /* Class */
@@ -154,7 +157,6 @@ a:active.menu {
 	word-break: break-all;
 	word-wrap: break-word;
 	overflow: hidden;
-	font-size: 12px;
 	margin: 0px;
 	padding: 0px;
 }
@@ -164,7 +166,6 @@ a:active.menu {
 	word-wrap: break-word;
 	min-height: 100px;
 	overflow: hidden;
-	font-size: 12px;
 	margin: 0px;
 	padding: 0px;
 }
@@ -174,7 +175,6 @@ a:active.menu {
 	word-wrap: break-word;
 	overflow: hidden;
 	vertical-align: bottom;
-	font-size: 12px;
 	margin: 0px;
 	padding: 0px;
 }
@@ -183,17 +183,17 @@ a:active.menu {
 	border: 1px solid #898C95;
 	background-color: #dddddd;
 	outline-style: none;
+	font-size: inherit;
 	height: 24px;
 	filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#cccccc);
 	background: linear-gradient(to bottom, #ffffff, #cccccc);
-	font-size: 12px;
 	vertical-align: bottom;
 }
 .activetab {
 	border: 1px solid #898C95;
 	background-color: #ffffff;
+	font-size: inherit;
 	height: 26px;
 	outline-style: none;
-	font-size: 12px;
 	vertical-align: bottom;
 }

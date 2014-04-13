@@ -1,33 +1,27 @@
 /* Tag */
 
-body {
-	overflow: hidden;
-	background-color: buttonface;
+* {
 	box-sizing: border-box;
-	-ms-box-sizing: border-box;
 }
 
-td {
+body {
+	font-size: 13px;
+	overflow: hidden;
+	background-color: buttonface;
+}
+
+table, td {
 	border: none;
 	padding: 0px;
 	margin: 0px;
-	box-sizing: border-box;
-	-ms-box-sizing: border-box;
-}
-
-div, input, textarea, select {
-	box-sizing: border-box;
-	-ms-box-sizing: border-box;
 }
 
 form {
 	display: inline;
 }
 
-table {
-	border: none;
-	padding: 0px;
-	margin: 0px;
+input, select {
+	font-size: inherit;
 }
 
 /* Class */
@@ -57,7 +51,6 @@ table {
 	border: 1px solid #898C95;
 	padding: 4px;
 	display: none;
-	font-size: 80%;
 	line-height: 150%;
 	overflow-y: auto;
 	clear:both;
@@ -96,8 +89,7 @@ table {
 	border-spacing: 0;
 }
 .input {
-	font-size: 13px;
-	height: 22px;
+	font-size: inherit;
 }
 .color {
 	border-radius: 2px;

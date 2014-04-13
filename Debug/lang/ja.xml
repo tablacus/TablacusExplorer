@@ -62,7 +62,7 @@
 	<text s="Get the current tab control">現在のタブ コントロールを取得</text>
 	<text s="Move the current tab control">現在のタブ コントロールを移動</text>
 	<text s="Add a tab control">タブ コントロールを追加</text>
-	<text s="Remove the current tab control">現在のタブ コントロールを削除</text>
+	<text s="Remove the current tab control">現在のタブ コントロールを消去</text>
 	<text s="Get the current folder view">現在のフォルダ ビューの設定取得</text>
 
 	<text s="Initialize config folder">設定フォルダの初期化</text>
@@ -82,7 +82,7 @@
 	<text s="Path">パス</text>
 	<text s="Filter">フィルタ</text>
 	<text s="Folder">フォルダ</text>
-	<text s="Remove">削除</text>
+	<text s="Remove">取除く</text>
 	<text s="Add">追加</text>
 	<text s="Replace">置換</text>
 	<text s="All">全体</text>

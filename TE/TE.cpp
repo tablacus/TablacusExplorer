@@ -46,7 +46,6 @@ int g_nPidls = MAX_CSIDL;
 int	g_nTCCount = 0;
 int	g_nTCIndex = 0;
 LONG nUpdate = 0;
-HWND			g_hDefLV = 0;
 WNDPROC			g_DefTCProc = NULL;
 WNDPROC			g_DefBTProc = NULL;
 WNDPROC			g_DefSTProc = NULL;
@@ -65,10 +64,10 @@ IDispatch			*g_pObject  = NULL;
 IDispatch			*g_pArray   = NULL;
 IDispatch			*g_pUnload   = NULL;
 
-FORMATETC HDROPFormat  = {CF_HDROP, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
+FORMATETC HDROPFormat = {CF_HDROP, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
 FORMATETC IDLISTFormat = {0, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
-FORMATETC DROPEFFECTFormat  = {0, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
-FORMATETC UNICODEFormat  = {CF_UNICODETEXT, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
+FORMATETC DROPEFFECTFormat = {0, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
+FORMATETC UNICODEFormat = {CF_UNICODETEXT, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
 
 long		g_nProcKey	   = 0;
 long		g_nProcMouse   = 0;
@@ -4559,7 +4558,6 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 			break;
 		case TET_Reload:
 			if (g_nReload) {
-				PostMessage(hwnd, WM_CLOSE, 0, 0);
 				BSTR bsPath, bsQuoted;
 				int i = teGetModuleFileName(NULL, &bsPath);
 				bsQuoted = SysAllocStringLen(bsPath, i + 2);
@@ -4567,6 +4565,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 				PathQuoteSpaces(bsQuoted);
 				ShellExecute(hwnd, NULL, bsQuoted, NULL, NULL, SW_SHOWNORMAL);
 				SysFreeString(bsQuoted);
+				PostMessage(hwnd, WM_CLOSE, 0, 0);
 			}
 			break;
 		case TET_Size2:
@@ -4916,10 +4915,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	hInst = hInstance;
 
 	::OleInitialize(NULL);
-	INITCOMMONCONTROLSEX ic;	
-	ic.dwSize = sizeof(INITCOMMONCONTROLSEX);
-	ic.dwICC  = ICC_LISTVIEW_CLASSES | ICC_TAB_CLASSES | ICC_TREEVIEW_CLASSES;
-	InitCommonControlsEx(&ic);
+	InitCommonControls();
 	//Multiple Launch
 	g_pCrcTable = new UINT[256];
 	for (UINT i = 0; i < 256; i++) {
