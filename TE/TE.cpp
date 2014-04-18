@@ -12,16 +12,13 @@
 // Global Variables:
 HINSTANCE hInst;								// current instance
 WCHAR g_szTE[MAX_LOADSTRING];
+WCHAR g_szText[MAX_PATH];
 HWND g_hwndMain = NULL;
 HWND g_hwndBrowser = NULL;
-LONG g_nSize = MAXWORD;
-LONG g_nLockUpdate = 0;
 CteTabs *g_pTabs = NULL;
 CteTabs *g_pTC[MAX_TC];
-int g_x = MAXINT;
 HINSTANCE	g_hShell32 = NULL;
 HINSTANCE	g_hCrypt32 = NULL;
-BOOL		g_bDialogOk = FALSE;
 HWND		g_hDialog = NULL;
 
 LPFNSHCreateItemFromIDList lpfnSHCreateItemFromIDList = NULL;
@@ -36,16 +33,13 @@ LPFNPSGetPropertyKeyFromName lpfnPSGetPropertyKeyFromName = NULL;
 LPFNPSPropertyKeyFromString lpfnPSPropertyKeyFromStringEx = NULL;
 LPFNPSGetPropertyDescription lpfnPSGetPropertyDescription = NULL;
 LPFNSHGetIDListFromObject lpfnSHGetIDListFromObject = NULL;
-DWORD	g_dragdrop = 0;
-UINT	*g_pCrcTable = NULL;
+LPFNIsWow64Process lpfnIsWow64Process = NULL;
+#ifndef _WIN64
+LPITEMIDLIST g_pidlCP = NULL;
+#endif
 LPITEMIDLIST g_pidls[MAX_CSIDL];
 LPITEMIDLIST g_pidlResultsFolder;
 LPITEMIDLIST g_pidlLibrary = NULL;
-DWORD		g_paramFV[SB_Count];
-int g_nPidls = MAX_CSIDL;
-int	g_nTCCount = 0;
-int	g_nTCIndex = 0;
-LONG nUpdate = 0;
 WNDPROC			g_DefTCProc = NULL;
 WNDPROC			g_DefBTProc = NULL;
 WNDPROC			g_DefSTProc = NULL;
@@ -69,16 +63,6 @@ FORMATETC IDLISTFormat = {0, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
 FORMATETC DROPEFFECTFormat = {0, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
 FORMATETC UNICODEFormat = {CF_UNICODETEXT, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
 
-long		g_nProcKey	   = 0;
-long		g_nProcMouse   = 0;
-long		g_nProcDrag    = 0;
-long		g_nProcFV      = 0;
-long		g_nProcTV      = 0;
-long		g_nProcFI      = 0;
-long		g_nThreads	   = 0;
-BOOL		g_bInit = true;
-BOOL		g_bUnload = FALSE;
-BOOL		g_bSetRedraw;
 IContextMenu *g_pCM = NULL;
 ULONG_PTR g_Token;
 Gdiplus::GdiplusStartupInput g_StartupInput;
@@ -87,18 +71,35 @@ HHOOK g_hMouseHook;
 HHOOK g_hMessageHook;
 HHOOK g_hMenuKeyHook = NULL;
 HMENU g_hMenu = NULL;
-int g_nCmdShow = SW_SHOWNORMAL;
-HANDLE g_hMutex;
-WCHAR g_szText[MAX_PATH];
-OSVERSIONINFO osInfo;
-BOOL	g_nReload = 0;
 BSTR	g_bsCmdLine = NULL;
-int		*g_maps[MAP_LENGTH];
+HANDLE g_hMutex;
+OSVERSIONINFO osInfo;
 
-LPFNIsWow64Process lpfnIsWow64Process = NULL;
-#ifndef _WIN64
-LPITEMIDLIST g_pidlCP = NULL;
-#endif
+UINT	*g_pCrcTable = NULL;
+LONG g_nSize = MAXWORD;
+LONG g_nLockUpdate = 0;
+LONG nUpdate = 0;
+DWORD		g_paramFV[SB_Count];
+DWORD	g_dragdrop = 0;
+long		g_nProcKey	   = 0;
+long		g_nProcMouse   = 0;
+long		g_nProcDrag    = 0;
+long		g_nProcFV      = 0;
+long		g_nProcTV      = 0;
+long		g_nProcFI      = 0;
+long		g_nThreads	   = 0;
+int g_nCmdShow = SW_SHOWNORMAL;
+int	g_nReload = 0;
+int g_nException = 64;
+int		*g_maps[MAP_LENGTH];
+int g_x = MAXINT;
+int g_nPidls = MAX_CSIDL;
+int	g_nTCCount = 0;
+int	g_nTCIndex = 0;
+BOOL		g_bDialogOk = FALSE;
+BOOL		g_bInit = true;
+BOOL		g_bUnload = FALSE;
+BOOL		g_bSetRedraw;
 
 #ifdef _2000XP
 int			g_nCharWidth = 7;
@@ -1333,6 +1334,33 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime);
 
 //Unit
 
+VOID teAdvise(IUnknown *punk, IID diid, IUnknown *punk2, PDWORD pdwCookie)
+{
+	IConnectionPointContainer *pCPC;
+	if (SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pCPC)))) {
+		IConnectionPoint *pCP;
+		if (SUCCEEDED(pCPC->FindConnectionPoint(diid, &pCP))) {
+			pCP->Advise(punk2, pdwCookie);
+			pCP->Release();
+		}
+		pCPC->Release();
+	}
+}
+
+VOID teUnadvise(IUnknown *punk, IID diid, PDWORD pdwCookie)
+{
+	IConnectionPointContainer *pCPC;
+	if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pCPC))) {
+		IConnectionPoint *pCP;
+		if (SUCCEEDED(pCPC->FindConnectionPoint(diid, &pCP))) {
+			pCP->Unadvise(*pdwCookie);
+			pCP->Release();
+		}
+		pCPC->Release();
+	}
+	*pdwCookie = 0;
+}
+
 VOID teSetRedraw(BOOL bSetRedraw)
 {
 	SendMessage(g_hwndBrowser, WM_SETREDRAW, bSetRedraw, 0);
@@ -2010,7 +2038,7 @@ LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath)
 			lpfnSHParseDisplayName(bsPath4, NULL, &pidl, 0, NULL);
 			::SysFreeString(bsPath4);
 		}
-		if (pidl == NULL) {
+		if (pidl == NULL && !teIsFileSystem(pszPath)) {
 			for (int i = 0; i < g_nPidls; i++) {
 				if (g_pidls[i]) {
 					if SUCCEEDED(GetDisplayNameFromPidl(&bstr, g_pidls[i], SHGDN_FORADDRESSBAR)) {
@@ -3795,10 +3823,10 @@ LRESULT CALLBACK TETVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return CallWindowProc(pTV->m_DefProc2, hwnd, msg, wParam, lParam);
 }
 
-VOID CALLBACK teNavigateCompleteProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+VOID CALLBACK teEnsureVisibleProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 {
 	KillTimer(hwnd, idEvent);
-	((CteShellBrowser *)idEvent)->OnNavigationComplete(NULL);
+	((CteShellBrowser *)idEvent)->EnsureFocusedItem();
 }
 
 LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -3861,7 +3889,13 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							SysFreeString(bsStatus);
 							break;
 						case SB_SETTEXT:
-							DoStatusText(pSB, (LPCWSTR)lParam, static_cast<int>(wParam));
+							if (lstrlen((LPCWSTR)lParam)) {
+								DoStatusText(pSB, (LPCWSTR)lParam, static_cast<int>(wParam));
+							}
+							else {
+								KillTimer(g_hwndMain, TET_Status);
+								SetTimer(g_hwndMain, TET_Status, 500, teTimerProc);
+							}
 							break;
 						case WM_COMMAND:
 							if (g_pOnFunc[TE_OnCommand]) {
@@ -3894,15 +3928,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			catch(...) {}
 			::InterlockedDecrement(&g_nProcFV);
 		}
-		if (msg == WM_NOTIFY) {
-			if (pSB->m_param[SB_Type] == CTRL_EB) {
-				NMLVDISPINFO *lpDispInfo = (NMLVDISPINFO *)lParam;
-				if (lpDispInfo->hdr.code == LVN_ITEMCHANGED) {
-					SetTimer(g_hwndMain, TET_Status, 500, teTimerProc);
-				}
-			}
-		}
-		if (msg == WM_WINDOWPOSCHANGED || msg == WM_COMMAND) {
+		if (msg == WM_WINDOWPOSCHANGED) {
 			PostMessage(pSB->m_hwndLV, LVM_SETEXTENDEDLISTVIEWSTYLE, LVS_EX_FULLROWSELECT, (pSB->m_param[SB_FolderFlags] & FWF_FULLROWSELECT) ? LVS_EX_FULLROWSELECT : 0);
 		}
 		return (lResult && hwnd == pSB->m_hwndDV) ? CallWindowProc((WNDPROC)pSB->m_DefProc, hwnd, msg, wParam, lParam) : 0;
@@ -5150,24 +5176,13 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	SysFreeString(bsIndex);
 
 	// Init ShellWindows
-	IConnectionPoint *pCP = NULL;
 	DWORD dwSWCookie;
 	long lSWCookie = 0;
 	IShellWindows *pSW = NULL;
 	if (SUCCEEDED(CoCreateInstance(CLSID_ShellWindows,
 		NULL, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER, IID_PPV_ARGS(&pSW)))) {
 		pSW->Register(g_pWebBrowser->m_pWebBrowser, (LONG)g_hwndMain, SWC_3RDPARTY, &lSWCookie);
-		IConnectionPointContainer *pCPC;
-		if SUCCEEDED(pSW->QueryInterface(IID_PPV_ARGS(&pCPC))) {
-			if SUCCEEDED(pCPC->FindConnectionPoint(DIID_DShellWindowsEvents, &pCP)) {
-				IUnknown *punk;
-				if SUCCEEDED(g_pTE->QueryInterface(IID_PPV_ARGS(&punk))) {
-					pCP->Advise(punk, &dwSWCookie);
-					punk->Release();
-				}
-			}
-			pCPC->Release();
-		}
+		teAdvise(pSW, DIID_DShellWindowsEvents, static_cast<IDispatch *>(g_pTE), &dwSWCookie);
 	}
 	// Main message loop:
 	for (;;) {
@@ -5181,6 +5196,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 			}
 		}
 		catch (...) {
+			g_nException = 0;
 		}
 	}
 	//At the end of processing
@@ -5193,10 +5209,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		}
 	} catch (...) {}
 	try {
-		if (pCP) {
-			pCP->Unadvise(dwSWCookie);
-			pCP->Release();
-		}
+		teUnadvise(pSW, DIID_DShellWindowsEvents, &dwSWCookie);
 	} catch (...) {}
 	try {
 		g_pArray && g_pArray->Release();
@@ -5469,6 +5482,8 @@ CteShellBrowser::CteShellBrowser(CteTabs *pTabs)
 	m_vRoot.vt = VT_I4;
 	m_vRoot.lVal = 0;
 	m_pTV = new CteTreeView();
+	m_dwCookie = 0;
+	m_bNavigateComplete = FALSE;
 	VariantInit(&m_Data);
 	Init(pTabs, true);
 }
@@ -5542,7 +5557,9 @@ CteShellBrowser::~CteShellBrowser()
 		m_ppLog[m_nLogCount]->Release();
 	}
 	teSysFreeString(&m_bsFilter);
+
 	if (m_pDSFV) {
+		teUnadvise(m_pDSFV, DIID_DShellFolderViewEvents, &m_dwCookie);
 		m_pDSFV->Release();
 	}
 #ifdef _2000XP
@@ -5774,8 +5791,7 @@ STDMETHODIMP CteShellBrowser::RemoveMenusSB(HMENU hmenuShared)
 
 STDMETHODIMP CteShellBrowser::SetStatusTextSB(LPCWSTR lpszStatusText)
 {
-	DoStatusText(this, lpszStatusText, 0);
-	return S_OK;
+	return E_NOTIMPL;
 }
 
 STDMETHODIMP CteShellBrowser::EnableModelessSB(BOOL fEnable)
@@ -6204,7 +6220,9 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	}
 #endif
 	if (hr != S_OK) {
-		m_pShellView && m_pShellView->Release();
+		if (m_pShellView) {
+			m_pShellView->Release();
+		}
 		m_pShellView = pPreviousView;
 
 		teILFreeClear(&m_pidl);
@@ -6533,6 +6551,20 @@ VOID CteShellBrowser::EnsureFocusedItem()
 	}
 }
 
+VOID CteShellBrowser::GetShellFolderView()
+{
+	if (m_pDSFV) {
+		teUnadvise(m_pDSFV, DIID_DShellFolderViewEvents, &m_dwCookie);
+		m_pDSFV->Release();
+	}
+	if SUCCEEDED(m_pShellView->GetItemObject(SVGIO_BACKGROUND, IID_PPV_ARGS(&m_pDSFV))) {
+		teAdvise(m_pDSFV, DIID_DShellFolderViewEvents, static_cast<IDispatch *>(this), &m_dwCookie);
+	}
+	else {
+		m_pDSFV = NULL;
+	}
+}
+
 VOID CteShellBrowser::GetVariantPath(FolderItem **ppFolderItem, FolderItems **ppFolderItems, VARIANT *pv)
 {
 	IUnknown *punk;
@@ -6648,10 +6680,7 @@ STDMETHODIMP CteShellBrowser::OnDefaultCommand(IShellView *ppshv)
 
 STDMETHODIMP CteShellBrowser::OnStateChange(IShellView *ppshv, ULONG uChange)
 {
-	if (uChange == CDBOSC_SELCHANGE) {
-		return DoFunc(TE_OnSelectionChanged, this, S_OK);
-	}
-	return S_OK;
+	return E_NOTIMPL;
 }
 
 STDMETHODIMP CteShellBrowser::IncludeObject(IShellView *ppshv, LPCITEMIDLIST pidl)
@@ -7102,7 +7131,6 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					m_param[SB_IconSize] = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
 					pFV2->SetViewModeAndIconSize(static_cast<FOLDERVIEWMODE>(m_param[SB_ViewMode]), m_param[SB_IconSize]);			
 					pFV2->Release();
-					PostMessage(m_hwndLV, LVM_SETEXTENDEDLISTVIEWSTYLE, LVS_EX_FULLROWSELECT, (m_param[SB_FolderFlags] & FWF_FULLROWSELECT) ? LVS_EX_FULLROWSELECT : 0);
 				}
 				else
 #endif
@@ -7113,7 +7141,6 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
 							pFV->SetCurrentViewMode(m_param[SB_ViewMode]);
 							pFV->Release();
-							PostMessage(m_hwndLV, LVM_SETEXTENDEDLISTVIEWSTYLE, LVS_EX_FULLROWSELECT, (m_param[SB_FolderFlags] & FWF_FULLROWSELECT) ? LVS_EX_FULLROWSELECT : 0);
 						}
 					}
 				}
@@ -7143,7 +7170,6 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						if (nArg >= 0) {
 							if (iImageSize != m_param[SB_IconSize]) {
 								pFV2->SetViewModeAndIconSize(uViewMode, m_param[SB_IconSize]);
-								PostMessage(m_hwndLV, LVM_SETEXTENDEDLISTVIEWSTYLE, LVS_EX_FULLROWSELECT, (m_param[SB_FolderFlags] & FWF_FULLROWSELECT) ? LVS_EX_FULLROWSELECT : 0);
 							}
 						}
 						else {
@@ -7536,11 +7562,11 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 								if (!ILIsEqual(m_pidl, g_pidlResultsFolder)) {
 									Show(FALSE);
 									if SUCCEEDED(CreateViewWindowEx(pPreviousView)) {
-		//								pPreviousView->SaveViewState();
 										pPreviousView->DestroyViewWindow();
 										pPreviousView->Release();
 										pPreviousView = NULL;
 										ResetPropEx();
+										GetShellFolderView();
 									}
 									Show(TRUE);
 									SetPropEx();
@@ -7888,6 +7914,25 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			case DISPID_VALUE:
 				teSetObject(pVarResult, this);
 				return S_OK;
+			//DIID_DShellFolderViewEvents
+			case DISPID_SELECTIONCHANGED:
+				if (m_pExplorerBrowser) {
+					KillTimer(g_hwndMain, TET_Status);
+					SetTimer(g_hwndMain, TET_Status, 500, teTimerProc);
+				}
+				return DoFunc(TE_OnSelectionChanged, this, S_OK);
+			case DISPID_FILELISTENUMDONE:
+				if (m_bNavigateComplete) {
+					m_bNavigateComplete = FALSE;
+					OnNavigationComplete(NULL);
+				}
+				return S_OK;
+			case DISPID_FOCUSCHANGED:
+				EnsureFocusedItem();
+				return S_OK;
+			case DISPID_VIEWMODECHANGED:
+				PostMessage(m_hwndLV, LVM_SETEXTENDEDLISTVIEWSTYLE, LVS_EX_FULLROWSELECT, (m_param[SB_FolderFlags] & FWF_FULLROWSELECT) ? LVS_EX_FULLROWSELECT : 0);
+				return S_OK;
 			default:
 				if (dispIdMember >= START_OnFunc && dispIdMember < START_OnFunc + Count_SBFunc) {
 					if (wFlags == DISPATCH_METHOD) {
@@ -8116,12 +8161,7 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 	if (psv) {
 		psv->QueryInterface(IID_PPV_ARGS(&m_pShellView));
 	}
-	if (m_pDSFV) {
-		m_pDSFV->Release();
-	}
-	if FAILED(m_pShellView->GetItemObject(SVGIO_BACKGROUND, IID_PPV_ARGS(&m_pDSFV))) {
-		m_pDSFV = NULL;
-	}
+	GetShellFolderView();
 #ifdef _VISTA7
 	if (m_pExplorerBrowser) {
 		IOleWindow *pOleWindow;
@@ -8129,9 +8169,9 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 			pOleWindow->GetWindow(&m_hwnd);
 			pOleWindow->Release();
 		}
-		DoStatusText(this, NULL, 0);
 	}
 #endif
+	m_bNavigateComplete = !m_pExplorerBrowser;
 #ifdef _2000XP
 	if (osInfo.dwMajorVersion <= 5) {
 		if (ILIsEqual(m_pidl, g_pidlResultsFolder)) {
@@ -8195,9 +8235,7 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 			}
 		}
 	}
-	if (!m_pExplorerBrowser) {
-		SetTimer(m_hwnd, (UINT_PTR)this, 32, teNavigateCompleteProc);
-	}
+	DoStatusText(this, L"", 0);
 	return S_OK;
 }
 
@@ -8218,8 +8256,9 @@ STDMETHODIMP CteShellBrowser::OnNavigationComplete(PCIDLIST_ABSOLUTE pidlFolder)
 	}
 	SetRedraw(TRUE);
 	SetActive();
-	EnsureFocusedItem();
 	DoFunc(TE_OnNavigateComplete, this, E_NOTIMPL);
+	KillTimer(m_hwnd, (UINT_PTR)this);
+	SetTimer(m_hwnd, (UINT_PTR)this, 32, teEnsureVisibleProc);
 	return S_OK;
 }
 
@@ -9152,11 +9191,18 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				return S_OK;
 			//Reload
 			case TE_METHOD + 1009:
-				g_nLockUpdate = 0;
 				g_nReload = 1;
-				ClearEvents();
-				g_pWebBrowser->m_pWebBrowser->Refresh();
+				if (g_nException) {
+					g_nException--;
+					g_nLockUpdate = 0;
+					ClearEvents();
+					g_pWebBrowser->m_pWebBrowser->Refresh();
+				}
+				else {
+					SetTimer(g_hwndMain, TET_Reload, 16, teTimerProc);
+				}
 				return S_OK;
+			//DIID_DShellWindowsEvents
 			case DISPID_WINDOWREGISTERED:
 				DoFunc(TE_OnWindowRegistered, g_pTE, S_OK);
 				return S_OK;
@@ -9508,23 +9554,7 @@ CteWebBrowser::CteWebBrowser(HWND hwnd, WCHAR *szPath)
 
 		SetRectEmpty(&rc);
 		hr = pOleObject->DoVerb(OLEIVERB_INPLACEACTIVATE, &msg, static_cast<IOleClientSite *>(this), 0, g_hwndMain, &rc);
-
-		IConnectionPointContainer *pCPC;
-		hr = m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&pCPC));
-		if (SUCCEEDED(hr)) {
-			IConnectionPoint *pCP;
-			hr = pCPC->FindConnectionPoint(DIID_DWebBrowserEvents2, &pCP);
-			if (SUCCEEDED(hr)) {
-				IUnknown *punk;
-				QueryInterface(IID_PPV_ARGS(&punk));
-				hr = pCP->Advise(punk, &m_dwCookie);
-				punk->Release();
-				pCP->Release();
-			}
-			pCPC->Release();
-		}
-		pOleObject->Release();
-
+		teAdvise(m_pWebBrowser, DIID_DWebBrowserEvents2, static_cast<IDispatch *>(this), &m_dwCookie);
 		m_pWebBrowser->put_Offline(VARIANT_TRUE);
 		m_bstrPath = SysAllocString(szPath);
 		hr = m_pWebBrowser->Navigate(m_bstrPath, NULL, NULL, NULL, NULL);
@@ -9668,59 +9698,13 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 					pdisp->Release();
 				}
 				return S_OK;
-	/*		//ShowBrowserBar
-			case 0x10000007:
-				if (nArg >= 2) {
-					VARIANT v1, v2, v3;
-					VariantInit(&v1);
-					VariantInit(&v2);
-					VariantInit(&v3);
-					VariantCopy(&v1, &pDispParams->rgvarg[nArg]);
-					VariantCopy(&v2, &pDispParams->rgvarg[nArg - 1]);
-					VariantCopy(&v3, &pDispParams->rgvarg[nArg - 2]);
-	//				HRESULT hr = m_pWebBrowser->ShowBrowserBar(&pDispParams->rgvarg[nArg], &pDispParams->rgvarg[nArg - 1], &pDispParams->rgvarg[nArg - 2]);
-					HRESULT hr = m_pWebBrowser->ShowBrowserBar(&v1, &v2, &v3);
-					VariantClear(&v1);
-					VariantClear(&v2);
-					VariantClear(&v3);
-				}
-				return S_OK;*/
-	/*
-	//		::CoCreateInstance(CLSID_Explorer,NULL,CLSCTX_SERVER,IID_IWebBrowser2,(void**)&m_pWebBrowser);
-			VARIANT v1, v2, v3;
-			CLSID clsid;
-			v1.bstrVal = SysAllocString(L"{EFA24E64-B078-11D0-89E4-00C04FC9E26E}");
-			v1.vt = VT_BSTR;
-	//		CLSIDFromString(L"{EFA24E64-B078-11D0-89E4-00C04FC9E26E}", &clsid);
-	//		v1.vt = VT_CLSID;
-	//		v1.puuid = &clsid;
-			v2.vt = VT_BOOL;
-			v2.boolVal = VARIANT_TRUE;
-			v3.vt = VT_I4;
-			v3.lVal = 200;
-			hr = m_pWebBrowser->Navigate(L"c:\\", NULL, NULL, NULL, NULL);
-			m_pWebBrowser->ShowBrowserBar((VARIANT *)&v1, &v2, &v3);
-	*/
-	/*		case DISPID_STATUSTEXTCHANGE:
-				if (nArg >= 0) {
-					if (pDispParams->rgvarg[nArg].vt == VT_BSTR) {
-						DoStatusText(this, (LPCWSTR)pDispParams->rgvarg[nArg].bstrVal, 0);
-					}
-				}*/
-	/*		case DISPID_COMMANDSTATECHANGE:
-			case DISPID_SETSECURELOCKICON:
-				return E_NOTIMPL;*/
+			//DIID_DWebBrowserEvents2
 			case DISPID_DOWNLOADCOMPLETE:
 				if (g_nReload == 1) {
 					g_nReload = 2;
 					SetTimer(g_hwndMain, TET_Reload, 2000, teTimerProc);
 				}
 				return S_OK;
-			case DISPID_NAVIGATECOMPLETE:
-				VARIANT vURL;
-				teVariantChangeType(&vURL, &pDispParams->rgvarg[nArg - 1], VT_BSTR);		
-				VariantClear(&vURL);
-				return E_NOTIMPL;
 			case DISPID_BEFORENAVIGATE2:
 				if (nArg >= 6) {
 					if (pDispParams->rgvarg[nArg - 6].vt == (VT_BYREF | VT_BOOL)) {
@@ -10057,17 +10041,9 @@ BOOL CteWebBrowser::IsBusy()
 */
 void CteWebBrowser::Close()
 {
-	IConnectionPointContainer *pCPC;
 	if (m_pWebBrowser) {
 		m_pWebBrowser->Quit();
-		if SUCCEEDED(m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&pCPC))) {
-			IConnectionPoint *pCP;
-			if (SUCCEEDED(pCPC->FindConnectionPoint(DIID_DWebBrowserEvents2, &pCP))) {
-				pCP->Unadvise(m_dwCookie);
-				pCP->Release();
-			}
-			pCPC->Release();
-		}
+		teUnadvise(m_pWebBrowser, DIID_DWebBrowserEvents2, &m_dwCookie);
 		IOleObject *pOleObject;
 		if SUCCEEDED(m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&pOleObject))) {
 			RECT rc;
@@ -13215,6 +13191,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 				}
 				break;
 #endif
+			//DIID_DShellNameSpaceEvents
 #ifdef _W2000
 			case DISPID_FAVSELECTIONCHANGE://(for Windows 2000)
 				//SelectedItem is empty (Windows 2000) 
@@ -14845,24 +14822,28 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 							}
 							break;
 						case 50065: //GetDisplayNameOf
-							if (nArg >= 1) {
-								int i = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
-								if (i & (SHGDN_FORPARSING | SHGDN_FORPARSINGEX) && (FindUnknown(&pDispParams->rgvarg[nArg], &punk))) {
-									CteFolderItem *pFI = NULL;
-									if SUCCEEDED(punk->QueryInterface(g_ClsIdFI, (LPVOID *)&pFI)) {
-										if (pFI->m_v.vt == VT_BSTR) {
-											VariantCopy(pVarResult, &pFI->m_v);
+							try {
+								if (nArg >= 1) {
+									int i = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
+									if (i & (SHGDN_FORPARSING | SHGDN_FORPARSINGEX) && (FindUnknown(&pDispParams->rgvarg[nArg], &punk))) {
+										CteFolderItem *pFI = NULL;
+										if SUCCEEDED(punk->QueryInterface(g_ClsIdFI, (LPVOID *)&pFI)) {
+											if (pFI->m_v.vt == VT_BSTR) {
+												VariantCopy(pVarResult, &pFI->m_v);
+												pFI->Release();
+												return S_OK;
+											}
 											pFI->Release();
-											return S_OK;
 										}
-										pFI->Release();
+									}
+									LPITEMIDLIST pidl;	
+									if (GetPidlFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
+										GetVarPathFromPidl(pVarResult, pidl, i);
+										teCoTaskMemFree(pidl);
 									}
 								}
-								LPITEMIDLIST pidl;	
-								if (GetPidlFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
-									GetVarPathFromPidl(pVarResult, pidl, i);
-									teCoTaskMemFree(pidl);
-								}
+							}
+							catch(...) {
 							}
 							return S_OK;
 						case 50075:

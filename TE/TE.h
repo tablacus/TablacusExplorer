@@ -11,7 +11,8 @@
 #include <Shellapi.h>
 #include <shobjidl.h>
 #include <Shlwapi.h>
-#include <exdispid.h> //DISPID_*
+#include <exdispid.h>
+#include <shdispid.h>
 #include <Commdlg.h>
 #include <Dbt.h>
 #include <propkey.h>
@@ -696,6 +697,7 @@ public:
 	VOID SetActive();
 	VOID SetTitle(LPOLESTR szName, int nIndex);
 	VOID EnsureFocusedItem();
+	VOID GetShellFolderView();
 public:
 	VARIANT		m_vRoot;
 	HWND		m_hwnd;
@@ -717,9 +719,11 @@ public:
 	int			m_nSB;
 	UINT		m_nColumns;
 	int			m_nUnload;
+	DWORD		m_nOpenedType;
+	DWORD		m_dwCookie;
 	BOOL		m_bEmpty, m_bInit;
 	BOOL		m_bVisible;
-	DWORD		m_nOpenedType;
+	BOOL		m_bNavigateComplete;
 private:
 	VARIANT		m_Data;
 	FolderItem	**m_ppLog;
