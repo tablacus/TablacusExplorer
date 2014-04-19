@@ -85,6 +85,7 @@ typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
 #define MAX_FV					1024
 #define MAX_PATHEX				32768
 #define MAX_PROP				4096
+#define MAX_STATUS				1024
 #define SIZE_BUFF				32768
 #define TET_Create				1
 #define TET_Reload				2
@@ -292,7 +293,7 @@ public:
 	VARIANT			m_v;
 	LPITEMIDLIST	m_pidl;
 	FolderItem		*m_pFolderItem;
-	BSTR			m_bsFocus;
+	LPITEMIDLIST	m_pidlFocus;
 	BOOL			m_bStrict;
 private:
 	LONG			m_cRef;
@@ -696,8 +697,9 @@ public:
 	VOID Refresh(BOOL bCheck);
 	VOID SetActive();
 	VOID SetTitle(LPOLESTR szName, int nIndex);
-	VOID EnsureFocusedItem();
+	VOID NavigateCompleted2();
 	VOID GetShellFolderView();
+	VOID GetFocusedIndex(int *piItem);
 public:
 	VARIANT		m_vRoot;
 	HWND		m_hwnd;
