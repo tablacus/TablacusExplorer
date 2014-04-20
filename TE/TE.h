@@ -688,6 +688,7 @@ public:
 	HRESULT CreateViewWindowEx(IShellView *pPreviousView);
 	BSTR GetColumnsStr();
 	VOID GetDefaultColumns();
+	VOID SaveFocusedItemToHistory();
 	HRESULT GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, FolderItem *pid, UINT wFlags, FolderItems *pFolderItems, FolderItem *pPrevious, CteShellBrowser *pHistSB);
 	VOID EBNavigate();
 	VOID SetHistory(FolderItems *pFolderItems, UINT wFlags);
