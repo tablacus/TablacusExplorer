@@ -701,6 +701,7 @@ public:
 	VOID NavigateCompleted2();
 	VOID GetShellFolderView();
 	VOID GetFocusedIndex(int *piItem);
+	VOID SetFolderFlags();
 public:
 	VARIANT		m_vRoot;
 	HWND		m_hwnd;
