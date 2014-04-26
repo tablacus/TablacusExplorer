@@ -1144,6 +1144,7 @@ TEmethod methodSB[] = {
 	{ 0x10000107, L"HitTest" },
 	{ 0x10000108, L"Droptarget" },
 	{ 0x10000109, L"Columns"},
+	{ 0x10000110, L"ItemCount" },
 	{ 0x10000202, L"Items" },
 	{ 0x10000203, L"SelectedItems" },
 	{ 0x10000206, L"Refresh" },
@@ -2666,15 +2667,44 @@ BOOL GetIDListFromObjectEx(IUnknown *punk, LPITEMIDLIST *ppidl)
 	return true;
 }
 
+BOOL teILIsEqualNet(BSTR bs1, IUnknown *punk, BOOL *pbResult)
+{
+	if (PathIsNetworkPath(bs1)) {
+		LPITEMIDLIST pidl;
+		if (GetIDListFromObject(punk, &pidl)) {
+			BSTR bs2;
+			if SUCCEEDED(GetDisplayNameFromPidl(&bs2, pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)) {
+				*pbResult = lstrcmpi(bs1, bs2) == 0;
+				::SysFreeString(bs2);
+			}
+			teCoTaskMemFree(pidl);
+		}
+		return TRUE;
+	}
+	return FALSE;
+}
 
 BOOL teILIsEqual(IUnknown *punk1, IUnknown *punk2)
 {
 	BOOL bResult = FALSE;
-	BSTR *pbs1, *pbs2;
+	BSTR *pbs1;
+	BSTR *pbs2;
+	if (!teGetBSTRFromFolderItem(&pbs2, punk2)) {
+		pbs2 = NULL;
+	}
 	if (teGetBSTRFromFolderItem(&pbs1, punk1)) {
-		if (teGetBSTRFromFolderItem(&pbs2, punk2)) {
+		if (pbs2) {
 			return lstrcmpi(*pbs1, *pbs2) == 0;
 		}
+		if (teILIsEqualNet(*pbs1, punk2, &bResult)) {
+			return bResult;
+		}
+	}
+	else {
+		pbs1 = NULL;
+	}
+	if (pbs2 && teILIsEqualNet(*pbs2, punk1, &bResult)) {
+		return bResult;
 	}
 	if (punk1 && punk2) {
 		LPITEMIDLIST pidl1, pidl2;
@@ -3776,79 +3806,85 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 LRESULT CALLBACK TETVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	HRESULT Result = S_FALSE;
-	CteTreeView *pTV = TVfromhwnd(hwnd, true);
-	if (!pTV) {
-		return 0;
-	}
-	if (msg == WM_NOTIFY) {
-		LPNMHDR pnmhdr = (LPNMHDR)lParam;
-		if (pnmhdr->code == NM_RCLICK) {
-			try {
-				if (InterlockedIncrement(&g_nProcTV) < 5) {
-					MSG msg1;
-					msg1.hwnd = hwnd;
-					msg1.message = WM_CONTEXTMENU;
-					msg1.wParam = (WPARAM)hwnd;
-					GetCursorPos(&msg1.pt);
-					Result = !MessageSubPt(TE_OnShowContextMenu, pTV, &msg1);
+	try {
+		CteTreeView *pTV = (CteTreeView *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+		if (msg == WM_NOTIFY) {
+			LPNMHDR pnmhdr = (LPNMHDR)lParam;
+			if (pnmhdr->code == NM_RCLICK) {
+				try {
+					if (InterlockedIncrement(&g_nProcTV) < 5) {
+						MSG msg1;
+						msg1.hwnd = hwnd;
+						msg1.message = WM_CONTEXTMENU;
+						msg1.wParam = (WPARAM)hwnd;
+						GetCursorPos(&msg1.pt);
+						Result = !MessageSubPt(TE_OnShowContextMenu, pTV, &msg1);
+					}
 				}
+				catch(...) {}
+				::InterlockedDecrement(&g_nProcTV);
 			}
-			catch(...) {}
-			::InterlockedDecrement(&g_nProcTV);
 		}
+		return Result ? CallWindowProc(pTV->m_DefProc, hwnd, msg, wParam, lParam) : 0;
 	}
-	return Result ? CallWindowProc(pTV->m_DefProc, hwnd, msg, wParam, lParam) : 0;
+	catch (...) {
+		g_nException = 0;
+	}
+	return 0;
 }
 #endif
 
 LRESULT CALLBACK TETVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	CteTreeView *pTV = TVfromhwnd(hwnd, true);
-	if (!pTV) {
-		return 0;
-	}
-	if (pTV->m_bMain) {
-		if (msg == WM_ENTERMENULOOP) {
-			pTV->m_bMain = false;
-		}
-	}
-	else {
-		if (msg == WM_EXITMENULOOP) {
-			pTV->m_bMain = true;
-		}
-		else if (msg >= TV_FIRST && msg < TV_FIRST + 0x100) {
-			return 0;
-		}
-	}
-	if (msg == WM_COMMAND) {
-		LRESULT Result = S_FALSE;
-		try {
-			if (InterlockedIncrement(&g_nProcTV) == 1) {
-				if (g_pOnFunc[TE_OnCommand]) {
-					MSG msg1;
-					msg1.hwnd = hwnd;
-					msg1.message = msg;
-					msg1.wParam = wParam;
-					msg1.lParam = lParam;
-					Result = MessageSub(TE_OnCommand, pTV, &msg1, S_FALSE);
-				}
+	try {
+		CteTreeView *pTV = (CteTreeView *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+		if (pTV->m_bMain) {
+			if (msg == WM_ENTERMENULOOP) {
+				pTV->m_bMain = false;
 			}
 		}
-		catch(...) {}
-		::InterlockedDecrement(&g_nProcTV);
-		if (Result == 0) {
-			return 0;
+		else {
+			if (msg == WM_EXITMENULOOP) {
+				pTV->m_bMain = true;
+			}
+			else if (msg >= TV_FIRST && msg < TV_FIRST + 0x100) {
+				return 0;
+			}
 		}
-	}
+		if (msg == WM_COMMAND) {
+			LRESULT Result = S_FALSE;
+			try {
+				if (InterlockedIncrement(&g_nProcTV) == 1) {
+					if (g_pOnFunc[TE_OnCommand]) {
+						MSG msg1;
+						msg1.hwnd = hwnd;
+						msg1.message = msg;
+						msg1.wParam = wParam;
+						msg1.lParam = lParam;
+						Result = MessageSub(TE_OnCommand, pTV, &msg1, S_FALSE);
+					}
+				}
+			}
+			catch(...) {}
+			::InterlockedDecrement(&g_nProcTV);
+			if (Result == 0) {
+				return 0;
+			}
+		}
 #ifdef _2000XP
-	if (msg == TVM_INSERTITEM) {
-		TVINSERTSTRUCT *pTVInsert = (TVINSERTSTRUCT *)lParam;
-		if (pTVInsert->item.cChildren == 1) {
-			pTVInsert->item.cChildren = -1;
+		if (msg == TVM_INSERTITEM) {
+			TVINSERTSTRUCT *pTVInsert = (TVINSERTSTRUCT *)lParam;
+			if (pTVInsert->item.cChildren == 1) {
+				pTVInsert->item.cChildren = -1;
+			}
 		}
-	}
 #endif
-	return CallWindowProc(pTV->m_DefProc2, hwnd, msg, wParam, lParam);
+		return CallWindowProc(pTV->m_DefProc2, hwnd, msg, wParam, lParam);
+	}
+	catch (...) {
+		g_nException = 0;
+	}
+	return 0;
 }
 
 VOID CALLBACK teNavigateCompleteProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
@@ -3863,10 +3899,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	static FolderItem *pidEdit = NULL;
 
 	try {
-		CteShellBrowser *pSB = SBfromhwnd(hwnd);
-		if (!pSB) {
-			return 0;
-		}
+		CteShellBrowser *pSB = (CteShellBrowser *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 		LRESULT lResult = S_FALSE;
 		if (msg == WM_CONTEXTMENU || msg == SB_SETTEXT || msg == WM_COMMAND || msg == WM_COPYDATA) {
 			try {
@@ -3945,7 +3978,10 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			pSB->SetFolderFlags();
 		}
 		return (lResult && hwnd == pSB->m_hwndDV) ? CallWindowProc((WNDPROC)pSB->m_DefProc, hwnd, msg, wParam, lParam) : 0;
-	} catch (...) {}
+	}
+	catch (...) {
+		g_nException = 0;
+	}
 	return 0;
 }
 
@@ -3997,8 +4033,8 @@ LRESULT CALLBACK TESTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	LRESULT Result = 1;
 
-	CteTabs *pTC = TCfromhwnd(hwnd);
-	if (pTC) {
+	try {
+		CteTabs *pTC = (CteTabs *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 		CteShellBrowser	*pSB = pTC->GetShellBrowser(pTC->m_nIndex);
 		if (pSB && pSB->m_pTV && pSB->m_pidl) {
 			switch (msg) {
@@ -4022,55 +4058,48 @@ LRESULT CALLBACK TESTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					break;
 			}//end_switch
 		}
+		return Result ? CallWindowProc(g_DefSTProc, hwnd, msg, wParam, lParam) : 0;
 	}
-	return Result ? CallWindowProc(g_DefSTProc, hwnd, msg, wParam, lParam) : 0;
+	catch (...) {
+		g_nException = 0;
+	}
+	return 0;
 }
 
-LRESULT TETCProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT TETCProc2(CteTabs *pTC, HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	LRESULT Result = 1;
-	CteTabs *pTC;
-
 	switch (msg) {
 		case WM_LBUTTONDOWN:
-			pTC = TCfromhwnd(hwnd);
-			if (pTC) {
-				if ((pTC->m_param[TE_Align] == 4 && WORD(lParam) >= pTC->m_param[TC_TabWidth] - pTC->m_nScrollWidth - 2 && WORD(lParam) < pTC->m_param[TC_TabWidth]) ||
-					(pTC->m_param[TE_Align] == 5 && WORD(lParam) < 2)) {
-					SetCapture(hwnd);
-					g_x = GET_X_LPARAM(lParam);
-					SetCursor(LoadCursor(NULL, IDC_SIZEWE));
-					Result = 0;
-				}
+			if ((pTC->m_param[TE_Align] == 4 && WORD(lParam) >= pTC->m_param[TC_TabWidth] - pTC->m_nScrollWidth - 2 && WORD(lParam) < pTC->m_param[TC_TabWidth]) ||
+				(pTC->m_param[TE_Align] == 5 && WORD(lParam) < 2)) {
+				SetCapture(hwnd);
+				g_x = GET_X_LPARAM(lParam);
+				SetCursor(LoadCursor(NULL, IDC_SIZEWE));
+				Result = 0;
 			}
 		case WM_SETFOCUS:
 		case WM_RBUTTONDOWN:
 			CheckChangeTabTC(hwnd, true);
 			break;
 		case WM_MOUSEMOVE:
-			pTC = TCfromhwnd(hwnd);
-			if (pTC) {
-				if (g_x == MAXINT) {
-					if ((pTC->m_param[TE_Align] == 4 && WORD(lParam) >= pTC->m_param[TC_TabWidth] - pTC->m_nScrollWidth - 2 && WORD(lParam) < pTC->m_param[TC_TabWidth]) ||
-						(pTC->m_param[TE_Align] == 5 && WORD(lParam) < 2)) {
-						SetCursor(LoadCursor(NULL, IDC_SIZEWE));
-					}
+			if (g_x == MAXINT) {
+				if ((pTC->m_param[TE_Align] == 4 && WORD(lParam) >= pTC->m_param[TC_TabWidth] - pTC->m_nScrollWidth - 2 && WORD(lParam) < pTC->m_param[TC_TabWidth]) ||
+					(pTC->m_param[TE_Align] == 5 && WORD(lParam) < 2)) {
+					SetCursor(LoadCursor(NULL, IDC_SIZEWE));
 				}
-				else {
-					if (pTC->m_param[TE_Align] == 4) {
-						teSetTabWidth(pTC, lParam);
-					}
-					Result = 0;
+			}
+			else {
+				if (pTC->m_param[TE_Align] == 4) {
+					teSetTabWidth(pTC, lParam);
 				}
+				Result = 0;
 			}
 			break;
 		case WM_LBUTTONUP:
 			if (g_x != MAXINT) {
 				ReleaseCapture();
-				pTC = TCfromhwnd(hwnd);
-				if (pTC) {
-					teSetTabWidth(pTC, lParam);
-				}
+				teSetTabWidth(pTC, lParam);
 				g_x = MAXINT;
 			}
 			break;
@@ -4081,31 +4110,23 @@ LRESULT TETCProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 LRESULT CALLBACK TEBTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	LRESULT Result = 1;
-	CteTabs *pTC;
-
-	switch (msg) {
-		case WM_NOTIFY:
-			switch (((LPNMHDR)lParam)->code) {
-				case TCN_SELCHANGE:
-					pTC = TCfromhwnd(hwnd);
-					if (pTC) {
+	try {
+		CteTabs *pTC = (CteTabs *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+		switch (msg) {
+			case WM_NOTIFY:
+				switch (((LPNMHDR)lParam)->code) {
+					case TCN_SELCHANGE:
 						if (g_pTabs->m_hwnd != pTC->m_hwnd && pTC->m_bVisible) {
 							g_pTabs = pTC;
 						}
 						pTC->TabChanged(true);
 						Result = 0;
-					}
-					break;
-				case TCN_SELCHANGING:
-					pTC = TCfromhwnd(hwnd);
-					if (pTC) {
+						break;
+					case TCN_SELCHANGING:
 						Result = DoFunc(TE_OnSelectionChanging, pTC, 0);
-					}
-					break;
-				case TTN_GETDISPINFO:
-					if (g_pOnFunc[TE_OnToolTip]) {
-						pTC = TCfromhwnd(hwnd);
-						if (pTC) {
+						break;
+					case TTN_GETDISPINFO:
+						if (g_pOnFunc[TE_OnToolTip]) {
 							VARIANT vResult;
 							VariantInit(&vResult);
 							VARIANTARG *pv = GetNewVARIANT(2);
@@ -4122,13 +4143,10 @@ LRESULT CALLBACK TEBTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							VariantClear(&vResult);
 							VariantClear(&vText);
 						}
-					}
-					break;
-			}
-			break;
-		case WM_CONTEXTMENU:
-			pTC = TCfromhwnd(hwnd);
-			if (pTC) {
+						break;
+				}
+				break;
+			case WM_CONTEXTMENU:
 				MSG msg1;
 				msg1.hwnd = pTC->m_hwnd;
 				msg1.message = msg;
@@ -4137,11 +4155,8 @@ LRESULT CALLBACK TEBTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				msg1.pt.y = GET_Y_LPARAM(lParam);
 				MessageSubPt(TE_OnShowContextMenu, pTC, &msg1);
 				Result = 0;
-			}
-			break;
-		case WM_VSCROLL:
-			pTC = TCfromhwnd(hwnd);
-			if (pTC) {
+				break;
+			case WM_VSCROLL:
 				switch(LOWORD(wParam)){
 					case SB_LINEUP:
 						pTC->m_si.nPos -= 16;
@@ -4167,29 +4182,31 @@ LRESULT CALLBACK TEBTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				}
 				SetScrollInfo(pTC->m_hwndButton, SB_VERT, &pTC->m_si, TRUE);
 				ArrangeWindow();
-			}
-			break;
-	}//end_switch
-	if (Result) {
-		Result = TETCProc2(hwnd, msg, wParam, lParam);
+				break;
+		}//end_switch
+		if (Result) {
+			Result = TETCProc2(pTC, hwnd, msg, wParam, lParam);
+		}
+		return Result ? CallWindowProc(g_DefBTProc, hwnd, msg, wParam, lParam) : 0;
 	}
-	return Result ? CallWindowProc(g_DefBTProc, hwnd, msg, wParam, lParam) : 0;
+	catch (...) {
+		g_nException = 0;
+	}
+	return 0;
 }
 
 LRESULT CALLBACK TETCProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	LRESULT Result = 1;
 	int nIndex, nCount;
-	CteTabs *pTC;
-
-	switch (msg) {
-		case TCM_DELETEITEM:
-			if (lParam) {
-				lParam = 0;
-			}
-			else {
-				pTC = TCfromhwnd(hwnd);
-				if (pTC) {
+	try {
+		CteTabs *pTC = (CteTabs *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+		switch (msg) {
+			case TCM_DELETEITEM:
+				if (lParam) {
+					lParam = 0;
+				}
+				else {
 					CteShellBrowser *pSB = NULL;
 					pSB = pTC->GetShellBrowser((int)wParam);
 					CallWindowProc(g_DefTCProc, hwnd, msg, wParam, lParam);
@@ -4220,12 +4237,9 @@ LRESULT CALLBACK TETCProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					pTC->TabChanged(true);
 					ArrangeWindow();
 				}
-			}
-			break;
-		case TCM_SETCURSEL:
-			if (wParam != (UINT_PTR)TabCtrl_GetCurSel(hwnd)) { 
-				pTC = TCfromhwnd(hwnd);
-				if (pTC) {
+				break;
+			case TCM_SETCURSEL:
+				if (wParam != (UINT_PTR)TabCtrl_GetCurSel(hwnd)) { 
 					CallWindowProc(g_DefTCProc, hwnd, msg, wParam, lParam);
 					Result = 0;
 					pTC->TabChanged(true);
@@ -4235,24 +4249,25 @@ LRESULT CALLBACK TETCProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						}
 					}
 				}
-			}
-			break;
-		case TCM_SETITEM:
-			pTC = TCfromhwnd(hwnd);
-			if (pTC) {
+				break;
+			case TCM_SETITEM:
 				if (pTC->m_param[TE_Flags] & TCS_FIXEDWIDTH) {
 					CallWindowProc(g_DefTCProc, hwnd, msg, wParam, lParam);
 					Result = 0;
 					CallWindowProc(g_DefTCProc, pTC->m_hwnd, TCM_SETITEMSIZE, 0, MAKELPARAM(pTC->m_param[TC_TabWidth], pTC->m_param[TC_TabHeight] + 1));
 					CallWindowProc(g_DefTCProc, pTC->m_hwnd, TCM_SETITEMSIZE, 0, pTC->m_dwSize);
 				}
-			}
-			break;
-	}//end_switch
-	if (Result) {
-		Result = TETCProc2(hwnd, msg, wParam, lParam);
+				break;
+		}//end_switch
+		if (Result) {
+			Result = TETCProc2(pTC, hwnd, msg, wParam, lParam);
+		}
+		return Result ? CallWindowProc(g_DefTCProc, hwnd, msg, wParam, lParam) : 0;
 	}
-	return Result ? CallWindowProc(g_DefTCProc, hwnd, msg, wParam, lParam) : 0;
+	catch (...) {
+		g_nException = 0;
+	}
+	return 0;
 }
 
 HRESULT MessageProc(MSG *pMsg)
@@ -7672,6 +7687,18 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					pVarResult->bstrVal = GetColumnsStr();
 				}
 				return S_OK;
+			//ItemCount
+			case 0x10000110:
+				if (pVarResult && m_pShellView) {
+					IFolderView *pFV;
+					if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
+						if SUCCEEDED(pFV->ItemCount(nArg >= 0 ? GetIntFromVariant(&pDispParams->rgvarg[nArg]) : SVGIO_ALLVIEW, &pVarResult->intVal)) {
+							pVarResult->vt = VT_I4;
+						}
+						pFV->Release();
+					}
+				}
+				return S_OK;
 			//Items
 			case 0x10000202:
 				if (pVarResult && m_pShellView) {
@@ -8581,6 +8608,7 @@ VOID CteShellBrowser::SetPropEx()
 {
 	if (m_pShellView->GetWindow(&m_hwndDV) == S_OK) {
 		if (!m_DefProc) {
+			SetWindowLongPtr(m_hwndDV, GWLP_USERDATA, (LONG_PTR)this);
 			m_DefProc = SetWindowLongPtr(m_hwndDV, GWLP_WNDPROC, (LONG_PTR)TELVProc);
 		}
 		m_hwndLV = FindWindowEx(m_hwndDV, 0, WC_LISTVIEW, NULL);
@@ -8694,7 +8722,10 @@ VOID CteShellBrowser::DestroyView(int nFlags)
 			Show(false);
 			m_pExplorerBrowser->Destroy();
 			m_pExplorerBrowser->Release();
-		} catch (...) {}
+		}
+		catch (...) {
+			g_nException = 0;
+		}
 		m_pExplorerBrowser = NULL;
 	}
 #endif
@@ -10241,7 +10272,7 @@ VOID CteTabs::CreateTC()
 		NULL); // WM_CREATE Parameter
 	ArrangeWindow();
 	SetItemSize();
-
+	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 	g_DefTCProc = (WNDPROC)SetWindowLongPtr(m_hwnd, GWLP_WNDPROC, (LONG_PTR)TETCProc);
 	RegisterDragDrop(m_hwnd, static_cast<IDropTarget *>(this));
 	BringWindowToTop(m_hwnd);
@@ -10253,6 +10284,7 @@ BOOL CteTabs::Create()
 		0, WC_STATIC, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | SS_NOTIFY,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 
 		g_hwndMain, (HMENU)0, hInst, NULL);
+	SetWindowLongPtr(m_hwndStatic, GWLP_USERDATA, (LONG_PTR)this);
 	g_DefSTProc = (WNDPROC)SetWindowLongPtr(m_hwndStatic, GWLP_WNDPROC, (LONG_PTR)TESTProc);
 	BringWindowToTop(m_hwndStatic);
 
@@ -10261,6 +10293,7 @@ BOOL CteTabs::Create()
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 
 		m_hwndStatic, (HMENU)0, hInst, NULL);
 
+	SetWindowLongPtr(m_hwndButton, GWLP_USERDATA, (LONG_PTR)this);
 	g_DefBTProc = (WNDPROC)SetWindowLongPtr(m_hwndButton, GWLP_WNDPROC, (LONG_PTR)TEBTProc);
 	RegisterDragDrop(m_hwndButton, static_cast<IDropTarget *>(this));
 	BringWindowToTop(m_hwndButton);
@@ -10728,6 +10761,7 @@ VOID CteTabs::TabChanged(BOOL bSameTC)
 	}
 	CteShellBrowser *pSB = GetShellBrowser(m_nIndex);
 	if (pSB) {
+		pSB->SetStatusTextSB(NULL);
 		DoFunc(TE_OnSelectionChanged, this, E_NOTIMPL);
 	}
 }
@@ -12093,6 +12127,7 @@ VOID CteMemory::Read(int nIndex, int nLen, VARIANT *pVarResult)
 		}//end_switch
 	}
 	catch (...) {
+		g_nException = 0;
 	}
 }
 
@@ -12205,6 +12240,7 @@ VOID CteMemory::Write(int nIndex, int nLen, VARTYPE vt, VARIANT *pv)
 		}//end_switch
 	}
 	catch (...) {
+		g_nException = 0;
 	}
 }
 
@@ -12796,6 +12832,7 @@ BOOL CteTreeView::Create()
 				if (pOleWindow->GetWindow(&m_hwnd) == S_OK) {
 					m_hwndTV = FindTreeWindow(m_hwnd);
 					if (m_hwndTV) {
+						SetWindowLongPtr(m_hwndTV, GWLP_USERDATA, (LONG_PTR)this);
 						m_DefProc2 = (WNDPROC)SetWindowLongPtr(m_hwndTV, GWLP_WNDPROC, (LONG_PTR)TETVProc2);
 						m_pFV->HookDragDrop(g_dragdrop & 2);
 					}
@@ -12882,7 +12919,10 @@ BOOL CteTreeView::Create()
 			m_pShellNameSpace->put_Flags(m_pFV->m_param[SB_TreeFlags] & NSTCS_FAVORITESMODE);
 			m_hwndTV = FindTreeWindow(hwnd);
 			if (m_hwndTV) {
-				m_DefProc = (WNDPROC)SetWindowLongPtr(GetParent(m_hwndTV), GWLP_WNDPROC, (LONG_PTR)TETVProc);
+				HWND hwndParent = GetParent(m_hwndTV);
+				SetWindowLongPtr(hwndParent, GWLP_USERDATA, (LONG_PTR)this);
+				m_DefProc = (WNDPROC)SetWindowLongPtr(hwndParent, GWLP_WNDPROC, (LONG_PTR)TETVProc);
+				SetWindowLongPtr(m_hwndTV, GWLP_USERDATA, (LONG_PTR)this);
 				m_DefProc2 = (WNDPROC)SetWindowLongPtr(m_hwndTV, GWLP_WNDPROC, (LONG_PTR)TETVProc2);
 				m_pFV->HookDragDrop(g_dragdrop & 2);
 
