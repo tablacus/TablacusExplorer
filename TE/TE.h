@@ -518,6 +518,11 @@ public:
 	HWND	m_hwnd;
 	HWND	m_hwndStatic;
 	HWND	m_hwndButton;
+
+	WNDPROC	m_DefTCProc;
+	WNDPROC	m_DefBTProc;
+	WNDPROC	m_DefSTProc;
+
 	int		m_nIndex;
 	DWORD	m_dwSize;
 	int		m_param[9];
@@ -697,7 +702,7 @@ public:
 	VOID Error(BSTR *pbs);
 	VOID Refresh(BOOL bCheck);
 	VOID SetActive();
-	VOID SetTitle(LPOLESTR szName, int nIndex);
+	VOID SetTitle(BSTR szName, int nIndex);
 	VOID NavigateCompleted2();
 	VOID GetShellFolderView();
 	VOID GetFocusedIndex(int *piItem);
@@ -937,8 +942,8 @@ public:
 	IDropTarget *m_pDropTarget;
 #ifdef _2000XP
 	IShellNameSpace *m_pShellNameSpace;
-#endif
 	WNDPROC		m_DefProc;
+#endif
 	WNDPROC		m_DefProc2;
 	BOOL		m_bMain;
 	BOOL		m_bSetRoot;

@@ -56,10 +56,6 @@ LPITEMIDLIST g_pidls[MAX_CSIDL];
 LPITEMIDLIST g_pidlResultsFolder;
 LPITEMIDLIST g_pidlLibrary = NULL;
 
-WNDPROC		g_DefTCProc = NULL;
-WNDPROC		g_DefBTProc = NULL;
-WNDPROC		g_DefSTProc = NULL;
-
 IDispatch	*g_pOnFunc[Count_OnFunc];
 IDispatch	*g_pObject  = NULL;
 IDispatch	*g_pArray   = NULL;
@@ -4058,7 +4054,7 @@ LRESULT CALLBACK TESTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					break;
 			}//end_switch
 		}
-		return Result ? CallWindowProc(g_DefSTProc, hwnd, msg, wParam, lParam) : 0;
+		return Result ? CallWindowProc(pTC->m_DefSTProc, hwnd, msg, wParam, lParam) : 0;
 	}
 	catch (...) {
 		g_nException = 0;
@@ -4187,7 +4183,7 @@ LRESULT CALLBACK TEBTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		if (Result) {
 			Result = TETCProc2(pTC, hwnd, msg, wParam, lParam);
 		}
-		return Result ? CallWindowProc(g_DefBTProc, hwnd, msg, wParam, lParam) : 0;
+		return Result ? CallWindowProc(pTC->m_DefBTProc, hwnd, msg, wParam, lParam) : 0;
 	}
 	catch (...) {
 		g_nException = 0;
@@ -4209,7 +4205,7 @@ LRESULT CALLBACK TETCProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				else {
 					CteShellBrowser *pSB = NULL;
 					pSB = pTC->GetShellBrowser((int)wParam);
-					CallWindowProc(g_DefTCProc, hwnd, msg, wParam, lParam);
+					CallWindowProc(pTC->m_DefTCProc, hwnd, msg, wParam, lParam);
 					Result = 0;
 					if (pSB) {
 						pSB->Close(true);
@@ -4232,7 +4228,7 @@ LRESULT CALLBACK TETCProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						}
 						pTC->m_nIndex = -1;
 						//TabCtrl_SetCurSel(hwnd, nIndex);
-						CallWindowProc(g_DefTCProc, hwnd, TCM_SETCURSEL, nIndex, 0);
+						CallWindowProc(pTC->m_DefTCProc, hwnd, TCM_SETCURSEL, nIndex, 0);
 					}
 					pTC->TabChanged(true);
 					ArrangeWindow();
@@ -4240,7 +4236,7 @@ LRESULT CALLBACK TETCProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				break;
 			case TCM_SETCURSEL:
 				if (wParam != (UINT_PTR)TabCtrl_GetCurSel(hwnd)) { 
-					CallWindowProc(g_DefTCProc, hwnd, msg, wParam, lParam);
+					CallWindowProc(pTC->m_DefTCProc, hwnd, msg, wParam, lParam);
 					Result = 0;
 					pTC->TabChanged(true);
 					if (g_pTE->m_param[TE_Tab] && pTC->m_param[TE_Align] == 1) {
@@ -4252,17 +4248,17 @@ LRESULT CALLBACK TETCProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				break;
 			case TCM_SETITEM:
 				if (pTC->m_param[TE_Flags] & TCS_FIXEDWIDTH) {
-					CallWindowProc(g_DefTCProc, hwnd, msg, wParam, lParam);
+					CallWindowProc(pTC->m_DefTCProc, hwnd, msg, wParam, lParam);
 					Result = 0;
-					CallWindowProc(g_DefTCProc, pTC->m_hwnd, TCM_SETITEMSIZE, 0, MAKELPARAM(pTC->m_param[TC_TabWidth], pTC->m_param[TC_TabHeight] + 1));
-					CallWindowProc(g_DefTCProc, pTC->m_hwnd, TCM_SETITEMSIZE, 0, pTC->m_dwSize);
+					CallWindowProc(pTC->m_DefTCProc, pTC->m_hwnd, TCM_SETITEMSIZE, 0, MAKELPARAM(pTC->m_param[TC_TabWidth], pTC->m_param[TC_TabHeight] + 1));
+					CallWindowProc(pTC->m_DefTCProc, pTC->m_hwnd, TCM_SETITEMSIZE, 0, pTC->m_dwSize);
 				}
 				break;
 		}//end_switch
 		if (Result) {
 			Result = TETCProc2(pTC, hwnd, msg, wParam, lParam);
 		}
-		return Result ? CallWindowProc(g_DefTCProc, hwnd, msg, wParam, lParam) : 0;
+		return Result ? CallWindowProc(pTC->m_DefTCProc, hwnd, msg, wParam, lParam) : 0;
 	}
 	catch (...) {
 		g_nException = 0;
@@ -4736,7 +4732,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 								}
 							}
 							MoveWindow(pTC->m_hwndButton, rcTab.left, rcTab.top,
-								rcTab.right - rcTab.left, rcTab.bottom - rcTab.top, true);
+								rcTab.right - rcTab.left, rcTab.bottom - rcTab.top, TRUE);
 							pTC->m_nScrollWidth = 0;
 							if (nAlign == 4 || nAlign == 5) {
 								int h2 = h - rcTab.bottom;
@@ -4783,7 +4779,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 									pSB->Show(TRUE);
 								}
 								MoveWindow(pSB->m_hwnd, rc.left, rc.top, rc.right - rc.left, 
-									rc.bottom - rc.top, true);
+									rc.bottom - rc.top, TRUE);
 							}
 						}
 					} catch (...) {}
@@ -6543,11 +6539,12 @@ VOID CteShellBrowser::SetActive()
 	}
 }
 
-VOID CteShellBrowser::SetTitle(LPOLESTR szName, int nIndex)
+VOID CteShellBrowser::SetTitle(BSTR szName, int nIndex)
 {
 	TC_ITEM tcItem;
 	BSTR bsText = SysAllocStringLen(L"", MAX_PATH);
-	tcItem.pszText = bsText;
+	BSTR bsOldText = SysAllocStringLen(L"", MAX_PATH);
+	tcItem.pszText = bsOldText;
 	tcItem.mask = TCIF_TEXT;
 	tcItem.cchTextMax = MAX_PATH;
 	int nCount = ::SysStringLen(szName);
@@ -6562,9 +6559,14 @@ VOID CteShellBrowser::SetTitle(LPOLESTR szName, int nIndex)
 		}
 	}
 	bsText[j] = NULL;
-	TabCtrl_SetItem(m_pTabs->m_hwnd, nIndex, &tcItem);
+	TabCtrl_GetItem(m_pTabs->m_hwnd, nIndex, &tcItem);
+	if (lstrcmpi(bsText, bsOldText)) {
+		tcItem.pszText = bsText;
+		TabCtrl_SetItem(m_pTabs->m_hwnd, nIndex, &tcItem);
+		ArrangeWindow();
+	}
+	SysFreeString(bsOldText);
 	SysFreeString(bsText);
-	ArrangeWindow();
 }
 
 VOID CteShellBrowser::NavigateCompleted2()
@@ -10149,6 +10151,9 @@ void CteTabs::Init()
 	m_param[TC_TabWidth] = 0;
 	m_param[TC_TabHeight] = 0;
 	m_nScrollWidth = 0;
+	m_DefTCProc = NULL;
+	m_DefBTProc = NULL;
+	m_DefSTProc = NULL;
 }
 
 VOID CteTabs::GetItem(int i, VARIANT *pVarResult)
@@ -10196,16 +10201,16 @@ void CteTabs::Close(BOOL bForce)
 		}
 		Show(FALSE);
 		RevokeDragDrop(m_hwnd);
-		SetWindowLongPtr(m_hwnd, GWLP_WNDPROC, (LONG_PTR)g_DefTCProc);
+		SetWindowLongPtr(m_hwnd, GWLP_WNDPROC, (LONG_PTR)m_DefTCProc);
 		DestroyWindow(m_hwnd);
 		m_hwnd = NULL;
 
 		RevokeDragDrop(m_hwndButton);
-		SetWindowLongPtr(m_hwndButton, GWLP_WNDPROC, (LONG_PTR)g_DefBTProc);
+		SetWindowLongPtr(m_hwndButton, GWLP_WNDPROC, (LONG_PTR)m_DefBTProc);
 		DestroyWindow(m_hwndButton);
 		m_hwndButton = NULL;
 
-		SetWindowLongPtr(m_hwndStatic, GWLP_WNDPROC, (LONG_PTR)g_DefSTProc);
+		SetWindowLongPtr(m_hwndStatic, GWLP_WNDPROC, (LONG_PTR)m_DefSTProc);
 		DestroyWindow(m_hwndStatic);
 		m_hwndStatic = NULL;
 		m_bEmpty = true;
@@ -10273,7 +10278,7 @@ VOID CteTabs::CreateTC()
 	ArrangeWindow();
 	SetItemSize();
 	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
-	g_DefTCProc = (WNDPROC)SetWindowLongPtr(m_hwnd, GWLP_WNDPROC, (LONG_PTR)TETCProc);
+	m_DefTCProc = (WNDPROC)SetWindowLongPtr(m_hwnd, GWLP_WNDPROC, (LONG_PTR)TETCProc);
 	RegisterDragDrop(m_hwnd, static_cast<IDropTarget *>(this));
 	BringWindowToTop(m_hwnd);
 }
@@ -10285,7 +10290,7 @@ BOOL CteTabs::Create()
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 
 		g_hwndMain, (HMENU)0, hInst, NULL);
 	SetWindowLongPtr(m_hwndStatic, GWLP_USERDATA, (LONG_PTR)this);
-	g_DefSTProc = (WNDPROC)SetWindowLongPtr(m_hwndStatic, GWLP_WNDPROC, (LONG_PTR)TESTProc);
+	m_DefSTProc = (WNDPROC)SetWindowLongPtr(m_hwndStatic, GWLP_WNDPROC, (LONG_PTR)TESTProc);
 	BringWindowToTop(m_hwndStatic);
 
 	m_hwndButton = CreateWindowEx(
@@ -10294,7 +10299,7 @@ BOOL CteTabs::Create()
 		m_hwndStatic, (HMENU)0, hInst, NULL);
 
 	SetWindowLongPtr(m_hwndButton, GWLP_USERDATA, (LONG_PTR)this);
-	g_DefBTProc = (WNDPROC)SetWindowLongPtr(m_hwndButton, GWLP_WNDPROC, (LONG_PTR)TEBTProc);
+	m_DefBTProc = (WNDPROC)SetWindowLongPtr(m_hwndButton, GWLP_WNDPROC, (LONG_PTR)TEBTProc);
 	RegisterDragDrop(m_hwndButton, static_cast<IDropTarget *>(this));
 	BringWindowToTop(m_hwndButton);
 
@@ -10545,7 +10550,7 @@ STDMETHODIMP CteTabs::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD w
 								HIMAGELIST hImage = TabCtrl_GetImageList(m_hwnd);
 								HFONT hFont = (HFONT)SendMessage(m_hwnd, WM_GETFONT, 0, 0);
 								RevokeDragDrop(m_hwnd);
-								SetWindowLongPtr(m_hwnd, GWLP_WNDPROC, (LONG_PTR)g_DefTCProc);
+								SetWindowLongPtr(m_hwnd, GWLP_WNDPROC, (LONG_PTR)m_DefTCProc);
 								DestroyWindow(m_hwnd);
 
 								CreateTC();
@@ -10763,6 +10768,7 @@ VOID CteTabs::TabChanged(BOOL bSameTC)
 	if (pSB) {
 		pSB->SetStatusTextSB(NULL);
 		DoFunc(TE_OnSelectionChanged, this, E_NOTIMPL);
+		ArrangeWindow();
 	}
 }
 
@@ -12735,7 +12741,9 @@ STDMETHODIMP CteDropTarget::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 CteTreeView::CteTreeView()
 {
 	m_cRef = 1;
+#ifdef _2000XP
 	m_DefProc = NULL;
+#endif
 	m_DefProc2 = NULL;
 	m_bMain = true;
 	m_pDragItems = NULL;
@@ -12749,10 +12757,12 @@ CteTreeView::CteTreeView()
 CteTreeView::~CteTreeView()
 {
 	Close();
+#ifdef _2000XP
 	if (m_DefProc) {
 		SetWindowLongPtr(m_hwnd, GWLP_WNDPROC, (LONG_PTR)m_DefProc);
 		m_DefProc = NULL;
 	}
+#endif
 	if (m_DefProc2) {
 		SetWindowLongPtr(m_hwndTV, GWLP_WNDPROC, (LONG_PTR)m_DefProc2);
 		m_DefProc2 = NULL;

@@ -99,8 +99,10 @@ PanelCreated = function (Ctrl)
 ChangeView = function (Ctrl)
 {
 	te.Data.bSaveConfig = true;
-	ChangeTabName(Ctrl);
-	RunEvent1("ChangeView", Ctrl);
+	if (Ctrl) {
+		ChangeTabName(Ctrl);
+		RunEvent1("ChangeView", Ctrl);
+	}
 }
 
 SetAddress = function (s)
@@ -1358,6 +1360,7 @@ te.OnArrange = function (Ctrl, rc)
 			o = document.getElementById("Panel_" + Ctrl.Id);
 			g_Panels[Ctrl.Id] = o;
 			ApplyLang(o);
+			ChangeView(Ctrl.Selected);
 		}
 		o.style.left = rc.Left + "px";
 		o.style.top = rc.Top + "px";
