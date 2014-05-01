@@ -1581,6 +1581,13 @@ function SetAttribEx(item, f, n)
 
 function GetAttribEx(item, f, n)
 {
+	if (/([^=]*)=(.*)/.test(n)) {
+		s = item.getAttribute(RegExp.$1);
+		if (s == RegExp.$2) {
+			document.getElementById(n).checked = true;
+		}
+		return;
+	}
 	s = item.getAttribute(n);
 	if (s || s === 0) {
 		SetElementValue(f.elements[n], s);
@@ -1715,7 +1722,7 @@ function InitAddonOptions()
 			var n = ele[i].id || ele[i].name;
 			if (n) {
 				GetAttribEx(item, document.F, n);
-				if (n.match(/^Color_(.*)/)) {
+				if (/^Color_(.*)/.test(n)) {
 					var o = document.F.elements[RegExp.$1];
 					if (o) {
 						ele[i].style.backgroundColor = GetWebColor(o.value);

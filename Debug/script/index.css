@@ -197,3 +197,11 @@ a:active.menu {
 	outline-style: none;
 	vertical-align: bottom;
 }
+.treebutton {
+	border: 1px solid gray;
+	font-size: 8px;
+	font-family: Consolas;
+	margin-right: 3px;
+	filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#dddddd);
+	background: linear-gradient(to bottom, #ffffff, #dddddd);
+}

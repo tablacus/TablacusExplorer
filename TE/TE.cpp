@@ -80,6 +80,7 @@ LONG	g_nLockUpdate = 0;
 LONG	nUpdate = 0;
 DWORD	g_paramFV[SB_Count];
 DWORD	g_dragdrop = 0;
+DWORD	g_dwMainThreadId;
 long	g_nProcKey	   = 0;
 long	g_nProcMouse   = 0;
 long	g_nProcDrag    = 0;
@@ -2035,6 +2036,21 @@ LPITEMIDLIST teILCreateFromPath2(IShellFolder *pSF, LPWSTR pszPath, SHGDNF uFlag
 	return NULL;
 }
 
+BOOL teILIsExists(LPITEMIDLIST pidl)
+{
+	BOOL bResult = FALSE;
+	IShellFolder *pSF;
+	if (GetShellFolder(&pSF, pidl)) {
+		IEnumIDList *pEI;
+		if SUCCEEDED(pSF->EnumObjects(NULL, SHCONTF_NONFOLDERS |SHCONTF_INCLUDEHIDDEN | SHCONTF_FOLDERS, &pEI)) {
+			bResult = TRUE;
+			pEI->Release();
+		}
+		pSF->Release();
+	}
+	return bResult;
+}
+
 LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath)
 {
 	LPITEMIDLIST pidl = NULL;
@@ -2059,44 +2075,46 @@ LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath)
 			pszPath = bsPath3;
 		}
 		int n = PathGetDriveNumber(pszPath);
-		if (n >= 0 && DriveType(n) == DRIVE_NO_ROOT_DIR && lstrlen(pszPath) >= 3) {
+		if (n >= 0 && DriveType(n) == DRIVE_NO_ROOT_DIR && lstrlen(pszPath) > 3) {
 			WCHAR szDrive[4];
-			lstrcpyn(szDrive, pszPath, 3);
+			lstrcpyn(szDrive, pszPath, 4);
 			lpfnSHParseDisplayName(szDrive, NULL, &pidl, 0, NULL);
-			if (!pidl) {
-				return NULL;
+			if (!pidl || g_dwMainThreadId == GetCurrentThreadId() || !teILIsExists(pidl)) {
+				pszPath = NULL;
 			}
-			teCoTaskMemFree(pidl);
+			teILFreeClear(&pidl);
 		}
-		lpfnSHParseDisplayName(pszPath, NULL, &pidl, 0, NULL);
-		if (pidl == NULL && PathMatchSpec(pszPath, L"::{*")) {
-			int nSize = lstrlen(pszPath) + 6;
-			BSTR bsPath4 = ::SysAllocStringLen(L"shell:", nSize);
-			lstrcat(bsPath4, pszPath);
-			lpfnSHParseDisplayName(bsPath4, NULL, &pidl, 0, NULL);
-			::SysFreeString(bsPath4);
-		}
-		if (pidl == NULL && !teIsFileSystem(pszPath)) {
-			for (int i = 0; i < g_nPidls; i++) {
-				if (g_pidls[i]) {
-					if SUCCEEDED(GetDisplayNameFromPidl(&bstr, g_pidls[i], SHGDN_FORADDRESSBAR)) {
-						if (teStrSameIFree(bstr, pszPath)) {
-							pidl = ILClone(g_pidls[i]);
-							break;
+		if (pszPath) {
+			lpfnSHParseDisplayName(pszPath, NULL, &pidl, 0, NULL);
+			if (pidl == NULL && PathMatchSpec(pszPath, L"::{*")) {
+				int nSize = lstrlen(pszPath) + 6;
+				BSTR bsPath4 = ::SysAllocStringLen(L"shell:", nSize);
+				lstrcat(bsPath4, pszPath);
+				lpfnSHParseDisplayName(bsPath4, NULL, &pidl, 0, NULL);
+				::SysFreeString(bsPath4);
+			}
+			if (pidl == NULL && !teIsFileSystem(pszPath)) {
+				for (int i = 0; i < g_nPidls; i++) {
+					if (g_pidls[i]) {
+						if SUCCEEDED(GetDisplayNameFromPidl(&bstr, g_pidls[i], SHGDN_FORADDRESSBAR)) {
+							if (teStrSameIFree(bstr, pszPath)) {
+								pidl = ILClone(g_pidls[i]);
+								break;
+							}
 						}
 					}
 				}
-			}
-			if (pidl == NULL) {
-				IShellFolder *pSF;
-				if (SHGetDesktopFolder(&pSF) == S_OK) {
-					pidl = teILCreateFromPath2(pSF, pszPath, SHGDN_FORPARSING | SHGDN_FORADDRESSBAR | SHGDN_INFOLDER, NULL);
-					pSF->Release();
-				}
 				if (pidl == NULL) {
-					if (GetShellFolder(&pSF, g_pidls[CSIDL_DRIVES])) {
-						pidl = teILCreateFromPath2(pSF, pszPath, SHGDN_FORPARSING | SHGDN_INFOLDER, NULL);
+					IShellFolder *pSF;
+					if (SHGetDesktopFolder(&pSF) == S_OK) {
+						pidl = teILCreateFromPath2(pSF, pszPath, SHGDN_FORPARSING | SHGDN_FORADDRESSBAR | SHGDN_INFOLDER, NULL);
 						pSF->Release();
+					}
+					if (pidl == NULL) {
+						if (GetShellFolder(&pSF, g_pidls[CSIDL_DRIVES])) {
+							pidl = teILCreateFromPath2(pSF, pszPath, SHGDN_FORPARSING | SHGDN_INFOLDER, NULL);
+							pSF->Release();
+						}
 					}
 				}
 			}
@@ -5158,8 +5176,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	IDLISTFormat.cfFormat = (CLIPFORMAT)RegisterClipboardFormat(CFSTR_SHELLIDLIST);
 	DROPEFFECTFormat.cfFormat = (CLIPFORMAT)RegisterClipboardFormat(CFSTR_PREFERREDDROPEFFECT);
 	// Hook
-	g_hHook = SetWindowsHookEx(WH_CALLWNDPROC, (HOOKPROC)HookProc, hInst, GetCurrentThreadId());
-	g_hMouseHook = SetWindowsHookEx(WH_MOUSE, (HOOKPROC)MouseProc, hInst, GetCurrentThreadId());
+	g_dwMainThreadId = GetCurrentThreadId();
+	g_hHook = SetWindowsHookEx(WH_CALLWNDPROC, (HOOKPROC)HookProc, hInst, g_dwMainThreadId);
+	g_hMouseHook = SetWindowsHookEx(WH_MOUSE, (HOOKPROC)MouseProc, hInst, g_dwMainThreadId);
 	// Create own class
 	CoCreateGuid(&g_ClsIdSB);
 	CoCreateGuid(&g_ClsIdTC);
@@ -5200,7 +5219,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	SysFreeString(bsIndex);
 
 	// Init ShellWindows
-	DWORD dwSWCookie;
+	DWORD dwSWCookie = 0;
 	long lSWCookie = 0;
 	IShellWindows *pSW = NULL;
 	if (SUCCEEDED(CoCreateInstance(CLSID_ShellWindows,
@@ -5908,18 +5927,7 @@ HRESULT CteShellBrowser::Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *
 VOID CteShellBrowser::CheckNavigate(LPITEMIDLIST *ppidl, CteShellBrowser *pHistSB, int nLogIndex)
 {
 	try {
-		IShellFolder *pSF;
-		if (GetShellFolder(&pSF, *ppidl)) {
-			IEnumIDList *pEI;
-			if SUCCEEDED(pSF->EnumObjects(NULL, SHCONTF_NONFOLDERS |SHCONTF_INCLUDEHIDDEN | SHCONTF_FOLDERS, &pEI)) {
-				pEI->Release();
-			}
-			else {
-				teILFreeClear(ppidl);
-			}
-			pSF->Release();
-		}
-		else {
+		if (!teILIsExists(*ppidl)) {
 			teILFreeClear(ppidl);
 		}
 
@@ -9802,7 +9810,8 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			case DISPID_AMBIENT_DLCONTROL:
 				if (pVarResult) {
 					pVarResult->vt = VT_I4;
-					pVarResult->lVal = DLCTL_DLIMAGES | DLCTL_VIDEOS | DLCTL_BGSOUNDS | DLCTL_FORCEOFFLINE | DLCTL_OFFLINE;
+					pVarResult->lVal = DLCTL_DLIMAGES | DLCTL_VIDEOS | DLCTL_BGSOUNDS | DLCTL_FORCEOFFLINE | DLCTL_OFFLINE |
+						DLCTL_NO_JAVA | DLCTL_NO_DLACTIVEXCTLS | DLCTL_NO_RUNACTIVEXCTLS;
 				}
 				return S_OK;
 			case DISPID_NEWWINDOW3:

@@ -309,13 +309,16 @@ Resize2 = function ()
 		i = o.clientHeight - o.style.height.replace(/\D/g, "");
 
 		var h2 = o.clientHeight - document.getElementById("LeftBar1").offsetHeight - document.getElementById("LeftBar3").offsetHeight;
-		o = document.getElementById("LeftBar2");
-		o.style.height = h2 - i + "px";
+		document.getElementById("LeftBar2").style.height = h2 - i + "px";
 	}
 	o = document.getElementById("rightbarT");
 	if (o) {
 		var i = h;
 		o.style.height = ((i >= 0) ? i : 0) + "px";
+		i = o.clientHeight - o.style.height.replace(/\D/g, "");
+
+		var h2 = o.clientHeight - document.getElementById("RightBar1").offsetHeight - document.getElementById("RightBar3").offsetHeight;
+		document.getElementById("RightBar2").style.height = h2 - i + "px";
 	}
 
 	var w2 = 0;

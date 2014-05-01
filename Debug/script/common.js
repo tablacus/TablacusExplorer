@@ -1725,7 +1725,7 @@ MakeMenus = function (hMenu, menus, arMenu, items)
 			if (api.strcmpi(strFlag, "Open") == 0) {
 				var mii = api.Memory("MENUITEMINFO");
 				mii.fMask = MIIM_STRING | MIIM_SUBMENU | MIIM_FTYPE;
-				mii.fType = uFlags;
+				mii.fType = 0;
 				mii.dwTypeData = ar.join("\t");
 				mii.hSubMenu = api.CreatePopupMenu();
 				MenusIcon(mii, item.getAttribute("Icon"));
