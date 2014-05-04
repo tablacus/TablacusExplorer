@@ -1151,11 +1151,10 @@ AddEnv("Installed", function(Ctrl)
 
 PathMatchEx = function (path, s)
 {
-	if (s.charAt(0) != '/') {
-		return api.PathMatchSpec(path, s);
+	if (/^\/(.*)\/(.*)/.test(s)) {
+		return new RegExp(RegExp.$1, RegExp.$2).test(path);
 	}
-	var i = s.lastIndexOf("/");
-	return (i > 1 && new RegExp(s.substr(1, i - 1), s.substr(i + 1)).test(path));
+	return api.PathMatchSpec(path, s);
 }
 
 IsFolderEx = function (Item)

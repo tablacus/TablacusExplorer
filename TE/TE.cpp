@@ -1724,9 +1724,9 @@ HRESULT GetDisplayNameFromPidl(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags)
 				BSTR bs;
 				if SUCCEEDED(GetDisplayNameFromPidl(&bs, pidl2, SHGDN_INFOLDER | SHGDN_FORPARSING)) {
 					if (*pbs) {
-						BSTR bs2 = ::SysAllocStringLen(bs, ::SysStringLen(bs) + ::SysStringLen(*pbs) + 2);
+						BSTR bs2;
+						tePathAppend(&bs2, bs, *pbs);
 						::SysFreeString(bs);
-						PathAppend(bs2, *pbs);
 						::SysFreeString(*pbs);
 						*pbs = bs2;
 					}
@@ -1993,14 +1993,10 @@ LPITEMIDLIST teILCreateFromPath2(IShellFolder *pSF, LPWSTR pszPath, SHGDNF uFlag
 				SHGDNF uFlag = uFlags & ashgdn[j];
 				if (uFlag && SUCCEEDED(pSF->GetDisplayNameOf(pidlPart, uFlag, &strret))) {
 					if SUCCEEDED(StrRetToBSTR(&strret, pidlPart, &bstr)) {
-						BSTR bsFull = NULL;
+						BSTR bsFull = bstr;
 						if (j && bsParent) {
-							bsFull = SysAllocStringLen(bsParent, lstrlen(bsParent) + SysStringLen(bstr) + 1);
-							PathAppend(bsFull, bstr);
+							tePathAppend(&bsFull, bsParent, bstr);
 							::SysFreeString(bstr);
-						}
-						else {
-							bsFull = bstr;
 						}
 						if (lstrcmpi(const_cast<LPCWSTR>(pszPath), (LPCWSTR)bsFull) == 0) {
 							::SysFreeString(bsFull);
@@ -9810,8 +9806,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			case DISPID_AMBIENT_DLCONTROL:
 				if (pVarResult) {
 					pVarResult->vt = VT_I4;
-					pVarResult->lVal = DLCTL_DLIMAGES | DLCTL_VIDEOS | DLCTL_BGSOUNDS | DLCTL_FORCEOFFLINE | DLCTL_OFFLINE |
-						DLCTL_NO_JAVA | DLCTL_NO_DLACTIVEXCTLS | DLCTL_NO_RUNACTIVEXCTLS;
+					pVarResult->lVal = DLCTL_DLIMAGES | DLCTL_VIDEOS | DLCTL_BGSOUNDS | DLCTL_FORCEOFFLINE | DLCTL_OFFLINE;
 				}
 				return S_OK;
 			case DISPID_NEWWINDOW3:
