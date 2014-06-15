@@ -263,6 +263,7 @@ SaveConfig = function ()
 	if (te.Data.bSaveAddons) {
 		te.Data.bSaveAddons = false;
 		SaveXmlEx("addons.xml", te.Data.Addons);
+		alert("save");
 	}
 	if (te.Data.bSaveConfig) {
 		te.Data.bChanged = false;
@@ -1565,6 +1566,8 @@ function ArrangeAddons()
 			if (arError.length) {
 				setTimeout(function () {
 					wsh.Popup(arError.join("\n\n"), 9, TITLE, MB_ICONSTOP);
+					te.Data.bErrorAddons = true;
+					ShowOptions("Tab=Add-ons");
 				}, 500);
 			}
 		}

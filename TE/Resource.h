@@ -9,5 +9,5 @@
 #define STRING(str) STRING2(str)
 #define STRING2(str) #str
 #define VER_Y		14
-#define VER_M		5
-#define VER_D		4
+#define VER_M		6
+#define VER_D		15

@@ -48,6 +48,11 @@ SetOptions = function ()
 	window.close();
 }
 
+AddEventEx(window, "beforeunload", function ()
+{
+	SaveAddons();
+});
+
 function ResetForm()
 {
 	var TV = te.Ctrl(CTRL_TV);
@@ -830,7 +835,8 @@ function SaveX(mode)
 
 function SaveAddons()
 {
-	if (g_Chg.Addons) {
+	if (g_Chg.Addons || te.Data.bErrorAddons) {
+		te.Data.bErrorAddons = false;
 		var xml = CreateXml();
 		var root = xml.createElement("TablacusExplorer");
 		var table = document.getElementById("Addons");
