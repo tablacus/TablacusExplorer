@@ -6003,7 +6003,9 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	m_pFolderItem1 && m_pFolderItem1->Release();
 	m_pFolderItem1 = NULL;
 
-	KillTimer(m_hwnd, (UINT_PTR)this);
+	if (m_hwnd) {
+		KillTimer(m_hwnd, (UINT_PTR)this);
+	}
 	SetRedraw(FALSE);
 	if (m_bInit) {
 		return E_FAIL;
@@ -6033,7 +6035,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		if (m_pFolderItem1) {
 			if SUCCEEDED(m_pFolderItem1->get_Path(&bs)) {
 				BSTR bs2;
-				if SUCCEEDED(GetDisplayNameFromPidl(&bs2, g_pidls[CSIDL_DESKTOP], SHGDN_FORPARSING)) {
+				if SUCCEEDED(GetDisplayNameFromPidl(&bs2, g_pidls[CSIDL_DESKTOP], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)) {
 					if (lstrcmpi(bs, bs2)) {
 						Error(&bs);
 						teILFreeClear(&pidl);
@@ -8096,7 +8098,7 @@ STDMETHODIMP CteShellBrowser::SelectItem(VARIANT *pvfi, int dwFlags)
 		LPITEMIDLIST pidl, ItemId;
 		GetPidlFromVariant(&pidl, pvfi);
 		ItemId = ILFindLastID(pidl);
-		if ((dwFlags & (SVSI_FOCUSED | SVSI_ENSUREVISIBLE)) == (SVSI_FOCUSED | SVSI_ENSUREVISIBLE)) {
+		if ((dwFlags & (SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE)) == (SVSI_FOCUSED | SVSI_ENSUREVISIBLE)) {
 			LPITEMIDLIST *ppidl;
 			if (teGetFocusedFromFolderItem(&ppidl, m_pFolderItem)) {
 				teILCloneReplace(ppidl, ItemId);

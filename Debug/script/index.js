@@ -1121,12 +1121,13 @@ te.OnDefaultCommand = function (Ctrl)
 	if (api.GetKeyState(VK_MENU) < 0) {
 		return S_FALSE;
 	}
-	var hr = RunEvent3("DefaultCommand", Ctrl);
+	var Selected = Ctrl.SelectedItems();
+	var hr = RunEvent3("DefaultCommand", Ctrl, Selected);
 	if (isFinite(hr)) {
 		return hr; 
 	}
 	if (ExecMenu(Ctrl, "Default", null, 2) != S_OK) {
-		InvokeCommand(Ctrl.SelectedItems(), 0, te.hwnd, null, null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
+		InvokeCommand(Selected, 0, te.hwnd, null, null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
 	}
 	return S_OK;
 }
