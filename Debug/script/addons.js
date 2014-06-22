@@ -217,17 +217,9 @@ function Install(o)
 		var temp = fso.BuildPath(wsh.ExpandEnvironmentStrings("%TEMP%"), "tablacus");
 		DeleteItem(temp);
 		CreateFolder(temp);
-		var xml = createHttpRequest();
-		xml.open("GET", urlAddons + Id + '/' + file, false);
-		xml.send(null);
 
 		var zipfile = fso.BuildPath(temp, file);
-		var ado = te.CreateObject("Adodb.Stream");
-		ado.Type = adTypeBinary;
-		ado.Open();
-		ado.Write(xml.responseBody);
-		ado.SaveToFile(zipfile, adSaveCreateOverWrite);
-
+		DownloadFile(urlAddons + Id + '/' + file, zipfile);
 		if (MainWindow.Extract(zipfile, temp) != S_OK) {
 			document.body.style.cursor = "auto";
 			return;

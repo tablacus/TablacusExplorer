@@ -1934,16 +1934,7 @@ function CheckUpdate()
 	DeleteItem(temp);
 	CreateFolder(temp);
 
-	xhr.open("GET", url + "dl/" + file, false);
-	xhr.send(null);
-
-	var ado = te.CreateObject("Adodb.Stream");
-	ado.Type = adTypeBinary;
-	ado.Open();
-	ado.Write(xhr.responseBody);
-	ado.SaveToFile(zipfile, adSaveCreateOverWrite);
-	ado.Close();
-
+	DownloadFile(url + "dl/" + file, zipfile);
 	if (Extract(zipfile, temp) != S_OK) {
 		return;
 	}
@@ -1964,8 +1955,8 @@ function CheckUpdate()
 		W.Popup('%s',9,T,%d);\
 		A.NameSpace(F).MoveHere(A.NameSpace('%s').Items(),%d);\
 		W.Popup('%s',0,T,%d);\
-		W.Run(Q+F+'\\\\%s'+Q);\
-		close()", EscapeUpdateFile(InstalledFolder), GetText("Please wait."), MB_ICONINFORMATION, EscapeUpdateFile(temp), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, GetText("Completed."), MB_ICONINFORMATION, 
+		W.%s(Q+F+'\\\\%s'+Q);\
+		close()", EscapeUpdateFile(InstalledFolder), GetText("Please wait."), MB_ICONINFORMATION, EscapeUpdateFile(temp), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, GetText("Completed."), MB_ICONINFORMATION, 'Run',
 EscapeUpdateFile(fso.GetFileName(api.GetModuleFileName(null)))).replace(/[\t\n]/g, "");
 
 	wsh.CurrentDirectory = temp;
@@ -2702,4 +2693,18 @@ FindChildByClass = function (hwnd, s)
 		}
 	}
 	return null;
+}
+
+DownloadFile = function (url, fn)
+{
+	var xhr = createHttpRequest();
+	xhr.open("GET", url, false);
+	xhr.send(null);
+
+	var ado = te.CreateObject("Adodb.Stream")
+	ado.Type = adTypeBinary;
+	ado.Open();
+	ado.Write(xhr["responseBody"]);
+	ado.SaveToFile(fn, adSaveCreateOverWrite);
+	ado.Close();
 }
