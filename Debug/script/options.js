@@ -31,8 +31,8 @@ SetOptions = function ()
 		return;
 	}
 	for (var i in document.F.elements) {
-		if (!i.match(/=|:/)) {
-			if (i.match(/^Tab_|^Tree_|^View_|^Conf_/)) {
+		if (!/=|:/.test(i)) {
+			if (/^Tab_|^Tree_|^View_|^Conf_/.test(i)) {
 				te.Data[i] = GetElementValue(document.F.elements[i]);
 			}
 		}
@@ -90,20 +90,20 @@ function ResetForm()
 	for(i = 0; i < document.F.length; i++) {
 		o = document.F.elements[i];
 		if (api.strcmpi(o.type, 'checkbox') == 0) {
-			if (!o.id.match(/^Conf_/)) {
+			if (!/^Conf_/.test(o.id)) {
 				o.checked = false;
 			}
 		}
 	}
 	for(i = 0; i < document.F.length; i++) {
 		o = document.F.elements[i];
-		if (o.id.match("=")) {
+		if (/=/.test(o.id)) {
 			var ar = o.id.split("=");
 			if (document.F.elements[ar[0]].value == eval(ar[1])) {
 				document.F.elements[i].checked = true;
 			}
 		}
-		if (o.id.match(":")) {
+		if (/:/.test(o.id)) {
 			var ar = o.id.split(":");
 			if (document.F.elements[ar[0]].value & eval(ar[1])) {
 				document.F.elements[i].checked = true;
@@ -155,7 +155,7 @@ function ClickTree(o, nMode, strChg)
 	}
 	nMode = api.LowPart(nMode);
 	var newTab = TabIndex != -1 ? TabIndex : 0;
-	if (o && o.id && o.id.match(/tab([^_]+)(_?)(.*)/)) {
+	if (o && o.id && /tab([^_]+)(_?)(.*)/.test(o.id)) {
 		newTab = RegExp.$1 + RegExp.$2 + RegExp.$3;
 		document.getElementById("MoveButton").style.display = RegExp.$1 == 1 || RegExp.$1 == 2 ? "inline-block" : "none";
 		if (nMode == 0) {
@@ -211,7 +211,7 @@ function ClickTree(o, nMode, strChg)
 		ovTab = document.getElementById('tab' + TabIndex);
 		if (ovTab) {
 			ovPanel = document.getElementById('panel' + TabIndex) || document.getElementById('panel' + TabIndex.replace(/_\d+/, ""));
-			if ((TabIndex + "").match(/2_(.+)/)) {
+			if (/2_(.+)/.test(TabIndex)) {
 				document.F.Menus.selectedIndex = RegExp.$1;
 				setTimeout("SwitchMenus(document.F.Menus);", 100);
 			}
@@ -1081,20 +1081,19 @@ function AddonEnable(Id, o)
 
 function OptionMove(dir)
 {
-	if (TabIndex.match(/^1/)) {
+	if (/^1/.test(TabIndex)) {
 		var r = document.F.AddonId;
 		for (i = 0; i < r.length; i++) {
 			if (r[i].checked) {
 				try {
-					var move = document.getElementById("Addons").rows(i).offsetHeight * dir;
 					AddonMoveEx(i, i + dir);
-					document.getElementById("panel1").scrollTop += move;
+					document.getElementById("panel1").scrollTop += document.getElementById("Addons").rows(i).offsetHeight * dir;
 				} catch (e) {}
 	 			break;
 			}
 		}
 	}
-	else if (TabIndex.match(/^2/)) {
+	else if (/^2/.test(TabIndex)) {
 		if (g_x.Menus.selectedIndex < 0 || g_x.Menus.selectedIndex + dir < 0 || g_x.Menus.selectedIndex + dir >= g_x.Menus.length) {
 			return;
 		}
@@ -1184,8 +1183,8 @@ InitOptions = function ()
 	var InstallPath = fso.GetParentFolderName(api.GetModuleFileName(null));
 	document.F.ButtonInitConfig.disabled = (InstallPath == te.Data.DataFolder) | !fso.FolderExists(fso.BuildPath(InstallPath, "layout"));
 	for (i in document.F.elements) {
-		if (!i.match(/=|:/)) {
-			if (i.match(/^Tab_|^Tree_|^View_|^Conf_/)) {
+		if (!/=|:/.test(i)) {
+			if (/^Tab_|^Tree_|^View_|^Conf_/.test(i)) {
 				if (te.Data[i] !== undefined) {
 					SetElementValue(document.F.elements[i], te.Data[i]);
 				}
@@ -1424,7 +1423,7 @@ InitLocation = function ()
 	oa[oa.length - 1].text = GetText("Select");
 	for (j in g_arMenuTypes) {
 		var s = g_arMenuTypes[j];
-		if (!s.match(/Default|Alias/)) {
+		if (!/Default|Alias/.test(s)) {
 			oa[++oa.length - 1].value = s;
 			oa[oa.length - 1].text = GetText(s);
 		}
@@ -1447,7 +1446,7 @@ InitLocation = function ()
 			var n = ele[i].id || ele[i].name;
 			if (n) {
 				s = item.getAttribute(n);
-				if (n.match(/Name$/)) {
+				if (/Name$/.test(n)) {
 					s = GetText(s);
 				}
 				if (n == "Key") {
@@ -1463,7 +1462,7 @@ InitLocation = function ()
 		dialogArguments.Data.show = "6";
 		dialogArguments.Data.index = 6;
 	}
-	if (dialogArguments.Data.show.match(/[8]/)) {
+	if (/[8]/.test(dialogArguments.Data.show)) {
 		MakeKeySelect();
 		SetKeyShift();
 	}
@@ -1543,10 +1542,10 @@ function GetElementValue(o)
 		if (api.strcmpi(o.type, 'checkbox') == 0) {
 			return o.checked ? 1 : 0;
 		}
-		if (o.type.match(/hidden|text/i)) {
+		if (/hidden|text/i.test(o.type)) {
 			return o.value;
 		}
-		if (o.type.match(/select/i)) {
+		if (/select/i.test(o.type)) {
 			return o[o.selectedIndex].value;
 		}
 	}
@@ -1559,11 +1558,11 @@ function SetElementValue(o, s)
 			o.checked = api.LowPart(s);
 			return;
 		}
-		if (o.type.match(/text/i)) {
+		if (/text/i.test(o.type)) {
 			o.value = s;
 			return;
 		}
-		if (o.type.match(/select/i)) {
+		if (/select/i.test(o.type)) {
 			var i = o.length;
 			while (--i >= 0) {
 				if (o(i).value == s) {
@@ -1603,7 +1602,7 @@ function GetAttribEx(item, f, n)
 function RefX(Id, bMultiLine, oButton)
 {
 	setTimeout(function () {
-		if (Id.match(/Path/)) {
+		if (/Path/.test(Id)) {
 			var s = Id.replace("Path", "Type");
 			var o = GetElement(s);
 			if (o) {
@@ -1666,7 +1665,7 @@ function AddPath(Id, strValue)
 {
 	var o = GetElement(Id);
 	var s = o.value;
-	if (s.match(/\n$/) || s == "") {
+	if (/\n$/.test(s) || s == "") {
 		s += strValue;
 	}
 	else {
@@ -1765,21 +1764,6 @@ function MouseOver(o)
 		}
 		objHover = o;
 		o.className = 'hover' + o.className;
-	}
-}
-
-function MouseOut(s)
-{
-	if (objHover) {
-		if (!s || objHover.id.match(s)) {
-			if (objHover.className == 'hoverbutton') {
-				objHover.className = 'button';
-			}
-			else if (objHover.className == 'hovermenu') {
-				objHover.className = 'menu';
-			}
-			objHover = null;
-		}
 	}
 }
 

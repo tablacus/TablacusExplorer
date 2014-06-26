@@ -431,7 +431,7 @@ CreateNewFolder = function (Ctrl, pt)
 {
 	var path = InputDialog(GetText("New Folder"), "");
 	if (path) {
-		if (!path.match(/^[A-Z]:\\|^\\/i)) {
+		if (!/^[A-Z]:\\|^\\/i.test(path)) {
 			var FV = GetFolderView(Ctrl, pt);
 			path = fso.BuildPath(FV.FolderItem.Path, path.replace(/^\s+/, ""));
 		}
@@ -591,11 +591,11 @@ DisableImage = function (img, bDisable)
 		else {
 			var s = img.src;
 			if (bDisable) {
-				if (s.match(/^data:image\/png/i)) {
+				if (/^data:image\/png/i.test(s)) {
 					img.src = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ' + img.offsetWidth + ' ' + img.offsetHeight + '"><filter id="G"><feColorMatrix type="saturate" values="0.1" /></filter><image width="' + img.width + '" height="' + img.height + '" xlink:href="' + img.src + '" filter="url(#G)" opacity=".48"></image></svg>');
 				}
 			}
-			else if (s.match(/^data:image\/svg/i) && decodeURIComponent(s).match(/href="([^"]*)/i)) {
+			else if (/^data:image\/svg/i.test(s) && /href="([^"]*)/i.test(decodeURIComponent(s))) {
 				img.src = RegExp.$1
 			}
 		}
@@ -617,12 +617,6 @@ te.OnCreate = function (Ctrl)
 
 te.OnClose = function (Ctrl)
 {
-	if (Ctrl.Type == CTRL_TC) {
-		var o = document.getElementById("Panel_" + Ctrl.Id);
-		if (o) {
-			o.style.display = "none";
-		}
-	}
 	return RunEvent2("Close", Ctrl);
 }
 
@@ -643,8 +637,17 @@ AddEvent("Close", function (Ctrl)
 			if (Ctrl.Data.Lock) {
 				return S_FALSE;
 			}
-			return CloseView(Ctrl);
+			var hr = CloseView(Ctrl);
+			if (hr == S_OK && Ctrl.Parent.Count <= 1) {
+				Ctrl.Navigate(HOME_PATH, SBSP_SAMEBROWSER);
+				hr = S_FALSE;
+			}
+			return hr;
 		case CTRL_TC:
+			var o = document.getElementById("Panel_" + Ctrl.Id);
+			if (o) {
+				o.style.display = "none";
+			}
 			break;
 	}
 });
@@ -1929,7 +1932,7 @@ g_basic =
 			{
 				var lines = s.split(/\r?\n/);
 				var last = lines.length ? lines[lines.length - 1] : "";
-				if (last.match(/^([^,]+),$/)) {
+				if (/^([^,]+),$/.test(last)) {
 					var Id = GetSourceText(RegExp.$1);
 					var r = OptionRef(Id, "", pt);
 					if (typeof r == "string") {
@@ -1941,7 +1944,7 @@ g_basic =
 					var arFunc = [];
 					RunEvent1("AddType", arFunc);
 					var r = g_basic.Popup(arFunc, s, pt);
-					return r == 1 ? 1 : s + (s.length && !s.match(/\n$/) ? "\n" : "") + r + ",";
+					return r == 1 ? 1 : s + (s.length && !/\n$/.test(s) ? "\n" : "") + r + ",";
 				}
 			}
 		},
@@ -1999,7 +2002,7 @@ g_basic =
 					pdwEffect = api.Memory("DWORD");
 				}
 				var re = /%Selected%/i;
-				if (s.match(re)) {
+				if (re.test(s)) {
 					pdwEffect[0] = DROPEFFECT_LINK;
 					if (bDrop) {
 						var ar = [];
@@ -2129,10 +2132,10 @@ g_basic =
 				var FV = GetFolderView(Ctrl, pt, true);
 				if (FV) {
 					var TC = FV.Parent;
-					if (s.match(/^\d/)) {
+					if (/^\d/.test(s)) {
 						TC.SelectedIndex = api.QuadPart(s);
 					}
-					else if (s.match(/^\-/)) {
+					else if (/^\-/.test(s)) {
 						TC.SelectedIndex = TC.Count + api.QuadPart(s);
 					}
 				}
@@ -2512,7 +2515,7 @@ g_basic =
 		}
 		if (!Verb) {
 			Verb = window.g_menu_string;
-			if ((Verb + "").match(/\t(.*)$/)) {
+			if (/\t(.*)$/.test(Verb)) {
 				Verb = RegExp.$1;
 			}
 		}
@@ -2578,7 +2581,7 @@ AddEvent("OptionEncode", function (Id, p)
 	if (Id === "") {
 		var lines = p.s.split(/\r?\n/);
 		for (var i in lines) {
-			if (lines[i].match(/^([^,]+),(.*)$/)) {
+			if (/^([^,]+),(.*)$/.test(lines[i])) {
 				var p2 = { s: RegExp.$2 };
 				Id = GetSourceText(RegExp.$1);
 				OptionEncode(Id, p2);
@@ -2601,7 +2604,7 @@ AddEvent("OptionDecode", function (Id, p)
 	if (Id === "") {
 		var lines = p.s.split(/\r?\n/);
 		for (var i in lines) {
-			if (lines[i].match(/^([^,]+),(.*)$/)) {
+			if (/^([^,]+),(.*)$/.test(lines[i])) {
 				var p2 = { s: RegExp.$2 };
 				Id = RegExp.$1;
 				OptionDecode(Id, p2);

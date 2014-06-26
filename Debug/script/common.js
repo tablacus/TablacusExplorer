@@ -2493,7 +2493,6 @@ function MouseOut(s)
 	}
 }
 
-
 InsertTab = function(e)
 {
 	var ot = (e || event).srcElement;
