@@ -2365,7 +2365,42 @@ void CheckChangeTabTC(HWND hwnd, BOOL bFocusSB)
 		}
 	}
 }
-
+/*
+BOOL AdjustIDList(LPITEMIDLIST *ppidllist, int nCount)
+{
+	if (ppidllist == NULL || nCount <= 0) {
+		return false;
+	}
+	if (ppidllist[0]) {
+		if (osInfo.dwMajorVersion >= 6 || !ILIsEqual(ppidllist[0], g_pidlResultsFolder)) {
+			return false;
+		}
+		for (int i = nCount; i > 1; i--) {
+			LPITEMIDLIST pidl = ppidllist[i];
+			ppidllist[i] = ILCombine(ppidllist[i], pidl);
+			teCoTaskMemFree(pidl);
+		}
+		teILFreeClear(&ppidllist[0]);
+	}
+	ppidllist[0] = ::ILClone(ppidllist[1]);
+	ILRemoveLastID(ppidllist[0]);
+	BOOL bParent = TRUE;
+	for (int i = nCount; i > 1 && bParent; i--) {
+		LPITEMIDLIST pidl = ::ILClone(ppidllist[i]);
+		ILRemoveLastID(pidl);
+		bParent = ILIsEqual(ppidllist[0], pidl);
+		teCoTaskMemFree(pidl);
+	}
+	if (bParent) {
+		for (int i = nCount; i > 0; i--) {
+			teILCloneReplace(&ppidllist[i], ILFindLastID(ppidllist[i]));
+		}
+		return TRUE;
+	}
+	teILCloneReplace(&ppidllist[0], g_pidls[CSIDL_DESKTOP]);
+	return TRUE;
+}
+*/
 BOOL AdjustIDList(LPITEMIDLIST *ppidllist, int nCount)
 {
 	if (ppidllist == NULL || nCount <= 0) {
@@ -5463,6 +5498,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case WM_SYSCOMMAND:
 		case WM_THEMECHANGED:
 		case WM_USERCHANGED:
+		case WM_QUERYENDSESSION:
 			if (g_pOnFunc[TE_OnSystemMessage]) {
 				msg1.hwnd = hWnd;
 				msg1.message = message;

@@ -2707,3 +2707,8 @@ DownloadFile = function (url, fn)
 	ado.SaveToFile(fn, adSaveCreateOverWrite);
 	ado.Close();
 }
+
+AddEvent("ConfigChanged", function (s)
+{
+	te.Data["bSave" + s] = true;
+});

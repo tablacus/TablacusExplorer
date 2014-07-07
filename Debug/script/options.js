@@ -801,7 +801,7 @@ function SaveMenus()
 		}
 		xml.appendChild(root);
 		te.Data.xmlMenus = xml;
-		te.Data.bSaveMenus = true;
+		MainWindow.RunEvent1("ConfigChanged", "Menus");
 	}
 }
 
@@ -871,7 +871,7 @@ function SaveAddons()
 		}
 		xml.appendChild(root);
 		te.Data.Addons = xml;
-		te.Data.bSaveAddons = true;
+		MainWindow.RunEvent1("ConfigChanged", "Addons");
 	}
 }
 
@@ -1490,8 +1490,8 @@ SetLocation = function()
 		for (var i = document.L.elements.length; i--;) {
 			if (document.L.elements[i].checked) {
 				item.setAttribute("Location", document.L.elements[i].value);
-				te.Data.bSaveAddons = true;
 				te.Data.bReload = true;
+				MainWindow.RunEvent1("ConfigChanged", "Addons");
 				break;
 			}
 		}
@@ -1517,8 +1517,8 @@ SetLocation = function()
 					}
 				}
 				if (SetAttribEx(item, document.F, n)) {
-					te.Data.bSaveAddons = true;
 					te.Data.bReload = true;
+					MainWindow.RunEvent1("ConfigChanged", "Addons");
 				}
 			}
 		}

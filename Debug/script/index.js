@@ -98,11 +98,11 @@ PanelCreated = function (Ctrl)
 
 ChangeView = function (Ctrl)
 {
-	te.Data.bSaveConfig = true;
 	if (Ctrl) {
 		ChangeTabName(Ctrl);
 		RunEvent1("ChangeView", Ctrl);
 	}
+	RunEvent1("ConfigChanged", "Config");
 }
 
 SetAddress = function (s)
@@ -263,10 +263,9 @@ SaveConfig = function ()
 	if (te.Data.bSaveAddons) {
 		te.Data.bSaveAddons = false;
 		SaveXmlEx("addons.xml", te.Data.Addons);
-		alert("save");
 	}
 	if (te.Data.bSaveConfig) {
-		te.Data.bChanged = false;
+		te.Data.bSaveConfig = false;
 		SaveXml(fso.BuildPath(te.Data.DataFolder, "config\\window.xml"), true);
 	}
 }
@@ -906,15 +905,15 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 
 te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam)
 {
-	te.Data.bSaveConfig = true;
 	var hr = RunEvent3("Command", Ctrl, hwnd, msg, wParam, lParam);
+	RunEvent1("ConfigChanged", "Config");
 	return isFinite(hr) ? hr : S_FALSE; 
 }
 
 te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon)
 {
-	te.Data.bSaveConfig = true;
 	var hr = RunEvent3("InvokeCommand", ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon);
+	RunEvent1("ConfigChanged", "Config");
 	if (isFinite(hr)) {
 		return hr; 
 	}
@@ -1189,6 +1188,9 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 						te.Reload();
 					}
 					break;
+				case WM_QUERYENDSESSION:
+					SaveConfig();
+					return true;
 				case WM_SYSCOMMAND:
 					if (wParam < 0xf000) {
 						var menus = te.Data.xmlMenus.getElementsByTagName("System");
