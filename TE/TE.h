@@ -75,6 +75,8 @@ typedef HRESULT (STDAPICALLTYPE * LPFNDllCanUnloadNow)(void);
 //Tablacus DLL Add-ons
 typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
 
+#define DISPID_AMBIENT_OFFLINEIFNOTCONNECTED -5501
+#define E_CANCELLED_BY_USER	0x800704c7
 
 #define WINDOW_CLASS			L"TablacusExplorer"
 #define MAX_LOADSTRING			100
@@ -154,8 +156,6 @@ typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
 #define DISPID_TE_INDEX 0x3ffffffd
 #define DISPID_TE_MAX TE_VI
 
-#define DISPID_AMBIENT_OFFLINEIFNOTCONNECTED -5501
-
 #define TE_Type		0
 #define TE_Left		1
 #define TE_Top		2
@@ -227,7 +227,7 @@ typedef struct tagTEInvoke
 } TEInvoke, *lpTEInvoke;
 
 const CLSID CLSID_ShellShellNameSpace = {0x2F2F1F96, 0x2BC1, 0x4b1c, { 0xBE, 0x28, 0xEA, 0x37, 0x74, 0xF4, 0x67, 0x6A}};
-const CLSID CLSID_JScriptChakra       = {0x16d51579, 0xa30b, 0x4c8b, { 0xa2, 0x76, 0x0f, 0xf4, 0xdc, 0x41, 0xe7, 0x55}}; 
+const CLSID CLSID_JScriptChakra       = {0x16d51579, 0xa30b, 0x4c8b, { 0xa2, 0x76, 0x0f, 0xf4, 0xdc, 0x41, 0xe7, 0x55}};
 
 class CteShellBrowser;
 class CteTreeView;
@@ -264,7 +264,7 @@ public:
 	STDMETHODIMP GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId);
 	STDMETHODIMP Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr);
 	//FolderItem
-    STDMETHODIMP get_Application(IDispatch **ppid);  
+    STDMETHODIMP get_Application(IDispatch **ppid);
     STDMETHODIMP get_Parent(IDispatch **ppid);
     STDMETHODIMP get_Name(BSTR *pbs);
     STDMETHODIMP put_Name(BSTR bs);
@@ -321,8 +321,8 @@ public:
 	STDMETHODIMP GetNameSpaceParent(IUnknown **ppunk);
 	//FolderItems
 	STDMETHODIMP get_Count(long *plCount);
-    STDMETHODIMP get_Application(IDispatch **ppid);    
-    STDMETHODIMP get_Parent(IDispatch **ppid);    
+    STDMETHODIMP get_Application(IDispatch **ppid);
+    STDMETHODIMP get_Parent(IDispatch **ppid);
     STDMETHODIMP Item(VARIANT index, FolderItem **ppid);
     STDMETHODIMP _NewEnum(IUnknown **ppunk);
 	//IDataObject
@@ -558,7 +558,7 @@ public:
 	LONG	m_cRef;
 };
 
-class CteShellBrowser : public IShellBrowser, public ICommDlgBrowser2, 
+class CteShellBrowser : public IShellBrowser, public ICommDlgBrowser2,
 	public IShellFolderViewDual,
 //	public IFolderFilter,
 #ifdef _VISTA7
@@ -942,8 +942,8 @@ public:
 	IDropTarget *m_pDropTarget;
 #ifdef _2000XP
 	IShellNameSpace *m_pShellNameSpace;
-	WNDPROC		m_DefProc;
 #endif
+	WNDPROC		m_DefProc;
 	WNDPROC		m_DefProc2;
 	BOOL		m_bMain;
 	BOOL		m_bSetRoot;

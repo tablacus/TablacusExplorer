@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <resources>
+	<Creator>Gaku</Creator>
 	<text s="&amp;File">ファイル(&amp;F)</text>
 	<text s="&amp;Edit">編集(&amp;E)</text>
 	<text s="&amp;View">表示(&amp;V)</text>
