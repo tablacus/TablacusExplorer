@@ -353,9 +353,10 @@ private:
 	IDataObject		*m_pDataObj;
 	FolderItems		*m_pFolderItems;
 	IDispatch		*m_oFolderItems;
+	BSTR			m_bsText;
+
 	LONG			m_cRef;
 	LONG			m_nCount;
-	DWORD			m_dwTick;
 	BOOL			m_bUseILF;
 };
 
@@ -463,10 +464,13 @@ public:
 	BOOL	m_bRedraw;
 private:
 	VARIANT m_Data;
-	CteFolderItems *m_pDragItems;
 	LONG	m_cRef;
 	DWORD	m_dwCookie;
+	CteFolderItems *m_pDragItems;
+	IDropTarget *m_pDropTarget;
 	DWORD	m_grfKeyState;
+	DWORD	m_dwEffect;
+	DWORD	m_dwEffectTE;
 };
 
 class CteTabs : public IDispatchEx, public IDropTarget
