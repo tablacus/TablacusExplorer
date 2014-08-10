@@ -26,6 +26,7 @@ function AddonsSearch()
 	if (AddonsSub(q)) {
 		document.F.b.disabled = true;
 		document.body.style.cursor = "wait";
+		document.getElementById('c').style.display = "inline";
 		AddonsAppend(q)
 	}
 	return true;
@@ -40,12 +41,10 @@ function AddonsSub(q)
 				table.deleteRow(0);
 			}
 			for (var i = 0; i < xmlAddons.length; i++) {
-				var Id = xmlAddons[i].getAttribute("Id");
 				var tr = table.insertRow(i);
 				q.td[i] = tr.insertCell(0);
 			}
 			q.ts = new Array(xmlAddons.length);
-			nCount = 0;
 			return true;
 		}
 	}
@@ -67,6 +66,7 @@ function AddonsList()
 	if (AddonsSub(q)) {
 		document.F.b.disabled = true;
 		document.body.style.cursor = "wait";
+		document.getElementById('c').style.display = "inline";
 		AddonsAppend(q)
 	}
 }
@@ -74,8 +74,9 @@ function AddonsList()
 function AddonsAppend(q)
 {
 	if (xmlAddons[q.i]) {
-		ArrangeAddon(xmlAddons[q.i], xmlAddons[q.i].getAttribute("Id"), q.td, q.ts);
-		q.i++
+		ArrangeAddon(xmlAddons[q.i++], q.td, q.ts);
+		document.getElementById('c').innerText = Math.floor(100 * q.i / q.ts.length) + " %";
+
 		g_tid = setTimeout(function () {
 			AddonsAppend(q);
 		}, 1);
@@ -83,11 +84,13 @@ function AddonsAppend(q)
 	else {
 		document.F.b.disabled = false;
 		document.body.style.cursor = "auto";
+		document.getElementById('c').style.display = "none";
 	}
 }
 
-function ArrangeAddon(xml, Id, td, ts)
+function ArrangeAddon(xml, td, ts)
 {
+	var Id = xml.getAttribute("Id");
 	var s = [];
 	if (Search(xml)) {
 		var info = [];
@@ -100,9 +103,9 @@ function ArrangeAddon(xml, Id, td, ts)
 		if (info.pubDate) {
 			pubDate = dt.toLocaleString() + " ";
 		}
-		s.push('<b>' + info.Name + "</b>&nbsp;" + info.Version + "&nbsp;" + info.Creator + "<br>" + info.Description + "<br>");
+		s.push('<b>', info.Name, "</b>&nbsp;", info.Version, "&nbsp;", info.Creator, "<br>", info.Description, "<br>");
 
-		s.push('<table width="100%"><tr><td>' + pubDate + '</td><td align="right">');
+		s.push('<table width="100%"><tr><td>', pubDate, '</td><td align="right">');
 		var filename = info.filename;
 		if (!filename) {
 			filename = Id + '_' + info.Version.replace(/\D/, '') + '.zip';
@@ -117,7 +120,7 @@ function ArrangeAddon(xml, Id, td, ts)
 					bInstall = false;
 				}
 				else {
-					s.push('<b id="_' + Id +'" style="color: red">' + GetText('Update available') + "</b>");
+					s.push('<b id="_', Id,'" style="color: red">', GetText('Update available'), "</b>");
 					dt2 += MAXINT * 2;
 				}
 			}
@@ -126,15 +129,15 @@ function ArrangeAddon(xml, Id, td, ts)
 			}
 			if (bInstall) {
 				if (info.MinVersion && te.Version >= CalcVersion(info.MinVersion)) {
-					s.push('<input type="button" onclick="Install(this)" title="' + Id + '_' + info.Version + '" value="' + GetText("Install") + '">');
+					s.push('<input type="button" onclick="Install(this)" title="', Id, '_', info.Version, '" value="', GetText("Install"), '">');
 				}
 				else {
-					s.push('<input type="button" style="color: red" onclick="CheckUpdate()" value="' + info.MinVersion.replace(/^20/, "Version ").replace(/\.0/g, '.') + ' ' + GetText("is required.") + '">');
+					s.push('<input type="button" style="color: red" onclick="CheckUpdate()" value="', info.MinVersion.replace(/^20/, "Version ").replace(/\.0/g, '.'), ' ', GetText("is required."), '">');
 				}
 			}
 		}
 		else {
-			s.push('<a href="' + Id + '/' + filename + '">' + 'Download' + '</a>');
+			s.push('<a href="', Id, '/', filename, '">', 'Download', '</a>');
 		}
 		s.push('</td></tr></table>');
 		var nInsert = 0;
@@ -179,7 +182,7 @@ function Search(xml)
 	if (q == "") {
 		return true;
 	}
-	var Tags = ["General", "en", "ja"];
+	var Tags = ["General", "en", "es", "ja", "zh"];
 
 	for (var k = 0; k < Tags.length; k++) {
 		var items = xml.getElementsByTagName(Tags[k]);

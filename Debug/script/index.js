@@ -199,7 +199,7 @@ IsSavePath = function (path)
 			ShowError(e, en, i);
 		}
 	}
-	return !IsSearchPath(path);
+	return true;
 }
 
 Lock = function (Ctrl, nIndex, turn)
@@ -795,7 +795,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 					bButton = api.strcmpi(g_mouse.str, "2") == 0;
 				}
 				else if (Ctrl.Type == CTRL_SB || Ctrl.Type == CTRL_EB) {
-					var iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
+					var iItem = Ctrl.HitTest(pt);
 					if (iItem < 0 && !IsDrag(pt, te.Data.pt)) {
 						Ctrl.SelectItem(null, SVSI_DESELECTOTHERS);
 					}
@@ -831,7 +831,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 			if (te.Data.Conf_Gestures >= 2) {
 				var iItem = -1;
 				if (Ctrl.Type == CTRL_SB || Ctrl.Type == CTRL_EB) {
-					iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
+					iItem = Ctrl.HitTest(pt);
 					if (iItem < 0) {
 						return S_OK;
 					}
@@ -2639,7 +2639,7 @@ if (!te.Data) {
 
 	te.Data.View_Type = CTRL_SB;
 	te.Data.View_ViewMode = FVM_DETAILS;
-	te.Data.View_fFlags = FWF_SHOWSELALWAYS | FWF_NOWEBVIEW | FWF_AUTOARRANGE;
+	te.Data.View_fFlags = FWF_SHOWSELALWAYS | FWF_NOWEBVIEW | FWF_AUTOARRANGE | FWF_USESEARCHFOLDER;
 	te.Data.View_Options = EBO_SHOWFRAMES | EBO_ALWAYSNAVIGATE;
 	te.Data.View_ViewFlags = CDB2GVF_SHOWALLFILES;
 	te.Data.View_IconSize = 0;

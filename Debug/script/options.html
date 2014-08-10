@@ -65,7 +65,8 @@
             <!--panel_start-->
             <div class="panel" id="panel0">
               <label>Language</label><br />
-              <input type="text" name="Conf_Lang" size="3" /><select id="SelLangID" onchange="SetValue(Conf_Lang, this)"></select><br />
+              <input type="text" name="Conf_Lang" size="3" />
+              <input type="button" value="Reference..." onclick="SelectLangID(this)" /><br />
               <label>Default LanguageID</label>:
               <span id="DefaultLangID"></span>&nbsp;<input type="button" value="Set Default" onclick="SetDefaultLangID()" /><br />
               <br />
@@ -569,9 +570,6 @@
                 <br />
                 <input type="checkbox" id="View_fFlags:0x20000000" onclick="SetCheckbox(this)" />
                 <label for="View_fFlags:0x20000000">SUBSETGROUPS</label>(*)
-                <input type="checkbox" id="View_fFlags:0x40000000" onclick="SetCheckbox(this)" />
-                <label for="View_fFlags:0x40000000">USESEARCHFOLDER</label>(*)
-                <br />
                 <input type="checkbox" id="View_fFlags:0x80000000" onclick="SetCheckbox(this)" />
                 <label for="View_fFlags:0x80000000">ALLOWRTLREADING</label>(*)
               </div>

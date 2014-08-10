@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <resources>
-	<Creator>Patricio M. Ros</Creator>
+	<lang author="Patricio M. Ros" en="Spanish">Español</lang>
 	<text s="&amp;File">&amp;Archivo</text>
 	<text s="&amp;Edit">&amp;Editar</text>
 	<text s="&amp;View">&amp;Ver</text>

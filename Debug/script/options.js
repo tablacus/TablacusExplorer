@@ -16,7 +16,6 @@ var g_tid = null;
 function SetDefaultLangID()
 {
 	document.F.Conf_Lang.value = navigator.userLanguage.replace(/\-.*/,"");
-	document.F.SelLangID.selectedIndex = 0;
 }
 
 function OpenGroup(id)
@@ -178,27 +177,6 @@ function ClickTree(o, nMode, strChg)
 			var o = document.getElementById("DefaultLangID");
 			if (o && o.innerHTML == "") {
 				o.innerHTML = navigator.userLanguage.replace(/\-.*/,"");
-				o = document.F.SelLangID;
-				o.length = 1;
-				o.options[o.length - 1].text = GetText("Select");
-				o.options[o.length - 1].value = "!";
-
-				var Langs = new Array();
-				var FindData = api.Memory("WIN32_FIND_DATA");
-				var hFind = api.FindFirstFile(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "lang\\*.xml"), FindData);
-				var bFind = hFind != INVALID_HANDLE_VALUE;
-				while (bFind) {
-					Langs.push(FindData.cFileName.replace(/\..*$/, ""));
-					bFind = api.FindNextFile(hFind, FindData);
-				}
-				api.FindClose(hFind);
-
-				Langs.sort();
-				o.length = Langs.length + 1;
-				for (i = 0; i < Langs.length; i++) {
-					o.options[i + 1].text = Langs[i];
-					o.options[i + 1].value = Langs[i];
-				}
 			}
 		}
 		var ovTab = document.getElementById('tab' + TabIndex);
@@ -1806,3 +1784,44 @@ ShowIcon = function ()
 	}
 }
 
+function SelectLangID(o)
+{
+	var i = 0;
+	var Langs = [];
+	var FindData = api.Memory("WIN32_FIND_DATA");
+	var hFind = api.FindFirstFile(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "lang\\*.xml"), FindData);
+	var bFind = hFind != INVALID_HANDLE_VALUE;
+	while (bFind) {
+		Langs.push(FindData.cFileName.replace(/\..*$/, ""));
+		bFind = api.FindNextFile(hFind, FindData);
+	}
+	api.FindClose(hFind);
+	Langs.sort();
+	var path = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "lang\\");
+	var hMenu = api.CreatePopupMenu();
+	for (i in Langs) {
+		var xml = te.CreateObject("Msxml2.DOMDocument");
+		xml.async = false;
+		var title = Langs[i];
+		xml.load(path + title + '.xml');
+		var items = xml.getElementsByTagName('lang');
+		if (items && items.length) {
+			var item = items[0];
+			var en = item.getAttribute("en");
+			if (en && api.strcmpi(item.text, en)) {
+				en = ' / ' + en;
+			}
+			else {
+				en = '';
+			}
+			title = item.text + en + " (" + title + ")\t" + item.getAttribute("author");
+		}
+		api.InsertMenu(hMenu, i, MF_BYPOSITION | MF_STRING, api.QuadPart(i) + 1, title);
+	}
+	var pt = GetPos(o, true);
+	var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y + o.offsetHeight, te.hwnd, null, null);
+	if (nVerb) {
+		document.F.Conf_Lang.value = Langs[nVerb - 1];
+	}
+	api.DestroyMenu(hMenu);
+}

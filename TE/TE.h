@@ -21,6 +21,8 @@
 #include <ActivScp.h>
 #include <windowsx.h>
 #include <CommonControls.h>
+#include <UIAutomationClient.h>
+#include <UIAutomationCore.h>
 
 using namespace Gdiplus;
 
@@ -97,7 +99,8 @@ typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
 #define TET_Show				6
 #define TET_Unload				7
 #define TET_Status				8
-
+#define TET_Refresh				9
+#define TET_KillFocus			10
 #define SHGDN_FORPARSINGEX	0x80000000
 #define START_OnFunc			5000
 #define TE_OnKeyMessage			0

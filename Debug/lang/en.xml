@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <resources>
-	<Creator>Gaku</Creator>
+	<lang author="Gaku" en="English">English</lang>
 	<text s="&amp;File">&amp;File</text>
 	<text s="&amp;Edit">&amp;Edit</text>
 	<text s="&amp;View">&amp;View</text>

@@ -594,6 +594,9 @@ SaveXml = function (filename, all)
 		for (var i2 in Ctrl) {
 			var FV = Ctrl[i2];
 			var path = api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
+			if (/search\-ms:.*?&crumb=location:([^&]*)/.test(path)) {
+				path = api.PathCreateFromUrl("file:" + RegExp.$1);
+			}
 			var bSave = !all || IsSavePath(path);
 			if (bSave || (bEmpty && i2 == nCount2 - 1)) {
 				if (!bSave) {
@@ -624,6 +627,9 @@ SaveXml = function (filename, all)
 						var nLogIndex = TL.Index;
 						for (var i3 in TL) {
 							path = api.GetDisplayNameOf(TL[i3], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
+							if (/search\-ms:.*?&crumb=location:([^&]*)/.test(path)) {
+								path = api.PathCreateFromUrl("file:" + RegExp.$1);
+							}
 							if (IsSavePath(path)) {
 								var item3 = xml.createElement("Log");
 								item3.setAttribute("Path", path);
@@ -1290,7 +1296,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 			FV = Ctrl;
 			break;
 		case CTRL_TC:
-			FV = Ctrl.Item(Ctrl.HitTest(pt, TCHT_ONITEM));
+			FV = Ctrl.Item(Ctrl.HitTest(pt));
 			bSel = false;
 			break;
 		case CTRL_TV:
@@ -1962,7 +1968,7 @@ EscapeUpdateFile(fso.GetFileName(api.GetModuleFileName(null)))).replace(/[\t\n]/
 	wsh.CurrentDirectory = temp;
 	var exe = "mshta.exe";
 	var s1 = ' "javascript:';
-	if (update.length >= 500) {
+	if (update.length >= 500 || !fso.FileExists(fso.BuildPath(system32, exe))) {
 		exe = "wscript.exe";
 		s1 = fso.GetParentFolderName(temp) + "\\update.js";
 		DeleteItem(s1);
@@ -2316,7 +2322,7 @@ GetFolderView = function (Ctrl, pt, bStrict)
 		return te.Ctrl(CTRL_FV);
 	}
 	if (pt) {
-		var i = Ctrl.HitTest(pt, TCHT_ONITEM);
+		var i = Ctrl.HitTest(pt);
 		if (i >= 0) {
 			return Ctrl.Item(i);
 		}
@@ -2338,7 +2344,7 @@ GetSelectedArray = function (Ctrl, pt, bPlus)
 			FV = Ctrl;
 			break;
 		case CTRL_TC:
-			FV = Ctrl.Item(Ctrl.HitTest(pt, TCHT_ONITEM));
+			FV = Ctrl.Item(Ctrl.HitTest(pt));
 			bSel = false;
 			break;
 		case CTRL_TV:
