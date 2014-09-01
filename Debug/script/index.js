@@ -426,6 +426,12 @@ AddFavorite = function (FolderItem)
 	return false;
 }
 
+AddFavoriteEx = function (Ctrl, pt)
+{
+	AddFavorite();
+	return S_OK
+}
+
 CreateNewFolder = function (Ctrl, pt)
 {
 	var path = InputDialog(GetText("New Folder"), "");
@@ -520,17 +526,7 @@ OpenSelected = function (Ctrl, NewTab)
 			var bFolder = Item.IsFolder;
 			if (!bFolder) {
 				if (Item.IsLink) {
-					var path = "";
-					try {
-						path = Item.GetLink.Path;
-					} catch (e) {
-						if (e.number == api.LowPart(0x800a0046)) {
-							var sc = wsh.CreateShortcut(Item.Path);
-							if (sc) {
-								path = sc.TargetPath;
-							}
-						}
-					}
+					var path = Item.ExtendedProperty("linktarget");
 					bFolder = path == "" || fso.FolderExists(path);
 				}
 			}
@@ -2287,7 +2283,7 @@ g_basic =
 				if (Ctrl.Type <= CTRL_EB) {
 					Selected = Ctrl.SelectedItems();
 				}
-				else if (Ctrl.Type == CTRL_TV ) {
+				else if (Ctrl.Type == CTRL_TV) {
 					Selected = Ctrl.SelectedItem;
 				}
 				else {
@@ -2400,7 +2396,7 @@ g_basic =
 					}
 					return S_OK;
 				},
-				"Add to Favorites": AddFavorite,
+				"Add to Favorites": AddFavoriteEx,
 				"Reload Customize": function ()
 				{
 					te.reload();

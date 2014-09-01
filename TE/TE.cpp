@@ -1543,7 +1543,7 @@ int teGetModuleFileName(HMODULE hModule, BSTR *pbsPath)
 VOID teDragQueryFile(HDROP hDrop, UINT iFile, BSTR *pbsPath)
 {
 	for (UINT nSize = MAX_PATH; nSize < MAX_PATHEX; nSize += MAX_PATH) {
-		*pbsPath = SysAllocStringLen(L"", nSize);
+		*pbsPath = SysAllocStringLen(NULL, nSize);
 		UINT i = DragQueryFile(hDrop, iFile, *pbsPath, nSize);
 		if (i + 1 < nSize) {
 			(*pbsPath)[i] = NULL;
@@ -1725,7 +1725,7 @@ VOID teSetParent(HWND hwnd, HWND hwndParent)
 
 BSTR SysAllocStringLenEx(const OLECHAR *strIn, UINT uSize, UINT uOrg)
 {
-	BSTR bs = SysAllocStringLen(L"", uSize);
+	BSTR bs = SysAllocStringLen(NULL, uSize);
 	lstrcpyn(bs, strIn, uSize < uOrg ? uSize : uOrg);
 	return bs;
 }
@@ -2000,7 +2000,8 @@ LPWSTR teGetCommandLine()
 	if (!g_bsCmdLine) {
 		LPWSTR strCmdLine = GetCommandLine();
 		int nSize = lstrlen(strCmdLine) + MAX_PATH;
-		g_bsCmdLine = SysAllocStringLen(L"", nSize);
+		g_bsCmdLine = SysAllocStringLen(NULL, nSize);
+		g_bsCmdLine[0] = NULL;
 		int j = 0;
 		int i = 0;
 		while (i < nSize) {
@@ -2054,22 +2055,6 @@ HWND FindTreeWindow(HWND hwnd)
 {
 	HWND hwnd1 = FindWindowEx(hwnd, 0, WC_TREEVIEW, NULL);
 	return hwnd1 ? hwnd1 : FindWindowEx(FindWindowEx(hwnd, 0, L"NamespaceTreeControl", NULL), 0, WC_TREEVIEW, NULL);
-}
-
-static void threadFileOperation(void *args)
-{
-	::InterlockedIncrement(&g_nThreads);
-	LPSHFILEOPSTRUCT pFO = (LPSHFILEOPSTRUCT)args;
-	try {
-		::SHFileOperation(pFO);
-	}
-	catch (...) {
-	}
-	::SysFreeString(const_cast<BSTR>(pFO->pTo));
-	::SysFreeString(const_cast<BSTR>(pFO->pFrom));
-	delete [] pFO;
-	::InterlockedDecrement(&g_nThreads);
-	::_endthread();
 }
 
 BOOL teSetRect(HWND hwnd, int left, int top, int right, int bottom)
@@ -2138,7 +2123,7 @@ LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath)
 		BSTR bsPath3 = NULL;
 		if (PathMatchSpec(pszPath, L"*\\..\\*;*\\..;*\\.\\*;*\\.;*%*%*")) {
 			UINT uLen = lstrlen(pszPath) + MAX_PATH;
-			bsPath3 = ::SysAllocStringLen(L"", uLen);
+			bsPath3 = ::SysAllocStringLen(NULL, uLen);
 			PathSearchAndQualify(pszPath, bsPath3, uLen);
 			pszPath = bsPath3;
 		}
@@ -2198,6 +2183,22 @@ LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath)
 	return pidl;
 }
 
+static void threadFileOperation(void *args)
+{
+	::InterlockedIncrement(&g_nThreads);
+	LPSHFILEOPSTRUCT pFO = (LPSHFILEOPSTRUCT)args;
+	try {
+		::SHFileOperation(pFO);
+	}
+	catch (...) {
+	}
+	::SysFreeString(const_cast<BSTR>(pFO->pTo));
+	::SysFreeString(const_cast<BSTR>(pFO->pFrom));
+	delete [] pFO;
+	::InterlockedDecrement(&g_nThreads);
+	::_endthread();
+}
+
 HRESULT GetShellFolder2(IShellFolder2 **ppSF2, LPCITEMIDLIST pidl, BSTR bsFilter)
 {
 	HRESULT hr = E_FAIL;
@@ -2234,7 +2235,7 @@ BSTR teGetMenuString(HMENU hMenu, UINT uIDItem, BOOL fByPosition)
 	mii.fMask  = MIIM_STRING;
 	GetMenuItemInfo(hMenu, uIDItem, fByPosition, &mii);
 	if (mii.cch) {
-		BSTR dwTypeData = SysAllocStringLen(L"", ++mii.cch);
+		BSTR dwTypeData = SysAllocStringLen(NULL, ++mii.cch);
 		mii.dwTypeData = dwTypeData;
 		GetMenuItemInfo(hMenu, uIDItem, fByPosition, &mii);
 		dwTypeData[mii.cch] = NULL;
@@ -2337,7 +2338,8 @@ void teCopyMenu(HMENU hDest, HMENU hSrc, UINT fState)
 		mii.cbSize = sizeof(MENUITEMINFO);
 		mii.fMask  = MIIM_STRING;
 		GetMenuItemInfo(hSrc, n, TRUE, &mii);
-		BSTR bsTypeData = SysAllocStringLen(L"", ++mii.cch);
+		BSTR bsTypeData = SysAllocStringLen(NULL, ++mii.cch);
+		bsTypeData[mii.cch] = NULL;
 		mii.dwTypeData = bsTypeData;
 		mii.fMask  = MIIM_ID | MIIM_TYPE | MIIM_SUBMENU | MIIM_STATE;
 		GetMenuItemInfo(hSrc, n, TRUE, &mii);
@@ -2909,10 +2911,14 @@ HRESULT GetFolderObjFromPidl(LPITEMIDLIST pidl, Folder** ppsdf)
 	GetVarArrayFromPidl(&v, pidl);
 	IShellDispatch *psha;
 	CLSID clsid;
-	CLSIDFromProgID(L"Shell.Application", &clsid);
-	CoCreateInstance(clsid, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&psha));
-	HRESULT hr = psha->NameSpace(v, ppsdf);
-	psha->Release();
+	HRESULT hr = CLSIDFromProgID(L"Shell.Application", &clsid);
+	if SUCCEEDED(hr) {
+		hr = CoCreateInstance(clsid, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&psha));
+		if SUCCEEDED(hr) {
+			hr = psha->NameSpace(v, ppsdf);
+		}
+		psha->Release();
+	}
 	VariantClear(&v);
 	return hr;
 }
@@ -6694,8 +6700,9 @@ VOID CteShellBrowser::SetActive()
 VOID CteShellBrowser::SetTitle(BSTR szName, int nIndex)
 {
 	TC_ITEM tcItem;
-	BSTR bsText = SysAllocStringLen(L"", MAX_PATH);
-	BSTR bsOldText = SysAllocStringLen(L"", MAX_PATH);
+	BSTR bsText = SysAllocStringLen(NULL, MAX_PATH);
+	BSTR bsOldText = SysAllocStringLen(NULL, MAX_PATH);
+	bsOldText[0] = NULL;
 	tcItem.pszText = bsOldText;
 	tcItem.mask = TCIF_TEXT;
 	tcItem.cchTextMax = MAX_PATH;
@@ -7528,7 +7535,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						VariantClear(&vText);
 					}
 					if (pVarResult) {
-						BSTR bsText = SysAllocStringLen(L"", MAX_PATH);
+						BSTR bsText = SysAllocStringLen(NULL, MAX_PATH);
+						bsText[0] = NULL;
 						tcItem.pszText = bsText;
 						tcItem.mask = TCIF_TEXT;
 						tcItem.cchTextMax = MAX_PATH;
@@ -9776,24 +9784,22 @@ CteWebBrowser::CteWebBrowser(HWND hwnd, WCHAR *szPath)
 	m_pDropTarget = NULL;
 	VariantInit(&m_Data);
 
-	HRESULT hr;
 	MSG        msg;
 	RECT       rc;
 
 	IOleObject *pOleObject;
 	CLSID clsid;
-	CLSIDFromProgID(L"Shell.Explorer", &clsid);
-	hr = CoCreateInstance(clsid, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&m_pWebBrowser));
-
-	if SUCCEEDED(m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&pOleObject))) {
+	if (SUCCEEDED(CLSIDFromProgID(L"Shell.Explorer", &clsid)) &&
+		SUCCEEDED(CoCreateInstance(clsid, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&m_pWebBrowser))) &&
+		SUCCEEDED(m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&pOleObject)))) {
 		pOleObject->SetClientSite(static_cast<IOleClientSite *>(this));
 
 		SetRectEmpty(&rc);
-		hr = pOleObject->DoVerb(OLEIVERB_INPLACEACTIVATE, &msg, static_cast<IOleClientSite *>(this), 0, g_hwndMain, &rc);
+		pOleObject->DoVerb(OLEIVERB_INPLACEACTIVATE, &msg, static_cast<IOleClientSite *>(this), 0, g_hwndMain, &rc);
 		teAdvise(m_pWebBrowser, DIID_DWebBrowserEvents2, static_cast<IDispatch *>(this), &m_dwCookie);
 		m_pWebBrowser->put_Offline(VARIANT_TRUE);
 		m_bstrPath = SysAllocString(szPath);
-		hr = m_pWebBrowser->Navigate(m_bstrPath, NULL, NULL, NULL, NULL);
+		m_pWebBrowser->Navigate(m_bstrPath, NULL, NULL, NULL, NULL);
 		m_pWebBrowser->put_Visible(VARIANT_TRUE);
 	}
 }
@@ -10333,8 +10339,9 @@ void CteWebBrowser::Close()
 			pOleObject->Release();
 		}
 		teUnadviseAndRelease(m_pWebBrowser, DIID_DWebBrowserEvents2, &m_dwCookie);
+		HWND hwnd = get_HWND();
 		m_pWebBrowser = NULL;
-		PostMessage(get_HWND(), WM_CLOSE, 0, 0);
+		PostMessage(hwnd, WM_CLOSE, 0, 0);
 	}
 	if (m_pDropTarget) {
 		m_pDropTarget->Release();
@@ -11287,7 +11294,7 @@ STDMETHODIMP CteFolderItems::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 						else if (pDataObj->GetData(&TEXTFormat, &Medium) == S_OK) {
 							LPCSTR lp = static_cast<LPCSTR>(GlobalLock(Medium.hGlobal));
 							int nLenW = MultiByteToWideChar(CP_ACP, 0, lp, -1, NULL, NULL);
-							pVarResult->bstrVal = SysAllocStringLen(L"", nLenW - 1);
+							pVarResult->bstrVal = SysAllocStringLen(NULL, nLenW - 1);
 							MultiByteToWideChar(CP_ACP, 0, lp, -1, pVarResult->bstrVal, nLenW);
 							pVarResult->vt = VT_BSTR;
 							GlobalUnlock(Medium.hGlobal);
@@ -12379,7 +12386,7 @@ VOID CteMemory::Read(int nIndex, int nLen, VARIANT *pVarResult)
 					nLen = m_nSize;
 				}
 				nLenW = MultiByteToWideChar(CP_ACP, 0, (LPCSTR)&m_pc[nIndex], nLen, NULL, NULL);
-				pVarResult->bstrVal = SysAllocStringLen(L"", nLenW);
+				pVarResult->bstrVal = SysAllocStringLen(NULL, nLenW);
 				MultiByteToWideChar(CP_ACP, 0, (LPCSTR)&m_pc[nIndex], nLen, pVarResult->bstrVal, nLenW);
 				pVarResult->vt = VT_BSTR;
 				break;
@@ -12687,7 +12694,7 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 								int nLenA = WideCharToMultiByte(CP_ACP, 0, ppwc[i], nLenW, NULL, 0, NULL, NULL);
 								ppc[i] = new char[nLenA];
 								WideCharToMultiByte(CP_ACP, 0, ppwc[i], nLenW, ppc[i], nLenA, NULL, NULL);
-								BSTR bs = SysAllocStringLen(L"", nLenW);
+								BSTR bs = SysAllocStringLen(NULL, nLenW);
 								MultiByteToWideChar(CP_ACP, 0, ppc[i], nLenA, bs, nLenW);
 								if (lstrcmp(bs, ppwc[i])) {
 									cmi.fMask = CMIC_MASK_UNICODE;
@@ -14622,7 +14629,8 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 		}
 		if (dispIdMember >= 40) {
 			if (!m_ofn.lpstrFile) {
-				m_ofn.lpstrFile = SysAllocStringLen(L"", m_ofn.nMaxFile);
+				m_ofn.lpstrFile = SysAllocStringLen(NULL, m_ofn.nMaxFile);
+				m_ofn.lpstrFile[0] = NULL;
 			}
 			BOOL bResult = FALSE;
 			switch (dispIdMember) {
@@ -15143,19 +15151,19 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 						case 50005:
 							if (nArg >= 0) {
 								int i = GetWindowTextLength((HWND)param[0]);
-								bsName = SysAllocStringLen(L"", i);
+								bsName = SysAllocStringLen(NULL, i);
 								GetWindowText((HWND)param[0], bsName, i);
 							}
 							break;
 						case 50015:
 							if (nArg >= 0) {
-								bsName = SysAllocStringLen(L"", MAX_CLASS_NAME);
+								bsName = SysAllocStringLen(NULL, MAX_CLASS_NAME);
 								GetClassName((HWND)param[0], bsName, MAX_CLASS_NAME);
 							}
 							break;
 						case 50145:
 							if (nArg >= 1) {
-								bsName = SysAllocStringLen(L"", 4096);
+								bsName = SysAllocStringLen(NULL, 4096);
 								LoadString((HINSTANCE)param[0], (UINT)param[1], bsName, 4096);
 							}
 							break;
@@ -15169,7 +15177,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 							break;
 						case 50045:
 							//use wsh.CurrentDirectory
-							bsName = SysAllocStringLen(L"", MAX_PATH);
+							bsName = SysAllocStringLen(NULL, MAX_PATH);
 							GetCurrentDirectory(MAX_PATH, bsName);
 							break;
 						case 50055:
@@ -15212,7 +15220,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 							return S_OK;
 						case 50075:
 							if (nArg >= 0) {
-								bsName = SysAllocStringLen(L"", MAX_PATH);
+								bsName = SysAllocStringLen(NULL, MAX_PATH);
 								GetKeyNameText((LONG)param[0], bsName, MAX_PATH);
 							}
 							break;
@@ -15255,7 +15263,8 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 								int nSize = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 								LPWSTR pszFormat = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]);
 								if (pszFormat && nSize > 0) {
-									bsName = SysAllocStringLen(L"", nSize);
+									bsName = SysAllocStringLen(NULL, nSize);
+									bsName[0] = NULL;
 									int nIndex = 1;
 									int nLen = 0;
 									while (++nIndex <= nArg && pszFormat[0] && nLen < nSize) {
@@ -15331,8 +15340,8 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 										DWORD dwSize;
 										lpfnCryptBinaryToStringW(pc, nLen, CRYPT_STRING_BASE64, NULL, &dwSize);
 										if (dwSize > 0) {
+											pVarResult->bstrVal = SysAllocStringLen(NULL, dwSize - 1);
 											pVarResult->vt = VT_BSTR;
-											pVarResult->bstrVal = SysAllocStringLen(L"", dwSize - 1);
 											lpfnCryptBinaryToStringW(pc, nLen, CRYPT_STRING_BASE64, pVarResult->bstrVal, &dwSize);
 										}
 									}
@@ -15346,7 +15355,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 								LPWSTR lp2 = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 2]);
 								LPWSTR lp3 = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 3]);
 								AssocQueryString((ASSOCF)param[0], (ASSOCSTR)param[1], lp2 , lp3, NULL, &cch);
-								bsName = SysAllocStringLen(L"", cch);
+								bsName = SysAllocStringLen(NULL, cch);
 								AssocQueryString((ASSOCF)param[0], (ASSOCSTR)param[1], lp2 , lp3, bsName, &cch);
 								bsName[cch] = NULL;
 							}
@@ -15356,7 +15365,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 							if (nArg >= 0) {
 								int nSize = (nArg >= 1) ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) : MAX_COLUMN_NAME_LEN;
 								if (nSize > 0) {
-									bsName = SysAllocStringLen(L"", nSize);
+									bsName = SysAllocStringLen(NULL, nSize);
 									StrFormatByteSize(GetLLFromVariant(&pDispParams->rgvarg[nArg]), bsName, nSize);
 								}
 							}
@@ -16669,7 +16678,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 					case 6025:
 						if (v.bstrVal) {
 							int nLen = GetShortPathName(v.bstrVal, NULL, 0);
-							bsResult = ::SysAllocStringLen(L"", nLen + MAX_PATH);
+							bsResult = ::SysAllocStringLen(NULL, nLen + MAX_PATH);
 							nLen = GetShortPathName(v.bstrVal, bsResult, nLen);
 							bsResult[nLen] = NULL;
 						}
@@ -16677,7 +16686,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 					case 6035:
 						if (v.bstrVal) {
 							DWORD dwLen = ::SysStringLen(v.bstrVal) + MAX_PATH;
-							bsResult = ::SysAllocStringLen(L"", dwLen);
+							bsResult = ::SysAllocStringLen(NULL, dwLen);
 							if FAILED(PathCreateFromUrl(v.bstrVal, bsResult, &dwLen, NULL)) {
 								teSysFreeString(&bsResult);
 							}
@@ -16709,7 +16718,8 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 									}
 #ifdef _2000XP
 									else {
-										bsResult = ::SysAllocStringLen(L"", MAX_PROP);
+										bsResult = ::SysAllocStringLen(NULL, MAX_PROP);
+										bsResult[0] = NULL;
 										IPropertyUI *pPUI;
 										if SUCCEEDED(CoCreateInstance(CLSID_PropertiesUI, NULL, CLSCTX_INPROC, IID_PPV_ARGS(&pPUI))) {
 											pPUI->FormatForDisplay(propKey.fmtid, propKey.pid, (PROPVARIANT *)&pDispParams->rgvarg[nArg - 1], GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]), bsResult, MAX_PROP);
@@ -16739,7 +16749,8 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 								}
 #ifdef _2000XP
 								else {
-									bsResult = ::SysAllocStringLen(L"", MAX_PROP);
+									bsResult = ::SysAllocStringLen(NULL, MAX_PROP);
+									bsResult[0] = NULL;
 									IPropertyUI *pPUI;
 									if SUCCEEDED(CoCreateInstance(CLSID_PropertiesUI, NULL, CLSCTX_INPROC, IID_PPV_ARGS(&pPUI))) {
 										pPUI->GetDisplayName(propKey.fmtid, propKey.pid, PUIFNF_DEFAULT, bsResult, MAX_PROP);

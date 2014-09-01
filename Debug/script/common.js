@@ -98,7 +98,7 @@ FolderMenu =
 		var mii = api.Memory("MENUITEMINFO");
 		mii.cbSize = mii.Size;
 		mii.fMask  = MIIM_ID | MIIM_STRING | MIIM_BITMAP | MIIM_SUBMENU;
-		if (bSelect) {
+		if (bSelect && Name) {
 			mii.dwTypeData = Name;
 		}
 		else {
@@ -108,8 +108,11 @@ FolderMenu =
 		this.Items.push(FolderItem);
 		mii.wID = this.Items.length;
 		if (!bSelect && api.GetAttributesOf(FolderItem, SFGAO_HASSUBFOLDER | SFGAO_BROWSABLE) == SFGAO_HASSUBFOLDER) {
-			mii.hSubMenu = api.CreatePopupMenu();
-			api.InsertMenu(mii.hSubMenu, 0, MF_BYPOSITION | MF_STRING, 0, api.sprintf(100, '\tJScript\tFolderMenu.OpenSubMenu("%llx",%d,"%llx")', hMenu, mii.wID, mii.hSubMenu));
+			var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
+			if (path.length != 3 || !api.PathIsNetworkPath(path)) {
+				mii.hSubMenu = api.CreatePopupMenu();
+				api.InsertMenu(mii.hSubMenu, 0, MF_BYPOSITION | MF_STRING, 0, api.sprintf(100, '\tJScript\tFolderMenu.OpenSubMenu("%llx",%d,"%llx")', hMenu, mii.wID, mii.hSubMenu));
+			}
 		}
 		api.InsertMenuItem(hMenu, MAXINT, false, mii);
 	},
@@ -246,6 +249,9 @@ function ApplyLang(doc)
 			var s = ImgBase64(o[i], 0);
 			if (s != "") {
 				o[i].src = s;
+			}
+			if (!o[i].ondragstart) {
+				o[i].draggable = false;
 			}
 		}
 	}
@@ -1542,7 +1548,7 @@ GetBaseMenu = function (nBase, FV, Selected, uCMF, Mode, SelItem)
 		case 8:
 			hMenu = api.CreatePopupMenu();
 			api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, 0x3001, GetText("&Add to Favorites..."));
-			ExtraMenuCommand[0x3001] = function (Ctrl, pt) { AddFavorite(); };
+			ExtraMenuCommand[0x3001] = AddFavoriteEx;
 			api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_SEPARATOR, 0, null);
 			break;
 		default:
@@ -1967,7 +1973,7 @@ EscapeUpdateFile(fso.GetFileName(api.GetModuleFileName(null)))).replace(/[\t\n]/
 
 	wsh.CurrentDirectory = temp;
 	var exe = "mshta.exe";
-	var s1 = ' "javascript:';
+	var s1 = '"javascript:';
 	if (update.length >= 500 || !fso.FileExists(fso.BuildPath(system32, exe))) {
 		exe = "wscript.exe";
 		s1 = fso.GetParentFolderName(temp) + "\\update.js";
@@ -1976,13 +1982,13 @@ EscapeUpdateFile(fso.GetFileName(api.GetModuleFileName(null)))).replace(/[\t\n]/
 		a.WriteLine(update.replace(/close\(\)$/, ""));
 		a.Close();
 		update = s1;
-		s1 = ' "';
+		s1 = '"';
 	}
 	var mshta = wsh.ExpandEnvironmentStrings("%windir%\\Sysnative\\" + exe);
 	if (!fso.FileExists(mshta)) {
 		mshta = fso.BuildPath(system32, exe);
  	}
-	wsh.Run(api.PathQuoteSpaces(mshta) + s1 + update + '"', SW_SHOWNORMAL, false);
+	sha.ShellExecute(mshta, s1 + update + '"', null, null, SW_SHOWNORMAL);
 	api.PostMessage(te.hwnd, WM_CLOSE, 0, 0);
 }
 
