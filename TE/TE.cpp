@@ -6866,7 +6866,7 @@ VOID CteShellBrowser::SetHistory(FolderItems *pFolderItems, UINT wFlags)
 
 STDMETHODIMP CteShellBrowser::GetViewStateStream(DWORD grfMode, IStream **ppStrm)
 {
-//	return SHCreateStreamOnFile(L"", STGM_READWRITE | STGM_CREATE, ppStrm);
+//	return SHCreateStreamOnFileEx(L"", STGM_READWRITE | STGM_SHARE_DENY_WRITE, FILE_ATTRIBUTE_NORMAL, TRUE, NULL ppStrm);
 	return E_NOTIMPL;
 }
 
@@ -9582,7 +9582,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 								IShellFolder *pDesktopFolder;
 								SHGetDesktopFolder(&pDesktopFolder);
 								if (pDesktopFolder->CreateViewObject(g_hwndMain, IID_PPV_ARGS(&pSB->m_pShellView)) == S_OK) {
-									FOLDERSETTINGS fs = { FWF_NOICONS, FVM_LIST };
+									FOLDERSETTINGS fs = { FWF_NOWEBVIEW, FVM_LIST };
 									RECT rc;
 									SetRectEmpty(&rc);
 									if SUCCEEDED(pSB->m_pShellView->CreateViewWindow(NULL, &fs, pSB, &rc, &pSB->m_hwnd)) {
@@ -17020,18 +17020,30 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 					IStorage *pStorage;
 					HMODULE hDll = teCreateInstance(&pDispParams->rgvarg[nArg], &pDispParams->rgvarg[nArg - 1], IID_PPV_ARGS(&pStorage));
 					if (pStorage) {
+						VARIANT vZip, vDest;
+						teVariantChangeType(&vZip, &pDispParams->rgvarg[nArg - 2], VT_BSTR);
+						teVariantChangeType(&vDest, &pDispParams->rgvarg[nArg - 3], VT_BSTR);
+
 						IPersistFile *pPF;
+						IPersistFolder *pPF2;
 						if SUCCEEDED(pStorage->QueryInterface(IID_PPV_ARGS(&pPF))) {
-							VARIANT v;
-							teVariantChangeType(&v, &pDispParams->rgvarg[nArg - 2], VT_BSTR);
-							if SUCCEEDED(pPF->Load(v.bstrVal, STGM_READ)) {
-								VariantClear(&v);
-								teVariantChangeType(&v, &pDispParams->rgvarg[nArg - 3], VT_BSTR);
-								*plResult = teExtract(pStorage, v.bstrVal);
+							if SUCCEEDED(pPF->Load(vZip.bstrVal, STGM_READ)) {
+								*plResult = teExtract(pStorage, vDest.bstrVal);
 							}
-							VariantClear(&v);
 							pPF->Release();
 						}
+						else if SUCCEEDED(pStorage->QueryInterface(IID_PPV_ARGS(&pPF2))) {
+							LPITEMIDLIST pidl = teILCreateFromPath(vZip.bstrVal);
+							if (pidl) {
+								if SUCCEEDED(pPF2->Initialize(pidl)) {
+									*plResult = teExtract(pStorage, vDest.bstrVal);
+								}
+								::CoTaskMemFree(pidl);
+							}
+							pPF2->Release();
+						}
+						VariantClear(&vDest);
+						VariantClear(&vZip);
 						pStorage->Release();
 					}
 					hDll && FreeLibrary(hDll);
