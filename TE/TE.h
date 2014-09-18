@@ -228,7 +228,16 @@ typedef struct tagTEInvoke
 	VARIANT *pv;
 	PVOID	pResult;
 } TEInvoke, *lpTEInvoke;
-
+/*
+typedef struct tagTEDrop
+{
+	IStream *pDropTarget;
+	IStream *pDataObj;
+	DWORD grfKeyState;
+	POINTL pt;
+	DWORD dwEffect;
+} TEDrop, *lpTEDrop;
+*/
 const CLSID CLSID_ShellShellNameSpace = {0x2F2F1F96, 0x2BC1, 0x4b1c, { 0xBE, 0x28, 0xEA, 0x37, 0x74, 0xF4, 0x67, 0x6A}};
 const CLSID CLSID_JScriptChakra       = {0x16d51579, 0xa30b, 0x4c8b, { 0xa2, 0x76, 0x0f, 0xf4, 0xdc, 0x41, 0xe7, 0x55}};
 
@@ -678,6 +687,7 @@ public:
 	~CteShellBrowser();
 
 	void Init(CteTabs *pTabs, BOOL bNew);
+	void Clear();
 	void Show(BOOL bShow);
 	VOID Suspend(BOOL bTree);
 	VOID SetPropEx();
