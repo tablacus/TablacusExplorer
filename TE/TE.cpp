@@ -1803,6 +1803,16 @@ LPITEMIDLIST teILCreateFromPath2(IShellFolder *pSF, LPWSTR pszPath, SHGDNF uFlag
 	return NULL;
 }
 
+BOOL GetCSIDLFromPath(int *i, LPWSTR pszPath)
+{
+	int n = lstrlen(pszPath);
+	if (n <= 3 && pszPath[0] >= '0' && pszPath[0] <= '9') {
+		swscanf_s(pszPath, L"%d", i);
+		return (*i <= 9 && n == 1) || (*i >= 10 && *i <= 99 && n == 2) || (*i >= 100 && *i < MAX_CSIDL);
+	}
+	return FALSE;
+}
+
 HRESULT GetDisplayNameFromPidl(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags)
 {
 	HRESULT hr = E_FAIL;
@@ -1821,13 +1831,13 @@ HRESULT GetDisplayNameFromPidl(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags)
 					LPITEMIDLIST pidl2 = SHSimpleIDListFromPath(*pbs);
 					if (!ILIsEqual(pidl, pidl2)) {
 						teILCloneReplace(&pidl2, pidl);
-						::SysFreeString(*pbs);
+						BSTR bs2;
+						BSTR bs3 = *pbs;
 						*pbs = NULL;
 						while (!ILIsEmpty(pidl2)) {
 							BSTR bs;
 							if SUCCEEDED(GetDisplayNameFromPidl(&bs, pidl2, SHGDN_INFOLDER | SHGDN_FORPARSING)) {
 								if (*pbs) {
-									BSTR bs2;
 									tePathAppend(&bs2, bs, *pbs);
 									::SysFreeString(bs);
 									::SysFreeString(*pbs);
@@ -1839,6 +1849,13 @@ HRESULT GetDisplayNameFromPidl(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags)
 								::ILRemoveLastID(pidl2);
 							}
 						}
+						int n;
+						if (GetCSIDLFromPath(&n, *pbs)) {
+							bs2 = *pbs;
+							*pbs = bs3;
+							bs3 = bs2;
+						}
+						::SysFreeString(bs3);
 					}
 					teCoTaskMemFree(pidl2);
 				}
@@ -2129,6 +2146,8 @@ LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath)
 {
 	LPITEMIDLIST pidl = NULL;
 	BSTR bstr = NULL;
+	int n;
+
 	if (pszPath) {
 		BSTR bsPath2 = NULL;
 		if (pszPath[0] == _T('"')) {
@@ -2148,7 +2167,11 @@ LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath)
 			bsPath3[0] = pszPath[0];
 			pszPath = bsPath3;
 		}
-		int n = PathGetDriveNumber(pszPath);
+		if (GetCSIDLFromPath(&n, pszPath)) {
+			pidl = ::ILClone(g_pidls[n]);
+			pszPath = NULL;
+		}
+		n = PathGetDriveNumber(pszPath);
 		if (n >= 0 && DriveType(n) == DRIVE_NO_ROOT_DIR && lstrlen(pszPath) > 3) {
 			WCHAR szDrive[4];
 			lstrcpyn(szDrive, pszPath, 4);
@@ -2199,21 +2222,121 @@ LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath)
 	return pidl;
 }
 
+BOOL teCreateItemFromPath(LPWSTR pszPath, IShellItem **ppSI)
+{
+	BOOL Result = FALSE;
+	if (lpfnSHCreateItemFromIDList) {
+		LPITEMIDLIST pidl = teILCreateFromPath(const_cast<LPWSTR>(pszPath));
+		if (pidl) {
+			Result = SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(ppSI)));
+			CoTaskMemFree(pidl);
+		}
+	}
+	return Result;
+}
+
+BOOL GetDestAndName(LPWSTR pszPath, IShellItem **ppSI, LPWSTR *ppsz)
+{
+	if (teCreateItemFromPath(pszPath, ppSI)) {
+		*ppsz = NULL;
+		return TRUE;
+	}
+	BOOL Result = FALSE;
+	BSTR bs = ::SysAllocString(pszPath);
+	if (PathRemoveFileSpec(bs)) {
+		Result = teCreateItemFromPath(bs, ppSI);
+		*ppsz = PathFindFileName(pszPath);
+		Result = TRUE;
+	}
+	::SysFreeString(bs);
+	return Result;
+}
+
+int teSHFileOperation(LPSHFILEOPSTRUCT pFOS)
+{
+	HRESULT hr = E_NOTIMPL;
+#ifdef _VISTA7
+	LPWSTR pszFrom = const_cast<LPWSTR>(pFOS->pFrom);
+	if (pszFrom && !(pFOS->fFlags & FOF_WANTMAPPINGHANDLE)) {
+		IFileOperation *pFO;
+		if (lpfnSHCreateItemFromIDList && SUCCEEDED(CoCreateInstance(CLSID_FileOperation, NULL, CLSCTX_ALL, IID_PPV_ARGS(&pFO)))) {
+			if SUCCEEDED(pFO->SetOperationFlags(pFOS->fFlags & ~FOF_MULTIDESTFILES)) {
+				try {
+					pFO->SetOwnerWindow(pFOS->hwnd);
+					LPWSTR pszTo = const_cast<LPWSTR>(pFOS->pTo);
+					IShellItem *psiFrom = NULL;
+					IShellItem *psiTo = NULL;
+					LPWSTR pszName = NULL;
+					while (*pszFrom) {
+						if (teCreateItemFromPath(pszFrom, &psiFrom)) {
+							if (pFOS->wFunc == FO_DELETE) {
+								hr = pFO->DeleteItem(psiFrom, NULL);
+							}
+							else if (pszTo && *pszTo) {
+								if (pFOS->wFunc == FO_RENAME) {
+									hr = pFO->RenameItem(psiFrom, pszTo, NULL);
+								}
+								else {
+									if (psiTo || GetDestAndName(pszTo, &psiTo, &pszName)) {
+										if (pFOS->wFunc == FO_COPY) {
+											hr = pFO->CopyItem(psiFrom, psiTo, pszName, NULL);
+										}
+										else if (pFOS->wFunc == FO_MOVE) {
+											if (!pszName || PathFindFileName(pszFrom) - pszFrom != pszName - pszTo || StrCmpNI(pszFrom, pszTo, (int)(pszName - pszTo))) {
+												hr = pFO->MoveItem(psiFrom, psiTo, pszName, NULL);
+											}
+											else {
+												hr = pFO->RenameItem(psiFrom, pszName, NULL);
+											}
+										}
+									}
+								}
+								if (pFOS->fFlags & FOF_MULTIDESTFILES) {
+									if (psiTo) {
+										psiTo->Release();
+										psiTo = NULL;
+									}
+									while (*(pszTo++));
+								}
+							}
+							psiFrom->Release();
+						}
+						while (*(pszFrom++));
+					}
+					psiTo && psiTo->Release();
+					if SUCCEEDED(hr) {
+						hr = pFO->PerformOperations();
+						pFO->GetAnyOperationsAborted(&pFOS->fAnyOperationsAborted);
+					}
+				}
+				catch (...) {
+				}
+			}
+			pFO->Release();
+		}
+	}
+#endif
+	return hr == E_NOTIMPL ? ::SHFileOperation(pFOS) : hr;
+}
+
 static void threadFileOperation(void *args)
 {
 	::InterlockedIncrement(&g_nThreads);
+	::CoInitialize(NULL);
 	LPSHFILEOPSTRUCT pFO = (LPSHFILEOPSTRUCT)args;
 	try {
-		::SHFileOperation(pFO);
+		teSHFileOperation(pFO);
 	}
 	catch (...) {
 	}
 	::SysFreeString(const_cast<BSTR>(pFO->pTo));
 	::SysFreeString(const_cast<BSTR>(pFO->pFrom));
 	delete [] pFO;
+	::CoUninitialize();
 	::InterlockedDecrement(&g_nThreads);
 	::_endthread();
 }
+
 /*//TEST
 static void threadDrop(void *args)
 {
@@ -3054,7 +3177,21 @@ BOOL GetFolderItemFromFolderItems(FolderItem **ppFolderItem, FolderItems *pFolde
 	GetFolderItemFromPidl(ppFolderItem, g_pidls[CSIDL_DESKTOP]);
 	return true;
 }
-
+/*
+VOID GetFolderItemsFromPCZZSTR(CteFolderItems **ppFolderItems, LPCWSTR pszPath)
+{
+	*ppFolderItems = new CteFolderItems(NULL, NULL, true);
+	VARIANT v;
+	VariantInit(&v);
+	while (pszPath[0]) {
+		v.vt = VT_BSTR;
+		v.bstrVal = ::SysAllocString(pszPath);
+		(*ppFolderItems)->ItemEx(-1, NULL, &v);
+		VariantClear(&v);
+		while (*(pszPath++));
+	}
+}
+*/
 BOOL GetDataObjFromVariant(IDataObject **ppDataObj, VARIANT *pv)
 {
 	*ppDataObj = NULL;
@@ -16117,17 +16254,19 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 					bs[++nLen] = 0;
 					pFO->pTo = bs;
 					pFO->fFlags = (FILEOP_FLAGS)param[3];
+
 					if (param[4]) {
 						SetVariantLL(pVarResult, (LONGLONG)_beginthread(&threadFileOperation, 0, pFO));
 					}
 					else {
 						try {
-							*plResult = ::SHFileOperation(pFO);
+							*plResult = teSHFileOperation(pFO);
 						}
 						catch (...) {
 						}
 						::SysFreeString(const_cast<BSTR>(pFO->pTo));
 						::SysFreeString(const_cast<BSTR>(pFO->pFrom));
+						delete [] pFO;
 					}
 					SetReturnValue(pVarResult, dispIdMember, &Result);
 					return S_OK;
@@ -16145,7 +16284,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 								}
 								break;
 							case 29002:
-								*plResult = ::SHFileOperation((LPSHFILEOPSTRUCT)pc);
+								*plResult = teSHFileOperation((LPSHFILEOPSTRUCT)pc);
 								break;
 							case 29011:
 								if (nArg >= 3) {

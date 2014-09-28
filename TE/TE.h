@@ -228,6 +228,7 @@ typedef struct tagTEInvoke
 	VARIANT *pv;
 	PVOID	pResult;
 } TEInvoke, *lpTEInvoke;
+
 /*
 typedef struct tagTEDrop
 {
