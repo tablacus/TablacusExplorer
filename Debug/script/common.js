@@ -775,7 +775,7 @@ NavigateFV = function (FV, Path, wFlags)
 			if (/%([^%]+)%/.test(Path)) {
 				Path = ExtractMacro(FV, Path);
 			}
-			if (/\?|\*/.test(Path) && !/:|\\/.test(Path)) {
+			if (/\?|\*/.test(Path) && !/\\\\\?\\/.test(Path)) {
 				FV.FilterView = Path;
 				FV.Refresh();
 				return;
@@ -1086,20 +1086,10 @@ ExtractMacro = function (Ctrl, s)
 	if (typeof(s) == "string") {
 		for (var j = 10; j--;) {
 			var s1 = s;
-			if (/%([^%]+)%/i.test(s)) {
-				var re = RegExp.$1;
-				var fn = eventTE.Environment[re.toLowerCase()];
-				if (fn) {
-					var r = fn(Ctrl);
-					if (typeof(r) == "string") {
-						s = s.replace("%" + re + "%", r);
-					}
-				}
-			}
 			for (var i in eventTE.ReplaceMacro) {
 				var re = eventTE.ReplaceMacro[i][0];
 				if (s.match(re)) {
-					var r = eventTE.ReplaceMacro[i][1](Ctrl);
+					var r = eventTE.ReplaceMacro[i][1](Ctrl, re);
 					if (typeof(r) == "string") {
 						s = s.replace(re, r);
 					}
@@ -1109,6 +1099,16 @@ ExtractMacro = function (Ctrl, s)
 				var re = eventTE.ExtractMacro[i][0];
 				if (s.match(re)) {
 					s = eventTE.ExtractMacro[i][1](Ctrl, s, re);
+				}
+			}
+			if (/%([^%]+)%/i.test(s)) {
+				var re = RegExp.$1;
+				var fn = eventTE.Environment[re.toLowerCase()];
+				if (fn) {
+					var r = fn(Ctrl);
+					if (typeof(r) == "string") {
+						s = s.replace("%" + re + "%", r);
+					}
 				}
 			}
 			s = wsh.ExpandEnvironmentStrings(s);
