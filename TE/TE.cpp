@@ -79,7 +79,6 @@ HHOOK	g_hMenuKeyHook = NULL;
 HMENU	g_hMenu = NULL;
 BSTR	g_bsCmdLine = NULL;
 HANDLE g_hMutex;
-OSVERSIONINFO osInfo;
 
 UINT	*g_pCrcTable = NULL;
 LONG	g_nSize = MAXWORD;
@@ -107,10 +106,12 @@ BOOL	g_bDialogOk = FALSE;
 BOOL	g_bInit = true;
 BOOL	g_bUnload = FALSE;
 BOOL	g_bSetRedraw;
-
 #ifdef _2000XP
 int		g_nCharWidth = 7;
 BOOL	g_bCharWidth = true;
+BOOL	g_bUpperVista;
+BOOL	g_bIsXP;
+BOOL	g_bIs2000;
 #endif
 
 TEmethod tesNULL[] =
@@ -2132,7 +2133,7 @@ BOOL GetShellFolder(IShellFolder **ppSF, LPCITEMIDLIST pidl)
 		SHGetDesktopFolder(ppSF);
 	}
 #ifdef _2000XP
-	if (osInfo.dwMajorVersion <= 5) {
+	if (!g_bUpperVista) {
 		if (ILIsEqual(pidl, g_pidlResultsFolder)) {
 			IPersistFolder *pPF;
 			if SUCCEEDED((*ppSF)->QueryInterface(IID_PPV_ARGS(&pPF))) {
@@ -2649,7 +2650,7 @@ BOOL AdjustIDList(LPITEMIDLIST *ppidllist, int nCount)
 	}
 	if (ppidllist[0]) {
 #ifdef _2000XP
-		if (osInfo.dwMajorVersion >= 6 || !ILIsEqual(ppidllist[0], g_pidlResultsFolder)) {
+		if (g_bUpperVista || !ILIsEqual(ppidllist[0], g_pidlResultsFolder)) {
 			return FALSE;
 		}
 		for (int i = nCount; i > 1; i--) {
@@ -4688,17 +4689,25 @@ VOID Initlize()
 	g_maps[MAP_CD] = SortTEMethod(methodCD, _countof(methodCD));
 	g_maps[MAP_SS] = SortTEMethod(structSize, _countof(structSize));
 
-	osInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-	if (lpfnRtlGetVersion) {
-		lpfnRtlGetVersion((PRTL_OSVERSIONINFOEXW)&osInfo);
-	}
-	else {
-		GetVersionEx(&osInfo);
-	}
 #ifdef _WIN64
 	g_pidlResultsFolder =ILCreateFromPath(L"shell:::{2965E715-EB66-4719-B53F-1672673BBEFA}");
 #else
-	g_pidlResultsFolder =ILCreateFromPath(osInfo.dwMajorVersion >= 6 ? L"shell:::{2965E715-EB66-4719-B53F-1672673BBEFA}" : L"::{e17d4fc0-5564-11d1-83f2-00a0c90dc849}");
+	DWORDLONG dwlConditionMask = 0;
+    OSVERSIONINFOEX osvi;
+    ZeroMemory(&osvi, sizeof(OSVERSIONINFOEX));
+    osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+    osvi.dwMajorVersion = 6;
+    VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
+	g_bUpperVista = VerifyVersionInfo(&osvi, VER_MAJORVERSION, dwlConditionMask);
+
+    dwlConditionMask = 0;
+	osvi.dwMajorVersion = 5;
+    osvi.dwMinorVersion = 1;
+	VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_EQUAL);
+    VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
+	g_bIsXP = VerifyVersionInfo(&osvi, VER_MAJORVERSION | VER_MINORVERSION, dwlConditionMask);
+	g_bIs2000 = !g_bUpperVista && !g_bIsXP;
+	g_pidlResultsFolder =ILCreateFromPath(g_bUpperVista ? L"shell:::{2965E715-EB66-4719-B53F-1672673BBEFA}" : L"::{e17d4fc0-5564-11d1-83f2-00a0c90dc849}");
 #endif
 	g_pidlLibrary = teILCreateFromPath(L"shell:libraries");
 }
@@ -6132,6 +6141,7 @@ STDMETHODIMP_(ULONG) CteShellBrowser::Release()
 	return m_cRef;
 }
 
+//IOleWindow
 STDMETHODIMP CteShellBrowser::GetWindow(HWND *phwnd)
 {
 	if (m_pExplorerBrowser) {// for Control panel
@@ -6147,6 +6157,7 @@ STDMETHODIMP CteShellBrowser::ContextSensitiveHelp(BOOL fEnterMode)
 	return E_NOTIMPL;
 }
 
+//IShellBrowser
 void CteShellBrowser::InitializeMenuItem(HMENU hmenu, LPTSTR lpszItemName, int nId, HMENU hmenuSub)
 {
 	MENUITEMINFO mii;
@@ -6540,7 +6551,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	Show(false);
 	BOOL bExplorerBrowser = m_param[SB_Type] == 2;
 #ifdef _2000XP
-	if (bExplorerBrowser && osInfo.dwMajorVersion <= 5) {
+	if (bExplorerBrowser && !g_bUpperVista) {
 		m_param[SB_Type] = 1;
 	}
 #endif
@@ -6560,7 +6571,11 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 			}
 		}
 		if (hr != S_OK) {
-			if (hr == S_FALSE && osInfo.dwMajorVersion >= 6) {
+			if (hr == S_FALSE
+#ifndef _WIN64
+				&& g_bUpperVista
+#endif
+			) {
 				bExplorerBrowser = true;//Use ExplorerBrowser
 			}
 			else {
@@ -6993,7 +7008,7 @@ VOID CteShellBrowser::GetShellFolderView()
 VOID CteShellBrowser::GetFocusedIndex(int *piItem)
 {
 #ifdef _W2000
-	if (osInfo.dwMajorVersion == 5 && osInfo.dwMinorVersion == 0) {
+	if (g_bIs2000) {
 		//Windows 2000
 		*piItem = ListView_GetNextItem(m_hwndLV, -1, LVNI_ALL | LVNI_FOCUSED);
 		return;
@@ -8473,7 +8488,7 @@ HRESULT CteShellBrowser::Items(UINT uItem, FolderItems **ppid)
 	IDataObject *pDataObj = NULL;
 	if (m_pShellView) {
 #ifdef _2000XP
-		if (osInfo.dwMajorVersion < 6 && ListView_GetSelectedCount(m_hwndLV) > 1) {
+		if (!g_bUpperVista && ListView_GetSelectedCount(m_hwndLV) > 1) {
 			BOOL bResultsFolder = ILIsEqual(m_pidl, g_pidlResultsFolder);
 			if (bResultsFolder || (uItem & (SVGIO_SELECTION | SVGIO_FLAG_VIEWORDER)) == (SVGIO_SELECTION | SVGIO_FLAG_VIEWORDER)) {
 				CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL, true);
@@ -8579,7 +8594,7 @@ STDMETHODIMP CteShellBrowser::SelectItem(VARIANT *pvfi, int dwFlags)
 		int nFocused = -1;
 		if (m_hwndLV && (dwFlags & SVSI_FOCUSED)) {// bug fix
 #ifdef _2000XP
-			if (osInfo.dwMajorVersion >= 6) {
+			if (g_bUpperVista) {
 #endif
 				nFocused = ListView_GetNextItem(m_hwndLV, -1, LVNI_ALL | LVNI_FOCUSED);
 				if (nFocused >= 0) {
@@ -8708,7 +8723,7 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 	m_bNavigateComplete = !m_pExplorerBrowser;
 	SetPropEx();
 #ifdef _2000XP
-	if (osInfo.dwMajorVersion <= 5) {
+	if (!g_bUpperVista) {
 		if (ILIsEqual(m_pidl, g_pidlResultsFolder)) {
 			UINT i = 0;
 			SHCOLUMNID scid;
@@ -8858,7 +8873,7 @@ STDMETHODIMP CteShellBrowser::CompareIDs(LPARAM lParam, PCUIDLIST_RELATIVE pidl1
 
 STDMETHODIMP CteShellBrowser::CreateViewObject(HWND hwndOwner, REFIID riid, void **ppv)
 {
-	if (osInfo.dwMajorVersion == 5 && osInfo.dwMinorVersion >= 1 && IsEqualIID(riid, IID_IShellView)) {
+	if (g_bIsXP && IsEqualIID(riid, IID_IShellView)) {
 		//only XP
 		if (m_pSFVCB) {
 			m_pSFVCB->Release();
@@ -9424,13 +9439,17 @@ HRESULT CteShellBrowser::CreateViewWindowEx(IShellView *pPreviousView)
 	if (m_pSF2) {
 #ifdef _2000XP
 		if SUCCEEDED(CreateViewObject(m_pTabs->m_hwndStatic, IID_PPV_ARGS(&m_pShellView)) && m_pShellView) {
-			if (osInfo.dwMajorVersion <= 5 && m_param[SB_ViewMode] == FVM_ICON && m_param[SB_IconSize] >= 96) {
+			if (!g_bUpperVista && m_param[SB_ViewMode] == FVM_ICON && m_param[SB_IconSize] >= 96) {
 				m_param[SB_ViewMode] = FVM_THUMBNAIL;
 			}
 #else
 		if SUCCEEDED(m_pSF2->CreateViewObject(m_pTabs->m_hwndStatic, IID_PPV_ARGS(&m_pShellView)) && m_pShellView) {
 #endif
-			if (osInfo.dwMajorVersion >= 6 && m_param[SB_ViewMode] == FVM_ICON && m_param[SB_IconSize] < 48) {
+			if (m_param[SB_ViewMode] == FVM_ICON && m_param[SB_IconSize] < 48
+#ifndef _WIN64
+				&& g_bUpperVista
+#endif
+			) {
 				m_param[SB_IconSize] = 48;
 			}
 			try {
@@ -15305,7 +15324,7 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 					HBITMAP hBM;
 #ifdef _2000XP
 					HICON hIcon;
-					if (cl && osInfo.dwMajorVersion <= 5 && m_pImage->GetHICON(&hIcon) == 0) {
+					if (cl && !g_bUpperVista && m_pImage->GetHICON(&hIcon) == 0) {
 						HDC hdc = GetDC(g_hwndMain);
 						ICONINFO iconinfo;
 						GetIconInfo(hIcon, &iconinfo);
@@ -17173,7 +17192,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 						long nCount;
 						ppidllist = IDListFormDataObj(pDataObj, &nCount);
 #ifdef _2000XP
-						if (nCount >= 2 && osInfo.dwMajorVersion < 6 && ppidllist[0] && ILIsEmpty(ppidllist[0])) {
+						if (nCount >= 2 && !g_bUpperVista && ppidllist[0] && ILIsEmpty(ppidllist[0])) {
 							for (int i = nCount; i-- > 0;) {
 								LPITEMIDLIST pidl = ppidllist[i + 1];
 								LPITEMIDLIST pidlFull = ILCombine(ppidllist[0], pidl);

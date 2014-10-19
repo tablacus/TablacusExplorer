@@ -596,9 +596,10 @@ public:
 	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
 	STDMETHODIMP_(ULONG) AddRef();
 	STDMETHODIMP_(ULONG) Release();
-	//IShellBrowser
+	//IOleWindow
 	STDMETHODIMP GetWindow(HWND *phwnd);
 	STDMETHODIMP ContextSensitiveHelp(BOOL fEnterMode);
+	//IShellBrowser
 	STDMETHODIMP InsertMenusSB(HMENU hmenuShared, LPOLEMENUGROUPWIDTHS lpMenuWidths);
 	STDMETHODIMP SetMenuSB(HMENU hmenuShared, HOLEMENU holemenuRes, HWND hwndActiveObject);
 	STDMETHODIMP RemoveMenusSB(HMENU hmenuShared);
@@ -926,9 +927,10 @@ public:
 	STDMETHODIMP ShowObject();
 	STDMETHODIMP OnShowWindow(BOOL fShow);
 	STDMETHODIMP RequestNewObjectLayout();
-	//IOleInPlaceSite
+	//IOleWindow
 	STDMETHODIMP GetWindow(HWND *phwnd);
 	STDMETHODIMP ContextSensitiveHelp(BOOL fEnterMode);
+	//IOleInPlaceSite
 	STDMETHODIMP CanInPlaceActivate();
 	STDMETHODIMP OnInPlaceActivate();
 	STDMETHODIMP OnUIActivate();

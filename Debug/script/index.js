@@ -918,7 +918,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 	if (isFinite(Verb)) {
 		Verb = ContextMenu.GetCommandString(Verb, GCS_VERB);
 	}
-	NewTab = SBSP_SAMEBROWSER;
+	NewTab = GetNavigateFlags();
 	for (var i = 0; i < Items.Count; i++) {
 		if (Verb && !api.PathMatchSpec(Verb, "runas")) {
 			var path = Items.Item(i).Path;
@@ -1951,7 +1951,7 @@ g_basic =
 		{
 			Exec: function (Ctrl, s, type, hwnd, pt)
 			{
-				return ExecOpen(Ctrl, s, type, hwnd, pt, OpenMode);
+				return ExecOpen(Ctrl, s, type, hwnd, pt, GetNavigateFlags(GetFolderView(Ctrl, pt)));
 			},
 
 			Drop: DropOpen,
@@ -2095,7 +2095,7 @@ g_basic =
 			{
 				Open: function (Ctrl)
 				{
-					return OpenSelected(Ctrl, OpenMode);
+					return OpenSelected(Ctrl, GetNavigateFlags(GetFolderView(Ctrl)));
 				},
 				"Open in New Tab": function (Ctrl)
 				{
@@ -2209,7 +2209,7 @@ g_basic =
 				"Up": function (Ctrl, pt)
 				{
 					var FV = GetFolderView(Ctrl, pt);
-					FV && FV.Navigate(null, SBSP_PARENT | OpenMode);
+					FV && FV.Navigate(null, SBSP_PARENT | GetNavigateFlags(FV));
 				},
 				"Back": function (Ctrl, pt)
 				{

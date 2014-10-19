@@ -781,6 +781,9 @@ NavigateFV = function (FV, Path, wFlags)
 				return;
 			}
 		}
+		if (FV.Data.Lock) {
+			wFlags |= SBSP_NEWBROWSER;
+		}
 		FV.Navigate(Path, wFlags);
 		FV.Focus();
 		if (Focus) {
@@ -1104,7 +1107,10 @@ ExtractMacro = function (Ctrl, s)
 			if (/%([^%]+)%/i.test(s)) {
 				var re = RegExp.$1;
 				var fn = eventTE.Environment[re.toLowerCase()];
-				if (fn) {
+				if (typeof(fn) == "string") {
+					s = s.replace("%" + re + "%", fn);
+				}
+				else if (fn) {
 					var r = fn(Ctrl);
 					if (typeof(r) == "string") {
 						s = s.replace("%" + re + "%", r);
@@ -1156,10 +1162,7 @@ AddEnv("TreeSelected", function(Ctrl)
 	return strSel;
 });
 
-AddEnv("Installed", function(Ctrl)
-{
-	return fso.GetDriveName(api.GetModuleFileName(null));
-});
+AddEnv("Installed", fso.GetDriveName(api.GetModuleFileName(null)));
 
 PathMatchEx = function (path, s)
 {
@@ -2718,6 +2721,14 @@ DownloadFile = function (url, fn)
 	ado.Write(xhr["responseBody"]);
 	ado.SaveToFile(fn, adSaveCreateOverWrite);
 	ado.Close();
+}
+
+GetNavigateFlags = function (FV)
+{
+	if (!FV && OpenMode != SBSP_NEWBROWSER) {
+		FV = te.Ctrl(CTRL_FV);
+	}
+	return FV && FV.Data.Lock ? SBSP_NEWBROWSER : OpenMode;
 }
 
 AddEvent("ConfigChanged", function (s)
