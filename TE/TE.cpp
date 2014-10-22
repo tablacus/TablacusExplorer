@@ -5194,15 +5194,26 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 					IFolderView *pFV;
 					if (pSB->m_pShellView && SUCCEEDED(pSB->m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV)))) {
 						int nCount;
-						UINT uID = 6477;
 						if SUCCEEDED(pFV->ItemCount(SVGIO_SELECTION, &nCount)) {
-							if (nCount == 0) {
-								pFV->ItemCount(SVGIO_ALLVIEW, &nCount);
-								uID = 6466;
+							UINT uID;
+							if (nCount) {
+								uID = nCount > 1 ? 38194 : 38195;
 							}
-							WCHAR sz[MAX_STATUS];
-							LoadString(g_hShell32, uID, sz, MAX_STATUS);
-							CopyMemory(&sz[4], L"%d", 2 * sizeof(WCHAR));
+							else if SUCCEEDED(pFV->ItemCount(SVGIO_ALLVIEW, &nCount)) {
+								uID = nCount > 1 ? 38192 : 38193;
+							}
+							WCHAR sz[MAX_STATUS + 4];
+							if (LoadString(g_hShell32, uID, &sz[4], MAX_STATUS) <= 2) {
+								uID = uID < 38194 ? 6466 : 6477;
+								if (LoadString(g_hShell32, uID, sz, MAX_STATUS) <= 6) {
+									lstrcpy(&sz[6], nCount <= 1 ? L" item" : L" items");
+									if (uID == 6477) {
+										lstrcat(&sz[6], L" selected");
+									}
+								}
+							}
+							sz[4] = '%';
+							sz[5] = 'd';
 							swprintf_s(g_szStatus, MAX_STATUS, &sz[4], nCount);
 						}
 						pFV->Release();
@@ -6572,7 +6583,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		}
 		if (hr != S_OK) {
 			if (hr == S_FALSE
-#ifndef _WIN64
+#ifdef _2000XP
 				&& g_bUpperVista
 #endif
 			) {
@@ -8394,9 +8405,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				return S_OK;
 			//DIID_DShellFolderViewEvents
 			case DISPID_SELECTIONCHANGED:
-				if (m_pExplorerBrowser) {
-					SetStatusTextSB(NULL);
-				}
+				SetStatusTextSB(NULL);
 				return DoFunc(TE_OnSelectionChanged, this, S_OK);
 			case DISPID_FILELISTENUMDONE:
 				if (m_bNavigateComplete) {
@@ -9446,7 +9455,7 @@ HRESULT CteShellBrowser::CreateViewWindowEx(IShellView *pPreviousView)
 		if SUCCEEDED(m_pSF2->CreateViewObject(m_pTabs->m_hwndStatic, IID_PPV_ARGS(&m_pShellView)) && m_pShellView) {
 #endif
 			if (m_param[SB_ViewMode] == FVM_ICON && m_param[SB_IconSize] < 48
-#ifndef _WIN64
+#ifdef _2000XP
 				&& g_bUpperVista
 #endif
 			) {
