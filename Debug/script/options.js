@@ -723,7 +723,14 @@ function LoadX(mode, fn)
 					while (--i >= 0) {
 						var item = items[i];
 						var s = item.getAttribute(mode);
-						SetData(o[i], [api.strcmpi(mode, "Key") ? s : GetKeyName(s), item.text, item.getAttribute("Type")]);
+						if (api.strcmpi(mode, "Key") == 0) {
+							var ar = /,$/.test(s) ? [s] : s.split(",");
+							for (var k = ar.length; k--;) {
+								ar[k] = GetKeyName(ar[k]);
+							}
+							s = ar.join(",");
+						}
+						SetData(o[i], [s, item.text, item.getAttribute("Type")]);
 					}
 				}
 			}
@@ -795,10 +802,14 @@ function SaveX(mode)
 				var a = o[i].value.split(g_sep);
 				var s = a[0];
 				if (api.strcmpi(mode, "Key") == 0) {
-					var n = GetKeyKey(s);
-					if (n) {
-						s = api.sprintf(8, "$%x", n);
+					var ar = /,$/.test(s) ? [s] : s.split(",");
+					for (var k = ar.length; k--;) {
+						var n = GetKeyKey(ar[k]);
+						if (n) {
+							ar[k] = api.sprintf(8, "$%x", n);
+						}
 					}
+					s = ar.join(",");
 				}
 				item.setAttribute(mode, s);
 				item.text = a[1];
@@ -1265,11 +1276,11 @@ InitDialog = function ()
 	if (api.strcmpi(Query, "key") == 0) {
 		returnValue = false;
 		var s = [];
-		s.push('<div style="padding: 8px;" style="display: block;"><label>Key</label><br /><input type="text" name="q" style="width: 100%" /></div>');
+		s.push('<div style="padding: 8px;" style="display: block;"><label>Key</label><br /><input type="text" name="q" style="width: 100%; ime-mode: disabled" /></div>');
 		document.getElementById("Content").innerHTML = s.join("");
 		document.body.onkeydown = function ()
 		{
-			returnValue = GetKeyName(api.sprintf(10, "$%x", (api.MapVirtualKey(event.keyCode, 0) | (event.keyCode > 32 && event.keyCode < 96 ? 256 : 0) | GetKeyShift())));
+			returnValue = GetKeyName(api.sprintf(10, "$%x", (api.MapVirtualKey(event.keyCode, 0) | ((event.keyCode >= 33 && event.keyCode <= 46 || event.keyCode >= 91 && event.keyCode <= 93 || event.keyCode == 111 || event.keyCode == 144) ? 256 : 0) | GetKeyShift())));
 			document.F.q.value = returnValue;
 			document.F.ButtonOk.disabled = false;
 			return false;

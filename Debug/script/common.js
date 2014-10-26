@@ -670,7 +670,12 @@ SaveXml = function (filename, all)
 		}
 	}
 	xml.appendChild(root);
-	xml.save(filename);
+	try {
+		xml.save(filename);
+	}
+	catch (e) {
+		ShowError(e, "Save: " + filename);
+	}
 }
 
 GetKeyKey = function (strKey)
@@ -694,14 +699,20 @@ GetKeyName = function (strKey)
 {
 	var nKey = api.sscanf(strKey, "$%x");
 	if (nKey) {
-		strKey = "";
-		for (var j in MainWindow.g_KeyState) {
-			if (nKey & MainWindow.g_KeyState[j][1]) {
-				nKey -= MainWindow.g_KeyState[j][1];
-				strKey += MainWindow.g_KeyState[j][0] + "+";
+		var s = api.GetKeyNameText((nKey & 0x17f) << 16);
+		if (s) {
+			var arKey = [];
+			for (var j in MainWindow.g_KeyState) {
+				if (nKey & MainWindow.g_KeyState[j][1]) {
+					nKey -= MainWindow.g_KeyState[j][1];
+					arKey.push(MainWindow.g_KeyState[j][0]);
+				}
+			}
+			if (GetKeyKey(s) == nKey) {
+				arKey.push(s);
+				return arKey.join("+");
 			}
 		}
-		strKey += api.GetKeyNameText((nKey & 0x17f) << 16);
 	}
 	return strKey;
 }
@@ -780,6 +791,7 @@ NavigateFV = function (FV, Path, wFlags)
 				FV.Refresh();
 				return;
 			}
+			Path = ExtractPath(FV, Path);
 		}
 		if (FV.Data.Lock) {
 			wFlags |= SBSP_NEWBROWSER;
@@ -975,7 +987,7 @@ ExecOpen = function (Ctrl, s, type, hwnd, pt, NewTab)
 	var line = s.split("\n");
 	for (var i = 0; i < line.length; i++) {
 		if (line[i] != "") {
-			Navigate2(ExtractPath(Ctrl, line[i]), NewTab);
+			Navigate2(ExtractPath(Ctrl, line[i], pt), NewTab);
 			NewTab |= SBSP_NEWBROWSER;
 		}
 	}
@@ -986,7 +998,7 @@ DropOpen = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, b
 {
 	var line = s.split("\n");
 	var hr = E_FAIL;
-	var path = ExtractPath(Ctrl, line[0]);
+	var path = ExtractPath(Ctrl, line[0], pt);
 	if (!api.ILIsEqual(dataObj.Item(-1), path)) {
 		var DropTarget = api.DropTarget(path);
 		if (DropTarget) {
@@ -1079,9 +1091,27 @@ DropScript = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect,
 	return E_NOTIMPL;
 }
 
-ExtractPath = function (Ctrl, s)
+ExtractPath = function (Ctrl, s, pt)
 {
-	return api.PathUnquoteSpaces(ExtractMacro(Ctrl, GetConsts(s)));
+	s = api.PathUnquoteSpaces(ExtractMacro(Ctrl, GetConsts(s)));
+	if (/^\.|^\\$/.test(s)) {
+		var FV = GetFolderView(Ctrl, pt);
+		if (FV) {
+			if (s == "\\") {
+				return fso.GetDriveName(FV.FolderItem.Path) + s;
+			}
+			if (s == "..") {
+				return api.GetDisplayNameOf(api.ILGetParent(FV), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
+			}
+			if (/\.\.\\(.*)/.test(s)) {
+				return fso.BuildPath(api.GetDisplayNameOf(api.ILGetParent(FV), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), RegExp.$1);
+			}
+			if (/\.\\(.*)/.test(s)) {
+				return fso.BuildPath(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), RegExp.$1);
+			}
+		}
+	}
+	return s;
 }
 
 ExtractMacro = function (Ctrl, s)
@@ -1773,7 +1803,13 @@ MakeMenus = function (hMenu, menus, arMenu, items)
 
 SaveXmlEx = function (filename, xml, bAppData)
 {
-	xml.save(fso.BuildPath(te.Data.DataFolder, "config\\" + filename));
+	try {
+		filename = fso.BuildPath(te.Data.DataFolder, "config\\" + filename);
+		xml.save(filename);
+	}
+	catch (e) {
+		ShowError(e, "Save: " + filename);
+	}
 }
 
 BlurId = function (Id)

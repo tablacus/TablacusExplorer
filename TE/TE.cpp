@@ -1559,17 +1559,19 @@ int teGetModuleFileName(HMODULE hModule, BSTR *pbsPath)
 	return i;
 }
 
-VOID teDragQueryFile(HDROP hDrop, UINT iFile, BSTR *pbsPath)
+int teDragQueryFile(HDROP hDrop, UINT iFile, BSTR *pbsPath)
 {
+	UINT i = 0;
 	for (UINT nSize = MAX_PATH; nSize < MAX_PATHEX; nSize += MAX_PATH) {
 		*pbsPath = SysAllocStringLen(NULL, nSize);
-		UINT i = DragQueryFile(hDrop, iFile, *pbsPath, nSize);
+		i = DragQueryFile(hDrop, iFile, *pbsPath, nSize);
 		if (i + 1 < nSize) {
 			(*pbsPath)[i] = NULL;
 			break;
 		}
 		SysFreeString(*pbsPath);
 	}
+	return i;
 }
 
 VOID tePathAppend(BSTR *pbsPath, LPWSTR pszPath, LPWSTR pszFile)
@@ -2051,12 +2053,11 @@ LPWSTR teGetCommandLine()
 {
 	if (!g_bsCmdLine) {
 		LPWSTR strCmdLine = GetCommandLine();
-		int nSize = lstrlen(strCmdLine) + MAX_PATH;
-		g_bsCmdLine = SysAllocStringLen(NULL, nSize);
-		g_bsCmdLine[0] = NULL;
+		int nSize = lstrlen(strCmdLine) + MAX_PROP;
+		BSTR bsCmdLine = SysAllocStringLen(NULL, nSize);
 		int j = 0;
 		int i = 0;
-		while (i < nSize) {
+		while (i < nSize && strCmdLine[j]) {
 			if (StrCmpNI(&strCmdLine[j], L"/idlist,:", 9) == 0) {
 				LONGLONG hData;
 				DWORD dwProcessId;
@@ -2077,7 +2078,7 @@ LPWSTR teGetCommandLine()
 					teVariantChangeType(&v2, &v, VT_BSTR);
 					lstrcpy(sz, v2.bstrVal);
 					PathQuoteSpaces(sz);
-					lstrcpy(&g_bsCmdLine[i], sz);
+					lstrcpy(&bsCmdLine[i], sz);
 					i += lstrlen(sz);
 					VariantClear(&v);
 					VariantClear(&v2);
@@ -2088,11 +2089,13 @@ LPWSTR teGetCommandLine()
 #endif
 			}
 			else {
-				g_bsCmdLine[i++] = strCmdLine[j++];
+				bsCmdLine[i++] = strCmdLine[j++];
 			}
 		}
+		g_bsCmdLine = ::SysAllocStringLen(bsCmdLine, i);
+		::SysFreeString(bsCmdLine);
 	}
-	return g_bsCmdLine;
+	return ::SysAllocString(g_bsCmdLine);
 }
 
 HRESULT teCLSIDFromProgID(__in LPCOLESTR lpszProgID, __out LPCLSID lpclsid)
@@ -2434,7 +2437,7 @@ HRESULT GetShellFolder2(IShellFolder2 **ppSF2, LPCITEMIDLIST pidl, BSTR bsFilter
 	return hr;
 }
 
-BSTR teGetMenuString(HMENU hMenu, UINT uIDItem, BOOL fByPosition)
+int teGetMenuString(BSTR *pbs, HMENU hMenu, UINT uIDItem, BOOL fByPosition)
 {
 	MENUITEMINFO mii;
 	::ZeroMemory(&mii, sizeof(MENUITEMINFO));
@@ -2442,15 +2445,11 @@ BSTR teGetMenuString(HMENU hMenu, UINT uIDItem, BOOL fByPosition)
 	mii.fMask  = MIIM_STRING;
 	GetMenuItemInfo(hMenu, uIDItem, fByPosition, &mii);
 	if (mii.cch) {
-		BSTR dwTypeData = SysAllocStringLen(NULL, ++mii.cch);
-		mii.dwTypeData = dwTypeData;
+		*pbs = SysAllocStringLen(NULL, mii.cch++);
+		mii.dwTypeData = *pbs;
 		GetMenuItemInfo(hMenu, uIDItem, fByPosition, &mii);
-		dwTypeData[mii.cch] = NULL;
-		return dwTypeData;
 	}
-	else {
-		return NULL;
-	}
+	return mii.cch;
 }
 
 VOID teMenuText(LPWSTR sz)
@@ -2545,8 +2544,7 @@ void teCopyMenu(HMENU hDest, HMENU hSrc, UINT fState)
 		mii.cbSize = sizeof(MENUITEMINFO);
 		mii.fMask  = MIIM_STRING;
 		GetMenuItemInfo(hSrc, n, TRUE, &mii);
-		BSTR bsTypeData = SysAllocStringLen(NULL, ++mii.cch);
-		bsTypeData[mii.cch] = NULL;
+		BSTR bsTypeData = SysAllocStringLen(NULL, mii.cch++);
 		mii.dwTypeData = bsTypeData;
 		mii.fMask  = MIIM_ID | MIIM_TYPE | MIIM_SUBMENU | MIIM_STATE;
 		GetMenuItemInfo(hSrc, n, TRUE, &mii);
@@ -6294,7 +6292,7 @@ HRESULT CteShellBrowser::Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		if (!(wFlags & SBSP_NEWBROWSER || m_bEmpty)) {
 			hr = Navigate2(pFolderItem, wFlags, param, pFolderItems, m_pFolderItem, this);
 			if (hr == E_ACCESSDENIED) {
-				wFlags |= SBSP_NEWBROWSER;
+				wFlags = (wFlags | SBSP_NEWBROWSER) & (~SBSP_ACTIVATE_NOFOCUS);
 			}
 		}
 		if (wFlags & SBSP_NEWBROWSER || (m_bEmpty && m_bVisible)) {
@@ -11027,7 +11025,7 @@ STDMETHODIMP CteTabs::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD w
 				}
 				if (pVarResult) {
 					pVarResult->vt = VT_BOOL;
-					pVarResult->boolVal = m_bVisible;
+					pVarResult->boolVal = m_bVisible ? VARIANT_TRUE : VARIANT_FALSE;
 				}
 				return S_OK;
 			//Id
@@ -15444,6 +15442,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 		LONG *plResult = (LONG *)&Result;
 		BOOL *pbResult = (BOOL *)&Result;
 		BSTR bsResult = NULL;
+		int nLen = 0;
 		IUnknown *punk = NULL;
 
 		if (wFlags == DISPATCH_PROPERTYGET) {
@@ -15465,43 +15464,45 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			}
 			if (dispIdMember >= 50000) {//string
 				if (pVarResult) {
-					BSTR bsName = NULL;
 					switch(dispIdMember) {
 						case 50005:
 							if (nArg >= 0) {
-								int i = GetWindowTextLength((HWND)param[0]);
-								bsName = SysAllocStringLen(NULL, i);
-								GetWindowText((HWND)param[0], bsName, i);
+								nLen = GetWindowTextLength((HWND)param[0]);
+								if (nLen) {
+									bsResult = SysAllocStringLen(NULL, nLen);
+									nLen = GetWindowText((HWND)param[0], bsResult, nLen + 1);
+								}
 							}
 							break;
 						case 50015:
 							if (nArg >= 0) {
-								bsName = SysAllocStringLen(NULL, MAX_CLASS_NAME);
-								GetClassName((HWND)param[0], bsName, MAX_CLASS_NAME);
+								bsResult = SysAllocStringLen(NULL, MAX_CLASS_NAME);
+								nLen = GetClassName((HWND)param[0], bsResult, MAX_CLASS_NAME);
 							}
 							break;
 						case 50145:
 							if (nArg >= 1) {
-								bsName = SysAllocStringLen(NULL, 4096);
-								LoadString((HINSTANCE)param[0], (UINT)param[1], bsName, 4096);
+								bsResult = SysAllocStringLen(NULL, SIZE_BUFF);
+								nLen = LoadString((HINSTANCE)param[0], (UINT)param[1], bsResult, SIZE_BUFF);
 							}
 							break;
 						case 50025:
 							if (nArg >= 0) {
-								teGetModuleFileName((HMODULE)param[0], &bsName);
+								nLen = teGetModuleFileName((HMODULE)param[0], &bsResult);
 							}
 							break;
 						case 50035:
-							bsName = SysAllocString(teGetCommandLine());
+							bsResult = teGetCommandLine();
+							nLen = -2;
 							break;
 						case 50045:
 							//use wsh.CurrentDirectory
-							bsName = SysAllocStringLen(NULL, MAX_PATH);
-							GetCurrentDirectory(MAX_PATH, bsName);
+							bsResult = SysAllocStringLen(NULL, MAX_PATH);
+							nLen = GetCurrentDirectory(MAX_PATH, bsResult);
 							break;
 						case 50055:
 							if (nArg >= 2) {
-								bsName = teGetMenuString((HMENU)param[0], (UINT)param[1], param[2] != MF_BYCOMMAND);
+								nLen = teGetMenuString(&bsResult, (HMENU)param[0], (UINT)param[1], param[2] != MF_BYCOMMAND);
 							}
 							break;
 						case 50065: //GetDisplayNameOf
@@ -15539,8 +15540,8 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 							return S_OK;
 						case 50075:
 							if (nArg >= 0) {
-								bsName = SysAllocStringLen(NULL, MAX_PATH);
-								GetKeyNameText((LONG)param[0], bsName, MAX_PATH);
+								bsResult = SysAllocStringLen(NULL, MAX_PATH);
+								nLen = GetKeyNameText((LONG)param[0], bsResult, MAX_PATH);
 							}
 							break;
 						//DragQueryFile
@@ -15554,27 +15555,26 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 									return S_OK;
 								}
 								else {
-									teDragQueryFile((HDROP)param[0], (UINT)param[1], &bsName);
+									nLen = teDragQueryFile((HDROP)param[0], (UINT)param[1], &bsResult);
 								}
 							}
 							break;
 						case 50095:
 							if (nArg >= 0) {
-								pVarResult->vt = VT_BSTR;
-								pVarResult->bstrVal = SysAllocString(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]));
-								return S_OK;
+								bsResult = SysAllocString(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]));
+								nLen = -2;
 							}
 							break;
 						case 50105:
 							if (nArg >= 1) {
-								bsName = SysAllocStringLen(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]), (UINT)param[1]);
+								bsResult = SysAllocStringLen(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]), (UINT)param[1]);
+								nLen = -2;
 							}
 							break;
 						case 50115:
 							if (nArg >= 1) {
-								pVarResult->vt = VT_BSTR;
-								pVarResult->bstrVal = SysAllocStringByteLen(reinterpret_cast<char*>(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg])), (UINT)param[1]);
-								return S_OK;
+								bsResult = SysAllocStringByteLen(reinterpret_cast<char*>(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg])), (UINT)param[1]);
+								nLen = -2;
 							}
 							break;
 						case 50125://sprintf_s
@@ -15582,69 +15582,70 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 								int nSize = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 								LPWSTR pszFormat = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]);
 								if (pszFormat && nSize > 0) {
-									bsName = SysAllocStringLen(NULL, nSize);
-									bsName[0] = NULL;
+									bsResult = SysAllocStringLen(NULL, nSize);
 									int nIndex = 1;
-									int nLen = 0;
-									while (++nIndex <= nArg && pszFormat[0] && nLen < nSize) {
-										int nPos = 0;
+									int nPos = 0;
+									while (pszFormat[nPos] && nLen < nSize) {
 										while (pszFormat[nPos] && pszFormat[nPos++] != '%') {
 										}
 										while (WCHAR wc = pszFormat[nPos]) {
 											nPos++;
 											if (wc == '%') {//Escape %
-												lstrcpyn(&bsName[nLen], pszFormat, nPos);
+												lstrcpyn(&bsResult[nLen], pszFormat, nPos);
 												nLen += nPos - 1;
 												pszFormat += nPos;
 												nPos = 0;
 												break;
 											}
-											if (StrChrIW(L"diuoxc", wc)) {//Integer
-												wc = pszFormat[nPos];
-												pszFormat[nPos] = NULL;
-												swprintf_s(&bsName[nLen], nSize - nLen, pszFormat, GetLLFromVariant(&pDispParams->rgvarg[nArg - nIndex]));
-												nLen += lstrlen(&bsName[nLen]);
-												pszFormat += nPos;
-												nPos = 0;
-												pszFormat[0] = wc;
-												break;
-											}
-											if (StrChrIW(L"efga", wc)) {//Real
-												wc = pszFormat[nPos];
-												pszFormat[nPos] = NULL;
-												VARIANT v;
-												teVariantChangeType(&v, &pDispParams->rgvarg[nArg - nIndex], VT_R8);
-												swprintf_s(&bsName[nLen], nSize - nLen, pszFormat, v.dblVal);
-												nLen += lstrlen(&bsName[nLen]);
-												pszFormat += nPos;
-												nPos = 0;
-												pszFormat[0] = wc;
-												break;
-											}
-											if (StrChrIW(L"s", wc)) {//String
-												wc = pszFormat[nPos];
-												pszFormat[nPos] = NULL;
-												VARIANT v;
-												teVariantChangeType(&v, &pDispParams->rgvarg[nArg - nIndex], VT_BSTR);
-												swprintf_s(&bsName[nLen], nSize - nLen, pszFormat, v.bstrVal);
-												VariantClear(&v);
-												nLen += lstrlen(&bsName[nLen]);
-												pszFormat += nPos;
-												nPos = 0;
-												pszFormat[0] = wc;
-												break;
-											}
-											if (!StrChrIW(L"0123456789-+#.hl", wc)) {//not Specifier
-												lstrcpyn(&bsName[nLen], pszFormat, nPos + 1);
-												nLen += nPos;
-												pszFormat += nPos;
-												nPos = 0;
-												break;
+											if (nIndex <= nArg) {
+												if (StrChrIW(L"diuoxc", wc)) {//Integer
+													wc = pszFormat[nPos];
+													pszFormat[nPos] = NULL;
+													swprintf_s(&bsResult[nLen], nSize - nLen, pszFormat, GetLLFromVariant(&pDispParams->rgvarg[nArg - ++nIndex]));
+													nLen += lstrlen(&bsResult[nLen]);
+													pszFormat += nPos;
+													nPos = 0;
+													pszFormat[0] = wc;
+													break;
+												}
+												if (StrChrIW(L"efga", wc)) {//Real
+													wc = pszFormat[nPos];
+													pszFormat[nPos] = NULL;
+													VARIANT v;
+													teVariantChangeType(&v, &pDispParams->rgvarg[nArg - ++nIndex], VT_R8);
+													swprintf_s(&bsResult[nLen], nSize - nLen, pszFormat, v.dblVal);
+													nLen += lstrlen(&bsResult[nLen]);
+													pszFormat += nPos;
+													nPos = 0;
+													pszFormat[0] = wc;
+													break;
+												}
+												if (StrChrIW(L"s", wc)) {//String
+													wc = pszFormat[nPos];
+													pszFormat[nPos] = NULL;
+													VARIANT v;
+													teVariantChangeType(&v, &pDispParams->rgvarg[nArg - ++nIndex], VT_BSTR);
+													swprintf_s(&bsResult[nLen], nSize - nLen, pszFormat, v.bstrVal);
+													VariantClear(&v);
+													nLen += lstrlen(&bsResult[nLen]);
+													pszFormat += nPos;
+													nPos = 0;
+													pszFormat[0] = wc;
+													break;
+												}
+												if (!StrChrIW(L"0123456789-+#.hl", wc)) {//not Specifier
+													lstrcpyn(&bsResult[nLen], pszFormat, nPos + 1);
+													nLen += nPos;
+													pszFormat += nPos;
+													nPos = 0;
+													break;
+												}
 											}
 										}
 									}
-									if (nLen < nSize) {
-										lstrcpyn(&bsName[nLen], pszFormat, nSize - nLen);
+									if (nLen < nSize && pszFormat[0]) {
+										lstrcpyn(&bsResult[nLen], pszFormat, nSize - nLen);
+										nLen += lstrlen(&bsResult[nLen]);
 									}
 								}
 							}
@@ -15653,15 +15654,14 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 							if (nArg >= 0) {
 								if (lpfnCryptBinaryToStringW) {
 									UCHAR *pc;
-									int nLen;
 									GetpDataFromVariant(&pc, &nLen, &pDispParams->rgvarg[nArg]);
 									if (pc) {
 										DWORD dwSize;
 										lpfnCryptBinaryToStringW(pc, nLen, CRYPT_STRING_BASE64, NULL, &dwSize);
 										if (dwSize > 0) {
-											pVarResult->bstrVal = SysAllocStringLen(NULL, dwSize - 1);
-											pVarResult->vt = VT_BSTR;
-											lpfnCryptBinaryToStringW(pc, nLen, CRYPT_STRING_BASE64, pVarResult->bstrVal, &dwSize);
+											bsResult = SysAllocStringLen(NULL, dwSize - 1);
+											lpfnCryptBinaryToStringW(pc, nLen, CRYPT_STRING_BASE64, bsResult, &dwSize);
+											nLen = -1;
 										}
 									}
 								}
@@ -15674,34 +15674,39 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 								LPWSTR lp2 = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 2]);
 								LPWSTR lp3 = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 3]);
 								AssocQueryString((ASSOCF)param[0], (ASSOCSTR)param[1], lp2 , lp3, NULL, &cch);
-								bsName = SysAllocStringLen(NULL, cch);
-								AssocQueryString((ASSOCF)param[0], (ASSOCSTR)param[1], lp2 , lp3, bsName, &cch);
-								bsName[cch] = NULL;
+								if (cch > 0) {
+									nLen = cch - 1;
+									bsResult = SysAllocStringLen(NULL, nLen);
+									AssocQueryString((ASSOCF)param[0], (ASSOCSTR)param[1], lp2 , lp3, bsResult, &cch);
+								}
 							}
 							break;
 						//StrFormatByteSize
 						case 50165:
 							if (nArg >= 0) {
-								int nSize = (nArg >= 1) ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) : MAX_COLUMN_NAME_LEN;
-								if (nSize > 0) {
-									bsName = SysAllocStringLen(NULL, nSize);
-									StrFormatByteSize(GetLLFromVariant(&pDispParams->rgvarg[nArg]), bsName, nSize);
+								nLen = (nArg >= 1) ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) : MAX_COLUMN_NAME_LEN;
+								if (nLen > 0) {
+									bsResult = SysAllocStringLen(NULL, nLen);
+									StrFormatByteSize(GetLLFromVariant(&pDispParams->rgvarg[nArg]), bsResult, nLen);
 								}
+								nLen = -1;
 							}
 							break;
 						default:
 							return DISP_E_MEMBERNOTFOUND;
 					}
-					if (bsName) {
-						pVarResult->vt = VT_BSTR;
-						if (lstrlen(bsName) == SysStringLen(bsName)) {
-							pVarResult->bstrVal = bsName;
+					pVarResult->vt = VT_BSTR;
+					if (bsResult) {
+						if (nLen < 0) {
+							nLen = lstrlen(bsResult);
 						}
-						else {
-							pVarResult->bstrVal = SysAllocString(bsName);
-							SysFreeString(bsName);
+						if (SysStringLen(bsResult) == nLen) {
+							pVarResult->bstrVal = bsResult;
+							return S_OK;
 						}
 					}
+					pVarResult->bstrVal = SysAllocStringLen(bsResult, nLen);
+					teSysFreeString(&bsResult);
 				}
 				return S_OK;
 			}
@@ -16991,29 +16996,29 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 						if (v.bstrVal) {
 							bsResult = ::SysAllocStringLen(v.bstrVal, ::SysStringLen(v.bstrVal) + 3);
 							PathQuoteSpaces(bsResult);
+							nLen = -1;
 						}
 						break;
 					case 6015:
 						if (v.bstrVal) {
 							bsResult = ::SysAllocString(v.bstrVal);
 							PathUnquoteSpaces(bsResult);
+							nLen = -1;
 						}
 						break;
 					case 6025:
 						if (v.bstrVal) {
-							int nLen = GetShortPathName(v.bstrVal, NULL, 0);
+							nLen = GetShortPathName(v.bstrVal, NULL, 0);
 							bsResult = ::SysAllocStringLen(NULL, nLen + MAX_PATH);
 							nLen = GetShortPathName(v.bstrVal, bsResult, nLen);
-							bsResult[nLen] = NULL;
 						}
 						break;
 					case 6035:
 						if (v.bstrVal) {
 							DWORD dwLen = ::SysStringLen(v.bstrVal) + MAX_PATH;
 							bsResult = ::SysAllocStringLen(NULL, dwLen);
-							if FAILED(PathCreateFromUrl(v.bstrVal, bsResult, &dwLen, NULL)) {
-								teSysFreeString(&bsResult);
-							}
+							PathCreateFromUrl(v.bstrVal, bsResult, &dwLen, NULL);
+							nLen = dwLen;
 						}
 						break;
 					case 6045:
@@ -17021,6 +17026,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 							UINT uLen = ::SysStringLen(v.bstrVal) + MAX_PATH;
 							bsResult = ::SysAllocStringLen(v.bstrVal, uLen);
 							PathSearchAndQualify(v.bstrVal, bsResult, uLen);
+							nLen = -1;
 						}
 						break;
 			//PSFormatForDisplay
@@ -17035,6 +17041,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 											LPWSTR psz;
 											if SUCCEEDED(pdesc->FormatForDisplay(*((PROPVARIANT *)&pDispParams->rgvarg[nArg - 1]), (PROPDESC_FORMAT_FLAGS)GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]), &psz)) {
 												bsResult = ::SysAllocString(psz);
+												nLen = -2;
 												::CoTaskMemFree(psz);
 											}
 											pdesc->Release();
@@ -17043,11 +17050,11 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 #ifdef _2000XP
 									else {
 										bsResult = ::SysAllocStringLen(NULL, MAX_PROP);
-										bsResult[0] = NULL;
 										IPropertyUI *pPUI;
 										if SUCCEEDED(CoCreateInstance(CLSID_PropertiesUI, NULL, CLSCTX_INPROC, IID_PPV_ARGS(&pPUI))) {
 											pPUI->FormatForDisplay(propKey.fmtid, propKey.pid, (PROPVARIANT *)&pDispParams->rgvarg[nArg - 1], GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]), bsResult, MAX_PROP);
 											pPUI->Release();
+											nLen = -1;
 										}
 									}
 #endif
@@ -17066,6 +17073,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 										LPWSTR psz;
 										if SUCCEEDED(pdesc->GetDisplayName(&psz)) {
 											bsResult = ::SysAllocString(psz);
+											nLen = -2;
 											CoTaskMemFree(psz);
 										}
 										pdesc->Release();
@@ -17074,11 +17082,11 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 #ifdef _2000XP
 								else {
 									bsResult = ::SysAllocStringLen(NULL, MAX_PROP);
-									bsResult[0] = NULL;
 									IPropertyUI *pPUI;
 									if SUCCEEDED(CoCreateInstance(CLSID_PropertiesUI, NULL, CLSCTX_INPROC, IID_PPV_ARGS(&pPUI))) {
 										pPUI->GetDisplayName(propKey.fmtid, propKey.pid, PUIFNF_DEFAULT, bsResult, MAX_PROP);
 										pPUI->Release();
+										nLen = -1;
 									}
 								}
 #endif
@@ -17093,20 +17101,21 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			}
 			int nMode = dispIdMember % 10;
 			if (nMode >= 5) {
+				pVarResult->vt = VT_BSTR;
 				if (bsResult) {
-					pVarResult->vt = VT_BSTR;
-					if (lstrlen(bsResult) == ::SysStringLen(bsResult)) {
-						pVarResult->bstrVal = bsResult;
+					if (nLen < 0) {
+						nLen = lstrlen(bsResult);
 					}
-					else {
-						pVarResult->bstrVal = SysAllocString(bsResult);
-						::SysFreeString(bsResult);
+					if (::SysStringLen(bsResult) == nLen) {
+						pVarResult->bstrVal = bsResult;
+						return S_OK;
 					}
 				}
+				pVarResult->bstrVal = SysAllocStringLen(bsResult, nLen);
+				teSysFreeString(&bsResult);
+				return S_OK;
 			}
-			else {
-				SetReturnValue(pVarResult, dispIdMember, &Result);
-			}
+			SetReturnValue(pVarResult, dispIdMember, &Result);
 			return S_OK;
 		}
 		switch(dispIdMember) {
@@ -18099,7 +18108,7 @@ CteTest::~CteTest()
 STDMETHODIMP CteTest::QueryInterface(REFIID riid, void **ppvObject)
 {
 	*ppvObject = NULL;
-
+	
 	if (IsEqualIID(riid, IID_IUnknown) || IsEqualIID(riid, IID_IDispatch)) {
 		*ppvObject = static_cast<IDispatch *>(this);
 	}
@@ -18113,13 +18122,11 @@ STDMETHODIMP CteTest::QueryInterface(REFIID riid, void **ppvObject)
 
 STDMETHODIMP_(ULONG) CteTest::AddRef()
 {
-	g_bReload = false;
 	return ::InterlockedIncrement(&m_cRef);
 }
 
 STDMETHODIMP_(ULONG) CteTest::Release()
 {
-	g_bReload = false;
 	if (::InterlockedDecrement(&m_cRef) == 0) {
 		delete this;
 		return 0;

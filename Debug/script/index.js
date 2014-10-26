@@ -1675,6 +1675,13 @@ function InitCode()
 
 SetKeyExec = function (mode, strKey, path, type, bLast)
 {
+	if (/,/.test(strKey) && !/,$/.test(strKey)) {
+		var ar = strKey.split(",");
+		for (var i in ar) {
+			SetKeyExec(mode, ar[i], path, type, bLast);
+		}
+		return;
+	}
 	if (strKey) {
 		strKey = GetKeyKey(strKey);
 		var KeyMode = eventTE.Key[mode];
@@ -1694,6 +1701,13 @@ SetKeyExec = function (mode, strKey, path, type, bLast)
 
 SetGestureExec = function (mode, strGesture, path, type, bLast)
 {
+	if (/,/.test(strGesture) && !/,$/.test(strGesture)) {
+		var ar = strGesture.split(",");
+		for (var i in ar) {
+			SetGestureExec(mode, ar[i], path, type, bLast);
+		}
+		return;
+	}
 	if (strGesture) {
 		strGesture = strGesture.toUpperCase();
 		var MouseMode = eventTE.Mouse[mode];
@@ -1823,15 +1837,24 @@ g_mouse =
 	GetButton: function (msg, wParam)
 	{
 		if (msg >= WM_LBUTTONDOWN && msg <= WM_LBUTTONDBLCLK) {
+			if (api.GetKeyState(VK_RBUTTON) < 0) {
+				g_mouse.CancelContextMenu = true;
+			}
 			return "1";
 		}
 		if (msg >= WM_RBUTTONDOWN && msg <= WM_RBUTTONDBLCLK) {
 			return "2";
 		}
 		if (msg >= WM_MBUTTONDOWN && msg <= WM_MBUTTONDBLCLK) {
+			if (api.GetKeyState(VK_RBUTTON) < 0) {
+				g_mouse.CancelContextMenu = true;
+			}
 			return "3";
 		}
 		if (msg >= WM_XBUTTONDOWN && msg <= WM_XBUTTONDBLCLK) {
+			if (api.GetKeyState(VK_RBUTTON) < 0) {
+				g_mouse.CancelContextMenu = true;
+			}
 			switch (wParam >> 16) {
 				case XBUTTON1:
 					return "4";
