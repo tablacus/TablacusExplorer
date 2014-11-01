@@ -1290,28 +1290,38 @@ te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 		return hr; 
 	}
 	if (msg == TWM_CHANGENOTIFY) {
+		var fFolder = SHCNE_DRIVEREMOVED | SHCNE_MEDIAREMOVED | SHCNE_NETUNSHARE | SHCNE_RENAMEFOLDER | SHCNE_RMDIR | SHCNE_SERVERDISCONNECT;
 		var pidls = te.FolderItems();
 		var hLock = api.SHChangeNotification_Lock(wParam, lParam, pidls);
 		if (hLock) {
-			if (pidls.lEvent & (SHCNE_DRIVEREMOVED | SHCNE_MEDIAREMOVED | SHCNE_NETUNSHARE | SHCNE_RENAMEFOLDER | SHCNE_RMDIR | SHCNE_SERVERDISCONNECT)) {
+			if (pidls.lEvent & (fFolder | SHCNE_DELETE | SHCNE_RENAMEITEM)) {
 				var cFV = te.Ctrls(CTRL_FV);
 				for (var i in cFV) {
 					var FV = cFV[i];
-					if (api.ILIsEqual(FV, pidls[0])) {
-						if (pidls.lEvent == SHCNE_RENAMEFOLDER && !FV.Data.Lock) {
-							FV.Navigate(api.GetDisplayNameOf(pidls[1], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX), SBSP_SAMEBROWSER);
+					if (pidls.lEvent & fFolder) {
+						if (api.ILIsEqual(FV, pidls[0])) {
+							if (pidls.lEvent == SHCNE_RENAMEFOLDER && !FV.Data.Lock) {
+								FV.Navigate(api.GetDisplayNameOf(pidls[1], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX), SBSP_SAMEBROWSER);
+							}
+							else {
+Addons.Debug.alert(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
+								FV.Suspend();
+							}
 						}
-						else {
-							FV.Suspend();
+						else if (api.ILIsParent(pidls[0], FV, true)) {
+							if (pidls.lEvent == SHCNE_RENAMEFOLDER && !FV.Data.Lock) {
+								FV.Navigate(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING).replace(api.GetDisplayNameOf(pidls[0], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), api.GetDisplayNameOf(pidls[1], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)), SBSP_SAMEBROWSER);
+							}
+							else {
+Addons.Debug.alert(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
+								FV.Suspend();
+							}
 						}
 					}
-					else if (api.ILIsParent(pidls[0], FV, true)) {
-						if (pidls.lEvent == SHCNE_RENAMEFOLDER && !FV.Data.Lock) {
-							FV.Navigate(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING).replace(api.GetDisplayNameOf(pidls[0], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), api.GetDisplayNameOf(pidls[1], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)), SBSP_SAMEBROWSER);
-						}
-						else {
-							FV.Suspend();
-						}
+					if (api.ILIsParent(FV, pidls[0], true)) {
+						var item = api.Memory("LVITEM");
+						item.stateMask = LVIS_CUT;
+						api.SendMessage(FV.hwndList, LVM_SETITEMSTATE, -1, item);
 					}
 				}
 			}
@@ -2709,7 +2719,7 @@ if (!te.Data) {
 	else {
 		LoadConfig();
 	}
-	te.Data.uRegisterId = api.SHChangeNotifyRegister(te.hwnd, SHCNRF_InterruptLevel | SHCNRF_ShellLevel | SHCNRF_NewDelivery, SHCNE_ALLEVENTS, ssfDESKTOP, true);
+	te.Data.uRegisterId = api.SHChangeNotifyRegister(te.hwnd, SHCNRF_InterruptLevel | SHCNRF_ShellLevel | SHCNRF_NewDelivery, SHCNE_ALLEVENTS, TWM_CHANGENOTIFY, ssfDESKTOP, true);
 }
 
 InitCode();

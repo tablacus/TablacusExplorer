@@ -710,6 +710,7 @@ public:
 	VOID Navigate1Ex(LPOLESTR pstr, FolderItems *pFolderItems, UINT wFlags, FolderItem *pPrevious);
 	HRESULT Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *param, FolderItems *pFolderItems, FolderItem *pPrevious, CteShellBrowser *pHistSB);
 	HRESULT Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *param, CteShellBrowser **ppSB, FolderItems *pFolderItems);
+	HRESULT NavigateEB();
 	HRESULT OnBeforeNavigate(FolderItem *pPrevious, UINT wFlags);
 	void InitializeMenuItem(HMENU hmenu, LPTSTR lpszItemName, int nId, HMENU hmenuSub);
 	VOID GetSort(BSTR* pbs);
@@ -745,6 +746,7 @@ public:
 	CteTabs		*m_pTabs;
 	CteTreeView	*m_pTV;
 	LONG_PTR	m_DefProc;
+//	LONG_PTR	m_DefProc2;
 	IShellView  *m_pShellView;
 	IDispatch	*m_pOnFunc[1];
 	TEColumn	*m_pColumns;

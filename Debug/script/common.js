@@ -2036,9 +2036,9 @@ function EscapeUpdateFile(s)
 	return s.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
 
-confirmYN = function (s)
+confirmYN = function (s, title)
 {
-	return wsh.Popup(GetText(s), 0, TITLE, MB_ICONQUESTION | MB_YESNO) == IDYES;
+	return wsh.Popup(GetText(s), 0, GetText(title) || TITLE, MB_ICONQUESTION | MB_YESNO) == IDYES;
 }
 
 createHttpRequest = function ()
@@ -2051,9 +2051,9 @@ createHttpRequest = function ()
 	}
 }
 
-InputDialog = function (text, defaultText, title)
+InputDialog = function (text, defaultText)
 {
-	return prompt(text, defaultText);
+	return prompt(GetText(text), defaultText);
 }
 
 AddonOptions = function (Id, fn, Data)
