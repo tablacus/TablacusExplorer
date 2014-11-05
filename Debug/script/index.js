@@ -406,7 +406,7 @@ AddFavorite = function (FolderItem)
 		if (!FolderItem) {
 			return false;
 		}
-		var s = InputDialog(GetText("Add Favorite"), api.GetDisplayNameOf(FolderItem, SHGDN_INFOLDER));
+		var s = InputDialog("Add Favorite", api.GetDisplayNameOf(FolderItem, SHGDN_INFOLDER));
 		if (s) {
 			item.setAttribute("Name", s);
 			item.setAttribute("Filter", "");
@@ -434,7 +434,7 @@ AddFavoriteEx = function (Ctrl, pt)
 
 CreateNewFolder = function (Ctrl, pt)
 {
-	var path = InputDialog(GetText("New Folder"), "");
+	var path = InputDialog("New Folder", "");
 	if (path) {
 		if (!/^[A-Z]:\\|^\\/i.test(path)) {
 			var FV = GetFolderView(Ctrl, pt);
@@ -447,7 +447,7 @@ CreateNewFolder = function (Ctrl, pt)
 
 CreateNewFile = function (Ctrl, pt)
 {
-	var path = InputDialog(GetText("New File"), "");
+	var path = InputDialog("New File", "");
 	if (path) {
 		if (!/^[A-Z]:\\|^\\/i.test(path)) {
 			var FV = GetFolderView(Ctrl, pt);
@@ -901,6 +901,14 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 
 te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam)
 {
+	if (Ctrl.Type <= CTRL_EB) {
+		if ((wParam & 0xfff) + 1 == CommandID_DELETE) {
+			var Items = Ctrl.SelectedItems();
+			for (var i = Items.Count; i--;) {
+				ChangeNotifyFV(Items[i].IsFolder ? SHCNE_RMDIR : SHCNE_DELETE, Items[i]);
+			}
+		}
+	}
 	var hr = RunEvent3("Command", Ctrl, hwnd, msg, wParam, lParam);
 	RunEvent1("ConfigChanged", "Config");
 	return isFinite(hr) ? hr : S_FALSE; 
@@ -908,6 +916,12 @@ te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam)
 
 te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon)
 {
+	if (Verb == CommandID_DELETE - 1) {
+		var Items = ContextMenu.Items();
+		for (var i = Items.Count; i--;) {
+			ChangeNotifyFV(Items[i].IsFolder ? SHCNE_RMDIR : SHCNE_DELETE, Items[i]);
+		}
+	}
 	var hr = RunEvent3("InvokeCommand", ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon);
 	RunEvent1("ConfigChanged", "Config");
 	if (isFinite(hr)) {
@@ -1290,41 +1304,10 @@ te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 		return hr; 
 	}
 	if (msg == TWM_CHANGENOTIFY) {
-		var fFolder = SHCNE_DRIVEREMOVED | SHCNE_MEDIAREMOVED | SHCNE_NETUNSHARE | SHCNE_RENAMEFOLDER | SHCNE_RMDIR | SHCNE_SERVERDISCONNECT;
 		var pidls = te.FolderItems();
 		var hLock = api.SHChangeNotification_Lock(wParam, lParam, pidls);
 		if (hLock) {
-			if (pidls.lEvent & (fFolder | SHCNE_DELETE | SHCNE_RENAMEITEM)) {
-				var cFV = te.Ctrls(CTRL_FV);
-				for (var i in cFV) {
-					var FV = cFV[i];
-					if (pidls.lEvent & fFolder) {
-						if (api.ILIsEqual(FV, pidls[0])) {
-							if (pidls.lEvent == SHCNE_RENAMEFOLDER && !FV.Data.Lock) {
-								FV.Navigate(api.GetDisplayNameOf(pidls[1], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX), SBSP_SAMEBROWSER);
-							}
-							else {
-Addons.Debug.alert(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
-								FV.Suspend();
-							}
-						}
-						else if (api.ILIsParent(pidls[0], FV, true)) {
-							if (pidls.lEvent == SHCNE_RENAMEFOLDER && !FV.Data.Lock) {
-								FV.Navigate(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING).replace(api.GetDisplayNameOf(pidls[0], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), api.GetDisplayNameOf(pidls[1], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)), SBSP_SAMEBROWSER);
-							}
-							else {
-Addons.Debug.alert(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
-								FV.Suspend();
-							}
-						}
-					}
-					if (api.ILIsParent(FV, pidls[0], true)) {
-						var item = api.Memory("LVITEM");
-						item.stateMask = LVIS_CUT;
-						api.SendMessage(FV.hwndList, LVM_SETITEMSTATE, -1, item);
-					}
-				}
-			}
+			ChangeNotifyFV(pidls.lEvent, pidls[0], pidls[1]);
 			RunEvent1("ChangeNotify", Ctrl, pidls);
 			api.SHChangeNotification_Unlock(hLock);
 		}
@@ -1577,9 +1560,10 @@ function ArrangeAddons()
 			}
 			if (arError.length) {
 				setTimeout(function () {
-					wsh.Popup(arError.join("\n\n"), 9, TITLE, MB_ICONSTOP);
-					te.Data.bErrorAddons = true;
-					ShowOptions("Tab=Add-ons");
+					if (wsh.Popup(arError.join("\n\n"), 0, TITLE, MB_ICONSTOP + 1) != IDCANCEL) {
+						te.Data.bErrorAddons = true;
+						ShowOptions("Tab=Add-ons");
+					}
 				}, 500);
 			}
 		}
@@ -1679,6 +1663,40 @@ function InitCode()
 		eventTE[i] = {};
 		for (var j in types[i]) {
 			eventTE[i][types[i][j]] = {};
+		}
+	}
+}
+
+function ChangeNotifyFV(lEvent, item1, item2)
+{
+	var fFolder = SHCNE_DRIVEREMOVED | SHCNE_MEDIAREMOVED | SHCNE_NETUNSHARE | SHCNE_RENAMEFOLDER | SHCNE_RMDIR | SHCNE_SERVERDISCONNECT;
+	if (lEvent & (fFolder | SHCNE_DELETE | SHCNE_RENAMEITEM)) {
+		var cFV = te.Ctrls(CTRL_FV);
+		for (var i in cFV) {
+			var FV = cFV[i];
+			if (lEvent & fFolder) {
+				if (api.ILIsEqual(FV, item1)) {
+					if (lEvent == SHCNE_RENAMEFOLDER && !FV.Data.Lock) {
+						FV.Navigate(api.GetDisplayNameOf(item2, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX), SBSP_SAMEBROWSER);
+					}
+					else {
+						FV.Suspend();
+					}
+				}
+				else if (api.ILIsParent(item1, FV, true)) {
+					if (lEvent == SHCNE_RENAMEFOLDER && !FV.Data.Lock) {
+						FV.Navigate(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING).replace(api.GetDisplayNameOf(item1, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), api.GetDisplayNameOf(item2, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)), SBSP_SAMEBROWSER);
+					}
+					else {
+						FV.Suspend();
+					}
+				}
+			}
+			if (FV.hwndList && api.ILIsParent(FV, item1, true)) {
+				var item = api.Memory("LVITEM");
+				item.stateMask = LVIS_CUT;
+				api.SendMessage(FV.hwndList, LVM_SETITEMSTATE, -1, item);
+			}
 		}
 	}
 }
@@ -2419,7 +2437,7 @@ g_basic =
 				{
 					var FV = GetFolderView(Ctrl, pt);
 					if (FV) {
-						var s = InputDialog(GetText("Search"), IsSearchPath(FV) ? api.GetDisplayNameOf(FV, SHGDN_INFOLDER) : "");
+						var s = InputDialog("Search", IsSearchPath(FV) ? api.GetDisplayNameOf(FV, SHGDN_INFOLDER) : "");
 						if (s) {
 							FV.FilterView(s);
 						}

@@ -6276,8 +6276,6 @@ STDMETHODIMP CteShellBrowser::BrowseObject(PCUIDLIST_RELATIVE pidl, UINT wFlags)
 		m_pidl = NULL;
 		wFlags &= ~(SBSP_RELATIVE | SBSP_REDIRECT);
 	}
-	else if ((wFlags & SBSP_RELATIVE) && m_pFolderItem && ILIsEmpty(m_pidl) && SUCCEEDED(m_pFolderItem->QueryInterface(IID_PPV_ARGS(&pid)))) {
-	}
 	else {
 		GetFolderItemFromPidl(&pid, const_cast<LPITEMIDLIST>(pidl));
 	}
