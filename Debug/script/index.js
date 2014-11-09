@@ -1674,28 +1674,22 @@ function ChangeNotifyFV(lEvent, item1, item2)
 		var cFV = te.Ctrls(CTRL_FV);
 		for (var i in cFV) {
 			var FV = cFV[i];
-			if (lEvent & fFolder) {
-				if (api.ILIsEqual(FV, item1)) {
-					if (lEvent == SHCNE_RENAMEFOLDER && !FV.Data.Lock) {
-						FV.Navigate(api.GetDisplayNameOf(item2, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX), SBSP_SAMEBROWSER);
-					}
-					else {
-						FV.Suspend();
-					}
-				}
-				else if (api.ILIsParent(item1, FV, true)) {
-					if (lEvent == SHCNE_RENAMEFOLDER && !FV.Data.Lock) {
-						FV.Navigate(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING).replace(api.GetDisplayNameOf(item1, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), api.GetDisplayNameOf(item2, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)), SBSP_SAMEBROWSER);
-					}
-					else {
-						FV.Suspend();
-					}
+			if (lEvent == SHCNE_RENAMEFOLDER && !FV.Data.Lock) {
+				var path = api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
+				var path1 = api.GetDisplayNameOf(item1, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
+				if (api.PathMatchSpec(path, [path1, path1].join("\\*;"))) {
+					FV.Navigate(path.replace(path1, api.GetDisplayNameOf(item2, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)), SBSP_SAMEBROWSER);
 				}
 			}
-			if (FV.hwndList && api.ILIsParent(FV, item1, true)) {
-				var item = api.Memory("LVITEM");
-				item.stateMask = LVIS_CUT;
-				api.SendMessage(FV.hwndList, LVM_SETITEMSTATE, -1, item);
+			if ((lEvent & fFolder) && FV.hwndList) {
+				if (api.ILIsParent(item1, FV, false)) {
+					FV.Suspend();
+				}
+				if (api.ILIsParent(FV, item1, true)) {
+					var item = api.Memory("LVITEM");
+					item.stateMask = LVIS_CUT;
+					api.SendMessage(FV.hwndList, LVM_SETITEMSTATE, -1, item);
+				}
 			}
 		}
 	}
