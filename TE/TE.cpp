@@ -4695,7 +4695,7 @@ VOID Initlize()
 	g_maps[MAP_SS] = SortTEMethod(structSize, _countof(structSize));
 
 #ifdef _WIN64
-	g_pidlResultsFolder =ILCreateFromPath(L"shell:::{2965E715-EB66-4719-B53F-1672673BBEFA}");
+	g_pidlResultsFolder = ILCreateFromPath(L"shell:::{2965E715-EB66-4719-B53F-1672673BBEFA}");
 #else
 	DWORDLONG dwlConditionMask = 0;
     OSVERSIONINFOEX osvi;
@@ -4711,11 +4711,17 @@ VOID Initlize()
     VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
 	g_bIsXP = VerifyVersionInfo(&osvi, VER_MAJORVERSION | VER_MINORVERSION, dwlConditionMask);
 	g_bIs2000 = !g_bUpperVista && !g_bIsXP;
-	g_pidlResultsFolder =ILCreateFromPath(g_bUpperVista ? L"shell:::{2965E715-EB66-4719-B53F-1672673BBEFA}" : L"::{e17d4fc0-5564-11d1-83f2-00a0c90dc849}");
+	g_pidlResultsFolder = ILCreateFromPath(L"::{e17d4fc0-5564-11d1-83f2-00a0c90dc849}");
+	if (!g_pidlResultsFolder) {
+		g_pidlResultsFolder = ILCreateFromPath(L"shell:::{2965E715-EB66-4719-B53F-1672673BBEFA}");
+	}
 #endif
 	g_pidlLibrary = teILCreateFromPath(L"shell:libraries");
 	g_pidlCP = ILClone(g_pidls[CSIDL_CONTROLS]);
 	ILRemoveLastID(g_pidlCP);
+	if (ILIsEmpty(g_pidlCP) || ILIsEqual(g_pidlCP, g_pidls[CSIDL_DRIVES])) {
+		teILCloneReplace(&g_pidlCP, g_pidls[CSIDL_CONTROLS]);
+	}
 }
 
 VOID Finalize()
@@ -6479,9 +6485,17 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		}
 		pSF->Release();
 	}
+	BOOL bExplorerBrowser = FALSE;
+#ifdef _2000XP
+	if (g_bUpperVista) {
+#endif
+		bExplorerBrowser = (m_param[SB_Type] == 2) || ILIsParent(g_pidlCP, pidl, FALSE);
+#ifdef _2000XP
+	}
+#endif
 #ifdef _VISTA7
 	//ExplorerBrowser
-	if (m_param[SB_Type] == 2 && m_pExplorerBrowser) {
+	if (bExplorerBrowser && m_pExplorerBrowser) {
 		if (!ILIsEqual(pidl, g_pidlResultsFolder) || !ILIsEqual(m_pidl, g_pidlResultsFolder)) {
 			IFolderViewOptions *pOptions;
 			FOLDERVIEWOPTIONS fvo = teGetFolderViewOptions(m_pidl, m_param[SB_ViewMode]);
@@ -6554,14 +6568,6 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	SetHistory(pFolderItems, wFlags);
 	DestroyView(m_param[SB_Type]);
 	Show(false);
-	BOOL bExplorerBrowser = FALSE;
-#ifdef _2000XP
-	if (g_bUpperVista) {
-#endif
-		bExplorerBrowser = (m_param[SB_Type] == 2) || ILIsParent(g_pidlCP, m_pidl, FALSE);
-#ifdef _2000XP
-	}
-#endif
 	//ShellBrowser
 	if (!bExplorerBrowser) {
 		IShellFolder *pShellFolder = NULL;

@@ -879,7 +879,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 				}
 				g_mouse.ptGesture.x = pt.x;
 				g_mouse.ptGesture.y = pt.y;
-				var s = (Math.abs(x) >= Math.abs(y)) ? ((x < 0) ? "L" : "R") :  ((y < 0) ? "U" : "D");
+				var s = (Math.abs(x) >= Math.abs(y)) ? ((x < 0) ? "L" : "R") : ((y < 0) ? "U" : "D");
 
 				if (s != g_mouse.str.charAt(g_mouse.str.length - 1)) {
 					g_mouse.str += s;

@@ -97,7 +97,7 @@ FolderMenu =
 	{
 		var mii = api.Memory("MENUITEMINFO");
 		mii.cbSize = mii.Size;
-		mii.fMask  = MIIM_ID | MIIM_STRING | MIIM_BITMAP | MIIM_SUBMENU;
+		mii.fMask = MIIM_ID | MIIM_STRING | MIIM_BITMAP | MIIM_SUBMENU;
 		if (bSelect && Name) {
 			mii.dwTypeData = Name;
 		}
@@ -1534,7 +1534,7 @@ GetBaseMenu = function (nBase, FV, Selected, uCMF, Mode, SelItem)
 					var oMenu2 = {};
 					var mii = api.Memory("MENUITEMINFO");
 					mii.cbSize = mii.Size;
-					mii.fMask  = MIIM_SUBMENU;
+					mii.fMask = MIIM_SUBMENU;
 					for (var i = api.GetMenuItemCount(hMenu2); i-- > 0;) {
 						var s = api.GetMenuString(hMenu2, i, MF_BYPOSITION);
 						if (s) {
@@ -1616,7 +1616,7 @@ MenuDbInit = function (hMenu, oMenu, oMenu2)
 	for (var i = api.GetMenuItemCount(hMenu); i--;) {
 		var mii = api.Memory("MENUITEMINFO");
 		mii.cbSize = mii.Size;
-		mii.fMask  = MIIM_ID | MIIM_BITMAP | MIIM_SUBMENU | MIIM_DATA | MIIM_FTYPE | MIIM_STATE;
+		mii.fMask = MIIM_ID | MIIM_BITMAP | MIIM_SUBMENU | MIIM_DATA | MIIM_FTYPE | MIIM_STATE;
 		var s = api.GetMenuString(hMenu, i, MF_BYPOSITION);
 		api.GetMenuItemInfo(hMenu, i, true, mii);
 		if (s) {
@@ -2125,7 +2125,7 @@ function CalcVersion(s)
 {
 	var r = 0;
 	if (/(\d+)\.(\d+)\.(\d+)/.test(s)) {
-		r =  api.QuadPart(RegExp.$1) * 10000 + api.QuadPart(RegExp.$2) * 100 + api.QuadPart(RegExp.$3);
+		r = api.QuadPart(RegExp.$1) * 10000 + api.QuadPart(RegExp.$2) * 100 + api.QuadPart(RegExp.$3);
 	}
 	if (r < 2000 * 10000) {
 		r += 2000 * 10000;
@@ -2202,7 +2202,7 @@ OpenInExplorer = function (FV)
 	if (FV) {
 		var exp = te.CreateObject("new:{C08AFD90-F2A1-11D1-8455-00A0C91F3880}");
 		exp.Navigate2(FV.FolderItem);
-    	exp.Visible = true;
+		exp.Visible = true;
 		try {
 			exp.Document.CurrentViewMode = FV.CurrentViewMode;
 		}
