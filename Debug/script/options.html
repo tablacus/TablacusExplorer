@@ -19,46 +19,42 @@
           <td style="vertical-align: top">
             <div id="tab_" class="panel" style="display: block; width: 150px; background-color: window">
               <tt class="treebutton" onclick="ClickButton(this, 0);">-</tt>
-              <label id="tab0" class="button" onmousedown="ClickTree(this);">General</label>
+              <label id="tab0" class="button" style="width: 88%" onmousedown="ClickTree(this);">General</label>
               <br />
               <div id="tab0_" style="margin-left: 20px">
-                <label id="tab0_1" class="button" onmousedown="ClickTree(this);">Mouse</label>
+                <label id="tab0_1" class="button" style="width: 100%" onmousedown="ClickTree(this);">Mouse</label>
                 <br />
               </div>
               <tt class="treebutton" onclick="ClickButton(this, 1);">-</tt>
-              <label id="tab1" class="button" onmousedown="ClickTree(this);">Add-ons</label>
+              <label id="tab1" class="button" style="width: 88%" onmousedown="ClickTree(this);">Add-ons</label>
               <br />
               <div id="tab1_" style="margin-left: 20px">
-                <label class="button" onmousedown="GetAddons();">Get Add-ons...</label>
+                <label class="button" style="width: 100%" onmousedown="GetAddons();">Get Add-ons...</label>
               </div>
               <tt id="tabbtn2" class="treebutton" onclick="ClickButton(this, 2);">-</tt>
-              <label id="tab2" class="button" onmousedown="ClickButton(document.getElementById('tabbtn2'), 2, true);ClickTree(document.getElementById('tab2_0'), null, 'Menus');">Menus</label>
+              <label id="tab2" class="button" style="width: 88%" onmousedown="ClickButton(document.getElementById('tabbtn2'), 2, true);ClickTree(document.getElementById('tab2_0'), null, 'Menus');">Menus</label>
               <br />
               <div id="tab2_" style="margin-left: 20px">
               </div>
               <tt class="treebutton" onclick="ClickButton(this, 3);">-</tt>
-              <label id="tab3" class="button" onmousedown="ClickTree(this, null, 'Tab');">Tabs</label>
+              <label id="tab3" class="button" style="width: 88%" onmousedown="ClickTree(this, null, 'Tab');">Tabs</label>
               <br />
               <div id="tab3_" style="margin-left: 20px">
-                <label id="tab3_1" class="button" onmousedown="ClickTree(this, null, 'Tab');">Advanced</label>
+                <label id="tab3_1" class="button" style="width: 100%" onmousedown="ClickTree(this, null, 'Tab');">Advanced</label>
                 <br />
               </div>
               <tt class="treebutton" onclick="ClickButton(this, 4);">-</tt>
-              <label id="tab4" class="button" onmousedown="ClickTree(this, null, 'Tree');">Tree</label>
+              <label id="tab4" class="button" style="width: 88%" onmousedown="ClickTree(this, null, 'Tree');">Tree</label>
               <br />
               <div id="tab4_" style="margin-left: 20px">
-                <label id="tab4_1" class="button" onmousedown="ClickTree(this, null, 'Tree');">Root</label>
+                <label id="tab4_1" class="button" style="width: 100%" onmousedown="ClickTree(this, null, 'Tree');">Root</label>
                 <br />
-                <label id="tab4_2" class="button" onmousedown="ClickTree(this, null, 'Tree');">EnumFlags</label>
+                <label id="tab4_2" class="button" style="width: 100%" onmousedown="ClickTree(this, null, 'Tree');">EnumFlags</label>
                 <br />
               </div>
-              <tt class="treebutton" onclick="ClickButton(this, 5);">-</tt>
-              <label id="tab5" class="button" onmousedown="ClickTree(this, null, 'View');">List</label>
+              <tt class="treebutton" style="visibility: hidden">-</tt>
+              <label id="tab5" class="button" style="width: 88%" onmousedown="ClickTree(this, null, 'View');">List</label>
               <br />
-              <div id="tab5_" style="margin-left: 20px">
-                <label id="tab5_1" class="button" onmousedown="ClickTree(this, null, 'View');">Advanced</label>
-                <br />
-              </div>
             </div>
           </td>
           <td style="width: 100%">
@@ -328,10 +324,13 @@
               <label>View</label>
               <br />
               <input type="hidden" name="Tree_Align" />
-              <input type="checkbox" id="Tree_Align:2" onclick="SetCheckbox(this)" />
-              <label for="Tree_Align:2">View</label>
+              <input type="radio" name="Tree_Align_" id="Tree_Align=3" onclick="SetRadio(this)" />
+              <label for="Tree_Align=3">Visible</label>
+              <input type="radio" name="Tree_Align_" id="Tree_Align=1" onclick="SetRadio(this)" />
+              <label for="Tree_Align=1">Hidden</label>
               <br />
               <label>Width</label>
+              <br />
               <input type="text" name="Tree_Width" size="4" />
               <br />
               <br />
@@ -430,7 +429,7 @@
             <!--panel_end-->
 
             <div class="panel" id="panel4_1">
-              <label>Root</label><br />
+              <label>Path</label><br />
               <input type="text" name="Tree_Root" style="width: 100%" /><br /><br />
               <label>RootStyle</label><br />
               <input type="hidden" name="Tree_RootStyle" />
@@ -488,15 +487,13 @@
             <!--panel_end-->
 
             <div class="panel" id="panel5">
-              <label>Type</label><br />
-              <input type="hidden" name="View_Type" />
-              <input type="radio" name="View_Type_" id="View_Type=1" onclick="SetRadio(this)" /><label for="View_Type=1">Shell Browser</label>
-              <input type="radio" name="View_Type_" id="View_Type=2" onclick="SetRadio(this)" /><label for="View_Type=2">Explorer Browser</label>(*)
-              <br /><br />
-              <label>View flags</label><br />
+              <label>View</label><br />
               <input type="hidden" name="View_ViewFlags" />
               <input type="checkbox" id="View_ViewFlags:0x1" onclick="SetCheckbox(this)" />
               <label for="View_ViewFlags:0x1">Show all files</label>
+              <input type="hidden" name="View_Type" />
+              <input type="checkbox" id="View_Type=2" onchange="document.F.View_Type.value=this.checked ? 2 : 1" />
+              <label for="View_Type=2">Show frames</label>(*)
               <br /><br />
               <label>View mode</label><br />
               <input type="hidden" name="View_ViewMode" />
@@ -584,22 +581,7 @@
                 (*7)Windows 7 <label>or higher.</label>
               </div>
             </div>
-            <!--panel_end-->
-
-            <div class="panel" id="panel5_1">
-              <label>Explorer Browser</label><br />
-              <input type="hidden" name="View_Options" />EBO_...(*)<br />
-              <input type="checkbox" id="View_Options:0x2" onclick="SetCheckbox(this)" />
-              <label for="View_Options:0x2">Show frames</label>
-              <input type="checkbox" id="View_Options:0x1" onclick="SetCheckbox(this)" />
-              <label for="View_Options:0x1">NAVIGATEONCE</label>
-              <input type="checkbox" id="View_Options:0x4" onclick="SetCheckbox(this)" />
-              <label for="View_Options:0x4">ALWAYSNAVIGATE</label><br />
-              <input type="checkbox" id="View_Options:0x10" onclick="SetCheckbox(this)" />
-              <label for="View_Options:0x10">NOWRAPPERWINDOW</label>
-              <input type="checkbox" id="View_Options:0x20" onclick="SetCheckbox(this)" />
-              <label for="View_Options:0x20">HTMLSHAREPOINTVIEW</label>
-            </div>
+            <input type="hidden" name="View_Options" />
             <!--panel_end-->
 
             <!-- - - - - - - - - - -  -->

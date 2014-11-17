@@ -1,23 +1,23 @@
 //Tablacus Explorer
 
-var Ctrl;
-var g_temp;
-var g_sep = "` ~";
-var Handled;
-var hwnd;
-var pt = api.Memory("POINT");
-var dataObj = null;
-var grfKeyState;
-var pdwEffect;
-var bDrop;
-var Input;
-var g_tidNew = null;
-var g_dlgOptions;
-var eventTE = { Environment: {} };
-var eventTA = {};
-var g_ptDrag = api.Memory("POINT");
-var objHover = null;
-var g_nFind = 0;
+Ctrl = null;
+g_temp = null;
+g_sep = "` ~";
+Handled = null;
+hwnd = null;
+pt = api.Memory("POINT");
+dataObj = null;
+grfKeyState = null;
+pdwEffect = 0;
+bDrop = null;
+Input = null;
+g_tidNew = null;
+g_dlgOptions = null;
+eventTE = { Environment: {} };
+eventTA = {};
+g_ptDrag = api.Memory("POINT");
+objHover = null;
+g_nFind = 0;
 
 FolderMenu =
 {
@@ -801,7 +801,7 @@ NavigateFV = function (FV, Path, wFlags)
 		if (Focus) {
 			setTimeout(function () {
 				var FV = te.Ctrl(CTRL_FV);
-				FV.SelectItem(Focus, SVSI_FOCUSED | SVSI_ENSUREVISIBLE);
+				FV.SelectItem(Focus, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
 			}, 100);
 		}
 	}
@@ -932,7 +932,7 @@ CreateNew = function (path, fn)
 		if (FV) {
 			if (api.ILIsEqual(FV, fso.GetParentFolderName(path))) {
 				var FolderItem = api.ILCreateFromPath(path);
-				FV.SelectItem(FolderItem, SVSI_SELECT | SVSI_DESELECTOTHERS | SVSI_ENSUREVISIBLE | SVSI_FOCUSED);
+				FV.SelectItem(FolderItem, SVSI_SELECT | SVSI_DESELECTOTHERS | SVSI_ENSUREVISIBLE | SVSI_FOCUSED | SVSI_NOTAKEFOCUS);
 			}
 		}
 	}, 1000);
@@ -1395,7 +1395,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 					break;
 				}
 			}
-			var nPos = MakeMenus(hMenu, menus, arMenu, items);
+			var nPos = MakeMenus(Ctrl, pt, hMenu, menus, arMenu, items);
 			for (var i in eventTE[Name]) {
 				nPos = eventTE[Name][i](Ctrl, hMenu, nPos, Selected, SelItem);
 			}
@@ -1735,7 +1735,7 @@ MenusIcon = function (mii, src)
 	}
 }
 
-MakeMenus = function (hMenu, menus, arMenu, items)
+MakeMenus = function (Ctrl, pt, hMenu, menus, arMenu, items)
 {
 	var hMenus = [hMenu];
 	var nPos = api.QuadPart(menus[0].getAttribute("Pos"));
@@ -1793,6 +1793,7 @@ MakeMenus = function (hMenu, menus, arMenu, items)
 					mii.wId = nResult;
 					mii.dwTypeData = ar.join("\t");
 					MenusIcon(mii, item.getAttribute("Icon"));
+					RunEvent3(["MenuState", item.getAttribute("Type"), item.text].join(":"), Ctrl, pt, mii);
 					api.InsertMenuItem(hMenus[hMenus.length - 1], nPos++, true, mii);
 				}
 			}
@@ -1820,7 +1821,7 @@ BlurId = function (Id)
 RunCommandLine = function (s)
 {
 	var arg = api.CommandLineToArgv(s.replace(/\/[^,\s]*/g, ""));
-	for (var i = 1; i < arg.Count; i++) {
+	for (var i = 1; i < arg.length; i++) {
 		Navigate(arg[i], SBSP_NEWBROWSER);
 	}
 }
@@ -2572,11 +2573,9 @@ RegEnumKey = function(hKey, Name)
 		var locator = te.CreateObject("WbemScripting.SWbemLocator");
 		var server = locator.ConnectServer(null, "root\\default");
 		var reg = server.Get("StdRegProv");
-		var Params = api.Memory("VARIANT", 3);
-		Params[2] = hKey;
-		Params[1] = Name;
+		var Params = [hKey, Name, null];
 		api.ExecMethod(reg, "EnumKey", Params);
-		return new VBArray(Params[0]).toArray();
+		return new VBArray(Params[2]).toArray();
 	}
 	catch (e) {}
 	return [];

@@ -351,7 +351,7 @@
         <input type="checkbox" id="MouseExec" />
         <label for="MouseExec">Exec</label>
         <br />
-        <select name="MouseOn" style="width: 150px">
+        <select name="MouseOn" style="width: 200px">
         </select>
         <br />
         <table width="100%" cellspacing="0" cellpadding="0">
@@ -367,9 +367,10 @@
                   </td>
                   <td align="right">
                     <script type="text/javascript">
-                      document.write('<input type="button" value="' + MainWindow.g_KeyState[0][0] + '" title="S" onclick="AddMouse(this)" />');
-                      document.write('<input type="button" value="' + MainWindow.g_KeyState[1][0] + '" title="C" onclick="AddMouse(this)" />');
-                      document.write('<input type="button" value="' + MainWindow.g_KeyState[2][0] + '" title="A" onclick="AddMouse(this)" />');
+                      var s = "CSA";
+                      for (var i = 0; i < s.length; i++) {
+                        document.write('<input type="button" value="' + MainWindow.g_KeyState[i][0] + '" title="' + s.charAt(i) + '" onclick="AddMouse(this)" />');
+                      }
                     </script>
                   </td>
                 </tr>

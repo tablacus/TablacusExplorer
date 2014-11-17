@@ -1,23 +1,24 @@
 //Tablacus Explorer
 
 te.ClearEvents();
-var g_Bar = "";
-var Addon = 1;
-var Addons = {"_stack": []};
-var Init = false;
-var OpenMode = SBSP_SAMEBROWSER;
-var ExtraMenus = {};
-var ExtraMenuCommand = [];
-var g_arBM = [];
+g_Bar = "";
+Addon = 1;
+Addons = {"_stack": []};
+Init = false;
+OpenMode = SBSP_SAMEBROWSER;
+ExtraMenus = {};
+ExtraMenuCommand = [];
+g_arBM = [];
+Exchange = {};
 
-var GetAddress = null;
-var ShowContextMenu = null;
+GetAddress = null;
+ShowContextMenu = null;
 
-var g_tidResize = null;
-var xmlWindow = null;
-var g_Panels = [];
-var g_KeyCode = {};
-var g_KeyState = [
+g_tidResize = null;
+xmlWindow = null;
+g_Panels = [];
+g_KeyCode = {};
+g_KeyState = [
 	[0x1d0000, 0x2000],
 	[0x2a0000, 0x1000],
 	[0x380000, 0x4000],
@@ -26,8 +27,8 @@ var g_KeyState = [
 	["Shift",  0x1000],
 	["Alt",    0x4000]
 ];
-var g_dlgs = {};
-var Addon_Id = "";
+g_dlgs = {};
+Addon_Id = "";
 
 RunEvent1 = function (en, a1, a2, a3)
 {
@@ -1587,7 +1588,7 @@ LoadAddon = function(ext, Id, arError)
 			var fn = api.GetScriptDispatch(s, "VBScript", {"_Addon_Id": {"Addon_Id": Id}, window: window},
 				function (ei, SourceLineText, dwSourceContext, lLineNumber, CharacterPosition)
 				{
-					arError.push(api.SysAllocString(ei.bstrDescription) + "\n" + fname);
+					arError.push(api.SysAllocString(ei.bstrDescription) + api.sprintf(16, "\nLine: %d\n", lLineNumber) + fname);
 				}
 			);
 			if (fn) {
@@ -1641,7 +1642,7 @@ function InitCode()
 	var types = 
 	{
 		Key:   ["All", "List", "Tree", "Browser"],
-		Mouse: ["All", "List", "Tree", "Tabs", "Browser"]
+		Mouse: ["All", "List", "List_Background", "Tree", "Tabs", "Tabs_Background", "Browser"]
 	};
 	var i;
 	for (i = 0; i < 3; i++) {
@@ -1889,7 +1890,6 @@ g_mouse =
 
 	Exec: function (Ctrl, hwnd, pt)
 	{
-		var hr;
 		this.str = GetGestureKey() + this.str;
 		te.Data.cmdMouse = this.str;
 		if (!Ctrl) {
@@ -1899,12 +1899,22 @@ g_mouse =
 		switch (Ctrl.Type) {
 			case CTRL_SB:
 			case CTRL_EB:
+				if (!Ctrl.SelectedItems.Count) {
+					if (GestureExec(Ctrl, "List_Background", this.str, pt, hwnd) === S_OK) {
+						return S_OK;
+					}
+				}
 				s = "List";
 				break;
 			case CTRL_TV:
 				s = "Tree";
 				break;
 			case CTRL_TC:
+				if (Ctrl.HitTest(pt, TCHT_ONITEM) < 0) {
+					if (GestureExec(Ctrl, "Tabs_Background", this.str, pt, hwnd) === S_OK) {
+						return S_OK;
+					}
+				}
 				s = "Tabs";
 				break;
 			case CTRL_WB:
@@ -1936,15 +1946,13 @@ g_mouse =
 				break;
 		}
 		if (s) {
-			hr = GestureExec(Ctrl, s, this.str, pt, hwnd);
-			if (hr === S_OK) {
-				return hr;
+			if (GestureExec(Ctrl, s, this.str, pt, hwnd) === S_OK) {
+				return S_OK;
 			}
 		}
 		if (Ctrl.Type != CTRL_TE) {
-			hr = GestureExec(Ctrl, "All", this.str, pt, hwnd);
-			if (hr === S_OK) {
-				return hr;
+			if (GestureExec(Ctrl, "All", this.str, pt, hwnd) === S_OK) {
+				return S_OK;
 			}
 		}
 		return S_FALSE;
@@ -2184,7 +2192,6 @@ g_basic =
 				}
 				return S_OK;
 			},
-
 			Cmd:
 			{
 				"Close Tab": function (Ctrl, pt)
@@ -2270,6 +2277,13 @@ g_basic =
 				{
 					var FV = GetFolderView(Ctrl, pt);
 					FV && FV.Refresh();
+				},
+				"Show frames": function (Ctrl, pt)
+				{
+					var FV = GetFolderView(Ctrl, pt);
+					if (FV) {
+						FV.Type = (FV.Type == CTRL_SB) ? CTRL_EB : CTRL_SB;
+					}
 				},
 				"Switch Explorer Engine": function (Ctrl, pt)
 				{
@@ -2585,6 +2599,67 @@ AddEvent("Exec", function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEff
 	}
 });
 
+AddEvent("MenuState:Tabs:Close Tab", function (Ctrl, pt, mii)
+{
+	var FV = GetFolderView(Ctrl, pt);
+	if (FV && FV.Data.Lock) {
+		mii.fMask |= MIIM_STATE;
+		mii.fState |= MFS_DISABLED;
+	}
+});
+
+AddEvent("MenuState:Tabs:Close Tabs on Left", function (Ctrl, pt, mii)
+{
+	var FV = GetFolderView(Ctrl, pt, true);
+	if (FV && FV.Index == 0) {
+		mii.fMask |= MIIM_STATE;
+		mii.fState = MFS_DISABLED;
+	}
+});
+
+AddEvent("MenuState:Tabs:Close Tabs on Right", function (Ctrl, pt, mii)
+{
+	var FV = GetFolderView(Ctrl, pt, true);
+	if (FV) {
+		var TC = FV.Parent;
+		if (FV.Index >= TC.Count - 1) {
+			mii.fMask |= MIIM_STATE;
+			mii.fState = MFS_DISABLED;
+		}
+	}
+});
+
+AddEvent("MenuState:Tabs:Up", function (Ctrl, pt, mii)
+{
+	var FV = GetFolderView(Ctrl, pt);
+	if (!FV || api.ILIsEmpty(FV)) {
+		mii.fMask |= MIIM_STATE;
+		mii.fState = MFS_DISABLED;
+	}
+});
+
+AddEvent("MenuState:Tabs:Lock", function (Ctrl, pt, mii)
+{
+	var FV = GetFolderView(Ctrl, pt);
+	if (FV && FV.Data.Lock) {
+		mii.fMask |= MIIM_STATE;
+		mii.fState = MFS_CHECKED;
+	}
+});
+
+AddEvent("MenuState:Tabs:Show frames", function (Ctrl, pt, mii)
+{
+	if (WINVER < 0x600) {
+		mii.fMask = 0;
+		return S_OK;
+	}
+	var FV = GetFolderView(Ctrl, pt);
+	if (!FV || FV.Type == CTRL_EB) {
+		mii.fMask |= MIIM_STATE;
+		mii.fState = MFS_CHECKED;
+	}
+});
+
 AddEvent("AddType", function (arFunc)
 {
 	for (var i in g_basic.Func) {
@@ -2733,7 +2808,6 @@ if (!te.Data) {
 	}
 	te.Data.uRegisterId = api.SHChangeNotifyRegister(te.hwnd, SHCNRF_InterruptLevel | SHCNRF_ShellLevel | SHCNRF_NewDelivery, SHCNE_ALLEVENTS, TWM_CHANGENOTIFY, ssfDESKTOP, true);
 }
-
 InitCode();
 InitMouse();
 InitMenus();

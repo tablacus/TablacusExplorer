@@ -1,21 +1,25 @@
 //Tablacus Explorer
 
 //Objects
-var MainWindow = window;
-while (MainWindow.dialogArguments || MainWindow.opener) {
-	MainWindow = MainWindow.dialogArguments || MainWindow.opener;
-	if (MainWindow.MainWindow) {
-		MainWindow = MainWindow.MainWindow;
+if (!window.MainWindow) {
+	MainWindow = window;
+	while (MainWindow.dialogArguments || MainWindow.opener) {
+		MainWindow = MainWindow.dialogArguments || MainWindow.opener;
+		if (MainWindow.MainWindow) {
+			MainWindow = MainWindow.MainWindow;
+		}
 	}
 }
-var te = MainWindow.external;
-var api = te.WindowsAPI;
-var fso = te.CreateObject("Scripting.FileSystemObject");
-var sha = te.CreateObject("Shell.Application");
-var wsh = te.CreateObject("WScript.Shell");
-var wnw = te.CreateObject("WScript.Network");
+if (!window.te) {
+	te = MainWindow.external;
+}
+api = te.WindowsAPI;
+fso = te.CreateObject("Scripting.FileSystemObject");
+sha = te.CreateObject("Shell.Application");
+wsh = te.CreateObject("WScript.Shell");
+wnw = te.CreateObject("WScript.Network");
 
-var osInfo = api.Memory("OSVERSIONINFOEX");
+osInfo = api.Memory("OSVERSIONINFOEX");
 osInfo.dwOSVersionInfoSize = osInfo.Size;
 api.GetVersionEx(osInfo);
 WINVER = osInfo.dwMajorVersion * 0x100 + osInfo.dwMinorVersion;

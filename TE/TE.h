@@ -42,6 +42,7 @@ using namespace Gdiplus;
 #define _W2000
 #endif
 #define _VISTA7
+//#define _USE_HTMLDOC
 //#define _USE_TESTOBJECT
 
 //Unnamed function
@@ -312,7 +313,8 @@ public:
 	VARIANT			m_v;
 	LPITEMIDLIST	m_pidl;
 	FolderItem		*m_pFolderItem;
-	LPITEMIDLIST	m_pidlFocus;
+	LPITEMIDLIST	m_pidlFocused;
+	int				m_nSelected;
 	BOOL			m_bStrict;
 private:
 	LONG			m_cRef;
@@ -359,6 +361,7 @@ public:
 	~CteFolderItems();
 
 	HDROP GethDrop(int x, int y, BOOL fNC, BOOL bSpecial);
+	VOID Regenerate();
 	VOID ItemEx(int nIndex, VARIANT *pVarResult, VARIANT *pVarNew);
 	VOID AdjustIDListEx();
 	VOID Clear();
@@ -404,8 +407,8 @@ public:
 public:
 	int		m_param[7];
 	BOOL	m_bDrop;
-private:
 	VARIANT m_Data;
+private:
 	CteFolderItems *m_pDragItems;
 	LONG	m_cRef;
 	DWORD m_grfKeyState;
@@ -727,13 +730,13 @@ public:
 	VOID HookDragDrop(int nMode);
 	VOID Error(BSTR *pbs);
 	VOID Refresh(BOOL bCheck);
-	VOID SetActive();
+	BOOL SetActive(BOOL bForce);
 	VOID SetTitle(BSTR szName, int nIndex);
-	VOID NavigateCompleted2();
 	VOID GetShellFolderView();
 	VOID GetFocusedIndex(int *piItem);
 	VOID SetFolderFlags();
 	HRESULT Items(UINT uItem, FolderItems **ppid);
+	HRESULT SelectItemEx(LPITEMIDLIST *ppidl, int dwFlags);
 #ifdef _2000XP
 	VOID AddPathXP(CteFolderItems *pFolderItems, IShellFolderView *pSFV, int nIndex, BOOL bResultsFolder);
 #endif
@@ -817,9 +820,8 @@ public:
 	BSTR AddBSTR(BSTR bs);
 	VOID Read(int nIndex, int nLen, VARIANT *pVarResult);
 	VOID Write(int nIndex, int nLen, VARTYPE vt, VARIANT *pv);
-	int GetLong(int nIndex);
-	void SetLong(int nIndex, int nValue);
-	void Free();
+	void SetPoint(int x, int y);
+	void Free(BOOL bpbs);
 
 	CteMemory(int nSize, char *pc, int nMode, int nCount, LPWSTR lpStruct);
 	~CteMemory();
@@ -827,12 +829,12 @@ public:
 	char	*m_pc;
 	int		m_nSize;
 	int		m_nCount;
+	int		m_nMode;
 private:
 	BSTR	m_bsStruct;
 	BSTR	*m_ppbs;
 	LONG	m_cRef;
-	int		m_nAlloc;
-	int		m_nMode;
+	BOOL	m_bAlloc;
 	int		m_nbs;
 };
 
@@ -1111,7 +1113,37 @@ public:
 	IDispatch *m_pOnError;
 	LONG		m_cRef;
 };
+#ifdef _USE_HTMLDOC
+// DocHostUIHandler
+class CteDocHostUIHandler : public IDocHostUIHandler
+{
+public:
+	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
+	STDMETHODIMP_(ULONG) AddRef();
+	STDMETHODIMP_(ULONG) Release();
+	//IDocHostUIHandler
+	STDMETHODIMP ShowContextMenu(DWORD dwID, POINT *ppt, IUnknown *pcmdtReserved, IDispatch *pdispReserved);
+	STDMETHODIMP GetHostInfo(DOCHOSTUIINFO *pInfo);
+	STDMETHODIMP ShowUI(DWORD dwID, IOleInPlaceActiveObject *pActiveObject, IOleCommandTarget *pCommandTarget, IOleInPlaceFrame *pFrame, IOleInPlaceUIWindow *pDoc);
+	STDMETHODIMP HideUI(VOID);
+	STDMETHODIMP UpdateUI(VOID);
+	STDMETHODIMP EnableModeless(BOOL fEnable);
+	STDMETHODIMP OnDocWindowActivate(BOOL fActivate);
+	STDMETHODIMP OnFrameWindowActivate(BOOL fActivate);
+	STDMETHODIMP ResizeBorder(LPCRECT prcBorder, IOleInPlaceUIWindow *pUIWindow, BOOL fFrameWindow);
+	STDMETHODIMP TranslateAccelerator(LPMSG lpMsg, const GUID *pguidCmdGroup, DWORD nCmdID);
+	STDMETHODIMP GetOptionKeyPath(LPOLESTR *pchKey, DWORD dw);
+	STDMETHODIMP GetDropTarget(IDropTarget *pDropTarget, IDropTarget **ppDropTarget);
+	STDMETHODIMP GetExternal(IDispatch **ppDispatch);
+	STDMETHODIMP TranslateUrl(DWORD dwTranslate, OLECHAR *pchURLIn, OLECHAR **ppchURLOut);
+	STDMETHODIMP FilterDataObject(IDataObject *pDO, IDataObject **ppDORet);
 
+	CteDocHostUIHandler();
+	~CteDocHostUIHandler();
+public:
+	LONG	m_cRef;
+};
+#endif
 #ifdef _USE_TESTOBJECT
 class CteTest : public IDispatch
 {

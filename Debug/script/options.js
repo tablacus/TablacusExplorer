@@ -636,7 +636,7 @@ function SetMenus(sel, a)
 {
 	sel.value = PackData(a);
 	var a2 = a[0].split(/\\t/);
-	sel.text =  [GetText(a2[0]), a[1]].join(" ").replace(/[\r\n].*/, "");
+	sel.text = [GetText(a2[0]), a[1]].join(" ").replace(/[\r\n].*/, "");
 }
 
 function LoadMenus(nSelected)
@@ -710,7 +710,7 @@ function LoadX(mode, fn)
 				oa.length = 0;
 				xml = OpenXml(mode + ".xml", false, true);
 				for (var j in g_Types[mode]) {
-					oa[++oa.length - 1].text = GetText(g_Types[mode][j]);
+					oa[++oa.length - 1].text = GetTextEx(g_Types[mode][j]);
 					oa[oa.length - 1].value = g_Types[mode][j];
 					var o = document.F.elements[mode + g_Types[mode][j]];
 					var items = xml.getElementsByTagName(g_Types[mode][j]);
@@ -756,7 +756,7 @@ function LoadX(mode, fn)
 				xml = null;
 			}
 			fn && fn();
-		}, 100);
+		}, 500);
 	}
 }
 
@@ -1184,7 +1184,7 @@ InitOptions = function ()
 	ResetForm();
 	var s = [];
 	for (var i in g_arMenuTypes) {
-		s.push('<label id="tab2_' + i + '" class="button" onmousedown="ClickTree(this, null, \'Menus\');">' + GetText(g_arMenuTypes[i]) + '</label><br />');
+		s.push('<label id="tab2_' + i + '" class="button" style="width: 100%" onmousedown="ClickTree(this, null, \'Menus\');">' + GetText(g_arMenuTypes[i]) + '</label><br />');
 	}
 	document.getElementById("tab2_").innerHTML = s.join("");
 	SetTab(dialogArguments.Data);
@@ -1425,7 +1425,7 @@ InitLocation = function ()
 		oa[++oa.length - 1].value = "";
 		oa[oa.length - 1].text = GetText("Select");
 		for (var j in MainWindow.eventTE[mode]) {
-			oa[++oa.length - 1].text = GetText(j);
+			oa[++oa.length - 1].text = GetTextEx(j);
 			oa[oa.length - 1].value = j;
 		}
 	}
@@ -1835,4 +1835,14 @@ function SelectLangID(o)
 		document.F.Conf_Lang.value = Langs[nVerb - 1];
 	}
 	api.DestroyMenu(hMenu);
+}
+
+function GetTextEx(s)
+{
+	var ar = s.split(/_/);
+	var s = GetText(ar.shift());
+	if (ar && ar.length) {
+		s += "(" + GetText(ar.join(" ")) + ")";
+	}
+	return s;
 }
