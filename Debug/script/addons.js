@@ -209,7 +209,7 @@ function Search(xml)
 
 function Install(o)
 {
-	if (!confirmYN(GetText("Do you want to install it now?"))) {
+	if (!confirmOk(GetText("Do you want to install it now?"))) {
 		return;
 	}
 	document.body.style.cursor = "wait";

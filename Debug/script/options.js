@@ -410,7 +410,7 @@ function InitConfig(o)
 	if (InstallPath == te.Data.DataFolder) {
 		return;
 	}
-	if (!confirmYN(GetText("Are you sure?"))) {
+	if (!confirmOk(GetText("Are you sure?"))) {
 		return;
 	}
 	var Dist = sha.NameSpace(te.Data.DataFolder);
@@ -598,7 +598,7 @@ function ReplaceX(mode)
 function RemoveMenus()
 {
 	ClearX("Menus");
-	if (g_x.Menus.selectedIndex < 0 || !confirmYN(GetText("Are you sure?"))) {
+	if (g_x.Menus.selectedIndex < 0 || !confirmOk(GetText("Are you sure?"))) {
 		return;
 	}
 	g_x.Menus[g_x.Menus.selectedIndex] = null;
@@ -1137,7 +1137,7 @@ function AddonMoveEx(src, dist)
 
 function AddonRemove(Id)
 {
-	if (!confirmYN(GetText("Are you sure?"))) {
+	if (!confirmOk(GetText("Are you sure?"))) {
 		return;
 	}
 
@@ -1635,7 +1635,7 @@ function RefX(Id, bMultiLine, oButton)
 
 function PortableX(Id)
 {
-	if (!confirmYN(GetText("Are you sure?"))) {
+	if (!confirmOk(GetText("Are you sure?"))) {
 		return;
 	}
 	var o = GetElement(Id);
@@ -1667,7 +1667,7 @@ function GetCurrentSetting(s)
 {
 	var FV = te.Ctrl(CTRL_FV);
 
-	if (confirmYN(GetText("Are you sure?"))) {
+	if (confirmOk(GetText("Are you sure?"))) {
 		AddPath(s, api.PathQuoteSpaces(api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORPARSINGEX | SHGDN_FORPARSING)));
 	}
 }
@@ -1765,7 +1765,7 @@ function SelectIcon(o)
 
 TestX = function (id)
 {
-	if (confirmYN(GetText("Are you sure?"))) {
+	if (confirmOk(GetText("Are you sure?"))) {
 		var o = document.F.elements[id + "Type"];
 		var p = { s: document.F.elements[id + "Path"].value };
 		MainWindow.OptionEncode(o[o.selectedIndex].value, p);

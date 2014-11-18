@@ -1265,10 +1265,11 @@ TEmethod methodTV[] = {
 };
 
 TEmethod methodFI[] = {
-	{ 0x4001001, L"Name" },
-	{ 0x4001002, L"Path" },
-	{ 0x4001003, L"Alt" },
-//	{ 0x4001004, L"FocusedItem" },
+	{ 1, L"Name" },
+	{ 2, L"Path" },
+	{ 3, L"Alt" },
+//	{ 4, L"FocusedItem" },
+	{ 9, L"_BLOB" },
 	{ 0, NULL }
 };
 
@@ -1361,14 +1362,14 @@ BOOL teChangeWindowMessageFilterEx(HWND hwnd, UINT message, DWORD action, PCHANG
 	return FALSE;
 }
 
-BOOL teGetBSTRFromFolderItem(BSTR **ppbs, IUnknown *punk)
+BOOL teGetBSTRFromFolderItem(BSTR *pbs, IUnknown *punk)
 {
 	CteFolderItem *pid;
 	if (punk && SUCCEEDED(punk->QueryInterface(g_ClsIdFI, (LPVOID *)&pid))) {
 		if (pid->m_v.vt == VT_BSTR) {
-			*ppbs = &pid->m_v.bstrVal;
+			*pbs = pid->m_v.bstrVal;
 			pid->Release();
-			return (*ppbs != NULL);
+			return (*pbs != NULL);
 		}
 		pid->Release();
 	}
@@ -3029,23 +3030,18 @@ BOOL teILIsEqualNet(BSTR bs1, IUnknown *punk, BOOL *pbResult)
 BOOL teILIsEqual(IUnknown *punk1, IUnknown *punk2)
 {
 	BOOL bResult = FALSE;
-	BSTR *pbs1;
-	BSTR *pbs2;
-	if (!teGetBSTRFromFolderItem(&pbs2, punk2)) {
-		pbs2 = NULL;
-	}
-	if (teGetBSTRFromFolderItem(&pbs1, punk1)) {
-		if (pbs2) {
-			return lstrcmpi(*pbs1, *pbs2) == 0;
+	BSTR bs1 = NULL;
+	BSTR bs2 = NULL;
+	teGetBSTRFromFolderItem(&bs2, punk2);
+	if (teGetBSTRFromFolderItem(&bs1, punk1)) {
+		if (bs2) {
+			return lstrcmpi(bs1, bs2) == 0;
 		}
-		if (teILIsEqualNet(*pbs1, punk2, &bResult)) {
+		if (teILIsEqualNet(bs1, punk2, &bResult)) {
 			return bResult;
 		}
 	}
-	else {
-		pbs1 = NULL;
-	}
-	if (pbs2 && teILIsEqualNet(*pbs2, punk1, &bResult)) {
+	if (bs2 && teILIsEqualNet(bs2, punk1, &bResult)) {
 		return bResult;
 	}
 	if (punk1 && punk2) {
@@ -5576,9 +5572,14 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	MyRegisterClass(hInstance);
 	// Title & Version
 	lstrcpy(g_szTE, L"Tablacus Explorer " _T(STRING(VER_Y)) L"." _T(STRING(VER_M)) L"." _T(STRING(VER_D)) L" Gaku");
-
-	g_hwndMain = CreateWindow(WINDOW_CLASS, g_szTE, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
-	  CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hInstance, NULL);
+	if (bVisible) {
+		g_hwndMain = CreateWindow(WINDOW_CLASS, g_szTE, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
+		  CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hInstance, NULL);
+	}
+	else {
+		g_hwndMain = CreateWindowEx(WS_EX_TOOLWINDOW | WS_EX_TRANSPARENT, WINDOW_CLASS, g_szTE, WS_VISIBLE | WS_POPUP,
+		  CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hInstance, NULL);
+	}
 	if (!g_hwndMain)
 	{
 		Finalize();
@@ -5649,34 +5650,36 @@ function _t(o) {\
 	}
 	else {
 		lp = L"\
-try {\
-	window.te = external;\
-	api = te.WindowsAPI;\
-	fso = te.CreateObject('Scripting.FileSystemObject');\
-	sha = te.CreateObject('Shell.Application');\
-	wsh = te.CreateObject('WScript.Shell');\
-	arg = api.CommandLineToArgv(api.GetCommandLine());\
-	_bn = arg[2];\
-	if (!api.PathMatchSpec(_bn, '?:\\*;\\\\*')) {\
-		_bn = fso.BuildPath(fso.GetParentFolderName(arg[0]), _bn);\
-	}\
-	(function () {\
+function _s() {\
+	try {\
+		window.te = external;\
+		api = te.WindowsAPI;\
+		fso = te.CreateObject('Scripting.FileSystemObject');\
+		sha = te.CreateObject('Shell.Application');\
+		wsh = te.CreateObject('WScript.Shell');\
+		arg = api.CommandLineToArgv(api.GetCommandLine());\
+		_bn = arg[2];\
+		if (!api.PathMatchSpec(_bn, '?:\\*;\\\\*')) {\
+			_bn = fso.BuildPath(fso.GetParentFolderName(arg[0]), _bn);\
+		}\
 		var wins = sha.Windows();\
 		for(var i = wins.Count; i--;) {\
 			var x = wins.Item(i);\
 			if (x && api.strcmpi(x.FullName, arg[0]) == 0) {\
-				var wind = x.Document.parentWindow;\
+				var w = x.Document.parentWindow;\
 				if (!window.MainWindow || window.MainWindow.Exchange && window.MainWindow.Exchange[arg[3]]) {\
-					window.MainWindow = wind\
+					window.MainWindow = w;\
+					var rc = api.Memory('RECT');\
+					api.GetWindowRect(w.te.hwnd, rc);\
+					api.MoveWindow(te.hwnd, (rc.Left + rc.Right) / 2, (rc.Top + rc.Bottom) / 2, 0, 0, false);\
 				}\
 			}\
 		}\
-	})();\
-	te.Data = _es(_bn);\
-} catch (e) {\
-	wsh.Popup((e.description || e.toString()), 0, 'Tablacus Explorer', 0x10);\
+		return _es(_bn);\
+	} catch (e) {\
+		wsh.Popup((e.description || e.toString()), 0, 'Tablacus Explorer', 0x10);\
+	}\
 }\
-\
 function _es(fn) {\
 	if (!api.PathMatchSpec(fn, '?:\\*;\\\\*')) {\
 		fn = fso.BuildPath(fso.GetParentFolderName(_bn), fn);\
@@ -5692,21 +5695,15 @@ function _es(fn) {\
 	} catch (e) {\
 		wsh.Popup((e.description || e.toString()) + '\\n' + fn, 0, 'Tablacus Explorer', 0x10);\
 	}\
-	return null;\
 }\
-function importScripts(a1,a2,a3,a4,a5,a6,a7,a8) {\
-	var a = [a1,a2,a3,a4,a5,a6,a7,a8];\
-	for (var i in a) {\
-		if (a[i]) {\
-			_es(a[i]);\
-		}\
+function importScripts() {\
+	for (var i = 0; i < arguments.length; i++) {\
+		_es(arguments[i]);\
 	}\
 }\
 ";
-		MoveWindow(g_hwndMain, -32768, -32768, 1, 1, TRUE);
-		SetWindowLong(g_hwndMain, GWL_EXSTYLE, GetWindowLong(g_hwndMain, GWL_EXSTYLE) | WS_EX_LAYERED);
-		ShowWindow(g_hwndMain, SW_SHOWNOACTIVATE);
-		ShowWindow(g_hwndMain, SW_HIDE);
+		VARIANT vResult;
+		VariantInit(&vResult);
 #ifdef _USE_HTMLDOC
 		// CLSID_HTMLDocument
 		if SUCCEEDED(CoCreateInstance(CLSID_HTMLDocument, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pHtmlDoc))) {
@@ -5722,7 +5719,7 @@ function importScripts(a1,a2,a3,a4,a5,a6,a7,a8) {\
 				VARIANT *pv;
 				SafeArrayAccessData(psa, (LPVOID *)&pv);
 				pv->vt = VT_BSTR;
-				LPOLESTR lpHtml = L"<html><body><script type='text/javascript'>%s</script></body></html>";
+				LPOLESTR lpHtml = L"<html><body><script type='text/javascript'>%s external.Data=_s;</script></body></html>";
 				int nSize = lstrlen(lp) + lstrlen(lpHtml) - 1;
 				pv->bstrVal = ::SysAllocStringLen(NULL, nSize);
 				swprintf_s((wchar_t *)pv->bstrVal, nSize, lpHtml, lp);
@@ -5731,6 +5728,11 @@ function importScripts(a1,a2,a3,a4,a5,a6,a7,a8) {\
 				VariantClear(pv);
 				pHtmlDoc->close();
 				SafeArrayDestroy(psa);
+				IDispatch *pdisp;
+				if (GetDispatch(&g_pTE->m_Data, &pdisp)) {
+					Invoke5(pdisp, DISPID_VALUE, DISPATCH_METHOD, &vResult, 0, NULL);
+					pdisp->Release();
+				}
 			}
 		}
 #else
@@ -5739,8 +5741,18 @@ function importScripts(a1,a2,a3,a4,a5,a6,a7,a8) {\
 		teSetObject(&pv[0], g_pTE);
 		teExecMethod(g_pJS, L"_t", &vWindow, 1, pv);
 		ParseScript(lp, L"JScript", &vWindow, NULL, &pJS);
+		DWORD dwThreadId = GetWindowThreadProcessId(GetForegroundWindow(), NULL);
+		AttachThreadInput(g_dwMainThreadId, dwThreadId, TRUE);
+		DWORD dwTimeout = 0;
+		SystemParametersInfo(SPI_GETFOREGROUNDLOCKTIMEOUT, 0, &dwTimeout, 0);
+		SystemParametersInfo(SPI_SETFOREGROUNDLOCKTIMEOUT, 0, NULL, 0);
+		SetForegroundWindow(g_hwndMain);
+		SystemParametersInfo(SPI_SETFOREGROUNDLOCKTIMEOUT, 0, &dwTimeout, 0);
+		AttachThreadInput(g_dwMainThreadId, dwThreadId, FALSE);
+		teExecMethod(pJS, L"_s", &vResult, 0, NULL);
 #endif
-		bVisible = (g_pTE->m_Data.vt == VT_BSTR) && (lstrcmpi(g_pTE->m_Data.bstrVal, L"wait") == 0);
+		bVisible = (vResult.vt == VT_BSTR) && (lstrcmpi(vResult.bstrVal, L"wait") == 0);
+		VariantClear(&vResult);
 	}
 	if (!bVisible) {
 		PostMessage(g_hwndMain, WM_CLOSE, 0, 0);
@@ -5914,6 +5926,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			//Close Browser
 			if (g_pWebBrowser) {
 				g_pWebBrowser->Close();
+				g_pWebBrowser = NULL;
 			}
 			PostQuitMessage(0);
 			break;
@@ -9930,14 +9943,16 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 			//Reload
 			case TE_METHOD + 1009:
 				g_nReload = 1;
-				if (g_nException && g_pWebBrowser) {
-					g_nException--;
-					g_nLockUpdate = 0;
-					ClearEvents();
-					g_pWebBrowser->m_pWebBrowser->Refresh();
-				}
-				else {
-					SetTimer(g_hwndMain, TET_Reload, 100, teTimerProc);
+				if (g_pWebBrowser) {
+					if (g_nException) {
+						g_nException--;
+						g_nLockUpdate = 0;
+						ClearEvents();
+						g_pWebBrowser->m_pWebBrowser->Refresh();
+					}
+					else {
+						SetTimer(g_hwndMain, TET_Reload, 100, teTimerProc);
+					}
 				}
 				return S_OK;
 			//DIID_DShellWindowsEvents
@@ -14849,7 +14864,7 @@ STDMETHODIMP CteFolderItem::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 		}
 		switch(dispIdMember) {
 			//Name
-			case 0x4001001:
+			case 1:
 				if (nArg >= 0) {
 					put_Name(pDispParams->rgvarg[nArg].bstrVal);
 				}
@@ -14860,7 +14875,7 @@ STDMETHODIMP CteFolderItem::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				}
 				return S_OK;
 			//Path
-			case 0x4001002:
+			case 2:
 				if (pVarResult) {
 					if SUCCEEDED(get_Path(&pVarResult->bstrVal)) {
 						pVarResult->vt = VT_BSTR;
@@ -14868,12 +14883,15 @@ STDMETHODIMP CteFolderItem::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				}
 				return S_OK;
 			//Alt
-			case 0x4001003:
+			case 3:
 				if (nArg >= 0) {
 					teILFreeClear(&m_pidl);
 					GetPidlFromVariant(&m_pidl, &pDispParams->rgvarg[nArg]);
 				}
 				return S_OK;
+			//_BLOB
+			case 9:
+				return DISP_E_MEMBERNOTFOUND;
 /*/// Reserved future
 			//FocusedItem
 			case 0x4001004:
@@ -15734,14 +15752,14 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 										}
 									}
 									else if (FindUnknown(pv, &punk)) {
-										BSTR *pbs;
-										if (teGetBSTRFromFolderItem(&pbs, punk)) {
+										BSTR bs;
+										if (teGetBSTRFromFolderItem(&bs, punk)) {
 											pVarResult->vt = VT_BSTR;
 											if (i & SHGDN_INFOLDER) {
-												pVarResult->bstrVal = ::SysAllocString(PathFindFileName(*pbs));
+												pVarResult->bstrVal = ::SysAllocString(PathFindFileName(bs));
 												return S_OK;
 											}
-											pVarResult->bstrVal = ::SysAllocString(*pbs);
+											pVarResult->bstrVal = ::SysAllocString(bs);
 											return S_OK;
 										}
 									}
@@ -16398,7 +16416,9 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 									punk->QueryInterface(IID_PPV_ARGS(&g_pCM));
 								}
 							}
-							g_hMenuKeyHook = g_hMenuKeyHook ? g_hMenuKeyHook : SetWindowsHookEx(WH_KEYBOARD, (HOOKPROC)MenuKeyProc, hInst, GetCurrentThreadId());
+							if (!g_hMenuKeyHook) {
+								g_hMenuKeyHook = SetWindowsHookEx(WH_KEYBOARD, (HOOKPROC)MenuKeyProc, hInst, g_dwMainThreadId);
+							}
 							*plResult = TrackPopupMenuEx((HMENU)param[0], (UINT)param[1], (int)param[2], (int)param[3],
 								(HWND)param[4], (LPTPMPARAMS)GetpcFromVariant(&pDispParams->rgvarg[nArg - 5]));
 							UnhookWindowsHookEx(g_hMenuKeyHook);

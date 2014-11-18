@@ -1395,7 +1395,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 					break;
 				}
 			}
-			var nPos = MakeMenus(Ctrl, pt, hMenu, menus, arMenu, items);
+			var nPos = MakeMenus(hMenu, menus, arMenu, items, Ctrl, pt);
 			for (var i in eventTE[Name]) {
 				nPos = eventTE[Name][i](Ctrl, hMenu, nPos, Selected, SelItem);
 			}
@@ -1735,7 +1735,7 @@ MenusIcon = function (mii, src)
 	}
 }
 
-MakeMenus = function (Ctrl, pt, hMenu, menus, arMenu, items)
+MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt)
 {
 	var hMenus = [hMenu];
 	var nPos = api.QuadPart(menus[0].getAttribute("Pos"));
@@ -1972,7 +1972,7 @@ function CheckUpdate()
 		wsh.Popup(te.About + "\n" + GetText("the latest version"), 0, TITLE, MB_ICONINFORMATION);
 		return;
 	}
-	if (!confirmYN(GetText("Update available") + "\n" + s + "\n" + GetText("Do you want to install it now?"), 0, TITLE, MB_ICONQUESTION | MB_YESNO)) {
+	if (!confirmOk(GetText("Update available") + "\n" + s + "\n" + GetText("Do you want to install it now?"), 0, TITLE)) {
 		return;
 	}
 	var temp = fso.BuildPath(fso.GetSpecialFolder(2).Path, "tablacus");
@@ -2040,6 +2040,11 @@ function EscapeUpdateFile(s)
 confirmYN = function (s, title)
 {
 	return wsh.Popup(GetText(s), 0, GetText(title) || TITLE, MB_ICONQUESTION | MB_YESNO) == IDYES;
+}
+
+confirmOk = function (s, title)
+{
+	return wsh.Popup(GetText(s), 0, GetText(title) || TITLE, MB_ICONQUESTION | MB_OKCANCEL) == IDOK;
 }
 
 createHttpRequest = function ()
