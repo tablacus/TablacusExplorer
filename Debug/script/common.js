@@ -1999,16 +1999,16 @@ function CheckUpdate()
 	}
 
 	var update = api.sprintf(2000, "\
-		T='Tablacus Explorer';\
-		F='%s';\
-		Q='\\x22';\
-		A=new ActiveXObject('Shell.Application');\
-		W=new ActiveXObject('WScript.Shell');\
-		W.Popup('%s',9,T,%d);\
-		A.NameSpace(F).MoveHere(A.NameSpace('%s').Items(),%d);\
-		W.Popup('%s',0,T,%d);\
-		W.%s(Q+F+'\\\\%s'+Q);\
-		close()", EscapeUpdateFile(InstalledFolder), GetText("Please wait."), MB_ICONINFORMATION, EscapeUpdateFile(temp), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, GetText("Completed."), MB_ICONINFORMATION, 'Run',
+T='Tablacus Explorer';\
+F='%s';\
+Q='\\x22';\
+A=new ActiveXObject('Shell.Application');\
+W=new ActiveXObject('WScript.Shell');\
+W.Popup('%s',9,T,%d);\
+A.NameSpace(F).MoveHere(A.NameSpace('%s').Items(),%d);\
+W.Popup('%s',0,T,%d);\
+W.%s(Q+F+'\\\\%s'+Q);\
+close()", EscapeUpdateFile(InstalledFolder), GetText("Please wait."), MB_ICONINFORMATION, EscapeUpdateFile(temp), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, GetText("Completed."), MB_ICONINFORMATION, 'Run',
 EscapeUpdateFile(fso.GetFileName(api.GetModuleFileName(null)))).replace(/[\t\n]/g, "");
 
 	wsh.CurrentDirectory = temp;
@@ -2028,7 +2028,8 @@ EscapeUpdateFile(fso.GetFileName(api.GetModuleFileName(null)))).replace(/[\t\n]/
 	if (!fso.FileExists(mshta)) {
 		mshta = fso.BuildPath(system32, exe);
  	}
-	sha.ShellExecute(mshta, s1 + update + '"', null, null, SW_SHOWNORMAL);
+	var oExec = wsh.Exec([mshta, ' ', s1, update, '"'].join(""));
+	wsh.AppActivate(oExec.ProcessID);
 	api.PostMessage(te.hwnd, WM_CLOSE, 0, 0);
 }
 

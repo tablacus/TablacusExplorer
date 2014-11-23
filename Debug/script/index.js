@@ -975,7 +975,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 	return S_FALSE; 
 }
 
-te.OnDragEnter = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect)
+te.OnDragEnter = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect, pgrfKeyState)
 {
 	var hr = E_NOTIMPL;
 	var dwEffect = pdwEffect[0];
@@ -984,7 +984,7 @@ te.OnDragEnter = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect)
 	for (var i in eo) {
 		try {
 			pdwEffect[0] = dwEffect;
-			var hr2 = eo[i](Ctrl, dataObj, grfKeyState, pt, pdwEffect);
+			var hr2 = eo[i](Ctrl, dataObj, pgrfKeyState[0], pt, pdwEffect, pgrfKeyState);
 			if (isFinite(hr2) && hr != S_OK) {
 				hr = hr2;
 			}
@@ -997,7 +997,7 @@ te.OnDragEnter = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect)
 	return hr; 
 }
 
-te.OnDragOver = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect)
+te.OnDragOver = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect, pgrfKeyState)
 {
 	var dwEffect = pdwEffect[0];
 	var en = "DragOver";
@@ -1005,7 +1005,7 @@ te.OnDragOver = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect)
 	for (var i in eo) {
 		try {
 			pdwEffect[0] = dwEffect;
-			var hr = eo[i](Ctrl, dataObj, grfKeyState, pt, pdwEffect);
+			var hr = eo[i](Ctrl, dataObj, pgrfKeyState[0], pt, pdwEffect, pgrfKeyState);
 			if (isFinite(hr)) {
 				return hr; 
 			}
@@ -1017,7 +1017,7 @@ te.OnDragOver = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect)
 	return E_NOTIMPL; 
 }
 
-te.OnDrop = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect)
+te.OnDrop = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect, pgrfKeyState)
 {
 	var dwEffect = pdwEffect[0];
 	var en = "Drop";
@@ -1025,7 +1025,7 @@ te.OnDrop = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect)
 	for (var i in eo) {
 		try {
 			pdwEffect[0] = dwEffect;
-			var hr = eo[i](Ctrl, dataObj, grfKeyState, pt, pdwEffect);
+			var hr = eo[i](Ctrl, dataObj, pgrfKeyState[0], pt, pdwEffect, pgrfKeyState);
 			if (isFinite(hr)) {
 				return hr; 
 			}
@@ -1037,14 +1037,14 @@ te.OnDrop = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect)
 	return E_NOTIMPL; 
 }
 
-te.OnDragleave = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect)
+te.OnDragleave = function (Ctrl)
 {
 	var hr = E_NOTIMPL;
 	var en = "Dragleave";
 	var eo = eventTE[en];
 	for (var i in eo) {
 		try {
-			var hr2 = eo[i](Ctrl, dataObj, grfKeyState, pt, pdwEffect);
+			var hr2 = eo[i](Ctrl);
 			if (isFinite(hr2) && hr != S_OK) {
 				hr = hr2;
 			}
@@ -1172,7 +1172,22 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 		case CTRL_TE:
 			switch (msg) {
 				case WM_DESTROY:
-					api.ImageList_Destroy(Ctrl.Data.himlTC);
+					var locator = te.CreateObject("WbemScripting.SWbemLocator");
+					if (locator) {
+						var server = locator.ConnectServer();
+						if (server) {
+							var cols = server.ExecQuery("SELECT * FROM Win32_Process WHERE ExecutablePath = '" + api.GetModuleFileName(null).replace(/\\/g, "\\\\") + "'");
+							for(var list = new Enumerator(cols); !list.atEnd(); list.moveNext()) {
+								var item = list.item();
+								if (/\/run/i.test(item.CommandLine)) {
+									var hwnd = GethwndFromPid(item.ProcessId);
+									api.SetWindowLongPtr(hwnd, GWL_EXSTYLE, api.GetWindowLongPtr(hwnd, GWL_EXSTYLE) & ~0x80);
+									api.ShowWindow(hwnd, SW_SHOWNORMAL);
+									api.SetForegroundWindow(hwnd);
+								}
+							}
+						}
+					}
 					break;
 				case WM_DEVICECHANGE:
 					if (wParam == DBT_DEVICEARRIVAL || wParam == DBT_DEVICEREMOVECOMPLETE) {
@@ -2747,6 +2762,7 @@ AddEvent("OptionDecode", function (Id, p)
 if (!te.Data) {
 	te.Data = te.Object();
 	te.Data.CustColors = api.Memory("int", 16);
+	te.Data.Addons = te.Object();
 	//Default Value
 	te.Data.Tab_Style = TCS_HOTTRACK | TCS_MULTILINE | TCS_RAGGEDRIGHT | TCS_SCROLLOPPOSITE | TCS_HOTTRACK | TCS_TOOLTIPS;
 	te.Data.Tab_Align = TCA_TOP;
@@ -2808,6 +2824,7 @@ if (!te.Data) {
 	}
 	te.Data.uRegisterId = api.SHChangeNotifyRegister(te.hwnd, SHCNRF_InterruptLevel | SHCNRF_ShellLevel | SHCNRF_NewDelivery, SHCNE_ALLEVENTS, TWM_CHANGENOTIFY, ssfDESKTOP, true);
 }
+
 InitCode();
 InitMouse();
 InitMenus();
