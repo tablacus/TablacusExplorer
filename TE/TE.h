@@ -98,16 +98,17 @@ typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
 #define MAX_PROP				4096
 #define MAX_STATUS				1024
 #define SIZE_BUFF				32768
-#define TET_Create				1
-#define TET_Reload				2
-#define TET_Size				3
-#define TET_Size2				4
-#define TET_Redraw				5
-#define TET_Show				6
-#define TET_Unload				7
-#define TET_Status				8
-#define TET_Refresh				9
-#define TET_SetFore				10
+#define DRAG_SCROLL				32
+#define DRAG_INTERVAL			300
+#define TET_Create				0x1fa1
+#define TET_Reload				0x1fa2
+#define TET_Size				0x1fa3
+#define TET_Size2				0x1fa4
+#define TET_Redraw				0x1fa5
+#define TET_Show				0x1fa6
+#define TET_Unload				0x1fa7
+#define TET_Status				0x1fa8
+#define TET_Refresh				0x1fa9
 #define SHGDN_FORPARSINGEX	0x80000000
 #define START_OnFunc			5000
 #define TE_OnKeyMessage			0
@@ -749,7 +750,7 @@ public:
 	CteTabs		*m_pTabs;
 	CteTreeView	*m_pTV;
 	LONG_PTR	m_DefProc;
-//	LONG_PTR	m_DefProc2;
+	LONG_PTR	m_DefProc2;
 	IShellView  *m_pShellView;
 	IDispatch	*m_pOnFunc[1];
 	TEColumn	*m_pColumns;

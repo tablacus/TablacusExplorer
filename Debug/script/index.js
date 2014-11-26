@@ -975,7 +975,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 	return S_FALSE; 
 }
 
-te.OnDragEnter = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect, pgrfKeyState)
+te.OnDragEnter = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect)
 {
 	var hr = E_NOTIMPL;
 	var dwEffect = pdwEffect[0];
@@ -997,7 +997,7 @@ te.OnDragEnter = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect, pgrfKeySta
 	return hr; 
 }
 
-te.OnDragOver = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect, pgrfKeyState)
+te.OnDragOver = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect)
 {
 	var dwEffect = pdwEffect[0];
 	var en = "DragOver";
@@ -1017,7 +1017,7 @@ te.OnDragOver = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect, pgrfKeyStat
 	return E_NOTIMPL; 
 }
 
-te.OnDrop = function (Ctrl, dataObj, grfKeyState, pt, pdwEffect, pgrfKeyState)
+te.OnDrop = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect)
 {
 	var dwEffect = pdwEffect[0];
 	var en = "Drop";

@@ -371,7 +371,7 @@ function MakeImgSrc(src, index, bSrc, h, strBitmap, strIcon)
 			if (value) {
 				fn = fso.BuildPath(te.Data.DataFolder, "cache\\icon\\" + value.replace(/[:\\\/]/g, "$") + ".png");
 			}
-			else if (src && !api.PathMatchSpec(src, "*.jpg;*.jpeg;*.png;*.bmp;*.gif;*.ico;data:*")) {
+			else if (src && !api.PathMatchSpec(src, FILTER_IMAGE)) {
 				src = src.replace(/^file:\/\/\//i, "").replace(/\//g, "\\");
 				fn = fso.BuildPath(te.Data.DataFolder, "cache\\file\\" + src.replace(/[:\\\/]/g, "$") + ".png");
 			}

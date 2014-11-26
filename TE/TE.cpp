@@ -84,6 +84,7 @@ LONG	nUpdate = 0;
 DWORD	g_paramFV[SB_Count];
 DWORD	g_dragdrop = 0;
 DWORD	g_dwMainThreadId;
+DWORD	g_dwTickScroll;
 long	g_nProcKey	   = 0;
 long	g_nProcMouse   = 0;
 long	g_nProcDrag    = 0;
@@ -971,6 +972,7 @@ TEmethod methodAPI[] = {
 	{ 20441, L"ImmSetOpenStatus" },
 	{ 20451, L"ImmReleaseContext" },
 	{ 20461, L"IsChild" },
+	{ 20471, L"KillTimer" },
 	//+other
 	{ 25001, L"InsertMenu" },
 	{ 25011, L"SetWindowText" },
@@ -1084,6 +1086,8 @@ TEmethod methodAPI[] = {
 	{ 40323, L"GetCurrentProcess" },
 	{ 40333, L"ImmGetContext" },
 	{ 40343, L"GetFocus" },
+	{ 40353, L"GetForegroundWindow" },
+	{ 40363, L"SetTimer" },
 	//+other
 	{ 45003, L"LoadMenu" },
 	{ 45013, L"LoadIcon" },
@@ -1360,9 +1364,13 @@ BOOL teSetForegroundWindow(HWND hwnd)
 		DWORD dwTimeout = 0;
 		SystemParametersInfo(SPI_GETFOREGROUNDLOCKTIMEOUT, 0, &dwTimeout, 0);
 		SystemParametersInfo(SPI_SETFOREGROUNDLOCKTIMEOUT, 0, NULL, 0);
-		AllowSetForegroundWindow(dwThreadId);
 		SetWindowPos(hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 		bResult = SetForegroundWindow(hwnd);
+		if (!bResult && hwnd == g_hwndMain) {
+			SetWindowLong(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) & ~WS_EX_TOOLWINDOW);
+			ShowWindow(hwnd, SW_SHOWNORMAL);
+			bResult = SetForegroundWindow(hwnd);
+		}
 		SystemParametersInfo(SPI_SETFOREGROUNDLOCKTIMEOUT, 0, &dwTimeout, 0);
 		AttachThreadInput(dwThreadId, dwForeThreadId, FALSE);
 	}
@@ -3890,20 +3898,15 @@ HRESULT DragSub(int nFunc, PVOID pObj, CteFolderItems *pDragItems, PDWORD pgrfKe
 	if (g_pOnFunc[nFunc]) {
 		try {
 			if (InterlockedIncrement(&g_nProcDrag) < 10) {
-				pv = GetNewVARIANT(6);
-				teSetObject(&pv[5], pObj);
-				teSetObject(&pv[4], pDragItems);
-
-				pv[3].lVal = *pgrfKeyState;
-				pv[3].vt = VT_I4;
-
+				pv = GetNewVARIANT(5);
+				teSetObject(&pv[4], pObj);
+				teSetObject(&pv[3], pDragItems);
+				teSetObjectRelease(&pv[2], new CteMemory(sizeof(int), (char *)pgrfKeyState, VT_NULL, 1, L"DWORD"));
 				pstPt = new CteMemory(2 * sizeof(int), NULL, VT_NULL, 1, L"POINT");
 				pstPt->SetPoint(pt.x, pt.y);
-				teSetObjectRelease(&pv[2], pstPt);
-				teSetObjectRelease(&pv[1], new CteMemory(sizeof(int), (char *)pdwEffect, VT_NULL, 1, L"DWORD"));
-				teSetObjectRelease(&pv[0], new CteMemory(sizeof(int), (char *)pgrfKeyState, VT_NULL, 1, L"DWORD"));
-
-				if SUCCEEDED(Invoke4(g_pOnFunc[nFunc], &vResult, 6, pv)) {
+				teSetObjectRelease(&pv[1], pstPt);
+				teSetObjectRelease(&pv[0], new CteMemory(sizeof(int), (char *)pdwEffect, VT_NULL, 1, L"DWORD"));
+				if SUCCEEDED(Invoke4(g_pOnFunc[nFunc], &vResult, 5, pv)) {
 					hr = GetIntFromVariant(&vResult);
 				}
 			}
@@ -4391,20 +4394,23 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	}
 	return 0;
 }
-/*
+
 LRESULT CALLBACK TELVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	try {
 		CteShellBrowser *pSB = (CteShellBrowser *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
-		LRESULT lResult = S_FALSE;
-		return (lResult && hwnd == pSB->m_hwndLV) ? CallWindowProc((WNDPROC)pSB->m_DefProc2, hwnd, msg, wParam, lParam) : 0;
+//		LRESULT lResult = S_FALSE;
+		if (msg == WM_HSCROLL || msg == WM_VSCROLL) {
+			g_dwTickScroll = GetTickCount();
+		}
+		return (/*lResult &&*/ hwnd == pSB->m_hwndLV) ? CallWindowProc((WNDPROC)pSB->m_DefProc2, hwnd, msg, wParam, lParam) : 0;
 	}
 	catch (...) {
 		g_nException = 0;
 	}
 	return 0;
 }
-*/
+
 VOID teSetTreeWidth(CteShellBrowser	*pSB, HWND hwnd, LPARAM lParam)
 {
 	int nWidth = pSB->m_param[SB_TreeWidth] + GET_X_LPARAM(lParam) - g_x;
@@ -6037,6 +6043,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			if (g_nReload) {
 				return E_FAIL;
 			}
+		case WM_TIMER:
 		case WM_SETFOCUS:
 		case WM_KILLFOCUS:
 		case WM_DROPFILES:
@@ -6117,7 +6124,7 @@ void CteShellBrowser::Init(CteTabs *pTabs, BOOL bNew)
 	m_pFolderItem1 = NULL;
 	m_nUnload = 0;
 	m_DefProc = NULL;
-//	m_DefProc2 = NULL;
+	m_DefProc2 = NULL;
 	m_pDropTarget = NULL;
 	m_pDragItems = NULL;
 	m_pDSFV = NULL;
@@ -9231,6 +9238,27 @@ STDMETHODIMP CteShellBrowser::DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwE
 		hr = hr2;
 	}
 	m_grfKeyState = grfKeyState;
+	if (hr == S_OK && m_hwndLV && GetTickCount() - g_dwTickScroll > DRAG_INTERVAL
+#ifdef _2000XP
+	&& g_bUpperVista
+#endif
+	) {
+		RECT rc;
+		ScreenToClient(m_hwndLV, (LPPOINT)&pt);
+		GetClientRect(m_hwndLV, &rc);
+		if (pt.x < DRAG_SCROLL) {
+			SendMessage(m_hwndLV, WM_HSCROLL, SB_LINELEFT, 0);
+		}
+		else if (pt.x > rc.right - DRAG_SCROLL) {
+			SendMessage(m_hwndLV, WM_HSCROLL, SB_LINERIGHT, 0);
+		}
+		if (pt.y < DRAG_SCROLL) {
+			SendMessage(m_hwndLV, WM_VSCROLL, SB_LINEUP, 0);
+		}
+		else if (pt.y > rc.bottom - DRAG_SCROLL) {
+			SendMessage(m_hwndLV, WM_VSCROLL, SB_LINEDOWN, 0);
+		}
+	}
 	return hr;
 }
 
@@ -9330,10 +9358,10 @@ VOID CteShellBrowser::SetPropEx()
 		}
 		m_hwndLV = FindWindowEx(m_hwndDV, 0, WC_LISTVIEW, NULL);
 		if (m_hwndLV) {
-/*			if (!m_DefProc2) {
+			if (!m_DefProc2) {
 				SetWindowLongPtr(m_hwndLV, GWLP_USERDATA, (LONG_PTR)this);
 				m_DefProc2 = SetWindowLongPtr(m_hwndLV, GWLP_WNDPROC, (LONG_PTR)TELVProc2);
-			}*/
+			}
 			HookDragDrop(g_dragdrop & 1);
 			if (m_pExplorerBrowser) {
 				if (m_param[SB_FolderFlags] & FWF_NOCLIENTEDGE) {
@@ -9353,10 +9381,10 @@ VOID CteShellBrowser::ResetPropEx()
 		SetWindowLongPtr(m_hwndDV, GWLP_WNDPROC, (LONG_PTR)m_DefProc);
 		m_DefProc = NULL;
 	}
-/*	if (m_DefProc2) {
+	if (m_DefProc2) {
 		SetWindowLongPtr(m_hwndLV, GWLP_WNDPROC, (LONG_PTR)m_DefProc2);
 		m_DefProc2 = NULL;
-	}*/
+	}
 	if (m_pDropTarget) {
 		SetProp(m_hwndLV, L"OleDropTargetInterface", (HANDLE)m_pDropTarget);
 		m_pDropTarget = NULL;
@@ -16186,6 +16214,14 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 					case 40343:
 						*phResult = GetFocus();
 						break;
+					case 40353:
+						*phResult = GetForegroundWindow();
+						break;
+					case 40363:
+						if (nArg >= 2) {
+							*phResult = (HANDLE)SetTimer((HWND)param[0], param[1], (UINT)param[2], NULL);
+						}
+						break;
 					case 45013:
 						if (nArg >= 1) {
 							*phResult = LoadIcon((HINSTANCE)param[0], GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]));
@@ -17028,6 +17064,11 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 					case 20461:
 						if (nArg >= 1) {
 							*pbResult = IsChild((HWND)param[0], (HWND)param[1]);
+						}
+						break;
+					case 20471:
+						if (nArg >= 1) {
+							*pbResult = KillTimer((HWND)param[0], param[1]);
 						}
 						break;
 					case 25001://InsertMenu
