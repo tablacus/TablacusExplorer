@@ -41,7 +41,6 @@ using namespace Gdiplus;
 #define _2000XP
 #define _W2000
 #endif
-#define _VISTA7
 //#define _USE_HTMLDOC
 //#define _USE_TESTOBJECT
 
@@ -588,9 +587,7 @@ public:
 class CteShellBrowser : public IShellBrowser, public ICommDlgBrowser2,
 	public IShellFolderViewDual,
 //	public IFolderFilter,
-#ifdef _VISTA7
 	public IExplorerBrowserEvents, public IExplorerPaneVisibility,
-#endif
 #ifdef _2000XP
 	public IShellFolder2, public IShellFolderViewCB,
 #endif
@@ -647,7 +644,6 @@ public:
 	STDMETHODIMP PopupItemMenu(FolderItem *pfi, VARIANT vx, VARIANT vy, BSTR *pbs);
 	STDMETHODIMP get_Script(IDispatch **ppDisp);
     STDMETHODIMP get_ViewOptions(long *plViewOptions);
-#ifdef _VISTA7
 	//IExplorerBrowserEvents
 	STDMETHODIMP OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder);
 	STDMETHODIMP OnViewCreated(IShellView *psv);
@@ -655,7 +651,6 @@ public:
 	STDMETHODIMP OnNavigationFailed(PCIDLIST_ABSOLUTE pidlFolder);
 	//IExplorerPaneVisibility
 	STDMETHODIMP GetPaneState(REFEXPLORERPANE ep, EXPLORERPANESTATE *peps);
-#endif
 #ifdef _2000XP
 	//IShellFolder
 	STDMETHODIMP ParseDisplayName(HWND hwnd, IBindCtx *pbc, LPWSTR pszDisplayName, ULONG *pchEaten, PIDLIST_RELATIVE *ppidl, ULONG *pdwAttributes);
@@ -714,7 +709,7 @@ public:
 	VOID Navigate1Ex(LPOLESTR pstr, FolderItems *pFolderItems, UINT wFlags, FolderItem *pPrevious);
 	HRESULT Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *param, FolderItems *pFolderItems, FolderItem *pPrevious, CteShellBrowser *pHistSB);
 	HRESULT Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *param, CteShellBrowser **ppSB, FolderItems *pFolderItems);
-	HRESULT NavigateEB();
+	HRESULT NavigateEB(DWORD dwFrame);
 	HRESULT OnBeforeNavigate(FolderItem *pPrevious, UINT wFlags);
 	void InitializeMenuItem(HMENU hmenu, LPTSTR lpszItemName, int nId, HMENU hmenuSub);
 	VOID GetSort(BSTR* pbs);
@@ -886,9 +881,7 @@ private:
 };
 
 class CteTreeView : public IDispatch,
-#ifdef _VISTA7
 	public INameSpaceTreeControlEvents,
-#endif
 #ifdef _2000XP
 	public IOleClientSite, public IOleInPlaceSite,
 #endif
@@ -903,7 +896,6 @@ public:
 	STDMETHODIMP GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo);
 	STDMETHODIMP GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId);
 	STDMETHODIMP Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr);
-#ifdef _VISTA7
 	//INameSpaceTreeControlEvents
 	STDMETHODIMP OnItemClick(IShellItem *psi, NSTCEHITTEST nstceHitTest, NSTCSTYLE nsctsFlags);
 	STDMETHODIMP OnPropertyItemCommit(IShellItem *psi);
@@ -923,7 +915,6 @@ public:
 	STDMETHODIMP OnAfterContextMenu(IShellItem *psi, IContextMenu *pcmIn, REFIID riid, void **ppv);
 	STDMETHODIMP OnBeforeStateImageChange(IShellItem *psi);
 	STDMETHODIMP OnGetDefaultIconIndex(IShellItem *psi, int *piDefaultIcon, int *piOpenIcon);
-#endif
 #ifdef _2000XP
 	//IOleClientSite
 	STDMETHODIMP SaveObject();
@@ -994,9 +985,7 @@ private:
 	int		m_nType, m_nOpenedType;
 	DWORD	m_grfKeyState;
 	HRESULT m_DragLeave;
-#ifdef _VISTA7
 	DWORD	m_dwCookie;
-#endif
 };
 
 class CteCommonDialog : public IDispatch

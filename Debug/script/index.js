@@ -1040,17 +1040,19 @@ te.OnDrop = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect)
 te.OnDragleave = function (Ctrl)
 {
 	var hr = E_NOTIMPL;
-	var en = "Dragleave";
-	var eo = eventTE[en];
-	for (var i in eo) {
-		try {
-			var hr2 = eo[i](Ctrl);
-			if (isFinite(hr2) && hr != S_OK) {
-				hr = hr2;
+	var en = ["Dragleave", "DragLeave"];
+	for (j in en) {
+		var eo = eventTE[en[j]];
+		for (var i in eo) {
+			try {
+				var hr2 = eo[i](Ctrl);
+				if (isFinite(hr2) && hr != S_OK) {
+					hr = hr2;
+				}
 			}
-		}
-		catch (e) {
-			ShowError(e, en, i);
+			catch (e) {
+				ShowError(e, en[j], i);
+			}
 		}
 	}
 	g_mouse.str = "";
@@ -2101,7 +2103,9 @@ g_basic =
 					ShowError(e, s);
 				}
 				return S_OK;
-			}
+			},
+
+			Ref: OpenDialog
 		},
 
 		JScript:
@@ -2762,7 +2766,7 @@ AddEvent("OptionDecode", function (Id, p)
 if (!te.Data) {
 	te.Data = te.Object();
 	te.Data.CustColors = api.Memory("int", 16);
-	te.Data.Addons = te.Object();
+	te.Data.AddonsData = te.Object();
 	//Default Value
 	te.Data.Tab_Style = TCS_HOTTRACK | TCS_MULTILINE | TCS_RAGGEDRIGHT | TCS_SCROLLOPPOSITE | TCS_HOTTRACK | TCS_TOOLTIPS;
 	te.Data.Tab_Align = TCA_TOP;

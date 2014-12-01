@@ -18,6 +18,7 @@ eventTA = {};
 g_ptDrag = api.Memory("POINT");
 objHover = null;
 g_nFind = 0;
+g_Colors = [];
 
 FolderMenu =
 {
@@ -401,7 +402,7 @@ function MakeImgData(src, index, h, strBitmap, strIcon)
 	var hIcon = MakeImgIcon(src, index, h, strBitmap, strIcon);
 	if (hIcon) {
 		var image = te.GdiplusBitmap();
-		image.FromHICON(hIcon, api.GetSysColor(COLOR_BTNFACE));
+		image.FromHICON(hIcon, GetSysColor(COLOR_BTNFACE));
 		api.DestroyIcon(hIcon);
 		return image;
 	}
@@ -1699,14 +1700,14 @@ AddMenuIconFolderItem = function (mii, FolderItem)
 		return;
 	}
 	var hIcon = info.hIcon;
-	image.FromHICON(hIcon, api.GetSysColor(COLOR_MENU));
+	image.FromHICON(hIcon, GetSysColor(COLOR_MENU));
 	api.DestroyIcon(hIcon);
 	AddMenuImage(mii, image, id);
 }
 
 AddMenuImage = function (mii, image, id)
 {
-	mii.hbmpItem = image.GetHBITMAP(WINVER >= 0x600 ? null : api.GetSysColor(COLOR_MENU));
+	mii.hbmpItem = image.GetHBITMAP(WINVER >= 0x600 ? null : GetSysColor(COLOR_MENU));
 	if (mii.hbmpItem) {
 		mii.fMask = mii.fMask | MIIM_BITMAP;
 		if (id) {
@@ -1728,7 +1729,7 @@ MenusIcon = function (mii, src)
 		}
 		else {
 			var hIcon = MakeImgIcon(src, 0, 16);
-			image.FromHICON(hIcon, api.GetSysColor(COLOR_MENU));
+			image.FromHICON(hIcon, GetSysColor(COLOR_MENU));
 			api.DestroyIcon(hIcon);
 		}
 		AddMenuImage(mii, image);
@@ -2210,6 +2211,7 @@ OpenInExplorer = function (FV)
 		var exp = te.CreateObject("new:{C08AFD90-F2A1-11D1-8455-00A0C91F3880}");
 		exp.Navigate2(FV.FolderItem);
 		exp.Visible = true;
+		api.SetForegroundWindow(exp.HWND);
 		try {
 			exp.Document.CurrentViewMode = FV.CurrentViewMode;
 		}
@@ -2230,12 +2232,11 @@ OpenInExplorer = function (FV)
 		}
 		catch (e) {}
 		try {
-			if (FV.TreeView && FV.TreeView.Align & 2) {
+			if (FV.TreeView && FV.TreeView.Visible) {
 				exp.ShowBrowserBar("{EFA24E64-B078-11D0-89E4-00C04FC9E26E}", true);
 			}
 		}
 		catch (e) {}
-		exp.Visible = true;
 	}
 }
 
@@ -2776,3 +2777,14 @@ AddEvent("ConfigChanged", function (s)
 {
 	te.Data["bSave" + s] = true;
 });
+
+GetSysColor = function (i)
+{
+	var c = g_Colors[i];
+	return c !== undefined ? c : api.GetSysColor(i);
+}
+
+SetSysColor = function (i, color)
+{
+	g_Colors[i] = color;
+}

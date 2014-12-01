@@ -1219,11 +1219,11 @@ OpenIcon = function (o)
 			}
 		}
 		else {
-			dllpath = fso.BuildPath(system32, "shell32.dll");
+			dllpath = fso.BuildPath(system32, a[1]);
 			var nCount = api.ExtractIconEx(dllpath, -1, null, null, 0);
 			for (var i = 0; i < nCount; i++) {
-				var s = "icon:shell32.dll," + i + "," + a[1];
-				var src = MakeImgSrc(s, 0, false, a[1]);
+				var s = ["icon:" + a[1],i ,a[2]].join(",");
+				var src = MakeImgSrc(s, 0, false, a[2]);
 				data.push('<img src="' + src + '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="' + s + '"> ');
 			}
 		}
@@ -1254,8 +1254,14 @@ InitDialog = function ()
 			"16px ieframe,699" : "b,699,16",
 			"24px ieframe,697" : "b,697,24",
 
-			"16px shell32" : "i,16",
-			"32px shell32" : "i,32",
+			"16px shell32" : "i,shell32.dll,16",
+			"32px shell32" : "i,shell32.dll32",
+			"16px wmploc" : "i,wmploc.dll,16",
+			"32px wmploc" : "i,wmploc.dll,32",
+			"16px setupapi" : "i,setupapi.dll,16",
+			"32px setupapi" : "i,setupapi.dll,32",
+			"16px dsuiext" : "i,dsuiext.dll,16",
+			"32px dsuiext" : "i,dsuiext.dll,32",
 
 			"25px TRAVEL_ENABLED_XP" : "b,TRAVEL_ENABLED_XP.BMP,25",
 			"30px TRAVEL_ENABLED_XP" : "b,TRAVEL_ENABLED_XP_120.BMP,30"
