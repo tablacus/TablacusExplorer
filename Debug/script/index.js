@@ -517,11 +517,14 @@ GetCommandId = function (hMenu, s, ContextMenu)
 	return wId;
 };
 
-OpenSelected = function (Ctrl, NewTab)
+OpenSelected = function (Ctrl, NewTab, pt)
 {
-	if (Ctrl.Type <= CTRL_EB) {
+	var ar = GetSelectedArray(Ctrl, pt, true);
+	var Selected = ar.shift();
+	var SelItem = ar.shift();
+	var FV = ar.shift();
+	if (Selected) {
 		var Exec = [];
-		var Selected = Ctrl.SelectedItems();
 		for (var i in Selected) {
 			var Item = Selected.Item(i);
 			var bFolder = Item.IsFolder;
@@ -532,7 +535,7 @@ OpenSelected = function (Ctrl, NewTab)
 				}
 			}
 			if (bFolder) {
-			 	Ctrl.Navigate(Item, NewTab);
+			 	FV.Navigate(Item, NewTab);
 			 	NewTab |= SBSP_NEWBROWSER;
 			}
 			else {
@@ -546,7 +549,7 @@ OpenSelected = function (Ctrl, NewTab)
 					Selected.AddItem(Exec[i]);
 				}
 			}
-			InvokeCommand(Selected, 0, te.hwnd, null, null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
+			InvokeCommand(Selected, 0, te.hwnd, null, null, null, SW_SHOWNORMAL, 0, 0, FV, CMF_DEFAULTONLY);
 		}
 	}
 	return S_OK;
@@ -2128,7 +2131,7 @@ g_basic =
 			{
 				var fn = g_basic.Func[type].Cmd[s];
 				if (fn) {
-					return fn(Ctrl);
+					return fn(Ctrl, pt);
 				}
 				else {
 					return Exec(Ctrl, s + " %Selected%", "Exec", hwnd, pt);
@@ -2165,22 +2168,23 @@ g_basic =
 
 			Cmd:
 			{
-				Open: function (Ctrl)
+				Open: function (Ctrl, pt)
 				{
-					return OpenSelected(Ctrl, GetNavigateFlags(GetFolderView(Ctrl)));
+					return OpenSelected(Ctrl, GetNavigateFlags(GetFolderView(Ctrl)), pt);
 				},
-				"Open in New Tab": function (Ctrl)
+				"Open in New Tab": function (Ctrl, pt)
 				{
-					return OpenSelected(Ctrl, SBSP_NEWBROWSER);
+					return OpenSelected(Ctrl, SBSP_NEWBROWSER, pt);
 				},
-				"Open in Background": function (Ctrl)
+				"Open in Background": function (Ctrl, pt)
 				{
-					return OpenSelected(Ctrl, SBSP_NEWBROWSER | SBSP_ACTIVATE_NOFOCUS);
+					return OpenSelected(Ctrl, SBSP_NEWBROWSER | SBSP_ACTIVATE_NOFOCUS, pt);
 				},
-				Exec: function (Ctrl)
+				Exec: function (Ctrl, pt)
 				{
-					if (Ctrl.Type <= CTRL_EB) {
-						InvokeCommand(Ctrl.SelectedItems(), 0, te.hwnd, null, null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
+					var Selected = GetSelectedArray(Ctrl, pt, true).shift();
+					if (Selected) {
+						InvokeCommand(Selected, 0, te.hwnd, null, null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
 					}
 					return S_OK;
 				},

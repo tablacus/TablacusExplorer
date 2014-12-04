@@ -1328,39 +1328,12 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 	var Selected = ar.shift();
 	var SelItem = ar.shift();
 	var FV = ar.shift();
-
-	var bSel = true;
-	switch(Ctrl.Type) {
-		case CTRL_SB:
-		case CTRL_EB:
-			FV = Ctrl;
-			break;
-		case CTRL_TC:
-			FV = Ctrl.Item(Ctrl.HitTest(pt));
-			bSel = false;
-			break;
-		case CTRL_TV:
-			SelItem = Ctrl.SelectedItem;
-			break;
-		case CTRL_WB:
-			SelItem = window.Input;
-			break;
-		default:
-			FV = te.Ctrl(CTRL_FV);
-			break;
-	}
 	if (FV) {
-		if (bSel) {
-	 		Selected = FV.SelectedItems();
-		}
-		if (Selected && Selected.Count) {
-			SelItem = Selected.Item(0);
-		}
-		else {
-			SelItem = FV.FolderItem;
-		}
 		try {
-			wsh.CurrentDirectory = FV.FolderItem.Path;
+			var path = FV.FolderItem.Path;
+			if (api.PathMatchSpec(Path, "?:\\*;\\*")) {
+				wsh.CurrentDirectory = path;
+			}
 		}
 		catch (e) {}
 	}
@@ -1482,7 +1455,7 @@ GetBaseMenu = function (nBase, FV, Selected, uCMF, Mode, SelItem)
 		case 2:
 		case 4:
 			var Items = Selected;
-			if (!FV && (!Items || !Items.Count)) {
+			if (!Items || !Items.Count) {
 				Items = SelItem;
 			}
 			hMenu = api.CreatePopupMenu();
@@ -1490,7 +1463,7 @@ GetBaseMenu = function (nBase, FV, Selected, uCMF, Mode, SelItem)
 				ContextMenu = api.ContextMenu(Items, FV);
 				if (ContextMenu) {
 					ContextMenu.QueryContextMenu(hMenu, 0, 0x3001, 0x6fff, uCMF);
-					if (!FV || nBase == 4) {
+					if (SelItem) {
 						SetRenameMenu(ContextMenu.idCmdFirst);
 					}
 				}
@@ -1836,22 +1809,23 @@ GetAddonInfo = function (Id)
 	xml.async = false;
 	xml.load(fso.BuildPath(path, "addons\\" + Id + "\\config.xml"));
 
-	GetAddonInfo2(xml, info, "General");
-	GetAddonInfo2(xml, info, "en");
+	GetAddonInfo2(xml, info, "General", true);
+	GetAddonInfo2(xml, info, "en", true);
 	GetAddonInfo2(xml, info, GetLangId());
-	if (!info["Name"]) {
-		info["Name"] = Id;
+	if (!info.Name) {
+		info.Name = Id;
 	}
 	return info;
 }
 
-GetAddonInfo2 = function (xml, info, Tag)
+GetAddonInfo2 = function (xml, info, Tag, bTrans)
 {
 	var items = xml.getElementsByTagName(Tag);
 	if (items.length) {
 		var item = items[0].childNodes;
 		for (var i = 0; i < item.length; i++) {
-			info[item[i].tagName] = item[i].text;
+			var n = item[i].tagName;
+			info[n] = bTrans && /Name|Description/i.test(n) ? GetText(item[i].text) : item[i].text;
 		}
 	}
 }
@@ -2208,6 +2182,8 @@ GetInnerFV = function (id)
 OpenInExplorer = function (FV)
 {
 	if (FV) {
+		var orgFunc = te.OnWindowRegistered;
+		te.OnWindowRegistered= null;
 		var exp = te.CreateObject("new:{C08AFD90-F2A1-11D1-8455-00A0C91F3880}");
 		exp.Navigate2(FV.FolderItem);
 		exp.Visible = true;
@@ -2237,6 +2213,7 @@ OpenInExplorer = function (FV)
 			}
 		}
 		catch (e) {}
+		te.OnWindowRegistered = orgFunc;
 	}
 }
 
@@ -2387,8 +2364,7 @@ GetFolderView = function (Ctrl, pt, bStrict)
 
 GetSelectedArray = function (Ctrl, pt, bPlus)
 {
-	var Selected = null;
-	var SelItem = null;
+	var Selected, SelItem;
 	var FV = null;
 	var bSel = true;
 	switch(Ctrl.Type) {
@@ -2401,16 +2377,18 @@ GetSelectedArray = function (Ctrl, pt, bPlus)
 			bSel = false;
 			break;
 		case CTRL_TV:
+			FV = Ctrl.FolderView;
 			SelItem = Ctrl.SelectedItem;
 			break;
 		case CTRL_WB:
+			FV = te.Ctrl(CTRL_FV);
 			SelItem = window.Input;
 			break;
 		default:
 			FV = te.Ctrl(CTRL_FV);
 			break;
 	}
-	if (FV) {
+	if (FV && !SelItem) {
 		if (bSel) {
 	 		Selected = FV.SelectedItems();
 		}
@@ -2650,7 +2628,8 @@ OpenDialog = function (path)
 ChooseFolder = function (path, pt)
 {
 	if (!pt) {
-		pt = api.GetCursorPos(pt);
+		pt = api.Memory("POINT");
+		api.GetCursorPos(pt);
 	}
 	var FolderItem = api.ILCreateFromPath(path);
 	FolderItem = FolderMenu.Open(FolderItem.IsFolder ? FolderItem : ssfDRIVES, pt.x, pt.y);
@@ -2686,13 +2665,7 @@ SetRenameMenu = function (n)
 	{
 		setTimeout(function ()
 		{
-			if (api.IsChild(te.Ctrl(CTRL_WB).hwnd, api.GetFocus())) {
-				var FV = te.Ctrl(CTRL_FV);
-				FV && FV.SelectItem(FV.FocusedItem, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_EDIT);
-			}
-			else {
-				wsh.SendKeys("{F2}");
-			}
+			wsh.SendKeys("{F2}");
 		}, 100);
 	};
 }

@@ -1656,6 +1656,8 @@ SVGIO_CHECKED = 3;
 SVGIO_TYPE_MASK = 0xf;
 SVGIO_FLAG_VIEWORDER= 0x80000000;
 
+ASFW_ANY = -1;
+
 // GDI Plus
 RotateNoneFlipNone = 0;
 Rotate90FlipNone   = 1;

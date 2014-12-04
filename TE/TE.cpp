@@ -992,6 +992,7 @@ TEmethod methodAPI[] = {
 	{ 20451, L"ImmReleaseContext" },
 	{ 20461, L"IsChild" },
 	{ 20471, L"KillTimer" },
+	{ 20481, L"AllowSetForegroundWindow" },
 	//+other
 	{ 25001, L"InsertMenu" },
 	{ 25011, L"SetWindowText" },
@@ -1056,6 +1057,7 @@ TEmethod methodAPI[] = {
 	{ 30252, L"ImageList_GetBkColor" },
 	{ 30262, L"SetWindowTheme" },
 	{ 30272, L"ImmGetVirtualKey" },
+	{ 30282, L"GetAsyncKeyState" },
 	//+other
 	{ 35002, L"TrackPopupMenuEx" },
 	{ 35012, L"ExtractIconEx" },
@@ -1380,20 +1382,24 @@ BOOL teSetForegroundWindow(HWND hwnd)
 		DWORD dwForeThreadId = GetWindowThreadProcessId(GetForegroundWindow(), NULL);
 		DWORD dwThreadId = GetCurrentThreadId();
 		AttachThreadInput(dwThreadId, dwForeThreadId, TRUE);
-		DWORD dwTimeout = 0;
-		SystemParametersInfo(SPI_GETFOREGROUNDLOCKTIMEOUT, 0, &dwTimeout, 0);
-		SystemParametersInfo(SPI_SETFOREGROUNDLOCKTIMEOUT, 0, NULL, 0);
 		SetWindowPos(hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 		bResult = SetForegroundWindow(hwnd);
-		SystemParametersInfo(SPI_SETFOREGROUNDLOCKTIMEOUT, 0, &dwTimeout, 0);
 		AttachThreadInput(dwThreadId, dwForeThreadId, FALSE);
 		if (!bResult) {
-			Sleep(500);
+			DWORD dwTimeout = 0;
+			SystemParametersInfo(SPI_GETFOREGROUNDLOCKTIMEOUT, 0, &dwTimeout, 0);
+			SystemParametersInfo(SPI_SETFOREGROUNDLOCKTIMEOUT, 0, NULL, 0);
+			SetWindowPos(hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 			bResult = SetForegroundWindow(hwnd);
-			if (!bResult && hwnd == g_hwndMain) {
-				SetWindowLong(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) & ~WS_EX_TOOLWINDOW);
-				ShowWindow(hwnd, SW_SHOWNORMAL);
+			SystemParametersInfo(SPI_SETFOREGROUNDLOCKTIMEOUT, 0, &dwTimeout, 0);
+			if (!bResult) {
+				Sleep(500);
 				bResult = SetForegroundWindow(hwnd);
+				if (!bResult && hwnd == g_hwndMain) {
+					SetWindowLong(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) & ~WS_EX_TOOLWINDOW);
+					ShowWindow(hwnd, SW_SHOWNORMAL);
+					bResult = SetForegroundWindow(hwnd);
+				}
 			}
 		}
 	}
@@ -4209,7 +4215,7 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 
 LRESULT CALLBACK TETVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	HRESULT Result = S_FALSE;
+	BOOL Handled = FALSE;
 	try {
 		CteTreeView *pTV = (CteTreeView *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 		if (msg == WM_NOTIFY) {
@@ -4236,7 +4242,9 @@ LRESULT CALLBACK TETVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						msg1.message = WM_CONTEXTMENU;
 						msg1.wParam = (WPARAM)hwnd;
 						GetCursorPos(&msg1.pt);
-						Result = !MessageSubPt(TE_OnShowContextMenu, pTV, &msg1);
+						if (MessageSubPt(TE_OnShowContextMenu, pTV, &msg1) == S_OK) {
+							Handled = TRUE;
+						}
 					}
 				}
 				catch(...) {}
@@ -4244,7 +4252,10 @@ LRESULT CALLBACK TETVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			}
 #endif
 		}
-		return Result ? CallWindowProc(pTV->m_DefProc, hwnd, msg, wParam, lParam) : 0;
+		if (Handled) {
+			return 1;
+		}
+		return CallWindowProc(pTV->m_DefProc, hwnd, msg, wParam, lParam);
 	}
 	catch (...) {
 		g_nException = 0;
@@ -5736,6 +5747,7 @@ function _s() {\
 			}\
 		}\
 		api.SetForegroundWindow(te.hwnd);\
+		api.AllowSetForegroundWindow(-1);\
 		return _es(_bn);\
 	} catch (e) {\
 		wsh.Popup((e.description || e.toString()), 0, 'Tablacus Explorer', 0x10);\
@@ -8153,15 +8165,32 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					int *pi = NULL;
 					if (v.bstrVal) {
 						lplpszArgs = CommandLineToArgvW(v.bstrVal, &nCount);
+						int nAllWidth = 0;
 						nCount /= 2;
 						methodArgs = new TEmethod[nCount];
 						for (int i = nCount; i-- > 0;) {
 							methodArgs[i].name = lplpszArgs[i * 2];
-							if (!StrToIntEx(lplpszArgs[i * 2 + 1], STIF_DEFAULT, (int *)&methodArgs[i].id)) {
-								methodArgs[i].id = -1;
+							int n;
+							if (StrToIntEx(lplpszArgs[i * 2 + 1], STIF_DEFAULT, &n)) {
+								nAllWidth += n;
 							}
+							else {
+								n = -1;
+								nAllWidth += 100;
+							}
+							methodArgs[i].id = n;
 						}
-						pi = SortTEMethod(methodArgs, nCount);
+						if (!nCount || nAllWidth > nCount + 4) {
+							pi = SortTEMethod(methodArgs, nCount);
+						}
+						else {
+							if (methodArgs) {
+								delete [] methodArgs;
+							}
+							LocalFree(lplpszArgs);
+							VariantClear(&v);
+							return S_OK;
+						}
 					}
 					VariantClear(&v);
 					IColumnManager *pColumnManager;
@@ -8173,7 +8202,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 								TEmethod *methodProp = new TEmethod[uCount];
 								int *piprop = new int[uCount];
 								CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_NAME };
-								for (UINT i = 0; i < uCount; i++) {
+								for (int i = uCount; i-- > 0;) {
 									if SUCCEEDED(pColumnManager->GetColumnInfo(propKey[i], &cmci)) {
 										methodProp[i].name = ::SysAllocString(cmci.wszName);
 									}
@@ -16475,6 +16504,11 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 							*plResult = ImmGetVirtualKey((HWND)param[0]);
 						}
 						break;
+					case 30282:
+						if (nArg >= 0) {
+							*plResult = GetAsyncKeyState((int)param[0]);
+						}
+						break;
 					case 35002://TrackPopupMenuEx
 						if (nArg >= 5) {
 							if (nArg >= 6) {
@@ -17045,6 +17079,11 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 					case 20471:
 						if (nArg >= 1) {
 							*pbResult = KillTimer((HWND)param[0], param[1]);
+						}
+						break;
+					case 20481:
+						if (nArg >= 0) {
+							*pbResult = AllowSetForegroundWindow((DWORD)param[0]);
 						}
 						break;
 					case 25001://InsertMenu
