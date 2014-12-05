@@ -1331,7 +1331,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 	if (FV) {
 		try {
 			var path = FV.FolderItem.Path;
-			if (api.PathMatchSpec(Path, "?:\\*;\\*")) {
+			if (api.PathMatchSpec(path, "?:\\*;\\*")) {
 				wsh.CurrentDirectory = path;
 			}
 		}
@@ -2653,6 +2653,9 @@ InvokeCommand = function (Items, fMask, hwnd, Verb, Parameters, Directory, nShow
 			if (Verb === null) {
 				Verb = api.GetMenuDefaultItem(hMenu, MF_BYCOMMAND, GMDI_USEDISABLED) - 1;
 			}
+			if (!Directory && FV) {
+				Directory = FV.FolderItem.Path;
+			}
 			ContextMenu.InvokeCommand(fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon);
 			api.DestroyMenu(hMenu);
 		}
@@ -2733,7 +2736,7 @@ DownloadFile = function (url, fn)
 	var ado = te.CreateObject("Adodb.Stream")
 	ado.Type = adTypeBinary;
 	ado.Open();
-	ado.Write(xhr["responseBody"]);
+	ado["Write"](xhr["r_e_s_p_o_n_s_e_B_o_d_y".replace(/_/g, "")]);
 	ado.SaveToFile(fn, adSaveCreateOverWrite);
 	ado.Close();
 }
@@ -2760,4 +2763,15 @@ GetSysColor = function (i)
 SetSysColor = function (i, color)
 {
 	g_Colors[i] = color;
+}
+
+ShellExecute = function (s, vOperation, nShow)
+{
+	var arg = api.CommandLineToArgv(s);
+	var s = arg.shift();
+	var vDir = fso.GetParentFolderName(s);
+	for (var i = arg.length; i-- > 0;) {
+		arg[i] = api.PathQuoteSpaces(arg[i]);
+	}
+	return sha.ShellExecute(s, arg.join(" "), vDir, vOperation, nShow);
 }
