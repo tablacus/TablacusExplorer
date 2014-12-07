@@ -1330,7 +1330,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 	var FV = ar.shift();
 	if (FV) {
 		try {
-			var path = FV.FolderItem.Path;
+			var path = api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORPARSING);
 			if (api.PathMatchSpec(path, "?:\\*;\\*")) {
 				wsh.CurrentDirectory = path;
 			}
@@ -1712,7 +1712,7 @@ MenusIcon = function (mii, src)
 MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt)
 {
 	var hMenus = [hMenu];
-	var nPos = api.QuadPart(menus[0].getAttribute("Pos"));
+	var nPos = menus ? api.QuadPart(menus[0].getAttribute("Pos")) : 0;
 	var nLen = api.GetMenuItemCount(hMenu);
 	var nResult = 0;
 	if (nPos < 0) {
@@ -1722,7 +1722,6 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt)
 		nPos = nLen;
 	}
 	nLen = arMenu.length;
-
 	for (var i = 0; i < nLen; i++) {
 		var item = items[arMenu[i]];
 		var s = item.getAttribute("Name").replace(/\\t/i, "\t");
@@ -2182,8 +2181,7 @@ GetInnerFV = function (id)
 OpenInExplorer = function (FV)
 {
 	if (FV) {
-		var orgFunc = te.OnWindowRegistered;
-		te.OnWindowRegistered= null;
+		CancelWindowRegistered();
 		var exp = te.CreateObject("new:{C08AFD90-F2A1-11D1-8455-00A0C91F3880}");
 		exp.Navigate2(FV.FolderItem);
 		exp.Visible = true;
@@ -2213,8 +2211,17 @@ OpenInExplorer = function (FV)
 			}
 		}
 		catch (e) {}
-		te.OnWindowRegistered = orgFunc;
 	}
+}
+
+CancelWindowRegistered = function ()
+{
+	clearTimeout(g_tidWindowRegistered);
+	g_bWindowRegistered = false;
+	g_tidWindowRegistered = setTimeout(function ()
+	{
+		g_bWindowRegistered = true;
+	}, 9999);
 }
 
 InputMouse = function ()
@@ -2654,7 +2661,10 @@ InvokeCommand = function (Items, fMask, hwnd, Verb, Parameters, Directory, nShow
 				Verb = api.GetMenuDefaultItem(hMenu, MF_BYCOMMAND, GMDI_USEDISABLED) - 1;
 			}
 			if (!Directory && FV) {
-				Directory = FV.FolderItem.Path;
+				Directory = api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORPARSING);
+				if (!api.PathMatchSpec(Directory, "?:\\*;\\*")) {
+					Directory = null;
+				}
 			}
 			ContextMenu.InvokeCommand(fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon);
 			api.DestroyMenu(hMenu);

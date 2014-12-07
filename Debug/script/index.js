@@ -15,6 +15,7 @@ GetAddress = null;
 ShowContextMenu = null;
 
 g_tidResize = null;
+g_tidWindowRegistered = null;
 xmlWindow = null;
 g_Panels = [];
 g_KeyCode = {};
@@ -28,6 +29,7 @@ g_KeyState = [
 	["Alt",    0x4000]
 ];
 g_dlgs = {};
+g_bWindowRegistered = true;
 Addon_Id = "";
 
 RunEvent1 = function (en, a1, a2, a3)
@@ -715,7 +717,7 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 				break;
 			case CTRL_TV:
 				var strClass = api.GetClassName(hwnd);
-				if (api.strcmpi(strClass, WC_TREEVIEW) == 0) {
+				if (api.PathMatchSpec(strClass, WC_TREEVIEW)) {
 					if (KeyExecEx(Ctrl, "Tree", nKey, hwnd) === S_OK) {
 						return S_OK;
 					}
@@ -792,7 +794,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 			if (msg == WM_RBUTTONUP) {
 				if (g_mouse.RButton >= 0) {
 					g_mouse.RButtonDown(true);
-					bButton = api.strcmpi(g_mouse.str, "2") == 0;
+					bButton = (g_mouse.str == "2");
 				}
 				else if (Ctrl.Type == CTRL_SB || Ctrl.Type == CTRL_EB) {
 					var iItem = Ctrl.HitTest(pt);
@@ -936,9 +938,12 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 	if (isFinite(Verb)) {
 		Verb = ContextMenu.GetCommandString(Verb, GCS_VERB);
 	}
+	if (api.PathMatchSpec(Verb, "opennewwindow")) {
+		CancelWindowRegistered();
+	}
 	NewTab = GetNavigateFlags();
 	for (var i = 0; i < Items.Count; i++) {
-		if (Verb && !api.PathMatchSpec(Verb, "runas")) {
+		if (Verb && api.strcmpi(Verb, "runas")) {
 			var path = Items.Item(i).Path;
 			var cmd = api.AssocQueryString(ASSOCF_NONE, ASSOCSTR_COMMAND, path, api.strcmpi(Verb, "Default") ? Verb : null).replace(/"?%1"?|%L/g, api.PathQuoteSpaces(path)).replace(/%\*|%I/g, "");
 			if (cmd) {
@@ -1439,7 +1444,10 @@ te.OnVisibleChanged = function (Ctrl)
 
 te.OnWindowRegistered = function (Ctrl)
 {
-	RunEvent1("WindowRegistered", Ctrl);
+	if (g_bWindowRegistered) {
+		RunEvent1("WindowRegistered", Ctrl);
+	}
+	g_bWindowRegistered = true;
 }
 
 te.OnToolTip = function (Ctrl, Index)
@@ -1484,7 +1492,7 @@ AddEventEx(window, "load", function ()
 	setTimeout(function ()
 	{
 		te.LockUpdate();
-		if (api.strcmpi(typeof(xmlWindow), "string") == 0) {
+		if (api.PathMatchSpec(typeof(xmlWindow), "string")) {
 			var TC = te.CreateCtrl(CTRL_TC, 0, 0, "100%", "100%", te.Data.Tab_Style, te.Data.Tab_Align, te.Data.Tab_TabWidth, te.Data.Tab_TabHeight);
 			TC.Selected.Navigate2(HOME_PATH, SBSP_NEWBROWSER, te.Data.View_Type, te.Data.View_ViewMode, te.Data.View_fFlags, te.Data.View_Options, te.Data.View_ViewFlags, te.Data.View_IconSize, te.Data.Tree_Align, te.Data.Tree_Width, te.Data.Tree_Style, te.Data.Tree_EnumFlags, te.Data.Tree_RootStyle, te.Data.Tree_Root);
 		}
@@ -1601,10 +1609,10 @@ LoadAddon = function(ext, Id, arError)
 		ado.LoadFromFile(fname);
 		var s = ado.ReadText();
 		ado.Close();
-		if (api.strcmpi(ext, "js") == 0) {
+		if (api.PathMatchSpec(ext, "js")) {
 			(new Function(s))(Id);
 		}
-		else if (api.strcmpi(ext, "vbs") == 0) {
+		else if (api.PathMatchSpec(ext, "vbs")) {
 			var fn = api.GetScriptDispatch(s, "VBScript", {"_Addon_Id": {"Addon_Id": Id}, window: window},
 				function (ei, SourceLineText, dwSourceContext, lLineNumber, CharacterPosition)
 				{
@@ -1643,7 +1651,7 @@ function SetAddon(strName, Location, Tag)
 			te.Data.Locations[Location].push(strName);
 		}
 		var o = document.getElementById(Location);
-		if (api.strcmpi(typeof(Tag), "string") == 0) {
+		if (api.PathMatchSpec(typeof(Tag), "string")) {
 			o.insertAdjacentHTML("BeforeEnd", Tag);
 		}
 		else if (Tag.join) {
@@ -1855,7 +1863,7 @@ g_mouse =
 
 	RButtonDown: function (mode)
 	{
-		if (api.strcmpi(this.str, "2") == 0) {
+		if (this.str == "2") {
 			var item = api.Memory("LVITEM");
 			item.iItem = this.RButton;
 			item.mask = LVIF_STATE;
