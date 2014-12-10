@@ -181,6 +181,22 @@ Finalize = function ()
 {
 	RunEvent1("Finalize");
 	SaveConfig();
+
+	for (var i in g_dlgs) {
+		var dlg = g_dlgs[i];
+		try {
+			if (dlg) {
+				if (dlg.oExec) {
+					if (dlg.oExec.Status == 0) {
+						dlg.oExec.Terminate();
+					}
+				}
+				else if (dlg.window) {
+					dlg.close();
+				}
+			}
+		} catch (e) {}
+	}
 }
 
 SetGestureText = function (Ctrl, Text)
@@ -1187,7 +1203,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 						var server = locator.ConnectServer();
 						if (server) {
 							var cols = server.ExecQuery("SELECT * FROM Win32_Process WHERE ExecutablePath = '" + api.GetModuleFileName(null).replace(/\\/g, "\\\\") + "'");
-							for(var list = new Enumerator(cols); !list.atEnd(); list.moveNext()) {
+							for (var list = new Enumerator(cols); !list.atEnd(); list.moveNext()) {
 								var item = list.item();
 								if (/\/run/i.test(item.CommandLine)) {
 									var hwnd = GethwndFromPid(item.ProcessId);
@@ -1198,6 +1214,10 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 							}
 						}
 					}
+					for (var i in te.Data.Fonts) {
+						api.DeleteObject(te.Data.Fonts[i]);
+					}
+					te.Data.Fonts = null;
 					break;
 				case WM_DEVICECHANGE:
 					if (wParam == DBT_DEVICEARRIVAL || wParam == DBT_DEVICEREMOVECOMPLETE) {
@@ -1535,12 +1555,6 @@ AddEventEx(window, "load", function ()
 AddEventEx(window, "resize", Resize);
 
 AddEventEx(window, "beforeunload", Finalize);
-
-document.body.onselectstart = function (e)
-{
-	var s = (e || event).srcElement.tagName;
-	return api.PathMatchSpec(s, "input;textarea");
-};
 
 //
 
@@ -2489,7 +2503,7 @@ g_basic =
 				"Add to Favorites": AddFavoriteEx,
 				"Reload Customize": function ()
 				{
-					te.reload();
+					te.Reload();
 					return S_OK;
 				},
 				"Load Layout": LoadLayout,
@@ -2779,6 +2793,7 @@ if (!te.Data) {
 	te.Data = te.Object();
 	te.Data.CustColors = api.Memory("int", 16);
 	te.Data.AddonsData = te.Object();
+	te.Data.Fonts = te.Object();
 	//Default Value
 	te.Data.Tab_Style = TCS_HOTTRACK | TCS_MULTILINE | TCS_RAGGEDRIGHT | TCS_SCROLLOPPOSITE | TCS_HOTTRACK | TCS_TOOLTIPS;
 	te.Data.Tab_Align = TCA_TOP;

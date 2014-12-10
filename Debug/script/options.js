@@ -258,7 +258,9 @@ function ChooseColor1(o)
 	setTimeout(function ()
 	{
 		var o2 = document.F.elements[o.id.replace("Color_", "")];
+		MainWindow.focus();
 		var c = ChooseColor(o2.value);
+		focus();
 		if (c) {
 			o2.value = c;
 			o.style.backgroundColor = GetWebColor(c);
@@ -1188,6 +1190,11 @@ InitOptions = function ()
 	}
 	document.getElementById("tab2_").innerHTML = s.join("");
 	SetTab(dialogArguments.Data);
+	MainWindow.g_dlgs.Options.window = window;
+	AddEventEx(window, "beforeunload", function ()
+	{
+		delete MainWindow.g_dlgs.Options;
+	});
 }
 
 OpenIcon = function (o)
@@ -1659,14 +1666,16 @@ function GetElement(Id)
 function AddPath(Id, strValue)
 {
 	var o = GetElement(Id);
-	var s = o.value;
-	if (/\n$/.test(s) || s == "") {
-		s += strValue;
+	if (o) {
+		var s = o.value;
+		if (/\n$/.test(s) || s == "") {
+			s += strValue;
+		}
+		else {
+			s += "\n" + strValue;
+		}
+		o.value = s;
 	}
-	else {
-		s += "\n" + strValue;
-	}
-	o.value = s;
 }
 
 function GetCurrentSetting(s)

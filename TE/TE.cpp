@@ -5734,7 +5734,7 @@ function _s() {\
 			_bn = fso.BuildPath(fso.GetParentFolderName(arg[0]), _bn);\
 		}\
 		var wins = sha.Windows();\
-		for(var i = wins.Count; i--;) {\
+		for (var i = wins.Count; i--;) {\
 			var x = wins.Item(i);\
 			if (x && api.strcmpi(x.FullName, arg[0]) == 0) {\
 				var w = x.Document.parentWindow;\

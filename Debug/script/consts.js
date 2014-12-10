@@ -12,6 +12,29 @@ if (!window.MainWindow) {
 }
 if (!window.te) {
 	te = MainWindow.external;
+	if (!te) {
+		var uid = location.hash.replace(/\D/g, "");
+		var wins = new ActiveXObject('Shell.Application').Windows();
+		for (var i = wins.Count; i--;) {
+			var x = wins.Item(i);
+			if (x) {
+				var w = x.Document.parentWindow;
+				if (w && w.te && w.Exchange) {
+					var a = w.Exchange[uid];
+					if (a) {
+						dialogArguments = a;
+						delete w.Exchange[uid];
+						window.MainWindow = w;
+						te = w.te;
+						if (a.width) {
+							resizeTo(a.width + 16, a.height + 38);
+						}
+						TEOk = a.TEOk;
+					}
+				}
+			}
+		}
+	}
 }
 api = te.WindowsAPI;
 fso = te.CreateObject("Scripting.FileSystemObject");
@@ -400,6 +423,7 @@ LVM_GETSTRINGWIDTH     = 0x1057;
 LVM_GETTEXTCOLOR       = 0x1023;
 LVM_GETTEXTBKCOLOR     = 0x1025;
 LVM_GETTOPINDEX        = 0x1027;
+LVM_GETVIEW            = 0x108F;
 LVM_HASGROUP           = 0x10A1;
 LVM_HITTEST            = 0x1012;
 LVM_ISITEMVISIBLE      = 0x10B6;
@@ -416,6 +440,7 @@ LVM_SETITEMSTATE       = 0x102B;
 LVM_SETSELECTEDCOLUMN  = 0x108C;
 LVM_SETTEXTBKCOLOR     = 0x1026;
 LVM_SETTEXTCOLOR       = 0x1024;
+LVM_SETVIEW            = 0x108E;
 
 LVIF_TEXT        = 0x00000001;
 LVIF_IMAGE       = 0x00000002;

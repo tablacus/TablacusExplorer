@@ -12,7 +12,6 @@ pdwEffect = 0;
 bDrop = null;
 Input = null;
 g_tidNew = null;
-g_dlgOptions = null;
 eventTE = { Environment: {} };
 eventTA = {};
 g_ptDrag = api.Memory("POINT");
@@ -827,16 +826,26 @@ ChangeTab = function (TC, nMove)
 
 ShowOptions = function (s)
 {
-	try {
-		if (g_dlgOptions && g_dlgOptions.window) {
-			g_dlgOptions.SetTab(s);
-			return;
+	var dlg = g_dlgs.Options;
+	if (dlg && dlg.oExec && dlg.oExec.Status == 0) {
+		if (dlg.window && dlg.window.SetTab) {
+			dlg.window.SetTab(s);
 		}
+		wsh.AppActivate(dlg.oExec.ProcessID);
 	}
-	catch (e) {
-		g_dlgOptions = null;
+	else {
+		g_dlgs.Options = { oExec: ShowDialog("options.html", {Data: s, width: 640, height: 480})};
 	}
-	g_dlgOptions = showModelessDialog("options.html", {MainWindow: MainWindow, Data: s} , "dialogWidth: 640px; dialogHeight: 480px; resizable: yes; status: 0");
+}
+
+ShowDialog = function (fn, opt)
+{
+	var uid;
+	do {
+		uid = String(Math.random()).replace(/^0?\./, "");
+	} while (Exchange[uid]);
+	Exchange[uid] = opt;
+	return wsh.Exec([fso.BuildPath(system32, "mshta.exe"), ' ', location.href.replace(/[^\/]*$/, fn), "#", uid].join(""));
 }
 
 LoadLayout = function ()
@@ -1775,7 +1784,7 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt)
 	return nResult;
 }
 
-SaveXmlEx = function (filename, xml, bAppData)
+SaveXmlEx = function (filename, xml)
 {
 	try {
 		filename = fso.BuildPath(te.Data.DataFolder, "config\\" + filename);
@@ -1971,7 +1980,19 @@ function CheckUpdate()
 			return;
 		}
 	}
+	var arDel = [];
+	var addons = temp + "\\addons";
 
+	for (var list = new Enumerator(fso.GetFolder(addons).SubFolders); !list.atEnd(); list.moveNext()) {
+		var n = list.item().Name;
+		var items = te.Data.Addons.getElementsByTagName(n);
+		if (!items || items.length == 0) {
+			arDel.push(fso.BuildPath(addons, n));
+		}
+	}
+	if (arDel.length) {
+		api.SHFileOperation(FO_DELETE, arDel.join("\0"), null, FOF_SILENT | FOF_NOCONFIRMATION, false);
+	}
 	var update = api.sprintf(2000, "\
 T='Tablacus Explorer';\
 F='%s';\
@@ -1998,7 +2019,7 @@ EscapeUpdateFile(fso.GetFileName(api.GetModuleFileName(null)))).replace(/[\t\n]/
 		update = s1;
 		s1 = '"';
 	}
-	var mshta = wsh.ExpandEnvironmentStrings("%windir%\\Sysnative\\" + exe);
+	var mshta = wsh.ExpandEnvironmentStrings("%windir%\\Sysnative\\") + exe;
 	if (!fso.FileExists(mshta)) {
 		mshta = fso.BuildPath(system32, exe);
  	}
@@ -2070,36 +2091,50 @@ AddonOptions = function (Id, fn, Data)
 		sFeatures = 'dialogWidth: 640px; dialogHeight: 480px; resizable: yes; status: 0';
 	}
 	try {
-		if (MainWindow.g_dlgs[Id] && MainWindow.g_dlgs[Id].window) {
-			MainWindow.g_dlgs[Id].focus();
-			return;
+		var dlg = MainWindow.g_dlgs[Id];
+		if (dlg) {
+			if (dlg.window) {
+				dlg.focus();
+				return;
+			}
+			if (dlg && dlg.oExec.Status == 0) {
+				wsh.AppActivate(dlg.oExec.ProcessID);
+				return;
+			}
 		}
 	}
 	catch (e) {
 		MainWindow.g_dlgs[Id] = null;
 	}
-	var dlg = showModelessDialog(sURL, {MainWindow: MainWindow, Data: Data}, sFeatures);
-	MainWindow.g_dlgs[Id] = dlg;
-	if (fn || g_Chg) {
-		try {
-			while (!dlg.window.document.body) {
-				api.Sleep(100);
-			}
-			if (fn) {
-				dlg.window.TEOk = fn;
-			}
-			else if (dlg.window.returnValue === undefined) {
-				dlg.window.TEOk = function ()
-				{
-					g_Chg.Addons = true;
-				}
-			}
-			else {
-				g_Chg.Addons = true;
+	var opt = {MainWindow: MainWindow, Data: Data};
+	if (fn) {
+		opt.TEOk = fn;
+	}
+	else if (g_Chg) {
+		opt.TEOk = function ()
+		{
+			g_Chg.Addons = true;
+		}
+	}
+	if (window.dialogArguments) {
+		dlg = showModelessDialog(sURL, opt, sFeatures);
+		while (!dlg.window.document.body) {
+			api.Sleep(100);
+		}
+		if (g_Chg && dlg.window.returnValue !== undefined) {
+			g_Chg.Addons = true;
+		}
+	}
+	else {
+		if (/width: *([0-9]+)/i.test(sFeatures)) {
+			opt.width = RegExp.$1 - 0;
+			if (/height: *([0-9]+)/i.test(sFeatures)) {
+				opt.height = RegExp.$1 - 0;
 			}
 		}
-		catch (e) {}
+		dlg = { oExec: ShowDialog(sURL, opt)};
 	}
+	MainWindow.g_dlgs[Id] = dlg;
 }
 
 function CalcVersion(s)
@@ -2785,3 +2820,25 @@ ShellExecute = function (s, vOperation, nShow)
 	}
 	return sha.ShellExecute(s, arg.join(" "), vDir, vOperation, nShow);
 }
+
+CreateFont = function (LogFont)
+{
+	var key = [LogFont.lfFaceName, LogFont.lfHeight, LogFont.lfCharSet, LogFont.lfWeight, LogFont.lfItalic, LogFont.lfUnderline].join("\t");
+	var hFont = te.Data.Fonts[key];
+	if (!hFont) {
+		hFont = api.CreateFontIndirect(LogFont);
+		te.Data.Fonts[key] = hFont;
+	}
+	return hFont;
+}
+
+setTimeout(function ()
+{
+	if (document && document.body) {
+		document.body.onselectstart = function (e)
+		{
+			var s = (e || event).srcElement.tagName;
+			return api.PathMatchSpec(s, "input;textarea");
+		};
+	}
+}, 100);
