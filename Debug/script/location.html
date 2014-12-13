@@ -12,7 +12,7 @@
     <script type="text/javascript" charset="utf-8" src="options.js">
     </script>
   </head>
-  <body onload="InitLocation();">
+  <body>
     <div>
       <input type="button" id="tab0" class="tab" onmousedown="ClickTab(this, 1);" hidefocus="true" style="display: none" /><!--
       --><input type="button" id="tab1" class="tab" onmousedown="ClickTab(this, 1);" hidefocus="true" style="display: none" /><!--
@@ -435,6 +435,11 @@
     </table>
     <script type="text/javascript"><!--
 document.write('<'+ 'script type="text/javascript" src="../addons/' + dialogArguments.Data.id + '/script.js"></' + 'script>');
+InitLocation();
+AddEventEx(window, "load", function ()
+{
+	ApplyLang(document);
+});
 //-->
     </script>
   </body>

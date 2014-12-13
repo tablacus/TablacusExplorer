@@ -108,6 +108,7 @@ typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
 #define TET_Unload				0x1fa7
 #define TET_Status				0x1fa8
 #define TET_Refresh				0x1fa9
+#define TET_ViewMode			0x1faa
 #define SHGDN_FORPARSINGEX	0x80000000
 #define START_OnFunc			5000
 #define TE_OnKeyMessage			0
@@ -731,6 +732,7 @@ public:
 	VOID GetShellFolderView();
 	VOID GetFocusedIndex(int *piItem);
 	VOID SetFolderFlags();
+	VOID GetViewModeAndIconSize(BOOL bGetIconSize);
 	HRESULT Items(UINT uItem, FolderItems **ppid);
 	HRESULT SelectItemEx(LPITEMIDLIST *ppidl, int dwFlags);
 #ifdef _2000XP

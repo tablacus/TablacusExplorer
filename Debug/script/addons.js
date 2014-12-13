@@ -209,7 +209,7 @@ function Search(xml)
 
 function Install(o)
 {
-	if (!confirmOk(GetText("Do you want to install it now?"))) {
+	if (!confirmOk("Do you want to install it now?")) {
 		return;
 	}
 	document.body.style.cursor = "wait";
@@ -231,7 +231,7 @@ function Install(o)
 		var configxml = fso.BuildPath(temp, Id) + "\\config.xml";
 		var nDog = 300;
 		while (!fso.FileExists(configxml)) {
-			if (wsh.Popup(GetText("Please wait."), 1, "Tablacus Explorer", MB_ICONINFORMATION | MB_OKCANCEL) == IDCANCEL || nDog-- == 0) {
+			if (wsh.Popup(GetText("Please wait."), 1, TITLE, MB_ICONINFORMATION | MB_OKCANCEL) == IDCANCEL || nDog-- == 0) {
 				document.body.style.cursor = "auto";
 				return;
 			}
@@ -250,7 +250,6 @@ function Install(o)
 				if (o) {
 					o.style.display = "none";
 				}
-				wsh.Popup(GetText("Completed."), 0, "Tablacus Explorer", MB_ICONINFORMATION);
 				UpdateAddon(Id, o);
 			}
 		}

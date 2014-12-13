@@ -642,7 +642,7 @@ AddEvent("Close", function (Ctrl)
 	switch (Ctrl.Type) {
 		case CTRL_TE:
 			Finalize();
-			if (api.GetThreadCount() && wsh.Popup(GetText("File is in operation."), 0, TITLE, MB_ICONSTOP | MB_ABORTRETRYIGNORE) != IDIGNORE) {
+			if (api.GetThreadCount() && MessageBox("File is in operation.", TITLE, MB_ICONSTOP | MB_ABORTRETRYIGNORE) != IDIGNORE) {
 				return S_FALSE;
 			}
 			api.SHChangeNotifyDeregister(te.Data.uRegisterId);
@@ -735,6 +735,10 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 				var strClass = api.GetClassName(hwnd);
 				if (api.PathMatchSpec(strClass, WC_TREEVIEW)) {
 					if (KeyExecEx(Ctrl, "Tree", nKey, hwnd) === S_OK) {
+						return S_OK;
+					}
+					if (key == VK_DELETE) {
+						InvokeCommand(Ctrl.SelectedItem, 0, te.hwnd, CommandID_DELETE - 1, null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
 						return S_OK;
 					}
 				}
@@ -1603,7 +1607,7 @@ function ArrangeAddons()
 			}
 			if (arError.length) {
 				setTimeout(function () {
-					if (wsh.Popup(arError.join("\n\n"), 0, TITLE, MB_ICONSTOP + 1) != IDCANCEL) {
+					if (MessageBox(arError.join("\n\n"), TITLE, MB_ICONSTOP + 1) != IDCANCEL) {
 						te.Data.bErrorAddons = true;
 						ShowOptions("Tab=Add-ons");
 					}

@@ -834,7 +834,11 @@ ShowOptions = function (s)
 		wsh.AppActivate(dlg.oExec.ProcessID);
 	}
 	else {
-		g_dlgs.Options = { oExec: ShowDialog("options.html", {Data: s, width: 640, height: 480})};
+		g_dlgs.Options = { oExec: ShowDialog("options.html", {Data: s, width: 640, height: 480, event: {
+			onbeforeunload: function () {
+				delete MainWindow.g_dlgs.Options;
+			}
+		}})};
 	}
 }
 
@@ -845,7 +849,7 @@ ShowDialog = function (fn, opt)
 		uid = String(Math.random()).replace(/^0?\./, "");
 	} while (Exchange[uid]);
 	Exchange[uid] = opt;
-	return wsh.Exec([fso.BuildPath(system32, "mshta.exe"), ' ', location.href.replace(/[^\/]*$/, fn), "#", uid].join(""));
+	return wsh.Exec([api.PathQuoteSpaces(fso.BuildPath(system32, "mshta.exe")), ' ', api.PathQuoteSpaces(location.href.replace(/[^\/]*$/, fn + "#" + uid))].join(""));
 }
 
 LoadLayout = function ()
@@ -1084,7 +1088,7 @@ ExecScriptEx = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffec
 		},
 		function (ei, SourceLineText, dwSourceContext, lLineNumber, CharacterPosition)
 		{
-			wsh.Popup(api.SysAllocString(ei.bstrDescription) + api.sprintf(16, "\n%X\n", ei.scode) + api.SysAllocString(ei.bstrSource), 0, TITLE, MB_ICONSTOP);
+			MessageBox(api.SysAllocString(ei.bstrDescription) + api.sprintf(16, "\n%X\n", ei.scode) + api.SysAllocString(ei.bstrSource), TITLE, MB_ICONSTOP);
 		}
 	);
 	return window.Handled;
@@ -1589,9 +1593,9 @@ GetHelpMenu = function (bTitle)
 		for (var i = dir.length; i--;) {
 			dir[i] = api.GetDisplayNameOf(dir[i], SHGDN_INFOLDER);
 		}
-		return [te.About, GetText("Check for updates")].concat(dir);
+		return [te.About, GetText("Check for updates"), GetText("Get Add-ons...")].concat(dir);
 	}
-	return [api.GetModuleFileName(null) + "\\..", CheckUpdate].concat(dir);
+	return [api.GetModuleFileName(null) + "\\..", CheckUpdate, GetAddons].concat(dir);
 }
 
 MenuDbInit = function (hMenu, oMenu, oMenu2)
@@ -1893,7 +1897,7 @@ Extract = function (Src, Dest)
 	}
 	catch (e) {
 		if (api.Extract(fso.BuildPath(system32, "zipfldr.dll"), "{E88DCCE0-B7B3-11d1-A9F0-00AA0060FA31}", Src, Dest) != S_OK) {
-			wsh.Popup(GetText("Extract Error"), 0, TITLE, MB_ICONSTOP);
+			MessageBox(GetText("Extract Error"), TITLE, MB_ICONSTOP);
 		}
 	}
 	return S_OK;
@@ -1924,9 +1928,14 @@ OptionEncode = function (Id, p)
 	for (var i in eventTE.OptionEncode) {
 		var hr = eventTE.OptionEncode[i](Id, p);
 		if (isFinite(hr)) {
-			return hr; 
+			return hr;
 		}
 	}
+}
+
+function GetAddons()
+{
+	ShowOptions("Tab=Get Addons...");
 }
 
 function CheckUpdate()
@@ -1952,10 +1961,10 @@ function CheckUpdate()
 		ver = 20000000 + api.QuadPart(RegExp.$1)
 	}
 	if (ver <= te.Version) {
-		wsh.Popup(te.About + "\n" + GetText("the latest version"), 0, TITLE, MB_ICONINFORMATION);
+		MessageBox(te.About + "\n" + GetText("the latest version"), TITLE, MB_ICONINFORMATION);
 		return;
 	}
-	if (!confirmOk(GetText("Update available") + "\n" + s + "\n" + GetText("Do you want to install it now?"), 0, TITLE)) {
+	if (!confirmOk(GetText("Update available") + "\n" + s + "\n" + GetText("Do you want to install it now?"))) {
 		return;
 	}
 	var temp = fso.BuildPath(fso.GetSpecialFolder(2).Path, "tablacus");
@@ -1994,16 +2003,14 @@ function CheckUpdate()
 		api.SHFileOperation(FO_DELETE, arDel.join("\0"), null, FOF_SILENT | FOF_NOCONFIRMATION, false);
 	}
 	var update = api.sprintf(2000, "\
-T='Tablacus Explorer';\
 F='%s';\
 Q='\\x22';\
 A=new ActiveXObject('Shell.Application');\
 W=new ActiveXObject('WScript.Shell');\
-W.Popup('%s',9,T,%d);\
+W.Popup('%s',9,'Tablacus Explorer',%d);\
 A.NameSpace(F).MoveHere(A.NameSpace('%s').Items(),%d);\
-W.Popup('%s',0,T,%d);\
 W.%s(Q+F+'\\\\%s'+Q);\
-close()", EscapeUpdateFile(InstalledFolder), GetText("Please wait."), MB_ICONINFORMATION, EscapeUpdateFile(temp), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, GetText("Completed."), MB_ICONINFORMATION, 'Run',
+close()", EscapeUpdateFile(InstalledFolder), GetText("Please wait."), MB_ICONINFORMATION, EscapeUpdateFile(temp), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, 'Run',
 EscapeUpdateFile(fso.GetFileName(api.GetModuleFileName(null)))).replace(/[\t\n]/g, "");
 
 	wsh.CurrentDirectory = temp;
@@ -2023,7 +2030,7 @@ EscapeUpdateFile(fso.GetFileName(api.GetModuleFileName(null)))).replace(/[\t\n]/
 	if (!fso.FileExists(mshta)) {
 		mshta = fso.BuildPath(system32, exe);
  	}
-	var oExec = wsh.Exec([mshta, ' ', s1, update, '"'].join(""));
+	var oExec = wsh.Exec([api.PathQuoteSpaces(mshta), ' ', s1, update, '"'].join(""));
 	wsh.AppActivate(oExec.ProcessID);
 	api.PostMessage(te.hwnd, WM_CLOSE, 0, 0);
 }
@@ -2035,12 +2042,20 @@ function EscapeUpdateFile(s)
 
 confirmYN = function (s, title)
 {
-	return wsh.Popup(GetText(s), 0, GetText(title) || TITLE, MB_ICONQUESTION | MB_YESNO) == IDYES;
+	return MessageBox(s, title, MB_ICONQUESTION | MB_YESNO) == IDYES;
 }
 
 confirmOk = function (s, title)
 {
-	return wsh.Popup(GetText(s), 0, GetText(title) || TITLE, MB_ICONQUESTION | MB_OKCANCEL) == IDOK;
+	return MessageBox(s, title, MB_ICONQUESTION | MB_OKCANCEL) == IDOK;
+}
+
+MessageBox = function (s, title, uType)
+{
+	if (api.MessageBox) {
+		return api.MessageBox(api.GetForegroundWindow(), GetText(s), GetText(title) || TITLE, uType);
+	}
+	return wsh.Popup(GetText(s), 0, GetText(title) || TITLE, uType);
 }
 
 createHttpRequest = function ()
@@ -2104,14 +2119,14 @@ AddonOptions = function (Id, fn, Data)
 		}
 	}
 	catch (e) {
-		MainWindow.g_dlgs[Id] = null;
+		delete MainWindow.g_dlgs[Id];
 	}
-	var opt = {MainWindow: MainWindow, Data: Data};
+	var opt = {MainWindow: MainWindow, Data: Data, event: {}};
 	if (fn) {
-		opt.TEOk = fn;
+		opt.event.TEOk = fn;
 	}
 	else if (g_Chg) {
-		opt.TEOk = function ()
+		opt.event.TEOk = function ()
 		{
 			g_Chg.Addons = true;
 		}
@@ -2131,6 +2146,9 @@ AddonOptions = function (Id, fn, Data)
 			if (/height: *([0-9]+)/i.test(sFeatures)) {
 				opt.height = RegExp.$1 - 0;
 			}
+		}
+		opt.event.onbeforeunload = function () {
+			delete MainWindow.g_dlgs[Id];
 		}
 		dlg = { oExec: ShowDialog(sURL, opt)};
 	}
@@ -2510,7 +2528,7 @@ ChooseColor = function (c)
 {
 	var cc = api.Memory("CHOOSECOLOR");
 	cc.lStructSize = cc.Size;
-	cc.hwndOwner = te.hwnd;
+	cc.hwndOwner = api.GetForegroundWindow();
 	cc.Flags = CC_FULLOPEN | CC_RGBINIT;
 	cc.rgbResult = c;
 	cc.lpCustColors = te.Data.CustColors;
@@ -2725,7 +2743,7 @@ ShowError = function (e, s, i)
 			s = eventTA[s][i] + " : " + s;
 		}
 	}
-	wsh.Popup([(e.description || e.toString()), s].join("\n"), 0, TITLE, MB_ICONSTOP);
+	MessageBox([(e.description || e.toString()), s].join("\n"), TITLE, MB_ICONSTOP);
 }
 
 ApiStruct = function (oTypedef, nAli, oMemory)
@@ -2832,13 +2850,14 @@ CreateFont = function (LogFont)
 	return hFont;
 }
 
-setTimeout(function ()
+function DetectProcessTag(e)
 {
-	if (document && document.body) {
-		document.body.onselectstart = function (e)
-		{
-			var s = (e || event).srcElement.tagName;
-			return api.PathMatchSpec(s, "input;textarea");
-		};
-	}
-}, 100);
+	var s = (e || event).srcElement.tagName;
+	return api.PathMatchSpec(s, "input;textarea");
+}
+
+AddEventEx(window, "load", function ()
+{
+	document.body.onselectstart = DetectProcessTag;
+	document.body.oncontextmenu = DetectProcessTag;
+});

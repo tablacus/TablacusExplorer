@@ -12,7 +12,7 @@
     <script type="text/javascript" charset="utf-8" src="options.js">
     </script>
   </head>
-  <body onload="InitOptions();" onresize="ClickTree();">
+  <body>
     <form name="F">
       <table class="layout" style="width: 100%">
         <tr>
@@ -423,7 +423,6 @@
               </div>
               <div>
                 (*)Windows Vista <label>or higher.</label>
-                (*7)Windows 7 <label>or higher.</label>
               </div>
             </div>
             <!--panel_end-->
@@ -482,7 +481,10 @@
                 <input type="checkbox" id="Tree_EnumFlags:0x10000" onclick="SetCheckbox(this)" />
                 <label for="Tree_EnumFlags:0x2000">INCLUDESUPERHIDDEN</label>(*7)
               </div>
-
+              <div>
+                (*)Windows Vista <label>or higher.</label>
+                (*7)Windows 7 <label>or higher.</label>
+              </div>
             </div>
             <!--panel_end-->
 
@@ -607,5 +609,9 @@
         </tr>
       </table>
     </form>
+    <script type="text/javascript"><!--
+InitOptions();
+//-->
+    </script>
   </body>
 </html>

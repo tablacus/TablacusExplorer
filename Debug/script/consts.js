@@ -14,22 +14,22 @@ if (!window.te) {
 	te = MainWindow.external;
 	if (!te) {
 		var uid = location.hash.replace(/\D/g, "");
-		var wins = new ActiveXObject('Shell.Application').Windows();
+		fso = new ActiveXObject("Scripting.FileSystemObject");
+		sha = new ActiveXObject("Shell.Application");
+		wsh = new ActiveXObject("WScript.Shell");
+		wnw = new ActiveXObject("WScript.Network");
+		var wins = sha.Windows();
 		for (var i = wins.Count; i--;) {
 			var x = wins.Item(i);
-			if (x) {
+			if (x && x.Document) {
 				var w = x.Document.parentWindow;
 				if (w && w.te && w.Exchange) {
 					var a = w.Exchange[uid];
 					if (a) {
 						dialogArguments = a;
 						delete w.Exchange[uid];
-						window.MainWindow = w;
+						MainWindow = w;
 						te = w.te;
-						if (a.width) {
-							resizeTo(a.width + 16, a.height + 38);
-						}
-						TEOk = a.TEOk;
 					}
 				}
 			}
@@ -37,11 +37,12 @@ if (!window.te) {
 	}
 }
 api = te.WindowsAPI;
-fso = te.CreateObject("Scripting.FileSystemObject");
-sha = te.CreateObject("Shell.Application");
-wsh = te.CreateObject("WScript.Shell");
-wnw = te.CreateObject("WScript.Network");
-
+if (!window.fso) {
+	fso = te.CreateObject("Scripting.FileSystemObject");
+	sha = te.CreateObject("Shell.Application");
+	wsh = te.CreateObject("WScript.Shell");
+	wnw = te.CreateObject("WScript.Network");
+}
 osInfo = api.Memory("OSVERSIONINFOEX");
 osInfo.dwOSVersionInfoSize = osInfo.Size;
 api.GetVersionEx(osInfo);
@@ -1683,6 +1684,25 @@ SVGIO_FLAG_VIEWORDER= 0x80000000;
 
 ASFW_ANY = -1;
 
+SWP_NOSIZE         = 0001;
+SWP_NOMOVE         = 0002;
+SWP_NOZORDER       = 0004;
+SWP_NOREDRAW       = 0008;
+SWP_NOACTIVATE     = 0010;
+SWP_FRAMECHANGED   = 0020;
+SWP_SHOWWINDOW     = 0040;
+SWP_HIDEWINDOW     = 0080;
+SWP_NOCOPYBITS     = 0100;
+SWP_NOOWNERZORDER  = 0200;
+SWP_NOSENDCHANGING = 0400;
+SWP_DEFERERASE     = 2000;
+SWP_ASYNCWINDOWPOS = 4000;
+
+HWND_TOP       = 0;
+HWND_BOTTOM    = 1;
+HWND_TOPMOST   = -1;
+HWND_NOTOPMOST = -2;
+
 // GDI Plus
 RotateNoneFlipNone = 0;
 Rotate90FlipNone   = 1;
@@ -1744,3 +1764,16 @@ EncoderParameterValueTypeLongRange      = 6;
 EncoderParameterValueTypeUndefined      = 7;
 EncoderParameterValueTypeRationalRange  = 8;
 EncoderParameterValueTypePointer        = 9;
+
+if (window.dialogArguments) {
+	for (var j in dialogArguments.event) {
+		window[j] = dialogArguments.event[j];
+	}
+	if (dialogArguments.width) {
+		resizeTo(dialogArguments.width + 16, dialogArguments.height + 38);
+		var rc = api.Memory("RECT");
+		api.GetWindowRect(te.hwnd, rc);
+		moveTo(rc.Left + (rc.Right - rc.Left - dialogArguments.width) / 2, rc.Top + (rc.Bottom - rc.Top - dialogArguments.height) / 2);
+		api.SetWindowPos(api.GetWindowLongPtr(api.GetWindow(document), GWLP_HWNDPARENT), HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+	}
+}

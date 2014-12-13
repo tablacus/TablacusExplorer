@@ -144,7 +144,7 @@ function ClickTab(o, nMode)
 	nTabMax = i;
 }
 
-function ClickTree(o, nMode, strChg)
+function ClickTree(o, nMode, strChg, bForce)
 {
 	if (g_tid) {
 		return;
@@ -172,7 +172,7 @@ function ClickTree(o, nMode, strChg)
 			}
 		}
 	}
-	if (newTab != TabIndex) {
+	if (newTab != TabIndex || bForce) {
 		if (newTab == "0") {
 			var o = document.getElementById("DefaultLangID");
 			if (o && o.innerHTML == "") {
@@ -196,7 +196,7 @@ function ClickTree(o, nMode, strChg)
 			ovTab.className = 'hoverbutton';
 			ovPanel.style.display = 'block';
 			var h = document.documentElement.clientHeight || document.body.clientHeight;
-			h -= 40;
+			h -= 44;
 			if (h > 0) {
 				ovPanel.style.height = h + 'px';
 				ovPanel.style.height = 2 * h - ovPanel.offsetHeight + "px";
@@ -258,9 +258,7 @@ function ChooseColor1(o)
 	setTimeout(function ()
 	{
 		var o2 = document.F.elements[o.id.replace("Color_", "")];
-		MainWindow.focus();
 		var c = ChooseColor(o2.value);
-		focus();
 		if (c) {
 			o2.value = c;
 			o.style.backgroundColor = GetWebColor(c);
@@ -301,11 +299,11 @@ function SetTreeControl(TV)
 function AddTabControl()
 {
 	if (document.F.Tab_Width.value == 0) {
-		wsh.Popup(GetText("Please enter the width."), 0, "Tablacus Explorer", MB_ICONEXCLAMATION);
+		MessageBox("Please enter the width.", TITLE, MB_ICONEXCLAMATION);
 		return;
 	}
 	if (document.F.Tab_Height.value == 0) {
-		wsh.Popup(GetText("Please enter the height."), 0, "Tablacus Explorer", MB_ICONEXCLAMATION);
+		MessageBox("Please enter the height.", TITLE, MB_ICONEXCLAMATION);
 		return;
 	}
 	var TC = te.CreateCtrl(CTRL_TC, document.F.Tab_Left.value, document.F.Tab_Top.value, document.F.Tab_Width.value, document.F.Tab_Height.value, document.F.Tab_Style.value, document.F.Tab_Align.value, document.F.Tab_TabWidth.value, document.F.Tab_TabHeight.value);
@@ -412,12 +410,11 @@ function InitConfig(o)
 	if (InstallPath == te.Data.DataFolder) {
 		return;
 	}
-	if (!confirmOk(GetText("Are you sure?"))) {
+	if (!confirmOk("Are you sure?")) {
 		return;
 	}
 	var Dist = sha.NameSpace(te.Data.DataFolder);
 	Dist.MoveHere(fso.BuildPath(InstallPath, "layout"), 0);
-	wsh.Popup(GetText("Completed."), 0, "Tablacus Explorer", MB_ICONINFORMATION);
 	o.disabled = true;
 }
 
@@ -486,7 +483,7 @@ function ConfirmX(bCancel, fn)
 {
 	try {
 		if (g_Chg.Data) {
-			switch (wsh.Popup(GetText("Do you want to replace?"), 0, TITLE, bCancel ? MB_ICONQUESTION | MB_YESNOCANCEL : MB_ICONQUESTION | MB_YESNO)) {
+			switch (MessageBox("Do you want to replace?", TITLE, bCancel ? MB_ICONQUESTION | MB_YESNOCANCEL : MB_ICONQUESTION | MB_YESNO)) {
 				case IDYES:
 					if (g_x[g_Chg.Data].selectedIndex >= 0) {
 						(fn || ReplaceX)(g_Chg.Data);
@@ -600,7 +597,7 @@ function ReplaceX(mode)
 function RemoveMenus()
 {
 	ClearX("Menus");
-	if (g_x.Menus.selectedIndex < 0 || !confirmOk(GetText("Are you sure?"))) {
+	if (g_x.Menus.selectedIndex < 0 || !confirmOk("Are you sure?")) {
 		return;
 	}
 	g_x.Menus[g_x.Menus.selectedIndex] = null;
@@ -610,7 +607,7 @@ function RemoveMenus()
 function RemoveX(mode)
 {
 	ClearX(mode);
-	if (g_x[mode].selectedIndex < 0 || !confirm(GetText("Are you sure?"))) {
+	if (g_x[mode].selectedIndex < 0 || !confirmOk("Are you sure?")) {
 		return;
 	}
 	g_x[mode][g_x[mode].selectedIndex] = null;
@@ -1041,7 +1038,7 @@ function AddonInfo(Id)
 	if (info.pubDate) {
 		pubDate = new Date(info.pubDate).toLocaleString() + "\n";
 	}
-	wsh.Popup(info.Name + " " + info.Version + " " + info.Creator + "\n\n" + info.Description + "\n\n" + pubDate + info.URL, 0, Id, MB_ICONINFORMATION);
+	MessageBox(info.Name + " " + info.Version + " " + info.Creator + "\n\n" + info.Description + "\n\n" + pubDate + info.URL, Id, MB_ICONINFORMATION);
 }
 
 function AddonWebsite(Id)
@@ -1139,7 +1136,7 @@ function AddonMoveEx(src, dist)
 
 function AddonRemove(Id)
 {
-	if (!confirmOk(GetText("Are you sure?"))) {
+	if (!confirmOk("Are you sure?")) {
 		return;
 	}
 
@@ -1147,7 +1144,7 @@ function AddonRemove(Id)
 		MainWindow.eventTE.AddonDisabled[i](Id);
 	}
 	sf = api.Memory("SHFILEOPSTRUCT");
-	sf.hwnd = te.hwnd;
+	sf.hwnd = api.GetForegroundWindow();
 	sf.wFunc = FO_DELETE;
 	sf.fFlags = FOF_ALLOWUNDO;
 	sf.pFrom = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\"+ Id) + "\0";
@@ -1189,11 +1186,14 @@ InitOptions = function ()
 		s.push('<label id="tab2_' + i + '" class="button" style="width: 100%" onmousedown="ClickTree(this, null, \'Menus\');">' + GetText(g_arMenuTypes[i]) + '</label><br />');
 	}
 	document.getElementById("tab2_").innerHTML = s.join("");
-	SetTab(dialogArguments.Data);
 	MainWindow.g_dlgs.Options.window = window;
-	AddEventEx(window, "beforeunload", function ()
+	AddEventEx(window, "load", function ()
 	{
-		delete MainWindow.g_dlgs.Options;
+		SetTab(dialogArguments.Data);
+	});
+	AddEventEx(window, "resize", function ()
+	{
+		ClickTree(null, null, null, true);
 	});
 }
 
@@ -1355,7 +1355,7 @@ MouseMove = function ()
 					api.LineTo(hdc, pt.x, pt.y);
 					api.SelectObject(hdc, hOld);
 					api.DeleteObject(pen1);
-					api.ReleaseDC(te.hwnd, hdc);
+					api.ReleaseDC(api.GetForegroundWindow(), hdc);
 				}
 			}
 			g_pt = pt;
@@ -1648,7 +1648,7 @@ function RefX(Id, bMultiLine, oButton)
 
 function PortableX(Id)
 {
-	if (!confirmOk(GetText("Are you sure?"))) {
+	if (!confirmOk("Are you sure?")) {
 		return;
 	}
 	var o = GetElement(Id);
@@ -1682,7 +1682,7 @@ function GetCurrentSetting(s)
 {
 	var FV = te.Ctrl(CTRL_FV);
 
-	if (confirmOk(GetText("Are you sure?"))) {
+	if (confirmOk("Are you sure?")) {
 		AddPath(s, api.PathQuoteSpaces(api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORPARSINGEX | SHGDN_FORPARSING)));
 	}
 }
@@ -1694,6 +1694,9 @@ function SetTab(s)
 	for (var i in arg) {
 		var ar = arg[i].split(/=/);
 		if (api.strcmpi(ar[0], "tab") == 0) {
+			if (api.strcmpi(ar[1], "Get Addons...") == 0) {
+				setTimeout(GetAddons, 100);
+			}
 			var s = GetText(ar[1]);
 			var ovTab;
 			for (var j = 0; ovTab = document.getElementById('tab' + j); j++) {
@@ -1780,7 +1783,7 @@ function SelectIcon(o)
 
 TestX = function (id)
 {
-	if (confirmOk(GetText("Are you sure?"))) {
+	if (confirmOk("Are you sure?")) {
 		var o = document.F.elements[id + "Type"];
 		var p = { s: document.F.elements[id + "Path"].value };
 		MainWindow.OptionEncode(o[o.selectedIndex].value, p);
@@ -1834,12 +1837,7 @@ function SelectLangID(o)
 		if (items && items.length) {
 			var item = items[0];
 			var en = item.getAttribute("en");
-			if (en && api.strcmpi(item.text, en)) {
-				en = ' / ' + en;
-			}
-			else {
-				en = '';
-			}
+			en = (en && api.strcmpi(item.text, en)) ? ' / ' + en : "";
 			title = item.text + en + " (" + title + ")\t" + item.getAttribute("author");
 		}
 		api.InsertMenu(hMenu, i, MF_BYPOSITION | MF_STRING, api.QuadPart(i) + 1, title);

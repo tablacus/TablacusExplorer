@@ -189,6 +189,16 @@ a:active.menu {
 	background: linear-gradient(to bottom, #ffffff, #cccccc);
 	vertical-align: bottom;
 }
+.tab2 {
+	border: 1px solid #898C95;
+	background-color: #dddddd;
+	outline-style: none;
+	font-size: inherit;
+	height: 24px;
+	filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#cccccc);
+	background: linear-gradient(to bottom, #ffffff, #cccccc);
+	vertical-align: bottom;
+}
 .activetab {
 	border: 1px solid #898C95;
 	background-color: #ffffff;

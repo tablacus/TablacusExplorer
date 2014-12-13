@@ -993,6 +993,7 @@ TEmethod methodAPI[] = {
 	{ 20461, L"IsChild" },
 	{ 20471, L"KillTimer" },
 	{ 20481, L"AllowSetForegroundWindow" },
+	{ 20491, L"SetWindowPos" },
 	//+other
 	{ 25001, L"InsertMenu" },
 	{ 25011, L"SetWindowText" },
@@ -1071,6 +1072,7 @@ TEmethod methodAPI[] = {
 	{ 35080, L"GetScriptDispatch" },
 	{ 35090, L"GetDispatch" },
 	{ 35100, L"SHChangeNotifyRegister" },
+	{ 35102, L"MessageBox" },
 	//Handle
 	{ 40003, L"ImageList_GetIcon" },
 	{ 40013, L"ImageList_Create" },
@@ -1976,7 +1978,7 @@ FOLDERVIEWOPTIONS teGetFolderViewOptions(LPITEMIDLIST pidl, UINT uViewMode)
 			return FVO_VISTALAYOUT;
 		}
 	}
-	else if (uViewMode < FVM_CONTENT) {
+	else if (uViewMode < FVM_THUMBSTRIP) {
 		return FVO_VISTALAYOUT;
 	}
 	return FVO_DEFAULT;
@@ -6960,17 +6962,7 @@ HRESULT CteShellBrowser::OnBeforeNavigate(FolderItem *pPrevious, UINT wFlags)
 {
 	HRESULT hr = S_OK;
 	if (m_pShellView) {
-		IFolderView2 *pFV2;
-		if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
-			pFV2->GetViewModeAndIconSize((FOLDERVIEWMODE *)&m_param[SB_ViewMode], (int *)&m_param[SB_IconSize]);
-			int i = m_param[SB_IconSize];
-			pFV2->Release();
-		}
-		else {
-			FOLDERSETTINGS fs;
-			m_pShellView->GetCurrentInfo(&fs);
-			m_param[SB_ViewMode] = fs.ViewMode;
-		}
+		GetViewModeAndIconSize(TRUE);
 		if (m_pExplorerBrowser) {
 			m_pExplorerBrowser->GetOptions((EXPLORER_BROWSER_OPTIONS *)&m_param[SB_Options]);
 		}
@@ -7260,36 +7252,81 @@ VOID CteShellBrowser::SetFolderFlags()
 	if (m_pShellView && SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2)))) {
 		pFV2->SetCurrentFolderFlags(~(FWF_NOENUMREFRESH | FWF_USESEARCHFOLDER), m_param[SB_FolderFlags]);
 		pFV2->Release();
-		FOLDERSETTINGS fs;
-		if SUCCEEDED(m_pShellView->GetCurrentInfo(&fs)) {
-			if (m_param[SB_ViewMode] != fs.ViewMode) {
-				m_param[SB_ViewMode] = fs.ViewMode;
-				m_param[SB_FolderFlags] = fs.fFlags;
-				if (m_pExplorerBrowser) {
-					IFolderViewOptions *pOptions;
-					if SUCCEEDED(m_pExplorerBrowser->QueryInterface(IID_PPV_ARGS(&pOptions))) {
-						FOLDERVIEWOPTIONS fvo = teGetFolderViewOptions(m_pidl, fs.ViewMode);
-						FOLDERVIEWOPTIONS fvo0 = fvo;
-						pOptions->GetFolderViewOptions(&fvo0);
-						teDoCommand(this, m_hwnd, WM_NULL, 0, 0);
-						if (fvo != (fvo0 & FVO_VISTALAYOUT)) {
-							SetTimer(m_hwnd, TET_Refresh, 16, teTimerProc);
-						}
-						pOptions->Release();
-					}
-				}
-				else if (teGetFolderViewOptions(m_pidl, m_param[SB_ViewMode]) == FVO_DEFAULT) {
-					teDoCommand(this, m_hwnd, WM_NULL, 0, 0);
-					SetTimer(m_hwnd, TET_Refresh, 16, teTimerProc);
-				}
-			}
-		}
 	}
 #ifdef _2000XP
 	else {
 		PostMessage(m_hwndLV, LVM_SETEXTENDEDLISTVIEWSTYLE, LVS_EX_FULLROWSELECT | LVS_EX_CHECKBOXES, HIWORD(m_param[SB_FolderFlags]));
 	}
 #endif
+	GetViewModeAndIconSize(FALSE);
+}
+
+VOID CteShellBrowser::GetViewModeAndIconSize(BOOL bGetIconSize)
+{
+	FOLDERSETTINGS fs;
+	UINT uViewMode = 0;
+	int iImageSize = m_param[SB_IconSize];
+	if SUCCEEDED(m_pShellView->GetCurrentInfo(&fs)) {
+		uViewMode = fs.ViewMode;
+		m_param[SB_FolderFlags] = fs.fFlags;
+	}
+	if (bGetIconSize || uViewMode != m_param[SB_ViewMode]) {
+		IFolderView2 *pFV2;
+		if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
+			pFV2->GetViewModeAndIconSize((FOLDERVIEWMODE *)&uViewMode, &iImageSize);
+			pFV2->Release();
+		}
+#ifdef _2000XP
+		else if (!g_bUpperVista) {
+			if (uViewMode == FVM_ICON && iImageSize >= 96) {
+				uViewMode = FVM_THUMBNAIL;
+				IFolderView *pFV;
+				if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
+					pFV->SetCurrentViewMode(uViewMode);
+					pFV->Release();
+				}
+			}
+			if (uViewMode == FVM_ICON) {
+				iImageSize = GetSystemMetrics(SM_CXICON);
+			}
+			else if (uViewMode == FVM_TILE) {
+				iImageSize = 48;
+			}
+			else if (uViewMode == FVM_THUMBNAIL) {
+				HKEY hKey;
+				if (RegOpenKeyEx(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+					DWORD dwSize = sizeof(iImageSize);
+					RegQueryValueEx(hKey, L"ThumbnailSize", NULL, NULL, (LPBYTE)&iImageSize, &dwSize);
+					RegCloseKey(hKey);
+				}
+			}
+			else {
+				iImageSize = GetSystemMetrics(SM_CXSMICON);
+			}
+		}
+#endif
+		m_param[SB_IconSize] = iImageSize;
+		if (uViewMode != m_param[SB_ViewMode]) {
+			m_param[SB_ViewMode] = uViewMode;
+			if (m_pExplorerBrowser) {
+				IFolderViewOptions *pOptions;
+				if SUCCEEDED(m_pExplorerBrowser->QueryInterface(IID_PPV_ARGS(&pOptions))) {
+					FOLDERVIEWOPTIONS fvo = teGetFolderViewOptions(m_pidl, fs.ViewMode);
+					FOLDERVIEWOPTIONS fvo0 = fvo;
+					pOptions->GetFolderViewOptions(&fvo0);
+					teDoCommand(this, m_hwnd, WM_NULL, 0, 0);
+					if (fvo != (fvo0 & FVO_VISTALAYOUT)) {
+						SetTimer(m_hwnd, TET_Refresh, 16, teTimerProc);
+					}
+					pOptions->Release();
+				}
+			}
+			else if (teGetFolderViewOptions(m_pidl, m_param[SB_ViewMode]) == FVO_DEFAULT) {
+				teDoCommand(this, m_hwnd, WM_NULL, 0, 0);
+				SetTimer(m_hwnd, TET_Refresh, 16, teTimerProc);
+			}
+		}
+	}
 }
 
 VOID CteShellBrowser::GetVariantPath(FolderItem **ppFolderItem, FolderItems **ppFolderItems, VARIANT *pv)
@@ -7854,10 +7891,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 				if (pVarResult) {
 					if (m_pShellView) {
-						FOLDERSETTINGS fs;
-						if SUCCEEDED(m_pShellView->GetCurrentInfo(&fs)) {
-							m_param[SB_ViewMode] = fs.ViewMode;
-						}
+						SetFolderFlags();
 					}
 					pVarResult->lVal = m_param[SB_ViewMode];
 					pVarResult->vt = VT_I4;
@@ -7865,55 +7899,20 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				return S_OK;
 			//IconSize
 			case 0x10000011:
-				if (nArg >= 0) {
-					m_param[SB_IconSize] = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
-				}
 				if (m_pShellView && m_bIconSize) {
-					IFolderView2 *pFV2;
-					if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
-						FOLDERVIEWMODE uViewMode;
-						int iImageSize;
-						pFV2->GetViewModeAndIconSize(&uViewMode, &iImageSize);
-						if (nArg >= 0) {
+					GetViewModeAndIconSize(TRUE);
+					if (nArg >= 0) {
+						int iImageSize = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+						IFolderView2 *pFV2;
+						if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
 							if (iImageSize != m_param[SB_IconSize]) {
-								pFV2->SetViewModeAndIconSize(uViewMode, m_param[SB_IconSize]);
+								pFV2->SetViewModeAndIconSize(static_cast<FOLDERVIEWMODE>(m_param[SB_ViewMode]), m_param[SB_IconSize]);
 							}
+							pFV2->Release();
 						}
+#ifdef _2000XP
 						else {
 							m_param[SB_IconSize] = iImageSize;
-						}
-						pFV2->Release();
-					}
-					else {
-#ifdef _2000XP
-						if (m_param[SB_ViewMode] == FVM_ICON && m_param[SB_IconSize] >= 96) {
-							m_param[SB_ViewMode] = FVM_THUMBNAIL;
-							if (nArg >= 0) {
-								if (m_pShellView) {
-									IFolderView *pFV;
-									if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
-										pFV->SetCurrentViewMode(m_param[SB_ViewMode]);
-										pFV->Release();
-									}
-								}
-							}
-						}
-						if (m_param[SB_ViewMode] == FVM_ICON) {
-							m_param[SB_IconSize] = GetSystemMetrics(SM_CXICON);
-						}
-						else if (m_param[SB_ViewMode] == FVM_TILE) {
-							m_param[SB_IconSize] = 48;
-						}
-						else if (m_param[SB_ViewMode] == FVM_THUMBNAIL) {
-							HKEY hKey;
-							if (RegOpenKeyEx(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-								DWORD dwSize = sizeof(m_param[SB_IconSize]);
-								RegQueryValueEx(hKey, L"ThumbnailSize", NULL, NULL, (LPBYTE)&m_param[SB_IconSize], &dwSize);
-								RegCloseKey(hKey);
-							}
-						}
-						else {
-							m_param[SB_IconSize] = GetSystemMetrics(SM_CXSMICON);
 						}
 #endif
 					}
@@ -8637,7 +8636,6 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 				return S_OK;
 			case DISPID_INITIALENUMERATIONDONE:
-
 			case DISPID_VIEWMODECHANGED:
 				SetFolderFlags();
 				return S_OK;
@@ -10785,16 +10783,18 @@ STDMETHODIMP CteWebBrowser::TranslateAccelerator(LPMSG lpMsg, const GUID *pguidC
 
 STDMETHODIMP CteWebBrowser::GetOptionKeyPath(LPOLESTR *pchKey, DWORD dw)
 {
-/*/// For check
-	if (!pchKey) {
-		return E_INVALIDARG;
-	}
-	const LPWSTR szBuf = L"";
-	int i = lstrlen(szBuf);
-	*pchKey = reinterpret_cast<LPOLESTR>(::CoTaskMemAlloc((i + 1) * sizeof(OLECHAR)));
-	lstrcpy(*pchKey, szBuf);
-*/
-	return S_FALSE;
+/*// For check
+	WCHAR* szKey = L"Software\\tablacus\\explorer";
+    if (pchKey) {
+		*pchKey = (LPOLESTR)CoTaskMemAlloc((lstrlen(szKey) + 1) * sizeof(WCHAR));
+		if (*pchKey) {
+			lstrcpy(*pchKey, szKey);
+			return S_OK;
+		}
+    }
+	return E_INVALIDARG;
+//*/
+	return E_NOTIMPL;
 }
 
 STDMETHODIMP CteWebBrowser::GetDropTarget(IDropTarget *pDropTarget, IDropTarget **ppDropTarget)
@@ -15151,7 +15151,7 @@ CteCommonDialog::CteCommonDialog()
 
 	::ZeroMemory(&m_ofn, sizeof(OPENFILENAME));
 	m_ofn.lStructSize = sizeof(OPENFILENAME);
-	m_ofn.hwndOwner = g_hwndMain;
+	m_ofn.hwndOwner = GetForegroundWindow();
 //	m_ofn.hInstance = hInst;
 	m_ofn.nMaxFile = MAX_PATH;
 }
@@ -16519,8 +16519,11 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 							if (!g_hMenuKeyHook) {
 								g_hMenuKeyHook = SetWindowsHookEx(WH_KEYBOARD, (HOOKPROC)MenuKeyProc, hInst, g_dwMainThreadId);
 							}
+							HWND hwnd = GetForegroundWindow();
+							teSetForegroundWindow((HWND)param[4]);
 							*plResult = TrackPopupMenuEx((HMENU)param[0], (UINT)param[1], (int)param[2], (int)param[3],
 								(HWND)param[4], (LPTPMPARAMS)GetpcFromVariant(&pDispParams->rgvarg[nArg - 5]));
+							teSetForegroundWindow(hwnd);
 							UnhookWindowsHookEx(g_hMenuKeyHook);
 							g_hMenuKeyHook = NULL;
 							if (g_pCM) {
@@ -16683,6 +16686,11 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 								*plResult = SHChangeNotifyRegister((HWND)param[0], (int)param[1], (LONG)param[2], (UINT)param[3], 1, &entry);
 								teCoTaskMemFree(const_cast<LPITEMIDLIST>(entry.pidl));
 							}
+						}
+						break;
+					case 35102:
+						if (nArg >= 3) {
+							*plResult = MessageBox((HWND)param[0], GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]), GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 2]), (UINT)param[3]);
 						}
 						break;
 					default:
@@ -17084,6 +17092,11 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 					case 20481:
 						if (nArg >= 0) {
 							*pbResult = AllowSetForegroundWindow((DWORD)param[0]);
+						}
+						break;
+					case 20491:
+						if (nArg >= 6) {
+							*pbResult = SetWindowPos((HWND)param[0], (HWND)param[1], (int)param[2], (int)param[3], (int)param[4], (int)param[5], (UINT)param[6]);
 						}
 						break;
 					case 25001://InsertMenu
