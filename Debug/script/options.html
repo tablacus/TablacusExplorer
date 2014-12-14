@@ -29,7 +29,7 @@
               <label id="tab1" class="button" style="width: 88%" onmousedown="ClickTree(this);">Add-ons</label>
               <br />
               <div id="tab1_" style="margin-left: 20px">
-                <label class="button" style="width: 100%" onmousedown="GetAddons();">Get Add-ons...</label>
+                <label id="tab1_1" class="button" style="width: 100%" onmousedown="ClickTree(this);">Get Add-ons</label>
               </div>
               <tt id="tabbtn2" class="treebutton" onclick="ClickButton(this, 2);">-</tt>
               <label id="tab2" class="button" style="width: 88%" onmousedown="ClickButton(document.getElementById('tabbtn2'), 2, true);ClickTree(document.getElementById('tab2_0'), null, 'Menus');">Menus</label>
@@ -116,6 +116,26 @@
                   </th>
                 </tr>
               </table>
+            </div>
+            <!--panel_end-->
+
+            <div class="panel" id="panel1_1">
+    <div id="bar">
+      <table><tr><td style="width: 100%">
+      <input type="text" id="_GetAddonsQ" style="width: 100%" onkeydown="FindKeyEvent(this)" />
+      </td><td>
+      <input type="button" value="Filter" onclick="AddonsSearch()" />
+      </td></tr></table>
+    </div>
+    <div class="panel" id="panel1_1_1" style="display: block; width: 100%">
+      <table id="addons" style="width: 100%; border: 1px;">
+        <tr>
+          <td>
+            <label>Please wait.</label>
+          </td>
+        </tr>
+      </table>
+    </div>
             </div>
             <!--panel_end-->
 
@@ -602,6 +622,7 @@
             <input type="button" value="Up" onclick="OptionMove(-1)"/>
             <input type="button" value="Down" onclick="OptionMove(1)"/>
           </td>
+          <td id="STATUS" align="center"></td>
           <td align="right">
             <input type="button" value="OK" style="width: 96px;" onclick="SetOptions(); return true;" />
             <input type="button" value="Cancel" style="width: 96px;" onclick="window.close(); return true;" />&nbsp;&nbsp;

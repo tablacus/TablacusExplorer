@@ -1593,7 +1593,7 @@ GetHelpMenu = function (bTitle)
 		for (var i = dir.length; i--;) {
 			dir[i] = api.GetDisplayNameOf(dir[i], SHGDN_INFOLDER);
 		}
-		return [te.About, GetText("Check for updates"), GetText("Get Add-ons...")].concat(dir);
+		return [te.About, GetText("Check for updates"), GetText("Get Add-ons")].concat(dir);
 	}
 	return [api.GetModuleFileName(null) + "\\..", CheckUpdate, GetAddons].concat(dir);
 }
@@ -1935,7 +1935,7 @@ OptionEncode = function (Id, p)
 
 function GetAddons()
 {
-	ShowOptions("Tab=Get Addons...");
+	ShowOptions("Tab=Get Addons");
 }
 
 function CheckUpdate()
@@ -2633,18 +2633,20 @@ FindText = function (s)
 		var rng = document.body.createTextRange();
 
 		while (bFound) {
-			for (var i = 0; i <= g_nFind && (bFound = rng.findText(s)) != false; i++) {
+			for (var i = 0; i <= g_nFind && (bFound = rng.findText(s)); i++) {
 				rng.moveStart("character", 1);
 				rng.moveEnd("textedit");
 			}
 			if (bFound) {
 				rng.moveStart("character", -1);
 				rng.findText(s);
+				document.body.onselectstart = null;
 				try {
 					rng.select();
 					bFound = false;
 				}
 				catch (e) {}
+				document.body.onselectstart = DetectProcessTag;
 				rng.scrollIntoView();
 				g_nFind++;
 			}
@@ -2659,7 +2661,6 @@ FindKeyEvent = function (o)
 {
 	if (event.keyCode == 13) {
 		FindText(o.value);
-		o.focus();
 		return false;
 	}
 	g_nFind = 0;
