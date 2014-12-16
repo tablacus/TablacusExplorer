@@ -852,7 +852,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 			g_mouse.CancelContextMenu = false;
 			if (te.Data.Conf_Gestures >= 2) {
 				var iItem = -1;
-				if (Ctrl.Type == CTRL_SB || Ctrl.Type == CTRL_EB) {
+				if (Ctrl.Type <= CTRL_EB) {
 					iItem = Ctrl.HitTest(pt);
 					if (iItem < 0) {
 						return S_OK;
@@ -862,6 +862,18 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 					g_mouse.RButton = iItem;
 					g_mouse.StartGestureTimer();
 					return S_OK;
+				}
+			}
+		}
+		if (msg == WM_MBUTTONDOWN) {
+			var iItem = -1;
+			if (Ctrl.Type <= CTRL_EB) {
+				iItem = Ctrl.HitTest(pt);
+				if (iItem >= 0) {
+					Ctrl.SelectItem(Ctrl.Items.Item(iItem), SVSI_SELECT | SVSI_FOCUSED | SVSI_DESELECTOTHERS);
+				}
+				else {
+					Ctrl.SelectItem(null, SVSI_DESELECTOTHERS);
 				}
 			}
 		}

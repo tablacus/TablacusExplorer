@@ -16520,10 +16520,20 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 								g_hMenuKeyHook = SetWindowsHookEx(WH_KEYBOARD, (HOOKPROC)MenuKeyProc, hInst, g_dwMainThreadId);
 							}
 							HWND hwnd = GetForegroundWindow();
-							teSetForegroundWindow((HWND)param[4]);
+							DWORD dwExStyle = 0;
+							if (hwnd != g_hwndMain) {
+								dwExStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
+								SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+								teSetForegroundWindow(g_hwndMain);
+							}
 							*plResult = TrackPopupMenuEx((HMENU)param[0], (UINT)param[1], (int)param[2], (int)param[3],
 								(HWND)param[4], (LPTPMPARAMS)GetpcFromVariant(&pDispParams->rgvarg[nArg - 5]));
-							teSetForegroundWindow(hwnd);
+							if (hwnd != g_hwndMain) {
+								if (!(dwExStyle & WS_EX_TOPMOST)) {
+									SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+								}
+								teSetForegroundWindow(hwnd);
+							}
 							UnhookWindowsHookEx(g_hMenuKeyHook);
 							g_hMenuKeyHook = NULL;
 							if (g_pCM) {
@@ -17849,7 +17859,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 					LPTSTR *lplpszArgs = NULL;
 					IDispatch *pdisp;
 					GetNewArray(&pdisp);
-					if (vCmdLine.bstrVal) {
+					if (vCmdLine.bstrVal && ::SysStringLen(vCmdLine.bstrVal)) {
 						lplpszArgs = CommandLineToArgvW(vCmdLine.bstrVal, &nLen);
 						for (int i = 0; i < nLen; i++) {
 							VARIANT *pv = GetNewVARIANT(1);

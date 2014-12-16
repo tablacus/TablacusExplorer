@@ -14,8 +14,8 @@ if (!window.te) {
 	te = MainWindow.external;
 	if (!te) {
 		var uid = location.hash.replace(/\D/g, "");
-		fso = new ActiveXObject("Scripting.FileSystemObject");
 		sha = new ActiveXObject("Shell.Application");
+		fso = new ActiveXObject("Scripting.FileSystemObject");
 		wsh = new ActiveXObject("WScript.Shell");
 		wnw = new ActiveXObject("WScript.Network");
 		var wins = sha.Windows();
@@ -43,6 +43,7 @@ if (!window.fso) {
 	wsh = te.CreateObject("WScript.Shell");
 	wnw = te.CreateObject("WScript.Network");
 }
+
 osInfo = api.Memory("OSVERSIONINFOEX");
 osInfo.dwOSVersionInfoSize = osInfo.Size;
 api.GetVersionEx(osInfo);
@@ -1774,6 +1775,5 @@ if (window.dialogArguments) {
 		var rc = api.Memory("RECT");
 		api.GetWindowRect(te.hwnd, rc);
 		moveTo(rc.Left + (rc.Right - rc.Left - dialogArguments.width) / 2, rc.Top + (rc.Bottom - rc.Top - dialogArguments.height) / 2);
-		api.SetWindowPos(api.GetWindowLongPtr(api.GetWindow(document), GWLP_HWNDPARENT), HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 	}
 }
