@@ -1368,7 +1368,7 @@ TEmethod methodGB[] = {
 };
 
 // Forward declarations of functions included in this code module:
-ATOM				MyRegisterClass(HINSTANCE hInstance);
+ATOM MyRegisterClass(HINSTANCE hInstance, LPWSTR szClassName);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 VOID ArrangeWindow();
 
@@ -1382,11 +1382,10 @@ BOOL teSetForegroundWindow(HWND hwnd)
 	BOOL bResult = SetForegroundWindow(hwnd);
 	if (!bResult) {
 		DWORD dwForeThreadId = GetWindowThreadProcessId(GetForegroundWindow(), NULL);
-		DWORD dwThreadId = GetCurrentThreadId();
-		AttachThreadInput(dwThreadId, dwForeThreadId, TRUE);
+		AttachThreadInput(g_dwMainThreadId, dwForeThreadId, TRUE);
 		SetWindowPos(hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 		bResult = SetForegroundWindow(hwnd);
-		AttachThreadInput(dwThreadId, dwForeThreadId, FALSE);
+		AttachThreadInput(g_dwMainThreadId, dwForeThreadId, FALSE);
 		if (!bResult) {
 			DWORD dwTimeout = 0;
 			SystemParametersInfo(SPI_GETFOREGROUNDLOCKTIMEOUT, 0, &dwTimeout, 0);
@@ -4966,7 +4965,7 @@ HRESULT teExtract(IStorage *pStorage, LPWSTR lpszFolderPath)
 //    so that the application will get 'well formed' small icons associated
 //    with it.
 //
-ATOM MyRegisterClass(HINSTANCE hInstance)
+ATOM MyRegisterClass(HINSTANCE hInstance, LPWSTR szClassName)
 {
 	WNDCLASSEX wcex;
 
@@ -4981,7 +4980,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 	wcex.hCursor		= LoadCursor(NULL, IDC_ARROW);
 	wcex.hbrBackground	= (HBRUSH)(COLOR_BTNFACE + 1);
 	wcex.lpszMenuName	= 0;
-	wcex.lpszClassName	= WINDOW_CLASS;
+	wcex.lpszClassName	= szClassName;
 	wcex.hIconSm		= LoadIcon(hInstance, MAKEINTRESOURCE(IDI_16));
 
 	return RegisterClassEx(&wcex);
@@ -5497,14 +5496,15 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	int nCrc32 = CalcCrc32((BYTE *)bsPath, lstrlen(bsPath) * sizeof(WCHAR), 0);
 	//Command Line
 	BOOL bVisible = !PathMatchSpec(lpCmdLine, L"/run *");
-	if (bVisible) {
+	BOOL bNewProcess = PathMatchSpec(lpCmdLine, L"/open *");
+	LPWSTR szClass = WINDOW_CLASS2;
+	if (bVisible && !bNewProcess) {
 		//Multiple Launch
+		szClass = WINDOW_CLASS;
 		g_hMutex = CreateMutex(NULL, FALSE, bsPath);
-		SysFreeString(bsPath);
-
 		if (WaitForSingleObject(g_hMutex, 0) == WAIT_TIMEOUT) {
 			HWND hwndTE = NULL;
-			while (hwndTE = FindWindowEx(NULL, hwndTE, WINDOW_CLASS, NULL)) {
+			while (hwndTE = FindWindowEx(NULL, hwndTE, szClass, NULL)) {
 				if (GetWindowLongPtr(hwndTE, GWLP_USERDATA) == nCrc32) {
 					BSTR bs = teGetCommandLine();
 					COPYDATASTRUCT cd;
@@ -5516,14 +5516,16 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 					::SysFreeString(bs);
 					if (lResult && dwResult == S_OK) {
 						::CloseHandle(g_hMutex);
-						teSetForegroundWindow(hwndTE);
+						SysFreeString(bsPath);
 						Finalize();
+						teSetForegroundWindow(hwndTE);
 						return FALSE;
 					}
 				}
 			}
 		}
 	}
+	SysFreeString(bsPath);
 
 	for (int i = MAX_CSIDL; i--;) {
 		SHGetFolderLocation(NULL, i, NULL, NULL, &g_pidls[i]);
@@ -5636,15 +5638,15 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	// Initialize GDI+
 	Gdiplus::GdiplusStartup(&g_Token, &g_StartupInput, NULL);
-	MyRegisterClass(hInstance);
+	MyRegisterClass(hInstance, szClass);
 	// Title & Version
 	lstrcpy(g_szTE, L"Tablacus Explorer " _T(STRING(VER_Y)) L"." _T(STRING(VER_M)) L"." _T(STRING(VER_D)) L" Gaku");
 	if (bVisible) {
-		g_hwndMain = CreateWindow(WINDOW_CLASS, g_szTE, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
+		g_hwndMain = CreateWindow(szClass, g_szTE, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
 		  CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
 	}
 	else {
-		g_hwndMain = CreateWindowEx(WS_EX_TOOLWINDOW, WINDOW_CLASS, g_szTE, WS_VISIBLE | WS_POPUP,
+		g_hwndMain = CreateWindowEx(WS_EX_TOOLWINDOW, szClass, g_szTE, WS_VISIBLE | WS_POPUP,
 		  CW_USEDEFAULT, CW_USEDEFAULT, 0, 0, NULL, NULL, hInstance, NULL);
 	}
 	if (!g_hwndMain)
@@ -5716,8 +5718,20 @@ function _t(o) {\
 	if (bVisible) {
 		teGetModuleFileName(NULL, &bsPath);//Executable Path
 		PathRemoveFileSpec(bsPath);
-		tePathAppend(&bsIndex, bsPath, L"script\\index.html");
+		LPTSTR *lplpszArgs = NULL;
+		LPWSTR lpFile = L"script\\index.html";
+		if (bNewProcess) {
+			int nCount = 0;
+			lplpszArgs = CommandLineToArgvW(lpCmdLine, &nCount);
+			if (nCount > 1) {
+				lpFile = lplpszArgs[1];
+			}
+		}
+		tePathAppend(&bsIndex, bsPath, lpFile);
 		SysFreeString(bsPath);
+		if (lplpszArgs) {
+			LocalFree(lplpszArgs);
+		}
 		g_pWebBrowser = new CteWebBrowser(g_hwndMain, bsIndex);
 		SysFreeString(bsIndex);
 	}
@@ -7248,17 +7262,19 @@ VOID CteShellBrowser::GetFocusedIndex(int *piItem)
 
 VOID CteShellBrowser::SetFolderFlags()
 {
-	IFolderView2 *pFV2;
-	if (m_pShellView && SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2)))) {
-		pFV2->SetCurrentFolderFlags(~(FWF_NOENUMREFRESH | FWF_USESEARCHFOLDER), m_param[SB_FolderFlags]);
-		pFV2->Release();
-	}
+	if (m_pShellView) {
+		IFolderView2 *pFV2;
+		if (SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2)))) {
+			pFV2->SetCurrentFolderFlags(~(FWF_NOENUMREFRESH | FWF_USESEARCHFOLDER), m_param[SB_FolderFlags]);
+			pFV2->Release();
+		}
 #ifdef _2000XP
-	else {
-		PostMessage(m_hwndLV, LVM_SETEXTENDEDLISTVIEWSTYLE, LVS_EX_FULLROWSELECT | LVS_EX_CHECKBOXES, HIWORD(m_param[SB_FolderFlags]));
-	}
+		else {
+			PostMessage(m_hwndLV, LVM_SETEXTENDEDLISTVIEWSTYLE, LVS_EX_FULLROWSELECT | LVS_EX_CHECKBOXES, HIWORD(m_param[SB_FolderFlags]));
+		}
 #endif
-	GetViewModeAndIconSize(FALSE);
+		GetViewModeAndIconSize(FALSE);
+	}
 }
 
 VOID CteShellBrowser::GetViewModeAndIconSize(BOOL bGetIconSize)
@@ -10046,7 +10062,6 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				return S_OK;
 			//GetObject
 			case TE_METHOD + 1020:
-				Sleep(1);
 			//CreateObject
 			case TE_METHOD + 1010:
 				if (nArg >= 0) {

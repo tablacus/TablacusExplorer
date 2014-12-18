@@ -1,4 +1,13 @@
 //Tablacus Explorer
+AddEventEx = function (w, Name, fn)
+{
+	if (w.addEventListener) {
+		w.addEventListener(Name, fn, false);
+	}
+	else if (w.attachEvent){
+		w.attachEvent("on" + Name, fn);
+	}
+}
 
 //Objects
 if (!window.MainWindow) {
@@ -12,37 +21,51 @@ if (!window.MainWindow) {
 }
 if (!window.te) {
 	te = MainWindow.external;
-	if (!te) {
-		var uid = location.hash.replace(/\D/g, "");
-		sha = new ActiveXObject("Shell.Application");
-		fso = new ActiveXObject("Scripting.FileSystemObject");
-		wsh = new ActiveXObject("WScript.Shell");
-		wnw = new ActiveXObject("WScript.Network");
+}
+if (window.te) {
+	fso = te.CreateObject("Scripting.FileSystemObject");
+	sha = te.CreateObject("Shell.Application");
+	wsh = te.CreateObject("WScript.Shell");
+	wnw = te.CreateObject("WScript.Network");
+}
+else {
+	fso = new ActiveXObject("Scripting.FileSystemObject");
+	sha = new ActiveXObject("Shell.Application");
+	wsh = new ActiveXObject("WScript.Shell");
+	wnw = new ActiveXObject("WScript.Network");
+}
+
+g_uid = window.location ? location.hash.replace(/\D/g, "") : false;
+if (g_uid) {
+	(function () {
 		var wins = sha.Windows();
 		for (var i = wins.Count; i--;) {
 			var x = wins.Item(i);
 			if (x && x.Document) {
 				var w = x.Document.parentWindow;
 				if (w && w.te && w.Exchange) {
-					var a = w.Exchange[uid];
+					var a = w.Exchange[g_uid];
 					if (a) {
 						dialogArguments = a;
-						delete w.Exchange[uid];
 						MainWindow = w;
-						te = w.te;
+						if (!window.te) {
+							window.te = w.te;
+						}
+						AddEventEx(window, "beforeunload", function ()
+						{
+							try {
+								delete MainWindow.Exchange[g_uid];
+							}
+							catch (e) {}
+						});
 					}
 				}
 			}
 		}
-	}
+	}) ();
 }
+
 api = te.WindowsAPI;
-if (!window.fso) {
-	fso = te.CreateObject("Scripting.FileSystemObject");
-	sha = te.CreateObject("Shell.Application");
-	wsh = te.CreateObject("WScript.Shell");
-	wnw = te.CreateObject("WScript.Network");
-}
 
 osInfo = api.Memory("OSVERSIONINFOEX");
 osInfo.dwOSVersionInfoSize = osInfo.Size;
@@ -1776,4 +1799,17 @@ if (window.dialogArguments) {
 		api.GetWindowRect(te.hwnd, rc);
 		moveTo(rc.Left + (rc.Right - rc.Left - dialogArguments.width) / 2, rc.Top + (rc.Bottom - rc.Top - dialogArguments.height) / 2);
 	}
+	AddEventEx(window, "load", function ()
+	{
+		var pid = api.Memory("DWORD");
+		var pid2 = api.Memory("DWORD");
+		api.GetWindowThreadProcessId(te.hwnd, pid);
+		api.GetWindowThreadProcessId(api.GetWindow(document), pid2);
+		if (pid[0] != pid2[0]) {
+			fso = new ActiveXObject("Scripting.FileSystemObject");
+			sha = new ActiveXObject("Shell.Application");
+			wsh = new ActiveXObject("WScript.Shell");
+			wnw = new ActiveXObject("WScript.Network");
+		}
+	});
 }

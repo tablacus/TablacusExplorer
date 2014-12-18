@@ -87,6 +87,7 @@ typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
 #define E_CANCELLED_BY_USER	0x800704c7
 
 #define WINDOW_CLASS			L"TablacusExplorer"
+#define WINDOW_CLASS2			L"TablacusExplorer2"
 #define MAX_LOADSTRING			100
 #define MAX_HISTORY				32
 #define MAX_CSIDL				256

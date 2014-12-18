@@ -8,10 +8,11 @@ g_arMenuTypes = ["Default", "Context", "Background", "Tabs", "Tree", "File", "Ed
 g_MenuType = null;
 g_dlgAddons = null;
 g_tdDown = null;
-g_bDrag = null;
+g_bDrag = false;
 g_pt = {x: 0, y: 0};
 g_Gesture = null;
 g_tid = null;
+g_drag5 = false;
 arLangs = [GetLangId(), "en", "General"];
 
 urlAddons = "http://www.eonet.ne.jp/~gakana/tablacus/addons/";
@@ -593,6 +594,7 @@ function ReplaceX(mode)
 	ClearX(mode);
 	if (g_x[mode].selectedIndex < 0) {
 		g_x[mode].selectedIndex = ++g_x[mode].length - 1;
+		EnableSelectTag(g_x[mode]);
 	}
 	var sel = g_x[mode][g_x[mode].selectedIndex];
 	var o = document.F.elements[mode + "Type"];
@@ -837,8 +839,8 @@ function SaveAddons()
 			var root = xml.createElement("TablacusExplorer");
 			var table = document.getElementById("Addons");
 			for (var j = 0; j < table.rows.length; j++) {
-				var Id = table.rows(j).id.replace("Addon_", "").toLowerCase();
-				var div = document.getElementById("Addon2_" + Id);
+				var div = table.rows(j).cells(0).firstChild;
+				var Id = div.id.replace("Addons_", "").toLowerCase();
 				var item = null;
 				var items = te.Data.Addons.getElementsByTagName(Id);
 				if (items.length) {
@@ -910,6 +912,8 @@ function LoadAddons()
 	api.FindClose(hFind);
 
 	var table = document.getElementById("Addons");
+	table.ondragover = Over5;
+	table.ondrop = Drop5;
 	table.deleteRow(0);
 	var root = te.Data.Addons.documentElement;
 	if (root) {
@@ -936,7 +940,6 @@ function AddAddon(table, Id, Enable)
 {
 	var tr = table.insertRow();
 	tr.className = (tr.rowIndex & 1) ? "oddline" : "";
-	tr.id = "Addon_" + Id;
 	SetAddon(tr.insertCell(), Id, Enable);
 }
 
@@ -947,28 +950,29 @@ function SetAddon(td, Id, Enable)
 	if (info.Description && info.Description.length > 80) {
 		info.Description = info.Description.substr(0, 80) + "...";
 	}
-	var s = [];
-	s.push('<div Id="Addon2_' + Id + '" style="color: ');
+	var s = ['<div draggable="true" ondragstart="Start5(this)" ondragend="End5(this)" Id="Addons_' + Id + '" style="color: '];
 	s.push((Enable == "Enable") ? "gray" : "black");
-	s.push('"><input type="radio" name="AddonId" id="_'+ Id + '"><label for="_'+ Id + '"><b>' + info.Name + "</b>&nbsp;" + info.Version + "&nbsp;" + info.Creator + "<br>" + info.Description + "</div>");
-	s.push('<input type="button" value="' + GetText('Remove') + '" onclick="AddonRemove(\'' + Id + '\')">');
-	s.push('<input type="button" value="' + GetText(Enable) + '" onclick="AddonEnable(\'' + Id + '\', this)"');
+	s.push('"><input type="radio" name="AddonId" id="_', Id, '"><label for="_', Id, '"><b>', info.Name, "</b>&nbsp;", info.Version, "&nbsp;", info.Creator, "<br />", info.Description, "<br />");
+	s.push('<input type="button" value="', GetText('Remove'), '" onclick="AddonRemove(\'', Id, '\')">');
+	s.push('<input type="button" value="', GetText(Enable), '" onclick="AddonEnable(\'', Id, '\', this)"');
 	if (info.MinVersion && te.Version < CalcVersion(info.MinVersion)) {
 		s.push(" disabled");
 	}
 	s.push('>');
-	s.push('<input type="button" value="' + GetText('Info...') + '" onclick="AddonInfo(\'' + Id + '\')">');
-	s.push('<input type="button" value="' + GetText('Options...') + '" onclick="AddonOptions(\'' + Id + '\')"');
+	s.push('<input type="button" value="', GetText('Info...'), '" onclick="AddonInfo(\'', Id, '\')">');
+	s.push('<input type="button" value="', GetText('Options...'), '" onclick="AddonOptions(\'', Id, '\')"');
 	if (!info.Options) {
 		s.push(" disabled");
 	}
-	s.push('></label>');
+	s.push('></label></div>');
 	td.innerHTML = s.join("");
 
 	td.onmousedown = function (e)
 	{
-		g_tdDown = e ? e.currentTarget : window.event.srcElement;
-		api.GetCursorPos(g_ptDrag);
+		var o = document.elementFromPoint((e || window.event).clientX, (e || window.event).clientY);
+		if (!o || api.strcmpi(o.tagName, "input")) {
+			g_tdDown = (e ? e.currentTarget : window.event.srcElement).firstChild.id;
+		}
 	}
 
 	td.onmouseup = function (e)
@@ -976,20 +980,19 @@ function SetAddon(td, Id, Enable)
 		if (g_bDrag) {
 			g_bDrag = false;
 			SetCursor(document.getElementById("Addons"), "auto");
-			var tdUp = e ? e.currentTarget : window.event.srcElement;
-			if (g_tdDown != tdUp) {
-				(function (src, dist) { setTimeout(function () {
-					AddonMoveEx(src, dist);
-				}, 100);}) (AddonRowIndex(g_tdDown) , AddonRowIndex(tdUp));
+			if (g_tdDown) {
+				(function (src, dest) { setTimeout(function () {
+					AddonMoveEx(src, dest);
+				}, 100);}) (GetRowIndexById(g_tdDown) , GetRowIndexById((e ? e.currentTarget : window.event.srcElement).firstChild.id));
 			}
 		}
-		g_tdDown = undefined;
+		g_tdDown = null;
 	}
 
 	td.onmousemove = function (e)
 	{
 		if (g_tdDown) {
-			if (api.GetKeyState(VK_LBUTTON) < 0) {
+			if (api.GetKeyState(VK_LBUTTON) < 0 && !g_drag5) {
 				(e ? e.currentTarget : window.event.srcElement).style.cursor = "move";
 				g_bDrag = true;
 			}
@@ -998,15 +1001,59 @@ function SetAddon(td, Id, Enable)
 			}
 		}
 	}
+
 	ApplyLang(td);
 }
 
-function AddonRowIndex (td)
+function Start5(o)
 {
-	var table = document.getElementById("Addons");
-	for (var i = table.rows.length; i--;) {
-		if (api.strcmpi(table.rows(i).cells(0).innerText, td.innerText) == 0) {
-			return i;
+	if (api.GetKeyState(VK_LBUTTON) < 0) {
+		event.dataTransfer.effectAllowed = 'move';
+		g_drag5 = o.id;
+		if (g_tdDown) {
+			SetCursor(document.getElementById("Addons"), "auto");
+			g_tdDown = null;
+		}
+		return true;
+	}
+	return false;
+}
+
+function End5()
+{
+	g_drag5 = false;
+}
+
+function Over5()
+{
+	if (g_drag5) {
+		event.preventDefault();
+	}
+}
+
+function Drop5(e)
+{
+	if (g_drag5) {
+		var o = document.elementFromPoint(e.clientX, e.clientY);
+		do {
+			if (/Addons_/i.test(o.id)) {
+				(function (src, dest) { setTimeout(function () {
+					AddonMoveEx(src, dest);
+				}, 100);}) (GetRowIndexById(g_drag5) , GetRowIndexById(o.id));
+				break;
+			}
+		} while (o = o.parentNode);
+	}
+}
+
+function GetRowIndexById(id)
+{
+	var o = document.getElementById(id);
+	if (o) {
+		while (o = o.parentNode) {
+			if (o.rowIndex !== undefined) {
+				return o.rowIndex;
+			}
 		}
 	}
 }
@@ -1029,7 +1076,7 @@ function AddonWebsite(Id)
 
 function AddonEnable(Id, o)
 {
-	var div = document.getElementById("Addon2_" + Id);
+	var div = document.getElementById("Addons_" + Id);
 	if (o.value != GetText('Enable')) {
 		for (var i in MainWindow.eventTE.AddonDisabled) {
 			MainWindow.eventTE.AddonDisabled[i](Id);
@@ -1078,10 +1125,10 @@ function OptionMove(dir)
 	}
 }
 
-function AddonMoveEx(src, dist)
+function AddonMoveEx(src, dest)
 {
 	var table = document.getElementById("Addons");
-	if (dist < 0 || dist >= table.rows.length) {
+	if (dest < 0 || dest >= table.rows.length || src == dest) {
 		return false;
 	}
 	var tr = table.rows(src);
@@ -1095,7 +1142,7 @@ function AddonMoveEx(src, dist)
 
 	table.deleteRow(src);
 
-	tr = table.insertRow(dist);
+	tr = table.insertRow(dest);
 	td = tr.insertCell();
 	tr.id = id2;
 	td.innerHTML = s;
@@ -1103,13 +1150,13 @@ function AddonMoveEx(src, dist)
 	td.onmouseup = mu;
 	td.onmousemove = mm;
 
-	var i = src > dist ? src : dist;
-	var j = src > dist ? dist : src;
+	var i = src > dest ? src : dest;
+	var j = src > dest ? dest : src;
 	while (i >= j) {
 		table.rows(i).className = (i & 1) ? "oddline" : "";
 		i--;
 	}
-	document.F.AddonId[dist].checked = true;
+	document.F.AddonId[dest].checked = true;
 	g_Chg.Addons = true;
 	return false;
 }
@@ -1131,10 +1178,8 @@ function AddonRemove(Id)
 	if (api.SHFileOperation(sf) == 0) {
 		if (!sf.fAnyOperationsAborted) {
 			var table = document.getElementById("Addons");
-			var tr = document.getElementById("Addon_" + Id);
-			var i = tr.rowIndex;
+			var i = GetRowIndexById("Addons_" + Id);
 			table.deleteRow(i);
-
 			while (i < table.rows.length) {
 				table.rows(i).className = (i & 1) ? "oddline" : "";
 				i++;
@@ -2057,7 +2102,7 @@ function Search(xml)
 			for (var i = item.length; i-- > 0;) {
 				var item1 = item[i];
 				if (item1.tagName) {
-					if ((item1.textContent || item1.text || "").toUpperCase().match(q)) {
+					if (item1.text.toUpperCase().match(q)) {
 						return true;
 					}
 				}

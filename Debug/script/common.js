@@ -155,16 +155,6 @@ AddEvent = function (Name, fn, priority)
 	}
 }
 
-AddEventEx = function (w, Name, fn)
-{
-	if (w.addEventListener) {
-		w.addEventListener(Name, fn, false);
-	}
-	else if (w.attachEvent){
-		w.attachEvent("on" + Name, fn);
-	}
-}
-
 AddEnv = function (Name, fn)
 {
 	eventTE.Environment[Name.toLowerCase()] = fn;
@@ -2287,7 +2277,7 @@ InputMouse = function ()
 
 InputKey = function()
 {
-	var s = showModalDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\dialog.html"), {MainWindow: MainWindow, Query: "key"}, 'dialogWidth: 320px; dialogHeight: 120px; resizable: yes; status: 0;');
+	var s = showModalDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\dialog.html"), {MainWindow: MainWindow, Query: "key"}, 'dialogWidth: 320px; dialogHeight: 120px; resizable: no; status: 0;');
 	if (s) {
 		(document.F.KeyKey || document.F.Key).value = s;
 		SetKeyShift();
@@ -2296,12 +2286,12 @@ InputKey = function()
 
 ShowLocationEx = function (s)
 {
-	showModelessDialog("../../script/location.html", {MainWindow: MainWindow, Data: s}, 'dialogWidth: 640px; dialogHeight: 480px; resizable: yes; status=0;');
+	showModelessDialog("../../script/location.html", {MainWindow: MainWindow, Data: s}, 'dialogWidth: 640px; dialogHeight: 480px; resizable: no; status: 0;');
 }
 
 ShowIconEx = function ()
 {
-	return showModalDialog("../../script/dialog.html", {MainWindow: MainWindow, Query: "icon"}, 'dialogWidth: 640px; dialogHeight: 480px; resizable: yes; status=0;');
+	return showModalDialog("../../script/dialog.html", {MainWindow: MainWindow, Query: "icon"}, 'dialogWidth: 640px; dialogHeight: 480px; resizable: no; status: 0;');
 }
 
 function MakeKeySelect()
