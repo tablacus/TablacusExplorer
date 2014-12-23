@@ -130,4 +130,5 @@ input, select {
 	margin-right: 3px;
 	filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#dddddd);
 	background: linear-gradient(to bottom, #ffffff, #dddddd);
+	cursor: default;
 }

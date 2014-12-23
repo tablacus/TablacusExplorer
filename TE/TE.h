@@ -417,6 +417,43 @@ private:
 	HRESULT m_DragLeave;
 };
 
+class CteInternetSecurityManager : public IInternetSecurityManager
+{
+public:
+	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
+	STDMETHODIMP_(ULONG) AddRef();
+	STDMETHODIMP_(ULONG) Release();
+	//IInternetSecurityManager
+	STDMETHODIMP SetSecuritySite(IInternetSecurityMgrSite *pSite);
+	STDMETHODIMP GetSecuritySite(IInternetSecurityMgrSite **ppSite);
+	STDMETHODIMP MapUrlToZone(LPCWSTR pwszUrl, DWORD *pdwZone, DWORD dwFlags);
+	STDMETHODIMP GetSecurityId(LPCWSTR pwszUrl,	BYTE *pbSecurityId, DWORD *pcbSecurityId, DWORD_PTR dwReserved);
+	STDMETHODIMP ProcessUrlAction(LPCWSTR pwszUrl, DWORD dwAction, BYTE *pPolicy, DWORD cbPolicy, BYTE *pContext, DWORD cbContext, DWORD dwFlags, DWORD dwReserved);
+	STDMETHODIMP QueryCustomPolicy(LPCWSTR pwszUrl, REFGUID guidKey, BYTE **ppPolicy, DWORD *pcbPolicy, BYTE *pContext, DWORD cbContext, DWORD dwReserved);
+	STDMETHODIMP SetZoneMapping(DWORD dwZone, LPCWSTR lpszPattern, DWORD dwFlags);
+	STDMETHODIMP GetZoneMappings(DWORD dwZone, IEnumString **ppenumString, DWORD dwFlags);
+
+	CteInternetSecurityManager();
+	~CteInternetSecurityManager();
+private:
+	LONG		m_cRef;
+};
+
+class CteNewWindowManager : public INewWindowManager
+{
+public:
+	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
+	STDMETHODIMP_(ULONG) AddRef();
+	STDMETHODIMP_(ULONG) Release();
+	//INewWindowManager
+	STDMETHODIMP EvaluateNewWindow(LPCWSTR pszUrl, LPCWSTR pszName, LPCWSTR pszUrlContext, LPCWSTR pszFeatures, BOOL fReplace, DWORD dwFlags, DWORD dwUserActionTime);
+
+	CteNewWindowManager();
+	~CteNewWindowManager();
+private:
+	LONG		m_cRef;
+};
+
 class CteWebBrowser : public IDispatch, public IOleClientSite, public IOleInPlaceSite,
 	public IDocHostUIHandler, public IDropTarget//, public IDocHostShowUI
 {
@@ -577,11 +614,11 @@ public:
 	//IServiceProvider
 	STDMETHODIMP QueryService(REFGUID guidService, REFIID riid, void **ppv);
 
-	CteServiceProvider(IShellBrowser *pSB, IShellView *pSV);
+	CteServiceProvider(IUnknown *punk, IShellView *pSV);
 	~CteServiceProvider();
 
 public:
-	IShellBrowser *m_pSB;
+	IUnknown *m_pUnk;
 	IShellView *m_pSV;
 	LONG	m_cRef;
 };

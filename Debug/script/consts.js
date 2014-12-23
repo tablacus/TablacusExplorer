@@ -10,35 +10,23 @@ AddEventEx = function (w, Name, fn)
 }
 
 //Objects
-if (!window.MainWindow) {
-	MainWindow = window;
-	while (MainWindow.dialogArguments || MainWindow.opener) {
-		MainWindow = MainWindow.dialogArguments || MainWindow.opener;
-		if (MainWindow.MainWindow) {
-			MainWindow = MainWindow.MainWindow;
+g_uid = location.hash.replace(/\D/g, "");
+if (!window.te && window.external && external.Type) {
+	te = external;
+	api = te.WindowsAPI;
+	if (api) {
+		if (!window.dialogArguments && !window.opener) {
+			arg = api.CommandLineToArgv(api.GetCommandLine());
+			if (arg.length > 3 && api.strcmpi(arg[1], '/open') == 0) {
+				g_uid = arg[3];
+			}
 		}
 	}
 }
-if (!window.te) {
-	te = MainWindow.external;
-}
-if (window.te) {
-	fso = te.CreateObject("Scripting.FileSystemObject");
-	sha = te.CreateObject("Shell.Application");
-	wsh = te.CreateObject("WScript.Shell");
-	wnw = te.CreateObject("WScript.Network");
-}
-else {
-	fso = new ActiveXObject("Scripting.FileSystemObject");
-	sha = new ActiveXObject("Shell.Application");
-	wsh = new ActiveXObject("WScript.Shell");
-	wnw = new ActiveXObject("WScript.Network");
-}
 
-g_uid = window.location ? location.hash.replace(/\D/g, "") : false;
 if (g_uid) {
 	(function () {
-		var wins = sha.Windows();
+		var wins = new ActiveXObject("Shell.Application").Windows();
 		for (var i = wins.Count; i--;) {
 			var x = wins.Item(i);
 			if (x && x.Document) {
@@ -48,9 +36,7 @@ if (g_uid) {
 					if (a) {
 						dialogArguments = a;
 						MainWindow = w;
-						if (!window.te) {
-							window.te = w.te;
-						}
+						te = w.te;
 						AddEventEx(window, "beforeunload", function ()
 						{
 							try {
@@ -58,6 +44,7 @@ if (g_uid) {
 							}
 							catch (e) {}
 						});
+						break;
 					}
 				}
 			}
@@ -65,7 +52,26 @@ if (g_uid) {
 	}) ();
 }
 
-api = te.WindowsAPI;
+if (!window.MainWindow) {
+	MainWindow = window;
+	while (MainWindow.dialogArguments || MainWindow.opener) {
+		MainWindow = MainWindow.dialogArguments || MainWindow.opener;
+		if (MainWindow.MainWindow) {
+			MainWindow = MainWindow.MainWindow;
+		}
+	}
+}
+ParentWindow = (window.dialogArguments ? dialogArguments.opener : window.opener);
+if (ParentWindow || !window.te) {
+	te = MainWindow.te;
+}
+if (!window.api) {
+	api = te.WindowsAPI;
+}
+fso = (ParentWindow || MainWindow).fso || new ActiveXObject("Scripting.FileSystemObject");
+sha = (ParentWindow || MainWindow).sha || new ActiveXObject("Shell.Application");
+wsh = (ParentWindow || MainWindow).wsh || new ActiveXObject("WScript.Shell");
+wnw = (ParentWindow || MainWindow).wnw || new ActiveXObject("WScript.Network");
 
 osInfo = api.Memory("OSVERSIONINFOEX");
 osInfo.dwOSVersionInfoSize = osInfo.Size;
@@ -1794,22 +1800,9 @@ if (window.dialogArguments) {
 		window[j] = dialogArguments.event[j];
 	}
 	if (dialogArguments.width) {
-		resizeTo(dialogArguments.width + 16, dialogArguments.height + 38);
 		var rc = api.Memory("RECT");
 		api.GetWindowRect(te.hwnd, rc);
+		resizeTo(dialogArguments.width + 16, dialogArguments.height + 38);
 		moveTo(rc.Left + (rc.Right - rc.Left - dialogArguments.width) / 2, rc.Top + (rc.Bottom - rc.Top - dialogArguments.height) / 2);
 	}
-	AddEventEx(window, "load", function ()
-	{
-		var pid = api.Memory("DWORD");
-		var pid2 = api.Memory("DWORD");
-		api.GetWindowThreadProcessId(te.hwnd, pid);
-		api.GetWindowThreadProcessId(api.GetWindow(document), pid2);
-		if (pid[0] != pid2[0]) {
-			fso = new ActiveXObject("Scripting.FileSystemObject");
-			sha = new ActiveXObject("Shell.Application");
-			wsh = new ActiveXObject("WScript.Shell");
-			wnw = new ActiveXObject("WScript.Network");
-		}
-	});
 }

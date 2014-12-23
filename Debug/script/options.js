@@ -5,7 +5,7 @@ TabIndex = -1;
 g_x = {Menu: null, Addons: null};
 g_Chg = {Menus: false, Addons: false, Tab: false, Tree: false, View: false, Data: null};
 g_arMenuTypes = ["Default", "Context", "Background", "Tabs", "Tree", "File", "Edit", "View", "Favorites", "Tools", "Help", "TaskTray", "System", "Alias"];
-g_MenuType = null;
+g_MenuType = "";
 g_dlgAddons = null;
 g_tdDown = null;
 g_bDrag = false;
@@ -54,11 +54,6 @@ SetOptions = function ()
 	te.Data.bReload = true;
 	window.close();
 }
-
-AddEventEx(window, "beforeunload", function ()
-{
-	SaveAddons();
-});
 
 function ResetForm()
 {
@@ -137,7 +132,7 @@ function ClickTab(o, nMode)
 			ovTab.className = 'activetab';
 			ovPanel.style.display = 'block';
 			var h = document.documentElement.clientHeight || document.body.clientHeight;
-			h -= 60;
+			h -= 70;
 			if (h > 0) {
 				ovPanel.style.height = h + 'px';
 				ovPanel.style.height = 2 * h - ovPanel.offsetHeight + "px";
@@ -202,7 +197,7 @@ function ClickTree(o, nMode, strChg, bForce)
 			ovPanel = document.getElementById('panel' + TabIndex) || document.getElementById('panel' + TabIndex.replace(/_\d+/, ""));
 			if (/2_(.+)/.test(TabIndex)) {
 				document.F.Menus.selectedIndex = RegExp.$1;
-				setTimeout("SwitchMenus(document.F.Menus);", 100);
+				SwitchMenus(document.F.Menus);
 			}
 			ovTab.className = 'hoverbutton';
 			ovPanel.style.display = 'block';
@@ -651,12 +646,12 @@ function SetMenus(sel, a)
 
 function LoadMenus(nSelected)
 {
+	var oa = document.F.Menus_Type;
 	if (!g_x.Menus) {
 		var arFunc = [];
 		for (var i in MainWindow.eventTE.AddType) {
 			MainWindow.eventTE.AddType[i](arFunc);
 		}
-		var oa = document.F.Menus_Type;
 		for (var i = 0; i < arFunc.length; i++) {
 			var o = oa[++oa.length - 1];
 			o.value = arFunc[i];
@@ -666,7 +661,7 @@ function LoadMenus(nSelected)
 		oa = document.F.Menus;
 		oa.length = 0;
 
-		for (j in g_arMenuTypes) {
+		for (var j in g_arMenuTypes) {
 			document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", '<select name="Menus_' + g_arMenuTypes[j] + '" size="17" style="width: 150px; height: 400px; display: none; font-family:' + document.F.elements["Menus_Pos"].style.fontFamily + '" ondblclick="EditMenus()" oncontextmenu="CancelX(\'Menus\')"></select>');
 			var menus = teMenuGetElementsByTagName(g_arMenuTypes[j]);
 			if (menus && menus.length) {
@@ -686,13 +681,27 @@ function LoadMenus(nSelected)
 				oa[++oa.length - 1].value = g_arMenuTypes[j];
 			}
 			oa[oa.length - 1].text = GetText(g_arMenuTypes[j]);
-			if (g_MenuType && api.strcmpi(g_MenuType, g_arMenuTypes[j]) == 0) {
-				nSelected = oa.length - 1;
-				oa[nSelected].selected = true;
-				g_MenuType = undefined;
-			}
 		}
 		SwitchMenus(oa[nSelected]);
+	}
+	for (var j in g_arMenuTypes) {
+		var ar = String(g_MenuType).split(",");
+		if (api.strcmpi(ar[0], g_arMenuTypes[j]) == 0) {
+			nSelected = oa.length - 1;
+			oa[nSelected].selected = true;
+			if (isFinite(ar[1])) {
+				var o = document.F.elements["Menus_" + ar[0]];
+				o.selectedIndex = ar[1];
+				EnableSelectTag(o);
+			}
+			g_MenuType = j;
+			setTimeout(function ()
+			{
+				ClickTree(document.getElementById("tab2_" + g_MenuType));
+				EditMenus();
+				g_MenuType = "";
+			}, 100);
+		}
 	}
 }
 
@@ -1220,6 +1229,10 @@ InitOptions = function ()
 	{
 		ClickTree(null, null, null, true);
 	});
+	AddEventEx(window, "beforeunload", function ()
+	{
+		SaveAddons();
+	});
 }
 
 OpenIcon = function (o)
@@ -1287,14 +1300,17 @@ InitDialog = function ()
 			"24px ieframe,697" : "b,697,24",
 
 			"16px shell32" : "i,shell32.dll,16",
-			"32px shell32" : "i,shell32.dll32",
+			"32px shell32" : "i,shell32.dll,32",
+			"16px imageres" : "i,imageres.dll,16",
+			"32px imageres" : "i,imageres.dll,32",
 			"16px wmploc" : "i,wmploc.dll,16",
 			"32px wmploc" : "i,wmploc.dll,32",
 			"16px setupapi" : "i,setupapi.dll,16",
 			"32px setupapi" : "i,setupapi.dll,32",
 			"16px dsuiext" : "i,dsuiext.dll,16",
 			"32px dsuiext" : "i,dsuiext.dll,32",
-
+			"16px inetcpl" : "i,inetcpl.cpl,16",
+			"32px inetcpl" : "i,inetcpl.cpl,32",
 			"25px TRAVEL_ENABLED_XP" : "b,TRAVEL_ENABLED_XP.BMP,25",
 			"30px TRAVEL_ENABLED_XP" : "b,TRAVEL_ENABLED_XP_120.BMP,30"
 		};
@@ -1508,7 +1524,6 @@ InitLocation = function ()
 		nTabIndex = dialogArguments.Data.index;
 	} catch (e) {}
 	SetImage();
-	ClickTab(null, 1);
 }
 
 SetLocation = function()
@@ -1903,6 +1918,7 @@ function GetAddons()
 		}
 	}
 	xhr.open("GET", urlAddons + "/index.xml?" + Math.floor(new Date().getTime() / 60000));
+	xhr.setRequestHeader('Content-Type', 'text/xml');
 	xhr.setRequestHeader('Pragma', 'no-cache');
 	xhr.setRequestHeader('Cache-Control', 'no-cache');
 	xhr.setRequestHeader('If-Modified-Since', 'Thu, 01 Jun 1970 00:00:00 GMT');
@@ -1972,11 +1988,13 @@ function AddonsList()
 		ts: [],
 		i: 0
 	}
-
-	xmlAddons = xhr.responseXML.getElementsByTagName("Item");
-	if (AddonsSub(q)) {
-		document.body.style.cursor = "wait";
-		AddonsAppend(q)
+	var xml = xhr.responseXML;
+	if (xml) {
+		xmlAddons = xml.getElementsByTagName("Item");
+		if (AddonsSub(q)) {
+			document.body.style.cursor = "wait";
+			AddonsAppend(q)
+		}
 	}
 }
 

@@ -232,6 +232,11 @@ Lock = function (Ctrl, nIndex, turn)
 	}
 }
 
+FontChanged = function ()
+{
+	RunEvent1("FontChanged");
+}
+
 LoadConfig = function ()
 {
 	var xml = OpenXml("window.xml", true, false);
@@ -303,23 +308,20 @@ Resize2 = function ()
 		clearTimeout(g_tidResize);
 		g_tidResize = null;
 	}
-	o = document.getElementById("toolbar");
-	if (o) {
-		te.offsetTop = o.offsetHeight;
-	}
-	else {
-		te.offsetTop = 0;
-	}
+	var o = document.getElementById("toolbar");
+	var offsetTop = o ? o.offsetHeight : 0;
+	te.offsetTop = Math.ceil(offsetTop * screen.deviceYDPI / screen.logicalYDPI);
 
 	var h = 0;
 	o = document.getElementById("bottombar");
 	if (o) {
-		te.offsetBottom = o.offsetHeight;
+		var offsetBottom = o.offsetHeight;
 		o = document.getElementById("client");
 		if (o) {
-			h = (document.documentElement ? document.documentElement.offsetHeight : document.body.offsetHeight) - te.offsetBottom - te.offsetTop;
+			h = (document.documentElement ? document.documentElement.offsetHeight : document.body.offsetHeight) - offsetBottom - offsetTop;
 			o.style.height = ((h >= 0) ? h : 0) + "px";
 		}
+		te.offsetBottom = Math.ceil(offsetBottom * screen.deviceYDPI / screen.logicalYDPI);
 	}
 	o = document.getElementById("leftbarT");
 	if (o) {
@@ -342,11 +344,11 @@ Resize2 = function ()
 
 	var w2 = 0;
 	var w = 0;
-	var o = te.Data.Locations;
+	o = te.Data.Locations;
 	if (o.LeftBar1 || o.LeftBar2 || o.LeftBar3) {
 		w = te.Data.Conf_LeftBarWidth;
 	}
-	var o = document.getElementById("leftbar");
+	o = document.getElementById("leftbar");
 	if (o) {
 		w = (w > 0) ? w : 0;
 		o.style.width = w + "px";
@@ -360,15 +362,15 @@ Resize2 = function ()
 			}
 		}
 	}
-	te.offsetLeft = w2;
+	te.offsetLeft = Math.ceil(w2 * screen.deviceXDPI / screen.logicalXDPI);
 
 	w2 = 0;
 	w = 0;
-	var o = te.Data.Locations;
+	o = te.Data.Locations;
 	if (o.RightBar1 || o.RightBar2 || o.RightBar3) {
 		w = te.Data.Conf_RightBarWidth;
 	}
-	var o = document.getElementById("rightbar");
+	o = document.getElementById("rightbar");
 	if (o) {
 		w = (w > 0) ? w : 0;
 		o.style.width = w + "px";
@@ -381,7 +383,7 @@ Resize2 = function ()
 			}
 		}
 	}
-	te.offsetRight = w2;
+	te.offsetRight = Math.ceil(w2 * screen.deviceXDPI / screen.logicalXDPI);
 	o = document.getElementById("Background");
 	if (o) {
 		w = (document.documentElement ? document.documentElement.offsetWidth : document.body.offsetWidth) - te.offsetLeft - te.offsetRight;
@@ -816,10 +818,24 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 					g_mouse.RButtonDown(true);
 					bButton = (g_mouse.str == "2");
 				}
-				else if (Ctrl.Type == CTRL_SB || Ctrl.Type == CTRL_EB) {
+				else if (Ctrl.Type <= CTRL_EB) {
 					var iItem = Ctrl.HitTest(pt);
 					if (iItem < 0 && !IsDrag(pt, te.Data.pt)) {
 						Ctrl.SelectItem(null, SVSI_DESELECTOTHERS);
+					}
+				}
+			}
+			if (msg == WM_MBUTTONUP) {
+				if (Ctrl.Type <= CTRL_EB && api.GetKeyState(VK_SHIFT) >= 0 && api.GetKeyState(VK_CONTROL) >= 0) {
+					var ar = eventTE.Mouse.List[g_mouse.str];
+					if (ar && api.strcmpi(ar[0][1], "Selected Items") == 0) {
+						var iItem = Ctrl.HitTest(pt);
+						if (iItem >= 0) {
+							Ctrl.SelectItem(Ctrl.Items.Item(iItem), SVSI_SELECT | SVSI_FOCUSED | SVSI_DESELECTOTHERS);
+						}
+						else {
+							Ctrl.SelectItem(null, SVSI_DESELECTOTHERS);
+						}
 					}
 				}
 			}
@@ -862,18 +878,6 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 					g_mouse.RButton = iItem;
 					g_mouse.StartGestureTimer();
 					return S_OK;
-				}
-			}
-		}
-		if (msg == WM_MBUTTONDOWN) {
-			var iItem = -1;
-			if (Ctrl.Type <= CTRL_EB) {
-				iItem = Ctrl.HitTest(pt);
-				if (iItem >= 0) {
-					Ctrl.SelectItem(Ctrl.Items.Item(iItem), SVSI_SELECT | SVSI_FOCUSED | SVSI_DESELECTOTHERS);
-				}
-				else {
-					Ctrl.SelectItem(null, SVSI_DESELECTOTHERS);
 				}
 			}
 		}
@@ -1195,7 +1199,7 @@ te.OnItemClick = function (Ctrl, Item, HitTest, Flags)
 
 te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 {
-	if (msg == WM_KILLFOCUS && Ctrl.Type == CTRL_TE) {
+	if (msg == WM_KILLFOCUS && Ctrl.Type == CTRL_TE && api.GetAsyncKeyState(VK_MBUTTON) >=0) {
 		g_mouse.str = "";
 		SetGestureText(Ctrl, "");
 	}
@@ -1724,6 +1728,8 @@ function InitCode()
 			eventTE[i][types[i][j]] = {};
 		}
 	}
+	DefaultFont = api.Memory("LOGFONT");
+	api.SystemParametersInfo(SPI_GETICONTITLELOGFONT, DefaultFont.Size, DefaultFont, 0);
 }
 
 function ChangeNotifyFV(lEvent, item1, item2)
@@ -2228,8 +2234,8 @@ g_basic =
 				},
 				"Open with...": undefined,
 				"Send to...": undefined
-			}
-
+			},
+			Enc: true
 		},
 
 		Tabs:
@@ -2358,7 +2364,9 @@ g_basic =
 					var FV = GetFolderView(Ctrl, pt);
 					FV && OpenInExplorer(FV);
 				}
-			}
+			},
+
+			Enc: true
 		},
 
 		Edit: 
@@ -2529,7 +2537,9 @@ g_basic =
 					api.PostMessage(te.hwnd, WM_CLOSE, 0, 0);
 					return S_OK;
 				}
-			}
+			},
+
+			Enc: true
 		},
 
 		Options:
@@ -2545,7 +2555,9 @@ g_basic =
 				return g_basic.Popup(g_basic.Func.Options.List, s, pt);
 			},
 
-			List: ["General", "Add-ons", "Menus", "Tabs", "Tree", "List"]
+			List: ["General", "Add-ons", "Menus", "Tabs", "Tree", "List"],
+
+			Enc: true
 		},
 
 		Key:
@@ -2559,7 +2571,8 @@ g_basic =
 
 		"Add-ons":
 		{
-			Cmd: {}
+			Cmd: {},
+			Enc: true
 		},
 
 		Menus:
@@ -2569,7 +2582,9 @@ g_basic =
 				return g_basic.Popup(g_basic.Func.Menus.List, s, pt);
 			},
 
-			List: ["Open", "Close", "Separator", "Break", "BarBreak"]
+			List: ["Open", "Close", "Separator", "Break", "BarBreak"],
+
+			Enc: true
 		}
 	},
 
@@ -2770,7 +2785,7 @@ AddEvent("OptionEncode", function (Id, p)
 		p.s = lines.join("\n");
 		return S_OK;
 	}
-	if (g_basic.Func[Id]) {
+	if (g_basic.Func[Id] && g_basic.Func[Id].Enc) {
 		p.s = GetSourceText(p.s);
 		return S_OK;
 	}
@@ -2793,7 +2808,7 @@ AddEvent("OptionDecode", function (Id, p)
 		p.s = lines.join("\n");
 		return S_OK;
 	}
-	if (g_basic.Func[Id]) {
+	if (g_basic.Func[Id] && g_basic.Func[Id].Enc) {
 		var s = GetText(p.s);
 		if (GetSourceText(s) == p.s) {
 			p.s = GetText(p.s);

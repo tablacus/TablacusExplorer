@@ -162,11 +162,10 @@ AddEnv = function (Name, fn)
 
 function ApplyLang(doc)
 {
-	var LogFont = api.Memory("LOGFONT");
-	api.SystemParametersInfo(SPI_GETICONTITLELOGFONT, LogFont.Size, LogFont, 0);
-	var FaceName = LogFont.lfFaceName;
+	var FaceName = MainWindow.DefaultFont.lfFaceName;
 	if (doc.body) {
 		doc.body.style.fontFamily = FaceName;
+		doc.body.style.fontSize = Math.abs(MainWindow.DefaultFont.lfHeight) + "px";
 		doc.body.style.backgroundColor = 'buttonface';
 	}
 
@@ -195,7 +194,7 @@ function ApplyLang(doc)
 	if (o) {
 		for (i = o.length; i--;) {
 			if (!h && o[i].type == "text") {
-				h = o[i].offsetHeight;
+				h = o[i].offsetHeight * screen.deviceYDPI / screen.logicalYDPI;
 			}
 			var s = Lang[o[i].placeholder];
 			if (s) {
@@ -824,11 +823,18 @@ ShowOptions = function (s)
 		wsh.AppActivate(dlg.oExec.ProcessID);
 	}
 	else {
-		g_dlgs.Options = { oExec: ShowDialog("options.html", {Data: s, width: 640, height: 480, event: {
-			onbeforeunload: function () {
-				delete MainWindow.g_dlgs.Options;
-			}
-		}})};
+		g_dlgs.Options = {
+			oExec: ShowDialog("options.html",
+			{
+				Data: s, width: 640, height: 480, event:
+				{
+					onbeforeunload: function () 
+					{
+						delete MainWindow.g_dlgs.Options;
+					}
+				}
+			})
+		};
 	}
 }
 
@@ -837,8 +843,9 @@ ShowDialog = function (fn, opt)
 	var uid;
 	do {
 		uid = String(Math.random()).replace(/^0?\./, "");
-	} while (Exchange[uid]);
-	Exchange[uid] = opt;
+	} while (MainWindow.Exchange[uid]);
+	MainWindow.Exchange[uid] = opt;
+	opt.opener = window;
 	return wsh.Exec([api.PathQuoteSpaces(fso.BuildPath(system32, "mshta.exe")), ' ', api.PathQuoteSpaces(location.href.replace(/[^\/]*$/, fn + "#" + uid))].join(""));
 }
 
@@ -883,8 +890,8 @@ GetPos = function (o, bScreen, bAbs, bPanel)
 		}
 	}
 	var pt = api.Memory("POINT");
-	pt.x = x;
-	pt.y = y;
+	pt.x = x * screen.deviceXDPI / screen.logicalXDPI;
+	pt.y = y * screen.deviceYDPI / screen.logicalYDPI;
 	return pt;
 }
 
@@ -892,10 +899,10 @@ HitTest = function (o, pt)
 {
 	if (o) {
 		var p = GetPos(o, true);
-		if (pt.x >= p.x && pt.x < p.x + o.offsetWidth && pt.y >= p.y && pt.y < p.y + o.offsetHeight) {
+		if (pt.x >= p.x && pt.x < p.x + o.offsetWidth && pt.y >= p.y && pt.y < p.y + o.offsetHeight * screen.deviceYDPI / screen.logicalYDPI) {
 			o = o.offsetParent;
 			p = GetPos(o, true, true);
-			return pt.x >= p.x && pt.x < p.x + o.offsetWidth && pt.y >= p.y && pt.y < p.y + o.offsetHeight;
+			return pt.x >= p.x && pt.x < p.x + o.offsetWidth * screen.deviceXDPI / screen.logicalXDPI && pt.y >= p.y && pt.y < p.y + o.offsetHeight * screen.deviceYDPI / screen.logicalYDPI;
 		}
 	}
 	return false;
@@ -1559,6 +1566,11 @@ GetBaseMenu = function (nBase, FV, Selected, uCMF, Mode, SelItem)
 			hMenu = api.CreatePopupMenu();
 			api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, 0x3001, GetText("&Add to Favorites..."));
 			ExtraMenuCommand[0x3001] = AddFavoriteEx;
+			api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, 0x3002, GetText("&Edit"));
+			ExtraMenuCommand[0x3002] = function ()
+			{
+				ShowOptions("Tab=Menus&Menus=Favorites");
+			};
 			api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_SEPARATOR, 0, null);
 			break;
 		default:
@@ -2115,7 +2127,7 @@ AddonOptions = function (Id, fn, Data)
 	if (fn) {
 		opt.event.TEOk = fn;
 	}
-	else if (g_Chg) {
+	else if (window.g_Chg) {
 		opt.event.TEOk = function ()
 		{
 			g_Chg.Addons = true;
@@ -2126,7 +2138,7 @@ AddonOptions = function (Id, fn, Data)
 		while (!dlg.window.document.body) {
 			api.Sleep(100);
 		}
-		if (g_Chg && dlg.window.returnValue !== undefined) {
+		if (window.g_Chg && dlg.window.returnValue !== undefined) {
 			g_Chg.Addons = true;
 		}
 	}
@@ -2328,8 +2340,9 @@ function MakeKeySelect()
 	for (i in s) {
 		if (j != s[i]) {
 			j = s[i];
-			oa[++oa.length - 1].value = j;
-			oa[oa.length - 1].text = j;
+			var o = oa[++oa.length - 1];
+			o.value = j;
+			o.text = j + " ";
 		}
 	}
 }

@@ -1200,6 +1200,7 @@ TEmethod methodWB[] = {
 	{ 0x10000004, L"TranslateAccelerator" },
 	{ 0x10000005, L"Application" },
 	{ 0x10000006, L"Document" },
+	{ 0x10000007, L"ExecWB" },
 	{ 0, NULL }
 };
 
@@ -5644,6 +5645,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	if (bVisible) {
 		g_hwndMain = CreateWindow(szClass, g_szTE, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
 		  CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
+		if (!bNewProcess) {
+			SetWindowLongPtr(g_hwndMain, GWLP_USERDATA, nCrc32);
+		}
 	}
 	else {
 		g_hwndMain = CreateWindowEx(WS_EX_TOOLWINDOW, szClass, g_szTE, WS_VISIBLE | WS_POPUP,
@@ -5654,7 +5658,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		Finalize();
 		return FALSE;
 	}
-	SetWindowLongPtr(g_hwndMain, GWLP_USERDATA, nCrc32);
 	// ClipboardFormat
 	IDLISTFormat.cfFormat = (CLIPFORMAT)RegisterClipboardFormat(CFSTR_SHELLIDLIST);
 	DROPEFFECTFormat.cfFormat = (CLIPFORMAT)RegisterClipboardFormat(CFSTR_PREFERREDDROPEFFECT);
@@ -5727,7 +5730,12 @@ function _t(o) {\
 				lpFile = lplpszArgs[1];
 			}
 		}
-		tePathAppend(&bsIndex, bsPath, lpFile);
+		if (teIsFileSystem(lpFile) || PathMatchSpec(lpFile, L"file://*")) {
+			bsIndex = ::SysAllocString(lpFile);			
+		}
+		else {
+			tePathAppend(&bsIndex, bsPath, lpFile);
+		}
 		SysFreeString(bsPath);
 		if (lplpszArgs) {
 			LocalFree(lplpszArgs);
@@ -5745,9 +5753,9 @@ function _s() {\
 		sha = te.CreateObject('Shell.Application');\
 		wsh = te.CreateObject('WScript.Shell');\
 		arg = api.CommandLineToArgv(api.GetCommandLine());\
-		_bn = arg[2];\
-		if (!api.PathMatchSpec(_bn, '?:\\*;\\\\*')) {\
-			_bn = fso.BuildPath(fso.GetParentFolderName(arg[0]), _bn);\
+		location = {href: arg[2], hash: ''};\
+		if (!api.PathMatchSpec(location.href, '?:\\*;\\\\*')) {\
+			location.href = fso.BuildPath(fso.GetParentFolderName(arg[0]), location.href);\
 		}\
 		var wins = sha.Windows();\
 		for (var i = wins.Count; i--;) {\
@@ -5764,14 +5772,14 @@ function _s() {\
 		}\
 		api.SetForegroundWindow(te.hwnd);\
 		api.AllowSetForegroundWindow(-1);\
-		return _es(_bn);\
+		return _es(location.href);\
 	} catch (e) {\
 		wsh.Popup((e.description || e.toString()), 0, 'Tablacus Explorer', 0x10);\
 	}\
 }\
 function _es(fn) {\
 	if (!api.PathMatchSpec(fn, '?:\\*;\\\\*')) {\
-		fn = fso.BuildPath(fso.GetParentFolderName(_bn), fn);\
+		fn = fso.BuildPath(fso.GetParentFolderName(location.href), fn);\
 	}\
 	try {\
 		var ado = te.CreateObject('Adodb.Stream');\
@@ -6358,7 +6366,7 @@ STDMETHODIMP CteShellBrowser::QueryInterface(REFIID riid, void **ppvObject)
 		}
 	}
 	else if (IsEqualIID(riid, IID_IServiceProvider)) {
-		*ppvObject = static_cast<IServiceProvider *>(new CteServiceProvider(this, ILIsEmpty(m_pidl) ? NULL : m_pShellView));
+		*ppvObject = static_cast<IServiceProvider *>(new CteServiceProvider(reinterpret_cast<IUnknown *>(this), ILIsEmpty(m_pidl) ? NULL : m_pShellView));
 		return S_OK;
 	}
 	else if (m_pShellView && IsEqualIID(riid, IID_IShellView)) {
@@ -6948,7 +6956,7 @@ HRESULT CteShellBrowser::NavigateEB(DWORD dwFrame)
 					pOptions->Release();
 				}
 				m_pExplorerBrowser->SetOptions(static_cast<EXPLORER_BROWSER_OPTIONS>((m_param[SB_Options] & ~EBO_SHOWFRAMES) | dwFrame | EBO_NOTRAVELLOG));
-				m_pServiceProvider = new CteServiceProvider(this, NULL);
+				m_pServiceProvider = new CteServiceProvider(reinterpret_cast<IUnknown *>(this), NULL);
 				IUnknown_SetSite(m_pExplorerBrowser, m_pServiceProvider);
 				hr = m_pExplorerBrowser->BrowseToObject(m_pSF2, SBSP_ABSOLUTE);
 			}
@@ -8446,7 +8454,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				pSP = NULL;
 				try {
 					if SUCCEEDED(m_pShellView->GetItemObject(SVGIO_BACKGROUND, IID_PPV_ARGS(&pCM))) {
-						pSP = new CteServiceProvider(this, m_pShellView);
+						pSP = new CteServiceProvider(reinterpret_cast<IUnknown *>(this), m_pShellView);
 						IUnknown_SetSite(pCM, pSP);
 						CteContextMenu *pCCM = new CteContextMenu(pCM, NULL);
 						pCCM->m_pShellBrowser = this;
@@ -10373,6 +10381,138 @@ STDMETHODIMP CTE::GiveFeedback(DWORD dwEffect)
 	return DRAGDROP_S_USEDEFAULTCURSORS;
 }
 
+// CteInternetSecurityManager
+CteInternetSecurityManager::CteInternetSecurityManager()
+{
+	m_cRef = 1;
+}
+
+CteInternetSecurityManager::~CteInternetSecurityManager()
+{
+}
+
+STDMETHODIMP CteInternetSecurityManager::QueryInterface(REFIID riid, void **ppvObject)
+{
+	*ppvObject = NULL;
+	
+	if (IsEqualIID(riid, IID_IUnknown) || IsEqualIID(riid, IID_IInternetSecurityManager)) {
+		*ppvObject = static_cast<IInternetSecurityManager *>(this);
+	}
+	else {
+		return E_NOINTERFACE;
+	}
+	AddRef();
+
+	return S_OK;
+}
+
+STDMETHODIMP_(ULONG) CteInternetSecurityManager::AddRef()
+{
+	return ::InterlockedIncrement(&m_cRef);
+}
+
+STDMETHODIMP_(ULONG) CteInternetSecurityManager::Release()
+{
+	if (::InterlockedDecrement(&m_cRef) == 0) {
+		delete this;
+		return 0;
+	}
+
+	return m_cRef;
+}
+
+//IInternetSecurityManager
+STDMETHODIMP CteInternetSecurityManager::SetSecuritySite(IInternetSecurityMgrSite *pSite)
+{
+	return INET_E_DEFAULT_ACTION;
+}
+
+STDMETHODIMP CteInternetSecurityManager::GetSecuritySite(IInternetSecurityMgrSite **ppSite)
+{
+	return INET_E_DEFAULT_ACTION;
+}
+
+STDMETHODIMP CteInternetSecurityManager::MapUrlToZone(LPCWSTR pwszUrl, DWORD *pdwZone, DWORD dwFlags)
+{
+	return INET_E_DEFAULT_ACTION;
+//	*pdwZone = URLZONE_LOCAL_MACHINE;
+//	return S_OK;
+}
+
+STDMETHODIMP CteInternetSecurityManager::GetSecurityId(LPCWSTR pwszUrl, BYTE *pbSecurityId, DWORD *pcbSecurityId, DWORD_PTR dwReserved)
+{
+	::CopyMemory(pbSecurityId, "file:\0\0\0\0", 9);
+	*pcbSecurityId = 9;
+	return INET_E_DEFAULT_ACTION;
+}
+
+STDMETHODIMP CteInternetSecurityManager::ProcessUrlAction(LPCWSTR pwszUrl, DWORD dwAction, BYTE *pPolicy, DWORD cbPolicy, BYTE *pContext, DWORD cbContext, DWORD dwFlags, DWORD dwReserved)
+{
+	*pPolicy = PathMatchSpec(pwszUrl, L"http*") ? URLPOLICY_DISALLOW : URLPOLICY_ALLOW;
+	return S_OK;
+}
+
+STDMETHODIMP CteInternetSecurityManager::QueryCustomPolicy(LPCWSTR pwszUrl, REFGUID guidKey, BYTE **ppPolicy, DWORD *pcbPolicy, BYTE *pContext, DWORD cbContext, DWORD dwReserved)
+{
+	return INET_E_DEFAULT_ACTION;
+}
+
+STDMETHODIMP CteInternetSecurityManager::SetZoneMapping(DWORD dwZone, LPCWSTR lpszPattern, DWORD dwFlags)
+{
+	return INET_E_DEFAULT_ACTION;
+}
+
+STDMETHODIMP CteInternetSecurityManager::GetZoneMappings(DWORD dwZone, IEnumString **ppenumString, DWORD dwFlags)
+{
+	return INET_E_DEFAULT_ACTION;
+}
+
+// CteNewWindowManager
+CteNewWindowManager::CteNewWindowManager()
+{
+	m_cRef = 1;
+}
+
+CteNewWindowManager::~CteNewWindowManager()
+{
+}
+
+STDMETHODIMP CteNewWindowManager::QueryInterface(REFIID riid, void **ppvObject)
+{
+	*ppvObject = NULL;
+	
+	if (IsEqualIID(riid, IID_IUnknown) || IsEqualIID(riid, IID_INewWindowManager)) {
+		*ppvObject = static_cast<INewWindowManager *>(this);
+	}
+	else {
+		return E_NOINTERFACE;
+	}
+	AddRef();
+
+	return S_OK;
+}
+
+STDMETHODIMP_(ULONG) CteNewWindowManager::AddRef()
+{
+	return ::InterlockedIncrement(&m_cRef);
+}
+
+STDMETHODIMP_(ULONG) CteNewWindowManager::Release()
+{
+	if (::InterlockedDecrement(&m_cRef) == 0) {
+		delete this;
+		return 0;
+	}
+
+	return m_cRef;
+}
+
+//INewWindowManager
+STDMETHODIMP CteNewWindowManager::EvaluateNewWindow(LPCWSTR pszUrl, LPCWSTR pszName, LPCWSTR pszUrlContext, LPCWSTR pszFeatures, BOOL fReplace, DWORD dwFlags, DWORD dwUserActionTime)
+{
+	return PathMatchSpec(pszUrl, L"http*") ? S_FALSE : S_OK;
+}
+
 // CteWebBrowser
 
 CteWebBrowser::CteWebBrowser(HWND hwnd, WCHAR *szPath)
@@ -10393,7 +10533,6 @@ CteWebBrowser::CteWebBrowser(HWND hwnd, WCHAR *szPath)
 		SUCCEEDED(CoCreateInstance(clsid, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&m_pWebBrowser))) &&
 		SUCCEEDED(m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&pOleObject)))) {
 		pOleObject->SetClientSite(static_cast<IOleClientSite *>(this));
-
 		SetRectEmpty(&rc);
 		pOleObject->DoVerb(OLEIVERB_INPLACEACTIVATE, &msg, static_cast<IOleClientSite *>(this), 0, g_hwndMain, &rc);
 		teAdvise(m_pWebBrowser, DIID_DWebBrowserEvents2, static_cast<IDispatch *>(this), &m_dwCookie);
@@ -10430,9 +10569,13 @@ STDMETHODIMP CteWebBrowser::QueryInterface(REFIID riid, void **ppvObject)
 	else if (IsEqualIID(riid, IID_IDropTarget)) {
 		*ppvObject = static_cast<IDropTarget *>(this);
 	}
-/*	else if (IsEqualIID(riid, IID_IDocHostShowUI)) {
+	/*	else if (IsEqualIID(riid, IID_IDocHostShowUI)) {
 		*ppvObject = static_cast<IDocHostShowUI *>(this);
 	}*/
+	else if (IsEqualIID(riid, IID_IServiceProvider)) {
+		*ppvObject = static_cast<IServiceProvider *>(new CteServiceProvider(reinterpret_cast<IUnknown *>(this), NULL));
+		return S_OK;
+	}
 	else if (IsEqualIID(riid, IID_IWebBrowser2)) {
 		return m_pWebBrowser->QueryInterface(riid, (LPVOID *)ppvObject);
 	}
@@ -10538,6 +10681,16 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 					teSetObjectRelease(pVarResult, pdisp);
 				}
 				return S_OK;
+			//ExecWB
+			case 0x10000007:
+				if (nArg >= 2) {
+					m_pWebBrowser->ExecWB((OLECMDID)GetIntFromVariant(&pDispParams->rgvarg[nArg]),
+						(OLECMDEXECOPT)GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]),
+						&pDispParams->rgvarg[nArg - 2],
+						pVarResult
+					);
+				}
+				return S_OK;
 			//DIID_DWebBrowserEvents2
 			case DISPID_DOWNLOADCOMPLETE:
 				if (g_nReload == 1) {
@@ -10615,6 +10768,13 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 					pDispParams->rgvarg[nArg - 1].boolVal = VARIANT_TRUE;
 				}
 				return S_OK;
+/*///
+			case DISPID_TITLECHANGE:
+				if (nArg >= 0 && pDispParams->rgvarg[nArg].vt == VT_BSTR) {
+					SetWindowText(g_hwndMain, pDispParams->rgvarg[nArg].bstrVal);
+				}
+				return S_OK;
+//*/
 			case DISPID_VALUE:
 				teSetObject(pVarResult, this);
 				return S_OK;
@@ -12482,19 +12642,16 @@ STDMETHODIMP CteFolderItems::EnumDAdvise(IEnumSTATDATA **ppenumAdvise)
 }
 
 //CteServiceProvider
-
 STDMETHODIMP CteServiceProvider::QueryInterface(REFIID riid, void **ppvObject)
 {
 	*ppvObject = NULL;
 
 	if (IsEqualIID(riid, IID_IUnknown) || IsEqualIID(riid, IID_IServiceProvider)) {
 		*ppvObject = static_cast<IServiceProvider *>(this);
+		AddRef();
+		return S_OK;
 	}
-	else {
-		return E_NOINTERFACE;
-	}
-	AddRef();
-	return S_OK;
+	return m_pUnk->QueryInterface(riid, ppvObject);
 }
 
 STDMETHODIMP_(ULONG) CteServiceProvider::AddRef()
@@ -12515,7 +12672,15 @@ STDMETHODIMP_(ULONG) CteServiceProvider::Release()
 STDMETHODIMP CteServiceProvider::QueryService(REFGUID guidService, REFIID riid, void **ppv)
 {
 	if (IsEqualIID(riid, IID_IShellBrowser) || IsEqualIID(riid, IID_ICommDlgBrowser) || IsEqualIID(riid, IID_ICommDlgBrowser2)) {//|| IsEqualIID(riid, IID_ICommDlgBrowser3)) {
-		return m_pSB->QueryInterface(riid, ppv);
+		return m_pUnk->QueryInterface(riid, ppv);
+	}
+	if (IsEqualIID(riid, IID_IInternetSecurityManager)) {
+		*ppv = static_cast<IInternetSecurityManager *>(new CteInternetSecurityManager());
+		return S_OK;
+	}
+	if (IsEqualIID(riid, IID_INewWindowManager)) {
+		*ppv = static_cast<INewWindowManager *>(new CteNewWindowManager());
+		return S_OK;
 	}
 	if (m_pSV) {
 		return m_pSV->QueryInterface(riid, ppv);
@@ -12523,10 +12688,10 @@ STDMETHODIMP CteServiceProvider::QueryService(REFGUID guidService, REFIID riid, 
 	return E_NOINTERFACE;
 }
 
-CteServiceProvider::CteServiceProvider(IShellBrowser *pSB, IShellView *pSV)
+CteServiceProvider::CteServiceProvider(IUnknown *punk, IShellView *pSV)
 {
 	m_cRef = 1;
-	m_pSB = pSB;
+	m_pUnk = punk;
 	m_pSV = pSV;
 }
 
@@ -18507,6 +18672,10 @@ STDMETHODIMP CteDocHostUIHandler::QueryInterface(REFIID riid, void **ppvObject)
 	
 	if (IsEqualIID(riid, IID_IUnknown) || IsEqualIID(riid, IID_IDocHostUIHandler)) {
 		*ppvObject = static_cast<IDocHostUIHandler *>(this);
+	}
+	else if (IsEqualIID(riid, IID_IServiceProvider)) {
+		*ppvObject = static_cast<IServiceProvider *>(new CteServiceProvider(NULL, NULL));
+		return S_OK;
 	}
 	else {
 		return E_NOINTERFACE;
