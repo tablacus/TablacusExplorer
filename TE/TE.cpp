@@ -10381,7 +10381,7 @@ STDMETHODIMP CTE::GiveFeedback(DWORD dwEffect)
 	return DRAGDROP_S_USEDEFAULTCURSORS;
 }
 
-// CteInternetSecurityManager
+/*/// CteInternetSecurityManager
 CteInternetSecurityManager::CteInternetSecurityManager()
 {
 	m_cRef = 1;
@@ -10512,7 +10512,7 @@ STDMETHODIMP CteNewWindowManager::EvaluateNewWindow(LPCWSTR pszUrl, LPCWSTR pszN
 {
 	return PathMatchSpec(pszUrl, L"http*") ? S_FALSE : S_OK;
 }
-
+//*/
 // CteWebBrowser
 
 CteWebBrowser::CteWebBrowser(HWND hwnd, WCHAR *szPath)
@@ -12674,14 +12674,14 @@ STDMETHODIMP CteServiceProvider::QueryService(REFGUID guidService, REFIID riid, 
 	if (IsEqualIID(riid, IID_IShellBrowser) || IsEqualIID(riid, IID_ICommDlgBrowser) || IsEqualIID(riid, IID_ICommDlgBrowser2)) {//|| IsEqualIID(riid, IID_ICommDlgBrowser3)) {
 		return m_pUnk->QueryInterface(riid, ppv);
 	}
-	if (IsEqualIID(riid, IID_IInternetSecurityManager)) {
+/*	if (IsEqualIID(riid, IID_IInternetSecurityManager)) {
 		*ppv = static_cast<IInternetSecurityManager *>(new CteInternetSecurityManager());
 		return S_OK;
 	}
 	if (IsEqualIID(riid, IID_INewWindowManager)) {
 		*ppv = static_cast<INewWindowManager *>(new CteNewWindowManager());
 		return S_OK;
-	}
+	}*/
 	if (m_pSV) {
 		return m_pSV->QueryInterface(riid, ppv);
 	}

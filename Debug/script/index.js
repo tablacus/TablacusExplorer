@@ -788,7 +788,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 	if (msg == WM_MOUSEWHEEL) {
 		var Ctrl2 = te.CtrlFromPoint(pt);
 		if (Ctrl2) {
-			g_mouse.str = GetGestureKey() + GetGestureButton() + (wParam > 0 ? "8" : "9");
+			g_mouse.str = GetGestureButton() + (wParam > 0 ? "8" : "9");
 			if (api.GetKeyState(VK_RBUTTON) < 0) {
 				g_mouse.CancelContextMenu = true;
 			}

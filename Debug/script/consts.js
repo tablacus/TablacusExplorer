@@ -68,10 +68,10 @@ if (ParentWindow || !window.te) {
 if (!window.api) {
 	api = te.WindowsAPI;
 }
-fso = (ParentWindow || MainWindow).fso || new ActiveXObject("Scripting.FileSystemObject");
-sha = (ParentWindow || MainWindow).sha || new ActiveXObject("Shell.Application");
-wsh = (ParentWindow || MainWindow).wsh || new ActiveXObject("WScript.Shell");
-wnw = (ParentWindow || MainWindow).wnw || new ActiveXObject("WScript.Network");
+fso = te.CreateObject("Scripting.FileSystemObject");
+sha = te.CreateObject("Shell.Application");
+wsh = te.CreateObject("WScript.Shell");
+wnw = te.CreateObject("WScript.Network");
 
 osInfo = api.Memory("OSVERSIONINFOEX");
 osInfo.dwOSVersionInfoSize = osInfo.Size;
@@ -1805,4 +1805,17 @@ if (window.dialogArguments) {
 		resizeTo(dialogArguments.width + 16, dialogArguments.height + 38);
 		moveTo(rc.Left + (rc.Right - rc.Left - dialogArguments.width) / 2, rc.Top + (rc.Bottom - rc.Top - dialogArguments.height) / 2);
 	}
+	AddEventEx(window, "load", function ()
+	{
+		var pid = api.Memory("DWORD");
+		var pid2 = api.Memory("DWORD");
+		api.GetWindowThreadProcessId(te.hwnd, pid);
+		api.GetWindowThreadProcessId(api.GetWindow(document), pid2);
+		if (pid[0] != pid2[0]) {
+			fso = new ActiveXObject("Scripting.FileSystemObject");
+			sha = new ActiveXObject("Shell.Application");
+			wsh = new ActiveXObject("WScript.Shell");
+			wnw = new ActiveXObject("WScript.Network");
+		}
+	});
 }

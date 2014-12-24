@@ -416,7 +416,7 @@ private:
 	DWORD m_grfKeyState;
 	HRESULT m_DragLeave;
 };
-
+/*//Probrem Win 8-
 class CteInternetSecurityManager : public IInternetSecurityManager
 {
 public:
@@ -453,7 +453,7 @@ public:
 private:
 	LONG		m_cRef;
 };
-
+*///
 class CteWebBrowser : public IDispatch, public IOleClientSite, public IOleInPlaceSite,
 	public IDocHostUIHandler, public IDropTarget//, public IDocHostShowUI
 {
