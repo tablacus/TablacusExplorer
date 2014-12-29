@@ -17,7 +17,7 @@
       <table class="layout" style="width: 100%">
         <tr>
           <td style="vertical-align: top">
-            <div id="tab_" class="panel" style="display: block; width: 150px; background-color: window">
+            <div id="tab_" class="panel" style="display: block; width: 150px; background-color: window; white-space: nowrap">
               <tt class="treebutton" onclick="ClickButton(this, 0);">-</tt>
               <label id="tab0" class="button" style="width: 88%" onmousedown="ClickTree(this);">General</label>
               <br />
@@ -79,6 +79,8 @@
                 <br />
                 <label>If you installed Tablacus Explorer to the Program Files directory, please press this button.</label>
               </div>
+              <label>Info</label>
+              <input type="text" id="_TEInfo" style="width: 100%" onclick="this.select()" readonly />
             </div>
             <!--panel_end-->
 
@@ -314,8 +316,8 @@
               <br />
               <br />
               <div>
-                <input type="checkbox" id="Default_Tab" />
-                <label for="Default_Tab">Default</label>
+                <input type="checkbox" id="Conf_TabDefault" />
+                <label for="Conf_TabDefault">Default</label>
               </div>
             </div>
             <!--panel_end-->
@@ -438,8 +440,8 @@
               </div>
               <br />
               <div>
-                <input type="checkbox" id="Default_Tree" />
-                <label for="Default_Tree">Default</label>
+                <input type="checkbox" id="Conf_TreeDefault" />
+                <label for="Conf_TreeDefault">Default</label>
               </div>
               <div>
                 (*)Windows Vista <label>or higher.</label>
@@ -594,8 +596,8 @@
               </div>
               <br />
               <div>
-                <input type="checkbox" id="Default_List" />
-                <label for="Default_List">Default</label>
+                <input type="checkbox" id="Conf_ListDefault" />
+                <label for="Conf_ListDefault">Default</label>
               </div>
               <div>
                 (*X)Windows XP <label>or higher.</label>
@@ -624,8 +626,8 @@
           </td>
           <td id="STATUS" align="center"></td>
           <td align="right">
-            <input type="button" value="OK" style="width: 96px;" onclick="SetOptions(); return true;" />
-            <input type="button" value="Cancel" style="width: 96px;" onclick="window.close(); return true;" />&nbsp;&nbsp;
+            <input type="button" value="OK" style="width: 96px;" onclick="SetResult(1)" />
+            <input type="button" value="Cancel" style="width: 96px;" onclick="SetResult(2)" />&nbsp;&nbsp;
           </td>
         </tr>
       </table>

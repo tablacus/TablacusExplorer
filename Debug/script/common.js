@@ -815,38 +815,54 @@ ChangeTab = function (TC, nMove)
 
 ShowOptions = function (s)
 {
-	var dlg = g_dlgs.Options;
-	if (dlg && dlg.oExec && dlg.oExec.Status == 0) {
-		if (dlg.window && dlg.window.SetTab) {
-			dlg.window.SetTab(s);
+	try {
+		var dlg = g_dlgs.Options;
+		if (dlg && dlg.oExec) {
+			if (dlg.window && dlg.window.SetTab) {
+				dlg.window.SetTab(s);
+			}
+			if (dlg.oExec.ProcessID && dlg.oExec.Status == 0) {
+				wsh.AppActivate(dlg.oExec.ProcessID);
+			}
+			else {
+				dlg.oExec.focus();
+			}
+			return;
 		}
-		wsh.AppActivate(dlg.oExec.ProcessID);
 	}
-	else {
-		g_dlgs.Options = {
-			oExec: ShowDialog("options.html",
+	catch (e) {}
+	g_dlgs.Options = {
+		oExec: ShowDialog("options.html",
+		{
+			Data: s, width: 640, height: 480, event:
 			{
-				Data: s, width: 640, height: 480, event:
+				onbeforeunload: function () 
 				{
-					onbeforeunload: function () 
-					{
-						delete MainWindow.g_dlgs.Options;
-					}
+					delete MainWindow.g_dlgs.Options;
 				}
-			})
-		};
-	}
+			}
+		})
+	};
 }
 
 ShowDialog = function (fn, opt)
 {
-	var uid;
-	do {
-		uid = String(Math.random()).replace(/^0?\./, "");
-	} while (MainWindow.Exchange[uid]);
-	MainWindow.Exchange[uid] = opt;
 	opt.opener = window;
-	return wsh.Exec([api.PathQuoteSpaces(fso.BuildPath(system32, "mshta.exe")), ' ', api.PathQuoteSpaces(location.href.replace(/[^\/]*$/, fn + "#" + uid))].join(""));
+	if (document.documentMode && api.GetKeyState(VK_SHIFT) >= 0) {
+		var uid;
+		do {
+			uid = String(Math.random()).replace(/^0?\./, "");
+		} while (MainWindow.Exchange[uid]);
+		MainWindow.Exchange[uid] = opt;
+		try {
+			return wsh.Exec([api.PathQuoteSpaces(fso.BuildPath(system32, "mshta.exe")), ' ', api.PathQuoteSpaces(location.href.replace(/[^\/]*$/, fn + "#" + uid))].join(""))
+		}
+		catch (e) {}
+	}
+	var sFeatures = 'dialogWidth: ' + opt.width + 'px; dialogHeight:  ' + opt.height + 'px; resizable: yes; status: 0';
+	opt.width = null;
+	opt.height = null;
+	return showModelessDialog(fn, opt, sFeatures);
 }
 
 LoadLayout = function ()
@@ -1295,8 +1311,7 @@ AdjustMenuBreak = function (hMenu)
 		var u = mii.fType & (MFT_MENUBREAK | MFT_MENUBARBREAK);
 		if (u) {
 			uFlags = u;
-			api.DeleteMenu(hMenu, i, MF_BYPOSITION);
-			i++;
+			api.DeleteMenu(hMenu, i++, MF_BYPOSITION);
 		}
 	}
 }
@@ -2004,17 +2019,23 @@ function CheckUpdate()
 	if (arDel.length) {
 		api.SHFileOperation(FO_DELETE, arDel.join("\0"), null, FOF_SILENT | FOF_NOCONFIRMATION, false);
 	}
+	var Taskkill = "";
+	if (fso.FileExists(fso.BuildPath(system32, "taskkill.exe"))) {
+		var pid = api.Memory("DWORD");
+		api.GetWindowThreadProcessId(te.hwnd, pid);
+		Taskkill = "W.Run('taskkill /pid " + pid[0] + " /f',2,true);";
+	}
 	var update = api.sprintf(2000, "\
 F='%s';\
 Q='\\x22';\
 A=new ActiveXObject('Shell.Application');\
 W=new ActiveXObject('WScript.Shell');\
 W.Popup('%s',9,'Tablacus Explorer',%d);\
+%s\
 A.NameSpace(F).MoveHere(A.NameSpace('%s').Items(),%d);\
-W.%s(Q+F+'\\\\%s'+Q);\
-close()", EscapeUpdateFile(InstalledFolder), GetText("Please wait."), MB_ICONINFORMATION, EscapeUpdateFile(temp), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, 'Run',
+W.Run(Q+F+'\\\\%s'+Q);\
+close()", EscapeUpdateFile(InstalledFolder), GetText("Please wait."), MB_ICONINFORMATION, Taskkill, EscapeUpdateFile(temp), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR,
 EscapeUpdateFile(fso.GetFileName(api.GetModuleFileName(null)))).replace(/[\t\n]/g, "");
-
 	wsh.CurrentDirectory = temp;
 	var exe = "mshta.exe";
 	var s1 = '"javascript:';
@@ -2109,15 +2130,14 @@ AddonOptions = function (Id, fn, Data)
 	}
 	try {
 		var dlg = MainWindow.g_dlgs[Id];
-		if (dlg) {
-			if (dlg.window) {
-				dlg.focus();
-				return;
-			}
-			if (dlg && dlg.oExec.Status == 0) {
+		if (dlg && dlg.oExec) {
+			if (dlg.oExec.Status == 0 && dlg.oExec.ProcessID) {
 				wsh.AppActivate(dlg.oExec.ProcessID);
-				return;
 			}
+			else {
+				dlg.oExec.focus();
+			}
+			return;
 		}
 	}
 	catch (e) {
@@ -2565,7 +2585,7 @@ SetCursor = function (o, s)
 
 function MouseOver(o)
 {
-	if (o.className == 'button' || o.className == 'menu') {
+	if (api.PathMatchSpec(o.className, 'button;menu')) {
 		if (objHover && o != objHover) {
 			MouseOut();
 		}
@@ -2657,7 +2677,9 @@ FindText = function (s)
 				g_nFind = 0;
 			}
 		}
+		return;
 	}
+	api.OleCmdExec(document, null, 32, 0, 0);
 }
 
 FindKeyEvent = function (o)

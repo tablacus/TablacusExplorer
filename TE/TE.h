@@ -46,6 +46,8 @@ using namespace Gdiplus;
 
 //Unnamed function
 typedef VOID (WINAPI * LPFNSHRunDialog)(HWND hwnd, HICON hIcon, LPWSTR pszPath, LPWSTR pszTitle, LPWSTR pszPrompt, DWORD dwFlags);
+//Closed function
+typedef BOOL (WINAPI * LPFNRegenerateUserEnvironment)(LPVOID *lpEnvironment, BOOL bUpdate);
 
 //XP or higher.
 typedef BOOL (WINAPI* LPFNCryptBinaryToStringW)(__in_bcount(cbBinary) CONST BYTE *pbBinary, DWORD cbBinary, DWORD dwFlags, __out_ecount_part_opt(*pcchString, *pcchString) LPWSTR pszString, DWORD *pcchString);
@@ -416,7 +418,7 @@ private:
 	DWORD m_grfKeyState;
 	HRESULT m_DragLeave;
 };
-/*//Probrem Win 8-
+//
 class CteInternetSecurityManager : public IInternetSecurityManager
 {
 public:
@@ -453,7 +455,7 @@ public:
 private:
 	LONG		m_cRef;
 };
-*///
+
 class CteWebBrowser : public IDispatch, public IOleClientSite, public IOleInPlaceSite,
 	public IDocHostUIHandler, public IDropTarget//, public IDocHostShowUI
 {
@@ -614,12 +616,12 @@ public:
 	//IServiceProvider
 	STDMETHODIMP QueryService(REFGUID guidService, REFIID riid, void **ppv);
 
-	CteServiceProvider(IUnknown *punk, IShellView *pSV);
+	CteServiceProvider(IUnknown *punk, IUnknown *punk2);
 	~CteServiceProvider();
 
 public:
 	IUnknown *m_pUnk;
-	IShellView *m_pSV;
+	IUnknown *m_pUnk2;
 	LONG	m_cRef;
 };
 

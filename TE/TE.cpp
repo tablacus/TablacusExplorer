@@ -28,6 +28,7 @@ LPFNSHParseDisplayName lpfnSHParseDisplayName = NULL;
 LPFNSHGetImageList lpfnSHGetImageList = NULL;
 LPFNSetWindowTheme lpfnSetWindowTheme = NULL;
 LPFNSHRunDialog lpfnSHRunDialog = NULL;
+LPFNRegenerateUserEnvironment lpfnRegenerateUserEnvironment = NULL;
 LPFNCryptBinaryToStringW lpfnCryptBinaryToStringW = NULL;
 LPFNPSPropertyKeyFromString lpfnPSPropertyKeyFromString = NULL;
 LPFNPSGetPropertyKeyFromName lpfnPSGetPropertyKeyFromName = NULL;
@@ -148,7 +149,7 @@ TEmethod tesCHOOSEFONT[] =
 	{ (VT_I4 << TE_VT) + offsetof(CHOOSEFONT, lStructSize), L"lStructSize" },
 	{ (VT_PTR << TE_VT) + offsetof(CHOOSEFONT, hwndOwner), L"hwndOwner" },
 	{ (VT_PTR << TE_VT) + offsetof(CHOOSEFONT, hDC), L"hDC" },
-	{ (VT_BSTR << TE_VT) + offsetof(CHOOSEFONT, lpLogFont), L"lpLogFont" },
+	{ (VT_PTR << TE_VT) + offsetof(CHOOSEFONT, lpLogFont), L"lpLogFont" },
 	{ (VT_I4 << TE_VT) + offsetof(CHOOSEFONT, iPointSize), L"iPointSize" },
 	{ (VT_I4 << TE_VT) + offsetof(CHOOSEFONT, Flags), L"Flags" },
 	{ (VT_I4 << TE_VT) + offsetof(CHOOSEFONT, rgbColors), L"rgbColors" },
@@ -868,6 +869,7 @@ TEmethod methodAPI[] = {
 	{ 1061, L"ContextMenu" },
 	{ 1070, L"DropTarget" },
 	{ 1080, L"DataObject" },
+	{ 1090, L"OleCmdExec" },
 	{ 1122, L"sizeof" },
 	{ 1132, L"LowPart" },
 	{ 1142, L"HighPart" },
@@ -1200,7 +1202,6 @@ TEmethod methodWB[] = {
 	{ 0x10000004, L"TranslateAccelerator" },
 	{ 0x10000005, L"Application" },
 	{ 0x10000006, L"Document" },
-	{ 0x10000007, L"ExecWB" },
 	{ 0, NULL }
 };
 
@@ -4019,8 +4020,7 @@ HRESULT MessageSubPt(int nFunc, PVOID pObj, MSG *pMsg)
 
 int GetShellBrowser2(CteShellBrowser *pSB)
 {
-	int i = MAX_FV;
-	while (--i >= 0) {
+	for (int i = MAX_FV; i--;) {
 		if (g_pSB[i]) {
 			if (!g_pSB[i]->m_bEmpty) {
 				if (g_pSB[i] == pSB) {
@@ -4068,8 +4068,7 @@ CteShellBrowser* GetNewShellBrowser(CteTabs *pTabs)
 
 CteTabs* GetNewTC()
 {
-	int i = MAX_TC;
-	while (--i >= 0) {
+	for (int i = MAX_TC; i--;) {
 		if (g_pTC[i]) {
 			if (g_pTC[i]->m_bEmpty) {
 				return g_pTC[i];
@@ -4299,8 +4298,8 @@ LRESULT CALLBACK TETVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		if (msg == TVM_INSERTITEM) {
 			TVINSERTSTRUCT *pTVInsert = (TVINSERTSTRUCT *)lParam;
 			if (pTVInsert->item.cChildren == 1) {
-				pTVInsert->item.cChildren = -1;
-			}
+				pTVInsert->item.cChildren = I_CHILDRENCALLBACK;
+			}			
 		}
 #endif
 		return CallWindowProc(pTV->m_DefProc2, hwnd, msg, wParam, lParam);
@@ -5546,6 +5545,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		lpfnSHGetImageList = (LPFNSHGetImageList)GetProcAddress(g_hShell32, "SHGetImageList");
 		lpfnSHGetIDListFromObject = (LPFNSHGetIDListFromObject)GetProcAddress(g_hShell32, "SHGetIDListFromObject");
 		lpfnSHRunDialog = (LPFNSHRunDialog)GetProcAddress(g_hShell32, MAKEINTRESOURCEA(61));
+		lpfnRegenerateUserEnvironment = (LPFNRegenerateUserEnvironment)GetProcAddress(g_hShell32, "RegenerateUserEnvironment");
 	}
 #ifdef _2000XP
 	if (!lpfnSHGetIDListFromObject) {
@@ -6102,6 +6102,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					}
 				}
 			}
+		case WM_SETTINGCHANGE:
+			if (message == WM_SETTINGCHANGE && lpfnRegenerateUserEnvironment) {
+				lpfnRegenerateUserEnvironment(NULL, TRUE);
+			}
 		case WM_COPYDATA:
 			if (g_nReload) {
 				return E_FAIL;
@@ -6115,7 +6119,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case WM_ENABLE:
 		case WM_NOTIFY:
 		case WM_SETCURSOR:
-		case WM_SETTINGCHANGE:
 		case WM_SYSCOLORCHANGE:
 		case WM_SYSCOMMAND:
 		case WM_THEMECHANGED:
@@ -10381,7 +10384,7 @@ STDMETHODIMP CTE::GiveFeedback(DWORD dwEffect)
 	return DRAGDROP_S_USEDEFAULTCURSORS;
 }
 
-/*/// CteInternetSecurityManager
+// CteInternetSecurityManager
 CteInternetSecurityManager::CteInternetSecurityManager()
 {
 	m_cRef = 1;
@@ -10441,8 +10444,6 @@ STDMETHODIMP CteInternetSecurityManager::MapUrlToZone(LPCWSTR pwszUrl, DWORD *pd
 
 STDMETHODIMP CteInternetSecurityManager::GetSecurityId(LPCWSTR pwszUrl, BYTE *pbSecurityId, DWORD *pcbSecurityId, DWORD_PTR dwReserved)
 {
-	::CopyMemory(pbSecurityId, "file:\0\0\0\0", 9);
-	*pcbSecurityId = 9;
 	return INET_E_DEFAULT_ACTION;
 }
 
@@ -10512,7 +10513,7 @@ STDMETHODIMP CteNewWindowManager::EvaluateNewWindow(LPCWSTR pszUrl, LPCWSTR pszN
 {
 	return PathMatchSpec(pszUrl, L"http*") ? S_FALSE : S_OK;
 }
-//*/
+
 // CteWebBrowser
 
 CteWebBrowser::CteWebBrowser(HWND hwnd, WCHAR *szPath)
@@ -10573,7 +10574,7 @@ STDMETHODIMP CteWebBrowser::QueryInterface(REFIID riid, void **ppvObject)
 		*ppvObject = static_cast<IDocHostShowUI *>(this);
 	}*/
 	else if (IsEqualIID(riid, IID_IServiceProvider)) {
-		*ppvObject = static_cast<IServiceProvider *>(new CteServiceProvider(reinterpret_cast<IUnknown *>(this), NULL));
+		*ppvObject = static_cast<IServiceProvider *>(new CteServiceProvider(reinterpret_cast<IUnknown *>(this), m_pWebBrowser));
 		return S_OK;
 	}
 	else if (IsEqualIID(riid, IID_IWebBrowser2)) {
@@ -10679,16 +10680,6 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			case 0x10000006:
 				if SUCCEEDED(m_pWebBrowser->get_Document(&pdisp)) {
 					teSetObjectRelease(pVarResult, pdisp);
-				}
-				return S_OK;
-			//ExecWB
-			case 0x10000007:
-				if (nArg >= 2) {
-					m_pWebBrowser->ExecWB((OLECMDID)GetIntFromVariant(&pDispParams->rgvarg[nArg]),
-						(OLECMDEXECOPT)GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]),
-						&pDispParams->rgvarg[nArg - 2],
-						pVarResult
-					);
 				}
 				return S_OK;
 			//DIID_DWebBrowserEvents2
@@ -12674,25 +12665,28 @@ STDMETHODIMP CteServiceProvider::QueryService(REFGUID guidService, REFIID riid, 
 	if (IsEqualIID(riid, IID_IShellBrowser) || IsEqualIID(riid, IID_ICommDlgBrowser) || IsEqualIID(riid, IID_ICommDlgBrowser2)) {//|| IsEqualIID(riid, IID_ICommDlgBrowser3)) {
 		return m_pUnk->QueryInterface(riid, ppv);
 	}
-/*	if (IsEqualIID(riid, IID_IInternetSecurityManager)) {
+	if (IsEqualIID(riid, IID_IServiceProvider)) {
+		return QueryInterface(riid, ppv);
+	}
+	if (IsEqualIID(riid, IID_IInternetSecurityManager)) {
 		*ppv = static_cast<IInternetSecurityManager *>(new CteInternetSecurityManager());
 		return S_OK;
 	}
 	if (IsEqualIID(riid, IID_INewWindowManager)) {
 		*ppv = static_cast<INewWindowManager *>(new CteNewWindowManager());
 		return S_OK;
-	}*/
-	if (m_pSV) {
-		return m_pSV->QueryInterface(riid, ppv);
+	}
+	if (m_pUnk2) {
+		return m_pUnk2->QueryInterface(riid, ppv);
 	}
 	return E_NOINTERFACE;
 }
 
-CteServiceProvider::CteServiceProvider(IUnknown *punk, IShellView *pSV)
+CteServiceProvider::CteServiceProvider(IUnknown *punk, IUnknown *punk2)
 {
 	m_cRef = 1;
 	m_pUnk = punk;
-	m_pSV = pSV;
+	m_pUnk2 = punk2;
 }
 
 CteServiceProvider::~CteServiceProvider()
@@ -16701,14 +16695,19 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 							}
 							HWND hwnd = GetForegroundWindow();
 							DWORD dwExStyle = 0;
+							DWORD dwPid1, dwPid2;
 							if (hwnd != g_hwndMain) {
-								dwExStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
-								SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-								teSetForegroundWindow(g_hwndMain);
+								GetWindowThreadProcessId(g_hwndMain, &dwPid1);
+								GetWindowThreadProcessId(hwnd, &dwPid2);
+								if (dwPid1 != dwPid2) {
+									dwExStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
+									SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+									teSetForegroundWindow(g_hwndMain);
+								}
 							}
 							*plResult = TrackPopupMenuEx((HMENU)param[0], (UINT)param[1], (int)param[2], (int)param[3],
 								(HWND)param[4], (LPTPMPARAMS)GetpcFromVariant(&pDispParams->rgvarg[nArg - 5]));
-							if (hwnd != g_hwndMain) {
+							if (hwnd != g_hwndMain && dwPid1 != dwPid2) {
 								if (!(dwExStyle & WS_EX_TOPMOST)) {
 									SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 								}
@@ -17840,6 +17839,28 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			//DataObject
 			case 1080:
 				teSetObjectRelease(pVarResult, new CteFolderItems(NULL, NULL, true));
+				return S_OK;
+			case 1090:
+				if (nArg >= 3) {
+					IUnknown *punk;
+					if (FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
+						IOleCommandTarget *pCT;
+						if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pCT))) {
+							GUID *pguid = NULL;
+							GUID guidCmd;
+							if (pDispParams->rgvarg[nArg - 1].vt == VT_BSTR) {
+								pguid = &guidCmd;
+								CLSIDFromString(pDispParams->rgvarg[nArg - 1].bstrVal, pguid);
+							}
+							pCT->Exec(pguid, (OLECMDID)GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]),
+								(OLECMDEXECOPT)GetIntFromVariant(&pDispParams->rgvarg[nArg - 3]),
+								&pDispParams->rgvarg[nArg - 4],
+								pVarResult
+							);
+							pCT->Release();
+						}
+					}
+				}
 				return S_OK;
 			//sizeof
 			case 1122:

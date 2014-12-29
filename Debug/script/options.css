@@ -5,12 +5,22 @@
 }
 
 body {
-	font-size: 13px;
 	overflow: hidden;
 	background-color: buttonface;
 }
 
-table, td {
+table {
+	border-collapse: collapse;
+	border-spacing: 0;
+	border: none;
+	padding: 0px;
+	margin: 0px;
+}
+
+td, tr {
+	vertical-align: top;
+	font-size: 12px;
+	font-size: inherit;
 	border: none;
 	padding: 0px;
 	margin: 0px;
@@ -33,7 +43,7 @@ input, select {
 	border-bottom: 0px solid #898C95;
 	background-color: #dddddd;
 	outline-style: none;
-	height: 24px;
+	height: 2em;
 	filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#cccccc);
 	background: linear-gradient(to bottom, #ffffff, #cccccc);
 }
@@ -43,7 +53,7 @@ input, select {
 	border-right: 1px solid #898C95;
 	border-bottom: 0px solid #898C95;
 	background-color: #ffffff;
-	height: 26px;
+	height: 2.167em;
 	outline-style: none;
 }
 
@@ -125,7 +135,7 @@ input, select {
 }
 .treebutton {
 	border: 1px solid gray;
-	font-size: 8px;
+	font-size: 0.667em;
 	font-family: Consolas;
 	margin-right: 3px;
 	filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#dddddd);

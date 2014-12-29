@@ -2564,6 +2564,7 @@ g_basic =
 		{
 			Exec: function (Ctrl, s, type, hwnd, pt)
 			{
+				api.SetFocus(Ctrl.hwnd);
 				wsh.SendKeys(s);
 				return S_OK;
 			}
@@ -2844,6 +2845,10 @@ if (!te.Data) {
 	te.Data.Tree_EnumFlags = SHCONTF_FOLDERS;
 	te.Data.Tree_RootStyle = NSTCRS_VISIBLE | NSTCRS_EXPANDED;
 	te.Data.Tree_Root = 0;
+
+	te.Data.Conf_TabDefault = true;
+	te.Data.Conf_TreeDefault = true;
+	te.Data.Conf_ListDefault = true;
 
 	te.Data.Installed = fso.GetParentFolderName(api.GetModuleFileName(null));
 	var DataFolder = te.Data.Installed;

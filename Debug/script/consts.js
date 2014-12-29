@@ -68,10 +68,10 @@ if (ParentWindow || !window.te) {
 if (!window.api) {
 	api = te.WindowsAPI;
 }
-fso = te.CreateObject("Scripting.FileSystemObject");
-sha = te.CreateObject("Shell.Application");
-wsh = te.CreateObject("WScript.Shell");
-wnw = te.CreateObject("WScript.Network");
+fso = (ParentWindow || MainWindow).fso || new ActiveXObject("Scripting.FileSystemObject");
+sha = (ParentWindow || MainWindow).sha || new ActiveXObject("Shell.Application");
+wsh = (ParentWindow || MainWindow).wsh || new ActiveXObject("WScript.Shell");
+wnw = (ParentWindow || MainWindow).wnw || new ActiveXObject("WScript.Network");
 
 osInfo = api.Memory("OSVERSIONINFOEX");
 osInfo.dwOSVersionInfoSize = osInfo.Size;
@@ -613,6 +613,8 @@ TVM_SETIMAGELIST     = 0x1109;
 TVM_SETINDENT        = 0x1107;
 TVM_SORTCHILDREN     = 0x1113;
 TVM_SORTCHILDRENCB   = 0x1115;
+TVM_SETITEMHEIGHT    = 0x111B;
+TVM_GETITEMHEIGHT    = 0x111C;
 TVM_SETBKCOLOR       = 0x111D;
 TVM_GETBKCOLOR       = 0x111F;
 
@@ -1805,17 +1807,4 @@ if (window.dialogArguments) {
 		resizeTo(dialogArguments.width + 16, dialogArguments.height + 38);
 		moveTo(rc.Left + (rc.Right - rc.Left - dialogArguments.width) / 2, rc.Top + (rc.Bottom - rc.Top - dialogArguments.height) / 2);
 	}
-	AddEventEx(window, "load", function ()
-	{
-		var pid = api.Memory("DWORD");
-		var pid2 = api.Memory("DWORD");
-		api.GetWindowThreadProcessId(te.hwnd, pid);
-		api.GetWindowThreadProcessId(api.GetWindow(document), pid2);
-		if (pid[0] != pid2[0]) {
-			fso = new ActiveXObject("Scripting.FileSystemObject");
-			sha = new ActiveXObject("Shell.Application");
-			wsh = new ActiveXObject("WScript.Shell");
-			wnw = new ActiveXObject("WScript.Network");
-		}
-	});
 }
