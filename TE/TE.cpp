@@ -7621,10 +7621,10 @@ STDMETHODIMP CteShellBrowser::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UI
 
 VOID AddColumnData(LPWSTR pszColumns, LPWSTR pszName, int nWidth)
 {
-	WCHAR szName[MAX_COLUMN_NAME_LEN + 2];
-	lstrcpyn(szName, pszName, MAX_COLUMN_NAME_LEN - 1);
+	WCHAR szName[MAX_COLUMN_NAME_LEN + 3];
+	lstrcpyn(szName, pszName, MAX_COLUMN_NAME_LEN);
 	PathQuoteSpaces(szName);
-	swprintf_s(&pszColumns[lstrlen(pszColumns)], MAX_COLUMN_NAME_LEN + 20, L" %s %d", pszName, nWidth);
+	swprintf_s(&pszColumns[lstrlen(pszColumns)], MAX_COLUMN_NAME_LEN + 20, L" %s %d", szName, nWidth);
 }
 
 BSTR CteShellBrowser::GetColumnsStr()

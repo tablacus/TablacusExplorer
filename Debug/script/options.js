@@ -93,7 +93,7 @@ function ResetForm()
 		}
 	}
 	document.F.Color_Conf_TrailColor.style.backgroundColor = GetWebColor(document.F.Conf_TrailColor.value);
-	document.getElementById("_TEInfo").value = api.sprintf(99, "TE%d %d.%d.%d Win %d.%d.%d %s %x IE %d %s%s", api.sizeof("HANDLE") * 8, (te.Version / 10000) % 100, (te.Version / 100) % 100, te.Version % 100, osInfo.dwMajorVersion, osInfo.dwMinorVersion, osInfo.dwBuildNumber, ["WS", "DC", "SV"][osInfo.wProductType - 1] || osInfo.wProductType, osInfo.wSuiteMask, document.documentMode, navigator.userLanguage, api.IsWow64Process(api.GetCurrentProcess()) ? " Wow64" : "");
+	document.getElementById("_TEInfo").value = api.sprintf(99, "TE%d %d.%d.%d Win %d.%d.%d %s %x IE %d %s%s", api.sizeof("HANDLE") * 8, (te.Version / 10000) % 100, (te.Version / 100) % 100, te.Version % 100, osInfo.dwMajorVersion, osInfo.dwMinorVersion, osInfo.dwBuildNumber, ["WS", "DC", "SV"][osInfo.wProductType - 1] || osInfo.wProductType, osInfo.wSuiteMask, document.documentMode || (document.body.style.maxHeight === undefined ? 6 : 7), navigator.userLanguage, api.IsWow64Process(api.GetCurrentProcess()) ? " Wow64" : "");
 }
 
 function ClickTab(o, nMode)
@@ -482,54 +482,52 @@ function ConfirmX(bCancel, fn)
 
 function SetOptions(fnYes, fnNo, NoCancel, bNoDef)
 {
-//	try {
-		if (g_nResult == 2 || api.strcmpi(document.activeElement.value, GetText("Cancel")) == 0) {
-			if (fnNo) {
-				fnNo();
-			}
-			return false;
-		}
-		document.activeElement.blur();
-		if (g_nResult == 1 && !g_Chg.Data) {
-			if (fnYes) {
-				fnYes();
-			}
-			return true;
-		}
-	 	if (g_bChanged || g_Chg.Data) {
-			switch (MessageBox("Do you want to replace?", TITLE, MB_ICONQUESTION | ((NoCancel || dialogArguments.width) && NoCancel !== 2 ? MB_YESNO : MB_YESNOCANCEL))) {
-				case IDYES:
-					if (fnYes) {
-						fnYes();
-					}
-					return true;
-				case IDNO:
-					if (fnNo) {
-						fnNo();
-					}
-					if (g_nResult == 1) {
-						ClearX();
-						if (fnYes) {
-							fnYes();
-						}
-					}
-					return true;
-				default:
-					if (g_nResult && NoCancel !== 2) {
-			 			event.returnValue = GetText('Are you sure?');
-						wsh.SendKeys("{Esc}");
-					}
-					return false;
-			}
-			if (!bNoDef && fnYes) {
-				fnYes();
-			}
-			return true;
-		}
+	if (g_nResult == 2 || api.strcmpi(document.activeElement.value, GetText("Cancel")) == 0) {
 		if (fnNo) {
 			fnNo();
 		}
-//	} catch (e) {}
+		return false;
+	}
+	document.activeElement.blur();
+	if (g_nResult == 1 && !g_Chg.Data) {
+		if (fnYes) {
+			fnYes();
+		}
+		return true;
+	}
+ 	if (g_bChanged || g_Chg.Data) {
+		switch (MessageBox("Do you want to replace?", TITLE, MB_ICONQUESTION | ((NoCancel || dialogArguments.width) && NoCancel !== 2 ? MB_YESNO : MB_YESNOCANCEL))) {
+			case IDYES:
+				if (fnYes) {
+					fnYes();
+				}
+				return true;
+			case IDNO:
+				if (fnNo) {
+					fnNo();
+				}
+				if (g_nResult == 1) {
+					ClearX();
+					if (fnYes) {
+						fnYes();
+					}
+				}
+				return true;
+			default:
+				if (g_nResult && NoCancel !== 2) {
+		 			event.returnValue = GetText('Are you sure?');
+					wsh.SendKeys("{Esc}");
+				}
+				return false;
+		}
+		if (!bNoDef && fnYes) {
+			fnYes();
+		}
+		return true;
+	}
+	if (fnNo) {
+		fnNo();
+	}
 	return false;
 }
 
