@@ -6104,7 +6104,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			}
 		case WM_SETTINGCHANGE:
 			if (message == WM_SETTINGCHANGE && lpfnRegenerateUserEnvironment) {
-				lpfnRegenerateUserEnvironment(NULL, TRUE);
+				try {
+					lpfnRegenerateUserEnvironment(NULL, TRUE);
+				}
+				catch (...) {
+				}
 			}
 		case WM_COPYDATA:
 			if (g_nReload) {
@@ -8225,51 +8229,52 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						if SUCCEEDED(pColumnManager->GetColumnCount(CM_ENUM_ALL, &uCount)) {
 							PROPERTYKEY *propKey = new PROPERTYKEY[uCount];
 							if SUCCEEDED(pColumnManager->GetColumns(CM_ENUM_ALL, propKey, uCount)) {
-								TEmethod *methodProp = new TEmethod[uCount];
-								int *piprop = new int[uCount];
-								CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_NAME };
-								for (int i = uCount; i-- > 0;) {
-									if SUCCEEDED(pColumnManager->GetColumnInfo(propKey[i], &cmci)) {
-										methodProp[i].name = ::SysAllocString(cmci.wszName);
-									}
-									else {
-										methodProp[i].name = NULL;
-									}
-								}
-								piprop = SortTEMethod(methodProp, uCount);
-								int k = 0;
-								PROPERTYKEY *propKey2 = new PROPERTYKEY[uCount];
-								int *pnWidth = new int[uCount];
-								int nIndex;
-								for (int i = 0; i < nCount; i++) {
-									nIndex = teBSearch(methodProp, uCount, piprop, methodArgs[i].name);
-									if (nIndex >= 0) {
-										pnWidth[k] = methodArgs[i].id;
-										propKey2[k++] = propKey[piprop[nIndex]];
-									}
-								}
-								if (k == 0) {	//Default Columns
-									while (k < (int)m_nDefultColumns && k < (int)uCount) {
-										propKey2[k] = m_pDefultColumns[k];
-										pnWidth[k++] = -1;
-									}
-								}
-								if (k > 0) {
-									if SUCCEEDED(pColumnManager->SetColumns(propKey2, k)) {
-										CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_WIDTH };
-										while (k--) {
-											cmci.uWidth = pnWidth[k];
-											pColumnManager->SetColumnInfo(propKey2[k], &cmci);
+								VARIANTARG *pv = GetNewVARIANT(3);
+								teExecMethod(g_pJS, L"_o", &pv[2], 0, NULL);
+								IDispatch *pdispColumns;
+								if (GetDispatch(&pv[2], &pdispColumns)) {
+									CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_NAME };
+									for (int i = uCount; i-- > 0;) {
+										if SUCCEEDED(pColumnManager->GetColumnInfo(propKey[i], &cmci)) {
+											if (cmci.wszName[0]) {
+												pv[1].vt = VT_BSTR;
+												pv[1].bstrVal = ::SysAllocString(cmci.wszName);
+												pv[0].vt = VT_I4;
+												pv[0].lVal = i;
+												teExecMethod(g_pJS, L"_p", NULL, -3, pv);
+												VariantClear(&pv[1]);
+											}
 										}
 									}
+									int k = 0;
+									PROPERTYKEY *propKey2 = new PROPERTYKEY[uCount];
+									int *pnWidth = new int[uCount];
+									for (int i = 0; i < nCount; i++) {
+										if (teGetProperty(pdispColumns, methodArgs[i].name, &pv[0]) == S_OK) {
+											pnWidth[k] = methodArgs[i].id;
+											propKey2[k++] = propKey[GetIntFromVariantClear(&pv[0])];
+										}
+									}
+									if (k == 0) {	//Default Columns
+										while (k < (int)m_nDefultColumns && k < (int)uCount) {
+											propKey2[k] = m_pDefultColumns[k];
+											pnWidth[k++] = -1;
+										}
+									}
+									if (k > 0) {
+										if SUCCEEDED(pColumnManager->SetColumns(propKey2, k)) {
+											CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_WIDTH };
+											while (k--) {
+												cmci.uWidth = pnWidth[k];
+												pColumnManager->SetColumnInfo(propKey2[k], &cmci);
+											}
+										}
+									}
+									delete [] pnWidth;
+									delete [] propKey2;
+									pdispColumns->Release();
 								}
-								delete [] pnWidth;
-								delete [] propKey2;
-								delete [] piprop;
-								for (int i = uCount; i-- > 0;) {
-									::SysFreeString(methodProp[i].name);
-								}
-								delete [] methodProp;
+								teClearVariantArgs(3, pv);
 							}
 							delete [] propKey;
 						}
