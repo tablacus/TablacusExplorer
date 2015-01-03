@@ -459,7 +459,7 @@ CreateNewFolder = function (Ctrl, pt)
 	if (path) {
 		if (!/^[A-Z]:\\|^\\/i.test(path)) {
 			var FV = GetFolderView(Ctrl, pt);
-			path = fso.BuildPath(FV.FolderItem.Path, path.replace(/^\s+/, ""));
+			path = fso.BuildPath(api.GetDisplayNameOf(FV, SHGDN_FORPARSING), path.replace(/^\s+/, ""));
 		}
 		CreateFolder(path);
 	}
@@ -472,7 +472,7 @@ CreateNewFile = function (Ctrl, pt)
 	if (path) {
 		if (!/^[A-Z]:\\|^\\/i.test(path)) {
 			var FV = GetFolderView(Ctrl, pt);
-			path = fso.BuildPath(FV.FolderItem.Path, path.replace(/^\s+/, ""));
+			path = fso.BuildPath(api.GetDisplayNameOf(FV, SHGDN_FORPARSING), path.replace(/^\s+/, ""));
 		}
 		CreateFile(path);
 	}

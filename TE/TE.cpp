@@ -21,6 +21,7 @@ CteTabs *g_pTC[MAX_TC];
 HINSTANCE	g_hShell32 = NULL;
 HINSTANCE	g_hCrypt32 = NULL;
 HWND		g_hDialog = NULL;
+IShellWindows *g_pSW = NULL;
 
 LPFNSHCreateItemFromIDList lpfnSHCreateItemFromIDList = NULL;
 LPFNSetDllDirectoryW lpfnSetDllDirectoryW = NULL;
@@ -86,6 +87,7 @@ DWORD	g_paramFV[SB_Count];
 DWORD	g_dragdrop = 0;
 DWORD	g_dwMainThreadId;
 DWORD	g_dwTickScroll;
+DWORD	g_dwSWCookie = 0;
 long	g_nProcKey	   = 0;
 long	g_nProcMouse   = 0;
 long	g_nProcDrag    = 0;
@@ -93,6 +95,7 @@ long	g_nProcFV      = 0;
 long	g_nProcTV      = 0;
 long	g_nProcFI      = 0;
 long	g_nThreads	   = 0;
+long	g_lSWCookie = 0;
 int		g_nCmdShow = SW_SHOWNORMAL;
 int		g_nReload = 0;
 int		g_nException = 64;
@@ -1165,6 +1168,7 @@ TEmethod methodSB[] = {
 	{ 0x10000017, L"Id" },
 	{ 0x10000018, L"FilterView" },
 	{ 0x10000020, L"FolderItem" },
+	{ 0x10000021, L"TreeView" },
 	{ 0x10000024, L"Parent" },
 	{ 0x10000031, L"Close" },
 	{ 0x10000032, L"Title" },
@@ -1185,7 +1189,6 @@ TEmethod methodSB[] = {
 	{ 0x10000208, L"TranslateAccelerator" },
 	{ 0x10000209, L"GetItemPosition" },
 	{ 0x1000020A, L"SelectAndPositionItem" },
-	{ 0x10000210, L"TreeView" },
 	{ 0x10000280, L"SelectItem" },
 	{ 0x10000281, L"FocusedItem" },
 	{ 0x10000282, L"GetFocusedItem" },
@@ -1462,6 +1465,28 @@ VOID teUnadviseAndRelease(IUnknown *punk, IID diid, PDWORD pdwCookie)
 		punk->Release();
 	}
 	*pdwCookie = 0;
+}
+
+VOID teRevoke()
+{
+	try {
+		if (g_hMutex) {
+			ReleaseMutex(g_hMutex);
+			::CloseHandle(g_hMutex);
+			g_hMutex = NULL;
+		}
+		if (g_pSW) {
+			if (g_lSWCookie) {
+				g_pSW->Revoke(g_lSWCookie);
+				g_lSWCookie = 0;
+			}
+			if (g_dwSWCookie) {
+				teUnadviseAndRelease(g_pSW, DIID_DShellWindowsEvents, &g_dwSWCookie);
+				g_dwSWCookie = 0;
+			}
+		}
+	} catch (...) {}
+
 }
 
 VOID teSetRedraw(BOOL bSetRedraw)
@@ -4839,6 +4864,7 @@ VOID Initlize()
 VOID Finalize()
 {
 	try {
+		teRevoke();
 		for (int i = _countof(g_maps); i--;) {
 			delete [] g_maps[i];
 		}
@@ -4863,9 +4889,6 @@ VOID Finalize()
 		::OleUninitialize();
 	}
 	catch (...) {
-	}
-	if (g_hMutex) {
-		ReleaseMutex(g_hMutex);
 	}
 }
 
@@ -5092,6 +5115,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 			break;
 		case TET_Reload:
 			if (g_nReload) {
+				teRevoke();
 				BSTR bsPath, bsQuoted;
 				int i = teGetModuleFileName(NULL, &bsPath);
 				bsQuoted = SysAllocStringLen(bsPath, i + 2);
@@ -5515,11 +5539,20 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 					LRESULT lResult = SendMessageTimeout(hwndTE, WM_COPYDATA, nCmdShow, LPARAM(&cd), SMTO_ABORTIFHUNG, 1000 * 30, &dwResult);
 					::SysFreeString(bs);
 					if (lResult && dwResult == S_OK) {
-						::CloseHandle(g_hMutex);
 						SysFreeString(bsPath);
 						Finalize();
 						teSetForegroundWindow(hwndTE);
 						return FALSE;
+					}
+					DWORD dwPid;
+					GetWindowThreadProcessId(hwndTE, &dwPid);
+					HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, dwPid);
+					if (hProcess) {
+						if (TerminateProcess(hProcess, 0)) {
+							WaitForSingleObject(g_hMutex, 0);
+						}
+						CloseHandle(hProcess);
+
 					}
 				}
 			}
@@ -5848,15 +5881,12 @@ function importScripts() {\
 	}
 
 	// Init ShellWindows
-	DWORD dwSWCookie = 0;
-	long lSWCookie = 0;
-	IShellWindows *pSW = NULL;
 	if (SUCCEEDED(CoCreateInstance(CLSID_ShellWindows,
-		NULL, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER, IID_PPV_ARGS(&pSW)))) {
+		NULL, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER, IID_PPV_ARGS(&g_pSW)))) {
 		if (g_pWebBrowser) {
-			pSW->Register(g_pWebBrowser->m_pWebBrowser, (LONG)g_hwndMain, SWC_3RDPARTY, &lSWCookie);
+			g_pSW->Register(g_pWebBrowser->m_pWebBrowser, (LONG)g_hwndMain, SWC_3RDPARTY, &g_lSWCookie);
 		}
-		teAdvise(pSW, DIID_DShellWindowsEvents, static_cast<IDispatch *>(g_pTE), &dwSWCookie);
+		teAdvise(g_pSW, DIID_DShellWindowsEvents, static_cast<IDispatch *>(g_pTE), &g_dwSWCookie);
 	}
 
 	// Main message loop:
@@ -5876,14 +5906,6 @@ function importScripts() {\
 		}
 	}
 	//At the end of processing
-	try {
-		if (pSW) {
-			if (lSWCookie) {
-				pSW->Revoke(lSWCookie);
-			}
-			teUnadviseAndRelease(pSW, DIID_DShellWindowsEvents, &dwSWCookie);
-		}
-	} catch (...) {}
 	try {
 #ifdef _USE_HTMLDOC
 		if (pHtmlDoc) {
@@ -5991,6 +6013,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case WM_CLOSE:
 			g_nLockUpdate += 1000;
 			if (CanClose(g_pTE)) {
+				teRevoke();
 				DestroyWindow(hWnd);
 			}
 			g_nLockUpdate -= 1000;
@@ -6105,7 +6128,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case WM_SETTINGCHANGE:
 			if (message == WM_SETTINGCHANGE && lpfnRegenerateUserEnvironment) {
 				try {
-					lpfnRegenerateUserEnvironment(NULL, TRUE);
+					if (lstrcmpi((LPCWSTR)lParam, L"Environment") == 0) {
+						LPVOID lpEnvironment;
+						lpfnRegenerateUserEnvironment(&lpEnvironment, TRUE);
+						FreeEnvironmentStrings((LPTSTR)lpEnvironment);
+					}
 				}
 				catch (...) {
 				}
@@ -8024,6 +8051,10 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					}
 				}
 				return S_OK;
+			//TreeView
+			case 0x10000021:
+				teSetObject(pVarResult, m_pTV);
+				return S_OK;
 			//Parent
 			case 0x10000024:
 				IDispatch *pdisp;
@@ -8546,10 +8577,6 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					pVarResult->lVal = hr;
 					pVarResult->vt = VT_I4;
 				}
-				return S_OK;
-			//TreeView
-			case 0x10000210:
-				teSetObject(pVarResult, m_pTV);
 				return S_OK;
 			//SelectItem
 			case 0x10000280:
@@ -10060,16 +10087,14 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 			//Reload
 			case TE_METHOD + 1009:
 				g_nReload = 1;
+				if (g_nException-- <= 0 || (nArg >= 0 && GetIntFromVariant(&pDispParams->rgvarg[nArg]))) {
+					SetTimer(g_hwndMain, TET_Reload, 100, teTimerProc);
+					return S_OK;
+				}
 				if (g_pWebBrowser) {
-					if (g_nException) {
-						g_nException--;
-						g_nLockUpdate = 0;
-						ClearEvents();
-						g_pWebBrowser->m_pWebBrowser->Refresh();
-					}
-					else {
-						SetTimer(g_hwndMain, TET_Reload, 100, teTimerProc);
-					}
+					g_nLockUpdate = 0;
+					ClearEvents();
+					g_pWebBrowser->m_pWebBrowser->Refresh();
 				}
 				return S_OK;
 			//DIID_DShellWindowsEvents
