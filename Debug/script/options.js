@@ -1894,6 +1894,9 @@ function SetAddonOptions()
 			}
 		}
 		g_bClosed = true;
+		if (returnValue) {
+			TEOk();
+		}
 		window.close();
 	}
 }

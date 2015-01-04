@@ -533,6 +533,7 @@ LoadXml = function (filename)
 						Path.Index = tab.getAttribute("LogIndex");
 					}
 					var FV = TC.Selected.Navigate2(Path, SBSP_NEWBROWSER, tab.getAttribute("Type"), tab.getAttribute("ViewMode"), tab.getAttribute("FolderFlags"), tab.getAttribute("Options"), tab.getAttribute("ViewFlags"), tab.getAttribute("IconSize"), tab.getAttribute("Align"), tab.getAttribute("Width"), tab.getAttribute("Flags"), tab.getAttribute("EnumFlags"), tab.getAttribute("RootStyle"), tab.getAttribute("Root"));
+					FV.FilterView = tab.getAttribute("FilterView");
 					FV.Data.Lock = api.QuadPart(tab.getAttribute("Lock")) != 0;
 					Lock(TC, i2, false);
 				}
@@ -605,16 +606,15 @@ SaveXml = function (filename, all)
 				item2.setAttribute("IconSize", FV.IconSize);
 				item2.setAttribute("Options", FV.Options);
 				item2.setAttribute("ViewFlags", FV.ViewFlags);
+				item2.setAttribute("FilterView", FV.FilterView);
 				item2.setAttribute("Lock", api.QuadPart(FV.Data.Lock));
 				var TV = FV.TreeView;
-				if (TV) {
-					item2.setAttribute("Align", FV.TreeView.Align);
-					item2.setAttribute("Width", FV.TreeView.Width);
-					item2.setAttribute("Flags", FV.TreeView.Style);
-					item2.setAttribute("EnumFlags", FV.TreeView.EnumFlags);
-					item2.setAttribute("RootStyle", FV.TreeView.RootStyle);
-					item2.setAttribute("Root", String(FV.TreeView.Root));
-				}
+				item2.setAttribute("Align", TV.Align);
+				item2.setAttribute("Width", TV.Width);
+				item2.setAttribute("Flags", TV.Style);
+				item2.setAttribute("EnumFlags", TV.EnumFlags);
+				item2.setAttribute("RootStyle", TV.RootStyle);
+				item2.setAttribute("Root", String(TV.Root));
 				var TL = FV.History;
 				if (TL) {
 					if (TL.Count > 1) {
@@ -2098,7 +2098,8 @@ InputDialog = function (text, defaultText)
 
 AddonOptions = function (Id, fn, Data)
 {
-	LoadLang2(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\" + Id + "\\lang\\" + GetLangId() + ".xml"));
+	var sParent = fso.GetParentFolderName(api.GetModuleFileName(null));
+	LoadLang2(fso.BuildPath(sParent, "addons\\" + Id + "\\lang\\" + GetLangId() + ".xml"));
 	var items = te.Data.Addons.getElementsByTagName(Id);
 	if (!items.length) {
 		var root = te.Data.Addons.documentElement;
@@ -2154,7 +2155,7 @@ AddonOptions = function (Id, fn, Data)
 		}
 	}
 	if (window.dialogArguments) {
-		dlg = showModelessDialog(sURL, opt, sFeatures);
+		dlg = showModelessDialog(sURL.replace(/^\.\./, sParent), opt, sFeatures);
 		while (!dlg.window.document.body) {
 			api.Sleep(100);
 		}
@@ -2281,7 +2282,7 @@ OpenInExplorer = function (FV)
 		}
 		catch (e) {}
 		try {
-			if (FV.TreeView && FV.TreeView.Visible) {
+			if (FV.TreeView.Visible) {
 				exp.ShowBrowserBar("{EFA24E64-B078-11D0-89E4-00C04FC9E26E}", true);
 			}
 		}
@@ -2318,12 +2319,12 @@ InputKey = function()
 
 ShowLocationEx = function (s)
 {
-	showModelessDialog("../../script/location.html", {MainWindow: MainWindow, Data: s}, 'dialogWidth: 640px; dialogHeight: 480px; resizable: no; status: 0;');
+	showModelessDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\location.html"), {MainWindow: MainWindow, Data: s}, 'dialogWidth: 640px; dialogHeight: 480px; resizable: no; status: 0;');
 }
 
 ShowIconEx = function ()
 {
-	return showModalDialog("../../script/dialog.html", {MainWindow: MainWindow, Query: "icon"}, 'dialogWidth: 640px; dialogHeight: 480px; resizable: no; status: 0;');
+	return showModalDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\dialog.html"), {MainWindow: MainWindow, Query: "icon"}, 'dialogWidth: 640px; dialogHeight: 480px; resizable: no; status: 0;');
 }
 
 function MakeKeySelect()

@@ -625,12 +625,50 @@ DisableImage = function (img, bDisable)
 
 te.OnCreate = function (Ctrl)
 {
-	if (!Ctrl.Data && Ctrl.Type != CTRL_TE) {
-		Ctrl.Data = te.Object();
-	}
-	RunEvent1("Create", Ctrl);
 	if (Ctrl.Type == CTRL_TE) {
+		te.LockUpdate();
+		if (xmlWindow && api.strcmpi(typeof(xmlWindow), "string")) {
+			LoadXml(xmlWindow);
+		}
+		if (te.Ctrls(CTRL_TC).Count == 0) {
+			var TC = te.CreateCtrl(CTRL_TC, 0, 0, "100%", "100%", te.Data.Tab_Style, te.Data.Tab_Align, te.Data.Tab_TabWidth, te.Data.Tab_TabHeight);
+			TC.Selected.Navigate2(HOME_PATH, SBSP_NEWBROWSER, te.Data.View_Type, te.Data.View_ViewMode, te.Data.View_fFlags, te.Data.View_Options, te.Data.View_ViewFlags, te.Data.View_IconSize, te.Data.Tree_Align, te.Data.Tree_Width, te.Data.Tree_Style, te.Data.Tree_EnumFlags, te.Data.Tree_RootStyle, te.Data.Tree_Root);
+		}
+		xmlWindow = null;
+		setTimeout(function ()
+		{
+			var a, i, j, root, menus, items;
+			root = te.Data.xmlMenus.documentElement;
+			if (root) {
+				menus = root.childNodes;
+				for (i = menus.length; i--;) {
+					items = menus[i].getElementsByTagName("Item");
+					for (j = items.length; j--;) {
+						a = items[j].getAttribute("Name").split(/\\t/);
+						if (a.length > 1) {
+							SetKeyExec("List", a[1], items[j].text, items[j].getAttribute("Type"), true);
+						}
+					}
+				}
+			}
+			DeviceChanged();
+			Resize();
+			var cTC = te.Ctrls(CTRL_TC);
+			for (var i in cTC) {
+				if (cTC[i].SelectedIndex >= 0) {
+					ChangeView(cTC[i].Selected);
+				}
+			}
+			te.UnlockUpdate();
+		}, 100);
+		RunEvent1("Create", Ctrl);
 		RunCommandLine(api.GetCommandLine());
+	}
+	else {
+		if (!Ctrl.Data) {
+			Ctrl.Data = te.Object();
+		}
+		RunEvent1("Create", Ctrl);
 	}
 }
 
@@ -1528,45 +1566,6 @@ te.OnILGetParent = function (FolderItem)
 AddEventEx(window, "load", function ()
 {
 	ApplyLang(document);
-
-	setTimeout(function ()
-	{
-		te.LockUpdate();
-		if (api.PathMatchSpec(typeof(xmlWindow), "string")) {
-			var TC = te.CreateCtrl(CTRL_TC, 0, 0, "100%", "100%", te.Data.Tab_Style, te.Data.Tab_Align, te.Data.Tab_TabWidth, te.Data.Tab_TabHeight);
-			TC.Selected.Navigate2(HOME_PATH, SBSP_NEWBROWSER, te.Data.View_Type, te.Data.View_ViewMode, te.Data.View_fFlags, te.Data.View_Options, te.Data.View_ViewFlags, te.Data.View_IconSize, te.Data.Tree_Align, te.Data.Tree_Width, te.Data.Tree_Style, te.Data.Tree_EnumFlags, te.Data.Tree_RootStyle, te.Data.Tree_Root);
-		}
-		else if (xmlWindow) {
-			LoadXml(xmlWindow);
-			xmlWindow = null;
-		}
-		setTimeout(function ()
-		{
-			var a, i, j, root, menus, items;
-			root = te.Data.xmlMenus.documentElement;
-			if (root) {
-				menus = root.childNodes;
-				for (i = menus.length; i--;) {
-					items = menus[i].getElementsByTagName("Item");
-					for (j = items.length; j--;) {
-						a = items[j].getAttribute("Name").split(/\\t/);
-						if (a.length > 1) {
-							SetKeyExec("List", a[1], items[j].text, items[j].getAttribute("Type"), true);
-						}
-					}
-				}
-			}
-			DeviceChanged();
-			Resize();
-			var cTC = te.Ctrls(CTRL_TC);
-			for (var i in cTC) {
-				if (cTC[i].SelectedIndex >= 0) {
-					ChangeView(cTC[i].Selected);
-				}
-			}
-			te.UnlockUpdate();
-		}, 100);
-	}, 1);
 	if (api.GetKeyState(VK_SHIFT) < 0 && api.GetKeyState(VK_CONTROL) < 0) {
 		ShowOptions("Tab=Add-ons");
 	}

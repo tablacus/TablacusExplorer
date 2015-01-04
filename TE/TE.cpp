@@ -7652,10 +7652,7 @@ STDMETHODIMP CteShellBrowser::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UI
 
 VOID AddColumnData(LPWSTR pszColumns, LPWSTR pszName, int nWidth)
 {
-	WCHAR szName[MAX_COLUMN_NAME_LEN + 3];
-	lstrcpyn(szName, pszName, MAX_COLUMN_NAME_LEN);
-	PathQuoteSpaces(szName);
-	swprintf_s(&pszColumns[lstrlen(pszColumns)], MAX_COLUMN_NAME_LEN + 20, L" %s %d", szName, nWidth);
+	swprintf_s(&pszColumns[lstrlen(pszColumns)], MAX_COLUMN_NAME_LEN + 20, L" \"%s\" %d", pszName, nWidth);
 }
 
 BSTR CteShellBrowser::GetColumnsStr()
@@ -8266,7 +8263,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 								if (GetDispatch(&pv[2], &pdispColumns)) {
 									CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_NAME };
 									for (int i = uCount; i-- > 0;) {
-										if SUCCEEDED(pColumnManager->GetColumnInfo(propKey[i], &cmci)) {
+										if (pColumnManager->GetColumnInfo(propKey[i], &cmci) == S_OK) {
 											if (cmci.wszName[0]) {
 												pv[1].vt = VT_BSTR;
 												pv[1].bstrVal = ::SysAllocString(cmci.wszName);
@@ -17618,7 +17615,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 							nLen = -1;
 						}
 						break;
-			//PSFormatForDisplay
+					//PSFormatForDisplay
 					case 6055:
 						if (nArg >= 2 && lpfnPSPropertyKeyFromStringEx) {
 							if (v.bstrVal) {
@@ -17651,7 +17648,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 							}
 						}
 						break;
-					//PSGetPropertyDescription
+					//PSGetDisplayName
 					case 6065:
 						if (v.bstrVal && lpfnPSPropertyKeyFromStringEx) {
 							PROPERTYKEY propKey;
