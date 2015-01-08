@@ -12,22 +12,23 @@
     <script type="text/javascript" charset="utf-8" src="options.js">
     </script>
   </head>
-  <body onload="InitDialog()">
+  <body>
     <form name="F">
       <div class="panel" id="panel0" style="border: 1px solid #898C95; overflow-y: auto;">
         <label id="Content">Please wait.</label>
         <!-- - - - - - - - - - - -->
       </div>
       <!--panel_end-->
-      <table id="buttons" width="97%">
+      <table id="buttons" width="99%">
         <tr>
           <td align="right">
             <span id="Selected"></span>
-            <input id="ButtonOk" type="button" value="OK" style="width: 96px;" onclick="window.close();" disabled="true" />
-            <input type="button" value="Cancel" style="width: 96px;" onclick="returnValue=null;window.close();" />
+            <input id="ButtonOk" type="button" value="OK" style="min-width: 96px" onclick="window.close();" disabled="true" />
+            <input type="button" value="Cancel" style="min-width: 96px" onclick="returnValue=null;window.close();" />
           </td>
         </tr>
       </table>
     </form>
+    <script type="text/javascript">InitDialog();</script>
   </body>
 </html>

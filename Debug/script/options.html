@@ -617,7 +617,7 @@
           <td style="width: 150px">
             <div style="position: relative; width: 100%">
             <input type="text" name="q" style="width: 100%; padding-right: 16px" onkeydown="FindKeyEvent(this)" placeholder="Search" />
-              <img bitmap="ieframe.dll,216,16,17" hidefocus="true" style="vertical-align: middle; width: 16px; height: 16px; position: absolute; left: 132px; top: 2px" onclick="FindText(document.F.q.value)" />
+              <img src="bitmap:ieframe.dll,216,16,17" hidefocus="true" style="vertical-align: middle; width: 16px; height: 16px; position: absolute; left: 132px; top: 2px" onclick="FindText(document.F.q.value)" />
             </div>
           </td>
           <td id="MoveButton" align="left" style="display: none;">
@@ -626,8 +626,8 @@
           </td>
           <td id="STATUS" align="center"></td>
           <td align="right">
-            <input type="button" value="OK" style="width: 96px;" onclick="SetResult(1)" />
-            <input type="button" value="Cancel" style="width: 96px;" onclick="SetResult(2)" />&nbsp;&nbsp;
+            <input type="button" value="OK" class="ok" onclick="SetResult(1)" />
+            <input type="button" value="Cancel" class="cancel" onclick="SetResult(2)" />
           </td>
         </tr>
       </table>

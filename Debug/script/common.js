@@ -339,10 +339,14 @@ function delamp(s)
 
 function ImgBase64(o, index)
 {
-	var s = MakeImgSrc(o.src, index, false, o.height, o.getAttribute("bitmap"), o.getAttribute("icon"));
+	var src = ExtractMacro(te, o.src);
+	var s = MakeImgSrc(src, index, false, o.height, o.getAttribute("bitmap"), o.getAttribute("icon"));
 	if (s) {
 		o.removeAttribute("bitmap");
 		o.removeAttribute("icon");
+	}
+	else if (api.strcmpi(o.src, src)) {
+		return src.replace(location.href.replace(/[^\/]*$/, ""), "file:///");
 	}
 	return s;
 }
@@ -369,7 +373,7 @@ function MakeImgSrc(src, index, bSrc, h, strBitmap, strIcon)
 			return fn;
 		}
 	}
-	var image = MakeImgData(src, index, h, strBitmap, strIcon);
+	var image = MakeImgData(ExtractMacro(te, src), index, h, strBitmap, strIcon);
 	if (image) {
 		if (document.documentMode) {
 			return image.DataURI("image/png");
@@ -1601,6 +1605,9 @@ GetHelpMenu = function (bTitle)
 	if (api.sizeof("HANDLE") > 4) {
 		dir.push(ssfPROGRAMFILESx86);
 	}
+	else if (api.IsWow64Process(api.GetCurrentProcess())) {
+		dir.push(api.GetDisplayNameOf(ssfPROGRAMFILES, SHGDN_FORPARSING).replace(/\s*\(x86\)$/i, ""));
+	}
 	dir.push(fso.GetSpecialFolder(2).Path);
 	if (WINVER >= 0x600) {
 		dir.push("shell:libraries");
@@ -1725,8 +1732,9 @@ AddMenuImage = function (mii, image, id)
 MenusIcon = function (mii, src)
 {
 	mii.cbSize = mii.Size;
-	var image = te.GdiplusBitmap();
 	if (src) {
+		src = ExtractMacro(te, src);
+		var image = te.GdiplusBitmap();
 		if (api.PathMatchSpec(src, FILTER_IMAGE)) {
 			image.FromFile(src);
 		}
@@ -2075,9 +2083,6 @@ confirmOk = function (s, title)
 
 MessageBox = function (s, title, uType)
 {
-	if (api.MessageBox) {
-		return api.MessageBox(api.GetForegroundWindow(), GetText(s), GetText(title) || TITLE, uType);
-	}
 	return wsh.Popup(GetText(s), 0, GetText(title) || TITLE, uType);
 }
 

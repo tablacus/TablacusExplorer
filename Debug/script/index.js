@@ -1237,7 +1237,7 @@ te.OnItemClick = function (Ctrl, Item, HitTest, Flags)
 
 te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 {
-	if (msg == WM_KILLFOCUS && Ctrl.Type == CTRL_TE && api.GetAsyncKeyState(VK_MBUTTON) >=0) {
+	if (msg == WM_ACTIVATE && (wParam & 0xffff) == 0) {
 		g_mouse.str = "";
 		SetGestureText(Ctrl, "");
 	}

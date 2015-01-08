@@ -18,7 +18,6 @@ table {
 }
 
 td, tr {
-	vertical-align: top;
 	font-size: 12px;
 	font-size: inherit;
 	border: none;
@@ -137,8 +136,15 @@ input, select {
 	border: 1px solid gray;
 	font-size: 0.667em;
 	font-family: Consolas;
+	padding: 0px 1px;
 	margin-right: 3px;
 	filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#dddddd);
 	background: linear-gradient(to bottom, #ffffff, #dddddd);
 	cursor: default;
+}
+.ok {
+	min-width: 96px;
+}
+.cancel {
+	min-width: 96px;
 }

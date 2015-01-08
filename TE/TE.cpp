@@ -6142,8 +6142,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				return E_FAIL;
 			}
 		case WM_TIMER:
-		case WM_SETFOCUS:
-		case WM_KILLFOCUS:
 		case WM_DROPFILES:
 		case WM_DEVICECHANGE:
 		case WM_FONTCHANGE:
