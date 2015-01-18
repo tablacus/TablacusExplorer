@@ -138,6 +138,7 @@ FolderMenu =
 AddEvent = function (Name, fn, priority)
 {
 	if (Name) {
+		Name = Name.replace("Dragleave", "DragLeave");
 		if (!eventTE[Name]) {
 			eventTE[Name] = [];
 		}
@@ -795,7 +796,7 @@ NavigateFV = function (FV, Path, wFlags)
 			setTimeout(function () {
 				var FV = te.Ctrl(CTRL_FV);
 				FV.SelectItem(Focus, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
-			}, 100);
+			}, 99);
 		}
 	}
 }
@@ -1059,7 +1060,9 @@ Exec = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop
 		window.pt = te.Data.pt;
 	}
 	window.Handled = S_OK;
-
+	if (s === "") {
+		return S_FALSE;
+	}
 	if (api.StrCmpI(type, "Func") == 0) {
 		return s(Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop);
 	}
@@ -1281,7 +1284,7 @@ ExecMenu3 = function (Ctrl, Name, x, y)
 	window.Ctrl = Ctrl;
 	setTimeout(function () {
 		ExecMenu2(Name, x, y);
-	}, 100);;
+	}, 99);;
 }
 
 ExecMenu2 = function (Name, x, y)
@@ -2083,7 +2086,7 @@ confirmOk = function (s, title)
 
 MessageBox = function (s, title, uType)
 {
-	return wsh.Popup(GetText(s), 0, GetText(title) || TITLE, uType);
+	return api.MessageBox(api.GetForegroundWindow(), GetText(s), GetText(title) || TITLE, uType);
 }
 
 createHttpRequest = function ()
@@ -2764,7 +2767,7 @@ SetRenameMenu = function (n)
 		setTimeout(function ()
 		{
 			wsh.SendKeys("{F2}");
-		}, 100);
+		}, 99);
 	};
 }
 

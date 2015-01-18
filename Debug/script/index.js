@@ -630,7 +630,7 @@ te.OnCreate = function (Ctrl)
 		if (xmlWindow && api.strcmpi(typeof(xmlWindow), "string")) {
 			LoadXml(xmlWindow);
 		}
-		if (te.Ctrls(CTRL_TC).Count == 0) {
+		if (te.Ctrls(CTRL_TC).length == 0) {
 			var TC = te.CreateCtrl(CTRL_TC, 0, 0, "100%", "100%", te.Data.Tab_Style, te.Data.Tab_Align, te.Data.Tab_TabWidth, te.Data.Tab_TabHeight);
 			TC.Selected.Navigate2(HOME_PATH, SBSP_NEWBROWSER, te.Data.View_Type, te.Data.View_ViewMode, te.Data.View_fFlags, te.Data.View_Options, te.Data.View_ViewFlags, te.Data.View_IconSize, te.Data.Tree_Align, te.Data.Tree_Width, te.Data.Tree_Style, te.Data.Tree_EnumFlags, te.Data.Tree_RootStyle, te.Data.Tree_Root);
 		}
@@ -660,7 +660,7 @@ te.OnCreate = function (Ctrl)
 				}
 			}
 			te.UnlockUpdate();
-		}, 100);
+		}, 99);
 		RunEvent1("Create", Ctrl);
 		RunCommandLine(api.GetCommandLine());
 	}
@@ -834,10 +834,6 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 			g_mouse.EndGesture(false);
 			if (hr == S_OK) {
 				return hr;
-			}
-			if (Ctrl2.Type == CTRL_TC) {
-				ChangeTab(Ctrl2, wParam > 0 ? -1 : 1)
-				return S_OK;
 			}
 			var hwnd2 = api.WindowFromPoint(pt);
 			if (hwnd2 && hwnd != hwnd2) {
@@ -1119,26 +1115,24 @@ te.OnDrop = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect)
 	return E_NOTIMPL; 
 }
 
-te.OnDragleave = function (Ctrl)
+te.OnDragLeave = function (Ctrl)
 {
 	var hr = E_NOTIMPL;
-	var en = ["Dragleave", "DragLeave"];
-	for (j in en) {
-		var eo = eventTE[en[j]];
-		for (var i in eo) {
-			try {
-				var hr2 = eo[i](Ctrl);
-				if (isFinite(hr2) && hr != S_OK) {
-					hr = hr2;
-				}
+	var en = "DragLeave";
+	var eo = eventTE[en];
+	for (var i in eo) {
+		try {
+			var hr2 = eo[i](Ctrl);
+			if (isFinite(hr2) && hr != S_OK) {
+				hr = hr2;
 			}
-			catch (e) {
-				ShowError(e, en[j], i);
-			}
+		}
+		catch (e) {
+			ShowError(e, en, i);
 		}
 	}
 	g_mouse.str = "";
-	return hr; 
+	return hr;
 }
 
 te.OnSelectionChanging = function (Ctrl)
@@ -1237,9 +1231,22 @@ te.OnItemClick = function (Ctrl, Item, HitTest, Flags)
 
 te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 {
-	if (msg == WM_ACTIVATE && (wParam & 0xffff) == 0) {
-		g_mouse.str = "";
-		SetGestureText(Ctrl, "");
+	if (msg == WM_ACTIVATE) {
+		if (wParam & 0xffff) {
+			if (g_mouse.str == "") {
+				setTimeout(function ()
+				{
+					var FV = te.Ctrl(CTRL_FV);
+					if (FV) {
+						FV.Focus();
+					}
+				}, 99);
+			}
+		}
+		else  {
+			g_mouse.str = "";
+			SetGestureText(Ctrl, "");
+		}
 	}
 	var hr = RunEvent3("SystemMessage", Ctrl, hwnd, msg, wParam, lParam);
 	if (isFinite(hr)) {
@@ -1408,7 +1415,7 @@ te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 		return hr; 
 	}
 	if (msg == TWM_CHANGENOTIFY) {
-		var pidls = te.FolderItems();
+		var pidls = {};
 		var hLock = api.SHChangeNotification_Lock(wParam, lParam, pidls);
 		if (hLock) {
 			ChangeNotifyFV(pidls.lEvent, pidls[0], pidls[1]);
@@ -1442,7 +1449,8 @@ te.OnClipboardText = function (Items)
 		return r; 
 	}
 	var s = [];
-	for (var i = Items.Count; i > 0; s.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(Items.Item(--i), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)))) {
+	for (var i = Items.Count; i-- > 0;) {
+		s.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(Items.Item(i), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)))
 	}
 	return s.join(" ");
 }
@@ -1556,7 +1564,7 @@ te.OnILGetParent = function (FolderItem)
 	if (r !== undefined) {
 		return r; 
 	}
-	if (/search\-ms:.*?&crumb=location:([^&]*)/.test(api.getDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING))) {
+	if (/search\-ms:.*?&crumb=location:([^&]*)/.test(api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING))) {
 		return api.PathCreateFromUrl("file:" + RegExp.$1);
 	}
 }

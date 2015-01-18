@@ -41,8 +41,12 @@ using namespace Gdiplus;
 #define _2000XP
 #define _W2000
 #endif
+//#define _USE_BSEARCHAPI
 //#define _USE_HTMLDOC
 //#define _USE_TESTOBJECT
+
+class CteShellBrowser;
+class CteTreeView;
 
 //Unnamed function
 typedef VOID (WINAPI * LPFNSHRunDialog)(HWND hwnd, HICON hIcon, LPWSTR pszPath, LPWSTR pszTitle, LPWSTR pszPrompt, DWORD dwFlags);
@@ -84,6 +88,9 @@ typedef HRESULT (STDAPICALLTYPE * LPFNDllCanUnloadNow)(void);
 
 //Tablacus DLL Add-ons
 typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
+
+//Dispatch Windows API
+typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult);
 
 #define DISPID_AMBIENT_OFFLINEIFNOTCONNECTED -5501
 #define E_CANCELLED_BY_USER	0x800704c7
@@ -208,13 +215,16 @@ typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
 #define MAP_TC	2
 #define MAP_TV	3
 #define MAP_CD	4
-#define MAP_API	5
+#define MAP_SS	5
 #define MAP_Mem	6
 #define MAP_GB	7
 #define MAP_FIs	8
-#define MAP_SS	9
+#ifdef _USE_BSEARCHAPI
+#define MAP_API	9
 #define MAP_LENGTH	10
-
+#else
+#define MAP_LENGTH	9
+#endif
 #ifndef offsetof
 #define offsetof(type, member)	(DWORD)(UINT_PTR)&((type *)0)->member
 #endif
@@ -240,6 +250,25 @@ typedef struct tagTEInvoke
 	PVOID	pResult;
 } TEInvoke, *lpTEInvoke;
 
+typedef struct tagTEDispatchApi
+{
+	char nArgs;
+	char nStr1;
+	char nStr2;
+	char nStr3;
+	LPWSTR name;
+	LPFNDispatchAPI fn;
+} TEDispatchApi, *lpTEDispatchApi;
+
+typedef struct tagTEFS
+{
+	BSTR bsName;
+	BSTR bsPath;
+	CteShellBrowser *pSB;
+	LPITEMIDLIST pidl;
+	ULONGLONG Result;
+} TEFS, *lpTEFS;
+
 /*
 typedef struct tagTEDrop
 {
@@ -252,9 +281,6 @@ typedef struct tagTEDrop
 */
 const CLSID CLSID_ShellShellNameSpace = {0x2F2F1F96, 0x2BC1, 0x4b1c, { 0xBE, 0x28, 0xEA, 0x37, 0x74, 0xF4, 0x67, 0x6A}};
 const CLSID CLSID_JScriptChakra       = {0x16d51579, 0xa30b, 0x4c8b, { 0xa2, 0x76, 0x0f, 0xf4, 0xdc, 0x41, 0xe7, 0x55}};
-
-class CteShellBrowser;
-class CteTreeView;
 
 class CteDll : public IUnknown
 {
@@ -366,7 +392,7 @@ public:
 
 	HDROP GethDrop(int x, int y, BOOL fNC, BOOL bSpecial);
 	VOID Regenerate();
-	VOID ItemEx(int nIndex, VARIANT *pVarResult, VARIANT *pVarNew);
+	VOID ItemEx(long nIndex, VARIANT *pVarResult, VARIANT *pVarNew);
 	VOID AdjustIDListEx();
 	VOID Clear();
 	HRESULT QueryGetData2(FORMATETC *pformatetc);
@@ -527,10 +553,10 @@ public:
 	BOOL	m_bRedraw;
 private:
 	VARIANT m_Data;
-	LONG	m_cRef;
-	DWORD	m_dwCookie;
 	CteFolderItems *m_pDragItems;
 	IDropTarget *m_pDropTarget;
+	LONG	m_cRef;
+	DWORD	m_dwCookie;
 	DWORD	m_grfKeyState;
 	DWORD	m_dwEffect;
 	DWORD	m_dwEffectTE;
@@ -590,8 +616,8 @@ public:
 	WNDPROC	m_DefBTProc;
 	WNDPROC	m_DefSTProc;
 
-	int		m_nIndex;
 	DWORD	m_dwSize;
+	int		m_nIndex;
 	int		m_param[9];
 	int		m_nTC;
 	int		m_nScrollWidth;
@@ -600,8 +626,8 @@ public:
 private:
 	VARIANT m_Data;
 	CteFolderItems *m_pDragItems;
-	LONG	m_cRef;
 	DWORD	m_grfKeyState;
+	LONG	m_cRef;
 	LONG	m_nLockUpdate;
 	BOOL	m_bRedraw;
 	HRESULT m_DragLeave;
@@ -775,12 +801,15 @@ public:
 	VOID GetViewModeAndIconSize(BOOL bGetIconSize);
 	HRESULT Items(UINT uItem, FolderItems **ppid);
 	HRESULT SelectItemEx(LPITEMIDLIST *ppidl, int dwFlags);
+	VOID InitFolderSize();
+	BOOL SetFolderSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch);
 #ifdef _2000XP
 	VOID AddPathXP(CteFolderItems *pFolderItems, IShellFolderView *pSFV, int nIndex, BOOL bResultsFolder);
 #endif
 
 public:
 	VARIANT		m_vRoot;
+	VARIANT		m_vFolderSize;	
 	HWND		m_hwnd;
 	HWND		m_hwndDV;
 	HWND		m_hwndLV;
@@ -790,16 +819,19 @@ public:
 	LONG_PTR	m_DefProc2;
 	IShellView  *m_pShellView;
 	IDispatch	*m_pOnFunc[1];
-	TEColumn	*m_pColumns;
 	FolderItem *m_pFolderItem;
 	FolderItem *m_pFolderItem1;
 	IExplorerBrowser *m_pExplorerBrowser;
 	CteServiceProvider *m_pServiceProvider;
 	LPITEMIDLIST m_pidl;
-
-	DWORD		m_param[SB_Count];
-	int			m_nSB;
+	IShellFolder2 *m_pSF2;
+#ifdef	_2000XP
+	TEColumn	*m_pColumns;
 	UINT		m_nColumns;
+#endif
+	DWORD		m_param[SB_Count];
+	int			m_nFolderSizeIndex;
+	int			m_nSB;
 	int			m_nUnload;
 	DWORD		m_nOpenedType;
 	DWORD		m_dwCookie;
@@ -811,12 +843,11 @@ private:
 	FolderItem	**m_ppLog;
 	FolderItem	**m_ppFocus;
 	IDispatch	*m_pDSFV;
-	IShellFolder2 *m_pSF2;
 	PROPERTYKEY *m_pDefultColumns;
 	IDropTarget *m_pDropTarget;
 	BSTR		m_bsFilter;
-
 	CteFolderItems *m_pDragItems;
+
 	LONG		m_cRef;
 	DWORD		m_dwEventCookie;
 	int			m_nLogCount;
@@ -828,8 +859,8 @@ private:
 	LONG		m_nCreate;
 	BOOL		m_bIconSize;
 #ifdef _2000XP
-	int			m_nFolderName;
 	IShellFolderViewCB	*m_pSFVCB;
+	int			m_nFolderName;
 #endif
 };
 
@@ -861,18 +892,19 @@ public:
 	void SetPoint(int x, int y);
 	void Free(BOOL bpbs);
 
-	CteMemory(int nSize, char *pc, int nMode, int nCount, LPWSTR lpStruct);
+	CteMemory(int nSize, char *pc, int nCount, LPWSTR lpStruct);
 	~CteMemory();
 public:
 	char	*m_pc;
+
 	int		m_nSize;
 	int		m_nCount;
-	int		m_nMode;
 private:
-	BSTR	m_bsStruct;
 	BSTR	*m_ppbs;
+	BSTR	m_bsStruct;
+	BSTR	m_bsAlloc;
 	LONG	m_cRef;
-	BOOL	m_bAlloc;
+
 	int		m_nbs;
 };
 
@@ -898,8 +930,10 @@ public:
 	CteDll *m_pDll;
 private:
 	IDataObject *m_pDataObj;
-	LONG	m_cRef;
+
 	UINT_PTR	m_param[5];
+
+	LONG	m_cRef;
 };
 
 class CteDropTarget : public IDispatch
@@ -919,6 +953,7 @@ public:
 private:
 	IDropTarget *m_pDropTarget;
 	FolderItem *m_pFolderItem;
+
 	LONG	m_cRef;
 };
 
@@ -1014,6 +1049,7 @@ public:
 #endif
 	WNDPROC		m_DefProc;
 	WNDPROC		m_DefProc2;
+
 	BOOL		m_bMain;
 	BOOL		m_bSetRoot;
 private:
@@ -1026,8 +1062,8 @@ private:
 	LONG	m_cRef;
 	int		m_nType, m_nOpenedType;
 	DWORD	m_grfKeyState;
-	HRESULT m_DragLeave;
 	DWORD	m_dwCookie;
+	HRESULT m_DragLeave;
 };
 
 class CteCommonDialog : public IDispatch
@@ -1046,6 +1082,7 @@ public:
 	~CteCommonDialog();
 private:
 	OPENFILENAME m_ofn;
+
 	LONG	m_cRef;
 };
 
@@ -1065,9 +1102,11 @@ public:
 	~CteGdiplusBitmap();
 private:
 	Gdiplus::Bitmap *m_pImage;
+
 	LONG	m_cRef;
 };
 
+#ifdef _USE_BSEARCHAPI
 class CteWindowsAPI : public IDispatch
 {
 public:
@@ -1080,11 +1119,32 @@ public:
 	STDMETHODIMP GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId);
 	STDMETHODIMP Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr);
 
-	CteWindowsAPI();
+	CteWindowsAPI(TEDispatchApi *pApi);
 	~CteWindowsAPI();
 private:
+	TEDispatchApi *m_pApi;
 	LONG	m_cRef;
 };
+#else
+class CteAPI : public IDispatch
+{
+public:
+	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
+	STDMETHODIMP_(ULONG) AddRef();
+	STDMETHODIMP_(ULONG) Release();
+	//IDispatch
+	STDMETHODIMP GetTypeInfoCount(UINT *pctinfo);
+	STDMETHODIMP GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo);
+	STDMETHODIMP GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId);
+	STDMETHODIMP Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr);
+
+	CteAPI(TEDispatchApi *pApi);
+	~CteAPI();
+private:
+	TEDispatchApi *m_pApi;
+	LONG		m_cRef;
+};
+#endif
 
 class CteDispatch : public IDispatch, public IEnumVARIANT
 {
@@ -1106,13 +1166,43 @@ public:
 	CteDispatch(IDispatch *pDispatch, int nMode);
 	~CteDispatch();
 
+public:
 	IActiveScript *m_pActiveScript;
 	DISPID		m_dispIdMember;
 	int			m_nIndex;
 private:
 	IDispatch	*m_pDispatch;
+
 	LONG		m_cRef;
-	int			m_nMode;//0: Clone 1:Collection 2:ScriptDispatch
+	int			m_nMode;//0: Clone 1:Collection
+};
+
+class CteDispatchEx : public IDispatchEx
+{
+public:
+	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
+	STDMETHODIMP_(ULONG) AddRef();
+	STDMETHODIMP_(ULONG) Release();
+	//IDispatch
+	STDMETHODIMP GetTypeInfoCount(UINT *pctinfo);
+	STDMETHODIMP GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo);
+	STDMETHODIMP GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId);
+	STDMETHODIMP Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr);
+	//IDispatchEx
+	STDMETHODIMP GetDispID(BSTR bstrName, DWORD grfdex, DISPID *pid);
+	STDMETHODIMP InvokeEx(DISPID id, LCID lcid, WORD wFlags, DISPPARAMS *pdp, VARIANT *pvarRes, EXCEPINFO *pei, IServiceProvider *pspCaller);
+	STDMETHODIMP DeleteMemberByName(BSTR bstrName, DWORD grfdex);
+	STDMETHODIMP DeleteMemberByDispID(DISPID id);
+	STDMETHODIMP GetMemberProperties(DISPID id, DWORD grfdexFetch, DWORD *pgrfdex);
+	STDMETHODIMP GetMemberName(DISPID id, BSTR *pbstrName);
+	STDMETHODIMP GetNextDispID(DWORD grfdex, DISPID id, DISPID *pid);
+	STDMETHODIMP GetNameSpaceParent(IUnknown **ppunk);
+
+	CteDispatchEx(IUnknown *punk);
+	~CteDispatchEx();
+private:
+	IDispatchEx *m_pdex;
+	LONG	m_cRef;
 };
 
 class CteActiveScriptSite : public IActiveScriptSite, public IActiveScriptSiteWindow
@@ -1143,8 +1233,10 @@ public:
 public:
 	IDispatchEx	*m_pDispatchEx;
 	IDispatch *m_pOnError;
+
 	LONG		m_cRef;
 };
+
 #ifdef _USE_HTMLDOC
 // DocHostUIHandler
 class CteDocHostUIHandler : public IDocHostUIHandler
