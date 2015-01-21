@@ -2885,6 +2885,20 @@ CreateFont = function (LogFont)
 	return hFont;
 }
 
+Activate = function (o, id)
+{
+	var TC = te.Ctrl(CTRL_TC);
+	if (TC && TC.Id != id) {
+		var FV = GetInnerFV(id);
+		if (FV) {
+			FV.Focus();
+			if (o) {
+				o.focus();
+			}
+		}
+	}
+}
+
 function DetectProcessTag(e)
 {
 	var s = (e || event).srcElement.tagName;

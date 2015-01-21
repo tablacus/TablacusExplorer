@@ -29,6 +29,11 @@
         </tr>
       </table>
     </form>
-    <script type="text/javascript">InitDialog();</script>
+    <script type="text/javascript">
+    AddEventEx(window, "load", function ()
+    {
+        InitDialog();
+    });
+    </script>
   </body>
 </html>
