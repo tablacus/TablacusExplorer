@@ -3955,10 +3955,10 @@ HRESULT MessageSub(int nFunc, PVOID pObj, MSG *pMsg, HRESULT hrDefault)
 	if (g_pOnFunc[nFunc]) {
 		pv = GetNewVARIANT(5);
 		teSetObject(&pv[4], pObj);
-		teSetLL(&pv[3], (LONGLONG)pMsg->hwnd);
+		teSetPtr(&pv[3], pMsg->hwnd);
 		teSetLong(&pv[2], pMsg->message);
-		teSetLL(&pv[1], pMsg->wParam);
-		teSetLL(&pv[0], pMsg->lParam);
+		teSetPtr(&pv[1], pMsg->wParam);
+		teSetPtr(&pv[0], pMsg->lParam);
 		if SUCCEEDED(Invoke4(g_pOnFunc[nFunc], &vResult, 5, pv)) {
 			return GetIntFromVariantClear(&vResult);
 		}
@@ -3985,9 +3985,9 @@ HRESULT MessageSubPt(int nFunc, PVOID pObj, MSG *pMsg)
 	if (g_pOnFunc[nFunc]) {
 		VARIANTARG *pv = GetNewVARIANT(5);
 		teSetObject(&pv[4], pObj);
-		teSetLL(&pv[3], (LONGLONG)pMsg->hwnd);
+		teSetPtr(&pv[3], pMsg->hwnd);
 		teSetLong(&pv[2], pMsg->message);
-		teSetLL(&pv[1], (LONGLONG)pMsg->wParam);
+		teSetPtr(&pv[1], pMsg->wParam);
 		CteMemory *pstPt = new CteMemory(2 * sizeof(int), NULL, 1, L"POINT");
 		pstPt->SetPoint(pMsg->pt.x, pMsg->pt.y);
 		teSetObjectRelease(&pv[0], pstPt);
@@ -4598,7 +4598,7 @@ LRESULT CALLBACK TEBTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							VariantInit(&pv[1]);
 							teSetObject(&pv[1], pTC);
 							VariantInit(&pv[0]);
-							teSetLL(&pv[0], ((LPNMHDR)lParam)->idFrom);
+							teSetPtr(&pv[0], ((LPNMHDR)lParam)->idFrom);
 							Invoke4(g_pOnFunc[TE_OnToolTip], &vResult, 2, pv);
 							VARIANT vText;
 							teVariantChangeType(&vText, &vResult, VT_BSTR);
@@ -5119,7 +5119,7 @@ VOID teApiQuadPart(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *
 VOID teApipvData(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	if (pDispParams->rgvarg[nArg].vt & VT_ARRAY) {
-		teSetLL(pVarResult, (LONGLONG)pDispParams->rgvarg[nArg].parray->pvData);
+		teSetPtr(pVarResult, pDispParams->rgvarg[nArg].parray->pvData);
 	}
 }
 
@@ -5190,12 +5190,12 @@ VOID teApiSub(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarR
 
 VOID teApiFindWindow(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)FindWindow((LPCWSTR)param[0], (LPCWSTR)param[1]));
+	teSetPtr(pVarResult, FindWindow((LPCWSTR)param[0], (LPCWSTR)param[1]));
 }
 
 VOID teApiFindWindowEx(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)FindWindowEx((HWND)param[0], (HWND)param[1], (LPCWSTR)param[2], (LPCWSTR)param[3]));
+	teSetPtr(pVarResult, FindWindowEx((HWND)param[0], (HWND)param[1], (LPCWSTR)param[2], (LPCWSTR)param[3]));
 }
 
 VOID teApiOleGetClipboard(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -5249,23 +5249,24 @@ VOID teApiCommandLineToArgv(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, 
 {
 	int nLen = 0;
 	LPTSTR *lplpszArgs = NULL;
-	IDispatch *pdisp;
-	GetNewArray(&pdisp);
+	IDispatch *pArray;
+	GetNewArray(&pArray);
 	if (param[0] && ::SysStringLen((BSTR)param[0])) {
 		lplpszArgs = CommandLineToArgvW((LPCWSTR)param[0], &nLen);
-		for (int i = 0; i < nLen; i++) {
+		for (int i = nLen; i-- > 0;) {
 			VARIANT v;
 			teSetSZ(&v, lplpszArgs[i]);
 			int n = ::SysStringLen(v.bstrVal);
 			if (v.bstrVal[n - 1] == '"') {
 				v.bstrVal[n - 1] = '\\';
 			}
-			tePutPropertyAt(pdisp, i, &v);
+			tePutPropertyAt(pArray, i, &v);
 			VariantClear(&v);
 		}
 		LocalFree(lplpszArgs);
 	}
-	teSetObjectRelease(pVarResult, pdisp);
+	teSetObjectRelease(pVarResult, new CteDispatchEx(pArray));
+	pArray->Release();
 }
 
 VOID teApiILIsEqual(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -5353,14 +5354,14 @@ VOID teApiILGetParent(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIAN
 
 VOID teApiFindFirstFile(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)FindFirstFile((LPCWSTR)param[0], (LPWIN32_FIND_DATA)param[1]));
+	teSetPtr(pVarResult, FindFirstFile((LPCWSTR)param[0], (LPWIN32_FIND_DATA)param[1]));
 }
 
 VOID teApiWindowFromPoint(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	POINT pt;
 	GetPointFormVariant(&pt, &pDispParams->rgvarg[nArg]);
-	teSetLL(pVarResult, (LONGLONG)WindowFromPoint(pt));
+	teSetPtr(pVarResult, WindowFromPoint(pt));
 }
 
 VOID teApiGetThreadCount(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -5646,27 +5647,27 @@ VOID teApiShellExecuteEx(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VAR
 
 VOID teApiCreateFontIndirect(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)::CreateFontIndirect((PLOGFONT)param[0]));
+	teSetPtr(pVarResult, ::CreateFontIndirect((PLOGFONT)param[0]));
 }
 
 VOID teApiCreateIconIndirect(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)::CreateIconIndirect((PICONINFO)param[0]));
+	teSetPtr(pVarResult, ::CreateIconIndirect((PICONINFO)param[0]));
 }
 
 VOID teApiFindText(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)::FindText((LPFINDREPLACE)param[0]));
+	teSetPtr(pVarResult, ::FindText((LPFINDREPLACE)param[0]));
 }
 
 VOID teApiFindReplace(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)::ReplaceText((LPFINDREPLACE)param[0]));
+	teSetPtr(pVarResult, ::ReplaceText((LPFINDREPLACE)param[0]));
 }
 
 VOID teApiDispatchMessage(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)::DispatchMessage((LPMSG)param[0]));
+	teSetPtr(pVarResult, ::DispatchMessage((LPMSG)param[0]));
 }
 
 VOID teApiPostMessage(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -6053,7 +6054,7 @@ VOID teApiSHFileOperation(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VA
 		pFO->pTo = bs;
 		pFO->fFlags = (FILEOP_FLAGS)param[3];
 		if (param[4]) {
-			teSetLL(pVarResult, (LONGLONG)_beginthread(&threadFileOperation, 0, pFO));
+			teSetPtr(pVarResult, _beginthread(&threadFileOperation, 0, pFO));
 			return;
 		}
 		try {
@@ -6545,57 +6546,57 @@ VOID teApiMessageBox(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT
 
 VOID teApiImageList_GetIcon(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)ImageList_GetIcon((HIMAGELIST)param[0], (int)param[1], (UINT)param[2]));
+	teSetPtr(pVarResult, ImageList_GetIcon((HIMAGELIST)param[0], (int)param[1], (UINT)param[2]));
 }
 
 VOID teApiImageList_Create(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)ImageList_Create((int)param[0], (int)param[1], (UINT)param[2], (int)param[3], (int)param[4]));
+	teSetPtr(pVarResult, ImageList_Create((int)param[0], (int)param[1], (UINT)param[2], (int)param[3], (int)param[4]));
 }
 
 VOID teApiGetWindowLongPtr(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)(HANDLE)GetWindowLongPtr((HWND)param[0], (int)param[1]));
+	teSetPtr(pVarResult, GetWindowLongPtr((HWND)param[0], (int)param[1]));
 }
 
 VOID teApiGetClassLongPtr(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)(HANDLE)GetClassLongPtr((HWND)param[0], (int)param[1]));
+	teSetPtr(pVarResult, GetClassLongPtr((HWND)param[0], (int)param[1]));
 }
 
 VOID teApiGetSubMenu(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)GetSubMenu((HMENU)param[0], (int)param[1]));
+	teSetPtr(pVarResult, GetSubMenu((HMENU)param[0], (int)param[1]));
 }
 
 VOID teApiSelectObject(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)SelectObject((HDC)param[0], (HGDIOBJ)param[1]));
+	teSetPtr(pVarResult, SelectObject((HDC)param[0], (HGDIOBJ)param[1]));
 }
 
 VOID teApiGetStockObject(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)GetStockObject((int)param[0]));
+	teSetPtr(pVarResult, GetStockObject((int)param[0]));
 }
 
 VOID teApiGetSysColorBrush(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)GetSysColorBrush((int)param[0]));
+	teSetPtr(pVarResult, GetSysColorBrush((int)param[0]));
 }
 
 VOID teApiSetFocus(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)SetFocus((HWND)param[0]));
+	teSetPtr(pVarResult, SetFocus((HWND)param[0]));
 }
 
 VOID teApiGetDC(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)GetDC((HWND)param[0]));
+	teSetPtr(pVarResult, GetDC((HWND)param[0]));
 }
 
 VOID teApiCreateCompatibleDC(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)CreateCompatibleDC((HDC)param[0]));
+	teSetPtr(pVarResult, CreateCompatibleDC((HDC)param[0]));
 }
 
 VOID teApiCreatePopupMenu(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -6607,7 +6608,7 @@ VOID teApiCreatePopupMenu(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VA
 	GetMenuInfo(hMenu, &menuInfo);
 	menuInfo.dwStyle = (menuInfo.dwStyle & ~MNS_NOCHECK) | MNS_CHECKORBMP;
 	SetMenuInfo(hMenu, &menuInfo);
-	teSetLL(pVarResult, (LONGLONG)hMenu);
+	teSetPtr(pVarResult, hMenu);
 }
 
 VOID teApiCreateMenu(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -6619,62 +6620,62 @@ VOID teApiCreateMenu(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT
 	GetMenuInfo(hMenu, &menuInfo);
 	menuInfo.dwStyle = (menuInfo.dwStyle & ~MNS_NOCHECK) | MNS_CHECKORBMP;
 	SetMenuInfo(hMenu, &menuInfo);
-	teSetLL(pVarResult, (LONGLONG)hMenu);
+	teSetPtr(pVarResult, hMenu);
 }
 
 VOID teApiCreateCompatibleBitmap(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)CreateCompatibleBitmap((HDC)param[0], (int)param[1], (int)param[2]));
+	teSetPtr(pVarResult, CreateCompatibleBitmap((HDC)param[0], (int)param[1], (int)param[2]));
 }
 
 VOID teApiSetWindowLongPtr(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)(HANDLE)SetWindowLongPtr((HWND)param[0], (int)param[1], (LONG_PTR)param[2]));
+	teSetPtr(pVarResult, SetWindowLongPtr((HWND)param[0], (int)param[1], (LONG_PTR)param[2]));
 }
 
 VOID teApiSetClassLongPtr(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)(HANDLE)SetClassLongPtr((HWND)param[0], (int)param[1], (LONG_PTR)param[2]));
+	teSetPtr(pVarResult, SetClassLongPtr((HWND)param[0], (int)param[1], (LONG_PTR)param[2]));
 }
 
 VOID teApiImageList_Duplicate(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)ImageList_Duplicate((HIMAGELIST)param[0]));
+	teSetPtr(pVarResult, ImageList_Duplicate((HIMAGELIST)param[0]));
 }
 
 VOID teApiSendMessage(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)SendMessage((HWND)param[0], (UINT)param[1], (WPARAM)param[2], (LPARAM)param[3]));
+	teSetPtr(pVarResult, SendMessage((HWND)param[0], (UINT)param[1], (WPARAM)param[2], (LPARAM)param[3]));
 }
 
 VOID teApiGetSystemMenu(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)GetSystemMenu((HWND)param[0], (BOOL)param[1]));
+	teSetPtr(pVarResult, GetSystemMenu((HWND)param[0], (BOOL)param[1]));
 }
 
 VOID teApiGetWindowDC(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)GetWindowDC((HWND)param[0]));
+	teSetPtr(pVarResult, GetWindowDC((HWND)param[0]));
 }
 
 VOID teApiCreatePen(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)CreatePen((int)param[0], (int)param[1], (COLORREF)param[2]));
+	teSetPtr(pVarResult, CreatePen((int)param[0], (int)param[1], (COLORREF)param[2]));
 }
 
 VOID teApiSetCapture(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)SetCapture((HWND)param[0]));
+	teSetPtr(pVarResult, SetCapture((HWND)param[0]));
 }
 
 VOID teApiSetCursor(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)SetCursor((HCURSOR)param[0]));
+	teSetPtr(pVarResult, SetCursor((HCURSOR)param[0]));
 }
 
 VOID teApiCallWindowProc(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)(HANDLE)CallWindowProc((WNDPROC)param[0], (HWND)param[1], (UINT)param[2], (WPARAM)param[3], (LPARAM)param[4]));
+	teSetPtr(pVarResult, CallWindowProc((WNDPROC)param[0], (HWND)param[1], (UINT)param[2], (WPARAM)param[3], (LPARAM)param[4]));
 }
 
 VOID teApiGetWindow(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -6683,36 +6684,36 @@ VOID teApiGetWindow(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT 
 	if (FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
 		HWND hwnd;
 		IUnknown_GetWindow(punk, &hwnd);
-		teSetLL(pVarResult, (LONGLONG)hwnd);
+		teSetPtr(pVarResult, hwnd);
 	}
 	else if (nArg >= 1) {
-		teSetLL(pVarResult, (LONGLONG)(HANDLE)GetWindow((HWND)param[0], (UINT)param[1]));
+		teSetPtr(pVarResult, GetWindow((HWND)param[0], (UINT)param[1]));
 	}
 }
 
 VOID teApiGetTopWindow(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)GetTopWindow((HWND)param[0]));
+	teSetPtr(pVarResult, GetTopWindow((HWND)param[0]));
 }
 
 VOID teApiOpenProcess(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)OpenProcess((DWORD)param[0], (BOOL)param[1], (DWORD)param[2]));
+	teSetPtr(pVarResult, OpenProcess((DWORD)param[0], (BOOL)param[1], (DWORD)param[2]));
 }
 
 VOID teApiGetParent(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)(HANDLE)GetParent((HWND)param[0]));
+	teSetPtr(pVarResult, GetParent((HWND)param[0]));
 }
 
 VOID teApiGetCapture(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)GetCapture());
+	teSetPtr(pVarResult, GetCapture());
 }
 
 VOID teApiGetModuleHandle(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)GetModuleHandle((LPCWSTR)param[0]));
+	teSetPtr(pVarResult, GetModuleHandle((LPCWSTR)param[0]));
 }
 
 VOID teApiSHGetImageList(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -6721,63 +6722,63 @@ VOID teApiSHGetImageList(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VAR
 	if FAILED(lpfnSHGetImageList((int)param[0], IID_IImageList, (LPVOID *)&h)) {
 		h = 0;
 	}
-	teSetLL(pVarResult, (LONGLONG)h);
+	teSetPtr(pVarResult, h);
 }
 
 VOID teApiCopyImage(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)CopyImage((HANDLE)param[0], (UINT)param[1], (int)param[2], (int)param[3], (UINT)param[4]));
+	teSetPtr(pVarResult, CopyImage((HANDLE)param[0], (UINT)param[1], (int)param[2], (int)param[3], (UINT)param[4]));
 }
 
 VOID teApiGetCurrentProcess(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)GetCurrentProcess());
+	teSetPtr(pVarResult, GetCurrentProcess());
 }
 
 VOID teApiImmGetContext(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)ImmGetContext((HWND)param[0]));
+	teSetPtr(pVarResult, ImmGetContext((HWND)param[0]));
 }
 
 VOID teApiGetFocus(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)GetFocus());
+	teSetPtr(pVarResult, GetFocus());
 }
 
 VOID teApiGetForegroundWindow(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)GetForegroundWindow());
+	teSetPtr(pVarResult, GetForegroundWindow());
 }
 
 VOID teApiSetTimer(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)(HANDLE)SetTimer((HWND)param[0], (UINT_PTR)param[1], (UINT)param[2], NULL));
+	teSetPtr(pVarResult, SetTimer((HWND)param[0], (UINT_PTR)param[1], (UINT)param[2], NULL));
 }
 
 VOID teApiLoadMenu(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)LoadMenu((HINSTANCE)param[0], GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1])));
+	teSetPtr(pVarResult, LoadMenu((HINSTANCE)param[0], GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1])));
 }
 
 VOID teApiLoadIcon(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)LoadIcon((HINSTANCE)param[0], GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1])));
+	teSetPtr(pVarResult, LoadIcon((HINSTANCE)param[0], GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1])));
 }
 
 VOID teApiLoadLibraryEx(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)LoadLibraryEx(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]), (HANDLE)param[1], (DWORD)param[2]));
+	teSetPtr(pVarResult, LoadLibraryEx(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]), (HANDLE)param[1], (DWORD)param[2]));
 }
 
 VOID teApiLoadImage(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)LoadImage((HINSTANCE)param[0], GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]),
+	teSetPtr(pVarResult, LoadImage((HINSTANCE)param[0], GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]),
 		(UINT)param[2],	(int)param[3], (int)param[4], (UINT)param[5]));
 }
 
 VOID teApiImageList_LoadImage(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)ImageList_LoadImage((HINSTANCE)param[0], GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]),
+	teSetPtr(pVarResult, ImageList_LoadImage((HINSTANCE)param[0], GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]),
 	(int)param[2], (int)param[3], (COLORREF)param[4], (UINT)param[5], (UINT)param[6]));
 }
 
@@ -6791,7 +6792,7 @@ VOID teApiSHGetFileInfo(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARI
 	else {
 		pidl = (LPITEMIDLIST)param[0];//string
 	}
-	teSetLL(pVarResult, (LONGLONG)SHGetFileInfo((LPCWSTR)pidl, (DWORD)param[1], (SHFILEINFO *)param[2], (UINT)param[3], (UINT)param[4]));
+	teSetPtr(pVarResult, SHGetFileInfo((LPCWSTR)pidl, (DWORD)param[1], (SHFILEINFO *)param[2], (UINT)param[3], (UINT)param[4]));
 	if (pidl != (LPITEMIDLIST)param[0]) {
 		teCoTaskMemFree(pidl);
 	}
@@ -6799,30 +6800,30 @@ VOID teApiSHGetFileInfo(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARI
 
 VOID teApiCreateWindowEx(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)CreateWindowEx((DWORD)param[0], (LPCWSTR)param[1], (LPCWSTR)param[2],
+	teSetPtr(pVarResult, CreateWindowEx((DWORD)param[0], (LPCWSTR)param[1], (LPCWSTR)param[2],
 		(DWORD)param[3], (int)param[4], (int)param[5], (int)param[6], (int)param[7],
 		(HWND)param[8], (HMENU)param[9], (HINSTANCE)param[10], (LPVOID)param[11]));
 }
 
 VOID teApiShellExecute(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)ShellExecute((HWND)param[0], GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]),
+	teSetPtr(pVarResult, ShellExecute((HWND)param[0], GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]),
 		GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 2]), (LPCWSTR)param[3], (LPCWSTR)param[4], (int)param[5]));
 }
 
 VOID teApiBeginPaint(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)BeginPaint((HWND)param[0], (LPPAINTSTRUCT)param[1]));
+	teSetPtr(pVarResult, BeginPaint((HWND)param[0], (LPPAINTSTRUCT)param[1]));
 }
 
 VOID teApiLoadCursor(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)LoadCursor((HINSTANCE)param[0], GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1])));
+	teSetPtr(pVarResult, LoadCursor((HINSTANCE)param[0], GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1])));
 }
 
 VOID teApiLoadCursorFromFile(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLL(pVarResult, (LONGLONG)LoadCursorFromFile(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1])));
+	teSetPtr(pVarResult, LoadCursorFromFile(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1])));
 }
 
 VOID teApiSHParseDisplayName(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -6836,7 +6837,7 @@ VOID teApiSHParseDisplayName(int nArg, LONGLONG *param, DISPPARAMS *pDispParams,
 			VariantCopy(&pInvoke->pv[i], &pDispParams->rgvarg[i]);
 		}
 		if (pInvoke->pv[pInvoke->cArgs - 1].vt == VT_BSTR) {
-			teSetLL(pVarResult, (LONGLONG)_beginthread(&threadParseDisplayName, 0, pInvoke));
+			teSetPtr(pVarResult, _beginthread(&threadParseDisplayName, 0, pInvoke));
 			return;
 		}
 		FolderItem *pid;
@@ -6845,7 +6846,7 @@ VOID teApiSHParseDisplayName(int nArg, LONGLONG *param, DISPPARAMS *pDispParams,
 		teSetObjectRelease(&pInvoke->pv[pInvoke->cArgs - 1], pid);
 		Invoke5(pInvoke->pdisp, DISPID_VALUE, DISPATCH_METHOD, NULL, pInvoke->cArgs, pInvoke->pv);
 		pInvoke->pdisp->Release();
-		teSetLL(pVarResult, (LONGLONG)0);
+		teSetPtr(pVarResult, 0);
 	}
 	delete [] pInvoke;
 }
@@ -6856,7 +6857,7 @@ VOID teApiSHChangeNotification_Lock(int nArg, LONGLONG *param, DISPPARAMS *pDisp
 	if (GetDispatch(&pDispParams->rgvarg[nArg - 2], &pdisp)) {
 		PIDLIST_ABSOLUTE *ppidl;
 		LONG lEvent;
-		teSetLL(pVarResult, (LONGLONG)SHChangeNotification_Lock((HANDLE)param[0], (DWORD)param[1], &ppidl, (LONG *)&lEvent));
+		teSetPtr(pVarResult, SHChangeNotification_Lock((HANDLE)param[0], (DWORD)param[1], &ppidl, (LONG *)&lEvent));
 		VARIANT v;
 		teSetIDList(&v, ppidl[0]);
 		tePutProperty(pdisp, L"0", &v);
@@ -8593,7 +8594,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					if (pSB) {
 						if (!pSB->m_bEmpty && pSB->m_nUnload == 0 && pSB->m_pidl) {
 							VARIANT v;
-							::VariantInit(&v);
+							v.bstrVal = NULL;
 							v.vt = VT_BSTR;
 							if SUCCEEDED(GetDisplayNameFromPidl(&v.bstrVal, pSB->m_pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)) {
 								if (PathIsNetworkPath(v.bstrVal)) {
@@ -9989,7 +9990,6 @@ VOID CteShellBrowser::SetHistory(FolderItems *pFolderItems, UINT wFlags)
 		if (nCount > MAX_HISTORY) {
 			nCount = MAX_HISTORY;
 		}
-		VariantInit(&v);
 		v.vt = VT_I4;
 		while (--nCount >= 0) {
 			v.lVal = nCount;
@@ -10336,7 +10336,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				return S_OK;
 			//hwnd
 			case 0x10000002:
-				teSetLL(pVarResult, (LONGLONG)m_hwnd);
+				teSetPtr(pVarResult, m_hwnd);
 				return S_OK;
 			//Type
 			case 0x10000003:
@@ -10895,14 +10895,14 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				return S_OK;
 			//hwndList
 			case 0x10000102:
-				teSetLL(pVarResult, (LONGLONG)m_hwndLV);
+				teSetPtr(pVarResult, m_hwndLV);
 				return S_OK;
 			//hwndView
 			case 0x10000103:
 				if (pVarResult && m_pShellView) {
 					HWND hwndDV = m_hwnd;
 					m_pShellView->GetWindow(&hwndDV);
-					teSetLL(pVarResult, (LONGLONG)hwndDV);
+					teSetPtr(pVarResult, hwndDV);
 				}
 				return S_OK;
 			//SortColumn
@@ -12444,7 +12444,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				return S_OK;
 			//hwnd
 			case 1002:
-				teSetLL(pVarResult, (LONGLONG)g_hwndMain);
+				teSetPtr(pVarResult, g_hwndMain);
 				return S_OK;
 			//About
 			case 1004:
@@ -12725,7 +12725,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 							}
 						}
 						teCopyMenu(hMenu, mii.hSubMenu, fState);
-						teSetLL(pVarResult, (LONGLONG)hMenu);
+						teSetPtr(pVarResult, hMenu);
 					}
 				}
 				return S_OK;
@@ -13147,7 +13147,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				return S_OK;
 			//hwnd
 			case 0x10000002:
-				teSetLL(pVarResult, (LONGLONG)get_HWND());
+				teSetPtr(pVarResult, get_HWND());
 				return S_OK;
 			//Type
 			case 0x10000003:
@@ -13891,7 +13891,7 @@ STDMETHODIMP CteTabs::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD w
 				return S_OK;
 			//hwnd
 			case 2:
-				teSetLL(pVarResult, (LONGLONG)m_hwnd);
+				teSetPtr(pVarResult, m_hwnd);
 				return S_OK;
 			//Type
 			case 3:
@@ -14536,7 +14536,7 @@ STDMETHODIMP CteFolderItems::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 					int y = (nArg >= 1) ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) : 0;
 					int fNC = (nArg >= 2) ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]) : FALSE;
 					int bSp = (nArg >= 3) ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 3]) : FALSE;
-					teSetLL(pVarResult, (LONGLONG)GethDrop(x, y, fNC, bSp));
+					teSetPtr(pVarResult, GethDrop(x, y, fNC, bSp));
 				}
 				return S_OK;
 			//GetData
@@ -15268,7 +15268,7 @@ STDMETHODIMP CteMemory::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD
 		switch(dispIdMember) {
 			//P
 			case 1:
-				teSetLL(pVarResult, (LONGLONG)m_pc);
+				teSetPtr(pVarResult, m_pc);
 				return S_OK;
 			//Item
 			case DISPID_TE_ITEM:
@@ -15360,15 +15360,9 @@ STDMETHODIMP CteMemory::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD
 						if (nArg >= 0) {
 							if (vt == VT_BSTR && pDispParams->rgvarg[nArg].vt == VT_BSTR) {
 								VARIANT v;
-								VariantInit(&v);
-								v.llVal = 0;
-								v.bstrVal = AddBSTR(pDispParams->rgvarg[nArg].bstrVal);
-#ifdef _WIN64
-								v.vt = VT_I8;
-#else
-								v.vt = VT_I4;
-#endif
+								teSetPtr(&v, AddBSTR(pDispParams->rgvarg[nArg].bstrVal));
 								Write(dispIdMember & TE_VI, -1, vt, &v);
+								VariantClear(&v);
 							}
 							else {
 								Write(dispIdMember & TE_VI, -1, vt, &pDispParams->rgvarg[nArg]);
@@ -15565,7 +15559,7 @@ VOID CteMemory::Read(int nIndex, int nLen, VARIANT *pVarResult)
 				break;
 			case VT_PTR:
 			case VT_BSTR:
-				teSetLL(pVarResult, *(INT_PTR *)&m_pc[nIndex]);
+				teSetPtr(pVarResult, *(INT_PTR *)&m_pc[nIndex]);
 				break;
 			case VT_LPWSTR:
 				if (nLen >= 0) {
@@ -15985,7 +15979,7 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 						pCM2->Release();
 					}
 				}
-				teSetLL(pVarResult, lResult);
+				teSetPtr(pVarResult, lResult);
 				return S_OK;
 
 			case DISPID_VALUE:
@@ -15993,7 +15987,7 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 				return S_OK;
 			default:
 				if (dispIdMember >= 10 && dispIdMember <= 14) {
-					teSetLL(pVarResult, m_param[dispIdMember - 10]);
+					teSetPtr(pVarResult, m_param[dispIdMember - 10]);
 					return S_OK;
 				}
 				break;
@@ -16610,7 +16604,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 				return S_OK;
 			//hwnd
 			case 0x10000003:
-				teSetLL(pVarResult, (LONGLONG)m_hwnd);
+				teSetPtr(pVarResult, m_hwnd);
 				return S_OK;
 			//Close
 			case 0x10000004:
@@ -16619,7 +16613,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 				return S_OK;
 			//hwnd
 			case 0x10000005:
-				teSetLL(pVarResult, (LONGLONG)m_hwndTV);
+				teSetPtr(pVarResult, m_hwndTV);
 				return S_OK;
 			//FolderView
 			case 0x10000007:
@@ -16686,7 +16680,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 							hItem = 0;
 						}
 					}
-					teSetLL(pVarResult, (LONGLONG)hItem);
+					teSetPtr(pVarResult, hItem);
 				}
 				return S_OK;
 
@@ -18143,11 +18137,11 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 				return S_OK;
 			//GetWidth
 			case 110:
-				teSetLL(pVarResult, m_pImage->GetWidth());
+				teSetLong(pVarResult, m_pImage->GetWidth());
 				return S_OK;
 			//GetHeight
 			case 111:
-				teSetLL(pVarResult, m_pImage->GetHeight());
+				teSetLong(pVarResult, m_pImage->GetHeight());
 				return S_OK;
 			//GetThumbnailImage
 			case 120:
@@ -18213,12 +18207,12 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 						DeleteObject(iconinfo.hbmColor);
 						DeleteObject(iconinfo.hbmMask);
 						DestroyIcon(hIcon);
-						teSetLL(pVarResult, (LONGLONG)hBM);
+						teSetPtr(pVarResult, hBM);
 						return S_OK;
 					}
 #endif
 					if (m_pImage->GetHBITMAP(((cl & 0xff) << 16) + (cl & 0xff00) + ((cl & 0xff0000) >> 16), &hBM) == 0) {
-						teSetLL(pVarResult, (LONGLONG)hBM);
+						teSetPtr(pVarResult, hBM);
 					}
 				}
 				return S_OK;
@@ -18226,7 +18220,7 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 			case 211:
 				HICON hIcon;
 				if (m_pImage->GetHICON(&hIcon) == 0) {
-					teSetLL(pVarResult, (LONGLONG)hIcon);
+					teSetPtr(pVarResult, hIcon);
 				}
 				return S_OK;
 			case DISPID_VALUE:

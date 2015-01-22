@@ -229,6 +229,12 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *
 #define offsetof(type, member)	(DWORD)(UINT_PTR)&((type *)0)->member
 #endif
 
+#ifdef _WIN64
+#define teSetPtr(pVar, nData)	teSetLL(pVar, (LONGLONG)nData)
+#else
+#define teSetPtr(pVar, nData)	teSetLong(pVar, (LONG)nData)
+#endif
+
 typedef struct tagTEMethod
 {
 	LONG   id;
