@@ -3987,7 +3987,7 @@ HRESULT MessageSubPt(int nFunc, PVOID pObj, MSG *pMsg)
 		teSetObject(&pv[4], pObj);
 		teSetPtr(&pv[3], pMsg->hwnd);
 		teSetLong(&pv[2], pMsg->message);
-		teSetPtr(&pv[1], pMsg->wParam);
+		teSetLong(&pv[1], pMsg->wParam);
 		CteMemory *pstPt = new CteMemory(2 * sizeof(int), NULL, 1, L"POINT");
 		pstPt->SetPoint(pMsg->pt.x, pMsg->pt.y);
 		teSetObjectRelease(&pv[0], pstPt);
@@ -6587,6 +6587,12 @@ VOID teApiGetSysColorBrush(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, V
 VOID teApiSetFocus(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	teSetPtr(pVarResult, SetFocus((HWND)param[0]));
+	if ((HWND)param[0] == g_hwndMain) {
+		CteShellBrowser *pSB = g_pTabs->GetShellBrowser(g_pTabs->m_nIndex);
+		if (pSB) {
+			pSB->SetActive(FALSE);
+		}
+	}
 }
 
 VOID teApiGetDC(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
