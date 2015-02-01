@@ -354,7 +354,7 @@ Resize2 = function ()
 		o.style.width = w + "px";
 		for (var i = 1; i <= 3; i++) {
 			var ob = document.getElementById("LeftBar" + i);
-			if (ob && api.StrCmpI(ob.style.display, "none")) {
+			if (ob && api.strcmpi(ob.style.display, "none")) {
 				pt = GetPos(ob);
 				o.style.width = w + "px";
 				w2 = w;
@@ -376,7 +376,7 @@ Resize2 = function ()
 		o.style.width = w + "px";
 		for (var i = 1; i <= 3; i++) {
 			var ob = document.getElementById("RightBar" + i);
-			if (ob && api.StrCmpI(ob.style.display, "none")) {
+			if (ob && api.strcmpi(ob.style.display, "none")) {
 				o.style.width = w + "px";
 				w2 = w;
 				break;
@@ -823,6 +823,8 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 	if (isFinite(hr)) {
 		return hr; 
 	}
+	var strClass = api.GetClassName(hwnd);
+	var bLV = Ctrl.Type <= CTRL_EB && api.PathMatchSpec(strClass, WC_LISTVIEW + ";DirectUIHWND");
 	if (msg == WM_MOUSEWHEEL) {
 		var Ctrl2 = te.CtrlFromPoint(pt);
 		if (Ctrl2) {
@@ -852,7 +854,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 					g_mouse.RButtonDown(true);
 					bButton = (g_mouse.str == "2");
 				}
-				else if (Ctrl.Type <= CTRL_EB) {
+				else if (bLV) {
 					var iItem = Ctrl.HitTest(pt);
 					if (iItem < 0 && !IsDrag(pt, te.Data.pt)) {
 						Ctrl.SelectItem(null, SVSI_DESELECTOTHERS);
@@ -860,7 +862,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 				}
 			}
 			if (msg == WM_MBUTTONUP) {
-				if (Ctrl.Type <= CTRL_EB && api.GetKeyState(VK_SHIFT) >= 0 && api.GetKeyState(VK_CONTROL) >= 0) {
+				if (bLV && api.GetKeyState(VK_SHIFT) >= 0 && api.GetKeyState(VK_CONTROL) >= 0) {
 					var ar = eventTE.Mouse.List[g_mouse.str];
 					if (ar && api.strcmpi(ar[0][1], "Selected Items") == 0) {
 						var iItem = Ctrl.HitTest(pt);
@@ -902,7 +904,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 			g_mouse.CancelContextMenu = false;
 			if (te.Data.Conf_Gestures >= 2) {
 				var iItem = -1;
-				if (Ctrl.Type <= CTRL_EB) {
+				if (bLV) {
 					iItem = Ctrl.HitTest(pt);
 					if (iItem < 0) {
 						return S_OK;
@@ -917,7 +919,6 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 		}
 	}
 	if (msg == WM_LBUTTONDBLCLK || msg == WM_RBUTTONDBLCLK || msg == WM_MBUTTONDBLCLK || msg == WM_XBUTTONDBLCLK) {
-		var strClass = api.GetClassName(hwnd);
 		if (api.strcmpi(strClass, WC_HEADER)) {
 			te.Data.pt = pt;
 			g_mouse.str = g_mouse.GetButton(msg, wParam);
@@ -1737,6 +1738,7 @@ function InitCode()
 	}
 	DefaultFont = api.Memory("LOGFONT");
 	api.SystemParametersInfo(SPI_GETICONTITLELOGFONT, DefaultFont.Size, DefaultFont, 0);
+	HOME_PATH = te.Data.Conf_NewTab || HOME_PATH;
 }
 
 function ChangeNotifyFV(lEvent, item1, item2)

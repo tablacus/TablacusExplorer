@@ -49,8 +49,6 @@
               <div id="tab4_" style="margin-left: 20px">
                 <label id="tab4_1" class="button" style="width: 100%" onmousedown="ClickTree(this, null, 'Tree');">Root</label>
                 <br />
-                <label id="tab4_2" class="button" style="width: 100%" onmousedown="ClickTree(this, null, 'Tree');">EnumFlags</label>
-                <br />
               </div>
               <tt class="treebutton" style="visibility: hidden">-</tt>
               <label id="tab5" class="button" style="width: 88%" onmousedown="ClickTree(this, null, 'View');">List</label>
@@ -72,7 +70,7 @@
               <label>Width</label><input type="text" id="Conf_RightBarWidth" align="right" size="4" />px<br /><br />
               <label>Tool Bar</label> <label>Icon</label><br />
               <label>Size</label><input type="text" id="Conf_IconSize" align="right" size="4" />px
-              <input type="button" value="Set Default" onclick="document.F.Conf_IconSize.value='';" />
+              <input type="button" value="Set Default" onclick="SetDefault(document.F.Conf_IconSize, '');" />
               <br /><br />
               <div class="block">
                 <input type="button" name="ButtonInitConfig" value="Initialize config folder" onclick="InitConfig(this);" />
@@ -312,8 +310,24 @@
               <label>Width</label>
               <input type="text" name="Tab_TabWidth" size="4" />
               <label>Height</label>
-              <input type="text" name="Tab_TabHeight" size="4" />
+              <input type="text" name="Tab_TabHeight" size="4" /><br />
               <br />
+              <div>
+                <label>New Tab</label>
+              </div>
+              <table style="width: 100%">
+                <tr>
+                  <td style="width: 100%">
+                    <input type="text" name="Conf_NewTab" style="width: 100%" />
+                  </td>
+                  <td>
+                    <input type="button" value="Reference..." onclick="ChooseFolder1(document.F.Conf_NewTab)" />
+                  </td>
+                  <td>
+                    <input type="button" value="Set Default" onclick="SetDefault(document.F.Conf_NewTab, '');" />
+                  </td>
+                </tr>
+              </table>
               <br />
               <div>
                 <input type="checkbox" id="Conf_TabDefault" />
@@ -350,7 +364,7 @@
               <label for="Tree_Align=3">Visible</label>
               <input type="radio" name="Tree_Align_" id="Tree_Align=1" onclick="SetRadio(this)" />
               <label for="Tree_Align=1">Hidden</label>
-              <br />
+              <br /><br />
               <label>Width</label>
               <br />
               <input type="text" name="Tree_Width" size="4" />
@@ -450,8 +464,20 @@
             <!--panel_end-->
 
             <div class="panel" id="panel4_1">
-              <label>Path</label><br />
-              <input type="text" name="Tree_Root" style="width: 100%" /><br /><br />
+              <label>Root</label><br />
+              <table style="width: 100%">
+                <tr>
+                  <td style="width: 100%">
+                    <input type="text" name="Tree_Root" style="width: 100%" />
+                  </td>
+                  <td>
+                    <input type="button" value="Reference..." onclick="ChooseFolder1(document.F.Tree_Root)" />
+                  </td>
+                  <td>
+                    <input type="button" value="Set Default" onclick="SetDefault(document.F.Tree_Root, '0');" />
+                  </td>
+                </tr>
+              </table><br />
               <label>RootStyle</label><br />
               <input type="hidden" name="Tree_RootStyle" />
               <input type="radio" name="Tree_RootStyle_" id="Tree_RootStyle=0" onclick="SetRadio(this)" />
@@ -460,10 +486,7 @@
               <label for="Tree_RootStyle=1">Hidden</label>
               <input type="radio" name="Tree_RootStyle_" id="Tree_RootStyle=2" onclick="SetRadio(this)" />
               <label for="Tree_RootStyle=2">Expanded</label>
-            </div>
-            <!--panel_end-->
-
-            <div class="panel" id="panel4_2">
+              <br /><br />
               <label>EnumFlags</label><br />
               <input type="hidden" name="Tree_EnumFlags" />
               <input type="checkbox" id="Tree_EnumFlags:0x20" onclick="SetCheckbox(this)" />
@@ -553,6 +576,7 @@
               <label for="View_fFlags:0x2000">Show selection always</label>
               <input type="checkbox" id="View_fFlags:0x8000" onclick="SetCheckbox(this)" />
               <label for="View_fFlags:0x8000">Single click activate</label>
+              <br />
               <input type="checkbox" id="View_fFlags:0x200000" onclick="SetCheckbox(this)" />
               <label for="View_fFlags:0x200000">Full row select</label>
 

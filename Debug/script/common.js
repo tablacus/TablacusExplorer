@@ -17,7 +17,7 @@ eventTA = {};
 g_ptDrag = api.Memory("POINT");
 objHover = null;
 g_nFind = 0;
-g_Colors = [];
+g_Colors = {};
 
 FolderMenu =
 {
@@ -594,7 +594,7 @@ SaveXml = function (filename, all)
 		var nCount2 = Ctrl.Count;
 		for (var i2 in Ctrl) {
 			var FV = Ctrl[i2];
-			var path = api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
+			var path = api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
 			if (/search\-ms:.*?&crumb=location:([^&]*)/.test(path)) {
 				path = api.PathCreateFromUrl("file:" + RegExp.$1);
 			}
@@ -1079,7 +1079,7 @@ ExecScriptEx = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffec
 {
 	var fn = null;
 	try {
-		if (api.StrCmpI(type, "JScript") == 0) {
+		if (api.PathMatchSpec(type, "J*Script")) {
 			fn = {Handled: new Function(s)};
 		}
 		else if (api.StrCmpI(type, "VBScript") == 0) {
@@ -1720,7 +1720,7 @@ AddMenuIconFolderItem = function (mii, FolderItem)
 
 AddMenuImage = function (mii, image, id)
 {
-	mii.hbmpItem = image.GetHBITMAP(WINVER >= 0x600 ? null : GetSysColor(COLOR_MENU));
+	mii.hbmpItem = image.GetHBITMAP(GetSysColor(COLOR_MENU));
 	if (mii.hbmpItem) {
 		mii.fMask = mii.fMask | MIIM_BITMAP;
 		if (id) {
@@ -2704,8 +2704,11 @@ OpenDialogEx = function (path, filter)
 {
 	var commdlg = te.CommonDialog;
 	var te_path = fso.GetParentFolderName(api.GetModuleFileName(null));
-	if (path.substr(0, 3) == "../") {
+	if (api.PathMatchSpec(path, "../*")) {
 		path = te_path + (path.substr(2, MAXINT).replace(/\//g, "\\"));
+	}
+	if (!fso.FolderExists(path)) {
+		path = fso.GetDriveName(te_path);
 	}
 	commdlg.InitDir = path;
 	commdlg.Filter = filter;
@@ -2735,7 +2738,7 @@ ChooseFolder = function (path, pt)
 
 BrowseForFolder = function (path)
 {
-	return OpenDialogEx(path, "Folder|<Folder>");
+	return OpenDialogEx(path, GetText("Folder") + "|<Folder>");
 }
 
 InvokeCommand = function (Items, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon, FV, uCMF)

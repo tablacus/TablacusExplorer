@@ -26,7 +26,18 @@ vb = api.GetScriptDispatch('Function fnFormatDateTime(s, n)\n fnFormatDateTime =
 
 function SetDefaultLangID()
 {
-	document.F.Conf_Lang.value = navigator.userLanguage.replace(/\-.*/,"");
+	SetDefault(document.F.Conf_Lang, navigator.userLanguage.replace(/\-.*/,""));
+}
+
+function SetDefault(o, v)
+{
+	setTimeout(function ()
+	{
+		if (!confirmOk("Are you sure?")) {
+			return;
+		}
+		o.value = v;
+	}, 99);
 }
 
 function OpenGroup(id)
@@ -254,7 +265,18 @@ function ChooseColor1(o)
 			o2.value = c;
 			o.style.backgroundColor = GetWebColor(c);
 		}
-	}, 100);
+	}, 99);
+}
+
+function ChooseFolder1(o)
+{
+	setTimeout(function ()
+	{
+		var r = BrowseForFolder(o.value);
+		if (r) {
+			o.value = r;
+		}
+	}, 99);
 }
 
 function SetTreeControls()
@@ -731,7 +753,7 @@ function LoadMenus(nSelected)
 				ClickTree(document.getElementById("tab2_" + g_MenuType));
 				EditMenus();
 				g_MenuType = "";
-			}, 100);
+			}, 99);
 		}
 	}
 }
@@ -889,7 +911,7 @@ function SaveAddons()
 				if (!item) {
 					item = xml.createElement(Id);
 				}
-				var Enabled = api.StrCmpI(div.style.color, "gray") ? 1 : 0;
+				var Enabled = api.strcmpi(div.style.color, "gray") ? 1 : 0;
 				if (Enabled) {
 					var AddonFolder = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\" + Id);
 					Enabled = 0;
@@ -1036,7 +1058,7 @@ function SetAddon(td, Id, Enable)
 			if (g_tdDown) {
 				(function (src, dest) { setTimeout(function () {
 					AddonMoveEx(src, dest);
-				}, 100);}) (GetRowIndexById(g_tdDown) , GetRowIndexById((e ? e.currentTarget : window.event.srcElement).firstChild.id));
+				}, 99);}) (GetRowIndexById(g_tdDown) , GetRowIndexById((e ? e.currentTarget : window.event.srcElement).firstChild.id));
 			}
 		}
 		g_tdDown = null;
@@ -1092,7 +1114,7 @@ function Drop5(e)
 			if (/Addons_/i.test(o.id)) {
 				(function (src, dest) { setTimeout(function () {
 					AddonMoveEx(src, dest);
-				}, 100);}) (GetRowIndexById(g_drag5) , GetRowIndexById(o.id));
+				}, 99);}) (GetRowIndexById(g_drag5) , GetRowIndexById(o.id));
 				break;
 			}
 		} while (o = o.parentNode);
@@ -1751,7 +1773,7 @@ function RefX(Id, bMultiLine, oButton)
 				GetElement(Id).value = path;
 			}
 		}
-	}, 100);
+	}, 99);
 	g_Chg.Data = true;
 }
 
@@ -2000,7 +2022,7 @@ function GetAddons()
 	{
 		if (xhr.readyState == 4) {
 			if (xhr.status == 200) {
-				setTimeout(AddonsList, 100);
+				setTimeout(AddonsList, 99);
 			}
 		}
 	}
@@ -2264,7 +2286,7 @@ function Install(o)
 			}
 		}
 		document.body.style.cursor = "auto";
-	}, 100);
+	}, 99);
 }
 
 function EnableSelectTag(o)
@@ -2277,7 +2299,7 @@ function EnableSelectTag(o)
 			o.style.visibility = "visible";
 			api.SendMessage(hwnd, WM_SETREDRAW, true, 0);
 			api.RedrawWindow(hwnd, null, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
-		}, 100);
+		}, 99);
 	}
 }
 

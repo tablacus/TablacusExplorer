@@ -68,6 +68,7 @@ typedef BOOL (WINAPI* LPFNIsWow64Process)(HANDLE hProcess, PBOOL Wow64Process);
 typedef HRESULT (STDAPICALLTYPE* LPFNPSPropertyKeyFromString)(__in LPCWSTR pszString,  __out PROPERTYKEY *pkey);
 typedef HRESULT (STDAPICALLTYPE* LPFNPSGetPropertyKeyFromName)(__in PCWSTR pszName, __out PROPERTYKEY *ppropkey);
 typedef HRESULT (STDAPICALLTYPE* LPFNPSGetPropertyDescription)(__in REFPROPERTYKEY propkey, __in REFIID riid,  __deref_out void **ppv);
+typedef HRESULT (STDAPICALLTYPE* LPFNPSStringFromPropertyKey)(__in REFPROPERTYKEY pkey, __out_ecount(cch) LPWSTR psz, __in UINT cch);
 
 //Vista or higher.
 typedef HRESULT (STDAPICALLTYPE* LPFNSHCreateItemFromIDList)(__in PCIDLIST_ABSOLUTE pidl, __in REFIID riid, __deref_out void **ppv);
@@ -106,6 +107,7 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *
 #define MAX_PATHEX				32768
 #define MAX_PROP				4096
 #define MAX_STATUS				1024
+#define MAX_COLUMNS				8192
 #define SIZE_BUFF				32768
 #define DRAG_SCROLL				32
 #define DRAG_INTERVAL			300
@@ -785,11 +787,11 @@ public:
 	HRESULT NavigateEB(DWORD dwFrame);
 	HRESULT OnBeforeNavigate(FolderItem *pPrevious, UINT wFlags);
 	void InitializeMenuItem(HMENU hmenu, LPTSTR lpszItemName, int nId, HMENU hmenuSub);
-	VOID GetSort(BSTR* pbs);
+	VOID GetSort(BSTR* pbs, int nFormat);
 	VOID SetSort(BSTR bs);
 	HRESULT SetRedraw(BOOL bRedraw);
 	HRESULT CreateViewWindowEx(IShellView *pPreviousView);
-	BSTR GetColumnsStr();
+	BSTR GetColumnsStr(int nFormat);
 	VOID GetDefaultColumns();
 	VOID SaveFocusedItemToHistory();
 	HRESULT GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, FolderItem *pid, UINT wFlags, FolderItems *pFolderItems, FolderItem *pPrevious, CteShellBrowser *pHistSB);
@@ -809,8 +811,10 @@ public:
 	HRESULT SelectItemEx(LPITEMIDLIST *ppidl, int dwFlags);
 	VOID InitFolderSize();
 	BOOL SetFolderSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch);
+	HRESULT PropertyKeyFromName(BSTR bs, PROPERTYKEY *pkey);
 #ifdef _2000XP
 	VOID AddPathXP(CteFolderItems *pFolderItems, IShellFolderView *pSFV, int nIndex, BOOL bResultsFolder);
+	BSTR PSGetNameXP(BSTR bsName, int nFormat);
 #endif
 
 public:
@@ -841,9 +845,10 @@ public:
 	int			m_nUnload;
 	DWORD		m_nOpenedType;
 	DWORD		m_dwCookie;
-	BOOL		m_bEmpty, m_bInit;
+	BOOL		m_bEmpty;
+	BOOL		m_bInit;
 	BOOL		m_bVisible;
-	BOOL		m_bNavigateComplete;
+	BOOL		m_bRefreshLayout;
 private:
 	VARIANT		m_Data;
 	FolderItem	**m_ppLog;
@@ -864,6 +869,8 @@ private:
 	HRESULT		m_DragLeave;
 	LONG		m_nCreate;
 	BOOL		m_bIconSize;
+	BOOL		m_bStopgap;
+	BOOL		m_bNavigateComplete;
 #ifdef _2000XP
 	IShellFolderViewCB	*m_pSFVCB;
 	int			m_nFolderName;

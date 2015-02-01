@@ -35,6 +35,7 @@ LPFNPSPropertyKeyFromString lpfnPSPropertyKeyFromString = NULL;
 LPFNPSGetPropertyKeyFromName lpfnPSGetPropertyKeyFromName = NULL;
 LPFNPSPropertyKeyFromString lpfnPSPropertyKeyFromStringEx = NULL;
 LPFNPSGetPropertyDescription lpfnPSGetPropertyDescription = NULL;
+LPFNPSStringFromPropertyKey lpfnPSStringFromPropertyKey = NULL;
 LPFNSHGetIDListFromObject lpfnSHGetIDListFromObject = NULL;
 LPFNIsWow64Process lpfnIsWow64Process = NULL;
 LPFNChangeWindowMessageFilter lpfnChangeWindowMessageFilter = NULL;
@@ -113,6 +114,8 @@ int		g_nCharWidth = 7;
 BOOL	g_bCharWidth = true;
 BOOL	g_bUpperVista;
 BOOL	g_bIsXP;
+LPWSTR  g_szTotalFileSizeXP = GetUserDefaultLCID() == 1041 ? L"総ファイル サイズ" : L"Total file size";
+LPWSTR	g_szTotalFileSizeCodeXP = L"System.TotalFileSize";
 #endif
 #ifdef _W2000
 BOOL	g_bIs2000;
@@ -1172,40 +1175,65 @@ VOID teSetLL(VARIANT *pv, LONGLONG ll)
 VOID teSetSZ(VARIANT *pv, LPCWSTR lpstr)
 {
 	if (pv) {
-		pv->bstrVal = ::SysAllocString(lpstr);;
+		pv->bstrVal = ::SysAllocString(lpstr);
 		pv->vt = VT_BSTR;
 	}
 }
 
-BSTR tePSGetDisplayName(PROPERTYKEY propKey)
+BSTR tePSGetNameFromPropertyKeyEx(PROPERTYKEY propKey, int nFormat)
 {
-	BSTR bs = NULL;
-	if (lpfnPSPropertyKeyFromStringEx) {
-		if (lpfnPSGetPropertyDescription) {
-			IPropertyDescription *pdesc;
-			if SUCCEEDED(lpfnPSGetPropertyDescription(propKey, IID_PPV_ARGS(&pdesc))) {
-				LPWSTR psz;
-				if SUCCEEDED(pdesc->GetDisplayName(&psz)) {
-					bs = ::SysAllocString(psz);
-					CoTaskMemFree(psz);
-				}
-				pdesc->Release();
-			}
+	if (nFormat == 2) {
+		WCHAR szProp[64];
+		if (lpfnPSStringFromPropertyKey) {
+			lpfnPSStringFromPropertyKey(propKey, szProp, 64);
 		}
 #ifdef _2000XP
 		else {
-			BSTR bs2 = ::SysAllocStringLen(NULL, MAX_PROP);
-			IPropertyUI *pPUI;
-			if SUCCEEDED(CoCreateInstance(CLSID_PropertiesUI, NULL, CLSCTX_INPROC, IID_PPV_ARGS(&pPUI))) {
-				pPUI->GetDisplayName(propKey.fmtid, propKey.pid, PUIFNF_DEFAULT, bs2, MAX_PROP);
-				pPUI->Release();
-			}
-			bs = ::SysAllocString(bs2);
-			::SysFreeString(bs2);
+			StringFromGUID2(propKey.fmtid, szProp, 39);
+			wchar_t szId[8];
+			swprintf_s((wchar_t *)&szId, 8, L" %d", propKey.pid);
+			lstrcat(szProp, szId);
 		}
 #endif
+		return ::SysAllocString(szProp);
 	}
-	return bs;
+	if (lpfnPSGetPropertyDescription) {
+		BSTR bs = NULL;
+		IPropertyDescription *pdesc;
+		if SUCCEEDED(lpfnPSGetPropertyDescription(propKey, IID_PPV_ARGS(&pdesc))) {
+			LPWSTR psz = NULL;
+			if (nFormat) {
+				pdesc->GetCanonicalName(&psz);
+			}
+			else {
+				pdesc->GetDisplayName(&psz);
+			}
+			if (psz) {
+				bs = ::SysAllocString(psz);
+				CoTaskMemFree(psz);
+			}
+			pdesc->Release();
+		}
+		return bs;
+	}
+#ifdef _2000XP
+	if (IsEqualPropertyKey(propKey, PKEY_TotalFileSize)) {
+		return ::SysAllocString(nFormat ? g_szTotalFileSizeCodeXP : g_szTotalFileSizeXP);
+	}
+	WCHAR szProp[MAX_PROP];
+	IPropertyUI *pPUI;
+	if SUCCEEDED(CoCreateInstance(CLSID_PropertiesUI, NULL, CLSCTX_INPROC, IID_PPV_ARGS(&pPUI))) {
+		if (nFormat) {
+			pPUI->GetCannonicalName(propKey.fmtid, propKey.pid, szProp, MAX_PROP);
+		}
+		else {
+			pPUI->GetDisplayName(propKey.fmtid, propKey.pid, PUIFNF_DEFAULT, szProp, MAX_PROP);
+		}
+		pPUI->Release();
+	}
+	return ::SysAllocString(szProp);
+#endif
+	return NULL;
 }
 
 BOOL teSetForegroundWindow(HWND hwnd)
@@ -2961,8 +2989,12 @@ LPITEMIDLIST teILCreateResultsXP(LPITEMIDLIST pidl)
 	return pidl2;
 }
 
-HRESULT STDAPICALLTYPE tePSPropertyKeyFromString(__in LPCWSTR pszString,  __out PROPERTYKEY *pkey)
+HRESULT STDAPICALLTYPE tePSPropertyKeyFromStringXP(__in LPCWSTR pszString,  __out PROPERTYKEY *pkey)
 {
+	if (lstrcmpi(pszString, g_szTotalFileSizeCodeXP) == 0) {
+		*pkey = PKEY_TotalFileSize;
+		return S_OK;
+	}
 	HRESULT hr = E_NOTIMPL;
 	ULONG chEaten = 0;
 	IPropertyUI *pPUI;
@@ -3987,7 +4019,7 @@ HRESULT MessageSubPt(int nFunc, PVOID pObj, MSG *pMsg)
 		teSetObject(&pv[4], pObj);
 		teSetPtr(&pv[3], pMsg->hwnd);
 		teSetLong(&pv[2], pMsg->message);
-		teSetLong(&pv[1], pMsg->wParam);
+		teSetLong(&pv[1], (LONG)pMsg->wParam);
 		CteMemory *pstPt = new CteMemory(2 * sizeof(int), NULL, 1, L"POINT");
 		pstPt->SetPoint(pMsg->pt.x, pMsg->pt.y);
 		teSetObjectRelease(&pv[0], pstPt);
@@ -4311,6 +4343,7 @@ VOID CALLBACK teNavigateCompleteProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWO
 		}
 		pid->Release();
 	}
+	pSB->m_bRefreshLayout = FALSE;
 }
 
 LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -5563,43 +5596,41 @@ VOID teApiPathSearchAndQualify(int nArg, LONGLONG *param, DISPPARAMS *pDispParam
 
 VOID teApiPSFormatForDisplay(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	if (lpfnPSPropertyKeyFromStringEx) {
-		if (param[0]) {
-			PROPERTYKEY propKey;
-			if SUCCEEDED(lpfnPSPropertyKeyFromStringEx((LPCWSTR)param[0], &propKey)) {
-				if (lpfnPSGetPropertyDescription) {
-					IPropertyDescription *pdesc;
-					if SUCCEEDED(lpfnPSGetPropertyDescription(propKey, IID_PPV_ARGS(&pdesc))) {
-						LPWSTR psz;
-						if SUCCEEDED(pdesc->FormatForDisplay(*((PROPVARIANT *)&pDispParams->rgvarg[nArg - 1]), (PROPDESC_FORMAT_FLAGS)param[2], &psz)) {
-							teSetSZ(pVarResult, psz);
-							::CoTaskMemFree(psz);
-						}
-						pdesc->Release();
+	if (param[0]) {
+		PROPERTYKEY propKey;
+		if SUCCEEDED(lpfnPSPropertyKeyFromStringEx((LPCWSTR)param[0], &propKey)) {
+			if (lpfnPSGetPropertyDescription) {
+				IPropertyDescription *pdesc;
+				if SUCCEEDED(lpfnPSGetPropertyDescription(propKey, IID_PPV_ARGS(&pdesc))) {
+					LPWSTR psz;
+					if SUCCEEDED(pdesc->FormatForDisplay(*((PROPVARIANT *)&pDispParams->rgvarg[nArg - 1]), (PROPDESC_FORMAT_FLAGS)param[2], &psz)) {
+						teSetSZ(pVarResult, psz);
+						::CoTaskMemFree(psz);
 					}
+					pdesc->Release();
 				}
-#ifdef _2000XP
-				else {
-					BSTR bsResult = ::SysAllocStringLen(NULL, MAX_PROP);
-					IPropertyUI *pPUI;
-					if SUCCEEDED(CoCreateInstance(CLSID_PropertiesUI, NULL, CLSCTX_INPROC, IID_PPV_ARGS(&pPUI))) {
-						pPUI->FormatForDisplay(propKey.fmtid, propKey.pid, (PROPVARIANT *)&pDispParams->rgvarg[nArg - 1], (PROPERTYUI_FORMAT_FLAGS)param[2], bsResult, MAX_PROP);
-						pPUI->Release();
-					}
-					teSetBSTR(pVarResult, bsResult, -1);
-				}
-#endif
 			}
+#ifdef _2000XP
+			else {
+				BSTR bsResult = ::SysAllocStringLen(NULL, MAX_PROP);
+				IPropertyUI *pPUI;
+				if SUCCEEDED(CoCreateInstance(CLSID_PropertiesUI, NULL, CLSCTX_INPROC, IID_PPV_ARGS(&pPUI))) {
+					pPUI->FormatForDisplay(propKey.fmtid, propKey.pid, (PROPVARIANT *)&pDispParams->rgvarg[nArg - 1], (PROPERTYUI_FORMAT_FLAGS)param[2], bsResult, MAX_PROP);
+					pPUI->Release();
+				}
+				teSetBSTR(pVarResult, bsResult, -1);
+			}
+#endif
 		}
 	}
 }
 
 VOID teApiPSGetDisplayName(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	if (param[0] && lpfnPSPropertyKeyFromStringEx && pVarResult) {
+	if (param[0] && pVarResult) {
 		PROPERTYKEY propKey;
 		if SUCCEEDED(lpfnPSPropertyKeyFromStringEx((LPCWSTR)param[0], &propKey)) {
-			pVarResult->bstrVal = tePSGetDisplayName(propKey);
+			pVarResult->bstrVal = tePSGetNameFromPropertyKeyEx(propKey, 0);
 			pVarResult->vt = VT_BSTR;
 		}
 	}
@@ -8082,15 +8113,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		lpfnPSPropertyKeyFromString = (LPFNPSPropertyKeyFromString)GetProcAddress(hDll, "PSPropertyKeyFromString");
 		lpfnPSGetPropertyKeyFromName = (LPFNPSGetPropertyKeyFromName)GetProcAddress(hDll, "PSGetPropertyKeyFromName");
 		lpfnPSGetPropertyDescription = (LPFNPSGetPropertyDescription)GetProcAddress(hDll, "PSGetPropertyDescription");
+		lpfnPSStringFromPropertyKey = (LPFNPSStringFromPropertyKey)GetProcAddress(hDll, "PSStringFromPropertyKey");
 		lpfnPSPropertyKeyFromStringEx = tePSPropertyKeyFromStringEx;
 	}
 #ifdef _2000XP
 	else {
-		IPropertyUI *pPUI;
-		if SUCCEEDED(CoCreateInstance(CLSID_PropertiesUI, NULL, CLSCTX_INPROC, IID_PPV_ARGS(&pPUI))) {
-			lpfnPSPropertyKeyFromStringEx = tePSPropertyKeyFromString;
-			pPUI->Release();
-		}
+		lpfnPSPropertyKeyFromStringEx = tePSPropertyKeyFromStringXP;
 	}
 #endif
 	SysFreeString(bsLib);
@@ -8717,6 +8745,7 @@ void CteShellBrowser::Init(CteTabs *pTabs, BOOL bNew)
 	m_pSFVCB = NULL;
 	m_nColumns = 0;
 #endif
+	m_bRefreshLayout = FALSE;
 	m_nCreate = 0;
 	m_nDefultColumns = 0;
 	m_bNavigateComplete = FALSE;
@@ -9176,6 +9205,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 
 	m_pFolderItem1 && m_pFolderItem1->Release();
 	m_pFolderItem1 = NULL;
+	m_bStopgap = FALSE;
 	VariantClear(&m_vFolderSize);
 	teExecMethod(g_pJS, L"_o", &m_vFolderSize, 0, NULL);
 
@@ -9218,6 +9248,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 			if SUCCEEDED(m_pFolderItem1->get_Path(&bs)) {
 				if (!teIsDesktopPath(bs)) {
 					teILCloneReplace(&pidl, g_pidlResultsFolder);
+					m_bStopgap = TRUE;
 				}
 				SysFreeString(bs);
 			}
@@ -9256,6 +9287,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	BOOL bExplorerBrowser = FALSE;
 	DWORD dwFrame = 0;
 	FOLDERVIEWOPTIONS fvo;
+	UINT uViewMode = m_param[SB_ViewMode];
 #ifdef _2000XP
 	if (g_bUpperVista) {
 #endif
@@ -9263,8 +9295,10 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		if (bExplorerBrowser) {
 			dwFrame = EBO_SHOWFRAMES;
 		}
-		fvo = teGetFolderViewOptions(pidl, m_param[SB_ViewMode]);
-		bExplorerBrowser |= fvo == FVO_DEFAULT;
+		fvo = teGetFolderViewOptions(pidl, uViewMode);
+		if (fvo == FVO_DEFAULT) {
+			bExplorerBrowser = TRUE;
+		}
 #ifdef _2000XP
 	}
 #endif
@@ -9309,6 +9343,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	dwflag = static_cast<EXPLORER_BROWSER_OPTIONS>(m_param[SB_Options]);
 
 	m_bIconSize = FALSE;
+	
 	if (param[SB_DoFunc]) {
 		hr = OnBeforeNavigate(pPrevious, wFlags);
 		if (hr == E_ACCESSDENIED && (teILIsEqual(m_pFolderItem, pPrevious) || !m_pShellView)) {
@@ -9340,6 +9375,18 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	SetHistory(pFolderItems, wFlags);
 	DestroyView(m_param[SB_Type]);
 	Show(false);
+#ifdef _2000XP
+	if (g_bUpperVista) {
+#endif
+		if (uViewMode != m_param[SB_ViewMode]) {
+			fvo = teGetFolderViewOptions(pidl, m_param[SB_ViewMode]);
+			if (fvo == FVO_DEFAULT) {
+				bExplorerBrowser = TRUE;
+			}
+		}
+#ifdef _2000XP
+	}
+#endif
 	//ShellBrowser
 	if (!bExplorerBrowser) {
 		IShellFolder *pShellFolder = NULL;
@@ -9351,7 +9398,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 					m_nColumns = 0;
 				}
 				SHELLDETAILS sd;
-				while (m_pSF2->GetDetailsOf(NULL, m_nColumns, &sd) == S_OK && m_nColumns < 8192) {
+				while (m_pSF2->GetDetailsOf(NULL, m_nColumns, &sd) == S_OK && m_nColumns < MAX_COLUMNS) {
 					m_nColumns++;
 				}
 				m_pColumns = new TEColumn[++m_nColumns];
@@ -9827,7 +9874,7 @@ VOID CteShellBrowser::InitFolderSize()
 		HWND hHeader = ListView_GetHeader(m_hwndLV);
 		if (hHeader) {
 			UINT nHeader = Header_GetItemCount(hHeader);
-			BSTR bs = tePSGetDisplayName(PKEY_TotalFileSize);
+			BSTR bs = tePSGetNameFromPropertyKeyEx(PKEY_TotalFileSize, 0);
 			HD_ITEM hdi;
 			::ZeroMemory(&hdi, sizeof(HD_ITEM));
 			hdi.mask = HDI_TEXT | HDI_FORMAT;
@@ -9901,7 +9948,6 @@ VOID CteShellBrowser::GetViewModeAndIconSize(BOOL bGetIconSize)
 	int iImageSize = m_param[SB_IconSize];
 	if SUCCEEDED(m_pShellView->GetCurrentInfo(&fs)) {
 		uViewMode = fs.ViewMode;
-		m_param[SB_FolderFlags] = fs.fFlags;
 	}
 	if (bGetIconSize || uViewMode != m_param[SB_ViewMode]) {
 		IFolderView2 *pFV2;
@@ -9939,22 +9985,24 @@ VOID CteShellBrowser::GetViewModeAndIconSize(BOOL bGetIconSize)
 		}
 #endif
 		m_param[SB_IconSize] = iImageSize;
-		if (uViewMode != m_param[SB_ViewMode]) {
-			m_param[SB_ViewMode] = uViewMode;
+		m_param[SB_ViewMode] = uViewMode;
+		if (!m_bRefreshLayout) {
 			if (m_pExplorerBrowser) {
 				IFolderViewOptions *pOptions;
 				if SUCCEEDED(m_pExplorerBrowser->QueryInterface(IID_PPV_ARGS(&pOptions))) {
-					FOLDERVIEWOPTIONS fvo = teGetFolderViewOptions(m_pidl, fs.ViewMode);
+					FOLDERVIEWOPTIONS fvo = teGetFolderViewOptions(m_pidl, uViewMode);
 					FOLDERVIEWOPTIONS fvo0 = fvo;
 					pOptions->GetFolderViewOptions(&fvo0);
-					teDoCommand(this, m_hwnd, WM_NULL, 0, 0);
 					if (fvo != (fvo0 & FVO_VISTALAYOUT)) {
-						SetTimer(m_hwnd, TET_Refresh, 16, teTimerProc);
+						m_bRefreshLayout = TRUE;
 					}
 					pOptions->Release();
 				}
 			}
 			else if (teGetFolderViewOptions(m_pidl, m_param[SB_ViewMode]) == FVO_DEFAULT) {
+				m_bRefreshLayout = TRUE;
+			}
+			if (m_bRefreshLayout) {
 				teDoCommand(this, m_hwnd, WM_NULL, 0, 0);
 				SetTimer(m_hwnd, TET_Refresh, 16, teTimerProc);
 			}
@@ -10095,7 +10143,7 @@ STDMETHODIMP CteShellBrowser::IncludeObject(IShellView *ppshv, LPCITEMIDLIST pid
 						if SUCCEEDED(m_pSF2->GetDisplayNameOf(pidl, SHGDN_NORMAL, &strret)) {
 							BSTR bs2;
 							if SUCCEEDED(StrRetToBSTR(&strret, pidl, &bs2)) {
-								if (tePathMatchSpec(bs2, m_bsFilter)) {
+								if (lstrcmpi(bs, bs2) && tePathMatchSpec(bs2, m_bsFilter)) {
 									hr = S_OK;
 								}
 								::SysFreeString(bs2);
@@ -10229,8 +10277,17 @@ VOID AddColumnData(LPWSTR pszColumns, LPWSTR pszName, int nWidth)
 	swprintf_s(&pszColumns[lstrlen(pszColumns)], MAX_COLUMN_NAME_LEN + 20, L" \"%s\" %d", pszName, nWidth);
 }
 
-BSTR CteShellBrowser::GetColumnsStr()
+VOID AddColumnDataEx(LPWSTR pszColumns, BSTR bsName, int nWidth)
 {
+	AddColumnData(pszColumns, bsName, nWidth);
+	teSysFreeString(&bsName);
+}
+
+BSTR CteShellBrowser::GetColumnsStr(int nFormat)
+{
+	if (m_bStopgap) {
+		return NULL;
+	}
 	WCHAR szColumns[8192];
 	szColumns[0] = 0;
 	szColumns[1] = 0;
@@ -10245,7 +10302,12 @@ BSTR CteShellBrowser::GetColumnsStr()
 					CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_WIDTH | CM_MASK_NAME };
 					for (UINT i = 0; i < uCount; i++) {
 						if SUCCEEDED(pColumnManager->GetColumnInfo(propKey[i], &cmci)) {
-							AddColumnData(szColumns, cmci.wszName, cmci.uWidth);
+							if (nFormat) {
+								AddColumnDataEx(szColumns, tePSGetNameFromPropertyKeyEx(propKey[i], nFormat), cmci.uWidth);
+							}
+							else {
+								AddColumnData(szColumns, cmci.wszName, cmci.uWidth);
+							}
 						}
 					}
 				}
@@ -10270,7 +10332,12 @@ BSTR CteShellBrowser::GetColumnsStr()
 				hdi.pszText = (LPWSTR)&szText;
 				for (UINT i = 0; i < nHeader; i++) {
 					Header_GetItem(hHeader, piOrderArray[i], &hdi);
-					AddColumnData(szColumns, szText, hdi.cxy);
+					if (nFormat) {
+						AddColumnDataEx(szColumns, PSGetNameXP(szText, nFormat), hdi.cxy);
+					}
+					else {
+						AddColumnData(szColumns, szText, hdi.cxy);
+					}
 				}
 				delete [] piOrderArray;
 			}
@@ -10280,12 +10347,17 @@ BSTR CteShellBrowser::GetColumnsStr()
 			if SUCCEEDED(QueryInterface(IID_PPV_ARGS(&pSF2))) {
 				SHELLDETAILS sd;
 				SHCOLSTATEF csFlags;
-				for (UINT i = 0; pSF2->GetDetailsOf(NULL, i, &sd) == S_OK && i < 8192; i++) {
+				for (UINT i = 0; pSF2->GetDetailsOf(NULL, i, &sd) == S_OK && i < MAX_COLUMNS; i++) {
 					if (pSF2->GetDefaultColumnState(i, &csFlags) == S_OK) {
 						if (csFlags & SHCOLSTATE_ONBYDEFAULT) {
 							BSTR bs;
 							if SUCCEEDED(StrRetToBSTR(&sd.str, NULL, &bs)) {
-								AddColumnData(szColumns, bs, sd.cxChar * g_nCharWidth);
+								if (nFormat) {
+									AddColumnDataEx(szColumns, PSGetNameXP(bs, nFormat), sd.cxChar * g_nCharWidth);
+								}
+								else {
+									AddColumnData(szColumns, bs, sd.cxChar * g_nCharWidth);
+								}
 								::SysFreeString(bs);
 							}
 						}
@@ -10319,6 +10391,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 {
 	try {
 		int nIndex;
+		int nFormat = 0;
 		TC_ITEM tcItem;
 
 		if ((m_bEmpty || m_nUnload == 1 || m_nUnload == 9) && dispIdMember >= 0x10000100 && dispIdMember) {
@@ -10671,19 +10744,24 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			//Columns
 			case 0x10000059:
 				if (nArg >= 0) {
-					VARIANT v;
-					teVariantChangeType(&v, &pDispParams->rgvarg[nArg], VT_BSTR);
-					int nCount = 0;
-					LPTSTR *lplpszArgs = NULL;
-					TEmethod *methodArgs = NULL;
-					int *pi = NULL;
-					if (v.bstrVal) {
-						lplpszArgs = CommandLineToArgvW(v.bstrVal, &nCount);
+					if (pDispParams->rgvarg[nArg].vt == VT_BSTR) {
+						int nCount = 0;
+						LPTSTR *lplpszArgs = NULL;
+						TEmethod *methodArgs = NULL;
+						int *pi = NULL;
+						lplpszArgs = CommandLineToArgvW(pDispParams->rgvarg[nArg].bstrVal, &nCount);
 						int nAllWidth = 0;
 						nCount /= 2;
 						methodArgs = new TEmethod[nCount];
+						BOOL *pbAlloc = new BOOL[nCount];
 						for (int i = nCount; i-- > 0;) {
+							pbAlloc[i] = FALSE;
 							methodArgs[i].name = lplpszArgs[i * 2];
+							PROPERTYKEY propKey;
+							if SUCCEEDED(lpfnPSPropertyKeyFromStringEx(lplpszArgs[i * 2], &propKey)) {
+								methodArgs[i].name = tePSGetNameFromPropertyKeyEx(propKey, 0);
+								pbAlloc[i] = TRUE;
+							}
 							int n;
 							if (StrToIntEx(lplpszArgs[i * 2 + 1], STIF_DEFAULT, &n) && n < 32768) {
 								nAllWidth += n;
@@ -10702,201 +10780,223 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 								delete [] methodArgs;
 							}
 							LocalFree(lplpszArgs);
-							VariantClear(&v);
 							return S_OK;
 						}
-					}
-					VariantClear(&v);
-					IColumnManager *pColumnManager;
-					if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pColumnManager))) {
-						UINT uCount;
-						if SUCCEEDED(pColumnManager->GetColumnCount(CM_ENUM_ALL, &uCount)) {
-							PROPERTYKEY *propKey = new PROPERTYKEY[uCount];
-							if SUCCEEDED(pColumnManager->GetColumns(CM_ENUM_ALL, propKey, uCount)) {
-								teExecMethod(g_pJS, L"_o", &v, 0, NULL);
-								IDispatch *pdispColumns;
-								if (GetDispatch(&v, &pdispColumns)) {
-									CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_NAME };
-									for (int i = uCount; i-- > 0;) {
-										if (pColumnManager->GetColumnInfo(propKey[i], &cmci) == S_OK) {
-											if (cmci.wszName[0]) {
-												VariantClear(&v);
-												teSetLong(&v, i);
-												tePutProperty(pdispColumns, cmci.wszName, &v);
+						IColumnManager *pColumnManager;
+						if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pColumnManager))) {
+							UINT uCount;
+							if SUCCEEDED(pColumnManager->GetColumnCount(CM_ENUM_ALL, &uCount)) {
+								PROPERTYKEY *propKey = new PROPERTYKEY[uCount];
+								if SUCCEEDED(pColumnManager->GetColumns(CM_ENUM_ALL, propKey, uCount)) {
+									VARIANT v;
+									VariantInit(&v);
+									teExecMethod(g_pJS, L"_o", &v, 0, NULL);
+									IDispatch *pdispColumns;
+									if (GetDispatch(&v, &pdispColumns)) {
+										CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_NAME };
+										for (int i = uCount; i-- > 0;) {
+											if (pColumnManager->GetColumnInfo(propKey[i], &cmci) == S_OK) {
+												if (cmci.wszName[0]) {
+													VariantClear(&v);
+													teSetLong(&v, i);
+													tePutProperty(pdispColumns, cmci.wszName, &v);
+												}
 											}
 										}
+										int k = 0;
+										PROPERTYKEY *propKey2 = new PROPERTYKEY[uCount];
+										int *pnWidth = new int[uCount];
+										VariantClear(&v);
+										for (int i = 0; i < nCount; i++) {
+											if (teGetPropertyI(pdispColumns, methodArgs[i].name, &v) == S_OK) {
+												pnWidth[k] = methodArgs[i].id;
+												propKey2[k++] = propKey[GetIntFromVariantClear(&v)];
+											}
+										}
+										if (k == 0) {	//Default Columns
+											while (k < (int)m_nDefultColumns && k < (int)uCount) {
+												propKey2[k] = m_pDefultColumns[k];
+												pnWidth[k++] = -1;
+											}
+										}
+										if (k > 0) {
+											if SUCCEEDED(pColumnManager->SetColumns(propKey2, k)) {
+												CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_WIDTH };
+												while (k--) {
+													cmci.uWidth = pnWidth[k];
+													pColumnManager->SetColumnInfo(propKey2[k], &cmci);
+												}
+											}
+										}
+										delete [] pnWidth;
+										delete [] propKey2;
+										pdispColumns->Release();
 									}
-									int k = 0;
-									PROPERTYKEY *propKey2 = new PROPERTYKEY[uCount];
-									int *pnWidth = new int[uCount];
 									VariantClear(&v);
-									for (int i = 0; i < nCount; i++) {
-										if (teGetPropertyI(pdispColumns, methodArgs[i].name, &v) == S_OK) {
-											pnWidth[k] = methodArgs[i].id;
-											propKey2[k++] = propKey[GetIntFromVariantClear(&v)];
+								}
+								delete [] propKey;
+							}
+							pColumnManager->Release();
+						}
+						else {
+#ifdef _2000XP
+							UINT uCount = m_nColumns;
+							SHELLDETAILS sd;
+							int nWidth;
+							if (m_pSF2) {
+								for (int i = uCount; i-- > 0;) {
+									m_pSF2->GetDefaultColumnState(i, &m_pColumns[i].csFlags);
+									m_pColumns[i].csFlags &= ~SHCOLSTATE_ONBYDEFAULT;
+									m_pColumns[i].nWidth = -3;
+								}
+								m_pColumns[uCount - 1].csFlags = SHCOLSTATE_TYPE_STR;
+
+								BSTR bs = GetColumnsStr(FALSE);
+								int nCur;
+								LPTSTR *lplpszColumns = CommandLineToArgvW(bs, &nCur);
+								::SysFreeString(bs);
+								nCur /= 2;
+								BOOL bDiff = nCount != nCur;
+								if (!bDiff) {
+									TEmethod *methodColumns = new TEmethod[nCur];
+									for (int i = nCur; i-- > 0;) {
+										methodColumns[i].name = lplpszColumns[i * 2];
+									}
+									int *piCur = SortTEMethod(methodColumns, nCur);
+									for (int i = nCur; i-- > 0;) {
+										if (lstrcmpi(methodArgs[pi[i]].name, methodColumns[piCur[i]].name)) {
+											bDiff = true;
+											break;
 										}
 									}
-									if (k == 0) {	//Default Columns
-										while (k < (int)m_nDefultColumns && k < (int)uCount) {
-											propKey2[k] = m_pDefultColumns[k];
-											pnWidth[k++] = -1;
-										}
-									}
-									if (k > 0) {
-										if SUCCEEDED(pColumnManager->SetColumns(propKey2, k)) {
-											CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_WIDTH };
-											while (k--) {
-												cmci.uWidth = pnWidth[k];
-												pColumnManager->SetColumnInfo(propKey2[k], &cmci);
+									delete [] piCur;
+									delete [] methodColumns;
+								}
+								LocalFree(lplpszColumns);
+
+								if (bDiff) {
+									int nIndex;
+									BOOL bDefault = true;
+									if (nCount) {
+										for (UINT i = 0; GetDetailsOf(NULL, i, &sd) == S_OK && i < MAX_COLUMNS; i++) {
+											BSTR bs;
+											if SUCCEEDED(StrRetToBSTR(&sd.str, NULL, &bs)) {
+												nIndex = teBSearch(methodArgs, nCount, pi, bs);
+												if (nIndex >= 0) {
+													m_pColumns[i].csFlags |= SHCOLSTATE_ONBYDEFAULT;
+													m_pColumns[i].nWidth = methodArgs[pi[nIndex]].id;
+													bDefault = false;
+												}
+												::SysFreeString(bs);
 											}
 										}
 									}
-									delete [] pnWidth;
-									delete [] propKey2;
-									pdispColumns->Release();
-								}
-								VariantClear(&v);
-							}
-							delete [] propKey;
-						}
-						pColumnManager->Release();
-					}
-					else {
-#ifdef _2000XP
-						UINT uCount = m_nColumns;
-						SHELLDETAILS sd;
-						int nWidth;
-						if (m_pSF2) {
-							for (int i = uCount; i-- > 0;) {
-								m_pSF2->GetDefaultColumnState(i, &m_pColumns[i].csFlags);
-								m_pColumns[i].csFlags &= ~SHCOLSTATE_ONBYDEFAULT;
-								m_pColumns[i].nWidth = -3;
-							}
-							m_pColumns[uCount - 1].csFlags = SHCOLSTATE_TYPE_STR;
-
-							BSTR bs = GetColumnsStr();
-							int nCur;
-							LPTSTR *lplpszColumns = CommandLineToArgvW(bs, &nCur);
-							::SysFreeString(bs);
-							nCur /= 2;
-							TEmethod *methodColumns = new TEmethod[nCur];
-							for (int i = nCur; i-- > 0;) {
-								methodColumns[i].name = lplpszColumns[i * 2];
-							}
-							BOOL bDiff = nCount != nCur;
-							if (!bDiff) {
-								int *piCur = SortTEMethod(methodColumns, nCur);
-								for (int i = nCur; i-- > 0;) {
-									if (lstrcmpi(methodArgs[pi[i]].name, methodColumns[piCur[i]].name)) {
-										bDiff = true;
-										break;
-									}
-								}
-								delete [] piCur;
-							}
-							delete [] methodColumns;
-							LocalFree(lplpszColumns);
-
-							if (bDiff) {
-								int nIndex;
-								BOOL bDefault = true;
-								for (UINT i = 0; (GetDetailsOf(NULL, i, &sd) == S_OK); i++) {
-									BSTR bs;
-									if SUCCEEDED(StrRetToBSTR(&sd.str, NULL, &bs)) {
-										nIndex = teBSearch(methodArgs, nCount, pi, bs);
-										if (nIndex >= 0) {
-											m_pColumns[i].csFlags |= SHCOLSTATE_ONBYDEFAULT;
-											m_pColumns[i].nWidth = methodArgs[pi[nIndex]].id;
-											bDefault = false;
+									if (!ILIsEqual(m_pidl, g_pidlResultsFolder)) {
+										if (bDefault) {
+											for (int i = uCount; i-- > 0;) {
+												m_pSF2->GetDefaultColumnState(i, &m_pColumns[i].csFlags);
+												m_pColumns[i].nWidth = -3;
+												if (m_pColumns[i].csFlags & SHCOLSTATE_ONBYDEFAULT) {
+													bDefault = FALSE;
+												}
+											}
+											if (bDefault) {
+												for (int i = uCount; i-- > 0;) {
+													m_pColumns[i].csFlags |= SHCOLSTATE_ONBYDEFAULT;
+												}
+											}
 										}
-										::SysFreeString(bs);
+										IShellView *pPreviousView = m_pShellView;
+										FOLDERSETTINGS fs;
+										pPreviousView->GetCurrentInfo(&fs);
+										m_param[SB_ViewMode] = fs.ViewMode;
+										Show(FALSE);
+										if SUCCEEDED(CreateViewWindowEx(pPreviousView)) {
+											pPreviousView->DestroyViewWindow();
+											pPreviousView->Release();
+											pPreviousView = NULL;
+											ResetPropEx();
+											GetShellFolderView();
+										}
+										Show(TRUE);
+										SetPropEx();
 									}
 								}
-								if (bDefault && m_nColumns) {
-									m_nColumns = 0;
-									delete [] m_pColumns;
-								}
-								IShellView *pPreviousView = m_pShellView;
-								FOLDERSETTINGS fs;
-								pPreviousView->GetCurrentInfo(&fs);
-								m_param[SB_ViewMode] = fs.ViewMode;
-								if (!ILIsEqual(m_pidl, g_pidlResultsFolder)) {
-									Show(FALSE);
-									if SUCCEEDED(CreateViewWindowEx(pPreviousView)) {
-										pPreviousView->DestroyViewWindow();
-										pPreviousView->Release();
-										pPreviousView = NULL;
-										ResetPropEx();
-										GetShellFolderView();
-									}
-									Show(TRUE);
-									SetPropEx();
-								}
-							}
-							//Columns Order and Width;
-							if (m_hwndLV) {
-								HWND hHeader = ListView_GetHeader(m_hwndLV);
-								if (hHeader) {
-									UINT nHeader = Header_GetItemCount(hHeader);
-									if (nHeader == nCount) {
-										SetRedraw(false);
-										int *piOrderArray = new int[nHeader];
-										try {
-											HD_ITEM hdi;
-											::ZeroMemory(&hdi, sizeof(HD_ITEM));
-											hdi.mask = HDI_TEXT | HDI_WIDTH;
-											hdi.cchTextMax = MAX_COLUMN_NAME_LEN;
-											WCHAR szText[MAX_COLUMN_NAME_LEN];
-											hdi.pszText = (LPWSTR)&szText;
-											int nIndex;
-											for (int i = nHeader; i-- > 0;) {
-												Header_GetItem(hHeader, i, &hdi);
-												nIndex = teBSearch(methodArgs, nCount, pi, szText);
-												if (nIndex >= 0) {
-													nWidth = methodArgs[pi[nIndex]].id;
-													piOrderArray[pi[nIndex]] = i;
-													if (nWidth != hdi.cxy) {
-														if (nWidth == -2) {
-															nWidth = LVSCW_AUTOSIZE;
-														}
-														else if (nWidth < 0) {
-															if (!bDiff) {
-																SHELLDETAILS sd;
-																for (UINT k = 0; (GetDetailsOf(NULL, k, &sd) == S_OK); k++) {
-																	BSTR bs;
-																	if SUCCEEDED(StrRetToBSTR(&sd.str, NULL, &bs)) {
-																		if (teStrSameIFree(bs, szText)) {
-																			nWidth = sd.cxChar * g_nCharWidth;
-																			break;
+								//Columns Order and Width;
+								if (m_hwndLV) {
+									HWND hHeader = ListView_GetHeader(m_hwndLV);
+									if (hHeader) {
+										UINT nHeader = Header_GetItemCount(hHeader);
+										if (nHeader == nCount) {
+											SetRedraw(false);
+											int *piOrderArray = new int[nHeader];
+											try {
+												for (int i = nHeader; i-- > 0;) {
+													piOrderArray[i] = i;
+												}
+												HD_ITEM hdi;
+												::ZeroMemory(&hdi, sizeof(HD_ITEM));
+												hdi.mask = HDI_TEXT | HDI_WIDTH;
+												hdi.cchTextMax = MAX_COLUMN_NAME_LEN;
+												WCHAR szText[MAX_COLUMN_NAME_LEN];
+												hdi.pszText = (LPWSTR)&szText;
+												int nIndex;
+												for (int i = nHeader; i-- > 0;) {
+													Header_GetItem(hHeader, i, &hdi);
+													nIndex = teBSearch(methodArgs, nCount, pi, szText);
+													if (nIndex >= 0) {
+														nWidth = methodArgs[pi[nIndex]].id;
+														piOrderArray[pi[nIndex]] = i;
+														if (nWidth != hdi.cxy) {
+															if (nWidth == -2) {
+																nWidth = LVSCW_AUTOSIZE;
+															}
+															else if (nWidth < 0) {
+																if (!bDiff) {
+																	SHELLDETAILS sd;
+																	for (UINT k = 0; GetDetailsOf(NULL, k, &sd) == S_OK && k < MAX_COLUMNS; k++) {
+																		BSTR bs;
+																		if SUCCEEDED(StrRetToBSTR(&sd.str, NULL, &bs)) {
+																			if (teStrSameIFree(bs, szText)) {
+																				nWidth = sd.cxChar * g_nCharWidth;
+																				break;
+																			}
 																		}
 																	}
 																}
 															}
+															ListView_SetColumnWidth(m_hwndLV, i, nWidth);
 														}
-														ListView_SetColumnWidth(m_hwndLV, i, nWidth);
 													}
 												}
+												ListView_SetColumnOrderArray(m_hwndLV, nHeader, piOrderArray);
+											} catch (...) {
 											}
-											ListView_SetColumnOrderArray(m_hwndLV, nHeader, piOrderArray);
-										} catch (...) {
+											delete [] piOrderArray;
+											SetRedraw(true);
 										}
-										delete [] piOrderArray;
-										SetRedraw(true);
 									}
 								}
 							}
-						}
 #endif
+						}
+						if (lplpszArgs) {
+							for (int i = nCount; i-- > 0;) {
+								if (pbAlloc[i]) {
+									teSysFreeString(&methodArgs[i].name);
+								}
+							}
+							delete [] pbAlloc;
+							delete [] pi;
+							delete [] methodArgs;
+							LocalFree(lplpszArgs);
+						}
 					}
-					if (lplpszArgs) {
-						delete [] pi;
-						delete [] methodArgs;
-						LocalFree(lplpszArgs);
-					}
+					nFormat = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 				}
 				if (pVarResult) {
 					pVarResult->vt = VT_BSTR;
-					pVarResult->bstrVal = GetColumnsStr();
+					pVarResult->bstrVal = GetColumnsStr(nFormat);
 				}
 				return S_OK;
 			//hwndList
@@ -10914,14 +11014,14 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			//SortColumn
 			case 0x10000104:
 				if (nArg >= 0) {
-					VARIANT v;
-					teVariantChangeType(&v, &pDispParams->rgvarg[nArg], VT_BSTR);
-					SetSort(v.bstrVal);
-					VariantClear(&v);
+					if (pDispParams->rgvarg[nArg].vt == VT_BSTR) {
+						SetSort(pDispParams->rgvarg[nArg].bstrVal);
+					}
+					nFormat = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 				}
 				if (pVarResult) {
 					pVarResult->vt = VT_BSTR;
-					GetSort(&pVarResult->bstrVal);
+					GetSort(&pVarResult->bstrVal, nFormat);
 				}
 				return S_OK;
 			//Focus
@@ -11369,6 +11469,27 @@ VOID CteShellBrowser::AddPathXP(CteFolderItems *pFolderItems, IShellFolderView *
 	}
 	catch (...) {}
 }
+
+BSTR CteShellBrowser::PSGetNameXP(BSTR bsName, int nFormat)
+{
+	if (nFormat == 0) {
+		return ::SysAllocString(bsName);
+	}
+	SHELLDETAILS sd;
+	for (UINT i = 0; GetDetailsOf(NULL, i, &sd) == S_OK && i < MAX_COLUMNS; i++) {
+		BSTR bs;
+		if SUCCEEDED(StrRetToBSTR(&sd.str, NULL, &bs)) {
+			if (teStrSameIFree(bs, bsName)) {
+				SHCOLUMNID scid;
+				if SUCCEEDED(MapColumnToSCID(i, &scid)) {
+					return tePSGetNameFromPropertyKeyEx(scid, nFormat);
+				}
+			}
+		}
+	}
+	return NULL;
+}
+
 #endif
 
 STDMETHODIMP CteShellBrowser::get_FocusedItem(FolderItem **ppid)
@@ -11469,13 +11590,6 @@ STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 	if (ILIsEqual(m_pidl, pidlFolder)) {
 		return S_OK;
 	}
-
-	IFolderViewOptions *pOptions;
-	if SUCCEEDED(m_pExplorerBrowser->QueryInterface(IID_PPV_ARGS(&pOptions))) {
-		FOLDERVIEWOPTIONS fvo = teGetFolderViewOptions(const_cast<LPITEMIDLIST>(pidlFolder), m_param[SB_ViewMode]);
-		pOptions->SetFolderViewOptions(FVO_VISTALAYOUT, fvo);
-		pOptions->Release();
-	}
 	LPITEMIDLIST pidlPrevius = m_pidl;
 	m_pidl = ::ILClone(pidlFolder);
 	FolderItem *pPrevious = m_pFolderItem;
@@ -11486,6 +11600,9 @@ STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 	else {
 		GetFolderItemFromPidl(&m_pFolderItem, m_pidl);
 	}
+
+	UINT uViewMode = m_param[SB_ViewMode];
+	FOLDERVIEWOPTIONS fvo = teGetFolderViewOptions(const_cast<LPITEMIDLIST>(pidlFolder), uViewMode);
 
 	HRESULT hr = OnBeforeNavigate(pPrevious, SBSP_SAMEBROWSER | SBSP_ABSOLUTE);
 	if FAILED(hr) {
@@ -11501,6 +11618,12 @@ STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 		}
 		pid ->Release();
 		return hr;
+	}
+
+	if (uViewMode != m_param[SB_ViewMode] && fvo != teGetFolderViewOptions(const_cast<LPITEMIDLIST>(pidlFolder), m_param[SB_ViewMode])) {
+		teCoTaskMemFree(pidlPrevius);
+		BrowseObject(m_pidl, SBSP_SAMEBROWSER);
+		return E_FAIL;
 	}
 	ResetPropEx();
 	//History / Management
@@ -11527,14 +11650,12 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 #ifdef _2000XP
 	if (!g_bUpperVista) {
 		if (ILIsEqual(m_pidl, g_pidlResultsFolder)) {
-			UINT i = 0;
 			SHCOLUMNID scid;
-			while (MapColumnToSCID(i, &scid) == S_OK) {
-				if (scid.pid == 2 && IsEqualFMTID(scid.fmtid, FMTID_Storage)) {
+			for (UINT i = 0; MapColumnToSCID(i, &scid) == S_OK && i < MAX_COLUMNS; i++) {
+				if (IsEqualPropertyKey(scid, PKEY_ItemFolderNameDisplay)) {
 					m_nFolderName = i;
 					break;
 				}
-				i++;
 			}
 		}
 	}
@@ -11550,7 +11671,7 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 				hdi.pszText = (LPWSTR)&szText;
 				Header_GetItem(hHeader, 0, &hdi);
 				SHELLDETAILS sd;
-				for (UINT i = 0; GetDetailsOf(NULL, i, &sd) == S_OK; i++) {
+				for (UINT i = 0; GetDetailsOf(NULL, i, &sd) == S_OK && i < MAX_COLUMNS; i++) {
 					BSTR bs;
 					if SUCCEEDED(StrRetToBSTR(&sd.str, NULL, &bs)) {
 						if (teStrSameIFree(bs, hdi.pszText)) {
@@ -11777,7 +11898,7 @@ STDMETHODIMP CteShellBrowser::GetDetailsOf(PCUITEMID_CHILD pidl, UINT iColumn, S
 			SetFolderSize(pidl, szBuf, MAX_COLUMN_NAME_LEN);
 		}
 		else {
-			lstrcpy(szBuf, GetUserDefaultLCID() == 1041 ? L"総ファイル サイズ" : L"Total file size");
+			lstrcpy(szBuf, g_szTotalFileSizeXP);
 			psd->fmt = LVCFMT_RIGHT;
 			psd->cxChar = 16;
 		}
@@ -11799,6 +11920,10 @@ STDMETHODIMP CteShellBrowser::GetDetailsOf(PCUITEMID_CHILD pidl, UINT iColumn, S
 
 STDMETHODIMP CteShellBrowser::MapColumnToSCID(UINT iColumn, SHCOLUMNID *pscid)
 {
+	if (iColumn == m_nColumns - 1) {
+		*pscid = PKEY_TotalFileSize;
+		return S_OK;
+	}
 	return m_pSF2->MapColumnToSCID(iColumn, pscid);
 }
 
@@ -12108,7 +12233,7 @@ VOID CteShellBrowser::DestroyView(int nFlags)
 	}
 }
 
-VOID CteShellBrowser::GetSort(BSTR* pbs)
+VOID CteShellBrowser::GetSort(BSTR* pbs, int nFormat)
 {
 	*pbs = NULL;
 	if (!m_pShellView) {
@@ -12118,19 +12243,9 @@ VOID CteShellBrowser::GetSort(BSTR* pbs)
 	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
 		SORTCOLUMN col;
 		if SUCCEEDED(pFV2->GetSortColumns(&col, 1)) {
-			if (lpfnPSGetPropertyDescription) {
-				IPropertyDescription *pdesc;
-				if SUCCEEDED(lpfnPSGetPropertyDescription(col.propkey, IID_PPV_ARGS(&pdesc))) {
-					LPWSTR pszName;
-					if SUCCEEDED(pdesc->GetDisplayName(&pszName)) {
-						*pbs = SysAllocString(pszName);
-						teCoTaskMemFree(pszName);
-					}
-					pdesc->Release();
-					if (col.direction < 0) {
-						ToMinus(pbs);
-					}
-				}
+			*pbs = tePSGetNameFromPropertyKeyEx(col.propkey, nFormat);
+			if (col.direction < 0) {
+				ToMinus(pbs);
 			}
 		}
 		pFV2->Release();
@@ -12163,7 +12278,7 @@ VOID CteShellBrowser::GetSort(BSTR* pbs)
 			Header_GetItem(hHeader, i, &hdi);
 			if (hdi.fmt & (HDF_SORTUP | HDF_SORTDOWN | HDF_BITMAP)) {
 				bEmpty = FALSE;
-				*pbs = SysAllocString(szColumn);
+				*pbs = PSGetNameXP(szColumn, nFormat);
 				if (hdi.fmt & HDF_SORTDOWN) {
 					ToMinus(pbs);
 				}
@@ -12193,7 +12308,10 @@ VOID CteShellBrowser::GetSort(BSTR* pbs)
 		if SUCCEEDED(QueryInterface(IID_PPV_ARGS(&pSF2))) {
 			SHELLDETAILS sd;
 			if (pSF2->GetDetailsOf(NULL, (UINT)Sort, &sd) == S_OK) {
-				if SUCCEEDED(StrRetToBSTR(&sd.str, NULL, pbs)) {
+				BSTR bs;
+				if SUCCEEDED(StrRetToBSTR(&sd.str, NULL, &bs)) {
+					*pbs = PSGetNameXP(bs, nFormat);
+					::SysFreeString(bs);
 					bEmpty = FALSE;
 				}
 			}
@@ -12203,25 +12321,19 @@ VOID CteShellBrowser::GetSort(BSTR* pbs)
 	if (bEmpty) {
 		teSysFreeString(pbs);
 	}
+/*	else {
+		BSTR bs = GetCanonicalNameXP(*pbs);
+		teSysFreeString(pbs);
+		*pbs = bs;
+	}*/
 #endif
 }
 
-VOID CteShellBrowser::SetSort(BSTR bs)
+HRESULT CteShellBrowser::PropertyKeyFromName(BSTR bs, PROPERTYKEY *pkey)
 {
-	BSTR bs1;
-	GetSort(&bs1);
-	if (lstrlen(bs) < 1 || lstrcmpi(bs, bs1) == 0) {
-		::SysFreeString(bs1);
-		return;
-	}
-	int dir = (bs[0] == '-') ? 1 : 0;
-	int dir1;
-	if (bs1) {
-		dir1 = lstrcmpi(&bs[dir], &bs1[(bs1 && bs1[0] == '-')]) ? 1 : 0;
-		::SysFreeString(bs1);
-	}
-	else {
-		dir1 = 1;
+	HRESULT hr = tePSPropertyKeyFromStringEx(bs, pkey);
+	if SUCCEEDED(hr) {
+		return hr;
 	}
 	IColumnManager *pColumnManager;
 	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pColumnManager))) {
@@ -12233,16 +12345,10 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 					CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_NAME };
 					for (UINT i = 0; i < uCount; i++) {
 						if SUCCEEDED(pColumnManager->GetColumnInfo(propKey[i], &cmci)) {
-							if (lstrcmpi(&bs[dir], cmci.wszName) == 0) {
-								SORTCOLUMN col;
-								col.direction = 1 - dir * 2;
-								IFolderView2 *pFV2;
-								if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
-									col.propkey = propKey[i];
-									pFV2->SetSortColumns(&col, 1);
-									pFV2->Release();
-									break;
-								}
+							if (lstrcmpi(bs, cmci.wszName) == 0) {
+								*pkey = propKey[i];
+								hr = S_OK;
+								break;
 							}
 						}
 					}
@@ -12251,26 +12357,66 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 			}
 		}
 		pColumnManager->Release();
+	}
+	return hr;
+}
+
+VOID CteShellBrowser::SetSort(BSTR bs)
+{
+	if (lstrlen(bs) < 1) {
 		return;
 	}
+	int dir = (bs[0] == '-') ? 1 : 0;
+	BSTR bsName = NULL;
+	LPWSTR szNew = &bs[dir];
+	PROPERTYKEY propKey;
+	if SUCCEEDED(lpfnPSPropertyKeyFromStringEx(szNew, &propKey)) {
+		bsName = tePSGetNameFromPropertyKeyEx(propKey, 0);
+		szNew = bsName;
+	}
+	BSTR bs1;
+	GetSort(&bs1, 0);
+	int dir1 = 0;
+	LPWSTR szOld = NULL;
+	if (bs1) {
+		if (bs1[0] == '-') {
+			dir1 = 1;
+		}
+		szOld = &bs1[dir1];
+	}
+	if (dir != dir1 || lstrcmpi(szNew, szOld)) {
+		IFolderView2 *pFV2;
+		if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
+			SORTCOLUMN col;
+			if SUCCEEDED(PropertyKeyFromName(&bs[dir], &col.propkey)) {
+				col.direction = 1 - dir * 2;
+				pFV2->SetSortColumns(&col, 1);
+			}
+			pFV2->Release();
+			return;
+		}
 #ifdef _2000XP
-	IShellFolderView *pSFV;
-	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pSFV))) {
-		SHELLDETAILS sd;
-		HRESULT hr = E_FAIL;
-		for (int i = 0; (GetDetailsOf(NULL, i, &sd) == S_OK && FAILED(hr)); i++) {
-			if SUCCEEDED(StrRetToBSTR(&sd.str, NULL, &bs1)) {
-				if (teStrSameIFree(bs1, &bs[dir])) {
-					hr = pSFV->Rearrange(i);
-					if (dir && dir1) {
+		IShellFolderView *pSFV;
+		if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pSFV))) {
+			HRESULT hr = E_FAIL;
+			SHELLDETAILS sd;
+			BSTR bs2;
+			for (int i = 0; GetDetailsOf(NULL, i, &sd) == S_OK && FAILED(hr) && i < MAX_COLUMNS; i++) {
+				if SUCCEEDED(StrRetToBSTR(&sd.str, NULL, &bs2)) {
+					if (teStrSameIFree(bs2, szNew)) {
 						hr = pSFV->Rearrange(i);
+						if (dir && lstrcmpi(szNew, szOld)) {
+							hr = pSFV->Rearrange(i);
+						}
 					}
 				}
 			}
+			pSFV->Release();
 		}
-		pSFV->Release();
-	}
 #endif
+	}
+	::SysFreeString(bs1);
+	teSysFreeString(&bsName);
 }
 
 HRESULT CteShellBrowser::SetRedraw(BOOL bRedraw)
@@ -18034,7 +18180,7 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 			case 2:
 				if (nArg >= 0) {
 					HICON hicon = (HICON)GetLLFromVariant(&pDispParams->rgvarg[nArg]);
-					if (nArg >= 1) {
+					if (nArg >= 1 && pDispParams->rgvarg[nArg - 1].vt != VT_NULL) {
 						ICONINFO iconinfo;
 						GetIconInfo(hicon, &iconinfo);
 						DIBSECTION dib;
@@ -18050,10 +18196,9 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 						DeleteObject(iconinfo.hbmColor);
 						DeleteObject(iconinfo.hbmMask);
 						DestroyIcon(icon2);
+						return S_OK;
 					}
-					else {
-						m_pImage = Gdiplus::Bitmap::FromHICON(hicon);
-					}
+					m_pImage = Gdiplus::Bitmap::FromHICON(hicon);
 				}
 				return S_OK;
 			//FromResource
