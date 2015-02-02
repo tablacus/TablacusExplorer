@@ -155,7 +155,9 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *
 #define TE_OnTranslatePath		29
 #define TE_OnNavigateComplete	30
 #define TE_OnILGetParent		31
-#define Count_OnFunc			32
+#define TE_OnViewModeChanged	32
+#define TE_OnColumnsChanged		33
+#define Count_OnFunc			34
 
 #define SB_OnIncludeObject		0
 

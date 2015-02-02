@@ -1151,6 +1151,16 @@ te.OnSelectionChanged = function (Ctrl, uChange)
 	return isFinite(hr) ? hr : S_OK;
 }
 
+te.OnViewModeChanged = function (Ctrl)
+{
+	RunEvent1("ViewModeChanged", Ctrl);
+}
+
+te.OnColumnsChanged = function (Ctrl)
+{
+	RunEvent1("ColumnsChanged", Ctrl);
+}
+
 te.OnShowContextMenu = function (Ctrl, hwnd, msg, wParam, pt)
 {
 	if (g_mouse.CancelContextMenu) {

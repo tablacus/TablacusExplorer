@@ -869,6 +869,8 @@ TEmethod methodTE[] = {
 	{ START_OnFunc + TE_OnTranslatePath, L"OnTranslatePath" },
 	{ START_OnFunc + TE_OnNavigateComplete, L"OnNavigateComplete" },
 	{ START_OnFunc + TE_OnILGetParent, L"OnILGetParent" },
+	{ START_OnFunc + TE_OnViewModeChanged, L"OnViewModeChanged" },
+	{ START_OnFunc + TE_OnColumnsChanged, L"OnColumnsChanged" },
 	{ 0, NULL }
 };
 
@@ -11059,7 +11061,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 									pVarResult->lVal--;
 								}
 								if (pVarResult->lVal < 0) {
-									IUIAutomationTreeWalker* pWalker = NULL;
+									IUIAutomationTreeWalker *pWalker = NULL;
 									if SUCCEEDED(g_pAutomation->get_ControlViewWalker(&pWalker)) {
 										if SUCCEEDED(pWalker->GetParentElement(pElement, &pElement2)) {
 											if SUCCEEDED(pElement2->GetCurrentPropertyValue(g_PID_ItemIndex, pVarResult)) {
@@ -11318,12 +11320,14 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 				return S_OK;
 			case DISPID_INITIALENUMERATIONDONE:
-			case DISPID_VIEWMODECHANGED:
 				SetFolderFlags();
 				return S_OK;
+			case DISPID_VIEWMODECHANGED:
+				SetFolderFlags();
+				return DoFunc(TE_OnViewModeChanged, this, S_OK);
 			case DISPID_COLUMNSCHANGED:
 				InitFolderSize();
-				return S_OK;
+				return DoFunc(TE_OnColumnsChanged, this, S_OK);
 			default:
 				if (dispIdMember >= START_OnFunc && dispIdMember < START_OnFunc + Count_SBFunc) {
 					if (wFlags & DISPATCH_METHOD) {
