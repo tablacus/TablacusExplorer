@@ -22,7 +22,6 @@ urlAddons = "http://www.eonet.ne.jp/~gakana/tablacus/addons/";
 nCount = 0;
 xhr = null;
 xmlAddons = null;
-vb = api.GetScriptDispatch('Function fnFormatDateTime(s, n)\n fnFormatDateTime = FormatDateTime(s, n)\nEnd Function', "VBScript");
 
 function SetDefaultLangID()
 {
@@ -2137,12 +2136,7 @@ function ArrangeAddon(xml, td, ts)
 		var pubDate = "";
 		var dt = new Date(info.pubDate);
 		if (info.pubDate) {
-			try {
-				pubDate = vb.fnFormatDateTime(dt.getVarDate(), 2) + " ";
-			}
-			catch (e) {
-				pubDate = dt.toLocaleString() + " ";
-			}
+			pubDate = api.GetDateFormat(LOCALE_USER_DEFAULT, 0, dt, api.GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SSHORTDATE)) + " ";
 		}
 		s.push('<b>', info.Name, "</b>&nbsp;", info.Version, "&nbsp;", info.Creator, "<br>", info.Description, "<br>");
 

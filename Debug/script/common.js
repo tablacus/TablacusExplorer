@@ -2913,3 +2913,8 @@ AddEventEx(window, "load", function ()
 	document.body.onselectstart = DetectProcessTag;
 	document.body.oncontextmenu = DetectProcessTag;
 });
+
+Alt = function ()
+{
+	return S_OK;
+}

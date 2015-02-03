@@ -816,7 +816,9 @@ public:
 	HRESULT PropertyKeyFromName(BSTR bs, PROPERTYKEY *pkey);
 #ifdef _2000XP
 	VOID AddPathXP(CteFolderItems *pFolderItems, IShellFolderView *pSFV, int nIndex, BOOL bResultsFolder);
-	BSTR PSGetNameXP(BSTR bsName, int nFormat);
+	int PSGetColumnIndexXP(LPWSTR pszName, int *pcxChar);
+	BSTR PSGetNameXP(LPWSTR pszName, int nFormat);
+	VOID AddColumnDataXP(LPWSTR pszColumns, LPWSTR pszName, int nWidth, int nFormat);
 #endif
 
 public:
@@ -1218,6 +1220,7 @@ public:
 private:
 	IDispatchEx *m_pdex;
 	LONG	m_cRef;
+	DISPID	m_dispItem;
 };
 
 class CteActiveScriptSite : public IActiveScriptSite, public IActiveScriptSiteWindow
