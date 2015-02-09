@@ -42,7 +42,7 @@ function SetDefault(o, v)
 function OpenGroup(id)
 {
 	var o = document.getElementById(id);
-	o.style.display = api.strcmpi(o.style.display, "block") ? "block" : "none";
+	o.style.display = api.StrCmpI(o.style.display, "block") ? "block" : "none";
 }
 
 function ResetForm()
@@ -81,7 +81,7 @@ function ResetForm()
 
 	for(i = 0; i < document.F.length; i++) {
 		o = document.F.elements[i];
-		if (api.strcmpi(o.type, 'checkbox') == 0) {
+		if (api.StrCmpI(o.type, 'checkbox') == 0) {
 			if (!/^Conf_/.test(o.id)) {
 				o.checked = false;
 			}
@@ -503,7 +503,7 @@ function ConfirmX(bCancel, fn)
 
 function SetOptions(fnYes, fnNo, NoCancel, bNoDef)
 {
-	if (g_nResult == 2 || api.strcmpi(document.activeElement.value, GetText("Cancel")) == 0) {
+	if (g_nResult == 2 || api.StrCmpI(document.activeElement.value, GetText("Cancel")) == 0) {
 		if (fnNo) {
 			fnNo();
 		}
@@ -584,7 +584,7 @@ EditX = function (mode)
 	MainWindow.OptionDecode(a[2], p);
 	document.F.elements[mode + "Path"].value = p.s;
 	SetType(document.F.elements[mode + "Type"], a[2]);
-	if (api.strcmpi(mode, "Key") == 0) {
+	if (api.StrCmpI(mode, "Key") == 0) {
 	 	SetKeyShift();
 	}
 }
@@ -738,7 +738,7 @@ function LoadMenus(nSelected)
 	}
 	for (var j in g_arMenuTypes) {
 		var ar = String(g_MenuType).split(",");
-		if (api.strcmpi(ar[0], g_arMenuTypes[j]) == 0) {
+		if (api.StrCmpI(ar[0], g_arMenuTypes[j]) == 0) {
 			nSelected = oa.length - 1;
 			oa[nSelected].selected = true;
 			if (isFinite(ar[1])) {
@@ -792,7 +792,7 @@ function LoadX(mode, fn)
 				while (--i >= 0) {
 					var item = items[i];
 					var s = item.getAttribute(mode);
-					if (api.strcmpi(mode, "Key") == 0) {
+					if (api.StrCmpI(mode, "Key") == 0) {
 						var ar = /,$/.test(s) ? [s] : s.split(",");
 						for (var k = ar.length; k--;) {
 							ar[k] = GetKeyName(ar[k]);
@@ -870,7 +870,7 @@ function SaveX(mode)
 				var item = xml.createElement(g_Types[mode][j]);
 				var a = o[i].value.split(g_sep);
 				var s = a[0];
-				if (api.strcmpi(mode, "Key") == 0) {
+				if (api.StrCmpI(mode, "Key") == 0) {
 					var ar = /,$/.test(s) ? [s] : s.split(",");
 					for (var k = ar.length; k--;) {
 						var n = GetKeyKey(ar[k]);
@@ -910,7 +910,7 @@ function SaveAddons()
 				if (!item) {
 					item = xml.createElement(Id);
 				}
-				var Enabled = api.strcmpi(div.style.color, "gray") ? 1 : 0;
+				var Enabled = api.StrCmpI(div.style.color, "gray") ? 1 : 0;
 				if (Enabled) {
 					var AddonFolder = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\" + Id);
 					Enabled = 0;
@@ -1044,7 +1044,7 @@ function SetAddon(td, Id, Enable)
 	td.onmousedown = function (e)
 	{
 		var o = document.elementFromPoint((e || window.event).clientX, (e || window.event).clientY);
-		if (!o || api.strcmpi(o.tagName, "input")) {
+		if (!o || api.StrCmpI(o.tagName, "input")) {
 			g_tdDown = (e ? e.currentTarget : window.event.srcElement).firstChild.id;
 		}
 	}
@@ -1369,7 +1369,7 @@ OpenIcon = function (o)
 InitDialog = function ()
 {
 	var Query = dialogArguments.Query || location.search.replace(/\?/, "");
-	if (api.strcmpi(Query, "icon") == 0) {
+	if (api.StrCmpI(Query, "icon") == 0) {
 		var h = document.documentElement.clientHeight || document.body.clientHeight;
 		h -= 60;
 		if (h > 0) {
@@ -1405,14 +1405,14 @@ InitDialog = function ()
 		}
 		document.getElementById("Content").innerHTML = s.join("");
 	}
-	if (api.strcmpi(Query, "mouse") == 0) {
+	if (api.StrCmpI(Query, "mouse") == 0) {
 		returnValue = false;
 		var s = [];
 		s.push('<input type="text" name="q" style="width: 100%" onkeydown="setTimeout(\'returnValue=document.F.q.value\',100)" />');
 		s.push('<div id="Gesture" style="width: 100%; height: 340px; border: 1px gray solid; text-align: center" onmousedown="return MouseDown()" onmouseup="return MouseUp()" onmousemove="return MouseMove()" ondblclick="MouseDbl()" onmousewheel="return MouseWheel()"></div>');
 		document.getElementById("Content").innerHTML = s.join("");
 	}
-	if (api.strcmpi(Query, "key") == 0) {
+	if (api.StrCmpI(Query, "key") == 0) {
 		returnValue = false;
 		var s = [];
 		s.push('<div style="padding: 8px;" style="display: block;"><label>Key</label><br /><input type="text" name="q" style="width: 100%; ime-mode: disabled" /></div>');
@@ -1527,7 +1527,7 @@ InitLocation = function ()
 			Location = window.Default;
 		}
 		for (var i = document.L.elements.length; i--;) {
-			if (api.strcmpi(Location, document.L.elements[i].value) == 0) {
+			if (api.StrCmpI(Location, document.L.elements[i].value) == 0) {
 				document.L.elements[i].checked = true;
 			}
 		}
@@ -1671,7 +1671,7 @@ function SetAttrib(item, n, s)
 function GetElementValue(o)
 {
 	if (o.type) {
-		if (api.strcmpi(o.type, 'checkbox') == 0) {
+		if (api.StrCmpI(o.type, 'checkbox') == 0) {
 			return o.checked ? 1 : 0;
 		}
 		if (/hidden|text/i.test(o.type)) {
@@ -1686,7 +1686,7 @@ function GetElementValue(o)
 function SetElementValue(o, s)
 {
 	if (o.type) {
-		if (api.strcmpi(o.type, "checkbox") == 0) {
+		if (api.StrCmpI(o.type, "checkbox") == 0) {
 			o.checked = api.LowPart(s);
 			return;
 		}
@@ -1823,20 +1823,20 @@ function SetTab(s)
 	var arg = String(s).split(/&/);
 	for (var i in arg) {
 		var ar = arg[i].split(/=/);
-		if (api.strcmpi(ar[0], "tab") == 0) {
-			if (api.strcmpi(ar[1], "Get Addons") == 0) {
+		if (api.StrCmpI(ar[0], "tab") == 0) {
+			if (api.StrCmpI(ar[1], "Get Addons") == 0) {
 				o = document.getElementById('tab1_1');
 			}
 			var s = GetText(ar[1]);
 			var ovTab;
 			for (var j = 0; ovTab = document.getElementById('tab' + j); j++) {
-				if (api.strcmpi(s, ovTab.innerText) == 0) {
+				if (api.StrCmpI(s, ovTab.innerText) == 0) {
 					o = ovTab;
 					break;
 				}
 			}
 		}
-		else if (api.strcmpi(ar[0], "menus") == 0) {
+		else if (api.StrCmpI(ar[0], "menus") == 0) {
 			g_MenuType = ar[1];
 		}
 	}
@@ -1987,7 +1987,7 @@ function SelectLangID(o)
 		if (items && items.length) {
 			var item = items[0];
 			var en = item.getAttribute("en");
-			en = (en && api.strcmpi(item.text, en)) ? ' / ' + en : "";
+			en = (en && api.StrCmpI(item.text, en)) ? ' / ' + en : "";
 			title = item.text + en + " (" + title + ")\t" + item.getAttribute("author");
 		}
 		api.InsertMenu(hMenu, i, MF_BYPOSITION | MF_STRING, api.QuadPart(i) + 1, title);

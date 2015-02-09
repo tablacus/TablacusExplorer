@@ -52,7 +52,7 @@ FolderMenu =
 		if (!FolderItem) {
 			return;
 		}
-		if (api.strcmpi(typeof(FolderItem), "object")) {
+		if (api.StrCmpI(typeof(FolderItem), "object")) {
 			FolderItem = api.ILCreateFromPath(FolderItem);
 		}
 		if (FolderItem.IsBrowsable) {
@@ -111,7 +111,7 @@ FolderMenu =
 			var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
 			if (path.length != 3 || !api.PathIsNetworkPath(path)) {
 				mii.hSubMenu = api.CreatePopupMenu();
-				api.InsertMenu(mii.hSubMenu, 0, MF_BYPOSITION | MF_STRING, 0, api.sprintf(100, '\tJScript\tFolderMenu.OpenSubMenu("%llx",%d,"%llx")', hMenu, mii.wID, mii.hSubMenu));
+				api.InsertMenu(mii.hSubMenu, 0, MF_BYPOSITION | MF_STRING, 0, api.sprintf(99, '\tJScript\tFolderMenu.OpenSubMenu("%llx",%d,"%llx")', hMenu, mii.wID, mii.hSubMenu));
 			}
 		}
 		api.InsertMenuItem(hMenu, MAXINT, false, mii);
@@ -346,7 +346,7 @@ function ImgBase64(o, index)
 		o.removeAttribute("bitmap");
 		o.removeAttribute("icon");
 	}
-	else if (api.strcmpi(o.src, src)) {
+	else if (api.StrCmpI(o.src, src)) {
 		return src.replace(location.href.replace(/[^\/]*$/, ""), "file:///");
 	}
 	return s;
@@ -447,7 +447,7 @@ function MakeImgIcon(src, index, h, strBitmap, strIcon)
 LoadImgDll = function (icon, index)
 {
 	var hModule = api.LoadLibraryEx(fso.BuildPath(system32, icon[index * 4]), 0, LOAD_LIBRARY_AS_DATAFILE);
-	if (!hModule && api.strcmpi(icon[index * 4], "ieframe.dll") == 0) {
+	if (!hModule && api.StrCmpI(icon[index * 4], "ieframe.dll") == 0) {
 		if (icon[index * 4 + 1] >= 500) {
 			hModule = api.LoadLibraryEx(fso.BuildPath(system32, "browseui.dll"), 0, LOAD_LIBRARY_AS_DATAFILE);
 		}
@@ -594,10 +594,7 @@ SaveXml = function (filename, all)
 		var nCount2 = Ctrl.Count;
 		for (var i2 in Ctrl) {
 			var FV = Ctrl[i2];
-			var path = api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
-			if (/search\-ms:.*?&crumb=location:([^&]*)/.test(path)) {
-				path = api.PathCreateFromUrl("file:" + RegExp.$1);
-			}
+			var path = GetSavePath(FV.FolderItem);
 			var bSave = !all || IsSavePath(path);
 			if (bSave || (bEmpty && i2 == nCount2 - 1)) {
 				if (!bSave) {
@@ -626,10 +623,7 @@ SaveXml = function (filename, all)
 						var bLogSaved = false;
 						var nLogIndex = TL.Index;
 						for (var i3 in TL) {
-							path = api.GetDisplayNameOf(TL[i3], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
-							if (/search\-ms:.*?&crumb=location:([^&]*)/.test(path)) {
-								path = api.PathCreateFromUrl("file:" + RegExp.$1);
-							}
+							path = GetSavePath(TL[i3]);
 							if (IsSavePath(path)) {
 								var item3 = xml.createElement("Log");
 								item3.setAttribute("Path", path);
@@ -780,7 +774,7 @@ NavigateFV = function (FV, Path, wFlags)
 			if (/%([^%]+)%/.test(Path)) {
 				Path = ExtractMacro(FV, Path);
 			}
-			if (/\?|\*/.test(Path) && !/\\\\\?\\/.test(Path)) {
+			if (/\?|\*/.test(Path) && !/\\\\\?\\|:/.test(Path)) {
 				FV.FilterView = Path;
 				FV.Refresh();
 				return;
@@ -901,7 +895,7 @@ GetPos = function (o, bScreen, bAbs, bPanel)
 	var y = (bScreen ? screenTop : 0);
 
 	while (o) {
-		if (bAbs || !bPanel || api.strcmpi(o.style.position, "absolute")) {
+		if (bAbs || !bPanel || api.StrCmpI(o.style.position, "absolute")) {
 			x += o.offsetLeft - (bAbs ? 0 : o.scrollLeft);
 			y += o.offsetTop - (bAbs ? 0 : o.scrollTop);
 			o = o.offsetParent;
@@ -936,8 +930,8 @@ DeleteItem = function (path)
 
 IsExists = function (path)
 {
-	var FindData = api.Memory("WIN32_FIND_DATA");
-	var hFind = api.FindFirstFile(path, FindData);
+	var wfd = api.Memory("WIN32_FIND_DATA");
+	var hFind = api.FindFirstFile(path, wfd);
 	api.FindClose(hFind);
 	return hFind != INVALID_HANDLE_VALUE;
 }
@@ -1238,12 +1232,10 @@ PathMatchEx = function (path, s)
 
 IsFolderEx = function (Item)
 {
-	var FindData = api.Memory("WIN32_FIND_DATA");
-	api.SHGetDataFromIDList(Item, SHGDFIL_FINDDATA, FindData, FindData.Size);
+	var wfd = api.Memory("WIN32_FIND_DATA");
+	api.SHGetDataFromIDList(Item, SHGDFIL_FINDDATA, wfd, wfd.Size);
 	if (Item.IsFolder) {
-		if ((FindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) || !Item.IsFileSystem || api.strcmpi(Item.Path.replace(/\\$/, ""), fso.GetDriveName(Item.Path)) == 0) {
-			return true;
-		}
+		return (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) || !Item.IsFileSystem || !fso.FileExists(Item.Path);
 	}
 	return false;
 }
@@ -1309,7 +1301,7 @@ AdjustMenuBreak = function (hMenu)
 			AdjustMenuBreak(mii.hSubMenu);
 			continue;
 		}
-		if (api.strcmpi(api.GetMenuString(hMenu, i, MF_BYPOSITION), "")) {
+		if (api.StrCmpI(api.GetMenuString(hMenu, i, MF_BYPOSITION), "")) {
 			mii.fType |= uFlags;
 			api.SetMenuItemInfo(hMenu, i, true, mii);
 			uFlags = 0;
@@ -1327,10 +1319,10 @@ teMenuGetElementsByTagName = function (Name)
 {
 	var menus = te.Data.xmlMenus.getElementsByTagName(Name);
 	if (!menus || !menus.length) {
-		if (api.strcmpi(Name, "ViewContext") == 0) {
+		if (api.StrCmpI(Name, "ViewContext") == 0) {
 			menus = te.Data.xmlMenus.getElementsByTagName("Background");
 		}
-		else if (api.strcmpi(Name, "Background") == 0) {
+		else if (api.StrCmpI(Name, "Background") == 0) {
 			menus = te.Data.xmlMenus.getElementsByTagName("ViewContext");
 		}
 	}
@@ -1342,10 +1334,10 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 	var items = null;
 	var menus = teMenuGetElementsByTagName(Name);
 	if (!menus) {
-		if (api.strcmpi(Name, "ViewContext") == 0) {
+		if (api.StrCmpI(Name, "ViewContext") == 0) {
 			menus = teMenuGetElementsByTagName("Background");
 		}
-		if (api.strcmpi(Name, "Background") == 0) {
+		if (api.StrCmpI(Name, "Background") == 0) {
 			menus = teMenuGetElementsByTagName("ViewContext");
 		}
 	}
@@ -1360,16 +1352,8 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 	var Selected = ar.shift();
 	var SelItem = ar.shift();
 	var FV = ar.shift();
-	if (FV) {
-		try {
-			var path = api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORPARSING);
-			if (api.PathMatchSpec(path, "?:\\*;\\*")) {
-				wsh.CurrentDirectory = path;
-			}
-		}
-		catch (e) {}
-	}
 	ExtraMenuCommand = [];
+	ExtraMenuData = [];
 	eventTE.MenuCommand = [];
 	var arMenu;
 	var item;
@@ -1401,12 +1385,9 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 					break;
 				}
 			}
-			var nPos = MakeMenus(hMenu, menus, arMenu, items, Ctrl, pt);
+			g_nPos = MakeMenus(hMenu, menus, arMenu, items, Ctrl, pt);
 			for (var i in eventTE[Name]) {
-				nPos = eventTE[Name][i](Ctrl, hMenu, nPos, Selected, SelItem);
-			}
-			if (ExtraMenus[Name]) {
-				ExtraMenus[Name](Ctrl, hMenu, nPos, Selected, SelItem);
+				g_nPos = eventTE[Name][i](Ctrl, hMenu, g_nPos, Selected, SelItem, ContextMenu);
 			}
 			if (!pt) {
 				pt = api.Memory("POINT");
@@ -1575,7 +1556,7 @@ GetBaseMenu = function (nBase, FV, Selected, uCMF, Mode, SelItem)
 			{
 				var s = GetHelpMenu(false)[nVerb - 0x3001];
 				if (s) {
-					if (api.strcmpi(typeof s, "function")) {
+					if (api.StrCmpI(typeof s, "function")) {
 						Navigate(s, SBSP_NEWBROWSER);
 						return;
 					}
@@ -1766,9 +1747,9 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt)
 	for (var i = 0; i < nLen; i++) {
 		var item = items[arMenu[i]];
 		var s = item.getAttribute("Name").replace(/\\t/i, "\t");
-		var strFlag = api.strcmpi(item.getAttribute("Type"), "Menus") ? "" : item.text;
+		var strFlag = api.StrCmpI(item.getAttribute("Type"), "Menus") ? "" : item.text;
 
-		if (api.strcmpi(strFlag, "Close") == 0) {
+		if (api.StrCmpI(strFlag, "Close") == 0) {
 			hMenus.pop();
 			if (!hMenus.length) {
 				break;
@@ -1780,7 +1761,7 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt)
 			if (ar.length > 1) {
 				ar[1] = GetKeyName(ar[1]);
 			}
-			if (api.strcmpi(strFlag, "Open") == 0) {
+			if (api.StrCmpI(strFlag, "Open") == 0) {
 				var mii = api.Memory("MENUITEMINFO");
 				mii.fMask = MIIM_STRING | MIIM_SUBMENU | MIIM_FTYPE;
 				mii.fType = 0;
@@ -1792,13 +1773,13 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt)
 			}
 			else {
 				nResult = arMenu[i] + 1;
-				if (s == "/" || api.strcmpi(strFlag, "Break") == 0) {
+				if (s == "/" || api.StrCmpI(strFlag, "Break") == 0) {
 					api.InsertMenu(hMenus[hMenus.length - 1], nPos++, MF_BYPOSITION | MF_MENUBREAK | MF_DISABLED, 0, "");
 				}
-				else if (s == "//" || api.strcmpi(strFlag, "BarBreak") == 0) {
+				else if (s == "//" || api.StrCmpI(strFlag, "BarBreak") == 0) {
 					api.InsertMenu(hMenus[hMenus.length - 1], nPos++, MF_BYPOSITION | MF_MENUBARBREAK | MF_DISABLED, 0, "");
 				}
-				else if (s == "-" || api.strcmpi(strFlag, "Separator") == 0) {
+				else if (s == "-" || api.StrCmpI(strFlag, "Separator") == 0) {
 					api.InsertMenu(hMenus[hMenus.length - 1], nPos++, MF_BYPOSITION | MF_SEPARATOR, 0, null);
 				}
 				else if (s) {
@@ -2128,13 +2109,13 @@ AddonOptions = function (Id, fn, Data)
 		Data.index = RegExp.$2;
 		sFeatures = 'Default';
 	}
-	if (api.strcmpi(sFeatures, "Location") == 0) {
+	if (api.StrCmpI(sFeatures, "Location") == 0) {
 		sURL = "location.html";
 		Data.show = "6";
 		Data.index = "6";
 		sFeatures = 'Default';
 	}
-	if (api.strcmpi(sFeatures, "Default") == 0) {
+	if (api.StrCmpI(sFeatures, "Default") == 0) {
 		sFeatures = 'dialogWidth: 640px; dialogHeight: 480px; resizable: yes; status: 0';
 	}
 	try {
@@ -2389,7 +2370,7 @@ function SetKeyShift()
 	}
 	o = document.getElementById("_KeySelect");
 	for (var i = o.length; i--;) {
-		if (api.strcmpi(key, o[i].value) == 0) {
+		if (api.StrCmpI(key, o[i].value) == 0) {
 			o.selectedIndex = i;
 			break;
 		}
@@ -2797,7 +2778,7 @@ ApiStruct = function (oTypedef, nAli, oMemory)
 	}
 	n = api.LowPart(nAli);
 	this.Size += (n - (this.Size % n)) % n;
-	this.Memory = api.strcmpi(typeof oMemory, "object") ? api.Memory("BYTE", this.Size) : oMemory;
+	this.Memory = api.StrCmpI(typeof oMemory, "object") ? api.Memory("BYTE", this.Size) : oMemory;
 	this.Read = function (Id)
 	{
 		var ar = this.Typedef[Id];
@@ -2917,4 +2898,13 @@ AddEventEx(window, "load", function ()
 Alt = function ()
 {
 	return S_OK;
+}
+
+GetSavePath = function (FolderItem)
+{
+	var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
+	if (!api.PathMatchSpec(path, "?:\\*;\\*") && /search\-ms:.*?&crumb=location:([^&]*)/.test(api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING))) {
+		return api.PathCreateFromUrl("file:" + RegExp.$1);
+	}
+	return path;
 }

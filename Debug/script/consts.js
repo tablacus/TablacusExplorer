@@ -77,7 +77,10 @@ osInfo = api.Memory("OSVERSIONINFOEX");
 osInfo.dwOSVersionInfoSize = osInfo.Size;
 api.GetVersionEx(osInfo);
 WINVER = osInfo.dwMajorVersion * 0x100 + osInfo.dwMinorVersion;
-
+try {
+	wsh.CurrentDirectory = fso.GetSpecialFolder(2).Path;
+} catch (e) {
+}
 //Tablacus
 Ox80000000 = api.LowPart(0x80000000);
 CTRL_FV =       0;

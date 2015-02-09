@@ -123,7 +123,7 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *
 #define TET_ViewMode			0x1faa
 #define SHGDN_FORPARSINGEX	0x80000000
 #define START_OnFunc			5000
-#define TE_OnKeyMessage			0
+#define TE_Labels				0
 #define TE_OnMouseMessage		1
 #define TE_OnViewCreated		2
 #define TE_OnDefaultCommand		3
@@ -157,7 +157,8 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *
 #define TE_OnILGetParent		31
 #define TE_OnViewModeChanged	32
 #define TE_OnColumnsChanged		33
-#define Count_OnFunc			34
+#define TE_OnKeyMessage			34
+#define Count_OnFunc			35
 
 #define SB_OnIncludeObject		0
 
@@ -813,6 +814,7 @@ public:
 	HRESULT SelectItemEx(LPITEMIDLIST *ppidl, int dwFlags);
 	VOID InitFolderSize();
 	BOOL SetFolderSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch);
+	VOID SetLabel(LPCITEMIDLIST pidl, LPWSTR szText, int cch);
 	HRESULT PropertyKeyFromName(BSTR bs, PROPERTYKEY *pkey);
 #ifdef _2000XP
 	VOID AddPathXP(CteFolderItems *pFolderItems, IShellFolderView *pSFV, int nIndex, BOOL bResultsFolder);
@@ -845,6 +847,7 @@ public:
 #endif
 	DWORD		m_param[SB_Count];
 	int			m_nFolderSizeIndex;
+	int			m_nLabelIndex;
 	int			m_nSB;
 	int			m_nUnload;
 	DWORD		m_nOpenedType;
@@ -853,6 +856,7 @@ public:
 	BOOL		m_bInit;
 	BOOL		m_bVisible;
 	BOOL		m_bRefreshLayout;
+	BOOL		m_bRefreshLator;
 private:
 	VARIANT		m_Data;
 	FolderItem	**m_ppLog;

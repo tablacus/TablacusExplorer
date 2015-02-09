@@ -6,7 +6,6 @@ Addon = 1;
 Addons = {"_stack": []};
 Init = false;
 OpenMode = SBSP_SAMEBROWSER;
-ExtraMenus = {};
 ExtraMenuCommand = [];
 g_arBM = [];
 Exchange = {};
@@ -354,7 +353,7 @@ Resize2 = function ()
 		o.style.width = w + "px";
 		for (var i = 1; i <= 3; i++) {
 			var ob = document.getElementById("LeftBar" + i);
-			if (ob && api.strcmpi(ob.style.display, "none")) {
+			if (ob && api.StrCmpI(ob.style.display, "none")) {
 				pt = GetPos(ob);
 				o.style.width = w + "px";
 				w2 = w;
@@ -376,7 +375,7 @@ Resize2 = function ()
 		o.style.width = w + "px";
 		for (var i = 1; i <= 3; i++) {
 			var ob = document.getElementById("RightBar" + i);
-			if (ob && api.strcmpi(ob.style.display, "none")) {
+			if (ob && api.StrCmpI(ob.style.display, "none")) {
 				o.style.width = w + "px";
 				w2 = w;
 				break;
@@ -627,7 +626,7 @@ te.OnCreate = function (Ctrl)
 {
 	if (Ctrl.Type == CTRL_TE) {
 		te.LockUpdate();
-		if (xmlWindow && api.strcmpi(typeof(xmlWindow), "string")) {
+		if (xmlWindow && api.StrCmpI(typeof(xmlWindow), "string")) {
 			LoadXml(xmlWindow);
 		}
 		if (te.Ctrls(CTRL_TC).length == 0) {
@@ -864,7 +863,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 			if (msg == WM_MBUTTONUP) {
 				if (bLV && api.GetKeyState(VK_SHIFT) >= 0 && api.GetKeyState(VK_CONTROL) >= 0) {
 					var ar = eventTE.Mouse.List[g_mouse.str];
-					if (ar && api.strcmpi(ar[0][1], "Selected Items") == 0) {
+					if (ar && !api.StrCmpI(ar[0][1], "Selected Items")) {
 						var iItem = Ctrl.HitTest(pt);
 						if (iItem >= 0) {
 							Ctrl.SelectItem(Ctrl.Items.Item(iItem), SVSI_SELECT | SVSI_FOCUSED | SVSI_DESELECTOTHERS);
@@ -919,7 +918,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 		}
 	}
 	if (msg == WM_LBUTTONDBLCLK || msg == WM_RBUTTONDBLCLK || msg == WM_MBUTTONDBLCLK || msg == WM_XBUTTONDBLCLK) {
-		if (api.strcmpi(strClass, WC_HEADER)) {
+		if (api.StrCmpI(strClass, WC_HEADER)) {
 			te.Data.pt = pt;
 			g_mouse.str = g_mouse.GetButton(msg, wParam);
 			g_mouse.str += g_mouse.str;
@@ -979,10 +978,11 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam)
 {
 	if (Ctrl.Type <= CTRL_EB) {
-		if ((wParam & 0xfff) + 1 == CommandID_DELETE) {
+		var cmd = (wParam & 0xfff) + 1;
+		if (cmd == CommandID_DELETE || cmd == CommandID_RENAME) {
 			var Items = Ctrl.SelectedItems();
 			for (var i = Items.Count; i--;) {
-				ChangeNotifyFV(Items[i].IsFolder ? SHCNE_RMDIR : SHCNE_DELETE, Items[i]);
+				ChangeNotifyFV(Items.Item(i).IsFolder ? SHCNE_RMDIR : SHCNE_DELETE, Items.Item(i));
 			}
 		}
 	}
@@ -1009,30 +1009,30 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 	if (isFinite(Verb)) {
 		Verb = ContextMenu.GetCommandString(Verb, GCS_VERB);
 	}
-	if (api.PathMatchSpec(Verb, "opennewwindow")) {
+	if (!api.StrCmpI(Verb, "opennewwindow")) {
 		CancelWindowRegistered();
 	}
 	NewTab = GetNavigateFlags();
 	for (var i = 0; i < Items.Count; i++) {
-		if (Verb && api.strcmpi(Verb, "runas")) {
+		if (Verb && api.StrCmpI(Verb, "runas")) {
 			var path = Items.Item(i).Path;
-			var cmd = api.AssocQueryString(ASSOCF_NONE, ASSOCSTR_COMMAND, path, api.strcmpi(Verb, "Default") ? Verb : null).replace(/"?%1"?|%L/g, api.PathQuoteSpaces(path)).replace(/%\*|%I/g, "");
+			var cmd = api.AssocQueryString(ASSOCF_NONE, ASSOCSTR_COMMAND, path, api.StrCmpI(Verb, "Default") ? Verb : null).replace(/"?%1"?|%L/g, api.PathQuoteSpaces(path)).replace(/%\*|%I/g, "");
 			if (cmd) {
 				ShowStatusText(te, Verb + ":" + cmd, 1);
-				if (api.PathMatchSpec(Verb, "open") && api.PathMatchSpec(cmd, "*\Explorer.exe /idlist,*;rundll32.exe *fldr.dll,RouteTheCall*")) {
+				if (!api.StrCmpI(Verb, "open") && api.PathMatchSpec(cmd, "*\Explorer.exe /idlist,*;rundll32.exe *fldr.dll,RouteTheCall*")) {
 					Navigate(Items.Item(i), NewTab);
 				 	NewTab |= SBSP_NEWBROWSER;
 					continue;
 				}
 				if (cmd.indexOf("%") < 0) {
 					var cmd2 = ExtractMacro(te, cmd);
-					if (api.strcmpi(cmd, cmd2)) {
+					if (api.StrCmpI(cmd, cmd2)) {
 						ShellExecute(cmd2, null, nShow);
 						continue;
 					}
 				}
 			}
-			if (api.PathMatchSpec(Verb, "open") && IsFolderEx(Items.Item(i))) {
+			if (!api.StrCmpI(Verb, "open") && IsFolderEx(Items.Item(i))) {
 				Navigate(Items.Item(i), NewTab);
 			 	NewTab |= SBSP_NEWBROWSER;
 				continue;
@@ -1487,7 +1487,7 @@ te.OnArrange = function (Ctrl, rc)
 		o.style.left = rc.Left + "px";
 		o.style.top = rc.Top + "px";
 		if (Ctrl.Visible) {
-			o.style.display = !document.documentMode || api.strcmpi(o.tagName, "td") ? "block" : "table-cell";
+			o.style.display = !document.documentMode || api.StrCmpI(o.tagName, "td") ? "block" : "table-cell";
 		}
 		else {
 			o.style.display = "none";
@@ -1523,7 +1523,7 @@ te.OnVisibleChanged = function (Ctrl)
 		var o = g_Panels[Ctrl.Id];
 		if (o) {
 			if (Ctrl.Visible) {
-				o.style.display = !document.documentMode || api.strcmpi(o.tagName, "td") ? "block" : "table-cell";
+				o.style.display = !document.documentMode || api.StrCmpI(o.tagName, "td") ? "block" : "table-cell";
 			}
 			else {
 				o.style.display = "none";
@@ -1578,6 +1578,25 @@ te.OnILGetParent = function (FolderItem)
 	if (/search\-ms:.*?&crumb=location:([^&]*)/.test(api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING))) {
 		return api.PathCreateFromUrl("file:" + RegExp.$1);
 	}
+}
+
+//Tablacus Events
+
+GetIconImage = function (Ctrl, BGColor)
+{
+	var img = RunEvent4("GetIconImage", Ctrl, BGColor);
+	if (img) {
+		return img;
+	}
+	if (document.documentMode) {
+		var info = api.Memory("SHFILEINFO");
+		api.SHGetFileInfo(Ctrl.FolderItem, 0, info, info.Size, SHGFI_ICON | SHGFI_SMALLICON | SHGFI_PIDL);
+		var image = te.GdiplusBitmap();
+		image.FromHICON(info.hIcon, BGColor);
+		api.DestroyIcon(info.hIcon);
+		return image.DataURI("image/png");
+	}
+	return MakeImgSrc("icon:shell32.dll,3,16", 0, false, 16);
 }
 
 // Browser Events
@@ -1661,10 +1680,10 @@ LoadAddon = function(ext, Id, arError)
 		ado.LoadFromFile(fname);
 		var s = ado.ReadText();
 		ado.Close();
-		if (api.PathMatchSpec(ext, "js")) {
+		if (!api.StrCmpI(ext, "js")) {
 			(new Function(s))(Id);
 		}
-		else if (api.PathMatchSpec(ext, "vbs")) {
+		else if (!api.StrCmpI(ext, "vbs")) {
 			var fn = api.GetScriptDispatch(s, "VBScript", {"_Addon_Id": {"Addon_Id": Id}, window: window},
 				function (ei, SourceLineText, dwSourceContext, lLineNumber, CharacterPosition)
 				{
@@ -1703,7 +1722,7 @@ function SetAddon(strName, Location, Tag)
 			te.Data.Locations[Location].push(strName);
 		}
 		var o = document.getElementById(Location);
-		if (api.PathMatchSpec(typeof(Tag), "string")) {
+		if (!api.StrCmpI(typeof(Tag), "string")) {
 			o.insertAdjacentHTML("BeforeEnd", Tag);
 		}
 		else if (Tag.join) {
@@ -1712,7 +1731,7 @@ function SetAddon(strName, Location, Tag)
 		else {
 			o.appendChild(Tag);
 		}
-		o.style.display = !document.documentMode || api.strcmpi(o.tagName, "td") ? "block" : "table-cell";
+		o.style.display = !document.documentMode || api.StrCmpI(o.tagName, "td") ? "block" : "table-cell";
 	}
 	return Location;
 }
@@ -2204,7 +2223,7 @@ g_basic =
 			Ref: function (s, pt)
 			{
 				var r = g_basic.Popup(g_basic.Func["Selected Items"].Cmd, s, pt);
-				if (api.strcmpi(r, GetText("Send to...")) == 0) {
+				if (api.StrCmpI(r, GetText("Send to...")) == 0) {
 					var Folder = sha.NameSpace(ssfSENDTO);
 					if (Folder) {
 						var Items = Folder.Items();
@@ -2220,7 +2239,7 @@ g_basic =
 					}
 					return 1;
 				}
-				if (api.strcmpi(r, GetText("Open with...")) == 0) {
+				if (api.StrCmpI(r, GetText("Open with...")) == 0) {
 					r = OpenDialog(s);
 					if (!r) {
 						r = 1;
@@ -2474,7 +2493,7 @@ g_basic =
 			{
 				var FV = te.Ctrl(CTRL_FV);
 				if (FV) {
-					var ContextMenu = api.strcmpi(s, "cmd") ? FV.ViewMenu() : api.ContextMenu(FV, FV);;
+					var ContextMenu = api.StrCmpI(s, "cmd") ? FV.ViewMenu() : api.ContextMenu(FV, FV);;
 					if (ContextMenu) {
 						var hMenu = api.CreatePopupMenu();
 						ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_EXTENDEDVERBS);
