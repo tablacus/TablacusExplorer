@@ -143,7 +143,7 @@
             </td>
             <td rowspan="3" style="background-color: white">
               <input name="Location" type="radio" value="Background" />
-              <Label>Background</label>
+              <label>Background</label>
             </td>
             <td>
               <input name="Location" type="radio" value="RightBar1" />
@@ -242,7 +242,7 @@
           </tr>
         </table>
         <input name="Location" type="radio" value="None" />
-        <Label>None</label>&nbsp;<span id="_None"></span>
+        <label>None</label>&nbsp;<span id="_None"></span>
         </form>
     </div>
     <!--panel_end-->
@@ -281,7 +281,7 @@
               <input type="text" name="Icon" onchange="SetImage();" style="width: 100%" />
             </td>
             <td style="white-space: nowrap">
-              <input type="button" value="File" onclick="RefX('Icon', false, null, 'ChangeX(\'List\');SetImage();'); SetImage();" />
+              <input type="button" value="File" onclick="RefX('Icon', false, null, 'ChangeX(\'List\');');" />
               <input type="button" value="Reference..." onclick="ShowIcon();" />
             </td>
           </tr>
@@ -295,7 +295,7 @@
               <input type="text" name="IconSize" size="4" onchange="SetImage();" />px
             </td>
             <td>
-              <input type="button" value="Default" onclick="document.F.IconSize.value='';SetImage();" />
+              <input type="button" value="Default" onclick="SetDefault(document.F.Icon, '');" />
             </td>
           </tr>
         </table>
@@ -317,7 +317,10 @@
               <input type="text" name="_MenuName" style="width: 100%" />
             </td>
             <td style="width: 80px">
-              <input type="text" name="_MenuKey" style="width: 100%" />
+              <input type="text" name="_MenuKey" title="Key" style="width: 100%" />
+            </td>
+            <td style="width: 20px">
+              <input type="button" value="Input" title="Key" onclick="InputKey(document.F.elements['_MenuKey']);" />
             </td>
           </tr>
         </table>
@@ -340,10 +343,18 @@
         </select>
         <br />
         <label>Key</label>
-        <input type="text" name="Key" onchange="SetKeyShift()" style="width: 100%" />
+        <table style="width: 100%">
+          <tr>
+            <td style="width: 100%">
+              <input type="text" name="Key" onchange="SetKeyShift()" style="width: 100%" />
+            </td>
+            <td style="width: 20px">
+              <input type="button" value="Input" title="Key" onclick="InputKey(document.F.Key);" />
+            </td>
+          </tr>
+        </table>
         <span id="_KeyState"></span>
         <select id="_KeySelect" onchange="KeySelect(this)"></select>
-        <input type="button" value="Input" onclick="InputKey();" />
       </div>
       <!--panel_end-->
 
@@ -363,15 +374,9 @@
                     <label>Mouse</label>
                   </td>
                   <td>
-                    <input type="button" value="Input" onclick="InputMouse();" />
+                    <input type="button" value="Input" title="Mouse" onclick="InputMouse();" />
                   </td>
-                  <td align="right">
-                    <script type="text/javascript">
-                      var s = "CSA";
-                      for (var i = 0; i < s.length; i++) {
-                        document.write('<input type="button" value="' + MainWindow.g_KeyState[i][0] + '" title="' + s.charAt(i) + '" onclick="AddMouse(this)" />');
-                      }
-                    </script>
+                  <td align="right" id="__MOUSEDATA">
                   </td>
                 </tr>
               </table>
@@ -384,7 +389,6 @@
             </td>
             <td align="center">
               <input type="button" value="RB" title="2" onclick="AddMouse(this)" />
-            </td>
             </td>
           </tr>
           <tr>
@@ -408,7 +412,6 @@
             <td align="left" rowspan="2">
               <input type="button" value=" R " title="R" onclick="AddMouse(this)" />
             </td>
-            </td>
           </tr>
           <tr>
             <td></td>
@@ -428,19 +431,21 @@
     <table style="width: 99%">
       <tr>
         <td align="right">
-          <input type="button" value="OK" class="ok" onclick="SetResult(1)" />
-          <input type="button" value="Cancel" class="cancel" onclick="SetResult(2)" />
+          <table>
+            <tr>
+              <td>
+                <input type="button" value="OK" class="ok" onclick="SetResult(1)" />&nbsp;
+              </td>
+              <td>
+                <input type="button" value="Cancel" class="cancel" onclick="SetResult(2)" />
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
     </table>
     <script type="text/javascript">
-document.write('<'+ 'script type="text/javascript" src="../addons/' + dialogArguments.Data.id + '/script.js"></' + 'script>');
-InitLocation();
-AddEventEx(window, "load", function ()
-{
-	ApplyLang(document);
-	ClickTab(null, 1);
-});
+      InitLocation();
     </script>
   </body>
 </html>

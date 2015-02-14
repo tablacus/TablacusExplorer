@@ -3,7 +3,6 @@
 te.ClearEvents();
 g_Bar = "";
 Addon = 1;
-Addons = {"_stack": []};
 Init = false;
 OpenMode = SBSP_SAMEBROWSER;
 ExtraMenuCommand = [];
@@ -258,22 +257,32 @@ LoadConfig = function ()
 			}
 		}
 		var items = xml.getElementsByTagName('Window');
-		for (var i = 0; i < items.length; i++) {
-			var item = items[i];
-			var x = item.getAttribute("Left");
-			var y = item.getAttribute("Top")
+		if  (items.length) {
+			var item = items[0];
+			var x = api.QuadPart(item.getAttribute("Left"));
+			var y = api.QuadPart(item.getAttribute("Top"));
 			if (x > -30000 && y > -30000) {
-				api.MoveWindow(te.hwnd, x, y, item.getAttribute("Width"), item.getAttribute("Height"), 0);
-				var nCmdShow = item.getAttribute("CmdShow");
-				if (nCmdShow != SW_SHOWNORMAL) {
-					api.ShowWindow(te.hwnd, nCmdShow);
+				var w = api.QuadPart(item.getAttribute("Width"));
+				var h = api.QuadPart(item.getAttribute("Height"));
+				var pt = {x: x + w / 2, y: y};
+				if (!api.MonitorFromPoint(pt, MONITOR_DEFAULTTONULL)) {
+					var hMonitor = api.MonitorFromPoint(pt, MONITOR_DEFAULTTOPRIMARY);
+					var mi = api.Memory("MONITORINFOEX");
+					mi.cbSize = mi.Size;
+					api.GetMonitorInfo(hMonitor, mi);
+					x = mi.rcWork.left + (mi.rcWork.right - mi.rcWork.left - w) / 2;
+					y = mi.rcWork.top + (mi.rcWork.bottom - mi.rcWork.top - h) / 2;
+					if (y < mi.rcWork.top) {
+						y = mi.rcWork.top;
+					}
 				}
+				api.MoveWindow(te.hwnd, x, y, w, h, 0);
 			}
+			te.CmdShow = item.getAttribute("CmdShow");
 		}
+		return;
 	}
-	else {
-		xmlWindow = "Init";
-	}
+	xmlWindow = "Init";
 }
 
 SaveConfig = function ()
@@ -450,32 +459,6 @@ AddFavoriteEx = function (Ctrl, pt)
 {
 	AddFavorite();
 	return S_OK
-}
-
-CreateNewFolder = function (Ctrl, pt)
-{
-	var path = InputDialog("New Folder", "");
-	if (path) {
-		if (!/^[A-Z]:\\|^\\/i.test(path)) {
-			var FV = GetFolderView(Ctrl, pt);
-			path = fso.BuildPath(api.GetDisplayNameOf(FV, SHGDN_FORPARSING), path.replace(/^\s+/, ""));
-		}
-		CreateFolder(path);
-	}
-	return S_OK;
-}
-
-CreateNewFile = function (Ctrl, pt)
-{
-	var path = InputDialog("New File", "");
-	if (path) {
-		if (!/^[A-Z]:\\|^\\/i.test(path)) {
-			var FV = GetFolderView(Ctrl, pt);
-			path = fso.BuildPath(api.GetDisplayNameOf(FV, SHGDN_FORPARSING), path.replace(/^\s+/, ""));
-		}
-		CreateFile(path);
-	}
-	return S_OK;
 }
 
 CancelFilterView = function (FV)
@@ -659,6 +642,7 @@ te.OnCreate = function (Ctrl)
 				}
 			}
 			te.UnlockUpdate();
+			api.ShowWindow(te.hwnd, te.CmdShow);
 		}, 99);
 		RunEvent1("Create", Ctrl);
 		RunCommandLine(api.GetCommandLine());
@@ -1242,23 +1226,6 @@ te.OnItemClick = function (Ctrl, Item, HitTest, Flags)
 
 te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 {
-	if (msg == WM_ACTIVATE) {
-		if (wParam & 0xffff) {
-			if (g_mouse.str == "") {
-				setTimeout(function ()
-				{
-					var FV = te.Ctrl(CTRL_FV);
-					if (FV) {
-						FV.Focus();
-					}
-				}, 99);
-			}
-		}
-		else  {
-			g_mouse.str = "";
-			SetGestureText(Ctrl, "");
-		}
-	}
 	var hr = RunEvent3("SystemMessage", Ctrl, hwnd, msg, wParam, lParam);
 	if (isFinite(hr)) {
 		return hr; 
@@ -1300,12 +1267,6 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 						DeviceChanged();
 					}
 					break;
-				case WM_SETFOCUS:
-					var FV = te.Ctrl(CTRL_FV);
-					if (FV) {
-						api.SetFocus(FV.hwnd);
-					}
-					break;
 				case WM_ACTIVATE:
 					if (te.Data.bSaveMenus) {
 						te.Data.bSaveMenus = false;
@@ -1318,6 +1279,21 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 					if (te.Data.bReload) {
 						te.Data.bReload = false;
 						te.Reload();
+					}
+					if (wParam & 0xffff) {
+						if (g_mouse.str == "") {
+							setTimeout(function ()
+							{
+								var FV = te.Ctrl(CTRL_FV);
+								if (FV) {
+									FV.Focus();
+								}
+							}, 99);
+						}
+					}
+					else  {
+						g_mouse.str = "";
+						SetGestureText(Ctrl, "");
 					}
 					break;
 				case WM_QUERYENDSESSION:
@@ -1667,36 +1643,6 @@ function ArrangeAddons()
 				}, 500);
 			}
 		}
-	}
-}
-
-LoadAddon = function(ext, Id, arError)
-{
-	try {
-		var ado = te.CreateObject("Adodb.Stream");
-		ado.CharSet = "utf-8";
-		ado.Open();
-		var fname = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons") + "\\" + Id + "\\script." + ext;
-		ado.LoadFromFile(fname);
-		var s = ado.ReadText();
-		ado.Close();
-		if (!api.StrCmpI(ext, "js")) {
-			(new Function(s))(Id);
-		}
-		else if (!api.StrCmpI(ext, "vbs")) {
-			var fn = api.GetScriptDispatch(s, "VBScript", {"_Addon_Id": {"Addon_Id": Id}, window: window},
-				function (ei, SourceLineText, dwSourceContext, lLineNumber, CharacterPosition)
-				{
-					arError.push(api.SysAllocString(ei.bstrDescription) + api.sprintf(16, "\nLine: %d\n", lLineNumber) + fname);
-				}
-			);
-			if (fn) {
-				Addons["_stack"].push(fn);
-			}
-		}
-	}
-	catch (e) {
-		arError.push([(e.description || e.toString()), fname].join("\n"));
 	}
 }
 

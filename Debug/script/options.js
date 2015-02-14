@@ -12,11 +12,13 @@ g_bDrag = false;
 g_pt = {x: 0, y: 0};
 g_Gesture = null;
 g_tid = null;
+g_tidResize = null;
 g_drag5 = false;
 g_nResult = 0;
 g_bChanged = true;
 g_bClosed = false;
 arLangs = [GetLangId(), "en", "General"];
+g_ovPanel = null;
 
 urlAddons = "http://www.eonet.ne.jp/~gakana/tablacus/addons/";
 nCount = 0;
@@ -36,6 +38,9 @@ function SetDefault(o, v)
 			return;
 		}
 		o.value = v;
+		if (o.onchange) {
+			o.onchange();
+		}
 	}, 99);
 }
 
@@ -106,6 +111,18 @@ function ResetForm()
 	document.getElementById("_TEInfo").value = api.sprintf(99, "TE%d %d.%d.%d Win %d.%d.%d %s %x IE %d %s%s", api.sizeof("HANDLE") * 8, (te.Version / 10000) % 100, (te.Version / 100) % 100, te.Version % 100, osInfo.dwMajorVersion, osInfo.dwMinorVersion, osInfo.dwBuildNumber, ["WS", "DC", "SV"][osInfo.wProductType - 1] || osInfo.wProductType, osInfo.wSuiteMask, document.documentMode || (document.body.style.maxHeight === undefined ? 6 : 7), navigator.userLanguage, api.IsWow64Process(api.GetCurrentProcess()) ? " Wow64" : "");
 }
 
+function ResizeTabPanel()
+{
+	if (g_ovPanel) {
+		var h = document.documentElement.clientHeight || document.body.clientHeight;
+		h += MainWindow.DefaultFont.lfHeight * 5;
+		if (h > 0) {
+			g_ovPanel.style.height = h + 'px';
+			g_ovPanel.style.height = 2 * h - g_ovPanel.offsetHeight + "px";
+		}
+	}
+}
+
 function ClickTab(o, nMode)
 {
 	nMode = api.LowPart(nMode);
@@ -115,19 +132,15 @@ function ClickTab(o, nMode)
 	var i = 0;
 	var ovTab;
 	while (ovTab = document.getElementById('tab' + i)) {
-		ovPanel = document.getElementById('panel' + i);
+		var ovPanel = document.getElementById('panel' + i);
 		if (i == nTabIndex) {
 			try {
 				ovTab.focus();
 			} catch (e) {}
 			ovTab.className = 'activetab';
 			ovPanel.style.display = 'block';
-			var h = document.documentElement.clientHeight || document.body.clientHeight;
-			h -= 70;
-			if (h > 0) {
-				ovPanel.style.height = h + 'px';
-				ovPanel.style.height = 2 * h - ovPanel.offsetHeight + "px";
-			}
+			g_ovPanel = ovPanel;
+			ResizeTabPanel();
 		}
 		else {
 			ovTab.className = 'tab';
@@ -197,7 +210,7 @@ function ClickTree(o, nMode, strChg, bForce)
 				ovPanel.style.width = (w - 150) + "px";
 			}
 			var h = document.documentElement.clientHeight || document.body.clientHeight;
-			h -= 44;
+			h += MainWindow.DefaultFont.lfHeight * 2.7;
 			if (h > 0) {
 				ovPanel.style.height = h + 'px';
 				ovPanel.style.height = 2 * h - ovPanel.offsetHeight + "px";
@@ -536,8 +549,13 @@ function SetOptions(fnYes, fnNo, NoCancel, bNoDef)
 				return true;
 			default:
 				if (g_nResult && NoCancel !== 2) {
-		 			event.returnValue = GetText('Are you sure?');
-					wsh.SendKeys("{Esc}");
+					if (event.preventDefault) {
+						event.preventDefault();
+					}
+					else {
+			 			event.returnValue = GetText('Are you sure?');
+						wsh.SendKeys("{Esc}");
+					}
 				}
 				return false;
 		}
@@ -714,7 +732,7 @@ function LoadMenus(nSelected)
 		oa.length = 0;
 
 		for (var j in g_arMenuTypes) {
-			document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", '<select name="Menus_' + g_arMenuTypes[j] + '" size="17" style="width: 150px; height: 400px; display: none; font-family:' + document.F.elements["Menus_Pos"].style.fontFamily + '" ondblclick="EditMenus()" oncontextmenu="CancelX(\'Menus\')"></select>');
+			document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", ['<select name="Menus_', g_arMenuTypes[j], '" size="17" style="width: 150px; height: 400px; display: none; font-family:', document.F.elements["Menus_Pos"].style.fontFamily, '" ondblclick="EditMenus()" oncontextmenu="CancelX(\'Menus\')"></select>'].join(""));
 			var menus = teMenuGetElementsByTagName(g_arMenuTypes[j]);
 			if (menus && menus.length) {
 				oa[++oa.length - 1].value = g_arMenuTypes[j] + "," + menus[0].getAttribute("Base") + "," + menus[0].getAttribute("Pos");
@@ -1027,18 +1045,18 @@ function SetAddon(td, Id, Enable)
 	var s = ['<div draggable="true" ondragstart="Start5(this)" ondragend="End5(this)" Id="Addons_' + Id + '" style="color: '];
 	s.push((Enable == "Enable") ? "gray" : "black");
 	s.push('"><input type="radio" name="AddonId" id="_', Id, '"><label for="_', Id, '"><b>', info.Name, "</b>&nbsp;", info.Version, "&nbsp;", info.Creator, "<br />", info.Description, "<br />");
-	s.push('<input type="button" value="', GetText('Remove'), '" onclick="AddonRemove(\'', Id, '\')">');
-	s.push('<input type="button" value="', GetText(Enable), '" onclick="AddonEnable(\'', Id, '\', this)"');
+	s.push('<table><tr><td><input type="button" value="', GetText('Remove'), '" onclick="AddonRemove(\'', Id, '\')"></td>');
+	s.push('<td><input type="button" value="', GetText(Enable), '" onclick="AddonEnable(\'', Id, '\', this)"');
 	if (info.MinVersion && te.Version < CalcVersion(info.MinVersion)) {
 		s.push(" disabled");
 	}
-	s.push('>');
-	s.push('<input type="button" value="', GetText('Info...'), '" onclick="AddonInfo(\'', Id, '\')">');
-	s.push('<input type="button" value="', GetText('Options...'), '" onclick="AddonOptions(\'', Id, '\')"');
+	s.push('></td>');
+	s.push('<td><input type="button" value="', GetText('Info...'), '" onclick="AddonInfo(\'', Id, '\')"></td>');
+	s.push('<td><input type="button" value="', GetText('Options...'), '" onclick="AddonOptions(\'', Id, '\')"');
 	if (!info.Options) {
 		s.push(" disabled");
 	}
-	s.push('></label></div>');
+	s.push('></td></tr></table></label></div>');
 	td.innerHTML = s.join("");
 
 	td.onmousedown = function (e)
@@ -1285,7 +1303,6 @@ InitOptions = function ()
 		s.push('<label id="tab2_' + i + '" class="button" style="width: 100%" onmousedown="ClickTree(this, null, \'Menus\');">' + GetText(g_arMenuTypes[i]) + '</label><br />');
 	}
 	document.getElementById("tab2_").innerHTML = s.join("");
-	MainWindow.g_dlgs.Options.window = window;
 
 	AddEventEx(window, "load", function ()
 	{
@@ -1294,7 +1311,11 @@ InitOptions = function ()
 
 	AddEventEx(window, "resize", function ()
 	{
-		ClickTree(null, null, null, true);
+		clearTimeout(g_tidResize);
+		g_tidResize = setTimeout(function ()
+		{
+			ClickTree(null, null, null, true);
+		}, 500);
 	});
 
 	SetOnChangeHandler();
@@ -1365,16 +1386,10 @@ OpenIcon = function (o)
 	document.body.style.cursor = "wait";
 }
 
-
 InitDialog = function ()
 {
 	var Query = dialogArguments.Query || location.search.replace(/\?/, "");
 	if (api.StrCmpI(Query, "icon") == 0) {
-		var h = document.documentElement.clientHeight || document.body.clientHeight;
-		h -= 60;
-		if (h > 0) {
-			document.getElementById("panel0").style.height = h + 'px';
-		}
 		var a =
 		{
 			"16px ieframe,206" : "b,206,16",
@@ -1406,26 +1421,96 @@ InitDialog = function ()
 		document.getElementById("Content").innerHTML = s.join("");
 	}
 	if (api.StrCmpI(Query, "mouse") == 0) {
-		returnValue = false;
-		var s = [];
-		s.push('<input type="text" name="q" style="width: 100%" onkeydown="setTimeout(\'returnValue=document.F.q.value\',100)" />');
-		s.push('<div id="Gesture" style="width: 100%; height: 340px; border: 1px gray solid; text-align: center" onmousedown="return MouseDown()" onmouseup="return MouseUp()" onmousemove="return MouseMove()" ondblclick="MouseDbl()" onmousewheel="return MouseWheel()"></div>');
-		document.getElementById("Content").innerHTML = s.join("");
+		document.getElementById("Content").innerHTML = '<div id="Gesture" style="width: 100%; height: 100%; text-align: center" onmousedown="return MouseDown()" onmouseup="return MouseUp()" onmousemove="return MouseMove()" ondblclick="MouseDbl()" onmousewheel="return MouseWheel()"></div>';
+		document.getElementById("Selected").innerHTML = '<input type="text" name="q" style="width: 100%" autocomplete="off" onkeydown="setTimeout(\'returnValue=document.F.q.value\',100)" />';
 	}
 	if (api.StrCmpI(Query, "key") == 0) {
 		returnValue = false;
-		var s = [];
-		s.push('<div style="padding: 8px;" style="display: block;"><label>Key</label><br /><input type="text" name="q" style="width: 100%; ime-mode: disabled" /></div>');
-		document.getElementById("Content").innerHTML = s.join("");
-		document.body.onkeydown = function ()
+		document.getElementById("Content").innerHTML = '<div style="padding: 8px;" style="display: block;"><label>Key</label><br /><input type="text" name="q" autocomplete="off" style="width: 100%; ime-mode: disabled" /></div>';
+		document.body.onkeydown = function (e)
 		{
-			returnValue = GetKeyName(api.sprintf(10, "$%x", (api.MapVirtualKey(event.keyCode, 0) | ((event.keyCode >= 33 && event.keyCode <= 46 || event.keyCode >= 91 && event.keyCode <= 93 || event.keyCode == 111 || event.keyCode == 144) ? 256 : 0) | GetKeyShift())));
+			var key = (e || event).keyCode;
+			returnValue = GetKeyName(api.sprintf(10, "$%x", (api.MapVirtualKey(key, 0) | ((key >= 33 && key <= 46 || key >= 91 && key <= 93 || key == 111 || key == 144) ? 256 : 0) | GetKeyShift())));
 			document.F.q.value = returnValue;
 			document.F.ButtonOk.disabled = false;
 			return false;
 		}
 	}
+	if (api.StrCmpI(Query, "new") == 0) {
+		returnValue = false;
+		var s = [];
+		s.push('<div style="padding: 8px;" style="display: block;"><input type="radio" name="mode" id="folder" onclick="document.F.path.focus()"><label for="folder">New Folder</label> <input type="radio" name="mode" id="file" onclick="document.F.path.focus()"><label for="file">New File</label><br />', dialogArguments.path ,'<br /><input type="text" name="path" style="width: 100%" /></div>');
+		document.getElementById("Content").innerHTML = s.join("");
+		document.body.onkeydown = function (e)
+		{
+			document.F.ButtonOk.disabled = !document.F.path.value;
+			var key = (e || event).keyCode;
+			if (key == VK_RETURN && document.F.path.value) {
+				SetResult(1);
+			}
+			if (key == VK_ESCAPE) {
+				SetResult(2);
+			}
+			return true;
+		}
+		setTimeout(function ()
+		{
+			document.F.elements[dialogArguments.Mode].checked = true;
+			document.F.path.focus();
+		}, 99);
+		AddEventEx(window, "beforeunload", function ()
+		{
+			if (g_nResult == 1) {
+				path = document.F.path.value;
+				if (path) {
+					if (!/^[A-Z]:\\|^\\/i.test(path)) {
+						path = fso.BuildPath(dialogArguments.path, path.replace(/^\s+/, ""));
+					}
+					if (document.getElementById("folder").checked) {
+						CreateFolder(path);
+					}
+					else if (document.getElementById("file").checked) {
+						CreateFile(path);
+					}
+					dialogArguments.FV.SelectItem(path, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
+				}
+			}
+		});
+	}
+	if (dialogArguments.element) {
+		AddEventEx(window, "beforeunload", function ()
+		{
+			try {
+				if (g_nResult == 1) {
+					dialogArguments.element.value = returnValue;
+					if (dialogArguments.element.onchange) {
+						dialogArguments.element.onchange();
+					}
+				}
+			}
+			catch (e) {
+			}
+		});
+	}
+	DialogResize = function ()
+	{
+		var h = document.documentElement.clientHeight || document.body.clientHeight;
+		var i = document.getElementById("buttons").offsetHeight * screen.deviceYDPI / screen.logicalYDPI + 6;
+		h -= i > 34 ? i : 34;
+		if (h > 0) {
+			document.getElementById("panel0").style.height = h + 'px';
+		}
+	};
+	AddEventEx(window, "resize", function ()
+	{
+		clearTimeout(g_tidResize);
+		g_tidResize = setTimeout(function ()
+		{
+			DialogResize();
+		}, 500);
+	});
 	ApplyLang(document);
+	DialogResize();
 }
 
 MouseDown = function ()
@@ -1515,6 +1600,13 @@ MouseWheel = function ()
 
 InitLocation = function ()
 {
+	document.write('<'+ 'script type="text/javascript" src="../addons/' + dialogArguments.Data.id + '/script.js"></' + 'script>');
+	var ar = [];
+	var s = "CSA";
+	for (var i = 0; i < s.length; i++) {
+		ar.push('<input type="button" value="', MainWindow.g_KeyState[i][0],'" title="', s.charAt(i), '" onclick="AddMouse(this)" />');
+	}
+	document.getElementById("__MOUSEDATA").innerHTML = ar.join("");
 	ApplyLang(document);
 	var info = GetAddonInfo(dialogArguments.Data.id);
 	document.title = info.Name;
@@ -1544,7 +1636,7 @@ InitLocation = function ()
 	for (var i in locs) {
 		var s = locs[i].join(", ").replace('"', "");
 		try {
-			document.getElementById('_' + i).innerHTML = '<input type="text" value="' + s + '" title="' + s + '" style="width: 85%">';
+			document.getElementById('_' + i).innerHTML = ['<input type="text" value="', s, '" title="', s, '" style="width: 85%">'].join("");
 		} catch (e) {}
 	}
 
@@ -1611,6 +1703,20 @@ InitLocation = function ()
 	SetImage();
 
 	SetOnChangeHandler();
+	AddEventEx(window, "load", function ()
+	{
+		ApplyLang(document);
+		ClickTab(null, 1);
+	});
+	AddEventEx(window, "resize", function ()
+	{
+		clearTimeout(g_tidResize);
+		g_tidResize = setTimeout(function ()
+		{
+			ResizeTabPanel();
+		}, 500);
+	});
+	
 	AddEventEx(window, "beforeunload", function ()
 	{
 		SetOptions(function () {
@@ -1759,17 +1865,21 @@ function RefX(Id, bMultiLine, oButton)
 					}
 					o.onchange();
 				}
+				return;
 			}
-			return;
 		}
 
-		var path = OpenDialog(GetElement(Id).value);
+		var o = GetElement(Id);
+		var path = OpenDialog(o.value);
 		if (path) {
 			if (bMultiLine) {
 				AddPath(Id, path);
 			}
 			else {
-				GetElement(Id).value = path;
+				o.value = path;
+			}
+			if (o.onchange) {
+				o.onchange();
 			}
 		}
 	}, 99);
@@ -1951,17 +2061,7 @@ SetImage = function ()
 	document.getElementById("_Icon").innerHTML = src ? '<img src="' + src + '" ' + (h ? 'height="' + h + 'px"' : "") + '>' : "";
 }
 
-ShowIcon = function ()
-{
-	var s = showModalDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\dialog.html"), {MainWindow: MainWindow, Query: "icon"}, 'dialogWidth: 640px; dialogHeight: 480px; resizable: yes; status: 0;');
-	if (s) {
-		document.F.Icon.value = s;
-		if (document.F.Icon.onchange) {
-			document.F.Icon.onchange();
-		}
-		SetImage();
-	}
-}
+ShowIcon = ShowIconEx;
 
 function SelectLangID(o)
 {
@@ -2302,3 +2402,4 @@ SetResult = function (i)
 	g_nResult = i;
 	window.close();
 }
+

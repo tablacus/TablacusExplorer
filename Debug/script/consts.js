@@ -11,8 +11,17 @@ AddEventEx = function (w, Name, fn)
 
 //Objects
 g_uid = location.hash.replace(/\D/g, "");
+
 if (!window.te && window.external && external.Type) {
 	te = external;
+	if (te.Type == 0x2ffff) {
+		dialogArguments = te.WB.Data;
+		te = te.TE;
+		try {
+			window.external = te;
+		} catch (e) {
+		}
+	}
 	api = te.WindowsAPI;
 	if (api) {
 		if (!window.dialogArguments && !window.opener) {
@@ -88,6 +97,7 @@ CTRL_SB =       1;
 CTRL_EB =       2;
 CTRL_TE = 0x10000;
 CTRL_WB = 0x20000;
+CTRL_SW = 0x20001;
 CTRL_TC = 0x30000;
 CTRL_TV = 0x40000;
 CTRL_DT = 0x80000;
@@ -1761,6 +1771,26 @@ DATE_LTRREADING       = 0x00000010;
 DATE_RTLREADING       = 0x00000020;
 DATE_AUTOLAYOUT       = 0x00000040;
 
+MONITOR_DEFAULTTONULL    = 0x00000000;
+MONITOR_DEFAULTTOPRIMARY = 0x00000001;
+MONITOR_DEFAULTTONEAREST = 0x00000002;
+
+PDFF_DEFAULT = 0;
+PDFF_PREFIXNAME = 0x1;
+PDFF_FILENAME = 0x2;
+PDFF_ALWAYSKB = 0x4;
+PDFF_RESERVED_RIGHTTOLEFT = 0x8;
+PDFF_SHORTTIME = 0x10;
+PDFF_LONGTIME = 0x20;
+PDFF_HIDETIME = 0x40;
+PDFF_SHORTDATE = 0x80;
+PDFF_LONGDATE = 0x100;
+PDFF_HIDEDATE = 0x200;
+PDFF_RELATIVEDATE = 0x400;
+PDFF_USEEDITINVITATION = 0x800;
+PDFF_READONLY= 0x1000;
+PDFF_NOAUTOREADINGORDER= 0x2000;
+
 // GDI Plus
 RotateNoneFlipNone = 0;
 Rotate90FlipNone   = 1;
@@ -1827,10 +1857,5 @@ if (window.dialogArguments) {
 	for (var j in dialogArguments.event) {
 		window[j] = dialogArguments.event[j];
 	}
-	if (dialogArguments.width) {
-		var rc = api.Memory("RECT");
-		api.GetWindowRect(te.hwnd, rc);
-		resizeTo(dialogArguments.width + 16, dialogArguments.height + 38);
-		moveTo(rc.Left + (rc.Right - rc.Left - dialogArguments.width) / 2, rc.Top + (rc.Bottom - rc.Top - dialogArguments.height) / 2);
-	}
 }
+

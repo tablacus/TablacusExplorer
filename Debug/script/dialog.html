@@ -19,21 +19,20 @@
         <!-- - - - - - - - - - - -->
       </div>
       <!--panel_end-->
-      <table id="buttons" width="99%">
+      <table id="buttons" style="width: 100%;">
         <tr>
-          <td align="right">
-            <span id="Selected"></span>
-            <input id="ButtonOk" type="button" value="OK" style="min-width: 96px" onclick="window.close();" disabled="true" />
-            <input type="button" value="Cancel" style="min-width: 96px" onclick="returnValue=null;window.close();" />
+          <td id="Selected" style="text-align: right; width: 100%; white-space: nowrap"></td>
+          <td style="width: 100px; white-space: nowrap">
+            <input id="ButtonOk" type="button" value="OK" style="min-width: 96px" onclick="SetResult(1)" disabled="true" />&nbsp;
+          </td>
+          <td style="width: 100px; white-space: nowrap">
+            <input type="button" value="Cancel" style="min-width: 96px" onclick="returnValue=null;SetResult(2);" />&nbsp;
           </td>
         </tr>
       </table>
     </form>
     <script type="text/javascript">
-    AddEventEx(window, "load", function ()
-    {
-        InitDialog();
-    });
+      InitDialog();
     </script>
   </body>
 </html>

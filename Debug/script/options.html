@@ -120,22 +120,27 @@
             <!--panel_end-->
 
             <div class="panel" id="panel1_1">
-    <div id="bar">
-      <table><tr><td style="width: 100%">
-      <input type="text" id="_GetAddonsQ" style="width: 100%" onkeydown="FindKeyEvent(this)" />
-      </td><td>
-      <input type="button" value="Filter" onclick="AddonsSearch()" />
-      </td></tr></table>
-    </div>
-    <div class="panel" id="panel1_1_1" style="display: block; width: 100%">
-      <table id="addons" style="width: 100%; border: 1px;">
-        <tr>
-          <td>
-            <label>Please wait.</label>
-          </td>
-        </tr>
-      </table>
-    </div>
+              <div id="bar">
+                <table>
+                  <tr>
+                    <td style="width: 100%">
+                      <input type="text" id="_GetAddonsQ" style="width: 100%" onkeydown="FindKeyEvent(this)" />
+                    </td>
+                    <td>
+                      <input type="button" value="Filter" onclick="AddonsSearch()" />
+                    </td>
+                  </tr>
+                </table>
+              </div>
+              <div class="panel" id="panel1_1_1" style="display: block; width: 100%">
+                <table id="addons" style="width: 100%; border: 1px;">
+                  <tr>
+                    <td>
+                      <label>Please wait.</label>
+                    </td>
+                  </tr>
+                </table>
+              </div>
             </div>
             <!--panel_end-->
 
@@ -176,7 +181,10 @@
                           <input type="text" name="Menus_Name" style="width: 100%" onchange="ChangeX('Menus')" />
                         </td>
                         <td style="width: 80px">
-                          <input type="text" name="Menus_Key" style="width: 100%" onchange="ChangeX('Menus')" />
+                          <input type="text" name="Menus_Key" title="Key" style="width: 100%" onchange="ChangeX('Menus')" />
+                        </td>
+                        <td style="width: 20px">
+                          <input type="button" value="..." title="Key" onclick="InputKey(document.F.elements['Menus_Key']);" />
                         </td>
                       </tr>
                     </table>
@@ -189,7 +197,7 @@
                         <td align="right">
                           <label>Position</label>
                           <input type="text" name="Menus_Pos" size="2" onchange="SwitchMenus();" />
-                          <select onchange="SelectPos(this, 'Menus_Pos');SwitchMenus();">
+                          <select onchange="SelectPos(this, 'Menus_Pos');SwitchMenus();" title="Position">
                             <option value="" />Select
                             <option value="0" />Add before
                             <option value="-1" />Add after
@@ -204,7 +212,7 @@
                           <label>Type</label>
                         </td>
                         <td align="right">
-                          <input type="button" value="Portable" onclick="PortableX('Menus_Path')" />
+                          <input type="button" value="Portable" onclick="PortableX('Menus_Path')" title="Options" />
                         </td>
                       </tr>
                     </table>
@@ -216,7 +224,7 @@
                           <label>Options</label>
                         </td>
                         <td align="right">
-                          <input type="button" value="Reference..." onclick="RefX('Menus_Path', true, this)" style="width: 160px" />
+                          <input type="button" value="Reference..." onclick="RefX('Menus_Path', true, this)" style="min-width: 160px" title="Options" />
                         </td>
                       </tr>
                     </table>
@@ -229,8 +237,8 @@
                         <td id="_Icon" style="width: 20px; height: 20px; overflow: hidden; vertical-align: middle" align="left">
                         </td>
                         <td style="white-space: nowrap" align="right">
-                          <input type="button" value="File" onclick="RefX('Icon', false, null, 'ChangeX(\'Menus\');SetImage();'); SetImage();" />
-                          <input type="button" value="Reference..." onclick="ShowIcon();" />
+                          <input type="button" value="File" onclick="RefX('Icon', false, null, 'ChangeX(\'Menus\')')" title="Icon" />
+                          <input type="button" value="Reference..." onclick="ShowIcon();" title="Icon" />
                         </td>
                       </tr>
                       <tr>
@@ -636,12 +644,12 @@
           </td>
         </tr>
       </table>
-      <table style="width: 100%">
+      <table style="width: 99%">
         <tr>
           <td style="width: 150px">
             <div style="position: relative; width: 100%">
-            <input type="text" name="q" style="width: 100%; padding-right: 16px" onkeydown="FindKeyEvent(this)" placeholder="Search" />
-              <img src="bitmap:ieframe.dll,216,16,17" hidefocus="true" style="vertical-align: middle; width: 16px; height: 16px; position: absolute; left: 132px; top: 2px" onclick="FindText(document.F.q.value)" />
+            <input type="text" name="optsearch" style="width: 100%; padding-right: 16px" onkeydown="FindKeyEvent(this)" placeholder="Search" />
+              <img src="bitmap:ieframe.dll,216,16,17" hidefocus="true" style="vertical-align: middle; width: 16px; height: 16px; position: absolute; left: 132px; top: 2px" onclick="FindText(document.F.optsearch.value)" />
             </div>
           </td>
           <td id="MoveButton" align="left" style="display: none;">
@@ -650,15 +658,22 @@
           </td>
           <td id="STATUS" align="center"></td>
           <td align="right">
-            <input type="button" value="OK" class="ok" onclick="SetResult(1)" />
-            <input type="button" value="Cancel" class="cancel" onclick="SetResult(2)" />
+            <table>
+              <tr>
+                <td>
+                  <input type="button" value="OK" class="ok" onclick="SetResult(1)" />&nbsp;
+                </td>
+                <td>
+                  <input type="button" value="Cancel" class="cancel" onclick="SetResult(2)" />
+                </td>
+              </tr>
+            </table>
           </td>
         </tr>
       </table>
     </form>
-    <script type="text/javascript"><!--
-InitOptions();
-//-->
+    <script type="text/javascript">
+      InitOptions();
     </script>
   </body>
 </html>

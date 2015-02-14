@@ -18,6 +18,7 @@ g_ptDrag = api.Memory("POINT");
 objHover = null;
 g_nFind = 0;
 g_Colors = {};
+Addons = {"_stack": []};
 
 FolderMenu =
 {
@@ -249,6 +250,10 @@ function ApplyLang(doc)
 	if (o) {
 		for (i = o.length; i--;) {
 			o[i].style.fontFamily = FaceName;
+			var s = Lang[o[i].title];
+			if (s) {
+				o[i].title = delamp(s);
+			}
 			for (var j = 0; j < o[i].length; j++) {
 				var s = Lang[o[i][j].text.replace(/^\n/, "").replace(/\n$/, "")];
 				if (s) {
@@ -309,10 +314,14 @@ function ApplyLang(doc)
 		}
 	}
 
+	doc.title = GetText(doc.title);
 	setTimeout(function ()
 	{
 		var hwnd = api.GetParent(api.GetWindow(doc));
-		api.SetWindowText(hwnd, GetText(api.GetWindowText(hwnd).replace(/ \-+ .*$/, "")));
+		var s = api.GetWindowText(hwnd);
+		if (/ \-+ .*$/.test(s)) {
+			api.SetWindowText(hwnd, s.replace(/ \-+ .*$/, ""));
+		}
 	}, 500);
 }
 
@@ -816,52 +825,33 @@ ShowOptions = function (s)
 {
 	try {
 		var dlg = g_dlgs.Options;
-		if (dlg && dlg.oExec) {
-			if (dlg.window && dlg.window.SetTab) {
-				dlg.window.SetTab(s);
-			}
-			if (dlg.oExec.ProcessID && dlg.oExec.Status == 0) {
-				wsh.AppActivate(dlg.oExec.ProcessID);
-			}
-			else {
-				dlg.oExec.focus();
-			}
+		if (dlg) {
+			dlg.Window.SetTab(s);
+			dlg.Focus();
 			return;
 		}
 	}
-	catch (e) {}
-	g_dlgs.Options = {
-		oExec: ShowDialog("options.html",
+	catch (e) {
+	}
+	g_dlgs.Options = ShowDialog("options.html",
+	{
+		Data: s, event:
 		{
-			Data: s, width: 640, height: 480, event:
+			onbeforeunload: function () 
 			{
-				onbeforeunload: function () 
-				{
-					delete MainWindow.g_dlgs.Options;
-				}
+				delete MainWindow.g_dlgs.Options;
 			}
-		})
-	};
+		}
+	})
 }
 
 ShowDialog = function (fn, opt)
 {
 	opt.opener = window;
-	if (document.documentMode && api.GetKeyState(VK_SHIFT) >= 0) {
-		var uid;
-		do {
-			uid = String(Math.random()).replace(/^0?\./, "");
-		} while (MainWindow.Exchange[uid]);
-		MainWindow.Exchange[uid] = opt;
-		try {
-			return wsh.Exec([api.PathQuoteSpaces(fso.BuildPath(system32, "mshta.exe")), ' ', api.PathQuoteSpaces(location.href.replace(/[^\/]*$/, fn + "#" + uid))].join(""))
-		}
-		catch (e) {}
+	if (!/:/.test(fn)) {
+		fn = location.href.replace(/[^\/]*$/, fn);
 	}
-	var sFeatures = 'dialogWidth: ' + opt.width + 'px; dialogHeight:  ' + opt.height + 'px; resizable: yes; status: 0';
-	opt.width = null;
-	opt.height = null;
-	return showModelessDialog(fn, opt, sFeatures);
+	return te.CreateCtrl(CTRL_SW, fn, opt, document, opt.width || 640, opt.height || 480);
 }
 
 LoadLayout = function ()
@@ -2116,17 +2106,12 @@ AddonOptions = function (Id, fn, Data)
 		sFeatures = 'Default';
 	}
 	if (api.StrCmpI(sFeatures, "Default") == 0) {
-		sFeatures = 'dialogWidth: 640px; dialogHeight: 480px; resizable: yes; status: 0';
+		sFeatures = 'dialogWidth: 640px; dialogHeight: 480px';
 	}
 	try {
 		var dlg = MainWindow.g_dlgs[Id];
-		if (dlg && dlg.oExec) {
-			if (dlg.oExec.Status == 0 && dlg.oExec.ProcessID) {
-				wsh.AppActivate(dlg.oExec.ProcessID);
-			}
-			else {
-				dlg.oExec.focus();
-			}
+		if (dlg) {
+			dlg.Focus();
 			return;
 		}
 	}
@@ -2143,28 +2128,16 @@ AddonOptions = function (Id, fn, Data)
 			g_Chg.Addons = true;
 		}
 	}
-	if (window.dialogArguments) {
-		dlg = showModelessDialog(sURL.replace(/^\.\./, sParent), opt, sFeatures);
-		while (!dlg.window.document.body) {
-			api.Sleep(100);
-		}
-		if (window.g_Chg && dlg.window.returnValue !== undefined) {
-			g_Chg.Addons = true;
+	if (/width: *([0-9]+)/i.test(sFeatures)) {
+		opt.width = RegExp.$1 - 0;
+		if (/height: *([0-9]+)/i.test(sFeatures)) {
+			opt.height = RegExp.$1 - 0;
 		}
 	}
-	else {
-		if (/width: *([0-9]+)/i.test(sFeatures)) {
-			opt.width = RegExp.$1 - 0;
-			if (/height: *([0-9]+)/i.test(sFeatures)) {
-				opt.height = RegExp.$1 - 0;
-			}
-		}
-		opt.event.onbeforeunload = function () {
-			delete MainWindow.g_dlgs[Id];
-		}
-		dlg = { oExec: ShowDialog(sURL, opt)};
+	opt.event.onbeforeunload = function () {
+		delete MainWindow.g_dlgs[Id];
 	}
-	MainWindow.g_dlgs[Id] = dlg;
+	MainWindow.g_dlgs[Id] = ShowDialog(sURL, opt);
 }
 
 function CalcVersion(s)
@@ -2289,31 +2262,52 @@ CancelWindowRegistered = function ()
 	}, 9999);
 }
 
-InputMouse = function ()
+ShowDialogEx = function (mode, w, h, ele)
 {
-	var s = showModalDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\dialog.html"), {MainWindow: MainWindow, Query: "mouse"}, 'dialogWidth: 500px; dialogHeight: 420px; resizable: yes; status: 0;');
-	if (s) {
-		(document.F.MouseMouse || document.F.Mouse).value = s;
+	ShowDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\dialog.html"), { MainWindow: MainWindow, Query: mode, width: w, height: h, element: ele});
+}
+ShowNew = function (Ctrl, pt, Mode)
+{
+	var FV = GetFolderView(Ctrl, pt);
+	var path = api.GetDisplayNameOf(FV, SHGDN_FORPARSING);
+	if (/^[A-Z]:\\|^\\/i.test(path)) {
+		ShowDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\dialog.html"), { MainWindow: MainWindow, Query: "new", Mode: Mode, path: path, FV: FV, Modal: false, width: 480, height: 120});
 	}
 }
 
-InputKey = function()
+CreateNewFolder = function (Ctrl, pt)
 {
-	var s = showModalDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\dialog.html"), {MainWindow: MainWindow, Query: "key"}, 'dialogWidth: 320px; dialogHeight: 120px; resizable: no; status: 0;');
-	if (s) {
-		(document.F.KeyKey || document.F.Key).value = s;
-		SetKeyShift();
+	ShowNew(Ctrl, pt, "folder");
+	return S_OK;
+}
+
+CreateNewFile = function (Ctrl, pt)
+{
+	ShowNew(Ctrl, pt, "file");
+	return S_OK;
+}
+
+InputMouse = function (o)
+{
+	ShowDialogEx("mouse", 500, 420, o || document.F.MouseMouse || document.F.Mouse);
+}
+
+InputKey = function(o)
+{
+	ShowDialogEx("key", 320, 120, o || document.F.KeyKey || document.F.Key);
+}
+
+ShowIconEx = function (ele)
+{
+	if (!ele) {
+		ele = document.F.Icon;
+		ShowDialogEx("icon", 640, 480, ele);
 	}
 }
 
 ShowLocationEx = function (s)
 {
-	showModelessDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\location.html"), {MainWindow: MainWindow, Data: s}, 'dialogWidth: 640px; dialogHeight: 480px; resizable: no; status: 0;');
-}
-
-ShowIconEx = function ()
-{
-	return showModalDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\dialog.html"), {MainWindow: MainWindow, Query: "icon"}, 'dialogWidth: 640px; dialogHeight: 480px; resizable: no; status: 0;');
+	ShowDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\location.html"), {MainWindow: MainWindow, Data: s});
 }
 
 function MakeKeySelect()
@@ -2908,3 +2902,47 @@ GetSavePath = function (FolderItem)
 	}
 	return path;
 }
+
+LoadAddon = function(ext, Id, arError)
+{
+	try {
+		var ado = te.CreateObject("Adodb.Stream");
+		ado.CharSet = "utf-8";
+		ado.Open();
+		var fname = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons") + "\\" + Id + "\\script." + ext;
+		ado.LoadFromFile(fname);
+		var s = ado.ReadText();
+		ado.Close();
+		if (!api.StrCmpI(ext, "js")) {
+			(new Function(s))(Id);
+		}
+		else if (!api.StrCmpI(ext, "vbs")) {
+			var fn = api.GetScriptDispatch(s, "VBScript", {"_Addon_Id": {"Addon_Id": Id}, window: window},
+				function (ei, SourceLineText, dwSourceContext, lLineNumber, CharacterPosition)
+				{
+					arError.push(api.SysAllocString(ei.bstrDescription) + api.sprintf(16, "\nLine: %d\n", lLineNumber) + fname);
+				}
+			);
+			if (fn) {
+				Addons["_stack"].push(fn);
+			}
+		}
+	}
+	catch (e) {
+		arError.push([(e.description || e.toString()), fname].join("\n"));
+	}
+}
+
+AddEventEx(window, "beforeunload", function ()
+{
+	var hwnd = api.GetWindow(document);
+	var hwnd1 = hwnd;
+	while (hwnd1 = api.GetParent(hwnd)) {
+		hwnd = hwnd1;
+	}
+	while (hwnd1 = api.FindWindowEx(null, hwnd1, null, null)) {
+		if (hwnd == api.GetWindowLongPtr(hwnd1, GWLP_HWNDPARENT)) {
+			api.PostMessage(hwnd1, WM_CLOSE, 0, 0);
+		}
+	}
+});

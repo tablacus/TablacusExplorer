@@ -7,6 +7,8 @@
 body {
 	overflow: hidden;
 	background-color: buttonface;
+	margin: 0px;
+	padding: 0px;
 }
 
 table {
@@ -27,9 +29,14 @@ td, tr {
 
 form {
 	display: inline;
+	margin: 0px;
 }
 
-input, select {
+input {
+	font-size: inherit;
+}
+
+select {
 	font-size: inherit;
 }
 

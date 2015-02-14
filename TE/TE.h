@@ -96,6 +96,7 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *
 #define DISPID_AMBIENT_OFFLINEIFNOTCONNECTED -5501
 #define E_CANCELLED_BY_USER	0x800704c7
 
+#define APP_TITLE				L"Tablacus Explorer"
 #define WINDOW_CLASS			L"TablacusExplorer"
 #define WINDOW_CLASS2			L"TablacusExplorer2"
 #define MAX_LOADSTRING			100
@@ -169,6 +170,8 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *
 #define CTRL_EB          2
 #define CTRL_TE    0x10000
 #define CTRL_WB    0x20000
+#define CTRL_SW    0x20001
+#define CTRL_AR    0x2ffff
 #define CTRL_TC    0x30000
 #define CTRL_TV    0x40000
 #define CTRL_DT    0x80000
@@ -245,6 +248,13 @@ typedef struct tagTEMethod
 	LONG   id;
 	LPWSTR name;
 } TEmethod, *lpTEmethod;
+
+typedef struct tagTEStruct
+{
+	LONG   lSize;
+	LPWSTR name;
+	lpTEmethod pMethod;
+} TEStruct, *lpTEStruct;
 
 typedef struct tagTEColumn
 {
@@ -443,12 +453,12 @@ public:
 	STDMETHODIMP QueryContinueDrag(BOOL fEscapePressed, DWORD grfKeyState);
 	STDMETHODIMP GiveFeedback(DWORD dwEffect);
 
-	CTE();
+	CTE(int nCmdShow);
 	~CTE();
 public:
+	VARIANT m_vData;
 	int		m_param[7];
 	BOOL	m_bDrop;
-	VARIANT m_Data;
 private:
 	CteFolderItems *m_pDragItems;
 	LONG	m_cRef;
@@ -551,21 +561,24 @@ public:
 	STDMETHODIMP DragLeave();
 	STDMETHODIMP Drop(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
 
-	CteWebBrowser(HWND hwnd, WCHAR *szPath);
+	CteWebBrowser(HWND hwndParent, WCHAR *szPath, VARIANT *pvArg);
 	~CteWebBrowser();
 	void Close();
 	HWND get_HWND();
 //	BOOL IsBusy();
 public:
+	VARIANT m_vData;
 	IWebBrowser2 *m_pWebBrowser;
-	HWND	m_hwnd;
 	BSTR	m_bstrPath;
+	HWND	m_hwndParent;
+	HWND	m_hwndBrowser;
+
 	HRESULT m_DragLeave;
 	BOOL	m_bRedraw;
 private:
-	VARIANT m_Data;
 	CteFolderItems *m_pDragItems;
 	IDropTarget *m_pDropTarget;
+	IDispatch		*m_pExternal;
 	LONG	m_cRef;
 	DWORD	m_dwCookie;
 	DWORD	m_grfKeyState;
@@ -635,7 +648,7 @@ public:
 	BOOL	m_bEmpty;
 	BOOL	m_bVisible;
 private:
-	VARIANT m_Data;
+	VARIANT m_vData;
 	CteFolderItems *m_pDragItems;
 	DWORD	m_grfKeyState;
 	LONG	m_cRef;
@@ -825,7 +838,7 @@ public:
 
 public:
 	VARIANT		m_vRoot;
-	VARIANT		m_vFolderSize;	
+	IDispatch	*m_pFolderSize;	
 	HWND		m_hwnd;
 	HWND		m_hwndDV;
 	HWND		m_hwndLV;
@@ -858,7 +871,7 @@ public:
 	BOOL		m_bRefreshLayout;
 	BOOL		m_bRefreshLator;
 private:
-	VARIANT		m_Data;
+	VARIANT		m_vData;
 	FolderItem	**m_ppLog;
 	FolderItem	**m_ppFocus;
 	IDispatch	*m_pDSFV;
@@ -924,9 +937,10 @@ private:
 	BSTR	*m_ppbs;
 	BSTR	m_bsStruct;
 	BSTR	m_bsAlloc;
-	LONG	m_cRef;
 
+	LONG	m_cRef;
 	int		m_nbs;
+	int		m_nStructIndex;
 };
 
 class CteContextMenu : public IDispatch
@@ -1074,7 +1088,7 @@ public:
 	BOOL		m_bMain;
 	BOOL		m_bSetRoot;
 private:
-	VARIANT m_Data;
+	VARIANT m_vData;
 	LPWSTR	lplpVerbs;
 	CteFolderItems *m_pDragItems;
 #ifdef _W2000
