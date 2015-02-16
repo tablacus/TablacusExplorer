@@ -1140,13 +1140,17 @@ function Drop5(e)
 
 function GetRowIndexById(id)
 {
-	var o = document.getElementById(id);
-	if (o) {
-		while (o = o.parentNode) {
-			if (o.rowIndex !== undefined) {
-				return o.rowIndex;
+	try {
+		var o = document.getElementById(id);
+		if (o) {
+			while (o = o.parentNode) {
+				if (o.rowIndex !== undefined) {
+					return o.rowIndex;
+				}
 			}
 		}
+	}
+	catch (e) {
 	}
 }
 
@@ -1472,7 +1476,7 @@ InitDialog = function ()
 					else if (document.getElementById("file").checked) {
 						CreateFile(path);
 					}
-					dialogArguments.FV.SelectItem(path, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
+					dialogArguments.FV.SelectItem(path, SVSI_SELECT | SVSI_DESELECTOTHERS | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
 				}
 			}
 		});
@@ -1600,8 +1604,15 @@ MouseWheel = function ()
 
 InitLocation = function ()
 {
-	document.write('<'+ 'script type="text/javascript" src="../addons/' + dialogArguments.Data.id + '/script.js"></' + 'script>');
 	var ar = [];
+	Addon_Id = dialogArguments.Data.id;
+	LoadAddon("js", Addon_Id, ar);
+	if (ar.length) {
+		setTimeout(function () {
+			MessageBox(ar.join("\n\n"), TITLE, MB_ICONSTOP);
+		}, 500);
+	}
+	ar = [];
 	var s = "CSA";
 	for (var i = 0; i < s.length; i++) {
 		ar.push('<input type="button" value="', MainWindow.g_KeyState[i][0],'" title="', s.charAt(i), '" onclick="AddMouse(this)" />');
@@ -1847,7 +1858,7 @@ function RefX(Id, bMultiLine, oButton)
 				var pt;
 				if (oButton) {
 					pt = GetPos(oButton, true);
-					pt.y = pt.y + o.offsetHeight;
+					pt.y = pt.y + o.offsetHeight * screen.deviceYDPI / screen.logicalYDPI;
 				}
 				else {
 					pt = api.Memory("POINT");

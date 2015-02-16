@@ -29,9 +29,10 @@ FolderMenu =
 		this.Items.length = 0;
 	},
 
-	Open: function (FolderItem, x, y)
+	Open: function (FolderItem, x, y, filter)
 	{
-		this.Clear;
+		this.Clear();
+		this.Filter = filter;
 		var hMenu = api.CreatePopupMenu();
 		this.OpenMenu(hMenu, FolderItem);
 		window.g_menu_click = true;
@@ -39,7 +40,7 @@ FolderMenu =
 		g_popup = null;
 		api.DestroyMenu(hMenu);
 		Verb = Verb ? this.Items[Verb - 1] : null;
-		this.Clear;
+		this.Clear();
 		return Verb;
 	},
 
@@ -71,7 +72,7 @@ FolderMenu =
 				var nCount = Items.Count;
 				for (var i = 0; i < nCount; i++) {
 					var Item = Items.Item(i);
-					if (Item.IsFolder) {
+					if (this.Filter ? api.PathMatchSpec(Item.Name, this.Filter) : Item.IsFolder) {
 						if (bSep) {
 							api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_SEPARATOR, 0, null);
 							bSep = false;
@@ -2561,7 +2562,9 @@ SetCursor = function (o, s)
 		if (o.getElementsByTagName) {
 			var e = o.getElementsByTagName("*");
 			for (var i in e) {
-				SetCursor(e[i], s);
+				if (e[i].style) {
+					e[i].style.cursor = s;
+				}
 			}
 		}
 	}
@@ -2728,7 +2731,7 @@ InvokeCommand = function (Items, fMask, hwnd, Verb, Parameters, Directory, nShow
 			}
 			if (!Directory && FV) {
 				Directory = api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORPARSING);
-				if (!api.PathMatchSpec(Directory, "?:\\*;\\*")) {
+				if (!/^[A-Z]:\\|^\\/i.test(Directory)) {
 					Directory = null;
 				}
 			}
@@ -2809,7 +2812,7 @@ DownloadFile = function (url, fn)
 	xhr.open("GET", url, false);
 	xhr.send(null);
 
-	var ado = te.CreateObject("Adodb.Stream")
+	var ado = te.CreateObject("Adodb.Stream");
 	ado.Type = adTypeBinary;
 	ado.Open();
 	ado["Write"](xhr["r_e_s_p_o_n_s_e_B_o_d_y".replace(/_/g, "")]);
@@ -2897,7 +2900,7 @@ Alt = function ()
 GetSavePath = function (FolderItem)
 {
 	var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
-	if (!api.PathMatchSpec(path, "?:\\*;\\*") && /search\-ms:.*?&crumb=location:([^&]*)/.test(api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING))) {
+	if (!/^[A-Z]:\\|^\\/i.test(path) && /search\-ms:.*?&crumb=location:([^&]*)/.test(api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING))) {
 		return api.PathCreateFromUrl("file:" + RegExp.$1);
 	}
 	return path;

@@ -1496,7 +1496,10 @@ ULONGLONG teGetFolderSize(LPCWSTR szPath, int nLevel, CteShellBrowser *pSB, LPIT
 				}
 				continue;
 			}
-			Result += (wfd.nFileSizeHigh * 0x100000000 + wfd.nFileSizeLow);
+			ULARGE_INTEGER uli;
+			uli.HighPart = wfd.nFileSizeHigh;
+			uli.LowPart = wfd.nFileSizeLow;
+			Result += uli.QuadPart;
 		} while(pSB->m_pidl == pidl && FindNextFile(hFind, &wfd));
 	}
 	FindClose(hFind);
@@ -7319,6 +7322,39 @@ VOID teApiGetMonitorInfo(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VAR
 	teSetBool(pVarResult, GetMonitorInfo((HMONITOR)param[0], (LPMONITORINFO)param[1]));
 }
 
+VOID teApiGlobalAddAtom(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetLong(pVarResult, GlobalAddAtom((LPCWSTR)param[0]));
+}
+
+VOID teApiGlobalGetAtomName(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	TCHAR szBuf[256];
+	UINT uSize = GlobalGetAtomName((ATOM)param[0], szBuf, sizeof(szBuf) / sizeof(TCHAR));
+	teSetSZ(pVarResult, szBuf);
+}
+
+VOID teApiGlobalFindAtom(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetLong(pVarResult, GlobalFindAtom((LPCWSTR)param[0]));
+}
+
+VOID teApiGlobalDeleteAtom(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetLong(pVarResult, GlobalDeleteAtom((ATOM)param[0]));
+}
+
+VOID teApiRegisterHotKey(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetBool(pVarResult, RegisterHotKey((HWND)param[0], (int)param[1], (UINT)param[2], (UINT)param[3]));
+}
+
+VOID teApiUnregisterHotKey(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetLong(pVarResult, UnregisterHotKey((HWND)param[0], (int)param[1]));
+}
+
+
 /*
 VOID teApi(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -7603,6 +7639,13 @@ TEDispatchApi dispAPI[] = {
 	{ 2, -1, -1, -1, L"MonitorFromPoint", teApiMonitorFromPoint },
 	{ 2, -1, -1, -1, L"MonitorFromRect", teApiMonitorFromRect },
 	{ 2, -1, -1, -1, L"GetMonitorInfo", teApiGetMonitorInfo },
+	{ 1,  0, -1, -1, L"GlobalAddAtom", teApiGlobalAddAtom },
+	{ 1, -1, -1, -1, L"GlobalGetAtomName", teApiGlobalGetAtomName },
+	{ 1,  0, -1, -1, L"GlobalFindAtom", teApiGlobalFindAtom },
+	{ 1, -1, -1, -1, L"GlobalDeleteAtom", teApiGlobalDeleteAtom },
+	{ 4, -1, -1, -1, L"RegisterHotKey", teApiRegisterHotKey },
+	{ 2, -1, -1, -1, L"UnregisterHotKey", teApiUnregisterHotKey },
+//	{ 0, -1, -1, -1, L"", teApi },
 //	{ 0, -1, -1, -1, L"Test", teApiTest },
 };
 
@@ -8924,6 +8967,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case WM_THEMECHANGED:
 		case WM_USERCHANGED:
 		case WM_QUERYENDSESSION:
+		case WM_HOTKEY:
 			if (g_pOnFunc[TE_OnSystemMessage]) {
 				msg1.hwnd = hWnd;
 				msg1.message = message;
@@ -10239,38 +10283,43 @@ VOID CteShellBrowser::InitFolderSize()
 
 BOOL CteShellBrowser::SetFolderSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch)
 {
-	WIN32_FIND_DATA wfd;
-	SHGetDataFromIDList(m_pSF2, pidl, SHGDFIL_FINDDATA, &wfd, sizeof(WIN32_FIND_DATA));
-	if (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-		VARIANT v;
-		VariantInit(&v);
-		teGetProperty(m_pFolderSize, wfd.cFileName, &v);
-		if (v.vt == VT_BSTR) {
-			lstrcpyn(szText, v.bstrVal, cch);
+	if (m_pSF2) {
+		WIN32_FIND_DATA wfd;
+		SHGetDataFromIDList(m_pSF2, pidl, SHGDFIL_FINDDATA, &wfd, sizeof(WIN32_FIND_DATA));
+		if (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+			VARIANT v;
+			VariantInit(&v);
+			teGetProperty(m_pFolderSize, wfd.cFileName, &v);
+			if (v.vt == VT_BSTR) {
+				lstrcpyn(szText, v.bstrVal, cch);
+				VariantClear(&v);
+				return TRUE;
+			}
+			else if (m_pFolderSize) {
+				teSetSZ(&v, L"");
+				tePutProperty(m_pFolderSize, wfd.cFileName, &v);
+				TEFS *pTEFS = new TEFS[1];
+				pTEFS->bsName = ::SysAllocString(wfd.cFileName);
+				teGetDisplayNameBSTR(m_pSF2, pidl, SHGDN_FORPARSING, &pTEFS->bsPath);
+				pTEFS->pSB = this;
+				pTEFS->pidl = m_pidl;
+				_beginthread(&threadFolderSize, 0, pTEFS);
+			}
+			VariantClear(&v);
+		}
+		else {
+			VARIANT v;
+			if (FAILED(m_pSF2->GetDetailsEx(pidl, &PKEY_Size, &v))) {
+				v.vt = VT_UI8;
+				ULARGE_INTEGER uli;
+				uli.LowPart = wfd.nFileSizeLow;
+				uli.HighPart = wfd.nFileSizeHigh;
+				v.ullVal = uli.QuadPart;
+			}
+			StrFormatKBSize(v.ullVal, szText, cch);
 			VariantClear(&v);
 			return TRUE;
 		}
-		else if (m_pFolderSize) {
-			teSetSZ(&v, L"");
-			tePutProperty(m_pFolderSize, wfd.cFileName, &v);
-			TEFS *pTEFS = new TEFS[1];
-			pTEFS->bsName = ::SysAllocString(wfd.cFileName);
-			teGetDisplayNameBSTR(m_pSF2, pidl, SHGDN_FORPARSING, &pTEFS->bsPath);
-			pTEFS->pSB = this;
-			pTEFS->pidl = m_pidl;
-			_beginthread(&threadFolderSize, 0, pTEFS);
-		}
-		VariantClear(&v);
-	}
-	else {
-		VARIANT v;
-		if (wfd.nFileSizeLow != MAXDWORD || !m_pSF2 || FAILED(m_pSF2->GetDetailsEx(pidl, &PKEY_Size, &v))) {
-			v.vt = VT_UI8;
-			v.ullVal = wfd.nFileSizeLow;
-		}
-		StrFormatKBSize(v.ullVal, szText, cch);
-		VariantClear(&v);
-		return TRUE;
 	}
 	return FALSE;
 }
@@ -11113,7 +11162,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						methodArgs = new TEmethod[nCount + 1];
 						BOOL *pbAlloc = new BOOL[nCount + 1];
 						BSTR bsName = tePSGetNameFromPropertyKeyEx(PKEY_ItemNameDisplay, 0);
-						BOOL bNoName = nCount;
+						BOOL bNoName = TRUE;
 						for (int i = nCount; i-- > 0;) {
 							pbAlloc[i] = FALSE;
 							methodArgs[i].name = lplpszArgs[i * 2];
@@ -11135,7 +11184,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 							}
 							methodArgs[i].id = n;
 						}
-						if (bNoName) {
+						if (bNoName && nAllWidth) {
 							methodArgs[nCount].name = bsName;
 							methodArgs[nCount++].id = -1;
 						}
@@ -16110,26 +16159,26 @@ VOID CteMemory::ItemEx(int i, VARIANT *pVarResult, VARIANT *pVarNew)
 			if (m_nCount) {
 				int nSize = m_nSize / m_nCount;
 				if (nSize >= 1 && nSize <= 8) {
-					LARGE_INTEGER ll;
-					ll.QuadPart = GetLLFromVariant(pVarNew);
-					if (ll.QuadPart == 0 && pVarNew->vt == VT_BSTR && pVarNew->bstrVal &&
+					LARGE_INTEGER li;
+					li.QuadPart = GetLLFromVariant(pVarNew);
+					if (li.QuadPart == 0 && pVarNew->vt == VT_BSTR && pVarNew->bstrVal &&
 					(lstrcmpi(m_bsStruct, L"BSTR") == 0 || lstrcmpi(m_bsStruct, L"LPWSTR") == 0)) {
-						ll.QuadPart = (LONGLONG)AddBSTR(pVarNew->bstrVal);
+						li.QuadPart = (LONGLONG)AddBSTR(pVarNew->bstrVal);
 					}
 					if (nSize == 1) {//BYTE
-						m_pc[i] = LOBYTE(ll.LowPart);
+						m_pc[i] = LOBYTE(li.LowPart);
 					}
 					else if (nSize == 2) {//WORD
 						WORD *p = (WORD *)m_pc;
-						p[i] = LOWORD(ll.LowPart);
+						p[i] = LOWORD(li.LowPart);
 					}
 					else if (nSize == 4) {//DWORD
 						int *p = (int *)m_pc;
-						p[i] = ll.LowPart;
+						p[i] = li.LowPart;
 					}
 					else if (nSize == 8) {//LONGLONG
 						LONGLONG *p = (LONGLONG *)m_pc;
-						p[i] = ll.QuadPart;
+						p[i] = li.QuadPart;
 					}
 				}
 			}
@@ -18773,14 +18822,14 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 						IStream* pStream = NULL;
 						if SUCCEEDED(CreateStreamOnHGlobal(NULL, TRUE, &pStream)) {
 							if (m_pImage->Save(pStream, &encoderClsid) == 0) {
-								ULARGE_INTEGER ulnSize;
-								LARGE_INTEGER lnOffset;
-								lnOffset.QuadPart = 0;
-								pStream->Seek(lnOffset, STREAM_SEEK_END, &ulnSize);
-								pStream->Seek(lnOffset, STREAM_SEEK_SET, NULL);
-								UCHAR *pBuff = new UCHAR[ulnSize.LowPart];
+								ULARGE_INTEGER uliSize;
+								LARGE_INTEGER liOffset;
+								liOffset.QuadPart = 0;
+								pStream->Seek(liOffset, STREAM_SEEK_END, &uliSize);
+								pStream->Seek(liOffset, STREAM_SEEK_SET, NULL);
+								UCHAR *pBuff = new UCHAR[uliSize.LowPart];
 								ULONG ulBytesRead;
-								if SUCCEEDED(pStream->Read(pBuff, (ULONG)ulnSize.QuadPart, &ulBytesRead)) {
+								if SUCCEEDED(pStream->Read(pBuff, uliSize.LowPart, &ulBytesRead)) {
 									wchar_t szHead[32];
 									szHead[0] = NULL;
 									if (dispIdMember == 102) {

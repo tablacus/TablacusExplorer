@@ -172,6 +172,7 @@ SetAddrss = function (s)
 RestoreFromTray = function ()
 {
 	api.ShowWindow(te.hwnd, api.IsIconic(te.hwnd) ? SW_RESTORE : SW_SHOW);
+	api.SetForegroundWindow(te.hwnd);
 	RunEvent1("RestoreFromTray");
 }
 
@@ -1636,7 +1637,7 @@ function ArrangeAddons()
 			}
 			if (arError.length) {
 				setTimeout(function () {
-					if (MessageBox(arError.join("\n\n"), TITLE, MB_ICONSTOP + 1) != IDCANCEL) {
+					if (MessageBox(arError.join("\n\n"), TITLE, MB_ICONSTOP | MB_OKCANCEL) != IDCANCEL) {
 						te.Data.bErrorAddons = true;
 						ShowOptions("Tab=Add-ons");
 					}
