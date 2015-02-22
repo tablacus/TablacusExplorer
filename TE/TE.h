@@ -121,7 +121,7 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *
 #define TET_Unload				0x1fa7
 #define TET_Status				0x1fa8
 #define TET_Refresh				0x1fa9
-#define TET_ViewMode			0x1faa
+#define TET_ShowInit			0x1faa
 #define SHGDN_FORPARSINGEX	0x80000000
 #define START_OnFunc			5000
 #define TE_Labels				0
@@ -243,35 +243,35 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *
 #define teSetPtr(pVar, nData)	teSetLong(pVar, (LONG)nData)
 #endif
 
-typedef struct tagTEMethod
+struct TEmethod
 {
 	LONG   id;
 	LPWSTR name;
-} TEmethod, *lpTEmethod;
+};
 
-typedef struct tagTEStruct
+struct TEStruct
 {
 	LONG   lSize;
 	LPWSTR name;
-	lpTEmethod pMethod;
-} TEStruct, *lpTEStruct;
+	TEmethod *pMethod;
+};
 
-typedef struct tagTEColumn
+struct TEColumn
 {
 	SHCOLSTATEF	csFlags;
 	int		nWidth;
-} TEColumn;
+};
 
-typedef struct tagTEInvoke
+struct TEInvoke
 {
 	IDispatch *pdisp;
 	DISPID dispid;
 	int	cArgs;
 	VARIANT *pv;
 	PVOID	pResult;
-} TEInvoke, *lpTEInvoke;
+};
 
-typedef struct tagTEDispatchApi
+struct TEDispatchApi
 {
 	char nArgs;
 	char nStr1;
@@ -279,26 +279,26 @@ typedef struct tagTEDispatchApi
 	char nStr3;
 	LPWSTR name;
 	LPFNDispatchAPI fn;
-} TEDispatchApi, *lpTEDispatchApi;
+};
 
-typedef struct tagTEFS
+struct TEFS
 {
 	BSTR bsName;
 	BSTR bsPath;
 	CteShellBrowser *pSB;
 	LPITEMIDLIST pidl;
 	ULONGLONG Result;
-} TEFS, *lpTEFS;
+};
 
 /*
-typedef struct tagTEDrop
+struct TEDrop
 {
 	IStream *pDropTarget;
 	IStream *pDataObj;
 	DWORD grfKeyState;
 	POINTL pt;
 	DWORD dwEffect;
-} TEDrop, *lpTEDrop;
+};
 */
 const CLSID CLSID_ShellShellNameSpace = {0x2F2F1F96, 0x2BC1, 0x4b1c, { 0xBE, 0x28, 0xEA, 0x37, 0x74, 0xF4, 0x67, 0x6A}};
 const CLSID CLSID_JScriptChakra       = {0x16d51579, 0xa30b, 0x4c8b, { 0xa2, 0x76, 0x0f, 0xf4, 0xdc, 0x41, 0xe7, 0x55}};

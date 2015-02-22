@@ -1555,6 +1555,12 @@ te.OnILGetParent = function (FolderItem)
 	if (/search\-ms:.*?&crumb=location:([^&]*)/.test(api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING))) {
 		return api.PathCreateFromUrl("file:" + RegExp.$1);
 	}
+	if (api.ILIsEqual(FolderItem, ssfRESULTSFOLDER)) {
+		var ar = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX).split("\\");
+		if (ar.length > 1 && ar.pop()) {
+			return ar.join("\\");
+		}
+	}
 }
 
 //Tablacus Events
@@ -1828,16 +1834,16 @@ KeyExecEx = function (Ctrl, mode, nKey, hwnd)
 
 function InitMouse()
 {
-	if (!te.Data.Conf_Gestures) {
+	if (!isFinite(te.Data.Conf_Gestures)) {
 		te.Data.Conf_Gestures = 2;
 	}
-	if (!te.Data.Conf_TrailColor) {
+	if (!isFinite(te.Data.Conf_TrailColor)) {
 		te.Data.Conf_TrailColor = 0xff00;
 	}
-	if (!te.Data.Conf_TrailSize) {
+	if (!isFinite(te.Data.Conf_TrailSize)) {
 		te.Data.Conf_TrailSize = 2;
 	}
-	if (!te.Data.Conf_GestureTimeout) {
+	if (!isFinite(te.Data.Conf_GestureTimeout)) {
 		te.Data.Conf_GestureTimeout = 3000;
 	}
 }

@@ -1269,7 +1269,7 @@ function AddonRemove(Id)
 	sf = api.Memory("SHFILEOPSTRUCT");
 	sf.hwnd = api.GetForegroundWindow();
 	sf.wFunc = FO_DELETE;
-	sf.fFlags = FOF_ALLOWUNDO;
+	sf.fFlags = 0;
 	sf.pFrom = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\"+ Id) + "\0";
 	if (api.SHFileOperation(sf) == 0) {
 		if (!sf.fAnyOperationsAborted) {

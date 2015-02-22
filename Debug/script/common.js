@@ -51,47 +51,59 @@ FolderMenu =
 
 	OpenMenu: function (hMenu, FolderItem, hParent, wID)
 	{
-		if (!FolderItem) {
-			return;
-		}
-		if (api.StrCmpI(typeof(FolderItem), "object")) {
-			FolderItem = api.ILCreateFromPath(FolderItem);
-		}
-		if (FolderItem.IsBrowsable) {
-			return;
-		}
-		var bSep = false;
-		if (!api.ILIsEmpty(FolderItem)) {
-			this.AddMenuItem(hMenu, api.ILRemoveLastID(FolderItem, true), "../");
-			bSep = true;
-		}
-		var Folder = FolderItem.GetFolder;
-		if (Folder) {
-			var Items = Folder.Items();
-			if (Items) {
-				var nCount = Items.Count;
-				for (var i = 0; i < nCount; i++) {
-					var Item = Items.Item(i);
-					if (this.Filter ? api.PathMatchSpec(Item.Name, this.Filter) : Item.IsFolder) {
-						if (bSep) {
-							api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_SEPARATOR, 0, null);
-							bSep = false;
+		try {
+			if (!FolderItem) {
+				return;
+			}
+			if (api.StrCmpI(typeof(FolderItem), "object")) {
+				FolderItem = api.ILCreateFromPath(FolderItem);
+			}
+			if (FolderItem.IsBrowsable) {
+				return;
+			}
+			var bSep = false;
+			if (!api.ILIsEmpty(FolderItem)) {
+				this.AddMenuItem(hMenu, api.ILRemoveLastID(FolderItem, true), "../");
+				bSep = true;
+			}
+			var Folder = FolderItem.GetFolder;
+			if (Folder) {
+				var Items = Folder.Items();
+				if (Items) {
+					var nCount = Items.Count;
+					for (var i = 0; i < nCount; i++) {
+						var Item = Items.Item(i);
+						var bMatch = Item.IsFolder;
+						if (this.Filter) {
+							var s = Item.Name;
+							if (bMatch && IsFolderEx(Item)) {
+								s += ".folder";
+							}
+							bMatch = api.PathMatchSpec(s, this.Filter);
 						}
-						this.AddMenuItem(hMenu, Item);
-						wID = null;
+						if (bMatch) {
+							if (bSep) {
+								api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_SEPARATOR, 0, null);
+								bSep = false;
+							}
+							this.AddMenuItem(hMenu, Item);
+							wID = null;
+						}
 					}
 				}
 			}
+			if (hParent && wID) {
+				var mii = api.Memory("MENUITEMINFO");
+				mii.cbSize = mii.Size;
+				mii.fMask = MIIM_SUBMENU | MIIM_FTYPE;
+				api.GetMenuItemInfo(hParent, wID, false, mii);
+				mii.hSubMenu = 0;
+				mii.fType = mii.fType & ~MF_POPUP;
+				api.SetMenuItemInfo(hParent, wID, false, mii);
+				api.DestroyMenu(hMenu);
+			}
 		}
-		if (hParent && wID) {
-			var mii = api.Memory("MENUITEMINFO");
-			mii.cbSize = mii.Size;
-			mii.fMask = MIIM_SUBMENU | MIIM_FTYPE;
-			api.GetMenuItemInfo(hParent, wID, false, mii);
-			mii.hSubMenu = 0;
-			mii.fType = mii.fType & ~MF_POPUP;
-			api.SetMenuItemInfo(hParent, wID, false, mii);
-			api.DestroyMenu(hMenu);
+		catch (e) {
 		}
 	},
 
@@ -916,7 +928,7 @@ HitTest = function (o, pt)
 
 DeleteItem = function (path)
 {
-	api.SHFileOperation(FO_DELETE, path, null, FOF_SILENT | FOF_ALLOWUNDO | FOF_NOCONFIRMATION, false);
+	api.SHFileOperation(FO_DELETE, path, null, FOF_SILENT | FOF_NOCONFIRMATION, false);
 }
 
 IsExists = function (path)
@@ -2902,6 +2914,15 @@ GetSavePath = function (FolderItem)
 	var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
 	if (!/^[A-Z]:\\|^\\/i.test(path) && /search\-ms:.*?&crumb=location:([^&]*)/.test(api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING))) {
 		return api.PathCreateFromUrl("file:" + RegExp.$1);
+	}
+	if (/\?/.test(path)) {
+		var nCount = api.ILGetCount(FolderItem);
+		path = [];
+		while (nCount-- > 0) {
+			path.unshift(api.GetDisplayNameOf(FolderItem, (nCount > 0 ? SHGDN_FORADDRESSBAR : 0) | SHGDN_FORPARSING | SHGDN_INFOLDER));
+			FolderItem = api.ILRemoveLastID(FolderItem);
+		}
+		return path.join("\\")
 	}
 	return path;
 }
