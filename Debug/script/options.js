@@ -2011,10 +2011,12 @@ function SetOnChangeHandler()
 		var o = document.getElementsByTagName(ar[j]);
 		if (o) {
 			for (var i = o.length; i--;) {
-				AddEventEx(o[i], "change", function ()
-				{
-					g_bChanged = true;
-				});
+				if (!/^_/.test(o[i].id)) {
+					AddEventEx(o[i], "change", function ()
+					{
+						g_bChanged = true;
+					});
+				}
 			}
 		}
 	}

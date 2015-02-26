@@ -815,7 +815,6 @@ public:
 	VOID SetHistory(FolderItems *pFolderItems, UINT wFlags);
 	VOID GetVariantPath(FolderItem **ppFolderItem, FolderItems **ppFolderItems, VARIANT *pv);
 	VOID HookDragDrop(int nMode);
-	VOID Error(BSTR *pbs);
 	VOID Refresh(BOOL bCheck);
 	BOOL SetActive(BOOL bForce);
 	VOID SetTitle(BSTR szName, int nIndex);

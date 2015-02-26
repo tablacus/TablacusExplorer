@@ -124,7 +124,7 @@
                 <table>
                   <tr>
                     <td style="width: 100%">
-                      <input type="text" id="_GetAddonsQ" style="width: 100%" onkeydown="FindKeyEvent(this)" />
+                      <input type="text" name="_GetAddonsQ" id="_GetAddonsQ" style="width: 100%" onkeydown="FindKeyEvent(this)" />
                     </td>
                     <td>
                       <input type="button" value="Filter" onclick="AddonsSearch()" />
@@ -181,7 +181,7 @@
                           <input type="text" name="Menus_Name" style="width: 100%" onchange="ChangeX('Menus')" />
                         </td>
                         <td style="width: 80px">
-                          <input type="text" name="Menus_Key" title="Key" style="width: 100%" onchange="ChangeX('Menus')" />
+                          <input type="text" name="Menus_Key" placeholder="Key" title="Key" style="width: 100%" onchange="ChangeX('Menus')" />
                         </td>
                         <td style="width: 20px">
                           <input type="button" value="..." title="Key" onclick="InputKey(document.F.elements['Menus_Key']);" />
@@ -648,8 +648,8 @@
         <tr>
           <td style="width: 150px">
             <div style="position: relative; width: 100%">
-            <input type="text" name="optsearch" style="width: 100%; padding-right: 16px" onkeydown="FindKeyEvent(this)" placeholder="Search" />
-              <img src="bitmap:ieframe.dll,216,16,17" hidefocus="true" style="vertical-align: middle; width: 16px; height: 16px; position: absolute; left: 132px; top: 2px" onclick="FindText(document.F.optsearch.value)" />
+            <input type="text" name="_search" id="_search" style="width: 100%; padding-right: 16px" onkeydown="FindKeyEvent(this)" placeholder="Search" />
+              <img src="bitmap:ieframe.dll,216,16,17" hidefocus="true" style="vertical-align: middle; width: 16px; height: 16px; position: absolute; left: 132px; top: 2px" onclick="FindText(document.getElementById('_search').value)" />
             </div>
           </td>
           <td id="MoveButton" align="left" style="display: none;">
