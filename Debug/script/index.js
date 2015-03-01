@@ -1012,7 +1012,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 				if (cmd.indexOf("%") < 0) {
 					var cmd2 = ExtractMacro(te, cmd);
 					if (api.StrCmpI(cmd, cmd2)) {
-						ShellExecute(cmd2, null, nShow);
+						ShellExecute(cmd2, null, nShow, Directory);
 						continue;
 					}
 				}
@@ -2094,7 +2094,7 @@ g_basic =
 			{
 				s = ExtractMacro(Ctrl, s);
 				try {
-					ShellExecute(s, null, SW_SHOWNORMAL);
+					ShellExecute(s, null, SW_SHOWNORMAL, Ctrl, pt);
 				}
 				catch (e) {
 					ShowError(e, s);
@@ -2135,7 +2135,7 @@ g_basic =
 			{
 				s = ExtractMacro(Ctrl, s);
 				try {
-					ShellExecute(s, "RunAs", SW_SHOWNORMAL);
+					ShellExecute(s, "RunAs", SW_SHOWNORMAL, Ctrl, pt);
 				}
 				catch (e) {
 					ShowError(e, s);

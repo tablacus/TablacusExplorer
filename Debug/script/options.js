@@ -20,7 +20,7 @@ g_bClosed = false;
 arLangs = [GetLangId(), "en", "General"];
 g_ovPanel = null;
 
-urlAddons = "http://www.eonet.ne.jp/~gakana/tablacus/addons/";
+urlAddons = "https://www.eonet.ne.jp/~gakana/tablacus/addons/";
 nCount = 0;
 xhr = null;
 xmlAddons = null;

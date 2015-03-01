@@ -264,11 +264,12 @@ struct TEColumn
 
 struct TEInvoke
 {
+	VARIANT *pv;
 	IDispatch *pdisp;
+	PVOID	pResult;
 	DISPID dispid;
 	int	cArgs;
-	VARIANT *pv;
-	PVOID	pResult;
+	BOOL bForce;
 };
 
 struct TEDispatchApi
@@ -367,6 +368,7 @@ public:
 	LPITEMIDLIST	m_pidlFocused;
 	int				m_nSelected;
 	BOOL			m_bStrict;
+	BOOL			m_bStopgap;
 private:
 	LONG			m_cRef;
 };
@@ -796,8 +798,8 @@ public:
 	HWND GetListHandle(HWND *hList);
 	HRESULT BrowseObject2(FolderItem *pid, UINT wFlags);
 	VOID CheckNavigate(LPITEMIDLIST *ppidl, CteShellBrowser *pHistSB, int nLogIndex);
-	BOOL Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItems *pFolderItems, FolderItem *pPrevious, LPITEMIDLIST *ppidl);
-	VOID Navigate1Ex(LPOLESTR pstr, FolderItems *pFolderItems, UINT wFlags, FolderItem *pPrevious);
+	BOOL Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItems *pFolderItems, FolderItem *pPrevious, LPITEMIDLIST *ppidl, BOOL bForce);
+	VOID Navigate1Ex(LPOLESTR pstr, FolderItems *pFolderItems, UINT wFlags, FolderItem *pPrevious, BOOL bForce);
 	HRESULT Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *param, FolderItems *pFolderItems, FolderItem *pPrevious, CteShellBrowser *pHistSB);
 	HRESULT Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *param, CteShellBrowser **ppSB, FolderItems *pFolderItems);
 	HRESULT NavigateEB(DWORD dwFrame);
@@ -807,6 +809,7 @@ public:
 	VOID SetSort(BSTR bs);
 	HRESULT SetRedraw(BOOL bRedraw);
 	HRESULT CreateViewWindowEx(IShellView *pPreviousView);
+	VOID SetColumnsStr(BSTR bsColumns);
 	BSTR GetColumnsStr(int nFormat);
 	VOID GetDefaultColumns();
 	VOID SaveFocusedItemToHistory();

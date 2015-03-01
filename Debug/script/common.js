@@ -1952,7 +1952,7 @@ function GetAddons()
 
 function CheckUpdate()
 {
-	var url = "http://www.eonet.ne.jp/~gakana/tablacus/";
+	var url = "https://www.eonet.ne.jp/~gakana/tablacus/";
 	var xhr = createHttpRequest();
 	xhr.open("GET", url + "explorer_en.html?" + Math.floor(new Date().getTime() / 60000), false);
 	xhr.setRequestHeader('Pragma', 'no-cache');
@@ -2856,11 +2856,14 @@ SetSysColor = function (i, color)
 	g_Colors[i] = color;
 }
 
-ShellExecute = function (s, vOperation, nShow)
+ShellExecute = function (s, vOperation, nShow, vDir2, pt)
 {
 	var arg = api.CommandLineToArgv(s);
 	var s = arg.shift();
-	var vDir = fso.GetParentFolderName(s);
+	var vDir = fso.GetParentFolderName(s) || vDir2;
+	if (pt && vDir.Type) {
+		vDir = (GetFolderView(Ctrl, pt) || {FolderItem: {}}).FolderItem.Path;
+	}
 	for (var i = arg.length; i-- > 0;) {
 		arg[i] = api.PathQuoteSpaces(arg[i]);
 	}
