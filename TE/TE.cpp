@@ -9031,7 +9031,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					if (lstrcmpi((LPCWSTR)lParam, L"Environment") == 0) {
 						LPVOID lpEnvironment;
 						lpfnRegenerateUserEnvironment(&lpEnvironment, TRUE);
-						FreeEnvironmentStrings((LPTSTR)lpEnvironment);
+						//Not permitted to free lpEnvironment!
+						//FreeEnvironmentStrings((LPTSTR)lpEnvironment);
 					}
 				}
 				catch (...) {
@@ -9189,6 +9190,7 @@ void CteShellBrowser::Init(CteTabs *pTabs, BOOL bNew)
 	m_bRefreshLator = FALSE;
 	m_nCreate = 0;
 	m_nDefultColumns = 0;
+	m_pDefultColumns = NULL;
 	m_bNavigateComplete = FALSE;
 	VariantClear(&m_vData);
 
@@ -9203,7 +9205,7 @@ void CteShellBrowser::Init(CteTabs *pTabs, BOOL bNew)
 	for (int i = Count_SBFunc; i--;) {
 		m_pOnFunc[i] = NULL;
 	}
-	m_bVisible = false;
+	m_bVisible = FALSE;
 	m_nLogCount = 0;
 	m_nLogIndex = -1;
 	m_nFolderSizeIndex = MAXINT;
@@ -9252,9 +9254,9 @@ void CteShellBrowser::Clear()
 		m_pSF2->Release();
 		m_pSF2 = NULL;
 	}
-	if (m_nDefultColumns) {
+	if (m_pDefultColumns) {
 		delete [] m_pDefultColumns;
-		m_nDefultColumns = 0;
+		m_pDefultColumns = NULL;
 	}
 	teILFreeClear(&m_pidl);
 	if (m_pFolderItem) {
@@ -11035,7 +11037,7 @@ VOID AddColumnDataEx(LPWSTR pszColumns, BSTR bsName, int nWidth)
 
 BSTR CteShellBrowser::GetColumnsStr(int nFormat)
 {
-	if (m_bStopgap) {
+	if (m_bStopgap || m_nDefultColumns == 0) {
 		return NULL;
 	}
 	WCHAR szColumns[SIZE_BUFF];
@@ -11113,10 +11115,11 @@ BSTR CteShellBrowser::GetColumnsStr(int nFormat)
 
 VOID CteShellBrowser::GetDefaultColumns()
 {
-	if (m_nDefultColumns) {
-		m_nDefultColumns = 0;
+	if (m_pDefultColumns) {
 		delete [] m_pDefultColumns;
+		m_pDefultColumns = NULL;
 	}
+	m_nDefultColumns = 0;
 	IColumnManager *pColumnManager;
 	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pColumnManager))) {
 		if SUCCEEDED(pColumnManager->GetColumnCount(CM_ENUM_VISIBLE, &m_nDefultColumns)) {
@@ -11125,6 +11128,11 @@ VOID CteShellBrowser::GetDefaultColumns()
 		}
 		pColumnManager->Release();
 	}
+#ifdef _2000XP
+	else if (!g_bUpperVista) {
+		m_nDefultColumns = -1;
+	}
+#endif
 }
 
 STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
@@ -11618,7 +11626,13 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				return S_OK;
 			//Refresh2Ex
 			case 0x20000206:
-				if (nArg >= 0 && pDispParams->rgvarg[nArg].vt != VT_EMPTY) {
+				if (nArg >= 0) {
+					FolderItem *pid = NULL;
+					GetFolderItemFromVariant(&pid, &pDispParams->rgvarg[nArg]);
+					if (pid && m_pFolderItem) {
+						m_pFolderItem->Release();
+						m_pFolderItem = pid;
+					}
 					Refresh(FALSE);
 				}
 				return S_OK;
@@ -12632,8 +12646,10 @@ STDMETHODIMP CteShellBrowser::GetCurFolder(PIDLIST_ABSOLUTE *ppidl)
 
 VOID CteShellBrowser::Suspend(BOOL bTree)
 {
-	SaveFocusedItemToHistory();
-	teDoCommand(this, m_hwnd, WM_NULL, 0, 0);//Save folder setings
+	if (!m_bStopgap) {
+		SaveFocusedItemToHistory();
+		teDoCommand(this, m_hwnd, WM_NULL, 0, 0);//Save folder setings
+	}
 	BOOL bVisible = m_bVisible;
 	DestroyView(0);
 	if (bTree && m_pTV) {
@@ -12646,7 +12662,7 @@ VOID CteShellBrowser::Suspend(BOOL bTree)
 			if (m_pFolderItem) {
 				m_pFolderItem->Release();
 			}
-			m_pFolderItem = new CteFolderItem(&v);
+			GetFolderItemFromVariant(&m_pFolderItem, &v);
 			teILFreeClear(&m_pidl);
 			VariantClear(&v);
 		}
@@ -12701,52 +12717,55 @@ VOID CteShellBrowser::ResetPropEx()
 
 void CteShellBrowser::Show(BOOL bShow)
 {
-	if (bShow) {
-		if (!m_pTabs->m_bVisible) {
-			return;
-		}
-		if (!g_nLockUpdate) {
-			if (m_nUnload == 9) {
-				m_nUnload = 2;
-				BrowseObject(NULL, SBSP_RELATIVE | SBSP_WRITENOHISTORY | SBSP_REDIRECT);
-				m_nUnload = 0;
-			}
-			else if (m_nUnload == 1 || !m_pShellView) {
-				m_nUnload = 2;
-				if SUCCEEDED(BrowseObject(NULL, SBSP_RELATIVE | SBSP_SAMEBROWSER)) {
+	bShow &= 1;
+	if (bShow ^ m_bVisible && m_pTabs->m_bVisible) {
+		if (bShow) {
+			if (!g_nLockUpdate) {
+				if (m_nUnload == 9) {
+					m_nUnload = 2;
+					BrowseObject(NULL, SBSP_RELATIVE | SBSP_WRITENOHISTORY | SBSP_REDIRECT);
 					m_nUnload = 0;
 				}
-			}
-			else if (m_bRefreshLator) {
-				Refresh(TRUE);
-			}
-		}
-	}
-	m_bVisible = bShow;
-	if (m_pShellView) {
-		if (bShow) {
-			ShowWindow(m_hwnd, SW_SHOW);
-			SetRedraw(TRUE);
-			if (m_param[SB_TreeAlign] & 2) {
-				ShowWindow(m_pTV->m_hwnd, SW_SHOW);
-				BringWindowToTop(m_pTV->m_hwnd);
-			}
-			if (!SetActive(FALSE)) {
-				m_pShellView->UIActivate(SVUIA_ACTIVATE_NOFOCUS);
-			}
-			BringWindowToTop(m_hwnd);
-			ArrangeWindow();
-			if (m_nUnload == 4) {
-				Refresh(FALSE);
+				else if (m_nUnload == 1 || !m_pShellView) {
+					m_nUnload = 2;
+					if SUCCEEDED(BrowseObject(NULL, SBSP_RELATIVE | SBSP_SAMEBROWSER)) {
+						m_nUnload = 0;
+					}
+				}
+				else if (m_bRefreshLator) {
+					Refresh(TRUE);
+				}
 			}
 		}
-		else {
-			SetRedraw(FALSE);
-			m_pShellView->UIActivate(SVUIA_DEACTIVATE);
-			MoveWindow(m_hwnd, -1, -1, 0, 0, false);
-			ShowWindow(m_hwnd, SW_HIDE);
-			MoveWindow(m_pTV->m_hwnd, -1, -1, 0, 0, false);
-			ShowWindow(m_pTV->m_hwnd, SW_HIDE);
+		m_bVisible = bShow;
+		if (m_pShellView) {
+			if (bShow) {
+				ShowWindow(m_hwnd, SW_SHOW);
+				SetRedraw(TRUE);
+				if (m_param[SB_TreeAlign] & 2) {
+					ShowWindow(m_pTV->m_hwnd, SW_SHOW);
+					BringWindowToTop(m_pTV->m_hwnd);
+				}
+				if (!SetActive(FALSE)) {
+					m_pShellView->UIActivate(SVUIA_ACTIVATE_NOFOCUS);
+				}
+				BringWindowToTop(m_hwnd);
+				ArrangeWindow();
+				if (m_nUnload == 4) {
+					Refresh(FALSE);
+				}
+			}
+			else {
+				SetRedraw(FALSE);
+				m_pShellView->UIActivate(SVUIA_DEACTIVATE);
+				MoveWindow(m_hwnd, -1, -1, 0, 0, false);
+				ShowWindow(m_hwnd, SW_HIDE);
+				MoveWindow(m_pTV->m_hwnd, -1, -1, 0, 0, false);
+				ShowWindow(m_pTV->m_hwnd, SW_HIDE);
+				if (m_bStopgap) {
+					Suspend(FALSE);
+				}
+			}
 		}
 	}
 }
@@ -14504,13 +14523,10 @@ VOID CteTabs::GetItem(int i, VARIANT *pVarResult)
 
 VOID CteTabs::Show(BOOL bVisible)
 {
-	if (bVisible ^ m_bVisible & 1) {
-		m_bVisible = bVisible & 1;
-		int nCmdShow = (bVisible ? SW_SHOW : SW_HIDE);
+	bVisible &= 1;
+	if (bVisible ^ m_bVisible) {
+		m_bVisible = bVisible;
 		if (bVisible) {
-			ShowWindow(m_hwnd, nCmdShow);
-			ShowWindow(m_hwndButton, nCmdShow);
-			ShowWindow(m_hwndStatic, nCmdShow);
 			g_pTabs = this;
 			ArrangeWindow();
 		}
@@ -14518,13 +14534,13 @@ VOID CteTabs::Show(BOOL bVisible)
 			MoveWindow(m_hwndStatic, -1, -1, 0, 0, false);
 			for (int i = TabCtrl_GetItemCount(m_hwnd); i--;) {
 				CteShellBrowser *pSB = GetShellBrowser(i);
-				if (pSB && pSB->m_bVisible) {
+				if (pSB) {
 					pSB->Show(FALSE);
 				}
 			}
 		}
+		DoFunc(TE_OnVisibleChanged, this, E_NOTIMPL);
 	}
-	DoFunc(TE_OnVisibleChanged, this, E_NOTIMPL);
 }
 
 void CteTabs::Close(BOOL bForce)
@@ -17031,7 +17047,6 @@ STDMETHODIMP CteDropTarget::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				}
 				teSetLong(pVarResult, hr);
 				return S_OK;
-
 			//DragLeave
 			case 4:
 				if (m_pDropTarget) {

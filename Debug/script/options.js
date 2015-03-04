@@ -108,6 +108,7 @@ function ResetForm()
 		}
 	}
 	document.F.Color_Conf_TrailColor.style.backgroundColor = GetWebColor(document.F.Conf_TrailColor.value);
+	document.getElementById("_EDIT").checked = true;
 	document.getElementById("_TEInfo").value = api.sprintf(99, "TE%d %d.%d.%d Win %d.%d.%d %s %x IE %d %s%s", api.sizeof("HANDLE") * 8, (te.Version / 10000) % 100, (te.Version / 100) % 100, te.Version % 100, osInfo.dwMajorVersion, osInfo.dwMinorVersion, osInfo.dwBuildNumber, ["WS", "DC", "SV"][osInfo.wProductType - 1] || osInfo.wProductType, osInfo.wSuiteMask, document.documentMode || (document.body.style.maxHeight === undefined ? 6 : 7), navigator.userLanguage, api.IsWow64Process(api.GetCurrentProcess()) ? " Wow64" : "");
 }
 
@@ -474,7 +475,7 @@ function SwitchMenus(o)
 		g_x.Menus.style.display = "inline";
 		document.F.elements["Menus_Base"].selectedIndex = a[1];
 		document.F.elements["Menus_Pos"].value = api.LowPart(a[2]);
-		EnableSelectTag(g_x.Menus);
+		CancelX("Menus");
 	}
 }
 
@@ -483,6 +484,7 @@ function SwitchX(mode, o)
 	g_x[mode].style.display = "none";
 	g_x[mode] = document.F.elements[mode + o.value];
 	g_x[mode].style.display = "inline";
+	CancelX(mode);
 }
 
 function ClearX(mode)
@@ -588,6 +590,13 @@ function EditMenus()
 	SetType(document.F.Menus_Type, a[3]);
 	document.F.Icon.value = a[4] || "";
 	SetImage();
+}
+
+function EditXEx(o, s)
+{
+	if (document.getElementById("_EDIT").checked) {
+		o(s);
+	}
 }
 
 EditX = function (mode)
@@ -732,7 +741,7 @@ function LoadMenus(nSelected)
 		oa.length = 0;
 
 		for (var j in g_arMenuTypes) {
-			document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", ['<select name="Menus_', g_arMenuTypes[j], '" size="17" style="width: 150px; height: 400px; display: none; font-family:', document.F.elements["Menus_Pos"].style.fontFamily, '" ondblclick="EditMenus()" oncontextmenu="CancelX(\'Menus\')"></select>'].join(""));
+			document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", ['<select name="Menus_', g_arMenuTypes[j], '" size="17" style="width: 150px; height: 400px; display: none; font-family:', document.F.elements["Menus_Pos"].style.fontFamily, '" onclick="EditXEx(EditMenus)" ondblclick="EditMenus()" oncontextmenu="CancelX(\'Menus\')"></select>'].join(""));
 			var menus = teMenuGetElementsByTagName(g_arMenuTypes[j]);
 			if (menus && menus.length) {
 				oa[++oa.length - 1].value = g_arMenuTypes[j] + "," + menus[0].getAttribute("Base") + "," + menus[0].getAttribute("Pos");

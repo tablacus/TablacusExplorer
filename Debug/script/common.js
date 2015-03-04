@@ -2119,7 +2119,7 @@ AddonOptions = function (Id, fn, Data)
 		sFeatures = 'Default';
 	}
 	if (api.StrCmpI(sFeatures, "Default") == 0) {
-		sFeatures = 'dialogWidth: 640px; dialogHeight: 480px';
+		sFeatures = 'Width: 640; Height: 480';
 	}
 	try {
 		var dlg = MainWindow.g_dlgs[Id];
