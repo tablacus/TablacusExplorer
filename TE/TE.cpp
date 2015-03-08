@@ -4469,19 +4469,19 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				NMLVDISPINFO *lpDispInfo = (NMLVDISPINFO *)lParam;
 				if (lpDispInfo->item.mask & LVIF_TEXT) {
 					if (lpDispInfo->item.iSubItem == pSB->m_nFolderSizeIndex) {
-						BOOL bHandled = FALSE;
-						IFolderView *pFV;
-						LPITEMIDLIST pidl;
-						if SUCCEEDED(pSB->m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
-							if SUCCEEDED(pFV->Item(lpDispInfo->item.iItem, &pidl)) {
-								bHandled = pSB->SetFolderSize(pidl, lpDispInfo->item.pszText, lpDispInfo->item.cchTextMax);
-								::CoTaskMemFree(pidl);
+						lResult = CallWindowProc((WNDPROC)pSB->m_DefProc, hwnd, msg, wParam, lParam);
+						if (lpDispInfo->item.pszText[0] == 0) {
+							IFolderView *pFV;
+							LPITEMIDLIST pidl;
+							if SUCCEEDED(pSB->m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
+								if SUCCEEDED(pFV->Item(lpDispInfo->item.iItem, &pidl)) {
+									pSB->SetFolderSize(pidl, lpDispInfo->item.pszText, lpDispInfo->item.cchTextMax);
+									::CoTaskMemFree(pidl);
+								}
+								pFV->Release();
 							}
-							pFV->Release();
 						}
-						if (bHandled) {
-							return 0;
-						}
+						return lResult;
 					}
 					if (lpDispInfo->item.iSubItem == pSB->m_nLabelIndex && g_pOnFunc[TE_Labels]) {
 						IFolderView *pFV;
@@ -5508,7 +5508,7 @@ VOID teApiCommandLineToArgv(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, 
 	LPTSTR *lplpszArgs = NULL;
 	IDispatch *pArray;
 	GetNewArray(&pArray);
-	if (param[0] && ::SysStringLen((BSTR)param[0])) {
+	if (param[0] && ((LPCWSTR)param[0])[0]) {
 		lplpszArgs = CommandLineToArgvW((LPCWSTR)param[0], &nLen);
 		for (int i = nLen; i-- > 0;) {
 			VARIANT v;
@@ -8621,7 +8621,7 @@ function _t(o) {\
 		PathRemoveFileSpec(bsPath);
 		LPTSTR *lplpszArgs = NULL;
 		LPWSTR lpFile = L"script\\index.html";
-		if (bNewProcess) {
+		if (bNewProcess && lpCmdLine && lpCmdLine[0]) {
 			int nCount = 0;
 			lplpszArgs = CommandLineToArgvW(lpCmdLine, &nCount);
 			if (nCount > 1) {
@@ -10399,19 +10399,17 @@ VOID CteShellBrowser::InitFolderSize()
 	}
 }
 
-BOOL CteShellBrowser::SetFolderSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch)
+VOID CteShellBrowser::SetFolderSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch)
 {
 	if (m_pSF2) {
+		VARIANT v;
+		VariantInit(&v);
 		WIN32_FIND_DATA wfd;
 		SHGetDataFromIDList(m_pSF2, pidl, SHGDFIL_FINDDATA, &wfd, sizeof(WIN32_FIND_DATA));
 		if (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-			VARIANT v;
-			VariantInit(&v);
 			teGetProperty(m_pFolderSize, wfd.cFileName, &v);
 			if (v.vt == VT_BSTR) {
 				lstrcpyn(szText, v.bstrVal, cch);
-				VariantClear(&v);
-				return TRUE;
 			}
 			else if (m_pFolderSize) {
 				teSetSZ(&v, L"");
@@ -10423,18 +10421,12 @@ BOOL CteShellBrowser::SetFolderSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch)
 				pTEFS->pidl = m_pidl;
 				_beginthread(&threadFolderSize, 0, pTEFS);
 			}
-			VariantClear(&v);
 		}
-		else {
-			VARIANT v;
-			if (SUCCEEDED(m_pSF2->GetDetailsEx(pidl, &PKEY_Size, &v))) {
-				StrFormatKBSize(v.ullVal, szText, cch);
-				VariantClear(&v);
-				return TRUE;
-			}
+		else if (SUCCEEDED(m_pSF2->GetDetailsEx(pidl, &PKEY_Size, &v))) {
+			StrFormatKBSize(v.ullVal, szText, cch);
 		}
+		VariantClear(&v);
 	}
-	return FALSE;
 }
 
 VOID CteShellBrowser::SetLabel(LPCITEMIDLIST pidl, LPWSTR szText, int cch)
@@ -10789,7 +10781,7 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 	int nCount = 0;
 	int nAllWidth = 0;
 	LPTSTR *lplpszArgs = NULL;
-	if (bsColumns) {
+	if (bsColumns && bsColumns[0]) {
 		lplpszArgs = CommandLineToArgvW(bsColumns, &nCount);
 		nCount /= 2;
 	}
@@ -10854,6 +10846,9 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 							pnWidth[k++] = methodArgs[i].id;
 						}
 					}
+					if (bNoName && k == 1) {
+						k = 0;
+					}
 					if (k == 0) {	//Default Columns
 						while (k < (int)m_nDefultColumns && k < (int)uCount) {
 							pPropKey2[k] = m_pDefultColumns[k];
@@ -10894,7 +10889,7 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 
 				int *piArgs = SortTEMethod(methodArgs, nCount);
 				BSTR bs = GetColumnsStr(FALSE);
-				if (bs) {
+				if (bs && bs[0]) {
 					int nCur;
 					LPTSTR *lplpszColumns = CommandLineToArgvW(bs, &nCur);
 					::SysFreeString(bs);
@@ -12798,6 +12793,7 @@ VOID CteShellBrowser::DestroyView(int nFlags)
 			IUnknown_SetSite(m_pExplorerBrowser, NULL);
 			m_pServiceProvider->Release();
 			m_pServiceProvider = NULL;
+			m_bStopgap = FALSE;
 			Show(false);
 			m_pExplorerBrowser->Destroy();
 			m_pExplorerBrowser->Release();
@@ -12809,6 +12805,7 @@ VOID CteShellBrowser::DestroyView(int nFlags)
 	}
 	if (m_pShellView) {
 		if ((nFlags & 1) == 0) {
+			m_bStopgap = FALSE;
 			Show(false);
 			IUnknown_SetSite(m_pShellView, NULL);
 			m_pShellView->DestroyViewWindow();

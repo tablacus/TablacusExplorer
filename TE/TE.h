@@ -828,7 +828,7 @@ public:
 	HRESULT Items(UINT uItem, FolderItems **ppid);
 	HRESULT SelectItemEx(LPITEMIDLIST *ppidl, int dwFlags);
 	VOID InitFolderSize();
-	BOOL SetFolderSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch);
+	VOID SetFolderSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch);
 	VOID SetLabel(LPCITEMIDLIST pidl, LPWSTR szText, int cch);
 	HRESULT PropertyKeyFromName(BSTR bs, PROPERTYKEY *pkey);
 #ifdef _2000XP
