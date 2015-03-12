@@ -894,7 +894,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 						return S_OK;
 					}
 				}
-				if (te.Data.Conf_Gestures == 3) {
+				if (te.Data.Conf_Gestures == 3 && Ctrl.Type != CTRL_WB) {
 					g_mouse.RButton = iItem;
 					g_mouse.StartGestureTimer();
 					return S_OK;

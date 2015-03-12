@@ -1128,7 +1128,12 @@ function End5()
 function Over5()
 {
 	if (g_drag5) {
-		event.preventDefault();
+		if (event.preventDefault) {
+			event.preventDefault();
+		}
+		else {
+ 			event.returnValue = false;
+		}
 	}
 }
 

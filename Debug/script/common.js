@@ -2560,7 +2560,7 @@ ChooseColor = function (c)
 ChooseWebColor = function (c)
 {
 	c = ChooseColor(GetWinColor(c));
-	if (c) {
+	if (isFinite(c)) {
 		return GetWebColor(c);
 	}
 }
