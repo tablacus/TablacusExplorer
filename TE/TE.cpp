@@ -40,6 +40,7 @@ LPFNIsWow64Process lpfnIsWow64Process = NULL;
 LPFNChangeWindowMessageFilter lpfnChangeWindowMessageFilter = NULL;
 LPFNChangeWindowMessageFilterEx lpfnChangeWindowMessageFilterEx = NULL;
 LPFNRtlGetVersion lpfnRtlGetVersion = NULL;
+LPFNSHTestTokenMembership lpfnSHTestTokenMembership = NULL;
 
 LPITEMIDLIST g_pidlCP = NULL;
 FORMATETC HDROPFormat = {CF_HDROP, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
@@ -3972,6 +3973,10 @@ VOID GetNewObject(IDispatch **ppObj)
 {
 	VARIANT v;
 	VariantInit(&v);
+	if (*ppObj) {
+		(*ppObj)->Release();
+		*ppObj = NULL;
+	}
 	if (teExecMethod(g_pJS, L"_o", &v, 0, NULL) == S_OK) {
 		GetDispatch(&v, ppObj);
 		VariantClear(&v);
@@ -3980,9 +3985,6 @@ VOID GetNewObject(IDispatch **ppObj)
 
 VOID ClearEvents()
 {
-	if (g_pSubWindows) {
-		g_pSubWindows->Release();
-	}
 	GetNewObject(&g_pSubWindows);
 	for (int j = Count_OnFunc; j-- > 1;) {
 		if (g_pOnFunc[j]) {
@@ -6783,6 +6785,7 @@ VOID teApiSHChangeNotifyRegister(int nArg, LONGLONG *param, DISPPARAMS *pDispPar
 	entry.fRecursive = (BOOL)param[5];
 	if (entry.pidl) {
 		teSetLong(pVarResult, SHChangeNotifyRegister((HWND)param[0], (int)param[1], (LONG)param[2], (UINT)param[3], 1, &entry));
+		teChangeWindowMessageFilterEx((HWND)param[0], (UINT)param[3], MSGFLT_ALLOW, NULL);
 		teCoTaskMemFree(const_cast<LPITEMIDLIST>(entry.pidl));
 	}
 }
@@ -7231,7 +7234,7 @@ VOID teApisprintf(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *p
 					if (StrChrIW(L"diuoxc", wc)) {//Integer
 						wc = pszFormat[nPos];
 						pszFormat[nPos] = NULL;
-						swprintf_s(&bsResult[nLen], nSize - nLen, pszFormat, param[++nIndex]);
+						swprintf_s(&bsResult[nLen], nSize - nLen, pszFormat, GetLLFromVariant(&pDispParams->rgvarg[nArg - ++nIndex]));
 						nLen += lstrlen(&bsResult[nLen]);
 						pszFormat += nPos;
 						nPos = 0;
@@ -7424,6 +7427,13 @@ VOID teApiILGetCount(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT
 	if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
 		teSetLong(pVarResult, ILGetCount(pidl));
 		teCoTaskMemFree(pidl);
+	}
+}
+
+VOID teApiSHTestTokenMembership(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	if (lpfnSHTestTokenMembership) {
+		teSetBool(pVarResult, lpfnSHTestTokenMembership((HANDLE)param[0], (ULONG)param[1]));
 	}
 }
 
@@ -7718,6 +7728,7 @@ TEDispatchApi dispAPI[] = {
 	{ 4, -1, -1, -1, L"RegisterHotKey", teApiRegisterHotKey },
 	{ 2, -1, -1, -1, L"UnregisterHotKey", teApiUnregisterHotKey },
 	{ 1, -1, -1, -1, L"ILGetCount", teApiILGetCount },
+	{ 2, -1, -1, -1, L"SHTestTokenMembership", teApiSHTestTokenMembership },
 //	{ 0, -1, -1, -1, L"", teApi },
 //	{ 0, -1, -1, -1, L"Test", teApiTest },
 };
@@ -8429,6 +8440,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		lpfnSHGetIDListFromObject = (LPFNSHGetIDListFromObject)GetProcAddress(g_hShell32, "SHGetIDListFromObject");
 		lpfnSHRunDialog = (LPFNSHRunDialog)GetProcAddress(g_hShell32, MAKEINTRESOURCEA(61));
 		lpfnRegenerateUserEnvironment = (LPFNRegenerateUserEnvironment)GetProcAddress(g_hShell32, "RegenerateUserEnvironment");
+		lpfnSHTestTokenMembership = (LPFNSHTestTokenMembership)GetProcAddress(g_hShell32, "SHTestTokenMembership");
 	}
 #ifdef _2000XP
 	if (!lpfnSHGetIDListFromObject) {
@@ -9662,9 +9674,6 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	m_bRefreshLator = FALSE;
 	m_nFolderSizeIndex = MAXINT;
 	m_nLabelIndex = MAXINT;
-	if (m_pFolderSize) {
-		m_pFolderSize->Release();
-	}
 	GetNewObject(&m_pFolderSize);
 	CteFolderItem *pid1 = NULL;
 	if SUCCEEDED(pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1)) {
@@ -10214,6 +10223,7 @@ VOID CteShellBrowser::Refresh(BOOL bCheck)
 {
 	m_bRefreshLator = FALSE;
 	teDoCommand(this, m_hwnd, WM_NULL, 0, 0);//Save folder setings
+	GetNewObject(&m_pFolderSize);
 	if (bCheck) {
 		VARIANT v, vResult;
 		VariantInit(&v);
@@ -10824,7 +10834,7 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 				if SUCCEEDED(pColumnManager->GetColumns(CM_ENUM_ALL, pPropKey, uCount)) {
 					VARIANT v;
 					VariantInit(&v);
-					IDispatch *pdispColumns;
+					IDispatch *pdispColumns = NULL;
 					GetNewObject(&pdispColumns);
 					CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_NAME };
 					for (int i = uCount; i-- > 0;) {
@@ -12672,6 +12682,9 @@ VOID CteShellBrowser::SetPropEx()
 		if (!m_DefProc) {
 			SetWindowLongPtr(m_hwndDV, GWLP_USERDATA, (LONG_PTR)this);
 			m_DefProc = SetWindowLongPtr(m_hwndDV, GWLP_WNDPROC, (LONG_PTR)TELVProc);
+			for (int i = WM_USER + 173; i <= WM_USER + 175; i++) {
+				teChangeWindowMessageFilterEx(m_hwndDV, i, MSGFLT_ALLOW, NULL);
+			}
 		}
 		m_hwndLV = FindWindowEx(m_hwndDV, 0, WC_LISTVIEW, NULL);
 		if (m_hwndLV) {
@@ -13233,7 +13246,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 			case TE_METHOD + 1006:
 				if (nArg >= 0) {
 					int nCtrl = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
-					IDispatch *pArray;
+					IDispatch *pArray = NULL;
 					GetNewArray(&pArray);
 					int i;
 
@@ -13808,6 +13821,7 @@ CteWebBrowser::CteWebBrowser(HWND hwndParent, WCHAR *szPath, VARIANT *pvArg)
 	m_dwCookie = 0;
 	m_pDragItems = NULL;
 	m_pDropTarget = NULL;
+	m_pExternal = NULL;
 	VariantInit(&m_vData);
 	if (pvArg) {
 		VariantCopy(&m_vData, pvArg);
@@ -13851,6 +13865,7 @@ CteWebBrowser::~CteWebBrowser()
 	Close();
 	VariantClear(&m_vData);
 	m_pExternal->Release();
+	m_pExternal = NULL;
 }
 
 STDMETHODIMP CteWebBrowser::QueryInterface(REFIID riid, void **ppvObject)
@@ -15188,7 +15203,7 @@ VOID CteFolderItems::Regenerate()
 	if (!m_oFolderItems) {
 		long nCount;
 		if SUCCEEDED(get_Count(&nCount)) {
-			IDispatch *oFolderItems;
+			IDispatch *oFolderItems = NULL;
 			GetNewArray(&oFolderItems);
 			VARIANT v;
 			v.vt = VT_I4;
