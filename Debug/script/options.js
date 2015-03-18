@@ -109,7 +109,7 @@ function ResetForm()
 	}
 	document.F.Color_Conf_TrailColor.style.backgroundColor = GetWebColor(document.F.Conf_TrailColor.value);
 	document.getElementById("_EDIT").checked = true;
-	document.getElementById("_TEInfo").value = api.sprintf(99, "TE%d %d.%d.%d Win %d.%d.%d %s %x IE %d %s%s", api.sizeof("HANDLE") * 8, (te.Version / 10000) % 100, (te.Version / 100) % 100, te.Version % 100, osInfo.dwMajorVersion, osInfo.dwMinorVersion, osInfo.dwBuildNumber, ["WS", "DC", "SV"][osInfo.wProductType - 1] || osInfo.wProductType, osInfo.wSuiteMask, document.documentMode || (document.body.style.maxHeight === undefined ? 6 : 7), navigator.userLanguage, api.IsWow64Process(api.GetCurrentProcess()) ? " Wow64" : "");
+	document.getElementById("_TEInfo").value = api.sprintf(99, "TE%d %d.%d.%d Win %d.%d.%d%s %s %x%s IE %d %s", api.sizeof("HANDLE") * 8, (te.Version / 10000) % 100, (te.Version / 100) % 100, te.Version % 100, osInfo.dwMajorVersion, osInfo.dwMinorVersion, osInfo.dwBuildNumber, api.IsWow64Process(api.GetCurrentProcess()) ? " Wow64" : "", ["WS", "DC", "SV"][osInfo.wProductType - 1] || osInfo.wProductType, osInfo.wSuiteMask, api.SHTestTokenMembership(null, 0x220) ? " Admin" : "", document.documentMode || (document.body.style.maxHeight === undefined ? 6 : 7), navigator.userLanguage);
 }
 
 function ResizeTabPanel()
@@ -1461,7 +1461,10 @@ InitDialog = function ()
 		document.getElementById("Content").innerHTML = s.join("");
 		document.body.onkeydown = function (e)
 		{
-			document.F.ButtonOk.disabled = !document.F.path.value;
+			setTimeout(function ()
+			{
+				document.F.ButtonOk.disabled = !document.F.path.value;
+			}, 99);
 			var key = (e || event).keyCode;
 			if (key == VK_RETURN && document.F.path.value) {
 				SetResult(1);

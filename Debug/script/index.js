@@ -1726,7 +1726,7 @@ function InitCode()
 function ChangeNotifyFV(lEvent, item1, item2)
 {
 	var fFolder = SHCNE_DRIVEREMOVED | SHCNE_MEDIAREMOVED | SHCNE_NETUNSHARE | SHCNE_RENAMEFOLDER | SHCNE_RMDIR | SHCNE_SERVERDISCONNECT;
-	if (lEvent & (fFolder | SHCNE_DELETE | SHCNE_RENAMEITEM)) {
+	if (lEvent & SHCNE_DISKEVENTS) {
 		var cFV = te.Ctrls(CTRL_FV);
 		for (var i in cFV) {
 			var FV = cFV[i];
@@ -1737,11 +1737,17 @@ function ChangeNotifyFV(lEvent, item1, item2)
 					FV.Navigate(path.replace(path1, api.GetDisplayNameOf(item2, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)), SBSP_SAMEBROWSER);
 				}
 			}
-			if ((lEvent & fFolder) && FV.hwndList) {
-				if (api.ILIsParent(item1, FV, false)) {
-					FV.Suspend();
+			if (FV.hwndView) {
+				if (lEvent & fFolder) {
+					if (api.ILIsParent(item1, FV, false)) {
+						FV.Suspend();
+					}
 				}
-				if (api.ILIsParent(FV, item1, true)) {
+				FV.Notify(item1);
+				if ((lEvent & (SHCNE_RENAMEITEM | SHCNE_RENAMEFOLDER))) {
+					FV.Notify(item2);
+				}
+				if (FV.hwndList && api.ILIsParent(FV, item1, true)) {
 					var item = api.Memory("LVITEM");
 					item.stateMask = LVIS_CUT;
 					api.SendMessage(FV.hwndList, LVM_SETITEMSTATE, -1, item);

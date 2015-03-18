@@ -871,6 +871,7 @@ TEmethod methodSB[] = {
 	{ 0x10000280, L"SelectItem" },
 	{ 0x10000281, L"FocusedItem" },
 	{ 0x10000282, L"GetFocusedItem" },
+	{ 0x10000300, L"Notify" },
 	{ 0x10000501, L"AddItem" },
 	{ 0x10000502, L"RemoveItem" },
 	{ START_OnFunc + SB_OnIncludeObject, L"OnIncludeObject" },
@@ -1046,6 +1047,8 @@ TEmethod methodGB[] = {
 	{ 102, L"DataURI" },
 	{ 110, L"GetWidth" },
 	{ 111, L"GetHeight" },
+	{ 112, L"GetPixel" },
+	{ 113, L"SetPixel" },
 	{ 120, L"GetThumbnailImage" },
 	{ 130, L"RotateFlip" },
 
@@ -11754,6 +11757,31 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					pVarResult->vt = VT_I4;
 				}
 				return S_OK;
+			//Notify
+			case 0x10000300:
+				if (nArg >= 0 && m_nFolderSizeIndex != MAXINT && m_hwndLV) {
+					LPITEMIDLIST pidl;
+					if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
+						if (::ILIsParent(m_pidl, pidl, false)) {
+							int n = ILGetCount(pidl) - ILGetCount(m_pidl);
+							while (n > 1) {
+								ILRemoveLastID(pidl);
+								n--;
+							}
+							if (n == 1) {
+								WIN32_FIND_DATA wfd;
+								SHGetDataFromIDList(m_pSF2, ILFindLastID(pidl), SHGDFIL_FINDDATA, &wfd, sizeof(WIN32_FIND_DATA));
+								if (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+									if SUCCEEDED(teDelProperty(m_pFolderSize, wfd.cFileName)) {
+										InvalidateRect(m_hwndLV, NULL, FALSE);
+									}
+								}
+							}
+						}
+						teCoTaskMemFree(pidl);
+					}
+				}
+				return S_OK;
 			//AddItem
 			case 0x10000501:
 				if (nArg >= 0) {
@@ -12465,6 +12493,7 @@ STDMETHODIMP CteShellBrowser::GetDetailsOf(PCUITEMID_CHILD pidl, UINT iColumn, S
 		szBuf[0] = NULL;
 		if (pidl) {
 			if (iColumn == m_nColumns - 1) {
+				m_nFolderSizeIndex = MAXINT - 1;
 				SetFolderSize(pidl, szBuf, MAX_COLUMN_NAME_LEN);
 			}
 			else {
@@ -14257,7 +14286,7 @@ STDMETHODIMP CteWebBrowser::ShowContextMenu(DWORD dwID, POINT *ppt, IUnknown *pc
 STDMETHODIMP CteWebBrowser::GetHostInfo(DOCHOSTUIINFO *pInfo)
 {
 	pInfo->cbSize        = sizeof(DOCHOSTUIINFO);
-	pInfo->dwFlags       = DOCHOSTUIFLAG_NO3DBORDER | DOCHOSTUIFLAG_ENABLE_FORMS_AUTOCOMPLETE | DOCHOSTUIFLAG_SCROLL_NO/* | DOCHOSTUIFLAG_THEME*/;
+	pInfo->dwFlags       = DOCHOSTUIFLAG_NO3DBORDER | DOCHOSTUIFLAG_ENABLE_FORMS_AUTOCOMPLETE | DOCHOSTUIFLAG_SCROLL_NO;
 	pInfo->dwDoubleClick = DOCHOSTUIDBLCLK_DEFAULT;
 	pInfo->pchHostCss    = NULL;
 	pInfo->pchHostNS     = NULL;
@@ -14312,7 +14341,6 @@ STDMETHODIMP CteWebBrowser::TranslateAccelerator(LPMSG lpMsg, const GUID *pguidC
 
 STDMETHODIMP CteWebBrowser::GetOptionKeyPath(LPOLESTR *pchKey, DWORD dw)
 {
-/*// For check
 	WCHAR* szKey = L"Software\\tablacus\\explorer";
     if (pchKey) {
 		*pchKey = (LPOLESTR)CoTaskMemAlloc((lstrlen(szKey) + 1) * sizeof(WCHAR));
@@ -14322,8 +14350,6 @@ STDMETHODIMP CteWebBrowser::GetOptionKeyPath(LPOLESTR *pchKey, DWORD dw)
 		}
     }
 	return E_INVALIDARG;
-//*/
-	return E_NOTIMPL;
 }
 
 STDMETHODIMP CteWebBrowser::GetDropTarget(IDropTarget *pDropTarget, IDropTarget **ppDropTarget)
@@ -19014,6 +19040,23 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 			//GetHeight
 			case 111:
 				teSetLong(pVarResult, m_pImage->GetHeight());
+				return S_OK;
+			//GetPixel
+			case 112:
+				if (nArg >= 1) {
+					Color cl;
+					if (m_pImage->GetPixel(GetIntFromVariant(&pDispParams->rgvarg[nArg]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]), &cl) == 0) {
+						teSetLong(pVarResult, cl.GetValue());
+					}
+				}
+				return S_OK;
+			//SetPixel
+			case 113:
+				if (nArg >= 2) {
+					Color cl;
+					cl.SetValue(GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]));
+					m_pImage->SetPixel(GetIntFromVariant(&pDispParams->rgvarg[nArg]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]), cl);
+				}
 				return S_OK;
 			//GetThumbnailImage
 			case 120:
