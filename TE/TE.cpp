@@ -1,5 +1,5 @@
 ﻿// TE.cpp
-// Tablacus Explorer (C)2011- Gaku
+// Tablacus Explorer (C)2011 Gaku
 // MIT Lisence
 // Visual C++ 2008 Express Edition SP1
 // Windows SDK v7.0
@@ -8058,7 +8058,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 									if (nCount != pTC->m_nIndex) {
 										pSB = pTC->GetShellBrowser(nCount);
 										if (pSB && pSB->m_bVisible) {
-											pSB->Show(FALSE);
+											pSB->Show(FALSE, TRUE);
 										}
 									}
 								}
@@ -8108,7 +8108,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 									ShowWindow(pSB->m_pTV->m_hwnd, (pSB->m_param[SB_TreeAlign] & 2) ? SW_SHOW : SW_HIDE);
 								}
 								else {
-									pSB->Show(TRUE);
+									pSB->Show(TRUE, FALSE);
 								}
 								MoveWindow(pSB->m_hwnd, rc.left, rc.top, rc.right - rc.left,
 									rc.bottom - rc.top, TRUE);
@@ -8842,14 +8842,16 @@ function importScripts() {\
 
 VOID ArrangeWindow()
 {
+	UINT_PTR uID;
 	if (g_nSize <= 0 && g_nLockUpdate == 0) {
 		g_nSize = 1;
-		KillTimer(g_hwndMain, TET_Size);
-		SetTimer(g_hwndMain, TET_Size, 1, teTimerProc);
-		return;
+		uID = TET_Size;
 	}
-	KillTimer(g_hwndMain, TET_Size2);
-	SetTimer(g_hwndMain, TET_Size2, 500, teTimerProc);
+	else {
+		uID = TET_Size2;
+	}
+	KillTimer(g_hwndMain, uID);
+	SetTimer(g_hwndMain, uID, 1, teTimerProc);
 }
 
 VOID ParseInvoke(TEInvoke *pInvoke)
@@ -8868,7 +8870,7 @@ VOID ParseInvoke(TEInvoke *pInvoke)
 		else if (pInvoke->bForce) {
 			CteFolderItem *pid = new CteFolderItem(&pInvoke->pv[pInvoke->cArgs - 1]);
 			teILCloneReplace(&pid->m_pidl, g_pidlResultsFolder);
-			pid->m_bStopgap = TRUE;
+			pid->m_bNotExist = TRUE;
 			VariantInit(&pInvoke->pv[pInvoke->cArgs - 1]);
 			teSetObjectRelease(&pInvoke->pv[pInvoke->cArgs - 1], pid);
 			Invoke5(pInvoke->pdisp, pInvoke->dispid, DISPATCH_METHOD, NULL, pInvoke->cArgs, pInvoke->pv);
@@ -9673,14 +9675,14 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 
 	m_pFolderItem1 && m_pFolderItem1->Release();
 	m_pFolderItem1 = NULL;
-	m_bStopgap = FALSE;
+	m_bNotExist = FALSE;
 	m_bRefreshLator = FALSE;
 	m_nFolderSizeIndex = MAXINT;
 	m_nLabelIndex = MAXINT;
 	GetNewObject(&m_pFolderSize);
 	CteFolderItem *pid1 = NULL;
 	if SUCCEEDED(pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1)) {
-		m_bStopgap = pid1->m_bStopgap;
+		m_bNotExist = pid1->m_bNotExist;
 		pid1->Release();
 	}	
 	if (m_hwnd) {
@@ -9722,7 +9724,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 			if SUCCEEDED(m_pFolderItem1->get_Path(&bs)) {
 				if (!teIsDesktopPath(bs)) {
 					teILCloneReplace(&pidl, g_pidlResultsFolder);
-					m_bStopgap = TRUE;
+					m_bNotExist = TRUE;
 				}
 				SysFreeString(bs);
 			}
@@ -9848,7 +9850,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	//History / Management
 	SetHistory(pFolderItems, wFlags);
 	DestroyView(m_param[SB_Type]);
-	Show(false);
+	Show(FALSE, FALSE);
 #ifdef _2000XP
 	if (g_bUpperVista) {
 #endif
@@ -9930,7 +9932,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 					}
 					else {
 						teILCloneReplace(&m_pidl, g_pidlResultsFolder);
-						m_bStopgap = TRUE;
+						m_bNotExist = TRUE;
 						nCreate++;
 					}
 					teSysFreeString(&bs);
@@ -10001,7 +10003,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 
 	m_nOpenedType = m_param[SB_Type];
 	if (m_pTabs && GetTabIndex() == m_pTabs->m_nIndex) {
-		Show(true);
+		Show(TRUE, FALSE);
 	}
 	if (!m_pExplorerBrowser) {
 		OnViewCreated(NULL);
@@ -10141,7 +10143,7 @@ HRESULT CteShellBrowser::GetAbsPidl(LPITEMIDLIST *ppidlOut, FolderItem **ppid, F
 						pid1->Release();
 						pid1 = new CteFolderItem(&v2);
 						teILCloneReplace(&pid1->m_pidl, g_pidlResultsFolder);
-						pid1->m_bStopgap = TRUE;
+						pid1->m_bNotExist = TRUE;
 					}
 					ppid[0]->Release();
 					ppid[0] = pid1;
@@ -10953,7 +10955,7 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 							FOLDERSETTINGS fs;
 							pPreviousView->GetCurrentInfo(&fs);
 							m_param[SB_ViewMode] = fs.ViewMode;
-							Show(FALSE);
+							Show(FALSE, FALSE);
 							if SUCCEEDED(CreateViewWindowEx(pPreviousView)) {
 								pPreviousView->DestroyViewWindow();
 								pPreviousView->Release();
@@ -10961,7 +10963,7 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 								ResetPropEx();
 								GetShellFolderView();
 							}
-							Show(TRUE);
+							Show(TRUE, FALSE);
 							SetPropEx();
 						}
 					}
@@ -11045,7 +11047,7 @@ VOID AddColumnDataEx(LPWSTR pszColumns, BSTR bsName, int nWidth)
 
 BSTR CteShellBrowser::GetColumnsStr(int nFormat)
 {
-	if (m_bStopgap || m_nDefultColumns == 0) {
+	if (m_bNotExist || m_nDefultColumns == 0) {
 		return NULL;
 	}
 	WCHAR szColumns[SIZE_BUFF];
@@ -11266,7 +11268,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 							teGetIDListFromObject(punk, &pidl);
 						}
 						if (SUCCEEDED(Navigate2(pFolderItem, GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]), param, pFolderItems, m_pFolderItem, this)) && m_bVisible) {
-							Show(TRUE);
+							Show(TRUE, FALSE);
 						}
 					}
 				}
@@ -12302,8 +12304,7 @@ STDMETHODIMP CteShellBrowser::OnNavigationFailed(PCIDLIST_ABSOLUTE pidlFolder)
 			v.bstrVal = bs;
 			CteFolderItem *pid = new CteFolderItem(&v);
 			VariantClear(&v);
-			pid->m_bStopgap = TRUE;
-			m_bStopgap = TRUE;
+			pid->m_bNotExist = TRUE;
 			teILCloneReplace(&pid->m_pidl, g_pidlResultsFolder);
 			m_pFolderItem->Release();
 			BrowseObject2(pid, SBSP_SAMEBROWSER | SBSP_ABSOLUTE);
@@ -12680,7 +12681,7 @@ STDMETHODIMP CteShellBrowser::GetCurFolder(PIDLIST_ABSOLUTE *ppidl)
 
 VOID CteShellBrowser::Suspend(BOOL bTree)
 {
-	if (!m_bStopgap) {
+	if (!m_bNotExist) {
 		SaveFocusedItemToHistory();
 		teDoCommand(this, m_hwnd, WM_NULL, 0, 0);//Save folder setings
 	}
@@ -12702,7 +12703,7 @@ VOID CteShellBrowser::Suspend(BOOL bTree)
 		}
 	}
 	m_nUnload = 9;
-	Show(bVisible);
+	Show(bVisible, FALSE);
 }
 
 VOID CteShellBrowser::SetPropEx()
@@ -12752,7 +12753,7 @@ VOID CteShellBrowser::ResetPropEx()
 	}
 }
 
-void CteShellBrowser::Show(BOOL bShow)
+void CteShellBrowser::Show(BOOL bShow, BOOL bSuspend)
 {
 	bShow &= 1;
 	if (bShow ^ m_bVisible && m_pTabs->m_bVisible) {
@@ -12799,7 +12800,7 @@ void CteShellBrowser::Show(BOOL bShow)
 				ShowWindow(m_hwnd, SW_HIDE);
 				MoveWindow(m_pTV->m_hwnd, -1, -1, 0, 0, false);
 				ShowWindow(m_pTV->m_hwnd, SW_HIDE);
-				if (m_bStopgap) {
+				if (bSuspend && m_bNotExist) {
 					Suspend(FALSE);
 				}
 			}
@@ -12835,8 +12836,7 @@ VOID CteShellBrowser::DestroyView(int nFlags)
 			IUnknown_SetSite(m_pExplorerBrowser, NULL);
 			m_pServiceProvider->Release();
 			m_pServiceProvider = NULL;
-			m_bStopgap = FALSE;
-			Show(false);
+			Show(FALSE, FALSE);
 			m_pExplorerBrowser->Destroy();
 			m_pExplorerBrowser->Release();
 		}
@@ -12847,8 +12847,7 @@ VOID CteShellBrowser::DestroyView(int nFlags)
 	}
 	if (m_pShellView) {
 		if ((nFlags & 1) == 0) {
-			m_bStopgap = FALSE;
-			Show(false);
+			Show(FALSE, FALSE);
 			IUnknown_SetSite(m_pShellView, NULL);
 			m_pShellView->DestroyViewWindow();
 		}
@@ -13575,7 +13574,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 							if (pTC->m_bVisible) {
 								CteShellBrowser *pSB = pTC->GetShellBrowser(pTC->m_nIndex);
 								if (pSB && !pSB->m_bEmpty && pSB->m_nUnload & 5) {
-									pSB->Show(TRUE);
+									pSB->Show(TRUE, FALSE);
 								}
 							}
 						}
@@ -14573,7 +14572,7 @@ VOID CteTabs::Show(BOOL bVisible)
 			for (int i = TabCtrl_GetItemCount(m_hwnd); i--;) {
 				CteShellBrowser *pSB = GetShellBrowser(i);
 				if (pSB) {
-					pSB->Show(FALSE);
+					pSB->Show(FALSE, TRUE);
 				}
 			}
 		}
@@ -18229,7 +18228,7 @@ CteFolderItem::CteFolderItem(VARIANT *pv)
 	m_pFolderItem = NULL;
 	m_bStrict = FALSE;
 	m_pidlFocused = NULL;
-	m_bStopgap = FALSE;
+	m_bNotExist = FALSE;
 	VariantInit(&m_v);
 	if (pv) {
 		VariantCopy(&m_v, pv);

@@ -1,4 +1,4 @@
-/* Tag */
+@charset "ISO-8859-1";
 
 * {
 	box-sizing: border-box;
@@ -47,15 +47,13 @@ input, select {
 	font-size: inherit;
 }
 
-/* Class */
-
 .button {
 	display: inline-block;
 	padding: 1px 1px;
 	text-decoration: none;
 	color: black;
 	cursor: default;
-	outline-style: none;
+	outline: 0px;
 	white-space: nowrap;
 	vertical-align: middle;
 }
@@ -67,7 +65,7 @@ input, select {
 	background-color: #E5EBEF;
 	border: 1px solid #7F9DB9;
 	padding: 0px;
-	outline-style: none;
+	outline: 0px;
 	white-space: nowrap;
 	vertical-align: middle;
 }
@@ -76,14 +74,14 @@ a:hover.button {
 	background-color: #E5EBEF;
 	border: 1px solid #7F9DB9;
 	padding: 0px;
-	outline-style: none;
+	outline: 0px;
 }
 a:active.button {
 	display: inline-block;
 	background-color: #E5EBEF;
 	border: 1px solid #7F9DB9;
 	padding: 0px;
-	outline-style: none;
+	outline: 0px;
 }
 .menu {
 	display: inline-block;
@@ -111,7 +109,6 @@ a:hover.menu {
 }
 a:active.menu {
 	display: inline-block;
-	background-color:;
 	border: none;
 	padding: 1px 5px;
 }
@@ -181,36 +178,53 @@ a:active.menu {
 .tab {
 	border: 1px solid #898C95;
 	background-color: #dddddd;
-	outline-style: none;
 	font-size: inherit;
 	height: 2em;
-	filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#cccccc);
-	background: linear-gradient(to bottom, #ffffff, #cccccc);
 	vertical-align: bottom;
+	outline: 0px;
+	cursor: default;
+	white-space: nowrap;
+	background: linear-gradient(to bottom, #ffffff, #cccccc);
+	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#cccccc)";
 }
+
 .tab2 {
 	border: 1px solid #898C95;
 	background-color: #dddddd;
-	outline-style: none;
 	font-size: inherit;
 	height: 2em;
-	filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#cccccc);
-	background: linear-gradient(to bottom, #ffffff, #cccccc);
 	vertical-align: bottom;
+	outline: 0px;
+	cursor: default;
+	white-space: nowrap;
+	background: linear-gradient(to bottom, #ffffff, #cccccc);
+	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#cccccc)";
 }
+
 .activetab {
 	border: 1px solid #898C95;
 	background-color: #ffffff;
 	font-size: inherit;
 	height: 2.167em;
-	outline-style: none;
 	vertical-align: bottom;
+	outline: 0px;
+	cursor: default;
+	white-space: nowrap;
 }
+
 .treebutton {
 	border: 1px solid gray;
 	font-size: 0.667em;
 	font-family: Consolas;
 	margin-right: 3px;
-	filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#dddddd);
 	background: linear-gradient(to bottom, #ffffff, #dddddd);
+	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#dddddd)";
+}
+
+.ok {
+	min-width: 96px;
+}
+
+.cancel {
+	min-width: 96px;
 }

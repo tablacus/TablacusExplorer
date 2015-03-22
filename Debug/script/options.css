@@ -1,4 +1,4 @@
-/* Tag */
+@charset "ISO-8859-1";
 
 * {
 	box-sizing: border-box;
@@ -7,8 +7,8 @@
 body {
 	overflow: hidden;
 	background-color: buttonface;
-	margin: 0px;
 	padding: 0px;
+	margin: 0px;
 }
 
 table {
@@ -40,27 +40,41 @@ select {
 	font-size: inherit;
 }
 
-/* Class */
-
 .tab {
-	border-top: 1px solid #898C95;
-	border-left: 1px solid #898C95;
-	border-right: 1px solid #898C95;
-	border-bottom: 0px solid #898C95;
+	border: 1px solid #898C95;
 	background-color: #dddddd;
-	outline-style: none;
+	font-size: inherit;
 	height: 2em;
-	filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#cccccc);
+	vertical-align: bottom;
+	outline: 0px;
+	cursor: default;
+	white-space: nowrap;
 	background: linear-gradient(to bottom, #ffffff, #cccccc);
+	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#cccccc)";
 }
+
+.tab2 {
+	border: 1px solid #898C95;
+	background-color: #dddddd;
+	font-size: inherit;
+	height: 2em;
+	vertical-align: bottom;
+	outline: 0px;
+	cursor: default;
+	white-space: nowrap;
+	background: linear-gradient(to bottom, #ffffff, #cccccc);
+	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#cccccc)";
+}
+
 .activetab {
-	border-top: 1px solid #898C95;
-	border-left: 1px solid #898C95;
-	border-right: 1px solid #898C95;
-	border-bottom: 0px solid #898C95;
+	border: 1px solid #898C95;
 	background-color: #ffffff;
+	font-size: inherit;
 	height: 2.167em;
-	outline-style: none;
+	vertical-align: bottom;
+	outline: 0px;
+	cursor: default;
+	white-space: nowrap;
 }
 
 .panel {
@@ -71,16 +85,19 @@ select {
 	overflow-y: auto;
 	clear:both;
 }
+
 .color {
 	border: 1px solid #7F9DB9;
 	width: 24px;
 }
+
 .block {
 	padding: 8px;
 	border: 1px solid gray;
 	margin-bottom: 8px;
 	display: block;
 }
+
 .group {
 	padding: 8px;
 	border-left: 1px solid gray;
@@ -89,12 +106,15 @@ select {
 	margin-bottom: 8px;
 	display: none;
 }
+
 .groupbutton {
 	width: 100%;
 }
+
 .oddline {
 	background-color: #dddddd;
 }
+
 .layout {
 	width: 100%;
 	padding: 0px;
@@ -104,15 +124,19 @@ select {
 	overflow: hidden;
 	border-spacing: 0;
 }
+
 .input {
 	font-size: inherit;
 }
+
 .color {
 	border-radius: 2px;
 }
+
 .window {
 	border: 1px solid #898C95;
 }
+
 .window td {
 	border: 1px solid #898C95;
 }
@@ -123,10 +147,11 @@ select {
 	text-decoration: none;
 	color: black;
 	cursor: default;
-	outline-style: none;
+	outline: 0px;
 	white-space: nowrap;
 	vertical-align: middle;
 }
+
 .hoverbutton {
 	display: inline-block;
 	text-decoration: none;
@@ -135,23 +160,26 @@ select {
 	background-color: #E5EBEF;
 	border: 1px solid #7F9DB9;
 	padding: 0px;
-	outline-style: none;
+	outline: 0px;
 	white-space: nowrap;
 	vertical-align: middle;
 }
+
 .treebutton {
 	border: 1px solid gray;
 	font-size: 0.667em;
 	font-family: Consolas;
 	padding: 0px 1px;
 	margin-right: 3px;
-	filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#dddddd);
-	background: linear-gradient(to bottom, #ffffff, #dddddd);
 	cursor: default;
+	background: linear-gradient(to bottom, #ffffff, #dddddd);
+	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#dddddd)";
 }
+
 .ok {
 	min-width: 96px;
 }
+
 .cancel {
 	min-width: 96px;
 }

@@ -1,6 +1,7 @@
 //Tablacus Explorer
 
 te.ClearEvents();
+te.LockUpdate();
 g_Bar = "";
 Addon = 1;
 Init = false;
@@ -609,7 +610,6 @@ DisableImage = function (img, bDisable)
 te.OnCreate = function (Ctrl)
 {
 	if (Ctrl.Type == CTRL_TE) {
-		te.LockUpdate();
 		if (xmlWindow && api.StrCmpI(typeof(xmlWindow), "string")) {
 			LoadXml(xmlWindow);
 		}
@@ -642,7 +642,6 @@ te.OnCreate = function (Ctrl)
 					ChangeView(cTC[i].Selected);
 				}
 			}
-			te.UnlockUpdate();
 			api.ShowWindow(te.hwnd, te.CmdShow);
 		}, 99);
 		RunEvent1("Create", Ctrl);
@@ -1840,18 +1839,12 @@ KeyExecEx = function (Ctrl, mode, nKey, hwnd)
 
 function InitMouse()
 {
-	if (!isFinite(te.Data.Conf_Gestures)) {
-		te.Data.Conf_Gestures = 2;
-	}
+	te.Data.Conf_Gestures = isFinite(te.Data.Conf_Gestures) ? api.QuadPart(te.Data.Conf_Gestures) : 2;
 	if (!isFinite(te.Data.Conf_TrailColor)) {
 		te.Data.Conf_TrailColor = 0xff00;
 	}
-	if (!isFinite(te.Data.Conf_TrailSize)) {
-		te.Data.Conf_TrailSize = 2;
-	}
-	if (!isFinite(te.Data.Conf_GestureTimeout)) {
-		te.Data.Conf_GestureTimeout = 3000;
-	}
+	te.Data.Conf_TrailSize = isFinite(te.Data.Conf_TrailSize) ? api.QuadPart(te.Data.Conf_TrailSize) : 2;
+	te.Data.Conf_GestureTimeout = isFinite(te.Data.Conf_GestureTimeout) ? api.QuadPart(te.Data.Conf_GestureTimeout) : 3000;
 }
 
 g_mouse = 
@@ -2894,3 +2887,7 @@ InitMouse();
 InitMenus();
 LoadLang();
 ArrangeAddons();
+setTimeout(function ()
+{
+	te.UnlockUpdate();
+}, 99);

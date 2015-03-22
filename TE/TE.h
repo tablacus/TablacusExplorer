@@ -370,7 +370,7 @@ public:
 	LPITEMIDLIST	m_pidlFocused;
 	int				m_nSelected;
 	BOOL			m_bStrict;
-	BOOL			m_bStopgap;
+	BOOL			m_bNotExist;
 private:
 	LONG			m_cRef;
 };
@@ -790,7 +790,7 @@ public:
 
 	void Init(CteTabs *pTabs, BOOL bNew);
 	void Clear();
-	void Show(BOOL bShow);
+	void Show(BOOL bShow, BOOL bSuspend);
 	VOID Suspend(BOOL bTree);
 	VOID SetPropEx();
 	VOID ResetPropEx();
@@ -894,7 +894,7 @@ private:
 	HRESULT		m_DragLeave;
 	LONG		m_nCreate;
 	BOOL		m_bIconSize;
-	BOOL		m_bStopgap;
+	BOOL		m_bNotExist;
 	BOOL		m_bNavigateComplete;
 #ifdef _2000XP
 	IShellFolderViewCB	*m_pSFVCB;

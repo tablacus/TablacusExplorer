@@ -341,23 +341,13 @@ function ApplyLang(doc)
 function amp2ul(s)
 {
 	s = s.replace(/&amp;/ig, "&");
-	if (s.match(";")) {
-		return s;
-	}
-	else {
-		return s.replace(/&(.)/ig, "<u>$1</u>");
-	}
+	return /;/.test(s) ? s : s.replace(/&(.)/ig, "<u>$1</u>");
 }
 
 function delamp(s)
 {
 	s = s.replace(/&amp;/ig, "&");
-	if (s.match(";")) {
-		return s;
-	}
-	else {
-		return s.replace(/&/ig, "");
-	}
+	return /;/.test(s) ? s : s.replace(/&/ig, "");
 }
 
 function ImgBase64(o, index)
