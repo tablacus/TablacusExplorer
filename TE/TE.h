@@ -245,6 +245,10 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *
 #define teSetPtr(pVar, nData)	teSetLong(pVar, (LONG)nData)
 #endif
 
+#ifdef _2000XP
+#define CommandID_GROUP 0x7601
+#endif
+
 struct TEmethod
 {
 	LONG   id;
@@ -809,6 +813,8 @@ public:
 	void InitializeMenuItem(HMENU hmenu, LPTSTR lpszItemName, int nId, HMENU hmenuSub);
 	VOID GetSort(BSTR* pbs, int nFormat);
 	VOID SetSort(BSTR bs);
+	VOID GetGroupBy(BSTR* pbs);
+	VOID SetGroupBy(BSTR bs);
 	HRESULT SetRedraw(BOOL bRedraw);
 	HRESULT CreateViewWindowEx(IShellView *pPreviousView);
 	VOID SetColumnsStr(BSTR bsColumns);

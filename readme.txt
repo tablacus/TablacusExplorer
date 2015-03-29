@@ -14,6 +14,9 @@ Patricio M. Ros
 Deutsch / German
 LightTempler
 
+Português / Portuguese
+Sérgio Nova
+
 //Documents
 https://www.penflip.com/LightTempler/tablacus-explorer
 

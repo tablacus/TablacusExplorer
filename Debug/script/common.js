@@ -2239,11 +2239,9 @@ OpenInExplorer = function (FV)
 			doc.CurrentViewMode = FV.CurrentViewMode;
 			if (doc.IconSize) {
 				doc.IconSize = FV.IconSize;
+				doc.SortColumns = FV.SortColumns;
+				doc.GroupBy = FV.GroupBy.replace(/^-/, "");
 			}
-		}
-		catch (e) {}
-		try {
-			doc.SortColumns = FV.SortColumns;
 		}
 		catch (e) {}
 		try {

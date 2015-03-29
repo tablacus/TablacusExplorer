@@ -860,6 +860,7 @@ TEmethod methodSB[] = {
 	{ 0x10000102, L"hwndList" },
 	{ 0x10000103, L"hwndView" },
 	{ 0x10000104, L"SortColumn" },
+	{ 0x10000105, L"GroupBy" },
 	{ 0x10000106, L"Focus" },
 	{ 0x10000107, L"HitTest" },
 	{ 0x10000110, L"ItemCount" },
@@ -3022,6 +3023,21 @@ HRESULT STDAPICALLTYPE tePSPropertyKeyFromStringXP(__in LPCWSTR pszString,  __ou
 		pPUI->Release();
 	}
 	return hr;
+}
+
+VOID teStripAmp(LPWSTR lpstr)
+{
+	LPWSTR lp1 = lpstr;
+	WCHAR wc;
+	while (wc = *lp1 = *(lpstr++)) {
+		if (wc == '(') {
+			*lp1 = NULL;
+			return;
+		}
+		if (wc != '&') {
+			lp1++;
+		}
+	}
 }
 
 #endif
@@ -11562,6 +11578,18 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					GetSort(&pVarResult->bstrVal, nFormat);
 				}
 				return S_OK;
+			//GroupBy
+			case 0x10000105:
+				if (nArg >= 0) {
+					if (pDispParams->rgvarg[nArg].vt == VT_BSTR) {
+						SetGroupBy(pDispParams->rgvarg[nArg].bstrVal);
+					}
+				}
+				if (pVarResult) {
+					pVarResult->vt = VT_BSTR;
+					GetGroupBy(&pVarResult->bstrVal);
+				}
+				return S_OK;
 			//Focus
 			case 0x10000106:
 				SetActive(TRUE);
@@ -12929,6 +12957,60 @@ VOID CteShellBrowser::GetSort(BSTR* pbs, int nFormat)
 #endif
 }
 
+VOID CteShellBrowser::GetGroupBy(BSTR* pbs)
+{
+	*pbs = NULL;
+	if (!m_pShellView) {
+		return;
+	}
+	IFolderView2 *pFV2;
+	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
+		PROPERTYKEY propKey;
+		BOOL fAscending;
+		if SUCCEEDED(pFV2->GetGroupBy(&propKey, &fAscending)) {
+			*pbs = tePSGetNameFromPropertyKeyEx(propKey, 1);
+			if (!fAscending) {
+				ToMinus(pbs);
+			}
+		}
+		pFV2->Release();
+		return;
+	}
+#ifdef _2000XP
+	if (SendMessage(m_hwndLV, LVM_ISGROUPVIEWENABLED, 0, 0)) {
+		IContextMenu *pCM;
+		if SUCCEEDED(m_pShellView->GetItemObject(SVGIO_BACKGROUND, IID_PPV_ARGS(&pCM))) {
+			HMENU hMenu = CreatePopupMenu();
+			pCM->QueryContextMenu(hMenu, 0, 1, 0x7fff, CMF_DEFAULTONLY);
+			WCHAR szName[MAX_COLUMN_NAME_LEN];
+			MENUITEMINFO mii;
+			::ZeroMemory(&mii, sizeof(MENUITEMINFO));
+			mii.cbSize = sizeof(MENUITEMINFO);
+			mii.fMask  = MIIM_SUBMENU;
+			GetMenuItemInfo(hMenu, 2, TRUE, &mii);
+			int wID = mii.wID;
+			HMENU hSubMenu = mii.hSubMenu;
+			int nCount = GetMenuItemCount(hSubMenu);
+			mii.fMask = MIIM_STATE | MIIM_STRING;
+			mii.dwTypeData = szName;
+			mii.cch = MAX_COLUMN_NAME_LEN;
+			for (int i = 0; i < nCount; i++) {
+				GetMenuItemInfo(hSubMenu, i, TRUE, &mii);
+				if (mii.fState & MFS_CHECKED) {
+					teStripAmp(szName);
+					*pbs = ::SysAllocString(szName);
+					break;
+				}
+			}
+			DestroyMenu(hMenu);
+			pCM->Release();
+		}
+		return;
+	}
+	*pbs = ::SysAllocString(L"System.Null");
+#endif
+}
+
 HRESULT CteShellBrowser::PropertyKeyFromName(BSTR bs, PROPERTYKEY *pkey)
 {
 	HRESULT hr = tePSPropertyKeyFromStringEx(bs, pkey);
@@ -13004,6 +13086,10 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 		return;
 	}
 #ifdef _2000XP
+	BOOL bGroup = SendMessage(m_hwndLV, LVM_ISGROUPVIEWENABLED, 0, 0);
+	if (bGroup) {
+		SendMessage(m_hwndDV, WM_COMMAND, CommandID_GROUP, 0);
+	}
 	BSTR bsName = NULL;
 	PROPERTYKEY propKey;
 	if SUCCEEDED(lpfnPSPropertyKeyFromStringEx(szNew, &propKey)) {
@@ -13034,6 +13120,66 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 		}
 		::SysFreeString(bs1);
 		teSysFreeString(&bsName);
+	}
+	if (bGroup) {
+		SendMessage(m_hwndDV, WM_COMMAND, CommandID_GROUP, 0);
+	}
+#endif
+}
+
+VOID CteShellBrowser::SetGroupBy(BSTR bs)
+{
+	IFolderView2 *pFV2;
+
+	PROPERTYKEY propKey;
+	int dir = (bs[0] == '-') ? 1 : 0;
+	LPWSTR szNew = &bs[dir];
+	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
+		if SUCCEEDED(PropertyKeyFromName(szNew, &propKey)) {
+			pFV2->SetGroupBy(propKey, !dir);
+		}
+		pFV2->Release();
+		return;
+	}
+#ifdef _2000XP
+	if (szNew[0] && lstrcmpi(szNew, L"System.Null")) {
+		if (!SendMessage(m_hwndLV, LVM_ISGROUPVIEWENABLED, 0, 0)) {
+			SendMessage(m_hwndDV, WM_COMMAND, CommandID_GROUP, 0);
+		}
+		IContextMenu *pCM;
+		if SUCCEEDED(m_pShellView->GetItemObject(SVGIO_BACKGROUND, IID_PPV_ARGS(&pCM))) {
+			HMENU hMenu = CreatePopupMenu();
+			pCM->QueryContextMenu(hMenu, 0, 1, 0x7fff, CMF_DEFAULTONLY);
+			MENUITEMINFO mii;
+			::ZeroMemory(&mii, sizeof(MENUITEMINFO));
+			mii.cbSize = sizeof(MENUITEMINFO);
+			mii.fMask  = MIIM_SUBMENU | MIIM_ID;
+			GetMenuItemInfo(hMenu, 2, TRUE, &mii);
+			int wID = mii.wID;
+			HMENU hSubMenu = mii.hSubMenu;
+			int nCount = GetMenuItemCount(hSubMenu);
+			for (int i = 0; i < nCount; i++) {
+				WCHAR szName[MAX_COLUMN_NAME_LEN];
+				mii.fMask = MIIM_ID | MIIM_STRING;
+				mii.cch = MAX_COLUMN_NAME_LEN;
+				mii.dwTypeData = szName;
+				GetMenuItemInfo(hSubMenu, i, TRUE, &mii);
+				teStripAmp(szName);
+				if (lstrcmpi(szName, szNew) == 0) {
+					CMINVOKECOMMANDINFO cmi;
+					::ZeroMemory(&cmi, sizeof(CMINVOKECOMMANDINFO));
+					cmi.cbSize = sizeof(CMINVOKECOMMANDINFO);
+					cmi.lpVerb = (LPCSTR)(mii.wID - 1);
+					pCM->InvokeCommand(&cmi);
+					break;
+				}
+			}
+			DestroyMenu(hMenu);
+			pCM->Release();
+		}
+	}
+	else if (SendMessage(m_hwndLV, LVM_ISGROUPVIEWENABLED, 0, 0)) {
+		SendMessage(m_hwndDV, WM_COMMAND, CommandID_GROUP, 0);
 	}
 #endif
 }
