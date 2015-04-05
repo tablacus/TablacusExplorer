@@ -569,7 +569,24 @@
               <label for="View_ViewMode=7">Thumbstrip</label>(*)
               <input type="radio" name="View_ViewMode_" id="View_ViewMode=8" onclick="SetRadio(this)" />
               <label for="View_ViewMode=8">Content</label>(*7)
-
+              <br /><br />
+              <label>Explorer Browser</label>(*7)<br />
+              <input type="text" name="Conf_Layout" style="display: none" />
+              <input type="checkbox" id="Conf_Layout:0x1" onclick="SetCheckbox(this)" />
+              <label for="Conf_Layout:0x1">Icon</label>
+              <input type="checkbox" id="Conf_Layout:0x2" onclick="SetCheckbox(this)" />
+              <label for="Conf_Layout:0x2">Small icon</label>
+              <input type="checkbox" id="Conf_Layout:0x4" onclick="SetCheckbox(this)" />
+              <label for="Conf_Layout:0x4">List</label>
+              <input type="checkbox" id="Conf_Layout:0x8" onclick="SetCheckbox(this)" />
+              <label for="Conf_Layout:0x8">Details</label>
+              <br />
+              <input type="checkbox" id="Conf_Layout:0x20" onclick="SetCheckbox(this)" />
+              <label for="Conf_Layout:0x20">Tile</label>
+              <input type="checkbox" id="Conf_Layout:0x40" onclick="SetCheckbox(this)" />
+              <label for="Conf_Layout:0x40">Thumbstrip</label>
+              <input type="checkbox" id="Conf_Layout:0x80" onclick="SetCheckbox(this)" />
+              <label for="Conf_Layout:0x80">Content</label>
               <br /><br />
               <label>Style</label><br />
               <input type="hidden" name="View_fFlags" />

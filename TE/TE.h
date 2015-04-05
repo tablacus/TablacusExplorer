@@ -1,5 +1,10 @@
 #pragma once
 
+//#define _USE_BSEARCHAPI
+//#define _USE_APIHOOK
+//#define _USE_HTMLDOC
+//#define _USE_TESTOBJECT
+
 #include "resource.h"
 #include <Mshtml.h>
 #include <mshtmhst.h>
@@ -23,7 +28,9 @@
 #include <CommonControls.h>
 #include <UIAutomationClient.h>
 #include <UIAutomationCore.h>
-
+#ifdef _USE_APIHOOK
+#include <imagehlp.h>
+#endif
 using namespace Gdiplus;
 
 #import <shdocvw.dll> exclude("OLECMDID", "OLECMDF", "OLECMDEXECOPT", "tagREADYSTATE") auto_rename
@@ -33,7 +40,9 @@ using namespace Gdiplus;
 #pragma comment(lib, "gdiplus.lib")
 #pragma comment(lib, "urlmon.lib")
 #pragma comment(lib, "imm32.lib")
-
+#ifdef _USE_APIHOOK
+#pragma comment(lib, "imagehlp.lib")
+#endif
 #ifdef _WIN64
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #else
@@ -41,9 +50,6 @@ using namespace Gdiplus;
 #define _2000XP
 #define _W2000
 #endif
-//#define _USE_BSEARCHAPI
-//#define _USE_HTMLDOC
-//#define _USE_TESTOBJECT
 
 class CteShellBrowser;
 class CteTreeView;
@@ -88,6 +94,11 @@ typedef NTSTATUS (WINAPI* LPFNRtlGetVersion)(PRTL_OSVERSIONINFOEXW lpVersionInfo
 //DLL
 typedef HRESULT (STDAPICALLTYPE * LPFNDllGetClassObject)(REFCLSID rclsid, REFIID riid, LPVOID* ppv);
 typedef HRESULT (STDAPICALLTYPE * LPFNDllCanUnloadNow)(void);
+
+#ifdef _USE_APIHOOK
+//API Hook
+typedef LSTATUS (APIENTRY* LPFNRegQueryValueExW)(HKEY hKey, LPCWSTR lpValueName, LPDWORD lpReserved, LPDWORD lpType, LPBYTE lpData, LPDWORD lpcbData);
+#endif
 
 //Tablacus DLL Add-ons
 typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
@@ -196,8 +207,10 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *
 #define TE_Bottom	4
 #define TE_Flags	5
 #define TE_Tab		5
-#define TE_Align	6
 #define TE_CmdShow	6
+#define TE_Layout	7
+
+#define TC_Align	6
 #define TC_TabWidth		7
 #define TC_TabHeight	8
 
@@ -465,7 +478,7 @@ public:
 	~CTE();
 public:
 	VARIANT m_vData;
-	int		m_param[7];
+	int		m_param[8];
 	BOOL	m_bDrop;
 private:
 	CteFolderItems *m_pDragItems;

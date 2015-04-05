@@ -41,6 +41,9 @@ LPFNChangeWindowMessageFilter lpfnChangeWindowMessageFilter = NULL;
 LPFNChangeWindowMessageFilterEx lpfnChangeWindowMessageFilterEx = NULL;
 LPFNRtlGetVersion lpfnRtlGetVersion = NULL;
 LPFNSHTestTokenMembership lpfnSHTestTokenMembership = NULL;
+#ifdef _USE_APIHOOK
+LPFNRegQueryValueExW lpfnRegQueryValueExW = NULL;
+#endif
 
 LPITEMIDLIST g_pidlCP = NULL;
 FORMATETC HDROPFormat = {CF_HDROP, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
@@ -793,6 +796,7 @@ TEmethod methodTE[] = {
 	{ TE_OFFSET + TE_Bottom , L"offsetBottom" },
 	{ TE_OFFSET + TE_Tab, L"Tab" },
 	{ TE_OFFSET + TE_CmdShow, L"CmdShow" },
+	{ TE_OFFSET + TE_Layout, L"Layout" },
 	{ START_OnFunc + TE_Labels, L"Labels" },
 	{ START_OnFunc + TE_OnBeforeNavigate, L"OnBeforeNavigate" },
 	{ START_OnFunc + TE_OnViewCreated, L"OnViewCreated" },
@@ -912,7 +916,7 @@ TEmethod methodTC[] = {
 	{ TE_OFFSET + TE_Width, L"Width" },
 	{ TE_OFFSET + TE_Height, L"Height" },
 	{ TE_OFFSET + TE_Flags, L"Style" },
-	{ TE_OFFSET + TE_Align, L"Align" },
+	{ TE_OFFSET + TC_Align, L"Align" },
 	{ TE_OFFSET + TC_TabWidth, L"TabWidth" },
 	{ TE_OFFSET + TC_TabHeight, L"TabHeight" },
 	{ 0, NULL }
@@ -1828,15 +1832,11 @@ BOOL teILIsSearchPath(LPITEMIDLIST pidl)
 
 FOLDERVIEWOPTIONS teGetFolderViewOptions(LPITEMIDLIST pidl, UINT uViewMode)
 {
-	if (teILIsSearchPath(pidl) && !teILIsFileSystem(pidl)) {
-		if (uViewMode == FVM_DETAILS) {
-			return FVO_VISTALAYOUT;
-		}
+	UINT uFlag = 1;
+	while (--uViewMode > 0) {
+		uFlag *= 2;
 	}
-	else if (uViewMode < FVM_THUMBSTRIP) {
-		return FVO_VISTALAYOUT;
-	}
-	return FVO_DEFAULT;
+	return uFlag & g_pTE->m_param[TE_Layout] ? FVO_DEFAULT : FVO_VISTALAYOUT;
 }
 
 void GetVarPathFromIDList(VARIANT *pVarResult, LPITEMIDLIST pidl, int uFlags)
@@ -2929,6 +2929,13 @@ LPITEMIDLIST* IDListFormDataObj(IDataObject *pDataObj, long *pnCount)
 	}
 	return ppidllist;
 }
+
+#ifdef _USE_APIHOOK
+LSTATUS APIENTRY teRegQueryValueExW(HKEY hKey, LPCWSTR lpValueName, LPDWORD lpReserved, LPDWORD lpType, LPBYTE lpData, LPDWORD lpcbData)
+{
+	return lpfnRegQueryValueExW(hKey, lpValueName, lpReserved, lpType, lpData, lpcbData);
+}
+#endif
 
 #ifdef _2000XP
 HRESULT STDAPICALLTYPE teGetIDListFromObjectXP(IUnknown *punk, PIDLIST_ABSOLUTE *ppidl)
@@ -4655,7 +4662,7 @@ VOID teSetTabWidth(CteTabs *pTC, LPARAM lParam)
 	GetWindowRect(pTC->m_hwndStatic, &rc);
 	int nMax = rc.right - rc.left - 1;
 	int nDiff = GET_X_LPARAM(lParam) - g_x;
-	nWidth += (pTC->m_param[TE_Align] == 4) ? nDiff : -nDiff;
+	nWidth += (pTC->m_param[TC_Align] == 4) ? nDiff : -nDiff;
 	if (nWidth > nMax) {
 		nWidth = nMax;
 	}
@@ -4714,8 +4721,8 @@ LRESULT TETCProc2(CteTabs *pTC, HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 	LRESULT Result = 1;
 	switch (msg) {
 		case WM_LBUTTONDOWN:
-			if ((pTC->m_param[TE_Align] == 4 && WORD(lParam) >= pTC->m_param[TC_TabWidth] - pTC->m_nScrollWidth - 2 && WORD(lParam) < pTC->m_param[TC_TabWidth]) ||
-				(pTC->m_param[TE_Align] == 5 && WORD(lParam) < 2)) {
+			if ((pTC->m_param[TC_Align] == 4 && WORD(lParam) >= pTC->m_param[TC_TabWidth] - pTC->m_nScrollWidth - 2 && WORD(lParam) < pTC->m_param[TC_TabWidth]) ||
+				(pTC->m_param[TC_Align] == 5 && WORD(lParam) < 2)) {
 				SetCapture(hwnd);
 				g_x = GET_X_LPARAM(lParam);
 				SetCursor(LoadCursor(NULL, IDC_SIZEWE));
@@ -4727,13 +4734,13 @@ LRESULT TETCProc2(CteTabs *pTC, HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 			break;
 		case WM_MOUSEMOVE:
 			if (g_x == MAXINT) {
-				if ((pTC->m_param[TE_Align] == 4 && WORD(lParam) >= pTC->m_param[TC_TabWidth] - pTC->m_nScrollWidth - 2 && WORD(lParam) < pTC->m_param[TC_TabWidth]) ||
-					(pTC->m_param[TE_Align] == 5 && WORD(lParam) < 2)) {
+				if ((pTC->m_param[TC_Align] == 4 && WORD(lParam) >= pTC->m_param[TC_TabWidth] - pTC->m_nScrollWidth - 2 && WORD(lParam) < pTC->m_param[TC_TabWidth]) ||
+					(pTC->m_param[TC_Align] == 5 && WORD(lParam) < 2)) {
 					SetCursor(LoadCursor(NULL, IDC_SIZEWE));
 				}
 			}
 			else {
-				if (pTC->m_param[TE_Align] == 4) {
+				if (pTC->m_param[TC_Align] == 4) {
 					teSetTabWidth(pTC, lParam);
 				}
 				Result = 0;
@@ -4884,7 +4891,7 @@ LRESULT CALLBACK TETCProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					CallWindowProc(pTC->m_DefTCProc, hwnd, msg, wParam, lParam);
 					Result = 0;
 					pTC->TabChanged(true);
-					if (g_pTE->m_param[TE_Tab] && pTC->m_param[TE_Align] == 1) {
+					if (g_pTE->m_param[TE_Tab] && pTC->m_param[TC_Align] == 1) {
 						if (pTC->m_param[TE_Flags] & TCS_SCROLLOPPOSITE) {
 							ArrangeWindow();
 						}
@@ -8010,7 +8017,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 							Invoke4(g_pOnFunc[TE_OnArrange], NULL, 2, pv);
 						}
 						if (!pTC->m_bEmpty && pTC->m_bVisible) {
-							int nAlign = g_pTE->m_param[TE_Tab] ? pTC->m_param[TE_Align] : 0;
+							int nAlign = g_pTE->m_param[TE_Tab] ? pTC->m_param[TC_Align] : 0;
 							if (rc.left) {
 								rc.left++;
 							}
@@ -8530,7 +8537,41 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		lpfnCryptBinaryToStringW = (LPFNCryptBinaryToStringW)GetProcAddress(g_hCrypt32, "CryptBinaryToStringW");
 	}
 	SysFreeString(bsLib);
+// API Hook test
+#ifdef _USE_APIHOOK
+	tePathAppend(&bsLib, bsPath, L"advapi32.dll");
+	hDll = GetModuleHandle(bsLib);
+	if (hDll) {
+		lpfnRegQueryValueExW = (LPFNRegQueryValueExW)GetProcAddress(hDll, "RegQueryValueExW");
+	}
+	SysFreeString(bsLib);
 
+	tePathAppend(&bsLib, bsPath, L"comctl32.dll");
+	hDll = GetModuleHandle(NULL);
+	if (hDll) {
+		DWORD_PTR dwBase = (DWORD_PTR)hDll;
+		DWORD dwIdataSize, dwDummy;
+		PIMAGE_IMPORT_DESCRIPTOR pImgDesc = (PIMAGE_IMPORT_DESCRIPTOR)ImageDirectoryEntryToData((HMODULE)dwBase,
+			true, IMAGE_DIRECTORY_ENTRY_IMPORT, &dwIdataSize);
+		while(pImgDesc->Name) {
+			char *lpModule = (char*)(dwBase + pImgDesc->Name);
+			if (!_strcmpi(lpModule, "advapi32.dll")) {
+				PIMAGE_THUNK_DATA pIAT = (PIMAGE_THUNK_DATA)(dwBase + pImgDesc->FirstThunk);
+				while (pIAT->u1.Function) {
+					if ((LPFNRegQueryValueExW)pIAT->u1.Function == lpfnRegQueryValueExW) {
+						VirtualProtect(&pIAT->u1.Function, sizeof(pIAT->u1.Function), PAGE_EXECUTE_READWRITE, &dwDummy);
+						LPVOID NewProc = &teRegQueryValueExW;
+						WriteProcessMemory(GetCurrentProcess(), &pIAT->u1.Function, &NewProc, sizeof(pIAT->u1.Function), &dwDummy);
+						break;
+					}
+				}
+				break;
+			}
+			pImgDesc++;
+		}
+	}
+	SysFreeString(bsLib);
+#endif
 	SysFreeString(bsPath);
 
 	Initlize();
@@ -11914,6 +11955,12 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			case DISPID_COLUMNSCHANGED:
 				InitFolderSize();
 				return DoFunc(TE_OnColumnsChanged, this, S_OK);
+			case DISPID_CONTENTSCHANGED:
+				if (!m_hwndLV && m_pExplorerBrowser) {
+					SetRedraw(TRUE);
+					RedrawWindow(m_hwndDV, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+				}
+				return S_OK;
 			default:
 				if (dispIdMember >= START_OnFunc && dispIdMember < START_OnFunc + Count_SBFunc) {
 					if (wFlags & DISPATCH_METHOD) {
@@ -13268,6 +13315,7 @@ CTE::CTE(int nCmdShow)
 	::ZeroMemory(m_param, sizeof(m_param));
 	m_param[TE_Type] = CTRL_TE;
 	m_param[TE_CmdShow] = nCmdShow;
+	m_param[TE_Layout] = 0x80;
 	VariantInit(&m_vData);
 }
 
@@ -13779,7 +13827,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 					return S_OK;
 				}
 				//Type, offsetLeft etc.
-				else if (dispIdMember >= TE_OFFSET && dispIdMember <= TE_OFFSET + TE_CmdShow) {
+				else if (dispIdMember >= TE_OFFSET && dispIdMember <= TE_OFFSET + TE_Layout) {
 					if (nArg >= 0 && dispIdMember != TE_OFFSET) {
 						m_param[dispIdMember - TE_OFFSET] = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 						if (dispIdMember >= TE_OFFSET + TE_Left && dispIdMember <= TE_Bottom + TE_OFFSET) {
@@ -14687,7 +14735,7 @@ void CteTabs::Init()
 	m_param[TE_Width] = 100;
 	m_param[TE_Height] = 100;
 	m_param[TE_Flags] = TCS_FOCUSNEVER | TCS_HOTTRACK | TCS_MULTILINE | TCS_RAGGEDRIGHT | TCS_SCROLLOPPOSITE | TCS_TOOLTIPS;
-	m_param[TE_Align] = 0;
+	m_param[TC_Align] = 0;
 	m_param[TC_TabWidth] = 0;
 	m_param[TC_TabHeight] = 0;
 	m_nScrollWidth = 0;
@@ -14782,7 +14830,7 @@ DWORD CteTabs::GetStyle()
 {
 	DWORD dwStyle = WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | TCS_FOCUSNEVER | m_param[TE_Flags];
 	if ((dwStyle & (TCS_SCROLLOPPOSITE | TCS_BUTTONS)) == TCS_SCROLLOPPOSITE) {
-		if (m_param[TE_Align] == 4 || m_param[TE_Align] == 5) {
+		if (m_param[TC_Align] == 4 || m_param[TC_Align] == 5) {
 			dwStyle |= TCS_BUTTONS;
 		}
 	}
@@ -14790,7 +14838,7 @@ DWORD CteTabs::GetStyle()
 		if (dwStyle & TCS_SCROLLOPPOSITE) {
 			dwStyle &= ~TCS_SCROLLOPPOSITE;
 		}
-		if (dwStyle & TCS_BOTTOM && m_param[TE_Align] > 1) {
+		if (dwStyle & TCS_BOTTOM && m_param[TC_Align] > 1) {
 			dwStyle &= ~TCS_BOTTOM;
 		}
 	}
@@ -17467,16 +17515,16 @@ BOOL CteTreeView::Create()
 					{ NSTCS_SINGLECLICKEXPAND, TVS_TRACKSELECT },
 					{ NSTCS_FULLROWSELECT, TVS_FULLROWSELECT },
 					{ NSTCS_SPRINGEXPAND, TVS_SINGLEEXPAND },
-					{ NSTCS_HORIZONTALSCROLL, TVS_NOHSCROLL },//Reverse
+					{ NSTCS_HORIZONTALSCROLL, TVS_NOHSCROLL },//Opposite
 					//NSTCS_ROOTHASEXPANDO
 					{ NSTCS_SHOWSELECTIONALWAYS, TVS_SHOWSELALWAYS },
-					{ NSTCS_NOINFOTIP, TVS_INFOTIP },//Reverse
-					{ NSTCS_EVENHEIGHT, TVS_NONEVENHEIGHT },//Reverse
+					{ NSTCS_NOINFOTIP, TVS_INFOTIP },//Opposite
+					{ NSTCS_EVENHEIGHT, TVS_NONEVENHEIGHT },//Opposite
 					//NSTCS_NOREPLACEOPEN	= 0x800,
 					{ NSTCS_DISABLEDRAGDROP, TVS_DISABLEDRAGDROP },
 					//NSTCS_NOORDERSTREAM
 					{ NSTCS_BORDER, WS_BORDER },
-					{ NSTCS_NOEDITLABELS, TVS_EDITLABELS },//Reverse
+					{ NSTCS_NOEDITLABELS, TVS_EDITLABELS },//Opposite
 					//NSTCS_FADEINOUTEXPANDOS
 					//NSTCS_EMPTYTEXT
 					{ NSTCS_CHECKBOXES, TVS_CHECKBOXES },

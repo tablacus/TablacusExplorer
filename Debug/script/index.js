@@ -875,7 +875,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 	}
 	if (msg == WM_LBUTTONDOWN || msg == WM_RBUTTONDOWN || msg == WM_MBUTTONDOWN || msg == WM_XBUTTONDOWN) {
 		if (g_mouse.str.length == 0) {
-			te.Data.pt = pt;
+			te.Data.pt = pt.Clone();
 			g_mouse.ptGesture.x = pt.x;
 			g_mouse.ptGesture.y = pt.y;
 			g_mouse.hwndGesture = hwnd;
@@ -890,7 +890,8 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 				if (bLV) {
 					iItem = Ctrl.HitTest(pt);
 					if (iItem < 0) {
-						return S_OK;
+						api.ScreenToClient(hwnd, pt);
+						return pt.y < 32 ? S_FALSE : S_OK;
 					}
 				}
 				if (te.Data.Conf_Gestures == 3 && Ctrl.Type != CTRL_WB) {
@@ -903,7 +904,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 	}
 	if (msg == WM_LBUTTONDBLCLK || msg == WM_RBUTTONDBLCLK || msg == WM_MBUTTONDBLCLK || msg == WM_XBUTTONDBLCLK) {
 		if (api.StrCmpI(strClass, WC_HEADER)) {
-			te.Data.pt = pt;
+			te.Data.pt = pt.Clone();
 			g_mouse.str = g_mouse.GetButton(msg, wParam);
 			g_mouse.str += g_mouse.str;
 			var hr = g_mouse.Exec(Ctrl, hwnd, pt);
@@ -1845,6 +1846,8 @@ function InitMouse()
 	}
 	te.Data.Conf_TrailSize = isFinite(te.Data.Conf_TrailSize) ? api.QuadPart(te.Data.Conf_TrailSize) : 2;
 	te.Data.Conf_GestureTimeout = isFinite(te.Data.Conf_GestureTimeout) ? api.QuadPart(te.Data.Conf_GestureTimeout) : 3000;
+	te.Data.Conf_Layout = isFinite(te.Data.Conf_Layout) ? api.QuadPart(te.Data.Conf_Layout) : 0x80;
+	te.Layout = te.Data.Conf_Layout;
 }
 
 g_mouse = 
@@ -1902,7 +1905,7 @@ g_mouse =
 				}
 				else {
 					var ptc = api.Memory("POINT");
-					ptc = te.Data.pt.clone();
+					ptc = te.Data.pt.Clone();
 					api.ScreenToClient(this.hwndGesture, ptc);
 					api.SendMessage(this.hwndGesture, WM_RBUTTONDOWN, 0, ptc.x + (ptc.y << 16));
 				}
