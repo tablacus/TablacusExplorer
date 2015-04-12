@@ -741,11 +741,12 @@ function LoadMenus(nSelected)
 		oa.length = 0;
 
 		for (var j in g_arMenuTypes) {
-			document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", ['<select name="Menus_', g_arMenuTypes[j], '" size="17" style="width: 150px; height: 400px; display: none; font-family:', document.F.elements["Menus_Pos"].style.fontFamily, '" onclick="EditXEx(EditMenus)" ondblclick="EditMenus()" oncontextmenu="CancelX(\'Menus\')"></select>'].join(""));
-			var menus = teMenuGetElementsByTagName(g_arMenuTypes[j]);
+			var s = g_arMenuTypes[j];
+			document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", ['<select name="Menus_', s, '" size="17" style="width: 150px; height: 400px; display: none; font-family:', document.F.elements["Menus_Pos"].style.fontFamily, '" onclick="EditXEx(EditMenus)" ondblclick="EditMenus()" oncontextmenu="CancelX(\'Menus\')"></select>'].join(""));
+			var menus = teMenuGetElementsByTagName(s);
 			if (menus && menus.length) {
-				oa[++oa.length - 1].value = g_arMenuTypes[j] + "," + menus[0].getAttribute("Base") + "," + menus[0].getAttribute("Pos");
-				var o = document.F.elements["Menus_" + g_arMenuTypes[j]];
+				oa[++oa.length - 1].value = s + "," + menus[0].getAttribute("Base") + "," + menus[0].getAttribute("Pos");
+				var o = document.F.elements["Menus_" + s];
 				var items = menus[0].getElementsByTagName("Item");
 				if (items) {
 					var i = items.length;
@@ -757,9 +758,9 @@ function LoadMenus(nSelected)
 				}
 			}
 			else {
-				oa[++oa.length - 1].value = g_arMenuTypes[j];
+				oa[++oa.length - 1].value = s;
 			}
-			oa[oa.length - 1].text = GetText(g_arMenuTypes[j]);
+			oa[oa.length - 1].text = GetText(s);
 		}
 		SwitchMenus(oa[nSelected]);
 	}
@@ -1318,7 +1319,8 @@ InitOptions = function ()
 	ResetForm();
 	var s = [];
 	for (var i in g_arMenuTypes) {
-		s.push('<label id="tab2_' + i + '" class="button" style="width: 100%" onmousedown="ClickTree(this, null, \'Menus\');">' + GetText(g_arMenuTypes[i]) + '</label><br />');
+		var j = g_arMenuTypes[i];
+		s.push('<label id="tab2_' + i + '" class="button" style="width: 100%" onmousedown="ClickTree(this, null, \'Menus\');">' + GetText(j == "TaskTray" ? "Systray" : j) + '</label><br />');
 	}
 	document.getElementById("tab2_").innerHTML = s.join("");
 

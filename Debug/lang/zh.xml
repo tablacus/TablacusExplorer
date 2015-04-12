@@ -131,7 +131,7 @@
 	<text s="Border">邊框</text>
 	<text s="Horizontal scroll">水平捲動</text>
 
-	<text s="EnumFlags">枚舉旗標</text>
+	<text s="Enumeration">枚舉旗標</text>
 	<text s="Folders">資料夾項目</text>
 	<text s="Not folders">非資料夾項目</text>
 	<text s="Include hidden items">包含隱藏項目</text>
@@ -195,7 +195,7 @@
 	<text s="Wheel">滾輪</text>
 	<text s="Add before">在前加入</text>
 	<text s="Add after">在後加入</text>
-	<text s="TaskTray">工作列</text>
+	<text s="Systray">工作列</text>
 	<text s="Next Tab">下一個頁籤</text>
 	<text s="Previous Tab">上一個頁籤</text>
 	<text s="Run Dialog">執行對話框</text>

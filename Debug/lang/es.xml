@@ -131,7 +131,7 @@
 	<text s="Border">Borde</text>
 	<text s="Horizontal scroll">Desplazamiento Horizontal</text>
 
-	<text s="EnumFlags">Opciones</text>
+	<text s="Enumeration">Opciones</text>
 	<text s="Folders">Carpetas</text>
 	<text s="Not folders">Sin Carpetas</text>
 	<text s="Include hidden items">Incluir Elementos Ocultos</text>
@@ -195,7 +195,7 @@
 	<text s="Wheel">Rueda</text>
 	<text s="Add before">Añadir antes</text>
 	<text s="Add after">Añadir después</text>
-	<text s="TaskTray">Bandeja de Tareas</text>
+	<text s="Systray">Bandeja de Tareas</text>
 	<text s="Next Tab">Pestaña Siguiente</text>
 	<text s="Previous Tab">Pestaña Anterior</text>
 	<text s="Run Dialog">Ventana de Diálogo de Ejecución</text>

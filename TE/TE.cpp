@@ -9306,44 +9306,50 @@ void CteShellBrowser::Clear()
 			catch (...) {}
 		}
 	}
-	DestroyView(0);
-	while (--m_nLogCount >= 0) {
-		m_ppLog[m_nLogCount]->Release();
-		m_ppLog[m_nLogCount] = NULL;
+	try {
+		DestroyView(0);
+	} catch (...) {
 	}
-	teSysFreeString(&m_bsFilter);
-	teUnadviseAndRelease(m_pDSFV, DIID_DShellFolderViewEvents, &m_dwCookie);
-	m_pDSFV = NULL;
+	try {
+		while (--m_nLogCount >= 0) {
+			m_ppLog[m_nLogCount]->Release();
+			m_ppLog[m_nLogCount] = NULL;
+		}
+		teSysFreeString(&m_bsFilter);
+		teUnadviseAndRelease(m_pDSFV, DIID_DShellFolderViewEvents, &m_dwCookie);
+		m_pDSFV = NULL;
 #ifdef _2000XP
-	if (m_pSFVCB) {
-		m_pSFVCB->Release();
-		m_pSFVCB = NULL;
-	}
-	if (m_nColumns) {
-		delete [] m_pColumns;
-		m_nColumns = 0;
-	}
+		if (m_pSFVCB) {
+			m_pSFVCB->Release();
+			m_pSFVCB = NULL;
+		}
+		if (m_nColumns) {
+			delete [] m_pColumns;
+			m_nColumns = 0;
+		}
 #endif
-	if (m_pSF2) {
-		m_pSF2->Release();
-		m_pSF2 = NULL;
-	}
-	if (m_pDefultColumns) {
-		delete [] m_pDefultColumns;
-		m_pDefultColumns = NULL;
-	}
-	teILFreeClear(&m_pidl);
-	if (m_pFolderItem) {
-		m_pFolderItem->Release();
-		m_pFolderItem= NULL;
-	}
-	if (m_pFolderItem1) {
-		m_pFolderItem1->Release();
-		m_pFolderItem1= NULL;
-	}
-	if (m_pFolderSize) {
-		m_pFolderSize->Release();
-		m_pFolderSize = NULL;
+		if (m_pSF2) {
+			m_pSF2->Release();
+			m_pSF2 = NULL;
+		}
+		if (m_pDefultColumns) {
+			delete [] m_pDefultColumns;
+			m_pDefultColumns = NULL;
+		}
+		teILFreeClear(&m_pidl);
+		if (m_pFolderItem) {
+			m_pFolderItem->Release();
+			m_pFolderItem= NULL;
+		}
+		if (m_pFolderItem1) {
+			m_pFolderItem1->Release();
+			m_pFolderItem1= NULL;
+		}
+		if (m_pFolderSize) {
+			m_pFolderSize->Release();
+			m_pFolderSize = NULL;
+		}
+	} catch (...) {
 	}
 	VariantClear(&m_vData);
 	VariantClear(&m_vRoot);
@@ -12875,7 +12881,7 @@ void CteShellBrowser::Show(BOOL bShow, BOOL bSuspend)
 				ShowWindow(m_hwnd, SW_HIDE);
 				MoveWindow(m_pTV->m_hwnd, -1, -1, 0, 0, false);
 				ShowWindow(m_pTV->m_hwnd, SW_HIDE);
-				if (bSuspend && m_bNotExist) {
+				if (bSuspend && m_bNotExist && !m_nCreate) {
 					Suspend(FALSE);
 				}
 			}
@@ -12921,14 +12927,19 @@ VOID CteShellBrowser::DestroyView(int nFlags)
 		m_pExplorerBrowser = NULL;
 	}
 	if (m_pShellView) {
-		if ((nFlags & 1) == 0) {
-			Show(FALSE, FALSE);
-			IUnknown_SetSite(m_pShellView, NULL);
-			m_pShellView->DestroyViewWindow();
+		try {
+			if ((nFlags & 1) == 0) {
+				Show(FALSE, FALSE);
+				IUnknown_SetSite(m_pShellView, NULL);
+				m_pShellView->DestroyViewWindow();
+			}
+			if (nFlags == 0 && m_pShellView) {
+				m_pShellView->Release();
+				m_pShellView = NULL;
+			}
 		}
-		if (nFlags == 0 && m_pShellView) {
-			m_pShellView->Release();
-			m_pShellView = NULL;
+		catch (...) {
+			g_nException = 0;
 		}
 	}
 }

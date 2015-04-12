@@ -131,7 +131,7 @@
 	<text s="Border">Border</text>
 	<text s="Horizontal scroll">Horizontal scroll</text>
 
-	<text s="EnumFlags">Enum flags</text>
+	<text s="Enumeration">Enumeration</text>
 	<text s="Folders">Folders</text>
 	<text s="Not folders">Not folders</text>
 	<text s="Include hidden items">Include hidden items</text>
@@ -195,7 +195,7 @@
 	<text s="Wheel">Wheel</text>
 	<text s="Add before">Add before</text>
 	<text s="Add after">Add after</text>
-	<text s="TaskTray">TaskTray</text>
+	<text s="Sysray">Systray</text>
 	<text s="Next Tab">Next tab</text>
 	<text s="Previous Tab">Previous tab</text>
 	<text s="Run Dialog">Run dialog</text>

@@ -131,7 +131,7 @@
 	<text s="Border">Limite</text>
 	<text s="Horizontal scroll">Rolagem horizontal</text>
 
-	<text s="EnumFlags">Enumeradores</text>
+	<text s="Enumeration">Enumeradores</text>
 	<text s="Folders">Pastas</text>
 	<text s="Not folders">Não pastas</text>
 	<text s="Include hidden items">Incluir itens ocultos</text>
@@ -195,7 +195,7 @@
 	<text s="Wheel">Roda</text>
 	<text s="Add before">Adicionar antes</text>
 	<text s="Add after">Adicionar depois</text>
-	<text s="TaskTray">Bandeja de tarefas</text>
+	<text s="Systray">Bandeja de tarefas</text>
 	<text s="Next Tab">Próxima aba</text>
 	<text s="Previous Tab">Aba anterior</text>
 	<text s="Run Dialog">Executar diálogo</text>

@@ -131,7 +131,7 @@
 	<text s="Border">Rand</text>
 	<text s="Horizontal scroll">Horizontal scroll</text>
 
-	<text s="EnumFlags">Attribute auflisten</text>
+	<text s="Enumeration">Attribute auflisten</text>
 	<text s="Folders">Ordner</text>
 	<text s="Not folders">Nicht Ordner</text>
 	<text s="Include hidden items">Verstecke Einträge einbeziehen</text>
@@ -195,7 +195,7 @@
 	<text s="Wheel">Mausrad</text>
 	<text s="Add before">Davor hinzufügen</text>
 	<text s="Add after">Danach hinzufügen</text>
-	<text s="TaskTray">TaskTray</text>
+	<text s="Systray">Systray</text>
 	<text s="Next Tab">Nächster Tab</text>
 	<text s="Previous Tab">Voriger Tab</text>
 	<text s="Run Dialog">Ausführen ...</text>

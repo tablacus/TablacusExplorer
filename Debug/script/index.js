@@ -1461,8 +1461,8 @@ te.OnArrange = function (Ctrl, rc)
 			ApplyLang(o);
 			ChangeView(Ctrl.Selected);
 		}
-		o.style.left = rc.Left + "px";
-		o.style.top = rc.Top + "px";
+		o.style.left = (rc.Left * screen.logicalXDPI / screen.deviceXDPI) + "px";
+		o.style.top = (rc.Top * screen.logicalYDPI / screen.deviceYDPI) + "px";
 		if (Ctrl.Visible) {
 			o.style.display = !document.documentMode || api.StrCmpI(o.tagName, "td") ? "block" : "table-cell";
 		}
@@ -1470,9 +1470,9 @@ te.OnArrange = function (Ctrl, rc)
 			o.style.display = "none";
 		}
 		var i = rc.Right - rc.Left
-		o.style.width = (i >=0 ? i : 0) + "px";
+		o.style.width = (i >= 0 ? i : 0) + "px";
 		i = rc.Bottom - rc.Top;
-		o.style.height = (i >=0 ? i : 0) + "px";
+		o.style.height = (i >= 0 ? i : 0) + "px";
 		rc.Top += document.getElementById("InnerTop_" + Ctrl.Id).offsetHeight + document.getElementById("InnerTop2_" + Ctrl.Id).offsetHeight;
 		var w1 = 0;
 		var w2 = 0;

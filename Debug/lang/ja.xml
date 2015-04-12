@@ -131,7 +131,7 @@
 	<text s="Border">外枠</text>
 	<text s="Horizontal scroll">水平スクロール</text>
 
-	<text s="EnumFlags">列挙</text>
+	<text s="Enumeration">列挙</text>
 	<text s="Folders">フォルダー</text>
 	<text s="Not folders">フォルダ以外</text>
 	<text s="Include hidden items">隠しオブジェクト</text>
@@ -195,7 +195,7 @@
 	<text s="Wheel">ホイール</text>
 	<text s="Add before">前に追加</text>
 	<text s="Add after">後に追加</text>
-	<text s="TaskTray">タスクトレイ</text>
+	<text s="Systray">タスクトレイ</text>
 	<text s="Next Tab">次のタブ</text>
 	<text s="Previous Tab">前のタブ</text>
 	<text s="Run Dialog">ファイル名を指定して実行</text>
