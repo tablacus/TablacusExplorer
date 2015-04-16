@@ -2448,7 +2448,7 @@ g_basic =
 			{
 				var FV = te.Ctrl(CTRL_FV);
 				if (FV) {
-					var ContextMenu = api.StrCmpI(s, "cmd") ? FV.ViewMenu() : api.ContextMenu(FV, FV);;
+					var ContextMenu = api.StrCmpI(s, "cmd") ? FV.ViewMenu() : api.ContextMenu(FV, FV);
 					if (ContextMenu) {
 						var hMenu = api.CreatePopupMenu();
 						ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_EXTENDEDVERBS);
