@@ -120,6 +120,7 @@ HOME_PATH = 0;//Desktop
 TITLE = "Tablacus Explorer";
 ssfRESULTSFOLDER = WINVER >= 0x600 ? "shell:::{2965E715-EB66-4719-B53F-1672673BBEFA}" : "::{e17d4fc0-5564-11d1-83f2-00a0c90dc849}";
 FILTER_IMAGE = "*.jpg;*.jpeg;*.png;*.bmp;*.gif;*.ico;data:*";
+REGEXP_IMAGE = /^data:|\.jpe?g$|\.png$|\.bmp$|\.gif$|\.ico$/i;
 
 //Windows
 

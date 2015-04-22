@@ -7,36 +7,32 @@
 body {
 	overflow: hidden;
 	background-color: buttonface;
-	padding: 0px;
-	margin: 0px;
+	padding: 0;
+	margin: 0;
 }
 
 table {
 	border-collapse: collapse;
 	border-spacing: 0;
 	border: none;
-	padding: 0px;
-	margin: 0px;
+	padding: 0;
+	margin: 0;
 }
 
 td, tr {
 	font-size: 12px;
 	font-size: inherit;
 	border: none;
-	padding: 0px;
-	margin: 0px;
+	padding: 0;
+	margin: 0;
 }
 
 form {
 	display: inline;
-	margin: 0px;
+	margin: 0;
 }
 
-input {
-	font-size: inherit;
-}
-
-select {
+input, select, textarea {
 	font-size: inherit;
 }
 
@@ -46,7 +42,7 @@ select {
 	font-size: inherit;
 	height: 2em;
 	vertical-align: bottom;
-	outline: 0px;
+	outline: 0;
 	cursor: default;
 	white-space: nowrap;
 	background: linear-gradient(to bottom, #ffffff, #cccccc);
@@ -59,7 +55,7 @@ select {
 	font-size: inherit;
 	height: 2em;
 	vertical-align: bottom;
-	outline: 0px;
+	outline: 0;
 	cursor: default;
 	white-space: nowrap;
 	background: linear-gradient(to bottom, #ffffff, #cccccc);
@@ -72,7 +68,7 @@ select {
 	font-size: inherit;
 	height: 2.167em;
 	vertical-align: bottom;
-	outline: 0px;
+	outline: 0;
 	cursor: default;
 	white-space: nowrap;
 }
@@ -88,7 +84,7 @@ select {
 
 .color {
 	border: 1px solid #7F9DB9;
-	width: 24px;
+	width: 2em;
 }
 
 .block {
@@ -117,8 +113,8 @@ select {
 
 .layout {
 	width: 100%;
-	padding: 0px;
-	margin: 0px;
+	padding: 0;
+	margin: 0;
 	border: none;
 	border-collapse: collapse;
 	overflow: hidden;
@@ -147,7 +143,7 @@ select {
 	text-decoration: none;
 	color: black;
 	cursor: default;
-	outline: 0px;
+	outline: 0;
 	white-space: nowrap;
 	vertical-align: middle;
 }
@@ -159,8 +155,8 @@ select {
 	cursor: default;
 	background-color: #E5EBEF;
 	border: 1px solid #7F9DB9;
-	padding: 0px;
-	outline: 0px;
+	padding: 0;
+	outline: 0;
 	white-space: nowrap;
 	vertical-align: middle;
 }
@@ -169,7 +165,7 @@ select {
 	border: 1px solid gray;
 	font-size: 0.667em;
 	font-family: Consolas;
-	padding: 0px 1px;
+	padding: 0 1px;
 	margin-right: 3px;
 	cursor: default;
 	background: linear-gradient(to bottom, #ffffff, #dddddd);
@@ -177,9 +173,9 @@ select {
 }
 
 .ok {
-	min-width: 96px;
+	min-width: 8em;
 }
 
 .cancel {
-	min-width: 96px;
+	min-width: 8em;
 }

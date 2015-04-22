@@ -17,7 +17,7 @@
       <table class="layout" style="width: 100%">
         <tr>
           <td style="vertical-align: top">
-            <div id="tab_" class="panel" style="display: block; width: 150px; background-color: window; white-space: nowrap">
+            <div id="tab_" class="panel" style="display: block; width: 12em; background-color: window; white-space: nowrap">
               <tt class="treebutton" onclick="ClickButton(this, 0);">-</tt>
               <label id="tab0" class="button" style="width: 88%" onmousedown="ClickTree(this);">General</label>
               <br />
@@ -111,7 +111,7 @@
             <div class="panel" id="panel1">
               <table id="Addons" style="width: 100%; border: 1px solid gray">
                 <tr>
-                  <th style="height: 420px">
+                  <th style="height: 35em">
                     <label>Please wait.</label>
                   </th>
                 </tr>
@@ -147,7 +147,7 @@
             <div class="panel" id="panel2">
               <table style="width: 100%">
                 <tr>
-                  <td width="150px" valign="top">
+                  <td width="12em" valign="top">
                     <select name="Menus" style="display: none">
                     </select>
                     <div id="Menus_List">
@@ -180,10 +180,10 @@
                         <td>
                           <input type="text" name="Menus_Name" style="width: 100%" onchange="ChangeX('Menus')" />
                         </td>
-                        <td style="width: 80px">
+                        <td style="width: 6.667em">
                           <input type="text" name="Menus_Key" placeholder="Key" title="Key" style="width: 100%" onchange="ChangeX('Menus')" />
                         </td>
-                        <td style="width: 20px">
+                        <td style="width: 1.667em">
                           <input type="button" value="..." title="Key" onclick="InputKey(document.F.elements['Menus_Key']);" />
                         </td>
                       </tr>
@@ -206,18 +206,18 @@
                       </tr>
                     </table>
                     <input type="text" name="Menus_Filter" style="width: 100%" onchange="ChangeX('Menus')" />
+                    <label>Type</label>
                     <table class="layout">
                       <tr>
                         <td valign="bottom">
-                          <label>Type</label>
+                          <select name="Menus_Type" onchange="ChangeX('Menus')">
+                          </select>
                         </td>
                         <td align="right">
                           <input type="button" value="Portable" onclick="PortableX('Menus_Path')" title="Options" />
                         </td>
                       </tr>
                     </table>
-                    <select name="Menus_Type" style="width: 100%" onchange="ChangeX('Menus')">
-                    </select>
                     <table class="layout">
                       <tr>
                         <td valign="bottom">
@@ -228,7 +228,7 @@
                         </td>
                       </tr>
                     </table>
-                    <textarea name="Menus_Path" style="width: 100%; height: 160px" onchange="ChangeX('Menus')"></textarea>
+                    <textarea name="Menus_Path" style="width: 100%; height: 13em" onchange="ChangeX('Menus')"></textarea>
                     <table class="layout">
                       <tr>
                         <td>
@@ -663,10 +663,10 @@
       </table>
       <table style="width: 99%">
         <tr>
-          <td style="width: 150px">
+          <td style="width: 12em">
             <div style="position: relative; width: 100%">
             <input type="text" name="_search" id="_search" style="width: 100%; padding-right: 16px" onkeydown="FindKeyEvent(this)" placeholder="Search" />
-              <img src="bitmap:ieframe.dll,216,16,17" hidefocus="true" style="vertical-align: middle; width: 16px; height: 16px; position: absolute; left: 132px; top: 2px" onclick="FindText(document.getElementById('_search').value)" />
+              <img src="bitmap:ieframe.dll,216,16,17" hidefocus="true" style="vertical-align: middle; width: 16px; height: 16px; position: absolute; left: 10.5em; top: 0.2em" onclick="FindText(document.getElementById('_search').value)" />
             </div>
           </td>
           <td id="MoveButton" align="left" style="display: none;">

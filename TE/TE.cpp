@@ -2742,14 +2742,20 @@ void teCopyMenu(HMENU hDest, HMENU hSrc, UINT fState)
 	}
 }
 
-HRESULT GetDataFromPidl(LPITEMIDLIST pidl, int nFormat, void *pv, int cb)
+HRESULT teSHGetDataFromIDList(IShellFolder *pSF, LPCITEMIDLIST ItemID, int nFormat, void *pv, int cb)
 {
-	HRESULT hr = E_FAIL;
-	IShellFolder *pSF;
-	LPCITEMIDLIST ItemID;
-	if SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &ItemID)) {
-		hr = SHGetDataFromIDList(pSF, ItemID, nFormat, pv, cb);
-		pSF->Release();
+	HRESULT hr = SHGetDataFromIDList(pSF, ItemID, nFormat, pv, cb);
+	if (hr != S_OK && nFormat == SHGDFIL_FINDDATA) {
+		// for Library
+		BSTR bs;
+		if SUCCEEDED(teGetDisplayNameBSTR(pSF, ItemID, SHGDN_FORPARSING, &bs)) {
+			HANDLE hFind = FindFirstFile(bs, (LPWIN32_FIND_DATA)pv);
+			::SysFreeString(bs);
+			if (hFind != INVALID_HANDLE_VALUE) {
+				FindClose(hFind);
+				hr = S_OK;
+			}
+		}
 	}
 	return hr;
 }
@@ -6449,7 +6455,14 @@ VOID teApiSHGetDataFromIDList(int nArg, LONGLONG *param, DISPPARAMS *pDispParams
 	LPITEMIDLIST pidl;
 	teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg]);
 	if (pidl) {
-		teSetLong(pVarResult, GetDataFromPidl(pidl, (int)param[1], (PVOID)param[2], (int)param[3]));
+		HRESULT hr = E_FAIL;
+		IShellFolder *pSF;
+		LPCITEMIDLIST ItemID;
+		if SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &ItemID)) {
+			hr = teSHGetDataFromIDList(pSF, ItemID, (int)param[1], (PVOID)param[2], (int)param[3]);
+			pSF->Release();
+		}
+		teSetLong(pVarResult, hr);
 		::CoTaskMemFree(pidl);
 	}
 }
@@ -10428,7 +10441,7 @@ VOID CteShellBrowser::SetFolderFlags()
 		}
 #ifdef _2000XP
 		else {
-			PostMessage(m_hwndLV, LVM_SETEXTENDEDLISTVIEWSTYLE, LVS_EX_FULLROWSELECT | LVS_EX_CHECKBOXES, HIWORD(m_param[SB_FolderFlags]));
+			ListView_SetExtendedListViewStyleEx(m_hwndLV, LVS_EX_FULLROWSELECT | LVS_EX_CHECKBOXES, HIWORD(m_param[SB_FolderFlags]));
 		}
 #endif
 		GetViewModeAndIconSize(FALSE);
@@ -10480,7 +10493,7 @@ VOID CteShellBrowser::SetFolderSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch)
 		VARIANT v;
 		VariantInit(&v);
 		WIN32_FIND_DATA wfd;
-		SHGetDataFromIDList(m_pSF2, pidl, SHGDFIL_FINDDATA, &wfd, sizeof(WIN32_FIND_DATA));
+		teSHGetDataFromIDList(m_pSF2, pidl, SHGDFIL_FINDDATA, &wfd, sizeof(WIN32_FIND_DATA));
 		if (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 			teGetProperty(m_pFolderSize, wfd.cFileName, &v);
 			if (v.vt == VT_BSTR) {
@@ -11843,7 +11856,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 							}
 							if (n == 1) {
 								WIN32_FIND_DATA wfd;
-								SHGetDataFromIDList(m_pSF2, ILFindLastID(pidl), SHGDFIL_FINDDATA, &wfd, sizeof(WIN32_FIND_DATA));
+								teSHGetDataFromIDList(m_pSF2, ILFindLastID(pidl), SHGDFIL_FINDDATA, &wfd, sizeof(WIN32_FIND_DATA));
 								if (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 									if SUCCEEDED(teDelProperty(m_pFolderSize, wfd.cFileName)) {
 										InvalidateRect(m_hwndLV, NULL, FALSE);
@@ -13031,7 +13044,7 @@ VOID CteShellBrowser::GetGroupBy(BSTR* pbs)
 		return;
 	}
 #ifdef _2000XP
-	if (SendMessage(m_hwndLV, LVM_ISGROUPVIEWENABLED, 0, 0)) {
+	if (ListView_IsGroupViewEnabled(m_hwndLV)) {
 		IContextMenu *pCM;
 		if SUCCEEDED(m_pShellView->GetItemObject(SVGIO_BACKGROUND, IID_PPV_ARGS(&pCM))) {
 			HMENU hMenu = CreatePopupMenu();
@@ -13140,7 +13153,7 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 		return;
 	}
 #ifdef _2000XP
-	BOOL bGroup = SendMessage(m_hwndLV, LVM_ISGROUPVIEWENABLED, 0, 0);
+	BOOL bGroup = ListView_IsGroupViewEnabled(m_hwndLV);
 	if (bGroup) {
 		SendMessage(m_hwndDV, WM_COMMAND, CommandID_GROUP, 0);
 	}
@@ -13197,7 +13210,7 @@ VOID CteShellBrowser::SetGroupBy(BSTR bs)
 	}
 #ifdef _2000XP
 	if (szNew[0] && lstrcmpi(szNew, L"System.Null")) {
-		if (!SendMessage(m_hwndLV, LVM_ISGROUPVIEWENABLED, 0, 0)) {
+		if (!ListView_IsGroupViewEnabled(m_hwndLV)) {
 			SendMessage(m_hwndDV, WM_COMMAND, CommandID_GROUP, 0);
 		}
 		IContextMenu *pCM;
@@ -13232,7 +13245,7 @@ VOID CteShellBrowser::SetGroupBy(BSTR bs)
 			pCM->Release();
 		}
 	}
-	else if (SendMessage(m_hwndLV, LVM_ISGROUPVIEWENABLED, 0, 0)) {
+	else if (ListView_IsGroupViewEnabled(m_hwndLV)) {
 		SendMessage(m_hwndDV, WM_COMMAND, CommandID_GROUP, 0);
 	}
 #endif

@@ -377,7 +377,7 @@ function MakeImgSrc(src, index, bSrc, h, strBitmap, strIcon)
 			if (value) {
 				fn = fso.BuildPath(te.Data.DataFolder, "cache\\icon\\" + value.replace(/[:\\\/]/g, "$") + ".png");
 			}
-			else if (src && !api.PathMatchSpec(src, FILTER_IMAGE)) {
+			else if (src && !REGEXP_IMAGE.test(src)) {
 				src = src.replace(/^file:\/\/\//i, "").replace(/\//g, "\\");
 				fn = fso.BuildPath(te.Data.DataFolder, "cache\\file\\" + src.replace(/[:\\\/]/g, "$") + ".png");
 			}
@@ -445,7 +445,7 @@ function MakeImgIcon(src, index, h, strBitmap, strIcon)
 			return phIcon[0];
 		}
 	}
-	if (src && !api.PathMatchSpec(src, FILTER_IMAGE)) {
+	if (src && !REGEXP_IMAGE.test(src)) {
 		var info = api.Memory("SHFILEINFO");
 		var pidl = api.ILCreateFromPath(api.PathUnquoteSpaces(src));
 		if (pidl) {
@@ -854,7 +854,8 @@ ShowDialog = function (fn, opt)
 	if (!/:/.test(fn)) {
 		fn = location.href.replace(/[^\/]*$/, fn);
 	}
-	return te.CreateCtrl(CTRL_SW, fn, opt, document, opt.width || 640, opt.height || 480);
+	var r = Math.abs(MainWindow.DefaultFont.lfHeight) / 12;
+	return te.CreateCtrl(CTRL_SW, fn, opt, document, (opt.width || 640) * r, (opt.height || 480) * r);
 }
 
 LoadLayout = function ()
@@ -1244,7 +1245,7 @@ OpenMenu = function (items, SelItem)
 		else {
 			path = String(api.GetDisplayNameOf(SelItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX));
 			arMenu = OpenMenu(items, path);
-			if (fso.GetExtensionName(path) || !IsFolderEx(SelItem)) {
+			if (!IsFolderEx(SelItem)) {
 				return arMenu;
 			}
 			path += ".folder";
@@ -1712,7 +1713,7 @@ MenusIcon = function (mii, src)
 	if (src) {
 		src = ExtractMacro(te, src);
 		var image = te.GdiplusBitmap();
-		if (api.PathMatchSpec(src, FILTER_IMAGE)) {
+		if (REGEXP_IMAGE.test(src)) {
 			image.FromFile(src);
 		}
 		else {

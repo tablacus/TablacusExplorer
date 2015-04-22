@@ -753,6 +753,9 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 						return S_OK;
 					}
 				}
+				if (strClass == WC_EDIT) {
+					return S_FALSE;
+				}
 				break;
 			case CTRL_TV:
 				var strClass = api.GetClassName(hwnd);
@@ -764,6 +767,9 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 						InvokeCommand(Ctrl.SelectedItem, 0, te.hwnd, CommandID_DELETE - 1, null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
 						return S_OK;
 					}
+				}
+				if (strClass == WC_EDIT) {
+					return S_FALSE;
 				}
 				break;
 			case CTRL_WB:
