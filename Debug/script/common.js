@@ -575,7 +575,7 @@ SaveXml = function (filename, all)
 			CmdShow = SW_SHOWMAXIMIZED;
 		}
 		api.ShowWindow(hwnd, SW_SHOWNORMAL);
-		rc = api.Memory("RECT");
+		var rc = api.Memory("RECT");
 		api.GetWindowRect(hwnd, rc);
 		item.setAttribute("Left", rc.left);
 		item.setAttribute("Top", rc.top);
@@ -2224,6 +2224,9 @@ OpenInExplorer = function (FV)
 {
 	if (FV) {
 		CancelWindowRegistered();
+		if (api.GetKeyState(VK_CONTROL) < 0) {
+			return sha.ShellExecute(api.GetDisplayNameOf(FV, SHGDN_FORPARSING), "", "", "explore", SW_SHOWNORMAL);
+		}
 		var exp = te.CreateObject("new:{C08AFD90-F2A1-11D1-8455-00A0C91F3880}");
 		exp.Navigate2(FV.FolderItem);
 		exp.Visible = true;

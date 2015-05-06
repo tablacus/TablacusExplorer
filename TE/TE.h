@@ -4,6 +4,7 @@
 //#define _USE_APIHOOK
 //#define _USE_HTMLDOC
 //#define _USE_TESTOBJECT
+//#define _USE_TESTPATHMATCHSPEC
 
 #include "resource.h"
 #include <Mshtml.h>

@@ -1653,6 +1653,7 @@ InitLocation = function ()
 				document.L.elements[i].checked = true;
 			}
 		}
+		InitColor1(item);
 	}
 	var locs = [];
 	items = te.Data.Locations;
@@ -1998,20 +1999,7 @@ function InitAddonOptions(bFlag)
 	document.title = info.Name;
 	var items = te.Data.Addons.getElementsByTagName(Addon_Id);
 	if (items.length) {
-		var item = items[0];
-		var ele = document.F.elements;
-		for (var i = ele.length; i--;) {
-			var n = ele[i].id || ele[i].name;
-			if (n) {
-				GetAttribEx(item, document.F, n);
-				if (/^Color_(.*)/.test(n)) {
-					var o = document.F.elements[RegExp.$1];
-					if (o) {
-						ele[i].style.backgroundColor = GetWebColor(o.value);
-					}
-				}
-			}
-		}
+		InitColor1(items[0]);
 	}
 
 	SetOnChangeHandler();
@@ -2435,3 +2423,19 @@ SetResult = function (i)
 	window.close();
 }
 
+function InitColor1(item)
+{
+	var ele = document.F.elements;
+	for (var i = ele.length; i--;) {
+		var n = ele[i].id || ele[i].name;
+		if (n) {
+			GetAttribEx(item, document.F, n);
+			if (/^Color_(.*)/.test(n)) {
+				var o = document.F.elements[RegExp.$1];
+				if (o) {
+					ele[i].style.backgroundColor = GetWebColor(o.value);
+				}
+			}
+		}
+	}
+}

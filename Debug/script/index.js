@@ -1000,7 +1000,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 	if (isFinite(Verb)) {
 		Verb = ContextMenu.GetCommandString(Verb, GCS_VERB);
 	}
-	if (!api.StrCmpI(Verb, "opennewwindow")) {
+	if (api.PathMatchSpec(Verb, "opennewwindow;opennewprocess")) {
 		CancelWindowRegistered();
 	}
 	NewTab = GetNavigateFlags();
@@ -1010,22 +1010,20 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 			var cmd = api.AssocQueryString(ASSOCF_NONE, ASSOCSTR_COMMAND, path, api.StrCmpI(Verb, "Default") ? Verb : null).replace(/"?%1"?|%L/g, api.PathQuoteSpaces(path)).replace(/%\*|%I/g, "");
 			if (cmd) {
 				ShowStatusText(te, Verb + ":" + cmd, 1);
-				if (!api.StrCmpI(Verb, "open") && api.PathMatchSpec(cmd, "*\Explorer.exe /idlist,*;rundll32.exe *fldr.dll,RouteTheCall*")) {
+				if (!api.StrCmpI(Verb, "open") && api.PathMatchSpec(cmd, "?:\\Windows\\Explorer.exe;*\\Explorer.exe /idlist,*;rundll32.exe *fldr.dll,RouteTheCall*")) {
 					Navigate(Items.Item(i), NewTab);
 				 	NewTab |= SBSP_NEWBROWSER;
 					continue;
 				}
-				if (cmd.indexOf("%") < 0) {
-					var cmd2 = ExtractMacro(te, cmd);
-					if (api.StrCmpI(cmd, cmd2)) {
-						ShellExecute(cmd2, null, nShow, Directory);
-						continue;
-					}
+				var cmd2 = ExtractMacro(te, cmd);
+				if (api.StrCmpI(cmd, cmd2)) {
+					ShellExecute(cmd2, null, nShow, Directory);
+					continue;
 				}
 			}
 			if (!api.StrCmpI(Verb, "open") && IsFolderEx(Items.Item(i))) {
 				Navigate(Items.Item(i), NewTab);
-			 	NewTab |= SBSP_NEWBROWSER;
+				NewTab |= SBSP_NEWBROWSER;
 				continue;
 			}
 		}

@@ -1399,7 +1399,8 @@ VOID Wow64ControlPanel(LPITEMIDLIST *ppidl, LPITEMIDLIST pidlReplace)
 }
 #endif
 
-BOOL tePathMatchSpec1(LPCWSTR pszFile, LPWSTR pszSpec)
+#ifdef _USE_TESTPATHMATCHSPEC
+BOOL tePathMatchSpec2(LPCWSTR pszFile, LPWSTR pszSpec)
 {
 	switch (*pszSpec)
 	{
@@ -1407,12 +1408,44 @@ BOOL tePathMatchSpec1(LPCWSTR pszFile, LPWSTR pszSpec)
 		case ';':
 			return !pszFile[0];
 		case '*':
-			return tePathMatchSpec1(pszFile, pszSpec + 1) || (pszFile[0] && tePathMatchSpec1(pszFile + 1, pszSpec));
+			return tePathMatchSpec2(pszFile, pszSpec + 1) || (pszFile[0] && tePathMatchSpec2(pszFile + 1, pszSpec));
 		case '?':
-			return pszFile[0] && tePathMatchSpec1(pszFile + 1, pszSpec + 1);
+			return pszFile[0] && tePathMatchSpec2(pszFile + 1, pszSpec + 1);
 		default:
-			return (tolower(pszFile[0]) == tolower(pszSpec[0])) && tePathMatchSpec1(pszFile + 1, pszSpec + 1);
+			return (tolower(pszFile[0]) == tolower(pszSpec[0])) && tePathMatchSpec2(pszFile + 1, pszSpec + 1);
 	}
+}
+#endif
+
+BOOL tePathMatchSpec1(LPCWSTR pszFile, LPWSTR pszSpec)
+{
+	WCHAR wc = *pszSpec;
+	BOOL bResult = *pszFile != NULL || !wc || wc == '*';
+	for (; bResult && *pszFile; pszFile++) {
+		wc = *pszSpec++;
+		if (wc == '*') {
+			wc = tolower(*pszSpec++);
+			do {
+				for (; *pszFile && tolower(*pszFile) != wc; pszFile++);
+				if (!wc || wc == ';') {
+					return TRUE; 
+				}
+				if (!*pszFile) {
+					return FALSE; 
+				}
+				bResult = tePathMatchSpec1(++pszFile, pszSpec);
+			} while (!bResult);
+			return bResult;
+		}
+		if (!wc || wc == ';') {
+			break; 
+		}
+		if (wc != '?') {
+			bResult = tolower(*pszFile) == tolower(wc);
+		}
+	}
+	wc = *pszSpec;
+	return bResult && (*pszFile == (wc == ';' || wc == '*' ? NULL : wc));
 }
 
 BOOL tePathMatchSpec(LPCWSTR pszFile, LPCWSTR pszSpec)
@@ -1422,6 +1455,13 @@ BOOL tePathMatchSpec(LPCWSTR pszFile, LPCWSTR pszSpec)
 	}
 	LPWSTR pszSpec1 = const_cast<LPWSTR>(pszSpec);
 	do {
+#ifdef _USE_TESTPATHMATCHSPEC
+		BOOL b1 = !!tePathMatchSpec1(pszFile, pszSpec1);
+		BOOL b2 = !!tePathMatchSpec2(pszFile, pszSpec1);
+		if (b1 != b2) {
+			b2 = !!tePathMatchSpec2(pszFile, pszSpec1);
+		}
+#endif
 		if (tePathMatchSpec1(pszFile, pszSpec1)) {
 			return TRUE;
 		}
