@@ -49,7 +49,7 @@ using namespace Gdiplus;
 #else
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #define _2000XP
-#define _W2000
+//#define _W2000
 #endif
 
 class CteShellBrowser;
@@ -172,7 +172,8 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *
 #define TE_OnViewModeChanged	32
 #define TE_OnColumnsChanged		33
 #define TE_OnKeyMessage			34
-#define Count_OnFunc			35
+#define TE_OnItemPrePaint			35
+#define Count_OnFunc			36
 
 #define SB_OnIncludeObject		0
 
@@ -949,7 +950,7 @@ public:
 	void SetPoint(int x, int y);
 	void Free(BOOL bpbs);
 
-	CteMemory(int nSize, char *pc, int nCount, LPWSTR lpStruct);
+	CteMemory(int nSize, void *pc, int nCount, LPWSTR lpStruct);
 	~CteMemory();
 public:
 	char	*m_pc;
@@ -1016,7 +1017,7 @@ private:
 };
 
 class CteTreeView : public IDispatch,
-	public INameSpaceTreeControlEvents,
+	public INameSpaceTreeControlEvents, public INameSpaceTreeControlCustomDraw,
 #ifdef _2000XP
 	public IOleClientSite, public IOleInPlaceSite,
 #endif
@@ -1050,6 +1051,11 @@ public:
 	STDMETHODIMP OnAfterContextMenu(IShellItem *psi, IContextMenu *pcmIn, REFIID riid, void **ppv);
 	STDMETHODIMP OnBeforeStateImageChange(IShellItem *psi);
 	STDMETHODIMP OnGetDefaultIconIndex(IShellItem *psi, int *piDefaultIcon, int *piOpenIcon);
+	//INameSpaceTreeControlCustomDraw
+	STDMETHODIMP PrePaint(HDC hdc, RECT *prc, LRESULT *plres);
+	STDMETHODIMP PostPaint(HDC hdc, RECT *prc);
+	STDMETHODIMP ItemPrePaint(HDC hdc, RECT *prc, NSTCCUSTOMDRAW *pnstccdItem, COLORREF *pclrText, COLORREF *pclrTextBk, LRESULT *plres);
+	STDMETHODIMP ItemPostPaint(HDC hdc, RECT *prc, NSTCCUSTOMDRAW *pnstccdItem);
 #ifdef _2000XP
 	//IOleClientSite
 	STDMETHODIMP SaveObject();
@@ -1104,8 +1110,8 @@ public:
 	IDropTarget *m_pDropTarget;
 #ifdef _2000XP
 	IShellNameSpace *m_pShellNameSpace;
-#endif
 	WNDPROC		m_DefProc;
+#endif
 	WNDPROC		m_DefProc2;
 
 	BOOL		m_bMain;

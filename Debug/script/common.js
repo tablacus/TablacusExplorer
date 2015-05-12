@@ -153,6 +153,13 @@ AddEvent = function (Name, fn, priority)
 {
 	if (Name) {
 		Name = Name.replace("Dragleave", "DragLeave");
+		if (Name == "ItemPrePaint" && !te.OnItemPrePaint) {
+			te.OnItemPrePaint = function (Ctrl, pid, nmcd, vcd, plRes)
+			{
+				RunEvent3("ItemPrePaint", Ctrl, pid, nmcd, vcd, plRes);
+			}
+		}
+
 		if (!eventTE[Name]) {
 			eventTE[Name] = [];
 		}

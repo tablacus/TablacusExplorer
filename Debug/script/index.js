@@ -856,7 +856,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 					if (ar && !api.StrCmpI(ar[0][1], "Selected Items")) {
 						var iItem = Ctrl.HitTest(pt);
 						if (iItem >= 0) {
-							Ctrl.SelectItem(Ctrl.Items.Item(iItem), SVSI_SELECT | SVSI_FOCUSED | SVSI_DESELECTOTHERS);
+							Ctrl.SelectItem(Ctrl.Item(iItem), SVSI_SELECT | SVSI_FOCUSED | SVSI_DESELECTOTHERS);
 						}
 						else {
 							Ctrl.SelectItem(null, SVSI_DESELECTOTHERS);
@@ -875,6 +875,9 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 			}
 			if (bButton) {
 				api.PostMessage(g_mouse.hwndGesture, WM_CONTEXTMENU, g_mouse.hwndGesture, pt.x + (pt.y << 16));
+				return S_OK;
+			}
+			if (hr === S_OK) {
 				return S_OK;
 			}
 		}
@@ -1905,7 +1908,7 @@ g_mouse =
 			if (!(item.state & LVIS_SELECTED)) {
 				if (mode) {
 					var Ctrl = te.CtrlFromWindow(this.hwndGesture);
-					Ctrl.SelectItem(Ctrl.Items.Item(this.RButton), SVSI_SELECT | SVSI_FOCUSED | SVSI_DESELECTOTHERS);
+					Ctrl.SelectItem(Ctrl.Item(this.RButton), SVSI_SELECT | SVSI_FOCUSED | SVSI_DESELECTOTHERS);
 				}
 				else {
 					var ptc = api.Memory("POINT");

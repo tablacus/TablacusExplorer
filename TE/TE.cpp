@@ -495,6 +495,44 @@ TEmethod tesNOTIFYICONDATA[] =
 	{ 0, NULL }
 };
 
+TEmethod tesNMCUSTOMDRAW[] =
+{
+	{ (VT_PTR << TE_VT) + offsetof(NMCUSTOMDRAW, hdr), L"hdr" },
+	{ (VT_I4 << TE_VT) + offsetof(NMCUSTOMDRAW, dwDrawStage), L"dwDrawStage" },
+	{ (VT_PTR << TE_VT) + offsetof(NMCUSTOMDRAW, hdc), L"hdc" },
+	{ (VT_CARRAY << TE_VT) + offsetof(NMCUSTOMDRAW, rc), L"rc" },
+	{ (VT_PTR << TE_VT) + offsetof(NMCUSTOMDRAW, dwItemSpec), L"dwItemSpec" },
+	{ (VT_I4 << TE_VT) + offsetof(NMCUSTOMDRAW, uItemState), L"uItemState" },
+	{ (VT_PTR << TE_VT) + offsetof(NMCUSTOMDRAW, lItemlParam), L"lItemlParam" },
+	{ 0, NULL }
+};
+
+TEmethod tesNMLVCUSTOMDRAW[] =
+{
+	{ (VT_PTR << TE_VT) + offsetof(NMLVCUSTOMDRAW, nmcd), L"nmcd" },
+	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, clrText), L"clrText" },
+	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, clrTextBk), L"clrTextBk" },
+	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, iSubItem), L"iSubItem" },
+	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, dwItemType), L"dwItemType" },
+	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, clrFace), L"clrFace" },
+	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, iIconEffect), L"iIconEffect" },
+	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, iIconPhase), L"iIconPhase" },
+	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, iPartId), L"iPartId" },
+	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, iStateId), L"iStateId" },
+	{ (VT_CARRAY << TE_VT) + offsetof(NMLVCUSTOMDRAW, rcText), L"rcText" },
+	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, uAlign), L"uAlign" },
+	{ 0, NULL }
+};
+
+TEmethod tesNMTVCUSTOMDRAW[] =
+{
+	{ (VT_PTR << TE_VT) + offsetof(NMTVCUSTOMDRAW, nmcd), L"nmcd" },
+	{ (VT_I4 << TE_VT) + offsetof(NMTVCUSTOMDRAW, clrText), L"clrText" },
+	{ (VT_I4 << TE_VT) + offsetof(NMTVCUSTOMDRAW, clrTextBk), L"clrTextBk" },
+	{ (VT_I4 << TE_VT) + offsetof(NMTVCUSTOMDRAW, iLevel), L"iLevel" },
+	{ 0, NULL }
+};
+
 TEmethod tesNMHDR[] =
 {
 	{ (VT_PTR << TE_VT) + offsetof(NMHDR, hwndFrom), L"hwndFrom" },
@@ -728,6 +766,9 @@ TEStruct pTEStructs[] = {
 	{ sizeof(MONITORINFOEX), L"MONITORINFOEX", tesMONITORINFOEX },
 	{ sizeof(MOUSEINPUT) + sizeof(DWORD), L"MOUSEINPUT", tesMOUSEINPUT },
 	{ sizeof(MSG), L"MSG", tesMSG },
+	{ sizeof(NMCUSTOMDRAW), L"NMCUSTOMDRAW", tesNMCUSTOMDRAW },
+	{ sizeof(NMLVCUSTOMDRAW), L"NMLVCUSTOMDRAW", tesNMLVCUSTOMDRAW },
+	{ sizeof(NMTVCUSTOMDRAW), L"NMTVCUSTOMDRAW", tesNMTVCUSTOMDRAW },
 	{ sizeof(NMHDR), L"NMHDR", tesNMHDR },
 	{ sizeof(NONCLIENTMETRICS), L"NONCLIENTMETRICS", tesNONCLIENTMETRICS },
 	{ sizeof(NOTIFYICONDATA), L"NOTIFYICONDATA", tesNOTIFYICONDATA },
@@ -832,6 +873,7 @@ TEmethod methodTE[] = {
 	{ START_OnFunc + TE_OnILGetParent, L"OnILGetParent" },
 	{ START_OnFunc + TE_OnViewModeChanged, L"OnViewModeChanged" },
 	{ START_OnFunc + TE_OnColumnsChanged, L"OnColumnsChanged" },
+	{ START_OnFunc + TE_OnItemPrePaint, L"OnItemPrePaint" },
 	{ 0, NULL }
 };
 
@@ -868,6 +910,7 @@ TEmethod methodSB[] = {
 	{ 0x10000106, L"Focus" },
 	{ 0x10000107, L"HitTest" },
 	{ 0x10000110, L"ItemCount" },
+	{ 0x10000111, L"Item" },
 	{ 0x10000206, L"Refresh" },
 	{ 0x10000207, L"ViewMenu" },
 	{ 0x10000208, L"TranslateAccelerator" },
@@ -4137,11 +4180,11 @@ HRESULT DragSub(int nFunc, PVOID pObj, CteFolderItems *pDragItems, PDWORD pgrfKe
 				pv = GetNewVARIANT(5);
 				teSetObject(&pv[4], pObj);
 				teSetObject(&pv[3], pDragItems);
-				teSetObjectRelease(&pv[2], new CteMemory(sizeof(int), (char *)pgrfKeyState, 1, L"DWORD"));
+				teSetObjectRelease(&pv[2], new CteMemory(sizeof(int), pgrfKeyState, 1, L"DWORD"));
 				pstPt = new CteMemory(2 * sizeof(int), NULL, 1, L"POINT");
 				pstPt->SetPoint(pt.x, pt.y);
 				teSetObjectRelease(&pv[1], pstPt);
-				teSetObjectRelease(&pv[0], new CteMemory(sizeof(int), (char *)pdwEffect, 1, L"DWORD"));
+				teSetObjectRelease(&pv[0], new CteMemory(sizeof(int), pdwEffect, 1, L"DWORD"));
 				if SUCCEEDED(Invoke4(g_pOnFunc[nFunc], &vResult, 5, pv)) {
 					hr = GetIntFromVariant(&vResult);
 				}
@@ -4411,6 +4454,7 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 	return (hrResult != S_OK) ? CallNextHookEx(g_hMouseHook, nCode, wParam, lParam) : TRUE;
 }
 
+#ifdef _2000XP
 LRESULT CALLBACK TETVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	BOOL Handled = FALSE;
@@ -4418,20 +4462,33 @@ LRESULT CALLBACK TETVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		CteTreeView *pTV = (CteTreeView *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 		if (msg == WM_NOTIFY) {
 			LPNMTVCUSTOMDRAW lptvcd = (LPNMTVCUSTOMDRAW)lParam;
-/*/// Color
-			if (lptvcd->nmcd.hdr.code == NM_CUSTOMDRAW) {
+/// Color
+			if (!pTV->m_pNameSpaceTreeControl && lptvcd->nmcd.hdr.code == NM_CUSTOMDRAW) {
 				if (lptvcd->nmcd.dwDrawStage == CDDS_PREPAINT) {
 					return CDRF_NOTIFYITEMDRAW;
 				}
 				if (lptvcd->nmcd.dwDrawStage == CDDS_ITEMPREPAINT) {
-					if (!(lptvcd->nmcd.uItemState & CDIS_SELECTED)) {
-						lptvcd->clrText = RGB(0, 0, 255);
+					LONG_PTR lRes = CDRF_DODEFAULT;
+					if (g_pOnFunc[TE_OnItemPrePaint] && !(lptvcd->nmcd.uItemState & CDIS_SELECTED)) {
+						VARIANTARG *pv = GetNewVARIANT(5);
+						teSetObject(&pv[4], pTV);
+/*//
+						if (pTV->m_pShellNameSpace && (lptvcd->nmcd.uItemState & CDIS_SELECTED)) {
+							IDispatch *pid;
+							if (pTV->m_pShellNameSpace->get_SelectedItem(&pid) == S_OK) {
+								teSetObjectRelease(&pv[3], pid);
+							}
+						}
+*///
+						teSetObjectRelease(&pv[2], new CteMemory(sizeof(NMCUSTOMDRAW), &lptvcd->nmcd, 1, L"NMCUSTOMDRAW"));
+						teSetObjectRelease(&pv[1], new CteMemory(sizeof(NMTVCUSTOMDRAW), lptvcd, 1, L"NMTVCUSTOMDRAW"));
+						teSetObjectRelease(&pv[0], new CteMemory(sizeof(HANDLE), &lRes, 1, L"HANDLE"));
+						Invoke4(g_pOnFunc[TE_OnItemPrePaint], NULL, 5, pv);
 					}
-					return CDRF_DODEFAULT;
+					return lRes;
 				}
 			}
-*///
-#ifdef _2000XP
+//*///
 			if (pTV->m_pShellNameSpace && lptvcd->nmcd.hdr.code == NM_RCLICK) {
 				try {
 					if (InterlockedIncrement(&g_nProcTV) < 5) {
@@ -4448,7 +4505,6 @@ LRESULT CALLBACK TETVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				catch(...) {}
 				::InterlockedDecrement(&g_nProcTV);
 			}
-#endif
 		}
 		if (Handled) {
 			return 1;
@@ -4460,6 +4516,7 @@ LRESULT CALLBACK TETVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	}
 	return 0;
 }
+#endif
 
 LRESULT CALLBACK TETVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -4571,18 +4628,34 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					}
 				}
 			}
-/*/// Color
-			LPNMLVCUSTOMDRAW lplvcd = (LPNMLVCUSTOMDRAW)lParam;
-			if (lplvcd->nmcd.hdr.code == NM_CUSTOMDRAW) {
-				if (lplvcd->nmcd.dwDrawStage == CDDS_PREPAINT) {
-					return CDRF_NOTIFYITEMDRAW;
-				}
-				if (lplvcd->nmcd.dwDrawStage == CDDS_ITEMPREPAINT) {
-					if (lplvcd->nmcd.uItemState) {
-						lplvcd->clrText = RGB(0, 0, 255);
-						lplvcd->clrTextBk = CLR_NONE;
+/// Color
+			if (g_pOnFunc[TE_OnItemPrePaint] && pSB->m_pShellView) {
+				LPNMLVCUSTOMDRAW lplvcd = (LPNMLVCUSTOMDRAW)lParam;
+				if (lplvcd->nmcd.hdr.code == NM_CUSTOMDRAW) {
+					if (lplvcd->nmcd.dwDrawStage == CDDS_PREPAINT) {
+						return CDRF_NOTIFYITEMDRAW;
 					}
-					return CDRF_DODEFAULT;
+					if (lplvcd->nmcd.dwDrawStage == CDDS_ITEMPREPAINT) {
+						LRESULT lRes = CDRF_DODEFAULT;
+						IFolderView *pFV;
+						if SUCCEEDED(pSB->m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
+							LPITEMIDLIST pidl;
+							if SUCCEEDED(pFV->Item((int)lplvcd->nmcd.dwItemSpec , &pidl)) {
+								LPITEMIDLIST pidlFull = ILCombine(pSB->m_pidl, pidl);
+								VARIANTARG *pv = GetNewVARIANT(5);
+								teSetObject(&pv[4], pSB);
+								teSetIDList(&pv[3], pidlFull);
+								CoTaskMemFree(pidlFull);
+								CoTaskMemFree(pidl);
+								teSetObjectRelease(&pv[2], new CteMemory(sizeof(NMCUSTOMDRAW), &lplvcd->nmcd, 1, L"NMCUSTOMDRAW"));
+								teSetObjectRelease(&pv[1], new CteMemory(sizeof(NMLVCUSTOMDRAW), lplvcd, 1, L"NMLVCUSTOMDRAW"));
+								teSetObjectRelease(&pv[0], new CteMemory(sizeof(HANDLE), &lRes, 1, L"HANDLE"));
+								Invoke4(g_pOnFunc[TE_OnItemPrePaint], NULL, 5, pv);
+							}
+							pFV->Release();
+						}
+						return lRes;
+					}
 				}
 			}
 //*/
@@ -8066,7 +8139,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 							VARIANTARG *pv;
 							pv = GetNewVARIANT(2);
 							teSetObject(&pv[1], pTC);
-							teSetObjectRelease(&pv[0], new CteMemory(sizeof(RECT), (char *)&rc, 1, L"RECT"));
+							teSetObjectRelease(&pv[0], new CteMemory(sizeof(RECT), &rc, 1, L"RECT"));
 							Invoke4(g_pOnFunc[TE_OnArrange], NULL, 2, pv);
 						}
 						if (!pTC->m_bEmpty && pTC->m_bVisible) {
@@ -10186,7 +10259,7 @@ HRESULT CteShellBrowser::OnBeforeNavigate(FolderItem *pPrevious, UINT wFlags)
 		pv = GetNewVARIANT(4);
 		teSetObject(&pv[3], this);
 
-		pMem = new CteMemory(4 * sizeof(int), (char *)&m_param[SB_ViewMode], 1, L"FOLDERSETTINGS");
+		pMem = new CteMemory(4 * sizeof(int), &m_param[SB_ViewMode], 1, L"FOLDERSETTINGS");
 		pMem->QueryInterface(IID_PPV_ARGS(&pv[2].punkVal));
 		teSetObjectRelease(&pv[2], pMem);
 		teSetLong(&pv[1], wFlags);
@@ -11750,6 +11823,22 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					}
 				}
 				return S_OK;
+			//Item
+			case 0x10000111:
+				if (pVarResult && m_pShellView && nArg >= 0) {
+					IFolderView *pFV;
+					if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
+						LPITEMIDLIST pidl;
+						if SUCCEEDED(pFV->Item(GetIntFromVariant(&pDispParams->rgvarg[nArg]), &pidl)) {
+							LPITEMIDLIST pidlFull = ILCombine(m_pidl, pidl);
+							teSetIDList(pVarResult, pidlFull);
+							CoTaskMemFree(pidlFull);
+							CoTaskMemFree(pidl);
+						}
+						pFV->Release();
+					}
+				}
+				return S_OK;
 			//Refresh
 			case 0x10000206:
 				if (!m_bVisible && nArg >= 0 && GetIntFromVariant(&pDispParams->rgvarg[nArg])) {
@@ -12453,7 +12542,7 @@ STDMETHODIMP CteShellBrowser::GetPaneState(REFEXPLORERPANE ep, EXPLORERPANESTATE
 	if (g_pOnFunc[TE_OnGetPaneState]) {
 		VARIANTARG *pv = GetNewVARIANT(3);
 		CteMemory *pstEps;
-		pstEps = new CteMemory(sizeof(int), (char *)peps, 1, L"DWORD");
+		pstEps = new CteMemory(sizeof(int), peps, 1, L"DWORD");
 		if SUCCEEDED(pstEps->QueryInterface(IID_PPV_ARGS(&pv[0].pdispVal))) {
 			pv[0].vt = VT_DISPATCH;
 		}
@@ -15737,7 +15826,7 @@ STDMETHODIMP CteFolderItems::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 				return S_OK;
 			//pdwEffect
 			case 0x10000002:
-				punk = new CteMemory(sizeof(int), (char *)&m_dwEffect, 1, L"DWORD");
+				punk = new CteMemory(sizeof(int), &m_dwEffect, 1, L"DWORD");
 				teSetObject(pVarResult, punk);
 				punk->Release();
 				return S_OK;
@@ -16307,10 +16396,10 @@ CteServiceProvider::~CteServiceProvider()
 
 //CteMemory
 
-CteMemory::CteMemory(int nSize, char *pc, int nCount, LPWSTR lpStruct)
+CteMemory::CteMemory(int nSize, void *pc, int nCount, LPWSTR lpStruct)
 {
 	m_cRef = 1;
-	m_pc = pc;
+	m_pc = (char *)pc;
 	m_bsStruct = NULL;
 	m_nStructIndex = -1;
 	if (lpStruct) {
@@ -17371,7 +17460,9 @@ STDMETHODIMP CteDropTarget::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 CteTreeView::CteTreeView()
 {
 	m_cRef = 1;
+#ifdef _2000XP
 	m_DefProc = NULL;
+#endif
 	m_DefProc2 = NULL;
 	m_bMain = true;
 	m_pDragItems = NULL;
@@ -17385,10 +17476,12 @@ CteTreeView::CteTreeView()
 CteTreeView::~CteTreeView()
 {
 	Close();
+#ifdef _2000XP
 	if (m_DefProc) {
 		SetWindowLongPtr(m_hwnd, GWLP_WNDPROC, (LONG_PTR)m_DefProc);
 		m_DefProc = NULL;
 	}
+#endif
 	if (m_DefProc2) {
 		SetWindowLongPtr(m_hwndTV, GWLP_WNDPROC, (LONG_PTR)m_DefProc2);
 		m_DefProc2 = NULL;
@@ -17465,8 +17558,6 @@ BOOL CteTreeView::Create()
 				if (pOleWindow->GetWindow(&m_hwnd) == S_OK) {
 					m_hwndTV = FindTreeWindow(m_hwnd);
 					if (m_hwndTV) {
-						SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
-						m_DefProc = (WNDPROC)SetWindowLongPtr(m_hwnd, GWLP_WNDPROC, (LONG_PTR)TETVProc);
 						SetWindowLongPtr(m_hwndTV, GWLP_USERDATA, (LONG_PTR)this);
 						m_DefProc2 = (WNDPROC)SetWindowLongPtr(m_hwndTV, GWLP_WNDPROC, (LONG_PTR)TETVProc2);
 						m_pFV->HookDragDrop(g_dragdrop & 2);
@@ -17644,6 +17735,9 @@ STDMETHODIMP CteTreeView::QueryInterface(REFIID riid, void **ppvObject)
 	}
 	else if (IsEqualIID(riid, IID_INameSpaceTreeControlEvents)) {
 		*ppvObject = static_cast<INameSpaceTreeControlEvents *>(this);
+	}
+	else if (IsEqualIID(riid, IID_INameSpaceTreeControlCustomDraw)) {
+		*ppvObject = static_cast<INameSpaceTreeControlCustomDraw *>(this);
 	}
 	else if (m_pNameSpaceTreeControl && IsEqualIID(riid, IID_INameSpaceTreeControl)) {
 		return m_pNameSpaceTreeControl->QueryInterface(riid, ppvObject);
@@ -18106,6 +18200,53 @@ STDMETHODIMP CteTreeView::OnGetDefaultIconIndex(IShellItem *psi, int *piDefaultI
 {
 	return E_NOTIMPL;
 }
+
+//INameSpaceTreeControlCustomDraw
+STDMETHODIMP CteTreeView::PrePaint(HDC hdc, RECT *prc, LRESULT *plres)
+{
+	*plres = CDRF_NOTIFYITEMDRAW;
+	return S_OK;
+}
+
+STDMETHODIMP CteTreeView::PostPaint(HDC hdc, RECT *prc)
+{
+	return S_OK;
+}
+
+STDMETHODIMP CteTreeView::ItemPrePaint(HDC hdc, RECT *prc, NSTCCUSTOMDRAW *pnstccdItem, COLORREF *pclrText, COLORREF *pclrTextBk, LRESULT *plres)
+{
+	if (g_pOnFunc[TE_OnItemPrePaint] && !(pnstccdItem->uItemState & CDIS_SELECTED)) {
+		NMTVCUSTOMDRAW tvcd;
+		::ZeroMemory(&tvcd, sizeof(NMTVCUSTOMDRAW));
+		tvcd.nmcd.hdc = hdc;
+		CopyRect(&tvcd.nmcd.rc, prc);
+		tvcd.clrText = *pclrText;
+		tvcd.clrTextBk = *pclrTextBk;
+		tvcd.iLevel = pnstccdItem->iLevel;
+		tvcd.nmcd.uItemState = pnstccdItem->uItemState;
+
+		VARIANTARG *pv = GetNewVARIANT(5);
+		teSetObject(&pv[4], this);
+		LPITEMIDLIST pidl;
+		if (teGetIDListFromObject(pnstccdItem->psi, &pidl)) {
+			teSetIDList(&pv[3], pidl);
+			CoTaskMemFree(pidl);
+		}
+		teSetObjectRelease(&pv[2], new CteMemory(sizeof(NMCUSTOMDRAW), &tvcd.nmcd, 1, L"NMCUSTOMDRAW"));
+		teSetObjectRelease(&pv[1], new CteMemory(sizeof(NMTVCUSTOMDRAW), &tvcd, 1, L"NMTVCUSTOMDRAW"));
+		teSetObjectRelease(&pv[0], new CteMemory(sizeof(HANDLE), plres, 1, L"HANDLE"));
+		Invoke4(g_pOnFunc[TE_OnItemPrePaint], NULL, 5, pv);
+		*pclrText = tvcd.clrText;
+		*pclrTextBk = tvcd.clrTextBk;
+	}
+	return S_OK;
+}
+
+STDMETHODIMP CteTreeView::ItemPostPaint(HDC hdc, RECT *prc, NSTCCUSTOMDRAW *pnstccdItem)
+{
+	return S_OK;
+}
+//*/
 #ifdef _2000XP
 //IOleClientSite
 STDMETHODIMP CteTreeView::SaveObject()

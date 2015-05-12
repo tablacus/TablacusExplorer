@@ -1798,6 +1798,20 @@ MOD_SHIFT    = 0x0004;
 MOD_WIN      = 0x0008;
 MOD_NOREPEAT = 0x4000;
 
+CDIS_SELECTED         = 0x0001;
+CDIS_GRAYED           = 0x0002;
+CDIS_DISABLED         = 0x0004;
+CDIS_CHECKED          = 0x0008;
+CDIS_FOCUS            = 0x0010;
+CDIS_DEFAULT          = 0x0020;
+CDIS_HOT              = 0x0040;
+CDIS_MARKED           = 0x0080;
+CDIS_INDETERMINATE    = 0x0100;
+CDIS_SHOWKEYBOARDCUES = 0x0200;
+CDIS_NEARHOT          = 0x0400;
+CDIS_OTHERSIDEHOT     = 0x0800;
+CDIS_DROPHILITED      = 0x1000;
+
 // GDI Plus
 RotateNoneFlipNone = 0;
 Rotate90FlipNone   = 1;
