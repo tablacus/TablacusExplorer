@@ -172,7 +172,7 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *
 #define TE_OnViewModeChanged	32
 #define TE_OnColumnsChanged		33
 #define TE_OnKeyMessage			34
-#define TE_OnItemPrePaint			35
+#define TE_OnItemPrePaint		35
 #define Count_OnFunc			36
 
 #define SB_OnIncludeObject		0
@@ -229,8 +229,10 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *
 #define SB_RootStyle	10
 #define SB_Root			11
 
-#define	SB_DoFunc	12
-#define	SB_Count	13
+#define	SB_SizeFormat	12
+
+#define	SB_DoFunc	13
+#define	SB_Count	14
 
 #define	TVVERBS 16
 
@@ -289,7 +291,7 @@ struct TEInvoke
 	PVOID	pResult;
 	DISPID dispid;
 	int	cArgs;
-	BOOL bForce;
+	int nErrorHandling;
 };
 
 struct TEDispatchApi
@@ -818,8 +820,8 @@ public:
 	HWND GetListHandle(HWND *hList);
 	HRESULT BrowseObject2(FolderItem *pid, UINT wFlags);
 	VOID CheckNavigate(LPITEMIDLIST *ppidl, CteShellBrowser *pHistSB, int nLogIndex);
-	BOOL Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItems *pFolderItems, FolderItem *pPrevious, LPITEMIDLIST *ppidl, BOOL bForce);
-	VOID Navigate1Ex(LPOLESTR pstr, FolderItems *pFolderItems, UINT wFlags, FolderItem *pPrevious, BOOL bForce);
+	BOOL Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItems *pFolderItems, FolderItem *pPrevious, LPITEMIDLIST *ppidl, int nErrorHandling);
+	VOID Navigate1Ex(LPOLESTR pstr, FolderItems *pFolderItems, UINT wFlags, FolderItem *pPrevious, int nErrorHandleing);
 	HRESULT Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *param, FolderItems *pFolderItems, FolderItem *pPrevious, CteShellBrowser *pHistSB);
 	HRESULT Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *param, CteShellBrowser **ppSB, FolderItems *pFolderItems);
 	HRESULT NavigateEB(DWORD dwFrame);
@@ -850,6 +852,7 @@ public:
 	HRESULT Items(UINT uItem, FolderItems **ppid);
 	HRESULT SelectItemEx(LPITEMIDLIST *ppidl, int dwFlags);
 	VOID InitFolderSize();
+	VOID SetSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch);
 	VOID SetFolderSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch);
 	VOID SetLabel(LPCITEMIDLIST pidl, LPWSTR szText, int cch);
 	HRESULT PropertyKeyFromName(BSTR bs, PROPERTYKEY *pkey);
@@ -885,6 +888,7 @@ public:
 	DWORD		m_param[SB_Count];
 	int			m_nFolderSizeIndex;
 	int			m_nLabelIndex;
+	int			m_nSizeIndex;
 	int			m_nSB;
 	int			m_nUnload;
 	DWORD		m_nOpenedType;

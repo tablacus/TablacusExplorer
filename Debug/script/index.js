@@ -615,7 +615,7 @@ te.OnCreate = function (Ctrl)
 		}
 		if (te.Ctrls(CTRL_TC).length == 0) {
 			var TC = te.CreateCtrl(CTRL_TC, 0, 0, "100%", "100%", te.Data.Tab_Style, te.Data.Tab_Align, te.Data.Tab_TabWidth, te.Data.Tab_TabHeight);
-			TC.Selected.Navigate2(HOME_PATH, SBSP_NEWBROWSER, te.Data.View_Type, te.Data.View_ViewMode, te.Data.View_fFlags, te.Data.View_Options, te.Data.View_ViewFlags, te.Data.View_IconSize, te.Data.Tree_Align, te.Data.Tree_Width, te.Data.Tree_Style, te.Data.Tree_EnumFlags, te.Data.Tree_RootStyle, te.Data.Tree_Root);
+			TC.Selected.Navigate2(HOME_PATH, SBSP_NEWBROWSER, te.Data.View_Type, te.Data.View_ViewMode, te.Data.View_fFlags, te.Data.View_Options, te.Data.View_ViewFlags, te.Data.View_IconSize, te.Data.Tree_Align, te.Data.Tree_Width, te.Data.Tree_Style, te.Data.Tree_EnumFlags, te.Data.Tree_RootStyle, te.Data.Tree_Root, te.Data.View_SizeFormat);
 		}
 		xmlWindow = null;
 		setTimeout(function ()
@@ -2838,6 +2838,7 @@ if (!te.Data) {
 	te.Data.View_Options = EBO_SHOWFRAMES | EBO_ALWAYSNAVIGATE;
 	te.Data.View_ViewFlags = CDB2GVF_SHOWALLFILES;
 	te.Data.View_IconSize = 0;
+	te.Data.View_SizeFormat = 0;
 
 	te.Data.Tree_Align = 0;
 	te.Data.Tree_Width = 200;

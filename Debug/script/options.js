@@ -82,6 +82,7 @@ function ResetForm()
 		document.F.View_fFlags.value = FV.FolderFlags;
 		document.F.View_Options.value = FV.Options;
 		document.F.View_ViewFlags.value = FV.ViewFlags;
+		document.F.View_SizeFormat.value = FV.SizeFormat > 9 ? api.sprintf(99, "%#x", FV.SizeFormat): FV.SizeFormat;
 	}
 
 	for(i = 0; i < document.F.length; i++) {
@@ -281,6 +282,20 @@ function ChooseColor1(o)
 	}, 99);
 }
 
+function ChooseColor2(o)
+{
+	setTimeout(function ()
+	{
+		var o2 = document.F.elements[o.id.replace("Color_", "")];
+		var c = ChooseColor(GetWinColor(o2.value));
+		if (c) {
+			c = GetWebColor(c);
+			o2.value = c;
+			o.style.backgroundColor = c;
+		}
+	}, 99);
+}
+
 function ChooseFolder1(o)
 {
 	setTimeout(function ()
@@ -333,7 +348,7 @@ function AddTabControl()
 		return;
 	}
 	var TC = te.CreateCtrl(CTRL_TC, document.F.Tab_Left.value, document.F.Tab_Top.value, document.F.Tab_Width.value, document.F.Tab_Height.value, document.F.Tab_Style.value, document.F.Tab_Align.value, document.F.Tab_TabWidth.value, document.F.Tab_TabHeight.value);
-	TC.Selected.Navigate2("c:\\", SBSP_NEWBROWSER, document.F.View_Type.value, document.F.View_ViewMode.value, document.F.View_fFlags.value, 0, document.F.View_Options.value, document.F.View_ViewFlags.value);
+	TC.Selected.Navigate2("c:\\", SBSP_NEWBROWSER, document.F.View_Type.value, document.F.View_ViewMode.value, document.F.View_fFlags.value, 0, document.F.View_Options.value, document.F.View_ViewFlags.value, api.QuadPart(document.F.View_SizeFormat.value) || api.sscanf(document.F.View_SizeFormat.value, "0x%x"));
 }
 
 function DelTabControl()
@@ -421,6 +436,7 @@ function SetFolderView(FV)
 		FV.FolderFlags = document.F.View_fFlags.value;
 		FV.Options = document.F.View_Options.value;
 		FV.ViewFlags = document.F.View_ViewFlags.value;
+		FV.SizeFormat = api.QuadPart(document.F.View_SizeFormat.value) || api.sscanf(document.F.View_SizeFormat.value, "0x%x");
 		if (FV.Type != document.F.View_Type.value) {
 			FV.Type = document.F.View_Type.value;
 		}
@@ -1751,6 +1767,9 @@ InitLocation = function ()
 	AddEventEx(window, "beforeunload", function ()
 	{
 		SetOptions(function () {
+			if (window.SaveLocation) {
+				window.SaveLocation();
+			}
 			var items = te.Data.Addons.getElementsByTagName(dialogArguments.Data.id);
 			if (items.length) {
 				var item = items[0];

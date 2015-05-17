@@ -556,7 +556,7 @@ LoadXml = function (filename)
 						}
 						Path.Index = tab.getAttribute("LogIndex");
 					}
-					var FV = TC.Selected.Navigate2(Path, SBSP_NEWBROWSER, tab.getAttribute("Type"), tab.getAttribute("ViewMode"), tab.getAttribute("FolderFlags"), tab.getAttribute("Options"), tab.getAttribute("ViewFlags"), tab.getAttribute("IconSize"), tab.getAttribute("Align"), tab.getAttribute("Width"), tab.getAttribute("Flags"), tab.getAttribute("EnumFlags"), tab.getAttribute("RootStyle"), tab.getAttribute("Root"));
+					var FV = TC.Selected.Navigate2(Path, SBSP_NEWBROWSER, tab.getAttribute("Type"), tab.getAttribute("ViewMode"), tab.getAttribute("FolderFlags"), tab.getAttribute("Options"), tab.getAttribute("ViewFlags"), tab.getAttribute("IconSize"), tab.getAttribute("Align"), tab.getAttribute("Width"), tab.getAttribute("Flags"), tab.getAttribute("EnumFlags"), tab.getAttribute("RootStyle"), tab.getAttribute("Root"), tab.getAttribute("SizeFormat"));
 					FV.FilterView = tab.getAttribute("FilterView");
 					FV.Data.Lock = api.QuadPart(tab.getAttribute("Lock")) != 0;
 					Lock(TC, i2, false);
@@ -626,6 +626,7 @@ SaveXml = function (filename, all)
 				item2.setAttribute("ViewMode", FV.CurrentViewMode);
 				item2.setAttribute("IconSize", FV.IconSize);
 				item2.setAttribute("Options", FV.Options);
+				item2.setAttribute("SizeFormat", FV.SizeFormat);
 				item2.setAttribute("ViewFlags", FV.ViewFlags);
 				item2.setAttribute("FilterView", FV.FilterView);
 				item2.setAttribute("Lock", api.QuadPart(FV.Data.Lock));
@@ -2836,7 +2837,7 @@ GetNavigateFlags = function (FV)
 	if (!FV && OpenMode != SBSP_NEWBROWSER) {
 		FV = te.Ctrl(CTRL_FV);
 	}
-	return FV && FV.Data.Lock ? SBSP_NEWBROWSER : OpenMode;
+	return api.GetKeyState(VK_CONTROL) < 0 || (FV && FV.Data.Lock) ? SBSP_NEWBROWSER : OpenMode;
 }
 
 AddEvent("ConfigChanged", function (s)
@@ -2914,8 +2915,10 @@ Alt = function ()
 GetSavePath = function (FolderItem)
 {
 	var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
-	if (!/^[A-Z]:\\|^\\/i.test(path) && /search\-ms:.*?&crumb=location:([^&]*)/.test(api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING))) {
-		return api.PathCreateFromUrl("file:" + RegExp.$1);
+	if (!/^[A-Z]:\\|^\\/i.test(path)) {
+		if (/search\-ms:.*?&crumb=location:([^&]*)/.test(api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING))) {
+			return api.PathCreateFromUrl("file:" + RegExp.$1);
+		}
 	}
 	if (/\?/.test(path)) {
 		var nCount = api.ILGetCount(FolderItem);

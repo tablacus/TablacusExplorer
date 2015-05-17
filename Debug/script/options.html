@@ -50,9 +50,13 @@
                 <label id="tab4_1" class="button" style="width: 100%" onmousedown="ClickTree(this, null, 'Tree');">Root</label>
                 <br />
               </div>
-              <tt class="treebutton" style="visibility: hidden">-</tt>
+              <tt class="treebutton" onclick="ClickButton(this, 5);">-</tt>
               <label id="tab5" class="button" style="width: 88%" onmousedown="ClickTree(this, null, 'View');">List</label>
               <br />
+              <div id="tab5_" style="margin-left: 20px">
+                <label id="tab5_1" class="button" style="width: 100%" onmousedown="ClickTree(this, null, 'List');">Style</label>
+                <br />
+              </div>
             </div>
           </td>
           <td style="width: 100%">
@@ -588,6 +592,38 @@
               <input type="checkbox" id="Conf_Layout:0x80" onclick="SetCheckbox(this)" />
               <label for="Conf_Layout:0x80">Content</label>
               <br /><br />
+              <label>Size</label><br />
+              <input type="radio" name="View_SizeFormat_" id="View_SizeFormat=0" onclick="SetRadio(this)" />
+              <label for="View_SizeFormat=0">Default</label>
+              <input type="radio" name="View_SizeFormat_" id="View_SizeFormat=2" onclick="SetRadio(this)" />
+              <label for="View_SizeFormat=2">Auto</label>
+              <input type="radio" name="View_SizeFormat_" id="View_SizeFormat=3" onclick="SetRadio(this)" />
+              <label for="View_SizeFormat=3">123</label>
+              <input type="radio" name="View_SizeFormat_" id="View_SizeFormat=1" onclick="SetRadio(this)" />
+              <label for="View_SizeFormat=1">KB</label>
+              <input type="radio" name="View_SizeFormat_" id="View_SizeFormat=0x22" onclick="SetRadio(this)" />
+              <label for="View_SizeFormat=0x224d">MB</label>
+              <input type="radio" name="View_SizeFormat_" id="View_SizeFormat=0x32" onclick="SetRadio(this)" />
+              <label for="View_SizeFormat=0x3247">GB</label>
+              <div>
+                <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_View_SizeFormat")' />
+              </div>
+              <div class="group" id="_Advanced_View_SizeFormat">
+                <input type="text" name="View_SizeFormat" style="width: 100%" />
+              </div>
+              <div>
+                <input type="checkbox" id="Conf_ListDefault" />
+                <label for="Conf_ListDefault">Default</label>
+              </div>
+              <div>
+                (*X)Windows XP <label>or higher.</label>
+                (*)Windows Vista <label>or higher.</label>
+                (*7)Windows 7 <label>or higher.</label>
+              </div>
+            </div>
+            <!--panel_end-->
+
+            <div class="panel" id="panel5_1">
               <label>Style</label><br />
               <input type="hidden" name="View_fFlags" />
               <input type="checkbox" id="View_fFlags:0x1" onclick="SetCheckbox(this)" />
@@ -643,15 +679,8 @@
                 <input type="checkbox" id="View_fFlags:0x80000000" onclick="SetCheckbox(this)" />
                 <label for="View_fFlags:0x80000000">ALLOWRTLREADING</label>(*)
               </div>
-              <br />
               <div>
-                <input type="checkbox" id="Conf_ListDefault" />
-                <label for="Conf_ListDefault">Default</label>
-              </div>
-              <div>
-                (*X)Windows XP <label>or higher.</label>
                 (*)Windows Vista <label>or higher.</label>
-                (*7)Windows 7 <label>or higher.</label>
               </div>
             </div>
             <input type="hidden" name="View_Options" />
