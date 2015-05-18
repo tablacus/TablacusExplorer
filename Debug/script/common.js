@@ -429,7 +429,7 @@ function MakeImgIcon(src, index, h, strBitmap, strIcon)
 		var icon = value.split(",");
 		var hModule = LoadImgDll(icon, index);
 		if (hModule) {
-			var himl = api.ImageList_LoadImage(hModule, isFinite(icon[index * 4 + 1]) ? api.QuadPart(icon[index * 4 + 1]) : icon[index * 4 + 1], icon[index * 4 + 2], 0, CLR_DEFAULT, IMAGE_BITMAP, LR_CREATEDIBSECTION);
+			var himl = api.ImageList_LoadImage(hModule, isFinite(icon[index * 4 + 1]) ? Number(icon[index * 4 + 1]) : icon[index * 4 + 1], icon[index * 4 + 2], 0, CLR_DEFAULT, IMAGE_BITMAP, LR_CREATEDIBSECTION);
 			if (himl) {
 				hIcon = api.ImageList_GetIcon(himl, icon[index * 4 + 3], ILD_NORMAL);
 				api.ImageList_Destroy(himl);
@@ -542,7 +542,7 @@ LoadXml = function (filename)
 		switch(item.getAttribute("Type") - 0) {
 			case CTRL_TC:
 				var TC = te.CreateCtrl(CTRL_TC, item.getAttribute("Left"), item.getAttribute("Top"), item.getAttribute("Width"), item.getAttribute("Height"), item.getAttribute("Style"), item.getAttribute("Align"), item.getAttribute("TabWidth"), item.getAttribute("TabHeight"));
-				TC.Data.Group = api.QuadPart(item.getAttribute("Group"));
+				TC.Data.Group = Number(item.getAttribute("Group")) || 0;
 				var tabs = item.getElementsByTagName('Ctrl');
 				for (var i2 = 0; i2 < tabs.length; i2++) {
 					var tab = tabs[i2];
@@ -1736,7 +1736,7 @@ MenusIcon = function (mii, src)
 MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt)
 {
 	var hMenus = [hMenu];
-	var nPos = menus ? api.QuadPart(menus[0].getAttribute("Pos")) : 0;
+	var nPos = menus ? Number(menus[0].getAttribute("Pos")) : 0;
 	var nLen = api.GetMenuItemCount(hMenu);
 	var nResult = 0;
 	if (nPos < 0) {

@@ -1548,8 +1548,10 @@ BOOL tePathMatchSpec1(LPCWSTR pszFile, LPWSTR pszSpec)
 			bResult = tolower(*pszFile) == tolower(wc);
 		}
 	}
-	wc = *pszSpec;
-	return bResult && (*pszFile == (wc == ';' || wc == '*' ? NULL : wc));
+	while ((wc = *pszSpec) == '*') {
+		pszSpec++;
+	}
+	return bResult && (*pszFile == (wc == ';' ? NULL : wc));
 }
 
 BOOL tePathMatchSpec(LPCWSTR pszFile, LPCWSTR pszSpec)
@@ -1563,7 +1565,7 @@ BOOL tePathMatchSpec(LPCWSTR pszFile, LPCWSTR pszSpec)
 		BOOL b1 = !!tePathMatchSpec1(pszFile, pszSpec1);
 		BOOL b2 = !!tePathMatchSpec2(pszFile, pszSpec1);
 		if (b1 != b2) {
-			b2 = !!tePathMatchSpec2(pszFile, pszSpec1);
+			b2 = !!tePathMatchSpec1(pszFile, pszSpec1);
 		}
 #endif
 		if (tePathMatchSpec1(pszFile, pszSpec1)) {
@@ -7501,7 +7503,7 @@ VOID teApisprintf(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *p
 						pszFormat[0] = wc;
 						break;
 					}
-					if (StrChrIW(L"s", wc)) {//String
+					if (tolower(wc) == 's') {//String
 						wc = pszFormat[nPos];
 						pszFormat[nPos] = NULL;
 						VARIANT v;
@@ -7514,7 +7516,7 @@ VOID teApisprintf(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *p
 						pszFormat[0] = wc;
 						break;
 					}
-					if (!StrChrIW(L"0123456789-+#.hl", wc)) {//not Specifier
+					if (!StrChrIW(L"0123456789-+#.hljzt", wc)) {//not Specifier
 						lstrcpyn(&bsResult[nLen], pszFormat, nPos + 1);
 						nLen += nPos;
 						pszFormat += nPos;

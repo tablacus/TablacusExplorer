@@ -275,7 +275,7 @@ function ChooseColor1(o)
 	{
 		var o2 = document.F.elements[o.id.replace("Color_", "")];
 		var c = ChooseColor(o2.value);
-		if (c) {
+		if (isFinite(c)) {
 			o2.value = c;
 			o.style.backgroundColor = GetWebColor(c);
 		}
@@ -288,7 +288,7 @@ function ChooseColor2(o)
 	{
 		var o2 = document.F.elements[o.id.replace("Color_", "")];
 		var c = ChooseColor(GetWinColor(o2.value));
-		if (c) {
+		if (isFinite(c)) {
 			c = GetWebColor(c);
 			o2.value = c;
 			o.style.backgroundColor = c;
@@ -348,7 +348,7 @@ function AddTabControl()
 		return;
 	}
 	var TC = te.CreateCtrl(CTRL_TC, document.F.Tab_Left.value, document.F.Tab_Top.value, document.F.Tab_Width.value, document.F.Tab_Height.value, document.F.Tab_Style.value, document.F.Tab_Align.value, document.F.Tab_TabWidth.value, document.F.Tab_TabHeight.value);
-	TC.Selected.Navigate2("c:\\", SBSP_NEWBROWSER, document.F.View_Type.value, document.F.View_ViewMode.value, document.F.View_fFlags.value, 0, document.F.View_Options.value, document.F.View_ViewFlags.value, api.QuadPart(document.F.View_SizeFormat.value) || api.sscanf(document.F.View_SizeFormat.value, "0x%x"));
+	TC.Selected.Navigate2("c:\\", SBSP_NEWBROWSER, document.F.View_Type.value, document.F.View_ViewMode.value, document.F.View_fFlags.value, 0, document.F.View_Options.value, document.F.View_ViewFlags.value, Number(document.F.View_SizeFormat.value));
 }
 
 function DelTabControl()
@@ -436,7 +436,7 @@ function SetFolderView(FV)
 		FV.FolderFlags = document.F.View_fFlags.value;
 		FV.Options = document.F.View_Options.value;
 		FV.ViewFlags = document.F.View_ViewFlags.value;
-		FV.SizeFormat = api.QuadPart(document.F.View_SizeFormat.value) || api.sscanf(document.F.View_SizeFormat.value, "0x%x");
+		FV.SizeFormat = Number(document.F.View_SizeFormat.value);
 		if (FV.Type != document.F.View_Type.value) {
 			FV.Type = document.F.View_Type.value;
 		}

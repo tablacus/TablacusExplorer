@@ -1847,13 +1847,13 @@ KeyExecEx = function (Ctrl, mode, nKey, hwnd)
 
 function InitMouse()
 {
-	te.Data.Conf_Gestures = isFinite(te.Data.Conf_Gestures) ? api.QuadPart(te.Data.Conf_Gestures) : 2;
+	te.Data.Conf_Gestures = isFinite(te.Data.Conf_Gestures) ? Number(te.Data.Conf_Gestures) : 2;
 	if (!isFinite(te.Data.Conf_TrailColor)) {
 		te.Data.Conf_TrailColor = 0xff00;
 	}
-	te.Data.Conf_TrailSize = isFinite(te.Data.Conf_TrailSize) ? api.QuadPart(te.Data.Conf_TrailSize) : 2;
-	te.Data.Conf_GestureTimeout = isFinite(te.Data.Conf_GestureTimeout) ? api.QuadPart(te.Data.Conf_GestureTimeout) : 3000;
-	te.Data.Conf_Layout = isFinite(te.Data.Conf_Layout) ? api.QuadPart(te.Data.Conf_Layout) : 0x80;
+	te.Data.Conf_TrailSize = isFinite(te.Data.Conf_TrailSize) ? Number(te.Data.Conf_TrailSize) : 2;
+	te.Data.Conf_GestureTimeout = isFinite(te.Data.Conf_GestureTimeout) ? Number(te.Data.Conf_GestureTimeout) : 3000;
+	te.Data.Conf_Layout = isFinite(te.Data.Conf_Layout) ? Number(te.Data.Conf_Layout) : 0x80;
 	te.Layout = te.Data.Conf_Layout;
 }
 
