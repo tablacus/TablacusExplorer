@@ -55,7 +55,7 @@ FolderMenu =
 			if (!FolderItem) {
 				return;
 			}
-			if (api.StrCmpI(typeof(FolderItem), "object")) {
+			if (typeof(FolderItem) != "object") {
 				FolderItem = api.ILCreateFromPath(FolderItem);
 			}
 			if (FolderItem.IsBrowsable) {
@@ -466,7 +466,7 @@ function MakeImgIcon(src, index, h, strBitmap, strIcon)
 LoadImgDll = function (icon, index)
 {
 	var hModule = api.LoadLibraryEx(fso.BuildPath(system32, icon[index * 4]), 0, LOAD_LIBRARY_AS_DATAFILE);
-	if (!hModule && api.StrCmpI(icon[index * 4], "ieframe.dll") == 0) {
+	if (!hModule && icon[index * 4].toLowerCase() == "ieframe.dll") {
 		if (icon[index * 4 + 1] >= 500) {
 			hModule = api.LoadLibraryEx(fso.BuildPath(system32, "browseui.dll"), 0, LOAD_LIBRARY_AS_DATAFILE);
 		}
@@ -2531,17 +2531,18 @@ GetGestureButton = function ()
 
 GetWebColor = function (c)
 {
-	return api.sprintf(8, "#%06x", ((c & 0xff) << 16) | (c & 0xff00) | ((c & 0xff0000) >> 16));
+	return !Number(c) && /^#[0-9a-f]{3,6}$/i ? c : api.sprintf(8, "#%06x", ((c & 0xff) << 16) | (c & 0xff00) | ((c & 0xff0000) >> 16));
 }
 
 GetWinColor = function (c)
 {
-	var c2 = api.sscanf(c, "#%06x");
-	if (c2) {
-		return ((c2 & 0xff) << 16) | (c2 & 0xff00) | ((c2 & 0xff0000) >> 16);
+	if (/^#([0-9a-z]{2})([0-9a-z]{2})([0-9a-z]{2})$/.test(c)) {
+		return Number(["0x", RegExp.$3, RegExp.$2, RegExp.$1].join(""));
 	}
-	c2 = api.sscanf(c, "#%03x");
-	return c2 ? ((c2 & 0xf) << 20) | ((c2 & 0xf) << 16) | ((c2 & 0xf0) << 8) | ((c2 & 0xf0) << 4) | ((c2 & 0xf00) >> 4) | ((c2 & 0xf00) >> 8) : c;
+	if (/^#([0-9a-z])([0-9a-z])([0-9a-z])$/.test(c)) {
+		return Number(["0x", RegExp.$3, RegExp.$3, RegExp.$2, RegExp.$2, RegExp.$1, RegExp.$1].join(""));
+	}
+	return c;
 }
 
 ChooseColor = function (c)
@@ -2787,7 +2788,7 @@ ApiStruct = function (oTypedef, nAli, oMemory)
 	}
 	n = api.LowPart(nAli);
 	this.Size += (n - (this.Size % n)) % n;
-	this.Memory = api.StrCmpI(typeof oMemory, "object") ? api.Memory("BYTE", this.Size) : oMemory;
+	this.Memory = typeof(oMemory) == "object" ? oMemory : api.Memory("BYTE", this.Size);
 	this.Read = function (Id)
 	{
 		var ar = this.Typedef[Id];

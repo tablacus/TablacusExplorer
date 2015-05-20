@@ -610,7 +610,7 @@ DisableImage = function (img, bDisable)
 te.OnCreate = function (Ctrl)
 {
 	if (Ctrl.Type == CTRL_TE) {
-		if (xmlWindow && api.StrCmpI(typeof(xmlWindow), "string")) {
+		if (xmlWindow && typeof(xmlWindow) != "string") {
 			LoadXml(xmlWindow);
 		}
 		if (te.Ctrls(CTRL_TC).length == 0) {
@@ -997,6 +997,9 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 	RunEvent1("ConfigChanged", "Config");
 	if (isFinite(hr)) {
 		return hr; 
+	}
+	if (typeof(Directory) == "string" && !fso.FolderExists(Directory)) {
+		return S_FALSE;
 	}
 	var Items = ContextMenu.Items();
 	var Exec = [];
@@ -1471,7 +1474,7 @@ te.OnArrange = function (Ctrl, rc)
 		o.style.left = (rc.Left * screen.logicalXDPI / screen.deviceXDPI) + "px";
 		o.style.top = (rc.Top * screen.logicalYDPI / screen.deviceYDPI) + "px";
 		if (Ctrl.Visible) {
-			o.style.display = !document.documentMode || api.StrCmpI(o.tagName, "td") ? "block" : "table-cell";
+			o.style.display = (document.documentMode && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
 		}
 		else {
 			o.style.display = "none";
@@ -1507,7 +1510,7 @@ te.OnVisibleChanged = function (Ctrl)
 		var o = g_Panels[Ctrl.Id];
 		if (o) {
 			if (Ctrl.Visible) {
-				o.style.display = !document.documentMode || api.StrCmpI(o.tagName, "td") ? "block" : "table-cell";
+				o.style.display = (document.documentMode && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
 			}
 			else {
 				o.style.display = "none";
@@ -1682,7 +1685,7 @@ function SetAddon(strName, Location, Tag)
 			te.Data.Locations[Location].push(strName);
 		}
 		var o = document.getElementById(Location);
-		if (!api.StrCmpI(typeof(Tag), "string")) {
+		if (typeof(Tag) == "string") {
 			o.insertAdjacentHTML("BeforeEnd", Tag);
 		}
 		else if (Tag.join) {
@@ -1691,7 +1694,7 @@ function SetAddon(strName, Location, Tag)
 		else {
 			o.appendChild(Tag);
 		}
-		o.style.display = !document.documentMode || api.StrCmpI(o.tagName, "td") ? "block" : "table-cell";
+		o.style.display = (document.documentMode && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
 	}
 	return Location;
 }

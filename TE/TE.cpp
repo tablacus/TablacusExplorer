@@ -109,6 +109,7 @@ int		g_x = MAXINT;
 int		g_nPidls = MAX_CSIDL;
 int		g_nTCCount = 0;
 int		g_nTCIndex = 0;
+BOOL	g_bShowInit = TRUE;
 BOOL	g_bMessageLoop = TRUE;
 BOOL	g_bDialogOk = FALSE;
 BOOL	g_bInit = FALSE;
@@ -6332,8 +6333,9 @@ VOID teApiSetMenuItemBitmaps(int nArg, LONGLONG *param, DISPPARAMS *pDispParams,
 VOID teApiShowWindow(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	HWND hwnd = (HWND)param[0];
-	if (hwnd == g_hwndMain) {
+	if (g_bShowInit && hwnd == g_hwndMain) {
 		KillTimer(g_hwndMain, TET_ShowInit);
+		g_bShowInit = FALSE;
 	}
 	teSetBool(pVarResult, ShowWindow(hwnd, (int)param[1]));
 }
@@ -8445,6 +8447,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 			break;
 		case TET_ShowInit:
 			ShowWindow(g_hwndMain, SW_SHOWNORMAL);
+			g_bShowInit = FALSE;
 			break;
 	}//end_switch
 }
@@ -10465,7 +10468,7 @@ HRESULT CteShellBrowser::GetAbsPidl(LPITEMIDLIST *ppidlOut, FolderItem **ppid, F
 		return E_FAIL;
 	}
 	LPITEMIDLIST pidl = NULL;
-	if (Navigate1(pid, wFlags, pFolderItems, pPrevious, &pidl, 2)) {
+	if (Navigate1(pid, wFlags, pFolderItems, pPrevious, &pidl, g_nLockUpdate ? 0 : 2)) {
 		return S_FALSE;
 	}
 	if (wFlags & SBSP_RELATIVE) {
@@ -17249,6 +17252,9 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 						else {
 							teVariantChangeType(&pv[i], &pDispParams->rgvarg[nArg - i - 2], VT_BSTR);
 							ppwc[i] = pv[i].bstrVal;
+							if (i == 2 && !PathIsDirectory(ppwc[i])) {
+								ppwc[i] = NULL;
+							}
 							if ((ULONG_PTR)ppwc[i] > MAXWORD) {
 								int nLenW = ::SysStringLen(ppwc[i]) + 1;
 								int nLenA = WideCharToMultiByte(CP_ACP, 0, ppwc[i], nLenW, NULL, 0, NULL, NULL);

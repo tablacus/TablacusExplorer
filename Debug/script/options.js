@@ -1669,7 +1669,6 @@ InitLocation = function ()
 				document.L.elements[i].checked = true;
 			}
 		}
-		InitColor1(item);
 	}
 	var locs = [];
 	items = te.Data.Locations;
@@ -1812,6 +1811,9 @@ InitLocation = function ()
 			}
 		});
 	});
+	if (item) {
+		InitColor1(item);
+	}
 }
 
 function SetAttrib(item, n, s)
