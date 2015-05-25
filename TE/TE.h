@@ -175,9 +175,9 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *
 #define TE_OnItemPrePaint		35
 #define Count_OnFunc			36
 
-#define SB_OnIncludeObject		0
-
-#define Count_SBFunc			1
+#define SB_TotalFileSize		0
+#define SB_OnIncludeObject		1
+#define Count_SBFunc			2
 
 #define CTRL_FV          0
 #define CTRL_SB          1
@@ -865,7 +865,6 @@ public:
 
 public:
 	VARIANT		m_vRoot;
-	IDispatch	*m_pFolderSize;	
 	HWND		m_hwnd;
 	HWND		m_hwndDV;
 	HWND		m_hwndLV;
@@ -874,7 +873,7 @@ public:
 	LONG_PTR	m_DefProc;
 	LONG_PTR	m_DefProc2;
 	IShellView  *m_pShellView;
-	IDispatch	*m_pOnFunc[1];
+	IDispatch	*m_pDispatch[2];
 	FolderItem *m_pFolderItem;
 	FolderItem *m_pFolderItem1;
 	IExplorerBrowser *m_pExplorerBrowser;

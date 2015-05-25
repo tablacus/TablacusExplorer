@@ -55,7 +55,7 @@ FolderMenu =
 			if (!FolderItem) {
 				return;
 			}
-			if (typeof(FolderItem) != "object") {
+			if (api.StrCmpI(typeof(FolderItem), "object")) {
 				FolderItem = api.ILCreateFromPath(FolderItem);
 			}
 			if (FolderItem.IsBrowsable) {
@@ -566,6 +566,7 @@ LoadXml = function (filename)
 				break;
 		}
 	}
+	MainWindow.RunEvent1("LoadWindow", xml);
 	te.UnlockUpdate();
 }
 
@@ -677,12 +678,15 @@ SaveXml = function (filename, all)
 			}
 		}
 	}
+	MainWindow.RunEvent1("SaveWindow", xml, root, all);
 	xml.appendChild(root);
 	try {
 		xml.save(filename);
 	}
 	catch (e) {
-		ShowError(e, "Save: " + filename);
+		if (e.number != E_ACCESSDENIED) {
+			ShowError(e, "Save: " + filename);
+		}
 	}
 }
 
@@ -1806,7 +1810,9 @@ SaveXmlEx = function (filename, xml)
 		xml.save(filename);
 	}
 	catch (e) {
-		ShowError(e, "Save: " + filename);
+		if (e.number != E_ACCESSDENIED) {
+			ShowError(e, "Save: " + filename);
+		}
 	}
 }
 
@@ -2788,7 +2794,7 @@ ApiStruct = function (oTypedef, nAli, oMemory)
 	}
 	n = api.LowPart(nAli);
 	this.Size += (n - (this.Size % n)) % n;
-	this.Memory = typeof(oMemory) == "object" ? oMemory : api.Memory("BYTE", this.Size);
+	this.Memory = api.StrCmpI(typeof oMemory, "object") ? api.Memory("BYTE", this.Size) : oMemory;
 	this.Read = function (Id)
 	{
 		var ar = this.Typedef[Id];

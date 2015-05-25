@@ -1016,16 +1016,16 @@ function LoadAddons()
 	g_x.Addons = true;
 
 	var AddonId = [];
-	var FindData = api.Memory("WIN32_FIND_DATA");
+	var wfd = api.Memory("WIN32_FIND_DATA");
 	var path = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\");
-	var hFind = api.FindFirstFile(path + "*", FindData);
+	var hFind = api.FindFirstFile(path + "*", wfd);
 	var bFind = hFind != INVALID_HANDLE_VALUE;
 	while (bFind) {
-		var Id = FindData.cFileName;
+		var Id = wfd.cFileName;
 		if (Id != "." && Id != ".." && !AddonId[Id]) {
 			AddonId[Id] = 1;
 		}
-		bFind = api.FindNextFile(hFind, FindData);
+		bFind = api.FindNextFile(hFind, wfd);
 	}
 	api.FindClose(hFind);
 
@@ -2108,12 +2108,12 @@ function SelectLangID(o)
 {
 	var i = 0;
 	var Langs = [];
-	var FindData = api.Memory("WIN32_FIND_DATA");
-	var hFind = api.FindFirstFile(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "lang\\*.xml"), FindData);
+	var wfd = api.Memory("WIN32_FIND_DATA");
+	var hFind = api.FindFirstFile(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "lang\\*.xml"), wfd);
 	var bFind = hFind != INVALID_HANDLE_VALUE;
 	while (bFind) {
-		Langs.push(FindData.cFileName.replace(/\..*$/, ""));
-		bFind = api.FindNextFile(hFind, FindData);
+		Langs.push(wfd.cFileName.replace(/\..*$/, ""));
+		bFind = api.FindNextFile(hFind, wfd);
 	}
 	api.FindClose(hFind);
 	Langs.sort();
@@ -2326,25 +2326,6 @@ function ArrangeAddon(xml, td, ts)
 		ts[nInsert] = dt2;
 		nCount++;
 	}
-}
-
-function GetAddonInfo2(xml, info, Tag)
-{
-	var items = xml.getElementsByTagName(Tag);
-	if (items.length) {
-		var item = items[0].childNodes;
-		for (var i = 0; i < item.length; i++) {
-			if (item[i].tagName) {
-				if (item[i].textContent) {
-					info[item[i].tagName] = item[i].textContent;
-				}
-				else {
-					info[item[i].tagName] = item[i].text;
-				}
-			}
-		}
-	}
-	return info;
 }
 
 function Search(xml)
