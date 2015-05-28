@@ -202,6 +202,27 @@ Finalize = function ()
 SetGestureText = function (Ctrl, Text)
 {
 	RunEvent3("SetGestureText", Ctrl, Text);
+	if (Text.length > 1 && te.Data.Conf_Gestures > 1) {
+		g_mouse.bTrail = true;
+		var hdc = api.GetWindowDC(te.hwnd);
+		if (hdc) {
+			var rc = api.Memory("RECT");
+			if (!g_mouse.ptText) {
+				g_mouse.ptText = g_mouse.ptGesture.Clone();
+				api.ScreenToClient(te.hwnd, g_mouse.ptText);
+			}
+			rc.left = g_mouse.ptText.x;
+			rc.top = g_mouse.ptText.y;
+			rc.right = 32767;
+			rc.bottom = 99;
+			var hOld = api.SelectObject(hdc, CreateFont(DefaultFont));
+			api.DrawText(hdc, Text, rc, DT_CALCRECT);
+			api.Rectangle(hdc, rc.left - 2, rc.top - 1, rc.right + 2, rc.bottom + 1);
+			api.DrawText(hdc, Text, rc, DT_LEFT);
+			api.SelectObject(hdc, hOld);
+			api.ReleaseDC(te.hwnd, hdc);
+		}
+	}
 }
 
 IsSavePath = function (path)
@@ -838,6 +859,9 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 		if (g_mouse.GetButton(msg, wParam) == g_mouse.str.charAt(0)) {
 			var hr = S_FALSE;
 			var bButton = false;
+			if (msg == WM_LBUTTONUP) {
+				g_mouse.EndGesture(false);
+			}
 			if (msg == WM_RBUTTONUP) {
 				if (g_mouse.RButton >= 0) {
 					g_mouse.RButtonDown(true);
@@ -1897,6 +1921,7 @@ g_mouse =
 		if (this.bTrail) {
 			api.RedrawWindow(te.hwnd, null, 0, RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN);
 			this.bTrail = false;
+			this.ptText = null;
 		}
 	},
 
@@ -2028,6 +2053,19 @@ g_mouse =
 
 g_basic =
 {
+	FuncI: function (s)
+	{
+		return this.Func[s] || api.ObjGetI(this.Func, s);
+	},
+
+	CmdI: function (s, s2)
+	{
+		var type = this.Func[s] || api.ObjGetI(this.Func, s);
+		if (type) {
+			return type.Cmd[s2] || api.ObjGetI(type.Cmd, s2);
+		}
+	},
+
 	Func:
 	{
 		"":
@@ -2176,7 +2214,7 @@ g_basic =
 		{
 			Exec: function (Ctrl, s, type, hwnd, pt)
 			{
-				var fn = g_basic.Func[type].Cmd[s];
+				var fn = g_basic.CmdI(type, s);
 				if (fn) {
 					return fn(Ctrl, pt);
 				}
@@ -2245,7 +2283,7 @@ g_basic =
 		{
 			Exec: function (Ctrl, s, type, hwnd, pt)
 			{
-				var fn = g_basic.Func[type].Cmd[s];
+				var fn = g_basic.CmdI(type, s);
 				if (fn) {
 					fn(Ctrl, pt);
 					return S_OK;
@@ -2594,7 +2632,7 @@ g_basic =
 
 	Exec: function (Ctrl, s, type, hwnd, pt)
 	{
-		var fn = g_basic.Func[type].Cmd[s];
+		var fn = g_basic.CmdI(type, s);
 		if (!pt) {
 			pt = api.Memory("POINT");
 			api.GetCursorPos(pt);
@@ -2663,7 +2701,7 @@ g_basic =
 
 AddEvent("Exec", function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop)
 {
-	var fn = g_basic.Func[type];
+	var fn = g_basic.FuncI(type);
 	if (fn) {
 		if (dataObj) {
 			if (fn.Drop) {
@@ -2749,20 +2787,20 @@ AddEvent("AddType", function (arFunc)
 
 AddType = function (strType, o)
 {
-	g_basic.Func[strType] = o;
+	api.ObjPutI(g_basic.Func, strType, o);
 };
 
 AddTypeEx = function (strType, strTitle, fn)
 {
-	var type = g_basic.Func[strType];
+	var type = g_basic.FuncI(strType);
 	if (type && type.Cmd) {
-		type.Cmd[strTitle] = fn;
+		api.ObjPutI(type.Cmd, strTitle, fn);
 	}
 };
 
 AddEvent("OptionRef", function (Id, s, pt)
 {
-	var fn = g_basic.Func[Id];
+	var fn = g_basic.FuncI(Id);
 	if (fn) {
 		var r;
 		if (fn.Ref) {
@@ -2789,7 +2827,8 @@ AddEvent("OptionEncode", function (Id, p)
 		p.s = lines.join("\n");
 		return S_OK;
 	}
-	if (g_basic.Func[Id] && g_basic.Func[Id].Enc) {
+	var type = g_basic.FuncI(Id);
+	if (type && type.Enc) {
 		p.s = GetSourceText(p.s);
 		return S_OK;
 	}
@@ -2812,7 +2851,8 @@ AddEvent("OptionDecode", function (Id, p)
 		p.s = lines.join("\n");
 		return S_OK;
 	}
-	if (g_basic.Func[Id] && g_basic.Func[Id].Enc) {
+	var type = g_basic.FuncI(Id);
+	if (type && type.Enc) {
 		var s = GetText(p.s);
 		if (GetSourceText(s) == p.s) {
 			p.s = GetText(p.s);

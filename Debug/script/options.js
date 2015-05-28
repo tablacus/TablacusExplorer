@@ -1915,7 +1915,9 @@ function RefX(Id, bMultiLine, oButton)
 					else {
 						GetElement(Id).value = p.s;
 					}
-					o.onchange();
+					if (o.onchange) {
+						o.onchange();
+					}
 				}
 				return;
 			}
@@ -1946,7 +1948,9 @@ function PortableX(Id)
 	var o = GetElement(Id);
 	var s = fso.GetDriveName(api.GetModuleFileName(null));
 	o.value = o.value.replace(new RegExp('^("?)' + s, "igm"), "$1%Installed%").replace(new RegExp('( "?)' + s, "igm"), "$1%Installed%");
-	o.onchange && o.onchange();
+	if (o.onchange) {
+		o.onchange();
+	}
 }
 
 function GetElement(Id)

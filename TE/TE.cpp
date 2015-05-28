@@ -2064,7 +2064,7 @@ HRESULT teDelProperty(IUnknown *punk, LPOLESTR sz)
 	return hr;
 }
 
-HRESULT tePutProperty(IUnknown *punk, LPOLESTR sz, VARIANT *pv)
+HRESULT tePutProperty0(IUnknown *punk, LPOLESTR sz, VARIANT *pv, DWORD grfdex)
 {
 	HRESULT hr = E_FAIL;
 	DISPID dispid, putid;
@@ -2072,7 +2072,7 @@ HRESULT tePutProperty(IUnknown *punk, LPOLESTR sz, VARIANT *pv)
 	IDispatchEx *pdex;
 	if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pdex))) {
 		BSTR bs = ::SysAllocString(sz);
-		hr = pdex->GetDispID(bs, fdexNameEnsure, &dispid);
+		hr = pdex->GetDispID(bs, grfdex, &dispid);
 		if SUCCEEDED(hr) {
 			putid = DISPID_PROPERTYPUT;
 			dispparams.rgvarg = pv;
@@ -2085,6 +2085,11 @@ HRESULT tePutProperty(IUnknown *punk, LPOLESTR sz, VARIANT *pv)
 		pdex->Release();
 	}
 	return hr;
+}
+
+HRESULT tePutProperty(IUnknown *punk, LPOLESTR sz, VARIANT *pv)
+{
+	return tePutProperty0(punk, sz, pv, fdexNameEnsure);
 }
 
 HRESULT teGetProperty(IDispatch *pdisp, LPOLESTR sz, VARIANT *pv)
@@ -4452,6 +4457,7 @@ LRESULT CALLBACK MenuKeyProc(int nCode, WPARAM wParam, LPARAM lParam)
 LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
 	static UINT dwDoubleTime;
+	static WPARAM wParam2;
 
 	HRESULT hrResult = S_FALSE;
 	IDispatch *pdisp = NULL;
@@ -4462,7 +4468,8 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 					MOUSEHOOKSTRUCTEX *pMHS = (MOUSEHOOKSTRUCTEX *)lParam;
 					if (ControlFromhwnd(&pdisp, pMHS->hwnd) == S_OK) {
 						try {
-							if (InterlockedIncrement(&g_nProcMouse) == 1) {
+							if (InterlockedIncrement(&g_nProcMouse) == 1 || wParam != wParam2) {
+								wParam2 = wParam;
 								CteTreeView *pTV = NULL;
 								TVHITTESTINFO ht;
 								pTV = TVfromhwnd(pMHS->hwnd, false);
@@ -7704,6 +7711,33 @@ VOID teApiSHTestTokenMembership(int nArg, LONGLONG *param, DISPPARAMS *pDispPara
 	}
 }
 
+VOID teApiObjGetI(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	IDispatch *pdisp;
+	if (GetDispatch(&pDispParams->rgvarg[nArg], &pdisp)) {
+		teGetPropertyI(pdisp, (LPOLESTR)param[1], pVarResult);
+		pdisp->Release();
+	}
+}
+
+VOID teApiObjPutI(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	IUnknown *punk;
+	if (FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
+		teSetLong(pVarResult, tePutProperty0(punk, (LPOLESTR)param[1], &pDispParams->rgvarg[nArg - 2], fdexNameEnsure | fdexNameCaseInsensitive));
+	}
+}
+
+VOID teApiDrawText(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetLong(pVarResult, DrawText((HDC)param[0], (LPCWSTR)param[1], lstrlen((LPCWSTR)param[1]), (LPRECT)param[2], (UINT)param[3]));
+}
+
+VOID teApiRectangle(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetLong(pVarResult, Rectangle((HDC)param[0], (int)param[1], (int)param[2], (int)param[3], (int)param[4]));
+}
+
 /*
 VOID teApi(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -7734,9 +7768,6 @@ TEDispatchApi dispAPI[] = {
 	{ 2,  0,  1, -1, L"PathMatchSpec", teApiPathMatchSpec },
 	{ 1,  0, -1, -1, L"CommandLineToArgv", teApiCommandLineToArgv },
 	{ 2, -1, -1, -1, L"ILIsEqual", teApiILIsEqual },
-#ifndef _USE_BSEARCHAPI
-	{ 2, -1, -1, -1, L"ILisEqual", teApiILIsEqual },
-#endif
 	{ 1, -1, -1, -1, L"ILClone", teApiILClone },
 	{ 3, -1, -1, -1, L"ILIsParent", teApiILIsParent },
 	{ 1, -1, -1, -1, L"ILRemoveLastID", teApiILRemoveLastID },
@@ -7755,9 +7786,6 @@ TEDispatchApi dispAPI[] = {
 	{ 1,  0, -1, -1, L"PathIsNetworkPath", teApiPathIsNetworkPath },
 	{ 1,  0, -1, -1, L"RegisterWindowMessage", teApiRegisterWindowMessage },
 	{ 2,  0,  1, -1, L"StrCmpI", teApiStrCmpI },
-#ifndef _USE_BSEARCHAPI
-	{ 2,  0,  1, -1, L"strcmpi", teApiStrCmpI },
-#endif
 	{ 1,  0, -1, -1, L"StrLen", teApiStrLen },
 	{ 3,  0,  1, -1, L"StrCmpNI", teApiStrCmpNI },
 	{ 2,  0,  1, -1, L"StrCmpLogical", teApiStrCmpLogical },
@@ -7955,9 +7983,6 @@ TEDispatchApi dispAPI[] = {
 	{ 6, -1, -1, -1, L"LoadImage", teApiLoadImage  },
 	{ 7, -1, -1, -1, L"ImageList_LoadImage", teApiImageList_LoadImage  },
 	{ 5,  0, -1, -1, L"SHGetFileInfo", teApiSHGetFileInfo  },
-#ifndef _USE_BSEARCHAPI
-	{ 5,  0, -1, -1, L"ShGetFileInfo", teApiSHGetFileInfo  },
-#endif
 	{12, -1,  1,  2, L"CreateWindowEx", teApiCreateWindowEx  },
 	{ 6, -1,  3,  4, L"ShellExecute", teApiShellExecute  },
 	{ 2, -1, -1, -1, L"BeginPaint", teApiBeginPaint  },
@@ -7996,6 +8021,10 @@ TEDispatchApi dispAPI[] = {
 	{ 2, -1, -1, -1, L"UnregisterHotKey", teApiUnregisterHotKey },
 	{ 1, -1, -1, -1, L"ILGetCount", teApiILGetCount },
 	{ 2, -1, -1, -1, L"SHTestTokenMembership", teApiSHTestTokenMembership },
+	{ 2,  1, -1, -1, L"ObjGetI", teApiObjGetI },
+	{ 3,  1, -1, -1, L"ObjPutI", teApiObjPutI },
+	{ 4,  1, -1, -1, L"DrawText", teApiDrawText },
+	{ 5, -1, -1, -1, L"Rectangle", teApiRectangle },
 //	{ 0, -1, -1, -1, L"", teApi },
 //	{ 0, -1, -1, -1, L"Test", teApiTest },
 };
@@ -8963,7 +8992,7 @@ function _s() {\
 		var wins = sha.Windows();\
 		for (var i = wins.Count; i--;) {\
 			var x = wins.Item(i);\
-			if (x && api.strcmpi(x.FullName, arg[0]) == 0) {\
+			if (x && api.StrCmpI(x.FullName, arg[0]) == 0) {\
 				var w = x.Document.parentWindow;\
 				if (!window.MainWindow || window.MainWindow.Exchange && window.MainWindow.Exchange[arg[3]]) {\
 					window.MainWindow = w;\
@@ -8973,7 +9002,6 @@ function _s() {\
 				}\
 			}\
 		}\
-		api.SetForegroundWindow(te.hwnd);\
 		api.AllowSetForegroundWindow(-1);\
 		return _es(location.href);\
 	} catch (e) {\
@@ -17500,9 +17528,14 @@ STDMETHODIMP CteDropTarget::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 							VARIANT v;
 							VariantInit(&v);
 							IDispatch *pEffect = NULL;
-							if (nArg >= 3 && GetDispatch(&pDispParams->rgvarg[nArg - 3], &pEffect)) {
-								teGetPropertyAt(pEffect, 0, &v);
-								dwEffect1 = GetIntFromVariantClear(&v);
+							if (nArg >= 3) {
+								if (GetDispatch(&pDispParams->rgvarg[nArg - 3], &pEffect)) {
+									teGetPropertyAt(pEffect, 0, &v);
+									dwEffect1 = GetIntFromVariantClear(&v);
+								}
+								else {
+									dwEffect1 = GetIntFromVariantClear(&pDispParams->rgvarg[nArg - 3]);
+								}
 							}
 							DWORD dwEffect = dwEffect1;
 							CteFolderItems *pDragItems = new CteFolderItems(pDataObj, NULL, false);

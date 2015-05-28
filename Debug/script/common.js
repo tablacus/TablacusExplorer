@@ -1825,8 +1825,23 @@ RunCommandLine = function (s)
 {
 	var arg = api.CommandLineToArgv(s.replace(/\/[^,\s]*/g, ""));
 	for (var i = 1; i < arg.length; i++) {
+		if (/,/.test(arg[i])) {
+			var ar = arg[i].split(",");
+			Exec(te, GetSourceText(ar[1]), GetSourceText(ar[0]), te.hwnd, api.Memory("POINT"))
+			continue;
+		}
 		Navigate(arg[i], SBSP_NEWBROWSER);
 	}
+}
+
+OpenNewProcess = function (fn, ex)
+{
+	var uid;
+	do {
+		uid = String(Math.random()).replace(/^0?\./, "");
+	} while (Exchange[uid]);
+	Exchange[uid] = ex;
+	return wsh.Exec([api.PathQuoteSpaces(api.GetModuleFileName(null)), '/run', fn, uid].join(" "));
 }
 
 GetAddonInfo = function (Id)
