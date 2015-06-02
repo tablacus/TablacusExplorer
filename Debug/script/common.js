@@ -348,6 +348,11 @@ function ApplyLang(doc)
 function amp2ul(s)
 {
 	s = s.replace(/&amp;/ig, "&");
+	if (/@.*\..*,\-?\d+/.test(s)) {
+		var lk = wsh.CreateShortCut(".lnk")
+		lk.Description = s;
+		s = lk.Description;
+	}
 	return /;/.test(s) ? s : s.replace(/&(.)/ig, "<u>$1</u>");
 }
 
@@ -1108,7 +1113,7 @@ ExecScriptEx = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffec
 		},
 		function (ei, SourceLineText, dwSourceContext, lLineNumber, CharacterPosition)
 		{
-			MessageBox(api.SysAllocString(ei.bstrDescription) + api.sprintf(16, "\n%X\n", ei.scode) + api.SysAllocString(ei.bstrSource), TITLE, MB_ICONSTOP);
+			MessageBox(api.SysAllocString(ei.bstrDescription) + api.sprintf(16, "\n%X\n", ei.scode) + api.SysAllocString(ei.bstrSource), TITLE, MB_OK);
 		}
 	);
 	return window.Handled;
@@ -1929,7 +1934,7 @@ Extract = function (Src, Dest)
 	}
 	catch (e) {
 		if (api.Extract(fso.BuildPath(system32, "zipfldr.dll"), "{E88DCCE0-B7B3-11d1-A9F0-00AA0060FA31}", Src, Dest) != S_OK) {
-			MessageBox(GetText("Extract Error"), TITLE, MB_ICONSTOP);
+			MessageBox(GetText("Extract Error"), TITLE, MB_OK);
 		}
 	}
 	return S_OK;
@@ -2253,36 +2258,35 @@ OpenInExplorer = function (FV)
 {
 	if (FV) {
 		CancelWindowRegistered();
-		if (api.GetKeyState(VK_CONTROL) < 0) {
-			return sha.ShellExecute(api.GetDisplayNameOf(FV, SHGDN_FORPARSING), "", "", "explore", SW_SHOWNORMAL);
-		}
 		var exp = te.CreateObject("new:{C08AFD90-F2A1-11D1-8455-00A0C91F3880}");
-		exp.Navigate2(FV.FolderItem);
+		exp.Navigate2(FV, 2);
 		exp.Visible = true;
 		api.SetForegroundWindow(exp.HWND);
-		try {
-			exp.Document.CurrentViewMode = FV.CurrentViewMode;
-		}
-		catch (e) {}
-		try {
-			do {
-				api.Sleep(100);
-			} while (exp.Busy || exp.ReadyState < 4);
-			var doc = exp.Document;
-			doc.CurrentViewMode = FV.CurrentViewMode;
-			if (doc.IconSize) {
-				doc.IconSize = FV.IconSize;
-				doc.SortColumns = FV.SortColumns;
-				doc.GroupBy = FV.GroupBy.replace(/^-/, "");
+		if (FV.FolderItem) {
+			try {
+				exp.Document.CurrentViewMode = FV.CurrentViewMode;
 			}
-		}
-		catch (e) {}
-		try {
-			if (FV.TreeView.Visible) {
-				exp.ShowBrowserBar("{EFA24E64-B078-11D0-89E4-00C04FC9E26E}", true);
+			catch (e) {}
+			try {
+				do {
+					api.Sleep(100);
+				} while (exp.Busy || exp.ReadyState < 4);
+				var doc = exp.Document;
+				doc.CurrentViewMode = FV.CurrentViewMode;
+				if (doc.IconSize) {
+					doc.IconSize = FV.IconSize;
+					doc.SortColumns = FV.SortColumns;
+					doc.GroupBy = FV.GroupBy.replace(/^-/, "");
+				}
 			}
+			catch (e) {}
+			try {
+				if (FV.TreeView.Visible) {
+					exp.ShowBrowserBar("{EFA24E64-B078-11D0-89E4-00C04FC9E26E}", true);
+				}
+			}
+			catch (e) {}
 		}
-		catch (e) {}
 	}
 }
 
@@ -2793,7 +2797,7 @@ ShowError = function (e, s, i)
 			s = eventTA[s][i] + " : " + s;
 		}
 	}
-	MessageBox([(e.description || e.toString()), s].join("\n"), TITLE, MB_ICONSTOP);
+	MessageBox([(e.description || e.toString()), s].join("\n"), TITLE, MB_OK);
 }
 
 ApiStruct = function (oTypedef, nAli, oMemory)

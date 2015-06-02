@@ -826,13 +826,12 @@ public:
 	HRESULT Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *param, CteShellBrowser **ppSB, FolderItems *pFolderItems);
 	HRESULT NavigateEB(DWORD dwFrame);
 	HRESULT OnBeforeNavigate(FolderItem *pPrevious, UINT wFlags);
-	void InitializeMenuItem(HMENU hmenu, LPTSTR lpszItemName, int nId, HMENU hmenuSub);
+//	void InitializeMenuItem(HMENU hmenu, LPTSTR lpszItemName, int nId, HMENU hmenuSub);
 	VOID GetSort(BSTR* pbs, int nFormat);
 	VOID SetSort(BSTR bs);
 	VOID GetGroupBy(BSTR* pbs);
 	VOID SetGroupBy(BSTR bs);
 	HRESULT SetRedraw(BOOL bRedraw);
-	HRESULT CreateViewWindowEx(IShellView *pPreviousView);
 	VOID SetColumnsStr(BSTR bsColumns);
 	BSTR GetColumnsStr(int nFormat);
 	VOID GetDefaultColumns();
@@ -856,7 +855,12 @@ public:
 	VOID SetFolderSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch);
 	VOID SetLabel(LPCITEMIDLIST pidl, LPWSTR szText, int cch);
 	HRESULT PropertyKeyFromName(BSTR bs, PROPERTYKEY *pkey);
+	FOLDERVIEWOPTIONS teGetFolderViewOptions(LPITEMIDLIST pidl, UINT uViewMode);
+	VOID OnNavigationComplete2();
+	HRESULT NavigationFailed();
+	HRESULT BrowseToObject();
 #ifdef _2000XP
+	HRESULT CreateViewWindowEx(IShellView *pPreviousView);
 	VOID AddPathXP(CteFolderItems *pFolderItems, IShellFolderView *pSFV, int nIndex, BOOL bResultsFolder);
 	int PSGetColumnIndexXP(LPWSTR pszName, int *pcxChar);
 	BSTR PSGetNameXP(LPWSTR pszName, int nFormat);
@@ -895,8 +899,9 @@ public:
 	BOOL		m_bEmpty;
 	BOOL		m_bInit;
 	BOOL		m_bVisible;
-	BOOL		m_bRefreshLayout;
+	BOOL		m_bCheckLayout;
 	BOOL		m_bRefreshLator;
+	BOOL		m_bShowFrames;
 private:
 	VARIANT		m_vData;
 	FolderItem	**m_ppLog;

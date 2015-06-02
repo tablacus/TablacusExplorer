@@ -1368,6 +1368,7 @@ InitOptions = function ()
 					}
 				}
 			}
+			te.Layout = te.Data.Conf_Layout;
 			SaveMenus();
 			SetTabControls();
 			SetTreeControls();
@@ -1644,7 +1645,7 @@ InitLocation = function ()
 	LoadAddon("js", Addon_Id, ar);
 	if (ar.length) {
 		setTimeout(function () {
-			MessageBox(ar.join("\n\n"), TITLE, MB_ICONSTOP);
+			MessageBox(ar.join("\n\n"), TITLE, MB_OK);
 		}, 500);
 	}
 	ar = [];
