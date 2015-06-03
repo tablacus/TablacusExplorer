@@ -871,7 +871,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 		}
 	}
 	if (msg == WM_LBUTTONUP || msg == WM_RBUTTONUP || msg == WM_MBUTTONUP || msg == WM_XBUTTONUP) {
-		if (g_mouse.GetButton(msg, wParam) == g_mouse.str.charAt(0)) {
+		if (g_mouse.str.length) {
 			var hr = S_FALSE;
 			var bButton = false;
 			if (msg == WM_RBUTTONUP) {
@@ -921,13 +921,17 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 		}
 	}
 	if (msg == WM_LBUTTONDOWN || msg == WM_RBUTTONDOWN || msg == WM_MBUTTONDOWN || msg == WM_XBUTTONDOWN) {
+		var s = g_mouse.GetButton(msg, wParam);
+		if (g_mouse.str.indexOf(s) >= 0) {
+			g_mouse.str = "";
+		}
 		if (g_mouse.str.length == 0) {
 			te.Data.pt = pt.Clone();
 			g_mouse.ptGesture.x = pt.x;
 			g_mouse.ptGesture.y = pt.y;
 			g_mouse.hwndGesture = hwnd;
 		}
-		g_mouse.str += g_mouse.GetButton(msg, wParam);
+		g_mouse.str += s;
 		g_mouse.StartGestureTimer();
 		SetGestureText(Ctrl, GetGestureKey() + g_mouse.str);
 		if (msg == WM_RBUTTONDOWN) {
@@ -1963,20 +1967,21 @@ g_mouse =
 
 	GetButton: function (msg, wParam)
 	{
+		var s = "";
 		if (msg >= WM_LBUTTONDOWN && msg <= WM_LBUTTONDBLCLK) {
 			if (api.GetKeyState(VK_RBUTTON) < 0) {
 				g_mouse.CancelContextMenu = true;
 			}
-			return "1";
+			s = "1";
 		}
 		if (msg >= WM_RBUTTONDOWN && msg <= WM_RBUTTONDBLCLK) {
-			return "2";
+			s = "2";
 		}
 		if (msg >= WM_MBUTTONDOWN && msg <= WM_MBUTTONDBLCLK) {
 			if (api.GetKeyState(VK_RBUTTON) < 0) {
 				g_mouse.CancelContextMenu = true;
 			}
-			return "3";
+			s = "3";
 		}
 		if (msg >= WM_XBUTTONDOWN && msg <= WM_XBUTTONDBLCLK) {
 			if (api.GetKeyState(VK_RBUTTON) < 0) {
@@ -1984,12 +1989,14 @@ g_mouse =
 			}
 			switch (wParam >> 16) {
 				case XBUTTON1:
-					return "4";
+					s = "4";
+					break;
 				case XBUTTON2:
-					return "5";
+					s = "5";
+					break;
 			}
 		}
-		return "";
+		return this.str.length ? s : GetGestureButton().replace(s, "") + s;
 	},
 
 	Exec: function (Ctrl, hwnd, pt)

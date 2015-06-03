@@ -10177,7 +10177,9 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	DestroyView(m_param[SB_Type]);
 	Show(FALSE, FALSE);
 #ifdef _2000XP
-	if (g_bUpperVista) {
+	if (
+//		FALSE &&		
+		g_bUpperVista) {
 #endif
 		//ExplorerBrowser
 		hr = NavigateEB(dwFrame);
@@ -10429,8 +10431,12 @@ HRESULT CteShellBrowser::GetAbsPidl(LPITEMIDLIST *ppidlOut, FolderItem **ppid, F
 {
 	if (wFlags & SBSP_PARENT) {
 		if (pPrevious) {
-			if (m_bsFilter) {
+			if (m_bsFilter || m_pDispatch[SB_OnIncludeObject]) {
 				teSysFreeString(&m_bsFilter);
+				if (m_pDispatch[SB_OnIncludeObject]) {
+					m_pDispatch[SB_OnIncludeObject]->Release();
+					m_pDispatch[SB_OnIncludeObject] = NULL;
+				}
 				Refresh(TRUE);
 				return E_FAIL;
 			}
@@ -10526,7 +10532,13 @@ VOID CteShellBrowser::HookDragDrop(int nMode)
 {
 	if (m_hwnd && nMode & 1) {
 		if (!m_pDropTarget) {
-			teRegisterDragDrop(m_hwndLV, this, &m_pDropTarget);
+			HWND hwnd = m_hwndLV;
+			if (!hwnd) {
+				hwnd = FindWindowEx(m_hwndDV, NULL, L"DirectUIHWND", NULL);
+			}
+			if (hwnd) {
+				teRegisterDragDrop(hwnd, this, &m_pDropTarget);
+			}
 		}
 	}
 	if (nMode & 2 && m_pTV && m_pTV->m_hwndTV && !m_pTV->m_pDropTarget) {
@@ -12603,7 +12615,6 @@ STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 	if (ILIsEqual(m_pidl, pidlFolder)) {
 		return S_OK;
 	}
-
 	LPITEMIDLIST pidlPrevius = m_pidl;
 	m_pidl = ::ILClone(pidlFolder);
 	FolderItem *pPrevious = m_pFolderItem;
@@ -12638,6 +12649,11 @@ STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 	if (uViewMode != m_param[SB_ViewMode] && fvo != teGetFolderViewOptions(const_cast<LPITEMIDLIST>(pidlFolder), m_param[SB_ViewMode])) {
 		m_bCheckLayout = TRUE;
 		return S_OK;
+	}
+	teSysFreeString(&m_bsFilter);
+	if (m_pDispatch[SB_OnIncludeObject]) {
+		m_pDispatch[SB_OnIncludeObject]->Release();
+		m_pDispatch[SB_OnIncludeObject] = NULL;
 	}
 	ResetPropEx();
 	//History / Management
@@ -12705,14 +12721,6 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 
 STDMETHODIMP CteShellBrowser::OnNavigationComplete(PCIDLIST_ABSOLUTE pidlFolder)
 {
-	if (!FindWindowEx(m_hwndDV, NULL, NULL, NULL)) {
-		m_pExplorerBrowser->GetOptions((EXPLORER_BROWSER_OPTIONS *)&m_param[SB_Options]);
-		if ((m_param[SB_Options] & EBO_SHOWFRAMES) == 0) {
-			m_bShowFrames = TRUE;
-			SetTimer(m_hwnd, SBSP_RELATIVE | SBSP_SAMEBROWSER, 100, teTimerProcNavigate);
-			return S_OK;
-		}
-	}
 	return S_OK;
 }
 
@@ -13200,7 +13208,6 @@ VOID CteShellBrowser::SetPropEx()
 				SetWindowLongPtr(m_hwndLV, GWLP_USERDATA, (LONG_PTR)this);
 				m_DefProc2 = SetWindowLongPtr(m_hwndLV, GWLP_WNDPROC, (LONG_PTR)TELVProc2);
 			}
-			HookDragDrop(g_dragdrop & 1);
 			if (m_pExplorerBrowser) {
 				if (m_param[SB_FolderFlags] & FWF_NOCLIENTEDGE) {
 					SetWindowLong(m_hwnd, GWL_STYLE, GetWindowLong(m_hwnd, GWL_STYLE) & ~WS_BORDER);
@@ -13210,6 +13217,7 @@ VOID CteShellBrowser::SetPropEx()
 				SetWindowLong(m_hwndLV, GWL_EXSTYLE, GetWindowLong(m_hwndLV, GWL_EXSTYLE) | WS_EX_CLIENTEDGE);
 			}
 		}
+		HookDragDrop(g_dragdrop & 1);
 	}
 }
 
