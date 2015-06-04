@@ -1588,7 +1588,7 @@ te.OnHitTest = function (Ctrl, pt, flags)
 te.OnGetPaneState = function (Ctrl, ep, peps)
 {
 	var hr = RunEvent3("GetPaneState", Ctrl, ep, peps);
-	return isFinite(hr) ? hr : -1;
+	return isFinite(hr) ? hr : E_NOTIMPL;
 }
 
 te.OnTranslatePath = function (Ctrl, Path)
