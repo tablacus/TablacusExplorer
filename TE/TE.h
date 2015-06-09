@@ -313,6 +313,12 @@ struct TEFS
 	ULONGLONG Result;
 };
 
+struct TEExists
+{
+	LPWSTR pszPath;
+	HANDLE hEvent[2];
+};
+
 /*
 struct TEDrop
 {
@@ -390,7 +396,7 @@ public:
 	LPITEMIDLIST	m_pidlFocused;
 	int				m_nSelected;
 	BOOL			m_bStrict;
-	BOOL			m_bNotExist;
+	DWORD			m_dwUnavailable;
 private:
 	LONG			m_cRef;
 };
@@ -811,7 +817,7 @@ public:
 	void Init(CteTabs *pTabs, BOOL bNew);
 	void Clear();
 	void Show(BOOL bShow, BOOL bSuspend);
-	VOID Suspend(BOOL bTree);
+	VOID Suspend(int nMode);
 	VOID SetPropEx();
 	VOID ResetPropEx();
 	int GetTabIndex();
@@ -819,7 +825,7 @@ public:
 	VOID DestroyView(int nFlags);
 	HWND GetListHandle(HWND *hList);
 	HRESULT BrowseObject2(FolderItem *pid, UINT wFlags);
-	VOID CheckNavigate(LPITEMIDLIST *ppidl, CteShellBrowser *pHistSB, int nLogIndex);
+//	VOID CheckNavigate(LPITEMIDLIST *ppidl, CteShellBrowser *pHistSB, int nLogIndex);
 	BOOL Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItems *pFolderItems, FolderItem *pPrevious, LPITEMIDLIST *ppidl, int nErrorHandling);
 	VOID Navigate1Ex(LPOLESTR pstr, FolderItems *pFolderItems, UINT wFlags, FolderItem *pPrevious, int nErrorHandleing);
 	HRESULT Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *param, FolderItems *pFolderItems, FolderItem *pPrevious, CteShellBrowser *pHistSB);
@@ -856,9 +862,10 @@ public:
 	HRESULT PropertyKeyFromName(BSTR bs, PROPERTYKEY *pkey);
 	FOLDERVIEWOPTIONS teGetFolderViewOptions(LPITEMIDLIST pidl, UINT uViewMode);
 	VOID OnNavigationComplete2();
-	HRESULT NavigationFailed();
 	HRESULT BrowseToObject();
+	HRESULT GetShellFolder2(LPITEMIDLIST pidl);
 #ifdef _2000XP
+	HRESULT NavigateSB(IShellView *pPreviousView, FolderItem *pPrevious);
 	HRESULT CreateViewWindowEx(IShellView *pPreviousView);
 	VOID AddPathXP(CteFolderItems *pFolderItems, IShellFolderView *pSFV, int nIndex, BOOL bResultsFolder);
 	int PSGetColumnIndexXP(LPWSTR pszName, int *pcxChar);
@@ -921,8 +928,9 @@ private:
 	HRESULT		m_DragLeave;
 	LONG		m_nCreate;
 	BOOL		m_bIconSize;
-	BOOL		m_bNotExist;
+	LONG		m_dwUnavailable;
 	BOOL		m_bNavigateComplete;
+	BOOL		m_bEnableSuspend;
 #ifdef _2000XP
 	IShellFolderViewCB	*m_pSFVCB;
 	int			m_nFolderName;
