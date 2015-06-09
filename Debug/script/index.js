@@ -1783,9 +1783,9 @@ function ChangeNotifyFV(lEvent, item1, item2)
 		for (var i in cFV) {
 			var FV = cFV[i];
 			if (lEvent == SHCNE_RENAMEFOLDER && !FV.Data.Lock) {
-			if (api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"))) {
 				var path = api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
 				var path1 = api.GetDisplayNameOf(item1, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
+				if (api.PathMatchSpec(path, [String(path1).replace(/\\$/, ""), path1].join("\\*;"))) {
 					FV.Navigate(path.replace(path1, api.GetDisplayNameOf(item2, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)), SBSP_SAMEBROWSER);
 				}
 			}
