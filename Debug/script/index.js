@@ -312,7 +312,8 @@ LoadConfig = function ()
 						y = mi.rcWork.top;
 					}
 				}
-				api.MoveWindow(te.hwnd, x, y, w, h, 0);
+				api.ShowWindow(te.hwnd, SW_SHOWNORMAL);
+				api.MoveWindow(te.hwnd, x, y, w, h, true);
 			}
 			te.CmdShow = item.getAttribute("CmdShow");
 		}
@@ -682,10 +683,7 @@ te.OnCreate = function (Ctrl)
 					ChangeView(cTC[i].Selected);
 				}
 			}
-			setTimeout(function ()
-			{
-				api.ShowWindow(te.hwnd, te.CmdShow);
-			}, 99);
+			api.ShowWindow(te.hwnd, te.CmdShow);
 		}, 99);
 		RunEvent1("Create", Ctrl);
 		RunCommandLine(api.GetCommandLine());
