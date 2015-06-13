@@ -30,6 +30,7 @@ g_KeyState = [
 g_dlgs = {};
 g_bWindowRegistered = true;
 Addon_Id = "";
+g_stack_TC = [];
 g_pidlCP = api.ILRemoveLastID(ssfCONTROLS);
 if (api.ILIsEmpty(g_pidlCP) || api.ILIsEqual(g_pidlCP, ssfDRIVES)) {
 	g_pidlCP = ssfCONTROLS;
@@ -333,6 +334,12 @@ SaveConfig = function ()
 	}
 	if (te.Data.bSaveConfig) {
 		te.Data.bSaveConfig = false;
+		if (document.msFullscreenElement) {
+			while (g_stack_TC.length) {
+				g_stack_TC.pop().Visible = true;
+			}
+			document.msExitFullscreen();
+		}
 		SaveXml(fso.BuildPath(te.Data.DataFolder, "config\\window.xml"), true);
 	}
 }
@@ -675,7 +682,10 @@ te.OnCreate = function (Ctrl)
 					ChangeView(cTC[i].Selected);
 				}
 			}
-			api.ShowWindow(te.hwnd, te.CmdShow);
+			setTimeout(function ()
+			{
+				api.ShowWindow(te.hwnd, te.CmdShow);
+			}, 99);
 		}, 99);
 		RunEvent1("Create", Ctrl);
 		RunCommandLine(api.GetCommandLine());
@@ -1017,6 +1027,14 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 
 te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam)
 {
+	if (Ctrl.Type <= CTRL_EB) {
+		if ((wParam & 0xfff) + 1 == CommandID_DELETE) {
+			var Items = Ctrl.SelectedItems();
+			for (var i = Items.Count; i--;) {
+				UnlockFV(Items[i]);
+			}
+		}
+	}
 	var hr = RunEvent3("Command", Ctrl, hwnd, msg, wParam, lParam);
 	RunEvent1("ConfigChanged", "Config");
 	return isFinite(hr) ? hr : S_FALSE; 
@@ -1024,6 +1042,12 @@ te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam)
 
 te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon)
 {
+	if (Verb == CommandID_DELETE - 1) {
+		var Items = ContextMenu.Items();
+		for (var i = Items.Count; i--;) {
+			UnlockFV(Items[i]);
+		}
+	}
 	var hr = RunEvent3("InvokeCommand", ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon);
 	RunEvent1("ConfigChanged", "Config");
 	if (isFinite(hr)) {
@@ -1266,6 +1290,12 @@ te.OnItemClick = function (Ctrl, Item, HitTest, Flags)
 	return isFinite(hr) ? hr : S_FALSE;
 }
 
+te.OnColumnClick = function (Ctrl, iItem)
+{
+	var hr = RunEvent3("ColumnClick", Ctrl, iItem);
+	return isFinite(hr) ? hr : S_FALSE;
+}
+
 te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 {
 	var hr = RunEvent3("SystemMessage", Ctrl, hwnd, msg, wParam, lParam);
@@ -1351,6 +1381,19 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 								if (item) {
 									Exec(Ctrl, item.text, item.getAttribute("Type"), null);
 									return 1;
+								}
+							}
+						}
+					}
+					break;
+				case WM_POWERBROADCAST:
+					if (wParam == PBT_APMRESUMEAUTOMATIC) {
+						var cFV = te.Ctrls(CTRL_FV);
+						for (var i in cFV) {
+							var FV = cFV[i];
+							if (FV.hwndView) {
+								if (api.PathIsNetworkPath(api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING))) {
+									FV.Suspend();
 								}
 							}
 						}
@@ -1647,6 +1690,25 @@ AddEventEx(window, "resize", Resize);
 
 AddEventEx(window, "beforeunload", Finalize);
 
+AddEventEx(document, "MSFullscreenChange", function ()
+{
+	if (document.msFullscreenElement) {
+		var cTC = te.Ctrls(CTRL_TC);
+		for (var i in cTC) {
+			var TC = cTC[i];
+			if (TC.Visible) {
+				g_stack_TC.push(TC);
+				TC.Visible = false;
+			}
+		}
+	}
+	else {
+		while (g_stack_TC.length) {
+			g_stack_TC.pop().Visible = true;
+		}
+	}
+});
+
 //
 
 function InitMenus()
@@ -1774,6 +1836,17 @@ function InitCode()
 	HOME_PATH = te.Data.Conf_NewTab || HOME_PATH;
 }
 
+function UnlockFV(Item)
+{
+	var cFV = te.Ctrls(CTRL_FV);
+	for (var i in cFV) {
+		var FV = cFV[i];
+		if (FV.hwndView && api.ILIsParent(Item, FV, false)) {
+			FV.Suspend();
+		}
+	}
+}
+
 function ChangeNotifyFV(lEvent, item1, item2)
 {
 	var fAdd = SHCNE_DRIVEADD | SHCNE_MEDIAINSERTED | SHCNE_NETSHARE | SHCNE_MKDIR;
@@ -1783,10 +1856,11 @@ function ChangeNotifyFV(lEvent, item1, item2)
 		for (var i in cFV) {
 			var FV = cFV[i];
 			if (lEvent == SHCNE_RENAMEFOLDER && !FV.Data.Lock) {
-				var path = api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
-				var path1 = api.GetDisplayNameOf(item1, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
-				if (api.PathMatchSpec(path, [String(path1).replace(/\\$/, ""), path1].join("\\*;"))) {
+				var path = String(api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
+				var path1 = String(api.GetDisplayNameOf(item1, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
+				if (api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"))) {
 					FV.Navigate(path.replace(path1, api.GetDisplayNameOf(item2, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)), SBSP_SAMEBROWSER);
+					continue;
 				}
 			}
 			if (FV.hwndView) {
@@ -1824,7 +1898,7 @@ function ChangeNotifyFV(lEvent, item1, item2)
 			}
 			if ((lEvent & fAdd) && FV.FolderItem.Unavailable) {
 				var path = api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
-				var path1 = api.GetDisplayNameOf(item1, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
+				var path1 = String(api.GetDisplayNameOf(item1, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
 				if (api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"))) {
 					FV.Refresh();
 				}
@@ -2879,8 +2953,6 @@ AddEvent("OptionEncode", function (Id, p)
 		p.s = GetSourceText(p.s);
 		return S_OK;
 	}
-
-
 });
 
 AddEvent("OptionDecode", function (Id, p)
@@ -2931,7 +3003,7 @@ if (!te.Data) {
 
 	te.Data.View_Type = CTRL_SB;
 	te.Data.View_ViewMode = FVM_DETAILS;
-	te.Data.View_fFlags = FWF_SHOWSELALWAYS | FWF_AUTOARRANGE;
+	te.Data.View_fFlags = FWF_SHOWSELALWAYS;
 	te.Data.View_Options = EBO_SHOWFRAMES | EBO_ALWAYSNAVIGATE;
 	te.Data.View_ViewFlags = CDB2GVF_SHOWALLFILES;
 	te.Data.View_IconSize = 0;

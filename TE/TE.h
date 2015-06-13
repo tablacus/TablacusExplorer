@@ -5,6 +5,7 @@
 //#define _USE_HTMLDOC
 //#define _USE_TESTOBJECT
 //#define _USE_TESTPATHMATCHSPEC
+#define _Emulate_XP_	//FALSE &&
 
 #include "resource.h"
 #include <Mshtml.h>
@@ -134,7 +135,6 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *
 #define TET_Show				0x1fa6
 #define TET_Unload				0x1fa7
 #define TET_Status				0x1fa8
-#define TET_ShowInit			0x1fa9
 #define SHGDN_FORPARSINGEX	0x80000000
 #define START_OnFunc			5000
 #define TE_Labels				0
@@ -173,7 +173,8 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *
 #define TE_OnColumnsChanged		33
 #define TE_OnKeyMessage			34
 #define TE_OnItemPrePaint		35
-#define Count_OnFunc			36
+#define TE_OnColumnClick		36
+#define Count_OnFunc			37
 
 #define SB_TotalFileSize		0
 #define SB_OnIncludeObject		1
@@ -595,6 +596,7 @@ public:
 	~CteWebBrowser();
 	void Close();
 	HWND get_HWND();
+	VOID write(LPWSTR pszPath);
 //	BOOL IsBusy();
 public:
 	VARIANT m_vData;
@@ -878,6 +880,7 @@ public:
 	HWND		m_hwnd;
 	HWND		m_hwndDV;
 	HWND		m_hwndLV;
+	HWND		m_hwndDT;
 	CteTabs		*m_pTabs;
 	CteTreeView	*m_pTV;
 	LONG_PTR	m_DefProc;

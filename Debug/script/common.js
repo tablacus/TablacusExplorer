@@ -51,14 +51,18 @@ FolderMenu =
 
 	OpenMenu: function (hMenu, FolderItem, hParent, wID)
 	{
+		if (!FolderItem) {
+			return;
+		}
+		var path = FolderItem.Path || FolderItem;
+		if (api.PathIsNetworkPath(path) && !api.PathIsDirectory(path, te.Data.Conf_NetworkTimeout)) {
+			return;
+		}
+		if (path === FolderItem) {
+			FolderItem = api.ILCreateFromPath(path);
+		}
 		try {
-			if (!FolderItem) {
-				return;
-			}
-			if (api.StrCmpI(typeof(FolderItem), "object")) {
-				FolderItem = api.ILCreateFromPath(FolderItem);
-			}
-			if (FolderItem.IsBrowsable) {
+			if (!FolderItem || FolderItem.IsBrowsable) {
 				return;
 			}
 			var bSep = false;
@@ -370,7 +374,7 @@ function ImgBase64(o, index)
 		o.removeAttribute("bitmap");
 		o.removeAttribute("icon");
 	}
-	else if (api.StrCmpI(o.src, src)) {
+	else if (o.src.toLowerCase() != src.toLowerCase()) {
 		return src.replace(location.href.replace(/[^\/]*$/, ""), "file:///");
 	}
 	return s;
@@ -506,11 +510,13 @@ function LoadLang2(filename)
 {
 	var xml = te.CreateObject("Msxml2.DOMDocument");
 	xml.async = false;
-	xml.load(filename);
-	var items = xml.getElementsByTagName('text');
-	for (var i = 0; i < items.length; i++) {
-		var item = items[i];
-		SetLang2(item.getAttribute("s").replace("\\t", "\t").replace("\\n", "\n"), item.text.replace("\\t", "\t").replace("\\n", "\n"));
+	if (fso.FileExists(filename)) {
+		xml.load(filename);
+		var items = xml.getElementsByTagName('text');
+		for (var i = 0; i < items.length; i++) {
+			var item = items[i];
+			SetLang2(item.getAttribute("s").replace("\\t", "\t").replace("\\n", "\n"), item.text.replace("\\t", "\t").replace("\\n", "\n"));
+		}
 	}
 }
 
@@ -536,7 +542,7 @@ LoadXml = function (filename)
 		cTC[i].Close();
 	}
 	var xml = filename;
-	if (typeof(filename) == "string") {
+	if (typeof(filename) == "string" && fso.FileExists(filename)) {
 		var xml = te.CreateObject("Msxml2.DOMDocument");
 		xml.async = false;
 		xml.load(filename);
@@ -787,6 +793,12 @@ CreateTab = function ()
 
 Navigate = function (Path, wFlags)
 {
+	if (Path) {
+		var path = Path.Path || Path;
+		if (api.PathIsNetworkPath(path) && !api.PathIsDirectory(path, te.Data.Conf_NetworkTimeout)) {
+			return;
+		}
+	}
 	var FV = te.Ctrl(CTRL_FV);
 	if (!FV) {
 		var TC = te.CreateCtrl(CTRL_TC, 0, 0, "100%", "100%", te.Data.Tab_Style, te.Data.Tab_Align, te.Data.Tab_TabWidth, te.Data.Tab_TabHeight);
@@ -1051,6 +1063,9 @@ DropOpen = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, b
 
 Exec = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop)
 {
+	if (s === "") {
+		return S_FALSE;
+	}
 	window.Ctrl = Ctrl;
 	window.hwnd = hwnd;
 	window.dataObj = dataObj;
@@ -1065,14 +1080,13 @@ Exec = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop
 		window.pt = te.Data.pt;
 	}
 	window.Handled = S_OK;
-	if (s === "") {
-		return S_FALSE;
-	}
+	window.FV = GetFolderView(Ctrl, pt);
+
 	if (api.StrCmpI(type, "Func") == 0) {
-		return s(Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop);
+		return s(Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop, window.FV);
 	}
 	for (var i in eventTE.Exec) {
-		var hr = eventTE.Exec[i](Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop);
+		var hr = eventTE.Exec[i](Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop, window.FV);
 		if (isFinite(hr)) {
 			return hr; 
 		}
@@ -1080,18 +1094,18 @@ Exec = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop
 	return window.Handled;
 }
 
-ExecScriptEx = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop)
+ExecScriptEx = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop, FV)
 {
 	var fn = null;
 	try {
-		if (api.PathMatchSpec(type, "J*Script")) {
+		if (/J.*Script/i.test(type)) {
 			fn = {Handled: new Function(s)};
 		}
-		else if (api.StrCmpI(type, "VBScript") == 0) {
-			fn = api.GetScriptDispatch('Function Handled(Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop)\n' + s + '\nEnd Function', type, true);
+		else if (/VBScript/i.test(type)) {
+			fn = api.GetScriptDispatch('Function Handled(Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop, FV)\n' + s + '\nEnd Function', type, true);
 		}
 		if (fn) {
-			var r = fn.Handled(Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop);
+			var r = fn.Handled(Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop, FV);
 			return isFinite(r) ? r : window.Handled;
 		}
 	}
@@ -1109,7 +1123,8 @@ ExecScriptEx = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffec
 			dataObj: dataObj,
 			grfKeyState: grfKeyState,
 			pdwEffect: pdwEffect,
-			bDrop: bDrop
+			bDrop: bDrop,
+			FV: FV
 		},
 		function (ei, SourceLineText, dwSourceContext, lLineNumber, CharacterPosition)
 		{
@@ -1118,13 +1133,14 @@ ExecScriptEx = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffec
 	);
 	return window.Handled;
 }
-DropScript = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop)
+
+DropScript = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop, FV)
 {
 	if (!pdwEffect) {
 		pdwEffect = api.Memory("DWORD");
 	}
 	if (s.match("EnableDragDrop")) {
-		return ExecScriptEx(Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop);
+		return ExecScriptEx(Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop, FV);
 	}
 	pdwEffect[0] = DROPEFFECT_NONE;
 	return E_NOTIMPL;
@@ -1856,13 +1872,16 @@ GetAddonInfo = function (Id)
 	var path = fso.GetParentFolderName(api.GetModuleFileName(null));
 	var xml = te.CreateObject("Msxml2.DOMDocument");
 	xml.async = false;
-	xml.load(fso.BuildPath(path, "addons\\" + Id + "\\config.xml"));
+	var xmlfile = fso.BuildPath(path, "addons\\" + Id + "\\config.xml");
+	if (fso.FileExists(xmlfile)) {
+		xml.load(xmlfile);
 
-	GetAddonInfo2(xml, info, "General", true);
-	GetAddonInfo2(xml, info, "en", true);
-	GetAddonInfo2(xml, info, GetLangId());
-	if (!info.Name) {
-		info.Name = Id;
+		GetAddonInfo2(xml, info, "General", true);
+		GetAddonInfo2(xml, info, "en", true);
+		GetAddonInfo2(xml, info, GetLangId());
+		if (!info.Name) {
+			info.Name = Id;
+		}
 	}
 	return info;
 }
@@ -1883,27 +1902,29 @@ OpenXml = function (strFile, bAppData, bEmpty, strInit)
 {
 	var xml = te.CreateObject("Msxml2.DOMDocument");
 	xml.async = false;
-	if (xml.load(fso.BuildPath(te.Data.DataFolder, "config\\" + strFile))) {
+	var path = fso.BuildPath(te.Data.DataFolder, "config\\" + strFile);
+	if (fso.FileExists(path) && xml.load(path)) {
 		return xml;
 	}
 	if (!bAppData) {
-		var path = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "config\\" + strFile);
-		if (xml.load(path)) {
+		path = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "config\\" + strFile);
+		if (fso.FileExists(path) && xml.load(path)) {
 			var Dest = sha.NameSpace(fso.BuildPath(te.Data.DataFolder, "config"));
 			Dest.MoveHere(path, FOF_SILENT | FOF_NOCONFIRMATION);
 			return xml;
 		}
 	}
-	if (strInit && xml.load(fso.BuildPath(strInit, strFile))) {
+	if (strInit) {
+		path = fso.BuildPath(strInit, strFile);
+		if (fso.FileExists(path) && xml.load(path)) {
+			return xml;
+		}
+	}
+	path = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "init\\" + strFile);
+	if (fso.FileExists(path) && xml.load(path)) {
 		return xml;
 	}
-	if (xml.load(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "init\\" + strFile))) {
-		return xml;
-	}
-	if (bEmpty) {
-		return xml;
-	}
-	return null;
+	return bEmpty ? xml : null;
 }
 
 CreateXml = function ()
