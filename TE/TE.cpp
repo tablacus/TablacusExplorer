@@ -1587,8 +1587,11 @@ BOOL tePathMatchSpec1(LPCWSTR pszFile, LPWSTR pszSpec)
 
 BOOL tePathMatchSpec(LPCWSTR pszFile, LPCWSTR pszSpec)
 {
-	if (!pszSpec[0]) {
+	if (!pszSpec || !pszSpec[0]) {
 		return TRUE;
+	}
+	if (!pszFile) {
+		return FALSE;
 	}
 	LPWSTR pszSpec1 = const_cast<LPWSTR>(pszSpec);
 	do {
@@ -1607,7 +1610,7 @@ BOOL tePathMatchSpec(LPCWSTR pszFile, LPCWSTR pszSpec)
 	return FALSE;
 }
 
-BOOL tePathIsNetworkPath(LPCWSTR pszPath)//PathIsNetworkPath is slow.
+BOOL tePathIsNetworkPath(LPCWSTR pszPath)//PathIsNetworkPath is slow in DRIVE_NO_ROOT_DIR.
 {
 	WCHAR pszDrive[4];
 	lstrcpyn(pszDrive, pszPath, 4);
@@ -2512,10 +2515,16 @@ BOOL teILIsExists(LPITEMIDLIST pidl)
 	return bResult;
 }
 
-BOOL tePathIsDirectory2(LPWSTR pszPath)
+BOOL tePathIsDirectory2(LPWSTR pszPath, BOOL bUseFS)
 {
 	BOOL bResult = FALSE;
-	LPITEMIDLIST pidl = teILCreateFromPath(pszPath);
+	LPITEMIDLIST pidl = NULL;
+	if (bUseFS) {
+		lpfnSHParseDisplayName(pszPath, NULL, &pidl, 0, NULL);
+	}
+	else {
+		pidl = teILCreateFromPath(pszPath);
+	}
 	if (pidl) {
 		bResult = teILIsExists(pidl);
 		teCoTaskMemFree(pidl);
@@ -2526,7 +2535,7 @@ BOOL tePathIsDirectory2(LPWSTR pszPath)
 static void threadExists(void *args)
 {
 	TEExists *pExists = (TEExists *)args;
-	SetEvent(pExists->hEvent[(pExists->bUseFS ? PathIsDirectory(pExists->pszPath) : tePathIsDirectory2(pExists->pszPath)) ? 1 : 0]);
+	SetEvent(pExists->hEvent[tePathIsDirectory2(pExists->pszPath, pExists->bUseFS) ? 1 : 0]);
 	CloseHandle(pExists->hEvent[1]);
 	CloseHandle(pExists->hEvent[0]);
 	delete [] pExists;
@@ -2547,7 +2556,7 @@ BOOL tePathIsDirectory(LPWSTR pszPath, int dwms, BOOL bUseFS)
 		_beginthread(&threadExists, 0, pExists);
 		return WaitForMultipleObjects(2, pExists->hEvent, FALSE, dwms) == WAIT_OBJECT_0 + 1;
 	}
-	return bUseFS ? PathIsDirectory(pszPath) : tePathIsDirectory2(pszPath);
+	return tePathIsDirectory2(pszPath, bUseFS);
 }
 
 LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath)
@@ -2601,14 +2610,15 @@ LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath)
 		if (pszPath) {
 			lpfnSHParseDisplayName(pszPath, NULL, &pidl, 0, NULL);
 			if (pidl) {
-				if (tePathIsNetworkPath(pszPath) && PathIsRoot(pszPath) && !tePathIsDirectory(pszPath, -1, TRUE)) {
+				if (tePathIsNetworkPath(pszPath) && PathIsRoot(pszPath) && !tePathIsDirectory(pszPath, -1, 1)) {
 					teILFreeClear(&pidl);
 				}
 			}
 			else if (PathGetDriveNumber(pszPath) >= 0 && !PathIsRoot(pszPath)) {
 				WCHAR pszDrive[4];
 				lstrcpyn(pszDrive, pszPath, 4);
-				if (GetDriveType(pszDrive) == DRIVE_NO_ROOT_DIR && tePathIsDirectory(pszDrive, -1, TRUE)) {
+				int n = GetDriveType(pszDrive);
+				if (n == DRIVE_NO_ROOT_DIR && tePathIsDirectory(pszDrive, -1, 1)) {
 					lpfnSHParseDisplayName(pszPath, NULL, &pidl, 0, NULL);
 				}
 			}
@@ -7796,11 +7806,7 @@ VOID teApiRectangle(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT 
 
 VOID teApiPathIsDirectory(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	if (nArg >= 1) {
-		teSetBool(pVarResult, tePathIsDirectory((LPWSTR)param[0], (DWORD)param[1], (DWORD)param[2]));
-		return;
-	}
-	teSetBool(pVarResult, tePathIsDirectory2((LPWSTR)param[0]));
+	teSetBool(pVarResult, tePathIsDirectory((LPWSTR)param[0], (DWORD)param[1], (DWORD)param[2]));
 }
 
 /*
@@ -8341,7 +8347,6 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 			while (--i >= 0) {
 				CteTabs *pTC = g_pTC[i];
 				if (pTC) {
-					BOOL bDirect = FALSE;
 					pTC->LockUpdate();
 					try {
 						teCalcClientRect(pTC->m_param, &rc, &rcClient);
@@ -8467,9 +8472,6 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 									ShowWindow(pSB->m_pTV->m_hwnd, (pSB->m_param[SB_TreeAlign] & 2) ? SW_SHOW : SW_HIDE);
 								}
 								else {
-									if (pSB->m_hwnd) {
-										bDirect = TRUE;
-									}
 									pSB->Show(TRUE, FALSE);
 								}
 								MoveWindow(pSB->m_hwnd, rc.left, rc.top, rc.right - rc.left,
@@ -8477,7 +8479,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 							}
 						}
 					} catch (...) {}
-					pTC->UnLockUpdate(bDirect);
+					pTC->UnLockUpdate(TRUE);
 				}
 				else{
 					break;
@@ -8519,19 +8521,24 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 							else if SUCCEEDED(pFV->ItemCount(SVGIO_ALLVIEW, &nCount)) {
 								uID = nCount > 1 ? 38192 : 38193;
 							}
-							WCHAR sz[MAX_STATUS + 4];
-							if (LoadString(g_hShell32, uID, &sz[4], MAX_STATUS) <= 2) {
+							BSTR bsCount = ::SysAllocStringLen(NULL, 16);
+							swprintf_s(bsCount, 16, L"%d", nCount);
+							teCommaSize(bsCount, 16);
+
+							WCHAR psz[MAX_STATUS];
+							if (LoadString(g_hShell32, uID, psz, MAX_STATUS) > 2) {
+								swprintf_s(g_szStatus, MAX_STATUS, psz, bsCount);
+							}
+#ifdef _2000XP
+							else {
 								uID = uID < 38194 ? 6466 : 6477;
-								if (LoadString(g_hShell32, uID, sz, MAX_STATUS) <= 6) {
-									lstrcpy(&sz[6], nCount <= 1 ? L" item" : L" items");
-									if (uID == 6477) {
-										lstrcat(&sz[6], L" selected");
-									}
+								if (LoadString(g_hShell32, uID, psz, MAX_STATUS) > 6) {
+									FormatMessage(FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY,
+										psz, 0, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)g_szStatus, MAX_STATUS, (va_list *)&bsCount);
 								}
 							}
-							sz[4] = '%';
-							sz[5] = 'd';
-							swprintf_s(g_szStatus, MAX_STATUS, &sz[4], nCount);
+#endif
+							::SysFreeString(bsCount);
 						}
 						pFV->Release();
 					}
@@ -17559,8 +17566,10 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 						else {
 							teVariantChangeType(&pv[i], &pDispParams->rgvarg[nArg - i - 2], VT_BSTR);
 							ppwc[i] = pv[i].bstrVal;
-							if (i == 2 && !tePathIsDirectory(ppwc[i], -1, TRUE)) {
-								ppwc[i] = NULL;
+							if (i == 2) {
+								if (!tePathMatchSpec(ppwc[i], L"?:\\*;\\\\*\\*") || !tePathIsDirectory(ppwc[i], -1, TRUE)) {
+									ppwc[i] = NULL;
+								}
 							}
 							if ((ULONG_PTR)ppwc[i] > MAXWORD) {
 								int nLenW = ::SysStringLen(ppwc[i]) + 1;
