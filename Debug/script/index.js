@@ -108,7 +108,7 @@ ChangeView = function (Ctrl)
 	if (Ctrl) {
 		if (!Ctrl.FolderItem.Unavailable && te.Data.Conf_NetworkTimeout) {
 			var strPath = api.GetDisplayNameOf(Ctrl.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
-			if (api.PathIsNetworkPath(strPath) && !api.PathIsDirectory(strPath, te.Data.Conf_NetworkTimeout)) {
+			if (api.PathIsNetworkPath(strPath) && !api.PathIsDirectory(strPath, -1)) {
 				Ctrl.Suspend(2);
 			}
 		}
@@ -684,6 +684,7 @@ te.OnCreate = function (Ctrl)
 				}
 			}
 			api.ShowWindow(te.hwnd, te.CmdShow);
+			te.UnlockUpdate();
 		}, 99);
 		RunEvent1("Create", Ctrl);
 		RunCommandLine(api.GetCommandLine());
@@ -1883,11 +1884,11 @@ function ChangeNotifyFV(lEvent, item1, item2)
 					var path = api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
 					if (api.PathIsNetworkPath(path)) {
 						var n = FV.FolderItem.Unavailable;
-						if (!n && !api.PathIsDirectory(path, te.Data.Conf_NetworkTimeout)) {
+						if (!n && !api.PathIsDirectory(path, -1)) {
 							FV.Suspend(2);
 							continue;
 						}
-						if (n > 30000 && api.PathIsDirectory(path, te.Data.Conf_NetworkTimeout)) {
+						if (n > 30000 && api.PathIsDirectory(path, -1)) {
 							FV.Refresh();
 							continue;
 						}
@@ -1997,6 +1998,7 @@ function InitMouse()
 	te.Data.Conf_Layout = isFinite(te.Data.Conf_Layout) ? Number(te.Data.Conf_Layout) : 0x80;
 	te.Data.Conf_NetworkTimeout = isFinite(te.Data.Conf_NetworkTimeout) ? Number(te.Data.Conf_NetworkTimeout) : 1000;
 	te.Layout = te.Data.Conf_Layout;
+	te.NetworkTimeout = te.Data.Conf_NetworkTimeout;
 }
 
 g_mouse = 
@@ -3059,13 +3061,12 @@ if (!te.Data) {
 	}
 	te.Data.uRegisterId = api.SHChangeNotifyRegister(te.hwnd, SHCNRF_InterruptLevel | SHCNRF_ShellLevel | SHCNRF_NewDelivery, SHCNE_ALLEVENTS, TWM_CHANGENOTIFY, ssfDESKTOP, true);
 }
+else {
+	setTimeout("te.UnlockUpdate();", 500);
+}
 
 InitCode();
 InitMouse();
 InitMenus();
 LoadLang();
 ArrangeAddons();
-setTimeout(function ()
-{
-	te.UnlockUpdate();
-}, 99);

@@ -131,10 +131,9 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *
 #define TET_Reload				0x1fa2
 #define TET_Size				0x1fa3
 #define TET_Size2				0x1fa4
-#define TET_Redraw				0x1fa5
-#define TET_Show				0x1fa6
-#define TET_Unload				0x1fa7
-#define TET_Status				0x1fa8
+#define TET_Status				0x1fa5
+#define TET_Unload				0x1fa6
+#define TET_Redraw				0x1da7
 #define SHGDN_FORPARSINGEX	0x80000000
 #define START_OnFunc			5000
 #define TE_Labels				0
@@ -211,6 +210,7 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *
 #define TE_Tab		5
 #define TE_CmdShow	6
 #define TE_Layout	7
+#define TE_NetworkTimeout	8
 
 #define TC_Align	6
 #define TC_TabWidth		7
@@ -318,6 +318,7 @@ struct TEExists
 {
 	LPWSTR pszPath;
 	HANDLE hEvent[2];
+	BOOL bUseFS;
 };
 
 /*
@@ -488,7 +489,7 @@ public:
 	~CTE();
 public:
 	VARIANT m_vData;
-	int		m_param[8];
+	int		m_param[9];
 	BOOL	m_bDrop;
 private:
 	CteFolderItems *m_pDragItems;
@@ -656,7 +657,7 @@ public:
 	VOID Close(BOOL bForce);
 	VOID Move(int nSrc, int nDest, CteTabs *pDestTab);
 	VOID LockUpdate();
-	VOID UnLockUpdate();
+	VOID UnLockUpdate(BOOL bDirect);
 	VOID RedrawUpdate();
 	VOID Show(BOOL bVisible);
 	VOID GetItem(int i, VARIANT *pVarResult);
@@ -679,13 +680,13 @@ public:
 	int		m_nScrollWidth;
 	BOOL	m_bEmpty;
 	BOOL	m_bVisible;
+	BOOL	m_bRedraw;
 private:
 	VARIANT m_vData;
 	CteFolderItems *m_pDragItems;
 	DWORD	m_grfKeyState;
 	LONG	m_cRef;
 	LONG	m_nLockUpdate;
-	BOOL	m_bRedraw;
 	HRESULT m_DragLeave;
 };
 
