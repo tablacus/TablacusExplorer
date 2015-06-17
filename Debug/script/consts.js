@@ -3,8 +3,7 @@ AddEventEx = function (w, Name, fn)
 {
 	if (w.addEventListener) {
 		w.addEventListener(Name, fn, false);
-	}
-	else if (w.attachEvent){
+	} else if (w.attachEvent){
 		w.attachEvent("on" + Name, fn);
 	}
 }
@@ -19,8 +18,7 @@ if (!window.te && window.external && external.Type) {
 		te = te.TE;
 		try {
 			window.external = te;
-		} catch (e) {
-		}
+		} catch (e) {}
 	}
 	api = te.WindowsAPI;
 	if (api) {
@@ -50,8 +48,7 @@ if (g_uid) {
 						{
 							try {
 								delete MainWindow.Exchange[g_uid];
-							}
-							catch (e) {}
+							} catch (e) {}
 						});
 						break;
 					}
@@ -88,8 +85,7 @@ api.GetVersionEx(osInfo);
 WINVER = osInfo.dwMajorVersion * 0x100 + osInfo.dwMinorVersion;
 try {
 	wsh.CurrentDirectory = fso.GetSpecialFolder(2).Path;
-} catch (e) {
-}
+} catch (e) {}
 api.ILisEqual = api.ILIsEqual;
 api.strcmpi = api.StrCmpI;
 api.ShGetFileInfo = api.SHGetFileInfo;

@@ -143,8 +143,7 @@ function ClickTab(o, nMode)
 			ovPanel.style.display = 'block';
 			g_ovPanel = ovPanel;
 			ResizeTabPanel();
-		}
-		else {
+		} else {
 			ovTab.className = 'tab';
 			ovPanel.style.display = 'none';
 		}
@@ -230,8 +229,7 @@ function ClickButton(o, n, f)
 	if (f || o.innerText != '-') {
 		o.innerText = '-';
 		op.style.display = "block";
-	}
-	else {
+	} else {
 		o.innerText = '+';
 		op.style.display = "none";
 	}
@@ -248,8 +246,7 @@ function SetCheckbox(o)
 	var ar = o.id.split(":");
 	if (o.checked) {
 		document.F.elements[ar[0]].value |= eval(ar[1]);
-	}
-	else {
+	} else {
 		document.F.elements[ar[0]].value &= ~eval(ar[1]);
 	}
 }
@@ -315,8 +312,7 @@ function SetTreeControls()
 			for (i = 0; i < cTV.Count; i++) {
 				SetTreeControl(cTV.Item(i));
 			}
-		}
-		else {
+		} else {
 			var TV = te.Ctrl(CTRL_TV);
 			if (TV) {
 				SetTreeControl(TV);
@@ -367,8 +363,7 @@ function SetTabControls()
 			for (i = 0; i < cTC.Count; i++) {
 				SetTabControl(cTC.Item(i));
 			}
-		}
-		else {
+		} else {
 			var TC = te.Ctrl(CTRL_TC);
 			if (TC) {
 				SetTabControl(TC);
@@ -420,8 +415,7 @@ function SetFolderViews()
 			for (i = 0; i< cFV.Count; i++) {
 				SetFolderView(cFV.Item(i));
 			}
-		}
-		else if (FV) {
+		} else if (FV) {
 			SetFolderView(FV);
 		}
 	}
@@ -439,8 +433,7 @@ function SetFolderView(FV)
 		FV.SizeFormat = Number(document.F.View_SizeFormat.value);
 		if (FV.Type != document.F.View_Type.value) {
 			FV.Type = document.F.View_Type.value;
-		}
-		else {
+		} else {
 			FV.Refresh();
 		}
 	}
@@ -569,8 +562,7 @@ function SetOptions(fnYes, fnNo, NoCancel, bNoDef)
 				if (g_nResult && NoCancel !== 2) {
 					if (event.preventDefault) {
 						event.preventDefault();
-					}
-					else {
+					} else {
 			 			event.returnValue = GetText('Are you sure?');
 						wsh.SendKeys("{Esc}");
 					}
@@ -772,8 +764,7 @@ function LoadMenus(nSelected)
 						SetMenus(o[i], [item.getAttribute("Name"), item.getAttribute("Filter"), item.text, item.getAttribute("Type"), item.getAttribute("Icon")]);
 					}
 				}
-			}
-			else {
+			} else {
 				oa[++oa.length - 1].value = s;
 			}
 			oa[oa.length - 1].text = GetText(s);
@@ -846,8 +837,7 @@ function LoadX(mode, fn)
 					SetData(o[i], [s, item.text, item.getAttribute("Type")]);
 				}
 			}
-		}
-		else {
+		} else {
 			g_x[mode] = document.F.List;
 			g_x[mode].length = 0;
 			var path = fso.GetParentFolderName(api.GetModuleFileName(null));
@@ -976,8 +966,7 @@ function SaveAddons()
 			te.Data.Addons = xml;
 			MainWindow.RunEvent1("ConfigChanged", "Addons");
 		}
-	}
-	catch (e) {}
+	} catch (e) {}
 }
 
 function SetChanged(fn)
@@ -986,8 +975,7 @@ function SetChanged(fn)
 		g_bChanged = true;
 		if (g_x[g_Chg.Data].selectedIndex >= 0) {
 			(fn || ReplaceX)(g_Chg.Data);
-		}
-		else {
+		} else {
 			AddX(g_Chg.Data, fn);
 		}
 	}
@@ -1113,8 +1101,7 @@ function SetAddon(td, Id, Enable)
 			if (api.GetKeyState(VK_LBUTTON) < 0 && !g_drag5) {
 				(e ? e.currentTarget : window.event.srcElement).style.cursor = "move";
 				g_bDrag = true;
-			}
-			else {
+			} else {
 				td.onmouseup(e);
 			}
 		}
@@ -1147,8 +1134,7 @@ function Over5()
 	if (g_drag5) {
 		if (event.preventDefault) {
 			event.preventDefault();
-		}
-		else {
+		} else {
  			event.returnValue = false;
 		}
 	}
@@ -1180,8 +1166,7 @@ function GetRowIndexById(id)
 				}
 			}
 		}
-	}
-	catch (e) {
+	} catch (e) {
 	}
 }
 
@@ -1210,8 +1195,7 @@ function AddonEnable(Id, o)
 		}
 		o.value = GetText('Enable');
 		div.style.color = "gray";
-	}
-	else {
+	} else {
 		var info = GetAddonInfo(Id);
 		if (!info.MinVersion || te.Version >= api.LowPart(info.MinVersion.replace(/\D/g, ""))) {
 			o.value = GetText('Disable');
@@ -1234,8 +1218,7 @@ function OptionMove(dir)
 	 			break;
 			}
 		}
-	}
-	else if (/^2/.test(TabIndex)) {
+	} else if (/^2/.test(TabIndex)) {
 		if (g_x.Menus.selectedIndex < 0 || g_x.Menus.selectedIndex + dir < 0 || g_x.Menus.selectedIndex + dir >= g_x.Menus.length) {
 			return;
 		}
@@ -1405,8 +1388,7 @@ OpenIcon = function (o)
 				}
 				api.FreeLibrary(hModule);
 			}
-		}
-		else {
+		} else {
 			dllpath = fso.BuildPath(system32, a[1]);
 			var nCount = api.ExtractIconEx(dllpath, -1, null, null, 0);
 			for (var i = 0; i < nCount; i++) {
@@ -1508,8 +1490,7 @@ InitDialog = function ()
 					}
 					if (document.getElementById("folder").checked) {
 						CreateFolder(path);
-					}
-					else if (document.getElementById("file").checked) {
+					} else if (document.getElementById("file").checked) {
 						CreateFile(path);
 					}
 					dialogArguments.FV.SelectItem(path, SVSI_SELECT | SVSI_DESELECTOTHERS | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
@@ -1527,8 +1508,7 @@ InitDialog = function ()
 						dialogArguments.element.onchange();
 					}
 				}
-			}
-			catch (e) {
+			} catch (e) {
 			}
 		});
 	}
@@ -1565,8 +1545,7 @@ MouseDown = function ()
 			}
 			n *= 2;
 		}
-	}
-	else {
+	} else {
 		returnValue = GetGestureKey() + GetGestureButton();
 		api.RedrawWindow(api.GetWindow(document), null, 0, RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN);
 	}
@@ -1821,8 +1800,7 @@ function SetAttrib(item, n, s)
 {
 	if (s) {
 		item.setAttribute(n, s);
-	}
-	else {
+	} else {
 		item.removeAttribute(n);
 	}
 }
@@ -1901,8 +1879,7 @@ function RefX(Id, bMultiLine, oButton)
 				if (oButton) {
 					pt = GetPos(oButton, true);
 					pt.y = pt.y + o.offsetHeight * screen.deviceYDPI / screen.logicalYDPI;
-				}
-				else {
+				} else {
 					pt = api.Memory("POINT");
 					api.GetCursorPos(pt);
 				}
@@ -1912,8 +1889,7 @@ function RefX(Id, bMultiLine, oButton)
 					MainWindow.OptionDecode(o[o.selectedIndex].value, p);
 					if (bMultiLine && api.GetKeyState(VK_CONTROL) < 0 && api.ILCreateFromPath(p.s)) {
 						AddPath(Id, p.s);
-					}
-					else {
+					} else {
 						GetElement(Id).value = p.s;
 					}
 					if (o.onchange) {
@@ -1929,8 +1905,7 @@ function RefX(Id, bMultiLine, oButton)
 		if (path) {
 			if (bMultiLine) {
 				AddPath(Id, path);
-			}
-			else {
+			} else {
 				o.value = path;
 			}
 			if (o.onchange) {
@@ -1967,8 +1942,7 @@ function AddPath(Id, strValue)
 		var s = o.value;
 		if (/\n$/.test(s) || s == "") {
 			s += strValue;
-		}
-		else {
+		} else {
 			s += "\n" + strValue;
 		}
 		o.value = s;
@@ -2002,8 +1976,7 @@ function SetTab(s)
 					break;
 				}
 			}
-		}
-		else if (api.StrCmpI(ar[0], "menus") == 0) {
+		} else if (api.StrCmpI(ar[0], "menus") == 0) {
 			g_MenuType = ar[1];
 		}
 	}
@@ -2261,13 +2234,11 @@ function AddonsAppend(q)
 				AddonsAppend(q);
 			}, 1);
 			document.getElementById('STATUS').innerText = Math.floor(100 * q.i / q.ts.length) + " %";
-		}
-		else {
+		} else {
 			document.body.style.cursor = "auto";
 			document.getElementById('STATUS').innerText = "";
 		}
-	}
-	catch (e) {}
+	} catch (e) {}
 }
 
 function ArrangeAddon(xml, td, ts)
@@ -2292,28 +2263,21 @@ function ArrangeAddon(xml, td, ts)
 			filename = Id + '_' + info.Version.replace(/\D/, '') + '.zip';
 		}
 		var dt2 = (dt.getTime() / (24 * 60 * 60 * 1000)) - info.Version;
-		var bInstall = true;
 		if (CheckAddon(Id)) {
 			installed = GetAddonInfo(Id);
 			if (installed.Version >= info.Version) {
-				s.push(GetText('Installed'));
-				bInstall = false;
-			}
-			else {
+				return;
+			} else {
 				s.push('<b id="_Addons_', Id,'" style="color: red; white-space: nowrap;">', GetText('Update available'), "</b>");
 				dt2 += MAXINT * 2;
 			}
-		}
-		else {
+		} else {
 			dt2 += MAXINT;
 		}
-		if (bInstall) {
-			if (info.MinVersion && te.Version >= CalcVersion(info.MinVersion)) {
-				s.push('<input type="button" onclick="Install(this)" title="', Id, '_', info.Version, '" value="', GetText("Install"), '">');
-			}
-			else {
-				s.push('<input type="button" style="color: red" onclick="CheckUpdate()" value="', info.MinVersion.replace(/^20/, "Version ").replace(/\.0/g, '.'), ' ', GetText("is required."), '">');
-			}
+		if (info.MinVersion && te.Version >= CalcVersion(info.MinVersion)) {
+			s.push('<input type="button" onclick="Install(this)" title="', Id, '_', info.Version, '" value="', GetText("Install"), '">');
+		} else {
+			s.push('<input type="button" style="color: red" onclick="CheckUpdate()" value="', info.MinVersion.replace(/^20/, "Version ").replace(/\.0/g, '.'), ' ', GetText("is required."), '">');
 		}
 		s.push('</td></tr></table>');
 		var nInsert = 0;

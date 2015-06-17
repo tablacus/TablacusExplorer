@@ -42,8 +42,7 @@ RunEvent1 = function (en, a1, a2, a3)
 	for (var i in eo) {
 		try {
 			eo[i](a1, a2, a3);
-		}
-		catch (e) {
+		} catch (e) {
 			ShowError(e, en, i);
 		}
 	}
@@ -58,8 +57,7 @@ RunEvent2 = function (en, a1, a2, a3, a4)
 			if (isFinite(hr) && hr != S_OK) {
 				return hr; 
 			}
-		}
-		catch (e) {
+		} catch (e) {
 			ShowError(e, en, i);
 		}
 	}
@@ -75,8 +73,7 @@ RunEvent3 = function (en, a1, a2, a3, a4, a5, a6, a7, a8, a9)
 			if (isFinite(hr)) {
 				return hr; 
 			}
-		}
-		catch (e) {
+		} catch (e) {
 			ShowError(e, en, i);
 		}
 	}
@@ -91,8 +88,7 @@ RunEvent4 = function (en, a1, a2)
 			if (r !== undefined) {
 				return r; 
 			}
-		}
-		catch (e) {
+		} catch (e) {
 			ShowError(e, en, i);
 		}
 	}
@@ -141,8 +137,7 @@ GetTabName = function (Ctrl)
 				if (s) {
 					return s;
 				}
-			}
-			catch (e) {
+			} catch (e) {
 				ShowError(e, en, i);
 			}
 		}
@@ -201,8 +196,7 @@ Finalize = function ()
 					if (dlg.oExec.Status == 0) {
 						dlg.oExec.Terminate();
 					}
-				}
-				else if (dlg.window) {
+				} else if (dlg.window) {
 					dlg.close();
 				}
 			}
@@ -247,8 +241,7 @@ IsSavePath = function (path)
 			if (!eo[i](path)) {
 				return false;
 			}
-		}
-		catch (e) {
+		} catch (e) {
 			ShowError(e, en, i);
 		}
 	}
@@ -486,8 +479,7 @@ AddFavorite = function (FolderItem)
 			if (fso.FileExists(item.text)) {
 				item.text = api.PathQuoteSpaces(item.text);
 				item.setAttribute("Type", "Exec");
-			}
-			else {
+			} else {
 				item.setAttribute("Type", "Open");
 			}
 			menus[0].appendChild(item);
@@ -582,8 +574,7 @@ OpenSelected = function (Ctrl, NewTab, pt)
 			if (bFolder) {
 			 	FV.Navigate(Item, NewTab);
 			 	NewTab |= SBSP_NEWBROWSER;
-			}
-			else {
+			} else {
 				Exec.push(Item);
 			}
 		}
@@ -631,15 +622,13 @@ DisableImage = function (img, bDisable)
 	if (img) {
 		if (api.QuadPart(document.documentMode) < 10) {
 			img.style.filter = bDisable ? "gray(); alpha(style=0,opacity=48);": "";
-		}
-		else {
+		} else {
 			var s = img.src;
 			if (bDisable) {
 				if (/^data:image\/png/i.test(s)) {
 					img.src = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ' + img.offsetWidth + ' ' + img.offsetHeight + '"><filter id="G"><feColorMatrix type="saturate" values="0.1" /></filter><image width="' + img.width + '" height="' + img.height + '" xlink:href="' + img.src + '" filter="url(#G)" opacity=".48"></image></svg>');
 				}
-			}
-			else if (/^data:image\/svg/i.test(s) && /href="([^"]*)/i.test(decodeURIComponent(s))) {
+			} else if (/^data:image\/svg/i.test(s) && /href="([^"]*)/i.test(decodeURIComponent(s))) {
 				img.src = RegExp.$1
 			}
 		}
@@ -688,8 +677,7 @@ te.OnCreate = function (Ctrl)
 		}, 99);
 		RunEvent1("Create", Ctrl);
 		RunCommandLine(api.GetCommandLine());
-	}
-	else {
+	} else {
 		if (!Ctrl.Data) {
 			Ctrl.Data = te.Object();
 		}
@@ -893,8 +881,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 				if (g_mouse.RButton >= 0) {
 					g_mouse.RButtonDown(true);
 					bButton = (g_mouse.str == "2");
-				}
-				else if (bLV) {
+				} else if (bLV) {
 					var iItem = Ctrl.HitTest(pt);
 					if (iItem < 0 && !IsDrag(pt, te.Data.pt)) {
 						Ctrl.SelectItem(null, SVSI_DESELECTOTHERS);
@@ -908,8 +895,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 						var iItem = Ctrl.HitTest(pt);
 						if (iItem >= 0) {
 							Ctrl.SelectItem(Ctrl.Item(iItem), SVSI_SELECT | SVSI_FOCUSED | SVSI_DESELECTOTHERS);
-						}
-						else {
+						} else {
 							Ctrl.SelectItem(null, SVSI_DESELECTOTHERS);
 						}
 					}
@@ -1116,8 +1102,7 @@ te.OnDragEnter = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect)
 			if (isFinite(hr2) && hr != S_OK) {
 				hr = hr2;
 			}
-		}
-		catch (e) {
+		} catch (e) {
 			ShowError(e, en, i);
 		}
 	}
@@ -1137,8 +1122,7 @@ te.OnDragOver = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect)
 			if (isFinite(hr)) {
 				return hr; 
 			}
-		}
-		catch (e) {
+		} catch (e) {
 			ShowError(e, en, i);
 		}
 	}
@@ -1157,8 +1141,7 @@ te.OnDrop = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect)
 			if (isFinite(hr)) {
 				return hr; 
 			}
-		}
-		catch (e) {
+		} catch (e) {
 			ShowError(e, en, i);
 		}
 	}
@@ -1176,8 +1159,7 @@ te.OnDragLeave = function (Ctrl)
 			if (isFinite(hr2) && hr != S_OK) {
 				hr = hr2;
 			}
-		}
-		catch (e) {
+		} catch (e) {
 			ShowError(e, en, i);
 		}
 	}
@@ -1227,8 +1209,7 @@ te.OnShowContextMenu = function (Ctrl, hwnd, msg, wParam, pt)
 				if (ExecMenu(Ctrl, "Context", pt, 1) == S_OK) {
 					return S_OK;
 				}
-			}
-			else {
+			} else {
 				if (ExecMenu(Ctrl, "Background", pt, 1) == S_OK) {
 					return S_OK;
 				}
@@ -1361,8 +1342,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 								}
 							}, 99);
 						}
-					}
-					else  {
+					} else  {
 						g_mouse.str = "";
 						SetGestureText(Ctrl, "");
 					}
@@ -1461,8 +1441,7 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 				while (eo && eo.length) {
 					eo.shift()();
 				}
-			}
-			catch (e) {
+			} catch (e) {
 				ShowError(e, en);
 			}
 			for (var i in g_arBM) {
@@ -1548,8 +1527,7 @@ te.OnArrange = function (Ctrl, rc)
 		o.style.top = (rc.Top * screen.logicalYDPI / screen.deviceYDPI) + "px";
 		if (Ctrl.Visible) {
 			o.style.display = (document.documentMode && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
-		}
-		else {
+		} else {
 			o.style.display = "none";
 		}
 		var i = rc.Right - rc.Left
@@ -1584,8 +1562,7 @@ te.OnVisibleChanged = function (Ctrl)
 		if (o) {
 			if (Ctrl.Visible) {
 				o.style.display = (document.documentMode && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
-			}
-			else {
+			} else {
 				o.style.display = "none";
 			}
 		}
@@ -1700,8 +1677,7 @@ AddEventEx(document, "MSFullscreenChange", function ()
 				TC.Visible = false;
 			}
 		}
-	}
-	else {
+	} else {
 		while (g_stack_TC.length) {
 			g_stack_TC.pop().Visible = true;
 		}
@@ -1789,11 +1765,9 @@ function SetAddon(strName, Location, Tag)
 		var o = document.getElementById(Location);
 		if (typeof(Tag) == "string") {
 			o.insertAdjacentHTML("BeforeEnd", Tag);
-		}
-		else if (Tag.join) {
+		} else if (Tag.join) {
 			o.insertAdjacentHTML("BeforeEnd", Tag.join(""));
-		}
-		else {
+		} else {
 			o.appendChild(Tag);
 		}
 		o.style.display = (document.documentMode && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
@@ -1924,8 +1898,7 @@ SetKeyExec = function (mode, strKey, path, type, bLast)
 			}
 			if (bLast) {
 				KeyMode[strKey].push([path, type]);
-			}
-			else {
+			} else {
 				KeyMode[strKey].unshift([path, type]);
 			}
 		}
@@ -1950,8 +1923,7 @@ SetGestureExec = function (mode, strGesture, path, type, bLast)
 			}
 			if (bLast) {
 				MouseMode[strGesture].push([path, type]);
-			}
-			else {
+			} else {
 				MouseMode[strGesture].unshift([path, type]);
 			}
 		}
@@ -2054,8 +2026,7 @@ g_mouse =
 				if (mode) {
 					var Ctrl = te.CtrlFromWindow(this.hwndGesture);
 					Ctrl.SelectItem(Ctrl.Item(this.RButton), SVSI_SELECT | SVSI_FOCUSED | SVSI_DESELECTOTHERS);
-				}
-				else {
+				} else {
 					var ptc = api.Memory("POINT");
 					ptc = te.Data.pt.Clone();
 					api.ScreenToClient(this.hwndGesture, ptc);
@@ -2216,8 +2187,7 @@ g_basic =
 						return s + r + "\n";
 					}
 					return r;
-				}
-				else {
+				} else {
 					var arFunc = [];
 					RunEvent1("AddType", arFunc);
 					var r = g_basic.Popup(arFunc, s, pt);
@@ -2266,8 +2236,7 @@ g_basic =
 				s = ExtractMacro(Ctrl, s);
 				try {
 					ShellExecute(s, null, SW_SHOWNORMAL, Ctrl, pt);
-				}
-				catch (e) {
+				} catch (e) {
 					ShowError(e, s);
 				}
 				return S_OK;
@@ -2286,12 +2255,10 @@ g_basic =
 						for (var i = dataObj.Count; i > 0; ar.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(dataObj.Item(--i), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)))) {
 						}
 						s = s.replace(re, ar.join(" "));
-					}
-					else {
+					} else {
 						return S_OK;
 					}
-				}
-				else {
+				} else {
 					pdwEffect[0] = DROPEFFECT_NONE;
 					return S_OK;
 				}
@@ -2307,8 +2274,7 @@ g_basic =
 				s = ExtractMacro(Ctrl, s);
 				try {
 					ShellExecute(s, "RunAs", SW_SHOWNORMAL, Ctrl, pt);
-				}
-				catch (e) {
+				} catch (e) {
 					ShowError(e, s);
 				}
 				return S_OK;
@@ -2338,8 +2304,7 @@ g_basic =
 				var fn = g_basic.CmdI(type, s);
 				if (fn) {
 					return fn(Ctrl, pt);
-				}
-				else {
+				} else {
 					return Exec(Ctrl, s + " %Selected%", "Exec", hwnd, pt);
 				}
 			},
@@ -2414,8 +2379,7 @@ g_basic =
 					var TC = FV.Parent;
 					if (/^\d/.test(s)) {
 						TC.SelectedIndex = api.QuadPart(s);
-					}
-					else if (/^\-/.test(s)) {
+					} else if (/^\-/.test(s)) {
 						TC.SelectedIndex = TC.Count + api.QuadPart(s);
 					}
 				}
@@ -2467,8 +2431,7 @@ g_basic =
 					var FV = GetFolderView(Ctrl, pt);
 					if (HOME_PATH) {
 						NavigateFV(FV, HOME_PATH, SBSP_NEWBROWSER);
-					}
-					else {
+					} else {
 						NavigateFV(FV, null, SBSP_RELATIVE | SBSP_NEWBROWSER);
 					}
 				},
@@ -2572,11 +2535,9 @@ g_basic =
 				var Selected;
 				if (Ctrl.Type <= CTRL_EB) {
 					Selected = Ctrl.SelectedItems();
-				}
-				else if (Ctrl.Type == CTRL_TV) {
+				} else if (Ctrl.Type == CTRL_TV) {
 					Selected = Ctrl.SelectedItem;
-				}
-				else {
+				} else {
 					var FV = te.Ctrl(CTRL_FV);
 					Selected = FV.SelectedItems();
 				}
@@ -2659,8 +2620,7 @@ g_basic =
 						while (--nCount >= 0) {
 							s.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(Selected.Item(nCount), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)));
 						}
-					}
-					else {
+					} else {
 						s.push(api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)));
 					}
 					clipboardData.setData("text", s.join(" "));
@@ -2679,8 +2639,7 @@ g_basic =
 						var s = InputDialog("Search", IsSearchPath(FV) ? api.GetDisplayNameOf(FV, SHGDN_INFOLDER) : "");
 						if (s) {
 							FV.FilterView(s);
-						}
-						else if (s === "") {
+						} else if (s === "") {
 							CancelFilterView(FV);
 						}
 					}
@@ -2768,8 +2727,7 @@ g_basic =
 		var ar = [];
 		if (Cmd.length) {
 			ar = Cmd;
-		}
-		else {
+		} else {
 			for (i in Cmd) {
 				ar.push(i);
 			}
@@ -2795,8 +2753,7 @@ g_basic =
 		for (var i = api.GetMenuItemCount(hMenu); i--;) {
 			if (api.GetMenuString(hMenu, i, MF_BYPOSITION)) {
 				api.EnableMenuItem(hMenu, i, MF_ENABLED | MF_BYPOSITION);
-			}
-			else {
+			} else {
 				api.DeleteMenu(hMenu, i, MF_BYPOSITION);
 			}
 		}
@@ -3055,13 +3012,11 @@ if (!te.Data) {
 
 	if (api.GetKeyState(VK_SHIFT) < 0 && api.GetKeyState(VK_CONTROL) < 0) {
 		xmlWindow = "Init";
-	}
-	else {
+	} else {
 		LoadConfig();
 	}
 	te.Data.uRegisterId = api.SHChangeNotifyRegister(te.hwnd, SHCNRF_InterruptLevel | SHCNRF_ShellLevel | SHCNRF_NewDelivery, SHCNE_ALLEVENTS, TWM_CHANGENOTIFY, ssfDESKTOP, true);
-}
-else {
+} else {
 	setTimeout("te.UnlockUpdate();", 500);
 }
 

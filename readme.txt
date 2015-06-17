@@ -17,6 +17,9 @@ LightTempler
 Português / Portuguese
 Sérgio Nova
 
+Italiano / Italian
+Michele Pezza
+
 //Documents
 https://www.penflip.com/LightTempler/tablacus-explorer
 
