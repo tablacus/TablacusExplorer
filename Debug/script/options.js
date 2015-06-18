@@ -2189,7 +2189,7 @@ function AddonsSearch()
 function AddonsSub(q)
 {
 	if (document.getElementById) {
-		var table = document.getElementById("addons");
+		var table = document.getElementById("Addons1");
 		if (table) {
 			while (table.rows.length > 0) {
 				table.deleteRow(0);
