@@ -619,7 +619,7 @@ private:
 	DWORD	m_dwEffectTE;
 };
 
-class CteTabs : public IDispatchEx, public IDropTarget
+class CteTabCtrl : public IDispatchEx, public IDropTarget
 {
 public:
 	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
@@ -648,14 +648,14 @@ public:
 	VOID TabChanged(BOOL bSameTC);
 	CteShellBrowser * GetShellBrowser(int nPage);
 
-	CteTabs();
-	~CteTabs();
+	CteTabCtrl();
+	~CteTabCtrl();
 
 	VOID CreateTC();
 	BOOL Create();
 	VOID Init();
 	VOID Close(BOOL bForce);
-	VOID Move(int nSrc, int nDest, CteTabs *pDestTab);
+	VOID Move(int nSrc, int nDest, CteTabCtrl *pDestTab);
 	VOID LockUpdate();
 	VOID UnLockUpdate(BOOL bDirect);
 	VOID RedrawUpdate();
@@ -814,10 +814,10 @@ public:
 	STDMETHODIMP GetCommandString(UINT_PTR idCmd, UINT uFlags, UINT *pwReserved, LPSTR pszName, UINT cchMax);
 	STDMETHODIMP InvokeCommand(LPCMINVOKECOMMANDINFO pici);
 */
-	CteShellBrowser(CteTabs *pTabs);
+	CteShellBrowser(CteTabCtrl *pTabs);
 	~CteShellBrowser();
 
-	void Init(CteTabs *pTabs, BOOL bNew);
+	void Init(CteTabCtrl *pTC, BOOL bNew);
 	void Clear();
 	void Show(BOOL bShow, BOOL bSuspend);
 	VOID Suspend(int nMode);
@@ -828,7 +828,6 @@ public:
 	VOID DestroyView(int nFlags);
 	HWND GetListHandle(HWND *hList);
 	HRESULT BrowseObject2(FolderItem *pid, UINT wFlags);
-//	VOID CheckNavigate(LPITEMIDLIST *ppidl, CteShellBrowser *pHistSB, int nLogIndex);
 	BOOL Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItems *pFolderItems, FolderItem *pPrevious, LPITEMIDLIST *ppidl, int nErrorHandling);
 	VOID Navigate1Ex(LPOLESTR pstr, FolderItems *pFolderItems, UINT wFlags, FolderItem *pPrevious, int nErrorHandleing);
 	HRESULT Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *param, FolderItems *pFolderItems, FolderItem *pPrevious, CteShellBrowser *pHistSB);
@@ -882,7 +881,7 @@ public:
 	HWND		m_hwndDV;
 	HWND		m_hwndLV;
 	HWND		m_hwndDT;
-	CteTabs		*m_pTabs;
+	CteTabCtrl		*m_pTC;
 	CteTreeView	*m_pTV;
 	LONG_PTR	m_DefProc;
 	LONG_PTR	m_DefProc2;
