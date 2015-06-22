@@ -1854,26 +1854,12 @@ function ChangeNotifyFV(lEvent, item1, item2)
 						api.SendMessage(FV.hwndList, LVM_SETITEMSTATE, -1, item);
 					}
 				}
-				if ((lEvent & SHCNE_UPDATEDIR) && te.Data.Conf_NetworkTimeout) {
+				if ((lEvent & fAdd) && FV.FolderItem.Unavailable) {
 					var path = api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
-					if (api.PathIsNetworkPath(path)) {
-						var n = FV.FolderItem.Unavailable;
-						if (!n && !api.PathIsDirectory(path, -1)) {
-							FV.Suspend(2);
-							continue;
-						}
-						if (n > 30000 && api.PathIsDirectory(path, -1)) {
-							FV.Refresh();
-							continue;
-						}
+					var path1 = String(api.GetDisplayNameOf(item1, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
+					if (api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"))) {
+						FV.Refresh();
 					}
-				}
-			}
-			if ((lEvent & fAdd) && FV.FolderItem.Unavailable) {
-				var path = api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
-				var path1 = String(api.GetDisplayNameOf(item1, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
-				if (api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"))) {
-					FV.Refresh();
 				}
 			}
 		}
