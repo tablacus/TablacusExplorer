@@ -2416,7 +2416,7 @@ GetFolderView = function (Ctrl, pt, bStrict)
 	if (!Ctrl) {
 		return te.Ctrl(CTRL_FV);
 	}
-	if (Ctrl.Type == CTRL_SB || Ctrl.Type == CTRL_EB) {
+	if (Ctrl.Type <= CTRL_EB) {
 		return Ctrl;
 	}
 	if (Ctrl.Type == CTRL_TV) {
@@ -2524,15 +2524,15 @@ GetGestureButton = function ()
 
 GetWebColor = function (c)
 {
-	return !Number(c) && /^#[0-9a-f]{3,6}$/i ? c : api.sprintf(8, "#%06x", ((c & 0xff) << 16) | (c & 0xff00) | ((c & 0xff0000) >> 16));
+	return isNaN(c) && /^#[0-9a-f]{3,6}$/i ? c : api.sprintf(8, "#%06x", ((c & 0xff) << 16) | (c & 0xff00) | ((c & 0xff0000) >> 16));
 }
 
 GetWinColor = function (c)
 {
-	if (/^#([0-9a-z]{2})([0-9a-z]{2})([0-9a-z]{2})$/.test(c)) {
+	if (/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.test(c)) {
 		return Number(["0x", RegExp.$3, RegExp.$2, RegExp.$1].join(""));
 	}
-	if (/^#([0-9a-z])([0-9a-z])([0-9a-z])$/.test(c)) {
+	if (/^#([0-9a-f])([0-9a-f])([0-9a-f])$/i.test(c)) {
 		return Number(["0x", RegExp.$3, RegExp.$3, RegExp.$2, RegExp.$2, RegExp.$1, RegExp.$1].join(""));
 	}
 	return c;
@@ -2887,8 +2887,7 @@ Activate = function (o, id)
 
 function DetectProcessTag(e)
 {
-	var s = (e || event).srcElement.tagName;
-	return api.PathMatchSpec(s, "input;textarea");
+	return /input|textarea/i.test((e || event).srcElement.tagName);
 }
 
 AddEventEx(window, "load", function ()

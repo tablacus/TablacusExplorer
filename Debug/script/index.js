@@ -101,7 +101,7 @@ PanelCreated = function (Ctrl)
 
 ChangeView = function (Ctrl)
 {
-	if (Ctrl) {
+	if (Ctrl && Ctrl.FolderItem) {
 		if (!Ctrl.FolderItem.Unavailable && te.Data.Conf_NetworkTimeout) {
 			var strPath = api.GetDisplayNameOf(Ctrl.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
 			if (api.PathIsNetworkPath(strPath) && !api.PathIsDirectory(strPath, -1)) {
@@ -1631,7 +1631,7 @@ GetIconImage = function (Ctrl, BGColor)
 	if (img) {
 		return img;
 	}
-	if (Ctrl.FolderItem.Unavailable) {
+	if (Ctrl.FolderItem && Ctrl.FolderItem.Unavailable) {
 		return MakeImgSrc("icon:shell32.dll,234,16", 0, false, 16);
 	}
 	var path = Ctrl.FolderItem.Path;
@@ -1948,6 +1948,9 @@ KeyExecEx = function (Ctrl, mode, nKey, hwnd)
 function InitMouse()
 {
 	te.Data.Conf_Gestures = isFinite(te.Data.Conf_Gestures) ? Number(te.Data.Conf_Gestures) : 2;
+	if (typeof(te.Data.Conf_TrailColor) == "string") {
+		te.Data.Conf_TrailColor = GetWinColor(te.Data.Conf_TrailColor);
+	}
 	if (!isFinite(te.Data.Conf_TrailColor)) {
 		te.Data.Conf_TrailColor = 0xff00;
 	}
@@ -2954,7 +2957,7 @@ if (!te.Data) {
 
 	te.Data.Tree_Align = 0;
 	te.Data.Tree_Width = 200;
-	te.Data.Tree_Style = NSTCS_HASEXPANDOS | NSTCS_SHOWSELECTIONALWAYS | NSTCS_HASLINES | NSTCS_BORDER;
+	te.Data.Tree_Style = NSTCS_HASEXPANDOS | NSTCS_SHOWSELECTIONALWAYS | NSTCS_HASLINES | NSTCS_BORDER | NSTCS_NOINFOTIP;
 	te.Data.Tree_EnumFlags = SHCONTF_FOLDERS;
 	te.Data.Tree_RootStyle = NSTCRS_VISIBLE | NSTCRS_EXPANDED;
 	te.Data.Tree_Root = 0;

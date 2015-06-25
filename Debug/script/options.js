@@ -108,7 +108,10 @@ function ResetForm()
 			}
 		}
 	}
-	document.F.Color_Conf_TrailColor.style.backgroundColor = GetWebColor(document.F.Conf_TrailColor.value);
+	var s = GetWebColor(document.F.Conf_TrailColor.value);
+	document.F.Conf_TrailColor.value = s;
+	document.F.Color_Conf_TrailColor.style.backgroundColor = s;
+	
 	document.getElementById("_EDIT").checked = true;
 	document.getElementById("_TEInfo").value = api.sprintf(99, "TE%d %d.%d.%d Win %d.%d.%d%s %s %x%s IE %d %s", api.sizeof("HANDLE") * 8, (te.Version / 10000) % 100, (te.Version / 100) % 100, te.Version % 100, osInfo.dwMajorVersion, osInfo.dwMinorVersion, osInfo.dwBuildNumber, api.IsWow64Process(api.GetCurrentProcess()) ? " Wow64" : "", ["WS", "DC", "SV"][osInfo.wProductType - 1] || osInfo.wProductType, osInfo.wSuiteMask, api.SHTestTokenMembership(null, 0x220) ? " Admin" : "", document.documentMode || (document.body.style.maxHeight === undefined ? 6 : 7), navigator.userLanguage);
 }
@@ -1996,16 +1999,15 @@ function InitAddonOptions(bFlag)
 	ApplyLang(document);
 	info = GetAddonInfo(Addon_Id);
 	document.title = info.Name;
-	var items = te.Data.Addons.getElementsByTagName(Addon_Id);
-	if (items.length) {
-		InitColor1(items[0]);
-	}
-
 	SetOnChangeHandler();
 	AddEventEx(window, "beforeunload", function ()
 	{
 		SetOptions(SetAddonOptions);
 	});
+	var items = te.Data.Addons.getElementsByTagName(Addon_Id);
+	if (items.length) {
+		InitColor1(items[0]);
+	}
 }
 
 function SetOnChangeHandler()
@@ -2401,6 +2403,11 @@ function InitColor1(item)
 		var n = ele[i].id || ele[i].name;
 		if (n) {
 			GetAttribEx(item, document.F, n);
+		}
+	}
+	for (var i = ele.length; i--;) {
+		var n = ele[i].id || ele[i].name;
+		if (n) {
 			if (/^Color_(.*)/.test(n)) {
 				var o = document.F.elements[RegExp.$1];
 				if (o) {
@@ -2410,3 +2417,12 @@ function InitColor1(item)
 		}
 	}
 }
+
+function ChangeColor1(ele)
+{
+	var o = document.getElementById("Color_" + (ele.id || ele.name));
+	if (o) {
+		o.style.backgroundColor = GetWebColor(ele.value);
+	}
+}
+

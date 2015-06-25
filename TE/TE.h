@@ -130,10 +130,9 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *
 #define TET_Create				0x1fa1
 #define TET_Reload				0x1fa2
 #define TET_Size				0x1fa3
-#define TET_Size2				0x1fa4
+#define TET_Redraw				0x1fa4
 #define TET_Status				0x1fa5
 #define TET_Unload				0x1fa6
-#define TET_Redraw				0x1da7
 #define SHGDN_FORPARSINGEX	0x80000000
 #define START_OnFunc			5000
 #define TE_Labels				0
@@ -674,6 +673,7 @@ public:
 	WNDPROC	m_DefSTProc;
 
 	DWORD	m_dwSize;
+	LONG	m_nLockUpdate;
 	int		m_nIndex;
 	int		m_param[9];
 	int		m_nTC;
@@ -686,7 +686,6 @@ private:
 	CteFolderItems *m_pDragItems;
 	DWORD	m_grfKeyState;
 	LONG	m_cRef;
-	LONG	m_nLockUpdate;
 	HRESULT m_DragLeave;
 };
 
@@ -866,6 +865,7 @@ public:
 	VOID OnNavigationComplete2();
 	HRESULT BrowseToObject();
 	HRESULT GetShellFolder2(LPITEMIDLIST pidl);
+	VOID SetLVSettings();
 #ifdef _2000XP
 	HRESULT NavigateSB(IShellView *pPreviousView, FolderItem *pPrevious);
 	HRESULT CreateViewWindowEx(IShellView *pPreviousView);
@@ -884,7 +884,6 @@ public:
 	CteTabCtrl		*m_pTC;
 	CteTreeView	*m_pTV;
 	LONG_PTR	m_DefProc;
-	LONG_PTR	m_DefProc2;
 	IShellView  *m_pShellView;
 	IDispatch	*m_pDispatch[2];
 	FolderItem *m_pFolderItem;
@@ -905,12 +904,14 @@ public:
 	int			m_nUnload;
 	DWORD		m_nOpenedType;
 	DWORD		m_dwCookie;
+	COLORREF	m_clrBk, m_clrTextBk, m_clrText;
 	BOOL		m_bEmpty;
 	BOOL		m_bInit;
 	BOOL		m_bVisible;
 	BOOL		m_bCheckLayout;
 	BOOL		m_bRefreshLator;
 	BOOL		m_bShowFrames;
+	BOOL		m_bRefreshing;
 private:
 	VARIANT		m_vData;
 	FolderItem	**m_ppLog;
