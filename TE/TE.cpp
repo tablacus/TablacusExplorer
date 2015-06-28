@@ -2506,6 +2506,9 @@ BOOL GetShellFolder(IShellFolder **ppSF, LPCITEMIDLIST pidl)
 
 BOOL teILIsExists(LPITEMIDLIST pidl)
 {
+	if (ILIsEqual(pidl, g_pidlResultsFolder)) {
+		return TRUE;
+	}
 	BOOL bResult = FALSE;
 	IShellFolder *pSF;
 	if (GetShellFolder(&pSF, pidl)) {
@@ -10060,7 +10063,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 #ifdef _2000XP
 	if (g_bUpperVista) {
 #endif
-		if (m_param[SB_Type] == 2 || m_bShowFrames) {
+		if (m_param[SB_Type] == 2 || m_bShowFrames || ILIsParent(g_pidlCP, pidl, FALSE)) {
 			m_bShowFrames = FALSE;
 			dwFrame = EBO_SHOWFRAMES;
 		}
