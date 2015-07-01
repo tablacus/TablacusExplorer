@@ -141,9 +141,11 @@
                 <label>Left Bar</label> 1
               </span>
             </td>
-            <td rowspan="3" style="background-color: white">
-              <input name="Location" type="radio" value="Background" />
-              <label>Background</label>
+            <td>
+              <input name="Location" type="radio" value="Inner" id="__Inner" disabled="true" />
+              <span id="_Inner">
+              <label>Inner bar</label>
+              </span></br />
             </td>
             <td>
               <input name="Location" type="radio" value="RightBar1" />
@@ -158,6 +160,10 @@
               <span id="_LeftBar2">
                 <label>Left Bar</label> 2
               </span>
+            </td>
+            <td rowspan="2" style="background-color: white">
+              <input name="Location" type="radio" value="Background" />
+              <label>Background</label>
             </td>
             <td>
               <input name="Location" type="radio" value="RightBar2" />
@@ -295,7 +301,7 @@
               <input type="text" name="IconSize" size="4" onchange="SetImage();" />px
             </td>
             <td>
-              <input type="button" value="Default" onclick="SetDefault(document.F.Icon, '');" />
+              <input type="button" value="Default" onclick="SetDefault(document.F.IconSize, '');" />
             </td>
           </tr>
         </table>

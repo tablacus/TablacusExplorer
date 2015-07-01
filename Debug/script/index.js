@@ -448,9 +448,9 @@ LoadLang = function (bAppend)
 	LoadLang2(filename);
 }
 
-Refresh = function ()
+Refresh = function (Ctrl, pt)
 {
-	var FV = te.Ctrl(CTRL_FV);
+	var FV = GetFolderView(Ctrl, pt);
 	if (FV) {
 		FV.Refresh();
 	}
@@ -1762,15 +1762,24 @@ function SetAddon(strName, Location, Tag)
 			}
 			te.Data.Locations[Location].push(strName);
 		}
-		var o = document.getElementById(Location);
-		if (typeof(Tag) == "string") {
-			o.insertAdjacentHTML("BeforeEnd", Tag);
-		} else if (Tag.join) {
-			o.insertAdjacentHTML("BeforeEnd", Tag.join(""));
-		} else {
-			o.appendChild(Tag);
+		if (Tag.join) {
+			Tag = Tag.join("");
 		}
-		o.style.display = (document.documentMode && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
+		var o = document.getElementById(Location);
+		if (o) {
+			if (typeof(Tag) == "string") {
+				o.insertAdjacentHTML("BeforeEnd", Tag);
+			} else {
+				o.appendChild(Tag);
+			}
+			o.style.display = (document.documentMode && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
+		}
+		else if (Location == "Inner") {
+			AddEvent("PanelCreated", function (Ctrl)
+			{
+				SetAddon(null, "Inner1Left_" + Ctrl.Id, Tag);
+			});
+		}
 	}
 	return Location;
 }

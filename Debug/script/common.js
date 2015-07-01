@@ -1413,7 +1413,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 			}
 			if (nVerb) {
 				for (var i in eventTE.MenuCommand) {
-					var hr = eventTE.MenuCommand[i](Ctrl, pt, Name, nVerb);
+					var hr = eventTE.MenuCommand[i](Ctrl, pt, Name, nVerb, hMenu);
 					if (isFinite(hr) && hr == S_OK) {
 						nVerb = 0;
 						break;
@@ -2414,6 +2414,16 @@ GetSourceText = function (s)
 GetFolderView = function (Ctrl, pt, bStrict)
 {
 	if (!Ctrl) {
+		return te.Ctrl(CTRL_FV);
+	}
+	if (!Ctrl.Type) {
+		var o = Ctrl.offsetParent;
+		while (o) {
+			if (/^Panel_(\d+)$/.test(o.id)) {
+				return te.Ctrl(CTRL_TC, RegExp.$1).Selected;
+			}
+			o = o.offsetParent
+		}
 		return te.Ctrl(CTRL_FV);
 	}
 	if (Ctrl.Type <= CTRL_EB) {

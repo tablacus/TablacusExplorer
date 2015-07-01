@@ -1665,7 +1665,10 @@ InitLocation = function ()
 	for (var i in locs) {
 		var s = locs[i].join(", ").replace('"', "");
 		try {
-			document.getElementById('_' + i).innerHTML = ['<input type="text" value="', s, '" title="', s, '" style="width: 85%">'].join("");
+			var o = document.getElementById('_' + i);
+			ApplyLang(o);
+			var s2 = o.innerHTML.replace(/<[^>]*>|[\r\n]|\s\s+/g, "");
+			o.innerHTML = ['<input type="text" value="', s, '" title="', s2, '" placeholder="', s2, '" style="width: 85%">'].join("");
 		} catch (e) {}
 	}
 
@@ -2426,3 +2429,10 @@ function ChangeColor1(ele)
 	}
 }
 
+function EnableInner()
+{
+	AddEventEx(window, "load", function ()
+	{
+		document.getElementById("__Inner").disabled  = false;;
+	});
+}

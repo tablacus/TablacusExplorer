@@ -866,9 +866,9 @@ public:
 	HRESULT BrowseToObject();
 	HRESULT GetShellFolder2(LPITEMIDLIST pidl);
 	VOID SetLVSettings();
-#ifdef _2000XP
 	HRESULT NavigateSB(IShellView *pPreviousView, FolderItem *pPrevious);
 	HRESULT CreateViewWindowEx(IShellView *pPreviousView);
+#ifdef _2000XP
 	VOID AddPathXP(CteFolderItems *pFolderItems, IShellFolderView *pSFV, int nIndex, BOOL bResultsFolder);
 	int PSGetColumnIndexXP(LPWSTR pszName, int *pcxChar);
 	BSTR PSGetNameXP(LPWSTR pszName, int nFormat);
