@@ -41,6 +41,7 @@ img {
 
 form {
 	display: inline;
+	margin: 0;
 }
 
 input, select, textarea {
@@ -175,41 +176,69 @@ a:active.menu {
 	padding: 0;
 }
 
+.tab0 {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+	cursor: default;
+	position: relative;
+}
+
+.tab0 li {
+	display: inline;
+	display: inline-block;
+	line-height: 2em;
+	position: relative;
+	white-space: nowrap;
+	font-size: inherit;
+}
+
 .tab {
 	border: 1px solid #898C95;
+	margin: 0;
+	padding: 0 8px;
 	background-color: #dddddd;
-	font-size: inherit;
 	height: 2em;
-	vertical-align: bottom;
 	outline: 0;
-	cursor: default;
-	white-space: nowrap;
 	background: linear-gradient(to bottom, #ffffff, #cccccc);
 	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#cccccc)";
+	vertical-align: bottom;
 }
 
 .tab2 {
 	border: 1px solid #898C95;
+	margin: 0;
+	padding: 0 8px;
 	background-color: #dddddd;
-	font-size: inherit;
 	height: 2em;
-	vertical-align: bottom;
 	outline: 0;
-	cursor: default;
-	white-space: nowrap;
 	background: linear-gradient(to bottom, #ffffff, #cccccc);
 	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#cccccc)";
+	vertical-align: bottom;
+}
+
+.tab3 {
+	border: 1px solid #898C95;
+	margin: 0;
+	padding: 0 8px;
+	background-color: #dddddd;
+	height: 2em;
+	outline: 0;
+	background: linear-gradient(to bottom, #ffffff, #cccccc);
+	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#cccccc)";
+	vertical-align: bottom;
 }
 
 .activetab {
 	border: 1px solid #898C95;
+	border-bottom: 0;
+	margin: 0 -1px;
+	padding: 0 9px;
 	background-color: #ffffff;
-	font-size: inherit;
 	height: 2.167em;
-	vertical-align: bottom;
 	outline: 0;
-	cursor: default;
-	white-space: nowrap;
+	z-index: 9999;
+	vertical-align: bottom;
 }
 
 .treebutton {

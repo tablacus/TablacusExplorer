@@ -2077,12 +2077,15 @@ TestX = function (id)
 
 SetImage = function ()
 {
-	var h = api.LowPart(document.F.IconSize ? document.F.IconSize.value : document.F.Height.value);
-	if (!h) {
-		h = window.IconSize ? window.IconSize : 24;
+	var o = document.getElementById("_Icon");
+	if (o) {
+		var h = api.LowPart(document.F.IconSize ? document.F.IconSize.value : document.F.Height.value);
+		if (!h) {
+			h = window.IconSize ? window.IconSize : 24;
+		}
+		var src = MakeImgSrc(document.F.Icon.value, 0, true, h);
+		o.innerHTML = src ? '<img src="' + src + '" ' + (h ? 'height="' + h + 'px"' : "") + '>' : "";
 	}
-	var src = MakeImgSrc(document.F.Icon.value, 0, true, h);
-	document.getElementById("_Icon").innerHTML = src ? '<img src="' + src + '" ' + (h ? 'height="' + h + 'px"' : "") + '>' : "";
 }
 
 ShowIcon = ShowIconEx;
@@ -2435,4 +2438,10 @@ function EnableInner()
 	{
 		document.getElementById("__Inner").disabled  = false;;
 	});
+}
+
+function SetTabContents(id, name, value)
+{
+	document.getElementById("tab" + id).value = GetText(name);
+	document.getElementById("panel" + id).innerHTML = value;
 }

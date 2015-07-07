@@ -2490,7 +2490,7 @@ BOOL teSetRect(HWND hwnd, int left, int top, int right, int bottom)
 {
 	RECT rc;
 	GetClientRect(hwnd, &rc);
-	MoveWindow(hwnd, left, top, right - left, bottom - top, TRUE);
+	MoveWindow(hwnd, left, top, right - left, bottom - top, FALSE);
 	return (rc.right - rc.left != right - left || rc.bottom - rc.top != bottom - top);
 }
 
@@ -8339,11 +8339,11 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 				rcClient.right -= g_pTE->m_param[TE_Width];
 				rcClient.bottom -= g_pTE->m_param[TE_Height];
 				CteShellBrowser *pSB;
-				BOOL bRedraw, bDirect, bRetry;
+				BOOL bRedraw, bDirect;
 				bRedraw = FALSE;
 				bDirect = TRUE;
 				CteTabCtrl *pTC;
-				bRetry = FALSE;
+				g_nSize--;
 				for (int i = MAX_TC; i-- && (pTC = g_ppTC[i]);) {
 					if (pTC->m_bVisible) {
 						pTC->LockUpdate();
@@ -8428,7 +8428,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 									}
 								}
 								MoveWindow(pTC->m_hwndButton, rcTab.left, rcTab.top,
-									rcTab.right - rcTab.left, rcTab.bottom - rcTab.top, TRUE);
+									rcTab.right - rcTab.left, rcTab.bottom - rcTab.top, FALSE);
 								pTC->m_nScrollWidth = 0;
 								if (nAlign == 4 || nAlign == 5) {
 									int h2 = h - rcTab.bottom;
@@ -8458,7 +8458,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 									pTC->m_si.nPos = 0;
 								}
 								if (teSetRect(pTC->m_hwnd, 0, -pTC->m_si.nPos, rcTab.right - rcTab.left, (nBottom - rcTab.top) + pTC->m_si.nPos)) {
-									bRetry = TRUE;
+									ArrangeWindow();
 								}
 								pSB = pTC->GetShellBrowser(pTC->m_nIndex);
 								if (pSB) {
@@ -8473,10 +8473,9 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 											bDirect = FALSE;
 										}
 										pSB->Show(TRUE, FALSE);
-										bRetry |= pSB->m_bVisible;
 									}
 									MoveWindow(pSB->m_hwnd, rc.left, rc.top, rc.right - rc.left,
-										rc.bottom - rc.top, TRUE);
+										rc.bottom - rc.top, FALSE);
 								}
 							}
 						} catch (...) {}
@@ -8492,10 +8491,6 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 					if (bRedraw) {
 						RedrawWindow(g_pWebBrowser->m_hwndBrowser, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
 					}
-				}
-				g_nSize--;
-				if (bRetry) {
-					ArrangeWindow();
 				}
 				break;
 			case TET_Redraw:
@@ -10268,7 +10263,6 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	}
 	if (!m_pExplorerBrowser) {
 		OnViewCreated(NULL);
-		ArrangeWindow();
 	}
 	return S_OK;
 }
@@ -13369,9 +13363,9 @@ void CteShellBrowser::Show(BOOL bShow, BOOL bSuspend)
 			} else {
 				SetRedraw(FALSE);
 				m_pShellView->UIActivate(SVUIA_DEACTIVATE);
-				MoveWindow(m_hwnd, -1, -1, 0, 0, false);
+				MoveWindow(m_hwnd, -1, -1, 0, 0, FALSE);
 				ShowWindow(m_hwnd, SW_HIDE);
-				MoveWindow(m_pTV->m_hwnd, -1, -1, 0, 0, false);
+				MoveWindow(m_pTV->m_hwnd, -1, -1, 0, 0, FALSE);
 				ShowWindow(m_pTV->m_hwnd, SW_HIDE);
 				if (bSuspend && m_dwUnavailable && !m_nCreate && !ILIsEqual(m_pidl, g_pidlResultsFolder)) {
 					Suspend(0);

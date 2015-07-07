@@ -327,6 +327,18 @@ function ApplyLang(doc)
 		}
 	}
 
+	var o = doc.getElementsByTagName("li");
+	if (o) {
+		for (i = o.length; i--;) {
+			o[i].style.fontFamily = FaceName;
+			var s = Lang[o[i].innerHTML.replace(/&amp;/ig, "&")];
+			if (!s) {
+				s = o[i].innerHTML;
+			}
+			o[i].innerHTML = amp2ul(s);
+		}
+	}
+
 	var o = doc.getElementsByTagName("form");
 	if (o) {
 		for (i = o.length; i--;) {
@@ -395,7 +407,8 @@ function MakeImgSrc(src, index, bSrc, h, strBitmap, strIcon)
 			return fn;
 		}
 	}
-	var image = MakeImgData(ExtractMacro(te, src), index, h, strBitmap, strIcon);
+	src = ExtractMacro(te, src);
+	var image = MakeImgData(src, index, h, strBitmap, strIcon);
 	if (image) {
 		if (document.documentMode) {
 			return image.DataURI("image/png");
