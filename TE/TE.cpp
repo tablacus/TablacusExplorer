@@ -14388,7 +14388,7 @@ STDMETHODIMP CteInternetSecurityManager::GetSecurityId(LPCWSTR pwszUrl, BYTE *pb
 
 STDMETHODIMP CteInternetSecurityManager::ProcessUrlAction(LPCWSTR pwszUrl, DWORD dwAction, BYTE *pPolicy, DWORD cbPolicy, BYTE *pContext, DWORD cbContext, DWORD dwFlags, DWORD dwReserved)
 {
-	*pPolicy = tePathMatchSpec1(pwszUrl, L"http*") ? URLPOLICY_DISALLOW : URLPOLICY_ALLOW;
+	*pPolicy = tePathMatchSpec1(pwszUrl, L"http:*") ? URLPOLICY_DISALLOW : URLPOLICY_ALLOW;
 	return S_OK;
 }
 
@@ -14729,7 +14729,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			case DISPID_SECURITYDOMAIN:
 				return S_OK;
 			case DISPID_AMBIENT_DLCONTROL:
-				teSetLong(pVarResult, DLCTL_DLIMAGES | DLCTL_VIDEOS | DLCTL_BGSOUNDS | DLCTL_FORCEOFFLINE | DLCTL_OFFLINE);
+				teSetLong(pVarResult, DLCTL_DLIMAGES | DLCTL_VIDEOS | DLCTL_BGSOUNDS);
 				return S_OK;
 /*///
 			case DISPID_AMBIENT_USERAGENT:
@@ -15698,11 +15698,7 @@ VOID CteTabCtrl::LockUpdate()
 	if (InterlockedIncrement(&m_nLockUpdate) == 1) {
 		SendMessage(m_hwndStatic, WM_SETREDRAW, FALSE, 0);
 		SendMessage(m_hwnd, WM_SETREDRAW, FALSE, 0);
-#ifdef _2000XP
-		if (!g_bUpperVista) {
-			teSetRedraw(FALSE);
-		}
-#endif
+		teSetRedraw(FALSE);
 	}
 }
 
@@ -15732,11 +15728,7 @@ VOID CteTabCtrl::RedrawUpdate()
 			pSB->SetRedraw(TRUE);
 		}
 		RedrawWindow(m_hwndStatic, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
-#ifdef _2000XP
-		if (!g_bUpperVista) {
-			teSetRedraw(TRUE);
-		}
-#endif
+		teSetRedraw(TRUE);
 	}
 }
 

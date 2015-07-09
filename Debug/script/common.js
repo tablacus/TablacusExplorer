@@ -188,6 +188,14 @@ function ApplyLang(doc)
 	if (doc.body) {
 		doc.body.style.fontFamily = FaceName;
 		doc.body.style.fontSize = Math.abs(MainWindow.DefaultFont.lfHeight) + "px";
+		var css = document.styleSheets.item(0);
+		var s = ['font-family: ', FaceName, '; font-size: ', doc.body.style.fontSize].join("");
+		if (css.insertRule) {
+			css.insertRule(["*", " { ", s, " }"].join(""), css.cssRules.length);
+		}
+		else if (css.addRule) {
+			css.addRule("*", s);
+		}
 		doc.body.style.backgroundColor = 'buttonface';
 	}
 
@@ -243,7 +251,6 @@ function ApplyLang(doc)
 					o[i].style.backgroundImage = "url('" + s + "')";
 				}
 			}
-			o[i].style.fontFamily = FaceName;
 		}
 	}
 	var o = doc.getElementsByTagName("img");
@@ -269,7 +276,6 @@ function ApplyLang(doc)
 	var o = doc.getElementsByTagName("select");
 	if (o) {
 		for (i = o.length; i--;) {
-			o[i].style.fontFamily = FaceName;
 			var s = Lang[o[i].title];
 			if (s) {
 				o[i].title = delamp(s);
@@ -303,7 +309,6 @@ function ApplyLang(doc)
 	var o = doc.getElementsByTagName("button");
 	if (o) {
 		for (i = o.length; i--;) {
-			o[i].style.fontFamily = FaceName;
 			var s = Lang[o[i].innerHTML.replace(/&amp;/ig, "&")];
 			if (!s) {
 				s = o[i].innerHTML;
@@ -322,7 +327,6 @@ function ApplyLang(doc)
 	var o = doc.getElementsByTagName("textarea");
 	if (o) {
 		for (i = o.length; i--;) {
-			o[i].style.fontFamily = FaceName;
 			o[i].onkeydown = InsertTab;
 		}
 	}
@@ -330,7 +334,6 @@ function ApplyLang(doc)
 	var o = doc.getElementsByTagName("li");
 	if (o) {
 		for (i = o.length; i--;) {
-			o[i].style.fontFamily = FaceName;
 			var s = Lang[o[i].innerHTML.replace(/&amp;/ig, "&")];
 			if (!s) {
 				s = o[i].innerHTML;

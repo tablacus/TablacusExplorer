@@ -2,6 +2,7 @@
 
 * {
 	box-sizing: border-box;
+	font-size: 12px;
 }
 
 html {
@@ -44,7 +45,7 @@ form {
 	margin: 0;
 }
 
-input, select, textarea {
+input, select, textarea, li {
 	font-size: inherit;
 }
 
