@@ -1422,6 +1422,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 				}
 			}
 			AdjustMenuBreak(hMenu);
+			window.g_menu_click = true;
 			var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, ContextMenu);
 			if (ExtraMenuCommand[nVerb]) {
 				ExtraMenuCommand[nVerb](Ctrl, pt, Name, nVerb);
@@ -1458,7 +1459,8 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 			}
 		}
 		if (item) {
-			Exec(Ctrl, item.text, item.getAttribute("Type"), Ctrl.hwnd, pt);
+			var s = item.getAttribute("Type");
+			Exec(Ctrl, item.text, window.g_menu_button == 3 && s == "Open" ? "Open in New Tab" : s, Ctrl.hwnd, pt);
 			return S_OK;
 		}
 		if (Mode != 2) {
@@ -2699,7 +2701,7 @@ FindText = function (s)
 
 FindKeyEvent = function (o)
 {
-	if (event.keyCode == 13) {
+	if (event.keyCode == VK_RETURN) {
 		FindText(o.value);
 		return false;
 	}
@@ -2710,8 +2712,8 @@ OpenDialogEx = function (path, filter)
 {
 	var commdlg = te.CommonDialog;
 	var te_path = fso.GetParentFolderName(api.GetModuleFileName(null));
-	if (api.PathMatchSpec(path, "../*")) {
-		path = te_path + (path.substr(2, MAXINT).replace(/\//g, "\\"));
+	if (/^\.\.(\/.*)/.test(path)) {
+		path = te_path + (RegExp.$1.replace(/\//g, "\\"));
 	}
 	if (!fso.FolderExists(path)) {
 		path = fso.GetDriveName(te_path);

@@ -202,7 +202,7 @@
 	<text s="Copy Full Path">パスをクリップボードにコピー</text>
 	<text s="Test">テスト</text>
 	<text s="Close">閉じる</text>
-	<text s="Separator">区切り線</text>
+	<text s="Separator">区切り</text>
 	<text s="Break">折り返し</text>
 	<text s="BarBreak">線を引いて折り返し</text>
 </resources>
