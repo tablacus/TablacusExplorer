@@ -1422,7 +1422,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 				}
 			}
 			AdjustMenuBreak(hMenu);
-			window.g_menu_click = true;
+			window.g_menu_click = 2;
 			var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, ContextMenu);
 			if (ExtraMenuCommand[nVerb]) {
 				ExtraMenuCommand[nVerb](Ctrl, pt, Name, nVerb);
