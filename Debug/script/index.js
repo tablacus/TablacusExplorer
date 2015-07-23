@@ -3017,7 +3017,14 @@ if (!te.Data) {
 	}
 	te.Data.uRegisterId = api.SHChangeNotifyRegister(te.hwnd, SHCNRF_InterruptLevel | SHCNRF_ShellLevel | SHCNRF_NewDelivery, SHCNE_ALLEVENTS, TWM_CHANGENOTIFY, ssfDESKTOP, true);
 } else {
-	setTimeout("te.UnlockUpdate();", 500);
+	setTimeout(function ()
+	{	
+		te.UnlockUpdate();
+		setTimeout(function ()
+		{
+			Resize();
+		}, 99);
+	}, 500);
 }
 
 InitCode();

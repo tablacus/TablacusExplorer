@@ -1478,6 +1478,13 @@ InitDialog = function ()
 			}
 			return true;
 		}
+		document.body.onpaste = function ()
+		{
+			setTimeout(function ()
+			{
+				document.F.ButtonOk.disabled = !document.F.path.value;
+			}, 99);
+		}
 		setTimeout(function ()
 		{
 			document.F.elements[dialogArguments.Mode].checked = true;

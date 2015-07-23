@@ -347,7 +347,7 @@ public:
 	HMODULE		m_hDll;
 };
 
-class CteFolderItem : public FolderItem, public IPersistFolder2
+class CteFolderItem : public FolderItem, public IPersistFolder2, public IParentAndItem
 {
 public:
 	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
@@ -359,6 +359,9 @@ public:
     STDMETHODIMP Initialize(PCIDLIST_ABSOLUTE pidl);
 	//IPersistFolder2
     STDMETHODIMP GetCurFolder(PIDLIST_ABSOLUTE *ppidl);
+	//IParentAndItem
+	STDMETHODIMP GetParentAndItem(PIDLIST_ABSOLUTE *ppidlParent, IShellFolder **ppsf, PITEMID_CHILD *ppidlChild);
+	STDMETHODIMP SetParentAndItem(PCIDLIST_ABSOLUTE pidlParent, IShellFolder *psf, PCUITEMID_CHILD pidlChild);
 	//IDispatch
 	STDMETHODIMP GetTypeInfoCount(UINT *pctinfo);
 	STDMETHODIMP GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo);

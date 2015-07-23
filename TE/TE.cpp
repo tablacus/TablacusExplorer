@@ -6637,6 +6637,7 @@ VOID teApiSHFileOperation(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VA
 	if (nArg >= 4) {
 		LPSHFILEOPSTRUCT pFO = new SHFILEOPSTRUCT[1];
 		::ZeroMemory(pFO, sizeof(SHFILEOPSTRUCT));
+		pFO->hwnd = g_hwndMain;
 		pFO->wFunc = (UINT)param[0];
 		BSTR bs = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]);
 		int nLen = ::SysStringLen(bs) + 1;
@@ -10021,7 +10022,7 @@ VOID CteShellBrowser::Navigate1Ex(LPOLESTR pstr, FolderItems *pFolderItems, UINT
 	pInvoke->dispid = 0x20000007;//Navigate2Ex
 	pInvoke->cArgs = 4;
 	pInvoke->pv = GetNewVARIANT(4);
-	pInvoke->nErrorHandling = g_nLockUpdate || m_nUnload == 2 ? 0 : nErrorHandling;
+	pInvoke->nErrorHandling = g_nLockUpdate || m_nUnload == 2 ? 1 : nErrorHandling;
 	teSetSZ(&pInvoke->pv[3], pstr);
 	teSetLong(&pInvoke->pv[2], wFlags);
 	teSetObject(&pInvoke->pv[1], pFolderItems);
@@ -18923,6 +18924,8 @@ STDMETHODIMP CteFolderItem::QueryInterface(REFIID riid, void **ppvObject)
 		*ppvObject = static_cast<IPersistFolder *>(this);
 	} else if (IsEqualIID(riid, IID_IPersistFolder2)) {
 		*ppvObject = static_cast<IPersistFolder2 *>(this);
+	} else if (IsEqualIID(riid, IID_IParentAndItem)) {
+		*ppvObject = static_cast<IParentAndItem *>(this);
 	} else if (IsEqualIID(riid, g_ClsIdFI)) {
 		*ppvObject = this;
 	} else if (IsEqualIID(riid, IID_FolderItem2) && GetFolderItem()) {
@@ -18982,6 +18985,32 @@ STDMETHODIMP CteFolderItem::GetCurFolder(PIDLIST_ABSOLUTE *ppidl)
 	return S_OK;
 }
 
+//IParentAndItem
+STDMETHODIMP CteFolderItem::GetParentAndItem(PIDLIST_ABSOLUTE *ppidlParent, IShellFolder **ppsf, PITEMID_CHILD *ppidlChild)
+{
+	HRESULT hr = E_NOTIMPL;
+	LPITEMIDLIST pidl = GetPidl();
+	if (pidl) {
+		if (ppsf) {
+			LPCITEMIDLIST pidlChild;
+			SHBindToParent(const_cast<LPCITEMIDLIST>(pidl), IID_PPV_ARGS(ppsf), &pidlChild);
+		}
+		if (ppidlParent) {
+			*ppidlParent = ILClone(pidl);
+			ILRemoveLastID(*ppidlParent);
+		}
+		*ppidlChild = ILClone(ILFindLastID(pidl));
+		hr = S_OK;
+	}
+	return hr;
+}
+
+STDMETHODIMP CteFolderItem::SetParentAndItem(PCIDLIST_ABSOLUTE pidlParent, IShellFolder *psf, PCUITEMID_CHILD pidlChild)
+{
+	return E_NOTIMPL;
+}
+
+//IDispatch
 STDMETHODIMP CteFolderItem::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
 	HRESULT hr = teGetDispId(methodFI, 0, NULL, *rgszNames, rgDispId, true);
