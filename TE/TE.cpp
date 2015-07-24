@@ -12745,9 +12745,18 @@ VOID CteShellBrowser::OnNavigationComplete2()
 	CteFolderItem *pid;
 	if (m_pFolderItem && SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid))) {
 		if (pid->m_pidlFocused) {
-			SelectItemEx(&pid->m_pidlFocused, 
-				pid->m_nSelected != 1 ? SVSI_FOCUSED | SVSI_DESELECTOTHERS | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS :
-				SVSI_SELECT | SVSI_FOCUSED | SVSI_DESELECTOTHERS | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
+			DWORD dwFlags = pid->m_nSelected != 1 ? SVSI_FOCUSED | SVSI_DESELECTOTHERS | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS :
+				SVSI_SELECT | SVSI_FOCUSED | SVSI_DESELECTOTHERS | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS;
+			SelectItemEx(&pid->m_pidlFocused, dwFlags);
+			IFolderView *pFV;
+			if (SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV)))) {
+				int iFocused, iItems;
+				if (pFV->GetFocusedItem(&iFocused) == S_OK && pFV->ItemCount(SVGIO_ALLVIEW, &iItems) == S_OK) {
+					pFV->SelectItem(iItems - 1, dwFlags);
+					pFV->SelectItem(iFocused, dwFlags);
+				}
+				pFV->Release();
+			}
 		} else {
 			IFolderView *pFV;
 			if (m_pShellView && SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV)))) {
