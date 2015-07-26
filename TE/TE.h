@@ -133,6 +133,7 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *
 #define TET_Redraw				0x1fa4
 #define TET_Status				0x1fa5
 #define TET_Unload				0x1fa6
+#define TET_Title				0x1fa7
 #define SHGDN_FORPARSINGEX	0x80000000
 #define START_OnFunc			5000
 #define TE_Labels				0

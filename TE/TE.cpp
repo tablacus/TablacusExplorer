@@ -14,6 +14,7 @@ HINSTANCE hInst;								// current instance
 WCHAR	g_szTE[MAX_LOADSTRING];
 WCHAR	g_szText[MAX_STATUS];
 WCHAR	g_szStatus[MAX_STATUS];
+WCHAR	g_szTitle[MAX_STATUS];
 HWND	g_hwndMain = NULL;
 CteTabCtrl *g_pTC = NULL;
 CteTabCtrl *g_ppTC[MAX_TC];
@@ -6598,9 +6599,16 @@ VOID teApiInsertMenu(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT
 
 VOID teApiSetWindowText(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	if (!g_nLockUpdate || (HWND)param[0] != g_hwndMain) {
-		teSetBool(pVarResult, SetWindowText((HWND)param[0], (LPCWSTR)param[1]));
+	if ((HWND)param[0] == g_hwndMain) {
+		if (param[1]) {
+			lstrcpyn(g_szTitle, (LPCWSTR)param[1], _countof(g_szTitle) - 1);
+		} else {
+			g_szTitle[0] = NULL;
+		}
+		SetTimer(g_hwndMain, TET_Title, 100, teTimerProc);
+		return;
 	}
+	teSetBool(pVarResult, SetWindowText((HWND)param[0], (LPCWSTR)param[1]));
 }
 
 VOID teApiRedrawWindow(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -7475,6 +7483,10 @@ VOID teApiSHChangeNotification_Lock(int nArg, LONGLONG *param, DISPPARAMS *pDisp
 
 VOID teApiGetWindowText(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
+	if ((HWND)param[0] == g_hwndMain) {
+		teSetSZ(pVarResult, g_szTitle);
+		return;
+	}
 	BSTR bs = NULL;
 	int nLen = GetWindowTextLength((HWND)param[0]);
 	if (nLen) {
@@ -8544,6 +8556,9 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 					g_szStatus[0] = NULL;
 				}
 				break;
+			case TET_Title:
+				SetWindowText(hwnd, g_szTitle);
+				break;
 		}//end_switch
 	} catch (...) {
 		g_nException = 0;
@@ -8956,6 +8971,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	MyRegisterClass(hInstance, szClass, WndProc);
 	// Title & Version
 	lstrcpy(g_szTE, APP_TITLE L" " _T(STRING(VER_Y)) L"." _T(STRING(VER_M)) L"." _T(STRING(VER_D)) L" Gaku");
+	lstrcpy(g_szTitle, g_szTE);
 	if (bVisible) {
 		g_bInit = !bNewProcess;
 		g_hwndMain = CreateWindow(szClass, g_szTE, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
@@ -9859,7 +9875,6 @@ STDMETHODIMP CteShellBrowser::RemoveMenusSB(HMENU hmenuShared)
 
 STDMETHODIMP CteShellBrowser::SetStatusTextSB(LPCWSTR lpszStatusText)
 {
-	KillTimer(g_hwndMain, TET_Status);
 	if (lpszStatusText) {
 		lstrcpyn(g_szStatus, lpszStatusText, _countof(g_szStatus) - 1);
 	} else {
