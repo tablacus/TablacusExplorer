@@ -104,7 +104,7 @@ ChangeView = function (Ctrl)
 	if (Ctrl && Ctrl.FolderItem) {
 		if (!Ctrl.FolderItem.Unavailable && te.Data.Conf_NetworkTimeout) {
 			var strPath = api.GetDisplayNameOf(Ctrl.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
-			if (api.PathIsNetworkPath(strPath) && !api.PathIsDirectory(strPath, -1)) {
+			if (/^[A-Z]:\\|^\\|^::{/i.test(strPath) && !api.PathIsDirectory(strPath)) {
 				Ctrl.Suspend(2);
 			}
 		}
@@ -568,7 +568,7 @@ OpenSelected = function (Ctrl, NewTab, pt)
 			if (!bFolder) {
 				if (Item.IsLink) {
 					var path = Item.ExtendedProperty("linktarget");
-					bFolder = path == "" || fso.FolderExists(path);
+					bFolder = path == "" || api.PathIsDirectory(path);
 				}
 			}
 			if (bFolder) {
@@ -1029,6 +1029,7 @@ te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam)
 
 te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon)
 {
+	var path;
 	if (Verb == CommandID_DELETE - 1) {
 		var Items = ContextMenu.Items();
 		for (var i = Items.Count; i--;) {
@@ -1054,7 +1055,12 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 	NewTab = GetNavigateFlags();
 	for (var i = 0; i < Items.Count; i++) {
 		if (Verb && api.StrCmpI(Verb, "runas")) {
-			var path = Items.Item(i).Path;
+			if (Items.Item(i).IsLink) {
+				path = Items.Item(i).ExtendedProperty("linktarget");
+			}
+			if (!path) {
+				path = Items.Item(i).Path;
+			}
 			var cmd = api.AssocQueryString(ASSOCF_NONE, ASSOCSTR_COMMAND, path, api.StrCmpI(Verb, "Default") ? Verb : null).replace(/"?%1"?|%L/g, api.PathQuoteSpaces(path)).replace(/%\*|%I/g, "");
 			if (cmd) {
 				ShowStatusText(te, Verb + ":" + cmd, 1);

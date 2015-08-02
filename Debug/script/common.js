@@ -55,15 +55,15 @@ FolderMenu =
 			return;
 		}
 		var path = FolderItem.Path || FolderItem;
-		if (api.PathIsNetworkPath(path) && !api.PathIsDirectory(path, te.Data.Conf_NetworkTimeout)) {
-			return;
+		if (/^[A-Z]:\\|^\\|^::{/i.test(path) && !api.PathIsDirectory(path)) {
+			FolderItem = {};
 		}
-		if (path === FolderItem) {
+		else if (path === FolderItem) {
 			FolderItem = api.ILCreateFromPath(path);
 		}
 		try {
 			if (!FolderItem || FolderItem.IsBrowsable) {
-				return;
+				FolderItem = {};
 			}
 			var bSep = false;
 			if (!api.ILIsEmpty(FolderItem)) {
@@ -124,10 +124,8 @@ FolderMenu =
 		mii.wID = this.Items.length;
 		if (!bSelect && api.GetAttributesOf(FolderItem, SFGAO_HASSUBFOLDER | SFGAO_BROWSABLE) == SFGAO_HASSUBFOLDER) {
 			var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
-			if (path.length != 3 || !api.PathIsNetworkPath(path)) {
-				mii.hSubMenu = api.CreatePopupMenu();
-				api.InsertMenu(mii.hSubMenu, 0, MF_BYPOSITION | MF_STRING, 0, api.sprintf(99, '\tJScript\tFolderMenu.OpenSubMenu("%llx",%d,"%llx")', hMenu, mii.wID, mii.hSubMenu));
-			}
+			mii.hSubMenu = api.CreatePopupMenu();
+			api.InsertMenu(mii.hSubMenu, 0, MF_BYPOSITION | MF_STRING, 0, api.sprintf(99, '\tJScript\tFolderMenu.OpenSubMenu("%llx",%d,"%llx")', hMenu, mii.wID, mii.hSubMenu));
 		}
 		api.InsertMenuItem(hMenu, MAXINT, false, mii);
 	},
@@ -796,7 +794,7 @@ Navigate = function (Path, wFlags)
 {
 	if (Path) {
 		var path = Path.Path || Path;
-		if (api.PathIsNetworkPath(path) && !api.PathIsDirectory(path, te.Data.Conf_NetworkTimeout)) {
+		if (api.PathIsNetworkPath(path) && !api.PathIsDirectory(path)) {
 			return;
 		}
 	}
@@ -828,12 +826,6 @@ NavigateFV = function (FV, Path, wFlags)
 		}
 		FV.Navigate(Path, wFlags);
 		FV.Focus();
-		if (Focus) {
-			setTimeout(function () {
-				var FV = te.Ctrl(CTRL_FV);
-				FV.SelectItem(Focus, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
-			}, 99);
-		}
 	}
 }
 
@@ -1267,9 +1259,14 @@ OpenMenu = function (items, SelItem)
 		if (typeof(SelItem) != "object") {
 			path = SelItem;	
 		} else {
-			path = String(api.GetDisplayNameOf(SelItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX));
+			if (SelItem.IsLink) {
+				path = String(SelItem.ExtendedProperty("linktarget"));
+			}
+			if (!path) {
+				path = String(api.GetDisplayNameOf(SelItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX));
+			}
 			arMenu = OpenMenu(items, path);
-			if (!IsFolderEx(SelItem)) {
+			if (!IsFolderEx(SelItem) && (!SelItem.IsLink || !api.PathIsDirectory(path))) {
 				return arMenu;
 			}
 			path += ".folder";
@@ -1438,7 +1435,28 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 				}
 			}
 			if (ContextMenu && nVerb >= ContextMenu.idCmdFirst && nVerb <= ContextMenu.idCmdLast) {
-				if (nBase == 3 && (uCMF & CMF_EXTENDEDVERBS) && ContextMenu.GetCommandString(nVerb - ContextMenu.idCmdFirst, GCS_VERB) == "cmd") {
+				var cmd = String(ContextMenu.GetCommandString(nVerb - ContextMenu.idCmdFirst, GCS_VERB)).toLowerCase();
+				if (cmd == "opencontaining") {
+					for (var j in Selected) {
+						var Item = Selected.Item(j);
+						if (Item.IsLink) {
+							var path = Item.ExtendedProperty("linktarget");
+							if (api.PathIsDirectory(path)) {
+								Navigate(path, SBSP_NEWBROWSER);
+							}
+							else {
+								Navigate(fso.GetParentFolderName(path), SBSP_NEWBROWSER);
+								setTimeout(function ()
+								{
+									var FV = te.Ctrl(CTRL_FV);
+									FV.SelectItem(path, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
+								}, 99);
+							}
+						}
+						nVerb = 0;
+					}
+				}
+				if (nBase == 3 && (uCMF & CMF_EXTENDEDVERBS) && cmd == "cmd") {
 					InvokeCommand(Ctrl, 0, te.hwnd, "cmd", null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY | CMF_EXTENDEDVERBS);
 					nVerb = 0;
 				} else if (ContextMenu.InvokeCommand(0, te.hwnd, nVerb - ContextMenu.idCmdFirst, null, null, SW_SHOWNORMAL, 0, 0) == S_OK) {

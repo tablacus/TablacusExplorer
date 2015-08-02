@@ -317,8 +317,18 @@ struct TEFS
 struct TEExists
 {
 	LPWSTR pszPath;
-	HANDLE hEvent[2];
-	BOOL bUseFS;
+	HANDLE hEvent;
+	LONG cRef;
+	int iUseFS;
+	BOOL bResult;
+};
+
+struct TEILCreate
+{
+	LPWSTR pszPath;
+	HANDLE hEvent;
+	LPITEMIDLIST pidlResult;
+	LONG cRef;
 };
 
 /*
