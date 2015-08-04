@@ -104,7 +104,7 @@ ChangeView = function (Ctrl)
 	if (Ctrl && Ctrl.FolderItem) {
 		if (!Ctrl.FolderItem.Unavailable && te.Data.Conf_NetworkTimeout) {
 			var strPath = api.GetDisplayNameOf(Ctrl.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
-			if (/^[A-Z]:\\|^\\|^::{/i.test(strPath) && !api.PathIsDirectory(strPath)) {
+			if (api.PathIsNetworkPath(strPath) && !api.PathIsDirectory(strPath)) {
 				Ctrl.Suspend(2);
 			}
 		}

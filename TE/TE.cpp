@@ -13304,6 +13304,9 @@ VOID CteShellBrowser::Suspend(int nMode)
 	BOOL bVisible = m_bVisible;
 	if (nMode == 2) {
 		if (!m_dwUnavailable) {
+			if (ILIsEqual(m_pidl, g_pidlResultsFolder)) {
+				return;
+			}
 			m_dwUnavailable = GetTickCount();
 			teReleaseClear(&m_pSF2);
 			teReleaseClear(&m_pShellView);

@@ -1456,7 +1456,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 						nVerb = 0;
 					}
 				}
-				if (nBase == 3 && (uCMF & CMF_EXTENDEDVERBS) && cmd == "cmd") {
+				else if (nBase == 3 && (uCMF & CMF_EXTENDEDVERBS) && cmd == "cmd") {
 					InvokeCommand(Ctrl, 0, te.hwnd, "cmd", null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY | CMF_EXTENDEDVERBS);
 					nVerb = 0;
 				} else if (ContextMenu.InvokeCommand(0, te.hwnd, nVerb - ContextMenu.idCmdFirst, null, null, SW_SHOWNORMAL, 0, 0) == S_OK) {
