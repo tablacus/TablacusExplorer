@@ -84,7 +84,8 @@ typedef HRESULT (STDAPICALLTYPE* LPFNPSStringFromPropertyKey)(__in REFPROPERTYKE
 typedef HRESULT (STDAPICALLTYPE* LPFNSHCreateItemFromIDList)(__in PCIDLIST_ABSOLUTE pidl, __in REFIID riid, __deref_out void **ppv);
 typedef HRESULT (STDAPICALLTYPE* LPFNSHGetIDListFromObject)(__in IUnknown *punk, __deref_out PIDLIST_ABSOLUTE *ppidl);
 typedef BOOL (WINAPI* LPFNChangeWindowMessageFilter)(__in UINT message, __in DWORD dwFlag);
-
+typedef BOOL (WINAPI* LPFNAddClipboardFormatListener)(__in HWND hwnd);
+typedef BOOL (WINAPI* LPFNRemoveClipboardFormatListener)(__in HWND hwnd);
 //typedef HRESULT (STDAPICALLTYPE * LPFNPSFormatForDisplayAlloc)(__in REFPROPERTYKEY key, __in REFPROPVARIANT propvar, __in PROPDESC_FORMAT_FLAGS pdff, __deref_out PWSTR *ppszDisplay);
 //typedef BOOL (WINAPI * LPFNChangeWindowMessageFilter)(UINT message, DWORD dwFlag);
 

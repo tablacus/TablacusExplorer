@@ -102,12 +102,6 @@ PanelCreated = function (Ctrl)
 ChangeView = function (Ctrl)
 {
 	if (Ctrl && Ctrl.FolderItem) {
-		if (!Ctrl.FolderItem.Unavailable && te.Data.Conf_NetworkTimeout) {
-			var strPath = api.GetDisplayNameOf(Ctrl.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
-			if (api.PathIsNetworkPath(strPath) && !api.PathIsDirectory(strPath)) {
-				Ctrl.Suspend(2);
-			}
-		}
 		ChangeTabName(Ctrl);
 		RunEvent1("ChangeView", Ctrl);
 	}
@@ -674,9 +668,12 @@ te.OnCreate = function (Ctrl)
 			}
 			api.ShowWindow(te.hwnd, te.CmdShow);
 			te.UnlockUpdate();
+			setTimeout(function ()
+			{
+				RunCommandLine(api.GetCommandLine());
+			}, 500);
 		}, 99);
 		RunEvent1("Create", Ctrl);
-		RunCommandLine(api.GetCommandLine());
 	} else {
 		if (!Ctrl.Data) {
 			Ctrl.Data = te.Object();
@@ -1030,12 +1027,6 @@ te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam)
 te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon)
 {
 	var path;
-	if (Verb == CommandID_DELETE - 1) {
-		var Items = ContextMenu.Items();
-		for (var i = Items.Count; i--;) {
-			UnlockFV(Items[i]);
-		}
-	}
 	var hr = RunEvent3("InvokeCommand", ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon);
 	RunEvent1("ConfigChanged", "Config");
 	if (isFinite(hr)) {
@@ -1093,9 +1084,48 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 		}
 		return S_OK;
 	}
-	ShowStatusText(te, (Verb || "") + ":" + (Items.Count == 1 ? Items.Item(0).Path : Items.Count), 1);
+	ShowStatusText(te, [Verb || "", Items.Count == 1 ? Items.Item(0).Path : Items.Count].join(":"), 1);
 	return S_FALSE; 
 }
+
+AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon)
+{
+	var strVerb = String(isFinite(Verb) ? ContextMenu.GetCommandString(Verb, GCS_VERB) : Verb).toLowerCase();
+	if (strVerb == "opencontaining") {
+		var Items = ContextMenu.Items();
+		for (var j in Items) {
+			var Item = Items.Item(j);
+			if (Item.IsLink) {
+				var path = Item.ExtendedProperty("linktarget");
+				if (api.PathIsDirectory(path)) {
+					Navigate(path, SBSP_NEWBROWSER);
+				}
+				else {
+					Navigate(fso.GetParentFolderName(path), SBSP_NEWBROWSER);
+					setTimeout(function ()
+					{
+						var FV = te.Ctrl(CTRL_FV);
+						FV.SelectItem(path, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
+					}, 99);
+				}
+			}
+			return S_OK;
+		}
+	}
+	if (strVerb == "cmd") {
+		var Items = ContextMenu.Items();
+		if (Items.Count == 0) {
+			InvokeCommand(ContextMenu.FolderView, 0, te.hwnd, "cmd", null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY | CMF_EXTENDEDVERBS);
+			return S_OK;
+		}
+	}
+	if (strVerb == "delete") {
+		var Items = ContextMenu.Items();
+		for (var i = Items.Count; i--;) {
+			UnlockFV(Items.Item(i));
+		}
+	}
+});
 
 te.OnDragEnter = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect)
 {

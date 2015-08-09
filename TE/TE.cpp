@@ -40,6 +40,9 @@ LPFNSHGetIDListFromObject lpfnSHGetIDListFromObject = NULL;
 LPFNIsWow64Process lpfnIsWow64Process = NULL;
 LPFNChangeWindowMessageFilter lpfnChangeWindowMessageFilter = NULL;
 LPFNChangeWindowMessageFilterEx lpfnChangeWindowMessageFilterEx = NULL;
+LPFNAddClipboardFormatListener lpfnAddClipboardFormatListener = NULL;
+LPFNRemoveClipboardFormatListener lpfnRemoveClipboardFormatListener = NULL;
+
 LPFNRtlGetVersion lpfnRtlGetVersion = NULL;
 LPFNSHTestTokenMembership lpfnSHTestTokenMembership = NULL;
 #ifdef _USE_APIHOOK
@@ -122,6 +125,7 @@ int		g_nCharWidth = 7;
 BOOL	g_bCharWidth = true;
 BOOL	g_bUpperVista;
 BOOL	g_bIsXP;
+HWND	g_hwndNextClip = NULL;
 LPWSTR  g_szTotalFileSizeXP = GetUserDefaultLCID() == 1041 ? L"総ファイル サイズ" : L"Total file size";
 LPWSTR  g_szLabelXP = GetUserDefaultLCID() == 1041 ? L"ラベル" : L"Label";
 LPWSTR	g_szTotalFileSizeCodeXP = L"System.TotalFileSize";
@@ -1353,6 +1357,9 @@ BSTR tePSGetNameFromPropertyKeyEx(PROPERTYKEY propKey, int nFormat)
 				CoTaskMemFree(psz);
 			}
 			pdesc->Release();
+		}
+		else {
+			bs = tePSGetNameFromPropertyKeyEx(propKey, 2);
 		}
 		return bs;
 	}
@@ -8984,6 +8991,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	if (hDll) {
 		lpfnChangeWindowMessageFilterEx = (LPFNChangeWindowMessageFilterEx)GetProcAddress(hDll, "ChangeWindowMessageFilterEx");
 		lpfnChangeWindowMessageFilter = (LPFNChangeWindowMessageFilter)GetProcAddress(hDll, "ChangeWindowMessageFilter");
+		lpfnRemoveClipboardFormatListener = (LPFNRemoveClipboardFormatListener)GetProcAddress(hDll, "RemoveClipboardFormatListener");
+		if (lpfnRemoveClipboardFormatListener) {
+			lpfnAddClipboardFormatListener = (LPFNAddClipboardFormatListener)GetProcAddress(hDll, "AddClipboardFormatListener");
+		}
 	}
 	SysFreeString(bsLib);
 
@@ -9106,6 +9117,14 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		teChangeWindowMessageFilterEx(g_hwndMain, WM_COPYDATA, MSGFLT_ALLOW, NULL);
 		CoCreateInstance(CLSID_DragDropHelper, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&g_pDropTargetHelper));
 #ifdef _2000XP
+	}
+#endif
+	if (lpfnAddClipboardFormatListener) {
+		lpfnAddClipboardFormatListener(g_hwndMain);
+	}
+#ifdef _2000XP
+	else {
+		g_hwndNextClip = SetClipboardViewer(g_hwndMain);
 	}
 #endif
 	//Get JScript Object
@@ -9328,6 +9347,14 @@ function importScripts() {\
 		if (g_hMenu) {
 			DestroyMenu(g_hMenu);
 		}
+		if (lpfnAddClipboardFormatListener) {
+			lpfnRemoveClipboardFormatListener(g_hwndMain);
+		}
+#ifdef	_2000XP
+		else {
+			ChangeClipboardChain(g_hwndMain, g_hwndNextClip);
+		}
+#endif
 	} catch (...) {}
 	Finalize();
 	teReleaseClear(&g_pTE);
@@ -9556,7 +9583,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case WM_USERCHANGED:
 		case WM_QUERYENDSESSION:
 		case WM_HOTKEY:
-			if (g_pOnFunc[TE_OnSystemMessage]) {
+		case WM_CLIPBOARDUPDATE:
+		if (g_pOnFunc[TE_OnSystemMessage]) {
 				msg1.hwnd = hWnd;
 				msg1.message = message;
 				msg1.wParam = wParam;
@@ -9573,6 +9601,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				return 1;
 			}
 			return DefWindowProc(hWnd, message, wParam, lParam);
+#ifdef	_2000XP
+		case WM_DRAWCLIPBOARD:
+			if (g_hwndNextClip) {
+				SendMessage(g_hwndNextClip, message, wParam, lParam);
+			}
+			PostMessage(g_hwndMain, WM_CLIPBOARDUPDATE, 0, 0);
+	        return 0;
+		case WM_CHANGECBCHAIN:
+			if ((HWND)wParam == g_hwndNextClip) {
+				g_hwndNextClip = (HWND)lParam;
+			} else if (g_hwndNextClip) {
+				SendMessage(g_hwndNextClip, message, wParam, lParam);
+			}
+			return 0;
+#endif
 		default:
 			if ((message >= WM_APP && message <= MAXWORD)) {
 				if (g_pOnFunc[TE_OnAppMessage]) {
@@ -12591,9 +12634,19 @@ HRESULT CteShellBrowser::CreateViewWindowEx(IShellView *pPreviousView)
 #endif
 			try {
 				if (::InterlockedIncrement(&m_nCreate) <= 1) {
-					FOLDERSETTINGS fs = { m_param[SB_ViewMode], (m_param[SB_FolderFlags] | FWF_USESEARCHFOLDER) & ~FWF_NOENUMREFRESH };
 					m_hwnd = NULL;
-					hr = m_pShellView->CreateViewWindow(pPreviousView, &fs, static_cast<IShellBrowser *>(this), &rc, &m_hwnd);
+					IEnumIDList *peidl = NULL;
+					hr = ILIsEqual(m_pidl, g_pidlResultsFolder) ? S_OK : m_pSF2->EnumObjects(g_hwndMain, SHCONTF_NONFOLDERS | SHCONTF_FOLDERS, &peidl);
+					if (hr == S_OK) {
+						FOLDERSETTINGS fs = { m_param[SB_ViewMode], (m_param[SB_FolderFlags] | FWF_USESEARCHFOLDER) & ~FWF_NOENUMREFRESH };
+						hr = m_pShellView->CreateViewWindow(pPreviousView, &fs, static_cast<IShellBrowser *>(this), &rc, &m_hwnd);
+						if (peidl) {
+							peidl->Release();
+						}
+					}
+					else {
+						hr = E_FAIL;
+					}
 				} else {
 					hr = OLE_E_BLANK;
 				}
@@ -14190,8 +14243,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 								}
 								if (pTC->Create()) {
 									teSetObject(pVarResult, pTC);
-									g_pTC = pTC;
-									pTC->Show(TRUE);
+									pTC->Show(!g_pTC);
 								} else {
 									pTC->Release();
 								}
