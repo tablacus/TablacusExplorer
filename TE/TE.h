@@ -110,7 +110,12 @@ typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
 typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult);
 
 #define DISPID_AMBIENT_OFFLINEIFNOTCONNECTED -5501
-#define E_CANCELLED_BY_USER	0x800704c7
+#define E_CANCELLED         HRESULT_FROM_WIN32(ERROR_CANCELLED)
+#define E_FILE_NOT_FOUND    HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)
+#define E_PATH_NOT_FOUND    HRESULT_FROM_WIN32(ERROR_PATH_NOT_FOUND)
+#define E_NOT_READY         HRESULT_FROM_WIN32(ERROR_NOT_READY)
+#define E_BAD_NETPATH       HRESULT_FROM_WIN32(ERROR_BAD_NETPATH)
+#define E_INVALID_PASSWORD  HRESULT_FROM_WIN32(ERROR_INVALID_PASSWORD)
 
 #define APP_TITLE				L"Tablacus Explorer"
 #define WINDOW_CLASS			L"TablacusExplorer"
@@ -321,7 +326,7 @@ struct TEExists
 	HANDLE hEvent;
 	LONG cRef;
 	int iUseFS;
-	BOOL bResult;
+	HRESULT hr;
 };
 
 struct TEILCreate
@@ -673,7 +678,7 @@ public:
 	VOID LockUpdate();
 	VOID UnLockUpdate(BOOL bDirect);
 	VOID RedrawUpdate();
-	VOID Show(BOOL bVisible);
+	VOID Show(BOOL bVisible, BOOL bMain);
 	VOID GetItem(int i, VARIANT *pVarResult);
 	DWORD GetStyle();
 	VOID SetItemSize();

@@ -102,6 +102,13 @@ PanelCreated = function (Ctrl)
 ChangeView = function (Ctrl)
 {
 	if (Ctrl && Ctrl.FolderItem) {
+		if (!Ctrl.FolderItem.Unavailable && te.Data.Conf_NetworkTimeout) {
+			var strPath = api.GetDisplayNameOf(Ctrl.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
+			if (api.PathIsNetworkPath(strPath) && !api.PathIsDirectory(strPath)) {
+				Ctrl.Suspend(2);
+				return;
+			}
+		}
 		ChangeTabName(Ctrl);
 		RunEvent1("ChangeView", Ctrl);
 	}
@@ -1872,12 +1879,12 @@ function ChangeNotifyFV(lEvent, item1, item2)
 	var fAdd = SHCNE_DRIVEADD | SHCNE_MEDIAINSERTED | SHCNE_NETSHARE | SHCNE_MKDIR;
 	var fRemove = SHCNE_DRIVEREMOVED | SHCNE_MEDIAREMOVED | SHCNE_NETUNSHARE | SHCNE_RENAMEFOLDER | SHCNE_RMDIR | SHCNE_SERVERDISCONNECT;
 	if (lEvent & (SHCNE_DISKEVENTS | fAdd | fRemove)) {
+		var path1 = String(api.GetDisplayNameOf(item1, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
 		var cFV = te.Ctrls(CTRL_FV);
 		for (var i in cFV) {
 			var FV = cFV[i];
+			var path = String(api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
 			if (lEvent == SHCNE_RENAMEFOLDER && !FV.Data.Lock) {
-				var path = String(api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
-				var path1 = String(api.GetDisplayNameOf(item1, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
 				if (api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"))) {
 					FV.Navigate(path.replace(path1, api.GetDisplayNameOf(item2, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)), SBSP_SAMEBROWSER);
 					continue;
@@ -1901,10 +1908,21 @@ function ChangeNotifyFV(lEvent, item1, item2)
 						api.SendMessage(FV.hwndList, LVM_SETITEMSTATE, -1, item);
 					}
 				}
+				if ((lEvent & SHCNE_UPDATEDIR) && te.Data.Conf_NetworkTimeout) {
+					if (api.PathIsNetworkPath(path) && api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"))) {
+						var n = FV.FolderItem.Unavailable;
+						if (!n && !api.PathIsDirectory(path)) {
+							FV.Suspend(2);
+							continue;
+						}
+						if (n > 30000 && api.PathIsDirectory(path)) {
+							FV.Refresh();
+							continue;
+						}
+					}
+				}
 				if ((lEvent & fAdd) && FV.FolderItem.Unavailable) {
-					var path = api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
-					var path1 = String(api.GetDisplayNameOf(item1, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
-					if (api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"))) {
+					if (api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;")) && api.PathIsDirectory(path)) {
 						FV.Refresh();
 					}
 				}
@@ -1989,6 +2007,11 @@ KeyExec = function (Ctrl, mode, str, hwnd)
 
 KeyExecEx = function (Ctrl, mode, nKey, hwnd)
 {
+	var pt = api.Memory("POINT");
+	var rc = api.Memory('RECT');
+	api.GetWindowRect(hwnd, rc);
+	pt.x = rc.Left;
+	pt.y = rc.Top;
 	return ArExec(Ctrl, eventTE.Key[mode][nKey], pt, hwnd);
 }
 

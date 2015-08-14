@@ -55,7 +55,7 @@ FolderMenu =
 			return;
 		}
 		var path = FolderItem.Path || FolderItem;
-		if (path === FolderItem) {
+		if (path === FolderItem || /^[A-Z]:\\$/i.test(path)) {
 			FolderItem = api.ILCreateFromPath(path);
 		}
 		try {
@@ -789,12 +789,6 @@ CreateTab = function ()
 
 Navigate = function (Path, wFlags)
 {
-	if (Path) {
-		var path = Path.Path || Path;
-		if (api.PathIsNetworkPath(path) && !api.PathIsDirectory(path)) {
-			return;
-		}
-	}
 	var FV = te.Ctrl(CTRL_FV);
 	if (!FV) {
 		var TC = te.CreateCtrl(CTRL_TC, 0, 0, "100%", "100%", te.Data.Tab_Style, te.Data.Tab_Align, te.Data.Tab_TabWidth, te.Data.Tab_TabHeight);
@@ -956,7 +950,10 @@ CreateNew = function (path, fn)
 				var s = fso.BuildPath(fso.GetSpecialFolder(2).Path, fso.GetFileName(path));
 				DeleteItem(s);
 				fn(s);
-				sha.NameSpace(fso.GetParentFolderName(path)).MoveHere(s, FOF_SILENT | FOF_NOCONFIRMATION);
+				var o = sha.NameSpace(fso.GetParentFolderName(path));
+				if (o) {
+					o.MoveHere(s, FOF_SILENT | FOF_NOCONFIRMATION);
+				}
 			}
 		}
 	}
@@ -1243,7 +1240,7 @@ IsFolderEx = function (Item)
 	var wfd = api.Memory("WIN32_FIND_DATA");
 	api.SHGetDataFromIDList(Item, SHGDFIL_FINDDATA, wfd, wfd.Size);
 	if (Item.IsFolder) {
-		return (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) || !Item.IsFileSystem || !fso.FileExists(Item.Path);
+		return (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) || !Item.IsFileSystem;
 	}
 	return false;
 }
@@ -2241,7 +2238,11 @@ OpenInExplorer = function (FV)
 	if (FV) {
 		CancelWindowRegistered();
 		var exp = te.CreateObject("new:{C08AFD90-F2A1-11D1-8455-00A0C91F3880}");
-		exp.Navigate2(FV, 2);
+		var pid = FV.FolderItem || FV;
+		if (api.ILIsEqual(pid.Alt, ssfRESULTSFOLDER)) {
+			pid = pid.Path;
+		}
+		exp.Navigate2(pid, 2);
 		exp.Visible = true;
 		api.SetForegroundWindow(exp.HWND);
 		if (FV.FolderItem) {
