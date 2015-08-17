@@ -12210,7 +12210,25 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 							if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
 								LPITEMIDLIST pidl;
 								if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
-									hr = pFV->GetItemPosition(ILFindLastID(pidl), ppt);
+									LPITEMIDLIST pidlChild = ILFindLastID(pidl);
+									hr = pFV->GetItemPosition(pidlChild, ppt);
+									if (m_hwndLV && ppt->x == 0 && ppt->y == 0) {
+										int i = 0;
+										pFV->ItemCount(SVGIO_ALLVIEW, &i);
+										while (i-- > 0) {
+											LPITEMIDLIST pidlPart;
+											if SUCCEEDED(pFV->Item(i, &pidlPart)) {
+												if (ILIsEqual(pidlChild, pidlPart)) {
+													RECT rc;
+													ListView_GetItemRect(m_hwndLV, i, &rc, LVIR_BOUNDS);
+													ppt->x = rc.left;
+													ppt->y = rc.top;
+													i = 0;
+												}
+												::CoTaskMemFree(pidlPart);
+											}
+										}
+									}
 									teCoTaskMemFree(pidl);
 								}
 								pFV->Release();

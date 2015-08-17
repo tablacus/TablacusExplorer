@@ -1267,13 +1267,20 @@ OpenMenu = function (items, SelItem)
 		}
 	}
 	arMenu = [];
-	for (var i = items.length; i-- > 0;) {
-		if (SelItem) {
-			if (PathMatchEx(path, items[i].getAttribute("Filter"))) {
-				arMenu.unshift(i);
-			}
-		} else if (items[i].getAttribute("Filter") == "") {
-			arMenu.unshift(i);
+	var arLevel = [];
+	for (var i = 0; i < items.length; i++) {
+		var item = items[i];
+		var strType = String(item.getAttribute("Type")).toLowerCase();
+		var strFlag = strType == "menus" ? item.text.toLowerCase() : "";
+		var bAdd = SelItem ? PathMatchEx(path, item.getAttribute("Filter")) : item.getAttribute("Filter") == "";
+		if (strFlag == "close") {
+			bAdd = arLevel.pop();
+		}
+		if (strFlag == "open") {
+			arLevel.push(bAdd);
+		}
+		if (bAdd && (arLevel.length == 0 || arLevel[arLevel.length - 1])) {
+			arMenu.push(i);
 		}
 	}
 	return arMenu;
@@ -1373,8 +1380,27 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 		if (nBase == 1) {
 			if (api.QuadPart(menus[0].getAttribute("Pos")) < 0) {
 				item = items[arMenu[arMenu.length - 1]];
+				if (arMenu.length > 1) {
+					for (var i = arMenu.length; i--;) {
+						var nLevel = 0;
+						if (String(items[arMenu[i]].getAttribute("Type")).toLowerCase() == "menus") {
+		 					var s = String(items[arMenu[i]].text).toLowerCase();
+		 					if (s == "close") {
+		 						nLevel++;
+		 					}
+		 					if (s == "open") {
+		 						if (--nLevel < 0) {
+		 							arMenu.splice(0, i + 1);
+									nBase = 0;
+									break;
+								}
+							}
+						}
+					}
+				}
 			}
-		} else {
+		}
+		if (nBase != 1) {
 			var ar = GetBaseMenu(nBase, FV, Selected, uCMF, Mode, SelItem)
 			var hMenu = ar.shift();
 			var ContextMenu = ar.shift();
@@ -1741,10 +1767,9 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt)
 	nLen = arMenu.length;
 	for (var i = 0; i < nLen; i++) {
 		var item = items[arMenu[i]];
-		var s = item.getAttribute("Name").replace(/\\t/i, "\t");
-		var strFlag = api.StrCmpI(item.getAttribute("Type"), "Menus") ? "" : item.text;
-
-		if (api.StrCmpI(strFlag, "Close") == 0) {
+		var s = (item.getAttribute("Name") || item.getAttribute("Mouse") || GetKeyName(item.getAttribute("Key")) || "").replace(/\\t/i, "\t");
+		var strFlag = String(item.getAttribute("Type")).toLowerCase() == "menus" ? item.text.toLowerCase() : "";
+		if (strFlag == "close") {
 			hMenus.pop();
 			if (!hMenus.length) {
 				break;
@@ -1755,7 +1780,7 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt)
 			if (ar.length > 1) {
 				ar[1] = GetKeyName(ar[1]);
 			}
-			if (api.StrCmpI(strFlag, "Open") == 0) {
+			if (strFlag == "open") {
 				var mii = api.Memory("MENUITEMINFO");
 				mii.fMask = MIIM_STRING | MIIM_SUBMENU | MIIM_FTYPE;
 				mii.fType = 0;

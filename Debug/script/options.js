@@ -644,9 +644,23 @@ function SetType(o, value)
 	}
 }
 
+function InsertX(sel)
+{
+	sel.length++;
+	if (sel.selectedIndex < 0) {
+		sel.selectedIndex = sel.length - 1;
+	} else {
+		sel.selectedIndex++;
+		for (var i = sel.length; i-- > sel.selectedIndex;) {
+			sel[i].text = sel[i - 1].text;
+			sel[i].value = sel[i - 1].value;
+		}
+	}
+}
+
 function AddX(mode, fn)
 {
-	g_x[mode].selectedIndex = ++g_x[mode].length - 1;
+	InsertX(g_x[mode]);
 	(fn || ReplaceX)(mode);
 	EnableSelectTag(g_x[mode]);
 }
@@ -655,7 +669,7 @@ function ReplaceMenus()
 {
 	ClearX("Menus");
 	if (g_x.Menus.selectedIndex < 0) {
-		g_x.Menus.selectedIndex = ++g_x.Menus.length - 1;
+		InsertX(g_x.Menus);
 	}
 	var sel = g_x.Menus[g_x.Menus.selectedIndex];
 	var o = document.F.Menus_Type;
@@ -674,7 +688,7 @@ function ReplaceX(mode)
 {
 	ClearX(mode);
 	if (g_x[mode].selectedIndex < 0) {
-		g_x[mode].selectedIndex = ++g_x[mode].length - 1;
+		InsertX(g_x[mode]);
 		EnableSelectTag(g_x[mode]);
 	}
 	var sel = g_x[mode][g_x[mode].selectedIndex];

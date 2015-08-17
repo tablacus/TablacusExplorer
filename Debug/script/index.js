@@ -665,7 +665,6 @@ te.OnCreate = function (Ctrl)
 					}
 				}
 			}
-			DeviceChanged();
 			Resize();
 			var cTC = te.Ctrls(CTRL_TC);
 			for (var i in cTC) {
@@ -1047,22 +1046,24 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 	if (isFinite(Verb)) {
 		Verb = ContextMenu.GetCommandString(Verb, GCS_VERB);
 	}
-	if (api.PathMatchSpec(Verb, "opennewwindow;opennewprocess")) {
+	var strVerb = String(Verb).toLowerCase();
+	if (api.PathMatchSpec(strVerb, "opennewwindow;opennewprocess")) {
 		CancelWindowRegistered();
 	}
+
 	NewTab = GetNavigateFlags();
 	for (var i = 0; i < Items.Count; i++) {
-		if (Verb && api.StrCmpI(Verb, "runas")) {
+		if (Verb && strVerb != "runas") {
 			if (Items.Item(i).IsLink) {
 				path = Items.Item(i).ExtendedProperty("linktarget");
 			}
 			if (!path) {
 				path = Items.Item(i).Path;
 			}
-			var cmd = api.AssocQueryString(ASSOCF_NONE, ASSOCSTR_COMMAND, path, api.StrCmpI(Verb, "Default") ? Verb : null).replace(/"?%1"?|%L/g, api.PathQuoteSpaces(path)).replace(/%\*|%I/g, "");
+			var cmd = api.AssocQueryString(ASSOCF_NONE, ASSOCSTR_COMMAND, path, strVerb == "default" ? null : Verb).replace(/"?%1"?|%L/g, api.PathQuoteSpaces(path)).replace(/%\*|%I/g, "");
 			if (cmd) {
 				ShowStatusText(te, Verb + ":" + cmd, 1);
-				if (!api.StrCmpI(Verb, "open") && api.PathMatchSpec(cmd, "?:\\Windows\\Explorer.exe;*\\Explorer.exe /idlist,*;rundll32.exe *fldr.dll,RouteTheCall*")) {
+				if (strVerb == "open" && api.PathMatchSpec(cmd, "?:\\Windows\\Explorer.exe;*\\Explorer.exe /idlist,*;rundll32.exe *fldr.dll,RouteTheCall*")) {
 					Navigate(Items.Item(i), NewTab);
 				 	NewTab |= SBSP_NEWBROWSER;
 					continue;
@@ -1073,7 +1074,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 					continue;
 				}
 			}
-			if (!api.StrCmpI(Verb, "open") && IsFolderEx(Items.Item(i))) {
+			if (strVerb == "open" && IsFolderEx(Items.Item(i))) {
 				Navigate(Items.Item(i), NewTab);
 				NewTab |= SBSP_NEWBROWSER;
 				continue;
@@ -1361,7 +1362,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 					break;
 				case WM_DEVICECHANGE:
 					if (wParam == DBT_DEVICEARRIVAL || wParam == DBT_DEVICEREMOVECOMPLETE) {
-						DeviceChanged();
+						DeviceChanged(Ctrl);
 					}
 					break;
 				case WM_ACTIVATE:
@@ -1676,10 +1677,11 @@ GetIconImage = function (Ctrl, BGColor)
 	if (img) {
 		return img;
 	}
-	if (Ctrl.FolderItem && Ctrl.FolderItem.Unavailable) {
+	var FolderItem = Ctrl.FolderItem || Ctrl;
+	if (!FolderItem || FolderItem.Unavailable) {
 		return MakeImgSrc("icon:shell32.dll,234,16", 0, false, 16);
 	}
-	var path = Ctrl.FolderItem.Path;
+	var path = FolderItem.Path;
 	if (api.PathIsNetworkPath(path)) {
 		if (fso.GetDriveName(path) != path.replace(/\\$/, "")) {
 			return MakeImgSrc(WINVER >= 0x600 ? "icon:shell32.dll,275,16" : "icon:shell32.dll,85,16", 0, false, 16);
@@ -1688,7 +1690,7 @@ GetIconImage = function (Ctrl, BGColor)
 	}
 	if (document.documentMode) {
 		var info = api.Memory("SHFILEINFO");
-		api.SHGetFileInfo(Ctrl.FolderItem, 0, info, info.Size, SHGFI_ICON | SHGFI_SMALLICON | SHGFI_PIDL);
+		api.SHGetFileInfo(FolderItem, 0, info, info.Size, SHGFI_ICON | SHGFI_SMALLICON | SHGFI_PIDL);
 		var image = te.GdiplusBitmap();
 		image.FromHICON(info.hIcon, BGColor);
 		api.DestroyIcon(info.hIcon);
@@ -1784,6 +1786,7 @@ function ArrangeAddons()
 			}
 		}
 	}
+	DeviceChanged(te);
 }
 
 function GetAddonLocation(strName)
@@ -2008,10 +2011,10 @@ KeyExec = function (Ctrl, mode, str, hwnd)
 KeyExecEx = function (Ctrl, mode, nKey, hwnd)
 {
 	var pt = api.Memory("POINT");
-	var rc = api.Memory('RECT');
-	api.GetWindowRect(hwnd, rc);
-	pt.x = rc.Left;
-	pt.y = rc.Top;
+	if (Ctrl.Type <= CTRL_EB) {
+		Ctrl.GetItemPosition(Ctrl.FocusedItem, pt);
+	}
+	api.ClientToScreen(Ctrl.hwnd, pt);
 	return ArExec(Ctrl, eventTE.Key[mode][nKey], pt, hwnd);
 }
 
