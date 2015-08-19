@@ -1357,8 +1357,7 @@ BSTR tePSGetNameFromPropertyKeyEx(PROPERTYKEY propKey, int nFormat)
 				CoTaskMemFree(psz);
 			}
 			pdesc->Release();
-		}
-		else {
+		} else {
 			bs = tePSGetNameFromPropertyKeyEx(propKey, 2);
 		}
 		return bs;
@@ -2720,7 +2719,7 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 				}
 				::SysFreeString(bsServer);
 			}
-			else {
+			if (!pidl) {
 				lpfnSHParseDisplayName(pszPath, NULL, &pidl, 0, NULL);
 				if (pidl) {
 					if (tePathIsNetworkPath(pszPath) && PathIsRoot(pszPath) && FAILED(tePathIsDirectory(pszPath, 0, 3))) {
@@ -2782,7 +2781,7 @@ static void threadILCreate(void *args)
 
 LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath)
 {
-	DWORD dwms = g_pTE ? g_pTE->m_param[TE_NetworkTimeout] : 1000; 
+	DWORD dwms = g_pTE ? g_pTE->m_param[TE_NetworkTimeout] : 2000; 
 	if (dwms && g_dwMainThreadId == GetCurrentThreadId()) {
 		TEILCreate *pILC = new TEILCreate[1];
 		pILC->cRef = 2;
@@ -4900,8 +4899,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						return lResult;
 					}
 				}
-			}
-			else if (((LPNMHDR)lParam)->code == LVN_COLUMNCLICK) {
+			} else if (((LPNMHDR)lParam)->code == LVN_COLUMNCLICK) {
 				if (g_pOnFunc[TE_OnColumnClick]) {
 					LPNMLISTVIEW pnmv = (LPNMLISTVIEW)lParam;
 					HWND hHeader = ListView_GetHeader(pSB->m_hwndLV);
@@ -4923,8 +4921,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						}
 					}
 				}
-			}
-			else if (((LPNMHDR)lParam)->code == HDN_ITEMCHANGED) {
+			} else if (((LPNMHDR)lParam)->code == HDN_ITEMCHANGED) {
 				pSB->SetLVSettings();
 			}
 /// Color
@@ -5005,8 +5002,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							if (wParam == 0x7103) {//Refresh
 								if (ILIsEqual(pSB->m_pidl, g_pidlResultsFolder)) {
 									pSB->BrowseObject(NULL, SBSP_RELATIVE | SBSP_SAMEBROWSER);
-								}
-								else {
+								} else {
 									pSB->m_bRefreshing = TRUE;
 								}
 							}
@@ -5910,8 +5906,7 @@ VOID teApiUQuadCmp(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *
 	int i = 0;
 	if (ll > 0) {
 		i = 1;
-	}
-	else if (ll < 0) {
+	} else if (ll < 0) {
 		i = -1;
 	}
 	teSetLong(pVarResult, i);
@@ -12702,8 +12697,7 @@ HRESULT CteShellBrowser::CreateViewWindowEx(IShellView *pPreviousView)
 						if (peidl) {
 							peidl->Release();
 						}
-					}
-					else {
+					} else {
 						hr = E_FAIL;
 					}
 				} else {
