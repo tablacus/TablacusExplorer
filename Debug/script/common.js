@@ -183,15 +183,17 @@ function ApplyLang(doc)
 	if (doc.body) {
 		doc.body.style.fontFamily = FaceName;
 		doc.body.style.fontSize = Math.abs(MainWindow.DefaultFont.lfHeight) + "px";
-		var css = document.styleSheets.item(0);
-		var s = ['font-family: ', FaceName, '; font-size: ', doc.body.style.fontSize].join("");
-		if (css.insertRule) {
-			css.insertRule(["*", " { ", s, " }"].join(""), css.cssRules.length);
-		}
-		else if (css.addRule) {
-			css.addRule("*", s);
-		}
 		doc.body.style.backgroundColor = 'buttonface';
+		var css = document.styleSheets.item(0);
+		if (css) {
+			var s = ['font-family: ', FaceName, '; font-size: ', doc.body.style.fontSize].join("");
+			if (css.insertRule) {
+				css.insertRule(["*", " { ", s, " }"].join(""), css.cssRules.length);
+			}
+			else if (css.addRule) {
+				css.addRule("*", s);
+			}
+		}
 	}
 
 	var i;
