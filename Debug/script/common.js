@@ -928,6 +928,11 @@ HitTest = function (o, pt)
 	return false;
 }
 
+PtInRect = function (rc, pt)
+{
+	return pt.x >= rc.Left && pt.x < rc.Right && pt.y >= rc.Top && pt.y < rc.Bottom;
+}
+
 DeleteItem = function (path)
 {
 	api.SHFileOperation(FO_DELETE, path, null, FOF_SILENT | FOF_NOCONFIRMATION, false);
@@ -1432,7 +1437,17 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 				switch (Ctrl.Type) {
 					case CTRL_SB:
 					case CTRL_EB:
-						Ctrl.GetItemPosition(SelItem, pt);
+					case CTRL_TV:
+						var rc = api.Memory("RECT");
+						if (Ctrl.GetItemRect(SelItem, rc) != S_OK) {
+							api.GetClientRect(Ctrl.hwnd, rc);
+						}
+						api.GetCursorPos(pt);
+						api.ScreenToClient(Ctrl.hwnd, pt);
+						if (!PtInRect(rc, pt)) {
+							pt.x = rc.Left;
+							pt.y = rc.Top;
+						}
 						api.ClientToScreen(Ctrl.hwnd, pt);
 						break;
 					default:

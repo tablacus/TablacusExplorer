@@ -567,9 +567,9 @@ OpenSelected = function (Ctrl, NewTab, pt)
 			var Item = Selected.Item(i);
 			var bFolder = Item.IsFolder;
 			if (!bFolder) {
-				if (Item.IsLink) {
-					var path = Item.ExtendedProperty("linktarget");
-					bFolder = path == "" || api.PathIsDirectory(path);
+				var path = Item.ExtendedProperty("linktarget");
+				if (path) {
+					bFolder = api.PathIsDirectory(path);
 				}
 			}
 			if (bFolder) {
@@ -1054,12 +1054,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 	NewTab = GetNavigateFlags();
 	for (var i = 0; i < Items.Count; i++) {
 		if (Verb && strVerb != "runas") {
-			if (Items.Item(i).IsLink) {
-				path = Items.Item(i).ExtendedProperty("linktarget");
-			}
-			if (!path) {
-				path = Items.Item(i).Path;
-			}
+			path = Items.Item(i).ExtendedProperty("linktarget") || Items.Item(i).Path;
 			var cmd = api.AssocQueryString(ASSOCF_NONE, ASSOCSTR_COMMAND, path, strVerb == "default" ? null : Verb).replace(/"?%1"?|%L/g, api.PathQuoteSpaces(path)).replace(/%\*|%I/g, "");
 			if (cmd) {
 				ShowStatusText(te, Verb + ":" + cmd, 1);
@@ -1103,19 +1098,21 @@ AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, 
 		var Items = ContextMenu.Items();
 		for (var j in Items) {
 			var Item = Items.Item(j);
-			if (Item.IsLink) {
-				var path = Item.ExtendedProperty("linktarget");
-				if (api.PathIsDirectory(path)) {
-					Navigate(path, SBSP_NEWBROWSER);
-				}
-				else {
-					Navigate(fso.GetParentFolderName(path), SBSP_NEWBROWSER);
-					setTimeout(function ()
-					{
-						var FV = te.Ctrl(CTRL_FV);
-						FV.SelectItem(path, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
-					}, 99);
-				}
+			var path = Item.ExtendedProperty("linktarget");
+			if (path) {
+			 	api.PathIsDirectory(function (hr, path)
+			 	{
+					if (hr >= 0) {
+						Navigate(path, SBSP_NEWBROWSER);
+					} else {
+						Navigate(fso.GetParentFolderName(path), SBSP_NEWBROWSER);
+						setTimeout(function ()
+						{
+							var FV = te.Ctrl(CTRL_FV);
+							FV.SelectItem(path, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
+						}, 99);
+					}
+				}, -1, path, path);
 			}
 			return S_OK;
 		}
@@ -1900,33 +1897,36 @@ function ChangeNotifyFV(lEvent, item1, item2)
 						continue;
 					}
 				}
+				FV.Notify(lEvent, item1, item2);
 				if (FV.hwndList) {
-					FV.Notify(item1);
-					if (lEvent & (SHCNE_RENAMEITEM | SHCNE_RENAMEFOLDER)) {
-						FV.Notify(item2);
-					}
 					if (api.ILIsParent(FV, item1, true)) {
 						var item = api.Memory("LVITEM");
 						item.stateMask = LVIS_CUT;
 						api.SendMessage(FV.hwndList, LVM_SETITEMSTATE, -1, item);
 					}
 				}
-				if ((lEvent & SHCNE_UPDATEDIR) && te.Data.Conf_NetworkTimeout) {
-					if (api.PathIsNetworkPath(path) && api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"))) {
-						var n = FV.FolderItem.Unavailable;
-						if (!n && !api.PathIsDirectory(path)) {
-							FV.Suspend(2);
-							continue;
-						}
-						if (n > 30000 && api.PathIsDirectory(path)) {
-							FV.Refresh();
-							continue;
-						}
-					}
-				}
 				if ((lEvent & fAdd) && FV.FolderItem.Unavailable) {
-					if (api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;")) && api.PathIsDirectory(path)) {
-						FV.Refresh();
+					FV.Refresh();
+				}
+				if (lEvent & SHCNE_UPDATEDIR) {
+					if (/^[A-Z]:\\|^\\/i.test(path) && api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"))) {
+					 	if (!FV.FolderItem.Unavailable) {
+						 	api.PathIsDirectory(function (hr, FV, FolderItem)
+						 	{
+								if (hr < 0 && api.ILIsEqual(FV.FolderItem, FolderItem)) {
+									FV.Suspend(2);
+								}
+							}, 0, FV.FolderItem, FV, FV.FolderItem);
+						}
+						else if (FV.FolderItem.Unavailable > 3000) {
+							FV.FolderItem.Unavailable = 1;
+						 	api.PathIsDirectory(function (hr, FV)
+						 	{
+								if (hr >= 0 && FV.FolderItem.Unavailable) {
+									FV.Refresh();
+								}
+							}, -1, path, FV);
+						}
 					}
 				}
 			}
@@ -2011,8 +2011,11 @@ KeyExec = function (Ctrl, mode, str, hwnd)
 KeyExecEx = function (Ctrl, mode, nKey, hwnd)
 {
 	var pt = api.Memory("POINT");
-	if (Ctrl.Type <= CTRL_EB) {
-		Ctrl.GetItemPosition(Ctrl.FocusedItem, pt);
+	if (Ctrl.Type <= CTRL_EB || Ctrl.Type == CTRL_TV) {
+		var rc = api.Memory("RECT");
+		Ctrl.GetItemRect(Ctrl.FocusedItem || Ctrl.SelectedItem, rc);
+		pt.x = rc.Left;
+		pt.y = rc.Top;
 	}
 	api.ClientToScreen(Ctrl.hwnd, pt);
 	return ArExec(Ctrl, eventTE.Key[mode][nKey], pt, hwnd);

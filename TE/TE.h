@@ -295,10 +295,13 @@ struct TEInvoke
 {
 	VARIANT *pv;
 	IDispatch *pdisp;
-	PVOID	pResult;
+	LPITEMIDLIST	pidl;
 	DISPID dispid;
 	int	cArgs;
-	int nErrorHandling;
+	HRESULT hr;
+	LONG cRef;
+	WORD wErrorHandling;
+	WORD wMode;
 };
 
 struct TEDispatchApi
