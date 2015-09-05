@@ -1160,6 +1160,9 @@ ExtractMacro = function (Ctrl, s)
 	if (typeof(s) == "string") {
 		for (var j = 10; j--;) {
 			var s1 = s;
+			for (var i in eventTE.ReplaceMacroEx) {
+				s = s.replace(eventTE.ReplaceMacroEx[i][0], eventTE.ReplaceMacroEx[i][1]);
+			}
 			for (var i in eventTE.ReplaceMacro) {
 				var re = eventTE.ReplaceMacro[i][0];
 				if (s.match(re)) {
@@ -1175,18 +1178,19 @@ ExtractMacro = function (Ctrl, s)
 					s = eventTE.ExtractMacro[i][1](Ctrl, s, re);
 				}
 			}
-			if (/%([^%]+)%/i.test(s)) {
-				var re = RegExp.$1;
-				var fn = eventTE.Environment[re.toLowerCase()];
+			s = s.replace(/%(\w+)%/g, function (strMatch, ref)
+			{
+				var fn = eventTE.Environment[ref.toLowerCase()];
 				if (typeof(fn) == "string") {
-					s = s.replace("%" + re + "%", fn);
+					return fn;
 				} else if (fn) {
 					var r = fn(Ctrl);
 					if (typeof(r) == "string") {
-						s = s.replace("%" + re + "%", r);
+						return r;
 					}
 				}
-			}
+				return strMatch;
+			});
 			s = wsh.ExpandEnvironmentStrings(s);
 			if (s == s1) {
 				break;
