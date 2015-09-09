@@ -1155,46 +1155,58 @@ ExtractPath = function (Ctrl, s, pt)
 	return s;
 }
 
+ExtractMacro2 = function (Ctrl, s)
+{
+	for (var j = 99; j--;) {
+		var s1 = s;
+		for (var i in eventTE.ReplaceMacroEx) {
+			s = s.replace(eventTE.ReplaceMacroEx[i][0], eventTE.ReplaceMacroEx[i][1]);
+		}
+		for (var i in eventTE.ReplaceMacro) {
+			var re = eventTE.ReplaceMacro[i][0];
+			if (s.match(re)) {
+				var r = eventTE.ReplaceMacro[i][1](Ctrl, re);
+				if (typeof(r) == "string") {
+					s = s.replace(re, r);
+				}
+			}
+		}
+		for (var i in eventTE.ExtractMacro) {
+			var re = eventTE.ExtractMacro[i][0];
+			if (s.match(re)) {
+				s = eventTE.ExtractMacro[i][1](Ctrl, s, re);
+			}
+		}
+		s = s.replace(/%(\w+)%/g, function (strMatch, ref)
+		{
+			var fn = eventTE.Environment[ref.toLowerCase()];
+			if (typeof(fn) == "string") {
+				return fn;
+			} else if (fn) {
+				var r = fn(Ctrl);
+				if (typeof(r) == "string") {
+					return r;
+				}
+			}
+			return strMatch;
+		});
+		s = wsh.ExpandEnvironmentStrings(s);
+		if (s == s1) {
+			break;
+		}
+	}
+	return s;
+}
+
 ExtractMacro = function (Ctrl, s)
 {
 	if (typeof(s) == "string") {
-		for (var j = 10; j--;) {
-			var s1 = s;
-			for (var i in eventTE.ReplaceMacroEx) {
-				s = s.replace(eventTE.ReplaceMacroEx[i][0], eventTE.ReplaceMacroEx[i][1]);
-			}
-			for (var i in eventTE.ReplaceMacro) {
-				var re = eventTE.ReplaceMacro[i][0];
-				if (s.match(re)) {
-					var r = eventTE.ReplaceMacro[i][1](Ctrl, re);
-					if (typeof(r) == "string") {
-						s = s.replace(re, r);
-					}
-				}
-			}
-			for (var i in eventTE.ExtractMacro) {
-				var re = eventTE.ExtractMacro[i][0];
-				if (s.match(re)) {
-					s = eventTE.ExtractMacro[i][1](Ctrl, s, re);
-				}
-			}
-			s = s.replace(/%(\w+)%/g, function (strMatch, ref)
-			{
-				var fn = eventTE.Environment[ref.toLowerCase()];
-				if (typeof(fn) == "string") {
-					return fn;
-				} else if (fn) {
-					var r = fn(Ctrl);
-					if (typeof(r) == "string") {
-						return r;
-					}
-				}
-				return strMatch;
-			});
-			s = wsh.ExpandEnvironmentStrings(s);
-			if (s == s1) {
-				break;
-			}
+		s = ExtractMacro2(Ctrl, s);
+		if (!/\t/.test(s) && /%/.test(s)) {
+			do {
+				s = ExtractMacro2(Ctrl, s.replace(/%/, "\t"));
+			} while (/%/.test(s));
+			s = s.replace(/\t/g, "%");
 		}
 	}
 	return s;
@@ -1219,7 +1231,7 @@ AddEnv("Current", function(Ctrl)
 	var strSel = "";
 	var FV = GetFolderView(Ctrl);
 	if (FV) {
-		strSel = api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
+		strSel = api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORPARSING));
 	}
 	return strSel;
 });
