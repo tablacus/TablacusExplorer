@@ -1177,7 +1177,7 @@ ExtractMacro2 = function (Ctrl, s)
 				s = eventTE.ExtractMacro[i][1](Ctrl, s, re);
 			}
 		}
-		s = s.replace(/%(\w+)%/g, function (strMatch, ref)
+		s = s.replace(/%([\w\-_]+)%/g, function (strMatch, ref)
 		{
 			var fn = eventTE.Environment[ref.toLowerCase()];
 			if (typeof(fn) == "string") {
