@@ -1934,7 +1934,7 @@ BOOL GetShellFolder(IShellFolder **ppSF, LPCITEMIDLIST pidl)
 		pSF->Release();
 	}
 	if (*ppSF == NULL) {
-		SHGetDesktopFolder(ppSF);
+		return FALSE;
 	}
 #ifdef _2000XP
 	if (!g_bUpperVista) {
@@ -1947,7 +1947,7 @@ BOOL GetShellFolder(IShellFolder **ppSF, LPCITEMIDLIST pidl)
 		}
 	}
 #endif
-	return true;
+	return TRUE;
 }
 
 LPITEMIDLIST teILCreateFromPath3(IShellFolder *pSF, LPWSTR pszPath, HWND hwnd)
@@ -13090,7 +13090,9 @@ HRESULT CteShellBrowser::GetShellFolder2(LPITEMIDLIST pidl)
 		::SysFreeString(bs);
 	}
 	if (!pSF) {
-		GetShellFolder(&pSF, pidl);
+		if (!GetShellFolder(&pSF, pidl)) {
+			GetShellFolder(&pSF, g_pidlResultsFolder);
+		}
 	}
 	if (pSF) {
 		if (m_pSF2) {

@@ -569,7 +569,7 @@ OpenSelected = function (Ctrl, NewTab, pt)
 			if (!bFolder) {
 				var path = Item.ExtendedProperty("linktarget");
 				if (path) {
-					bFolder = api.PathIsDirectory(path);
+					bFolder = api.PathIsDirectory(path) === true;
 				}
 			}
 			if (bFolder) {
@@ -2752,6 +2752,36 @@ g_basic =
 				wsh.SendKeys(s);
 				return S_OK;
 			}
+		},
+
+		"&Load Layout...":
+		{
+			Exec: function (Ctrl, s, type, hwnd, pt)
+			{
+				if (s) {
+					LoadXml(s);
+				} else {
+					LoadLayout();
+				}
+				return S_OK;
+			},
+
+			Ref: OpenDialog
+		},
+
+		"&Save Layout...":
+		{
+			Exec: function (Ctrl, s, type, hwnd, pt)
+			{
+				if (s) {
+					SaveXml(s);
+				} else {
+					SaveLayout();
+				}
+				return S_OK;
+			},
+
+			Ref: OpenDialog
 		},
 
 		"Add-ons":

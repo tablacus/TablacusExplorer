@@ -759,7 +759,7 @@ function LoadMenus(nSelected)
 		for (var i = 0; i < arFunc.length; i++) {
 			var o = oa[++oa.length - 1];
 			o.value = arFunc[i];
-			o.innerText = GetText(arFunc[i]);
+			o.innerText = GetText(arFunc[i]).replace(/&|\.\.\.$/g, "").replace(/\(\w\)/, "");
 		}
 
 		oa = document.F.Menus;
@@ -823,7 +823,7 @@ function LoadX(mode, fn)
 		for (var i = 0; i < arFunc.length; i++) {
 			var o = oa[++oa.length - 1];
 			o.value = arFunc[i];
-			o.innerText = GetText(arFunc[i]);
+			o.innerText = GetText(arFunc[i]).replace(/&|\.\.\.$/g, "").replace(/\(\w\)/, "");
 		}
 		g_x[mode] = document.F.elements[mode + "All"];
 		if (g_x[mode]) {
