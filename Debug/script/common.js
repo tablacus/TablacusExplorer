@@ -1276,9 +1276,10 @@ OpenMenu = function (items, SelItem)
 		if (typeof(SelItem) != "object") {
 			path = SelItem;	
 		} else {
-			path = SelItem.ExtendedProperty("linktarget") || String(api.GetDisplayNameOf(SelItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX));
+			var link = SelItem.ExtendedProperty("linktarget");
+			path = link || String(api.GetDisplayNameOf(SelItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX));
 			arMenu = OpenMenu(items, path);
-			if (!IsFolderEx(SelItem) && (!path || !api.PathIsDirectory(path))) {
+			if (!IsFolderEx(SelItem) && (!link || !api.PathIsDirectory(path))) {
 				return arMenu;
 			}
 			path += ".folder";
