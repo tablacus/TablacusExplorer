@@ -8,6 +8,9 @@ http://www.opensource.org/licenses/mit-license.php
 Español / Spanish
 Patricio M. Ros
 
+简体中文 / Simplified Chinese
+秋寥
+
 正體中文 / Traditional Chinese
 風逸蘭
 
