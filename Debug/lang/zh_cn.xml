@@ -1,12 +1,4 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
 ﻿<?xml version="1.0" encoding="UTF-8"?>
-=======
-<?xml version="1.0" encoding="UTF-8"?>
->>>>>>> origin/master
-=======
-<?xml version="1.0" encoding="UTF-8"?>
->>>>>>> origin/master
 <resources>
 	<lang author="秋寥" en="Simplified Chinese">简体中文</lang>
 	<text s="&amp;File">文件(&amp;F)</text>
@@ -213,12 +205,4 @@
 	<text s="Separator">分隔符</text>
 	<text s="Break">断开</text>
 	<text s="BarBreak">换行</text>
-<<<<<<< HEAD
-<<<<<<< HEAD
 </resources>
-=======
-</resources>
->>>>>>> origin/master
-=======
-</resources>
->>>>>>> origin/master
