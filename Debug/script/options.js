@@ -17,7 +17,14 @@ g_drag5 = false;
 g_nResult = 0;
 g_bChanged = true;
 g_bClosed = false;
-arLangs = [GetLangId(), "en", "General"];
+arLangs = [GetLangId()];
+if (/(\w+)_/.test(arLangs[0])) {
+	arLangs.push(RegExp.$1);
+}
+if (!/^en/.test(arLangs[0])) {
+	arLangs.push("en");
+}
+arLangs.push("General");
 g_ovPanel = null;
 
 urlAddons = "https://www.eonet.ne.jp/~gakana/tablacus/addons/";
@@ -27,7 +34,7 @@ xmlAddons = null;
 
 function SetDefaultLangID()
 {
-	SetDefault(document.F.Conf_Lang, navigator.userLanguage.replace(/\-.*/,""));
+	SetDefault(document.F.Conf_Lang, GetLangId(true));
 }
 
 function SetDefault(o, v)
@@ -113,7 +120,7 @@ function ResetForm()
 	document.F.Color_Conf_TrailColor.style.backgroundColor = s;
 	
 	document.getElementById("_EDIT").checked = true;
-	document.getElementById("_TEInfo").value = api.sprintf(99, "TE%d %d.%d.%d Win %d.%d.%d%s %s %x%s IE %d %s", api.sizeof("HANDLE") * 8, (te.Version / 10000) % 100, (te.Version / 100) % 100, te.Version % 100, osInfo.dwMajorVersion, osInfo.dwMinorVersion, osInfo.dwBuildNumber, api.IsWow64Process(api.GetCurrentProcess()) ? " Wow64" : "", ["WS", "DC", "SV"][osInfo.wProductType - 1] || osInfo.wProductType, osInfo.wSuiteMask, api.SHTestTokenMembership(null, 0x220) ? " Admin" : "", document.documentMode || (document.body.style.maxHeight === undefined ? 6 : 7), navigator.userLanguage);
+	document.getElementById("_TEInfo").value = GetTEInfo();
 }
 
 function ResizeTabPanel()
@@ -190,7 +197,12 @@ function ClickTree(o, nMode, strChg, bForce)
 		if (newTab == "0") {
 			var o = document.getElementById("DefaultLangID");
 			if (o && o.innerHTML == "") {
-				o.innerHTML = navigator.userLanguage.replace(/\-.*/,"");
+				var s = GetLangId(1);
+				var s2 = GetLangId(2);
+				if (s != s2) {
+					s += ' (' + s2 + ')';
+				}
+				o.innerHTML = s;
 			}
 		}
 		var ovTab = document.getElementById('tab' + TabIndex);

@@ -2595,10 +2595,8 @@ g_basic =
 			Exec: function (Ctrl, s, type, hwnd, pt)
 			{
 				var Selected;
-				if (Ctrl.Type <= CTRL_EB) {
+				if (Ctrl.Type <= CTRL_EB || Ctrl.Type == CTRL_TV) {
 					Selected = Ctrl.SelectedItems();
-				} else if (Ctrl.Type == CTRL_TV) {
-					Selected = Ctrl.SelectedItem;
 				} else {
 					var FV = te.Ctrl(CTRL_FV);
 					Selected = FV.SelectedItems();

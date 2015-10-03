@@ -78,7 +78,7 @@ IDispatch	*g_pJS		= NULL;
 IDispatch	*g_pSubWindows = NULL;
 IDropTargetHelper *g_pDropTargetHelper = NULL;
 
-IContextMenu *g_pCM = NULL;
+IDispatchEx *g_pCM = NULL;
 ULONG_PTR g_Token;
 Gdiplus::GdiplusStartupInput g_StartupInput;
 HHOOK	g_hHook;
@@ -1017,8 +1017,9 @@ TEmethod methodTV[] = {
 	{ 0x10000007, L"FolderView" },
 	{ 0x10000008, L"Align" },
 	{ 0x10000009, L"Visible" },
-	{ 0x10000105, L"Focus" },
-	{ 0x10000106, L"HitTest" },
+	{ 0x10000106, L"Focus" },
+	{ 0x10000107, L"HitTest" },
+	{ 0x10000283, L"GetItemRect" },
 	{ TE_OFFSET + SB_TreeWidth, L"Width" },
 	{ TE_OFFSET + SB_TreeFlags, L"Style" },
 	{ TE_OFFSET + SB_EnumFlags, L"EnumFlags" },
@@ -4224,7 +4225,7 @@ HRESULT ParseScript(LPOLESTR lpScript, LPOLESTR lpLang, VARIANT *pv, IUnknown *p
 				if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pdex))) {
 					DISPID dispid;
 					HRESULT hr = pdex->GetNextDispID(fdexEnumAll, DISPID_STARTENUM, &dispid);
-					while (hr == NOERROR) {
+					while (hr == S_OK) {
 						BSTR bs;
 						if (pdex->GetMemberName(dispid, &bs) == S_OK) {
 							pas->AddNamedItem(bs, SCRIPTITEM_ISVISIBLE | SCRIPTITEM_ISSOURCE | SCRIPTITEM_GLOBALMEMBERS);
@@ -7074,7 +7075,18 @@ VOID teApiTrackPopupMenuEx(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, V
 	IUnknown *punk;
 	if (nArg >= 6) {
 		if (FindUnknown(&pDispParams->rgvarg[nArg - 6], &punk)) {
-			punk->QueryInterface(IID_PPV_ARGS(&g_pCM));
+			IContextMenu *pCM;
+			if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pCM))) {
+				IDispatch *pdisp;
+				GetNewArray(&pdisp);
+				teArrayPush(pdisp, pCM);
+				pCM->Release();
+				pdisp->QueryInterface(IID_PPV_ARGS(&g_pCM));
+				pdisp->Release();
+			}
+			else {
+				punk->QueryInterface(IID_PPV_ARGS(&g_pCM));
+			}
 		}
 	}
 	if (!g_hMenuKeyHook) {
@@ -7102,10 +7114,7 @@ VOID teApiTrackPopupMenuEx(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, V
 	}
 	UnhookWindowsHookEx(g_hMenuKeyHook);
 	g_hMenuKeyHook = NULL;
-	if (g_pCM) {
-		g_pCM->Release();
-		g_pCM = NULL;
-	}
+	teReleaseClear(&g_pCM);
 }
 
 VOID teApiExtractIconEx(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -9614,15 +9623,31 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			}
 			if (bDone && g_pCM) {
 				LRESULT lResult = 0;
+				BOOL bRet = FALSE;
 				IContextMenu3 *pCM3;
 				IContextMenu2 *pCM2;
-				if SUCCEEDED(g_pCM->QueryInterface(IID_PPV_ARGS(&pCM3))) {
-					pCM3->HandleMenuMsg2(message, wParam, lParam, &lResult);
-					pCM3->Release();
+				DISPID dispid;
+				VARIANT v;
+				VariantInit(&v);
+				IUnknown *punk;
+				HRESULT hr = g_pCM->GetNextDispID(fdexEnumAll, DISPID_STARTENUM, &dispid);
+				while (hr == S_OK) {
+					if (Invoke5(g_pCM, dispid, DISPATCH_PROPERTYGET, &v, 0, NULL) == S_OK) {
+						if (FindUnknown(&v, &punk)) {
+							if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pCM3))) {
+								bRet = SUCCEEDED(pCM3->HandleMenuMsg2(message, wParam, lParam, &lResult));
+								pCM3->Release();
+							} else if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pCM2))) {
+								pCM2->HandleMenuMsg(message, wParam, lParam);
+								pCM2->Release();
+							}
+						}
+						VariantClear(&v);
+					}
+					hr = g_pCM->GetNextDispID(fdexEnumAll, dispid, &dispid);
+				}
+				if (bRet) {
 					return lResult;
-				} else if SUCCEEDED(g_pCM->QueryInterface(IID_PPV_ARGS(&pCM2))) {
-					pCM2->HandleMenuMsg(message, wParam, lParam);
-					pCM2->Release();
 				}
 			}
 			break;
@@ -17512,8 +17537,8 @@ STDMETHODIMP CteContextMenu::QueryInterface(REFIID riid, void **ppvObject)
 
 	if (IsEqualIID(riid, IID_IUnknown) || IsEqualIID(riid, IID_IDispatch)) {
 		*ppvObject = static_cast<IDispatch *>(this);
-	} else if (IsEqualIID(riid, IID_IContextMenu)) {
-		return m_pContextMenu->QueryInterface(IID_IContextMenu, ppvObject);
+	} else if (IsEqualIID(riid, IID_IContextMenu) || IsEqualIID(riid, IID_IContextMenu2) || IsEqualIID(riid, IID_IContextMenu3)) {
+		return m_pContextMenu->QueryInterface(riid, ppvObject);
 	} else {
 		return E_NOINTERFACE;
 	}
@@ -18388,11 +18413,11 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 				teSetBool(pVarResult, m_pFV->m_param[SB_TreeAlign] & 2);
 				return S_OK;
 			//Focus
-			case 0x10000105:
+			case 0x10000106:
 				SetFocus(m_hwndTV);
 				return S_OK;
 			//HitTest (Screen coordinates)
-			case 0x10000106:
+			case 0x10000107:
 				if (nArg >= 0 && pVarResult) {
 					TVHITTESTINFO info;
 					GetPointFormVariant(&info.pt, &pDispParams->rgvarg[nArg]);
@@ -18409,12 +18434,47 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 					teSetPtr(pVarResult, hItem);
 				}
 				return S_OK;
-
+			//GetItemRect
+			case 0x10000283:
+				if (nArg >= 1) {
+					VARIANT vMem;
+					VariantInit(&vMem);
+					LPRECT prc = (LPRECT)GetpcFromVariant(&pDispParams->rgvarg[nArg - 1], &vMem);
+					if (prc) {
+						LPITEMIDLIST pidl;
+						if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
+							if (m_pNameSpaceTreeControl && lpfnSHCreateItemFromIDList) {
+								IShellItem *pShellItem;
+								if SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(&pShellItem))) {
+									teSetLong(pVarResult, m_pNameSpaceTreeControl->GetItemRect(pShellItem, prc));
+									pShellItem->Release();
+								}
+							}
+							teCoTaskMemFree(pidl);
+						}
+					}
+					teWriteBack(&pDispParams->rgvarg[nArg - 1], &vMem);
+					VariantClear(&vMem);
+				}
+				return S_OK;
 			//SelectedItem
 			case 0x20000000:
 				IDispatch *pdisp;
 				if (getSelected(&pdisp) == S_OK) {
 					teSetObjectRelease(pVarResult, pdisp);
+					return S_OK;
+				}
+				break;
+			//SelectedItems
+			case 0x20000001:
+				if (getSelected(&pdisp) == S_OK) {
+					CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL, true);
+					VARIANT v;
+					VariantInit(&v);
+					teSetObjectRelease(&v, pdisp);
+					pFolderItems->ItemEx(-1, NULL, &v);
+					VariantClear(&v);
+					teSetObjectRelease(pVarResult, pFolderItems);
 					return S_OK;
 				}
 				break;
