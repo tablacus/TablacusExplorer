@@ -859,6 +859,9 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 		return hr; 
 	}
 	var strClass = api.GetClassName(hwnd);
+	if (strClass == WC_HEADER) {
+		return S_FALSE;
+	}
 	var bLV = Ctrl.Type <= CTRL_EB && api.PathMatchSpec(strClass, WC_LISTVIEW + ";DirectUIHWND");
 	if (msg == WM_MOUSEWHEEL) {
 		var Ctrl2 = te.CtrlFromPoint(pt);
@@ -960,13 +963,11 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 		}
 	}
 	if (msg == WM_LBUTTONDBLCLK || msg == WM_RBUTTONDBLCLK || msg == WM_MBUTTONDBLCLK || msg == WM_XBUTTONDBLCLK) {
-		if (api.StrCmpI(strClass, WC_HEADER)) {
-			te.Data.pt = pt.Clone();
-			g_mouse.str = g_mouse.GetButton(msg, wParam);
-			g_mouse.str += g_mouse.str;
-			if (g_mouse.Exec(Ctrl, hwnd, pt) == S_OK) {
-				return S_OK;
-			}
+		te.Data.pt = pt.Clone();
+		g_mouse.str = g_mouse.GetButton(msg, wParam);
+		g_mouse.str += g_mouse.str;
+		if (g_mouse.Exec(Ctrl, hwnd, pt) == S_OK) {
+			return S_OK;
 		}
 	}
 

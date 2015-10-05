@@ -1020,6 +1020,7 @@ TEmethod methodTV[] = {
 	{ 0x10000106, L"Focus" },
 	{ 0x10000107, L"HitTest" },
 	{ 0x10000283, L"GetItemRect" },
+	{ 0x10000300, L"Notify" },
 	{ TE_OFFSET + SB_TreeWidth, L"Width" },
 	{ TE_OFFSET + SB_TreeFlags, L"Style" },
 	{ TE_OFFSET + SB_EnumFlags, L"EnumFlags" },
@@ -18455,6 +18456,31 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 					}
 					teWriteBack(&pDispParams->rgvarg[nArg - 1], &vMem);
 					VariantClear(&vMem);
+				}
+				return S_OK;
+			//Notify
+			case 0x10000300:
+				if (nArg >= 2 && m_pNameSpaceTreeControl) {
+					long lEvent = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+					if (lEvent & (SHCNE_MKDIR | SHCNE_MEDIAINSERTED | SHCNE_DRIVEADD | SHCNE_NETSHARE)) {					
+						LPITEMIDLIST pidl;
+						if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg - 1])) {
+							IShellItem *psi, *psiParent;
+							if SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(&psi))) {
+								DWORD dwState;
+								if FAILED(m_pNameSpaceTreeControl->GetItemState(psi, NSTCIS_EXPANDED, &dwState)) {
+									if (ILRemoveLastID(pidl) && SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(&psiParent)))) {
+										if SUCCEEDED(m_pNameSpaceTreeControl->GetItemState(psiParent, NSTCIS_EXPANDED, &dwState)) {
+											m_pNameSpaceTreeControl->SetItemState(psi, NSTCIS_EXPANDED, NSTCIS_EXPANDED);
+										}
+										psiParent->Release();
+									}
+								}
+								psi->Release();
+							}
+							teCoTaskMemFree(pidl);
+						}
+					}
 				}
 				return S_OK;
 			//SelectedItem
