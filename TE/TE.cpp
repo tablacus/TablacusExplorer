@@ -8587,7 +8587,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 										if (nCount != pTC->m_nIndex) {
 											pSB = pTC->GetShellBrowser(nCount);
 											if (pSB && pSB->m_bVisible) {
-												pSB->Show(FALSE, TRUE);
+												pSB->Show(FALSE, 1);
 											}
 										}
 									}
@@ -8637,7 +8637,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 										if (!pSB->m_hwnd) {
 											bDirect = FALSE;
 										}
-										pSB->Show(TRUE, FALSE);
+										pSB->Show(TRUE, 0);
 									}
 									MoveWindow(pSB->m_hwnd, rc.left, rc.top, rc.right - rc.left,
 										rc.bottom - rc.top, FALSE);
@@ -10454,7 +10454,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	//History / Management
 	SetHistory(pFolderItems, wFlags);
 	DestroyView(m_param[SB_Type]);
-	Show(FALSE, FALSE);
+	Show(FALSE, 2);
 	if (dwFrame || teGetFolderViewOptions(m_pidl, m_param[SB_ViewMode]) == FVO_DEFAULT) {
 		//ExplorerBrowser
 		hr = NavigateEB(dwFrame);
@@ -10477,7 +10477,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		}
 		m_nLogIndex = m_nPrevLogIndex;
 		if (m_pSF2 && m_pTC && GetTabIndex() == m_pTC->m_nIndex) {
-			Show(TRUE, FALSE);
+			Show(TRUE, 0);
 		}
 		return hr;
 	}
@@ -10520,7 +10520,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 
 	m_nOpenedType = m_param[SB_Type];
 	if (m_pTC && GetTabIndex() == m_pTC->m_nIndex) {
-		Show(TRUE, FALSE);
+		Show(TRUE, 0);
 	}
 	if (!m_pExplorerBrowser) {
 		OnViewCreated(NULL);
@@ -11505,14 +11505,14 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 							FOLDERSETTINGS fs;
 							pPreviousView->GetCurrentInfo(&fs);
 							m_param[SB_ViewMode] = fs.ViewMode;
-							Show(FALSE, FALSE);
+							Show(FALSE, 0);
 							ResetPropEx();
 							if SUCCEEDED(CreateViewWindowEx(pPreviousView)) {
 								pPreviousView->DestroyViewWindow();
 								SetTimer(m_hwnd, (UINT_PTR)pPreviousView, 100, teTimerProcRelease);
 								GetShellFolderView();
 							}
-							Show(TRUE, FALSE);
+							Show(TRUE, 0);
 							SetPropEx();
 						}
 					}
@@ -11812,7 +11812,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 							teGetIDListFromObject(punk, &pidl);
 						}
 						if (SUCCEEDED(Navigate2(pFolderItem, GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]), param, pFolderItems, m_pFolderItem, this)) && m_bVisible) {
-							Show(TRUE, FALSE);
+							Show(TRUE, 0);
 						}
 					}
 				}
@@ -13511,7 +13511,7 @@ VOID CteShellBrowser::Suspend(int nMode)
 		if (m_dwUnavailable || ILIsEqual(m_pidl, g_pidlResultsFolder)) {
 			return;
 		}
-		Show(FALSE, FALSE);
+		Show(FALSE, 0);
 		m_dwUnavailable = GetTickCount();
 		teILCloneReplace(&m_pidl, g_pidlResultsFolder);
 		VARIANT v;
@@ -13556,7 +13556,7 @@ VOID CteShellBrowser::Suspend(int nMode)
 		}
 	}
 	m_nUnload = 9;
-	Show(bVisible, FALSE);
+	Show(bVisible, 0);
 }
 
 VOID CteShellBrowser::SetPropEx()
@@ -13602,7 +13602,7 @@ VOID CteShellBrowser::ResetPropEx()
 	}
 }
 
-void CteShellBrowser::Show(BOOL bShow, BOOL bSuspend)
+void CteShellBrowser::Show(BOOL bShow, DWORD dwOptions)
 {
 	bShow &= 1;
 	if (bShow ^ m_bVisible) {
@@ -13644,19 +13644,21 @@ void CteShellBrowser::Show(BOOL bShow, BOOL bSuspend)
 					Refresh(FALSE);
 				}
 			} else {
-				SetRedraw(FALSE);
-				m_pShellView->UIActivate(SVUIA_DEACTIVATE);
-				MoveWindow(m_hwnd, -1, -1, 0, 0, FALSE);
-				ShowWindow(m_hwnd, SW_HIDE);
-				if (m_hwndLV) {
-					ShowWindow(m_hwndLV, SW_HIDE);
-				}
-				if (m_pTV->m_hwnd) {
-					MoveWindow(m_pTV->m_hwnd, -1, -1, 0, 0, FALSE);
-					ShowWindow(m_pTV->m_hwnd, SW_HIDE);
-				}
-				if (bSuspend && m_dwUnavailable && !m_nCreate && !ILIsEqual(m_pidl, g_pidlResultsFolder)) {
-					Suspend(0);
+				if ((dwOptions & 2) == 0) {
+					SetRedraw(FALSE);
+					m_pShellView->UIActivate(SVUIA_DEACTIVATE);
+					MoveWindow(m_hwnd, -1, -1, 0, 0, FALSE);
+					ShowWindow(m_hwnd, SW_HIDE);
+					if (m_hwndLV) {
+						ShowWindow(m_hwndLV, SW_HIDE);
+					}
+					if (m_pTV->m_hwnd) {
+						MoveWindow(m_pTV->m_hwnd, -1, -1, 0, 0, FALSE);
+						ShowWindow(m_pTV->m_hwnd, SW_HIDE);
+					}
+					if ((dwOptions & 1) && m_dwUnavailable && !m_nCreate && !ILIsEqual(m_pidl, g_pidlResultsFolder)) {
+						Suspend(0);
+					}
 				}
 			}
 		} else {
@@ -13695,7 +13697,7 @@ VOID CteShellBrowser::DestroyView(int nFlags)
 			IUnknown_SetSite(m_pExplorerBrowser, NULL);
 			m_pServiceProvider->Release();
 			m_pServiceProvider = NULL;
-			Show(FALSE, FALSE);
+			Show(FALSE, 0);
 			m_pExplorerBrowser->Destroy();
 			m_pExplorerBrowser->Release();
 		} catch (...) {
@@ -13706,7 +13708,7 @@ VOID CteShellBrowser::DestroyView(int nFlags)
 	if (m_pShellView) {
 		try {
 			if (bCloseSB && (nFlags & 1) == 0) {
-				Show(FALSE, FALSE);
+				Show(FALSE, 0);
 				m_pShellView->DestroyViewWindow();
 			}
 			if (nFlags == 0) {
@@ -14494,7 +14496,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 							CteShellBrowser *pSB = pTC->GetShellBrowser(pTC->m_nIndex);
 							if (pSB && !pSB->m_bEmpty) {
 								if (pSB->m_nUnload & 5) {
-									pSB->Show(TRUE, FALSE);
+									pSB->Show(TRUE, 0);
 								}
 								if (pTC->m_bRedraw) {
 									pTC->RedrawUpdate();
@@ -15490,7 +15492,7 @@ VOID CteTabCtrl::Show(BOOL bVisible, BOOL bMain)
 			for (int i = TabCtrl_GetItemCount(m_hwnd); i--;) {
 				CteShellBrowser *pSB = GetShellBrowser(i);
 				if (pSB) {
-					pSB->Show(FALSE, TRUE);
+					pSB->Show(FALSE, 1);
 				}
 			}
 		}

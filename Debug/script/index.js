@@ -102,13 +102,6 @@ PanelCreated = function (Ctrl)
 ChangeView = function (Ctrl)
 {
 	if (Ctrl && Ctrl.FolderItem) {
-		if (!Ctrl.FolderItem.Unavailable && te.Data.Conf_NetworkTimeout) {
-			var strPath = api.GetDisplayNameOf(Ctrl.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
-			if (api.PathIsNetworkPath(strPath) && !api.PathIsDirectory(strPath)) {
-				Ctrl.Suspend(2);
-				return;
-			}
-		}
 		ChangeTabName(Ctrl);
 		RunEvent1("ChangeView", Ctrl);
 	}
@@ -859,9 +852,6 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 		return hr; 
 	}
 	var strClass = api.GetClassName(hwnd);
-	if (strClass == WC_HEADER) {
-		return S_FALSE;
-	}
 	var bLV = Ctrl.Type <= CTRL_EB && api.PathMatchSpec(strClass, WC_LISTVIEW + ";DirectUIHWND");
 	if (msg == WM_MOUSEWHEEL) {
 		var Ctrl2 = te.CtrlFromPoint(pt);
@@ -909,7 +899,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 					}
 				}
 			}
-			if (g_mouse.str.length >= 2 || !IsDrag(pt, te.Data.pt)) {
+			if (g_mouse.str.length >= 2 || (!IsDrag(pt, te.Data.pt) && strClass != WC_HEADER)) {
 				hr = g_mouse.Exec(te.CtrlFromWindow(g_mouse.hwndGesture), g_mouse.hwndGesture, pt);
 				if (msg == WM_LBUTTONUP) {
 					hr = S_FALSE;
@@ -963,11 +953,13 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 		}
 	}
 	if (msg == WM_LBUTTONDBLCLK || msg == WM_RBUTTONDBLCLK || msg == WM_MBUTTONDBLCLK || msg == WM_XBUTTONDBLCLK) {
-		te.Data.pt = pt.Clone();
-		g_mouse.str = g_mouse.GetButton(msg, wParam);
-		g_mouse.str += g_mouse.str;
-		if (g_mouse.Exec(Ctrl, hwnd, pt) == S_OK) {
-			return S_OK;
+		if (strClass != WC_HEADER) {
+			te.Data.pt = pt.Clone();
+			g_mouse.str = g_mouse.GetButton(msg, wParam);
+			g_mouse.str += g_mouse.str;
+			if (g_mouse.Exec(Ctrl, hwnd, pt) == S_OK) {
+				return S_OK;
+			}
 		}
 	}
 
@@ -1485,10 +1477,9 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 			} catch (e) {
 				ShowError(e, en);
 			}
-			for (var i in g_arBM) {
-				api.DeleteObject(g_arBM[i]);
+			while (g_arBM.length) {
+				api.DeleteObject(g_arBM.pop());
 			}
-			g_arBM = [];
 			break;
 		case WM_MENUCHAR:
 			if (window.g_menu_click && (wParam & 0xffff) == VK_LBUTTON) {
@@ -2169,21 +2160,21 @@ g_mouse =
 				break;
 			default:
 				if (str.length) {
-					if (window.g_menu_click != 2) {
-						window.g_menu_button = str;
-					}
-					if (window.g_menu_click === true) {
-						var hSubMenu = api.GetSubMenu(window.g_menu_handle, window.g_menu_pos);
-						if (hSubMenu) {
-							var mii = api.Memory("MENUITEMINFO");
-							mii.cbSize = mii.Size;
-							mii.fMask = MIIM_SUBMENU;
-							if (api.SetMenuItemInfo(window.g_menu_handle, window.g_menu_pos, true, mii)) {
-								api.DestroyMenu(hSubMenu);
+					window.g_menu_button = str;
+					if (window.g_menu_click) {
+						if (window.g_menu_click === true) {
+							var hSubMenu = api.GetSubMenu(window.g_menu_handle, window.g_menu_pos);
+							if (hSubMenu) {
+								var mii = api.Memory("MENUITEMINFO");
+								mii.cbSize = mii.Size;
+								mii.fMask = MIIM_SUBMENU;
+								if (api.SetMenuItemInfo(window.g_menu_handle, window.g_menu_pos, true, mii)) {
+									api.DestroyMenu(hSubMenu);
+								}
 							}
 						}
 						if (str > 2) {
-							window.g_menu_click = 2;
+							window.g_menu_click = 4;
 							var lParam = pt.x + (pt.y << 16);
 							api.PostMessage(hwnd, WM_LBUTTONDOWN, 0, lParam);
 							api.PostMessage(hwnd, WM_LBUTTONUP, 0, lParam);

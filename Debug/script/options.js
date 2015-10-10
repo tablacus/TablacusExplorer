@@ -41,12 +41,8 @@ function SetDefault(o, v)
 {
 	setTimeout(function ()
 	{
-		if (!confirmOk("Are you sure?")) {
-			return;
-		}
-		o.value = v;
-		if (o.onchange) {
-			o.onchange();
+		if (confirmOk("Are you sure?")) {
+			SetValue(o, v);
 		}
 	}, 99);
 }
@@ -1929,10 +1925,7 @@ function RefX(Id, bMultiLine, oButton)
 					if (bMultiLine && api.GetKeyState(VK_CONTROL) < 0 && api.ILCreateFromPath(p.s)) {
 						AddPath(Id, p.s);
 					} else {
-						GetElement(Id).value = p.s;
-					}
-					if (o.onchange) {
-						o.onchange();
+						SetValue(GetElement(Id), p.s);
 					}
 				}
 				return;
@@ -1945,10 +1938,7 @@ function RefX(Id, bMultiLine, oButton)
 			if (bMultiLine) {
 				AddPath(Id, path);
 			} else {
-				o.value = path;
-			}
-			if (o.onchange) {
-				o.onchange();
+				SetValue(o, path);
 			}
 		}
 	}, 99);
@@ -1962,10 +1952,7 @@ function PortableX(Id)
 	}
 	var o = GetElement(Id);
 	var s = fso.GetDriveName(api.GetModuleFileName(null));
-	o.value = o.value.replace(new RegExp('^("?)' + s, "igm"), "$1%Installed%").replace(new RegExp('( "?)' + s, "igm"), "$1%Installed%");
-	if (o.onchange) {
-		o.onchange();
-	}
+	SetValue(o, o.value.replace(new RegExp('^("?)' + s, "igm"), "$1%Installed%").replace(new RegExp('( "?)' + s, "igm"), "$1%Installed%"));
 }
 
 function GetElement(Id)
@@ -1984,7 +1971,15 @@ function AddPath(Id, strValue)
 		} else {
 			s += "\n" + strValue;
 		}
+		SetValue(o, s);
+	}
+}
+
+function SetValue(o, s)
+{
+	if (o.value != s) {
 		o.value = s;
+		FireEvent(o, "change");
 	}
 }
 

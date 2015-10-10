@@ -57,7 +57,7 @@
 	<text s="Action">動作</text>
 	<text s="Open in New &amp;Tab">新しいタブで開く(&amp;T)</text>
 	<text s="Open in Background">バックグラウンドで開く</text>
-	<text s="Open with...">アプリで開く...</text>
+	<text s="Open with...">プログラムから開く...</text>
 	<text s="Send to...">送る...</text>
 
 	<text s="Get the current tab control">現在のタブ コントロールを取得</text>
@@ -70,7 +70,7 @@
 	<text s="If you installed Tablacus Explorer to the Program Files directory, please press this button.">Tablacus ExplorerをProgram Filesにインストールした場合はこのボタンを押してください。</text>
 	<text s="Please enter the width.">幅を入力してください。</text>
 	<text s="Please enter the height.">高さを入力してください。</text>
-	<text s="Please wait.">しばらくお待ちください。</text>
+	<text s="Please wait.">お待ちください。</text>
 	<text s="Completed.">完了しました。</text>
 	<text s="Set Default">既定値に設定</text>
 	<text s="Select">選択</text>

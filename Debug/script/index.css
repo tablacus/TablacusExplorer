@@ -247,6 +247,7 @@ a:active.menu {
 	font-size: 0.667em;
 	font-family: Consolas;
 	margin-right: 3px;
+	cursor: default;
 	background: linear-gradient(to bottom, #ffffff, #dddddd);
 	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#dddddd)";
 }

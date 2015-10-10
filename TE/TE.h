@@ -841,7 +841,7 @@ public:
 
 	void Init(CteTabCtrl *pTC, BOOL bNew);
 	void Clear();
-	void Show(BOOL bShow, BOOL bSuspend);
+	void Show(BOOL bShow, DWORD dwOptions);
 	VOID Suspend(int nMode);
 	VOID SetPropEx();
 	VOID ResetPropEx();
