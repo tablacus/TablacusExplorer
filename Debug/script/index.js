@@ -258,6 +258,11 @@ FontChanged = function ()
 	RunEvent1("FontChanged");
 }
 
+FavoriteChanged = function ()
+{
+	RunEvent1("FavoriteChanged");
+}
+
 LoadConfig = function ()
 {
 	var xml = OpenXml("window.xml", true, false);
@@ -478,6 +483,7 @@ AddFavorite = function (FolderItem)
 			}
 			menus[0].appendChild(item);
 			SaveXmlEx("menus.xml", xml);
+			FavoriteChanged();
 			return true;
 		}
 	}

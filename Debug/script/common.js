@@ -1479,6 +1479,10 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 		}
 		if (item) {
 			var s = item.getAttribute("Type");
+			if (window.g_menu_button == 2 && api.PathMatchSpec(s, "Open;Open in New Tab;Open in Background")) {
+				PopupContextMenu(item.text);
+				return S_OK;
+			}
 			Exec(Ctrl, item.text, window.g_menu_button == 3 && s == "Open" ? "Open in New Tab" : s, Ctrl.hwnd, pt);
 			return S_OK;
 		}
@@ -2295,6 +2299,13 @@ GethwndFromPid = function (ProcessId, bDT)
 
 PopupContextMenu = function (Item, FV)
 {
+	if (typeof(Item) == "string") {
+		var arg = api.CommandLineToArgv(Item);
+		Item = te.FolderItems();
+		for (var i in arg) {
+			Item.AddItem(arg[i]);
+		}
+	}
 	var hMenu = api.CreatePopupMenu();
 	var ContextMenu = api.ContextMenu(Item, FV);
 	if (ContextMenu) {

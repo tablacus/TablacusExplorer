@@ -7606,13 +7606,13 @@ VOID teApiSHChangeNotification_Lock(int nArg, LONGLONG *param, DISPPARAMS *pDisp
 	if (GetDispatch(&pDispParams->rgvarg[nArg - 2], &pdisp)) {
 		PIDLIST_ABSOLUTE *ppidl;
 		LONG lEvent;
-		teSetPtr(pVarResult, SHChangeNotification_Lock((HANDLE)param[0], (DWORD)param[1], &ppidl, (LONG *)&lEvent));
+		teSetPtr(pVarResult, SHChangeNotification_Lock((HANDLE)param[0], (DWORD)param[1], &ppidl, &lEvent));
 		VARIANT v;
 		teSetIDList(&v, ppidl[0]);
-		tePutProperty(pdisp, L"0", &v);
+		tePutPropertyAt(pdisp, 0, &v);
 		VariantClear(&v);
 		teSetIDList(&v, ppidl[1]);
-		tePutProperty(pdisp, L"1", &v);
+		tePutPropertyAt(pdisp, 1, &v);
 		VariantClear(&v);
 		teSetLong(&v, lEvent);
 		tePutProperty(pdisp, L"lEvent", &v);
@@ -10624,6 +10624,7 @@ VOID CteShellBrowser::SaveFocusedItemToHistory()
 						pid1->QueryInterface(IID_PPV_ARGS(&m_ppLog[m_nLogIndex]));
 					}
 				}
+				teILFreeClear(&pid1->m_pidlFocused);
 				pFV->Item(i, &pid1->m_pidlFocused);
 				pFV->ItemCount(SVGIO_SELECTION, &pid1->m_nSelected);
 				pid1->Release();
@@ -10684,6 +10685,7 @@ HRESULT CteShellBrowser::GetAbsPidl(LPITEMIDLIST *ppidlOut, FolderItem **ppid, F
 			if (m_pFolderItem) {
 				m_ppLog[nLogIndex]->Release();
 				m_pFolderItem->QueryInterface(IID_PPV_ARGS(&m_ppLog[nLogIndex]));
+				SaveFocusedItemToHistory();
 			}
 			if (teGetIDListFromObjectEx(pHistSB->m_ppLog[--nLogIndex], ppidlOut)) {
 				pHistSB->m_ppLog[nLogIndex]->QueryInterface(IID_PPV_ARGS(ppid));
@@ -10701,6 +10703,7 @@ HRESULT CteShellBrowser::GetAbsPidl(LPITEMIDLIST *ppidlOut, FolderItem **ppid, F
 			if (m_pFolderItem) {
 				m_ppLog[nLogIndex]->Release();
 				m_pFolderItem->QueryInterface(IID_PPV_ARGS(&m_ppLog[nLogIndex]));
+				SaveFocusedItemToHistory();
 			}
 			if (teGetIDListFromObjectEx(pHistSB->m_ppLog[++nLogIndex], ppidlOut)) {
 				pHistSB->m_ppLog[nLogIndex]->QueryInterface(IID_PPV_ARGS(ppid));

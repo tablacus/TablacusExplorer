@@ -245,11 +245,19 @@ a:active.menu {
 .treebutton {
 	border: 1px solid gray;
 	font-size: 0.667em;
-	font-family: Consolas;
-	margin-right: 3px;
+	font-family: monospace;
+	margin: 0 2px 0 1px;
 	cursor: default;
 	background: linear-gradient(to bottom, #ffffff, #dddddd);
 	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#dddddd)";
+}
+
+.treespace {
+	border: 0;
+	font-size: 0.667em;
+	font-family: monospace;
+	margin: 1px;
+	cursor: default;
 }
 
 .ok {
