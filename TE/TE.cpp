@@ -8761,6 +8761,19 @@ VOID CALLBACK teTimerProcSort(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTi
 	}
 }
 
+VOID CALLBACK teTimerProcFocus(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+{
+	try {
+		KillTimer(hwnd, idEvent);
+		CteShellBrowser *pSB = SBfromhwnd(hwnd);
+		if (pSB) {
+			pSB->FocusItem(0);
+		}
+	} catch (...) {
+		g_nException = 0;
+	}
+}
+
 
 VOID CALLBACK teTimerProcNavigate(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 {
@@ -10631,6 +10644,30 @@ VOID CteShellBrowser::SaveFocusedItemToHistory()
 			}
 			pFV->Release();
 		}
+	}
+}
+
+VOID CteShellBrowser::FocusItem(int dwFlags)
+{
+	CteFolderItem *pid;
+	if (m_pFolderItem && SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid))) {
+		if (pid->m_pidlFocused) {
+			if (pid->m_nSelected == 1 || (pid->m_nSelected && dwFlags == 0)) {
+				dwFlags |= SVSI_SELECT;
+			}
+			SelectItemEx(&pid->m_pidlFocused, dwFlags | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
+		} else {
+			IFolderView *pFV;
+			if (m_pShellView && SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV)))) {
+				pFV->SelectItem(0, SVSI_FOCUSED | SVSI_ENSUREVISIBLE);
+				pFV->Release();
+			}
+			if (m_hwndLV) {
+				ListView_EnsureVisible(m_hwndLV, 0, FALSE);
+			} 
+		}
+		m_dwUnavailable = pid->m_dwUnavailable;
+		pid->Release();
 	}
 }
 
@@ -13060,24 +13097,7 @@ VOID CteShellBrowser::OnNavigationComplete2()
 	SetRedraw(TRUE);
 	SetActive(FALSE);
 
-	CteFolderItem *pid;
-	if (m_pFolderItem && SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid))) {
-		if (pid->m_pidlFocused) {
-			SelectItemEx(&pid->m_pidlFocused, pid->m_nSelected != 1 ? SVSI_FOCUSED | SVSI_DESELECTOTHERS | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS :
-				SVSI_SELECT | SVSI_FOCUSED | SVSI_DESELECTOTHERS | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
-		} else {
-			IFolderView *pFV;
-			if (m_pShellView && SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV)))) {
-				pFV->SelectItem(0, SVSI_FOCUSED | SVSI_ENSUREVISIBLE);
-				pFV->Release();
-			}
-			if (m_hwndLV) {
-				ListView_EnsureVisible(m_hwndLV, 0, FALSE);
-			} 
-		}
-		m_dwUnavailable = pid->m_dwUnavailable;
-		pid->Release();
-	}
+	FocusItem(SVSI_DESELECTOTHERS);
 	DoFunc(TE_OnNavigateComplete, this, E_NOTIMPL);
 	m_bCheckLayout = TRUE;
 	SetFolderFlags();
@@ -13923,6 +13943,7 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 #endif
 		return;
 	}
+	SaveFocusedItemToHistory();
 	int dir = (bs[0] == '-') ? 1 : 0;
 	LPWSTR szNew = &bs[dir];
 	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
@@ -13931,6 +13952,7 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 			pFV2->SetSortColumns(&col, 1);
 		}
 		pFV2->Release();
+		SetTimer(m_hwnd, 0, 16, teTimerProcFocus);
 		return;
 	}
 #ifdef _2000XP
@@ -13968,6 +13990,7 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 		}
 		::SysFreeString(bs1);
 		teSysFreeString(&bsName);
+		SetTimer(m_hwnd, 0, 16, teTimerProcFocus);
 	}
 	if (bGroup) {
 		SendMessage(m_hwndDV, WM_COMMAND, CommandID_GROUP, 0);

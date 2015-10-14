@@ -50,7 +50,7 @@ function SetDefault(o, v)
 function OpenGroup(id)
 {
 	var o = document.getElementById(id);
-	o.style.display = api.StrCmpI(o.style.display, "block") ? "block" : "none";
+	o.style.display = String(o.style.display).toLowerCase() == "block" ? "none" : "block";
 }
 
 function ResetForm()
@@ -90,7 +90,7 @@ function ResetForm()
 
 	for(i = 0; i < document.F.length; i++) {
 		o = document.F.elements[i];
-		if (api.StrCmpI(o.type, 'checkbox') == 0) {
+		if (String(o.type).toLowerCase() == 'checkbox') {
 			if (!/^Conf_/.test(o.id)) {
 				o.checked = false;
 			}
@@ -801,18 +801,17 @@ function LoadMenus(nSelected)
 		if (api.StrCmpI(ar[0], g_arMenuTypes[j]) == 0) {
 			nSelected = oa.length - 1;
 			oa[nSelected].selected = true;
-			if (isFinite(ar[1])) {
-				var o = document.F.elements["Menus_" + ar[0]];
-				o.selectedIndex = ar[1];
-				EnableSelectTag(o);
-			}
 			g_MenuType = j;
-			setTimeout(function ()
-			{
+			(function (o, v) { setTimeout(function () {
 				ClickTree(document.getElementById("tab2_" + g_MenuType));
 				EditMenus();
 				g_MenuType = "";
-			}, 99);
+				if (isFinite(v)) {
+					o.selectedIndex = v;
+					EnableSelectTag(o);
+					FireEvent(o, "click");
+				}
+			}, 99);}) (document.F.elements["Menus_" + ar[0]], ar[1]);
 		}
 	}
 }
@@ -1432,8 +1431,8 @@ OpenIcon = function (o)
 
 InitDialog = function ()
 {
-	var Query = dialogArguments.Query || location.search.replace(/\?/, "");
-	if (api.StrCmpI(Query, "icon") == 0) {
+	var Query = String(dialogArguments.Query || location.search.replace(/\?/, "")).toLowerCase();
+	if (Query == "icon") {
 		var a =
 		{
 			"16px ieframe,206" : "b,206,16",
@@ -1464,11 +1463,11 @@ InitDialog = function ()
 		}
 		document.getElementById("Content").innerHTML = s.join("");
 	}
-	if (api.StrCmpI(Query, "mouse") == 0) {
+	if (Query == "mouse") {
 		document.getElementById("Content").innerHTML = '<div id="Gesture" style="width: 100%; height: 100%; text-align: center" onmousedown="return MouseDown()" onmouseup="return MouseUp()" onmousemove="return MouseMove()" ondblclick="MouseDbl()" onmousewheel="return MouseWheel()"></div>';
 		document.getElementById("Selected").innerHTML = '<input type="text" name="q" style="width: 100%" autocomplete="off" onkeydown="setTimeout(\'returnValue=document.F.q.value\',100)" />';
 	}
-	if (api.StrCmpI(Query, "key") == 0) {
+	if (Query == "key") {
 		returnValue = false;
 		document.getElementById("Content").innerHTML = '<div style="padding: 8px;" style="display: block;"><label>Key</label><br /><input type="text" name="q" autocomplete="off" style="width: 100%; ime-mode: disabled" /></div>';
 		document.body.onkeydown = function (e)
@@ -1480,7 +1479,7 @@ InitDialog = function ()
 			return false;
 		}
 	}
-	if (api.StrCmpI(Query, "new") == 0) {
+	if (Query == "new") {
 		returnValue = false;
 		var s = [];
 		s.push('<div style="padding: 8px;" style="display: block;"><input type="radio" name="mode" id="folder" onclick="document.F.path.focus()"><label for="folder">New Folder</label> <input type="radio" name="mode" id="file" onclick="document.F.path.focus()"><label for="file">New File</label><br />', dialogArguments.path ,'<br /><input type="text" name="path" style="width: 100%" /></div>');
@@ -1998,7 +1997,7 @@ function SetTab(s)
 	var arg = String(s).split(/&/);
 	for (var i in arg) {
 		var ar = arg[i].split(/=/);
-		if (api.StrCmpI(ar[0], "tab") == 0) {
+		if (ar[0].toLowerCase() == "tab") {
 			if (api.StrCmpI(ar[1], "Get Addons") == 0) {
 				o = document.getElementById('tab1_1');
 			}

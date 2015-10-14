@@ -866,6 +866,7 @@ public:
 	BSTR GetColumnsStr(int nFormat);
 	VOID GetDefaultColumns();
 	VOID SaveFocusedItemToHistory();
+	VOID FocusItem(int dwFlags);
 	HRESULT GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, FolderItem *pid, UINT wFlags, FolderItems *pFolderItems, FolderItem *pPrevious, CteShellBrowser *pHistSB);
 	VOID EBNavigate();
 	VOID SetHistory(FolderItems *pFolderItems, UINT wFlags);

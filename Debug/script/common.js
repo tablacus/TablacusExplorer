@@ -3123,3 +3123,17 @@ FireEvent = function (o, event)
 		return !o.dispatchEvent(evt);
 	}
 }
+
+RemoveCommand = function (hMenu, ContextMenu, strDelete)
+{
+	var mii = api.Memory("MENUITEMINFO");
+	mii.cbSize = mii.Size;
+	mii.fMask = MIIM_ID;
+	for (var i = api.GetMenuItemCount(hMenu); i-- > 0;) {
+		if (api.GetMenuItemInfo(hMenu, i, true, mii)) {
+			if (api.PathMatchSpec(ContextMenu.GetCommandString(mii.wId - ContextMenu.idCmdFirst, GCS_VERB), strDelete)) {
+				api.DeleteMenu(hMenu, i, MF_BYPOSITION);
+			}
+		}
+	}
+}
