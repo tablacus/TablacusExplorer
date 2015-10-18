@@ -239,7 +239,7 @@ IsSavePath = function (path)
 			ShowError(e, en, i);
 		}
 	}
-	return true;
+	return !api.PathMatchSpec(path, "search-ms:*");
 }
 
 Lock = function (Ctrl, nIndex, turn)
@@ -906,9 +906,16 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 				}
 			}
 			if (g_mouse.str.length >= 2 || (!IsDrag(pt, te.Data.pt) && strClass != WC_HEADER)) {
-				hr = g_mouse.Exec(te.CtrlFromWindow(g_mouse.hwndGesture), g_mouse.hwndGesture, pt);
-				if (msg == WM_LBUTTONUP) {
-					hr = S_FALSE;
+				if (msg != WM_RBUTTONUP || g_mouse.str.length < 2) {
+					hr = g_mouse.Exec(te.CtrlFromWindow(g_mouse.hwndGesture), g_mouse.hwndGesture, pt);
+					if (msg == WM_LBUTTONUP) {
+						hr = S_FALSE;
+					}
+				} else {
+					(function (Ctrl, hwnd, pt, str) { setTimeout(function () {
+						hr = g_mouse.Exec(Ctrl, hwnd, pt, str);
+					}, 99);}) (te.CtrlFromWindow(g_mouse.hwndGesture), g_mouse.hwndGesture, pt, g_mouse.str);
+					hr = S_OK;
 				}
 			}
 			g_mouse.EndGesture(false);
@@ -940,7 +947,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 		g_mouse.StartGestureTimer();
 		SetGestureText(Ctrl, GetGestureKey() + g_mouse.str);
 		if (msg == WM_RBUTTONDOWN) {
-			g_mouse.CancelContextMenu = false;
+			g_mouse.CancelContextMenu = api.GetKeyState(VK_LBUTTON) < 0 || api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_XBUTTON1) < 0 || api.GetKeyState(VK_XBUTTON2) < 0;
 			if (te.Data.Conf_Gestures >= 2) {
 				var iItem = -1;
 				if (bLV) {
@@ -1813,8 +1820,7 @@ function SetAddon(strName, Location, Tag)
 				o.appendChild(Tag);
 			}
 			o.style.display = (document.documentMode && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
-		}
-		else if (Location == "Inner") {
+		} else if (Location == "Inner") {
 			AddEvent("PanelCreated", function (Ctrl)
 			{
 				SetAddon(null, "Inner1Left_" + Ctrl.Id, Tag);
@@ -1912,8 +1918,7 @@ function ChangeNotifyFV(lEvent, item1, item2)
 									FV.Suspend(2);
 								}
 							}, 0, FV.FolderItem, FV, FV.FolderItem);
-						}
-						else if (FV.FolderItem.Unavailable > 3000) {
+						} else if (FV.FolderItem.Unavailable > 3000) {
 							FV.FolderItem.Unavailable = 1;
 						 	api.PathIsDirectory(function (hr, FV)
 						 	{
@@ -2131,9 +2136,9 @@ g_mouse =
 		return this.str.length ? s : GetGestureButton().replace(s, "") + s;
 	},
 
-	Exec: function (Ctrl, hwnd, pt)
+	Exec: function (Ctrl, hwnd, pt, str)
 	{
-		var str = GetGestureKey() + this.str;
+		var str = GetGestureKey() + (str || this.str);
 		this.EndGesture(false);
 		te.Data.cmdMouse = str;
 		if (!Ctrl) {

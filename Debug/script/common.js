@@ -189,8 +189,7 @@ function ApplyLang(doc)
 			var s = ['font-family: ', FaceName, '; font-size: ', doc.body.style.fontSize].join("");
 			if (css.insertRule) {
 				css.insertRule(["*", " { ", s, " }"].join(""), css.cssRules.length);
-			}
-			else if (css.addRule) {
+			} else if (css.addRule) {
 				css.addRule("*", s);
 			}
 		}
@@ -611,7 +610,6 @@ SaveXml = function (filename, all)
 		item.setAttribute("Height", rc.bottom - rc.top);
 		item.setAttribute("CmdShow", CmdShow);
 		root.appendChild(item);
-		item = null;
 	}
 	var cTC = te.Ctrls(CTRL_TC);
 	for (var i in cTC) {
@@ -3075,9 +3073,9 @@ LoadAddon = function(ext, Id, arError)
 		ado.LoadFromFile(fname);
 		var s = ado.ReadText();
 		ado.Close();
-		if (!api.StrCmpI(ext, "js")) {
+		if (ext == "js") {
 			(new Function(s))(Id);
-		} else if (!api.StrCmpI(ext, "vbs")) {
+		} else if (ext == "vbs") {
 			var fn = api.GetScriptDispatch(s, "VBScript", {"_Addon_Id": {"Addon_Id": Id}, window: window},
 				function (ei, SourceLineText, dwSourceContext, lLineNumber, CharacterPosition)
 				{

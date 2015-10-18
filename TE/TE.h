@@ -936,6 +936,7 @@ public:
 	BOOL		m_bRefreshLator;
 	BOOL		m_bShowFrames;
 	BOOL		m_bRefreshing;
+	BOOL		m_bFocusItem;
 private:
 	VARIANT		m_vData;
 	FolderItem	**m_ppLog;
