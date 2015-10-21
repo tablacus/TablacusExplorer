@@ -866,7 +866,7 @@ public:
 	BSTR GetColumnsStr(int nFormat);
 	VOID GetDefaultColumns();
 	VOID SaveFocusedItemToHistory();
-	VOID FocusItem(int dwFlags);
+	VOID FocusItem(BOOL bFree);
 	HRESULT GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, FolderItem *pid, UINT wFlags, FolderItems *pFolderItems, FolderItem *pPrevious, CteShellBrowser *pHistSB);
 	VOID EBNavigate();
 	VOID SetHistory(FolderItems *pFolderItems, UINT wFlags);
@@ -879,7 +879,7 @@ public:
 	VOID SetFolderFlags();
 	VOID GetViewModeAndIconSize(BOOL bGetIconSize);
 	HRESULT Items(UINT uItem, FolderItems **ppid);
-	HRESULT SelectItemEx(LPITEMIDLIST *ppidl, int dwFlags);
+	HRESULT SelectItemEx(LPITEMIDLIST *ppidl, int dwFlags, BOOL bFree);
 	VOID InitFolderSize();
 	VOID SetSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch);
 	VOID SetFolderSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch);
@@ -926,6 +926,7 @@ public:
 	int			m_nSizeIndex;
 	int			m_nSB;
 	int			m_nUnload;
+	int			m_nFocusItem;
 	DWORD		m_nOpenedType;
 	DWORD		m_dwCookie;
 	COLORREF	m_clrBk, m_clrTextBk, m_clrText;
@@ -936,7 +937,6 @@ public:
 	BOOL		m_bRefreshLator;
 	BOOL		m_bShowFrames;
 	BOOL		m_bRefreshing;
-	BOOL		m_bFocusItem;
 private:
 	VARIANT		m_vData;
 	FolderItem	**m_ppLog;

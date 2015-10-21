@@ -1654,9 +1654,9 @@ InitLocation = function ()
 	Addon_Id = dialogArguments.Data.id;
 	LoadAddon("js", Addon_Id, ar);
 	if (ar.length) {
-		setTimeout(function () {
+		(function (ar) { setTimeout(function () {
 			MessageBox(ar.join("\n\n"), TITLE, MB_OK);
-		}, 500);
+		}, 500);}) (ar);
 	}
 	ar = [];
 	var s = "CSA";

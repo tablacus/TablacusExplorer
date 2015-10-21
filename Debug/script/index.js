@@ -1776,12 +1776,12 @@ function ArrangeAddons()
 				window.Error_source = "";
 			}
 			if (arError.length) {
-				setTimeout(function () {
+				(function (arError) { setTimeout(function () {
 					if (MessageBox(arError.join("\n\n"), TITLE, MB_OKCANCEL) != IDCANCEL) {
 						te.Data.bErrorAddons = true;
 						ShowOptions("Tab=Add-ons");
 					}
-				}, 500);
+				}, 500);}) (arError);
 			}
 		}
 	}
@@ -3084,9 +3084,7 @@ if (!te.Data) {
 			var ParentFolder = fso.GetParentFolderName(DataFolder);
 			if (!fso.FolderExists(ParentFolder)) {
 				if (fso.CreateFolder(ParentFolder)) {
-					if (!fso.FolderExists(DataFolder)) {
-						fso.CreateFolder(DataFolder);
-					}
+					CreateFolder2(DataFolder);
 				}
 			}
 			break;

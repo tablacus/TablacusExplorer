@@ -2090,15 +2090,13 @@ function CheckUpdate()
 		return;
 	}
 	var temp = fso.BuildPath(fso.GetSpecialFolder(2).Path, "tablacus");
-	if (!IsExists(temp)) {
-		CreateFolder(temp);
-	}
+	CreateFolder2(temp);
 	wsh.CurrentDirectory = temp;
 	var InstalledFolder = fso.GetParentFolderName(api.GetModuleFileName(null));
 	var zipfile = fso.BuildPath(temp, file);
 	temp += "\\explorer";
 	DeleteItem(temp);
-	CreateFolder(temp);
+	CreateFolder2(temp);
 
 	DownloadFile(url + "dl/" + file, zipfile);
 	if (Extract(zipfile, temp) != S_OK) {
