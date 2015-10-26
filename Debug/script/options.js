@@ -1214,9 +1214,7 @@ function AddonEnable(Id, o)
 {
 	var div = document.getElementById("Addons_" + Id);
 	if (o.value != GetText('Enable')) {
-		for (var i in MainWindow.eventTE.AddonDisabled) {
-			MainWindow.eventTE.AddonDisabled[i](Id);
-		}
+		MainWindow.AddonDisabled(Id);
 		o.value = GetText('Enable');
 		div.style.color = "gray";
 	} else {
@@ -1300,10 +1298,7 @@ function AddonRemove(Id)
 	if (!confirmOk("Are you sure?")) {
 		return;
 	}
-
-	for (var i in MainWindow.eventTE.AddonDisabled) {
-		MainWindow.eventTE.AddonDisabled[i](Id);
-	}
+	MainWindow.AddonDisabled(Id);
 	sf = api.Memory("SHFILEOPSTRUCT");
 	sf.hwnd = api.GetForegroundWindow();
 	sf.wFunc = FO_DELETE;
@@ -2049,7 +2044,7 @@ function SetOnChangeHandler()
 		var o = document.getElementsByTagName(ar[j]);
 		if (o) {
 			for (var i = o.length; i--;) {
-				if (!/^_/.test(o[i].id)) {
+				if (o[i].name && !/^_/.test(o[i].id)) {
 					AddEventEx(o[i], "change", function ()
 					{
 						g_bChanged = true;
@@ -2364,6 +2359,9 @@ function Install(o)
 	if (!confirmOk("Do you want to install it now?")) {
 		return;
 	}
+	var Id = o.title.replace(/_.*/, "");
+
+	MainWindow.AddonDisabled(Id);
 	document.body.style.cursor = "wait";
 	setTimeout(function ()
 	{

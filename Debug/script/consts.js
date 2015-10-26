@@ -184,6 +184,7 @@ ssfSYSTEMx86          = 0x29;
 ssfTEMPLATES          = 0x15;
 ssfWINDOWS            = 0x24;
 
+FVM_AUTO      = -1;
 FVM_ICON       = 1;
 FVM_SMALLICON  = 2;
 FVM_LIST       = 3;

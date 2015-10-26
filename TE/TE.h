@@ -1274,15 +1274,17 @@ public:
 	CteDispatch(IDispatch *pDispatch, int nMode);
 	~CteDispatch();
 
+	VOID Clear();
 public:
 	IActiveScript *m_pActiveScript;
+	HMODULE		m_hDll;
 	DISPID		m_dispIdMember;
 	int			m_nIndex;
 private:
 	IDispatch	*m_pDispatch;
 
 	LONG		m_cRef;
-	int			m_nMode;//0: Clone 1:Collection
+	int			m_nMode;//0: Clone 1:Collection 2:IActiveScript 4:DLL
 };
 
 class CteDispatchEx : public IDispatchEx

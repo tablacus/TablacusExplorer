@@ -177,6 +177,25 @@ AddEnv = function (Name, fn)
 	eventTE.Environment[Name.toLowerCase()] = fn;
 }
 
+AddEventId = function (Name, Id, fn)
+{
+	if (!eventTE[Name]) {
+		eventTE[Name] = {};
+	}
+	eventTE[Name][Id.toLowerCase()] = fn;
+}
+
+AddonDisabled = function (Id)
+{
+	for (var i in eventTE.AddonDisabled) {
+		eventTE.AddonDisabled[i](Id);
+	}
+	if (eventTE.AddonDisabledEx) {
+		(eventTE.AddonDisabledEx[Id.toLowerCase()] || function () {})();
+	}
+	CollectGarbage();
+}
+
 function ApplyLang(doc)
 {
 	var FaceName = MainWindow.DefaultFont.lfFaceName;
@@ -360,9 +379,11 @@ function amp2ul(s)
 {
 	s = s.replace(/&amp;/ig, "&");
 	if (/@.*\..*,\-?\d+/.test(s)) {
-		var lk = wsh.CreateShortCut(".lnk")
-		lk.Description = s;
-		s = lk.Description;
+		try {
+			var lk = wsh.CreateShortCut(".lnk");
+			lk.Description = s;
+			s = lk.Description;
+		} catch (e) {}
 	}
 	return /;/.test(s) ? s : s.replace(/&(.)/ig, "<u>$1</u>");
 }
@@ -1914,14 +1935,14 @@ RunCommandLine = function (s)
 	}
 }
 
-OpenNewProcess = function (fn, ex)
+OpenNewProcess = function (fn, ex, mode)
 {
 	var uid;
 	do {
 		uid = String(Math.random()).replace(/^0?\./, "");
 	} while (Exchange[uid]);
 	Exchange[uid] = ex;
-	return wsh.Exec([api.PathQuoteSpaces(api.GetModuleFileName(null)), '/run', fn, uid].join(" "));
+	return wsh.Exec([api.PathQuoteSpaces(api.GetModuleFileName(null)), mode ? '/open' : '/run', fn, uid].join(" "));
 }
 
 GetAddonInfo = function (Id)
