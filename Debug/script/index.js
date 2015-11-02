@@ -701,6 +701,7 @@ AddEvent("Close", function (Ctrl)
 				return S_FALSE;
 			}
 			api.SHChangeNotifyDeregister(te.Data.uRegisterId);
+			DeleteItem(fso.BuildPath(fso.GetSpecialFolder(2).Path, "tablacus"));
 			break;
 		case CTRL_WB:
 			break;

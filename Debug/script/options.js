@@ -1897,7 +1897,7 @@ function GetAttribEx(item, f, n)
 	}
 }
 
-function RefX(Id, bMultiLine, oButton)
+function RefX(Id, bMultiLine, oButton, bFilesOnly)
 {
 	setTimeout(function () {
 		if (/Path/.test(Id)) {
@@ -1927,7 +1927,7 @@ function RefX(Id, bMultiLine, oButton)
 		}
 
 		var o = GetElement(Id);
-		var path = OpenDialog(o.value);
+		var path = OpenDialog(o.value, api.LowPart(bFilesOnly));
 		if (path) {
 			if (bMultiLine) {
 				AddPath(Id, path);

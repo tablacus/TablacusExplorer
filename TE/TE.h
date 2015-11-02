@@ -318,9 +318,10 @@ struct TEFS
 {
 	BSTR bsName;
 	BSTR bsPath;
-	CteShellBrowser *pSB;
+	IStream *pStrmTotalFileSize;
+	LPITEMIDLIST *ppidl;
 	LPITEMIDLIST pidl;
-	ULONGLONG Result;
+	HWND hwnd;
 };
 
 struct TEExists
@@ -340,16 +341,13 @@ struct TEILCreate
 	LONG cRef;
 };
 
-/*
-struct TEDrop
+struct TEAddItems
 {
-	IStream *pDropTarget;
-	IStream *pDataObj;
-	DWORD grfKeyState;
-	POINTL pt;
-	DWORD dwEffect;
+	VARIANTARG *pv;
+	IStream *pStrmSB;
+	IStream *pStrmArray;
 };
-*/
+
 const CLSID CLSID_ShellShellNameSpace = {0x2F2F1F96, 0x2BC1, 0x4b1c, { 0xBE, 0x28, 0xEA, 0x37, 0x74, 0xF4, 0x67, 0x6A}};
 const CLSID CLSID_JScriptChakra       = {0x16d51579, 0xa30b, 0x4c8b, { 0xa2, 0x76, 0x0f, 0xf4, 0xdc, 0x41, 0xe7, 0x55}};
 
@@ -892,6 +890,8 @@ public:
 	VOID SetLVSettings();
 	HRESULT NavigateSB(IShellView *pPreviousView, FolderItem *pPrevious);
 	HRESULT CreateViewWindowEx(IShellView *pPreviousView);
+	VOID SetTabName();
+	HRESULT RemoveAll();
 #ifdef _2000XP
 	VOID AddPathXP(CteFolderItems *pFolderItems, IShellFolderView *pSFV, int nIndex, BOOL bResultsFolder);
 	int PSGetColumnIndexXP(LPWSTR pszName, int *pcxChar);
@@ -929,6 +929,7 @@ public:
 	int			m_nFocusItem;
 	DWORD		m_nOpenedType;
 	DWORD		m_dwCookie;
+	DWORD		m_dwSessionId;
 	COLORREF	m_clrBk, m_clrTextBk, m_clrText;
 	BOOL		m_bEmpty;
 	BOOL		m_bInit;

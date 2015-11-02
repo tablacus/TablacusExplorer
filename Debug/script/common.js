@@ -2841,27 +2841,31 @@ FindKeyEvent = function (o)
 	g_nFind = 0;
 }
 
-OpenDialogEx = function (path, filter)
+OpenDialogEx = function (path, filter, bFilesOnly)
 {
 	var commdlg = te.CommonDialog;
 	var te_path = fso.GetParentFolderName(api.GetModuleFileName(null));
 	if (/^\.\.(\/.*)/.test(path)) {
 		path = te_path + (RegExp.$1.replace(/\//g, "\\"));
 	}
+	path = api.PathUnquoteSpaces(path);
 	if (!fso.FolderExists(path)) {
-		path = fso.GetDriveName(te_path);
+		path = fso.GetParentFolderName(path);
+		if (!fso.FolderExists(path)) {
+			path = fso.GetDriveName(te_path);
+		}
 	}
 	commdlg.InitDir = path;
 	commdlg.Filter = filter;
-	commdlg.Flags = OFN_FILEMUSTEXIST | OFN_EXPLORER | OFN_ENABLESIZING | OFN_ENABLEHOOK;
+	commdlg.Flags = OFN_FILEMUSTEXIST | OFN_EXPLORER | OFN_ENABLESIZING | (bFilesOnly ? 0 : OFN_ENABLEHOOK);
 	if (commdlg.ShowOpen()) {
 		return api.PathQuoteSpaces(commdlg.FileName);
 	}
 }
 
-OpenDialog = function (path)
+OpenDialog = function (path, bFilesOnly)
 {
-	return OpenDialogEx(path, "All Files|*.*");
+	return OpenDialogEx(path, "All Files|*.*", bFilesOnly);
 }
 
 ChooseFolder = function (path, pt)
