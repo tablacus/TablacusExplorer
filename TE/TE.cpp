@@ -110,10 +110,12 @@ long	g_lSWCookie = 0;
 int		g_nReload = 0;
 int		g_nException = 64;
 int		*g_maps[MAP_LENGTH];
+int		g_param[Count_TE_params];
 int		g_x = MAXINT;
 int		g_nPidls = MAX_CSIDL;
 int		g_nTCCount = 0;
 int		g_nTCIndex = 0;
+BOOL	g_bLabelsMode;
 BOOL	g_bMessageLoop = TRUE;
 BOOL	g_bDialogOk = FALSE;
 BOOL	g_bInit = FALSE;
@@ -939,6 +941,7 @@ TEmethod methodSB[] = {
 	{ 0x10000505, L"SessionId" },
 	{ START_OnFunc + SB_TotalFileSize, L"TotalFileSize" },
 	{ START_OnFunc + SB_OnIncludeObject, L"OnIncludeObject" },
+	{ START_OnFunc + SB_OnBeforeGetData, L"OnBeforeGetData" },
 	{ 0, NULL }
 };
 
@@ -2557,6 +2560,15 @@ HRESULT teCLSIDFromProgID(__in LPCOLESTR lpszProgID, __out LPCLSID lpclsid)
 	return CLSIDFromProgID(lpszProgID, lpclsid);
 }
 
+HRESULT teCLSIDFromString(__in LPCOLESTR lpsz, __out LPCLSID lpclsid)
+{
+	HRESULT hr = CLSIDFromString(lpsz, lpclsid);
+	if (hr == S_OK) {
+		return S_OK;
+	}
+	return teCLSIDFromProgID(lpsz, lpclsid);
+}
+
 HWND FindTreeWindow(HWND hwnd)
 {
 	HWND hwnd1 = FindWindowEx(hwnd, 0, WC_TREEVIEW, NULL);
@@ -2656,7 +2668,7 @@ HRESULT tePathIsDirectory(LPWSTR pszPath, int dwms, int iUseFS)
 {
 	if (g_dwMainThreadId == GetCurrentThreadId()) {
 		if (dwms <= 0) {
-			dwms = g_pTE->m_param[TE_NetworkTimeout];
+			dwms = g_param[TE_NetworkTimeout];
 		}
 		if (dwms) {
 			TEExists *pExists = new TEExists[1];
@@ -2794,7 +2806,7 @@ static void threadILCreate(void *args)
 
 LPITEMIDLIST teILCreateFromPath0(LPWSTR pszPath, BOOL bForceLimit)
 {
-	DWORD dwms = g_pTE ? g_pTE->m_param[TE_NetworkTimeout] : 2000;
+	DWORD dwms = g_pTE ? g_param[TE_NetworkTimeout] : 2000;
 	if (bForceLimit && (!dwms || dwms > 500)) {
 		dwms = 500;
 	}
@@ -3416,7 +3428,7 @@ HMODULE teCreateInstance(LPVARIANTARG pvDllFile, LPVARIANTARG pvClass, REFIID ri
 	CLSID clsid;
 	VARIANT v;
 	teVariantChangeType(&v, pvClass, VT_BSTR);
-	CLSIDFromString(v.bstrVal, &clsid);
+	teCLSIDFromString(v.bstrVal, &clsid);
 	VariantClear(&v);
 	*ppvObj = NULL;
 	HMODULE hDll = NULL;
@@ -4382,7 +4394,7 @@ VOID ClearEvents()
 			teReleaseClear(&pSB->m_pDispatch[j]);
 		}
 	}
-	g_pTE->m_param[TE_Tab] = TRUE;
+	g_param[TE_Tab] = TRUE;
 }
 
 VOID teArrayPush(IDispatch *pdisp, PVOID pObj)
@@ -5318,7 +5330,7 @@ LRESULT CALLBACK TETCProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					CallWindowProc(pTC->m_DefTCProc, hwnd, msg, wParam, lParam);
 					Result = 0;
 					pTC->TabChanged(true);
-					if (g_pTE->m_param[TE_Tab] && pTC->m_param[TC_Align] == 1) {
+					if (g_param[TE_Tab] && pTC->m_param[TC_Align] == 1) {
 						if (pTC->m_param[TE_Flags] & TCS_SCROLLOPPOSITE) {
 							ArrangeWindow();
 						}
@@ -5444,6 +5456,7 @@ HRESULT teExtract(IStorage *pStorage, LPWSTR lpszFolderPath)
 {
 	STATSTG statstg;
 	IEnumSTATSTG *pEnumSTATSTG;
+	BYTE pszData[SIZE_BUFF];
 #ifdef _2000XP
 	IShellFolder2 *pSF2;
 	LPITEMIDLIST pidl;
@@ -5473,39 +5486,33 @@ HRESULT teExtract(IStorage *pStorage, LPWSTR lpszFolderPath)
 
 			hr = pStorage->OpenStream(statstg.pwcsName, NULL, STGM_READ, NULL, &pStream);
 			if SUCCEEDED(hr) {
-				LPBYTE lpData = (LPBYTE)CoTaskMemAlloc(SIZE_BUFF);
-				if (lpData) {
-					HANDLE hFile = CreateFile(bsPath, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-					if (hFile) {
-						while (SUCCEEDED(pStream->Read(lpData, SIZE_BUFF, &uRead)) && uRead) {
-							WriteFile(hFile, lpData, uRead, &dwWriteByte, NULL);
-						}
-#ifdef _2000XP
-						if (statstg.mtime.dwLowDateTime == 0) {
-							if SUCCEEDED(pStorage->QueryInterface(IID_PPV_ARGS(&pSF2))) {
-								if SUCCEEDED(pSF2->ParseDisplayName(NULL, NULL, statstg.pwcsName, &chEaten, &pidl, &dwAttributes)) {
-									VariantInit(&v);
-									if (SUCCEEDED(pSF2->GetDetailsEx(pidl, &PKEY_DateModified, &v)) && v.vt == VT_DATE) {
-										if (::VariantTimeToSystemTime(v.date, &SysTime)) {
-											::SystemTimeToFileTime(&SysTime, &statstg.mtime);
-										}
-									}
-									VariantClear(&v);
-									teCoTaskMemFree(pidl);
-								}
-								pSF2->Release();
-							}
-						}
-#endif
-						SetFileTime(hFile, &statstg.ctime, &statstg.atime, &statstg.mtime);
-						CloseHandle(hFile);
-						hr = S_OK;
-					} else {
-						hr = E_ACCESSDENIED;
+				HANDLE hFile = CreateFile(bsPath, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+				if (hFile != INVALID_HANDLE_VALUE) {
+					while (SUCCEEDED(pStream->Read(pszData, SIZE_BUFF, &uRead)) && uRead) {
+						WriteFile(hFile, pszData, uRead, &dwWriteByte, NULL);
 					}
-					teCoTaskMemFree(lpData);
+#ifdef _2000XP
+					if (statstg.mtime.dwLowDateTime == 0) {
+						if SUCCEEDED(pStorage->QueryInterface(IID_PPV_ARGS(&pSF2))) {
+							if SUCCEEDED(pSF2->ParseDisplayName(NULL, NULL, statstg.pwcsName, &chEaten, &pidl, &dwAttributes)) {
+								VariantInit(&v);
+								if (SUCCEEDED(pSF2->GetDetailsEx(pidl, &PKEY_DateModified, &v)) && v.vt == VT_DATE) {
+									if (::VariantTimeToSystemTime(v.date, &SysTime)) {
+										::SystemTimeToFileTime(&SysTime, &statstg.mtime);
+									}
+								}
+								VariantClear(&v);
+								teCoTaskMemFree(pidl);
+							}
+							pSF2->Release();
+						}
+					}
+#endif
+					SetFileTime(hFile, &statstg.ctime, &statstg.atime, &statstg.mtime);
+					CloseHandle(hFile);
+					hr = S_OK;
 				} else {
-					hr = E_OUTOFMEMORY;
+					hr = E_ACCESSDENIED;
 				}
 				pStream->Release();
 			}
@@ -5775,7 +5782,7 @@ VOID teApiOleCmdExec(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT
 		IOleCommandTarget *pCT;
 		if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pCT))) {
 			GUID *pguid = NULL;
-			CLSIDFromString((LPCOLESTR)param[1], pguid);
+			teCLSIDFromString((LPCOLESTR)param[1], pguid);
 			pCT->Exec(pguid, (OLECMDID)param[2], (OLECMDEXECOPT)param[3], &pDispParams->rgvarg[nArg - 4], pVarResult);
 			pCT->Release();
 		}
@@ -6198,7 +6205,7 @@ VOID teApiGetProcObject(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARI
 			IDispatch *pdisp;
 			if (GetDispatch(pVarResult, &pdisp)) {
 				CteDispatch *odisp = new CteDispatch(pdisp, 4);
-				odisp->m_hDll = hDll;
+				odisp->m_pDll = new CteDll(hDll);
 				hDll = 0;
 				VariantClear(pVarResult);
 				teSetObjectRelease(pVarResult, odisp);
@@ -7215,21 +7222,21 @@ VOID teApiGetAttributesOf(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VA
 	teSetLong(pVarResult, lResult);
 }
 
-VOID teApiDoDragDrop(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+VOID teApiSHDoDragDrop(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	IDataObject *pDataObj;
-	if (GetDataObjFromVariant(&pDataObj, &pDispParams->rgvarg[nArg])) {
-		g_pTE->m_bDrop = true;
+	if (GetDataObjFromVariant(&pDataObj, &pDispParams->rgvarg[nArg - 1])) {
 		IDispatch *pEffect = NULL;
 		DWORD dwEffect = DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK;
 		VARIANT v;
 		VariantInit(&v);
-		if (nArg >= 2 && GetDispatch(&pDispParams->rgvarg[nArg - 2], &pEffect)) {
+		if (nArg >= 3 && GetDispatch(&pDispParams->rgvarg[nArg - 3], &pEffect)) {
 			teGetPropertyAt(pEffect, 0, &v);
 			dwEffect = GetIntFromVariantClear(&v);
 		}
 		try {
-			teSetLong(pVarResult, ::DoDragDrop(pDataObj, static_cast<IDropSource *>(g_pTE), (DWORD)param[1], &dwEffect));
+			g_pTE->m_bDropFinished = FALSE;
+			teSetLong(pVarResult, SHDoDragDrop((HWND)param[0], pDataObj, static_cast<IDropSource *>(g_pTE), (DWORD)param[2], &dwEffect));
 		} catch(...) {
 		}
 		if (pEffect) {
@@ -7611,7 +7618,7 @@ VOID teAsyncInvoke(WORD wMode, int nArg, DISPPARAMS *pDispParams, VARIANT *pVarR
 	if (GetDispatch(&pDispParams->rgvarg[nArg], &pInvoke->pdisp)) {
 		int dwms = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
 		if (dwms == 0) {
-			dwms = g_pTE->m_param[TE_NetworkTimeout];
+			dwms = g_param[TE_NetworkTimeout];
 		}
 		pInvoke->dispid = DISPID_VALUE;
 		pInvoke->cRef = 2;
@@ -8076,6 +8083,11 @@ VOID teApiSHSimpleIDListFromPath(int nArg, LONGLONG *param, DISPPARAMS *pDispPar
 	}
 }
 
+VOID teApiOutputDebugString(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	::OutputDebugString((LPCWSTR)param[0]);
+}
+
 /*
 VOID teApi(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -8275,7 +8287,8 @@ TEDispatchApi dispAPI[] = {
 	{ 6, -1, -1, -1, L"MultiByteToWideChar", teApiMultiByteToWideChar },
 	{ 8,  2, -1, -1, L"WideCharToMultiByte", teApiWideCharToMultiByte },
 	{ 2, -1, -1, -1, L"GetAttributesOf", teApiGetAttributesOf },
-	{ 2, -1, -1, -1, L"DoDragDrop", teApiDoDragDrop },
+//	{ 2, -1, -1, -1, L"DoDragDrop", teApiDoDragDrop },
+	{ 3, -1, -1, -1, L"SHDoDragDrop", teApiSHDoDragDrop },
 	{ 3, -1, -1, -1, L"CompareIDs", teApiCompareIDs },
 	{ 2,  0,  1, -1, L"ExecScript", teApiExecScript },
 	{ 2,  0,  1, -1, L"GetScriptDispatch", teApiGetScriptDispatch },
@@ -8372,6 +8385,7 @@ TEDispatchApi dispAPI[] = {
 	{ 2,  0,  1, -1, L"PathIsSameRoot", teApiPathIsSameRoot },
 	{ 2,  1, -1, -1, L"ObjDispId", teApiObjDispId },
 	{ 1,  0, -1, -1, L"SHSimpleIDListFromPath", teApiSHSimpleIDListFromPath },
+	{ 1,  0, -1, -1, L"OutputDebugString", teApiOutputDebugString },
 //	{ 0, -1, -1, -1, L"", teApi },
 //	{ 0, -1, -1, -1, L"Test", teApiTest },
 };
@@ -8594,10 +8608,10 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 				break;
 			case TET_Size:
 				GetClientRect(hwnd, &rcClient);
-				rcClient.left += g_pTE->m_param[TE_Left];
-				rcClient.top += g_pTE->m_param[TE_Top];
-				rcClient.right -= g_pTE->m_param[TE_Width];
-				rcClient.bottom -= g_pTE->m_param[TE_Height];
+				rcClient.left += g_param[TE_Left];
+				rcClient.top += g_param[TE_Top];
+				rcClient.right -= g_param[TE_Width];
+				rcClient.bottom -= g_param[TE_Height];
 				CteShellBrowser *pSB;
 				BOOL bRedraw, bDirect;
 				bRedraw = FALSE;
@@ -8617,7 +8631,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 								Invoke4(g_pOnFunc[TE_OnArrange], NULL, 2, pv);
 							}
 							if (!pTC->m_bEmpty && pTC->m_bVisible) {
-								int nAlign = g_pTE->m_param[TE_Tab] ? pTC->m_param[TC_Align] : 0;
+								int nAlign = g_param[TE_Tab] ? pTC->m_param[TC_Align] : 0;
 								if (rc.left) {
 									rc.left++;
 								}
@@ -8764,6 +8778,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 					pdisp = g_pUnload;
 					GetNewArray(&g_pUnload);
 					pdisp->Release();
+					teExecMethod(g_pJS, L"CollectGarbage", NULL, 0, NULL);
 				}
 				break;
 			case TET_Status:
@@ -10025,6 +10040,8 @@ STDMETHODIMP CteShellBrowser::QueryInterface(REFIID riid, void **ppvObject)
 		*ppvObject = static_cast<IExplorerBrowserEvents *>(this);
 	} else if (IsEqualIID(riid, IID_IExplorerPaneVisibility)) {
 		*ppvObject = static_cast<IExplorerPaneVisibility *>(this);
+	} else if (IsEqualIID(riid, IID_IDropSource)) {
+		*ppvObject = static_cast<IDropSource *>(this);
 	}
 #ifdef _2000XP
 	else if (IsEqualIID(riid, IID_IShellFolderViewCB)) {
@@ -10489,6 +10506,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		if (!teILIsEqual(m_pFolderItem, pPrevious)) {
 			teSysFreeString(&m_bsFilter);
 			teReleaseClear(&m_pDispatch[SB_OnIncludeObject]);
+			teReleaseClear(&m_pDispatch[SB_OnBeforeGetData]);
 		}
 	}
 
@@ -11092,11 +11110,17 @@ VOID CteShellBrowser::SetLabel(LPCITEMIDLIST pidl, LPWSTR szText, int cch)
 	IShellFolder2 *pSF2;
 	BSTR bs;
 	VARIANT v;
-	VariantClear(&v);
+	VariantInit(&v);
 	if SUCCEEDED(QueryInterface(IID_PPV_ARGS(&pSF2))) {
 		if SUCCEEDED(teGetDisplayNameBSTR(pSF2, pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING, &bs)) {
 			if (::SysStringLen(bs)) {
-				teGetProperty(g_pOnFunc[TE_Labels], bs, &v);
+				if (g_bLabelsMode) {
+					teGetProperty(g_pOnFunc[TE_Labels], bs, &v);
+				} else {
+					VARIANTARG *pv = GetNewVARIANT(1);
+					teSetBSTR(&pv[0], bs, -1);
+					Invoke4(g_pOnFunc[TE_Labels], &v, 1, pv);
+				}
 				if (v.vt == VT_BSTR) {
 					lstrcpyn(szText, v.bstrVal, cch);
 				}
@@ -11304,7 +11328,18 @@ STDMETHODIMP CteShellBrowser::SetToolbarItems(LPTBBUTTONSB lpButtons, UINT nButt
 
 STDMETHODIMP CteShellBrowser::OnDefaultCommand(IShellView *ppshv)
 {
-	return DoFunc(TE_OnDefaultCommand, this, S_FALSE);
+	HRESULT hr = DoFunc(TE_OnDefaultCommand, this, S_FALSE);
+	if (hr == S_FALSE && m_pDispatch[SB_OnBeforeGetData]) {
+		FolderItems *pFolderItems;
+		if SUCCEEDED(Items(SVGIO_SELECTION, &pFolderItems)) {
+			VARIANTARG *pv = GetNewVARIANT(3);
+			teSetObject(&pv[2], this);
+			teSetObjectRelease(&pv[1], pFolderItems);
+			teSetLong(&pv[0], 1);
+			Invoke4(m_pDispatch[SB_OnBeforeGetData], NULL, 3, pv);
+		}
+	}
+	return hr;
 }
 
 STDMETHODIMP CteShellBrowser::OnStateChange(IShellView *ppshv, ULONG uChange)
@@ -12613,14 +12648,14 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				teSetObject(pVarResult, this);
 				return S_OK;
 			//DIID_DShellFolderViewEvents
-			case DISPID_SELECTIONCHANGED:
-				SetStatusTextSB(NULL);
-				return DoFunc(TE_OnSelectionChanged, this, S_OK);
 /*///
 			case DISPID_EXPLORERWINDOWREADY:
 				return E_NOTIMPL;
 //*///
-			case DISPID_FILELISTENUMDONE:
+			case DISPID_SELECTIONCHANGED://XP+
+				SetStatusTextSB(NULL);
+				return DoFunc(TE_OnSelectionChanged, this, S_OK);
+			case DISPID_FILELISTENUMDONE://XP+
 				m_bRefreshing = FALSE;
 				if (m_bNavigateComplete) {
 					m_bNavigateComplete = FALSE;
@@ -12643,25 +12678,37 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					RedrawWindow(m_hwndDV, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
 				}
 				return S_OK;
-			case DISPID_SORTDONE:
+			case DISPID_VIEWMODECHANGED://XP+
+				SetFolderFlags();
+				return DoFunc(TE_OnViewModeChanged, this, S_OK);
+			case DISPID_BEGINDRAG://XP+
+				if (m_pDispatch[SB_OnBeforeGetData]) {
+					if SUCCEEDED(Items(SVGIO_SELECTION, &pFolderItems)) {
+						IDataObject *pDataObj;
+						if SUCCEEDED(pFolderItems->QueryInterface(IID_PPV_ARGS(&pDataObj))) {
+							DWORD dwEffect = DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK;
+							m_bDropFinished = FALSE;
+							if SUCCEEDED(SHDoDragDrop(m_hwndDV, pDataObj, static_cast<IDropSource *>(this), dwEffect, &dwEffect)) {
+								teSetBool(pVarResult, FALSE);
+							}
+							pDataObj->Release();
+						}
+						pFolderItems->Release();
+					}
+				}
+				return S_OK;
+			case DISPID_COLUMNSCHANGED://XP-
+				InitFolderSize();
+				return DoFunc(TE_OnColumnsChanged, this, S_OK);
+			case DISPID_SORTDONE://XP-
 				if (m_nFocusItem < 0) {
 					FocusItem(FALSE);
 				}
 				return S_OK;
-			case DISPID_INITIALENUMERATIONDONE:
+/*			case DISPID_INITIALENUMERATIONDONE://XP-
 				SetFolderFlags();
 				return S_OK;
-			case DISPID_VIEWMODECHANGED:
-				SetFolderFlags();
-				return DoFunc(TE_OnViewModeChanged, this, S_OK);
-			case DISPID_COLUMNSCHANGED:
-				InitFolderSize();
-				return DoFunc(TE_OnColumnsChanged, this, S_OK);
-/*			case DISPID_CONTENTSCHANGED:
-				if (!m_hwndLV && m_pExplorerBrowser) {
-					SetRedraw(TRUE);
-					RedrawWindow(m_hwndDV, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
-				}
+			case DISPID_CONTENTSCHANGED://XP-
 				return S_OK;*/
 			default:
 				if (dispIdMember >= START_OnFunc && dispIdMember < START_OnFunc + Count_SBFunc) {
@@ -13126,6 +13173,7 @@ STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 	if (bDiffReal) {
 		teSysFreeString(&m_bsFilter);
 		teReleaseClear(&m_pDispatch[SB_OnIncludeObject]);
+		teReleaseClear(&m_pDispatch[SB_OnBeforeGetData]);
 	}
 	ResetPropEx();
 	//History / Management
@@ -13671,6 +13719,34 @@ STDMETHODIMP CteShellBrowser::GetCurFolder(PIDLIST_ABSOLUTE *ppidl)
 	return S_OK;
 }
 
+//IDropSource
+STDMETHODIMP CteShellBrowser::QueryContinueDrag(BOOL fEscapePressed, DWORD grfKeyState)
+{
+	if (fEscapePressed || m_bDropFinished || (grfKeyState & (MK_LBUTTON | MK_RBUTTON)) == (MK_LBUTTON | MK_RBUTTON)) {
+		return DRAGDROP_S_CANCEL;
+	}
+	if ((grfKeyState & (MK_LBUTTON | MK_RBUTTON)) == 0) {
+		m_bDropFinished = TRUE;
+		if (m_pDispatch[SB_OnBeforeGetData]) {
+			FolderItems *pFolderItems;
+			if SUCCEEDED(Items(SVGIO_SELECTION, &pFolderItems)) {
+				VARIANTARG *pv = GetNewVARIANT(3);
+				teSetObject(&pv[2], this);
+				teSetObjectRelease(&pv[1], pFolderItems);
+				teSetLong(&pv[0], 3);
+				Invoke4(m_pDispatch[SB_OnBeforeGetData], NULL, 3, pv);
+			}
+		}
+		return DRAGDROP_S_DROP;
+	}
+	return S_OK;
+}
+
+STDMETHODIMP CteShellBrowser::GiveFeedback(DWORD dwEffect)
+{
+	return DRAGDROP_S_USEDEFAULTCURSORS;
+}
+
 //
 
 VOID CteShellBrowser::Suspend(int nMode)
@@ -14051,7 +14127,7 @@ FOLDERVIEWOPTIONS CteShellBrowser::teGetFolderViewOptions(LPITEMIDLIST pidl, UIN
 	while (--uViewMode > 0) {
 		uFlag *= 2;
 	}
-	return uFlag & g_pTE->m_param[TE_Layout] ? FVO_DEFAULT : FVO_VISTALAYOUT;
+	return uFlag & g_param[TE_Layout] ? FVO_DEFAULT : FVO_VISTALAYOUT;
 }
 
 VOID CteShellBrowser::SetSort(BSTR bs)
@@ -14226,10 +14302,10 @@ CTE::CTE(int nCmdShow)
 {
 	m_cRef = 1;
 	m_pDragItems = NULL;
-	::ZeroMemory(m_param, sizeof(m_param));
-	m_param[TE_Type] = CTRL_TE;
-	m_param[TE_CmdShow] = nCmdShow;
-	m_param[TE_Layout] = 0x80;
+	::ZeroMemory(g_param, sizeof(g_param));
+	g_param[TE_Type] = CTRL_TE;
+	g_param[TE_CmdShow] = nCmdShow;
+	g_param[TE_Layout] = 0x80;
 	VariantInit(&m_vData);
 }
 
@@ -14700,6 +14776,13 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 						teReleaseClear(&g_pOnFunc[dispIdMember - START_OnFunc]);
 						if (FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
 							punk->QueryInterface(IID_PPV_ARGS(&g_pOnFunc[dispIdMember - START_OnFunc]));
+							if (dispIdMember == TE_Labels + START_OnFunc && g_pOnFunc[dispIdMember - START_OnFunc]) {
+								VARIANT v;
+								VariantInit(&v);
+								teGetProperty(g_pOnFunc[TE_Labels], L"call", &v);
+								g_bLabelsMode = v.vt != VT_DISPATCH;
+								VariantClear(&v);
+							}
 						}
 					}
 					if (g_pOnFunc[dispIdMember - START_OnFunc]) {
@@ -14708,14 +14791,14 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 					return S_OK;
 				}
 				//Type, offsetLeft etc.
-				else if (dispIdMember >= TE_OFFSET && dispIdMember <= TE_OFFSET + TE_NetworkTimeout) {
+				else if (dispIdMember >= TE_OFFSET && dispIdMember < TE_OFFSET + Count_TE_params) {
 					if (nArg >= 0 && dispIdMember != TE_OFFSET) {
-						m_param[dispIdMember - TE_OFFSET] = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+						g_param[dispIdMember - TE_OFFSET] = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 						if (dispIdMember >= TE_OFFSET + TE_Left && dispIdMember <= TE_Bottom + TE_OFFSET) {
 							ArrangeWindow();
 						}
 					}
-					teSetLong(pVarResult, m_param[dispIdMember - TE_OFFSET]);
+					teSetLong(pVarResult, g_param[dispIdMember - TE_OFFSET]);
 				}
 				return S_OK;
 		}
@@ -14763,18 +14846,12 @@ STDMETHODIMP CTE::Drop(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWOR
 //IDropSource
 STDMETHODIMP CTE::QueryContinueDrag(BOOL fEscapePressed, DWORD grfKeyState)
 {
-	if (fEscapePressed) {
+	if (fEscapePressed || m_bDropFinished || (grfKeyState & (MK_LBUTTON | MK_RBUTTON)) == (MK_LBUTTON | MK_RBUTTON)) {
 		return DRAGDROP_S_CANCEL;
 	}
 	if ((grfKeyState & (MK_LBUTTON | MK_RBUTTON)) == 0) {
-		if (m_bDrop) {
-			m_bDrop = false;
-			return DRAGDROP_S_DROP;
-		}
-		return DRAGDROP_S_CANCEL;
-	}
-	if ((grfKeyState & (MK_LBUTTON | MK_RBUTTON)) == (MK_LBUTTON | MK_RBUTTON)) {
-		return DRAGDROP_S_CANCEL;
+		m_bDropFinished = TRUE;
+		return DRAGDROP_S_DROP;
 	}
 	return S_OK;
 }
@@ -17651,7 +17728,7 @@ VOID CteMemory::Write(int nIndex, int nLen, VARTYPE vt, VARIANT *pv)
 				break;
 			case VT_CLSID:
 				if (pv->vt == VT_BSTR) {
-					CLSIDFromString(pv->bstrVal, (LPCLSID)&m_pc[nIndex]);
+					teCLSIDFromString(pv->bstrVal, (LPCLSID)&m_pc[nIndex]);
 				}
 				break;
 			case VT_VARIANT:
@@ -17766,6 +17843,13 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 			//InvokeCommand
 			case 2:
 				if (nArg >= 7) {
+					if (m_pShellBrowser && m_pShellBrowser->m_pDispatch[SB_OnBeforeGetData]) {
+						VARIANTARG *pv = GetNewVARIANT(3);
+						teSetObject(&pv[2], m_pShellBrowser);
+						teSetObjectRelease(&pv[1], new CteFolderItems(m_pDataObj, NULL, false));
+						teSetLong(&pv[0], 2);
+						Invoke4(m_pShellBrowser->m_pDispatch[SB_OnBeforeGetData], NULL, 3, pv);
+					}
 					if (g_pOnFunc[TE_OnInvokeCommand]) {
 						VARIANT vResult;
 						VariantInit(&vResult);
@@ -20123,8 +20207,8 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 					CLSID encoderClsid;
 					WCHAR szMime[16];
 					if (GetEncoderClsid(vText.bstrVal, &encoderClsid, szMime)) {
-						IStream* pStream = NULL;
-						if SUCCEEDED(CreateStreamOnHGlobal(NULL, TRUE, &pStream)) {
+						IStream *pStream = SHCreateMemStream(NULL, NULL);
+						if (pStream) {
 							if (m_pImage->Save(pStream, &encoderClsid) == 0) {
 								ULARGE_INTEGER uliSize;
 								LARGE_INTEGER liOffset;
@@ -20186,8 +20270,8 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 				if (nArg >= 1) {
 					CLSID encoderClsid;
 					if (GetEncoderClsid(L"image/png", &encoderClsid, NULL)) {
-						IStream* pStream = NULL;
-						if SUCCEEDED(CreateStreamOnHGlobal(NULL, TRUE, &pStream)) {
+						IStream *pStream = SHCreateMemStream(NULL, NULL);
+						if (pStream) {
 							int x = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 							int y = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
 							if (x > 96 || y > 96) {
@@ -20372,7 +20456,7 @@ CteDispatch::CteDispatch(IDispatch *pDispatch, int nMode)
 	m_dispIdMember = DISPID_UNKNOWN;
 	m_nIndex = 0;
 	m_pActiveScript = NULL;
-	m_hDll = NULL;
+	m_pDll = NULL;
 }
 
 CteDispatch::~CteDispatch()
@@ -20389,10 +20473,7 @@ VOID CteDispatch::Clear()
 		m_pActiveScript->Release();
 		m_pActiveScript = NULL;
 	}
-	if (m_hDll) {
-		FreeLibrary(m_hDll);
-		m_hDll = NULL;
-	}
+	teReleaseClear(&m_pDll);
 }
 
 
@@ -20739,11 +20820,11 @@ STDMETHODIMP_(ULONG) CteDll::Release()
 {
 	if (::InterlockedDecrement(&m_cRef) == 0) {
 		LPFNDllCanUnloadNow lpfnDllCanUnloadNow = (LPFNDllCanUnloadNow)GetProcAddress(m_hDll, "DllCanUnloadNow");
-		if (g_pUnload && lpfnDllCanUnloadNow && lpfnDllCanUnloadNow()) {
+		if (g_pUnload && lpfnDllCanUnloadNow && lpfnDllCanUnloadNow() != S_OK) {
 			teArrayPush(g_pUnload, this);
 			if (!g_bUnload) {
 				g_bUnload = TRUE;
-				SetTimer(g_hwndMain, TET_Unload, 1000 * 60 * 10, teTimerProc);
+				SetTimer(g_hwndMain, TET_Unload, 15 * 1000, teTimerProc);
 			}
 			return m_cRef;
 		}

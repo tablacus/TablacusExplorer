@@ -962,7 +962,9 @@ PtInRect = function (rc, pt)
 
 DeleteItem = function (path)
 {
-	api.SHFileOperation(FO_DELETE, path, null, FOF_SILENT | FOF_NOCONFIRMATION, false);
+	if (IsExists(path)) {
+		api.SHFileOperation(FO_DELETE, path, null, FOF_SILENT | FOF_NOCONFIRMATION, false);
+	}
 }
 
 IsExists = function (path)

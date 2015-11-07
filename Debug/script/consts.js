@@ -89,6 +89,11 @@ try {
 api.ILisEqual = api.ILIsEqual;
 api.strcmpi = api.StrCmpI;
 api.ShGetFileInfo = api.SHGetFileInfo;
+api.DoDragDrop = function (pDataObj, dwEffect, pdwEffect)
+{
+	return api.SHDoDragDrop(null, pDataObj, dwEffect, pdwEffect);
+}
+
 //Tablacus
 Ox80000000 = api.LowPart(0x80000000);
 CTRL_FV =       0;

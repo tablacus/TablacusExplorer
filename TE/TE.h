@@ -183,7 +183,8 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *
 
 #define SB_TotalFileSize		0
 #define SB_OnIncludeObject		1
-#define Count_SBFunc			2
+#define SB_OnBeforeGetData		2
+#define Count_SBFunc			3
 
 #define CTRL_FV          0
 #define CTRL_SB          1
@@ -217,6 +218,7 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *
 #define TE_CmdShow	6
 #define TE_Layout	7
 #define TE_NetworkTimeout	8
+#define Count_TE_params	9
 
 #define TC_Align	6
 #define TC_TabWidth		7
@@ -509,8 +511,7 @@ public:
 	~CTE();
 public:
 	VARIANT m_vData;
-	int		m_param[9];
-	BOOL	m_bDrop;
+	BOOL	m_bDropFinished;
 private:
 	CteFolderItems *m_pDragItems;
 	LONG	m_cRef;
@@ -735,7 +736,8 @@ class CteShellBrowser : public IShellBrowser, public ICommDlgBrowser2,
 #ifdef _2000XP
 	public IShellFolder2, public IShellFolderViewCB,
 #endif
-	public IDropTarget, public IPersistFolder2
+	public IDropTarget, public IPersistFolder2,
+	public IDropSource
 {
 public:
 	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
@@ -829,11 +831,10 @@ public:
     STDMETHODIMP Initialize(PCIDLIST_ABSOLUTE pidl);
 	//IPersistFolder2
     STDMETHODIMP GetCurFolder(PIDLIST_ABSOLUTE *ppidl);
-/*	//IContextMenu
-	STDMETHODIMP QueryContextMenu(HMENU hmenu, UINT indexMenu, UINT idCmdFirst, UINT idCmdLast, UINT uFlags);
-	STDMETHODIMP GetCommandString(UINT_PTR idCmd, UINT uFlags, UINT *pwReserved, LPSTR pszName, UINT cchMax);
-	STDMETHODIMP InvokeCommand(LPCMINVOKECOMMANDINFO pici);
-*/
+	//IDropSource
+	STDMETHODIMP QueryContinueDrag(BOOL fEscapePressed, DWORD grfKeyState);
+	STDMETHODIMP GiveFeedback(DWORD dwEffect);
+
 	CteShellBrowser(CteTabCtrl *pTabs);
 	~CteShellBrowser();
 
@@ -909,7 +910,7 @@ public:
 	CteTreeView	*m_pTV;
 	LONG_PTR	m_DefProc;
 	IShellView  *m_pShellView;
-	IDispatch	*m_pDispatch[2];
+	IDispatch	*m_pDispatch[Count_SBFunc];
 	FolderItem *m_pFolderItem;
 	FolderItem *m_pFolderItem1;
 	IExplorerBrowser *m_pExplorerBrowser;
@@ -961,6 +962,7 @@ private:
 	LONG		m_dwUnavailable;
 	BOOL		m_bNavigateComplete;
 	BOOL		m_bEnableSuspend;
+	BOOL		m_bDropFinished;
 #ifdef _2000XP
 	IShellFolderViewCB	*m_pSFVCB;
 	int			m_nFolderName;
@@ -1278,7 +1280,7 @@ public:
 	VOID Clear();
 public:
 	IActiveScript *m_pActiveScript;
-	HMODULE		m_hDll;
+	CteDll		*m_pDll;
 	DISPID		m_dispIdMember;
 	int			m_nIndex;
 private:
