@@ -34,7 +34,7 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
         BLOCK "0400FDE9"
         {
             VALUE "CompanyName", "Tablacus\0"
-            VALUE "FileDescription", "Tablacus Explorer\0"
+            VALUE "FileDescription", PRODUCTNAME "\0"
             VALUE "FileVersion", STRING(VER_Y) "." STRING(VER_M) "." STRING(VER_D) "\0"
             VALUE "InternalName", "TE\0"
             VALUE "LegalCopyright", "(C) Gaku\0"
@@ -43,7 +43,7 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 #else
             VALUE "OriginalFilename", "TE32.exe\0"
 #endif
-            VALUE "ProductName", "Tablacus Explorer\0"
+            VALUE "ProductName", PRODUCTNAME "\0"
             VALUE "ProductVersion", STRING(VER_Y) "." STRING(VER_M) "." STRING(VER_D) "\0"
         }
     }

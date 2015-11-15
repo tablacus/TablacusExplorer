@@ -701,6 +701,7 @@ AddEvent("Close", function (Ctrl)
 				return S_FALSE;
 			}
 			api.SHChangeNotifyDeregister(te.Data.uRegisterId);
+			DeleteTempFolder();
 			break;
 		case CTRL_WB:
 			break;
@@ -1133,6 +1134,10 @@ AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, 
 			UnlockFV(Items.Item(i));
 		}
 	}
+	var FV = ContextMenu.FolderView;
+	if (FV) {
+		te.OnBeforeGetData(FV, ContextMenu.Items(), 2);
+	}
 });
 
 te.OnDragEnter = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect)
@@ -1296,10 +1301,11 @@ te.OnShowContextMenu = function (Ctrl, hwnd, msg, wParam, pt)
 
 te.OnDefaultCommand = function (Ctrl)
 {
-	if (api.GetKeyState(VK_MENU) < 0) {
-		return S_FALSE;
-	}
 	var Selected = Ctrl.SelectedItems();
+	if (api.GetKeyState(VK_MENU) < 0) {
+		InvokeCommand(Selected, 0, te.hwnd, CommandID_PROPERTIES - 1, null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
+		return S_OK;
+	}
 	var hr = RunEvent3("DefaultCommand", Ctrl, Selected);
 	if (isFinite(hr)) {
 		return hr; 
@@ -1666,6 +1672,16 @@ te.OnILGetParent = function (FolderItem)
 			return ar.join("\\");
 		}
 	}
+}
+
+te.OnBeginDrag = function (Ctrl)
+{
+	return !isFinite(RunEvent3("BeginDrag", Ctrl));
+}
+
+te.OnBeforeGetData = function (Ctrl, Items, nMode)
+{
+	RunEvent3("BeforeGetData", Ctrl, Items, nMode);
 }
 
 //Tablacus Events
@@ -2873,6 +2889,8 @@ g_basic =
 
 AddEvent("Exec", function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop)
 {
+	var FV = GetFolderView(Ctrl, pt);
+	te.OnBeforeGetData(FV, dataObj || FV.SelectedItems(), 3);
 	var fn = g_basic.FuncI(type);
 	if (fn) {
 		if (dataObj) {

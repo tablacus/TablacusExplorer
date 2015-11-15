@@ -2181,6 +2181,7 @@ EscapeUpdateFile(fso.GetFileName(api.GetModuleFileName(null)))).replace(/[\t\n]/
  	}
 	var oExec = wsh.Exec([api.PathQuoteSpaces(mshta), ' ', s1, update, '"'].join(""));
 	wsh.AppActivate(oExec.ProcessID);
+	DeleteTempFolder = function () {};
 	api.PostMessage(te.hwnd, WM_CLOSE, 0, 0);
 }
 
@@ -2330,6 +2331,7 @@ PopupContextMenu = function (Item, FV)
 	if (ContextMenu) {
 		var uCMF = (api.GetKeyState(VK_SHIFT) < 0) ? CMF_EXTENDEDVERBS : CMF_NORMAL;
 		ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, uCMF);
+		RemoveCommand(hMenu, ContextMenu, "delete");
 		var pt = api.Memory("POINT");
 		api.GetCursorPos(pt);
 		var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, ContextMenu);
@@ -3159,4 +3161,9 @@ RemoveCommand = function (hMenu, ContextMenu, strDelete)
 			}
 		}
 	}
+}
+
+DeleteTempFolder = function ()
+{
+	DeleteItem(fso.BuildPath(fso.GetSpecialFolder(2).Path, "tablacus"));
 }

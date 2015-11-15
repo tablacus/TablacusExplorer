@@ -117,7 +117,6 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *
 #define E_BAD_NETPATH       HRESULT_FROM_WIN32(ERROR_BAD_NETPATH)
 #define E_INVALID_PASSWORD  HRESULT_FROM_WIN32(ERROR_INVALID_PASSWORD)
 
-#define APP_TITLE				L"Tablacus Explorer"
 #define WINDOW_CLASS			L"TablacusExplorer"
 #define WINDOW_CLASS2			L"TablacusExplorer2"
 #define MAX_LOADSTRING			100
@@ -140,6 +139,7 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *
 #define TET_Status				0x1fa5
 #define TET_Unload				0x1fa6
 #define TET_Title				0x1fa7
+#define TET_FreeLibrary			0x1fa8
 #define SHGDN_FORPARSINGEX	0x80000000
 #define START_OnFunc			5000
 #define TE_Labels				0
@@ -179,12 +179,13 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *
 #define TE_OnKeyMessage			34
 #define TE_OnItemPrePaint		35
 #define TE_OnColumnClick		36
-#define Count_OnFunc			37
+#define TE_OnBeginDrag			37
+#define TE_OnBeforeGetData		38
+#define Count_OnFunc			39
 
 #define SB_TotalFileSize		0
 #define SB_OnIncludeObject		1
-#define SB_OnBeforeGetData		2
-#define Count_SBFunc			3
+#define Count_SBFunc			2
 
 #define CTRL_FV          0
 #define CTRL_SB          1
@@ -474,9 +475,9 @@ public:
 public:
 	int				m_nIndex;
 	DWORD			m_dwEffect;
+	LPITEMIDLIST	*m_pidllist;
 
 private:
-	LPITEMIDLIST	*m_pidllist;
 	IDataObject		*m_pDataObj;
 	FolderItems		*m_pFolderItems;
 	IDispatch		*m_oFolderItems;
@@ -511,7 +512,6 @@ public:
 	~CTE();
 public:
 	VARIANT m_vData;
-	BOOL	m_bDropFinished;
 private:
 	CteFolderItems *m_pDragItems;
 	LONG	m_cRef;
@@ -736,8 +736,7 @@ class CteShellBrowser : public IShellBrowser, public ICommDlgBrowser2,
 #ifdef _2000XP
 	public IShellFolder2, public IShellFolderViewCB,
 #endif
-	public IDropTarget, public IPersistFolder2,
-	public IDropSource
+	public IDropTarget, public IPersistFolder2
 {
 public:
 	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
@@ -831,9 +830,6 @@ public:
     STDMETHODIMP Initialize(PCIDLIST_ABSOLUTE pidl);
 	//IPersistFolder2
     STDMETHODIMP GetCurFolder(PIDLIST_ABSOLUTE *ppidl);
-	//IDropSource
-	STDMETHODIMP QueryContinueDrag(BOOL fEscapePressed, DWORD grfKeyState);
-	STDMETHODIMP GiveFeedback(DWORD dwEffect);
 
 	CteShellBrowser(CteTabCtrl *pTabs);
 	~CteShellBrowser();
@@ -962,7 +958,6 @@ private:
 	LONG		m_dwUnavailable;
 	BOOL		m_bNavigateComplete;
 	BOOL		m_bEnableSuspend;
-	BOOL		m_bDropFinished;
 #ifdef _2000XP
 	IShellFolderViewCB	*m_pSFVCB;
 	int			m_nFolderName;
@@ -1026,13 +1021,12 @@ public:
 	STDMETHODIMP GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId);
 	STDMETHODIMP Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr);
 
-	CteContextMenu(IUnknown *punk, IDataObject *pDataObj);
+	CteContextMenu(IUnknown *punk, IDataObject *pDataObj, IUnknown *pSB);
 	~CteContextMenu();
 
-	LRESULT HandleMenuMessage(MSG *pMsg);
+	BOOL GetFolderVew(IShellBrowser **ppSB);
 public:
 	IContextMenu *m_pContextMenu;
-	CteShellBrowser *m_pShellBrowser;
 	CteDll *m_pDll;
 private:
 	IDataObject *m_pDataObj;
