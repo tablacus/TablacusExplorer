@@ -120,7 +120,7 @@
 	<text s="Advanced">高度</text>
 
 	<text s="Expandos">ボタンを表示</text>
-	<text s="Lines">線を表示</text>
+	<text s="Lines">線</text>
 	<text s="No edit labels">名前の編集禁止</text>
 	<text s="Disable Drag-and-Drop">ドラッグ禁止</text>
 	<text s="No infotip">ツールチップなし</text>
@@ -139,7 +139,7 @@
 	<text s="RootStyle">ルートスタイル</text>
 	<text s="Visible">表示する</text>
 	<text s="Hidden">隠す</text>
-	<text s="Expanded">展開</text>
+	<text s="Expanded">展開する</text>
 
 	<text s="Buttons">ボタン</text>
 	<text s="Flat buttons">フラットボタン</text>

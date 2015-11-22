@@ -9600,6 +9600,7 @@ BOOL teReleaseParse(TEInvoke *pInvoke)
 	BOOL bResult = ::InterlockedDecrement(&pInvoke->cRef) == 0;
 	if (bResult) {
 		teDelayRelease(&pInvoke->pdisp);
+		delete [] pInvoke;
 	}
 	return bResult;
 }
@@ -9674,7 +9675,7 @@ static void threadParseDisplayName(void *args)
 		g_nException = 0;
 	}
 	if (!teReleaseParse(pInvoke)) {
-		SetTimer(g_hwndMain, (UINT_PTR)args, 10, teTimerProcParse);
+		SetTimer(g_hwndMain, (UINT_PTR)args, 100, teTimerProcParse);
 	}
 	::OleUninitialize();
 	::_endthread();
@@ -10345,9 +10346,11 @@ BOOL CteShellBrowser::Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItem
 			if (!pid->m_pidl) {
 				if (pid->m_v.vt == VT_BSTR) {
 					if (tePathIsNetworkPath(pid->m_v.bstrVal)) {
-						Navigate1Ex(pid->m_v.bstrVal, pFolderItems, wFlags, pPrevious, nErrorHandleing);
-						pid->Release();
-						return TRUE;
+						if (tePathIsDirectory(pid->m_v.bstrVal, 100, 3) != S_OK) {
+							Navigate1Ex(pid->m_v.bstrVal, pFolderItems, wFlags, pPrevious, nErrorHandleing);
+							pid->Release();
+							return TRUE;
+						}
 					}
 					if (ppidl) {
 						pid->GetCurFolder(ppidl);
