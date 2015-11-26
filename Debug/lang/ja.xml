@@ -74,7 +74,8 @@
 	<text s="Completed.">完了しました。</text>
 	<text s="Set Default">既定値に設定</text>
 	<text s="Select">選択</text>
-	<text s="Reference...">参照...</text>
+	<text s="Browse...">参照...</text>
+	<text s="Reference...">参照する...</text>
 	<text s="Selected Items">選択項目</text>
 	<text s="Default LanguageID">既定のLanguageID</text>
 	<text s="New Folder">新規フォルダ</text>
@@ -97,7 +98,6 @@
 	<text s="Do you want to replace?">置き換えますか？</text>
 	<text s="Menus">メニュー</text>
 	<text s="Context">コンテキスト</text>
-	<text s="ViewContext">表示コンテキスト</text>
 	<text s="System">システム</text>
 	<text s="&amp;Add to Favorites...">お気に入りに追加(&amp;A)...</text>
 	<text s="Add Favorite">お気に入りの追加</text>
@@ -119,7 +119,6 @@
 	<text s="Background">バックグラウンド</text>
 	<text s="Advanced">高度</text>
 
-	<text s="Expandos">ボタンを表示</text>
 	<text s="Lines">線</text>
 	<text s="No edit labels">名前の編集禁止</text>
 	<text s="Disable Drag-and-Drop">ドラッグ禁止</text>
@@ -205,4 +204,13 @@
 	<text s="Separator">区切り</text>
 	<text s="Break">折り返し</text>
 	<text s="BarBreak">線を引いて折り返し</text>
+
+	<text s="Move">移動</text>
+	<text s="Copy">コピー</text>
+	<text s="Delete">削除</text>
+	<text s="Rename">名前の変更</text>
+	<text s="Extract">展開</text>
+	<text s="Save">保存</text>
+	<text s="Load">読み込み</text>
+	<text s="Get %s...">%s を入手...</text>
 </resources>

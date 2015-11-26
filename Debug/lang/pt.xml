@@ -74,6 +74,7 @@
 	<text s="Completed.">Completo.</text>
 	<text s="Set Default">Definir padrão</text>
 	<text s="Select">Selecionar</text>
+	<text s="Browse...">Procurar...</text>
 	<text s="Reference...">Referência...</text>
 	<text s="Selected Items">Itens selecionados</text>
 	<text s="Default LanguageID">Idioma padrão</text>
@@ -97,7 +98,6 @@
 	<text s="Do you want to replace?">Quer substituir?</text>
 	<text s="Menus">Menus</text>
 	<text s="Context">Contexto</text>
-	<text s="ViewContext">VisualizarContexto</text>
 	<text s="System">Sistema</text>
 	<text s="&amp;Add to Favorites...">&amp;Adicionar aos favoritos...</text>
 	<text s="Add Favorite">Adicionar favorito</text>
@@ -119,7 +119,6 @@
 	<text s="Background">Plano de fundo</text>
 	<text s="Advanced">Avançado</text>
 
-	<text s="Expandos">Expansíveis</text>
 	<text s="Lines">Linhas</text>
 	<text s="No edit labels">Sem rótulos de edição</text>
 	<text s="Disable Drag-and-Drop">Desabilitar arrastar-e-soltar</text>
@@ -205,4 +204,13 @@
 	<text s="Separator">Separador</text>
 	<text s="Break">Pausar</text>
 	<text s="BarBreak">Pausar barra</text>
+
+	<text s="Move">Mover</text>
+	<text s="Copy">Copiar</text>
+	<text s="Delete">Eliminar</text>
+	<text s="Rename">Mudar o nome</text>
+	<text s="Extract">Extrair</text>
+	<text s="Save">Salvar</text>
+	<text s="Load">Carregar</text>
+	<text s="Get %s...">Obter %s...</text>
 </resources>

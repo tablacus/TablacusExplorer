@@ -74,7 +74,8 @@
 	<text s="Completed.">Finalizado.</text>
 	<text s="Set Default">Valor por defecto</text>
 	<text s="Select">Seleccionar</text>
-	<text s="Reference...">Examinar...</text>
+	<text s="Browse...">Examinar...</text>
+	<text s="Reference...">Examinar....</text>
 	<text s="Selected Items">Elementos Seleccionados</text>
 	<text s="Default LanguageID">Identificador de Idioma por Defecto</text>
 	<text s="New Folder">Nueva Carpeta</text>
@@ -97,7 +98,6 @@
 	<text s="Do you want to replace?">¿Desea remplazar?</text>
 	<text s="Menus">Menús</text>
 	<text s="Context">Contextual</text>
-	<text s="ViewContext">Contextual de la Vista</text>
 	<text s="System">Sistema</text>
 	<text s="&amp;Add to Favorites...">&amp;Añadir a favoritos...</text>
 	<text s="Add Favorite">Añadir a favoritos</text>
@@ -109,7 +109,7 @@
 	<text s="Disable">Deshabilitar</text>
 	<text s="Visit website">Visitar sitio web</text>
 	<text s="Info...">Información...</text>
-	<text s="Location">Posición</text>
+	<text s="Location">Ubicación</text>
 	<text s="Title Bar">Barra de Título</text>
 	<text s="Tool Bar">Barra de Herramientas</text>
 	<text s="Left Bar">Barra Izquierda</text>
@@ -119,7 +119,6 @@
 	<text s="Background">Fondo</text>
 	<text s="Advanced">Avanzado</text>
 
-	<text s="Expandos">Expandos</text>
 	<text s="Lines">Líneas</text>
 	<text s="No edit labels">Sin Líneas de Edición</text>
 	<text s="Disable Drag-and-Drop">Deshabilitar Arrastar y Soltar</text>
@@ -205,4 +204,13 @@
 	<text s="Separator">Separador</text>
 	<text s="Break">Break</text>
 	<text s="BarBreak">BarBreak</text>
+
+	<text s="Move">Mover</text>
+	<text s="Copy">Copiar</text>
+	<text s="Delete">Borrar</text>
+	<text s="Rename">Cambiar nombre</text>
+	<text s="Extract">Extraer</text>
+	<text s="Save">Guardar</text>
+	<text s="Load">Cargar</text>
+	<text s="Get %s...">Obtener %s...</text>
 </resources>

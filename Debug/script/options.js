@@ -997,7 +997,7 @@ function SetChanged(fn)
 {
 	if (g_Chg.Data) {
 		g_bChanged = true;
-		if (g_x[g_Chg.Data].selectedIndex >= 0) {
+		if (g_x[g_Chg.Data] && g_x[g_Chg.Data].selectedIndex >= 0) {
 			(fn || ReplaceX)(g_Chg.Data);
 		} else {
 			AddX(g_Chg.Data, fn);

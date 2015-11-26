@@ -74,6 +74,7 @@
 	<text s="Completed.">完成</text>
 	<text s="Set Default">设为默认</text>
 	<text s="Select">选择</text>
+	<text s="Browse...">浏览...</text>
 	<text s="Reference...">设置...</text>
 	<text s="Selected Items">选择项目</text>
 	<text s="Default LanguageID">默认语言值</text>
@@ -97,7 +98,6 @@
 	<text s="Do you want to replace?">确认替换？</text>
 	<text s="Menus">菜单</text>
 	<text s="Context">右键菜单</text>
-	<text s="ViewContext">查看右键菜单</text>
 	<text s="System">系统</text>
 	<text s="&amp;Add to Favorites...">添加到收藏...(&amp;A)...</text>
 	<text s="Add Favorite">添加收藏</text>
@@ -119,7 +119,6 @@
 	<text s="Background">背景</text>
 	<text s="Advanced">高级</text>
 
-	<text s="Expandos">显示节点状态图示</text>
 	<text s="Lines">显示网格线</text>
 	<text s="No edit labels">无标记编辑</text>
 	<text s="Disable Drag-and-Drop">禁用拖放</text>
@@ -205,4 +204,13 @@
 	<text s="Separator">分隔符</text>
 	<text s="Break">断开</text>
 	<text s="BarBreak">换行</text>
+
+	<text s="Move">移动</text>
+	<text s="Copy">复制</text>
+	<text s="Delete">删除</text>
+	<text s="Rename">重命名</text>
+	<text s="Extract">解压缩</text>
+	<text s="Save">保存</text>
+	<text s="Load">加载</text>
+	<text s="Get %s...">获取 %s...</text>
 </resources>

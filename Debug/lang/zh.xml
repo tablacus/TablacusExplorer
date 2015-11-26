@@ -6,7 +6,7 @@
 	<text s="&amp;View">檢視(&amp;V)</text>
 	<text s="F&amp;avorites">我的最愛(&amp;A)</text>
 	<text s="&amp;Tools">工具(&amp;T)</text>
-	<text s="&amp;Help">協助(&amp;H)【正體中文：風逸蘭】</text>
+	<text s="&amp;Help">協助(&amp;H)</text>
 	<text s="Back">上一頁</text>
 	<text s="Forward">下一頁</text>
 	<text s="Up">上移</text>
@@ -74,6 +74,7 @@
 	<text s="Completed.">已完成。</text>
 	<text s="Set Default">設定預設值</text>
 	<text s="Select">選擇</text>
+	<text s="Browse...">瀏覽...</text>
 	<text s="Reference...">參考...</text>
 	<text s="Selected Items">選擇項目</text>
 	<text s="Default LanguageID">預設 LanguageID</text>
@@ -97,7 +98,6 @@
 	<text s="Do you want to replace?">您想要取代嗎？</text>
 	<text s="Menus">選單</text>
 	<text s="Context">上下文</text>
-	<text s="ViewContext">檢視上下文</text>
 	<text s="System">系統</text>
 	<text s="&amp;Add to Favorites...">加入到我的最愛(&amp;A)...</text>
 	<text s="Add Favorite">加入我的最愛</text>
@@ -119,7 +119,6 @@
 	<text s="Background">背景</text>
 	<text s="Advanced">進階</text>
 
-	<text s="Expandos">顯示節點狀態圖示</text>
 	<text s="Lines">顯示線條</text>
 	<text s="No edit labels">停用標籤編輯</text>
 	<text s="Disable Drag-and-Drop">停用拖曳</text>
@@ -205,4 +204,13 @@
 	<text s="Separator">分隔線</text>
 	<text s="Break">斷開</text>
 	<text s="BarBreak">斷開並分列</text>
+
+	<text s="Move">移動</text>
+	<text s="Copy">複製</text>
+	<text s="Delete">刪除</text>
+	<text s="Rename">重新命名</text>
+	<text s="Extract">解壓縮</text>
+	<text s="Save">儲存</text>
+	<text s="Load">載入</text>
+	<text s="Get %s...">取得 %s...</text>
 </resources>
