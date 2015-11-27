@@ -141,14 +141,14 @@
 	<text s="Expanded">Etendu</text>
 
 	<text s="Buttons">Boutons</text>
-	<text s="Flat buttons">Buttons plats</text>
+	<text s="Flat buttons">Boutons plats</text>
 	<text s="Scroll opposite">Défilement opposé</text>
 	<text s="Multi line">Multi-ligne</text>
 	<text s="Fixed width">Largeur fixe</text>
 	<text s="Ragged right">Droite irréguliere</text>
 	<text s="Right/Bottom">Droit/bas</text>
 	<text s="Vertical">Vertical</text>
-	<text s="Hot track">Hot track</text>
+	<text s="Hot track">Selection au vol</text>
 	<text s="Tooltips">Info-bulles</text>
 	<text s="Force icon left">Forcer l'icone à gauche</text>
 	<text s="Force label left">Forcer le label à gauche</text>
@@ -157,8 +157,8 @@
 	<text s="Explorer Browser">Navigateur de l'explorateur</text>
 
 	<text s="Auto arrange">Réorganisation automatique</text>
-	<text s="Single selection">Sélection simple</text>
-	<text s="No client edge">No client edge</text>
+	<text s="Single selection">Selection unique</text>
+	<text s="No client edge">Pas de bords en creux</text>
 	<text s="Show selection always">Montre toujours la sélection</text>
 	<text s="Single click activate">Activation simple-click</text>
 
@@ -172,8 +172,8 @@
 	<text s="List">Liste</text>
 	<text s="Details">Details</text>
 	<text s="Thumbnail">Miniatures</text>
-	<text s="Tile">Tile</text>
-	<text s="Thumbstrip">Bande de miniature</text>
+	<text s="Tile">Tuile</text>
+	<text s="Thumbstrip">Bande de miniatures</text>
 	<text s="Content">Contenu</text>
 	<text s="or higher.">ou plus grand.</text>
 	<text s="Check for updates">Vérifier les mises à jour</text>
