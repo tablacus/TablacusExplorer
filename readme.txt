@@ -23,6 +23,9 @@ Sérgio Nova
 Italiano / Italian
 Michele Pezza
 
+French / Français
+Olivier Wuillemin
+
 //Documents
 https://www.penflip.com/LightTempler/tablacus-explorer
 

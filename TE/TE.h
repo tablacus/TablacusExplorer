@@ -466,7 +466,7 @@ public:
 	CteFolderItems(IDataObject *pDataObj, FolderItems *pFolderItems, BOOL bEditable);
 	~CteFolderItems();
 
-	HDROP GethDrop(int x, int y, BOOL fNC, BOOL bSpecial);
+	HDROP GethDrop(int x, int y, BOOL fNC);
 	VOID Regenerate();
 	VOID ItemEx(long nIndex, VARIANT *pVarResult, VARIANT *pVarNew);
 	VOID AdjustIDListEx();

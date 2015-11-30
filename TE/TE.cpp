@@ -119,6 +119,7 @@ int		g_x = MAXINT;
 int		g_nPidls = MAX_CSIDL;
 int		g_nTCCount = 0;
 int		g_nTCIndex = 0;
+BOOL	g_nDropState = 0;
 BOOL	g_bLabelsMode;
 BOOL	g_bMessageLoop = TRUE;
 BOOL	g_bDialogOk = FALSE;
@@ -126,7 +127,6 @@ BOOL	g_bInit = FALSE;
 BOOL	g_bUnload = FALSE;
 BOOL	g_bSetRedraw;
 BOOL	g_bShowParseError = TRUE;
-BOOL	g_bDropFinished = TRUE;
 #ifdef _2000XP
 int		g_nCharWidth = 7;
 BOOL	g_bCharWidth = true;
@@ -2141,7 +2141,6 @@ BOOL teIsDesktopPath(BSTR bs)
 void GetVarPathFromIDList(VARIANT *pVarResult, LPITEMIDLIST pidl, int uFlags)
 {
 	int i;
-	BOOL bSpecial = FALSE;
 
 	if (uFlags & SHGDN_FORPARSINGEX) {
 		for (i = 0; i < g_nPidls; i++) {
@@ -3489,7 +3488,7 @@ BOOL teGetIDListFromObject(IUnknown *punk, LPITEMIDLIST *ppidl)
 	}
 	return *ppidl != NULL;
 }
-
+/*
 BOOL teGetIDListFromObjectEx(IUnknown *punk, LPITEMIDLIST *ppidl)
 {
 	if (!teGetIDListFromObject(punk, ppidl)) {
@@ -3497,7 +3496,7 @@ BOOL teGetIDListFromObjectEx(IUnknown *punk, LPITEMIDLIST *ppidl)
 	}
 	return true;
 }
-
+*/
 
 BOOL teILIsEqualNet(BSTR bs1, IUnknown *punk, BOOL *pbResult)
 {
@@ -7250,7 +7249,7 @@ VOID teApiSHDoDragDrop(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIA
 		VARIANT v;
 		VariantInit(&v);
 		try {
-			g_bDropFinished = FALSE;
+			g_nDropState = param[5] ? 2 : 1;
 			teSetLong(pVarResult, SHDoDragDrop((HWND)param[0], pDataObj, static_cast<IDropSource *>(g_pTE), dwEffect, &dwEffect));
 		} catch(...) {}
 		g_pDraggingCtrl = NULL;
@@ -10811,7 +10810,7 @@ HRESULT CteShellBrowser::GetAbsPidl(LPITEMIDLIST *ppidlOut, FolderItem **ppid, F
 				m_pFolderItem->QueryInterface(IID_PPV_ARGS(&m_ppLog[nLogIndex]));
 				SaveFocusedItemToHistory();
 			}
-			if (teGetIDListFromObjectEx(pHistSB->m_ppLog[--nLogIndex], ppidlOut)) {
+			if (teGetIDListFromObject(pHistSB->m_ppLog[--nLogIndex], ppidlOut)) {
 				pHistSB->m_ppLog[nLogIndex]->QueryInterface(IID_PPV_ARGS(ppid));
 				if (this == pHistSB) {
 					m_nLogIndex = nLogIndex;
@@ -10829,7 +10828,7 @@ HRESULT CteShellBrowser::GetAbsPidl(LPITEMIDLIST *ppidlOut, FolderItem **ppid, F
 				m_pFolderItem->QueryInterface(IID_PPV_ARGS(&m_ppLog[nLogIndex]));
 				SaveFocusedItemToHistory();
 			}
-			if (teGetIDListFromObjectEx(pHistSB->m_ppLog[++nLogIndex], ppidlOut)) {
+			if (teGetIDListFromObject(pHistSB->m_ppLog[++nLogIndex], ppidlOut)) {
 				pHistSB->m_ppLog[nLogIndex]->QueryInterface(IID_PPV_ARGS(ppid));
 				if (this == pHistSB) {
 					m_nLogIndex = nLogIndex;
@@ -14791,18 +14790,19 @@ STDMETHODIMP CTE::Drop(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWOR
 //IDropSource
 STDMETHODIMP CTE::QueryContinueDrag(BOOL fEscapePressed, DWORD grfKeyState)
 {
-	if (fEscapePressed || g_bDropFinished || (grfKeyState & (MK_LBUTTON | MK_RBUTTON)) == (MK_LBUTTON | MK_RBUTTON)) {
+	if (fEscapePressed || !g_nDropState || (grfKeyState & (MK_LBUTTON | MK_RBUTTON)) == (MK_LBUTTON | MK_RBUTTON)) {
 		return DRAGDROP_S_CANCEL;
 	}
 	if ((grfKeyState & (MK_LBUTTON | MK_RBUTTON)) == 0) {
-		g_bDropFinished = TRUE;
-		if (g_pOnFunc[TE_OnBeforeGetData]) {
+		if (g_nDropState == 2 && g_pOnFunc[TE_OnBeforeGetData]) {
+			g_nDropState = 0;
 			VARIANTARG *pv = GetNewVARIANT(3);
 			teSetObject(&pv[2], g_pDraggingCtrl);
-			teSetObjectRelease(&pv[1], new CteFolderItems(g_pDraggingItems, NULL, FALSE));
+			teSetObject(&pv[1], g_pDraggingItems);
 			teSetLong(&pv[0], 2);
 			Invoke4(g_pOnFunc[TE_OnBeforeGetData], NULL, 3, pv);
 		}
+		g_nDropState = 0;
 		return DRAGDROP_S_DROP;
 	}
 	return S_OK;
@@ -16297,7 +16297,7 @@ CteFolderItems::CteFolderItems(IDataObject *pDataObj, FolderItems *pFolderItems,
 	m_pFolderItems = pFolderItems;
 	m_nIndex = 0;
 	m_dwEffect = (DWORD)-1;
-	m_bUseILF = true;
+	m_bUseILF = TRUE;
 }
 
 CteFolderItems::~CteFolderItems()
@@ -16377,6 +16377,7 @@ VOID CteFolderItems::ItemEx(long nIndex, VARIANT *pVarResult, VARIANT *pVarNew)
 
 VOID CteFolderItems::AdjustIDListEx()
 {
+	m_bUseILF = TRUE;
 	if (!m_pidllist && m_oFolderItems) {
 		get_Count(&m_nCount);
 		m_pidllist = new LPITEMIDLIST[m_nCount + 1];
@@ -16386,13 +16387,15 @@ VOID CteFolderItems::AdjustIDListEx()
 		FolderItem *pid = NULL;
 		while (--v.lVal >= 0) {
 			if (Item(v, &pid) == S_OK) {
-				teGetIDListFromObjectEx(pid, &m_pidllist[v.lVal + 1]);
+				if (!teGetIDListFromObject(pid, &m_pidllist[v.lVal + 1])) {
+					m_pidllist[v.lVal + 1] = ::ILClone(g_pidls[CSIDL_DESKTOP]);
+					m_bUseILF = FALSE;
+				}
 				pid->Release();
 			}
 		}
-		teReleaseClear(&m_oFolderItems);
 	}
-	m_bUseILF = AdjustIDList(m_pidllist, m_nCount);
+	m_bUseILF &= AdjustIDList(m_pidllist, m_nCount);
 }
 
 STDMETHODIMP CteFolderItems::QueryInterface(REFIID riid, void **ppvObject)
@@ -16518,11 +16521,13 @@ STDMETHODIMP CteFolderItems::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 			//hDrop
 			case 9:
 				if (pVarResult) {
-					int pi[4] = { 0 };
+					int pi[3] = { 0 };
 					for (int i = nArg; i >= 0; i--) {
-						pi[i] = GetIntFromVariant(&pDispParams->rgvarg[nArg - i]);
+						if (i < 3) {
+							pi[i] = GetIntFromVariant(&pDispParams->rgvarg[nArg - i]);
+						}
 					}
-					teSetPtr(pVarResult, GethDrop(pi[0], pi[1], pi[2], pi[3]));
+					teSetPtr(pVarResult, GethDrop(pi[0], pi[1], pi[2]));
 				}
 				return S_OK;
 			//GetData
@@ -16738,7 +16743,7 @@ STDMETHODIMP CteFolderItems::GetNameSpaceParent(IUnknown **ppunk)
 	return E_NOTIMPL;
 }
 
-HDROP CteFolderItems::GethDrop(int x, int y, BOOL fNC, BOOL bSpecial)
+HDROP CteFolderItems::GethDrop(int x, int y, BOOL fNC)
 {
 	if (m_pDataObj) {
 		STGMEDIUM Medium;
@@ -16767,20 +16772,15 @@ HDROP CteFolderItems::GethDrop(int x, int y, BOOL fNC, BOOL bSpecial)
 	}
 	BSTR *pbslist = new BSTR[m_nCount];
 	UINT uSize = sizeof(WCHAR);
+	VARIANT v;
+	v.vt = VT_I4;
 	for (int i = m_nCount; i-- > 0;) {
-		LPITEMIDLIST pidl = ILCombine(m_pidllist[0], m_pidllist[i + 1]);
-		if (bSpecial) {
-			GetDisplayNameFromPidl(&pbslist[i], pidl, SHGDN_FORPARSING);
-			int j = SysStringByteLen(pbslist[i]);
-			if (j) {
-				uSize += j + sizeof(WCHAR);
-			} else {
-				teSysFreeString(&pbslist[i]);
-			}
-		} else {
+		pbslist[i] = NULL;
+		v.lVal = i;
+		FolderItem *pid;
+		if SUCCEEDED(Item(v, &pid)) {
 			BSTR bsPath;
-			pbslist[i] = NULL;
-			if SUCCEEDED(GetDisplayNameFromPidl(&bsPath, pidl, SHGDN_FORPARSING)) {
+			if SUCCEEDED(pid->get_Path(&bsPath)) {
 				int nLen = ::SysStringByteLen(bsPath);
 				if (nLen) {
 					pbslist[i] = bsPath;
@@ -16789,8 +16789,8 @@ HDROP CteFolderItems::GethDrop(int x, int y, BOOL fNC, BOOL bSpecial)
 					::SysFreeString(bsPath);
 				}
 			}
+			pid->Release();
 		}
-		teCoTaskMemFree(pidl);
 	}
 	HDROP hDrop = (HDROP)GlobalAlloc(GHND, sizeof(DROPFILES) + uSize);
 	LPDROPFILES lpDropFiles = (LPDROPFILES)GlobalLock(hDrop);
@@ -16891,8 +16891,20 @@ STDMETHODIMP CteFolderItems::GetData(FORMATETC *pformatetcIn, STGMEDIUM *pmedium
 	}
 	if (pformatetcIn->cfFormat == CF_HDROP) {
 		pmedium->tymed = TYMED_HGLOBAL;
-		pmedium->hGlobal = (HGLOBAL)GethDrop(0, 0, FALSE, FALSE);
+		pmedium->hGlobal = (HGLOBAL)GethDrop(0, 0, FALSE);
 		pmedium->pUnkForRelease = NULL;
+		BSTR bs = NULL;
+		teGetRootFromDataObj(&bs, this);
+		if (teStrSameIFree(bs, g_bsClipRoot)) {
+			if (g_pOnFunc[TE_OnBeforeGetData]) {
+				VARIANTARG *pv = GetNewVARIANT(3);
+				teSetObject(&pv[2], g_pTE);
+				teSetObjectRelease(&pv[1], this);
+				teSetLong(&pv[0], 5);
+				Invoke4(g_pOnFunc[TE_OnBeforeGetData], NULL, 3, pv);
+			}
+		}
+		teSysFreeString(&g_bsClipRoot);
 		return S_OK;
 	}
 
@@ -18712,27 +18724,21 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 			//Expand
 			case 0x20000004:
 				if (nArg >= 1) {
-					if (g_nLockUpdate) {
-						return S_OK;
-					}
 					LPITEMIDLIST pidl;
 					teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg]);
 					if (ILIsEqual(pidl, g_pidlResultsFolder)) {
 						teCoTaskMemFree(pidl);
 						return S_OK;
 					}
-					if (m_pNameSpaceTreeControl) {
+					if (m_pNameSpaceTreeControl && lpfnSHCreateItemFromIDList) {
 						IShellItem *pShellItem;
-						DWORD dwState;
-						dwState = NSTCIS_SELECTED;
+						DWORD dwState = NSTCIS_SELECTED;
 						if (GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) != 0) {
 							dwState |= NSTCIS_EXPANDED;
 						}
-						if (lpfnSHCreateItemFromIDList) {
-							if SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(&pShellItem))) {
-								m_pNameSpaceTreeControl->SetItemState(pShellItem, dwState, dwState);
-								pShellItem->Release();
-							}
+						if SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(&pShellItem))) {
+							m_pNameSpaceTreeControl->SetItemState(pShellItem, dwState, dwState);
+							pShellItem->Release();
 						}
 						teCoTaskMemFree(pidl);
 						return S_OK;

@@ -1105,22 +1105,20 @@ AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, 
 		var Items = ContextMenu.Items();
 		for (var j in Items) {
 			var Item = Items.Item(j);
-			var path = Item.ExtendedProperty("linktarget");
-			if (path) {
-			 	api.PathIsDirectory(function (hr, path)
-			 	{
-					if (hr >= 0) {
-						Navigate(path, SBSP_NEWBROWSER);
-					} else {
-						Navigate(fso.GetParentFolderName(path), SBSP_NEWBROWSER);
-						setTimeout(function ()
-						{
-							var FV = te.Ctrl(CTRL_FV);
-							FV.SelectItem(path, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
-						}, 99);
-					}
-				}, -1, path, path);
-			}
+			var path = Item.ExtendedProperty("linktarget") || Item.Path;
+		 	api.PathIsDirectory(function (hr, path)
+		 	{
+				if (hr >= 0) {
+					Navigate(path, SBSP_NEWBROWSER);
+				} else {
+					Navigate(fso.GetParentFolderName(path), SBSP_NEWBROWSER);
+					setTimeout(function ()
+					{
+						var FV = te.Ctrl(CTRL_FV);
+						FV.SelectItem(path, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
+					}, 99);
+				}
+			}, -1, path, path);
 			return S_OK;
 		}
 	}
