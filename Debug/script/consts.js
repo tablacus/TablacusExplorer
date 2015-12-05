@@ -91,7 +91,7 @@ api.strcmpi = api.StrCmpI;
 api.ShGetFileInfo = api.SHGetFileInfo;
 api.DoDragDrop = function (pDataObj, dwEffect, pdwEffect)
 {
-	return api.SHDoDragDrop(null, pDataObj, dwEffect, pdwEffect);
+	return api.SHDoDragDrop(null, pDataObj, te, dwEffect, pdwEffect);
 }
 
 //Tablacus

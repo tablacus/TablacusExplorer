@@ -18724,6 +18724,10 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 			//Expand
 			case 0x20000004:
 				if (nArg >= 1) {
+					if (g_nLockUpdate || m_pFV->m_pTC->m_nLockUpdate) {
+						teSetLong(pVarResult, E_PENDING);
+						return S_OK;
+					}
 					LPITEMIDLIST pidl;
 					teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg]);
 					if (ILIsEqual(pidl, g_pidlResultsFolder)) {
