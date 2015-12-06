@@ -1690,6 +1690,7 @@ SHCNF_FLUSH       = 0x1000;
 SHCNF_FLUSHNOWAIT = 0x3000;
 
 system32 = api.GetDisplayNameOf(ssfSYSTEM, SHGDN_FORPARSING);
+hShell32 = api.GetModuleHandle(fso.BuildPath(system32, "shell32.dll"));
 
 SRCCOPY     = 0x00CC0020;
 SRCPAINT    = 0x00EE0086;

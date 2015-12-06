@@ -56,6 +56,107 @@ using namespace Gdiplus;
 class CteShellBrowser;
 class CteTreeView;
 
+union teParam
+{
+    LONGLONG llVal;
+    LONG lVal;
+    ULONG ulVal;
+    INT intVal;
+    UINT uintVal;
+	BYTE bVal;
+    BSTR bstrVal;
+    VARIANT_BOOL boolVal;
+
+    BYTE *pbVal;
+    CHAR *pcVal;
+    INT *pintVal;
+
+	WORD word;
+	DWORD dword;
+	WPARAM wparam;
+	LPARAM lparam;
+	COLORREF colorref;
+	LONG_PTR long_ptr;
+	UINT_PTR uint_ptr;
+	ULONG_PTR ulong_ptr;
+	LARGE_INTEGER li;
+	ULARGE_INTEGER uli;
+
+	HANDLE handle;
+	HWND hwnd;
+	HKEY hkeyVal;
+	HICON hicon;
+	HBITMAP hbitmap;
+	HDROP hdrop;
+	HDC hdc;
+	HMENU hmenu;
+	HMODULE hmodule;
+	HIMAGELIST himagelist;
+	HGDIOBJ hgdiobj;
+	HBRUSH hbrush;
+	HCURSOR hcursor;
+	HIMC himc;
+	HRGN hrgn;
+	HINSTANCE hinstance;
+	HMONITOR hmonitor;
+	HICON *phicon;
+
+	LPWSTR lpwstr;
+	LPCWSTR lpcwstr;
+	LPOLESTR lpolestr;
+	LPCOLESTR lpcolestr;
+	LPSTR lpstr;
+	LPCSTR lpcstr;
+
+	OLECMDID olecmdid;
+	OLECMDEXECOPT olecmdexecopt;
+
+	PLOGFONT plogfont;
+	PICONINFO piconinfo;
+	PNOTIFYICONDATA pnotifyicondata;
+	PCHANGEFILTERSTRUCT pchangefilterstruct;
+	WNDPROC wndproc;
+
+	LPVOID lpvoid;
+	LPBOOL lpbool;
+	LPDWORD lpdword;
+	LPHANDLE lphandle;
+	LPSHFILEOPSTRUCT lpshfileopstruct;
+	LPSHELLEXECUTEINFO lpshellexecuteinfo;
+	LPMONITORINFO lpmonitorinfo;
+	SHFILEINFO *lpshfileinfo;
+	LPPOINT lppoint;
+	LPMSG lpmsg;
+	LPSIZE lpsize;
+	LPRECT lprect;
+	LPCRECT lpcrect;
+	LPPAINTSTRUCT lppaintstruct;
+	LPFINDREPLACE lpfindreplace;
+	LPWIN32_FIND_DATA lpwin32_find_data;
+	LPCHOOSECOLOR lpchoosecolor;
+	LPCHOOSEFONT lpchoosefont;
+	LPINPUT lpinput;
+	LPTPMPARAMS lptpmparams;
+	LPITEMIDLIST lpitemidlist;
+	LPMENUINFO lpmenuinfo;
+	LPCMENUINFO lpcmenuinfo;
+	LPMENUITEMINFO lpmenuiteminfo;
+	LPCMENUITEMINFO lpcmenuiteminfo;
+	LPOSVERSIONINFO lposversioninfo;
+	PRTL_OSVERSIONINFOEXW prtl_osversioninfoexw;
+
+	ATOM atom;
+	ASSOCF assocf;
+	ASSOCSTR assocstr;
+	LCID lcid;
+	LCTYPE lctype;
+	PROPDESC_FORMAT_FLAGS propdesc_format_flags;
+	PROPERTYUI_FORMAT_FLAGS propertyui_format_flags;
+	FILEOP_FLAGS fileop_flags;
+
+	IImageList *pImageList;
+};
+
 //Unnamed function
 typedef VOID (WINAPI * LPFNSHRunDialog)(HWND hwnd, HICON hIcon, LPWSTR pszPath, LPWSTR pszTitle, LPWSTR pszPrompt, DWORD dwFlags);
 //Closed function
@@ -107,7 +208,7 @@ typedef LSTATUS (APIENTRY* LPFNRegQueryValueExW)(HKEY hKey, LPCWSTR lpValueName,
 typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
 
 //Dispatch Windows API
-typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, LONGLONG *param, DISPPARAMS *pDispParams, VARIANT *pVarResult);
+typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult);
 
 #define DISPID_AMBIENT_OFFLINEIFNOTCONNECTED -5501
 #define E_CANCELLED         HRESULT_FROM_WIN32(ERROR_CANCELLED)

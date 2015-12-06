@@ -1893,6 +1893,9 @@ function GetAttribEx(item, f, n)
 	}
 	s = item.getAttribute(n);
 	if (s || s === 0) {
+		if (n == "Key") {
+			s = GetKeyName(s);
+		}
 		SetElementValue(f.elements[n], s);
 	}
 }

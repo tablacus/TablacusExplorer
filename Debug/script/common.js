@@ -3167,3 +3167,19 @@ DeleteTempFolder = function ()
 {
 	DeleteItem(fso.BuildPath(fso.GetSpecialFolder(2).Path, "tablacus"));
 }
+
+OpenContains = function (Ctrl, pt)
+{
+	var FV = GetFolderView(Ctrl. pt);
+	var Items = FV.SelectedItems();
+	for (var j in Items) {
+		var Item = Items.Item(j);
+		var path = Item.Path;
+		Navigate(fso.GetParentFolderName(path), SBSP_NEWBROWSER);
+		setTimeout(function ()
+		{
+			var FV = te.Ctrl(CTRL_FV);
+			FV.SelectItem(Item, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
+		}, 99);
+	}
+}
