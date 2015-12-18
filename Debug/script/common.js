@@ -2121,8 +2121,7 @@ function CheckUpdate()
 	DeleteItem(temp);
 	CreateFolder2(temp);
 
-	DownloadFile(url + "dl/" + file, zipfile);
-	if (Extract(zipfile, temp) != S_OK) {
+	if (DownloadFile(url + "dl/" + file, zipfile) != S_OK || Extract(zipfile, temp) != S_OK) {
 		return;
 	}
 	var te64exe = temp + "\\te64.exe";
@@ -2979,16 +2978,7 @@ FindChildByClass = function (hwnd, s)
 
 DownloadFile = function (url, fn)
 {
-	var xhr = createHttpRequest();
-	xhr.open("GET", url, false);
-	xhr.send(null);
-
-	var ado = te.CreateObject("Adodb.Stream");
-	ado.Type = adTypeBinary;
-	ado.Open();
-	ado["Write"](xhr["r_e_s_p_o_n_s_e_B_o_d_y".replace(/_/g, "")]);
-	ado.SaveToFile(fn, adSaveCreateOverWrite);
-	ado.Close();
+	return api.URLDownloadToFile(null, url, fn, 0, null);
 }
 
 GetNavigateFlags = function (FV)

@@ -450,6 +450,7 @@ struct TEAddItems
 	VARIANTARG *pv;
 	IStream *pStrmSB;
 	IStream *pStrmArray;
+	BOOL	bDeleted;
 };
 
 const CLSID CLSID_ShellShellNameSpace = {0x2F2F1F96, 0x2BC1, 0x4b1c, { 0xBE, 0x28, 0xEA, 0x37, 0x74, 0xF4, 0x67, 0x6A}};

@@ -357,7 +357,7 @@ TEmethod tesLVFINDINFO[] =
 	{ 0, NULL }
 };
 
-TEmethod tesLVGROUP[] =
+TEmethod tesLVGROUP[] = 
 {
 	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, cbSize), L"cbSize" },
 	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, mask), L"mask" },
@@ -4180,7 +4180,10 @@ static void threadAddItems(void *args)
 		HRESULT hr = pArray->GetIDsOfNames(IID_NULL, &lpShift, 1, LOCALE_USER_DEFAULT, &dispidShift);
 		if (hr == S_OK) {
 			while (Invoke5(pArray, dispidShift, DISPATCH_METHOD, &pAddItems->pv[1], 0, NULL) == S_OK && pAddItems->pv[1].vt != VT_EMPTY) {
-				if (teGetIDListFromVariant(&pidl, &pAddItems->pv[1], TRUE)) {
+				if (!teGetIDListFromVariant(&pidl, &pAddItems->pv[1], TRUE) && pAddItems->bDeleted && pAddItems->pv[1].vt == VT_BSTR) {
+					pidl = SHSimpleIDListFromPath(pAddItems->pv[1].bstrVal);
+				}
+				if (pidl) {
 					VariantClear(&pAddItems->pv[1]);
 					teSetIDList(&pAddItems->pv[1], pidl);
 					teCoTaskMemFree(pidl);
@@ -4987,14 +4990,18 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 								if ((lParam & MAXDWORD) == MAXDWORD) {
 									msg1.pt.x = 0;
 									msg1.pt.y = 0;
-									ClientToScreen(hwndLV, &msg1.pt);
-									int nSelected = ListView_GetNextItem(hwndLV, -1, LVNI_ALL | LVNI_SELECTED);
-									if (nSelected >= 0) {
-										RECT rc;
-										ListView_GetItemRect(hwndLV, nSelected, &rc, LVIR_ICON);
-										OffsetRect(&rc, msg1.pt.x, msg1.pt.y);
-										msg1.pt.x = (rc.left + rc.right) / 2;
-										msg1.pt.y = (rc.top + rc.bottom) / 2;
+									if (hwndLV) {
+										ClientToScreen(hwndLV, &msg1.pt);
+										int nSelected = ListView_GetNextItem(hwndLV, -1, LVNI_ALL | LVNI_SELECTED);
+										if (nSelected >= 0) {
+											RECT rc;
+											ListView_GetItemRect(hwndLV, nSelected, &rc, LVIR_ICON);
+											OffsetRect(&rc, msg1.pt.x, msg1.pt.y);
+											msg1.pt.x = (rc.left + rc.right) / 2;
+											msg1.pt.y = (rc.top + rc.bottom) / 2;
+										}
+									} else {
+										ClientToScreen(pSB->m_hwndDV, &msg1.pt);
 									}
 								} else {
 									if (GetKeyState(VK_SHIFT) < 0 && ListView_GetNextItem(hwndLV, -1, LVNI_ALL | LVNI_SELECTED) >= 0) {
@@ -8110,6 +8117,13 @@ VOID teApiDllGetClassObject(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 	}
 }
 
+VOID teApiURLDownloadToFile(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	IUnknown *punk = NULL;
+	FindUnknown(&pDispParams->rgvarg[nArg], &punk);
+	teSetLong(pVarResult, URLDownloadToFile(punk, param[1].bstrVal, param[2].bstrVal, param[3].dword, NULL));
+}
+
 /*
 VOID teApi(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -8409,6 +8423,7 @@ TEDispatchApi dispAPI[] = {
 	{ 1,  0, -1, -1, L"SHSimpleIDListFromPath", teApiSHSimpleIDListFromPath },
 	{ 1,  0, -1, -1, L"OutputDebugString", teApiOutputDebugString },
 	{ 2, -1, -1, -1, L"DllGetClassObject", teApiDllGetClassObject },
+	{ 3,  1,  2, -1, L"URLDownloadToFile", teApiURLDownloadToFile },
 //	{ 0, -1, -1, -1, L"", teApi },
 //	{ 0, -1, -1, -1, L"Test", teApiTest },
 };
@@ -8753,6 +8768,11 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 								}
 								if (teSetRect(pTC->m_hwnd, 0, -pTC->m_si.nPos, rcTab.right - rcTab.left, (nBottom - rcTab.top) + pTC->m_si.nPos)) {
 									ArrangeWindow();
+									if (!(pTC->m_param[TE_Flags] & TCS_MULTILINE)) {
+										int i = TabCtrl_GetCurSel(pTC->m_hwnd);
+										TabCtrl_SetCurSel(pTC->m_hwnd, 0);
+										TabCtrl_SetCurSel(pTC->m_hwnd, i);
+									}
 								}
 								pSB = pTC->GetShellBrowser(pTC->m_nIndex);
 								if (pSB) {
@@ -12261,9 +12281,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 								}
 							}
 						} else if (g_pAutomation) {
-							POINT pt = info.pt;
 							IUIAutomationElement *pElement, *pElement2;
-							if SUCCEEDED(g_pAutomation->ElementFromPoint(pt, &pElement)) {
+							if SUCCEEDED(g_pAutomation->ElementFromPoint(info.pt, &pElement)) {
 								if SUCCEEDED(pElement->GetCurrentPropertyValue(g_PID_ItemIndex, pVarResult)) {
 									pVarResult->lVal--;
 								}
@@ -12630,11 +12649,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						CoMarshalInterThreadInterfaceInStream(IID_IDispatch, pdisp, &pAddItems->pStrmArray);
 						pdisp->Release();
 						pAddItems->pv = GetNewVARIANT(2);
-						if (nArg >= 1) {
-							VariantCopy(&pAddItems->pv[0], &pDispParams->rgvarg[0]);
-						} else {
-							teSetLong(&pAddItems->pv[0], m_dwSessionId);
-						}
+						teSetLong(&pAddItems->pv[0], m_dwSessionId);
+						pAddItems->bDeleted = nArg >= 1 && GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
 						_beginthread(&threadAddItems, 0, pAddItems);
 					}
 				}
@@ -15739,11 +15755,13 @@ DWORD CteTabCtrl::GetStyle()
 		}
 	}
 	if (dwStyle & TCS_BUTTONS) {
-		if (dwStyle & TCS_SCROLLOPPOSITE) {
-			dwStyle &= ~TCS_SCROLLOPPOSITE;
-		}
 		if (dwStyle & TCS_BOTTOM && m_param[TC_Align] > 1) {
 			dwStyle &= ~TCS_BOTTOM;
+		}
+	}
+	if (dwStyle & TCS_SCROLLOPPOSITE) {
+		if ((dwStyle & TCS_BUTTONS) || !(dwStyle & TCS_MULTILINE)) {
+			dwStyle &= ~TCS_SCROLLOPPOSITE;
 		}
 	}
 	return dwStyle;
@@ -15764,6 +15782,7 @@ VOID CteTabCtrl::CreateTC()
 		(HMENU)0, // Child window identifier
 		hInst, // Instance handle
 		NULL); // WM_CREATE Parameter
+	SetWindowLong(m_hwnd, GWL_STYLE, GetStyle());
 	ArrangeWindow();
 	SetItemSize();
 	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);

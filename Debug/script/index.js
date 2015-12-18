@@ -1799,6 +1799,8 @@ function ArrangeAddons()
 			}
 		}
 	}
+	RunEvent1("Load");
+	delete eventTE["Load"];
 	DeviceChanged(te);
 }
 

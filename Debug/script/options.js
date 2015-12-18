@@ -1468,8 +1468,10 @@ InitDialog = function ()
 		document.body.onkeydown = function (e)
 		{
 			var key = (e || event).keyCode;
-			returnValue = GetKeyName(api.sprintf(10, "$%x", (api.MapVirtualKey(key, 0) | ((key >= 33 && key <= 46 || key >= 91 && key <= 93 || key == 111 || key == 144) ? 256 : 0) | GetKeyShift())));
+			var s = api.sprintf(10, "$%x", (api.MapVirtualKey(key, 0) | ((key >= 33 && key <= 46 || key >= 91 && key <= 93 || key == 111 || key == 144) ? 256 : 0) | GetKeyShift()));
+			returnValue = GetKeyName(s);
 			document.F.q.value = returnValue;
+			document.F.q.title = s;
 			document.F.ButtonOk.disabled = false;
 			return false;
 		}
