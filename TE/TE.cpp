@@ -8116,14 +8116,14 @@ VOID teApiDllGetClassObject(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 		teSetObjectRelease(pVarResult, odisp);
 	}
 }
-
+/*//Deprecated (SSL)
 VOID teApiURLDownloadToFile(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	IUnknown *punk = NULL;
 	FindUnknown(&pDispParams->rgvarg[nArg], &punk);
 	teSetLong(pVarResult, URLDownloadToFile(punk, param[1].bstrVal, param[2].bstrVal, param[3].dword, NULL));
 }
-
+///*/
 /*
 VOID teApi(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -8423,7 +8423,7 @@ TEDispatchApi dispAPI[] = {
 	{ 1,  0, -1, -1, L"SHSimpleIDListFromPath", teApiSHSimpleIDListFromPath },
 	{ 1,  0, -1, -1, L"OutputDebugString", teApiOutputDebugString },
 	{ 2, -1, -1, -1, L"DllGetClassObject", teApiDllGetClassObject },
-	{ 3,  1,  2, -1, L"URLDownloadToFile", teApiURLDownloadToFile },
+//	{ 3,  1,  2, -1, L"URLDownloadToFile", teApiURLDownloadToFile },//Deprecated
 //	{ 0, -1, -1, -1, L"", teApi },
 //	{ 0, -1, -1, -1, L"Test", teApiTest },
 };

@@ -12,4 +12,4 @@
 #define STRING2(str) #str
 #define VER_Y		15
 #define VER_M		12
-#define VER_D		18
+#define VER_D		22

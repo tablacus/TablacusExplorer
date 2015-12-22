@@ -571,10 +571,13 @@ LoadXml = function (filename)
 		cTC[i].Close();
 	}
 	var xml = filename;
-	if (typeof(filename) == "string" && fso.FileExists(filename)) {
-		var xml = te.CreateObject("Msxml2.DOMDocument");
-		xml.async = false;
-		xml.load(filename);
+	if (typeof(filename) == "string") {
+		filename = api.PathUnquoteSpaces(filename);
+		if (fso.FileExists(filename)) {
+			xml = te.CreateObject("Msxml2.DOMDocument");
+			xml.async = false;
+			xml.load(filename);
+		}
 	}
 	var items = xml.getElementsByTagName('Ctrl');
 	for (var i = 0; i < items.length; i++) {
@@ -719,7 +722,7 @@ SaveXml = function (filename, all)
 	MainWindow.RunEvent1("SaveWindow", xml, root, all);
 	xml.appendChild(root);
 	try {
-		xml.save(filename);
+		xml.save(api.PathUnquoteSpaces(filename));
 	} catch (e) {
 		if (e.number != E_ACCESSDENIED) {
 			ShowError(e, "Save: " + filename);
@@ -2091,7 +2094,12 @@ function CheckUpdate()
 	xhr.setRequestHeader('Pragma', 'no-cache');
 	xhr.setRequestHeader('Cache-Control', 'no-cache');
 	xhr.setRequestHeader('If-Modified-Since', 'Thu, 01 Jun 1970 00:00:00 GMT');
-	xhr.send(null);
+	try {
+		xhr.send(null);
+	} catch (e) {
+		ShowError(e);
+		return;
+	}
 	if (!/<td id="te">(.*?)<\/td>/i.test(xhr.responseText)) {
 		return;
 	}
@@ -2978,7 +2986,21 @@ FindChildByClass = function (hwnd, s)
 
 DownloadFile = function (url, fn)
 {
-	return api.URLDownloadToFile(null, url, fn, 0, null);
+	var xhr = createHttpRequest();
+	xhr.open("GET", url, false);
+	try {
+		xhr.send(null);
+		var ado = te.CreateObject("Adodb.Stream");
+		ado.Type = adTypeBinary;
+		ado.Open();
+		ado.Write(xhr[XHRBODY]);
+		ado.SaveToFile(fn, adSaveCreateOverWrite);
+		ado.Close();
+	} catch (e) {
+		ShowError(e);
+		return E_FAIL;
+	}
+	return S_OK;
 }
 
 GetNavigateFlags = function (FV)

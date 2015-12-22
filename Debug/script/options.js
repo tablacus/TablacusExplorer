@@ -2184,7 +2184,11 @@ function GetAddons()
 	xhr.setRequestHeader('Pragma', 'no-cache');
 	xhr.setRequestHeader('Cache-Control', 'no-cache');
 	xhr.setRequestHeader('If-Modified-Since', 'Thu, 01 Jun 1970 00:00:00 GMT');
-	xhr.send(null);
+	try {
+		xhr.send(null);
+	} catch (e) {
+		ShowError(e);
+	}
 }
 
 function UpdateAddon(Id, o)
@@ -2377,8 +2381,7 @@ function Install(o)
 		CreateFolder(temp);
 		var hwnd = api.GetWindowLongPtr(api.GetWindow(document), GWLP_HWNDPARENT);
 		var zipfile = fso.BuildPath(temp, file);
-		DownloadFile(urlAddons + Id + '/' + file, zipfile);
-		if (MainWindow.Extract(zipfile, temp) != S_OK) {
+		if (DownloadFile(urlAddons + Id + '/' + file, zipfile) != S_OK || MainWindow.Extract(zipfile, temp) != S_OK) {
 			document.body.style.cursor = "auto";
 			return;
 		}
