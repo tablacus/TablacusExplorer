@@ -18,8 +18,9 @@ g_nResult = 0;
 g_bChanged = true;
 g_bClosed = false;
 arLangs = [GetLangId()];
-if (/(\w+)_/.test(arLangs[0])) {
-	arLangs.push(RegExp.$1);
+var res = /(\w+)_/.test(arLangs[0]);
+if (res) {
+	arLangs.push(res[1]);
 }
 if (!/^en/.test(arLangs[0])) {
 	arLangs.push("en");
@@ -165,27 +166,30 @@ function ClickTree(o, nMode, strChg, bForce)
 	}
 	nMode = api.LowPart(nMode);
 	var newTab = TabIndex != -1 ? TabIndex : 0;
-	if (o && o.id && /tab([^_]+)(_?)(.*)/.test(o.id)) {
-		newTab = RegExp.$1 + RegExp.$2 + RegExp.$3;
-		document.getElementById("MoveButton").style.display = newTab == "1" || RegExp.$1 == 2 ? "inline-block" : "none";
-		if (nMode == 0) {
-			switch (RegExp.$1 - 0) {
-				case 1:
-					document.body.style.cursor = "wait";
-					setTimeout(function () {
-						LoadAddons();
-						document.body.style.cursor = "auto";
-					}, 10);
-					if (newTab == '1_1') {
-					setTimeout(function () {
-						GetAddons();
-						document.body.style.cursor = "auto";
-					}, 10);
-					}
-					break;
-				case 2:
-					LoadMenus(RegExp.$3 - 0);
-					break;
+	if (o && o.id) {
+		var res = /tab([^_]+)(_?)(.*)/.exec(o.id);
+		if (res) {
+			newTab = res[1] + res[2] + res[3];
+			document.getElementById("MoveButton").style.display = newTab == "1" || res[1] == 2 ? "inline-block" : "none";
+			if (nMode == 0) {
+				switch (res[1] - 0) {
+					case 1:
+						document.body.style.cursor = "wait";
+						setTimeout(function () {
+							LoadAddons();
+							document.body.style.cursor = "auto";
+						}, 9);
+						if (newTab == '1_1') {
+						setTimeout(function () {
+							GetAddons();
+							document.body.style.cursor = "auto";
+						}, 9);
+						}
+						break;
+					case 2:
+						LoadMenus(res[3] - 0);
+						break;
+				}
 			}
 		}
 	}
@@ -211,8 +215,9 @@ function ClickTree(o, nMode, strChg, bForce)
 		ovTab = document.getElementById('tab' + TabIndex);
 		if (ovTab) {
 			ovPanel = document.getElementById('panel' + TabIndex) || document.getElementById('panel' + TabIndex.replace(/_\d+/, ""));
-			if (/2_(.+)/.test(TabIndex)) {
-				document.F.Menus.selectedIndex = RegExp.$1;
+			var res = /2_(.+)/.exec(TabIndex);
+			if (res) {
+				document.F.Menus.selectedIndex = res[1];
 				SwitchMenus(document.F.Menus);
 			}
 			ovTab.className = 'hoverbutton';
@@ -599,7 +604,9 @@ function EditMenus()
 	ClearX("Menus");
 	var a = g_x.Menus[g_x.Menus.selectedIndex].value.split(g_sep);
 	var a2 = a[0].split(/\\t/);
-	a2.unshift(GetText(a2.shift()));
+	if (!a[5]) {
+		a2[0] = GetText(a2[0]);
+	}
 	document.F.Menus_Key.value = a2.length > 1 ? GetKeyName(a2.pop()) : "";
 	document.F.Menus_Name.value = a2.join("\\t");
 	document.F.Menus_Filter.value = a[1];
@@ -682,13 +689,14 @@ function ReplaceMenus()
 	var sel = g_x.Menus[g_x.Menus.selectedIndex];
 	var o = document.F.Menus_Type;
 	var s = GetSourceText(document.F.Menus_Name.value);
+	var org = (s == document.F.Menus_Name.value && api.GetKeyState(VK_SHIFT) >= 0) ? "1" : ""
 	if (document.F.Menus_Key.value.length) {
 		var n = GetKeyKey(document.F.Menus_Key.value);
 		s += "\\t" + (n ? api.sprintf(8, "$%x", n) : document.F.Menus_Key.value);
 	}
 	var p = { s: document.F.Menus_Path.value };
 	MainWindow.OptionEncode(o[o.selectedIndex].value, p);
-	SetMenus(sel, [s, document.F.Menus_Filter.value, p.s, o[o.selectedIndex].value, document.F.Icon.value]);
+	SetMenus(sel, [s, document.F.Menus_Filter.value, p.s, o[o.selectedIndex].value, document.F.Icon.value, org]);
 	g_Chg.Menus = true;
 }
 
@@ -753,7 +761,7 @@ function SetMenus(sel, a)
 {
 	sel.value = PackData(a);
 	var a2 = a[0].split(/\\t/);
-	sel.text = [GetText(a2[0]), a[1]].join(" ").replace(/[\r\n].*/, "");
+	sel.text = [a[5] ? a2[0] : GetText(a2[0]), a[1]].join(" ").replace(/[\r\n].*/, "");
 }
 
 function LoadMenus(nSelected)
@@ -786,7 +794,7 @@ function LoadMenus(nSelected)
 					o.length = i;
 					while (--i >= 0) {
 						var item = items[i];
-						SetMenus(o[i], [item.getAttribute("Name"), item.getAttribute("Filter"), item.text, item.getAttribute("Type"), item.getAttribute("Icon")]);
+						SetMenus(o[i], [item.getAttribute("Name"), item.getAttribute("Filter"), item.text, item.getAttribute("Type"), item.getAttribute("Icon"), item.getAttribute("Org")]);
 					}
 				}
 			} else {
@@ -907,6 +915,9 @@ function SaveMenus()
 				item.text = a[2];
 				item.setAttribute("Type", a[3]);
 				item.setAttribute("Icon", a[4]);
+				if (a[5]) {
+					item.setAttribute("Org", 1);
+				}
 				items.appendChild(item);
 			}
 			root.appendChild(items);
@@ -1563,7 +1574,6 @@ InitDialog = function ()
 
 MouseDown = function ()
 {
-	var hwnd = api.GetWindow(document);
 	if (g_Gesture) {
 		var c = returnValue.charAt(returnValue.length - 1);
 		var n = 1;
@@ -1693,7 +1703,7 @@ InitLocation = function ()
 			var o = document.getElementById('_' + i);
 			ApplyLang(o);
 			var s2 = o.innerHTML.replace(/<[^>]*>|[\r\n]|\s\s+/g, "");
-			o.innerHTML = ['<input type="text" value="', s, '" title="', s2, '" placeholder="', s2, '" style="width: 85%">'].join("");
+			o.innerHTML = ['<input type="text" value="', s, '" title="', s2, '" placeholder="', s2, '" style="width: 85%" readonly="readonly" />'].join("");
 		} catch (e) {}
 	}
 
@@ -1886,9 +1896,10 @@ function SetAttribEx(item, f, n)
 
 function GetAttribEx(item, f, n)
 {
-	if (/([^=]*)=(.*)/.test(n)) {
-		s = item.getAttribute(RegExp.$1);
-		if (s == RegExp.$2) {
+	var res  = /([^=]*)=(.*)/.exec(n);
+	if (res) {
+		s = item.getAttribute(res[1]);
+		if (s == res[2]) {
 			document.getElementById(n).checked = true;
 		}
 		return;
@@ -2302,6 +2313,7 @@ function ArrangeAddon(xml, td, ts)
 			filename = Id + '_' + info.Version.replace(/\D/, '') + '.zip';
 		}
 		var dt2 = (dt.getTime() / (24 * 60 * 60 * 1000)) - info.Version;
+		var bUpdate = false;
 		if (CheckAddon(Id)) {
 			installed = GetAddonInfo(Id);
 			if (installed.Version >= info.Version) {
@@ -2309,12 +2321,13 @@ function ArrangeAddon(xml, td, ts)
 			} else {
 				s.push('<b id="_Addons_', Id,'" style="color: red; white-space: nowrap;">', GetText('Update available'), "</b>");
 				dt2 += MAXINT * 2;
+				bUpdate = true;
 			}
 		} else {
 			dt2 += MAXINT;
 		}
 		if (info.MinVersion && te.Version >= CalcVersion(info.MinVersion)) {
-			s.push('<input type="button" onclick="Install(this)" title="', Id, '_', info.Version, '" value="', GetText("Install"), '">');
+			s.push('<input type="button" onclick="Install(this,', bUpdate, ')" title="', Id, '_', info.Version, '" value="', GetText("Install"), '">');
 		} else {
 			s.push('<input type="button" style="color: red" onclick="CheckUpdate()" value="', info.MinVersion.replace(/^20/, "Version ").replace(/\.0/g, '.'), ' ', GetText("is required."), '">');
 		}
@@ -2363,9 +2376,9 @@ function Search(xml)
 	return false;
 }
 
-function Install(o)
+function Install(o, bUpdate)
 {
-	if (!confirmOk("Do you want to install it now?")) {
+	if (!bUpdate && !confirmOk("Do you want to install it now?")) {
 		return;
 	}
 	var Id = o.title.replace(/_.*/, "");
@@ -2379,7 +2392,6 @@ function Install(o)
 		var temp = fso.BuildPath(wsh.ExpandEnvironmentStrings("%TEMP%"), "tablacus");
 		DeleteItem(temp);
 		CreateFolder(temp);
-		var hwnd = api.GetWindowLongPtr(api.GetWindow(document), GWLP_HWNDPARENT);
 		var zipfile = fso.BuildPath(temp, file);
 		if (DownloadFile(urlAddons + Id + '/' + file, zipfile) != S_OK || MainWindow.Extract(zipfile, temp) != S_OK) {
 			document.body.style.cursor = "auto";
@@ -2447,8 +2459,9 @@ function InitColor1(item)
 	for (var i = ele.length; i--;) {
 		var n = ele[i].id || ele[i].name;
 		if (n) {
-			if (/^Color_(.*)/.test(n)) {
-				var o = document.F.elements[RegExp.$1];
+			var res = /^Color_(.*)/.exec(n);
+			if (res) {
+				var o = document.F.elements[res[1]];
 				if (o) {
 					ele[i].style.backgroundColor = GetWebColor(o.value);
 				}

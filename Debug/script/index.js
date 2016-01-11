@@ -628,8 +628,11 @@ DisableImage = function (img, bDisable)
 				if (/^data:image\/png/i.test(s)) {
 					img.src = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ' + img.offsetWidth + ' ' + img.offsetHeight + '"><filter id="G"><feColorMatrix type="saturate" values="0.1" /></filter><image width="' + img.width + '" height="' + img.height + '" xlink:href="' + img.src + '" filter="url(#G)" opacity=".48"></image></svg>');
 				}
-			} else if (/^data:image\/svg/i.test(s) && /href="([^"]*)/i.test(decodeURIComponent(s))) {
-				img.src = RegExp.$1
+			} else if (/^data:image\/svg/i.test(s)) {
+				var res = /href="([^"]*)/i.exec(decodeURIComponent(s));
+				if (res) {
+					img.src = res[1];
+				}
 			}
 		}
 	}
@@ -1301,15 +1304,14 @@ te.OnDefaultCommand = function (Ctrl)
 {
 	var Selected = Ctrl.SelectedItems();
 	if (api.GetKeyState(VK_MENU) < 0) {
-		InvokeCommand(Selected, 0, te.hwnd, CommandID_PROPERTIES - 1, null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
-		return S_OK;
+		return InvokeCommand(Selected, 0, te.hwnd, CommandID_PROPERTIES - 1, null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
 	}
 	var hr = RunEvent3("DefaultCommand", Ctrl, Selected);
 	if (isFinite(hr)) {
 		return hr; 
 	}
 	if (ExecMenu(Ctrl, "Default", null, 2) != S_OK) {
-		InvokeCommand(Selected, 0, te.hwnd, null, null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
+		return InvokeCommand(Selected, 0, te.hwnd, null, null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
 	}
 	return S_OK;
 }
@@ -1661,8 +1663,9 @@ te.OnILGetParent = function (FolderItem)
 	if (r !== undefined) {
 		return r; 
 	}
-	if (/search\-ms:.*?&crumb=location:([^&]*)/.test(api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING))) {
-		return api.PathCreateFromUrl("file:" + RegExp.$1);
+	var res = /search\-ms:.*?&crumb=location:([^&]*)/.exec(api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
+	if (res) {
+		return api.PathCreateFromUrl("file:" + res[1]);
 	}
 	if (api.ILIsEqual(FolderItem, ssfRESULTSFOLDER)) {
 		var ar = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX).split("\\");
@@ -2261,8 +2264,9 @@ g_basic =
 			{
 				var lines = s.split(/\r?\n/);
 				var last = lines.length ? lines[lines.length - 1] : "";
-				if (/^([^,]+),$/.test(last)) {
-					var Id = GetSourceText(RegExp.$1);
+				var res = /^([^,]+),$/.exec(last);
+				if (res) {
+					var Id = GetSourceText(res[1]);
 					var r = OptionRef(Id, "", pt);
 					if (typeof r == "string") {
 						return s + r + "\n";
@@ -2878,8 +2882,9 @@ g_basic =
 		}
 		if (!Verb) {
 			Verb = window.g_menu_string;
-			if (/\t(.*)$/.test(Verb)) {
-				Verb = RegExp.$1;
+			var res = /\t(.*)$/.exec(Verb);
+			if (res) {
+				Verb = res[1];
 			}
 		}
 		api.DestroyMenu(hMenu);
@@ -3007,9 +3012,10 @@ AddEvent("OptionEncode", function (Id, p)
 	if (Id === "") {
 		var lines = p.s.split(/\r?\n/);
 		for (var i in lines) {
-			if (/^([^,]+),(.*)$/.test(lines[i])) {
-				var p2 = { s: RegExp.$2 };
-				Id = GetSourceText(RegExp.$1);
+			var res = /^([^,]+),(.*)$/.exec(lines[i]);
+			if (res) {
+				var p2 = { s: res[2] };
+				Id = GetSourceText(res[1]);
 				OptionEncode(Id, p2);
 				lines[i] = [Id, p2.s].join(",");
 			}
@@ -3029,9 +3035,10 @@ AddEvent("OptionDecode", function (Id, p)
 	if (Id === "") {
 		var lines = p.s.split(/\r?\n/);
 		for (var i in lines) {
-			if (/^([^,]+),(.*)$/.test(lines[i])) {
-				var p2 = { s: RegExp.$2 };
-				Id = RegExp.$1;
+			var res = /^([^,]+),(.*)$/.exec(lines[i]);
+			if (res) {
+				var p2 = { s: res[2] };
+				Id = res[1];
 				OptionDecode(Id, p2);
 				lines[i] = [GetText(Id), p2.s].join(",");
 			}

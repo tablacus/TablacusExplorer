@@ -74,13 +74,9 @@ FolderMenu =
 					var nCount = Items.Count;
 					for (var i = 0; i < nCount; i++) {
 						var Item = Items.Item(i);
-						var bMatch = Item.IsFolder;
+						var bMatch = IsFolderEx(Item);
 						if (this.Filter) {
-							var s = Item.Name;
-							if (bMatch && IsFolderEx(Item)) {
-								s += ".folder";
-							}
-							bMatch = api.PathMatchSpec(s, this.Filter);
+							bMatch = api.PathMatchSpec(bMatch ? Item.Name + ".folder" : Item.Name, this.Filter);
 						}
 						if (bMatch) {
 							if (bSep) {
@@ -411,11 +407,13 @@ function MakeImgSrc(src, index, bSrc, h, strBitmap, strIcon)
 {
 	var fn;
 	if (!document.documentMode) {
-		var value = /^bitmap:(.*)/i.test(src) ? RegExp.$1 : strBitmap;
+		var res = /^bitmap:(.*)/i.exec(src);
+		var value = res ? res[1] : strBitmap;
 		if (value) {
 			fn = fso.BuildPath(te.Data.DataFolder, "cache\\bitmap\\" + value.replace(/[:\\\/]/g, "$") + ".png");
 		} else {
-			value = /^icon:(.*)/i.test(src) ? RegExp.$1 : strIcon;
+			res = /^icon:(.*)/i.exec(src);
+			value = res ? res[1] : strIcon;
 			if (value) {
 				fn = fso.BuildPath(te.Data.DataFolder, "cache\\icon\\" + value.replace(/[:\\\/]/g, "$") + ".png");
 			} else if (src && !REGEXP_IMAGE.test(src)) {
@@ -458,7 +456,8 @@ function MakeImgData(src, index, h, strBitmap, strIcon)
 function MakeImgIcon(src, index, h, strBitmap, strIcon)
 {
 	var hIcon = null;
-	var value = /^bitmap:(.*)/i.test(src) ? RegExp.$1 : strBitmap;
+	var res = /^bitmap:(.*)/i.exec(src);
+	var value = res ? res[1] : strBitmap;
 	if (value) {
 		var icon = value.split(",");
 		var hModule = LoadImgDll(icon, index);
@@ -472,7 +471,8 @@ function MakeImgIcon(src, index, h, strBitmap, strIcon)
 			return hIcon;
 		}
 	}
-	value = /^icon:(.*)/i.test(src) ? RegExp.$1 : strIcon;
+	res = /^icon:(.*)/i.exec(src);
+	value = res ? res[1] : strIcon;
 	if (value) {
 		var icon = value.split(",");
 		var phIcon = api.Memory("HANDLE");
@@ -709,9 +709,10 @@ SaveXml = function (filename, all)
 	}
 	if (all) {
 		for (var i in te.Data) {
-			if (/^(Tab|Tree|View|Conf)_(.*)/.test(i)) {
-				var item = xml.createElement(RegExp.$1);
-				item.setAttribute("Id", RegExp.$2);
+			var res = /^(Tab|Tree|View|Conf)_(.*)/.exec(i);
+			if (res) {
+				var item = xml.createElement(res[1]);
+				item.setAttribute("Id", res[2]);
 				item.text = te.Data[i];
 				if (item.text != "") {
 					root.appendChild(item);
@@ -725,7 +726,7 @@ SaveXml = function (filename, all)
 		xml.save(api.PathUnquoteSpaces(filename));
 	} catch (e) {
 		if (e.number != E_ACCESSDENIED) {
-			ShowError(e, "Save: " + filename);
+			ShowError(e, [GetText("Save"), filename].join(": "));
 		}
 	}
 }
@@ -1176,11 +1177,13 @@ ExtractPath = function (Ctrl, s, pt)
 			if (s == "..") {
 				return api.GetDisplayNameOf(api.ILGetParent(FV), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
 			}
-			if (/\.\.\\(.*)/.test(s)) {
-				return fso.BuildPath(api.GetDisplayNameOf(api.ILGetParent(FV), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), RegExp.$1);
+			var res = /\.\.\\(.*)/.exec(s);
+			if (res) {
+				return fso.BuildPath(api.GetDisplayNameOf(api.ILGetParent(FV), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), res[1]);
 			}
-			if (/\.\\(.*)/.test(s)) {
-				return fso.BuildPath(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), RegExp.$1);
+			res = /\.\\(.*)/.exec(s);
+			if (res) {
+				return fso.BuildPath(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), res[1]);
 			}
 		}
 	}
@@ -1196,8 +1199,9 @@ ExtractMacro2 = function (Ctrl, s)
 		}
 		for (var i in eventTE.ReplaceMacro) {
 			var re = eventTE.ReplaceMacro[i][0];
-			if (s.match(re)) {
-				var r = eventTE.ReplaceMacro[i][1](Ctrl, re);
+			var res = s.match(re);
+			if (res) {
+				var r = eventTE.ReplaceMacro[i][1](Ctrl, re, res);
 				if (typeof(r) == "string") {
 					s = s.replace(re, r);
 				}
@@ -1284,10 +1288,8 @@ AddEnv("Installed", fso.GetDriveName(api.GetModuleFileName(null)));
 
 PathMatchEx = function (path, s)
 {
-	if (/^\/(.*)\/(.*)/.test(s)) {
-		return new RegExp(RegExp.$1, RegExp.$2).test(path);
-	}
-	return api.PathMatchSpec(path, s);
+	var res = /^\/(.*)\/(.*)/.exec(s);
+	return res ? new RegExp(res[1], res[2]).test(path) : api.PathMatchSpec(path, s);
 }
 
 IsFolderEx = function (Item)
@@ -1793,10 +1795,8 @@ MenuDbReplace = function (hMenu, oMenu, hMenu2)
 
 GetAccelerator = function (s)
 {
-	if (/&(.)/.test(s)) {
-		return RegExp.$1;
-	}
-	return "";
+	var res = /&(.)/.exec(s);
+	return res ? res[1] : "";
 }
 
 AddMenuIconFolderItem = function (mii, FolderItem)
@@ -1871,7 +1871,9 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem)
 			}
 		} else {
 			var ar = s.split(/\t/);
-			ar[0] = GetText(ar[0]);
+			if (!item.getAttribute("Org")) {
+				ar[0] = GetText(ar[0]);
+			}
 			if (ar.length > 1) {
 				ar[1] = GetKeyName(ar[1]);
 			}
@@ -1917,7 +1919,7 @@ SaveXmlEx = function (filename, xml)
 		xml.save(filename);
 	} catch (e) {
 		if (e.number != E_ACCESSDENIED) {
-			ShowError(e, "Save: " + filename);
+			ShowError(e, [GetText("Save"), filename].join(": "));
 		}
 	}
 }
@@ -1966,8 +1968,9 @@ GetAddonInfo = function (Id)
 		if (!/^en/.test(lang)) {
 			GetAddonInfo2(xml, info, "en", true);
 		}
-		if (/(\w+)_/.test(lang)) {
-			GetAddonInfo2(xml, info, RegExp.$1);
+		var res = /(\w+)_/.exec(lang);
+		if (res) {
+			GetAddonInfo2(xml, info, res[1]);
 		}
 		GetAddonInfo2(xml, info, lang);
 		if (!info.Name) {
@@ -2100,18 +2103,21 @@ function CheckUpdate()
 		ShowError(e);
 		return;
 	}
-	if (!/<td id="te">(.*?)<\/td>/i.test(xhr.responseText)) {
+	var res = /<td id="te">(.*?)<\/td>/i.exec(xhr.responseText);
+	if (!res) {
 		return;
 	}
-	var s = RegExp.$1;
-	if (!/<a href="dl\/([^"]*)/i.test(s)) {
+	var s = res[1];
+	res = /<a href="dl\/([^"]*)/i.exec(s);
+	if (!res) {
 		return;
 	}
-	var file = RegExp.$1;
+	var file = res[1];
 	s = s.replace(/Download/i, "").replace(/<[^>]*>/ig, "");
 	var ver = 0;
-	if (/(\d+)/.test(file)) {
-		ver = 20000000 + api.QuadPart(RegExp.$1)
+	res = /(\d+)/.exec(file);
+	if (res) {
+		ver = 20000000 + api.QuadPart(res[1])
 	}
 	if (ver <= te.Version) {
 		MessageBox(te.About + "\n" + GetText("the latest version"), TITLE, MB_ICONINFORMATION);
@@ -2244,10 +2250,11 @@ AddonOptions = function (Id, fn, Data)
 	}
 	Data.id = Id;
 	var sFeatures = info.Options;
-	if (/Common:([\d,]+):(\d)/i.test(sFeatures)) {
+	var res = /Common:([\d,]+):(\d)/i.exec(sFeatures);
+	if (res) {
 		sURL = "location.html";
-		Data.show = RegExp.$1;
-		Data.index = RegExp.$2;
+		Data.show = res[1];
+		Data.index = res[2];
 		sFeatures = 'Default';
 	}
 	if (api.StrCmpI(sFeatures, "Location") == 0) {
@@ -2277,10 +2284,12 @@ AddonOptions = function (Id, fn, Data)
 			g_Chg.Addons = true;
 		}
 	}
-	if (/width: *([0-9]+)/i.test(sFeatures)) {
-		opt.width = RegExp.$1 - 0;
-		if (/height: *([0-9]+)/i.test(sFeatures)) {
-			opt.height = RegExp.$1 - 0;
+	res = /width: *([0-9]+)/i.exec(sFeatures);
+	if (res) {
+		opt.width = res[1] - 0;
+		res = /height: *([0-9]+)/i.exec(sFeatures);
+		if (res) {
+			opt.height = res[1] - 0;
 		}
 	}
 	opt.event.onbeforeunload = function () {
@@ -2292,8 +2301,9 @@ AddonOptions = function (Id, fn, Data)
 function CalcVersion(s)
 {
 	var r = 0;
-	if (/(\d+)\.(\d+)\.(\d+)/.test(s)) {
-		r = api.QuadPart(RegExp.$1) * 10000 + api.QuadPart(RegExp.$2) * 100 + api.QuadPart(RegExp.$3);
+	var res = /(\d+)\.(\d+)\.(\d+)/.exec(s);
+	if (res) {
+		r = api.QuadPart(res[1]) * 10000 + api.QuadPart(res[2]) * 100 + api.QuadPart(res[3]);
 	}
 	if (r < 2000 * 10000) {
 		r += 2000 * 10000;
@@ -2377,36 +2387,7 @@ OpenInExplorer = function (FV)
 {
 	if (FV) {
 		CancelWindowRegistered();
-		var exp = te.CreateObject("new:{C08AFD90-F2A1-11D1-8455-00A0C91F3880}");
-		var pid = FV.FolderItem || FV;
-		if (api.ILIsEqual(pid.Alt, ssfRESULTSFOLDER)) {
-			pid = pid.Path;
-		}
-		exp.Navigate2(pid, 2);
-		exp.Visible = true;
-		api.SetForegroundWindow(exp.HWND);
-		if (FV.FolderItem) {
-			try {
-				exp.Document.CurrentViewMode = FV.CurrentViewMode;
-			} catch (e) {}
-			try {
-				do {
-					api.Sleep(100);
-				} while (exp.Busy || exp.ReadyState < 4);
-				var doc = exp.Document;
-				doc.CurrentViewMode = FV.CurrentViewMode;
-				if (doc.IconSize) {
-					doc.IconSize = FV.IconSize;
-					doc.SortColumns = FV.SortColumns;
-					doc.GroupBy = FV.GroupBy.replace(/^-/, "");
-				}
-			} catch (e) {}
-			try {
-				if (FV.TreeView.Visible) {
-					exp.ShowBrowserBar("{EFA24E64-B078-11D0-89E4-00C04FC9E26E}", true);
-				}
-			} catch (e) {}
-		}
+		ShellExecute(api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)), "Explore", SW_SHOWNORMAL);
 	}
 }
 
@@ -2581,8 +2562,9 @@ GetFolderView = function (Ctrl, pt, bStrict)
 	if (!Ctrl.Type) {
 		var o = Ctrl.offsetParent;
 		while (o) {
-			if (/^Panel_(\d+)$/.test(o.id)) {
-				return te.Ctrl(CTRL_TC, RegExp.$1).Selected;
+			var res = /^Panel_(\d+)$/.exec(o.id);
+			if (res) {
+				return te.Ctrl(CTRL_TC, res[1]).Selected;
 			}
 			o = o.offsetParent
 		}
@@ -2701,11 +2683,13 @@ GetWebColor = function (c)
 
 GetWinColor = function (c)
 {
-	if (/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.test(c)) {
-		return Number(["0x", RegExp.$3, RegExp.$2, RegExp.$1].join(""));
+	var res = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(c);
+	if (res) {
+		return Number(["0x", res[3], res[2], res[1]].join(""));
 	}
-	if (/^#([0-9a-f])([0-9a-f])([0-9a-f])$/i.test(c)) {
-		return Number(["0x", RegExp.$3, RegExp.$3, RegExp.$2, RegExp.$2, RegExp.$1, RegExp.$1].join(""));
+	res = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/i.exec(c);
+	if (res) {
+		return Number(["0x", res[3], res[3], res[2], res[2], res[1], res[1]].join(""));
 	}
 	return c;
 }
@@ -2856,8 +2840,9 @@ OpenDialogEx = function (path, filter, bFilesOnly)
 {
 	var commdlg = te.CommonDialog;
 	var te_path = fso.GetParentFolderName(api.GetModuleFileName(null));
-	if (/^\.\.(\/.*)/.test(path)) {
-		path = te_path + (RegExp.$1.replace(/\//g, "\\"));
+	var res = /^\.\.(\/.*)/.exec(path);
+	if (res) {
+		path = te_path + (res[1].replace(/\//g, "\\"));
 	}
 	path = api.PathUnquoteSpaces(path);
 	if (!fso.FolderExists(path)) {
@@ -2906,6 +2891,10 @@ InvokeCommand = function (Items, fMask, hwnd, Verb, Parameters, Directory, nShow
 			ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, uCMF);
 			if (Verb === null) {
 				Verb = api.GetMenuDefaultItem(hMenu, MF_BYCOMMAND, GMDI_USEDISABLED) - 1;
+				if (Verb == -2) {
+					api.DestroyMenu(hMenu);
+					return S_FALSE;
+				}
 			}
 			if (!Directory && FV) {
 				Directory = api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORPARSING);
@@ -2917,6 +2906,7 @@ InvokeCommand = function (Items, fMask, hwnd, Verb, Parameters, Directory, nShow
 			api.DestroyMenu(hMenu);
 		}
 	}
+	return S_OK;
 }
 
 SetRenameMenu = function (n)
@@ -3086,8 +3076,9 @@ GetSavePath = function (FolderItem)
 {
 	var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
 	if (!/^[A-Z]:\\|^\\/i.test(path)) {
-		if (/search\-ms:.*?&crumb=location:([^&]*)/.test(api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING))) {
-			return api.PathCreateFromUrl("file:" + RegExp.$1);
+		var res = /search\-ms:.*?&crumb=location:([^&]*)/.exec(api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
+		if (res) {
+			return api.PathCreateFromUrl("file:" + res[1]);
 		}
 	}
 	if (/\?/.test(path)) {
