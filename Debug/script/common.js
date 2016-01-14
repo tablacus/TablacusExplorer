@@ -1295,9 +1295,9 @@ PathMatchEx = function (path, s)
 IsFolderEx = function (Item)
 {
 	var wfd = api.Memory("WIN32_FIND_DATA");
-	api.SHGetDataFromIDList(Item, SHGDFIL_FINDDATA, wfd, wfd.Size);
+	var hr = api.SHGetDataFromIDList(Item, SHGDFIL_FINDDATA, wfd, wfd.Size);
 	if (Item.IsFolder) {
-		return (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) || !Item.IsFileSystem;
+		return (hr < 0) || (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
 	}
 	return false;
 }
@@ -1396,11 +1396,13 @@ teMenuGetElementsByTagName = function (Name)
 {
 	var menus = te.Data.xmlMenus.getElementsByTagName(Name);
 	if (!menus || !menus.length) {
-		if (api.StrCmpI(Name, "ViewContext") == 0) {
-			menus = te.Data.xmlMenus.getElementsByTagName("Background");
-		} else if (api.StrCmpI(Name, "Background") == 0) {
-			menus = te.Data.xmlMenus.getElementsByTagName("ViewContext");
+		var altMenu = {
+			"ViewContext": "Background",
+			"Background": "ViewContext",
+			"TaskTray": "Systray",
+			"Systray": "TaskTray"
 		}
+		menus = te.Data.xmlMenus.getElementsByTagName(altMenu[Name]);
 	}
 	return menus;
 }
@@ -1465,7 +1467,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 			}
 			g_nPos = MakeMenus(hMenu, menus, arMenu, items, Ctrl, pt);
 			for (var i in eventTE[Name]) {
-				g_nPos = eventTE[Name][i](Ctrl, hMenu, g_nPos, Selected, SelItem, ContextMenu);
+				g_nPos = eventTE[Name][i](Ctrl, hMenu, g_nPos, Selected, SelItem, ContextMenu, Name);
 			}
 			if (!pt) {
 				pt = api.Memory("POINT");

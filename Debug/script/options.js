@@ -4,7 +4,7 @@ nTabMax = 0;
 TabIndex = -1;
 g_x = {Menu: null, Addons: null};
 g_Chg = {Menus: false, Addons: false, Tab: false, Tree: false, View: false, Data: null};
-g_arMenuTypes = ["Default", "Context", "Background", "Tabs", "Tree", "File", "Edit", "View", "Favorites", "Tools", "Help", "TaskTray", "System", "Alias"];
+g_arMenuTypes = ["Default", "Context", "Background", "Tabs", "Tree", "File", "Edit", "View", "Favorites", "Tools", "Help", "Systray", "System", "Alias"];
 g_MenuType = "";
 g_dlgAddons = null;
 g_tdDown = null;
@@ -846,9 +846,10 @@ function LoadX(mode, fn)
 			oa.length = 0;
 			xml = OpenXml(mode + ".xml", false, true);
 			for (var j in g_Types[mode]) {
-				oa[++oa.length - 1].text = GetTextEx(g_Types[mode][j]);
-				oa[oa.length - 1].value = g_Types[mode][j];
-				var o = document.F.elements[mode + g_Types[mode][j]];
+				var o = oa[++oa.length - 1];
+				o.text = GetTextEx(g_Types[mode][j]);
+				o.value = g_Types[mode][j];
+				o = document.F.elements[mode + g_Types[mode][j]];
 				var items = xml.getElementsByTagName(g_Types[mode][j]);
 				var i = items.length;
 				if (i == 0 && g_Types[mode][j] == "List") {
@@ -1349,7 +1350,7 @@ InitOptions = function ()
 	var s = [];
 	for (var i in g_arMenuTypes) {
 		var j = g_arMenuTypes[i];
-		s.push('<label id="tab2_' + i + '" class="button" style="width: 100%" onmousedown="ClickTree(this, null, \'Menus\');">' + GetText(j == "TaskTray" ? "Systray" : j) + '</label><br />');
+		s.push('<label id="tab2_' + i + '" class="button" style="width: 100%" onmousedown="ClickTree(this, null, \'Menus\');">' + GetText(j) + '</label><br />');
 	}
 	document.getElementById("tab2_").innerHTML = s.join("");
 
@@ -1709,13 +1710,15 @@ InitLocation = function ()
 
 	var oa = document.F.Menu;
 	oa.length = 0;
-	oa[++oa.length - 1].value = "";
-	oa[oa.length - 1].text = GetText("Select");
-	for (j in g_arMenuTypes) {
+	var o = oa[++oa.length - 1];
+	o.value = "";
+	o.text = GetText("Select");
+	for (var j in g_arMenuTypes) {
 		var s = g_arMenuTypes[j];
 		if (!/Default|Alias/.test(s)) {
-			oa[++oa.length - 1].value = s;
-			oa[oa.length - 1].text = GetText(s);
+			o = oa[++oa.length - 1];
+			o.value = s;
+			o.text = GetText(s);
 		}
 	}
 	var ar = ["Key", "Mouse"];
@@ -1723,11 +1726,13 @@ InitLocation = function ()
 		var mode = ar[i];
 		var oa = document.F.elements[mode + "On"];
 		oa.length = 0;
-		oa[++oa.length - 1].value = "";
-		oa[oa.length - 1].text = GetText("Select");
+		o = oa[++oa.length - 1];
+		o.value = "";
+		o.text = GetText("Select");
 		for (var j in MainWindow.eventTE[mode]) {
-			oa[++oa.length - 1].text = GetTextEx(j);
-			oa[oa.length - 1].value = j;
+			o = oa[++oa.length - 1];
+			o.text = GetTextEx(j);
+			o.value = j;
 		}
 	}
 	if (item) {

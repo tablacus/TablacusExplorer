@@ -948,6 +948,7 @@ TEmethod methodSB[] = {
 	{ 0x10000505, L"SessionId" },
 	{ START_OnFunc + SB_TotalFileSize, L"TotalFileSize" },
 	{ START_OnFunc + SB_OnIncludeObject, L"OnIncludeObject" },
+	{ START_OnFunc + SB_AltSelectedItems, L"AltSelectedItems" },
 	{ 0, NULL }
 };
 
@@ -10422,6 +10423,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	m_nFolderSizeIndex = MAXINT;
 	m_nLabelIndex = MAXINT;
 	GetNewObject(&m_pDispatch[SB_TotalFileSize]);
+	teReleaseClear(&m_pDispatch[SB_AltSelectedItems]);
 	CteFolderItem *pid1 = NULL;
 	if (m_hwnd) {
 		KillTimer(m_hwnd, (UINT_PTR)this);
@@ -10894,6 +10896,7 @@ VOID CteShellBrowser::Refresh(BOOL bCheck)
 		teDoCommand(this, m_hwnd, WM_NULL, 0, 0);//Save folder setings
 	}
 	GetNewObject(&m_pDispatch[SB_TotalFileSize]);
+	teReleaseClear(&m_pDispatch[SB_AltSelectedItems]);
 	if (bCheck) {
 		VARIANT v, vResult;
 		VariantInit(&v);
@@ -12781,6 +12784,9 @@ STDMETHODIMP CteShellBrowser::SelectedItems(FolderItems **ppid)
 
 HRESULT CteShellBrowser::Items(UINT uItem, FolderItems **ppid)
 {
+	if (uItem & SVGIO_SELECTION && m_pDispatch[SB_AltSelectedItems]) {
+		return m_pDispatch[SB_AltSelectedItems]->QueryInterface(IID_PPV_ARGS(ppid));
+	}
 	FolderItems *pItems = NULL;
 	IDataObject *pDataObj = NULL;
 	if (m_pShellView) {

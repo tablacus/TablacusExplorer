@@ -286,7 +286,8 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 
 #define SB_TotalFileSize		0
 #define SB_OnIncludeObject		1
-#define Count_SBFunc			2
+#define SB_AltSelectedItems		2
+#define Count_SBFunc			3
 
 #define CTRL_FV          0
 #define CTRL_SB          1
