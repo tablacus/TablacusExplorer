@@ -337,6 +337,13 @@ SaveConfig = function ()
 	}
 }
 
+ResetScroll = function ()
+{
+	if (document.documentElement && document.documentElement.scrollLeft) {
+		document.documentElement.scrollLeft = 0;
+	}
+}
+
 Resize = function ()
 {
 	if (!g_tidResize) {
@@ -351,6 +358,7 @@ Resize2 = function ()
 		clearTimeout(g_tidResize);
 		g_tidResize = null;
 	}
+	ResetScroll();
 	var o = document.getElementById("toolbar");
 	var offsetTop = o ? o.offsetHeight : 0;
 	te.offsetTop = Math.ceil(offsetTop * screen.deviceYDPI / screen.logicalYDPI);
@@ -1729,6 +1737,8 @@ AddEventEx(window, "resize", Resize);
 
 AddEventEx(window, "beforeunload", Finalize);
 
+AddEventEx(window, "blur", ResetScroll);
+
 AddEventEx(document, "MSFullscreenChange", function ()
 {
 	if (document.msFullscreenElement) {
@@ -2055,6 +2065,49 @@ function InitMouse()
 	te.Data.Conf_NetworkTimeout = isFinite(te.Data.Conf_NetworkTimeout) ? Number(te.Data.Conf_NetworkTimeout) : 2000;
 	te.Layout = te.Data.Conf_Layout;
 	te.NetworkTimeout = te.Data.Conf_NetworkTimeout;
+}
+
+importScript = function (fn)
+{
+	if (/"/.test(fn)) {
+		fn = api.api.PathUnquoteSpaces(fn);
+	}
+	fn = ExtractMacro(te, fn);
+	if (!api.PathMatchSpec(fn, '?:\\*;\\\\*')) {
+		fn = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), fn);
+	}
+	try {
+		var sc;
+		var ado = OpenAdodbFromTextFile(fn);
+		if (ado) {
+			var arError = [];
+			var s = ado.ReadText();
+			if (/\.vbs/i.test(fn)) {
+				sc = ExecAddonScript("VBScript", s, fn, arError);
+			} else {
+				try {
+					sc = new Function(s);
+				} catch (e) {
+					sc = ExecAddonScript("JScript", s, fn, arError);
+				}
+			}
+			if (arError.length) {
+				MessageBox([arError.join("\n"), GetTEInfo()].join("\n\n"), TITLE, MB_OK);
+				sc = null;
+			}
+			ado.Close();
+		}
+		return sc ? sc() : E_FAIL;
+	} catch (e) {
+		ShowError(e, fn);
+	}
+}
+
+importScripts = function()
+{
+	for (var i = 0; i < arguments.length; i++) {
+		importScript(arguments[i]);
+	}
 }
 
 g_mouse = 

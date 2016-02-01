@@ -853,6 +853,11 @@ NavigateFV = function (FV, Path, wFlags)
 	}
 }
 
+GetOpenMode = function ()
+{
+	return window.g_menu_button == 3 || api.GetKeyState(VK_CONTROL) < 0 ? SBSP_NEWBROWSER : OpenMode;
+}
+
 IsDrag = function (pt1, pt2)
 {
 	if (pt1 && pt2) {
@@ -1369,7 +1374,7 @@ AdjustMenuBreak = function (hMenu)
 			AdjustMenuBreak(mii.hSubMenu);
 			continue;
 		}
-		if (api.StrCmpI(api.GetMenuString(hMenu, i, MF_BYPOSITION), "")) {
+		if (api.GetMenuString(hMenu, i, MF_BYPOSITION) != "") {
 			mii.fType |= uFlags;
 			api.SetMenuItemInfo(hMenu, i, true, mii);
 			uFlags = 0;
@@ -1390,6 +1395,15 @@ AdjustMenuBreak = function (hMenu)
 		}
 		break;
 	}
+	uFlags = 0;
+	for (var i = api.GetMenuItemCount(hMenu); i--;) {
+		mii.fMask = MIIM_FTYPE;
+		api.GetMenuItemInfo(hMenu, i, true, mii);
+		if (uFlags & mii.fType & MFT_SEPARATOR) {
+			api.DeleteMenu(hMenu, i, MF_BYPOSITION);
+		}
+		uFlags = mii.fType;
+	}
 }
 
 teMenuGetElementsByTagName = function (Name)
@@ -1407,7 +1421,7 @@ teMenuGetElementsByTagName = function (Name)
 	return menus;
 }
 
-ExecMenu = function (Ctrl, Name, pt, Mode)
+ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec)
 {
 	var items = null;
 	var menus = teMenuGetElementsByTagName(Name);
@@ -1467,7 +1481,10 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 			}
 			g_nPos = MakeMenus(hMenu, menus, arMenu, items, Ctrl, pt);
 			for (var i in eventTE[Name]) {
-				g_nPos = eventTE[Name][i](Ctrl, hMenu, g_nPos, Selected, SelItem, ContextMenu, Name);
+				g_nPos = eventTE[Name][i](Ctrl, hMenu, g_nPos, Selected, SelItem, ContextMenu, Name, pt);
+			}
+			for (var i in eventTE.Menus) {
+				g_nPos = eventTE.Menus[i](Ctrl, hMenu, g_nPos, Selected, SelItem, ContextMenu, Name, pt);
 			}
 			if (!pt) {
 				pt = api.Memory("POINT");
@@ -1497,15 +1514,19 @@ ExecMenu = function (Ctrl, Name, pt, Mode)
 				}
 			}
 			AdjustMenuBreak(hMenu);
-			window.g_menu_click = 2;
+			window.g_menu_click = bNoExec ? true : 2;
 			var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, ContextMenu);
-			var hr = ExecMenu4(Ctrl, Name, pt, hMenu, [ContextMenu], nVerb, FV);
-			if (isFinite(hr)) {
-				return hr;
+			if (bNoExec) {
+				return nVerb > 0 ? S_OK : S_FALSE;
+			} else {
+				var hr = ExecMenu4(Ctrl, Name, pt, hMenu, [ContextMenu], nVerb, FV);
+				if (isFinite(hr)) {
+					return hr;
+				}
+				item = items[nVerb - 1];
 			}
-			item = items[nVerb - 1];
 		}
-		if (item) {
+		if (item && !bNoExec) {
 			var s = item.getAttribute("Type");
 			if (window.g_menu_button == 2 && api.PathMatchSpec(s, "Open;Open in New Tab;Open in Background")) {
 				PopupContextMenu(item.text);
@@ -3095,31 +3116,42 @@ GetSavePath = function (FolderItem)
 	return path;
 }
 
-LoadAddon = function(ext, Id, arError)
+ExecAddonScript = function (type, s, fn, arError, o)
+{
+	var sc = api.GetScriptDispatch(s, type, o,
+		function (ei, SourceLineText, dwSourceContext, lLineNumber, CharacterPosition)
+		{
+			arError.push([api.SysAllocString(ei.bstrDescription), fn, api.sprintf(16, "Line: %d", lLineNumber)].join("\n"));
+		}
+	);
+	if (sc) {
+		Addons["_stack"].push(sc);
+	}
+	return sc;
+}
+
+LoadAddon = function (ext, Id, arError)
 {
 	try {
-		var ado = te.CreateObject("Adodb.Stream");
-		ado.CharSet = "utf-8";
-		ado.Open();
-		var fname = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons") + "\\" + Id + "\\script." + ext;
-		ado.LoadFromFile(fname);
+		var sc;
+		var fn = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons") + "\\" + Id + "\\script." + ext;
+		var ado = OpenAdodbFromTextFile(fn);
 		var s = ado.ReadText();
 		ado.Close();
 		if (ext == "js") {
-			(new Function(s))(Id);
-		} else if (ext == "vbs") {
-			var fn = api.GetScriptDispatch(s, "VBScript", {"_Addon_Id": {"Addon_Id": Id}, window: window},
-				function (ei, SourceLineText, dwSourceContext, lLineNumber, CharacterPosition)
-				{
-					arError.push(api.SysAllocString(ei.bstrDescription) + api.sprintf(16, "\nLine: %d\n", lLineNumber) + fname);
-				}
-			);
-			if (fn) {
-				Addons["_stack"].push(fn);
+			try {
+				sc = new Function(s);
+			} catch (e) {
+				sc = ExecAddonScript("JScript", s, fn, arError);
 			}
+		} else if (ext == "vbs") {
+			sc = ExecAddonScript("VBScript", s, fn, arError, {"_Addon_Id": {"Addon_Id": Id}, window: window});
+		}
+		if (sc) {
+			sc(Id);
 		}
 	} catch (e) {
-		arError.push([(e.description || e.toString()), fname].join("\n"));
+		arError.push([(e.description || e.toString()), fn].join("\n"));
 	}
 }
 
@@ -3187,4 +3219,27 @@ OpenContains = function (Ctrl, pt)
 			FV.SelectItem(Item, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
 		}, 99);
 	}
+}
+
+OpenAdodbFromTextFile = function (fn)
+{
+	var ado = te.CreateObject("Adodb.Stream");
+	var charset = "_autodetect_all";
+	try {
+		ado.CharSet = "iso-8859-1";
+		ado.Open();
+		ado.LoadFromFile(fn);
+		var s = ado.ReadText(3);
+		if (/^\xEF\xBB\xBF/.test(s)) {
+			charset = 'utf-8';
+		} else if (/^\xFF\xFE|^\xFE\xFF/.test(s)) {
+			charset = 'unicode';
+		}
+	} catch (e) {
+		ado.close();
+		return;
+	}
+	ado.Position = 0;
+	ado.CharSet = charset;
+	return ado;
 }

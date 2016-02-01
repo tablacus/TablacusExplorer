@@ -762,6 +762,9 @@ function SetMenus(sel, a)
 	sel.value = PackData(a);
 	var a2 = a[0].split(/\\t/);
 	sel.text = [a[5] ? a2[0] : GetText(a2[0]), a[1]].join(" ").replace(/[\r\n].*/, "");
+	if (!sel.text.length) {
+		sel.text = "********";
+	}
 }
 
 function LoadMenus(nSelected)
