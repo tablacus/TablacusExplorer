@@ -1134,7 +1134,7 @@ AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, 
 		}
 	}
 	if (strVerb == "cmd") {
-		ShellExecute(ExtractMacro(ContextMenu.FolderView, "%ComSpec% /k cd %Current%"), null, SW_SHOWNORMAL);
+		ShellExecute(ExtractMacro(ContextMenu.FolderView, "%ComSpec% /k cd /d %Current%"), null, SW_SHOWNORMAL);
 		return S_OK;
 	}
 	if (strVerb == "delete") {
@@ -2076,31 +2076,13 @@ importScript = function (fn)
 	if (!api.PathMatchSpec(fn, '?:\\*;\\\\*')) {
 		fn = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), fn);
 	}
-	try {
-		var sc;
-		var ado = OpenAdodbFromTextFile(fn);
-		if (ado) {
-			var arError = [];
-			var s = ado.ReadText();
-			if (/\.vbs/i.test(fn)) {
-				sc = ExecAddonScript("VBScript", s, fn, arError);
-			} else {
-				try {
-					sc = new Function(s);
-				} catch (e) {
-					sc = ExecAddonScript("JScript", s, fn, arError);
-				}
-			}
-			if (arError.length) {
-				MessageBox([arError.join("\n"), GetTEInfo()].join("\n\n"), TITLE, MB_OK);
-				sc = null;
-			}
-			ado.Close();
-		}
-		return sc ? sc() : E_FAIL;
-	} catch (e) {
-		ShowError(e, fn);
+	var hr = E_FAIL;
+	var ado = OpenAdodbFromTextFile(fn);
+	if (ado) {
+		ExecScriptEx(window.Ctrl, ado.ReadText(), /\.vbs/i.test(fn) ? "VBScript" : "JScript", window.pt, window.dataObj, window.grfKeyState, window.pdwEffect, window.bDrop);
+		ado.Close();
 	}
+	return hr;
 }
 
 importScripts = function()

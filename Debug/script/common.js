@@ -3116,7 +3116,7 @@ GetSavePath = function (FolderItem)
 	return path;
 }
 
-ExecAddonScript = function (type, s, fn, arError, o)
+ExecAddonScript = function (type, s, fn, arError, o, arStack)
 {
 	var sc = api.GetScriptDispatch(s, type, o,
 		function (ei, SourceLineText, dwSourceContext, lLineNumber, CharacterPosition)
@@ -3124,8 +3124,8 @@ ExecAddonScript = function (type, s, fn, arError, o)
 			arError.push([api.SysAllocString(ei.bstrDescription), fn, api.sprintf(16, "Line: %d", lLineNumber)].join("\n"));
 		}
 	);
-	if (sc) {
-		Addons["_stack"].push(sc);
+	if (sc && arStack) {
+		arStack.push(sc);
 	}
 	return sc;
 }
@@ -3145,7 +3145,7 @@ LoadAddon = function (ext, Id, arError)
 				sc = ExecAddonScript("JScript", s, fn, arError);
 			}
 		} else if (ext == "vbs") {
-			sc = ExecAddonScript("VBScript", s, fn, arError, {"_Addon_Id": {"Addon_Id": Id}, window: window});
+			sc = ExecAddonScript("VBScript", s, fn, arError, {"_Addon_Id": {"Addon_Id": Id}, window: window}, Addons["_stack"]);
 		}
 		if (sc) {
 			sc(Id);
