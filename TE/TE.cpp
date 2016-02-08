@@ -7679,12 +7679,14 @@ VOID teApiSHChangeNotification_Lock(int nArg, teParam *param, DISPPARAMS *pDispP
 		LONG lEvent;
 		teSetPtr(pVarResult, SHChangeNotification_Lock(param[0].handle, param[1].dword, &ppidl, &lEvent));
 		VARIANT v;
-		teSetIDList(&v, ppidl[0]);
-		tePutPropertyAt(pdisp, 0, &v);
-		VariantClear(&v);
-		teSetIDList(&v, ppidl[1]);
-		tePutPropertyAt(pdisp, 1, &v);
-		VariantClear(&v);
+		VariantInit(&v);
+		for (int i = 2; i--;) {
+			CteFolderItem *pPF = new CteFolderItem(NULL);
+			pPF->Initialize(ppidl[i]);
+			teSetObjectRelease(&v, pPF);
+			tePutPropertyAt(pdisp, i, &v);
+			VariantClear(&v);
+		}
 		teSetLong(&v, lEvent);
 		tePutProperty(pdisp, L"lEvent", &v);
 		VariantClear(&v);
