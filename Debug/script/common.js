@@ -2182,9 +2182,9 @@ function CheckUpdate()
 		api.SHFileOperation(FO_DELETE, arDel.join("\0"), null, FOF_SILENT | FOF_NOCONFIRMATION, false);
 	}
 	var Taskkill = "";
+	var pid = api.Memory("DWORD");
+	api.GetWindowThreadProcessId(te.hwnd, pid);
 	if (fso.FileExists(fso.BuildPath(system32, "taskkill.exe"))) {
-		var pid = api.Memory("DWORD");
-		api.GetWindowThreadProcessId(te.hwnd, pid);
 		Taskkill = "W.Run('taskkill /pid " + pid[0] + " /f',2,true);";
 	}
 	var update = api.sprintf(2000, "\
@@ -2219,6 +2219,10 @@ EscapeUpdateFile(fso.GetFileName(api.GetModuleFileName(null)))).replace(/[\t\n]/
 	wsh.AppActivate(oExec.ProcessID);
 	DeleteTempFolder = function () {};
 	api.PostMessage(te.hwnd, WM_CLOSE, 0, 0);
+	WmiProcess("WHERE ExecutablePath = '" + api.GetModuleFileName(null).replace(/\\/g, "\\\\") + "' AND ProcessId!=" + pid[0], function (item)
+	{
+		item.Terminate();
+	});
 }
 
 function EscapeUpdateFile(s)
@@ -2383,18 +2387,21 @@ PopupContextMenu = function (Item, FV)
 	api.DestroyMenu(hMenu);
 }
 
-GetAddonOption = function (strAddon, strTag)
+GetAddonElement = function (id)
 {
-	var items = te.Data.Addons.getElementsByTagName(strAddon);
-	if (items.length) {
-		var item = items[0];
-		return item.getAttribute(strTag);
-	}
+	var items = te.Data.Addons.getElementsByTagName(id);
+	return items.length ? items[0] : null;
 }
 
-GetAddonOptionEx = function (strAddon, strTag)
+GetAddonOption = function (id, strTag)
 {
-	return api.QuadPart(GetAddonOption (strAddon, strTag));
+	var item = GetAddonElement(id);
+	return item ? item.getAttribute(strTag) : null;
+}
+
+GetAddonOptionEx = function (id, strTag)
+{
+	return api.QuadPart(GetAddonOption(id, strTag));
 }
 
 GetInnerFV = function (id)
@@ -3242,4 +3249,18 @@ OpenAdodbFromTextFile = function (fn)
 	ado.Position = 0;
 	ado.CharSet = charset;
 	return ado;
+}
+
+WmiProcess = function(arg, fn)
+{
+	var locator = te.CreateObject("WbemScripting.SWbemLocator");
+	if (locator) {
+		var server = locator.ConnectServer();
+		if (server) {
+			var cols = server.ExecQuery("SELECT * FROM Win32_Process " + arg);
+			for (var list = new Enumerator(cols); !list.atEnd(); list.moveNext()) {
+				fn(list.item());
+			}
+		}
+	}
 }

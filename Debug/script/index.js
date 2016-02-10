@@ -1353,22 +1353,15 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 		case CTRL_TE:
 			switch (msg) {
 				case WM_DESTROY:
-					var locator = te.CreateObject("WbemScripting.SWbemLocator");
-					if (locator) {
-						var server = locator.ConnectServer();
-						if (server) {
-							var cols = server.ExecQuery("SELECT * FROM Win32_Process WHERE ExecutablePath = '" + api.GetModuleFileName(null).replace(/\\/g, "\\\\") + "'");
-							for (var list = new Enumerator(cols); !list.atEnd(); list.moveNext()) {
-								var item = list.item();
-								if (/\/run/i.test(item.CommandLine)) {
-									var hwnd = GethwndFromPid(item.ProcessId);
-									api.SetWindowLongPtr(hwnd, GWL_EXSTYLE, api.GetWindowLongPtr(hwnd, GWL_EXSTYLE) & ~0x80);
-									api.ShowWindow(hwnd, SW_SHOWNORMAL);
-									api.SetForegroundWindow(hwnd);
-								}
-							}
-						}
-					}
+					var pid = api.Memory("DWORD");
+					api.GetWindowThreadProcessId(te.hwnd, pid);
+					WmiProcess("WHERE ExecutablePath = '" + api.GetModuleFileName(null).replace(/\\/g, "\\\\") + "' AND ProcessId!=" + pid[0], function (item)
+					{
+						var hwnd = GethwndFromPid(item.ProcessId);
+						api.SetWindowLongPtr(hwnd, GWL_EXSTYLE, api.GetWindowLongPtr(hwnd, GWL_EXSTYLE) & ~0x80);
+						api.ShowWindow(hwnd, SW_SHOWNORMAL);
+						api.SetForegroundWindow(hwnd);
+					});
 					for (var i in te.Data.Fonts) {
 						api.DeleteObject(te.Data.Fonts[i]);
 					}
