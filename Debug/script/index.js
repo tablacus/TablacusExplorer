@@ -1345,9 +1345,13 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 	switch (Ctrl.Type) {
 		case CTRL_WB:
 			if (msg == WM_KILLFOCUS) {
-				try {
-					document.selection.empty();
-				} catch (e) {}
+				var o = document.activeElement;
+				if (o) {
+					var s = o.style.visibility;
+					o.style.visibility = "hidden";
+					o.style.visibility = s;
+					FireEvent(o, "blur");
+				}
 			}
 			break;
 		case CTRL_TE:

@@ -126,7 +126,13 @@ ssfRESULTSFOLDER = WINVER >= 0x600 ? "shell:::{2965E715-EB66-4719-B53F-1672673BB
 FILTER_IMAGE = "*.jpg;*.jpeg;*.png;*.bmp;*.gif;*.ico;data:*";
 REGEXP_IMAGE = /^data:|\.jpe?g$|\.png$|\.bmp$|\.gif$|\.ico$/i;
 XHRBODY = 'responseBody';
-
+BUTTONS = {
+	opened: '&#x25e2;',
+	closed: '&#x25b7;',
+	parent: '&laquo;',
+	next: '<span style="font-family: Marlett">4</span>',
+	dropdown: '<span style="font-family: Marlett">6</span>'
+}
 //Windows
 
 MAXINT = 0x7fffffff;

@@ -27,6 +27,7 @@ LPFNSetDllDirectoryW lpfnSetDllDirectoryW = NULL;
 LPFNSHParseDisplayName lpfnSHParseDisplayName = NULL;
 LPFNSHGetImageList lpfnSHGetImageList = NULL;
 LPFNSetWindowTheme lpfnSetWindowTheme = NULL;
+LPFNIsThemeActive lpfnIsThemeActive = NULL;
 LPFNSHRunDialog lpfnSHRunDialog = NULL;
 LPFNRegenerateUserEnvironment lpfnRegenerateUserEnvironment = NULL;
 LPFNCryptBinaryToStringW lpfnCryptBinaryToStringW = NULL;
@@ -8119,6 +8120,14 @@ VOID teApiDllGetClassObject(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 		teSetObjectRelease(pVarResult, odisp);
 	}
 }
+
+VOID teApiIsThemeActive(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	if (lpfnIsThemeActive) {
+		teSetBool(pVarResult, lpfnIsThemeActive());
+	}
+}
+
 /*//Deprecated (SSL)
 VOID teApiURLDownloadToFile(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -8426,6 +8435,7 @@ TEDispatchApi dispAPI[] = {
 	{ 1,  0, -1, -1, L"SHSimpleIDListFromPath", teApiSHSimpleIDListFromPath },
 	{ 1,  0, -1, -1, L"OutputDebugString", teApiOutputDebugString },
 	{ 2, -1, -1, -1, L"DllGetClassObject", teApiDllGetClassObject },
+	{ 0, -1, -1, -1, L"IsThemeActive", teApiIsThemeActive },
 //	{ 3,  1,  2, -1, L"URLDownloadToFile", teApiURLDownloadToFile },//Deprecated
 //	{ 0, -1, -1, -1, L"", teApi },
 //	{ 0, -1, -1, -1, L"Test", teApiTest },
@@ -8943,7 +8953,7 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 					switch (pcwp->message)
 					{
 						case WM_KILLFOCUS:
-							if (pcwp->message == WM_KILLFOCUS && GetFocus() != g_hwndMain) {
+							if (!IsChild(g_pWebBrowser->get_HWND(), pcwp->hwnd)) {
 								break;
 							}
 						case WM_SHOWWINDOW:
@@ -9193,6 +9203,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	hDll = GetModuleHandle(bsLib);
 	if (hDll) {
 		lpfnSetWindowTheme = (LPFNSetWindowTheme)GetProcAddress(hDll, "SetWindowTheme");
+		lpfnIsThemeActive = (LPFNIsThemeActive)GetProcAddress(hDll, "IsThemeActive");
 	}
 	SysFreeString(bsLib);
 
@@ -15016,6 +15027,7 @@ STDMETHODIMP CteWebBrowser::QueryInterface(REFIID riid, void **ppvObject)
 		QITABENT(CteWebBrowser, IDispatch),
 		QITABENT(CteWebBrowser, IDocHostUIHandler),
 		QITABENT(CteWebBrowser, IDropTarget),
+//		QITABENT(CteWebBrowser, IOleCommandTarget),
 //		QITABENT(CteWebBrowser, IDocHostShowUI),
 		{ 0 },
 	};
@@ -15376,6 +15388,24 @@ STDMETHODIMP CteWebBrowser::OnPosRectChange(LPCRECT lprcPosRect)
 	return S_OK;
 }
 
+/*///
+//IOleCommandTarget
+STDMETHODIMP CteWebBrowser::QueryStatus(const GUID *pguidCmdGroup, ULONG cCmds, OLECMD *prgCmds, OLECMDTEXT *pCmdText)
+{
+	return E_NOTIMPL;
+}
+
+STDMETHODIMP CteWebBrowser::Exec(const GUID *pguidCmdGroup, DWORD nCmdID, DWORD nCmdexecopt, VARIANT *pvaIn, VARIANT *pvaOut)
+{
+	if (nCmdID == OLECMDID_SHOWMESSAGE) {
+		return E_NOTIMPL;
+	}
+	if (nCmdID == OLECMDID_SHOWSCRIPTERROR) {
+		Sleep(0);
+	}
+	return E_NOTIMPL;
+}
+//*/
 //IDocHostUIHandler
 STDMETHODIMP CteWebBrowser::ShowContextMenu(DWORD dwID, POINT *ppt, IUnknown *pcmdtReserved, IDispatch *pdispReserved)
 {

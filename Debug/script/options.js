@@ -242,11 +242,11 @@ function ClickTree(o, nMode, strChg, bForce)
 function ClickButton(o, n, f)
 {
 	var op = document.getElementById("tab" + n + "_");
-	if (f || o.innerText != '-') {
-		o.innerText = '-';
+	if (f || op.style.display.toLowerCase() == "none") {
+		o.innerHTML = BUTTONS.opened;
 		op.style.display = "block";
 	} else {
-		o.innerText = '+';
+		o.innerHTML = BUTTONS.closed;
 		op.style.display = "none";
 	}
 }

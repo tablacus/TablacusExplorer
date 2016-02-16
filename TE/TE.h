@@ -168,6 +168,7 @@ typedef HRESULT (WINAPI* LPFNSHParseDisplayName)(LPCWSTR pszName, IBindCtx *pbc,
 typedef HRESULT (WINAPI* LPFNSHGetImageList)(int iImageList, REFIID riid, void **ppvObj);
 typedef HRESULT (WINAPI* LPFNSetWindowTheme)(HWND hwnd, LPCWSTR pszSubAppName, LPCWSTR pszSubIdList);
 typedef BOOL (WINAPI* LPFNSHTestTokenMembership)(HANDLE hToken, ULONG ulRID);
+typedef BOOL (WINAPI* LPFNIsThemeActive)(void);
 
 //XP SP1 or higher.
 typedef BOOL (WINAPI* LPFNSetDllDirectoryW)(__in_opt LPCWSTR lpPathName);
@@ -660,7 +661,7 @@ private:
 };
 
 class CteWebBrowser : public IDispatch, public IOleClientSite, public IOleInPlaceSite,
-	public IDocHostUIHandler, public IDropTarget//, public IDocHostShowUI
+	public IDocHostUIHandler, public IDropTarget//, public IOleCommandTarget, public IDocHostShowUI
 {
 public:
 	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
@@ -692,6 +693,9 @@ public:
 	STDMETHODIMP DiscardUndoState();
 	STDMETHODIMP DeactivateAndUndo();
 	STDMETHODIMP OnPosRectChange(LPCRECT lprcPosRect);
+	//IOleCommandTarget
+//    STDMETHODIMP QueryStatus(const GUID *pguidCmdGroup, ULONG cCmds, OLECMD *prgCmds, OLECMDTEXT *pCmdText);
+//    STDMETHODIMP Exec(const GUID *pguidCmdGroup, DWORD nCmdID, DWORD nCmdexecopt, VARIANT *pvaIn, VARIANT *pvaOut);       
 	//IDocHostUIHandler
 	STDMETHODIMP ShowContextMenu(DWORD dwID, POINT *ppt, IUnknown *pcmdtReserved, IDispatch *pdispReserved);
 	STDMETHODIMP GetHostInfo(DOCHOSTUIINFO *pInfo);

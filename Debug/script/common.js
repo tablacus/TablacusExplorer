@@ -228,6 +228,9 @@ function ApplyLang(doc)
 			if (s) {
 				o[i].alt = s;
 			}
+			if (o[i].className == "treebutton" && o[i].innerHTML == "") {
+				o[i].innerHTML = BUTTONS.opened;
+			}
 		}
 	}
 	var h = 0;
@@ -3028,7 +3031,7 @@ GetNavigateFlags = function (FV)
 	if (!FV && OpenMode != SBSP_NEWBROWSER) {
 		FV = te.Ctrl(CTRL_FV);
 	}
-	return api.GetKeyState(VK_CONTROL) < 0 || (FV && FV.Data.Lock) ? SBSP_NEWBROWSER : OpenMode;
+	return api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_CONTROL) < 0 || (FV && FV.Data.Lock) ? SBSP_NEWBROWSER : OpenMode;
 }
 
 AddEvent("ConfigChanged", function (s)
@@ -3184,12 +3187,14 @@ GetTEInfo = function ()
 FireEvent = function (o, event)
 {
 
-	if (o.fireEvent){
-		return o.fireEvent('on' + event);
-	} else if (document.createEvent) {
-		var evt = document.createEvent("HTMLEvents");
-		evt.initEvent(event, true, true);
-		return !o.dispatchEvent(evt);
+	if (o) {
+		if (o.fireEvent){
+			return o.fireEvent('on' + event);
+		} else if (document.createEvent) {
+			var evt = document.createEvent("HTMLEvents");
+			evt.initEvent(event, true, true);
+			return !o.dispatchEvent(evt);
+		}
 	}
 }
 

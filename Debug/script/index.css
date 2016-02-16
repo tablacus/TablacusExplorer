@@ -58,6 +58,7 @@ input, select, textarea, li {
 	white-space: nowrap;
 	vertical-align: middle;
 }
+
 .hoverbutton {
 	display: inline-block;
 	text-decoration: none;
@@ -70,20 +71,7 @@ input, select, textarea, li {
 	white-space: nowrap;
 	vertical-align: middle;
 }
-a:hover.button {
-	display: inline-block;
-	background-color: #E5EBEF;
-	border: 1px solid #7F9DB9;
-	padding: 0;
-	outline: 0;
-}
-a:active.button {
-	display: inline-block;
-	background-color: #E5EBEF;
-	border: 1px solid #7F9DB9;
-	padding: 0;
-	outline: 0;
-}
+
 .menu {
 	display: inline-block;
 	margin: 1px 5px;
@@ -92,6 +80,7 @@ a:active.button {
 	cursor: default;
 	white-space: nowrap;
 }
+
 .hovermenu {
 	display: inline-block;
 	color: black;
@@ -102,17 +91,6 @@ a:active.button {
 	border: 1px solid #7F9DB9;
 	padding: 0 4px;
 }
-a:hover.menu {
-	display: inline-block;
-	background-color: #E5EBEF;
-	border: 1px solid #7F9DB9;
-	padding: 0 4px;
-}
-a:active.menu {
-	display: inline-block;
-	border: none;
-	padding: 1px 5px;
-}
 
 .toolbar1 {
 	display: none;
@@ -121,12 +99,14 @@ a:active.menu {
 	white-space: nowrap;
 	vertical-align: middle;
 }
+
 .toolbar2 {
 	display: none;
 	margin: 1px 1px 1px 0;
 	padding: 1px 1px 1px 0;
 	width: 100%
 }
+
 .toolbar3 {
 	display: none;
 	margin: 1px 1px 1px 0;
@@ -135,6 +115,7 @@ a:active.menu {
 	white-space: nowrap;
 	vertical-align: middle;
 }
+
 .layout {
 	width: 100%;
 	padding: 0;
@@ -143,12 +124,14 @@ a:active.menu {
 	border-collapse: collapse;
 	overflow: hidden;
 }
+
 .sidebar {
 	margin: 0;
 	padding: 0;
 	border: none;
 	overflow: hidden;
 }
+
 .sidebar1 {
 	display: none;
 	word-break: break-all;
@@ -157,6 +140,7 @@ a:active.menu {
 	margin: 0;
 	padding: 0;
 }
+
 .sidebar2 {
 	display: none;
 	word-break: break-all;
@@ -166,6 +150,7 @@ a:active.menu {
 	margin: 0;
 	padding: 0;
 }
+
 .sidebar3 {
 	display: none;
 	word-break: break-all;
@@ -193,38 +178,14 @@ a:active.menu {
 	font-size: inherit;
 }
 
-.tab {
+.tab, .tab2, .tab3 {
 	border: 1px solid #898C95;
 	margin: 0;
 	padding: 0 8px;
-	background-color: #dddddd;
+	background-color: #ddd;
 	height: 2em;
 	outline: 0;
-	background: linear-gradient(to bottom, #ffffff, #cccccc);
-	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#cccccc)";
-	vertical-align: bottom;
-}
-
-.tab2 {
-	border: 1px solid #898C95;
-	margin: 0;
-	padding: 0 8px;
-	background-color: #dddddd;
-	height: 2em;
-	outline: 0;
-	background: linear-gradient(to bottom, #ffffff, #cccccc);
-	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#cccccc)";
-	vertical-align: bottom;
-}
-
-.tab3 {
-	border: 1px solid #898C95;
-	margin: 0;
-	padding: 0 8px;
-	background-color: #dddddd;
-	height: 2em;
-	outline: 0;
-	background: linear-gradient(to bottom, #ffffff, #cccccc);
+	background: linear-gradient(to bottom, #fff, #ccc);
 	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#cccccc)";
 	vertical-align: bottom;
 }
@@ -234,7 +195,7 @@ a:active.menu {
 	border-bottom: 0;
 	margin: 0 -1px;
 	padding: 0 9px;
-	background-color: #ffffff;
+	background-color: #fff;
 	height: 2.167em;
 	outline: 0;
 	z-index: 9999;
@@ -242,21 +203,24 @@ a:active.menu {
 }
 
 .treebutton {
-	border: 1px solid gray;
-	font-size: 0.667em;
+	color: gray;
 	font-family: monospace;
+	font-size: 91.6%;
 	margin: 0 2px 0 1px;
+	text-decoration: none;
 	cursor: default;
-	background: linear-gradient(to bottom, #ffffff, #dddddd);
-	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#dddddd)";
 }
 
 .treespace {
 	border: 0;
-	font-size: 0.667em;
+	font-size: 91.6%;
 	font-family: monospace;
 	margin: 1px;
 	cursor: default;
+}
+
+.treebutton:hover {
+	color: #27C7F7;
 }
 
 .ok {
