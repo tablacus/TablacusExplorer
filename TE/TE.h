@@ -283,7 +283,8 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TE_OnColumnClick		36
 #define TE_OnBeginDrag			37
 #define TE_OnBeforeGetData		38
-#define Count_OnFunc			39
+#define TE_OnIconSizeChanged	39
+#define Count_OnFunc			40
 
 #define SB_TotalFileSize		0
 #define SB_OnIncludeObject		1

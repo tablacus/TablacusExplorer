@@ -202,25 +202,22 @@ input, select, textarea, li {
 	vertical-align: bottom;
 }
 
-.treebutton {
-	color: gray;
+.treebutton, .treespace {
+	color: #666;
 	font-family: monospace;
-	font-size: 91.6%;
 	margin: 0 2px 0 1px;
 	text-decoration: none;
 	cursor: default;
+	vertical-align: middle;
 }
 
 .treespace {
-	border: 0;
-	font-size: 91.6%;
-	font-family: monospace;
-	margin: 1px;
-	cursor: default;
+	visibility: hidden;
 }
 
-.treebutton:hover {
-	color: #27C7F7;
+a.treebutton:hover {
+	color: highlight;
+	text-shadow: 0px 0px 2px highlight;
 }
 
 .ok {

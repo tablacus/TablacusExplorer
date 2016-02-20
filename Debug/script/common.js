@@ -3241,15 +3241,20 @@ OpenAdodbFromTextFile = function (fn)
 		ado.CharSet = "iso-8859-1";
 		ado.Open();
 		ado.LoadFromFile(fn);
-		var s = ado.ReadText(3);
-		if (/^\xEF\xBB\xBF/.test(s)) {
-			charset = 'utf-8';
-		} else if (/^\xFF\xFE|^\xFE\xFF/.test(s)) {
-			charset = 'unicode';
-		}
+		var s = ado.ReadText(999);
 	} catch (e) {
 		ado.close();
 		return;
+	}
+	if (/^\xEF\xBB\xBF/.test(s)) {
+		charset = 'utf-8';
+	} else if (/^\xFF\xFE|^\xFE\xFF/.test(s)) {
+		charset = 'unicode';
+	} else {
+		var res = /<meta[^>]*charset\s*=([\w_\-]+)|\@charset.*?([\w_\-]+)|<\?xml[^>]*encoding\s*=[^\w_\->]*([\w_\-]+)/i.exec(s);
+		if (res) {
+			charset = res[1] || res[2] || res[3];
+		}
 	}
 	ado.Position = 0;
 	ado.CharSet = charset;

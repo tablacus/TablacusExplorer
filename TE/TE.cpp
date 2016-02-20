@@ -894,6 +894,7 @@ TEmethod methodTE[] = {
 	{ START_OnFunc + TE_OnColumnClick, L"OnColumnClick" },
 	{ START_OnFunc + TE_OnBeginDrag, L"OnBeginDrag" },
 	{ START_OnFunc + TE_OnBeforeGetData, L"OnBeforeGetData" },
+	{ START_OnFunc + TE_OnIconSizeChanged, L"OnIconSizeChanged" },
 	{ 0, NULL }
 };
 
@@ -1340,6 +1341,15 @@ VOID teSetSZ(VARIANT *pv, LPCWSTR lpstr)
 	}
 }
 
+VOID teCoTaskMemFree(LPVOID pv)
+{
+	if (pv) {
+		try {
+			::CoTaskMemFree(pv);
+		} catch (...) {}
+	}
+}
+
 BSTR tePSGetNameFromPropertyKeyEx(PROPERTYKEY propKey, int nFormat, IShellView *pSV)
 {
 	if (nFormat == 2) {
@@ -1380,7 +1390,7 @@ BSTR tePSGetNameFromPropertyKeyEx(PROPERTYKEY propKey, int nFormat, IShellView *
 			}
 			if (psz) {
 				bs = ::SysAllocString(psz);
-				CoTaskMemFree(psz);
+				teCoTaskMemFree(psz);
 			}
 			pdesc->Release();
 		} else {
@@ -1558,15 +1568,6 @@ BOOL teStrSameIFree(BSTR bs, LPWSTR lpstr2)
 	BOOL b = lstrcmpi(bs, lpstr2) == 0;
 	::SysFreeString(bs);
 	return b;
-}
-
-VOID teCoTaskMemFree(LPVOID pv)
-{
-	if (pv) {
-		try {
-			::CoTaskMemFree(pv);
-		} catch (...) {}
-	}
 }
 
 VOID teILCloneReplace(LPITEMIDLIST *ppidl, LPCITEMIDLIST pidl)
@@ -2849,7 +2850,7 @@ BOOL teCreateItemFromPath(LPWSTR pszPath, IShellItem **ppSI)
 		LPITEMIDLIST pidl = teILCreateFromPath(const_cast<LPWSTR>(pszPath));
 		if (pidl) {
 			Result = SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(ppSI)));
-			CoTaskMemFree(pidl);
+			teCoTaskMemFree(pidl);
 		}
 	}
 	return Result;
@@ -4962,8 +4963,8 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 								VARIANTARG *pv = GetNewVARIANT(5);
 								teSetObject(&pv[4], pSB);
 								teSetIDList(&pv[3], pidlFull);
-								CoTaskMemFree(pidlFull);
-								CoTaskMemFree(pidl);
+								teCoTaskMemFree(pidlFull);
+								teCoTaskMemFree(pidl);
 								teSetObjectRelease(&pv[2], new CteMemory(sizeof(NMCUSTOMDRAW), &lplvcd->nmcd, 1, L"NMCUSTOMDRAW"));
 								teSetObjectRelease(&pv[1], new CteMemory(sizeof(NMLVCUSTOMDRAW), lplvcd, 1, L"NMLVCUSTOMDRAW"));
 								teSetObjectRelease(&pv[0], new CteMemory(sizeof(HANDLE), &lRes, 1, L"HANDLE"));
@@ -5442,9 +5443,9 @@ VOID Finalize()
 			teILFreeClear(&g_pidls[g_nPidls]);
 			teSysFreeString(&g_bsPidls[g_nPidls]);
 		}
-		teCoTaskMemFree(g_pidlResultsFolder);
-		teCoTaskMemFree(g_pidlCP);
-		teCoTaskMemFree(g_pidlLibrary);
+		teILFreeClear(&g_pidlResultsFolder);
+		teILFreeClear(&g_pidlCP);
+		teILFreeClear(&g_pidlLibrary);
 		if (g_hCrypt32) {
 			FreeLibrary(g_hCrypt32);
 		}
@@ -5554,7 +5555,7 @@ BOOL teLocalizePath(LPWSTR pszPath, BSTR *pbsPath)
 						lstrcat(*pbsPath, lp);
 						::SysFreeString(bs);
 					}
-					CoTaskMemFree(pidl);
+					teCoTaskMemFree(pidl);
 				}
 				lp[0] = '\\';
 			}
@@ -5632,7 +5633,7 @@ BOOL GetVarPathFromFolderItem(FolderItem *pFolderItem, VARIANT *pVarResult)
 				if (teGetIDListFromObject(pFolderItem, &pidl)) {
 					VariantClear(pVarResult);
 					GetVarArrayFromIDList(pVarResult, pidl);
-					CoTaskMemFree(pidl);
+					teCoTaskMemFree(pidl);
 				}
 			}
 			return TRUE;
@@ -12341,8 +12342,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						if SUCCEEDED(pFV->Item(GetIntFromVariant(&pDispParams->rgvarg[nArg]), &pidl)) {
 							LPITEMIDLIST pidlFull = ILCombine(m_pidl, pidl);
 							teSetIDList(pVarResult, pidlFull);
-							CoTaskMemFree(pidlFull);
-							CoTaskMemFree(pidl);
+							teCoTaskMemFree(pidlFull);
+							teCoTaskMemFree(pidl);
 						}
 						pFV->Release();
 					}
@@ -12614,7 +12615,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 									teSetObjectRelease(pVarResult, pFolderItem);
 								}
 								teCoTaskMemFree(pidlFull);
-								CoTaskMemFree(pidlChild);
+								teCoTaskMemFree(pidlChild);
 							}
 						}
 					}
@@ -12723,6 +12724,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			case DISPID_COLUMNSCHANGED://XP-
 				InitFolderSize();
 				return DoFunc(TE_OnColumnsChanged, this, S_OK);
+			case DISPID_ICONSIZECHANGED://XP-
+				return DoFunc(TE_OnIconSizeChanged, this, S_OK);
 			case DISPID_SORTDONE://XP-
 				if (m_nFocusItem < 0) {
 					FocusItem(FALSE);
@@ -15663,6 +15666,7 @@ void CteWebBrowser::Close()
 			RECT rc;
 			SetRectEmpty(&rc);
 			pOleObject->DoVerb(OLEIVERB_HIDE, NULL, NULL, 0, m_hwndParent, &rc);
+			pOleObject->Close(OLECLOSE_NOSAVE);
 			pOleObject->Release();
 		}
 		teUnadviseAndRelease(m_pWebBrowser, DIID_DWebBrowserEvents2, &m_dwCookie);

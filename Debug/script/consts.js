@@ -126,15 +126,28 @@ ssfRESULTSFOLDER = WINVER >= 0x600 ? "shell:::{2965E715-EB66-4719-B53F-1672673BB
 FILTER_IMAGE = "*.jpg;*.jpeg;*.png;*.bmp;*.gif;*.ico;data:*";
 REGEXP_IMAGE = /^data:|\.jpe?g$|\.png$|\.bmp$|\.gif$|\.ico$/i;
 XHRBODY = 'responseBody';
-BUTTONS = {
-	opened: '&#x25e2;',
-	closed: '&#x25b7;',
-	parent: '&laquo;',
-	next: '<span style="font-family: Marlett">4</span>',
-	dropdown: '<span style="font-family: Marlett">6</span>'
+if (WINVER > 0x603) {
+	BUTTONS = {
+		opened: '<b style="transform: scale(1.5,0.9) rotate(-90deg); transform-origin: 50% 55%">&lt;</b>',
+		closed: '<b style="transform: scale(0.9,1.5); opacity: 0.5">&gt;</b>',
+		parent: '&laquo;',
+		next: '<b style="color: #666; transform: scale(0.6,1.2); text-shadow: 1px 0px">&gt;</b>',
+		dropdown: '<b style="color: #666; transform: scale(1.2,0.6); text-shadow: 0px 1px">&#8744;</b>'
+	}
+} else {
+	BUTTONS = {
+		opened: '<span style="font-size: 1.25em; font-size: 0.583rem; transform: translateY(-2px)"">&#x25e2;</span>',
+		closed: '<span style="font-size: 1.25em; font-size: 0.583rem; transform: scale(1,1.4)">&#x25b7;</span>',
+		parent: '&laquo;',
+		next: '<span style="font-family: Marlett">4</span>',
+		dropdown: '<span style="font-family: Marlett">6</span>'
+	}
 }
+/*
+		opened: '<b style="transform: scale(1.4,0.8); text-shadow: 0px 1px">&#8744;</b>',
+		closed: '<b style="transform: scale(0.8,1.4) rotate(90deg); transform-origin: 50% 50%; text-shadow: 0px 1px">&#8743;</b>',
+*/
 //Windows
-
 MAXINT = 0x7fffffff;
 MAX_PATH = 260;
 INVALID_HANDLE_VALUE = -1;

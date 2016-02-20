@@ -917,7 +917,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 					}
 				}
 			}
-			if (g_mouse.str.length >= 2 || (!IsDrag(pt, te.Data.pt) && strClass != WC_HEADER)) {
+			if (g_mouse.str.length >= 2 || /[45]/.test(g_mouse.str) || (!IsDrag(pt, te.Data.pt) && strClass != WC_HEADER)) {
 				if (msg != WM_RBUTTONUP || g_mouse.str.length < 2) {
 					hr = g_mouse.Exec(te.CtrlFromWindow(g_mouse.hwndGesture), g_mouse.hwndGesture, pt);
 					if (msg == WM_LBUTTONUP) {
@@ -988,7 +988,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 		}
 	}
 
-	if (msg == WM_MOUSEMOVE) {
+	if (msg == WM_MOUSEMOVE && !/[45]/.test(g_mouse.str)) {
 		if (api.GetKeyState(VK_ESCAPE) < 0) {
 			g_mouse.EndGesture(false);
 		}
@@ -1250,6 +1250,11 @@ te.OnViewModeChanged = function (Ctrl)
 te.OnColumnsChanged = function (Ctrl)
 {
 	RunEvent1("ColumnsChanged", Ctrl);
+}
+
+te.OnIconSizeChanged = function (Ctrl)
+{
+	RunEvent1("IconSizeChanged", Ctrl);
 }
 
 te.OnShowContextMenu = function (Ctrl, hwnd, msg, wParam, pt)
@@ -1567,9 +1572,9 @@ te.OnArrange = function (Ctrl, rc)
 		var o = g_Panels[Ctrl.Id];
 		if (!o) {
 			var s = ['<table id="Panel_$" class="layout" style="position: absolute; z-index: 1;">'];
-			s.push('<tr><td id="InnerLeft_$" class="sidebar" style="width: 0px; display: none; overflow: auto"></td><td><div id="InnerTop_$" style="display: none"></div>');
-			s.push('<table id="InnerTop2_$" class="layout" style="width: 100%">');
-			s.push('<tr><td id="Inner1Left_$" class="toolbar1"></td><td id="Inner1Center_$" class="toolbar2" style="white-space: nowrap;"></td><td id="Inner1Right_$" class="toolbar3"></td></tr></table>');
+			s.push('<tr><td id="InnerLeft_$" class="sidebar" style="width: 0px; display: none; overflow: auto"></td><td style="width: 100%"><div id="InnerTop_$" style="display: none"></div>');
+			s.push('<table id="InnerTop2_$" class="layout">');
+			s.push('<tr><td id="Inner1Left_$" class="toolbar1"></td><td id="Inner1Center_$" class="toolbar2" style="white-space: nowrap"></td><td id="Inner1Right_$" class="toolbar3"></td></tr></table>');
 			s.push('<table id="InnerView_$" class="layout" style="width: 100%"><tr><td id="Inner2Left_$" style="width: 0px"></td><td id="Inner2Center_$"></td><td id="Inner2Right_$" style="width: 0px; overflow: auto"></td></tr></table>');
 			s.push('<div id="InnerBottom_$"></div></td><td id="InnerRight_$" class="sidebar" style="width: 0px; display: none"></td></tr></table>');
 			document.getElementById("Panel").insertAdjacentHTML("BeforeEnd", s.join("").replace(/\$/g, Ctrl.Id));

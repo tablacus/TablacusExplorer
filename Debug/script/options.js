@@ -224,7 +224,7 @@ function ClickTree(o, nMode, strChg, bForce)
 			ovPanel.style.display = 'block';
 			if (!dialogArguments.width) {
 				var w = document.documentElement.clientWidth || document.body.clientWidth;
-				ovPanel.style.width = (w - 12 * Math.abs(MainWindow.DefaultFont.lfHeight)) + "px";
+				ovPanel.style.width = document.documentMode >= 9 ? 'calc(100vw - 12em)' : (w - 12 * Math.abs(MainWindow.DefaultFont.lfHeight)) + "px";
 			}
 			var h = document.documentElement.clientHeight || document.body.clientHeight;
 			h += MainWindow.DefaultFont.lfHeight * 2.7;
@@ -786,7 +786,7 @@ function LoadMenus(nSelected)
 
 		for (var j in g_arMenuTypes) {
 			var s = g_arMenuTypes[j];
-			document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", ['<select name="Menus_', s, '" size="17" style="width: 12em; height: 32em; display: none; font-family:', document.F.elements["Menus_Pos"].style.fontFamily, '" onclick="EditXEx(EditMenus)" ondblclick="EditMenus()" oncontextmenu="CancelX(\'Menus\')"></select>'].join(""));
+			document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", ['<select name="Menus_', s, '" size="17" style="width: 12em; height: 32em; height: calc(100vh - 6em); display: none; font-family:', document.F.elements["Menus_Pos"].style.fontFamily, '" onclick="EditXEx(EditMenus)" ondblclick="EditMenus()" oncontextmenu="CancelX(\'Menus\')"></select>'].join(""));
 			var menus = teMenuGetElementsByTagName(s);
 			if (menus && menus.length) {
 				oa[++oa.length - 1].value = s + "," + menus[0].getAttribute("Base") + "," + menus[0].getAttribute("Pos");
