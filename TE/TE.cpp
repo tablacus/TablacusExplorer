@@ -895,6 +895,7 @@ TEmethod methodTE[] = {
 	{ START_OnFunc + TE_OnBeginDrag, L"OnBeginDrag" },
 	{ START_OnFunc + TE_OnBeforeGetData, L"OnBeforeGetData" },
 	{ START_OnFunc + TE_OnIconSizeChanged, L"OnIconSizeChanged" },
+	{ START_OnFunc + TE_OnFilterChanged, L"OnFilterChanged" },
 	{ 0, NULL }
 };
 
@@ -12125,6 +12126,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						if (lstrlen(v.bstrVal)) {
 							m_bsFilter = ::SysAllocString(v.bstrVal);
 						}
+						DoFunc(TE_OnFilterChanged, this, S_OK);
 					}
 					VariantClear(&v);
 				}

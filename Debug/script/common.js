@@ -187,7 +187,14 @@ AddonDisabled = function (Id)
 		eventTE.AddonDisabled[i](Id);
 	}
 	if (eventTE.AddonDisabledEx) {
-		(eventTE.AddonDisabledEx[Id.toLowerCase()] || function () {})();
+		var fn = eventTE.AddonDisabledEx[Id.toLowerCase()];
+		if (fn) {
+			delete eventTE.AddonDisabledEx[Id.toLowerCase()];
+			AddEventEx(window, "beforeunload", function ()
+			{
+				fn();
+			});
+		}
 	}
 	CollectGarbage();
 }

@@ -755,18 +755,27 @@ te.OnViewCreated = function (Ctrl)
 
 te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev)
 {
-	if (Ctrl.Type <= CTRL_EB) {
-		if (api.ILIsParent(g_pidlCP, Ctrl, false) && !api.ILIsEqual(Ctrl, g_pidlCP) && !api.ILIsEqual(Ctrl, ssfCONTROLS)) {
-			(function (Path) { setTimeout(function () {
-				OpenInExplorer(Path);
-			}, 99);}) (Ctrl.FolderItem);
-			return E_NOTIMPL;
+	var path = api.GetDisplayNameOf(Ctrl.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
+	var res = /javascript:(.*)/im.exec(path);
+	if (res) {
+		try {
+			new Function(res[1])(Ctrl);
+		} catch (e) {
+			ShowError(e, res[1]);
 		}
+		return E_NOTIMPL;
 	}
+	if (api.ILIsParent(g_pidlCP, Ctrl, false) && !api.ILIsEqual(Ctrl, g_pidlCP) && !api.ILIsEqual(Ctrl, ssfCONTROLS)) {
+		(function (Path) { setTimeout(function () {
+			OpenInExplorer(Path);
+		}, 99);}) (Ctrl.FolderItem);
+		return E_NOTIMPL;
+	}
+	var hr = RunEvent2("BeforeNavigate", Ctrl, fs, wFlags, Prev);
 	if (Ctrl.Data.Lock && (wFlags & SBSP_NEWBROWSER) == 0) {
-		return E_ACCESSDENIED;
+		hr = E_ACCESSDENIED;
 	}
-	return RunEvent2("BeforeNavigate", Ctrl, fs, wFlags, Prev);
+	return hr;
 }
 
 te.OnNavigateComplete = function (Ctrl)
@@ -1255,6 +1264,25 @@ te.OnColumnsChanged = function (Ctrl)
 te.OnIconSizeChanged = function (Ctrl)
 {
 	RunEvent1("IconSizeChanged", Ctrl);
+}
+
+te.OnFilterChanged = function (Ctrl)
+{
+	if (isFinite(RunEvent3("FilterChanged", Ctrl))) {
+		return; 
+	}
+	var res = /\/(.*)\/(.*)/.exec(Ctrl.FilterView);
+	if (res) {
+		try {
+			Ctrl.Data.RE = new RegExp((window.migemo && migemo.query(res[1])) || res[1], res[2]);
+			Ctrl.OnIncludeObject = function (Ctrl, Path1, Path2)
+			{
+				return Ctrl.Data.RE.test(Path1) || (Path1 != Path2 && Ctrl.Data.RE.test(Path2)) ? S_OK : S_FALSE;
+			}
+			return;
+		} catch (e) {}
+	}
+	Ctrl.OnIncludeObject = null;
 }
 
 te.OnShowContextMenu = function (Ctrl, hwnd, msg, wParam, pt)

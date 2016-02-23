@@ -2129,7 +2129,7 @@ SetImage = function ()
 		if (!h) {
 			h = window.IconSize ? window.IconSize : 24;
 		}
-		var src = MakeImgSrc(document.F.Icon.value, 0, true, h);
+		var src = MakeImgSrc(api.PathUnquoteSpaces(document.F.Icon.value), 0, true, h);
 		o.innerHTML = src ? '<img src="' + src + '" ' + (h ? 'height="' + h + 'px"' : "") + '>' : "";
 	}
 }
