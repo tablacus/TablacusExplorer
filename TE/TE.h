@@ -232,8 +232,6 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define MAX_STATUS				1024
 #define MAX_COLUMNS				8192
 #define SIZE_BUFF				32768
-#define DRAG_SCROLL				32
-#define DRAG_INTERVAL			300
 #define TET_Create				0x1fa1
 #define TET_Reload				0x1fa2
 #define TET_Size				0x1fa3
@@ -594,7 +592,32 @@ private:
 	BOOL			m_bUseILF;
 };
 
-class CTE : public IDispatch, public IDropTarget, public IDropSource
+class CteDropTarget2 : public IDropTarget
+{
+public:
+	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
+	STDMETHODIMP_(ULONG) AddRef();
+	STDMETHODIMP_(ULONG) Release();
+	//IDropTarget
+	STDMETHODIMP DragEnter(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
+	STDMETHODIMP DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
+	STDMETHODIMP DragLeave();
+	STDMETHODIMP Drop(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
+
+	CteDropTarget2(HWND hwnd, IUnknown *punk);
+	~CteDropTarget2();
+public:
+	CteFolderItems *m_pDragItems;
+	IDropTarget *m_pDropTarget;
+	HWND        m_hwnd;
+	IUnknown	*m_punk;
+
+	DWORD	m_grfKeyState;
+	HRESULT m_DragLeave;
+	LONG	m_cRef;
+};
+
+class CTE : public IDispatch, public IDropSource
 {
 public:
 	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
@@ -605,11 +628,6 @@ public:
 	STDMETHODIMP GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo);
 	STDMETHODIMP GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId);
 	STDMETHODIMP Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr);
-	//IDropTarget
-	STDMETHODIMP DragEnter(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
-	STDMETHODIMP DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
-	STDMETHODIMP DragLeave();
-	STDMETHODIMP Drop(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
 	//IDropSource
 	STDMETHODIMP QueryContinueDrag(BOOL fEscapePressed, DWORD grfKeyState);
 	STDMETHODIMP GiveFeedback(DWORD dwEffect);
@@ -618,11 +636,9 @@ public:
 	~CTE();
 public:
 	VARIANT m_vData;
+	CteDropTarget2 *m_pDropTarget2;
 private:
-	CteFolderItems *m_pDragItems;
 	LONG	m_cRef;
-	DWORD m_grfKeyState;
-	HRESULT m_DragLeave;
 };
 //
 class CteInternetSecurityManager : public IInternetSecurityManager
@@ -749,7 +765,7 @@ private:
 	DWORD	m_dwEffectTE;
 };
 
-class CteTabCtrl : public IDispatchEx, public IDropTarget
+class CteTabCtrl : public IDispatchEx
 {
 public:
 	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
@@ -769,11 +785,6 @@ public:
 	STDMETHODIMP GetMemberName(DISPID id, BSTR *pbstrName);
 	STDMETHODIMP GetNextDispID(DWORD grfdex, DISPID id, DISPID *pid);
 	STDMETHODIMP GetNameSpaceParent(IUnknown **ppunk);
-	//IDropTarget
-	STDMETHODIMP DragEnter(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
-	STDMETHODIMP DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
-	STDMETHODIMP DragLeave();
-	STDMETHODIMP Drop(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
 
 	VOID TabChanged(BOOL bSameTC);
 	CteShellBrowser * GetShellBrowser(int nPage);
@@ -814,10 +825,8 @@ public:
 	BOOL	m_bRedraw;
 private:
 	VARIANT m_vData;
-	CteFolderItems *m_pDragItems;
-	DWORD	m_grfKeyState;
+	CteDropTarget2 *m_pDropTarget2;
 	LONG	m_cRef;
-	HRESULT m_DragLeave;
 };
 
 class CteServiceProvider : public IServiceProvider
@@ -845,7 +854,7 @@ class CteShellBrowser : public IShellBrowser, public ICommDlgBrowser2,
 #ifdef _2000XP
 	public IShellFolder2, public IShellFolderViewCB,
 #endif
-	public IDropTarget, public IPersistFolder2
+	public IPersistFolder2
 {
 public:
 	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
@@ -1050,9 +1059,8 @@ private:
 	FolderItem	**m_ppFocus;
 	IDispatch	*m_pDSFV;
 	PROPERTYKEY *m_pDefultColumns;
-	IDropTarget *m_pDropTarget;
+	CteDropTarget2 *m_pDropTarget2;
 	BSTR		m_bsFilter;
-	CteFolderItems *m_pDragItems;
 
 	LONG		m_cRef;
 	DWORD		m_dwEventCookie;
@@ -1060,8 +1068,6 @@ private:
 	int			m_nLogIndex;
 	int			m_nPrevLogIndex;
 	UINT		m_nDefultColumns;
-	DWORD m_grfKeyState;
-	HRESULT		m_DragLeave;
 	LONG		m_nCreate;
 	BOOL		m_bIconSize;
 	LONG		m_dwUnavailable;
@@ -1167,11 +1173,10 @@ private:
 };
 
 class CteTreeView : public IDispatch,
-	public INameSpaceTreeControlEvents, public INameSpaceTreeControlCustomDraw,
 #ifdef _2000XP
 	public IOleClientSite, public IOleInPlaceSite,
 #endif
-	public IDropTarget
+	public INameSpaceTreeControlEvents, public INameSpaceTreeControlCustomDraw
 {
 public:
 	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
@@ -1229,11 +1234,6 @@ public:
 	STDMETHODIMP DeactivateAndUndo();
 	STDMETHODIMP OnPosRectChange(LPCRECT lprcPosRect);
 #endif
-	//IDropTarget
-	STDMETHODIMP DragEnter(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
-	STDMETHODIMP DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
-	STDMETHODIMP DragLeave();
-	STDMETHODIMP Drop(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
 	//IPersist
     STDMETHODIMP GetClassID(CLSID *pClassID);
 	//IPersistFolder
@@ -1257,7 +1257,6 @@ public:
 	HWND        m_hwndTV;
 	INameSpaceTreeControl	*m_pNameSpaceTreeControl;
 	CteShellBrowser	*m_pFV;
-	IDropTarget *m_pDropTarget;
 #ifdef _2000XP
 	IShellNameSpace *m_pShellNameSpace;
 	WNDPROC		m_DefProc;
@@ -1269,15 +1268,13 @@ public:
 private:
 	VARIANT m_vData;
 	LPWSTR	lplpVerbs;
-	CteFolderItems *m_pDragItems;
+	CteDropTarget2 *m_pDropTarget2;
 #ifdef _W2000
 	VARIANT m_vSelected;
 #endif
 	LONG	m_cRef;
 	int		m_nType, m_nOpenedType;
-	DWORD	m_grfKeyState;
 	DWORD	m_dwCookie;
-	HRESULT m_DragLeave;
 };
 
 class CteCommonDialog : public IDispatch

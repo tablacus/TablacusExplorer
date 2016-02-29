@@ -186,8 +186,15 @@ input, select, textarea, li {
 	height: 2em;
 	outline: 0;
 	background: linear-gradient(to bottom, #fff, #ccc);
-	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#cccccc)";
+	filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#cccccc);
 	vertical-align: bottom;
+	transition: 0.2s;
+}
+
+.tab:hover, .tab2:hover, .tab3:hover {
+	opacity: 0.8;
+	box-shadow: 0 0 0 9em rgba(51,204,255,0.2) inset;
+	filter: alpha(style=0,opacity=80);
 }
 
 .activetab {

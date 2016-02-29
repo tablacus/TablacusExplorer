@@ -15,6 +15,7 @@ g_tidNew = null;
 eventTE = { Environment: {} };
 eventTA = {};
 g_ptDrag = api.Memory("POINT");
+g_rcWindow = api.Memory("RECT");
 objHover = null;
 g_nFind = 0;
 g_Colors = {};
@@ -630,19 +631,14 @@ SaveXml = function (filename, all)
 
 	if (all) {
 		var item = xml.createElement("Window");
-		var CmdShow = SW_SHOWNORMAL;
-		var hwnd = te.hwnd;
-		if (api.IsZoomed(hwnd)) {
-			CmdShow = SW_SHOWMAXIMIZED;
+		if (!api.IsZoomed(te.hwnd) && !api.IsIconic(te.hwnd)) {
+			api.GetWindowRect(te.hwnd, g_rcWindow);
 		}
-		api.ShowWindow(hwnd, SW_SHOWNORMAL);
-		var rc = api.Memory("RECT");
-		api.GetWindowRect(hwnd, rc);
-		item.setAttribute("Left", rc.left);
-		item.setAttribute("Top", rc.top);
-		item.setAttribute("Width", rc.right - rc.left);
-		item.setAttribute("Height", rc.bottom - rc.top);
-		item.setAttribute("CmdShow", CmdShow);
+		item.setAttribute("Left", g_rcWindow.left);
+		item.setAttribute("Top", g_rcWindow.top);
+		item.setAttribute("Width", g_rcWindow.right - g_rcWindow.left);
+		item.setAttribute("Height", g_rcWindow.bottom - g_rcWindow.top);
+		item.setAttribute("CmdShow", api.IsZoomed(te.hwnd) ? SW_SHOWMAXIMIZED : SW_SHOWNORMAL);
 		root.appendChild(item);
 	}
 	var cTC = te.Ctrls(CTRL_TC);
@@ -832,35 +828,31 @@ CreateTab = function ()
 
 Navigate = function (Path, wFlags)
 {
-	var FV = te.Ctrl(CTRL_FV);
-	if (!FV) {
-		var TC = te.CreateCtrl(CTRL_TC, 0, 0, "100%", "100%", te.Data.Tab_Style, te.Data.Tab_Align, te.Data.Tab_TabWidth, te.Data.Tab_TabHeight);
-		FV = TC.Selected;
-	}
-	NavigateFV(FV, Path, wFlags);
+	NavigateFV(te.Ctrl(CTRL_FV), Path, wFlags);
 }
 
 NavigateFV = function (FV, Path, wFlags)
 {
-	if (FV) {
-		var Focus = null;
-		if (typeof(Path) == "string") {
-			if (/%([^%]+)%/.test(Path)) {
-				Path = ExtractMacro(FV, Path);
-			}
-			if (/\?|\*/.test(Path) && !/\\\\\?\\|:/.test(Path)) {
-				FV.FilterView = Path;
-				FV.Refresh();
-				return;
-			}
-			Path = ExtractPath(FV, Path);
-		}
-		if (FV.Data.Lock) {
-			wFlags |= SBSP_NEWBROWSER;
-		}
-		FV.Navigate(Path, wFlags);
-		FV.Focus();
+	if (!FV) {
+		var TC = te.CreateCtrl(CTRL_TC, 0, 0, "100%", "100%", te.Data.Tab_Style, te.Data.Tab_Align, te.Data.Tab_TabWidth, te.Data.Tab_TabHeight);
+		FV = TC.Selected;
 	}
+	if (typeof(Path) == "string") {
+		if (/%([^%]+)%/.test(Path)) {
+			Path = ExtractMacro(FV, Path);
+		}
+		if (/\?|\*/.test(Path) && !/\\\\\?\\|:/.test(Path)) {
+			FV.FilterView = Path;
+			FV.Refresh();
+			return;
+		}
+		Path = ExtractPath(FV, Path);
+	}
+	if (FV.Data.Lock) {
+		wFlags |= SBSP_NEWBROWSER;
+	}
+	FV.Navigate(Path, wFlags);
+	FV.Focus();
 }
 
 GetOpenMode = function ()
@@ -1073,7 +1065,7 @@ ExecOpen = function (Ctrl, s, type, hwnd, pt, NewTab)
 	var line = s.split("\n");
 	for (var i = 0; i < line.length; i++) {
 		if (line[i] != "") {
-			Navigate(ExtractPath(Ctrl, line[i], pt), NewTab);
+			NavigateFV(GetFolderView(Ctrl, pt), ExtractPath(Ctrl, line[i], pt), NewTab);
 			NewTab |= SBSP_NEWBROWSER;
 		}
 	}
@@ -2427,7 +2419,7 @@ OpenInExplorer = function (FV)
 {
 	if (FV) {
 		CancelWindowRegistered();
-		ShellExecute(api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)), "Explore", SW_SHOWNORMAL);
+		ShellExecute(api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORPARSING)), "Explore", SW_SHOWNORMAL);
 	}
 }
 
@@ -3147,7 +3139,7 @@ ExecAddonScript = function (type, s, fn, arError, o, arStack)
 	return sc;
 }
 
-LoadAddon = function (ext, Id, arError)
+LoadAddon = function (ext, Id, arError, param)
 {
 	try {
 		var sc;
@@ -3166,6 +3158,12 @@ LoadAddon = function (ext, Id, arError)
 		}
 		if (sc) {
 			sc(Id);
+			if (param) {
+				var res = /[\r\n\s]Default\s*=\s*["'](.*)["'];/.exec(s);
+				if (res) {
+					param.Default = res[1];
+				}
+			}
 		}
 	} catch (e) {
 		arError.push([(e.description || e.toString()), fn].join("\n"));

@@ -101,7 +101,6 @@ LONG	g_nLockUpdate = 0;
 LONG	nUpdate = 0;
 DWORD	g_paramFV[SB_Count];
 DWORD	g_dwMainThreadId;
-DWORD	g_dwTickScroll;
 DWORD	g_dwSWCookie = 0;
 DWORD	g_dwHideFileExt = 0;
 long	g_nProcKey	   = 0;
@@ -8646,6 +8645,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 			case TET_Reload:
 				if (g_nReload) {
 					teRevoke();
+#ifndef _DEBUG
 					BSTR bsPath, bsQuoted;
 					int i = teGetModuleFileName(NULL, &bsPath);
 					bsQuoted = SysAllocStringLen(bsPath, i + 2);
@@ -8653,6 +8653,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 					PathQuoteSpaces(bsQuoted);
 					ShellExecute(hwnd, NULL, bsQuoted, NULL, NULL, SW_SHOWNORMAL);
 					SysFreeString(bsQuoted);
+#endif 
 					PostMessage(hwnd, WM_CLOSE, 0, 0);
 				}
 				break;
@@ -8983,10 +8984,6 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 									g_bDialogOk = TRUE;
 								}
 							}
-							break;
-						case WM_HSCROLL:
-						case WM_VSCROLL:
-							g_dwTickScroll = GetTickCount();
 							break;
 						case LVM_SETTEXTCOLOR:
 							pSB = SBfromhwnd(pcwp->hwnd);
@@ -9384,7 +9381,6 @@ function _t(o) {\
 #endif
 	// CTE
 	g_pTE = new CTE(nCmdShow);
-	RegisterDragDrop(g_hwndMain, static_cast<IDropTarget *>(g_pTE));
 
 	IDispatch *pJS = NULL;
 #ifdef _USE_HTMLDOC
@@ -10013,8 +10009,7 @@ void CteShellBrowser::Init(CteTabCtrl *pTC, BOOL bNew)
 	m_pFolderItem1 = NULL;
 	m_nUnload = 0;
 	m_DefProc = NULL;
-	m_pDropTarget = NULL;
-	m_pDragItems = NULL;
+	m_pDropTarget2 = NULL;
 	m_pDSFV = NULL;
 	m_pSF2 = NULL;
 	m_clrText = GetSysColor(COLOR_WINDOWTEXT);
@@ -10113,7 +10108,6 @@ STDMETHODIMP CteShellBrowser::QueryInterface(REFIID riid, void **ppvObject)
 		QITABENT(CteShellBrowser, IShellFolderViewDual),
 		QITABENT(CteShellBrowser, IExplorerBrowserEvents),
 		QITABENT(CteShellBrowser, IExplorerPaneVisibility),
-		QITABENT(CteShellBrowser, IDropTarget),
 		QITABENT(CteShellBrowser, IPersist),
 		QITABENT(CteShellBrowser, IPersistFolder),
 		QITABENT(CteShellBrowser, IPersistFolder2),
@@ -12210,7 +12204,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			case 0x10000058:
 				IDropTarget *pDT;
 				pDT = NULL;
-				if (!m_pDropTarget || FAILED(QueryInterface(IID_PPV_ARGS(&pDT)))) {
+				if (!m_pDropTarget2 || FAILED(m_pDropTarget2->QueryInterface(IID_PPV_ARGS(&pDT)))) {
 					LPITEMIDLIST pidl;
 					if (teGetIDListFromObject(m_pFolderItem, &pidl)) {
 						IShellFolder *pSF;
@@ -13623,104 +13617,6 @@ STDMETHODIMP CteShellBrowser::MessageSFVCB(UINT uMsg, WPARAM wParam, LPARAM lPar
 }
 #endif
 
-//IDropTarget
-STDMETHODIMP CteShellBrowser::DragEnter(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect)
-{
-	m_DragLeave = E_NOT_SET;
-	GetDragItems(&m_pDragItems, pDataObj);
-	DWORD dwEffect = *pdwEffect;
-	HRESULT hr = DragSub(TE_OnDragEnter, this, m_pDragItems, &grfKeyState, pt, pdwEffect);
-	if (m_pDropTarget) {
-		*pdwEffect = dwEffect;
-		if (m_pDropTarget->DragEnter(pDataObj, grfKeyState, pt, pdwEffect) == S_OK) {
-			hr = S_OK;
-		}
-	}
-	if (hr == S_OK && *pdwEffect) {
-		m_pDragItems->Regenerate();
-	}
-	if (g_pDropTargetHelper) {
-		g_pDropTargetHelper->DragEnter(m_hwnd, pDataObj, (LPPOINT)&pt, *pdwEffect);
-	}
-	return hr;
-}
-
-STDMETHODIMP CteShellBrowser::DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEffect)
-{
-	DWORD dwEffect2 = *pdwEffect;
-	HRESULT hr2 = E_NOTIMPL;
-	HRESULT hr = DragSub(TE_OnDragOver, this, m_pDragItems, &grfKeyState, pt, pdwEffect);
-	if (m_pDropTarget) {
-		hr2 = m_pDropTarget->DragOver(grfKeyState, pt, &dwEffect2);
-	}
-	if (hr == S_OK) {
-		if (*pdwEffect != dwEffect2) {
-			if (g_pDropTargetHelper) {
-				g_pDropTargetHelper->DragOver((LPPOINT)&pt, *pdwEffect);
-			}
-		}
-	} else {
-		*pdwEffect = dwEffect2;
-		hr = hr2;
-	}
-	m_grfKeyState = grfKeyState;
-	if (hr == S_OK && m_hwndLV && GetTickCount() - g_dwTickScroll > DRAG_INTERVAL
-#ifdef _2000XP
-	&& g_bUpperVista
-#endif
-	) {
-		RECT rc;
-		ScreenToClient(m_hwndLV, (LPPOINT)&pt);
-		GetClientRect(m_hwndLV, &rc);
-		if (pt.x < DRAG_SCROLL) {
-			SendMessage(m_hwndLV, WM_HSCROLL, SB_LINELEFT, 0);
-		} else if (pt.x > rc.right - DRAG_SCROLL) {
-			SendMessage(m_hwndLV, WM_HSCROLL, SB_LINERIGHT, 0);
-		}
-		if (pt.y < DRAG_SCROLL) {
-			SendMessage(m_hwndLV, WM_VSCROLL, SB_LINEUP, 0);
-		} else if (pt.y > rc.bottom - DRAG_SCROLL) {
-			SendMessage(m_hwndLV, WM_VSCROLL, SB_LINEDOWN, 0);
-		}
-	}
-	return hr;
-}
-
-STDMETHODIMP CteShellBrowser::DragLeave()
-{
-	if (m_DragLeave == E_NOT_SET) {
-		if (g_pDropTargetHelper) {
-			g_pDropTargetHelper->DragLeave();
-		}
-		m_DragLeave = DragLeaveSub(this, &m_pDragItems);
-		if (m_pDropTarget) {
-			HRESULT hr = m_pDropTarget->DragLeave();
-			if (m_DragLeave != S_OK) {
-				m_DragLeave = hr;
-			}
-		}
-	}
-	return m_DragLeave;
-}
-
-STDMETHODIMP CteShellBrowser::Drop(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect)
-{
-	GetDragItems(&m_pDragItems, pDataObj);
-	DWORD dwEffect = *pdwEffect;
-	HRESULT hr = DragSub(TE_OnDrop, this, m_pDragItems, &m_grfKeyState, pt, pdwEffect);
-	if (m_pDropTarget) {
-		if (hr != S_OK) {
-			*pdwEffect = dwEffect;
-			hr = m_pDropTarget->Drop(pDataObj, m_grfKeyState, pt, pdwEffect);
-		}
-	}
-	if (g_pDropTargetHelper) {
-		g_pDropTargetHelper->Drop(pDataObj, (LPPOINT)&pt, *pdwEffect);
-	}
-	DragLeave();
-	return hr;
-}
-
 //IPersist
 STDMETHODIMP CteShellBrowser::GetClassID(CLSID *pClassID)
 {
@@ -13822,8 +13718,9 @@ VOID CteShellBrowser::SetPropEx()
 		} else {
 			m_hwndDT = FindWindowEx(m_hwndDV, NULL, L"DirectUIHWND", NULL);
 		}
-		if (!m_pDropTarget) {
-			teRegisterDragDrop(m_hwndDT, this, &m_pDropTarget);
+		if (!m_pDropTarget2) {
+			m_pDropTarget2 = new CteDropTarget2(NULL, static_cast<IDispatch *>(this));
+			teRegisterDragDrop(m_hwndDT, m_pDropTarget2, &m_pDropTarget2->m_pDropTarget);
 		}
 	}
 }
@@ -13834,11 +13731,11 @@ VOID CteShellBrowser::ResetPropEx()
 		SetWindowLongPtr(m_hwndDV, GWLP_WNDPROC, (LONG_PTR)m_DefProc);
 		m_DefProc = NULL;
 	}
-	if (m_pDropTarget) {
+	if (m_pDropTarget2) {
+//		SetProp(m_hwndDT, L"OleDropTargetInterface", (HANDLE)m_pDropTarget2->m_pDropTarget);
 		RevokeDragDrop(m_hwndDT);
-		RegisterDragDrop(m_hwndDT, m_pDropTarget);
-		m_pDropTarget->Release();
-		m_pDropTarget = NULL;
+		RegisterDragDrop(m_hwndDT, m_pDropTarget2->m_pDropTarget);
+		teReleaseClear(&m_pDropTarget2);
 	}
 }
 
@@ -14289,17 +14186,19 @@ HRESULT CteShellBrowser::SetRedraw(BOOL bRedraw)
 CTE::CTE(int nCmdShow)
 {
 	m_cRef = 1;
-	m_pDragItems = NULL;
 	::ZeroMemory(g_param, sizeof(g_param));
 	g_param[TE_Type] = CTRL_TE;
 	g_param[TE_CmdShow] = nCmdShow;
 	g_param[TE_Layout] = 0x80;
 	VariantInit(&m_vData);
+	m_pDropTarget2 = new CteDropTarget2(NULL, static_cast<IDispatch *>(this));
+	RegisterDragDrop(g_hwndMain, m_pDropTarget2);
 }
 
 CTE::~CTE()
 {
 	VariantClear(&m_vData);
+	teReleaseClear(&m_pDropTarget2);
 }
 
 STDMETHODIMP CTE::QueryInterface(REFIID riid, void **ppvObject)
@@ -14307,7 +14206,6 @@ STDMETHODIMP CTE::QueryInterface(REFIID riid, void **ppvObject)
 	static const QITAB qit[] =
 	{
 		QITABENT(CTE, IDispatch),
-		QITABENT(CTE, IDropTarget),
 		QITABENT(CTE, IDropSource),
 		{ 0 },
 	};
@@ -14772,9 +14670,19 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				//Type, offsetLeft etc.
 				else if (dispIdMember >= TE_OFFSET && dispIdMember < TE_OFFSET + Count_TE_params) {
 					if (nArg >= 0 && dispIdMember != TE_OFFSET) {
-						g_param[dispIdMember - TE_OFFSET] = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
-						if (dispIdMember >= TE_OFFSET + TE_Left && dispIdMember <= TE_Bottom + TE_OFFSET) {
-							ArrangeWindow();
+						int i = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+						if (i != g_param[dispIdMember - TE_OFFSET]) {
+							g_param[dispIdMember - TE_OFFSET] = i;
+							if (dispIdMember >= TE_OFFSET + TE_Left && dispIdMember <= TE_Bottom + TE_OFFSET) {
+								ArrangeWindow();
+							}
+							if (dispIdMember == TE_OFFSET + TE_Layout) {
+								CteShellBrowser *pSB;
+								for (i = MAX_FV; i-- && (pSB = g_ppSB[i]);) {
+									pSB->m_bCheckLayout = TRUE;
+									pSB->GetViewModeAndIconSize(TRUE);
+								}
+							}
 						}
 					}
 					teSetLong(pVarResult, g_param[dispIdMember - TE_OFFSET]);
@@ -14785,41 +14693,6 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 		return teException(pExcepInfo, L"external", methodTE, dispIdMember);
 	}
 	return DISP_E_MEMBERNOTFOUND;
-}
-
-//IDropTarget
-STDMETHODIMP CTE::DragEnter(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect)
-{
-	m_DragLeave = E_NOT_SET;
-	GetDragItems(&m_pDragItems, pDataObj);
-	HRESULT hr = DragSub(TE_OnDragEnter, this, m_pDragItems, &grfKeyState, pt, pdwEffect);
-	if (hr == S_OK && *pdwEffect) {
-		m_pDragItems->Regenerate();
-	}
-	return hr;
-}
-
-STDMETHODIMP CTE::DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEffect)
-{
-	HRESULT hr = DragSub(TE_OnDragOver, this, m_pDragItems, &grfKeyState, pt, pdwEffect);
-	m_grfKeyState = grfKeyState;
-	return hr;
-}
-
-STDMETHODIMP CTE::DragLeave()
-{
-	if (m_DragLeave == E_NOT_SET) {
-		m_DragLeave = DragLeaveSub(this, &m_pDragItems);
-	}
-	return m_DragLeave;
-}
-
-STDMETHODIMP CTE::Drop(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect)
-{
-	GetDragItems(&m_pDragItems, pDataObj);
-	HRESULT hr = DragSub(TE_OnDrop, this, m_pDragItems, &m_grfKeyState, pt, pdwEffect);
-	DragLeave();
-	return hr;
 }
 
 //IDropSource
@@ -15692,7 +15565,6 @@ CteTabCtrl::CteTabCtrl()
 void CteTabCtrl::Init()
 {
 	m_nIndex = -1;
-	m_pDragItems = NULL;
 	m_bEmpty = false;
 	VariantInit(&m_vData);
 	m_param[TE_Left] = 0;
@@ -15831,7 +15703,7 @@ VOID CteTabCtrl::CreateTC()
 	SetItemSize();
 	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
 	m_DefTCProc = (WNDPROC)SetWindowLongPtr(m_hwnd, GWLP_WNDPROC, (LONG_PTR)TETCProc);
-	RegisterDragDrop(m_hwnd, static_cast<IDropTarget *>(this));
+	RegisterDragDrop(m_hwnd, m_pDropTarget2);
 	BringWindowToTop(m_hwnd);
 }
 
@@ -15852,7 +15724,8 @@ BOOL CteTabCtrl::Create()
 
 	SetWindowLongPtr(m_hwndButton, GWLP_USERDATA, (LONG_PTR)this);
 	m_DefBTProc = (WNDPROC)SetWindowLongPtr(m_hwndButton, GWLP_WNDPROC, (LONG_PTR)TEBTProc);
-	RegisterDragDrop(m_hwndButton, static_cast<IDropTarget *>(this));
+	m_pDropTarget2 = new CteDropTarget2(m_hwndButton, static_cast<IDispatch *>(this));
+	RegisterDragDrop(m_hwndButton, m_pDropTarget2);
 	BringWindowToTop(m_hwndButton);
 
 	CreateTC();
@@ -15866,6 +15739,7 @@ CteTabCtrl::~CteTabCtrl()
 {
 	Close(true);
 	VariantClear(&m_vData);
+	teReleaseClear(&m_pDropTarget2);
 }
 
 STDMETHODIMP CteTabCtrl::QueryInterface(REFIID riid, void **ppvObject)
@@ -15874,7 +15748,6 @@ STDMETHODIMP CteTabCtrl::QueryInterface(REFIID riid, void **ppvObject)
 	{
 		QITABENT(CteTabCtrl, IDispatch),
 		QITABENT(CteTabCtrl, IDispatchEx),
-		QITABENT(CteTabCtrl, IDropTarget),
 		{ 0 },
 	};
 	if (IsEqualIID(riid, g_ClsIdTC)) {
@@ -16260,53 +16133,6 @@ VOID CteTabCtrl::RedrawUpdate()
 		RedrawWindow(m_hwndStatic, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
 		teSetRedraw(TRUE);
 	}
-}
-
-//IDropTarget
-STDMETHODIMP CteTabCtrl::DragEnter(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect)
-{
-	m_DragLeave = E_NOT_SET;
-	GetDragItems(&m_pDragItems, pDataObj);
-	HRESULT hr = DragSub(TE_OnDragEnter, this, m_pDragItems, &grfKeyState, pt, pdwEffect);
-	if (hr == S_OK && *pdwEffect) {
-		m_pDragItems->Regenerate();
-	}
-	if (g_pDropTargetHelper) {
-		g_pDropTargetHelper->DragEnter(m_hwnd, pDataObj, (LPPOINT)&pt, *pdwEffect);
-	}
-	return hr;
-}
-
-STDMETHODIMP CteTabCtrl::DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEffect)
-{
-	HRESULT hr = DragSub(TE_OnDragOver, this, m_pDragItems, &grfKeyState, pt, pdwEffect);
-	if (g_pDropTargetHelper) {
-		g_pDropTargetHelper->DragOver((LPPOINT)&pt, *pdwEffect);
-	}
-	m_grfKeyState = grfKeyState;
-	return hr;
-}
-
-STDMETHODIMP CteTabCtrl::DragLeave()
-{
-	if (m_DragLeave == E_NOT_SET) {
-		if (g_pDropTargetHelper) {
-			g_pDropTargetHelper->DragLeave();
-		}
-		m_DragLeave = DragLeaveSub(this, &m_pDragItems);
-	}
-	return m_DragLeave;
-}
-
-STDMETHODIMP CteTabCtrl::Drop(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect)
-{
-	GetDragItems(&m_pDragItems, pDataObj);
-	if (g_pDropTargetHelper) {
-		g_pDropTargetHelper->Drop(pDataObj, (LPPOINT)&pt, *pdwEffect);
-	}
-	HRESULT hr = DragSub(TE_OnDrop, this, m_pDragItems, &m_grfKeyState, pt, pdwEffect);
-	DragLeave();
-	return hr;
 }
 
 VOID CteTabCtrl::TabChanged(BOOL bSameTC)
@@ -18242,8 +18068,7 @@ CteTreeView::CteTreeView()
 #endif
 	m_DefProc2 = NULL;
 	m_bMain = true;
-	m_pDragItems = NULL;
-	m_pDropTarget = NULL;
+	m_pDropTarget2 = NULL;
 	VariantInit(&m_vData);
 #ifdef _W2000
 	VariantInit(&m_vSelected);
@@ -18263,10 +18088,11 @@ CteTreeView::~CteTreeView()
 		SetWindowLongPtr(m_hwndTV, GWLP_WNDPROC, (LONG_PTR)m_DefProc2);
 		m_DefProc2 = NULL;
 	}
-	if (m_pDropTarget) {
+	if (m_pDropTarget2) {
+//		SetProp(m_hwndTV, L"OleDropTargetInterface", (HANDLE)m_pDropTarget2->m_pDropTarget);
 		RevokeDragDrop(m_hwndTV);
-		RegisterDragDrop(m_hwndTV, m_pDropTarget);
-		teReleaseClear(&m_pDropTarget);
+		RegisterDragDrop(m_hwndTV, m_pDropTarget2->m_pDropTarget);
+		teReleaseClear(&m_pDropTarget2);
 	}
 #ifdef _W2000
 	VariantClear(&m_vSelected);
@@ -18334,8 +18160,9 @@ BOOL CteTreeView::Create()
 					if (m_hwndTV) {
 						SetWindowLongPtr(m_hwndTV, GWLP_USERDATA, (LONG_PTR)this);
 						m_DefProc2 = (WNDPROC)SetWindowLongPtr(m_hwndTV, GWLP_WNDPROC, (LONG_PTR)TETVProc2);
-						if (!m_pDropTarget) {
-							teRegisterDragDrop(m_hwndTV, this, &m_pDropTarget);
+						if (!m_pDropTarget2) {
+							m_pDropTarget2 = new CteDropTarget2(NULL, static_cast<IDispatch *>(this));
+							teRegisterDragDrop(m_hwndTV, m_pDropTarget2, &m_pDropTarget2->m_pDropTarget);
 						}
 					}
 					BringWindowToTop(m_hwnd);
@@ -18429,8 +18256,9 @@ BOOL CteTreeView::Create()
 				m_DefProc = (WNDPROC)SetWindowLongPtr(hwndParent, GWLP_WNDPROC, (LONG_PTR)TETVProc);
 				SetWindowLongPtr(m_hwndTV, GWLP_USERDATA, (LONG_PTR)this);
 				m_DefProc2 = (WNDPROC)SetWindowLongPtr(m_hwndTV, GWLP_WNDPROC, (LONG_PTR)TETVProc2);
-				if (!m_pDropTarget) {
-					teRegisterDragDrop(m_hwndTV, this, &m_pDropTarget);
+				if (!m_pDropTarget2) {
+					m_pDropTarget2 = new CteDropTarget2(NULL, static_cast<IDispatch *>(this));
+					teRegisterDragDrop(m_hwndTV, m_pDropTarget2, &m_pDropTarget2->m_pDropTarget);
 				}
 
 				DWORD dwStyle = GetWindowLong(m_hwndTV, GWL_STYLE);
@@ -18497,7 +18325,6 @@ STDMETHODIMP CteTreeView::QueryInterface(REFIID riid, void **ppvObject)
 	static const QITAB qit[] =
 	{
 		QITABENT(CteTreeView, IDispatch),
-		QITABENT(CteTreeView, IDropTarget),
 		QITABENT(CteTreeView, INameSpaceTreeControlEvents),
 		QITABENT(CteTreeView, INameSpaceTreeControlCustomDraw),
 //		QITABENT(CteTreeView, IContextMenu),
@@ -19335,70 +19162,6 @@ HRESULT CteTreeView::getSelected(IDispatch **ppid)
 	if (!*ppid) {
 		hr = E_FAIL;
 	}
-	return hr;
-}
-
-//IDropTarget
-STDMETHODIMP CteTreeView::DragEnter(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect)
-{
-	m_DragLeave = E_NOT_SET;
-	GetDragItems(&m_pDragItems, pDataObj);
-	DWORD dwEffect = *pdwEffect;
-	HRESULT hr = DragSub(TE_OnDragEnter, this, m_pDragItems, &grfKeyState, pt, pdwEffect);
-	if (m_pDropTarget) {
-		*pdwEffect = dwEffect;
-		if (m_pDropTarget->DragEnter(pDataObj, grfKeyState, pt, pdwEffect) == S_OK) {
-			hr = S_OK;
-		}
-	}
-	if (hr == S_OK && *pdwEffect) {
-		m_pDragItems->Regenerate();
-	}
-	return hr;
-}
-
-STDMETHODIMP CteTreeView::DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEffect)
-{
-	DWORD dwEffect2 = *pdwEffect;
-	HRESULT hr2 = E_NOTIMPL;
-	HRESULT hr = DragSub(TE_OnDragOver, this, m_pDragItems, &grfKeyState, pt, pdwEffect);
-	if (m_pDropTarget) {
-		hr2 = m_pDropTarget->DragOver(grfKeyState, pt, &dwEffect2);
-	}
-	if (hr != S_OK) {
-		*pdwEffect = dwEffect2;
-		hr = hr2;
-	}
-	m_grfKeyState = grfKeyState;
-	return hr;
-}
-
-STDMETHODIMP CteTreeView::DragLeave()
-{
-	if (m_DragLeave == E_NOT_SET) {
-		m_DragLeave = DragLeaveSub(this, &m_pDragItems);
-		if (m_pDropTarget) {
-			HRESULT hr = m_pDropTarget->DragLeave();
-			if (m_DragLeave != S_OK) {
-				m_DragLeave = hr;
-			}
-		}
-	}
-	return m_DragLeave;
-}
-
-STDMETHODIMP CteTreeView::Drop(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect)
-{
-	GetDragItems(&m_pDragItems, pDataObj);
-	DWORD dwEffect = *pdwEffect;
-	HRESULT hr = DragSub(TE_OnDrop, this, m_pDragItems, &m_grfKeyState, pt, pdwEffect);
-	if (m_pDropTarget) {
-		if (hr != S_OK) {
-			*pdwEffect = dwEffect;
-			hr = m_pDropTarget->Drop(pDataObj, m_grfKeyState, pt, pdwEffect);
-		}
-	}
-	DragLeave();
 	return hr;
 }
 
@@ -21008,6 +20771,130 @@ STDMETHODIMP CteDispatchEx::GetNameSpaceParent(IUnknown **ppunk)
 	return m_pdex->GetNameSpaceParent(ppunk);
 }
 //*///
+
+CteDropTarget2::CteDropTarget2(HWND hwnd, IUnknown *punk)
+{
+	m_cRef = 1;
+	m_pDragItems = NULL;
+	m_pDropTarget = NULL;
+
+	m_hwnd = hwnd;
+	m_punk = punk;
+}
+
+CteDropTarget2::~CteDropTarget2()
+{
+	teReleaseClear(&m_pDropTarget);
+}
+
+STDMETHODIMP CteDropTarget2::QueryInterface(REFIID riid, void **ppvObject)
+{
+	*ppvObject = NULL;
+	
+	if (IsEqualIID(riid, IID_IUnknown) || IsEqualIID(riid, IID_IDropTarget)) {
+		*ppvObject = static_cast<IDropTarget *>(this);
+		AddRef();
+		return S_OK;
+	}
+	if (m_pDropTarget) {
+		return m_pDropTarget->QueryInterface(riid, ppvObject);
+	}
+	return E_NOINTERFACE;
+}
+
+STDMETHODIMP_(ULONG) CteDropTarget2::AddRef()
+{
+	return ::InterlockedIncrement(&m_cRef);
+}
+
+STDMETHODIMP_(ULONG) CteDropTarget2::Release()
+{
+	if (::InterlockedDecrement(&m_cRef) == 0) {
+		delete this;
+		return 0;
+	}
+
+	return m_cRef;
+}
+
+//IDropTarget
+STDMETHODIMP CteDropTarget2::DragEnter(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect)
+{
+	m_DragLeave = E_NOT_SET;
+	GetDragItems(&m_pDragItems, pDataObj);
+	DWORD dwEffect = *pdwEffect;
+	HRESULT hr = DragSub(TE_OnDragEnter, m_punk, m_pDragItems, &grfKeyState, pt, pdwEffect);
+	if (m_pDropTarget) {
+		*pdwEffect = dwEffect;
+		if (m_pDropTarget->DragEnter(pDataObj, grfKeyState, pt, pdwEffect) == S_OK) {
+			hr = S_OK;
+		}
+	}
+	if (hr == S_OK && *pdwEffect) {
+		m_pDragItems->Regenerate();
+	}
+	if (g_pDropTargetHelper && m_hwnd) {
+		g_pDropTargetHelper->DragEnter(m_hwnd, pDataObj, (LPPOINT)&pt, *pdwEffect);
+	}
+	return hr;
+}
+
+STDMETHODIMP CteDropTarget2::DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEffect)
+{
+	DWORD dwEffect2 = *pdwEffect;
+	HRESULT hr2 = E_NOTIMPL;
+	HRESULT hr = DragSub(TE_OnDragOver, m_punk, m_pDragItems, &grfKeyState, pt, pdwEffect);
+	if (m_pDropTarget) {
+		hr2 = m_pDropTarget->DragOver(grfKeyState, pt, &dwEffect2);
+	}
+	if (hr == S_OK) {
+		if (*pdwEffect != dwEffect2) {
+			if (g_pDropTargetHelper && m_hwnd) {
+				g_pDropTargetHelper->DragOver((LPPOINT)&pt, *pdwEffect);
+			}
+		}
+	} else {
+		*pdwEffect = dwEffect2;
+		hr = hr2;
+	}
+	m_grfKeyState = grfKeyState;
+	return hr;
+}
+
+STDMETHODIMP CteDropTarget2::DragLeave()
+{
+	if (m_DragLeave == E_NOT_SET) {
+		if (g_pDropTargetHelper && m_hwnd) {
+			g_pDropTargetHelper->DragLeave();
+		}
+		m_DragLeave = DragLeaveSub(m_punk, &m_pDragItems);
+		if (m_pDropTarget) {
+			HRESULT hr = m_pDropTarget->DragLeave();
+			if (m_DragLeave != S_OK) {
+				m_DragLeave = hr;
+			}
+		}
+	}
+	return m_DragLeave;
+}
+
+STDMETHODIMP CteDropTarget2::Drop(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect)
+{
+	GetDragItems(&m_pDragItems, pDataObj);
+	DWORD dwEffect = *pdwEffect;
+	HRESULT hr = DragSub(TE_OnDrop, m_punk, m_pDragItems, &m_grfKeyState, pt, pdwEffect);
+	if (m_pDropTarget) {
+		if (hr != S_OK) {
+			*pdwEffect = dwEffect;
+			hr = m_pDropTarget->Drop(pDataObj, m_grfKeyState, pt, pdwEffect);
+		}
+	}
+	if (g_pDropTargetHelper && m_hwnd) {
+		g_pDropTargetHelper->Drop(pDataObj, (LPPOINT)&pt, *pdwEffect);
+	}
+	DragLeave();
+	return hr;
+}
 
 #ifdef _USE_HTMLDOC
 // CteDocHostUIHandler

@@ -1371,6 +1371,11 @@ te.OnColumnClick = function (Ctrl, iItem)
 
 te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 {
+	if (Ctrl.Type == CTRL_TE && msg == WM_SYSCOMMAND && wParam >= 0xf000) {
+		if (!api.IsZoomed(te.hwnd) && !api.IsIconic(te.hwnd)) {
+			api.GetWindowRect(te.hwnd, g_rcWindow);
+		}
+	}
 	var hr = RunEvent3("SystemMessage", Ctrl, hwnd, msg, wParam, lParam);
 	if (isFinite(hr)) {
 		return hr; 
@@ -2377,6 +2382,20 @@ g_basic =
 
 			Drop: DropOpen,
 			Ref: BrowseForFolder
+		},
+
+		Filter:
+		{
+			Exec: function (Ctrl, s, type, hwnd, pt)
+			{
+				var FV = GetFolderView(Ctrl, pt);
+				if (FV) {
+					var s = ExtractMacro(Ctrl, s);
+				 	FV.FilterView = s != "*" ? s : null;
+				 	FV.Refresh();
+				 }
+				return S_OK;
+			}
 		},
 
 		Exec:

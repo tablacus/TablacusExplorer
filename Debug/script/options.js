@@ -1661,9 +1661,9 @@ MouseWheel = function ()
 
 InitLocation = function ()
 {
-	var ar = [];
+	var ar = [], param = [];
 	Addon_Id = dialogArguments.Data.id;
-	LoadAddon("js", Addon_Id, ar);
+	LoadAddon("js", Addon_Id, ar, param);
 	if (ar.length) {
 		(function (ar) { setTimeout(function () {
 			MessageBox(ar.join("\n\n"), TITLE, MB_OK);
@@ -1684,7 +1684,7 @@ InitLocation = function ()
 		item = items[0];
 		var Location = item.getAttribute("Location");
 		if (!Location) {
-			Location = window.Default;
+			Location = param.Default;
 		}
 		for (var i = document.L.elements.length; i--;) {
 			if (api.StrCmpI(Location, document.L.elements[i].value) == 0) {
