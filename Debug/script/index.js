@@ -687,6 +687,7 @@ te.OnCreate = function (Ctrl)
 			setTimeout(function ()
 			{
 				RunCommandLine(api.GetCommandLine());
+				api.PostMessage(te.hwnd, WM_SIZE, 0, 0);
 			}, 500);
 		}, 99);
 		RunEvent1("Create", Ctrl);
@@ -3221,10 +3222,7 @@ if (!te.Data) {
 	setTimeout(function ()
 	{	
 		te.UnlockUpdate();
-		setTimeout(function ()
-		{
-			Resize();
-		}, 99);
+		setTimeout(Resize, 99);
 	}, 500);
 }
 

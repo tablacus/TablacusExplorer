@@ -2392,13 +2392,20 @@ PopupContextMenu = function (Item, FV)
 GetAddonElement = function (id)
 {
 	var items = te.Data.Addons.getElementsByTagName(id);
-	return items.length ? items[0] : null;
+	if (items.length) {
+		return items[0];
+	}
+	return {
+		getAttribute: function (s) {
+			return "";
+		},
+		setAttribute: function () {}
+	}
 }
 
 GetAddonOption = function (id, strTag)
 {
-	var item = GetAddonElement(id);
-	return item ? item.getAttribute(strTag) : null;
+	return GetAddonElement(id).getAttribute(strTag);
 }
 
 GetAddonOptionEx = function (id, strTag)

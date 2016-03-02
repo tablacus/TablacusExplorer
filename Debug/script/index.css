@@ -186,9 +186,8 @@ input, select, textarea, li {
 	height: 2em;
 	outline: 0;
 	background: linear-gradient(to bottom, #fff, #ccc);
-	filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#cccccc);
 	vertical-align: bottom;
-	transition: 0.2s;
+	filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#cccccc);
 }
 
 .tab:hover, .tab2:hover, .tab3:hover {

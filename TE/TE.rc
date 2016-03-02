@@ -11,10 +11,7 @@
 // Icon resources
 //
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
-IDI_16             ICON           "te16.ico"
-
-LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
-IDI_TE             ICON           "te.ico"
+IDI_TE              ICON           "te.ico"
 
 //
 // Version Information resources
