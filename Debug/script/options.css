@@ -5,6 +5,7 @@
 	border: 1px solid #898C95;
 	padding: 4px;
 	display: none;
+	width: 100%;
 	line-height: 150%;
 	overflow-y: auto;
 	clear:both;

@@ -169,6 +169,7 @@ typedef HRESULT (WINAPI* LPFNSHGetImageList)(int iImageList, REFIID riid, void *
 typedef HRESULT (WINAPI* LPFNSetWindowTheme)(HWND hwnd, LPCWSTR pszSubAppName, LPCWSTR pszSubIdList);
 typedef BOOL (WINAPI* LPFNSHTestTokenMembership)(HANDLE hToken, ULONG ulRID);
 typedef BOOL (WINAPI* LPFNIsThemeActive)(void);
+typedef HRESULT (STDAPICALLTYPE* LPFNSHDefExtractIconW)(LPCWSTR pszIconFile, int iIndex, UINT uFlags, HICON *phiconLarge, HICON *phiconSmall, UINT nIconSize);
 
 //XP SP1 or higher.
 typedef BOOL (WINAPI* LPFNSetDllDirectoryW)(__in_opt LPCWSTR lpPathName);

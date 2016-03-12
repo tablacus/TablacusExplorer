@@ -126,27 +126,24 @@ ssfRESULTSFOLDER = WINVER >= 0x600 ? "shell:::{2965E715-EB66-4719-B53F-1672673BB
 FILTER_IMAGE = "*.jpg;*.jpeg;*.png;*.bmp;*.gif;*.ico;data:*";
 REGEXP_IMAGE = /^data:|\.jpe?g$|\.png$|\.bmp$|\.gif$|\.ico$/i;
 XHRBODY = 'responseBody';
+
 if (WINVER > 0x603) {
 	BUTTONS = {
-		opened: '<b style="transform: scale(1.5,0.9) rotate(-90deg); transform-origin: 50% 55%">&lt;</b>',
-		closed: '<b style="transform: scale(0.9,1.5); opacity: 0.5">&gt;</b>',
+		opened: '<b style="font-family: Consolas; transform: scale(1.2,1) rotate(-90deg)">&lt;</b>',
+		closed: '<b style="font-family: Consolas; transform: scale(1,1.2) translateX(1px); opacity: 0.5">&gt;</b>',
 		parent: '&laquo;',
-		next: '<b style="color: #666; transform: scale(0.6,1.2); text-shadow: 1px 0px">&gt;</b>',
-		dropdown: '<b style="color: #666; transform: scale(1.2,0.6); text-shadow: 0px 1px">&#8744;</b>'
-	}
+		next: '<b style="font-family: Consolas; color: #666; transform: scale(0.75,0.9); text-shadow: 1px 0px">&gt;</b>',
+		dropdown: '<b style="font-family: Consolas; transform: scale(1.2,1) rotate(-90deg) translateX(2px); opacity: 0.5; width: 1em; display: inline-block">&lt;</b>'	}
 } else {
 	BUTTONS = {
-		opened: '<span style="font-size: 1.25em; font-size: 0.583rem; transform: translateY(-2px)"">&#x25e2;</span>',
-		closed: '<span style="font-size: 1.25em; font-size: 0.583rem; transform: scale(1,1.4)">&#x25b7;</span>',
+		opened: '<span style="font-size: 13px; transform: translateY(-3px)">&#x25e2;</span>',
+		closed: '<span style="font-size: 13px; transform: scale(1,1.4)">&#x25b7;</span>',
 		parent: '&laquo;',
 		next: '<span style="font-family: Marlett">4</span>',
 		dropdown: '<span style="font-family: Marlett">6</span>'
 	}
 }
-/*
-		opened: '<b style="transform: scale(1.4,0.8); text-shadow: 0px 1px">&#8744;</b>',
-		closed: '<b style="transform: scale(0.8,1.4) rotate(90deg); transform-origin: 50% 50%; text-shadow: 0px 1px">&#8743;</b>',
-*/
+
 //Windows
 MAXINT = 0x7fffffff;
 MAX_PATH = 260;
@@ -481,6 +478,7 @@ LVM_GETBKCOLOR         = 0x1000;
 LVM_GETBKIMAGE         = 0x108B;
 LVM_GETCOLUMNWIDTH     = 0x101D;
 LVM_GETCOUNTPERPAGE    = 0x1028;
+LVM_GETEDITCONTROL     = 0x1018;
 LVM_GETEXTENDEDLISTVIEWSTYLE = 0x1037;
 LVM_GETGROUPCOUNT      = 0x1098;
 LVM_GETGROUPINFO       = 0x1095;

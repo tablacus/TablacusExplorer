@@ -42,7 +42,7 @@ LPFNChangeWindowMessageFilter lpfnChangeWindowMessageFilter = NULL;
 LPFNChangeWindowMessageFilterEx lpfnChangeWindowMessageFilterEx = NULL;
 LPFNAddClipboardFormatListener lpfnAddClipboardFormatListener = NULL;
 LPFNRemoveClipboardFormatListener lpfnRemoveClipboardFormatListener = NULL;
-
+LPFNSHDefExtractIconW lpfnSHDefExtractIconW = NULL;
 LPFNRtlGetVersion lpfnRtlGetVersion = NULL;
 LPFNSHTestTokenMembership lpfnSHTestTokenMembership = NULL;
 #ifdef _USE_APIHOOK
@@ -8129,6 +8129,13 @@ VOID teApiIsThemeActive(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 	}
 }
 
+VOID teApiSHDefExtractIcon(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	if (lpfnSHDefExtractIconW) {
+		teSetLong(pVarResult, lpfnSHDefExtractIconW(param[0].lpcwstr, param[1].intVal, param[2].uintVal, param[3].phicon, param[4].phicon, param[5].uintVal));
+	}
+}
+
 /*//Deprecated (SSL)
 VOID teApiURLDownloadToFile(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -8437,6 +8444,7 @@ TEDispatchApi dispAPI[] = {
 	{ 1,  0, -1, -1, L"OutputDebugString", teApiOutputDebugString },
 	{ 2, -1, -1, -1, L"DllGetClassObject", teApiDllGetClassObject },
 	{ 0, -1, -1, -1, L"IsThemeActive", teApiIsThemeActive },
+	{ 6,  0, -1, -1, L"SHDefExtractIcon", teApiSHDefExtractIcon },
 //	{ 3,  1,  2, -1, L"URLDownloadToFile", teApiURLDownloadToFile },//Deprecated
 //	{ 0, -1, -1, -1, L"", teApi },
 //	{ 0, -1, -1, -1, L"Test", teApiTest },
@@ -8517,7 +8525,6 @@ ATOM MyRegisterClass(HINSTANCE hInstance, LPWSTR szClassName, WNDPROC lpfnWndPro
 	WNDCLASSEX wcex;
 
 	wcex.cbSize = sizeof(WNDCLASSEX);
-
 	wcex.style			= CS_HREDRAW | CS_VREDRAW;
 	wcex.lpfnWndProc	= lpfnWndProc;
 	wcex.cbClsExtra		= 0;
@@ -8528,7 +8535,11 @@ ATOM MyRegisterClass(HINSTANCE hInstance, LPWSTR szClassName, WNDPROC lpfnWndPro
 	wcex.hbrBackground	= (HBRUSH)(COLOR_BTNFACE + 1);
 	wcex.lpszMenuName	= 0;
 	wcex.lpszClassName	= szClassName;
+#ifdef _2000XP
+	wcex.hIconSm		= g_bUpperVista ? NULL : wcex.hIcon;
+#else
 	wcex.hIconSm		= NULL;
+#endif
 
 	return RegisterClassEx(&wcex);
 }
@@ -9156,6 +9167,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		lpfnSHRunDialog = (LPFNSHRunDialog)GetProcAddress(g_hShell32, MAKEINTRESOURCEA(61));
 		lpfnRegenerateUserEnvironment = (LPFNRegenerateUserEnvironment)GetProcAddress(g_hShell32, "RegenerateUserEnvironment");
 		lpfnSHTestTokenMembership = (LPFNSHTestTokenMembership)GetProcAddress(g_hShell32, "SHTestTokenMembership");
+		lpfnSHDefExtractIconW = (LPFNSHDefExtractIconW)GetProcAddress(g_hShell32, "SHDefExtractIconW");
 	}
 #ifdef _2000XP
 	if (!lpfnSHGetIDListFromObject) {
@@ -9647,11 +9659,12 @@ VOID CALLBACK teTimerProcParse(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 			teILFreeClear(&pInvoke->pidl);
 			Invoke5(pInvoke->pdisp, pInvoke->dispid, DISPATCH_METHOD, NULL, pInvoke->cArgs, pInvoke->pv);
 		} else if (pInvoke->wErrorHandling == 1) {
-			CteFolderItem *pid = new CteFolderItem(&pInvoke->pv[pInvoke->cArgs - 1]);
+			VARIANT *pv = &pInvoke->pv[pInvoke->cArgs - 1];
+			CteFolderItem *pid = new CteFolderItem(pv);
 			teILCloneReplace(&pid->m_pidl, g_pidlResultsFolder);
 			pid->m_dwUnavailable = GetTickCount();
-			VariantInit(&pInvoke->pv[pInvoke->cArgs - 1]);
-			teSetObjectRelease(&pInvoke->pv[pInvoke->cArgs - 1], pid);
+			VariantClear(pv);
+			teSetObjectRelease(pv, pid);
 			Invoke5(pInvoke->pdisp, pInvoke->dispid, DISPATCH_METHOD, NULL, pInvoke->cArgs, pInvoke->pv);
 		} else if (pInvoke->wErrorHandling == 2) {
 			if (g_bShowParseError) {

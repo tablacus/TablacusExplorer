@@ -122,12 +122,21 @@ function ResetForm()
 
 function ResizeTabPanel()
 {
-	if (g_ovPanel) {
-		var h = document.documentElement.clientHeight || document.body.clientHeight;
-		h += MainWindow.DefaultFont.lfHeight * 5;
-		if (h > 0) {
-			g_ovPanel.style.height = h + 'px';
-			g_ovPanel.style.height = 2 * h - g_ovPanel.offsetHeight + "px";
+	CalcElementHeight(g_ovPanel, 4.8);
+}
+
+function CalcElementHeight(o, em)
+{
+	if (o) {
+		if (document.documentMode >= 9) {
+			o.style.height = "calc(100vh - " + em + "em)";
+		} else {
+			var h = document.documentElement.clientHeight || document.body.clientHeight;
+			h += MainWindow.DefaultFont.lfHeight * em;
+			if (h > 0) {
+				o.style.height = h + 'px';
+				o.style.height = 2 * h - o.offsetHeight + "px";
+			}
 		}
 	}
 }
@@ -222,19 +231,8 @@ function ClickTree(o, nMode, strChg, bForce)
 			}
 			ovTab.className = 'hoverbutton';
 			ovPanel.style.display = 'block';
-			if (!dialogArguments.width) {
-				var w = document.documentElement.clientWidth || document.body.clientWidth;
-				ovPanel.style.width = document.documentMode >= 9 ? 'calc(100vw - 12em)' : (w - 12 * Math.abs(MainWindow.DefaultFont.lfHeight)) + "px";
-			}
-			var h = document.documentElement.clientHeight || document.body.clientHeight;
-			h += MainWindow.DefaultFont.lfHeight * 2.7;
-			if (h > 0) {
-				ovPanel.style.height = h + 'px';
-				ovPanel.style.height = 2 * h - ovPanel.offsetHeight + "px";
-			}
-			var o = document.getElementById("tab_");
-			o.style.height = h + 'px';
-			o.style.height = 2 * h - o.offsetHeight + "px";
+			CalcElementHeight(ovPanel, 2.7);
+			CalcElementHeight(document.getElementById("tab_"), 2.7);
 		}
 	}
 }
@@ -264,6 +262,11 @@ function SetCheckbox(o)
 		document.F.elements[ar[0]].value |= eval(ar[1]);
 	} else {
 		document.F.elements[ar[0]].value &= ~eval(ar[1]);
+	}
+	var res = /^(Tab|Tree|View|Conf)/.exec(ar[0]);
+	if (res) {
+		g_Chg[res[1]] = true;
+		g_bChanged = true;
 	}
 }
 
@@ -360,7 +363,7 @@ function AddTabControl()
 		return;
 	}
 	var TC = te.CreateCtrl(CTRL_TC, document.F.Tab_Left.value, document.F.Tab_Top.value, document.F.Tab_Width.value, document.F.Tab_Height.value, document.F.Tab_Style.value, document.F.Tab_Align.value, document.F.Tab_TabWidth.value, document.F.Tab_TabHeight.value);
-	TC.Selected.Navigate2("c:\\", SBSP_NEWBROWSER, document.F.View_Type.value, document.F.View_ViewMode.value, document.F.View_fFlags.value, 0, document.F.View_Options.value, document.F.View_ViewFlags.value, Number(document.F.View_SizeFormat.value));
+	TC.Selected.Navigate2("C:\\", SBSP_NEWBROWSER, document.F.View_Type.value, document.F.View_ViewMode.value, document.F.View_fFlags.value, 0, document.F.View_Options.value, document.F.View_ViewFlags.value, Number(document.F.View_SizeFormat.value));
 }
 
 function DelTabControl()
@@ -786,7 +789,7 @@ function LoadMenus(nSelected)
 
 		for (var j in g_arMenuTypes) {
 			var s = g_arMenuTypes[j];
-			document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", ['<select name="Menus_', s, '" size="17" style="width: 12em; height: 32em; height: calc(100vh - 6em); display: none; font-family:', document.F.elements["Menus_Pos"].style.fontFamily, '" onclick="EditXEx(EditMenus)" ondblclick="EditMenus()" oncontextmenu="CancelX(\'Menus\')"></select>'].join(""));
+			document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", ['<select name="Menus_', s, '" size="17" style="width: 12em; height: 32em; height: calc(100vh - 6em); display: none" onchange="EditXEx(EditMenus)" ondblclick="EditMenus()" oncontextmenu="CancelX(\'Menus\')"></select>'].join(""));
 			var menus = teMenuGetElementsByTagName(s);
 			if (menus && menus.length) {
 				oa[++oa.length - 1].value = s + "," + menus[0].getAttribute("Base") + "," + menus[0].getAttribute("Pos");
@@ -1453,23 +1456,23 @@ InitDialog = function ()
 			"24px ieframe,697" : "b,697,24",
 
 			"16px shell32" : "i,shell32.dll,16",
-			"32px shell32" : "i,shell32.dll,32",
 			"16px imageres" : "i,imageres.dll,16",
-			"32px imageres" : "i,imageres.dll,32",
 			"16px wmploc" : "i,wmploc.dll,16",
-			"32px wmploc" : "i,wmploc.dll,32",
 			"16px setupapi" : "i,setupapi.dll,16",
-			"32px setupapi" : "i,setupapi.dll,32",
 			"16px dsuiext" : "i,dsuiext.dll,16",
-			"32px dsuiext" : "i,dsuiext.dll,32",
 			"16px inetcpl" : "i,inetcpl.cpl,16",
-			"32px inetcpl" : "i,inetcpl.cpl,32",
+
 			"25px TRAVEL_ENABLED_XP" : "b,TRAVEL_ENABLED_XP.BMP,25",
 			"30px TRAVEL_ENABLED_XP" : "b,TRAVEL_ENABLED_XP_120.BMP,30"
 		};
-		var s = [];
+		var s = [], ar = [24, 32, 48];
 		for (var i in a) {
 			s.push('<div id="' + a[i] + '" onclick="OpenIcon(this)" style="cursor: pointer"><span class="tab">' + i + '</span></div>');
+			if (a[i].charAt(0) == 'i') {
+				for (var j in ar) {
+					s.push('<div id="' + a[i].replace("16", ar[j]) + '" onclick="OpenIcon(this)" style="cursor: pointer"><span class="tab">' + i.replace("16", ar[j]) + '</span></div>');
+				}
+			}
 		}
 		document.getElementById("Content").innerHTML = s.join("");
 	}
@@ -1561,7 +1564,11 @@ InitDialog = function ()
 		var i = document.getElementById("buttons").offsetHeight * screen.deviceYDPI / screen.logicalYDPI + 6;
 		h -= i > 34 ? i : 34;
 		if (h > 0) {
-			document.getElementById("panel0").style.height = h + 'px';
+			if (document.documentMode >= 9) {
+				document.getElementById("panel0").style.height = "calc(100vh - " + i + "px";
+			} else {
+				document.getElementById("panel0").style.height = h + 'px';
+			}
 		}
 	};
 	AddEventEx(window, "resize", function ()
@@ -2107,6 +2114,7 @@ function SelectIcon(o)
 	returnValue = o.title;
 	document.F.ButtonOk.disabled = false;
 	document.getElementById("Selected").innerHTML = o.outerHTML;
+	DialogResize();
 }
 
 TestX = function (id)

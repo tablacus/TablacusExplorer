@@ -819,6 +819,14 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 					}
 				}
 				if (strClass == WC_EDIT) {
+					if (key == VK_TAB && Ctrl.hwndList) {
+						(function (FV) { setTimeout(function () {
+							if (!api.SendMessage(FV.hwndList, LVM_GETEDITCONTROL, 0, 0) || WINVER < 0x600) {
+								var Items = FV.Items;
+								FV.SelectItem(Items.Item(FV.GetFocusedItem() + (api.GetKeyState(VK_SHIFT) < 0 ? -1 :1)) || FV.Items.Item(api.GetKeyState(VK_SHIFT) < 0 ? Items.Count - 1: 0), SVSI_EDIT | SVSI_FOCUSED | SVSI_SELECT | SVSI_DESELECTOTHERS);
+							}
+						}, 99);}) (Ctrl);
+					}
 					return S_FALSE;
 				}
 				break;
@@ -1749,11 +1757,11 @@ GetIconImage = function (Ctrl, BGColor)
 		return MakeImgSrc(WINVER >= 0x600 ? "icon:shell32.dll,273,16" : "icon:shell32.dll,9,16", 0, false, 16);
 	}
 	if (document.documentMode) {
-		var info = api.Memory("SHFILEINFO");
-		api.SHGetFileInfo(FolderItem, 0, info, info.Size, SHGFI_ICON | SHGFI_SMALLICON | SHGFI_PIDL);
+		var sfi = api.Memory("SHFILEINFO");
+		api.SHGetFileInfo(FolderItem, 0, sfi, sfi.Size, SHGFI_ICON | SHGFI_SMALLICON | SHGFI_PIDL);
 		var image = te.GdiplusBitmap();
-		image.FromHICON(info.hIcon, BGColor);
-		api.DestroyIcon(info.hIcon);
+		image.FromHICON(sfi.hIcon, BGColor);
+		api.DestroyIcon(sfi.hIcon);
 		return image.DataURI("image/png");
 	}
 	return MakeImgSrc("icon:shell32.dll,3,16", 0, false, 16);

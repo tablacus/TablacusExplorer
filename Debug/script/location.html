@@ -434,19 +434,15 @@
       <input type="hidden" name="Set" value="1" />
     </form>
 
-    <table style="width: 99%">
+    <table id="buttons" width="100%">
       <tr>
-        <td align="right">
-          <table>
-            <tr>
-              <td>
-                <input type="button" value="OK" class="ok" onclick="SetResult(1)" />&nbsp;
-              </td>
-              <td>
-                <input type="button" value="Cancel" class="cancel" onclick="SetResult(2)" />
-              </td>
-            </tr>
-          </table>
+        <td id="toolbar" style="width: 100%; white-space: nowrap">
+        </td>
+        <td style="width: 8em; white-space: nowrap">
+          <input type="button" value="OK" class="ok" onclick="SetResult(1)" />&nbsp;
+        </td>
+        <td style="width: 8em; white-space: nowrap">
+          <input type="button" value="Cancel" class="cancel" onclick="SetResult(2)" />&nbsp;
         </td>
       </tr>
     </table>

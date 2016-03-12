@@ -207,15 +207,6 @@ function ApplyLang(doc)
 		doc.body.style.fontFamily = FaceName;
 		doc.body.style.fontSize = Math.abs(MainWindow.DefaultFont.lfHeight) + "px";
 		doc.body.style.backgroundColor = 'buttonface';
-		var css = document.styleSheets.item(0);
-		if (css) {
-			var s = ['font-family: ', FaceName, '; font-size: ', doc.body.style.fontSize].join("");
-			if (css.insertRule) {
-				css.insertRule(["*", " { ", s, " }"].join(""), css.cssRules.length);
-			} else if (css.addRule) {
-				css.addRule("*", s);
-			}
-		}
 	}
 
 	var i;
@@ -488,20 +479,20 @@ function MakeImgIcon(src, index, h, strBitmap, strIcon)
 		var icon = value.split(",");
 		var phIcon = api.Memory("HANDLE");
 		if (icon[index * 4 + 2] > 16) {
-			api.ExtractIconEx(icon[index * 4], icon[index * 4 + 1], phIcon, null, 1);
+			api.SHDefExtractIcon(icon[index * 4], icon[index * 4 + 1], 0, phIcon, null, icon[index * 4 + 2]);
 		} else {
-			api.ExtractIconEx(icon[index * 4], icon[index * 4 + 1], null, phIcon, 1);
+			api.SHDefExtractIcon(icon[index * 4], icon[index * 4 + 1], 0, null, phIcon, icon[index * 4 + 2] << 16);
 		}
 		if (phIcon[0]) {
 			return phIcon[0];
 		}
 	}
 	if (src && !REGEXP_IMAGE.test(src)) {
-		var info = api.Memory("SHFILEINFO");
+		var sfi = api.Memory("SHFILEINFO");
 		var pidl = api.ILCreateFromPath(api.PathUnquoteSpaces(src));
 		if (pidl) {
-			api.ShGetFileInfo(pidl, 0, info, info.Size, (h && h <= 16) ? SHGFI_PIDL | SHGFI_ICON | SHGFI_SMALLICON : SHGFI_PIDL | SHGFI_ICON);
-			return info.hIcon;
+			api.ShGetFileInfo(pidl, 0, sfi, sfi.Size, (h && h <= 16) ? SHGFI_PIDL | SHGFI_ICON | SHGFI_SMALLICON : SHGFI_PIDL | SHGFI_ICON);
+			return sfi.hIcon;
 		}
 	}
 	return null;
@@ -1827,15 +1818,15 @@ GetAccelerator = function (s)
 AddMenuIconFolderItem = function (mii, FolderItem)
 {
 	var image = te.GdiplusBitmap();
-	var info = api.Memory("SHFILEINFO");
-	api.ShGetFileInfo(FolderItem, 0, info, info.Size, SHGFI_ICON | SHGFI_SMALLICON | SHGFI_SYSICONINDEX | SHGFI_PIDL);
-	var id = info.iIcon;
+	var sfi = api.Memory("SHFILEINFO");
+	api.ShGetFileInfo(FolderItem, 0, sfi, sfi.Size, SHGFI_ICON | SHGFI_SMALLICON | SHGFI_SYSICONINDEX | SHGFI_PIDL);
+	var id = sfi.iIcon;
 	mii.hbmpItem = MainWindow.g_arBM['U' + id];
 	if (mii.hbmpItem) {
 		mii.fMask = mii.fMask | MIIM_BITMAP;
 		return;
 	}
-	var hIcon = info.hIcon;
+	var hIcon = sfi.hIcon;
 	image.FromHICON(hIcon, GetSysColor(COLOR_MENU));
 	api.DestroyIcon(hIcon);
 	AddMenuImage(mii, image, id);
