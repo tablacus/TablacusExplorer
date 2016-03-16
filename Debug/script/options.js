@@ -54,6 +54,26 @@ function OpenGroup(id)
 	o.style.display = String(o.style.display).toLowerCase() == "block" ? "none" : "block";
 }
 
+
+function LoadChecked(form)
+{
+	for(i = 0; i < form.length; i++) {
+		var o = form.elements[i];
+		if (/=/.test(o.id)) {
+			var ar = o.id.split("=");
+			if (form.elements[ar[0]].value == eval(ar[1])) {
+				form.elements[i].checked = true;
+			}
+		}
+		if (/:/.test(o.id)) {
+			var ar = o.id.split(":");
+			if (form.elements[ar[0]].value & eval(ar[1])) {
+				form.elements[i].checked = true;
+			}
+		}
+	}
+}
+
 function ResetForm()
 {
 	var TV = te.Ctrl(CTRL_TV);
@@ -97,21 +117,7 @@ function ResetForm()
 			}
 		}
 	}
-	for(i = 0; i < document.F.length; i++) {
-		o = document.F.elements[i];
-		if (/=/.test(o.id)) {
-			var ar = o.id.split("=");
-			if (document.F.elements[ar[0]].value == eval(ar[1])) {
-				document.F.elements[i].checked = true;
-			}
-		}
-		if (/:/.test(o.id)) {
-			var ar = o.id.split(":");
-			if (document.F.elements[ar[0]].value & eval(ar[1])) {
-				document.F.elements[i].checked = true;
-			}
-		}
-	}
+	LoadChecked(document.F);
 	var s = GetWebColor(document.F.Conf_TrailColor.value);
 	document.F.Conf_TrailColor.value = s;
 	document.F.Color_Conf_TrailColor.style.backgroundColor = s;
@@ -123,22 +129,6 @@ function ResetForm()
 function ResizeTabPanel()
 {
 	CalcElementHeight(g_ovPanel, 4.8);
-}
-
-function CalcElementHeight(o, em)
-{
-	if (o) {
-		if (document.documentMode >= 9) {
-			o.style.height = "calc(100vh - " + em + "em)";
-		} else {
-			var h = document.documentElement.clientHeight || document.body.clientHeight;
-			h += MainWindow.DefaultFont.lfHeight * em;
-			if (h > 0) {
-				o.style.height = h + 'px';
-				o.style.height = 2 * h - o.offsetHeight + "px";
-			}
-		}
-	}
 }
 
 function ClickTab(o, nMode)
@@ -1483,23 +1473,26 @@ InitDialog = function ()
 	if (Query == "key") {
 		returnValue = false;
 		document.getElementById("Content").innerHTML = '<div style="padding: 8px;" style="display: block;"><label>Key</label><br /><input type="text" name="q" autocomplete="off" style="width: 100%; ime-mode: disabled" /></div>';
-		document.body.onkeydown = function (e)
+		AddEventEx(window, "keydown", function (e)
 		{
 			var key = (e || event).keyCode;
 			var s = api.sprintf(10, "$%x", (api.MapVirtualKey(key, 0) | ((key >= 33 && key <= 46 || key >= 91 && key <= 93 || key == 111 || key == 144) ? 256 : 0) | GetKeyShift()));
 			returnValue = GetKeyName(s);
+			if (/^\$\w02a$|^\$\w01d$|^\$\w038$/i.test(returnValue)) {
+				returnValue = GetKeyName(s.substr(0, 3) + "1e").replace(/\+A$/, "");
+			}
 			document.F.q.value = returnValue;
 			document.F.q.title = s;
 			document.F.ButtonOk.disabled = false;
 			return false;
-		}
+		});
 	}
 	if (Query == "new") {
 		returnValue = false;
 		var s = [];
 		s.push('<div style="padding: 8px;" style="display: block;"><input type="radio" name="mode" id="folder" onclick="document.F.path.focus()"><label for="folder">New Folder</label> <input type="radio" name="mode" id="file" onclick="document.F.path.focus()"><label for="file">New File</label><br />', dialogArguments.path ,'<br /><input type="text" name="path" style="width: 100%" /></div>');
 		document.getElementById("Content").innerHTML = s.join("");
-		document.body.onkeydown = function (e)
+		AddEventEx(window, "keydown", function (e)
 		{
 			setTimeout(function ()
 			{
@@ -1513,14 +1506,16 @@ InitDialog = function ()
 				SetResult(2);
 			}
 			return true;
-		}
-		document.body.onpaste = function ()
+		});
+
+		AddEventEx(window, "paste", function ()
 		{
 			setTimeout(function ()
 			{
 				document.F.ButtonOk.disabled = !document.F.path.value;
 			}, 99);
-		}
+		});
+
 		setTimeout(function ()
 		{
 			document.F.elements[dialogArguments.Mode].checked = true;
@@ -1749,7 +1744,7 @@ InitLocation = function ()
 		var ele = document.F.elements;
 		for (var i = ele.length; i--;) {
 			var n = ele[i].id || ele[i].name;
-			if (n) {
+			if (n && !/=/.test(n)) {
 				s = item.getAttribute(n);
 				if (/Name$/.test(n)) {
 					s = GetText(s);
@@ -1763,6 +1758,8 @@ InitLocation = function ()
 			}
 		}
 	}
+	LoadChecked(document.F);
+
 	if (!dialogArguments.Data.show) {
 		dialogArguments.Data.show = "6";
 		dialogArguments.Data.index = 6;
@@ -1879,7 +1876,7 @@ function GetElementValue(o)
 function SetElementValue(o, s)
 {
 	if (o.type) {
-		if (api.StrCmpI(o.type, "checkbox") == 0) {
+		if (/checkbox/i.test(o.type)) {
 			o.checked = api.LowPart(s);
 			return;
 		}
@@ -2333,12 +2330,21 @@ function ArrangeAddon(xml, td, ts)
 		if (CheckAddon(Id)) {
 			installed = GetAddonInfo(Id);
 			if (installed.Version >= info.Version) {
-				return;
-			} else {
-				s.push('<b id="_Addons_', Id,'" style="color: red; white-space: nowrap;">', GetText('Update available'), "</b>");
-				dt2 += MAXINT * 2;
-				bUpdate = true;
+				try {
+					if (!installed.DllVersion) {
+						return;
+					}
+					var path = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\" + Id + "\\t" + Id + (api.sizeof("HANDLE") * 8) + ".dll");
+					if (CalcVersion(installed.DllVersion) <= CalcVersion(fso.GetFileVersion(path))) {
+						return;
+					}
+				} catch (e) {
+					return;
+				}
 			}
+			s.push('<b id="_Addons_', Id,'" style="color: red; white-space: nowrap;">', GetText('Update available'), "</b>");
+			dt2 += MAXINT * 2;
+			bUpdate = true;
 		} else {
 			dt2 += MAXINT;
 		}

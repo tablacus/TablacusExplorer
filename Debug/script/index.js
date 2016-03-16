@@ -1011,6 +1011,10 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 			g_mouse.EndGesture(false);
 		}
 		if (g_mouse.str.length && (te.Data.Conf_Gestures > 1 && api.GetKeyState(VK_RBUTTON) < 0) || (te.Data.Conf_Gestures && (api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_XBUTTON1) < 0 || api.GetKeyState(VK_XBUTTON2) < 0))) {
+			if (g_mouse.ptGesture.x == -1 && g_mouse.ptGesture.y == -1) {
+				g_mouse.ptGesture.x = pt.x;
+				g_mouse.ptGesture.y = pt.y;
+			}
 			var x = (pt.x - g_mouse.ptGesture.x);
 			var y = (pt.y - g_mouse.ptGesture.y);
 			if (Math.abs(x) + Math.abs(y) >= 20) {
@@ -1046,6 +1050,9 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 				}
 				g_mouse.StartGestureTimer();
 			}
+		} else {
+			g_mouse.ptGesture.x = -1;
+			g_mouse.ptGesture.y = -1;
 		}
 	}
 	return g_mouse.str.length >= 2 ? S_OK : S_FALSE;
@@ -1867,7 +1874,7 @@ function GetAddonLocation(strName)
 	return (items.length ? items[0].getAttribute("Location") : null);
 }
 
-function SetAddon(strName, Location, Tag)
+function SetAddon(strName, Location, Tag, strVAlign)
 {
 	if (strName) {
 		var s = GetAddonLocation(strName);
@@ -1893,6 +1900,9 @@ function SetAddon(strName, Location, Tag)
 				o.appendChild(Tag);
 			}
 			o.style.display = (document.documentMode && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
+			if (strVAlign && !o.style.verticalAlign) {
+				o.style.verticalAlign = strVAlign;
+			}
 		} else if (Location == "Inner") {
 			AddEvent("PanelCreated", function (Ctrl)
 			{

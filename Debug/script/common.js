@@ -2321,7 +2321,11 @@ AddonOptions = function (Id, fn, Data)
 function CalcVersion(s)
 {
 	var r = 0;
-	var res = /(\d+)\.(\d+)\.(\d+)/.exec(s);
+	var res = /(\d+)\.(\d+)\.(\d+)\.(\d+)/.exec(s);
+	if (res) {
+		return api.sprintf(99, "%04x%04x%04x%04x", res[1], res[2], res[3], res[4]);
+	}
+	res = /(\d+)\.(\d+)\.(\d+)/.exec(s);
 	if (res) {
 		r = api.QuadPart(res[1]) * 10000 + api.QuadPart(res[2]) * 100 + api.QuadPart(res[3]);
 	}
@@ -3246,7 +3250,7 @@ OpenAdodbFromTextFile = function (fn)
 		ado.LoadFromFile(fn);
 		var s = ado.ReadText(999);
 	} catch (e) {
-		ado.close();
+		ado.Close();
 		return;
 	}
 	if (/^\xEF\xBB\xBF/.test(s)) {
@@ -3273,6 +3277,22 @@ WmiProcess = function(arg, fn)
 			var cols = server.ExecQuery("SELECT * FROM Win32_Process " + arg);
 			for (var list = new Enumerator(cols); !list.atEnd(); list.moveNext()) {
 				fn(list.item());
+			}
+		}
+	}
+}
+
+function CalcElementHeight(o, em)
+{
+	if (o) {
+		if (document.documentMode >= 9) {
+			o.style.height = "calc(100vh - " + em + "em)";
+		} else {
+			var h = document.documentElement.clientHeight || document.body.clientHeight;
+			h += MainWindow.DefaultFont.lfHeight * em;
+			if (h > 0) {
+				o.style.height = h + 'px';
+				o.style.height = 2 * h - o.offsetHeight + "px";
 			}
 		}
 	}

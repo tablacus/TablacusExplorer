@@ -3444,6 +3444,9 @@ HMODULE teCreateInstance(LPVARIANTARG pvDllFile, LPVARIANTARG pvClass, REFIID ri
 					pCF->CreateInstance(NULL, riid, ppvObj);
 					pCF->Release();
 				}
+			} else {
+				FreeLibrary(hDll);
+				hDll = NULL;
 			}
 		}
 	}
