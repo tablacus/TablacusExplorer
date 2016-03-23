@@ -8139,14 +8139,12 @@ VOID teApiSHDefExtractIcon(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 	}
 }
 
-/*//Deprecated (SSL)
 VOID teApiURLDownloadToFile(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	IUnknown *punk = NULL;
 	FindUnknown(&pDispParams->rgvarg[nArg], &punk);
 	teSetLong(pVarResult, URLDownloadToFile(punk, param[1].bstrVal, param[2].bstrVal, param[3].dword, NULL));
 }
-///*/
 /*
 VOID teApi(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -8448,7 +8446,7 @@ TEDispatchApi dispAPI[] = {
 	{ 2, -1, -1, -1, L"DllGetClassObject", teApiDllGetClassObject },
 	{ 0, -1, -1, -1, L"IsThemeActive", teApiIsThemeActive },
 	{ 6,  0, -1, -1, L"SHDefExtractIcon", teApiSHDefExtractIcon },
-//	{ 3,  1,  2, -1, L"URLDownloadToFile", teApiURLDownloadToFile },//Deprecated
+	{ 3,  1,  2, -1, L"URLDownloadToFile", teApiURLDownloadToFile },
 //	{ 0, -1, -1, -1, L"", teApi },
 //	{ 0, -1, -1, -1, L"Test", teApiTest },
 };
@@ -9386,13 +9384,17 @@ function _t(o) {\
 	g_pAPI = new CteWindowsAPI(NULL);
 #else
 	GetNewObject(&g_pAPI);
+	VARIANT v;
 	for (int i = _countof(dispAPI); i--;) {
-		VARIANT v;
 		v.vt = VT_DISPATCH;
 		v.pdispVal = new CteAPI(&dispAPI[i]);
 		tePutProperty(g_pAPI, dispAPI[i].name, &v);
 		VariantClear(&v);
 	}
+	v.vt = VT_BSTR;
+	v.bstrVal = ::SysAllocString(L"ADODB.Stream");
+	tePutProperty(g_pAPI, L"ADBSTRM", &v);
+	VariantClear(&v);
 #endif
 	// CTE
 	g_pTE = new CTE(nCmdShow);
@@ -9472,7 +9474,7 @@ function _es(fn) {\
 		fn = fso.BuildPath(fso.GetParentFolderName(location.href), fn);\
 	}\
 	try {\
-		var ado = te.CreateObject('Adodb.Stream');\
+		var ado = te.CreateObject(api.ADBSTRM);\
 		ado.CharSet = 'utf-8';\
 		ado.Open();\
 		ado.LoadFromFile(fn);\

@@ -149,6 +149,9 @@ function ClickTab(o, nMode)
 			ovPanel.style.display = 'block';
 			g_ovPanel = ovPanel;
 			ResizeTabPanel();
+			if (window.OnTabChanged) {
+				OnTabChanged(i);
+			}
 		} else {
 			ovTab.className = 'tab';
 			ovPanel.style.display = 'none';
@@ -654,6 +657,9 @@ function SetType(o, value)
 
 function InsertX(sel)
 {
+	if (!sel) {
+		return;
+	}
 	sel.length++;
 	if (sel.selectedIndex < 0) {
 		sel.selectedIndex = sel.length - 1;
@@ -779,7 +785,7 @@ function LoadMenus(nSelected)
 
 		for (var j in g_arMenuTypes) {
 			var s = g_arMenuTypes[j];
-			document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", ['<select name="Menus_', s, '" size="17" style="width: 12em; height: 32em; height: calc(100vh - 6em); display: none" onchange="EditXEx(EditMenus)" ondblclick="EditMenus()" oncontextmenu="CancelX(\'Menus\')"></select>'].join(""));
+			document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", ['<select name="Menus_', s, '" size="17" style="width: 12em; height: 34em; height: calc(100vh - 6em); min-height: 20em; display: none" onchange="EditXEx(EditMenus)" ondblclick="EditMenus()" oncontextmenu="CancelX(\'Menus\')"></select>'].join(""));
 			var menus = teMenuGetElementsByTagName(s);
 			if (menus && menus.length) {
 				oa[++oa.length - 1].value = s + "," + menus[0].getAttribute("Base") + "," + menus[0].getAttribute("Pos");
@@ -1935,7 +1941,9 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly)
 				var pt;
 				if (oButton) {
 					pt = GetPos(oButton, true);
-					pt.y = pt.y + o.offsetHeight * screen.deviceYDPI / screen.logicalYDPI;
+					pt = {x: pt.x, y: pt.y + oButton.offsetHeight * screen.deviceYDPI / screen.logicalYDPI,
+						width: oButton.offsetWidth * screen.deviceXDPI / screen.logicalXDPI
+					};
 				} else {
 					pt = api.Memory("POINT");
 					api.GetCursorPos(pt);

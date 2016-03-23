@@ -114,7 +114,7 @@
             <div class="panel" id="panel1">
               <table id="Addons" style="width: 100%; border: 1px solid gray">
                 <tr>
-                  <th style="height: 35em">
+                  <th style="height: 35em; height: calc(100vh - 3.5em)">
                     <label>Please wait.</label>
                   </th>
                 </tr>
@@ -194,12 +194,16 @@
 
                     <table style="width: 100%">
                       <tr>
-                        <td valign="bottom" style="white-space: nowrap">
+                        <td valign="bottom" style="width: 100%; white-space: nowrap">
                           <label>Filter</label>
                         </td>
-                        <td align="right">
+                        <td class="buttons">
                           <label>Position</label>
+                        </td>
+                        <td class="buttons">
                           <input type="text" name="Menus_Pos" size="2" onchange="SwitchMenus();" />
+                        </td>
+                        <td>
                           <select onchange="SelectPos(this, 'Menus_Pos');SwitchMenus();" title="Position">
                             <option value="" />Select
                             <option value="0" />Add before
@@ -210,31 +214,26 @@
                     </table>
                     <input type="text" name="Menus_Filter" style="width: 100%" onchange="ChangeX('Menus')" />
                     <label>Type</label>
+                    <br />
+                    <select name="Menus_Type" onchange="ChangeX('Menus')">
+                    </select>
                     <table class="layout">
                       <tr>
-                        <td valign="bottom">
-                          <select name="Menus_Type" onchange="ChangeX('Menus')">
-                          </select>
-                        </td>
-                        <td align="right">
-                          <input type="button" value="Portable" onclick="PortableX('Menus_Path')" title="Options" />
-                        </td>
-                      </tr>
-                    </table>
-                    <table class="layout">
-                      <tr>
-                        <td valign="bottom">
+                        <td valign="bottom" style="width: 100%">
                           <label>Options</label>
                         </td>
-                        <td align="right">
-                          <input type="button" value="Browse..." onclick="RefX('Menus_Path', true, this)" style="min-width: 15em" title="Options" />
+                        <td class="buttons">
+                          <input type="button" value="Portable" onclick="PortableX('Menus_Path')" title="Options" />
+                        </td>
+                        <td>
+                          <input type="button" value="Browse..." onclick="RefX('Menus_Path', true, this)" title="Options" />
                         </td>
                       </tr>
                     </table>
-                    <textarea name="Menus_Path" style="width: 100%; height: 13em; height: calc(100vh - 24em)" onchange="ChangeX('Menus')"></textarea>
+                    <textarea name="Menus_Path" style="width: 100%; height: 17em; height: calc(100vh - 24em); min-height: 2em" onchange="ChangeX('Menus')"></textarea>
                     <table class="layout">
                       <tr>
-                        <td>
+                        <td style="vertical-align: bottom">
                           <label>Icon</label><input type="hidden" name="IconSize" value="16">
                         </td>
                         <td id="_Icon" style="width: 20px; height: 20px; overflow: hidden; vertical-align: middle" align="left">
@@ -709,11 +708,11 @@
           <td align="right">
             <table>
               <tr>
-                <td>
-                  <input type="button" value="OK" class="ok" onclick="SetResult(1)" />&nbsp;
+                <td class="buttons">
+                  <input type="button" value="OK" class="ok" onclick="SetResult(1)" autofocus />
                 </td>
-                <td>
-                  <input type="button" value="Cancel" class="cancel" onclick="SetResult(2)" />&nbsp;
+                <td class="buttons">
+                  <input type="button" value="Cancel" class="cancel" onclick="SetResult(2)" />
                 </td>
               </tr>
             </table>

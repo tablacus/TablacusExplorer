@@ -229,3 +229,8 @@ a.treebutton:hover {
 .cancel {
 	min-width: 8em;
 }
+
+.buttons {
+	padding-right: 3px;
+	white-space: nowrap;
+}

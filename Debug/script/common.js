@@ -3010,21 +3010,11 @@ FindChildByClass = function (hwnd, s)
 
 DownloadFile = function (url, fn)
 {
-	var xhr = createHttpRequest();
-	xhr.open("GET", url, false);
-	try {
-		xhr.send(null);
-		var ado = te.CreateObject("Adodb.Stream");
-		ado.Type = adTypeBinary;
-		ado.Open();
-		ado.Write(xhr[XHRBODY]);
-		ado.SaveToFile(fn, adSaveCreateOverWrite);
-		ado.Close();
-	} catch (e) {
-		ShowError(e);
-		return E_FAIL;
+	var hr = api.URLDownloadToFile(null, url, fn);
+	if (hr && /^https:/.test(url)) {
+		hr = api.URLDownloadToFile(null, url.replace(/^https/, "http"), fn);
 	}
-	return S_OK;
+	return hr;
 }
 
 GetNavigateFlags = function (FV)
@@ -3242,7 +3232,7 @@ OpenContains = function (Ctrl, pt)
 
 OpenAdodbFromTextFile = function (fn)
 {
-	var ado = te.CreateObject("Adodb.Stream");
+	var ado = te.CreateObject(api.ADBSTRM);
 	var charset = "_autodetect_all";
 	try {
 		ado.CharSet = "iso-8859-1";

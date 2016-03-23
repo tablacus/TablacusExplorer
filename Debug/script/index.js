@@ -305,7 +305,10 @@ LoadConfig = function ()
 					}
 				}
 				api.ShowWindow(te.hwnd, SW_SHOWNORMAL);
-				api.MoveWindow(te.hwnd, x, y, w, h, true);
+				if (w && h) {
+					api.MoveWindow(te.hwnd, x, y, w, h, true);
+				}
+				api.GetWindowRect(te.hwnd, g_rcWindow);
 			}
 			te.CmdShow = item.getAttribute("CmdShow");
 		}
@@ -443,6 +446,7 @@ Resize2 = function ()
 		}
 	}
 	RunEvent1("Resize");
+	api.PostMessage(te.hwnd, WM_SIZE, 0, 0);
 }
 
 LoadLang = function (bAppend)
@@ -2508,7 +2512,7 @@ g_basic =
 						for (i = 0; i < Items.Count; i++) {
 							api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, i + 1, Items.Item(i).Name);
 						}
-						var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, null);
+						var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD | (pt.width ? TPM_RIGHTALIGN : 0), pt.x + pt.width, pt.y, te.hwnd, null, null);
 						api.DestroyMenu(hMenu);
 						if (nVerb) {
 							return api.PathQuoteSpaces(Items.Item(nVerb - 1).Path);
@@ -2955,7 +2959,7 @@ g_basic =
 				api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, i + 1, GetText(ar[i]));
 			}
 		}
-		var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, null);
+		var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD | (pt.width ? TPM_RIGHTALIGN : 0), pt.x + pt.width, pt.y, te.hwnd, null, null);
 		s = api.GetMenuString(hMenu, nVerb, MF_BYCOMMAND);
 		api.DestroyMenu(hMenu);
 		if (nVerb == 0) {
@@ -2975,7 +2979,7 @@ g_basic =
 			}
 		}
 		window.g_menu_click = true;
-		var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, ContextMenu);
+		var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD | (pt.width ? TPM_RIGHTALIGN : 0), pt.x + pt.width, pt.y, te.hwnd, null, ContextMenu);
 		if (nVerb == 0) {
 			api.DestroyMenu(hMenu);
 			return 1;
