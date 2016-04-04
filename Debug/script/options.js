@@ -1083,28 +1083,22 @@ function LoadAddons()
 function AddAddon(table, Id, Enable)
 {
 	var tr = table.insertRow();
-	tr.className = (tr.rowIndex & 1) ? "oddline" : "";
 	SetAddon(tr.insertCell(), Id, Enable);
 }
 
 function SetAddon(td, Id, Enable)
 {
 	var info = GetAddonInfo(Id);
-
-	if (info.Description && info.Description.length > 80) {
-		info.Description = info.Description.substr(0, 80) + "...";
-	}
-	var s = ['<div draggable="true" ondragstart="Start5(this)" ondragend="End5(this)" Id="Addons_' + Id + '" style="color: '];
-	s.push((Enable == "Enable") ? "gray" : "black");
-	s.push('"><input type="radio" name="AddonId" id="_', Id, '"><label for="_', Id, '"><b>', info.Name, "</b>&nbsp;", info.Version, "&nbsp;", info.Creator, "<br />", info.Description, "<br />");
-	s.push('<table><tr><td><input type="button" value="', GetText('Remove'), '" onclick="AddonRemove(\'', Id, '\')"></td>');
+	var s = ['<div draggable="true" title="', Id, '" ondragstart="Start5(this)" ondragend="End5(this)" Id="Addons_', Id, '" style="color: '];
+	s.push((Enable == "Enable") ? "gray" : "");
+	s.push('"><table><tr style="border-bottom: 1px solid ButtonShadow"><td style="width: 100%"><input type="radio" name="AddonId" id="_', Id, '"><label for="_', Id, '"><b>', info.Name, "</b>&nbsp;", info.Version, '&nbsp;<a href="#" style="font-size: 75%" onclick="return AddonInfo(\'', Id, '\')">', GetText('Details'), '</a>');
+	s.push('</td><td><input type="button" value="', GetText('Remove'), '" onclick="AddonRemove(\'', Id, '\')"></td>');
 	s.push('<td><input type="button" value="', GetText(Enable), '" onclick="AddonEnable(\'', Id, '\', this)"');
 	if (info.MinVersion && te.Version < CalcVersion(info.MinVersion)) {
 		s.push(" disabled");
 	}
 	s.push('></td>');
-	s.push('<td><input type="button" value="', GetText('Info...'), '" onclick="AddonInfo(\'', Id, '\')"></td>');
-	s.push('<td><input type="button" value="', GetText('Options...'), '" onclick="AddonOptions(\'', Id, '\')"');
+	s.push('<td><input type="button" value="', GetText('Options'), '" onclick="AddonOptions(\'', Id, '\')"');
 	if (!info.Options) {
 		s.push(" disabled");
 	}
@@ -1216,6 +1210,7 @@ function AddonInfo(Id)
 		pubDate = new Date(info.pubDate).toLocaleString() + "\n";
 	}
 	MessageBox(info.Name + " " + info.Version + " " + info.Creator + "\n\n" + info.Description + "\n\n" + pubDate + info.URL, Id, MB_ICONINFORMATION);
+	return false;
 }
 
 function AddonWebsite(Id)
@@ -1227,7 +1222,7 @@ function AddonWebsite(Id)
 function AddonEnable(Id, o)
 {
 	var div = document.getElementById("Addons_" + Id);
-	if (o.value != GetText('Enable')) {
+	if (api.StrCmpI(div.style.color, "gray")) {
 		MainWindow.AddonDisabled(Id);
 		o.value = GetText('Enable');
 		div.style.color = "gray";
@@ -1235,7 +1230,7 @@ function AddonEnable(Id, o)
 		var info = GetAddonInfo(Id);
 		if (!info.MinVersion || te.Version >= api.LowPart(info.MinVersion.replace(/\D/g, ""))) {
 			o.value = GetText('Disable');
-			div.style.color = "black";
+			div.style.color = "";
 		}
 	}
 	g_Chg.Addons = true;
@@ -1296,12 +1291,6 @@ function AddonMoveEx(src, dest)
 	td.onmouseup = mu;
 	td.onmousemove = mm;
 
-	var i = src > dest ? src : dest;
-	var j = src > dest ? dest : src;
-	while (i >= j) {
-		table.rows(i).className = (i & 1) ? "oddline" : "";
-		i--;
-	}
 	document.F.AddonId[dest].checked = true;
 	g_Chg.Addons = true;
 	return false;
@@ -1323,10 +1312,6 @@ function AddonRemove(Id)
 			var table = document.getElementById("Addons");
 			var i = GetRowIndexById("Addons_" + Id);
 			table.deleteRow(i);
-			while (i < table.rows.length) {
-				table.rows(i).className = (i & 1) ? "oddline" : "";
-				i++;
-			}
 			g_Chg.Addons = true;
 		}
 	}
@@ -1379,7 +1364,7 @@ InitOptions = function ()
 			SetChanged(ReplaceMenus);
 			for (var i in document.F.elements) {
 				if (!/=|:/.test(i)) {
-					if (/^Tab_|^Tree_|^View_|^Conf_/.test(i)) {
+					if (/^Tab_|^Tree_|^View_|^Conf_/.test(i) && !/_$/.test(i)) {
 						te.Data[i] = GetElementValue(document.F.elements[i]);
 					}
 				}
@@ -1479,7 +1464,7 @@ InitDialog = function ()
 	if (Query == "key") {
 		returnValue = false;
 		document.getElementById("Content").innerHTML = '<div style="padding: 8px;" style="display: block;"><label>Key</label><br /><input type="text" name="q" autocomplete="off" style="width: 100%; ime-mode: disabled" /></div>';
-		AddEventEx(window, "keydown", function (e)
+		AddEventEx(document.body, "keydown", function (e)
 		{
 			var key = (e || event).keyCode;
 			var s = api.sprintf(10, "$%x", (api.MapVirtualKey(key, 0) | ((key >= 33 && key <= 46 || key >= 91 && key <= 93 || key == 111 || key == 144) ? 256 : 0) | GetKeyShift()));
@@ -1498,7 +1483,7 @@ InitDialog = function ()
 		var s = [];
 		s.push('<div style="padding: 8px;" style="display: block;"><input type="radio" name="mode" id="folder" onclick="document.F.path.focus()"><label for="folder">New Folder</label> <input type="radio" name="mode" id="file" onclick="document.F.path.focus()"><label for="file">New File</label><br />', dialogArguments.path ,'<br /><input type="text" name="path" style="width: 100%" /></div>');
 		document.getElementById("Content").innerHTML = s.join("");
-		AddEventEx(window, "keydown", function (e)
+		AddEventEx(document.body, "keydown", function (e)
 		{
 			setTimeout(function ()
 			{
@@ -1514,7 +1499,7 @@ InitDialog = function ()
 			return true;
 		});
 
-		AddEventEx(window, "paste", function ()
+		AddEventEx(document.body, "paste", function ()
 		{
 			setTimeout(function ()
 			{
@@ -1527,6 +1512,7 @@ InitDialog = function ()
 			document.F.elements[dialogArguments.Mode].checked = true;
 			document.F.path.focus();
 		}, 99);
+
 		AddEventEx(window, "beforeunload", function ()
 		{
 			if (g_nResult == 1) {
@@ -2372,6 +2358,7 @@ function ArrangeAddon(xml, td, ts)
 			ts[j] = ts[j - 1];
 		}
 		td[nInsert].className = (nInsert & 1) ? "oddline" : "";
+		td[nInsert].style.borderBottom = "1px solid ButtonShadow";
 		td[nInsert].innerHTML = s.join("");
 		ApplyLang(td[nInsert]);
 		ts[nInsert] = dt2;

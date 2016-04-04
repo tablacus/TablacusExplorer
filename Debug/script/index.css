@@ -16,7 +16,8 @@ body {
 	margin: 0;
 	padding: 0;
 	border: none;
-	background-color: buttonface;
+	color: ButtonText;
+	background-color: ButtonFace;
 	height: 100%;
 }
 
@@ -49,7 +50,6 @@ form {
 	display: inline-block;
 	padding: 1px 1px;
 	text-decoration: none;
-	color: black;
 	cursor: default;
 	outline: 0;
 	white-space: nowrap;
@@ -59,7 +59,7 @@ form {
 .hoverbutton {
 	display: inline-block;
 	text-decoration: none;
-	color: black;
+	color: #000;
 	cursor: default;
 	background-color: #E5EBEF;
 	border: 1px solid #7F9DB9;
@@ -73,17 +73,17 @@ form {
 	display: inline-block;
 	margin: 1px 5px;
 	text-decoration: none;
-	color: black;
+	color: ButtonText;
 	cursor: default;
 	white-space: nowrap;
 }
 
 .hovermenu {
 	display: inline-block;
-	color: black;
 	cursor: default;
 	text-decoration: none;
 	white-space: nowrap;
+	color: #000;
 	background-color: #E5EBEF;
 	border: 1px solid #7F9DB9;
 	padding: 0 4px;
@@ -175,28 +175,32 @@ form {
 }
 
 .tab, .tab2, .tab3 {
-	border: 1px solid #898C95;
+	border: 1px solid ButtonShadow;
 	margin: 0;
 	padding: 0 8px;
+	color: #000;
 	background-color: #ddd;
 	height: 2em;
 	outline: 0;
 	background: linear-gradient(to bottom, #fff, #ccc);
 	vertical-align: bottom;
-	filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#cccccc);
+	box-shadow: 0 1em 1em 0 rgba(255,255,255,0.2) inset;
+	opacity: 0.85;
+	filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#cccccc), alpha(style=0,opacity=85);
 }
 
 .tab:hover, .tab2:hover, .tab3:hover {
-	opacity: 0.8;
 	box-shadow: 0 0 0 9em rgba(51,204,255,0.2) inset;
-	filter: alpha(style=0,opacity=80);
+	opacity: 1;
+	filter: alpha(style=0,opacity=100);
 }
 
 .activetab {
-	border: 1px solid #898C95;
+	border: 1px solid ButtonShadow;
 	border-bottom: 0;
 	margin: 0 -1px;
 	padding: 0 9px;
+	color: #000;
 	background-color: #fff;
 	height: 2.167em;
 	outline: 0;
@@ -218,8 +222,8 @@ form {
 }
 
 a.treebutton:hover {
-	color: highlight;
-	text-shadow: 0px 0px 2px highlight;
+	color: Highlight;
+	text-shadow: 0px 0px 2px Highlight;
 }
 
 .ok {
@@ -232,5 +236,11 @@ a.treebutton:hover {
 
 .buttons {
 	padding-right: 3px;
+	white-space: nowrap;
+}
+
+.breadcrumb {
+	color: WindowText;
+	background-color: Window; 
 	white-space: nowrap;
 }

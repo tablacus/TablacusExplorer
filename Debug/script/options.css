@@ -1,12 +1,20 @@
 @charset "ISO-8859-1";
 @import url("index.css"); 
 
+select {
+	min-height: 1.7em;
+}
+
+input[type="text"] {
+	min-height: 1.4em;
+}
+
 .panel {
-	border: 1px solid #898C95;
+	border: 1px solid ButtonShadow;
 	padding: 4px;
 	display: none;
 	width: 100%;
-	line-height: 150%;
+	line-height: 1.5em;
 	overflow-y: auto;
 	clear:both;
 }
@@ -37,6 +45,7 @@
 }
 
 .oddline {
+	color: #000;
 	background-color: #ddd;
 }
 
@@ -45,9 +54,13 @@
 }
 
 .window {
-	border: 1px solid #898C95;
+	border: 1px solid ButtonShadow;
 }
 
 .window td {
-	border: 1px solid #898C95;
+	border: 1px solid ButtonShadow;
+}
+
+.footer {
+	width: 100%; line-height: 1.5em
 }

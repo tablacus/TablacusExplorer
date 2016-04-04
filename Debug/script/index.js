@@ -268,7 +268,7 @@ LoadConfig = function ()
 	var xml = OpenXml("window.xml", true, false);
 	if (xml) {
 		xmlWindow = xml;
-		arKey = ["Conf", "Tab", "Tree", "View"]
+		var arKey = ["Conf", "Tab", "Tree", "View"];
 		for (var j in arKey) {
 			var key = arKey[j];
 			var items = xml.getElementsByTagName(key);
@@ -502,12 +502,6 @@ AddFavorite = function (FolderItem)
 	return false;
 }
 
-AddFavoriteEx = function (Ctrl, pt)
-{
-	AddFavorite();
-	return S_OK
-}
-
 CancelFilterView = function (FV)
 {
 	if (IsSearchPath(FV) || FV.FilterView) {
@@ -633,18 +627,26 @@ DisableImage = function (img, bDisable)
 {
 	if (img) {
 		if (api.QuadPart(document.documentMode) < 10) {
-			img.style.filter = bDisable ? "gray(); alpha(style=0,opacity=48);": "";
+			img.style.filter = bDisable ? "gray(), alpha(style=0,opacity=48);": "";
 		} else {
-			var s = img.src;
+			var s = decodeURIComponent(img.src);
+			var res = /^data:image\/svg.*?href="([^"]*)/i.exec(s);
 			if (bDisable) {
-				if (/^data:image\/png/i.test(s)) {
-					img.src = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ' + img.offsetWidth + ' ' + img.offsetHeight + '"><filter id="G"><feColorMatrix type="saturate" values="0.1" /></filter><image width="' + img.width + '" height="' + img.height + '" xlink:href="' + img.src + '" filter="url(#G)" opacity=".48"></image></svg>');
+				if (!res) {
+					if (/^file:/i.test(s)) {
+						var image = te.GdiplusBitmap();
+						image.FromFile(api.PathCreateFromUrl(s));
+						s = image.DataURI("image/png");
+					}
+					api.SVG_GRAY[1] = img.offsetWidth;
+					api.SVG_GRAY[3] = img.offsetHeight;
+					api.SVG_GRAY[5] = img.width;
+					api.SVG_GRAY[7] = img.height;
+					api.SVG_GRAY[9] = s;
+					img.src = "data:image/svg+xml," + encodeURIComponent(api.SVG_GRAY.join(""));
 				}
-			} else if (/^data:image\/svg/i.test(s)) {
-				var res = /href="([^"]*)/i.exec(decodeURIComponent(s));
-				if (res) {
-					img.src = res[1];
-				}
+			} else if (res) {
+				img.src = res[1];
 			}
 		}
 	}
@@ -1490,6 +1492,15 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 									FV.Suspend();
 								}
 							}
+						}
+					}
+					break;
+				case WM_SYSCOLORCHANGE:
+					var cFV = te.Ctrls(CTRL_FV);
+					for (var i in cFV) {
+						var FV = cFV[i];
+						if (FV.hwndView) {
+							FV.Suspend();
 						}
 					}
 					break;

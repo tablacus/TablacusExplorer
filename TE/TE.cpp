@@ -149,992 +149,993 @@ TEmethod tesNULL[] =
 
 TEmethod tesBITMAP[] =
 {
-	{ (VT_I4 << TE_VT) + offsetof(BITMAP, bmType), L"bmType" },
-	{ (VT_I4 << TE_VT) + offsetof(BITMAP, bmWidth), L"bmWidth" },
-	{ (VT_I4 << TE_VT) + offsetof(BITMAP, bmHeight), L"bmHeight" },
-	{ (VT_I4 << TE_VT) + offsetof(BITMAP, bmWidthBytes), L"bmWidthBytes" },
-	{ (VT_UI2 << TE_VT) + offsetof(BITMAP, bmPlanes), L"bmPlanes" },
-	{ (VT_UI2 << TE_VT) + offsetof(BITMAP, bmBitsPixel), L"bmBitsPixel" },
-	{ (VT_PTR << TE_VT) + offsetof(BITMAP, bmBits), L"bmBits" },
+	{ (VT_I4 << TE_VT) + offsetof(BITMAP, bmType), "bmType" },
+	{ (VT_I4 << TE_VT) + offsetof(BITMAP, bmWidth), "bmWidth" },
+	{ (VT_I4 << TE_VT) + offsetof(BITMAP, bmHeight), "bmHeight" },
+	{ (VT_I4 << TE_VT) + offsetof(BITMAP, bmWidthBytes), "bmWidthBytes" },
+	{ (VT_UI2 << TE_VT) + offsetof(BITMAP, bmPlanes), "bmPlanes" },
+	{ (VT_UI2 << TE_VT) + offsetof(BITMAP, bmBitsPixel), "bmBitsPixel" },
+	{ (VT_PTR << TE_VT) + offsetof(BITMAP, bmBits), "bmBits" },
 	{ 0, NULL }
 };
 
 TEmethod tesCHOOSECOLOR[] =
 {
-	{ (VT_I4 << TE_VT) + offsetof(CHOOSECOLOR, lStructSize), L"lStructSize" },
-	{ (VT_PTR << TE_VT) + offsetof(CHOOSECOLOR, hwndOwner), L"hwndOwner" },
-	{ (VT_PTR << TE_VT) + offsetof(CHOOSECOLOR, hInstance), L"hInstance" },
-	{ (VT_I4 << TE_VT) + offsetof(CHOOSECOLOR, rgbResult), L"rgbResult" },
-	{ (VT_PTR << TE_VT) + offsetof(CHOOSECOLOR, lpCustColors), L"lpCustColors" },
-	{ (VT_I4 << TE_VT) + offsetof(CHOOSECOLOR, Flags), L"Flags" },
-	{ (VT_PTR << TE_VT) + offsetof(CHOOSECOLOR, lCustData), L"lCustData" },
-	{ (VT_PTR << TE_VT) + offsetof(CHOOSECOLOR, lpfnHook), L"lpfnHook" },
-	{ (VT_BSTR << TE_VT) + offsetof(CHOOSECOLOR, lpTemplateName), L"lpTemplateName" },
+	{ (VT_I4 << TE_VT) + offsetof(CHOOSECOLOR, lStructSize), "lStructSize" },
+	{ (VT_PTR << TE_VT) + offsetof(CHOOSECOLOR, hwndOwner), "hwndOwner" },
+	{ (VT_PTR << TE_VT) + offsetof(CHOOSECOLOR, hInstance), "hInstance" },
+	{ (VT_I4 << TE_VT) + offsetof(CHOOSECOLOR, rgbResult), "rgbResult" },
+	{ (VT_PTR << TE_VT) + offsetof(CHOOSECOLOR, lpCustColors), "lpCustColors" },
+	{ (VT_I4 << TE_VT) + offsetof(CHOOSECOLOR, Flags), "Flags" },
+	{ (VT_PTR << TE_VT) + offsetof(CHOOSECOLOR, lCustData), "lCustData" },
+	{ (VT_PTR << TE_VT) + offsetof(CHOOSECOLOR, lpfnHook), "lpfnHook" },
+	{ (VT_BSTR << TE_VT) + offsetof(CHOOSECOLOR, lpTemplateName), "lpTemplateName" },
 	{ 0, NULL }
 };
 
 TEmethod tesCHOOSEFONT[] =
 {
-	{ (VT_I4 << TE_VT) + offsetof(CHOOSEFONT, lStructSize), L"lStructSize" },
-	{ (VT_PTR << TE_VT) + offsetof(CHOOSEFONT, hwndOwner), L"hwndOwner" },
-	{ (VT_PTR << TE_VT) + offsetof(CHOOSEFONT, hDC), L"hDC" },
-	{ (VT_PTR << TE_VT) + offsetof(CHOOSEFONT, lpLogFont), L"lpLogFont" },
-	{ (VT_I4 << TE_VT) + offsetof(CHOOSEFONT, iPointSize), L"iPointSize" },
-	{ (VT_I4 << TE_VT) + offsetof(CHOOSEFONT, Flags), L"Flags" },
-	{ (VT_I4 << TE_VT) + offsetof(CHOOSEFONT, rgbColors), L"rgbColors" },
-	{ (VT_PTR << TE_VT) + offsetof(CHOOSEFONT, lCustData), L"lCustData" },
-	{ (VT_PTR << TE_VT) + offsetof(CHOOSEFONT, lpfnHook), L"lpfnHook" },
-	{ (VT_BSTR << TE_VT) + offsetof(CHOOSEFONT, lpTemplateName), L"lpTemplateName" },
-	{ (VT_PTR << TE_VT) + offsetof(CHOOSEFONT, hInstance), L"hInstance" },
-	{ (VT_BSTR << TE_VT) + offsetof(CHOOSEFONT, lpszStyle), L"lpszStyle" },
-	{ (VT_UI2 << TE_VT) + offsetof(CHOOSEFONT, nFontType), L"nFontType" },
-	{ (VT_UI2 << TE_VT) + offsetof(CHOOSEFONT, ___MISSING_ALIGNMENT__), L"___MISSING_ALIGNMENT__" },
-	{ (VT_I4 << TE_VT) + offsetof(CHOOSEFONT, nSizeMin), L"nSizeMin" },
-	{ (VT_I4 << TE_VT) + offsetof(CHOOSEFONT, nSizeMax), L"nSizeMax" },
+	{ (VT_I4 << TE_VT) + offsetof(CHOOSEFONT, lStructSize), "lStructSize" },
+	{ (VT_PTR << TE_VT) + offsetof(CHOOSEFONT, hwndOwner), "hwndOwner" },
+	{ (VT_PTR << TE_VT) + offsetof(CHOOSEFONT, hDC), "hDC" },
+	{ (VT_PTR << TE_VT) + offsetof(CHOOSEFONT, lpLogFont), "lpLogFont" },
+	{ (VT_I4 << TE_VT) + offsetof(CHOOSEFONT, iPointSize), "iPointSize" },
+	{ (VT_I4 << TE_VT) + offsetof(CHOOSEFONT, Flags), "Flags" },
+	{ (VT_I4 << TE_VT) + offsetof(CHOOSEFONT, rgbColors), "rgbColors" },
+	{ (VT_PTR << TE_VT) + offsetof(CHOOSEFONT, lCustData), "lCustData" },
+	{ (VT_PTR << TE_VT) + offsetof(CHOOSEFONT, lpfnHook), "lpfnHook" },
+	{ (VT_BSTR << TE_VT) + offsetof(CHOOSEFONT, lpTemplateName), "lpTemplateName" },
+	{ (VT_PTR << TE_VT) + offsetof(CHOOSEFONT, hInstance), "hInstance" },
+	{ (VT_BSTR << TE_VT) + offsetof(CHOOSEFONT, lpszStyle), "lpszStyle" },
+	{ (VT_UI2 << TE_VT) + offsetof(CHOOSEFONT, nFontType), "nFontType" },
+	{ (VT_UI2 << TE_VT) + offsetof(CHOOSEFONT, ___MISSING_ALIGNMENT__), "___MISSING_ALIGNMENT__" },
+	{ (VT_I4 << TE_VT) + offsetof(CHOOSEFONT, nSizeMin), "nSizeMin" },
+	{ (VT_I4 << TE_VT) + offsetof(CHOOSEFONT, nSizeMax), "nSizeMax" },
 	{ 0, NULL }
 };
 
 TEmethod tesCOPYDATASTRUCT[] =
 {
-	{ (VT_PTR << TE_VT) + offsetof(COPYDATASTRUCT, dwData), L"dwData" },
-	{ (VT_I4 << TE_VT) + offsetof(COPYDATASTRUCT, cbData), L"cbData" },
-	{ (VT_PTR << TE_VT) + offsetof(COPYDATASTRUCT, lpData), L"lpData" },
+	{ (VT_PTR << TE_VT) + offsetof(COPYDATASTRUCT, dwData), "dwData" },
+	{ (VT_I4 << TE_VT) + offsetof(COPYDATASTRUCT, cbData), "cbData" },
+	{ (VT_PTR << TE_VT) + offsetof(COPYDATASTRUCT, lpData), "lpData" },
 	{ 0, NULL }
 };
 
 TEmethod tesDIBSECTION[] =
 {
-	{ (VT_PTR << TE_VT) + offsetof(DIBSECTION, dsBm), L"dsBm" },
-	{ (VT_PTR << TE_VT) + offsetof(DIBSECTION, dsBmih), L"dsBmih" },
-	{ (VT_I4 << TE_VT) + offsetof(DIBSECTION, dsBitfields[0]), L"dsBitfields0" },
-	{ (VT_I4 << TE_VT) + offsetof(DIBSECTION, dsBitfields[1]), L"dsBitfields1" },
-	{ (VT_I4 << TE_VT) + offsetof(DIBSECTION, dsBitfields[2]), L"dsBitfields2" },
-	{ (VT_PTR << TE_VT) + offsetof(DIBSECTION, dshSection), L"dshSection" },
-	{ (VT_I4 << TE_VT) + offsetof(DIBSECTION, dsOffset), L"dsOffset" },
+	{ (VT_PTR << TE_VT) + offsetof(DIBSECTION, dsBm), "dsBm" },
+	{ (VT_PTR << TE_VT) + offsetof(DIBSECTION, dsBmih), "dsBmih" },
+	{ (VT_I4 << TE_VT) + offsetof(DIBSECTION, dsBitfields[0]), "dsBitfields0" },
+	{ (VT_I4 << TE_VT) + offsetof(DIBSECTION, dsBitfields[1]), "dsBitfields1" },
+	{ (VT_I4 << TE_VT) + offsetof(DIBSECTION, dsBitfields[2]), "dsBitfields2" },
+	{ (VT_PTR << TE_VT) + offsetof(DIBSECTION, dshSection), "dshSection" },
+	{ (VT_I4 << TE_VT) + offsetof(DIBSECTION, dsOffset), "dsOffset" },
 	{ 0, NULL }
 };
 
 TEmethod tesEncoderParameter[] =
 {
-	{ (VT_CLSID << TE_VT) + offsetof(EncoderParameter, Guid), L"Guid" },
-	{ (VT_I4 << TE_VT) + offsetof(EncoderParameter, NumberOfValues), L"NumberOfValues" },
-	{ (VT_I4 << TE_VT) + offsetof(EncoderParameter, Type), L"Type" },
-	{ (VT_PTR << TE_VT) + offsetof(EncoderParameter, Value), L"Value" },
+	{ (VT_CLSID << TE_VT) + offsetof(EncoderParameter, Guid), "Guid" },
+	{ (VT_I4 << TE_VT) + offsetof(EncoderParameter, NumberOfValues), "NumberOfValues" },
+	{ (VT_I4 << TE_VT) + offsetof(EncoderParameter, Type), "Type" },
+	{ (VT_PTR << TE_VT) + offsetof(EncoderParameter, Value), "Value" },
 	{ 0, NULL }
 };
 
 TEmethod tesEncoderParameters[] =
 {
-	{ (VT_I4 << TE_VT) + offsetof(EncoderParameters, Count), L"Count" },
-	{ DISPID_TE_ITEM, L"Parameter" },
+	{ (VT_I4 << TE_VT) + offsetof(EncoderParameters, Count), "Count" },
+	{ DISPID_TE_ITEM, "Parameter" },
 	{ 0, NULL }
 };
 
 TEmethod tesEXCEPINFO[] =
 {
-	{ (VT_UI2 << TE_VT) + offsetof(EXCEPINFO, wCode), L"wCode" },
-	{ (VT_UI2 << TE_VT) + offsetof(EXCEPINFO, wReserved), L"wReserved" },
-	{ (VT_BSTR << TE_VT) + offsetof(EXCEPINFO, bstrSource), L"bstrSource" },
-	{ (VT_BSTR << TE_VT) + offsetof(EXCEPINFO, bstrDescription), L"bstrDescription" },
-	{ (VT_BSTR << TE_VT) + offsetof(EXCEPINFO, bstrHelpFile), L"bstrHelpFile" },
-	{ (VT_I4 << TE_VT) + offsetof(EXCEPINFO, dwHelpContext), L"dwHelpContext" },
-	{ (VT_PTR << TE_VT) + offsetof(EXCEPINFO, pvReserved), L"pvReserved" },
-	{ (VT_PTR << TE_VT) + offsetof(EXCEPINFO, pfnDeferredFillIn), L"pfnDeferredFillIn" },
-	{ (VT_I4 << TE_VT) + offsetof(EXCEPINFO, scode), L"scode" },
+	{ (VT_UI2 << TE_VT) + offsetof(EXCEPINFO, wCode), "wCode" },
+	{ (VT_UI2 << TE_VT) + offsetof(EXCEPINFO, wReserved), "wReserved" },
+	{ (VT_BSTR << TE_VT) + offsetof(EXCEPINFO, bstrSource), "bstrSource" },
+	{ (VT_BSTR << TE_VT) + offsetof(EXCEPINFO, bstrDescription), "bstrDescription" },
+	{ (VT_BSTR << TE_VT) + offsetof(EXCEPINFO, bstrHelpFile), "bstrHelpFile" },
+	{ (VT_I4 << TE_VT) + offsetof(EXCEPINFO, dwHelpContext), "dwHelpContext" },
+	{ (VT_PTR << TE_VT) + offsetof(EXCEPINFO, pvReserved), "pvReserved" },
+	{ (VT_PTR << TE_VT) + offsetof(EXCEPINFO, pfnDeferredFillIn), "pfnDeferredFillIn" },
+	{ (VT_I4 << TE_VT) + offsetof(EXCEPINFO, scode), "scode" },
 	{ 0, NULL }
 };
 
 TEmethod tesFINDREPLACE[] =
 {
-	{ (VT_I4 << TE_VT) + offsetof(FINDREPLACE, lStructSize), L"lStructSize" },
-	{ (VT_PTR << TE_VT) + offsetof(FINDREPLACE, hwndOwner), L"hwndOwner" },
-	{ (VT_PTR << TE_VT) + offsetof(FINDREPLACE, hInstance), L"hInstance" },
-	{ (VT_I4 << TE_VT) + offsetof(FINDREPLACE, Flags), L"Flags" },
-	{ (VT_BSTR << TE_VT) + offsetof(FINDREPLACE, lpstrFindWhat), L"lpstrFindWhat" },
-	{ (VT_BSTR << TE_VT) + offsetof(FINDREPLACE, lpstrReplaceWith), L"lpstrReplaceWith" },
-	{ (VT_UI2 << TE_VT) + offsetof(FINDREPLACE, wFindWhatLen), L"wFindWhatLen" },
-	{ (VT_UI2 << TE_VT) + offsetof(FINDREPLACE, wReplaceWithLen), L"wReplaceWithLen" },
-	{ (VT_PTR << TE_VT) + offsetof(FINDREPLACE, lCustData), L"lCustData" },
-	{ (VT_PTR << TE_VT) + offsetof(FINDREPLACE, lpfnHook), L"lpfnHook" },
-	{ (VT_BSTR << TE_VT) + offsetof(FINDREPLACE, lpTemplateName), L"lpTemplateName" },
+	{ (VT_I4 << TE_VT) + offsetof(FINDREPLACE, lStructSize), "lStructSize" },
+	{ (VT_PTR << TE_VT) + offsetof(FINDREPLACE, hwndOwner), "hwndOwner" },
+	{ (VT_PTR << TE_VT) + offsetof(FINDREPLACE, hInstance), "hInstance" },
+	{ (VT_I4 << TE_VT) + offsetof(FINDREPLACE, Flags), "Flags" },
+	{ (VT_BSTR << TE_VT) + offsetof(FINDREPLACE, lpstrFindWhat), "lpstrFindWhat" },
+	{ (VT_BSTR << TE_VT) + offsetof(FINDREPLACE, lpstrReplaceWith), "lpstrReplaceWith" },
+	{ (VT_UI2 << TE_VT) + offsetof(FINDREPLACE, wFindWhatLen), "wFindWhatLen" },
+	{ (VT_UI2 << TE_VT) + offsetof(FINDREPLACE, wReplaceWithLen), "wReplaceWithLen" },
+	{ (VT_PTR << TE_VT) + offsetof(FINDREPLACE, lCustData), "lCustData" },
+	{ (VT_PTR << TE_VT) + offsetof(FINDREPLACE, lpfnHook), "lpfnHook" },
+	{ (VT_BSTR << TE_VT) + offsetof(FINDREPLACE, lpTemplateName), "lpTemplateName" },
 	{ 0, NULL }
 };
 
 TEmethod tesFOLDERSETTINGS[] =
 {
-	{ (VT_I4 << TE_VT) + offsetof(FOLDERSETTINGS, ViewMode), L"ViewMode" },
-	{ (VT_I4 << TE_VT) + offsetof(FOLDERSETTINGS, fFlags), L"fFlags" },
-	{ (VT_I4 << TE_VT) + (SB_Options - 1) * 4, L"Options" },
-	{ (VT_I4 << TE_VT) + (SB_ViewFlags - 1) * 4, L"ViewFlags" },
-	{ (VT_I4 << TE_VT) + (SB_IconSize - 1) * 4, L"ImageSize" },
+	{ (VT_I4 << TE_VT) + offsetof(FOLDERSETTINGS, ViewMode), "ViewMode" },
+	{ (VT_I4 << TE_VT) + offsetof(FOLDERSETTINGS, fFlags), "fFlags" },
+	{ (VT_I4 << TE_VT) + (SB_Options - 1) * 4, "Options" },
+	{ (VT_I4 << TE_VT) + (SB_ViewFlags - 1) * 4, "ViewFlags" },
+	{ (VT_I4 << TE_VT) + (SB_IconSize - 1) * 4, "ImageSize" },
 	{ 0, NULL }
 };
 
 TEmethod tesHDITEM[] =
 {
-	{ (VT_I4 << TE_VT) + offsetof(HDITEM, mask), L"mask" },
-	{ (VT_I4 << TE_VT) + offsetof(HDITEM, cxy), L"cxy" },
-	{ (VT_BSTR << TE_VT) + offsetof(HDITEM, pszText), L"pszText" },
-	{ (VT_PTR << TE_VT) + offsetof(HDITEM, hbm), L"hbm" },
-	{ (VT_I4 << TE_VT) + offsetof(HDITEM, cchTextMax), L"cchTextMax" },
-	{ (VT_I4 << TE_VT) + offsetof(HDITEM, fmt), L"fmt" },
-	{ (VT_I4 << TE_VT) + offsetof(HDITEM, lParam), L"lParam" },
-	{ (VT_I4 << TE_VT) + offsetof(HDITEM, iImage), L"iImage" },
-	{ (VT_I4 << TE_VT) + offsetof(HDITEM, iOrder), L"iOrder" },
-	{ (VT_I4 << TE_VT) + offsetof(HDITEM, type), L"type" },
-	{ (VT_PTR << TE_VT) + offsetof(HDITEM, pvFilter), L"pvFilter" },
-	{ (VT_I4 << TE_VT) + offsetof(HDITEM, state), L"state" },
+	{ (VT_I4 << TE_VT) + offsetof(HDITEM, mask), "mask" },
+	{ (VT_I4 << TE_VT) + offsetof(HDITEM, cxy), "cxy" },
+	{ (VT_BSTR << TE_VT) + offsetof(HDITEM, pszText), "pszText" },
+	{ (VT_PTR << TE_VT) + offsetof(HDITEM, hbm), "hbm" },
+	{ (VT_I4 << TE_VT) + offsetof(HDITEM, cchTextMax), "cchTextMax" },
+	{ (VT_I4 << TE_VT) + offsetof(HDITEM, fmt), "fmt" },
+	{ (VT_I4 << TE_VT) + offsetof(HDITEM, lParam), "lParam" },
+	{ (VT_I4 << TE_VT) + offsetof(HDITEM, iImage), "iImage" },
+	{ (VT_I4 << TE_VT) + offsetof(HDITEM, iOrder), "iOrder" },
+	{ (VT_I4 << TE_VT) + offsetof(HDITEM, type), "type" },
+	{ (VT_PTR << TE_VT) + offsetof(HDITEM, pvFilter), "pvFilter" },
+	{ (VT_I4 << TE_VT) + offsetof(HDITEM, state), "state" },
 	{ 0, NULL }
 };
 
 TEmethod tesICONINFO[] =
 {
-	{ (VT_BOOL << TE_VT) + offsetof(ICONINFO, fIcon), L"fIcon" },
-	{ (VT_I4 << TE_VT) + offsetof(ICONINFO, xHotspot), L"xHotspot" },
-	{ (VT_I4 << TE_VT) + offsetof(ICONINFO, yHotspot), L"yHotspot" },
-	{ (VT_PTR << TE_VT) + offsetof(ICONINFO, hbmMask), L"hbmMask" },
-	{ (VT_PTR << TE_VT) + offsetof(ICONINFO, hbmColor), L"hbmColor" },
+	{ (VT_BOOL << TE_VT) + offsetof(ICONINFO, fIcon), "fIcon" },
+	{ (VT_I4 << TE_VT) + offsetof(ICONINFO, xHotspot), "xHotspot" },
+	{ (VT_I4 << TE_VT) + offsetof(ICONINFO, yHotspot), "yHotspot" },
+	{ (VT_PTR << TE_VT) + offsetof(ICONINFO, hbmMask), "hbmMask" },
+	{ (VT_PTR << TE_VT) + offsetof(ICONINFO, hbmColor), "hbmColor" },
 	{ 0, NULL }
 };
 
 TEmethod tesICONMETRICS[] =
 {
-	{ (VT_I4 << TE_VT) + offsetof(ICONMETRICS, iHorzSpacing), L"iHorzSpacing" },
-	{ (VT_I4 << TE_VT) + offsetof(ICONMETRICS, iVertSpacing), L"iVertSpacing" },
-	{ (VT_I4 << TE_VT) + offsetof(ICONMETRICS, iTitleWrap), L"iTitleWrap" },
-	{ (VT_PTR << TE_VT) + offsetof(ICONMETRICS, lfFont), L"lfFont" },
+	{ (VT_I4 << TE_VT) + offsetof(ICONMETRICS, iHorzSpacing), "iHorzSpacing" },
+	{ (VT_I4 << TE_VT) + offsetof(ICONMETRICS, iVertSpacing), "iVertSpacing" },
+	{ (VT_I4 << TE_VT) + offsetof(ICONMETRICS, iTitleWrap), "iTitleWrap" },
+	{ (VT_PTR << TE_VT) + offsetof(ICONMETRICS, lfFont), "lfFont" },
 	{ 0, NULL }
 };
 
 TEmethod tesKEYBDINPUT[] =
 {
-	{ (VT_I4 << TE_VT), L"type" },
-	{ (VT_I4 << TE_VT) + offsetof(KEYBDINPUT, wVk), L"wVk" },
-	{ (VT_I4 << TE_VT) + offsetof(KEYBDINPUT, wScan), L"wScan" },
-	{ (VT_I4 << TE_VT) + offsetof(KEYBDINPUT, dwFlags), L"dwFlags" },
-	{ (VT_I4 << TE_VT) + offsetof(KEYBDINPUT, time), L"time" },
-	{ (VT_PTR << TE_VT) + offsetof(KEYBDINPUT, dwExtraInfo), L"dwExtraInfo" },
+	{ (VT_I4 << TE_VT), "type" },
+	{ (VT_I4 << TE_VT) + offsetof(KEYBDINPUT, wVk), "wVk" },
+	{ (VT_I4 << TE_VT) + offsetof(KEYBDINPUT, wScan), "wScan" },
+	{ (VT_I4 << TE_VT) + offsetof(KEYBDINPUT, dwFlags), "dwFlags" },
+	{ (VT_I4 << TE_VT) + offsetof(KEYBDINPUT, time), "time" },
+	{ (VT_PTR << TE_VT) + offsetof(KEYBDINPUT, dwExtraInfo), "dwExtraInfo" },
 	{ 0, NULL }
 };
 
 TEmethod tesLOGFONT[] =
 {
-	{ (VT_I4 << TE_VT) + offsetof(LOGFONT, lfHeight), L"lfHeight" },
-	{ (VT_I4 << TE_VT) + offsetof(LOGFONT, lfWidth), L"lfWidth" },
-	{ (VT_I4 << TE_VT) + offsetof(LOGFONT, lfEscapement), L"lfEscapement" },
-	{ (VT_I4 << TE_VT) + offsetof(LOGFONT, lfOrientation), L"lfOrientation" },
-	{ (VT_I4 << TE_VT) + offsetof(LOGFONT, lfWeight), L"lfWeight" },
-	{ (VT_UI1 << TE_VT) + offsetof(LOGFONT, lfItalic), L"lfItalic" },
-	{ (VT_UI1 << TE_VT) + offsetof(LOGFONT, lfUnderline), L"lfUnderline" },
-	{ (VT_UI1 << TE_VT) + offsetof(LOGFONT, lfStrikeOut), L"lfStrikeOut" },
-	{ (VT_UI1 << TE_VT) + offsetof(LOGFONT, lfCharSet), L"lfCharSet" },
-	{ (VT_UI1 << TE_VT) + offsetof(LOGFONT, lfOutPrecision), L"lfOutPrecision" },
-	{ (VT_UI1 << TE_VT) + offsetof(LOGFONT, lfClipPrecision), L"lfClipPrecision" },
-	{ (VT_UI1 << TE_VT) + offsetof(LOGFONT, lfQuality), L"lfQuality" },
-	{ (VT_UI1 << TE_VT) + offsetof(LOGFONT, lfPitchAndFamily), L"lfPitchAndFamily" },
-	{ (VT_LPWSTR << TE_VT) + offsetof(LOGFONT, lfFaceName), L"lfFaceName" },
+	{ (VT_I4 << TE_VT) + offsetof(LOGFONT, lfHeight), "lfHeight" },
+	{ (VT_I4 << TE_VT) + offsetof(LOGFONT, lfWidth), "lfWidth" },
+	{ (VT_I4 << TE_VT) + offsetof(LOGFONT, lfEscapement), "lfEscapement" },
+	{ (VT_I4 << TE_VT) + offsetof(LOGFONT, lfOrientation), "lfOrientation" },
+	{ (VT_I4 << TE_VT) + offsetof(LOGFONT, lfWeight), "lfWeight" },
+	{ (VT_UI1 << TE_VT) + offsetof(LOGFONT, lfItalic), "lfItalic" },
+	{ (VT_UI1 << TE_VT) + offsetof(LOGFONT, lfUnderline), "lfUnderline" },
+	{ (VT_UI1 << TE_VT) + offsetof(LOGFONT, lfStrikeOut), "lfStrikeOut" },
+	{ (VT_UI1 << TE_VT) + offsetof(LOGFONT, lfCharSet), "lfCharSet" },
+	{ (VT_UI1 << TE_VT) + offsetof(LOGFONT, lfOutPrecision), "lfOutPrecision" },
+	{ (VT_UI1 << TE_VT) + offsetof(LOGFONT, lfClipPrecision), "lfClipPrecision" },
+	{ (VT_UI1 << TE_VT) + offsetof(LOGFONT, lfQuality), "lfQuality" },
+	{ (VT_UI1 << TE_VT) + offsetof(LOGFONT, lfPitchAndFamily), "lfPitchAndFamily" },
+	{ (VT_LPWSTR << TE_VT) + offsetof(LOGFONT, lfFaceName), "lfFaceName" },
 	{ 0, NULL }
 };
 
 TEmethod tesLVBKIMAGE[] =
 {
-	{ (VT_I4 << TE_VT) + offsetof(LVBKIMAGE, ulFlags), L"ulFlags" },
-	{ (VT_PTR << TE_VT) + offsetof(LVBKIMAGE, hbm), L"hbm" },
-	{ (VT_BSTR << TE_VT) + offsetof(LVBKIMAGE, pszImage), L"pszImage" },
-	{ (VT_I4 << TE_VT) + offsetof(LVBKIMAGE, cchImageMax), L"cchImageMax" },
-	{ (VT_I4 << TE_VT) + offsetof(LVBKIMAGE, xOffsetPercent), L"xOffsetPercent" },
-	{ (VT_I4 << TE_VT) + offsetof(LVBKIMAGE, yOffsetPercent), L"yOffsetPercent" },
+	{ (VT_I4 << TE_VT) + offsetof(LVBKIMAGE, ulFlags), "ulFlags" },
+	{ (VT_PTR << TE_VT) + offsetof(LVBKIMAGE, hbm), "hbm" },
+	{ (VT_BSTR << TE_VT) + offsetof(LVBKIMAGE, pszImage), "pszImage" },
+	{ (VT_I4 << TE_VT) + offsetof(LVBKIMAGE, cchImageMax), "cchImageMax" },
+	{ (VT_I4 << TE_VT) + offsetof(LVBKIMAGE, xOffsetPercent), "xOffsetPercent" },
+	{ (VT_I4 << TE_VT) + offsetof(LVBKIMAGE, yOffsetPercent), "yOffsetPercent" },
 	{ 0, NULL }
 };
 
 TEmethod tesLVFINDINFO[] =
 {
-	{ (VT_I4 << TE_VT) + offsetof(LVFINDINFO, flags), L"flags" },
-	{ (VT_BSTR << TE_VT) + offsetof(LVFINDINFO, psz), L"psz" },
-	{ (VT_I4 << TE_VT) + offsetof(LVFINDINFO, lParam), L"lParam" },
-	{ (VT_CY << TE_VT) + offsetof(LVFINDINFO, pt), L"pt" },
-	{ (VT_I4 << TE_VT) + offsetof(LVFINDINFO, vkDirection), L"vkDirection" },
+	{ (VT_I4 << TE_VT) + offsetof(LVFINDINFO, flags), "flags" },
+	{ (VT_BSTR << TE_VT) + offsetof(LVFINDINFO, psz), "psz" },
+	{ (VT_I4 << TE_VT) + offsetof(LVFINDINFO, lParam), "lParam" },
+	{ (VT_CY << TE_VT) + offsetof(LVFINDINFO, pt), "pt" },
+	{ (VT_I4 << TE_VT) + offsetof(LVFINDINFO, vkDirection), "vkDirection" },
 	{ 0, NULL }
 };
 
 TEmethod tesLVGROUP[] = 
 {
-	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, cbSize), L"cbSize" },
-	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, mask), L"mask" },
-	{ (VT_BSTR << TE_VT) + offsetof(LVGROUP, pszHeader), L"pszHeader" },
-	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, cchHeader), L"cchHeader" },
-	{ (VT_BSTR << TE_VT) + offsetof(LVGROUP, pszFooter), L"pszFooter" },
-	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, cchFooter), L"cchFooter" },
-	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, iGroupId), L"iGroupId" },
-	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, stateMask), L"stateMask" },
-	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, state), L"state" },
-	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, uAlign), L"uAlign" },
-	{ (VT_BSTR << TE_VT) + offsetof(LVGROUP, pszSubtitle), L"pszSubtitle" },
-	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, cchSubtitle), L"cchSubtitle" },
-	{ (VT_BSTR << TE_VT) + offsetof(LVGROUP, pszTask), L"pszTask" },
-	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, cchTask), L"cchTask" },
-	{ (VT_BSTR << TE_VT) + offsetof(LVGROUP, pszDescriptionTop), L"pszDescriptionTop" },
-	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, cchDescriptionTop), L"cchDescriptionTop" },
-	{ (VT_BSTR << TE_VT) + offsetof(LVGROUP, pszDescriptionBottom), L"pszDescriptionBottom" },
-	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, cchDescriptionBottom), L"cchDescriptionBottom" },
-	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, iTitleImage), L"iTitleImage" },
-	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, iExtendedImage), L"iExtendedImage" },
-	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, iFirstItem), L"iFirstItem" },
-	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, cItems), L"cItems" },
-	{ (VT_BSTR << TE_VT) + offsetof(LVGROUP, pszSubsetTitle), L"pszSubsetTitle" },
-	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, cchSubsetTitle), L"cchSubsetTitle" },
+	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, cbSize), "cbSize" },
+	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, mask), "mask" },
+	{ (VT_BSTR << TE_VT) + offsetof(LVGROUP, pszHeader), "pszHeader" },
+	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, cchHeader), "cchHeader" },
+	{ (VT_BSTR << TE_VT) + offsetof(LVGROUP, pszFooter), "pszFooter" },
+	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, cchFooter), "cchFooter" },
+	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, iGroupId), "iGroupId" },
+	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, stateMask), "stateMask" },
+	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, state), "state" },
+	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, uAlign), "uAlign" },
+	{ (VT_BSTR << TE_VT) + offsetof(LVGROUP, pszSubtitle), "pszSubtitle" },
+	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, cchSubtitle), "cchSubtitle" },
+	{ (VT_BSTR << TE_VT) + offsetof(LVGROUP, pszTask), "pszTask" },
+	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, cchTask), "cchTask" },
+	{ (VT_BSTR << TE_VT) + offsetof(LVGROUP, pszDescriptionTop), "pszDescriptionTop" },
+	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, cchDescriptionTop), "cchDescriptionTop" },
+	{ (VT_BSTR << TE_VT) + offsetof(LVGROUP, pszDescriptionBottom), "pszDescriptionBottom" },
+	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, cchDescriptionBottom), "cchDescriptionBottom" },
+	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, iTitleImage), "iTitleImage" },
+	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, iExtendedImage), "iExtendedImage" },
+	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, iFirstItem), "iFirstItem" },
+	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, cItems), "cItems" },
+	{ (VT_BSTR << TE_VT) + offsetof(LVGROUP, pszSubsetTitle), "pszSubsetTitle" },
+	{ (VT_I4 << TE_VT) + offsetof(LVGROUP, cchSubsetTitle), "cchSubsetTitle" },
 	{ 0, NULL }
 };
 
 TEmethod tesLVHITTESTINFO[] =
 {
-	{ (VT_CY << TE_VT) + offsetof(LVHITTESTINFO, pt), L"pt" },
-	{ (VT_I4 << TE_VT) + offsetof(LVHITTESTINFO, flags), L"flags" },
-	{ (VT_I4 << TE_VT) + offsetof(LVHITTESTINFO, iItem), L"iItem" },
-	{ (VT_I4 << TE_VT) + offsetof(LVHITTESTINFO, iSubItem ), L"iSubItem" },
-	{ (VT_I4 << TE_VT) + offsetof(LVHITTESTINFO, iGroup), L"iGroup" },
+	{ (VT_CY << TE_VT) + offsetof(LVHITTESTINFO, pt), "pt" },
+	{ (VT_I4 << TE_VT) + offsetof(LVHITTESTINFO, flags), "flags" },
+	{ (VT_I4 << TE_VT) + offsetof(LVHITTESTINFO, iItem), "iItem" },
+	{ (VT_I4 << TE_VT) + offsetof(LVHITTESTINFO, iSubItem ), "iSubItem" },
+	{ (VT_I4 << TE_VT) + offsetof(LVHITTESTINFO, iGroup), "iGroup" },
 	{ 0, NULL }
 };
 
 TEmethod tesLVITEM[] =
 {
-	{ (VT_I4 << TE_VT) + offsetof(LVITEM, mask), L"mask" },
-	{ (VT_I4 << TE_VT) + offsetof(LVITEM, iItem), L"iItem" },
-	{ (VT_I4 << TE_VT) + offsetof(LVITEM, iSubItem), L"iSubItem" },
-	{ (VT_I4 << TE_VT) + offsetof(LVITEM, state), L"state" },
-	{ (VT_I4 << TE_VT) + offsetof(LVITEM, stateMask), L"stateMask" },
-	{ (VT_BSTR << TE_VT) + offsetof(LVITEM, pszText), L"pszText" },
-	{ (VT_I4 << TE_VT) + offsetof(LVITEM, cchTextMax), L"cchTextMax" },
-	{ (VT_I4 << TE_VT) + offsetof(LVITEM, iImage), L"iImage" },
-	{ (VT_I4 << TE_VT) + offsetof(LVITEM, lParam), L"lParam" },
-	{ (VT_I4 << TE_VT) + offsetof(LVITEM, iIndent), L"iIndent" },
-	{ (VT_I4 << TE_VT) + offsetof(LVITEM, iGroupId), L"iGroupId" },
-	{ (VT_I4 << TE_VT) + offsetof(LVITEM, cColumns), L"cColumns" },
-	{ (VT_PTR << TE_VT) + offsetof(LVITEM, puColumns), L"puColumns" },
-	{ (VT_PTR << TE_VT) + offsetof(LVITEM, piColFmt), L"piColFmt" },
-	{ (VT_I4 << TE_VT) + offsetof(LVITEM, iGroup), L"iGroup" },
+	{ (VT_I4 << TE_VT) + offsetof(LVITEM, mask), "mask" },
+	{ (VT_I4 << TE_VT) + offsetof(LVITEM, iItem), "iItem" },
+	{ (VT_I4 << TE_VT) + offsetof(LVITEM, iSubItem), "iSubItem" },
+	{ (VT_I4 << TE_VT) + offsetof(LVITEM, state), "state" },
+	{ (VT_I4 << TE_VT) + offsetof(LVITEM, stateMask), "stateMask" },
+	{ (VT_BSTR << TE_VT) + offsetof(LVITEM, pszText), "pszText" },
+	{ (VT_I4 << TE_VT) + offsetof(LVITEM, cchTextMax), "cchTextMax" },
+	{ (VT_I4 << TE_VT) + offsetof(LVITEM, iImage), "iImage" },
+	{ (VT_I4 << TE_VT) + offsetof(LVITEM, lParam), "lParam" },
+	{ (VT_I4 << TE_VT) + offsetof(LVITEM, iIndent), "iIndent" },
+	{ (VT_I4 << TE_VT) + offsetof(LVITEM, iGroupId), "iGroupId" },
+	{ (VT_I4 << TE_VT) + offsetof(LVITEM, cColumns), "cColumns" },
+	{ (VT_PTR << TE_VT) + offsetof(LVITEM, puColumns), "puColumns" },
+	{ (VT_PTR << TE_VT) + offsetof(LVITEM, piColFmt), "piColFmt" },
+	{ (VT_I4 << TE_VT) + offsetof(LVITEM, iGroup), "iGroup" },
 	{ 0, NULL }
 };
 
 TEmethod tesMENUITEMINFO[] =
 {
-	{ (VT_I4 << TE_VT) + offsetof(MENUITEMINFO, cbSize), L"cbSize" },
-	{ (VT_I4 << TE_VT) + offsetof(MENUITEMINFO, fMask), L"fMask" },
-	{ (VT_I4 << TE_VT) + offsetof(MENUITEMINFO, fType), L"fType" },
-	{ (VT_I4 << TE_VT) + offsetof(MENUITEMINFO, fState), L"fState" },
-	{ (VT_I4 << TE_VT) + offsetof(MENUITEMINFO, wID), L"wID" },
-	{ (VT_PTR << TE_VT) + offsetof(MENUITEMINFO, hSubMenu), L"hSubMenu" },
-	{ (VT_PTR << TE_VT) + offsetof(MENUITEMINFO, hbmpChecked), L"hbmpChecked" },
-	{ (VT_PTR << TE_VT) + offsetof(MENUITEMINFO, hbmpUnchecked), L"hbmpUnchecked" },
-	{ (VT_PTR << TE_VT) + offsetof(MENUITEMINFO, dwItemData), L"dwItemData" },
-	{ (VT_BSTR << TE_VT) + offsetof(MENUITEMINFO, dwTypeData), L"dwTypeData" },
-	{ (VT_I4 << TE_VT) + offsetof(MENUITEMINFO, cch), L"cch" },
-	{ (VT_PTR << TE_VT) + offsetof(MENUITEMINFO, hbmpItem), L"hbmpItem" },
+	{ (VT_I4 << TE_VT) + offsetof(MENUITEMINFO, cbSize), "cbSize" },
+	{ (VT_I4 << TE_VT) + offsetof(MENUITEMINFO, fMask), "fMask" },
+	{ (VT_I4 << TE_VT) + offsetof(MENUITEMINFO, fType), "fType" },
+	{ (VT_I4 << TE_VT) + offsetof(MENUITEMINFO, fState), "fState" },
+	{ (VT_I4 << TE_VT) + offsetof(MENUITEMINFO, wID), "wID" },
+	{ (VT_PTR << TE_VT) + offsetof(MENUITEMINFO, hSubMenu), "hSubMenu" },
+	{ (VT_PTR << TE_VT) + offsetof(MENUITEMINFO, hbmpChecked), "hbmpChecked" },
+	{ (VT_PTR << TE_VT) + offsetof(MENUITEMINFO, hbmpUnchecked), "hbmpUnchecked" },
+	{ (VT_PTR << TE_VT) + offsetof(MENUITEMINFO, dwItemData), "dwItemData" },
+	{ (VT_BSTR << TE_VT) + offsetof(MENUITEMINFO, dwTypeData), "dwTypeData" },
+	{ (VT_I4 << TE_VT) + offsetof(MENUITEMINFO, cch), "cch" },
+	{ (VT_PTR << TE_VT) + offsetof(MENUITEMINFO, hbmpItem), "hbmpItem" },
 	{ 0, NULL }
 };
 
 TEmethod tesMONITORINFOEX[] =
 {
-	{ (VT_I4 << TE_VT), L"cbSize" },
-	{ (VT_CARRAY << TE_VT) + offsetof(MONITORINFOEX, rcMonitor), L"rcMonitor" },
-	{ (VT_CARRAY << TE_VT) + offsetof(MONITORINFOEX, rcWork), L"rcWork" },
-	{ (VT_I4 << TE_VT) + offsetof(MONITORINFOEX, dwFlags), L"dwFlags" },
-	{ (VT_LPWSTR << TE_VT) + offsetof(MONITORINFOEX, szDevice), L"szDevice" },
+	{ (VT_I4 << TE_VT), "cbSize" },
+	{ (VT_CARRAY << TE_VT) + offsetof(MONITORINFOEX, rcMonitor), "rcMonitor" },
+	{ (VT_CARRAY << TE_VT) + offsetof(MONITORINFOEX, rcWork), "rcWork" },
+	{ (VT_I4 << TE_VT) + offsetof(MONITORINFOEX, dwFlags), "dwFlags" },
+	{ (VT_LPWSTR << TE_VT) + offsetof(MONITORINFOEX, szDevice), "szDevice" },
 	{ 0, NULL }
 };
 
 
 TEmethod tesMOUSEINPUT[] =
 {
-	{ (VT_I4 << TE_VT), L"type" },
-	{ (VT_I4 << TE_VT) + offsetof(MOUSEINPUT, dx), L"dx" },
-	{ (VT_I4 << TE_VT) + offsetof(MOUSEINPUT, dy), L"dy" },
-	{ (VT_I4 << TE_VT) + offsetof(MOUSEINPUT, mouseData), L"mouseData" },
-	{ (VT_I4 << TE_VT) + offsetof(MOUSEINPUT, dwFlags), L"dwFlags" },
-	{ (VT_I4 << TE_VT) + offsetof(MOUSEINPUT, time), L"time" },
-	{ (VT_PTR << TE_VT) + offsetof(MOUSEINPUT, dwExtraInfo), L"dwExtraInfo" },
+	{ (VT_I4 << TE_VT), "type" },
+	{ (VT_I4 << TE_VT) + offsetof(MOUSEINPUT, dx), "dx" },
+	{ (VT_I4 << TE_VT) + offsetof(MOUSEINPUT, dy), "dy" },
+	{ (VT_I4 << TE_VT) + offsetof(MOUSEINPUT, mouseData), "mouseData" },
+	{ (VT_I4 << TE_VT) + offsetof(MOUSEINPUT, dwFlags), "dwFlags" },
+	{ (VT_I4 << TE_VT) + offsetof(MOUSEINPUT, time), "time" },
+	{ (VT_PTR << TE_VT) + offsetof(MOUSEINPUT, dwExtraInfo), "dwExtraInfo" },
 	{ 0, NULL }
 };
 
 TEmethod tesMSG[] =
 {
-	{ (VT_PTR << TE_VT) + offsetof(MSG, hwnd), L"hwnd" },
-	{ (VT_I4 << TE_VT) + offsetof(MSG, message), L"message" },
-	{ (VT_PTR << TE_VT) + offsetof(MSG, wParam), L"wParam" },
-	{ (VT_PTR << TE_VT) + offsetof(MSG, lParam), L"lParam" },
-	{ (VT_I4 << TE_VT) + offsetof(MSG, time), L"time" },
-	{ (VT_CY << TE_VT) + offsetof(MSG, pt), L"pt" },
+	{ (VT_PTR << TE_VT) + offsetof(MSG, hwnd), "hwnd" },
+	{ (VT_I4 << TE_VT) + offsetof(MSG, message), "message" },
+	{ (VT_PTR << TE_VT) + offsetof(MSG, wParam), "wParam" },
+	{ (VT_PTR << TE_VT) + offsetof(MSG, lParam), "lParam" },
+	{ (VT_I4 << TE_VT) + offsetof(MSG, time), "time" },
+	{ (VT_CY << TE_VT) + offsetof(MSG, pt), "pt" },
 	{ 0, NULL }
 };
 
 TEmethod tesNONCLIENTMETRICS[] =
 {
-	{ (VT_I4 << TE_VT) + offsetof(NONCLIENTMETRICS, cbSize), L"cbSize" },
-	{ (VT_I4 << TE_VT) + offsetof(NONCLIENTMETRICS, iBorderWidth), L"iBorderWidth" },
-	{ (VT_I4 << TE_VT) + offsetof(NONCLIENTMETRICS, iScrollWidth), L"iScrollWidth" },
-	{ (VT_I4 << TE_VT) + offsetof(NONCLIENTMETRICS, iScrollHeight), L"iScrollHeight" },
-	{ (VT_I4 << TE_VT) + offsetof(NONCLIENTMETRICS, iCaptionWidth), L"iCaptionWidth" },
-	{ (VT_I4 << TE_VT) + offsetof(NONCLIENTMETRICS, iCaptionHeight), L"iCaptionHeight" },
-	{ (VT_PTR << TE_VT) + offsetof(NONCLIENTMETRICS, lfCaptionFont), L"lfCaptionFont" },
-	{ (VT_I4 << TE_VT) + offsetof(NONCLIENTMETRICS, iSmCaptionWidth), L"iSmCaptionWidth" },
-	{ (VT_I4 << TE_VT) + offsetof(NONCLIENTMETRICS, iSmCaptionHeight), L"iSmCaptionHeight" },
-	{ (VT_PTR << TE_VT) + offsetof(NONCLIENTMETRICS, lfSmCaptionFont), L"lfSmCaptionFont" },
-	{ (VT_I4 << TE_VT) + offsetof(NONCLIENTMETRICS, iMenuWidth), L"iMenuWidth" },
-	{ (VT_I4 << TE_VT) + offsetof(NONCLIENTMETRICS, iMenuHeight), L"iMenuHeight" },
-	{ (VT_PTR << TE_VT) + offsetof(NONCLIENTMETRICS, lfMenuFont), L"lfMenuFont" },
-	{ (VT_PTR << TE_VT) + offsetof(NONCLIENTMETRICS, lfStatusFont), L"lfStatusFont" },
-	{ (VT_PTR << TE_VT) + offsetof(NONCLIENTMETRICS, lfMessageFont), L"lfMessageFont" },
-	{ (VT_I4 << TE_VT) + offsetof(NONCLIENTMETRICS, iPaddedBorderWidth), L"iPaddedBorderWidth" },
+	{ (VT_I4 << TE_VT) + offsetof(NONCLIENTMETRICS, cbSize), "cbSize" },
+	{ (VT_I4 << TE_VT) + offsetof(NONCLIENTMETRICS, iBorderWidth), "iBorderWidth" },
+	{ (VT_I4 << TE_VT) + offsetof(NONCLIENTMETRICS, iScrollWidth), "iScrollWidth" },
+	{ (VT_I4 << TE_VT) + offsetof(NONCLIENTMETRICS, iScrollHeight), "iScrollHeight" },
+	{ (VT_I4 << TE_VT) + offsetof(NONCLIENTMETRICS, iCaptionWidth), "iCaptionWidth" },
+	{ (VT_I4 << TE_VT) + offsetof(NONCLIENTMETRICS, iCaptionHeight), "iCaptionHeight" },
+	{ (VT_PTR << TE_VT) + offsetof(NONCLIENTMETRICS, lfCaptionFont), "lfCaptionFont" },
+	{ (VT_I4 << TE_VT) + offsetof(NONCLIENTMETRICS, iSmCaptionWidth), "iSmCaptionWidth" },
+	{ (VT_I4 << TE_VT) + offsetof(NONCLIENTMETRICS, iSmCaptionHeight), "iSmCaptionHeight" },
+	{ (VT_PTR << TE_VT) + offsetof(NONCLIENTMETRICS, lfSmCaptionFont), "lfSmCaptionFont" },
+	{ (VT_I4 << TE_VT) + offsetof(NONCLIENTMETRICS, iMenuWidth), "iMenuWidth" },
+	{ (VT_I4 << TE_VT) + offsetof(NONCLIENTMETRICS, iMenuHeight), "iMenuHeight" },
+	{ (VT_PTR << TE_VT) + offsetof(NONCLIENTMETRICS, lfMenuFont), "lfMenuFont" },
+	{ (VT_PTR << TE_VT) + offsetof(NONCLIENTMETRICS, lfStatusFont), "lfStatusFont" },
+	{ (VT_PTR << TE_VT) + offsetof(NONCLIENTMETRICS, lfMessageFont), "lfMessageFont" },
+	{ (VT_I4 << TE_VT) + offsetof(NONCLIENTMETRICS, iPaddedBorderWidth), "iPaddedBorderWidth" },
 	{ 0, NULL }
 };
 
 TEmethod tesNOTIFYICONDATA[] =
 {
-	{ (VT_I4 << TE_VT) + offsetof(NOTIFYICONDATA, cbSize), L"cbSize" },
-	{ (VT_PTR << TE_VT) + offsetof(NOTIFYICONDATA, hWnd), L"hWnd" },
-	{ (VT_I4 << TE_VT) + offsetof(NOTIFYICONDATA, uID), L"uID" },
-	{ (VT_I4 << TE_VT) + offsetof(NOTIFYICONDATA, uFlags), L"uFlags" },
-	{ (VT_I4 << TE_VT) + offsetof(NOTIFYICONDATA, uCallbackMessage), L"uCallbackMessage" },
-	{ (VT_PTR << TE_VT) + offsetof(NOTIFYICONDATA, hIcon), L"hIcon" },
-	{ (VT_LPWSTR << TE_VT) + offsetof(NOTIFYICONDATA, szTip), L"szTip" },
-	{ (VT_I4 << TE_VT) + offsetof(NOTIFYICONDATA, dwState), L"dwState" },
-	{ (VT_I4 << TE_VT) + offsetof(NOTIFYICONDATA, dwState), L"dwState" },
-	{ (VT_I4 << TE_VT) + offsetof(NOTIFYICONDATA, dwStateMask), L"dwStateMask" },
-	{ (VT_LPWSTR << TE_VT) + offsetof(NOTIFYICONDATA, szInfo), L"szInfo" },
-	{ (VT_I4 << TE_VT) + offsetof(NOTIFYICONDATA, uTimeout), L"uTimeout" },
-	{ (VT_I4 << TE_VT) + offsetof(NOTIFYICONDATA, uVersion), L"uVersion" },
-	{ (VT_LPWSTR << TE_VT) + offsetof(NOTIFYICONDATA, szInfoTitle), L"szInfoTitle" },
-	{ (VT_I4 << TE_VT) + offsetof(NOTIFYICONDATA, dwInfoFlags), L"dwInfoFlags" },
-	{ (VT_PTR << TE_VT) + offsetof(NOTIFYICONDATA, guidItem), L"guidItem" },
-	{ (VT_PTR << TE_VT) + offsetof(NOTIFYICONDATA, hBalloonIcon), L"hBalloonIcon" },
+	{ (VT_I4 << TE_VT) + offsetof(NOTIFYICONDATA, cbSize), "cbSize" },
+	{ (VT_PTR << TE_VT) + offsetof(NOTIFYICONDATA, hWnd), "hWnd" },
+	{ (VT_I4 << TE_VT) + offsetof(NOTIFYICONDATA, uID), "uID" },
+	{ (VT_I4 << TE_VT) + offsetof(NOTIFYICONDATA, uFlags), "uFlags" },
+	{ (VT_I4 << TE_VT) + offsetof(NOTIFYICONDATA, uCallbackMessage), "uCallbackMessage" },
+	{ (VT_PTR << TE_VT) + offsetof(NOTIFYICONDATA, hIcon), "hIcon" },
+	{ (VT_LPWSTR << TE_VT) + offsetof(NOTIFYICONDATA, szTip), "szTip" },
+	{ (VT_I4 << TE_VT) + offsetof(NOTIFYICONDATA, dwState), "dwState" },
+	{ (VT_I4 << TE_VT) + offsetof(NOTIFYICONDATA, dwState), "dwState" },
+	{ (VT_I4 << TE_VT) + offsetof(NOTIFYICONDATA, dwStateMask), "dwStateMask" },
+	{ (VT_LPWSTR << TE_VT) + offsetof(NOTIFYICONDATA, szInfo), "szInfo" },
+	{ (VT_I4 << TE_VT) + offsetof(NOTIFYICONDATA, uTimeout), "uTimeout" },
+	{ (VT_I4 << TE_VT) + offsetof(NOTIFYICONDATA, uVersion), "uVersion" },
+	{ (VT_LPWSTR << TE_VT) + offsetof(NOTIFYICONDATA, szInfoTitle), "szInfoTitle" },
+	{ (VT_I4 << TE_VT) + offsetof(NOTIFYICONDATA, dwInfoFlags), "dwInfoFlags" },
+	{ (VT_PTR << TE_VT) + offsetof(NOTIFYICONDATA, guidItem), "guidItem" },
+	{ (VT_PTR << TE_VT) + offsetof(NOTIFYICONDATA, hBalloonIcon), "hBalloonIcon" },
 	{ 0, NULL }
 };
 
 TEmethod tesNMCUSTOMDRAW[] =
 {
-	{ (VT_PTR << TE_VT) + offsetof(NMCUSTOMDRAW, hdr), L"hdr" },
-	{ (VT_I4 << TE_VT) + offsetof(NMCUSTOMDRAW, dwDrawStage), L"dwDrawStage" },
-	{ (VT_PTR << TE_VT) + offsetof(NMCUSTOMDRAW, hdc), L"hdc" },
-	{ (VT_CARRAY << TE_VT) + offsetof(NMCUSTOMDRAW, rc), L"rc" },
-	{ (VT_PTR << TE_VT) + offsetof(NMCUSTOMDRAW, dwItemSpec), L"dwItemSpec" },
-	{ (VT_I4 << TE_VT) + offsetof(NMCUSTOMDRAW, uItemState), L"uItemState" },
-	{ (VT_PTR << TE_VT) + offsetof(NMCUSTOMDRAW, lItemlParam), L"lItemlParam" },
+	{ (VT_PTR << TE_VT) + offsetof(NMCUSTOMDRAW, hdr), "hdr" },
+	{ (VT_I4 << TE_VT) + offsetof(NMCUSTOMDRAW, dwDrawStage), "dwDrawStage" },
+	{ (VT_PTR << TE_VT) + offsetof(NMCUSTOMDRAW, hdc), "hdc" },
+	{ (VT_CARRAY << TE_VT) + offsetof(NMCUSTOMDRAW, rc), "rc" },
+	{ (VT_PTR << TE_VT) + offsetof(NMCUSTOMDRAW, dwItemSpec), "dwItemSpec" },
+	{ (VT_I4 << TE_VT) + offsetof(NMCUSTOMDRAW, uItemState), "uItemState" },
+	{ (VT_PTR << TE_VT) + offsetof(NMCUSTOMDRAW, lItemlParam), "lItemlParam" },
 	{ 0, NULL }
 };
 
 TEmethod tesNMLVCUSTOMDRAW[] =
 {
-	{ (VT_PTR << TE_VT) + offsetof(NMLVCUSTOMDRAW, nmcd), L"nmcd" },
-	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, clrText), L"clrText" },
-	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, clrTextBk), L"clrTextBk" },
-	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, iSubItem), L"iSubItem" },
-	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, dwItemType), L"dwItemType" },
-	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, clrFace), L"clrFace" },
-	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, iIconEffect), L"iIconEffect" },
-	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, iIconPhase), L"iIconPhase" },
-	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, iPartId), L"iPartId" },
-	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, iStateId), L"iStateId" },
-	{ (VT_CARRAY << TE_VT) + offsetof(NMLVCUSTOMDRAW, rcText), L"rcText" },
-	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, uAlign), L"uAlign" },
+	{ (VT_PTR << TE_VT) + offsetof(NMLVCUSTOMDRAW, nmcd), "nmcd" },
+	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, clrText), "clrText" },
+	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, clrTextBk), "clrTextBk" },
+	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, iSubItem), "iSubItem" },
+	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, dwItemType), "dwItemType" },
+	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, clrFace), "clrFace" },
+	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, iIconEffect), "iIconEffect" },
+	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, iIconPhase), "iIconPhase" },
+	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, iPartId), "iPartId" },
+	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, iStateId), "iStateId" },
+	{ (VT_CARRAY << TE_VT) + offsetof(NMLVCUSTOMDRAW, rcText), "rcText" },
+	{ (VT_I4 << TE_VT) + offsetof(NMLVCUSTOMDRAW, uAlign), "uAlign" },
 	{ 0, NULL }
 };
 
 TEmethod tesNMTVCUSTOMDRAW[] =
 {
-	{ (VT_PTR << TE_VT) + offsetof(NMTVCUSTOMDRAW, nmcd), L"nmcd" },
-	{ (VT_I4 << TE_VT) + offsetof(NMTVCUSTOMDRAW, clrText), L"clrText" },
-	{ (VT_I4 << TE_VT) + offsetof(NMTVCUSTOMDRAW, clrTextBk), L"clrTextBk" },
-	{ (VT_I4 << TE_VT) + offsetof(NMTVCUSTOMDRAW, iLevel), L"iLevel" },
+	{ (VT_PTR << TE_VT) + offsetof(NMTVCUSTOMDRAW, nmcd), "nmcd" },
+	{ (VT_I4 << TE_VT) + offsetof(NMTVCUSTOMDRAW, clrText), "clrText" },
+	{ (VT_I4 << TE_VT) + offsetof(NMTVCUSTOMDRAW, clrTextBk), "clrTextBk" },
+	{ (VT_I4 << TE_VT) + offsetof(NMTVCUSTOMDRAW, iLevel), "iLevel" },
 	{ 0, NULL }
 };
 
 TEmethod tesNMHDR[] =
 {
-	{ (VT_PTR << TE_VT) + offsetof(NMHDR, hwndFrom), L"hwndFrom" },
-	{ (VT_I4 << TE_VT) + offsetof(NMHDR, idFrom), L"idFrom" },
-	{ (VT_I4 << TE_VT) + offsetof(NMHDR, code), L"code" },
+	{ (VT_PTR << TE_VT) + offsetof(NMHDR, hwndFrom), "hwndFrom" },
+	{ (VT_I4 << TE_VT) + offsetof(NMHDR, idFrom), "idFrom" },
+	{ (VT_I4 << TE_VT) + offsetof(NMHDR, code), "code" },
 	{ 0, NULL }
 };
 
 TEmethod tesOSVERSIONINFOEX[] =
 {
-	{ (VT_I4 << TE_VT) + offsetof(OSVERSIONINFOEX, dwOSVersionInfoSize), L"dwOSVersionInfoSize" },
-	{ (VT_I4 << TE_VT) + offsetof(OSVERSIONINFOEX, dwMajorVersion), L"dwMajorVersion" },
-	{ (VT_I4 << TE_VT) + offsetof(OSVERSIONINFOEX, dwMinorVersion), L"dwMinorVersion" },
-	{ (VT_I4 << TE_VT) + offsetof(OSVERSIONINFOEX, dwBuildNumber), L"dwBuildNumber" },
-	{ (VT_I4 << TE_VT) + offsetof(OSVERSIONINFOEX, dwPlatformId), L"dwPlatformId" },
-	{ (VT_LPWSTR << TE_VT) + offsetof(OSVERSIONINFOEX, szCSDVersion), L"szCSDVersion" },
-	{ (VT_UI2 << TE_VT) + offsetof(OSVERSIONINFOEX, wServicePackMajor), L"wServicePackMajor" },
-	{ (VT_UI2 << TE_VT) + offsetof(OSVERSIONINFOEX, wServicePackMinor), L"wServicePackMinor" },
-	{ (VT_UI2 << TE_VT) + offsetof(OSVERSIONINFOEX, wSuiteMask), L"wSuiteMask" },
-	{ (VT_UI1 << TE_VT) + offsetof(OSVERSIONINFOEX, wProductType), L"wProductType" },
-	{ (VT_UI1 << TE_VT) + offsetof(OSVERSIONINFOEX, wReserved), L"wReserved" },
+	{ (VT_I4 << TE_VT) + offsetof(OSVERSIONINFOEX, dwOSVersionInfoSize), "dwOSVersionInfoSize" },
+	{ (VT_I4 << TE_VT) + offsetof(OSVERSIONINFOEX, dwMajorVersion), "dwMajorVersion" },
+	{ (VT_I4 << TE_VT) + offsetof(OSVERSIONINFOEX, dwMinorVersion), "dwMinorVersion" },
+	{ (VT_I4 << TE_VT) + offsetof(OSVERSIONINFOEX, dwBuildNumber), "dwBuildNumber" },
+	{ (VT_I4 << TE_VT) + offsetof(OSVERSIONINFOEX, dwPlatformId), "dwPlatformId" },
+	{ (VT_LPWSTR << TE_VT) + offsetof(OSVERSIONINFOEX, szCSDVersion), "szCSDVersion" },
+	{ (VT_UI2 << TE_VT) + offsetof(OSVERSIONINFOEX, wServicePackMajor), "wServicePackMajor" },
+	{ (VT_UI2 << TE_VT) + offsetof(OSVERSIONINFOEX, wServicePackMinor), "wServicePackMinor" },
+	{ (VT_UI2 << TE_VT) + offsetof(OSVERSIONINFOEX, wSuiteMask), "wSuiteMask" },
+	{ (VT_UI1 << TE_VT) + offsetof(OSVERSIONINFOEX, wProductType), "wProductType" },
+	{ (VT_UI1 << TE_VT) + offsetof(OSVERSIONINFOEX, wReserved), "wReserved" },
 	{ 0, NULL }
 };
 
 TEmethod tesPAINTSTRUCT[] =
 {
-	{ (VT_PTR << TE_VT) + offsetof(PAINTSTRUCT, hdc), L"hdc" },
-	{ (VT_BOOL << TE_VT) + offsetof(PAINTSTRUCT, fErase), L"fErase" },
-	{ (VT_CARRAY << TE_VT) + offsetof(PAINTSTRUCT, rcPaint), L"rcPaint" },
-	{ (VT_BOOL << TE_VT) + offsetof(PAINTSTRUCT, fRestore), L"fRestore" },
-	{ (VT_BOOL << TE_VT) + offsetof(PAINTSTRUCT, fIncUpdate), L"fIncUpdate" },
-	{ (VT_UI1 << TE_VT) + offsetof(PAINTSTRUCT, rgbReserved), L"rgbReserved" },
+	{ (VT_PTR << TE_VT) + offsetof(PAINTSTRUCT, hdc), "hdc" },
+	{ (VT_BOOL << TE_VT) + offsetof(PAINTSTRUCT, fErase), "fErase" },
+	{ (VT_CARRAY << TE_VT) + offsetof(PAINTSTRUCT, rcPaint), "rcPaint" },
+	{ (VT_BOOL << TE_VT) + offsetof(PAINTSTRUCT, fRestore), "fRestore" },
+	{ (VT_BOOL << TE_VT) + offsetof(PAINTSTRUCT, fIncUpdate), "fIncUpdate" },
+	{ (VT_UI1 << TE_VT) + offsetof(PAINTSTRUCT, rgbReserved), "rgbReserved" },
 	{ 0, NULL }
 };
 
 TEmethod tesPOINT[] =
 {
-	{ (VT_I4 << TE_VT) + offsetof(POINT, x), L"x" },
-	{ (VT_I4 << TE_VT) + offsetof(POINT, y), L"y" },
+	{ (VT_I4 << TE_VT) + offsetof(POINT, x), "x" },
+	{ (VT_I4 << TE_VT) + offsetof(POINT, y), "y" },
 	{ 0, NULL }
 };
 
 TEmethod tesRECT[] =
 {
-	{ (VT_I4 << TE_VT) + offsetof(RECT, left), L"left" },
-	{ (VT_I4 << TE_VT) + offsetof(RECT, top), L"top" },
-	{ (VT_I4 << TE_VT) + offsetof(RECT, right), L"right" },
-	{ (VT_I4 << TE_VT) + offsetof(RECT, bottom), L"bottom" },
+	{ (VT_I4 << TE_VT) + offsetof(RECT, left), "left" },
+	{ (VT_I4 << TE_VT) + offsetof(RECT, top), "top" },
+	{ (VT_I4 << TE_VT) + offsetof(RECT, right), "right" },
+	{ (VT_I4 << TE_VT) + offsetof(RECT, bottom), "bottom" },
 	{ 0, NULL }
 };
 
 TEmethod tesSHELLEXECUTEINFO[] =
 {
-	{ (VT_I4 << TE_VT) + offsetof(SHELLEXECUTEINFO, cbSize), L"cbSize" },
-	{ (VT_I4 << TE_VT) + offsetof(SHELLEXECUTEINFO, fMask), L"fMask" },
-	{ (VT_PTR << TE_VT) + offsetof(SHELLEXECUTEINFO, hwnd), L"hwnd" },
-	{ (VT_BSTR << TE_VT) + offsetof(SHELLEXECUTEINFO, lpVerb), L"lpVerb" },
-	{ (VT_BSTR << TE_VT) + offsetof(SHELLEXECUTEINFO, lpFile), L"lpFile" },
-	{ (VT_BSTR << TE_VT) + offsetof(SHELLEXECUTEINFO, lpParameters), L"lpParameters" },
-	{ (VT_BSTR << TE_VT) + offsetof(SHELLEXECUTEINFO, lpDirectory), L"lpDirectory" },
-	{ (VT_I4 << TE_VT) + offsetof(SHELLEXECUTEINFO, nShow), L"nShow" },
-	{ (VT_PTR << TE_VT) + offsetof(SHELLEXECUTEINFO, hInstApp), L"hInstApp" },
-	{ (VT_PTR << TE_VT) + offsetof(SHELLEXECUTEINFO, lpIDList), L"lpIDList" },
-	{ (VT_BSTR << TE_VT) + offsetof(SHELLEXECUTEINFO, lpClass), L"lpClass" },
-	{ (VT_PTR << TE_VT) + offsetof(SHELLEXECUTEINFO, hkeyClass), L"hkeyClass" },
-	{ (VT_I4 << TE_VT) + offsetof(SHELLEXECUTEINFO, dwHotKey), L"dwHotKey" },
-	{ (VT_PTR << TE_VT) + offsetof(SHELLEXECUTEINFO, hIcon), L"hIcon" },
-	{ (VT_PTR << TE_VT) + offsetof(SHELLEXECUTEINFO, hMonitor), L"hMonitor" },
-	{ (VT_PTR << TE_VT) + offsetof(SHELLEXECUTEINFO, hProcess), L"hProcess" },
+	{ (VT_I4 << TE_VT) + offsetof(SHELLEXECUTEINFO, cbSize), "cbSize" },
+	{ (VT_I4 << TE_VT) + offsetof(SHELLEXECUTEINFO, fMask), "fMask" },
+	{ (VT_PTR << TE_VT) + offsetof(SHELLEXECUTEINFO, hwnd), "hwnd" },
+	{ (VT_BSTR << TE_VT) + offsetof(SHELLEXECUTEINFO, lpVerb), "lpVerb" },
+	{ (VT_BSTR << TE_VT) + offsetof(SHELLEXECUTEINFO, lpFile), "lpFile" },
+	{ (VT_BSTR << TE_VT) + offsetof(SHELLEXECUTEINFO, lpParameters), "lpParameters" },
+	{ (VT_BSTR << TE_VT) + offsetof(SHELLEXECUTEINFO, lpDirectory), "lpDirectory" },
+	{ (VT_I4 << TE_VT) + offsetof(SHELLEXECUTEINFO, nShow), "nShow" },
+	{ (VT_PTR << TE_VT) + offsetof(SHELLEXECUTEINFO, hInstApp), "hInstApp" },
+	{ (VT_PTR << TE_VT) + offsetof(SHELLEXECUTEINFO, lpIDList), "lpIDList" },
+	{ (VT_BSTR << TE_VT) + offsetof(SHELLEXECUTEINFO, lpClass), "lpClass" },
+	{ (VT_PTR << TE_VT) + offsetof(SHELLEXECUTEINFO, hkeyClass), "hkeyClass" },
+	{ (VT_I4 << TE_VT) + offsetof(SHELLEXECUTEINFO, dwHotKey), "dwHotKey" },
+	{ (VT_PTR << TE_VT) + offsetof(SHELLEXECUTEINFO, hIcon), "hIcon" },
+	{ (VT_PTR << TE_VT) + offsetof(SHELLEXECUTEINFO, hMonitor), "hMonitor" },
+	{ (VT_PTR << TE_VT) + offsetof(SHELLEXECUTEINFO, hProcess), "hProcess" },
 	{ 0, NULL }
 };
 
 TEmethod tesSHFILEINFO[] =
 {
-	{ (VT_PTR << TE_VT) + offsetof(SHFILEINFO, hIcon), L"hIcon" },
-	{ (VT_I4 << TE_VT) + offsetof(SHFILEINFO, iIcon), L"iIcon" },
-	{ (VT_I4 << TE_VT) + offsetof(SHFILEINFO, dwAttributes), L"dwAttributes" },
-	{ (VT_LPWSTR << TE_VT) + offsetof(SHFILEINFO, szDisplayName), L"szDisplayName" },
-	{ (VT_LPWSTR << TE_VT) + offsetof(SHFILEINFO, szTypeName), L"szTypeName" },
+	{ (VT_PTR << TE_VT) + offsetof(SHFILEINFO, hIcon), "hIcon" },
+	{ (VT_I4 << TE_VT) + offsetof(SHFILEINFO, iIcon), "iIcon" },
+	{ (VT_I4 << TE_VT) + offsetof(SHFILEINFO, dwAttributes), "dwAttributes" },
+	{ (VT_LPWSTR << TE_VT) + offsetof(SHFILEINFO, szDisplayName), "szDisplayName" },
+	{ (VT_LPWSTR << TE_VT) + offsetof(SHFILEINFO, szTypeName), "szTypeName" },
 	{ 0, NULL }
 };
 
 TEmethod tesSHFILEOPSTRUCT[] =
 {
-	{ (VT_PTR << TE_VT) + offsetof(SHFILEOPSTRUCT, hwnd), L"hwnd" },
-	{ (VT_I4 << TE_VT) + offsetof(SHFILEOPSTRUCT, wFunc), L"wFunc" },
-	{ (VT_BSTR << TE_VT) + offsetof(SHFILEOPSTRUCT, pFrom), L"pFrom" },
-	{ (VT_BSTR << TE_VT) + offsetof(SHFILEOPSTRUCT, pTo), L"pTo" },
-	{ (VT_UI2 << TE_VT) + offsetof(SHFILEOPSTRUCT, fFlags), L"fFlags" },
-	{ (VT_BOOL << TE_VT) + offsetof(SHFILEOPSTRUCT, fAnyOperationsAborted), L"fAnyOperationsAborted" },
-	{ (VT_PTR << TE_VT) + offsetof(SHFILEOPSTRUCT, hNameMappings), L"hNameMappings" },
-	{ (VT_BSTR << TE_VT) + offsetof(SHFILEOPSTRUCT, lpszProgressTitle), L"lpszProgressTitle" },
+	{ (VT_PTR << TE_VT) + offsetof(SHFILEOPSTRUCT, hwnd), "hwnd" },
+	{ (VT_I4 << TE_VT) + offsetof(SHFILEOPSTRUCT, wFunc), "wFunc" },
+	{ (VT_BSTR << TE_VT) + offsetof(SHFILEOPSTRUCT, pFrom), "pFrom" },
+	{ (VT_BSTR << TE_VT) + offsetof(SHFILEOPSTRUCT, pTo), "pTo" },
+	{ (VT_UI2 << TE_VT) + offsetof(SHFILEOPSTRUCT, fFlags), "fFlags" },
+	{ (VT_BOOL << TE_VT) + offsetof(SHFILEOPSTRUCT, fAnyOperationsAborted), "fAnyOperationsAborted" },
+	{ (VT_PTR << TE_VT) + offsetof(SHFILEOPSTRUCT, hNameMappings), "hNameMappings" },
+	{ (VT_BSTR << TE_VT) + offsetof(SHFILEOPSTRUCT, lpszProgressTitle), "lpszProgressTitle" },
 	{ 0, NULL }
 };
 
 TEmethod tesSIZE[] =
 {
-	{ (VT_I4 << TE_VT) + offsetof(SIZE, cx), L"cx" },
-	{ (VT_I4 << TE_VT) + offsetof(SIZE, cy), L"cy" },
+	{ (VT_I4 << TE_VT) + offsetof(SIZE, cx), "cx" },
+	{ (VT_I4 << TE_VT) + offsetof(SIZE, cy), "cy" },
 	{ 0, NULL }
 };
 
 TEmethod tesTCHITTESTINFO[] =
 {
-	{ (VT_CY << TE_VT) + offsetof(TCHITTESTINFO, pt), L"pt" },
-	{ (VT_I4 << TE_VT) + offsetof(TCHITTESTINFO, flags), L"flags" },
+	{ (VT_CY << TE_VT) + offsetof(TCHITTESTINFO, pt), "pt" },
+	{ (VT_I4 << TE_VT) + offsetof(TCHITTESTINFO, flags), "flags" },
 	{ 0, NULL }
 };
 
 TEmethod tesTCITEM[] =
 {
-	{ (VT_I4 << TE_VT) + offsetof(TCITEM, mask), L"mask" },
-	{ (VT_I4 << TE_VT) + offsetof(TCITEM, dwState), L"dwState" },
-	{ (VT_I4 << TE_VT) + offsetof(TCITEM, dwStateMask), L"dwStateMask" },
-	{ (VT_BSTR << TE_VT) + offsetof(TCITEM, pszText), L"pszText" },
-	{ (VT_I4 << TE_VT) + offsetof(TCITEM, cchTextMax), L"cchTextMax" },
-	{ (VT_I4 << TE_VT) + offsetof(TCITEM, iImage), L"iImage" },
-	{ (VT_PTR << TE_VT) + offsetof(TCITEM, lParam), L"lParam" },
+	{ (VT_I4 << TE_VT) + offsetof(TCITEM, mask), "mask" },
+	{ (VT_I4 << TE_VT) + offsetof(TCITEM, dwState), "dwState" },
+	{ (VT_I4 << TE_VT) + offsetof(TCITEM, dwStateMask), "dwStateMask" },
+	{ (VT_BSTR << TE_VT) + offsetof(TCITEM, pszText), "pszText" },
+	{ (VT_I4 << TE_VT) + offsetof(TCITEM, cchTextMax), "cchTextMax" },
+	{ (VT_I4 << TE_VT) + offsetof(TCITEM, iImage), "iImage" },
+	{ (VT_PTR << TE_VT) + offsetof(TCITEM, lParam), "lParam" },
 	{ 0, NULL }
 };
 
 TEmethod tesTVHITTESTINFO[] =
 {
-	{ (VT_CY << TE_VT) + offsetof(TVHITTESTINFO, pt), L"pt" },
-	{ (VT_I4 << TE_VT) + offsetof(TVHITTESTINFO, flags), L"flags" },
-	{ (VT_PTR << TE_VT) + offsetof(TVHITTESTINFO, hItem), L"hItem" },
+	{ (VT_CY << TE_VT) + offsetof(TVHITTESTINFO, pt), "pt" },
+	{ (VT_I4 << TE_VT) + offsetof(TVHITTESTINFO, flags), "flags" },
+	{ (VT_PTR << TE_VT) + offsetof(TVHITTESTINFO, hItem), "hItem" },
 	{ 0, NULL }
 };
 
 TEmethod tesTVITEM[] =
 {
-	{ (VT_I4 << TE_VT) + offsetof(TVITEM, mask), L"mask" },
-	{ (VT_PTR << TE_VT) + offsetof(TVITEM, hItem), L"hItem" },
-	{ (VT_I4 << TE_VT) + offsetof(TVITEM, state), L"state" },
-	{ (VT_I4 << TE_VT) + offsetof(TVITEM, stateMask), L"stateMask" },
-	{ (VT_BSTR << TE_VT) + offsetof(TVITEM, pszText), L"pszText" },
-	{ (VT_I4 << TE_VT) + offsetof(TVITEM, cchTextMax), L"cchTextMax" },
-	{ (VT_I4 << TE_VT) + offsetof(TVITEM, iImage), L"iImage" },
-	{ (VT_I4 << TE_VT) + offsetof(TVITEM, iSelectedImage), L"iSelectedImage" },
-	{ (VT_I4 << TE_VT) + offsetof(TVITEM, cChildren), L"cChildren" },
-	{ (VT_PTR << TE_VT) + offsetof(TVITEM, lParam), L"lParam" },
+	{ (VT_I4 << TE_VT) + offsetof(TVITEM, mask), "mask" },
+	{ (VT_PTR << TE_VT) + offsetof(TVITEM, hItem), "hItem" },
+	{ (VT_I4 << TE_VT) + offsetof(TVITEM, state), "state" },
+	{ (VT_I4 << TE_VT) + offsetof(TVITEM, stateMask), "stateMask" },
+	{ (VT_BSTR << TE_VT) + offsetof(TVITEM, pszText), "pszText" },
+	{ (VT_I4 << TE_VT) + offsetof(TVITEM, cchTextMax), "cchTextMax" },
+	{ (VT_I4 << TE_VT) + offsetof(TVITEM, iImage), "iImage" },
+	{ (VT_I4 << TE_VT) + offsetof(TVITEM, iSelectedImage), "iSelectedImage" },
+	{ (VT_I4 << TE_VT) + offsetof(TVITEM, cChildren), "cChildren" },
+	{ (VT_PTR << TE_VT) + offsetof(TVITEM, lParam), "lParam" },
 	{ 0, NULL }
 };
 
 TEmethod tesWIN32_FIND_DATA[] =
 {
-	{ (VT_I4 << TE_VT) + offsetof(WIN32_FIND_DATA, dwFileAttributes), L"dwFileAttributes" },
-	{ (VT_FILETIME << TE_VT) + offsetof(WIN32_FIND_DATA, ftCreationTime), L"ftCreationTime" },
-	{ (VT_FILETIME << TE_VT) + offsetof(WIN32_FIND_DATA, ftLastAccessTime), L"ftLastAccessTime" },
-	{ (VT_FILETIME << TE_VT) + offsetof(WIN32_FIND_DATA, ftLastWriteTime), L"ftLastWriteTime" },
-	{ (VT_I4 << TE_VT) + offsetof(WIN32_FIND_DATA, nFileSizeHigh), L"nFileSizeHigh" },
-	{ (VT_I4 << TE_VT) + offsetof(WIN32_FIND_DATA, nFileSizeLow), L"nFileSizeLow" },
-	{ (VT_I4 << TE_VT) + offsetof(WIN32_FIND_DATA, dwReserved0), L"dwReserved0" },
-	{ (VT_I4 << TE_VT) + offsetof(WIN32_FIND_DATA, dwReserved1), L"dwReserved1" },
-	{ (VT_LPWSTR << TE_VT) + offsetof(WIN32_FIND_DATA, cFileName), L"cFileName" },
-	{ (VT_LPWSTR << TE_VT) + offsetof(WIN32_FIND_DATA, cAlternateFileName), L"cAlternateFileName" },
+	{ (VT_I4 << TE_VT) + offsetof(WIN32_FIND_DATA, dwFileAttributes), "dwFileAttributes" },
+	{ (VT_FILETIME << TE_VT) + offsetof(WIN32_FIND_DATA, ftCreationTime), "ftCreationTime" },
+	{ (VT_FILETIME << TE_VT) + offsetof(WIN32_FIND_DATA, ftLastAccessTime), "ftLastAccessTime" },
+	{ (VT_FILETIME << TE_VT) + offsetof(WIN32_FIND_DATA, ftLastWriteTime), "ftLastWriteTime" },
+	{ (VT_I4 << TE_VT) + offsetof(WIN32_FIND_DATA, nFileSizeHigh), "nFileSizeHigh" },
+	{ (VT_I4 << TE_VT) + offsetof(WIN32_FIND_DATA, nFileSizeLow), "nFileSizeLow" },
+	{ (VT_I4 << TE_VT) + offsetof(WIN32_FIND_DATA, dwReserved0), "dwReserved0" },
+	{ (VT_I4 << TE_VT) + offsetof(WIN32_FIND_DATA, dwReserved1), "dwReserved1" },
+	{ (VT_LPWSTR << TE_VT) + offsetof(WIN32_FIND_DATA, cFileName), "cFileName" },
+	{ (VT_LPWSTR << TE_VT) + offsetof(WIN32_FIND_DATA, cAlternateFileName), "cAlternateFileName" },
 	{ 0, NULL }
 };
 
 TEmethod tesDRAWITEMSTRUCT[] =
 {
-	{ (VT_I4 << TE_VT) + offsetof(DRAWITEMSTRUCT, CtlType), L"CtlType" },
-	{ (VT_I4 << TE_VT) + offsetof(DRAWITEMSTRUCT, CtlID), L"CtlID" },
-	{ (VT_I4 << TE_VT) + offsetof(DRAWITEMSTRUCT, itemID), L"itemID" },
-	{ (VT_I4 << TE_VT) + offsetof(DRAWITEMSTRUCT, itemAction), L"itemAction" },
-	{ (VT_I4 << TE_VT) + offsetof(DRAWITEMSTRUCT, itemState), L"itemState" },
-	{ (VT_PTR << TE_VT) + offsetof(DRAWITEMSTRUCT, hwndItem), L"hwndItem" },
-	{ (VT_PTR << TE_VT) + offsetof(DRAWITEMSTRUCT, hDC), L"hDC" },
-	{ (VT_CARRAY << TE_VT) + offsetof(DRAWITEMSTRUCT, rcItem), L"rcItem" },
-	{ (VT_PTR << TE_VT) + offsetof(DRAWITEMSTRUCT, itemData), L"itemData" },
+	{ (VT_I4 << TE_VT) + offsetof(DRAWITEMSTRUCT, CtlType), "CtlType" },
+	{ (VT_I4 << TE_VT) + offsetof(DRAWITEMSTRUCT, CtlID), "CtlID" },
+	{ (VT_I4 << TE_VT) + offsetof(DRAWITEMSTRUCT, itemID), "itemID" },
+	{ (VT_I4 << TE_VT) + offsetof(DRAWITEMSTRUCT, itemAction), "itemAction" },
+	{ (VT_I4 << TE_VT) + offsetof(DRAWITEMSTRUCT, itemState), "itemState" },
+	{ (VT_PTR << TE_VT) + offsetof(DRAWITEMSTRUCT, hwndItem), "hwndItem" },
+	{ (VT_PTR << TE_VT) + offsetof(DRAWITEMSTRUCT, hDC), "hDC" },
+	{ (VT_CARRAY << TE_VT) + offsetof(DRAWITEMSTRUCT, rcItem), "rcItem" },
+	{ (VT_PTR << TE_VT) + offsetof(DRAWITEMSTRUCT, itemData), "itemData" },
 	{ 0, NULL }
 };
 
 TEmethod tesMEASUREITEMSTRUCT[] =
 {
-	{ (VT_I4 << TE_VT) + offsetof(MEASUREITEMSTRUCT, CtlType), L"CtlType" },
-	{ (VT_I4 << TE_VT) + offsetof(MEASUREITEMSTRUCT, CtlID), L"CtlID" },
-	{ (VT_I4 << TE_VT) + offsetof(MEASUREITEMSTRUCT, itemID), L"itemID" },
-	{ (VT_I4 << TE_VT) + offsetof(MEASUREITEMSTRUCT, itemWidth), L"itemWidth" },
-	{ (VT_I4 << TE_VT) + offsetof(MEASUREITEMSTRUCT, itemHeight), L"itemHeight" },
-	{ (VT_PTR << TE_VT) + offsetof(MEASUREITEMSTRUCT, itemData), L"itemData" },
+	{ (VT_I4 << TE_VT) + offsetof(MEASUREITEMSTRUCT, CtlType), "CtlType" },
+	{ (VT_I4 << TE_VT) + offsetof(MEASUREITEMSTRUCT, CtlID), "CtlID" },
+	{ (VT_I4 << TE_VT) + offsetof(MEASUREITEMSTRUCT, itemID), "itemID" },
+	{ (VT_I4 << TE_VT) + offsetof(MEASUREITEMSTRUCT, itemWidth), "itemWidth" },
+	{ (VT_I4 << TE_VT) + offsetof(MEASUREITEMSTRUCT, itemHeight), "itemHeight" },
+	{ (VT_PTR << TE_VT) + offsetof(MEASUREITEMSTRUCT, itemData), "itemData" },
 	{ 0, NULL }
 };
 
 TEmethod tesMENUINFO[] =
 {
-	{ (VT_I4 << TE_VT) + offsetof(MENUINFO, cbSize), L"cbSize" },
-	{ (VT_I4 << TE_VT) + offsetof(MENUINFO, fMask), L"fMask" },
-	{ (VT_I4 << TE_VT) + offsetof(MENUINFO, dwStyle), L"dwStyle" },
-	{ (VT_I4 << TE_VT) + offsetof(MENUINFO, cyMax), L"cyMax" },
-	{ (VT_PTR << TE_VT) + offsetof(MENUINFO, hbrBack), L"hbrBack" },
-	{ (VT_I4 << TE_VT) + offsetof(MENUINFO, dwContextHelpID), L"dwContextHelpID" },
-	{ (VT_PTR << TE_VT) + offsetof(MENUINFO, dwMenuData), L"dwMenuData" },
+	{ (VT_I4 << TE_VT) + offsetof(MENUINFO, cbSize), "cbSize" },
+	{ (VT_I4 << TE_VT) + offsetof(MENUINFO, fMask), "fMask" },
+	{ (VT_I4 << TE_VT) + offsetof(MENUINFO, dwStyle), "dwStyle" },
+	{ (VT_I4 << TE_VT) + offsetof(MENUINFO, cyMax), "cyMax" },
+	{ (VT_PTR << TE_VT) + offsetof(MENUINFO, hbrBack), "hbrBack" },
+	{ (VT_I4 << TE_VT) + offsetof(MENUINFO, dwContextHelpID), "dwContextHelpID" },
+	{ (VT_PTR << TE_VT) + offsetof(MENUINFO, dwMenuData), "dwMenuData" },
 	{ 0, NULL }
 };
 
 TEStruct pTEStructs[] = {
-	{ sizeof(BITMAP), L"BITMAP", tesBITMAP },
-	{ sizeof(BSTR), L"BSTR", tesNULL },
-	{ sizeof(BYTE), L"BYTE", tesNULL },
-	{ sizeof(char), L"char", tesNULL },
-	{ sizeof(CHOOSECOLOR), L"CHOOSECOLOR", tesCHOOSECOLOR },
-	{ sizeof(CHOOSEFONT), L"CHOOSEFONT", tesCHOOSEFONT },
-	{ sizeof(COPYDATASTRUCT), L"COPYDATASTRUCT", tesCOPYDATASTRUCT },
-	{ sizeof(DIBSECTION), L"DIBSECTION", tesDIBSECTION },
-	{ sizeof(DRAWITEMSTRUCT), L"DRAWITEMSTRUCT", tesDRAWITEMSTRUCT },
-	{ sizeof(DWORD), L"DWORD", tesNULL },
-	{ sizeof(EncoderParameter), L"EncoderParameter", tesEncoderParameter },
-	{ sizeof(EncoderParameter), L"EncoderParameters", tesEncoderParameters },
-	{ sizeof(EXCEPINFO), L"EXCEPINFO", tesEXCEPINFO },
-	{ sizeof(FINDREPLACE), L"FINDREPLACE", tesFINDREPLACE },
-	{ sizeof(FOLDERSETTINGS), L"FOLDERSETTINGS", tesFOLDERSETTINGS },
-	{ sizeof(GUID), L"GUID", tesNULL },
-	{ sizeof(HANDLE), L"HANDLE", tesNULL },
-	{ sizeof(HDITEM), L"HDITEM", tesHDITEM },
-	{ sizeof(ICONINFO), L"ICONINFO", tesICONINFO },
-	{ sizeof(ICONMETRICS), L"ICONMETRICS", tesICONMETRICS },
-	{ sizeof(int), L"int", tesNULL },
-	{ sizeof(KEYBDINPUT) + sizeof(DWORD), L"KEYBDINPUT", tesKEYBDINPUT },
-	{ 256, L"KEYSTATE", tesNULL },
-	{ sizeof(LOGFONT), L"LOGFONT", tesLOGFONT },
-	{ sizeof(LPWSTR), L"LPWSTR", tesNULL },
-	{ sizeof(LVBKIMAGE), L"LVBKIMAGE", tesLVBKIMAGE },
-	{ sizeof(LVFINDINFO), L"LVFINDINFO", tesLVFINDINFO },
-	{ sizeof(LVGROUP), L"LVGROUP", tesLVGROUP },
-	{ sizeof(LVHITTESTINFO), L"LVHITTESTINFO", tesLVHITTESTINFO },
-	{ sizeof(LVITEM), L"LVITEM", tesLVITEM },
-	{ sizeof(MEASUREITEMSTRUCT), L"MEASUREITEMSTRUCT", tesMEASUREITEMSTRUCT },
-	{ sizeof(MENUINFO), L"MENUINFO", tesMENUINFO },
-	{ sizeof(MENUITEMINFO), L"MENUITEMINFO", tesMENUITEMINFO },
-	{ sizeof(MONITORINFOEX), L"MONITORINFOEX", tesMONITORINFOEX },
-	{ sizeof(MOUSEINPUT) + sizeof(DWORD), L"MOUSEINPUT", tesMOUSEINPUT },
-	{ sizeof(MSG), L"MSG", tesMSG },
-	{ sizeof(NMCUSTOMDRAW), L"NMCUSTOMDRAW", tesNMCUSTOMDRAW },
-	{ sizeof(NMLVCUSTOMDRAW), L"NMLVCUSTOMDRAW", tesNMLVCUSTOMDRAW },
-	{ sizeof(NMTVCUSTOMDRAW), L"NMTVCUSTOMDRAW", tesNMTVCUSTOMDRAW },
-	{ sizeof(NMHDR), L"NMHDR", tesNMHDR },
-	{ sizeof(NONCLIENTMETRICS), L"NONCLIENTMETRICS", tesNONCLIENTMETRICS },
-	{ sizeof(NOTIFYICONDATA), L"NOTIFYICONDATA", tesNOTIFYICONDATA },
-	{ sizeof(OSVERSIONINFO), L"OSVERSIONINFO", tesOSVERSIONINFOEX },
-	{ sizeof(OSVERSIONINFOEX), L"OSVERSIONINFOEX", tesOSVERSIONINFOEX },
-	{ sizeof(PAINTSTRUCT), L"PAINTSTRUCT", tesPAINTSTRUCT },
-	{ sizeof(POINT), L"POINT", tesPOINT },
-	{ sizeof(RECT), L"RECT", tesRECT },
-	{ sizeof(SHELLEXECUTEINFO), L"SHELLEXECUTEINFO", tesSHELLEXECUTEINFO },
-	{ sizeof(SHFILEINFO), L"SHFILEINFO", tesSHFILEINFO },
-	{ sizeof(SHFILEOPSTRUCT), L"SHFILEOPSTRUCT", tesSHFILEOPSTRUCT },
-	{ sizeof(SIZE), L"SIZE", tesSIZE },
-	{ sizeof(TCHITTESTINFO), L"TCHITTESTINFO", tesTCHITTESTINFO },
-	{ sizeof(TCITEM), L"TCITEM", tesTCITEM },
-	{ sizeof(TVHITTESTINFO), L"TVHITTESTINFO", tesTVHITTESTINFO },
-	{ sizeof(TVITEM), L"TVITEM", tesTVITEM },
-	{ sizeof(VARIANT), L"VARIANT", tesNULL },
-	{ sizeof(WCHAR), L"WCHAR", tesNULL },
-	{ sizeof(WIN32_FIND_DATA), L"WIN32_FIND_DATA", tesWIN32_FIND_DATA },
-	{ sizeof(WORD), L"WORD", tesNULL },
+	{ sizeof(BITMAP), "BITMAP", tesBITMAP },
+	{ sizeof(BSTR), "BSTR", tesNULL },
+	{ sizeof(BYTE), "BYTE", tesNULL },
+	{ sizeof(char), "char", tesNULL },
+	{ sizeof(CHOOSECOLOR), "CHOOSECOLOR", tesCHOOSECOLOR },
+	{ sizeof(CHOOSEFONT), "CHOOSEFONT", tesCHOOSEFONT },
+	{ sizeof(COPYDATASTRUCT), "COPYDATASTRUCT", tesCOPYDATASTRUCT },
+	{ sizeof(DIBSECTION), "DIBSECTION", tesDIBSECTION },
+	{ sizeof(DRAWITEMSTRUCT), "DRAWITEMSTRUCT", tesDRAWITEMSTRUCT },
+	{ sizeof(DWORD), "DWORD", tesNULL },
+	{ sizeof(EncoderParameter), "EncoderParameter", tesEncoderParameter },
+	{ sizeof(EncoderParameter), "EncoderParameters", tesEncoderParameters },
+	{ sizeof(EXCEPINFO), "EXCEPINFO", tesEXCEPINFO },
+	{ sizeof(FINDREPLACE), "FINDREPLACE", tesFINDREPLACE },
+	{ sizeof(FOLDERSETTINGS), "FOLDERSETTINGS", tesFOLDERSETTINGS },
+	{ sizeof(GUID), "GUID", tesNULL },
+	{ sizeof(HANDLE), "HANDLE", tesNULL },
+	{ sizeof(HDITEM), "HDITEM", tesHDITEM },
+	{ sizeof(ICONINFO), "ICONINFO", tesICONINFO },
+	{ sizeof(ICONMETRICS), "ICONMETRICS", tesICONMETRICS },
+	{ sizeof(int), "int", tesNULL },
+	{ sizeof(KEYBDINPUT) + sizeof(DWORD), "KEYBDINPUT", tesKEYBDINPUT },
+	{ 256, "KEYSTATE", tesNULL },
+	{ sizeof(LOGFONT), "LOGFONT", tesLOGFONT },
+	{ sizeof(LPWSTR), "LPWSTR", tesNULL },
+	{ sizeof(LVBKIMAGE), "LVBKIMAGE", tesLVBKIMAGE },
+	{ sizeof(LVFINDINFO), "LVFINDINFO", tesLVFINDINFO },
+	{ sizeof(LVGROUP), "LVGROUP", tesLVGROUP },
+	{ sizeof(LVHITTESTINFO), "LVHITTESTINFO", tesLVHITTESTINFO },
+	{ sizeof(LVITEM), "LVITEM", tesLVITEM },
+	{ sizeof(MEASUREITEMSTRUCT), "MEASUREITEMSTRUCT", tesMEASUREITEMSTRUCT },
+	{ sizeof(MENUINFO), "MENUINFO", tesMENUINFO },
+	{ sizeof(MENUITEMINFO), "MENUITEMINFO", tesMENUITEMINFO },
+	{ sizeof(MONITORINFOEX), "MONITORINFOEX", tesMONITORINFOEX },
+	{ sizeof(MOUSEINPUT) + sizeof(DWORD), "MOUSEINPUT", tesMOUSEINPUT },
+	{ sizeof(MSG), "MSG", tesMSG },
+	{ sizeof(NMCUSTOMDRAW), "NMCUSTOMDRAW", tesNMCUSTOMDRAW },
+	{ sizeof(NMLVCUSTOMDRAW), "NMLVCUSTOMDRAW", tesNMLVCUSTOMDRAW },
+	{ sizeof(NMTVCUSTOMDRAW), "NMTVCUSTOMDRAW", tesNMTVCUSTOMDRAW },
+	{ sizeof(NMHDR), "NMHDR", tesNMHDR },
+	{ sizeof(NONCLIENTMETRICS), "NONCLIENTMETRICS", tesNONCLIENTMETRICS },
+	{ sizeof(NOTIFYICONDATA), "NOTIFYICONDATA", tesNOTIFYICONDATA },
+	{ sizeof(OSVERSIONINFO), "OSVERSIONINFO", tesOSVERSIONINFOEX },
+	{ sizeof(OSVERSIONINFOEX), "OSVERSIONINFOEX", tesOSVERSIONINFOEX },
+	{ sizeof(PAINTSTRUCT), "PAINTSTRUCT", tesPAINTSTRUCT },
+	{ sizeof(POINT), "POINT", tesPOINT },
+	{ sizeof(RECT), "RECT", tesRECT },
+	{ sizeof(SHELLEXECUTEINFO), "SHELLEXECUTEINFO", tesSHELLEXECUTEINFO },
+	{ sizeof(SHFILEINFO), "SHFILEINFO", tesSHFILEINFO },
+	{ sizeof(SHFILEOPSTRUCT), "SHFILEOPSTRUCT", tesSHFILEOPSTRUCT },
+	{ sizeof(SIZE), "SIZE", tesSIZE },
+	{ sizeof(TCHITTESTINFO), "TCHITTESTINFO", tesTCHITTESTINFO },
+	{ sizeof(TCITEM), "TCITEM", tesTCITEM },
+	{ sizeof(TVHITTESTINFO), "TVHITTESTINFO", tesTVHITTESTINFO },
+	{ sizeof(TVITEM), "TVITEM", tesTVITEM },
+	{ sizeof(VARIANT), "VARIANT", tesNULL },
+	{ sizeof(WCHAR), "WCHAR", tesNULL },
+	{ sizeof(WIN32_FIND_DATA), "WIN32_FIND_DATA", tesWIN32_FIND_DATA },
+	{ sizeof(WORD), "WORD", tesNULL },
 };
 
 TEmethod methodMem2[] = {
-	{ VT_I4  << TE_VT, L"int" },
-	{ VT_UI4 << TE_VT, L"DWORD" },
-	{ VT_UI1 << TE_VT, L"BYTE" },
-	{ VT_UI2 << TE_VT, L"WORD" },
-	{ VT_UI2 << TE_VT, L"WCHAR" },
-	{ VT_PTR << TE_VT, L"HANDLE" },
-	{ VT_PTR << TE_VT, L"LPWSTR" },
+	{ VT_I4  << TE_VT, "int" },
+	{ VT_UI4 << TE_VT, "DWORD" },
+	{ VT_UI1 << TE_VT, "BYTE" },
+	{ VT_UI2 << TE_VT, "WORD" },
+	{ VT_UI2 << TE_VT, "WCHAR" },
+	{ VT_PTR << TE_VT, "HANDLE" },
+	{ VT_PTR << TE_VT, "LPWSTR" },
 	{ 0, NULL }
 };
 
 TEmethod methodTE[] = {
-	{ 1001, L"Data" },
-	{ 1002, L"hwnd" },
-	{ 1004, L"About" },
-	{ TE_METHOD + 1005, L"Ctrl" },
-	{ TE_METHOD + 1006, L"Ctrls" },
-	{ 1007, L"Version" },
-	{ TE_METHOD + 1008, L"ClearEvents" },
-	{ TE_METHOD + 1009, L"Reload" },
-	{ TE_METHOD + 1010, L"CreateObject" },
-	{ TE_METHOD + 1020, L"GetObject" },
-	{ 1030, L"WindowsAPI" },
-	{ 1131, L"CommonDialog" },
-	{ 1132, L"GdiplusBitmap" },
-	{ TE_METHOD + 1133, L"FolderItems" },
-	{ TE_METHOD + 1134, L"Object" },
-	{ TE_METHOD + 1135, L"Array" },
-	{ TE_METHOD + 1136, L"Collection" },
-	{ TE_METHOD + 1050, L"CreateCtrl" },
-	{ TE_METHOD + 1040, L"CtrlFromPoint" },
-	{ TE_METHOD + 1060, L"MainMenu" },
-	{ TE_METHOD + 1070, L"CtrlFromWindow" },
-	{ TE_METHOD + 1080, L"LockUpdate" },
-	{ TE_METHOD + 1090, L"UnlockUpdate" },
-	{ TE_METHOD + 1100, L"HookDragDrop" },//Deprecated
+	{ 1001, "Data" },
+	{ 1002, "hwnd" },
+	{ 1004, "About" },
+	{ TE_METHOD + 1005, "Ctrl" },
+	{ TE_METHOD + 1006, "Ctrls" },
+	{ 1007, "Version" },
+	{ TE_METHOD + 1008, "ClearEvents" },
+	{ TE_METHOD + 1009, "Reload" },
+	{ TE_METHOD + 1010, "CreateObject" },
+	{ TE_METHOD + 1020, "GetObject" },
+	{ 1030, "WindowsAPI" },
+	{ 1131, "CommonDialog" },
+	{ 1132, "GdiplusBitmap" },
+	{ TE_METHOD + 1133, "FolderItems" },
+	{ TE_METHOD + 1134, "Object" },
+	{ TE_METHOD + 1135, "Array" },
+	{ TE_METHOD + 1136, "Collection" },
+	{ TE_METHOD + 1050, "CreateCtrl" },
+	{ TE_METHOD + 1040, "CtrlFromPoint" },
+	{ TE_METHOD + 1060, "MainMenu" },
+	{ TE_METHOD + 1070, "CtrlFromWindow" },
+	{ TE_METHOD + 1080, "LockUpdate" },
+	{ TE_METHOD + 1090, "UnlockUpdate" },
+	{ TE_METHOD + 1100, "HookDragDrop" },//Deprecated
 #ifdef _USE_TESTOBJECT
-	{ 1200, L"TestObj" },
+	{ 1200, "TestObj" },
 #endif
-	{ TE_OFFSET + TE_Type   , L"Type" },
-	{ TE_OFFSET + TE_Left   , L"offsetLeft" },
-	{ TE_OFFSET + TE_Top    , L"offsetTop" },
-	{ TE_OFFSET + TE_Right  , L"offsetRight" },
-	{ TE_OFFSET + TE_Bottom , L"offsetBottom" },
-	{ TE_OFFSET + TE_Tab, L"Tab" },
-	{ TE_OFFSET + TE_CmdShow, L"CmdShow" },
-	{ TE_OFFSET + TE_Layout, L"Layout" },
-	{ TE_OFFSET + TE_NetworkTimeout, L"NetworkTimeout" },
-	{ START_OnFunc + TE_Labels, L"Labels" },
-	{ START_OnFunc + TE_OnBeforeNavigate, L"OnBeforeNavigate" },
-	{ START_OnFunc + TE_OnViewCreated, L"OnViewCreated" },
-	{ START_OnFunc + TE_OnKeyMessage, L"OnKeyMessage" },
-	{ START_OnFunc + TE_OnMouseMessage, L"OnMouseMessage" },
-	{ START_OnFunc + TE_OnCreate, L"OnCreate" },
-	{ START_OnFunc + TE_OnDefaultCommand, L"OnDefaultCommand" },
-	{ START_OnFunc + TE_OnItemClick, L"OnItemClick" },
-	{ START_OnFunc + TE_OnGetPaneState, L"OnGetPaneState" },
-	{ START_OnFunc + TE_OnMenuMessage, L"OnMenuMessage" },
-	{ START_OnFunc + TE_OnSystemMessage, L"OnSystemMessage" },
-	{ START_OnFunc + TE_OnShowContextMenu, L"OnShowContextMenu" },
-	{ START_OnFunc + TE_OnSelectionChanged, L"OnSelectionChanged" },
-	{ START_OnFunc + TE_OnClose, L"OnClose" },
-	{ START_OnFunc + TE_OnDragEnter, L"OnDragEnter" },
-	{ START_OnFunc + TE_OnDragOver, L"OnDragOver" },
-	{ START_OnFunc + TE_OnDrop, L"OnDrop" },
-	{ START_OnFunc + TE_OnDragLeave, L"OnDragLeave" },
-	{ START_OnFunc + TE_OnAppMessage, L"OnAppMessage" },
-	{ START_OnFunc + TE_OnStatusText, L"OnStatusText" },
-	{ START_OnFunc + TE_OnToolTip, L"OnToolTip" },
-	{ START_OnFunc + TE_OnNewWindow, L"OnNewWindow" },
-	{ START_OnFunc + TE_OnWindowRegistered, L"OnWindowRegistered" },
-	{ START_OnFunc + TE_OnSelectionChanging, L"OnSelectionChanging" },
-	{ START_OnFunc + TE_OnClipboardText, L"OnClipboardText" },
-	{ START_OnFunc + TE_OnCommand, L"OnCommand" },
-	{ START_OnFunc + TE_OnInvokeCommand, L"OnInvokeCommand" },
-	{ START_OnFunc + TE_OnArrange, L"OnArrange" },
-	{ START_OnFunc + TE_OnHitTest, L"OnHitTest" },
-	{ START_OnFunc + TE_OnVisibleChanged, L"OnVisibleChanged" },
-	{ START_OnFunc + TE_OnTranslatePath, L"OnTranslatePath" },
-	{ START_OnFunc + TE_OnNavigateComplete, L"OnNavigateComplete" },
-	{ START_OnFunc + TE_OnILGetParent, L"OnILGetParent" },
-	{ START_OnFunc + TE_OnViewModeChanged, L"OnViewModeChanged" },
-	{ START_OnFunc + TE_OnColumnsChanged, L"OnColumnsChanged" },
-	{ START_OnFunc + TE_OnItemPrePaint, L"OnItemPrePaint" },
-	{ START_OnFunc + TE_OnColumnClick, L"OnColumnClick" },
-	{ START_OnFunc + TE_OnBeginDrag, L"OnBeginDrag" },
-	{ START_OnFunc + TE_OnBeforeGetData, L"OnBeforeGetData" },
-	{ START_OnFunc + TE_OnIconSizeChanged, L"OnIconSizeChanged" },
-	{ START_OnFunc + TE_OnFilterChanged, L"OnFilterChanged" },
+	{ TE_OFFSET + TE_Type   , "Type" },
+	{ TE_OFFSET + TE_Left   , "offsetLeft" },
+	{ TE_OFFSET + TE_Top    , "offsetTop" },
+	{ TE_OFFSET + TE_Right  , "offsetRight" },
+	{ TE_OFFSET + TE_Bottom , "offsetBottom" },
+	{ TE_OFFSET + TE_Tab, "Tab" },
+	{ TE_OFFSET + TE_CmdShow, "CmdShow" },
+	{ TE_OFFSET + TE_Layout, "Layout" },
+	{ TE_OFFSET + TE_NetworkTimeout, "NetworkTimeout" },
+	{ START_OnFunc + TE_Labels, "Labels" },
+	{ START_OnFunc + TE_OnBeforeNavigate, "OnBeforeNavigate" },
+	{ START_OnFunc + TE_OnViewCreated, "OnViewCreated" },
+	{ START_OnFunc + TE_OnKeyMessage, "OnKeyMessage" },
+	{ START_OnFunc + TE_OnMouseMessage, "OnMouseMessage" },
+	{ START_OnFunc + TE_OnCreate, "OnCreate" },
+	{ START_OnFunc + TE_OnDefaultCommand, "OnDefaultCommand" },
+	{ START_OnFunc + TE_OnItemClick, "OnItemClick" },
+	{ START_OnFunc + TE_OnGetPaneState, "OnGetPaneState" },
+	{ START_OnFunc + TE_OnMenuMessage, "OnMenuMessage" },
+	{ START_OnFunc + TE_OnSystemMessage, "OnSystemMessage" },
+	{ START_OnFunc + TE_OnShowContextMenu, "OnShowContextMenu" },
+	{ START_OnFunc + TE_OnSelectionChanged, "OnSelectionChanged" },
+	{ START_OnFunc + TE_OnClose, "OnClose" },
+	{ START_OnFunc + TE_OnDragEnter, "OnDragEnter" },
+	{ START_OnFunc + TE_OnDragOver, "OnDragOver" },
+	{ START_OnFunc + TE_OnDrop, "OnDrop" },
+	{ START_OnFunc + TE_OnDragLeave, "OnDragLeave" },
+	{ START_OnFunc + TE_OnAppMessage, "OnAppMessage" },
+	{ START_OnFunc + TE_OnStatusText, "OnStatusText" },
+	{ START_OnFunc + TE_OnToolTip, "OnToolTip" },
+	{ START_OnFunc + TE_OnNewWindow, "OnNewWindow" },
+	{ START_OnFunc + TE_OnWindowRegistered, "OnWindowRegistered" },
+	{ START_OnFunc + TE_OnSelectionChanging, "OnSelectionChanging" },
+	{ START_OnFunc + TE_OnClipboardText, "OnClipboardText" },
+	{ START_OnFunc + TE_OnCommand, "OnCommand" },
+	{ START_OnFunc + TE_OnInvokeCommand, "OnInvokeCommand" },
+	{ START_OnFunc + TE_OnArrange, "OnArrange" },
+	{ START_OnFunc + TE_OnHitTest, "OnHitTest" },
+	{ START_OnFunc + TE_OnVisibleChanged, "OnVisibleChanged" },
+	{ START_OnFunc + TE_OnTranslatePath, "OnTranslatePath" },
+	{ START_OnFunc + TE_OnNavigateComplete, "OnNavigateComplete" },
+	{ START_OnFunc + TE_OnILGetParent, "OnILGetParent" },
+	{ START_OnFunc + TE_OnViewModeChanged, "OnViewModeChanged" },
+	{ START_OnFunc + TE_OnColumnsChanged, "OnColumnsChanged" },
+	{ START_OnFunc + TE_OnItemPrePaint, "OnItemPrePaint" },
+	{ START_OnFunc + TE_OnColumnClick, "OnColumnClick" },
+	{ START_OnFunc + TE_OnBeginDrag, "OnBeginDrag" },
+	{ START_OnFunc + TE_OnBeforeGetData, "OnBeforeGetData" },
+	{ START_OnFunc + TE_OnIconSizeChanged, "OnIconSizeChanged" },
+	{ START_OnFunc + TE_OnFilterChanged, "OnFilterChanged" },
 	{ 0, NULL }
 };
 
 TEmethod methodSB[] = {
-	{ 0x10000001, L"Data" },
-	{ 0x10000002, L"hwnd" },
-	{ 0x10000003, L"Type" },
-	{ 0x10000004, L"Navigate" },
-	{ 0x10000007, L"Navigate2" },
-	{ 0x10000008, L"Index" },
-	{ 0x10000009, L"FolderFlags" },
-	{ 0x1000000B, L"History" },
-	{ 0x10000010, L"CurrentViewMode" },
-	{ 0x10000011, L"IconSize" },
-	{ 0x10000012, L"Options" },
-	{ 0x10000013, L"SizeFormat" },
-	{ 0x10000016, L"ViewFlags" },
-	{ 0x10000017, L"Id" },
-	{ 0x10000018, L"FilterView" },
-	{ 0x10000020, L"FolderItem" },
-	{ 0x10000021, L"TreeView" },
-	{ 0x10000024, L"Parent" },
-	{ 0x10000031, L"Close" },
-	{ 0x10000032, L"Title" },
-	{ 0x10000033, L"Suspend" },
-	{ 0x10000040, L"Items" },
-	{ 0x10000041, L"SelectedItems" },
-	{ 0x10000050, L"ShellFolderView" },
-	{ 0x10000058, L"Droptarget" },
-	{ 0x10000059, L"Columns"},
-	{ 0x10000102, L"hwndList" },
-	{ 0x10000103, L"hwndView" },
-	{ 0x10000104, L"SortColumn" },
-	{ 0x10000105, L"GroupBy" },
-	{ 0x10000106, L"Focus" },
-	{ 0x10000107, L"HitTest" },
-	{ 0x10000110, L"ItemCount" },
-	{ 0x10000111, L"Item" },
-	{ 0x10000206, L"Refresh" },
-	{ 0x10000207, L"ViewMenu" },
-	{ 0x10000208, L"TranslateAccelerator" },
-	{ 0x10000209, L"GetItemPosition" },
-	{ 0x1000020A, L"SelectAndPositionItem" },
-	{ 0x10000280, L"SelectItem" },
-	{ 0x10000281, L"FocusedItem" },
-	{ 0x10000282, L"GetFocusedItem" },
-	{ 0x10000283, L"GetItemRect" },
-	{ 0x10000300, L"Notify" },
-	{ 0x10000501, L"AddItem" },
-	{ 0x10000502, L"RemoveItem" },
-	{ 0x10000503, L"AddItems" },
-	{ 0x10000504, L"RemoveAll" },
-	{ 0x10000505, L"SessionId" },
-	{ START_OnFunc + SB_TotalFileSize, L"TotalFileSize" },
-	{ START_OnFunc + SB_OnIncludeObject, L"OnIncludeObject" },
-	{ START_OnFunc + SB_AltSelectedItems, L"AltSelectedItems" },
+	{ 0x10000001, "Data" },
+	{ 0x10000002, "hwnd" },
+	{ 0x10000003, "Type" },
+	{ 0x10000004, "Navigate" },
+	{ 0x10000007, "Navigate2" },
+	{ 0x10000008, "Index" },
+	{ 0x10000009, "FolderFlags" },
+	{ 0x1000000B, "History" },
+	{ 0x10000010, "CurrentViewMode" },
+	{ 0x10000011, "IconSize" },
+	{ 0x10000012, "Options" },
+	{ 0x10000013, "SizeFormat" },
+	{ 0x10000016, "ViewFlags" },
+	{ 0x10000017, "Id" },
+	{ 0x10000018, "FilterView" },
+	{ 0x10000020, "FolderItem" },
+	{ 0x10000021, "TreeView" },
+	{ 0x10000024, "Parent" },
+	{ 0x10000031, "Close" },
+	{ 0x10000032, "Title" },
+	{ 0x10000033, "Suspend" },
+	{ 0x10000040, "Items" },
+	{ 0x10000041, "SelectedItems" },
+	{ 0x10000050, "ShellFolderView" },
+	{ 0x10000058, "Droptarget" },
+	{ 0x10000059, "Columns"},
+	{ 0x10000102, "hwndList" },
+	{ 0x10000103, "hwndView" },
+	{ 0x10000104, "SortColumn" },
+	{ 0x10000105, "GroupBy" },
+	{ 0x10000106, "Focus" },
+	{ 0x10000107, "HitTest" },
+	{ 0x10000110, "ItemCount" },
+	{ 0x10000111, "Item" },
+	{ 0x10000206, "Refresh" },
+	{ 0x10000207, "ViewMenu" },
+	{ 0x10000208, "TranslateAccelerator" },
+	{ 0x10000209, "GetItemPosition" },
+	{ 0x1000020A, "SelectAndPositionItem" },
+	{ 0x10000280, "SelectItem" },
+	{ 0x10000281, "FocusedItem" },
+	{ 0x10000282, "GetFocusedItem" },
+	{ 0x10000283, "GetItemRect" },
+	{ 0x10000300, "Notify" },
+	{ 0x10000501, "AddItem" },
+	{ 0x10000502, "RemoveItem" },
+	{ 0x10000503, "AddItems" },
+	{ 0x10000504, "RemoveAll" },
+	{ 0x10000505, "SessionId" },
+	{ START_OnFunc + SB_TotalFileSize, "TotalFileSize" },
+	{ START_OnFunc + SB_OnIncludeObject, "OnIncludeObject" },
+	{ START_OnFunc + SB_AltSelectedItems, "AltSelectedItems" },
 	{ 0, NULL }
 };
 
 TEmethod methodWB[] = {
-	{ 0x10000001, L"Data" },
-	{ 0x10000002, L"hwnd" },
-	{ 0x10000003, L"Type" },
-	{ 0x10000004, L"TranslateAccelerator" },
-	{ 0x10000005, L"Application" },
-	{ 0x10000006, L"Document" },
-	{ 0x10000007, L"Window" },
-	{ 0x10000008, L"Focus" },
-//	{ 0x10000009, L"Close" },
+	{ 0x10000001, "Data" },
+	{ 0x10000002, "hwnd" },
+	{ 0x10000003, "Type" },
+	{ 0x10000004, "TranslateAccelerator" },
+	{ 0x10000005, "Application" },
+	{ 0x10000006, "Document" },
+	{ 0x10000007, "Window" },
+	{ 0x10000008, "Focus" },
+//	{ 0x10000009, "Close" },
 	{ 0, NULL }
 };
 
 TEmethod methodTC[] = {
-	{ 1, L"Data" },
-	{ 2, L"hwnd" },
-	{ 3, L"Type" },
-	{ 6, L"HitTest" },
-	{ 7, L"Move" },
-	{ 8, L"Selected" },
-	{ 9, L"Close" },
-	{ 10, L"SelectedIndex" },
-	{ 11, L"Visible" },
-	{ 12, L"Id" },
-	{ 13, L"LockUpdate" },
-	{ 14, L"UnlockUpdate" },
-	{ DISPID_NEWENUM, L"_NewEnum" },
-	{ DISPID_TE_ITEM, L"Item" },
-	{ DISPID_TE_COUNT, L"Count" },
-	{ DISPID_TE_COUNT, L"length" },
-	{ TE_OFFSET + TE_Left, L"Left" },
-	{ TE_OFFSET + TE_Top, L"Top" },
-	{ TE_OFFSET + TE_Width, L"Width" },
-	{ TE_OFFSET + TE_Height, L"Height" },
-	{ TE_OFFSET + TE_Flags, L"Style" },
-	{ TE_OFFSET + TC_Align, L"Align" },
-	{ TE_OFFSET + TC_TabWidth, L"TabWidth" },
-	{ TE_OFFSET + TC_TabHeight, L"TabHeight" },
+	{ 1, "Data" },
+	{ 2, "hwnd" },
+	{ 3, "Type" },
+	{ 6, "HitTest" },
+	{ 7, "Move" },
+	{ 8, "Selected" },
+	{ 9, "Close" },
+	{ 10, "SelectedIndex" },
+	{ 11, "Visible" },
+	{ 12, "Id" },
+	{ 13, "LockUpdate" },
+	{ 14, "UnlockUpdate" },
+	{ DISPID_NEWENUM, "_NewEnum" },
+	{ DISPID_TE_ITEM, "Item" },
+	{ DISPID_TE_COUNT, "Count" },
+	{ DISPID_TE_COUNT, "length" },
+	{ TE_OFFSET + TE_Left, "Left" },
+	{ TE_OFFSET + TE_Top, "Top" },
+	{ TE_OFFSET + TE_Width, "Width" },
+	{ TE_OFFSET + TE_Height, "Height" },
+	{ TE_OFFSET + TE_Flags, "Style" },
+	{ TE_OFFSET + TC_Align, "Align" },
+	{ TE_OFFSET + TC_TabWidth, "TabWidth" },
+	{ TE_OFFSET + TC_TabHeight, "TabHeight" },
 	{ 0, NULL }
 };
 
 TEmethod methodFIs[] = {
-	{ 2, L"Application" },
-	{ 3, L"Parent" },
-	{ 8, L"AddItem" },
-	{ 9, L"hDrop" },
-	{ 10, L"GetData" },
-	{ 11, L"SetData" },
-	{ DISPID_NEWENUM, L"_NewEnum" },
-	{ DISPID_TE_ITEM, L"Item" },
-	{ DISPID_TE_COUNT, L"Count" },
-	{ DISPID_TE_COUNT, L"length" },
-	{ DISPID_TE_INDEX, L"Index" },
-//	{ 0x10000001, L"lEvent" },
-	{ 0x10000001, L"dwEffect" },
-	{ 0x10000002, L"pdwEffect" },
+	{ 2, "Application" },
+	{ 3, "Parent" },
+	{ 8, "AddItem" },
+	{ 9, "hDrop" },
+	{ 10, "GetData" },
+	{ 11, "SetData" },
+	{ DISPID_NEWENUM, "_NewEnum" },
+	{ DISPID_TE_ITEM, "Item" },
+	{ DISPID_TE_COUNT, "Count" },
+	{ DISPID_TE_COUNT, "length" },
+	{ DISPID_TE_INDEX, "Index" },
+//	{ 0x10000001, "lEvent" },
+	{ 0x10000001, "dwEffect" },
+	{ 0x10000002, "pdwEffect" },
 	{ 0, NULL }
 };
 
 TEmethod methodDT[] = {
-	{ 1, L"DragEnter" },
-	{ 2, L"DragOver" },
-	{ 3, L"Drop" },
-	{ 4, L"DragLeave" },
-	{ 5, L"Type" },
-	{ 6, L"FolderItem" },
+	{ 1, "DragEnter" },
+	{ 2, "DragOver" },
+	{ 3, "Drop" },
+	{ 4, "DragLeave" },
+	{ 5, "Type" },
+	{ 6, "FolderItem" },
 	{ 0, NULL }
 };
 
 TEmethod methodTV[] = {
-	{ 0x10000001, L"Data" },
-	{ 0x10000002, L"Type" },
-	{ 0x10000003, L"hwnd" },
-	{ 0x10000004, L"Close" },
-	{ 0x10000005, L"hwndTree" },
-	{ 0x10000007, L"FolderView" },
-	{ 0x10000008, L"Align" },
-	{ 0x10000009, L"Visible" },
-	{ 0x10000106, L"Focus" },
-	{ 0x10000107, L"HitTest" },
-	{ 0x10000283, L"GetItemRect" },
-	{ 0x10000300, L"Notify" },
-	{ TE_OFFSET + SB_TreeWidth, L"Width" },
-	{ TE_OFFSET + SB_TreeFlags, L"Style" },
-	{ TE_OFFSET + SB_EnumFlags, L"EnumFlags" },
-	{ TE_OFFSET + SB_RootStyle, L"RootStyle" },
-	{ 0x20000000, L"SelectedItem" },
-	{ 0x20000001, L"SelectedItems" },
-	{ 0x20000002, L"Root" },
-	{ 0x20000003, L"SetRoot" },
-	{ 0x20000004, L"Expand" },
-	{ 0x20000005, L"Columns" },
-	{ 0x20000006, L"CountViewTypes" },
-	{ 0x20000007, L"Depth" },
-	{ 0x20000008, L"EnumOptions" },
-	{ 0x20000009, L"Export" },
-	{ 0x2000000a, L"Flags" },
-	{ 0x2000000b, L"Import" },
-	{ 0x2000000c, L"Mode" },
-	{ 0x2000000d, L"ResetSort" },
-	{ 0x2000000e, L"SetViewType" },
-	{ 0x2000000f, L"Synchronize" },
-	{ 0x20000010, L"TVFlags" },
+	{ 0x10000001, "Data" },
+	{ 0x10000002, "Type" },
+	{ 0x10000003, "hwnd" },
+	{ 0x10000004, "Close" },
+	{ 0x10000005, "hwndTree" },
+	{ 0x10000007, "FolderView" },
+	{ 0x10000008, "Align" },
+	{ 0x10000009, "Visible" },
+	{ 0x10000106, "Focus" },
+	{ 0x10000107, "HitTest" },
+	{ 0x10000283, "GetItemRect" },
+	{ 0x10000300, "Notify" },
+	{ TE_OFFSET + SB_TreeWidth, "Width" },
+	{ TE_OFFSET + SB_TreeFlags, "Style" },
+	{ TE_OFFSET + SB_EnumFlags, "EnumFlags" },
+	{ TE_OFFSET + SB_RootStyle, "RootStyle" },
+	{ 0x20000000, "SelectedItem" },
+	{ 0x20000001, "SelectedItems" },
+	{ 0x20000002, "Root" },
+	{ 0x20000003, "SetRoot" },
+	{ 0x20000004, "Expand" },
+	{ 0x20000005, "Columns" },
+	{ 0x20000006, "CountViewTypes" },
+	{ 0x20000007, "Depth" },
+	{ 0x20000008, "EnumOptions" },
+	{ 0x20000009, "Export" },
+	{ 0x2000000a, "Flags" },
+	{ 0x2000000b, "Import" },
+	{ 0x2000000c, "Mode" },
+	{ 0x2000000d, "ResetSort" },
+	{ 0x2000000e, "SetViewType" },
+	{ 0x2000000f, "Synchronize" },
+	{ 0x20000010, "TVFlags" },
 	{ 0, NULL }
 };
 
 TEmethod methodFI[] = {
-	{ 1, L"Name" },
-	{ 2, L"Path" },
-	{ 3, L"Alt" },
-//	{ 4, L"FocusedItem" },
-	{ 5, L"Unavailable" },
-	{ 9, L"_BLOB" },	//To be necessary
+	{ 1, "Name" },
+	{ 2, "Path" },
+	{ 3, "Alt" },
+//	{ 4, "FocusedItem" },
+	{ 5, "Unavailable" },
+	{ 9, "_BLOB" },	//To be necessary
 	{ 0, NULL }
 };
 
 TEmethod methodMem[] = {
-	{ 1, L"P" },
-	{ 4, L"Read" },
-	{ 5, L"Write" },
-	{ 6, L"Size" },
-	{ 7, L"Free" },
-	{ 8, L"Clone" },
-	{ 9, L"_BLOB" },
-	{ DISPID_NEWENUM, L"_NewEnum" },
-	{ DISPID_TE_ITEM, L"Item" },
-	{ DISPID_TE_COUNT, L"Count" },
-	{ DISPID_TE_COUNT, L"length" },
+	{ 1, "P" },
+	{ 4, "Read" },
+	{ 5, "Write" },
+	{ 6, "Size" },
+	{ 7, "Free" },
+	{ 8, "Clone" },
+	{ 9, "_BLOB" },
+	{ DISPID_NEWENUM, "_NewEnum" },
+	{ DISPID_TE_ITEM, "Item" },
+	{ DISPID_TE_COUNT, "Count" },
+	{ DISPID_TE_COUNT, "length" },
 	{ 0, NULL }
 };
 
 TEmethod methodCM[] = {
-	{ 1, L"QueryContextMenu" },
-	{ 2, L"InvokeCommand" },
-	{ 3, L"Items" },
-	{ 4, L"GetCommandString" },
-	{ 5, L"FolderView" },
-	{ 6, L"HandleMenuMsg" },
-	{ 10, L"hmenu" },
-	{ 11, L"indexMenu" },
-	{ 12, L"idCmdFirst" },
-	{ 13, L"idCmdLast" },
-	{ 14, L"uFlags" },
+	{ 1, "QueryContextMenu" },
+	{ 2, "InvokeCommand" },
+	{ 3, "Items" },
+	{ 4, "GetCommandString" },
+	{ 5, "FolderView" },
+	{ 6, "HandleMenuMsg" },
+	{ 10, "hmenu" },
+	{ 11, "indexMenu" },
+	{ 12, "idCmdFirst" },
+	{ 13, "idCmdLast" },
+	{ 14, "uFlags" },
 	{ 0, NULL }
 };
 
 TEmethod methodCD[] = {
-	{ 40, L"ShowOpen" },
-	{ 41, L"ShowSave" },
-//	{ 42, L"ShowFolder" },
-	{ 10, L"FileName" },
-	{ 13, L"Filter" },
-	{ 20, L"InitDir" },
-	{ 21, L"DefExt" },
-	{ 22, L"Title" },
-	{ 30, L"MaxFileSize" },
-	{ 31, L"Flags" },
-	{ 32, L"FilterIndex" },
-	{ 31, L"FlagsEx" },
+	{ 40, "ShowOpen" },
+	{ 41, "ShowSave" },
+//	{ 42, "ShowFolder" },
+	{ 10, "FileName" },
+	{ 13, "Filter" },
+	{ 20, "InitDir" },
+	{ 21, "DefExt" },
+	{ 22, "Title" },
+	{ 30, "MaxFileSize" },
+	{ 31, "Flags" },
+	{ 32, "FilterIndex" },
+	{ 31, "FlagsEx" },
 	{ 0, NULL }
 };
 
 TEmethod methodGB[] = {
-	{ 1, L"FromHBITMAP" },
-	{ 2, L"FromHICON" },
-	{ 3, L"FromResource" },
-	{ 4, L"FromFile" },
-	{ 99, L"Free" },
+	{ 1, "FromHBITMAP" },
+	{ 2, "FromHICON" },
+	{ 3, "FromResource" },
+	{ 4, "FromFile" },
+	{ 99, "Free" },
 
-	{ 100, L"Save" },
-	{ 101, L"Base64" },
-	{ 102, L"DataURI" },
-	{ 110, L"GetWidth" },
-	{ 111, L"GetHeight" },
-	{ 112, L"GetPixel" },
-	{ 113, L"SetPixel" },
-	{ 120, L"GetThumbnailImage" },
-	{ 130, L"RotateFlip" },
+	{ 100, "Save" },
+	{ 101, "Base64" },
+	{ 102, "DataURI" },
+	{ 110, "GetWidth" },
+	{ 111, "GetHeight" },
+	{ 112, "GetPixel" },
+	{ 113, "SetPixel" },
+	{ 114, "GetPixelFormat" },
+	{ 120, "GetThumbnailImage" },
+	{ 130, "RotateFlip" },
 
-	{ 210, L"GetHBITMAP" },
-	{ 211, L"GetHICON" },
+	{ 210, "GetHBITMAP" },
+	{ 211, "GetHICON" },
 	{ 0, NULL }
 };
 
@@ -1150,6 +1151,33 @@ static void threadParseDisplayName(void *args);
 LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath);
 
 //Unit
+
+BSTR teMultiByteToWideChar(UINT CodePage, LPCSTR lpA, int nLenA)
+{
+	int nLenW = MultiByteToWideChar(CodePage, 0, lpA, nLenA, NULL, NULL);
+	BSTR bs = ::SysAllocStringLen(NULL, nLenW);
+	MultiByteToWideChar(CodePage, 0, lpA, nLenA, bs, nLenW);
+	return bs;
+}
+
+BSTR teLoadFromFile(BSTR bsFile)
+{
+	BSTR bsResult = NULL;
+	HANDLE hFile = CreateFile(bsFile, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hFile != INVALID_HANDLE_VALUE) {
+		DWORD dwFileSize, dwFileSize2;
+		dwFileSize = GetFileSize(hFile, &dwFileSize2);
+		if(dwFileSize != INVALID_FILE_SIZE) {
+			BSTR bsUTF8 = ::SysAllocStringByteLen(NULL, dwFileSize);
+			if (ReadFile(hFile, bsUTF8, dwFileSize, &dwFileSize2, NULL)) {
+				bsResult = teMultiByteToWideChar(CP_UTF8, (LPCSTR)bsUTF8, -1);
+			}
+			::SysFreeString(bsUTF8);
+		}
+		CloseHandle(hFile);
+	}
+	return bsResult;
+}
 
 LONGLONG teGetU(LONGLONG ll)
 {
@@ -1227,7 +1255,7 @@ VOID teStrFormatSize(DWORD dwFormat, LONGLONG qdw, LPWSTR pszBuf, UINT cchBuf)
 		teCommaSize(pszNum, pszBuf, cchBuf, 0);
 		return;
 	}
-	LPWSTR pszPrefix = L"\0KMGTPE\0";
+	LPCSTR pszPrefix = "\0KMGTPE\0";
 	int i = (dwFormat >> 4) & 7;
 	int j = i;
 	LONGLONG llPow = 1;
@@ -1245,9 +1273,9 @@ VOID teStrFormatSize(DWORD dwFormat, LONGLONG qdw, LPWSTR pszBuf, UINT cchBuf)
 VOID teGetWinSettings()
 {
 	HKEY hKey;
-	if (RegOpenKeyEx(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+	if (RegOpenKeyExA(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
 		DWORD dwSize = sizeof(g_dwHideFileExt);
-		RegQueryValueEx(hKey, L"HideFileExt", NULL, NULL, (LPBYTE)&g_dwHideFileExt, &dwSize);
+		RegQueryValueExA(hKey, "HideFileExt", NULL, NULL, (LPBYTE)&g_dwHideFileExt, &dwSize);
 		RegCloseKey(hKey);
 	}
 }
@@ -1537,30 +1565,33 @@ VOID teSetRedraw(BOOL bSetRedraw)
 	g_bSetRedraw = bSetRedraw;
 }
 
-HRESULT teExceptionEx(EXCEPINFO *pExcepInfo, LPWSTR pszObj, LPCWSTR pszName)
+HRESULT teExceptionEx(EXCEPINFO *pExcepInfo, LPCSTR pszObjA, LPCSTR pszNameA)
 {
 	if (pExcepInfo) {
-		int nLen = lstrlen(pszObj) + lstrlen(pszName) + 15;
-		pExcepInfo->bstrDescription = SysAllocStringLen(NULL, nLen);
-		swprintf_s(pExcepInfo->bstrDescription, nLen, L"Exception in %s.%s", pszObj, pszName ? pszName : L"");
-		pExcepInfo->bstrSource = SysAllocString(g_szTE);
+		BSTR bsObj = teMultiByteToWideChar(CP_UTF8, pszObjA, -1);
+		BSTR bsName = teMultiByteToWideChar(CP_UTF8, pszNameA, -1);
+		int nLen = ::SysStringLen(bsObj) + ::SysStringLen(bsName) + 15;
+		pExcepInfo->bstrDescription = ::SysAllocStringLen(NULL, nLen);
+		swprintf_s(pExcepInfo->bstrDescription, nLen, L"Exception in %s.%s", bsObj, pszNameA ? bsName : L"");
+		pExcepInfo->bstrSource = ::SysAllocString(g_szTE);
 		pExcepInfo->scode = DISP_E_EXCEPTION;
-
+		::SysFreeString(bsName);
+		::SysFreeString(bsObj);
 	}
 	return DISP_E_EXCEPTION;
 }
 
-HRESULT teException(EXCEPINFO *pExcepInfo, LPWSTR pszObj, TEmethod* pMethod, DISPID dispIdMember)
+HRESULT teException(EXCEPINFO *pExcepInfo, LPCSTR pszObjA, TEmethod* pMethod, DISPID dispIdMember)
 {
-	LPWSTR pszName = NULL;
+	LPSTR pszNameA = NULL;
 	if (pMethod) {
 		int i = 0;
 		while (pMethod[i].id && pMethod[i].id != dispIdMember) {
 			i++;
 		}
-		pszName = pMethod[i].name;
+		pszNameA = pMethod[i].name;
 	}
-	return teExceptionEx(pExcepInfo, pszObj, pszName);
+	return teExceptionEx(pExcepInfo, pszObjA, pszNameA);
 }
 
 BOOL teStrSameIFree(BSTR bs, LPWSTR lpstr2)
@@ -1751,6 +1782,22 @@ VOID tePathAppend(BSTR *pbsPath, LPCWSTR pszPath, LPWSTR pszFile)
 	PathAppend(*pbsPath, pszFile);
 }
 
+LPITEMIDLIST teSHSimpleIDListFromPath(LPWSTR lpstr, BOOL bFolder)
+{
+	LPITEMIDLIST pidl;
+	int n = lstrlen(lpstr);
+	if (bFolder || (n > 0 && lpstr[n - 1] == '\\')) {
+		BSTR bs;
+		tePathAppend(&bs, lpstr, L"a");
+		pidl = SHSimpleIDListFromPath(bs);
+		ILRemoveLastID(pidl);
+		::SysFreeString(bs);
+	} else {
+		pidl = SHSimpleIDListFromPath(lpstr);
+	}
+	return pidl;
+}
+
 ULONGLONG teGetFolderSize(LPCWSTR szPath, int nLevel, LPITEMIDLIST *ppidl, LPITEMIDLIST pidl)
 {
 	if (*ppidl != pidl) {
@@ -1908,7 +1955,7 @@ BOOL GetDispatch(VARIANT *pv, IDispatch **ppdisp)
 
 VOID teRegisterDragDrop(HWND hwnd, IDropTarget *pDropTarget, IDropTarget **ppDropTarget)
 {
-	*ppDropTarget = static_cast<IDropTarget *>(GetProp(hwnd, L"OleDropTargetInterface"));
+	*ppDropTarget = static_cast<IDropTarget *>(GetPropA(hwnd, "OleDropTargetInterface"));
 	if (*ppDropTarget) {
 		(*ppDropTarget)->AddRef();
 		RevokeDragDrop(hwnd);
@@ -2577,8 +2624,8 @@ HRESULT teCLSIDFromString(__in LPCOLESTR lpsz, __out LPCLSID lpclsid)
 
 HWND FindTreeWindow(HWND hwnd)
 {
-	HWND hwnd1 = FindWindowEx(hwnd, 0, WC_TREEVIEW, NULL);
-	return hwnd1 ? hwnd1 : FindWindowEx(FindWindowEx(hwnd, 0, L"NamespaceTreeControl", NULL), 0, WC_TREEVIEW, NULL);
+	HWND hwnd1 = FindWindowExA(hwnd, 0, WC_TREEVIEWA, NULL);
+	return hwnd1 ? hwnd1 : FindWindowExA(FindWindowExA(hwnd, 0, "NamespaceTreeControl", NULL), 0, WC_TREEVIEWA, NULL);
 }
 
 BOOL teSetRect(HWND hwnd, int left, int top, int right, int bottom)
@@ -2731,7 +2778,7 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 				pszPath = bsPath3;
 			}
 		} else if (lstrlen(pszPath) == 1 && pszPath[0] >= 'A') {
-			bsPath3 = ::SysAllocStringLen(L"?:\\", 4);
+			bsPath3 = teMultiByteToWideChar(CP_UTF8, "?:\\", -1);
 			bsPath3[0] = pszPath[0];
 			pszPath = bsPath3;
 		}
@@ -3868,6 +3915,155 @@ int* teSortDispatchApi(TEDispatchApi *method, int nCount)
 	int *pi = new int[nCount];
 
 	for (int j = 0; j < nCount; j++) {
+		LPSTR pszNameA = method[j].name;
+		int nMin = 0;
+		int nMax = j - 1;
+		int nIndex;
+		while (nMin <= nMax) {
+			nIndex = (nMin + nMax) / 2;
+			if (lstrcmpiA(pszNameA, method[pi[nIndex]].name) < 0) {
+				nMax = nIndex - 1;
+			} else {
+				nMin = nIndex + 1;
+			}
+		}
+		for (int i = j; i > nMin; i--) {
+			pi[i] = pi[i - 1];
+		}
+		pi[nMin] = j;
+	}
+	return pi;
+}
+
+int teBSearchApi(TEDispatchApi *method, int nSize, int* pMap, LPOLESTR bs)
+{
+	int nMin = 0;
+	int nMax = nSize - 1;
+	int nIndex, nCC;
+	CHAR pszNameA[32];
+	WideCharToMultiByte(CP_ACP, 0, (LPCWSTR)bs, -1, pszNameA, sizeof(pszNameA) - 1, NULL, NULL);
+
+	while (nMin <= nMax) {
+		nIndex = (nMin + nMax) / 2;
+		nCC = lstrcmpiA(pszNameA, method[pMap[nIndex]].name);
+		if (nCC < 0) {
+			nMax = nIndex - 1;
+			continue;
+		}
+		if (nCC > 0) {
+			nMin = nIndex + 1;
+			continue;
+		}
+		return pMap[nIndex];
+	}
+	return -1;
+}
+#endif
+
+int* SortTEMethod(TEmethod *method, int nCount)
+{
+	int *pi = new int[nCount];
+
+	for (int j = 0; j < nCount; j++) {
+		LPSTR pszNameA = method[j].name;
+		int nMin = 0;
+		int nMax = j - 1;
+		int nIndex;
+		while (nMin <= nMax) {
+			nIndex = (nMin + nMax) / 2;
+			if (lstrcmpiA(pszNameA, method[pi[nIndex]].name) < 0) {
+				nMax = nIndex - 1;
+			} else {
+				nMin = nIndex + 1;
+			}
+		}
+		for (int i = j; i > nMin; i--) {
+			pi[i] = pi[i - 1];
+		}
+		pi[nMin] = j;
+	}
+	return pi;
+}
+
+int teBSearch(TEmethod *method, int nSize, int* pMap, LPOLESTR bs)
+{
+	int nMin = 0;
+	int nMax = nSize - 1;
+	int nIndex, nCC;
+	CHAR pszNameA[32];
+	WideCharToMultiByte(CP_ACP, 0, (LPCWSTR)bs, -1, pszNameA, sizeof(pszNameA) - 1, NULL, NULL);
+
+	while (nMin <= nMax) {
+		nIndex = (nMin + nMax) / 2;
+		nCC = lstrcmpiA(pszNameA, method[pMap[nIndex]].name);
+		if (nCC < 0) {
+			nMax = nIndex - 1;
+			continue;
+		}
+		if (nCC > 0) {
+			nMin = nIndex + 1;
+			continue;
+		}
+		return pMap[nIndex];
+	}
+	return -1;
+}
+
+int* SortTEStruct(TEStruct *method, int nCount)
+{
+	int *pi = new int[nCount];
+
+	for (int j = 0; j < nCount; j++) {
+		LPSTR pszNameA = method[j].name;
+		int nMin = 0;
+		int nMax = j - 1;
+		int nIndex;
+		while (nMin <= nMax) {
+			nIndex = (nMin + nMax) / 2;
+			if (lstrcmpiA(pszNameA, method[pi[nIndex]].name) < 0) {
+				nMax = nIndex - 1;
+			} else {
+				nMin = nIndex + 1;
+			}
+		}
+		for (int i = j; i > nMin; i--) {
+			pi[i] = pi[i - 1];
+		}
+		pi[nMin] = j;
+	}
+	return pi;
+}
+
+int teBSearchStruct(TEStruct *method, int nSize, int* pMap, LPOLESTR bs)
+{
+	int nMin = 0;
+	int nMax = nSize - 1;
+	int nIndex, nCC;
+	CHAR pszNameA[32];
+	WideCharToMultiByte(CP_ACP, 0, (LPCWSTR)bs, -1, pszNameA, sizeof(pszNameA) - 1, NULL, NULL);
+
+	while (nMin <= nMax) {
+		nIndex = (nMin + nMax) / 2;
+		nCC = lstrcmpiA(pszNameA, method[pMap[nIndex]].name);
+		if (nCC < 0) {
+			nMax = nIndex - 1;
+			continue;
+		}
+		if (nCC > 0) {
+			nMin = nIndex + 1;
+			continue;
+		}
+		return pMap[nIndex];
+	}
+	return -1;
+}
+
+#ifdef _2000XP
+int* SortTEMethodW(TEmethodW *method, int nCount)
+{
+	int *pi = new int[nCount];
+
+	for (int j = 0; j < nCount; j++) {
 		BSTR bs = method[j].name;
 		int nMin = 0;
 		int nMax = j - 1;
@@ -3888,7 +4084,7 @@ int* teSortDispatchApi(TEDispatchApi *method, int nCount)
 	return pi;
 }
 
-int teBSearchApi(TEDispatchApi *method, int nSize, int* pMap, LPOLESTR bs)
+int teBSearchW(TEmethodW *method, int nSize, int* pMap, LPOLESTR bs)
 {
 	int nMin = 0;
 	int nMax = nSize - 1;
@@ -3911,100 +4107,6 @@ int teBSearchApi(TEDispatchApi *method, int nSize, int* pMap, LPOLESTR bs)
 }
 #endif
 
-int* SortTEMethod(TEmethod *method, int nCount)
-{
-	int *pi = new int[nCount];
-
-	for (int j = 0; j < nCount; j++) {
-		BSTR bs = method[j].name;
-		int nMin = 0;
-		int nMax = j - 1;
-		int nIndex;
-		while (nMin <= nMax) {
-			nIndex = (nMin + nMax) / 2;
-			if (lstrcmpi(bs, method[pi[nIndex]].name) < 0) {
-				nMax = nIndex - 1;
-			} else {
-				nMin = nIndex + 1;
-			}
-		}
-		for (int i = j; i > nMin; i--) {
-			pi[i] = pi[i - 1];
-		}
-		pi[nMin] = j;
-	}
-	return pi;
-}
-
-int teBSearch(TEmethod *method, int nSize, int* pMap, LPOLESTR bs)
-{
-	int nMin = 0;
-	int nMax = nSize - 1;
-	int nIndex, nCC;
-
-	while (nMin <= nMax) {
-		nIndex = (nMin + nMax) / 2;
-		nCC = lstrcmpi(bs, method[pMap[nIndex]].name);
-		if (nCC < 0) {
-			nMax = nIndex - 1;
-			continue;
-		}
-		if (nCC > 0) {
-			nMin = nIndex + 1;
-			continue;
-		}
-		return pMap[nIndex];
-	}
-	return -1;
-}
-
-int* SortTEStruct(TEStruct *method, int nCount)
-{
-	int *pi = new int[nCount];
-
-	for (int j = 0; j < nCount; j++) {
-		BSTR bs = method[j].name;
-		int nMin = 0;
-		int nMax = j - 1;
-		int nIndex;
-		while (nMin <= nMax) {
-			nIndex = (nMin + nMax) / 2;
-			if (lstrcmpi(bs, method[pi[nIndex]].name) < 0) {
-				nMax = nIndex - 1;
-			} else {
-				nMin = nIndex + 1;
-			}
-		}
-		for (int i = j; i > nMin; i--) {
-			pi[i] = pi[i - 1];
-		}
-		pi[nMin] = j;
-	}
-	return pi;
-}
-
-int teBSearchStruct(TEStruct *method, int nSize, int* pMap, LPOLESTR bs)
-{
-	int nMin = 0;
-	int nMax = nSize - 1;
-	int nIndex, nCC;
-
-	while (nMin <= nMax) {
-		nIndex = (nMin + nMax) / 2;
-		nCC = lstrcmpi(bs, method[pMap[nIndex]].name);
-		if (nCC < 0) {
-			nMax = nIndex - 1;
-			continue;
-		}
-		if (nCC > 0) {
-			nMin = nIndex + 1;
-			continue;
-		}
-		return pMap[nIndex];
-	}
-	return -1;
-}
-
 HRESULT teGetDispId(TEmethod *method, int nCount, int* pMap, LPOLESTR bs, DISPID *rgDispId, BOOL bNum)
 {
 	if (pMap) {
@@ -4014,8 +4116,10 @@ HRESULT teGetDispId(TEmethod *method, int nCount, int* pMap, LPOLESTR bs, DISPID
 			return S_OK;
 		}
 	} else {
+		CHAR pszNameA[32];
+		WideCharToMultiByte(CP_ACP, 0, (LPCWSTR)bs, -1, pszNameA, sizeof(pszNameA) - 1, NULL, NULL);
 		for (int i = 0; method[i].name; i++) {
-			if (lstrcmpi(bs, method[i].name) == 0) {
+			if (lstrcmpiA(pszNameA, method[i].name) == 0) {
 				*rgDispId = method[i].id;
 				return S_OK;
 			}
@@ -4187,7 +4291,7 @@ static void threadAddItems(void *args)
 		if (hr == S_OK) {
 			while (Invoke5(pArray, dispidShift, DISPATCH_METHOD, &pAddItems->pv[1], 0, NULL) == S_OK && pAddItems->pv[1].vt != VT_EMPTY) {
 				if (!teGetIDListFromVariant(&pidl, &pAddItems->pv[1], TRUE) && pAddItems->bDeleted && pAddItems->pv[1].vt == VT_BSTR) {
-					pidl = SHSimpleIDListFromPath(pAddItems->pv[1].bstrVal);
+					pidl = teSHSimpleIDListFromPath(pAddItems->pv[1].bstrVal, FALSE);
 				}
 				if (pidl) {
 					VariantClear(&pAddItems->pv[1]);
@@ -4366,25 +4470,25 @@ BOOL teILGetParent(FolderItem *pid, FolderItem **ppid)
 	return bResult;
 }
 
-VOID GetNewArray(IDispatch **ppArray)
-{
-	VARIANT v;
-	VariantInit(&v);
-	if (teExecMethod(g_pJS, L"_a", &v, 0, NULL) == S_OK) {
-		GetDispatch(&v, ppArray);
-		VariantClear(&v);
-	}
-}
-
-VOID GetNewObject(IDispatch **ppObj)
+VOID GetNewObject1(LPOLESTR sz, IDispatch **ppObj)
 {
 	VARIANT v;
 	VariantInit(&v);
 	teReleaseClear(ppObj);
-	if (teExecMethod(g_pJS, L"_o", &v, 0, NULL) == S_OK) {
+	if (teExecMethod(g_pJS, sz, &v, 0, NULL) == S_OK) {
 		GetDispatch(&v, ppObj);
 		VariantClear(&v);
 	}
+}
+
+VOID GetNewArray(IDispatch **ppArray)
+{
+	GetNewObject1(L"_a", ppArray);
+}
+
+VOID GetNewObject(IDispatch **ppObj)
+{
+	GetNewObject1(L"_o", ppObj);
 }
 
 VOID ClearEvents()
@@ -4685,9 +4789,9 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 									msg.hwnd = pMHS->hwnd;
 									msg.message = (LONG)wParam;
 									if (msg.message == WM_LBUTTONDOWN) {
-										WCHAR szClass[MAX_CLASS_NAME];
-										GetClassName(msg.hwnd, szClass, MAX_CLASS_NAME);
-										if (lstrcmp(szClass, L"DirectUIHWND") == 0) {
+										CHAR szClassA[MAX_CLASS_NAME];
+										GetClassNameA(msg.hwnd, szClassA, MAX_CLASS_NAME);
+										if (lstrcmpA(szClassA, "DirectUIHWND") == 0) {
 											DWORD dwTick = GetTickCount();
 											if (dwTick - dwDoubleTime < GetDoubleClickTime()) {
 												msg.message = WM_LBUTTONDBLCLK;
@@ -5496,7 +5600,7 @@ HRESULT teExtract(IStorage *pStorage, LPWSTR lpszFolderPath)
 
 			hr = pStorage->OpenStream(statstg.pwcsName, NULL, STGM_READ, NULL, &pStream);
 			if SUCCEEDED(hr) {
-				HANDLE hFile = CreateFile(bsPath, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+				HANDLE hFile = CreateFile(bsPath, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 				if (hFile != INVALID_HANDLE_VALUE) {
 					while (SUCCEEDED(pStream->Read(pszData, SIZE_BUFF, &uRead)) && uRead) {
 						WriteFile(hFile, pszData, uRead, &dwWriteByte, NULL);
@@ -6018,7 +6122,7 @@ VOID teApiCommandLineToArgv(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 {
 	int nLen = 0;
 	LPTSTR *lplpszArgs = NULL;
-	IDispatch *pArray;
+	IDispatch *pArray = NULL;
 	GetNewArray(&pArray);
 	if (param[0].lpcwstr && param[0].lpcwstr[0]) {
 		lplpszArgs = CommandLineToArgvW(param[0].lpcwstr, &nLen);
@@ -7155,7 +7259,7 @@ VOID teApiTrackPopupMenuEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 		if (FindUnknown(&pDispParams->rgvarg[nArg - 6], &punk)) {
 			IContextMenu *pCM;
 			if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pCM))) {
-				IDispatch *pdisp;
+				IDispatch *pdisp = NULL;
 				GetNewArray(&pdisp);
 				teArrayPush(pdisp, pCM);
 				pCM->Release();
@@ -8076,15 +8180,7 @@ VOID teApiPathIsSameRoot(int nArg, teParam *param, DISPPARAMS *pDispParams, VARI
 VOID teApiSHSimpleIDListFromPath(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	LPITEMIDLIST pidl;
-	if (nArg >= 1 && (param[1].dword & FILE_ATTRIBUTE_DIRECTORY)) {
-		BSTR bs;
-		tePathAppend(&bs, param[0].lpwstr, L"a");
-		pidl = SHSimpleIDListFromPath(bs);
-		ILRemoveLastID(pidl);
-		::SysFreeString(bs);
-	} else {
-		pidl = SHSimpleIDListFromPath(param[0].lpwstr);
-	}
+	pidl = teSHSimpleIDListFromPath(param[0].lpwstr, nArg >= 1 && (param[1].dword & FILE_ATTRIBUTE_DIRECTORY));
 	if (pidl) {
 		if (nArg >= 0 && ILGetSize(pidl) > 16) {
 			LPWORD pwIdl = (LPWORD)ILFindLastID(pidl);
@@ -8154,301 +8250,301 @@ VOID teApi(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResul
 
 //
 TEDispatchApi dispAPI[] = {
-	{ 1, -1, -1, -1, L"Memory", teApiMemory },
-	{ 1,  5, -1, -1, L"ContextMenu", teApiContextMenu },
-	{ 1, -1, -1, -1, L"DropTarget", teApiDropTarget },
-	{ 0, -1, -1, -1, L"DataObject", teApiDataObject },
-	{ 5,  1, -1, -1, L"OleCmdExec", teApiOleCmdExec },
-	{ 1, -1, -1, -1, L"sizeof", teApisizeof },
-	{ 1, -1, -1, -1, L"LowPart", teApiLowPart },
-	{ 1, -1, -1, -1, L"ULowPart", teApiULowPart },
-	{ 1, -1, -1, -1, L"HighPart", teApiHighPart },
-	{ 1, -1, -1, -1, L"QuadPart", teApiQuadPart },
-	{ 1, -1, -1, -1, L"UQuadPart", teApiUQuadPart },
-	{ 1, -1, -1, -1, L"pvData", teApipvData },
-	{ 3,  1, -1, -1, L"ExecMethod", teApiExecMethod },
-	{ 4,  2,  3, -1, L"Extract", teApiExtract },
-	{ 2, -1, -1, -1, L"Add", teApiQuadAdd },
-	{ 2, -1, -1, -1, L"UQuadAdd", teApiUQuadAdd },
-	{ 2, -1, -1, -1, L"UQuadSub", teApiUQuadSub },
-	{ 2, -1, -1, -1, L"UQuadCmp", teApiUQuadCmp },
-	{ 2,  0,  1, -1, L"FindWindow", teApiFindWindow },
-	{ 4,  2,  3, -1, L"FindWindowEx", teApiFindWindowEx },
-	{ 0, -1, -1, -1, L"OleGetClipboard", teApiOleGetClipboard },
-	{ 1, -1, -1, -1, L"OleSetClipboard", teApiOleSetClipboard },
-	{ 2,  0,  1, -1, L"PathMatchSpec", teApiPathMatchSpec },
-	{ 1,  0, -1, -1, L"CommandLineToArgv", teApiCommandLineToArgv },
-	{ 2, -1, -1, -1, L"ILIsEqual", teApiILIsEqual },
-	{ 1, -1, -1, -1, L"ILClone", teApiILClone },
-	{ 3, -1, -1, -1, L"ILIsParent", teApiILIsParent },
-	{ 1, -1, -1, -1, L"ILRemoveLastID", teApiILRemoveLastID },
-	{ 1, -1, -1, -1, L"ILFindLastID", teApiILFindLastID },
-	{ 1, -1, -1, -1, L"ILIsEmpty", teApiILIsEmpty },
-	{ 1, -1, -1, -1, L"ILGetParent", teApiILGetParent },
-	{ 2,  0, -1, -1, L"FindFirstFile", teApiFindFirstFile },
-	{ 1, -1, -1, -1, L"WindowFromPoint", teApiWindowFromPoint },
-	{ 0, -1, -1, -1, L"GetThreadCount", teApiGetThreadCount },
-	{ 0, -1, -1, -1, L"DoEvents", teApiDoEvents },
-	{ 2,  0,  1, -1, L"sscanf", teApisscanf },
-	{ 4, -1, -1, -1, L"SetFileTime", teApiSetFileTime },
-	{ 1, -1, -1, -1, L"ILCreateFromPath", teApiILCreateFromPath },
-	{ 2,  0, -1, -1, L"GetProcObject", teApiGetProcObject },
-	{ 1,  0, -1, -1, L"SetDllDirectory", teApiSetDllDirectory },
-	{ 1,  0, -1, -1, L"PathIsNetworkPath", teApiPathIsNetworkPath },
-	{ 1,  0, -1, -1, L"RegisterWindowMessage", teApiRegisterWindowMessage },
-	{ 2,  0,  1, -1, L"StrCmpI", teApiStrCmpI },
-	{ 1,  0, -1, -1, L"StrLen", teApiStrLen },
-	{ 3,  0,  1, -1, L"StrCmpNI", teApiStrCmpNI },
-	{ 2,  0,  1, -1, L"StrCmpLogical", teApiStrCmpLogical },
-	{ 1,  0, -1, -1, L"PathQuoteSpaces", teApiPathQuoteSpaces },
-	{ 1,  0, -1, -1, L"PathUnquoteSpaces", teApiPathUnquoteSpaces },
-	{ 1,  0, -1, -1, L"GetShortPathName", teApiGetShortPathName },
-	{ 1,  0, -1, -1, L"PathCreateFromUrl", teApiPathCreateFromUrl },
-	{ 1,  0, -1, -1, L"PathSearchAndQualify", teApiPathSearchAndQualify },
-	{ 3,  0, -1, -1, L"PSFormatForDisplay", teApiPSFormatForDisplay },
-	{ 1,  0, -1, -1, L"PSGetDisplayName", teApiPSGetDisplayName },
-	{ 1, -1, -1, -1, L"GetCursorPos", teApiGetCursorPos },
-	{ 1, -1, -1, -1, L"GetKeyboardState", teApiGetKeyboardState },
-	{ 1, -1, -1, -1, L"SetKeyboardState", teApiSetKeyboardState },
-	{ 1, -1, -1, -1, L"GetVersionEx", teApiGetVersionEx },
-	{ 1, -1, -1, -1, L"ChooseFont", teApiChooseFont },
-	{ 1, -1, -1, -1, L"ChooseColor", teApiChooseColor },
-	{ 1, -1, -1, -1, L"TranslateMessage", teApiTranslateMessage },
-	{ 1, -1, -1, -1, L"ShellExecuteEx", teApiShellExecuteEx },
-	{ 1, -1, -1, -1, L"CreateFontIndirect", teApiCreateFontIndirect },
-	{ 1, -1, -1, -1, L"CreateIconIndirect", teApiCreateIconIndirect },
-	{ 1, -1, -1, -1, L"FindText", teApiFindText },
-	{ 1, -1, -1, -1, L"FindReplace", teApiFindReplace },
-	{ 1, -1, -1, -1, L"DispatchMessage", teApiDispatchMessage },
-	{ 1, -1, -1, -1, L"PostMessage", teApiPostMessage },
-	{ 1, -1, -1, -1, L"SHFreeNameMappings", teApiSHFreeNameMappings },
-	{ 1, -1, -1, -1, L"CoTaskMemFree", teApiCoTaskMemFree },
-	{ 1, -1, -1, -1, L"Sleep", teApiSleep },
-	{ 6,  2,  3,  4, L"ShRunDialog", teApiShRunDialog },
-	{ 2, -1, -1, -1, L"DragAcceptFiles", teApiDragAcceptFiles },
-	{ 1, -1, -1, -1, L"DragFinish", teApiDragFinish },
-	{ 2, -1, -1, -1, L"mouse_event", teApimouse_event },
-	{ 4, -1, -1, -1, L"keybd_event", teApikeybd_event },
-	{ 4, -1, -1, -1, L"SHChangeNotify", teApiSHChangeNotify },
-	{ 4, -1, -1, -1, L"DrawIcon", teApiDrawIcon },
-	{ 1, -1, -1, -1, L"DestroyMenu", teApiDestroyMenu },
-	{ 1, -1, -1, -1, L"FindClose", teApiFindClose },
-	{ 1, -1, -1, -1, L"FreeLibrary", teApiFreeLibrary },
-	{ 1, -1, -1, -1, L"ImageList_Destroy", teApiImageList_Destroy },
-	{ 1, -1, -1, -1, L"DeleteObject", teApiDeleteObject },
-	{ 1, -1, -1, -1, L"DestroyIcon", teApiDestroyIcon },
-	{ 1, -1, -1, -1, L"IsWindow", teApiIsWindow },
-	{ 1, -1, -1, -1, L"IsWindowVisible", teApiIsWindowVisible },
-	{ 1, -1, -1, -1, L"IsZoomed", teApiIsZoomed },
-	{ 1, -1, -1, -1, L"IsIconic", teApiIsIconic },
-	{ 1, -1, -1, -1, L"OpenIcon", teApiOpenIcon },
-	{ 1, -1, -1, -1, L"SetForegroundWindow", teApiSetForegroundWindow },
-	{ 1, -1, -1, -1, L"BringWindowToTop", teApiBringWindowToTop },
-	{ 1, -1, -1, -1, L"DeleteDC", teApiDeleteDC },
-	{ 1, -1, -1, -1, L"CloseHandle", teApiCloseHandle },
-	{ 1, -1, -1, -1, L"IsMenu", teApiIsMenu },
-	{ 6, -1, -1, -1, L"MoveWindow", teApiMoveWindow },
-	{ 5, -1, -1, -1, L"SetMenuItemBitmaps", teApiSetMenuItemBitmaps },
-	{ 2, -1, -1, -1, L"ShowWindow", teApiShowWindow },
-	{ 3, -1, -1, -1, L"DeleteMenu", teApiDeleteMenu },
-	{ 3, -1, -1, -1, L"RemoveMenu", teApiRemoveMenu },
-	{ 9, -1, -1, -1, L"DrawIconEx", teApiDrawIconEx },
-	{ 3, -1, -1, -1, L"EnableMenuItem", teApiEnableMenuItem },
-	{ 2, -1, -1, -1, L"ImageList_Remove", teApiImageList_Remove },
-	{ 3, -1, -1, -1, L"ImageList_SetIconSize", teApiImageList_SetIconSize },
-	{ 6, -1, -1, -1, L"ImageList_Draw", teApiImageList_Draw },
-	{10, -1, -1, -1, L"ImageList_DrawEx", teApiImageList_DrawEx },
-	{ 2, -1, -1, -1, L"ImageList_SetImageCount", teApiImageList_SetImageCount },
-	{ 3, -1, -1, -1, L"ImageList_SetOverlayImage", teApiImageList_SetOverlayImage },
-	{ 5, -1, -1, -1, L"ImageList_Copy", teApiImageList_Copy },
-	{ 1, -1, -1, -1, L"DestroyWindow", teApiDestroyWindow },
-	{ 3, -1, -1, -1, L"LineTo", teApiLineTo },
-	{ 0, -1, -1, -1, L"ReleaseCapture", teApiReleaseCapture },
-	{ 2, -1, -1, -1, L"SetCursorPos", teApiSetCursorPos },
-	{ 2, -1, -1, -1, L"DestroyCursor", teApiDestroyCursor },
-	{ 2, -1, -1, -1, L"SHFreeShared", teApiSHFreeShared },
-	{ 0, -1, -1, -1, L"EndMenu", teApiEndMenu },
-	{ 1, -1, -1, -1, L"SHChangeNotifyDeregister", teApiSHChangeNotifyDeregister },
-	{ 1, -1, -1, -1, L"SHChangeNotification_Unlock", teApiSHChangeNotification_Unlock },
-	{ 1, -1, -1, -1, L"IsWow64Process", teApiIsWow64Process },
-	{ 9, -1, -1, -1, L"BitBlt", teApiBitBlt },
-	{ 2, -1, -1, -1, L"ImmSetOpenStatus", teApiImmSetOpenStatus },
-	{ 2, -1, -1, -1, L"ImmReleaseContext", teApiImmReleaseContext },
-	{ 2, -1, -1, -1, L"IsChild", teApiIsChild },
-	{ 2, -1, -1, -1, L"KillTimer", teApiKillTimer },
-	{ 1, -1, -1, -1, L"AllowSetForegroundWindow", teApiAllowSetForegroundWindow },
-	{ 7, -1, -1, -1, L"SetWindowPos", teApiSetWindowPos },
-	{ 5,  4, -1, -1, L"InsertMenu", teApiInsertMenu },
-	{ 2, -1,  1, -1, L"SetWindowText", teApiSetWindowText },
-	{ 4, -1, -1, -1, L"RedrawWindow", teApiRedrawWindow },
-	{ 4, -1, -1, -1, L"MoveToEx", teApiMoveToEx },
-	{ 3, -1, -1, -1, L"InvalidateRect", teApiInvalidateRect },
-	{ 4, -1, -1, -1, L"SendNotifyMessage", teApiSendNotifyMessage },
-	{ 5, -1, -1, -1, L"PeekMessage", teApiPeekMessage },
-	{ 1, -1, -1, -1, L"SHFileOperation", teApiSHFileOperation },
-	{ 4, -1, -1, -1, L"GetMessage", teApiGetMessage },
-	{ 2, -1, -1, -1, L"GetWindowRect", teApiGetWindowRect },
-	{ 2, -1, -1, -1, L"GetWindowThreadProcessId", teApiGetWindowThreadProcessId },
-	{ 2, -1, -1, -1, L"GetClientRect", teApiGetClientRect },
-	{ 3, -1, -1, -1, L"SendInput", teApiSendInput },
-	{ 2, -1, -1, -1, L"ScreenToClient", teApiScreenToClient },
-	{ 5, -1, -1, -1, L"MsgWaitForMultipleObjectsEx", teApiMsgWaitForMultipleObjectsEx },
-	{ 2, -1, -1, -1, L"ClientToScreen", teApiClientToScreen },
-	{ 2, -1, -1, -1, L"GetIconInfo", teApiGetIconInfo },
-	{ 2, -1, -1, -1, L"FindNextFile", teApiFindNextFile },
-	{ 3, -1, -1, -1, L"FillRect", teApiFillRect },
-	{ 2, -1, -1, -1, L"Shell_NotifyIcon", teApiShell_NotifyIcon },
-	{ 2, -1, -1, -1, L"EndPaint", teApiEndPaint },
-	{ 2, -1, -1, -1, L"ImageList_GetIconSize", teApiImageList_GetIconSize },
-	{ 2, -1, -1, -1, L"GetMenuInfo", teApiGetMenuInfo },
-	{ 2, -1, -1, -1, L"SetMenuInfo", teApiSetMenuInfo },
-	{ 4, -1, -1, -1, L"SystemParametersInfo", teApiSystemParametersInfo },
-	{ 3,  1, -1, -1, L"GetTextExtentPoint32", teApiGetTextExtentPoint32 },
-	{ 4, -1, -1, -1, L"SHGetDataFromIDList", teApiSHGetDataFromIDList },
-	{ 4, -1, -1, -1, L"InsertMenuItem", teApiInsertMenuItem },
-	{ 4, -1, -1, -1, L"GetMenuItemInfo", teApiGetMenuItemInfo },
-	{ 4, -1, -1, -1, L"SetMenuItemInfo", teApiSetMenuItemInfo },
-	{ 4, -1, -1, -1, L"ChangeWindowMessageFilterEx", teApiChangeWindowMessageFilterEx },
-	{ 2, -1, -1, -1, L"ImageList_SetBkColor", teApiImageList_SetBkColor },
-	{ 2, -1, -1, -1, L"ImageList_AddIcon", teApiImageList_AddIcon },
-	{ 3, -1, -1, -1, L"ImageList_Add", teApiImageList_Add },
-	{ 3, -1, -1, -1, L"ImageList_AddMasked", teApiImageList_AddMasked },
-	{ 1, -1, -1, -1, L"GetKeyState", teApiGetKeyState },
-	{ 1, -1, -1, -1, L"GetSystemMetrics", teApiGetSystemMetrics },
-	{ 1, -1, -1, -1, L"GetSysColor", teApiGetSysColor },
-	{ 1, -1, -1, -1, L"GetMenuItemCount", teApiGetMenuItemCount },
-	{ 1, -1, -1, -1, L"ImageList_GetImageCount", teApiImageList_GetImageCount },
-	{ 2, -1, -1, -1, L"ReleaseDC", teApiReleaseDC },
-	{ 2, -1, -1, -1, L"GetMenuItemID", teApiGetMenuItemID },
-	{ 4, -1, -1, -1, L"ImageList_Replace", teApiImageList_Replace },
-	{ 3, -1, -1, -1, L"ImageList_ReplaceIcon", teApiImageList_ReplaceIcon },
-	{ 2, -1, -1, -1, L"SetBkMode", teApiSetBkMode },
-	{ 2, -1, -1, -1, L"SetBkColor", teApiSetBkColor },
-	{ 2, -1, -1, -1, L"SetTextColor", teApiSetTextColor },
-	{ 2, -1, -1, -1, L"MapVirtualKey", teApiMapVirtualKey },
-	{ 2, -1, -1, -1, L"WaitForInputIdle", teApiWaitForInputIdle },
-	{ 2, -1, -1, -1, L"WaitForSingleObject", teApiWaitForSingleObject },
-	{ 3, -1, -1, -1, L"GetMenuDefaultItem", teApiGetMenuDefaultItem },
-	{ 3, -1, -1, -1, L"SetMenuDefaultItem", teApiSetMenuDefaultItem },
-	{ 1, -1, -1, -1, L"CRC32", teApiCRC32 },
-	{ 3,  1, -1, -1, L"SHEmptyRecycleBin", teApiSHEmptyRecycleBin },
-	{ 0, -1, -1, -1, L"GetMessagePos", teApiGetMessagePos },
-	{ 2, -1, -1, -1, L"ImageList_GetOverlayImage", teApiImageList_GetOverlayImage },
-	{ 1, -1, -1, -1, L"ImageList_GetBkColor", teApiImageList_GetBkColor },
-	{ 3,  1,  2, -1, L"SetWindowTheme", teApiSetWindowTheme },
-	{ 1, -1, -1, -1, L"ImmGetVirtualKey", teApiImmGetVirtualKey },
-	{ 1, -1, -1, -1, L"GetAsyncKeyState", teApiGetAsyncKeyState },
-	{ 6, -1, -1, -1, L"TrackPopupMenuEx", teApiTrackPopupMenuEx },
-	{ 5,  0, -1, -1, L"ExtractIconEx", teApiExtractIconEx },
-	{ 3, -1, -1, -1, L"GetObject", teApiGetObject },
-	{ 6, -1, -1, -1, L"MultiByteToWideChar", teApiMultiByteToWideChar },
-	{ 8,  2, -1, -1, L"WideCharToMultiByte", teApiWideCharToMultiByte },
-	{ 2, -1, -1, -1, L"GetAttributesOf", teApiGetAttributesOf },
-//	{ 2, -1, -1, -1, L"DoDragDrop", teApiDoDragDrop },
-	{ 4, -1, -1, -1, L"SHDoDragDrop", teApiSHDoDragDrop },
-	{ 3, -1, -1, -1, L"CompareIDs", teApiCompareIDs },
-	{ 2,  0,  1, -1, L"ExecScript", teApiExecScript },
-	{ 2,  0,  1, -1, L"GetScriptDispatch", teApiGetScriptDispatch },
-	{ 2,  1, -1, -1, L"GetDispatch", teApiGetDispatch },
-	{ 6, -1, -1, -1, L"SHChangeNotifyRegister", teApiSHChangeNotifyRegister },
-	{ 4,  1,  2, -1, L"MessageBox", teApiMessageBox },
+	{ 1, -1, -1, -1, "Memory", teApiMemory },
+	{ 1,  5, -1, -1, "ContextMenu", teApiContextMenu },
+	{ 1, -1, -1, -1, "DropTarget", teApiDropTarget },
+	{ 0, -1, -1, -1, "DataObject", teApiDataObject },
+	{ 5,  1, -1, -1, "OleCmdExec", teApiOleCmdExec },
+	{ 1, -1, -1, -1, "sizeof", teApisizeof },
+	{ 1, -1, -1, -1, "LowPart", teApiLowPart },
+	{ 1, -1, -1, -1, "ULowPart", teApiULowPart },
+	{ 1, -1, -1, -1, "HighPart", teApiHighPart },
+	{ 1, -1, -1, -1, "QuadPart", teApiQuadPart },
+	{ 1, -1, -1, -1, "UQuadPart", teApiUQuadPart },
+	{ 1, -1, -1, -1, "pvData", teApipvData },
+	{ 3,  1, -1, -1, "ExecMethod", teApiExecMethod },
+	{ 4,  2,  3, -1, "Extract", teApiExtract },
+	{ 2, -1, -1, -1, "Add", teApiQuadAdd },
+	{ 2, -1, -1, -1, "UQuadAdd", teApiUQuadAdd },
+	{ 2, -1, -1, -1, "UQuadSub", teApiUQuadSub },
+	{ 2, -1, -1, -1, "UQuadCmp", teApiUQuadCmp },
+	{ 2,  0,  1, -1, "FindWindow", teApiFindWindow },
+	{ 4,  2,  3, -1, "FindWindowEx", teApiFindWindowEx },
+	{ 0, -1, -1, -1, "OleGetClipboard", teApiOleGetClipboard },
+	{ 1, -1, -1, -1, "OleSetClipboard", teApiOleSetClipboard },
+	{ 2,  0,  1, -1, "PathMatchSpec", teApiPathMatchSpec },
+	{ 1,  0, -1, -1, "CommandLineToArgv", teApiCommandLineToArgv },
+	{ 2, -1, -1, -1, "ILIsEqual", teApiILIsEqual },
+	{ 1, -1, -1, -1, "ILClone", teApiILClone },
+	{ 3, -1, -1, -1, "ILIsParent", teApiILIsParent },
+	{ 1, -1, -1, -1, "ILRemoveLastID", teApiILRemoveLastID },
+	{ 1, -1, -1, -1, "ILFindLastID", teApiILFindLastID },
+	{ 1, -1, -1, -1, "ILIsEmpty", teApiILIsEmpty },
+	{ 1, -1, -1, -1, "ILGetParent", teApiILGetParent },
+	{ 2,  0, -1, -1, "FindFirstFile", teApiFindFirstFile },
+	{ 1, -1, -1, -1, "WindowFromPoint", teApiWindowFromPoint },
+	{ 0, -1, -1, -1, "GetThreadCount", teApiGetThreadCount },
+	{ 0, -1, -1, -1, "DoEvents", teApiDoEvents },
+	{ 2,  0,  1, -1, "sscanf", teApisscanf },
+	{ 4, -1, -1, -1, "SetFileTime", teApiSetFileTime },
+	{ 1, -1, -1, -1, "ILCreateFromPath", teApiILCreateFromPath },
+	{ 2,  0, -1, -1, "GetProcObject", teApiGetProcObject },
+	{ 1,  0, -1, -1, "SetDllDirectory", teApiSetDllDirectory },
+	{ 1,  0, -1, -1, "PathIsNetworkPath", teApiPathIsNetworkPath },
+	{ 1,  0, -1, -1, "RegisterWindowMessage", teApiRegisterWindowMessage },
+	{ 2,  0,  1, -1, "StrCmpI", teApiStrCmpI },
+	{ 1,  0, -1, -1, "StrLen", teApiStrLen },
+	{ 3,  0,  1, -1, "StrCmpNI", teApiStrCmpNI },
+	{ 2,  0,  1, -1, "StrCmpLogical", teApiStrCmpLogical },
+	{ 1,  0, -1, -1, "PathQuoteSpaces", teApiPathQuoteSpaces },
+	{ 1,  0, -1, -1, "PathUnquoteSpaces", teApiPathUnquoteSpaces },
+	{ 1,  0, -1, -1, "GetShortPathName", teApiGetShortPathName },
+	{ 1,  0, -1, -1, "PathCreateFromUrl", teApiPathCreateFromUrl },
+	{ 1,  0, -1, -1, "PathSearchAndQualify", teApiPathSearchAndQualify },
+	{ 3,  0, -1, -1, "PSFormatForDisplay", teApiPSFormatForDisplay },
+	{ 1,  0, -1, -1, "PSGetDisplayName", teApiPSGetDisplayName },
+	{ 1, -1, -1, -1, "GetCursorPos", teApiGetCursorPos },
+	{ 1, -1, -1, -1, "GetKeyboardState", teApiGetKeyboardState },
+	{ 1, -1, -1, -1, "SetKeyboardState", teApiSetKeyboardState },
+	{ 1, -1, -1, -1, "GetVersionEx", teApiGetVersionEx },
+	{ 1, -1, -1, -1, "ChooseFont", teApiChooseFont },
+	{ 1, -1, -1, -1, "ChooseColor", teApiChooseColor },
+	{ 1, -1, -1, -1, "TranslateMessage", teApiTranslateMessage },
+	{ 1, -1, -1, -1, "ShellExecuteEx", teApiShellExecuteEx },
+	{ 1, -1, -1, -1, "CreateFontIndirect", teApiCreateFontIndirect },
+	{ 1, -1, -1, -1, "CreateIconIndirect", teApiCreateIconIndirect },
+	{ 1, -1, -1, -1, "FindText", teApiFindText },
+	{ 1, -1, -1, -1, "FindReplace", teApiFindReplace },
+	{ 1, -1, -1, -1, "DispatchMessage", teApiDispatchMessage },
+	{ 1, -1, -1, -1, "PostMessage", teApiPostMessage },
+	{ 1, -1, -1, -1, "SHFreeNameMappings", teApiSHFreeNameMappings },
+	{ 1, -1, -1, -1, "CoTaskMemFree", teApiCoTaskMemFree },
+	{ 1, -1, -1, -1, "Sleep", teApiSleep },
+	{ 6,  2,  3,  4, "ShRunDialog", teApiShRunDialog },
+	{ 2, -1, -1, -1, "DragAcceptFiles", teApiDragAcceptFiles },
+	{ 1, -1, -1, -1, "DragFinish", teApiDragFinish },
+	{ 2, -1, -1, -1, "mouse_event", teApimouse_event },
+	{ 4, -1, -1, -1, "keybd_event", teApikeybd_event },
+	{ 4, -1, -1, -1, "SHChangeNotify", teApiSHChangeNotify },
+	{ 4, -1, -1, -1, "DrawIcon", teApiDrawIcon },
+	{ 1, -1, -1, -1, "DestroyMenu", teApiDestroyMenu },
+	{ 1, -1, -1, -1, "FindClose", teApiFindClose },
+	{ 1, -1, -1, -1, "FreeLibrary", teApiFreeLibrary },
+	{ 1, -1, -1, -1, "ImageList_Destroy", teApiImageList_Destroy },
+	{ 1, -1, -1, -1, "DeleteObject", teApiDeleteObject },
+	{ 1, -1, -1, -1, "DestroyIcon", teApiDestroyIcon },
+	{ 1, -1, -1, -1, "IsWindow", teApiIsWindow },
+	{ 1, -1, -1, -1, "IsWindowVisible", teApiIsWindowVisible },
+	{ 1, -1, -1, -1, "IsZoomed", teApiIsZoomed },
+	{ 1, -1, -1, -1, "IsIconic", teApiIsIconic },
+	{ 1, -1, -1, -1, "OpenIcon", teApiOpenIcon },
+	{ 1, -1, -1, -1, "SetForegroundWindow", teApiSetForegroundWindow },
+	{ 1, -1, -1, -1, "BringWindowToTop", teApiBringWindowToTop },
+	{ 1, -1, -1, -1, "DeleteDC", teApiDeleteDC },
+	{ 1, -1, -1, -1, "CloseHandle", teApiCloseHandle },
+	{ 1, -1, -1, -1, "IsMenu", teApiIsMenu },
+	{ 6, -1, -1, -1, "MoveWindow", teApiMoveWindow },
+	{ 5, -1, -1, -1, "SetMenuItemBitmaps", teApiSetMenuItemBitmaps },
+	{ 2, -1, -1, -1, "ShowWindow", teApiShowWindow },
+	{ 3, -1, -1, -1, "DeleteMenu", teApiDeleteMenu },
+	{ 3, -1, -1, -1, "RemoveMenu", teApiRemoveMenu },
+	{ 9, -1, -1, -1, "DrawIconEx", teApiDrawIconEx },
+	{ 3, -1, -1, -1, "EnableMenuItem", teApiEnableMenuItem },
+	{ 2, -1, -1, -1, "ImageList_Remove", teApiImageList_Remove },
+	{ 3, -1, -1, -1, "ImageList_SetIconSize", teApiImageList_SetIconSize },
+	{ 6, -1, -1, -1, "ImageList_Draw", teApiImageList_Draw },
+	{10, -1, -1, -1, "ImageList_DrawEx", teApiImageList_DrawEx },
+	{ 2, -1, -1, -1, "ImageList_SetImageCount", teApiImageList_SetImageCount },
+	{ 3, -1, -1, -1, "ImageList_SetOverlayImage", teApiImageList_SetOverlayImage },
+	{ 5, -1, -1, -1, "ImageList_Copy", teApiImageList_Copy },
+	{ 1, -1, -1, -1, "DestroyWindow", teApiDestroyWindow },
+	{ 3, -1, -1, -1, "LineTo", teApiLineTo },
+	{ 0, -1, -1, -1, "ReleaseCapture", teApiReleaseCapture },
+	{ 2, -1, -1, -1, "SetCursorPos", teApiSetCursorPos },
+	{ 2, -1, -1, -1, "DestroyCursor", teApiDestroyCursor },
+	{ 2, -1, -1, -1, "SHFreeShared", teApiSHFreeShared },
+	{ 0, -1, -1, -1, "EndMenu", teApiEndMenu },
+	{ 1, -1, -1, -1, "SHChangeNotifyDeregister", teApiSHChangeNotifyDeregister },
+	{ 1, -1, -1, -1, "SHChangeNotification_Unlock", teApiSHChangeNotification_Unlock },
+	{ 1, -1, -1, -1, "IsWow64Process", teApiIsWow64Process },
+	{ 9, -1, -1, -1, "BitBlt", teApiBitBlt },
+	{ 2, -1, -1, -1, "ImmSetOpenStatus", teApiImmSetOpenStatus },
+	{ 2, -1, -1, -1, "ImmReleaseContext", teApiImmReleaseContext },
+	{ 2, -1, -1, -1, "IsChild", teApiIsChild },
+	{ 2, -1, -1, -1, "KillTimer", teApiKillTimer },
+	{ 1, -1, -1, -1, "AllowSetForegroundWindow", teApiAllowSetForegroundWindow },
+	{ 7, -1, -1, -1, "SetWindowPos", teApiSetWindowPos },
+	{ 5,  4, -1, -1, "InsertMenu", teApiInsertMenu },
+	{ 2, -1,  1, -1, "SetWindowText", teApiSetWindowText },
+	{ 4, -1, -1, -1, "RedrawWindow", teApiRedrawWindow },
+	{ 4, -1, -1, -1, "MoveToEx", teApiMoveToEx },
+	{ 3, -1, -1, -1, "InvalidateRect", teApiInvalidateRect },
+	{ 4, -1, -1, -1, "SendNotifyMessage", teApiSendNotifyMessage },
+	{ 5, -1, -1, -1, "PeekMessage", teApiPeekMessage },
+	{ 1, -1, -1, -1, "SHFileOperation", teApiSHFileOperation },
+	{ 4, -1, -1, -1, "GetMessage", teApiGetMessage },
+	{ 2, -1, -1, -1, "GetWindowRect", teApiGetWindowRect },
+	{ 2, -1, -1, -1, "GetWindowThreadProcessId", teApiGetWindowThreadProcessId },
+	{ 2, -1, -1, -1, "GetClientRect", teApiGetClientRect },
+	{ 3, -1, -1, -1, "SendInput", teApiSendInput },
+	{ 2, -1, -1, -1, "ScreenToClient", teApiScreenToClient },
+	{ 5, -1, -1, -1, "MsgWaitForMultipleObjectsEx", teApiMsgWaitForMultipleObjectsEx },
+	{ 2, -1, -1, -1, "ClientToScreen", teApiClientToScreen },
+	{ 2, -1, -1, -1, "GetIconInfo", teApiGetIconInfo },
+	{ 2, -1, -1, -1, "FindNextFile", teApiFindNextFile },
+	{ 3, -1, -1, -1, "FillRect", teApiFillRect },
+	{ 2, -1, -1, -1, "Shell_NotifyIcon", teApiShell_NotifyIcon },
+	{ 2, -1, -1, -1, "EndPaint", teApiEndPaint },
+	{ 2, -1, -1, -1, "ImageList_GetIconSize", teApiImageList_GetIconSize },
+	{ 2, -1, -1, -1, "GetMenuInfo", teApiGetMenuInfo },
+	{ 2, -1, -1, -1, "SetMenuInfo", teApiSetMenuInfo },
+	{ 4, -1, -1, -1, "SystemParametersInfo", teApiSystemParametersInfo },
+	{ 3,  1, -1, -1, "GetTextExtentPoint32", teApiGetTextExtentPoint32 },
+	{ 4, -1, -1, -1, "SHGetDataFromIDList", teApiSHGetDataFromIDList },
+	{ 4, -1, -1, -1, "InsertMenuItem", teApiInsertMenuItem },
+	{ 4, -1, -1, -1, "GetMenuItemInfo", teApiGetMenuItemInfo },
+	{ 4, -1, -1, -1, "SetMenuItemInfo", teApiSetMenuItemInfo },
+	{ 4, -1, -1, -1, "ChangeWindowMessageFilterEx", teApiChangeWindowMessageFilterEx },
+	{ 2, -1, -1, -1, "ImageList_SetBkColor", teApiImageList_SetBkColor },
+	{ 2, -1, -1, -1, "ImageList_AddIcon", teApiImageList_AddIcon },
+	{ 3, -1, -1, -1, "ImageList_Add", teApiImageList_Add },
+	{ 3, -1, -1, -1, "ImageList_AddMasked", teApiImageList_AddMasked },
+	{ 1, -1, -1, -1, "GetKeyState", teApiGetKeyState },
+	{ 1, -1, -1, -1, "GetSystemMetrics", teApiGetSystemMetrics },
+	{ 1, -1, -1, -1, "GetSysColor", teApiGetSysColor },
+	{ 1, -1, -1, -1, "GetMenuItemCount", teApiGetMenuItemCount },
+	{ 1, -1, -1, -1, "ImageList_GetImageCount", teApiImageList_GetImageCount },
+	{ 2, -1, -1, -1, "ReleaseDC", teApiReleaseDC },
+	{ 2, -1, -1, -1, "GetMenuItemID", teApiGetMenuItemID },
+	{ 4, -1, -1, -1, "ImageList_Replace", teApiImageList_Replace },
+	{ 3, -1, -1, -1, "ImageList_ReplaceIcon", teApiImageList_ReplaceIcon },
+	{ 2, -1, -1, -1, "SetBkMode", teApiSetBkMode },
+	{ 2, -1, -1, -1, "SetBkColor", teApiSetBkColor },
+	{ 2, -1, -1, -1, "SetTextColor", teApiSetTextColor },
+	{ 2, -1, -1, -1, "MapVirtualKey", teApiMapVirtualKey },
+	{ 2, -1, -1, -1, "WaitForInputIdle", teApiWaitForInputIdle },
+	{ 2, -1, -1, -1, "WaitForSingleObject", teApiWaitForSingleObject },
+	{ 3, -1, -1, -1, "GetMenuDefaultItem", teApiGetMenuDefaultItem },
+	{ 3, -1, -1, -1, "SetMenuDefaultItem", teApiSetMenuDefaultItem },
+	{ 1, -1, -1, -1, "CRC32", teApiCRC32 },
+	{ 3,  1, -1, -1, "SHEmptyRecycleBin", teApiSHEmptyRecycleBin },
+	{ 0, -1, -1, -1, "GetMessagePos", teApiGetMessagePos },
+	{ 2, -1, -1, -1, "ImageList_GetOverlayImage", teApiImageList_GetOverlayImage },
+	{ 1, -1, -1, -1, "ImageList_GetBkColor", teApiImageList_GetBkColor },
+	{ 3,  1,  2, -1, "SetWindowTheme", teApiSetWindowTheme },
+	{ 1, -1, -1, -1, "ImmGetVirtualKey", teApiImmGetVirtualKey },
+	{ 1, -1, -1, -1, "GetAsyncKeyState", teApiGetAsyncKeyState },
+	{ 6, -1, -1, -1, "TrackPopupMenuEx", teApiTrackPopupMenuEx },
+	{ 5,  0, -1, -1, "ExtractIconEx", teApiExtractIconEx },
+	{ 3, -1, -1, -1, "GetObject", teApiGetObject },
+	{ 6, -1, -1, -1, "MultiByteToWideChar", teApiMultiByteToWideChar },
+	{ 8,  2, -1, -1, "WideCharToMultiByte", teApiWideCharToMultiByte },
+	{ 2, -1, -1, -1, "GetAttributesOf", teApiGetAttributesOf },
+//	{ 2, -1, -1, -1, "DoDragDrop", teApiDoDragDrop },
+	{ 4, -1, -1, -1, "SHDoDragDrop", teApiSHDoDragDrop },
+	{ 3, -1, -1, -1, "CompareIDs", teApiCompareIDs },
+	{ 2,  0,  1, -1, "ExecScript", teApiExecScript },
+	{ 2,  0,  1, -1, "GetScriptDispatch", teApiGetScriptDispatch },
+	{ 2,  1, -1, -1, "GetDispatch", teApiGetDispatch },
+	{ 6, -1, -1, -1, "SHChangeNotifyRegister", teApiSHChangeNotifyRegister },
+	{ 4,  1,  2, -1, "MessageBox", teApiMessageBox },
 	//Handle
-	{ 3, -1, -1, -1, L"ImageList_GetIcon", teApiImageList_GetIcon },
-	{ 5, -1, -1, -1, L"ImageList_Create", teApiImageList_Create },
-	{ 2, -1, -1, -1, L"GetWindowLongPtr", teApiGetWindowLongPtr },
-	{ 2, -1, -1, -1, L"GetClassLongPtr", teApiGetClassLongPtr },
-	{ 2, -1, -1, -1, L"GetSubMenu", teApiGetSubMenu },
-	{ 2, -1, -1, -1, L"SelectObject", teApiSelectObject },
-	{ 1, -1, -1, -1, L"GetStockObject", teApiGetStockObject },
-	{ 1, -1, -1, -1, L"GetSysColorBrush", teApiGetSysColorBrush },
-	{ 1, -1, -1, -1, L"SetFocus", teApiSetFocus },
-	{ 1, -1, -1, -1, L"GetDC", teApiGetDC },
-	{ 1, -1, -1, -1, L"CreateCompatibleDC", teApiCreateCompatibleDC },
-	{ 0, -1, -1, -1, L"CreatePopupMenu", teApiCreatePopupMenu },
-	{ 0, -1, -1, -1, L"CreateMenu", teApiCreateMenu },
-	{ 3, -1, -1, -1, L"CreateCompatibleBitmap", teApiCreateCompatibleBitmap },
-	{ 3, -1, -1, -1, L"SetWindowLongPtr", teApiSetWindowLongPtr },
-	{ 3, -1, -1, -1, L"SetClassLongPtr", teApiSetClassLongPtr },
-	{ 1, -1, -1, -1, L"ImageList_Duplicate", teApiImageList_Duplicate },
-	{ 2, -1, -1, -1, L"SendMessage", teApiSendMessage },
-	{ 2, -1, -1, -1, L"GetSystemMenu", teApiGetSystemMenu },
-	{ 1, -1, -1, -1, L"GetWindowDC", teApiGetWindowDC },
-	{ 3, -1, -1, -1, L"CreatePen", teApiCreatePen },
-	{ 1, -1, -1, -1, L"SetCapture", teApiSetCapture },
-	{ 1, -1, -1, -1, L"SetCursor", teApiSetCursor },
-	{ 5, -1, -1, -1, L"CallWindowProc", teApiCallWindowProc },
-	{ 1, -1, -1, -1, L"GetWindow", teApiGetWindow },
-	{ 1, -1, -1, -1, L"GetTopWindow", teApiGetTopWindow },
-	{ 3, -1, -1, -1, L"OpenProcess", teApiOpenProcess },
-	{ 1, -1, -1, -1, L"GetParent", teApiGetParent },
-	{ 0, -1, -1, -1, L"GetCapture", teApiGetCapture },
-	{ 1, -1,  0, -1, L"GetModuleHandle", teApiGetModuleHandle },
-	{ 1, -1, -1, -1, L"SHGetImageList", teApiSHGetImageList },
-	{ 5, -1, -1, -1, L"CopyImage", teApiCopyImage },
-	{ 0, -1, -1, -1, L"GetCurrentProcess", teApiGetCurrentProcess },
-	{ 1, -1, -1, -1, L"ImmGetContext", teApiImmGetContext },
-	{ 0, -1, -1, -1, L"GetFocus", teApiGetFocus },
-	{ 0, -1, -1, -1, L"GetForegroundWindow", teApiGetForegroundWindow },
-	{ 3, -1, -1, -1, L"SetTimer", teApiSetTimer },
-	{ 2, -1, -1, -1, L"LoadMenu", teApiLoadMenu },
-	{ 2, -1, -1, -1, L"LoadIcon", teApiLoadIcon },
-	{ 3, -1, -1, -1, L"LoadLibraryEx", teApiLoadLibraryEx },
-	{ 6, -1, -1, -1, L"LoadImage", teApiLoadImage },
-	{ 7, -1, -1, -1, L"ImageList_LoadImage", teApiImageList_LoadImage },
-	{ 5,  0, -1, -1, L"SHGetFileInfo", teApiSHGetFileInfo },
-	{12, -1,  1,  2, L"CreateWindowEx", teApiCreateWindowEx },
-	{ 6, -1,  3,  4, L"ShellExecute", teApiShellExecute },
-	{ 2, -1, -1, -1, L"BeginPaint", teApiBeginPaint },
-	{ 2, -1, -1, -1, L"LoadCursor", teApiLoadCursor },
-	{ 2, -1, -1, -1, L"LoadCursorFromFile", teApiLoadCursorFromFile },
-	{ 3, -1, -1, -1, L"SHParseDisplayName", teApiSHParseDisplayName },
-	{ 3, -1, -1, -1, L"SHChangeNotification_Lock", teApiSHChangeNotification_Lock },
-	{ 1, -1, -1, -1, L"GetWindowText", teApiGetWindowText },
-	{ 1, -1, -1, -1, L"GetClassName", teApiGetClassName },
-	{ 1, -1, -1, -1, L"GetModuleFileName", teApiGetModuleFileName },
-	{ 0, -1, -1, -1, L"GetCommandLine", teApiGetCommandLine },
-	{ 0, -1, -1, -1, L"GetCurrentDirectory", teApiGetCurrentDirectory },//use wsh.CurrentDirectory
-	{ 3, -1, -1, -1, L"GetMenuString", teApiGetMenuString },
-	{ 2, -1, -1, -1, L"GetDisplayNameOf", teApiGetDisplayNameOf },
-	{ 1, -1, -1, -1, L"GetKeyNameText", teApiGetKeyNameText },
-	{ 2, -1, -1, -1, L"DragQueryFile", teApiDragQueryFile },
-	{ 1, -1, -1, -1, L"SysAllocString", teApiSysAllocString },
-	{ 2, -1, -1, -1, L"SysAllocStringLen", teApiSysAllocStringLen },
-	{ 2, -1, -1, -1, L"SysAllocStringByteLen", teApiSysAllocStringByteLen },
-	{ 3, -1,  1, -1, L"sprintf", teApisprintf },
-	{ 1, -1, -1, -1, L"base64_encode", teApibase64_encode },
-	{ 2, -1, -1, -1, L"LoadString", teApiLoadString },
-	{ 4,  2,  3, -1, L"AssocQueryString", teApiAssocQueryString },
-	{ 1, -1, -1, -1, L"StrFormatByteSize", teApiStrFormatByteSize },
-	{ 4,  3, -1, -1, L"GetDateFormat", teApiGetDateFormat },
-	{ 4,  3, -1, -1, L"GetTimeFormat", teApiGetTimeFormat },
-	{ 2, -1, -1, -1, L"GetLocaleInfo", teApiGetLocaleInfo },	
-	{ 2, -1, -1, -1, L"MonitorFromPoint", teApiMonitorFromPoint },
-	{ 2, -1, -1, -1, L"MonitorFromRect", teApiMonitorFromRect },
-	{ 2, -1, -1, -1, L"GetMonitorInfo", teApiGetMonitorInfo },
-	{ 1,  0, -1, -1, L"GlobalAddAtom", teApiGlobalAddAtom },
-	{ 1, -1, -1, -1, L"GlobalGetAtomName", teApiGlobalGetAtomName },
-	{ 1,  0, -1, -1, L"GlobalFindAtom", teApiGlobalFindAtom },
-	{ 1, -1, -1, -1, L"GlobalDeleteAtom", teApiGlobalDeleteAtom },
-	{ 4, -1, -1, -1, L"RegisterHotKey", teApiRegisterHotKey },
-	{ 2, -1, -1, -1, L"UnregisterHotKey", teApiUnregisterHotKey },
-	{ 1, -1, -1, -1, L"ILGetCount", teApiILGetCount },
-	{ 2, -1, -1, -1, L"SHTestTokenMembership", teApiSHTestTokenMembership },
-	{ 2,  1, -1, -1, L"ObjGetI", teApiObjGetI },
-	{ 3,  1, -1, -1, L"ObjPutI", teApiObjPutI },
-	{ 5,  1, -1, -1, L"DrawText", teApiDrawText },
-	{ 5, -1, -1, -1, L"Rectangle", teApiRectangle },
-	{ 1,  0, -1, -1, L"PathIsDirectory", teApiPathIsDirectory },
-	{ 2,  0,  1, -1, L"PathIsSameRoot", teApiPathIsSameRoot },
-	{ 2,  1, -1, -1, L"ObjDispId", teApiObjDispId },
-	{ 1,  0, -1, -1, L"SHSimpleIDListFromPath", teApiSHSimpleIDListFromPath },
-	{ 1,  0, -1, -1, L"OutputDebugString", teApiOutputDebugString },
-	{ 2, -1, -1, -1, L"DllGetClassObject", teApiDllGetClassObject },
-	{ 0, -1, -1, -1, L"IsThemeActive", teApiIsThemeActive },
-	{ 6,  0, -1, -1, L"SHDefExtractIcon", teApiSHDefExtractIcon },
-	{ 3,  1,  2, -1, L"URLDownloadToFile", teApiURLDownloadToFile },
-//	{ 0, -1, -1, -1, L"", teApi },
-//	{ 0, -1, -1, -1, L"Test", teApiTest },
+	{ 3, -1, -1, -1, "ImageList_GetIcon", teApiImageList_GetIcon },
+	{ 5, -1, -1, -1, "ImageList_Create", teApiImageList_Create },
+	{ 2, -1, -1, -1, "GetWindowLongPtr", teApiGetWindowLongPtr },
+	{ 2, -1, -1, -1, "GetClassLongPtr", teApiGetClassLongPtr },
+	{ 2, -1, -1, -1, "GetSubMenu", teApiGetSubMenu },
+	{ 2, -1, -1, -1, "SelectObject", teApiSelectObject },
+	{ 1, -1, -1, -1, "GetStockObject", teApiGetStockObject },
+	{ 1, -1, -1, -1, "GetSysColorBrush", teApiGetSysColorBrush },
+	{ 1, -1, -1, -1, "SetFocus", teApiSetFocus },
+	{ 1, -1, -1, -1, "GetDC", teApiGetDC },
+	{ 1, -1, -1, -1, "CreateCompatibleDC", teApiCreateCompatibleDC },
+	{ 0, -1, -1, -1, "CreatePopupMenu", teApiCreatePopupMenu },
+	{ 0, -1, -1, -1, "CreateMenu", teApiCreateMenu },
+	{ 3, -1, -1, -1, "CreateCompatibleBitmap", teApiCreateCompatibleBitmap },
+	{ 3, -1, -1, -1, "SetWindowLongPtr", teApiSetWindowLongPtr },
+	{ 3, -1, -1, -1, "SetClassLongPtr", teApiSetClassLongPtr },
+	{ 1, -1, -1, -1, "ImageList_Duplicate", teApiImageList_Duplicate },
+	{ 2, -1, -1, -1, "SendMessage", teApiSendMessage },
+	{ 2, -1, -1, -1, "GetSystemMenu", teApiGetSystemMenu },
+	{ 1, -1, -1, -1, "GetWindowDC", teApiGetWindowDC },
+	{ 3, -1, -1, -1, "CreatePen", teApiCreatePen },
+	{ 1, -1, -1, -1, "SetCapture", teApiSetCapture },
+	{ 1, -1, -1, -1, "SetCursor", teApiSetCursor },
+	{ 5, -1, -1, -1, "CallWindowProc", teApiCallWindowProc },
+	{ 1, -1, -1, -1, "GetWindow", teApiGetWindow },
+	{ 1, -1, -1, -1, "GetTopWindow", teApiGetTopWindow },
+	{ 3, -1, -1, -1, "OpenProcess", teApiOpenProcess },
+	{ 1, -1, -1, -1, "GetParent", teApiGetParent },
+	{ 0, -1, -1, -1, "GetCapture", teApiGetCapture },
+	{ 1, -1,  0, -1, "GetModuleHandle", teApiGetModuleHandle },
+	{ 1, -1, -1, -1, "SHGetImageList", teApiSHGetImageList },
+	{ 5, -1, -1, -1, "CopyImage", teApiCopyImage },
+	{ 0, -1, -1, -1, "GetCurrentProcess", teApiGetCurrentProcess },
+	{ 1, -1, -1, -1, "ImmGetContext", teApiImmGetContext },
+	{ 0, -1, -1, -1, "GetFocus", teApiGetFocus },
+	{ 0, -1, -1, -1, "GetForegroundWindow", teApiGetForegroundWindow },
+	{ 3, -1, -1, -1, "SetTimer", teApiSetTimer },
+	{ 2, -1, -1, -1, "LoadMenu", teApiLoadMenu },
+	{ 2, -1, -1, -1, "LoadIcon", teApiLoadIcon },
+	{ 3, -1, -1, -1, "LoadLibraryEx", teApiLoadLibraryEx },
+	{ 6, -1, -1, -1, "LoadImage", teApiLoadImage },
+	{ 7, -1, -1, -1, "ImageList_LoadImage", teApiImageList_LoadImage },
+	{ 5,  0, -1, -1, "SHGetFileInfo", teApiSHGetFileInfo },
+	{12, -1,  1,  2, "CreateWindowEx", teApiCreateWindowEx },
+	{ 6, -1,  3,  4, "ShellExecute", teApiShellExecute },
+	{ 2, -1, -1, -1, "BeginPaint", teApiBeginPaint },
+	{ 2, -1, -1, -1, "LoadCursor", teApiLoadCursor },
+	{ 2, -1, -1, -1, "LoadCursorFromFile", teApiLoadCursorFromFile },
+	{ 3, -1, -1, -1, "SHParseDisplayName", teApiSHParseDisplayName },
+	{ 3, -1, -1, -1, "SHChangeNotification_Lock", teApiSHChangeNotification_Lock },
+	{ 1, -1, -1, -1, "GetWindowText", teApiGetWindowText },
+	{ 1, -1, -1, -1, "GetClassName", teApiGetClassName },
+	{ 1, -1, -1, -1, "GetModuleFileName", teApiGetModuleFileName },
+	{ 0, -1, -1, -1, "GetCommandLine", teApiGetCommandLine },
+	{ 0, -1, -1, -1, "GetCurrentDirectory", teApiGetCurrentDirectory },//use wsh.CurrentDirectory
+	{ 3, -1, -1, -1, "GetMenuString", teApiGetMenuString },
+	{ 2, -1, -1, -1, "GetDisplayNameOf", teApiGetDisplayNameOf },
+	{ 1, -1, -1, -1, "GetKeyNameText", teApiGetKeyNameText },
+	{ 2, -1, -1, -1, "DragQueryFile", teApiDragQueryFile },
+	{ 1, -1, -1, -1, "SysAllocString", teApiSysAllocString },
+	{ 2, -1, -1, -1, "SysAllocStringLen", teApiSysAllocStringLen },
+	{ 2, -1, -1, -1, "SysAllocStringByteLen", teApiSysAllocStringByteLen },
+	{ 3, -1,  1, -1, "sprintf", teApisprintf },
+	{ 1, -1, -1, -1, "base64_encode", teApibase64_encode },
+	{ 2, -1, -1, -1, "LoadString", teApiLoadString },
+	{ 4,  2,  3, -1, "AssocQueryString", teApiAssocQueryString },
+	{ 1, -1, -1, -1, "StrFormatByteSize", teApiStrFormatByteSize },
+	{ 4,  3, -1, -1, "GetDateFormat", teApiGetDateFormat },
+	{ 4,  3, -1, -1, "GetTimeFormat", teApiGetTimeFormat },
+	{ 2, -1, -1, -1, "GetLocaleInfo", teApiGetLocaleInfo },	
+	{ 2, -1, -1, -1, "MonitorFromPoint", teApiMonitorFromPoint },
+	{ 2, -1, -1, -1, "MonitorFromRect", teApiMonitorFromRect },
+	{ 2, -1, -1, -1, "GetMonitorInfo", teApiGetMonitorInfo },
+	{ 1,  0, -1, -1, "GlobalAddAtom", teApiGlobalAddAtom },
+	{ 1, -1, -1, -1, "GlobalGetAtomName", teApiGlobalGetAtomName },
+	{ 1,  0, -1, -1, "GlobalFindAtom", teApiGlobalFindAtom },
+	{ 1, -1, -1, -1, "GlobalDeleteAtom", teApiGlobalDeleteAtom },
+	{ 4, -1, -1, -1, "RegisterHotKey", teApiRegisterHotKey },
+	{ 2, -1, -1, -1, "UnregisterHotKey", teApiUnregisterHotKey },
+	{ 1, -1, -1, -1, "ILGetCount", teApiILGetCount },
+	{ 2, -1, -1, -1, "SHTestTokenMembership", teApiSHTestTokenMembership },
+	{ 2,  1, -1, -1, "ObjGetI", teApiObjGetI },
+	{ 3,  1, -1, -1, "ObjPutI", teApiObjPutI },
+	{ 5,  1, -1, -1, "DrawText", teApiDrawText },
+	{ 5, -1, -1, -1, "Rectangle", teApiRectangle },
+	{ 1,  0, -1, -1, "PathIsDirectory", teApiPathIsDirectory },
+	{ 2,  0,  1, -1, "PathIsSameRoot", teApiPathIsSameRoot },
+	{ 2,  1, -1, -1, "ObjDispId", teApiObjDispId },
+	{ 1,  0, -1, -1, "SHSimpleIDListFromPath", teApiSHSimpleIDListFromPath },
+	{ 1,  0, -1, -1, "OutputDebugString", teApiOutputDebugString },
+	{ 2, -1, -1, -1, "DllGetClassObject", teApiDllGetClassObject },
+	{ 0, -1, -1, -1, "IsThemeActive", teApiIsThemeActive },
+	{ 6,  0, -1, -1, "SHDefExtractIcon", teApiSHDefExtractIcon },
+	{ 3,  1,  2, -1, "URLDownloadToFile", teApiURLDownloadToFile },
+//	{ 0, -1, -1, -1, "", teApi },
+//	{ 0, -1, -1, -1, "Test", teApiTest },
 };
 
 VOID Initlize()
@@ -8467,8 +8563,8 @@ VOID Initlize()
 	for (int i = 0; i < _countof(pTEStructs); i++) {
 		int j = map[i];
 		if (i != j) {
-			LPWSTR lpi = pTEStructs[i].name;
-			LPWSTR lpj = pTEStructs[j].name;
+			LPSTR lpi = pTEStructs[i].name;
+			LPSTR lpj = pTEStructs[j].name;
 			Sleep(0);
 		}
 	}
@@ -8477,7 +8573,7 @@ VOID Initlize()
 	g_maps[MAP_API] = teSortDispatchApi(dispAPI, _countof(dispAPI));
 #endif
 #ifndef _2000XP
-	lpfnSHParseDisplayName(L"shell:::{2965E715-EB66-4719-B53F-1672673BBEFA}", NULL, &g_pidlResultsFolder, 0, NULL);
+	g_pidlResultsFolder = ILCreateFromPathA("shell:::{2965E715-EB66-4719-B53F-1672673BBEFA}");
 #else
 	DWORDLONG dwlConditionMask = 0;
 	OSVERSIONINFOEX osvi = { sizeof(OSVERSIONINFOEX), 6 };
@@ -8494,13 +8590,13 @@ VOID Initlize()
 	g_bIs2000 = !g_bUpperVista && !g_bIsXP;
 #endif
 #ifdef _2000XP
-	lpfnSHParseDisplayName(L"::{e17d4fc0-5564-11d1-83f2-00a0c90dc849}", NULL, &g_pidlResultsFolder, 0, NULL);
+	g_pidlResultsFolder = ILCreateFromPathA("::{e17d4fc0-5564-11d1-83f2-00a0c90dc849}");
 	if (!g_pidlResultsFolder) {
-		lpfnSHParseDisplayName(L"shell:::{2965E715-EB66-4719-B53F-1672673BBEFA}", NULL, &g_pidlResultsFolder, 0, NULL);
+		g_pidlResultsFolder = ILCreateFromPathA("shell:::{2965E715-EB66-4719-B53F-1672673BBEFA}");
 	}
 	g_bCharWidth = !g_bUpperVista;
 #endif
-	lpfnSHParseDisplayName(L"shell:libraries", NULL, &g_pidlLibrary, 0, NULL);
+	g_pidlLibrary = ILCreateFromPathA("shell:libraries");
 	g_pidlCP = ILClone(g_pidls[CSIDL_CONTROLS]);
 	ILRemoveLastID(g_pidlCP);
 	if (ILIsEmpty(g_pidlCP) || ILIsEqual(g_pidlCP, g_pidls[CSIDL_DRIVES])) {
@@ -8636,7 +8732,6 @@ VOID ArrangeTree(CteShellBrowser *pSB, LPRECT rc)
 VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 {
 	RECT rc, rcTab, rcClient;
-	IDispatch *pdisp;
 	KillTimer(hwnd, idEvent);
 	try {
 		switch (idEvent) {
@@ -8647,7 +8742,9 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 					break;
 				}
 				g_bsDocumentWrite = ::SysAllocStringLen(NULL, MAX_STATUS);
-				lstrcpy(g_bsDocumentWrite, lstrcmpi(g_pWebBrowser->m_bstrPath, L"TE32.exe") ? PathFileExists(g_pWebBrowser->m_bstrPath) ? L"<h1>500 Internal Script Error</h1>" : L"<h1>404 File Not Found</h1>" : L"<h1>303 Exec Other</h1>");
+				MultiByteToWideChar(CP_UTF8, 0, lstrcmpi(g_pWebBrowser->m_bstrPath, L"TE32.exe") ? PathFileExists(g_pWebBrowser->m_bstrPath) ?
+					"<h1>500 Internal Script Error</h1>" : "<h1>404 File Not Found</h1>" : "<h1>303 Exec Other</h1>",
+					-1, g_bsDocumentWrite, MAX_STATUS);
 				lstrcat(g_bsDocumentWrite, g_pWebBrowser->m_bstrPath);
 				g_nSize = 0;
 				g_nLockUpdate = 0;
@@ -8843,9 +8940,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 			case TET_Unload:
 				g_bUnload = FALSE;
 				if (g_pUnload) {
-					pdisp = g_pUnload;
 					GetNewArray(&g_pUnload);
-					pdisp->Release();
 					teExecMethod(g_pJS, L"CollectGarbage", NULL, 0, NULL);
 				}
 				break;
@@ -9074,7 +9169,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
-	BSTR bsPath, bsLib, bsIndex;
+	BSTR bsPath, bsLib;
+	BSTR bsIndex = NULL;
+	BSTR bsScript = NULL;
 	HINSTANCE hDll;
 
 	hInst = hInstance;
@@ -9361,7 +9458,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	}
 #endif
 	//Get JScript Object
-	LPOLESTR lp = L"\
+	bsScript = teMultiByteToWideChar(CP_UTF8, "\
 function _o() {\
 	return {};\
 }\
@@ -9371,12 +9468,14 @@ function _a() {\
 function _t(o) {\
 	return {window: {external: o}};\
 }\
-";
-	if (ParseScript(lp, L"JScript", NULL, NULL, &g_pJS) != S_OK) {
+", -1);
+	if (ParseScript(bsScript, L"JScript", NULL, NULL, &g_pJS) != S_OK) {
+		teSysFreeString(&bsScript);
 		PostMessage(g_hwndMain, WM_CLOSE, 0, 0);
 		Finalize();
 		return FALSE;
 	}
+	teSysFreeString(&bsScript);
 	GetNewArray(&g_pUnload);
 	GetNewArray(&g_pFreeLibrary);
 	//WindowAPI
@@ -9388,11 +9487,12 @@ function _t(o) {\
 	for (int i = _countof(dispAPI); i--;) {
 		v.vt = VT_DISPATCH;
 		v.pdispVal = new CteAPI(&dispAPI[i]);
-		tePutProperty(g_pAPI, dispAPI[i].name, &v);
+		BSTR bs = teMultiByteToWideChar(CP_UTF8, dispAPI[i].name, -1);
+		tePutProperty(g_pAPI, bs, &v);
+		::SysFreeString(bs);
 		VariantClear(&v);
 	}
-	v.vt = VT_BSTR;
-	v.bstrVal = ::SysAllocString(L"ADODB.Stream");
+	teSetSZ(&v, L"ADODB.Stream");
 	tePutProperty(g_pAPI, L"ADBSTRM", &v);
 	VariantClear(&v);
 #endif
@@ -9406,9 +9506,9 @@ function _t(o) {\
 	VARIANT vWindow;
 	VariantInit(&vWindow);
 #endif
+	teGetModuleFileName(NULL, &bsPath);//Executable Path
+	PathRemoveFileSpec(bsPath);
 	if (bVisible) {
-		teGetModuleFileName(NULL, &bsPath);//Executable Path
-		PathRemoveFileSpec(bsPath);
 		LPTSTR *lplpszArgs = NULL;
 		LPWSTR lpFile = L"script\\index.html";
 		if (bNewProcess && lpCmdLine && lpCmdLine[0]) {
@@ -9423,7 +9523,6 @@ function _t(o) {\
 		} else {
 			tePathAppend(&bsIndex, bsPath, lpFile);
 		}
-		SysFreeString(bsPath);
 		if (lplpszArgs) {
 			LocalFree(lplpszArgs);
 		}
@@ -9434,63 +9533,10 @@ function _t(o) {\
 #endif
 		CoInternetSetFeatureEnabled(FEATURE_DISABLE_NAVIGATION_SOUNDS, SET_FEATURE_ON_PROCESS, TRUE);
 		g_pWebBrowser = new CteWebBrowser(g_hwndMain, bsIndex, NULL);
-		SysFreeString(bsIndex);
 		SetTimer(g_hwndMain, TET_Create, 10000, teTimerProc);
 	} else {
-		lp = L"\
-function _s() {\
-	try {\
-		window.te = external;\
-		api = te.WindowsAPI;\
-		fso = te.CreateObject('Scripting.FileSystemObject');\
-		sha = te.CreateObject('Shell.Application');\
-		wsh = te.CreateObject('WScript.Shell');\
-		arg = api.CommandLineToArgv(api.GetCommandLine());\
-		location = {href: arg[2], hash: ''};\
-		if (!api.PathMatchSpec(location.href, '?:\\*;\\\\*')) {\
-			location.href = fso.BuildPath(fso.GetParentFolderName(arg[0]), location.href);\
-		}\
-		var wins = sha.Windows();\
-		for (var i = wins.Count; i--;) {\
-			var x = wins.Item(i);\
-			if (x && api.StrCmpI(x.FullName, arg[0]) == 0) {\
-				var w = x.Document.parentWindow;\
-				if (!window.MainWindow || window.MainWindow.Exchange && window.MainWindow.Exchange[arg[3]]) {\
-					window.MainWindow = w;\
-					var rc = api.Memory('RECT');\
-					api.GetWindowRect(w.te.hwnd, rc);\
-					api.MoveWindow(te.hwnd, (rc.Left + rc.Right) / 2, (rc.Top + rc.Bottom) / 2, 0, 0, false);\
-				}\
-			}\
-		}\
-		api.AllowSetForegroundWindow(-1);\
-		return _es(location.href);\
-	} catch (e) {\
-		wsh.Popup((e.stack || e.description || e.toString()), 0, 'Tablacus Explorer', 0x10);\
-	}\
-}\
-function _es(fn) {\
-	if (!api.PathMatchSpec(fn, '?:\\*;\\\\*')) {\
-		fn = fso.BuildPath(fso.GetParentFolderName(location.href), fn);\
-	}\
-	try {\
-		var ado = te.CreateObject(api.ADBSTRM);\
-		ado.CharSet = 'utf-8';\
-		ado.Open();\
-		ado.LoadFromFile(fn);\
-		var fn = new Function(ado.ReadText());\
-		ado.Close();\
-		return fn();\
-	} catch (e) {\
-		wsh.Popup((e.stack || e.description || e.toString()) + '\\n' + fn, 0, 'Tablacus Explorer', 0x10);\
-	}\
-}\
-function importScripts() {\
-	for (var i = 0; i < arguments.length; i++) {\
-		_es(arguments[i]);\
-	}\
-}\
-";
+		tePathAppend(&bsIndex, bsPath, L"script\\background.js");
+		bsScript = teLoadFromFile(bsIndex);
 		VARIANT vResult;
 		VariantInit(&vResult);
 #ifdef _USE_HTMLDOC
@@ -9529,8 +9575,9 @@ function importScripts() {\
 		VARIANTARG *pv = GetNewVARIANT(1);
 		teSetObject(&pv[0], g_pTE);
 		teExecMethod(g_pJS, L"_t", &vWindow, 1, pv);
-		ParseScript(lp, L"JScript", &vWindow, NULL, &pJS);
+		ParseScript(bsScript, L"JScript", &vWindow, NULL, &pJS);
 		teExecMethod(pJS, L"_s", &vResult, 0, NULL);
+		teSysFreeString(&bsScript);
 #endif
 		bVisible = (vResult.vt == VT_BSTR) && (lstrcmpi(vResult.bstrVal, L"wait") == 0);
 		VariantClear(&vResult);
@@ -9538,6 +9585,8 @@ function importScripts() {\
 	if (!bVisible) {
 		PostMessage(g_hwndMain, WM_CLOSE, 0, 0);
 	}
+	teSysFreeString(&bsIndex);
+	teSysFreeString(&bsPath);
 
 	// Init ShellWindows
 	if (SUCCEEDED(CoCreateInstance(CLSID_ShellWindows,
@@ -10030,9 +10079,6 @@ void CteShellBrowser::Init(CteTabCtrl *pTC, BOOL bNew)
 	m_pDropTarget2 = NULL;
 	m_pDSFV = NULL;
 	m_pSF2 = NULL;
-	m_clrText = GetSysColor(COLOR_WINDOWTEXT);
-	m_clrBk = GetSysColor(COLOR_WINDOW);
-	m_clrTextBk = m_clrBk;
 	m_bRefreshing = FALSE;
 #ifdef _2000XP
 	m_pSFVCB = NULL;
@@ -10554,6 +10600,10 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 #ifdef _2000XP
 	}
 #endif
+	m_clrText = GetSysColor(COLOR_WINDOWTEXT);
+	m_clrBk = GetSysColor(COLOR_WINDOW);
+	m_clrTextBk = m_clrBk;
+
 	teCoTaskMemFree(m_pidl);
 	m_pidl = pidl;
 	m_pFolderItem = m_pFolderItem1;
@@ -10994,9 +11044,9 @@ BOOL CteShellBrowser::SetActive(BOOL bForce)
 			if (IsChild(g_pWebBrowser->m_hwndBrowser, hwnd) || (m_pTV && IsChild(m_pTV->m_hwnd, hwnd))) {
 				return FALSE;
 			}
-			WCHAR szClass[MAX_CLASS_NAME];
-			GetClassName(hwnd, szClass, MAX_CLASS_NAME);
-			if (lstrcmp(szClass, WC_TREEVIEW) == 0) {
+			CHAR szClassA[MAX_CLASS_NAME];
+			GetClassNameA(hwnd, szClassA, MAX_CLASS_NAME);
+			if (lstrcmpA(szClassA, WC_TREEVIEWA) == 0) {
 				return FALSE;
 			}
 		}
@@ -11245,9 +11295,9 @@ VOID CteShellBrowser::GetViewModeAndIconSize(BOOL bGetIconSize)
 				iImageSize = 48;
 			} else if (uViewMode == FVM_THUMBNAIL) {
 				HKEY hKey;
-				if (RegOpenKeyEx(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+				if (RegOpenKeyExA(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
 					DWORD dwSize = sizeof(iImageSize);
-					RegQueryValueEx(hKey, L"ThumbnailSize", NULL, NULL, (LPBYTE)&iImageSize, &dwSize);
+					RegQueryValueExA(hKey, "ThumbnailSize", NULL, NULL, (LPBYTE)&iImageSize, &dwSize);
 					RegCloseKey(hKey);
 				}
 			} else {
@@ -11527,7 +11577,7 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 		lplpszArgs = CommandLineToArgvW(bsColumns, &nCount);
 		nCount /= 2;
 	}
-	TEmethod *methodArgs = new TEmethod[nCount + 1];
+	TEmethodW *methodArgs = new TEmethodW[nCount + 1];
 	BOOL *pbAlloc = new BOOL[nCount + 1];
 	BSTR bsName = tePSGetNameFromPropertyKeyEx(PKEY_ItemNameDisplay, 0, m_pShellView);
 	BOOL bNoName = TRUE;
@@ -11627,7 +11677,7 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 				m_pColumns[uCount - 1].csFlags = SHCOLSTATE_TYPE_STR;
 				m_pColumns[uCount - 2].csFlags = SHCOLSTATE_TYPE_STR;
 
-				int *piArgs = SortTEMethod(methodArgs, nCount);
+				int *piArgs = SortTEMethodW(methodArgs, nCount);
 				BSTR bs = GetColumnsStr(FALSE);
 				if (bs && bs[0]) {
 					int nCur;
@@ -11636,11 +11686,11 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 					nCur /= 2;
 					BOOL bDiff = nCount != nCur || nCur == 0;
 					if (!bDiff) {
-						TEmethod *methodColumns = new TEmethod[nCur];
+						TEmethodW *methodColumns = new TEmethodW[nCur];
 						for (int i = nCur; i-- > 0;) {
 							methodColumns[i].name = lplpszColumns[i * 2];
 						}
-						int *piCur = SortTEMethod(methodColumns, nCur);
+						int *piCur = SortTEMethodW(methodColumns, nCur);
 						for (int i = nCur; i-- > 0;) {
 							if (lstrcmpi(methodArgs[piArgs[i]].name, methodColumns[piCur[i]].name)) {
 								bDiff = true;
@@ -11659,7 +11709,7 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 							for (UINT i = 0; i < m_nColumns && GetDetailsOf(NULL, i, &sd) == S_OK; i++) {
 								BSTR bs;
 								if SUCCEEDED(StrRetToBSTR(&sd.str, NULL, &bs)) {
-									nIndex = teBSearch(methodArgs, nCount, piArgs, bs);
+									nIndex = teBSearchW(methodArgs, nCount, piArgs, bs);
 									if (nIndex >= 0) {
 										m_pColumns[i].csFlags |= SHCOLSTATE_ONBYDEFAULT;
 										m_pColumns[i].nWidth = methodArgs[nIndex].id;
@@ -11706,7 +11756,7 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 									int nIndex;
 									for (int i = nHeader; i-- > 0;) {
 										Header_GetItem(hHeader, i, &hdi);
-										nIndex = teBSearch(methodArgs, nCount, piArgs, szText);
+										nIndex = teBSearchW(methodArgs, nCount, piArgs, szText);
 										if (nIndex >= 0) {
 											nWidth = methodArgs[nIndex].id;
 											piOrderArray[nIndex] = i;
@@ -12775,7 +12825,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			return m_pDSFV->Invoke(dispIdMember, riid, lcid, wFlags, pDispParams, pVarResult, pExcepInfo, puArgErr);
 		}
 	} catch (...) {
-		return teException(pExcepInfo, L"FolderView", methodSB, dispIdMember);
+		return teException(pExcepInfo, "FolderView", methodSB, dispIdMember);
 	}
 	return DISP_E_MEMBERNOTFOUND;
 }
@@ -13723,7 +13773,7 @@ VOID CteShellBrowser::SetPropEx()
 				teChangeWindowMessageFilterEx(m_hwndDV, i, MSGFLT_ALLOW, NULL);
 			}
 		}
-		m_hwndLV = FindWindowEx(m_hwndDV, 0, WC_LISTVIEW, NULL);
+		m_hwndLV = FindWindowExA(m_hwndDV, 0, WC_LISTVIEWA, NULL);
 		m_hwndDT = m_hwndLV;
 		if (m_hwndLV) {
 			if (m_pExplorerBrowser) {
@@ -13734,7 +13784,7 @@ VOID CteShellBrowser::SetPropEx()
 				SetWindowLong(m_hwndLV, GWL_EXSTYLE, GetWindowLong(m_hwndLV, GWL_EXSTYLE) | WS_EX_CLIENTEDGE);
 			}
 		} else {
-			m_hwndDT = FindWindowEx(m_hwndDV, NULL, L"DirectUIHWND", NULL);
+			m_hwndDT = FindWindowExA(m_hwndDV, NULL, "DirectUIHWND", NULL);
 		}
 		if (!m_pDropTarget2) {
 			m_pDropTarget2 = new CteDropTarget2(NULL, static_cast<IDispatch *>(this));
@@ -14708,7 +14758,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				return S_OK;
 		}
 	} catch (...) {
-		return teException(pExcepInfo, L"external", methodTE, dispIdMember);
+		return teException(pExcepInfo, "external", methodTE, dispIdMember);
 	}
 	return DISP_E_MEMBERNOTFOUND;
 }
@@ -15179,7 +15229,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				return S_OK;
 		}
 	} catch (...) {
-		return teException(pExcepInfo, L"WebBrowser", methodWB, dispIdMember);
+		return teException(pExcepInfo, "WebBrowser", methodWB, dispIdMember);
 	}
 	return DISP_E_MEMBERNOTFOUND;
 }
@@ -16021,7 +16071,7 @@ STDMETHODIMP CteTabCtrl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WOR
 			return S_OK;
 		}
 	} catch (...) {
-		return teException(pExcepInfo, L"TabControl", methodTC, dispIdMember);
+		return teException(pExcepInfo, "TabControl", methodTC, dispIdMember);
 	}
 	return DISP_E_MEMBERNOTFOUND;
 }
@@ -16168,7 +16218,7 @@ VOID CteTabCtrl::TabChanged(BOOL bSameTC)
 
 CteShellBrowser* CteTabCtrl::GetShellBrowser(int nPage)
 {
-	if (nPage < 0) {
+	if (nPage < 0 || !m_hwnd) {
 		return NULL;
 	}
 	TC_ITEM tcItem;
@@ -16443,10 +16493,7 @@ STDMETHODIMP CteFolderItems::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 							GlobalUnlock(Medium.hGlobal);
 							ReleaseStgMedium(&Medium);
 						} else if (pDataObj->GetData(&TEXTFormat, &Medium) == S_OK) {
-							LPCSTR lp = static_cast<LPCSTR>(GlobalLock(Medium.hGlobal));
-							int nLenW = MultiByteToWideChar(CP_ACP, 0, lp, -1, NULL, NULL);
-							pVarResult->bstrVal = SysAllocStringLen(NULL, nLenW - 1);
-							MultiByteToWideChar(CP_ACP, 0, lp, -1, pVarResult->bstrVal, nLenW);
+							pVarResult->bstrVal = teMultiByteToWideChar(CP_ACP, static_cast<LPCSTR>(GlobalLock(Medium.hGlobal)), -1);
 							pVarResult->vt = VT_BSTR;
 							GlobalUnlock(Medium.hGlobal);
 							ReleaseStgMedium(&Medium);
@@ -16491,7 +16538,7 @@ STDMETHODIMP CteFolderItems::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 				return S_OK;
 		}
 	} catch (...) {
-		return teException(pExcepInfo, L"FolderItems", methodFIs, dispIdMember);
+		return teException(pExcepInfo, "FolderItems", methodFIs, dispIdMember);
 	}
 	return DISP_E_MEMBERNOTFOUND;
 }
@@ -17262,7 +17309,7 @@ STDMETHODIMP CteMemory::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD
 				}
 		}
 	} catch (...) {
-		return teException(pExcepInfo, L"Memory", methodMem, dispIdMember);
+		return teException(pExcepInfo, "Memory", methodMem, dispIdMember);
 	}
 	return DISP_E_MEMBERNOTFOUND;
 }
@@ -17447,13 +17494,10 @@ VOID CteMemory::Read(int nIndex, int nLen, VARIANT *pVarResult)
 				}
 				break;
 			case VT_LPSTR:
-				int nLenW;
 				if (nLen > m_nSize) {
 					nLen = m_nSize;
 				}
-				nLenW = MultiByteToWideChar(CP_ACP, 0, (LPCSTR)&m_pc[nIndex], nLen, NULL, NULL);
-				pVarResult->bstrVal = SysAllocStringLen(NULL, nLenW);
-				MultiByteToWideChar(CP_ACP, 0, (LPCSTR)&m_pc[nIndex], nLen, pVarResult->bstrVal, nLenW);
+				pVarResult->bstrVal = teMultiByteToWideChar(CP_ACP, (LPCSTR)&m_pc[nIndex], nLen);
 				pVarResult->vt = VT_BSTR;
 				break;
 			case VT_FILETIME:
@@ -17850,7 +17894,7 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 				break;
 		}
 	} catch (...) {
-		return teException(pExcepInfo, L"ContextMenu", methodCM, dispIdMember);
+		return teException(pExcepInfo, "ContextMenu", methodCM, dispIdMember);
 	}
 	return DISP_E_MEMBERNOTFOUND;
 }
@@ -18071,7 +18115,7 @@ STDMETHODIMP CteDropTarget::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				return S_OK;
 		}
 	} catch (...) {
-		return teException(pExcepInfo, L"DropTarget", methodDT, dispIdMember);
+		return teException(pExcepInfo, "DropTarget", methodDT, dispIdMember);
 	}
 	return DISP_E_MEMBERNOTFOUND;
 }
@@ -18714,7 +18758,9 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 			if (m_pShellNameSpace) {
 				for (int i = _countof(methodTV); i--;) {
 					if (methodTV[i].id == dispIdMember) {
-						NSInvoke(methodTV[i].name, wFlags, pDispParams, pVarResult);
+						BSTR bs = teMultiByteToWideChar(CP_UTF8, methodTV[i].name, -1);
+						NSInvoke(bs, wFlags, pDispParams, pVarResult);
+						::SysFreeString(bs);
 						break;
 					}
 				}
@@ -18723,7 +18769,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 			return S_OK;
 		}
 	} catch (...) {
-		return teException(pExcepInfo, L"TreeView", methodTV, dispIdMember);
+		return teException(pExcepInfo, "TreeView", methodTV, dispIdMember);
 	}
 	return DISP_E_MEMBERNOTFOUND;
 }
@@ -19484,7 +19530,7 @@ STDMETHODIMP CteFolderItem::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			return m_pFolderItem->Invoke(dispIdMember, riid, lcid, wFlags, pDispParams, pVarResult, pExcepInfo, puArgErr);
 		}
 	} catch (...) {
-		return teException(pExcepInfo, L"FolderItem", methodFI, dispIdMember);
+		return teException(pExcepInfo, "FolderItem", methodFI, dispIdMember);
 	}
 	return DISP_E_MEMBERNOTFOUND;
 }
@@ -19818,7 +19864,7 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			return S_OK;
 		}
 	} catch (...) {
-		return teException(pExcepInfo, L"CommonDialog", methodCD, dispIdMember);
+		return teException(pExcepInfo, "CommonDialog", methodCD, dispIdMember);
 	}
 	return DISP_E_MEMBERNOTFOUND;
 }
@@ -20038,6 +20084,10 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 					m_pImage->SetPixel(GetIntFromVariant(&pDispParams->rgvarg[nArg]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]), cl);
 				}
 				return S_OK;
+			//GetPixelFormat 
+			case 114:
+				teSetLong(pVarResult, m_pImage->GetPixelFormat());
+				return S_OK;
 			//GetThumbnailImage
 			case 120:
 				if (nArg >= 1) {
@@ -20123,7 +20173,7 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 				return S_OK;
 		}
 	} catch (...) {
-		return teException(pExcepInfo, L"GdiplusBitmap", methodGB, dispIdMember);
+		return teException(pExcepInfo, "GdiplusBitmap", methodGB, dispIdMember);
 	}
 	return DISP_E_MEMBERNOTFOUND;
 }
@@ -20337,7 +20387,7 @@ STDMETHODIMP CteDispatch::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 			return m_pDispatch->Invoke(m_nMode ? dispIdMember : m_dispIdMember, riid, lcid, wFlags, pDispParams, pVarResult, pExcepInfo, puArgErr);
 		}
 	} catch (...) {
-		return teException(pExcepInfo, L"Dispatch", NULL, dispIdMember);
+		return teException(pExcepInfo, "Dispatch", NULL, dispIdMember);
 	}
 	return DISP_E_MEMBERNOTFOUND;
 }
@@ -20664,7 +20714,7 @@ STDMETHODIMP CteAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wF
 			return S_OK;
 		}
 	} catch (...) {
-		return teExceptionEx(pExcepInfo, L"WindowsAPI", m_pApi->name);
+		return teExceptionEx(pExcepInfo, "WindowsAPI", m_pApi->name);
 	}
 	return DISP_E_MEMBERNOTFOUND;
 }

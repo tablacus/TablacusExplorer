@@ -52,6 +52,7 @@ using namespace Gdiplus;
 #define _2000XP
 //#define _W2000
 #endif
+//#pragma execution_character_set("utf-8")//KB980263
 
 class CteShellBrowser;
 class CteTreeView;
@@ -382,13 +383,13 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 struct TEmethod
 {
 	LONG   id;
-	LPWSTR name;
+	LPSTR name;
 };
 
 struct TEStruct
 {
 	LONG   lSize;
-	LPWSTR name;
+	LPSTR name;
 	TEmethod *pMethod;
 };
 
@@ -396,6 +397,12 @@ struct TEColumn
 {
 	SHCOLSTATEF	csFlags;
 	int		nWidth;
+};
+
+struct TEmethodW
+{
+	LONG   id;
+	LPWSTR name;
 };
 
 struct TEInvoke
@@ -417,7 +424,7 @@ struct TEDispatchApi
 	char nStr1;
 	char nStr2;
 	char nStr3;
-	LPWSTR name;
+	LPSTR name;
 	LPFNDispatchAPI fn;
 };
 

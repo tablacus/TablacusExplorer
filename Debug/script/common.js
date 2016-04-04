@@ -565,12 +565,14 @@ SetLang2 = function(s, v)
 	}
 }
 
-LoadXml = function (filename)
+LoadXml = function (filename, nGroup)
 {
 	te.LockUpdate();
-	var cTC = te.Ctrls(CTRL_TC);
-	for (i in cTC) {
-		cTC[i].Close();
+	if (!nGroup) {
+		var cTC = te.Ctrls(CTRL_TC);
+		for (i in cTC) {
+			cTC[i].Close();
+		}
 	}
 	var xml = filename;
 	if (typeof(filename) == "string") {
@@ -587,7 +589,7 @@ LoadXml = function (filename)
 		switch(item.getAttribute("Type") - 0) {
 			case CTRL_TC:
 				var TC = te.CreateCtrl(CTRL_TC, item.getAttribute("Left"), item.getAttribute("Top"), item.getAttribute("Width"), item.getAttribute("Height"), item.getAttribute("Style"), item.getAttribute("Align"), item.getAttribute("TabWidth"), item.getAttribute("TabHeight"));
-				TC.Data.Group = Number(item.getAttribute("Group")) || 0;
+				TC.Data.Group = nGroup || Number(item.getAttribute("Group")) || 0;
 				var tabs = item.getElementsByTagName('Ctrl');
 				for (var i2 = 0; i2 < tabs.length; i2++) {
 					var tab = tabs[i2];
@@ -611,15 +613,88 @@ LoadXml = function (filename)
 				break;
 		}
 	}
-	MainWindow.RunEvent1("LoadWindow", xml);
+	if (!nGroup) {
+		MainWindow.RunEvent1("LoadWindow", xml);
+	}
 	te.UnlockUpdate();
+}
+
+SaveXmlTC = function (Ctrl, xml, nGroup)
+{
+	var item = xml.createElement("Ctrl");
+	item.setAttribute("Type", Ctrl.Type);
+	item.setAttribute("Left", Ctrl.Left);
+	item.setAttribute("Top", Ctrl.Top);
+	item.setAttribute("Width", Ctrl.Width);
+	item.setAttribute("Height", Ctrl.Height);
+	item.setAttribute("Style", Ctrl.Style);
+	item.setAttribute("Align", Ctrl.Align);
+	item.setAttribute("TabWidth", Ctrl.TabWidth);
+	item.setAttribute("TabHeight", Ctrl.TabHeight);
+	item.setAttribute("SelectedIndex", Ctrl.SelectedIndex);
+	item.setAttribute("Visible", api.QuadPart(Ctrl.Visible));
+	item.setAttribute("Group", api.QuadPart(nGroup || Ctrl.Data.Group));
+
+	var bEmpty = true;
+	var nCount2 = Ctrl.Count;
+	for (var i2 in Ctrl) {
+		var FV = Ctrl[i2];
+		var path = GetSavePath(FV.FolderItem);
+		var bSave = IsSavePath(path);
+		if (bSave || (bEmpty && i2 == nCount2 - 1)) {
+			if (!bSave) {
+				path = HOME_PATH;
+			}
+			var item2 = xml.createElement("Ctrl");
+			item2.setAttribute("Type", FV.Type);
+			item2.setAttribute("Path", path);
+			item2.setAttribute("FolderFlags", FV.FolderFlags);
+			item2.setAttribute("ViewMode", FV.CurrentViewMode);
+			item2.setAttribute("IconSize", FV.IconSize);
+			item2.setAttribute("Options", FV.Options);
+			item2.setAttribute("SizeFormat", FV.SizeFormat);
+			item2.setAttribute("ViewFlags", FV.ViewFlags);
+			item2.setAttribute("FilterView", FV.FilterView);
+			item2.setAttribute("Lock", api.QuadPart(FV.Data.Lock));
+			var TV = FV.TreeView;
+			item2.setAttribute("Align", TV.Align);
+			item2.setAttribute("Width", TV.Width);
+			item2.setAttribute("Flags", TV.Style);
+			item2.setAttribute("EnumFlags", TV.EnumFlags);
+			item2.setAttribute("RootStyle", TV.RootStyle);
+			item2.setAttribute("Root", String(TV.Root));
+			var TL = FV.History;
+			if (TL) {
+				if (TL.Count > 1) {
+					var bLogSaved = false;
+					var nLogIndex = TL.Index;
+					for (var i3 in TL) {
+						path = GetSavePath(TL[i3]);
+						if (IsSavePath(path)) {
+							var item3 = xml.createElement("Log");
+							item3.setAttribute("Path", path);
+							item2.appendChild(item3);
+							bLogSaved = true;
+						} else if (i3 < nLogIndex) {
+							nLogIndex--;
+						}
+					}
+					if (bLogSaved) {
+						item2.setAttribute("LogIndex", nLogIndex);
+					}
+				}
+			}
+			item.appendChild(item2);
+			bEmpty = false;
+		}
+	}
+	xml.documentElement.appendChild(item);
 }
 
 SaveXml = function (filename, all)
 {
-	var xml = CreateXml();
-	var root = xml.createElement("TablacusExplorer");
-
+	var xml = CreateXml(true);
+	var root = xml.documentElement;
 	if (all) {
 		var item = xml.createElement("Window");
 		if (!api.IsZoomed(te.hwnd) && !api.IsIconic(te.hwnd)) {
@@ -634,91 +709,22 @@ SaveXml = function (filename, all)
 	}
 	var cTC = te.Ctrls(CTRL_TC);
 	for (var i in cTC) {
-		var Ctrl = cTC[i];
-		var item = xml.createElement("Ctrl");
-		item.setAttribute("Type", Ctrl.Type);
-		item.setAttribute("Left", Ctrl.Left);
-		item.setAttribute("Top", Ctrl.Top);
-		item.setAttribute("Width", Ctrl.Width);
-		item.setAttribute("Height", Ctrl.Height);
-		item.setAttribute("Style", Ctrl.Style);
-		item.setAttribute("Align", Ctrl.Align);
-		item.setAttribute("TabWidth", Ctrl.TabWidth);
-		item.setAttribute("TabHeight", Ctrl.TabHeight);
-		item.setAttribute("SelectedIndex", Ctrl.SelectedIndex);
-		item.setAttribute("Visible", api.QuadPart(Ctrl.Visible));
-		item.setAttribute("Group", api.QuadPart(Ctrl.Data.Group));
-
-		var bEmpty = true;
-		var nCount2 = Ctrl.Count;
-		for (var i2 in Ctrl) {
-			var FV = Ctrl[i2];
-			var path = GetSavePath(FV.FolderItem);
-			var bSave = !all || IsSavePath(path);
-			if (bSave || (bEmpty && i2 == nCount2 - 1)) {
-				if (!bSave) {
-					path = HOME_PATH;
-				}
-				var item2 = xml.createElement("Ctrl");
-				item2.setAttribute("Type", FV.Type);
-				item2.setAttribute("Path", path);
-				item2.setAttribute("FolderFlags", FV.FolderFlags);
-				item2.setAttribute("ViewMode", FV.CurrentViewMode);
-				item2.setAttribute("IconSize", FV.IconSize);
-				item2.setAttribute("Options", FV.Options);
-				item2.setAttribute("SizeFormat", FV.SizeFormat);
-				item2.setAttribute("ViewFlags", FV.ViewFlags);
-				item2.setAttribute("FilterView", FV.FilterView);
-				item2.setAttribute("Lock", api.QuadPart(FV.Data.Lock));
-				var TV = FV.TreeView;
-				item2.setAttribute("Align", TV.Align);
-				item2.setAttribute("Width", TV.Width);
-				item2.setAttribute("Flags", TV.Style);
-				item2.setAttribute("EnumFlags", TV.EnumFlags);
-				item2.setAttribute("RootStyle", TV.RootStyle);
-				item2.setAttribute("Root", String(TV.Root));
-				var TL = FV.History;
-				if (TL) {
-					if (TL.Count > 1) {
-						var bLogSaved = false;
-						var nLogIndex = TL.Index;
-						for (var i3 in TL) {
-							path = GetSavePath(TL[i3]);
-							if (IsSavePath(path)) {
-								var item3 = xml.createElement("Log");
-								item3.setAttribute("Path", path);
-								item2.appendChild(item3);
-								bLogSaved = true;
-							} else if (i3 < nLogIndex) {
-								nLogIndex--;
-							}
-						}
-						if (bLogSaved) {
-							item2.setAttribute("LogIndex", nLogIndex);
-						}
-					}
-				}
-				item.appendChild(item2);
-				bEmpty = false;
-			}
-		}
-		root.appendChild(item);
+		SaveXmlTC(cTC[i], xml);
 	}
 	if (all) {
 		for (var i in te.Data) {
 			var res = /^(Tab|Tree|View|Conf)_(.*)/.exec(i);
 			if (res) {
-				var item = xml.createElement(res[1]);
-				item.setAttribute("Id", res[2]);
-				item.text = te.Data[i];
-				if (item.text != "") {
+				if (te.Data[i] != "") {
+					var item = xml.createElement(res[1]);
+					item.setAttribute("Id", res[2]);
+					item.text = te.Data[i];
 					root.appendChild(item);
 				}
 			}
 		}
 	}
-	MainWindow.RunEvent1("SaveWindow", xml, root, all);
-	xml.appendChild(root);
+	MainWindow.RunEvent1("SaveWindow", xml, all);
 	try {
 		xml.save(api.PathUnquoteSpaces(filename));
 	} catch (e) {
@@ -1292,10 +1298,12 @@ PathMatchEx = function (path, s)
 
 IsFolderEx = function (Item)
 {
-	var wfd = api.Memory("WIN32_FIND_DATA");
-	var hr = api.SHGetDataFromIDList(Item, SHGDFIL_FINDDATA, wfd, wfd.Size);
-	if (Item.IsFolder) {
-		return (hr < 0) || (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
+	if (Item) {
+		var wfd = api.Memory("WIN32_FIND_DATA");
+		var hr = api.SHGetDataFromIDList(Item, SHGDFIL_FINDDATA, wfd, wfd.Size);
+		if (Item.IsFolder) {
+			return (hr < 0) || Boolean(wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
+		}
 	}
 	return false;
 }
@@ -2037,11 +2045,14 @@ OpenXml = function (strFile, bAppData, bEmpty, strInit)
 	return bEmpty ? xml : null;
 }
 
-CreateXml = function ()
+CreateXml = function (bRoot)
 {
 	var xml = te.CreateObject("Msxml2.DOMDocument");
 	xml.async = false;
 	xml.appendChild(xml.createProcessingInstruction("xml", 'version="1.0" encoding="UTF-8"'));
+	if (bRoot) {
+		xml.appendChild(xml.createElement("TablacusExplorer"));
+	}
 	return xml;
 }
 
@@ -3286,4 +3297,10 @@ function CalcElementHeight(o, em)
 			}
 		}
 	}
+}
+
+AddFavoriteEx = function (Ctrl, pt)
+{
+	AddFavorite();
+	return S_OK
 }

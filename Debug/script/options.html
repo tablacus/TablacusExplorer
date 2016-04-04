@@ -17,7 +17,7 @@
       <table class="layout" style="width: 100%">
         <tr>
           <td style="vertical-align: top">
-            <div id="tab_" class="panel" style="display: block; width: 12em; background-color: window; white-space: nowrap">
+            <div id="tab_" class="panel" style="display: block; width: 12em; color: WindowText; background-color: Window; white-space: nowrap">
               <a class="treebutton" onclick="ClickButton(this, 0);"></a>
               <label id="tab0" class="button" style="width: 88%" onmousedown="ClickTree(this);">General</label>
               <br />
@@ -112,7 +112,7 @@
             <!--panel_end-->
 
             <div class="panel" id="panel1">
-              <table id="Addons" style="width: 100%; border: 1px solid gray">
+              <table id="Addons" style="width: 100%; border: 1px solid ButtonShadow">
                 <tr>
                   <th style="height: 35em; height: calc(100vh - 3.5em)">
                     <label>Please wait.</label>
@@ -159,10 +159,10 @@
                   <td valign="top">
                     <table style="width: 100%">
                       <tr>
-                        <td valign="bottom" style="white-space: nowrap">
+                        <td style="white-space: nowrap; vertical-align: bottom">
                           <label>Name</label>
                         </td>
-                        <td align="right">
+                        <td align="right" style="vertical-align: bottom">
                           <label>Base</label>
                           <select name="Menus_Base" onchange="SwitchMenus();">
                             <option value="Normal" />Normal
@@ -194,10 +194,10 @@
 
                     <table style="width: 100%">
                       <tr>
-                        <td valign="bottom" style="width: 100%; white-space: nowrap">
+                        <td style="width: 100%; white-space: nowrap; vertical-align: bottom">
                           <label>Filter</label>
                         </td>
-                        <td class="buttons">
+                        <td class="buttons" style="vertical-align: bottom">
                           <label>Position</label>
                         </td>
                         <td class="buttons">
@@ -219,7 +219,7 @@
                     </select>
                     <table class="layout">
                       <tr>
-                        <td valign="bottom" style="width: 100%">
+                        <td style="width: 100%; vertical-align: bottom">
                           <label>Options</label>
                         </td>
                         <td class="buttons">
@@ -230,7 +230,7 @@
                         </td>
                       </tr>
                     </table>
-                    <textarea name="Menus_Path" style="width: 100%; height: 17em; height: calc(100vh - 24em); min-height: 2em" onchange="ChangeX('Menus')"></textarea>
+                    <textarea name="Menus_Path" style="width: 100%; height: 16em; height: calc(100vh - 24em); min-height: 2em" onchange="ChangeX('Menus')"></textarea>
                     <table class="layout">
                       <tr>
                         <td style="vertical-align: bottom">
@@ -692,7 +692,7 @@
           </td>
         </tr>
       </table>
-      <table style="width: 100%">
+      <table class="footer">
         <tr>
           <td style="width: 12em">
             <div style="position: relative; width: 100%">
@@ -700,7 +700,7 @@
               <img src="bitmap:ieframe.dll,216,16,17" hidefocus="true" style="vertical-align: middle; width: 16px; height: 16px; position: absolute; left: 10.5em; top: 0.2em" onclick="FindText(document.getElementById('_search').value)" />
             </div>
           </td>
-          <td id="MoveButton" align="left" style="display: none;">
+          <td id="MoveButton" align="left" style="display: none; height: 24px">
             <input type="button" value="Up" onclick="OptionMove(-1)"/>
             <input type="button" value="Down" onclick="OptionMove(1)"/>
           </td>

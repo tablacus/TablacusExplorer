@@ -93,6 +93,13 @@ api.DoDragDrop = function (pDataObj, dwEffect, pdwEffect)
 {
 	return api.SHDoDragDrop(null, pDataObj, te, dwEffect, pdwEffect);
 }
+api.SVG_GRAY = te.Array();
+api.SVG_GRAY[0] = '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ';
+api.SVG_GRAY[2] = ' ';
+api.SVG_GRAY[4] = '"><filter id="G"><feColorMatrix type="saturate" values="0.1" /></filter><image width="';
+api.SVG_GRAY[6] = '" height="';
+api.SVG_GRAY[8] = '" opacity=".48" xlink:href="';
+api.SVG_GRAY[10] = '" filter="url(#G)"></image></svg>';
 
 //Tablacus
 Ox80000000 = api.LowPart(0x80000000);
