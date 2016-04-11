@@ -718,6 +718,7 @@ AddEvent("Close", function (Ctrl)
 			if (api.GetThreadCount() && MessageBox("File is in operation.", TITLE, MB_ABORTRETRYIGNORE) != IDIGNORE) {
 				return S_FALSE;
 			}
+			eventTE = { Environment: {} };
 			api.SHChangeNotifyDeregister(te.Data.uRegisterId);
 			DeleteTempFolder();
 			break;

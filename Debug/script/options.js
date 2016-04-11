@@ -2302,6 +2302,7 @@ function ArrangeAddon(xml, td, ts)
 {
 	var Id = xml.getAttribute("Id");
 	var s = [];
+	var strUpdate = "";
 	if (Search(xml)) {
 		var info = [];
 		for (var i = arLangs.length; i--;) {
@@ -2312,9 +2313,7 @@ function ArrangeAddon(xml, td, ts)
 		if (info.pubDate) {
 			pubDate = api.GetDateFormat(LOCALE_USER_DEFAULT, 0, dt, api.GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SSHORTDATE)) + " ";
 		}
-		s.push('<b>', info.Name, "</b>&nbsp;", info.Version, "&nbsp;", info.Creator, "<br>", info.Description, "<br>");
-
-		s.push('<table width="100%"><tr><td>', pubDate, '</td><td align="right">');
+		s.push('<table width="100%"><tr><td width="100%"><b style="font-size: 1.3em">', info.Name, "</b>&nbsp;", info.Version, "&nbsp;", info.Creator, "<br />", info.Description, "<br />", pubDate, '</td><td align="right">');
 		var filename = info.filename;
 		if (!filename) {
 			filename = Id + '_' + info.Version.replace(/\D/, '') + '.zip';
@@ -2336,7 +2335,7 @@ function ArrangeAddon(xml, td, ts)
 					return;
 				}
 			}
-			s.push('<b id="_Addons_', Id,'" style="color: red; white-space: nowrap;">', GetText('Update available'), "</b>");
+			strUpdate = '<br /><b id="_Addons_' + Id + '" style="color: red; white-space: nowrap;">' + GetText('Update available') + '</b>';
 			dt2 += MAXINT * 2;
 			bUpdate = true;
 		} else {
@@ -2345,24 +2344,26 @@ function ArrangeAddon(xml, td, ts)
 		if (info.MinVersion && te.Version >= CalcVersion(info.MinVersion)) {
 			s.push('<input type="button" onclick="Install(this,', bUpdate, ')" title="', Id, '_', info.Version, '" value="', GetText("Install"), '">');
 		} else {
-			s.push('<input type="button" style="color: red" onclick="CheckUpdate()" value="', info.MinVersion.replace(/^20/, "Version ").replace(/\.0/g, '.'), ' ', GetText("is required."), '">');
+			s.push('<input type="button" style="color: red" onclick="MainWindow.CheckUpdate()" value="', info.MinVersion.replace(/^20/, "Version ").replace(/\.0/g, '.'), ' ', GetText("is required."), '">');
 		}
-		s.push('</td></tr></table>');
+		s.push(strUpdate, '</td></tr></table>');
 		var nInsert = 0;
 		while (nInsert <= nCount && dt2 < ts[nInsert]) {
 			nInsert++;
 		}
 		for (j = nCount; j > nInsert; j--) {
 			td[j].innerHTML = td[j - 1].innerHTML;
-			td[j].className = (j & 1) ? "oddline" : "";
 			ts[j] = ts[j - 1];
 		}
-		td[nInsert].className = (nInsert & 1) ? "oddline" : "";
-		td[nInsert].style.borderBottom = "1px solid ButtonShadow";
 		td[nInsert].innerHTML = s.join("");
 		ApplyLang(td[nInsert]);
 		ts[nInsert] = dt2;
 		nCount++;
+		for (j = nCount; j-- > 0;) {
+			td[j].className = (j & 1) ? "oddline" : "";
+			td[j].style.borderBottom = "1px solid ButtonShadow";
+			td[j].style.paddingTop = "3px";
+		}
 	}
 }
 

@@ -165,7 +165,6 @@ typedef BOOL (WINAPI * LPFNRegenerateUserEnvironment)(LPVOID *lpEnvironment, BOO
 
 //XP or higher.
 typedef BOOL (WINAPI* LPFNCryptBinaryToStringW)(__in_bcount(cbBinary) CONST BYTE *pbBinary, DWORD cbBinary, DWORD dwFlags, __out_ecount_part_opt(*pcchString, *pcchString) LPWSTR pszString, DWORD *pcchString);
-typedef HRESULT (WINAPI* LPFNSHParseDisplayName)(LPCWSTR pszName, IBindCtx *pbc, PIDLIST_ABSOLUTE *ppidl, SFGAOF sfgaoIn, SFGAOF *psfgaoOut);
 typedef HRESULT (WINAPI* LPFNSHGetImageList)(int iImageList, REFIID riid, void **ppvObj);
 typedef HRESULT (WINAPI* LPFNSetWindowTheme)(HWND hwnd, LPCWSTR pszSubAppName, LPCWSTR pszSubIdList);
 typedef BOOL (WINAPI* LPFNSHTestTokenMembership)(HANDLE hToken, ULONG ulRID);
@@ -1255,9 +1254,6 @@ public:
 	void Init();
 	void Close();
 	BOOL Create();
-#ifdef _2000XP
-	HRESULT NSInvoke(LPWSTR szVerb, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult);
-#endif
 	HRESULT getSelected(IDispatch **pItem);
 	HRESULT SetRoot();
 public:

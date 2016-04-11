@@ -24,7 +24,6 @@ IShellWindows *g_pSW = NULL;
 
 LPFNSHCreateItemFromIDList lpfnSHCreateItemFromIDList = NULL;
 LPFNSetDllDirectoryW lpfnSetDllDirectoryW = NULL;
-LPFNSHParseDisplayName lpfnSHParseDisplayName = NULL;
 LPFNSHGetImageList lpfnSHGetImageList = NULL;
 LPFNSetWindowTheme lpfnSetWindowTheme = NULL;
 LPFNIsThemeActive lpfnIsThemeActive = NULL;
@@ -2682,12 +2681,7 @@ HRESULT tePathIsDirectory2(LPWSTR pszPath, int iUseFS)
 			}
 		}
 	}
-	LPITEMIDLIST pidl = NULL;
-	if (iUseFS) {
-		lpfnSHParseDisplayName(pszPath, NULL, &pidl, 0, NULL);
-	} else {
-		pidl = teILCreateFromPath(pszPath);
-	}
+	LPITEMIDLIST pidl = iUseFS ? ILCreateFromPath(pszPath) : teILCreateFromPath(pszPath);
 	if (pidl) {
 		HRESULT hr = teILFolderExists(pidl);
 		teCoTaskMemFree(pidl);
@@ -2790,15 +2784,15 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 			if (tePathMatchSpec1(pszPath, L"\\\\*\\*")) {
 				LPWSTR lpDelimiter = StrChr(&pszPath[2], '\\');
 				BSTR bsServer = ::SysAllocStringLen(pszPath, int(lpDelimiter - pszPath));
-				LPITEMIDLIST pidlServer;
-				if SUCCEEDED(lpfnSHParseDisplayName(bsServer, NULL, &pidlServer, 0, NULL)) {
+				LPITEMIDLIST pidlServer = ILCreateFromPath(bsServer);
+				if (pidlServer) {
 					pidl = teILCreateFromPath2(pidlServer, &lpDelimiter[1], g_hwndMain);
 					teCoTaskMemFree(pidlServer);
 				}
 				::SysFreeString(bsServer);
 			}
 			if (!pidl) {
-				lpfnSHParseDisplayName(pszPath, NULL, &pidl, 0, NULL);
+				pidl = ILCreateFromPath(pszPath);
 				if (pidl) {
 					if (tePathIsNetworkPath(pszPath) && PathIsRoot(pszPath) && FAILED(tePathIsDirectory(pszPath, 0, 3))) {
 						teILFreeClear(&pidl);
@@ -2808,7 +2802,7 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 					lstrcpyn(pszDrive, pszPath, 4);
 					int n = GetDriveType(pszDrive);
 					if (n == DRIVE_NO_ROOT_DIR && SUCCEEDED(tePathIsDirectory(pszDrive, 0, 3))) {
-						lpfnSHParseDisplayName(pszPath, NULL, &pidl, 0, NULL);
+						pidl = ILCreateFromPath(pszPath);
 					}
 				}
 			}
@@ -3441,12 +3435,6 @@ VOID teStripAmp(LPWSTR lpstr)
 
 #endif
 #ifdef _W2000
-HRESULT STDAPICALLTYPE teSHParseDisplayName2000(LPCWSTR pszName, IBindCtx *pbc, PIDLIST_ABSOLUTE *ppidl, SFGAOF sfgaoIn, SFGAOF *psfgaoOut)
-{
-	*ppidl = ILCreateFromPath(pszName);
-	return *ppidl ? S_OK : E_FAIL;
-}
-
 HRESULT STDAPICALLTYPE teSHGetImageList2000(int iImageList, REFIID riid, void **ppvObj)
 {
 	SHFILEINFO sfi;
@@ -4162,17 +4150,8 @@ int GetSizeOfStruct(LPOLESTR bs)
 
 LPWSTR GetSubStruct(BSTR bs)
 {
-	struct
-	{
-		LPWSTR name;
-		LPWSTR sub;
-	} s[] = {
-		{ L"EncoderParameters", L"EncoderParameter" },
-	};
-	for (int i = _countof(s); i--;) {
-		if (lstrcmpi(bs, s[i].name) == 0) {
-			return s[i].sub;
-		}
+	if (lstrcmpi(bs, L"EncoderParameters") == 0) {
+		return L"EncoderParameter";
 	}
 	return bs;
 }
@@ -5649,8 +5628,8 @@ BOOL teLocalizePath(LPWSTR pszPath, BSTR *pbsPath)
 			lpEnd = lp;
 			if (lp) {
 				lp[0] = NULL;
-				LPITEMIDLIST pidl;
-				if SUCCEEDED(lpfnSHParseDisplayName(bsPath, NULL, &pidl, 0, NULL)) {
+				LPITEMIDLIST pidl = ILCreateFromPath(bsPath);
+				if (pidl) {
 					BSTR bs;
 					if SUCCEEDED(GetDisplayNameFromPidl(&bs, pidl, SHGDN_FORADDRESSBAR)) {
 						if (StrChr(bsPath, '\\') && !StrChr(bs, '\\')) {
@@ -9259,7 +9238,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	SysFreeString(bsLib);
 	if (g_hShell32) {
 		lpfnSHCreateItemFromIDList = (LPFNSHCreateItemFromIDList)GetProcAddress(g_hShell32, "SHCreateItemFromIDList");
-		lpfnSHParseDisplayName = (LPFNSHParseDisplayName)GetProcAddress(g_hShell32, "SHParseDisplayName");
 		lpfnSHGetImageList = (LPFNSHGetImageList)GetProcAddress(g_hShell32, "SHGetImageList");
 		lpfnSHGetIDListFromObject = (LPFNSHGetIDListFromObject)GetProcAddress(g_hShell32, "SHGetIDListFromObject");
 		lpfnSHRunDialog = (LPFNSHRunDialog)GetProcAddress(g_hShell32, MAKEINTRESOURCEA(61));
@@ -9273,9 +9251,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	}
 #endif
 #ifdef _W2000
-	if (!lpfnSHParseDisplayName) {
-		lpfnSHParseDisplayName = teSHParseDisplayName2000;
-	}
 	if (!lpfnSHGetImageList) {
 		lpfnSHGetImageList = teSHGetImageList2000;
 	}
@@ -15370,7 +15345,7 @@ STDMETHODIMP CteWebBrowser::ShowContextMenu(DWORD dwID, POINT *ppt, IUnknown *pc
 STDMETHODIMP CteWebBrowser::GetHostInfo(DOCHOSTUIINFO *pInfo)
 {
 	pInfo->cbSize        = sizeof(DOCHOSTUIINFO);
-	pInfo->dwFlags       = DOCHOSTUIFLAG_NO3DBORDER | DOCHOSTUIFLAG_ENABLE_FORMS_AUTOCOMPLETE | DOCHOSTUIFLAG_SCROLL_NO;
+	pInfo->dwFlags       = DOCHOSTUIFLAG_NO3DBORDER | DOCHOSTUIFLAG_SCROLL_NO | DOCHOSTUIFLAG_IME_ENABLE_RECONVERSION;// DOCHOSTUIFLAG_ENABLE_FORMS_AUTOCOMPLETE
 	pInfo->dwDoubleClick = DOCHOSTUIDBLCLK_DEFAULT;
 	pInfo->pchHostCss    = NULL;
 	pInfo->pchHostNS     = NULL;
@@ -18226,6 +18201,9 @@ BOOL CteTreeView::Create()
 							m_pDropTarget2 = new CteDropTarget2(NULL, static_cast<IDispatch *>(this));
 							teRegisterDragDrop(m_hwndTV, m_pDropTarget2, &m_pDropTarget2->m_pDropTarget);
 						}
+						if (m_pFV->m_param[SB_TreeFlags] & NSTCS_NOEDITLABELS) {
+							SetWindowLongPtr(m_hwndTV, GWL_STYLE, GetWindowLongPtr(m_hwndTV, GWL_STYLE) & ~TVS_EDITLABELS);
+						}
 					}
 					BringWindowToTop(m_hwnd);
 					ArrangeWindow();
@@ -18339,7 +18317,7 @@ BOOL CteTreeView::Create()
 					{ NSTCS_SHOWSELECTIONALWAYS, TVS_SHOWSELALWAYS },
 					{ NSTCS_NOINFOTIP, TVS_INFOTIP },//Opposite
 					{ NSTCS_EVENHEIGHT, TVS_NONEVENHEIGHT },//Opposite
-					//NSTCS_NOREPLACEOPEN	= 0x800,
+					//NSTCS_NOREPLACEOPEN
 					{ NSTCS_DISABLEDRAGDROP, TVS_DISABLEDRAGDROP },
 					//NSTCS_NOORDERSTREAM
 					{ NSTCS_BORDER, WS_BORDER },
@@ -18360,7 +18338,7 @@ BOOL CteTreeView::Create()
 						dwStyle &= ~style[i].nsc;
 					}
 				}
-				dwStyle ^= (TVS_NOHSCROLL | TVS_INFOTIP | TVS_NONEVENHEIGHT | TVS_EDITLABELS);
+				dwStyle ^= (TVS_NOHSCROLL | TVS_INFOTIP | TVS_NONEVENHEIGHT | TVS_EDITLABELS);//Opposite
 				SetWindowLongPtr(m_hwndTV, GWL_STYLE, dwStyle & ~WS_BORDER);
 				DWORD dwExStyle = GetWindowLong(m_hwnd, GWL_EXSTYLE);
 				if (dwStyle & WS_BORDER) {
@@ -18758,9 +18736,18 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 			if (m_pShellNameSpace) {
 				for (int i = _countof(methodTV); i--;) {
 					if (methodTV[i].id == dispIdMember) {
-						BSTR bs = teMultiByteToWideChar(CP_UTF8, methodTV[i].name, -1);
-						NSInvoke(bs, wFlags, pDispParams, pVarResult);
-						::SysFreeString(bs);
+						if (m_pShellNameSpace) {
+							IDispatch *pDispatch;
+							if SUCCEEDED(m_pShellNameSpace->QueryInterface(IID_PPV_ARGS(&pDispatch))) {
+								DISPID dispid;
+								BSTR bs = teMultiByteToWideChar(CP_UTF8, methodTV[i].name, -1);
+								if SUCCEEDED(pDispatch->GetIDsOfNames(IID_NULL, &bs, 1, LOCALE_USER_DEFAULT, &dispid)) {
+									pDispatch->Invoke(dispid, IID_NULL, LOCALE_USER_DEFAULT, wFlags, pDispParams, pVarResult, NULL, NULL);
+								}
+								::SysFreeString(bs);
+								pDispatch->Release();
+							}
+						}
 						break;
 					}
 				}
@@ -19107,24 +19094,6 @@ STDMETHODIMP CteTreeView::InvokeCommand(LPCMINVOKECOMMANDINFO pici)
 	return S_OK;
 }
 //*/
-#ifdef _2000XP
-HRESULT CteTreeView::NSInvoke(LPWSTR lpVerb, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult)
-{
-	HRESULT hr = E_NOTIMPL;
-	if (m_pShellNameSpace) {
-		IDispatch *pDispatch;
-		if SUCCEEDED(m_pShellNameSpace->QueryInterface(IID_PPV_ARGS(&pDispatch))) {
-			DISPID dispid;
-			if SUCCEEDED(pDispatch->GetIDsOfNames(IID_NULL, &lpVerb, 1, LOCALE_USER_DEFAULT, &dispid)) {
-				hr = pDispatch->Invoke(dispid, IID_NULL, LOCALE_USER_DEFAULT,
-					wFlags, pDispParams, pVarResult, NULL, NULL);
-			}
-			pDispatch->Release();
-		}
-	}
-	return hr;
-}
-#endif
 
 HRESULT CteTreeView::SetRoot()
 {
