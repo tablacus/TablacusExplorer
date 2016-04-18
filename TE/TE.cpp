@@ -19287,10 +19287,13 @@ LPITEMIDLIST CteFolderItem::GetPidl()
 			if (tePathMatchSpec1(m_v.bstrVal, L"*\\..")) {
 				BSTR bs = ::SysAllocString(m_v.bstrVal);
 				PathRemoveFileSpec(bs);
-				LPITEMIDLIST pidl = SHSimpleIDListFromPath(bs);
+				LPITEMIDLIST pidl = ILCreateFromPath(bs);
 				::SysFreeString(bs);
-				teILCloneReplace(&m_pidlFocused, ILFindLastID(pidl));
-				teILFreeClear(&pidl);
+				if (pidl) {
+					teILCloneReplace(&m_pidlFocused, ILFindLastID(pidl));
+					m_nSelected = 1;
+					teCoTaskMemFree(pidl);
+				}
 			}
 		}
 		if (teGetIDListFromVariant(&m_pidl, &vPath)) {
