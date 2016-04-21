@@ -3271,16 +3271,18 @@ OpenAdodbFromTextFile = function (fn)
 
 WmiProcess = function(arg, fn)
 {
-	var locator = te.CreateObject("WbemScripting.SWbemLocator");
-	if (locator) {
-		var server = locator.ConnectServer();
-		if (server) {
-			var cols = server.ExecQuery("SELECT * FROM Win32_Process " + arg);
-			for (var list = new Enumerator(cols); !list.atEnd(); list.moveNext()) {
-				fn(list.item());
+	try {
+		var locator = te.CreateObject("WbemScripting.SWbemLocator");
+		if (locator) {
+			var server = locator.ConnectServer();
+			if (server) {
+				var cols = server.ExecQuery("SELECT * FROM Win32_Process " + arg);
+				for (var list = new Enumerator(cols); !list.atEnd(); list.moveNext()) {
+					fn(list.item());
+				}
 			}
 		}
-	}
+	} catch (e) {}
 }
 
 function CalcElementHeight(o, em)
