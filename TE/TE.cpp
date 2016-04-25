@@ -5343,7 +5343,8 @@ LRESULT CALLBACK TEBTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						pTC->m_si.nPos -= 16;
 						break;
 					case SB_LINEDOWN:
-						pTC->m_si.nPos += 16; break;
+						pTC->m_si.nPos += 16;
+						break;
 					case SB_PAGEUP:
 						pTC->m_si.nPos -= pTC->m_si.nPage;
 						break;
@@ -9374,7 +9375,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	g_paramFV[SB_TreeAlign] = 1;
 	g_paramFV[SB_TreeWidth] = 200;
-	g_paramFV[SB_TreeFlags] = NSTCS_HASEXPANDOS | NSTCS_SHOWSELECTIONALWAYS | NSTCS_BORDER | NSTCS_HASLINES | NSTCS_NOINFOTIP;
+	g_paramFV[SB_TreeFlags] = NSTCS_HASEXPANDOS | NSTCS_SHOWSELECTIONALWAYS | NSTCS_BORDER | NSTCS_HASLINES | NSTCS_NOINFOTIP | NSTCS_HORIZONTALSCROLL;
 	g_paramFV[SB_EnumFlags] = SHCONTF_FOLDERS;
 	g_paramFV[SB_RootStyle] = NSTCRS_VISIBLE | NSTCRS_EXPANDED;
 
@@ -18674,6 +18675,16 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 						if SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(&pShellItem))) {
 							m_pNameSpaceTreeControl->SetItemState(pShellItem, dwState, dwState);
 							pShellItem->Release();
+							HTREEITEM hItem = TreeView_GetNextSelected(m_hwndTV, NULL);
+							RECT rc;
+							int w = TreeView_GetItemHeight(m_hwndTV);
+							for (int i = 9; i--;) {
+								TreeView_GetItemRect(m_hwndTV, hItem, &rc, TRUE);
+								if (rc.left >= w) {
+									break;
+								}
+								SendMessage(m_hwndTV, WM_HSCROLL, SB_LINELEFT, 0);
+							}
 						}
 						teCoTaskMemFree(pidl);
 						return S_OK;
