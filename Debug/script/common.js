@@ -715,7 +715,7 @@ SaveXml = function (filename, all)
 		for (var i in te.Data) {
 			var res = /^(Tab|Tree|View|Conf)_(.*)/.exec(i);
 			if (res) {
-				if (te.Data[i] != "") {
+				if (isFinite(te.Data[i]) || te.Data[i] != "") {
 					var item = xml.createElement(res[1]);
 					item.setAttribute("Id", res[2]);
 					item.text = te.Data[i];
