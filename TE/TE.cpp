@@ -15570,8 +15570,7 @@ VOID CteWebBrowser::write(LPWSTR pszPath)
 	SAFEARRAY *psf = SafeArrayCreateVector(VT_VARIANT, 0, 1);
 	VARIANT *pv;
 	SafeArrayAccessData(psf, (LPVOID *)&pv);
-	pv->vt = VT_BSTR;
-	pv->bstrVal = ::SysAllocString(pszPath);
+	teSetSZ(pv, pszPath);
 	SafeArrayUnaccessData(psf);
 	HRESULT hr = pDoc->write(psf);
 	VariantClear(pv);
@@ -17650,16 +17649,7 @@ CteContextMenu::CteContextMenu(IUnknown *punk, IDataObject *pDataObj, IUnknown *
 	if (punk) {
 		punk->QueryInterface(IID_PPV_ARGS(&m_pContextMenu));
 		if (punkSB) {
-			IShellBrowser *pSB;
-			if SUCCEEDED(punkSB->QueryInterface(IID_PPV_ARGS(&pSB))) {
-				IShellView *pSV = NULL;
-				pSB->QueryActiveShellView(&pSV);
-				CteServiceProvider *pSP = new CteServiceProvider(punkSB, pSV);
-				HRESULT hr = IUnknown_SetSite(punk, pSB);
-				teReleaseClear(&pSP);
-				teReleaseClear(&pSV);
-				teReleaseClear(&pSB);
-			}
+			IUnknown_SetSite(punk, punkSB);
 		}
 	}
 }
@@ -17766,6 +17756,20 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 							teVariantChangeType(&pv[i], &pDispParams->rgvarg[nArg - i - 2], VT_BSTR);
 							ppwc[i] = pv[i].bstrVal;
 							if (i == 2) {
+								if (!ppwc[i]) {
+									IShellBrowser *pSB;
+									if (GetFolderVew(&pSB)) {
+										LPITEMIDLIST pidl;
+										if (teGetIDListFromObject(pSB, &pidl)) {
+											GetDisplayNameFromPidl(&ppwc[i], pidl, SHGDN_FORPARSING);
+											VariantClear(&pv[i]);
+											pv[i].bstrVal = ppwc[i];
+											pv[i].vt = VT_BSTR;
+											teCoTaskMemFree(pidl);
+										}
+										pSB->Release();
+									}
+								}
 								if (!tePathMatchSpec(ppwc[i], L"?:\\*;\\\\*\\*") || tePathIsDirectory(ppwc[i], 0, TRUE) != S_OK) {
 									ppwc[i] = NULL;
 								}

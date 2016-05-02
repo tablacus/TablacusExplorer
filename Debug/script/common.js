@@ -2941,12 +2941,6 @@ InvokeCommand = function (Items, fMask, hwnd, Verb, Parameters, Directory, nShow
 					return S_FALSE;
 				}
 			}
-			if (!Directory && FV) {
-				Directory = api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORPARSING);
-				if (!/^[A-Z]:\\|^\\/i.test(Directory)) {
-					Directory = null;
-				}
-			}
 			ContextMenu.InvokeCommand(fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon);
 			api.DestroyMenu(hMenu);
 		}

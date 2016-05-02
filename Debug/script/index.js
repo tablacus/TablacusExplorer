@@ -1165,10 +1165,6 @@ AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, 
 			return S_OK;
 		}
 	}
-	if (strVerb == "cmd") {
-		ShellExecute(ExtractMacro(ContextMenu.FolderView, "%ComSpec% /k cd /d %Current%"), null, SW_SHOWNORMAL);
-		return S_OK;
-	}
 	if (strVerb == "delete") {
 		var Items = ContextMenu.Items();
 		for (var i = Items.Count; i--;) {
@@ -2780,12 +2776,11 @@ g_basic =
 			{
 				var FV = te.Ctrl(CTRL_FV);
 				if (FV) {
-					var bNoCmd = String(s).toLowerCase() != "cmd";
-					var ContextMenu = bNoCmd ? FV.ViewMenu() : api.ContextMenu(FV, FV);
+					var ContextMenu = FV.ViewMenu();
 					if (ContextMenu) {
 						var hMenu = api.CreatePopupMenu();
 						ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_EXTENDEDVERBS);
-						var nVerb = bNoCmd ? GetCommandId(hMenu, s, ContextMenu) : 0;
+						var nVerb = GetCommandId(hMenu, s, ContextMenu);
 						ContextMenu.InvokeCommand(0, te.hwnd, nVerb ? nVerb - 1 : s, null, null, SW_SHOWNORMAL, 0, 0);
 						api.DestroyMenu(hMenu);
 					}
