@@ -994,10 +994,7 @@ CreateNew = function (path, fn)
 				var s = fso.BuildPath(fso.GetSpecialFolder(2).Path, fso.GetFileName(path));
 				DeleteItem(s);
 				fn(s);
-				var o = sha.NameSpace(fso.GetParentFolderName(path));
-				if (o) {
-					o.MoveHere(s, FOF_SILENT | FOF_NOCONFIRMATION);
-				}
+				api.SHFileOperation(FO_MOVE, s, fso.GetParentFolderName(path), FOF_SILENT | FOF_NOCONFIRMATION, false);
 			}
 		}
 	}
@@ -2027,8 +2024,7 @@ OpenXml = function (strFile, bAppData, bEmpty, strInit)
 	if (!bAppData) {
 		path = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "config\\" + strFile);
 		if (fso.FileExists(path) && xml.load(path)) {
-			var Dest = sha.NameSpace(fso.BuildPath(te.Data.DataFolder, "config"));
-			Dest.MoveHere(path, FOF_SILENT | FOF_NOCONFIRMATION);
+			api.SHFileOperation(FO_MOVE, path, fso.BuildPath(te.Data.DataFolder, "config"), FOF_SILENT | FOF_NOCONFIRMATION, false);
 			return xml;
 		}
 	}
@@ -2118,18 +2114,11 @@ function GetAddons()
 
 function CheckUpdate()
 {
-	var url = "https://www.eonet.ne.jp/~gakana/tablacus/";
-	var xhr = createHttpRequest();
-	xhr.open("GET", url + "explorer_en.html?" + Math.floor(new Date().getTime() / 60000), false);
-	xhr.setRequestHeader('Pragma', 'no-cache');
-	xhr.setRequestHeader('Cache-Control', 'no-cache');
-	xhr.setRequestHeader('If-Modified-Since', 'Thu, 01 Jun 1970 00:00:00 GMT');
-	try {
-		xhr.send(null);
-	} catch (e) {
-		ShowError(e);
-		return;
-	}
+	OpenHttpRequest("https://www.eonet.ne.jp/~gakana/tablacus/explorer_en.html", "text/html", CheckUpdate2);
+}
+
+function CheckUpdate2(xhr)
+{
 	var res = /<td id="te">(.*?)<\/td>/i.exec(xhr.responseText);
 	if (!res) {
 		return;
@@ -2162,7 +2151,7 @@ function CheckUpdate()
 	DeleteItem(temp);
 	CreateFolder2(temp);
 
-	if (DownloadFile(url + "dl/" + file, zipfile) != S_OK || Extract(zipfile, temp) != S_OK) {
+	if (DownloadFile("https://www.eonet.ne.jp/~gakana/tablacus/dl/" + file, zipfile) != S_OK || Extract(zipfile, temp) != S_OK) {
 		return;
 	}
 	var te64exe = temp + "\\te64.exe";
@@ -2255,6 +2244,29 @@ createHttpRequest = function ()
 		return te.CreateObject("Msxml2.XMLHTTP");
 	} catch (e) {
 		return te.CreateObject("Microsoft.XMLHTTP");
+	}
+}
+
+OpenHttpRequest = function (url, ct, fn)
+{
+	var xhr = createHttpRequest();
+	xhr.onreadystatechange = function()
+	{
+		if (xhr.readyState == 4) {
+			if (xhr.status == 200) {
+				fn(xhr);
+			}
+		}
+	}
+	xhr.open("GET", url + "?" + Math.floor(new Date().getTime() / 60000), false);
+	xhr.setRequestHeader('Content-Type', ct);
+	xhr.setRequestHeader('Pragma', 'no-cache');
+	xhr.setRequestHeader('Cache-Control', 'no-cache');
+	xhr.setRequestHeader('If-Modified-Since', 'Thu, 01 Jun 1970 00:00:00 GMT');
+	try {
+		xhr.send(null);
+	} catch (e) {
+		ShowError(e);
 	}
 }
 

@@ -460,8 +460,7 @@ function InitConfig(o)
 	if (!confirmOk("Are you sure?")) {
 		return;
 	}
-	var Dist = sha.NameSpace(te.Data.DataFolder);
-	Dist.MoveHere(fso.BuildPath(InstallPath, "layout"), 0);
+	api.SHFileOperation(FO_MOVE, fso.BuildPath(InstallPath, "layout"), te.Data.DataFolder, 0, false);
 	o.disabled = true;
 }
 
@@ -1302,7 +1301,7 @@ function AddonRemove(Id)
 		return;
 	}
 	MainWindow.AddonDisabled(Id);
-	sf = api.Memory("SHFILEOPSTRUCT");
+	var sf = api.Memory("SHFILEOPSTRUCT");
 	sf.hwnd = api.GetForegroundWindow();
 	sf.wFunc = FO_DELETE;
 	sf.fFlags = 0;
@@ -2188,25 +2187,7 @@ function GetAddons()
 	if (nCount) {
 		return;
 	}
-	xhr = createHttpRequest();
-	xhr.onreadystatechange = function()
-	{
-		if (xhr.readyState == 4) {
-			if (xhr.status == 200) {
-				setTimeout(AddonsList, 99);
-			}
-		}
-	}
-	xhr.open("GET", urlAddons + "/index.xml?" + Math.floor(new Date().getTime() / 60000));
-	xhr.setRequestHeader('Content-Type', 'text/xml');
-	xhr.setRequestHeader('Pragma', 'no-cache');
-	xhr.setRequestHeader('Cache-Control', 'no-cache');
-	xhr.setRequestHeader('If-Modified-Since', 'Thu, 01 Jun 1970 00:00:00 GMT');
-	try {
-		xhr.send(null);
-	} catch (e) {
-		ShowError(e);
-	}
+	OpenHttpRequest(urlAddons + "/index.xml", "text/xml", AddonsList);
 }
 
 function UpdateAddon(Id, o)
@@ -2262,7 +2243,7 @@ function AddonsSub(q)
 	return false;
 }
 
-function AddonsList()
+function AddonsList(xhr2)
 {
 	clearTimeout(g_tid);
 	nCount = 0;
@@ -2271,6 +2252,9 @@ function AddonsList()
 		td: [],
 		ts: [],
 		i: 0
+	}
+	if (xhr2) {
+		xhr = xhr2;
 	}
 	var xml = xhr.responseXML;
 	if (xml) {
@@ -2424,23 +2408,14 @@ function Install(o, bUpdate)
 				return;
 			}
 		}
-		var oSrc = sha.NameSpace(fso.BuildPath(temp, Id));
-		if (oSrc) {
-			var Items = oSrc.Items();
-			var dest = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\" + Id);
-			CreateFolder(dest);
-			var oDest = sha.NameSpace(dest);
-			if (oDest) {
-				oDest.MoveHere(Items, FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR);
-				o.disabled = true;
-				o.value = GetText("Installed");
-				o = document.getElementById('_Addons_' + Id);
-				if (o) {
-					o.style.display = "none";
-				}
-				UpdateAddon(Id, o);
-			}
+		api.SHFileOperation(FO_MOVE, fso.BuildPath(temp, Id), fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons"), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, false);
+		o.disabled = true;
+		o.value = GetText("Installed");
+		o = document.getElementById('_Addons_' + Id);
+		if (o) {
+			o.style.display = "none";
 		}
+		UpdateAddon(Id, o);
 		document.body.style.cursor = "auto";
 	}, 99);
 }
