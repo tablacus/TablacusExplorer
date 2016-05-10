@@ -7767,12 +7767,11 @@ VOID teApiSHChangeNotification_Lock(int nArg, teParam *param, DISPPARAMS *pDispP
 		PIDLIST_ABSOLUTE *ppidl;
 		LONG lEvent;
 		HANDLE hLock = SHChangeNotification_Lock(param[0].handle, param[1].dword, &ppidl, &lEvent);
-		teSetPtr(pVarResult, hLock);
 		if (hLock) {
 			VARIANT v;
 			VariantInit(&v);
 			if (ppidl) {
-				for (int i = 2; i--;) {
+				for (int i = (lEvent & (SHCNE_RENAMEFOLDER | SHCNE_RENAMEITEM)) ? 2 : 1; i--;) {
 					CteFolderItem *pPF = new CteFolderItem(NULL);
 					pPF->Initialize(ppidl[i]);
 					teSetObjectRelease(&v, pPF);
@@ -7780,10 +7779,11 @@ VOID teApiSHChangeNotification_Lock(int nArg, teParam *param, DISPPARAMS *pDispP
 					VariantClear(&v);
 				}
 			}
+			SHChangeNotification_Unlock(hLock);
+			teSetPtr(pVarResult, hLock);
 			teSetLong(&v, lEvent);
 			tePutProperty(pdisp, L"lEvent", &v);
 			VariantClear(&v);
-			SHChangeNotification_Unlock(hLock);
 		}
 		pdisp->Release();
 	}
@@ -9467,8 +9467,7 @@ function _t(o) {\
 	GetNewObject(&g_pAPI);
 	VARIANT v;
 	for (int i = _countof(dispAPI); i--;) {
-		v.vt = VT_DISPATCH;
-		v.pdispVal = new CteAPI(&dispAPI[i]);
+		teSetObjectRelease(&v, new CteAPI(&dispAPI[i]));
 		BSTR bs = teMultiByteToWideChar(CP_UTF8, dispAPI[i].name, -1);
 		tePutProperty(g_pAPI, bs, &v);
 		::SysFreeString(bs);

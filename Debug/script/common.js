@@ -11,7 +11,6 @@ grfKeyState = null;
 pdwEffect = 0;
 bDrop = null;
 Input = null;
-g_tidNew = null;
 eventTE = { Environment: {} };
 eventTA = {};
 g_ptDrag = api.Memory("POINT");
@@ -985,29 +984,43 @@ IsExists = function (path)
 
 CreateNew = function (path, fn)
 {
-	clearTimeout(g_tidNew);
 	if (fn && !IsExists(path)) {
 		try {
 			fn(path);
 		} catch (e) {
 			if (/^[A-Z]:\\|^\\/i.test(path)) {
-				var s = fso.BuildPath(fso.GetSpecialFolder(2).Path, fso.GetFileName(path));
-				DeleteItem(s);
-				fn(s);
-				api.SHFileOperation(FO_MOVE, s, fso.GetParentFolderName(path), FOF_SILENT | FOF_NOCONFIRMATION, false);
+				var path1, path2, path3, path4;
+				path1 = path;
+				path2 = "";
+				do {
+					path2 = fso.BuildPath(fso.GetFileName(path1), path2);
+					path1 = fso.GetParentFolderName(path1);
+				} while (path1 && !fso.FolderExists(path1));
+				var ar = path2.split("\\");
+				if (ar[0]) {
+					path = fso.BuildPath(path1, ar[0]);
+					path3 = fso.BuildPath(fso.GetSpecialFolder(2).Path, ar[0]);
+					DeleteItem(path3);
+					path4 = path3;
+					for (var i = 1; i < ar.length; i++) {
+						fso.CreateFolder(path4);
+						path4 = fso.BuildPath(path4, ar[i]);
+					}
+					fn(path4);
+					api.SHFileOperation(FO_MOVE, path3, fso.GetParentFolderName(path), FOF_SILENT | FOF_NOCONFIRMATION, false);
+				}
 			}
 		}
 	}
-	g_tidNew = setTimeout(function ()
-	{
-		var FV = te.Ctrl(CTRL_FV);
-		if (FV) {
-			if (api.ILIsEqual(FV, fso.GetParentFolderName(path))) {
-				var FolderItem = api.ILCreateFromPath(path);
-				FV.SelectItem(FolderItem, SVSI_SELECT | SVSI_DESELECTOTHERS | SVSI_ENSUREVISIBLE | SVSI_FOCUSED | SVSI_NOTAKEFOCUS);
-			}
-		}
-	}, 1000);
+	MainWindow.setTimeout(
+		'path="' + path.replace(/\\/g, "\\\\") + '";\
+		var FV = te.Ctrl(CTRL_FV);\
+		if (FV) {\
+			if (!api.StrCmpI(FV.FolderItem.Path, fso.GetParentFolderName(path))) {\
+				FV.SelectItem(path, SVSI_SELECT | SVSI_DESELECTOTHERS | SVSI_ENSUREVISIBLE | SVSI_FOCUSED | SVSI_NOTAKEFOCUS);\
+			}\
+		}', 99
+	);
 }
 
 CreateFolder = function (path)
@@ -1328,7 +1341,7 @@ OpenMenu = function (items, SelItem)
 		var item = items[i];
 		var strType = String(item.getAttribute("Type")).toLowerCase();
 		var strFlag = strType == "menus" ? item.text.toLowerCase() : "";
-		var bAdd = SelItem ? PathMatchEx(path, item.getAttribute("Filter")) : item.getAttribute("Filter") == "";
+		var bAdd = SelItem ? PathMatchEx(path, item.getAttribute("Filter")) : /^$|^\/\^\$\//.test(item.getAttribute("Filter"));
 		if (strFlag == "close") {
 			bAdd = arLevel.pop();
 		}
@@ -3232,7 +3245,7 @@ DeleteTempFolder = function ()
 }
 
 OpenContains = function (Ctrl, pt)
-{
+{ 
 	var FV = GetFolderView(Ctrl. pt);
 	var Items = FV.SelectedItems();
 	for (var j in Items) {

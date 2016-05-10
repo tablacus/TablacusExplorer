@@ -1525,7 +1525,6 @@ InitDialog = function ()
 					} else if (document.getElementById("file").checked) {
 						CreateFile(path);
 					}
-					dialogArguments.FV.SelectItem(path, SVSI_SELECT | SVSI_DESELECTOTHERS | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
 				}
 			}
 		});

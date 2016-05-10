@@ -895,6 +895,9 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 		return hr; 
 	}
 	var strClass = api.GetClassName(hwnd);
+	if (strClass == WC_EDIT) {
+		return S_FALSE;
+	}
 	var bLV = Ctrl.Type <= CTRL_EB && api.PathMatchSpec(strClass, WC_LISTVIEW + ";DirectUIHWND");
 	if (msg == WM_MOUSEWHEEL) {
 		var Ctrl2 = te.CtrlFromPoint(pt);
@@ -1590,9 +1593,9 @@ te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 		var pidls = {};
 		var hLock = api.SHChangeNotification_Lock(wParam, lParam, pidls);
 		if (hLock) {
-			api.SHChangeNotification_Unlock(hLock);
 			ChangeNotifyFV(pidls.lEvent, pidls[0], pidls[1]);
 			RunEvent1("ChangeNotify", Ctrl, pidls);
+			api.SHChangeNotification_Unlock(hLock);
 		}
 		return S_OK;
 	}
@@ -3246,7 +3249,7 @@ if (!te.Data) {
 	} else {
 		LoadConfig();
 	}
-	te.Data.uRegisterId = api.SHChangeNotifyRegister(te.hwnd, SHCNRF_InterruptLevel | SHCNRF_ShellLevel | SHCNRF_NewDelivery, SHCNE_ALLEVENTS, TWM_CHANGENOTIFY, ssfDESKTOP, true);
+	te.Data.uRegisterId = api.SHChangeNotifyRegister(te.hwnd, SHCNRF_InterruptLevel | SHCNRF_ShellLevel | SHCNRF_NewDelivery, SHCNE_ALLEVENTS & ~SHCNE_UPDATEIMAGE, TWM_CHANGENOTIFY, ssfDESKTOP, true);
 } else {
 	setTimeout(function ()
 	{	
