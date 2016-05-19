@@ -65,10 +65,13 @@ union teParam
     INT intVal;
     UINT uintVal;
 	BYTE bVal;
-    BSTR bstrVal;
+	SHORT iVal;
+	BSTR bstrVal;
     VARIANT_BOOL boolVal;
+	FLOAT fltVal;
+	DOUBLE dblVal;
 
-    BYTE *pbVal;
+	BYTE *pbVal;
     CHAR *pcVal;
     INT *pintVal;
 
@@ -156,6 +159,8 @@ union teParam
 	FILEOP_FLAGS fileop_flags;
 
 	IImageList *pImageList;
+	IID iid;
+	VARIANT variant;
 };
 
 //Unnamed function
@@ -371,8 +376,10 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 
 #ifdef _WIN64
 #define teSetPtr(pVar, nData)	teSetLL(pVar, (LONGLONG)nData)
+#define GetPtrFromVariant(pv)	GetLLFromVariant(pv)
 #else
 #define teSetPtr(pVar, nData)	teSetLong(pVar, (LONG)nData)
+#define GetPtrFromVariant(pv)	GetIntFromVariant(pv)
 #endif
 
 #ifdef _2000XP
@@ -1038,7 +1045,7 @@ public:
 	CteServiceProvider *m_pServiceProvider;
 	LPITEMIDLIST m_pidl;
 	IShellFolder2 *m_pSF2;
-#ifdef	_2000XP
+#ifdef _2000XP
 	TEColumn	*m_pColumns;
 	UINT		m_nColumns;
 #endif
@@ -1153,7 +1160,7 @@ public:
 private:
 	IDataObject *m_pDataObj;
 
-	UINT_PTR	m_param[5];
+	teParam	m_param[5];
 
 	LONG	m_cRef;
 };
@@ -1263,8 +1270,8 @@ public:
 	CteShellBrowser	*m_pFV;
 #ifdef _2000XP
 	IShellNameSpace *m_pShellNameSpace;
-	WNDPROC		m_DefProc;
 #endif
+	WNDPROC		m_DefProc;
 	WNDPROC		m_DefProc2;
 
 	BOOL		m_bMain;

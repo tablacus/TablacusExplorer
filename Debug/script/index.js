@@ -36,12 +36,12 @@ if (api.ILIsEmpty(g_pidlCP) || api.ILIsEqual(g_pidlCP, ssfDRIVES)) {
 	g_pidlCP = ssfCONTROLS;
 }
 
-RunEvent1 = function (en, a1, a2, a3)
+RunEvent1 = function (en, a1, a2, a3, a4)
 {
 	var eo = eventTE[en];
 	for (var i in eo) {
 		try {
-			eo[i](a1, a2, a3);
+			eo[i](a1, a2, a3, a4);
 		} catch (e) {
 			ShowError(e, en, i);
 		}
@@ -1593,9 +1593,9 @@ te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 		var pidls = {};
 		var hLock = api.SHChangeNotification_Lock(wParam, lParam, pidls);
 		if (hLock) {
-			ChangeNotifyFV(pidls.lEvent, pidls[0], pidls[1]);
-			RunEvent1("ChangeNotify", Ctrl, pidls);
 			api.SHChangeNotification_Unlock(hLock);
+			ChangeNotifyFV(pidls.lEvent, pidls[0], pidls[1]);
+			RunEvent1("ChangeNotify", Ctrl, pidls, wParam, lParam);
 		}
 		return S_OK;
 	}
@@ -1608,8 +1608,7 @@ te.OnNewWindow = function (Ctrl, dwFlags, UrlContext, Url)
 	if (isFinite(hr)) {
 		return hr; 
 	}
-	var Path = api.PathCreateFromUrl(Url);
-	var FolderItem = api.ILCreateFromPath(Path);
+	var FolderItem = api.ILCreateFromPath(api.PathCreateFromUrl(Url));
 	if (FolderItem.IsFolder) {
 		Navigate(FolderItem, SBSP_NEWBROWSER);
 		return S_OK;

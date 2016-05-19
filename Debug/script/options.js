@@ -818,7 +818,7 @@ function LoadMenus(nSelected)
 				if (isFinite(v)) {
 					o.selectedIndex = v;
 					EnableSelectTag(o);
-					FireEvent(o, "click");
+					FireEvent(o, "change");
 				}
 			}, 99);}) (document.F.elements["Menus_" + ar[0]], ar[1]);
 		}
@@ -2273,7 +2273,7 @@ function AddonsAppend(q)
 			g_tid = setTimeout(function () {
 				AddonsAppend(q);
 			}, 1);
-			document.getElementById('STATUS').innerText = Math.floor(100 * q.i / q.ts.length) + " %";
+			document.getElementById('STATUS').innerText = (100 * q.i / q.ts.length).toFixed(1) + " %";
 		} else {
 			document.body.style.cursor = "auto";
 			document.getElementById('STATUS').innerText = "";

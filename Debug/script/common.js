@@ -2146,11 +2146,13 @@ function CheckUpdate2(xhr)
 	var ver = 0;
 	res = /(\d+)/.exec(file);
 	if (res) {
-		ver = 20000000 + api.QuadPart(res[1])
+		ver = api.Add(20000000, res[1]);
 	}
 	if (ver <= te.Version) {
 		MessageBox(te.About + "\n" + GetText("the latest version"), TITLE, MB_ICONINFORMATION);
-		return;
+		if (api.GetKeyState(VK_SHIFT) >= 0 || api.GetKeyState(VK_CONTROL) >= 0) {
+			return;
+		}
 	}
 	if (!confirmOk(GetText("Update available") + "\n" + s + "\n" + GetText("Do you want to install it now?"))) {
 		return;
@@ -2217,18 +2219,13 @@ EscapeUpdateFile(fso.GetFileName(api.GetModuleFileName(null)))).replace(/[\t\n]/
 		update = s1;
 		s1 = '"';
 	}
-	var mshta = wsh.ExpandEnvironmentStrings("%windir%\\Sysnative\\") + exe;
-	if (!fso.FileExists(mshta)) {
-		mshta = fso.BuildPath(system32, exe);
- 	}
-	var oExec = wsh.Exec([api.PathQuoteSpaces(mshta), ' ', s1, update, '"'].join(""));
-	wsh.AppActivate(oExec.ProcessID);
-	DeleteTempFolder = function () {};
-	api.PostMessage(te.hwnd, WM_CLOSE, 0, 0);
+	MainWindow.g_strUpdate = ['"', api.IsWow64Process(api.GetCurrentProcess()) ? wsh.ExpandEnvironmentStrings("%windir%\\Sysnative") : system32, "\\", exe, '" ', s1, update, '"'].join("");
+	MainWindow.DeleteTempFolder = MainWindow.UpdateSelf;
 	WmiProcess("WHERE ExecutablePath = '" + api.GetModuleFileName(null).replace(/\\/g, "\\\\") + "' AND ProcessId!=" + pid[0], function (item)
 	{
 		item.Terminate();
 	});
+	api.PostMessage(te.hwnd, WM_CLOSE, 0, 0);
 }
 
 function EscapeUpdateFile(s)
@@ -3242,6 +3239,12 @@ RemoveCommand = function (hMenu, ContextMenu, strDelete)
 DeleteTempFolder = function ()
 {
 	DeleteItem(fso.BuildPath(fso.GetSpecialFolder(2).Path, "tablacus"));
+}
+
+UpdateSelf = function ()
+{
+	var oExec = wsh.Exec(g_strUpdate);
+	wsh.AppActivate(oExec.ProcessID);
 }
 
 OpenContains = function (Ctrl, pt)
