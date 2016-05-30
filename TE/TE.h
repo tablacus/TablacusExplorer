@@ -693,7 +693,7 @@ private:
 };
 
 class CteWebBrowser : public IDispatch, public IOleClientSite, public IOleInPlaceSite,
-	public IDocHostUIHandler, public IDropTarget//, public IOleCommandTarget, public IDocHostShowUI
+	public IDocHostUIHandler, public IDropTarget, public IDocHostShowUI//, public IOleCommandTarget
 {
 public:
 	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
@@ -744,7 +744,7 @@ public:
 	STDMETHODIMP GetExternal(IDispatch **ppDispatch);
 	STDMETHODIMP TranslateUrl(DWORD dwTranslate, OLECHAR *pchURLIn, OLECHAR **ppchURLOut);
 	STDMETHODIMP FilterDataObject(IDataObject *pDO, IDataObject **ppDORet);
-	/*IDocHostShowUI
+	//IDocHostShowUI
 	STDMETHODIMP ShowMessage(HWND hwnd, LPOLESTR lpstrText, LPOLESTR lpstrCaption, DWORD dwType, LPOLESTR lpstrHelpFile, DWORD dwHelpContext, LRESULT *plResult);
 	STDMETHODIMP ShowHelp(HWND hwnd, LPOLESTR pszHelpFile, UINT uCommand, DWORD dwData, POINT ptMouse, IDispatch *pDispatchObjectHit);//*/
 	//IDropTarget

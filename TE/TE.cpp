@@ -2456,16 +2456,18 @@ LONGLONG GetLLPFromVariant(VARIANT *pv, VARIANT *pvMem)
 		if (pc) {
 			return (LONGLONG)pc;
 		}
-		VARIANT vo;
-		VariantInit(&vo);
-		if SUCCEEDED(VariantChangeType(&vo, pv, 0, VT_I8)) {
-			return vo.llVal;
-		}
+		if (pv->vt != VT_DISPATCH) {
+			VARIANT vo;
+			VariantInit(&vo);
+			if SUCCEEDED(VariantChangeType(&vo, pv, 0, VT_I8)) {
+				return vo.llVal;
+			}
 #ifdef _W2000
-		if SUCCEEDED(VariantChangeType(&vo, pv, 0, VT_R8)) {
-			return (int)(LONGLONG)vo.dblVal;
-		}
+			if SUCCEEDED(VariantChangeType(&vo, pv, 0, VT_R8)) {
+				return (LONGLONG)vo.dblVal;
+			}
 #endif
+		}
 	}
 	return 0;
 }
@@ -3116,7 +3118,7 @@ void teCopyMenu(HMENU hDest, HMENU hSrc, UINT fState)
 		GetMenuItemInfo(hSrc, n, TRUE, &mii);
 		HMENU hSubMenu = mii.hSubMenu;
 		if (hSubMenu) {
-			mii.hSubMenu = CreatePopupMenu();
+			mii.hSubMenu = CreateMenu();
 		}
 		mii.fState = fState;
 		InsertMenuItem(hDest, 0, TRUE, &mii);
@@ -14936,8 +14938,8 @@ STDMETHODIMP CteWebBrowser::QueryInterface(REFIID riid, void **ppvObject)
 		QITABENT(CteWebBrowser, IDispatch),
 		QITABENT(CteWebBrowser, IDocHostUIHandler),
 		QITABENT(CteWebBrowser, IDropTarget),
+		QITABENT(CteWebBrowser, IDocHostShowUI),
 //		QITABENT(CteWebBrowser, IOleCommandTarget),
-//		QITABENT(CteWebBrowser, IDocHostShowUI),
 		{ 0 },
 	};
 	*ppvObject = NULL;
@@ -15426,17 +15428,21 @@ STDMETHODIMP CteWebBrowser::FilterDataObject(IDataObject *pDO, IDataObject **ppD
 	return E_NOTIMPL;
 }
 
-/*/// IDocHostShowUI
+// IDocHostShowUI
 STDMETHODIMP CteWebBrowser::ShowMessage(HWND hwnd, LPOLESTR lpstrText, LPOLESTR lpstrCaption, DWORD dwType, LPOLESTR lpstrHelpFile, DWORD dwHelpContext, LRESULT *plResult)
 {
-	return E_NOTIMPL;
+	if (dwType == (MB_ICONEXCLAMATION | MB_YESNO)) {// Stop running this script?
+		*plResult = IDNO;
+		return S_OK;
+	}
+	*plResult = MessageBox(hwnd, lpstrText, _T(PRODUCTNAME), dwType);
+	return S_OK;
 }
 
 STDMETHODIMP CteWebBrowser::ShowHelp(HWND hwnd, LPOLESTR pszHelpFile, UINT uCommand, DWORD dwData, POINT ptMouse, IDispatch *pDispatchObjectHit)
 {
 	return E_NOTIMPL;
 }
-//*/
 
 //IDropTarget
 STDMETHODIMP CteWebBrowser::DragEnter(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect)
@@ -17766,10 +17772,9 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 								WideCharToMultiByte(CP_ACP, 0, ppwc[i], nLenW, ppc[i], nLenA, NULL, NULL);
 								BSTR bs = SysAllocStringLen(NULL, nLenW);
 								MultiByteToWideChar(CP_ACP, 0, ppc[i], nLenA, bs, nLenW);
-								if (lstrcmp(bs, ppwc[i])) {
+								if (!teStrSameIFree(bs, ppwc[i])) {
 									cmi.fMask = CMIC_MASK_UNICODE;
 								}
-								SysFreeString(bs);
 							} else {
 								ppc[i] = (char *)ppwc[i];
 							}
