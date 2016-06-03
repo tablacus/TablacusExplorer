@@ -2663,6 +2663,9 @@ HRESULT teILFolderExists(LPITEMIDLIST pidl)
 			if (peidl) {
 				LPITEMIDLIST pidlPart;
 				hr = peidl->Next(1, &pidlPart, NULL);
+				if (hr == S_FALSE) {
+					hr = S_OK;
+				}
 				teCoTaskMemFree(pidlPart);
 				peidl->Release();
 			}
