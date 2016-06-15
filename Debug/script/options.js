@@ -1208,7 +1208,7 @@ function AddonInfo(Id)
 	if (info.pubDate) {
 		pubDate = new Date(info.pubDate).toLocaleString() + "\n";
 	}
-	MessageBox(info.Name + " " + info.Version + " " + info.Creator + "\n\n" + info.Description + "\n\n" + pubDate + info.URL, Id, MB_ICONINFORMATION);
+	MessageBox(info.Name + " " + info.Version + " " + info.Creator + "\n\n" + info.Description + "\n\n" + pubDate + info.URL + "\n" + fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\" + Id), Id, MB_ICONINFORMATION);
 	return false;
 }
 

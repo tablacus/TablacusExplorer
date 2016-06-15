@@ -541,8 +541,8 @@ GetCommandId = function (hMenu, s, ContextMenu)
 					var title = api.GetMenuString(hMenu, i, MF_BYPOSITION);
 					if (title) {
 						var a = title.split(/\t/);
-						if (api.PathMatchSpec(a[0], s) || api.PathMatchSpec(a[0], sl) || api.PathMatchSpec(a[1], s) || (ContextMenu && api.PathMatchSpec(ContextMenu.GetCommandString(mii.wId - 1, GCS_VERB), s))) {
-							wId = mii.hSubMenu ? api.TrackPopupMenuEx(mii.hSubMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, ContextMenu) : mii.wId;
+						if (api.PathMatchSpec(a[0], s) || api.PathMatchSpec(a[0], sl) || api.PathMatchSpec(a[1], s) || (ContextMenu && api.PathMatchSpec(ContextMenu.GetCommandString(mii.wID - 1, GCS_VERB), s))) {
+							wId = mii.hSubMenu ? api.TrackPopupMenuEx(mii.hSubMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, ContextMenu) : mii.wID;
 							arMenu.length = 0;
 							break;
 						}

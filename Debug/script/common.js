@@ -1926,7 +1926,7 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem)
 				} else if (s) {
 					var mii = api.Memory("MENUITEMINFO");
 					mii.fMask = MIIM_STRING | MIIM_ID;
-					mii.wId = nResult;
+					mii.wID = nResult;
 					mii.dwTypeData = ar.join("\t");
 					MenusIcon(mii, item.getAttribute("Icon"));
 					RunEvent3(["MenuState", item.getAttribute("Type"), item.text].join(":"), Ctrl, pt, mii);
@@ -3225,7 +3225,7 @@ RemoveCommand = function (hMenu, ContextMenu, strDelete)
 	mii.fMask = MIIM_ID;
 	for (var i = api.GetMenuItemCount(hMenu); i-- > 0;) {
 		if (api.GetMenuItemInfo(hMenu, i, true, mii)) {
-			if (api.PathMatchSpec(ContextMenu.GetCommandString(mii.wId - ContextMenu.idCmdFirst, GCS_VERB), strDelete)) {
+			if (api.PathMatchSpec(ContextMenu.GetCommandString(mii.wID - ContextMenu.idCmdFirst, GCS_VERB), strDelete)) {
 				api.DeleteMenu(hMenu, i, MF_BYPOSITION);
 			}
 		}
