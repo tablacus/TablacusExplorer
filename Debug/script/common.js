@@ -3112,6 +3112,10 @@ AddEventEx(window, "load", function ()
 {
 	document.body.onselectstart = DetectProcessTag;
 	document.body.oncontextmenu = DetectProcessTag;
+	document.body.onmousewheel = function ()
+	{
+		return api.GetKeyState(VK_CONTROL) >= 0;
+	};
 });
 
 Alt = function ()
