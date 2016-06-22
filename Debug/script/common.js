@@ -14,11 +14,29 @@ Input = null;
 eventTE = { Environment: {} };
 eventTA = {};
 g_ptDrag = api.Memory("POINT");
-g_rcWindow = api.Memory("RECT");
 objHover = null;
-g_nFind = 0;
-g_Colors = {};
 Addons = {"_stack": []};
+g_ = {
+	rcWindow: api.Memory("RECT"),
+	Colors: {},
+	nFind: 0,
+	Panels: [],
+	KeyCode: {},
+	KeyState: [
+		[0x1d0000, 0x2000],
+		[0x2a0000, 0x1000],
+		[0x380000, 0x4000],
+		["Win",    0x8000],
+		["Ctrl",   0x2000],
+		["Shift",  0x1000],
+		["Alt",    0x4000]
+	],
+	stack_TC: [],
+	dlgs: {},
+	tidWindowRegistered: null,
+	bWindowRegistered: true,
+	xmlWindow: null
+};
 
 FolderMenu =
 {
@@ -697,12 +715,12 @@ SaveXml = function (filename, all)
 	if (all) {
 		var item = xml.createElement("Window");
 		if (!api.IsZoomed(te.hwnd) && !api.IsIconic(te.hwnd)) {
-			api.GetWindowRect(te.hwnd, g_rcWindow);
+			api.GetWindowRect(te.hwnd, g_.rcWindow);
 		}
-		item.setAttribute("Left", g_rcWindow.left);
-		item.setAttribute("Top", g_rcWindow.top);
-		item.setAttribute("Width", g_rcWindow.right - g_rcWindow.left);
-		item.setAttribute("Height", g_rcWindow.bottom - g_rcWindow.top);
+		item.setAttribute("Left", g_.rcWindow.left);
+		item.setAttribute("Top", g_.rcWindow.top);
+		item.setAttribute("Width", g_.rcWindow.right - g_.rcWindow.left);
+		item.setAttribute("Height", g_.rcWindow.bottom - g_.rcWindow.top);
 		item.setAttribute("CmdShow", api.IsZoomed(te.hwnd) ? SW_SHOWMAXIMIZED : SW_SHOWNORMAL);
 		root.appendChild(item);
 	}
@@ -740,14 +758,14 @@ GetKeyKey = function (strKey)
 		return nShift;
 	}
 	strKey = strKey.toUpperCase();
-	for (var j in MainWindow.g_KeyState) {
-		var s = MainWindow.g_KeyState[j][0].toUpperCase() + "+";
+	for (var j in MainWindow.g_.KeyState) {
+		var s = MainWindow.g_.KeyState[j][0].toUpperCase() + "+";
 		if (strKey.match(s)) {
 			strKey = strKey.replace(s, "");
-			nShift |= MainWindow.g_KeyState[j][1];
+			nShift |= MainWindow.g_.KeyState[j][1];
 		}
 	}
-	return nShift | MainWindow.g_KeyCode[strKey];
+	return nShift | MainWindow.g_.KeyCode[strKey];
 }
 
 GetKeyName = function (strKey)
@@ -757,10 +775,10 @@ GetKeyName = function (strKey)
 		var s = api.GetKeyNameText((nKey & 0x17f) << 16);
 		if (s) {
 			var arKey = [];
-			for (var j in MainWindow.g_KeyState) {
-				if (nKey & MainWindow.g_KeyState[j][1]) {
-					nKey -= MainWindow.g_KeyState[j][1];
-					arKey.push(MainWindow.g_KeyState[j][0]);
+			for (var j in MainWindow.g_.KeyState) {
+				if (nKey & MainWindow.g_.KeyState[j][1]) {
+					nKey -= MainWindow.g_.KeyState[j][1];
+					arKey.push(MainWindow.g_.KeyState[j][0]);
 				}
 			}
 			if (GetKeyKey(s) == nKey) {
@@ -875,20 +893,20 @@ ChangeTab = function (TC, nMove)
 ShowOptions = function (s)
 {
 	try {
-		var dlg = g_dlgs.Options;
+		var dlg = g_.dlgs.Options;
 		if (dlg) {
 			dlg.Window.SetTab(s);
 			dlg.Focus();
 			return;
 		}
 	} catch (e) {}
-	g_dlgs.Options = ShowDialog("options.html",
+	g_.dlgs.Options = ShowDialog("options.html",
 	{
 		Data: s, event:
 		{
 			onbeforeunload: function () 
 			{
-				delete MainWindow.g_dlgs.Options;
+				delete MainWindow.g_.dlgs.Options;
 			}
 		}
 	})
@@ -2315,13 +2333,13 @@ AddonOptions = function (Id, fn, Data)
 		sFeatures = 'Width: 640; Height: 480';
 	}
 	try {
-		var dlg = MainWindow.g_dlgs[Id];
+		var dlg = MainWindow.g_.dlgs[Id];
 		if (dlg) {
 			dlg.Focus();
 			return;
 		}
 	} catch (e) {
-		delete MainWindow.g_dlgs[Id];
+		delete MainWindow.g_.dlgs[Id];
 	}
 	var opt = {MainWindow: MainWindow, Data: Data, event: {}};
 	if (fn) {
@@ -2341,9 +2359,9 @@ AddonOptions = function (Id, fn, Data)
 		}
 	}
 	opt.event.onbeforeunload = function () {
-		delete MainWindow.g_dlgs[Id];
+		delete MainWindow.g_.dlgs[Id];
 	}
-	MainWindow.g_dlgs[Id] = ShowDialog(sURL, opt);
+	MainWindow.g_.dlgs[Id] = ShowDialog(sURL, opt);
 }
 
 function CalcVersion(s)
@@ -2455,11 +2473,11 @@ OpenInExplorer = function (FV)
 
 CancelWindowRegistered = function ()
 {
-	clearTimeout(g_tidWindowRegistered);
-	g_bWindowRegistered = false;
-	g_tidWindowRegistered = setTimeout(function ()
+	clearTimeout(g_.tidWindowRegistered);
+	g_.bWindowRegistered = false;
+	g_.tidWindowRegistered = setTimeout(function ()
 	{
-		g_bWindowRegistered = true;
+		g_.bWindowRegistered = true;
 	}, 9999);
 }
 
@@ -2517,7 +2535,7 @@ function MakeKeySelect()
 	if (oa) {
 		var ar = [];
 		for (var i = 0; i < 4; i++) {
-			var s = MainWindow.g_KeyState[i][0];
+			var s = MainWindow.g_.KeyState[i][0];
 			ar.push('<input type="checkbox" onclick="KeyShift(this)" id="_Key', s, '"><label for="_Key', s, '">', s, '&nbsp;</label>');
 		}
 		oa.insertAdjacentHTML("AfterBegin", ar.join(""));
@@ -2555,8 +2573,8 @@ function MakeKeySelect()
 function SetKeyShift()
 {
 	var key = (document.F.elements.KeyKey || document.F.elements.Key).value;
-	for (var i = 0; i < MainWindow.g_KeyState.length; i++) {
-		var s = MainWindow.g_KeyState[i][0];
+	for (var i = 0; i < MainWindow.g_.KeyState.length; i++) {
+		var s = MainWindow.g_.KeyState[i][0];
 		var o = document.getElementById("_Key" + s);
 		if (o) {
 			o.checked = key.match(s + "+");
@@ -2865,7 +2883,7 @@ FindText = function (s)
 		var rng = document.body.createTextRange();
 
 		while (bFound) {
-			for (var i = 0; i <= g_nFind && (bFound = rng.findText(s)); i++) {
+			for (var i = 0; i <= g_.nFind && (bFound = rng.findText(s)); i++) {
 				rng.moveStart("character", 1);
 				rng.moveEnd("textedit");
 			}
@@ -2879,9 +2897,9 @@ FindText = function (s)
 				} catch (e) {}
 				document.body.onselectstart = DetectProcessTag;
 				rng.scrollIntoView();
-				g_nFind++;
+				g_.nFind++;
 			} else {
-				g_nFind = 0;
+				g_.nFind = 0;
 			}
 		}
 		return;
@@ -2895,7 +2913,7 @@ FindKeyEvent = function (o)
 		FindText(o.value);
 		return false;
 	}
-	g_nFind = 0;
+	g_.nFind = 0;
 }
 
 OpenDialogEx = function (path, filter, bFilesOnly)
@@ -3055,13 +3073,13 @@ AddEvent("ConfigChanged", function (s)
 
 GetSysColor = function (i)
 {
-	var c = g_Colors[i];
+	var c = g_.Colors[i];
 	return c !== undefined ? c : api.GetSysColor(i);
 }
 
 SetSysColor = function (i, color)
 {
-	g_Colors[i] = color;
+	g_.Colors[i] = color;
 }
 
 ShellExecute = function (s, vOperation, nShow, vDir2, pt)
@@ -3255,11 +3273,11 @@ OpenContains = function (Ctrl, pt)
 		var Item = Items.Item(j);
 		var path = Item.Path;
 		Navigate(fso.GetParentFolderName(path), SBSP_NEWBROWSER);
-		setTimeout(function ()
+		(function (Item) { setTimeout(function ()
 		{
 			var FV = te.Ctrl(CTRL_FV);
 			FV.SelectItem(Item, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
-		}, 99);
+		}, 99);}) (Item);
 	}
 }
 

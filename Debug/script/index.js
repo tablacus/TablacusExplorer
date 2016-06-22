@@ -2,7 +2,6 @@
 
 te.ClearEvents();
 te.LockUpdate();
-g_Bar = "";
 Addon = 1;
 Init = false;
 OpenMode = SBSP_SAMEBROWSER;
@@ -14,23 +13,7 @@ GetAddress = null;
 ShowContextMenu = null;
 
 g_tidResize = null;
-g_tidWindowRegistered = null;
-xmlWindow = null;
-g_Panels = [];
-g_KeyCode = {};
-g_KeyState = [
-	[0x1d0000, 0x2000],
-	[0x2a0000, 0x1000],
-	[0x380000, 0x4000],
-	["Win",    0x8000],
-	["Ctrl",   0x2000],
-	["Shift",  0x1000],
-	["Alt",    0x4000]
-];
-g_dlgs = {};
-g_bWindowRegistered = true;
 Addon_Id = "";
-g_stack_TC = [];
 g_pidlCP = api.ILRemoveLastID(ssfCONTROLS);
 if (api.ILIsEmpty(g_pidlCP) || api.ILIsEqual(g_pidlCP, ssfDRIVES)) {
 	g_pidlCP = ssfCONTROLS;
@@ -182,8 +165,8 @@ Finalize = function ()
 	RunEvent1("Finalize");
 	SaveConfig();
 
-	for (var i in g_dlgs) {
-		var dlg = g_dlgs[i];
+	for (var i in g_.dlgs) {
+		var dlg = g_.dlgs[i];
 		try {
 			if (dlg) {
 				if (dlg.oExec) {
@@ -267,7 +250,7 @@ LoadConfig = function ()
 {
 	var xml = OpenXml("window.xml", true, false);
 	if (xml) {
-		xmlWindow = xml;
+		g_.xmlWindow = xml;
 		var arKey = ["Conf", "Tab", "Tree", "View"];
 		for (var j in arKey) {
 			var key = arKey[j];
@@ -308,13 +291,13 @@ LoadConfig = function ()
 				if (w && h) {
 					api.MoveWindow(te.hwnd, x, y, w, h, true);
 				}
-				api.GetWindowRect(te.hwnd, g_rcWindow);
+				api.GetWindowRect(te.hwnd, g_.rcWindow);
 			}
 			te.CmdShow = item.getAttribute("CmdShow");
 		}
 		return;
 	}
-	xmlWindow = "Init";
+	g_.xmlWindow = "Init";
 }
 
 SaveConfig = function ()
@@ -331,8 +314,8 @@ SaveConfig = function ()
 	if (te.Data.bSaveConfig) {
 		te.Data.bSaveConfig = false;
 		if (document.msFullscreenElement) {
-			while (g_stack_TC.length) {
-				g_stack_TC.pop().Visible = true;
+			while (g_.stack_TC.length) {
+				g_.stack_TC.pop().Visible = true;
 			}
 			document.msExitFullscreen();
 		}
@@ -657,14 +640,14 @@ DisableImage = function (img, bDisable)
 te.OnCreate = function (Ctrl)
 {
 	if (Ctrl.Type == CTRL_TE) {
-		if (xmlWindow && typeof(xmlWindow) != "string") {
-			LoadXml(xmlWindow);
+		if (g_.xmlWindow && typeof(g_.xmlWindow) != "string") {
+			LoadXml(g_.xmlWindow);
 		}
 		if (te.Ctrls(CTRL_TC).length == 0) {
 			var TC = te.CreateCtrl(CTRL_TC, 0, 0, "100%", "100%", te.Data.Tab_Style, te.Data.Tab_Align, te.Data.Tab_TabWidth, te.Data.Tab_TabHeight);
 			TC.Selected.Navigate2(HOME_PATH, SBSP_NEWBROWSER, te.Data.View_Type, te.Data.View_ViewMode, te.Data.View_fFlags, te.Data.View_Options, te.Data.View_ViewFlags, te.Data.View_IconSize, te.Data.Tree_Align, te.Data.Tree_Width, te.Data.Tree_Style, te.Data.Tree_EnumFlags, te.Data.Tree_RootStyle, te.Data.Tree_Root, te.Data.View_SizeFormat);
 		}
-		xmlWindow = null;
+		g_.xmlWindow = null;
 		setTimeout(function ()
 		{
 			var a, i, j, root, menus, items;
@@ -830,7 +813,7 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 						(function (FV) { setTimeout(function () {
 							if (!api.SendMessage(FV.hwndList, LVM_GETEDITCONTROL, 0, 0) || WINVER < 0x600) {
 								var Items = FV.Items;
-								FV.SelectItem(Items.Item(FV.GetFocusedItem() + (api.GetKeyState(VK_SHIFT) < 0 ? -1 :1)) || FV.Items.Item(api.GetKeyState(VK_SHIFT) < 0 ? Items.Count - 1: 0), SVSI_EDIT | SVSI_FOCUSED | SVSI_SELECT | SVSI_DESELECTOTHERS);
+								FV.SelectItem(Items.Item(FV.GetFocusedItem() + (api.GetKeyState(VK_SHIFT) < 0 ? -1 : 1)) || FV.Items.Item(api.GetKeyState(VK_SHIFT) < 0 ? Items.Count - 1: 0), SVSI_EDIT | SVSI_FOCUSED | SVSI_SELECT | SVSI_DESELECTOTHERS);
 							}
 						}, 99);}) (Ctrl);
 					}
@@ -938,7 +921,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 					if (ar && !api.StrCmpI(ar[0][1], "Selected Items")) {
 						var iItem = Ctrl.HitTest(pt);
 						if (iItem >= 0) {
-							Ctrl.SelectItem(Ctrl.Item(iItem), SVSI_SELECT | SVSI_FOCUSED | SVSI_DESELECTOTHERS);
+							Ctrl.SelectItem(iItem, SVSI_SELECT | SVSI_FOCUSED | SVSI_DESELECTOTHERS);
 						} else {
 							Ctrl.SelectItem(null, SVSI_DESELECTOTHERS);
 						}
@@ -1073,8 +1056,8 @@ te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam)
 	if (Ctrl.Type <= CTRL_EB) {
 		if ((wParam & 0xfff) + 1 == CommandID_DELETE) {
 			var Items = Ctrl.SelectedItems();
-			for (var i = Items.Count; i--;) {
-				UnlockFV(Items[i]);
+			for (var i = Items.Count; i--; ) {
+				UnlockFV(Items.Item(i));
 			}
 		}
 	}
@@ -1168,15 +1151,15 @@ AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, 
 			return S_OK;
 		}
 	}
+	var FV = ContextMenu.FolderView;
+	var Items = ContextMenu.Items();
 	if (strVerb == "delete") {
-		var Items = ContextMenu.Items();
-		for (var i = Items.Count; i--;) {
+		for (var i = Items.Count; i--; ) {
 			UnlockFV(Items.Item(i));
 		}
 	}
-	var FV = ContextMenu.FolderView;
 	if (FV) {
-		te.OnBeforeGetData(FV, ContextMenu.Items(), 2);
+		te.OnBeforeGetData(FV, Items, 2);
 	}
 });
 
@@ -1395,7 +1378,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 {
 	if (Ctrl.Type == CTRL_TE && msg == WM_SYSCOMMAND && wParam >= 0xf000) {
 		if (!api.IsZoomed(te.hwnd) && !api.IsIconic(te.hwnd)) {
-			api.GetWindowRect(te.hwnd, g_rcWindow);
+			api.GetWindowRect(te.hwnd, g_.rcWindow);
 		}
 	}
 	var hr = RunEvent3("SystemMessage", Ctrl, hwnd, msg, wParam, lParam);
@@ -1632,7 +1615,7 @@ te.OnClipboardText = function (Items)
 te.OnArrange = function (Ctrl, rc)
 {
 	if (Ctrl.Type == CTRL_TC) {
-		var o = g_Panels[Ctrl.Id];
+		var o = g_.Panels[Ctrl.Id];
 		if (!o) {
 			var s = ['<table id="Panel_$" class="layout" style="position: absolute; z-index: 1;">'];
 			s.push('<tr><td id="InnerLeft_$" class="sidebar" style="width: 0px; display: none; overflow: auto"></td><td style="width: 100%"><div id="InnerTop_$" style="display: none"></div>');
@@ -1643,7 +1626,7 @@ te.OnArrange = function (Ctrl, rc)
 			document.getElementById("Panel").insertAdjacentHTML("BeforeEnd", s.join("").replace(/\$/g, Ctrl.Id));
 			PanelCreated(Ctrl);
 			o = document.getElementById("Panel_" + Ctrl.Id);
-			g_Panels[Ctrl.Id] = o;
+			g_.Panels[Ctrl.Id] = o;
 			ApplyLang(o);
 			ChangeView(Ctrl.Selected);
 		}
@@ -1682,7 +1665,7 @@ te.OnArrange = function (Ctrl, rc)
 te.OnVisibleChanged = function (Ctrl)
 {
 	if (Ctrl.Type == CTRL_TC) {
-		var o = g_Panels[Ctrl.Id];
+		var o = g_.Panels[Ctrl.Id];
 		if (o) {
 			if (Ctrl.Visible) {
 				o.style.display = (document.documentMode && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
@@ -1702,10 +1685,10 @@ te.OnVisibleChanged = function (Ctrl)
 
 te.OnWindowRegistered = function (Ctrl)
 {
-	if (g_bWindowRegistered) {
+	if (g_.bWindowRegistered) {
 		RunEvent1("WindowRegistered", Ctrl);
 	}
-	g_bWindowRegistered = true;
+	g_.bWindowRegistered = true;
 }
 
 te.OnToolTip = function (Ctrl, Index)
@@ -1811,13 +1794,13 @@ AddEventEx(document, "MSFullscreenChange", function ()
 		for (var i in cTC) {
 			var TC = cTC[i];
 			if (TC.Visible) {
-				g_stack_TC.push(TC);
+				g_.stack_TC.push(TC);
 				TC.Visible = false;
 			}
 		}
 	} else {
-		while (g_stack_TC.length) {
-			g_stack_TC.pop().Visible = true;
+		while (g_.stack_TC.length) {
+			g_.stack_TC.pop().Visible = true;
 		}
 	}
 });
@@ -1936,17 +1919,17 @@ function InitCode()
 	};
 	var i;
 	for (i = 0; i < 3; i++) {
-		g_KeyState[i][0] = api.GetKeyNameText(g_KeyState[i][0]);
+		g_.KeyState[i][0] = api.GetKeyNameText(g_.KeyState[i][0]);
 	}
-	i = g_KeyState.length;
-	while (i-- > 4 && g_KeyState[i][0] == g_KeyState[i - 4][0]) {
-		g_KeyState.pop();
+	i = g_.KeyState.length;
+	while (i-- > 4 && g_.KeyState[i][0] == g_.KeyState[i - 4][0]) {
+		g_.KeyState.pop();
 	}
 	for (var j = 256; j >= 0; j -= 256) {
 		for (var i = 128; i > 0; i--) {
 			var v = api.GetKeyNameText((i + j) * 0x10000);
 			if (v && v.charCodeAt(0) > 32) {
-				g_KeyCode[v.toUpperCase()] = i + j;
+				g_.KeyCode[v.toUpperCase()] = i + j;
 			}
 		}
 	}
@@ -1996,11 +1979,21 @@ function ChangeNotifyFV(lEvent, item1, item2)
 					}
 				}
 				FV.Notify(lEvent, item1, item2);
-				if (FV.hwndList) {
-					if (api.ILIsParent(FV, item1, true)) {
+				if (api.ILIsParent(FV, item1, true)) {
+					if (FV.hwndList) {
 						var item = api.Memory("LVITEM");
 						item.stateMask = LVIS_CUT;
 						api.SendMessage(FV.hwndList, LVM_SETITEMSTATE, -1, item);
+					}
+					if (WINVER >= 0x600 && (lEvent & (SHCNE_DELETE | SHCNE_RMDIR))) {
+						var nPos = FV.GetFocusedItem - 1;
+						if (nPos > 0 && api.ILIsEqual(item1, FV.FocusedItem)) {
+							(function (FV, nPos) { setTimeout(function ()
+							{
+								var nCount = FV.ItemCount(SVGIO_ALLVIEW);
+								FV.SelectItem(nPos < nCount ? nPos : nCount - 1, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | (FV.Id == te.Ctrl(CTRL_FV).Id ? 0 : SVSI_NOTAKEFOCUS));
+							}, 99);}) (FV, nPos);
+						}
 					}
 				}
 				if ((lEvent & fAdd) && FV.FolderItem.Unavailable) {
@@ -2212,7 +2205,7 @@ g_mouse =
 			if (!(item.state & LVIS_SELECTED)) {
 				if (mode) {
 					var Ctrl = te.CtrlFromWindow(this.hwndGesture);
-					Ctrl.SelectItem(Ctrl.Item(this.RButton), SVSI_SELECT | SVSI_FOCUSED | SVSI_DESELECTOTHERS);
+					Ctrl.SelectItem(this.RButton, SVSI_SELECT | SVSI_FOCUSED | SVSI_DESELECTOTHERS);
 				} else {
 					var ptc = api.Memory("POINT");
 					ptc = te.Data.pt.Clone();
@@ -3244,7 +3237,7 @@ if (!te.Data) {
 	te.Data.Conf_Lang = GetLangId();
 
 	if (api.GetKeyState(VK_SHIFT) < 0 && api.GetKeyState(VK_CONTROL) < 0) {
-		xmlWindow = "Init";
+		g_.xmlWindow = "Init";
 	} else {
 		LoadConfig();
 	}
