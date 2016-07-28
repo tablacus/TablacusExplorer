@@ -7978,7 +7978,7 @@ VOID teApiAssocQueryString(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 	AssocQueryString(param[0].assocf, param[1].assocstr, param[2].lpcwstr, param[3].lpcwstr, NULL, &cch);
 	BSTR bsResult = NULL;
 	int nLen = -1;
-	if (cch > 0) {
+	if (cch) {
 		nLen = cch - 1;
 		bsResult = SysAllocStringLen(NULL, nLen);
 		AssocQueryString(param[0].assocf, param[1].assocstr, param[2].lpcwstr, param[3].lpcwstr, bsResult, &cch);
@@ -8223,6 +8223,12 @@ VOID teApiURLDownloadToFile(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 	FindUnknown(&pDispParams->rgvarg[nArg], &punk);
 	teSetLong(pVarResult, URLDownloadToFile(punk, param[1].bstrVal, param[2].bstrVal, param[3].dword, NULL));
 }
+
+VOID teApiMoveFileEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetBool(pVarResult, MoveFileEx(param[0].lpcwstr, param[1].lpcwstr, param[2].dword));
+}
+
 /*
 VOID teApi(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -8525,6 +8531,7 @@ TEDispatchApi dispAPI[] = {
 	{ 0, -1, -1, -1, "IsThemeActive", teApiIsThemeActive },
 	{ 6,  0, -1, -1, "SHDefExtractIcon", teApiSHDefExtractIcon },
 	{ 3,  1,  2, -1, "URLDownloadToFile", teApiURLDownloadToFile },
+	{ 3,  0,  1, -1, "MoveFileEx", teApiMoveFileEx },
 //	{ 0, -1, -1, -1, "", teApi },
 //	{ 0, -1, -1, -1, "Test", teApiTest },
 };

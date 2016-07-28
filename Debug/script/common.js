@@ -985,10 +985,10 @@ PtInRect = function (rc, pt)
 	return pt.x >= rc.Left && pt.x < rc.Right && pt.y >= rc.Top && pt.y < rc.Bottom;
 }
 
-DeleteItem = function (path)
+DeleteItem = function (path, fFlags)
 {
 	if (IsExists(path)) {
-		api.SHFileOperation(FO_DELETE, path, null, FOF_SILENT | FOF_NOCONFIRMATION, false);
+		api.SHFileOperation(FO_DELETE, path, null, fFlags || FOF_SILENT | FOF_NOCONFIRMATION | FOF_NOERRORUI, false);
 	}
 }
 
@@ -1550,6 +1550,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec)
 					return hr;
 				}
 				item = items[nVerb - 1];
+				Mode = 0;
 			}
 		}
 		if (item && !bNoExec) {
@@ -1978,7 +1979,18 @@ BlurId = function (Id)
 
 RunCommandLine = function (s)
 {
-	var arg = api.CommandLineToArgv(s.replace(/\/[^,\s]*/g, ""));
+	var re = /\/select,([^,]+)/i.exec(s);
+	if (re) {
+		var arg = api.CommandLineToArgv(re[1]);
+		Navigate(fso.GetParentFolderName(arg[0]), SBSP_NEWBROWSER);
+		(function (Item) { setTimeout(function ()
+		{
+			var FV = te.Ctrl(CTRL_FV);
+			FV.SelectItem(Item, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
+		}, 99);}) (arg[0]);
+		return;
+	}
+	var arg = api.CommandLineToArgv(s.replace(/^\/e,|^\/n,|^\/root,/ig, ""));
 	for (var i = 1; i < arg.length; i++) {
 		if (/,/.test(arg[i])) {
 			var ar = arg[i].split(",");
@@ -1989,14 +2001,14 @@ RunCommandLine = function (s)
 	}
 }
 
-OpenNewProcess = function (fn, ex, mode)
+OpenNewProcess = function (fn, ex, mode, vOperation)
 {
 	var uid;
 	do {
 		uid = String(Math.random()).replace(/^0?\./, "");
-	} while (Exchange[uid]);
-	Exchange[uid] = ex;
-	return wsh.Exec([api.PathQuoteSpaces(api.GetModuleFileName(null)), mode ? '/open' : '/run', fn, uid].join(" "));
+	} while (MainWindow.Exchange[uid]);
+	MainWindow.Exchange[uid] = ex;
+	return ShellExecute([api.PathQuoteSpaces(api.GetModuleFileName(null)), mode ? '/open' : '/run', fn, uid].join(" "), vOperation, SW_SHOWNORMAL);
 }
 
 GetAddonInfo = function (Id)
@@ -3178,33 +3190,43 @@ ExecAddonScript = function (type, s, fn, arError, o, arStack)
 
 LoadAddon = function (ext, Id, arError, param)
 {
+	var r;
 	try {
 		var sc;
-		var fn = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons") + "\\" + Id + "\\script." + ext;
-		var ado = OpenAdodbFromTextFile(fn);
-		var s = ado.ReadText();
-		ado.Close();
-		if (ext == "js") {
-			try {
-				sc = new Function(s);
-			} catch (e) {
-				sc = ExecAddonScript("JScript", s, fn, arError);
-			}
-		} else if (ext == "vbs") {
-			sc = ExecAddonScript("VBScript", s, fn, arError, {"_Addon_Id": {"Addon_Id": Id}, window: window}, Addons["_stack"]);
+		var ar = ext.split(".");
+		if (ar.length == 1) {
+			ar.unshift("script");
 		}
-		if (sc) {
-			sc(Id);
-			if (param) {
-				var res = /[\r\n\s]Default\s*=\s*["'](.*)["'];/.exec(s);
-				if (res) {
-					param.Default = res[1];
+		var fn = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons") + "\\" + Id + "\\" + ar.join(".");
+		var ado = OpenAdodbFromTextFile(fn);
+		if (ado) {
+			var s = ado.ReadText();
+			if (s) {
+				ado.Close();
+				if (ar[1] == "js") {
+					try {
+						sc = new Function(s);
+					} catch (e) {
+						sc = ExecAddonScript("JScript", s, fn, arError);
+					}
+				} else if (ar[1] == "vbs") {
+					sc = ExecAddonScript("VBScript", s, fn, arError, {"_Addon_Id": {"Addon_Id": Id}, window: window}, Addons["_stack"]);
+				}
+				if (sc) {
+					r = sc(Id);
+					if (param) {
+						var res = /[\r\n\s]Default\s*=\s*["'](.*)["'];/.exec(s);
+						if (res) {
+							param.Default = res[1];
+						}
+					}
 				}
 			}
 		}
 	} catch (e) {
 		arError.push([(e.description || e.toString()), fn].join("\n"));
 	}
+	return r;
 }
 
 AddEventEx(window, "beforeunload", function ()

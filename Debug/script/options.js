@@ -58,17 +58,17 @@ function OpenGroup(id)
 function LoadChecked(form)
 {
 	for(i = 0; i < form.length; i++) {
-		var o = form.elements[i];
+		var o = form[i];
 		if (/=/.test(o.id)) {
 			var ar = o.id.split("=");
-			if (form.elements[ar[0]].value == eval(ar[1])) {
-				form.elements[i].checked = true;
+			if (form[ar[0]].value == eval(ar[1])) {
+				form[i].checked = true;
 			}
 		}
 		if (/:/.test(o.id)) {
 			var ar = o.id.split(":");
-			if (form.elements[ar[0]].value & eval(ar[1])) {
-				form.elements[i].checked = true;
+			if (form[ar[0]].value & eval(ar[1])) {
+				form[i].checked = true;
 			}
 		}
 	}
@@ -110,7 +110,7 @@ function ResetForm()
 	}
 
 	for(i = 0; i < document.F.length; i++) {
-		o = document.F.elements[i];
+		o = document.F[i];
 		if (String(o.type).toLowerCase() == 'checkbox') {
 			if (!/^Conf_/.test(o.id)) {
 				o.checked = false;
@@ -245,16 +245,16 @@ function ClickButton(o, n, f)
 function SetRadio(o)
 {
 	var ar = o.id.split("=");
-	document.F.elements[ar[0]].value = ar[1];
+	document.F[ar[0]].value = ar[1];
 }
 
 function SetCheckbox(o)
 {
 	var ar = o.id.split(":");
 	if (o.checked) {
-		document.F.elements[ar[0]].value |= eval(ar[1]);
+		document.F[ar[0]].value |= eval(ar[1]);
 	} else {
-		document.F.elements[ar[0]].value &= ~eval(ar[1]);
+		document.F[ar[0]].value &= ~eval(ar[1]);
 	}
 	var res = /^(Tab|Tree|View|Conf)/.exec(ar[0]);
 	if (res) {
@@ -272,7 +272,7 @@ function SetValue(n, v)
 
 function AddValue(name, i, min, max)
 {
-	var o = document.F.elements[name];
+	var o = document.F[name];
 	i += api.LowPart(o.value);
 	i = (i < min) ? min : i;
 	o.value = (i < max) ? i : max;
@@ -282,7 +282,7 @@ function ChooseColor1(o)
 {
 	setTimeout(function ()
 	{
-		var o2 = document.F.elements[o.id.replace("Color_", "")];
+		var o2 = document.F[o.id.replace("Color_", "")];
 		var c = ChooseColor(o2.value);
 		if (isFinite(c)) {
 			o2.value = c;
@@ -295,7 +295,7 @@ function ChooseColor2(o)
 {
 	setTimeout(function ()
 	{
-		var o2 = document.F.elements[o.id.replace("Color_", "")];
+		var o2 = document.F[o.id.replace("Color_", "")];
 		var c = ChooseColor(GetWinColor(o2.value));
 		if (isFinite(c)) {
 			c = GetWebColor(c);
@@ -468,7 +468,7 @@ function SelectPos(o, s)
 {
 	var v = o[o.selectedIndex].value;
 	if (v != "") {
-		document.F.elements[s].value = v;
+		document.F[s].value = v;
 	}
 }
 
@@ -480,7 +480,7 @@ function SwitchMenus(o)
 		for (var i = o.length; i-- > 0;) {
 			var a = o[i].value.split(",");
 			if ("Menus_" + a[0] == g_x.Menus.name) {
-				s = a[0] + "," + document.F.elements["Menus_Base"].selectedIndex + "," + document.F.elements["Menus_Pos"].value;
+				s = a[0] + "," + document.F["Menus_Base"].selectedIndex + "," + document.F["Menus_Pos"].value;
 				if (s != o[i].value) {
 					g_Chg.Menus = true;
 					o[i].value = s;
@@ -491,10 +491,10 @@ function SwitchMenus(o)
 	}
 	if (o) {
 		var a = o.value.split(",");
-		g_x.Menus = document.F.elements["Menus_" + a[0]];
+		g_x.Menus = document.F["Menus_" + a[0]];
 		g_x.Menus.style.display = "inline";
-		document.F.elements["Menus_Base"].selectedIndex = a[1];
-		document.F.elements["Menus_Pos"].value = api.LowPart(a[2]);
+		document.F["Menus_Base"].selectedIndex = a[1];
+		document.F["Menus_Pos"].value = api.LowPart(a[2]);
 		CancelX("Menus");
 	}
 }
@@ -502,7 +502,7 @@ function SwitchMenus(o)
 function SwitchX(mode, o)
 {
 	g_x[mode].style.display = "none";
-	g_x[mode] = document.F.elements[mode + o.value];
+	g_x[mode] = document.F[mode + o.value];
 	g_x[mode].style.display = "inline";
 	CancelX(mode);
 }
@@ -627,11 +627,11 @@ EditX = function (mode)
 	}
 	ClearX(mode);
 	var a = g_x[mode][g_x[mode].selectedIndex].value.split(g_sep);
-	document.F.elements[mode + mode].value = a[0];
+	document.F[mode + mode].value = a[0];
 	var p = { s: a[1] };
 	MainWindow.OptionDecode(a[2], p);
-	document.F.elements[mode + "Path"].value = p.s;
-	SetType(document.F.elements[mode + "Type"], a[2]);
+	document.F[mode + "Path"].value = p.s;
+	SetType(document.F[mode + "Type"], a[2]);
 	if (api.StrCmpI(mode, "Key") == 0) {
 	 	SetKeyShift();
 	}
@@ -706,10 +706,10 @@ function ReplaceX(mode)
 		EnableSelectTag(g_x[mode]);
 	}
 	var sel = g_x[mode][g_x[mode].selectedIndex];
-	var o = document.F.elements[mode + "Type"];
-	var p = { s: document.F.elements[mode + "Path"].value };
+	var o = document.F[mode + "Type"];
+	var p = { s: document.F[mode + "Path"].value };
 	MainWindow.OptionEncode(o[o.selectedIndex].value, p);
-	SetData(sel, [document.F.elements[mode + mode].value, p.s, o[o.selectedIndex].value]);
+	SetData(sel, [document.F[mode + mode].value, p.s, o[o.selectedIndex].value]);
 	g_Chg[mode] = true;
 	g_bChanged = true;
 }
@@ -788,7 +788,7 @@ function LoadMenus(nSelected)
 			var menus = teMenuGetElementsByTagName(s);
 			if (menus && menus.length) {
 				oa[++oa.length - 1].value = s + "," + menus[0].getAttribute("Base") + "," + menus[0].getAttribute("Pos");
-				var o = document.F.elements["Menus_" + s];
+				var o = document.F["Menus_" + s];
 				var items = menus[0].getElementsByTagName("Item");
 				if (items) {
 					var i = items.length;
@@ -820,7 +820,7 @@ function LoadMenus(nSelected)
 					EnableSelectTag(o);
 					FireEvent(o, "change");
 				}
-			}, 99);}) (document.F.elements["Menus_" + ar[0]], ar[1]);
+			}, 99);}) (document.F["Menus_" + ar[0]], ar[1]);
 		}
 	}
 }
@@ -832,7 +832,7 @@ function LoadX(mode, fn)
 		for (var i in MainWindow.eventTE.AddType) {
 			MainWindow.eventTE.AddType[i](arFunc);
 		}
-		var oa = document.F.elements[mode + "Type"] || document.F.Type;
+		var oa = document.F[mode + "Type"] || document.F.Type;
 		while (oa.length) {
 			oa.removeChild(oa[0]);
 		}
@@ -841,16 +841,16 @@ function LoadX(mode, fn)
 			o.value = arFunc[i];
 			o.innerText = GetText(arFunc[i]).replace(/&|\.\.\.$/g, "").replace(/\(\w\)/, "");
 		}
-		g_x[mode] = document.F.elements[mode + "All"];
+		g_x[mode] = document.F[mode + "All"];
 		if (g_x[mode]) {
-			oa = document.F.elements[mode];
+			oa = document.F[mode];
 			oa.length = 0;
 			xml = OpenXml(mode + ".xml", false, true);
 			for (var j in g_Types[mode]) {
 				var o = oa[++oa.length - 1];
 				o.text = GetTextEx(g_Types[mode][j]);
 				o.value = g_Types[mode][j];
-				o = document.F.elements[mode + g_Types[mode][j]];
+				o = document.F[mode + g_Types[mode][j]];
 				var items = xml.getElementsByTagName(g_Types[mode][j]);
 				var i = items.length;
 				if (i == 0 && g_Types[mode][j] == "List") {
@@ -904,7 +904,7 @@ function SaveMenus()
 
 		var root = xml.createElement("TablacusExplorer");
 		for (var j in g_arMenuTypes) {
-			var o = document.F.elements["Menus_" + g_arMenuTypes[j]];
+			var o = document.F["Menus_" + g_arMenuTypes[j]];
 			var items = xml.createElement(g_arMenuTypes[j]);
 			var a = document.F.elements.Menus[j].value.split(",");
 			items.setAttribute("Base", api.LowPart(a[1]));
@@ -936,7 +936,7 @@ function SaveX(mode)
 		var xml = CreateXml();
 		var root = xml.createElement("TablacusExplorer");
 		for (var j in g_Types[mode]) {
-			var o = document.F.elements[mode + g_Types[mode][j]];
+			var o = document.F[mode + g_Types[mode][j]];
 			for (var i = 0; i < o.length; i++) {
 				var item = xml.createElement(g_Types[mode][j]);
 				var a = o[i].value.split(g_sep);
@@ -1088,19 +1088,11 @@ function AddAddon(table, Id, Enable)
 function SetAddon(td, Id, Enable)
 {
 	var info = GetAddonInfo(Id);
-	var s = ['<div draggable="true" title="', Id, '" ondragstart="Start5(this)" ondragend="End5(this)" Id="Addons_', Id, '" style="color: '];
-	s.push((Enable == "Enable") ? "gray" : "");
-	s.push('"><table><tr style="border-bottom: 1px solid ButtonShadow"><td style="width: 100%"><input type="radio" name="AddonId" id="_', Id, '"><label for="_', Id, '"><b>', info.Name, "</b>&nbsp;", info.Version, '&nbsp;<a href="#" style="font-size: 75%" onclick="return AddonInfo(\'', Id, '\')">', GetText('Details'), '</a>');
+	var s = ['<div draggable="true" title="', Id, '" ondragstart="Start5(this)" ondragend="End5(this)" Id="Addons_', Id, '" style="color: ', (Enable == "Enable") ? "gray" : "", '">'];
+	s.push('<table><tr style="border-bottom: 1px solid ButtonShadow"><td style="width: 100%"><input type="radio" name="AddonId" id="_', Id, '"><label for="_', Id, '"><b>', info.Name, "</b>&nbsp;", info.Version, '&nbsp;<a href="#" style="font-size: 75%" onclick="return AddonInfo(\'', Id, '\')">', GetText('Details'), '</a>');
 	s.push('</td><td><input type="button" value="', GetText('Remove'), '" onclick="AddonRemove(\'', Id, '\')"></td>');
-	s.push('<td><input type="button" value="', GetText(Enable), '" onclick="AddonEnable(\'', Id, '\', this)"');
-	if (info.MinVersion && te.Version < CalcVersion(info.MinVersion)) {
-		s.push(" disabled");
-	}
-	s.push('></td>');
-	s.push('<td><input type="button" value="', GetText('Options'), '" onclick="AddonOptions(\'', Id, '\')"');
-	if (!info.Options) {
-		s.push(" disabled");
-	}
+	s.push('<td><input type="button" value="', GetText(Enable), '" onclick="AddonEnable(\'', Id, '\', this)"', info.MinVersion && te.Version < CalcVersion(info.MinVersion) ? " disabled" : "", '></td>');
+	s.push('<td><input type="button" value="', GetText('Options'), '" onclick="AddonOptions(\'', Id, '\')"', info.Options ? "" : " disabled");
 	s.push('></td></tr></table></label></div>');
 	td.innerHTML = s.join("");
 
@@ -1301,6 +1293,9 @@ function AddonRemove(Id)
 		return;
 	}
 	MainWindow.AddonDisabled(Id);
+	if (AddonBeforeRemove(Id) < 0) {
+		return;
+	}
 	var sf = api.Memory("SHFILEOPSTRUCT");
 	sf.hwnd = api.GetForegroundWindow();
 	sf.wFunc = FO_DELETE;
@@ -1326,7 +1321,7 @@ InitOptions = function ()
 		if (!/=|:/.test(i)) {
 			if (/^Tab_|^Tree_|^View_|^Conf_/.test(i)) {
 				if (te.Data[i] !== undefined) {
-					SetElementValue(document.F.elements[i], te.Data[i]);
+					SetElementValue(document.F[i], te.Data[i]);
 				}
 			}
 		}
@@ -1364,7 +1359,7 @@ InitOptions = function ()
 			for (var i in document.F.elements) {
 				if (!/=|:/.test(i)) {
 					if (/^Tab_|^Tree_|^View_|^Conf_/.test(i) && !/_$/.test(i)) {
-						te.Data[i] = GetElementValue(document.F.elements[i]);
+						te.Data[i] = GetElementValue(document.F[i]);
 					}
 				}
 			}
@@ -1508,7 +1503,7 @@ InitDialog = function ()
 
 		setTimeout(function ()
 		{
-			document.F.elements[dialogArguments.Mode].checked = true;
+			document.F[dialogArguments.Mode].checked = true;
 			document.F.path.focus();
 		}, 99);
 
@@ -1571,11 +1566,13 @@ InitDialog = function ()
 MouseDown = function ()
 {
 	if (g_Gesture) {
-		var c = returnValue.charAt(returnValue.length - 1);
 		var n = 1;
-		for (i = 1; i < 4; i++) {
-			if (event.button & n && g_Gesture.indexOf(i + "") < 0) {
-				returnValue += i + "";
+		var ar = [0, 0, 2, 1];
+		for (i = 1; i < 6; i++) {
+			if (g_Gesture.indexOf(i + "") < 0) {
+				if ((event.buttons && event.buttons & n) || event.button == ar[i]) {
+					returnValue += i + "";
+				}
 			}
 			n *= 2;
 		}
@@ -1679,8 +1676,8 @@ InitLocation = function ()
 			Location = param.Default;
 		}
 		for (var i = document.L.elements.length; i--;) {
-			if (api.StrCmpI(Location, document.L.elements[i].value) == 0) {
-				document.L.elements[i].checked = true;
+			if (api.StrCmpI(Location, document.L[i].value) == 0) {
+				document.L[i].checked = true;
 			}
 		}
 	}
@@ -1719,7 +1716,7 @@ InitLocation = function ()
 	var ar = ["Key", "Mouse"];
 	for (i in ar) {
 		var mode = ar[i];
-		var oa = document.F.elements[mode + "On"];
+		var oa = document.F[mode + "On"];
 		oa.length = 0;
 		o = oa[++oa.length - 1];
 		o.value = "";
@@ -1797,8 +1794,8 @@ InitLocation = function ()
 				var item = items[0];
 				item.removeAttribute("Location");
 				for (var i = document.L.elements.length; i--;) {
-					if (document.L.elements[i].checked) {
-						item.setAttribute("Location", document.L.elements[i].value);
+					if (document.L[i].checked) {
+						item.setAttribute("Location", document.L[i].value);
 						te.Data.bReload = true;
 						MainWindow.RunEvent1("ConfigChanged", "Addons");
 						break;
@@ -1820,9 +1817,9 @@ InitLocation = function ()
 					var n = ele[i].id || ele[i].name;
 					if (n && n.charAt(0) != "_") {
 						if (n == "Key") {
-							var s = GetKeyKey(document.F.elements[n].value);
+							var s = GetKeyKey(document.F[n].value);
 							if (s) {
-								document.F.elements[n].value = api.sprintf(10, "$%x", s);
+								document.F[n].value = api.sprintf(10, "$%x", s);
 							}
 						}
 						if (SetAttribEx(item, document.F, n)) {
@@ -1888,7 +1885,7 @@ function SetElementValue(o, s)
 
 function SetAttribEx(item, f, n)
 {
-	var s = GetElementValue(f.elements[n]);
+	var s = GetElementValue(f[n]);
 	if (s != GetAttribEx(item, f, n)) {
 		SetAttrib(item, n, s);
 		return true;
@@ -1911,7 +1908,7 @@ function GetAttribEx(item, f, n)
 		if (n == "Key") {
 			s = GetKeyName(s);
 		}
-		SetElementValue(f.elements[n], s);
+		SetElementValue(f[n], s);
 	}
 }
 
@@ -1971,7 +1968,7 @@ function PortableX(Id)
 
 function GetElement(Id)
 {
-	var o = document.F.elements[Id];
+	var o = document.F[Id];
 	return o ? o : document.getElementById(Id);
 }
 
@@ -2033,7 +2030,7 @@ function SetTab(s)
 
 function AddMouse(o)
 {
-	(document.F.elements["MouseMouse"] || document.F.elements["Mouse"]).value += o.title;
+	(document.F["MouseMouse"] || document.F["Mouse"]).value += o.title;
 }
 
 function InitAddonOptions(bFlag)
@@ -2109,8 +2106,8 @@ function SelectIcon(o)
 TestX = function (id)
 {
 	if (confirmOk("Are you sure?")) {
-		var o = document.F.elements[id + "Type"];
-		var p = { s: document.F.elements[id + "Path"].value };
+		var o = document.F[id + "Type"];
+		var p = { s: document.F[id + "Path"].value };
 		MainWindow.OptionEncode(o[o.selectedIndex].value, p);
 		MainWindow.focus();
 		MainWindow.Exec(te.Ctrl(CTRL_FV), p.s, o[o.selectedIndex].value);
@@ -2385,6 +2382,9 @@ function Install(o, bUpdate)
 	var Id = o.title.replace(/_.*/, "");
 
 	MainWindow.AddonDisabled(Id);
+	if (AddonBeforeRemove(Id) < 0) {
+		return;
+	}
 	document.body.style.cursor = "wait";
 	setTimeout(function ()
 	{
@@ -2453,7 +2453,7 @@ function InitColor1(item)
 		if (n) {
 			var res = /^Color_(.*)/.exec(n);
 			if (res) {
-				var o = document.F.elements[res[1]];
+				var o = document.F[res[1]];
 				if (o) {
 					ele[i].style.backgroundColor = GetWebColor(o.value);
 				}
@@ -2482,4 +2482,15 @@ function SetTabContents(id, name, value)
 {
 	document.getElementById("tab" + id).value = GetText(name);
 	document.getElementById("panel" + id).innerHTML = value;
+}
+
+function AddonBeforeRemove(Id)
+{
+	CollectGarbage();
+	var arError = [];
+	var r = LoadAddon("remove.js", Id, arError);
+	if (arError.length) {
+		MessageBox(arError.join("\n\n"), TITLE, MB_OK);
+	}
+	return r;
 }

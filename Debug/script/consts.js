@@ -9,6 +9,10 @@ AddEventEx = function (w, Name, fn)
 }
 
 //Objects
+fso = new ActiveXObject("Scripting.FileSystemObject");
+sha = new ActiveXObject("Shell.Application");
+wsh = new ActiveXObject("WScript.Shell");
+wnw = new ActiveXObject("WScript.Network");
 g_uid = location.hash.replace(/\D/g, "");
 
 if (!window.te && window.external && external.Type) {
@@ -33,7 +37,7 @@ if (!window.te && window.external && external.Type) {
 
 if (g_uid) {
 	(function () {
-		var wins = new ActiveXObject("Shell.Application").Windows();
+		var wins = sha.Windows();
 		for (var i = wins.Count; i--;) {
 			var x = wins.Item(i);
 			if (x && x.Document) {
@@ -74,10 +78,6 @@ if (ParentWindow || !window.te) {
 if (!window.api) {
 	api = te.WindowsAPI;
 }
-fso = (ParentWindow || MainWindow).fso || new ActiveXObject("Scripting.FileSystemObject");
-sha = (ParentWindow || MainWindow).sha || new ActiveXObject("Shell.Application");
-wsh = (ParentWindow || MainWindow).wsh || new ActiveXObject("WScript.Shell");
-wnw = (ParentWindow || MainWindow).wnw || new ActiveXObject("WScript.Network");
 
 osInfo = api.Memory("OSVERSIONINFOEX");
 osInfo.dwOSVersionInfoSize = osInfo.Size;
@@ -1877,6 +1877,13 @@ DT_PREFIXONLY           = 0x00200000;
 
 PBT_APMRESUMEAUTOMATIC = 0x0012;
 PBT_POWERSETTINGCHANGE = 0x8013;
+
+MOVEFILE_REPLACE_EXISTING      = 0x00000001;
+MOVEFILE_COPY_ALLOWED          = 0x00000002;
+MOVEFILE_DELAY_UNTIL_REBOOT    = 0x00000004;
+MOVEFILE_WRITE_THROUGH         = 0x00000008;
+MOVEFILE_CREATE_HARDLINK       = 0x00000010;
+MOVEFILE_FAIL_IF_NOT_TRACKABLE = 0x00000020;
 
 // GDI Plus
 RotateNoneFlipNone = 0;
