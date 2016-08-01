@@ -10403,7 +10403,7 @@ HRESULT CteShellBrowser::Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	return hr;
 }
 
-BOOL CteShellBrowser::Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItems *pFolderItems, FolderItem *pPrevious, LPITEMIDLIST *ppidl, int nErrorHandleing)
+BOOL CteShellBrowser::Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItems *pFolderItems, FolderItem *pPrevious, LPITEMIDLIST *ppidl, int nErrorHandling)
 {
 	CteFolderItem *pid = NULL;
 	if (pFolderItem) {
@@ -10412,7 +10412,11 @@ BOOL CteShellBrowser::Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItem
 				if (pid->m_v.vt == VT_BSTR) {
 					if (tePathIsNetworkPath(pid->m_v.bstrVal)) {
 						if (tePathIsDirectory(pid->m_v.bstrVal, 100, 3) != S_OK) {
-							Navigate1Ex(pid->m_v.bstrVal, pFolderItems, wFlags, pPrevious, nErrorHandleing);
+							if (!g_nLockUpdate && m_pTC->m_bVisible) {
+								Navigate1Ex(pid->m_v.bstrVal, pFolderItems, wFlags, pPrevious, nErrorHandling);
+							} else {
+								m_nUnload = 9;
+							}
 							pid->Release();
 							return TRUE;
 						}
@@ -10421,7 +10425,7 @@ BOOL CteShellBrowser::Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItem
 						pid->GetCurFolder(ppidl);
 						if (!pid->m_pidl && m_pShellView) {
 							teILFreeClear(ppidl);
-							Navigate1Ex(pid->m_v.bstrVal, pFolderItems, wFlags, pPrevious, nErrorHandleing);
+							Navigate1Ex(pid->m_v.bstrVal, pFolderItems, wFlags, pPrevious, nErrorHandling);
 							pid->Release();
 							return TRUE;
 						}
@@ -13792,6 +13796,11 @@ void CteShellBrowser::Show(BOOL bShow, DWORD dwOptions)
 			if (!g_nLockUpdate && !m_nCreate) {
 				if (m_nUnload == 9) {
 					m_nUnload = 2;
+					CteFolderItem *pid;
+					if SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
+						teILFreeClear(&pid->m_pidl);
+						pid->Release();
+					}
 					if SUCCEEDED(BrowseObject(NULL, SBSP_RELATIVE | SBSP_WRITENOHISTORY | SBSP_REDIRECT)) {
 						m_nUnload = 0;
 					}

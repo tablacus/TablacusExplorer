@@ -2428,11 +2428,13 @@ g_basic =
 		{
 			Exec: function (Ctrl, s, type, hwnd, pt)
 			{
-				s = ExtractMacro(Ctrl, s);
-				try {
-					ShellExecute(s, null, SW_SHOWNORMAL, Ctrl, pt);
-				} catch (e) {
-					ShowError(e, s);
+				var lines = ExtractMacro(Ctrl, s).split(/\r?\n/);
+				for (var i in lines) {
+					try {
+						ShellExecute(lines[i], null, SW_SHOWNORMAL, Ctrl, pt);
+					} catch (e) {
+						ShowError(e, lines[i]);
+					}
 				}
 				return S_OK;
 			},
