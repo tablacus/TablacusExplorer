@@ -10412,7 +10412,7 @@ BOOL CteShellBrowser::Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItem
 				if (pid->m_v.vt == VT_BSTR) {
 					if (tePathIsNetworkPath(pid->m_v.bstrVal)) {
 						if (tePathIsDirectory(pid->m_v.bstrVal, 100, 3) != S_OK) {
-							if (!g_nLockUpdate && m_pTC->m_bVisible) {
+							if (m_nUnload || (!g_nLockUpdate && m_pTC->m_bVisible)) {
 								Navigate1Ex(pid->m_v.bstrVal, pFolderItems, wFlags, pPrevious, nErrorHandling);
 							} else {
 								m_nUnload = 9;
