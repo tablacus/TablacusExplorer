@@ -10412,7 +10412,7 @@ BOOL CteShellBrowser::Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItem
 				if (pid->m_v.vt == VT_BSTR) {
 					if (tePathIsNetworkPath(pid->m_v.bstrVal)) {
 						if (tePathIsDirectory(pid->m_v.bstrVal, 100, 3) != S_OK) {
-							if (m_nUnload || (!g_nLockUpdate && m_pTC->m_bVisible)) {
+							if (m_nUnload || !g_nLockUpdate) {
 								Navigate1Ex(pid->m_v.bstrVal, pFolderItems, wFlags, pPrevious, nErrorHandling);
 							} else {
 								m_nUnload = 9;
@@ -13798,7 +13798,9 @@ void CteShellBrowser::Show(BOOL bShow, DWORD dwOptions)
 					m_nUnload = 2;
 					CteFolderItem *pid;
 					if SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
-						teILFreeClear(&pid->m_pidl);
+						if (pid->m_v.vt == VT_BSTR) {
+							teILFreeClear(&pid->m_pidl);
+						}
 						pid->Release();
 					}
 					if SUCCEEDED(BrowseObject(NULL, SBSP_RELATIVE | SBSP_WRITENOHISTORY | SBSP_REDIRECT)) {
