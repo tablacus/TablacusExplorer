@@ -13800,6 +13800,7 @@ void CteShellBrowser::Show(BOOL bShow, DWORD dwOptions)
 					if SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
 						if (pid->m_v.vt == VT_BSTR) {
 							teILFreeClear(&pid->m_pidl);
+							pid->m_dwUnavailable = 0;
 						}
 						pid->Release();
 					}
