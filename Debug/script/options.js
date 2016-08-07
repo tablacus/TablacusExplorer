@@ -686,7 +686,7 @@ function ReplaceMenus()
 	}
 	var sel = g_x.Menus[g_x.Menus.selectedIndex];
 	var o = document.F.Menus_Type;
-	var s = GetSourceText(document.F.Menus_Name.value);
+	var s = GetSourceText(document.F.Menus_Name.value.replace(/\\/g, "/"));
 	var org = (s == document.F.Menus_Name.value && api.GetKeyState(VK_SHIFT) >= 0) ? "1" : ""
 	if (document.F.Menus_Key.value.length) {
 		var n = GetKeyKey(document.F.Menus_Key.value);

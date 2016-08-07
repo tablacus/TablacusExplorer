@@ -17051,7 +17051,8 @@ STDMETHODIMP CteServiceProvider::QueryService(REFGUID guidService, REFIID riid, 
 	if (IsEqualIID(riid, IID_IUnknown) || IsEqualIID(riid, IID_IServiceProvider)) {
 		return E_NOINTERFACE;
 	}
-	if (IsEqualIID(riid, IID_IShellBrowser) || IsEqualIID(riid, IID_ICommDlgBrowser) || IsEqualIID(riid, IID_ICommDlgBrowser2) || IsEqualIID(riid, IID_IExplorerPaneVisibility)) {// || IsEqualIID(riid, IID_ICommDlgBrowser3)) {
+	if (IsEqualIID(riid, IID_IShellBrowser) || IsEqualIID(riid, IID_ICommDlgBrowser) || IsEqualIID(riid, IID_ICommDlgBrowser2) || //IsEqualIID(riid, IID_ICommDlgBrowser3)||
+		IsEqualIID(riid, IID_IExplorerPaneVisibility)) {
 		return m_pUnk->QueryInterface(riid, ppv);
 	}
 	if (IsEqualIID(riid, IID_IInternetSecurityManager)) {

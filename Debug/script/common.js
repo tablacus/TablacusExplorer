@@ -1572,9 +1572,10 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec)
 ExecMenu4 = function (Ctrl, Name, pt, hMenu, arContextMenu, nVerb, FV)
 {
 	if (ExtraMenuCommand[nVerb]) {
-		ExtraMenuCommand[nVerb](Ctrl, pt, Name, nVerb);
-		api.DestroyMenu(hMenu);
-		return S_OK;
+		if (ExtraMenuCommand[nVerb](Ctrl, pt, Name, nVerb) != S_FALSE) {
+			api.DestroyMenu(hMenu);
+			return S_OK;
+		}
 	}
 	for (var i in eventTE.MenuCommand) {
 		var hr = eventTE.MenuCommand[i](Ctrl, pt, Name, nVerb, hMenu);
@@ -1991,13 +1992,19 @@ RunCommandLine = function (s)
 		return;
 	}
 	var arg = api.CommandLineToArgv(s.replace(/^\/e,|^\/n,|^\/root,/ig, ""));
-	for (var i = 1; i < arg.length; i++) {
-		if (/,/.test(arg[i])) {
-			var ar = arg[i].split(",");
+	arg.shift();
+	var s  = arg.join(" ");
+	if (/^[A-Z]:\\|^\\/i.test(s) && IsExists(s)) {
+		Navigate(s, SBSP_NEWBROWSER);
+		return;
+	}
+	while (s = arg.shift()) {
+		var ar = s.split(",");
+		if (ar.length > 1) {
 			Exec(te, GetSourceText(ar[1]), GetSourceText(ar[0]), te.hwnd, api.Memory("POINT"))
 			continue;
 		}
-		Navigate(arg[i], SBSP_NEWBROWSER);
+		Navigate(s, SBSP_NEWBROWSER);
 	}
 }
 
@@ -2999,11 +3006,15 @@ SetRenameMenu = function (n)
 {
 	ExtraMenuCommand[CommandID_RENAME + n - 1] = function (Ctrl, pt, Name, nVerb)
 	{
-		setTimeout(function ()
-		{
-			Ctrl.Focus();
-			wsh.SendKeys("{F2}");
-		}, 99);
+		if (Ctrl.Type == CTRL_TV) {
+			setTimeout(function ()
+			{
+				Ctrl.Focus();
+				wsh.SendKeys("{F2}");
+			}, 99);
+		} else {
+			return S_FALSE;
+		}
 	};
 }
 

@@ -26,6 +26,9 @@ Michele Pezza
 French / Français
 Olivier Wuillemin
 
+русский / Russian
+Hunter User
+
 //Documents
 https://www.penflip.com/LightTempler/tablacus-explorer
 

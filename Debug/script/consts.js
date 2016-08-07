@@ -1439,6 +1439,7 @@ CommandID_PROPERTIES = 20;
 CommandID_CUT        = 25;
 CommandID_COPY       = 26;
 CommandID_PASTE      = 27;
+CommandID_STORE      = 28;
 
 ICON_SMALL  = 0;
 ICON_BIG    = 1;

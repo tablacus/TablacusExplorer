@@ -467,7 +467,7 @@ AddFavorite = function (FolderItem)
 		}
 		var s = InputDialog("Add Favorite", api.GetDisplayNameOf(FolderItem, SHGDN_INFOLDER));
 		if (s) {
-			item.setAttribute("Name", s);
+			item.setAttribute("Name", s.replace(/\\/g, "/"));
 			item.setAttribute("Filter", "");
 			item.text = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
 			if (fso.FileExists(item.text)) {
@@ -2730,18 +2730,20 @@ g_basic =
 			Exec: function (Ctrl, s, type, hwnd, pt)
 			{
 				var Selected;
+				var FV = Ctrl;
 				if (Ctrl.Type <= CTRL_EB || Ctrl.Type == CTRL_TV) {
 					Selected = Ctrl.SelectedItems();
 				} else {
-					var FV = te.Ctrl(CTRL_FV);
+					FV = te.Ctrl(CTRL_FV);
 					Selected = FV.SelectedItems();
 				}
 				if (Selected && Selected.Count) {
 					var ContextMenu = api.ContextMenu(Selected, FV);
 					if (ContextMenu) {
 						var hMenu = api.CreatePopupMenu();
-						ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_EXTENDEDVERBS);
+						ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_EXTENDEDVERBS | CMF_CANRENAME);
 						var nVerb = GetCommandId(hMenu, s, ContextMenu);
+						FV.Focus();
 						ContextMenu.InvokeCommand(0, te.hwnd, nVerb ? nVerb - 1 : s, null, null, SW_SHOWNORMAL, 0, 0);
 						api.DestroyMenu(hMenu);
 					}
@@ -2760,7 +2762,7 @@ g_basic =
 					var ContextMenu = api.ContextMenu(Selected, FV);
 					if (ContextMenu) {
 						var hMenu = api.CreatePopupMenu();
-						ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_EXTENDEDVERBS);
+						ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_EXTENDEDVERBS | CMF_CANRENAME | CMF_DONOTPICKDEFAULT);
 						return g_basic.PopupMenu(hMenu, ContextMenu, pt);
 					}
 				}
@@ -2792,7 +2794,7 @@ g_basic =
 					var ContextMenu = FV.ViewMenu();
 					if (ContextMenu) {
 						var hMenu = api.CreatePopupMenu();
-						ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_EXTENDEDVERBS);
+						ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_EXTENDEDVERBS | CMF_DONOTPICKDEFAULT);
 						return g_basic.PopupMenu(hMenu, ContextMenu, pt);
 					}
 				}
