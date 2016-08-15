@@ -1727,7 +1727,7 @@ BOOL tePathIsNetworkPath(LPCWSTR pszPath)//PathIsNetworkPath is slow in DRIVE_NO
 		UINT uDriveType = GetDriveType(pszDrive);
 		return uDriveType == DRIVE_REMOTE || uDriveType == DRIVE_NO_ROOT_DIR;
 	}
-	return (pszDrive[0] == '\\' && pszDrive[1] == '\\');
+	return tePathMatchSpec(pszPath, L"\\*;*://*");
 }
 
 HRESULT STDAPICALLTYPE tePSPropertyKeyFromStringEx(__in LPCWSTR pszString,  __out PROPERTYKEY *pkey)
@@ -2024,6 +2024,24 @@ BOOL GetShellFolder(IShellFolder **ppSF, LPCITEMIDLIST pidl)
 	return TRUE;
 }
 
+LPITEMIDLIST teILCreateFromPathEx(LPWSTR pszPath)
+{
+	LPITEMIDLIST pidl = NULL;
+	IBindCtx *pbc = NULL;
+	ULONG chEaten;
+	ULONG dwAttributes;
+	IShellFolder *pSF;
+	if SUCCEEDED(SHGetDesktopFolder(&pSF)) {
+		if SUCCEEDED(CreateBindCtx(0, &pbc)) {
+			pbc->RegisterObjectParam(STR_PARSE_PREFER_FOLDER_BROWSING, static_cast<IDropSource *>(g_pTE));
+		}
+		pSF->ParseDisplayName(NULL, pbc, pszPath, &chEaten, &pidl, &dwAttributes);
+		SafeRelease(&pbc);
+		pSF->Release();
+	}
+	return pidl;
+}
+
 LPITEMIDLIST teILCreateFromPath3(IShellFolder *pSF, LPWSTR pszPath, HWND hwnd)
 {
 	LPITEMIDLIST pidlResult = NULL;
@@ -2109,13 +2127,13 @@ HRESULT GetDisplayNameFromPidl(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags)
 		if (hr == S_OK) {
 			if (teIsFileSystem(*pbs)) {
 				if (uFlags & SHGDN_FORPARSINGEX) {
-					BOOL bSearch = FALSE;
+					BOOL bSpecial = FALSE;
 					BSTR bs2;
 					if SUCCEEDED(teGetDisplayNameBSTR(pSF, pidlPart, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING, &bs2)) {
-						bSearch = teStartsText(L"search-ms:", bs2);
+						bSpecial = tePathMatchSpec(bs2, L"search-ms:*;*://*");
 						::SysFreeString(bs2);
 					}
-					if (!bSearch) {
+					if (!bSpecial) {
 						LPITEMIDLIST pidl2 = SHSimpleIDListFromPath(*pbs);
 						if (!ILIsEqual(pidl, pidl2)) {
 							teILCloneReplace(&pidl2, pidl);
@@ -2690,7 +2708,7 @@ HRESULT tePathIsDirectory2(LPWSTR pszPath, int iUseFS)
 			}
 		}
 	}
-	LPITEMIDLIST pidl = iUseFS ? ILCreateFromPath(pszPath) : teILCreateFromPath(pszPath);
+	LPITEMIDLIST pidl = iUseFS ? teILCreateFromPathEx(pszPath) : teILCreateFromPath(pszPath);
 	if (pidl) {
 		HRESULT hr = teILFolderExists(pidl);
 		teCoTaskMemFree(pidl);
@@ -2793,7 +2811,7 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 			if (tePathMatchSpec1(pszPath, L"\\\\*\\*")) {
 				LPWSTR lpDelimiter = StrChr(&pszPath[2], '\\');
 				BSTR bsServer = ::SysAllocStringLen(pszPath, int(lpDelimiter - pszPath));
-				LPITEMIDLIST pidlServer = ILCreateFromPath(bsServer);
+				LPITEMIDLIST pidlServer = teILCreateFromPathEx(bsServer);
 				if (pidlServer) {
 					pidl = teILCreateFromPath2(pidlServer, &lpDelimiter[1], g_hwndMain);
 					teCoTaskMemFree(pidlServer);
@@ -2801,7 +2819,7 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 				::SysFreeString(bsServer);
 			}
 			if (!pidl) {
-				pidl = ILCreateFromPath(pszPath);
+				pidl = teILCreateFromPathEx(pszPath);
 				if (pidl) {
 					if (tePathIsNetworkPath(pszPath) && PathIsRoot(pszPath) && FAILED(tePathIsDirectory(pszPath, 0, 3))) {
 						teILFreeClear(&pidl);
@@ -2811,7 +2829,7 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 					lstrcpyn(pszDrive, pszPath, 4);
 					int n = GetDriveType(pszDrive);
 					if (n == DRIVE_NO_ROOT_DIR && SUCCEEDED(tePathIsDirectory(pszDrive, 0, 3))) {
-						pidl = ILCreateFromPath(pszPath);
+						pidl = teILCreateFromPathEx(pszPath);
 					}
 				}
 			}
@@ -5627,7 +5645,7 @@ BOOL teLocalizePath(LPWSTR pszPath, BSTR *pbsPath)
 			lpEnd = lp;
 			if (lp) {
 				lp[0] = NULL;
-				LPITEMIDLIST pidl = ILCreateFromPath(bsPath);
+				LPITEMIDLIST pidl = teILCreateFromPathEx(bsPath);
 				if (pidl) {
 					BSTR bs;
 					if SUCCEEDED(GetDisplayNameFromPidl(&bs, pidl, SHGDN_FORADDRESSBAR)) {
@@ -10388,6 +10406,7 @@ HRESULT CteShellBrowser::Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *
 				if (bNew && (wFlags & SBSP_ACTIVATE_NOFOCUS) == 0) {
 					TabCtrl_SetCurSel(m_pTC->m_hwnd, m_pTC->m_nIndex + 1);
 					m_pTC->m_nIndex = TabCtrl_GetCurSel(m_pTC->m_hwnd);
+					pSB->Show(TRUE, 0);
 				} else {
 					m_pTC->TabChanged(TRUE);
 				}
@@ -12630,12 +12649,18 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 										hr = S_OK;
 									}
 								}
-								::SysFreeString(bs);
+								teSysFreeString(&bs);
 							}
 							if (hr == S_OK) {
 								IResultsFolder *pRF;
 								if (SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) && SUCCEEDED(pFV->GetFolder(IID_PPV_ARGS(&pRF)))) {
 									pRF->AddIDList(pidl, &pidlChild);
+									BSTR bs2 = NULL;
+									if (FAILED(teGetDisplayNameBSTR(m_pSF2, pidlChild, SHGDN_NORMAL, &bs2)) || !bs2[0]) {
+										pRF->RemoveIDList(pidl);
+										hr = E_FAIL;
+									}
+									teSysFreeString(&bs2);
 									pRF->Release();
 								}
 #ifdef _2000XP
@@ -19320,7 +19345,7 @@ LPITEMIDLIST CteFolderItem::GetPidl()
 			if (tePathMatchSpec1(m_v.bstrVal, L"*\\..")) {
 				BSTR bs = ::SysAllocString(m_v.bstrVal);
 				PathRemoveFileSpec(bs);
-				LPITEMIDLIST pidl = ILCreateFromPath(bs);
+				LPITEMIDLIST pidl = teILCreateFromPathEx(bs);
 				::SysFreeString(bs);
 				if (pidl) {
 					teILCloneReplace(&m_pidlFocused, ILFindLastID(pidl));
