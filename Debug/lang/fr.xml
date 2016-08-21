@@ -3,7 +3,7 @@
 	<lang author="Olivier Wuillemin" en="French">Français</lang>
 	<text s="&amp;File">&amp;Fichier</text>
 	<text s="&amp;Edit">&amp;Edition</text>
-	<text s="&amp;View">&amp;Visualiser</text>
+	<text s="&amp;View">Aff&amp;ichage</text>
 	<text s="F&amp;avorites">F&amp;avoris</text>
 	<text s="&amp;Tools">&amp;Outils</text>
 	<text s="&amp;Help">&amp;Aide</text>
@@ -14,17 +14,17 @@
 	<text s="Go">Go</text>
 	<text s="&amp;Close Application">&amp;Fermer l'application</text>
 	<text s="&amp;Up One Level">&amp;Remonter d'un niveau</text>
-	<text s="&amp;Refresh">&amp;Rafraîchir</text>
-	<text s="&amp;Reload Customize">&amp;Recharger la personalisation</text>
+	<text s="&amp;Refresh">&amp;Actualiser</text>
+	<text s="&amp;Reload Customize">&amp;Recharger la personnalisation</text>
 	<text s="&amp;Load Layout...">&amp;Charger la disposition...</text>
-	<text s="&amp;Save Layout...">&amp;Sauver la disposition...</text>
+	<text s="&amp;Save Layout...">&amp;Enregistrer la disposition...</text>
 	<text s="&amp;Options...">&amp;Préférences...</text>
 	<text s="&amp;Close Tab">&amp;Fermer l'onglet</text>
 	<text s="Cl&amp;ose Other Tabs">F&amp;ermer les autres onglets</text>
 	<text s="Close Tabs on Left">Fermer les onglets à gauche</text>
 	<text s="Close Tabs on Right">Fermer les onglets à droite</text>
 	<text s="&amp;New Tab">&amp;Nouvel onglet</text>
-	<text s="Switch &amp;Explorer Engine">Commuter de moteur d'&amp;Explorateur</text>
+	<text s="Switch &amp;Explorer Engine">Changer le moteur de l'&amp;Explorateur</text>
 	<text s="Open in E&amp;xplorer">Ouvrir dans l'E&amp;xplorateur</text>
 	<text s="General">Général</text>
 	<text s="Tabs">Onglets</text>
@@ -40,10 +40,10 @@
 	<text s="Style">Style</text>
 	<text s="Type">Type</text>
 	<text s="Align">Alignement</text>
-	<text s="Size">Size</text>
+	<text s="Size">Taille</text>
 	<text s="Position">Position</text>
 	<text s="Root">Racine</text>
-	<text s="View mode">Mode visualisation</text>
+	<text s="View mode">Mode d'affichage</text>
 
 	<text s="Left">Gauche</text>
 	<text s="Top">Haut</text>
@@ -64,7 +64,7 @@
 	<text s="Move the current tab control">Déplacer la commande de l'onglet courant</text>
 	<text s="Add a tab control">Ajouter une nouvelle commande d'onglet</text>
 	<text s="Remove the current tab control">Supprimer la commande de l'onglet courant</text>
-	<text s="Get the current folder view">Obtenir la vue du doccier courant</text>
+	<text s="Get the current folder view">Obtenir la vue du dossier courant</text>
 
 	<text s="Initialize config folder">Initialiser le dossier de configuration</text>
 	<text s="If you installed Tablacus Explorer to the Program Files directory, please press this button.">Si vous avez installé Tablacus Explorer dans le dossier Program Files, appuyez sur ce ce bouton.</text>
@@ -86,7 +86,7 @@
 	<text s="Folder">Dossier</text>
 	<text s="Remove">Supprimer</text>
 	<text s="Add">Ajouter</text>
-	<text s="Replace">Repmplacer</text>
+	<text s="Replace">Remplacer</text>
 	<text s="All">Tout</text>
 	<text s="Open">Ouvrir</text>
 	<text s="Exec">Exécuter</text>
@@ -94,13 +94,13 @@
 	<text s="Normal">Normal</text>
 	<text s="Help">Aide</text>
 	<text s="Link">Lien</text>
-	<text s="Are you sure?">Etes vous sûr ?</text>
-	<text s="Do you want to replace?">Voulez vous remplacer ?</text>
+	<text s="Are you sure?">Êtes vous sûr ?</text>
+	<text s="Do you want to replace?">Voulez-vous remplacer ?</text>
 	<text s="Menus">Menus</text>
 	<text s="Context">Contexte</text>
 	<text s="System">Système</text>
 	<text s="&amp;Add to Favorites...">&amp;Ajouter aux favoris...</text>
-	<text s="Add Favorite">Ajout favori</text>
+	<text s="Add Favorite">Ajout un favori</text>
 	<text s="&amp;Lock">&amp;Verrouiller</text>
 	<text s="Alias">Alias</text>
 	<text s="&amp;Add-ons...">&amp;Compléments...</text>
@@ -121,16 +121,16 @@
 
 	<text s="Lines">Lignes</text>
 	<text s="No edit labels">Pas d'édition des labels</text>
-	<text s="Disable Drag-and-Drop">Désactiver Glisser-Déplacer</text>
+	<text s="Disable Drag-and-Drop">Désactiver le Glisser-Déplacer</text>
 	<text s="No infotip">Pas d'info-bulles</text>
-	<text s="Single click expand">Agrandissement simple click</text>
-	<text s="Spring expand">Agrandissement bondissant</text>
+	<text s="Single click expand">Agrandissement par simple click</text>
+	<text s="Spring expand">Agrandissement par bondissement</text>
 	<text s="Full row select">Sélection ligne entière</text>
-	<text s="Show selection always">Montre toujours la sélection</text>
+	<text s="Show selection always">Afficher toujours la sélection</text>
 	<text s="Border">Bordure</text>
 	<text s="Horizontal scroll">Défilement horizontal</text>
 
-	<text s="Enumeration">Enumeration</text>
+	<text s="Enumeration">Énumeration</text>
 	<text s="Folders">Dossiers</text>
 	<text s="Not folders">Autres</text>
 	<text s="Include hidden items">Inclure les éléments cachés</text>
@@ -148,29 +148,29 @@
 	<text s="Ragged right">Droite irréguliere</text>
 	<text s="Right/Bottom">Droit/bas</text>
 	<text s="Vertical">Vertical</text>
-	<text s="Hot track">Selection au vol</text>
+	<text s="Hot track">Sélection au vol</text>
 	<text s="Tooltips">Info-bulles</text>
-	<text s="Force icon left">Forcer l'icone à gauche</text>
-	<text s="Force label left">Forcer le label à gauche</text>
+	<text s="Force icon left">Forcer l'icône à gauche</text>
+	<text s="Force label left">Forcer le texte à gauche</text>
 
 	<text s="Shell Browser">Navigateur du Shell</text>
 	<text s="Explorer Browser">Navigateur de l'explorateur</text>
 
 	<text s="Auto arrange">Réorganisation automatique</text>
-	<text s="Single selection">Selection unique</text>
+	<text s="Single selection">Sélection unique</text>
 	<text s="No client edge">Pas de bords en creux</text>
 	<text s="Show selection always">Montre toujours la sélection</text>
-	<text s="Single click activate">Activation simple-click</text>
+	<text s="Single click activate">Activation par simple-clic</text>
 
-	<text s="Show frames">Afficher cadre explorateur</text>
+	<text s="Show frames">Afficher les cadres explorateurs</text>
 
 	<text s="View flags">Afficher les drapeaux</text>
 	<text s="Show all files">Afficher tous les fichiers</text>
 
-	<text s="Icon">Icones</text>
-	<text s="Small icon">Petites icones</text>
+	<text s="Icon">Icônes</text>
+	<text s="Small icon">Petites icônes</text>
 	<text s="List">Liste</text>
-	<text s="Details">Details</text>
+	<text s="Details">Détails</text>
 	<text s="Thumbnail">Miniatures</text>
 	<text s="Tile">Tuile</text>
 	<text s="Thumbstrip">Bande de miniatures</text>
@@ -201,16 +201,16 @@
 	<text s="Copy Full Path">Copier le chemin complet</text>
 	<text s="Test">Tester</text>
 	<text s="Close">Fermer</text>
-	<text s="Separator">Separation</text>
+	<text s="Separator">Séparateur</text>
 	<text s="Break">Cassure</text>
 	<text s="BarBreak">Cassure de barre</text>
 
-	<text s="Move">le déplacement</text>
-	<text s="Copy">la copie</text>
-	<text s="Delete">la suppression</text>
+	<text s="Move">Déplacer</text>
+	<text s="Copy">Copier</text>
+	<text s="Delete">Supprimer</text>
 	<text s="Rename">Renommer</text>
 	<text s="Extract">Extraire</text>
-	<text s="Save">Sauver</text>
+	<text s="Save">Enregistrer</text>
 	<text s="Load">Charger</text>
 	<text s="Get %s...">Obternir des %s...</text>
 </resources>
