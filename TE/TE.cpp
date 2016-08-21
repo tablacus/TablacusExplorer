@@ -12211,7 +12211,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				return S_OK;
 			//Close
 			case 0x10000031:
-				Close(false);
+				teSetBool(pVarResult, Close(FALSE));
 				return S_OK;
 			//Title
 			case 0x10000032:
@@ -13884,12 +13884,9 @@ void CteShellBrowser::Show(BOOL bShow, DWORD dwOptions)
 	}
 }
 
-VOID CteShellBrowser::Close(BOOL bForce)
+BOOL CteShellBrowser::Close(BOOL bForce)
 {
-	if (m_bEmpty) {
-		return;
-	}
-	if (CanClose(this) || bForce) {
+	if (!m_bEmpty && (CanClose(this) || bForce)) {
 		int i = GetTabIndex();
 		m_bEmpty = true;
 		if (i >= 0)	{
@@ -13897,7 +13894,9 @@ VOID CteShellBrowser::Close(BOOL bForce)
 		}
 		ShowWindow(m_pTV->m_hwnd, SW_HIDE);
 		Clear();
+		return TRUE;
 	}
+	return FALSE;
 }
 
 VOID CteShellBrowser::DestroyView(int nFlags)
@@ -15693,14 +15692,14 @@ VOID CteTabCtrl::Show(BOOL bVisible, BOOL bMain)
 	}
 }
 
-void CteTabCtrl::Close(BOOL bForce)
+BOOL CteTabCtrl::Close(BOOL bForce)
 {
 	if (CanClose(this) || bForce) {
 		int nCount = TabCtrl_GetItemCount(m_hwnd);
 		while (nCount--) {
 			CteShellBrowser *pSB = GetShellBrowser(0);
 			if (pSB) {
-				pSB->Close(true);
+				pSB->Close(TRUE);
 			}
 		}
 		Show(FALSE, FALSE);
@@ -15726,11 +15725,13 @@ void CteTabCtrl::Close(BOOL bForce)
 			for (int i = MAX_TC; i-- && (pTC = g_ppTC[i]);) {
 				if (!pTC->m_bEmpty && pTC->m_bVisible) {
 					g_pTC =  pTC;
-					return;
+					break;
 				}
 			}
 		}
+		return TRUE;
 	}
+	return FALSE;
 }
 
 VOID CteTabCtrl::SetItemSize()
@@ -15966,7 +15967,7 @@ STDMETHODIMP CteTabCtrl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WOR
 				return S_OK;
 			//Close
 			case 9:
-				Close(false);
+				Close(FALSE);
 				return S_OK;
 			//SelectedIndex
 			case 10:

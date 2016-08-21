@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <resources>
-	<lang author="Olivier Wuillemin" en="French">Français</lang>
+	<lang author="Olivier Wuillemin/bufferUnderrun" en="French">Français</lang>
 	<text s="&amp;File">&amp;Fichier</text>
 	<text s="&amp;Edit">&amp;Edition</text>
 	<text s="&amp;View">Aff&amp;ichage</text>

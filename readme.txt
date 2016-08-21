@@ -24,7 +24,7 @@ Italiano / Italian
 Michele Pezza
 
 French / Français
-Olivier Wuillemin
+Olivier Wuillemin / bufferUnderrun
 
 русский / Russian
 Hunter User

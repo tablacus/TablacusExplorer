@@ -809,7 +809,7 @@ public:
 	VOID CreateTC();
 	BOOL Create();
 	VOID Init();
-	VOID Close(BOOL bForce);
+	BOOL Close(BOOL bForce);
 	VOID Move(int nSrc, int nDest, CteTabCtrl *pDestTab);
 	VOID LockUpdate();
 	VOID UnLockUpdate(BOOL bDirect);
@@ -973,7 +973,7 @@ public:
 	VOID SetPropEx();
 	VOID ResetPropEx();
 	int GetTabIndex();
-	VOID Close(BOOL bForce);
+	BOOL Close(BOOL bForce);
 	VOID DestroyView(int nFlags);
 	HWND GetListHandle(HWND *hList);
 	HRESULT BrowseObject2(FolderItem *pid, UINT wFlags);
