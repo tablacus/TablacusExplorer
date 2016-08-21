@@ -14,10 +14,10 @@
 	<text s="Go">Go</text>
 	<text s="&amp;Close Application">&amp;Fermer l'application</text>
 	<text s="&amp;Up One Level">&amp;Remonter d'un niveau</text>
-	<text s="&amp;Refresh">&amp;Rafraîchir</text>
-	<text s="&amp;Reload Customize">&amp;Recharger la personalisation</text>
+	<text s="&amp;Refresh">&amp;Actualiser</text>
+	<text s="&amp;Reload Customize">&amp;Recharger la personnalisation</text>
 	<text s="&amp;Load Layout...">&amp;Charger la disposition...</text>
-	<text s="&amp;Save Layout...">&amp;Sauver la disposition...</text>
+	<text s="&amp;Save Layout...">&amp;Enregistrer la disposition...</text>
 	<text s="&amp;Options...">&amp;Préférences...</text>
 	<text s="&amp;Close Tab">&amp;Fermer l'onglet</text>
 	<text s="Cl&amp;ose Other Tabs">F&amp;ermer les autres onglets</text>
