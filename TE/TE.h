@@ -289,7 +289,10 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TE_OnBeforeGetData		38
 #define TE_OnIconSizeChanged	39
 #define TE_OnFilterChanged		40
-#define Count_OnFunc			41
+#define TE_OnBeginLabelEdit		41
+#define TE_OnEndLabelEdit		42
+#define TE_OnReplacePath		43
+#define Count_OnFunc			44
 
 #define SB_TotalFileSize		0
 #define SB_OnIncludeObject		1
@@ -1045,6 +1048,7 @@ public:
 	CteServiceProvider *m_pServiceProvider;
 	LPITEMIDLIST m_pidl;
 	IShellFolder2 *m_pSF2;
+	DWORD		m_dwNameFormat;
 #ifdef _2000XP
 	TEColumn	*m_pColumns;
 	UINT		m_nColumns;

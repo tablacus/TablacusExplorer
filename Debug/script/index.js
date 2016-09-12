@@ -1471,7 +1471,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 						for (var i in cFV) {
 							var FV = cFV[i];
 							if (FV.hwndView) {
-								if (api.PathIsNetworkPath(api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING))) {
+								if (api.PathIsNetworkPath(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING))) {
 									FV.Suspend();
 								}
 							}
@@ -1739,6 +1739,21 @@ te.OnBeginDrag = function (Ctrl)
 te.OnBeforeGetData = function (Ctrl, Items, nMode)
 {
 	RunEvent3("BeforeGetData", Ctrl, Items, nMode);
+}
+
+te.OnBeginLabelEdit = function (Ctrl)
+{
+	return RunEvent4("BeginLabelEdit", Ctrl);
+}
+
+te.OnEndLabelEdit = function (Ctrl, Name)
+{
+	return RunEvent4("EndLabelEdit", Ctrl, Name);
+}
+
+te.OnReplacePath = function (FolderItem)
+{
+	return RunEvent4("ReplacePath", FolderItem, api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
 }
 
 //Tablacus Events
@@ -2811,16 +2826,14 @@ g_basic =
 				{
 					var FV = GetFolderView(Ctrl, pt);
 					var Selected = FV.SelectedItems();
-					var s = [];
+					var s = "";
 					var nCount = Selected.Count;
 					if (nCount) {
-						while (--nCount >= 0) {
-							s.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(Selected.Item(nCount), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)));
-						}
+						s = te.OnClipboardText(Selected);
 					} else {
-						s.push(api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)));
+						s = api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
 					}
-					clipboardData.setData("text", s.join(" "));
+					clipboardData.setData("text", s);
 					return S_OK;
 				},
 				"Run Dialog": function (Ctrl, pt)

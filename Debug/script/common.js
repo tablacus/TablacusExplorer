@@ -1006,7 +1006,7 @@ CreateNew = function (path, fn)
 		try {
 			fn(path);
 		} catch (e) {
-			if (/^[A-Z]:\\|^\\/i.test(path)) {
+			if (/^[A-Z]:\\|^\\\\[A-Z]/i.test(path)) {
 				var path1, path2, path3, path4;
 				path1 = path;
 				path2 = "";
@@ -1041,8 +1041,39 @@ CreateNew = function (path, fn)
 	);
 }
 
+SetFileTime = function (path, ctime, atime, mtime)
+{
+	var b = MainWindow.RunEvent3("SetFileTime", path, ctime, atime, mtime);
+	if (isFinite(b)) {
+		return b; 
+	}
+	return api.SetFileTime(path, ctime, atime, mtime);
+}
+
+SetFileAttributes = function (path, attr)
+{
+	var b = MainWindow.RunEvent3("SetFileAttributes", path, attr);
+	if (isFinite(b)) {
+		return b; 
+	}
+	try {
+		fso.GetFile(path).Attributes = attr;
+	} catch (e) {
+		try {
+			fso.GetFolder(path).Attributes = attr;
+		} catch (e) {
+			return false;
+		}
+	}
+	return true;
+}
+
 CreateFolder = function (path)
 {
+	var r = MainWindow.RunEvent4("CreateFolder", path);
+	if (r !== undefined) {
+		return r; 
+	}
 	CreateNew(path, function (strPath)
 	{
 		fso.CreateFolder(strPath);
@@ -1051,6 +1082,10 @@ CreateFolder = function (path)
 
 CreateFile = function (path)
 {
+	var r = MainWindow.RunEvent4("CreateFile", path);
+	if (r !== undefined) {
+		return r; 
+	}
 	CreateNew(path, function (strPath)
 	{
 		fso.CreateTextFile(strPath).Close();
@@ -1063,6 +1098,11 @@ CreateFolder2 = function (path)
 		CreateFolder(path);
 	}
 }
+
+FormatDateTime = function (s)
+{
+	return new Date(s).getTime() > 0 ? (api.GetDateFormat(LOCALE_USER_DEFAULT, 0, s, api.GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SSHORTDATE)) + " " + api.GetTimeFormat(LOCALE_USER_DEFAULT, 0, s, api.GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_STIMEFORMAT))) : "";
+};
 
 GetConsts = function (s)
 {
@@ -1994,7 +2034,7 @@ RunCommandLine = function (s)
 	var arg = api.CommandLineToArgv(s.replace(/^\/e,|^\/n,|^\/root,/ig, ""));
 	arg.shift();
 	var s  = arg.join(" ");
-	if (/^[A-Z]:\\|^\\/i.test(s) && IsExists(s)) {
+	if (/^[A-Z]:\\|^\\\\/i.test(s) && IsExists(s)) {
 		Navigate(s, SBSP_NEWBROWSER);
 		return;
 	}
@@ -2508,7 +2548,7 @@ ShowNew = function (Ctrl, pt, Mode)
 {
 	var FV = GetFolderView(Ctrl, pt);
 	var path = api.GetDisplayNameOf(FV, SHGDN_FORPARSING);
-	if (/^[A-Z]:\\|^\\/i.test(path)) {
+	if (/^[A-Z]:\\|^\\\\/i.test(path)) {
 		ShowDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\dialog.html"), { MainWindow: MainWindow, Query: "new", Mode: Mode, path: path, FV: FV, Modal: false, width: 480, height: 120});
 	}
 }
@@ -3167,7 +3207,7 @@ Alt = function ()
 GetSavePath = function (FolderItem)
 {
 	var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
-	if (!/^[A-Z]:\\|^\\/i.test(path)) {
+	if (!/^[A-Z]:\\|^\\\\[A-Z]/i.test(path)) {
 		var res = /search\-ms:.*?&crumb=location:([^&]*)/.exec(api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
 		if (res) {
 			return api.PathCreateFromUrl("file:" + res[1]);
