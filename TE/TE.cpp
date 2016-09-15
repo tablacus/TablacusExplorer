@@ -12488,6 +12488,20 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 							}
 						}
 					}
+					if (nArg == 0) {
+						int i = GetIntFromVariantClear(pVarResult);
+						IFolderView *pFV;
+						if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
+							LPITEMIDLIST pidl;
+							if SUCCEEDED(pFV->Item(i, &pidl)) {
+								LPITEMIDLIST pidlFull = ILCombine(m_pidl, pidl);
+								teSetIDList(pVarResult, pidlFull);
+								teCoTaskMemFree(pidlFull);
+								teCoTaskMemFree(pidl);
+							}
+							pFV->Release();
+						}
+					}
 				}
 				return S_OK;
 			//ItemCount
@@ -18688,6 +18702,19 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 				if (nArg >= 0 && pVarResult) {
 					TVHITTESTINFO info;
 					GetPointFormVariant(&info.pt, &pDispParams->rgvarg[nArg]);
+					if (nArg == 0 && m_pNameSpaceTreeControl) {
+						IShellItem *pSI;
+						POINT pt = info.pt;		
+						ScreenToClient(m_hwndTV, &pt);
+						if (m_pNameSpaceTreeControl->HitTest(&pt, &pSI) == S_OK) {
+							FolderItem *pFI;
+							if SUCCEEDED(GetFolderItemFromObject(&pFI, pSI)) {
+								teSetObjectRelease(pVarResult, pFI);
+							}
+							pSI->Release();
+						}
+						return S_OK;
+					}
 					UINT flags = nArg >= 1 ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) : TVHT_ONITEM;
 					HTREEITEM hItem = (HTREEITEM)DoHitTest(this, info.pt, flags);
 					if ((LONGLONG)hItem < 1) {
@@ -18697,6 +18724,17 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 						if (!(info.flags & flags)) {
 							hItem = 0;
 						}
+#ifdef _2000XP
+						if (nArg == 0) {
+							if (hItem == TreeView_GetSelection(m_hwndTV)) {
+								IDispatch *pdisp;
+								if (getSelected(&pdisp) == S_OK) {
+									teSetObjectRelease(pVarResult, pdisp);
+									return S_OK;
+								}
+							}
+						}
+#endif
 					}
 					teSetPtr(pVarResult, hItem);
 				}

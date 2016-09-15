@@ -926,7 +926,7 @@ LoadLayout = function ()
 {
 	var commdlg = te.CommonDialog();
 	commdlg.InitDir = fso.BuildPath(te.Data.DataFolder, "layout");
-	commdlg.Filter = "XML Files|*.xml|All Files|*.*";
+	commdlg.Filter = "XML Files|*.xml|" + (api.LoadString(hShell32, 34193) || "All Files") + "|*.*";
 	commdlg.Flags = OFN_FILEMUSTEXIST;
 	if (commdlg.ShowOpen()) {
 		LoadXml(commdlg.FileName);
@@ -938,7 +938,7 @@ SaveLayout = function ()
 {
 	var commdlg = te.CommonDialog();
 	commdlg.InitDir = fso.BuildPath(te.Data.DataFolder, "layout");
-	commdlg.Filter = "XML Files|*.xml|All Files|*.*";
+	commdlg.Filter = "XML Files|*.xml|" + (api.LoadString(hShell32, 34193) || "All Files") + "|*.*";
 	commdlg.DefExt = "xml";
 	commdlg.Flags = OFN_OVERWRITEPROMPT;
 	if (commdlg.ShowSave()) {
@@ -1357,6 +1357,16 @@ AddEnv("TreeSelected", function(Ctrl)
 });
 
 AddEnv("Installed", fso.GetDriveName(api.GetModuleFileName(null)));
+
+AddEnv("TE_Config", function ()
+{
+	return fso.BuildPath(te.Data.DataFolder, "config");
+});
+
+AddEvent("ReplaceMacroEx", [/%res:(\d+)%/ig, function (strMatch, ref1)
+{
+	return api.LoadString(hShell32, ref1);
+}]);
 
 PathMatchEx = function (path, s)
 {
@@ -2983,7 +2993,7 @@ OpenDialogEx = function (path, filter, bFilesOnly)
 	if (res) {
 		path = te_path + (res[1].replace(/\//g, "\\"));
 	}
-	path = api.PathUnquoteSpaces(path);
+	path = api.PathUnquoteSpaces(ExtractMacro(te, path));
 	if (!fso.FolderExists(path)) {
 		path = fso.GetParentFolderName(path);
 		if (!fso.FolderExists(path)) {
@@ -2991,7 +3001,8 @@ OpenDialogEx = function (path, filter, bFilesOnly)
 		}
 	}
 	commdlg.InitDir = path;
-	commdlg.Filter = filter;
+	var s = (api.LoadString(hShell32, 34193) || "All Files") + "|*.*";
+	commdlg.Filter = filter ? ExtractMacro(te, filter).replace(/#/g, "|") + "|" + s : s;
 	commdlg.Flags = OFN_FILEMUSTEXIST | OFN_EXPLORER | OFN_ENABLESIZING | (bFilesOnly ? 0 : OFN_ENABLEHOOK);
 	if (commdlg.ShowOpen()) {
 		return api.PathQuoteSpaces(commdlg.FileName);
@@ -3000,7 +3011,7 @@ OpenDialogEx = function (path, filter, bFilesOnly)
 
 OpenDialog = function (path, bFilesOnly)
 {
-	return OpenDialogEx(path, "All Files|*.*", bFilesOnly);
+	return OpenDialogEx(path, null, bFilesOnly);
 }
 
 ChooseFolder = function (path, pt)
@@ -3018,7 +3029,7 @@ ChooseFolder = function (path, pt)
 
 BrowseForFolder = function (path)
 {
-	return OpenDialogEx(path, GetText("Folder") + "|<Folder>");
+	return OpenDialogEx(path, api.LoadString(hShell32, 4131) + "|<Folder>");
 }
 
 InvokeCommand = function (Items, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon, FV, uCMF)

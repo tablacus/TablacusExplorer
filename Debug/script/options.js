@@ -1912,7 +1912,7 @@ function GetAttribEx(item, f, n)
 	}
 }
 
-function RefX(Id, bMultiLine, oButton, bFilesOnly)
+function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter)
 {
 	setTimeout(function () {
 		if (/Path/.test(Id)) {
@@ -1944,7 +1944,7 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly)
 		}
 
 		var o = GetElement(Id);
-		var path = OpenDialog(o.value, api.LowPart(bFilesOnly));
+		var path = OpenDialogEx(o.value, Filter, api.LowPart(bFilesOnly));
 		if (path) {
 			if (bMultiLine) {
 				AddPath(Id, path);
@@ -2061,7 +2061,7 @@ function SetOnChangeHandler()
 		var o = document.getElementsByTagName(ar[j]);
 		if (o) {
 			for (var i = o.length; i--;) {
-				if (o[i].name && !/^_/.test(o[i].id)) {
+				if ((o[i].name || o[i].id) && o[i].name != "List" && !/^_/.test(o[i].id)) {
 					AddEventEx(o[i], "change", function ()
 					{
 						g_bChanged = true;
