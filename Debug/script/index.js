@@ -769,6 +769,11 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev)
 	return hr;
 }
 
+te.OnBeginNavigate = function (Ctrl)
+{
+	return RunEvent2("BeginNavigate", Ctrl);
+}
+
 te.OnNavigateComplete = function (Ctrl)
 {
 	RunEvent1("NavigateComplete", Ctrl);
@@ -909,7 +914,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 					g_mouse.RButtonDown(true);
 					bButton = (g_mouse.str == "2");
 				} else if (bLV) {
-					var iItem = Ctrl.HitTest(pt);
+					var iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
 					if (iItem < 0 && !IsDrag(pt, te.Data.pt)) {
 						Ctrl.SelectItem(null, SVSI_DESELECTOTHERS);
 					}
@@ -919,7 +924,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 				if (bLV && api.GetKeyState(VK_SHIFT) >= 0 && api.GetKeyState(VK_CONTROL) >= 0) {
 					var ar = eventTE.Mouse.List[g_mouse.str];
 					if (ar && !api.StrCmpI(ar[0][1], "Selected Items")) {
-						var iItem = Ctrl.HitTest(pt);
+						var iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
 						if (iItem >= 0) {
 							Ctrl.SelectItem(iItem, SVSI_SELECT | SVSI_FOCUSED | SVSI_DESELECTOTHERS);
 						} else {
@@ -974,7 +979,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 			if (te.Data.Conf_Gestures >= 2) {
 				var iItem = -1;
 				if (bLV) {
-					iItem = Ctrl.HitTest(pt);
+					iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
 					if (iItem < 0) {
 						api.ScreenToClient(hwnd, pt);
 						return pt.y < 32 ? S_FALSE : S_OK;

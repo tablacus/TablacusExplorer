@@ -897,6 +897,7 @@ TEmethod methodTE[] = {
 	{ START_OnFunc + TE_OnBeginLabelEdit, "OnBeginLabelEdit" },
 	{ START_OnFunc + TE_OnEndLabelEdit, "OnEndLabelEdit" },
 	{ START_OnFunc + TE_OnReplacePath, "OnReplacePath" },
+	{ START_OnFunc + TE_OnBeginNavigate, "OnBeginNavigate" },
 	{ 0, NULL }
 };
 
@@ -3847,6 +3848,13 @@ int GetIntFromVariantClear(VARIANT *pv)
 	return i;
 }
 
+LONGLONG GetLLFromVariantClear(VARIANT *pv)
+{
+	LONGLONG ll = GetLLFromVariant(pv);
+	VariantClear(pv);
+	return ll;
+}
+
 BOOL GetDataObjFromVariant(IDataObject **ppDataObj, VARIANT *pv)
 {
 	*ppDataObj = NULL;
@@ -4273,45 +4281,6 @@ VOID GetpDataFromVariant(UCHAR **ppc, int *pnLen, VARIANT *pv)
 	*pnLen = 0;
 }
 
-static void threadAddItems(void *args)
-{
-	::OleInitialize(NULL);
-	LPOLESTR lpShift = L"shift";
-	DISPID dispidShift;
-	LPITEMIDLIST pidl;
-
-	TEAddItems *pAddItems = (TEAddItems *)args;
-	IDispatch *pSB;
-	CoGetInterfaceAndReleaseStream(pAddItems->pStrmSB, IID_PPV_ARGS(&pSB));
-	IDispatch *pArray;
-	CoGetInterfaceAndReleaseStream(pAddItems->pStrmArray, IID_PPV_ARGS(&pArray));
-	try {
-		HRESULT hr = pArray->GetIDsOfNames(IID_NULL, &lpShift, 1, LOCALE_USER_DEFAULT, &dispidShift);
-		if (hr == S_OK) {
-			while (Invoke5(pArray, dispidShift, DISPATCH_METHOD, &pAddItems->pv[1], 0, NULL) == S_OK && pAddItems->pv[1].vt != VT_EMPTY) {
-				if (!teGetIDListFromVariant(&pidl, &pAddItems->pv[1], TRUE) && pAddItems->bDeleted && pAddItems->pv[1].vt == VT_BSTR) {
-					pidl = teSHSimpleIDListFromPath(pAddItems->pv[1].bstrVal, FALSE);
-				}
-				if (pidl) {
-					VariantClear(&pAddItems->pv[1]);
-					teSetIDList(&pAddItems->pv[1], pidl);
-					teCoTaskMemFree(pidl);
-					if (Invoke5(pSB, 0x10000501, DISPATCH_METHOD, NULL, -2, pAddItems->pv) != S_OK) {
-						break;
-					}
-				}
-				VariantClear(&pAddItems->pv[1]);
-			}
-		}
-	} catch (...) {}
-	teClearVariantArgs(2, pAddItems->pv);
-	delete [] pAddItems;
-	pArray->Release();
-	pSB->Release();
-	::OleUninitialize();
-	::_endthread();
-}
-
 HRESULT Invoke4(IDispatch *pdisp, VARIANT *pvResult, int nArgs, VARIANTARG *pvArgs)
 {
 	return Invoke5(pdisp, DISPID_VALUE, DISPATCH_METHOD, pvResult, nArgs, pvArgs);
@@ -4426,7 +4395,49 @@ HRESULT DoFunc(int nFunc, PVOID pObj, HRESULT hr)
 {
 	VARIANT vResult;
 	VariantInit(&vResult);
-	return SUCCEEDED(DoFunc1(nFunc, pObj, &vResult)) ? GetIntFromVariant(&vResult) : hr;
+	return SUCCEEDED(DoFunc1(nFunc, pObj, &vResult)) ? GetIntFromVariantClear(&vResult) : hr;
+}
+
+static void threadAddItems(void *args)
+{
+	::OleInitialize(NULL);
+	LPOLESTR lpShift = L"shift";
+	DISPID dispidShift;
+	LPITEMIDLIST pidl;
+
+	TEAddItems *pAddItems = (TEAddItems *)args;
+	IDispatch *pSB;
+	CoGetInterfaceAndReleaseStream(pAddItems->pStrmSB, IID_PPV_ARGS(&pSB));
+	IDispatch *pArray;
+	CoGetInterfaceAndReleaseStream(pAddItems->pStrmArray, IID_PPV_ARGS(&pArray));
+	try {
+		HRESULT hr = pArray->GetIDsOfNames(IID_NULL, &lpShift, 1, LOCALE_USER_DEFAULT, &dispidShift);
+		if (hr == S_OK) {
+			while (Invoke5(pArray, dispidShift, DISPATCH_METHOD, &pAddItems->pv[1], 0, NULL) == S_OK && pAddItems->pv[1].vt != VT_EMPTY) {
+				if (!teGetIDListFromVariant(&pidl, &pAddItems->pv[1], TRUE) && pAddItems->bDeleted && pAddItems->pv[1].vt == VT_BSTR) {
+					pidl = teSHSimpleIDListFromPath(pAddItems->pv[1].bstrVal, FALSE);
+				}
+				if (pidl) {
+					VariantClear(&pAddItems->pv[1]);
+					teSetIDList(&pAddItems->pv[1], pidl);
+					teCoTaskMemFree(pidl);
+					if (Invoke5(pSB, 0x10000501, DISPATCH_METHOD, NULL, -2, pAddItems->pv) != S_OK) {
+						break;
+					}
+				}
+				VariantClear(&pAddItems->pv[1]);
+			}
+			if (pAddItems->bNavigateComplete) {
+				Invoke5(pSB, 0x10000500, DISPATCH_METHOD, NULL, NULL, NULL);
+			}
+		}
+	} catch (...) {}
+	teClearVariantArgs(2, pAddItems->pv);
+	delete [] pAddItems;
+	pArray->Release();
+	pSB->Release();
+	::OleUninitialize();
+	::_endthread();
 }
 
 BOOL teILGetParent(FolderItem *pid, FolderItem **ppid)
@@ -4530,7 +4541,7 @@ HRESULT DoStatusText(PVOID pObj, LPCWSTR lpszStatusText, int iPart)
 	return hr;
 }
 
-LONGLONG DoHitTest(PVOID pObj, POINT pt, UINT flags)
+LONG_PTR DoHitTest(PVOID pObj, POINT pt, UINT flags)
 {
 	if (g_pOnFunc[TE_OnHitTest]) {
 		VARIANT vResult;
@@ -4543,7 +4554,7 @@ LONGLONG DoHitTest(PVOID pObj, POINT pt, UINT flags)
 		pstPt->Release();
 		teSetLong(&pv[0], flags);
 		Invoke4(g_pOnFunc[TE_OnHitTest], &vResult, 3, pv);
-		return GetLLFromVariant(&vResult);
+		return GetPtrFromVariantClear(&vResult);
 	}
 	return -1;
 }
@@ -5724,14 +5735,8 @@ VOID teFreeLibraries()
 {
 	VARIANT v;
 	VariantInit(&v);
-	for (;;) {
-		teExecMethod(g_pFreeLibrary, L"shift", &v, 0, NULL);
-		if (v.vt == VT_EMPTY) {
-			return;
-		}
-		HMODULE hDll = (HMODULE)GetPtrFromVariant(&v);
-		VariantClear(&v);
-		FreeLibrary(hDll);
+	while (teExecMethod(g_pFreeLibrary, L"shift", &v, 0, NULL) == S_OK && v.vt != VT_EMPTY) {
+		FreeLibrary((HMODULE)GetPtrFromVariantClear(&v));
 	}
 }
 
@@ -11121,7 +11126,9 @@ VOID CteShellBrowser::Refresh(BOOL bCheck)
 				RemoveAll();
 				m_dwSessionId = MAKELONG(GetTickCount(), rand());
 				SetTabName();
-				DoFunc(TE_OnNavigateComplete, this, E_NOTIMPL);
+				if (DoFunc(TE_OnBeginNavigate, this, S_OK) != S_FALSE) {
+					DoFunc(TE_OnNavigateComplete, this, E_NOTIMPL);
+				}
 			} else {
 				m_pShellView->Refresh();
 			}
@@ -11800,6 +11807,16 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 					}
 					LocalFree(lplpszColumns);
 
+					if (ILIsEqual(m_pidl, g_pidlResultsFolder)) {
+						IFolderView *pFV;
+						if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
+							int i = 0;
+							pFV->ItemCount(SVGIO_ALLVIEW, &i);
+							if (i) {
+								bDiff = FALSE;
+							}
+						}
+					}
 					if (bDiff) {
 						int nIndex;
 						BOOL bDefault = true;
@@ -12722,6 +12739,10 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					}
 				}
 				return S_OK;
+			//NavigationComplete
+			case 0x10000500:
+				DoFunc(TE_OnNavigateComplete, this, E_NOTIMPL);
+				return S_OK;
 			//AddItem
 			case 0x10000501:
 				if (nArg >= 0) {
@@ -12855,6 +12876,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						pAddItems->pv = GetNewVARIANT(2);
 						teSetLong(&pAddItems->pv[0], m_dwSessionId);
 						pAddItems->bDeleted = nArg >= 1 && GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
+						pAddItems->bNavigateComplete = nArg >= 2 && GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]);
 						_beginthread(&threadAddItems, 0, pAddItems);
 					}
 				}
@@ -13441,11 +13463,8 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 VOID CteShellBrowser::SetTabName()
 {
 	//View Tab Name
-	int i;
-	i = GetTabIndex();
+	int i = GetTabIndex();
 	if (i >= 0) {
-		VARIANT vResult;
-		teSetLong(&vResult, S_FALSE);
 		if (DoFunc(TE_OnViewCreated, this, E_NOTIMPL) != S_OK) {
 			BSTR bstr;
 			if (m_pFolderItem && SUCCEEDED(m_pFolderItem->get_Name(&bstr))) {
@@ -13478,7 +13497,9 @@ VOID CteShellBrowser::OnNavigationComplete2()
 	SetRedraw(TRUE);
 	SetActive(FALSE);
 	m_nFocusItem = 1;
-	DoFunc(TE_OnNavigateComplete, this, E_NOTIMPL);
+	if (DoFunc(TE_OnBeginNavigate, this, S_OK) != S_FALSE) {
+		DoFunc(TE_OnNavigateComplete, this, E_NOTIMPL);
+	}
 	if (m_nFocusItem > 0) {
 		FocusItem(FALSE);
 	}
@@ -16031,6 +16052,9 @@ STDMETHODIMP CteTabCtrl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WOR
 						if (!(info.flags & flags)) {
 							pVarResult->lVal = -1;
 						}
+					}
+					if (nArg == 0) {
+						GetItem(GetIntFromVariantClear(pVarResult), pVarResult);
 					}
 				}
 				return S_OK;
@@ -18701,31 +18725,32 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 			case 0x10000107:
 				if (nArg >= 0 && pVarResult) {
 					TVHITTESTINFO info;
+					HTREEITEM hItem;
 					GetPointFormVariant(&info.pt, &pDispParams->rgvarg[nArg]);
-					if (nArg == 0 && m_pNameSpaceTreeControl) {
-						IShellItem *pSI;
-						POINT pt = info.pt;		
-						ScreenToClient(m_hwndTV, &pt);
-						if (m_pNameSpaceTreeControl->HitTest(&pt, &pSI) == S_OK) {
-							FolderItem *pFI;
-							if SUCCEEDED(GetFolderItemFromObject(&pFI, pSI)) {
-								teSetObjectRelease(pVarResult, pFI);
-							}
-							pSI->Release();
-						}
-						return S_OK;
-					}
 					UINT flags = nArg >= 1 ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) : TVHT_ONITEM;
-					HTREEITEM hItem = (HTREEITEM)DoHitTest(this, info.pt, flags);
-					if ((LONGLONG)hItem < 1) {
+					LONG_PTR r = DoHitTest(this, info.pt, flags);
+					if (r != -1) {
+						hItem = (HTREEITEM)r;
+					} else {
 						ScreenToClient(m_hwndTV, &info.pt);
 						info.flags = flags;
 						hItem = TreeView_HitTest(m_hwndTV, &info);
 						if (!(info.flags & flags)) {
 							hItem = 0;
 						}
+						if (nArg == 0 && hItem) {
+							if (m_pNameSpaceTreeControl) {
+								IShellItem *pSI;
+								if (m_pNameSpaceTreeControl->HitTest(&info.pt, &pSI) == S_OK) {
+									FolderItem *pFI;
+									if SUCCEEDED(GetFolderItemFromObject(&pFI, pSI)) {
+										teSetObjectRelease(pVarResult, pFI);
+									}
+									pSI->Release();
+								}
+								return S_OK;
+							}
 #ifdef _2000XP
-						if (nArg == 0) {
 							if (hItem == TreeView_GetSelection(m_hwndTV)) {
 								IDispatch *pdisp;
 								if (getSelected(&pdisp) == S_OK) {
@@ -18733,8 +18758,8 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 									return S_OK;
 								}
 							}
-						}
 #endif
+						}
 					}
 					teSetPtr(pVarResult, hItem);
 				}

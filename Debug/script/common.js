@@ -2322,7 +2322,7 @@ confirmYN = function (s, title)
 
 confirmOk = function (s, title)
 {
-	return MessageBox(s, title, MB_ICONQUESTION | MB_OKCANCEL) == IDOK;
+	return MessageBox(s || "Are you sure?", title, MB_ICONQUESTION | MB_OKCANCEL) == IDOK;
 }
 
 MessageBox = function (s, title, uType)
@@ -2729,9 +2729,9 @@ GetFolderView = function (Ctrl, pt, bStrict)
 		return te.Ctrl(CTRL_FV);
 	}
 	if (pt) {
-		var i = Ctrl.HitTest(pt);
-		if (i >= 0) {
-			return Ctrl.Item(i);
+		var FV = Ctrl.HitTest(pt);
+		if (FV) {
+			return FV;
 		}
 	}
 	if (!bStrict || !pt) {
@@ -2750,7 +2750,7 @@ GetSelectedArray = function (Ctrl, pt, bPlus)
 			FV = Ctrl;
 			break;
 		case CTRL_TC:
-			FV = Ctrl.Item(Ctrl.HitTest(pt));
+			FV = Ctrl.HitTest(pt);
 			bSel = false;
 			break;
 		case CTRL_TV:

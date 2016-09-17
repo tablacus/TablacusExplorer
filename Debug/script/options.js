@@ -42,7 +42,7 @@ function SetDefault(o, v)
 {
 	setTimeout(function ()
 	{
-		if (confirmOk("Are you sure?")) {
+		if (confirmOk()) {
 			SetValue(o, v);
 		}
 	}, 99);
@@ -457,7 +457,7 @@ function InitConfig(o)
 	if (InstallPath == te.Data.DataFolder) {
 		return;
 	}
-	if (!confirmOk("Are you sure?")) {
+	if (!confirmOk()) {
 		return;
 	}
 	api.SHFileOperation(FO_MOVE, fso.BuildPath(InstallPath, "layout"), te.Data.DataFolder, 0, false);
@@ -717,7 +717,7 @@ function ReplaceX(mode)
 function RemoveMenus()
 {
 	ClearX("Menus");
-	if (g_x.Menus.selectedIndex < 0 || !confirmOk("Are you sure?")) {
+	if (g_x.Menus.selectedIndex < 0 || !confirmOk()) {
 		return;
 	}
 	g_x.Menus[g_x.Menus.selectedIndex] = null;
@@ -728,7 +728,7 @@ function RemoveMenus()
 function RemoveX(mode)
 {
 	ClearX(mode);
-	if (g_x[mode].selectedIndex < 0 || !confirmOk("Are you sure?")) {
+	if (g_x[mode].selectedIndex < 0 || !confirmOk()) {
 		return;
 	}
 	g_x[mode][g_x[mode].selectedIndex] = null;
@@ -1289,7 +1289,7 @@ function AddonMoveEx(src, dest)
 
 function AddonRemove(Id)
 {
-	if (!confirmOk("Are you sure?")) {
+	if (!confirmOk()) {
 		return;
 	}
 	MainWindow.AddonDisabled(Id);
@@ -1958,7 +1958,7 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter)
 
 function PortableX(Id)
 {
-	if (!confirmOk("Are you sure?")) {
+	if (!confirmOk()) {
 		return;
 	}
 	var o = GetElement(Id);
@@ -1998,7 +1998,7 @@ function GetCurrentSetting(s)
 {
 	var FV = te.Ctrl(CTRL_FV);
 
-	if (confirmOk("Are you sure?")) {
+	if (confirmOk()) {
 		AddPath(s, api.PathQuoteSpaces(api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORPARSINGEX | SHGDN_FORPARSING)));
 	}
 }
@@ -2105,7 +2105,7 @@ function SelectIcon(o)
 
 TestX = function (id)
 {
-	if (confirmOk("Are you sure?")) {
+	if (confirmOk()) {
 		var o = document.F[id + "Type"];
 		var p = { s: document.F[id + "Path"].value };
 		MainWindow.OptionEncode(o[o.selectedIndex].value, p);

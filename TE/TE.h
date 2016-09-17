@@ -292,7 +292,8 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TE_OnBeginLabelEdit		41
 #define TE_OnEndLabelEdit		42
 #define TE_OnReplacePath		43
-#define Count_OnFunc			44
+#define TE_OnBeginNavigate		44
+#define Count_OnFunc			45
 
 #define SB_TotalFileSize		0
 #define SB_OnIncludeObject		1
@@ -380,9 +381,11 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #ifdef _WIN64
 #define teSetPtr(pVar, nData)	teSetLL(pVar, (LONGLONG)nData)
 #define GetPtrFromVariant(pv)	GetLLFromVariant(pv)
+#define GetPtrFromVariantClear(pv)	GetLLFromVariantClear(pv)
 #else
 #define teSetPtr(pVar, nData)	teSetLong(pVar, (LONG)nData)
 #define GetPtrFromVariant(pv)	GetIntFromVariant(pv)
+#define GetPtrFromVariantClear(pv)	GetIntFromVariantClear(pv)
 #endif
 
 #ifdef _2000XP
@@ -470,6 +473,7 @@ struct TEAddItems
 	IStream *pStrmSB;
 	IStream *pStrmArray;
 	BOOL	bDeleted;
+	BOOL	bNavigateComplete;
 };
 
 const CLSID CLSID_ShellShellNameSpace = {0x2F2F1F96, 0x2BC1, 0x4b1c, { 0xBE, 0x28, 0xEA, 0x37, 0x74, 0xF4, 0x67, 0x6A}};

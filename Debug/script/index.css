@@ -244,3 +244,7 @@ a.treebutton:hover {
 	background-color: Window; 
 	white-space: nowrap;
 }
+
+.separator {
+	color: gray;
+}
