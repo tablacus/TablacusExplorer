@@ -1813,16 +1813,17 @@ ULONGLONG teGetFolderSize(LPCWSTR szPath, int nLevel, LPITEMIDLIST *ppidl, LPITE
 	WIN32_FIND_DATA wfd;
 	tePathAppend(&bs, szPath, L"*");
 	HANDLE hFind = FindFirstFile(bs, &wfd);
+	teSysFreeString(&bs);
 	if (hFind != INVALID_HANDLE_VALUE) {
 		do {
 			if (tePathMatchSpec(wfd.cFileName, L".;..")) {
 				continue;
 			}
-			if (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+			if ((wfd.dwFileAttributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT)) == FILE_ATTRIBUTE_DIRECTORY) {
 				if (nLevel) {
-					::SysFreeString(bs);
 					tePathAppend(&bs, szPath, wfd.cFileName);
 					Result += teGetFolderSize(bs, nLevel - 1, ppidl, pidl);
+					teSysFreeString(&bs);
 				}
 				continue;
 			}
@@ -1830,10 +1831,9 @@ ULONGLONG teGetFolderSize(LPCWSTR szPath, int nLevel, LPITEMIDLIST *ppidl, LPITE
 			uli.HighPart = wfd.nFileSizeHigh;
 			uli.LowPart = wfd.nFileSizeLow;
 			Result += uli.QuadPart;
-		} while(*ppidl == pidl && FindNextFile(hFind, &wfd));
+		} while (*ppidl == pidl && FindNextFile(hFind, &wfd));
 	}
 	FindClose(hFind);
-	::SysFreeString(bs);
 	return Result;
 }
 
@@ -1996,6 +1996,11 @@ HRESULT teGetDisplayNameBSTR(IShellFolder *pSF, PCUITEMID_CHILD pidl, SHGDNF uFl
 	HRESULT hr = pSF->GetDisplayNameOf(pidl, uFlags, &strret);
 	if SUCCEEDED(hr) {
 		hr = StrRetToBSTR(&strret, pidl, pbs);
+		if (hr == S_OK && uFlags & SHGDN_INFOLDER) {
+			while (LPWSTR lpBS = StrChr(*pbs, '\\')) {
+				*lpBS = '_';
+			}
+		}
 	}
 	return hr;
 }
@@ -2057,11 +2062,11 @@ LPITEMIDLIST teILCreateFromPath3(IShellFolder *pSF, LPWSTR pszPath, HWND hwnd)
 	if (lpDelimiter) {
 		nDelimiter = (int)(lpDelimiter - pszPath);
 	}
-	int ashgdn[] = {SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_INFOLDER, SHGDN_INFOLDER | SHGDN_FORPARSING};
+	int ashgdn[] = { SHGDN_INFOLDER | SHGDN_FORPARSING, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_INFOLDER };
 	if SUCCEEDED(pSF->EnumObjects(hwnd, SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN | SHCONTF_INCLUDESUPERHIDDEN, &peidl)) {
 		LPITEMIDLIST pidlPart;
 		while (!pidlResult && peidl->Next(1, &pidlPart, NULL) == S_OK) {
-			for (int j = 0; j < 2; j++) {
+			for (int j = _countof(ashgdn); j--;) {
 				if SUCCEEDED(teGetDisplayNameBSTR(pSF, pidlPart, ashgdn[j], &bstr)) {
 					if (nDelimiter) {
 						if (nDelimiter == ::SysStringLen(bstr) && StrCmpNI(const_cast<LPCWSTR>(pszPath), (LPCWSTR)bstr, nDelimiter) == 0) {
@@ -2756,8 +2761,11 @@ HRESULT tePathIsDirectory(LPWSTR pszPath, int dwms, int iUseFS)
 			pExists->pszPath = pszPath;
 			pExists->hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 			pExists->iUseFS = iUseFS;
-			_beginthread(&threadExists, 0, pExists);
-			WaitForSingleObject(pExists->hEvent, dwms);
+			if (_beginthread(&threadExists, 0, pExists) != -1) {
+				WaitForSingleObject(pExists->hEvent, dwms);
+			} else {
+				pExists->cRef--;
+			}
 			HRESULT hr = pExists->hr;
 			teReleaseExists(pExists);
 			return hr;
@@ -2895,15 +2903,19 @@ LPITEMIDLIST teILCreateFromPath0(LPWSTR pszPath, BOOL bForceLimit)
 		pILC->pidlResult = NULL;
 		pILC->pszPath = pszPath;
 		pILC->hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-		_beginthread(&threadILCreate, 0, pILC);
 		LPITEMIDLIST pidl = NULL;
-		if (WaitForSingleObject(pILC->hEvent, dwms) != WAIT_TIMEOUT) {
-			pidl = pILC->pidlResult;
-			if (pidl) {
-				pILC->pidlResult = NULL;
-			} else {
-				pidl = teILCreateFromPath1(pszPath);
+		if (_beginthread(&threadILCreate, 0, pILC) != -1) {
+			if (WaitForSingleObject(pILC->hEvent, dwms) != WAIT_TIMEOUT) {
+				pidl = pILC->pidlResult;
+				if (pidl) {
+					pILC->pidlResult = NULL;
+				} else {
+					pidl = teILCreateFromPath1(pszPath);
+				}
 			}
+		} else {
+			pILC->cRef--;
+			pidl = teILCreateFromPath1(pszPath);
 		}
 		teReleaseILCreate(pILC);
 		return pidl;
@@ -3153,24 +3165,6 @@ void teCopyMenu(HMENU hDest, HMENU hSrc, UINT fState)
 		}
 		::SysFreeString(bsTypeData);
 	}
-}
-
-HRESULT teSHGetDataFromIDList(IShellFolder *pSF, LPCITEMIDLIST pidlPart, int nFormat, void *pv, int cb)
-{
-	HRESULT hr = SHGetDataFromIDList(pSF, pidlPart, nFormat, pv, cb);
-	if (hr != S_OK && nFormat == SHGDFIL_FINDDATA) {
-		// for Library
-		BSTR bs;
-		if SUCCEEDED(teGetDisplayNameBSTR(pSF, pidlPart, SHGDN_FORPARSING, &bs)) {
-			HANDLE hFind = FindFirstFile(bs, (LPWIN32_FIND_DATA)pv);
-			::SysFreeString(bs);
-			if (hFind != INVALID_HANDLE_VALUE) {
-				FindClose(hFind);
-				hr = S_OK;
-			}
-		}
-	}
-	return hr;
 }
 
 CteShellBrowser* SBfromhwnd(HWND hwnd)
@@ -3642,6 +3636,59 @@ int GetIntFromVariant(VARIANT *pv)
 	return 0;
 }
 
+int GetIntFromVariantClear(VARIANT *pv)
+{
+	int i = GetIntFromVariant(pv);
+	VariantClear(pv);
+	return i;
+}
+
+HRESULT teSHGetDataFromIDList(IShellFolder *pSF, LPCITEMIDLIST pidlPart, int nFormat, void *pv, int cb)
+{
+	HRESULT hr = SHGetDataFromIDList(pSF, pidlPart, nFormat, pv, cb);
+	if (hr != S_OK && nFormat == SHGDFIL_FINDDATA) {
+		::ZeroMemory(pv, cb);
+		WIN32_FIND_DATA *pwfd = (WIN32_FIND_DATA *)pv;
+		STATSTG statstg = { 0 };
+		IStream *pStream = NULL;
+		IStorage *pStorage = NULL;
+		if SUCCEEDED(pSF->BindToStorage(pidlPart, NULL, IID_PPV_ARGS(&pStream))) {
+			pStream->Stat(&statstg, STATFLAG_DEFAULT);
+			ULARGE_INTEGER uliSize;
+			LARGE_INTEGER liOffset;
+			liOffset.QuadPart = 0;
+			if SUCCEEDED(pStream->Seek(liOffset, STREAM_SEEK_END, &uliSize)) {
+				pwfd->nFileSizeHigh = uliSize.HighPart;
+				pwfd->nFileSizeLow = uliSize.LowPart;
+			}
+			pStream->Release();
+		} else if SUCCEEDED(pSF->BindToStorage(pidlPart, NULL, IID_PPV_ARGS(&pStorage))) {
+			pStorage->Stat(&statstg, STATFLAG_DEFAULT);
+			pStorage->Release();
+			pwfd->dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY;
+		}
+		pwfd->ftCreationTime = statstg.ctime;
+		pwfd->ftLastAccessTime = statstg.atime;
+		pwfd->ftLastWriteTime = statstg.mtime;
+		if (statstg.pwcsName) {
+			lstrcpyn(pwfd->cFileName, statstg.pwcsName, MAX_PATH);
+			::CoTaskMemFree(statstg.pwcsName);
+			hr = S_OK;
+		}
+		IShellFolder2 *pSF2;
+		if SUCCEEDED(pSF->QueryInterface(IID_PPV_ARGS(&pSF2))) {
+			VARIANT v;
+			VariantInit(&v);
+			if SUCCEEDED(pSF2->GetDetailsEx(pidlPart, &PKEY_FileAttributes, &v)) {
+				pwfd->dwFileAttributes = GetIntFromVariantClear(&v);
+			}
+			VariantClear(&v);
+			SafeRelease(&pSF2);
+		}
+	}
+	return hr;
+}
+
 BOOL teGetIDListFromVariant(LPITEMIDLIST *ppidl, VARIANT *pv, BOOL bForceLimit = FALSE)
 {
 	*ppidl = NULL;
@@ -3839,13 +3886,6 @@ VOID teSetIDList(VARIANT *pv, LPITEMIDLIST pidl)
 	if (GetFolderItemFromIDList(&pFI, pidl)) {
 		teSetObjectRelease(pv, pFI);
 	}
-}
-
-int GetIntFromVariantClear(VARIANT *pv)
-{
-	int i = GetIntFromVariant(pv);
-	VariantClear(pv);
-	return i;
 }
 
 LONGLONG GetLLFromVariantClear(VARIANT *pv)
@@ -5211,7 +5251,9 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							break;
 					}//end_switch
 				}
-			} catch(...) {}
+			} catch(...) {
+				g_nException = 0;
+			}
 			::InterlockedDecrement(&g_nProcFV);
 		}
 		if (msg == WM_WINDOWPOSCHANGED) {
@@ -9871,201 +9913,205 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	MSG msg1;
 	int i;
 
-	switch (message)
-	{
-		case WM_CLOSE:
-			g_nLockUpdate += 1000;
-			try {
-				if (CanClose(g_pTE)) {
-					teRevoke();
-					try {
-						DestroyWindow(hWnd);
-					} catch (...) {
-						g_bMessageLoop = FALSE;
-					}
-				}
-			} catch (...) {
-				DestroyWindow(hWnd);
-			}
-			g_nLockUpdate -= 1000;
-			return 0;
-		case WM_SIZE:
-			ArrangeWindow();
-			break;
-		case WM_DESTROY:
-			try {
-				if (g_pOnFunc[TE_OnSystemMessage]) {
-					msg1.hwnd = hWnd;
-					msg1.message = message;
-					msg1.wParam = wParam;
-					msg1.lParam = lParam;
-					MessageSub(TE_OnSystemMessage, g_pTE, &msg1, S_FALSE);
-				}
-				//Close Tab
-				CteTabCtrl *pTC;
-				for (i = MAX_TC; i-- && (pTC = g_ppTC[i]);) {
-					pTC->Close(TRUE);
-				}
-				//Close Browser
-				if (g_pWebBrowser) {
-					g_pWebBrowser->Close();
-					SafeRelease(&g_pWebBrowser);
-				}
-			} catch (...) {}
-			PostQuitMessage(0);
-			break;
-		case WM_CONTEXTMENU:	//System Menu
-			MSG msg1;
-			msg1.hwnd = hWnd;
-			msg1.message = message;
-			msg1.wParam = wParam;
-			msg1.pt.x = GET_X_LPARAM(lParam);
-			msg1.pt.y = GET_Y_LPARAM(lParam);
-			MessageSubPt(TE_OnShowContextMenu, g_pTE, &msg1);
-			return DefWindowProc(hWnd, message, wParam, lParam);
-			break;
-		//Menu
-		case WM_MENUSELECT:
-		case WM_HELP:
-		case WM_INITMENU:
-		case WM_MEASUREITEM:
-		case WM_DRAWITEM:
-		case WM_ENTERMENULOOP:
-		case WM_INITMENUPOPUP:
-		case WM_MENUCHAR:
-		case WM_EXITMENULOOP:
-		case WM_MENURBUTTONUP:
-		case WM_MENUDRAG:
-		case WM_MENUGETOBJECT:
-		case WM_UNINITMENUPOPUP:
-		case WM_MENUCOMMAND:
-			msg1.hwnd = hWnd;
-			msg1.message = message;
-			msg1.wParam = wParam;
-			msg1.lParam = lParam;
-			BOOL bDone;
-			bDone = true;
-
-			if (g_pOnFunc[TE_OnMenuMessage]) {
-				HRESULT hr = MessageSub(TE_OnMenuMessage, g_pTE, &msg1, S_FALSE);
-				if (hr == S_OK) {
-					bDone = false;
-				}
-				if (message == WM_MENUCHAR && hr & 0xffff0000) {
-					return hr;
-				}
-			}
-			if (bDone && g_pCM) {
-				LRESULT lResult = 0;
-				BOOL bRet = FALSE;
-				IContextMenu3 *pCM3;
-				IContextMenu2 *pCM2;
-				DISPID dispid;
-				VARIANT v;
-				VariantInit(&v);
-				IUnknown *punk;
-				HRESULT hr = g_pCM->GetNextDispID(fdexEnumAll, DISPID_STARTENUM, &dispid);
-				while (hr == S_OK) {
-					if (Invoke5(g_pCM, dispid, DISPATCH_PROPERTYGET, &v, 0, NULL) == S_OK) {
-						if (FindUnknown(&v, &punk)) {
-							if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pCM3))) {
-								bRet = SUCCEEDED(pCM3->HandleMenuMsg2(message, wParam, lParam, &lResult));
-								pCM3->Release();
-							} else if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pCM2))) {
-								pCM2->HandleMenuMsg(message, wParam, lParam);
-								pCM2->Release();
-							}
+	try {
+		switch (message)
+		{
+			case WM_CLOSE:
+				g_nLockUpdate += 1000;
+				try {
+					if (CanClose(g_pTE)) {
+						teRevoke();
+						try {
+							DestroyWindow(hWnd);
+						} catch (...) {
+							g_bMessageLoop = FALSE;
 						}
-						VariantClear(&v);
 					}
-					hr = g_pCM->GetNextDispID(fdexEnumAll, dispid, &dispid);
+				} catch (...) {
+					DestroyWindow(hWnd);
 				}
-				if (bRet) {
-					return lResult;
-				}
-			}
-			break;
-		//System
-		case WM_SETTINGCHANGE:
-			if (message == WM_SETTINGCHANGE) {
-				teGetWinSettings();
-				if (lpfnRegenerateUserEnvironment) {
-					try {
-						if (lstrcmpi((LPCWSTR)lParam, L"Environment") == 0) {
-							LPVOID lpEnvironment;
-							lpfnRegenerateUserEnvironment(&lpEnvironment, TRUE);
-							//Not permitted to free lpEnvironment!
-							//FreeEnvironmentStrings((LPTSTR)lpEnvironment);
-						}
-					} catch (...) {}
-				}
-			}
-		case WM_COPYDATA:
-			if (g_nReload) {
-				return E_FAIL;
-			}
-		case WM_POWERBROADCAST:
-		case WM_TIMER:
-		case WM_DROPFILES:
-		case WM_DEVICECHANGE:
-		case WM_FONTCHANGE:
-		case WM_ENABLE:
-		case WM_NOTIFY:
-		case WM_SETCURSOR:
-		case WM_SYSCOLORCHANGE:
-		case WM_SYSCOMMAND:
-		case WM_THEMECHANGED:
-		case WM_USERCHANGED:
-		case WM_QUERYENDSESSION:
-		case WM_HOTKEY:
-		case WM_CLIPBOARDUPDATE:
-		if (g_pOnFunc[TE_OnSystemMessage]) {
+				g_nLockUpdate -= 1000;
+				return 0;
+			case WM_SIZE:
+				ArrangeWindow();
+				break;
+			case WM_DESTROY:
+				try {
+					if (g_pOnFunc[TE_OnSystemMessage]) {
+						msg1.hwnd = hWnd;
+						msg1.message = message;
+						msg1.wParam = wParam;
+						msg1.lParam = lParam;
+						MessageSub(TE_OnSystemMessage, g_pTE, &msg1, S_FALSE);
+					}
+					//Close Tab
+					CteTabCtrl *pTC;
+					for (i = MAX_TC; i-- && (pTC = g_ppTC[i]);) {
+						pTC->Close(TRUE);
+					}
+					//Close Browser
+					if (g_pWebBrowser) {
+						g_pWebBrowser->Close();
+						SafeRelease(&g_pWebBrowser);
+					}
+				} catch (...) {}
+				PostQuitMessage(0);
+				break;
+			case WM_CONTEXTMENU:	//System Menu
+				MSG msg1;
+				msg1.hwnd = hWnd;
+				msg1.message = message;
+				msg1.wParam = wParam;
+				msg1.pt.x = GET_X_LPARAM(lParam);
+				msg1.pt.y = GET_Y_LPARAM(lParam);
+				MessageSubPt(TE_OnShowContextMenu, g_pTE, &msg1);
+				return DefWindowProc(hWnd, message, wParam, lParam);
+				break;
+			//Menu
+			case WM_MENUSELECT:
+			case WM_HELP:
+			case WM_INITMENU:
+			case WM_MEASUREITEM:
+			case WM_DRAWITEM:
+			case WM_ENTERMENULOOP:
+			case WM_INITMENUPOPUP:
+			case WM_MENUCHAR:
+			case WM_EXITMENULOOP:
+			case WM_MENURBUTTONUP:
+			case WM_MENUDRAG:
+			case WM_MENUGETOBJECT:
+			case WM_UNINITMENUPOPUP:
+			case WM_MENUCOMMAND:
 				msg1.hwnd = hWnd;
 				msg1.message = message;
 				msg1.wParam = wParam;
 				msg1.lParam = lParam;
-				HRESULT hr;
-				hr = MessageSub(TE_OnSystemMessage, g_pTE, &msg1, S_OK);
-				if (hr != S_OK) {
-					return hr;
+				BOOL bDone;
+				bDone = true;
+
+				if (g_pOnFunc[TE_OnMenuMessage]) {
+					HRESULT hr = MessageSub(TE_OnMenuMessage, g_pTE, &msg1, S_FALSE);
+					if (hr == S_OK) {
+						bDone = false;
+					}
+					if (message == WM_MENUCHAR && hr & 0xffff0000) {
+						return hr;
+					}
 				}
-			}
-			return DefWindowProc(hWnd, message, wParam, lParam);
-		case WM_COMMAND:
-			if (teDoCommand(g_pTE, hWnd, message, wParam, lParam) == S_OK) {
-				return 1;
-			}
-			return DefWindowProc(hWnd, message, wParam, lParam);
-#ifdef	_2000XP
-		case WM_DRAWCLIPBOARD:
-			if (g_hwndNextClip) {
-				SendMessage(g_hwndNextClip, message, wParam, lParam);
-			}
-			PostMessage(g_hwndMain, WM_CLIPBOARDUPDATE, 0, 0);
-	        return 0;
-		case WM_CHANGECBCHAIN:
-			if ((HWND)wParam == g_hwndNextClip) {
-				g_hwndNextClip = (HWND)lParam;
-			} else if (g_hwndNextClip) {
-				SendMessage(g_hwndNextClip, message, wParam, lParam);
-			}
-			return 0;
-#endif
-		default:
-			if ((message >= WM_APP && message <= MAXWORD)) {
-				if (g_pOnFunc[TE_OnAppMessage]) {
+				if (bDone && g_pCM) {
+					LRESULT lResult = 0;
+					BOOL bRet = FALSE;
+					IContextMenu3 *pCM3;
+					IContextMenu2 *pCM2;
+					DISPID dispid;
+					VARIANT v;
+					VariantInit(&v);
+					IUnknown *punk;
+					HRESULT hr = g_pCM->GetNextDispID(fdexEnumAll, DISPID_STARTENUM, &dispid);
+					while (hr == S_OK) {
+						if (Invoke5(g_pCM, dispid, DISPATCH_PROPERTYGET, &v, 0, NULL) == S_OK) {
+							if (FindUnknown(&v, &punk)) {
+								if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pCM3))) {
+									bRet = SUCCEEDED(pCM3->HandleMenuMsg2(message, wParam, lParam, &lResult));
+									pCM3->Release();
+								} else if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pCM2))) {
+									pCM2->HandleMenuMsg(message, wParam, lParam);
+									pCM2->Release();
+								}
+							}
+							VariantClear(&v);
+						}
+						hr = g_pCM->GetNextDispID(fdexEnumAll, dispid, &dispid);
+					}
+					if (bRet) {
+						return lResult;
+					}
+				}
+				break;
+			//System
+			case WM_SETTINGCHANGE:
+				if (message == WM_SETTINGCHANGE) {
+					teGetWinSettings();
+					if (lpfnRegenerateUserEnvironment) {
+						try {
+							if (lstrcmpi((LPCWSTR)lParam, L"Environment") == 0) {
+								LPVOID lpEnvironment;
+								lpfnRegenerateUserEnvironment(&lpEnvironment, TRUE);
+								//Not permitted to free lpEnvironment!
+								//FreeEnvironmentStrings((LPTSTR)lpEnvironment);
+							}
+						} catch (...) {}
+					}
+				}
+			case WM_COPYDATA:
+				if (g_nReload) {
+					return E_FAIL;
+				}
+			case WM_POWERBROADCAST:
+			case WM_TIMER:
+			case WM_DROPFILES:
+			case WM_DEVICECHANGE:
+			case WM_FONTCHANGE:
+			case WM_ENABLE:
+			case WM_NOTIFY:
+			case WM_SETCURSOR:
+			case WM_SYSCOLORCHANGE:
+			case WM_SYSCOMMAND:
+			case WM_THEMECHANGED:
+			case WM_USERCHANGED:
+			case WM_QUERYENDSESSION:
+			case WM_HOTKEY:
+			case WM_CLIPBOARDUPDATE:
+			if (g_pOnFunc[TE_OnSystemMessage]) {
 					msg1.hwnd = hWnd;
 					msg1.message = message;
 					msg1.wParam = wParam;
 					msg1.lParam = lParam;
-					HRESULT hr = MessageSub(TE_OnAppMessage, g_pTE, &msg1, S_FALSE);
-					if (hr == S_OK) {
+					HRESULT hr;
+					hr = MessageSub(TE_OnSystemMessage, g_pTE, &msg1, S_OK);
+					if (hr != S_OK) {
 						return hr;
 					}
 				}
-			}
-			return DefWindowProc(hWnd, message, wParam, lParam);
-	}//end_switch
+				return DefWindowProc(hWnd, message, wParam, lParam);
+			case WM_COMMAND:
+				if (teDoCommand(g_pTE, hWnd, message, wParam, lParam) == S_OK) {
+					return 1;
+				}
+				return DefWindowProc(hWnd, message, wParam, lParam);
+	#ifdef	_2000XP
+			case WM_DRAWCLIPBOARD:
+				if (g_hwndNextClip) {
+					SendMessage(g_hwndNextClip, message, wParam, lParam);
+				}
+				PostMessage(g_hwndMain, WM_CLIPBOARDUPDATE, 0, 0);
+				return 0;
+			case WM_CHANGECBCHAIN:
+				if ((HWND)wParam == g_hwndNextClip) {
+					g_hwndNextClip = (HWND)lParam;
+				} else if (g_hwndNextClip) {
+					SendMessage(g_hwndNextClip, message, wParam, lParam);
+				}
+				return 0;
+	#endif
+			default:
+				if ((message >= WM_APP && message <= MAXWORD)) {
+					if (g_pOnFunc[TE_OnAppMessage]) {
+						msg1.hwnd = hWnd;
+						msg1.message = message;
+						msg1.wParam = wParam;
+						msg1.lParam = lParam;
+						HRESULT hr = MessageSub(TE_OnAppMessage, g_pTE, &msg1, S_FALSE);
+						if (hr == S_OK) {
+							return hr;
+						}
+					}
+				}
+				return DefWindowProc(hWnd, message, wParam, lParam);
+		}//end_switch
+	} catch (...) {
+		g_nException = 0;
+	}
 	return 0;
 }
 
@@ -10588,7 +10634,6 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	if (m_hwnd) {
 		KillTimer(m_hwnd, (UINT_PTR)this);
 	}
-	SetRedraw(FALSE);
 	if (m_bInit) {
 		return E_FAIL;
 	}
@@ -10747,6 +10792,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	SetHistory(pFolderItems, wFlags);
 	DestroyView(m_param[SB_Type]);
 
+	SetRedraw(FALSE);
 	m_pTC->LockUpdate();
 	try {
 		Show(FALSE, 2);
@@ -11331,7 +11377,14 @@ VOID CteShellBrowser::SetFolderSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch)
 				pFS->pidl = m_pidl;
 				pFS->hwnd = m_hwndLV;
 				CoMarshalInterThreadInterfaceInStream(IID_IDispatch, m_pDispatch[SB_TotalFileSize], &pFS->pStrmTotalFileSize);
-				_beginthread(&threadFolderSize, 0, pFS);
+				if (_beginthread(&threadFolderSize, 0, pFS) == -1) {
+					pFS->pStrmTotalFileSize->Release();
+					teSysFreeString(&pFS->bsPath);
+					teSysFreeString(&pFS->bsName);
+					delete [] pFS;
+					VariantClear(&v);
+					tePutProperty(m_pDispatch[SB_TotalFileSize], wfd.cFileName, &v);
+				}
 			}
 		} else if (SUCCEEDED(m_pSF2->GetDetailsEx(pidl, &PKEY_Size, &v))) {
 			teStrFormatSize(m_param[SB_SizeFormat], v.ullVal, szText, cch);
@@ -11622,7 +11675,7 @@ STDMETHODIMP CteShellBrowser::GetDefaultMenuText(IShellView *ppshv, LPWSTR pszTe
 
 STDMETHODIMP CteShellBrowser::GetViewFlags(DWORD *pdwFlags)
 {
-	*pdwFlags = (m_param[SB_ViewFlags] & (~(CDB2GVF_NOINCLUDEITEM | CDB2GVF_NOSELECTVERB))) | ((m_bsFilter || m_pDispatch[SB_OnIncludeObject] || ILIsEqual(m_pidl, g_pidlResultsFolder)) ? 0 : CDB2GVF_NOINCLUDEITEM);
+	*pdwFlags = (m_param[SB_ViewFlags] & (~(CDB2GVF_NOINCLUDEITEM | CDB2GVF_NOSELECTVERB))) | (((m_bsFilter || m_pDispatch[SB_OnIncludeObject]) && !ILIsEqual(m_pidl, g_pidlResultsFolder)) ? 0 : CDB2GVF_NOINCLUDEITEM);
 	return S_OK;
 }
 /*/// ICommDlgBrowser3
@@ -18797,7 +18850,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 							if SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(&psi))) {
 								DWORD dwState;
 								if FAILED(m_pNameSpaceTreeControl->GetItemState(psi, NSTCIS_EXPANDED, &dwState)) {
-									if (ILRemoveLastID(pidl) && SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(&psiParent)))) {
+									if SUCCEEDED(psi->GetParent(&psiParent)) {
 										if SUCCEEDED(m_pNameSpaceTreeControl->GetItemState(psiParent, NSTCIS_EXPANDED, &dwState)) {
 											m_pNameSpaceTreeControl->SetItemState(psi, NSTCIS_EXPANDED, NSTCIS_EXPANDED);
 										}
@@ -19404,6 +19457,7 @@ HRESULT CteTreeView::getSelected(IDispatch **ppid)
 				FolderItem *pFI;
 				if SUCCEEDED(GetFolderItemFromObject(&pFI, psi)) {
 					hr = pFI->QueryInterface(IID_PPV_ARGS(ppid));
+					pFI->Release();
 				}
 				psi->Release();
 			}

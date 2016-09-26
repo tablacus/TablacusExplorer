@@ -28,7 +28,7 @@ if (!/^en/.test(arLangs[0])) {
 arLangs.push("General");
 g_ovPanel = null;
 
-urlAddons = "https://www.eonet.ne.jp/~gakana/tablacus/addons/";
+urlAddons = "http://tablacus.github.io/TablacusExplorerAddons/";
 nCount = 0;
 xhr = null;
 xmlAddons = null;
