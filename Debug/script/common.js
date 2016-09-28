@@ -20,7 +20,7 @@ g_ = {
 	rcWindow: api.Memory("RECT"),
 	Colors: {},
 	nFind: 0,
-	Panels: [],
+	Panels: {},
 	KeyCode: {},
 	KeyState: [
 		[0x1d0000, 0x2000],
@@ -3263,8 +3263,8 @@ LoadAddon = function (ext, Id, arError, param)
 		var ado = OpenAdodbFromTextFile(fn);
 		if (ado) {
 			var s = ado.ReadText();
+			ado.Close();
 			if (s) {
-				ado.Close();
 				if (ar[1] == "js") {
 					try {
 						sc = new Function(s);

@@ -226,11 +226,7 @@ a.treebutton:hover {
 	text-shadow: 0px 0px 2px Highlight;
 }
 
-.ok {
-	min-width: 8em;
-}
-
-.cancel {
+.ok, .apply, .cancel {
 	min-width: 8em;
 }
 

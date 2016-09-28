@@ -1311,6 +1311,24 @@ function AddonRemove(Id)
 	}
 }
 
+function Apply() 
+{
+	SetChanged(ReplaceMenus);
+	for (var i in document.F.elements) {
+		if (!/=|:/.test(i)) {
+			if (/^Tab_|^Tree_|^View_|^Conf_/.test(i) && !/_$/.test(i)) {
+				te.Data[i] = GetElementValue(document.F[i]);
+			}
+		}
+	}
+	te.Layout = te.Data.Conf_Layout;
+	SaveMenus();
+	SetTabControls();
+	SetTreeControls();
+	SetFolderViews();
+	te.Data.bReload = true;
+}
+
 InitOptions = function ()
 {
 	ApplyLang(document);
@@ -1354,22 +1372,7 @@ InitOptions = function ()
 	{
 		g_bChanged |= g_Chg.Addons || te.Data.bErrorAddons || g_Chg.Menus || g_Chg.Tab || g_Chg.Tree || g_Chg.View;
 		SaveAddons();
-		SetOptions(function () {
-			SetChanged(ReplaceMenus);
-			for (var i in document.F.elements) {
-				if (!/=|:/.test(i)) {
-					if (/^Tab_|^Tree_|^View_|^Conf_/.test(i) && !/_$/.test(i)) {
-						te.Data[i] = GetElementValue(document.F[i]);
-					}
-				}
-			}
-			te.Layout = te.Data.Conf_Layout;
-			SaveMenus();
-			SetTabControls();
-			SetTreeControls();
-			SetFolderViews();
-			te.Data.bReload = true;
-		});
+		SetOptions(Apply);
 	});
 }
 
@@ -1848,10 +1851,10 @@ function SetAttrib(item, n, s)
 function GetElementValue(o)
 {
 	if (o.type) {
-		if (api.StrCmpI(o.type, 'checkbox') == 0) {
+		if (/checkbox/i.test(o.type)) {
 			return o.checked ? 1 : 0;
 		}
-		if (/hidden|text/i.test(o.type)) {
+		if (/hidden|text|number|url|password|range|color|date|time/i.test(o.type)) {
 			return o.value;
 		}
 		if (/select/i.test(o.type)) {
@@ -1867,7 +1870,7 @@ function SetElementValue(o, s)
 			o.checked = api.LowPart(s);
 			return;
 		}
-		if (/text/i.test(o.type)) {
+		if (/text|number|url|password|range|color|date|time/i.test(o.type)) {
 			o.value = s;
 			return;
 		}

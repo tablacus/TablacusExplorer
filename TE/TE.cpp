@@ -2459,6 +2459,13 @@ LONGLONG GetLLFromVariant(VARIANT *pv)
 	return 0;
 }
 
+LONGLONG GetLLFromVariantClear(VARIANT *pv)
+{
+	LONGLONG ll = GetLLFromVariant(pv);
+	VariantClear(pv);
+	return ll;
+}
+
 LONGLONG GetLLPFromVariant(VARIANT *pv, VARIANT *pvMem)
 {
 	if (pv) {
@@ -2560,6 +2567,25 @@ BOOL teGetSystemTime(VARIANT *pv, SYSTEMTIME *pSysTime)
 	return FALSE;
 }
 
+VOID teExtraLongPath(BSTR *pbs)
+{
+	int nLen = lstrlen(*pbs);
+	if (nLen < MAX_PATH || StrChr(*pbs, '?')) {
+		return;
+	}
+	BSTR bs;
+	if (tePathMatchSpec(*pbs, L"\\\\*\\*")) {
+		bs = ::SysAllocStringLen(NULL, nLen + 7);
+		lstrcpy(bs, L"\\\\?\\UNC");
+	} else {
+		bs = ::SysAllocStringLen(NULL, nLen + 4);
+		lstrcpy(bs, L"\\\\?\\");
+	}
+	lstrcat(bs, *pbs);
+	teSysFreeString(pbs);
+	*pbs = bs;
+}
+
 HRESULT teInvokeAPI(TEDispatchApi *pApi, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo)
 {
 	int nArg = pDispParams ? pDispParams->cArgs : 0;
@@ -2571,8 +2597,11 @@ HRESULT teInvokeAPI(TEDispatchApi *pApi, DISPPARAMS *pDispParams, VARIANT *pVarR
 		teParam param[12] = { 0 };
 		for (int i = nArg < 11 ? nArg : 11; i >= 0; i--) {
 			VariantInit(&vParam[i]);
-			if (i == pApi->nStr1 || i == pApi->nStr2 || i == pApi->nStr3) {
+			if (i == (pApi->nStr1 % 10) || i == (pApi->nStr2 % 10) || i == (pApi->nStr3 % 10)) {
 				teVariantChangeType(&vParam[i], &pDispParams->rgvarg[nArg - i], VT_BSTR);
+				if (i == (pApi->nStr1 - 10) || i == (pApi->nStr2 - 10) || i == (pApi->nStr3 - 10)) {
+					teExtraLongPath(&vParam[i].bstrVal);
+				}
 				param[i].bstrVal = vParam[i].bstrVal;
 			} else {
 				param[i].llVal = GetLLPFromVariant(&pDispParams->rgvarg[nArg - i], &vParam[i]);
@@ -3643,47 +3672,50 @@ int GetIntFromVariantClear(VARIANT *pv)
 	return i;
 }
 
+VOID teGetFileTimeFromItem(IShellFolder2 *pSF2, LPCITEMIDLIST pidl, const SHCOLUMNID *pscid, FILETIME *pft)
+{
+	VARIANT v;
+	VariantInit(&v);
+	SYSTEMTIME SysTime;
+	if (SUCCEEDED(pSF2->GetDetailsEx(pidl, pscid, &v)) && v.vt == VT_DATE) {
+		if (::VariantTimeToSystemTime(v.date, &SysTime)) {
+			::SystemTimeToFileTime(&SysTime, pft);
+		}
+	}
+	VariantClear(&v);
+}
+
 HRESULT teSHGetDataFromIDList(IShellFolder *pSF, LPCITEMIDLIST pidlPart, int nFormat, void *pv, int cb)
 {
 	HRESULT hr = SHGetDataFromIDList(pSF, pidlPart, nFormat, pv, cb);
 	if (hr != S_OK && nFormat == SHGDFIL_FINDDATA) {
 		::ZeroMemory(pv, cb);
 		WIN32_FIND_DATA *pwfd = (WIN32_FIND_DATA *)pv;
-		STATSTG statstg = { 0 };
-		IStream *pStream = NULL;
-		IStorage *pStorage = NULL;
-		if SUCCEEDED(pSF->BindToStorage(pidlPart, NULL, IID_PPV_ARGS(&pStream))) {
-			pStream->Stat(&statstg, STATFLAG_DEFAULT);
-			ULARGE_INTEGER uliSize;
-			LARGE_INTEGER liOffset;
-			liOffset.QuadPart = 0;
-			if SUCCEEDED(pStream->Seek(liOffset, STREAM_SEEK_END, &uliSize)) {
-				pwfd->nFileSizeHigh = uliSize.HighPart;
-				pwfd->nFileSizeLow = uliSize.LowPart;
-			}
-			pStream->Release();
-		} else if SUCCEEDED(pSF->BindToStorage(pidlPart, NULL, IID_PPV_ARGS(&pStorage))) {
-			pStorage->Stat(&statstg, STATFLAG_DEFAULT);
-			pStorage->Release();
-			pwfd->dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY;
-		}
-		pwfd->ftCreationTime = statstg.ctime;
-		pwfd->ftLastAccessTime = statstg.atime;
-		pwfd->ftLastWriteTime = statstg.mtime;
-		if (statstg.pwcsName) {
-			lstrcpyn(pwfd->cFileName, statstg.pwcsName, MAX_PATH);
-			::CoTaskMemFree(statstg.pwcsName);
+
+		BSTR bs = NULL;
+		if SUCCEEDED(teGetDisplayNameBSTR(pSF, pidlPart, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_INFOLDER, &bs)) {
+			lstrcpyn(pwfd->cFileName, bs, MAX_PATH);
+			::SysFreeString(bs);
 			hr = S_OK;
-		}
-		IShellFolder2 *pSF2;
-		if SUCCEEDED(pSF->QueryInterface(IID_PPV_ARGS(&pSF2))) {
-			VARIANT v;
-			VariantInit(&v);
-			if SUCCEEDED(pSF2->GetDetailsEx(pidlPart, &PKEY_FileAttributes, &v)) {
-				pwfd->dwFileAttributes = GetIntFromVariantClear(&v);
+
+			IShellFolder2 *pSF2;
+			if SUCCEEDED(pSF->QueryInterface(IID_PPV_ARGS(&pSF2))) {
+				VARIANT v;
+				VariantInit(&v);
+				if SUCCEEDED(pSF2->GetDetailsEx(pidlPart, &PKEY_FileAttributes, &v)) {
+					pwfd->dwFileAttributes = GetIntFromVariantClear(&v);
+				}
+				if SUCCEEDED(pSF2->GetDetailsEx(pidlPart, &PKEY_Size, &v)) {
+					ULARGE_INTEGER uli;
+					uli.QuadPart = GetLLFromVariantClear(&v);
+					pwfd->nFileSizeHigh = uli.HighPart;
+					pwfd->nFileSizeLow = uli.LowPart;
+				}
+				teGetFileTimeFromItem(pSF2, pidlPart, &PKEY_DateCreated, &pwfd->ftCreationTime);
+				teGetFileTimeFromItem(pSF2, pidlPart, &PKEY_DateAccessed, &pwfd->ftLastAccessTime);
+				teGetFileTimeFromItem(pSF2, pidlPart, &PKEY_DateModified, &pwfd->ftLastWriteTime);
+				SafeRelease(&pSF2);
 			}
-			VariantClear(&v);
-			SafeRelease(&pSF2);
 		}
 	}
 	return hr;
@@ -3886,13 +3918,6 @@ VOID teSetIDList(VARIANT *pv, LPITEMIDLIST pidl)
 	if (GetFolderItemFromIDList(&pFI, pidl)) {
 		teSetObjectRelease(pv, pFI);
 	}
-}
-
-LONGLONG GetLLFromVariantClear(VARIANT *pv)
-{
-	LONGLONG ll = GetLLFromVariant(pv);
-	VariantClear(pv);
-	return ll;
 }
 
 BOOL GetDataObjFromVariant(IDataObject **ppDataObj, VARIANT *pv)
@@ -5677,8 +5702,6 @@ HRESULT teExtract(IStorage *pStorage, LPWSTR lpszFolderPath)
 	LPITEMIDLIST pidl;
 	ULONG chEaten;
 	ULONG dwAttributes;
-	SYSTEMTIME SysTime;
-	VARIANT v;
 #endif
 	CreateDirectory(lpszFolderPath, NULL);
 
@@ -5710,13 +5733,9 @@ HRESULT teExtract(IStorage *pStorage, LPWSTR lpszFolderPath)
 					if (statstg.mtime.dwLowDateTime == 0) {
 						if SUCCEEDED(pStorage->QueryInterface(IID_PPV_ARGS(&pSF2))) {
 							if SUCCEEDED(pSF2->ParseDisplayName(NULL, NULL, statstg.pwcsName, &chEaten, &pidl, &dwAttributes)) {
-								VariantInit(&v);
-								if (SUCCEEDED(pSF2->GetDetailsEx(pidl, &PKEY_DateModified, &v)) && v.vt == VT_DATE) {
-									if (::VariantTimeToSystemTime(v.date, &SysTime)) {
-										::SystemTimeToFileTime(&SysTime, &statstg.mtime);
-									}
-								}
-								VariantClear(&v);
+								teGetFileTimeFromItem(pSF2, pidl, &PKEY_DateCreated, &statstg.ctime);
+								teGetFileTimeFromItem(pSF2, pidl, &PKEY_DateAccessed, &statstg.atime);
+								teGetFileTimeFromItem(pSF2, pidl, &PKEY_DateModified, &statstg.mtime);
 								teCoTaskMemFree(pidl);
 							}
 							pSF2->Release();
@@ -8376,6 +8395,11 @@ VOID teApiArray(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVar
 	teSetObjectRelease(pVarResult, pdisp);
 }
 
+VOID teApiPathIsRoot(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetBool(pVarResult, PathIsRoot(param[0].lpcwstr));
+}
+
 /*
 VOID teApi(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -8416,7 +8440,7 @@ TEDispatchApi dispAPI[] = {
 	{ 1, -1, -1, -1, "ILFindLastID", teApiILFindLastID },
 	{ 1, -1, -1, -1, "ILIsEmpty", teApiILIsEmpty },
 	{ 1, -1, -1, -1, "ILGetParent", teApiILGetParent },
-	{ 2,  0, -1, -1, "FindFirstFile", teApiFindFirstFile },
+	{ 2, 10, -1, -1, "FindFirstFile", teApiFindFirstFile },
 	{ 1, -1, -1, -1, "WindowFromPoint", teApiWindowFromPoint },
 	{ 0, -1, -1, -1, "GetThreadCount", teApiGetThreadCount },
 	{ 0, -1, -1, -1, "DoEvents", teApiDoEvents },
@@ -8625,7 +8649,7 @@ TEDispatchApi dispAPI[] = {
 	{ 3, -1, -1, -1, "LoadLibraryEx", teApiLoadLibraryEx },
 	{ 6, -1, -1, -1, "LoadImage", teApiLoadImage },
 	{ 7, -1, -1, -1, "ImageList_LoadImage", teApiImageList_LoadImage },
-	{ 5,  0, -1, -1, "SHGetFileInfo", teApiSHGetFileInfo },
+	{ 5, 10, -1, -1, "SHGetFileInfo", teApiSHGetFileInfo },
 	{12, -1,  1,  2, "CreateWindowEx", teApiCreateWindowEx },
 	{ 6, -1,  3,  4, "ShellExecute", teApiShellExecute },
 	{ 2, -1, -1, -1, "BeginPaint", teApiBeginPaint },
@@ -8668,7 +8692,7 @@ TEDispatchApi dispAPI[] = {
 	{ 3,  1, -1, -1, "ObjPutI", teApiObjPutI },
 	{ 5,  1, -1, -1, "DrawText", teApiDrawText },
 	{ 5, -1, -1, -1, "Rectangle", teApiRectangle },
-	{ 1,  0, -1, -1, "PathIsDirectory", teApiPathIsDirectory },
+	{ 1, 10, -1, -1, "PathIsDirectory", teApiPathIsDirectory },
 	{ 2,  0,  1, -1, "PathIsSameRoot", teApiPathIsSameRoot },
 	{ 2,  1, -1, -1, "ObjDispId", teApiObjDispId },
 	{ 1,  0, -1, -1, "SHSimpleIDListFromPath", teApiSHSimpleIDListFromPath },
@@ -8680,6 +8704,7 @@ TEDispatchApi dispAPI[] = {
 	{ 3,  0,  1, -1, "MoveFileEx", teApiMoveFileEx },
 	{ 0, -1, -1, -1, "Object", teApiObject },
 	{ 0, -1, -1, -1, "Array", teApiArray },
+	{ 1,  0, -1, -1, "PathIsRoot", teApiPathIsRoot },
 //	{ 0, -1, -1, -1, "", teApi },
 //	{ 0, -1, -1, -1, "Test", teApiTest },
 };
@@ -14663,7 +14688,6 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				if (g_pWebBrowser) {
 					g_nLockUpdate = 0;
 					ClearEvents();
-					g_nSize += MAXWORD;
 					g_pWebBrowser->m_pWebBrowser->Refresh();
 				}
 				return S_OK;
