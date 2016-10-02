@@ -1028,6 +1028,8 @@ public:
 	HRESULT CreateViewWindowEx(IShellView *pPreviousView);
 	VOID SetTabName();
 	HRESULT RemoveAll();
+	VOID SetViewModeAndIconSize(BOOL bSetIconSize);
+	VOID SetListColumnWidth();
 #ifdef _2000XP
 	VOID AddPathXP(CteFolderItems *pFolderItems, IShellFolderView *pSFV, int nIndex, BOOL bResultsFolder);
 	int PSGetColumnIndexXP(LPWSTR pszName, int *pcxChar);
@@ -1053,6 +1055,7 @@ public:
 	LPITEMIDLIST m_pidl;
 	IShellFolder2 *m_pSF2;
 	DWORD		m_dwNameFormat;
+	SORTCOLUMN m_col;
 #ifdef _2000XP
 	TEColumn	*m_pColumns;
 	UINT		m_nColumns;
