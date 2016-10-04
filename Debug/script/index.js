@@ -1418,6 +1418,10 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 						api.DeleteObject(te.Data.Fonts[i]);
 					}
 					te.Data.Fonts = null;
+					for (var i in te.Data.SHIL) {
+						api.ImageList_Destroy(te.Data.SHIL[i], true);
+					}
+					te.Data.SHIL = [];
 					break;
 				case WM_DEVICECHANGE:
 					if (wParam == DBT_DEVICEARRIVAL || wParam == DBT_DEVICEREMOVECOMPLETE) {
@@ -3257,7 +3261,10 @@ if (!te.Data) {
 
 	te.Data.DataFolder = DataFolder;
 	te.Data.Conf_Lang = GetLangId();
-
+	te.Data.SHIL = [];
+	for (var i = SHIL_JUMBO; i--;) {
+		te.Data.SHIL[i] = api.SHGetImageList(i);
+	}
 	if (api.GetKeyState(VK_SHIFT) < 0 && api.GetKeyState(VK_CONTROL) < 0) {
 		g_.xmlWindow = "Init";
 	} else {

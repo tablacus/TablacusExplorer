@@ -1054,8 +1054,9 @@ public:
 	CteServiceProvider *m_pServiceProvider;
 	LPITEMIDLIST m_pidl;
 	IShellFolder2 *m_pSF2;
-	DWORD		m_dwNameFormat;
 	SORTCOLUMN m_col;
+	DWORD		m_dwNameFormat;
+	BOOL	m_bSetListColumnWidth;
 #ifdef _2000XP
 	TEColumn	*m_pColumns;
 	UINT		m_nColumns;

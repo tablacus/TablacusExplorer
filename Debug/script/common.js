@@ -508,7 +508,7 @@ function MakeImgIcon(src, index, h, strBitmap, strIcon)
 		var sfi = api.Memory("SHFILEINFO");
 		var pidl = api.ILCreateFromPath(api.PathUnquoteSpaces(src));
 		if (pidl) {
-			api.ShGetFileInfo(pidl, 0, sfi, sfi.Size, (h && h <= 16) ? SHGFI_PIDL | SHGFI_ICON | SHGFI_SMALLICON : SHGFI_PIDL | SHGFI_ICON);
+			api.SHGetFileInfo(pidl, 0, sfi, sfi.Size, (h && h <= 16) ? SHGFI_PIDL | SHGFI_ICON | SHGFI_SMALLICON : SHGFI_PIDL | SHGFI_ICON);
 			return sfi.hIcon;
 		}
 	}
@@ -1902,14 +1902,14 @@ AddMenuIconFolderItem = function (mii, FolderItem)
 {
 	var image = te.GdiplusBitmap();
 	var sfi = api.Memory("SHFILEINFO");
-	api.ShGetFileInfo(FolderItem, 0, sfi, sfi.Size, SHGFI_ICON | SHGFI_SMALLICON | SHGFI_SYSICONINDEX | SHGFI_PIDL);
+	api.SHGetFileInfo(FolderItem, 0, sfi, sfi.Size, SHGFI_SYSICONINDEX | SHGFI_PIDL);
 	var id = sfi.iIcon;
 	mii.hbmpItem = MainWindow.g_arBM['U' + id];
 	if (mii.hbmpItem) {
 		mii.fMask = mii.fMask | MIIM_BITMAP;
 		return;
 	}
-	var hIcon = sfi.hIcon;
+	var hIcon = api.ImageList_GetIcon(te.Data.SHIL[SHIL_SMALL], id, ILD_NORMAL);
 	image.FromHICON(hIcon, GetSysColor(COLOR_MENU));
 	api.DestroyIcon(hIcon);
 	AddMenuImage(mii, image, id);
