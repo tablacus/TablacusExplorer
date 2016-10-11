@@ -1270,11 +1270,11 @@ public:
 	CteTreeView();
 	~CteTreeView();
 
-	void Init();
-	void Close();
-	BOOL Create();
+	VOID Init();
+	VOID Close();
+	BOOL Create(BOOL bIfVisible);
 	HRESULT getSelected(IDispatch **pItem);
-	HRESULT SetRoot();
+	VOID SetRoot();
 public:
 	HWND        m_hwnd;
 	HWND        m_hwndTV;

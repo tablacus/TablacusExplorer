@@ -1421,7 +1421,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 					for (var i in te.Data.SHIL) {
 						api.ImageList_Destroy(te.Data.SHIL[i], true);
 					}
-					te.Data.SHIL = [];
+					te.Data.SHIL = te.Array();
 					break;
 				case WM_DEVICECHANGE:
 					if (wParam == DBT_DEVICEARRIVAL || wParam == DBT_DEVICEREMOVECOMPLETE) {
@@ -3261,7 +3261,7 @@ if (!te.Data) {
 
 	te.Data.DataFolder = DataFolder;
 	te.Data.Conf_Lang = GetLangId();
-	te.Data.SHIL = [];
+	te.Data.SHIL = te.Array();
 	for (var i = SHIL_JUMBO; i--;) {
 		te.Data.SHIL[i] = api.SHGetImageList(i);
 	}
