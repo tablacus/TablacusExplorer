@@ -1010,7 +1010,7 @@ public:
 	VOID SetTitle(BSTR szName, int nIndex);
 	VOID GetShellFolderView();
 	VOID GetFocusedIndex(int *piItem);
-	VOID SetFolderFlags();
+	VOID SetFolderFlags(BOOL bGetIconSize);
 	VOID GetViewModeAndIconSize(BOOL bGetIconSize);
 	HRESULT Items(UINT uItem, FolderItems **ppid);
 	HRESULT SelectItemEx(LPITEMIDLIST *ppidl, int dwFlags, BOOL bFree);

@@ -4848,9 +4848,11 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 												wParam == WM_RBUTTONUP || wParam == WM_RBUTTONDBLCLK ||
 												wParam == WM_MBUTTONUP || wParam == WM_MBUTTONDBLCLK ||
 												wParam == WM_XBUTTONUP || wParam == WM_XBUTTONDBLCLK) {
-												if (ht.hItem == g_hItemDown && ht.flags & TVHT_ONITEM) {
+												if (ht.hItem == g_hItemDown) {
 													SetFocus(pMHS->hwnd);
-													TreeView_SelectItem(pMHS->hwnd, ht.hItem);
+													if (ht.flags & TVHT_ONITEM) {
+														TreeView_SelectItem(pMHS->hwnd, ht.hItem);
+													}
 												}
 											}
 										}
@@ -5277,7 +5279,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			::InterlockedDecrement(&g_nProcFV);
 		}
 		if (msg == WM_WINDOWPOSCHANGED) {
-			pSB->SetFolderFlags();
+			pSB->SetFolderFlags(FALSE);
 		}
 		if (hwnd != pSB->m_hwndDV) {
 			return 0;
@@ -11312,7 +11314,7 @@ VOID CteShellBrowser::GetFocusedIndex(int *piItem)
 	}
 }
 
-VOID CteShellBrowser::SetFolderFlags()
+VOID CteShellBrowser::SetFolderFlags(BOOL bGetIconSize)
 {
 	if (m_pShellView) {
 		IFolderView2 *pFV2;
@@ -11325,7 +11327,7 @@ VOID CteShellBrowser::SetFolderFlags()
 			ListView_SetExtendedListViewStyleEx(m_hwndLV, LVS_EX_FULLROWSELECT | LVS_EX_CHECKBOXES, HIWORD(m_param[SB_FolderFlags]));
 		}
 #endif
-		GetViewModeAndIconSize(FALSE);
+		GetViewModeAndIconSize(bGetIconSize);
 		SetLVSettings();
 	}
 }
@@ -12283,7 +12285,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			case 0x10000009:
 				if (nArg >= 0) {
 					m_param[SB_FolderFlags] = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
-					SetFolderFlags();
+					SetFolderFlags(FALSE);
 				}
 				teSetLong(pVarResult, m_param[SB_FolderFlags]);
 				return S_OK;
@@ -12296,7 +12298,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					}
 					SetViewModeAndIconSize(nArg >= 1);
 				}
-				SetFolderFlags();
+				SetFolderFlags(FALSE);
 				teSetLong(pVarResult, m_param[SB_ViewMode]);
 				return S_OK;
 			//IconSize
@@ -13007,7 +13009,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 				return S_OK;
 			case DISPID_VIEWMODECHANGED://XP+
-				SetFolderFlags();
+				SetFolderFlags(TRUE);
 				m_bSetListColumnWidth = TRUE;
 				SetListColumnWidth();
 				return DoFunc(TE_OnViewModeChanged, this, S_OK);
@@ -13025,7 +13027,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 				return S_OK;
 			case DISPID_INITIALENUMERATIONDONE://XP-
-				SetFolderFlags();
+				SetFolderFlags(FALSE);
 				return S_OK;
 /*			case DISPID_CONTENTSCHANGED://XP-
 				return S_OK;*/
@@ -13584,7 +13586,7 @@ VOID CteShellBrowser::OnNavigationComplete2()
 		FocusItem(FALSE);
 	}
 	m_bCheckLayout = TRUE;
-	SetFolderFlags();
+	SetFolderFlags(FALSE);
 	InitFolderSize();
 	if (m_pTC->m_bRedraw) {
 		KillTimer(g_hwndMain, TET_Redraw);
