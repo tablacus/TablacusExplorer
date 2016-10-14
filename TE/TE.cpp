@@ -9277,13 +9277,11 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 							break;
 						case LVM_SETCOLUMNWIDTH:
 							pSB = SBfromhwnd(pcwp->hwnd);
-							if (pSB) {
+							if (pSB && pSB->m_param[SB_ViewMode] == FVM_LIST) {
 								if (pcwp->lParam < 0) {
-									if (pSB && pSB->m_param[SB_ViewMode] == FVM_LIST) {
-										pSB->m_bSetListColumnWidth = TRUE;
-										pSB->SetListColumnWidth();
-										return 0;
-									}
+									pSB->m_bSetListColumnWidth = TRUE;
+									pSB->SetListColumnWidth();
+									return 0;
 								}
 								pSB->m_bSetListColumnWidth = FALSE;
 							}
@@ -11156,7 +11154,6 @@ HRESULT CteShellBrowser::GetAbsPidl(LPITEMIDLIST *ppidlOut, FolderItem **ppid, F
 VOID CteShellBrowser::Refresh(BOOL bCheck)
 {
 	m_bRefreshLator = FALSE;
-	m_bSetListColumnWidth = TRUE;
 	if (!m_dwUnavailable) {
 		teDoCommand(this, m_hwnd, WM_NULL, 0, 0);//Save folder setings
 	}
@@ -13010,7 +13007,6 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				return S_OK;
 			case DISPID_VIEWMODECHANGED://XP+
 				SetFolderFlags(TRUE);
-				m_bSetListColumnWidth = TRUE;
 				SetListColumnWidth();
 				return DoFunc(TE_OnViewModeChanged, this, S_OK);
 			case DISPID_BEGINDRAG://XP+
@@ -13704,8 +13700,8 @@ VOID CteShellBrowser::SetViewModeAndIconSize(BOOL bSetIconSize)
 VOID CteShellBrowser::SetListColumnWidth()
 {
 	if (m_bSetListColumnWidth) {
-		m_bSetListColumnWidth = FALSE;
 		if (m_pSF2 && m_hwndLV && m_pShellView && m_param[SB_ViewMode] == FVM_LIST) {
+			m_bSetListColumnWidth = FALSE;
 			int nOrgWidth = ListView_GetColumnWidth(m_hwndLV, 0);
 			IFolderView *pFV;
 			if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
