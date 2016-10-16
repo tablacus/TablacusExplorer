@@ -1059,11 +1059,19 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam)
 {
 	if (Ctrl.Type <= CTRL_EB) {
-		if ((wParam & 0xfff) + 1 == CommandID_DELETE) {
-			var Items = Ctrl.SelectedItems();
-			for (var i = Items.Count; i--; ) {
-				UnlockFV(Items.Item(i));
-			}
+		switch ((wParam & 0xfff) + 1) {
+			case CommandID_DELETE:
+				var Items = Ctrl.SelectedItems();
+				for (var i = Items.Count; i--; ) {
+					UnlockFV(Items.Item(i));
+				}
+				break;
+			case CommandID_CUT:
+			case CommandID_COPY:
+				if (Ctrl.hwndList) {
+					api.InvalidateRect(Ctrl.hwndList, null, true);
+				}
+				break;
 		}
 	}
 	var hr = RunEvent3("Command", Ctrl, hwnd, msg, wParam, lParam);
@@ -1075,6 +1083,24 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 {
 	var path;
 	var hr = RunEvent3("InvokeCommand", ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon);
+	if (isNaN(hr) && Verb == CommandID_CUT - 1) {
+		var FV = ContextMenu.FolderView;
+		if (FV && FV.hwndView && ContextMenu.Items().Count == FV.SelectedItems().Count) {
+			var hMenu = te.MainMenu(FCIDM_MENU_EDIT);
+			var mii = api.Memory("MENUITEMINFO");
+			mii.cbSize = mii.Size;
+			mii.fMask = MIIM_ID;
+			for (var i = api.GetMenuItemCount(hMenu); i-- > 0;) {
+				if (api.GetMenuItemInfo(hMenu, i, true, mii)) {
+					if ((mii.wID & 0xfff) == Verb) {
+						api.SendMessage(FV.hwndView, WM_COMMAND, mii.wID, 0);
+						hr = S_OK;
+						break;
+					}
+				}
+			}
+		}
+	}
 	RunEvent1("ConfigChanged", "Config");
 	if (isFinite(hr)) {
 		return hr; 
