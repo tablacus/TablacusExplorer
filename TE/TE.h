@@ -1051,7 +1051,6 @@ public:
 	FolderItem *m_pFolderItem;
 	FolderItem *m_pFolderItem1;
 	IExplorerBrowser *m_pExplorerBrowser;
-	CteServiceProvider *m_pServiceProvider;
 	LPITEMIDLIST m_pidl;
 	IShellFolder2 *m_pSF2;
 	SORTCOLUMN m_col;

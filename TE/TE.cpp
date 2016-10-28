@@ -10236,7 +10236,6 @@ void CteShellBrowser::Init(CteTabCtrl *pTC, BOOL bNew)
 	m_hwndDT = NULL;
 	m_pShellView = NULL;
 	m_pExplorerBrowser = NULL;
-	m_pServiceProvider = NULL;
 	m_dwEventCookie = 0;
 	m_pidl = NULL;
 	m_pFolderItem = NULL;
@@ -10841,9 +10840,6 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 				hr = NavigateSB(pPreviousView, pPrevious);
 			}
 		} catch (...) {}
-		if (m_pTC && GetTabIndex() == m_pTC->m_nIndex) {
-			Show(TRUE, 0);
-		}
 	} catch (...) {}
 	m_pTC->UnLockUpdate(FALSE);
 
@@ -10860,6 +10856,9 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		}
 		m_nLogIndex = m_nPrevLogIndex;
 		return hr;
+	}
+	if (m_pTC && GetTabIndex() == m_pTC->m_nIndex) {
+		Show(TRUE, 0);
 	}
 
 	if (pPreviousView) {
@@ -10925,8 +10924,9 @@ HRESULT CteShellBrowser::NavigateEB(DWORD dwFrame)
 							pOptions->Release();
 						}
 						m_pExplorerBrowser->SetOptions(static_cast<EXPLORER_BROWSER_OPTIONS>((m_param[SB_Options] & ~(EBO_SHOWFRAMES | EBO_NAVIGATEONCE | EBO_ALWAYSNAVIGATE)) | dwFrame | EBO_NOTRAVELLOG));
-						m_pServiceProvider = new CteServiceProvider(static_cast<IShellBrowser *>(this), NULL);
-						IUnknown_SetSite(m_pExplorerBrowser, m_pServiceProvider);
+						IServiceProvider *pSP = new CteServiceProvider(static_cast<IShellBrowser *>(this), NULL);
+						IUnknown_SetSite(m_pExplorerBrowser, pSP);
+						pSP->Release();
 /*///
 						IFolderFilterSite *pFolderFilterSite;
 						if SUCCEEDED(m_pExplorerBrowser->QueryInterface(IID_PPV_ARGS(&pFolderFilterSite))) {
@@ -11013,7 +11013,7 @@ VOID CteShellBrowser::SaveFocusedItemToHistory()
 VOID CteShellBrowser::FocusItem(BOOL bFree)
 {
 	CteFolderItem *pid;
-	if (m_pFolderItem && SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid))) {
+	if (m_pFolderItem && !m_dwUnavailable && SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid))) {
 		if (pid->m_pidlFocused) {
 			SelectItemEx(&pid->m_pidlFocused, pid->m_nSelected == 1 ?
 				SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS | SVSI_DESELECTOTHERS | SVSI_SELECT :
@@ -11458,7 +11458,7 @@ VOID CteShellBrowser::SetLabel(LPCITEMIDLIST pidl, LPWSTR szText, int cch)
 
 VOID CteShellBrowser::GetViewModeAndIconSize(BOOL bGetIconSize)
 {
-	if (!m_pShellView) {
+	if (!m_pShellView || m_dwUnavailable) {
 		return;
 	}
 	FOLDERSETTINGS fs;
@@ -14190,8 +14190,6 @@ VOID CteShellBrowser::DestroyView(int nFlags)
 			  m_pExplorerBrowser->Unadvise(m_dwEventCookie);
 			}
 			IUnknown_SetSite(m_pExplorerBrowser, NULL);
-			m_pServiceProvider->Release();
-			m_pServiceProvider = NULL;
 			Show(FALSE, 0);
 			m_pExplorerBrowser->Destroy();
 			m_pExplorerBrowser->Release();
