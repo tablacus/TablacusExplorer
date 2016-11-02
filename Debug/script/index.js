@@ -763,7 +763,7 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev)
 		return E_NOTIMPL;
 	}
 	var hr = RunEvent2("BeforeNavigate", Ctrl, fs, wFlags, Prev);
-	if (Ctrl.Data.Lock && (wFlags & SBSP_NEWBROWSER) == 0) {
+	if (Ctrl.Data && Ctrl.Data.Lock && (wFlags & SBSP_NEWBROWSER) == 0) {
 		hr = E_ACCESSDENIED;
 	}
 	return hr;
@@ -2045,9 +2045,9 @@ function ChangeNotifyFV(lEvent, item1, item2)
 							}, 99);}) (FV, nPos);
 						}
 					}
-				}
-				if ((lEvent & fAdd) && FV.FolderItem.Unavailable) {
-					FV.Refresh();
+					if ((lEvent & fAdd) && FV.FolderItem.Unavailable) {
+						FV.Refresh();
+					}
 				}
 				if (lEvent & SHCNE_UPDATEDIR) {
 					if (/^[A-Z]:\\|^\\/i.test(path) && api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"))) {

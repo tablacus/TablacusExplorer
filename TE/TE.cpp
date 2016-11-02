@@ -10843,6 +10843,9 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	} catch (...) {}
 	m_pTC->UnLockUpdate(FALSE);
 
+	if (m_pTC && GetTabIndex() == m_pTC->m_nIndex) {
+		Show(TRUE, 0);
+	}
 	if (hr != S_OK) {
 		SafeRelease(&m_pShellView);
 		m_pShellView = pPreviousView;
@@ -10856,9 +10859,6 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		}
 		m_nLogIndex = m_nPrevLogIndex;
 		return hr;
-	}
-	if (m_pTC && GetTabIndex() == m_pTC->m_nIndex) {
-		Show(TRUE, 0);
 	}
 
 	if (pPreviousView) {
@@ -11767,6 +11767,9 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 	int nCount = 0;
 	int nAllWidth = 0;
 	LPTSTR *lplpszArgs = NULL;
+	if (m_dwUnavailable) {
+		return;
+	}
 	if (bsColumns && bsColumns[0]) {
 		lplpszArgs = CommandLineToArgvW(bsColumns, &nCount);
 		nCount /= 2;
@@ -12117,7 +12120,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 		int nFormat = 0;
 		TC_ITEM tcItem;
 
-		if ((m_bEmpty || m_nUnload == 1 || m_nUnload == 9) && dispIdMember >= 0x10000100 && dispIdMember) {
+		if ((m_bEmpty || m_nUnload == 1 || (m_nUnload & 8)) && dispIdMember >= 0x10000100 && dispIdMember) {
 			return S_OK;
 		}
 
@@ -12514,7 +12517,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			//SortColumn
 			case 0x10000104:
 				if (nArg >= 0) {
-					if (pDispParams->rgvarg[nArg].vt == VT_BSTR) {
+					if (pDispParams->rgvarg[nArg].vt == VT_BSTR && !m_dwUnavailable) {
 						SetSort(pDispParams->rgvarg[nArg].bstrVal);
 					}
 					nFormat = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
@@ -14007,44 +14010,41 @@ VOID CteShellBrowser::Suspend(int nMode)
 		Show(FALSE, 0);
 		m_dwUnavailable = GetTickCount();
 		teILCloneReplace(&m_pidl, g_pidlResultsFolder);
-		VARIANT v;
-		if (GetVarPathFromFolderItem(m_pFolderItem, &v)) {
-			SafeRelease(&m_pFolderItem);
-			CteFolderItem *pid = new CteFolderItem(&v);
-			pid->m_dwUnavailable = m_dwUnavailable;
-			pid->m_pidl = ILClone(g_pidlResultsFolder);
-			m_pFolderItem = pid;
-			VariantClear(&v);
-		}
 	}
 	if (!m_dwUnavailable) {
 		SaveFocusedItemToHistory();
 		teDoCommand(this, m_hwnd, WM_NULL, 0, 0);//Save folder setings
 	}
 	DestroyView(0);
-	if (nMode && m_pTV) {
+	if (nMode == 1 && m_pTV) {
 		m_pTV->Close();
 		m_pTV->m_bSetRoot = true;
 	}
-	CteFolderItem *pid1 = NULL;
-	if SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1)) {
-		if (pid1->m_v.vt == VT_BSTR) {
-			teILFreeClear(&m_pidl);
-			pid1->Release();
+	if (nMode != 2) {
+		CteFolderItem *pid1 = NULL;
+		if SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1)) {
+			if (pid1->m_v.vt == VT_BSTR) {
+				teILFreeClear(&m_pidl);
+				pid1->Release();
+			}
 		}
 	}
+	m_nUnload = 9;
 	if (m_pidl) {
 		VARIANT v;
 		if (GetVarPathFromFolderItem(m_pFolderItem, &v)) {
 			SafeRelease(&m_pFolderItem);
 			CteFolderItem *pid = new CteFolderItem(&v);
 			pid->m_dwUnavailable = m_dwUnavailable;
+			if (nMode == 2) {
+				pid->m_pidl = ILClone(g_pidlResultsFolder);
+				m_nUnload = 8;
+			}
 			m_pFolderItem = pid;
 			teILFreeClear(&m_pidl);
 			VariantClear(&v);
 		}
 	}
-	m_nUnload = 9;
 	Show(bVisible, 0);
 }
 
@@ -14098,16 +14098,18 @@ void CteShellBrowser::Show(BOOL bShow, DWORD dwOptions)
 	if (bShow ^ m_bVisible) {
 		if (bShow) {
 			if (!g_nLockUpdate && !m_nCreate) {
-				if (m_nUnload == 9) {
-					m_nUnload = 2;
-					CteFolderItem *pid;
-					if SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
-						if (pid->m_v.vt == VT_BSTR) {
-							teILFreeClear(&pid->m_pidl);
-							pid->m_dwUnavailable = 0;
+				if (m_nUnload & 8) {
+					if (m_nUnload & 1) {
+						CteFolderItem *pid;
+						if SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
+							if (pid->m_v.vt == VT_BSTR) {
+								teILFreeClear(&pid->m_pidl);
+								pid->m_dwUnavailable = 0;
+							}
+							pid->Release();
 						}
-						pid->Release();
 					}
+					m_nUnload = 2;
 					if SUCCEEDED(BrowseObject(NULL, SBSP_RELATIVE | SBSP_WRITENOHISTORY | SBSP_REDIRECT)) {
 						m_nUnload = 0;
 					}
@@ -14216,7 +14218,7 @@ VOID CteShellBrowser::DestroyView(int nFlags)
 VOID CteShellBrowser::GetSort(BSTR* pbs, int nFormat)
 {
 	*pbs = NULL;
-	if (!m_pShellView) {
+	if (!m_pShellView || m_dwUnavailable) {
 		return;
 	}
 	IFolderView2 *pFV2;
