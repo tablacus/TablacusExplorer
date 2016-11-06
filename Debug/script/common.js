@@ -947,13 +947,21 @@ SaveLayout = function ()
 	return S_OK;
 }
 
-GetPos = function (o, bScreen, bAbs, bPanel)
+GetPos = function (o, bScreen, bAbs, bPanel, bBottom)
 {
+	if (typeof(bScreen) == "number") {
+		bAbs = bScreen & 2;
+		bPanel = bScreen & 4;
+		bBottom = bScreen & 8;
+		bScreen &= 1;
+	}
 	var x = (bScreen ? screenLeft : 0);
 	var y = (bScreen ? screenTop : 0);
-
+	if (bBottom) {
+		y += o.offsetHeight;
+	}
 	while (o) {
-		if (bAbs || !bPanel || api.StrCmpI(o.style.position, "absolute")) {
+		if (bAbs || !bPanel || String(o.style.position).toLowerCase() != "absolute") {
 			x += o.offsetLeft - (bAbs ? 0 : o.scrollLeft);
 			y += o.offsetTop - (bAbs ? 0 : o.scrollTop);
 			o = o.offsetParent;
@@ -970,10 +978,10 @@ GetPos = function (o, bScreen, bAbs, bPanel)
 HitTest = function (o, pt)
 {
 	if (o) {
-		var p = GetPos(o, true);
+		var p = GetPos(o, 1);
 		if (pt.x >= p.x && pt.x < p.x + o.offsetWidth && pt.y >= p.y && pt.y < p.y + o.offsetHeight * screen.deviceYDPI / screen.logicalYDPI) {
 			o = o.offsetParent;
-			p = GetPos(o, true, true);
+			p = GetPos(o, 3);
 			return pt.x >= p.x && pt.x < p.x + o.offsetWidth * screen.deviceXDPI / screen.logicalXDPI && pt.y >= p.y && pt.y < p.y + o.offsetHeight * screen.deviceYDPI / screen.logicalYDPI;
 		}
 	}
@@ -1902,6 +1910,15 @@ AddMenuIconFolderItem = function (mii, FolderItem)
 {
 	var image = te.GdiplusBitmap();
 	var sfi = api.Memory("SHFILEINFO");
+	var path = FolderItem.Path;
+	if (api.PathIsNetworkPath(path)) {
+		if (fso.GetDriveName(path) != path.replace(/\\$/, "")) {
+			MenusIcon(mii, WINVER >= 0x600 ? "icon:shell32.dll,275,16" : "icon:shell32.dll,85,16");
+			return;
+		}
+		MenusIcon(mii, WINVER >= 0x600 ? "icon:shell32.dll,273,16" : "icon:shell32.dll,9,16");
+		return;
+	}
 	api.SHGetFileInfo(FolderItem, 0, sfi, sfi.Size, SHGFI_SYSICONINDEX | SHGFI_PIDL);
 	var id = sfi.iIcon;
 	mii.hbmpItem = MainWindow.g_arBM['U' + id];
@@ -1934,6 +1951,11 @@ MenusIcon = function (mii, src)
 	if (src) {
 		src = ExtractMacro(te, src);
 		var image = te.GdiplusBitmap();
+		mii.hbmpItem = MainWindow.g_arBM['U' + src];
+		if (mii.hbmpItem) {
+			mii.fMask = mii.fMask | MIIM_BITMAP;
+			return;
+		}
 		if (REGEXP_IMAGE.test(src)) {
 			image.FromFile(src);
 		} else {
@@ -1941,7 +1963,7 @@ MenusIcon = function (mii, src)
 			image.FromHICON(hIcon, GetSysColor(COLOR_MENU));
 			api.DestroyIcon(hIcon);
 		}
-		AddMenuImage(mii, image);
+		AddMenuImage(mii, image, src);
 	}
 }
 
