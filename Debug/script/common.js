@@ -1910,7 +1910,7 @@ AddMenuIconFolderItem = function (mii, FolderItem)
 {
 	var image = te.GdiplusBitmap();
 	var sfi = api.Memory("SHFILEINFO");
-	var path = FolderItem.Path;
+	var path = typeof(FolderItem) == "string" ? FolderItem : api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING);
 	if (api.PathIsNetworkPath(path)) {
 		if (fso.GetDriveName(path) != path.replace(/\\$/, "")) {
 			MenusIcon(mii, WINVER >= 0x600 ? "icon:shell32.dll,275,16" : "icon:shell32.dll,85,16");

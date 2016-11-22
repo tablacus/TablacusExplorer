@@ -10959,6 +10959,11 @@ HRESULT CteShellBrowser::OnBeforeNavigate(FolderItem *pPrevious, UINT wFlags)
 			m_pExplorerBrowser->GetOptions((EXPLORER_BROWSER_OPTIONS *)&m_param[SB_Options]);
 		}
 	}
+#ifdef _2000XP
+	m_bAutoVM = g_bUpperVista;
+#else
+	m_bAutoVM = TRUE;
+#endif
 	if (g_pOnFunc[TE_OnBeforeNavigate]) {
 		VARIANT vResult;
 		VariantInit(&vResult);
@@ -10975,12 +10980,19 @@ HRESULT CteShellBrowser::OnBeforeNavigate(FolderItem *pPrevious, UINT wFlags)
 		if (!teILIsEqual(m_pFolderItem, pPrevious)) {
 			teSetObject(&pv[0], pPrevious);
 		}
+		DWORD nViewMode = m_param[SB_ViewMode];
+		m_param[SB_ViewMode] = FVM_AUTO;
 		m_bInit = true;
 		try {
 			Invoke4(g_pOnFunc[TE_OnBeforeNavigate], &vResult, 4, pv);
 		} catch (...) {}
 		m_bInit = false;
 		hr = GetIntFromVariantClear(&vResult);
+		if (m_param[SB_ViewMode] == FVM_AUTO) {
+			m_param[SB_ViewMode] = nViewMode;
+		} else {
+			m_bAutoVM = FALSE;
+		} 
 	}
 	return hr;
 }
@@ -13281,11 +13293,7 @@ HRESULT CteShellBrowser::CreateViewWindowEx(IShellView *pPreviousView)
 					BOOL bResultsFolder = ILIsEqual(m_pidl, g_pidlResultsFolder);
 					hr =  bResultsFolder ? S_OK : m_pSF2->EnumObjects(g_hwndMain, SHCONTF_NONFOLDERS | SHCONTF_FOLDERS, &peidl);
 					if (hr == S_OK) {
-#ifdef _2000XP
-						FOLDERSETTINGS fs = { g_bUpperVista && !bResultsFolder ? FVM_AUTO : m_param[SB_ViewMode], (m_param[SB_FolderFlags] | FWF_USESEARCHFOLDER) & ~FWF_NOENUMREFRESH };
-#else
-						FOLDERSETTINGS fs = { bResultsFolder ? m_param[SB_ViewMode] : FVM_AUTO, (m_param[SB_FolderFlags] | FWF_USESEARCHFOLDER) & ~FWF_NOENUMREFRESH };
-#endif
+						FOLDERSETTINGS fs = { m_bAutoVM && !bResultsFolder ? FVM_AUTO : m_param[SB_ViewMode], (m_param[SB_FolderFlags] | FWF_USESEARCHFOLDER) & ~FWF_NOENUMREFRESH };
 						hr = m_pShellView->CreateViewWindow(pPreviousView, &fs, static_cast<IShellBrowser *>(this), &rc, &m_hwnd);
 					} else {
 						hr = E_FAIL;
@@ -13504,6 +13512,9 @@ STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 	//History / Management
 	SetHistory(NULL, SBSP_SAMEBROWSER | SBSP_ABSOLUTE);
 	SafeRelease(&pPrevious);
+	if (!m_bAutoVM) {
+		SetViewModeAndIconSize(TRUE);
+	}
 	return hr;
 }
 
