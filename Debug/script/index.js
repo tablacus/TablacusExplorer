@@ -1468,7 +1468,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 						te.Reload();
 					}
 					if (wParam & 0xffff) {
-						if (g_mouse.str == "") {
+						if (g_mouse.str == "" && !api.GetFocus()) {
 							setTimeout(function ()
 							{
 								var FV = te.Ctrl(CTRL_FV);
