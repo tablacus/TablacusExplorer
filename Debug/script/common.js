@@ -1183,7 +1183,7 @@ Exec = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop
 	window.Handled = S_OK;
 	window.FV = GetFolderView(Ctrl, pt);
 
-	if (api.StrCmpI(type, "Func") == 0) {
+	if (/^Func$/i.test(type)) {
 		return s(Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop, window.FV);
 	}
 	for (var i in eventTE.Exec) {
@@ -1788,11 +1788,11 @@ GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arCon
 			{
 				var s = GetHelpMenu(false)[nVerb - 0x4011];
 				if (s) {
-					if (api.StrCmpI(typeof s, "function")) {
+					if (/^function$/i.test(typeof s)) {
+						s(Ctrl, pt, Name, nVerb);
+					} else {
 						Navigate(s, SBSP_NEWBROWSER);
-						return;
 					}
-					s(Ctrl, pt, Name, nVerb);
 					return S_OK;
 				}
 			});
@@ -2414,13 +2414,13 @@ AddonOptions = function (Id, fn, Data)
 		Data.index = res[2];
 		sFeatures = 'Default';
 	}
-	if (api.StrCmpI(sFeatures, "Location") == 0) {
+	if (/^Location$/i.test(sFeatures)) {
 		sURL = "location.html";
 		Data.show = "6";
 		Data.index = "6";
 		sFeatures = 'Default';
 	}
-	if (api.StrCmpI(sFeatures, "Default") == 0) {
+	if (/^Default$/i.test(sFeatures)) {
 		sFeatures = 'Width: 640; Height: 480';
 	}
 	try {
@@ -3114,7 +3114,7 @@ ApiStruct = function (oTypedef, nAli, oMemory)
 	}
 	n = api.LowPart(nAli);
 	this.Size += (n - (this.Size % n)) % n;
-	this.Memory = api.StrCmpI(typeof oMemory, "object") ? api.Memory("BYTE", this.Size) : oMemory;
+	this.Memory = /^object$/i.test(typeof oMemory) ? oMemory : api.Memory("BYTE", this.Size);
 	this.Read = function (Id)
 	{
 		var ar = this.Typedef[Id];

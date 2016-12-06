@@ -391,7 +391,7 @@ Resize2 = function ()
 		o.style.width = w + "px";
 		for (var i = 1; i <= 3; i++) {
 			var ob = document.getElementById("LeftBar" + i);
-			if (ob && api.StrCmpI(ob.style.display, "none")) {
+			if (ob && !/^none$/i.test(ob.style.display)) {
 				pt = GetPos(ob);
 				o.style.width = w + "px";
 				w2 = w;
@@ -413,7 +413,7 @@ Resize2 = function ()
 		o.style.width = w + "px";
 		for (var i = 1; i <= 3; i++) {
 			var ob = document.getElementById("RightBar" + i);
-			if (ob && api.StrCmpI(ob.style.display, "none")) {
+			if (ob && !/^none$/i.test(ob.style.display)) {
 				o.style.width = w + "px";
 				w2 = w;
 				break;
@@ -814,13 +814,17 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 					}
 				}
 				if (strClass == WC_EDIT) {
+					if (KeyExecEx(Ctrl, "Edit", nKey, hwnd) === S_OK) {
+						return S_OK;
+					}
 					if (key == VK_TAB && Ctrl.hwndList) {
 						(function (FV) { setTimeout(function () {
 							if (!api.SendMessage(FV.hwndList, LVM_GETEDITCONTROL, 0, 0) || WINVER < 0x600) {
 								var Items = FV.Items;
-								FV.SelectItem(Items.Item(FV.GetFocusedItem() + (api.GetKeyState(VK_SHIFT) < 0 ? -1 : 1)) || FV.Items.Item(api.GetKeyState(VK_SHIFT) < 0 ? Items.Count - 1: 0), SVSI_EDIT | SVSI_FOCUSED | SVSI_SELECT | SVSI_DESELECTOTHERS);
+								FV.SelectItem(Items.Item(FV.GetFocusedItem() + (api.GetKeyState(VK_SHIFT) < 0 ? -1 : 1)) || FV.Items.Item(api.GetKeyState(VK_SHIFT) < 0 ? Items.Count - 1 : 0), SVSI_EDIT | SVSI_FOCUSED | SVSI_SELECT | SVSI_DESELECTOTHERS);
 							}
 						}, 99);}) (Ctrl);
+						return S_OK;
 					}
 					return S_FALSE;
 				}
@@ -837,6 +841,9 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 					}
 				}
 				if (strClass == WC_EDIT) {
+					if (KeyExecEx(Ctrl, "Edit", nKey, hwnd) === S_OK) {
+						return S_OK;
+					}
 					return S_FALSE;
 				}
 				break;
@@ -923,7 +930,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 			if (msg == WM_MBUTTONUP) {
 				if (bLV && api.GetKeyState(VK_SHIFT) >= 0 && api.GetKeyState(VK_CONTROL) >= 0) {
 					var ar = eventTE.Mouse.List[g_mouse.str];
-					if (ar && !api.StrCmpI(ar[0][1], "Selected Items")) {
+					if (ar && /^Selected Items$/i.test(ar[0][1])) {
 						var iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
 						if (iItem >= 0) {
 							Ctrl.SelectItem(iItem, SVSI_SELECT | SVSI_FOCUSED | SVSI_DESELECTOTHERS);
@@ -1953,7 +1960,7 @@ function SetAddon(strName, Location, Tag, strVAlign)
 		} else if (Location == "Inner") {
 			AddEvent("PanelCreated", function (Ctrl)
 			{
-				SetAddon(null, "Inner1Left_" + Ctrl.Id, Tag);
+				SetAddon(null, "Inner1Left_" + Ctrl.Id, Tag.replace(/\$/g, Ctrl.Id));
 			});
 		}
 	}
@@ -1964,7 +1971,7 @@ function InitCode()
 {
 	var types = 
 	{
-		Key:   ["All", "List", "Tree", "Browser"],
+		Key:   ["All", "List", "Tree", "Browser", "Edit"],
 		Mouse: ["All", "List", "List_Background", "Tree", "Tabs", "Tabs_Background", "Browser"]
 	};
 	var i;
