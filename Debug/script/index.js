@@ -817,12 +817,10 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 					if (KeyExecEx(Ctrl, "Edit", nKey, hwnd) === S_OK) {
 						return S_OK;
 					}
-					if (key == VK_TAB && Ctrl.hwndList) {
+					if (WINVER < 0x600 && key == VK_TAB && Ctrl.hwndList) {
 						(function (FV) { setTimeout(function () {
-							if (!api.SendMessage(FV.hwndList, LVM_GETEDITCONTROL, 0, 0) || WINVER < 0x600) {
-								var Items = FV.Items;
-								FV.SelectItem(Items.Item(FV.GetFocusedItem() + (api.GetKeyState(VK_SHIFT) < 0 ? -1 : 1)) || FV.Items.Item(api.GetKeyState(VK_SHIFT) < 0 ? Items.Count - 1 : 0), SVSI_EDIT | SVSI_FOCUSED | SVSI_SELECT | SVSI_DESELECTOTHERS);
-							}
+							var Items = FV.Items;
+							FV.SelectItem(Items.Item(FV.GetFocusedItem() + (api.GetKeyState(VK_SHIFT) < 0 ? -1 : 1)) || FV.Items.Item(api.GetKeyState(VK_SHIFT) < 0 ? Items.Count - 1 : 0), SVSI_EDIT | SVSI_FOCUSED | SVSI_SELECT | SVSI_DESELECTOTHERS);
 						}, 99);}) (Ctrl);
 						return S_OK;
 					}
@@ -1414,11 +1412,6 @@ te.OnColumnClick = function (Ctrl, iItem)
 
 te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 {
-	if (Ctrl.Type == CTRL_TE && msg == WM_SYSCOMMAND && wParam >= 0xf000) {
-		if (!api.IsZoomed(te.hwnd) && !api.IsIconic(te.hwnd)) {
-			api.GetWindowRect(te.hwnd, g_.rcWindow);
-		}
-	}
 	var hr = RunEvent3("SystemMessage", Ctrl, hwnd, msg, wParam, lParam);
 	if (isFinite(hr)) {
 		return hr; 
@@ -1505,6 +1498,10 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 								}
 							}
 						}
+					} else {
+						if (!api.IsZoomed(te.hwnd) && !api.IsIconic(te.hwnd)) {
+							api.GetWindowRect(te.hwnd, g_.rcWindow);
+						}
 					}
 					break;
 				case WM_POWERBROADCAST:
@@ -1537,6 +1534,12 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 				if (o) {
 					o.style.display = "none";
 				}
+			}
+			break;
+		case CTRL_SB:
+		case CTRL_EB:
+			if (msg == WM_SHOWWINDOW && te.hwnd == api.GetFocus()) {
+				Ctrl.Focus();
 			}
 			break;
 	}
@@ -1643,6 +1646,9 @@ te.OnNewWindow = function (Ctrl, dwFlags, UrlContext, Url)
 
 te.OnClipboardText = function (Items)
 {
+	if (!Items) {
+		return "";
+	}
 	var r = RunEvent4("ClipboardText", Items);
 	if (r !== undefined) {
 		return r; 
