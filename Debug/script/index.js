@@ -817,12 +817,13 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 					if (KeyExecEx(Ctrl, "Edit", nKey, hwnd) === S_OK) {
 						return S_OK;
 					}
-					if (WINVER < 0x600 && key == VK_TAB && Ctrl.hwndList) {
+					if (key == VK_TAB && Ctrl.hwndList) {
 						(function (FV) { setTimeout(function () {
-							var Items = FV.Items;
-							FV.SelectItem(Items.Item(FV.GetFocusedItem() + (api.GetKeyState(VK_SHIFT) < 0 ? -1 : 1)) || FV.Items.Item(api.GetKeyState(VK_SHIFT) < 0 ? Items.Count - 1 : 0), SVSI_EDIT | SVSI_FOCUSED | SVSI_SELECT | SVSI_DESELECTOTHERS);
+							if (!api.SendMessage(FV.hwndList, LVM_GETEDITCONTROL, 0, 0) || WINVER < 0x600) {
+								var Items = FV.Items;
+								FV.SelectItem(Items.Item(FV.GetFocusedItem() + (api.GetKeyState(VK_SHIFT) < 0 ? -1 : 1)) || FV.Items.Item(api.GetKeyState(VK_SHIFT) < 0 ? Items.Count - 1: 0), SVSI_EDIT | SVSI_FOCUSED | SVSI_SELECT | SVSI_DESELECTOTHERS);
+							}
 						}, 99);}) (Ctrl);
-						return S_OK;
 					}
 					return S_FALSE;
 				}
