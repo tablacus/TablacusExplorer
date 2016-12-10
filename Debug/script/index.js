@@ -998,6 +998,9 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 				}
 			}
 		}
+		if (Ctrl.Type <= CTRL_EB && api.SendMessage(hwnd, LVM_GETEDITCONTROL, 0, 0)) {
+			return S_OK;
+		}
 	}
 	if (msg == WM_LBUTTONDBLCLK || msg == WM_RBUTTONDBLCLK || msg == WM_MBUTTONDBLCLK || msg == WM_XBUTTONDBLCLK) {
 		if (strClass != WC_HEADER) {
