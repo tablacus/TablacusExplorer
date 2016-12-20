@@ -998,7 +998,8 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 				}
 			}
 		}
-		if (Ctrl.Type <= CTRL_EB && api.SendMessage(hwnd, LVM_GETEDITCONTROL, 0, 0)) {
+		if (Ctrl.Type == CTRL_SB && api.SendMessage(hwnd, LVM_GETEDITCONTROL, 0, 0)) {
+			Ctrl.SelectItem(null, SVSI_DESELECTOTHERS);
 			return S_OK;
 		}
 	}

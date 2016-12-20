@@ -18,32 +18,32 @@ HWND	g_hwndMain = NULL;
 CteTabCtrl *g_pTC = NULL;
 CteTabCtrl *g_ppTC[MAX_TC];
 HINSTANCE	g_hShell32 = NULL;
-HINSTANCE	g_hCrypt32 = NULL;
 HWND		g_hDialog = NULL;
 IShellWindows *g_pSW = NULL;
 
 LPFNSHCreateItemFromIDList lpfnSHCreateItemFromIDList = NULL;
-LPFNSetDllDirectoryW lpfnSetDllDirectoryW = NULL;
-LPFNSHGetImageList lpfnSHGetImageList = NULL;
-LPFNSetWindowTheme lpfnSetWindowTheme = NULL;
-LPFNIsThemeActive lpfnIsThemeActive = NULL;
 LPFNSHRunDialog lpfnSHRunDialog = NULL;
 LPFNRegenerateUserEnvironment lpfnRegenerateUserEnvironment = NULL;
-LPFNCryptBinaryToStringW lpfnCryptBinaryToStringW = NULL;
+LPFNSHGetIDListFromObject lpfnSHGetIDListFromObject = NULL;
+LPFNChangeWindowMessageFilter lpfnChangeWindowMessageFilter = NULL;
+LPFNChangeWindowMessageFilterEx lpfnChangeWindowMessageFilterEx = NULL;
+LPFNAddClipboardFormatListener lpfnAddClipboardFormatListener = NULL;
+LPFNRemoveClipboardFormatListener lpfnRemoveClipboardFormatListener = NULL;
+LPFNRtlGetVersion lpfnRtlGetVersion = NULL;
+#ifdef _2000XP
+LPFNSetDllDirectoryW lpfnSetDllDirectoryW = NULL;
+LPFNIsWow64Process lpfnIsWow64Process = NULL;
 LPFNPSPropertyKeyFromString lpfnPSPropertyKeyFromString = NULL;
 LPFNPSGetPropertyKeyFromName lpfnPSGetPropertyKeyFromName = NULL;
 LPFNPSPropertyKeyFromString lpfnPSPropertyKeyFromStringEx = NULL;
 LPFNPSGetPropertyDescription lpfnPSGetPropertyDescription = NULL;
 LPFNPSStringFromPropertyKey lpfnPSStringFromPropertyKey = NULL;
-LPFNSHGetIDListFromObject lpfnSHGetIDListFromObject = NULL;
-LPFNIsWow64Process lpfnIsWow64Process = NULL;
-LPFNChangeWindowMessageFilter lpfnChangeWindowMessageFilter = NULL;
-LPFNChangeWindowMessageFilterEx lpfnChangeWindowMessageFilterEx = NULL;
-LPFNAddClipboardFormatListener lpfnAddClipboardFormatListener = NULL;
-LPFNRemoveClipboardFormatListener lpfnRemoveClipboardFormatListener = NULL;
-LPFNSHDefExtractIconW lpfnSHDefExtractIconW = NULL;
-LPFNRtlGetVersion lpfnRtlGetVersion = NULL;
-LPFNSHTestTokenMembership lpfnSHTestTokenMembership = NULL;
+#else
+#define lpfnPSPropertyKeyFromString PSPropertyKeyFromString
+#define lpfnPSGetPropertyKeyFromName PSGetPropertyKeyFromName
+#define lpfnPSGetPropertyDescription PSGetPropertyDescription
+#define lpfnPSPropertyKeyFromStringEx tePSPropertyKeyFromStringEx
+#endif
 #ifdef _USE_APIHOOK
 LPFNRegQueryValueExW lpfnRegQueryValueExW = NULL;
 #endif
@@ -1377,20 +1377,24 @@ BSTR tePSGetNameFromPropertyKeyEx(PROPERTYKEY propKey, int nFormat, IShellView *
 {
 	if (nFormat == 2) {
 		WCHAR szProp[64];
+#ifdef _2000XP
 		if (lpfnPSStringFromPropertyKey) {
 			lpfnPSStringFromPropertyKey(propKey, szProp, 64);
 		}
-#ifdef _2000XP
 		else {
 			StringFromGUID2(propKey.fmtid, szProp, 39);
 			wchar_t pszId[8];
 			swprintf_s(pszId, 8, L" %u", propKey.pid);
 			lstrcat(szProp, pszId);
 		}
+#else
+		PSStringFromPropertyKey(propKey, szProp, 64);
 #endif
 		return ::SysAllocString(szProp);
 	}
+#ifdef _2000XP
 	if (lpfnPSGetPropertyDescription) {
+#endif
 		BSTR bs = NULL;
 		IPropertyDescription *pdesc;
 		if SUCCEEDED(lpfnPSGetPropertyDescription(propKey, IID_PPV_ARGS(&pdesc))) {
@@ -1420,8 +1424,8 @@ BSTR tePSGetNameFromPropertyKeyEx(PROPERTYKEY propKey, int nFormat, IShellView *
 			bs = tePSGetNameFromPropertyKeyEx(propKey, 2, NULL);
 		}
 		return bs;
-	}
 #ifdef _2000XP
+	}
 	if (IsEqualPropertyKey(propKey, PKEY_TotalFileSize)) {
 		return ::SysAllocString(nFormat ? g_szTotalFileSizeCodeXP : g_szTotalFileSizeXP);
 	}
@@ -2035,7 +2039,11 @@ LPITEMIDLIST teILCreateFromPathEx(LPWSTR pszPath)
 		if SUCCEEDED(CreateBindCtx(0, &pbc)) {
 			pbc->RegisterObjectParam(STR_PARSE_PREFER_FOLDER_BROWSING, static_cast<IDropSource *>(g_pTE));
 		}
-		pSF->ParseDisplayName(NULL, pbc, pszPath, &chEaten, &pidl, &dwAttributes);
+		try {
+			pSF->ParseDisplayName(NULL, pbc, pszPath, &chEaten, &pidl, &dwAttributes);
+		} catch (...) {
+			pidl = NULL;
+		}
 		SafeRelease(&pbc);
 		pSF->Release();
 	}
@@ -5676,9 +5684,6 @@ VOID Finalize()
 		teILFreeClear(&g_pidlResultsFolder);
 		teILFreeClear(&g_pidlCP);
 		teILFreeClear(&g_pidlLibrary);
-		if (g_hCrypt32) {
-			FreeLibrary(g_hCrypt32);
-		}
 		teSysFreeString(&g_bsCmdLine);
 	} catch (...) {}
 	try {
@@ -6473,9 +6478,13 @@ VOID teApiSetCurrentDirectory(int nArg, teParam *param, DISPPARAMS *pDispParams,
 
 VOID teApiSetDllDirectory(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
+#ifdef _2000XP
 	if (lpfnSetDllDirectoryW) {
 		teSetBool(pVarResult, lpfnSetDllDirectoryW(param[0].lpcwstr));
 	}
+#else
+	teSetBool(pVarResult, SetDllDirectory(param[0].lpcwstr));
+#endif
 }
 
 VOID teApiPathIsNetworkPath(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -6561,7 +6570,9 @@ VOID teApiPSFormatForDisplay(int nArg, teParam *param, DISPPARAMS *pDispParams, 
 	if (param[0].lpcwstr) {
 		PROPERTYKEY propKey;
 		if SUCCEEDED(lpfnPSPropertyKeyFromStringEx(param[0].lpcwstr, &propKey)) {
+#ifdef _2000XP
 			if (lpfnPSGetPropertyDescription) {
+#endif
 				IPropertyDescription *pdesc;
 				if SUCCEEDED(lpfnPSGetPropertyDescription(propKey, IID_PPV_ARGS(&pdesc))) {
 					LPWSTR psz;
@@ -6571,8 +6582,8 @@ VOID teApiPSFormatForDisplay(int nArg, teParam *param, DISPPARAMS *pDispParams, 
 					}
 					pdesc->Release();
 				}
-			}
 #ifdef _2000XP
+			}
 			else {
 				BSTR bsResult = ::SysAllocStringLen(NULL, MAX_PROP);
 				IPropertyUI *pPUI;
@@ -6961,11 +6972,15 @@ VOID teApiSHChangeNotification_Unlock(int nArg, teParam *param, DISPPARAMS *pDis
 
 VOID teApiIsWow64Process(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
+	BOOL bResult = FALSE;
+#ifdef _2000XP
 	if (lpfnIsWow64Process) {
-		BOOL bResult;
 		lpfnIsWow64Process(param[0].handle, &bResult);
-		teSetBool(pVarResult, bResult);
 	}
+#else
+	IsWow64Process(param[0].handle, &bResult);
+#endif
+	teSetBool(pVarResult, bResult);
 }
 
 VOID teApiBitBlt(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -7357,9 +7372,7 @@ VOID teApiImageList_GetBkColor(int nArg, teParam *param, DISPPARAMS *pDispParams
 
 VOID teApiSetWindowTheme(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	if (lpfnSetWindowTheme) {
-		teSetLong(pVarResult, lpfnSetWindowTheme(param[0].hwnd, param[1].lpcwstr, param[2].lpcwstr));
-	}
+	teSetLong(pVarResult, SetWindowTheme(param[0].hwnd, param[1].lpcwstr, param[2].lpcwstr));
 }
 
 VOID teApiImmGetVirtualKey(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -7752,7 +7765,7 @@ VOID teApiGetModuleHandle(int nArg, teParam *param, DISPPARAMS *pDispParams, VAR
 VOID teApiSHGetImageList(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	HANDLE h = 0;
-	if FAILED(lpfnSHGetImageList(param[0].intVal, IID_IImageList, (LPVOID *)&h)) {
+	if FAILED(SHGetImageList(param[0].intVal, IID_IImageList, (LPVOID *)&h)) {
 		h = 0;
 	}
 	teSetPtr(pVarResult, h);
@@ -8093,20 +8106,18 @@ VOID teApisprintf(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pV
 
 VOID teApibase64_encode(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	if (lpfnCryptBinaryToStringW) {
-		UCHAR *pc;
-		int nLen = 0;
-		GetpDataFromVariant(&pc, &nLen, &pDispParams->rgvarg[nArg]);
-		if (pc) {
-			DWORD dwSize;
-			lpfnCryptBinaryToStringW(pc, nLen, CRYPT_STRING_BASE64, NULL, &dwSize);
-			BSTR bsResult = NULL;
-			if (dwSize > 0) {
-				bsResult = SysAllocStringLen(NULL, dwSize - 1);
-				lpfnCryptBinaryToStringW(pc, nLen, CRYPT_STRING_BASE64, bsResult, &dwSize);
-			}
-			teSetBSTR(pVarResult, &bsResult, -1);
+	UCHAR *pc;
+	int nLen = 0;
+	GetpDataFromVariant(&pc, &nLen, &pDispParams->rgvarg[nArg]);
+	if (pc) {
+		DWORD dwSize;
+		CryptBinaryToString(pc, nLen, CRYPT_STRING_BASE64, NULL, &dwSize);
+		BSTR bsResult = NULL;
+		if (dwSize > 0) {
+			bsResult = SysAllocStringLen(NULL, dwSize - 1);
+			CryptBinaryToString(pc, nLen, CRYPT_STRING_BASE64, bsResult, &dwSize);
 		}
+		teSetBSTR(pVarResult, &bsResult, -1);
 	}
 }
 
@@ -8239,9 +8250,7 @@ VOID teApiILGetCount(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 
 VOID teApiSHTestTokenMembership(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	if (lpfnSHTestTokenMembership) {
-		teSetBool(pVarResult, lpfnSHTestTokenMembership(param[0].handle, param[1].ulVal));
-	}
+	teSetBool(pVarResult, SHTestTokenMembership(param[0].handle, param[1].ulVal));
 }
 
 VOID teApiObjGetI(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -8360,16 +8369,12 @@ VOID teApiDllGetClassObject(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 
 VOID teApiIsThemeActive(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	if (lpfnIsThemeActive) {
-		teSetBool(pVarResult, lpfnIsThemeActive());
-	}
+	teSetBool(pVarResult, IsThemeActive());
 }
 
 VOID teApiSHDefExtractIcon(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	if (lpfnSHDefExtractIconW) {
-		teSetLong(pVarResult, lpfnSHDefExtractIconW(param[0].lpcwstr, param[1].intVal, param[2].uintVal, param[3].phicon, param[4].phicon, param[5].uintVal));
-	}
+	teSetLong(pVarResult, SHDefExtractIcon(param[0].lpcwstr, param[1].intVal, param[2].uintVal, param[3].phicon, param[4].phicon, param[5].uintVal));
 }
 
 VOID teApiURLDownloadToFile(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -9429,12 +9434,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	SysFreeString(bsLib);
 	if (g_hShell32) {
 		lpfnSHCreateItemFromIDList = (LPFNSHCreateItemFromIDList)GetProcAddress(g_hShell32, "SHCreateItemFromIDList");
-		lpfnSHGetImageList = (LPFNSHGetImageList)GetProcAddress(g_hShell32, "SHGetImageList");
 		lpfnSHGetIDListFromObject = (LPFNSHGetIDListFromObject)GetProcAddress(g_hShell32, "SHGetIDListFromObject");
 		lpfnSHRunDialog = (LPFNSHRunDialog)GetProcAddress(g_hShell32, MAKEINTRESOURCEA(61));
 		lpfnRegenerateUserEnvironment = (LPFNRegenerateUserEnvironment)GetProcAddress(g_hShell32, "RegenerateUserEnvironment");
-		lpfnSHTestTokenMembership = (LPFNSHTestTokenMembership)GetProcAddress(g_hShell32, "SHTestTokenMembership");
-		lpfnSHDefExtractIconW = (LPFNSHDefExtractIconW)GetProcAddress(g_hShell32, "SHDefExtractIconW");
 	}
 #ifdef _2000XP
 	if (!lpfnSHGetIDListFromObject) {
@@ -9446,7 +9448,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		lpfnSHGetImageList = teSHGetImageList2000;
 	}
 #endif
-
+#ifdef _2000XP
 	tePathAppend(&bsLib, bsPath, L"kernel32.dll");
 	hDll = GetModuleHandle(bsLib);
 	SysFreeString(bsLib);
@@ -9457,7 +9459,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		}
 		lpfnIsWow64Process = (LPFNIsWow64Process)GetProcAddress(hDll, "IsWow64Process");
 	}
-
+#else
+	SetDllDirectory(L"");
+#endif
+#ifdef _2000XP
 	tePathAppend(&bsLib, bsPath, L"propsys.dll");
 	hDll = GetModuleHandle(bsLib);
 	if (hDll) {
@@ -9467,21 +9472,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		lpfnPSStringFromPropertyKey = (LPFNPSStringFromPropertyKey)GetProcAddress(hDll, "PSStringFromPropertyKey");
 		lpfnPSPropertyKeyFromStringEx = tePSPropertyKeyFromStringEx;
 	}
-#ifdef _2000XP
 	else {
 		lpfnPSPropertyKeyFromStringEx = tePSPropertyKeyFromStringXP;
 	}
+	SysFreeString(bsLib);
 #endif
-	SysFreeString(bsLib);
-
-	tePathAppend(&bsLib, bsPath, L"uxtheme.dll");
-	hDll = GetModuleHandle(bsLib);
-	if (hDll) {
-		lpfnSetWindowTheme = (LPFNSetWindowTheme)GetProcAddress(hDll, "SetWindowTheme");
-		lpfnIsThemeActive = (LPFNIsThemeActive)GetProcAddress(hDll, "IsThemeActive");
-	}
-	SysFreeString(bsLib);
-
 	tePathAppend(&bsLib, bsPath, L"user32.dll");
 	hDll = GetModuleHandle(bsLib);
 	if (hDll) {
@@ -9501,12 +9496,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	}
 	SysFreeString(bsLib);
 
-	tePathAppend(&bsLib, bsPath, L"crypt32.dll");
-	g_hCrypt32 = LoadLibrary(bsLib);
-	if (g_hCrypt32) {
-		lpfnCryptBinaryToStringW = (LPFNCryptBinaryToStringW)GetProcAddress(g_hCrypt32, "CryptBinaryToStringW");
-	}
-	SysFreeString(bsLib);
 // API Hook test
 #ifdef _USE_APIHOOK
 	tePathAppend(&bsLib, bsPath, L"advapi32.dll");
@@ -20399,7 +20388,7 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 			case 101:
 			//DataURI
 			case 102:
-				if (nArg >= 0 && lpfnCryptBinaryToStringW) {
+				if (nArg >= 0) {
 					VARIANT vText;
 					teVariantChangeType(&vText, &pDispParams->rgvarg[nArg], VT_BSTR);
 					CLSID encoderClsid;
@@ -20423,12 +20412,12 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 									}
 									int nDest = lstrlen(szHead);
 									DWORD dwSize;
-									lpfnCryptBinaryToStringW(pBuff, ulBytesRead, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, NULL, &dwSize);
+									CryptBinaryToString(pBuff, ulBytesRead, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, NULL, &dwSize);
 									if (dwSize > 0) {
 										pVarResult->vt = VT_BSTR;
 										pVarResult->bstrVal = SysAllocStringLen(NULL, nDest + dwSize - 1);
 										lstrcpy(pVarResult->bstrVal, szHead);
-										lpfnCryptBinaryToStringW(pBuff, ulBytesRead, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, &pVarResult->bstrVal[nDest], &dwSize);
+										CryptBinaryToString(pBuff, ulBytesRead, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, &pVarResult->bstrVal[nDest], &dwSize);
 									}
 								}
 								delete [] pBuff;

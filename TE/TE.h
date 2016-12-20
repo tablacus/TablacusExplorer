@@ -6,7 +6,10 @@
 //#define _USE_TESTOBJECT
 //#define _USE_TESTPATHMATCHSPEC
 #define _Emulate_XP_	//FALSE &&
-
+#ifndef _WIN64
+#define _2000XP
+//#define _W2000
+#endif
 #include "resource.h"
 #include <Mshtml.h>
 #include <mshtmhst.h>
@@ -30,6 +33,10 @@
 #include <CommonControls.h>
 #include <UIAutomationClient.h>
 #include <UIAutomationCore.h>
+#include <Uxtheme.h>
+#ifndef _2000XP
+#include <Propsys.h>
+#endif
 #ifdef _USE_APIHOOK
 #include <imagehlp.h>
 #endif
@@ -42,6 +49,11 @@ using namespace Gdiplus;
 #pragma comment(lib, "gdiplus.lib")
 #pragma comment(lib, "urlmon.lib")
 #pragma comment(lib, "imm32.lib")
+#pragma comment(lib, "crypt32.lib")
+#pragma comment(lib, "UxTheme.lib")
+#ifndef _2000XP
+#pragma comment(lib, "Propsys.lib")
+#endif
 #ifdef _USE_APIHOOK
 #pragma comment(lib, "imagehlp.lib")
 #endif
@@ -49,8 +61,6 @@ using namespace Gdiplus;
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #else
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")
-#define _2000XP
-//#define _W2000
 #endif
 //#pragma execution_character_set("utf-8")//KB980263
 
@@ -165,16 +175,11 @@ union teParam
 
 //Unnamed function
 typedef VOID (WINAPI * LPFNSHRunDialog)(HWND hwnd, HICON hIcon, LPWSTR pszPath, LPWSTR pszTitle, LPWSTR pszPrompt, DWORD dwFlags);
+
 //Closed function
 typedef BOOL (WINAPI * LPFNRegenerateUserEnvironment)(LPVOID *lpEnvironment, BOOL bUpdate);
 
-//XP or higher.
-typedef BOOL (WINAPI* LPFNCryptBinaryToStringW)(__in_bcount(cbBinary) CONST BYTE *pbBinary, DWORD cbBinary, DWORD dwFlags, __out_ecount_part_opt(*pcchString, *pcchString) LPWSTR pszString, DWORD *pcchString);
-typedef HRESULT (WINAPI* LPFNSHGetImageList)(int iImageList, REFIID riid, void **ppvObj);
-typedef HRESULT (WINAPI* LPFNSetWindowTheme)(HWND hwnd, LPCWSTR pszSubAppName, LPCWSTR pszSubIdList);
-typedef BOOL (WINAPI* LPFNSHTestTokenMembership)(HANDLE hToken, ULONG ulRID);
-typedef BOOL (WINAPI* LPFNIsThemeActive)(void);
-typedef HRESULT (STDAPICALLTYPE* LPFNSHDefExtractIconW)(LPCWSTR pszIconFile, int iIndex, UINT uFlags, HICON *phiconLarge, HICON *phiconSmall, UINT nIconSize);
+#ifdef _2000XP
 
 //XP SP1 or higher.
 typedef BOOL (WINAPI* LPFNSetDllDirectoryW)(__in_opt LPCWSTR lpPathName);
@@ -187,6 +192,8 @@ typedef HRESULT (STDAPICALLTYPE* LPFNPSPropertyKeyFromString)(__in LPCWSTR pszSt
 typedef HRESULT (STDAPICALLTYPE* LPFNPSGetPropertyKeyFromName)(__in PCWSTR pszName, __out PROPERTYKEY *ppropkey);
 typedef HRESULT (STDAPICALLTYPE* LPFNPSGetPropertyDescription)(__in REFPROPERTYKEY propkey, __in REFIID riid,  __deref_out void **ppv);
 typedef HRESULT (STDAPICALLTYPE* LPFNPSStringFromPropertyKey)(__in REFPROPERTYKEY pkey, __out_ecount(cch) LPWSTR psz, __in UINT cch);
+
+#endif
 
 //Vista or higher.
 typedef HRESULT (STDAPICALLTYPE* LPFNSHCreateItemFromIDList)(__in PCIDLIST_ABSOLUTE pidl, __in REFIID riid, __deref_out void **ppv);

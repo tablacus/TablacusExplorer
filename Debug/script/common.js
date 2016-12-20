@@ -1279,7 +1279,7 @@ ExtractMacro2 = function (Ctrl, s)
 		}
 		for (var i in eventTE.ReplaceMacro) {
 			var re = eventTE.ReplaceMacro[i][0];
-			var res = s.match(re);
+			var res = re.exec(s);
 			if (res) {
 				var r = eventTE.ReplaceMacro[i][1](Ctrl, re, res);
 				if (typeof(r) == "string") {
@@ -1621,7 +1621,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec)
 			return S_OK;
 		}
 		if (Mode != 2) {
-			return S_OK;
+			return (nBase != 2 || ContextMenu) ? S_OK : S_FALSE;
 		}
 	}
 	return S_FALSE;
@@ -1721,9 +1721,11 @@ GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arCon
 						arContextMenu[1] = ContextMenu;
 					}
 				}
-				ContextMenu.QueryContextMenu(hMenu, 0, 0x6001, 0x6fff, uCMF | CMF_DONOTPICKDEFAULT);
-				if (!Items.Count) {
-					SetRenameMenu(ContextMenu.idCmdFirst);
+				if (ContextMenu) {
+					ContextMenu.QueryContextMenu(hMenu, 0, 0x6001, 0x6fff, uCMF | CMF_DONOTPICKDEFAULT);
+					if (!Items.Count) {
+						SetRenameMenu(ContextMenu.idCmdFirst);
+					}
 				}
 			} else if (FV) {
 				ContextMenu = GetViewMenu(arContextMenu, FV, hMenu, uCMF | CMF_DONOTPICKDEFAULT);
