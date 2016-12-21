@@ -184,24 +184,24 @@ Finalize = function ()
 SetGestureText = function (Ctrl, Text)
 {
 	RunEvent3("SetGestureText", Ctrl, Text);
-	if (g_mouse.str.length > 1 && te.Data.Conf_Gestures > 1) {
-		g_mouse.bTrail = true;
+	if (g_.mouse.str.length > 1 && te.Data.Conf_Gestures > 1) {
+		g_.mouse.bTrail = true;
 		var hdc = api.GetWindowDC(te.hwnd);
 		if (hdc) {
 			var rc = api.Memory("RECT");
-			if (!g_mouse.ptText) {
-				g_mouse.ptText = g_mouse.ptGesture.Clone();
-				api.ScreenToClient(te.hwnd, g_mouse.ptText);
-				g_mouse.right = -32767;
+			if (!g_.mouse.ptText) {
+				g_.mouse.ptText = g_.mouse.ptGesture.Clone();
+				api.ScreenToClient(te.hwnd, g_.mouse.ptText);
+				g_.mouse.right = -32767;
 			}
-			rc.left = g_mouse.ptText.x;
-			rc.top = g_mouse.ptText.y;
+			rc.left = g_.mouse.ptText.x;
+			rc.top = g_.mouse.ptText.y;
 			var hOld = api.SelectObject(hdc, CreateFont(DefaultFont));
 			api.DrawText(hdc, Text, -1, rc, DT_CALCRECT);
-			if (g_mouse.right < rc.right) {
-				g_mouse.right = rc.right;
+			if (g_.mouse.right < rc.right) {
+				g_.mouse.right = rc.right;
 			}
-			api.Rectangle(hdc, rc.left - 2, rc.top - 1, g_mouse.right + 2, rc.bottom + 1);
+			api.Rectangle(hdc, rc.left - 2, rc.top - 1, g_.mouse.right + 2, rc.bottom + 1);
 			api.DrawText(hdc, Text, -1, rc, DT_TOP);
 			api.SelectObject(hdc, hOld);
 			api.ReleaseDC(te.hwnd, hdc);
@@ -795,13 +795,13 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 	if (isFinite(hr)) {
 		return hr; 
 	}
-	if (g_mouse.str.length > 1) {
-		SetGestureText(Ctrl, GetGestureKey() + g_mouse.str);
+	if (g_.mouse.str.length > 1) {
+		SetGestureText(Ctrl, GetGestureKey() + g_.mouse.str);
 	}
 	if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) {
 		var nKey = ((keydata >> 16) & 0x17f) | GetKeyShift();
 		if (nKey == 0x15d) {
-			g_mouse.CancelContextMenu = false;
+			g_.mouse.CancelContextMenu = false;
 		}
 		te.Data.cmdKey = nKey;
 		switch (Ctrl.Type) {
@@ -896,11 +896,11 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 	if (msg == WM_MOUSEWHEEL) {
 		var Ctrl2 = te.CtrlFromPoint(pt);
 		if (Ctrl2) {
-			g_mouse.str = GetGestureButton() + (wParam > 0 ? "8" : "9");
+			g_.mouse.str = GetGestureButton() + (wParam > 0 ? "8" : "9");
 			if (api.GetKeyState(VK_RBUTTON) < 0) {
-				g_mouse.CancelContextMenu = true;
+				g_.mouse.CancelContextMenu = true;
 			}
-			if (g_mouse.Exec(Ctrl2, hwnd, pt) == S_OK) {
+			if (g_.mouse.Exec(Ctrl2, hwnd, pt) == S_OK) {
 				return S_OK;
 			}
 			var hwnd2 = api.WindowFromPoint(pt);
@@ -912,13 +912,13 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 		}
 	}
 	if (msg == WM_LBUTTONUP || msg == WM_RBUTTONUP || msg == WM_MBUTTONUP || msg == WM_XBUTTONUP) {
-		if (g_mouse.str.length) {
+		if (g_.mouse.str.length) {
 			var hr = S_FALSE;
 			var bButton = false;
 			if (msg == WM_RBUTTONUP) {
-				if (g_mouse.RButton >= 0) {
-					g_mouse.RButtonDown(true);
-					bButton = (g_mouse.str == "2");
+				if (g_.mouse.RButton >= 0) {
+					g_.mouse.RButtonDown(true);
+					bButton = (g_.mouse.str == "2");
 				} else if (bLV) {
 					var iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
 					if (iItem < 0 && !IsDrag(pt, te.Data.pt)) {
@@ -928,7 +928,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 			}
 			if (msg == WM_MBUTTONUP) {
 				if (bLV && api.GetKeyState(VK_SHIFT) >= 0 && api.GetKeyState(VK_CONTROL) >= 0) {
-					var ar = eventTE.Mouse.List[g_mouse.str];
+					var ar = eventTE.Mouse.List[g_.mouse.str];
 					if (ar && /^Selected Items$/i.test(ar[0][1])) {
 						var iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
 						if (iItem >= 0) {
@@ -939,26 +939,26 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 					}
 				}
 			}
-			if (g_mouse.str.length >= 2 || /[45]/.test(g_mouse.str) || (!IsDrag(pt, te.Data.pt) && strClass != WC_HEADER)) {
-				if (msg != WM_RBUTTONUP || g_mouse.str.length < 2) {
-					hr = g_mouse.Exec(te.CtrlFromWindow(g_mouse.hwndGesture), g_mouse.hwndGesture, pt);
+			if (g_.mouse.str.length >= 2 || /[45]/.test(g_.mouse.str) || (!IsDrag(pt, te.Data.pt) && strClass != WC_HEADER)) {
+				if (msg != WM_RBUTTONUP || g_.mouse.str.length < 2) {
+					hr = g_.mouse.Exec(te.CtrlFromWindow(g_.mouse.hwndGesture), g_.mouse.hwndGesture, pt);
 					if (msg == WM_LBUTTONUP) {
 						hr = S_FALSE;
 					}
 				} else {
 					(function (Ctrl, hwnd, pt, str) { setTimeout(function () {
-						hr = g_mouse.Exec(Ctrl, hwnd, pt, str);
-					}, 99);}) (te.CtrlFromWindow(g_mouse.hwndGesture), g_mouse.hwndGesture, pt, g_mouse.str);
+						hr = g_.mouse.Exec(Ctrl, hwnd, pt, str);
+					}, 99);}) (te.CtrlFromWindow(g_.mouse.hwndGesture), g_.mouse.hwndGesture, pt, g_.mouse.str);
 					hr = S_OK;
 				}
 			}
-			g_mouse.EndGesture(false);
-			if (g_mouse.bCapture) {
+			g_.mouse.EndGesture(false);
+			if (g_.mouse.bCapture) {
 				api.ReleaseCapture();
-				g_mouse.bCapture = false;
+				g_.mouse.bCapture = false;
 			}
 			if (bButton) {
-				api.PostMessage(g_mouse.hwndGesture, WM_CONTEXTMENU, g_mouse.hwndGesture, pt.x + (pt.y << 16));
+				api.PostMessage(g_.mouse.hwndGesture, WM_CONTEXTMENU, g_.mouse.hwndGesture, pt.x + (pt.y << 16));
 				return S_OK;
 			}
 			if (hr === S_OK) {
@@ -967,21 +967,21 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 		}
 	}
 	if (msg == WM_LBUTTONDOWN || msg == WM_RBUTTONDOWN || msg == WM_MBUTTONDOWN || msg == WM_XBUTTONDOWN) {
-		var s = g_mouse.GetButton(msg, wParam);
-		if (g_mouse.str.indexOf(s) >= 0) {
-			g_mouse.str = "";
+		var s = g_.mouse.GetButton(msg, wParam);
+		if (g_.mouse.str.indexOf(s) >= 0) {
+			g_.mouse.str = "";
 		}
-		if (g_mouse.str.length == 0) {
+		if (g_.mouse.str.length == 0) {
 			te.Data.pt = pt.Clone();
-			g_mouse.ptGesture.x = pt.x;
-			g_mouse.ptGesture.y = pt.y;
-			g_mouse.hwndGesture = hwnd;
+			g_.mouse.ptGesture.x = pt.x;
+			g_.mouse.ptGesture.y = pt.y;
+			g_.mouse.hwndGesture = hwnd;
 		}
-		g_mouse.str += s;
-		g_mouse.StartGestureTimer();
-		SetGestureText(Ctrl, GetGestureKey() + g_mouse.str);
+		g_.mouse.str += s;
+		g_.mouse.StartGestureTimer();
+		SetGestureText(Ctrl, GetGestureKey() + g_.mouse.str);
 		if (msg == WM_RBUTTONDOWN) {
-			g_mouse.CancelContextMenu = api.GetKeyState(VK_LBUTTON) < 0 || api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_XBUTTON1) < 0 || api.GetKeyState(VK_XBUTTON2) < 0;
+			g_.mouse.CancelContextMenu = api.GetKeyState(VK_LBUTTON) < 0 || api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_XBUTTON1) < 0 || api.GetKeyState(VK_XBUTTON2) < 0;
 			if (te.Data.Conf_Gestures >= 2) {
 				var iItem = -1;
 				if (bLV) {
@@ -992,78 +992,82 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 					}
 				}
 				if (te.Data.Conf_Gestures == 3 && Ctrl.Type != CTRL_WB) {
-					g_mouse.RButton = iItem;
-					g_mouse.StartGestureTimer();
+					g_.mouse.RButton = iItem;
+					g_.mouse.StartGestureTimer();
 					return S_OK;
 				}
 			}
 		}
 		if (Ctrl.Type == CTRL_SB && api.SendMessage(hwnd, LVM_GETEDITCONTROL, 0, 0)) {
-			Ctrl.SelectItem(null, SVSI_DESELECTOTHERS);
+			g_.mouse.Deselect = Ctrl;
 			return S_OK;
 		}
 	}
 	if (msg == WM_LBUTTONDBLCLK || msg == WM_RBUTTONDBLCLK || msg == WM_MBUTTONDBLCLK || msg == WM_XBUTTONDBLCLK) {
 		if (strClass != WC_HEADER) {
 			te.Data.pt = pt.Clone();
-			g_mouse.str = g_mouse.GetButton(msg, wParam);
-			g_mouse.str += g_mouse.str;
-			if (g_mouse.Exec(Ctrl, hwnd, pt) == S_OK) {
+			g_.mouse.str = g_.mouse.GetButton(msg, wParam);
+			g_.mouse.str += g_.mouse.str;
+			if (g_.mouse.Exec(Ctrl, hwnd, pt) == S_OK) {
 				return S_OK;
 			}
 		}
 	}
 
-	if (msg == WM_MOUSEMOVE && !/[45]/.test(g_mouse.str)) {
+	if (msg == WM_MOUSEMOVE && !/[45]/.test(g_.mouse.str)) {
 		if (api.GetKeyState(VK_ESCAPE) < 0) {
-			g_mouse.EndGesture(false);
+			g_.mouse.EndGesture(false);
 		}
-		if (g_mouse.str.length && (te.Data.Conf_Gestures > 1 && api.GetKeyState(VK_RBUTTON) < 0) || (te.Data.Conf_Gestures && (api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_XBUTTON1) < 0 || api.GetKeyState(VK_XBUTTON2) < 0))) {
-			if (g_mouse.ptGesture.x == -1 && g_mouse.ptGesture.y == -1) {
-				g_mouse.ptGesture.x = pt.x;
-				g_mouse.ptGesture.y = pt.y;
+		if (g_.mouse.str.length && (te.Data.Conf_Gestures > 1 && api.GetKeyState(VK_RBUTTON) < 0) || (te.Data.Conf_Gestures && (api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_XBUTTON1) < 0 || api.GetKeyState(VK_XBUTTON2) < 0))) {
+			if (g_.mouse.ptGesture.x == -1 && g_.mouse.ptGesture.y == -1) {
+				g_.mouse.ptGesture.x = pt.x;
+				g_.mouse.ptGesture.y = pt.y;
 			}
-			var x = (pt.x - g_mouse.ptGesture.x);
-			var y = (pt.y - g_mouse.ptGesture.y);
+			var x = (pt.x - g_.mouse.ptGesture.x);
+			var y = (pt.y - g_.mouse.ptGesture.y);
 			if (Math.abs(x) + Math.abs(y) >= 20) {
 				if (te.Data.Conf_TrailSize) {
 					var hdc = api.GetWindowDC(te.hwnd);
 					if (hdc) {
 						var rc = api.Memory("RECT");
 						api.GetWindowRect(te.hwnd, rc);
-						api.MoveToEx(hdc, g_mouse.ptGesture.x - rc.left, g_mouse.ptGesture.y - rc.top, null);
+						api.MoveToEx(hdc, g_.mouse.ptGesture.x - rc.left, g_.mouse.ptGesture.y - rc.top, null);
 						var pen1 = api.CreatePen(PS_SOLID, te.Data.Conf_TrailSize, te.Data.Conf_TrailColor);
 						var hOld = api.SelectObject(hdc, pen1);
 						api.LineTo(hdc, pt.x - rc.left, pt.y - rc.top);
 						api.SelectObject(hdc, hOld);
 						api.DeleteObject(pen1);
-						g_mouse.bTrail = true;
+						g_.mouse.bTrail = true;
 						api.ReleaseDC(te.hwnd, hdc);
 					}
 				}
-				g_mouse.ptGesture.x = pt.x;
-				g_mouse.ptGesture.y = pt.y;
+				g_.mouse.ptGesture.x = pt.x;
+				g_.mouse.ptGesture.y = pt.y;
 				var s = (Math.abs(x) >= Math.abs(y)) ? ((x < 0) ? "L" : "R") : ((y < 0) ? "U" : "D");
 
-				if (s != g_mouse.str.charAt(g_mouse.str.length - 1)) {
-					g_mouse.str += s;
+				if (s != g_.mouse.str.charAt(g_.mouse.str.length - 1)) {
+					g_.mouse.str += s;
 					if (api.GetKeyState(VK_RBUTTON) < 0) {
-						g_mouse.CancelContextMenu = true;
+						g_.mouse.CancelContextMenu = true;
 					}
-					SetGestureText(Ctrl, GetGestureKey() + g_mouse.str);
+					SetGestureText(Ctrl, GetGestureKey() + g_.mouse.str);
 				}
-				if (!g_mouse.bCapture) {
-					api.SetCapture(g_mouse.hwndGesture);
-					g_mouse.bCapture = true;
+				if (!g_.mouse.bCapture) {
+					api.SetCapture(g_.mouse.hwndGesture);
+					g_.mouse.bCapture = true;
 				}
-				g_mouse.StartGestureTimer();
+				g_.mouse.StartGestureTimer();
 			}
 		} else {
-			g_mouse.ptGesture.x = -1;
-			g_mouse.ptGesture.y = -1;
+			g_.mouse.ptGesture.x = -1;
+			g_.mouse.ptGesture.y = -1;
+		}
+		if (g_.mouse.Deselect) {
+			g_.mouse.Deselect.SelectItem(null, SVSI_DESELECTOTHERS);
+			delete g_.mouse.Deselect;
 		}
 	}
-	return g_mouse.str.length >= 2 ? S_OK : S_FALSE;
+	return g_.mouse.str.length >= 2 ? S_OK : S_FALSE;
 }
 
 te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam)
@@ -1221,7 +1225,7 @@ te.OnDragEnter = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect)
 			ShowError(e, en, i);
 		}
 	}
-	g_mouse.str = "";
+	g_.mouse.str = "";
 	return hr; 
 }
 
@@ -1278,7 +1282,7 @@ te.OnDragLeave = function (Ctrl)
 			ShowError(e, en, i);
 		}
 	}
-	g_mouse.str = "";
+	g_.mouse.str = "";
 	return hr;
 }
 
@@ -1333,7 +1337,7 @@ te.OnFilterChanged = function (Ctrl)
 
 te.OnShowContextMenu = function (Ctrl, hwnd, msg, wParam, pt)
 {
-	if (g_mouse.CancelContextMenu) {
+	if (g_.mouse.CancelContextMenu) {
 		return S_OK;
 	}
 	var hr = RunEvent3("ShowContextMenu", Ctrl, hwnd, msg, wParam, pt);
@@ -1473,7 +1477,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 						te.Reload();
 					}
 					if (wParam & 0xffff) {
-						if (g_mouse.str == "" && !api.GetFocus()) {
+						if (g_.mouse.str == "" && !api.GetFocus()) {
 							setTimeout(function ()
 							{
 								var FV = te.Ctrl(CTRL_FV);
@@ -1483,7 +1487,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 							}, 99);
 						}
 					} else  {
-						g_mouse.str = "";
+						g_.mouse.str = "";
 						SetGestureText(Ctrl, "");
 					}
 					break;
@@ -2221,7 +2225,7 @@ importScripts = function()
 	}
 }
 
-g_mouse = 
+g_.mouse = 
 {
 	str: "",
 	CancelContextMenu: false,
@@ -2238,7 +2242,7 @@ g_mouse =
 		var i = te.Data.Conf_GestureTimeout;
 		if (i) {
 			clearTimeout(this.tidGesture);
-			this.tidGesture = setTimeout("g_mouse.EndGesture(true)", i);
+			this.tidGesture = setTimeout("g_.mouse.EndGesture(true)", i);
 		}
 	},
 
@@ -2290,7 +2294,7 @@ g_mouse =
 		var s = "";
 		if (msg >= WM_LBUTTONDOWN && msg <= WM_LBUTTONDBLCLK) {
 			if (api.GetKeyState(VK_RBUTTON) < 0) {
-				g_mouse.CancelContextMenu = true;
+				g_.mouse.CancelContextMenu = true;
 			}
 			s = "1";
 		}
@@ -2299,13 +2303,13 @@ g_mouse =
 		}
 		if (msg >= WM_MBUTTONDOWN && msg <= WM_MBUTTONDBLCLK) {
 			if (api.GetKeyState(VK_RBUTTON) < 0) {
-				g_mouse.CancelContextMenu = true;
+				g_.mouse.CancelContextMenu = true;
 			}
 			s = "3";
 		}
 		if (msg >= WM_XBUTTONDOWN && msg <= WM_XBUTTONDBLCLK) {
 			if (api.GetKeyState(VK_RBUTTON) < 0) {
-				g_mouse.CancelContextMenu = true;
+				g_.mouse.CancelContextMenu = true;
 			}
 			switch (wParam >> 16) {
 				case XBUTTON1:

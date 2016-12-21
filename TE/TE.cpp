@@ -21,14 +21,9 @@ HINSTANCE	g_hShell32 = NULL;
 HWND		g_hDialog = NULL;
 IShellWindows *g_pSW = NULL;
 
-LPFNSHCreateItemFromIDList lpfnSHCreateItemFromIDList = NULL;
 LPFNSHRunDialog lpfnSHRunDialog = NULL;
 LPFNRegenerateUserEnvironment lpfnRegenerateUserEnvironment = NULL;
-LPFNSHGetIDListFromObject lpfnSHGetIDListFromObject = NULL;
-LPFNChangeWindowMessageFilter lpfnChangeWindowMessageFilter = NULL;
 LPFNChangeWindowMessageFilterEx lpfnChangeWindowMessageFilterEx = NULL;
-LPFNAddClipboardFormatListener lpfnAddClipboardFormatListener = NULL;
-LPFNRemoveClipboardFormatListener lpfnRemoveClipboardFormatListener = NULL;
 LPFNRtlGetVersion lpfnRtlGetVersion = NULL;
 #ifdef _2000XP
 LPFNSetDllDirectoryW lpfnSetDllDirectoryW = NULL;
@@ -38,11 +33,18 @@ LPFNPSGetPropertyKeyFromName lpfnPSGetPropertyKeyFromName = NULL;
 LPFNPSPropertyKeyFromString lpfnPSPropertyKeyFromStringEx = NULL;
 LPFNPSGetPropertyDescription lpfnPSGetPropertyDescription = NULL;
 LPFNPSStringFromPropertyKey lpfnPSStringFromPropertyKey = NULL;
+LPFNSHCreateItemFromIDList lpfnSHCreateItemFromIDList = NULL;
+LPFNSHGetIDListFromObject lpfnSHGetIDListFromObject = NULL;
+LPFNChangeWindowMessageFilter lpfnChangeWindowMessageFilter = NULL;
+LPFNAddClipboardFormatListener lpfnAddClipboardFormatListener = NULL;
+LPFNRemoveClipboardFormatListener lpfnRemoveClipboardFormatListener = NULL;
 #else
 #define lpfnPSPropertyKeyFromString PSPropertyKeyFromString
 #define lpfnPSGetPropertyKeyFromName PSGetPropertyKeyFromName
 #define lpfnPSGetPropertyDescription PSGetPropertyDescription
 #define lpfnPSPropertyKeyFromStringEx tePSPropertyKeyFromStringEx
+#define lpfnSHCreateItemFromIDList SHCreateItemFromIDList
+#define lpfnSHGetIDListFromObject SHGetIDListFromObject
 #endif
 #ifdef _USE_APIHOOK
 LPFNRegQueryValueExW lpfnRegQueryValueExW = NULL;
@@ -1482,9 +1484,13 @@ BOOL teChangeWindowMessageFilterEx(HWND hwnd, UINT message, DWORD action, PCHANG
 	if (lpfnChangeWindowMessageFilterEx) {
 		return lpfnChangeWindowMessageFilterEx(hwnd, message, action, pChangeFilterStruct);
 	}
+#ifdef _2000XP
 	if (lpfnChangeWindowMessageFilter) {
 		return lpfnChangeWindowMessageFilter(message, action);
 	}
+#else
+	ChangeWindowMessageFilter(message, action);
+#endif
 	return FALSE;
 }
 
@@ -1621,12 +1627,10 @@ VOID teILFreeClear(LPITEMIDLIST *ppidl)
 VOID Wow64ControlPanel(LPITEMIDLIST *ppidl, LPITEMIDLIST pidlReplace)
 {
 	BOOL bIsWow64 = FALSE;
-	if (lpfnIsWow64Process) {
-		lpfnIsWow64Process(GetCurrentProcess(), &bIsWow64);
-		if (bIsWow64) {
-			if (ILIsParent(g_pidlCP, *ppidl, FALSE) && !ILIsEqual(*ppidl, g_pidls[CSIDL_CONTROLS])) {
-				teILCloneReplace(ppidl, pidlReplace);
-			}
+	IsWow64Process(GetCurrentProcess(), &bIsWow64);
+	if (bIsWow64) {
+		if (ILIsParent(g_pidlCP, *ppidl, FALSE) && !ILIsEqual(*ppidl, g_pidls[CSIDL_CONTROLS])) {
+			teILCloneReplace(ppidl, pidlReplace);
 		}
 	}
 }
@@ -2958,13 +2962,17 @@ LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath)
 BOOL teCreateItemFromPath(LPWSTR pszPath, IShellItem **ppSI)
 {
 	BOOL Result = FALSE;
+#ifdef _2000XP
 	if (lpfnSHCreateItemFromIDList) {
+#endif
 		LPITEMIDLIST pidl = teILCreateFromPath(const_cast<LPWSTR>(pszPath));
 		if (pidl) {
 			Result = SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(ppSI)));
 			teCoTaskMemFree(pidl);
 		}
+#ifdef _2000XP
 	}
+#endif
 	return Result;
 }
 
@@ -2991,7 +2999,11 @@ int teSHFileOperation(LPSHFILEOPSTRUCT pFOS)
 	LPWSTR pszFrom = const_cast<LPWSTR>(pFOS->pFrom);
 	if (pszFrom && !(pFOS->fFlags & FOF_WANTMAPPINGHANDLE)) {
 		IFileOperation *pFO;
-		if (lpfnSHCreateItemFromIDList && SUCCEEDED(CoCreateInstance(CLSID_FileOperation, NULL, CLSCTX_ALL, IID_PPV_ARGS(&pFO)))) {
+		if (
+#ifdef _2000XP
+			lpfnSHCreateItemFromIDList &&
+#endif
+			SUCCEEDED(CoCreateInstance(CLSID_FileOperation, NULL, CLSCTX_ALL, IID_PPV_ARGS(&pFO)))) {
 			if SUCCEEDED(pFO->SetOperationFlags(pFOS->fFlags & ~FOF_MULTIDESTFILES)) {
 				try {
 					pFO->SetOwnerWindow(pFOS->hwnd);
@@ -5676,7 +5688,9 @@ VOID Finalize()
 		for (int i = _countof(g_maps); i--;) {
 			delete [] g_maps[i];
 		}
+#ifdef _2000XP
 		lpfnSHCreateItemFromIDList = NULL;
+#endif
 		while (g_nPidls--) {
 			teILFreeClear(&g_pidls[g_nPidls]);
 			teSysFreeString(&g_bsPidls[g_nPidls]);
@@ -9433,8 +9447,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	g_hShell32 = GetModuleHandle(bsLib);
 	SysFreeString(bsLib);
 	if (g_hShell32) {
+#ifdef _2000XP
 		lpfnSHCreateItemFromIDList = (LPFNSHCreateItemFromIDList)GetProcAddress(g_hShell32, "SHCreateItemFromIDList");
 		lpfnSHGetIDListFromObject = (LPFNSHGetIDListFromObject)GetProcAddress(g_hShell32, "SHGetIDListFromObject");
+#endif
 		lpfnSHRunDialog = (LPFNSHRunDialog)GetProcAddress(g_hShell32, MAKEINTRESOURCEA(61));
 		lpfnRegenerateUserEnvironment = (LPFNRegenerateUserEnvironment)GetProcAddress(g_hShell32, "RegenerateUserEnvironment");
 	}
@@ -9481,11 +9497,13 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	hDll = GetModuleHandle(bsLib);
 	if (hDll) {
 		lpfnChangeWindowMessageFilterEx = (LPFNChangeWindowMessageFilterEx)GetProcAddress(hDll, "ChangeWindowMessageFilterEx");
+#ifdef _2000XP
 		lpfnChangeWindowMessageFilter = (LPFNChangeWindowMessageFilter)GetProcAddress(hDll, "ChangeWindowMessageFilter");
 		lpfnRemoveClipboardFormatListener = (LPFNRemoveClipboardFormatListener)GetProcAddress(hDll, "RemoveClipboardFormatListener");
 		if (lpfnRemoveClipboardFormatListener) {
 			lpfnAddClipboardFormatListener = (LPFNAddClipboardFormatListener)GetProcAddress(hDll, "AddClipboardFormatListener");
 		}
+#endif
 	}
 	SysFreeString(bsLib);
 
@@ -9603,14 +9621,14 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		CoCreateInstance(CLSID_DragDropHelper, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&g_pDropTargetHelper));
 #ifdef _2000XP
 	}
-#endif
 	if (lpfnAddClipboardFormatListener) {
 		lpfnAddClipboardFormatListener(g_hwndMain);
 	}
-#ifdef _2000XP
 	else {
 		g_hwndNextClip = SetClipboardViewer(g_hwndMain);
 	}
+#else
+	AddClipboardFormatListener(g_hwndMain);
 #endif
 	//Get JScript Object
 	bsScript = teMultiByteToWideChar(CP_UTF8, "\
@@ -9678,11 +9696,6 @@ function _t(o) {\
 		if (lplpszArgs) {
 			LocalFree(lplpszArgs);
 		}
-#ifdef _WIN64
-		if (!lpfnSHCreateItemFromIDList) {
-			SysReAllocString(&bsIndex, L"TE32.exe");
-		}
-#endif
 		CoInternetSetFeatureEnabled(FEATURE_DISABLE_NAVIGATION_SOUNDS, SET_FEATURE_ON_PROCESS, TRUE);
 		g_pWebBrowser = new CteWebBrowser(g_hwndMain, bsIndex, NULL);
 		SetTimer(g_hwndMain, TET_Create, 10000, teTimerProc);
@@ -9787,13 +9800,14 @@ function _t(o) {\
 		if (g_hMenu) {
 			DestroyMenu(g_hMenu);
 		}
+#ifdef	_2000XP
 		if (lpfnAddClipboardFormatListener) {
 			lpfnRemoveClipboardFormatListener(g_hwndMain);
-		}
-#ifdef	_2000XP
-		else {
+		} else {
 			ChangeClipboardChain(g_hwndMain, g_hwndNextClip);
 		}
+#else
+		RemoveClipboardFormatListener(g_hwndMain);
 #endif
 	} catch (...) {}
 	Finalize();
@@ -18909,7 +18923,11 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 					if (prc) {
 						LPITEMIDLIST pidl;
 						if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
-							if (m_pNameSpaceTreeControl && lpfnSHCreateItemFromIDList) {
+							if (m_pNameSpaceTreeControl
+#ifdef _2000XP
+								&& lpfnSHCreateItemFromIDList
+#endif
+							) {
 								IShellItem *pShellItem;
 								if SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(&pShellItem))) {
 									teSetLong(pVarResult, m_pNameSpaceTreeControl->GetItemRect(pShellItem, prc));
@@ -19014,7 +19032,11 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 						teCoTaskMemFree(pidl);
 						return S_OK;
 					}
-					if (m_pNameSpaceTreeControl && lpfnSHCreateItemFromIDList) {
+					if (m_pNameSpaceTreeControl
+#ifdef _2000XP
+						&& lpfnSHCreateItemFromIDList
+#endif
+					) {
 						IShellItem *pShellItem;
 						DWORD dwState = NSTCIS_SELECTED;
 						if (GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) != 0) {
@@ -19469,7 +19491,9 @@ VOID CteTreeView::SetRoot()
 	HRESULT hr = E_FAIL;
 	if (m_pNameSpaceTreeControl) {
 		IShellItem *pShellItem;
+#ifdef _2000XP
 		if (lpfnSHCreateItemFromIDList) {
+#endif
 			LPITEMIDLIST pidl;
 			if (!teGetIDListFromVariant(&pidl, &m_pFV->m_vRoot)) {
 				pidl = ::ILClone(g_pidls[CSIDL_DESKTOP]);
@@ -19480,7 +19504,9 @@ VOID CteTreeView::SetRoot()
 				pShellItem->Release();
 			}
 			teCoTaskMemFree(pidl);
+#ifdef _2000XP
 		}
+#endif
 	}
 #ifdef _2000XP
 	if (hr != S_OK && m_pShellNameSpace) {
