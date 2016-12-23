@@ -222,7 +222,7 @@ IsSavePath = function (path)
 			ShowError(e, en, i);
 		}
 	}
-	return !api.PathMatchSpec(path, "search-ms:*");
+	return !/^search\-ms:/i.test(path);
 }
 
 Lock = function (Ctrl, nIndex, turn)

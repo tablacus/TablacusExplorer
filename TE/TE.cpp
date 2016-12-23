@@ -14074,12 +14074,13 @@ VOID CteShellBrowser::SetPropEx()
 		}
 		m_hwndLV = FindWindowExA(m_hwndDV, 0, WC_LISTVIEWA, NULL);
 		m_hwndDT = m_hwndLV;
+		if (m_pExplorerBrowser) {
+			if (m_param[SB_FolderFlags] & FWF_NOCLIENTEDGE) {
+				SetWindowLong(m_hwnd, GWL_STYLE, GetWindowLong(m_hwnd, GWL_STYLE) & ~WS_BORDER);
+			}
+		}
 		if (m_hwndLV) {
-			if (m_pExplorerBrowser) {
-				if (m_param[SB_FolderFlags] & FWF_NOCLIENTEDGE) {
-					SetWindowLong(m_hwnd, GWL_STYLE, GetWindowLong(m_hwnd, GWL_STYLE) & ~WS_BORDER);
-				}
-			} else if (!(m_param[SB_FolderFlags] & FWF_NOCLIENTEDGE)) {
+			if (!(m_param[SB_FolderFlags] & FWF_NOCLIENTEDGE)) {
 				SetWindowLong(m_hwndLV, GWL_EXSTYLE, GetWindowLong(m_hwndLV, GWL_EXSTYLE) | WS_EX_CLIENTEDGE);
 			}
 		} else {
