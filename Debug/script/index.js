@@ -47,12 +47,12 @@ RunEvent2 = function (en, a1, a2, a3, a4)
 	return S_OK; 
 }
 
-RunEvent3 = function (en, a1, a2, a3, a4, a5, a6, a7, a8, a9)
+RunEvent3 = function (en, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)
 {
 	var eo = eventTE[en];
 	for (var i in eo) {
 		try {
-			var hr = eo[i](a1, a2, a3, a4, a5, a6, a7, a8, a9);
+			var hr = eo[i](a1, a2, a3, a4, a5, a6, a7, a8, a9, a10);
 			if (isFinite(hr)) {
 				return hr; 
 			}
@@ -1096,8 +1096,9 @@ te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam)
 te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon)
 {
 	var path;
-	var hr = RunEvent3("InvokeCommand", ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon);
-	if (isNaN(hr) && Verb == CommandID_CUT - 1) {
+	var strVerb = (isFinite(Verb) ? ContextMenu.GetCommandString(Verb, GCS_VERB) : Verb).toLowerCase();
+	var hr = RunEvent3("InvokeCommand", ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon, strVerb);
+	if (isNaN(hr) && strVerb == "cut") {
 		var FV = ContextMenu.FolderView;
 		if (FV && FV.hwndView && ContextMenu.Items().Count == FV.SelectedItems().Count) {
 			var hMenu = te.MainMenu(FCIDM_MENU_EDIT);
@@ -1124,10 +1125,6 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 	}
 	var Items = ContextMenu.Items();
 	var Exec = [];
-	if (isFinite(Verb)) {
-		Verb = ContextMenu.GetCommandString(Verb, GCS_VERB);
-	}
-	var strVerb = String(Verb).toLowerCase();
 	if (api.PathMatchSpec(strVerb, "opennewwindow;opennewprocess")) {
 		CancelWindowRegistered();
 	}
