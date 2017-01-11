@@ -14982,24 +14982,25 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				if (::InterlockedDecrement(&g_nLockUpdate) <= 0) {
 					g_nLockUpdate = 0;
 					teSetRedraw(TRUE);
-					for (int i = MAX_TC; i-- && g_ppTC[i];) {
-						CteTabCtrl *pTC = g_ppTC[i];
-						if (pTC->m_bVisible) {
-							CteShellBrowser *pSB = pTC->GetShellBrowser(pTC->m_nIndex);
-							if (pSB && !pSB->m_bEmpty) {
-								if (pSB->m_nUnload & 5) {
-									pSB->Show(TRUE, 0);
-								}
-								if (pTC->m_bRedraw) {
-									pTC->RedrawUpdate();
+					if (g_nSize >= MAXWORD) {
+						g_nSize -= MAXWORD;
+					} else {
+						for (int i = MAX_TC; i-- && g_ppTC[i];) {
+							CteTabCtrl *pTC = g_ppTC[i];
+							if (pTC->m_bVisible) {
+								CteShellBrowser *pSB = pTC->GetShellBrowser(pTC->m_nIndex);
+								if (pSB && !pSB->m_bEmpty) {
+									if (pSB->m_nUnload & 5) {
+										pSB->Show(TRUE, 0);
+									}
+									if (pTC->m_bRedraw) {
+										pTC->RedrawUpdate();
+									}
 								}
 							}
 						}
+						ArrangeWindow();
 					}
-					if (g_nSize >= MAXWORD) {
-						g_nSize -= MAXWORD;
-					}
-					ArrangeWindow();
 				}
 				return S_OK;
 			//HookDragDrop//Deprecated
@@ -20121,6 +20122,7 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			BOOL bResult = FALSE;
 			switch (dispIdMember) {
+				//ShowOpen
 				case 40:
 					if (m_ofn.Flags & OFN_ENABLEHOOK) {
 						m_ofn.lpfnHook = OFNHookProc;
@@ -20128,6 +20130,7 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					g_bDialogOk = FALSE;
 					bResult = GetOpenFileName(&m_ofn) || g_bDialogOk;
 					break;
+				//ShowSave
 				case 41:
 					bResult = GetSaveFileName(&m_ofn);
 					break;
