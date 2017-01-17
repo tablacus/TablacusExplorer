@@ -1084,7 +1084,7 @@ CreateFolder = function (path)
 	}
 	CreateNew(path, function (strPath)
 	{
-		fso.CreateFolder(strPath);
+		fso.CreateFolder(strPath.replace(/^\s*/, ""));
 	});
 }
 
@@ -3453,4 +3453,22 @@ AddFavoriteEx = function (Ctrl, pt)
 {
 	AddFavorite();
 	return S_OK
+}
+
+importScript = function (fn)
+{
+	if (/"/.test(fn)) {
+		fn = api.api.PathUnquoteSpaces(fn);
+	}
+	fn = ExtractMacro(te, fn);
+	if (!api.PathMatchSpec(fn, '?:\\*;\\\\*')) {
+		fn = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), fn);
+	}
+	var hr = E_FAIL;
+	var ado = OpenAdodbFromTextFile(fn);
+	if (ado) {
+		ExecScriptEx(window.Ctrl, ado.ReadText(), /\.vbs/i.test(fn) ? "VBScript" : "JScript", window.pt, window.dataObj, window.grfKeyState, window.pdwEffect, window.bDrop);
+		ado.Close();
+	}
+	return hr;
 }

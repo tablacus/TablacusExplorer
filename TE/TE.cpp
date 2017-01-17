@@ -13266,6 +13266,12 @@ HRESULT CteShellBrowser::NavigateSB(IShellView *pPreviousView, FolderItem *pPrev
 			}
 		}
 		if (hr != S_OK) {
+			if (ILIsEqual(m_pidl, g_pidlResultsFolder)) {
+				m_dwUnavailable = GetTickCount();
+				g_nReload = 1;
+				SetTimer(g_hwndMain, TET_Reload, 100, teTimerProc);
+				return E_FAIL;
+			}
 			teILCloneReplace(&m_pidl, g_pidlResultsFolder);
 			m_dwUnavailable = GetTickCount();
 			nCreate++;
@@ -19882,7 +19888,7 @@ STDMETHODIMP CteFolderItem::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				return S_OK;
 /*/// Reserved future
 			//FocusedItem
-			case 0x4001004:
+			case 8:
 				if (nArg >= 0) {
 					teILFreeClear(&m_pidlFocused);
 					teGetIDListFromVariant(&m_pidlFocused, &pDispParams->rgvarg[nArg]);

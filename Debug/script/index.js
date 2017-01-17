@@ -2212,24 +2212,6 @@ function InitMouse()
 	te.NetworkTimeout = te.Data.Conf_NetworkTimeout;
 }
 
-importScript = function (fn)
-{
-	if (/"/.test(fn)) {
-		fn = api.api.PathUnquoteSpaces(fn);
-	}
-	fn = ExtractMacro(te, fn);
-	if (!api.PathMatchSpec(fn, '?:\\*;\\\\*')) {
-		fn = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), fn);
-	}
-	var hr = E_FAIL;
-	var ado = OpenAdodbFromTextFile(fn);
-	if (ado) {
-		ExecScriptEx(window.Ctrl, ado.ReadText(), /\.vbs/i.test(fn) ? "VBScript" : "JScript", window.pt, window.dataObj, window.grfKeyState, window.pdwEffect, window.bDrop);
-		ado.Close();
-	}
-	return hr;
-}
-
 importScripts = function()
 {
 	for (var i = 0; i < arguments.length; i++) {
