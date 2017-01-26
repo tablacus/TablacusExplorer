@@ -778,21 +778,6 @@ te.OnNavigateComplete = function (Ctrl)
 {
 	RunEvent1("NavigateComplete", Ctrl);
 	ChangeView(Ctrl);
-	if (WINVER >= 0xa00 && osInfo.dwBuildNumber > 14393 && Ctrl.hwndList && Ctrl.CurrentViewMode == FVM_DETAILS) {
-		var pt = api.Memory("POINT");
-		for (var i = 9; i < 999; i *= 9) {
-			setTimeout(function ()
-			{
-				if (Ctrl.hwndList && Ctrl.CurrentViewMode == FVM_DETAILS) {
-					api.SendMessage(Ctrl.hwndList, LVM_GETORIGIN, 0, pt);
-					if (pt.y < 0) {
-						api.PostMessage(Ctrl.hwndList, LVM_SETVIEW, 2, 0);
-						api.PostMessage(Ctrl.hwndList, LVM_SETVIEW, 1, 0);
-					}
-				}
-			}, i);
-		}
-	}
 	return S_OK;
 }
 
@@ -1489,12 +1474,15 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 						te.Reload();
 					}
 					if (wParam & 0xffff) {
-						if (g_.mouse.str == "" && !api.GetFocus()) {
+						if (g_.mouse.str == "") {
 							setTimeout(function ()
 							{
-								var FV = te.Ctrl(CTRL_FV);
-								if (FV) {
-									FV.Focus();
+								var hFocus = api.GetFocus();
+								if (!hFocus || hFocus == te.hwnd) {
+									var FV = te.Ctrl(CTRL_FV);
+									if (FV) {
+										FV.Focus();
+									}
 								}
 							}, 99);
 						}

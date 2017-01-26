@@ -1299,10 +1299,12 @@ ExtractMacro2 = function (Ctrl, s)
 			if (typeof(fn) == "string") {
 				return fn;
 			} else if (fn) {
-				var r = fn(Ctrl);
-				if (typeof(r) == "string") {
-					return r;
-				}
+				try {
+					var r = fn(Ctrl);
+					if (typeof(r) == "string") {
+						return r;
+					}
+				} catch (e) {}
 			}
 			return strMatch;
 		});

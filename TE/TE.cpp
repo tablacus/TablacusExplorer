@@ -128,6 +128,7 @@ BOOL	g_bInit = FALSE;
 BOOL	g_bUnload = FALSE;
 BOOL	g_bSetRedraw;
 BOOL	g_bShowParseError = TRUE;
+BOOL	g_bDragging = FALSE;
 #ifdef _2000XP
 int		g_nCharWidth = 7;
 BOOL	g_bCharWidth = true;
@@ -832,6 +833,7 @@ TEmethod methodTE[] = {
 	{ 1030, "WindowsAPI" },
 	{ 1131, "CommonDialog" },
 	{ 1132, "GdiplusBitmap" },
+	{ 1137, "ProgressDialog" },
 	{ TE_METHOD + 1133, "FolderItems" },
 	{ TE_METHOD + 1134, "Object" },
 	{ TE_METHOD + 1135, "Array" },
@@ -1142,6 +1144,18 @@ TEmethod methodGB[] = {
 
 	{ 210, "GetHBITMAP" },
 	{ 211, "GetHICON" },
+	{ 0, NULL }
+};
+
+TEmethod methodPD[] = {
+	{ 0x60010001, "HasUserCancelled" },
+	{ 0x60010002, "SetCancelMsg" },
+	{ 0x60010003, "SetLine" },
+	{ 0x60010004, "SetProgress" },
+	{ 0x60010005, "SetTitle" },
+	{ 0x60010006, "StartProgressDialog" },
+	{ 0x60010007, "StopProgressDialog" },
+	{ 0x60010008, "Timer" },
 	{ 0, NULL }
 };
 
@@ -8422,6 +8436,16 @@ VOID teApiPathIsRoot(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 	teSetBool(pVarResult, PathIsRoot(param[0].lpcwstr));
 }
 
+VOID teApiEnableWindow(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetBool(pVarResult, EnableWindow(param[0].hwnd, param[1].boolVal));
+}
+
+VOID teApiIsWindowEnabled(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetBool(pVarResult, IsWindowEnabled(param[0].hwnd));
+}
+
 /*
 VOID teApi(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -8727,6 +8751,8 @@ TEDispatchApi dispAPI[] = {
 	{ 0, -1, -1, -1, "Object", teApiObject },
 	{ 0, -1, -1, -1, "Array", teApiArray },
 	{ 1,  0, -1, -1, "PathIsRoot", teApiPathIsRoot },
+	{ 2, -1, -1, -1, "EnableWindow", teApiEnableWindow },
+	{ 1, -1, -1, -1, "IsWindowEnabled", teApiIsWindowEnabled },
 //	{ 0, -1, -1, -1, "", teApi },
 //	{ 0, -1, -1, -1, "Test", teApiTest },
 };
@@ -9222,6 +9248,14 @@ VOID CALLBACK teTimerProcFocus(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 		KillTimer(hwnd, idEvent);
 		CteShellBrowser *pSB = SBfromhwnd(hwnd);
 		if (pSB) {
+			if (pSB->m_hwndLV && pSB->m_param[SB_ViewMode] == FVM_DETAILS) {//bug fix 1 for Windows 10 Insider Preview 14986-
+				POINT pt;
+				ListView_GetOrigin(pSB->m_hwndLV, &pt);
+				if (pt.y < 0) {
+					ListView_SetView(pSB->m_hwndLV, LV_VIEW_SMALLICON);
+					ListView_SetView(pSB->m_hwndLV, LV_VIEW_DETAILS);
+				}
+			}
 			pSB->FocusItem(TRUE);
 		}
 	} catch (...) {
@@ -10119,7 +10153,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					return 1;
 				}
 				return DefWindowProc(hWnd, message, wParam, lParam);
-	#ifdef	_2000XP
+#ifdef	_2000XP
 			case WM_DRAWCLIPBOARD:
 				if (g_hwndNextClip) {
 					SendMessage(g_hwndNextClip, message, wParam, lParam);
@@ -10133,7 +10167,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					SendMessage(g_hwndNextClip, message, wParam, lParam);
 				}
 				return 0;
-	#endif
+#endif
 			default:
 				if ((message >= WM_APP && message <= MAXWORD)) {
 					if (g_pOnFunc[TE_OnAppMessage]) {
@@ -13000,10 +13034,13 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				return DoFunc(TE_OnSelectionChanged, this, S_OK);
 			case DISPID_FILELISTENUMDONE://XP+
 				IFolderView2 *pFV2;
-				m_bRefreshing = FALSE;
-				if (m_bNavigateComplete) {
-					m_bNavigateComplete = FALSE;
-					OnNavigationComplete2();
+				if (m_bRefreshing || m_bNavigateComplete) {
+					m_bRefreshing = FALSE;
+					if (m_bNavigateComplete) {
+						m_bNavigateComplete = FALSE;
+						OnNavigationComplete2();
+					}
+					SetTimer(m_hwnd, 1, 64, teTimerProcFocus);//bug fix 1 for Windows 10 Insider Preview 14986-
 				}
 				SetListColumnWidth();
 				if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
@@ -14830,6 +14867,10 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 					teSetObjectRelease(pVarResult, new CteDispatch(pdisp, 1));
 				}
 				return S_OK;
+			//ProgressDialog
+			case 1137:
+				teSetObjectRelease(pVarResult, new CteProgressDialog());
+				return S_OK;
 #ifdef _USE_TESTOBJECT
 			//TestObj
 			case 1200:
@@ -15786,9 +15827,9 @@ STDMETHODIMP CteWebBrowser::ShowHelp(HWND hwnd, LPOLESTR pszHelpFile, UINT uComm
 //IDropTarget
 STDMETHODIMP CteWebBrowser::DragEnter(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect)
 {
+	g_bDragging = TRUE;
 	m_DragLeave = E_NOT_SET;
 	GetDragItems(&m_pDragItems, pDataObj);
-
 	DWORD dwEffect = *pdwEffect;
 	HRESULT	hr = DragSub(TE_OnDragEnter, this, m_pDragItems, &grfKeyState, pt, pdwEffect);
 	if (m_pDropTarget) {
@@ -15825,6 +15866,7 @@ STDMETHODIMP CteWebBrowser::DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEff
 
 STDMETHODIMP CteWebBrowser::DragLeave()
 {
+	g_bDragging = FALSE;
 	if (m_DragLeave == E_NOT_SET) {
 		m_DragLeave = DragLeaveSub(this, &m_pDragItems);
 		if (m_pDropTarget) {
@@ -16475,7 +16517,7 @@ VOID CteTabCtrl::Move(int nSrc, int nDest, CteTabCtrl *pDestTab)
 VOID CteTabCtrl::LockUpdate()
 {
 	if (InterlockedIncrement(&m_nLockUpdate) == 1) {
-		SendMessage(m_hwndStatic, WM_SETREDRAW, FALSE, 0);
+		SendMessage(m_hwndStatic, WM_SETREDRAW, g_bDragging, 0);
 		SendMessage(m_hwnd, WM_SETREDRAW, FALSE, 0);
 		teSetRedraw(FALSE);
 	}
@@ -21291,6 +21333,7 @@ STDMETHODIMP_(ULONG) CteDropTarget2::Release()
 //IDropTarget
 STDMETHODIMP CteDropTarget2::DragEnter(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect)
 {
+	g_bDragging = TRUE;
 	m_DragLeave = E_NOT_SET;
 	GetDragItems(&m_pDragItems, pDataObj);
 	DWORD dwEffect = *pdwEffect;
@@ -21334,6 +21377,7 @@ STDMETHODIMP CteDropTarget2::DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEf
 
 STDMETHODIMP CteDropTarget2::DragLeave()
 {
+	g_bDragging = FALSE;
 	if (m_DragLeave == E_NOT_SET) {
 		if (g_pDropTargetHelper && m_hwnd) {
 			g_pDropTargetHelper->DragLeave();
@@ -21554,3 +21598,124 @@ STDMETHODIMP CteTest::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD w
 	return DISP_E_MEMBERNOTFOUND;
 }
 #endif
+
+//CteProgressDialog
+
+CteProgressDialog::CteProgressDialog()
+{
+	m_cRef = 1;
+	CoCreateInstance(CLSID_ProgressDialog, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&m_ppd));
+}
+
+CteProgressDialog::~CteProgressDialog()
+{
+	SafeRelease(&m_ppd);
+}
+
+STDMETHODIMP CteProgressDialog::QueryInterface(REFIID riid, void **ppvObject)
+{
+	static const QITAB qit[] =
+	{
+		QITABENT(CteProgressDialog, IDispatch),
+		{ 0 },
+	};
+	return QISearch(this, qit, riid, ppvObject);
+}
+
+STDMETHODIMP_(ULONG) CteProgressDialog::AddRef()
+{
+	return ::InterlockedIncrement(&m_cRef);
+}
+
+STDMETHODIMP_(ULONG) CteProgressDialog::Release()
+{
+	if (::InterlockedDecrement(&m_cRef) == 0) {
+		delete this;
+		return 0;
+	}
+
+	return m_cRef;
+}
+
+STDMETHODIMP CteProgressDialog::GetTypeInfoCount(UINT *pctinfo)
+{
+	*pctinfo = 0;
+	return S_OK;
+}
+
+STDMETHODIMP CteProgressDialog::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo)
+{
+	return E_NOTIMPL;
+}
+
+STDMETHODIMP CteProgressDialog::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
+{
+	return teGetDispId(methodPD, 0, NULL, *rgszNames, rgDispId, true);
+}
+
+STDMETHODIMP CteProgressDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
+{
+	try {
+		LPCWSTR *pbs = NULL;
+		DWORD *pdw = NULL;
+		int nArg = pDispParams ? pDispParams->cArgs - 1 : -1;
+		if (pVarResult) {
+			VariantInit(pVarResult);
+		}
+		switch(dispIdMember) {
+			//HasUserCancelled
+			case 0x60010001:
+				teSetBool(pVarResult, m_ppd->HasUserCancelled());
+				return S_OK;
+			//SetCancelMsg
+			case 0x60010002:
+				if (nArg >= 0) {
+					teSetLong(pVarResult, m_ppd->SetCancelMsg(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]), NULL));
+				}
+				return S_OK;
+			//SetLine
+			case 0x60010003:
+				if (nArg >= 2) {
+					teSetLong(pVarResult, m_ppd->SetLine(GetIntFromVariant(&pDispParams->rgvarg[nArg]), GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]), NULL));
+				}
+				return S_OK;
+			//SetProgress
+			case 0x60010004:
+				if (nArg >= 1) {
+					teSetLong(pVarResult, m_ppd->SetProgress64(GetLLFromVariant(&pDispParams->rgvarg[nArg]), GetLLFromVariant(&pDispParams->rgvarg[nArg - 1])));
+				}
+				return S_OK;
+			//SetTitle
+			case 0x60010005:
+				if (nArg >= 0) {
+					teSetLong(pVarResult, m_ppd->SetTitle(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg])));
+				}
+				return S_OK;
+			//StartProgressDialog
+			case 0x60010006:
+				if (nArg >= 2) {
+					IUnknown *punk = NULL;
+					FindUnknown(&pDispParams->rgvarg[nArg - 1], &punk);
+					teSetLong(pVarResult, m_ppd->StartProgressDialog((HWND)GetPtrFromVariant(&pDispParams->rgvarg[nArg]), punk, GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]), NULL));
+				}
+				return S_OK;
+			//StopProgressDialog
+			case 0x60010007:
+				teSetLong(pVarResult, m_ppd->StopProgressDialog());
+				return S_OK;
+			//Timer
+			case 0x60010008:
+				if (nArg >= 0) {
+					teSetLong(pVarResult, m_ppd->Timer(GetIntFromVariant(&pDispParams->rgvarg[nArg]), NULL));
+				}
+				return S_OK;
+			case DISPID_VALUE:
+				teSetObject(pVarResult, this);
+				return S_OK;
+		}//end_switch
+	} catch (...) {
+		return teException(pExcepInfo, "ProgressDialog", methodPD, dispIdMember);
+	}
+	return DISP_E_MEMBERNOTFOUND;
+}
+
