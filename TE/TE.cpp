@@ -1,8 +1,8 @@
 ﻿// TE.cpp
 // Tablacus Explorer (C)2011 Gaku
 // MIT Lisence
-// Visual C++ 2008 Express Edition SP1
-// Windows SDK v7.0
+// Visual C++ 2010 Express Edition SP1
+// Windows SDK v7.1
 // http://www.eonet.ne.jp/~gakana/tablacus/
 
 #include "stdafx.h"
@@ -1346,8 +1346,7 @@ VOID teSetLL(VARIANT *pv, LONGLONG ll)
 			pv->vt = VT_R8;
 			return;
 		}
-		SAFEARRAY *psa;
-		psa = SafeArrayCreateVector(VT_I4, 0, sizeof(LONGLONG) / sizeof(int));
+		SAFEARRAY *psa = SafeArrayCreateVector(VT_I4, 0, sizeof(LONGLONG) / sizeof(int));
 		if (psa) {
 			PVOID pvData;
 			if (::SafeArrayAccessData(psa, &pvData) == S_OK) {
@@ -1593,11 +1592,12 @@ HRESULT teExceptionEx(EXCEPINFO *pExcepInfo, LPCSTR pszObjA, LPCSTR pszNameA)
 		pExcepInfo->bstrDescription = ::SysAllocStringLen(NULL, nLen);
 		swprintf_s(pExcepInfo->bstrDescription, nLen, L"Exception in %s.%s", bsObj, pszNameA ? bsName : L"");
 		pExcepInfo->bstrSource = ::SysAllocString(g_szTE);
-		pExcepInfo->scode = DISP_E_EXCEPTION;
+		pExcepInfo->scode = E_UNEXPECTED;
 		::SysFreeString(bsName);
 		::SysFreeString(bsObj);
+		return DISP_E_EXCEPTION;
 	}
-	return DISP_E_EXCEPTION;
+	return E_UNEXPECTED;
 }
 
 HRESULT teException(EXCEPINFO *pExcepInfo, LPCSTR pszObjA, TEmethod* pMethod, DISPID dispIdMember)
@@ -2608,9 +2608,10 @@ HRESULT teInvokeAPI(TEDispatchApi *pApi, DISPPARAMS *pDispParams, VARIANT *pVarR
 	if (pVarResult) {
 		VariantInit(pVarResult);
 	}
+	teParam param[14] = { 0 };
+	param[TE_EXCEPINFO].pExcepInfo = pExcepInfo;
 	if (nArg-- >= pApi->nArgs) {
 		VARIANT vParam[12] = { 0 };
-		teParam param[12] = { 0 };
 		for (int i = nArg < 11 ? nArg : 11; i >= 0; i--) {
 			VariantInit(&vParam[i]);
 			if (i == (pApi->nStr1 % 10) || i == (pApi->nStr2 % 10) || i == (pApi->nStr3 % 10)) {
@@ -2632,7 +2633,7 @@ HRESULT teInvokeAPI(TEDispatchApi *pApi, DISPPARAMS *pDispParams, VARIANT *pVarR
 			}
 		}
 	}
-	return S_OK;
+	return param[TE_API_RESULT].lVal;
 }
 
 LPWSTR teGetCommandLine()
@@ -3799,25 +3800,35 @@ BOOL teGetIDListFromVariant(LPITEMIDLIST *ppidl, VARIANT *pv, BOOL bForceLimit =
 	return (*ppidl != NULL);
 }
 
-BOOL GetVarArrayFromIDList(VARIANT *vaPidl, LPITEMIDLIST pidl)
+BOOL teCreateSafeArray(VARIANT *pv, PVOID pSrc, DWORD dwSize, BOOL bBSTR)
 {
-	SAFEARRAY *psa;
-	ULONG cbData;
-
-	VariantInit(vaPidl);
-	cbData = ILGetSize(pidl);
-	psa = SafeArrayCreateVector(VT_UI1, 0, cbData);
-	if (psa) {
-		PVOID pvData;
-		if (::SafeArrayAccessData(psa, &pvData) == S_OK) {
-			::CopyMemory(pvData, pidl, cbData);
-			::SafeArrayUnaccessData(psa);
-			vaPidl->vt = VT_ARRAY | VT_UI1;
-			vaPidl->parray = psa;
-			return true;
+	if (bBSTR) {
+		pv->vt = VT_BSTR;
+		pv->bstrVal = ::SysAllocStringByteLen(NULL, dwSize);
+		if (pSrc && pv->bstrVal) {
+			::CopyMemory(pv->bstrVal, pSrc, dwSize);
+		}
+		return TRUE;
+	}
+	else {
+		pv->parray = SafeArrayCreateVector(VT_UI1, 0, dwSize);
+		if (pv->parray) {
+			pv->vt = VT_ARRAY | VT_UI1;
+			PVOID pvData;
+			if (pSrc && ::SafeArrayAccessData(pv->parray, &pvData) == S_OK) {
+				::CopyMemory(pvData, pSrc, dwSize);
+				::SafeArrayUnaccessData(pv->parray);
+			}
+			return TRUE;
 		}
 	}
-	return false;
+	pv->vt = VT_EMPTY;
+	return FALSE;
+}
+
+BOOL GetVarArrayFromIDList(VARIANT *pv, LPITEMIDLIST pidl)
+{
+	return teCreateSafeArray(pv, pidl, ILGetSize(pidl), FALSE);
 }
 
 HRESULT GetFolderObjFromIDList(LPITEMIDLIST pidl, Folder** ppsdf)
@@ -4046,7 +4057,7 @@ int teBSearchApi(TEDispatchApi *method, int nSize, int* pMap, LPOLESTR bs)
 	int nMax = nSize - 1;
 	int nIndex, nCC;
 	CHAR pszNameA[32];
-	WideCharToMultiByte(CP_ACP, 0, (LPCWSTR)bs, -1, pszNameA, sizeof(pszNameA) - 1, NULL, NULL);
+	WideCharToMultiByte(CP_TE, 0, (LPCWSTR)bs, -1, pszNameA, sizeof(pszNameA) - 1, NULL, NULL);
 
 	while (nMin <= nMax) {
 		nIndex = (nMin + nMax) / 2;
@@ -4096,7 +4107,7 @@ int teBSearch(TEmethod *method, int nSize, int* pMap, LPOLESTR bs)
 	int nMax = nSize - 1;
 	int nIndex, nCC;
 	CHAR pszNameA[32];
-	WideCharToMultiByte(CP_ACP, 0, (LPCWSTR)bs, -1, pszNameA, sizeof(pszNameA) - 1, NULL, NULL);
+	WideCharToMultiByte(CP_TE, 0, (LPCWSTR)bs, -1, pszNameA, sizeof(pszNameA) - 1, NULL, NULL);
 
 	while (nMin <= nMax) {
 		nIndex = (nMin + nMax) / 2;
@@ -4145,7 +4156,7 @@ int teBSearchStruct(TEStruct *method, int nSize, int* pMap, LPOLESTR bs)
 	int nMax = nSize - 1;
 	int nIndex, nCC;
 	CHAR pszNameA[32];
-	WideCharToMultiByte(CP_ACP, 0, (LPCWSTR)bs, -1, pszNameA, sizeof(pszNameA) - 1, NULL, NULL);
+	WideCharToMultiByte(CP_TE, 0, (LPCWSTR)bs, -1, pszNameA, sizeof(pszNameA) - 1, NULL, NULL);
 
 	while (nMin <= nMax) {
 		nIndex = (nMin + nMax) / 2;
@@ -4222,7 +4233,7 @@ HRESULT teGetDispId(TEmethod *method, int nCount, int* pMap, LPOLESTR bs, DISPID
 		}
 	} else {
 		CHAR pszNameA[32];
-		WideCharToMultiByte(CP_ACP, 0, (LPCWSTR)bs, -1, pszNameA, sizeof(pszNameA) - 1, NULL, NULL);
+		WideCharToMultiByte(CP_TE, 0, (LPCWSTR)bs, -1, pszNameA, sizeof(pszNameA) - 1, NULL, NULL);
 		for (int i = 0; method[i].name; i++) {
 			if (lstrcmpiA(pszNameA, method[i].name) == 0) {
 				*rgDispId = method[i].id;
@@ -4375,7 +4386,7 @@ HRESULT Invoke4(IDispatch *pdisp, VARIANT *pvResult, int nArgs, VARIANTARG *pvAr
 	return Invoke5(pdisp, DISPID_VALUE, DISPATCH_METHOD, pvResult, nArgs, pvArgs);
 }
 
-HRESULT ParseScript(LPOLESTR lpScript, LPOLESTR lpLang, VARIANT *pv, IUnknown *pOnError, IDispatch **ppdisp)
+HRESULT ParseScript(LPOLESTR lpScript, LPOLESTR lpLang, VARIANT *pv, IDispatch **ppdisp, EXCEPINFO *pExcepInfo)
 {
 	HRESULT hr = E_FAIL;
 	CLSID clsid;
@@ -4396,7 +4407,7 @@ HRESULT ParseScript(LPOLESTR lpScript, LPOLESTR lpLang, VARIANT *pv, IUnknown *p
 		}
 		IUnknown *punk = NULL;
 		FindUnknown(pv, &punk);
-		CteActiveScriptSite *pass = new CteActiveScriptSite(punk, pOnError);
+		CteActiveScriptSite *pass = new CteActiveScriptSite(punk, pExcepInfo, &hr);
 		pas->SetScriptSite(pass);
 		pass->Release();
 		IActiveScriptParse *pasp;
@@ -4424,7 +4435,7 @@ HRESULT ParseScript(LPOLESTR lpScript, LPOLESTR lpLang, VARIANT *pv, IUnknown *p
 			}
 			VARIANT v;
 			VariantInit(&v);
-			hr = pasp->ParseScriptText(lpScript, NULL, NULL, NULL, 0, 1, SCRIPTTEXT_ISPERSISTENT | SCRIPTTEXT_ISVISIBLE, &v, NULL);
+			pasp->ParseScriptText(lpScript, NULL, NULL, NULL, 0, 1, SCRIPTTEXT_ISPERSISTENT | SCRIPTTEXT_ISVISIBLE, &v, NULL);
 			if (hr == S_OK) {
 				pas->SetScriptState(SCRIPTSTATE_CONNECTED);
 				if (ppdisp) {
@@ -5922,9 +5933,10 @@ VOID teApiMemory(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVa
 		i = GetSizeOfStruct(sz);
 	}
 	if (pDispParams->rgvarg[nArg].vt & VT_ARRAY) {
-		pc = (char *)pDispParams->rgvarg[nArg].parray->pvData;
+		pc = pDispParams->rgvarg[nArg].pcVal;
 		nCount = pDispParams->rgvarg[nArg].parray->rgsabound[0].cElements;
 		i = SizeOfvt(pDispParams->rgvarg[nArg].vt);
+		sz = L"SAFEARRAY";
 	}
 	if (i == 0) {
 		i = param[0].lVal;
@@ -7556,11 +7568,8 @@ VOID teApiExecScript(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 	if (nArg >= 2) {
 		pv = &pDispParams->rgvarg[nArg - 2];
 	}
-	IUnknown *pOnError = NULL;
-	if (nArg >= 3) {
-		FindUnknown(&pDispParams->rgvarg[nArg - 3], &pOnError);
-	}
-	teSetLong(pVarResult, ParseScript(param[0].lpolestr, param[1].lpolestr, pv, pOnError, NULL));
+	param[TE_API_RESULT].lVal = ParseScript(param[0].lpolestr, param[1].lpolestr, pv, NULL, param[TE_EXCEPINFO].pExcepInfo);
+	teSetLong(pVarResult, param[TE_API_RESULT].lVal);
 }
 
 VOID teApiGetScriptDispatch(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -7570,12 +7579,8 @@ VOID teApiGetScriptDispatch(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 		if (nArg >= 2) {
 			pv = &pDispParams->rgvarg[nArg - 2];
 		}
-		IUnknown *pOnError = NULL;
-		if (nArg >= 3) {
-			FindUnknown(&pDispParams->rgvarg[nArg - 3], &pOnError);
-		}
 		IDispatch *pdisp = NULL;
-		ParseScript(param[0].lpolestr, param[1].lpolestr, pv, pOnError, &pdisp);
+		param[TE_API_RESULT].lVal = ParseScript(param[0].lpolestr, param[1].lpolestr, pv, &pdisp, param[TE_EXCEPINFO].pExcepInfo);
 		teSetObjectRelease(pVarResult, pdisp);
 	}
 }
@@ -8446,6 +8451,61 @@ VOID teApiIsWindowEnabled(int nArg, teParam *param, DISPPARAMS *pDispParams, VAR
 	teSetBool(pVarResult, IsWindowEnabled(param[0].hwnd));
 }
 
+VOID teApiCryptProtectData(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	DATA_BLOB blob[3];
+	for (int i = 2; i--;) {
+		blob[i].cbData = ::SysStringByteLen(param[i].bstrVal);
+		blob[i].pbData = param[i].pbVal;
+	}
+	if (CryptProtectData(&blob[0], NULL, &blob[1], NULL, NULL, 0, &blob[2])) {
+		teCreateSafeArray(pVarResult, blob[2].pbData, blob[2].cbData, param[2].boolVal);
+		LocalFree(blob[2].pbData);
+	}
+}
+
+VOID teApiCryptUnprotectData(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	UCHAR *pc;
+	int nLen = 0;
+	GetpDataFromVariant(&pc, &nLen, &pDispParams->rgvarg[nArg]);
+	if (pc && pVarResult) {
+		DATA_BLOB blob[3];
+		blob[0].cbData = nLen;
+		blob[0].pbData = pc;
+		blob[1].cbData = ::SysStringByteLen(param[1].bstrVal);
+		blob[1].pbData = param[1].pbVal;
+		if (CryptUnprotectData(&blob[0], NULL, &blob[1], NULL, NULL, 0, &blob[2])) {
+			teCreateSafeArray(pVarResult, blob[2].pbData, blob[2].cbData, param[2].boolVal);
+			LocalFree(blob[2].pbData);
+		}
+	}
+}
+
+VOID teApibase64_decode(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	DWORD dwData;
+	if (pVarResult) {
+		if (CryptStringToBinary(param[0].bstrVal, ::SysStringLen(param[0].bstrVal), CRYPT_STRING_BASE64, NULL, &dwData, NULL, NULL) && dwData > 0) {
+			if (param[1].boolVal) {
+				pVarResult->vt = VT_BSTR;
+				pVarResult->bstrVal = ::SysAllocStringByteLen(NULL, dwData);
+				CryptStringToBinary(param[0].bstrVal, ::SysStringLen(param[0].bstrVal), CRYPT_STRING_BASE64, (BYTE *)pVarResult->bstrVal, &dwData, NULL, NULL);
+			} else {
+				SAFEARRAY *psa = SafeArrayCreateVector(VT_UI1, 0, dwData);
+				if (psa) {
+					PVOID pvData;
+					if (::SafeArrayAccessData(psa, &pvData) == S_OK) {
+						pVarResult->vt = VT_ARRAY | VT_UI1;
+						pVarResult->parray = psa;
+						CryptStringToBinary(param[0].bstrVal, ::SysStringLen(param[0].bstrVal), CRYPT_STRING_BASE64, (BYTE *)pvData, &dwData, NULL, NULL);
+						::SafeArrayUnaccessData(psa);
+					}
+				}
+			}
+		}
+	}
+}
 /*
 VOID teApi(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -8753,6 +8813,9 @@ TEDispatchApi dispAPI[] = {
 	{ 1,  0, -1, -1, "PathIsRoot", teApiPathIsRoot },
 	{ 2, -1, -1, -1, "EnableWindow", teApiEnableWindow },
 	{ 1, -1, -1, -1, "IsWindowEnabled", teApiIsWindowEnabled },
+	{ 2,  0,  1, -1, "CryptProtectData", teApiCryptProtectData },
+	{ 2, -1,  1, -1, "CryptUnprotectData", teApiCryptUnprotectData },
+	{ 1,  0, -1, -1, "base64_decode", teApibase64_decode },
 //	{ 0, -1, -1, -1, "", teApi },
 //	{ 0, -1, -1, -1, "Test", teApiTest },
 };
@@ -8932,6 +8995,29 @@ VOID ArrangeTree(CteShellBrowser *pSB, LPRECT rc)
 		}
 #endif
 		rc->left += pSB->m_param[SB_TreeWidth];
+	}
+}
+
+VOID CALLBACK teTimerProcFocus(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+{
+	try {
+		KillTimer(hwnd, idEvent);
+		CteShellBrowser *pSB = SBfromhwnd(hwnd);
+		if (pSB) {
+#ifdef _FIXWIN10IPBUG1
+			if (pSB->m_hwndLV && pSB->m_param[SB_ViewMode] == FVM_DETAILS) {
+				POINT pt;
+				ListView_GetOrigin(pSB->m_hwndLV, &pt);
+				if (pt.y < 0) {
+					ListView_SetView(pSB->m_hwndLV, LV_VIEW_SMALLICON);
+					ListView_SetView(pSB->m_hwndLV, LV_VIEW_DETAILS);
+				}
+			}
+#endif
+			pSB->FocusItem(TRUE);
+		}
+	} catch (...) {
+		g_nException = 0;
 	}
 }
 
@@ -9118,6 +9204,9 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 											bDirect = FALSE;
 										}
 										pSB->Show(TRUE, 0);
+#ifdef _FIXWIN10IPBUG1
+										SetTimer(pSB->m_hwnd, 1, 64, teTimerProcFocus);
+#endif
 									}
 									MoveWindow(pSB->m_hwnd, rc.left, rc.top, rc.right - rc.left,
 										rc.bottom - rc.top, FALSE);
@@ -9236,27 +9325,6 @@ VOID CALLBACK teTimerProcSort(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTi
 				pFV2->SetSortColumns(&pSB->m_col, 1);
 				pFV2->Release();
 			}
-		}
-	} catch (...) {
-		g_nException = 0;
-	}
-}
-
-VOID CALLBACK teTimerProcFocus(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
-{
-	try {
-		KillTimer(hwnd, idEvent);
-		CteShellBrowser *pSB = SBfromhwnd(hwnd);
-		if (pSB) {
-			if (pSB->m_hwndLV && pSB->m_param[SB_ViewMode] == FVM_DETAILS) {//bug fix 1 for Windows 10 Insider Preview 14986-
-				POINT pt;
-				ListView_GetOrigin(pSB->m_hwndLV, &pt);
-				if (pt.y < 0) {
-					ListView_SetView(pSB->m_hwndLV, LV_VIEW_SMALLICON);
-					ListView_SetView(pSB->m_hwndLV, LV_VIEW_DETAILS);
-				}
-			}
-			pSB->FocusItem(TRUE);
 		}
 	} catch (...) {
 		g_nException = 0;
@@ -9676,7 +9744,7 @@ function _t(o) {\
 	return {window: {external: o}};\
 }\
 ", -1);
-	if (ParseScript(bsScript, L"JScript", NULL, NULL, &g_pJS) != S_OK) {
+	if (ParseScript(bsScript, L"JScript", NULL, &g_pJS, NULL) != S_OK) {
 		teSysFreeString(&bsScript);
 		PostMessage(g_hwndMain, WM_CLOSE, 0, 0);
 		Finalize();
@@ -9774,7 +9842,7 @@ function _t(o) {\
 		VARIANTARG *pv = GetNewVARIANT(1);
 		teSetObject(&pv[0], g_pTE);
 		teExecMethod(g_pJS, L"_t", &vWindow, 1, pv);
-		ParseScript(bsScript, L"JScript", &vWindow, NULL, &pJS);
+		ParseScript(bsScript, L"JScript", &vWindow, &pJS, NULL);
 		teExecMethod(pJS, L"_s", &vResult, 0, NULL);
 		teSysFreeString(&bsScript);
 #endif
@@ -13040,7 +13108,6 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						m_bNavigateComplete = FALSE;
 						OnNavigationComplete2();
 					}
-					SetTimer(m_hwnd, 1, 64, teTimerProcFocus);//bug fix 1 for Windows 10 Insider Preview 14986-
 				}
 				SetListColumnWidth();
 				if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
@@ -13076,6 +13143,16 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				if (m_nFocusItem < 0) {
 					FocusItem(FALSE);
 				}
+#ifdef _FIXWIN10IPBUG1
+				if (m_hwndLV && m_param[SB_ViewMode] == FVM_DETAILS) {
+					POINT pt;
+					ListView_GetOrigin(m_hwndLV, &pt);
+					if (pt.y < 0) {
+						ListView_SetView(m_hwndLV, LV_VIEW_SMALLICON);
+						ListView_SetView(m_hwndLV, LV_VIEW_DETAILS);
+					}
+				}
+#endif
 				return S_OK;
 			case DISPID_INITIALENUMERATIONDONE://XP-
 				SetFolderFlags(FALSE);
@@ -15118,16 +15195,21 @@ STDMETHODIMP CTE::QueryContinueDrag(BOOL fEscapePressed, DWORD grfKeyState)
 		return DRAGDROP_S_CANCEL;
 	}
 	if ((grfKeyState & (MK_LBUTTON | MK_RBUTTON)) == 0) {
+		VARIANT v;
+		VariantInit(&v);
 		if (g_nDropState == 2 && g_pOnFunc[TE_OnBeforeGetData]) {
 			g_nDropState = 0;
+			if (g_pDropTargetHelper) {
+				g_pDropTargetHelper->DragLeave();
+			}
 			VARIANTARG *pv = GetNewVARIANT(3);
 			teSetObject(&pv[2], g_pDraggingCtrl);
 			teSetObject(&pv[1], g_pDraggingItems);
-			teSetLong(&pv[0], 2);
-			Invoke4(g_pOnFunc[TE_OnBeforeGetData], NULL, 3, pv);
+			teSetLong(&pv[0], 4);
+			Invoke4(g_pOnFunc[TE_OnBeforeGetData], &v, 3, pv);
 		}
 		g_nDropState = 0;
-		return DRAGDROP_S_DROP;
+		return GetIntFromVariantClear(&v) ? DRAGDROP_S_CANCEL : DRAGDROP_S_DROP;
 	}
 	return S_OK;
 }
@@ -15861,6 +15943,7 @@ STDMETHODIMP CteWebBrowser::DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEff
 	}
 	*pdwEffect |= m_dwEffect;
 	m_grfKeyState = grfKeyState;
+
 	return hr;
 }
 
@@ -15883,6 +15966,9 @@ STDMETHODIMP CteWebBrowser::Drop(IDataObject *pDataObj, DWORD grfKeyState, POINT
 {
 	HRESULT hr = E_NOTIMPL;
 	DWORD dwEffect = *pdwEffect;
+	if (g_pDropTargetHelper) {
+		g_pDropTargetHelper->DragLeave();
+	}
 	if (m_dwEffectTE) {
 		GetDragItems(&m_pDragItems, pDataObj);
 		hr = DragSub(TE_OnDrop, this, m_pDragItems, &m_grfKeyState, pt, pdwEffect);
@@ -16516,8 +16602,8 @@ VOID CteTabCtrl::Move(int nSrc, int nDest, CteTabCtrl *pDestTab)
 
 VOID CteTabCtrl::LockUpdate()
 {
-	if (InterlockedIncrement(&m_nLockUpdate) == 1) {
-		SendMessage(m_hwndStatic, WM_SETREDRAW, g_bDragging, 0);
+	if (InterlockedIncrement(&m_nLockUpdate) == 1 && !g_bDragging) {
+		SendMessage(m_hwndStatic, WM_SETREDRAW, FALSE, 0);
 		SendMessage(m_hwnd, WM_SETREDRAW, FALSE, 0);
 		teSetRedraw(FALSE);
 	}
@@ -17452,10 +17538,15 @@ CteServiceProvider::~CteServiceProvider()
 
 CteMemory::CteMemory(int nSize, void *pc, int nCount, LPWSTR lpStruct)
 {
+	BOOL bSafeArray = FALSE;
 	m_cRef = 1;
 	m_pc = (char *)pc;
 	m_bsStruct = NULL;
 	m_nStructIndex = -1;
+	if (lstrcmpi(lpStruct, L"SAFEARRAY") == 0) {
+		lpStruct = NULL;
+		bSafeArray = TRUE;
+	}
 	if (lpStruct) {
 		m_nStructIndex = teBSearchStruct(pTEStructs, _countof(pTEStructs), g_maps[MAP_SS], lpStruct);
 		m_bsStruct = ::SysAllocString(lpStruct);
@@ -17465,11 +17556,17 @@ CteMemory::CteMemory(int nSize, void *pc, int nCount, LPWSTR lpStruct)
 	m_nSize = 0;
 	if (nSize > 0) {
 		m_nSize = nSize;
-		if (pc == NULL) {
+		if (pc == NULL || bSafeArray) {
 			m_bsAlloc = ::SysAllocStringByteLen(NULL, nSize);
 			m_pc = (char *)m_bsAlloc;
 			if (m_pc) {
-				::ZeroMemory(m_pc, nSize);
+				PVOID pvData;
+				if (bSafeArray && pc && ::SafeArrayAccessData((SAFEARRAY *)pc, &pvData) == S_OK) {
+					::CopyMemory(pvData, pc, nSize);
+					::SafeArrayUnaccessData((SAFEARRAY *)pc);
+				} else {
+					::ZeroMemory(m_pc, nSize);
+				}
 			}
 		}
 	}
@@ -17484,10 +17581,7 @@ CteMemory::~CteMemory()
 
 void CteMemory::Free(BOOL bpbs)
 {
-	if (m_bsAlloc) {
-		::SysFreeString(m_bsAlloc);
-		m_bsAlloc = NULL;
-	}
+	teSysFreeString(&m_bsAlloc);
 	teSysFreeString(&m_bsStruct);
 	if (bpbs && m_ppbs) {
 		while (--m_nbs >= 0) {
@@ -17850,10 +17944,11 @@ VOID CteMemory::Read(int nIndex, int nLen, VARIANT *pVarResult)
 				}
 				break;
 			case VT_LPSTR:
+			case VT_USERDEFINED:
 				if (nLen > m_nSize) {
 					nLen = m_nSize;
 				}
-				pVarResult->bstrVal = teMultiByteToWideChar(CP_ACP, (LPCSTR)pFrom, nLen);
+				pVarResult->bstrVal = teMultiByteToWideChar(pVarResult->vt != VT_USERDEFINED ? CP_ACP : CP_UTF8, (LPCSTR)pFrom, nLen);
 				pVarResult->vt = VT_BSTR;
 				break;
 			case VT_FILETIME:
@@ -17956,15 +18051,17 @@ VOID CteMemory::Write(int nIndex, int nLen, VARTYPE vt, VARIANT *pv)
 				VariantClear(&v);
 				break;
 			case VT_LPSTR:
+			case VT_USERDEFINED:
 				teVariantChangeType(&v, pv, VT_BSTR);
 				int nLenA;
 				nLenA = 0;
 				if (v.bstrVal) {
-					nLenA = WideCharToMultiByte(CP_ACP, 0, (LPCWSTR)v.bstrVal, nLen, NULL, 0, NULL, NULL) + 1;
+					UINT cp = vt != VT_USERDEFINED ? CP_ACP : CP_UTF8;
+					nLenA = WideCharToMultiByte(cp, 0, (LPCWSTR)v.bstrVal, nLen, NULL, 0, NULL, NULL) + 1;
 					if (nLenA > m_nSize) {
 						nLenA = m_nSize;
 					}
-					WideCharToMultiByte(CP_ACP, 0, (LPCWSTR)v.bstrVal, nLen, (LPSTR)pDest, nLenA - 1, NULL, NULL);
+					WideCharToMultiByte(cp, 0, (LPCWSTR)v.bstrVal, nLen, (LPSTR)pDest, nLenA - 1, NULL, NULL);
 				}
 				((LPSTR)pDest)[nLenA] = NULL;
 				VariantClear(&v);
@@ -20895,22 +20992,19 @@ STDMETHODIMP CteDispatch::Clone(IEnumVARIANT **ppEnum)
 }
 
 //CteActiveScriptSite
-CteActiveScriptSite::CteActiveScriptSite(IUnknown *punk, IUnknown *pOnError)
+CteActiveScriptSite::CteActiveScriptSite(IUnknown *punk, EXCEPINFO *pExcepInfo, HRESULT *phr)
 {
 	m_cRef = 1;
+	m_phr = phr;
 	m_pDispatchEx = NULL;
-	m_pOnError = NULL;
 	if (punk) {
 		punk->QueryInterface(IID_PPV_ARGS(&m_pDispatchEx));
 	}
-	if (pOnError) {
-		pOnError->QueryInterface(IID_PPV_ARGS(&m_pOnError));
-	}
+	m_pExcepInfo = pExcepInfo;
 }
 
 CteActiveScriptSite::~CteActiveScriptSite()
 {
-	SafeRelease(&m_pOnError);
 	SafeRelease(&m_pDispatchEx);
 }
 
@@ -20995,26 +21089,10 @@ STDMETHODIMP CteActiveScriptSite::OnScriptError(IActiveScriptError *pscripterror
 	if (!pscripterror) {
 		return E_POINTER;
 	}
-	HRESULT hr = E_NOTIMPL;
-	if (m_pOnError) {
-		EXCEPINFO ei;
-		hr = pscripterror->GetExceptionInfo(&ei);
-		CteMemory *pei = new CteMemory(sizeof(EXCEPINFO), NULL, 1, L"EXCEPINFO");
-		::CopyMemory(pei->m_pc, &ei, sizeof(EXCEPINFO));
-		VARIANTARG *pv = GetNewVARIANT(5);
-		teSetObjectRelease(&pv[4], pei);
-		pv[3].vt = VT_BSTR;
-		if (pscripterror->GetSourceLineText(&pv[3].bstrVal) != S_OK) {
-			pv[3].bstrVal = NULL;
-		}
-		if (pscripterror->GetSourcePosition(&pv[2].ulVal, &pv[1].ulVal, &pv[0].lVal) == S_OK) {
-			pv[2].vt = VT_I4;
-			pv[1].vt = VT_I4;
-			pv[0].vt = VT_I4;
-		}
-		Invoke4(m_pOnError, NULL, 5, pv);
+	if (m_pExcepInfo && (SUCCEEDED(pscripterror->GetExceptionInfo(m_pExcepInfo)))) {
+		*m_phr = DISP_E_EXCEPTION;
 	}
-	return hr;
+	return S_OK;
 }
 
 STDMETHODIMP CteActiveScriptSite::OnStateChange(SCRIPTSTATE ssScriptState)
@@ -21397,6 +21475,9 @@ STDMETHODIMP CteDropTarget2::Drop(IDataObject *pDataObj, DWORD grfKeyState, POIN
 {
 	GetDragItems(&m_pDragItems, pDataObj);
 	DWORD dwEffect = *pdwEffect;
+	if (g_pDropTargetHelper) {
+		g_pDropTargetHelper->DragLeave();
+	}
 	HRESULT hr = DragSub(TE_OnDrop, m_punk, m_pDragItems, &m_grfKeyState, pt, pdwEffect);
 	if (m_pDropTarget) {
 		if (hr != S_OK) {
@@ -21662,6 +21743,7 @@ STDMETHODIMP CteProgressDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lc
 		if (pVarResult) {
 			VariantInit(pVarResult);
 		}
+		VARIANT v;
 		switch(dispIdMember) {
 			//HasUserCancelled
 			case 0x60010001:
@@ -21670,13 +21752,17 @@ STDMETHODIMP CteProgressDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lc
 			//SetCancelMsg
 			case 0x60010002:
 				if (nArg >= 0) {
-					teSetLong(pVarResult, m_ppd->SetCancelMsg(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]), NULL));
+					teVariantChangeType(&v, &pDispParams->rgvarg[nArg], VT_BSTR);
+					teSetLong(pVarResult, m_ppd->SetCancelMsg(v.bstrVal, NULL));
+					VariantClear(&v);
 				}
 				return S_OK;
 			//SetLine
 			case 0x60010003:
 				if (nArg >= 2) {
-					teSetLong(pVarResult, m_ppd->SetLine(GetIntFromVariant(&pDispParams->rgvarg[nArg]), GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]), NULL));
+					teVariantChangeType(&v, &pDispParams->rgvarg[nArg - 1], VT_BSTR);
+					teSetLong(pVarResult, m_ppd->SetLine(GetIntFromVariant(&pDispParams->rgvarg[nArg]), v.bstrVal, GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]), NULL));
+					VariantClear(&v);
 				}
 				return S_OK;
 			//SetProgress
@@ -21688,7 +21774,9 @@ STDMETHODIMP CteProgressDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lc
 			//SetTitle
 			case 0x60010005:
 				if (nArg >= 0) {
-					teSetLong(pVarResult, m_ppd->SetTitle(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg])));
+					teVariantChangeType(&v, &pDispParams->rgvarg[nArg], VT_BSTR);
+					teSetLong(pVarResult, m_ppd->SetTitle(v.bstrVal));
+					VariantClear(&v);
 				}
 				return S_OK;
 			//StartProgressDialog

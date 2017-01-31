@@ -10,6 +10,9 @@
 #define _2000XP
 //#define _W2000
 #endif
+//bug fix 1 for Windows 10 Insider Preview 14986-
+#define _FIXWIN10IPBUG1
+
 #include "resource.h"
 #include <Mshtml.h>
 #include <mshtmhst.h>
@@ -62,7 +65,12 @@ using namespace Gdiplus;
 #else
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #endif
-//#pragma execution_character_set("utf-8")//KB980263
+#if _MSC_VER >=1600 
+#pragma execution_character_set("utf-8")
+#define CP_TE CP_UTF8
+#else
+#define CP_TE CP_ACP
+#endif
 
 class CteShellBrowser;
 class CteTreeView;
@@ -171,6 +179,7 @@ union teParam
 	IImageList *pImageList;
 	IID iid;
 	VARIANT variant;
+	EXCEPINFO *pExcepInfo;
 };
 
 //Unnamed function
@@ -380,6 +389,10 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define MAP_LENGTH	10
 #else
 #define MAP_LENGTH	9
+
+#define TE_API_RESULT	12
+#define TE_EXCEPINFO	13
+
 #endif
 #ifndef offsetof
 #define offsetof(type, member)	(DWORD)(UINT_PTR)&((type *)0)->member
@@ -1456,7 +1469,7 @@ public:
 	STDMETHODIMP_(ULONG) AddRef();
 	STDMETHODIMP_(ULONG) Release();
 
-	CteActiveScriptSite(IUnknown *punk, IUnknown *pOnError);
+	CteActiveScriptSite(IUnknown *punk, EXCEPINFO *pExcepInfo, HRESULT *phr);
 	~CteActiveScriptSite();
 	//ActiveScriptSite
 	STDMETHODIMP GetLCID(LCID *plcid);
@@ -1476,8 +1489,8 @@ public:
 
 public:
 	IDispatchEx	*m_pDispatchEx;
-	IDispatch *m_pOnError;
-
+	EXCEPINFO *m_pExcepInfo;
+	HRESULT	*m_phr;
 	LONG		m_cRef;
 };
 

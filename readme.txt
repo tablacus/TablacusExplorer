@@ -33,7 +33,7 @@ Hunter User
 https://www.penflip.com/LightTempler/tablacus-explorer
 
 //Build
-Visual C++ 2008 Express Edition SP1
-Windows SDK v7.0 
+Visual C++ 2010 Express Edition SP1
+Windows SDK v7.1 
 
 http://www.eonet.ne.jp/~gakana/tablacus/

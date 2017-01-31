@@ -622,11 +622,11 @@ LoadXml = function (filename, nGroup)
 					}
 					var FV = TC.Selected.Navigate2(Path, SBSP_NEWBROWSER, tab.getAttribute("Type"), tab.getAttribute("ViewMode"), tab.getAttribute("FolderFlags"), tab.getAttribute("Options"), tab.getAttribute("ViewFlags"), tab.getAttribute("IconSize"), tab.getAttribute("Align"), tab.getAttribute("Width"), tab.getAttribute("Flags"), tab.getAttribute("EnumFlags"), tab.getAttribute("RootStyle"), tab.getAttribute("Root"), tab.getAttribute("SizeFormat"));
 					FV.FilterView = tab.getAttribute("FilterView");
-					FV.Data.Lock = api.QuadPart(tab.getAttribute("Lock")) != 0;
+					FV.Data.Lock = api.LowPart(tab.getAttribute("Lock")) != 0;
 					Lock(TC, i2, false);
 				}
 				TC.SelectedIndex = item.getAttribute("SelectedIndex");
-				TC.Visible = api.QuadPart(item.getAttribute("Visible"));
+				TC.Visible = api.LowPart(item.getAttribute("Visible"));
 				break;
 		}
 	}
@@ -649,8 +649,8 @@ SaveXmlTC = function (Ctrl, xml, nGroup)
 	item.setAttribute("TabWidth", Ctrl.TabWidth);
 	item.setAttribute("TabHeight", Ctrl.TabHeight);
 	item.setAttribute("SelectedIndex", Ctrl.SelectedIndex);
-	item.setAttribute("Visible", api.QuadPart(Ctrl.Visible));
-	item.setAttribute("Group", api.QuadPart(nGroup || Ctrl.Data.Group));
+	item.setAttribute("Visible", api.LowPart(Ctrl.Visible));
+	item.setAttribute("Group", api.LowPart(nGroup || Ctrl.Data.Group));
 
 	var bEmpty = true;
 	var nCount2 = Ctrl.Count;
@@ -672,7 +672,7 @@ SaveXmlTC = function (Ctrl, xml, nGroup)
 			item2.setAttribute("SizeFormat", FV.SizeFormat);
 			item2.setAttribute("ViewFlags", FV.ViewFlags);
 			item2.setAttribute("FilterView", FV.FilterView);
-			item2.setAttribute("Lock", api.QuadPart(FV.Data.Lock));
+			item2.setAttribute("Lock", api.LowPart(FV.Data.Lock));
 			var TV = FV.TreeView;
 			item2.setAttribute("Align", TV.Align);
 			item2.setAttribute("Width", TV.Width);
@@ -1208,28 +1208,22 @@ ExecScriptEx = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffec
 			var r = fn.Handled(Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop, FV);
 			return isFinite(r) ? r : window.Handled;
 		}
+		api.ExecScript(s, type,
+			{
+				window: window,
+				Ctrl: Ctrl,
+				pt: pt,
+				hwnd: hwnd,
+				dataObj: dataObj,
+				grfKeyState: grfKeyState,
+				pdwEffect: pdwEffect,
+				bDrop: bDrop,
+				FV: FV
+			}
+		);
 	} catch (e) {
 		ShowError(e, s);
-		return window.Handled;
 	}
-
-	api.ExecScript(s, type,
-		{
-			window: window,
-			Ctrl: Ctrl,
-			pt: pt,
-			hwnd: hwnd,
-			dataObj: dataObj,
-			grfKeyState: grfKeyState,
-			pdwEffect: pdwEffect,
-			bDrop: bDrop,
-			FV: FV
-		},
-		function (ei, SourceLineText, dwSourceContext, lLineNumber, CharacterPosition)
-		{
-			MessageBox(api.SysAllocString(ei.bstrDescription) + api.sprintf(16, "\n%X\n", ei.scode) + api.SysAllocString(ei.bstrSource), TITLE, MB_OK);
-		}
-	);
 	return window.Handled;
 }
 
@@ -1238,7 +1232,7 @@ DropScript = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect,
 	if (!pdwEffect) {
 		pdwEffect = api.Memory("DWORD");
 	}
-	if (s.match("EnableDragDrop")) {
+	if (/EnableDragDrop/.test(s)) {
 		return ExecScriptEx(Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop, FV);
 	}
 	pdwEffect[0] = DROPEFFECT_NONE;
@@ -1289,7 +1283,7 @@ ExtractMacro2 = function (Ctrl, s)
 		}
 		for (var i in eventTE.ExtractMacro) {
 			var re = eventTE.ExtractMacro[i][0];
-			if (s.match(re)) {
+			if (re.test(s)) {
 				s = eventTE.ExtractMacro[i][1](Ctrl, s, re);
 			}
 		}
@@ -1535,9 +1529,9 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec)
 		if (arMenu.length) {
 			item = items[arMenu[0]];
 		}
-		var nBase = api.QuadPart(menus[0].getAttribute("Base"));
+		var nBase = api.LowPart(menus[0].getAttribute("Base"));
 		if (nBase == 1) {
-			if (api.QuadPart(menus[0].getAttribute("Pos")) < 0) {
+			if (api.LowPart(menus[0].getAttribute("Pos")) < 0) {
 				item = items[arMenu[arMenu.length - 1]];
 				if (arMenu.length > 1) {
 					for (var i = arMenu.length; i--;) {
@@ -2468,7 +2462,7 @@ function CalcVersion(s)
 	}
 	res = /(\d+)\.(\d+)\.(\d+)/.exec(s);
 	if (res) {
-		r = api.QuadPart(res[1]) * 10000 + api.QuadPart(res[2]) * 100 + api.QuadPart(res[3]);
+		r = api.LowPart(res[1]) * 10000 + api.LowPart(res[2]) * 100 + api.LowPart(res[3]);
 	}
 	if (r < 2000 * 10000) {
 		r += 2000 * 10000;
@@ -2546,7 +2540,7 @@ GetAddonOption = function (id, strTag)
 
 GetAddonOptionEx = function (id, strTag)
 {
-	return api.QuadPart(GetAddonOption(id, strTag));
+	return api.LowPart(GetAddonOption(id, strTag));
 }
 
 GetInnerFV = function (id)

@@ -270,11 +270,11 @@ LoadConfig = function ()
 		var items = xml.getElementsByTagName('Window');
 		if  (items.length) {
 			var item = items[0];
-			var x = api.QuadPart(item.getAttribute("Left"));
-			var y = api.QuadPart(item.getAttribute("Top"));
+			var x = api.LowPart(item.getAttribute("Left"));
+			var y = api.LowPart(item.getAttribute("Top"));
 			if (x > -30000 && y > -30000) {
-				var w = api.QuadPart(item.getAttribute("Width"));
-				var h = api.QuadPart(item.getAttribute("Height"));
+				var w = api.LowPart(item.getAttribute("Width"));
+				var h = api.LowPart(item.getAttribute("Height"));
 				var pt = {x: x + w / 2, y: y};
 				if (!api.MonitorFromPoint(pt, MONITOR_DEFAULTTONULL)) {
 					var hMonitor = api.MonitorFromPoint(pt, MONITOR_DEFAULTTOPRIMARY);
@@ -609,7 +609,7 @@ EnableDragDrop = function ()
 DisableImage = function (img, bDisable)
 {
 	if (img) {
-		if (api.QuadPart(document.documentMode) < 10) {
+		if (api.LowPart(document.documentMode) < 10) {
 			img.style.filter = bDisable ? "gray(), alpha(style=0,opacity=48);": "";
 		} else {
 			var s = decodeURIComponent(img.src);
@@ -1201,7 +1201,9 @@ AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, 
 		}
 	}
 	if (FV) {
-		te.OnBeforeGetData(FV, Items, 2);
+		if (te.OnBeforeGetData(FV, Items, 2)) {
+			return S_OK;
+		}
 	}
 });
 
@@ -1703,8 +1705,8 @@ te.OnArrange = function (Ctrl, rc)
 		var w2 = 0;
 		var x = '';
 		for (i = 0; i <= 1; i++) {
-			w1 += api.QuadPart(document.getElementById("Inner" + x + "Left_" + Ctrl.Id).style.width.replace(/\D/g, ""));
-			w2 += api.QuadPart(document.getElementById("Inner" + x + "Right_" + Ctrl.Id).style.width.replace(/\D/g, ""));
+			w1 += api.LowPart(document.getElementById("Inner" + x + "Left_" + Ctrl.Id).style.width.replace(/\D/g, ""));
+			w2 += api.LowPart(document.getElementById("Inner" + x + "Right_" + Ctrl.Id).style.width.replace(/\D/g, ""));
 			x = '2';
 		}
 		rc.Left += w1;
@@ -1795,7 +1797,7 @@ te.OnBeginDrag = function (Ctrl)
 
 te.OnBeforeGetData = function (Ctrl, Items, nMode)
 {
-	RunEvent3("BeforeGetData", Ctrl, Items, nMode);
+	return RunEvent2("BeforeGetData", Ctrl, Items, nMode);
 }
 
 te.OnBeginLabelEdit = function (Ctrl)
@@ -1908,7 +1910,7 @@ function ArrangeAddons()
 				var Id = item.nodeName;
 				window.Error_source = Id;
 				if (!AddonId[Id]) {
-					var Enabled = api.QuadPart(item.getAttribute("Enabled"));
+					var Enabled = api.LowPart(item.getAttribute("Enabled"));
 					if (Enabled & 6) {
 						LoadLang2(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\" + Id + "\\lang\\" + GetLangId() + ".xml"));
 					}
@@ -2627,11 +2629,10 @@ g_basic =
 				}
 				var FV = GetFolderView(Ctrl, pt, true);
 				if (FV) {
-					var TC = FV.Parent;
-					if (/^\d/.test(s)) {
-						TC.SelectedIndex = api.QuadPart(s);
-					} else if (/^\-/.test(s)) {
-						TC.SelectedIndex = TC.Count + api.QuadPart(s);
+					var res = /^(\-?)(\d+)/.exec(s);
+					if (res) {
+						var TC = FV.Parent;
+						TC.SelectedIndex = res[1] ? TC.Count - res[2] : res[2];
 					}
 				}
 				return S_OK;
@@ -3060,7 +3061,10 @@ g_basic =
 AddEvent("Exec", function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop)
 {
 	var FV = GetFolderView(Ctrl, pt);
-	te.OnBeforeGetData(FV, dataObj || FV.SelectedItems(), 3);
+	var hr = te.OnBeforeGetData(FV, dataObj || FV.SelectedItems(), 3);
+	if (hr) {
+		return hr;
+	}
 	var fn = g_basic.FuncI(type);
 	if (fn) {
 		if (dataObj) {

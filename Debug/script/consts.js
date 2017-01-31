@@ -998,6 +998,7 @@ VT_UI8     = 21;
 VT_R4      = 4;
 VT_R8      = 5;
 VT_BSTR    = 8;
+VT_UTF8    = 29;
 VT_LPSTR   = 30;
 VT_LPWSTR  = 31;
 VT_PTR     = 26;

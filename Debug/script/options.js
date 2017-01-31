@@ -2160,7 +2160,7 @@ function SelectLangID(o)
 			en = (en && api.StrCmpI(item.text, en)) ? ' / ' + en : "";
 			title = item.text + en + " (" + title + ")\t" + item.getAttribute("author");
 		}
-		api.InsertMenu(hMenu, i, MF_BYPOSITION | MF_STRING, api.QuadPart(i) + 1, title);
+		api.InsertMenu(hMenu, i, MF_BYPOSITION | MF_STRING, api.LowPart(i) + 1, title);
 	}
 	var pt = GetPos(o, true);
 	var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y + o.offsetHeight, te.hwnd, null, null);
