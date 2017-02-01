@@ -262,6 +262,7 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TET_Unload				0x1fa6
 #define TET_Title				0x1fa7
 #define TET_FreeLibrary			0x1fa8
+#define TET_Refresh				0x1fa9
 #define SHGDN_FORPARSINGEX	0x80000000
 #define START_OnFunc			5000
 #define TE_Labels				0
@@ -785,7 +786,7 @@ public:
 	void Close();
 	HWND get_HWND();
 	VOID write(LPWSTR pszPath);
-//	BOOL IsBusy();
+	BOOL IsBusy();
 public:
 	VARIANT m_vData;
 	IWebBrowser2 *m_pWebBrowser;

@@ -1290,12 +1290,12 @@ ExtractMacro2 = function (Ctrl, s)
 		s = s.replace(/%([\w\-_]+)%/g, function (strMatch, ref)
 		{
 			var fn = eventTE.Environment[ref.toLowerCase()];
-			if (typeof(fn) == "string") {
+			if (typeof(fn) == "string" || typeof(fn) == "number") {
 				return fn;
 			} else if (fn) {
 				try {
 					var r = fn(Ctrl);
-					if (typeof(r) == "string") {
+					if (typeof(r) == "string" || typeof(fn) == "number") {
 						return r;
 					}
 				} catch (e) {}
@@ -2462,7 +2462,7 @@ function CalcVersion(s)
 	}
 	res = /(\d+)\.(\d+)\.(\d+)/.exec(s);
 	if (res) {
-		r = api.LowPart(res[1]) * 10000 + api.LowPart(res[2]) * 100 + api.LowPart(res[3]);
+		r = res[1] * 10000 + res[2] * 100 + (res[3] - 0);
 	}
 	if (r < 2000 * 10000) {
 		r += 2000 * 10000;
@@ -2474,7 +2474,7 @@ GethwndFromPid = function (ProcessId, bDT)
 {
 	var hProcess = api.OpenProcess(PROCESS_QUERY_INFORMATION, false, ProcessId);
 	if (hProcess) {
-		api.WaitForInputIdle(hProcess, 10000);
+		api.WaitForInputIdle(hProcess, 9999);
 		api.CloseHandle(hProcess);
 	}
 	var nIndex = bDT ? GWL_EXSTYLE : GWLP_HWNDPARENT;

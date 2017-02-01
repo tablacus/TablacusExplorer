@@ -113,7 +113,7 @@ long	g_nProcFI      = 0;
 long	g_nThreads	   = 0;
 long	g_lSWCookie = 0;
 int		g_nReload = 0;
-int		g_nException = 64;
+int		g_nException = 256;
 int		*g_maps[MAP_LENGTH];
 int		g_param[Count_TE_params];
 int		g_x = MAXINT;
@@ -9058,6 +9058,17 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 					PostMessage(hwnd, WM_CLOSE, 0, 0);
 				}
 				break;
+			case TET_Refresh:
+				if (g_pWebBrowser) {
+					g_nLockUpdate = 0;
+					if (g_pWebBrowser->IsBusy()) {
+						SetTimer(g_hwndMain, TET_Refresh, 100, teTimerProc);
+						return;
+					}
+					ClearEvents();
+					g_pWebBrowser->m_pWebBrowser->Refresh();
+				}
+				break;
 			case TET_Size:
 				GetClientRect(hwnd, &rcClient);
 				rcClient.left += g_param[TE_Left];
@@ -13108,6 +13119,9 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						m_bNavigateComplete = FALSE;
 						OnNavigationComplete2();
 					}
+#ifdef _FIXWIN10IPBUG1
+					SetTimer(m_hwnd, 1, 64, teTimerProcFocus);
+#endif
 				}
 				SetListColumnWidth();
 				if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
@@ -14878,11 +14892,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 					SetTimer(g_hwndMain, TET_Reload, 100, teTimerProc);
 					return S_OK;
 				}
-				if (g_pWebBrowser) {
-					g_nLockUpdate = 0;
-					ClearEvents();
-					g_pWebBrowser->m_pWebBrowser->Refresh();
-				}
+				SetTimer(g_hwndMain, TET_Refresh, 100, teTimerProc);
 				return S_OK;
 			//DIID_DShellWindowsEvents
 			case DISPID_WINDOWREGISTERED:
@@ -15996,7 +16006,6 @@ HWND CteWebBrowser::get_HWND()
 	return hwnd;
 }
 
-/*//
 BOOL CteWebBrowser::IsBusy()
 {
 	VARIANT_BOOL vb;
@@ -16006,9 +16015,8 @@ BOOL CteWebBrowser::IsBusy()
 	}
 	READYSTATE rs;
 	m_pWebBrowser->get_ReadyState(&rs);
-	return rs < READYSTATE_COMPLETE;
+	return rs < READYSTATE_INTERACTIVE;
 }
-//*/
 
 VOID CteWebBrowser::write(LPWSTR pszPath)
 {
@@ -16022,14 +16030,17 @@ VOID CteWebBrowser::write(LPWSTR pszPath)
 			pdisp->Release();
 		}
 	} while (!pDoc);
-	SAFEARRAY *psf = SafeArrayCreateVector(VT_VARIANT, 0, 1);
-	VARIANT *pv;
-	SafeArrayAccessData(psf, (LPVOID *)&pv);
-	teSetSZ(pv, pszPath);
-	SafeArrayUnaccessData(psf);
-	HRESULT hr = pDoc->write(psf);
-	VariantClear(pv);
-	SafeArrayDestroy(psf);			
+	SAFEARRAY *psa = SafeArrayCreateVector(VT_VARIANT, 0, 1);
+	if (psa) {
+		VARIANT *pv;
+		if (::SafeArrayAccessData(psa, (LPVOID *)&pv) == S_OK) {
+			teSetSZ(pv, pszPath);
+			::SafeArrayUnaccessData(psa);
+			pDoc->write(psa);
+			VariantClear(pv);
+		}
+		::SafeArrayDestroy(psa);
+	}
 }
 
 void CteWebBrowser::Close()

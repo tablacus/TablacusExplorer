@@ -984,10 +984,7 @@ function SaveAddons()
 				var Enabled = api.StrCmpI(div.style.color, "gray") ? 1 : 0;
 				if (Enabled) {
 					var AddonFolder = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\" + Id);
-					Enabled = 0;
-					if (fso.FolderExists(AddonFolder + "\\lang")) {
-						Enabled = 2;
-					}
+					Enabled = fso.FolderExists(AddonFolder + "\\lang") ? 2 : 0;
 					if (fso.FileExists(AddonFolder + "\\script.vbs")) {
 						Enabled |= 8;
 					}
