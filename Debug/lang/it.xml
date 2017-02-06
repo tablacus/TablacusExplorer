@@ -141,7 +141,7 @@
 	<text s="Expanded">Esteso</text>
 
 	<text s="Buttons">Pulsanti</text>
-	<text s="Flat buttons">Pulsanti piatti</text>
+	<text s="Flat">Piatto</text>
 	<text s="Scroll opposite">Scorrimento inverso</text>
 	<text s="Multi line">Multi Linea </text>
 	<text s="Fixed width">Larghezza fissa</text>
@@ -213,4 +213,5 @@
 	<text s="Save">Salva</text>
 	<text s="Load">Carica</text>
 	<text s="Get %s...">Ottieni %s...</text>
+	<text s="Results">risultati</text>
 </resources>

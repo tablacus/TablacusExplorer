@@ -141,7 +141,7 @@
 	<text s="Expanded">Расширенный</text>
 
 	<text s="Buttons">Кнопки</text>
-	<text s="Flat buttons">Плоские кнопки</text>
+	<text s="Flat">Плоские</text>
 	<text s="Scroll opposite">Обратный порядок прокрутки</text>
 	<text s="Multi line">Многострочный</text>
 	<text s="Fixed width">Фиксированная ширина</text>
@@ -213,4 +213,5 @@
 	<text s="Save">Сохранить</text>
 	<text s="Load">Загрузить</text>
 	<text s="Get %s...">Получить %s...</text>
+	<text s="Results">Результаты</text>
 </resources>

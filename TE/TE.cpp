@@ -902,6 +902,7 @@ TEmethod methodTE[] = {
 	{ START_OnFunc + TE_OnEndLabelEdit, "OnEndLabelEdit" },
 	{ START_OnFunc + TE_OnReplacePath, "OnReplacePath" },
 	{ START_OnFunc + TE_OnBeginNavigate, "OnBeginNavigate" },
+	{ START_OnFunc + TE_OnSort, "OnSort" },
 	{ 0, NULL }
 };
 
@@ -3955,6 +3956,14 @@ VOID teSetIDList(VARIANT *pv, LPITEMIDLIST pidl)
 	}
 }
 
+int teGetObjectLength(IDispatch *pdisp)
+{
+	VARIANT v;
+	VariantInit(&v);
+	teGetProperty(pdisp, L"length", &v);
+	return GetIntFromVariantClear(&v);
+}
+
 BOOL GetDataObjFromVariant(IDataObject **ppDataObj, VARIANT *pv)
 {
 	*ppDataObj = NULL;
@@ -3991,11 +4000,10 @@ BOOL GetDataObjFromVariant(IDataObject **ppDataObj, VARIANT *pv)
 		}
 		IDispatchEx *pdex;
 		if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pdex))) {
-			VARIANT v;
-			VariantInit(&v);
-			teGetProperty(pdex, L"length", &v);
-			long lCount = GetIntFromVariantClear(&v);
+			long lCount = teGetObjectLength(pdex);
 			if (lCount) {
+				VARIANT v;
+				VariantInit(&v);
 				CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL, true);
 				for (int i = 0; i < lCount; i++) {
 					teGetPropertyAt(pdex, i, &v);
@@ -4501,41 +4509,59 @@ HRESULT DoFunc(int nFunc, PVOID pObj, HRESULT hr)
 static void threadAddItems(void *args)
 {
 	::OleInitialize(NULL);
+	WCHAR pszMsg[MAX_PATH];
 	LPOLESTR lpShift = L"shift";
 	DISPID dispidShift;
 	LPITEMIDLIST pidl;
+	IProgressDialog *ppd;
 
 	TEAddItems *pAddItems = (TEAddItems *)args;
 	IDispatch *pSB;
 	CoGetInterfaceAndReleaseStream(pAddItems->pStrmSB, IID_PPV_ARGS(&pSB));
 	IDispatch *pArray;
 	CoGetInterfaceAndReleaseStream(pAddItems->pStrmArray, IID_PPV_ARGS(&pArray));
+	CoCreateInstance(CLSID_ProgressDialog, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&ppd));
 	try {
+		ppd->StartProgressDialog(g_hwndMain, NULL, PROGDLG_NORMAL | PROGDLG_AUTOTIME, NULL);
+		if (!LoadString(g_hShell32, 13585, pszMsg, MAX_PATH)) {
+			LoadString(g_hShell32, 6478, pszMsg, MAX_PATH);
+		}
+		ppd->SetLine(1, pszMsg, TRUE, NULL);
 		HRESULT hr = pArray->GetIDsOfNames(IID_NULL, &lpShift, 1, LOCALE_USER_DEFAULT, &dispidShift);
 		if (hr == S_OK) {
-			while (Invoke5(pArray, dispidShift, DISPATCH_METHOD, &pAddItems->pv[1], 0, NULL) == S_OK && pAddItems->pv[1].vt != VT_EMPTY) {
+			int nCurrent = 0;
+			int nCount = teGetObjectLength(pArray);
+			while (!ppd->HasUserCancelled() && Invoke5(pArray, dispidShift, DISPATCH_METHOD, &pAddItems->pv[1], 0, NULL) == S_OK && pAddItems->pv[1].vt != VT_EMPTY) {
+				ppd->SetProgress(++nCurrent, nCount);
+				swprintf_s(pszMsg, MAX_PATH, L"%d%%", nCurrent * 100 / nCount);
+				ppd->SetTitle(pszMsg);
 				if (!teGetIDListFromVariant(&pidl, &pAddItems->pv[1], TRUE) && pAddItems->bDeleted && pAddItems->pv[1].vt == VT_BSTR) {
 					pidl = teSHSimpleIDListFromPath(pAddItems->pv[1].bstrVal, FALSE);
 				}
 				if (pidl) {
 					VariantClear(&pAddItems->pv[1]);
 					teSetIDList(&pAddItems->pv[1], pidl);
+					if (SHGetPathFromIDList(pidl, pszMsg)) {						
+						ppd->SetLine(2, PathFindFileName(pszMsg), TRUE, NULL);
+					}
 					teCoTaskMemFree(pidl);
-					if (Invoke5(pSB, 0x10000501, DISPATCH_METHOD, NULL, -2, pAddItems->pv) != S_OK) {
+					if (Invoke5(pSB, 0x10000501, DISPATCH_METHOD, NULL, -2, pAddItems->pv) == E_ACCESSDENIED) {
 						break;
 					}
 				}
 				VariantClear(&pAddItems->pv[1]);
 			}
 			if (pAddItems->bNavigateComplete) {
-				Invoke5(pSB, 0x10000500, DISPATCH_METHOD, NULL, NULL, NULL);
+				Invoke5(pSB, 0x10000500, DISPATCH_METHOD, NULL, 0, NULL);
 			}
 		}
 	} catch (...) {}
+	ppd->StopProgressDialog();
 	teClearVariantArgs(2, pAddItems->pv);
 	delete [] pAddItems;
-	pArray->Release();
-	pSB->Release();
+	SafeRelease(&pArray);
+	SafeRelease(&pSB);
+	SafeRelease(&ppd);
 	::OleUninitialize();
 	::_endthread();
 }
@@ -5990,6 +6016,7 @@ VOID teApiContextMenu(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT
 						}
 						RegCloseKey(hKey);
 					}
+					SafeRelease(&pDataObj);
 				}
 				teCoTaskMemFree(pidl);
 			}
@@ -6011,6 +6038,7 @@ VOID teApiContextMenu(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT
 					teILCloneReplace(&ppidllist[i + 1], teILCreateFromPath(bs));
 					SysFreeString(bs);
 				}
+				teCoTaskMemFree(ppidllist[i + 1]);
 				teCoTaskMemFree(pidlFull);
 			}
 			teILFreeClear(&ppidllist[0]);
@@ -6140,10 +6168,7 @@ VOID teApiExecMethod(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 	if (GetDispatch(&pDispParams->rgvarg[nArg], &pdisp)) {
 		IDispatch *pdisp1 = NULL;
 		if (GetDispatch(&pDispParams->rgvarg[nArg - 2], &pdisp1)) {
-			VARIANT v;
-			VariantInit(&v);
-			teGetProperty(pdisp1, L"length", &v);
-			int nCount = GetIntFromVariantClear(&v);
+			int nCount = teGetObjectLength(pdisp);
 			VARIANTARG *pv = GetNewVARIANT(nCount);
 			for (int i = nCount; i-- > 0;) {
 				teGetPropertyAt(pdisp1, nCount - i - 1, &pv[i]);//Reverse argument
@@ -12959,7 +12984,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					if (nArg >= 1) {
 						DWORD dwSessionId = GetIntFromVariant(&pDispParams->rgvarg[0]);
 						if (dwSessionId != m_dwSessionId) {
-							return S_FALSE;
+							return E_ACCESSDENIED;
 						}
 					}
 					IFolderView *pFV = NULL;
@@ -13002,28 +13027,32 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 								teSysFreeString(&bs);
 							}
 							if (hr == S_OK) {
-								IResultsFolder *pRF;
-								if (SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) && SUCCEEDED(pFV->GetFolder(IID_PPV_ARGS(&pRF)))) {
-									pRF->AddIDList(pidl, &pidlChild);
-									BSTR bs2 = NULL;
-									if (FAILED(teGetDisplayNameBSTR(m_pSF2, pidlChild, SHGDN_NORMAL, &bs2)) || !bs2[0]) {
-										pRF->RemoveIDList(pidl);
-										hr = E_FAIL;
+								m_pTC->LockUpdate();
+								try {
+									IResultsFolder *pRF;
+									if (SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) && SUCCEEDED(pFV->GetFolder(IID_PPV_ARGS(&pRF)))) {
+										pRF->AddIDList(pidl, &pidlChild);
+										BSTR bs2 = NULL;
+										if (FAILED(teGetDisplayNameBSTR(m_pSF2, pidlChild, SHGDN_NORMAL, &bs2)) || !bs2[0]) {
+											pRF->RemoveIDList(pidl);
+											hr = E_FAIL;
+										}
+										teSysFreeString(&bs2);
+										pRF->Release();
 									}
-									teSysFreeString(&bs2);
-									pRF->Release();
-								}
 #ifdef _2000XP
-								else if (ILIsEqual(m_pidl, g_pidlResultsFolder)) {
-									IShellFolderView *pSFV;
-									if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pSFV))) {
-										pidlChild = teILCreateResultsXP(pidl);
-										UINT ui;
-										pSFV->AddObject(pidlChild, &ui);
-										pSFV->Release();
+									else if (ILIsEqual(m_pidl, g_pidlResultsFolder)) {
+										IShellFolderView *pSFV;
+										if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pSFV))) {
+											pidlChild = teILCreateResultsXP(pidl);
+											UINT ui;
+											pSFV->AddObject(pidlChild, &ui);
+											pSFV->Release();
+										}
 									}
-								}
 #endif
+								} catch (...) {}
+								m_pTC->UnLockUpdate(FALSE);
 							}
 							SafeRelease(&pFV);
 							if (pidlChild) {
@@ -13167,7 +13196,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					}
 				}
 #endif
-				return S_OK;
+				return DoFunc(TE_OnSort, this, S_OK);;
 			case DISPID_INITIALENUMERATIONDONE://XP-
 				SetFolderFlags(FALSE);
 				return S_OK;
@@ -13502,6 +13531,35 @@ STDMETHODIMP CteShellBrowser::SelectItem(VARIANT *pvfi, int dwFlags)
 			}
 		}
 	}
+/*	IDataObject *pDataObj;
+	if (m_pShellView && GetDataObjFromVariant(&pDataObj, pvfi)) {
+		if (m_hwndLV && (dwFlags & SVSI_FOCUSED)) {// bug fix
+#ifdef _2000XP
+			if (g_bUpperVista) {
+#endif
+				int nFocused = ListView_GetNextItem(m_hwndLV, -1, LVNI_ALL | LVNI_FOCUSED);
+				if (nFocused >= 0) {
+					ListView_SetItemState(m_hwndLV, nFocused, 0, LVIS_FOCUSED);
+				}
+#ifdef _2000XP
+			}
+#endif
+		}
+		long nCount;
+		LPITEMIDLIST *ppidllist = IDListFormDataObj(pDataObj, &nCount);
+		if (ppidllist) {
+			if (nCount >= 1 &&  ppidllist[0]) {
+				for (int i = nCount; i-- > 0;) {
+					m_pShellView->SelectItem(ppidllist[i + 1], dwFlags);
+					teCoTaskMemFree(ppidllist[i + 1]);
+				}
+				teILFreeClear(&ppidllist[0]);
+			}
+			delete [] ppidllist;
+		}
+		SafeRelease(&pDataObj);
+		return S_OK;
+	}*/
 	teGetIDListFromVariant(&pidl, pvfi);
 	return SelectItemEx(&pidl, dwFlags, TRUE);
 }
@@ -17001,11 +17059,8 @@ STDMETHODIMP CteFolderItems::get_Count(long *plCount)
 		return m_pFolderItems->get_Count(plCount);
 	}
 	if (m_oFolderItems) {
-		VARIANT v;
-		VariantInit(&v);
-		HRESULT hr = teGetProperty(m_oFolderItems, L"length", &v);
-		*plCount = GetIntFromVariantClear(&v);
-		return hr;
+		*plCount = teGetObjectLength(m_oFolderItems);
+		return S_OK;
 	}
 	if (m_nCount < 0) {
 		if (m_pDataObj) {

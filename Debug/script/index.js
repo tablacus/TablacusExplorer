@@ -1815,6 +1815,11 @@ te.OnReplacePath = function (FolderItem)
 	return RunEvent4("ReplacePath", FolderItem, api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
 }
 
+te.OnSort = function (Ctrl)
+{
+	return RunEvent1("Sort", Ctrl);
+}
+
 //Tablacus Events
 
 GetIconImage = function (Ctrl, BGColor)

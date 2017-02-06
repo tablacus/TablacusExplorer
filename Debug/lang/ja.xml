@@ -141,7 +141,7 @@
 	<text s="Expanded">展開する</text>
 
 	<text s="Buttons">ボタン</text>
-	<text s="Flat buttons">フラットボタン</text>
+	<text s="Flat">フラット</text>
 	<text s="Scroll opposite">選択されていないタブを反対に移動</text>
 	<text s="Multi line">複数行</text>
 	<text s="Fixed width">幅固定</text>
@@ -213,4 +213,5 @@
 	<text s="Save">保存</text>
 	<text s="Load">読み込み</text>
 	<text s="Get %s...">%s を入手...</text>
+	<text s="Results">結果</text>
 </resources>

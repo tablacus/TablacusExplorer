@@ -310,7 +310,8 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TE_OnEndLabelEdit		42
 #define TE_OnReplacePath		43
 #define TE_OnBeginNavigate		44
-#define Count_OnFunc			45
+#define TE_OnSort				45
+#define Count_OnFunc			46
 
 #define SB_TotalFileSize		0
 #define SB_OnIncludeObject		1

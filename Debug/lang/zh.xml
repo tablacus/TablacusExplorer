@@ -141,7 +141,7 @@
 	<text s="Expanded">展開</text>
 
 	<text s="Buttons">按鈕</text>
-	<text s="Flat buttons">平面按鈕</text>
+	<text s="Flat">平面</text>
 	<text s="Scroll opposite">對立面捲動</text>
 	<text s="Multi line">複數行</text>
 	<text s="Fixed width">固定寬度</text>
@@ -213,4 +213,5 @@
 	<text s="Save">儲存</text>
 	<text s="Load">載入</text>
 	<text s="Get %s...">取得 %s...</text>
+	<text s="Results">結果</text>
 </resources>

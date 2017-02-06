@@ -592,7 +592,7 @@ LoadXml = function (filename, nGroup)
 		}
 	}
 	var xml = filename;
-	if (typeof(filename) == "string") {
+	if (/string/i.test(typeof filename)) {
 		filename = api.PathUnquoteSpaces(filename);
 		if (fso.FileExists(filename)) {
 			xml = te.CreateObject("Msxml2.DOMDocument");
@@ -851,7 +851,7 @@ NavigateFV = function (FV, Path, wFlags)
 		var TC = te.CreateCtrl(CTRL_TC, 0, 0, "100%", "100%", te.Data.Tab_Style, te.Data.Tab_Align, te.Data.Tab_TabWidth, te.Data.Tab_TabHeight);
 		FV = TC.Selected;
 	}
-	if (typeof(Path) == "string") {
+	if (/string/i.test(typeof Path)) {
 		if (/%([^%]+)%/.test(Path)) {
 			Path = ExtractMacro(FV, Path);
 		}
@@ -949,7 +949,7 @@ SaveLayout = function ()
 
 GetPos = function (o, bScreen, bAbs, bPanel, bBottom)
 {
-	if (typeof(bScreen) == "number") {
+	if (/number/i.test(typeof bScreen)) {
 		bAbs = bScreen & 2;
 		bPanel = bScreen & 4;
 		bBottom = bScreen & 8;
@@ -1276,7 +1276,7 @@ ExtractMacro2 = function (Ctrl, s)
 			var res = re.exec(s);
 			if (res) {
 				var r = eventTE.ReplaceMacro[i][1](Ctrl, re, res);
-				if (typeof(r) == "string") {
+				if (/string|number/i.test(typeof r)) {
 					s = s.replace(re, r);
 				}
 			}
@@ -1290,12 +1290,12 @@ ExtractMacro2 = function (Ctrl, s)
 		s = s.replace(/%([\w\-_]+)%/g, function (strMatch, ref)
 		{
 			var fn = eventTE.Environment[ref.toLowerCase()];
-			if (typeof(fn) == "string" || typeof(fn) == "number") {
+			if (/string|number/i.test(typeof fn)) {
 				return fn;
 			} else if (fn) {
 				try {
 					var r = fn(Ctrl);
-					if (typeof(r) == "string" || typeof(fn) == "number") {
+					if (/string|number/i.test(typeof r)) {
 						return r;
 					}
 				} catch (e) {}
@@ -1312,7 +1312,7 @@ ExtractMacro2 = function (Ctrl, s)
 
 ExtractMacro = function (Ctrl, s)
 {
-	if (typeof(s) == "string") {
+	if (/string/i.test(typeof s)) {
 		s = ExtractMacro2(Ctrl, s);
 		if (!/\t/.test(s) && /%/.test(s)) {
 			do {
@@ -1369,7 +1369,12 @@ AddEnv("TE_Config", function ()
 
 AddEvent("ReplaceMacroEx", [/%res:(\d+)%/ig, function (strMatch, ref1)
 {
-	return api.LoadString(hShell32, ref1);
+	return api.LoadString(hShell32, ref1) || "";
+}]);
+
+AddEvent("ReplaceMacroEx", [/%AddonStatus:([^%]*)%/ig, function (strMatch, ref1)
+{
+	return api.LowPart(GetAddonElement(ref1).getAttribute("Enabled")) ? "on" : "off";
 }]);
 
 PathMatchEx = function (path, s)
@@ -1395,9 +1400,7 @@ OpenMenu = function (items, SelItem)
 	var arMenu;
 	var path = "";
 	if (SelItem) {
-		if (typeof(SelItem) != "object") {
-			path = SelItem;	
-		} else {
+		if (/object/i.test(typeof SelItem)) {
 			var link = SelItem.ExtendedProperty("linktarget");
 			path = link || String(api.GetDisplayNameOf(SelItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX));
 			arMenu = OpenMenu(items, path);
@@ -1405,6 +1408,8 @@ OpenMenu = function (items, SelItem)
 				return arMenu;
 			}
 			path += ".folder";
+		} else {
+			path = SelItem;	
 		}
 	}
 	arMenu = [];
@@ -1908,7 +1913,7 @@ AddMenuIconFolderItem = function (mii, FolderItem)
 {
 	var image = te.GdiplusBitmap();
 	var sfi = api.Memory("SHFILEINFO");
-	var path = typeof(FolderItem) == "string" ? FolderItem : api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING);
+	var path = /string/i.test(typeof FolderItem) ? FolderItem : api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING);
 	if (api.PathIsNetworkPath(path)) {
 		if (fso.GetDriveName(path) != path.replace(/\\$/, "")) {
 			MenusIcon(mii, WINVER >= 0x600 ? "icon:shell32.dll,275,16" : "icon:shell32.dll,85,16");
@@ -2495,7 +2500,7 @@ GethwndFromPid = function (ProcessId, bDT)
 
 PopupContextMenu = function (Item, FV)
 {
-	if (typeof(Item) == "string") {
+	if (/string/i.test(typeof Item)) {
 		var arg = api.CommandLineToArgv(Item);
 		Item = te.FolderItems();
 		for (var i in arg) {

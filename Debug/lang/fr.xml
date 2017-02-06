@@ -141,7 +141,7 @@
 	<text s="Expanded">Etendu</text>
 
 	<text s="Buttons">Boutons</text>
-	<text s="Flat buttons">Boutons plats</text>
+	<text s="Flat">Plat</text>
 	<text s="Scroll opposite">Défilement opposé</text>
 	<text s="Multi line">Multi-ligne</text>
 	<text s="Fixed width">Largeur fixe</text>
@@ -213,4 +213,5 @@
 	<text s="Save">Enregistrer</text>
 	<text s="Load">Charger</text>
 	<text s="Get %s...">Obternir des %s...</text>
+	<text s="Results">Résultats</text>
 </resources>

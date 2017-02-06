@@ -141,7 +141,7 @@
 	<text s="Expanded">Erweitert</text>
 
 	<text s="Buttons">Buttons</text>
-	<text s="Flat buttons">Flache Buttons</text>
+	<text s="Flat">Flache</text>
 	<text s="Scroll opposite">Scrollrichtung tauschen</text>
 	<text s="Multi line">MehrzeiligM</text>
 	<text s="Fixed width">Feste Breite</text>
@@ -213,4 +213,5 @@
 	<text s="Save">Speichern</text>
 	<text s="Load">Lade</text>
 	<text s="Get %s...">%s hinzufügen...</text>
+	<text s="Results">Ergebnisse</text>
 </resources>
