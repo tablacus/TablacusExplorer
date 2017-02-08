@@ -1686,20 +1686,24 @@ InitLocation = function ()
 	for (var i in items) {
 		locs[i] = [];
 		for (var j in items[i]) {
-			info = GetAddonInfo(items[i][j]);
-			locs[i].push(info.Name);
+			var ar = items[i][j].split("\0");
+			info = GetAddonInfo(ar[0]);
+			if (ar[1]) {
+				locs[i].push('<img src="', ar[1], '" title="', info.Name.replace(/"/g, ""), '" class="img1"> ');
+			} else {
+				locs[i].push('<span class="text1">', info.Name, '</span> ');
+			}
 		}
 	}
 	for (var i in locs) {
-		var s = locs[i].join(", ").replace('"', "");
+		var s = locs[i].join("");
 		try {
 			var o = document.getElementById('_' + i);
 			ApplyLang(o);
-			var s2 = o.innerHTML.replace(/<[^>]*>|[\r\n]|\s\s+/g, "");
-			o.innerHTML = ['<input type="text" value="', s, '" title="', s2, '" placeholder="', s2, '" style="width: 85%" readonly="readonly" />'].join("");
+			o.parentNode.title = o.innerHTML.replace(/<[^>]*>|[\r\n]|\s\s+/g, "");
+			o.innerHTML = s;
 		} catch (e) {}
 	}
-
 	var oa = document.F.Menu;
 	oa.length = 0;
 	var o = oa[++oa.length - 1];
@@ -1930,7 +1934,7 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter)
 					api.GetCursorPos(pt);
 				}
 				var r = MainWindow.OptionRef(o[o.selectedIndex].value, GetElement(Id).value, pt);
-				if (typeof r == "string") {
+				if (/string/i.test(typeof r)) {
 					var p = { s: r };
 					MainWindow.OptionDecode(o[o.selectedIndex].value, p);
 					if (bMultiLine && api.GetKeyState(VK_CONTROL) < 0 && api.ILCreateFromPath(p.s)) {

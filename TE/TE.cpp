@@ -934,6 +934,7 @@ TEmethod methodSB[] = {
 	{ 0x10000050, "ShellFolderView" },
 	{ 0x10000058, "Droptarget" },
 	{ 0x10000059, "Columns"},
+//	{ 0x1000005A, "Searches"},
 	{ 0x10000102, "hwndList" },
 	{ 0x10000103, "hwndView" },
 	{ 0x10000104, "SortColumn" },
@@ -3974,7 +3975,7 @@ BOOL GetDataObjFromVariant(IDataObject **ppDataObj, VARIANT *pv)
 		}
 		FolderItems *pItems;
 		if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pItems))) {
-			long lCount;
+			long lCount = 0;
 			pItems->get_Count(&lCount);
 			if (lCount) {
 				CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL, true);
@@ -12659,6 +12660,28 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					pVarResult->bstrVal = GetColumnsStr(nFormat);
 				}
 				return S_OK;
+/*			//Searches //test
+			case 0x1000005A:
+				IDispatch *pArray;
+				GetNewArray(&pArray);
+				IEnumExtraSearch *pees;
+				if SUCCEEDED(m_pSF2->EnumSearches(&pees)) {
+					EXTRASEARCH es;
+					ULONG ulFetched;
+					VARIANT v;
+					VariantInit(&v);
+					WCHAR pszBuff[SIZE_BUFF];
+					while (pees->Next(1, &es, &ulFetched) == S_OK) {
+						StringFromGUID2(es.guidSearch, pszBuff, 39);
+						swprintf_s(&pszBuff[40], SIZE_BUFF, L"\t\s\t\s", es.wszFriendlyName, es.wszUrl);
+						teSetSZ(&v, pszBuff);
+						teExecMethod(pArray, L"push", NULL, -1, &v);
+						VariantClear(&v);
+					}
+					pees->Release();
+				}
+				teSetObjectRelease(pVarResult, pArray);
+				return S_OK;*/
 			//hwndList
 			case 0x10000102:
 				teSetPtr(pVarResult, m_hwndLV);

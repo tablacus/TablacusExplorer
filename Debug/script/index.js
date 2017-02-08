@@ -640,7 +640,7 @@ DisableImage = function (img, bDisable)
 te.OnCreate = function (Ctrl)
 {
 	if (Ctrl.Type == CTRL_TE) {
-		if (g_.xmlWindow && typeof(g_.xmlWindow) != "string") {
+		if (g_.xmlWindow && !/string/i.test(typeof g_.xmlWindow)) {
 			LoadXml(g_.xmlWindow);
 		}
 		if (te.Ctrls(CTRL_TC).length == 0) {
@@ -999,6 +999,8 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 			}
 		}
 		if (Ctrl.Type == CTRL_SB && api.SendMessage(hwnd, LVM_GETEDITCONTROL, 0, 0)) {
+			var iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
+			g_.mouse.Select = iItem >= 0 ? Ctrl.Items.Item(iItem) : null;
 			g_.mouse.Deselect = Ctrl;
 			return S_OK;
 		}
@@ -1063,8 +1065,9 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 			g_.mouse.ptGesture.y = -1;
 		}
 		if (g_.mouse.Deselect) {
-			g_.mouse.Deselect.SelectItem(null, SVSI_DESELECTOTHERS);
+			g_.mouse.Deselect.SelectItem(g_.mouse.Select, (g_.mouse.Select ? SVSI_SELECT | SVSI_FOCUSED : 0) | (api.GetKeyState(VK_CONTROL) < 0 ? 0 : SVSI_DESELECTOTHERS));
 			delete g_.mouse.Deselect;
+			delete g_.mouse.Select
 		}
 	}
 	return g_.mouse.str.length >= 2 ? S_OK : S_FALSE;
@@ -1120,7 +1123,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 	if (isFinite(hr)) {
 		return hr; 
 	}
-	if (typeof(Directory) == "string" && !fso.FolderExists(Directory)) {
+	if (/string/i.test(typeof Directory) && !fso.FolderExists(Directory)) {
 		return S_FALSE;
 	}
 	var Items = ContextMenu.Items();
@@ -1959,18 +1962,12 @@ function SetAddon(strName, Location, Tag, strVAlign)
 		}
 	}
 	if (Tag) {
-		if (strName) {
-			if (!te.Data.Locations[Location]) {
-				te.Data.Locations[Location] = te.Array();
-			}
-			te.Data.Locations[Location].push(strName);
-		}
 		if (Tag.join) {
 			Tag = Tag.join("");
 		}
 		var o = document.getElementById(Location);
 		if (o) {
-			if (typeof(Tag) == "string") {
+			if (/string/i.test(typeof Tag)) {
 				o.insertAdjacentHTML("BeforeEnd", Tag);
 			} else {
 				o.appendChild(Tag);
@@ -1984,6 +1981,16 @@ function SetAddon(strName, Location, Tag, strVAlign)
 			{
 				SetAddon(null, "Inner1Left_" + Ctrl.Id, Tag.replace(/\$/g, Ctrl.Id));
 			});
+		}
+		if (strName) {
+			if (!te.Data.Locations[Location]) {
+				te.Data.Locations[Location] = te.Array();
+			}
+			var res = /<img.*?src=["'](.*?)["']/i.exec(String(Tag));
+			if (res) {
+				strName += "\0" + res[1];
+			}
+			te.Data.Locations[Location].push(strName);
 		}
 	}
 	return Location;
@@ -2193,7 +2200,7 @@ KeyExecEx = function (Ctrl, mode, nKey, hwnd)
 function InitMouse()
 {
 	te.Data.Conf_Gestures = isFinite(te.Data.Conf_Gestures) ? Number(te.Data.Conf_Gestures) : 2;
-	if (typeof(te.Data.Conf_TrailColor) == "string") {
+	if (/string/i.test(typeof te.Data.Conf_TrailColor)) {
 		te.Data.Conf_TrailColor = GetWinColor(te.Data.Conf_TrailColor);
 	}
 	if (!isFinite(te.Data.Conf_TrailColor)) {
@@ -2425,7 +2432,7 @@ g_basic =
 				if (res) {
 					var Id = GetSourceText(res[1]);
 					var r = OptionRef(Id, "", pt);
-					if (typeof r == "string") {
+					if (/string/i.test(typeof r)) {
 						return s + r + "\n";
 					}
 					return r;

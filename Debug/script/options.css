@@ -64,3 +64,15 @@ input[type="text"] {
 .footer {
 	width: 100%; line-height: 1.5em
 }
+
+.text1 {
+	color: WindowText;
+	background-color: Window;
+	border: 1px solid ButtonShadow;
+	white-space: nowrap;
+}
+
+.img1 {
+	max-width: 1.333em;
+	max-height: 1.333em;
+}

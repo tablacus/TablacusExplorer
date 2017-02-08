@@ -26,28 +26,28 @@
       --><input type="button" id="tab9" value="Mouse" class="tab" onmousedown="ClickTab(this, 1);" hidefocus="true" style="display: none" /><!--
     --></div>
 
-    <div class="panel" id="panel6">
+    <div class="panel" id="panel6" style="background-color: AppWorkspace">
       <form name="L">
-        <table class="window" border="1" style="width: 100%">
+        <table class="window" id="tewin" border="1" style="width: 100%; color: ButtonText; background-color: ButtonFace; border: 2px ridge windowframe">
           <tr>
-            <th colspan="3" style="color: black; background-color: #316AC5; align: center">
+            <th colspan="3" style="color: CaptionText; background-color: ActiveCaption; align: center">
               <label>Title Bar</label>
             </th>
           </tr>
           <tr>
-            <td style="width: 33%">
+            <td>
               <input name="Location" type="radio" value="ToolBar1Left" />
               <span id="_ToolBar1Left">
                 <label>Tool Bar</label> 1 <label>Left</label>
               </span>
             </td>
-            <td style="width: 33%">
+            <td>
               <input name="Location" type="radio" value="ToolBar1Center" />
               <span id="_ToolBar1Center">
                 <label>Tool Bar</label> 1 <label>Center</label>
               </span>
             </td>
-            <td style="width: 33%">
+            <td>
               <input name="Location" type="radio" value="ToolBar1Right" />
               <span id="_ToolBar1Right">
                 <label>Tool Bar</label> 1 <label>Right</label>
@@ -247,8 +247,9 @@
             </td>
           </tr>
         </table>
+        <div>
         <input name="Location" type="radio" value="None" />
-        <label>None</label>&nbsp;<span id="_None"></span>
+        <span id="_None"><label>None</label></span></div>
         </form>
     </div>
     <!--panel_end-->
