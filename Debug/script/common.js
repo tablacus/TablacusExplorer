@@ -2234,7 +2234,7 @@ function GetAddons()
 
 function CheckUpdate()
 {
-	OpenHttpRequest("https://www.eonet.ne.jp/~gakana/tablacus/explorer_en.html", "text/html", CheckUpdate2);
+	OpenHttpRequest("http://www.eonet.ne.jp/~gakana/tablacus/explorer_en.html", "text/html", CheckUpdate2);
 }
 
 function CheckUpdate2(xhr)
@@ -2273,7 +2273,7 @@ function CheckUpdate2(xhr)
 	DeleteItem(temp);
 	CreateFolder2(temp);
 
-	if (DownloadFile("https://www.eonet.ne.jp/~gakana/tablacus/dl/" + file, zipfile) != S_OK || Extract(zipfile, temp) != S_OK) {
+	if (DownloadFile("http://www.eonet.ne.jp/~gakana/tablacus/dl/" + file, zipfile) != S_OK || Extract(zipfile, temp) != S_OK) {
 		return;
 	}
 	var te64exe = temp + "\\te64.exe";
@@ -2970,44 +2970,9 @@ RegEnumKey = function(hKey, Name)
 	return [];
 }
 
-FindText = function (s)
+FindText = function ()
 {
-	if (s) {
-		var bFound = true;
-		var rng = document.body.createTextRange();
-
-		while (bFound) {
-			for (var i = 0; i <= g_.nFind && (bFound = rng.findText(s)); i++) {
-				rng.moveStart("character", 1);
-				rng.moveEnd("textedit");
-			}
-			if (bFound) {
-				rng.moveStart("character", -1);
-				rng.findText(s);
-				document.body.onselectstart = null;
-				try {
-					rng.select();
-					bFound = false;
-				} catch (e) {}
-				document.body.onselectstart = DetectProcessTag;
-				rng.scrollIntoView();
-				g_.nFind++;
-			} else {
-				g_.nFind = 0;
-			}
-		}
-		return;
-	}
 	api.OleCmdExec(document, null, 32, 0, 0);
-}
-
-FindKeyEvent = function (o)
-{
-	if (event.keyCode == VK_RETURN) {
-		FindText(o.value);
-		return false;
-	}
-	g_.nFind = 0;
 }
 
 OpenDialogEx = function (path, filter, bFilesOnly)

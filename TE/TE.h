@@ -248,6 +248,7 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define MAX_CSIDL				256
 #define MAX_FORMATS				1024
 #define MAX_TC					128
+#define MAX_TV					128
 #define MAX_FV					1024
 #define MAX_PATHEX				32768
 #define MAX_PROP				4096
@@ -1060,7 +1061,6 @@ public:
 #endif
 
 public:
-	VARIANT		m_vRoot;
 	HWND		m_hwnd;
 	HWND		m_hwndDV;
 	HWND		m_hwndLV;
@@ -1292,16 +1292,21 @@ public:
 	CteTreeView();
 	~CteTreeView();
 
-	VOID Init();
+	VOID Init(CteShellBrowser *pFV, HWND hwnd);
 	VOID Close();
 	BOOL Create(BOOL bIfVisible);
 	HRESULT getSelected(IDispatch **pItem);
 	VOID SetRoot();
+#ifdef _2000XP
+	VOID SetObjectRect();
+#endif
 public:
+	VARIANT		m_vRoot;
 	HWND        m_hwnd;
 	HWND        m_hwndTV;
 	INameSpaceTreeControl	*m_pNameSpaceTreeControl;
 	CteShellBrowser	*m_pFV;
+	BOOL	m_bEmpty;
 #ifdef _2000XP
 	IShellNameSpace *m_pShellNameSpace;
 #endif
@@ -1314,6 +1319,8 @@ private:
 	VARIANT m_vData;
 	LPWSTR	lplpVerbs;
 	CteDropTarget2 *m_pDropTarget2;
+	HWND	m_hwndParent;
+	DWORD	*m_param;
 #ifdef _W2000
 	VARIANT m_vSelected;
 #endif

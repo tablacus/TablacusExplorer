@@ -367,7 +367,7 @@ Resize2 = function ()
 		i = o.clientHeight - o.style.height.replace(/\D/g, "");
 
 		var h2 = o.clientHeight - document.getElementById("LeftBar1").offsetHeight - document.getElementById("LeftBar3").offsetHeight;
-		document.getElementById("LeftBar2").style.height = h2 - i + "px";
+		document.getElementById("LeftBar2").style.height = Math.abs(h2 - i) + "px";
 	}
 	o = document.getElementById("rightbarT");
 	if (o) {

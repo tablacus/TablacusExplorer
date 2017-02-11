@@ -696,11 +696,11 @@
         <tr>
           <td style="width: 12em">
             <div style="position: relative; width: 100%">
-            <input type="text" name="_search" id="_search" style="width: 100%; padding-right: 16px" onkeydown="FindKeyEvent(this)" placeholder="Search" />
-              <img src="bitmap:ieframe.dll,216,16,17" hidefocus="true" style="vertical-align: middle; width: 16px; height: 16px; position: absolute; left: 10.5em; top: 0.2em" onclick="FindText(document.getElementById('_search').value)" />
+              <input type="button" style="width: 100%; padding-right: 16px" value="Search" onclick="FindText()" />
+              <img src="bitmap:ieframe.dll,216,16,17" hidefocus="true" style="vertical-align: middle; width: 16px; height: 16px; position: absolute; left: 10.5em; top: 0.2em" onclick="FindText()" />
             </div>
           </td>
-          <td id="MoveButton" align="left" style="display: none; height: 24px">
+          <td id="MoveButton" align="left" style="display: none; height: 24px; padding-left: 4px">
             <input type="button" value="Up" onclick="OptionMove(-1)"/>
             <input type="button" value="Down" onclick="OptionMove(1)"/>
           </td>
