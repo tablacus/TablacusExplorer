@@ -5257,9 +5257,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					VARIANT vResult;
 					VariantInit(&vResult);
 					VARIANTARG *pv = GetNewVARIANT(2);
-					VariantInit(&pv[1]);
 					teSetObject(&pv[1], pSB);
-					VariantInit(&pv[0]);
 					teSetLong(&pv[0], lpInfotip->iItem);
 					Invoke4(g_pOnFunc[TE_OnToolTip], &vResult, 2, pv);
 					if (vResult.vt == VT_BSTR) {
@@ -5553,9 +5551,7 @@ LRESULT CALLBACK TEBTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							VARIANT vResult;
 							VariantInit(&vResult);
 							VARIANTARG *pv = GetNewVARIANT(2);
-							VariantInit(&pv[1]);
 							teSetObject(&pv[1], pTC);
-							VariantInit(&pv[0]);
 							teSetPtr(&pv[0], ((LPNMHDR)lParam)->idFrom);
 							Invoke4(g_pOnFunc[TE_OnToolTip], &vResult, 2, pv);
 							VARIANT vText;

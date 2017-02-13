@@ -61,13 +61,13 @@ function LoadChecked(form)
 		var o = form[i];
 		if (/=/.test(o.id)) {
 			var ar = o.id.split("=");
-			if (form[ar[0]].value == eval(ar[1])) {
+			if (form[ar[0]].value == (api.sscanf(ar[1], "0x%x") || ar[1])) {
 				form[i].checked = true;
 			}
 		}
 		if (/:/.test(o.id)) {
 			var ar = o.id.split(":");
-			if (form[ar[0]].value & eval(ar[1])) {
+			if (form[ar[0]].value & (api.sscanf(ar[1], "0x%x") || ar[1])) {
 				form[i].checked = true;
 			}
 		}

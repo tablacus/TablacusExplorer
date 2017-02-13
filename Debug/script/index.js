@@ -1089,6 +1089,17 @@ te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam)
 					api.InvalidateRect(Ctrl.hwndList, null, true);
 				}
 				break;
+			case CommandID_PASTE:
+				var cFV = te.Ctrls(CTRL_FV);
+				for (var i in cFV) {
+					var FV = cFV[i];
+					if (FV.hwndList) {
+						var item = api.Memory("LVITEM");
+						item.stateMask = LVIS_CUT;
+						api.SendMessage(FV.hwndList, LVM_SETITEMSTATE, -1, item);
+					}
+				}
+				break;
 		}
 	}
 	var hr = RunEvent3("Command", Ctrl, hwnd, msg, wParam, lParam);
