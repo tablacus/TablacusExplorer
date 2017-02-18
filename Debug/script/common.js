@@ -465,7 +465,7 @@ function MakeImgData(src, index, h, strBitmap, strIcon)
 	var hIcon = MakeImgIcon(src, index, h, strBitmap, strIcon);
 	if (hIcon) {
 		var image = te.GdiplusBitmap();
-		image.FromHICON(hIcon, GetSysColor(COLOR_BTNFACE));
+		image.FromHICON(hIcon);
 		api.DestroyIcon(hIcon);
 		return image;
 	}
@@ -1930,7 +1930,7 @@ AddMenuIconFolderItem = function (mii, FolderItem)
 		return;
 	}
 	var hIcon = api.ImageList_GetIcon(te.Data.SHIL[SHIL_SMALL], id, ILD_NORMAL);
-	image.FromHICON(hIcon, GetSysColor(COLOR_MENU));
+	image.FromHICON(hIcon);
 	api.DestroyIcon(hIcon);
 	AddMenuImage(mii, image, id);
 }
@@ -1963,7 +1963,7 @@ MenusIcon = function (mii, src)
 			image.FromFile(src);
 		} else {
 			var hIcon = MakeImgIcon(src, 0, 16);
-			image.FromHICON(hIcon, GetSysColor(COLOR_MENU));
+			image.FromHICON(hIcon);
 			api.DestroyIcon(hIcon);
 		}
 		AddMenuImage(mii, image, src);

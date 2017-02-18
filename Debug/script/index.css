@@ -121,7 +121,6 @@ form {
 	border-collapse: collapse;
 	overflow: hidden;
 }
-
 .sidebar {
 	margin: 0;
 	padding: 0;
@@ -243,4 +242,13 @@ a.treebutton:hover {
 
 .separator {
 	color: gray;
+}
+
+.splitter {
+	padding: 0;
+	margin: 0;
+	border: none;
+	width: 2px;
+	height: 100%;
+	cursor: e-resize;
 }

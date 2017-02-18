@@ -5,6 +5,7 @@
 //#define _USE_HTMLDOC
 //#define _USE_TESTOBJECT
 //#define _USE_TESTPATHMATCHSPEC
+//#define _USE_WIC
 #define _Emulate_XP_	//FALSE &&
 #ifndef _WIN64
 #define _2000XP
@@ -18,7 +19,6 @@
 #include <mshtmhst.h>
 #include "mshtmdid.h"
 #include <commdlg.h>
-#include <gdiplus.h>
 #include <commctrl.h>
 #include <Shlobj.h>
 #include <Shellapi.h>
@@ -37,6 +37,10 @@
 #include <UIAutomationClient.h>
 #include <UIAutomationCore.h>
 #include <Uxtheme.h>
+#include <gdiplus.h>
+#ifdef _USE_WIC
+#include <wincodec.h>
+#endif
 #ifndef _2000XP
 #include <Propsys.h>
 #endif
@@ -49,11 +53,11 @@ using namespace Gdiplus;
 //#import <mshtml.tlb>
 #pragma comment(lib, "comctl32.lib")
 #pragma comment(lib, "shlwapi.lib")
-#pragma comment(lib, "gdiplus.lib")
 #pragma comment(lib, "urlmon.lib")
 #pragma comment(lib, "imm32.lib")
 #pragma comment(lib, "crypt32.lib")
 #pragma comment(lib, "UxTheme.lib")
+#pragma comment(lib, "gdiplus.lib")
 #ifndef _2000XP
 #pragma comment(lib, "Propsys.lib")
 #endif
@@ -312,7 +316,9 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TE_OnReplacePath		43
 #define TE_OnBeginNavigate		44
 #define TE_OnSort				45
-#define Count_OnFunc			46
+#define TE_OnFromFile			46
+#define TE_OnFromStream			47
+#define Count_OnFunc			48
 
 #define SB_TotalFileSize		0
 #define SB_OnIncludeObject		1
@@ -1363,9 +1369,13 @@ public:
 
 	CteGdiplusBitmap();
 	~CteGdiplusBitmap();
+	VOID FromStreamRelease(IStream *pStream, BOOL b);
 private:
+#ifdef _USE_WIC
+	IWICBitmapSource *m_pBitmap;
+#else
 	Gdiplus::Bitmap *m_pImage;
-
+#endif
 	LONG	m_cRef;
 };
 

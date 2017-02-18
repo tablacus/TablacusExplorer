@@ -347,7 +347,6 @@ Resize2 = function ()
 	ResetScroll();
 	var o = document.getElementById("toolbar");
 	var offsetTop = o ? o.offsetHeight : 0;
-	te.offsetTop = Math.ceil(offsetTop * screen.deviceYDPI / screen.logicalYDPI);
 
 	var h = 0;
 	o = document.getElementById("bottombar");
@@ -358,7 +357,6 @@ Resize2 = function ()
 			h = (document.documentElement ? document.documentElement.offsetHeight : document.body.offsetHeight) - offsetBottom - offsetTop;
 			o.style.height = ((h >= 0) ? h : 0) + "px";
 		}
-		te.offsetBottom = Math.ceil(offsetBottom * screen.deviceYDPI / screen.logicalYDPI);
 	}
 	o = document.getElementById("leftbarT");
 	if (o) {
@@ -379,7 +377,6 @@ Resize2 = function ()
 		document.getElementById("RightBar2").style.height = h2 - i + "px";
 	}
 
-	var w2 = 0;
 	var w = 0;
 	o = te.Data.Locations;
 	if (o.LeftBar1 || o.LeftBar2 || o.LeftBar3) {
@@ -394,14 +391,15 @@ Resize2 = function ()
 			if (ob && !/^none$/i.test(ob.style.display)) {
 				pt = GetPos(ob);
 				o.style.width = w + "px";
-				w2 = w;
 				break;
 			}
 		}
 	}
-	te.offsetLeft = Math.ceil(w2 * screen.deviceXDPI / screen.logicalXDPI);
+	o = document.getElementById("leftsplitter");
+	if (o) {
+		o.style.display = w ? (document.documentMode ? "table-cell" : "block") : "none"
+	}
 
-	w2 = 0;
 	w = 0;
 	o = te.Data.Locations;
 	if (o.RightBar1 || o.RightBar2 || o.RightBar3) {
@@ -415,18 +413,21 @@ Resize2 = function ()
 			var ob = document.getElementById("RightBar" + i);
 			if (ob && !/^none$/i.test(ob.style.display)) {
 				o.style.width = w + "px";
-				w2 = w;
 				break;
 			}
 		}
 	}
-	te.offsetRight = Math.ceil(w2 * screen.deviceXDPI / screen.logicalXDPI);
+	o = document.getElementById("rightsplitter");
+	if (o) {
+		o.style.display = w ? (document.documentMode ? "table-cell" : "block") : "none"
+	}
 	o = document.getElementById("Background");
 	if (o) {
-		w = (document.documentElement ? document.documentElement.offsetWidth : document.body.offsetWidth) - te.offsetLeft - te.offsetRight;
-		if (w > 0) {
-			o.style.width = w + "px";
-		}
+		pt = GetPos(o);
+		te.offsetLeft = Math.ceil(pt.x * screen.deviceXDPI / screen.logicalXDPI);
+		te.offsetRight = Math.ceil(((document.documentElement ? document.documentElement.offsetWidth : document.body.offsetWidth) - o.offsetWidth - te.offsetLeft) * screen.deviceXDPI / screen.logicalXDPI);
+		te.offsetTop = Math.ceil(pt.y * screen.deviceYDPI / screen.logicalYDPI);
+		te.offsetBottom = Math.ceil(((document.documentElement ? document.documentElement.offsetHeight : document.body.offsetHeight) - o.offsetHeight - te.offsetTop) * screen.deviceYDPI / screen.logicalYDPI);
 	}
 	RunEvent1("Resize");
 	api.PostMessage(te.hwnd, WM_SIZE, 0, 0);
@@ -884,6 +885,28 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 
 te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 {
+	if (g_.mouse.Capture) {
+		if (msg == WM_LBUTTONUP || api.GetKeyState(VK_LBUTTON) >= 0) {
+			api.ReleaseCapture(te.Ctrl(CTRL_WB).hwnd);
+			var pt2 = pt.Clone();
+			api.ScreenToClient(te.hwnd, pt2);
+			if (pt2.x < 1) {
+				pt2.x = 1;
+			}
+			var w = document.documentElement ? document.documentElement.offsetWidth : document.body.offsetWidth;
+			if (pt2.x >= w) {
+				pt2.x = w - 1;
+			}
+			if (g_.mouse.Capture == 1) {
+				te.Data["Conf_LeftBarWidth"] = pt2.x;
+			} else if (g_.mouse.Capture == 2) {
+				te.Data["Conf_RightBarWidth"] = w - pt2.x;
+			}
+			g_.mouse.Capture = 0;
+			Resize();
+		}
+		return S_OK;
+	}
 	var hr = RunEvent3("MouseMessage", Ctrl, hwnd, msg, wParam, pt);
 	if (isFinite(hr)) {
 		return hr; 
@@ -1834,6 +1857,30 @@ te.OnSort = function (Ctrl)
 	return RunEvent1("Sort", Ctrl);
 }
 
+te.OnFromFile = function (image, file, bECM)
+{
+	var alt;
+	var s = fso.BuildPath(fso.GetSpecialFolder(2).Path, "tablacus\\");
+	if (api.StrCmpNI(file, s, s.length) == 0) {
+		var s = file.substr(s.length);
+		var dwSessionId = api.sscanf(s, "%llx");
+		var cFV = te.Ctrls(CTRL_FV);
+		for (var i in cFV) {
+			var FV = cFV[i];
+			if (dwSessionId == FV.SessionId) {
+				alt = fso.BuildPath(FV.FolderItem.Path, fso.GetFileName(s));
+				break;
+			}
+		}
+	}
+	return RunEvent3("FromFile", image, file, alt, bECM);
+}
+
+te.OnFromStream = function (image, stream, bECM)
+{
+	return RunEvent3("FromStream", image, stream, bECM);
+}
+
 //Tablacus Events
 
 GetIconImage = function (Ctrl, BGColor)
@@ -1857,7 +1904,7 @@ GetIconImage = function (Ctrl, BGColor)
 		var sfi = api.Memory("SHFILEINFO");
 		api.SHGetFileInfo(FolderItem, 0, sfi, sfi.Size, SHGFI_ICON | SHGFI_SMALLICON | SHGFI_PIDL);
 		var image = te.GdiplusBitmap();
-		image.FromHICON(sfi.hIcon, BGColor);
+		image.FromHICON(sfi.hIcon);
 		api.DestroyIcon(sfi.hIcon);
 		return image.DataURI("image/png");
 	}
@@ -3255,6 +3302,14 @@ AddEvent("Addons.OpenInstead", function (path)
 		return S_FALSE;
 	}
 });
+
+function RunSplitter(n)
+{
+	if (event.buttons !== undefined ? event.buttons & 1 : event.button == 0) {
+		g_.mouse.Capture = n;
+		api.SetCapture(te.hwnd);
+	}
+}
 
 //Init
 
