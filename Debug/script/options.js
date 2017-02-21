@@ -121,7 +121,7 @@ function ResetForm()
 	var s = GetWebColor(document.F.Conf_TrailColor.value);
 	document.F.Conf_TrailColor.value = s;
 	document.F.Color_Conf_TrailColor.style.backgroundColor = s;
-	
+
 	document.getElementById("_EDIT").checked = true;
 	document.getElementById("_TEInfo").value = GetTEInfo();
 }
@@ -1308,7 +1308,7 @@ function AddonRemove(Id)
 	}
 }
 
-function Apply() 
+function Apply()
 {
 	SetChanged(ReplaceMenus);
 	for (var i in document.F.elements) {
@@ -1381,7 +1381,7 @@ OpenIcon = function (o)
 		var a = o.id.split(/,/);
 		if (a[0] == "b") {
 			var dllpath = fso.BuildPath(system32, "ieframe.dll");
-			var image = te.GdiplusBitmap;
+			var image = te.WICBitmap;
 			a[0] = fso.GetFileName(dllpath);
 			var a1 = a[1];
 			var hModule = LoadImgDll(a, 0);
@@ -1786,7 +1786,7 @@ InitLocation = function ()
 			ResizeTabPanel();
 		}, 500);
 	});
-	
+
 	AddEventEx(window, "beforeunload", function ()
 	{
 		SetOptions(function () {

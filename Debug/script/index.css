@@ -16,8 +16,8 @@ body {
 	margin: 0;
 	padding: 0;
 	border: none;
-	color: ButtonText;
-	background-color: ButtonFace;
+	color: buttontext;
+	background-color: buttonface;
 	height: 100%;
 }
 
@@ -73,7 +73,7 @@ form {
 	display: inline-block;
 	margin: 1px 5px;
 	text-decoration: none;
-	color: ButtonText;
+	color: buttontext;
 	cursor: default;
 	white-space: nowrap;
 }
@@ -174,7 +174,7 @@ form {
 }
 
 .tab, .tab2, .tab3 {
-	border: 1px solid ButtonShadow;
+	border: 1px solid buttonshadow;
 	margin: 0;
 	padding: 0 8px;
 	color: #000;
@@ -195,7 +195,7 @@ form {
 }
 
 .activetab {
-	border: 1px solid ButtonShadow;
+	border: 1px solid buttonshadow;
 	border-bottom: 0;
 	margin: 0 -1px;
 	padding: 0 9px;
@@ -221,8 +221,8 @@ form {
 }
 
 a.treebutton:hover {
-	color: Highlight;
-	text-shadow: 0px 0px 2px Highlight;
+	color: highlight;
+	text-shadow: 0px 0px 2px highlight;
 }
 
 .ok, .apply, .cancel {
@@ -235,8 +235,8 @@ a.treebutton:hover {
 }
 
 .breadcrumb {
-	color: WindowText;
-	background-color: Window; 
+	color: windowtext;
+	background-color: window;
 	white-space: nowrap;
 }
 

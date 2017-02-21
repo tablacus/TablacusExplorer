@@ -1,5 +1,5 @@
 @charset "ISO-8859-1";
-@import url("index.css"); 
+@import url("index.css");
 
 select {
 	min-height: 1.7em;
@@ -10,7 +10,7 @@ input[type="text"] {
 }
 
 .panel {
-	border: 1px solid ButtonShadow;
+	border: 1px solid buttonshadow;
 	padding: 4px;
 	display: none;
 	width: 100%;
@@ -54,11 +54,11 @@ input[type="text"] {
 }
 
 .window {
-	border: 1px solid ButtonShadow;
+	border: 1px solid buttonshadow;
 }
 
 .window td {
-	border: 1px solid ButtonShadow;
+	border: 1px solid buttonshadow;
 }
 
 .footer {
@@ -66,9 +66,9 @@ input[type="text"] {
 }
 
 .text1 {
-	color: WindowText;
-	background-color: Window;
-	border: 1px solid ButtonShadow;
+	color: windowtext;
+	background-color: window;
+	border: 1px solid buttonshadow;
 	white-space: nowrap;
 }
 

@@ -464,7 +464,7 @@ function MakeImgData(src, index, h, strBitmap, strIcon)
 {
 	var hIcon = MakeImgIcon(src, index, h, strBitmap, strIcon);
 	if (hIcon) {
-		var image = te.GdiplusBitmap();
+		var image = te.WICBitmap();
 		image.FromHICON(hIcon);
 		api.DestroyIcon(hIcon);
 		return image;
@@ -1911,7 +1911,7 @@ GetAccelerator = function (s)
 
 AddMenuIconFolderItem = function (mii, FolderItem)
 {
-	var image = te.GdiplusBitmap();
+	var image = te.WICBitmap();
 	var sfi = api.Memory("SHFILEINFO");
 	var path = /string/i.test(typeof FolderItem) ? FolderItem : api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING);
 	if (api.PathIsNetworkPath(path)) {
@@ -1953,7 +1953,7 @@ MenusIcon = function (mii, src)
 	mii.cbSize = mii.Size;
 	if (src) {
 		src = ExtractMacro(te, src);
-		var image = te.GdiplusBitmap();
+		var image = te.WICBitmap();
 		mii.hbmpItem = MainWindow.g_arBM['U' + src];
 		if (mii.hbmpItem) {
 			mii.fMask = mii.fMask | MIIM_BITMAP;

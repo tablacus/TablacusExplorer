@@ -1887,71 +1887,8 @@ MOVEFILE_WRITE_THROUGH         = 0x00000008;
 MOVEFILE_CREATE_HARDLINK       = 0x00000010;
 MOVEFILE_FAIL_IF_NOT_TRACKABLE = 0x00000020;
 
-// GDI Plus
-RotateNoneFlipNone = 0;
-Rotate90FlipNone   = 1;
-Rotate180FlipNone  = 2;
-Rotate270FlipNone  = 3;
-
-RotateNoneFlipX    = 4;
-Rotate90FlipX      = 5;
-Rotate180FlipX     = 6;
-Rotate270FlipX     = 7;
-
-RotateNoneFlipY    = Rotate180FlipX;
-Rotate90FlipY      = Rotate270FlipX;
-Rotate180FlipY     = RotateNoneFlipX;
-Rotate270FlipY     = Rotate90FlipX;
-
-RotateNoneFlipXY   = Rotate180FlipNone;
-Rotate90FlipXY     = Rotate270FlipNone;
-Rotate180FlipXY    = RotateNoneFlipNone;
-Rotate270FlipXY    = Rotate90FlipNone;
-
-EncoderValueColorTypeCMYK = 0;
-EncoderValueColorTypeYCCK = 1;
-EncoderValueCompressionLZW = 2;
-EncoderValueCompressionCCITT3 = 3;
-EncoderValueCompressionCCITT4 = 4;
-EncoderValueCompressionRle = 5;
-EncoderValueCompressionNone = 6;
-EncoderValueScanMethodInterlaced = 7;
-EncoderValueScanMethodNonInterlaced = 8;
-EncoderValueVersionGif87 = 9;
-EncoderValueVersionGif89 = 10;
-EncoderValueRenderProgressive = 11;
-EncoderValueRenderNonProgressive = 12;
-EncoderValueTransformRotate90 = 13;
-EncoderValueTransformRotate180 = 14;
-EncoderValueTransformRotate270 = 15;
-EncoderValueTransformFlipHorizontal = 16;
-EncoderValueTransformFlipVertical = 17;
-EncoderValueMultiFrame = 18;
-EncoderValueLastFrame = 19;
-EncoderValueFlush = 20;
-EncoderValueFrameDimensionTime = 21;
-EncoderValueFrameDimensionResolution = 22;
-EncoderValueFrameDimensionPage = 23;
-EncoderValueColorTypeGray = 24;
-EncoderValueColorTypeRGB = 25;
-
-EncoderColorDepth     = "{66087055-ad66-4c7c-9a18-38a2310b8337}";
-EncoderQuality        = "{1d5be4b5-fa4a-452d-9cdd-5db35105e7eb}";
-EncoderTransformation = "{8d0eb2d1-a58e-4ea8-aa14-108074b7b6f9}";
-
-EncoderParameterValueTypeByte           = 1;
-EncoderParameterValueTypeASCII          = 2;
-EncoderParameterValueTypeShort          = 3;
-EncoderParameterValueTypeLong           = 4;
-EncoderParameterValueTypeRational       = 5;
-EncoderParameterValueTypeLongRange      = 6;
-EncoderParameterValueTypeUndefined      = 7;
-EncoderParameterValueTypeRationalRange  = 8;
-EncoderParameterValueTypePointer        = 9;
-
 if (window.dialogArguments) {
 	for (var j in dialogArguments.event) {
 		window[j] = dialogArguments.event[j];
 	}
 }
-

@@ -350,87 +350,54 @@ Resize2 = function ()
 
 	var h = 0;
 	o = document.getElementById("bottombar");
+	var offsetBottom = o.offsetHeight;
+	o = document.getElementById("client");
 	if (o) {
-		var offsetBottom = o.offsetHeight;
-		o = document.getElementById("client");
-		if (o) {
-			h = (document.documentElement ? document.documentElement.offsetHeight : document.body.offsetHeight) - offsetBottom - offsetTop;
-			o.style.height = ((h >= 0) ? h : 0) + "px";
+		h = (document.documentElement ? document.documentElement.offsetHeight : document.body.offsetHeight) - offsetBottom - offsetTop;
+		if (h < 0) {
+			h = 0;
 		}
+		o.style.height = h + "px";
 	}
-	o = document.getElementById("leftbarT");
-	if (o) {
-		var i = h;
-		o.style.height = ((i >= 0) ? i : 0) + "px";
-		i = o.clientHeight - o.style.height.replace(/\D/g, "");
-
-		var h2 = o.clientHeight - document.getElementById("LeftBar1").offsetHeight - document.getElementById("LeftBar3").offsetHeight;
-		document.getElementById("LeftBar2").style.height = Math.abs(h2 - i) + "px";
-	}
-	o = document.getElementById("rightbarT");
-	if (o) {
-		var i = h;
-		o.style.height = ((i >= 0) ? i : 0) + "px";
-		i = o.clientHeight - o.style.height.replace(/\D/g, "");
-
-		var h2 = o.clientHeight - document.getElementById("RightBar1").offsetHeight - document.getElementById("RightBar3").offsetHeight;
-		document.getElementById("RightBar2").style.height = h2 - i + "px";
-	}
-
-	var w = 0;
-	o = te.Data.Locations;
-	if (o.LeftBar1 || o.LeftBar2 || o.LeftBar3) {
-		w = te.Data.Conf_LeftBarWidth;
-	}
-	o = document.getElementById("leftbar");
-	if (o) {
-		w = (w > 0) ? w : 0;
-		o.style.width = w + "px";
-		for (var i = 1; i <= 3; i++) {
-			var ob = document.getElementById("LeftBar" + i);
-			if (ob && !/^none$/i.test(ob.style.display)) {
-				pt = GetPos(ob);
-				o.style.width = w + "px";
-				break;
-			}
-		}
-	}
-	o = document.getElementById("leftsplitter");
-	if (o) {
-		o.style.display = w ? (document.documentMode ? "table-cell" : "block") : "none"
-	}
-
-	w = 0;
-	o = te.Data.Locations;
-	if (o.RightBar1 || o.RightBar2 || o.RightBar3) {
-		w = te.Data.Conf_RightBarWidth;
-	}
-	o = document.getElementById("rightbar");
-	if (o) {
-		w = (w > 0) ? w : 0;
-		o.style.width = w + "px";
-		for (var i = 1; i <= 3; i++) {
-			var ob = document.getElementById("RightBar" + i);
-			if (ob && !/^none$/i.test(ob.style.display)) {
-				o.style.width = w + "px";
-				break;
-			}
-		}
-	}
-	o = document.getElementById("rightsplitter");
-	if (o) {
-		o.style.display = w ? (document.documentMode ? "table-cell" : "block") : "none"
-	}
+	ResizeSizeBar("Left", h);
+	ResizeSizeBar("Right", h);
 	o = document.getElementById("Background");
-	if (o) {
-		pt = GetPos(o);
-		te.offsetLeft = Math.ceil(pt.x * screen.deviceXDPI / screen.logicalXDPI);
-		te.offsetRight = Math.ceil(((document.documentElement ? document.documentElement.offsetWidth : document.body.offsetWidth) - o.offsetWidth - te.offsetLeft) * screen.deviceXDPI / screen.logicalXDPI);
-		te.offsetTop = Math.ceil(pt.y * screen.deviceYDPI / screen.logicalYDPI);
-		te.offsetBottom = Math.ceil(((document.documentElement ? document.documentElement.offsetHeight : document.body.offsetHeight) - o.offsetHeight - te.offsetTop) * screen.deviceYDPI / screen.logicalYDPI);
-	}
+	pt = GetPos(o);
+	te.offsetLeft = Math.ceil(pt.x * screen.deviceXDPI / screen.logicalXDPI);
+	te.offsetRight = Math.ceil(((document.documentElement ? document.documentElement.offsetWidth : document.body.offsetWidth) - o.offsetWidth - te.offsetLeft) * screen.deviceXDPI / screen.logicalXDPI);
+	te.offsetTop = Math.ceil(pt.y * screen.deviceYDPI / screen.logicalYDPI);
+	pt = GetPos(document.getElementById("bottombar"));
+	te.offsetBottom = Math.ceil(((document.documentElement ? document.documentElement.offsetHeight : document.body.offsetHeight) - pt.y) * screen.deviceYDPI / screen.logicalYDPI);
 	RunEvent1("Resize");
 	api.PostMessage(te.hwnd, WM_SIZE, 0, 0);
+}
+
+function ResizeSizeBar(z, h)
+{
+	var o = te.Data.Locations;
+	var w =(o[z + "Bar1"] || o[z + "Bar2"] || o[z + "Bar3"]) ? te.Data["Conf_" + z + "BarWidth"] : 0;
+	o = document.getElementById(z.toLowerCase() + "bar");
+	if (w > 0) {
+		o.style.display = "";
+		if (w != o.offsetWidth * screen.deviceXDPI / screen.logicalXDPI) {
+			o.style.width = w + "px";
+			for (var i = 1; i <= 3; i++) {
+				document.getElementById(z + "Bar" + i).style.width = w + "px";
+			}
+			document.getElementById(z.toLowerCase() + "barT").style.width = w + "px";
+		}
+	} else {
+		o.style.display = "none";
+	}
+	document.getElementById(z.toLowerCase() + "splitter").style.display = w ? "" : "none";
+
+	o = document.getElementById(z.toLowerCase() + "barT");
+	var i = h;
+	o.style.height = ((i >= 0) ? i : 0) + "px";
+	i = o.clientHeight - o.style.height.replace(/\D/g, "");
+
+	var h2 = o.clientHeight - document.getElementById(z + "Bar1").offsetHeight - document.getElementById(z + "Bar3").offsetHeight;
+	document.getElementById(z + "Bar2").style.height = Math.abs(h2 - i) + "px";
 }
 
 LoadLang = function (bAppend)
@@ -618,7 +585,7 @@ DisableImage = function (img, bDisable)
 			if (bDisable) {
 				if (!res) {
 					if (/^file:/i.test(s)) {
-						var image = te.GdiplusBitmap();
+						var image = te.WICBitmap();
 						image.FromFile(api.PathCreateFromUrl(s));
 						s = image.DataURI("image/png");
 					}
@@ -1903,7 +1870,7 @@ GetIconImage = function (Ctrl, BGColor)
 	if (document.documentMode) {
 		var sfi = api.Memory("SHFILEINFO");
 		api.SHGetFileInfo(FolderItem, 0, sfi, sfi.Size, SHGFI_ICON | SHGFI_SMALLICON | SHGFI_PIDL);
-		var image = te.GdiplusBitmap();
+		var image = te.WICBitmap();
 		image.FromHICON(sfi.hIcon);
 		api.DestroyIcon(sfi.hIcon);
 		return image.DataURI("image/png");

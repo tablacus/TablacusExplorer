@@ -5,7 +5,7 @@
 //#define _USE_HTMLDOC
 //#define _USE_TESTOBJECT
 //#define _USE_TESTPATHMATCHSPEC
-//#define _USE_WIC
+#define _USE_WIC
 #define _Emulate_XP_	//FALSE &&
 #ifndef _WIN64
 #define _2000XP
@@ -37,9 +37,10 @@
 #include <UIAutomationClient.h>
 #include <UIAutomationCore.h>
 #include <Uxtheme.h>
-#include <gdiplus.h>
 #ifdef _USE_WIC
 #include <wincodec.h>
+#else
+#include <gdiplus.h>
 #endif
 #ifndef _2000XP
 #include <Propsys.h>
@@ -47,7 +48,9 @@
 #ifdef _USE_APIHOOK
 #include <imagehlp.h>
 #endif
+#ifndef _USE_WIC
 using namespace Gdiplus;
+#endif
 
 #import <shdocvw.dll> exclude("OLECMDID", "OLECMDF", "OLECMDEXECOPT", "tagREADYSTATE") auto_rename
 //#import <mshtml.tlb>
@@ -57,7 +60,9 @@ using namespace Gdiplus;
 #pragma comment(lib, "imm32.lib")
 #pragma comment(lib, "crypt32.lib")
 #pragma comment(lib, "UxTheme.lib")
+#ifndef _USE_WIC
 #pragma comment(lib, "gdiplus.lib")
+#endif
 #ifndef _2000XP
 #pragma comment(lib, "Propsys.lib")
 #endif
@@ -69,7 +74,7 @@ using namespace Gdiplus;
 #else
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #endif
-#if _MSC_VER >=1600 
+#if _MSC_VER >=1600
 #pragma execution_character_set("utf-8")
 #define CP_TE CP_UTF8
 #else
@@ -763,7 +768,7 @@ public:
 	STDMETHODIMP OnPosRectChange(LPCRECT lprcPosRect);
 	//IOleCommandTarget
 //    STDMETHODIMP QueryStatus(const GUID *pguidCmdGroup, ULONG cCmds, OLECMD *prgCmds, OLECMDTEXT *pCmdText);
-//    STDMETHODIMP Exec(const GUID *pguidCmdGroup, DWORD nCmdID, DWORD nCmdexecopt, VARIANT *pvaIn, VARIANT *pvaOut);       
+//    STDMETHODIMP Exec(const GUID *pguidCmdGroup, DWORD nCmdID, DWORD nCmdexecopt, VARIANT *pvaIn, VARIANT *pvaOut);
 	//IDocHostUIHandler
 	STDMETHODIMP ShowContextMenu(DWORD dwID, POINT *ppt, IUnknown *pcmdtReserved, IDispatch *pdispReserved);
 	STDMETHODIMP GetHostInfo(DOCHOSTUIINFO *pInfo);
@@ -1370,9 +1375,14 @@ public:
 	CteGdiplusBitmap();
 	~CteGdiplusBitmap();
 	VOID FromStreamRelease(IStream *pStream, BOOL b);
+#ifdef _USE_WIC
+	HBITMAP GetHBITMAP();
+	BOOL GetBGRA();
+	HRESULT CreateStream(IStream *pStream, ULARGE_INTEGER *puliSize, CLSID encoderClsid, LONG lQuality);
+#endif
 private:
 #ifdef _USE_WIC
-	IWICBitmapSource *m_pBitmap;
+	IWICBitmap *m_pBitmap;
 #else
 	Gdiplus::Bitmap *m_pImage;
 #endif
@@ -1581,4 +1591,3 @@ private:
 	IProgressDialog *m_ppd;
 	LONG	m_cRef;
 };
-
