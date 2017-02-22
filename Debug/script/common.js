@@ -451,9 +451,7 @@ function MakeImgSrc(src, index, bSrc, h, strBitmap, strIcon)
 			return image.DataURI("image/png");
 		}
 		if (fn) {
-			try {
-				image.Save(fn);
-			} catch (e) {}
+			image.Save(fn);
 			return fn;
 		}
 	}
@@ -464,8 +462,7 @@ function MakeImgData(src, index, h, strBitmap, strIcon)
 {
 	var hIcon = MakeImgIcon(src, index, h, strBitmap, strIcon);
 	if (hIcon) {
-		var image = te.WICBitmap();
-		image.FromHICON(hIcon);
+		var image = te.WICBitmap().FromHICON(hIcon);
 		api.DestroyIcon(hIcon);
 		return image;
 	}
@@ -904,7 +901,7 @@ ShowOptions = function (s)
 	{
 		Data: s, event:
 		{
-			onbeforeunload: function () 
+			onbeforeunload: function ()
 			{
 				delete MainWindow.g_.dlgs.Options;
 			}
@@ -1053,7 +1050,7 @@ SetFileTime = function (path, ctime, atime, mtime)
 {
 	var b = MainWindow.RunEvent3("SetFileTime", path, ctime, atime, mtime);
 	if (isFinite(b)) {
-		return b; 
+		return b;
 	}
 	return api.SetFileTime(path, ctime, atime, mtime);
 }
@@ -1062,7 +1059,7 @@ SetFileAttributes = function (path, attr)
 {
 	var b = MainWindow.RunEvent3("SetFileAttributes", path, attr);
 	if (isFinite(b)) {
-		return b; 
+		return b;
 	}
 	try {
 		fso.GetFile(path).Attributes = attr;
@@ -1080,7 +1077,7 @@ CreateFolder = function (path)
 {
 	var r = MainWindow.RunEvent4("CreateFolder", path);
 	if (r !== undefined) {
-		return r; 
+		return r;
 	}
 	CreateNew(path, function (strPath)
 	{
@@ -1092,7 +1089,7 @@ CreateFile = function (path)
 {
 	var r = MainWindow.RunEvent4("CreateFile", path);
 	if (r !== undefined) {
-		return r; 
+		return r;
 	}
 	CreateNew(path, function (strPath)
 	{
@@ -1189,7 +1186,7 @@ Exec = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop
 	for (var i in eventTE.Exec) {
 		var hr = eventTE.Exec[i](Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop, window.FV);
 		if (isFinite(hr)) {
-			return hr; 
+			return hr;
 		}
 	}
 	return window.Handled;
@@ -1409,7 +1406,7 @@ OpenMenu = function (items, SelItem)
 			}
 			path += ".folder";
 		} else {
-			path = SelItem;	
+			path = SelItem;
 		}
 	}
 	arMenu = [];
@@ -1704,7 +1701,7 @@ GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arCon
 	for (var i in eventTE.GetBaseMenuEx) {
 		ContextMenu = eventTE.GetBaseMenuEx[i](hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arContextMenu);
 		if (ContextMenu !== undefined) {
-			return ContextMenu; 
+			return ContextMenu;
 		}
 	}
 	switch (nBase) {
@@ -2177,7 +2174,7 @@ Extract = function (Src, Dest)
 	for (var i in eventTE.Extract) {
 		var hr = eventTE.Extract[i](Src, Dest);
 		if (isFinite(hr)) {
-			return hr; 
+			return hr;
 		}
 	}
 	try {
@@ -2202,7 +2199,7 @@ OptionRef = function (Id, s, pt)
 	for (var i in eventTE.OptionRef) {
 		var r = eventTE.OptionRef[i](Id, s, pt);
 		if (r !== undefined) {
-			return r; 
+			return r;
 		}
 	}
 }
@@ -2212,7 +2209,7 @@ OptionDecode = function (Id, p)
 	for (var i in eventTE.OptionDecode) {
 		var hr = eventTE.OptionDecode[i](Id, p);
 		if (isFinite(hr)) {
-			return hr; 
+			return hr;
 		}
 	}
 }
@@ -3340,7 +3337,7 @@ UpdateSelf = function ()
 }
 
 OpenContains = function (Ctrl, pt)
-{ 
+{
 	var FV = GetFolderView(Ctrl. pt);
 	var Items = FV.SelectedItems();
 	for (var j in Items) {

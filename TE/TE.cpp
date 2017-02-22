@@ -20639,17 +20639,13 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 CteGdiplusBitmap::CteGdiplusBitmap()
 {
 	m_cRef = 1;
-#ifdef _USE_WIC
-	m_pBitmap = NULL;
-#else
 	m_pImage = NULL;
-#endif
 }
 
 CteGdiplusBitmap::~CteGdiplusBitmap()
 {
 #ifdef _USE_WIC
-	SafeRelease(&m_pBitmap);
+	SafeRelease(&m_pImage);
 #else
 	if (m_pImage) {
 		delete m_pImage;
@@ -20787,22 +20783,41 @@ Gdiplus::Bitmap* teGetImageFromHICON(HICON hIcon)
 }
 #endif
 #ifdef _USE_WIC
-BOOL teWICResult(IWICBitmapSource *pBitmap)
-{
-	if (pBitmap) {
-		UINT w = 0, h = 0;
-		pBitmap->GetSize(&w, &h);
-		return w != 0;
-	}
-	return FALSE;
-}
 
-HBITMAP CteGdiplusBitmap::GetHBITMAP()
+HBITMAP CteGdiplusBitmap::GetHBITMAP(COLORREF clBk)
 {
+	if (clBk && GetBGRA()) {
+		int r0 = GetRValue(clBk);
+		int g0 = GetGValue(clBk);
+		int b0 = GetBValue(clBk);
+		UINT w = 0, h = 0;
+		m_pImage->GetSize(&w, &h);
+		IWICBitmapLock *pBitmapLock;
+		WICRect rc = {0, 0, w, h};
+		if SUCCEEDED(m_pImage->Lock(&rc, WICBitmapLockWrite, &pBitmapLock)) {
+			UINT cbSize = 0;
+			BYTE *raw = NULL;
+			if SUCCEEDED(pBitmapLock->GetDataPointer(&cbSize, &raw)) {
+				for (int y = h; y--;) {
+					for (int x = w; x--;) {
+						PBYTE p = &raw[(x + y * w) * 4];
+						int a = p[3];
+						if (a < 255) {
+							p[0] = (p[0] - b0) * a / 255 + b0;
+							p[1] = (p[1] - g0) * a / 255 + g0;
+							p[2] = (p[2] - r0) * a / 255 + r0;
+							p[3] = 0xff;
+						}
+					}
+				}
+			}
+			pBitmapLock->Release();
+		}
+	}
 	HBITMAP hBM = NULL;
 	UINT w = 0, h = 0, biBitCount = 0;
 	WICPixelFormatGUID guidPF;
-	m_pBitmap->GetPixelFormat(&guidPF);
+	m_pImage->GetPixelFormat(&guidPF);
 	if (IsEqualGUID(guidPF, GUID_WICPixelFormat32bppBGR)) {
 		biBitCount = 24;
 	} else if (GetBGRA()) {
@@ -20810,11 +20825,11 @@ HBITMAP CteGdiplusBitmap::GetHBITMAP()
 	} else {
 		return NULL;
 	}
-	m_pBitmap->GetSize(&w, &h);
+	m_pImage->GetSize(&w, &h);
 	if (w & h) {
 		IWICBitmapLock *pBitmapLock;
 		WICRect rc = {0, 0, w, h};
-		if SUCCEEDED(m_pBitmap->Lock(&rc, WICBitmapLockRead, &pBitmapLock)) {
+		if SUCCEEDED(m_pImage->Lock(&rc, WICBitmapLockRead, &pBitmapLock)) {
 			UINT cbStride;
 			if SUCCEEDED(pBitmapLock->GetStride(&cbStride)) {
 				BITMAPINFO bmi;
@@ -20829,7 +20844,7 @@ HBITMAP CteGdiplusBitmap::GetHBITMAP()
 				LPBYTE lpBits;
 				hBM = CreateDIBSection(NULL, (LPBITMAPINFO)&bmi, DIB_RGB_COLORS, (void **)&lpBits, NULL, 0);
 				if (hBM && lpBits) {
-					m_pBitmap->CopyPixels(NULL, cbStride, cbStride * h, lpBits);
+					m_pImage->CopyPixels(NULL, cbStride, cbStride * h, lpBits);
 				}
 			}
 			SafeRelease(&pBitmapLock);
@@ -20841,18 +20856,18 @@ HBITMAP CteGdiplusBitmap::GetHBITMAP()
 BOOL CteGdiplusBitmap::GetBGRA()
 {
 	WICPixelFormatGUID guidPF;
-	m_pBitmap->GetPixelFormat(&guidPF);
+	m_pImage->GetPixelFormat(&guidPF);
 	if (IsEqualGUID(guidPF, GUID_WICPixelFormat32bppBGRA)) {
 		return TRUE;
 	}
 	BOOL b = FALSE;
 	IWICFormatConverter *pConverter;
 	if SUCCEEDED(g_pWICFactory->CreateFormatConverter(&pConverter)) {
-		if SUCCEEDED(pConverter->Initialize(m_pBitmap, GUID_WICPixelFormat32bppBGRA, WICBitmapDitherTypeNone, NULL, 0.f, WICBitmapPaletteTypeMedianCut)) {
+		if SUCCEEDED(pConverter->Initialize(m_pImage, GUID_WICPixelFormat32bppBGRA, WICBitmapDitherTypeNone, NULL, 0.f, WICBitmapPaletteTypeMedianCut)) {
 			pConverter->GetPixelFormat(&guidPF);
 			if (IsEqualGUID(guidPF, GUID_WICPixelFormat32bppBGRA)) {
-				SafeRelease(&m_pBitmap);
-				b = SUCCEEDED(g_pWICFactory->CreateBitmapFromSource(pConverter, WICBitmapCacheOnDemand, &m_pBitmap));
+				SafeRelease(&m_pImage);
+				b = SUCCEEDED(g_pWICFactory->CreateBitmapFromSource(pConverter, WICBitmapCacheOnDemand, &m_pImage));
 			}
 			SafeRelease(&pConverter);
 		}
@@ -20883,7 +20898,7 @@ HRESULT CteGdiplusBitmap::CreateStream(IStream *pStream, ULARGE_INTEGER *puliSiz
 				}
 				hr = pFrameEncode->Initialize(pPropBag);
 				if SUCCEEDED(hr) {
-					hr = pFrameEncode->WriteSource(m_pBitmap, NULL);
+					hr = pFrameEncode->WriteSource(m_pImage, NULL);
 				}
 				if SUCCEEDED(hr) {
 					hr = pFrameEncode->Commit();
@@ -20905,7 +20920,87 @@ HRESULT CteGdiplusBitmap::CreateStream(IStream *pStream, ULARGE_INTEGER *puliSiz
 	return hr;
 }
 
+HRESULT CteGdiplusBitmap::CreateBMPStream(IStream *pStream, ULARGE_INTEGER *puliSize, LPWSTR szMime)
+{
+	HRESULT hr = E_FAIL;
+	if (pStream) {
+		HBITMAP hBM = GetHBITMAP(GetSysColor(COLOR_BTNFACE));
+		if (hBM) {
+			BITMAPFILEHEADER bf;
+			BITMAPINFO bi;
+			BITMAP bm;
+			GetObject(hBM, sizeof(BITMAP), &bm);
+			ZeroMemory(&bi.bmiHeader, sizeof(BITMAPINFOHEADER));
+			bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+			bi.bmiHeader.biWidth = bm.bmWidth;
+			bi.bmiHeader.biHeight = -bm.bmHeight;
+			bi.bmiHeader.biPlanes = 1;
+			bi.bmiHeader.biBitCount = bm.bmBitsPixel;
+			bi.bmiHeader.biCompression = BI_RGB;
+			bi.bmiHeader.biSizeImage = bm.bmWidthBytes * bm.bmHeight;
+			bf.bfType = 0x4d42;
+			bf.bfReserved1 = 0;
+			bf.bfReserved2 = 0;
+			DWORD cb = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
+			bf.bfOffBits = cb;
+			bf.bfSize = cb + bi.bmiHeader.biSizeImage;
+			bf.bfType = 0x4d42;
+			bf.bfReserved1 = 0;
+			bf.bfReserved2 = 0;
+
+			IWICBitmapLock *pBitmapLock;
+			WICRect rc = {0, 0, bm.bmWidth, bm.bmHeight};
+			hr = m_pImage->Lock(&rc, WICBitmapLockRead, &pBitmapLock);
+			if SUCCEEDED(hr) {
+				UINT cbSize = 0;
+				PBYTE raw = NULL;
+				hr = pBitmapLock->GetDataPointer(&cbSize, &raw);
+				if SUCCEEDED(hr) {
+					LARGE_INTEGER liOffset;
+					liOffset.QuadPart = 0;
+					pStream->Seek(liOffset, STREAM_SEEK_SET, NULL);
+					hr = pStream->Write(&bf, sizeof(BITMAPFILEHEADER), NULL);
+					if SUCCEEDED(hr) {
+						hr = pStream->Write(&bi, sizeof(BITMAPINFOHEADER), NULL);
+					}
+					if SUCCEEDED(hr) {
+						hr = pStream->Write(raw, cbSize, NULL);
+					}
+					if SUCCEEDED(hr) {
+						lstrcpy(szMime, L"image/bmp");
+						pStream->Seek(liOffset, STREAM_SEEK_END, puliSize);
+						pStream->Seek(liOffset, STREAM_SEEK_SET, NULL);
+					}
+				}
+				pBitmapLock->Release();
+			}
+			DeleteObject(hBM);
+		}
+	}
+	return hr;
+}
+
+BOOL CteGdiplusBitmap::HasImage()
+{
+	if (m_pImage) {
+		UINT w = 0, h = 0;
+		m_pImage->GetSize(&w, &h);
+		return w != 0;
+	}
+	return FALSE;
+}
+
+#else
+BOOL CteGdiplusBitmap::HasImage()
+{
+	return m_pImage && m_pImage->GetWidth();
+}
 #endif
+
+CteGdiplusBitmap* CteGdiplusBitmap::GetBitmapObj()
+{
+	return HasImage() ? this : NULL;
+}
 
 VOID CteGdiplusBitmap::FromStreamRelease(IStream *pStream, BOOL b)
 {
@@ -20914,17 +21009,16 @@ VOID CteGdiplusBitmap::FromStreamRelease(IStream *pStream, BOOL b)
 	if SUCCEEDED(g_pWICFactory->CreateDecoderFromStream(pStream, NULL, WICDecodeMetadataCacheOnDemand, &pDecoder)) {
 		IWICBitmapFrameDecode *pFrameDecode;
 		if SUCCEEDED(pDecoder->GetFrame(0, &pFrameDecode)) {
-			SafeRelease(&m_pBitmap);
-			g_pWICFactory->CreateBitmapFromSource(pFrameDecode, WICBitmapCacheOnDemand, &m_pBitmap);
+			SafeRelease(&m_pImage);
+			g_pWICFactory->CreateBitmapFromSource(pFrameDecode, WICBitmapCacheOnDemand, &m_pImage);
 			SafeRelease(&pFrameDecode);
 		}
 		SafeRelease(&pDecoder);
 	}
-	if (teWICResult(m_pBitmap)) {
 #else
 	m_pImage = Gdiplus::Bitmap::FromStream(pStream, b);
-	if (!m_pImage || m_pImage->GetWidth() == 0) {
 #endif
+	if (!HasImage()) {
 		if (g_pOnFunc[TE_OnFromStream]) {
 			try {
 				if (InterlockedIncrement(&g_nProcIMG) < 8) {
@@ -20953,47 +21047,40 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 		if (!g_pWICFactory) {
 			return S_OK;
 		} else if (dispIdMember < 100) {
-			SafeRelease(&m_pBitmap);
-		} else if (!m_pBitmap) {
-			return S_OK;
-		}
+			SafeRelease(&m_pImage);
 #else
 		if (dispIdMember < 100) {
 			if (m_pImage) {
 				delete m_pImage;
 				m_pImage = NULL;
 			}
+#endif
 		} else if (!m_pImage) {
 			return S_OK;
 		}
-#endif
+
 		switch(dispIdMember) {
 			//FromHBITMAP
 			case 1:
 				if (nArg >= 0) {
 					HPALETTE pal = (nArg >= 1) ? (HPALETTE)GetPtrFromVariant(&pDispParams->rgvarg[nArg - 1]) : 0;
 #ifdef _USE_WIC
+					WICBitmapAlphaChannelOption nAlpha = (nArg >= 2) ? (WICBitmapAlphaChannelOption)GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]) : WICBitmapIgnoreAlpha;
 					IWICBitmap *pBitmap;
-					if SUCCEEDED(g_pWICFactory->CreateBitmapFromHBITMAP((HBITMAP)GetPtrFromVariant(&pDispParams->rgvarg[nArg]), pal, WICBitmapUseAlpha, &pBitmap)) {
-						m_pBitmap = pBitmap;
+					if SUCCEEDED(g_pWICFactory->CreateBitmapFromHBITMAP((HBITMAP)GetPtrFromVariant(&pDispParams->rgvarg[nArg]), pal, nAlpha, &pBitmap)) {
+						m_pImage = pBitmap;
 					}
-					teSetBool(pVarResult, teWICResult(m_pBitmap));
 #else
 					m_pImage = Gdiplus::Bitmap::FromHBITMAP((HBITMAP)GetPtrFromVariant(&pDispParams->rgvarg[nArg]), pal);
-					teSetBool(pVarResult, m_pImage && m_pImage->GetWidth());
 #endif
+					teSetObject(pVarResult, GetBitmapObj());
 				}
 				return S_OK;
 			//FromHICON
 			case 2:
 				if (nArg >= 0) {
-#ifdef _USE_WIC
-					m_pBitmap = teGetImageFromHICON((HICON)GetPtrFromVariant(&pDispParams->rgvarg[nArg]));
-					teSetBool(pVarResult, teWICResult(m_pBitmap));
-#else
 					m_pImage = teGetImageFromHICON((HICON)GetPtrFromVariant(&pDispParams->rgvarg[nArg]));
-					teSetBool(pVarResult, m_pImage && m_pImage->GetWidth());
-#endif
+					teSetObject(pVarResult, GetBitmapObj());
 				}
 				return S_OK;
 			//FromResource
@@ -21003,8 +21090,8 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 					HBITMAP hBM = (HBITMAP)LoadImage((HINSTANCE)GetPtrFromVariant(&pDispParams->rgvarg[nArg]), GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 					if (hBM) {
 						IWICBitmap *pBitmap;
-						if SUCCEEDED(g_pWICFactory->CreateBitmapFromHBITMAP(hBM, 0, WICBitmapUseAlpha, &pBitmap)) {
-							m_pBitmap = pBitmap;
+						if SUCCEEDED(g_pWICFactory->CreateBitmapFromHBITMAP(hBM, 0, WICBitmapIgnoreAlpha, &pBitmap)) {
+							m_pImage = pBitmap;
 						}
 						DeleteObject(hBM);
 					}
@@ -21012,8 +21099,8 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 					m_pImage = Gdiplus::Bitmap::FromResource(
 						(HINSTANCE)GetPtrFromVariant(&pDispParams->rgvarg[nArg]),
 						GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]));
-					teSetBool(pVarResult, m_pImage && m_pImage->GetWidth());
 #endif
+					teSetObject(pVarResult, GetBitmapObj());
 				}
 				return S_OK;
 			//FromFile
@@ -21028,17 +21115,16 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 					if SUCCEEDED(g_pWICFactory->CreateDecoderFromFilename(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]), NULL, GENERIC_READ, WICDecodeMetadataCacheOnDemand, &pDecoder)) {
 						IWICBitmapFrameDecode *pFrameDecode;
 						if SUCCEEDED(pDecoder->GetFrame(0, &pFrameDecode)) {
-							SafeRelease(&m_pBitmap);
-							g_pWICFactory->CreateBitmapFromSource(pFrameDecode, WICBitmapCacheOnDemand, &m_pBitmap);
+							SafeRelease(&m_pImage);
+							g_pWICFactory->CreateBitmapFromSource(pFrameDecode, WICBitmapCacheOnDemand, &m_pImage);
 							SafeRelease(&pFrameDecode);
 						}
 						SafeRelease(&pDecoder);
 					}
-					if (teWICResult(m_pBitmap)) {
 #else
 					m_pImage = Gdiplus::Bitmap::FromFile(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]), b);
-					if (!m_pImage || m_pImage->GetWidth() == 0) {
 #endif
+					if (!HasImage()) {
 						if (g_pOnFunc[TE_OnFromFile]) {
 							try {
 								if (InterlockedIncrement(&g_nProcIMG) < 8) {
@@ -21052,11 +21138,7 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 							::InterlockedDecrement(&g_nProcIMG);
 						}
 					}
-#ifdef _USE_WIC
-					teSetBool(pVarResult, teWICResult(m_pBitmap));
-#else
-					teSetBool(pVarResult, m_pImage && m_pImage->GetWidth());
-#endif
+					teSetObject(pVarResult, GetBitmapObj());
 				}
 				return S_OK;
 			//FromStream
@@ -21073,11 +21155,7 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 							FromStreamRelease(pStream, b);
 						}
 					}
-#ifdef _USE_WIC
-					teSetBool(pVarResult, teWICResult(m_pBitmap));
-#else
-					teSetBool(pVarResult, m_pImage && m_pImage->GetWidth());
-#endif
+					teSetObject(pVarResult, GetBitmapObj());
 				}
 				return S_OK;
 			//FromArchive
@@ -21116,11 +21194,7 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 					}
 					SafeRelease(&pStorage);
 					teFreeLibrary(hDll, 0);
-#ifdef _USE_WIC
-					teSetBool(pVarResult, teWICResult(m_pBitmap));
-#else
-					teSetBool(pVarResult, m_pImage && m_pImage->GetWidth());
-#endif
+					teSetObject(pVarResult, GetBitmapObj());
 				}
 				return S_OK;
 			//Free(99)
@@ -21176,6 +21250,9 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 						ULARGE_INTEGER uliSize;
 						IStream *pStream = SHCreateMemStream(NULL, NULL);
 						hr = CreateStream(pStream, &uliSize, encoderClsid, 0);
+						if FAILED(hr) {
+							hr = CreateBMPStream(pStream, &uliSize, szMime);
+						}
 						if SUCCEEDED(hr) {
 							UCHAR *pBuff = new UCHAR[uliSize.LowPart];
 							ULONG ulBytesRead;
@@ -21244,7 +21321,7 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 #ifdef _USE_WIC
 				UINT w, h;
 				w = 0;
-				m_pBitmap->GetSize(&w, &h);
+				m_pImage->GetSize(&w, &h);
 				teSetLong(pVarResult, w);
 #else
 				teSetLong(pVarResult, m_pImage->GetWidth());
@@ -21254,7 +21331,7 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 			case 111:
 #ifdef _USE_WIC
 				h = 0;
-				m_pBitmap->GetSize(&w, &h);
+				m_pImage->GetSize(&w, &h);
 				teSetLong(pVarResult, h);
 #else
 				teSetLong(pVarResult, m_pImage->GetHeight());
@@ -21265,10 +21342,10 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 #ifdef _USE_WIC
 				if (nArg >= 1 && GetBGRA()) {
 					UINT w = 0, h = 0;
-					m_pBitmap->GetSize(&w, &h);
+					m_pImage->GetSize(&w, &h);
 					IWICBitmapLock *pBitmapLock;
 					WICRect rc = {0, 0, w, h};
-					if SUCCEEDED(m_pBitmap->Lock(&rc, WICBitmapLockRead, &pBitmapLock)) {
+					if SUCCEEDED(m_pImage->Lock(&rc, WICBitmapLockRead, &pBitmapLock)) {
 						UINT cbSize = 0;
 						LONG *raw = NULL;
 						if SUCCEEDED(pBitmapLock->GetDataPointer(&cbSize, (PBYTE *)&raw)) {
@@ -21298,10 +21375,10 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 #ifdef _USE_WIC
 					if (GetBGRA()) {
 						UINT w = 0, h = 0;
-						m_pBitmap->GetSize(&w, &h);
+						m_pImage->GetSize(&w, &h);
 						IWICBitmapLock *pBitmapLock;
 						WICRect rc = {0, 0, w, h};
-						if SUCCEEDED(m_pBitmap->Lock(&rc, WICBitmapLockWrite, &pBitmapLock)) {
+						if SUCCEEDED(m_pImage->Lock(&rc, WICBitmapLockWrite, &pBitmapLock)) {
 							UINT cbSize = 0;
 							LONG *raw = NULL;
 							if SUCCEEDED(pBitmapLock->GetDataPointer(&cbSize, (PBYTE *)&raw)) {
@@ -21326,6 +21403,11 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 			//GetPixelFormat
 			case 114:
 #ifdef _USE_WIC
+				WICPixelFormatGUID guidPF;
+				m_pImage->GetPixelFormat(&guidPF);
+				WCHAR pszBuff[40];
+				StringFromGUID2(guidPF, pszBuff, 39);
+				teSetSZ(pVarResult, pszBuff);
 #else
 				teSetLong(pVarResult, m_pImage->GetPixelFormat());
 #endif
@@ -21339,9 +21421,9 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 					UINT h = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
 					IWICBitmapScaler *pScaler;
 					if SUCCEEDED(g_pWICFactory->CreateBitmapScaler(&pScaler)) {
-						if SUCCEEDED(pScaler->Initialize(m_pBitmap, w, h, WICBitmapInterpolationModeCubic)) {
+						if SUCCEEDED(pScaler->Initialize(m_pImage, w, h, WICBitmapInterpolationModeCubic)) {
 							CteGdiplusBitmap *pGB = new CteGdiplusBitmap();
-							g_pWICFactory->CreateBitmapFromSource(pScaler, WICBitmapCacheOnDemand, &pGB->m_pBitmap);
+							g_pWICFactory->CreateBitmapFromSource(pScaler, WICBitmapCacheOnDemand, &pGB->m_pImage);
 							SafeRelease(&pScaler);
 							teSetObjectRelease(pVarResult, pGB);
 						}
@@ -21418,9 +21500,9 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 #ifdef _USE_WIC
 					IWICBitmapFlipRotator *pFlipRotator;
 					if SUCCEEDED(g_pWICFactory->CreateBitmapFlipRotator(&pFlipRotator)) {
-						if SUCCEEDED(pFlipRotator->Initialize(m_pBitmap, static_cast<WICBitmapTransformOptions>(GetIntFromVariant(&pDispParams->rgvarg[nArg])))) {
-							SafeRelease(&m_pBitmap);
-							g_pWICFactory->CreateBitmapFromSource(pFlipRotator, WICBitmapCacheOnDemand, &m_pBitmap);
+						if SUCCEEDED(pFlipRotator->Initialize(m_pImage, static_cast<WICBitmapTransformOptions>(GetIntFromVariant(&pDispParams->rgvarg[nArg])))) {
+							SafeRelease(&m_pImage);
+							g_pWICFactory->CreateBitmapFromSource(pFlipRotator, WICBitmapCacheOnDemand, &m_pImage);
 						}
 						SafeRelease(&pFlipRotator);
 					}
@@ -21434,39 +21516,7 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 				if (pVarResult) {
 					HBITMAP hBM;
 #ifdef _USE_WIC
-					UINT clBk = 0;
-					if (nArg >= 0) {
-						clBk = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
-					}
-					if (clBk && GetBGRA()) {
-						int r0 = GetRValue(clBk);
-						int g0 = GetGValue(clBk);
-						int b0 = GetBValue(clBk);
-						UINT w = 0, h = 0;
-						m_pBitmap->GetSize(&w, &h);
-						IWICBitmapLock *pBitmapLock;
-						WICRect rc = {0, 0, w, h};
-						if SUCCEEDED(m_pBitmap->Lock(&rc, WICBitmapLockWrite, &pBitmapLock)) {
-							UINT cbSize = 0;
-							BYTE *raw = NULL;
-							if SUCCEEDED(pBitmapLock->GetDataPointer(&cbSize, &raw)) {
-								for (int y = h; y--;) {
-									for (int x = w; x--;) {
-										PBYTE p = &raw[(x + y * w) * 4];
-										int a = p[3];
-										if (a < 255) {
-											p[0] = (p[0] - b0) * a / 255 + b0;
-											p[1] = (p[1] - g0) * a / 255 + g0;
-											p[2] = (p[2] - r0) * a / 255 + r0;
-											p[3] = 0xff;
-										}
-									}
-								}
-							}
-							pBitmapLock->Release();
-						}
-					}
-					hBM = GetHBITMAP();
+					hBM = GetHBITMAP(nArg >= 0 ? GetIntFromVariant(&pDispParams->rgvarg[nArg]) : 0);
 #else
 					hBM = NULL;
 					if (nArg >= 0) {
@@ -21482,13 +21532,20 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 				return S_OK;
 			//GetHICON
 			case 211:
+				HICON hIcon;
 #ifdef _USE_WIC
 				HBITMAP hBM;
-				if (hBM = GetHBITMAP()) {
-					teSetPtr(pVarResult, CopyImage(hBM, IMAGE_ICON, 0, 0, LR_COPYDELETEORG | LR_COPYRETURNORG));
+				if (hBM = GetHBITMAP(0)) {
+					BITMAP bm;
+					GetObject(hBM, sizeof(BITMAP), &bm);
+					HIMAGELIST himl = ImageList_Create(bm.bmWidth, bm.bmHeight, ILC_COLOR32, 0, 0);
+					ImageList_Add(himl, hBM, NULL);
+					DeleteObject(hBM);
+					hIcon = ImageList_GetIcon(himl, 0, ILD_NORMAL);
+					ImageList_Destroy(himl);
+					teSetPtr(pVarResult, hIcon);
 				}
 #else
-				HICON hIcon;
 				if (m_pImage->GetHICON(&hIcon) == 0) {
 					teSetPtr(pVarResult, hIcon);
 				}

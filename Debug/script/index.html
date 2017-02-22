@@ -53,24 +53,23 @@
       <div id="client">
         <table class="layout" onresize="Resize()">
           <tr>
-            <td id="leftbar" class="sidebar" style="width: 0px; height: 100%">
+            <td id="leftbar" class="sidebar">
               <div id="leftbarT"  class="layout" onresize="Resize()">
                 <div id="LeftBar1" class="sidebar1" onchange="Resize()"></div>
                 <div id="LeftBar2" class="sidebar2"></div>
                 <div id="LeftBar3" class="sidebar3" onchange="Resize()"></div>
               </div>
             </td>
-            <td id="leftsplitter" class="splitter" onmousedown="RunSplitter(1)"></td>
-            <td id="Background" class="sidebar" style="height: 100%"></td>
-            <td id="rightsplitter" class="splitter" onmousedown="RunSplitter(2)"></td>
-            <td id="rightbar" class="sidebar" style="width: 0px; height: 100%">
+            <td id="leftsplitter" class="splitter" onmousedown="RunSplitter(1)"><br /></td>
+            <td id="Background" class="sidebar" style="width: 100%"></td>
+            <td id="rightsplitter" class="splitter" onmousedown="RunSplitter(2)"><br /></td>
+            <td id="rightbar" class="sidebar">
               <div id="rightbarT"  class="layout" onresize="Resize()">
                 <div id="RightBar1" class="sidebar1" onchange="Resize()"></div>
                 <div id="RightBar2" class="sidebar2"></div>
                 <div id="RightBar3" class="sidebar3" onchange="Resize()"></div>
               </div>
             </td>
-
           </tr>
         </table>
       </div>

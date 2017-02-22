@@ -125,6 +125,7 @@ form {
 	margin: 0;
 	padding: 0;
 	border: none;
+  height: 100%;
 	overflow: hidden;
 }
 
@@ -245,10 +246,10 @@ a.treebutton:hover {
 }
 
 .splitter {
-	padding: 0;
+	padding: 1px;
 	margin: 0;
 	border: none;
-	width: 2px;
+	width: 0;
 	height: 100%;
 	cursor: e-resize;
 }

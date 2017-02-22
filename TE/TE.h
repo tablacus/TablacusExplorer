@@ -1375,14 +1375,17 @@ public:
 	CteGdiplusBitmap();
 	~CteGdiplusBitmap();
 	VOID FromStreamRelease(IStream *pStream, BOOL b);
+	BOOL HasImage();
+	CteGdiplusBitmap* GetBitmapObj();
 #ifdef _USE_WIC
-	HBITMAP GetHBITMAP();
+	HBITMAP GetHBITMAP(COLORREF clBk);
 	BOOL GetBGRA();
 	HRESULT CreateStream(IStream *pStream, ULARGE_INTEGER *puliSize, CLSID encoderClsid, LONG lQuality);
+	HRESULT CreateBMPStream(IStream *pStream, ULARGE_INTEGER *puliSize, LPWSTR szMime);
 #endif
 private:
 #ifdef _USE_WIC
-	IWICBitmap *m_pBitmap;
+	IWICBitmap *m_pImage;
 #else
 	Gdiplus::Bitmap *m_pImage;
 #endif
