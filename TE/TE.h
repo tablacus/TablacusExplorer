@@ -39,6 +39,7 @@
 #include <Uxtheme.h>
 #ifdef _USE_WIC
 #include <wincodec.h>
+#include <wincodecsdk.h>
 #else
 #include <gdiplus.h>
 #endif
@@ -1377,15 +1378,17 @@ public:
 	VOID FromStreamRelease(IStream *pStream, BOOL b);
 	BOOL HasImage();
 	CteGdiplusBitmap* GetBitmapObj();
+	VOID ClearImage();
 #ifdef _USE_WIC
 	HBITMAP GetHBITMAP(COLORREF clBk);
 	BOOL GetBGRA();
 	HRESULT CreateStream(IStream *pStream, ULARGE_INTEGER *puliSize, CLSID encoderClsid, LONG lQuality);
-	HRESULT CreateBMPStream(IStream *pStream, ULARGE_INTEGER *puliSize, LPWSTR szMime);
+//	HRESULT CreateBMPStream(IStream *pStream, ULARGE_INTEGER *puliSize, LPWSTR szMime);
 #endif
 private:
 #ifdef _USE_WIC
 	IWICBitmap *m_pImage;
+	IWICBitmapDecoder *m_pDecoder;
 #else
 	Gdiplus::Bitmap *m_pImage;
 #endif

@@ -38,13 +38,13 @@ RunEvent2 = function (en, a1, a2, a3, a4)
 		try {
 			var hr = eo[i](a1, a2, a3, a4);
 			if (isFinite(hr) && hr != S_OK) {
-				return hr; 
+				return hr;
 			}
 		} catch (e) {
 			ShowError(e, en, i);
 		}
 	}
-	return S_OK; 
+	return S_OK;
 }
 
 RunEvent3 = function (en, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)
@@ -54,7 +54,7 @@ RunEvent3 = function (en, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)
 		try {
 			var hr = eo[i](a1, a2, a3, a4, a5, a6, a7, a8, a9, a10);
 			if (isFinite(hr)) {
-				return hr; 
+				return hr;
 			}
 		} catch (e) {
 			ShowError(e, en, i);
@@ -69,7 +69,7 @@ RunEvent4 = function (en, a1, a2)
 		try {
 			var r = eo[i](a1, a2);
 			if (r !== undefined) {
-				return r; 
+				return r;
 			}
 		} catch (e) {
 			ShowError(e, en, i);
@@ -585,9 +585,10 @@ DisableImage = function (img, bDisable)
 			if (bDisable) {
 				if (!res) {
 					if (/^file:/i.test(s)) {
-						var image = te.WICBitmap();
-						image.FromFile(api.PathCreateFromUrl(s));
-						s = image.DataURI("image/png");
+						var image;
+						if (image = te.WICBitmap().FromFile(api.PathCreateFromUrl(s))) {
+							s = image.DataURI("image/png");
+						}
 					}
 					api.SVG_GRAY[1] = img.offsetWidth;
 					api.SVG_GRAY[3] = img.offsetHeight;
@@ -752,7 +753,7 @@ te.OnNavigateComplete = function (Ctrl)
 ShowStatusText = function (Ctrl, Text, iPart)
 {
 	RunEvent1("StatusText", Ctrl, Text, iPart);
-	return S_OK; 
+	return S_OK;
 }
 
 te.OnStatusText = ShowStatusText;
@@ -761,7 +762,7 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 {
 	var hr = RunEvent3("KeyMessage", Ctrl, hwnd, msg, key, keydata);
 	if (isFinite(hr)) {
-		return hr; 
+		return hr;
 	}
 	if (g_.mouse.str.length > 1) {
 		SetGestureText(Ctrl, GetGestureKey() + g_.mouse.str);
@@ -847,7 +848,7 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 			}
 		}
 	}
-	return S_FALSE; 
+	return S_FALSE;
 }
 
 te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
@@ -876,7 +877,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 	}
 	var hr = RunEvent3("MouseMessage", Ctrl, hwnd, msg, wParam, pt);
 	if (isFinite(hr)) {
-		return hr; 
+		return hr;
 	}
 	var strClass = api.GetClassName(hwnd);
 	if (strClass == WC_EDIT) {
@@ -1094,7 +1095,7 @@ te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam)
 	}
 	var hr = RunEvent3("Command", Ctrl, hwnd, msg, wParam, lParam);
 	RunEvent1("ConfigChanged", "Config");
-	return isFinite(hr) ? hr : S_FALSE; 
+	return isFinite(hr) ? hr : S_FALSE;
 }
 
 te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon)
@@ -1122,7 +1123,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 	}
 	RunEvent1("ConfigChanged", "Config");
 	if (isFinite(hr)) {
-		return hr; 
+		return hr;
 	}
 	if (/string/i.test(typeof Directory) && !fso.FolderExists(Directory)) {
 		return S_FALSE;
@@ -1170,7 +1171,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 		return S_OK;
 	}
 	ShowStatusText(te, [Verb || "", Items.Count == 1 ? Items.Item(0).Path : Items.Count].join(":"), 1);
-	return S_FALSE; 
+	return S_FALSE;
 }
 
 AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon)
@@ -1229,7 +1230,7 @@ te.OnDragEnter = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect)
 		}
 	}
 	g_.mouse.str = "";
-	return hr; 
+	return hr;
 }
 
 te.OnDragOver = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect)
@@ -1242,13 +1243,13 @@ te.OnDragOver = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect)
 			pdwEffect[0] = dwEffect;
 			var hr = eo[i](Ctrl, dataObj, pgrfKeyState[0], pt, pdwEffect, pgrfKeyState);
 			if (isFinite(hr)) {
-				return hr; 
+				return hr;
 			}
 		} catch (e) {
 			ShowError(e, en, i);
 		}
 	}
-	return E_NOTIMPL; 
+	return E_NOTIMPL;
 }
 
 te.OnDrop = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect)
@@ -1261,13 +1262,13 @@ te.OnDrop = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect)
 			pdwEffect[0] = dwEffect;
 			var hr = eo[i](Ctrl, dataObj, pgrfKeyState[0], pt, pdwEffect, pgrfKeyState);
 			if (isFinite(hr)) {
-				return hr; 
+				return hr;
 			}
 		} catch (e) {
 			ShowError(e, en, i);
 		}
 	}
-	return E_NOTIMPL; 
+	return E_NOTIMPL;
 }
 
 te.OnDragLeave = function (Ctrl)
@@ -1322,7 +1323,7 @@ te.OnIconSizeChanged = function (Ctrl)
 te.OnFilterChanged = function (Ctrl)
 {
 	if (isFinite(RunEvent3("FilterChanged", Ctrl))) {
-		return; 
+		return;
 	}
 	var res = /\/(.*)\/(.*)/.exec(Ctrl.FilterView);
 	if (res) {
@@ -1345,7 +1346,7 @@ te.OnShowContextMenu = function (Ctrl, hwnd, msg, wParam, pt)
 	}
 	var hr = RunEvent3("ShowContextMenu", Ctrl, hwnd, msg, wParam, pt);
 	if (isFinite(hr)) {
-		return hr; 
+		return hr;
 	}
 	switch (Ctrl.Type) {
 		case CTRL_SB:
@@ -1402,7 +1403,7 @@ te.OnDefaultCommand = function (Ctrl)
 	}
 	var hr = RunEvent3("DefaultCommand", Ctrl, Selected);
 	if (isFinite(hr)) {
-		return hr; 
+		return hr;
 	}
 	if (ExecMenu(Ctrl, "Default", null, 2) != S_OK) {
 		return InvokeCommand(Selected, 0, te.hwnd, null, null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
@@ -1426,7 +1427,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 {
 	var hr = RunEvent3("SystemMessage", Ctrl, hwnd, msg, wParam, lParam);
 	if (isFinite(hr)) {
-		return hr; 
+		return hr;
 	}
 	switch (Ctrl.Type) {
 		case CTRL_WB:
@@ -1562,7 +1563,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 		var cd = api.Memory("COPYDATASTRUCT", 1, lParam);
 		var hr = RunEvent3("CopyData", Ctrl, cd, wParam);
 		if (isFinite(hr)) {
-			return hr; 
+			return hr;
 		}
 		if (Ctrl.Type == CTRL_TE && cd.dwData == 0 && cd.cbData) {
 			var strData = api.SysAllocStringByteLen(cd.lpData, cd.cbData);
@@ -1571,14 +1572,14 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 			return S_OK;
 		}
 	}
-	return 0; 
+	return 0;
 };
 
 te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 {
 	var hr = RunEvent3("MenuMessage", Ctrl, hwnd, msg, wParam, lParam);
 	if (isFinite(hr)) {
-		return hr; 
+		return hr;
 	}
 	switch (msg) {
 		case WM_INITMENUPOPUP:
@@ -1623,14 +1624,14 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 			}
 			break;
 	}
-	return S_FALSE; 
+	return S_FALSE;
 };
 
 te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 {
 	var hr = RunEvent3("AppMessage", Ctrl, hwnd, msg, wParam, lParam);
 	if (isFinite(hr)) {
-		return hr; 
+		return hr;
 	}
 	if (msg == TWM_CHANGENOTIFY) {
 		var pidls = {};
@@ -1649,7 +1650,7 @@ te.OnNewWindow = function (Ctrl, dwFlags, UrlContext, Url)
 {
 	var hr = RunEvent3("NewWindow", Ctrl, dwFlags, UrlContext, Url);
 	if (isFinite(hr)) {
-		return hr; 
+		return hr;
 	}
 	var FolderItem = api.ILCreateFromPath(api.PathCreateFromUrl(Url));
 	if (FolderItem.IsFolder) {
@@ -1666,7 +1667,7 @@ te.OnClipboardText = function (Items)
 	}
 	var r = RunEvent4("ClipboardText", Items);
 	if (r !== undefined) {
-		return r; 
+		return r;
 	}
 	var s = [];
 	for (var i = Items.Count; i-- > 0;) {
@@ -1780,7 +1781,7 @@ te.OnILGetParent = function (FolderItem)
 {
 	var r = RunEvent4("ILGetParent", FolderItem);
 	if (r !== undefined) {
-		return r; 
+		return r;
 	}
 	var res = /search\-ms:.*?&crumb=location:([^&]*)/.exec(api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
 	if (res) {
@@ -2023,7 +2024,7 @@ function SetAddon(strName, Location, Tag, strVAlign)
 
 function InitCode()
 {
-	var types = 
+	var types =
 	{
 		Key:   ["All", "List", "Tree", "Browser", "Edit"],
 		Mouse: ["All", "List", "List_Background", "Tree", "Tabs", "Tabs_Background", "Browser"]
@@ -2246,7 +2247,7 @@ importScripts = function()
 	}
 }
 
-g_.mouse = 
+g_.mouse =
 {
 	str: "",
 	CancelContextMenu: false,
@@ -2587,7 +2588,7 @@ g_basic =
 			Ref: OpenDialog
 		},
 
-		"Selected Items": 
+		"Selected Items":
 		{
 			Exec: function (Ctrl, s, type, hwnd, pt)
 			{
@@ -2783,7 +2784,7 @@ g_basic =
 			Enc: true
 		},
 
-		Edit: 
+		Edit:
 		{
 			Exec: function (Ctrl, s, type, hwnd, pt)
 			{
@@ -2800,7 +2801,7 @@ g_basic =
 			}
 		},
 
-		View: 
+		View:
 		{
 			Exec: function (Ctrl, s, type, hwnd, pt)
 			{
@@ -2817,7 +2818,7 @@ g_basic =
 			}
 		},
 
-		Context: 
+		Context:
 		{
 			Exec: function (Ctrl, s, type, hwnd, pt)
 			{
@@ -2861,7 +2862,7 @@ g_basic =
 			}
 		},
 
-		Background: 
+		Background:
 		{
 			Exec: function (Ctrl, s, type, hwnd, pt)
 			{
@@ -3352,7 +3353,7 @@ if (!te.Data) {
 	te.Data.uRegisterId = api.SHChangeNotifyRegister(te.hwnd, SHCNRF_InterruptLevel | SHCNRF_ShellLevel | SHCNRF_NewDelivery, SHCNE_ALLEVENTS & ~SHCNE_UPDATEIMAGE, TWM_CHANGENOTIFY, ssfDESKTOP, true);
 } else {
 	setTimeout(function ()
-	{	
+	{
 		te.UnlockUpdate();
 		setTimeout(Resize, 99);
 	}, 500);
