@@ -23,17 +23,20 @@ Sérgio Nova
 Italiano / Italian
 Michele Pezza
 
-French / Français
+Français / French
 Olivier Wuillemin / bufferUnderrun
 
 русский / Russian
 Hunter User
+
+Türkçe / Turkish
+Ferhat Aydin
 
 //Documents
 https://www.penflip.com/LightTempler/tablacus-explorer
 
 //Build
 Visual C++ 2010 Express Edition SP1
-Windows SDK v7.1 
+Windows SDK v7.1
 
 http://www.eonet.ne.jp/~gakana/tablacus/
