@@ -20641,7 +20641,9 @@ CteGdiplusBitmap::CteGdiplusBitmap()
 {
 	m_cRef = 1;
 	m_pImage = NULL;
+#ifdef _USE_WIC
 	m_pDecoder = NULL;
+#endif
 }
 
 CteGdiplusBitmap::~CteGdiplusBitmap()
@@ -20702,56 +20704,7 @@ STDMETHODIMP CteGdiplusBitmap::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, U
 	return teGetDispId(methodGB, _countof(methodGB), g_maps[MAP_GB], *rgszNames, rgDispId, true);
 }
 
-#ifdef _USE_WIC
-
-IWICBitmap* teGetImageFromHICON(HICON hIcon)
-{
-	const COLORREF pColor[] = { 0, 0xffffff };
-	ICONINFO iconinfo;
-	GetIconInfo(hIcon, &iconinfo);
-	BITMAP bm;
-	GetObject(iconinfo.hbmColor, sizeof(BITMAP), &bm);
-	DeleteObject(iconinfo.hbmColor);
-	DeleteObject(iconinfo.hbmMask);
-	IWICBitmap *ppBitmap[2];
-	if (bm.bmWidth > 48) {
-		g_pWICFactory->CreateBitmapFromHICON(hIcon, &ppBitmap[0]);
-		return ppBitmap[0];
-	}
-	HIMAGELIST himl = ImageList_Create(bm.bmWidth, bm.bmHeight, ILC_COLOR24 | ILC_MASK, 0, 0);
-
-	IWICBitmapLock *ppBitmapLock[2];
-	WICRect rc = { 0, 0, bm.bmWidth, bm.bmHeight };
-	try {
-		UINT cbSize = 0;
-		RGBQUAD *ppbData[2];
-		for (int i = 0; i < 2; i++) {
-			ImageList_SetBkColor(himl, pColor[i]);
-			ImageList_AddIcon(himl, hIcon);
-			HICON hIcon2 = ImageList_GetIcon(himl, i, ILD_NORMAL);
-			g_pWICFactory->CreateBitmapFromHICON(hIcon2, &ppBitmap[i]);
-			DestroyIcon(hIcon2);
-			ppBitmap[i]->Lock(&rc, i ? WICBitmapLockRead : WICBitmapLockWrite, &ppBitmapLock[i]);
-			ppBitmapLock[i]->GetDataPointer(&cbSize, (PBYTE *)&ppbData[i]);
-		}
-		for (int y = bm.bmHeight; y--;) {
-			for (int x = bm.bmWidth; x--;) {
-				int ix = x + y * bm.bmWidth;
-				BYTE a = 0xff - (&ppbData[1][ix])->rgbRed + (&ppbData[0][ix])->rgbRed;
-				if (a < 0xff) {
-					(&ppbData[0][ix])->rgbReserved = a;
-				}
-			}
-		}
-	} catch (...) {}
-	SafeRelease(&ppBitmapLock[1]);
-	SafeRelease(&ppBitmapLock[0]);
-	ImageList_Destroy(himl);
-	SafeRelease(&ppBitmap[1]);
-	return ppBitmap[0];
-}
-
-#else
+#ifndef _USE_WIC
 Gdiplus::Bitmap* teGetImageFromHICON(HICON hIcon)
 {
 	const COLORREF pColor[] = { 0, 0xffffff };
@@ -20795,34 +20748,9 @@ Gdiplus::Bitmap* teGetImageFromHICON(HICON hIcon)
 
 HBITMAP CteGdiplusBitmap::GetHBITMAP(COLORREF clBk)
 {
-	if (clBk && GetBGRA()) {
-		int r0 = GetRValue(clBk);
-		int g0 = GetGValue(clBk);
-		int b0 = GetBValue(clBk);
-		UINT w = 0, h = 0;
-		m_pImage->GetSize(&w, &h);
-		IWICBitmapLock *pBitmapLock;
-		WICRect rc = {0, 0, w, h};
-		if SUCCEEDED(m_pImage->Lock(&rc, WICBitmapLockWrite, &pBitmapLock)) {
-			UINT cbSize = 0;
-			RGBQUAD *pbData = NULL;
-			if SUCCEEDED(pBitmapLock->GetDataPointer(&cbSize, (PBYTE *)&pbData)) {
-				for (int y = h; y--;) {
-					for (int x = w; x--;) {
-						RGBQUAD *pcl = &pbData[x + y * w];
-						int a = pcl->rgbReserved;
-						if (a < 0xff) {
-							pcl->rgbBlue = (pcl->rgbBlue - b0) * a / 255 + b0;
-							pcl->rgbGreen = (pcl->rgbGreen - g0) * a / 255 + g0;
-							pcl->rgbRed = (pcl->rgbRed - r0) * a / 255 + r0;
-							pcl->rgbReserved = 0xff;
-						}
-					}
-				}
-			}
-			pBitmapLock->Release();
-		}
-	}
+	WICPixelFormatGUID guidPF;
+	m_pImage->GetPixelFormat(&guidPF);
+	BOOL bFixAlpha = IsEqualGUID(guidPF, GUID_WICPixelFormat32bppBGRA) || (clBk && GetBGRA());
 	HBITMAP hBM = NULL;
 	UINT w = 0, h = 0;
 	m_pImage->GetSize(&w, &h);
@@ -20840,25 +20768,47 @@ HBITMAP CteGdiplusBitmap::GetHBITMAP(COLORREF clBk)
 					}
 				}
 				LPBITMAPINFO lpbmi = (LPBITMAPINFO)HeapAlloc(GetProcessHeap(), 0, sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * uCount);
-				::ZeroMemory(&lpbmi->bmiHeader, sizeof(BITMAPINFOHEADER));
-				lpbmi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-				lpbmi->bmiHeader.biWidth = w;
-				lpbmi->bmiHeader.biHeight = -static_cast<LONG>(h);
-				lpbmi->bmiHeader.biPlanes = 1;
-				lpbmi->bmiHeader.biBitCount = cbStride * 8 / w;
-
-				if (uCount) {
-					UINT cActualColors;
-					pPalette->GetColors(uCount, (WICColor *)&lpbmi->bmiColors[0], &cActualColors);
+				if (lpbmi) {
+					::ZeroMemory(&lpbmi->bmiHeader, sizeof(BITMAPINFOHEADER));
+					lpbmi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+					lpbmi->bmiHeader.biWidth = w;
+					lpbmi->bmiHeader.biHeight = h;
+					lpbmi->bmiHeader.biPlanes = 1;
+					lpbmi->bmiHeader.biBitCount = cbStride * 8 / w;
+					if (uCount) {
+						UINT cActualColors;
+						pPalette->GetColors(uCount, (WICColor *)&lpbmi->bmiColors[0], &cActualColors);
+					}
+					SafeRelease(&pPalette);
+					RGBQUAD *lpBits, *pbData;
+					hBM = CreateDIBSection(NULL, lpbmi, DIB_RGB_COLORS, (void **)&lpBits, NULL, 0);
+					HeapFree(GetProcessHeap(), 0, lpbmi);
+					if (hBM && lpBits) {
+						UINT cbSize = 0;
+						if SUCCEEDED(pBitmapLock->GetDataPointer(&cbSize, (PBYTE *)&pbData)) {
+							if (bFixAlpha) {
+								int r0 = GetRValue(clBk);
+								int g0 = GetGValue(clBk);
+								int b0 = GetBValue(clBk);
+								for (int y = h; y--;) {
+									RGBQUAD *pclSrc = &pbData[y * w];
+									RGBQUAD *pclDst = &lpBits[(h - y - 1) * w];
+									for (int x = w; x--; pclSrc++, pclDst++) {
+										int a = pclSrc->rgbReserved;
+										pclDst->rgbBlue = (pclSrc->rgbBlue - b0) * a / 0xff + b0;
+										pclDst->rgbGreen = (pclSrc->rgbGreen - g0) * a / 0xff + g0;
+										pclDst->rgbRed = (pclSrc->rgbRed - r0) * a / 0xff + r0;
+										pclDst->rgbReserved = clBk ? 0xff : pclSrc->rgbReserved;
+									}
+								}
+							} else {
+								for (int y = h; y--;) {
+									::CopyMemory(&lpBits[(h - y - 1) * w], &pbData[y * w], cbStride);
+								}
+							}
+						}
+					}
 				}
-				SafeRelease(&pPalette);
-				
-				LPBYTE lpBits;
-				hBM = CreateDIBSection(NULL, lpbmi, DIB_RGB_COLORS, (void **)&lpBits, NULL, 0);
-				if (hBM && lpBits) {
-					m_pImage->CopyPixels(NULL, cbStride, cbStride * h, lpBits);
-				}
-				HeapFree(GetProcessHeap(), 0, lpbmi);
 			}
 			SafeRelease(&pBitmapLock);
 		}
@@ -21157,7 +21107,11 @@ STDMETHODIMP CteGdiplusBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
 			//FromHICON
 			case 2:
 				if (nArg >= 0) {
+#ifdef _USE_WIC
+					g_pWICFactory->CreateBitmapFromHICON((HICON)GetPtrFromVariant(&pDispParams->rgvarg[nArg]), &m_pImage);
+#else
 					m_pImage = teGetImageFromHICON((HICON)GetPtrFromVariant(&pDispParams->rgvarg[nArg]));
+#endif
 					teSetObject(pVarResult, GetBitmapObj());
 				}
 				return S_OK;

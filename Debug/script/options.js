@@ -252,9 +252,9 @@ function SetCheckbox(o)
 {
 	var ar = o.id.split(":");
 	if (o.checked) {
-		document.F[ar[0]].value |= eval(ar[1]);
+		document.F[ar[0]].value |= (api.sscanf(ar[1], "0x%x") || ar[1]);
 	} else {
-		document.F[ar[0]].value &= ~eval(ar[1]);
+		document.F[ar[0]].value &= ~(api.sscanf(ar[1], "0x%x") || ar[1]);
 	}
 	var res = /^(Tab|Tree|View|Conf)/.exec(ar[0]);
 	if (res) {

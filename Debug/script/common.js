@@ -1949,7 +1949,7 @@ MenusIcon = function (mii, src)
 {
 	mii.cbSize = mii.Size;
 	if (src) {
-		src = ExtractMacro(te, src);
+		src = api.PathUnquoteSpaces(ExtractMacro(te, src));
 		var image = te.WICBitmap();
 		mii.hbmpItem = MainWindow.g_arBM['U' + src];
 		if (mii.hbmpItem) {
