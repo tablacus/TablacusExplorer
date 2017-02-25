@@ -1375,7 +1375,7 @@ public:
 
 	CteGdiplusBitmap();
 	~CteGdiplusBitmap();
-	VOID FromStreamRelease(IStream *pStream, BOOL b);
+	VOID FromStreamRelease(IStream *pStream, BOOL b, BOOL bFile);
 	BOOL HasImage();
 	CteGdiplusBitmap* GetBitmapObj();
 	VOID ClearImage();
@@ -1388,11 +1388,13 @@ public:
 private:
 #ifdef _USE_WIC
 	IWICBitmap *m_pImage;
-	IWICBitmapDecoder *m_pDecoder;
+	IStream *m_pStream;
+	CLSID m_guidSrc;
 #else
 	Gdiplus::Bitmap *m_pImage;
 #endif
 	LONG	m_cRef;
+	UINT m_uFrameCount;
 };
 
 #ifdef _USE_BSEARCHAPI
