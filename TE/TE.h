@@ -61,6 +61,7 @@ using namespace Gdiplus;
 #pragma comment(lib, "imm32.lib")
 #pragma comment(lib, "crypt32.lib")
 #pragma comment(lib, "UxTheme.lib")
+#pragma comment(lib, "Msimg32.lib")
 #ifndef _USE_WIC
 #pragma comment(lib, "gdiplus.lib")
 #endif
@@ -1375,13 +1376,14 @@ public:
 
 	CteGdiplusBitmap();
 	~CteGdiplusBitmap();
-	VOID FromStreamRelease(IStream *pStream, BOOL b, BOOL bFile);
+	VOID FromStreamRelease(IStream *pStream, LPWSTR lpfn, BOOL bExtend);
+	VOID GetFrameFromStream(IStream *pStream, UINT uFrame, BOOL bInit);
 	BOOL HasImage();
 	CteGdiplusBitmap* GetBitmapObj();
-	VOID ClearImage();
+	VOID ClearImage(BOOL bAll);
 #ifdef _USE_WIC
 	HBITMAP GetHBITMAP(COLORREF clBk);
-	BOOL GetBGRA();
+	BOOL Get(WICPixelFormatGUID guidNewPF);
 	HRESULT CreateStream(IStream *pStream, ULARGE_INTEGER *puliSize, CLSID encoderClsid, LONG lQuality);
 //	HRESULT CreateBMPStream(IStream *pStream, ULARGE_INTEGER *puliSize, LPWSTR szMime);
 #endif
@@ -1390,11 +1392,12 @@ private:
 	IWICBitmap *m_pImage;
 	IStream *m_pStream;
 	CLSID m_guidSrc;
+	IWICMetadataQueryReader *m_ppMetadataQueryReader[2];
 #else
 	Gdiplus::Bitmap *m_pImage;
 #endif
 	LONG	m_cRef;
-	UINT m_uFrameCount;
+	UINT m_uFrameCount, m_uFrame;
 };
 
 #ifdef _USE_BSEARCHAPI

@@ -2380,7 +2380,7 @@ OpenHttpRequest = function (url, ct, fn)
 	try {
 		xhr.send(null);
 	} catch (e) {
-		ShowError(e);
+		MessageBox([api.LoadString(hShell32, 4227).replace(/^\t/, "").replace("%d", api.sprintf(99, "0x%08x", e.number)), url].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
 	}
 }
 

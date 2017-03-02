@@ -1825,7 +1825,7 @@ te.OnSort = function (Ctrl)
 	return RunEvent1("Sort", Ctrl);
 }
 
-te.OnFromFile = function (image, file, bECM)
+te.OnFromFile = function (image, file)
 {
 	var alt;
 	var s = fso.BuildPath(fso.GetSpecialFolder(2).Path, "tablacus\\");
@@ -1841,12 +1841,12 @@ te.OnFromFile = function (image, file, bECM)
 			}
 		}
 	}
-	return RunEvent3("FromFile", image, file, alt, bECM);
+	return RunEvent3("FromFile", image, file, alt);
 }
 
-te.OnFromStream = function (image, stream, bECM)
+te.OnFromStream = function (image, stream, filename)
 {
-	return RunEvent3("FromStream", image, stream, bECM);
+	return RunEvent3("FromStream", image, stream, filename);
 }
 
 //Tablacus Events

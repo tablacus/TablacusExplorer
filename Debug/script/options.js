@@ -2187,7 +2187,7 @@ function GetAddons()
 	if (nCount) {
 		return;
 	}
-	OpenHttpRequest(urlAddons + "/index.xml", "text/xml", AddonsList);
+	OpenHttpRequest(urlAddons + "index.xml", "text/xml", AddonsList);
 }
 
 function UpdateAddon(Id, o)
@@ -2398,8 +2398,17 @@ function Install(o, bUpdate)
 		DeleteItem(temp);
 		CreateFolder(temp);
 		var zipfile = fso.BuildPath(temp, file);
-		if (DownloadFile(urlAddons + Id + '/' + file, zipfile) != S_OK || MainWindow.Extract(zipfile, temp) != S_OK) {
+		var url = urlAddons + Id + '/' + file;
+		var hr = DownloadFile(url, zipfile);
+		if (hr != S_OK) {
 			document.body.style.cursor = "auto";
+			MessageBox([api.LoadString(hShell32, 4227).replace(/^\t/, "").replace("%d", api.sprintf(99, "0x%08x", hr)), url].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
+			return;
+		}
+		hr = MainWindow.Extract(zipfile, temp);
+		if (hr != S_OK) {
+			document.body.style.cursor = "auto";
+			MessageBox([api.LoadString(hShell32, 4228).replace(/^\t/, "").replace("%d", api.sprintf(99, "0x%08x", hr)), GetText("Extract"), zipfile].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
 			return;
 		}
 
