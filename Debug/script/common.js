@@ -202,16 +202,17 @@ AddEventId = function (Name, Id, fn)
 AddonDisabled = function (Id)
 {
 	for (var i in eventTE.AddonDisabled) {
-		eventTE.AddonDisabled[i](Id);
+		try {
+			eventTE.AddonDisabled[i](Id);
+		} catch (e) {
+			ShowError(e, s);
+		}
 	}
 	if (eventTE.AddonDisabledEx) {
 		var fn = eventTE.AddonDisabledEx[Id.toLowerCase()];
 		if (fn) {
 			delete eventTE.AddonDisabledEx[Id.toLowerCase()];
-			AddEventEx(window, "beforeunload", function ()
-			{
-				fn();
-			});
+			AddEventEx(window, "beforeunload", fn);
 		}
 	}
 	CollectGarbage();

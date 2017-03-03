@@ -5,7 +5,6 @@
 //#define _USE_HTMLDOC
 //#define _USE_TESTOBJECT
 //#define _USE_TESTPATHMATCHSPEC
-#define _USE_WIC
 #define _Emulate_XP_	//FALSE &&
 #ifndef _WIN64
 #define _2000XP
@@ -37,20 +36,13 @@
 #include <UIAutomationClient.h>
 #include <UIAutomationCore.h>
 #include <Uxtheme.h>
-#ifdef _USE_WIC
 #include <wincodec.h>
 #include <wincodecsdk.h>
-#else
-#include <gdiplus.h>
-#endif
 #ifndef _2000XP
 #include <Propsys.h>
 #endif
 #ifdef _USE_APIHOOK
 #include <imagehlp.h>
-#endif
-#ifndef _USE_WIC
-using namespace Gdiplus;
 #endif
 
 #import <shdocvw.dll> exclude("OLECMDID", "OLECMDF", "OLECMDEXECOPT", "tagREADYSTATE") auto_rename
@@ -62,9 +54,6 @@ using namespace Gdiplus;
 #pragma comment(lib, "crypt32.lib")
 #pragma comment(lib, "UxTheme.lib")
 #pragma comment(lib, "Msimg32.lib")
-#ifndef _USE_WIC
-#pragma comment(lib, "gdiplus.lib")
-#endif
 #ifndef _2000XP
 #pragma comment(lib, "Propsys.lib")
 #endif
@@ -1362,7 +1351,7 @@ private:
 	LONG	m_cRef;
 };
 
-class CteGdiplusBitmap : public IDispatch
+class CteWICBitmap : public IDispatch
 {
 public:
 	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
@@ -1374,28 +1363,22 @@ public:
 	STDMETHODIMP GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId);
 	STDMETHODIMP Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr);
 
-	CteGdiplusBitmap();
-	~CteGdiplusBitmap();
+	CteWICBitmap();
+	~CteWICBitmap();
 	VOID FromStreamRelease(IStream *pStream, LPWSTR lpfn, BOOL bExtend);
 	VOID GetFrameFromStream(IStream *pStream, UINT uFrame, BOOL bInit);
 	BOOL HasImage();
-	CteGdiplusBitmap* GetBitmapObj();
+	CteWICBitmap* GetBitmapObj();
 	VOID ClearImage(BOOL bAll);
-#ifdef _USE_WIC
 	HBITMAP GetHBITMAP(COLORREF clBk);
 	BOOL Get(WICPixelFormatGUID guidNewPF);
 	HRESULT CreateStream(IStream *pStream, ULARGE_INTEGER *puliSize, CLSID encoderClsid, LONG lQuality);
 //	HRESULT CreateBMPStream(IStream *pStream, ULARGE_INTEGER *puliSize, LPWSTR szMime);
-#endif
 private:
-#ifdef _USE_WIC
 	IWICBitmap *m_pImage;
 	IStream *m_pStream;
 	CLSID m_guidSrc;
 	IWICMetadataQueryReader *m_ppMetadataQueryReader[2];
-#else
-	Gdiplus::Bitmap *m_pImage;
-#endif
 	LONG	m_cRef;
 	UINT m_uFrameCount, m_uFrame;
 };
