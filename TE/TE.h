@@ -264,6 +264,7 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TET_Title				0x1fa7
 #define TET_FreeLibrary			0x1fa8
 #define TET_Refresh				0x1fa9
+#define TET_EndThread			0x1faa
 #define SHGDN_FORPARSINGEX	0x80000000
 #define START_OnFunc			5000
 #define TE_Labels				0
@@ -314,7 +315,8 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TE_OnSort				45
 #define TE_OnFromFile			46
 #define TE_OnFromStream			47
-#define Count_OnFunc			48
+#define TE_OnEndThread			48
+#define Count_OnFunc			49
 
 #define SB_TotalFileSize		0
 #define SB_OnIncludeObject		1

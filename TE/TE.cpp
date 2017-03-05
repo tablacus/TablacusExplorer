@@ -905,6 +905,7 @@ TEmethod methodTE[] = {
 	{ START_OnFunc + TE_OnSort, "OnSort" },
 	{ START_OnFunc + TE_OnFromFile, "OnFromFile" },
 	{ START_OnFunc + TE_OnFromStream, "OnFromStream" },
+	{ START_OnFunc + TE_OnEndThread, "OnEndThread" },
 	{ 0, NULL }
 };
 
@@ -3110,6 +3111,7 @@ static void threadFileOperation(void *args)
 	::SysFreeString(const_cast<BSTR>(pFO->pTo));
 	::SysFreeString(const_cast<BSTR>(pFO->pFrom));
 	delete [] pFO;
+	SetTimer(g_hwndMain, TET_EndThread, 100, teTimerProc);
 	::CoUninitialize();
 	::_endthread();
 }
@@ -9413,6 +9415,9 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 			case TET_Title:
 				SetWindowText(hwnd, g_szTitle);
 				break;
+			case TET_EndThread:
+				DoFunc(TE_OnEndThread, g_pTE, S_OK);
+				break;
 		}//end_switch
 	} catch (...) {
 		g_nException = 0;
@@ -13317,7 +13322,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					}
 				}
 #endif
-				return DoFunc(TE_OnSort, this, S_OK);;
+				return DoFunc(TE_OnSort, this, S_OK);
 			case DISPID_INITIALENUMERATIONDONE://XP-
 				SetFolderFlags(FALSE);
 				return S_OK;

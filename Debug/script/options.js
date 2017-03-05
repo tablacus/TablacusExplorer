@@ -700,6 +700,9 @@ function ReplaceMenus()
 
 function ReplaceX(mode)
 {
+	if (!g_x[mode]) {
+		return;
+	}
 	ClearX(mode);
 	if (g_x[mode].selectedIndex < 0) {
 		InsertX(g_x[mode]);
@@ -1015,17 +1018,20 @@ function SetChanged(fn)
 	}
 }
 
-function SetData(sel, a)
+function SetData(sel, a, t)
 {
 	sel.value = PackData(a);
-	sel.text = GetText(a[0]);
+	if (/boolean/.test(typeof t)) {
+		t = (t ? String.fromCharCode(9745, 32) : String.fromCharCode(9744, 32)) + a[0];
+	}
+	sel.text = GetText(t || a[0]);
 }
 
 function PackData(a)
 {
 	var i = a.length;
 	while (--i >= 0) {
-		a[i] = (a[i] || "").replace(g_sep, "`  ~");
+		a[i] = (a[i] ?  String(a[i]) : "").replace(g_sep, "`  ~");
 	}
 	return a.join(g_sep);
 }
@@ -1523,6 +1529,32 @@ InitDialog = function ()
 				}
 			}
 		});
+	}
+	if (Query == "about") {
+		returnValue = false;
+		var s = ['<table style="border-spacing: 2em; border-collapse: separate;"><tr><td>'];
+		var src = MakeImgSrc(api.GetModuleFileName(null), 0, 32);
+		s.push('<img src="', src , '"></td><td><span style="font-weight: bold; font-size: 120%">', te.About, '</span> (', (api.sizeof("HANDLE") * 8), 'bit)<br>');
+		s.push('<br><a href="javascript:Run(0)">', api.GetModuleFileName(null), '</a><br>');
+		s.push('<br><a href="javascript:Run(1)">', fso.BuildPath(te.Data.DataFolder, "config"), '</a><br>');
+		s.push('<br><a href="javascript:Run(2)">http://www.eonet.ne.jp/~gakana/tablacus/explorer_en.html</a><br><br>');
+		s.push('<input type="button" value="Check for updates" onclick="Run(3)">');
+		s.push('</td></tr></table>');
+		document.getElementById("Content").innerHTML = s.join("");
+		document.F.ButtonOk.disabled = false;
+		document.getElementById("buttonCancel").style.display = "none";
+
+		Run = function (n)
+		{
+			var ar = [
+				'Navigate(api.GetModuleFileName(null) + "\\\\..")',
+				'Navigate(fso.BuildPath(te.Data.DataFolder, "config"))',
+				'wsh.Run("http://www.eonet.ne.jp/~gakana/tablacus/explorer_en.html")',
+				'CheckUpdate()'
+			];
+			MainWindow.setTimeout(ar[n], 500);
+			window.close();
+		}
 	}
 	if (dialogArguments.element) {
 		AddEventEx(window, "beforeunload", function ()

@@ -1774,26 +1774,16 @@ GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arCon
 			}
 			break;
 		case 7:
-			var dir = GetHelpMenu(true);
+			var dir = [GetText("Check for updates"), GetText("Get Add-ons"), null, api.sprintf(99, GetText("&About %s"), "Tablacus Explorer")];
 			for (var i = 0; i < dir.length; i++) {
 				var s = dir[i];
-				if (s === null) {
-					api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_SEPARATOR, 0, null);
-				} else {
-					if (s) {
-						api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, i + 0x4011, s);
-					}
-				}
+				api.InsertMenu(hMenu, MAXINT, s === null ? MF_BYPOSITION | MF_SEPARATOR : MF_BYPOSITION | MF_STRING, i + 0x4011, s);
 			}
 			AddEvent("MenuCommand", function (Ctrl, pt, Name, nVerb)
 			{
-				var s = GetHelpMenu(false)[nVerb - 0x4011];
+				var s = [CheckUpdate, GetAddons, null, ShowAbout][nVerb - 0x4011];
 				if (s) {
-					if (/^function$/i.test(typeof s)) {
-						s(Ctrl, pt, Name, nVerb);
-					} else {
-						Navigate(s, SBSP_NEWBROWSER);
-					}
+					s(Ctrl, pt, Name, nVerb);
 					return S_OK;
 				}
 			});
@@ -1812,28 +1802,6 @@ GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arCon
 			break;
 	}
 	return ContextMenu;
-}
-
-GetHelpMenu = function (bTitle)
-{
-	var dir = [fso.BuildPath(te.Data.DataFolder, "config") , null, ssfDRIVES, ssfNETHOOD, ssfWINDOWS, ssfSYSTEM, ssfPROGRAMFILES];
-	if (api.sizeof("HANDLE") > 4) {
-		dir.push(ssfPROGRAMFILESx86);
-	} else if (api.IsWow64Process(api.GetCurrentProcess())) {
-		dir.push(api.GetDisplayNameOf(ssfPROGRAMFILES, SHGDN_FORPARSING).replace(/\s*\(x86\)$/i, ""));
-	}
-	dir.push(fso.GetSpecialFolder(2).Path);
-	if (WINVER >= 0x600) {
-		dir.push("shell:libraries");
-	}
-	dir = dir.concat([ssfPERSONAL, ssfSTARTMENU, ssfPROGRAMS, ssfSTARTUP, ssfSENDTO, ssfAPPDATA, ssfFAVORITES, ssfRECENT, ssfHISTORY, ssfDESKTOPDIRECTORY, ssfCONTROLS, ssfTEMPLATES, ssfFONTS, ssfPRINTERS, ssfBITBUCKET]);
-	if (bTitle) {
-		for (var i = dir.length; i--;) {
-			dir[i] = api.GetDisplayNameOf(dir[i], SHGDN_INFOLDER);
-		}
-		return [te.About, GetText("Check for updates"), GetText("Get Add-ons")].concat(dir);
-	}
-	return [api.GetModuleFileName(null) + "\\..", CheckUpdate, GetAddons].concat(dir);
 }
 
 MenuDbInit = function (hMenu, oMenu, oMenu2)
@@ -2331,6 +2299,11 @@ EscapeUpdateFile(fso.GetFileName(api.GetModuleFileName(null)))).replace(/[\t\n]/
 		item.Terminate();
 	});
 	api.PostMessage(te.hwnd, WM_CLOSE, 0, 0);
+}
+
+function ShowAbout()
+{
+	ShowDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\dialog.html"), { MainWindow: MainWindow, Query: "about", Modal: false, width: 640, height: 240});
 }
 
 function EscapeUpdateFile(s)

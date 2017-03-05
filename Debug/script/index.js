@@ -1849,6 +1849,11 @@ te.OnFromStream = function (image, stream, filename)
 	return RunEvent3("FromStream", image, stream, filename);
 }
 
+te.OnEndThread = function (Ctrl)
+{
+	return RunEvent1("EndThread", api.GetThreadCount());
+}
+
 //Tablacus Events
 
 GetIconImage = function (Ctrl, BGColor)
