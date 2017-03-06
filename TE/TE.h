@@ -38,6 +38,7 @@
 #include <Uxtheme.h>
 #include <wincodec.h>
 #include <wincodecsdk.h>
+#include <Thumbcache.h>
 #ifndef _2000XP
 #include <Propsys.h>
 #endif

@@ -1136,6 +1136,7 @@ TEmethod methodGB[] = {
 	{ 4, "FromFile" },
 	{ 5, "FromStream" },
 	{ 6, "FromArchive" },
+	{ 7, "FromItem" },
 	{ 99, "Free" },
 
 	{ 100, "Save" },
@@ -4537,7 +4538,7 @@ static void threadAddItems(void *args)
 	LPOLESTR lpShift = L"shift";
 	DISPID dispidShift;
 	LPITEMIDLIST pidl;
-	IProgressDialog *ppd;
+	IProgressDialog *ppd = NULL;
 
 	TEAddItems *pAddItems = (TEAddItems *)args;
 	IDispatch *pSB;
@@ -4546,11 +4547,13 @@ static void threadAddItems(void *args)
 	CoGetInterfaceAndReleaseStream(pAddItems->pStrmArray, IID_PPV_ARGS(&pArray));
 	CoCreateInstance(CLSID_ProgressDialog, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&ppd));
 	try {
-		ppd->StartProgressDialog(g_hwndMain, NULL, PROGDLG_NORMAL | PROGDLG_AUTOTIME, NULL);
-		if (!LoadString(g_hShell32, 13585, pszMsg, MAX_PATH)) {
-			LoadString(g_hShell32, 6478, pszMsg, MAX_PATH);
+		if (ppd) {
+			ppd->StartProgressDialog(g_hwndMain, NULL, PROGDLG_NORMAL | PROGDLG_AUTOTIME, NULL);
+			if (!LoadString(g_hShell32, 13585, pszMsg, MAX_PATH)) {
+				LoadString(g_hShell32, 6478, pszMsg, MAX_PATH);
+			}
+			ppd->SetLine(1, pszMsg, TRUE, NULL);
 		}
-		ppd->SetLine(1, pszMsg, TRUE, NULL);
 		HRESULT hr = pArray->GetIDsOfNames(IID_NULL, &lpShift, 1, LOCALE_USER_DEFAULT, &dispidShift);
 		if (hr == S_OK) {
 			int nCurrent = 0;
@@ -4580,12 +4583,14 @@ static void threadAddItems(void *args)
 			}
 		}
 	} catch (...) {}
-	ppd->StopProgressDialog();
 	teClearVariantArgs(2, pAddItems->pv);
 	delete [] pAddItems;
 	SafeRelease(&pArray);
 	SafeRelease(&pSB);
-	SafeRelease(&ppd);
+	if (ppd) {
+		ppd->StopProgressDialog();
+		SafeRelease(&ppd);
+	}
 	::OleUninitialize();
 	::_endthread();
 }
@@ -5792,10 +5797,10 @@ VOID Finalize()
 	} catch (...) {}
 }
 
-HRESULT teExtract(IStorage *pStorage, LPWSTR lpszFolderPath)
+HRESULT teExtract(IStorage *pStorage, LPWSTR lpszFolderPath, IProgressDialog *ppd)
 {
 	STATSTG statstg;
-	IEnumSTATSTG *pEnumSTATSTG;
+	IEnumSTATSTG *pEnumSTATSTG = NULL;
 	BYTE pszData[SIZE_BUFF];
 #ifdef _2000XP
 	IShellFolder2 *pSF2;
@@ -5803,26 +5808,31 @@ HRESULT teExtract(IStorage *pStorage, LPWSTR lpszFolderPath)
 	ULONG chEaten;
 	ULONG dwAttributes;
 #endif
+	if (ppd) {
+		if (ppd->HasUserCancelled()) {
+			return E_ABORT;
+		}
+		ppd->SetLine(2, lpszFolderPath, TRUE, NULL);
+	}
 	CreateDirectory(lpszFolderPath, NULL);
 
 	HRESULT hr = pStorage->EnumElements(NULL, NULL, NULL, &pEnumSTATSTG);
-	if FAILED(hr) {
-		return hr;
-	}
-	while (pEnumSTATSTG->Next(1, &statstg, NULL) == S_OK) {
+	while (SUCCEEDED(hr) && pEnumSTATSTG->Next(1, &statstg, NULL) == S_OK) {
 		BSTR bsPath;
 		tePathAppend(&bsPath, lpszFolderPath, statstg.pwcsName);
 		if (statstg.type == STGTY_STORAGE) {
 			IStorage *pStorageNew;
 			pStorage->OpenStorage(statstg.pwcsName, NULL, STGM_READ, 0, 0, &pStorageNew);
-			teExtract(pStorageNew, bsPath);
+			hr = teExtract(pStorageNew, bsPath, ppd);
 			pStorageNew->Release();
 		} else if (statstg.type == STGTY_STREAM) {
+			if (ppd) {
+				ppd->SetLine(3, statstg.pwcsName, TRUE, NULL);
+			}
 			IStream *pStream;
 			ULONG uRead;
 			DWORD dwWriteByte;
-
-			hr = pStorage->OpenStream(statstg.pwcsName, NULL, STGM_READ, NULL, &pStream);
+			hr = (ppd && ppd->HasUserCancelled()) ? E_ABORT : pStorage->OpenStream(statstg.pwcsName, NULL, STGM_READ, NULL, &pStream);
 			if SUCCEEDED(hr) {
 				HANDLE hFile = CreateFile(bsPath, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 				if (hFile != INVALID_HANDLE_VALUE) {
@@ -5851,10 +5861,10 @@ HRESULT teExtract(IStorage *pStorage, LPWSTR lpszFolderPath)
 				pStream->Release();
 			}
 		}
-		SysFreeString(bsPath);
+		::SysFreeString(bsPath);
 		teCoTaskMemFree(statstg.pwcsName);
 	}
-	pEnumSTATSTG->Release();
+	SafeRelease(&pEnumSTATSTG);
 	return hr;
 }
 
@@ -6259,14 +6269,30 @@ HRESULT teInitStorage(LPVARIANTARG pvDllFile, LPVARIANTARG pvClass, LPWSTR lpwst
 
 VOID teApiExtract(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
+	HRESULT hr = E_FAIL;
 	IStorage *pStorage = NULL;
 	HMODULE hDll;
-	HRESULT hr = teInitStorage(&pDispParams->rgvarg[nArg], &pDispParams->rgvarg[nArg - 1], param[2].lpwstr, &hDll, &pStorage);
-	if SUCCEEDED(hr) {
-		hr = teExtract(pStorage, param[3].lpwstr);
-	}
+	WCHAR pszMsg[MAX_PATH];
+	IProgressDialog *ppd = NULL;
+	CoCreateInstance(CLSID_ProgressDialog, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&ppd));
+	try {
+		if (ppd) {
+			ppd->StartProgressDialog(g_hwndMain, NULL, PROGDLG_MARQUEEPROGRESS, NULL);
+			LoadString(g_hShell32, 5954, pszMsg, MAX_PATH);
+			ppd->SetTitle(pszMsg);
+			ppd->SetLine(1, param[2].lpwstr, TRUE, NULL);
+		}
+		hr = teInitStorage(&pDispParams->rgvarg[nArg], &pDispParams->rgvarg[nArg - 1], param[2].lpwstr, &hDll, &pStorage);
+		if SUCCEEDED(hr) {
+			hr = teExtract(pStorage, param[3].lpwstr, ppd);
+		}
+	} catch (...) {}
 	SafeRelease(&pStorage);
 	teFreeLibrary(hDll, 0);
+	if (ppd) {
+		ppd->StopProgressDialog();
+		SafeRelease(&ppd);
+	}
 	teSetLong(pVarResult, hr);
 }
 
@@ -21111,6 +21137,46 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					}
 					SafeRelease(&pStorage);
 					teFreeLibrary(hDll, 0);
+					teSetObject(pVarResult, GetBitmapObj());
+				}
+				return S_OK;
+			//FromItem
+			case 7:
+				if (nArg >= 0) {
+					LPITEMIDLIST pidl;
+					if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
+						SIZE size;
+						size.cx = nArg >= 1 ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) : 0xffff;
+						IShellFolder *pSF;
+						LPCITEMIDLIST pidlPart;
+						if SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &pidlPart)) {
+							HBITMAP hBM = NULL;
+							WTS_ALPHATYPE alphaType = WTSAT_RGB;
+							IExtractImage *pEI;
+							IThumbnailProvider *pTP;
+							if (pSF->GetUIObjectOf(NULL, 1, (LPCITEMIDLIST *)&pidlPart, IID_IThumbnailProvider, NULL, (void **)&pTP) == S_OK) {
+								pTP->GetThumbnail(size.cx, &hBM, &alphaType);
+								pTP->Release();
+							} else if (pSF->GetUIObjectOf(NULL, 1, (LPCITEMIDLIST *)&pidlPart, IID_IExtractImage, NULL, (void **)&pEI) == S_OK) {
+								size.cy = size.cx;
+								DWORD dwFlags = IEIFLAG_ASPECT | IEIFLAG_ORIGSIZE | IEIFLAG_QUALITY;
+								WCHAR pszPath[MAX_PATH];
+								if (pEI->GetLocation(pszPath, MAX_PATH, NULL, &size, 32, &dwFlags) == S_OK) {
+									pEI->Extract(&hBM);
+								}
+								pEI->Release();
+							}
+							if (hBM) {
+								IWICBitmap *pBitmap;
+								if SUCCEEDED(g_pWICFactory->CreateBitmapFromHBITMAP(hBM, 0, alphaType == WTSAT_ARGB ? WICBitmapUseAlpha : WICBitmapIgnoreAlpha, &pBitmap)) {
+									m_pImage = pBitmap;
+								}
+								DeleteObject(hBM);
+							}
+							pSF->Release();
+						}
+						teCoTaskMemFree(pidl);
+					}
 					teSetObject(pVarResult, GetBitmapObj());
 				}
 				return S_OK;

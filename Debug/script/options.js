@@ -1537,8 +1537,8 @@ InitDialog = function ()
 		s.push('<img src="', src , '"></td><td><span style="font-weight: bold; font-size: 120%">', te.About, '</span> (', (api.sizeof("HANDLE") * 8), 'bit)<br>');
 		s.push('<br><a href="javascript:Run(0)">', api.GetModuleFileName(null), '</a><br>');
 		s.push('<br><a href="javascript:Run(1)">', fso.BuildPath(te.Data.DataFolder, "config"), '</a><br>');
-		s.push('<br><a href="javascript:Run(2)">http://www.eonet.ne.jp/~gakana/tablacus/explorer_en.html</a><br><br>');
-		s.push('<input type="button" value="Check for updates" onclick="Run(3)">');
+		s.push('<br><input type="button" value="Visit website" onclick="Run(2)">');
+		s.push('&nbsp;<input type="button" value="Check for updates" onclick="Run(3)">');
 		s.push('</td></tr></table>');
 		document.getElementById("Content").innerHTML = s.join("");
 		document.F.ButtonOk.disabled = false;
@@ -1721,7 +1721,7 @@ InitLocation = function ()
 			var ar = items[i][j].split("\0");
 			info = GetAddonInfo(ar[0]);
 			if (ar[1]) {
-				locs[i].push('<img src="', ar[1], '" title="', info.Name.replace(/"/g, ""), '" class="img1"> ');
+				locs[i].push('<img src="', ar[1], '" title="', (info.Name || "").replace(/"/g, ""), '" class="img1"> ');
 			} else {
 				locs[i].push('<span class="text1">', info.Name, '</span> ');
 			}

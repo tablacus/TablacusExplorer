@@ -1777,7 +1777,7 @@ GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arCon
 			var dir = [GetText("Check for updates"), GetText("Get Add-ons"), null, api.sprintf(99, GetText("&About %s"), "Tablacus Explorer")];
 			for (var i = 0; i < dir.length; i++) {
 				var s = dir[i];
-				api.InsertMenu(hMenu, MAXINT, s === null ? MF_BYPOSITION | MF_SEPARATOR : MF_BYPOSITION | MF_STRING, i + 0x4011, s);
+				api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | (s === null ? MF_SEPARATOR : MF_STRING), i + 0x4011, s);
 			}
 			AddEvent("MenuCommand", function (Ctrl, pt, Name, nVerb)
 			{
@@ -2146,21 +2146,7 @@ Extract = function (Src, Dest)
 			return hr;
 		}
 	}
-	try {
-		var oSrc = sha.NameSpace(Src)
-		if (oSrc) {
-			var oDest = sha.NameSpace(Dest);
-			if (oDest) {
-				oDest.CopyHere(oSrc.Items(), FOF_NOCONFIRMATION);
-				return S_OK;
-			}
-		}
-	} catch (e) {
-		if (api.Extract(fso.BuildPath(system32, "zipfldr.dll"), "{E88DCCE0-B7B3-11d1-A9F0-00AA0060FA31}", Src, Dest) != S_OK) {
-			MessageBox(GetText("Extract Error"), TITLE, MB_OK);
-		}
-	}
-	return S_OK;
+	return api.Extract(fso.BuildPath(system32, "zipfldr.dll"), "{E88DCCE0-B7B3-11d1-A9F0-00AA0060FA31}", Src, Dest);
 }
 
 OptionRef = function (Id, s, pt)
@@ -2303,7 +2289,7 @@ EscapeUpdateFile(fso.GetFileName(api.GetModuleFileName(null)))).replace(/[\t\n]/
 
 function ShowAbout()
 {
-	ShowDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\dialog.html"), { MainWindow: MainWindow, Query: "about", Modal: false, width: 640, height: 240});
+	ShowDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\dialog.html"), { MainWindow: MainWindow, Query: "about", Modal: false, width: 640, height: 220});
 }
 
 function EscapeUpdateFile(s)
