@@ -1,5 +1,12 @@
 //Tablacus Explorer
 
+api.strcmpi = api.StrCmpI;
+api.ILisEqual = api.ILIsEqual;
+api.ShGetFileInfo = api.SHGetFileInfo;
+api.DoDragDrop = function (pDataObj, dwEffect, pdwEffect)
+{
+	return api.SHDoDragDrop(null, pDataObj, te, dwEffect, pdwEffect);
+}
 te.ClearEvents();
 te.LockUpdate();
 Addon = 1;
@@ -590,12 +597,7 @@ DisableImage = function (img, bDisable)
 							s = image.DataURI("image/png");
 						}
 					}
-					api.SVG_GRAY[1] = img.offsetWidth;
-					api.SVG_GRAY[3] = img.offsetHeight;
-					api.SVG_GRAY[5] = img.width;
-					api.SVG_GRAY[7] = img.height;
-					api.SVG_GRAY[9] = s;
-					img.src = "data:image/svg+xml," + encodeURIComponent(api.SVG_GRAY.join(""));
+					img.src = "data:image/svg+xml," + encodeURIComponent(['<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ', img.offsetWidth, ' ', img.offsetHeight, '"><filter id="G"><feColorMatrix type="saturate" values="0.1" /></filter><image width="', img.width, '" height="', img.height, '" opacity=".48" xlink:href="', s,'" filter="url(#G)"></image></svg>'].join(""));
 				}
 			} else if (res) {
 				img.src = res[1];

@@ -86,20 +86,6 @@ WINVER = osInfo.dwMajorVersion * 0x100 + osInfo.dwMinorVersion;
 try {
 	wsh.CurrentDirectory = fso.GetSpecialFolder(2).Path;
 } catch (e) {}
-api.ILisEqual = api.ILIsEqual;
-api.strcmpi = api.StrCmpI;
-api.ShGetFileInfo = api.SHGetFileInfo;
-api.DoDragDrop = function (pDataObj, dwEffect, pdwEffect)
-{
-	return api.SHDoDragDrop(null, pDataObj, te, dwEffect, pdwEffect);
-}
-api.SVG_GRAY = te.Array();
-api.SVG_GRAY[0] = '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ';
-api.SVG_GRAY[2] = ' ';
-api.SVG_GRAY[4] = '"><filter id="G"><feColorMatrix type="saturate" values="0.1" /></filter><image width="';
-api.SVG_GRAY[6] = '" height="';
-api.SVG_GRAY[8] = '" opacity=".48" xlink:href="';
-api.SVG_GRAY[10] = '" filter="url(#G)"></image></svg>';
 
 //Tablacus
 Ox80000000 = api.LowPart(0x80000000);
@@ -134,21 +120,19 @@ FILTER_IMAGE = "*.jpg;*.jpeg;*.png;*.bmp;*.gif;*.ico;data:*";
 REGEXP_IMAGE = /^data:|\.jpe?g$|\.png$|\.bmp$|\.gif$|\.ico$/i;
 XHRBODY = 'responseBody';
 
-if (WINVER > 0x603) {
-	BUTTONS = {
-		opened: '<b style="font-family: Consolas; transform: scale(1.2,1) rotate(-90deg)">&lt;</b>',
-		closed: '<b style="font-family: Consolas; transform: scale(1,1.2) translateX(1px); opacity: 0.5">&gt;</b>',
-		parent: '&laquo;',
-		next: '<b style="font-family: Consolas; color: #666; transform: scale(0.75,0.9); text-shadow: 1px 0px">&gt;</b>',
-		dropdown: '<b style="font-family: Consolas; transform: scale(1.2,1) rotate(-90deg) translateX(2px); opacity: 0.5; width: 1em; display: inline-block">&lt;</b>'	}
-} else {
-	BUTTONS = {
-		opened: '<span style="font-size: 13px; transform: translateY(-3px)">&#x25e2;</span>',
-		closed: '<span style="font-size: 13px; transform: scale(1,1.4)">&#x25b7;</span>',
-		parent: '&laquo;',
-		next: '<span style="font-family: Marlett">4</span>',
-		dropdown: '<span style="font-family: Marlett">6</span>'
-	}
+BUTTONS = WINVER > 0x603 ?
+{
+	opened: '<b style="font-family: Consolas; transform: scale(1.2,1) rotate(-90deg)">&lt;</b>',
+	closed: '<b style="font-family: Consolas; transform: scale(1,1.2) translateX(1px); opacity: 0.5">&gt;</b>',
+	parent: '&laquo;',
+	next: '<b style="font-family: Consolas; color: #666; transform: scale(0.75,0.9); text-shadow: 1px 0px">&gt;</b>',
+	dropdown: '<b style="font-family: Consolas; transform: scale(1.2,1) rotate(-90deg) translateX(2px); opacity: 0.5; width: 1em; display: inline-block">&lt;</b>'
+} : {
+	opened: '<span style="font-size: 13px; transform: translateY(-3px)">&#x25e2;</span>',
+	closed: '<span style="font-size: 13px; transform: scale(1,1.4)">&#x25b7;</span>',
+	parent: '&laquo;',
+	next: '<span style="font-family: Marlett">4</span>',
+	dropdown: '<span style="font-family: Marlett">6</span>'
 }
 
 //Windows

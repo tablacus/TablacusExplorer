@@ -4531,6 +4531,14 @@ HRESULT DoFunc(int nFunc, PVOID pObj, HRESULT hr)
 	return SUCCEEDED(DoFunc1(nFunc, pObj, &vResult)) ? GetIntFromVariantClear(&vResult) : hr;
 }
 
+VOID teSetProgress(IProgressDialog *ppd, int nCurrent, int nCount)
+{
+	WCHAR pszMsg[8];
+	ppd->SetProgress(nCurrent, nCount);
+	swprintf_s(pszMsg, 8, L"%d%%", nCurrent * 100 / nCount);
+	ppd->SetTitle(pszMsg);
+}
+
 static void threadAddItems(void *args)
 {
 	::OleInitialize(NULL);
@@ -4559,9 +4567,7 @@ static void threadAddItems(void *args)
 			int nCurrent = 0;
 			int nCount = teGetObjectLength(pArray);
 			while (!ppd->HasUserCancelled() && Invoke5(pArray, dispidShift, DISPATCH_METHOD, &pAddItems->pv[1], 0, NULL) == S_OK && pAddItems->pv[1].vt != VT_EMPTY) {
-				ppd->SetProgress(++nCurrent, nCount);
-				swprintf_s(pszMsg, MAX_PATH, L"%d%%", nCurrent * 100 / nCount);
-				ppd->SetTitle(pszMsg);
+				teSetProgress(ppd, ++nCurrent, nCount);
 				if (!teGetIDListFromVariant(&pidl, &pAddItems->pv[1], TRUE) && pAddItems->bDeleted && pAddItems->pv[1].vt == VT_BSTR) {
 					pidl = teSHSimpleIDListFromPath(pAddItems->pv[1].bstrVal, FALSE);
 				}
@@ -4683,15 +4689,14 @@ HRESULT DoStatusText(PVOID pObj, LPCWSTR lpszStatusText, int iPart)
 {
 	HRESULT hr = E_NOTIMPL;
 	if (g_pOnFunc[TE_OnStatusText]) {
-		VARIANTARG *pv;
 		VARIANT vResult;
 		VariantInit(&vResult);
-		pv = GetNewVARIANT(3);
+		VARIANTARG *pv = GetNewVARIANT(3);
 		teSetObject(&pv[2], pObj);
 		teSetSZ(&pv[1], lpszStatusText);
 		teSetLong(&pv[0], iPart);
 		Invoke4(g_pOnFunc[TE_OnStatusText], &vResult, 3, pv);
-		hr = GetIntFromVariant(&vResult);
+		hr = GetIntFromVariantClear(&vResult);
 	}
 	return hr;
 }
@@ -5797,25 +5802,26 @@ VOID Finalize()
 	} catch (...) {}
 }
 
-HRESULT teExtract(IStorage *pStorage, LPWSTR lpszFolderPath, IProgressDialog *ppd)
+HRESULT teExtract(IStorage *pStorage, LPWSTR lpszFolderPath, IProgressDialog *ppd, int *pnItems, int nCount)
 {
 	STATSTG statstg;
 	IEnumSTATSTG *pEnumSTATSTG = NULL;
 	BYTE pszData[SIZE_BUFF];
+	IStream *pStream;
+	ULONG uRead;
+	DWORD dwWriteByte;
 #ifdef _2000XP
 	IShellFolder2 *pSF2;
 	LPITEMIDLIST pidl;
 	ULONG chEaten;
 	ULONG dwAttributes;
 #endif
-	if (ppd) {
-		if (ppd->HasUserCancelled()) {
-			return E_ABORT;
-		}
-		ppd->SetLine(2, lpszFolderPath, TRUE, NULL);
+	if (ppd->HasUserCancelled()) {
+		return E_ABORT;
 	}
-	CreateDirectory(lpszFolderPath, NULL);
-
+	if (nCount >= 0) {
+		CreateDirectory(lpszFolderPath, NULL);
+	}
 	HRESULT hr = pStorage->EnumElements(NULL, NULL, NULL, &pEnumSTATSTG);
 	while (SUCCEEDED(hr) && pEnumSTATSTG->Next(1, &statstg, NULL) == S_OK) {
 		BSTR bsPath;
@@ -5823,42 +5829,43 @@ HRESULT teExtract(IStorage *pStorage, LPWSTR lpszFolderPath, IProgressDialog *pp
 		if (statstg.type == STGTY_STORAGE) {
 			IStorage *pStorageNew;
 			pStorage->OpenStorage(statstg.pwcsName, NULL, STGM_READ, 0, 0, &pStorageNew);
-			hr = teExtract(pStorageNew, bsPath, ppd);
+			hr = teExtract(pStorageNew, bsPath, ppd, pnItems, nCount);
 			pStorageNew->Release();
 		} else if (statstg.type == STGTY_STREAM) {
-			if (ppd) {
-				ppd->SetLine(3, statstg.pwcsName, TRUE, NULL);
-			}
-			IStream *pStream;
-			ULONG uRead;
-			DWORD dwWriteByte;
-			hr = (ppd && ppd->HasUserCancelled()) ? E_ABORT : pStorage->OpenStream(statstg.pwcsName, NULL, STGM_READ, NULL, &pStream);
-			if SUCCEEDED(hr) {
-				HANDLE hFile = CreateFile(bsPath, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-				if (hFile != INVALID_HANDLE_VALUE) {
-					while (SUCCEEDED(pStream->Read(pszData, SIZE_BUFF, &uRead)) && uRead) {
-						WriteFile(hFile, pszData, uRead, &dwWriteByte, NULL);
-					}
-#ifdef _2000XP
-					if (statstg.mtime.dwLowDateTime == 0) {
-						if SUCCEEDED(pStorage->QueryInterface(IID_PPV_ARGS(&pSF2))) {
-							if SUCCEEDED(pSF2->ParseDisplayName(NULL, NULL, statstg.pwcsName, &chEaten, &pidl, &dwAttributes)) {
-								teGetFileTimeFromItem(pSF2, pidl, &PKEY_DateCreated, &statstg.ctime);
-								teGetFileTimeFromItem(pSF2, pidl, &PKEY_DateAccessed, &statstg.atime);
-								teGetFileTimeFromItem(pSF2, pidl, &PKEY_DateModified, &statstg.mtime);
-								teCoTaskMemFree(pidl);
-							}
-							pSF2->Release();
+			ppd->SetLine(2, statstg.pwcsName, TRUE, NULL);
+			pnItems[0]++;
+			if (ppd->HasUserCancelled()) {
+				hr = E_ABORT;
+			} else if (nCount >= 0) {
+				teSetProgress(ppd, pnItems[0], nCount);
+				hr = pStorage->OpenStream(statstg.pwcsName, NULL, STGM_READ, NULL, &pStream);
+				if SUCCEEDED(hr) {
+					HANDLE hFile = CreateFile(bsPath, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+					if (hFile != INVALID_HANDLE_VALUE) {
+						while (SUCCEEDED(pStream->Read(pszData, SIZE_BUFF, &uRead)) && uRead) {
+							WriteFile(hFile, pszData, uRead, &dwWriteByte, NULL);
 						}
-					}
+#ifdef _2000XP
+						if (statstg.mtime.dwLowDateTime == 0) {
+							if SUCCEEDED(pStorage->QueryInterface(IID_PPV_ARGS(&pSF2))) {
+								if SUCCEEDED(pSF2->ParseDisplayName(NULL, NULL, statstg.pwcsName, &chEaten, &pidl, &dwAttributes)) {
+									teGetFileTimeFromItem(pSF2, pidl, &PKEY_DateCreated, &statstg.ctime);
+									teGetFileTimeFromItem(pSF2, pidl, &PKEY_DateAccessed, &statstg.atime);
+									teGetFileTimeFromItem(pSF2, pidl, &PKEY_DateModified, &statstg.mtime);
+									teCoTaskMemFree(pidl);
+								}
+								pSF2->Release();
+							}
+						}
 #endif
-					SetFileTime(hFile, &statstg.ctime, &statstg.atime, &statstg.mtime);
-					CloseHandle(hFile);
-					hr = S_OK;
-				} else {
-					hr = E_ACCESSDENIED;
+						SetFileTime(hFile, &statstg.ctime, &statstg.atime, &statstg.mtime);
+						CloseHandle(hFile);
+						hr = S_OK;
+					} else {
+						hr = E_ACCESSDENIED;
+					}
+					pStream->Release();
 				}
-				pStream->Release();
 			}
 		}
 		::SysFreeString(bsPath);
@@ -6272,19 +6279,20 @@ VOID teApiExtract(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pV
 	HRESULT hr = E_FAIL;
 	IStorage *pStorage = NULL;
 	HMODULE hDll;
-	WCHAR pszMsg[MAX_PATH];
 	IProgressDialog *ppd = NULL;
 	CoCreateInstance(CLSID_ProgressDialog, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&ppd));
 	try {
 		if (ppd) {
-			ppd->StartProgressDialog(g_hwndMain, NULL, PROGDLG_MARQUEEPROGRESS, NULL);
-			LoadString(g_hShell32, 5954, pszMsg, MAX_PATH);
-			ppd->SetTitle(pszMsg);
+			ppd->StartProgressDialog(g_hwndMain, NULL, PROGDLG_NORMAL | PROGDLG_AUTOTIME, NULL);
 			ppd->SetLine(1, param[2].lpwstr, TRUE, NULL);
 		}
 		hr = teInitStorage(&pDispParams->rgvarg[nArg], &pDispParams->rgvarg[nArg - 1], param[2].lpwstr, &hDll, &pStorage);
 		if SUCCEEDED(hr) {
-			hr = teExtract(pStorage, param[3].lpwstr, ppd);
+			int nItems = 0, nCount = 0,
+			hr = teExtract(pStorage, param[3].lpwstr, ppd, &nCount, -1);
+			if SUCCEEDED(hr) {
+				hr = teExtract(pStorage, param[3].lpwstr, ppd, &nItems, nCount);
+			}
 		}
 	} catch (...) {}
 	SafeRelease(&pStorage);
@@ -10457,8 +10465,7 @@ LRESULT CALLBACK WndProc2(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					if (GetForegroundWindow() == pWB->m_hwndParent) {
 						teSetForegroundWindow((HWND)GetWindowLongPtr(pWB->m_hwndParent, GWLP_HWNDPARENT));
 					}
-				} catch(...) {
-				}
+				} catch(...) {}
 				DestroyWindow(hWnd);
 				return 0;
 			case WM_SIZE:
