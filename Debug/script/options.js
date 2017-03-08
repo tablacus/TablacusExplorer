@@ -1547,8 +1547,8 @@ InitDialog = function ()
 		Run = function (n)
 		{
 			var ar = [
-				'Navigate(api.GetModuleFileName(null) + "\\\\..")',
-				'Navigate(fso.BuildPath(te.Data.DataFolder, "config"))',
+				'Navigate(api.GetModuleFileName(null) + "\\\\..", SBSP_NEWBROWSER)',
+				'Navigate(fso.BuildPath(te.Data.DataFolder, "config"), SBSP_NEWBROWSER)',
 				'wsh.Run("http://www.eonet.ne.jp/~gakana/tablacus/explorer_en.html")',
 				'CheckUpdate()'
 			];

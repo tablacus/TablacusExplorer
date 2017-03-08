@@ -5802,7 +5802,7 @@ VOID Finalize()
 	} catch (...) {}
 }
 
-HRESULT teExtract(IStorage *pStorage, LPWSTR lpszFolderPath, IProgressDialog *ppd, int *pnItems, int nCount)
+HRESULT teExtract(IStorage *pStorage, LPWSTR lpszFolderPath, IProgressDialog *ppd, int *pnItems, int nCount, int nBase)
 {
 	STATSTG statstg;
 	IEnumSTATSTG *pEnumSTATSTG = NULL;
@@ -5829,10 +5829,10 @@ HRESULT teExtract(IStorage *pStorage, LPWSTR lpszFolderPath, IProgressDialog *pp
 		if (statstg.type == STGTY_STORAGE) {
 			IStorage *pStorageNew;
 			pStorage->OpenStorage(statstg.pwcsName, NULL, STGM_READ, 0, 0, &pStorageNew);
-			hr = teExtract(pStorageNew, bsPath, ppd, pnItems, nCount);
+			hr = teExtract(pStorageNew, bsPath, ppd, pnItems, nCount, nBase);
 			pStorageNew->Release();
 		} else if (statstg.type == STGTY_STREAM) {
-			ppd->SetLine(2, statstg.pwcsName, TRUE, NULL);
+			ppd->SetLine(2, &bsPath[nBase], TRUE, NULL);
 			pnItems[0]++;
 			if (ppd->HasUserCancelled()) {
 				hr = E_ABORT;
@@ -6288,10 +6288,10 @@ VOID teApiExtract(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pV
 		}
 		hr = teInitStorage(&pDispParams->rgvarg[nArg], &pDispParams->rgvarg[nArg - 1], param[2].lpwstr, &hDll, &pStorage);
 		if SUCCEEDED(hr) {
-			int nItems = 0, nCount = 0,
-			hr = teExtract(pStorage, param[3].lpwstr, ppd, &nCount, -1);
+			int nItems = 0, nCount = 0, nBase = lstrlen(param[3].lpwstr) + 1;
+			hr = teExtract(pStorage, param[3].lpwstr, ppd, &nCount, -1, nBase);
 			if SUCCEEDED(hr) {
-				hr = teExtract(pStorage, param[3].lpwstr, ppd, &nItems, nCount);
+				hr = teExtract(pStorage, param[3].lpwstr, ppd, &nItems, nCount, nBase);
 			}
 		}
 	} catch (...) {}
