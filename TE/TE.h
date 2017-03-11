@@ -11,7 +11,7 @@
 //#define _W2000
 #endif
 //bug fix 1 for Windows 10 Insider Preview 14986-
-#define _FIXWIN10IPBUG1
+//#define _FIXWIN10IPBUG1
 
 #include "resource.h"
 #include <Mshtml.h>
@@ -1074,7 +1074,7 @@ public:
 	CteTreeView	*m_pTV;
 	LONG_PTR	m_DefProc;
 	IShellView  *m_pShellView;
-	IDispatch	*m_pDispatch[Count_SBFunc];
+	IDispatch	*m_ppDispatch[Count_SBFunc];
 	FolderItem *m_pFolderItem;
 	FolderItem *m_pFolderItem1;
 	IExplorerBrowser *m_pExplorerBrowser;
