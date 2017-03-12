@@ -9162,6 +9162,7 @@ VOID CALLBACK teTimerProcFocus(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 					ListView_SetView(pSB->m_hwndLV, LV_VIEW_DETAILS);
 				}
 			}
+			pSB->m_bDisableFocus = FALSE;
 #endif
 			pSB->FocusItem(TRUE);
 		}
@@ -9169,21 +9170,6 @@ VOID CALLBACK teTimerProcFocus(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 		g_nException = 0;
 	}
 }
-
-VOID CALLBACK teTimerProcNavigationComplete(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
-{
-	try {
-		KillTimer(hwnd, idEvent);
-		CteShellBrowser *pSB = SBfromhwnd(hwnd);
-		if (pSB) {
-			pSB->OnNavigationComplete2();
-		}
-	} catch (...) {
-		g_nException = 0;
-	}
-}
-
-
 
 VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 {
@@ -9384,10 +9370,11 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 										if (!pSB->m_hwnd) {
 											bDirect = FALSE;
 										}
-										pSB->Show(TRUE, 0);
 #ifdef _FIXWIN10IPBUG1
+										pSB->m_bDisableFocus = TRUE;
 										SetTimer(pSB->m_hwnd, 1, 64, teTimerProcFocus);
 #endif
+										pSB->Show(TRUE, 0);
 									}
 									MoveWindow(pSB->m_hwnd, rc.left, rc.top, rc.right - rc.left,
 										rc.bottom - rc.top, FALSE);
@@ -11317,6 +11304,9 @@ VOID CteShellBrowser::SaveFocusedItemToHistory()
 
 VOID CteShellBrowser::FocusItem(BOOL bFree)
 {
+	if (m_bDisableFocus) {
+		return;
+	}
 	CteFolderItem *pid;
 	if (m_pFolderItem && !m_dwUnavailable && SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid))) {
 		if (pid->m_pidlFocused) {
@@ -11338,7 +11328,7 @@ VOID CteShellBrowser::FocusItem(BOOL bFree)
 			}
 			pFV->Release();
 		}
-		SetTimer(m_hwnd, 1, 32, teTimerProcFocus);
+		SetTimer(m_hwnd, 1, 64, teTimerProcFocus);
 		m_nFocusItem = 0;
 	}
 }
@@ -13326,13 +13316,14 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				IFolderView2 *pFV2;
 				if (m_bRefreshing || m_bNavigateComplete) {
 					m_bRefreshing = FALSE;
-					if (m_bNavigateComplete) {
-						m_bNavigateComplete = FALSE;
-						SetTimer(m_hwnd, 1, 64, teTimerProcNavigationComplete);
-					}
 #ifdef _FIXWIN10IPBUG1
+					m_bDisableFocus = TRUE;
 					SetTimer(m_hwnd, 1, 64, teTimerProcFocus);
 #endif
+					if (m_bNavigateComplete) {
+						m_bNavigateComplete = FALSE;
+						OnNavigationComplete2();
+					}
 				}
 				SetListColumnWidth();
 				if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
@@ -13365,19 +13356,13 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			case DISPID_ICONSIZECHANGED://XP-
 				return DoFunc(TE_OnIconSizeChanged, this, S_OK);
 			case DISPID_SORTDONE://XP-
+#ifdef _FIXWIN10IPBUG1
+				m_bDisableFocus = TRUE;
+				SetTimer(m_hwnd, 1, 64, teTimerProcFocus);
+#endif
 				if (m_nFocusItem < 0) {
 					FocusItem(FALSE);
 				}
-#ifdef _FIXWIN10IPBUG1
-				if (m_hwndLV && m_param[SB_ViewMode] == FVM_DETAILS) {
-					POINT pt;
-					ListView_GetOrigin(m_hwndLV, &pt);
-					if (pt.y < 0) {
-						ListView_SetView(m_hwndLV, LV_VIEW_SMALLICON);
-						ListView_SetView(m_hwndLV, LV_VIEW_DETAILS);
-					}
-				}
-#endif
 				return DoFunc(TE_OnSort, this, S_OK);
 			case DISPID_INITIALENUMERATIONDONE://XP-
 				SetFolderFlags(FALSE);

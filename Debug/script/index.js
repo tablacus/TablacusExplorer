@@ -966,9 +966,9 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 		}
 		if (g_.mouse.str.length == 0) {
 			te.Data.pt = pt.Clone();
-			g_.mouse.ptGesture.x = pt.x;
-			g_.mouse.ptGesture.y = pt.y;
+			g_.mouse.ptGesture = pt.Clone();
 			g_.mouse.hwndGesture = hwnd;
+			g_.mouse.ptDown = pt.Clone();
 		}
 		g_.mouse.str += s;
 		g_.mouse.StartGestureTimer();
@@ -1015,8 +1015,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 		}
 		if (g_.mouse.str.length && (te.Data.Conf_Gestures > 1 && api.GetKeyState(VK_RBUTTON) < 0) || (te.Data.Conf_Gestures && (api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_XBUTTON1) < 0 || api.GetKeyState(VK_XBUTTON2) < 0))) {
 			if (g_.mouse.ptGesture.x == -1 && g_.mouse.ptGesture.y == -1) {
-				g_.mouse.ptGesture.x = pt.x;
-				g_.mouse.ptGesture.y = pt.y;
+				g_.mouse.ptGesture = pt.Clone();
 			}
 			var x = (pt.x - g_.mouse.ptGesture.x);
 			var y = (pt.y - g_.mouse.ptGesture.y);
@@ -1036,8 +1035,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 						api.ReleaseDC(te.hwnd, hdc);
 					}
 				}
-				g_.mouse.ptGesture.x = pt.x;
-				g_.mouse.ptGesture.y = pt.y;
+				g_.mouse.ptGesture = pt.Clone();
 				var s = (Math.abs(x) >= Math.abs(y)) ? ((x < 0) ? "L" : "R") : ((y < 0) ? "U" : "D");
 
 				if (s != g_.mouse.str.charAt(g_.mouse.str.length - 1)) {
@@ -1616,9 +1614,10 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 			} catch (e) {
 				ShowError(e, en);
 			}
-			while (g_arBM.length) {
-				api.DeleteObject(g_arBM.pop());
+			for (var i in g_arBM) {
+				api.DeleteObject(g_arBM[i]);
 			}
+			g_arBM = [];
 			break;
 		case WM_MENUCHAR:
 			if (window.g_menu_click && (wParam & 0xffff) == VK_LBUTTON) {

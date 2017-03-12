@@ -11,7 +11,7 @@
 //#define _W2000
 #endif
 //bug fix 1 for Windows 10 Insider Preview 14986-
-//#define _FIXWIN10IPBUG1
+#define _FIXWIN10IPBUG1
 
 #include "resource.h"
 #include <Mshtml.h>
@@ -1083,6 +1083,7 @@ public:
 	SORTCOLUMN m_col;
 	DWORD		m_dwNameFormat;
 	BOOL	m_bSetListColumnWidth;
+	BOOL	m_bDisableFocus;
 #ifdef _2000XP
 	TEColumn	*m_pColumns;
 	UINT		m_nColumns;

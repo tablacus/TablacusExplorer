@@ -1875,7 +1875,7 @@ GetAccelerator = function (s)
 	return res ? res[1] : "";
 }
 
-AddMenuIconFolderItem = function (mii, FolderItem)
+AddMenuIconFolderItem = function (mii, FolderItem, nHeight)
 {
 	var image = te.WICBitmap();
 	var sfi = api.Memory("SHFILEINFO");
@@ -1890,7 +1890,7 @@ AddMenuIconFolderItem = function (mii, FolderItem)
 	}
 	api.SHGetFileInfo(FolderItem, 0, sfi, sfi.Size, SHGFI_SYSICONINDEX | SHGFI_PIDL);
 	var id = sfi.iIcon;
-	mii.hbmpItem = MainWindow.g_arBM['U' + id];
+	mii.hbmpItem = MainWindow.g_arBM[[id, nHeight].join("\t")];
 	if (mii.hbmpItem) {
 		mii.fMask = mii.fMask | MIIM_BITMAP;
 		return;
@@ -1901,34 +1901,36 @@ AddMenuIconFolderItem = function (mii, FolderItem)
 	AddMenuImage(mii, image, id);
 }
 
-AddMenuImage = function (mii, image, id)
+AddMenuImage = function (mii, image, id, nHeight)
 {
 	mii.hbmpItem = image.GetHBITMAP(WINVER >= 0x600 ? null : GetSysColor(COLOR_MENU));
 	if (mii.hbmpItem) {
 		mii.fMask = mii.fMask | MIIM_BITMAP;
 		if (id) {
-			MainWindow.g_arBM['U' + id] = mii.hbmpItem;
+			MainWindow.g_arBM[[id, nHeight].join("\t")] = mii.hbmpItem;
 		} else {
 			MainWindow.g_arBM.push(mii.hbmpItem);
 		}
 	}
 }
 
-MenusIcon = function (mii, src)
+MenusIcon = function (mii, src, nHeight)
 {
 	mii.cbSize = mii.Size;
 	if (src) {
 		src = api.PathUnquoteSpaces(ExtractMacro(te, src));
 		var image = te.WICBitmap();
-		mii.hbmpItem = MainWindow.g_arBM['U' + src];
+		mii.hbmpItem = MainWindow.g_arBM[[src, nHeight].join("\t")];
 		if (mii.hbmpItem) {
 			mii.fMask = mii.fMask | MIIM_BITMAP;
 			return;
 		}
-		if (REGEXP_IMAGE.test(src)) {
-			image.FromFile(src);
+		if (image.FromFile(src)) {
+			if (nHeight && nHeight != image.GetHeight()) {
+				image = image.GetThumbnailImage(nHeight * image.GetWidth() / image.GetHeight(), nHeight);
+			}
 		} else {
-			var hIcon = MakeImgIcon(src, 0, 16);
+			var hIcon = MakeImgIcon(src, 0, nHeight || 16);
 			image.FromHICON(hIcon);
 			api.DestroyIcon(hIcon);
 		}
@@ -1973,7 +1975,7 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem)
 				mii.fType = 0;
 				mii.dwTypeData = ar.join("\t");
 				mii.hSubMenu = api.CreateMenu();
-				MenusIcon(mii, item.getAttribute("Icon"));
+				MenusIcon(mii, item.getAttribute("Icon"), item.getAttribute("Height"));
 				api.InsertMenuItem(hMenus[hMenus.length - 1], nPos++, true, mii);
 				hMenus.push(mii.hSubMenu);
 			} else {
@@ -1989,7 +1991,7 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem)
 					mii.fMask = MIIM_STRING | MIIM_ID;
 					mii.wID = nResult;
 					mii.dwTypeData = ar.join("\t");
-					MenusIcon(mii, item.getAttribute("Icon"));
+					MenusIcon(mii, item.getAttribute("Icon"), item.getAttribute("Height"));
 					RunEvent3(["MenuState", item.getAttribute("Type"), item.text].join(":"), Ctrl, pt, mii);
 					if (arItem) {
 						arItem[nResult - 1] = items[arMenu[i]];
