@@ -131,11 +131,11 @@ BOOL	g_bUnload = FALSE;
 BOOL	g_bSetRedraw;
 BOOL	g_bShowParseError = TRUE;
 BOOL	g_bDragging = FALSE;
+BOOL	g_bUpper7;
 #ifdef _2000XP
 int		g_nCharWidth = 7;
 BOOL	g_bCharWidth = true;
 BOOL	g_bUpperVista;
-BOOL	g_bIsXP;
 HWND	g_hwndNextClip = NULL;
 LPWSTR  g_szTotalFileSizeXP = GetUserDefaultLCID() == 1041 ? L"総ファイル サイズ" : L"Total file size";
 LPWSTR  g_szLabelXP = GetUserDefaultLCID() == 1041 ? L"ラベル" : L"Label";
@@ -143,6 +143,7 @@ LPWSTR	g_szTotalFileSizeCodeXP = L"System.TotalFileSize";
 LPWSTR	g_szLabelCodeXP = L"System.Contact.Label";
 #endif
 #ifdef _W2000
+BOOL	g_bIsXP;
 BOOL	g_bIs2000;
 #endif
 
@@ -1168,6 +1169,7 @@ TEmethod methodPD[] = {
 	{ 0x60010006, "StartProgressDialog" },
 	{ 0x60010007, "StopProgressDialog" },
 	{ 0x60010008, "Timer" },
+	{ 0x60010009, "SetAnimation" },
 	{ 0, NULL }
 };
 
@@ -4557,6 +4559,9 @@ static void threadAddItems(void *args)
 	try {
 		if (ppd) {
 			ppd->StartProgressDialog(g_hwndMain, NULL, PROGDLG_NORMAL | PROGDLG_AUTOTIME, NULL);
+#ifdef _2000XP
+			ppd->SetAnimation(g_hShell32, 150);
+#endif
 			if (!LoadString(g_hShell32, 13585, pszMsg, MAX_PATH)) {
 				LoadString(g_hShell32, 6478, pszMsg, MAX_PATH);
 			}
@@ -6278,12 +6283,15 @@ VOID teApiExtract(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pV
 {
 	HRESULT hr = E_FAIL;
 	IStorage *pStorage = NULL;
-	HMODULE hDll;
+	HMODULE hDll = NULL;
 	IProgressDialog *ppd = NULL;
 	CoCreateInstance(CLSID_ProgressDialog, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&ppd));
 	try {
 		if (ppd) {
 			ppd->StartProgressDialog(g_hwndMain, NULL, PROGDLG_NORMAL | PROGDLG_AUTOTIME, NULL);
+#ifdef _2000XP
+			ppd->SetAnimation(g_hShell32, 161);
+#endif
 			ppd->SetLine(1, param[2].lpwstr, TRUE, NULL);
 		}
 		hr = teInitStorage(&pDispParams->rgvarg[nArg], &pDispParams->rgvarg[nArg - 1], param[2].lpwstr, &hDll, &pStorage);
@@ -8641,6 +8649,16 @@ VOID teApiTransparentBlt(int nArg, teParam *param, DISPPARAMS *pDispParams, VARI
 		param[5].hdc, param[6].intVal, param[7].intVal, param[8].intVal, param[9].intVal, param[10].uintVal));
 }
 
+VOID teApiFormatMessage(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	LPWSTR lpBuf;
+	if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY,
+		param[0].lpwstr, 0, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&lpBuf, MAX_STATUS, (va_list *)&param[1])) {
+		teSetSZ(pVarResult, lpBuf);
+		LocalFree(lpBuf);
+	}
+}
+
 /*
 VOID teApi(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -8954,6 +8972,7 @@ TEDispatchApi dispAPI[] = {
 	{11, -1, -1, -1, "AlphaBlend", teApiAlphaBlend },
 	{11, -1, -1, -1, "StretchBlt", teApiStretchBlt },
 	{11, -1, -1, -1, "TransparentBlt", teApiTransparentBlt },
+	{ 2,  0,  1,  2, "FormatMessage", teApiFormatMessage },
 //	{ 0, -1, -1, -1, "", teApi },
 //	{ 0, -1, -1, -1, "Test", teApiTest },
 };
@@ -8983,21 +9002,24 @@ VOID Initlize()
 #ifdef _USE_BSEARCHAPI
 	g_maps[MAP_API] = teSortDispatchApi(dispAPI, _countof(dispAPI));
 #endif
-#ifndef _2000XP
-	g_pidlResultsFolder = ILCreateFromPathA("shell:::{2965E715-EB66-4719-B53F-1672673BBEFA}");
-#else
 	DWORDLONG dwlConditionMask = 0;
-	OSVERSIONINFOEX osvi = { sizeof(OSVERSIONINFOEX), 6 };
+	OSVERSIONINFOEX osvi = { sizeof(OSVERSIONINFOEX), 6, 1 };
     VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
+    VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
+	g_bUpper7 = VerifyVersionInfo(&osvi, VER_MAJORVERSION | VER_MINORVERSION, dwlConditionMask);
+#ifdef _2000XP
+	osvi.dwMajorVersion = 0;
 	g_bUpperVista = VerifyVersionInfo(&osvi, VER_MAJORVERSION, dwlConditionMask);
+#else
+	g_pidlResultsFolder = ILCreateFromPathA("shell:::{2965E715-EB66-4719-B53F-1672673BBEFA}");
+#endif
+#ifdef _W2000
     dwlConditionMask = 0;
 	osvi.dwMajorVersion = 5;
     osvi.dwMinorVersion = 1;
 	VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_EQUAL);
     VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
 	g_bIsXP = VerifyVersionInfo(&osvi, VER_MAJORVERSION | VER_MINORVERSION, dwlConditionMask);
-#endif
-#ifdef _W2000
 	g_bIs2000 = !g_bUpperVista && !g_bIsXP;
 #endif
 #ifdef _2000XP
@@ -12446,7 +12468,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						if (m_param[SB_Type] != dwType) {
 							m_param[SB_Type] = dwType;
 							if (!m_bEmpty) {
-								m_bCheckLayout = TRUE;
+								m_bCheckLayout = g_bUpper7;
 								GetViewModeAndIconSize(TRUE);
 							}
 						}
@@ -13853,7 +13875,7 @@ STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 	SysFreeString(bs);
 	teCoTaskMemFree(pidlPrevius);
 	if (uViewMode != m_param[SB_ViewMode] && fvo != teGetFolderViewOptions(const_cast<LPITEMIDLIST>(pidlFolder), m_param[SB_ViewMode])) {
-		m_bCheckLayout = TRUE;
+		m_bCheckLayout = g_bUpper7;
 		return S_OK;
 	}
 	if (bDiffReal) {
@@ -13947,7 +13969,7 @@ VOID CteShellBrowser::OnNavigationComplete2()
 	if (m_nFocusItem > 0) {
 		FocusItem(FALSE);
 	}
-	m_bCheckLayout = TRUE;
+	m_bCheckLayout = g_bUpper7;
 	SetFolderFlags(FALSE);
 	InitFolderSize();
 	if (m_pTC->m_bRedraw) {
@@ -14168,7 +14190,11 @@ STDMETHODIMP CteShellBrowser::CompareIDs(LPARAM lParam, PCUIDLIST_RELATIVE pidl1
 
 STDMETHODIMP CteShellBrowser::CreateViewObject(HWND hwndOwner, REFIID riid, void **ppv)
 {
+#ifdef _W2000
 	if (g_bIsXP && IsEqualIID(riid, IID_IShellView)) {
+#else
+	if (IsEqualIID(riid, IID_IShellView)) {
+#endif
 		//only XP
 		SafeRelease(&m_pSFVCB);
 		IShellView *pSV;
@@ -15411,7 +15437,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 							if (dispIdMember == TE_OFFSET + TE_Layout) {
 								CteShellBrowser *pSB;
 								for (i = MAX_FV; i-- && (pSB = g_ppSB[i]);) {
-									pSB->m_bCheckLayout = TRUE;
+									pSB->m_bCheckLayout = g_bUpper7;
 									pSB->GetViewModeAndIconSize(TRUE);
 								}
 							}
@@ -22495,6 +22521,14 @@ STDMETHODIMP CteProgressDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lc
 				if (nArg >= 0) {
 					teSetLong(pVarResult, m_ppd->Timer(GetIntFromVariant(&pDispParams->rgvarg[nArg]), NULL));
 				}
+				return S_OK;
+			//SetAnimation
+			case 0x60010009:
+#ifdef _2000XP
+				if (nArg >= 1) {
+					teSetLong(pVarResult, m_ppd->SetAnimation((HINSTANCE)GetPtrFromVariant(&pDispParams->rgvarg[nArg]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 1])));
+				}
+#endif
 				return S_OK;
 			case DISPID_VALUE:
 				teSetObject(pVarResult, this);
