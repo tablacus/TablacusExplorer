@@ -2191,18 +2191,24 @@ function CheckUpdate()
 	OpenHttpRequest("http://www.eonet.ne.jp/~gakana/tablacus/explorer_en.html", "text/html", CheckUpdate2);
 }
 
-function CheckUpdate2(xhr)
+function CheckUpdate2(xhr, url)
 {
-	var res = /<td id="te">(.*?)<\/td>/i.exec(xhr.responseText);
+	var res = /<meta http\-equiv="refresh" content="\d+; *URL=([^"]*)/i.exec(xhr.responseText);
+	if (res) {
+		OpenHttpRequest(res[1], "text/html", CheckUpdate2);
+		return;
+	}
+	res = /<td id="te">(.*?)<\/td>/i.exec(xhr.responseText);
 	if (!res) {
 		return;
 	}
 	var s = res[1];
-	res = /<a href="dl\/([^"]*)/i.exec(s);
+	res = /<a href="([^"]*)/i.exec(s);
 	if (!res) {
 		return;
 	}
-	var file = res[1];
+	var uri = res[1];
+	var file = fso.GetFileName(uri.replace(/\//g, "\\"));
 	s = s.replace(/Download/i, "").replace(/<[^>]*>/ig, "");
 	var ver = 0;
 	res = /(\d+)/.exec(file);
@@ -2215,7 +2221,7 @@ function CheckUpdate2(xhr)
 			return;
 		}
 	}
-	if (!confirmOk(GetText("Update available") + "\n" + s + "\n" + GetText("Do you want to install it now?"))) {
+	if (!confirmOk([GetText("Update available"), s, GetText("Do you want to install it now?")].join("\n"))) {
 		return;
 	}
 	var temp = fso.BuildPath(fso.GetSpecialFolder(2).Path, "tablacus");
@@ -2226,8 +2232,10 @@ function CheckUpdate2(xhr)
 	temp += "\\explorer";
 	DeleteItem(temp);
 	CreateFolder2(temp);
-
-	if (DownloadFile("http://www.eonet.ne.jp/~gakana/tablacus/dl/" + file, zipfile) != S_OK || Extract(zipfile, temp) != S_OK) {
+	if (!/^https?:/i.test(uri)) {
+		uri = url.replace(/[^\/]*$/, '') + uri;
+	}
+	if (DownloadFile(uri, zipfile) != S_OK || Extract(zipfile, temp) != S_OK) {
 		return;
 	}
 	var te64exe = temp + "\\te64.exe";
@@ -2328,7 +2336,7 @@ OpenHttpRequest = function (url, ct, fn)
 	{
 		if (xhr.readyState == 4) {
 			if (xhr.status == 200) {
-				fn(xhr);
+				fn(xhr, url);
 			}
 		}
 	}

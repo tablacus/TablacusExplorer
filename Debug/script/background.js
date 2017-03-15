@@ -1,14 +1,16 @@
+//Tablacus Explorer
+
 function _s()
 {
 	try {
 		window.te = external;
 		api = te.WindowsAPI;
-		fso = te.CreateObject('Scripting.FileSystemObject');
-		sha = te.CreateObject('Shell.Application');
-		wsh = te.CreateObject('WScript.Shell');
+		fso = new ActiveXObject('Scripting.FileSystemObject');
+		sha = new ActiveXObject('Shell.Application');
+		wsh = new ActiveXObject('WScript.Shell');
 		arg = api.CommandLineToArgv(api.GetCommandLine());
 		location = {href: arg[2], hash: ''};
-		if (!api.PathMatchSpec(location.href, '?:\\*;\\\\*')) {
+		if (!/^[A-Z]:\\|^\\\\/i.test(location.href)) {
 			location.href = fso.BuildPath(fso.GetParentFolderName(arg[0]), location.href);
 		}
 		var wins = sha.Windows();
@@ -33,7 +35,7 @@ function _s()
 
 function _es(fn)
 {
-	if (!api.PathMatchSpec(fn, '?:\\*;\\\\*')) {
+	if (!/^[A-Z]:\\|^\\\\/i.test(fn)) {
 		fn = fso.BuildPath(fso.GetParentFolderName(location.href), fn);
 	}
 	try {

@@ -131,7 +131,6 @@ BOOL	g_bUnload = FALSE;
 BOOL	g_bSetRedraw;
 BOOL	g_bShowParseError = TRUE;
 BOOL	g_bDragging = FALSE;
-BOOL	g_bUpper7;
 #ifdef _2000XP
 int		g_nCharWidth = 7;
 BOOL	g_bCharWidth = true;
@@ -9002,13 +9001,10 @@ VOID Initlize()
 #ifdef _USE_BSEARCHAPI
 	g_maps[MAP_API] = teSortDispatchApi(dispAPI, _countof(dispAPI));
 #endif
-	DWORDLONG dwlConditionMask = 0;
-	OSVERSIONINFOEX osvi = { sizeof(OSVERSIONINFOEX), 6, 1 };
-    VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
-    VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
-	g_bUpper7 = VerifyVersionInfo(&osvi, VER_MAJORVERSION | VER_MINORVERSION, dwlConditionMask);
 #ifdef _2000XP
-	osvi.dwMajorVersion = 0;
+	DWORDLONG dwlConditionMask = 0;
+	OSVERSIONINFOEX osvi = { sizeof(OSVERSIONINFOEX), 6 };
+    VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
 	g_bUpperVista = VerifyVersionInfo(&osvi, VER_MAJORVERSION, dwlConditionMask);
 #else
 	g_pidlResultsFolder = ILCreateFromPathA("shell:::{2965E715-EB66-4719-B53F-1672673BBEFA}");
@@ -12468,7 +12464,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						if (m_param[SB_Type] != dwType) {
 							m_param[SB_Type] = dwType;
 							if (!m_bEmpty) {
-								m_bCheckLayout = g_bUpper7;
+								m_bCheckLayout = TRUE;
 								GetViewModeAndIconSize(TRUE);
 							}
 						}
@@ -13875,7 +13871,7 @@ STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 	SysFreeString(bs);
 	teCoTaskMemFree(pidlPrevius);
 	if (uViewMode != m_param[SB_ViewMode] && fvo != teGetFolderViewOptions(const_cast<LPITEMIDLIST>(pidlFolder), m_param[SB_ViewMode])) {
-		m_bCheckLayout = g_bUpper7;
+		m_bCheckLayout = TRUE;
 		return S_OK;
 	}
 	if (bDiffReal) {
@@ -13969,7 +13965,7 @@ VOID CteShellBrowser::OnNavigationComplete2()
 	if (m_nFocusItem > 0) {
 		FocusItem(FALSE);
 	}
-	m_bCheckLayout = g_bUpper7;
+	m_bCheckLayout = TRUE;
 	SetFolderFlags(FALSE);
 	InitFolderSize();
 	if (m_pTC->m_bRedraw) {
@@ -14766,7 +14762,17 @@ FOLDERVIEWOPTIONS CteShellBrowser::teGetFolderViewOptions(LPITEMIDLIST pidl, UIN
 	while (--uViewMode > 0) {
 		uFlag *= 2;
 	}
-	return uFlag & g_param[TE_Layout] ? FVO_DEFAULT : FVO_VISTALAYOUT;
+	if (uFlag & g_param[TE_Layout]) {
+		if (m_pExplorerBrowser) {
+			IFolderViewOptions *pOptions;
+			if SUCCEEDED(m_pExplorerBrowser->QueryInterface(IID_PPV_ARGS(&pOptions))) {
+				pOptions->Release();
+				return FVO_DEFAULT;
+			}
+		}
+
+	}
+	return FVO_VISTALAYOUT;
 }
 
 VOID CteShellBrowser::SetSort(BSTR bs)
@@ -15437,7 +15443,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 							if (dispIdMember == TE_OFFSET + TE_Layout) {
 								CteShellBrowser *pSB;
 								for (i = MAX_FV; i-- && (pSB = g_ppSB[i]);) {
-									pSB->m_bCheckLayout = g_bUpper7;
+									pSB->m_bCheckLayout = TRUE;
 									pSB->GetViewModeAndIconSize(TRUE);
 								}
 							}
