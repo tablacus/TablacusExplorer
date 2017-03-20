@@ -11,12 +11,12 @@ g_tdDown = null;
 g_bDrag = false;
 g_pt = {x: 0, y: 0};
 g_Gesture = null;
-g_tid = null;
 g_tidResize = null;
 g_drag5 = false;
 g_nResult = 0;
 g_bChanged = true;
 g_bClosed = false;
+g_tdAddon = {};
 arLangs = [GetLangId()];
 var res = /(\w+)_/.test(arLangs[0]);
 if (res) {
@@ -29,7 +29,6 @@ arLangs.push("General");
 g_ovPanel = null;
 
 urlAddons = "http://tablacus.github.io/TablacusExplorerAddons/";
-nCount = 0;
 xhr = null;
 xmlAddons = null;
 
@@ -176,16 +175,13 @@ function ClickTree(o, nMode, strChg, bForce)
 			if (nMode == 0) {
 				switch (res[1] - 0) {
 					case 1:
-						document.body.style.cursor = "wait";
 						setTimeout(function () {
 							LoadAddons();
-							document.body.style.cursor = "auto";
 						}, 9);
 						if (newTab == '1_1') {
-						setTimeout(function () {
-							GetAddons();
-							document.body.style.cursor = "auto";
-						}, 9);
+							setTimeout(function () {
+								GetAddons();
+							}, 9);
 						}
 						break;
 					case 2:
@@ -984,7 +980,7 @@ function SaveAddons()
 				if (!item) {
 					item = xml.createElement(Id);
 				}
-				var Enabled = api.StrCmpI(div.style.color, "gray") ? 1 : 0;
+				var Enabled = document.getElementById("enable_" + Id).checked;
 				if (Enabled) {
 					var AddonFolder = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\" + Id);
 					Enabled = fso.FolderExists(AddonFolder + "\\lang") ? 2 : 0;
@@ -1069,7 +1065,7 @@ function LoadAddons()
 				var item = items[i];
 				var Id = item.nodeName;
 				if (AddonId[Id]) {
-					AddAddon(table, Id, (api.LowPart(item.getAttribute("Enabled"))) ? "Disable" : "Enable");
+					AddAddon(table, Id, api.LowPart(item.getAttribute("Enabled")));
 					delete AddonId[Id];
 				}
 			}
@@ -1077,26 +1073,32 @@ function LoadAddons()
 	}
 	for (var Id in AddonId) {
 		if (fso.FileExists(path + Id + "\\config.xml")) {
-			AddAddon(table, Id, "Enable");
+			AddAddon(table, Id, false);
 		}
 	}
 }
 
-function AddAddon(table, Id, Enable)
+function AddAddon(table, Id, bEnable)
 {
 	var tr = table.insertRow();
-	SetAddon(tr.insertCell(), Id, Enable);
+	g_tdAddon[Id] = tr.insertCell();
+	SetAddon(Id, bEnable);
 }
 
-function SetAddon(td, Id, Enable)
+function SetAddon(Id, bEnable)
 {
+	var td = g_tdAddon[Id];
 	var info = GetAddonInfo(Id);
-	var s = ['<div draggable="true" title="', Id, '" ondragstart="Start5(this)" ondragend="End5(this)" Id="Addons_', Id, '" style="color: ', (Enable == "Enable") ? "gray" : "", '">'];
-	s.push('<table><tr style="border-bottom: 1px solid ButtonShadow"><td style="width: 100%"><input type="radio" name="AddonId" id="_', Id, '"><label for="_', Id, '"><b>', info.Name, "</b>&nbsp;", info.Version, '&nbsp;<a href="#" style="font-size: 75%" onclick="return AddonInfo(\'', Id, '\')">', GetText('Details'), '</a>');
-	s.push('</td><td><input type="button" value="', GetText('Remove'), '" onclick="AddonRemove(\'', Id, '\')"></td>');
-	s.push('<td><input type="button" value="', GetText(Enable), '" onclick="AddonEnable(\'', Id, '\', this)"', info.MinVersion && te.Version < CalcVersion(info.MinVersion) ? " disabled" : "", '></td>');
-	s.push('<td><input type="button" value="', GetText('Options'), '" onclick="AddonOptions(\'', Id, '\')"', info.Options ? "" : " disabled");
-	s.push('></td></tr></table></label></div>');
+	var s = ['<div draggable="true" title="', Id, '" ondragstart="Start5(this)" ondragend="End5(this)" Id="Addons_', Id, '" style="color: ', bEnable ? "": "gray", '">'];
+	s.push('<table><tr style="border-bottom: 1px solid buttonshadow"><td style="width: 100%"><input type="radio" name="AddonId" id="_', Id, '"><label for="_', Id, '"><b>', info.Name, "</b>&nbsp;", info.Version, '&nbsp;<a href="#" style="font-size: 75%" onclick="return AddonInfo(\'', Id, '\')">', GetText('Details'), '</a>');
+
+	if (info.Options) {
+		s.push('</td><td style="white-space: nowrap; vertical-align: bottom; padding-right: 1em"><a href="#" onclick="AddonOptions(\'', Id, '\'); return false;">', GetText('Options'), '</td>');
+	}
+	s.push('<td style="vertical-align: bottom";"><input type="checkbox" id="enable_', Id, '" onchange="AddonEnable(this)" ', info.MinVersion && te.Version < CalcVersion(info.MinVersion) ? " disabled" : "", bEnable ? " checked" : "", '></td>');
+	s.push('<td style="vertical-align: bottom"><label for="enable_', Id, '" style="display: block; width: 6em; white-space: nowrap">', GetText(bEnable ? "Enabled" : "Enable"), '</label></td>');
+	s.push('<td style="vertical-align: bottom"><input type="image" src="bitmap:ieframe.dll,216,16,10" title="', GetText('Remove'), '" onclick="AddonRemove(\'', Id, '\')"></td>');
+	s.push('</tr></table></label></div>');
 	td.innerHTML = s.join("");
 
 	td.onmousedown = function (e)
@@ -1213,20 +1215,14 @@ function AddonWebsite(Id)
 	wsh.run(info.URL);
 }
 
-function AddonEnable(Id, o)
+function AddonEnable(o)
 {
+	var Id = o.id.replace(/^enable_/i, "");
 	var div = document.getElementById("Addons_" + Id);
-	if (api.StrCmpI(div.style.color, "gray")) {
+	if (!o.checked) {
 		MainWindow.AddonDisabled(Id);
-		o.value = GetText('Enable');
-		div.style.color = "gray";
-	} else {
-		var info = GetAddonInfo(Id);
-		if (!info.MinVersion || te.Version >= api.LowPart(info.MinVersion.replace(/\D/g, ""))) {
-			o.value = GetText('Disable');
-			div.style.color = "";
-		}
 	}
+	SetAddon(Id, o.checked);
 	g_Chg.Addons = true;
 }
 
@@ -2216,9 +2212,6 @@ function GetTextEx(s)
 
 function GetAddons()
 {
-	if (nCount) {
-		return;
-	}
 	OpenHttpRequest(urlAddons + "index.xml", "text/xml", AddonsList);
 }
 
@@ -2237,88 +2230,66 @@ function CheckAddon(Id)
 
 function AddonsSearch()
 {
-	clearTimeout(g_tid);
-	if (nCount != xmlAddons.length) {
-		AddonsList();
-		return true;
-	}
-	nCount = 0;
-	var q =
-	{
-		td: [],
-		ts: [],
-		i: 0
-	}
-	if (AddonsSub(q)) {
-		document.body.style.cursor = "wait";
-		AddonsAppend(q)
-	}
+	AddonsAppend()
 	return true;
-}
-
-function AddonsSub(q)
-{
-	if (document.getElementById) {
-		var table = document.getElementById("Addons1");
-		if (table) {
-			while (table.rows.length > 0) {
-				table.deleteRow(0);
-			}
-			for (var i = 0; i < xmlAddons.length; i++) {
-				var tr = table.insertRow(i);
-				q.td[i] = tr.insertCell(0);
-			}
-			q.ts = new Array(xmlAddons.length);
-			return true;
-		}
-	}
-	return false;
 }
 
 function AddonsList(xhr2)
 {
-	clearTimeout(g_tid);
-	nCount = 0;
-	var q =
-	{
-		td: [],
-		ts: [],
-		i: 0
-	}
 	if (xhr2) {
 		xhr = xhr2;
 	}
 	var xml = xhr.responseXML;
 	if (xml) {
 		xmlAddons = xml.getElementsByTagName("Item");
-		if (AddonsSub(q)) {
-			document.body.style.cursor = "wait";
-			AddonsAppend(q)
-		}
+		AddonsAppend()
 	}
 }
 
-function AddonsAppend(q)
+function AddonsAppend()
 {
+	var Progress = te.ProgressDialog;
+	var i = 0, td = [];
+	Progress.StartProgressDialog(te.hwnd, null, 2);
 	try {
-		if (xmlAddons[q.i]) {
-			ArrangeAddon(xmlAddons[q.i++], q.td, q.ts);
-			g_tid = setTimeout(function () {
-				AddonsAppend(q);
-			}, 1);
-			document.getElementById('STATUS').innerText = (100 * q.i / q.ts.length).toFixed(1) + " %";
-		} else {
-			document.body.style.cursor = "auto";
-			document.getElementById('STATUS').innerText = "";
+		Progress.SetAnimation(hShell32, 150);
+		Progress.SetLine(1, api.LoadString(hShell32, 13585) || api.LoadString(hShell32, 6478), true);
+		while ( !Progress.HasUserCancelled() && xmlAddons[i]) {
+			ArrangeAddon(xmlAddons[i++], td, Progress);
+			Progress.SetTitle(Math.floor(100 * i / xmlAddons.length) + "%");
+			Progress.SetProgress(i, xmlAddons.length);
 		}
-	} catch (e) {}
+		td.sort(function (a,b) {
+			return b[0] - a[0];
+		});
+		var table = document.getElementById("Addons1");
+		if (table) {
+			while (table.rows.length > 0) {
+				table.deleteRow(0);
+			}
+			for (i = 0; i < td.length; i++) {
+				var tr = table.insertRow(i);
+				var td1 = tr.insertCell(0);
+				td[i].shift();
+				td1.innerHTML = td[i].join("");
+				ApplyLang(td1);
+				td1.className = (i & 1) ? "oddline" : "";
+				td1.style.borderBottom = "1px solid buttonshadow";
+				td1.style.paddingTop = "3px";
+			}
+		}
+	} catch (e) {
+		ShowError(e);
+	}
+	Progress.StopProgressDialog();
 }
 
-function ArrangeAddon(xml, td, ts)
+function ArrangeAddon(xml, td, Progress)
 {
 	var Id = xml.getAttribute("Id");
 	var s = [];
 	var strUpdate = "";
+	var nInsert;
 	if (Search(xml)) {
 		var info = [];
 		for (var i = arLangs.length; i--;) {
@@ -2326,6 +2297,7 @@ function ArrangeAddon(xml, td, ts)
 		}
 		var pubDate = "";
 		var dt = new Date(info.pubDate);
+		Progress.SetLine(2, info.Name, true);
 		if (info.pubDate) {
 			pubDate = api.GetDateFormat(LOCALE_USER_DEFAULT, 0, dt, api.GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SSHORTDATE)) + " ";
 		}
@@ -2363,23 +2335,8 @@ function ArrangeAddon(xml, td, ts)
 			s.push('<input type="button" style="color: red" onclick="MainWindow.CheckUpdate()" value="', info.MinVersion.replace(/^20/, "Version ").replace(/\.0/g, '.'), ' ', GetText("is required."), '">');
 		}
 		s.push(strUpdate, '</td></tr></table>');
-		var nInsert = 0;
-		while (nInsert <= nCount && dt2 < ts[nInsert]) {
-			nInsert++;
-		}
-		for (j = nCount; j > nInsert; j--) {
-			td[j].innerHTML = td[j - 1].innerHTML;
-			ts[j] = ts[j - 1];
-		}
-		td[nInsert].innerHTML = s.join("");
-		ApplyLang(td[nInsert]);
-		ts[nInsert] = dt2;
-		nCount++;
-		for (j = nCount; j-- > 0;) {
-			td[j].className = (j & 1) ? "oddline" : "";
-			td[j].style.borderBottom = "1px solid ButtonShadow";
-			td[j].style.paddingTop = "3px";
-		}
+		s.unshift(dt2);
+		td.push(s);
 	}
 }
 

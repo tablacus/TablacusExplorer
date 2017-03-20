@@ -979,7 +979,7 @@ HitTest = function (o, pt)
 		var p = GetPos(o, 1);
 		if (pt.x >= p.x && pt.x < p.x + o.offsetWidth && pt.y >= p.y && pt.y < p.y + o.offsetHeight * screen.deviceYDPI / screen.logicalYDPI) {
 			o = o.offsetParent;
-			p = GetPos(o, 3);
+			p = GetPos(o, 1);
 			return pt.x >= p.x && pt.x < p.x + o.offsetWidth * screen.deviceXDPI / screen.logicalXDPI && pt.y >= p.y && pt.y < p.y + o.offsetHeight * screen.deviceYDPI / screen.logicalYDPI;
 		}
 	}

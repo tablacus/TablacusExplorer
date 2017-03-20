@@ -9172,15 +9172,7 @@ VOID CALLBACK teTimerProcFocus(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 		CteShellBrowser *pSB = SBfromhwnd(hwnd);
 		if (pSB) {
 #ifdef _FIXWIN10IPBUG1
-			if (pSB->m_hwndLV && pSB->m_param[SB_ViewMode] == FVM_DETAILS) {
-				POINT pt;
-				ListView_GetOrigin(pSB->m_hwndLV, &pt);
-				if (pt.y < 0) {
-					ListView_SetView(pSB->m_hwndLV, LV_VIEW_SMALLICON);
-					ListView_SetView(pSB->m_hwndLV, LV_VIEW_DETAILS);
-				}
-			}
-			pSB->m_bDisableFocus = FALSE;
+			pSB->FixWin10IPBug1();
 #endif
 			pSB->FocusItem(TRUE);
 		}
@@ -13375,8 +13367,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				return DoFunc(TE_OnIconSizeChanged, this, S_OK);
 			case DISPID_SORTDONE://XP-
 #ifdef _FIXWIN10IPBUG1
-				m_bDisableFocus = TRUE;
-				SetTimer(m_hwnd, 1, 64, teTimerProcFocus);
+				FixWin10IPBug1();
 #endif
 				if (m_nFocusItem < 0) {
 					FocusItem(FALSE);
@@ -13565,6 +13556,19 @@ VOID CteShellBrowser::AddColumnDataXP(LPWSTR pszColumns, LPWSTR pszName, int nWi
 		return;
 	}
 	AddColumnData(pszColumns, pszName, nWidth);
+}
+#endif
+#ifdef _FIXWIN10IPBUG1
+VOID CteShellBrowser::FixWin10IPBug1() {
+	if (m_hwndLV && m_param[SB_ViewMode] == FVM_DETAILS) {
+		POINT pt;
+		ListView_GetOrigin(m_hwndLV, &pt);
+		if (pt.y < 0) {
+			ListView_SetView(m_hwndLV, LV_VIEW_SMALLICON);
+			ListView_SetView(m_hwndLV, LV_VIEW_DETAILS);
+		}
+	}
+	m_bDisableFocus = FALSE;
 }
 #endif
 

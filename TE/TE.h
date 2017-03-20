@@ -1064,7 +1064,9 @@ public:
 	BSTR PSGetNameXP(LPWSTR pszName, int nFormat);
 	VOID AddColumnDataXP(LPWSTR pszColumns, LPWSTR pszName, int nWidth, int nFormat);
 #endif
-
+#ifdef _FIXWIN10IPBUG1
+	VOID FixWin10IPBug1();
+#endif
 public:
 	HWND		m_hwnd;
 	HWND		m_hwndDV;
