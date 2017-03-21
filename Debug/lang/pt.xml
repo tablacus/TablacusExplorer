@@ -43,7 +43,6 @@
 	<text s="Size">Tamanho</text>
 	<text s="Position">Posição</text>
 	<text s="Root">Raiz</text>
-	<text s="View mode">Modo de visualização</text>
 
 	<text s="Left">Esquerda</text>
 	<text s="Top">Alto</text>
@@ -105,11 +104,10 @@
 	<text s="Alias">Apelido</text>
 	<text s="&amp;Add-ons...">&amp;Extensões...</text>
 	<text s="Get Add-ons...">Obter extensões...</text>
+  <text s="Enabled">Habilitada</text>
 	<text s="Enable">Habilitar</text>
-	<text s="Disable">Desabilitar</text>
 	<text s="Visit website">Visitar página</text>
-	<text s="Info...">Informações...</text>
-	<text s="Location">Localização</text>
+	<text s="Information...">Informações...</text>
 	<text s="Title Bar">Barra de título</text>
 	<text s="Tool Bar">Barra de ferramentas</text>
 	<text s="Left Bar">Barra esquerda</text>
@@ -135,7 +133,6 @@
 	<text s="Not folders">Não pastas</text>
 	<text s="Include hidden items">Incluir itens ocultos</text>
 
-	<text s="RootStyle">Estilo raiz</text>
 	<text s="Visible">Visível</text>
 	<text s="Hidden">Oculto</text>
 	<text s="Expanded">Expandido</text>
@@ -214,4 +211,11 @@
 	<text s="Load">Carregar</text>
 	<text s="Get %s...">Obter %s...</text>
 	<text s="Results">Resultados</text>
+	<text s="Number of items">Número de itens</text>
+	<text s="&amp;About %s">&amp;Sobre %s</text>
+
+	<text s="Location">Localização</text>
+	<text s="Root style">Estilo raiz</text>
+	<text s="View mode">Modo de visualização</text>
+  <text s="Disable">Desabilitar</text>
 </resources>

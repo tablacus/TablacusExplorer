@@ -1085,7 +1085,6 @@ public:
 	SORTCOLUMN m_col;
 	DWORD		m_dwNameFormat;
 	BOOL	m_bSetListColumnWidth;
-	BOOL	m_bDisableFocus;
 #ifdef _2000XP
 	TEColumn	*m_pColumns;
 	UINT		m_nColumns;

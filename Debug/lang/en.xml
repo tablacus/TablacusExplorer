@@ -43,7 +43,6 @@
 	<text s="Size">Size</text>
 	<text s="Position">Position</text>
 	<text s="Root">Root</text>
-	<text s="View mode">View mode</text>
 
 	<text s="Left">Left</text>
 	<text s="Top">Top</text>
@@ -106,10 +105,9 @@
 	<text s="&amp;Add-ons...">&amp;Add-ons...</text>
 	<text s="Get Add-ons...">Get Add-ons...</text>
 	<text s="Enable">Enable</text>
-	<text s="Disable">Disable</text>
+	<text s="Enabled">Enabled</text>
 	<text s="Visit website">Visit website</text>
-	<text s="Info...">Info...</text>
-	<text s="Location">Location</text>
+	<text s="Information...">Information...</text>
 	<text s="Title Bar">Title bar</text>
 	<text s="Tool Bar">Tool bar</text>
 	<text s="Left Bar">Left bar</text>
@@ -135,7 +133,6 @@
 	<text s="Not folders">Not folders</text>
 	<text s="Include hidden items">Include hidden items</text>
 
-	<text s="RootStyle">Root style</text>
 	<text s="Visible">Visible</text>
 	<text s="Hidden">Hidden</text>
 	<text s="Expanded">Expanded</text>
@@ -214,4 +211,11 @@
 	<text s="Load">Load</text>
 	<text s="Get %s...">Get %s...</text>
 	<text s="Results">Results</text>
+	<text s="Number of items">Number of items</text>
+	<text s="&amp;About %s">&amp;About %s</text>
+
+	<text s="Location">Location</text>
+	<text s="Root style">Root style</text>
+	<text s="View mode">View mode</text>
+	<text s="Disable">Disable</text>
 </resources>

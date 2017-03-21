@@ -43,7 +43,6 @@
 	<text s="Size">Размер</text>
 	<text s="Position">Позиция</text>
 	<text s="Root">Корень</text>
-	<text s="View mode">Режим просмотра</text>
 
 	<text s="Left">Влево</text>
 	<text s="Top">Вверх</text>
@@ -105,11 +104,10 @@
 	<text s="Alias">Псевдоним</text>
 	<text s="&amp;Add-ons...">&amp;Плагины...</text>
 	<text s="Get Add-ons...">Скачать плагины...</text>
+	<text s="Enabled">Включено</text>
 	<text s="Enable">Включить</text>
-	<text s="Disable">Отключить</text>
 	<text s="Visit website">Посетить web-сайт</text>
-	<text s="Info...">Инфо...</text>
-	<text s="Location">Локация</text>
+	<text s="Information...">Информация...</text>
 	<text s="Title Bar">Панель вкладок</text>
 	<text s="Tool Bar">Панель инструментов</text>
 	<text s="Left Bar">Левая панель</text>
@@ -135,7 +133,6 @@
 	<text s="Not folders">Не папки</text>
 	<text s="Include hidden items">Включить скрытые элементы</text>
 
-	<text s="RootStyle">Стиль корневой папки</text>
 	<text s="Visible">Видимый</text>
 	<text s="Hidden">Скрытый</text>
 	<text s="Expanded">Расширенный</text>
@@ -214,4 +211,11 @@
 	<text s="Load">Загрузить</text>
 	<text s="Get %s...">Получить %s...</text>
 	<text s="Results">Результаты</text>
+	<text s="Number of items">Число объектов</text>
+	<text s="&amp;About %s">&amp;О %s</text>
+
+	<text s="Location">Локация</text>
+	<text s="Root style">Стиль корневой папки</text>
+	<text s="View mode">Режим просмотра</text>
+	<text s="Disable">Отключить</text>
 </resources>

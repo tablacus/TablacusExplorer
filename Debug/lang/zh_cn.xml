@@ -43,7 +43,6 @@
 	<text s="Size">大小</text>
 	<text s="Position">位置</text>
 	<text s="Root">根目录</text>
-	<text s="View mode">查看模式</text>
 
 	<text s="Left">左</text>
 	<text s="Top">顶</text>
@@ -105,11 +104,10 @@
 	<text s="Alias">别名</text>
 	<text s="&amp;Add-ons...">附加组件(&amp;A)...</text>
 	<text s="Get Add-ons...">获取附加组件...</text>
+	<text s="Enabled">已启用</text>
 	<text s="Enable">启用</text>
-	<text s="Disable">禁用</text>
 	<text s="Visit website">查看网站</text>
-	<text s="Info...">信息...</text>
-	<text s="Location">定位</text>
+	<text s="Information...">信息...</text>
 	<text s="Title Bar">标题栏</text>
 	<text s="Tool Bar">工具栏</text>
 	<text s="Left Bar">左栏</text>
@@ -135,7 +133,6 @@
 	<text s="Not folders">非文件夹</text>
 	<text s="Include hidden items">包含隐藏项目</text>
 
-	<text s="RootStyle">根目录样式</text>
 	<text s="Visible">可见</text>
 	<text s="Hidden">隐藏</text>
 	<text s="Expanded">展开</text>
@@ -214,4 +211,11 @@
 	<text s="Load">加载</text>
 	<text s="Get %s...">获取 %s...</text>
 	<text s="Results">结果</text>
+	<text s="Number of items">项目数</text>
+	<text s="&amp;About %s">关于 %s</text>
+
+	<text s="Location">定位</text>
+	<text s="Root style">根目录样式</text>
+	<text s="View mode">查看模式</text>
+  <text s="Disable">禁用</text>
 </resources>

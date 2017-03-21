@@ -43,7 +43,6 @@
 	<text s="Size">大小</text>
 	<text s="Position">位置</text>
 	<text s="Root">根節點</text>
-	<text s="View mode">檢視模式</text>
 
 	<text s="Left">左</text>
 	<text s="Top">上</text>
@@ -105,11 +104,10 @@
 	<text s="Alias">別名</text>
 	<text s="&amp;Add-ons...">附加元件(&amp;A)...</text>
 	<text s="Get Add-ons...">取得附加元件...</text>
-	<text s="Enable">啟用</text>
-	<text s="Disable">停用</text>
+	<text s="Enabled">已啟用</text>
+  <text s="Enable">啟用</text>
 	<text s="Visit website">訪問網站</text>
-	<text s="Info...">訊息...</text>
-	<text s="Location">位置</text>
+	<text s="Information...">訊息...</text>
 	<text s="Title Bar">標題列</text>
 	<text s="Tool Bar">工具列</text>
 	<text s="Left Bar">左側列</text>
@@ -135,7 +133,6 @@
 	<text s="Not folders">非資料夾項目</text>
 	<text s="Include hidden items">包含隱藏項目</text>
 
-	<text s="RootStyle">根節點樣式</text>
 	<text s="Visible">顯示</text>
 	<text s="Hidden">隱藏</text>
 	<text s="Expanded">展開</text>
@@ -214,4 +211,11 @@
 	<text s="Load">載入</text>
 	<text s="Get %s...">取得 %s...</text>
 	<text s="Results">結果</text>
+	<text s="Number of items">項目數</text>
+	<text s="&amp;About %s">關於 %s</text>
+
+	<text s="Location">位置</text>
+	<text s="Root style">根節點樣式</text>
+	<text s="View mode">檢視模式</text>
+  <text s="Disable">停用</text>
 </resources>

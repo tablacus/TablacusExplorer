@@ -43,7 +43,6 @@
 	<text s="Size">Boyut</text>
 	<text s="Position">Pozisyonn</text>
 	<text s="Root">Kök</text>
-	<text s="View mode">Görünüm türü</text>
 
 	<text s="Left">Sol</text>
 	<text s="Top">Üst</text>
@@ -105,11 +104,10 @@
 	<text s="Alias">Takma ad</text>
 	<text s="&amp;Add-ons...">&amp;Eklentiler...</text>
 	<text s="Get Add-ons...">Eklenti ekle...</text>
-	<text s="Enable">Aktif</text>
-	<text s="Disable">Pasif</text>
+  <text s="Enabled">Etkin</text>
+	<text s="Enable">Etkinleştir</text>
 	<text s="Visit website">Web sitesine git</text>
-	<text s="Info...">Bilgi...</text>
-	<text s="Location">Yer</text>
+	<text s="Information...">Bilgi...</text>
 	<text s="Title Bar">Başlık çubuğu</text>
 	<text s="Tool Bar">Araç çubuğu</text>
 	<text s="Left Bar">Sol araç çubuğu</text>
@@ -135,7 +133,6 @@
 	<text s="Not folders">Klasörler hariç</text>
 	<text s="Include hidden items">Gizli nesneleri içer</text>
 
-	<text s="RootStyle">Kök sitili</text>
 	<text s="Visible">Görünmez</text>
 	<text s="Hidden">Gizli</text>
 	<text s="Expanded">Genişletilmiş</text>
@@ -214,4 +211,11 @@
 	<text s="Load">Yükle</text>
 	<text s="Get %s...">Al %s...</text>
 	<text s="Results">Sonuçlar</text>
+	<text s="Number of items">öğe sayısı</text>
+	<text s="&amp;About %s">%s,</text>
+
+	<text s="Location">Yer</text>
+	<text s="Root style">Kök sitili</text>
+	<text s="View mode">Görünüm türü</text>
+	<text s="Disable">Pasif</text>
 </resources>

@@ -97,7 +97,6 @@ BSTR	g_bsDocumentWrite = NULL;
 BSTR	g_bsClipRoot = NULL;
 HANDLE	g_hMutex = NULL;
 HTREEITEM	g_hItemDown = NULL;
-SHELLFLAGSTATE g_sfs;
 UINT	g_uCrcTable[256];
 LONG	g_nSize = MAXWORD;
 LONG	g_nLockUpdate = 0;
@@ -5195,28 +5194,8 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							return lResult;
 						}
 					}
-					if (lpDispInfo->item.iSubItem == 0 && (pSB->m_dwNameFormat || !g_sfs.fShowExtensions)) {
+					if (lpDispInfo->item.iSubItem == 0 && pSB->m_dwNameFormat) {
 						lResult = CallWindowProc((WNDPROC)pSB->m_DefProc, hwnd, msg, wParam, lParam);
-						if (!g_sfs.fShowExtensions) {
-							if (!StrChr(lpDispInfo->item.pszText, '.')) {
-								IFolderView *pFV;
-								LPITEMIDLIST pidl;
-								if SUCCEEDED(pSB->m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
-									if SUCCEEDED(pFV->Item(lpDispInfo->item.iItem, &pidl)) {
-										BSTR bsFile;
-										if SUCCEEDED(teGetDisplayNameBSTR(pSB->m_pSF2, pidl, SHGDN_FORPARSING, &bsFile)) {
-											LPWSTR pszExt = PathFindExtension(bsFile);
-											if (pszExt && lstrlen(lpDispInfo->item.pszText) + lstrlen(pszExt) < lpDispInfo->item.cchTextMax) {
-												lstrcat(lpDispInfo->item.pszText, pszExt);
-											}
-											::SysFreeString(bsFile);
-										}
-										teCoTaskMemFree(pidl);
-										pFV->Release();
-									}
-								}
-							}
-						}
 						if (pSB->m_dwNameFormat & 1) {
 							LPWSTR lpEsc = StrChr(lpDispInfo->item.pszText, '%');
 							try {
@@ -9380,11 +9359,10 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 										if (!pSB->m_hwnd) {
 											bDirect = FALSE;
 										}
-#ifdef _FIXWIN10IPBUG1
-										pSB->m_bDisableFocus = TRUE;
-										SetTimer(pSB->m_hwnd, 1, 64, teTimerProcFocus);
-#endif
 										pSB->Show(TRUE, 0);
+#ifdef _FIXWIN10IPBUG1
+										pSB->FixWin10IPBug1();
+#endif
 									}
 									MoveWindow(pSB->m_hwnd, rc.left, rc.top, rc.right - rc.left,
 										rc.bottom - rc.top, FALSE);
@@ -10046,7 +10024,6 @@ function _t(o) {\
 		}
 		teAdvise(g_pSW, DIID_DShellWindowsEvents, static_cast<IDispatch *>(g_pTE), &g_dwSWCookie);
 	}
-	SHGetSettings(&g_sfs, SSF_SHOWEXTENSIONS);
 
 	// Main message loop:
 	while (g_bMessageLoop) {
@@ -10362,7 +10339,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			//System
 			case WM_SETTINGCHANGE:
 				if (message == WM_SETTINGCHANGE) {
-					SHGetSettings(&g_sfs, SSF_SHOWEXTENSIONS);
 					if (lpfnRegenerateUserEnvironment) {
 						try {
 							if (lstrcmpi((LPCWSTR)lParam, L"Environment") == 0) {
@@ -11314,9 +11290,6 @@ VOID CteShellBrowser::SaveFocusedItemToHistory()
 
 VOID CteShellBrowser::FocusItem(BOOL bFree)
 {
-	if (m_bDisableFocus) {
-		return;
-	}
 	CteFolderItem *pid;
 	if (m_pFolderItem && !m_dwUnavailable && SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid))) {
 		if (pid->m_pidlFocused) {
@@ -13326,10 +13299,6 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				IFolderView2 *pFV2;
 				if (m_bRefreshing || m_bNavigateComplete) {
 					m_bRefreshing = FALSE;
-#ifdef _FIXWIN10IPBUG1
-					m_bDisableFocus = TRUE;
-					SetTimer(m_hwnd, 1, 64, teTimerProcFocus);
-#endif
 					if (m_bNavigateComplete) {
 						m_bNavigateComplete = FALSE;
 						OnNavigationComplete2();
@@ -13352,6 +13321,9 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					SetRedraw(TRUE);
 					RedrawWindow(m_hwndDV, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
 				}
+#ifdef _FIXWIN10IPBUG1
+				FixWin10IPBug1();
+#endif
 				return S_OK;
 			case DISPID_VIEWMODECHANGED://XP+
 				SetFolderFlags(TRUE);
@@ -13568,7 +13540,6 @@ VOID CteShellBrowser::FixWin10IPBug1() {
 			ListView_SetView(m_hwndLV, LV_VIEW_DETAILS);
 		}
 	}
-	m_bDisableFocus = FALSE;
 }
 #endif
 
