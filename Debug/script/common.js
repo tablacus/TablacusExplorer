@@ -19,7 +19,6 @@ Addons = {"_stack": []};
 g_ = {
 	rcWindow: api.Memory("RECT"),
 	Colors: {},
-	nFind: 0,
 	Panels: {},
 	KeyCode: {},
 	KeyState: [
@@ -35,7 +34,8 @@ g_ = {
 	dlgs: {},
 	tidWindowRegistered: null,
 	bWindowRegistered: true,
-	xmlWindow: null
+	xmlWindow: null,
+	elAddons: {}
 };
 
 FolderMenu =
@@ -917,7 +917,7 @@ ShowDialog = function (fn, opt)
 		fn = location.href.replace(/[^\/]*$/, fn);
 	}
 	var r = Math.abs(MainWindow.DefaultFont.lfHeight) / 12;
-	return te.CreateCtrl(CTRL_SW, fn, opt, document, (opt.width || 640) * r, (opt.height || 480) * r);
+	return te.CreateCtrl(CTRL_SW, fn, opt, document, (opt.width || 750) * r, (opt.height || 530) * r);
 }
 
 LoadLayout = function ()
@@ -2388,18 +2388,6 @@ AddonOptions = function (Id, fn, Data)
 		Data.index = "6";
 		sFeatures = 'Default';
 	}
-	if (/^Default$/i.test(sFeatures)) {
-		sFeatures = 'Width: 640; Height: 480';
-	}
-	try {
-		var dlg = MainWindow.g_.dlgs[Id];
-		if (dlg) {
-			dlg.Focus();
-			return;
-		}
-	} catch (e) {
-		delete MainWindow.g_.dlgs[Id];
-	}
 	var opt = {MainWindow: MainWindow, Data: Data, event: {}};
 	if (fn) {
 		opt.event.TEOk = fn;
@@ -2409,18 +2397,65 @@ AddonOptions = function (Id, fn, Data)
 			g_Chg.Addons = true;
 		}
 	}
-	res = /width: *([0-9]+)/i.exec(sFeatures);
-	if (res) {
-		opt.width = res[1] - 0;
-		res = /height: *([0-9]+)/i.exec(sFeatures);
-		if (res) {
-			opt.height = res[1] - 0;
+	if (window.Addon == 1) {
+		if (/^Default$/i.test(sFeatures)) {
+			sFeatures = 'Width: 640; Height: 480';
 		}
+		try {
+			var dlg = MainWindow.g_.dlgs[Id];
+			if (dlg) {
+				dlg.Focus();
+				return;
+			}
+		} catch (e) {
+			delete MainWindow.g_.dlgs[Id];
+		}
+		var opt = {MainWindow: MainWindow, Data: Data, event: {}};
+		if (fn) {
+			opt.event.TEOk = fn;
+		} else if (window.g_Chg) {
+			opt.event.TEOk = function ()
+			{
+				g_Chg.Addons = true;
+			}
+		}
+		res = /width: *([0-9]+)/i.exec(sFeatures);
+		if (res) {
+			opt.width = res[1] - 0;
+			res = /height: *([0-9]+)/i.exec(sFeatures);
+			if (res) {
+				opt.height = res[1] - 0;
+			}
+		}
+		opt.event.onbeforeunload = function () {
+			delete MainWindow.g_.dlgs[Id];
+		}
+		MainWindow.g_.dlgs[Id] = ShowDialog(sURL, opt);
+		return;
 	}
-	opt.event.onbeforeunload = function () {
-		delete MainWindow.g_.dlgs[Id];
+	if (!g_.elAddons[Id]) {
+		opt.event.onload = function ()
+		{
+			var cInput = el.contentWindow.document.getElementsByTagName('input');
+			for (var i in cInput) {
+				if (/^ok$|^cancel$/i.test(cInput[i].className)) {
+					cInput[i].style.display = 'none';
+				}
+			}
+			el.contentWindow.g_.Inline = true;
+		}
+		external.WB.Data = opt;
+		var el = document.createElement('iframe');
+		el.id = 'panel1_' + Id;
+		el.src = sURL;
+		el.style.cssText = 'width: 100%; border: 0; padding: 0; margin: 0';
+		g_.elAddons[Id] = el;
+		var o = document.getElementById('panel1_2');
+		o.appendChild(el);
+		o = document.getElementById('tab1_');
+		o.insertAdjacentHTML("BeforeEnd", '<label id="tab1_' + Id + '" class="button" style="width: 100%" onmousedown="ClickTree(this);">'+ info.Name +'</label><br />');
 	}
-	MainWindow.g_.dlgs[Id] = ShowDialog(sURL, opt);
+	ClickTree(document.getElementById('tab1_' + Id));
 }
 
 function CalcVersion(s)

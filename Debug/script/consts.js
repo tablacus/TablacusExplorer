@@ -1873,6 +1873,11 @@ MOVEFILE_FAIL_IF_NOT_TRACKABLE = 0x00000020;
 
 if (window.dialogArguments) {
 	for (var j in dialogArguments.event) {
-		window[j] = dialogArguments.event[j];
+		var res = /^on(.+)/i.exec(j);
+		if (res) {
+			AddEventEx(window, res[1], dialogArguments.event[j]);
+		} else {
+			window[j] = dialogArguments.event[j];
+		}
 	}
 }

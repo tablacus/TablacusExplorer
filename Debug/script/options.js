@@ -127,7 +127,11 @@ function ResetForm()
 
 function ResizeTabPanel()
 {
-	CalcElementHeight(g_ovPanel, 4.8);
+	var h = 4.8;
+	if (g_.Inline && !/\w/.test(document.getElementById('toolbar').innerHTML)) {
+		h = 2.4;
+	}
+	CalcElementHeight(g_ovPanel, h);
 }
 
 function ClickTab(o, nMode)
@@ -171,6 +175,9 @@ function ClickTree(o, nMode, strChg, bForce)
 		var res = /tab([^_]+)(_?)(.*)/.exec(o.id);
 		if (res) {
 			newTab = res[1] + res[2] + res[3];
+			if (res[3]) {
+				ClickButton(res[1], true);
+			}
 			document.getElementById("MoveButton").style.display = newTab == "1" || res[1] == 2 ? "inline-block" : "none";
 			if (nMode == 0) {
 				switch (res[1] - 0) {
@@ -205,14 +212,14 @@ function ClickTree(o, nMode, strChg, bForce)
 		}
 		var ovTab = document.getElementById('tab' + TabIndex);
 		if (ovTab) {
-			var ovPanel = document.getElementById('panel' + TabIndex) || document.getElementById('panel' + TabIndex.replace(/_\d+/, ""));
+			var ovPanel = document.getElementById('panel' + TabIndex) || document.getElementById('panel' + TabIndex.replace(/_\w+/, ""));
 			ovTab.className = 'button';
 			ovPanel.style.display = 'none';
 		}
 		TabIndex = newTab;
 		ovTab = document.getElementById('tab' + TabIndex);
 		if (ovTab) {
-			ovPanel = document.getElementById('panel' + TabIndex) || document.getElementById('panel' + TabIndex.replace(/_\d+/, ""));
+			ovPanel = document.getElementById('panel' + TabIndex) || document.getElementById('panel' + TabIndex.replace(/_\w+/, ""));
 			var res = /2_(.+)/.exec(TabIndex);
 			if (res) {
 				document.F.Menus.selectedIndex = res[1];
@@ -221,13 +228,19 @@ function ClickTree(o, nMode, strChg, bForce)
 			ovTab.className = 'hoverbutton';
 			ovPanel.style.display = 'block';
 			CalcElementHeight(ovPanel, 2.7);
-			CalcElementHeight(document.getElementById("tab_"), 2.7);
+			var o = document.getElementById("tab_");
+			CalcElementHeight(o, 2.7);
+			var i = ovTab.offsetTop - o.scrollTop;
+			if (i < 0 || i >= o.offsetHeight - ovTab.offsetHeight) {
+				ovTab.scrollIntoView(i < 0);
+			}
 		}
 	}
 }
 
-function ClickButton(o, n, f)
+function ClickButton(n, f)
 {
+	var o = document.getElementById("tabbtn" + n);
 	var op = document.getElementById("tab" + n + "_");
 	if (f || op.style.display.toLowerCase() == "none") {
 		o.innerHTML = BUTTONS.opened;
@@ -1090,14 +1103,14 @@ function SetAddon(Id, bEnable)
 	var td = g_tdAddon[Id];
 	var info = GetAddonInfo(Id);
 	var s = ['<div draggable="true" title="', Id, '" ondragstart="Start5(this)" ondragend="End5(this)" Id="Addons_', Id, '" style="color: ', bEnable ? "": "gray", '">'];
-	s.push('<table><tr style="border-bottom: 1px solid buttonshadow"><td style="width: 100%"><input type="radio" name="AddonId" id="_', Id, '"><label for="_', Id, '"><b>', info.Name, "</b>&nbsp;", info.Version, '&nbsp;<a href="#" style="font-size: 75%" onclick="return AddonInfo(\'', Id, '\')">', GetText('Details'), '</a>');
+	s.push('<table><tr style="border-bottom: 1px solid buttonshadow"><td><input type="radio" name="AddonId" id="_', Id, '"></td><td style="width: 100%"><label for="_', Id, '">', info.Name, "&nbsp;", info.Version, '<br /><a href="#" onclick="return AddonInfo(\'', Id, '\', this)" style="font-size: .9em">', GetText('Details'), '</a>');
 
 	if (info.Options) {
-		s.push('</td><td style="white-space: nowrap; vertical-align: bottom; padding-right: 1em"><a href="#" onclick="AddonOptions(\'', Id, '\'); return false;">', GetText('Options'), '</td>');
+		s.push('</td><td style="white-space: nowrap; vertical-align: middle; padding-right: 1em"><a href="#" onclick="AddonOptions(\'', Id, '\'); return false;">', GetText('Options'), '</td>');
 	}
-	s.push('<td style="vertical-align: bottom";"><input type="checkbox" id="enable_', Id, '" onchange="AddonEnable(this)" ', info.MinVersion && te.Version < CalcVersion(info.MinVersion) ? " disabled" : "", bEnable ? " checked" : "", '></td>');
-	s.push('<td style="vertical-align: bottom"><label for="enable_', Id, '" style="display: block; width: 6em; white-space: nowrap">', GetText(bEnable ? "Enabled" : "Enable"), '</label></td>');
-	s.push('<td style="vertical-align: bottom"><input type="image" src="bitmap:ieframe.dll,216,16,10" title="', GetText('Remove'), '" onclick="AddonRemove(\'', Id, '\')"></td>');
+	s.push('<td style="vertical-align: middle"><input type="checkbox" id="enable_', Id, '" onchange="AddonEnable(this)" ', info.MinVersion && te.Version < CalcVersion(info.MinVersion) ? " disabled" : "", bEnable ? " checked" : "", '></td>');
+	s.push('<td style="vertical-align: middle"><label for="enable_', Id, '" style="display: block; width: 6em; white-space: nowrap">', GetText(bEnable ? "Enabled" : "Enable"), '</label></td>');
+	s.push('<td style="vertical-align: middle; padding-right: 1em"><input type="image" src="bitmap:ieframe.dll,216,16,10" title="', GetText('Remove'), '" onclick="AddonRemove(\'', Id, '\')"></td>');
 	s.push('</tr></table></label></div>');
 	td.innerHTML = s.join("");
 
@@ -1198,14 +1211,14 @@ function GetRowIndexById(id)
 	}
 }
 
-function AddonInfo(Id)
+function AddonInfo(Id, o)
 {
+	o.style.textDecoration = "none";
+	o.style.color = "windowtext";
+	o.style.cursor = "default";
+	o.onclick = null;
 	var info = GetAddonInfo(Id);
-	var pubDate = "";
-	if (info.pubDate) {
-		pubDate = new Date(info.pubDate).toLocaleString() + "\n";
-	}
-	MessageBox(info.Name + " " + info.Version + " " + info.Creator + "\n\n" + info.Description + "\n\n" + pubDate + info.URL + "\n" + fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\" + Id), Id, MB_ICONINFORMATION);
+	o.innerHTML = info.Description;
 	return false;
 }
 
@@ -1234,7 +1247,6 @@ function OptionMove(dir)
 			if (r[i].checked) {
 				try {
 					AddonMoveEx(i, i + dir);
-					document.getElementById("Addons").rows(i + dir).scrollIntoView(false);
 				} catch (e) {}
 	 			break;
 			}
@@ -1280,7 +1292,11 @@ function AddonMoveEx(src, dest)
 	td.onmousedown = md;
 	td.onmouseup = mu;
 	td.onmousemove = mm;
-
+	var o = document.getElementById('panel1');
+	var i = td.offsetTop - o.scrollTop;
+	if (i < 0 || i >= o.offsetHeight - td.offsetHeight) {
+		td.scrollIntoView(i < 0);
+	}
 	document.F.AddonId[dest].checked = true;
 	g_Chg.Addons = true;
 	return false;
@@ -1369,6 +1385,15 @@ InitOptions = function ()
 	SetOnChangeHandler();
 	AddEventEx(window, "beforeunload", function ()
 	{
+		for (var i in g_.elAddons) {
+			try {
+				var w = g_.elAddons[i].contentWindow;
+				w.g_nResult = g_nResult;
+				if (g_nResult == 1) {
+					w.TEOk();
+				}
+			} catch (e) {}
+		}
 		g_bChanged |= g_Chg.Addons || te.Data.bErrorAddons || g_Chg.Menus || g_Chg.Tab || g_Chg.Tree || g_Chg.View;
 		SaveAddons();
 		SetOptions(Apply);
@@ -2483,7 +2508,7 @@ function EnableInner()
 function SetTabContents(id, name, value)
 {
 	document.getElementById("tab" + id).value = GetText(name);
-	document.getElementById("panel" + id).innerHTML = value;
+	document.getElementById("panel" + id).innerHTML = value.join ? value.join('') : value;
 }
 
 function AddonBeforeRemove(Id)

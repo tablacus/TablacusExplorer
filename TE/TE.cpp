@@ -14161,11 +14161,7 @@ STDMETHODIMP CteShellBrowser::CompareIDs(LPARAM lParam, PCUIDLIST_RELATIVE pidl1
 
 STDMETHODIMP CteShellBrowser::CreateViewObject(HWND hwndOwner, REFIID riid, void **ppv)
 {
-#ifdef _W2000
-	if (g_bIsXP && IsEqualIID(riid, IID_IShellView)) {
-#else
-	if (IsEqualIID(riid, IID_IShellView)) {
-#endif
+	if (!g_bUpperVista && IsEqualIID(riid, IID_IShellView)) {
 		//only XP
 		SafeRelease(&m_pSFVCB);
 		IShellView *pSV;
