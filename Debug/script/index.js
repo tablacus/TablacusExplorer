@@ -229,7 +229,7 @@ IsSavePath = function (path)
 			ShowError(e, en, i);
 		}
 	}
-	return !/^search\-ms:/i.test(path);
+	return !IsSearchPath(path);
 }
 
 Lock = function (Ctrl, nIndex, turn)
@@ -469,9 +469,9 @@ CancelFilterView = function (FV)
 	return S_FALSE;
 }
 
-IsSearchPath = function (FI)
+IsSearchPath = function (pid)
 {
-	return api.PathMatchSpec(api.GetDisplayNameOf(FI, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), "search-ms:*");
+	return /search\-ms:.*?&crumb=location:([^&]*)/.exec(/string/i.test(typeof pid) ? pid : api.GetDisplayNameOf(pid, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
 }
 
 GetCommandId = function (hMenu, s, ContextMenu)
@@ -1784,7 +1784,7 @@ te.OnILGetParent = function (FolderItem)
 	if (r !== undefined) {
 		return r;
 	}
-	var res = /search\-ms:.*?&crumb=location:([^&]*)/.exec(api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
+	var res = IsSearchPath(FolderItem);
 	if (res) {
 		return api.PathCreateFromUrl("file:" + res[1]);
 	}

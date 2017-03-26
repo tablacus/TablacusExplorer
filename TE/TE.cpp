@@ -130,6 +130,7 @@ BOOL	g_bUnload = FALSE;
 BOOL	g_bSetRedraw;
 BOOL	g_bShowParseError = TRUE;
 BOOL	g_bDragging = FALSE;
+BOOL	g_bCanLayout = FALSE;
 #ifdef _2000XP
 int		g_nCharWidth = 7;
 BOOL	g_bCharWidth = true;
@@ -8980,6 +8981,15 @@ VOID Initlize()
 #ifdef _USE_BSEARCHAPI
 	g_maps[MAP_API] = teSortDispatchApi(dispAPI, _countof(dispAPI));
 #endif
+	IExplorerBrowser *pEB;
+	if (SUCCEEDED(CoCreateInstance(CLSID_ExplorerBrowser, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pEB)))) {
+		IFolderViewOptions *pOptions;
+		if SUCCEEDED(pEB->QueryInterface(IID_PPV_ARGS(&pOptions))) {
+			g_bCanLayout = TRUE;
+			pOptions->Release();
+		}
+		pEB->Release();
+	}
 #ifdef _2000XP
 	DWORDLONG dwlConditionMask = 0;
 	OSVERSIONINFOEX osvi = { sizeof(OSVERSIONINFOEX), 6 };
@@ -11940,6 +11950,14 @@ STDMETHODIMP CteShellBrowser::OnStateChange(IShellView *ppshv, ULONG uChange)
 
 STDMETHODIMP CteShellBrowser::IncludeObject(IShellView *ppshv, LPCITEMIDLIST pidl)
 {
+	if (!(m_param[SB_FolderFlags] & 1)) {
+		WIN32_FIND_DATA wfd;
+		if SUCCEEDED(SHGetDataFromIDList(m_pSF2, pidl, SHGDFIL_FINDDATA, &wfd, sizeof(WIN32_FIND_DATA))) {
+			if (wfd.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) {
+				return S_FALSE;
+			}
+		}
+	}
 	if (m_ppDispatch[SB_OnIncludeObject]) {
 		VARIANT vResult;
 		VariantInit(&vResult);
@@ -11989,7 +12007,8 @@ STDMETHODIMP CteShellBrowser::GetDefaultMenuText(IShellView *ppshv, LPWSTR pszTe
 
 STDMETHODIMP CteShellBrowser::GetViewFlags(DWORD *pdwFlags)
 {
-	*pdwFlags = (m_param[SB_ViewFlags] & (~(CDB2GVF_NOINCLUDEITEM | CDB2GVF_NOSELECTVERB))) | (((m_bsFilter || m_ppDispatch[SB_OnIncludeObject]) && !ILIsEqual(m_pidl, g_pidlResultsFolder)) ? 0 : CDB2GVF_NOINCLUDEITEM);
+//	*pdwFlags = (m_param[SB_ViewFlags] & (~(CDB2GVF_NOINCLUDEITEM | CDB2GVF_NOSELECTVERB))) | (((m_bsFilter || m_ppDispatch[SB_OnIncludeObject]) && !ILIsEqual(m_pidl, g_pidlResultsFolder)) ? 0 : CDB2GVF_NOINCLUDEITEM);
+	*pdwFlags = (m_param[SB_ViewFlags] & (~(CDB2GVF_NOINCLUDEITEM | CDB2GVF_NOSELECTVERB)));
 	return S_OK;
 }
 /*/// ICommDlgBrowser3
@@ -14726,22 +14745,14 @@ HRESULT CteShellBrowser::PropertyKeyFromName(BSTR bs, PROPERTYKEY *pkey)
 
 FOLDERVIEWOPTIONS CteShellBrowser::teGetFolderViewOptions(LPITEMIDLIST pidl, UINT uViewMode)
 {
-	if (m_param[SB_FolderFlags] & FWF_CHECKSELECT) {
-		return FVO_VISTALAYOUT;
-	}
-	UINT uFlag = 1;
-	while (--uViewMode > 0) {
-		uFlag *= 2;
-	}
-	if (uFlag & g_param[TE_Layout]) {
-		if (m_pExplorerBrowser) {
-			IFolderViewOptions *pOptions;
-			if SUCCEEDED(m_pExplorerBrowser->QueryInterface(IID_PPV_ARGS(&pOptions))) {
-				pOptions->Release();
-				return FVO_DEFAULT;
-			}
+	if (g_bCanLayout && !(m_param[SB_FolderFlags] & FWF_CHECKSELECT)) {
+		UINT uFlag = 1;
+		while (--uViewMode > 0) {
+			uFlag *= 2;
 		}
-
+		if (uFlag & g_param[TE_Layout]) {
+			return FVO_DEFAULT;
+		}
 	}
 	return FVO_VISTALAYOUT;
 }
