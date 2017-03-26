@@ -11950,7 +11950,7 @@ STDMETHODIMP CteShellBrowser::OnStateChange(IShellView *ppshv, ULONG uChange)
 
 STDMETHODIMP CteShellBrowser::IncludeObject(IShellView *ppshv, LPCITEMIDLIST pidl)
 {
-	if (!(m_param[SB_FolderFlags] & 1)) {
+	if (!(m_param[SB_ViewFlags] & CDB2GVF_SHOWALLFILES)) {
 		WIN32_FIND_DATA wfd;
 		if SUCCEEDED(SHGetDataFromIDList(m_pSF2, pidl, SHGDFIL_FINDDATA, &wfd, sizeof(WIN32_FIND_DATA))) {
 			if (wfd.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) {
