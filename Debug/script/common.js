@@ -2188,11 +2188,12 @@ function GetAddons()
 
 function CheckUpdate()
 {
-	OpenHttpRequest("http://www.eonet.ne.jp/~gakana/tablacus/explorer_en.html", "text/html", CheckUpdate2);
+	OpenHttpRequest("https://www.eonet.ne.jp/~gakana/tablacus/explorer_en.html", "text/html", CheckUpdate2);
 }
 
 function CheckUpdate2(xhr, url)
 {
+	var arg = {};
 	var res = /<meta http\-equiv="refresh" content="\d+; *URL=([^"]*)/i.exec(xhr.responseText);
 	if (res) {
 		OpenHttpRequest(res[1], "text/html", CheckUpdate2);
@@ -2208,10 +2209,10 @@ function CheckUpdate2(xhr, url)
 		return;
 	}
 	var uri = res[1];
-	var file = fso.GetFileName(uri.replace(/\//g, "\\"));
+	arg.file = fso.GetFileName(uri.replace(/\//g, "\\"));
 	s = s.replace(/Download/i, "").replace(/<[^>]*>/ig, "");
 	var ver = 0;
-	res = /(\d+)/.exec(file);
+	res = /(\d+)/.exec(arg.file);
 	if (res) {
 		ver = api.Add(20000000, res[1]);
 	}
@@ -2224,21 +2225,29 @@ function CheckUpdate2(xhr, url)
 	if (!confirmOk([GetText("Update available"), s, GetText("Do you want to install it now?")].join("\n"))) {
 		return;
 	}
-	var temp = fso.BuildPath(fso.GetSpecialFolder(2).Path, "tablacus");
-	CreateFolder2(temp);
-	wsh.CurrentDirectory = temp;
-	var InstalledFolder = fso.GetParentFolderName(api.GetModuleFileName(null));
-	var zipfile = fso.BuildPath(temp, file);
-	temp += "\\explorer";
-	DeleteItem(temp);
-	CreateFolder2(temp);
+	arg.temp = fso.BuildPath(fso.GetSpecialFolder(2).Path, "tablacus");
+	CreateFolder2(arg.temp);
+	wsh.CurrentDirectory = arg.temp;
+	arg.InstalledFolder = fso.GetParentFolderName(api.GetModuleFileName(null));
+	arg.zipfile = fso.BuildPath(arg.temp, arg.file);
+	arg.temp += "\\explorer";
+	DeleteItem(arg.temp);
+	CreateFolder2(arg.temp);
 	if (!/^https?:/i.test(uri)) {
 		uri = url.replace(/[^\/]*$/, '') + uri;
 	}
-	if (DownloadFile(uri, zipfile) != S_OK || Extract(zipfile, temp) != S_OK) {
+	OpenHttpRequest(uri, "application/zip", CheckUpdate3, arg);
+}
+
+function CheckUpdate3(xhr, url, arg)
+{
+	if (DownloadFile(xhr, arg.zipfile)) {
 		return;
 	}
-	var te64exe = temp + "\\te64.exe";
+	if (Extract(arg.zipfile, arg.temp)) {
+		return;
+	}
+	var te64exe = arg.temp + "\\te64.exe";
 	var nDog = 300;
 	while (!fso.FileExists(te64exe)) {
 		if (wsh.Popup(GetText("Please wait."), 1, TITLE, MB_ICONINFORMATION | MB_OKCANCEL) == IDCANCEL || nDog-- == 0) {
@@ -2246,7 +2255,7 @@ function CheckUpdate2(xhr, url)
 		}
 	}
 	var arDel = [];
-	var addons = temp + "\\addons";
+	var addons = arg.temp + "\\addons";
 
 	for (var list = new Enumerator(fso.GetFolder(addons).SubFolders); !list.atEnd(); list.moveNext()) {
 		var n = list.item().Name;
@@ -2272,13 +2281,13 @@ W.Popup('%s',9,T,%d);\
 %s\
 A.NameSpace(F).MoveHere(A.NameSpace('%s').Items(),%d);\
 if(W.Popup('%s',0,T,%d)==1){W.Run(Q+F+'\\\\%s'+Q)}\
-close()", EscapeUpdateFile(InstalledFolder), GetText("Please wait."), MB_ICONINFORMATION, Taskkill, EscapeUpdateFile(temp), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, GetText("Exec"), MB_ICONQUESTION | MB_OKCANCEL, EscapeUpdateFile(fso.GetFileName(api.GetModuleFileName(null)))).replace(/[\t\n]/g, "");
-	wsh.CurrentDirectory = temp;
+close()", EscapeUpdateFile(arg.InstalledFolder), GetText("Please wait."), MB_ICONINFORMATION, Taskkill, EscapeUpdateFile(arg.temp), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, GetText("Exec"), MB_ICONQUESTION | MB_OKCANCEL, EscapeUpdateFile(fso.GetFileName(api.GetModuleFileName(null)))).replace(/[\t\n]/g, "");
+	wsh.CurrentDirectory = arg.temp;
 	var exe = "mshta.exe";
 	var s1 = '"javascript:';
 	if (update.length >= 500 || !fso.FileExists(fso.BuildPath(system32, exe))) {
 		exe = "wscript.exe";
-		s1 = fso.GetParentFolderName(temp) + "\\update.js";
+		s1 = fso.GetParentFolderName(arg.temp) + "\\update.js";
 		DeleteItem(s1);
 		var a = fso.CreateTextFile(s1, true);
 		a.WriteLine(update.replace(/close\(\)$/, ""));
@@ -2329,14 +2338,14 @@ createHttpRequest = function ()
 	}
 }
 
-OpenHttpRequest = function (url, ct, fn)
+OpenHttpRequest = function (url, ct, fn, arg)
 {
 	var xhr = createHttpRequest();
 	xhr.onreadystatechange = function()
 	{
 		if (xhr.readyState == 4) {
 			if (xhr.status == 200) {
-				fn(xhr, url);
+				fn(xhr, url, arg);
 			}
 		}
 	}
@@ -3115,11 +3124,7 @@ FindChildByClass = function (hwnd, s)
 
 DownloadFile = function (url, fn)
 {
-	var hr = api.URLDownloadToFile(null, url, fn);
-	if (hr && /^https:/.test(url)) {
-		hr = api.URLDownloadToFile(null, url.replace(/^https/, "http"), fn);
-	}
-	return hr;
+	return api.URLDownloadToFile(null, url, fn);
 }
 
 GetNavigateFlags = function (FV)

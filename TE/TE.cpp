@@ -8512,6 +8512,30 @@ VOID teApiSHDefExtractIcon(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 
 VOID teApiURLDownloadToFile(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
+	IDispatch *pdisp = NULL;
+	if (GetDispatch(&pDispParams->rgvarg[nArg - 1], &pdisp)) {
+		HRESULT hr = E_FAIL;
+		VARIANT v;
+		if SUCCEEDED(teGetProperty(pdisp, L"responseBody", &v)) {
+			UCHAR *pc;
+			int nLen = 0;
+			GetpDataFromVariant(&pc, &nLen, &v);
+			if (pc) {
+				HANDLE hFile = CreateFile(param[2].bstrVal, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+				if (hFile != INVALID_HANDLE_VALUE) {
+					DWORD dwWriteByte;
+					if (WriteFile(hFile, pc, nLen, &dwWriteByte, NULL)) {
+						hr = S_OK;
+					}
+					CloseHandle(hFile);
+				}
+			}
+			VariantClear(&v);
+		}
+		pdisp->Release();
+		teSetLong(pVarResult, hr);
+		return;
+	}
 	IUnknown *punk = NULL;
 	FindUnknown(&pDispParams->rgvarg[nArg], &punk);
 	teSetLong(pVarResult, URLDownloadToFile(punk, param[1].bstrVal, param[2].bstrVal, param[3].dword, NULL));
@@ -9938,6 +9962,7 @@ function _t(o) {\
 	}
 	teSetSZ(&v, L"ADODB.Stream");
 	tePutProperty(g_pAPI, L"ADBSTRM", &v);
+	VariantClear(&v);
 #endif
 	// CTE
 	g_pTE = new CTE(nCmdShow);

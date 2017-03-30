@@ -28,7 +28,7 @@ if (!/^en/.test(arLangs[0])) {
 arLangs.push("General");
 g_ovPanel = null;
 
-urlAddons = "http://tablacus.github.io/TablacusExplorerAddons/";
+urlAddons = "https://tablacus.github.io/TablacusExplorerAddons/";
 xhr = null;
 xmlAddons = null;
 
@@ -2397,53 +2397,46 @@ function Install(o, bUpdate)
 	if (!bUpdate && !confirmOk("Do you want to install it now?")) {
 		return;
 	}
-	var Id = o.title.replace(/_.*/, "");
-
+	var Id = o.title.replace(/_.*$/, "");
 	MainWindow.AddonDisabled(Id);
 	if (AddonBeforeRemove(Id) < 0) {
 		return;
 	}
-	document.body.style.cursor = "wait";
-	setTimeout(function ()
-	{
-		var Id = o.title.replace(/_.*$/, "");
-		var file = o.title.replace(/\./, "") + '.zip';
-		var temp = fso.BuildPath(wsh.ExpandEnvironmentStrings("%TEMP%"), "tablacus");
-		DeleteItem(temp);
-		CreateFolder(temp);
-		var zipfile = fso.BuildPath(temp, file);
-		var url = urlAddons + Id + '/' + file;
-		var hr = DownloadFile(url, zipfile);
-		if (hr != S_OK) {
-			document.body.style.cursor = "auto";
-			MessageBox([api.LoadString(hShell32, 4227).replace(/^\t/, "").replace("%d", api.sprintf(99, "0x%08x", hr)), url].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
-			return;
-		}
-		hr = MainWindow.Extract(zipfile, temp);
-		if (hr != S_OK) {
-			document.body.style.cursor = "auto";
-			MessageBox([api.LoadString(hShell32, 4228).replace(/^\t/, "").replace("%d", api.sprintf(99, "0x%08x", hr)), GetText("Extract"), zipfile].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
-			return;
-		}
+	var file = o.title.replace(/\./, "") + '.zip';
+	OpenHttpRequest(urlAddons + Id + '/' + file, "application/zip", Install2, o);
+}
 
-		var configxml = fso.BuildPath(temp, Id) + "\\config.xml";
-		var nDog = 300;
-		while (!fso.FileExists(configxml)) {
-			if (wsh.Popup(GetText("Please wait."), 1, TITLE, MB_ICONINFORMATION | MB_OKCANCEL) == IDCANCEL || nDog-- == 0) {
-				document.body.style.cursor = "auto";
-				return;
-			}
+function Install2(xhr, url, o)
+{
+	var Id = o.title.replace(/_.*$/, "");
+	var file = o.title.replace(/\./, "") + '.zip';
+	var temp = fso.BuildPath(wsh.ExpandEnvironmentStrings("%TEMP%"), "tablacus");
+	DeleteItem(temp);
+	CreateFolder(temp);
+	var zipfile = fso.BuildPath(temp, file);
+	var hr = DownloadFile(xhr, zipfile);
+	if (hr == S_OK) {
+		hr = MainWindow.Extract(zipfile, temp);
+	}
+	if (hr != S_OK) {
+		MessageBox([api.LoadString(hShell32, 4228).replace(/^\t/, "").replace("%d", api.sprintf(99, "0x%08x", hr)), GetText("Extract"), zipfile].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
+		return;
+	}
+	var configxml = fso.BuildPath(temp, Id) + "\\config.xml";
+	var nDog = 300;
+	while (!fso.FileExists(configxml)) {
+		if (wsh.Popup(GetText("Please wait."), 1, TITLE, MB_ICONINFORMATION | MB_OKCANCEL) == IDCANCEL || nDog-- == 0) {
+			return;
 		}
-		api.SHFileOperation(FO_MOVE, fso.BuildPath(temp, Id), fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons"), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, false);
-		o.disabled = true;
-		o.value = GetText("Installed");
-		o = document.getElementById('_Addons_' + Id);
-		if (o) {
-			o.style.display = "none";
-		}
-		UpdateAddon(Id, o);
-		document.body.style.cursor = "auto";
-	}, 99);
+	}
+	api.SHFileOperation(FO_MOVE, fso.BuildPath(temp, Id), fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons"), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, false);
+	o.disabled = true;
+	o.value = GetText("Installed");
+	o = document.getElementById('_Addons_' + Id);
+	if (o) {
+		o.style.display = "none";
+	}
+	UpdateAddon(Id, o);
 }
 
 function EnableSelectTag(o)
