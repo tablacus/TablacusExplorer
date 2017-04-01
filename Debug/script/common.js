@@ -2140,10 +2140,22 @@ CreateXml = function (bRoot)
 	return xml;
 }
 
-Extract = function (Src, Dest)
+DownloadFile = function (url, fn)
 {
+	return api.URLDownloadToFile(null, url, fn);
+}
+
+Extract = function (Src, Dest, xhr)
+{
+	var hr;
+	if (xhr) {
+		hr = DownloadFile(xhr, Src);
+		if (hr) {
+			return hr;
+		}
+	}
 	for (var i in eventTE.Extract) {
-		var hr = eventTE.Extract[i](Src, Dest);
+		hr = eventTE.Extract[i](Src, Dest);
 		if (isFinite(hr)) {
 			return hr;
 		}
@@ -2241,10 +2253,9 @@ function CheckUpdate2(xhr, url)
 
 function CheckUpdate3(xhr, url, arg)
 {
-	if (DownloadFile(xhr, arg.zipfile)) {
-		return;
-	}
-	if (Extract(arg.zipfile, arg.temp)) {
+	var hr = Extract(arg.zipfile, arg.temp, xhr);
+	if (hr) {
+		MessageBox([api.LoadString(hShell32, 4228).replace(/^\t/, "").replace("%d", api.sprintf(99, "0x%08x", hr)), GetText("Extract"), fso.GetFileName(arg.zipfile)].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
 		return;
 	}
 	var te64exe = arg.temp + "\\te64.exe";
@@ -2823,6 +2834,16 @@ StripAmp = function (s)
 	return s.replace(/\(&\w\)|&/, "").replace(/\.\.\.$/, "");
 }
 
+EncodeSC = function (s)
+{
+	return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+DecodeSC = function (s)
+{
+	return s.replace(/&amp;/ig, "&").replace(/&quot;/ig, '"').replace(/&lt;/ig, "<").replace(/&gt;/ig, ">");
+}
+
 GetGestureKey = function ()
 {
 	var s = "";
@@ -3120,11 +3141,6 @@ FindChildByClass = function (hwnd, s)
 		}
 	}
 	return null;
-}
-
-DownloadFile = function (url, fn)
-{
-	return api.URLDownloadToFile(null, url, fn);
 }
 
 GetNavigateFlags = function (FV)

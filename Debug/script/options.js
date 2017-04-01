@@ -2413,13 +2413,9 @@ function Install2(xhr, url, o)
 	var temp = fso.BuildPath(wsh.ExpandEnvironmentStrings("%TEMP%"), "tablacus");
 	DeleteItem(temp);
 	CreateFolder(temp);
-	var zipfile = fso.BuildPath(temp, file);
-	var hr = DownloadFile(xhr, zipfile);
-	if (hr == S_OK) {
-		hr = MainWindow.Extract(zipfile, temp);
-	}
-	if (hr != S_OK) {
-		MessageBox([api.LoadString(hShell32, 4228).replace(/^\t/, "").replace("%d", api.sprintf(99, "0x%08x", hr)), GetText("Extract"), zipfile].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
+	var hr = Extract(fso.BuildPath(temp, file), temp, xhr);
+	if (hr) {
+		MessageBox([api.LoadString(hShell32, 4228).replace(/^\t/, "").replace("%d", api.sprintf(99, "0x%08x", hr)), GetText("Extract"), file].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
 		return;
 	}
 	var configxml = fso.BuildPath(temp, Id) + "\\config.xml";

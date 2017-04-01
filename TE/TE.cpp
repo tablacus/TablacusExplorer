@@ -2039,9 +2039,11 @@ HRESULT teGetDisplayNameBSTR(IShellFolder *pSF, PCUITEMID_CHILD pidl, SHGDNF uFl
 	HRESULT hr = pSF->GetDisplayNameOf(pidl, uFlags, &strret);
 	if SUCCEEDED(hr) {
 		hr = StrRetToBSTR(&strret, pidl, pbs);
-		if (hr == S_OK && uFlags & SHGDN_INFOLDER) {
-			while (LPWSTR lpBS = StrChr(*pbs, '\\')) {
-				*lpBS = '_';
+		if (hr == S_OK) {
+			for (int i = ::SysStringLen(*pbs); i-- > 0;) {
+				if (((uFlags & SHGDN_INFOLDER) && pbs[0][i] == '\\') || StrChr(L"\"<>|", pbs[0][i])) {
+					pbs[0][i] = '_';
+				}
 			}
 		}
 	}
@@ -6271,7 +6273,7 @@ VOID teApiExtract(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pV
 #ifdef _2000XP
 			ppd->SetAnimation(g_hShell32, 161);
 #endif
-			ppd->SetLine(1, param[2].lpwstr, TRUE, NULL);
+			ppd->SetLine(1, PathFindFileName(param[2].lpwstr), TRUE, NULL);
 		}
 		hr = teInitStorage(&pDispParams->rgvarg[nArg], &pDispParams->rgvarg[nArg - 1], param[2].lpwstr, &hDll, &pStorage);
 		if SUCCEEDED(hr) {
@@ -8513,21 +8515,21 @@ VOID teApiSHDefExtractIcon(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 VOID teApiURLDownloadToFile(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	IDispatch *pdisp = NULL;
+	IUnknown *punk = NULL;
 	if (GetDispatch(&pDispParams->rgvarg[nArg - 1], &pdisp)) {
 		HRESULT hr = E_FAIL;
 		VARIANT v;
-		if SUCCEEDED(teGetProperty(pdisp, L"responseBody", &v)) {
-			UCHAR *pc;
-			int nLen = 0;
-			GetpDataFromVariant(&pc, &nLen, &v);
-			if (pc) {
-				HANDLE hFile = CreateFile(param[2].bstrVal, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-				if (hFile != INVALID_HANDLE_VALUE) {
-					DWORD dwWriteByte;
-					if (WriteFile(hFile, pc, nLen, &dwWriteByte, NULL)) {
-						hr = S_OK;
+		if SUCCEEDED(teGetProperty(pdisp, L"responseStream", &v)) {
+			if (FindUnknown(&v, &punk)) {
+				IStream *pDst, *pSrc;
+				hr = punk->QueryInterface(IID_PPV_ARGS(&pSrc));
+				if SUCCEEDED(hr) {
+					hr = SHCreateStreamOnFileEx(param[2].bstrVal, STGM_WRITE | STGM_CREATE | STGM_SHARE_DENY_WRITE, FILE_ATTRIBUTE_NORMAL, TRUE, NULL, &pDst);
+					if SUCCEEDED(hr) {
+						teCopyStream(pSrc, pDst);
+						pDst->Release();
 					}
-					CloseHandle(hFile);
+					pSrc->Release();
 				}
 			}
 			VariantClear(&v);
@@ -8536,7 +8538,6 @@ VOID teApiURLDownloadToFile(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 		teSetLong(pVarResult, hr);
 		return;
 	}
-	IUnknown *punk = NULL;
 	FindUnknown(&pDispParams->rgvarg[nArg], &punk);
 	teSetLong(pVarResult, URLDownloadToFile(punk, param[1].bstrVal, param[2].bstrVal, param[3].dword, NULL));
 }
@@ -9178,6 +9179,21 @@ BOOL CanClose(PVOID pObj)
 	return DoFunc(TE_OnClose, pObj, S_OK) != S_FALSE;
 }
 
+#ifdef _FIXWIN10IPBUG1
+VOID CALLBACK teTimerProcFixWin10IPBug1(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+{
+	try {
+		KillTimer(hwnd, idEvent);
+		CteShellBrowser *pSB = SBfromhwnd(hwnd);
+		if (pSB) {
+			pSB->FixWin10IPBug1();
+		}
+	} catch (...) {
+		g_nException = 0;
+	}
+}
+#endif
+
 VOID CALLBACK teTimerProcFocus(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 {
 	try {
@@ -9394,9 +9410,6 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 											bDirect = FALSE;
 										}
 										pSB->Show(TRUE, 0);
-#ifdef _FIXWIN10IPBUG1
-										pSB->FixWin10IPBug1();
-#endif
 									}
 									MoveWindow(pSB->m_hwnd, rc.left, rc.top, rc.right - rc.left,
 										rc.bottom - rc.top, FALSE);
@@ -13366,7 +13379,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					RedrawWindow(m_hwndDV, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
 				}
 #ifdef _FIXWIN10IPBUG1
-				FixWin10IPBug1();
+				SetTimer(m_hwnd, 1, 64, teTimerProcFixWin10IPBug1);
 #endif
 				return S_OK;
 			case DISPID_VIEWMODECHANGED://XP+
@@ -14530,6 +14543,9 @@ void CteShellBrowser::Show(BOOL bShow, DWORD dwOptions)
 				ShowWindow(m_hwnd, SW_SHOW);
 				if (m_hwndLV) {
 					ShowWindow(m_hwndLV, SW_SHOW);
+#ifdef _FIXWIN10IPBUG1
+					SetTimer(m_hwnd, 1, 64, teTimerProcFixWin10IPBug1);
+#endif
 				}
 				SetRedraw(TRUE);
 				if (m_param[SB_TreeAlign] & 2) {
