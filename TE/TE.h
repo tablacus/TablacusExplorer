@@ -1105,7 +1105,6 @@ public:
 	BOOL		m_bVisible;
 	BOOL		m_bCheckLayout;
 	BOOL		m_bRefreshLator;
-	BOOL		m_bShowFrames;
 	BOOL		m_bRefreshing;
 	BOOL		m_bAutoVM;
 private:

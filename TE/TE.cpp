@@ -9404,7 +9404,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 									}
 									if (pSB->m_bVisible) {
 										teSetParent(pSB->m_pTV->m_hwnd, pSB->m_pTC->m_hwndStatic);
-										ShowWindow(pSB->m_pTV->m_hwnd, (pSB->m_param[SB_TreeAlign] & 2) ? SW_SHOW : SW_HIDE);
+										ShowWindow(pSB->m_pTV->m_hwnd, (pSB->m_param[SB_TreeAlign] & 2) ? SW_SHOWNA : SW_HIDE);
 									} else {
 										if (!pSB->m_hwnd) {
 											bDirect = FALSE;
@@ -10568,7 +10568,6 @@ void CteShellBrowser::Init(CteTabCtrl *pTC, BOOL bNew)
 #endif
 	m_bCheckLayout = FALSE;
 	m_bRefreshLator = FALSE;
-	m_bShowFrames = FALSE;
 	m_nCreate = 0;
 	m_nDefultColumns = 0;
 	m_pDefultColumns = NULL;
@@ -11066,8 +11065,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 #ifdef _2000XP
 	if (g_bUpperVista) {
 #endif
-		if (m_param[SB_Type] == 2 || m_bShowFrames || ILIsParent(g_pidlCP, pidl, FALSE)) {
-			m_bShowFrames = FALSE;
+		if (m_param[SB_Type] == 2 || ILIsParent(g_pidlCP, pidl, FALSE)) {
 			dwFrame = EBO_SHOWFRAMES;
 		}
 		//ExplorerBrowser
@@ -11494,7 +11492,7 @@ VOID CteShellBrowser::Refresh(BOOL bCheck)
 			teGetDisplayNameOf(&v, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING, &vResult);
 			VariantClear(&v);
 			if (vResult.vt == VT_BSTR) {
-				if (!m_pShellView || tePathIsNetworkPath(vResult.bstrVal) || m_bShowFrames || m_dwUnavailable) {
+				if (!m_pShellView || tePathIsNetworkPath(vResult.bstrVal) || m_dwUnavailable) {
 					TEInvoke *pInvoke = new TEInvoke[1];
 					QueryInterface(IID_PPV_ARGS(&pInvoke->pdisp));
 					pInvoke->dispid = 0x20000206;//Refresh2Ex
@@ -14446,14 +14444,17 @@ VOID CteShellBrowser::Suspend(int nMode)
 	if (m_pidl) {
 		VARIANT v;
 		if (GetVarPathFromFolderItem(m_pFolderItem, &v)) {
-			SafeRelease(&m_pFolderItem);
-			CteFolderItem *pid = new CteFolderItem(&v);
-			pid->m_dwUnavailable = m_dwUnavailable;
-			if (nMode == 2) {
-				pid->m_pidl = ILClone(g_pidlResultsFolder);
-				m_nUnload = 8;
+			CteFolderItem *pid1;
+			if SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1)) {
+				if (nMode == 2) {
+					teILCloneReplace(&pid1->m_pidl, g_pidlResultsFolder);
+					m_nUnload = 8;
+				} else {
+					VariantClear(&pid1->m_v);
+					VariantCopy(&pid1->m_v, &v);
+				}
+				pid1->Release();
 			}
-			m_pFolderItem = pid;
 			teILFreeClear(&m_pidl);
 			VariantClear(&v);
 		}
@@ -14540,16 +14541,16 @@ void CteShellBrowser::Show(BOOL bShow, DWORD dwOptions)
 		if (m_pShellView) {
 			m_bVisible = bShow;
 			if (bShow) {
-				ShowWindow(m_hwnd, SW_SHOW);
+				ShowWindow(m_hwnd, SW_SHOWNA);
 				if (m_hwndLV) {
-					ShowWindow(m_hwndLV, SW_SHOW);
+					ShowWindow(m_hwndLV, SW_SHOWNA);
 #ifdef _FIXWIN10IPBUG1
 					SetTimer(m_hwnd, 1, 64, teTimerProcFixWin10IPBug1);
 #endif
 				}
 				SetRedraw(TRUE);
 				if (m_param[SB_TreeAlign] & 2) {
-					ShowWindow(m_pTV->m_hwnd, SW_SHOW);
+					ShowWindow(m_pTV->m_hwnd, SW_SHOWNA);
 					BringWindowToTop(m_pTV->m_hwnd);
 				}
 				if (!SetActive(FALSE)) {
@@ -20105,6 +20106,7 @@ CteFolderItem::CteFolderItem(VARIANT *pv)
 	m_pFolderItem = NULL;
 	m_bStrict = FALSE;
 	m_pidlFocused = NULL;
+	m_nSelected = 0;
 	m_dwUnavailable = 0;
 	VariantInit(&m_v);
 	if (pv) {

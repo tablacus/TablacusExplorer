@@ -1108,7 +1108,7 @@ function SetAddon(Id, bEnable)
 	if (info.Options) {
 		s.push('</td><td style="white-space: nowrap; vertical-align: middle; padding-right: 1em"><a href="#" onclick="AddonOptions(\'', Id, '\'); return false;">', GetText('Options'), '</td>');
 	}
-	s.push('<td style="vertical-align: middle"><input type="checkbox" id="enable_', Id, '" onchange="AddonEnable(this)" ', info.MinVersion && te.Version < CalcVersion(info.MinVersion) ? " disabled" : "", bEnable ? " checked" : "", '></td>');
+	s.push('<td style="vertical-align: middle"><input type="checkbox" id="enable_', Id, '" onclick="AddonEnable(this)" ', info.MinVersion && te.Version < CalcVersion(info.MinVersion) ? " disabled" : "", bEnable ? " checked" : "", '></td>');
 	s.push('<td style="vertical-align: middle"><label for="enable_', Id, '" style="display: block; width: 6em; white-space: nowrap">', GetText(bEnable ? "Enabled" : "Enable"), '</label></td>');
 	s.push('<td style="vertical-align: middle; padding-right: 1em"><input type="image" src="bitmap:ieframe.dll,216,16,10" title="', GetText('Remove'), '" onclick="AddonRemove(\'', Id, '\')"></td>');
 	s.push('</tr></table></label></div>');
