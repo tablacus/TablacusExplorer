@@ -16,7 +16,6 @@ g_drag5 = false;
 g_nResult = 0;
 g_bChanged = true;
 g_bClosed = false;
-g_tdAddon = {};
 arLangs = [GetLangId()];
 var res = /(\w+)_/.test(arLangs[0]);
 if (res) {
@@ -52,7 +51,6 @@ function OpenGroup(id)
 	var o = document.getElementById(id);
 	o.style.display = String(o.style.display).toLowerCase() == "block" ? "none" : "block";
 }
-
 
 function LoadChecked(form)
 {
@@ -1093,14 +1091,14 @@ function LoadAddons()
 
 function AddAddon(table, Id, bEnable)
 {
-	var tr = table.insertRow();
-	g_tdAddon[Id] = tr.insertCell();
-	SetAddon(Id, bEnable);
+	SetAddon(Id, bEnable, table.insertRow().insertCell());
 }
 
-function SetAddon(Id, bEnable)
+function SetAddon(Id, bEnable, td)
 {
-	var td = g_tdAddon[Id];
+	if (!td) {
+		td = document.getElementById("Addons_" + Id).parentNode;
+	}
 	var info = GetAddonInfo(Id);
 	var s = ['<div draggable="true" title="', Id, '" ondragstart="Start5(this)" ondragend="End5(this)" Id="Addons_', Id, '" style="color: ', bEnable ? "": "gray", '">'];
 	s.push('<table><tr style="border-bottom: 1px solid buttonshadow"><td><input type="radio" name="AddonId" id="_', Id, '"></td><td style="width: 100%"><label for="_', Id, '">', info.Name, "&nbsp;", info.Version, '<br /><a href="#" onclick="return AddonInfo(\'', Id, '\', this)" style="font-size: .9em">', GetText('Details'), '</a>');
@@ -1207,8 +1205,7 @@ function GetRowIndexById(id)
 				}
 			}
 		}
-	} catch (e) {
-	}
+	} catch (e) {}
 }
 
 function AddonInfo(Id, o)
@@ -1245,6 +1242,13 @@ function OptionMove(dir)
 		var r = document.F.AddonId;
 		for (i = 0; i < r.length; i++) {
 			if (r[i].checked) {
+				if (api.GetKeyState(VK_CONTROL) < 0) {
+					if (dir < 0) {
+						dir = -i;
+					} else {
+						dir = document.getElementById("Addons").rows.length - i - 1;
+					}
+				}
 				try {
 					AddonMoveEx(i, i + dir);
 				} catch (e) {}
@@ -1275,7 +1279,6 @@ function AddonMoveEx(src, dest)
 		return false;
 	}
 	var tr = table.rows(src);
-	var id2 = tr.id;
 	var td = tr.cells(0);
 
 	var s = td.innerHTML
@@ -1287,7 +1290,6 @@ function AddonMoveEx(src, dest)
 
 	tr = table.insertRow(dest);
 	td = tr.insertCell();
-	tr.id = id2;
 	td.innerHTML = s;
 	td.onmousedown = md;
 	td.onmouseup = mu;
