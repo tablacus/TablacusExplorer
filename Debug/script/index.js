@@ -3285,6 +3285,45 @@ function RunSplitter(n)
 	}
 }
 
+function CreateUpdater(arg)
+{
+	if (isFinite(RunEvent3("CreateUpdater", arg))) {
+		return;
+	}
+	var Taskkill = "";
+	if (fso.FileExists(fso.BuildPath(system32, "taskkill.exe"))) {
+		Taskkill = "W.Run('taskkill /pid " + arg.pid + " /f',2,true);";
+	}
+	var update = api.sprintf(2000, "\
+F='%s';Q='\\x22';T='Tablacus Explorer';\
+A=new ActiveXObject('Shell.Application');\
+W=new ActiveXObject('WScript.Shell');\
+W.Popup('%s',9,T,%d);\
+%s\
+A.NameSpace(F).MoveHere(A.NameSpace('%s').Items(),%d);\
+if(W.Popup('%s',0,T,%d)==1){W.Run(Q+F+'\\\\%s'+Q)}\
+close()", EscapeUpdateFile(arg.InstalledFolder), GetText("Please wait."), MB_ICONINFORMATION, Taskkill, EscapeUpdateFile(arg.temp), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, GetText("Exec"), MB_ICONQUESTION | MB_OKCANCEL, EscapeUpdateFile(fso.GetFileName(api.GetModuleFileName(null)))).replace(/[\t\n]/g, "");
+	wsh.CurrentDirectory = arg.temp;
+	var exe = "mshta.exe";
+	var s1 = '"javascript:';
+	if (update.length >= 500 || !fso.FileExists(fso.BuildPath(system32, exe))) {
+		exe = "wscript.exe";
+		s1 = fso.GetParentFolderName(arg.temp) + "\\update.js";
+		DeleteItem(s1);
+		var a = fso.CreateTextFile(s1, true);
+		a.WriteLine(update.replace(/close\(\)$/, ""));
+		a.Close();
+		update = s1;
+		s1 = '"';
+	}
+	g_.strUpdate = ['"', api.IsWow64Process(api.GetCurrentProcess()) ? wsh.ExpandEnvironmentStrings("%windir%\\Sysnative") : system32, "\\", exe, '" ', s1, update, '"'].join("");
+	DeleteTempFolder = function ()
+	{
+		var oExec = wsh.Exec(g_.strUpdate);
+		wsh.AppActivate(oExec.ProcessID);
+	};
+}
+
 //Init
 
 if (!te.Data) {

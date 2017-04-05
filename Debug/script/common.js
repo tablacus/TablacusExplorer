@@ -2278,37 +2278,11 @@ function CheckUpdate3(xhr, url, arg)
 	if (arDel.length) {
 		api.SHFileOperation(FO_DELETE, arDel.join("\0"), null, FOF_SILENT | FOF_NOCONFIRMATION, false);
 	}
-	var Taskkill = "";
 	var pid = api.Memory("DWORD");
 	api.GetWindowThreadProcessId(te.hwnd, pid);
-	if (fso.FileExists(fso.BuildPath(system32, "taskkill.exe"))) {
-		Taskkill = "W.Run('taskkill /pid " + pid[0] + " /f',2,true);";
-	}
-	var update = api.sprintf(2000, "\
-F='%s';Q='\\x22';T='Tablacus Explorer';\
-A=new ActiveXObject('Shell.Application');\
-W=new ActiveXObject('WScript.Shell');\
-W.Popup('%s',9,T,%d);\
-%s\
-A.NameSpace(F).MoveHere(A.NameSpace('%s').Items(),%d);\
-if(W.Popup('%s',0,T,%d)==1){W.Run(Q+F+'\\\\%s'+Q)}\
-close()", EscapeUpdateFile(arg.InstalledFolder), GetText("Please wait."), MB_ICONINFORMATION, Taskkill, EscapeUpdateFile(arg.temp), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, GetText("Exec"), MB_ICONQUESTION | MB_OKCANCEL, EscapeUpdateFile(fso.GetFileName(api.GetModuleFileName(null)))).replace(/[\t\n]/g, "");
-	wsh.CurrentDirectory = arg.temp;
-	var exe = "mshta.exe";
-	var s1 = '"javascript:';
-	if (update.length >= 500 || !fso.FileExists(fso.BuildPath(system32, exe))) {
-		exe = "wscript.exe";
-		s1 = fso.GetParentFolderName(arg.temp) + "\\update.js";
-		DeleteItem(s1);
-		var a = fso.CreateTextFile(s1, true);
-		a.WriteLine(update.replace(/close\(\)$/, ""));
-		a.Close();
-		update = s1;
-		s1 = '"';
-	}
-	MainWindow.g_strUpdate = ['"', api.IsWow64Process(api.GetCurrentProcess()) ? wsh.ExpandEnvironmentStrings("%windir%\\Sysnative") : system32, "\\", exe, '" ', s1, update, '"'].join("");
-	MainWindow.DeleteTempFolder = MainWindow.UpdateSelf;
-	WmiProcess("WHERE ExecutablePath = '" + api.GetModuleFileName(null).replace(/\\/g, "\\\\") + "' AND ProcessId!=" + pid[0], function (item)
+	arg.pid = pid[0];
+	MainWindow.CreateUpdater(arg);
+	WmiProcess("WHERE ExecutablePath = '" + api.GetModuleFileName(null).replace(/\\/g, "\\\\") + "' AND ProcessId!=" + arg.pid, function (item)
 	{
 		item.Terminate();
 	});
@@ -2363,8 +2337,8 @@ OpenHttpRequest = function (url, ct, fn, arg)
 	xhr.open("GET", url + "?" + Math.floor(new Date().getTime() / 60000), false);
 	xhr.setRequestHeader('Content-Type', ct);
 	xhr.setRequestHeader('Pragma', 'no-cache');
-	xhr.setRequestHeader('Cache-Control', 'no-cache');
-	xhr.setRequestHeader('If-Modified-Since', 'Thu, 01 Jun 1970 00:00:00 GMT');
+	xhr.setRequestHeader('Cache-Control', 'no-store');
+	xhr.setRequestHeader('Expires', '0');
 	try {
 		xhr.send(null);
 	} catch (e) {
@@ -3352,12 +3326,6 @@ RemoveCommand = function (hMenu, ContextMenu, strDelete)
 DeleteTempFolder = function ()
 {
 	DeleteItem(fso.BuildPath(fso.GetSpecialFolder(2).Path, "tablacus"));
-}
-
-UpdateSelf = function ()
-{
-	var oExec = wsh.Exec(g_strUpdate);
-	wsh.AppActivate(oExec.ProcessID);
 }
 
 OpenContains = function (Ctrl, pt)

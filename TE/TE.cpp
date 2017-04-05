@@ -2041,7 +2041,7 @@ HRESULT teGetDisplayNameBSTR(IShellFolder *pSF, PCUITEMID_CHILD pidl, SHGDNF uFl
 		hr = StrRetToBSTR(&strret, pidl, pbs);
 		if (hr == S_OK) {
 			for (int i = ::SysStringLen(*pbs); i-- > 0;) {
-				if (((uFlags & SHGDN_INFOLDER) && pbs[0][i] == '\\') || StrChr(L"\"<>|", pbs[0][i])) {
+				if (((uFlags & SHGDN_INFOLDER) && pbs[0][i] == '\\') || pbs[0][i] < 0x20 || StrChr(L"\"<>|", pbs[0][i])) {
 					pbs[0][i] = '_';
 				}
 			}
