@@ -9241,7 +9241,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 					bsQuoted = SysAllocStringLen(bsPath, i + 2);
 					SysFreeString(bsPath);
 					PathQuoteSpaces(bsQuoted);
-					ShellExecute(hwnd, NULL, bsQuoted, NULL, NULL, SW_SHOWNORMAL);
+					ShellExecute(hwnd, NULL, bsQuoted, NULL, NULL, SW_SHOWNOACTIVATE);
 					SysFreeString(bsQuoted);
 #endif
 					PostMessage(hwnd, WM_CLOSE, 0, 0);
@@ -9892,7 +9892,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		  CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
 		if (!bNewProcess) {
 			SetWindowLongPtr(g_hwndMain, GWLP_USERDATA, nCrc32);
-			ShowWindow(g_hwndMain, SW_SHOWMINIMIZED);
 		}
 	} else {
 		g_hwndMain = CreateWindowEx(WS_EX_TOOLWINDOW, szClass, g_szTE, WS_VISIBLE | WS_POPUP,
@@ -13182,6 +13181,9 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 							teCoTaskMemFree(pidl);
 						}
 					}
+#ifdef _FIXWIN10IPBUG1
+					SetTimer(m_hwnd, 1, 64, teTimerProcFixWin10IPBug1);
+#endif
 				}
 				return S_OK;
 			//NavigationComplete

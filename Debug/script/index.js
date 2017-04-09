@@ -294,7 +294,6 @@ LoadConfig = function ()
 						y = mi.rcWork.top;
 					}
 				}
-				api.ShowWindow(te.hwnd, SW_SHOWNORMAL);
 				if (w && h) {
 					api.MoveWindow(te.hwnd, x, y, w, h, true);
 				}
