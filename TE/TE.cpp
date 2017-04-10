@@ -13182,7 +13182,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						}
 					}
 #ifdef _FIXWIN10IPBUG1
-					SetTimer(m_hwnd, 1, 64, teTimerProcFixWin10IPBug1);
+					SetTimer(m_hwnd, 1, 500, teTimerProcFixWin10IPBug1);
 #endif
 				}
 				return S_OK;
@@ -19329,6 +19329,9 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 								SetRoot();
 							}
 						}
+					}
+					if (!m_pFV) {
+						ShowWindow(m_hwnd, m_param[SB_TreeAlign] & 2 ? SW_SHOWNA : SW_HIDE);
 					}
 					ArrangeWindow();
 				}
