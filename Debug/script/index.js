@@ -1137,7 +1137,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 	for (var i = 0; i < Items.Count; i++) {
 		if (Verb && strVerb != "runas") {
 			path = Items.Item(i).ExtendedProperty("linktarget") || Items.Item(i).Path;
-			var cmd = api.AssocQueryString(ASSOCF_NONE, ASSOCSTR_COMMAND, path, strVerb == "default" ? null : Verb).replace(/"?%1"?|%L/g, api.PathQuoteSpaces(path)).replace(/%\*|%I/g, "");
+			var cmd = api.AssocQueryString(ASSOCF_NONE, ASSOCSTR_COMMAND, path, strVerb == "default" ? null : strVerb).replace(/"?%1"?|%L/g, api.PathQuoteSpaces(path)).replace(/%\*|%I/g, "");
 			if (cmd) {
 				ShowStatusText(te, Verb + ":" + cmd, 1);
 				if (strVerb == "open" && api.PathMatchSpec(cmd, "?:\\Windows\\Explorer.exe;*\\Explorer.exe /idlist,*;rundll32.exe *fldr.dll,RouteTheCall*")) {

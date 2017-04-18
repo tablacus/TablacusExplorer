@@ -2810,12 +2810,18 @@ StripAmp = function (s)
 
 EncodeSC = function (s)
 {
-	return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+	return s.replace(/[&"<>]/g, function (strMatch)
+	{
+		return api.sprintf(9, "&#x%02x;", strMatch.charCodeAt(0));
+	});
 }
 
 DecodeSC = function (s)
 {
-	return s.replace(/&amp;/ig, "&").replace(/&quot;/ig, '"').replace(/&lt;/ig, "<").replace(/&gt;/ig, ">");
+	return s.replace(/&#x([\da-f]{2});/g, function (strMatch, ref)
+	{
+		return String.fromCharCode(parseInt(ref, 16));
+	});
 }
 
 GetGestureKey = function ()

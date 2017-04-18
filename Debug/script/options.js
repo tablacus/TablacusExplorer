@@ -1101,7 +1101,7 @@ function SetAddon(Id, bEnable, td)
 	}
 	var info = GetAddonInfo(Id);
 	var s = ['<div draggable="true" title="', Id, '" ondragstart="Start5(this)" ondragend="End5(this)" Id="Addons_', Id, '" style="color: ', bEnable ? "": "gray", '">'];
-	s.push('<table><tr style="border-bottom: 1px solid buttonshadow"><td><input type="radio" name="AddonId" id="_', Id, '"></td><td style="width: 100%"><label for="_', Id, '">', info.Name, "&nbsp;", info.Version, '<br /><a href="#" onclick="return AddonInfo(\'', Id, '\', this)" style="font-size: .9em">', GetText('Details'), '</a>');
+	s.push('<table><tr style="border-top: 1px solid buttonshadow"><td><input type="radio" name="AddonId" id="_', Id, '"></td><td style="width: 100%"><label for="_', Id, '">', info.Name, "&nbsp;", info.Version, '<br /><a href="#" onclick="return AddonInfo(\'', Id, '\', this)" style="font-size: .9em">', GetText('Details'), '</a>');
 
 	if (info.Options) {
 		s.push('</td><td style="white-space: nowrap; vertical-align: middle; padding-right: 1em"><a href="#" onclick="AddonOptions(\'', Id, '\'); return false;">', GetText('Options'), '</td>');
@@ -2301,8 +2301,8 @@ function AddonsAppend()
 				td1.innerHTML = td[i].join("");
 				ApplyLang(td1);
 				td1.className = (i & 1) ? "oddline" : "";
-				td1.style.borderBottom = "1px solid buttonshadow";
-				td1.style.paddingTop = "3px";
+				td1.style.borderTop = "1px solid buttonshadow";
+				td1.style.padding = "3px";
 			}
 		}
 	} catch (e) {
