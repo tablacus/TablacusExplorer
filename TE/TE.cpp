@@ -5249,7 +5249,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				}
 			} else if (((LPNMHDR)lParam)->code == LVN_ENDLABELEDIT) {
 				NMLVDISPINFO *lpDispInfo = (NMLVDISPINFO *)lParam;
-				if (lpDispInfo->item.pszText && g_pOnFunc[TE_OnEndLabelEdit]) {
+				if (g_pOnFunc[TE_OnEndLabelEdit]) {
 					VARIANTARG *pv = GetNewVARIANT(2);
 					teSetObject(&pv[1], pSB);
 					teSetSZ(&pv[0], lpDispInfo->item.pszText);
