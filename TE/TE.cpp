@@ -5140,6 +5140,21 @@ LRESULT CALLBACK TETVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
+#ifdef _FIXWIN10IPBUG1
+VOID CALLBACK teTimerProcFixWin10IPBug1(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+{
+	try {
+		KillTimer(hwnd, idEvent);
+		CteShellBrowser *pSB = SBfromhwnd(hwnd);
+		if (pSB) {
+			pSB->FixWin10IPBug1();
+		}
+	} catch (...) {
+		g_nException = 0;
+	}
+}
+#endif
+
 LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static HWND hwndEdit = NULL;
@@ -5260,6 +5275,9 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						lpDispInfo->item.pszText[0] = NULL;
 					}
 				}
+#ifdef _FIXWIN10IPBUG1
+				SetTimer(pSB->m_hwnd, 1, 64, teTimerProcFixWin10IPBug1);
+#endif
 			} else if (((LPNMHDR)lParam)->code == LVN_GETINFOTIP) {
 				LPNMLVGETINFOTIP lpInfotip = ((LPNMLVGETINFOTIP)lParam);
 				if (g_pOnFunc[TE_OnToolTip] && lpInfotip->cchTextMax) {
@@ -9178,21 +9196,6 @@ BOOL CanClose(PVOID pObj)
 {
 	return DoFunc(TE_OnClose, pObj, S_OK) != S_FALSE;
 }
-
-#ifdef _FIXWIN10IPBUG1
-VOID CALLBACK teTimerProcFixWin10IPBug1(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
-{
-	try {
-		KillTimer(hwnd, idEvent);
-		CteShellBrowser *pSB = SBfromhwnd(hwnd);
-		if (pSB) {
-			pSB->FixWin10IPBug1();
-		}
-	} catch (...) {
-		g_nException = 0;
-	}
-}
-#endif
 
 VOID CALLBACK teTimerProcFocus(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 {
@@ -13587,14 +13590,28 @@ VOID CteShellBrowser::AddColumnDataXP(LPWSTR pszColumns, LPWSTR pszName, int nWi
 	AddColumnData(pszColumns, pszName, nWidth);
 }
 #endif
-#ifdef _FIXWIN10IPBUG1
+#ifdef _FIXWIN10IPBUG1 //Fix Windows 10 Insider Preview & Creaters Update bugs
 VOID CteShellBrowser::FixWin10IPBug1() {
-	if (m_hwndLV && m_param[SB_ViewMode] == FVM_DETAILS) {
-		POINT pt;
-		ListView_GetOrigin(m_hwndLV, &pt);
-		if (pt.y < 0) {
-			ListView_SetView(m_hwndLV, LV_VIEW_SMALLICON);
-			ListView_SetView(m_hwndLV, LV_VIEW_DETAILS);
+	if (m_hwndLV) {
+		if (m_param[SB_ViewMode] == FVM_DETAILS) {
+			POINT pt;
+			ListView_GetOrigin(m_hwndLV, &pt);
+			if (pt.y < 0) {
+				ListView_SetView(m_hwndLV, LV_VIEW_SMALLICON);
+				ListView_SetView(m_hwndLV, LV_VIEW_DETAILS);
+			}
+		}
+		if (IsWindowVisible(m_hwndLV)) {
+			if (!(m_param[SB_FolderFlags] & FWF_NOCOLUMNHEADER)) {
+				HWND hHeader = ListView_GetHeader(m_hwndLV);
+				if (hHeader) {
+					RECT rc;
+					if (GetWindowRect(hHeader, &rc) && rc.top == rc.bottom) {
+						ShowWindow(m_hwndLV, SW_HIDE);
+						ShowWindow(m_hwndLV, SW_SHOWNA);
+					}
+				}
+			}
 		}
 	}
 }
