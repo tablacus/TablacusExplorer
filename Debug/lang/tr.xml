@@ -108,11 +108,11 @@
 	<text s="Enable">Etkinleştir</text>
 	<text s="Visit website">Web sitesine git</text>
 	<text s="Information...">Bilgi...</text>
-	<text s="Title Bar">Başlık çubuğu</text>
-	<text s="Tool Bar">Araç çubuğu</text>
-	<text s="Left Bar">Sol araç çubuğu</text>
-	<text s="Right Bar">Sağ araç çubuğu bar</text>
-	<text s="Bottom Bar">Alt araç çubuğu</text>
+	<text s="Title bar">Başlık çubuğu</text>
+	<text s="Tool bar">Araç çubuğu</text>
+	<text s="Left bar">Sol araç çubuğu</text>
+	<text s="Right bar">Sağ araç çubuğu bar</text>
+	<text s="Bottom bar">Alt araç çubuğu</text>
 	<text s="Center">Merkez</text>
 	<text s="Background">Arkaplan</text>
 	<text s="Advanced">İleri düzey</text>

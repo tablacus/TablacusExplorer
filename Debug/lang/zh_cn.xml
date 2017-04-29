@@ -108,11 +108,11 @@
 	<text s="Enable">启用</text>
 	<text s="Visit website">查看网站</text>
 	<text s="Information...">信息...</text>
-	<text s="Title Bar">标题栏</text>
-	<text s="Tool Bar">工具栏</text>
-	<text s="Left Bar">左栏</text>
-	<text s="Right Bar">右栏</text>
-	<text s="Bottom Bar">按钮栏</text>
+	<text s="Title bar">标题栏</text>
+	<text s="Tool bar">工具栏</text>
+	<text s="Left bar">左栏</text>
+	<text s="Right bar">右栏</text>
+	<text s="Bottom bar">按钮栏</text>
 	<text s="Center">居中</text>
 	<text s="Background">背景</text>
 	<text s="Advanced">高级</text>

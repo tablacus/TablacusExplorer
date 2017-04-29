@@ -108,11 +108,11 @@
   <text s="Enable">啟用</text>
 	<text s="Visit website">訪問網站</text>
 	<text s="Information...">訊息...</text>
-	<text s="Title Bar">標題列</text>
-	<text s="Tool Bar">工具列</text>
-	<text s="Left Bar">左側列</text>
-	<text s="Right Bar">右側列</text>
-	<text s="Bottom Bar">按鈕列</text>
+	<text s="Title bar">標題列</text>
+	<text s="Tool bar">工具列</text>
+	<text s="Left bar">左側列</text>
+	<text s="Right bar">右側列</text>
+	<text s="Bottom bar">按鈕列</text>
 	<text s="Center">中央</text>
 	<text s="Background">背景</text>
 	<text s="Advanced">進階</text>

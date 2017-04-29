@@ -6,7 +6,7 @@
 	<text s="&amp;View">&amp;Ansicht</text>
 	<text s="F&amp;avorites">&amp;Favoriten</text>
 	<text s="&amp;Tools">&amp;Tools</text>
-	<text s="&amp;Help">Direkt zu ...</text>
+	<text s="&amp;Help">&amp;Hilfe</text>
 	<text s="Back">Zurück</text>
 	<text s="Forward">Vorwärts</text>
 	<text s="Up">Hoch</text>
@@ -108,11 +108,11 @@
 	<text s="Enable">Aktivieren</text>
 	<text s="Visit website">Webseite besuchen</text>
 	<text s="Information...">Information...</text>
-	<text s="Title Bar">Title Bar</text>
-	<text s="Tool Bar">Tool Bar</text>
-	<text s="Left Bar">Left Bar</text>
-	<text s="Right Bar">Right Bar</text>
-	<text s="Bottom Bar">Bottom Bar</text>
+	<text s="Title bar">Title bar</text>
+	<text s="Tool bar">Tool bar</text>
+	<text s="Left bar">Left bar</text>
+	<text s="Right bar">Right bar</text>
+	<text s="Bottom bar">Bottom bar</text>
 	<text s="Center">Center</text>
 	<text s="Background">Hintergrund</text>
 	<text s="Advanced">Erweitert</text>

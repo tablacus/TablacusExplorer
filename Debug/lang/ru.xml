@@ -108,11 +108,11 @@
 	<text s="Enable">Включить</text>
 	<text s="Visit website">Посетить web-сайт</text>
 	<text s="Information...">Информация...</text>
-	<text s="Title Bar">Панель вкладок</text>
-	<text s="Tool Bar">Панель инструментов</text>
-	<text s="Left Bar">Левая панель</text>
-	<text s="Right Bar">Правая панель</text>
-	<text s="Bottom Bar">Нжняя панель</text>
+	<text s="Title bar">Панель вкладок</text>
+	<text s="Tool bar">Панель инструментов</text>
+	<text s="Left bar">Левая панель</text>
+	<text s="Right bar">Правая панель</text>
+	<text s="Bottom bar">Нжняя панель</text>
 	<text s="Center">Центр</text>
 	<text s="Background">Задний план</text>
 	<text s="Advanced">Дополнительно</text>

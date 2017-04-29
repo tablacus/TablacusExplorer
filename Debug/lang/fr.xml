@@ -108,11 +108,11 @@
   <text s="Enable">Activer</text>
 	<text s="Visit website">Visiter le site web</text>
 	<text s="Information...">Information...</text>
-	<text s="Title Bar">Barre de titre</text>
-	<text s="Tool Bar">Barre d'outils</text>
-	<text s="Left Bar">Barre de gauche</text>
-	<text s="Right Bar">Barre de doite</text>
-	<text s="Bottom Bar">Barre du bas</text>
+	<text s="Title bar">Barre de titre</text>
+	<text s="Tool bar">Barre d'outils</text>
+	<text s="Left bar">Barre de gauche</text>
+	<text s="Right bar">Barre de doite</text>
+	<text s="Bottom bar">Barre du bas</text>
 	<text s="Center">Centrer</text>
 	<text s="Background">Arrière plan</text>
 	<text s="Advanced">Avancé</text>
