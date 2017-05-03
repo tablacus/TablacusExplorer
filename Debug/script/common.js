@@ -1467,9 +1467,11 @@ AdjustMenuBreak = function (hMenu)
 			continue;
 		}
 		var u = mii.fType & (MFT_MENUBREAK | MFT_MENUBARBREAK);
-		if (u) {
+		if (u && api.DeleteMenu(hMenu, i, MF_BYPOSITION)) {
+			i++;
 			uFlags = u;
-			api.DeleteMenu(hMenu, i++, MF_BYPOSITION);
+		} else {
+			uFlags = 0;
 		}
 	}
 	for (var i = api.GetMenuItemCount(hMenu); i--;) {
