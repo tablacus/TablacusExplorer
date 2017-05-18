@@ -7,7 +7,6 @@ g_Chg = {Menus: false, Addons: false, Tab: false, Tree: false, View: false, Data
 g_arMenuTypes = ["Default", "Context", "Background", "Tabs", "Tree", "File", "Edit", "View", "Favorites", "Tools", "Help", "Systray", "System", "Alias"];
 g_MenuType = "";
 g_dlgAddons = null;
-g_tdDown = null;
 g_bDrag = false;
 g_pt = {x: 0, y: 0};
 g_Gesture = null;
@@ -545,7 +544,7 @@ function ConfirmX(bCancel, fn)
 
 function SetOptions(fnYes, fnNo, NoCancel, bNoDef)
 {
-	if (g_nResult == 2 || api.StrCmpI(document.activeElement.value, GetText("Cancel")) == 0) {
+	if (g_nResult == 2 || document.activeElement && api.StrCmpI(document.activeElement.value, GetText("Cancel")) == 0) {
 		if (fnNo) {
 			fnNo();
 		}
@@ -587,10 +586,6 @@ function SetOptions(fnYes, fnNo, NoCancel, bNoDef)
 				}
 				return false;
 		}
-		if (!bNoDef && fnYes) {
-			fnYes();
-		}
-		return true;
 	}
 	if (fnNo) {
 		fnNo();
@@ -1111,41 +1106,6 @@ function SetAddon(Id, bEnable, td)
 	s.push('<td style="vertical-align: middle; padding-right: 1em"><input type="image" src="bitmap:ieframe.dll,216,16,10" title="', GetText('Remove'), '" onclick="AddonRemove(\'', Id, '\')"></td>');
 	s.push('</tr></table></label></div>');
 	td.innerHTML = s.join("");
-
-	td.onmousedown = function (e)
-	{
-		var o = document.elementFromPoint((e || window.event).clientX, (e || window.event).clientY);
-		if (!o || api.StrCmpI(o.tagName, "input")) {
-			g_tdDown = (e ? e.currentTarget : window.event.srcElement).firstChild.id;
-		}
-	}
-
-	td.onmouseup = function (e)
-	{
-		if (g_bDrag) {
-			g_bDrag = false;
-			SetCursor(document.getElementById("Addons"), "auto");
-			if (g_tdDown) {
-				(function (src, dest) { setTimeout(function () {
-					AddonMoveEx(src, dest);
-				}, 99);}) (GetRowIndexById(g_tdDown) , GetRowIndexById((e ? e.currentTarget : window.event.srcElement).firstChild.id));
-			}
-		}
-		g_tdDown = null;
-	}
-
-	td.onmousemove = function (e)
-	{
-		if (g_tdDown) {
-			if (api.GetKeyState(VK_LBUTTON) < 0 && !g_drag5) {
-				(e ? e.currentTarget : window.event.srcElement).style.cursor = "move";
-				g_bDrag = true;
-			} else {
-				td.onmouseup(e);
-			}
-		}
-	}
-
 	ApplyLang(td);
 }
 
@@ -1154,10 +1114,6 @@ function Start5(o)
 	if (api.GetKeyState(VK_LBUTTON) < 0) {
 		event.dataTransfer.effectAllowed = 'move';
 		g_drag5 = o.id;
-		if (g_tdDown) {
-			SetCursor(document.getElementById("Addons"), "auto");
-			g_tdDown = null;
-		}
 		return true;
 	}
 	return false;

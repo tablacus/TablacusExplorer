@@ -1104,7 +1104,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 	var hr = RunEvent3("InvokeCommand", ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon, strVerb);
 	if (isNaN(hr) && strVerb == "cut") {
 		var FV = ContextMenu.FolderView;
-		if (FV && FV.hwndView && ContextMenu.Items().Count == FV.SelectedItems().Count) {
+		if (FV && FV.hwndView && SameFolderItems(ContextMenu.Items(), FV.SelectedItems())) {
 			var hMenu = te.MainMenu(FCIDM_MENU_EDIT);
 			var mii = api.Memory("MENUITEMINFO");
 			mii.cbSize = mii.Size;

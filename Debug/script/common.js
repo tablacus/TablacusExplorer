@@ -3435,3 +3435,17 @@ importScript = function (fn)
 	}
 	return hr;
 }
+
+function SameFolderItems(Items1, Items2)
+{
+	var i = Items1.Count;
+	if (i != Items2.Count) {
+		return false;
+	}
+	while (i-- > 0) {
+		if (!api.ILIsEqual(Items1.Item(i), Items2.Item(i))) {
+			return false;
+		}
+	}
+	return true;
+}

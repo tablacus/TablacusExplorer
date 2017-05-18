@@ -15688,6 +15688,7 @@ CteWebBrowser::CteWebBrowser(HWND hwndParent, WCHAR *szPath, VARIANT *pvArg)
 		pOleObject->SetClientSite(static_cast<IOleClientSite *>(this));
 		SetRectEmpty(&rc);
 		pOleObject->DoVerb(OLEIVERB_INPLACEACTIVATE, &msg, static_cast<IOleClientSite *>(this), 0, hwndParent, &rc);
+		pOleObject->Release();
 		teAdvise(m_pWebBrowser, DIID_DWebBrowserEvents2, static_cast<IDispatch *>(this), &m_dwCookie);
 		m_pWebBrowser->put_Offline(VARIANT_TRUE);
 		m_bstrPath = SysAllocString(szPath);
