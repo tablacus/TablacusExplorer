@@ -6385,7 +6385,8 @@ VOID teApiOleSetClipboard(int nArg, teParam *param, DISPPARAMS *pDispParams, VAR
 		lResult = OleSetClipboard(pDataObj);
 		teSysFreeString(&g_bsClipRoot);
 		teGetRootFromDataObj(&g_bsClipRoot, pDataObj);
-		pDataObj->Release();
+//		Don't release pDataObj.
+//		pDataObj->Release();
 	}
 	teSetLong(pVarResult, lResult);
 }
