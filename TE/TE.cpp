@@ -8538,7 +8538,8 @@ VOID teApiURLDownloadToFile(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 	if (GetDispatch(&pDispParams->rgvarg[nArg - 1], &pdisp)) {
 		HRESULT hr = E_FAIL;
 		VARIANT v;
-		if SUCCEEDED(teGetProperty(pdisp, L"responseStream", &v)) {
+		//XMLHTTPRequest does not support responseStream.
+/*		if SUCCEEDED(teGetProperty(pdisp, L"responseStream", &v)) {
 			if (FindUnknown(&v, &punk)) {
 				IStream *pDst, *pSrc;
 				hr = punk->QueryInterface(IID_PPV_ARGS(&pSrc));
@@ -8549,6 +8550,23 @@ VOID teApiURLDownloadToFile(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 						pDst->Release();
 					}
 					pSrc->Release();
+				}
+			}
+			VariantClear(&v);
+		} else 
+*/
+		if SUCCEEDED(teGetProperty(pdisp, L"responseBody", &v)) {
+			UCHAR *pc;
+			int nLen = 0;
+			GetpDataFromVariant(&pc, &nLen, &v);
+			if (pc) {
+				HANDLE hFile = CreateFile(param[2].bstrVal, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+				if (hFile != INVALID_HANDLE_VALUE) {
+					DWORD dwWriteByte;
+					if (WriteFile(hFile, pc, nLen, &dwWriteByte, NULL)) {
+						hr = S_OK;
+					}
+					CloseHandle(hFile);
 				}
 			}
 			VariantClear(&v);
@@ -16750,7 +16768,16 @@ STDMETHODIMP CteTabCtrl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WOR
 				return S_OK;
 			//Count
 			case DISPID_TE_COUNT:
-				teSetLong(pVarResult, TabCtrl_GetItemCount(m_hwnd));
+				if (pVarResult) {
+					int nCount = TabCtrl_GetItemCount(m_hwnd);
+					if (nCount == 1) {
+						CteShellBrowser *pSB = GetShellBrowser(0);
+						if (!pSB || pSB->m_bEmpty) {
+							nCount = 0;
+						}
+					}
+					teSetLong(pVarResult, nCount);
+				}
 				return S_OK;
 			//_NewEnum
 			case DISPID_NEWENUM:

@@ -2098,7 +2098,8 @@ GetAddonInfo2 = function (xml, info, Tag, bTrans)
 		var item = items[0].childNodes;
 		for (var i = 0; i < item.length; i++) {
 			var n = item[i].tagName;
-			info[n] = bTrans && /Name|Description/i.test(n) ? GetText(item[i].text) : item[i].text;
+			var s = item[i].textContent || item[i].text;
+			info[n] = (bTrans && /Name|Description/i.test(n) ? GetText(s) : s);
 		}
 	}
 }
@@ -2202,29 +2203,31 @@ function GetAddons()
 
 function CheckUpdate()
 {
-	OpenHttpRequest("https://www.eonet.ne.jp/~gakana/tablacus/explorer_en.html", "text/html", CheckUpdate2);
+	OpenHttpRequest("https://api.github.com/repos/tablacus/TablacusExplorer/releases/latest", "http://www.eonet.ne.jp/~gakana/tablacus/explorer_en.html", CheckUpdate2);
 }
 
 function CheckUpdate2(xhr, url)
 {
 	var arg = {};
-	var res = /<meta http\-equiv="refresh" content="\d+; *URL=([^"]*)/i.exec(xhr.responseText);
+	var res = /<td id="te">.*?<a href="([^"]+)">.*?\(([\d\.]+)\s*KB.*?<\/td>/i.exec(xhr.responseText);
 	if (res) {
-		OpenHttpRequest(res[1], "text/html", CheckUpdate2);
+		arg.url = res[1];
+		arg.size = res[2];
+		if (!/^https?:/i.test(arg.url)) {
+			arg.url = url.replace(/[^\/]*$/, '') + arg.url;
+		}
+	} else {
+		var json = !window.JSON ? JSON.parse(xhr.responseText) : (new Function('return ' + xhr.responseText))();
+		var assets = json.assets;
+		if (json.assets && json.assets[0]) {
+			arg.size = json.assets[0]["size"] / 1024;
+			arg.url = json.assets[0]["browser_download_url"];
+		}
+	}
+	if (!arg.url) {
 		return;
 	}
-	res = /<td id="te">(.*?)<\/td>/i.exec(xhr.responseText);
-	if (!res) {
-		return;
-	}
-	var s = res[1];
-	res = /<a href="([^"]*)/i.exec(s);
-	if (!res) {
-		return;
-	}
-	var uri = res[1];
-	arg.file = fso.GetFileName(uri.replace(/\//g, "\\"));
-	s = s.replace(/Download/i, "").replace(/<[^>]*>/ig, "");
+	arg.file = fso.GetFileName(arg.url.replace(/\//g, "\\"));
 	var ver = 0;
 	res = /(\d+)/.exec(arg.file);
 	if (res) {
@@ -2236,6 +2239,7 @@ function CheckUpdate2(xhr, url)
 			return;
 		}
 	}
+	var s = api.sprintf(99, "Version %d.%d.%d (%.1lfKB)", ver / 10000 % 100, ver / 100 % 100, ver % 100, arg.size);
 	if (!confirmOk([GetText("Update available"), s, GetText("Do you want to install it now?")].join("\n"))) {
 		return;
 	}
@@ -2247,10 +2251,7 @@ function CheckUpdate2(xhr, url)
 	arg.temp += "\\explorer";
 	DeleteItem(arg.temp);
 	CreateFolder2(arg.temp);
-	if (!/^https?:/i.test(uri)) {
-		uri = url.replace(/[^\/]*$/, '') + uri;
-	}
-	OpenHttpRequest(uri, "application/zip", CheckUpdate3, arg);
+	OpenHttpRequest(arg.url, "http", CheckUpdate3, arg);
 }
 
 function CheckUpdate3(xhr, url, arg)
@@ -2319,33 +2320,34 @@ MessageBox = function (s, title, uType)
 createHttpRequest = function ()
 {
 	try {
-		return te.CreateObject("Msxml2.XMLHTTP");
+		return window.XMLHttpRequest ? new XMLHttpRequest() : te.CreateObject("Msxml2.XMLHTTP");
 	} catch (e) {
 		return te.CreateObject("Microsoft.XMLHTTP");
 	}
 }
 
-OpenHttpRequest = function (url, ct, fn, arg)
+OpenHttpRequest = function (url, alt, fn, arg)
 {
 	var xhr = createHttpRequest();
 	xhr.onreadystatechange = function()
 	{
 		if (xhr.readyState == 4) {
 			if (xhr.status == 200) {
-				fn(xhr, url, arg);
+				return fn(xhr, url, arg);
 			}
+			if (/^http/.test(alt)) {
+				return OpenHttpRequest(/^https/.test(url) && alt == "http" ? url.replace(/^https/, alt) : alt, '', fn, arg);
+			}
+			MessageBox([api.sprintf(999, api.LoadString(hShell32, 4227).replace(/^\t/, ""), xhr.status), url].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
 		}
 	}
 	xhr.open("GET", url + "?" + Math.floor(new Date().getTime() / 60000), false);
-	xhr.setRequestHeader('Content-Type', ct);
 	xhr.setRequestHeader('Pragma', 'no-cache');
 	xhr.setRequestHeader('Cache-Control', 'no-store');
 	xhr.setRequestHeader('Expires', '0');
 	try {
 		xhr.send(null);
-	} catch (e) {
-		MessageBox([api.LoadString(hShell32, 4227).replace(/^\t/, "").replace("%d", api.sprintf(99, "0x%08x", e.number)), url].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
-	}
+	} catch (e) {}
 }
 
 InputDialog = function (text, defaultText)
@@ -2447,6 +2449,7 @@ AddonOptions = function (Id, fn, Data)
 		el.style.cssText = 'width: 100%; border: 0; padding: 0; margin: 0';
 		g_.elAddons[Id] = el;
 		var o = document.getElementById('panel1_2');
+		o.style.display = "block";
 		o.appendChild(el);
 		o = document.getElementById('tab1_');
 		o.insertAdjacentHTML("BeforeEnd", '<label id="tab1_' + Id + '" class="button" style="width: 100%" onmousedown="ClickTree(this);">'+ info.Name +'</label><br />');

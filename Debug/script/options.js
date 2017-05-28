@@ -2195,7 +2195,7 @@ function GetTextEx(s)
 
 function GetAddons()
 {
-	OpenHttpRequest(urlAddons + "index.xml", "text/xml", AddonsList);
+	OpenHttpRequest(urlAddons + "index.xml", "http", AddonsList);
 }
 
 function UpdateAddon(Id, o)
@@ -2361,7 +2361,7 @@ function Install(o, bUpdate)
 		return;
 	}
 	var file = o.title.replace(/\./, "") + '.zip';
-	OpenHttpRequest(urlAddons + Id + '/' + file, "application/zip", Install2, o);
+	OpenHttpRequest(urlAddons + Id + '/' + file, "http", Install2, o);
 }
 
 function Install2(xhr, url, o)
