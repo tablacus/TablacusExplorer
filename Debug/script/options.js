@@ -2340,7 +2340,7 @@ function Search(xml)
 			for (var i = item.length; i-- > 0;) {
 				var item1 = item[i];
 				if (item1.tagName) {
-					if (item1.text.toUpperCase().match(q)) {
+					if ((item1.textContent || item1.text).toUpperCase().indexOf(q) >= 0) {
 						return true;
 					}
 				}

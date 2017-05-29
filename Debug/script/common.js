@@ -1377,6 +1377,10 @@ AddEvent("ReplaceMacroEx", [/%AddonStatus:([^%]*)%/ig, function (strMatch, ref1)
 
 PathMatchEx = function (path, s)
 {
+	var hr = MainWindow.RunEvent3("PathMatch", path, s);
+	if (isFinite(hr)) {
+		return hr;
+	}
 	var res = /^\/(.*)\/(.*)/.exec(s);
 	return res ? new RegExp(res[1], res[2]).test(path) : api.PathMatchSpec(path, s);
 }
