@@ -2814,12 +2814,12 @@ GetSelectedArray = function (Ctrl, pt, bPlus)
 
 StripAmp = function (s)
 {
-	return s.replace(/\(&\w\)|&/, "").replace(/\.\.\.$/, "");
+	return String(s).replace(/\(&\w\)|&/, "").replace(/\.\.\.$/, "");
 }
 
 EncodeSC = function (s)
 {
-	return s.replace(/[&"<>]/g, function (strMatch)
+	return String(s).replace(/[&"<>]/g, function (strMatch)
 	{
 		return api.sprintf(9, "&#x%02x;", strMatch.charCodeAt(0));
 	});
@@ -2827,7 +2827,7 @@ EncodeSC = function (s)
 
 DecodeSC = function (s)
 {
-	return s.replace(/&#x([\da-f]{2});/g, function (strMatch, ref)
+	return String(s).replace(/&#x([\da-f]{2});/g, function (strMatch, ref)
 	{
 		return String.fromCharCode(parseInt(ref, 16));
 	});

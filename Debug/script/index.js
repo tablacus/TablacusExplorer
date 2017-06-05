@@ -1682,11 +1682,11 @@ te.OnArrange = function (Ctrl, rc)
 		var o = g_.Panels[Ctrl.Id];
 		if (!o) {
 			var s = ['<table id="Panel_$" class="layout" style="position: absolute; z-index: 1;">'];
-			s.push('<tr><td id="InnerLeft_$" class="sidebar" style="width: 0px; display: none; overflow: auto"></td><td style="width: 100%"><div id="InnerTop_$" style="display: none"></div>');
+			s.push('<tr><td id="InnerLeft_$" class="sidebar" style="width: 0; display: none; overflow: auto"></td><td style="width: 100%"><div id="InnerTop_$" style="display: none"></div>');
 			s.push('<table id="InnerTop2_$" class="layout">');
 			s.push('<tr><td id="Inner1Left_$" class="toolbar1"></td><td id="Inner1Center_$" class="toolbar2" style="white-space: nowrap"></td><td id="Inner1Right_$" class="toolbar3"></td></tr></table>');
-			s.push('<table id="InnerView_$" class="layout" style="width: 100%"><tr><td id="Inner2Left_$" style="width: 0px"></td><td id="Inner2Center_$"></td><td id="Inner2Right_$" style="width: 0px; overflow: auto"></td></tr></table>');
-			s.push('<div id="InnerBottom_$"></div></td><td id="InnerRight_$" class="sidebar" style="width: 0px; display: none"></td></tr></table>');
+			s.push('<table id="InnerView_$" class="layout" style="width: 100%"><tr><td id="Inner2Left_$" style="width: 0"></td><td id="Inner2Center_$"></td><td id="Inner2Right_$" style="width: 0; overflow: auto"></td></tr></table>');
+			s.push('<div id="InnerBottom_$"></div></td><td id="InnerRight_$" class="sidebar" style="width: 0; display: none"></td></tr></table>');
 			document.getElementById("Panel").insertAdjacentHTML("BeforeEnd", s.join("").replace(/\$/g, Ctrl.Id));
 			PanelCreated(Ctrl);
 			o = document.getElementById("Panel_" + Ctrl.Id);
@@ -1702,9 +1702,9 @@ te.OnArrange = function (Ctrl, rc)
 			o.style.display = "none";
 		}
 		var i = rc.Right - rc.Left
-		o.style.width = (i >= 0 ? i : 0) + "px";
+		o.style.width = i > 0 ? i + "px" : 0;
 		i = rc.Bottom - rc.Top;
-		o.style.height = (i >= 0 ? i : 0) + "px";
+		o.style.height = i > 0 ? i + "px" : 0;
 		rc.Top += document.getElementById("InnerTop_" + Ctrl.Id).offsetHeight + document.getElementById("InnerTop2_" + Ctrl.Id).offsetHeight;
 		var w1 = 0;
 		var w2 = 0;
@@ -1719,9 +1719,9 @@ te.OnArrange = function (Ctrl, rc)
 		rc.Bottom -= document.getElementById("InnerBottom_" + Ctrl.Id).offsetHeight;
 		o = document.getElementById("Inner2Center_" + Ctrl.Id).style;
 		i = rc.Right - rc.Left;
-		o.width = i > 0 ? i + "px" : "0px";
+		o.width = i > 0 ? i + "px" : 0;
 		i = rc.Bottom - rc.Top;
-		o.height = i > 0 ? i + "px" : "0px";
+		o.height = i > 0 ? i + "px" : 0;
 	}
 	RunEvent1("Arrange", Ctrl, rc);
 }
