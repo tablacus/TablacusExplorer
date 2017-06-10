@@ -1026,7 +1026,7 @@ function SetData(sel, a, t)
 	if (/boolean/.test(typeof t)) {
 		t = (t ? String.fromCharCode(9745, 32) : String.fromCharCode(9744, 32)) + a[0];
 	}
-	sel.text = GetText(t || a[0]);
+	sel.text = t || a[0];
 }
 
 function PackData(a)

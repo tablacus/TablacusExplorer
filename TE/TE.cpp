@@ -6712,8 +6712,11 @@ VOID teApiPathCreateFromUrl(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 	if (param[0].bstrVal) {
 		DWORD dwLen = ::SysStringLen(param[0].bstrVal) + MAX_PATH;
 		BSTR bsResult = ::SysAllocStringLen(NULL, dwLen);
-		PathCreateFromUrl(param[0].lpcwstr, bsResult, &dwLen, NULL);
-		teSetBSTR(pVarResult, &bsResult, dwLen);
+		if SUCCEEDED(PathCreateFromUrl(param[0].lpcwstr, bsResult, &dwLen, NULL)) {
+			teSetBSTR(pVarResult, &bsResult, dwLen);
+		} else {
+			::SysFreeString(bsResult);
+		}
 	}
 }
 
@@ -15223,18 +15226,20 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 					CLSID clsid;
 					VARIANT vClass;
 					teVariantChangeType(&vClass, &pDispParams->rgvarg[nArg], VT_BSTR);
+					HRESULT hr = E_FAIL;
+					IUnknown *punk;
 					if SUCCEEDED(teCLSIDFromProgID(vClass.bstrVal, &clsid)) {
-						HRESULT hr = E_FAIL;
-						IUnknown *punk;
 						if (dispIdMember == TE_METHOD + 1020) {
 							hr = GetActiveObject(clsid, NULL, &punk);
 						}
 						if FAILED(hr) {
 							hr = CoCreateInstance(clsid, NULL, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER, IID_PPV_ARGS(&punk));
 						}
-						if SUCCEEDED(hr) {
-							teSetObjectRelease(pVarResult, punk);
-						}
+					} else if (dispIdMember == TE_METHOD + 1020) {
+						hr = CoGetObject(vClass.bstrVal, NULL, IID_PPV_ARGS(&punk));
+					}
+					if SUCCEEDED(hr) {
+						teSetObjectRelease(pVarResult, punk);
 					}
 					VariantInit(&vClass);
 				}

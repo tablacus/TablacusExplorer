@@ -478,7 +478,7 @@ GetCommandId = function (hMenu, s, ContextMenu)
 	var arMenu = [hMenu];
 	var wId = 0;
 	if (s) {
-		var sl = GetText(s);
+		var sl = GetTextR(s);
 		var mii = api.Memory("MENUITEMINFO");
 		mii.cbSize = mii.Size;
 		mii.fMask = MIIM_SUBMENU | MIIM_ID | MIIM_FTYPE | MIIM_STATE;
@@ -3058,7 +3058,7 @@ g_basic =
 		var hMenu = api.CreatePopupMenu();
 		for (i = 0; i < ar.length; i++) {
 			if (ar[i]) {
-				api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, i + 1, GetText(ar[i]));
+				api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, i + 1, GetTextR(ar[i]));
 			}
 		}
 		var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD | (pt.width ? TPM_RIGHTALIGN : 0), pt.x + pt.width, pt.y, te.hwnd, null, null);
@@ -3301,7 +3301,7 @@ W.Popup('%s',9,T,%d);\
 %s\
 A.NameSpace(F).MoveHere(A.NameSpace('%s').Items(),%d);\
 if(W.Popup('%s',0,T,%d)==1){W.Run(Q+F+'\\\\%s'+Q)}\
-close()", EscapeUpdateFile(arg.InstalledFolder), GetText("Please wait."), MB_ICONINFORMATION, Taskkill, EscapeUpdateFile(arg.temp), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, GetText("Exec"), MB_ICONQUESTION | MB_OKCANCEL, EscapeUpdateFile(fso.GetFileName(api.GetModuleFileName(null)))).replace(/[\t\n]/g, "");
+close()", EscapeUpdateFile(arg.InstalledFolder), GetText("Please wait."), MB_ICONINFORMATION, Taskkill, EscapeUpdateFile(arg.temp), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, GetTextR("@shell32.dll,-12852"), MB_ICONQUESTION | MB_OKCANCEL, EscapeUpdateFile(fso.GetFileName(api.GetModuleFileName(null)))).replace(/[\t\n]/g, "");
 	wsh.CurrentDirectory = arg.temp;
 	var exe = "mshta.exe";
 	var s1 = '"javascript:';

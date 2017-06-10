@@ -8,7 +8,7 @@ hwnd = null;
 pt = api.Memory("POINT");
 dataObj = null;
 grfKeyState = null;
-pdwEffect = 0;
+pdwEffect = [0];
 bDrop = null;
 Input = null;
 eventTE = { Environment: {} };
@@ -228,23 +228,12 @@ function ApplyLang(doc)
 	}
 
 	var i;
-	var Lang = MainWindow.Lang;
 	var o = doc.getElementsByTagName("a");
 	if (o) {
 		for (i = o.length; i--;) {
-			var s = Lang[o[i].innerHTML.replace(/&amp;/ig, "&")];
-			if (!s) {
-				s = o[i].innerHTML;
-			}
-			o[i].innerHTML = amp2ul(s);
-			var s = Lang[o[i].title];
-			if (s) {
-				o[i].title = s;
-			}
-			var s = Lang[o[i].alt];
-			if (s) {
-				o[i].alt = s;
-			}
+			o[i].innerHTML = amp2ul(GetTextR(o[i].innerHTML.replace(/&amp;/ig, "&")));
+			o[i].title = GetTextR(o[i].title);
+			o[i].alt = GetTextR(o[i].alt);
 			if (o[i].className == "treebutton" && o[i].innerHTML == "") {
 				o[i].innerHTML = BUTTONS.opened;
 			}
@@ -257,28 +246,16 @@ function ApplyLang(doc)
 			if (!h && o[i].type == "text") {
 				h = o[i].offsetHeight * screen.deviceYDPI / screen.logicalYDPI;
 			}
-			var s = Lang[o[i].placeholder];
-			if (s) {
-				o[i].placeholder = s;
-			}
-			var s = Lang[o[i].title];
-			if (s) {
-				o[i].title = s;
-			}
-			var s = Lang[o[i].alt];
-			if (s) {
-				o[i].alt = s;
-			}
+			o[i].placeholder = GetTextR(o[i].placeholder);
+			o[i].title = GetTextR(o[i].title);
+			o[i].alt = GetTextR(o[i].alt);
 			if (o[i].type == "button") {
-				s = Lang[o[i].value];
-				if (s) {
-					o[i].value = s;
-				}
+				o[i].value = GetTextR(o[i].value);
 			}
 			var s = ImgBase64(o[i], 0);
-			if (s != "") {
+			if (s) {
 				o[i].src = s;
-				if (o[i].type == "text" && s != "") {
+				if (o[i].type == "text") {
 					o[i].style.backgroundImage = "url('" + s + "')";
 				}
 			}
@@ -287,16 +264,10 @@ function ApplyLang(doc)
 	var o = doc.getElementsByTagName("img");
 	if (o) {
 		for (i = o.length; i--;) {
-			var s = Lang[o[i].title];
-			if (s) {
-				o[i].title = delamp(s);
-			}
-			var s = Lang[o[i].alt];
-			if (s) {
-				o[i].alt = delamp(s);
-			}
+			o[i].title = delamp(GetTextR(o[i].title));
+			o[i].alt = delamp(GetTextR(o[i].alt));
 			var s = ImgBase64(o[i], 0);
-			if (s != "") {
+			if (s) {
 				o[i].src = s;
 			}
 			if (!o[i].ondragstart) {
@@ -307,52 +278,26 @@ function ApplyLang(doc)
 	var o = doc.getElementsByTagName("select");
 	if (o) {
 		for (i = o.length; i--;) {
-			var s = Lang[o[i].title];
-			if (s) {
-				o[i].title = delamp(s);
-			}
+			o[i].title = delamp(GetTextR(o[i].title));
 			for (var j = 0; j < o[i].length; j++) {
-				var s = Lang[o[i][j].text.replace(/^\n/, "").replace(/\n$/, "")];
-				if (s) {
-					o[i][j].text = s;
-				}
+				o[i][j].text = GetTextR(o[i][j].text.replace(/^\n/, "").replace(/\n$/, ""));
 			}
 		}
 	}
 	var o = doc.getElementsByTagName("label");
 	if (o) {
 		for (i = o.length; i--;) {
-			var s = Lang[o[i].innerHTML.replace(/&amp;/ig, "&")];
-			if (!s) {
-				s = o[i].innerHTML;
-			}
-			o[i].innerHTML = amp2ul(s);
-			var s = Lang[o[i].title];
-			if (s) {
-				o[i].title = s;
-			}
-			var s = Lang[o[i].alt];
-			if (s) {
-				o[i].alt = s;
-			}
+			o[i].innerHTML = amp2ul(GetTextR(o[i].innerHTML.replace(/&amp;/ig, "&")));
+			o[i].title = GetTextR(o[i].title);
+			o[i].alt = GetTextR(o[i].alt);
 		}
 	}
 	var o = doc.getElementsByTagName("button");
 	if (o) {
 		for (i = o.length; i--;) {
-			var s = Lang[o[i].innerHTML.replace(/&amp;/ig, "&")];
-			if (!s) {
-				s = o[i].innerHTML;
-			}
-			o[i].innerHTML = amp2ul(s);
-			var s = Lang[o[i].title];
-			if (s) {
-				o[i].title = s;
-			}
-			var s = Lang[o[i].alt];
-			if (s) {
-				o[i].alt = s;
-			}
+			o[i].innerHTML = amp2ul(GetTextR(o[i].innerHTML.replace(/&amp;/ig, "&")));
+			o[i].title = GetTextR(o[i].title);
+			o[i].alt = GetTextR(o[i].alt);
 		}
 	}
 	var o = doc.getElementsByTagName("textarea");
@@ -361,26 +306,19 @@ function ApplyLang(doc)
 			o[i].onkeydown = InsertTab;
 		}
 	}
-
 	var o = doc.getElementsByTagName("li");
 	if (o) {
 		for (i = o.length; i--;) {
-			var s = Lang[o[i].innerHTML.replace(/&amp;/ig, "&")];
-			if (!s) {
-				s = o[i].innerHTML;
-			}
-			o[i].innerHTML = amp2ul(s);
+			o[i].innerHTML = amp2ul(GetTextR(o[i].innerHTML.replace(/&amp;/ig, "&")));
 		}
 	}
-
 	var o = doc.getElementsByTagName("form");
 	if (o) {
 		for (i = o.length; i--;) {
 			o[i].onsubmit = function () { return false };
 		}
 	}
-
-	doc.title = GetText(doc.title);
+	doc.title = GetTextR(doc.title);
 	setTimeout(function ()
 	{
 		var hwnd = api.GetParent(api.GetWindow(doc));
@@ -504,7 +442,7 @@ function MakeImgIcon(src, index, h, strBitmap, strIcon)
 	}
 	if (src && !REGEXP_IMAGE.test(src)) {
 		var sfi = api.Memory("SHFILEINFO");
-		var pidl = api.ILCreateFromPath(api.PathUnquoteSpaces(src));
+		var pidl = api.ILCreateFromPath(api.PathUnquoteSpaces(api.PathCreateFromUrl(src) || src));
 		if (pidl) {
 			api.SHGetFileInfo(pidl, 0, sfi, sfi.Size, (h && h <= 16) ? SHGFI_PIDL | SHGFI_ICON | SHGFI_SMALLICON : SHGFI_PIDL | SHGFI_ICON);
 			return sfi.hIcon;
@@ -519,14 +457,8 @@ LoadImgDll = function (icon, index)
 	if (!hModule && icon[index * 4].toLowerCase() == "ieframe.dll") {
 		if (icon[index * 4 + 1] >= 500) {
 			hModule = api.LoadLibraryEx(fso.BuildPath(system32, "browseui.dll"), 0, LOAD_LIBRARY_AS_DATAFILE);
-		} else if (WINVER > 0x500) {
-			hModule = api.LoadLibraryEx(fso.BuildPath(system32, "shell32.dll"), 0, LOAD_LIBRARY_AS_DATAFILE);
 		} else {
-			hModule = api.LoadLibraryEx(fso.BuildPath(system32, "browseui.dll"), 0, LOAD_LIBRARY_AS_DATAFILE);
-			icon[index * 4 + 1] = (icon[index * 4 + 1] < 210 ? 62 : 63) + (icon[index * 4 + 1] & ~1);
-			if (icon[index * 4 + 2] > 20) {
-				icon[index * 4 + 2] = 20;
-			}
+			hModule = api.LoadLibraryEx(fso.BuildPath(system32, "shell32.dll"), 0, LOAD_LIBRARY_AS_DATAFILE);
 		}
 	}
 	return hModule;
@@ -542,6 +474,22 @@ GetText = function (id)
 		}
 	} catch (e) {}
 	return id;
+}
+
+GetTextR = function (id)
+{
+	var res = /^\@(.+\.dll),-(\d+)$/i.exec(id);
+	if (res) {
+		var hModule = api.LoadLibraryEx(res[1], 0, LOAD_LIBRARY_AS_DATAFILE);
+		if (hModule) {
+			var s = api.LoadString(hModule, api.LowPart(res[2]));
+			api.FreeLibrary(hModule);
+			if (s) {
+				return s;
+			}
+		}
+	}
+	return GetText(id);
 }
 
 function LoadLang2(filename)
@@ -1365,9 +1313,9 @@ AddEnv("TE_Config", function ()
 	return fso.BuildPath(te.Data.DataFolder, "config");
 });
 
-AddEvent("ReplaceMacroEx", [/%res:(\d+)%/ig, function (strMatch, ref1)
+AddEvent("ReplaceMacroEx", [/%res:(.+)%/ig, function (strMatch, ref1)
 {
-	return api.LoadString(hShell32, ref1) || "";
+	return api.LoadString(hShell32, ref1) || GetTextR(ref1);
 }]);
 
 AddEvent("ReplaceMacroEx", [/%AddonStatus:([^%]*)%/ig, function (strMatch, ref1)
@@ -1727,7 +1675,7 @@ GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arCon
 					}
 				}
 				if (ContextMenu) {
-					ContextMenu.QueryContextMenu(hMenu, 0, 0x6001, 0x6fff, uCMF | CMF_DONOTPICKDEFAULT);
+					ContextMenu.QueryContextMenu(hMenu, 0, 0x6001, 0x6fff, uCMF | CMF_DONOTPICKDEFAULT | CMF_ITEMMENU);
 					if (!Items.Count) {
 						SetRenameMenu(ContextMenu.idCmdFirst);
 					}
@@ -2318,7 +2266,7 @@ confirmOk = function (s, title)
 
 MessageBox = function (s, title, uType)
 {
-	return api.MessageBox(api.GetForegroundWindow(), GetText(s), GetText(title) || TITLE, uType);
+	return api.MessageBox(api.GetForegroundWindow(), GetTextR(s), GetTextR(title) || TITLE, uType);
 }
 
 createHttpRequest = function ()
@@ -2356,7 +2304,7 @@ OpenHttpRequest = function (url, alt, fn, arg)
 
 InputDialog = function (text, defaultText)
 {
-	return prompt(GetText(text), defaultText);
+	return prompt(GetTextR(text), defaultText);
 }
 
 AddonOptions = function (Id, fn, Data)
@@ -2976,17 +2924,14 @@ InsertTab = function(e)
 	return true;
 }
 
+
 RegEnumKey = function(hKey, Name)
 {
-	try {
-		var locator = te.CreateObject("WbemScripting.SWbemLocator");
-		var server = locator.ConnectServer(null, "root\\default");
-		var reg = server.Get("StdRegProv");
-		var Params = [hKey, Name, null];
-		api.ExecMethod(reg, "EnumKey", Params);
-		return new VBArray(Params[2]).toArray();
-	} catch (e) {}
-	return [];
+	var server = te.GetObject("winmgmts:\\\\.\\root\\default:StdRegProv");
+	var iParams = server.Methods_.Item("EnumKey").InParameters.SpawnInstance_();
+	iParams.hDefKey = hKey;
+	iParams.sSubKeyName = Name;
+	return server.ExecMethod_("EnumKey", iParams).sNames.toArray();
 }
 
 FindText = function ()
@@ -3390,14 +3335,11 @@ OpenAdodbFromTextFile = function (fn)
 WmiProcess = function(arg, fn)
 {
 	try {
-		var locator = te.CreateObject("WbemScripting.SWbemLocator");
-		if (locator) {
-			var server = locator.ConnectServer();
-			if (server) {
-				var cols = server.ExecQuery("SELECT * FROM Win32_Process " + arg);
-				for (var list = new Enumerator(cols); !list.atEnd(); list.moveNext()) {
-					fn(list.item());
-				}
+		var server = te.GetObject("winmgmts:\\\\.\\root\\cimv2");
+		if (server) {
+			var cols = server.ExecQuery("SELECT * FROM Win32_Process " + arg);
+			for (var list = new Enumerator(cols); !list.atEnd(); list.moveNext()) {
+				fn(list.item());
 			}
 		}
 	} catch (e) {}
