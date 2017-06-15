@@ -5644,6 +5644,7 @@ LRESULT CALLBACK TETCProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	LRESULT Result = 1;
 	int nIndex, nCount;
+	static BOOL bCancelPaint = FALSE;
 	try {
 		CteTabCtrl *pTC = (CteTabCtrl *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 		if (hwnd != pTC->m_hwnd) {
@@ -5704,6 +5705,19 @@ LRESULT CALLBACK TETCProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				}
 				break;
 		}//end_switch
+
+		//Fix for high CPU usage on single line tab.
+		if (!(pTC->m_param[TE_Flags] & TCS_MULTILINE)) {
+			if (msg == WM_PAINT) {
+				if (bCancelPaint) {
+					Result = 0;
+				}
+				bCancelPaint = TRUE;
+			} else if (msg != WM_ERASEBKGND && msg != WM_NCPAINT && msg != TCM_GETITEM) {
+				bCancelPaint = FALSE;
+			}
+		}
+
 		if (Result) {
 			Result = TETCProc2(pTC, hwnd, msg, wParam, lParam);
 		}
@@ -8556,7 +8570,7 @@ VOID teApiURLDownloadToFile(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 				}
 			}
 			VariantClear(&v);
-		} else 
+		} else
 */
 		if SUCCEEDED(teGetProperty(pdisp, L"responseBody", &v)) {
 			UCHAR *pc;
@@ -19746,6 +19760,23 @@ STDMETHODIMP CteTreeView::OnEndLabelEdit(IShellItem *psi)
 
 STDMETHODIMP CteTreeView::OnGetToolTip(IShellItem *psi, LPWSTR pszTip, int cchTip)
 {
+	if (g_pOnFunc[TE_OnToolTip]) {
+		VARIANTARG *pv;
+		VARIANT vResult;
+		pv = GetNewVARIANT(2);
+		teSetObject(&pv[1], this);
+		FolderItem *pid;
+		if SUCCEEDED(GetFolderItemFromObject(&pid, psi)) {
+			teSetObjectRelease(&pv[0], pid);
+		}
+		VariantInit(&vResult);
+		Invoke4(g_pOnFunc[TE_OnToolTip], &vResult, 2, pv);
+		if (vResult.vt == VT_BSTR) {
+			lstrcpyn(pszTip, vResult.bstrVal, cchTip);
+			VariantClear(&vResult);
+			return S_OK;
+		}
+	}
 	return E_NOTIMPL;
 }
 

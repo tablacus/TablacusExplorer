@@ -218,37 +218,55 @@ AddonDisabled = function (Id)
 	CollectGarbage();
 }
 
+function ApplyLangTag(o)
+{
+	if (o) {
+		for (i = o.length; i--;) {
+			var s = o[i].innerHTML;
+			if (s) {
+				o[i].innerHTML = amp2ul(GetTextR(s.replace(/&amp;/ig, "&")));
+			}
+			s = o[i].title;
+			if (s) {
+				o[i].title = GetTextR(s);
+			}
+			s = o[i].alt;
+			if (s) {
+				o[i].alt = GetTextR(s);
+			}
+		}
+	}
+}
+
 function ApplyLang(doc)
 {
+	var i, o, h = 0;
 	var FaceName = MainWindow.DefaultFont.lfFaceName;
 	if (doc.body) {
 		doc.body.style.fontFamily = FaceName;
 		doc.body.style.fontSize = Math.abs(MainWindow.DefaultFont.lfHeight) + "px";
 		doc.body.style.backgroundColor = 'buttonface';
 	}
-
-	var i;
-	var o = doc.getElementsByTagName("a");
+	ApplyLangTag(doc.getElementsByTagName("label"));
+	ApplyLangTag(doc.getElementsByTagName("button"));
+	ApplyLangTag(doc.getElementsByTagName("li"));
+	o = doc.getElementsByTagName("a");
 	if (o) {
+		ApplyLangTag(o);
 		for (i = o.length; i--;) {
-			o[i].innerHTML = amp2ul(GetTextR(o[i].innerHTML.replace(/&amp;/ig, "&")));
-			o[i].title = GetTextR(o[i].title);
-			o[i].alt = GetTextR(o[i].alt);
 			if (o[i].className == "treebutton" && o[i].innerHTML == "") {
 				o[i].innerHTML = BUTTONS.opened;
 			}
 		}
 	}
-	var h = 0;
-	var o = doc.getElementsByTagName("input");
+	o = doc.getElementsByTagName("input");
 	if (o) {
+		ApplyLangTag(o);
 		for (i = o.length; i--;) {
 			if (!h && o[i].type == "text") {
 				h = o[i].offsetHeight * screen.deviceYDPI / screen.logicalYDPI;
 			}
 			o[i].placeholder = GetTextR(o[i].placeholder);
-			o[i].title = GetTextR(o[i].title);
-			o[i].alt = GetTextR(o[i].alt);
 			if (o[i].type == "button") {
 				o[i].value = GetTextR(o[i].value);
 			}
@@ -261,11 +279,10 @@ function ApplyLang(doc)
 			}
 		}
 	}
-	var o = doc.getElementsByTagName("img");
+	o = doc.getElementsByTagName("img");
 	if (o) {
+		ApplyLangTag(o);
 		for (i = o.length; i--;) {
-			o[i].title = delamp(GetTextR(o[i].title));
-			o[i].alt = delamp(GetTextR(o[i].alt));
 			var s = ImgBase64(o[i], 0);
 			if (s) {
 				o[i].src = s;
@@ -275,7 +292,7 @@ function ApplyLang(doc)
 			}
 		}
 	}
-	var o = doc.getElementsByTagName("select");
+	o = doc.getElementsByTagName("select");
 	if (o) {
 		for (i = o.length; i--;) {
 			o[i].title = delamp(GetTextR(o[i].title));
@@ -284,35 +301,13 @@ function ApplyLang(doc)
 			}
 		}
 	}
-	var o = doc.getElementsByTagName("label");
-	if (o) {
-		for (i = o.length; i--;) {
-			o[i].innerHTML = amp2ul(GetTextR(o[i].innerHTML.replace(/&amp;/ig, "&")));
-			o[i].title = GetTextR(o[i].title);
-			o[i].alt = GetTextR(o[i].alt);
-		}
-	}
-	var o = doc.getElementsByTagName("button");
-	if (o) {
-		for (i = o.length; i--;) {
-			o[i].innerHTML = amp2ul(GetTextR(o[i].innerHTML.replace(/&amp;/ig, "&")));
-			o[i].title = GetTextR(o[i].title);
-			o[i].alt = GetTextR(o[i].alt);
-		}
-	}
-	var o = doc.getElementsByTagName("textarea");
+	o = doc.getElementsByTagName("textarea");
 	if (o) {
 		for (i = o.length; i--;) {
 			o[i].onkeydown = InsertTab;
 		}
 	}
-	var o = doc.getElementsByTagName("li");
-	if (o) {
-		for (i = o.length; i--;) {
-			o[i].innerHTML = amp2ul(GetTextR(o[i].innerHTML.replace(/&amp;/ig, "&")));
-		}
-	}
-	var o = doc.getElementsByTagName("form");
+	o = doc.getElementsByTagName("form");
 	if (o) {
 		for (i = o.length; i--;) {
 			o[i].onsubmit = function () { return false };
@@ -442,7 +437,10 @@ function MakeImgIcon(src, index, h, strBitmap, strIcon)
 	}
 	if (src && !REGEXP_IMAGE.test(src)) {
 		var sfi = api.Memory("SHFILEINFO");
-		var pidl = api.ILCreateFromPath(api.PathUnquoteSpaces(api.PathCreateFromUrl(src) || src));
+		if (/^file:/i.test(src)) {
+			src = api.PathCreateFromUrl(src) || src;
+		}
+		var pidl = api.ILCreateFromPath(api.PathUnquoteSpaces(src));
 		if (pidl) {
 			api.SHGetFileInfo(pidl, 0, sfi, sfi.Size, (h && h <= 16) ? SHGFI_PIDL | SHGFI_ICON | SHGFI_SMALLICON : SHGFI_PIDL | SHGFI_ICON);
 			return sfi.hIcon;
