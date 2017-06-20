@@ -141,20 +141,24 @@ FolderMenu =
 		api.InsertMenuItem(hMenu, MAXINT, false, mii);
 	},
 
-	Invoke: function (FolderItem)
+	Invoke: function (FolderItem, wFlags)
 	{
 		if (FolderItem) {
-			switch (window.g_menu_button - 0) {
-				case 2:
-					PopupContextMenu(FolderItem);
-					break;
-				case 3:
-					Navigate(FolderItem, SBSP_NEWBROWSER);
-					break;
-				default:
-					Navigate(FolderItem, OpenMode);
-					break;
+			if (window.g_menu_button == 2) {
+				PopupContextMenu(FolderItem);
+				retrn;
 			}
+			if (FolderItem.IsFolder) {
+				if (FolderItem.Unavailable) {
+					var arg = api.CommandLineToArgv(FolderItem.Path);
+					if (arg.length > 1 && fso.FileExists(arg[0])) {
+						ShellExecute(FolderItem.Path, null, SW_SHOWNORMAL);
+					}
+				}
+				Navigate(FolderItem, isFinite(wFlags) ? wFlags : GetOpenMode());
+				return;
+			}
+			ShellExecute(FolderItem.Path, null, SW_SHOWNORMAL);
 		}
 	}
 };
@@ -704,8 +708,9 @@ GetKeyKey = function (strKey)
 	strKey = strKey.toUpperCase();
 	for (var j in MainWindow.g_.KeyState) {
 		var s = MainWindow.g_.KeyState[j][0].toUpperCase() + "+";
-		if (strKey.match(s)) {
-			strKey = strKey.replace(s, "");
+		var i = strKey.indexOf(s);
+		if (i >= 0) {
+			strKey = strKey.substr(0, i) + strKey.substr(i + s.length);
 			nShift |= MainWindow.g_.KeyState[j][1];
 		}
 	}
@@ -1831,7 +1836,12 @@ AddMenuIconFolderItem = function (mii, FolderItem, nHeight)
 {
 	var image = te.WICBitmap();
 	var sfi = api.Memory("SHFILEINFO");
-	var path = /string/i.test(typeof FolderItem) ? FolderItem : api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING);
+	var dwFlags = SHGFI_SYSICONINDEX;
+	var path = FolderItem;
+	if (!/string/i.test(typeof FolderItem)) {
+		path = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING);
+		dwFlags |=  SHGFI_PIDL;
+	}
 	if (api.PathIsNetworkPath(path)) {
 		if (fso.GetDriveName(path) != path.replace(/\\$/, "")) {
 			MenusIcon(mii, WINVER >= 0x600 ? "icon:shell32.dll,275,16" : "icon:shell32.dll,85,16");
@@ -1840,7 +1850,7 @@ AddMenuIconFolderItem = function (mii, FolderItem, nHeight)
 		MenusIcon(mii, WINVER >= 0x600 ? "icon:shell32.dll,273,16" : "icon:shell32.dll,9,16");
 		return;
 	}
-	api.SHGetFileInfo(FolderItem, 0, sfi, sfi.Size, SHGFI_SYSICONINDEX | SHGFI_PIDL);
+	api.SHGetFileInfo(FolderItem, 0, sfi, sfi.Size, dwFlags);
 	var id = sfi.iIcon;
 	mii.hbmpItem = MainWindow.g_arBM[[id, nHeight].join("\t")];
 	if (mii.hbmpItem) {
@@ -2620,7 +2630,7 @@ function SetKeyShift()
 		var s = MainWindow.g_.KeyState[i][0];
 		var o = document.getElementById("_Key" + s);
 		if (o) {
-			o.checked = key.match(s + "+");
+			o.checked = key.indexOf(s + "+") >= 0;
 		}
 		key = key.replace(s + "+", "");
 	}
@@ -2889,7 +2899,7 @@ function MouseOver(o)
 function MouseOut(s)
 {
 	if (objHover) {
-		if (!s || objHover.id.match(s)) {
+		if (!s || objHover.id.indexOf(s) >= 0) {
 			if (objHover.className == 'hoverbutton') {
 				objHover.className = 'button';
 			} else if (objHover.className == 'hovermenu') {

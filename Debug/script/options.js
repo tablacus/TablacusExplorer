@@ -1031,9 +1031,8 @@ function SetData(sel, a, t)
 
 function PackData(a)
 {
-	var i = a.length;
-	while (--i >= 0) {
-		a[i] = (a[i] ?  String(a[i]) : "").replace(g_sep, "`  ~");
+	for (var i = a.length; i-- > 0;) {
+		a[i] = String(a[i] || "").replace(g_sep, "`  ~");
 	}
 	return a.join(g_sep);
 }
@@ -1442,7 +1441,7 @@ InitDialog = function ()
 	}
 	if (Query == "key") {
 		returnValue = false;
-		document.getElementById("Content").innerHTML = '<div style="padding: 8px;" style="display: block;"><label>Key</label><br /><input type="text" name="q" autocomplete="off" style="width: 100%; ime-mode: disabled" /></div>';
+		document.getElementById("Content").innerHTML = '<div style="padding: 8px;" style="display: block;"><label>Key</label><br /><input type="text" name="q" autocomplete="off" style="width: 100%; ime-mode: disabled" onfocus="this.blur()" /></div>';
 		AddEventEx(document.body, "keydown", function (e)
 		{
 			var key = (e || event).keyCode;
