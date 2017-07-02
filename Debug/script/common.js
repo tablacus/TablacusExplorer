@@ -35,7 +35,8 @@ g_ = {
 	tidWindowRegistered: null,
 	bWindowRegistered: true,
 	xmlWindow: null,
-	elAddons: {}
+	elAddons: {},
+	event: {}
 };
 
 FolderMenu =
@@ -167,11 +168,8 @@ AddEvent = function (Name, fn, priority)
 {
 	if (Name) {
 		Name = Name.replace("Dragleave", "DragLeave");
-		if (Name == "ItemPrePaint" && !te.OnItemPrePaint) {
-			te.OnItemPrePaint = function (Ctrl, pid, nmcd, vcd, plRes)
-			{
-				RunEvent3("ItemPrePaint", Ctrl, pid, nmcd, vcd, plRes);
-			}
+		if (g_.event[Name] && !te["On" + Name]) {
+			te["On" + Name] = g_.event[Name];
 		}
 
 		if (!eventTE[Name]) {
@@ -669,7 +667,7 @@ SaveXml = function (filename, all)
 		item.setAttribute("Top", g_.rcWindow.top);
 		item.setAttribute("Width", g_.rcWindow.right - g_.rcWindow.left);
 		item.setAttribute("Height", g_.rcWindow.bottom - g_.rcWindow.top);
-		item.setAttribute("CmdShow", api.IsZoomed(te.hwnd) ? SW_SHOWMAXIMIZED : SW_SHOWNOACTIVATE);
+		item.setAttribute("CmdShow", api.IsZoomed(te.hwnd) ? SW_SHOWMAXIMIZED : api.IsChild(te.hwnd, api.GetFocus()) ? SW_SHOWNORMAL : SW_SHOWNOACTIVATE);
 		root.appendChild(item);
 	}
 	var cTC = te.Ctrls(CTRL_TC);
@@ -785,8 +783,7 @@ function SendShortcutKeyFV(Key)
 
 CreateTab = function ()
 {
-	var FV = te.Ctrl(CTRL_FV);
-	Navigate(HOME_PATH ? HOME_PATH : FV, SBSP_NEWBROWSER);
+	Navigate(HOME_PATH || te.Ctrl(CTRL_FV), SBSP_NEWBROWSER);
 }
 
 Navigate = function (Path, wFlags)
@@ -1043,10 +1040,7 @@ CreateFile = function (path)
 	if (r !== undefined) {
 		return r;
 	}
-	CreateNew(path, function (strPath)
-	{
-		fso.CreateTextFile(strPath).Close();
-	});
+	CreateNew(path, CreateFile2);
 }
 
 CreateFolder2 = function (path)
@@ -1054,6 +1048,52 @@ CreateFolder2 = function (path)
 	if (!fso.FolderExists(path)) {
 		CreateFolder(path);
 	}
+}
+
+CreateFile2 = function (path)
+{
+	var ext = fso.GetExtensionName(path);
+	if (ext) {
+		var s, r = "HKCR\\." + ext + "\\";
+		try {
+			s = wsh.regRead(r);
+			try {
+				wsh.RegRead(r + "ShellNew\\");
+			} catch (e) {
+				r += s + "\\";
+				wsh.RegRead(r + "\\ShellNew\\");
+			}
+			r += "ShellNew\\";
+			var ar = ['Command', 'Data', 'FileName'];
+			for (var i in ar) {
+				try {
+					s = wsh.RegRead(r + ar[i]);
+				} catch (e) {
+					continue;
+				}
+				if (s) {
+					if (i == 2) {
+						r = fso.BuildPath(wsh.SpecialFolders("Templates"), s);
+						if (!fso.FileExists(r)) {
+							r = wsh.ExpandEnvironmentStrings("%SystemRoot%\\ShellNew\\") + s;
+						}
+						fso.CopyFile(r, path);
+						SetFileTime(path, null, null, new Date());
+						return;
+					}
+					if (i == 1) {
+						var a = fso.CreateTextFile(path);
+						a.Write(s);
+						a.Close();
+						return;
+					}
+					ShellExecute(s.replace("%1", path), null, SW_SHOWNORMAL);
+					return;
+				}
+			}
+		} catch (e) {}
+	}
+	fso.CreateTextFile(path).Close();
 }
 
 FormatDateTime = function (s)
@@ -1276,12 +1316,9 @@ ExtractMacro = function (Ctrl, s)
 AddEnv("Selected", function(Ctrl)
 {
 	var ar = [];
-	var FV = GetFolderView(Ctrl);
-	if (FV) {
-		var Selected = FV.SelectedItems();
-		if (Selected) {
-			for (var i = Selected.Count; i > 0; ar.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(Selected.Item(--i), SHGDN_FORPARSING)))) {
-			}
+	var Selected = GetSelectedItems(Ctrl);
+	if (Selected) {
+		for (var i = Selected.Count; i > 0; ar.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(Selected.Item(--i), SHGDN_FORPARSING)))) {
 		}
 	}
 	return ar.join(" ");
@@ -1301,7 +1338,10 @@ AddEnv("TreeSelected", function(Ctrl)
 {
 	var strSel = "";
 	if (!Ctrl || Ctrl.Type != CTRL_TV) {
-		Ctrl = te.Ctrl(CTRL_TV);
+		var FV = GetFolderView(Ctrl);
+		if (FV) {
+			Ctrl = FV.TreeView;
+		}
 	}
 	if (Ctrl) {
 		strSel = api.PathQuoteSpaces(api.GetDisplayNameOf(Ctrl.SelectedItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
@@ -2520,7 +2560,7 @@ OpenInExplorer = function (FV)
 {
 	if (FV) {
 		CancelWindowRegistered();
-		ShellExecute(api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORPARSING)), "Explore", SW_SHOWNORMAL);
+		ShellExecute([api.PathQuoteSpaces("%SystemRoot%\\explorer.exe"), api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORPARSING))].join(" "), null, SW_SHOWNORMAL);
 	}
 }
 
@@ -2932,7 +2972,6 @@ InsertTab = function(e)
 	return true;
 }
 
-
 RegEnumKey = function(hKey, Name)
 {
 	var server = te.GetObject("winmgmts:\\\\.\\root\\default:StdRegProv");
@@ -3111,7 +3150,7 @@ SetSysColor = function (i, color)
 
 ShellExecute = function (s, vOperation, nShow, vDir2, pt)
 {
-	var arg = api.CommandLineToArgv(s);
+	var arg = api.CommandLineToArgv(ExtractMacro(te, s));
 	var s = arg.shift();
 	var vDir = fso.GetParentFolderName(s) || vDir2;
 	if (pt && vDir.Type) {
@@ -3298,8 +3337,7 @@ DeleteTempFolder = function ()
 
 OpenContains = function (Ctrl, pt)
 {
-	var FV = GetFolderView(Ctrl. pt);
-	var Items = FV.SelectedItems();
+	var Items = GetSelectedItems(Ctrl, pt);
 	for (var j in Items) {
 		var Item = Items.Item(j);
 		var path = Item.Path;
@@ -3405,4 +3443,12 @@ function SameFolderItems(Items1, Items2)
 		}
 	}
 	return true;
+}
+
+function GetSelectedItems(Ctrl, pt)
+{
+	var FV = GetFolderView(Ctrl, pt);
+	if (FV) {
+		return FV.SelectedItems();
+	}
 }

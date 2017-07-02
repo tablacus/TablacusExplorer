@@ -167,6 +167,7 @@ union teParam
 	LPCMENUITEMINFO lpcmenuiteminfo;
 	LPOSVERSIONINFO lposversioninfo;
 	PRTL_OSVERSIONINFOEXW prtl_osversioninfoexw;
+	PGUITHREADINFO pgui;
 
 	ATOM atom;
 	ASSOCF assocf;
@@ -318,7 +319,6 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TE_OnFromStream			47
 #define TE_OnEndThread			48
 #define Count_OnFunc			49
-
 #define SB_TotalFileSize		0
 #define SB_OnIncludeObject		1
 #define SB_AltSelectedItems		2

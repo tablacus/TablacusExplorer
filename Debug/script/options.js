@@ -1349,8 +1349,10 @@ InitOptions = function ()
 				if (g_nResult == 1) {
 					w.TEOk();
 				}
+				w.close();
 			} catch (e) {}
 		}
+		g_.elAddons = {};
 		g_bChanged |= g_Chg.Addons || te.Data.bErrorAddons || g_Chg.Menus || g_Chg.Tab || g_Chg.Tree || g_Chg.View;
 		SaveAddons();
 		SetOptions(Apply);

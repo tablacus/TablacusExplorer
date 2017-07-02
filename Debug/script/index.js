@@ -642,6 +642,9 @@ te.OnCreate = function (Ctrl)
 				}
 			}
 			api.ShowWindow(te.hwnd, te.CmdShow);
+			if (te.CmdShow == SW_SHOWNOACTIVATE) {
+				api.SetWindowPos(te.hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+			}
 			te.UnlockUpdate();
 			setTimeout(function ()
 			{
@@ -739,25 +742,12 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev)
 	return hr;
 }
 
-te.OnBeginNavigate = function (Ctrl)
-{
-	return RunEvent2("BeginNavigate", Ctrl);
-}
-
 te.OnNavigateComplete = function (Ctrl)
 {
 	RunEvent1("NavigateComplete", Ctrl);
 	ChangeView(Ctrl);
 	return S_OK;
 }
-
-ShowStatusText = function (Ctrl, Text, iPart)
-{
-	RunEvent1("StatusText", Ctrl, Text, iPart);
-	return S_OK;
-}
-
-te.OnStatusText = ShowStatusText;
 
 te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 {
@@ -1094,7 +1084,7 @@ te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam)
 	}
 	var hr = RunEvent3("Command", Ctrl, hwnd, msg, wParam, lParam);
 	RunEvent1("ConfigChanged", "Config");
-	return isFinite(hr) ? hr : S_FALSE;
+	return hr;
 }
 
 te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon)
@@ -1289,34 +1279,12 @@ te.OnDragLeave = function (Ctrl)
 	return hr;
 }
 
-te.OnSelectionChanging = function (Ctrl)
-{
-	var hr = RunEvent3("SelectionChanging", Ctrl);
-	return isFinite(hr) ? hr : S_OK;
-}
-
 te.OnSelectionChanged = function (Ctrl, uChange)
 {
 	if (Ctrl.Type == CTRL_TC && Ctrl.SelectedIndex >= 0) {
 		ChangeView(Ctrl.Selected);
 	}
-	var hr = RunEvent3("SelectionChanged", Ctrl, uChange);
-	return isFinite(hr) ? hr : S_OK;
-}
-
-te.OnViewModeChanged = function (Ctrl)
-{
-	RunEvent1("ViewModeChanged", Ctrl);
-}
-
-te.OnColumnsChanged = function (Ctrl)
-{
-	RunEvent1("ColumnsChanged", Ctrl);
-}
-
-te.OnIconSizeChanged = function (Ctrl)
-{
-	RunEvent1("IconSizeChanged", Ctrl);
+	return RunEvent3("SelectionChanged", Ctrl, uChange);
 }
 
 te.OnFilterChanged = function (Ctrl)
@@ -1408,18 +1376,6 @@ te.OnDefaultCommand = function (Ctrl)
 		return InvokeCommand(Selected, 0, te.hwnd, null, null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
 	}
 	return S_OK;
-}
-
-te.OnItemClick = function (Ctrl, Item, HitTest, Flags)
-{
-	var hr = RunEvent3("ItemClick", Ctrl, Item, HitTest, Flags);
-	return isFinite(hr) ? hr : S_FALSE;
-}
-
-te.OnColumnClick = function (Ctrl, iItem)
-{
-	var hr = RunEvent3("ColumnClick", Ctrl, iItem);
-	return isFinite(hr) ? hr : S_FALSE;
 }
 
 te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
@@ -1747,36 +1703,6 @@ te.OnVisibleChanged = function (Ctrl)
 	RunEvent1("VisibleChanged", Ctrl);
 }
 
-te.OnWindowRegistered = function (Ctrl)
-{
-	if (g_.bWindowRegistered) {
-		RunEvent1("WindowRegistered", Ctrl);
-	}
-	g_.bWindowRegistered = true;
-}
-
-te.OnToolTip = function (Ctrl, Index)
-{
-	return RunEvent4("ToolTip", Ctrl, Index);
-}
-
-te.OnHitTest = function (Ctrl, pt, flags)
-{
-	var hr = RunEvent3("HitTest", Ctrl, pt, flags);
-	return isFinite(hr) ? hr : -1;
-}
-
-te.OnGetPaneState = function (Ctrl, ep, peps)
-{
-	var hr = RunEvent3("GetPaneState", Ctrl, ep, peps);
-	return isFinite(hr) ? hr : E_NOTIMPL;
-}
-
-te.OnTranslatePath = function (Ctrl, Path)
-{
-	return RunEvent4("TranslatePath", Ctrl, Path);
-}
-
 te.OnILGetParent = function (FolderItem)
 {
 	var r = RunEvent4("ILGetParent", FolderItem);
@@ -1795,37 +1721,108 @@ te.OnILGetParent = function (FolderItem)
 	}
 }
 
-te.OnBeginDrag = function (Ctrl)
+ShowStatusText = function (Ctrl, Text, iPart)
+{
+	RunEvent1("StatusText", Ctrl, Text, iPart);
+	return S_OK;
+}
+
+g_.event.StatusText = ShowStatusText;
+
+g_.event.BeginNavigate = function (Ctrl)
+{
+	return RunEvent2("BeginNavigate", Ctrl);
+}
+
+g_.event.SelectionChanging = function (Ctrl)
+{
+	return RunEvent3("SelectionChanging", Ctrl);
+}
+
+g_.event.ViewModeChanged = function (Ctrl)
+{
+	RunEvent1("ViewModeChanged", Ctrl);
+}
+
+g_.event.ColumnsChanged = function (Ctrl)
+{
+	RunEvent1("ColumnsChanged", Ctrl);
+}
+
+g_.event.IconSizeChanged = function (Ctrl)
+{
+	RunEvent1("IconSizeChanged", Ctrl);
+}
+
+g_.event.ItemClick = function (Ctrl, Item, HitTest, Flags)
+{
+	return RunEvent3("ItemClick", Ctrl, Item, HitTest, Flags);
+}
+
+g_.event.ColumnClick = function (Ctrl, iItem)
+{
+	return RunEvent3("ColumnClick", Ctrl, iItem);
+}
+
+g_.event.WindowRegistered = function (Ctrl)
+{
+	if (g_.bWindowRegistered) {
+		RunEvent1("WindowRegistered", Ctrl);
+	}
+	g_.bWindowRegistered = true;
+}
+
+g_.event.ToolTip = function (Ctrl, Index)
+{
+	return RunEvent4("ToolTip", Ctrl, Index);
+}
+
+g_.event.HitTest = function (Ctrl, pt, flags)
+{
+	return RunEvent3("HitTest", Ctrl, pt, flags);
+}
+
+g_.event.GetPaneState = function (Ctrl, ep, peps)
+{
+	return RunEvent3("GetPaneState", Ctrl, ep, peps);
+}
+
+g_.event.TranslatePath = function (Ctrl, Path)
+{
+	return RunEvent4("TranslatePath", Ctrl, Path);
+}
+
+g_.event.BeginDrag = function (Ctrl)
 {
 	return !isFinite(RunEvent3("BeginDrag", Ctrl));
 }
 
-te.OnBeforeGetData = function (Ctrl, Items, nMode)
+g_.event.BeforeGetData = function (Ctrl, Items, nMode)
 {
 	return RunEvent2("BeforeGetData", Ctrl, Items, nMode);
 }
 
-te.OnBeginLabelEdit = function (Ctrl)
+g_.event.BeginLabelEdit = function (Ctrl)
 {
 	return RunEvent4("BeginLabelEdit", Ctrl);
 }
 
-te.OnEndLabelEdit = function (Ctrl, Name)
+g_.event.EndLabelEdit = function (Ctrl, Name)
 {
 	return RunEvent4("EndLabelEdit", Ctrl, Name);
 }
 
-te.OnReplacePath = function (FolderItem)
+g_.event.ReplacePath = function (FolderItem)
 {
 	return RunEvent4("ReplacePath", FolderItem, api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
 }
 
-te.OnSort = function (Ctrl)
+g_.event.Sort = function (Ctrl)
 {
 	return RunEvent1("Sort", Ctrl);
 }
 
-te.OnFromFile = function (image, file)
+g_.event.FromFile = function (image, file)
 {
 	var alt;
 	var s = fso.BuildPath(fso.GetSpecialFolder(2).Path, "tablacus\\");
@@ -1844,14 +1841,19 @@ te.OnFromFile = function (image, file)
 	return RunEvent3("FromFile", image, file, alt);
 }
 
-te.OnFromStream = function (image, stream, filename)
+g_.event.FromStream = function (image, stream, filename)
 {
 	return RunEvent3("FromStream", image, stream, filename);
 }
 
-te.OnEndThread = function (Ctrl)
+g_.event.EndThread = function (Ctrl)
 {
 	return RunEvent1("EndThread", api.GetThreadCount());
+}
+
+g_.event.ItemPrePaint = function (Ctrl, pid, nmcd, vcd, plRes)
+{
+	RunEvent3("ItemPrePaint", Ctrl, pid, nmcd, vcd, plRes);
 }
 
 //Tablacus Events
@@ -2724,11 +2726,7 @@ g_basic =
 				"New Tab": function (Ctrl, pt)
 				{
 					var FV = GetFolderView(Ctrl, pt);
-					if (HOME_PATH) {
-						NavigateFV(FV, HOME_PATH, SBSP_NEWBROWSER);
-					} else {
-						NavigateFV(FV, null, SBSP_RELATIVE | SBSP_NEWBROWSER);
-					}
+					NavigateFV(FV, HOME_PATH || FV, SBSP_NEWBROWSER);
 				},
 				Lock: function (Ctrl, pt)
 				{
@@ -2907,8 +2905,7 @@ g_basic =
 				"New File": CreateNewFile,
 				"Copy Full Path": function (Ctrl, pt)
 				{
-					var FV = GetFolderView(Ctrl, pt);
-					var Selected = FV.SelectedItems();
+					var Selected = GetSelectedItems(Ctrl, pt);
 					var s = "";
 					var nCount = Selected.Count;
 					if (nCount) {
@@ -3315,7 +3312,7 @@ close()", EscapeUpdateFile(arg.InstalledFolder), GetText("Please wait."), MB_ICO
 		update = s1;
 		s1 = '"';
 	}
-	g_.strUpdate = ['"', api.IsWow64Process(api.GetCurrentProcess()) ? wsh.ExpandEnvironmentStrings("%windir%\\Sysnative") : system32, "\\", exe, '" ', s1, update, '"'].join("");
+	g_.strUpdate = ['"', api.IsWow64Process(api.GetCurrentProcess()) ? wsh.ExpandEnvironmentStrings("%SystemRoot%\\Sysnative") : system32, "\\", exe, '" ', s1, update, '"'].join("");
 	DeleteTempFolder = function ()
 	{
 		var oExec = wsh.Exec(g_.strUpdate);
@@ -3400,6 +3397,7 @@ if (!te.Data) {
 	{
 		te.UnlockUpdate();
 		setTimeout(Resize, 99);
+		window.focus();
 	}, 500);
 }
 
