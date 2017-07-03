@@ -2217,11 +2217,11 @@ function CheckUpdate2(xhr, url)
 			arg.url = url.replace(/[^\/]*$/, '') + arg.url;
 		}
 	} else {
-		var json = !window.JSON ? JSON.parse(xhr.responseText) : (new Function('return ' + xhr.responseText))();
+		var json = window.JSON ? JSON.parse(xhr.responseText) : (new Function('return ' + xhr.responseText))();
 		var assets = json.assets;
 		if (json.assets && json.assets[0]) {
-			arg.size = json.assets[0]["size"] / 1024;
-			arg.url = json.assets[0]["browser_download_url"];
+			arg.size = json.assets[0].size / 1024;
+			arg.url = json.assets[0].browser_download_url;
 		}
 	}
 	if (!arg.url) {
@@ -2341,10 +2341,10 @@ OpenHttpRequest = function (url, alt, fn, arg)
 			MessageBox([api.sprintf(999, api.LoadString(hShell32, 4227).replace(/^\t/, ""), xhr.status), url].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
 		}
 	}
-	xhr.open("GET", url + "?" + Math.floor(new Date().getTime() / 60000), false);
-	xhr.setRequestHeader('Pragma', 'no-cache');
-	xhr.setRequestHeader('Cache-Control', 'no-store');
-	xhr.setRequestHeader('Expires', '0');
+	if (/ml$/i.test(url)) {
+		url += "?" + Math.floor(new Date().getTime() / 60000);
+	}
+	xhr.open("GET", url, false);
 	try {
 		xhr.send(null);
 	} catch (e) {}

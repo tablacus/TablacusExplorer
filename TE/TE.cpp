@@ -10302,6 +10302,7 @@ VOID CALLBACK teTimerProcParse(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 			Invoke5(pInvoke->pdisp, pInvoke->dispid, DISPATCH_METHOD, NULL, pInvoke->cArgs, pInvoke->pv);
 		} else if (pInvoke->wErrorHandling == 2) {
 			if (g_bShowParseError) {
+				g_bShowParseError = FALSE;
 				LPWSTR lpBuf;
 				WCHAR pszFormat[MAX_STATUS];
 				if (LoadString(g_hShell32, 6456, pszFormat, MAX_STATUS)) {
@@ -10314,9 +10315,7 @@ VOID CALLBACK teTimerProcParse(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 							_beginthread(&threadParseDisplayName, 0, pInvoke);
 							return;
 						}
-						if (r == IDIGNORE) {
-							g_bShowParseError = FALSE;
-						}
+						g_bShowParseError = (r != IDIGNORE);
 					}
 				}
 			}
@@ -10912,6 +10911,9 @@ STDMETHODIMP CteShellBrowser::TranslateAcceleratorSB(LPMSG lpmsg, WORD wID)
 
 STDMETHODIMP CteShellBrowser::BrowseObject(PCUIDLIST_RELATIVE pidl, UINT wFlags)
 {
+	if (ILIsEqual(pidl, g_pidlResultsFolder)) {
+		return ILIsEqual(m_pidl, pidl) ? S_FALSE : E_FAIL;
+	}
 	FolderItem *pid = NULL;
 	if (wFlags & SBSP_REDIRECT) {
 		if (m_pidl) {
@@ -11057,7 +11059,7 @@ VOID CteShellBrowser::Navigate1Ex(LPOLESTR pstr, FolderItems *pFolderItems, UINT
 	pInvoke->dispid = 0x20000007;//Navigate2Ex
 	pInvoke->cArgs = 4;
 	pInvoke->pv = GetNewVARIANT(4);
-	pInvoke->wErrorHandling = g_nLockUpdate || m_nUnload == 2 ? 1 : nErrorHandling;
+	pInvoke->wErrorHandling = g_nLockUpdate || m_nUnload == 2 || !g_bShowParseError ? 1 : nErrorHandling;
 	pInvoke->wMode = 0;
 	pInvoke->pidl = NULL;
 	teSetSZ(&pInvoke->pv[3], pstr);
@@ -13756,12 +13758,6 @@ HRESULT CteShellBrowser::NavigateSB(IShellView *pPreviousView, FolderItem *pPrev
 			}
 		}
 		if (hr != S_OK) {
-			if (ILIsEqual(m_pidl, g_pidlResultsFolder)) {
-				m_dwUnavailable = GetTickCount();
-				g_nReload = 1;
-				SetTimer(g_hwndMain, TET_Reload, 100, teTimerProc);
-				return E_FAIL;
-			}
 			teILCloneReplace(&m_pidl, g_pidlResultsFolder);
 			m_dwUnavailable = GetTickCount();
 			nCreate++;
