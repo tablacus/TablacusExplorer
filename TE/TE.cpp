@@ -5317,22 +5317,24 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				}
 			} else if (((LPNMHDR)lParam)->code == LVN_ENDLABELEDIT) {
 				NMLVDISPINFO *lpDispInfo = (NMLVDISPINFO *)lParam;
-				if (g_pOnFunc[TE_OnEndLabelEdit]) {
-					VARIANTARG *pv = GetNewVARIANT(2);
-					teSetObject(&pv[1], pSB);
-					teSetSZ(&pv[0], lpDispInfo->item.pszText);
-					VARIANT vResult;
-					VariantInit(&vResult);
-					Invoke4(g_pOnFunc[TE_OnEndLabelEdit], &vResult, 2, pv);
-					if (GetIntFromVariantClear(&vResult)) {
-						lpDispInfo->item.pszText[0] = NULL;
+				if (lpDispInfo->item.pszText) {
+					if (g_pOnFunc[TE_OnEndLabelEdit]) {
+						VARIANTARG *pv = GetNewVARIANT(2);
+						teSetObject(&pv[1], pSB);
+						teSetSZ(&pv[0], lpDispInfo->item.pszText);
+						VARIANT vResult;
+						VariantInit(&vResult);
+						Invoke4(g_pOnFunc[TE_OnEndLabelEdit], &vResult, 2, pv);
+						if (GetIntFromVariantClear(&vResult)) {
+							lpDispInfo->item.pszText[0] = NULL;
+						}
 					}
-				}
-				if (lpDispInfo->item.pszText[0] == '.' && !StrChr(&lpDispInfo->item.pszText[1], '.')) {
-					int i = lstrlen(lpDispInfo->item.pszText);
-					if (i > 1 && i < lpDispInfo->item.cchTextMax - 1) {
-						lpDispInfo->item.pszText[i++] = '.';
-						lpDispInfo->item.pszText[i] = NULL;
+					if (lpDispInfo->item.pszText[0] == '.' && !StrChr(&lpDispInfo->item.pszText[1], '.')) {
+						int i = lstrlen(lpDispInfo->item.pszText);
+						if (i > 1 && i < lpDispInfo->item.cchTextMax - 1) {
+							lpDispInfo->item.pszText[i++] = '.';
+							lpDispInfo->item.pszText[i] = NULL;
+						}
 					}
 				}
 #ifdef _FIXWIN10IPBUG1
@@ -16459,7 +16461,7 @@ void CteWebBrowser::Close()
 			SetRectEmpty(&rc);
 			pOleObject->DoVerb(OLEIVERB_HIDE, NULL, NULL, 0, m_hwndParent, &rc);
 			pOleObject->Close(OLECLOSE_NOSAVE);
-			pOleObject->Release();
+			teDelayRelease(&pOleObject);
 		}
 		teUnadviseAndRelease(m_pWebBrowser, DIID_DWebBrowserEvents2, &m_dwCookie);
 		PostMessage(get_HWND(), WM_CLOSE, 0, 0);
