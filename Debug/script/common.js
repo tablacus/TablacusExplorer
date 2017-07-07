@@ -2367,25 +2367,23 @@ AddonOptions = function (Id, fn, Data)
 		}
 	}
 	var info = GetAddonInfo(Id);
-	var sURL = "../addons/" + Id + "/options.html";
+	var sURL = "addons\\" + Id + "\\options.html";
 	if (!Data) {
 		Data = {};
 	}
 	Data.id = Id;
 	var sFeatures = info.Options;
+	if (/^Location$/i.test(sFeatures)) {
+		sFeatures = "Common:6:6";
+	}
 	var res = /Common:([\d,]+):(\d)/i.exec(sFeatures);
 	if (res) {
-		sURL = "location.html";
+		sURL = "script\\location.html";
 		Data.show = res[1];
 		Data.index = res[2];
 		sFeatures = 'Default';
 	}
-	if (/^Location$/i.test(sFeatures)) {
-		sURL = "location.html";
-		Data.show = "6";
-		Data.index = "6";
-		sFeatures = 'Default';
-	}
+	sURL = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), sURL);
 	var opt = {MainWindow: MainWindow, Data: Data, event: {}};
 	if (fn) {
 		opt.event.TEOk = fn;
@@ -2395,7 +2393,7 @@ AddonOptions = function (Id, fn, Data)
 			g_Chg.Addons = true;
 		}
 	}
-	if (window.Addon == 1) {
+	if (window.Addon == 1 || api.GetKeyState(VK_CONTROL) < 0) {
 		if (/^Default$/i.test(sFeatures)) {
 			sFeatures = 'Width: 640; Height: 480';
 		}
