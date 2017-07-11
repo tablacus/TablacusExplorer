@@ -1984,8 +1984,7 @@ function PortableX(Id)
 
 function GetElement(Id)
 {
-	var o = document.F[Id];
-	return o ? o : document.getElementById(Id);
+	return document.F[Id] || document.getElementById(Id) || document.E[Id];
 }
 
 function AddPath(Id, strValue)

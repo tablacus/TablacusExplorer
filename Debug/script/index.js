@@ -1856,6 +1856,16 @@ g_.event.ItemPrePaint = function (Ctrl, pid, nmcd, vcd, plRes)
 	RunEvent3("ItemPrePaint", Ctrl, pid, nmcd, vcd, plRes);
 }
 
+g_.event.ItemPostPaint = function (Ctrl, pid, nmcd, vcd)
+{
+	RunEvent3("ItemPostPaint", Ctrl, pid, nmcd, vcd);
+}
+
+g_.event.HandleIcon = function (Ctrl, pid)
+{
+	return RunEvent3("HandleIcon", Ctrl, pid);
+}
+
 //Tablacus Events
 
 GetIconImage = function (Ctrl, BGColor)
@@ -3383,7 +3393,7 @@ if (!te.Data) {
 	te.Data.DataFolder = DataFolder;
 	te.Data.Conf_Lang = GetLangId();
 	te.Data.SHIL = te.Array();
-	for (var i = SHIL_JUMBO; i--;) {
+	for (var i = SHIL_JUMBO + 1; i--;) {
 		te.Data.SHIL[i] = api.SHGetImageList(i);
 	}
 	if (api.GetKeyState(VK_SHIFT) < 0 && api.GetKeyState(VK_CONTROL) < 0) {

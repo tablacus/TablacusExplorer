@@ -145,7 +145,9 @@ LPWSTR	g_szLabelCodeXP = L"System.Contact.Label";
 BOOL	g_bIsXP;
 BOOL	g_bIs2000;
 #endif
-
+#ifdef _DEBUG
+LPWSTR	g_strException;
+#endif
 TEmethod tesNULL[] =
 {
 	{ 0, NULL }
@@ -921,6 +923,8 @@ TEmethod methodTE[] = {
 	{ START_OnFunc + TE_OnFromFile, "OnFromFile" },
 	{ START_OnFunc + TE_OnFromStream, "OnFromStream" },
 	{ START_OnFunc + TE_OnEndThread, "OnEndThread" },
+	{ START_OnFunc + TE_OnItemPostPaint, "OnItemPostPaint" },
+	{ START_OnFunc + TE_OnHandleIcon, "OnHandleIcon" },
 	{ 0, NULL }
 };
 
@@ -1245,6 +1249,9 @@ VOID SafeRelease(PVOID ppObj)
 		}
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"SafeRelease";
+#endif
 	}
 }
 
@@ -2838,6 +2845,9 @@ static void threadExists(void *args)
 		teReleaseExists(pExists);
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"threadExists";
+#endif
 	}
 	::_endthread();
 }
@@ -2981,6 +2991,9 @@ static void threadILCreate(void *args)
 		teReleaseILCreate(pILC);
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"threadILCreate";
+#endif
 	}
 	::_endthread();
 }
@@ -3125,6 +3138,9 @@ static void threadFileOperation(void *args)
 		teSHFileOperation(pFO);
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"threadFileOperation";
+#endif
 	}
 	::InterlockedDecrement(&g_nThreads);
 	::SysFreeString(const_cast<BSTR>(pFO->pTo));
@@ -3153,6 +3169,9 @@ static void threadFolderSize(void *args)
 		}
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"threadFolderSize";
+#endif
 	}
 	VariantClear(&v);
 	pTotalFileSize->Release();
@@ -4443,15 +4462,49 @@ VOID Invoke4(IDispatch *pdisp, VARIANT *pvResult, int nArgs, VARIANTARG *pvArgs)
 	Invoke5(pdisp, DISPID_VALUE, DISPATCH_METHOD, pvResult, nArgs, pvArgs);
 }
 
-VOID teCustomDrawItemPrePaint(PVOID pCtrl, LPITEMIDLIST pidl, LPNMCUSTOMDRAW lpnmcd, PVOID pvcd, LRESULT *lpres)
+VOID teCustomDraw(int nFunc, CteShellBrowser *pSB, CteTreeView *pTV, IShellItem *psi, LPNMCUSTOMDRAW lpnmcd, PVOID pvcd, LRESULT *plres)
 {
-	VARIANTARG *pv = GetNewVARIANT(5);
-	teSetObject(&pv[4], pCtrl);
-	teSetIDListRelease(&pv[3], &pidl);
-	teSetObjectRelease(&pv[2], new CteMemory(sizeof(NMCUSTOMDRAW), lpnmcd, 1, L"NMCUSTOMDRAW"));
-	teSetObjectRelease(&pv[1], pvcd);
-	teSetObjectRelease(&pv[0], new CteMemory(sizeof(HANDLE), lpres, 1, L"HANDLE"));
-	Invoke4(g_pOnFunc[TE_OnItemPrePaint], NULL, 5, pv);
+	LPITEMIDLIST pidl = NULL;
+	PVOID pvcd2 = NULL;
+	if (nFunc == TE_OnItemPrePaint && g_pOnFunc[TE_OnItemPostPaint]) {
+		*plres = CDRF_NOTIFYPOSTPAINT;
+	}
+	if (g_pOnFunc[nFunc]) {
+		VARIANTARG *pv = GetNewVARIANT(5);
+		if (pSB) {
+			teSetObject(&pv[4], pSB);
+			pvcd2 = new CteMemory(sizeof(NMLVCUSTOMDRAW), pvcd, 1, L"NMLVCUSTOMDRAW");
+			IFolderView *pFV;
+			if SUCCEEDED(pSB->m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
+				LPITEMIDLIST pidlChild;
+				if SUCCEEDED(pFV->Item((int)lpnmcd->dwItemSpec, &pidlChild)) {
+					pidl = ILCombine(pSB->m_pidl, pidlChild);
+					teCoTaskMemFree(pidlChild);
+				}
+				pFV->Release();
+			}
+		} else {
+			teSetObject(&pv[4], pTV);
+			pvcd2 = new CteMemory(sizeof(NMTVCUSTOMDRAW), pvcd, 1, L"NMTVCUSTOMDRAW");
+			if (psi) {
+				teGetIDListFromObject(psi, &pidl);
+			}
+#ifdef _2000XP
+			if (!pidl && pTV->m_pShellNameSpace && (lpnmcd->uItemState & CDIS_SELECTED)) {
+				IDispatch *pid;
+				if (pTV->m_pShellNameSpace->get_SelectedItem(&pid) == S_OK) {
+					teGetIDListFromObject(pid, &pidl);
+					pid->Release();
+				}
+			}
+#endif
+		}
+		teSetIDListRelease(&pv[3], &pidl);
+		teSetObjectRelease(&pv[2], new CteMemory(sizeof(NMCUSTOMDRAW), lpnmcd, 1, L"NMCUSTOMDRAW"));
+		teSetObjectRelease(&pv[1], pvcd2);
+		teSetObjectRelease(&pv[0], new CteMemory(sizeof(HANDLE), plres, 1, L"HANDLE"));
+		Invoke4(g_pOnFunc[nFunc], NULL, 5, pv);
+	}
 }
 
 HRESULT ParseScript(LPOLESTR lpScript, LPOLESTR lpLang, VARIANT *pv, IDispatch **ppdisp, EXCEPINFO *pExcepInfo)
@@ -4970,6 +5023,9 @@ LRESULT CALLBACK MenuKeyProc(int nCode, WPARAM wParam, LPARAM lParam)
 				}
 			} catch(...) {
 				g_nException = 0;
+#ifdef _DEBUG
+				g_strException = L"MenuKeyProc";
+#endif
 			}
 			::InterlockedDecrement(&g_nProcKey);
 		}
@@ -5066,6 +5122,9 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 		}
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"MouseProc";
+#endif
 	}
 	return (hrResult != S_OK) ? CallNextHookEx(g_hMouseHook, nCode, wParam, lParam) : TRUE;
 }
@@ -5083,23 +5142,20 @@ LRESULT CALLBACK TETVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			LPNMTVCUSTOMDRAW lptvcd = (LPNMTVCUSTOMDRAW)lParam;
 /// Custom Draw
 			if (lptvcd->nmcd.hdr.code == NM_CUSTOMDRAW) {
-				if (lptvcd->nmcd.dwDrawStage == CDDS_PREPAINT) {
-					return CDRF_NOTIFYITEMDRAW;
-				}
-				if (lptvcd->nmcd.dwDrawStage == CDDS_ITEMPREPAINT) {
-					LONG_PTR lRes = CDRF_DODEFAULT;
-					if (g_pOnFunc[TE_OnItemPrePaint]) {
-						LPITEMIDLIST pidl = NULL;
-						if (pTV->m_pShellNameSpace && (lptvcd->nmcd.uItemState & CDIS_SELECTED)) {
-							IDispatch *pid;
-							if (pTV->m_pShellNameSpace->get_SelectedItem(&pid) == S_OK) {
-								teGetIDListFromObject(pid, &pidl);
-								pid->Release();
-							}
-						}
-						teCustomDrawItemPrePaint(pTV, NULL, &lptvcd->nmcd, new CteMemory(sizeof(NMLVCUSTOMDRAW), lptvcd, 1, L"NMTVCUSTOMDRAW"), &lRes);
+				if (g_pOnFunc[TE_OnItemPrePaint] || g_pOnFunc[TE_OnItemPostPaint]) {
+					if (lptvcd->nmcd.dwDrawStage == CDDS_PREPAINT) {
+						return CDRF_NOTIFYITEMDRAW;
 					}
-					return lRes;
+					if (lptvcd->nmcd.dwDrawStage == CDDS_ITEMPREPAINT) {
+						LRESULT lRes = CDRF_DODEFAULT;
+						teCustomDraw(TE_OnItemPrePaint, NULL, pTV, NULL, &lptvcd->nmcd, lptvcd, &lRes);
+						return lRes;
+					}
+					if (lptvcd->nmcd.dwDrawStage == CDDS_ITEMPOSTPAINT) {
+						LRESULT lRes = CDRF_DODEFAULT;
+						teCustomDraw(TE_OnItemPostPaint, NULL, pTV, NULL, &lptvcd->nmcd, lptvcd, &lRes);
+						return lRes;
+					}
 				}
 			}
 			if (lptvcd->nmcd.hdr.code == NM_RCLICK) {
@@ -5121,6 +5177,9 @@ LRESULT CALLBACK TETVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		return bHandled ? 1 : CallWindowProc(pTV->m_DefProc, hwnd, msg, wParam, lParam);
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"TETVProc";
+#endif
 	}
 	return 0;
 }
@@ -5167,6 +5226,9 @@ LRESULT CALLBACK TETVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		return CallWindowProc(pTV->m_DefProc2, hwnd, msg, wParam, lParam);
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"TETVProc2";
+#endif
 	}
 	return 0;
 }
@@ -5182,6 +5244,9 @@ VOID CALLBACK teTimerProcFixWin10IPBug1(HWND hwnd, UINT uMsg, UINT_PTR idEvent, 
 		}
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"teTimerProcFixWin10IPBug1";
+#endif
 	}
 }
 #endif
@@ -5258,26 +5323,26 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						return lResult;
 					}
 				}
-#ifdef _USE_ONGETICON
-				// There are obstacles (Icon replace)
-				if (lpDispInfo->item.mask & LVIF_IMAGE && g_pOnFunc[TE_OnGetIcon]) {
-					lResult = CallWindowProc((WNDPROC)pSB->m_DefProc, hwnd, msg, wParam, lParam);
+				if (lpDispInfo->item.mask & LVIF_IMAGE && g_pOnFunc[TE_OnHandleIcon]) {
 					IFolderView *pFV;
 					LPITEMIDLIST pidl;
 					if SUCCEEDED(pSB->m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
+						VARIANT vResult;
+						VariantInit(&vResult);
 						if SUCCEEDED(pFV->Item(lpDispInfo->item.iItem, &pidl)) {
-							VARIANTARG *pv = GetNewVARIANT(3);
-							teSetObject(&pv[2], pSB);
-							teSetIDListRelease(&pv[1], &pidl);
-							teSetObjectRelease(&pv[0], new CteMemory(sizeof(LVITEM), &lpDispInfo->item, 1, L"LVITEM"));
-							Invoke4(g_pOnFunc[TE_OnGetIcon], NULL, 3, pv);
+							VARIANTARG *pv = GetNewVARIANT(2);
+							teSetObject(&pv[1], pSB);
+							teSetIDListRelease(&pv[0], &pidl);
+							Invoke4(g_pOnFunc[TE_OnHandleIcon], &vResult, 2, pv);
 						}
 						pFV->Release();
+						if (GetIntFromVariantClear(&vResult)) {
+							lResult = CallWindowProc((WNDPROC)pSB->m_DefProc, hwnd, msg, wParam, lParam);
+							lpDispInfo->item.iImage = -1;
+							return lResult;
+						}
 					}
-					return lResult;
 				}
-				//end
-#endif
 			} else if (((LPNMHDR)lParam)->code == LVN_COLUMNCLICK) {
 				if (g_pOnFunc[TE_OnColumnClick]) {
 					LPNMLISTVIEW pnmv = (LPNMLISTVIEW)lParam;
@@ -5360,7 +5425,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			}
 /// Custom Draw
 			if (pSB->m_pShellView) {
-				if (g_pOnFunc[TE_OnItemPrePaint]) {
+				if (g_pOnFunc[TE_OnItemPrePaint] || g_pOnFunc[TE_OnItemPostPaint]) {
 					LPNMLVCUSTOMDRAW lplvcd = (LPNMLVCUSTOMDRAW)lParam;
 					if (lplvcd->nmcd.hdr.code == NM_CUSTOMDRAW) {
 						if (lplvcd->nmcd.dwDrawStage == CDDS_PREPAINT) {
@@ -5368,15 +5433,12 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						}
 						if (lplvcd->nmcd.dwDrawStage == CDDS_ITEMPREPAINT) {
 							LRESULT lRes = CDRF_DODEFAULT;
-							IFolderView *pFV;
-							if SUCCEEDED(pSB->m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
-								LPITEMIDLIST pidl;
-								if SUCCEEDED(pFV->Item((int)lplvcd->nmcd.dwItemSpec, &pidl)) {
-									teCustomDrawItemPrePaint(pSB, ILCombine(pSB->m_pidl, pidl), &lplvcd->nmcd, new CteMemory(sizeof(NMLVCUSTOMDRAW), lplvcd, 1, L"NMLVCUSTOMDRAW"), &lRes);
-									teCoTaskMemFree(pidl);
-								}
-								pFV->Release();
-							}
+							teCustomDraw(TE_OnItemPrePaint, pSB, NULL, NULL, &lplvcd->nmcd, lplvcd, &lRes);
+							return lRes;
+						}
+						if (lplvcd->nmcd.dwDrawStage == CDDS_ITEMPOSTPAINT) {
+							LRESULT lRes = CDRF_DODEFAULT;
+							teCustomDraw(TE_OnItemPostPaint, pSB, NULL, NULL, &lplvcd->nmcd, lplvcd, &lRes);
 							return lRes;
 						}
 					}
@@ -5454,6 +5516,9 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				}
 			} catch(...) {
 				g_nException = 0;
+#ifdef _DEBUG
+				g_strException = L"TELVProc";
+#endif
 			}
 			::InterlockedDecrement(&g_nProcFV);
 		}
@@ -5466,6 +5531,9 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		return lResult ? CallWindowProc((WNDPROC)pSB->m_DefProc, hwnd, msg, wParam, lParam) : 0;
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"TELVProc/2";
+#endif
 	}
 	return 0;
 }
@@ -5564,6 +5632,9 @@ LRESULT CALLBACK TESTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		return lResult ? CallWindowProc(pTC->m_DefSTProc, hwnd, msg, wParam, lParam) : 0;
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"TESTProc";
+#endif
 	}
 	return 0;
 }
@@ -5692,6 +5763,9 @@ LRESULT CALLBACK TEBTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		return lResult ? CallWindowProc(pTC->m_DefBTProc, hwnd, msg, wParam, lParam) : 0;
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"TEBTProc";
+#endif
 	}
 	return 0;
 }
@@ -5780,6 +5854,9 @@ LRESULT CALLBACK TETCProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		return Result ? CallWindowProc(pTC->m_DefTCProc, hwnd, msg, wParam, lParam) : 0;
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"TETCProc";
+#endif
 	}
 	return 0;
 }
@@ -9313,6 +9390,9 @@ VOID CALLBACK teTimerProcFocus(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 		}
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"teTimerProcFocus";
+#endif
 	}
 }
 
@@ -9598,6 +9678,9 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 		}//end_switch
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"teTimerProc";
+#endif
 	}
 }
 
@@ -9623,6 +9706,9 @@ VOID CALLBACK teTimerProcSW(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime
 		}
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"teTimerProcSW";
+#endif
 	}
 }
 
@@ -9640,6 +9726,9 @@ VOID CALLBACK teTimerProcSort(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTi
 		}
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"teTimerProcSort";
+#endif
 	}
 }
 
@@ -9725,6 +9814,9 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 		}
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"HookProc";
+#endif
 	}
 	return CallNextHookEx(g_hHook, nCode, wParam, lParam);
 }
@@ -9760,6 +9852,9 @@ UINT_PTR CALLBACK OFNHookProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		}
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"OFNHookProc";
+#endif
 	}
     return FALSE;
 }
@@ -10191,6 +10286,9 @@ function _t(o) {\
 			DispatchMessage(&msg);
 		} catch (...) {
 			g_nException = 0;
+#ifdef _DEBUG
+			g_strException = L"MainMessageLoop";
+#endif
 		}
 	}
 	//At the end of processing
@@ -10246,6 +10344,9 @@ VOID CALLBACK teTimerProcRelease(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD d
 		((IUnknown *)idEvent)->Release();
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"teTimerProcRelease";
+#endif
 	}
 }
 
@@ -10264,6 +10365,9 @@ VOID teDelayRelease(PVOID ppObj)
 		}
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"teDelayRelease";
+#endif
 	}
 }
 
@@ -10325,6 +10429,9 @@ VOID CALLBACK teTimerProcParse(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 		}
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"teTimerProcParse";
+#endif
 	}
 	teReleaseParse(pInvoke);
 }
@@ -10345,6 +10452,9 @@ static void threadParseDisplayName(void *args)
 		}
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"threadParseDisplayName";
+#endif
 	}
 	if (!teReleaseParse(pInvoke)) {
 		SetTimer(g_hwndMain, (UINT_PTR)args, 100, teTimerProcParse);
@@ -10570,6 +10680,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}//end_switch
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"WndProc";
+#endif
 	}
 	return 0;
 }
@@ -10630,6 +10743,9 @@ LRESULT CALLBACK WndProc2(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"WndProc2";
+#endif
 	}
 	return 0;
 }
@@ -11677,8 +11793,11 @@ BOOL CteShellBrowser::SetActive(BOOL bForce)
 			m_pShellView->UIActivate(SVUIA_ACTIVATE_FOCUS);
 		} catch (...) {
 			m_pShellView = NULL;
-			g_nException = 0;
 			Suspend(0);
+			g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"SetActive";
+#endif
 		}
 	}
 	return TRUE;
@@ -11906,19 +12025,12 @@ VOID CteShellBrowser::GetViewModeAndIconSize(BOOL bGetIconSize)
 		}
 #ifdef _2000XP
 		else if (!g_bUpperVista) {
-			if (uViewMode == FVM_ICON && iImageSize >= 96) {
-				uViewMode = FVM_THUMBNAIL;
-				IFolderView *pFV;
-				if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
-					pFV->SetCurrentViewMode(uViewMode);
-					pFV->Release();
-				}
-			}
 			if (uViewMode == FVM_ICON) {
-				iImageSize = GetSystemMetrics(SM_CXICON);
+				iImageSize = 32;
 			} else if (uViewMode == FVM_TILE) {
 				iImageSize = 48;
 			} else if (uViewMode == FVM_THUMBNAIL) {
+				iImageSize = 96;
 				HKEY hKey;
 				if (RegOpenKeyExA(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
 					DWORD dwSize = sizeof(iImageSize);
@@ -11926,7 +12038,7 @@ VOID CteShellBrowser::GetViewModeAndIconSize(BOOL bGetIconSize)
 					RegCloseKey(hKey);
 				}
 			} else {
-				iImageSize = GetSystemMetrics(SM_CXSMICON);
+				iImageSize = 16;
 			}
 		}
 #endif
@@ -12687,6 +12799,11 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						m_param[i] = g_paramFV[i];
 						param[i] = g_paramFV[i];
 					}
+#ifdef _2000XP
+					if (!g_bUpperVista && m_param[SB_IconSize] >= 96 && m_param[SB_ViewMode] == FVM_ICON) {
+						m_param[SB_ViewMode] = FVM_THUMBNAIL;
+					}
+#endif
 					FolderItem *pFolderItem = NULL;
 					FolderItems *pFolderItems = NULL;
 					GetVariantPath(&pFolderItem, &pFolderItems, &pDispParams->rgvarg[nArg]);
@@ -14732,6 +14849,9 @@ VOID CteShellBrowser::DestroyView(int nFlags)
 			m_pExplorerBrowser->Release();
 		} catch (...) {
 			g_nException = 0;
+#ifdef _DEBUG
+			g_strException = L"DestroyView";
+#endif
 		}
 		m_pExplorerBrowser = NULL;
 	}
@@ -14746,6 +14866,9 @@ VOID CteShellBrowser::DestroyView(int nFlags)
 			}
 		} catch (...) {
 			g_nException = 0;
+#ifdef _DEBUG
+			g_strException = L"DestroyView/2";
+#endif
 		}
 	}
 }
@@ -15285,6 +15408,11 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 			case TE_METHOD + 1009:
 				g_nReload = 1;
 				if (g_nException-- <= 0 || (nArg >= 0 && GetIntFromVariant(&pDispParams->rgvarg[nArg]))) {
+#ifdef _DEBUG
+					if (g_strException) {
+						MessageBox(NULL, g_strException, NULL, MB_OK);
+					}
+#endif
 					SetTimer(g_hwndMain, TET_Reload, 100, teTimerProc);
 					return S_OK;
 				}
@@ -16461,7 +16589,14 @@ void CteWebBrowser::Close()
 			SetRectEmpty(&rc);
 			pOleObject->DoVerb(OLEIVERB_HIDE, NULL, NULL, 0, m_hwndParent, &rc);
 			pOleObject->Close(OLECLOSE_NOSAVE);
-			teDelayRelease(&pOleObject);
+			try {
+				pOleObject->Release();
+			} catch (...) {
+				g_nException = 0;
+#ifdef _DEBUG
+				g_strException = L"OleObject->Release";
+#endif
+			}
 		}
 		teUnadviseAndRelease(m_pWebBrowser, DIID_DWebBrowserEvents2, &m_dwCookie);
 		PostMessage(get_HWND(), WM_CLOSE, 0, 0);
@@ -18405,6 +18540,9 @@ VOID CteMemory::Read(int nIndex, int nLen, VARIANT *pVarResult)
 		}//end_switch
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"CteMemory::Read";
+#endif
 	}
 }
 
@@ -18521,6 +18659,9 @@ VOID CteMemory::Write(int nIndex, int nLen, VARTYPE vt, VARIANT *pv)
 		}//end_switch
 	} catch (...) {
 		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"CteMemory::Write";
+#endif
 	}
 }
 
@@ -19912,7 +20053,7 @@ STDMETHODIMP CteTreeView::OnGetDefaultIconIndex(IShellItem *psi, int *piDefaultI
 //INameSpaceTreeControlCustomDraw
 STDMETHODIMP CteTreeView::PrePaint(HDC hdc, RECT *prc, LRESULT *plres)
 {
-	*plres = g_pOnFunc[TE_OnItemPrePaint] ? CDRF_NOTIFYITEMDRAW : CDRF_DODEFAULT;
+	*plres = CDRF_NOTIFYITEMDRAW;
 	return S_OK;
 }
 
@@ -19923,19 +20064,18 @@ STDMETHODIMP CteTreeView::PostPaint(HDC hdc, RECT *prc)
 
 STDMETHODIMP CteTreeView::ItemPrePaint(HDC hdc, RECT *prc, NSTCCUSTOMDRAW *pnstccdItem, COLORREF *pclrText, COLORREF *pclrTextBk, LRESULT *plres)
 {
-	if (g_pOnFunc[TE_OnItemPrePaint]) {
-		NMTVCUSTOMDRAW tvcd = { { { 0, 0, NM_CUSTOMDRAW }, CDDS_ITEMPREPAINT, hdc, *prc, 0, pnstccdItem->uItemState }, *pclrText, *pclrTextBk, pnstccdItem->iLevel };
-		LPITEMIDLIST pidl = NULL;
-		teGetIDListFromObject(pnstccdItem->psi, &pidl);
-		teCustomDrawItemPrePaint(this, pidl, &tvcd.nmcd, new CteMemory(sizeof(NMTVCUSTOMDRAW), &tvcd, 1, L"NMTVCUSTOMDRAW"), plres);
-		*pclrText = tvcd.clrText;
-		*pclrTextBk = tvcd.clrTextBk;
-	}
+	NMTVCUSTOMDRAW tvcd = { { { 0, 0, NM_CUSTOMDRAW }, CDDS_ITEMPREPAINT, hdc, *prc, 0, pnstccdItem->uItemState }, *pclrText, *pclrTextBk, pnstccdItem->iLevel };
+	teCustomDraw(TE_OnItemPrePaint, NULL, this, pnstccdItem->psi, &tvcd.nmcd, &tvcd, plres);
+	*pclrText = tvcd.clrText;
+	*pclrTextBk = tvcd.clrTextBk;
 	return S_OK;
 }
 
 STDMETHODIMP CteTreeView::ItemPostPaint(HDC hdc, RECT *prc, NSTCCUSTOMDRAW *pnstccdItem)
 {
+	NMTVCUSTOMDRAW tvcd = { { { 0, 0, NM_CUSTOMDRAW }, CDDS_ITEMPOSTPAINT, hdc, *prc, 0, pnstccdItem->uItemState }, 0, 0, pnstccdItem->iLevel };
+	LRESULT lres = CDRF_DODEFAULT;
+	teCustomDraw(TE_OnItemPostPaint, NULL, this, pnstccdItem->psi, &tvcd.nmcd, &tvcd, &lres);
 	return S_OK;
 }
 //*/
