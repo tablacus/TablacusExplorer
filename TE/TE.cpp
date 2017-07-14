@@ -1175,6 +1175,7 @@ TEmethod methodGB[] = {
 
 	{ 210, "GetHBITMAP" },
 	{ 211, "GetHICON" },
+	{ 212, "DrawEx" },
 	{ 0, NULL }
 };
 
@@ -5332,12 +5333,16 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						if SUCCEEDED(pFV->Item(lpDispInfo->item.iItem, &pidl)) {
 							VARIANTARG *pv = GetNewVARIANT(2);
 							teSetObject(&pv[1], pSB);
-							teSetIDListRelease(&pv[0], &pidl);
+							LPITEMIDLIST pidlFull = ILCombine(pSB->m_pidl, pidl);
+							teSetIDListRelease(&pv[0], &pidlFull);
+							teCoTaskMemFree(pidl);
 							Invoke4(g_pOnFunc[TE_OnHandleIcon], &vResult, 2, pv);
 						}
 						pFV->Release();
 						if (GetIntFromVariantClear(&vResult)) {
+							lpDispInfo->item.mask &= ~LVIF_IMAGE;
 							lResult = CallWindowProc((WNDPROC)pSB->m_DefProc, hwnd, msg, wParam, lParam);
+							lpDispInfo->item.mask |= LVIF_IMAGE;
 							lpDispInfo->item.iImage = -1;
 							return lResult;
 						}
@@ -8670,9 +8675,9 @@ VOID teApiDllGetClassObject(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 	}
 }
 
-VOID teApiIsThemeActive(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+VOID teApiIsAppThemed(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetBool(pVarResult, IsThemeActive());
+	teSetBool(pVarResult, IsAppThemed());
 }
 
 VOID teApiSHDefExtractIcon(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -8859,6 +8864,12 @@ VOID teApiCreateSolidBrush(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 	teSetPtr(pVarResult, CreateSolidBrush(param[0].colorref));
 }
 
+VOID teApiPlgBlt(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	SetStretchBltMode(param[0].hdc, HALFTONE);
+	teSetBool(pVarResult, PlgBlt(param[0].hdc, param[1].lppoint, param[2].hdc, param[3].intVal, param[4].intVal,
+		param[5].intVal, param[6].intVal, param[7].hbitmap, param[8].intVal, param[9].intVal));
+}
 /*
 VOID teApi(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -9157,7 +9168,7 @@ TEDispatchApi dispAPI[] = {
 	{ 1,  0, -1, -1, "SHSimpleIDListFromPath", teApiSHSimpleIDListFromPath },
 	{ 1,  0, -1, -1, "OutputDebugString", teApiOutputDebugString },
 	{ 2, -1, -1, -1, "DllGetClassObject", teApiDllGetClassObject },
-	{ 0, -1, -1, -1, "IsThemeActive", teApiIsThemeActive },
+	{ 0, -1, -1, -1, "IsAppThemed", teApiIsAppThemed },
 	{ 6,  0, -1, -1, "SHDefExtractIcon", teApiSHDefExtractIcon },
 	{ 3,  1,  2, -1, "URLDownloadToFile", teApiURLDownloadToFile },
 	{ 3,  0,  1, -1, "MoveFileEx", teApiMoveFileEx },
@@ -9175,6 +9186,7 @@ TEDispatchApi dispAPI[] = {
 	{ 2,  0,  1,  2, "FormatMessage", teApiFormatMessage },
 	{ 2, -1, -1, -1, "GetGUIThreadInfo", teApiGetGUIThreadInfo },
 	{ 1, -1, -1, -1, "CreateSolidBrush", teApiCreateSolidBrush },
+	{10, -1, -1, -1, "PlgBlt", teApiPlgBlt },
 //	{ 0, -1, -1, -1, "", teApi },
 //	{ 0, -1, -1, -1, "Test", teApiTest },
 };
@@ -21724,7 +21736,8 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				return S_OK;
 			//GetHICON
 			case 211:
-				HICON hIcon;
+			//DrawEx
+			case 212:
 				HBITMAP hBM;
 				if (hBM = GetHBITMAP(-1)) {
 					BITMAP bm;
@@ -21732,9 +21745,17 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					HIMAGELIST himl = ImageList_Create(bm.bmWidth, bm.bmHeight, ILC_COLOR32, 0, 0);
 					ImageList_Add(himl, hBM, NULL);
 					DeleteObject(hBM);
-					hIcon = ImageList_GetIcon(himl, 0, ILD_NORMAL);
+					if (dispIdMember == 211) {
+						teSetPtr(pVarResult, ImageList_GetIcon(himl, 0, nArg >= 0 ? GetIntFromVariant(&pDispParams->rgvarg[nArg]) : ILD_NORMAL));
+					} else if (dispIdMember == 212 && nArg >= 7) {
+						teSetBool(pVarResult, ImageList_DrawEx(himl, 0, (HDC)GetPtrFromVariant(&pDispParams->rgvarg[nArg]),
+							GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]),
+							GetIntFromVariant(&pDispParams->rgvarg[nArg - 3]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 4]),
+							GetIntFromVariant(&pDispParams->rgvarg[nArg - 5]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 6]),
+							GetIntFromVariant(&pDispParams->rgvarg[nArg - 7])
+						));
+					}
 					ImageList_Destroy(himl);
-					teSetPtr(pVarResult, hIcon);
 				}
 				return S_OK;
 			case DISPID_VALUE:

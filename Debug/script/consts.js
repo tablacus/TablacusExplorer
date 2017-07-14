@@ -822,6 +822,8 @@ COLOR_BTNHIGHLIGHT      = 20;
 
 ILD_NORMAL      = 0;
 ILD_TRANSPARENT = 1;
+ILD_FOCUS       = 2;
+ILD_SELECTED    = 4;
 ILD_MASK        = 0x10;
 ILD_IMAGE       = 0x20;
 

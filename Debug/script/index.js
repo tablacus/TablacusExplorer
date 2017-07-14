@@ -1854,11 +1854,13 @@ g_.event.EndThread = function (Ctrl)
 g_.event.ItemPrePaint = function (Ctrl, pid, nmcd, vcd, plRes)
 {
 	RunEvent3("ItemPrePaint", Ctrl, pid, nmcd, vcd, plRes);
+	RunEvent1("ItemPrePaint2", Ctrl, pid, nmcd, vcd, plRes);
 }
 
 g_.event.ItemPostPaint = function (Ctrl, pid, nmcd, vcd)
 {
 	RunEvent3("ItemPostPaint", Ctrl, pid, nmcd, vcd);
+	RunEvent1("ItemPostPaint2", Ctrl, pid, nmcd, vcd);
 }
 
 g_.event.HandleIcon = function (Ctrl, pid)

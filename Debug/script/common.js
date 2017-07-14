@@ -154,6 +154,7 @@ FolderMenu =
 					var arg = api.CommandLineToArgv(FolderItem.Path);
 					if (arg.length > 1 && fso.FileExists(arg[0])) {
 						ShellExecute(FolderItem.Path, null, SW_SHOWNORMAL);
+						return;
 					}
 				}
 				Navigate(FolderItem, isFinite(wFlags) ? wFlags : GetOpenMode());
@@ -168,8 +169,9 @@ AddEvent = function (Name, fn, priority)
 {
 	if (Name) {
 		Name = Name.replace("Dragleave", "DragLeave");
-		if (g_.event[Name] && !te["On" + Name]) {
-			te["On" + Name] = g_.event[Name];
+		var s = Name.replace(/\d$/g, "");
+		if (g_.event[s] && !te["On" + s]) {
+			te["On" + s] = g_.event[s];
 		}
 
 		if (!eventTE[Name]) {
@@ -2523,7 +2525,7 @@ PopupContextMenu = function (Item, FV)
 
 GetAddonElement = function (id)
 {
-	var items = te.Data.Addons.getElementsByTagName(id);
+	var items = te.Data.Addons.getElementsByTagName(id.toLowerCase());
 	if (items.length) {
 		return items[0];
 	}
@@ -3075,7 +3077,13 @@ ShowError = function (e, s, i)
 			s = eventTA[s][i] + " : " + s;
 		}
 	}
-	MessageBox([e.stack || e.description || e.toString(), s, GetTEInfo()].join("\n\n"), TITLE, MB_OK);
+	if (!g_.ShowError) {
+		g_.ShowError = true;
+		setTimeout(function ()
+		{
+			g_.ShowError = MessageBox([e.stack || e.description || e.toString(), s, GetTEInfo()].join("\n\n"), TITLE, MB_OKCANCEL) != IDOK;
+		}, 99);
+	}
 }
 
 ApiStruct = function (oTypedef, nAli, oMemory)
@@ -3449,4 +3457,13 @@ function GetSelectedItems(Ctrl, pt)
 	if (FV) {
 		return FV.SelectedItems();
 	}
+}
+
+function GetThumbnail(image, m, f)
+{
+	var w = image.GetWidth(), h = image.GetHeight(), z = w > h ? m / w : m / h;
+	if (z == 1 || (f && z > 1)) {
+		return image;
+	}
+	return image.GetThumbnailImage(w * z, h * z);
 }
