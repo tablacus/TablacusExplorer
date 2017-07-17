@@ -149,18 +149,16 @@ FolderMenu =
 				PopupContextMenu(FolderItem);
 				retrn;
 			}
+			var res = /^`(.*)`$/.exec(FolderItem.Path);
+			if (res) {
+				ShellExecute(res[1], null, SW_SHOWNORMAL);
+				return;
+			}
 			if (FolderItem.IsFolder) {
-				if (FolderItem.Unavailable) {
-					var arg = api.CommandLineToArgv(FolderItem.Path);
-					if (arg.length > 1 && fso.FileExists(arg[0])) {
-						ShellExecute(FolderItem.Path, null, SW_SHOWNORMAL);
-						return;
-					}
-				}
 				Navigate(FolderItem, isFinite(wFlags) ? wFlags : GetOpenMode());
 				return;
 			}
-			ShellExecute(FolderItem.Path, null, SW_SHOWNORMAL);
+			ShellExecute(api.PathQuoteSpaces(FolderItem.Path), null, SW_SHOWNORMAL);
 		}
 	}
 };
