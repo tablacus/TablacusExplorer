@@ -131,6 +131,7 @@ BOOL	g_bSetRedraw;
 BOOL	g_bShowParseError = TRUE;
 BOOL	g_bDragging = FALSE;
 BOOL	g_bCanLayout = FALSE;
+BOOL	g_bUpper10;
 #ifdef _2000XP
 int		g_nCharWidth = 7;
 BOOL	g_bCharWidth = true;
@@ -9225,9 +9226,13 @@ VOID Initlize()
 		}
 		pEB->Release();
 	}
-#ifdef _2000XP
 	DWORDLONG dwlConditionMask = 0;
-	OSVERSIONINFOEX osvi = { sizeof(OSVERSIONINFOEX), 6 };
+	OSVERSIONINFOEX osvi = { sizeof(OSVERSIONINFOEX), 10 };
+    VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
+	g_bUpper10 = VerifyVersionInfo(&osvi, VER_MAJORVERSION, dwlConditionMask);
+#ifdef _2000XP
+    dwlConditionMask = 0;
+	osvi.dwMajorVersion = 6;
     VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
 	g_bUpperVista = VerifyVersionInfo(&osvi, VER_MAJORVERSION, dwlConditionMask);
 #else
@@ -21680,7 +21685,11 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					UINT h = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
 					IWICBitmapScaler *pScaler;
 					if SUCCEEDED(g_pWICFactory->CreateBitmapScaler(&pScaler)) {
-						if SUCCEEDED(pScaler->Initialize(m_pImage, w, h, WICBitmapInterpolationModeCubic)) {
+						int mode = nArg >= 2 ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]) : 4;
+						if (!g_bUpper10 && mode > 3) {
+							mode = 3;
+						}
+						if SUCCEEDED(pScaler->Initialize(m_pImage, w, h, WICBitmapInterpolationMode(mode))) {
 							CteWICBitmap *pGB = new CteWICBitmap();
 							g_pWICFactory->CreateBitmapFromSource(pScaler, WICBitmapCacheOnDemand, &pGB->m_pImage);
 							SafeRelease(&pScaler);

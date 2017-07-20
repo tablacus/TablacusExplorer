@@ -719,17 +719,6 @@ function ReplaceX(mode)
 	g_bChanged = true;
 }
 
-function RemoveMenus()
-{
-	ClearX("Menus");
-	if (g_x.Menus.selectedIndex < 0 || !confirmOk()) {
-		return;
-	}
-	g_x.Menus[g_x.Menus.selectedIndex] = null;
-	g_Chg.Menus = true;
-	g_bChanged = true;
-}
-
 function RemoveX(mode)
 {
 	ClearX(mode);

@@ -1905,7 +1905,7 @@ AddMenuIconFolderItem = function (mii, FolderItem, nHeight)
 
 AddMenuImage = function (mii, image, id, nHeight)
 {
-	mii.hbmpItem = image.GetHBITMAP(WINVER >= 0x600 ? null : GetSysColor(COLOR_MENU));
+	mii.hbmpItem = image.GetHBITMAP(WINVER >= 0x600 ? -1 : GetSysColor(COLOR_MENU));
 	if (mii.hbmpItem) {
 		mii.fMask = mii.fMask | MIIM_BITMAP;
 		if (id) {
