@@ -25,6 +25,7 @@ LPFNSHRunDialog lpfnSHRunDialog = NULL;
 LPFNRegenerateUserEnvironment lpfnRegenerateUserEnvironment = NULL;
 LPFNChangeWindowMessageFilterEx lpfnChangeWindowMessageFilterEx = NULL;
 LPFNRtlGetVersion lpfnRtlGetVersion = NULL;
+LPFNSetDefaultDllDirectories lpfnSetDefaultDllDirectories = NULL;
 #ifdef _2000XP
 LPFNSetDllDirectoryW lpfnSetDllDirectoryW = NULL;
 LPFNIsWow64Process lpfnIsWow64Process = NULL;
@@ -9990,20 +9991,24 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		lpfnSHGetImageList = teSHGetImageList2000;
 	}
 #endif
-#ifdef _2000XP
 	tePathAppend(&bsLib, bsPath, L"kernel32.dll");
 	hDll = GetModuleHandle(bsLib);
 	SysFreeString(bsLib);
 	if (hDll) {
+		lpfnSetDefaultDllDirectories = (LPFNSetDefaultDllDirectories)GetProcAddress(hDll, "SetDefaultDllDirectories");
+		if (lpfnSetDefaultDllDirectories) {
+			lpfnSetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS);
+		}
+#ifdef _2000XP
 		lpfnSetDllDirectoryW = (LPFNSetDllDirectoryW)GetProcAddress(hDll, "SetDllDirectoryW");
 		if (lpfnSetDllDirectoryW) {
 			lpfnSetDllDirectoryW(L"");
 		}
 		lpfnIsWow64Process = (LPFNIsWow64Process)GetProcAddress(hDll, "IsWow64Process");
-	}
 #else
-	SetDllDirectory(L"");
+		SetDllDirectory(L"");
 #endif
+	}
 #ifdef _2000XP
 	tePathAppend(&bsLib, bsPath, L"propsys.dll");
 	hDll = GetModuleHandle(bsLib);
@@ -13422,7 +13427,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						}
 					}
 #ifdef _FIXWIN10IPBUG1
-					SetTimer(m_hwnd, 1, 500, teTimerProcFixWin10IPBug1);
+					SetTimer(m_hwnd, 2, 500, teTimerProcFixWin10IPBug1);
 #endif
 				}
 				return S_OK;
@@ -13619,7 +13624,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					RedrawWindow(m_hwndDV, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
 				}
 #ifdef _FIXWIN10IPBUG1
-				SetTimer(m_hwnd, 1, 64, teTimerProcFixWin10IPBug1);
+				SetTimer(m_hwnd, 2, 64, teTimerProcFixWin10IPBug1);
 #endif
 				return S_OK;
 			case DISPID_VIEWMODECHANGED://XP+
@@ -13633,6 +13638,9 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				InitFolderSize();
 				return DoFunc(TE_OnColumnsChanged, this, S_OK);
 			case DISPID_ICONSIZECHANGED://XP-
+#ifdef _FIXWIN10IPBUG1
+				FixWin10IPBug1();
+#endif
 				return DoFunc(TE_OnIconSizeChanged, this, S_OK);
 			case DISPID_SORTDONE://XP-
 #ifdef _FIXWIN10IPBUG1
@@ -14249,7 +14257,6 @@ VOID CteShellBrowser::OnNavigationComplete2()
 	SetFolderFlags(FALSE);
 	InitFolderSize();
 	if (m_pTC->m_bRedraw) {
-		KillTimer(g_hwndMain, TET_Redraw);
 		SetTimer(g_hwndMain, TET_Redraw, 24, teTimerProc);
 	}
 }
@@ -14796,7 +14803,7 @@ void CteShellBrowser::Show(BOOL bShow, DWORD dwOptions)
 				if (m_hwndLV) {
 					ShowWindow(m_hwndLV, SW_SHOWNA);
 #ifdef _FIXWIN10IPBUG1
-					SetTimer(m_hwnd, 1, 64, teTimerProcFixWin10IPBug1);
+					SetTimer(m_hwnd, 2, 64, teTimerProcFixWin10IPBug1);
 #endif
 				}
 				SetRedraw(TRUE);
@@ -16136,7 +16143,6 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 					}
 					if (g_bInit) {
 						g_bInit = FALSE;
-						KillTimer(g_hwndMain, TET_Create);
 						SetTimer(g_hwndMain, TET_Create, 100, teTimerProc);
 					}
 					if (g_hwndMain != m_hwndParent) {
@@ -17197,7 +17203,6 @@ VOID CteTabCtrl::UnLockUpdate(BOOL bDirect)
 		RedrawUpdate();
 		return;
 	}
-	KillTimer(g_hwndMain, TET_Redraw);
 	SetTimer(g_hwndMain, TET_Redraw, 500, teTimerProc);
 }
 
@@ -17205,7 +17210,6 @@ VOID CteTabCtrl::RedrawUpdate()
 {
 	if (m_bRedraw) {
 		if (g_nLockUpdate) {
-			KillTimer(g_hwndMain, TET_Redraw);
 			SetTimer(g_hwndMain, TET_Redraw, 500, teTimerProc);
 			return;
 		}
