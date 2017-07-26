@@ -9892,6 +9892,24 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	hInst = hInstance;
 
+	//DLL hijacking vulnerability measures
+	hDll = GetModuleHandleA("kernel32.dll");
+	if (hDll) {
+		lpfnSetDefaultDllDirectories = (LPFNSetDefaultDllDirectories)GetProcAddress(hDll, "SetDefaultDllDirectories");
+		if (lpfnSetDefaultDllDirectories) {
+			lpfnSetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS);
+		}
+#ifdef _2000XP
+		lpfnSetDllDirectoryW = (LPFNSetDllDirectoryW)GetProcAddress(hDll, "SetDllDirectoryW");
+		if (lpfnSetDllDirectoryW) {
+			lpfnSetDllDirectoryW(L"");
+		}
+		lpfnIsWow64Process = (LPFNIsWow64Process)GetProcAddress(hDll, "IsWow64Process");
+#else
+		SetDllDirectory(L"");
+#endif
+	}
+
 	::OleInitialize(NULL);
 	InitCommonControls();
 
@@ -9991,24 +10009,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		lpfnSHGetImageList = teSHGetImageList2000;
 	}
 #endif
-	tePathAppend(&bsLib, bsPath, L"kernel32.dll");
-	hDll = GetModuleHandle(bsLib);
-	SysFreeString(bsLib);
-	if (hDll) {
-		lpfnSetDefaultDllDirectories = (LPFNSetDefaultDllDirectories)GetProcAddress(hDll, "SetDefaultDllDirectories");
-		if (lpfnSetDefaultDllDirectories) {
-			lpfnSetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS);
-		}
-#ifdef _2000XP
-		lpfnSetDllDirectoryW = (LPFNSetDllDirectoryW)GetProcAddress(hDll, "SetDllDirectoryW");
-		if (lpfnSetDllDirectoryW) {
-			lpfnSetDllDirectoryW(L"");
-		}
-		lpfnIsWow64Process = (LPFNIsWow64Process)GetProcAddress(hDll, "IsWow64Process");
-#else
-		SetDllDirectory(L"");
-#endif
-	}
 #ifdef _2000XP
 	tePathAppend(&bsLib, bsPath, L"propsys.dll");
 	hDll = GetModuleHandle(bsLib);
@@ -18140,7 +18140,7 @@ CteMemory::CteMemory(int nSize, void *pc, int nCount, LPWSTR lpStruct)
 			if (m_pc) {
 				PVOID pvData;
 				if (bSafeArray && pc && ::SafeArrayAccessData((SAFEARRAY *)pc, &pvData) == S_OK) {
-					::CopyMemory(pvData, pc, nSize);
+					::CopyMemory(m_pc, pvData, nSize);
 					::SafeArrayUnaccessData((SAFEARRAY *)pc);
 				} else {
 					::ZeroMemory(m_pc, nSize);

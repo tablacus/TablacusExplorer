@@ -148,6 +148,7 @@
       <EntryPointSymbol>
       </EntryPointSymbol>
       <TargetMachine>MachineX86</TargetMachine>
+      <DelayLoadDLLs>COMCTL32.dll;CRYPT32.dll;UxTheme.dll;MSIMG32.dll;SHLWAPI.dll;IMM32.dll</DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -174,6 +175,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX64</TargetMachine>
+      <DelayLoadDLLs>COMCTL32.dll;SHLWAPI.dll;IMM32.dll;CRYPT32.dll;UxTheme.dll;MSIMG32.dll;PROPSYS.dll</DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
