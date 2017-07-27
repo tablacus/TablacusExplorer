@@ -11247,7 +11247,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 			}
 		}
 	}
-	hr = GetAbsPidl(&pidl, &m_pFolderItem1, pFolderItem, wFlags, pFolderItems, pPrevious, pHistSB);
+	hr = GetAbsPidl(&pidl, pFolderItem, wFlags, pFolderItems, pPrevious, pHistSB);
 	if (ILIsEqual(pidl, g_pidlResultsFolder)) {
 		if SUCCEEDED(pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1)) {
 			m_dwUnavailable = pid1->m_dwUnavailable;
@@ -11607,7 +11607,7 @@ VOID CteShellBrowser::FocusItem(BOOL bFree)
 	}
 }
 
-HRESULT CteShellBrowser::GetAbsPidl(LPITEMIDLIST *ppidlOut, FolderItem **ppid, FolderItem *pid, UINT wFlags, FolderItems *pFolderItems, FolderItem *pPrevious, CteShellBrowser *pHistSB)
+HRESULT CteShellBrowser::GetAbsPidl(LPITEMIDLIST *ppidlOut, FolderItem *pid, UINT wFlags, FolderItems *pFolderItems, FolderItem *pPrevious, CteShellBrowser *pHistSB)
 {
 	if (wFlags & SBSP_PARENT) {
 		if (pPrevious) {
@@ -11617,12 +11617,12 @@ HRESULT CteShellBrowser::GetAbsPidl(LPITEMIDLIST *ppidlOut, FolderItem **ppid, F
 				Refresh(TRUE);
 				return E_FAIL;
 			}
-			if (teILGetParent(pPrevious, ppid)) {
-				if (Navigate1(*ppid, wFlags & ~SBSP_PARENT, pFolderItems, pPrevious, ppidlOut, 0)) {
+			if (teILGetParent(pPrevious, &m_pFolderItem1)) {
+				if (Navigate1(m_pFolderItem1, wFlags & ~SBSP_PARENT, pFolderItems, pPrevious, ppidlOut, 0)) {
 					return S_FALSE;
 				}
 				VARIANT v;
-				if SUCCEEDED(ppid[0]->QueryInterface(IID_PPV_ARGS(&v.pdispVal))) {
+				if SUCCEEDED(m_pFolderItem1->QueryInterface(IID_PPV_ARGS(&v.pdispVal))) {
 					v.vt = VT_DISPATCH;
 					CteFolderItem *pid1 = new CteFolderItem(&v);
 					VARIANT v2;
@@ -11637,8 +11637,8 @@ HRESULT CteShellBrowser::GetAbsPidl(LPITEMIDLIST *ppidlOut, FolderItem **ppid, F
 						teILCloneReplace(&pid1->m_pidl, g_pidlResultsFolder);
 						pid1->m_dwUnavailable = GetTickCount();
 					}
-					ppid[0]->Release();
-					ppid[0] = pid1;
+					m_pFolderItem1->Release();
+					m_pFolderItem1 = pid1;
 					VariantClear(&v2);
 					VariantClear(&v);
 				}
@@ -11646,7 +11646,7 @@ HRESULT CteShellBrowser::GetAbsPidl(LPITEMIDLIST *ppidlOut, FolderItem **ppid, F
 			}
 		}
 		*ppidlOut = ::ILClone(g_pidls[CSIDL_DESKTOP]);
-		GetFolderItemFromIDList(ppid, *ppidlOut);
+		GetFolderItemFromIDList(&m_pFolderItem1, *ppidlOut);
 		return S_OK;
 	}
 	if (wFlags & SBSP_NAVIGATEBACK) {
@@ -11658,7 +11658,7 @@ HRESULT CteShellBrowser::GetAbsPidl(LPITEMIDLIST *ppidlOut, FolderItem **ppid, F
 				SaveFocusedItemToHistory();
 			}
 			if (teGetIDListFromObject(pHistSB->m_ppLog[--nLogIndex], ppidlOut)) {
-				pHistSB->m_ppLog[nLogIndex]->QueryInterface(IID_PPV_ARGS(ppid));
+				pHistSB->m_ppLog[nLogIndex]->QueryInterface(IID_PPV_ARGS(&m_pFolderItem1));
 				if (this == pHistSB) {
 					m_nLogIndex = nLogIndex;
 				}
@@ -11676,7 +11676,7 @@ HRESULT CteShellBrowser::GetAbsPidl(LPITEMIDLIST *ppidlOut, FolderItem **ppid, F
 				SaveFocusedItemToHistory();
 			}
 			if (teGetIDListFromObject(pHistSB->m_ppLog[++nLogIndex], ppidlOut)) {
-				pHistSB->m_ppLog[nLogIndex]->QueryInterface(IID_PPV_ARGS(ppid));
+				pHistSB->m_ppLog[nLogIndex]->QueryInterface(IID_PPV_ARGS(&m_pFolderItem1));
 				if (this == pHistSB) {
 					m_nLogIndex = nLogIndex;
 				}
@@ -11694,13 +11694,13 @@ HRESULT CteShellBrowser::GetAbsPidl(LPITEMIDLIST *ppidlOut, FolderItem **ppid, F
 		teGetIDListFromObject(pPrevious, &pidlPrevius);
 		if (pidlPrevius && !ILIsEqual(pidlPrevius, g_pidlResultsFolder) && !ILIsEmpty(pidl)) {
 			*ppidlOut = ILCombine(pidlPrevius, pidl);
-			GetFolderItemFromIDList(ppid, *ppidlOut);
+			GetFolderItemFromIDList(&m_pFolderItem1, *ppidlOut);
 		} else {
 			*ppidlOut = ILClone(pidlPrevius);
 			if (pPrevious) {
-				pPrevious->QueryInterface(IID_PPV_ARGS(ppid));
+				pPrevious->QueryInterface(IID_PPV_ARGS(&m_pFolderItem1));
 			} else {
-				GetFolderItemFromIDList(ppid, *ppidlOut);
+				GetFolderItemFromIDList(&m_pFolderItem1, *ppidlOut);
 			}
 		}
 		teCoTaskMemFree(pidlPrevius);
@@ -11708,14 +11708,14 @@ HRESULT CteShellBrowser::GetAbsPidl(LPITEMIDLIST *ppidlOut, FolderItem **ppid, F
 		return S_OK;
 	}
 	if (pid) {
-		pid->QueryInterface(IID_PPV_ARGS(ppid));
+		pid->QueryInterface(IID_PPV_ARGS(&m_pFolderItem1));
 		if (pidl) {
 			*ppidlOut = pidl;
 			return S_OK;
 		}
 	}
-	if (*ppid) {
-		return teGetIDListFromObject(*ppid, ppidlOut) ? S_OK : E_FAIL;
+	if (m_pFolderItem1) {
+		return teGetIDListFromObject(m_pFolderItem1, ppidlOut) ? S_OK : E_FAIL;
 	}
 	return E_FAIL;
 }

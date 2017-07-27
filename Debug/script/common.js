@@ -797,21 +797,28 @@ NavigateFV = function (FV, Path, wFlags)
 		var TC = te.CreateCtrl(CTRL_TC, 0, 0, "100%", "100%", te.Data.Tab_Style, te.Data.Tab_Align, te.Data.Tab_TabWidth, te.Data.Tab_TabHeight);
 		FV = TC.Selected;
 	}
+	var res;
 	if (/string/i.test(typeof Path)) {
-		if (/%([^%]+)%/.test(Path)) {
-			Path = ExtractMacro(FV, Path);
+		Path = ExtractMacro(FV, Path);
+		if (/\?|\*/.test(Path)) {
+			if (!/\\\\\?\\|:/.test(Path)) {
+				FV.FilterView = Path;
+				FV.Refresh();
+				return;
+			}
+			res = /^([A-Z]:\\[^\?\*]*)\\([^\\]+)/i.exec(Path) || /^(\\\\[A-Z][^\?\*]*)\\([^\\]+)/i.exec(Path)
 		}
-		if (/\?|\*/.test(Path) && !/\\\\\?\\|:/.test(Path)) {
-			FV.FilterView = Path;
-			FV.Refresh();
-			return;
-		}
-		Path = ExtractPath(FV, Path);
 	}
 	if (FV.Data.Lock) {
 		wFlags |= SBSP_NEWBROWSER;
 	}
-	FV.Navigate(Path, wFlags);
+	if (res) {
+		FV.Navigate(res[1], wFlags);
+		FV.FilterView = res[2];
+		FV.Refresh();
+	} else {
+		FV.Navigate(Path, wFlags);
+	}
 	FV.Focus();
 }
 
@@ -3420,7 +3427,7 @@ AddFavoriteEx = function (Ctrl, pt)
 importScript = function (fn)
 {
 	if (/"/.test(fn)) {
-		fn = api.api.PathUnquoteSpaces(fn);
+		fn = api.PathUnquoteSpaces(fn);
 	}
 	fn = ExtractMacro(te, fn);
 	if (!api.PathMatchSpec(fn, '?:\\*;\\\\*')) {

@@ -1042,7 +1042,7 @@ public:
 	VOID GetDefaultColumns();
 	VOID SaveFocusedItemToHistory();
 	VOID FocusItem(BOOL bFree);
-	HRESULT GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem **ppid, FolderItem *pid, UINT wFlags, FolderItems *pFolderItems, FolderItem *pPrevious, CteShellBrowser *pHistSB);
+	HRESULT GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem *pid, UINT wFlags, FolderItems *pFolderItems, FolderItem *pPrevious, CteShellBrowser *pHistSB);
 	VOID EBNavigate();
 	VOID SetHistory(FolderItems *pFolderItems, UINT wFlags);
 	VOID GetVariantPath(FolderItem **ppFolderItem, FolderItems **ppFolderItems, VARIANT *pv);
