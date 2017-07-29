@@ -16103,11 +16103,10 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				}
 				return S_OK;
 			case DISPID_BEFORENAVIGATE2:
-				if (nArg >= 6 && m_hwndParent == g_hwndMain) {
+				if (nArg >= 6 && m_hwndParent == g_hwndMain && pDispParams->rgvarg[nArg].pdispVal == m_pWebBrowser) {
 					if (pDispParams->rgvarg[nArg - 6].vt == (VT_BYREF | VT_BOOL)) {
 						VARIANT vURL;
 						teVariantChangeType(&vURL, &pDispParams->rgvarg[nArg - 1], VT_BSTR);
-						VARIANT v = pDispParams->rgvarg[nArg - 1];
 						VARIANT_BOOL bSB = VARIANT_FALSE;
 						FolderItem *pid = new CteFolderItem(&vURL);
 						pid->get_IsFolder(&bSB);
@@ -16601,31 +16600,32 @@ VOID CteWebBrowser::write(LPWSTR pszPath)
 
 void CteWebBrowser::Close()
 {
-	if (m_pWebBrowser) {
-		if (m_hwndParent != g_hwndMain) {
-			teDelPropertyAtLLX(g_pSubWindows, (LONGLONG)m_hwndParent);
-		}
-		m_pWebBrowser->Quit();
-		IOleObject *pOleObject;
-		if SUCCEEDED(m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&pOleObject))) {
-			RECT rc;
-			SetRectEmpty(&rc);
-			pOleObject->DoVerb(OLEIVERB_HIDE, NULL, NULL, 0, m_hwndParent, &rc);
-			pOleObject->Close(OLECLOSE_NOSAVE);
-			try {
-				pOleObject->Release();
-			} catch (...) {
-				g_nException = 0;
-#ifdef _DEBUG
-				g_strException = L"OleObject->Release";
-#endif
+	try {
+		if (m_pWebBrowser) {
+			HWND hwnd = get_HWND();
+			if (m_hwndParent != g_hwndMain) {
+				teDelPropertyAtLLX(g_pSubWindows, (LONGLONG)m_hwndParent);
 			}
+			m_pWebBrowser->Quit();
+			IOleObject *pOleObject;
+			if SUCCEEDED(m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&pOleObject))) {
+				RECT rc;
+				SetRectEmpty(&rc);
+				pOleObject->DoVerb(OLEIVERB_HIDE, NULL, NULL, 0, m_hwndParent, &rc);
+				pOleObject->Close(OLECLOSE_NOSAVE);
+				pOleObject->Release();
+			}
+			teUnadviseAndRelease(m_pWebBrowser, DIID_DWebBrowserEvents2, &m_dwCookie);
+			PostMessage(hwnd, WM_CLOSE, 0, 0);
+			teDelayRelease(&m_pWebBrowser);
 		}
-		teUnadviseAndRelease(m_pWebBrowser, DIID_DWebBrowserEvents2, &m_dwCookie);
-		PostMessage(get_HWND(), WM_CLOSE, 0, 0);
-		teDelayRelease(&m_pWebBrowser);
+		SafeRelease(&m_pDropTarget);
+	} catch (...) {
+		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"WebBrowser::Close";
+#endif
 	}
-	SafeRelease(&m_pDropTarget);
 }
 
 // CteTabCtrl

@@ -1973,7 +1973,7 @@ function PortableX(Id)
 
 function GetElement(Id)
 {
-	return document.F[Id] || document.getElementById(Id) || document.E[Id];
+	return (document.F && document.F[Id]) || document.getElementById(Id) || (document.E && document.E[Id]);
 }
 
 function AddPath(Id, strValue)

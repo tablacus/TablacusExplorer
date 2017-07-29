@@ -2565,7 +2565,8 @@ OpenInExplorer = function (FV)
 {
 	if (FV) {
 		CancelWindowRegistered();
-		ShellExecute([api.PathQuoteSpaces("%SystemRoot%\\explorer.exe"), api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORPARSING))].join(" "), null, SW_SHOWNORMAL);
+		var Selected = FV.SelectedItems();
+		ShellExecute([api.PathQuoteSpaces("%SystemRoot%\\explorer.exe"), Selected.Count == 1 ? '/select,' + api.PathQuoteSpaces(api.GetDisplayNameOf(Selected.Item(0), SHGDN_FORPARSING)) : api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORPARSING))].join(" "), null, SW_SHOWNORMAL);
 	}
 }
 
@@ -3329,13 +3330,15 @@ FireEvent = function (o, event)
 
 RemoveCommand = function (hMenu, ContextMenu, strDelete)
 {
-	var mii = api.Memory("MENUITEMINFO");
-	mii.cbSize = mii.Size;
-	mii.fMask = MIIM_ID;
-	for (var i = api.GetMenuItemCount(hMenu); i-- > 0;) {
-		if (api.GetMenuItemInfo(hMenu, i, true, mii)) {
-			if (api.PathMatchSpec(ContextMenu.GetCommandString(mii.wID - ContextMenu.idCmdFirst, GCS_VERB), strDelete)) {
-				api.DeleteMenu(hMenu, i, MF_BYPOSITION);
+	if (ContextMenu) {
+		var mii = api.Memory("MENUITEMINFO");
+		mii.cbSize = mii.Size;
+		mii.fMask = MIIM_ID;
+		for (var i = api.GetMenuItemCount(hMenu); i-- > 0;) {
+			if (api.GetMenuItemInfo(hMenu, i, true, mii)) {
+				if (api.PathMatchSpec(ContextMenu.GetCommandString(mii.wID - ContextMenu.idCmdFirst, GCS_VERB), strDelete)) {
+					api.DeleteMenu(hMenu, i, MF_BYPOSITION);
+				}
 			}
 		}
 	}
