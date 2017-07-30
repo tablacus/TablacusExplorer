@@ -191,7 +191,7 @@ Finalize = function ()
 SetGestureText = function (Ctrl, Text)
 {
 	RunEvent3("SetGestureText", Ctrl, Text);
-	if (g_.mouse.str.length > 1 && te.Data.Conf_Gestures > 1) {
+	if (Text.length > 1 && te.Data.Conf_Gestures > 1) {
 		g_.mouse.bTrail = true;
 		var hdc = api.GetWindowDC(te.hwnd);
 		if (hdc) {

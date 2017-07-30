@@ -16602,7 +16602,6 @@ void CteWebBrowser::Close()
 {
 	try {
 		if (m_pWebBrowser) {
-			HWND hwnd = get_HWND();
 			if (m_hwndParent != g_hwndMain) {
 				teDelPropertyAtLLX(g_pSubWindows, (LONGLONG)m_hwndParent);
 			}
@@ -16616,8 +16615,7 @@ void CteWebBrowser::Close()
 				pOleObject->Release();
 			}
 			teUnadviseAndRelease(m_pWebBrowser, DIID_DWebBrowserEvents2, &m_dwCookie);
-			PostMessage(hwnd, WM_CLOSE, 0, 0);
-			teDelayRelease(&m_pWebBrowser);
+			m_pWebBrowser = NULL;
 		}
 		SafeRelease(&m_pDropTarget);
 	} catch (...) {

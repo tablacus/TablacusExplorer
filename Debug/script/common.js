@@ -154,6 +154,15 @@ FolderMenu =
 				ShellExecute(res[1], null, SW_SHOWNORMAL);
 				return;
 			}
+			res = /^javascript:(.*)$/i.exec(FolderItem.Path);
+			if (res) {
+				try {
+					new Function(res[1])();
+				} catch (e) {
+					ShowError(e, res[1]);
+				}
+				return;
+			}
 			if (FolderItem.IsFolder) {
 				Navigate(FolderItem, isFinite(wFlags) ? wFlags : GetOpenMode());
 				return;
@@ -831,7 +840,7 @@ IsDrag = function (pt1, pt2)
 {
 	if (pt1 && pt2) {
 		try {
-			return (Math.abs(pt1.x - pt2.x) > api.GetSystemMetrics(SM_CXDRAG) | Math.abs(pt1.y - pt2.y) > api.GetSystemMetrics(SM_CYDRAG));
+			return (Math.abs(pt1.x - pt2.x) > api.GetSystemMetrics(SM_CXDRAG) || Math.abs(pt1.y - pt2.y) > api.GetSystemMetrics(SM_CYDRAG));
 		} catch (e) {}
 	}
 	return false;
