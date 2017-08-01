@@ -605,6 +605,19 @@ DisableImage = function (img, bDisable)
 	}
 }
 
+function SetFolderViewData(FV, FVD)
+{
+	if (FV) {
+		var t = FV.Type;
+		for (var i in FVD) {
+			FV[i] = FVD[i];
+		}
+		if (t == FVD.Type) {
+			FV.Refresh();
+		}
+	}
+}
+
 //Events
 
 te.OnCreate = function (Ctrl)
@@ -1434,6 +1447,18 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 					if (te.Data.bReload) {
 						te.Data.bReload = false;
 						te.Reload();
+					}
+					if (g_.FVData) {
+						if (g_.FVData.All) {
+							delete g_.FVData.All;
+							var cFV = te.Ctrls(CTRL_FV);
+							for (var i in cFV) {
+								SetFolderViewData(cFV[i], g_.FVData);
+							}
+						} else {
+							SetFolderViewData(te.Ctrl(CTRL_FV), g_.FVData);
+						}
+						delete g_.FVData;
 					}
 					if (wParam & 0xffff) {
 						if (g_.mouse.str == "") {

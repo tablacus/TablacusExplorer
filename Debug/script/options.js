@@ -428,32 +428,18 @@ function SetFolderViews()
 {
 	FV = te.Ctrl(CTRL_FV);
 	if (g_Chg.View) {
-		if (document.getElementById("Conf_ListDefault").checked) {
-			var cFV = te.Ctrls(CTRL_FV);
-			for (i = 0; i< cFV.Count; i++) {
-				SetFolderView(cFV.Item(i));
-			}
-		} else if (FV) {
-			SetFolderView(FV);
-		}
+		MainWindow.g_.FVData =
+		{
+			All: document.getElementById("Conf_ListDefault").checked,
+			FolderFlags: document.F.View_fFlags.value,
+			Options: document.F.View_Options.value,
+			ViewFlags: document.F.View_ViewFlags.value,
+			SizeFormat: Number(document.F.View_SizeFormat.value),
+			Type: document.F.View_Type.value
+		};
 	}
 	if (FV) {
 		FV.CurrentViewMode = document.F.View_ViewMode.value;
-	}
-}
-
-function SetFolderView(FV)
-{
-	if (FV) {
-		FV.FolderFlags = document.F.View_fFlags.value;
-		FV.Options = document.F.View_Options.value;
-		FV.ViewFlags = document.F.View_ViewFlags.value;
-		FV.SizeFormat = Number(document.F.View_SizeFormat.value);
-		if (FV.Type != document.F.View_Type.value) {
-			FV.Type = document.F.View_Type.value;
-		} else {
-			FV.Refresh();
-		}
 	}
 }
 

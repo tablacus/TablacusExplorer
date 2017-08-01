@@ -1550,7 +1550,7 @@ BOOL teSetForegroundWindow(HWND hwnd)
 
 BOOL teChangeWindowMessageFilterEx(HWND hwnd, UINT message, DWORD action, PCHANGEFILTERSTRUCT pChangeFilterStruct)
 {
-	if (lpfnChangeWindowMessageFilterEx) {
+	if (lpfnChangeWindowMessageFilterEx && hwnd) {
 		return lpfnChangeWindowMessageFilterEx(hwnd, message, action, pChangeFilterStruct);
 	}
 #ifdef _2000XP
@@ -1558,7 +1558,7 @@ BOOL teChangeWindowMessageFilterEx(HWND hwnd, UINT message, DWORD action, PCHANG
 		return lpfnChangeWindowMessageFilter(message, action);
 	}
 #else
-	ChangeWindowMessageFilter(message, action);
+	return ChangeWindowMessageFilter(message, action);
 #endif
 	return FALSE;
 }
@@ -6801,6 +6801,9 @@ VOID teApiSetDllDirectory(int nArg, teParam *param, DISPPARAMS *pDispParams, VAR
 #else
 	teSetBool(pVarResult, SetDllDirectory(param[0].lpcwstr));
 #endif
+	if (lpfnSetDefaultDllDirectories) {
+		lpfnSetDefaultDllDirectories(lstrlen(param[0].lpcwstr) ? LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS : LOAD_LIBRARY_SEARCH_SYSTEM32);
+	}
 }
 
 VOID teApiPathIsNetworkPath(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -9888,16 +9891,14 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	BSTR bsPath, bsLib;
 	BSTR bsIndex = NULL;
 	BSTR bsScript = NULL;
-	HINSTANCE hDll;
-
 	hInst = hInstance;
 
-	//DLL hijacking vulnerability measures
-	hDll = GetModuleHandleA("kernel32.dll");
+	//Eliminates the vulnerable to a DLL pre-loading attack.
+	HINSTANCE hDll = GetModuleHandleA("kernel32.dll");
 	if (hDll) {
 		lpfnSetDefaultDllDirectories = (LPFNSetDefaultDllDirectories)GetProcAddress(hDll, "SetDefaultDllDirectories");
 		if (lpfnSetDefaultDllDirectories) {
-			lpfnSetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS);
+			lpfnSetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32);
 		}
 #ifdef _2000XP
 		lpfnSetDllDirectoryW = (LPFNSetDllDirectoryW)GetProcAddress(hDll, "SetDllDirectoryW");
@@ -10149,7 +10150,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 #ifdef _2000XP
 	if (g_bUpperVista) {
 #endif
-		teChangeWindowMessageFilterEx(g_hwndMain, WM_COPYDATA, MSGFLT_ALLOW, NULL);
+		teChangeWindowMessageFilterEx(NULL, WM_COPYDATA, MSGFLT_ALLOW, NULL);
 		CoCreateInstance(CLSID_DragDropHelper, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&g_pDropTargetHelper));
 #ifdef _2000XP
 	}
