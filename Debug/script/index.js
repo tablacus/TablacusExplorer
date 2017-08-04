@@ -14,7 +14,6 @@ Init = false;
 OpenMode = SBSP_SAMEBROWSER;
 ExtraMenuCommand = [];
 g_arBM = [];
-Exchange = {};
 
 GetAddress = null;
 ShowContextMenu = null;
@@ -633,20 +632,7 @@ te.OnCreate = function (Ctrl)
 		g_.xmlWindow = null;
 		setTimeout(function ()
 		{
-			var a, i, j, root, menus, items;
-			root = te.Data.xmlMenus.documentElement;
-			if (root) {
-				menus = root.childNodes;
-				for (i = menus.length; i--;) {
-					items = menus[i].getElementsByTagName("Item");
-					for (j = items.length; j--;) {
-						a = items[j].getAttribute("Name").split(/\\t/);
-						if (a.length > 1) {
-							SetKeyExec("List", a[1], items[j].text, items[j].getAttribute("Type"), true);
-						}
-					}
-				}
-			}
+			var a, i, j, menus, items;
 			Resize();
 			var cTC = te.Ctrls(CTRL_TC);
 			for (var i in cTC) {
@@ -1962,6 +1948,19 @@ AddEventEx(document, "MSFullscreenChange", function ()
 function InitMenus()
 {
 	te.Data.xmlMenus = OpenXml("menus.xml", false, true);
+	var root = te.Data.xmlMenus.documentElement;
+	if (root) {
+		menus = root.childNodes;
+		for (i = menus.length; i--;) {
+			items = menus[i].getElementsByTagName("Item");
+			for (j = items.length; j--;) {
+				a = items[j].getAttribute("Name").split(/\\t/);
+				if (a.length > 1) {
+					SetKeyExec("List", a[1], items[j].text, items[j].getAttribute("Type"), true);
+				}
+			}
+		}
+	}
 }
 
 function ArrangeAddons()
@@ -3364,6 +3363,7 @@ if (!te.Data) {
 	te.Data.CustColors = api.Memory("int", 16);
 	te.Data.AddonsData = te.Object();
 	te.Data.Fonts = te.Object();
+	te.Data.Exchange = te.Object();
 	//Default Value
 	te.Data.Tab_Style = TCS_HOTTRACK | TCS_MULTILINE | TCS_RAGGEDRIGHT | TCS_SCROLLOPPOSITE | TCS_HOTTRACK | TCS_TOOLTIPS;
 	te.Data.Tab_Align = TCA_TOP;
@@ -3437,6 +3437,7 @@ if (!te.Data) {
 		window.focus();
 	}, 500);
 }
+Exchange = te.Data.Exchange;
 
 InitCode();
 InitMouse();

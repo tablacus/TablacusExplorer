@@ -428,15 +428,14 @@ function SetFolderViews()
 {
 	FV = te.Ctrl(CTRL_FV);
 	if (g_Chg.View) {
-		MainWindow.g_.FVData =
-		{
-			All: document.getElementById("Conf_ListDefault").checked,
-			FolderFlags: document.F.View_fFlags.value,
-			Options: document.F.View_Options.value,
-			ViewFlags: document.F.View_ViewFlags.value,
-			SizeFormat: Number(document.F.View_SizeFormat.value),
-			Type: document.F.View_Type.value
-		};
+		var o = te.Object();
+		o.All = document.getElementById("Conf_ListDefault").checked;
+		o.FolderFlags = document.F.View_fFlags.value;
+		o.Options = document.F.View_Options.value;
+		o.ViewFlags = document.F.View_ViewFlags.value;
+		o.SizeFormat = Number(document.F.View_SizeFormat.value);
+		o.Type = document.F.View_Type.value;
+		MainWindow.g_.FVData = o;
 	}
 	if (FV) {
 		FV.CurrentViewMode = document.F.View_ViewMode.value;
@@ -528,7 +527,7 @@ function ConfirmX(bCancel, fn)
 	}, !bCancel, true);
 }
 
-function SetOptions(fnYes, fnNo, NoCancel, bNoDef)
+function SetOptions(fnYes, fnNo)
 {
 	if (g_nResult == 2 || document.activeElement && api.StrCmpI(document.activeElement.value, GetText("Cancel")) == 0) {
 		if (fnNo) {
@@ -544,7 +543,7 @@ function SetOptions(fnYes, fnNo, NoCancel, bNoDef)
 		return true;
 	}
  	if (g_bChanged || g_Chg.Data) {
-		switch (MessageBox("Do you want to replace?", TITLE, MB_ICONQUESTION | ((NoCancel || dialogArguments.width) && NoCancel !== 2 ? MB_YESNO : MB_YESNOCANCEL))) {
+		switch (MessageBox("Do you want to replace?", TITLE, MB_ICONQUESTION | MB_YESNO)) {
 			case IDYES:
 				if (fnYes) {
 					fnYes();
@@ -562,14 +561,6 @@ function SetOptions(fnYes, fnNo, NoCancel, bNoDef)
 				}
 				return true;
 			default:
-				if (g_nResult && NoCancel !== 2) {
-					if (event.preventDefault) {
-						event.preventDefault();
-					} else {
-			 			event.returnValue = GetText('Are you sure?');
-						wsh.SendKeys("{Esc}");
-					}
-				}
 				return false;
 		}
 	}
@@ -1274,6 +1265,7 @@ function Apply()
 	SetTreeControls();
 	SetFolderViews();
 	te.Data.bReload = true;
+	api.EnableWindow(te.Ctrl(CTRL_WB).hwnd, false);
 }
 
 InitOptions = function ()
@@ -1521,8 +1513,7 @@ InitDialog = function ()
 						dialogArguments.element.onchange();
 					}
 				}
-			} catch (e) {
-			}
+			} catch (e) {}
 		});
 	}
 	DialogResize = function ()

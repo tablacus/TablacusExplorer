@@ -1609,13 +1609,8 @@ VOID teUnadviseAndRelease(IUnknown *punk, IID diid, PDWORD pdwCookie)
 
 VOID teRevoke()
 {
-	try {
-		if (g_hMutex) {
-			ReleaseMutex(g_hMutex);
-			::CloseHandle(g_hMutex);
-			g_hMutex = NULL;
-		}
-		if (g_pSW) {
+	if (g_pSW) {
+		try {
 			if (g_lSWCookie) {
 				g_pSW->Revoke(g_lSWCookie);
 				g_lSWCookie = 0;
@@ -1623,9 +1618,29 @@ VOID teRevoke()
 			if (g_dwSWCookie) {
 				teUnadviseAndRelease(g_pSW, DIID_DShellWindowsEvents, &g_dwSWCookie);
 			}
-		}
-	} catch (...) {}
+		} catch (...) {}
+	}
 	g_pSW = NULL;
+}
+
+VOID teRegister(BOOL bInit)
+{
+	if (bInit || g_pSW) {
+		IShellWindows *pSW;
+		if (SUCCEEDED(CoCreateInstance(CLSID_ShellWindows,
+			NULL, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER, IID_PPV_ARGS(&pSW)))) {
+			if (pSW != g_pSW) {
+				teRevoke();
+				g_pSW = pSW;
+				if (g_pWebBrowser) {
+					pSW->Register(g_pWebBrowser->m_pWebBrowser, (LONG)g_hwndMain, SWC_3RDPARTY, &g_lSWCookie);
+				}
+				teAdvise(pSW, DIID_DShellWindowsEvents, static_cast<IDispatch *>(g_pTE), &g_dwSWCookie);
+			} else {
+				pSW->Release();
+			}
+		}
+	}
 }
 
 VOID teSetRedraw(BOOL bSetRedraw)
@@ -4772,6 +4787,7 @@ VOID ClearEvents()
 		}
 	}
 	g_param[TE_Tab] = TRUE;
+	EnableWindow(g_pWebBrowser->get_HWND(), TRUE);
 }
 
 VOID teArrayPush(IDispatch *pdisp, PVOID pObj)
@@ -5939,6 +5955,11 @@ HRESULT MessageProc(MSG *pMsg)
 VOID Finalize()
 {
 	try {
+		if (g_hMutex) {
+			ReleaseMutex(g_hMutex);
+			::CloseHandle(g_hMutex);
+			g_hMutex = NULL;
+		}
 		teRevoke();
 		for (int i = _countof(g_maps); i--;) {
 			delete [] g_maps[i];
@@ -8875,6 +8896,12 @@ VOID teApiPlgBlt(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVa
 	teSetBool(pVarResult, PlgBlt(param[0].hdc, param[1].lppoint, param[2].hdc, param[3].intVal, param[4].intVal,
 		param[5].intVal, param[6].intVal, param[7].hbitmap, param[8].intVal, param[9].intVal));
 }
+
+VOID teApiRoundRect(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetBool(pVarResult, RoundRect(param[0].hdc, param[1].intVal, param[2].intVal, param[3].intVal, param[4].intVal, param[5].intVal, param[6].intVal)); 
+}
+
 /*
 VOID teApi(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -9192,6 +9219,7 @@ TEDispatchApi dispAPI[] = {
 	{ 2, -1, -1, -1, "GetGUIThreadInfo", teApiGetGUIThreadInfo },
 	{ 1, -1, -1, -1, "CreateSolidBrush", teApiCreateSolidBrush },
 	{10, -1, -1, -1, "PlgBlt", teApiPlgBlt },
+	{ 7, -1, -1, -1, "RoundRect", teApiRoundRect },
 //	{ 0, -1, -1, -1, "", teApi },
 //	{ 0, -1, -1, -1, "Test", teApiTest },
 };
@@ -10288,14 +10316,7 @@ function _t(o) {\
 	teSysFreeString(&bsPath);
 
 	// Init ShellWindows
-	if (SUCCEEDED(CoCreateInstance(CLSID_ShellWindows,
-		NULL, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER, IID_PPV_ARGS(&g_pSW)))) {
-		if (g_pWebBrowser) {
-			g_pSW->Register(g_pWebBrowser->m_pWebBrowser, (LONG)g_hwndMain, SWC_3RDPARTY, &g_lSWCookie);
-		}
-		teAdvise(g_pSW, DIID_DShellWindowsEvents, static_cast<IDispatch *>(g_pTE), &g_dwSWCookie);
-	}
-
+	teRegister(TRUE);
 	// Main message loop:
 	while (g_bMessageLoop) {
 		try {
@@ -10624,6 +10645,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			//System
 			case WM_SETTINGCHANGE:
 				if (message == WM_SETTINGCHANGE) {
+					teRegister(FALSE);
 					if (lpfnRegenerateUserEnvironment) {
 						try {
 							if (lstrcmpi((LPCWSTR)lParam, L"Environment") == 0) {
