@@ -2943,16 +2943,6 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 			pszPath = NULL;
 		}
 		if (pszPath) {
-			if (tePathMatchSpec1(pszPath, L"\\\\*\\*")) {
-				LPWSTR lpDelimiter = StrChr(&pszPath[2], '\\');
-				BSTR bsServer = ::SysAllocStringLen(pszPath, int(lpDelimiter - pszPath));
-				LPITEMIDLIST pidlServer = teILCreateFromPathEx(bsServer);
-				if (pidlServer) {
-					pidl = teILCreateFromPath2(pidlServer, &lpDelimiter[1], g_hwndMain);
-					teCoTaskMemFree(pidlServer);
-				}
-				::SysFreeString(bsServer);
-			}
 			if (!pidl) {
 				pidl = teILCreateFromPathEx(pszPath);
 				if (pidl) {
@@ -2966,6 +2956,15 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 					if (n == DRIVE_NO_ROOT_DIR && SUCCEEDED(tePathIsDirectory(pszDrive, 0, 3))) {
 						pidl = teILCreateFromPathEx(pszPath);
 					}
+				} else if (tePathMatchSpec1(pszPath, L"\\\\*\\*")) {
+					LPWSTR lpDelimiter = StrChr(&pszPath[2], '\\');
+					BSTR bsServer = ::SysAllocStringLen(pszPath, int(lpDelimiter - pszPath));
+					LPITEMIDLIST pidlServer = teILCreateFromPathEx(bsServer);
+					if (pidlServer) {
+						pidl = teILCreateFromPath2(pidlServer, &lpDelimiter[1], g_hwndMain);
+						teCoTaskMemFree(pidlServer);
+					}
+					::SysFreeString(bsServer);
 				}
 			}
 /*/// To parse too much.
@@ -9857,6 +9856,14 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 								pSB->m_bSetListColumnWidth = FALSE;
 							}
 							break;
+#ifdef _FIXWIN10IPBUG1
+						case LVM_FIRST + 193:
+							pSB = SBfromhwnd(pcwp->hwnd);
+							if (pSB) {
+								pSB->FixWin10IPBug1();
+							}
+							break;
+#endif
 					}//end_switch
 				}
 			}
