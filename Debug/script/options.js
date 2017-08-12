@@ -1393,7 +1393,7 @@ InitDialog = function ()
 			"25px TRAVEL_ENABLED_XP" : "b,TRAVEL_ENABLED_XP.BMP,25",
 			"30px TRAVEL_ENABLED_XP" : "b,TRAVEL_ENABLED_XP_120.BMP,30"
 		};
-		var s = [], ar = [24, 32, 48];
+		var s = [], ar = [32, 48];
 		for (var i in a) {
 			s.push('<div id="' + a[i] + '" onclick="OpenIcon(this)" style="cursor: pointer"><span class="tab">' + i + '</span></div>');
 			if (a[i].charAt(0) == 'i') {
@@ -1479,11 +1479,25 @@ InitDialog = function ()
 	}
 	if (Query == "about") {
 		returnValue = false;
-		var s = ['<table style="border-spacing: 2em; border-collapse: separate;"><tr><td>'];
+		var s = ['<table style="border-spacing: 2em; border-collapse: separate; width: 100%"><tr><td>'];
 		var src = MakeImgSrc(api.GetModuleFileName(null), 0, 32);
 		s.push('<img src="', src , '"></td><td><span style="font-weight: bold; font-size: 120%">', te.About, '</span> (', (api.sizeof("HANDLE") * 8), 'bit)<br>');
 		s.push('<br><a href="javascript:Run(0)">', api.GetModuleFileName(null), '</a><br>');
 		s.push('<br><a href="javascript:Run(1)">', fso.BuildPath(te.Data.DataFolder, "config"), '</a><br>');
+		s.push('<br><label>Information</label><input type="text" value="', GetTEInfo(), '" style="width: 100%" onclick="this.select()" readonly /><br>');
+		var root = te.Data.Addons.documentElement;
+		if (root) {
+			var ar = [];
+			var items = root.childNodes;
+			if (items) {
+				for (var i = 0; i < items.length; i++) {
+					if (api.LowPart(items[i].getAttribute("Enabled"))) {
+						ar.push(items[i].nodeName);
+					}
+				}
+			}
+			s.push('<br><label>Add-ons</label><input type="text" value="', ar.join(","), '" style="width: 100%" onclick="this.select()" /><br>');
+		}
 		s.push('<br><input type="button" value="Visit website" onclick="Run(2)">');
 		s.push('&nbsp;<input type="button" value="Check for updates" onclick="Run(3)">');
 		s.push('</td></tr></table>');

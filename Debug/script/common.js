@@ -448,14 +448,29 @@ function MakeImgIcon(src, index, h, strBitmap, strIcon)
 	}
 	if (src && !REGEXP_IMAGE.test(src)) {
 		var sfi = api.Memory("SHFILEINFO");
-		if (/^file:/i.test(src)) {
-			src = api.PathCreateFromUrl(src) || src;
+		var uFlags = SHGFI_ICON;
+		if (h) {
+			if (h <= 16) {
+				uFlags |= SHGFI_SMALLICON;
+			} else if (h >= 48) {
+				uFlags = SHGFI_SYSICONINDEX;
+			}
 		}
-		var pidl = api.ILCreateFromPath(api.PathUnquoteSpaces(src));
-		if (pidl) {
-			api.SHGetFileInfo(pidl, 0, sfi, sfi.Size, (h && h <= 16) ? SHGFI_PIDL | SHGFI_ICON | SHGFI_SMALLICON : SHGFI_PIDL | SHGFI_ICON);
-			return sfi.hIcon;
+		if (/\*/.test(src)) {
+			api.SHGetFileInfo(src, 0, sfi, sfi.Size, uFlags | SHGFI_USEFILEATTRIBUTES);
+		} else {
+			if (/^file:/i.test(src)) {
+				src = api.PathCreateFromUrl(src) || src;
+			}
+			var pidl = api.ILCreateFromPath(api.PathUnquoteSpaces(src));
+			if (pidl) {
+				api.SHGetFileInfo(pidl, 0, sfi, sfi.Size, uFlags | SHGFI_PIDL);
+			}
 		}
+		if (uFlags & SHGFI_SYSICONINDEX) {
+			sfi.hIcon = api.ImageList_GetIcon(te.Data.SHIL[SHIL_EXTRALARGE], sfi.iIcon, ILD_NORMAL);
+		}
+		return sfi.hIcon;
 	}
 	return null;
 }
@@ -1661,6 +1676,12 @@ ExecMenu4 = function (Ctrl, Name, pt, hMenu, arContextMenu, nVerb, FV)
 			if (FolderView) {
 				FolderView.Focus();
 			}
+			if (Name != "Default" && (ContextMenu.GetCommandString(nVerb - ContextMenu.idCmdFirst, GCS_VERB) || "").toLowerCase() == "open") {
+				if (ExecMenu(Ctrl, "Default", null, 2) == S_OK) {
+					api.DestroyMenu(hMenu);
+					return S_OK;
+				}
+			}
 			if (ContextMenu.InvokeCommand(0, te.hwnd, nVerb - ContextMenu.idCmdFirst, null, null, SW_SHOWNORMAL, 0, 0) == S_OK) {
 				api.DestroyMenu(hMenu);
 				return S_OK;
@@ -2310,7 +2331,7 @@ function CheckUpdate3(xhr, url, arg)
 
 function ShowAbout()
 {
-	ShowDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\dialog.html"), { MainWindow: MainWindow, Query: "about", Modal: false, width: 640, height: 220});
+	ShowDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\dialog.html"), { MainWindow: MainWindow, Query: "about", Modal: false, width: 640, height: 360});
 }
 
 function EscapeUpdateFile(s)
@@ -2574,7 +2595,7 @@ OpenInExplorer = function (FV)
 {
 	if (FV) {
 		CancelWindowRegistered();
-		var Selected = FV.SelectedItems();
+		var Selected = FV.SelectedItems ? FV.SelectedItems() : [];
 		ShellExecute([api.PathQuoteSpaces("%SystemRoot%\\explorer.exe"), Selected.Count == 1 ? '/select,' + api.PathQuoteSpaces(api.GetDisplayNameOf(Selected.Item(0), SHGDN_FORPARSING)) : api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORPARSING))].join(" "), null, SW_SHOWNORMAL);
 	}
 }
@@ -2624,12 +2645,9 @@ InputKey = function(o)
 	ShowDialogEx("key", 320, 120, o || document.F.KeyKey || document.F.Key);
 }
 
-ShowIconEx = function (ele)
+ShowIconEx = function (o)
 {
-	if (!ele) {
-		ele = document.F.Icon;
-		ShowDialogEx("icon", 640, 480, ele);
-	}
+	ShowDialogEx("icon", 640, 480, o || document.F.Icon);
 }
 
 ShowLocationEx = function (s)

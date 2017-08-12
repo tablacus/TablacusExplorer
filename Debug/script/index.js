@@ -1295,14 +1295,13 @@ te.OnFilterChanged = function (Ctrl)
 	if (res) {
 		try {
 			Ctrl.Data.RE = new RegExp((window.migemo && migemo.query(res[1])) || res[1], res[2]);
-			Ctrl.OnIncludeObject = function (Ctrl, Path1, Path2)
+			Ctrl.OnIncludeObject = function (Ctrl, Path1, Path2, Item)
 			{
 				return Ctrl.Data.RE.test(Path1) || (Path1 != Path2 && Ctrl.Data.RE.test(Path2)) ? S_OK : S_FALSE;
 			}
 			return;
 		} catch (e) {}
 	}
-	Ctrl.OnIncludeObject = null;
 }
 
 te.OnShowContextMenu = function (Ctrl, hwnd, msg, wParam, pt)

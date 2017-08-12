@@ -1656,6 +1656,12 @@ VOID teSetRedraw(BOOL bSetRedraw)
 
 HRESULT teExceptionEx(EXCEPINFO *pExcepInfo, LPCSTR pszObjA, LPCSTR pszNameA)
 {
+	g_nException = 0;
+#ifdef _DEBUG
+	if (!g_strException) {
+		g_strException = L"Exception";
+	}
+#endif
 	if (pExcepInfo) {
 		BSTR bsObj = teMultiByteToWideChar(CP_UTF8, pszObjA, -1);
 		BSTR bsName = teMultiByteToWideChar(CP_UTF8, pszNameA, -1);
@@ -4787,6 +4793,7 @@ VOID ClearEvents()
 	}
 	g_param[TE_Tab] = TRUE;
 	EnableWindow(g_pWebBrowser->get_HWND(), TRUE);
+	SetWindowPos(g_hwndMain, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 }
 
 VOID teArrayPush(IDispatch *pdisp, PVOID pObj)
@@ -7729,6 +7736,7 @@ VOID teApiGetAsyncKeyState(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 VOID teApiTrackPopupMenuEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	IUnknown *punk;
+	BOOL bHook = FALSE;
 	if (nArg >= 6) {
 		if (FindUnknown(&pDispParams->rgvarg[nArg - 6], &punk)) {
 			IContextMenu *pCM;
@@ -7747,29 +7755,14 @@ VOID teApiTrackPopupMenuEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 	}
 	if (!g_hMenuKeyHook) {
 		g_hMenuKeyHook = SetWindowsHookEx(WH_KEYBOARD, (HOOKPROC)MenuKeyProc, hInst, g_dwMainThreadId);
-	}
-	HWND hwnd = GetForegroundWindow();
-	DWORD dwExStyle = 0;
-	DWORD dwPid1, dwPid2;
-	if (hwnd != g_hwndMain) {
-		GetWindowThreadProcessId(g_hwndMain, &dwPid1);
-		GetWindowThreadProcessId(hwnd, &dwPid2);
-		if (dwPid1 != dwPid2) {
-			dwExStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
-			SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-			teSetForegroundWindow(g_hwndMain);
-		}
+		bHook = TRUE;
 	}
 	teSetLong(pVarResult, TrackPopupMenuEx(param[0].hmenu, param[1].uintVal, param[2].intVal, param[3].intVal,
 		param[4].hwnd, param[5].lptpmparams));
-	if (hwnd != g_hwndMain && dwPid1 != dwPid2) {
-		if (!(dwExStyle & WS_EX_TOPMOST)) {
-			SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-		}
-		teSetForegroundWindow(hwnd);
+	if (bHook) {
+		UnhookWindowsHookEx(g_hMenuKeyHook);
+		g_hMenuKeyHook = NULL;
 	}
-	UnhookWindowsHookEx(g_hMenuKeyHook);
-	g_hMenuKeyHook = NULL;
 	SafeRelease(&g_pCM);
 }
 
@@ -12268,15 +12261,19 @@ STDMETHODIMP CteShellBrowser::IncludeObject(IShellView *ppshv, LPCITEMIDLIST pid
 	if (m_ppDispatch[SB_OnIncludeObject]) {
 		VARIANT vResult;
 		VariantInit(&vResult);
-		VARIANTARG *pv = GetNewVARIANT(3);
-		teSetObject(&pv[2], this);
-		if SUCCEEDED(teGetDisplayNameBSTR(m_pSF2, pidl, SHGDN_NORMAL, &pv[1].bstrVal)) {
+		VARIANTARG *pv = GetNewVARIANT(4);
+		teSetObject(&pv[3], this);
+		if SUCCEEDED(teGetDisplayNameBSTR(m_pSF2, pidl, SHGDN_NORMAL, &pv[2].bstrVal)) {
+			pv[2].vt = VT_BSTR;
+		}
+		if SUCCEEDED(teGetDisplayNameBSTR(m_pSF2, pidl, SHGDN_INFOLDER | SHGDN_FORPARSING, &pv[1].bstrVal)) {
 			pv[1].vt = VT_BSTR;
 		}
-		if SUCCEEDED(teGetDisplayNameBSTR(m_pSF2, pidl, SHGDN_INFOLDER | SHGDN_FORPARSING, &pv[0].bstrVal)) {
-			pv[0].vt = VT_BSTR;
+		LPITEMIDLIST pidlFull = ILCombine(m_pidl, pidl);
+		if (pidlFull) {
+			teSetIDListRelease(&pv[0], &pidlFull);
 		}
-		Invoke4(m_ppDispatch[SB_OnIncludeObject], &vResult, 3, pv);
+		Invoke4(m_ppDispatch[SB_OnIncludeObject], &vResult, 4, pv);
 		return GetIntFromVariantClear(&vResult);
 	}
 	if (m_bsFilter) {
@@ -13009,6 +13006,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						if (lstrlen(v.bstrVal)) {
 							m_bsFilter = ::SysAllocString(v.bstrVal);
 						}
+						SafeRelease(&m_ppDispatch[SB_OnIncludeObject]);
 						DoFunc(TE_OnFilterChanged, this, S_OK);
 					}
 					VariantClear(&v);
@@ -13486,16 +13484,16 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 									if (m_ppDispatch[SB_OnIncludeObject]) {
 										VARIANT vResult;
 										VariantInit(&vResult);
-										VARIANTARG *pv = GetNewVARIANT(3);
-										teSetObject(&pv[2], this);
-										teSetSZ(&pv[1], bs);
-										if (GetDisplayNameFromPidl(&pv[0].bstrVal, pidl, SHGDN_INFOLDER | SHGDN_FORPARSING) == S_OK) {
-											pv[0].vt = VT_BSTR;
+										VARIANTARG *pv = GetNewVARIANT(4);
+										teSetObject(&pv[3], this);
+										teSetSZ(&pv[2], bs);
+										if (GetDisplayNameFromPidl(&pv[1].bstrVal, pidl, SHGDN_INFOLDER | SHGDN_FORPARSING) == S_OK) {
+											pv[1].vt = VT_BSTR;
 										}
-										Invoke4(m_ppDispatch[SB_OnIncludeObject], &vResult, 3, pv);
+										teSetIDList(&pv[0], pidl);
+										Invoke4(m_ppDispatch[SB_OnIncludeObject], &vResult, 4, pv);
 										hr = GetIntFromVariantClear(&vResult);
-									}
-									else if (m_bsFilter) {
+									} else if (m_bsFilter) {
 										if (tePathMatchSpec(bs, m_bsFilter)) {
 											hr = S_OK;
 										} else {
