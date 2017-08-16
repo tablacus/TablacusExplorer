@@ -11722,8 +11722,10 @@ HRESULT CteShellBrowser::GetAbsPidl(LPITEMIDLIST *ppidlOut, FolderItem *pid, UIN
 			*ppidlOut = ILClone(pidlPrevius);
 			if (pPrevious) {
 				pPrevious->QueryInterface(IID_PPV_ARGS(&m_pFolderItem1));
-			} else {
+			} else if (pidlPrevius) {
 				GetFolderItemFromIDList(&m_pFolderItem1, *ppidlOut);
+			} else {
+				*ppidlOut = ::ILClone(g_pidls[CSIDL_DESKTOP]);
 			}
 		}
 		teCoTaskMemFree(pidlPrevius);

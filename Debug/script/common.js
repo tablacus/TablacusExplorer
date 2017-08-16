@@ -437,10 +437,13 @@ function MakeImgIcon(src, index, h, strBitmap, strIcon)
 	if (value) {
 		var icon = value.split(",");
 		var phIcon = api.Memory("HANDLE");
-		if (icon[index * 4 + 2] > 16) {
-			api.SHDefExtractIcon(icon[index * 4], icon[index * 4 + 1], 0, phIcon, null, icon[index * 4 + 2]);
+		if (!h) {
+			h = api.GetSystemMetrics(SM_CYSMICON);
+		}
+		if (h > 16) {
+			api.SHDefExtractIcon(icon[index * 4], icon[index * 4 + 1], 0, phIcon, null, h);
 		} else {
-			api.SHDefExtractIcon(icon[index * 4], icon[index * 4 + 1], 0, null, phIcon, icon[index * 4 + 2] << 16);
+			api.SHDefExtractIcon(icon[index * 4], icon[index * 4 + 1], 0, null, phIcon, h << 16);
 		}
 		if (phIcon[0]) {
 			return phIcon[0];
@@ -1921,10 +1924,10 @@ AddMenuIconFolderItem = function (mii, FolderItem, nHeight)
 	}
 	if (api.PathIsNetworkPath(path)) {
 		if (fso.GetDriveName(path) != path.replace(/\\$/, "")) {
-			MenusIcon(mii, WINVER >= 0x600 ? "icon:shell32.dll,275,16" : "icon:shell32.dll,85,16");
+			MenusIcon(mii, WINVER >= 0x600 ? "icon:shell32.dll,275" : "icon:shell32.dll,85");
 			return;
 		}
-		MenusIcon(mii, WINVER >= 0x600 ? "icon:shell32.dll,273,16" : "icon:shell32.dll,9,16");
+		MenusIcon(mii, WINVER >= 0x600 ? "icon:shell32.dll,273" : "icon:shell32.dll,9");
 		return;
 	}
 	api.SHGetFileInfo(FolderItem, 0, sfi, sfi.Size, dwFlags);
@@ -1969,7 +1972,7 @@ MenusIcon = function (mii, src, nHeight)
 				image = image.GetThumbnailImage(nHeight * image.GetWidth() / image.GetHeight(), nHeight);
 			}
 		} else {
-			var hIcon = MakeImgIcon(src, 0, nHeight || 16);
+			var hIcon = MakeImgIcon(src, 0, nHeight || api.GetSystemMetrics(SM_CYSMICON));
 			image.FromHICON(hIcon);
 			api.DestroyIcon(hIcon);
 		}

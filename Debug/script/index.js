@@ -189,8 +189,24 @@ Finalize = function ()
 
 SetGestureText = function (Ctrl, Text)
 {
+	var mode = g_.mouse.GetMode(Ctrl, g_.mouse.ptGesture);
+	if (mode) {
+		var s = eventTE.Mouse[mode][Text];
+		if (!s) {
+			var res = /(.*)_Background/i.exec(mode);
+			if (res) {
+				s = eventTE.Mouse[res[1]][Text];
+			}
+			if (!s) {
+				s = eventTE.Mouse.All[Text];
+			}
+		}
+		if (s && s[0][2]) {
+			Text += "\n" + GetText(s[0][2]);
+		}
+	}
 	RunEvent3("SetGestureText", Ctrl, Text);
-	if (Text.length > 1 && te.Data.Conf_Gestures > 1) {
+	if (Text.length > 1 && te.Data.Conf_Gestures > 1 && !/^[a-z]+\d$/i.test(Text)) {
 		g_.mouse.bTrail = true;
 		var hdc = api.GetWindowDC(te.hwnd);
 		if (hdc) {
@@ -198,17 +214,20 @@ SetGestureText = function (Ctrl, Text)
 			if (!g_.mouse.ptText) {
 				g_.mouse.ptText = g_.mouse.ptGesture.Clone();
 				api.ScreenToClient(te.hwnd, g_.mouse.ptText);
-				g_.mouse.right = -32767;
+				g_.mouse.right = g_.mouse.bottom = -32767;
 			}
 			rc.left = g_.mouse.ptText.x;
 			rc.top = g_.mouse.ptText.y;
 			var hOld = api.SelectObject(hdc, CreateFont(DefaultFont));
-			api.DrawText(hdc, Text, -1, rc, DT_CALCRECT);
+			api.DrawText(hdc, Text, -1, rc, DT_CALCRECT | DT_NOPREFIX);
 			if (g_.mouse.right < rc.right) {
 				g_.mouse.right = rc.right;
 			}
-			api.Rectangle(hdc, rc.left - 2, rc.top - 1, g_.mouse.right + 2, rc.bottom + 1);
-			api.DrawText(hdc, Text, -1, rc, DT_TOP);
+			if (g_.mouse.bottom < rc.bottom) {
+				g_.mouse.bottom = rc.bottom;
+			}
+			api.Rectangle(hdc, rc.left - 2, rc.top - 1, g_.mouse.right + 2, g_.mouse.bottom + 1);
+			api.DrawText(hdc, Text, -1, rc, DT_NOPREFIX);
 			api.SelectObject(hdc, hOld);
 			api.ReleaseDC(te.hwnd, hdc);
 		}
@@ -681,15 +700,7 @@ AddEvent("Close", function (Ctrl)
 			break;
 		case CTRL_SB:
 		case CTRL_EB:
-			if (Ctrl.Data.Lock) {
-				return S_FALSE;
-			}
-			var hr = CloseView(Ctrl);
-			if (hr == S_OK && Ctrl.Parent.Count <= 1) {
-				Ctrl.Navigate(HOME_PATH, SBSP_SAMEBROWSER);
-				hr = S_FALSE;
-			}
-			return hr;
+			return Ctrl.Data.Lock ? S_FALSE : CloseView(Ctrl);
 		case CTRL_TC:
 			var o = document.getElementById("Panel_" + Ctrl.Id);
 			if (o) {
@@ -1886,16 +1897,17 @@ GetIconImage = function (Ctrl, BGColor)
 	if (img) {
 		return img;
 	}
+	var nSize = api.GetSystemMetrics(SM_CYSMICON);
 	var FolderItem = Ctrl.FolderItem || Ctrl;
 	if (!FolderItem || FolderItem.Unavailable) {
-		return MakeImgSrc("icon:shell32.dll,234,16", 0, false, 16);
+		return MakeImgSrc("icon:shell32.dll,234", 0, false, nSize);
 	}
 	var path = FolderItem.Path;
 	if (api.PathIsNetworkPath(path)) {
 		if (fso.GetDriveName(path) != path.replace(/\\$/, "")) {
-			return MakeImgSrc(WINVER >= 0x600 ? "icon:shell32.dll,275,16" : "icon:shell32.dll,85,16", 0, false, 16);
+			return MakeImgSrc(WINVER >= 0x600 ? "icon:shell32.dll,275" : "icon:shell32.dll,85", 0, false, nSize);
 		}
-		return MakeImgSrc(WINVER >= 0x600 ? "icon:shell32.dll,273,16" : "icon:shell32.dll,9,16", 0, false, 16);
+		return MakeImgSrc(WINVER >= 0x600 ? "icon:shell32.dll,273" : "icon:shell32.dll,9", 0, false, nSize);
 	}
 	if (document.documentMode) {
 		var sfi = api.Memory("SHFILEINFO");
@@ -1905,7 +1917,7 @@ GetIconImage = function (Ctrl, BGColor)
 		api.DestroyIcon(sfi.hIcon);
 		return image.DataURI("image/png");
 	}
-	return MakeImgSrc("icon:shell32.dll,3,16", 0, false, 16);
+	return MakeImgSrc("icon:shell32.dll,3", 0, false, nSize);
 }
 
 // Browser Events
@@ -1965,7 +1977,7 @@ function InitMenus()
 function ArrangeAddons()
 {
 	te.Data.Locations = te.Object();
-	window.IconSize = te.Data.Conf_IconSize;
+	window.IconSize = te.Data.Conf_IconSize || 24 * screen.logicalYDPI / 96;
 	var xml = OpenXml("addons.xml", false, true);
 	te.Data.Addons = xml;
 	if (api.GetKeyState(VK_SHIFT) < 0 && api.GetKeyState(VK_CONTROL) < 0) {
@@ -2194,21 +2206,17 @@ SetKeyExec = function (mode, strKey, path, type, bLast)
 			if (!KeyMode[strKey]) {
 				KeyMode[strKey] = [];
 			}
-			if (bLast) {
-				KeyMode[strKey].push([path, type]);
-			} else {
-				KeyMode[strKey].unshift([path, type]);
-			}
+			KeyMode[strKey][bLast ? "push" : "unshift"]([path, type]);
 		}
 	}
 }
 
-SetGestureExec = function (mode, strGesture, path, type, bLast)
+SetGestureExec = function (mode, strGesture, path, type, bLast, Name)
 {
 	if (/,/.test(strGesture) && !/,$/.test(strGesture)) {
 		var ar = strGesture.split(",");
 		for (var i in ar) {
-			SetGestureExec(mode, ar[i], path, type, bLast);
+			SetGestureExec(mode, ar[i], path, type, bLast, Name);
 		}
 		return;
 	}
@@ -2219,11 +2227,7 @@ SetGestureExec = function (mode, strGesture, path, type, bLast)
 			if (!MouseMode[strGesture]) {
 				MouseMode[strGesture] = [];
 			}
-			if (bLast) {
-				MouseMode[strGesture].push([path, type]);
-			} else {
-				MouseMode[strGesture].unshift([path, type]);
-			}
+			MouseMode[strGesture][bLast ? "push" : "unshift"]([path, type, Name]);
 		}
 	}
 }
@@ -2387,6 +2391,21 @@ g_.mouse =
 		return this.str.length ? s : GetGestureButton().replace(s, "") + s;
 	},
 
+	GetMode: function (Ctrl, pt)
+	{
+		switch (Ctrl ? Ctrl.Type : 0) {
+			case CTRL_SB:
+			case CTRL_EB:
+				return Ctrl.SelectedItems.Count ? "List" : "List_Background";
+			case CTRL_TV:
+				return "Tree";
+			case CTRL_TC:
+				return Ctrl.HitTest(pt, TCHT_ONITEM) >= 0 ? "Tabs" : "Tabs_Background";
+			case CTRL_WB:
+				return "Browser";
+		}
+	},
+
 	Exec: function (Ctrl, hwnd, pt, str)
 	{
 		var str = GetGestureKey() + (str || this.str);
@@ -2395,59 +2414,39 @@ g_.mouse =
 		if (!Ctrl) {
 			return S_FALSE;
 		}
-		var s = null;
-		switch (Ctrl.Type) {
-			case CTRL_SB:
-			case CTRL_EB:
-				if (!Ctrl.SelectedItems.Count) {
-					if (GestureExec(Ctrl, "List_Background", str, pt, hwnd) === S_OK) {
-						return S_OK;
-					}
-				}
-				s = "List";
-				break;
-			case CTRL_TV:
-				s = "Tree";
-				break;
-			case CTRL_TC:
-				if (Ctrl.HitTest(pt, TCHT_ONITEM) < 0) {
-					if (GestureExec(Ctrl, "Tabs_Background", str, pt, hwnd) === S_OK) {
-						return S_OK;
-					}
-				}
-				s = "Tabs";
-				break;
-			case CTRL_WB:
-				s = "Browser";
-				break;
-			default:
-				if (str.length) {
-					window.g_menu_button = str;
-					if (window.g_menu_click) {
-						if (window.g_menu_click === true) {
-							var hSubMenu = api.GetSubMenu(window.g_menu_handle, window.g_menu_pos);
-							if (hSubMenu) {
-								var mii = api.Memory("MENUITEMINFO");
-								mii.cbSize = mii.Size;
-								mii.fMask = MIIM_SUBMENU;
-								if (api.SetMenuItemInfo(window.g_menu_handle, window.g_menu_pos, true, mii)) {
-									api.DestroyMenu(hSubMenu);
-								}
-							}
-						}
-						if (str > 2) {
-							window.g_menu_click = 4;
-							var lParam = pt.x + (pt.y << 16);
-							api.PostMessage(hwnd, WM_LBUTTONDOWN, 0, lParam);
-							api.PostMessage(hwnd, WM_LBUTTONUP, 0, lParam);
-						}
-					}
-				}
-				break;
-		}
+		var s = this.GetMode(Ctrl, pt);
 		if (s) {
 			if (GestureExec(Ctrl, s, str, pt, hwnd) === S_OK) {
 				return S_OK;
+			}
+			var res = /(.*)_Background/i.exec(s);
+			if (res) {
+				if (GestureExec(Ctrl, res[1], str, pt, hwnd) === S_OK) {
+					return S_OK;
+				}
+			}
+		} else {
+			if (str.length) {
+				window.g_menu_button = str;
+				if (window.g_menu_click) {
+					if (window.g_menu_click === true) {
+						var hSubMenu = api.GetSubMenu(window.g_menu_handle, window.g_menu_pos);
+						if (hSubMenu) {
+							var mii = api.Memory("MENUITEMINFO");
+							mii.cbSize = mii.Size;
+							mii.fMask = MIIM_SUBMENU;
+							if (api.SetMenuItemInfo(window.g_menu_handle, window.g_menu_pos, true, mii)) {
+								api.DestroyMenu(hSubMenu);
+							}
+						}
+					}
+					if (str > 2) {
+						window.g_menu_click = 4;
+						var lParam = pt.x + (pt.y << 16);
+						api.PostMessage(hwnd, WM_LBUTTONDOWN, 0, lParam);
+						api.PostMessage(hwnd, WM_LBUTTONUP, 0, lParam);
+					}
+				}
 			}
 		}
 		if (Ctrl.Type != CTRL_TE) {

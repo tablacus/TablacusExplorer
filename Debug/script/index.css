@@ -253,3 +253,7 @@ a.treebutton:hover {
 	height: 100%;
 	cursor: e-resize;
 }
+
+.favicon {
+  height: 12pt;
+}

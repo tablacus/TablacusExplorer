@@ -490,10 +490,10 @@ function SwitchMenus(o)
 	}
 }
 
-function SwitchX(mode, o)
+function SwitchX(mode, o, form)
 {
 	g_x[mode].style.display = "none";
-	g_x[mode] = document.F[mode + o.value];
+	g_x[mode] = (form || document.F)[mode + o.value];
 	g_x[mode].style.display = "inline";
 	CancelX(mode);
 }
@@ -592,27 +592,34 @@ function EditMenus()
 	SetImage();
 }
 
-function EditXEx(o, s)
+function EditXEx(o, s, form)
 {
 	if (document.getElementById("_EDIT").checked) {
-		o(s);
+		o(s, form);
 	}
 }
 
-EditX = function (mode)
+EditX = function (mode, form)
 {
 	if (g_x[mode].selectedIndex < 0) {
 		return;
 	}
+	if (!form) {
+		form = document.F;
+	}
 	ClearX(mode);
 	var a = g_x[mode][g_x[mode].selectedIndex].value.split(g_sep);
-	document.F[mode + mode].value = a[0];
+	form[mode + mode].value = a[0];
 	var p = { s: a[1] };
 	MainWindow.OptionDecode(a[2], p);
-	document.F[mode + "Path"].value = p.s;
-	SetType(document.F[mode + "Type"], a[2]);
-	if (api.StrCmpI(mode, "Key") == 0) {
+	form[mode + "Path"].value = p.s;
+	SetType(form[mode + "Type"], a[2]);
+	if (api.StrCmpI(mode, "key") == 0) {
 	 	SetKeyShift();
+	}
+	var o = form[mode + "Name"];
+	if (o) {
+		o.value = GetText(a[3] || "");
 	}
 }
 
@@ -650,10 +657,10 @@ function InsertX(sel)
 	}
 }
 
-function AddX(mode, fn)
+function AddX(mode, fn, form)
 {
 	InsertX(g_x[mode]);
-	(fn || ReplaceX)(mode);
+	(fn || ReplaceX)(mode, form);
 	EnableSelectTag(g_x[mode]);
 }
 
@@ -677,10 +684,13 @@ function ReplaceMenus()
 	g_Chg.Menus = true;
 }
 
-function ReplaceX(mode)
+function ReplaceX(mode, form)
 {
 	if (!g_x[mode]) {
 		return;
+	}
+	if (!form) {
+		form = document.F;
 	}
 	ClearX(mode);
 	if (g_x[mode].selectedIndex < 0) {
@@ -688,10 +698,11 @@ function ReplaceX(mode)
 		EnableSelectTag(g_x[mode]);
 	}
 	var sel = g_x[mode][g_x[mode].selectedIndex];
-	var o = document.F[mode + "Type"];
-	var p = { s: document.F[mode + "Path"].value };
+	var o = form[mode + "Type"];
+	var p = { s: form[mode + "Path"].value };
 	MainWindow.OptionEncode(o[o.selectedIndex].value, p);
-	SetData(sel, [document.F[mode + mode].value, p.s, o[o.selectedIndex].value]);
+	var o2 = form[mode + "Name"];
+	SetData(sel, [form[mode + mode].value, p.s, o[o.selectedIndex].value, o2 ? GetSourceText(o2.value) : ""]);
 	g_Chg[mode] = true;
 	g_bChanged = true;
 }
@@ -796,14 +807,17 @@ function LoadMenus(nSelected)
 	}
 }
 
-function LoadX(mode, fn)
+function LoadX(mode, fn, form)
 {
 	if (!g_x[mode]) {
+        if (!form) {
+            form = document.F;
+        }
 		var arFunc = [];
 		for (var i in MainWindow.eventTE.AddType) {
 			MainWindow.eventTE.AddType[i](arFunc);
 		}
-		var oa = document.F[mode + "Type"] || document.F.Type;
+		var oa = form[mode + "Type"] || form.Type;
 		while (oa.length) {
 			oa.removeChild(oa[0]);
 		}
@@ -812,16 +826,16 @@ function LoadX(mode, fn)
 			o.value = arFunc[i];
 			o.innerText = GetText(arFunc[i]).replace(/&|\.\.\.$/g, "").replace(/\(\w\)/, "");
 		}
-		g_x[mode] = document.F[mode + "All"];
+		g_x[mode] = form[mode + "All"];
 		if (g_x[mode]) {
-			oa = document.F[mode];
+			oa = form[mode];
 			oa.length = 0;
 			xml = OpenXml(mode + ".xml", false, true);
 			for (var j in g_Types[mode]) {
 				var o = oa[++oa.length - 1];
 				o.text = GetTextEx(g_Types[mode][j]);
 				o.value = g_Types[mode][j];
-				o = document.F[mode + g_Types[mode][j]];
+				o = form[mode + g_Types[mode][j]];
 				var items = xml.getElementsByTagName(g_Types[mode][j]);
 				var i = items.length;
 				if (i == 0 && g_Types[mode][j] == "List") {
@@ -839,11 +853,11 @@ function LoadX(mode, fn)
 						}
 						s = ar.join(",");
 					}
-					SetData(o[i], [s, item.text, item.getAttribute("Type")]);
+					SetData(o[i], [s, item.text, item.getAttribute("Type"), item.getAttribute("Name")]);
 				}
 			}
 		} else {
-			g_x[mode] = document.F.List;
+			g_x[mode] = form.List;
 			g_x[mode].length = 0;
 			var path = fso.GetParentFolderName(api.GetModuleFileName(null));
 			var xml = te.Data["xml" + AddonName];
@@ -901,18 +915,18 @@ function SaveMenus()
 	}
 }
 
-function SaveX(mode)
+function SaveX(mode, form)
 {
 	if (g_Chg[mode]) {
 		var xml = CreateXml();
 		var root = xml.createElement("TablacusExplorer");
 		for (var j in g_Types[mode]) {
-			var o = document.F[mode + g_Types[mode][j]];
+			var o = (form || document.F)[mode + g_Types[mode][j]];
 			for (var i = 0; i < o.length; i++) {
 				var item = xml.createElement(g_Types[mode][j]);
 				var a = o[i].value.split(g_sep);
 				var s = a[0];
-				if (api.StrCmpI(mode, "Key") == 0) {
+				if (mode.toLowerCase() == "key") {
 					var ar = /,$/.test(s) ? [s] : s.split(",");
 					for (var k = ar.length; k--;) {
 						var n = GetKeyKey(ar[k]);
@@ -921,6 +935,8 @@ function SaveX(mode)
 						}
 					}
 					s = ar.join(",");
+				} else {
+					item.setAttribute("Name", a[3]);
 				}
 				item.setAttribute(mode, s);
 				item.text = a[1];
@@ -1068,7 +1084,7 @@ function SetAddon(Id, bEnable, td)
 	}
 	s.push('<td style="vertical-align: middle"><input type="checkbox" id="enable_', Id, '" onclick="AddonEnable(this)" ', info.MinVersion && te.Version < CalcVersion(info.MinVersion) ? " disabled" : "", bEnable ? " checked" : "", '></td>');
 	s.push('<td style="vertical-align: middle"><label for="enable_', Id, '" style="display: block; width: 6em; white-space: nowrap">', GetText(bEnable ? "Enabled" : "Enable"), '</label></td>');
-	s.push('<td style="vertical-align: middle; padding-right: 1em"><input type="image" src="bitmap:ieframe.dll,216,16,10" title="', GetText('Remove'), '" onclick="AddonRemove(\'', Id, '\')"></td>');
+	s.push('<td style="vertical-align: middle; padding-right: 1em"><input type="image" src="bitmap:ieframe.dll,216,16,10" title="', GetText('Remove'), '" onclick="AddonRemove(\'', Id, '\')" style="width: 12pt"></td>');
 	s.push('</tr></table></label></div>');
 	td.innerHTML = s.join("");
 	ApplyLang(td);
@@ -1357,8 +1373,8 @@ OpenIcon = function (o)
 			dllpath = fso.BuildPath(system32, a[1]);
 			var nCount = api.ExtractIconEx(dllpath, -1, null, null, 0);
 			for (var i = 0; i < nCount; i++) {
-				var s = ["icon:" + a[1],i ,a[2]].join(",");
-				var src = MakeImgSrc(s, 0, false, a[2]);
+				var s = ["icon:" + a[1], i].join(",");
+				var src = MakeImgSrc(s, 0, false, 32);
 				data.push('<img src="' + src + '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="' + s + '"> ');
 			}
 		}
@@ -1383,24 +1399,19 @@ InitDialog = function ()
 			"16px ieframe,699" : "b,699,16",
 			"24px ieframe,697" : "b,697,24",
 
-			"16px shell32" : "i,shell32.dll,16",
-			"16px imageres" : "i,imageres.dll,16",
-			"16px wmploc" : "i,wmploc.dll,16",
-			"16px setupapi" : "i,setupapi.dll,16",
-			"16px dsuiext" : "i,dsuiext.dll,16",
-			"16px inetcpl" : "i,inetcpl.cpl,16",
+			"shell32" : "i,shell32.dll",
+			"imageres" : "i,imageres.dll",
+			"wmploc" : "i,wmploc.dll",
+			"setupapi" : "i,setupapi.dll",
+			"dsuiext" : "i,dsuiext.dll",
+			"inetcpl" : "i,inetcpl.cpl",
 
 			"25px TRAVEL_ENABLED_XP" : "b,TRAVEL_ENABLED_XP.BMP,25",
 			"30px TRAVEL_ENABLED_XP" : "b,TRAVEL_ENABLED_XP_120.BMP,30"
 		};
-		var s = [], ar = [32, 48];
+		var s = [];
 		for (var i in a) {
 			s.push('<div id="' + a[i] + '" onclick="OpenIcon(this)" style="cursor: pointer"><span class="tab">' + i + '</span></div>');
-			if (a[i].charAt(0) == 'i') {
-				for (var j in ar) {
-					s.push('<div id="' + a[i].replace("16", ar[j]) + '" onclick="OpenIcon(this)" style="cursor: pointer"><span class="tab">' + i.replace("16", ar[j]) + '</span></div>');
-				}
-			}
 		}
 		document.getElementById("Content").innerHTML = s.join("");
 	}
