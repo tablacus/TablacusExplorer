@@ -11139,7 +11139,7 @@ HRESULT CteShellBrowser::Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *
 				wFlags = (wFlags | SBSP_NEWBROWSER) & (~SBSP_ACTIVATE_NOFOCUS);
 			}
 		}
-		if (wFlags & SBSP_NEWBROWSER || (m_bEmpty && m_bVisible)) {
+		if (wFlags & SBSP_NEWBROWSER || m_bEmpty) {
 			CteShellBrowser *pSB = this;
 			BOOL bNew = !m_bEmpty && (wFlags & SBSP_NEWBROWSER);
 			if (bNew) {
@@ -17994,7 +17994,7 @@ HRESULT CteFolderItems::QueryGetData2(FORMATETC *pformatetc)
 	if (pformatetc->cfFormat == CF_TEXT) {
 		return S_OK;
 	}
-	if (m_nCount) {
+	if (m_nCount > 0) {
 		if (pformatetc->cfFormat == CF_HDROP) {
 			return S_OK;
 		}
@@ -18024,30 +18024,11 @@ STDMETHODIMP CteFolderItems::SetData(FORMATETC *pformatetc, STGMEDIUM *pmedium, 
 STDMETHODIMP CteFolderItems::EnumFormatEtc(DWORD dwDirection, IEnumFORMATETC **ppenumFormatEtc)
 {
 	if (dwDirection == DATADIR_GET) {
-		FORMATETC formats[MAX_FORMATS];
-		FORMATETC teformats[] = {  IDLISTFormat, HDROPFormat, UNICODEFormat, TEXTFormat, DROPEFFECTFormat };
+		FORMATETC formats[] = { IDLISTFormat, HDROPFormat, UNICODEFormat, TEXTFormat, DROPEFFECTFormat };
 		UINT nFormat = 0;
-
-		if (m_pDataObj) {
-			IEnumFORMATETC *penumFormatEtc;
-			if SUCCEEDED(m_pDataObj->EnumFormatEtc(DATADIR_GET, &penumFormatEtc)) {
-				while (nFormat < MAX_FORMATS - _countof(teformats) && penumFormatEtc->Next(1, &formats[nFormat], NULL) == S_OK) {
-					if (QueryGetData2(&formats[nFormat]) != S_OK) {
-						nFormat++;
-					}
-				}
-				penumFormatEtc->Release();
-			}
-		}
 		AdjustIDListEx();
-		int nMax = _countof(teformats);
-		if (m_dwEffect == (DWORD)-1) {
-			nMax--;
-		}
-		for (int i = m_nCount ? (m_bUseILF ? 0 : 1) : 2 ; i < nMax; i++) {
-			formats[nFormat++] = teformats[i];
-		}
-		return CreateFormatEnumerator(nFormat, formats, ppenumFormatEtc);
+		int i = m_nCount ? (m_bUseILF ? 0 : 1) : 2;
+		return CreateFormatEnumerator(_countof(formats) - i, &formats[i], ppenumFormatEtc);
 	}
 	if (m_pDataObj) {
 		return m_pDataObj->EnumFormatEtc(dwDirection, ppenumFormatEtc);
