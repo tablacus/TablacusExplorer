@@ -174,6 +174,14 @@ function ClickTree(o, nMode, strChg, bForce)
 			newTab = res[1] + res[2] + res[3];
 			if (res[3]) {
 				ClickButton(res[1], true);
+				if (res[1] == 1) {
+					(function (Id) { setTimeout(function () {
+						if (g_.elAddons[Id] && !g_.elAddons[Id].contentWindow) {
+							AddonOptions(Id, null, null, true);
+						}
+
+					}, 999);}) (res[3]);
+				}
 			}
 			document.getElementById("MoveButton").style.display = newTab == "1" || res[1] == 2 ? "inline-block" : "none";
 			if (nMode == 0) {

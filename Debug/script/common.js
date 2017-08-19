@@ -437,7 +437,9 @@ function MakeImgIcon(src, index, h, strBitmap, strIcon)
 	if (value) {
 		var icon = value.split(",");
 		var phIcon = api.Memory("HANDLE");
-		if (!h) {
+		if (icon[index * 4 + 2]) {
+			h = icon[index * 4 + 2];
+		} else if (!h) {
 			h = api.GetSystemMetrics(SM_CYSMICON);
 		}
 		if (h > 16) {
@@ -2395,7 +2397,7 @@ InputDialog = function (text, defaultText)
 	return prompt(GetTextR(text), defaultText);
 }
 
-AddonOptions = function (Id, fn, Data)
+AddonOptions = function (Id, fn, Data, bNew)
 {
 	var sParent = fso.GetParentFolderName(api.GetModuleFileName(null));
 	LoadLang2(fso.BuildPath(sParent, "addons\\" + Id + "\\lang\\" + GetLangId() + ".xml"));
@@ -2433,7 +2435,7 @@ AddonOptions = function (Id, fn, Data)
 			g_Chg.Addons = true;
 		}
 	}
-	if (window.Addon == 1 || api.GetKeyState(VK_CONTROL) < 0) {
+	if (bNew || window.Addon == 1 || api.GetKeyState(VK_CONTROL) < 0) {
 		if (/^Default$/i.test(sFeatures)) {
 			sFeatures = 'Width: 640; Height: 480';
 		}
