@@ -700,15 +700,7 @@ AddEvent("Close", function (Ctrl)
 			break;
 		case CTRL_SB:
 		case CTRL_EB:
-			if (Ctrl.Data.Lock) {
-				return S_FALSE;
-			}
-			var hr = CloseView(Ctrl);
-			if (hr == S_OK && Ctrl.Parent.Count <= 1) {
-				Ctrl.Navigate(HOME_PATH, SBSP_SAMEBROWSER);
-				hr = S_FALSE;
-			}
-			return hr;
+			return Ctrl.Data.Lock ? S_FALSE : CloseView(Ctrl);
 		case CTRL_TC:
 			var o = document.getElementById("Panel_" + Ctrl.Id);
 			if (o) {

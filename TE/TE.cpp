@@ -9251,23 +9251,21 @@ VOID Initlize()
 		pEB->Release();
 	}
 	DWORDLONG dwlConditionMask = 0;
-	OSVERSIONINFOEX osvi = { sizeof(OSVERSIONINFOEX), 10 };
     VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
+	OSVERSIONINFOEX osvi = { sizeof(OSVERSIONINFOEX), 10 };
 	g_bUpper10 = VerifyVersionInfo(&osvi, VER_MAJORVERSION, dwlConditionMask);
 #ifdef _2000XP
-    dwlConditionMask = 0;
 	osvi.dwMajorVersion = 6;
-    VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
 	g_bUpperVista = VerifyVersionInfo(&osvi, VER_MAJORVERSION, dwlConditionMask);
 #else
 	g_pidlResultsFolder = ILCreateFromPathA("shell:::{2965E715-EB66-4719-B53F-1672673BBEFA}");
 #endif
 #ifdef _W2000
     dwlConditionMask = 0;
-	osvi.dwMajorVersion = 5;
-    osvi.dwMinorVersion = 1;
 	VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_EQUAL);
     VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
+	osvi.dwMajorVersion = 5;
+    osvi.dwMinorVersion = 1;
 	g_bIsXP = VerifyVersionInfo(&osvi, VER_MAJORVERSION | VER_MINORVERSION, dwlConditionMask);
 	g_bIs2000 = !g_bUpperVista && !g_bIsXP;
 #endif
@@ -9619,6 +9617,9 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 									}
 								}
 								pSB = pTC->GetShellBrowser(pTC->m_nIndex);
+								if (!pSB) {
+									pSB = GetNewShellBrowser(pTC);
+								}
 								if (pSB) {
 									if (pSB->m_param[SB_TreeAlign] & 2) {
 										RECT rcTree = rc;
