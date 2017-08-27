@@ -1,18 +1,5 @@
 #pragma once
 
-//#define _USE_BSEARCHAPI
-//#define _USE_APIHOOK
-//#define _USE_HTMLDOC
-//#define _USE_TESTOBJECT
-//#define _USE_TESTPATHMATCHSPEC
-#define _Emulate_XP_	//FALSE &&
-#ifndef _WIN64
-#define _2000XP
-//#define _W2000
-#endif
-//bug fix 1 for Windows 10 Insider Preview 14986-
-#define _FIXWIN10IPBUG1
-
 #include "resource.h"
 #include <Mshtml.h>
 #include <mshtmhst.h>
@@ -1325,6 +1312,7 @@ public:
 	HWND        m_hwndTV;
 	INameSpaceTreeControl	*m_pNameSpaceTreeControl;
 	CteShellBrowser	*m_pFV;
+	DWORD	*m_param;
 	BOOL	m_bEmpty;
 #ifdef _2000XP
 	IShellNameSpace *m_pShellNameSpace;
@@ -1339,7 +1327,6 @@ private:
 	LPWSTR	lplpVerbs;
 	CteDropTarget2 *m_pDropTarget2;
 	HWND	m_hwndParent;
-	DWORD	*m_param;
 #ifdef _W2000
 	VARIANT m_vSelected;
 #endif

@@ -256,6 +256,7 @@ function ApplyLang(doc)
 	if (doc.body) {
 		doc.body.style.fontFamily = FaceName;
 		doc.body.style.fontSize = Math.abs(MainWindow.DefaultFont.lfHeight) + "px";
+		doc.body.style.fontWeight = MainWindow.DefaultFont.lfWeight;
 		doc.body.style.backgroundColor = 'buttonface';
 	}
 	ApplyLangTag(doc.getElementsByTagName("label"));
@@ -2362,7 +2363,7 @@ MessageBox = function (s, title, uType)
 createHttpRequest = function ()
 {
 	try {
-		return window.XMLHttpRequest ? new XMLHttpRequest() : te.CreateObject("Msxml2.XMLHTTP");
+		return window.XMLHttpRequest && document.documentMode >= 9 ? new XMLHttpRequest() : te.CreateObject("Msxml2.XMLHTTP");
 	} catch (e) {
 		return te.CreateObject("Microsoft.XMLHTTP");
 	}
@@ -3343,7 +3344,15 @@ AddEventEx(window, "beforeunload", function ()
 
 GetTEInfo = function ()
 {
-	return api.sprintf(99, "TE%d %d.%d.%d Win %d.%d.%d%s %s %x%s IE %d %s", api.sizeof("HANDLE") * 8, (te.Version / 10000) % 100, (te.Version / 100) % 100, te.Version % 100, osInfo.dwMajorVersion, osInfo.dwMinorVersion, osInfo.dwBuildNumber, api.IsWow64Process(api.GetCurrentProcess()) ? " Wow64" : "", ["WS", "DC", "SV"][osInfo.wProductType - 1] || osInfo.wProductType, osInfo.wSuiteMask, api.SHTestTokenMembership(null, 0x220) ? " Admin" : "", document.documentMode || (document.body.style.maxHeight === undefined ? 6 : 7), GetLangId(2));
+	var ar = [""];
+	var server = te.GetObject("winmgmts:\\\\.\\root\\SecurityCenter" + (WINVER >= 0x600 ? "2" : ""));
+	if (server) {
+		var cols = server.ExecQuery("SELECT * FROM AntiVirusProduct");
+		for (var list = new Enumerator(cols); !list.atEnd(); list.moveNext()) {
+			ar.push(list.item().displayName);
+		}
+	}
+	return api.sprintf(99, "TE%d %d.%d.%d Win %d.%d.%d%s %s %x%s IE %d %s", api.sizeof("HANDLE") * 8, (te.Version / 10000) % 100, (te.Version / 100) % 100, te.Version % 100, osInfo.dwMajorVersion, osInfo.dwMinorVersion, osInfo.dwBuildNumber, api.IsWow64Process(api.GetCurrentProcess()) ? " Wow64" : "", ["WS", "DC", "SV"][osInfo.wProductType - 1] || osInfo.wProductType, osInfo.wSuiteMask, api.SHTestTokenMembership(null, 0x220) ? " Admin" : "", document.documentMode || (document.body.style.maxHeight === undefined ? 6 : 7), GetLangId(2)) + ar.join(" ");
 }
 
 FireEvent = function (o, event)

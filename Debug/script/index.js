@@ -601,7 +601,7 @@ EnableDragDrop = function ()
 DisableImage = function (img, bDisable)
 {
 	if (img) {
-		if (api.LowPart(document.documentMode) < 10) {
+		if (document.documentMode < 10) {
 			img.style.filter = bDisable ? "gray(), alpha(style=0,opacity=48);": "";
 		} else {
 			var s = decodeURIComponent(img.src);

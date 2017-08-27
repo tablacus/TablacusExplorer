@@ -15404,6 +15404,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 			case TE_METHOD + 1006:
 				if (nArg >= 0) {
 					int nCtrl = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+					BOOL bAll = nArg >= 1 ? !GetIntFromVariant(&pDispParams->rgvarg[nArg -  1]) : TRUE;
 					IDispatch *pArray = NULL;
 					GetNewArray(&pArray);
 					int i;
@@ -15415,9 +15416,11 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 						case CTRL_TV:
 							CteShellBrowser *pSB;
 							for (i = MAX_FV; i-- && (pSB = g_ppSB[i]);) {
-								if (!pSB->m_bEmpty) {
+								if (!pSB->m_bEmpty && (bAll || pSB->m_pTC->m_bVisible)) {
 									if (nCtrl == CTRL_TV) {
-										teArrayPush(pArray, pSB->m_pTV);
+										if (pSB->m_pTV->m_param[SB_TreeAlign] & 2) {
+											teArrayPush(pArray, pSB->m_pTV);
+										}
 									} else {
 										teArrayPush(pArray, pSB);
 									}
@@ -15426,7 +15429,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 							if (nCtrl == CTRL_TV) {
 								CteTreeView *pTV;
 								for (i = MAX_TV; i-- && (pTV = g_ppTV[i]);) {
-									if (!pTV->m_bEmpty) {
+									if (!pTV->m_bEmpty && (bAll || pTV->m_param[SB_TreeAlign] & 2)) {
 										teArrayPush(pArray, pTV);
 									}
 								}
@@ -15435,7 +15438,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 						case CTRL_TC:
 							CteTabCtrl *pTC;
 							for (i = MAX_TC; i-- && (pTC = g_ppTC[i]);) {
-								if (!pTC->m_bEmpty) {
+								if (!pTC->m_bEmpty && (bAll || pTC->m_bVisible)) {
 									teArrayPush(pArray, pTC);
 								}
 							}

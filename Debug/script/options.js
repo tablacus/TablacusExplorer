@@ -187,13 +187,9 @@ function ClickTree(o, nMode, strChg, bForce)
 			if (nMode == 0) {
 				switch (res[1] - 0) {
 					case 1:
-						setTimeout(function () {
-							LoadAddons();
-						}, 9);
+						setTimeout(LoadAddons, 9);
 						if (newTab == '1_1') {
-							setTimeout(function () {
-								GetAddons();
-							}, 9);
+							setTimeout(GetAddons, 9);
 						}
 						break;
 					case 2:
@@ -1565,10 +1561,7 @@ InitDialog = function ()
 	AddEventEx(window, "resize", function ()
 	{
 		clearTimeout(g_tidResize);
-		g_tidResize = setTimeout(function ()
-		{
-			DialogResize();
-		}, 500);
+		g_tidResize = setTimeout(DialogResize, 500);
 	});
 	ApplyLang(document);
 	DialogResize();
@@ -1792,10 +1785,7 @@ InitLocation = function ()
 	AddEventEx(window, "resize", function ()
 	{
 		clearTimeout(g_tidResize);
-		g_tidResize = setTimeout(function ()
-		{
-			ResizeTabPanel();
-		}, 500);
+		g_tidResize = setTimeout(ResizeTabPanel, 500);
 	});
 
 	AddEventEx(window, "beforeunload", function ()
