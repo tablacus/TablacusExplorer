@@ -10,8 +10,8 @@
 #define STRING(str) STRING2(str)
 #define STRING2(str) #str
 #define VER_Y		17
-#define VER_M		8
-#define VER_D		27
+#define VER_M		9
+#define VER_D		4
 
 //Define
 //#define _USE_BSEARCHAPI

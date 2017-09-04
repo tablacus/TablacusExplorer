@@ -12398,6 +12398,8 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 			nAllWidth += n;
 		} else {
 			n = -1;
+		}
+		if (n < 0) {
 			nAllWidth += 100;
 		}
 		methodArgs[i].id = n;
