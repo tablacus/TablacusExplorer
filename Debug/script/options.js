@@ -176,10 +176,11 @@ function ClickTree(o, nMode, strChg, bForce)
 				ClickButton(res[1], true);
 				if (res[1] == 1) {
 					(function (Id) { setTimeout(function () {
-						if (g_.elAddons[Id] && !g_.elAddons[Id].contentWindow) {
-							AddonOptions(Id, null, null, true);
+						if (g_.elAddons[Id]) {
+							if (!g_.elAddons[Id].contentWindow || !g_.elAddons[Id].contentWindow.document.body.innerHTML) {
+								AddonOptions(Id, null, null, true);
+							}
 						}
-
 					}, 999);}) (res[3]);
 				}
 			}

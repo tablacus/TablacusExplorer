@@ -1207,6 +1207,24 @@ LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath);
 
 //Unit
 
+BOOL teGetHTMLWindow(IWebBrowser2 *pWB2, REFIID riid, void **ppvObject)
+{
+	*ppvObject = NULL;
+	IDispatch *pdisp;
+	if (pWB2->get_Document(&pdisp) == S_OK) {
+		IHTMLDocument2 *pdoc;
+		if SUCCEEDED(pdisp->QueryInterface(IID_PPV_ARGS(&pdoc))) {
+			IHTMLWindow2 *pwin;
+			if SUCCEEDED(pdoc->get_parentWindow(&pwin)) {
+				pwin->QueryInterface(riid, ppvObject);
+			}
+			pdoc->Release();
+		}
+		pdisp->Release();
+	}
+	return *ppvObject != NULL;
+}
+
 BSTR teMultiByteToWideChar(UINT CodePage, LPCSTR lpA, int nLenA)
 {
 	int nLenW = MultiByteToWideChar(CodePage, 0, lpA, nLenA, NULL, NULL);
@@ -9728,22 +9746,14 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 
 VOID CALLBACK teTimerProcSW(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 {
-	IDispatch *pdisp;
 	try {
 		KillTimer(hwnd, idEvent);
 		CteWebBrowser *pWB = (CteWebBrowser *)idEvent;
 		if (GetFocus() == pWB->m_hwndParent) {
-			if (pWB->m_pWebBrowser->get_Document(&pdisp) == S_OK) {
-				IHTMLDocument2 *pdoc;
-				if SUCCEEDED(pdisp->QueryInterface(IID_PPV_ARGS(&pdoc))) {
-					IHTMLWindow2 *pwin;
-					if SUCCEEDED(pdoc->get_parentWindow(&pwin)) {
-						teExecMethod(pwin, L"focus", NULL, NULL, NULL);
-						pwin->Release();
-					}
-					pdoc->Release();
-				}
-				pdisp->Release();
+			IHTMLWindow2 *pwin;
+			if (teGetHTMLWindow(pWB->m_pWebBrowser, IID_PPV_ARGS(&pwin))) {
+				pwin->focus();
+				pwin->Release();
 			}
 		}
 	} catch (...) {
@@ -11726,7 +11736,15 @@ HRESULT CteShellBrowser::GetAbsPidl(LPITEMIDLIST *ppidlOut, FolderItem *pid, UIN
 			} else if (pidlPrevius) {
 				GetFolderItemFromIDList(&m_pFolderItem1, *ppidlOut);
 			} else {
-				*ppidlOut = ::ILClone(g_pidls[CSIDL_DESKTOP]);
+				VARIANT v;
+				VariantInit(&v);
+				IDispatch *pdisp;
+				if (teGetHTMLWindow(g_pWebBrowser->m_pWebBrowser, IID_PPV_ARGS(&pdisp))) {
+					teGetProperty(pdisp, L"HOME_PATH", &v);
+					pdisp->Release();
+				}
+				teGetIDListFromVariant(ppidlOut, &v);
+				VariantClear(&v);
 			}
 		}
 		teCoTaskMemFree(pidlPrevius);
@@ -13870,7 +13888,7 @@ VOID CteShellBrowser::AddColumnDataXP(LPWSTR pszColumns, LPWSTR pszName, int nWi
 #endif
 #ifdef _FIXWIN10IPBUG1 //Fix Windows 10 Insider Preview & Creaters Update bugs
 VOID CteShellBrowser::FixWin10IPBug1() {
-	if (m_hwndLV) {
+	if (m_hwndLV && IsWindowVisible(m_hwndLV) && !ListView_GetEditControl(m_hwndLV)) {
 		if (m_param[SB_ViewMode] == FVM_DETAILS) {
 			POINT pt;
 			ListView_GetOrigin(m_hwndLV, &pt);
@@ -13879,15 +13897,16 @@ VOID CteShellBrowser::FixWin10IPBug1() {
 				ListView_SetView(m_hwndLV, LV_VIEW_DETAILS);
 			}
 		}
-		if (IsWindowVisible(m_hwndLV)) {
-			if (!(m_param[SB_FolderFlags] & FWF_NOCOLUMNHEADER)) {
-				HWND hHeader = ListView_GetHeader(m_hwndLV);
-				if (hHeader) {
-					RECT rc;
-					if (GetWindowRect(hHeader, &rc) && rc.top == rc.bottom) {
-						ShowWindow(m_hwndLV, SW_HIDE);
-						ShowWindow(m_hwndLV, SW_SHOWNA);
-					}
+		if (!(m_param[SB_FolderFlags] & FWF_NOCOLUMNHEADER)) {
+			HWND hHeader = ListView_GetHeader(m_hwndLV);
+			if (hHeader) {
+				RECT rc;
+				if (GetWindowRect(hHeader, &rc) && rc.top == rc.bottom) {
+					ListView_Scroll(m_hwndLV, 0, 0);
+				}
+				if (GetWindowRect(hHeader, &rc) && rc.top == rc.bottom) {
+					ShowWindow(m_hwndLV, SW_HIDE);
+					ShowWindow(m_hwndLV, SW_SHOWNA);
 				}
 			}
 		}
@@ -16110,17 +16129,8 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				return S_OK;
 			//Window
 			case 0x10000007:
-				if (m_pWebBrowser->get_Document(&pdisp) == S_OK) {
-					IHTMLDocument2 *pdoc;
-					if SUCCEEDED(pdisp->QueryInterface(IID_PPV_ARGS(&pdoc))) {
-						IHTMLWindow2 *pwin;
-						if SUCCEEDED(pdoc->get_parentWindow(&pwin)) {
-							teSetObjectRelease(pVarResult, pwin);
-							pwin->Release();
-						}
-						pdoc->Release();
-					}
-					pdisp->Release();
+				if (teGetHTMLWindow(m_pWebBrowser, IID_PPV_ARGS(&pdisp))) {
+					teSetObjectRelease(pVarResult, pdisp);
 				}
 				return S_OK;
 			//Focus
@@ -22131,19 +22141,7 @@ STDMETHODIMP CteActiveScriptSite::GetItemInfo(LPCOLESTR pstrName,
 			VariantClear(&v);
 		}
 		if (g_pWebBrowser && lstrcmpi(pstrName, L"window") == 0) {
-			IDispatch *pdisp;
-			if (g_pWebBrowser->m_pWebBrowser->get_Document(&pdisp) == S_OK) {
-				IHTMLDocument2 *pdoc;
-				if SUCCEEDED(pdisp->QueryInterface(IID_PPV_ARGS(&pdoc))) {
-					IHTMLWindow2 *pwin;
-					if SUCCEEDED(pdoc->get_parentWindow(&pwin)) {
-						pwin->QueryInterface(IID_PPV_ARGS(ppiunkItem));
-						pwin->Release();
-					}
-					pdoc->Release();
-				}
-				pdisp->Release();
-			}
+			teGetHTMLWindow(g_pWebBrowser->m_pWebBrowser, IID_PPV_ARGS(ppiunkItem));
 			return S_OK;
 		}
 /*		else if (g_pWebBrowser && lstrcmpi(pstrName, L"te") == 0) {
