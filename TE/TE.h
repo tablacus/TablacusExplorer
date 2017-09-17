@@ -28,6 +28,7 @@
 #include <Thumbcache.h>
 #ifndef _2000XP
 #include <Propsys.h>
+#include <Propvarutil.h>
 #endif
 #ifdef _USE_APIHOOK
 #include <imagehlp.h>
@@ -190,6 +191,8 @@ typedef HRESULT (STDAPICALLTYPE* LPFNPSPropertyKeyFromString)(__in LPCWSTR pszSt
 typedef HRESULT (STDAPICALLTYPE* LPFNPSGetPropertyKeyFromName)(__in PCWSTR pszName, __out PROPERTYKEY *ppropkey);
 typedef HRESULT (STDAPICALLTYPE* LPFNPSGetPropertyDescription)(__in REFPROPERTYKEY propkey, __in REFIID riid,  __deref_out void **ppv);
 typedef HRESULT (STDAPICALLTYPE* LPFNPSStringFromPropertyKey)(__in REFPROPERTYKEY pkey, __out_ecount(cch) LPWSTR psz, __in UINT cch);
+typedef HRESULT (STDAPICALLTYPE* LPFNPropVariantToVariant)(__in const PROPVARIANT *pPropVar, __out VARIANT *pVar);
+typedef HRESULT (STDAPICALLTYPE* LPFNVariantToPropVariant)(__in const VARIANT* pVar, __out PROPVARIANT* pPropVar);
 
 //Vista or higher.
 typedef HRESULT (STDAPICALLTYPE* LPFNSHCreateItemFromIDList)(__in PCIDLIST_ABSOLUTE pidl, __in REFIID riid, __deref_out void **ppv);
@@ -356,7 +359,8 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TE_CmdShow	6
 #define TE_Layout	7
 #define TE_NetworkTimeout	8
-#define Count_TE_params	9
+#define TE_SizeFormat	9
+#define Count_TE_params	10
 
 #define TC_Align	6
 #define TC_TabWidth		7
@@ -376,10 +380,8 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define SB_RootStyle	10
 #define SB_Root			11
 
-#define	SB_SizeFormat	12
-
-#define	SB_DoFunc	13
-#define	SB_Count	14
+#define	SB_DoFunc	12
+#define	SB_Count	13
 
 #define	TVVERBS 16
 
@@ -1090,6 +1092,7 @@ public:
 	UINT		m_nColumns;
 #endif
 	DWORD		m_param[SB_Count];
+	WORD		*m_pDTColumns;
 	int			m_nFolderSizeIndex;
 	int			m_nLabelIndex;
 	int			m_nSizeIndex;

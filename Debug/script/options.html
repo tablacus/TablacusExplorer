@@ -598,25 +598,28 @@
               <label for="Conf_Layout:0x80">Content</label>
               <br /><br />
               <label>Size</label><br />
-              <input type="radio" name="View_SizeFormat_" id="View_SizeFormat=0" onclick="SetRadio(this)" />
-              <label for="View_SizeFormat=0">Default</label>
-              <input type="radio" name="View_SizeFormat_" id="View_SizeFormat=2" onclick="SetRadio(this)" />
-              <label for="View_SizeFormat=2">Auto</label>
-              <input type="radio" name="View_SizeFormat_" id="View_SizeFormat=3" onclick="SetRadio(this)" />
-              <label for="View_SizeFormat=3">123</label>
-              <input type="radio" name="View_SizeFormat_" id="View_SizeFormat=1" onclick="SetRadio(this)" />
-              <label for="View_SizeFormat=1">KB</label>
-              <input type="radio" name="View_SizeFormat_" id="View_SizeFormat=0x22" onclick="SetRadio(this)" />
-              <label for="View_SizeFormat=0x22">MB</label>
-              <input type="radio" name="View_SizeFormat_" id="View_SizeFormat=0x32" onclick="SetRadio(this)" />
-              <label for="View_SizeFormat=0x32">GB</label>
+              <input type="radio" name="Conf_SizeFormat_" id="Conf_SizeFormat=0" onclick="SetRadio(this)" />
+              <label for="Conf_SizeFormat=0">Default</label>
+              <input type="radio" name="Conf_SizeFormat_" id="Conf_SizeFormat=2" onclick="SetRadio(this)" />
+              <label for="Conf_SizeFormat=2">Auto</label>
+              <input type="radio" name="Conf_SizeFormat_" id="Conf_SizeFormat=3" onclick="SetRadio(this)" />
+              <label for="Conf_SizeFormat=3">123</label>
+              <input type="radio" name="Conf_SizeFormat_" id="Conf_SizeFormat=1" onclick="SetRadio(this)" />
+              <label for="Conf_SizeFormat=1">KB</label>
+              <input type="radio" name="Conf_SizeFormat_" id="Conf_SizeFormat=0x22" onclick="SetRadio(this)" />
+              <label for="Conf_SizeFormat=0x22">MB</label>
+              <input type="radio" name="Conf_SizeFormat_" id="Conf_SizeFormat=0x32" onclick="SetRadio(this)" />
+              <label for="Conf_SizeFormat=0x32">GB</label>
               <div>
-                <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_View_SizeFormat")' />
+                <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_Conf_SizeFormat")' />
               </div>
-              <div class="group" id="_Advanced_View_SizeFormat">
-                <input type="text" name="View_SizeFormat" style="width: 100%" />
+              <div class="group" id="_Advanced_Conf_SizeFormat">
+                <input type="text" name="Conf_SizeFormat" style="width: 100%" />
               </div>
               <br />
+              <label id="_DateTimeFormat">@shell32.dll,-32522</label><br />
+              <input type="text" id="Conf_DateTimeFormat" style="width: 100%" />
+              <br /><br />
               <label>Timeout</label><br />
               <input type="text" id="Conf_NetworkTimeout" style="width: 6em; text-align:right" />ms
               <br /><br />

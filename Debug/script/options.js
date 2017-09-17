@@ -102,8 +102,8 @@ function ResetForm()
 		document.F.View_fFlags.value = FV.FolderFlags;
 		document.F.View_Options.value = FV.Options;
 		document.F.View_ViewFlags.value = FV.ViewFlags;
-		document.F.View_SizeFormat.value = FV.SizeFormat > 9 ? api.sprintf(99, "%#x", FV.SizeFormat): FV.SizeFormat;
 	}
+	document.F.Conf_SizeFormat.value = te.Data.Conf_SizeFormat || 0;
 
 	for(i = 0; i < document.F.length; i++) {
 		o = document.F[i];
@@ -118,6 +118,10 @@ function ResetForm()
 	document.F.Conf_TrailColor.value = s;
 	document.F.Color_Conf_TrailColor.style.backgroundColor = s;
 
+	var o = document.getElementById("_DateTimeFormat");
+	if (/\@/.test(o.innerHTML)) {
+		o.innerHTML = api.PSGetDisplayName("System.ItemDate");
+	}
 	document.getElementById("_EDIT").checked = true;
 	document.getElementById("_TEInfo").value = GetTEInfo();
 }
@@ -367,7 +371,7 @@ function AddTabControl()
 		return;
 	}
 	var TC = te.CreateCtrl(CTRL_TC, document.F.Tab_Left.value, document.F.Tab_Top.value, document.F.Tab_Width.value, document.F.Tab_Height.value, document.F.Tab_Style.value, document.F.Tab_Align.value, document.F.Tab_TabWidth.value, document.F.Tab_TabHeight.value);
-	TC.Selected.Navigate2("C:\\", SBSP_NEWBROWSER, document.F.View_Type.value, document.F.View_ViewMode.value, document.F.View_fFlags.value, 0, document.F.View_Options.value, document.F.View_ViewFlags.value, Number(document.F.View_SizeFormat.value));
+	TC.Selected.Navigate2("C:\\", SBSP_NEWBROWSER, document.F.View_Type.value, document.F.View_ViewMode.value, document.F.View_fFlags.value, 0, document.F.View_Options.value, document.F.View_ViewFlags.value);
 }
 
 function DelTabControl()
@@ -438,7 +442,6 @@ function SetFolderViews()
 		o.FolderFlags = document.F.View_fFlags.value;
 		o.Options = document.F.View_Options.value;
 		o.ViewFlags = document.F.View_ViewFlags.value;
-		o.SizeFormat = Number(document.F.View_SizeFormat.value);
 		o.Type = document.F.View_Type.value;
 		MainWindow.g_.FVData = o;
 	}

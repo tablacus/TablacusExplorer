@@ -648,7 +648,7 @@ te.OnCreate = function (Ctrl)
 		}
 		if (te.Ctrls(CTRL_TC).length == 0) {
 			var TC = te.CreateCtrl(CTRL_TC, 0, 0, "100%", "100%", te.Data.Tab_Style, te.Data.Tab_Align, te.Data.Tab_TabWidth, te.Data.Tab_TabHeight);
-			TC.Selected.Navigate2(HOME_PATH, SBSP_NEWBROWSER, te.Data.View_Type, te.Data.View_ViewMode, te.Data.View_fFlags, te.Data.View_Options, te.Data.View_ViewFlags, te.Data.View_IconSize, te.Data.Tree_Align, te.Data.Tree_Width, te.Data.Tree_Style, te.Data.Tree_EnumFlags, te.Data.Tree_RootStyle, te.Data.Tree_Root, te.Data.View_SizeFormat);
+			TC.Selected.Navigate2(HOME_PATH, SBSP_NEWBROWSER, te.Data.View_Type, te.Data.View_ViewMode, te.Data.View_fFlags, te.Data.View_Options, te.Data.View_ViewFlags, te.Data.View_IconSize, te.Data.Tree_Align, te.Data.Tree_Width, te.Data.Tree_Style, te.Data.Tree_EnumFlags, te.Data.Tree_RootStyle, te.Data.Tree_Root);
 		}
 		g_.xmlWindow = null;
 		setTimeout(function ()
@@ -2286,6 +2286,8 @@ function InitMouse()
 	te.Data.Conf_NetworkTimeout = isFinite(te.Data.Conf_NetworkTimeout) ? Number(te.Data.Conf_NetworkTimeout) : 2000;
 	te.Layout = te.Data.Conf_Layout;
 	te.NetworkTimeout = te.Data.Conf_NetworkTimeout;
+	te.SizeFormat = Number(te.Data.Conf_SizeFormat);
+	te.DateTimeFormat = te.Data.Conf_DateTimeFormat;
 }
 
 importScripts = function()

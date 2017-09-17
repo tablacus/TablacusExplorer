@@ -596,7 +596,7 @@ LoadXml = function (filename, nGroup)
 						}
 						Path.Index = tab.getAttribute("LogIndex");
 					}
-					var FV = TC.Selected.Navigate2(Path, SBSP_NEWBROWSER, tab.getAttribute("Type"), tab.getAttribute("ViewMode"), tab.getAttribute("FolderFlags"), tab.getAttribute("Options"), tab.getAttribute("ViewFlags"), tab.getAttribute("IconSize"), tab.getAttribute("Align"), tab.getAttribute("Width"), tab.getAttribute("Flags"), tab.getAttribute("EnumFlags"), tab.getAttribute("RootStyle"), tab.getAttribute("Root"), tab.getAttribute("SizeFormat"));
+					var FV = TC.Selected.Navigate2(Path, SBSP_NEWBROWSER, tab.getAttribute("Type"), tab.getAttribute("ViewMode"), tab.getAttribute("FolderFlags"), tab.getAttribute("Options"), tab.getAttribute("ViewFlags"), tab.getAttribute("IconSize"), tab.getAttribute("Align"), tab.getAttribute("Width"), tab.getAttribute("Flags"), tab.getAttribute("EnumFlags"), tab.getAttribute("RootStyle"), tab.getAttribute("Root"));
 					FV.FilterView = tab.getAttribute("FilterView");
 					FV.Data.Lock = api.LowPart(tab.getAttribute("Lock")) != 0;
 					Lock(TC, i2, false);
@@ -645,7 +645,6 @@ SaveXmlTC = function (Ctrl, xml, nGroup)
 			item2.setAttribute("ViewMode", FV.CurrentViewMode);
 			item2.setAttribute("IconSize", FV.IconSize);
 			item2.setAttribute("Options", FV.Options);
-			item2.setAttribute("SizeFormat", FV.SizeFormat);
 			item2.setAttribute("ViewFlags", FV.ViewFlags);
 			item2.setAttribute("FilterView", FV.FilterView);
 			item2.setAttribute("Lock", api.LowPart(FV.Data.Lock));
