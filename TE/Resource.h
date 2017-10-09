@@ -10,8 +10,8 @@
 #define STRING(str) STRING2(str)
 #define STRING2(str) #str
 #define VER_Y		17
-#define VER_M		9
-#define VER_D		17
+#define VER_M		10
+#define VER_D		9
 
 //Define
 //#define _USE_BSEARCHAPI
@@ -19,6 +19,7 @@
 //#define _USE_HTMLDOC
 //#define _USE_TESTOBJECT
 //#define _USE_TESTPATHMATCHSPEC
+//#define _LOG
 #define _Emulate_XP_	//FALSE &&
 #ifndef _WIN64
 #define _2000XP

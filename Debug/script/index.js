@@ -271,10 +271,22 @@ FavoriteChanged = function ()
 	RunEvent1("FavoriteChanged");
 }
 
-LoadConfig = function ()
+LoadConfig = function (bDog)
 {
 	var xml = OpenXml("window.xml", true, false);
 	if (xml) {
+		var items = xml.getElementsByTagName('Data');
+		if  (items.length && !bDog) {
+			var path = items[0].getAttribute("Path");
+			if (path) {
+				path = ExtractMacro(te, path);
+				if (fso.FolderExists(fso.BuildPath(path, "config"))) {
+					te.Data.DataFolder = path;
+					LoadConfig(true);
+					return;
+				}
+			}
+		}
 		g_.xmlWindow = xml;
 		var arKey = ["Conf", "Tab", "Tree", "View"];
 		for (var j in arKey) {
@@ -635,6 +647,17 @@ function SetFolderViewData(FV, FVD)
 		if (t == FVD.Type) {
 			FV.Refresh();
 		}
+	}
+}
+
+function SetTreeViewData(FV, TVD)
+{
+	var TV = FV.TreeView;
+	if (TV) {
+		TV.Align = TVD.Align;
+		TV.Style = TVD.Style;
+		TV.Width = TVD.Width;
+		TV.SetRoot(TVD.Root, TVD.EnumFlags, TVD.RootStyle);
 	}
 }
 
@@ -1457,6 +1480,17 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 							SetFolderViewData(te.Ctrl(CTRL_FV), g_.FVData);
 						}
 						delete g_.FVData;
+					}
+					if (g_.TVData) {
+						if (g_.TVData.All) {
+							var cFV = te.Ctrls(CTRL_FV);
+							for (var i in cFV) {
+								SetTreeViewData(cFV[i], g_.TVData);
+							}
+						} else {
+							SetTreeViewData(te.Ctrl(CTRL_FV), g_.TVData);
+						}
+						delete g_.TVData;
 					}
 					if (wParam & 0xffff) {
 						if (g_.mouse.str == "") {

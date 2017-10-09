@@ -333,31 +333,15 @@ function ChooseFolder1(o)
 
 function SetTreeControls()
 {
-	if (g_Chg.Tree) {
-		if (document.getElementById("Conf_TreeDefault").checked) {
-			var cTV = te.Ctrls(CTRL_TV);
-			for (i = 0; i < cTV.Count; i++) {
-				SetTreeControl(cTV.Item(i));
-			}
-		} else {
-			var TV = te.Ctrl(CTRL_TV);
-			if (TV) {
-				SetTreeControl(TV);
-			}
-		}
-	}
-}
-
-function SetTreeControl(TV)
-{
-	if (TV) {
-		var Selected = TV.SelectedItem;
-		TV.Align = document.F.Tree_Align.value;
-		TV.Style = document.F.Tree_Style.value;
-		TV.Width = document.F.Tree_Width.value;
-		TV.SetRoot(document.F.Tree_Root.value, document.F.Tree_EnumFlags.value, document.F.Tree_RootStyle.value);
-		TV.Expand(Selected, 1);
-	}
+	var o = te.Object();
+	o.All = document.getElementById("Conf_TreeDefault").checked;
+	o.Align = document.F.Tree_Align.value;
+	o.Style = document.F.Tree_Style.value;
+	o.Width = document.F.Tree_Width.value;
+	o.Root = document.F.Tree_Root.value;
+	o.EnumFlags = document.F.Tree_EnumFlags.value;
+	o.RootStyle = document.F.Tree_RootStyle.value;
+	MainWindow.g_.TVData = o;
 }
 
 function AddTabControl()
@@ -444,6 +428,15 @@ function SetFolderViews()
 		o.ViewFlags = document.F.View_ViewFlags.value;
 		o.Type = document.F.View_Type.value;
 		MainWindow.g_.FVData = o;
+		o = te.Object();
+		o.All = document.getElementById("Conf_TreeDefault").checked;
+		o.Align = document.F.Tree_Align.value;
+		o.Style = document.F.Tree_Style.value;
+		o.Width = document.F.Tree_Width.value;
+		o.Root = document.F.Tree_Root.value;
+		o.EnumFlags = document.F.Tree_EnumFlags.value;
+		o.RootStyle = document.F.Tree_RootStyle.value;
+		MainWindow.g_.TVData = o;
 	}
 	if (FV) {
 		FV.CurrentViewMode = document.F.View_ViewMode.value;

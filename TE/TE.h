@@ -1306,6 +1306,7 @@ public:
 	BOOL Create(BOOL bIfVisible);
 	HRESULT getSelected(IDispatch **pItem);
 	VOID SetRoot();
+	VOID Show();
 #ifdef _2000XP
 	VOID SetObjectRect();
 #endif
