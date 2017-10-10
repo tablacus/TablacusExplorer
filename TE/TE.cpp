@@ -9808,6 +9808,13 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 								}
 								if (pSB) {
 									if (pSB->m_param[SB_TreeAlign] & 2) {
+										if (pSB->m_pTV->m_bSetRoot && (pSB->m_pTV->m_pNameSpaceTreeControl
+#ifdef _2000XP
+											|| pSB->m_pTV->m_pShellNameSpace
+#endif
+										)) {
+											pSB->m_pTV->SetRoot();
+										}
 										RECT rcTree = rc;
 										rcTree.right = rc.left + pSB->m_param[SB_TreeWidth] - 2;
 										MoveWindow(pSB->m_pTV->m_hwnd, rcTree.left, rcTree.top, rcTree.right - rcTree.left, rcTree.bottom - rcTree.top, TRUE);
