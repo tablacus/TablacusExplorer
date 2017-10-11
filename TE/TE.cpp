@@ -7033,9 +7033,6 @@ VOID teApiSetDllDirectory(int nArg, teParam *param, DISPPARAMS *pDispParams, VAR
 #else
 	teSetBool(pVarResult, SetDllDirectory(param[0].lpcwstr));
 #endif
-	if (lpfnSetDefaultDllDirectories) {
-		lpfnSetDefaultDllDirectories(lstrlen(param[0].lpcwstr) ? LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS : LOAD_LIBRARY_SEARCH_SYSTEM32);
-	}
 }
 
 VOID teApiPathIsNetworkPath(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -10114,7 +10111,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	if (hDll) {
 		lpfnSetDefaultDllDirectories = (LPFNSetDefaultDllDirectories)GetProcAddress(hDll, "SetDefaultDllDirectories");
 		if (lpfnSetDefaultDllDirectories) {
-			lpfnSetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32);
+			lpfnSetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS);
 		}
 #ifdef _2000XP
 		lpfnSetDllDirectoryW = (LPFNSetDllDirectoryW)GetProcAddress(hDll, "SetDllDirectoryW");
@@ -10668,6 +10665,22 @@ VOID CALLBACK teTimerProcParse(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 #endif
 	}
 	teReleaseParse(pInvoke);
+}
+
+VOID CALLBACK teTimerProcSetRoot(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+{
+	KillTimer(hwnd, idEvent);
+	CteTreeView *pTV = (CteTreeView *)idEvent;
+	try {
+		if (pTV->m_param[SB_TreeAlign] & 2) {
+			pTV->Show();
+		}
+	} catch (...) {
+		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"teTimerProcSetRoot";
+#endif
+	}
 }
 
 static void threadParseDisplayName(void *args)
@@ -19834,6 +19847,9 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 				if (nArg >= 0) {
 					m_param[SB_TreeAlign] = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 					ArrangeWindow();
+					if (m_bSetRoot && m_param[SB_TreeAlign] & 2) {
+						SetTimer(g_hwndMain, (UINT_PTR)this, 500, teTimerProcSetRoot);
+					}
 				}
 				teSetLong(pVarResult, m_param[SB_TreeAlign]);
 				return S_OK;
@@ -19842,6 +19858,9 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 				if (nArg >= 0) {
 					m_param[SB_TreeAlign] = GetIntFromVariant(&pDispParams->rgvarg[nArg]) ? 3 : 1;
 					ArrangeWindow();
+					if (m_bSetRoot && m_param[SB_TreeAlign] & 2) {
+						SetTimer(g_hwndMain, (UINT_PTR)this, 500, teTimerProcSetRoot);
+					}
 				}
 				teSetBool(pVarResult, m_param[SB_TreeAlign] & 2);
 				return S_OK;
@@ -20554,12 +20573,11 @@ VOID CteTreeView::Show()
 #ifdef _2000XP
 		&& !m_pShellNameSpace
 #endif
-		) {
-		if (Create(FALSE)) {
-			if (m_bSetRoot) {
-				SetRoot();
-			}
-		}
+	) {
+		Create(FALSE);
+	}
+	if (m_bSetRoot) {
+		SetRoot();
 	}
 }
 

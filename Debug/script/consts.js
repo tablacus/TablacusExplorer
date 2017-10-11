@@ -9,10 +9,6 @@ AddEventEx = function (w, Name, fn)
 }
 
 //Objects
-fso = new ActiveXObject("Scripting.FileSystemObject");
-sha = new ActiveXObject("Shell.Application");
-wsh = new ActiveXObject("WScript.Shell");
-wnw = new ActiveXObject("WScript.Network");
 g_uid = location.hash.replace(/\D/g, "");
 
 if (!window.te && window.external && external.Type) {
@@ -34,6 +30,10 @@ if (!window.te && window.external && external.Type) {
 		}
 	}
 }
+fso = new ActiveXObject("Scripting.FileSystemObject") || te.CreateObject("Scripting.FileSystemObject");
+sha = new ActiveXObject("Shell.Application") || te.CreateObject("Shell.Application");
+wsh = new ActiveXObject("WScript.Shell") || te.CreateObject("WScript.Shell");
+wnw = new ActiveXObject("WScript.Network") || te.CreateObject("WScript.Network");
 
 if (g_uid) {
 	(function () {

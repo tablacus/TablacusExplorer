@@ -5,9 +5,9 @@ function _s()
 	try {
 		window.te = external;
 		api = te.WindowsAPI;
-		fso = new ActiveXObject('Scripting.FileSystemObject');
-		sha = new ActiveXObject('Shell.Application');
-		wsh = new ActiveXObject('WScript.Shell');
+		fso = te.CreateObject('Scripting.FileSystemObject');
+		sha = te.CreateObject('Shell.Application');
+		wsh = te.CreateObject('WScript.Shell');
 		arg = api.CommandLineToArgv(api.GetCommandLine());
 		location = {href: arg[2], hash: ''};
 		if (!/^[A-Z]:\\|^\\\\/i.test(location.href)) {
