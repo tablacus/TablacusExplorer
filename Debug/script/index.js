@@ -653,7 +653,7 @@ function SetFolderViewData(FV, FVD)
 function SetTreeViewData(FV, TVD)
 {
 	var TV = FV.TreeView;
-	if (TV) {
+	if (TV && TVD) {
 		TV.Align = TVD.Align;
 		TV.Style = TVD.Style;
 		TV.Width = TVD.Width;
@@ -2167,7 +2167,7 @@ function ChangeNotifyFV(lEvent, item1, item2)
 		for (var i in cFV) {
 			var FV = cFV[i];
 			var path = String(api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
-			if (lEvent == SHCNE_RENAMEFOLDER && !FV.Data.Lock) {
+			if (lEvent == SHCNE_RENAMEFOLDER && FV.Data && !FV.Data.Lock) {
 				if (api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"))) {
 					FV.Navigate(path.replace(path1, api.GetDisplayNameOf(item2, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)), SBSP_SAMEBROWSER);
 					continue;

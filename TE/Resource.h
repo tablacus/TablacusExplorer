@@ -10,7 +10,7 @@
 #define STRING(str) STRING2(str)
 #define STRING2(str) #str
 #define VER_Y		17
-#define VER_M		10
+#define VER_M		11
 #define VER_D		11
 
 //Define
@@ -26,4 +26,4 @@
 //#define _W2000
 #endif
 //bug fix 1 for Windows 10 Insider Preview 14986-
-#define _FIXWIN10IPBUG1
+//#define _FIXWIN10IPBUG1
