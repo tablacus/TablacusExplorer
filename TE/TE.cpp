@@ -9077,6 +9077,56 @@ VOID teApiRoundRect(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *
 	teSetBool(pVarResult, RoundRect(param[0].hdc, param[1].intVal, param[2].intVal, param[3].intVal, param[4].intVal, param[5].intVal, param[6].intVal)); 
 }
 
+VOID teApiCreateProcess(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	HANDLE hRead, hWrite;
+ 	SECURITY_ATTRIBUTES	sa;
+	STARTUPINFO si;
+	PROCESS_INFORMATION	pi;
+	DWORD dwLen;
+
+	sa.nLength = sizeof(sa);
+	sa.lpSecurityDescriptor	= 0;
+	sa.bInheritHandle = TRUE;
+
+	if(!CreatePipe(&hRead, &hWrite, &sa, 0)) {
+		return;
+	}
+
+	::ZeroMemory(&si, sizeof(si));
+	si.cb = sizeof(si);
+	si.dwFlags = STARTF_USESTDHANDLES;
+	si.hStdOutput = hWrite;
+	si.hStdError = hWrite;
+	DWORD dwms =  param[2].dword;
+	if (dwms == 0) {
+		dwms = INFINITE;
+	}
+	if (CreateProcess(NULL, param[0].lpwstr, NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi)) {
+		if (WaitForInputIdle(pi.hProcess, dwms)) {
+			if (WaitForSingleObject(pi.hProcess, dwms) != WAIT_TIMEOUT) {
+				if (PeekNamedPipe(hRead, NULL, 0, NULL, &dwLen, NULL)) {
+					BSTR bs = ::SysAllocStringByteLen(NULL, dwLen);
+					if (dwLen) {
+						ReadFile(hRead, bs, dwLen, &dwLen, NULL);
+						if (param[1].intVal == 2 || (param[1].intVal != 1 && IsTextUnicode(bs, dwLen, NULL))) {
+							teSetBSTR(pVarResult, &bs, dwLen);
+						} else {
+							BSTR bs2 = teMultiByteToWideChar(CP_ACP, (LPCSTR)bs, dwLen);
+							teSetBSTR(pVarResult, &bs2, -1);
+							teSysFreeString(&bs);
+						}
+					}
+				}
+			}
+		}
+		CloseHandle(pi.hThread);
+		CloseHandle(pi.hProcess);
+	}
+	CloseHandle(hRead);
+	CloseHandle(hWrite);
+}
+
 /*
 VOID teApi(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -9395,6 +9445,7 @@ TEDispatchApi dispAPI[] = {
 	{ 1, -1, -1, -1, "CreateSolidBrush", teApiCreateSolidBrush },
 	{10, -1, -1, -1, "PlgBlt", teApiPlgBlt },
 	{ 7, -1, -1, -1, "RoundRect", teApiRoundRect },
+	{ 1,  0, -1, -1, "CreateProcess", teApiCreateProcess },
 //	{ 0, -1, -1, -1, "", teApi },
 //	{ 0, -1, -1, -1, "Test", teApiTest },
 };
@@ -18279,11 +18330,30 @@ STDMETHODIMP CteFolderItems::SetData(FORMATETC *pformatetc, STGMEDIUM *pmedium, 
 STDMETHODIMP CteFolderItems::EnumFormatEtc(DWORD dwDirection, IEnumFORMATETC **ppenumFormatEtc)
 {
 	if (dwDirection == DATADIR_GET) {
-		FORMATETC formats[] = { IDLISTFormat, HDROPFormat, UNICODEFormat, TEXTFormat, DROPEFFECTFormat };
+		FORMATETC formats[MAX_FORMATS];
+		FORMATETC teformats[] = { IDLISTFormat, HDROPFormat, UNICODEFormat, TEXTFormat, DROPEFFECTFormat };
 		UINT nFormat = 0;
+
+		if (m_pDataObj) {
+			IEnumFORMATETC *penumFormatEtc;
+			if SUCCEEDED(m_pDataObj->EnumFormatEtc(DATADIR_GET, &penumFormatEtc)) {
+				while (nFormat < MAX_FORMATS - _countof(teformats) && penumFormatEtc->Next(1, &formats[nFormat], NULL) == S_OK) {
+					if (QueryGetData2(&formats[nFormat]) != S_OK) {
+						nFormat++;
+					}
+				}
+				penumFormatEtc->Release();
+			}
+		}
 		AdjustIDListEx();
-		int i = m_nCount ? (m_bUseILF ? 0 : 1) : 2;
-		return CreateFormatEnumerator(_countof(formats) - i, &formats[i], ppenumFormatEtc);
+		int nMax = _countof(teformats);
+		if (m_dwEffect == (DWORD)-1) {
+			nMax--;
+		}
+		for (int i = m_nCount ? (m_bUseILF ? 0 : 1) : 2 ; i < nMax; i++) {
+			formats[nFormat++] = teformats[i];
+		}
+		return CreateFormatEnumerator(nFormat, formats, ppenumFormatEtc);
 	}
 	if (m_pDataObj) {
 		return m_pDataObj->EnumFormatEtc(dwDirection, ppenumFormatEtc);

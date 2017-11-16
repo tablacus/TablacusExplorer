@@ -2080,7 +2080,7 @@ RunCommandLine = function (s)
 	}
 	var arg = api.CommandLineToArgv(s.replace(/^\/e,|^\/n,|^\/root,/ig, ""));
 	arg.shift();
-	var s  = arg.join(" ");
+	s = arg.join(" ");
 	if (/^[A-Z]:\\|^\\\\/i.test(s) && IsExists(s)) {
 		Navigate(s, SBSP_NEWBROWSER);
 		return;
@@ -2088,7 +2088,7 @@ RunCommandLine = function (s)
 	while (s = arg.shift()) {
 		var ar = s.split(",");
 		if (ar.length > 1) {
-			Exec(te, GetSourceText(ar[1]), GetSourceText(ar[0]), te.hwnd, api.Memory("POINT"))
+			Exec(te, GetSourceText(ar[1]), GetSourceText(ar[0]), te.hwnd, api.Memory("POINT"));
 			continue;
 		}
 		Navigate(s, SBSP_NEWBROWSER);
