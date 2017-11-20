@@ -9098,18 +9098,18 @@ VOID teApiCreateProcess(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 	si.dwFlags = STARTF_USESTDHANDLES;
 	si.hStdOutput = hWrite;
 	si.hStdError = hWrite;
-	DWORD dwms =  param[2].dword;
+	DWORD dwms =  param[3].dword;
 	if (dwms == 0) {
 		dwms = INFINITE;
 	}
-	if (CreateProcess(NULL, param[0].lpwstr, NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi)) {
+	if (CreateProcess(NULL, param[0].lpwstr, NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, param[1].lpwstr, &si, &pi)) {
 		if (WaitForInputIdle(pi.hProcess, dwms)) {
 			if (WaitForSingleObject(pi.hProcess, dwms) != WAIT_TIMEOUT) {
 				if (PeekNamedPipe(hRead, NULL, 0, NULL, &dwLen, NULL)) {
 					BSTR bs = ::SysAllocStringByteLen(NULL, dwLen);
 					if (dwLen) {
 						ReadFile(hRead, bs, dwLen, &dwLen, NULL);
-						if (param[1].intVal == 2 || (param[1].intVal != 1 && IsTextUnicode(bs, dwLen, NULL))) {
+						if (param[2].intVal == 2 || (param[2].intVal != 1 && IsTextUnicode(bs, dwLen, NULL))) {
 							teSetBSTR(pVarResult, &bs, dwLen);
 						} else {
 							BSTR bs2 = teMultiByteToWideChar(CP_ACP, (LPCSTR)bs, dwLen);
@@ -9445,7 +9445,7 @@ TEDispatchApi dispAPI[] = {
 	{ 1, -1, -1, -1, "CreateSolidBrush", teApiCreateSolidBrush },
 	{10, -1, -1, -1, "PlgBlt", teApiPlgBlt },
 	{ 7, -1, -1, -1, "RoundRect", teApiRoundRect },
-	{ 1,  0, -1, -1, "CreateProcess", teApiCreateProcess },
+	{ 1,  0,  1, -1, "CreateProcess", teApiCreateProcess },
 //	{ 0, -1, -1, -1, "", teApi },
 //	{ 0, -1, -1, -1, "Test", teApiTest },
 };
@@ -19916,6 +19916,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 			case 0x10000008:
 				if (nArg >= 0) {
 					m_param[SB_TreeAlign] = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+					ShowWindow(m_hwnd, m_param[SB_TreeAlign] & 2 ? SW_SHOWNA : SW_HIDE);
 					ArrangeWindow();
 					if (m_bSetRoot && m_param[SB_TreeAlign] & 2) {
 						SetTimer(g_hwndMain, (UINT_PTR)this, 500, teTimerProcSetRoot);
@@ -19927,6 +19928,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 			case 0x10000009:
 				if (nArg >= 0) {
 					m_param[SB_TreeAlign] = GetIntFromVariant(&pDispParams->rgvarg[nArg]) ? 3 : 1;
+					ShowWindow(m_hwnd, m_param[SB_TreeAlign] & 2 ? SW_SHOWNA : SW_HIDE);
 					ArrangeWindow();
 					if (m_bSetRoot && m_param[SB_TreeAlign] & 2) {
 						SetTimer(g_hwndMain, (UINT_PTR)this, 500, teTimerProcSetRoot);

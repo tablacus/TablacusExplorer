@@ -508,15 +508,22 @@ GetText = function (id)
 
 GetTextR = function (id)
 {
-	var res = /^\@(.+\.dll),-(\d+)$/i.exec(id);
+	var res = /^\@(.+\.dll),-(\d+)(\[[^\]]+\])?$/i.exec(id);
 	if (res) {
 		var hModule = api.LoadLibraryEx(res[1], 0, LOAD_LIBRARY_AS_DATAFILE);
-		if (hModule) {
-			var s = api.LoadString(hModule, api.LowPart(res[2]));
-			api.FreeLibrary(hModule);
-			if (s) {
-				return s;
+		var s = api.LoadString(hModule, api.LowPart(res[2]));
+		if (!s && res[3]) {
+			var ar = res[3].substr(1, res[3].length - 2).split("|");
+			for (var i = 0; i < ar.length && !s; i++) {
+				res = /^-(\d+)$/.exec(ar[i]);
+				s = res ? api.LoadString(hModule, api.LowPart(res[1])) : ar[i];
 			}
+		}
+		if (hModule) {
+			api.FreeLibrary(hModule);
+		}
+		if (s) {
+			return s;
 		}
 	}
 	return GetText(id);
@@ -985,7 +992,7 @@ DeleteItem = function (path, fFlags)
 IsExists = function (path)
 {
 	var wfd = api.Memory("WIN32_FIND_DATA");
-	var hFind = api.FindFirstFile(path, wfd);
+	var hFind = api.FindFirstFile(path.replace(/\\$/, ""), wfd);
 	api.FindClose(hFind);
 	return hFind != INVALID_HANDLE_VALUE;
 }
