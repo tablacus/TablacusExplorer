@@ -11,7 +11,7 @@
 #define STRING2(str) #str
 #define VER_Y		17
 #define VER_M		11
-#define VER_D		20
+#define VER_D		26
 
 //Define
 //#define _USE_BSEARCHAPI
@@ -25,5 +25,3 @@
 #define _2000XP
 //#define _W2000
 #endif
-//bug fix 1 for Windows 10 Insider Preview 14986-
-//#define _FIXWIN10IPBUG1

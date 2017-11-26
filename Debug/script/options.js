@@ -2270,7 +2270,11 @@ function ArrangeAddon(xml, td, Progress)
 		if (info.pubDate) {
 			pubDate = api.GetDateFormat(LOCALE_USER_DEFAULT, 0, dt, api.GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SSHORTDATE)) + " ";
 		}
-		s.push('<table width="100%"><tr><td width="100%"><b style="font-size: 1.3em">', info.Name, "</b>&nbsp;", info.Version, "&nbsp;", info.Creator, "<br />", info.Description, "<br />", pubDate, '</td><td align="right">');
+		s.push('<table width="100%"><tr><td width="100%"><b style="font-size: 1.3em">', info.Name, "</b>&nbsp;", info.Version, "&nbsp;", info.Creator, "<br />", info.Description, "<br />");
+		if (info.Details) {
+			s.push('<a href="#" title="', info.Details, '" onclick="wsh.run(this.title); return false;">', GetText('Details'), '</a><br />');
+		}
+		s.push(pubDate, '</td><td align="right">');
 		var filename = info.filename;
 		if (!filename) {
 			filename = Id + '_' + info.Version.replace(/\D/, '') + '.zip';

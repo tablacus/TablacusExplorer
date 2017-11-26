@@ -5445,24 +5445,6 @@ LRESULT CALLBACK TETVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-#ifdef _FIXWIN10IPBUG1
-VOID CALLBACK teTimerProcFixWin10IPBug1(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
-{
-	try {
-		KillTimer(hwnd, idEvent);
-		CteShellBrowser *pSB = SBfromhwnd(hwnd);
-		if (pSB) {
-			pSB->FixWin10IPBug1();
-		}
-	} catch (...) {
-		g_nException = 0;
-#ifdef _DEBUG
-		g_strException = L"teTimerProcFixWin10IPBug1";
-#endif
-	}
-}
-#endif
-
 LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static HWND hwndEdit = NULL;
@@ -5650,11 +5632,6 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						}
 					}
 				}
-#ifdef _FIXWIN10IPBUG1
-				if (g_bUpper10) {
-					SetTimer(pSB->m_hwnd, 1, 64, teTimerProcFixWin10IPBug1);
-				}
-#endif
 			} else if (((LPNMHDR)lParam)->code == LVN_GETINFOTIP) {
 				LPNMLVGETINFOTIP lpInfotip = ((LPNMLVGETINFOTIP)lParam);
 				if (g_pOnFunc[TE_OnToolTip] && lpInfotip->cchTextMax) {
@@ -9656,9 +9633,6 @@ VOID CALLBACK teTimerProcFocus(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 		KillTimer(hwnd, idEvent);
 		CteShellBrowser *pSB = SBfromhwnd(hwnd);
 		if (pSB) {
-#ifdef _FIXWIN10IPBUG1
-			pSB->FixWin10IPBug1();
-#endif
 			pSB->FocusItem(TRUE);
 		}
 	} catch (...) {
@@ -10083,16 +10057,6 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 								pSB->m_bSetListColumnWidth = FALSE;
 							}
 							break;
-#ifdef _FIXWIN10IPBUG1
-						case LVM_FIRST + 193:
-							if (g_bUpper10) {
-								pSB = SBfromhwnd(pcwp->hwnd);
-								if (pSB) {
-									pSB->FixWin10IPBug1();
-								}
-							}
-							break;
-#endif
 					}//end_switch
 				}
 			}
@@ -13746,11 +13710,6 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 							teCoTaskMemFree(pidl);
 						}
 					}
-#ifdef _FIXWIN10IPBUG1
-					if (g_bUpper10) {
-						SetTimer(m_hwnd, 2, 500, teTimerProcFixWin10IPBug1);
-					}
-#endif
 				}
 				return S_OK;
 			//NavigationComplete
@@ -13945,11 +13904,6 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					SetRedraw(TRUE);
 					RedrawWindow(m_hwndDV, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
 				}
-#ifdef _FIXWIN10IPBUG1
-				if (g_bUpper10) {
-					SetTimer(m_hwnd, 2, 64, teTimerProcFixWin10IPBug1);
-				}
-#endif
 				return S_OK;
 			case DISPID_VIEWMODECHANGED://XP+
 				SetFolderFlags(TRUE);
@@ -13959,20 +13913,11 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				DoFunc1(TE_OnBeginDrag, this, pVarResult);
 				return S_OK;
 			case DISPID_COLUMNSCHANGED://XP-
-#ifdef _FIXWIN10IPBUG1
-				FixWin10IPBug1();
-#endif
 				InitFolderSize();
 				return DoFunc(TE_OnColumnsChanged, this, S_OK);
 			case DISPID_ICONSIZECHANGED://XP-
-#ifdef _FIXWIN10IPBUG1
-				FixWin10IPBug1();
-#endif
 				return DoFunc(TE_OnIconSizeChanged, this, S_OK);
 			case DISPID_SORTDONE://XP-
-#ifdef _FIXWIN10IPBUG1
-				FixWin10IPBug1();
-#endif
 				if (m_nFocusItem < 0) {
 					FocusItem(FALSE);
 				}
@@ -14160,35 +14105,6 @@ VOID CteShellBrowser::AddColumnDataXP(LPWSTR pszColumns, LPWSTR pszName, int nWi
 		return;
 	}
 	AddColumnData(pszColumns, pszName, nWidth);
-}
-#endif
-#ifdef _FIXWIN10IPBUG1 //Fix Windows 10 Insider Preview & Creaters Update bugs
-VOID CteShellBrowser::FixWin10IPBug1() {
-	if (g_bUpper10 && m_hwndLV && IsWindowVisible(m_hwndLV) && !ListView_GetEditControl(m_hwndLV)) {
-		if (m_param[SB_ViewMode] == FVM_DETAILS) {
-			POINT pt;
-			ListView_GetOrigin(m_hwndLV, &pt);
-			if (pt.y < 0) {
-				ListView_SetView(m_hwndLV, LV_VIEW_SMALLICON);
-				ListView_SetView(m_hwndLV, LV_VIEW_DETAILS);
-			}
-		}
-		if (!(m_param[SB_FolderFlags] & FWF_NOCOLUMNHEADER)) {
-			if (m_param[SB_ViewMode] == FVM_DETAILS || !(m_param[SB_FolderFlags] & FWF_NOHEADERINALLVIEWS)) {
-				HWND hHeader = ListView_GetHeader(m_hwndLV);
-				if (hHeader) {
-					RECT rc;
-					if (GetWindowRect(hHeader, &rc) && rc.top == rc.bottom) {
-						ListView_Scroll(m_hwndLV, 0, 0);
-					}
-					if (GetWindowRect(hHeader, &rc) && rc.top == rc.bottom) {
-						ShowWindow(m_hwndLV, SW_HIDE);
-						ShowWindow(m_hwndLV, SW_SHOWNA);
-					}
-				}
-			}
-		}
-	}
 }
 #endif
 
@@ -15131,11 +15047,6 @@ void CteShellBrowser::Show(BOOL bShow, DWORD dwOptions)
 				ShowWindow(m_hwnd, SW_SHOWNA);
 				if (m_hwndLV) {
 					ShowWindow(m_hwndLV, SW_SHOWNA);
-#ifdef _FIXWIN10IPBUG1
-					if (g_bUpper10) {
-						SetTimer(m_hwnd, 2, 64, teTimerProcFixWin10IPBug1);
-					}
-#endif
 				}
 				SetRedraw(TRUE);
 				if (m_param[SB_TreeAlign] & 2) {
