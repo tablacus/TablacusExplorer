@@ -2416,6 +2416,15 @@ void GetVarPathFromIDList(VARIANT *pVarResult, LPITEMIDLIST pidl, int uFlags)
 	}
 }
 
+VOID teSuspend(CteFolderItem *pid)
+{
+	if (pid->m_v.vt == VT_EMPTY && pid->m_pidl) {
+		GetVarPathFromIDList(&pid->m_v, pid->m_pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
+	}
+	teILCloneReplace(&pid->m_pidl, g_pidlResultsFolder);
+	pid->m_dwUnavailable = GetTickCount();
+}
+
 // VARIANT Clean-up of an array
 VOID teClearVariantArgs(int nArgs, VARIANTARG *pvArgs)
 {
@@ -10647,8 +10656,7 @@ VOID CALLBACK teTimerProcParse(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 		} else if (pInvoke->wErrorHandling == 1) {
 			VARIANT *pv = &pInvoke->pv[pInvoke->cArgs - 1];
 			CteFolderItem *pid = new CteFolderItem(pv);
-			teILCloneReplace(&pid->m_pidl, g_pidlResultsFolder);
-			pid->m_dwUnavailable = GetTickCount();
+			teSuspend(pid);
 			VariantClear(pv);
 			teSetObjectRelease(pv, pid);
 			Invoke5(pInvoke->pdisp, pInvoke->dispid, DISPATCH_METHOD, NULL, pInvoke->cArgs, pInvoke->pv);
@@ -11511,8 +11519,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 				if SUCCEEDED(pFolderItem->QueryInterface(IID_PPV_ARGS(&m_pFolderItem))) {
 					CteFolderItem *pid1 = NULL;
 					if (SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1)) && !pid1->m_pidl) {
-						teILCloneReplace(&pid1->m_pidl, g_pidlResultsFolder);
-						pid1->m_dwUnavailable = GetTickCount();
+						teSuspend(pid1);
 						pid1->Release();
 					}
 				}
@@ -11877,8 +11884,7 @@ HRESULT CteShellBrowser::GetAbsPidl(LPITEMIDLIST *ppidlOut, FolderItem *pid, UIN
 					} else {
 						pid1->Release();
 						pid1 = new CteFolderItem(&v2);
-						teILCloneReplace(&pid1->m_pidl, g_pidlResultsFolder);
-						pid1->m_dwUnavailable = GetTickCount();
+						teSuspend(pid1);
 					}
 					m_pFolderItem1->Release();
 					m_pFolderItem1 = pid1;
@@ -14951,7 +14957,7 @@ VOID CteShellBrowser::Suspend(int nMode)
 			CteFolderItem *pid1;
 			teQueryFolderItem(&m_pFolderItem, &pid1);
 			if (nMode == 2) {
-				teILCloneReplace(&pid1->m_pidl, g_pidlResultsFolder);
+				teSuspend(pid1);
 				m_nUnload = 8;
 			} else {
 				VariantClear(&pid1->m_v);

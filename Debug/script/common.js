@@ -1604,10 +1604,18 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec)
 			}
 			g_nPos = MakeMenus(hMenu, menus, arMenu, items, Ctrl, pt);
 			for (var i in eventTE[Name]) {
-				g_nPos = eventTE[Name][i](Ctrl, hMenu, g_nPos, Selected, SelItem, ContextMenu, Name, pt);
+				try {
+					g_nPos = eventTE[Name][i](Ctrl, hMenu, g_nPos, Selected, SelItem, ContextMenu, Name, pt);
+				} catch (e) {
+					ShowError(e, Name, i);
+				}
 			}
 			for (var i in eventTE.Menus) {
-				g_nPos = eventTE.Menus[i](Ctrl, hMenu, g_nPos, Selected, SelItem, ContextMenu, Name, pt);
+				try {
+					g_nPos = eventTE.Menus[i](Ctrl, hMenu, g_nPos, Selected, SelItem, ContextMenu, Name, pt);
+				} catch (e) {
+					ShowError(e, "Menus", i);
+				}
 			}
 			if (!pt) {
 				pt = api.Memory("POINT");
