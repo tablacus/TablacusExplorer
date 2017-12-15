@@ -2164,10 +2164,10 @@ int ILGetCount(LPITEMIDLIST pidl)
 HRESULT teGetDisplayNameBSTR(IShellFolder *pSF, PCUITEMID_CHILD pidl, SHGDNF uFlags, BSTR *pbs)
 {
 	STRRET strret;
-	HRESULT hr = pSF->GetDisplayNameOf(pidl, uFlags, &strret);
+	HRESULT hr = pSF->GetDisplayNameOf(pidl, uFlags & 0x3fffffff, &strret);
 	if SUCCEEDED(hr) {
 		hr = StrRetToBSTR(&strret, pidl, pbs);
-		if (hr == S_OK) {
+		if (hr == S_OK && !(uFlags & SHGDN_ORIGINAL)) {
 			for (int i = ::SysStringLen(*pbs); i-- > 0;) {
 				if (((uFlags & SHGDN_INFOLDER) && pbs[0][i] == '\\') || pbs[0][i] < 0x20 || StrChr(L"\"<>|", pbs[0][i])) {
 					pbs[0][i] = '_';
@@ -11835,8 +11835,8 @@ VOID CteShellBrowser::FocusItem(BOOL bFree)
 	if (m_pFolderItem && !m_dwUnavailable && SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid))) {
 		if (pid->m_pidlFocused) {
 			SelectItemEx(&pid->m_pidlFocused, pid->m_nSelected == 1 ?
-				SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS | SVSI_DESELECTOTHERS | SVSI_SELECT :
-				SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS | SVSI_DESELECTOTHERS, bFree);
+				SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK | SVSI_SELECT :
+				SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK, bFree);
 		}
 		m_dwUnavailable = pid->m_dwUnavailable;
 		pid->Release();

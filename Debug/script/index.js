@@ -2998,7 +2998,7 @@ g_basic =
 				{
 					var FV = GetFolderView(Ctrl, pt);
 					if (FV) {
-						var s = InputDialog("Search", IsSearchPath(FV) ? api.GetDisplayNameOf(FV, SHGDN_INFOLDER) : "");
+						var s = InputDialog("Search", IsSearchPath(FV) ? api.GetDisplayNameOf(FV, SHGDN_INFOLDER | SHGDN_ORIGINAL) : "");
 						if (s) {
 							FV.FilterView(s);
 						} else if (s === "") {
