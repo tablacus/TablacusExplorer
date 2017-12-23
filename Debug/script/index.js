@@ -124,7 +124,26 @@ GetTabName = function (Ctrl)
 				ShowError(e, en, i);
 			}
 		}
-		return Ctrl.FolderItem.Name;
+		return GetFolderItemName(Ctrl.FolderItem);
+	}
+}
+
+GetFolderItemName = function (pid)
+{
+	if (pid) {
+		var en = "GetFolderItemName";
+		var eo = eventTE[en];
+		for (var i in eo) {
+			try {
+				var s = eo[i](pid);
+				if (s) {
+					return s;
+				}
+			} catch (e) {
+				ShowError(e, en, i);
+			}
+		}
+		return pid.Name;
 	}
 }
 

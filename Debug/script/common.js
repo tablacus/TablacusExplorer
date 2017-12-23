@@ -2258,12 +2258,12 @@ function GetAddons()
 	ShowOptions("Tab=Get Addons");
 }
 
-function CheckUpdate()
+function CheckUpdate(arg)
 {
-	OpenHttpRequest("https://api.github.com/repos/tablacus/TablacusExplorer/releases/latest", "http://www.eonet.ne.jp/~gakana/tablacus/explorer_en.html", CheckUpdate2);
+	OpenHttpRequest("https://api.github.com/repos/tablacus/TablacusExplorer/releases/latest", "http://www.eonet.ne.jp/~gakana/tablacus/explorer_en.html", CheckUpdate2, arg);
 }
 
-function CheckUpdate2(xhr, url)
+function CheckUpdate2(xhr, url, arg1)
 {
 	var arg = {};
 	var res = /<td id="te">.*?<a href="([^"]+)">.*?\(([\d\.]+)\s*KB.*?<\/td>/i.exec(xhr.responseText);
@@ -2291,14 +2291,17 @@ function CheckUpdate2(xhr, url)
 		ver = api.Add(20000000, res[1]);
 	}
 	if (ver <= te.Version) {
-		MessageBox(te.About + "\n" + GetText("the latest version"), TITLE, MB_ICONINFORMATION);
-		if (api.GetKeyState(VK_SHIFT) >= 0 || api.GetKeyState(VK_CONTROL) >= 0) {
-			return;
+		if ((arg1 && arg1.silent) || MessageBox(te.About + "\n" + GetText("the latest version"), TITLE, MB_ICONINFORMATION)) {
+			if (api.GetKeyState(VK_SHIFT) >= 0 || api.GetKeyState(VK_CONTROL) >= 0) {
+				return;
+			}
 		}
 	}
-	var s = api.sprintf(99, "Version %d.%d.%d (%.1lfKB)", ver / 10000 % 100, ver / 100 % 100, ver % 100, arg.size);
-	if (!confirmOk([GetText("Update available"), s, GetText("Do you want to install it now?")].join("\n"))) {
-		return;
+	if (arg1 && !arg1.noconfirm) {
+		var s = api.sprintf(99, "Version %d.%d.%d (%.1lfKB)", ver / 10000 % 100, ver / 100 % 100, ver % 100, arg.size);
+		if (!confirmOk([GetText("Update available"), s, GetText("Do you want to install it now?")].join("\n"))) {
+			return;
+		}
 	}
 	arg.temp = fso.BuildPath(fso.GetSpecialFolder(2).Path, "tablacus");
 	CreateFolder2(arg.temp);
