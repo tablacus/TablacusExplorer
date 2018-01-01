@@ -632,9 +632,7 @@ EnableDragDrop = function ()
 DisableImage = function (img, bDisable)
 {
 	if (img) {
-		if (document.documentMode < 10) {
-			img.style.filter = bDisable ? "gray(), alpha(style=0,opacity=48);": "";
-		} else {
+		if (document.documentMode > 9) {
 			var s = decodeURIComponent(img.src);
 			var res = /^data:image\/svg.*?href="([^"]*)/i.exec(s);
 			if (bDisable) {
@@ -650,6 +648,8 @@ DisableImage = function (img, bDisable)
 			} else if (res) {
 				img.src = res[1];
 			}
+		} else {
+			img.style.filter = bDisable ? "gray(), alpha(style=0,opacity=48);": "";
 		}
 	}
 }
