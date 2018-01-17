@@ -147,7 +147,7 @@ FolderMenu =
 		if (FolderItem) {
 			if (window.g_menu_button == 2) {
 				PopupContextMenu(FolderItem);
-				retrn;
+				return;
 			}
 			var res = /^`(.*)`$/.exec(FolderItem.Path);
 			if (res) {
@@ -2117,7 +2117,7 @@ OpenNewProcess = function (fn, ex, mode, vOperation)
 		uid = String(Math.random()).replace(/^0?\./, "");
 	} while (MainWindow.Exchange[uid]);
 	MainWindow.Exchange[uid] = ex;
-	return ShellExecute([api.PathQuoteSpaces(api.GetModuleFileName(null)), mode ? '/open' : '/run', fn, uid].join(" "), vOperation, SW_SHOWNORMAL);
+	return ShellExecute([api.PathQuoteSpaces(api.GetModuleFileName(null)), mode ? '/open' : '/run', fn, uid].join(" "), vOperation, mode ? SW_SHOWNORMAL : SW_SHOWNOACTIVATE);
 }
 
 GetAddonInfo = function (Id)
@@ -2618,8 +2618,17 @@ OpenInExplorer = function (FV)
 {
 	if (FV) {
 		CancelWindowRegistered();
-		var Selected = FV.SelectedItems ? FV.SelectedItems() : [];
-		ShellExecute([api.PathQuoteSpaces("%SystemRoot%\\explorer.exe"), Selected.Count == 1 ? '/select,' + api.PathQuoteSpaces(api.GetDisplayNameOf(Selected.Item(0), SHGDN_FORPARSING)) : api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORPARSING))].join(" "), null, SW_SHOWNORMAL);
+		var ar = [];
+		var pid = FV.FolderItem;
+		for (var n = 99; !api.ILIsEmpty(pid) && n--; pid = api.ILGetParent(pid)) {
+			var path = api.GetDisplayNameOf(pid, SHGDN_FORPARSING | SHGDN_INFOLDER | SHGDN_ORIGINAL);
+			if (!path || /\\/.test(path)) {
+				ar = [FV.FolderItem.Path];
+				break;
+			}
+			ar.unshift(path);
+		}
+		ShellExecute([api.PathQuoteSpaces("%SystemRoot%\\explorer.exe"), api.PathQuoteSpaces(ar.join("\\"))].join(" "), null, SW_SHOWNORMAL);
 	}
 }
 

@@ -991,14 +991,14 @@ function SaveAddons()
 	} catch (e) {}
 }
 
-function SetChanged(fn)
+function SetChanged(fn, form)
 {
 	if (g_Chg.Data) {
 		g_bChanged = true;
 		if (g_x[g_Chg.Data] && g_x[g_Chg.Data].selectedIndex >= 0) {
-			(fn || ReplaceX)(g_Chg.Data);
+			(fn || ReplaceX)(g_Chg.Data, form);
 		} else {
-			AddX(g_Chg.Data, fn);
+			AddX(g_Chg.Data, fn, form);
 		}
 	}
 }
@@ -1078,7 +1078,7 @@ function SetAddon(Id, bEnable, td)
 	}
 	var info = GetAddonInfo(Id);
 	var s = ['<div draggable="true" title="', Id, '" ondragstart="Start5(this)" ondragend="End5(this)" Id="Addons_', Id, '" style="color: ', bEnable ? "": "gray", '">'];
-	s.push('<table><tr style="border-top: 1px solid buttonshadow"><td><input type="radio" name="AddonId" id="_', Id, '"></td><td style="width: 100%"><label for="_', Id, '">', info.Name, "&nbsp;", info.Version, '<br /><a href="#" onclick="return AddonInfo(\'', Id, '\', this)" style="font-size: .9em">', GetText('Details'), '</a>');
+	s.push('<table><tr style="border-top: 1px solid buttonshadow"><td><input type="radio" name="AddonId" id="_', Id, '"></td><td style="width: 100%"><label for="_', Id, '">', info.Name, "&nbsp;", info.Version, '<br /><a href="#" onclick="return AddonInfo(\'', Id, '\', this)" style="font-size: .9em">', GetText('Details'), ' (', Id, ')</a>');
 
 	if (info.Options) {
 		s.push('</td><td style="white-space: nowrap; vertical-align: middle; padding-right: 1em"><a href="#" onclick="AddonOptions(\'', Id, '\'); return false;">', GetText('Options'), '</td>');

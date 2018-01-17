@@ -3,7 +3,7 @@
 // MIT Lisence
 // Visual C++ 2010 Express Edition SP1
 // Windows SDK v7.1
-// http://www.eonet.ne.jp/~gakana/tablacus/
+// https://tablacus.github.io/
 
 #include "stdafx.h"
 #include "TE.h"
@@ -4157,60 +4157,67 @@ int teGetObjectLength(IDispatch *pdisp)
 	return GetIntFromVariantClear(&v);
 }
 
+BOOL GetDataObjFromObject(IDataObject **ppDataObj, IUnknown *punk)
+{
+	*ppDataObj = NULL;
+	if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(ppDataObj))) {
+		return TRUE;
+	}
+	FolderItems *pItems;
+	if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pItems))) {
+		long lCount = 0;
+		pItems->get_Count(&lCount);
+		if (lCount) {
+			CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL, true);
+			VARIANT v, v2;
+			VariantInit(&v);
+			VariantInit(&v2);
+			v.vt = VT_I4;
+			for (v.lVal = 0; v.lVal < lCount; v.lVal++) {
+				FolderItem *pItem;
+				if SUCCEEDED(pItems->Item(v, &pItem)) {
+					teSetObjectRelease(&v2, pItem);
+					pFolderItems->ItemEx(-1, NULL, &v2);
+					VariantClear(&v2);
+				}
+			}
+			pFolderItems->QueryInterface(IID_PPV_ARGS(ppDataObj));
+			pFolderItems->Release();
+		}
+		pItems->Release();
+		if (*ppDataObj) {
+			return TRUE;
+		}
+	}
+	IDispatchEx *pdex;
+	if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pdex))) {
+		long lCount = teGetObjectLength(pdex);
+		if (lCount) {
+			VARIANT v;
+			VariantInit(&v);
+			CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL, true);
+			for (int i = 0; i < lCount; i++) {
+				teGetPropertyAt(pdex, i, &v);
+				pFolderItems->ItemEx(-1, NULL, &v);
+				VariantClear(&v);
+			}
+			pFolderItems->QueryInterface(IID_PPV_ARGS(ppDataObj));
+			pFolderItems->Release();
+		}
+		pdex->Release();
+		if (*ppDataObj) {
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 BOOL GetDataObjFromVariant(IDataObject **ppDataObj, VARIANT *pv)
 {
 	*ppDataObj = NULL;
 	IUnknown *punk;
-	if (FindUnknown(pv, &punk)) {
-		if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(ppDataObj))) {
-			return true;
-		}
-		FolderItems *pItems;
-		if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pItems))) {
-			long lCount = 0;
-			pItems->get_Count(&lCount);
-			if (lCount) {
-				CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL, true);
-				VARIANT v, v2;
-				VariantInit(&v);
-				VariantInit(&v2);
-				v.vt = VT_I4;
-				for (v.lVal = 0; v.lVal < lCount; v.lVal++) {
-					FolderItem *pItem;
-					if SUCCEEDED(pItems->Item(v, &pItem)) {
-						teSetObjectRelease(&v2, pItem);
-						pFolderItems->ItemEx(-1, NULL, &v2);
-						VariantClear(&v2);
-					}
-				}
-				pFolderItems->QueryInterface(IID_PPV_ARGS(ppDataObj));
-				pFolderItems->Release();
-			}
-			pItems->Release();
-			if (*ppDataObj) {
-				return TRUE;
-			}
-		}
-		IDispatchEx *pdex;
-		if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pdex))) {
-			long lCount = teGetObjectLength(pdex);
-			if (lCount) {
-				VARIANT v;
-				VariantInit(&v);
-				CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL, true);
-				for (int i = 0; i < lCount; i++) {
-					teGetPropertyAt(pdex, i, &v);
-					pFolderItems->ItemEx(-1, NULL, &v);
-					VariantClear(&v);
-				}
-				pFolderItems->QueryInterface(IID_PPV_ARGS(ppDataObj));
-				pFolderItems->Release();
-			}
-			pdex->Release();
-			if (*ppDataObj) {
-				return TRUE;
-			}
-		}
+	if (FindUnknown(pv, &punk) && GetDataObjFromObject(ppDataObj, punk)) {
+		return TRUE;
 	}
 	LPITEMIDLIST pidl;
 	pidl = NULL;
@@ -4791,8 +4798,8 @@ static void threadAddItems(void *args)
 			ppd->SetLine(1, pszMsg, TRUE, NULL);
 		}
 		HRESULT hr = pArray->GetIDsOfNames(IID_NULL, &lpShift, 1, LOCALE_USER_DEFAULT, &dispidShift);
+		int nCurrent = 0;
 		if (hr == S_OK) {
-			int nCurrent = 0;
 			int nCount = teGetObjectLength(pArray);
 			while (!ppd->HasUserCancelled() && Invoke5(pArray, dispidShift, DISPATCH_METHOD, &pAddItems->pv[1], 0, NULL) == S_OK && pAddItems->pv[1].vt != VT_EMPTY) {
 				teSetProgress(ppd, ++nCurrent, nCount);
@@ -4813,6 +4820,38 @@ static void threadAddItems(void *args)
 			}
 			if (pAddItems->bNavigateComplete) {
 				Invoke5(pSB, 0x10000500, DISPATCH_METHOD, NULL, 0, NULL);
+			}
+		} else {
+			IDataObject *pDataObj;
+			if (GetDataObjFromObject(&pDataObj, pArray)) {
+				long nCount;
+				LPITEMIDLIST *ppidllist = IDListFormDataObj(pDataObj, &nCount);
+				if (ppidllist) {
+					if (nCount >= 1) {
+						for (int i = 0; i < nCount && !ppd->HasUserCancelled(); i++) {
+							teSetProgress(ppd, i, nCount - 1);
+							if (ppidllist[0]) {
+								pidl = ILCombine(ppidllist[0], ppidllist[i + 1]);
+								teCoTaskMemFree(ppidllist[i + 1]);
+							} else {
+								pidl = ppidllist[i + 1];
+							}
+							if (SHGetPathFromIDList(pidl, pszMsg)) {
+								ppd->SetLine(2, PathFindFileName(pszMsg), TRUE, NULL);
+							}
+							teSetIDListRelease(&pAddItems->pv[1], &pidl);
+							if (Invoke5(pSB, 0x10000501, DISPATCH_METHOD, NULL, -2, pAddItems->pv) == E_ACCESSDENIED) {
+								break;
+							}
+						}
+						teILFreeClear(&ppidllist[0]);
+					}
+					delete [] ppidllist;
+				}
+				pDataObj->Release();
+				if (pAddItems->bNavigateComplete) {
+					Invoke5(pSB, 0x10000500, DISPATCH_METHOD, NULL, 0, NULL);
+				}
 			}
 		}
 	} catch (...) {}
@@ -10356,7 +10395,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 			SetWindowLongPtr(g_hwndMain, GWLP_USERDATA, nCrc32);
 		}
 	} else {
-		g_hwndMain = CreateWindowEx(WS_EX_TOOLWINDOW, szClass, g_szTE, WS_VISIBLE | WS_POPUP,
+		g_hwndMain = CreateWindowEx(WS_EX_TOOLWINDOW, szClass, g_szTE, WS_POPUP,
 		  CW_USEDEFAULT, CW_USEDEFAULT, 0, 0, NULL, NULL, hInstance, NULL);
 	}
 	if (!g_hwndMain)

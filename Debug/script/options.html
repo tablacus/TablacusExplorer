@@ -387,6 +387,15 @@
               <input type="text" name="Tree_Width" size="4" />
               <br />
               <br />
+              <label>Enumeration</label><br />
+              <input type="hidden" name="Tree_EnumFlags" />
+              <input type="checkbox" id="Tree_EnumFlags:0x20" onclick="SetCheckbox(this)" />
+              <label for="Tree_EnumFlags:0x20">Folders</label>
+              <input type="checkbox" id="Tree_EnumFlags:0x40" onclick="SetCheckbox(this)" />
+              <label for="Tree_EnumFlags:0x40">Not folders</label>
+              <input type="checkbox" id="Tree_EnumFlags:0x80" onclick="SetCheckbox(this)" />
+              <label for="Tree_EnumFlags:0x80">Include hidden items</label>
+              <br /><br />
               <label>Style</label>
               <br />
               <input type="hidden" name="Tree_Style" />
@@ -503,15 +512,6 @@
               <label for="Tree_RootStyle=1">Hidden</label>
               <input type="radio" name="Tree_RootStyle_" id="Tree_RootStyle=2" onclick="SetRadio(this)" />
               <label for="Tree_RootStyle=2">Expanded</label>
-              <br /><br />
-              <label>Enumeration</label><br />
-              <input type="hidden" name="Tree_EnumFlags" />
-              <input type="checkbox" id="Tree_EnumFlags:0x20" onclick="SetCheckbox(this)" />
-              <label for="Tree_EnumFlags:0x20">Folders</label>
-              <input type="checkbox" id="Tree_EnumFlags:0x40" onclick="SetCheckbox(this)" />
-              <label for="Tree_EnumFlags:0x40">Not folders</label>
-              <input type="checkbox" id="Tree_EnumFlags:0x80" onclick="SetCheckbox(this)" />
-              <label for="Tree_EnumFlags:0x80">Include hidden items</label>
 
               <div>
                 <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_Tree_EnumFlags")' />
