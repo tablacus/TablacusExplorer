@@ -10701,22 +10701,27 @@ VOID CALLBACK teTimerProcParse(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 			Invoke5(pInvoke->pdisp, pInvoke->dispid, DISPATCH_METHOD, NULL, pInvoke->cArgs, pInvoke->pv);
 		} else if (pInvoke->wErrorHandling == 2) {
 			if (g_bShowParseError) {
-				g_bShowParseError = FALSE;
-				LPWSTR lpBuf;
-				WCHAR pszFormat[MAX_STATUS];
-				if (LoadString(g_hShell32, 6456, pszFormat, MAX_STATUS)) {
-					if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY,
-						pszFormat, 0, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&lpBuf, MAX_STATUS, (va_list *)&pInvoke->pv[pInvoke->cArgs - 1].bstrVal)) {
-						int r = MessageBox(g_hwndMain, lpBuf, _T(PRODUCTNAME), MB_ABORTRETRYIGNORE);
-						LocalFree(lpBuf);
-						if (r == IDRETRY) {
-							::InterlockedIncrement(&pInvoke->cRef);
-							_beginthread(&threadParseDisplayName, 0, pInvoke);
-							return;
+				CteShellBrowser *pSB = NULL;
+				pInvoke->pdisp->QueryInterface(g_ClsIdSB, (LPVOID *)&pSB);
+				if (pSB == g_pTC->GetShellBrowser(g_pTC->m_nIndex)) {
+					g_bShowParseError = FALSE;
+					LPWSTR lpBuf;
+					WCHAR pszFormat[MAX_STATUS];
+					if (LoadString(g_hShell32, 6456, pszFormat, MAX_STATUS)) {
+						if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY,
+							pszFormat, 0, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&lpBuf, MAX_STATUS, (va_list *)&pInvoke->pv[pInvoke->cArgs - 1].bstrVal)) {
+							int r = MessageBox(g_hwndMain, lpBuf, _T(PRODUCTNAME), MB_ABORTRETRYIGNORE);
+							LocalFree(lpBuf);
+							if (r == IDRETRY) {
+								::InterlockedIncrement(&pInvoke->cRef);
+								_beginthread(&threadParseDisplayName, 0, pInvoke);
+								return;
+							}
+							g_bShowParseError = (r != IDIGNORE);
 						}
-						g_bShowParseError = (r != IDIGNORE);
 					}
 				}
+				SafeRelease(&pSB);
 			}
 			teClearVariantArgs(pInvoke->cArgs, pInvoke->pv);
 		}
@@ -10835,7 +10840,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					}
 				} catch (...) {}
 				PostQuitMessage(0);
-				break;
+				return 0;
 			case WM_CONTEXTMENU:	//System Menu
 				MSG msg1;
 				msg1.hwnd = hWnd;
@@ -10844,7 +10849,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				msg1.pt.x = GET_X_LPARAM(lParam);
 				msg1.pt.y = GET_Y_LPARAM(lParam);
 				MessageSubPt(TE_OnShowContextMenu, g_pTE, &msg1);
-				return DefWindowProc(hWnd, message, wParam, lParam);
 				break;
 			//Menu
 			case WM_MENUSELECT:
@@ -10940,8 +10944,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			case WM_USERCHANGED:
 			case WM_QUERYENDSESSION:
 			case WM_HOTKEY:
-			case WM_CLIPBOARDUPDATE:
-			if (g_pOnFunc[TE_OnSystemMessage]) {
+			case TWM_CLIPBOARDUPDATE:
+				if (g_pOnFunc[TE_OnSystemMessage]) {
 					msg1.hwnd = hWnd;
 					msg1.message = message;
 					msg1.wParam = wParam;
@@ -10952,19 +10956,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 						return hr;
 					}
 				}
-				return DefWindowProc(hWnd, message, wParam, lParam);
+				break;
 			case WM_COMMAND:
 				if (teDoCommand(g_pTE, hWnd, message, wParam, lParam) == S_OK) {
 					return 1;
 				}
-				return DefWindowProc(hWnd, message, wParam, lParam);
+				break;
 #ifdef	_2000XP
-			case WM_DRAWCLIPBOARD:
-				if (g_hwndNextClip) {
-					SendMessage(g_hwndNextClip, message, wParam, lParam);
-				}
-				PostMessage(g_hwndMain, WM_CLIPBOARDUPDATE, 0, 0);
-				return 0;
 			case WM_CHANGECBCHAIN:
 				if ((HWND)wParam == g_hwndNextClip) {
 					g_hwndNextClip = (HWND)lParam;
@@ -10972,9 +10970,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					SendMessage(g_hwndNextClip, message, wParam, lParam);
 				}
 				return 0;
+			case WM_DRAWCLIPBOARD:
+				if (g_hwndNextClip) {
+					SendMessage(g_hwndNextClip, message, wParam, lParam);
+				}
 #endif
+			case WM_CLIPBOARDUPDATE:
+				PostMessage(g_hwndMain, TWM_CLIPBOARDUPDATE, 0, 0);
+				break;
 			default:
-				if ((message >= WM_APP && message <= MAXWORD)) {
+				if ((message > WM_APP && message <= MAXWORD)) {
 					if (g_pOnFunc[TE_OnAppMessage]) {
 						msg1.hwnd = hWnd;
 						msg1.message = message;
@@ -10994,7 +10999,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		g_strException = L"WndProc";
 #endif
 	}
-	return 0;
+	return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
 // Sub window

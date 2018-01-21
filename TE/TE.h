@@ -268,6 +268,7 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TET_FreeLibrary			0x1fa8
 #define TET_Refresh				0x1fa9
 #define TET_EndThread			0x1faa
+#define TWM_CLIPBOARDUPDATE		WM_APP
 #define SHGDN_ORIGINAL		0x40000000
 #define SHGDN_FORPARSINGEX	0x80000000
 #define START_OnFunc			5000

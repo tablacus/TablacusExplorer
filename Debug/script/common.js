@@ -2614,19 +2614,23 @@ GetInnerFV = function (id)
 	return null;
 }
 
-OpenInExplorer = function (FV)
+OpenInExplorer = function (pid1)
 {
-	if (FV) {
+	if (pid1) {
 		CancelWindowRegistered();
 		var ar = [];
-		var pid = FV.FolderItem;
+		pid1 = pid1.FolderItem || pid1;
+		var pid = pid1;
 		for (var n = 99; !api.ILIsEmpty(pid) && n--; pid = api.ILGetParent(pid)) {
 			var path = api.GetDisplayNameOf(pid, SHGDN_FORPARSING | SHGDN_INFOLDER | SHGDN_ORIGINAL);
 			if (!path || /\\/.test(path)) {
-				ar = [FV.FolderItem.Path];
+				ar = [];
 				break;
 			}
 			ar.unshift(path);
+		}
+		if (!ar.length) {
+			ar = [pid1.Path];			
 		}
 		ShellExecute([api.PathQuoteSpaces("%SystemRoot%\\explorer.exe"), api.PathQuoteSpaces(ar.join("\\"))].join(" "), null, SW_SHOWNORMAL);
 	}
