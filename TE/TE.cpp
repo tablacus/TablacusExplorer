@@ -1840,11 +1840,13 @@ BOOL teStartsText(LPWSTR pszSub, LPCWSTR pszFile)
 BOOL tePathMatchSpec1(LPCWSTR pszFile, LPWSTR pszSpec)
 {
 	WCHAR wc = *pszSpec;
-	BOOL bResult = *pszFile != NULL || !wc || wc == '*';
+	BOOL bResult = *pszFile != NULL || wc == '*' || !wc || wc == ';';
 	for (; bResult && *pszFile; pszFile++) {
 		wc = *pszSpec++;
 		if (wc == '*') {
-			wc = tolower(*pszSpec++);
+			do {
+				wc = tolower(*pszSpec++);
+			} while (wc == '*');
 			do {
 				if (!wc || wc == ';') {
 					return TRUE;
