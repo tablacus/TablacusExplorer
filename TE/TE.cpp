@@ -1840,36 +1840,38 @@ BOOL teStartsText(LPWSTR pszSub, LPCWSTR pszFile)
 BOOL tePathMatchSpec1(LPCWSTR pszFile, LPWSTR pszSpec)
 {
 	WCHAR wc = *pszSpec;
-	BOOL bResult = *pszFile != NULL || wc == '*' || !wc || wc == ';';
-	for (; bResult && *pszFile; pszFile++) {
+	if (!wc || wc == ';') {
+		return !*pszFile;
+	}
+	if (!*pszFile && wc != '*') {
+		return FALSE;
+	}
+	for (; *pszFile; pszFile++) {
 		wc = *pszSpec++;
 		if (wc == '*') {
 			do {
 				wc = tolower(*pszSpec++);
 			} while (wc == '*');
+			if (!wc || wc == ';') {
+				return TRUE;
+			}
 			do {
-				if (!wc || wc == ';') {
-					return TRUE;
+				while (tolower(*pszFile) != wc) {
+					if (!*(++pszFile)) {
+						return FALSE;
+					}
 				}
-				for (; *pszFile && tolower(*pszFile) != wc; pszFile++);
-				if (!*pszFile) {
-					return FALSE;
-				}
-				bResult = tePathMatchSpec1(++pszFile, pszSpec);
-			} while (!bResult);
-			return bResult;
-		}
-		if (!wc || wc == ';') {
-			break;
+			} while (!tePathMatchSpec1(++pszFile, pszSpec));
+			return TRUE;
 		}
 		if (wc != '?') {
-			bResult = tolower(*pszFile) == tolower(wc);
+			if (!wc || wc == ';' || tolower(*pszFile) != tolower(wc)) {
+				return FALSE;
+			}
 		}
 	}
-	while ((wc = *pszSpec) == '*') {
-		pszSpec++;
-	}
-	return bResult && (*pszFile == (wc == ';' ? NULL : wc));
+	for (; (wc = *pszSpec) == '*'; pszSpec++);
+	return *pszFile == (wc == ';' ? NULL : wc);
 }
 
 BOOL tePathMatchSpec(LPCWSTR pszFile, LPCWSTR pszSpec)
@@ -1905,7 +1907,7 @@ BOOL tePathIsNetworkPath(LPCWSTR pszPath)//PathIsNetworkPath is slow in DRIVE_NO
 		UINT uDriveType = GetDriveType(pszDrive);
 		return uDriveType == DRIVE_REMOTE || uDriveType == DRIVE_NO_ROOT_DIR;
 	}
-	return tePathMatchSpec(pszPath, L"\\\\*;*://*") && !tePathMatchSpec(pszPath, L"\\\\\\*");
+	return tePathMatchSpec(pszPath, L"\\\\*;*://*") && !teStartsText(L"\\\\\\", pszPath);
 }
 
 HRESULT STDAPICALLTYPE tePSPropertyKeyFromStringEx(__in LPCWSTR pszString,  __out PROPERTYKEY *pkey)
@@ -11685,6 +11687,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 
 	//History / Management
 	SetHistory(pFolderItems, wFlags);
+	SetTimer(g_hwndMain, TET_Redraw, 500, teTimerProc);
 	SetRedraw(FALSE);
 	m_pTC->LockUpdate();
 	try {

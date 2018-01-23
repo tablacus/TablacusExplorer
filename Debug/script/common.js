@@ -134,10 +134,13 @@ FolderMenu =
 		AddMenuIconFolderItem(mii, FolderItem);
 		this.Items.push(FolderItem);
 		mii.wID = this.Items.length;
-		if (!bSelect && api.GetAttributesOf(FolderItem, SFGAO_HASSUBFOLDER | SFGAO_BROWSABLE) == SFGAO_HASSUBFOLDER) {
-			var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
-			mii.hSubMenu = api.CreateMenu();
-			api.InsertMenu(mii.hSubMenu, 0, MF_BYPOSITION | MF_STRING, 0, api.sprintf(99, '\tJScript\tFolderMenu.OpenSubMenu("%llx",%d,"%llx")', hMenu, mii.wID, mii.hSubMenu));
+		if (!bSelect && api.GetAttributesOf(FolderItem, SFGAO_HASSUBFOLDER | SFGAO_BROWSABLE | SFGAO_LINK) == SFGAO_HASSUBFOLDER) {
+			var d = fso.GetDriveName(FolderItem.Path);
+			var o = d ? fso.GetDrive(d) : null;
+			if (!o || o.IsReady) {
+				mii.hSubMenu = api.CreateMenu();
+				api.InsertMenu(mii.hSubMenu, 0, MF_BYPOSITION | MF_STRING, 0, api.sprintf(99, '\tJScript\tFolderMenu.OpenSubMenu("%llx",%d,"%llx")', hMenu, mii.wID, mii.hSubMenu));
+			}
 		}
 		api.InsertMenuItem(hMenu, MAXINT, false, mii);
 	},
@@ -1425,7 +1428,7 @@ IsFolderEx = function (Item)
 		var wfd = api.Memory("WIN32_FIND_DATA");
 		var hr = api.SHGetDataFromIDList(Item, SHGDFIL_FINDDATA, wfd, wfd.Size);
 		if (Item.IsFolder) {
-			return (hr < 0) || Boolean(wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
+			return (hr < 0) || (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 || !/^[A-Z]:\\|^\\\\/i.test(api.GetDisplayNameOf(Item, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
 		}
 	}
 	return false;
@@ -2630,7 +2633,7 @@ OpenInExplorer = function (pid1)
 			ar.unshift(path);
 		}
 		if (!ar.length) {
-			ar = [pid1.Path];			
+			ar = [pid1.Path];
 		}
 		ShellExecute([api.PathQuoteSpaces("%SystemRoot%\\explorer.exe"), api.PathQuoteSpaces(ar.join("\\"))].join(" "), null, SW_SHOWNORMAL);
 	}
