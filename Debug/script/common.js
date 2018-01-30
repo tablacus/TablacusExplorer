@@ -36,7 +36,8 @@ g_ = {
 	bWindowRegistered: true,
 	xmlWindow: null,
 	elAddons: {},
-	event: {}
+	event: {},
+	tid_rf: []
 };
 
 FolderMenu =
@@ -63,13 +64,14 @@ FolderMenu =
 		return Verb;
 	},
 
-	OpenSubMenu: function (hMenu, wID, hSubMenu)
+	OpenSubMenu: function (hMenu, wID, hSubMenu, nParent)
 	{
-		this.OpenMenu(api.sscanf(hSubMenu, "%llx"), this.Items[wID - 1], api.sscanf(hMenu, "%llx"), wID);
+		this.OpenMenu(api.sscanf(hSubMenu, "%llx"), this.Items[wID - 1], api.sscanf(hMenu, "%llx"), wID, nParent);
 	},
 
-	OpenMenu: function (hMenu, FolderItem, hParent, wID)
+	OpenMenu: function (hMenu, FolderItem, hParent, wID, nParent)
 	{
+		var Items, Item;
 		if (!FolderItem) {
 			return;
 		}
@@ -78,33 +80,46 @@ FolderMenu =
 			FolderItem = api.ILCreateFromPath(path);
 		}
 		try {
-			if (!FolderItem || FolderItem.IsBrowsable) {
+			if (!FolderItem) {
 				FolderItem = {};
 			}
 			var bSep = false;
-			if (!api.ILIsEmpty(FolderItem)) {
-				this.AddMenuItem(hMenu, api.ILRemoveLastID(FolderItem, true), "../");
+			if (!nParent && !api.ILIsEmpty(FolderItem) && !api.ILIsParent(1, FolderItem, false)) {
+				this.AddMenuItem(hMenu, api.ILRemoveLastID(FolderItem, true), "../", false, true);
 				bSep = true;
 			}
-			var Folder = FolderItem.GetFolder;
-			if (Folder) {
-				var Items = Folder.Items();
-				if (Items) {
-					var nCount = Items.Count;
-					for (var i = 0; i < nCount; i++) {
-						var Item = Items.Item(i);
-						var bMatch = IsFolderEx(Item);
-						if (this.Filter) {
-							bMatch = api.PathMatchSpec(bMatch ? Item.Name + ".folder" : Item.Name, this.Filter);
+			var ENum = FolderItem.ENum;
+			if (ENum) {
+				Items = ENum(FolderItem);
+			}
+			if (!Items) {
+				var Folder = FolderItem.GetFolder;
+				if (Folder) {
+					Items = Folder.Items();
+				}
+			}
+			if (Items) {
+				var nCount = Items.Count;
+				if (!nCount) {
+					Items.Item = function (i)
+					{
+						return api.ILCreateFromPath(Items[i]);
+					}
+					nCount = Items.length;
+				}
+				for (var i = 0; i < nCount; i++) {
+					Item = Items.Item(i);
+					var bMatch = IsFolderEx(Item);
+					if (this.Filter) {
+						bMatch = api.PathMatchSpec(bMatch ? Item.Name + ".folder" : Item.Name, this.Filter);
+					}
+					if (bMatch) {
+						if (bSep) {
+							api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_SEPARATOR, 0, null);
+							bSep = false;
 						}
-						if (bMatch) {
-							if (bSep) {
-								api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_SEPARATOR, 0, null);
-								bSep = false;
-							}
-							this.AddMenuItem(hMenu, Item);
-							wID = null;
-						}
+						this.AddMenuItem(hMenu, Item);
+						wID = null;
 					}
 				}
 			}
@@ -119,9 +134,10 @@ FolderMenu =
 				api.DestroyMenu(hMenu);
 			}
 		} catch (e) {}
+		MainWindow.RunEvent1("FolderMenuCreated", hMenu, FolderItem, hParent);
 	},
 
-	AddMenuItem: function (hMenu, FolderItem, Name, bSelect)
+	AddMenuItem: function (hMenu, FolderItem, Name, bSelect, bParent)
 	{
 		var mii = api.Memory("MENUITEMINFO");
 		mii.cbSize = mii.Size;
@@ -135,11 +151,14 @@ FolderMenu =
 		this.Items.push(FolderItem);
 		mii.wID = this.Items.length;
 		if (!bSelect && api.GetAttributesOf(FolderItem, SFGAO_HASSUBFOLDER | SFGAO_BROWSABLE | SFGAO_LINK) == SFGAO_HASSUBFOLDER) {
-			var d = fso.GetDriveName(FolderItem.Path);
-			var o = d ? fso.GetDrive(d) : null;
-			if (!o || o.IsReady) {
+			try {
+				var o = fso.GetDrive(fso.GetDriveName(FolderItem.Path));
+			} catch (e) {
+				o = { IsReady: true };
+			}
+			if (o.IsReady) {
 				mii.hSubMenu = api.CreateMenu();
-				api.InsertMenu(mii.hSubMenu, 0, MF_BYPOSITION | MF_STRING, 0, api.sprintf(99, '\tJScript\tFolderMenu.OpenSubMenu("%llx",%d,"%llx")', hMenu, mii.wID, mii.hSubMenu));
+				api.InsertMenu(mii.hSubMenu, 0, MF_BYPOSITION | MF_STRING, 0, api.sprintf(99, '\tJScript\tFolderMenu.OpenSubMenu("%llx",%d,"%llx",%d)', hMenu, mii.wID, mii.hSubMenu, !bParent));
 			}
 		}
 		api.InsertMenuItem(hMenu, MAXINT, false, mii);
@@ -1424,12 +1443,10 @@ PathMatchEx = function (path, s)
 
 IsFolderEx = function (Item)
 {
-	if (Item) {
+	if (Item && Item.IsFolder) {
 		var wfd = api.Memory("WIN32_FIND_DATA");
 		var hr = api.SHGetDataFromIDList(Item, SHGDFIL_FINDDATA, wfd, wfd.Size);
-		if (Item.IsFolder) {
-			return (hr < 0) || (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 || !/^[A-Z]:\\|^\\\\/i.test(api.GetDisplayNameOf(Item, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
-		}
+		return (hr < 0) || (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 || !/^[A-Z]:\\|^\\\\/i.test(api.GetDisplayNameOf(Item, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
 	}
 	return false;
 }
@@ -2635,7 +2652,7 @@ OpenInExplorer = function (pid1)
 		if (!ar.length) {
 			ar = [pid1.Path];
 		}
-		ShellExecute([api.PathQuoteSpaces("%SystemRoot%\\explorer.exe"), api.PathQuoteSpaces(ar.join("\\"))].join(" "), null, SW_SHOWNORMAL);
+		api.CreateProcess([api.PathQuoteSpaces(wsh.ExpandEnvironmentStrings("%SystemRoot%\\explorer.exe")), api.PathQuoteSpaces(ar.join("\\"))].join(" "), null, 0, 1, 0);
 	}
 }
 

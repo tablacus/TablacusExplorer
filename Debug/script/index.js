@@ -783,13 +783,13 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev)
 		}
 		return E_NOTIMPL;
 	}
-	if (api.ILIsParent(g_pidlCP, Ctrl, false) && !api.ILIsEqual(Ctrl, g_pidlCP) && !api.ILIsEqual(Ctrl, ssfCONTROLS)) {
+	var hr = RunEvent2("BeforeNavigate", Ctrl, fs, wFlags, Prev);
+	if (hr == S_OK && RunEvent3("UseExplorer", Ctrl.FolderItem)) {
 		(function (Path) { setTimeout(function () {
 			OpenInExplorer(Path);
 		}, 99);}) (Ctrl.FolderItem);
 		return E_NOTIMPL;
 	}
-	var hr = RunEvent2("BeforeNavigate", Ctrl, fs, wFlags, Prev);
 	if (Ctrl.Data && Ctrl.Data.Lock && (wFlags & SBSP_NEWBROWSER) == 0) {
 		hr = E_ACCESSDENIED;
 	}
@@ -1789,11 +1789,12 @@ te.OnILGetParent = function (FolderItem)
 	if (res) {
 		return api.PathCreateFromUrl("file:" + res[1]);
 	}
-	if (api.ILIsEqual(FolderItem, ssfRESULTSFOLDER)) {
+	if (api.ILIsEqual(FolderItem.Alt, ssfRESULTSFOLDER)) {
 		var ar = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX).split("\\");
 		if (ar.length > 1 && ar.pop()) {
 			return ar.join("\\");
 		}
+		return ssfDESKTOP;
 	}
 }
 
@@ -3357,10 +3358,30 @@ AddEvent("OptionDecode", function (Id, p)
 	}
 });
 
-AddEvent("Addons.OpenInstead", function (path)
+AddEvent("BeginNavigate", function (Ctrl)
 {
-	if (api.ILIsParent(g_pidlCP, path, false) && !api.ILIsEqual(path, g_pidlCP) && !api.ILIsEqual(path, ssfCONTROLS)) {
+	var fn = Ctrl.FolderItem.ENum;
+	if (fn && !g_.tid_rf[Ctrl.Id]) {
+		Ctrl.SortColumn = "System.Contact.Label";
+		g_.tid_rf[Ctrl.Id] = setTimeout(function ()
+		{
+			delete g_.tid_rf[Ctrl.Id];
+			Ctrl.SortColumn = "";
+			var Items = fn(Ctrl.FolderItem, Ctrl, function (Ctrl, Items) {
+				Ctrl.AddItems(Items, true, true);
+			});
+			if (Items) {
+				Ctrl.AddItems(Items, true, true);
+			}
+		}, 99);
 		return S_FALSE;
+	}
+});
+
+AddEvent("UseExplorer", function (pid)
+{
+	if (!api.GetAttributesOf(pid.Alt || pid, SFGAO_FILESYSTEM | SFGAO_FILESYSANCESTOR | SFGAO_STORAGEANCESTOR | SFGAO_NONENUMERATED | SFGAO_DROPTARGET) && !api.ILIsParent(1, pid, false)) {
+		return true;
 	}
 });
 

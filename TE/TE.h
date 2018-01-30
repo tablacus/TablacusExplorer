@@ -504,6 +504,7 @@ struct TEAddItems
 	VARIANTARG *pv;
 	IStream *pStrmSB;
 	IStream *pStrmArray;
+	IStream *pStrmOnCompleted;
 	BOOL	bDeleted;
 	BOOL	bNavigateComplete;
 };
@@ -570,17 +571,23 @@ public:
 	CteFolderItem(VARIANT *pv);
 	~CteFolderItem();
 	LPITEMIDLIST GetPidl();
+	LPITEMIDLIST GetAlt();
 	BOOL GetFolderItem();
+	VOID Clear();
+	BSTR GetStrPath();
+	VOID MakeUnavailable();
 
 	VARIANT			m_v;
-	LPITEMIDLIST	m_pidl;
+	LPITEMIDLIST	m_pidl, m_pidlAlt;
 	FolderItem		*m_pFolderItem;
 	LPITEMIDLIST	m_pidlFocused;
+	IDispatch		*m_pENum;
 	int				m_nSelected;
 	BOOL			m_bStrict;
 	DWORD			m_dwUnavailable;
 private:
 	LONG			m_cRef;
+	DWORD			m_dwSessionId;
 };
 
 class CteFolderItems : public FolderItems, public IDispatchEx, public IDataObject
@@ -1589,7 +1596,7 @@ public:
 	STDMETHODIMP GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId);
 	STDMETHODIMP Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr);
 
-	CteProgressDialog();
+	CteProgressDialog(IProgressDialog *ppd);
 	~CteProgressDialog();
 private:
 	IProgressDialog *m_ppd;
