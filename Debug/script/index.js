@@ -3380,7 +3380,7 @@ AddEvent("BeginNavigate", function (Ctrl)
 
 AddEvent("UseExplorer", function (pid)
 {
-	if (!api.GetAttributesOf(pid.Alt || pid, SFGAO_FILESYSTEM | SFGAO_FILESYSANCESTOR | SFGAO_STORAGEANCESTOR | SFGAO_NONENUMERATED | SFGAO_DROPTARGET) && !api.ILIsParent(1, pid, false)) {
+	if (pid.Path && !api.GetAttributesOf(pid.Alt || pid, SFGAO_FILESYSTEM | SFGAO_FILESYSANCESTOR | SFGAO_STORAGEANCESTOR | SFGAO_NONENUMERATED | SFGAO_DROPTARGET) && !api.ILIsParent(1, pid, false)) {
 		return true;
 	}
 });

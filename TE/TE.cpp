@@ -3835,20 +3835,17 @@ BOOL teGetIDListFromObjectForFV(IUnknown *punk, LPITEMIDLIST *ppidl)
 
 BOOL teILIsEqual(IUnknown *punk1, IUnknown *punk2)
 {
-	BSTR bs1 = NULL;
-	BSTR bs2 = NULL;
-	FolderItem *pid;
-	if (punk1 && SUCCEEDED(punk1->QueryInterface(IID_PPV_ARGS(&pid)))) {
-		pid->get_Path(&bs1);
-		pid->Release();
+	BOOL bResult = FALSE;
+	if (punk1 && punk2) {
+		LPITEMIDLIST pidl1, pidl2;
+		if (teGetIDListFromObject(punk1, &pidl1)) {
+			if (teGetIDListFromObject(punk2, &pidl2)) {
+				bResult = ::ILIsEqual(pidl1, pidl2);
+				teCoTaskMemFree(pidl2);
+			}
+			teCoTaskMemFree(pidl1);
+		}
 	}
-	if (punk2 && SUCCEEDED(punk2->QueryInterface(IID_PPV_ARGS(&pid)))) {
-		pid->get_Path(&bs2);
-		pid->Release();
-	}
-	BOOL bResult = lstrcmpi(bs1, bs2) == 0;
-	teSysFreeString(&bs2);
-	teSysFreeString(&bs1);
 	return bResult;
 }
 
@@ -11497,7 +11494,7 @@ BOOL CteShellBrowser::Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItem
 	CteFolderItem *pid = NULL;
 	if (pFolderItem) {
 		if SUCCEEDED(pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
-			if (!pid->m_pidl) {
+			if (!pid->m_pidl && !pid->m_pidlAlt) {
 				if (pid->m_v.vt == VT_BSTR) {
 					if (tePathIsNetworkPath(pid->m_v.bstrVal)) {
 						if (tePathIsDirectory(pid->m_v.bstrVal, 100, 3) != S_OK) {
