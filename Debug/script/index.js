@@ -1899,7 +1899,7 @@ g_.event.Sort = function (Ctrl)
 	return RunEvent1("Sort", Ctrl);
 }
 
-g_.event.FromFile = function (image, file)
+g_.event.FromFile = function (image, file, cx)
 {
 	var alt;
 	var s = fso.BuildPath(fso.GetSpecialFolder(2).Path, "tablacus\\");
@@ -1915,7 +1915,7 @@ g_.event.FromFile = function (image, file)
 			}
 		}
 	}
-	return RunEvent3("FromFile", image, file, alt);
+	return RunEvent3("FromFile", image, file, alt, cx);
 }
 
 g_.event.FromStream = function (image, stream, filename)

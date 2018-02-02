@@ -1385,6 +1385,17 @@ VOID teStrFormatSize(DWORD dwFormat, LONGLONG qdw, LPWSTR pszBuf, UINT cchBuf)
 	swprintf_s(&pszBuf[lstrlen(pszBuf)], 4, L" %cB", pszPrefix[j]);
 }
 
+BSTR teSysAllocStringLen(const OLECHAR *strIn, UINT uSize)
+{
+	UINT uOrg = lstrlen(strIn);
+	if (uSize > uOrg) {
+		BSTR bs = ::SysAllocStringLen(NULL, uSize);
+		lstrcpy(bs, strIn);
+		return bs;
+	}
+	return ::SysAllocStringLen(strIn, uSize);
+}
+
 VOID teSysFreeString(BSTR *pbs)
 {
 	if (*pbs) {
@@ -1423,7 +1434,7 @@ VOID teSetBSTR(VARIANT *pv, BSTR *pbs, int nLen)
 				return;
 			}
 		}
-		pv->bstrVal = ::SysAllocStringLen(*pbs, nLen);
+		pv->bstrVal = teSysAllocStringLen(*pbs, nLen);
 		teSysFreeString(pbs);
 	}
 }
@@ -1951,7 +1962,7 @@ int teDragQueryFile(HDROP hDrop, UINT iFile, BSTR *pbsPath)
 {
 	UINT i = 0;
 	for (UINT nSize = MAX_PATH; nSize < MAX_PATHEX; nSize += MAX_PATH) {
-		*pbsPath = SysAllocStringLen(NULL, nSize);
+		*pbsPath = ::SysAllocStringLen(NULL, nSize);
 		i = DragQueryFile(hDrop, iFile, *pbsPath, nSize);
 		if (i + 1 < nSize) {
 			(*pbsPath)[i] = NULL;
@@ -1964,7 +1975,7 @@ int teDragQueryFile(HDROP hDrop, UINT iFile, BSTR *pbsPath)
 
 VOID tePathAppend(BSTR *pbsPath, LPCWSTR pszPath, LPWSTR pszFile)
 {
-	*pbsPath = SysAllocStringLen(pszPath, lstrlen(pszPath) + lstrlen(pszFile) + 1);
+	*pbsPath = teSysAllocStringLen(pszPath, lstrlen(pszPath) + lstrlen(pszFile) + 1);
 	PathAppend(*pbsPath, pszFile);
 }
 
@@ -2161,13 +2172,6 @@ VOID teSetParent(HWND hwnd, HWND hwndParent)
 	if (GetParent(hwnd) != hwndParent) {
 		SetParent(hwnd, hwndParent);
 	}
-}
-
-BSTR SysAllocStringLenEx(const OLECHAR *strIn, UINT uSize, UINT uOrg)
-{
-	BSTR bs = SysAllocStringLen(NULL, uSize);
-	lstrcpyn(bs, strIn, uSize < uOrg ? uSize : uOrg);
-	return bs;
 }
 
 int ILGetCount(LPITEMIDLIST pidl)
@@ -2797,14 +2801,7 @@ VOID teExtraLongPath(BSTR *pbs)
 	if (nLen < MAX_PATH || StrChr(*pbs, '?')) {
 		return;
 	}
-	BSTR bs;
-	if (tePathMatchSpec(*pbs, L"\\\\*\\*")) {
-		bs = ::SysAllocStringLen(NULL, nLen + 7);
-		lstrcpy(bs, L"\\\\?\\UNC");
-	} else {
-		bs = ::SysAllocStringLen(NULL, nLen + 4);
-		lstrcpy(bs, L"\\\\?\\");
-	}
+	BSTR bs = tePathMatchSpec(*pbs, L"\\\\*\\*") ? teSysAllocStringLen(L"\\\\?\\UNC", nLen + 7) : teSysAllocStringLen(L"\\\\?\\", nLen + 4);
 	lstrcat(bs, *pbs);
 	teSysFreeString(pbs);
 	*pbs = bs;
@@ -2849,7 +2846,7 @@ LPWSTR teGetCommandLine()
 	if (!g_bsCmdLine) {
 		LPWSTR strCmdLine = GetCommandLine();
 		int nSize = lstrlen(strCmdLine) + MAX_PROP;
-		BSTR bsCmdLine = SysAllocStringLen(NULL, nSize);
+		BSTR bsCmdLine = ::SysAllocStringLen(NULL, nSize);
 		int j = 0;
 		int i = 0;
 		while (i < nSize && strCmdLine[j]) {
@@ -2886,10 +2883,10 @@ LPWSTR teGetCommandLine()
 				bsCmdLine[i++] = strCmdLine[j++];
 			}
 		}
-		g_bsCmdLine = ::SysAllocStringLen(bsCmdLine, i);
+		g_bsCmdLine = teSysAllocStringLen(bsCmdLine, i);
 		::SysFreeString(bsCmdLine);
 	}
-	return ::SysAllocString(g_bsCmdLine);
+	return g_bsCmdLine;
 }
 
 HRESULT teCLSIDFromProgID(__in LPCOLESTR lpszProgID, __out LPCLSID lpclsid)
@@ -3040,7 +3037,7 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 	if (pszPath) {
 		BSTR bsPath2 = NULL;
 		if (pszPath[0] == _T('"')) {
-			bsPath2 = ::SysAllocStringLen(pszPath, lstrlen(pszPath) + 1);
+			bsPath2 = teSysAllocStringLen(pszPath, lstrlen(pszPath) + 1);
 			PathUnquoteSpaces(bsPath2);
 			pszPath = bsPath2;
 		}
@@ -3093,7 +3090,7 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 					}
 				} else if (tePathMatchSpec1(pszPath, L"\\\\*\\*")) {
 					LPWSTR lpDelimiter = StrChr(&pszPath[2], '\\');
-					BSTR bsServer = ::SysAllocStringLen(pszPath, int(lpDelimiter - pszPath));
+					BSTR bsServer = teSysAllocStringLen(pszPath, int(lpDelimiter - pszPath));
 					LPITEMIDLIST pidlServer = teILCreateFromPathEx(bsServer);
 					if (pidlServer) {
 						pidl = teILCreateFromPath2(pidlServer, &lpDelimiter[1], g_hwndMain);
@@ -3105,7 +3102,7 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 /*/// To parse too much.
 			if (pidl == NULL && PathMatchSpec(pszPath, L"::{*")) {
 				int nSize = lstrlen(pszPath) + 6;
-				BSTR bsPath4 = ::SysAllocStringLen(L"shell:", nSize);
+				BSTR bsPath4 = teSysAllocStringLen(L"shell:", nSize);
 				lstrcat(bsPath4, pszPath);
 				lpfnSHParseDisplayName(bsPath4, NULL, &pidl, 0, NULL);
 				::SysFreeString(bsPath4);
@@ -6353,7 +6350,7 @@ BOOL teLocalizePath(LPWSTR pszPath, BSTR *pbsPath)
 							GetDisplayNameFromPidl(&bs, pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
 						}
 						lp[0] = '\\';
-						*pbsPath = ::SysAllocStringLen(bs, SysStringLen(bs) + lstrlen(lp) + 1);
+						*pbsPath = teSysAllocStringLen(bs, SysStringLen(bs) + lstrlen(lp) + 1);
 						lstrcat(*pbsPath, lp);
 						::SysFreeString(bs);
 					}
@@ -7134,7 +7131,7 @@ VOID teApiStrCmpLogical(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 VOID teApiPathQuoteSpaces(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	if (param[0].bstrVal) {
-		BSTR bsResult = ::SysAllocStringLen(param[0].bstrVal, ::SysStringLen(param[0].bstrVal) + 3);
+		BSTR bsResult = teSysAllocStringLen(param[0].bstrVal, ::SysStringLen(param[0].bstrVal) + 3);
 		PathQuoteSpaces(bsResult);
 		teSetBSTR(pVarResult, &bsResult, -1);
 	}
@@ -7176,7 +7173,7 @@ VOID teApiPathSearchAndQualify(int nArg, teParam *param, DISPPARAMS *pDispParams
 {
 	if (param[0].bstrVal) {
 		UINT uLen = ::SysStringLen(param[0].bstrVal) + MAX_PATH;
-		BSTR bsResult = ::SysAllocStringLen(param[0].lpolestr, uLen);
+		BSTR bsResult = teSysAllocStringLen(param[0].lpolestr, uLen);
 		PathSearchAndQualify(param[0].lpcwstr, bsResult, uLen);
 		teSetBSTR(pVarResult, &bsResult, -1);
 	}
@@ -7674,12 +7671,12 @@ VOID teApiSHFileOperation(int nArg, teParam *param, DISPPARAMS *pDispParams, VAR
 		pFO->wFunc = param[0].uintVal;
 		BSTR bs = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]);
 		int nLen = ::SysStringLen(bs) + 1;
-		bs = ::SysAllocStringLen(bs, nLen);
+		bs = teSysAllocStringLen(bs, nLen);
 		bs[nLen] = 0;
 		pFO->pFrom = bs;
 		bs = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 2]);
 		nLen = ::SysStringLen(bs) + 1;
-		bs = ::SysAllocStringLen(bs, nLen);
+		bs = teSysAllocStringLen(bs, nLen);
 		bs[nLen] = 0;
 		pFO->pTo = bs;
 		pFO->fFlags = param[3].fileop_flags;
@@ -8529,7 +8526,7 @@ VOID teApiGetWindowText(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 	BSTR bs = NULL;
 	int nLen = GetWindowTextLength(param[0].hwnd);
 	if (nLen) {
-		bs = SysAllocStringLen(NULL, nLen);
+		bs = ::SysAllocStringLen(NULL, nLen);
 		nLen = GetWindowText(param[0].hwnd, bs, nLen + 1);
 	}
 	teSetBSTR(pVarResult, &bs, nLen);
@@ -8551,13 +8548,12 @@ VOID teApiGetModuleFileName(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 
 VOID teApiGetCommandLine(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	BSTR bsResult = teGetCommandLine();
-	teSetBSTR(pVarResult, &bsResult, -2);
+	teSetSZ(pVarResult, teGetCommandLine());
 }
 
 VOID teApiGetCurrentDirectory(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	BSTR bsResult = SysAllocStringLen(NULL, MAX_PATH);
+	BSTR bsResult = ::SysAllocStringLen(NULL, MAX_PATH);
 	int nLen = GetCurrentDirectory(MAX_PATH, bsResult);
 	teSetBSTR(pVarResult, &bsResult, nLen);
 }
@@ -8576,7 +8572,7 @@ VOID teApiGetDisplayNameOf(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 
 VOID teApiGetKeyNameText(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	BSTR bsResult = SysAllocStringLen(NULL, MAX_PATH);
+	BSTR bsResult = ::SysAllocStringLen(NULL, MAX_PATH);
 	int nLen = GetKeyNameText(param[0].lVal, bsResult, MAX_PATH);
 	teSetBSTR(pVarResult, &bsResult, nLen);
 }
@@ -8599,7 +8595,7 @@ VOID teApiSysAllocString(int nArg, teParam *param, DISPPARAMS *pDispParams, VARI
 
 VOID teApiSysAllocStringLen(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	BSTR bsResult = ::SysAllocStringLen(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]), param[1].uintVal);
+	BSTR bsResult = teSysAllocStringLen(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]), param[1].uintVal);
 	teSetBSTR(pVarResult, &bsResult, -2);
 }
 
@@ -8614,7 +8610,7 @@ VOID teApisprintf(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pV
 	int nSize = param[0].intVal;
 	LPWSTR pszFormat = param[1].lpwstr;
 	if (pszFormat && nSize > 0) {
-		BSTR bsResult = SysAllocStringLen(NULL, nSize);
+		BSTR bsResult = ::SysAllocStringLen(NULL, nSize);
 		int nLen = 0;
 		int nIndex = 1;
 		int nPos = 0;
@@ -8694,7 +8690,7 @@ VOID teApibase64_encode(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 		CryptBinaryToString(pc, nLen, CRYPT_STRING_BASE64, NULL, &dwSize);
 		BSTR bsResult = NULL;
 		if (dwSize > 0) {
-			bsResult = SysAllocStringLen(NULL, dwSize - 1);
+			bsResult = ::SysAllocStringLen(NULL, dwSize - 1);
 			CryptBinaryToString(pc, nLen, CRYPT_STRING_BASE64, bsResult, &dwSize);
 		}
 		teSetBSTR(pVarResult, &bsResult, -1);
@@ -8716,7 +8712,7 @@ VOID teApiAssocQueryString(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 	int nLen = -1;
 	if (cch) {
 		nLen = cch - 1;
-		bsResult = SysAllocStringLen(NULL, nLen);
+		bsResult = ::SysAllocStringLen(NULL, nLen);
 		AssocQueryString(param[0].assocf, param[1].assocstr, param[2].lpcwstr, param[3].lpcwstr, bsResult, &cch);
 	}
 	teSetBSTR(pVarResult, &bsResult, nLen);
@@ -9757,7 +9753,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 #ifndef _DEBUG
 					BSTR bsPath, bsQuoted;
 					int i = teGetModuleFileName(NULL, &bsPath);
-					bsQuoted = SysAllocStringLen(bsPath, i + 2);
+					bsQuoted = teSysAllocStringLen(bsPath, i + 2);
 					SysFreeString(bsPath);
 					PathQuoteSpaces(bsQuoted);
 					ShellExecute(hwnd, NULL, bsQuoted, NULL, NULL, SW_SHOWNOACTIVATE);
@@ -12174,8 +12170,8 @@ BOOL CteShellBrowser::SetActive(BOOL bForce)
 VOID CteShellBrowser::SetTitle(BSTR szName, int nIndex)
 {
 	TC_ITEM tcItem;
-	BSTR bsText = SysAllocStringLen(NULL, MAX_PATH);
-	BSTR bsOldText = SysAllocStringLen(NULL, MAX_PATH);
+	BSTR bsText = ::SysAllocStringLen(NULL, MAX_PATH);
+	BSTR bsOldText = ::SysAllocStringLen(NULL, MAX_PATH);
 	bsOldText[0] = NULL;
 	tcItem.pszText = bsOldText;
 	tcItem.mask = TCIF_TEXT;
@@ -13392,7 +13388,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						VariantClear(&vText);
 					}
 					if (pVarResult) {
-						BSTR bsText = SysAllocStringLen(NULL, MAX_PATH);
+						BSTR bsText = ::SysAllocStringLen(NULL, MAX_PATH);
 						bsText[0] = NULL;
 						tcItem.pszText = bsText;
 						tcItem.mask = TCIF_TEXT;
@@ -18863,7 +18859,7 @@ VOID CteMemory::Read(int nIndex, int nLen, VARIANT *pVarResult)
 					if (nLen * (int)sizeof(WCHAR) > m_nSize) {
 						nLen = m_nSize / sizeof(WCHAR);
 					}
-					pVarResult->bstrVal = SysAllocStringLenEx((WCHAR *)pFrom, nLen, lstrlen((WCHAR *)pFrom));
+					pVarResult->bstrVal = teSysAllocStringLen((WCHAR *)pFrom, nLen);
 					pVarResult->vt = VT_BSTR;
 				} else {
 					teSetSZ(pVarResult, (WCHAR *)pFrom);
@@ -19185,7 +19181,7 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 								int nLenA = WideCharToMultiByte(CP_ACP, 0, ppwc[i], nLenW, NULL, 0, NULL, NULL);
 								ppc[i] = new char[nLenA];
 								WideCharToMultiByte(CP_ACP, 0, ppwc[i], nLenW, ppc[i], nLenA, NULL, NULL);
-								BSTR bs = SysAllocStringLen(NULL, nLenW);
+								BSTR bs = ::SysAllocStringLen(NULL, nLenW);
 								MultiByteToWideChar(CP_ACP, 0, ppc[i], nLenA, bs, nLenW);
 								if (!teStrSameIFree(bs, ppwc[i])) {
 									cmi.fMask = CMIC_MASK_UNICODE;
@@ -21284,14 +21280,14 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					VARIANT vFile;
 					teVariantChangeType(&vFile, &pDispParams->rgvarg[nArg], VT_BSTR);
 					if (!m_ofn.lpstrFile) {
-						m_ofn.lpstrFile = SysAllocStringLen(vFile.bstrVal, m_ofn.nMaxFile);
+						m_ofn.lpstrFile = teSysAllocStringLen(vFile.bstrVal, m_ofn.nMaxFile);
 					} else {
 						lstrcpyn(m_ofn.lpstrFile, vFile.bstrVal, m_ofn.nMaxFile);
 					}
 					VariantClear(&vFile);
 				}
 				if (pVarResult) {
-					pVarResult->bstrVal = SysAllocStringLen(m_ofn.lpstrFile, m_ofn.nMaxFile);
+					pVarResult->bstrVal = teSysAllocStringLen(m_ofn.lpstrFile, m_ofn.nMaxFile);
 					pVarResult->vt = VT_BSTR;
 				}
 				return S_OK;
@@ -21301,7 +21297,7 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					if (pDispParams->rgvarg[nArg].vt == VT_BSTR) {
 						teSysFreeString(const_cast<BSTR *>(&m_ofn.lpstrFilter));
 						int i = ::SysStringLen(pDispParams->rgvarg[nArg].bstrVal);
-						BSTR bs = SysAllocStringLen(pDispParams->rgvarg[nArg].bstrVal, i + 1);
+						BSTR bs = teSysAllocStringLen(pDispParams->rgvarg[nArg].bstrVal, i + 1);
 						bs[i + 1] = NULL;
 						while (i >= 0) {
 							if (bs[i] == '|') {
@@ -21320,7 +21316,7 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 		}
 		if (dispIdMember >= 40) {
 			if (!m_ofn.lpstrFile) {
-				m_ofn.lpstrFile = SysAllocStringLen(NULL, m_ofn.nMaxFile);
+				m_ofn.lpstrFile = ::SysAllocStringLen(NULL, m_ofn.nMaxFile);
 				m_ofn.lpstrFile[0] = NULL;
 			}
 			BOOL bResult = FALSE;
@@ -21866,10 +21862,13 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 						if (g_pOnFunc[TE_OnFromFile]) {
 							try {
 								if (InterlockedIncrement(&g_nProcIMG) < 8) {
-									VARIANTARG *pv = GetNewVARIANT(2);
-									teSetObject(&pv[1], this);
-									VariantCopy(&pv[0], &pDispParams->rgvarg[nArg]);
-									Invoke4(g_pOnFunc[TE_OnFromFile], NULL, 2, pv);
+									VARIANTARG *pv = GetNewVARIANT(3);
+									teSetObject(&pv[2], this);
+									VariantCopy(&pv[1], &pDispParams->rgvarg[nArg]);
+									if (nArg >= 0) {
+										VariantCopy(&pv[0], &pDispParams->rgvarg[nArg - 1]);
+									}
+									Invoke4(g_pOnFunc[TE_OnFromFile], NULL, 3, pv);
 								}
 							} catch(...) {}
 							::InterlockedDecrement(&g_nProcIMG);
@@ -22019,7 +22018,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 									CryptBinaryToString((BYTE *)bsBuff, ulBytesRead, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, NULL, &dwSize);
 									if (dwSize > 0) {
 										pVarResult->vt = VT_BSTR;
-										pVarResult->bstrVal = SysAllocStringLen(NULL, nDest + dwSize - 1);
+										pVarResult->bstrVal = ::SysAllocStringLen(NULL, nDest + dwSize - 1);
 										lstrcpy(pVarResult->bstrVal, szHead);
 										CryptBinaryToString((BYTE *)bsBuff, ulBytesRead, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, &pVarResult->bstrVal[nDest], &dwSize);
 									}
