@@ -59,10 +59,6 @@
 	<text s="Open with...">Aperto con...</text>
 	<text s="Send to...">Invia a...</text>
 
-	<text s="Get the current tab control">Prendi il controllo di scheda corrente</text>
-	<text s="Move the current tab control">Spostare il controllo scheda corrente</text>
-	<text s="Add a tab control">Aggiungi un controllo scheda</text>
-	<text s="Remove the current tab control">Rimuovi il controllo scheda corrente</text>
 	<text s="Get the current folder view">Prendi la vista cartella attuale</text>
 
 	<text s="Initialize config folder">Inizializzare cartella config</text>
@@ -213,6 +209,7 @@
 	<text s="Results">risultati</text>
 	<text s="Number of items">Numero di elementi</text>
 	<text s="&amp;About %s">A proposito di %s</text>
+	<text s="Get">Ottieni</text>
 
 	<text s="Location">Percorso</text>
 	<text s="Root style">Stile Radice</text>

@@ -59,10 +59,6 @@
 	<text s="Open with...">Abrir con...</text>
 	<text s="Send to...">Enviar a...</text>
 
-	<text s="Get the current tab control">Obtener la pestaña de control actual</text>
-	<text s="Move the current tab control">Mover la pestaña de control actual</text>
-	<text s="Add a tab control">Añadir una pestaña de control</text>
-	<text s="Remove the current tab control">Quitar la pestaña de control actual</text>
 	<text s="Get the current folder view">Obtener la vista de carpeta actual</text>
 
 	<text s="Initialize config folder">Initialize config folder</text>
@@ -213,6 +209,7 @@
 	<text s="Results">Resultados</text>
 	<text s="Number of items">Número de elementos</text>
 	<text s="&amp;About %s">&amp;Acerca de %s</text>
+	<text s="Get">Obtener</text>
 
 	<text s="Location">Ubicación</text>
 	<text s="Root style">Estilo de la Raíz</text>

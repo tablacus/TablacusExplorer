@@ -59,10 +59,6 @@
 	<text s="Open with...">Ouvrir avec...</text>
 	<text s="Send to...">Envoyer vers...</text>
 
-	<text s="Get the current tab control">Obtenir la commande de l'onglet courant</text>
-	<text s="Move the current tab control">Déplacer la commande de l'onglet courant</text>
-	<text s="Add a tab control">Ajouter une nouvelle commande d'onglet</text>
-	<text s="Remove the current tab control">Supprimer la commande de l'onglet courant</text>
 	<text s="Get the current folder view">Obtenir la vue du dossier courant</text>
 
 	<text s="Initialize config folder">Initialiser le dossier de configuration</text>
@@ -213,6 +209,7 @@
 	<text s="Results">Résultats</text>
 	<text s="Number of items">Nombre d’éléments</text>
 	<text s="&amp;About %s">A propos de %s</text>
+	<text s="Get">Obtenir</text>
 
 	<text s="Location">Emplacement</text>
 	<text s="Root style">Style</text>

@@ -59,10 +59,6 @@
 	<text s="Open with...">打开方式...</text>
 	<text s="Send to...">发送到...</text>
 
-	<text s="Get the current tab control">获取当前选项卡控制</text>
-	<text s="Move the current tab control">移动当前选项卡控制</text>
-	<text s="Add a tab control">添加选项卡控制</text>
-	<text s="Remove the current tab control">移除当前选项卡控制</text>
 	<text s="Get the current folder view">获取当前文件夹视图</text>
 
 	<text s="Initialize config folder">初始化配置文件</text>
@@ -213,6 +209,7 @@
 	<text s="Results">结果</text>
 	<text s="Number of items">项目数</text>
 	<text s="&amp;About %s">关于 %s</text>
+	<text s="Get">获取</text>
 
 	<text s="Location">定位</text>
 	<text s="Root style">根目录样式</text>

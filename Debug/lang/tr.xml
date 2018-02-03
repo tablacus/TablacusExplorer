@@ -59,10 +59,6 @@
 	<text s="Open with...">... ile aç</text>
 	<text s="Send to...">Gönder...</text>
 
-	<text s="Get the current tab control">Geçerli sekme denetimini al</text>
-	<text s="Move the current tab control">Geçerli sekme denetimini taşı</text>
-	<text s="Add a tab control">Sekme kontrolü ekle</text>
-	<text s="Remove the current tab control">Geçerli sekme denetimini sil</text>
 	<text s="Get the current folder view">Geçerli klasör görünümünü al</text>
 
 	<text s="Initialize config folder">Yapılandırma klasörünü başlat</text>
@@ -213,6 +209,7 @@
 	<text s="Results">Sonuçlar</text>
 	<text s="Number of items">öğe sayısı</text>
 	<text s="&amp;About %s">%s,</text>
+	<text s="Get">Almak</text>
 
 	<text s="Location">Yer</text>
 	<text s="Root style">Kök sitili</text>

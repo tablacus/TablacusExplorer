@@ -1382,7 +1382,7 @@ public:
 
 	CteWICBitmap();
 	~CteWICBitmap();
-	VOID FromStreamRelease(IStream *pStream, LPWSTR lpfn, BOOL bExtend);
+	VOID FromStreamRelease(IStream *pStream, LPWSTR lpfn, BOOL bExtend, VARIANT *pvCX);
 	VOID GetFrameFromStream(IStream *pStream, UINT uFrame, BOOL bInit);
 	BOOL HasImage();
 	CteWICBitmap* GetBitmapObj();

@@ -2436,9 +2436,20 @@ function ChangeColor1(ele)
 
 function EnableInner()
 {
+	ChangeForm([["__Inner", "disabled", false]]);
+}
+
+function ChangeForm(ar)
+{
 	AddEventEx(window, "load", function ()
 	{
-		document.getElementById("__Inner").disabled  = false;;
+		for (var i in ar) {
+			var o = document.getElementById(ar[i][0]);
+			for (var s = ar[i][1].split("/"); s.length > 1;) {
+				o = o[s.shift()];
+			}
+			o[s[0]] = ar[i][2];
+		}
 	});
 }
 

@@ -59,10 +59,6 @@
 	<text s="Open with...">Открыть с...</text>
 	<text s="Send to...">Отправить...</text>
 
-	<text s="Get the current tab control">Получить контроль текущий вкладки</text>
-	<text s="Move the current tab control">Переместить текущий элемент управления вкладки</text>
-	<text s="Add a tab control">Добавить вкладку</text>
-	<text s="Remove the current tab control">Удалить контроль текущей вкладки</text>
 	<text s="Get the current folder view">Получить текущий вид папки</text>
 
 	<text s="Initialize config folder">Инициализировать папку конфигурации</text>
@@ -213,6 +209,7 @@
 	<text s="Results">Результаты</text>
 	<text s="Number of items">Число объектов</text>
 	<text s="&amp;About %s">&amp;О %s</text>
+	<text s="Get">Получить</text>
 
 	<text s="Location">Локация</text>
 	<text s="Root style">Стиль корневой папки</text>

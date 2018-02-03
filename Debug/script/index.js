@@ -1918,9 +1918,9 @@ g_.event.FromFile = function (image, file, cx)
 	return RunEvent3("FromFile", image, file, alt, cx);
 }
 
-g_.event.FromStream = function (image, stream, filename)
+g_.event.FromStream = function (image, stream, filename, cx)
 {
-	return RunEvent3("FromStream", image, stream, filename);
+	return RunEvent3("FromStream", image, stream, filename, cx);
 }
 
 g_.event.EndThread = function (Ctrl)

@@ -393,6 +393,10 @@ function ImgBase64(o, index)
 function MakeImgSrc(src, index, bSrc, h, strBitmap, strIcon)
 {
 	var fn;
+	src = ExtractMacro(te, src);
+	if (REGEXP_IMAGE.test(src)) {
+		return src;
+	}
 	if (!document.documentMode) {
 		var res = /^bitmap:(.*)/i.exec(src);
 		var value = res ? res[1] : strBitmap;
@@ -402,17 +406,15 @@ function MakeImgSrc(src, index, bSrc, h, strBitmap, strIcon)
 			res = /^icon:(.*)/i.exec(src);
 			value = res ? res[1] : strIcon;
 			if (value) {
-				fn = fso.BuildPath(te.Data.DataFolder, "cache\\icon\\" + value.replace(/[:\\\/]/g, "$") + ".png");
+				fn = fso.BuildPath(te.Data.DataFolder, "cache\\icon\\" + (value.replace(/[:\\\/]/g, "$")) + ".png");
 			} else if (src && !REGEXP_IMAGE.test(src)) {
-				src = src.replace(/^file:\/\/\//i, "").replace(/\//g, "\\");
-				fn = fso.BuildPath(te.Data.DataFolder, "cache\\file\\" + src.replace(/[:\\\/]/g, "$") + ".png");
+				fn = fso.BuildPath(te.Data.DataFolder, "cache\\file\\" + (api.PathCreateFromUrl(src).replace(/[:\\\/]/g, "$")) + ".png");
 			}
 		}
 		if (fn && fso.FileExists(fn)) {
 			return fn;
 		}
 	}
-	src = ExtractMacro(te, src);
 	var image = MakeImgData(src, index, h, strBitmap, strIcon);
 	if (image) {
 		if (document.documentMode) {

@@ -1396,6 +1396,17 @@ BSTR teSysAllocStringLen(const OLECHAR *strIn, UINT uSize)
 	return ::SysAllocStringLen(strIn, uSize);
 }
 
+BSTR teSysAllocStringLenEx(const BSTR strIn, UINT uSize)
+{
+	UINT uOrg = ::SysStringLen(strIn);
+	if (uSize > uOrg) {
+		BSTR bs = ::SysAllocStringLen(NULL, uSize);
+		::CopyMemory(bs, strIn, ::SysStringByteLen(strIn) + sizeof(WORD));
+		return bs;
+	}
+	return ::SysAllocStringLen(strIn, uSize);
+}
+
 VOID teSysFreeString(BSTR *pbs)
 {
 	if (*pbs) {
@@ -1434,7 +1445,7 @@ VOID teSetBSTR(VARIANT *pv, BSTR *pbs, int nLen)
 				return;
 			}
 		}
-		pv->bstrVal = teSysAllocStringLen(*pbs, nLen);
+		pv->bstrVal = teSysAllocStringLenEx(*pbs, nLen);
 		teSysFreeString(pbs);
 	}
 }
@@ -2883,7 +2894,7 @@ LPWSTR teGetCommandLine()
 				bsCmdLine[i++] = strCmdLine[j++];
 			}
 		}
-		g_bsCmdLine = teSysAllocStringLen(bsCmdLine, i);
+		g_bsCmdLine = teSysAllocStringLenEx(bsCmdLine, i);
 		::SysFreeString(bsCmdLine);
 	}
 	return g_bsCmdLine;
@@ -6350,7 +6361,7 @@ BOOL teLocalizePath(LPWSTR pszPath, BSTR *pbsPath)
 							GetDisplayNameFromPidl(&bs, pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
 						}
 						lp[0] = '\\';
-						*pbsPath = teSysAllocStringLen(bs, SysStringLen(bs) + lstrlen(lp) + 1);
+						*pbsPath = teSysAllocStringLenEx(bs, SysStringLen(bs) + lstrlen(lp) + 1);
 						lstrcat(*pbsPath, lp);
 						::SysFreeString(bs);
 					}
@@ -7131,7 +7142,7 @@ VOID teApiStrCmpLogical(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 VOID teApiPathQuoteSpaces(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	if (param[0].bstrVal) {
-		BSTR bsResult = teSysAllocStringLen(param[0].bstrVal, ::SysStringLen(param[0].bstrVal) + 3);
+		BSTR bsResult = teSysAllocStringLen(param[0].bstrVal, ::SysStringLen(param[0].bstrVal) + 2);
 		PathQuoteSpaces(bsResult);
 		teSetBSTR(pVarResult, &bsResult, -1);
 	}
@@ -7671,12 +7682,12 @@ VOID teApiSHFileOperation(int nArg, teParam *param, DISPPARAMS *pDispParams, VAR
 		pFO->wFunc = param[0].uintVal;
 		BSTR bs = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]);
 		int nLen = ::SysStringLen(bs) + 1;
-		bs = teSysAllocStringLen(bs, nLen);
+		bs = teSysAllocStringLenEx(bs, nLen);
 		bs[nLen] = 0;
 		pFO->pFrom = bs;
 		bs = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 2]);
 		nLen = ::SysStringLen(bs) + 1;
-		bs = teSysAllocStringLen(bs, nLen);
+		bs = teSysAllocStringLenEx(bs, nLen);
 		bs[nLen] = 0;
 		pFO->pTo = bs;
 		pFO->fFlags = param[3].fileop_flags;
@@ -8595,13 +8606,14 @@ VOID teApiSysAllocString(int nArg, teParam *param, DISPPARAMS *pDispParams, VARI
 
 VOID teApiSysAllocStringLen(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	BSTR bsResult = teSysAllocStringLen(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]), param[1].uintVal);
+	VARIANT *pv = &pDispParams->rgvarg[nArg];
+	BSTR bsResult = pv->vt == VT_BSTR ? teSysAllocStringLenEx(pv->bstrVal, param[1].uintVal) : teSysAllocStringLen(GetLPWSTRFromVariant(pv), param[1].uintVal);
 	teSetBSTR(pVarResult, &bsResult, -2);
 }
 
 VOID teApiSysAllocStringByteLen(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	BSTR bsResult = SysAllocStringByteLen((char *)GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]), param[1].uintVal);
+	BSTR bsResult = ::SysAllocStringByteLen((char *)GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]), param[1].uintVal);
 	teSetBSTR(pVarResult, &bsResult, -2);
 }
 
@@ -21280,7 +21292,7 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					VARIANT vFile;
 					teVariantChangeType(&vFile, &pDispParams->rgvarg[nArg], VT_BSTR);
 					if (!m_ofn.lpstrFile) {
-						m_ofn.lpstrFile = teSysAllocStringLen(vFile.bstrVal, m_ofn.nMaxFile);
+						m_ofn.lpstrFile = teSysAllocStringLenEx(vFile.bstrVal, m_ofn.nMaxFile);
 					} else {
 						lstrcpyn(m_ofn.lpstrFile, vFile.bstrVal, m_ofn.nMaxFile);
 					}
@@ -21297,8 +21309,9 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					if (pDispParams->rgvarg[nArg].vt == VT_BSTR) {
 						teSysFreeString(const_cast<BSTR *>(&m_ofn.lpstrFilter));
 						int i = ::SysStringLen(pDispParams->rgvarg[nArg].bstrVal);
-						BSTR bs = teSysAllocStringLen(pDispParams->rgvarg[nArg].bstrVal, i + 1);
-						bs[i + 1] = NULL;
+						BSTR bs = teSysAllocStringLenEx(pDispParams->rgvarg[nArg].bstrVal, i);
+						OLECHAR c = bs[i + 1];
+						Sleep(c);
 						while (i >= 0) {
 							if (bs[i] == '|') {
 								bs[i] = NULL;
@@ -21777,7 +21790,7 @@ VOID CteWICBitmap::GetFrameFromStream(IStream *pStream, UINT uFrame, BOOL bInit)
 	}
 }
 
-VOID CteWICBitmap::FromStreamRelease(IStream *pStream, LPWSTR lpfn, BOOL bExtend)
+VOID CteWICBitmap::FromStreamRelease(IStream *pStream, LPWSTR lpfn, BOOL bExtend, VARIANT *pvCX)
 {
 	SafeRelease(&m_pStream);
 	m_uFrameCount = 1;
@@ -21786,11 +21799,14 @@ VOID CteWICBitmap::FromStreamRelease(IStream *pStream, LPWSTR lpfn, BOOL bExtend
 		if (g_pOnFunc[TE_OnFromStream]) {
 			try {
 				if (InterlockedIncrement(&g_nProcIMG) < 8) {
-					VARIANTARG *pv = GetNewVARIANT(3);
-					teSetObject(&pv[2], this);
-					teSetObject(&pv[1], pStream);
-					teSetSZ(&pv[0], lpfn);
-					Invoke4(g_pOnFunc[TE_OnFromStream], NULL, 3, pv);
+					VARIANTARG *pv = GetNewVARIANT(4);
+					teSetObject(&pv[3], this);
+					teSetObject(&pv[2], pStream);
+					teSetSZ(&pv[1], lpfn);
+					if (pvCX) {
+						::VariantCopy(&pv[0], pvCX);
+					}
+					Invoke4(g_pOnFunc[TE_OnFromStream], NULL, 4, pv);
 				}
 			} catch(...) {}
 			::InterlockedDecrement(&g_nProcIMG);
@@ -21856,7 +21872,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					IStream *pStream;
 					LPWSTR lpfn = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]);
 					if SUCCEEDED(SHCreateStreamOnFileEx(lpfn, STGM_READ | STGM_SHARE_DENY_NONE, FILE_ATTRIBUTE_NORMAL, FALSE, NULL, &pStream)) {
-						FromStreamRelease(pStream, lpfn, FALSE);
+						FromStreamRelease(pStream, lpfn, FALSE, nArg >= 1 ? &pDispParams->rgvarg[nArg - 1] : NULL);
 					}
 					if (!HasImage()) {
 						if (g_pOnFunc[TE_OnFromFile]) {
@@ -21865,7 +21881,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 									VARIANTARG *pv = GetNewVARIANT(3);
 									teSetObject(&pv[2], this);
 									VariantCopy(&pv[1], &pDispParams->rgvarg[nArg]);
-									if (nArg >= 0) {
+									if (nArg >= 1) {
 										VariantCopy(&pv[0], &pDispParams->rgvarg[nArg - 1]);
 									}
 									Invoke4(g_pOnFunc[TE_OnFromFile], NULL, 3, pv);
@@ -21885,7 +21901,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					if (FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
 						IStream *pStream;
 						if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pStream))) {
-							FromStreamRelease(pStream, lpfn, TRUE);
+							FromStreamRelease(pStream, lpfn, TRUE, nArg >= 2 ? &pDispParams->rgvarg[nArg - 2] : NULL);
 						}
 					}
 					teSetObject(pVarResult, GetBitmapObj());
@@ -21917,7 +21933,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 						IStream *pStream;
 						hr = pStorage->OpenStream(lpPath1, NULL, STGM_READ, NULL, &pStream);
 						if SUCCEEDED(hr) {
-							FromStreamRelease(pStream, lpPath1, TRUE);
+							FromStreamRelease(pStream, lpPath1, TRUE, nArg >= 4 ? &pDispParams->rgvarg[nArg - 4] : NULL);
 						}
 						VariantClear(&v);
 					}

@@ -59,10 +59,6 @@
 	<text s="Open with...">Öffnen mit...</text>
 	<text s="Send to...">Senden an..</text>
 
-	<text s="Get the current tab control">Verwende das aktuelle Tab</text>
-	<text s="Move the current tab control">Bewege das aktuelle Tab</text>
-	<text s="Add a tab control">Tab hinzufügen</text>
-	<text s="Remove the current tab control">Aktuelles Tab entfernen</text>
 	<text s="Get the current folder view">Verwende die aktuelle Ordneransicht</text>
 
 	<text s="Initialize config folder">Initialisiere den Konfigurationsordner</text>
@@ -213,6 +209,7 @@
 	<text s="Results">Ergebnisse</text>
 	<text s="Number of items">Anzahl der Elemente</text>
 	<text s="&amp;About %s">Über %s</text>
+	<text s="Get">Bekommen</text>
 
 	<text s="Location">Lokation</text>
 	<text s="Root style">Root style</text>
