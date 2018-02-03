@@ -1401,7 +1401,9 @@ BSTR teSysAllocStringLenEx(const BSTR strIn, UINT uSize)
 	UINT uOrg = ::SysStringLen(strIn);
 	if (uSize > uOrg) {
 		BSTR bs = ::SysAllocStringLen(NULL, uSize);
-		::CopyMemory(bs, strIn, ::SysStringByteLen(strIn) + sizeof(WORD));
+		if (bs) {
+			::CopyMemory(bs, strIn, ::SysStringByteLen(strIn) + sizeof(WORD));
+		}
 		return bs;
 	}
 	return ::SysAllocStringLen(strIn, uSize);
@@ -1444,9 +1446,11 @@ VOID teSetBSTR(VARIANT *pv, BSTR *pbs, int nLen)
 				*pbs = NULL;
 				return;
 			}
+			pv->bstrVal = teSysAllocStringLenEx(*pbs, nLen);
+			teSysFreeString(pbs);
+		} else {
+			pv->bstrVal = NULL;
 		}
-		pv->bstrVal = teSysAllocStringLenEx(*pbs, nLen);
-		teSysFreeString(pbs);
 	}
 }
 
@@ -7680,14 +7684,16 @@ VOID teApiSHFileOperation(int nArg, teParam *param, DISPPARAMS *pDispParams, VAR
 		::ZeroMemory(pFO, sizeof(SHFILEOPSTRUCT));
 		pFO->hwnd = g_hwndMain;
 		pFO->wFunc = param[0].uintVal;
-		BSTR bs = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]);
-		int nLen = ::SysStringLen(bs) + 1;
-		bs = teSysAllocStringLenEx(bs, nLen);
+		VARIANT *pv = &pDispParams->rgvarg[nArg - 1];
+		BSTR bs = GetLPWSTRFromVariant(pv);
+		int nLen = (pv->vt == VT_BSTR ? ::SysStringLen(bs): lstrlen(bs)) + 1;
+		bs = pv->vt == VT_BSTR ? teSysAllocStringLenEx(bs, nLen) : teSysAllocStringLen(bs, nLen);
 		bs[nLen] = 0;
 		pFO->pFrom = bs;
-		bs = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 2]);
-		nLen = ::SysStringLen(bs) + 1;
-		bs = teSysAllocStringLenEx(bs, nLen);
+		pv = &pDispParams->rgvarg[nArg - 2];
+		bs = GetLPWSTRFromVariant(pv);
+		nLen = (pv->vt == VT_BSTR ? ::SysStringLen(bs): lstrlen(bs)) + 1;
+		bs = pv->vt == VT_BSTR ? teSysAllocStringLenEx(bs, nLen) : teSysAllocStringLen(bs, nLen);
 		bs[nLen] = 0;
 		pFO->pTo = bs;
 		pFO->fFlags = param[3].fileop_flags;
