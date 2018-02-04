@@ -380,11 +380,8 @@ function delamp(s)
 function ImgBase64(o, index)
 {
 	var src = ExtractMacro(te, o.src);
-	var s = MakeImgSrc(src, index, false, o.height, o.getAttribute("bitmap"), o.getAttribute("icon"));
-	if (s) {
-		o.removeAttribute("bitmap");
-		o.removeAttribute("icon");
-	} else if (o.src.toLowerCase() != src.toLowerCase()) {
+	var s = MakeImgSrc(src, index, false, o.height);
+	if (!s && api.StrCmpI(o.src, src)) {
 		return src.replace(location.href.replace(/[^\/]*$/, ""), "file:///");
 	}
 	return s;
@@ -394,7 +391,7 @@ function MakeImgSrc(src, index, bSrc, h, strBitmap, strIcon)
 {
 	var fn;
 	src = ExtractMacro(te, src);
-	if (REGEXP_IMAGE.test(src)) {
+	if (!/^file:/i.test(src) && REGEXP_IMAGE.test(src)) {
 		return src;
 	}
 	if (!document.documentMode) {

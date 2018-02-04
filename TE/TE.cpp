@@ -1854,7 +1854,7 @@ BOOL tePathMatchSpec2(LPCWSTR pszFile, LPWSTR pszSpec)
 		case '?':
 			return pszFile[0] && tePathMatchSpec2(pszFile + 1, pszSpec + 1);
 		default:
-			return (tolower(pszFile[0]) == tolower(pszSpec[0])) && tePathMatchSpec2(pszFile + 1, pszSpec + 1);
+			return (towlower(pszFile[0]) == towlower(pszSpec[0])) && tePathMatchSpec2(pszFile + 1, pszSpec + 1);
 	}
 }
 #endif
@@ -1864,15 +1864,15 @@ BOOL teStartsText(LPWSTR pszSub, LPCWSTR pszFile)
 	BOOL bResult = pszFile ? TRUE : FALSE;
 	WCHAR wc;
 	while (bResult && (wc = *pszSub++)) {
-		bResult = tolower(wc) == tolower(*pszFile++);
+		bResult = towlower(wc) == towlower(*pszFile++);
 	}
 	return bResult;
 }
 
-BOOL tePathMatchSpec1(LPCWSTR pszFile, LPWSTR pszSpec)
+BOOL tePathMatchSpec1(LPCWSTR pszFile, LPWSTR pszSpec, WCHAR wSpecEnd)
 {
 	WCHAR wc = *pszSpec;
-	if (!wc || wc == ';') {
+	if (wc == wSpecEnd) {
 		return !*pszFile;
 	}
 	if (!*pszFile && wc != '*') {
@@ -1881,53 +1881,57 @@ BOOL tePathMatchSpec1(LPCWSTR pszFile, LPWSTR pszSpec)
 	for (; *pszFile; pszFile++) {
 		wc = *pszSpec++;
 		if (wc == '*') {
-			do {
-				wc = tolower(*pszSpec++);
-			} while (wc == '*');
-			if (!wc || wc == ';') {
+			wc = towlower(*pszSpec++);
+			if (wc == wSpecEnd) {
 				return TRUE;
 			}
 			do {
-				while (tolower(*pszFile) != wc) {
-					if (!*(++pszFile)) {
-						return FALSE;
+				if (!*pszFile) {
+					return FALSE;
+				}
+				if (wc != '*' && wc != '?') {
+					while (towlower(*pszFile) != wc) {
+						if (!*(++pszFile)) {
+							return FALSE;
+						}
 					}
 				}
-			} while (!tePathMatchSpec1(++pszFile, pszSpec));
+			} while (!tePathMatchSpec1(++pszFile, pszSpec, wSpecEnd));
 			return TRUE;
 		}
 		if (wc != '?') {
-			if (!wc || wc == ';' || tolower(*pszFile) != tolower(wc)) {
+			if (wc == wSpecEnd || towlower(*pszFile) != towlower(wc)) {
 				return FALSE;
 			}
 		}
 	}
 	for (; (wc = *pszSpec) == '*'; pszSpec++);
-	return *pszFile == (wc == ';' ? NULL : wc);
+	return *pszFile == (wc == wSpecEnd ? NULL : wc);
 }
 
-BOOL tePathMatchSpec(LPCWSTR pszFile, LPCWSTR pszSpec)
+BOOL tePathMatchSpec(LPCWSTR pszFile, LPWSTR pszSpec)
 {
+	LPWSTR pszSpecEnd;
 	if (!pszSpec || !pszSpec[0]) {
 		return TRUE;
 	}
 	if (!pszFile) {
 		return FALSE;
 	}
-	LPWSTR pszSpec1 = const_cast<LPWSTR>(pszSpec);
 	do {
+		pszSpecEnd = StrChr(pszSpec, ';');
 #ifdef _USE_TESTPATHMATCHSPEC
-		BOOL b1 = !!tePathMatchSpec1(pszFile, pszSpec1);
-		BOOL b2 = !!tePathMatchSpec2(pszFile, pszSpec1);
+		BOOL b1 = !!tePathMatchSpec1(pszFile, pszSpec, pszSpecEnd ? ';' : NULL);
+		BOOL b2 = !!tePathMatchSpec2(pszFile, pszSpec);
 		if (b1 != b2) {
-			b2 = !!tePathMatchSpec1(pszFile, pszSpec1);
+			b2 = !!tePathMatchSpec1(pszFile, pszSpec, pszSpecEnd ? ';' : NULL);
 		}
 #endif
-		if (tePathMatchSpec1(pszFile, pszSpec1)) {
+		if (tePathMatchSpec1(pszFile, pszSpec, pszSpecEnd ? ';' : NULL)) {
 			return TRUE;
 		}
-		pszSpec1 = StrChr(pszSpec1, ';') + 1;
-	} while (pszSpec1 > LPWSTR(sizeof(WCHAR)) && *pszSpec1);
+		pszSpec = pszSpecEnd + 1;
+	} while (pszSpecEnd);
 	return FALSE;
 }
 
@@ -2388,7 +2392,7 @@ HRESULT GetDisplayNameFromPidl(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags)
 					}
 				}
 			} else if (((uFlags & (SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)) == (SHGDN_FORADDRESSBAR | SHGDN_FORPARSING))) {
-				if (ILGetCount(pidl) == 1 || tePathMatchSpec1(*pbs, L"search-ms:*\\*")) {
+				if (ILGetCount(pidl) == 1 || tePathMatchSpec(*pbs, L"search-ms:*\\*")) {
 					LPITEMIDLIST pidl2 = teILCreateFromPath2(g_pidls[CSIDL_DESKTOP], *pbs, NULL);
 					if (!ILIsEqual(pidl, pidl2)) {
 						teSysFreeString(pbs);
@@ -3103,7 +3107,7 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 					if (n == DRIVE_NO_ROOT_DIR && SUCCEEDED(tePathIsDirectory(pszDrive, 0, 3))) {
 						pidl = teILCreateFromPathEx(pszPath);
 					}
-				} else if (tePathMatchSpec1(pszPath, L"\\\\*\\*")) {
+				} else if (tePathMatchSpec(pszPath, L"\\\\*\\*")) {
 					LPWSTR lpDelimiter = StrChr(&pszPath[2], '\\');
 					BSTR bsServer = teSysAllocStringLen(pszPath, int(lpDelimiter - pszPath));
 					LPITEMIDLIST pidlServer = teILCreateFromPathEx(bsServer);
@@ -4516,7 +4520,7 @@ int GetIntFromVariantPP(VARIANT *pv, int nIndex)
 	if (nIndex >= TE_Left && nIndex <= TE_Bottom) {
 		int i = 0;
 		if (pv->vt == VT_BSTR) {
-			if (tePathMatchSpec1(pv->bstrVal, L"*%")) {
+			if (tePathMatchSpec(pv->bstrVal, L"*%")) {
 				float f = 0;
 				if (swscanf_s(pv->bstrVal, L"%g%%", &f) != EOF) {
 					i = (int)(f * 100);
@@ -4663,7 +4667,7 @@ HRESULT ParseScript(LPOLESTR lpScript, LPOLESTR lpLang, VARIANT *pv, IDispatch *
 	CLSID clsid;
 	IActiveScript *pas = NULL;
 
-	if (tePathMatchSpec1(lpLang, L"J*Script")) {
+	if (tePathMatchSpec(lpLang, L"J*Script")) {
 		teCreateInstance(CLSID_JScriptChakra, NULL, NULL, IID_PPV_ARGS(&pas));
 	}
 	if (pas == NULL && teCLSIDFromProgID(lpLang, &clsid) == S_OK) {
@@ -6847,7 +6851,7 @@ VOID teApiOleSetClipboard(int nArg, teParam *param, DISPPARAMS *pDispParams, VAR
 
 VOID teApiPathMatchSpec(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetBool(pVarResult, tePathMatchSpec(param[0].lpcwstr, param[1].lpcwstr));
+	teSetBool(pVarResult, tePathMatchSpec(param[0].lpcwstr, param[1].lpwstr));
 }
 
 VOID teApiCommandLineToArgv(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -8667,7 +8671,7 @@ VOID teApisprintf(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pV
 						pszFormat[0] = wc;
 						break;
 					}
-					if (tolower(wc) == 's') {//String
+					if (towlower(wc) == 's') {//String
 						wc = pszFormat[nPos];
 						pszFormat[nPos] = NULL;
 						VARIANT v;
@@ -10008,7 +10012,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 								teCommaSize(pszNum, bsCount, 16, 0);
 
 								WCHAR psz[MAX_STATUS];
-								if (LoadString(g_hShell32, uID, psz, MAX_STATUS) > 2 && tePathMatchSpec1(psz, L"*%s*")) {
+								if (LoadString(g_hShell32, uID, psz, MAX_STATUS) > 2 && tePathMatchSpec(psz, L"*%s*")) {
 									swprintf_s(g_szStatus, MAX_STATUS, psz, bsCount);
 								} else {
 									uID = uID < 38194 ? 6466 : 6477;
@@ -20815,7 +20819,7 @@ LPITEMIDLIST CteFolderItem::GetPidl()
 	if (m_v.vt != VT_EMPTY) {
 		if (m_pidl == NULL) {
 			if (m_v.vt == VT_BSTR) {
-				if (tePathMatchSpec1(m_v.bstrVal, L"*\\..")) {
+				if (tePathMatchSpec(m_v.bstrVal, L"*\\..")) {
 					BSTR bs = ::SysAllocString(m_v.bstrVal);
 					PathRemoveFileSpec(bs);
 					LPITEMIDLIST pidl = teILCreateFromPathEx(bs);
