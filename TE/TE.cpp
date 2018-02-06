@@ -21319,9 +21319,7 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					if (pDispParams->rgvarg[nArg].vt == VT_BSTR) {
 						teSysFreeString(const_cast<BSTR *>(&m_ofn.lpstrFilter));
 						int i = ::SysStringLen(pDispParams->rgvarg[nArg].bstrVal);
-						BSTR bs = teSysAllocStringLenEx(pDispParams->rgvarg[nArg].bstrVal, i);
-						OLECHAR c = bs[i + 1];
-						Sleep(c);
+						BSTR bs = teSysAllocStringLenEx(pDispParams->rgvarg[nArg].bstrVal, i + 1);
 						while (i >= 0) {
 							if (bs[i] == '|') {
 								bs[i] = NULL;
@@ -21958,12 +21956,13 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					LPITEMIDLIST pidl;
 					if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
 						SIZE size;
-						size.cx = nArg >= 1 ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) : 0xffff;
+						int cx = nArg >= 1 ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) : 0;
+						size.cx = cx ? cx : 0xffff;
 						IShellFolder *pSF;
 						LPCITEMIDLIST pidlPart;
 						if SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &pidlPart)) {
 							HBITMAP hBM = NULL;
-							WTS_ALPHATYPE alphaType = WTSAT_RGB;
+							WTS_ALPHATYPE alphaType = WTSAT_ARGB;
 							IExtractImage *pEI;
 							IThumbnailProvider *pTP;
 							if (pSF->GetUIObjectOf(NULL, 1, (LPCITEMIDLIST *)&pidlPart, IID_IThumbnailProvider, NULL, (void **)&pTP) == S_OK) {
@@ -21971,7 +21970,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 								pTP->Release();
 							} else if (pSF->GetUIObjectOf(NULL, 1, (LPCITEMIDLIST *)&pidlPart, IID_IExtractImage, NULL, (void **)&pEI) == S_OK) {
 								size.cy = size.cx;
-								DWORD dwFlags = IEIFLAG_ASPECT | IEIFLAG_ORIGSIZE | IEIFLAG_QUALITY;
+								DWORD dwFlags = cx ? IEIFLAG_SCREEN : IEIFLAG_ASPECT | IEIFLAG_ORIGSIZE | IEIFLAG_QUALITY;
 								WCHAR pszPath[MAX_PATH];
 								if (pEI->GetLocation(pszPath, MAX_PATH, NULL, &size, 32, &dwFlags) == S_OK) {
 									pEI->Extract(&hBM);
