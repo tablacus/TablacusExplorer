@@ -3839,8 +3839,11 @@ BOOL teGetIDListFromObject(IUnknown *punk, LPITEMIDLIST *ppidl)
 
 BOOL teGetIDListFromObjectForFV(IUnknown *punk, LPITEMIDLIST *ppidl)
 {
-	CteFolderItem *pid1 = NULL;
 	*ppidl = NULL;
+	if (!punk) {
+		return FALSE;
+	}
+	CteFolderItem *pid1 = NULL;
 	if SUCCEEDED(punk->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1)) {
 		*ppidl = ILClone(pid1->GetAlt());
 		pid1->Release();
@@ -11502,6 +11505,10 @@ HRESULT CteShellBrowser::Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		}
 	} catch (...) {
 		hr = E_FAIL;
+#ifdef _DEBUG
+		g_nException = 0;
+		g_strException = L"Navigate3";
+#endif
 	}
 	SafeRelease(&pFolderItem);
 	return hr;
@@ -11863,6 +11870,10 @@ HRESULT CteShellBrowser::NavigateEB(DWORD dwFrame)
 		}
 	} catch (...) {
 		hr = E_FAIL;
+#ifdef _DEBUG
+		g_nException = 0;
+		g_strException = L"NavigateEB";
+#endif
 	}
 	InterlockedDecrement(&m_nCreate);
 	return hr;
@@ -11882,18 +11893,14 @@ HRESULT CteShellBrowser::OnBeforeNavigate(FolderItem *pPrevious, UINT wFlags)
 #else
 	m_bAutoVM = TRUE;
 #endif
-	if (g_pOnFunc[TE_OnBeforeNavigate]) {
+	if (g_pOnFunc[TE_OnBeforeNavigate] && m_pFolderItem) {
 		VARIANT vResult;
 		VariantInit(&vResult);
 
 		VARIANTARG *pv;
-		CteMemory *pMem;
 		pv = GetNewVARIANT(4);
 		teSetObject(&pv[3], this);
-
-		pMem = new CteMemory(4 * sizeof(int), &m_param[SB_ViewMode], 1, L"FOLDERSETTINGS");
-		pMem->QueryInterface(IID_PPV_ARGS(&pv[2].punkVal));
-		teSetObjectRelease(&pv[2], pMem);
+		teSetObjectRelease(&pv[2], new CteMemory(4 * sizeof(int), &m_param[SB_ViewMode], 1, L"FOLDERSETTINGS"));
 		teSetLong(&pv[1], wFlags);
 		if (!teILIsEqual(m_pFolderItem, pPrevious)) {
 			teSetObject(&pv[0], pPrevious);
@@ -14262,6 +14269,10 @@ HRESULT CteShellBrowser::NavigateSB(IShellView *pPreviousView, FolderItem *pPrev
 				hr = CreateViewWindowEx(pPreviousView);
 			} catch (...) {
 				hr = E_FAIL;
+#ifdef _DEBUG
+				g_nException = 0;
+				g_strException = L"NavigateSB";
+#endif
 			}
 		}
 		if (hr != S_OK) {
@@ -14306,6 +14317,10 @@ HRESULT CteShellBrowser::CreateViewWindowEx(IShellView *pPreviousView)
 				}
 			} catch (...) {
 				hr = E_FAIL;
+#ifdef _DEBUG
+				g_nException = 0;
+				g_strException = L"CreateViewWindowEx";
+#endif
 			}
 			InterlockedDecrement(&m_nCreate);
 			if (hr == S_FALSE) {
@@ -14792,19 +14807,11 @@ STDMETHODIMP CteShellBrowser::GetPaneState(REFEXPLORERPANE ep, EXPLORERPANESTATE
 {
 	if (g_pOnFunc[TE_OnGetPaneState]) {
 		VARIANTARG *pv = GetNewVARIANT(3);
-		CteMemory *pstEps;
-		pstEps = new CteMemory(sizeof(int), peps, 1, L"DWORD");
-		if SUCCEEDED(pstEps->QueryInterface(IID_PPV_ARGS(&pv[0].pdispVal))) {
-			pv[0].vt = VT_DISPATCH;
-		}
-		pstEps->Release();
+		teSetObject(&pv[2], this);
 		pv[1].vt = VT_BSTR;
 		pv[1].bstrVal = ::SysAllocStringLen(NULL, 38);
 		StringFromGUID2(ep, pv[1].bstrVal, 39);
-
-		if SUCCEEDED(QueryInterface(IID_PPV_ARGS(&pv[2].pdispVal))) {
-			pv[2].vt = VT_DISPATCH;
-		}
+		teSetObjectRelease(&pv[0], new CteMemory(sizeof(int), peps, 1, L"DWORD"));
 		VARIANT vResult;
 		VariantInit(&vResult);
 		Invoke4(g_pOnFunc[TE_OnGetPaneState], &vResult, 3, pv);
@@ -18147,7 +18154,12 @@ HDROP CteFolderItems::GethDrop(int x, int y, BOOL fNC)
 		}
 		*lp = 0;
 		delete [] pbslist;
-	} catch (...) {}
+	} catch (...) {
+#ifdef _DEBUG
+		g_nException = 0;
+		g_strException = L"GethDrop";
+#endif
+	}
 	GlobalUnlock(hDrop);
 	return hDrop;
 }
