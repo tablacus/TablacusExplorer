@@ -1023,7 +1023,7 @@ public:
 	VOID DestroyView(int nFlags);
 	HWND GetListHandle(HWND *hList);
 	HRESULT BrowseObject2(FolderItem *pid, UINT wFlags);
-	BOOL Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItems *pFolderItems, FolderItem *pPrevious, LPITEMIDLIST *ppidl, int nErrorHandling);
+	BOOL Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItems *pFolderItems, FolderItem *pPrevious, int nErrorHandling);
 	VOID Navigate1Ex(LPOLESTR pstr, FolderItems *pFolderItems, UINT wFlags, FolderItem *pPrevious, int nErrorHandleing);
 	HRESULT Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *param, FolderItems *pFolderItems, FolderItem *pPrevious, CteShellBrowser *pHistSB);
 	HRESULT Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *param, CteShellBrowser **ppSB, FolderItems *pFolderItems);
@@ -1040,7 +1040,7 @@ public:
 	VOID GetDefaultColumns();
 	VOID SaveFocusedItemToHistory();
 	VOID FocusItem(BOOL bFree);
-	HRESULT GetAbsPidl(LPITEMIDLIST *pidlOut, FolderItem *pid, UINT wFlags, FolderItems *pFolderItems, FolderItem *pPrevious, CteShellBrowser *pHistSB);
+	HRESULT GetAbsPath(FolderItem *pid, UINT wFlags, FolderItems *pFolderItems, FolderItem *pPrevious, CteShellBrowser *pHistSB);
 	VOID EBNavigate();
 	VOID SetHistory(FolderItems *pFolderItems, UINT wFlags);
 	VOID GetVariantPath(FolderItem **ppFolderItem, FolderItems **ppFolderItems, VARIANT *pv);

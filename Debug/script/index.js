@@ -773,6 +773,10 @@ te.OnViewCreated = function (Ctrl)
 
 te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev)
 {
+	if (g_.tid_rf[Ctrl.Id]) {
+		clearTimeout(g_.tid_rf[Ctrl.Id]);
+		delete g_.tid_rf[Ctrl.Id];
+	}
 	var path = api.GetDisplayNameOf(Ctrl.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
 	var res = /javascript:(.*)/im.exec(path);
 	if (res) {
