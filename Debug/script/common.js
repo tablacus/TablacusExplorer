@@ -85,15 +85,8 @@ FolderMenu =
 			}
 			var bSep = false;
 			if (!nParent && !api.ILIsEmpty(FolderItem) && !api.ILIsParent(1, FolderItem, false)) {
-				var Item = api.ILRemoveLastID(FolderItem, true);
-				var bMatch = IsFolderEx(Item);
-				if (this.Filter) {
-					bMatch = PathMatchEx(bMatch ? Item.Name + ".folder" : Item.Name, this.Filter);
-				}
-				if (bMatch) {
-					this.AddMenuItem(hMenu, Item, "../", false, true);
-					bSep = true;
-				}
+				this.AddMenuItem(hMenu, api.ILRemoveLastID(FolderItem, true), "../", false, true);
+				bSep = true;
 			}
 			var ENum = FolderItem.ENum;
 			if (ENum) {
@@ -118,7 +111,7 @@ FolderMenu =
 					Item = Items.Item(i);
 					var bMatch = IsFolderEx(Item);
 					if (this.Filter) {
-						bMatch = PathMatchEx(bMatch ? Item.Name + ".folder" : Item.Name, this.Filter);
+						bMatch = api.PathMatchSpec(bMatch ? Item.Name + ".folder" : Item.Name, this.Filter);
 					}
 					if (bMatch) {
 						if (bSep) {
