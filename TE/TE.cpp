@@ -1254,6 +1254,18 @@ BSTR teMultiByteToWideChar(UINT CodePage, LPCSTR lpA, int nLenA)
 	return bs;
 }
 
+BSTR teSysAllocStringByteLen(LPCSTR psz, UINT len, UINT org)
+{
+	if (!len) {
+		return NULL;
+	}
+	BSTR bs = ::SysAllocStringByteLen(NULL, len);
+	if (psz && bs && org) {
+		::CopyMemory(bs, psz, org < len ? org : len);
+	}
+	return bs;
+}
+
 BSTR teLoadFromFile(BSTR bsFile)
 {
 	BSTR bsResult = NULL;
@@ -1448,10 +1460,12 @@ VOID teSetBSTR(VARIANT *pv, BSTR *pbs, int nLen)
 			}
 			pv->bstrVal = teSysAllocStringLenEx(*pbs, nLen);
 			teSysFreeString(pbs);
-		} else {
-			pv->bstrVal = NULL;
+			return;
 		}
+		pv->bstrVal = NULL;
+		return;
 	}
+	teSysFreeString(pbs);
 }
 
 VOID teSetLL(VARIANT *pv, LONGLONG ll)
@@ -2456,20 +2470,6 @@ BOOL teILIsFileSystemEx(LPCITEMIDLIST pidl)
 	return FALSE;
 }
 
-BOOL teIsDesktopPath(BSTR bs)
-{
-	BOOL bResult = TRUE;
-	BSTR bs2, bs3;
-	if SUCCEEDED(GetDisplayNameFromPidl(&bs2, g_pidls[CSIDL_DESKTOP], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)) {
-		if (!teStrSameIFree(bs2, bs)) {
-			if SUCCEEDED(GetDisplayNameFromPidl(&bs3, g_pidls[CSIDL_DESKTOP], SHGDN_FORPARSING)) {
-				bResult = teStrSameIFree(bs3, bs);
-			}
-		}
-	}
-	return bResult;
-}
-
 void GetVarPathFromIDList(VARIANT *pVarResult, LPITEMIDLIST pidl, int uFlags)
 {
 	int i;
@@ -2925,7 +2925,7 @@ LPWSTR teGetCommandLine()
 		g_bsCmdLine = teSysAllocStringLenEx(bsCmdLine, i);
 		::SysFreeString(bsCmdLine);
 	}
-	return g_bsCmdLine;
+	return ::SysAllocStringLen(g_bsCmdLine, ::SysStringLen(g_bsCmdLine));
 }
 
 HRESULT teCLSIDFromProgID(__in LPCOLESTR lpszProgID, __out LPCLSID lpclsid)
@@ -4591,12 +4591,6 @@ VOID GetpDataFromVariant(UCHAR **ppc, int *pnLen, VARIANT *pv)
 		*pnLen = pv->parray->rgsabound[0].cElements * SizeOfvt(pv->vt);
 		return;
 	}
-	BSTR bs = GetLPWSTRFromVariant(pv);
-	if (bs) {
-		*pnLen = ::SysStringByteLen(bs);
-		*ppc = (UCHAR *)bs;
-		return;
-	}
 	char *pc = GetpcFromVariant(pv, NULL);
 	if (pc) {
 		IDispatch *pdisp;
@@ -4611,8 +4605,10 @@ VOID GetpDataFromVariant(UCHAR **ppc, int *pnLen, VARIANT *pv)
 			return;
 		}
 	}
-	*ppc = NULL;
-	*pnLen = 0;
+	*ppc = (UCHAR *)GetLPWSTRFromVariant(pv);
+	if (pv->vt == VT_BSTR) {
+		*pnLen = ::SysStringByteLen(pv->bstrVal);
+	}
 }
 
 VOID Invoke4(IDispatch *pdisp, VARIANT *pvResult, int nArgs, VARIANTARG *pvArgs)
@@ -4953,7 +4949,7 @@ BOOL teILGetParent(FolderItem *pid, FolderItem **ppid)
 		if (!bResult || ILIsEmpty(pidl)) {
 			BSTR bs;
 			if SUCCEEDED(pid->get_Path(&bs)) {
-				if (tePathMatchSpec(bs, L"?:\\*") && !teIsDesktopPath(bs)) {
+				if (tePathMatchSpec(bs, L"?:\\*")) {
 					if (PathRemoveFileSpec(bs)) {
 						CteFolderItem *pid1 = new CteFolderItem(NULL);
 						pid1->m_v.vt = VT_BSTR;
@@ -7224,7 +7220,7 @@ VOID teApiGetShortPathName(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 		int nLen = GetShortPathName(param[0].lpcwstr, NULL, 0);
 		BSTR bsResult = ::SysAllocStringLen(NULL, nLen + MAX_PATH);
 		nLen = GetShortPathName(param[0].lpcwstr, bsResult, nLen);
-		teSetBSTR(pVarResult, &bsResult, -1);
+		teSetBSTR(pVarResult, &bsResult, nLen);
 	}
 }
 
@@ -8019,7 +8015,7 @@ VOID teApiSetMenuDefaultItem(int nArg, teParam *param, DISPPARAMS *pDispParams, 
 VOID teApiCRC32(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	BYTE *pc;
-	int nLen;
+	int nLen = 0;
 	GetpDataFromVariant(&pc, &nLen, &pDispParams->rgvarg[nArg]);
 	teSetLong(pVarResult, CalcCrc32(pc, nLen, param[1].uintVal));
 }
@@ -8637,7 +8633,10 @@ VOID teApiGetModuleFileName(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 
 VOID teApiGetCommandLine(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetSZ(pVarResult, teGetCommandLine());
+	if (pVarResult) {
+		pVarResult->bstrVal = teGetCommandLine();
+		pVarResult->vt = VT_BSTR;
+	}
 }
 
 VOID teApiGetCurrentDirectory(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -8684,15 +8683,22 @@ VOID teApiSysAllocString(int nArg, teParam *param, DISPPARAMS *pDispParams, VARI
 
 VOID teApiSysAllocStringLen(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	VARIANT *pv = &pDispParams->rgvarg[nArg];
-	BSTR bsResult = pv->vt == VT_BSTR ? teSysAllocStringLenEx(pv->bstrVal, param[1].uintVal) : teSysAllocStringLen(GetLPWSTRFromVariant(pv), param[1].uintVal);
-	teSetBSTR(pVarResult, &bsResult, -2);
+	if (pVarResult) {
+		VARIANT *pv = &pDispParams->rgvarg[nArg];
+		pVarResult->bstrVal = (pv->vt == VT_BSTR) ? teSysAllocStringLenEx(pv->bstrVal, param[1].uintVal) : teSysAllocStringLen(GetLPWSTRFromVariant(pv), param[1].uintVal);
+		pVarResult->vt = VT_BSTR;
+	}
 }
 
 VOID teApiSysAllocStringByteLen(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	BSTR bsResult = ::SysAllocStringByteLen((char *)GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]), param[1].uintVal);
-	teSetBSTR(pVarResult, &bsResult, -2);
+	if (pVarResult) {
+		UCHAR *pc;
+		int nLen = param[2].intVal;
+		GetpDataFromVariant(&pc, &nLen, &pDispParams->rgvarg[nArg]);
+		pVarResult->bstrVal = teSysAllocStringByteLen((LPCSTR)pc, param[1].uintVal, nLen);
+		pVarResult->vt = VT_BSTR;
+	}
 }
 
 VOID teApisprintf(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -8775,7 +8781,7 @@ VOID teApibase64_encode(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 	UCHAR *pc;
 	int nLen = 0;
 	GetpDataFromVariant(&pc, &nLen, &pDispParams->rgvarg[nArg]);
-	if (pc) {
+	if (nLen) {
 		DWORD dwSize;
 		CryptBinaryToString(pc, nLen, CRYPT_STRING_BASE64, NULL, &dwSize);
 		BSTR bsResult = NULL;
@@ -8860,7 +8866,6 @@ VOID teApiMonitorFromPoint(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 	POINT pt;
 	GetPointFormVariant(&pt, &pDispParams->rgvarg[nArg]);
 	teSetPtr(pVarResult, MonitorFromPoint(pt, param[1].dword));
-
 }
 
 VOID teApiMonitorFromRect(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -9070,7 +9075,7 @@ VOID teApiURLDownloadToFile(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 			UCHAR *pc;
 			int nLen = 0;
 			GetpDataFromVariant(&pc, &nLen, &v);
-			if (pc) {
+			if (nLen) {
 				HANDLE hFile = CreateFile(param[2].bstrVal, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 				if (hFile != INVALID_HANDLE_VALUE) {
 					DWORD dwWriteByte;
@@ -9142,7 +9147,7 @@ VOID teApiCryptUnprotectData(int nArg, teParam *param, DISPPARAMS *pDispParams, 
 	UCHAR *pc;
 	int nLen = 0;
 	GetpDataFromVariant(&pc, &nLen, &pDispParams->rgvarg[nArg]);
-	if (pc && pVarResult) {
+	if (nLen && pVarResult) {
 		DATA_BLOB blob[3];
 		blob[0].cbData = nLen;
 		blob[0].pbData = pc;
@@ -10473,7 +10478,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 					cd.cbData = ::SysStringByteLen(bs) + sizeof(WCHAR);
 					DWORD_PTR dwResult;
 					LRESULT lResult = SendMessageTimeout(hwndTE, WM_COPYDATA, nCmdShow, LPARAM(&cd), SMTO_ABORTIFHUNG, 1000 * 30, &dwResult);
-					::SysFreeString(bs);
+					teSysFreeString(&bs);
 					if (lResult && dwResult == S_OK) {
 						SysFreeString(bsPath);
 						Finalize();
@@ -12035,9 +12040,19 @@ VOID CteShellBrowser::FocusItem(BOOL bFree)
 	CteFolderItem *pid;
 	if (m_pFolderItem && !m_dwUnavailable && SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid))) {
 		if (pid->m_pidlFocused) {
-			SelectItemEx(&pid->m_pidlFocused, pid->m_nSelected == 1 ?
-				SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK | SVSI_SELECT :
-				SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK, bFree);
+			m_pTC->LockUpdate();
+			try {
+				SelectItemEx(&pid->m_pidlFocused, pid->m_nSelected == 1 ?
+					SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK | SVSI_SELECT :
+					SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK, bFree);
+
+			} catch (...) {
+#ifdef _DEBUG
+				g_nException = 0;
+				g_strException = L"FocusItem";
+#endif
+			}
+			m_pTC->UnLockUpdate(TRUE);
 		}
 		m_dwUnavailable = pid->m_dwUnavailable;
 		pid->Release();
@@ -12072,30 +12087,18 @@ HRESULT CteShellBrowser::GetAbsPath(FolderItem *pid, UINT wFlags, FolderItems *p
 				if (Navigate1(m_pFolderItem1, wFlags & ~SBSP_PARENT, pFolderItems, pPrevious, 0)) {
 					return S_FALSE;
 				}
-				VARIANT v;
-				if SUCCEEDED(m_pFolderItem1->QueryInterface(IID_PPV_ARGS(&v.pdispVal))) {
-					v.vt = VT_DISPATCH;
-					CteFolderItem *pid1 = new CteFolderItem(&v);
-					VARIANT v2;
-					VariantInit(&v2);
-					teGetDisplayNameOf(&v, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING, &v2);
-					if (teIsDesktopPath(v2.bstrVal) || !ILIsEmpty(pid1->GetPidl())) {
-						teGetIDListFromObject(pPrevious, &pid1->m_pidlFocused);
-						pid1->m_nSelected = 1;
-					} else {
-						pid1->Release();
-						pid1 = new CteFolderItem(&v2);
-						pid1->MakeUnavailable();
-					}
-					m_pFolderItem1->Release();
-					m_pFolderItem1 = pid1;
-					VariantClear(&v2);
-					VariantClear(&v);
-				}
-				return S_OK;
+				CteFolderItem *pid1;
+				teQueryFolderItem(&m_pFolderItem1, &pid1);
+				teGetIDListFromObject(pPrevious, &pid1->m_pidlFocused);
+				pid1->m_nSelected = 1;
+				SafeRelease(&pid1);
 			}
+		} else {
+			GetFolderItemFromIDList(&m_pFolderItem1, g_pidls[CSIDL_DESKTOP]);
 		}
-		GetFolderItemFromIDList(&m_pFolderItem1, g_pidls[CSIDL_DESKTOP]);
+		if (teILIsEqual(pPrevious, m_pFolderItem1)) {
+			return E_FAIL;
+		}
 		return S_OK;
 	}
 	if (wFlags & SBSP_NAVIGATEBACK) {
@@ -13179,14 +13182,15 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 		int nIndex;
 		int nFormat = 0;
 		TC_ITEM tcItem;
-
-		if ((m_bEmpty || m_nUnload == 1 || (m_nUnload & 8)) && dispIdMember >= 0x10000100 && dispIdMember) {
-			return S_OK;
-		}
-
 		int nArg = pDispParams ? pDispParams->cArgs - 1 : -1;
 		if (pVarResult) {
 			VariantInit(pVarResult);
+		}
+		if ((m_bEmpty || m_nUnload == 1 || (m_nUnload & 8)) && dispIdMember >= 0x10000100 && dispIdMember) {
+			return S_OK;
+		}
+		if (!m_pFolderItem && dispIdMember >= DISPID_SELECTIONCHANGED && dispIdMember <= DISPID_INITIALENUMERATIONDONE) {
+			return  S_OK;
 		}
 		switch(dispIdMember) {
 			//Data

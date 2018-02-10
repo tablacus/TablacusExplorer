@@ -18,7 +18,6 @@ g_arBM = [];
 GetAddress = null;
 ShowContextMenu = null;
 
-g_tidResize = null;
 Addon_Id = "";
 g_pidlCP = api.ILRemoveLastID(ssfCONTROLS);
 if (api.ILIsEmpty(g_pidlCP) || api.ILIsEqual(g_pidlCP, ssfDRIVES)) {
@@ -154,7 +153,6 @@ CloseView = function (Ctrl)
 
 DeviceChanged = function (Ctrl)
 {
-	g_tidDevice = null;
 	RunEvent1("DeviceChanged", Ctrl);
 }
 
@@ -387,17 +385,21 @@ ResetScroll = function ()
 
 Resize = function ()
 {
-	if (!g_tidResize) {
-		clearTimeout(g_tidResize);
-		g_tidResize = setTimeout(Resize2, 500);
+	if (!g_.tidResize) {
+		clearTimeout(g_.tidResize);
+		g_.tidResize = setTimeout(Resize2, 500);
 	}
 }
 
 Resize2 = function ()
 {
-	if (g_tidResize) {
-		clearTimeout(g_tidResize);
-		g_tidResize = null;
+	if (g_.tidResize) {
+		clearTimeout(g_.tidResize);
+		delete g_.tidResize;
+	}
+	if (!te.Ctrl(CTRL_FV)) {
+		Resize();
+		return;
 	}
 	ResetScroll();
 	var o = document.getElementById("toolbar");
@@ -1601,7 +1603,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 			return hr;
 		}
 		if (Ctrl.Type == CTRL_TE && cd.dwData == 0 && cd.cbData) {
-			var strData = api.SysAllocStringByteLen(cd.lpData, cd.cbData);
+			var strData = api.SysAllocStringByteLen(cd.lpData, cd.cbData, cd.cbData);
 			RestoreFromTray();
 			RunCommandLine(strData);
 			return S_OK;
