@@ -709,6 +709,7 @@ te.OnCreate = function (Ctrl)
 			if (te.CmdShow == SW_SHOWNOACTIVATE) {
 				api.SetWindowPos(te.hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 			}
+			te.CmdShow = SW_SHOWNORMAL;
 			te.UnlockUpdate();
 			setTimeout(function ()
 			{

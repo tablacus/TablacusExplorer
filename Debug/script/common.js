@@ -731,7 +731,7 @@ SaveXml = function (filename, all)
 		item.setAttribute("Top", g_.rcWindow.top);
 		item.setAttribute("Width", g_.rcWindow.right - g_.rcWindow.left);
 		item.setAttribute("Height", g_.rcWindow.bottom - g_.rcWindow.top);
-		item.setAttribute("CmdShow", api.IsZoomed(te.hwnd) ? SW_SHOWMAXIMIZED : api.IsChild(te.hwnd, api.GetFocus()) ? SW_SHOWNORMAL : SW_SHOWNOACTIVATE);
+		item.setAttribute("CmdShow", api.IsZoomed(te.hwnd) ? SW_SHOWMAXIMIZED : te.CmdShow);
 		root.appendChild(item);
 	}
 	var cTC = te.Ctrls(CTRL_TC);
