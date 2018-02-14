@@ -4678,9 +4678,8 @@ BOOL teFreeLibrary(HMODULE hDll, UINT uElpase)
 			teExecMethod(g_pFreeLibrary, L"push", NULL, 1, pv);
 			SetTimer(g_hwndMain, TET_FreeLibrary, uElpase, teTimerProc);
 			return TRUE;
-		} else {
-			return FreeLibrary(hDll);
 		}
+		return FreeLibrary(hDll);
 	}
 	return FALSE;
 }
@@ -10172,6 +10171,9 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 			if (nCode == HC_ACTION) {
 				if (wParam == NULL) {
 					pcwp = (LPCWPSTRUCT)lParam;
+					if (pcwp->message == WM_ACTIVATE) {
+						SetTimer(g_hwndMain, TET_Redraw, 500, teTimerProc);
+					}
 					switch (pcwp->message)
 					{
 						case WM_KILLFOCUS:
@@ -10485,16 +10487,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 						teSetForegroundWindow(hwndTE);
 						return FALSE;
 					}
-					DWORD dwPid;
-					GetWindowThreadProcessId(hwndTE, &dwPid);
-					HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, dwPid);
-					if (hProcess) {
-						if (TerminateProcess(hProcess, 0)) {
-							WaitForSingleObject(g_hMutex, 0);
-						}
-						CloseHandle(hProcess);
-
-					}
 				}
 			}
 		}
@@ -10570,8 +10562,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	}
 	if (lpfnAddClipboardFormatListener) {
 		lpfnAddClipboardFormatListener(g_hwndMain);
-	}
-	else {
+	} else {
 		g_hwndNextClip = SetClipboardViewer(g_hwndMain);
 	}
 #else
@@ -11224,6 +11215,7 @@ CteShellBrowser::CteShellBrowser(CteTabCtrl *pTC)
 	m_pTV = new CteTreeView();
 	m_dwCookie = 0;
 	VariantInit(&m_vData);
+	m_nForceViewMode = FVM_AUTO;
 	Init(pTC, TRUE);
 }
 
@@ -11841,7 +11833,6 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	}
 	try {
 		m_pTC->m_bRedraw = TRUE;
-		SetTimer(g_hwndMain, TET_Redraw, 500, teTimerProc);
 		if (dwFrame || teGetFolderViewOptions(m_pidl, m_param[SB_ViewMode]) == FVO_DEFAULT) {
 			//ExplorerBrowser
 			hr = NavigateEB(dwFrame);
@@ -11926,9 +11917,13 @@ HRESULT CteShellBrowser::NavigateEB(DWORD dwFrame)
 			if (m_pExplorerBrowser) {
 				DestroyView(CTRL_SB);
 			}
-			if (SUCCEEDED(teCreateInstance(CLSID_ExplorerBrowser,
-			NULL, NULL, IID_PPV_ARGS(&m_pExplorerBrowser)))) {
-				FOLDERSETTINGS fs = { ILIsEqual(m_pidl, g_pidlResultsFolder) ? m_param[SB_ViewMode] : FVM_AUTO, (m_param[SB_FolderFlags] | FWF_USESEARCHFOLDER) & ~FWF_NOENUMREFRESH };
+			if (SUCCEEDED(teCreateInstance(CLSID_ExplorerBrowser, NULL, NULL, IID_PPV_ARGS(&m_pExplorerBrowser)))) {
+				if (m_nForceViewMode != FVM_AUTO) {
+					m_param[SB_ViewMode] = m_nForceViewMode;
+					m_bAutoVM = FALSE;
+					m_nForceViewMode = FVM_AUTO;
+				}
+				FOLDERSETTINGS fs = { !m_bAutoVM || ILIsEqual(m_pidl, g_pidlResultsFolder) ? m_param[SB_ViewMode] : FVM_AUTO, (m_param[SB_FolderFlags] | FWF_USESEARCHFOLDER) & ~FWF_NOENUMREFRESH };
 				if (SUCCEEDED(m_pExplorerBrowser->Initialize(m_pTC->m_hwndStatic, &rc, &fs))) {
 					if (GetShellFolder2(m_pidl) == S_OK) {
 						m_pExplorerBrowser->Advise(static_cast<IExplorerBrowserEvents *>(this), &m_dwEventCookie);
@@ -12040,19 +12035,9 @@ VOID CteShellBrowser::FocusItem(BOOL bFree)
 	CteFolderItem *pid;
 	if (m_pFolderItem && !m_dwUnavailable && SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid))) {
 		if (pid->m_pidlFocused) {
-			m_pTC->LockUpdate();
-			try {
-				SelectItemEx(&pid->m_pidlFocused, pid->m_nSelected == 1 ?
-					SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK | SVSI_SELECT :
-					SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK, bFree);
-
-			} catch (...) {
-#ifdef _DEBUG
-				g_nException = 0;
-				g_strException = L"FocusItem";
-#endif
-			}
-			m_pTC->UnLockUpdate(TRUE);
+			SelectItemEx(&pid->m_pidlFocused, pid->m_nSelected == 1 ?
+				SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK | SVSI_SELECT :
+				SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK, bFree);
 		}
 		m_dwUnavailable = pid->m_dwUnavailable;
 		pid->Release();
@@ -12561,8 +12546,9 @@ VOID CteShellBrowser::GetViewModeAndIconSize(BOOL bGetIconSize)
 				m_bCheckLayout = FALSE;
 			}
 			if (!m_bCheckLayout) {
+				m_nForceViewMode = uViewMode;
 				SetRedraw(FALSE);
-				Suspend(0);
+				Suspend(4);
 			}
 		}
 	}
@@ -14125,6 +14111,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 				return S_OK;
 			case DISPID_VIEWMODECHANGED://XP+
+				m_bCheckLayout = TRUE;
 				SetFolderFlags(TRUE);
 				SetListColumnWidth();
 				return DoFunc(TE_OnViewModeChanged, this, S_OK);
@@ -14406,6 +14393,11 @@ HRESULT CteShellBrowser::CreateViewWindowEx(IShellView *pPreviousView)
 					BOOL bResultsFolder = ILIsEqual(m_pidl, g_pidlResultsFolder);
 					hr =  bResultsFolder ? S_OK : m_pSF2->EnumObjects(g_hwndMain, SHCONTF_NONFOLDERS | SHCONTF_FOLDERS, &peidl);
 					if (hr == S_OK) {
+						if (m_nForceViewMode != FVM_AUTO) {
+							m_param[SB_ViewMode] = m_nForceViewMode;
+							m_bAutoVM = FALSE;
+							m_nForceViewMode = FVM_AUTO;
+						}
 						FOLDERSETTINGS fs = { m_bAutoVM && !bResultsFolder ? FVM_AUTO : m_param[SB_ViewMode], (m_param[SB_FolderFlags] | FWF_USESEARCHFOLDER) & ~FWF_NOENUMREFRESH };
 						hr = m_pShellView->CreateViewWindow(pPreviousView, &fs, static_cast<IShellBrowser *>(this), &rc, &m_hwnd);
 					} else {
@@ -15166,11 +15158,12 @@ VOID CteShellBrowser::Suspend(int nMode)
 		m_pTV->Close();
 		m_pTV->m_bSetRoot = true;
 	}
-	if (nMode != 2) {
+	if (nMode != 2 && nMode != 4) {
 		CteFolderItem *pid1 = NULL;
 		if SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1)) {
 			if (pid1->m_v.vt == VT_BSTR) {
 				teILFreeClear(&m_pidl);
+				teILFreeClear(&pid1->m_pidl);
 				pid1->Release();
 			}
 		}
@@ -15186,6 +15179,7 @@ VOID CteShellBrowser::Suspend(int nMode)
 				m_nUnload = 8;
 			} else {
 				VariantClear(&pid1->m_v);
+				teILFreeClear(&pid1->m_pidl);
 				VariantCopy(&pid1->m_v, &v);
 			}
 			pid1->Release();

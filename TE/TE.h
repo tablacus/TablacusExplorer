@@ -1102,6 +1102,7 @@ public:
 #endif
 	DWORD		m_param[SB_Count];
 	WORD		*m_pDTColumns;
+	int			m_nForceViewMode;
 	int			m_nFolderSizeIndex;
 	int			m_nLabelIndex;
 	int			m_nSizeIndex;
