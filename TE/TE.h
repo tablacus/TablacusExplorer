@@ -248,7 +248,12 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define WINDOW_CLASS2			L"TablacusExplorer2"
 #define MAX_LOADSTRING			100
 #define MAX_HISTORY				32
-#define MAX_CSIDL				256
+#define MAX_CSIDL				0x3e
+#define CSIDL_LIBRARY			0x3e
+#define CSIDL_USER				0x3f
+#define CSIDL_RESULTSFOLDER		0x40
+#define MAX_CSIDL2				0x41
+
 #define MAX_FORMATS				1024
 #define MAX_TC					128
 #define MAX_TV					128

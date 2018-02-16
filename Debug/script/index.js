@@ -490,7 +490,7 @@ AddFavorite = function (FolderItem)
 		if (!FolderItem) {
 			return false;
 		}
-		var s = InputDialog("Add Favorite", api.GetDisplayNameOf(FolderItem, SHGDN_INFOLDER));
+		var s = InputDialog("Add Favorite", api.GetDisplayNameOf(FolderItem, SHGDN_INFOLDER | SHGDN_ORIGINAL));
 		if (s) {
 			item.setAttribute("Name", s.replace(/\\/g, "/"));
 			item.setAttribute("Filter", "");
@@ -521,7 +521,7 @@ CancelFilterView = function (FV)
 
 IsSearchPath = function (pid)
 {
-	return /search\-ms:.*?&crumb=location:([^&]*)/.exec(/string/i.test(typeof pid) ? pid : api.GetDisplayNameOf(pid, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
+	return /search\-ms:.*?&crumb=location:([^&]*)/.exec(/string/i.test(typeof pid) ? pid : api.GetDisplayNameOf(pid, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 }
 
 GetCommandId = function (hMenu, s, ContextMenu)
@@ -780,7 +780,7 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev)
 		clearTimeout(g_.tid_rf[Ctrl.Id]);
 		delete g_.tid_rf[Ctrl.Id];
 	}
-	var path = api.GetDisplayNameOf(Ctrl.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
+	var path = api.GetDisplayNameOf(Ctrl.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL);
 	var res = /javascript:(.*)/im.exec(path);
 	if (res) {
 		try {
@@ -1710,7 +1710,7 @@ te.OnClipboardText = function (Items)
 	}
 	var s = [];
 	for (var i = Items.Count; i-- > 0;) {
-		s.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(Items.Item(i), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)))
+		s.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(Items.Item(i), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)))
 	}
 	return s.join(" ");
 }
@@ -1898,7 +1898,7 @@ g_.event.EndLabelEdit = function (Ctrl, Name)
 
 g_.event.ReplacePath = function (FolderItem)
 {
-	return RunEvent4("ReplacePath", FolderItem, api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
+	return RunEvent4("ReplacePath", FolderItem, api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 }
 
 g_.event.Sort = function (Ctrl)
@@ -2189,14 +2189,14 @@ function ChangeNotifyFV(lEvent, item1, item2)
 	var fAdd = SHCNE_DRIVEADD | SHCNE_MEDIAINSERTED | SHCNE_NETSHARE | SHCNE_MKDIR;
 	var fRemove = SHCNE_DRIVEREMOVED | SHCNE_MEDIAREMOVED | SHCNE_NETUNSHARE | SHCNE_RENAMEFOLDER | SHCNE_RMDIR | SHCNE_SERVERDISCONNECT;
 	if (lEvent & (SHCNE_DISKEVENTS | fAdd | fRemove)) {
-		var path1 = String(api.GetDisplayNameOf(item1, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
+		var path1 = String(api.GetDisplayNameOf(item1, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 		var cFV = te.Ctrls(CTRL_FV);
 		for (var i in cFV) {
 			var FV = cFV[i];
-			var path = String(api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
+			var path = String(api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 			if (lEvent == SHCNE_RENAMEFOLDER && FV.Data && !FV.Data.Lock) {
 				if (api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"))) {
-					FV.Navigate(path.replace(path1, api.GetDisplayNameOf(item2, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)), SBSP_SAMEBROWSER);
+					FV.Navigate(path.replace(path1, api.GetDisplayNameOf(item2, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)), SBSP_SAMEBROWSER);
 					continue;
 				}
 			}
@@ -2649,7 +2649,7 @@ g_basic =
 					pdwEffect[0] = DROPEFFECT_LINK;
 					if (bDrop) {
 						var ar = [];
-						for (var i = dataObj.Count; i > 0; ar.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(dataObj.Item(--i), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)))) {
+						for (var i = dataObj.Count; i > 0; ar.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(dataObj.Item(--i), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)))) {
 						}
 						s = s.replace(re, ar.join(" "));
 					} else {
@@ -3010,7 +3010,7 @@ g_basic =
 					if (nCount) {
 						s = te.OnClipboardText(Selected);
 					} else {
-						s = api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
+						s = api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 					}
 					clipboardData.setData("text", s);
 					return S_OK;
@@ -3025,7 +3025,7 @@ g_basic =
 				{
 					var FV = GetFolderView(Ctrl, pt);
 					if (FV) {
-						var s = InputDialog("Search", IsSearchPath(FV) ? api.GetDisplayNameOf(FV, SHGDN_INFOLDER | SHGDN_ORIGINAL) : "");
+						var s = InputDialog("Search", IsSearchPath(FV) ? api.GetDisplayNameOf(FV, SHGDN_INFOLDER | SHGDN_ORIGINAL | SHGDN_ORIGINAL) : "");
 						if (s) {
 							FV.FilterView(s);
 						} else if (s === "") {
@@ -3405,23 +3405,19 @@ function CreateUpdater(arg)
 	if (isFinite(RunEvent3("CreateUpdater", arg))) {
 		return;
 	}
-	var Taskkill = "";
-	if (fso.FileExists(fso.BuildPath(system32, "taskkill.exe"))) {
-		Taskkill = "W.Run('taskkill /pid " + arg.pid + " /f',2,true);";
-	}
 	var update = api.sprintf(2000, "\
 F='%s';Q='\\x22';T='Tablacus Explorer';\
 A=new ActiveXObject('Shell.Application');\
 W=new ActiveXObject('WScript.Shell');\
 W.Popup('%s',9,T,%d);\
-%s\
+W.Run('taskkill /pid %d /f',2,1);\
 A.NameSpace(F).MoveHere(A.NameSpace('%s').Items(),%d);\
 if(W.Popup('%s',0,T,%d)==1){W.Run(Q+F+'\\\\%s'+Q)}\
-close()", EscapeUpdateFile(arg.InstalledFolder), GetText("Please wait."), MB_ICONINFORMATION, Taskkill, EscapeUpdateFile(arg.temp), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, GetTextR("@shell32.dll,-12852"), MB_ICONQUESTION | MB_OKCANCEL, EscapeUpdateFile(fso.GetFileName(api.GetModuleFileName(null)))).replace(/[\t\n]/g, "");
+close()", EscapeUpdateFile(arg.InstalledFolder), GetText("Please wait."), MB_ICONINFORMATION, arg.pid, EscapeUpdateFile(arg.temp), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, GetTextR("@shell32.dll,-12852"), MB_ICONQUESTION | MB_OKCANCEL, EscapeUpdateFile(fso.GetFileName(api.GetModuleFileName(null)))).replace(/[\t\n]/g, "");
 	wsh.CurrentDirectory = arg.temp;
 	var exe = "mshta.exe";
 	var s1 = '"javascript:';
-	if (update.length >= 500 || !fso.FileExists(fso.BuildPath(system32, exe))) {
+	if (update.length > 500 || !fso.FileExists(fso.BuildPath(system32, exe))) {
 		exe = "wscript.exe";
 		s1 = fso.GetParentFolderName(arg.temp) + "\\update.js";
 		DeleteItem(s1);

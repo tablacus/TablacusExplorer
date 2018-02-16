@@ -95,9 +95,8 @@ FolderMenu =
 					bSep = true;
 				}
 			}
-			var ENum = FolderItem.ENum;
-			if (ENum) {
-				Items = ENum(FolderItem);
+			if (FolderItem.ENum) {
+				Items = FolderItem.ENum(FolderItem);
 			}
 			if (!Items) {
 				var Folder = FolderItem.GetFolder;
@@ -152,7 +151,7 @@ FolderMenu =
 		if (bSelect && Name) {
 			mii.dwTypeData = Name;
 		} else {
-			mii.dwTypeData = (Name ? Name + api.GetDisplayNameOf(FolderItem, SHGDN_INFOLDER) : api.GetDisplayNameOf(FolderItem, SHGDN_INFOLDER));
+			mii.dwTypeData = (Name || "") + api.GetDisplayNameOf(FolderItem, SHGDN_INFOLDER | SHGDN_ORIGINAL);
 		}
 		AddMenuIconFolderItem(mii, FolderItem);
 		this.Items.push(FolderItem);
@@ -1309,15 +1308,15 @@ ExtractPath = function (Ctrl, s, pt)
 				return fso.GetDriveName(FV.FolderItem.Path) + s;
 			}
 			if (s == "..") {
-				return api.GetDisplayNameOf(api.ILGetParent(FV), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
+				return api.GetDisplayNameOf(api.ILGetParent(FV), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL);
 			}
 			var res = /\.\.\\(.*)/.exec(s);
 			if (res) {
-				return fso.BuildPath(api.GetDisplayNameOf(api.ILGetParent(FV), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), res[1]);
+				return fso.BuildPath(api.GetDisplayNameOf(api.ILGetParent(FV), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL), res[1]);
 			}
 			res = /\.\\(.*)/.exec(s);
 			if (res) {
-				return fso.BuildPath(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), res[1]);
+				return fso.BuildPath(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL), res[1]);
 			}
 		}
 	}
@@ -1389,7 +1388,7 @@ AddEnv("Selected", function(Ctrl)
 	var ar = [];
 	var Selected = GetSelectedItems(Ctrl);
 	if (Selected) {
-		for (var i = Selected.Count; i > 0; ar.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(Selected.Item(--i), SHGDN_FORPARSING)))) {
+		for (var i = Selected.Count; i > 0; ar.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(Selected.Item(--i), SHGDN_FORPARSING | SHGDN_ORIGINAL)))) {
 		}
 	}
 	return ar.join(" ");
@@ -1400,7 +1399,7 @@ AddEnv("Current", function(Ctrl)
 	var strSel = "";
 	var FV = GetFolderView(Ctrl);
 	if (FV) {
-		strSel = api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORPARSING));
+		strSel = api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORPARSING | SHGDN_ORIGINAL));
 	}
 	return strSel;
 });
@@ -1415,7 +1414,7 @@ AddEnv("TreeSelected", function(Ctrl)
 		}
 	}
 	if (Ctrl) {
-		strSel = api.PathQuoteSpaces(api.GetDisplayNameOf(Ctrl.SelectedItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
+		strSel = api.PathQuoteSpaces(api.GetDisplayNameOf(Ctrl.SelectedItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 	}
 	return strSel;
 });
@@ -1452,7 +1451,7 @@ IsFolderEx = function (Item)
 	if (Item && Item.IsFolder) {
 		var wfd = api.Memory("WIN32_FIND_DATA");
 		var hr = api.SHGetDataFromIDList(Item, SHGDFIL_FINDDATA, wfd, wfd.Size);
-		return (hr < 0) || (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 || !/^[A-Z]:\\|^\\\\/i.test(api.GetDisplayNameOf(Item, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
+		return (hr < 0) || (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 || !/^[A-Z]:\\|^\\\\/i.test(api.GetDisplayNameOf(Item, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 	}
 	return false;
 }
@@ -1962,7 +1961,7 @@ AddMenuIconFolderItem = function (mii, FolderItem, nHeight)
 	var dwFlags = SHGFI_SYSICONINDEX;
 	var path = FolderItem;
 	if (!/string/i.test(typeof FolderItem)) {
-		path = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING);
+		path = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_ORIGINAL);
 		dwFlags |=  SHGFI_PIDL;
 	}
 	if (api.PathIsNetworkPath(path)) {
@@ -2679,7 +2678,7 @@ ShowDialogEx = function (mode, w, h, ele)
 ShowNew = function (Ctrl, pt, Mode)
 {
 	var FV = GetFolderView(Ctrl, pt);
-	var path = api.GetDisplayNameOf(FV, SHGDN_FORPARSING);
+	var path = api.GetDisplayNameOf(FV, SHGDN_FORPARSING | SHGDN_ORIGINAL);
 	if (/^[A-Z]:\\|^\\\\/i.test(path)) {
 		ShowDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\dialog.html"), { MainWindow: MainWindow, Query: "new", Mode: Mode, path: path, FV: FV, Modal: false, width: 480, height: 120});
 	}
@@ -3312,7 +3311,7 @@ GetSavePath = function (FolderItem)
 {
 	var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
 	if (!/^[A-Z]:\\|^\\\\[A-Z]/i.test(path)) {
-		var res = /search\-ms:.*?&crumb=location:([^&]*)/.exec(api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
+		var res = /search\-ms:.*?&crumb=location:([^&]*)/.exec(api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 		if (res) {
 			return api.PathCreateFromUrl("file:" + res[1]);
 		}
@@ -3321,7 +3320,7 @@ GetSavePath = function (FolderItem)
 		var nCount = api.ILGetCount(FolderItem);
 		path = [];
 		while (nCount-- > 0) {
-			path.unshift(api.GetDisplayNameOf(FolderItem, (nCount > 0 ? SHGDN_FORADDRESSBAR : 0) | SHGDN_FORPARSING | SHGDN_INFOLDER));
+			path.unshift(api.GetDisplayNameOf(FolderItem, (nCount > 0 ? SHGDN_FORADDRESSBAR : 0) | SHGDN_FORPARSING | SHGDN_INFOLDER | SHGDN_ORIGINAL));
 			FolderItem = api.ILRemoveLastID(FolderItem);
 		}
 		return path.join("\\")
