@@ -36,18 +36,28 @@ function _s()
 function _es(fn)
 {
 	if (!/^[A-Z]:\\|^\\\\/i.test(fn)) {
-		fn = fso.BuildPath(fso.GetParentFolderName(location.href), fn);
+		fn = fso.BuildPath(/^\\/.test(fn) ? fso.GetParentFolderName(api.GetModuleFileName(null)) : fso.GetParentFolderName(location.href), fn);
 	}
+	var s;
 	try {
 		var ado = te.CreateObject(api.ADBSTRM);
 		ado.CharSet = 'utf-8';
 		ado.Open();
 		ado.LoadFromFile(fn);
-		var fn = new Function(ado.ReadText());
+		s = ado.ReadText();
 		ado.Close();
-		return fn();
 	} catch (e) {
-		wsh.Popup((e.stack || e.description || e.toString()) + '\\n' + fn, 0, 'Tablacus Explorer', 0x10);
+		if (MainWindow.Exchange) {
+			delete MainWindow.Exchange[arg[3]];
+		}
+		wsh.Popup((e.description || e.toString()) + '\n' + fn, 0, 'Tablacus Explorer', 0x10);
+	}
+	if (s) {
+		try {
+			new Function(s)();
+		} catch (e) {
+			wsh.Popup((e.stack || e.description || e.toString()) + '\n' + fn, 0, 'Tablacus Explorer', 0x10);
+		}
 	}
 }
 

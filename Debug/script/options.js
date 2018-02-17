@@ -331,19 +331,6 @@ function ChooseFolder1(o)
 	}, 99);
 }
 
-function SetTreeControls()
-{
-	var o = te.Object();
-	o.All = document.getElementById("Conf_TreeDefault").checked;
-	o.Align = document.F.Tree_Align.value;
-	o.Style = document.F.Tree_Style.value;
-	o.Width = document.F.Tree_Width.value;
-	o.Root = document.F.Tree_Root.value;
-	o.EnumFlags = document.F.Tree_EnumFlags.value;
-	o.RootStyle = document.F.Tree_RootStyle.value;
-	MainWindow.g_.TVData = o;
-}
-
 function AddTabControl()
 {
 	if (document.F.Tab_Width.value == 0) {
@@ -383,6 +370,38 @@ function SetTabControls()
 	}
 }
 
+function SetFolderViews()
+{
+	if (g_Chg.View) {
+		var o = te.Object();
+		o.Layout = te.Data.Conf_Layout;
+		o.ViewMode = document.F.View_ViewMode.value;
+		MainWindow.g_.TEData = o;
+		o = te.Object();
+		o.All = document.getElementById("Conf_ListDefault").checked;
+		o.FolderFlags = document.F.View_fFlags.value;
+		o.Options = document.F.View_Options.value;
+		o.ViewFlags = document.F.View_ViewFlags.value;
+		o.Type = document.F.View_Type.value;
+		MainWindow.g_.FVData = o;
+	}
+}
+
+function SetTreeControls()
+{
+	if (g_Chg.Tree) {
+		var o = te.Object();
+		o.All = document.getElementById("Conf_TreeDefault").checked;
+		o.Align = document.F.Tree_Align.value;
+		o.Style = document.F.Tree_Style.value;
+		o.Width = document.F.Tree_Width.value;
+		o.Root = document.F.Tree_Root.value;
+		o.EnumFlags = document.F.Tree_EnumFlags.value;
+		o.RootStyle = document.F.Tree_RootStyle.value;
+		MainWindow.g_.TVData = o;
+	}
+}
+
 function SetTabControl(TC)
 {
 	if (TC) {
@@ -414,32 +433,6 @@ function MoveTabControl()
 			TC.Width = document.F.Tab_Width.value;
 			TC.Height = document.F.Tab_Height.value;
 		}
-	}
-}
-
-function SetFolderViews()
-{
-	FV = te.Ctrl(CTRL_FV);
-	if (g_Chg.View) {
-		var o = te.Object();
-		o.All = document.getElementById("Conf_ListDefault").checked;
-		o.FolderFlags = document.F.View_fFlags.value;
-		o.Options = document.F.View_Options.value;
-		o.ViewFlags = document.F.View_ViewFlags.value;
-		o.Type = document.F.View_Type.value;
-		MainWindow.g_.FVData = o;
-		o = te.Object();
-		o.All = document.getElementById("Conf_TreeDefault").checked;
-		o.Align = document.F.Tree_Align.value;
-		o.Style = document.F.Tree_Style.value;
-		o.Width = document.F.Tree_Width.value;
-		o.Root = document.F.Tree_Root.value;
-		o.EnumFlags = document.F.Tree_EnumFlags.value;
-		o.RootStyle = document.F.Tree_RootStyle.value;
-		MainWindow.g_.TVData = o;
-	}
-	if (FV) {
-		FV.CurrentViewMode = document.F.View_ViewMode.value;
 	}
 }
 
@@ -1276,7 +1269,6 @@ function Apply()
 			}
 		}
 	}
-	te.Layout = te.Data.Conf_Layout;
 	SaveMenus();
 	SetTabControls();
 	SetTreeControls();

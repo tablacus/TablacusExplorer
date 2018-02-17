@@ -10146,15 +10146,18 @@ VOID CALLBACK teTimerProcSW(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime
 VOID CALLBACK teTimerProcSort(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 {
 	KillTimer(hwnd, idEvent);
+	TESortColumns *pSC = (TESortColumns *)idEvent;
 	try {
 		CteShellBrowser *pSB = SBfromhwnd(hwnd);
 		if (pSB) {
 			IFolderView2 *pFV2;
 			if SUCCEEDED(pSB->m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
-				pFV2->SetSortColumns(&pSB->m_col, 1);
+				pFV2->SetSortColumns(pSC->pSC, pSC->nCount);
 				pFV2->Release();
 			}
 		}
+		delete [] pSC->pSC;
+		delete [] pSC;
 	} catch (...) {
 		g_nException = 0;
 #ifdef _DEBUG
@@ -14643,10 +14646,6 @@ STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 		SafeRelease(&m_ppDispatch[SB_OnIncludeObject]);
 	}
 	teILFreeClear(&pidlPrevius);
-	if (uViewMode != m_param[SB_ViewMode] && fvo != teGetFolderViewOptions(const_cast<LPITEMIDLIST>(pidlFolder), m_param[SB_ViewMode])) {
-		m_bCheckLayout = TRUE;
-		return S_OK;
-	}
 	ResetPropEx();
 	//History / Management
 	SetHistory(NULL, SBSP_SAMEBROWSER | SBSP_ABSOLUTE);
@@ -15550,12 +15549,20 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 	SORTCOLUMN col, col2;
 	if (lstrlen(bs) < 1) {
 		if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
-			if SUCCEEDED(pFV2->GetSortColumns(&m_col, 1)) {
-				col.propkey = PKEY_Contact_Label;
-				col.direction = SORT_ASCENDING;
-				pFV2->SetSortColumns(&col, 1);
-				m_nFocusItem = -1;
-				SetTimer(m_hwnd, (UINT_PTR)&m_col, 100, teTimerProcSort);
+			int nCount;
+			if SUCCEEDED(pFV2->GetSortColumnCount(&nCount)) {
+				TESortColumns *pSC = new TESortColumns[1];
+				pSC->pSC = new SORTCOLUMN[nCount];
+				pSC->nCount = nCount;
+				if SUCCEEDED(pFV2->GetSortColumns(pSC->pSC, pSC->nCount)) {
+					col.propkey = PKEY_Contact_JobTitle;
+					col.direction = SORT_ASCENDING;
+					pFV2->SetSortColumns(&col, 1);
+					m_nFocusItem = -1;
+					SetTimer(m_hwnd, (UINT_PTR)pSC, 100, teTimerProcSort);
+				} else {
+					delete [] pSC;
+				}
 			}
 			pFV2->Release();
 			return;
@@ -15579,7 +15586,9 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 		if SUCCEEDED(PropertyKeyFromName(szNew, &col.propkey)) {
 			col.direction = 1 - dir * 2;
 			if SUCCEEDED(pFV2->GetSortColumns(&col2, 1)) {
-				if (col.direction != col2.direction || col.propkey.pid != col2.propkey.pid || !IsEqualFMTID(col.propkey.fmtid, col2.propkey.fmtid)) {
+				int nCount = 0;
+				pFV2->GetSortColumnCount(&nCount);
+				if (nCount != 1 || col.direction != col2.direction || col.propkey.pid != col2.propkey.pid || !IsEqualFMTID(col.propkey.fmtid, col2.propkey.fmtid)) {
 					m_nFocusItem = -1;
 					pFV2->SetSortColumns(&col, 1);
 				}

@@ -514,6 +514,12 @@ struct TEAddItems
 	BOOL	bNavigateComplete;
 };
 
+struct TESortColumns
+{
+	SORTCOLUMN *pSC;
+	int   nCount;
+};
+
 const CLSID CLSID_ShellShellNameSpace = {0x2F2F1F96, 0x2BC1, 0x4b1c, { 0xBE, 0x28, 0xEA, 0x37, 0x74, 0xF4, 0x67, 0x6A}};
 const CLSID CLSID_JScriptChakra       = {0x16d51579, 0xa30b, 0x4c8b, { 0xa2, 0x76, 0x0f, 0xf4, 0xdc, 0x41, 0xe7, 0x55}};
 
@@ -1098,7 +1104,6 @@ public:
 	IExplorerBrowser *m_pExplorerBrowser;
 	LPITEMIDLIST m_pidl;
 	IShellFolder2 *m_pSF2;
-	SORTCOLUMN m_col;
 	DWORD		m_dwNameFormat;
 	BOOL	m_bSetListColumnWidth;
 #ifdef _2000XP

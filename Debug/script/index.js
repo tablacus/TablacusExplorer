@@ -807,6 +807,7 @@ te.OnNavigateComplete = function (Ctrl)
 {
 	RunEvent1("NavigateComplete", Ctrl);
 	ChangeView(Ctrl);
+	Ctrl.SortColumn = "";
 	return S_OK;
 }
 
@@ -1494,6 +1495,14 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 					if (te.Data.bReload) {
 						te.Data.bReload = false;
 						te.Reload();
+					}
+					if (g_.TEData) {
+						te.Layout = g_.TEData.Layout;
+						var FV = te.Ctrl(CTRL_FV);
+						if (FV) {
+							FV.CurrentViewMode = g_.TEData.ViewMode;
+						}
+						delete g_.TEData;
 					}
 					if (g_.FVData) {
 						if (g_.FVData.All) {
@@ -3369,11 +3378,9 @@ AddEvent("BeginNavigate", function (Ctrl)
 {
 	var fn = Ctrl.FolderItem.ENum;
 	if (fn && !g_.tid_rf[Ctrl.Id]) {
-		Ctrl.SortColumn = "System.Contact.Label";
 		g_.tid_rf[Ctrl.Id] = setTimeout(function ()
 		{
 			delete g_.tid_rf[Ctrl.Id];
-			Ctrl.SortColumn = "";
 			var Items = fn(Ctrl.FolderItem, Ctrl, function (Ctrl, Items) {
 				Ctrl.AddItems(Items, true, true);
 			});

@@ -3529,13 +3529,13 @@ importScript = function (fn)
 		fn = api.PathUnquoteSpaces(fn);
 	}
 	fn = ExtractMacro(te, fn);
-	if (!api.PathMatchSpec(fn, '?:\\*;\\\\*')) {
+	if (!/^[A-Z]:\\|^\\\\/i.test(fn)) {
 		fn = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), fn);
 	}
 	var hr = E_FAIL;
 	var ado = OpenAdodbFromTextFile(fn);
 	if (ado) {
-		ExecScriptEx(window.Ctrl, ado.ReadText(), /\.vbs/i.test(fn) ? "VBScript" : "JScript", window.pt, window.dataObj, window.grfKeyState, window.pdwEffect, window.bDrop);
+		hr = ExecScriptEx(window.Ctrl, ado.ReadText(), /\.vbs/i.test(fn) ? "VBScript" : "JScript", window.pt, window.dataObj, window.grfKeyState, window.pdwEffect, window.bDrop);
 		ado.Close();
 	}
 	return hr;
