@@ -151,7 +151,7 @@ FolderMenu =
 		if (bSelect && Name) {
 			mii.dwTypeData = Name;
 		} else {
-			mii.dwTypeData = (Name || "") + api.GetDisplayNameOf(FolderItem, SHGDN_INFOLDER | SHGDN_ORIGINAL);
+			mii.dwTypeData = (Name || "") + GetFolderItemName(FolderItem);
 		}
 		AddMenuIconFolderItem(mii, FolderItem);
 		this.Items.push(FolderItem);

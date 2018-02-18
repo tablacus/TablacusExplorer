@@ -1144,12 +1144,12 @@ private:
 	int			m_nLogCount;
 	int			m_nLogIndex;
 	int			m_nPrevLogIndex;
+	int			m_nSuspendMode;
 	UINT		m_nDefultColumns;
 	LONG		m_nCreate;
 	BOOL		m_bIconSize;
 	LONG		m_dwUnavailable;
 	BOOL		m_bNavigateComplete;
-	BOOL		m_bEnableSuspend;
 #ifdef _2000XP
 	IShellFolderViewCB	*m_pSFVCB;
 	int			m_nFolderName;

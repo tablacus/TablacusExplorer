@@ -54,7 +54,7 @@ function _es(fn)
 	}
 	if (s) {
 		try {
-			new Function(s)();
+			return new Function(s)();
 		} catch (e) {
 			wsh.Popup((e.stack || e.description || e.toString()) + '\n' + fn, 0, 'Tablacus Explorer', 0x10);
 		}

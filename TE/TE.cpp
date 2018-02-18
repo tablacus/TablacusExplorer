@@ -10155,6 +10155,7 @@ VOID CALLBACK teTimerProcSort(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTi
 				pFV2->SetSortColumns(pSC->pSC, pSC->nCount);
 				pFV2->Release();
 			}
+			pSB->m_pTC->UnLockUpdate(FALSE);
 		}
 		delete [] pSC->pSC;
 		delete [] pSC;
@@ -11690,6 +11691,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	m_bRefreshLator = FALSE;
 	m_nFolderSizeIndex = MAXINT;
 	m_nLabelIndex = MAXINT;
+	SafeRelease(&m_ppDispatch[SB_TotalFileSize]);
 	GetNewObject(&m_ppDispatch[SB_TotalFileSize]);
 	SafeRelease(&m_ppDispatch[SB_AltSelectedItems]);
 	CteFolderItem *pid1 = NULL;
@@ -11732,11 +11734,10 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		if (hr == S_FALSE) {
 			if (!m_pFolderItem) {
 				if SUCCEEDED(pFolderItem->QueryInterface(IID_PPV_ARGS(&m_pFolderItem))) {
-					CteFolderItem *pid1 = NULL;
-					if (SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1)) && !pid1->m_pidl) {
-						pid1->MakeUnavailable();
-						pid1->Release();
-					}
+					CteFolderItem *pid1;
+					teQueryFolderItem(&m_pFolderItem, &pid1);
+					pid1->MakeUnavailable();
+					pid1->Release();
 				}
 			}
 		}
@@ -14611,6 +14612,10 @@ STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 	if (ILIsEqual(m_pidl, pidlFolder)) {
 		return S_OK;
 	}
+	if (!m_pFolderItem1 && ILIsEqual(pidlFolder, g_pidls[CSIDL_RESULTSFOLDER])) {
+		m_nSuspendMode = 4;
+		return E_FAIL;
+	}
 	LPITEMIDLIST pidlPrevius = m_pidl;
 	m_pidl = ::ILClone(pidlFolder);
 	FolderItem *pPrevious = m_pFolderItem;
@@ -14620,9 +14625,6 @@ STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 	} else {
 		GetFolderItemFromIDList(&m_pFolderItem, m_pidl);
 	}
-
-	UINT uViewMode = m_param[SB_ViewMode];
-	FOLDERVIEWOPTIONS fvo = teGetFolderViewOptions(const_cast<LPITEMIDLIST>(pidlFolder), uViewMode);
 
 	HRESULT hr = OnBeforeNavigate(pPrevious, SBSP_SAMEBROWSER | SBSP_ABSOLUTE);
 	if FAILED(hr) {
@@ -14638,7 +14640,7 @@ STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 			BrowseObject2(pid, SBSP_NEWBROWSER | SBSP_ABSOLUTE);
 		}
 		pid ->Release();
-		m_bEnableSuspend = FALSE;
+		m_nSuspendMode = 0;
 		return hr;
 	}
 	if (!ILIsEqual(m_pidl, pidlPrevius)) {
@@ -14750,7 +14752,7 @@ VOID CteShellBrowser::OnNavigationComplete2()
 
 HRESULT CteShellBrowser::BrowseToObject()
 {
-	m_bEnableSuspend = TRUE;
+	m_nSuspendMode = 2;
 	HRESULT hr = m_pExplorerBrowser->BrowseToObject(m_pSF2, SBSP_ABSOLUTE);
 	if SUCCEEDED(hr) {
 		IOleWindow *pOleWindow;
@@ -14898,8 +14900,8 @@ VOID CteShellBrowser::SetListColumnWidth()
 
 STDMETHODIMP CteShellBrowser::OnNavigationFailed(PCIDLIST_ABSOLUTE pidlFolder)
 {
-	if (m_bEnableSuspend) {
-		Suspend(2);
+	if (m_nSuspendMode) {
+		Suspend(m_nSuspendMode);
 	}
 	return S_OK;
 }
@@ -15549,19 +15551,22 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 	SORTCOLUMN col, col2;
 	if (lstrlen(bs) < 1) {
 		if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
-			int nCount;
-			if SUCCEEDED(pFV2->GetSortColumnCount(&nCount)) {
-				TESortColumns *pSC = new TESortColumns[1];
-				pSC->pSC = new SORTCOLUMN[nCount];
-				pSC->nCount = nCount;
-				if SUCCEEDED(pFV2->GetSortColumns(pSC->pSC, pSC->nCount)) {
-					col.propkey = PKEY_Contact_JobTitle;
-					col.direction = SORT_ASCENDING;
-					pFV2->SetSortColumns(&col, 1);
-					m_nFocusItem = -1;
-					SetTimer(m_hwnd, (UINT_PTR)pSC, 100, teTimerProcSort);
-				} else {
-					delete [] pSC;
+			int nCount = 0;
+			if (SUCCEEDED(pFV2->ItemCount(SVGIO_ALLVIEW, &nCount)) && nCount) {
+				if SUCCEEDED(pFV2->GetSortColumnCount(&nCount)) {
+					TESortColumns *pSC = new TESortColumns[1];
+					pSC->pSC = new SORTCOLUMN[nCount];
+					pSC->nCount = nCount;
+					if SUCCEEDED(pFV2->GetSortColumns(pSC->pSC, pSC->nCount)) {
+						m_pTC->LockUpdate();
+						col.propkey = PKEY_ItemNameDisplay;
+						col.direction = -pSC->pSC->direction;
+						pFV2->SetSortColumns(&col, 1);
+						m_nFocusItem = -1;
+						SetTimer(m_hwnd, (UINT_PTR)pSC, 100, teTimerProcSort);
+					} else {
+						delete [] pSC;
+					}
 				}
 			}
 			pFV2->Release();

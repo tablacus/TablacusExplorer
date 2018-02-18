@@ -129,21 +129,12 @@ GetTabName = function (Ctrl)
 
 GetFolderItemName = function (pid)
 {
-	if (pid) {
-		var en = "GetFolderItemName";
-		var eo = eventTE[en];
-		for (var i in eo) {
-			try {
-				var s = eo[i](pid);
-				if (s) {
-					return s;
-				}
-			} catch (e) {
-				ShowError(e, en, i);
-			}
-		}
-		return pid.Name;
-	}
+	return pid ? RunEvent4("GetFolderItemName", pid) || api.GetDisplayNameOf(pid, SHGDN_INFOLDER | SHGDN_ORIGINAL) : "";
+}
+
+IsUseExplorer = function (pid)
+{
+	return RunEvent3("UseExplorer", pid);
 }
 
 CloseView = function (Ctrl)
@@ -490,7 +481,7 @@ AddFavorite = function (FolderItem)
 		if (!FolderItem) {
 			return false;
 		}
-		var s = InputDialog("Add Favorite", api.GetDisplayNameOf(FolderItem, SHGDN_INFOLDER | SHGDN_ORIGINAL));
+		var s = InputDialog("Add Favorite", GetFolderItemName(FolderItem));
 		if (s) {
 			item.setAttribute("Name", s.replace(/\\/g, "/"));
 			item.setAttribute("Filter", "");
@@ -791,7 +782,7 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev)
 		return E_NOTIMPL;
 	}
 	var hr = RunEvent2("BeforeNavigate", Ctrl, fs, wFlags, Prev);
-	if (hr == S_OK && RunEvent3("UseExplorer", Ctrl.FolderItem)) {
+	if (hr == S_OK && IsUseExplorer(Ctrl.FolderItem)) {
 		(function (Path) { setTimeout(function () {
 			OpenInExplorer(Path);
 		}, 99);}) (Ctrl.FolderItem);
@@ -807,7 +798,9 @@ te.OnNavigateComplete = function (Ctrl)
 {
 	RunEvent1("NavigateComplete", Ctrl);
 	ChangeView(Ctrl);
-	Ctrl.SortColumn = "";
+	if (api.ILIsEqual(Ctrl.FolderItem.Alt, ssfRESULTSFOLDER)) {
+		Ctrl.SortColumn = "";
+	}
 	return S_OK;
 }
 
@@ -3034,7 +3027,7 @@ g_basic =
 				{
 					var FV = GetFolderView(Ctrl, pt);
 					if (FV) {
-						var s = InputDialog("Search", IsSearchPath(FV) ? api.GetDisplayNameOf(FV, SHGDN_INFOLDER | SHGDN_ORIGINAL | SHGDN_ORIGINAL) : "");
+						var s = InputDialog("Search", IsSearchPath(FV) ? GetFolderItemName(FV.FolderItem) : "");
 						if (s) {
 							FV.FilterView(s);
 						} else if (s === "") {
