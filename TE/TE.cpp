@@ -3569,7 +3569,7 @@ void CheckChangeTabSB(HWND hwnd)
 			}
 		}
 		if (pSB && pSB->m_pTC->m_bVisible) {
-			if (g_pTC->m_hwnd != pSB->m_pTC->m_hwnd) {
+			if (g_pTC != pSB->m_pTC) {
 				g_pTC = pSB->m_pTC;
 				pSB->m_pTC->TabChanged(false);
 			}
@@ -3581,7 +3581,7 @@ void CheckChangeTabTC(HWND hwnd, BOOL bFocusSB)
 {
 	CteTabCtrl *pTC = TCfromhwnd(hwnd);
 	if (pTC && pTC->m_bVisible) {
-		if (g_pTC->m_hwnd != pTC->m_hwnd) {
+		if (g_pTC != pTC) {
 			g_pTC = pTC;
 			pTC->TabChanged(false);
 		}
@@ -6068,7 +6068,7 @@ LRESULT CALLBACK TEBTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			case WM_NOTIFY:
 				switch (((LPNMHDR)lParam)->code) {
 					case TCN_SELCHANGE:
-						if (g_pTC->m_hwnd != pTC->m_hwnd && pTC->m_bVisible) {
+						if (g_pTC != pTC && pTC->m_bVisible) {
 							g_pTC = pTC;
 						}
 						pTC->TabChanged(true);
@@ -10056,6 +10056,10 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 				}
 				break;
 			case TET_Redraw:
+				if (g_nLockUpdate) {
+					SetTimer(g_hwndMain, TET_Redraw, 500, teTimerProc);
+					break;
+				}
 				for (int i = MAX_TC; i-- && (pTC = g_ppTC[i]);) {
 					pTC->RedrawUpdate();
 				}
@@ -15333,6 +15337,7 @@ BOOL CteShellBrowser::Close(BOOL bForce)
 		}
 		ShowWindow(m_pTV->m_hwnd, SW_HIDE);
 		Clear();
+		SetTimer(g_hwndMain, TET_Redraw, 500, teTimerProc);
 		return TRUE;
 	}
 	return FALSE;
