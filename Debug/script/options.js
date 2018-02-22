@@ -707,9 +707,17 @@ function RemoveX(mode)
 	if (g_x[mode].selectedIndex < 0 || !confirmOk()) {
 		return;
 	}
-	g_x[mode][g_x[mode].selectedIndex] = null;
+	var i = g_x[mode].selectedIndex;
+	g_x[mode][i] = null;
 	g_Chg[mode] = true;
 	g_bChanged = true;
+	if (i >= g_x[mode].length) {
+		i = g_x[mode].length - 1;
+	}
+	if (i >= 0) {
+		g_x[mode].selectedIndex = i;
+		FireEvent(g_x[mode][i], "change");
+	}
 }
 
 function MoveX(mode, n)

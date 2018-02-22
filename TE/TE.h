@@ -369,6 +369,8 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TE_SizeFormat	9
 #define Count_TE_params	10
 
+#define	TE_AutoViewMode	0x10000
+
 #define TC_Align	6
 #define TC_TabWidth		7
 #define TC_TabHeight	8

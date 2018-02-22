@@ -1209,7 +1209,6 @@ static void threadParseDisplayName(void *args);
 LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath);
 int teGetModuleFileName(HMODULE hModule, BSTR *pbsPath);
 BOOL GetVarArrayFromIDList(VARIANT *pv, LPITEMIDLIST pidl);
-LPITEMIDLIST teILCreateFromPath3(IShellFolder *pSF, LPWSTR pszPath, HWND hwnd, int nDog);
 
 //Unit
 VOID teQueryFolderItem(FolderItem **ppfi, CteFolderItem **ppid)
@@ -2294,34 +2293,6 @@ LPITEMIDLIST teILCreateFromPathEx(LPWSTR pszPath)
 	return pidl;
 }
 
-VOID teILCreateFromPath4(LPITEMIDLIST *ppidlResult, IShellFolder *pSF, LPITEMIDLIST pidlPart, LPWSTR pszPath, LPWSTR lpDelimiter, int nDelimiter, int nDog)
-{
-	BSTR bstr = NULL;
-	LPWSTR lpfn = NULL;
-	int ashgdn[] = { SHGDN_FORPARSING, SHGDN_INFOLDER, SHGDN_INFOLDER | SHGDN_FORPARSING, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_INFOLDER };
-	for (int j = _countof(ashgdn); !*ppidlResult && j--; teSysFreeString(&bstr)) {
-		if SUCCEEDED(teGetDisplayNameBSTR(pSF, pidlPart, ashgdn[j], &bstr)) {
-			lpfn = ashgdn[j] & SHGDN_INFOLDER ? bstr : PathFindFileName(bstr);
-			if (nDelimiter && nDelimiter == lstrlen(lpfn) && StrCmpNI(const_cast<LPCWSTR>(pszPath), (LPCWSTR)lpfn, nDelimiter) == 0) {
-				IShellFolder *pSF1;
-				if SUCCEEDED(pSF->BindToObject(pidlPart, NULL, IID_PPV_ARGS(&pSF1))) {
-					*ppidlResult = teILCreateFromPath3(pSF1, &lpDelimiter[1], NULL, nDog);
-					pSF1->Release();
-				}
-				continue;
-			}
-			if (lstrcmpi(lpfn, pszPath) == 0) {
-				LPITEMIDLIST pidlParent;
-				if (teGetIDListFromObject(pSF, &pidlParent)) {
-					*ppidlResult = ILCombine(pidlParent, pidlPart);
-					teCoTaskMemFree(pidlParent);
-				}
-				continue;
-			}
-		}
-	}
-}
-
 LPITEMIDLIST teILCreateFromPath3(IShellFolder *pSF, LPWSTR pszPath, HWND hwnd, int nDog)
 {
 	LPITEMIDLIST pidlResult = NULL;
@@ -2334,50 +2305,36 @@ LPITEMIDLIST teILCreateFromPath3(IShellFolder *pSF, LPWSTR pszPath, HWND hwnd, i
 	if (lpDelimiter) {
 		nDelimiter = (int)(lpDelimiter - pszPath);
 	}
-	if SUCCEEDED(pSF->EnumObjects(hwnd, SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN | SHCONTF_INCLUDESUPERHIDDEN, &peidl)) {
+	if SUCCEEDED(pSF->EnumObjects(hwnd, SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN | SHCONTF_INCLUDESUPERHIDDEN | SHCONTF_NAVIGATION_ENUM, &peidl)) {
+		int ashgdn[] = { SHGDN_FORPARSING, SHGDN_INFOLDER, SHGDN_INFOLDER | SHGDN_FORPARSING, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_INFOLDER };
+		BSTR bstr = NULL;
+		LPWSTR lpfn = NULL;
 		LPITEMIDLIST pidlPart;
 		while (!pidlResult && peidl->Next(1, &pidlPart, NULL) == S_OK) {
-			teILCreateFromPath4(&pidlResult, pSF, pidlPart, pszPath, lpDelimiter, nDelimiter, nDog);
+			for (int j = _countof(ashgdn); !pidlResult && j--; teSysFreeString(&bstr)) {
+				if SUCCEEDED(teGetDisplayNameBSTR(pSF, pidlPart, ashgdn[j], &bstr)) {
+					lpfn = ashgdn[j] & SHGDN_INFOLDER ? bstr : PathFindFileName(bstr);
+					if (nDelimiter && nDelimiter == lstrlen(lpfn) && StrCmpNI(const_cast<LPCWSTR>(pszPath), (LPCWSTR)lpfn, nDelimiter) == 0) {
+						IShellFolder *pSF1;
+						if SUCCEEDED(pSF->BindToObject(pidlPart, NULL, IID_PPV_ARGS(&pSF1))) {
+							pidlResult = teILCreateFromPath3(pSF1, &lpDelimiter[1], NULL, nDog);
+							pSF1->Release();
+						}
+						continue;
+					}
+					if (lstrcmpi(lpfn, pszPath) == 0) {
+						LPITEMIDLIST pidlParent;
+						if (teGetIDListFromObject(pSF, &pidlParent)) {
+							pidlResult = ILCombine(pidlParent, pidlPart);
+							teCoTaskMemFree(pidlParent);
+						}
+						continue;
+					}
+				}
+			}
 			teCoTaskMemFree(pidlPart);
 		}
 		peidl->Release();
-	}
-	if (pidlResult) {
-		return pidlResult;
-	}
-	LPITEMIDLIST pidlParent;
-	if (teGetIDListFromObject(pSF, &pidlParent)) {
-		IShellItem *pSI;
-		if SUCCEEDED(lpfnSHCreateItemFromIDList(pidlParent, IID_PPV_ARGS(&pSI))) {
-			IShellLibrary *pSL;
-			if SUCCEEDED(SHLoadLibraryFromItem(pSI, STGM_READ, IID_PPV_ARGS(&pSL))) {
-				IObjectArray *pOA;
-				if SUCCEEDED(pSL->GetFolders(LFF_ALLITEMS, IID_PPV_ARGS(&pOA))) {
-					IUnknown *punk;
-					int i = 0;
-					pOA->GetCount((UINT *)&i);
-					while (i-- > 0) {
-						if SUCCEEDED(pOA->GetAt(i, IID_PPV_ARGS(&punk))) {
-							LPITEMIDLIST pidl1;
-							if SUCCEEDED(teGetIDListFromObject(punk, &pidl1)) {
-								IShellFolder *pSF1;
-								LPCITEMIDLIST pidlPart;
-								if SUCCEEDED(SHBindToParent(pidl1, IID_PPV_ARGS(&pSF1), &pidlPart)) {
-									teILCreateFromPath4(&pidlResult, pSF1, const_cast<LPITEMIDLIST>(pidlPart), pszPath, lpDelimiter, nDelimiter, nDog);
-									pSF1->Release();
-								}
-								teCoTaskMemFree(pidl1);
-							}
-							SafeRelease(&punk);
-						}
-					}
-					pOA->Release();
-				}
-				pSL->Release();
-			}
-			pSI->Release();
-		}
-		teILFreeClear(&pidlParent);
 	}
 	return pidlResult;
 }
@@ -3046,7 +3003,7 @@ HRESULT teILFolderExists(LPITEMIDLIST pidl)
 		hr = pSF->BindToObject(pidlPart, NULL, IID_PPV_ARGS(&pSF1));
 		if SUCCEEDED(hr) {
 			IEnumIDList *peidl = NULL;
-			hr = pSF1->EnumObjects(NULL, SHCONTF_NONFOLDERS | SHCONTF_FOLDERS, &peidl);
+			hr = pSF1->EnumObjects(NULL, SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN | SHCONTF_INCLUDESUPERHIDDEN | SHCONTF_NAVIGATION_ENUM, &peidl);
 			if (peidl) {
 				LPITEMIDLIST pidlPart;
 				hr = peidl->Next(1, &pidlPart, NULL);
@@ -12062,9 +12019,9 @@ HRESULT CteShellBrowser::OnBeforeNavigate(FolderItem *pPrevious, UINT wFlags)
 		}
 	}
 #ifdef _2000XP
-	m_bAutoVM = g_bUpperVista;
+	m_bAutoVM = g_bUpperVista && (g_param[TE_Layout] & TE_AutoViewMode);
 #else
-	m_bAutoVM = TRUE;
+	m_bAutoVM = (g_param[TE_Layout] & TE_AutoViewMode);
 #endif
 	if (g_pOnFunc[TE_OnBeforeNavigate]) {
 		VARIANT vResult;
@@ -14465,7 +14422,7 @@ HRESULT CteShellBrowser::CreateViewWindowEx(IShellView *pPreviousView)
 					m_hwnd = NULL;
 					IEnumIDList *peidl = NULL;
 					BOOL bResultsFolder = ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER]);
-					hr =  bResultsFolder ? S_OK : m_pSF2->EnumObjects(g_hwndMain, SHCONTF_NONFOLDERS | SHCONTF_FOLDERS, &peidl);
+					hr =  bResultsFolder ? S_OK : m_pSF2->EnumObjects(g_hwndMain, SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN | SHCONTF_INCLUDESUPERHIDDEN | SHCONTF_NAVIGATION_ENUM, &peidl);
 					if (hr == S_OK) {
 						if (m_nForceViewMode != FVM_AUTO) {
 							m_param[SB_ViewMode] = m_nForceViewMode;
@@ -15386,7 +15343,6 @@ BOOL CteShellBrowser::Close(BOOL bForce)
 		}
 		ShowWindow(m_pTV->m_hwnd, SW_HIDE);
 		Clear();
-		SetTimer(g_hwndMain, TET_Redraw, 500, teTimerProc);
 		return TRUE;
 	}
 	return FALSE;
@@ -17731,7 +17687,7 @@ VOID CteTabCtrl::LockUpdate()
 
 VOID CteTabCtrl::UnLockUpdate(BOOL bDirect)
 {
-	if (::InterlockedDecrement(&m_nLockUpdate) > 0 || m_bRedraw) {
+	if (::InterlockedDecrement(&m_nLockUpdate) > 0) {
 		return;
 	}
 	m_nLockUpdate = 0;
