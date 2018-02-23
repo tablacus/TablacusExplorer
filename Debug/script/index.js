@@ -1337,6 +1337,7 @@ te.OnDragLeave = function (Ctrl)
 te.OnSelectionChanged = function (Ctrl, uChange)
 {
 	if (Ctrl.Type == CTRL_TC && Ctrl.SelectedIndex >= 0) {
+		ShowStatusText(Ctrl.Selected, "", 0);
 		ChangeView(Ctrl.Selected);
 	}
 	return RunEvent3("SelectionChanged", Ctrl, uChange);
@@ -1817,6 +1818,7 @@ g_.event.StatusText = ShowStatusText;
 
 g_.event.BeginNavigate = function (Ctrl)
 {
+	ShowStatusText(Ctrl, "", 0);
 	return RunEvent2("BeginNavigate", Ctrl);
 }
 

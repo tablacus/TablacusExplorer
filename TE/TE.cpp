@@ -106,6 +106,7 @@ DWORD	g_paramFV[SB_Count];
 DWORD	g_dwMainThreadId;
 DWORD	g_dwSWCookie = 0;
 DWORD	g_dwSessionId = 0;
+DWORD	g_dwTickKey;
 long	g_nProcKey	   = 0;
 long	g_nProcMouse   = 0;
 long	g_nProcDrag    = 0;
@@ -5368,7 +5369,13 @@ LRESULT CALLBACK MenuKeyProc(int nCode, WPARAM wParam, LPARAM lParam)
 		if (nCode == HC_ACTION) {
 			MSG msg;
 			msg.hwnd = GetFocus();
-			msg.message = (lParam >= 0) ? WM_KEYDOWN : WM_KEYUP;
+			if (lParam >= 0) {
+				msg.message = WM_KEYDOWN;
+				g_dwTickKey = GetTickCount();
+			} else {
+				msg.message = WM_KEYUP;
+				g_dwTickKey = 0;
+			}
 			msg.wParam = wParam;
 			msg.lParam = lParam;
 			try {
@@ -5476,6 +5483,7 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 				}
 			}
 		}
+		g_dwTickKey = 0;
 	} catch (...) {
 		g_nException = 0;
 #ifdef _DEBUG
@@ -6256,6 +6264,7 @@ HRESULT MessageProc(MSG *pMsg)
 					pdisp->Release();
 				}
 			}
+			g_dwTickKey = 0;
 		} catch(...) {}
 		::InterlockedDecrement(&g_nProcMouse);
 	}
@@ -6299,6 +6308,7 @@ HRESULT MessageProc(MSG *pMsg)
 					VariantClear(&v);
 				}
 			}
+			g_dwTickKey = (pMsg->message == WM_KEYUP) ? 0 : GetTickCount();
 		} catch(...) {}
 		::InterlockedDecrement(&g_nProcKey);
 	}
@@ -8784,7 +8794,7 @@ VOID teApisprintf(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pV
 						pszFormat[0] = wc;
 						break;
 					}
-					if (!StrChrIW(L"0123456789-+#.hljzt", wc)) {//not Specifier
+					if (!StrChrIW(L"0123456789-+#.hljzt ", wc)) {//not Specifier
 						lstrcpyn(&bsResult[nLen], pszFormat, nPos + 1);
 						nLen += nPos;
 						pszFormat += nPos;
@@ -10076,33 +10086,39 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 			case TET_Status:
 				pSB = g_pTC->GetShellBrowser(g_pTC->m_nIndex);
 				if (pSB) {
-					if (g_szStatus[0] == NULL) {
+					if (g_szStatus[0] == NULL || (g_szStatus[0] == '0' && ILIsEqual(pSB->m_pidl, g_pidls[CSIDL_RESULTSFOLDER]))) {
 						IFolderView *pFV;
 						if (pSB->m_pShellView && SUCCEEDED(pSB->m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV)))) {
 							int nCount;
 							if SUCCEEDED(pFV->ItemCount(SVGIO_SELECTION, &nCount)) {
-								UINT uID;
+								UINT uID = 0;
 								if (nCount) {
 									uID = nCount > 1 ? 38194 : 38195;
 								} else if SUCCEEDED(pFV->ItemCount(SVGIO_ALLVIEW, &nCount)) {
-									uID = nCount > 1 ? 38192 : 38193;
-								}
-								BSTR bsCount = ::SysAllocStringLen(NULL, 16);
-								WCHAR pszNum[16];
-								swprintf_s(pszNum, 12, L"%d", nCount);
-								teCommaSize(pszNum, bsCount, 16, 0);
-
-								WCHAR psz[MAX_STATUS];
-								if (LoadString(g_hShell32, uID, psz, MAX_STATUS) > 2 && tePathMatchSpec(psz, L"*%s*")) {
-									swprintf_s(g_szStatus, MAX_STATUS, psz, bsCount);
-								} else {
-									uID = uID < 38194 ? 6466 : 6477;
-									if (LoadString(g_hShell32, uID, psz, MAX_STATUS) > 6) {
-										FormatMessage(FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY,
-											psz, 0, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), g_szStatus, MAX_STATUS, (va_list *)&bsCount);
+									if (nCount || !ILIsEqual(pSB->m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
+										uID = nCount > 1 ? 38192 : 38193;
 									}
 								}
-								::SysFreeString(bsCount);
+								if (uID) {
+									BSTR bsCount = ::SysAllocStringLen(NULL, 16);
+									WCHAR pszNum[16];
+									swprintf_s(pszNum, 12, L"%d", nCount);
+									teCommaSize(pszNum, bsCount, 16, 0);
+
+									WCHAR psz[MAX_STATUS];
+									if (LoadString(g_hShell32, uID, psz, MAX_STATUS) > 2 && tePathMatchSpec(psz, L"*%s*")) {
+										swprintf_s(g_szStatus, MAX_STATUS, psz, bsCount);
+									} else {
+										uID = uID < 38194 ? 6466 : 6477;
+										if (LoadString(g_hShell32, uID, psz, MAX_STATUS) > 6) {
+											FormatMessage(FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY,
+												psz, 0, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), g_szStatus, MAX_STATUS, (va_list *)&bsCount);
+										}
+									}
+									::SysFreeString(bsCount);
+								} else {
+									g_szStatus[0] = NULL;
+								}
 							}
 							pFV->Release();
 						}
@@ -11522,7 +11538,7 @@ STDMETHODIMP CteShellBrowser::SetStatusTextSB(LPCWSTR lpszStatusText)
 	} else {
 		g_szStatus[0] = NULL;
 	}
-	SetTimer(g_hwndMain, TET_Status, 500, teTimerProc);
+	SetTimer(g_hwndMain, TET_Status, GetTickCount() - g_dwTickKey < 3000 ? 500 : 100, teTimerProc);
 	return S_OK;
 }
 
@@ -14050,6 +14066,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						}
 					}
 					teCoTaskMemFree(pidl);
+					SetStatusTextSB(NULL);
 				}
 				return S_OK;
 			//RemoveItem
