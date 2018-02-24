@@ -1074,7 +1074,7 @@ public:
 	FOLDERVIEWOPTIONS teGetFolderViewOptions(LPITEMIDLIST pidl, UINT uViewMode);
 	VOID OnNavigationComplete2();
 	HRESULT BrowseToObject();
-	HRESULT GetShellFolder2(LPITEMIDLIST pidl);
+	HRESULT GetShellFolder2(LPITEMIDLIST *ppidl);
 	VOID SetLVSettings();
 	HRESULT NavigateSB(IShellView *pPreviousView, FolderItem *pPrevious);
 	HRESULT CreateViewWindowEx(IShellView *pPreviousView);
@@ -1132,6 +1132,7 @@ public:
 	BOOL		m_bRefreshLator;
 	BOOL		m_bRefreshing;
 	BOOL		m_bAutoVM;
+	BOOL		m_bBeforeNavigate;
 private:
 	VARIANT		m_vData;
 	FolderItem	**m_ppLog;
@@ -1142,15 +1143,15 @@ private:
 	BSTR		m_bsFilter;
 
 	LONG		m_cRef;
+	LONG		m_nCreate;
+	LONG		m_dwUnavailable;
 	DWORD		m_dwEventCookie;
 	int			m_nLogCount;
 	int			m_nLogIndex;
 	int			m_nPrevLogIndex;
 	int			m_nSuspendMode;
 	UINT		m_nDefultColumns;
-	LONG		m_nCreate;
 	BOOL		m_bIconSize;
-	LONG		m_dwUnavailable;
 	BOOL		m_bNavigateComplete;
 #ifdef _2000XP
 	IShellFolderViewCB	*m_pSFVCB;
