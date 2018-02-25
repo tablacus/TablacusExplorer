@@ -14102,6 +14102,9 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					}
 				}
 				teSetLong(pVarResult, hr);
+				if (hr == S_OK) {
+					SetTimer(g_hwndMain, TET_Status, 500, teTimerProc);
+				}
 				return S_OK;
 			//AddItems
 			case 0x10000503:

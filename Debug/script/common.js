@@ -1594,17 +1594,27 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec)
 	var item;
 	if (items) {
 		arMenu = OpenMenu(items, SelItem);
-		if (arMenu.length) {
-			item = items[arMenu[0]];
+		for (var i = 0; i < arMenu.length; i++) {
+			item = items[arMenu[i]];
+			if (!/^menus$/i.test(item.getAttribute("Type"))) {
+				break;
+			}
+			item = null;
 		}
 		var nBase = api.LowPart(menus[0].getAttribute("Base"));
 		if (nBase == 1) {
 			if (api.LowPart(menus[0].getAttribute("Pos")) < 0) {
-				item = items[arMenu[arMenu.length - 1]];
+				for (var i = arMenu.length; i-- > 0;) {
+					item = items[arMenu[i]];
+					if (!/^menus$/i.test(item.getAttribute("Type"))) {
+						break;
+					}
+					item = null;
+				}
 				if (arMenu.length > 1) {
 					for (var i = arMenu.length; i--;) {
 						var nLevel = 0;
-						if (String(items[arMenu[i]].getAttribute("Type")).toLowerCase() == "menus") {
+						if (/^menus$/i.test(items[arMenu[i]].getAttribute("Type"))) {
 		 					var s = String(items[arMenu[i]].text).toLowerCase();
 		 					if (s == "close") {
 		 						nLevel++;
