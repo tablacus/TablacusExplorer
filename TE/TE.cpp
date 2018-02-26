@@ -10105,13 +10105,13 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 								teCommaSize(pszNum, bsCount, 16, 0);
 
 								WCHAR psz[MAX_STATUS];
-								if (LoadString(g_hShell32, uID, psz, MAX_STATUS) > 2 && tePathMatchSpec(psz, L"*%s*")) {
-									swprintf_s(g_szStatus, MAX_STATUS, psz, bsCount);
+								if (LoadString(g_hShell32, uID, psz, _countof(psz)) > 2 && tePathMatchSpec(psz, L"*%s*")) {
+									swprintf_s(g_szStatus, _countof(g_szStatus), psz, bsCount);
 								} else {
 									uID = uID < 38194 ? 6466 : 6477;
 									if (LoadString(g_hShell32, uID, psz, MAX_STATUS) > 6) {
 										FormatMessage(FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY,
-											psz, 0, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), g_szStatus, MAX_STATUS, (va_list *)&bsCount);
+											psz, 0, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), g_szStatus, _countof(g_szStatus), (va_list *)&bsCount);
 									}
 								}
 								::SysFreeString(bsCount);
@@ -11528,9 +11528,7 @@ STDMETHODIMP CteShellBrowser::RemoveMenusSB(HMENU hmenuShared)
 
 STDMETHODIMP CteShellBrowser::SetStatusTextSB(LPCWSTR lpszStatusText)
 {
-/*	if (lpszStatusText) {
-		lstrcpyn(g_szStatus, lpszStatusText, _countof(g_szStatus) - 1);
-	}*/
+	g_szStatus[0] = 0x20;
 	SetTimer(g_hwndMain, TET_Status, g_dwTickKey && (GetTickCount() - g_dwTickKey < 3000) ? 500 : 100, teTimerProc);
 	return S_OK;
 }

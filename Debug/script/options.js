@@ -1955,7 +1955,6 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter)
 			}
 		}
 	}, 99);
-	g_Chg.Data = true;
 }
 
 function PortableX(Id)
