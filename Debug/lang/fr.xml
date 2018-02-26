@@ -99,7 +99,7 @@
 	<text s="&amp;Lock">&amp;Verrouiller</text>
 	<text s="Alias">Alias</text>
 	<text s="&amp;Add-ons...">&amp;Compléments...</text>
-	<text s="Get Add-ons...">Obternir des compléments...</text>
+	<text s="Get Add-ons...">Obtenir des compléments...</text>
 	<text s="Enabled">Activée</text>
   <text s="Enable">Activer</text>
 	<text s="Visit website">Visiter le site web</text>
@@ -205,7 +205,7 @@
 	<text s="Extract">Extraire</text>
 	<text s="Save">Enregistrer</text>
 	<text s="Load">Charger</text>
-	<text s="Get %s...">Obternir des %s...</text>
+	<text s="Get %s...">Obtenir des %s...</text>
 	<text s="Results">Résultats</text>
 	<text s="Number of items">Nombre d’éléments</text>
 	<text s="&amp;About %s">A propos de %s</text>
