@@ -3413,9 +3413,9 @@ A=new ActiveXObject('Shell.Application');\
 W=new ActiveXObject('WScript.Shell');\
 W.Popup('%s',9,T,%d);\
 W.Run('taskkill /pid %d /f',2,1);\
-A.NameSpace(F).MoveHere(A.NameSpace('%s').Items(),%d);\
+A.NameSpace(F).CopyHere(A.NameSpace('%s').Items(),%d);\
 if(W.Popup('%s',0,T,%d)==1){W.Run(Q+F+'\\\\%s'+Q)}\
-close()", EscapeUpdateFile(arg.InstalledFolder), GetText("Please wait."), MB_ICONINFORMATION, arg.pid, EscapeUpdateFile(arg.temp), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, GetTextR("@shell32.dll,-12852"), MB_ICONQUESTION | MB_OKCANCEL, EscapeUpdateFile(fso.GetFileName(api.GetModuleFileName(null)))).replace(/[\t\n]/g, "");
+close()", EscapeUpdateFile(arg.InstalledFolder), GetText("Please wait."), MB_OK, arg.pid, EscapeUpdateFile(arg.temp), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, GetTextR("@shell32.dll,-12852"), MB_ICONQUESTION | MB_OKCANCEL, EscapeUpdateFile(fso.GetFileName(api.GetModuleFileName(null)))).replace(/[\t\n]/g, "");
 	wsh.CurrentDirectory = arg.temp;
 	var exe = "mshta.exe";
 	var s1 = '"javascript:';

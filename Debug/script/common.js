@@ -2359,11 +2359,11 @@ function CheckUpdate3(xhr, url, arg)
 	var te64exe = arg.temp + "\\te64.exe";
 	var nDog = 300;
 	while (!fso.FileExists(te64exe)) {
-		if (wsh.Popup(GetText("Please wait."), 1, TITLE, MB_ICONINFORMATION | MB_OKCANCEL) == IDCANCEL || nDog-- == 0) {
+		if (wsh.Popup(GetText("Please wait."), 1, TITLE, MB_OKCANCEL) == IDCANCEL || nDog-- == 0) {
 			return;
 		}
 	}
-	var arDel = [];
+	var arDel = [arg.temp + "\\config"];
 	var addons = arg.temp + "\\addons";
 
 	for (var list = new Enumerator(fso.GetFolder(addons).SubFolders); !list.atEnd(); list.moveNext()) {
@@ -2373,14 +2373,12 @@ function CheckUpdate3(xhr, url, arg)
 			arDel.push(fso.BuildPath(addons, n));
 		}
 	}
-	if (arDel.length) {
-		api.SHFileOperation(FO_DELETE, arDel.join("\0"), null, FOF_SILENT | FOF_NOCONFIRMATION, false);
-	}
-	var pid = api.Memory("DWORD");
-	api.GetWindowThreadProcessId(te.hwnd, pid);
-	arg.pid = pid[0];
+	api.SHFileOperation(FO_DELETE, arDel.join("\0"), null, FOF_SILENT | FOF_NOCONFIRMATION, false);
+	var ppid = api.Memory("DWORD");
+	api.GetWindowThreadProcessId(te.hwnd, ppid);
+	arg.pid = ppid[0];
 	MainWindow.CreateUpdater(arg);
-	WmiProcess("WHERE ExecutablePath = '" + api.GetModuleFileName(null).replace(/\\/g, "\\\\") + "' AND ProcessId!=" + arg.pid, function (item)
+	WmiProcess("WHERE ExecutablePath='" + api.GetModuleFileName(null).replace(/\\/g, "\\\\") + "' AND ProcessId!=" + arg.pid, function (item)
 	{
 		item.Terminate();
 	});

@@ -3387,6 +3387,7 @@ static void threadFolderSize(void *args)
 			if (pFS->hwnd) {
 				InvalidateRect(pFS->hwnd, NULL, FALSE);
 			}
+			SetTimer(g_hwndMain, TET_Status, 100, teTimerProc);
 		}
 	} catch (...) {
 		g_nException = 0;
@@ -13949,8 +13950,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 									WIN32_FIND_DATA wfd;
 									teSHGetDataFromIDList(m_pSF2, ILFindLastID(pidl), SHGDFIL_FINDDATA, &wfd, sizeof(WIN32_FIND_DATA));
 									if (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-										if (nArg >= 1 && GetIntFromVariant(&pDispParams->rgvarg[nArg - 1])) {
-											SetFolderSize(ILFindLastID(pidl), wfd.cAlternateFileName, 13);
+										if (nArg >= 3 && GetIntFromVariant(&pDispParams->rgvarg[nArg - 3])) {
+											SetFolderSize(ILFindLastID(pidl), wfd.cAlternateFileName, _countof(wfd.cAlternateFileName));
 										} else {
 											if SUCCEEDED(teDelProperty(m_ppDispatch[SB_TotalFileSize], wfd.cFileName) && m_hwndLV) {
 												InvalidateRect(m_hwndLV, NULL, FALSE);
