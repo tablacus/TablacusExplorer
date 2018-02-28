@@ -34,5 +34,5 @@ if (server) {
 var v = fso.GetFileVersion(args(0));
 sha.NameSpace(fso.GetParentFolderName(args(0))).CopyHere(sha.NameSpace(args(1)).Items(), 0x0210);
 if (v != fso.GetFileVersion(args(0)) || wsh.Popup(args(3), 0, TITLE, 0x21) == 1) {
-	wsh.Run(args(0));
+	wsh.Run('"' + args(0) + '"');
 }

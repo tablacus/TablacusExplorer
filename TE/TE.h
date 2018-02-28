@@ -481,7 +481,6 @@ struct TEDispatchApi
 
 struct TEFS
 {
-	BSTR bsName;
 	BSTR bsPath;
 	IStream *pStrmTotalFileSize;
 	LPITEMIDLIST *ppidl;
@@ -1068,7 +1067,7 @@ public:
 	HRESULT SelectItemEx(LPITEMIDLIST *ppidl, int dwFlags, BOOL bFree);
 	VOID InitFolderSize();
 	VOID SetSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch);
-	VOID SetFolderSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch);
+	VOID SetFolderSize(IShellFolder2 *pSF2, LPCITEMIDLIST pidl, LPWSTR szText, int cch);
 	VOID SetLabel(LPCITEMIDLIST pidl, LPWSTR szText, int cch);
 	HRESULT PropertyKeyFromName(BSTR bs, PROPERTYKEY *pkey);
 	FOLDERVIEWOPTIONS teGetFolderViewOptions(LPITEMIDLIST pidl, UINT uViewMode);

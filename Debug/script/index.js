@@ -3407,29 +3407,7 @@ function CreateUpdater(arg)
 	if (isFinite(RunEvent3("CreateUpdater", arg))) {
 		return;
 	}
-	var update = api.sprintf(2000, "\
-F='%s';Q='\\x22';T='Tablacus Explorer';\
-A=new ActiveXObject('Shell.Application');\
-W=new ActiveXObject('WScript.Shell');\
-W.Popup('%s',9,T,%d);\
-W.Run('taskkill /pid %d /f',2,1);\
-A.NameSpace(F).CopyHere(A.NameSpace('%s').Items(),%d);\
-if(W.Popup('%s',0,T,%d)==1){W.Run(Q+F+'\\\\%s'+Q)}\
-close()", EscapeUpdateFile(arg.InstalledFolder), GetText("Please wait."), MB_OK, arg.pid, EscapeUpdateFile(arg.temp), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, GetTextR("@shell32.dll,-12852"), MB_ICONQUESTION | MB_OKCANCEL, EscapeUpdateFile(fso.GetFileName(api.GetModuleFileName(null)))).replace(/[\t\n]/g, "");
-	wsh.CurrentDirectory = arg.temp;
-	var exe = "mshta.exe";
-	var s1 = '"javascript:';
-	if (update.length > 500 || !fso.FileExists(fso.BuildPath(system32, exe))) {
-		exe = "wscript.exe";
-		s1 = fso.GetParentFolderName(arg.temp) + "\\update.js";
-		DeleteItem(s1);
-		var a = fso.CreateTextFile(s1, true);
-		a.WriteLine(update.replace(/close\(\)$/, ""));
-		a.Close();
-		update = s1;
-		s1 = '"';
-	}
-	g_.strUpdate = ['"', api.IsWow64Process(api.GetCurrentProcess()) ? wsh.ExpandEnvironmentStrings("%SystemRoot%\\Sysnative") : system32, "\\", exe, '" ', s1, update, '"'].join("");
+	g_.strUpdate = ['"', api.IsWow64Process(api.GetCurrentProcess()) ? wsh.ExpandEnvironmentStrings("%SystemRoot%\\Sysnative") : system32, "\\", "wscript.exe", '" "', arg.temp, "\\script\\update.js", '" "', api.GetModuleFileName(null), '" "', arg.temp, '" "', api.LoadString(hShell32, 12599), '" "', api.LoadString(hShell32, 12852),'"'].join("");
 	DeleteTempFolder = function ()
 	{
 		var oExec = wsh.Exec(g_.strUpdate);

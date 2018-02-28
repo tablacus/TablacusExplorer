@@ -2048,6 +2048,13 @@ ULONGLONG teGetFolderSize(LPCWSTR szPath, int nLevel, LPITEMIDLIST *ppidl, LPITE
 	if (*ppidl != pidl) {
 		return 0;
 	}
+	if (PathIsRoot(szPath)) {
+		ULARGE_INTEGER FreeBytesOfAvailable;
+		ULARGE_INTEGER TotalNumberOfBytes;
+		ULARGE_INTEGER TotalNumberOfFreeBytes;
+		GetDiskFreeSpaceEx(szPath, &FreeBytesOfAvailable, &TotalNumberOfBytes, &TotalNumberOfFreeBytes);
+		return TotalNumberOfBytes.QuadPart - TotalNumberOfFreeBytes.QuadPart;
+	}
 	ULONGLONG Result = 0;
 	BSTR bs;
 	WIN32_FIND_DATA wfd;
@@ -3383,7 +3390,7 @@ static void threadFolderSize(void *args)
 	try {
 		teSetLL(&v, teGetFolderSize(pFS->bsPath, 128, pFS->ppidl, pFS->pidl));
 		if (*pFS->ppidl == pFS->pidl) {
-			tePutProperty(pTotalFileSize, pFS->bsName, &v);
+			tePutProperty(pTotalFileSize, pFS->bsPath, &v);
 			if (pFS->hwnd) {
 				InvalidateRect(pFS->hwnd, NULL, FALSE);
 			}
@@ -3398,7 +3405,6 @@ static void threadFolderSize(void *args)
 	VariantClear(&v);
 	pTotalFileSize->Release();
 	::SysFreeString(pFS->bsPath);
-	::SysFreeString(pFS->bsName);
 	delete [] pFS;
 	::CoUninitialize();
 	::_endthread();
@@ -5615,7 +5621,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							LPITEMIDLIST pidl;
 							if SUCCEEDED(pSB->m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
 								if SUCCEEDED(pFV->Item(lpDispInfo->item.iItem, &pidl)) {
-									pSB->SetFolderSize(pidl, lpDispInfo->item.pszText, lpDispInfo->item.cchTextMax);
+									pSB->SetFolderSize(pSB->m_pSF2, pidl, lpDispInfo->item.pszText, lpDispInfo->item.cchTextMax);
 									teCoTaskMemFree(pidl);
 								}
 								pFV->Release();
@@ -12482,15 +12488,17 @@ VOID CteShellBrowser::SetSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch)
 	}
 }
 
-VOID CteShellBrowser::SetFolderSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch)
+VOID CteShellBrowser::SetFolderSize(IShellFolder2 *pSF2, LPCITEMIDLIST pidl, LPWSTR szText, int cch)
 {
-	if (m_pSF2) {
+	if (pSF2) {
 		VARIANT v;
 		VariantInit(&v);
 		WIN32_FIND_DATA wfd;
-		teSHGetDataFromIDList(m_pSF2, pidl, SHGDFIL_FINDDATA, &wfd, sizeof(WIN32_FIND_DATA));
+		teSHGetDataFromIDList(pSF2, pidl, SHGDFIL_FINDDATA, &wfd, sizeof(WIN32_FIND_DATA));
 		if (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-			teGetProperty(m_ppDispatch[SB_TotalFileSize], wfd.cFileName, &v);
+			BSTR bsPath;
+			teGetDisplayNameBSTR(pSF2, pidl, SHGDN_FORPARSING, &bsPath);
+			teGetProperty(m_ppDispatch[SB_TotalFileSize], bsPath, &v);
 			if (v.vt == VT_BSTR) {
 				lstrcpyn(szText, v.bstrVal, cch);
 			} else if (v.vt != VT_EMPTY) {
@@ -12498,10 +12506,9 @@ VOID CteShellBrowser::SetFolderSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch)
 			} else if (m_ppDispatch[SB_TotalFileSize]) {
 				v.vt = VT_BSTR;
 				v.bstrVal = NULL;
-				tePutProperty(m_ppDispatch[SB_TotalFileSize], wfd.cFileName, &v);
+				tePutProperty(m_ppDispatch[SB_TotalFileSize], bsPath, &v);
 				TEFS *pFS = new TEFS[1];
-				pFS->bsName = ::SysAllocString(wfd.cFileName);
-				teGetDisplayNameBSTR(m_pSF2, pidl, SHGDN_FORPARSING, &pFS->bsPath);
+				pFS->bsPath = ::SysAllocString(bsPath);
 				pFS->ppidl = &m_pidl;
 				pFS->pidl = m_pidl;
 				pFS->hwnd = m_hwndLV;
@@ -12509,13 +12516,13 @@ VOID CteShellBrowser::SetFolderSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch)
 				if (_beginthread(&threadFolderSize, 0, pFS) == -1) {
 					pFS->pStrmTotalFileSize->Release();
 					teSysFreeString(&pFS->bsPath);
-					teSysFreeString(&pFS->bsName);
 					delete [] pFS;
 					VariantClear(&v);
-					tePutProperty(m_ppDispatch[SB_TotalFileSize], wfd.cFileName, &v);
+					tePutProperty(m_ppDispatch[SB_TotalFileSize], bsPath, &v);
 				}
 			}
-		} else if (SUCCEEDED(m_pSF2->GetDetailsEx(pidl, &PKEY_Size, &v))) {
+			teSysFreeString(&bsPath);
+		} else if (SUCCEEDED(pSF2->GetDetailsEx(pidl, &PKEY_Size, &v))) {
 			teStrFormatSize(g_param[TE_SizeFormat], GetLLFromVariant(&v), szText, cch);
 		}
 		VariantClear(&v);
@@ -13937,28 +13944,26 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			case 0x10000300:
 				if (nArg >= 2) {
 					long lEvent = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+					BOOL bTFS = (nArg >= 3 && GetIntFromVariant(&pDispParams->rgvarg[nArg - 3]));
 					for (int i = 1; i < (lEvent & (SHCNE_RENAMEITEM | SHCNE_RENAMEFOLDER) ? 3 : 2); i++) {
 						LPITEMIDLIST pidl;
 						if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg - i])) {
-							if (::ILIsParent(m_pidl, pidl, false)) {
-								int n = ILGetCount(pidl) - ILGetCount(m_pidl);
-								while (n > 1) {
-									ILRemoveLastID(pidl);
-									n--;
-								}
-								if (n == 1) {
-									WIN32_FIND_DATA wfd;
-									teSHGetDataFromIDList(m_pSF2, ILFindLastID(pidl), SHGDFIL_FINDDATA, &wfd, sizeof(WIN32_FIND_DATA));
-									if (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-										if (nArg >= 3 && GetIntFromVariant(&pDispParams->rgvarg[nArg - 3])) {
-											SetFolderSize(ILFindLastID(pidl), wfd.cAlternateFileName, _countof(wfd.cAlternateFileName));
-										} else {
-											if SUCCEEDED(teDelProperty(m_ppDispatch[SB_TotalFileSize], wfd.cFileName) && m_hwndLV) {
-												InvalidateRect(m_hwndLV, NULL, FALSE);
-											}
+							IShellFolder2 *pSF2;
+							LPCITEMIDLIST pidlLast;
+							if SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF2), &pidlLast)) {
+								if (bTFS) {
+									WCHAR szBuf[MAX_COLUMN_NAME_LEN];
+									SetFolderSize(pSF2, pidlLast, szBuf, _countof(szBuf));
+								} else {
+									BSTR bsPath;
+									if SUCCEEDED(teGetDisplayNameBSTR(pSF2, pidl, SHGDN_FORPARSING, &bsPath)) {
+										if SUCCEEDED(teDelProperty(m_ppDispatch[SB_TotalFileSize], bsPath) && m_hwndLV) {
+											InvalidateRect(m_hwndLV, NULL, FALSE);
 										}
+										teSysFreeString(&bsPath);
 									}
 								}
+								pSF2->Release();
 							}
 							teCoTaskMemFree(pidl);
 						}
@@ -15110,7 +15115,7 @@ STDMETHODIMP CteShellBrowser::GetDetailsOf(PCUITEMID_CHILD pidl, UINT iColumn, S
 		if (pidl) {
 			if (iColumn == m_nColumns - 1) {
 				m_nFolderSizeIndex = MAXINT - 1;
-				SetFolderSize(pidl, szBuf, MAX_COLUMN_NAME_LEN);
+				SetFolderSize(m_pSF2, pidl, szBuf, _countof(szBuf));
 			} else {
 				SetLabel(pidl, szBuf, MAX_COLUMN_NAME_LEN);
 			}

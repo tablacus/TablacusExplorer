@@ -2363,9 +2363,11 @@ function CheckUpdate3(xhr, url, arg)
 			return;
 		}
 	}
-	var arDel = [arg.temp + "\\config"];
+	var arDel = [];
 	var addons = arg.temp + "\\addons";
-
+	if (fso.FolderExists(arg.temp + "\\config")) {
+		arDel.push(arg.temp + "\\config");
+	}
 	for (var list = new Enumerator(fso.GetFolder(addons).SubFolders); !list.atEnd(); list.moveNext()) {
 		var n = list.item().Name;
 		var items = te.Data.Addons.getElementsByTagName(n);
@@ -2373,7 +2375,9 @@ function CheckUpdate3(xhr, url, arg)
 			arDel.push(fso.BuildPath(addons, n));
 		}
 	}
-	api.SHFileOperation(FO_DELETE, arDel.join("\0"), null, FOF_SILENT | FOF_NOCONFIRMATION, false);
+	if (arDel.length) {
+		api.SHFileOperation(FO_DELETE, arDel.join("\0"), null, FOF_SILENT | FOF_NOCONFIRMATION, false);
+	}
 	var ppid = api.Memory("DWORD");
 	api.GetWindowThreadProcessId(te.hwnd, ppid);
 	arg.pid = ppid[0];
