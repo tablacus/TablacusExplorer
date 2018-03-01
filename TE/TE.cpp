@@ -2016,8 +2016,10 @@ int teDragQueryFile(HDROP hDrop, UINT iFile, BSTR *pbsPath)
 
 VOID tePathAppend(BSTR *pbsPath, LPCWSTR pszPath, LPWSTR pszFile)
 {
-	*pbsPath = teSysAllocStringLen(pszPath, lstrlen(pszPath) + lstrlen(pszFile) + 1);
-	PathAppend(*pbsPath, pszFile);
+	BSTR bsPath = teSysAllocStringLen(pszPath, lstrlen(pszPath) + lstrlen(pszFile) + 1);
+	PathAppend(bsPath, pszFile);
+	*pbsPath = ::SysAllocString(bsPath);
+	teSysFreeString(&bsPath);
 }
 
 LPITEMIDLIST teSHSimpleIDListFromPath(LPWSTR lpstr, BOOL bFolder, WORD wAttr)
@@ -4688,7 +4690,9 @@ VOID teCustomDraw(int nFunc, CteShellBrowser *pSB, CteTreeView *pTV, IShellItem 
 			}
 #endif
 		}
-		teSetIDListRelease(&pv[3], &pidl);
+		if (pidl) {
+			teSetIDListRelease(&pv[3], &pidl);
+		}
 		teSetObjectRelease(&pv[2], new CteMemory(sizeof(NMCUSTOMDRAW), lpnmcd, 1, L"NMCUSTOMDRAW"));
 		teSetObjectRelease(&pv[1], pvcd2);
 		teSetObjectRelease(&pv[0], new CteMemory(sizeof(HANDLE), plres, 1, L"HANDLE"));
@@ -5822,7 +5826,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							teCustomDraw(TE_OnItemPrePaint, pSB, NULL, NULL, &lplvcd->nmcd, lplvcd, &lRes);
 							return lRes;
 						}
-						if (lplvcd->nmcd.dwDrawStage == CDDS_ITEMPOSTPAINT) {
+						if (lplvcd->nmcd.dwDrawStage == CDDS_ITEMPOSTPAINT && lplvcd->iStateId == 0) {
 							LRESULT lRes = CDRF_DODEFAULT;
 							teCustomDraw(TE_OnItemPostPaint, pSB, NULL, NULL, &lplvcd->nmcd, lplvcd, &lRes);
 							return lRes;
