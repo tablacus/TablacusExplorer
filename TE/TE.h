@@ -643,7 +643,7 @@ public:
 	~CteFolderItems();
 
 	HDROP GethDrop(int x, int y, BOOL fNC);
-	VOID Regenerate();
+	VOID Regenerate(BOOL bFull);
 	VOID ItemEx(long nIndex, VARIANT *pVarResult, VARIANT *pVarNew);
 	VOID AdjustIDListEx();
 	VOID Clear();
@@ -1152,6 +1152,7 @@ private:
 	UINT		m_nDefultColumns;
 	BOOL		m_bIconSize;
 	BOOL		m_bNavigateComplete;
+	BOOL		m_bRegenerateItems;
 #ifdef _2000XP
 	IShellFolderViewCB	*m_pSFVCB;
 	int			m_nFolderName;

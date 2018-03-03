@@ -529,7 +529,9 @@ function SetOptions(fnYes, fnNo)
 		}
 		return false;
 	}
-	document.activeElement.blur();
+	if (document.activeElement) {
+		document.activeElement.blur();
+	}
 	if (g_nResult == 1 && !g_Chg.Data) {
 		if (fnYes) {
 			fnYes();
@@ -832,7 +834,7 @@ function LoadX(mode, fn, form)
 		if (g_x[mode]) {
 			oa = form[mode];
 			oa.length = 0;
-			xml = OpenXml(mode + ".xml", false, true);
+			var xml = OpenXml(mode + ".xml", false, true);
 			for (var j in g_Types[mode]) {
 				var o = oa[++oa.length - 1];
 				o.text = GetTextEx(g_Types[mode][j]);

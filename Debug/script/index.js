@@ -2656,9 +2656,9 @@ g_basic =
 						for (var i = dataObj.Count; i > 0; ar.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(dataObj.Item(--i), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)))) {
 						}
 						s = s.replace(re, ar.join(" "));
-					} else {
-						return S_OK;
+						ShellExecute(s, null, SW_SHOWNORMAL, Ctrl, pt);
 					}
+					return S_OK;
 				} else {
 					pdwEffect[0] = DROPEFFECT_NONE;
 					return S_OK;
@@ -2706,8 +2706,18 @@ g_basic =
 				if (fn) {
 					return fn(Ctrl, pt);
 				} else {
-					return Exec(Ctrl, s + " %Selected%", "Exec", hwnd, pt);
+					return g_basic.Func.Exec.Exec(Ctrl, s + " %Selected%", "Exec", hwnd, pt);
 				}
+			},
+
+			Drop: function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop)
+			{
+				var fn = g_basic.CmdI(type, s);
+				if (fn) {
+					pdwEffect[0] = DROPEFFECT_NONE;
+					return S_OK;
+				}
+				return g_basic.Func.Exec.Drop(Ctrl, s + " %Selected%", "Exec", hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop)
 			},
 
 			Ref: function (s, pt)
@@ -3489,6 +3499,11 @@ if (!te.Data) {
 	}
 	te.Data.uRegisterId = api.SHChangeNotifyRegister(te.hwnd, SHCNRF_InterruptLevel | SHCNRF_ShellLevel | SHCNRF_NewDelivery, SHCNE_ALLEVENTS & ~SHCNE_UPDATEIMAGE, TWM_CHANGENOTIFY, ssfDESKTOP, true);
 } else {
+	for (var i in te.Data) {
+		if (/^xml/.test(i)) {
+			delete te.Data[i];
+		}
+	}
 	setTimeout(function ()
 	{
 		te.UnlockUpdate();
