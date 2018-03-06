@@ -733,10 +733,15 @@ SaveXml = function (filename, all)
 		item.setAttribute("CmdShow", api.IsZoomed(te.hwnd) ? SW_SHOWMAXIMIZED : te.CmdShow);
 		root.appendChild(item);
 	}
+	var TC = te.Ctrl(CTRL_TC);
 	var cTC = te.Ctrls(CTRL_TC);
 	for (var i in cTC) {
-		SaveXmlTC(cTC[i], xml);
+		if (cTC[i].Id != TC.Id) {
+			SaveXmlTC(cTC[i], xml);
+		}
 	}
+	SaveXmlTC(TC, xml);
+
 	if (all) {
 		for (var i in te.Data) {
 			var res = /^(Tab|Tree|View|Conf)_(.*)/.exec(i);
@@ -2328,6 +2333,7 @@ function CheckUpdate2(xhr, url, arg1)
 	if (ver <= te.Version) {
 		if ((arg1 && arg1.silent) || MessageBox(te.About + "\n" + GetText("the latest version"), TITLE, MB_ICONINFORMATION)) {
 			if (api.GetKeyState(VK_SHIFT) >= 0 || api.GetKeyState(VK_CONTROL) >= 0) {
+				MainWindow.RunEvent1("CheckUpdate", arg1);
 				return;
 			}
 		}
@@ -2429,6 +2435,9 @@ OpenHttpRequest = function (url, alt, fn, arg)
 	xhr.onreadystatechange = function()
 	{
 		if (xhr.readyState == 4) {
+			if (arg && arg.pcRef) {
+				arg.pcRef[0]--;
+			}
 			if (xhr.status == 200) {
 				return fn(xhr, url, arg);
 			}
@@ -2440,6 +2449,9 @@ OpenHttpRequest = function (url, alt, fn, arg)
 	}
 	if (/ml$/i.test(url)) {
 		url += "?" + Math.floor(new Date().getTime() / 60000);
+	}
+	if (arg && arg.pcRef) {
+		arg.pcRef[0]++;
 	}
 	xhr.open("GET", url, false);
 	try {
@@ -3582,4 +3594,15 @@ function GetThumbnail(image, m, f)
 		return image;
 	}
 	return image.GetThumbnailImage(w * z, h * z);
+}
+
+function AddonBeforeRemove(Id)
+{
+	CollectGarbage();
+	var arError = [];
+	var r = LoadAddon("remove.js", Id, arError);
+	if (arError.length) {
+		MessageBox(arError.join("\n\n"), TITLE, MB_OK);
+	}
+	return r;
 }

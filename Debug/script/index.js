@@ -1138,6 +1138,9 @@ te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam)
 		}
 	}
 	var hr = RunEvent3("Command", Ctrl, hwnd, msg, wParam, lParam);
+	if (!isFinite(hr) && Ctrl.Type <= CTRL_EB && (wParam & 0xfff) + 1 == CommandID_PROPERTIES) {
+		hr = InvokeCommand(Ctrl.SelectedItems(), 0, te.hwnd, "properties", null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
+	}
 	RunEvent1("ConfigChanged", "Config");
 	return hr;
 }
@@ -1419,10 +1422,11 @@ te.OnShowContextMenu = function (Ctrl, hwnd, msg, wParam, pt)
 
 te.OnDefaultCommand = function (Ctrl)
 {
-	var Selected = Ctrl.SelectedItems();
 	if (api.GetKeyState(VK_MENU) < 0) {
-		return InvokeCommand(Selected, 0, te.hwnd, CommandID_PROPERTIES - 1, null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
+		api.SendMessage(Ctrl.hwndView, WM_COMMAND, CommandID_PROPERTIES - 1, 0);
+		return S_OK;
 	}
+	var Selected = Ctrl.SelectedItems();
 	var hr = RunEvent3("DefaultCommand", Ctrl, Selected);
 	if (isFinite(hr)) {
 		return hr;

@@ -2360,21 +2360,22 @@ function Install2(xhr, url, o)
 	var Id = o.title.replace(/_.*$/, "");
 	var file = o.title.replace(/\./, "") + '.zip';
 	var temp = fso.BuildPath(wsh.ExpandEnvironmentStrings("%TEMP%"), "tablacus");
-	DeleteItem(temp);
 	CreateFolder(temp);
+	var dest = fso.BuildPath(temp, Id);
+	DeleteItem(dest);
 	var hr = Extract(fso.BuildPath(temp, file), temp, xhr);
 	if (hr) {
 		MessageBox([api.LoadString(hShell32, 4228).replace(/^\t/, "").replace("%d", api.sprintf(99, "0x%08x", hr)), GetText("Extract"), file].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
 		return;
 	}
-	var configxml = fso.BuildPath(temp, Id) + "\\config.xml";
+	var configxml = dest + "\\config.xml";
 	var nDog = 300;
 	while (!fso.FileExists(configxml)) {
 		if (wsh.Popup(GetText("Please wait."), 1, TITLE, MB_ICONINFORMATION | MB_OKCANCEL) == IDCANCEL || nDog-- == 0) {
 			return;
 		}
 	}
-	api.SHFileOperation(FO_MOVE, fso.BuildPath(temp, Id), fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons"), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, false);
+	api.SHFileOperation(FO_MOVE, dest, fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons"), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, false);
 	o.disabled = true;
 	o.value = GetText("Installed");
 	o = document.getElementById('_Addons_' + Id);
@@ -2458,15 +2459,4 @@ function SetTabContents(id, name, value)
 {
 	document.getElementById("tab" + id).value = GetText(name);
 	document.getElementById("panel" + id).innerHTML = value.join ? value.join('') : value;
-}
-
-function AddonBeforeRemove(Id)
-{
-	CollectGarbage();
-	var arError = [];
-	var r = LoadAddon("remove.js", Id, arError);
-	if (arError.length) {
-		MessageBox(arError.join("\n\n"), TITLE, MB_OK);
-	}
-	return r;
 }
