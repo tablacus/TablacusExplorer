@@ -2079,8 +2079,7 @@ ULONGLONG teGetFolderSize(LPCWSTR szPath, int nLevel, LPITEMIDLIST *ppidl, LPITE
 		ULARGE_INTEGER FreeBytesOfAvailable;
 		ULARGE_INTEGER TotalNumberOfBytes;
 		ULARGE_INTEGER TotalNumberOfFreeBytes;
-		GetDiskFreeSpaceEx(szPath, &FreeBytesOfAvailable, &TotalNumberOfBytes, &TotalNumberOfFreeBytes);
-		return TotalNumberOfBytes.QuadPart - TotalNumberOfFreeBytes.QuadPart;
+		return GetDiskFreeSpaceEx(szPath, &FreeBytesOfAvailable, &TotalNumberOfBytes, &TotalNumberOfFreeBytes) ? TotalNumberOfBytes.QuadPart - TotalNumberOfFreeBytes.QuadPart : 0;
 	}
 	ULONGLONG Result = 0;
 	BSTR bs;
@@ -13917,7 +13916,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			//GetItemRect
 			case 0x10000283:
 				hr = E_NOTIMPL;
-				if (m_pShellView) {
+				if (m_pShellView && m_hwndLV) {
 					if (nArg >= 1) {
 						VARIANT vMem;
 						VariantInit(&vMem);

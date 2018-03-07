@@ -1200,7 +1200,7 @@ Navigate2 = function (path, NewTab)
 ExecOpen = function (Ctrl, s, type, hwnd, pt, NewTab)
 {
 	var line = s.split("\n");
-	for (var i = 0; i < line.length; i++) {
+	for (var i = (NewTab & SBSP_ACTIVATE_NOFOCUS) ? line.length - 1 : 0; i < line.length && i >= 0; i += (NewTab & SBSP_ACTIVATE_NOFOCUS) ? -1 : 1) {
 		if (line[i] != "") {
 			NavigateFV(GetFolderView(Ctrl, pt), ExtractPath(Ctrl, line[i], pt), NewTab);
 			NewTab |= SBSP_NEWBROWSER;
@@ -1456,7 +1456,7 @@ IsFolderEx = function (Item)
 	if (Item && Item.IsFolder) {
 		var wfd = api.Memory("WIN32_FIND_DATA");
 		var hr = api.SHGetDataFromIDList(Item, SHGDFIL_FINDDATA, wfd, wfd.Size);
-		return (hr < 0) || (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 || !/^[A-Z]:\\|^\\\\/i.test(api.GetDisplayNameOf(Item, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
+		return (hr < 0) || (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 || !/^[A-Z]:\\|^\\\\[A-Z].*\\.*\\/i.test(Item.Path);
 	}
 	return false;
 }

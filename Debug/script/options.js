@@ -983,6 +983,8 @@ function SaveAddons()
 						Enabled |= 1;
 					}
 					Enabled = (Enabled & 9) ? Enabled : 4;
+				} else {
+					MainWindow.AddonDisabled(Id);
 				}
 				item.setAttribute("Enabled", Enabled);
 				root.appendChild(item);
@@ -1170,9 +1172,6 @@ function AddonEnable(o)
 {
 	var Id = o.id.replace(/^enable_/i, "");
 	var div = document.getElementById("Addons_" + Id);
-	if (!o.checked) {
-		MainWindow.AddonDisabled(Id);
-	}
 	SetAddon(Id, o.checked);
 	g_Chg.Addons = true;
 }
@@ -1269,7 +1268,7 @@ function AddonRemove(Id)
 	}
 }
 
-function Apply()
+function ApplyOptions()
 {
 	SetChanged(ReplaceMenus);
 	for (var i in document.F.elements) {
@@ -1279,12 +1278,22 @@ function Apply()
 			}
 		}
 	}
+	SaveAddons(); 
 	SaveMenus();
 	SetTabControls();
 	SetTreeControls();
 	SetFolderViews();
 	te.Data.bReload = true;
 	api.EnableWindow(te.Ctrl(CTRL_WB).hwnd, false);
+}
+
+function CancelOptions()
+{
+	if (te.Data.bErrorAddons) {
+		SaveAddons(); 
+		te.Data.bReload = true;
+		api.EnableWindow(te.Ctrl(CTRL_WB).hwnd, false);
+	}
 }
 
 InitOptions = function ()
@@ -1339,9 +1348,8 @@ InitOptions = function ()
 			} catch (e) {}
 		}
 		g_.elAddons = {};
-		g_bChanged |= g_Chg.Addons || te.Data.bErrorAddons || g_Chg.Menus || g_Chg.Tab || g_Chg.Tree || g_Chg.View;
-		SaveAddons();
-		SetOptions(Apply);
+		g_bChanged |= g_Chg.Addons || g_Chg.Menus || g_Chg.Tab || g_Chg.Tree || g_Chg.View;
+		SetOptions(ApplyOptions, CancelOptions);
 	});
 }
 
