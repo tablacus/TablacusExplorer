@@ -101,10 +101,11 @@ FolderMenu =
 			if (!Items) {
 				var Folder = FolderItem.GetFolder;
 				if (Folder) {
-					Items = Folder.Items();
+					Items = te.FolderItems(Folder.Items());
 				}
 			}
 			if (Items) {
+				MainWindow.RunEvent1("AddItems", Items, FolderItem);
 				var nCount = Items.Count;
 				if (!nCount) {
 					Items.Item = function (i)

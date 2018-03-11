@@ -246,6 +246,7 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 
 #define WINDOW_CLASS			L"TablacusExplorer"
 #define WINDOW_CLASS2			L"TablacusExplorer2"
+#define PATH_NEWTAB				L"about:newtab"
 #define MAX_LOADSTRING			100
 #define MAX_HISTORY				32
 #define MAX_CSIDL				0x3e
@@ -639,7 +640,7 @@ public:
 	STDMETHODIMP DUnadvise(DWORD dwConnection);
 	STDMETHODIMP EnumDAdvise(IEnumSTATDATA **ppenumAdvise);
 
-	CteFolderItems(IDataObject *pDataObj, FolderItems *pFolderItems, BOOL bEditable);
+	CteFolderItems(IDataObject *pDataObj, FolderItems *pFolderItems);
 	~CteFolderItems();
 
 	HDROP GethDrop(int x, int y, BOOL fNC);
@@ -1095,6 +1096,7 @@ public:
 	HWND		m_hwndDV;
 	HWND		m_hwndLV;
 	HWND		m_hwndDT;
+	HWND		m_hwndAlt;
 	CteTabCtrl		*m_pTC;
 	CteTreeView	*m_pTV;
 	LONG_PTR	m_DefProc;

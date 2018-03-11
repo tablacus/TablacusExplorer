@@ -968,6 +968,7 @@ TEmethod methodSB[] = {
 	{ 0x10000105, "GroupBy" },
 	{ 0x10000106, "Focus" },
 	{ 0x10000107, "HitTest" },
+	{ 0x10000108, "hwndAlt" },
 	{ 0x10000110, "ItemCount" },
 	{ 0x10000111, "Item" },
 	{ 0x10000206, "Refresh" },
@@ -2188,7 +2189,7 @@ BOOL teFileTimeToVariantTime(LPFILETIME pft, DOUBLE *pdt)
 VOID GetDragItems(CteFolderItems **ppDragItems, IDataObject *pDataObj)
 {
 	SafeRelease(ppDragItems);
-	*ppDragItems = new CteFolderItems(pDataObj, NULL, false);
+	*ppDragItems = new CteFolderItems(pDataObj, NULL);
 }
 
 BOOL teIsFileSystem(LPOLESTR bs)
@@ -4019,7 +4020,10 @@ HRESULT teSHGetDataFromIDList(IShellFolder *pSF, LPCITEMIDLIST pidlPart, int nFo
 				VARIANT v;
 				VariantInit(&v);
 				if SUCCEEDED(pSF2->GetDetailsEx(pidlPart, &PKEY_FileAttributes, &v)) {
-					pwfd->dwFileAttributes = GetIntFromVariantClear(&v);
+					int nAttritutes = GetIntFromVariantClear(&v);
+					if (nAttritutes != -1) {
+						pwfd->dwFileAttributes = nAttritutes;
+					}
 				}
 				if SUCCEEDED(pSF2->GetDetailsEx(pidlPart, &PKEY_Size, &v)) {
 					ULARGE_INTEGER uli;
@@ -4271,7 +4275,7 @@ BOOL GetDataObjFromObject(IDataObject **ppDataObj, IUnknown *punk)
 		long lCount = 0;
 		pItems->get_Count(&lCount);
 		if (lCount) {
-			CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL, true);
+			CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL);
 			VARIANT v, v2;
 			VariantInit(&v);
 			VariantInit(&v2);
@@ -4298,7 +4302,7 @@ BOOL GetDataObjFromObject(IDataObject **ppDataObj, IUnknown *punk)
 		if (lCount) {
 			VARIANT v;
 			VariantInit(&v);
-			CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL, true);
+			CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL);
 			for (int i = 0; i < lCount; i++) {
 				teGetPropertyAt(pdex, i, &v);
 				pFolderItems->ItemEx(-1, NULL, &v);
@@ -4716,11 +4720,14 @@ VOID teCustomDraw(int nFunc, CteShellBrowser *pSB, CteTreeView *pTV, IShellItem 
 		}
 		if (pidl) {
 			teSetIDListRelease(&pv[3], &pidl);
+			teSetObjectRelease(&pv[2], new CteMemory(sizeof(NMCUSTOMDRAW), lpnmcd, 1, L"NMCUSTOMDRAW"));
+			teSetObjectRelease(&pv[1], pvcd2);
+			teSetObjectRelease(&pv[0], new CteMemory(sizeof(HANDLE), plres, 1, L"HANDLE"));
+			Invoke4(g_pOnFunc[nFunc], NULL, 5, pv);
+		} else {
+			SafeRelease(&pvcd2);
+			delete [] pv;
 		}
-		teSetObjectRelease(&pv[2], new CteMemory(sizeof(NMCUSTOMDRAW), lpnmcd, 1, L"NMCUSTOMDRAW"));
-		teSetObjectRelease(&pv[1], pvcd2);
-		teSetObjectRelease(&pv[0], new CteMemory(sizeof(HANDLE), plres, 1, L"HANDLE"));
-		Invoke4(g_pOnFunc[nFunc], NULL, 5, pv);
 	}
 }
 
@@ -5863,6 +5870,9 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 //*/
 		}
 		if (msg == WM_CONTEXTMENU || msg == SB_SETTEXT || msg == WM_COMMAND || msg == WM_COPYDATA) {
+			if (pSB->m_hwndAlt && msg == WM_CONTEXTMENU) {
+				return TRUE;
+			}
 			try {
 				if (InterlockedIncrement(&g_nProcFV) < 5) {
 					switch (msg) {
@@ -6729,7 +6739,7 @@ VOID teApiDropTarget(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 
 VOID teApiDataObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetObjectRelease(pVarResult, new CteFolderItems(NULL, NULL, true));
+	teSetObjectRelease(pVarResult, new CteFolderItems(NULL, NULL));
 }
 
 VOID teApiOleCmdExec(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -6925,7 +6935,7 @@ VOID teApiOleGetClipboard(int nArg, teParam *param, DISPPARAMS *pDispParams, VAR
 	if (pVarResult) {
 		IDataObject *pDataObj;
 		if (OleGetClipboard(&pDataObj) == S_OK) {
-			FolderItems *pFolderItems = new CteFolderItems(pDataObj, NULL, false);
+			FolderItems *pFolderItems = new CteFolderItems(pDataObj, NULL);
 			if (teSetObject(pVarResult, pFolderItems)) {
 				STGMEDIUM Medium;
 				if (pDataObj->GetData(&DROPEFFECTFormat, &Medium) == S_OK) {
@@ -10052,8 +10062,10 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 										}
 										pSB->Show(TRUE, 0);
 									}
-									MoveWindow(pSB->m_hwnd, rc.left, rc.top, rc.right - rc.left,
-										rc.bottom - rc.top, FALSE);
+									MoveWindow(pSB->m_hwnd, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, FALSE);
+									if (pSB->m_hwndAlt) {
+										MoveWindow(pSB->m_hwndAlt, 0, 0, rc.right - rc.left, rc.bottom - rc.top, FALSE);
+									}
 								}
 							}
 						} catch (...) {
@@ -11290,6 +11302,7 @@ void CteShellBrowser::Init(CteTabCtrl *pTC, BOOL bNew)
 	m_hwndLV = NULL;
 	m_hwndDV = NULL;
 	m_hwndDT = NULL;
+	m_hwndAlt = NULL;
 	m_pShellView = NULL;
 	m_pExplorerBrowser = NULL;
 	m_dwEventCookie = 0;
@@ -11619,6 +11632,12 @@ HRESULT CteShellBrowser::Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *
 {
 	HRESULT hr = E_FAIL;
 	try {
+		BSTR bs = NULL;
+		if (pFolderItem && (wFlags & SBSP_NEWBROWSER) && SUCCEEDED(pFolderItem->get_Path(&bs))) { 
+			if (teStrSameIFree(bs, PATH_NEWTAB)) {
+				wFlags &= ~SBSP_NEWBROWSER;
+			}
+		}
 		if (!(wFlags & SBSP_NEWBROWSER || m_bEmpty)) {
 			hr = Navigate2(pFolderItem, wFlags, param, pFolderItems, m_pFolderItem, this);
 			if (hr == E_ACCESSDENIED) {
@@ -12209,12 +12228,7 @@ HRESULT CteShellBrowser::GetAbsPath(FolderItem *pid, UINT wFlags, FolderItems *p
 			GetFolderItemFromIDList(&m_pFolderItem1, pidlPrevius);
 		} else {
 			VARIANT v;
-			VariantInit(&v);
-			IDispatch *pdisp;
-			if (teGetHTMLWindow(g_pWebBrowser->m_pWebBrowser, IID_PPV_ARGS(&pdisp))) {
-				teGetProperty(pdisp, L"HOME_PATH", &v);
-				pdisp->Release();
-			}
+			teSetSZ(&v, PATH_NEWTAB);
 			m_pFolderItem1 = new CteFolderItem(&v);
 			VariantClear(&v);
 		}
@@ -12301,6 +12315,11 @@ BOOL CteShellBrowser::SetActive(BOOL bForce)
 {
 	if (!m_bVisible) {
 		return FALSE;
+	}
+	if (m_hwndAlt) {
+		BringWindowToTop(m_hwndAlt);
+		SetFocus(m_hwndAlt);
+		return TRUE;
 	}
 	HWND hwnd = GetFocus();
 	if (!bForce) {
@@ -13320,7 +13339,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				//History
 				if (dispIdMember == 0x1000000B) {
 					if (pVarResult) {
-						CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL, true);
+						CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL);
 						VARIANT v;
 						for (int i = 1; i <= m_nLogCount; i++) {
 							try {
@@ -13764,12 +13783,31 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					}
 				}
 				return S_OK;
+			//hwndAlt
+			case 0x10000108:
+				if (nArg >= 0) {
+					m_hwndAlt = (HWND)GetPtrFromVariant(&pDispParams->rgvarg[nArg]);
+					ArrangeWindow();
+				}
+				teSetPtr(pVarResult, m_hwndAlt);
+				return S_OK;
 			//ItemCount
 			case 0x10000110:
 				if (pVarResult && m_pShellView) {
+					UINT uItem = (nArg >= 0) ? GetIntFromVariant(&pDispParams->rgvarg[nArg]) : SVGIO_ALLVIEW;
+					if (m_ppDispatch[SB_AltSelectedItems] && uItem == SVGIO_SELECTION) {
+						FolderItems *pid;
+						if SUCCEEDED(m_ppDispatch[SB_AltSelectedItems]->QueryInterface(IID_PPV_ARGS(&pid))) {
+							if SUCCEEDED(pid->get_Count(&pVarResult->lVal)) {
+								pVarResult->vt = VT_I4;
+							}
+							pid->Release();
+						}
+						return S_OK;
+					}
 					IFolderView *pFV;
 					if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
-						if SUCCEEDED(pFV->ItemCount(nArg >= 0 ? GetIntFromVariant(&pDispParams->rgvarg[nArg]) : SVGIO_ALLVIEW, &pVarResult->intVal)) {
+						if SUCCEEDED(pFV->ItemCount(uItem, &pVarResult->intVal)) {
 							pVarResult->vt = VT_I4;
 						}
 						pFV->Release();
@@ -14299,7 +14337,7 @@ STDMETHODIMP CteShellBrowser::SelectedItems(FolderItems **ppid)
 
 HRESULT CteShellBrowser::Items(UINT uItem, FolderItems **ppid)
 {
-	if (uItem & SVGIO_SELECTION && m_ppDispatch[SB_AltSelectedItems]) {
+	if (m_ppDispatch[SB_AltSelectedItems] && uItem == SVGIO_SELECTION) {
 		return m_ppDispatch[SB_AltSelectedItems]->QueryInterface(IID_PPV_ARGS(ppid));
 	}
 	FolderItems *pItems = NULL;
@@ -14309,7 +14347,7 @@ HRESULT CteShellBrowser::Items(UINT uItem, FolderItems **ppid)
 		if (!g_bUpperVista && ListView_GetSelectedCount(m_hwndLV) > 1) {
 			BOOL bResultsFolder = ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER]);
 			if (bResultsFolder || (uItem & (SVGIO_SELECTION | SVGIO_FLAG_VIEWORDER)) == (SVGIO_SELECTION | SVGIO_FLAG_VIEWORDER)) {
-				CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL, true);
+				CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL);
 				IShellFolderView *pSFV;
 				if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pSFV))) {
 					if (uItem & SVGIO_SELECTION) {
@@ -14339,7 +14377,7 @@ HRESULT CteShellBrowser::Items(UINT uItem, FolderItems **ppid)
 #endif
 		m_pShellView->GetItemObject(uItem, IID_PPV_ARGS(&pDataObj));
 	}
-	CteFolderItems *pid = new CteFolderItems(pDataObj, pItems, false);
+	CteFolderItems *pid = new CteFolderItems(pDataObj, pItems);
 	if (m_bRegenerateItems) {
 		pid->Regenerate(TRUE);
 	}
@@ -15325,6 +15363,7 @@ VOID CteShellBrowser::SetPropEx()
 			m_pDropTarget2 = new CteDropTarget2(NULL, static_cast<IDispatch *>(this));
 			teRegisterDragDrop(m_hwndDT, m_pDropTarget2, &m_pDropTarget2->m_pDropTarget);
 		}
+		m_hwndAlt = NULL;
 	}
 }
 
@@ -15376,7 +15415,9 @@ void CteShellBrowser::Show(BOOL bShow, DWORD dwOptions)
 			m_bVisible = bShow;
 			if (bShow) {
 				ShowWindow(m_hwnd, SW_SHOWNA);
-				if (m_hwndLV) {
+				if (m_hwndAlt) {
+					ShowWindow(m_hwndAlt, SW_SHOWNA);
+				} else if (m_hwndLV) {
 					ShowWindow(m_hwndLV, SW_SHOWNA);
 				}
 				SetRedraw(TRUE);
@@ -15398,6 +15439,9 @@ void CteShellBrowser::Show(BOOL bShow, DWORD dwOptions)
 				m_pShellView->UIActivate(SVUIA_DEACTIVATE);
 				MoveWindow(m_hwnd, -1, -1, 0, 0, FALSE);
 				ShowWindow(m_hwnd, SW_HIDE);
+				if (m_hwndAlt) {
+					ShowWindow(m_hwndAlt, SW_HIDE);
+				}
 				if (m_hwndLV) {
 					ShowWindow(m_hwndLV, SW_HIDE);
 				}
@@ -15804,6 +15848,9 @@ HRESULT CteShellBrowser::SetRedraw(BOOL bRedraw)
 #endif
 		}
 	}
+	if (m_hwndAlt) {
+		BringWindowToTop(m_hwndAlt);
+	}
 	return hr;
 }
 
@@ -16076,7 +16123,13 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				return S_OK;
 			//FolderItems
 			case TE_METHOD + 1133:
-				teSetObjectRelease(pVarResult, new CteFolderItems(NULL, NULL, true));
+				IDataObject *pDataObj;
+				pDataObj = NULL;
+				if (nArg >= 0) {
+					GetDataObjFromVariant(&pDataObj, &pDispParams->rgvarg[nArg]);
+				}
+				teSetObjectRelease(pVarResult, new CteFolderItems(pDataObj, NULL));
+				SafeRelease(&pDataObj);
 				return S_OK;
 			//Object
 			case TE_METHOD + 1134:
@@ -17829,20 +17882,19 @@ CteShellBrowser* CteTabCtrl::GetShellBrowser(int nPage)
 
 // CteFolderItems
 
-CteFolderItems::CteFolderItems(IDataObject *pDataObj, FolderItems *pFolderItems, BOOL bEditable)
+CteFolderItems::CteFolderItems(IDataObject *pDataObj, FolderItems *pFolderItems)
 {
 	m_cRef = 1;
 	m_pDataObj = pDataObj;
+	m_oFolderItems = NULL;
 	if (m_pDataObj) {
 		m_pDataObj->AddRef();
+	} else {
+		GetNewArray(&m_oFolderItems);
 	}
 	m_pidllist = NULL;
 	m_nCount = -1;
-	m_oFolderItems = NULL;
 	m_bsText = NULL;
-	if (bEditable) {
-		GetNewArray(&m_oFolderItems);
-	}
 	m_pFolderItems = pFolderItems;
 	m_nIndex = 0;
 	m_dwEffect = (DWORD)-1;
@@ -19494,7 +19546,7 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 				return S_OK;
 			//Items
 			case 3:
-				teSetObjectRelease(pVarResult, new CteFolderItems(m_pDataObj, NULL, false));
+				teSetObjectRelease(pVarResult, new CteFolderItems(m_pDataObj, NULL));
 				return S_OK;
 			//GetCommandString
 			case 4:
@@ -19673,7 +19725,7 @@ STDMETHODIMP CteDropTarget::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 								}
 							}
 							DWORD dwEffect = dwEffect1;
-							CteFolderItems *pDragItems = new CteFolderItems(pDataObj, NULL, false);
+							CteFolderItems *pDragItems = new CteFolderItems(pDataObj, NULL);
 							try {
 								POINTL pt0 = {0, 0};
 								if (!bSingle || dispIdMember == 1) {//DragEnter
@@ -20350,7 +20402,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 			//SelectedItems
 			case 0x20000001:
 				if (getSelected(&pdisp) == S_OK) {
-					CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL, true);
+					CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL);
 					VARIANT v;
 					VariantInit(&v);
 					teSetObjectRelease(&v, pdisp);
