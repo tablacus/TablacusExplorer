@@ -246,7 +246,7 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 
 #define WINDOW_CLASS			L"TablacusExplorer"
 #define WINDOW_CLASS2			L"TablacusExplorer2"
-#define PATH_NEWTAB				L"about:newtab"
+#define PATH_BLANK				L"about:blank"
 #define MAX_LOADSTRING			100
 #define MAX_HISTORY				32
 #define MAX_CSIDL				0x3e

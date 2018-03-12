@@ -11633,8 +11633,8 @@ HRESULT CteShellBrowser::Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	HRESULT hr = E_FAIL;
 	try {
 		BSTR bs = NULL;
-		if (pFolderItem && (wFlags & SBSP_NEWBROWSER) && SUCCEEDED(pFolderItem->get_Path(&bs))) { 
-			if (teStrSameIFree(bs, PATH_NEWTAB)) {
+		if (m_pFolderItem && (wFlags & SBSP_NEWBROWSER) && SUCCEEDED(m_pFolderItem->get_Path(&bs))) { 
+			if (teStrSameIFree(bs, PATH_BLANK)) {
 				wFlags &= ~SBSP_NEWBROWSER;
 			}
 		}
@@ -12228,7 +12228,7 @@ HRESULT CteShellBrowser::GetAbsPath(FolderItem *pid, UINT wFlags, FolderItems *p
 			GetFolderItemFromIDList(&m_pFolderItem1, pidlPrevius);
 		} else {
 			VARIANT v;
-			teSetSZ(&v, PATH_NEWTAB);
+			teSetSZ(&v, PATH_BLANK);
 			m_pFolderItem1 = new CteFolderItem(&v);
 			VariantClear(&v);
 		}
@@ -20455,7 +20455,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 					}
 					LPITEMIDLIST pidl;
 					teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg]);
-					if (ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
+					if (::ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER]) || ::ILIsParent(g_pidls[CSIDL_INTERNET], pidl, FALSE)) {
 						teCoTaskMemFree(pidl);
 						return S_OK;
 					}

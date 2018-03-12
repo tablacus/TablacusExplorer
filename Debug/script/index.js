@@ -801,6 +801,11 @@ te.OnNavigateComplete = function (Ctrl)
 	if (api.ILIsEqual(Ctrl.FolderItem.Alt, ssfRESULTSFOLDER)) {
 		Ctrl.SortColumn = "";
 	}
+	if (Ctrl.FolderItem.Path == "about:blank" && HOME_PATH != "about:blank") {
+		(function (FV) { g_.tid_rf[FV.Id] = setTimeout(function () {
+			FV.Navigate(HOME_PATH, SBSP_SAMEBROWSER);
+		}, 500);}) (Ctrl);
+	}
 	return S_OK;
 }
 
@@ -2836,6 +2841,16 @@ g_basic =
 						var TC = FV.Parent;
 						var nIndex = FV.Index;
 						for (var i = TC.Count; --i > nIndex;) {
+							TC[i].Close();
+						}
+					}
+				},
+				"Close all Tabs": function (Ctrl, pt)
+				{
+					var FV = GetFolderView(Ctrl, pt);
+					if (FV) {
+						var TC = FV.Parent;
+						for (var i = TC.Count; i--;) {
 							TC[i].Close();
 						}
 					}
