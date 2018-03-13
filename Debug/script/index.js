@@ -258,6 +258,11 @@ IsSavePath = function (path)
 	return !IsSearchPath(path);
 }
 
+AddEvent("IsSavePath", function (path)
+{
+	return path != "about:blank";
+});
+
 Lock = function (Ctrl, nIndex, turn)
 {
 	var FV = Ctrl[nIndex];
@@ -801,9 +806,10 @@ te.OnNavigateComplete = function (Ctrl)
 	if (api.ILIsEqual(Ctrl.FolderItem.Alt, ssfRESULTSFOLDER)) {
 		Ctrl.SortColumn = "";
 	}
-	if (Ctrl.FolderItem.Path == "about:blank" && HOME_PATH != "about:blank") {
-		(function (FV) { g_.tid_rf[FV.Id] = setTimeout(function () {
-			FV.Navigate(HOME_PATH, SBSP_SAMEBROWSER);
+	if (!g_.tid_rf[Ctrl.Id] && Ctrl.FolderItem.Path == "about:blank" && HOME_PATH != "about:blank") {
+		(function (Ctrl) { g_.tid_rf[Ctrl.Id] = setTimeout(function () {
+			delete g_.tid_rf[Ctrl.Id];
+			Ctrl.Navigate(HOME_PATH, SBSP_SAMEBROWSER);
 		}, 500);}) (Ctrl);
 	}
 	return S_OK;

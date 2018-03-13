@@ -3430,7 +3430,7 @@ static void threadFolderSize(void *args)
 #endif
 	}
 	VariantClear(&v);
-	pTotalFileSize->Release();
+	SafeRelease(&pTotalFileSize);
 	::SysFreeString(pFS->bsPath);
 	delete [] pFS;
 	::CoUninitialize();
@@ -9344,6 +9344,11 @@ VOID teApiCreateProcess(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 	CloseHandle(hWrite);
 }
 
+VOID teApiDeleteFile(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetBool(pVarResult, DeleteFile(param[0].lpcwstr));
+}
+
 /*
 VOID teApi(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -9663,6 +9668,7 @@ TEDispatchApi dispAPI[] = {
 	{10, -1, -1, -1, "PlgBlt", teApiPlgBlt },
 	{ 7, -1, -1, -1, "RoundRect", teApiRoundRect },
 	{ 1,  0,  1, -1, "CreateProcess", teApiCreateProcess },
+	{ 1,  0, -1, -1, "DeleteFile", teApiDeleteFile },
 //	{ 0, -1, -1, -1, "", teApi },
 //	{ 0, -1, -1, -1, "Test", teApiTest },
 };
@@ -21216,7 +21222,7 @@ VOID CteFolderItem::Clear()
 BSTR CteFolderItem::GetStrPath()
 {
 	if (m_v.vt == VT_BSTR) {
-		if (m_pidl == NULL || (m_pidlAlt && !ILIsEqual(m_pidl, m_pidlAlt))) {
+		if ((m_pidl == NULL && lstrlen(m_v.bstrVal) > 2) || (m_pidlAlt && !ILIsEqual(m_pidl, m_pidlAlt))) {
 			return m_v.bstrVal;
 		}
 	}
