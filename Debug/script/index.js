@@ -24,64 +24,6 @@ if (api.ILIsEmpty(g_pidlCP) || api.ILIsEqual(g_pidlCP, ssfDRIVES)) {
 	g_pidlCP = ssfCONTROLS;
 }
 
-RunEvent1 = function (en, a1, a2, a3, a4)
-{
-	var eo = eventTE[en];
-	for (var i in eo) {
-		try {
-			eo[i](a1, a2, a3, a4);
-		} catch (e) {
-			ShowError(e, en, i);
-		}
-	}
-}
-
-RunEvent2 = function (en, a1, a2, a3, a4)
-{
-	var eo = eventTE[en];
-	for (var i in eo) {
-		try {
-			var hr = eo[i](a1, a2, a3, a4);
-			if (isFinite(hr) && hr != S_OK) {
-				return hr;
-			}
-		} catch (e) {
-			ShowError(e, en, i);
-		}
-	}
-	return S_OK;
-}
-
-RunEvent3 = function (en, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)
-{
-	var eo = eventTE[en];
-	for (var i in eo) {
-		try {
-			var hr = eo[i](a1, a2, a3, a4, a5, a6, a7, a8, a9, a10);
-			if (isFinite(hr)) {
-				return hr;
-			}
-		} catch (e) {
-			ShowError(e, en, i);
-		}
-	}
-}
-
-RunEvent4 = function (en, a1, a2)
-{
-	var eo = eventTE[en];
-	for (var i in eo) {
-		try {
-			var r = eo[i](a1, a2);
-			if (r !== undefined) {
-				return r;
-			}
-		} catch (e) {
-			ShowError(e, en, i);
-		}
-	}
-}
-
 PanelCreated = function (Ctrl)
 {
 	RunEvent1("PanelCreated", Ctrl);
@@ -112,7 +54,7 @@ GetTabName = function (Ctrl)
 {
 	if (Ctrl.FolderItem) {
 		var en = "GetTabName";
-		var eo = eventTE[en];
+		var eo = eventTE[en.toLowerCase()];
 		for (var i in eo) {
 			try {
 				var s = eo[i](Ctrl);
@@ -245,7 +187,7 @@ SetGestureText = function (Ctrl, Text)
 IsSavePath = function (path)
 {
 	var en = "IsSavePath";
-	var eo = eventTE[en];
+	var eo = eventTE[en.toLowerCase()];
 	for (var i in eo) {
 		try {
 			if (!eo[i](path)) {
@@ -1275,7 +1217,7 @@ te.OnDragEnter = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect)
 	var hr = E_NOTIMPL;
 	var dwEffect = pdwEffect[0];
 	var en = "DragEnter";
-	var eo = eventTE[en];
+	var eo = eventTE[en.toLowerCase()];
 	for (var i in eo) {
 		try {
 			pdwEffect[0] = dwEffect;
@@ -1295,7 +1237,7 @@ te.OnDragOver = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect)
 {
 	var dwEffect = pdwEffect[0];
 	var en = "DragOver";
-	var eo = eventTE[en];
+	var eo = eventTE[en.toLowerCase()];
 	for (var i in eo) {
 		try {
 			pdwEffect[0] = dwEffect;
@@ -1314,7 +1256,7 @@ te.OnDrop = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect)
 {
 	var dwEffect = pdwEffect[0];
 	var en = "Drop";
-	var eo = eventTE[en];
+	var eo = eventTE[en.toLowerCase()];
 	for (var i in eo) {
 		try {
 			pdwEffect[0] = dwEffect;
@@ -1333,7 +1275,7 @@ te.OnDragLeave = function (Ctrl)
 {
 	var hr = E_NOTIMPL;
 	var en = "DragLeave";
-	var eo = eventTE[en];
+	var eo = eventTE[en.toLowerCase()];
 	for (var i in eo) {
 		try {
 			var hr2 = eo[i](Ctrl);
@@ -1662,7 +1604,7 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 		case WM_EXITMENULOOP:
 			window.g_menu_click = false;
 			var en = "ExitMenuLoop";
-			var eo = eventTE[en];
+			var eo = eventTE[en.toLowerCase()];
 			try {
 				while (eo && eo.length) {
 					eo.shift()();
@@ -1829,45 +1771,45 @@ ShowStatusText = function (Ctrl, Text, iPart)
 	return S_OK;
 }
 
-g_.event.StatusText = ShowStatusText;
+g_.event.statustext = ShowStatusText;
 
-g_.event.BeginNavigate = function (Ctrl)
+g_.event.beginnavigate = function (Ctrl)
 {
 	ShowStatusText(Ctrl, "", 0);
 	return RunEvent2("BeginNavigate", Ctrl);
 }
 
-g_.event.SelectionChanging = function (Ctrl)
+g_.event.selectionchanging = function (Ctrl)
 {
 	return RunEvent3("SelectionChanging", Ctrl);
 }
 
-g_.event.ViewModeChanged = function (Ctrl)
+g_.event.viewmodechanged = function (Ctrl)
 {
 	RunEvent1("ViewModeChanged", Ctrl);
 }
 
-g_.event.ColumnsChanged = function (Ctrl)
+g_.event.columnschanged = function (Ctrl)
 {
 	RunEvent1("ColumnsChanged", Ctrl);
 }
 
-g_.event.IconSizeChanged = function (Ctrl)
+g_.event.iconsizechanged = function (Ctrl)
 {
 	RunEvent1("IconSizeChanged", Ctrl);
 }
 
-g_.event.ItemClick = function (Ctrl, Item, HitTest, Flags)
+g_.event.itemclick = function (Ctrl, Item, HitTest, Flags)
 {
 	return RunEvent3("ItemClick", Ctrl, Item, HitTest, Flags);
 }
 
-g_.event.ColumnClick = function (Ctrl, iItem)
+g_.event.columnclick = function (Ctrl, iItem)
 {
 	return RunEvent3("ColumnClick", Ctrl, iItem);
 }
 
-g_.event.WindowRegistered = function (Ctrl)
+g_.event.windowregistered = function (Ctrl)
 {
 	if (g_.bWindowRegistered) {
 		RunEvent1("WindowRegistered", Ctrl);
@@ -1875,57 +1817,57 @@ g_.event.WindowRegistered = function (Ctrl)
 	g_.bWindowRegistered = true;
 }
 
-g_.event.ToolTip = function (Ctrl, Index)
+g_.event.tooltip = function (Ctrl, Index)
 {
 	return RunEvent4("ToolTip", Ctrl, Index);
 }
 
-g_.event.HitTest = function (Ctrl, pt, flags)
+g_.event.hittest = function (Ctrl, pt, flags)
 {
 	return RunEvent3("HitTest", Ctrl, pt, flags);
 }
 
-g_.event.GetPaneState = function (Ctrl, ep, peps)
+g_.event.getpanestate = function (Ctrl, ep, peps)
 {
 	return RunEvent3("GetPaneState", Ctrl, ep, peps);
 }
 
-g_.event.TranslatePath = function (Ctrl, Path)
+g_.event.translatepath = function (Ctrl, Path)
 {
 	return RunEvent4("TranslatePath", Ctrl, Path);
 }
 
-g_.event.BeginDrag = function (Ctrl)
+g_.event.begindrag = function (Ctrl)
 {
 	return !isFinite(RunEvent3("BeginDrag", Ctrl));
 }
 
-g_.event.BeforeGetData = function (Ctrl, Items, nMode)
+g_.event.beforegetdata = function (Ctrl, Items, nMode)
 {
 	return RunEvent2("BeforeGetData", Ctrl, Items, nMode);
 }
 
-g_.event.BeginLabelEdit = function (Ctrl)
+g_.event.beginlabeledit = function (Ctrl)
 {
 	return RunEvent4("BeginLabelEdit", Ctrl);
 }
 
-g_.event.EndLabelEdit = function (Ctrl, Name)
+g_.event.endlabeledit = function (Ctrl, Name)
 {
 	return RunEvent4("EndLabelEdit", Ctrl, Name);
 }
 
-g_.event.ReplacePath = function (FolderItem)
+g_.event.replacepath = function (FolderItem)
 {
 	return RunEvent4("ReplacePath", FolderItem, api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 }
 
-g_.event.Sort = function (Ctrl)
+g_.event.sort = function (Ctrl)
 {
 	return RunEvent1("Sort", Ctrl);
 }
 
-g_.event.FromFile = function (image, file, cx)
+g_.event.fromfile = function (image, file, cx)
 {
 	var alt;
 	var s = fso.BuildPath(fso.GetSpecialFolder(2).Path, "tablacus\\");
@@ -1944,29 +1886,29 @@ g_.event.FromFile = function (image, file, cx)
 	return RunEvent3("FromFile", image, file, alt, cx);
 }
 
-g_.event.FromStream = function (image, stream, filename, cx)
+g_.event.fromstream = function (image, stream, filename, cx)
 {
 	return RunEvent3("FromStream", image, stream, filename, cx);
 }
 
-g_.event.EndThread = function (Ctrl)
+g_.event.endthread = function (Ctrl)
 {
 	return RunEvent1("EndThread", api.GetThreadCount());
 }
 
-g_.event.ItemPrePaint = function (Ctrl, pid, nmcd, vcd, plRes)
+g_.event.itemprepaint = function (Ctrl, pid, nmcd, vcd, plRes)
 {
 	RunEvent3("ItemPrePaint", Ctrl, pid, nmcd, vcd, plRes);
 	RunEvent1("ItemPrePaint2", Ctrl, pid, nmcd, vcd, plRes);
 }
 
-g_.event.ItemPostPaint = function (Ctrl, pid, nmcd, vcd)
+g_.event.itempostpaint = function (Ctrl, pid, nmcd, vcd)
 {
 	RunEvent3("ItemPostPaint", Ctrl, pid, nmcd, vcd);
 	RunEvent1("ItemPostPaint2", Ctrl, pid, nmcd, vcd);
 }
 
-g_.event.HandleIcon = function (Ctrl, pid)
+g_.event.handleicon = function (Ctrl, pid)
 {
 	return RunEvent3("HandleIcon", Ctrl, pid);
 }
@@ -2105,7 +2047,7 @@ function ArrangeAddons()
 		}
 	}
 	RunEvent1("Load");
-	delete eventTE["Load"];
+	delete eventTE.load;
 	DeviceChanged(te);
 }
 
@@ -2330,7 +2272,7 @@ GestureExec = function (Ctrl, mode, str, pt, hwnd)
 	if (hwnd && Ctrl.Type != CTRL_TC && Ctrl.Type != CTRL_WB) {
 		api.SetFocus(hwnd);
 	}
-	return ArExec(Ctrl, eventTE.Mouse[mode][str], pt, hwnd || Ctrl.hwnd);
+	return ArExec(Ctrl, api.ObjGetI(eventTE.Mouse[mode], str), pt, hwnd || Ctrl.hwnd);
 }
 
 KeyExec = function (Ctrl, mode, str, hwnd)
@@ -2607,7 +2549,7 @@ g_basic =
 			Ref: BrowseForFolder
 		},
 
-		"Open in New Tab":
+		"Open in new tab":
 		{
 			Exec: function (Ctrl, s, type, hwnd, pt)
 			{
@@ -2618,7 +2560,7 @@ g_basic =
 			Ref: BrowseForFolder
 		},
 
-		"Open in Background":
+		"Open in background":
 		{
 			Exec: function (Ctrl, s, type, hwnd, pt)
 			{
@@ -2713,7 +2655,7 @@ g_basic =
 			Ref: OpenDialog
 		},
 
-		"Selected Items":
+		"Selected items":
 		{
 			Exec: function (Ctrl, s, type, hwnd, pt)
 			{
@@ -2769,11 +2711,11 @@ g_basic =
 				{
 					return OpenSelected(Ctrl, GetNavigateFlags(GetFolderView(Ctrl)), pt);
 				},
-				"Open in New Tab": function (Ctrl, pt)
+				"Open in new tab": function (Ctrl, pt)
 				{
 					return OpenSelected(Ctrl, SBSP_NEWBROWSER, pt);
 				},
-				"Open in Background": function (Ctrl, pt)
+				"Open in background": function (Ctrl, pt)
 				{
 					return OpenSelected(Ctrl, SBSP_NEWBROWSER | SBSP_ACTIVATE_NOFOCUS, pt);
 				},
@@ -2812,12 +2754,12 @@ g_basic =
 			},
 			Cmd:
 			{
-				"Close Tab": function (Ctrl, pt)
+				"Close tab": function (Ctrl, pt)
 				{
 					var FV = GetFolderView(Ctrl, pt, true);
 					FV && FV.Close();
 				},
-				"Close Other Tabs": function (Ctrl, pt)
+				"Close other tabs": function (Ctrl, pt)
 				{
 					var FV = GetFolderView(Ctrl, pt);
 					if (FV) {
@@ -2830,7 +2772,7 @@ g_basic =
 						}
 					}
 				},
-				"Close Tabs on Left": function (Ctrl, pt)
+				"Close tabs on left": function (Ctrl, pt)
 				{
 					var FV = GetFolderView(Ctrl, pt, true);
 					if (FV) {
@@ -2840,7 +2782,7 @@ g_basic =
 						}
 					}
 				},
-				"Close Tabs on Right": function (Ctrl, pt)
+				"Close tabs on right": function (Ctrl, pt)
 				{
 					var FV = GetFolderView(Ctrl, pt, true);
 					if (FV) {
@@ -2851,7 +2793,7 @@ g_basic =
 						}
 					}
 				},
-				"Close all Tabs": function (Ctrl, pt)
+				"Close all tabs": function (Ctrl, pt)
 				{
 					var FV = GetFolderView(Ctrl, pt);
 					if (FV) {
@@ -2861,7 +2803,7 @@ g_basic =
 						}
 					}
 				},
-				"New Tab": function (Ctrl, pt)
+				"New tab": function (Ctrl, pt)
 				{
 					var FV = GetFolderView(Ctrl, pt);
 					NavigateFV(FV, HOME_PATH || FV, SBSP_NEWBROWSER);
@@ -2871,12 +2813,12 @@ g_basic =
 					var FV = GetFolderView(Ctrl, pt);
 					FV && Lock(FV.Parent, FV.Index, true);
 				},
-				"Previous Tab": function (Ctrl, pt)
+				"Previous tab": function (Ctrl, pt)
 				{
 					var FV = GetFolderView(Ctrl, pt);
 					FV && ChangeTab(FV.Parent, -1);
 				},
-				"Next Tab": function (Ctrl, pt)
+				"Next tab": function (Ctrl, pt)
 				{
 					var FV = GetFolderView(Ctrl, pt);
 					FV && ChangeTab(FV.Parent, 1);
@@ -2908,7 +2850,7 @@ g_basic =
 						FV.Type = (FV.Type == CTRL_SB) ? CTRL_EB : CTRL_SB;
 					}
 				},
-				"Switch Explorer Engine": function (Ctrl, pt)
+				"Switch Explorer engine": function (Ctrl, pt)
 				{
 					var FV = GetFolderView(Ctrl, pt);
 					if (FV) {
@@ -3039,9 +2981,9 @@ g_basic =
 		{
 			Cmd:
 			{
-				"New Folder": CreateNewFolder,
-				"New File": CreateNewFile,
-				"Copy Full Path": function (Ctrl, pt)
+				"New folder": CreateNewFolder,
+				"New file": CreateNewFile,
+				"Copy full path": function (Ctrl, pt)
 				{
 					var Selected = GetSelectedItems(Ctrl, pt);
 					var s = "";
@@ -3054,7 +2996,7 @@ g_basic =
 					clipboardData.setData("text", s);
 					return S_OK;
 				},
-				"Run Dialog": function (Ctrl, pt)
+				"Run dialog": function (Ctrl, pt)
 				{
 					var FV = GetFolderView(Ctrl, pt);
 					api.ShRunDialog(te.hwnd, 0, FV ? FV.FolderItem.Path : null, null, null, 0);
@@ -3073,15 +3015,15 @@ g_basic =
 					}
 					return S_OK;
 				},
-				"Add to Favorites": AddFavoriteEx,
-				"Reload Customize": function ()
+				"Add to favorites": AddFavoriteEx,
+				"Reload customize": function ()
 				{
 					te.Reload();
 					return S_OK;
 				},
-				"Load Layout": LoadLayout,
-				"Save Layout": SaveLayout,
-				"Close Application": function ()
+				"Load layout": LoadLayout,
+				"Save layout": SaveLayout,
+				"Close application": function ()
 				{
 					api.PostMessage(te.hwnd, WM_CLOSE, 0, 0);
 					return S_OK;
@@ -3119,7 +3061,7 @@ g_basic =
 			}
 		},
 
-		"&Load Layout...":
+		"&Load layout...":
 		{
 			Exec: function (Ctrl, s, type, hwnd, pt)
 			{
@@ -3134,7 +3076,7 @@ g_basic =
 			Ref: OpenDialog
 		},
 
-		"&Save Layout...":
+		"&Save layout...":
 		{
 			Exec: function (Ctrl, s, type, hwnd, pt)
 			{
@@ -3323,7 +3265,7 @@ AddEvent("MenuState:Tabs:Show frames", function (Ctrl, pt, mii)
 AddEvent("AddType", function (arFunc)
 {
 	for (var i in g_basic.Func) {
-		arFunc.push(i);
+		arFunc.push(i.replace(/&|\.\.\.$/g, "").replace(/\(\w\)/, ""));
 	}
 });
 
@@ -3396,7 +3338,7 @@ AddEvent("OptionDecode", function (Id, p)
 	var type = g_basic.FuncI(Id);
 	if (type && type.Enc) {
 		var s = GetText(p.s);
-		if (GetSourceText(s) == p.s) {
+		if (GetSourceText(s).toLowerCase() == p.s.toLowerCase()) {
 			p.s = GetText(p.s);
 			return S_OK;
 		}

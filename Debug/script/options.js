@@ -623,7 +623,7 @@ function SetType(o, value)
 {
 	var i = o.length;
 	while (--i >= 0) {
-		if (o[i].value == value) {
+		if (o[i].value.toLowerCase() == value.toLowerCase()) {
 			o.selectedIndex = i;
 			break;
 		}
@@ -669,7 +669,7 @@ function ReplaceMenus()
 	var sel = g_x.Menus[g_x.Menus.selectedIndex];
 	var o = document.F.Menus_Type;
 	var s = GetSourceText(document.F.Menus_Name.value.replace(/\\/g, "/"));
-	var org = (s == document.F.Menus_Name.value && api.GetKeyState(VK_SHIFT) >= 0) ? "1" : ""
+	var org = (s.toLowerCase() == document.F.Menus_Name.value.toLowerCase() && api.GetKeyState(VK_SHIFT) >= 0) ? "1" : ""
 	if (document.F.Menus_Key.value.length) {
 		var n = GetKeyKey(document.F.Menus_Key.value);
 		s += "\\t" + (n ? api.sprintf(8, "$%x", n) : document.F.Menus_Key.value);
@@ -756,13 +756,11 @@ function LoadMenus(nSelected)
 	var oa = document.F.Menus_Type;
 	if (!g_x.Menus) {
 		var arFunc = [];
-		for (var i in MainWindow.eventTE.AddType) {
-			MainWindow.eventTE.AddType[i](arFunc);
-		}
+		MainWindow.RunEvent1("AddType", arFunc);
 		for (var i = 0; i < arFunc.length; i++) {
 			var o = oa[++oa.length - 1];
 			o.value = arFunc[i];
-			o.innerText = GetText(arFunc[i]).replace(/&|\.\.\.$/g, "").replace(/\(\w\)/, "");
+			o.innerText = GetText(arFunc[i]);
 		}
 
 		oa = document.F.Menus;
@@ -818,9 +816,7 @@ function LoadX(mode, fn, form)
             form = document.F;
         }
 		var arFunc = [];
-		for (var i in MainWindow.eventTE.AddType) {
-			MainWindow.eventTE.AddType[i](arFunc);
-		}
+		MainWindow.RunEvent1("AddType", arFunc);
 		var oa = form[mode + "Type"] || form.Type;
 		while (oa.length) {
 			oa.removeChild(oa[0]);
@@ -828,7 +824,7 @@ function LoadX(mode, fn, form)
 		for (var i = 0; i < arFunc.length; i++) {
 			var o = oa[++oa.length - 1];
 			o.value = arFunc[i];
-			o.innerText = GetText(arFunc[i]).replace(/&|\.\.\.$/g, "").replace(/\(\w\)/, "");
+			o.innerText = GetText(arFunc[i]);
 		}
 		g_x[mode] = form[mode + "All"];
 		if (g_x[mode]) {
@@ -1278,7 +1274,7 @@ function ApplyOptions()
 			}
 		}
 	}
-	SaveAddons(); 
+	SaveAddons();
 	SaveMenus();
 	SetTabControls();
 	SetTreeControls();
@@ -1290,7 +1286,7 @@ function ApplyOptions()
 function CancelOptions()
 {
 	if (te.Data.bErrorAddons) {
-		SaveAddons(); 
+		SaveAddons();
 		te.Data.bReload = true;
 		api.EnableWindow(te.Ctrl(CTRL_WB).hwnd, false);
 	}

@@ -6524,8 +6524,13 @@ VOID teGetDisplayNameOf(VARIANT *pv, int uFlags, VARIANT *pVarResult)
 			BSTR bs;
 			if (teGetStrFromFolderItem(&bs, punk)) {
 				if (uFlags & SHGDN_INFOLDER) {
-					teSetSZ(pVarResult, PathFindFileName(bs));
-					return;
+					if (bs && lstrlen(bs) > 2) {
+						LPWSTR pszName = PathFindFileName(bs);
+						if (pszName && pszName[0] != ':') {
+							teSetSZ(pVarResult, PathFindFileName(bs));
+							return;
+						}
+					}
 				}
 				if (uFlags & SHGDN_FORADDRESSBAR) {
 					BSTR bsLocal;
@@ -6535,8 +6540,10 @@ VOID teGetDisplayNameOf(VARIANT *pv, int uFlags, VARIANT *pVarResult)
 						return;
 					}
 				}
-				teSetSZ(pVarResult, bs);
-				return;
+				if (!(uFlags & SHGDN_INFOLDER)) {
+					teSetSZ(pVarResult, bs);
+					return;
+				}
 			}
 		}
 		LPITEMIDLIST pidl;
@@ -17942,8 +17949,20 @@ VOID CteFolderItems::Regenerate(BOOL bFull)
 					if (bFull) {
 						CteFolderItem *pid1;
 						teQueryFolderItem(&pid, &pid1);
-						if (pid1->m_pidl && GetVarPathFromFolderItem(pid, &pid1->m_v)) {
-							teILFreeClear(&pid1->m_pidl);
+						if (pid1->m_pidl) {
+							if (pid1->m_v.vt != VT_EMPTY || GetVarPathFromFolderItem(pid, &pid1->m_v)) {
+								if (pid1->m_v.vt == VT_BSTR) {
+									if (teIsFileSystem(pid1->m_v.bstrVal)) {
+										LPITEMIDLIST pidl;
+										if (teGetIDListFromVariant(&pidl, &pid1->m_v)) {
+											if (!ILIsEqual(pidl, pid1->m_pidl)) {
+												teILCloneReplace(&pid1->m_pidl, pidl);
+											}
+											teILFreeClear(&pidl);
+										}
+									}
+								}
+							}
 						}
 						pid1->Release();
 					}
@@ -21222,7 +21241,7 @@ VOID CteFolderItem::Clear()
 BSTR CteFolderItem::GetStrPath()
 {
 	if (m_v.vt == VT_BSTR) {
-		if ((m_pidl == NULL && lstrlen(m_v.bstrVal) > 2) || (m_pidlAlt && !ILIsEqual(m_pidl, m_pidlAlt))) {
+		if (m_pidl == NULL || (m_pidlAlt && !ILIsEqual(m_pidl, m_pidlAlt))) {
 			return m_v.bstrVal;
 		}
 	}
@@ -21461,9 +21480,12 @@ STDMETHODIMP CteFolderItem::get_Parent(IDispatch **ppid)
 STDMETHODIMP CteFolderItem::get_Name(BSTR *pbs)
 {
 	BSTR bs = GetStrPath();
-	if (bs) {
-		*pbs = ::SysAllocString(PathFindFileName(bs));
-		return S_OK;
+	if (bs && lstrlen(bs) > 2) {
+		LPWSTR pszName = PathFindFileName(bs);
+		if (pszName && pszName[0] != ':') {
+			*pbs = ::SysAllocString(pszName);
+			return S_OK;
+		}
 	}
 	return teGetDisplayNameFromIDList(pbs, GetPidl(), SHGDN_INFOLDER);
 }

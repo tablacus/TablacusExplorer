@@ -201,27 +201,84 @@ FolderMenu =
 	}
 };
 
+RunEvent1 = function (en, a1, a2, a3, a4)
+{
+	var eo = eventTE[en.toLowerCase()];
+	for (var i in eo) {
+		try {
+			eo[i](a1, a2, a3, a4);
+		} catch (e) {
+			ShowError(e, en, i);
+		}
+	}
+}
+
+RunEvent2 = function (en, a1, a2, a3, a4)
+{
+	var eo = eventTE[en.toLowerCase()];
+	for (var i in eo) {
+		try {
+			var hr = eo[i](a1, a2, a3, a4);
+			if (isFinite(hr) && hr != S_OK) {
+				return hr;
+			}
+		} catch (e) {
+			ShowError(e, en, i);
+		}
+	}
+	return S_OK;
+}
+
+RunEvent3 = function (en, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)
+{
+	var eo = eventTE[en.toLowerCase()];
+	for (var i in eo) {
+		try {
+			var hr = eo[i](a1, a2, a3, a4, a5, a6, a7, a8, a9, a10);
+			if (isFinite(hr)) {
+				return hr;
+			}
+		} catch (e) {
+			ShowError(e, en, i);
+		}
+	}
+}
+
+RunEvent4 = function (en, a1, a2, a3)
+{
+	var eo = eventTE[en.toLowerCase()];
+	for (var i in eo) {
+		try {
+			var r = eo[i](a1, a2, a3);
+			if (r !== undefined) {
+				return r;
+			}
+		} catch (e) {
+			ShowError(e, en, i);
+		}
+	}
+}
+
 AddEvent = function (Name, fn, priority)
 {
 	if (Name) {
-		Name = Name.replace("Dragleave", "DragLeave");
-		var s = Name.replace(/\d$/g, "");
+		var en = Name.toLowerCase();
+		var s = en.replace(/\d$/g, "");
 		if (g_.event[s] && !te["On" + s]) {
 			te["On" + s] = g_.event[s];
 		}
-
-		if (!eventTE[Name]) {
-			eventTE[Name] = [];
+		if (!eventTE[en]) {
+			eventTE[en] = [];
 		}
-		if (!eventTA[Name]) {
-			eventTA[Name] = [];
+		if (!eventTA[en]) {
+			eventTA[en] = [];
 		}
 		if (priority) {
-			eventTE[Name].unshift(fn);
-			eventTA[Name].unshift(window.Error_source);
+			eventTE[en].unshift(fn);
+			eventTA[en].unshift(window.Error_source);
 		} else {
-			eventTE[Name].push(fn);
-			eventTA[Name].push(window.Error_source);
+			eventTE[en].push(fn);
+			eventTA[en].push(window.Error_source);
 		}
 	}
 }
@@ -233,25 +290,20 @@ AddEnv = function (Name, fn)
 
 AddEventId = function (Name, Id, fn)
 {
-	if (!eventTE[Name]) {
-		eventTE[Name] = {};
+	var en = Name.toLowerCase();
+	if (!eventTE[en]) {
+		eventTE[en] = {};
 	}
-	eventTE[Name][Id.toLowerCase()] = fn;
+	eventTE[en][Id.toLowerCase()] = fn;
 }
 
 AddonDisabled = function (Id)
 {
-	for (var i in eventTE.AddonDisabled) {
-		try {
-			eventTE.AddonDisabled[i](Id);
-		} catch (e) {
-			ShowError(e, s);
-		}
-	}
-	if (eventTE.AddonDisabledEx) {
-		var fn = eventTE.AddonDisabledEx[Id.toLowerCase()];
+	RunEvent1("AddonDisabled", Id);
+	if (eventTE.addondisabledex) {
+		var fn = eventTE.addondisabledex[Id.toLowerCase()];
 		if (fn) {
-			delete eventTE.AddonDisabledEx[Id.toLowerCase()];
+			delete eventTE.addondisabledex[Id.toLowerCase()];
 			AddEventEx(window, "beforeunload", fn);
 		}
 	}
@@ -526,10 +578,7 @@ GetText = function (id)
 {
 	try {
 		id = id.replace(/&amp;/g, "&");
-		var s = MainWindow.Lang[id];
-		if (s) {
-			return s;
-		}
+		return MainWindow.Lang[id.toLowerCase()] || id;
 	} catch (e) {}
 	return id;
 }
@@ -581,8 +630,9 @@ function LoadLang2(filename)
 
 SetLang2 = function(s, v)
 {
-	if (!MainWindow.Lang[s] && !MainWindow.LangSrc[v]) {
-		MainWindow.Lang[s] = v;
+	var sl = s.toLowerCase();
+	if (!MainWindow.Lang[sl] && !MainWindow.LangSrc[v]) {
+		MainWindow.Lang[sl] = v;
 		MainWindow.LangSrc[v] = s;
 		if (/&/.test(s)) {
 			SetLang2(s.replace(/\(&\w\)|&/, ""), v.replace(/\(&\w\)|&/, ""));
@@ -1251,13 +1301,8 @@ Exec = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop
 	if (/^Func$/i.test(type)) {
 		return s(Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop, window.FV);
 	}
-	for (var i in eventTE.Exec) {
-		var hr = eventTE.Exec[i](Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop, window.FV);
-		if (isFinite(hr)) {
-			return hr;
-		}
-	}
-	return window.Handled;
+	var hr = MainWindow.RunEvent3("Exec", Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop, window.FV);
+	return isFinite(hr) ? hr : window.Handled;
 }
 
 ExecScriptEx = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop, FV)
@@ -1333,23 +1378,23 @@ ExtractMacro2 = function (Ctrl, s)
 {
 	for (var j = 99; j--;) {
 		var s1 = s;
-		for (var i in eventTE.ReplaceMacroEx) {
-			s = s.replace(eventTE.ReplaceMacroEx[i][0], eventTE.ReplaceMacroEx[i][1]);
+		for (var i in eventTE.replacemacroex) {
+			s = s.replace(eventTE.replacemacroex[i][0], eventTE.replacemacroex[i][1]);
 		}
-		for (var i in eventTE.ReplaceMacro) {
-			var re = eventTE.ReplaceMacro[i][0];
+		for (var i in eventTE.replacemacro) {
+			var re = eventTE.replacemacro[i][0];
 			var res = re.exec(s);
 			if (res) {
-				var r = eventTE.ReplaceMacro[i][1](Ctrl, re, res);
+				var r = eventTE.replacemacro[i][1](Ctrl, re, res);
 				if (/string|number/i.test(typeof r)) {
 					s = s.replace(re, r);
 				}
 			}
 		}
-		for (var i in eventTE.ExtractMacro) {
-			var re = eventTE.ExtractMacro[i][0];
+		for (var i in eventTE.extractmacro) {
+			var re = eventTE.extractmacro[i][0];
 			if (re.test(s)) {
-				s = eventTE.ExtractMacro[i][1](Ctrl, s, re);
+				s = eventTE.extractmacro[i][1](Ctrl, s, re);
 			}
 		}
 		s = s.replace(/%([\w\-_]+)%/g, function (strMatch, ref)
@@ -1595,7 +1640,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec)
 	var FV = ar.shift();
 	ExtraMenuCommand = [];
 	ExtraMenuData = [];
-	eventTE.MenuCommand = [];
+	eventTE.menucommand = [];
 	var arMenu;
 	var item;
 	if (items) {
@@ -1644,16 +1689,17 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec)
 				AdjustMenuBreak(hMenu);
 			}
 			g_nPos = MakeMenus(hMenu, menus, arMenu, items, Ctrl, pt);
-			for (var i in eventTE[Name]) {
+			var eo = eventTE[Name.toLowerCase()];
+			for (var i in eo) {
 				try {
-					g_nPos = eventTE[Name][i](Ctrl, hMenu, g_nPos, Selected, SelItem, ContextMenu, Name, pt);
+					g_nPos = eo[i](Ctrl, hMenu, g_nPos, Selected, SelItem, ContextMenu, Name, pt);
 				} catch (e) {
 					ShowError(e, Name, i);
 				}
 			}
-			for (var i in eventTE.Menus) {
+			for (var i in eventTE.menus) {
 				try {
-					g_nPos = eventTE.Menus[i](Ctrl, hMenu, g_nPos, Selected, SelItem, ContextMenu, Name, pt);
+					g_nPos = eventTE.menus[i](Ctrl, hMenu, g_nPos, Selected, SelItem, ContextMenu, Name, pt);
 				} catch (e) {
 					ShowError(e, "Menus", i);
 				}
@@ -1723,8 +1769,8 @@ ExecMenu4 = function (Ctrl, Name, pt, hMenu, arContextMenu, nVerb, FV)
 			return S_OK;
 		}
 	}
-	for (var i in eventTE.MenuCommand) {
-		var hr = eventTE.MenuCommand[i](Ctrl, pt, Name, nVerb, hMenu);
+	for (var i in eventTE.menucommand) {
+		var hr = eventTE.menucommand[i](Ctrl, pt, Name, nVerb, hMenu);
 		if (isFinite(hr) && hr == S_OK) {
 			api.DestroyMenu(hMenu);
 			return S_OK;
@@ -1794,8 +1840,8 @@ GetViewMenu = function (arContextMenu, FV, hMenu, uCMF)
 GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arContextMenu)
 {
 	var ContextMenu;
-	for (var i in eventTE.GetBaseMenuEx) {
-		ContextMenu = eventTE.GetBaseMenuEx[i](hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arContextMenu);
+	for (var i in eventTE.getbasemenuex) {
+		ContextMenu = eventTE.getbasemenuex[i](hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arContextMenu);
 		if (ContextMenu !== undefined) {
 			return ContextMenu;
 		}
@@ -2255,8 +2301,8 @@ Extract = function (Src, Dest, xhr)
 			return hr;
 		}
 	}
-	for (var i in eventTE.Extract) {
-		hr = eventTE.Extract[i](Src, Dest);
+	for (var i in eventTE.extract) {
+		hr = eventTE.extract[i](Src, Dest);
 		if (isFinite(hr)) {
 			return hr;
 		}
@@ -2266,32 +2312,17 @@ Extract = function (Src, Dest, xhr)
 
 OptionRef = function (Id, s, pt)
 {
-	for (var i in eventTE.OptionRef) {
-		var r = eventTE.OptionRef[i](Id, s, pt);
-		if (r !== undefined) {
-			return r;
-		}
-	}
+	return RunEvent4("OptionRef", Id, s, pt);
 }
 
 OptionDecode = function (Id, p)
 {
-	for (var i in eventTE.OptionDecode) {
-		var hr = eventTE.OptionDecode[i](Id, p);
-		if (isFinite(hr)) {
-			return hr;
-		}
-	}
+	return RunEvent3("OptionDecode", Id, p);
 }
 
 OptionEncode = function (Id, p)
 {
-	for (var i in eventTE.OptionEncode) {
-		var hr = eventTE.OptionEncode[i](Id, p);
-		if (isFinite(hr)) {
-			return hr;
-		}
-	}
+	return RunEvent3("OptionEncode", Id, p);
 }
 
 function GetAddons()
