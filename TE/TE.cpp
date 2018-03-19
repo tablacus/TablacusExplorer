@@ -4798,7 +4798,7 @@ HRESULT ParseScript(LPOLESTR lpScript, LPOLESTR lpLang, VARIANT *pv, IDispatch *
 					pdex->Release();
 				}
 			} else if (pv && pv->boolVal) {
-				if (g_pWebBrowser) {
+				if (g_pWebBrowser && g_dwMainThreadId == GetCurrentThreadId()) {
 					pas->AddNamedItem(L"window", SCRIPTITEM_ISVISIBLE | SCRIPTITEM_ISSOURCE | SCRIPTITEM_GLOBALMEMBERS);
 				}
 			}
@@ -8278,11 +8278,47 @@ VOID teApiCompareIDs(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 	}
 }
 
+static void threadExecScript(void *args)
+{
+	::OleInitialize(NULL);
+	VARIANT v;
+	VariantInit(&v);
+	TEExecScript *pES = (TEExecScript *)args;
+	try {
+		if (pES->pStream) {
+			if SUCCEEDED(CoGetInterfaceAndReleaseStream(pES->pStream, IID_PPV_ARGS(&v.pdispVal))) {
+				v.vt = VT_DISPATCH;
+			}
+		}
+		ParseScript(pES->bsScript, pES->bsLang, &v, NULL, NULL);
+	} catch (...) {
+		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"threadExecScript";
+#endif
+	}
+	VariantClear(&v);
+	teSysFreeString(&pES->bsLang);
+	teSysFreeString(&pES->bsScript);
+	::OleUninitialize();
+	::_endthread();
+}
+
 VOID teApiExecScript(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	VARIANT *pv = NULL;
 	if (nArg >= 2) {
 		pv = &pDispParams->rgvarg[nArg - 2];
+		if (param[3].boolVal) {
+			TEExecScript *pES = new TEExecScript();
+			pES->bsScript = ::SysAllocString(param[0].lpolestr);
+			pES->bsLang = ::SysAllocString(param[1].lpolestr);
+			if (pv && pv->vt == VT_DISPATCH) {
+				CoMarshalInterThreadInterfaceInStream(IID_IDispatch, pv->pdispVal, &pES->pStream);
+			}
+			teSetPtr(pVarResult, _beginthread(&threadExecScript, 0, pES));
+			return;
+		}
 	}
 	param[TE_API_RESULT].lVal = ParseScript(param[0].lpolestr, param[1].lpolestr, pv, NULL, param[TE_EXCEPINFO].pExcepInfo);
 	teSetLong(pVarResult, param[TE_API_RESULT].lVal);
@@ -22921,7 +22957,7 @@ STDMETHODIMP CteActiveScriptSite::GetItemInfo(LPCOLESTR pstrName,
 			}
 			VariantClear(&v);
 		}
-		if (g_pWebBrowser && lstrcmpi(pstrName, L"window") == 0) {
+		if (g_pWebBrowser && g_dwMainThreadId == GetCurrentThreadId() && lstrcmpi(pstrName, L"window") == 0) {
 			teGetHTMLWindow(g_pWebBrowser->m_pWebBrowser, IID_PPV_ARGS(ppiunkItem));
 			return S_OK;
 		}

@@ -480,6 +480,13 @@ struct TEDispatchApi
 	LPFNDispatchAPI fn;
 };
 
+struct TEExecScript
+{
+	BSTR bsScript;
+	BSTR bsLang;
+	IStream *pStream;
+};
+
 struct TEFS
 {
 	BSTR bsPath;

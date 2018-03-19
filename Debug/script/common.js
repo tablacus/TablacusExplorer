@@ -3222,9 +3222,10 @@ SetRenameMenu = function (n)
 
 ShowError = function (e, s, i)
 {
+	var sl = s.toLowerCase();
 	if (isFinite(i)) {
-		if (eventTA[s][i]) {
-			s = eventTA[s][i] + " : " + s;
+		if (eventTA[sl][i]) {
+			s = eventTA[sl][i] + " : " + s;
 		}
 	}
 	if (!g_.ShowError) {
