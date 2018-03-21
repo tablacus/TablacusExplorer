@@ -154,6 +154,7 @@ union teParam
 	LPMENUITEMINFO lpmenuiteminfo;
 	LPCMENUITEMINFO lpcmenuiteminfo;
 	LPOSVERSIONINFO lposversioninfo;
+	LPSECURITY_ATTRIBUTES lpEventAttributes;
 	PRTL_OSVERSIONINFOEXW prtl_osversioninfoexw;
 	PGUITHREADINFO pgui;
 
@@ -409,11 +410,9 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define MAP_LENGTH	10
 #else
 #define MAP_LENGTH	9
-
+#endif
 #define TE_API_RESULT	12
 #define TE_EXCEPINFO	13
-
-#endif
 #ifndef offsetof
 #define offsetof(type, member)	(DWORD)(UINT_PTR)&((type *)0)->member
 #endif
@@ -662,6 +661,7 @@ public:
 	LPITEMIDLIST	*m_pidllist;
 
 private:
+	VARIANT m_vData;
 	IDataObject		*m_pDataObj;
 	FolderItems		*m_pFolderItems;
 	IDispatch		*m_oFolderItems;

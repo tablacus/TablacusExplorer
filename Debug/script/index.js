@@ -1,12 +1,5 @@
 //Tablacus Explorer
 
-api.strcmpi = api.StrCmpI;
-api.ILisEqual = api.ILIsEqual;
-api.ShGetFileInfo = api.SHGetFileInfo;
-api.DoDragDrop = function (pDataObj, dwEffect, pdwEffect)
-{
-	return api.SHDoDragDrop(null, pDataObj, te, dwEffect, pdwEffect);
-}
 te.ClearEvents();
 te.LockUpdate();
 Addon = 1;
