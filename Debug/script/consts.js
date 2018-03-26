@@ -20,7 +20,7 @@ if (!window.te && window.external && external.Type) {
 			window.external = te;
 		} catch (e) {}
 	}
-	api = te.WindowsAPI;
+	api = te.WindowsAPI0.CreateObject("api");
 	if (api) {
 		if (!window.dialogArguments && !window.opener) {
 			arg = api.CommandLineToArgv(api.GetCommandLine());

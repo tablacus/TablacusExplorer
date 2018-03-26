@@ -512,6 +512,7 @@ struct TEILCreate
 	LONG cRef;
 };
 
+#ifdef _USE_THREADADDITEMS
 struct TEAddItems
 {
 	VARIANTARG *pv;
@@ -521,6 +522,7 @@ struct TEAddItems
 	BOOL	bDeleted;
 	BOOL	bNavigateComplete;
 };
+#endif
 
 struct TESortColumns
 {
@@ -877,8 +879,8 @@ public:
 	VOID Init();
 	BOOL Close(BOOL bForce);
 	VOID Move(int nSrc, int nDest, CteTabCtrl *pDestTab);
-	VOID LockUpdate();
-	VOID UnLockUpdate(BOOL bDirect);
+	VOID LockUpdate(BOOL bTE);
+	VOID UnlockUpdate(BOOL bDirect);
 	VOID RedrawUpdate();
 	VOID Show(BOOL bVisible, BOOL bMain);
 	VOID GetItem(int i, VARIANT *pVarResult);
@@ -1089,6 +1091,10 @@ public:
 	HRESULT RemoveAll();
 	VOID SetViewModeAndIconSize(BOOL bSetIconSize);
 	VOID SetListColumnWidth();
+	VOID AddItem(LPITEMIDLIST pidl);
+#ifndef _USE_THREADADDITEMS
+	VOID AddItems(IDispatch *pdisp, BOOL bDeleted, IDispatch *pOnCompleted, BOOL bNavigateComplete);
+#endif
 #ifdef _2000XP
 	VOID AddPathXP(CteFolderItems *pFolderItems, IShellFolderView *pSFV, int nIndex, BOOL bResultsFolder);
 	int PSGetColumnIndexXP(LPWSTR pszName, int *pcxChar);
@@ -1442,7 +1448,8 @@ private:
 	TEDispatchApi *m_pApi;
 	LONG	m_cRef;
 };
-#else
+#endif
+#ifdef _USE_OBJECTAPI
 class CteAPI : public IDispatch
 {
 public:

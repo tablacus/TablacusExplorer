@@ -3415,11 +3415,7 @@ LoadAddon = function (ext, Id, arError, param)
 			ado.Close();
 			if (s) {
 				if (ar[1] == "js") {
-					try {
-						sc = new Function(s);
-					} catch (e) {
-						sc = ExecAddonScript("JScript", s, fn, arError);
-					}
+					sc = new Function(s);
 				} else if (ar[1] == "vbs") {
 					sc = ExecAddonScript("VBScript", s, fn, arError, {"_Addon_Id": {"Addon_Id": Id}, window: window}, Addons["_stack"]);
 				}
@@ -3435,7 +3431,7 @@ LoadAddon = function (ext, Id, arError, param)
 			}
 		}
 	} catch (e) {
-		arError.push([(e.description || e.toString()), fn].join("\n"));
+		arError.push([e.stack || e.description || e.toString(), fn].join("\n"));
 	}
 	return r;
 }

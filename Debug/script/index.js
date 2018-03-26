@@ -2672,7 +2672,7 @@ g_basic =
 
 			Ref: function (s, pt)
 			{
-				var r = g_basic.Popup(g_basic.Func["Selected Items"].Cmd, s, pt);
+				var r = g_basic.Popup(g_basic.Func["Selected items"].Cmd, s, pt);
 				if (api.StrCmpI(r, GetText("Send to...")) == 0) {
 					var Folder = sha.NameSpace(ssfSENDTO);
 					if (Folder) {
@@ -3054,7 +3054,7 @@ g_basic =
 			}
 		},
 
-		"&Load layout...":
+		"Load layout":
 		{
 			Exec: function (Ctrl, s, type, hwnd, pt)
 			{
@@ -3069,7 +3069,7 @@ g_basic =
 			Ref: OpenDialog
 		},
 
-		"&Save layout...":
+		"Save layout":
 		{
 			Exec: function (Ctrl, s, type, hwnd, pt)
 			{

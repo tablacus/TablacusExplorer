@@ -11,10 +11,12 @@
 #define STRING2(str) #str
 #define VER_Y		18
 #define VER_M		3
-#define VER_D		21
+#define VER_D		26
 
 //Define
 #define _USE_BSEARCHAPI
+//#define _USE_OBJECTAPI
+#define _USE_THREADADDITEMS
 //#define _USE_APIHOOK
 //#define _USE_HTMLDOC
 //#define _USE_TESTOBJECT
