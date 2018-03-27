@@ -882,7 +882,7 @@ public:
 	VOID LockUpdate(BOOL bTE);
 	VOID UnlockUpdate(BOOL bDirect);
 	VOID RedrawUpdate();
-	VOID Show(BOOL bVisible, BOOL bMain);
+	VOID Show(BOOL bVisible);
 	VOID GetItem(int i, VARIANT *pVarResult);
 	DWORD GetStyle();
 	VOID SetItemSize();

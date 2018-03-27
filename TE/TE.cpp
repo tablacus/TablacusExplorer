@@ -16491,7 +16491,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 								}
 								if (pTC->Create()) {
 									teSetObject(pVarResult, pTC);
-									pTC->Show(TRUE, !g_pTC);
+									pTC->Show(TRUE);
 								} else {
 									pTC->Release();
 								}
@@ -17591,11 +17591,11 @@ VOID CteTabCtrl::GetItem(int i, VARIANT *pVarResult)
 	}
 }
 
-VOID CteTabCtrl::Show(BOOL bVisible, BOOL bMain)
+VOID CteTabCtrl::Show(BOOL bVisible)
 {
 	bVisible &= 1;
 	if (bVisible) {
-		if (bMain) {
+		if (!g_pTC || !g_pTC->m_bVisible) {
 			g_pTC = this;
 		}
 		ArrangeWindow();
@@ -17625,7 +17625,7 @@ BOOL CteTabCtrl::Close(BOOL bForce)
 				pSB->Close(TRUE);
 			}
 		}
-		Show(FALSE, FALSE);
+		Show(FALSE);
 		if (m_bRedraw) {
 			KillTimer(m_hwnd, (UINT_PTR)this);
 		}
@@ -17907,7 +17907,7 @@ STDMETHODIMP CteTabCtrl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WOR
 			//Visible
 			case 11:
 				if (nArg >= 0) {
-					Show(GetIntFromVariant(&pDispParams->rgvarg[nArg]), TRUE);
+					Show(GetIntFromVariant(&pDispParams->rgvarg[nArg]));
 				}
 				teSetBool(pVarResult, m_bVisible);
 				return S_OK;

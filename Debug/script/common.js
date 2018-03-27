@@ -3338,7 +3338,9 @@ Activate = function (o, id)
 		if (FV) {
 			FV.Focus();
 			if (o) {
-				o.focus();
+				setTimeout(function () {
+					o.focus();
+				}, 99)
 			}
 		}
 	}
