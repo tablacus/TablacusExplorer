@@ -1189,6 +1189,8 @@ TEmethod methodGB[] = {
 	{ 210, "GetHBITMAP" },
 	{ 211, "GetHICON" },
 	{ 212, "DrawEx" },
+
+	{ 900, "GetCodecInfo" },
 	{ 0, NULL }
 };
 
@@ -1219,6 +1221,23 @@ int teGetModuleFileName(HMODULE hModule, BSTR *pbsPath);
 BOOL GetVarArrayFromIDList(VARIANT *pv, LPITEMIDLIST pidl);
 
 //Unit
+HRESULT teGetCodecInfo(IWICBitmapCodecInfo *pCodecInfo, int nMode, UINT cch, WCHAR *wz, UINT *pcchActual)
+{
+	switch (nMode) {
+		case 0:
+			return pCodecInfo->GetFileExtensions(cch, wz, pcchActual);
+		case 1:
+			return pCodecInfo->GetMimeTypes(cch, wz, pcchActual);
+		case 2:
+			return pCodecInfo->GetFriendlyName(cch, wz, pcchActual);
+		case 3:
+			return pCodecInfo->GetAuthor(cch, wz, pcchActual);
+		case 4:
+			return pCodecInfo->GetSpecVersion(cch, wz, pcchActual);
+	}
+	return E_NOTIMPL;
+}
+
 VOID teQueryFolderItem(FolderItem **ppfi, CteFolderItem **ppid)
 {
 	if FAILED((*ppfi)->QueryInterface(g_ClsIdFI, (LPVOID *)ppid)) {
@@ -9448,7 +9467,7 @@ VOID teApiDeleteFile(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 VOID teApiCreateObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	if (lstrcmpi(param[0].lpwstr, L"Array") == 0) {
-		IDispatch *pdisp;
+		IDispatch *pdisp = NULL;
 		GetNewArray(&pdisp);
 		teSetObjectRelease(pVarResult, pdisp);
 		return;
@@ -9467,7 +9486,7 @@ VOID teApiCreateObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIAN
 		return;
 	}
 	if (lstrcmpi(param[0].lpwstr, L"Object") == 0) {
-		IDispatch *pdisp;
+		IDispatch *pdisp = NULL;
 		GetNewObject(&pdisp);
 		teSetObjectRelease(pVarResult, pdisp);
 		return;
@@ -9926,7 +9945,7 @@ BOOL GetEncoderClsid(LPWSTR pszName, CLSID* pClsid, LPWSTR pszMimeType)
 		ULONG cbActual = 0;
 		IUnknown *punk;
 		hr = E_FAIL;
-		while(pEnum->Next(1, &punk, &cbActual) == S_OK && hr != S_OK) {
+		while (pEnum->Next(1, &punk, &cbActual) == S_OK && hr != S_OK) {
 			IWICBitmapCodecInfo *pCodecInfo;
 			if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pCodecInfo))) {
 				UINT uActual = 0;
@@ -22484,7 +22503,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 		}
 		if (dispIdMember < 100) {
 			ClearImage(TRUE);
-		} else if (!m_pImage) {
+		} else if (!m_pImage && dispIdMember < 900) {
 			return S_OK;
 		}
 
@@ -22639,7 +22658,8 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					teSetObject(pVarResult, GetBitmapObj());
 				}
 				return S_OK;
-			//Free(99)
+			//Free
+			case 99:
 				return S_OK;
 			//Save
 			case 100:
@@ -22875,6 +22895,38 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 						));
 					}
 					ImageList_Destroy(himl);
+				}
+				return S_OK;
+			//GetCodecInfo
+			case 900:
+				IDispatch *pdisp;
+				if (nArg >= 2 && GetDispatch(&pDispParams->rgvarg[nArg - 2], &pdisp)) {
+					IEnumUnknown *pEnum;
+					HRESULT hr = g_pWICFactory->CreateComponentEnumerator(WICComponentType(GetIntFromVariant(&pDispParams->rgvarg[nArg])), WICComponentEnumerateDefault, &pEnum);
+					if SUCCEEDED(hr) {
+						int nMode = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
+						ULONG cbActual = 0;
+						IUnknown *punk;
+						hr = E_FAIL;
+						while(pEnum->Next(1, &punk, &cbActual) == S_OK && hr != S_OK) {
+							IWICBitmapCodecInfo *pCodecInfo;
+							if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pCodecInfo))) {
+								UINT uActual = 0;
+								teGetCodecInfo(pCodecInfo, nMode, 0, NULL, &uActual);
+								if (uActual > 1) {
+									VARIANT *pv = GetNewVARIANT(1);
+									pv->vt = VT_BSTR;
+									pv->bstrVal = ::SysAllocStringLen(NULL, uActual - 1);
+									teGetCodecInfo(pCodecInfo, nMode, uActual, pv->bstrVal, &uActual);
+									teExecMethod(pdisp, L"push", NULL, 1, pv);
+								}
+								pCodecInfo->Release();
+							}
+							punk->Release();
+						}
+						pEnum->Release();
+					}
+					pdisp->Release();
 				}
 				return S_OK;
 			case DISPID_VALUE:

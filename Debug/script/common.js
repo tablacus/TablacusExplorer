@@ -645,13 +645,7 @@ SetLang2 = function(s, v)
 
 LoadXml = function (filename, nGroup)
 {
-	te.LockUpdate();
-	if (!nGroup) {
-		var cTC = te.Ctrls(CTRL_TC);
-		for (i in cTC) {
-			cTC[i].Close();
-		}
-	}
+	var items;
 	var xml = filename;
 	if (/string/i.test(typeof filename)) {
 		filename = api.PathUnquoteSpaces(filename);
@@ -661,7 +655,18 @@ LoadXml = function (filename, nGroup)
 			xml.load(filename);
 		}
 	}
-	var items = xml.getElementsByTagName('Ctrl');
+	try {
+		items = xml.getElementsByTagName('Ctrl');
+	} catch (e) {
+		return;
+	}
+	te.LockUpdate();
+	if (!nGroup) {
+		var cTC = te.Ctrls(CTRL_TC);
+		for (i in cTC) {
+			cTC[i].Close();
+		}
+	}
 	for (var i = 0; i < items.length; i++) {
 		var item = items[i];
 		switch(item.getAttribute("Type") - 0) {
