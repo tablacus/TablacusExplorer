@@ -1875,12 +1875,14 @@ MOVEFILE_CREATE_HARDLINK = 0x10;
 MOVEFILE_FAIL_IF_NOT_TRACKABLE = 0x20;
 
 if (window.dialogArguments) {
-	for (var j in dialogArguments.event) {
-		var res = /^on(.+)/i.exec(j);
-		if (res) {
-			AddEventEx(window, res[1], dialogArguments.event[j]);
-		} else {
-			window[j] = dialogArguments.event[j];
+	(function () {
+		for (var j in dialogArguments.event) {
+			var res = /^on(.+)/i.exec(j);
+			if (res) {
+				AddEventEx(window, res[1], dialogArguments.event[j]);
+			} else {
+				window[j] = dialogArguments.event[j];
+			}
 		}
-	}
+	})();
 }

@@ -3133,7 +3133,8 @@ RegEnumKey = function(hKey, Name)
 	var iParams = server.Methods_.Item("EnumKey").InParameters.SpawnInstance_();
 	iParams.hDefKey = hKey;
 	iParams.sSubKeyName = Name;
-	return server.ExecMethod_("EnumKey", iParams).sNames.toArray();
+	var r = server.ExecMethod_("EnumKey", iParams).sNames;
+	return r !== null ? r.toArray() : [];
 }
 
 FindText = function ()

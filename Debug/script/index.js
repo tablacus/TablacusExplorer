@@ -2481,12 +2481,13 @@ g_basic =
 {
 	FuncI: function (s)
 	{
+		s = s.replace(/&|\.\.\.$/g, "");
 		return this.Func[s] || api.ObjGetI(this.Func, s);
 	},
 
 	CmdI: function (s, s2)
 	{
-		var type = this.Func[s] || api.ObjGetI(this.Func, s);
+		var type = this.FuncI(s);
 		if (type) {
 			return type.Cmd[s2] || api.ObjGetI(type.Cmd, s2);
 		}
@@ -3258,13 +3259,13 @@ AddEvent("MenuState:Tabs:Show frames", function (Ctrl, pt, mii)
 AddEvent("AddType", function (arFunc)
 {
 	for (var i in g_basic.Func) {
-		arFunc.push(i.replace(/&|\.\.\.$/g, "").replace(/\(\w\)/, ""));
+		arFunc.push(i);
 	}
 });
 
 AddType = function (strType, o)
 {
-	api.ObjPutI(g_basic.Func, strType, o);
+	api.ObjPutI(g_basic.Func, strType.replace(/&|\.\.\.$/g, ""), o);
 };
 
 AddTypeEx = function (strType, strTitle, fn)

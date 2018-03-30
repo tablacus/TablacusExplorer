@@ -621,6 +621,7 @@ EditX = function (mode, form)
 
 function SetType(o, value)
 {
+	value = value.replace(/&|\.\.\.$/g, "");
 	var i = o.length;
 	while (--i >= 0) {
 		if (o[i].value.toLowerCase() == value.toLowerCase()) {
