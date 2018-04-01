@@ -85,7 +85,7 @@ FolderMenu =
 			}
 			var bSep = false;
 			if (!nParent && !api.ILIsEmpty(FolderItem) && !api.ILIsParent(1, FolderItem, false)) {
-				var Item = api.ILRemoveLastID(FolderItem, true);
+				var Item = api.ILRemoveLastID(FolderItem);
 				var bMatch = IsFolderEx(Item);
 				if (this.Filter) {
 					bMatch = PathMatchEx(bMatch ? Item.Name + ".folder" : Item.Name, this.Filter);
@@ -114,8 +114,16 @@ FolderMenu =
 					}
 					nCount = Items.length;
 				}
+				var ar = new Array(nCount);
+				for (var i = nCount; i--;) {
+					ar[i] = i;
+				}
+				ar.sort(function (a, b) {
+					var r = api.CompareIDs(0, Items.Item(a), Items.Item(b));
+					return r ? r > 32767 ? - 1 : 1 : 0;
+				});
 				for (var i = 0; i < nCount; i++) {
-					Item = Items.Item(i);
+					Item = Items.Item(ar[i]);
 					var bMatch = IsFolderEx(Item);
 					if (this.Filter) {
 						bMatch = PathMatchEx(bMatch ? Item.Name + ".folder" : Item.Name, this.Filter);
@@ -157,7 +165,8 @@ FolderMenu =
 		AddMenuIconFolderItem(mii, FolderItem);
 		this.Items.push(FolderItem);
 		mii.wID = this.Items.length;
-		if (!bSelect && api.GetAttributesOf(FolderItem, SFGAO_HASSUBFOLDER | SFGAO_BROWSABLE | SFGAO_LINK) == SFGAO_HASSUBFOLDER) {
+		var cc = this.Filter ? SFGAO_FOLDER : SFGAO_HASSUBFOLDER;
+		if (!bSelect && api.GetAttributesOf(FolderItem, cc | SFGAO_BROWSABLE | SFGAO_LINK) == cc) {
 			try {
 				var o = fso.GetDrive(fso.GetDriveName(FolderItem.Path));
 			} catch (e) {

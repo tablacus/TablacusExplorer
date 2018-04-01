@@ -26,6 +26,7 @@
 #include <wincodec.h>
 #include <wincodecsdk.h>
 #include <Thumbcache.h>
+#include <mmsystem.h>
 #ifndef _2000XP
 #include <Propsys.h>
 #include <Propvarutil.h>
@@ -43,6 +44,7 @@
 #pragma comment(lib, "crypt32.lib")
 #pragma comment(lib, "UxTheme.lib")
 #pragma comment(lib, "Msimg32.lib")
+#pragma comment(lib, "Winmm.lib")
 #ifndef _2000XP
 #pragma comment(lib, "Propsys.lib")
 #endif
@@ -395,6 +397,7 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define	SB_Count	13
 
 #define	TVVERBS 16
+#define TESORTING 10
 
 #define MAP_TE	0
 #define MAP_SB	1
@@ -1135,6 +1138,7 @@ public:
 	int			m_nSB;
 	int			m_nUnload;
 	int			m_nFocusItem;
+	int			m_nSorting;
 	DWORD		m_nOpenedType;
 	DWORD		m_dwCookie;
 	DWORD		m_dwSessionId;
@@ -1631,4 +1635,24 @@ public:
 private:
 	IProgressDialog *m_ppd;
 	LONG	m_cRef;
+};
+
+class CteObject : public IDispatch
+{
+public:
+	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
+	STDMETHODIMP_(ULONG) AddRef();
+	STDMETHODIMP_(ULONG) Release();
+	//IDispatch
+	STDMETHODIMP GetTypeInfoCount(UINT *pctinfo);
+	STDMETHODIMP GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo);
+	STDMETHODIMP GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId);
+	STDMETHODIMP Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr);
+
+	CteObject(REFIID riid, PVOID pObj);
+	~CteObject();
+public:
+	LONG	m_cRef;
+	IID		m_iid;
+	IUnknown *m_punk;
 };

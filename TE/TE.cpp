@@ -3628,7 +3628,7 @@ void CheckChangeTabSB(HWND hwnd)
 		if (pSB && pSB->m_pTC->m_bVisible) {
 			if (g_pTC != pSB->m_pTC) {
 				g_pTC = pSB->m_pTC;
-				pSB->m_pTC->TabChanged(false);
+				pSB->m_pTC->TabChanged(FALSE);
 			}
 		}
 	}
@@ -3640,7 +3640,7 @@ void CheckChangeTabTC(HWND hwnd, BOOL bFocusSB)
 	if (pTC && pTC->m_bVisible) {
 		if (g_pTC != pTC) {
 			g_pTC = pTC;
-			pTC->TabChanged(false);
+			pTC->TabChanged(FALSE);
 		}
 		if (bFocusSB) {
 			CteShellBrowser *pSB;
@@ -6164,7 +6164,7 @@ LRESULT CALLBACK TEBTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						if (g_pTC != pTC && pTC->m_bVisible) {
 							g_pTC = pTC;
 						}
-						pTC->TabChanged(true);
+						pTC->TabChanged(TRUE);
 						lResult = 0;
 						break;
 					case TCN_SELCHANGING:
@@ -6280,7 +6280,7 @@ LRESULT CALLBACK TETCProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						pTC->m_nIndex = -1;
 						CallWindowProc(pTC->m_DefTCProc, hwnd, TCM_SETCURSEL, nIndex, 0);
 					}
-					pTC->TabChanged(true);
+					pTC->TabChanged(TRUE);
 					ArrangeWindow();
 				}
 				break;
@@ -6288,7 +6288,7 @@ LRESULT CALLBACK TETCProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				if (wParam != (UINT_PTR)TabCtrl_GetCurSel(hwnd)) {
 					CallWindowProc(pTC->m_DefTCProc, hwnd, msg, wParam, lParam);
 					Result = 0;
-					pTC->TabChanged(true);
+					pTC->TabChanged(TRUE);
 					if (g_param[TE_Tab] && pTC->m_param[TC_Align] == 1) {
 						if (pTC->m_param[TE_Flags] & TCS_SCROLLOPPOSITE) {
 							ArrangeWindow();
@@ -6651,16 +6651,28 @@ VOID teApiMemory(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVa
 	char *pc = NULL;;
 	LPWSTR sz = NULL;
 	int nCount = 1;
+	IUnknown *punk;
+	IStream *pStream = NULL;
 	int i = 0;
 	if (pDispParams->rgvarg[nArg].vt == VT_BSTR) {
 		sz = pDispParams->rgvarg[nArg].bstrVal;
 		i = GetSizeOfStruct(sz);
-	}
-	if (pDispParams->rgvarg[nArg].vt & VT_ARRAY) {
+	} else if (pDispParams->rgvarg[nArg].vt & VT_ARRAY) {
 		pc = pDispParams->rgvarg[nArg].pcVal;
 		nCount = pDispParams->rgvarg[nArg].parray->rgsabound[0].cElements;
 		i = SizeOfvt(pDispParams->rgvarg[nArg].vt);
 		sz = L"SAFEARRAY";
+	} else if (nArg >= 1 && FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
+		if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pStream))) {
+			sz = L"IStream";
+			i = 1;
+			ULARGE_INTEGER uliSize;
+			LARGE_INTEGER liOffset;
+			liOffset.QuadPart = 0;
+			pStream->Seek(liOffset, STREAM_SEEK_END, &uliSize);
+			pStream->Seek(liOffset, STREAM_SEEK_SET, NULL);
+			nCount = uliSize.QuadPart < param[1].lVal ? uliSize.LowPart : param[1].lVal;
+		}
 	}
 	if (i == 0) {
 		i = param[0].lVal;
@@ -6669,7 +6681,7 @@ VOID teApiMemory(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVa
 		}
 	}
 	BSTR bs = NULL;
-	if (nArg >= 1) {
+	if (nArg >= 1 && !pStream) {
 		if (i == 2 && pDispParams->rgvarg[nArg - 1].vt == VT_BSTR) {
 			bs = pDispParams->rgvarg[nArg - 1].bstrVal;
 			nCount = SysStringByteLen(bs) / 2 + 1;
@@ -6686,6 +6698,11 @@ VOID teApiMemory(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVa
 	pMem = new CteMemory(i * nCount, pc, nCount, sz);
 	if (bs) {
 		::CopyMemory(pMem->m_pc, bs, nCount * 2);
+	}
+	if (pStream) {
+		ULONG ulBytesRead;
+		pStream->Read(pMem->m_pc, nCount, &ulBytesRead);
+		pStream->Release();
 	}
 	teSetObjectRelease(pVarResult, pMem);
 }
@@ -7092,6 +7109,9 @@ VOID teApiILRemoveLastID(int nArg, teParam *param, DISPPARAMS *pDispParams, VARI
 	if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
 		if (!ILIsEmpty(pidl)) {
 			if (::ILRemoveLastID(pidl)) {
+				if (ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
+					teILCloneReplace(&pidl, g_pidls[CSIDL_DESKTOP]);
+				}
 				teSetIDList(pVarResult, pidl);
 			}
 		}
@@ -9522,6 +9542,32 @@ VOID teApiSetEvent(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *p
 	teSetBool(pVarResult, SetEvent(param[0].handle));
 }
 
+VOID teApiPlaySound(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetBool(pVarResult, PlaySound(param[0].lpcwstr, param[1].hmodule, param[2].dword));
+}
+
+VOID teApiSHCreateStreamOnFileEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	IUnknown *punk;
+	IStream *pStream0 = NULL;
+	if (FindUnknown(&pDispParams->rgvarg[nArg - 4], &punk)) {
+		punk->QueryInterface(IID_PPV_ARGS(&pStream0));
+	}
+	IStream *pStream = NULL;
+	teSetLong(pVarResult, SHCreateStreamOnFileEx(param[0].lpcwstr, param[1].dword, param[2].dword, param[3].boolVal, pStream0, &pStream));
+	if (pStream) {
+		if (FindUnknown(&pDispParams->rgvarg[nArg - 5], &punk)) {
+			VARIANT v;
+			v.vt = VT_DISPATCH;
+			v.pdispVal = new CteObject(IID_IStream, pStream);
+			tePutPropertyAt(punk, 0, &v);
+			VariantClear(&v);
+		}
+		pStream->Release();
+	}
+}
+
 /*
 VOID teApi(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -9845,6 +9891,8 @@ TEDispatchApi dispAPI[] = {
 	{ 1,  0, -1, -1, "DeleteFile", teApiDeleteFile },
 	{ 4,  3, -1, -1, "CreateEvent", teApiCreateEvent },
 	{ 1, -1, -1, -1, "SetEvent", teApiSetEvent },
+	{ 3,  0, -1, -1, "PlaySound", teApiPlaySound },
+	{ 6,  0, -1, -1, "SHCreateStreamOnFileEx", teApiSHCreateStreamOnFileEx },	
 //	{ 0, -1, -1, -1, "", teApi },
 //	{ 0, -1, -1, -1, "Test", teApiTest },
 };
@@ -10375,6 +10423,7 @@ VOID CALLBACK teTimerProcSort(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTi
 		if (pSB) {
 			IFolderView2 *pFV2;
 			if SUCCEEDED(pSB->m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
+				pSB->m_nSorting = TESORTING;
 				pFV2->SetSortColumns(pSC->pSC, pSC->nCount);
 				pFV2->Release();
 			}
@@ -10386,6 +10435,43 @@ VOID CALLBACK teTimerProcSort(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTi
 		g_nException = 0;
 #ifdef _DEBUG
 		g_strException = L"teTimerProcSort";
+#endif
+	}
+}
+
+VOID CALLBACK teTimerProcGroupBy(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+{
+	KillTimer(hwnd, idEvent);
+	BSTR bs = (BSTR)idEvent;
+	try {
+		CteShellBrowser *pSB = SBfromhwnd(hwnd);
+		if (pSB) {
+			pSB->SetGroupBy(bs);
+		}
+		::SysFreeString(bs);
+	} catch (...) {
+		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"teTimerProcGroupBy";
+#endif
+	}
+}
+
+VOID CALLBACK teTimerProcTabChanged(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+{
+	KillTimer(hwnd, idEvent);
+	BSTR bs = (BSTR)idEvent;
+	try {
+		CteShellBrowser *pSB = SBfromhwnd(hwnd);
+		if (pSB) {
+			pSB->SetStatusTextSB(NULL);
+			DoFunc(TE_OnSelectionChanged, pSB->m_pTC, E_NOTIMPL);
+			ArrangeWindow();
+		}
+	} catch (...) {
+		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"teTimerProcTabChanged";
 #endif
 	}
 }
@@ -11920,6 +12006,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	m_nFolderSizeIndex = MAXINT;
 	m_nLabelIndex = MAXINT;
 	m_bRegenerateItems = FALSE;
+	m_nSorting = TESORTING;
 	GetNewObject(&m_ppDispatch[SB_TotalFileSize]);
 	SafeRelease(&m_ppDispatch[SB_AltSelectedItems]);
 	CteFolderItem *pid1 = NULL;
@@ -12153,6 +12240,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 					SORTCOLUMN col;
 					if SUCCEEDED(pSF2->MapColumnToSCID(0, &col.propkey)) {
 						col.direction = SORT_ASCENDING;
+						m_nSorting = TESORTING;
 						pFV2->SetSortColumns(&col, 1);
 					}
 					pSF2->Release();
@@ -12479,6 +12567,7 @@ VOID CteShellBrowser::Refresh(BOOL bCheck)
 			m_bRefreshing = TRUE;
 			if (ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
 				m_bBeforeNavigate = MAXINT;
+				m_nSorting = TESORTING;
 				RemoveAll();
 				m_dwSessionId = MAKELONG(GetTickCount(), rand());
 				SetTabName();
@@ -14372,6 +14461,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			case DISPID_ICONSIZECHANGED://XP-
 				return DoFunc(TE_OnIconSizeChanged, this, S_OK);
 			case DISPID_SORTDONE://XP-
+				m_nSorting = 0;
 				if (m_nFocusItem < 0) {
 					FocusItem(FALSE);
 				}
@@ -15996,6 +16086,7 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 						m_pTC->LockUpdate(TRUE);
 						col.propkey = PKEY_ItemNameDisplay;
 						col.direction = -pSC->pSC->direction;
+						m_nSorting = TESORTING;
 						pFV2->SetSortColumns(&col, 1);
 						m_nFocusItem = -1;
 						SetTimer(m_hwnd, (UINT_PTR)pSC, 100, teTimerProcSort);
@@ -16030,6 +16121,7 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 				pFV2->GetSortColumnCount(&nCount);
 				if (nCount != 1 || col.direction != col2.direction || col.propkey.pid != col2.propkey.pid || !IsEqualFMTID(col.propkey.fmtid, col2.propkey.fmtid)) {
 					m_nFocusItem = -1;
+					m_nSorting = TESORTING;
 					pFV2->SetSortColumns(&col, 1);
 				}
 			}
@@ -16088,7 +16180,12 @@ VOID CteShellBrowser::SetGroupBy(BSTR bs)
 	LPWSTR szNew = &bs[dir];
 	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
 		if SUCCEEDED(PropertyKeyFromName(szNew, &propKey)) {
-			pFV2->SetGroupBy(propKey, !dir);
+			if (m_nSorting && ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
+				m_nSorting--;
+				SetTimer(m_hwnd, (UINT_PTR)::SysAllocString(bs), 100, teTimerProcGroupBy);
+			} else {
+				pFV2->SetGroupBy(propKey, !dir);
+			}
 		}
 		pFV2->Release();
 		return;
@@ -18114,7 +18211,7 @@ VOID CteTabCtrl::Move(int nSrc, int nDest, CteTabCtrl *pDestTab)
 					TabCtrl_SetCurSel(m_hwnd, nSrc);
 				} else {
 					TabCtrl_SetCurSel(m_hwnd, nDest);
-					TabChanged(true);
+					TabChanged(TRUE);
 				}
 			}
 		}
@@ -18180,9 +18277,14 @@ VOID CteTabCtrl::TabChanged(BOOL bSameTC)
 	}
 	CteShellBrowser *pSB = GetShellBrowser(m_nIndex);
 	if (pSB) {
-		pSB->SetStatusTextSB(NULL);
-		DoFunc(TE_OnSelectionChanged, this, E_NOTIMPL);
-		ArrangeWindow();
+		if (bSameTC) {
+			KillTimer(pSB->m_hwnd, 2);
+			pSB->SetStatusTextSB(NULL);
+			DoFunc(TE_OnSelectionChanged, pSB->m_pTC, E_NOTIMPL);
+			ArrangeWindow();
+		} else {
+			SetTimer(pSB->m_hwnd, 2, GetDoubleClickTime(), teTimerProcTabChanged);
+		}
 	}
 }
 
@@ -22476,7 +22578,7 @@ VOID CteWICBitmap::FromStreamRelease(IStream *pStream, LPWSTR lpfn, BOOL bExtend
 				if (InterlockedIncrement(&g_nProcIMG) < 8) {
 					VARIANTARG *pv = GetNewVARIANT(4);
 					teSetObject(&pv[3], this);
-					teSetObject(&pv[2], pStream);
+					teSetObjectRelease(&pv[2], new CteObject(IID_IStream, pStream));
 					teSetSZ(&pv[1], lpfn);
 					if (pvCX) {
 						::VariantCopy(&pv[0], pvCX);
@@ -24048,5 +24150,86 @@ STDMETHODIMP CteProgressDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lc
 	} catch (...) {
 		return teException(pExcepInfo, "ProgressDialog", methodPD, dispIdMember);
 	}
+	return DISP_E_MEMBERNOTFOUND;
+}
+
+//CteObject
+CteObject::CteObject(REFIID riid, PVOID pObj)
+{
+	m_iid = riid;
+	try {
+		IUnknown *punk = static_cast<IUnknown *>(pObj);
+		punk->QueryInterface(IID_PPV_ARGS(&m_punk));
+	} catch (...) {}
+	m_cRef = 1;
+}
+
+CteObject::~CteObject()
+{
+	SafeRelease(&m_punk);
+}
+
+STDMETHODIMP CteObject::QueryInterface(REFIID riid, void **ppvObject)
+{
+	*ppvObject = NULL;
+
+	if (IsEqualIID(riid, IID_IUnknown) || IsEqualIID(riid, IID_IDispatch)) {
+		*ppvObject = static_cast<IDispatch *>(this);
+	} else if (m_punk && IsEqualIID(riid, m_iid)) {
+		return m_punk->QueryInterface(riid, ppvObject);
+	} else {
+		return E_NOINTERFACE;
+	}
+	AddRef();
+
+	return S_OK;
+}
+
+STDMETHODIMP_(ULONG) CteObject::AddRef()
+{
+	return ::InterlockedIncrement(&m_cRef);
+}
+
+STDMETHODIMP_(ULONG) CteObject::Release()
+{
+	if (::InterlockedDecrement(&m_cRef) == 0) {
+		delete this;
+		return 0;
+	}
+
+	return m_cRef;
+}
+
+STDMETHODIMP CteObject::GetTypeInfoCount(UINT *pctinfo)
+{
+	*pctinfo = 0;
+	return S_OK;
+}
+
+STDMETHODIMP CteObject::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo)
+{
+	return E_NOTIMPL;
+}
+
+STDMETHODIMP CteObject::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
+{
+	if (lstrcmpi(*rgszNames, L"Free") == 0) {
+		*rgDispId = 0x60010001;
+		return S_OK;
+	}
+	return E_NOTIMPL;
+}
+
+STDMETHODIMP CteObject::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
+{
+	switch (dispIdMember) {
+		case 0x60010001:
+			SafeRelease(&m_punk);
+			return S_OK;
+		//this
+		case DISPID_VALUE:
+			teSetObject(pVarResult, this);
+			return S_OK;
+	}//end_switch
 	return DISP_E_MEMBERNOTFOUND;
 }
