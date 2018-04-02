@@ -119,7 +119,6 @@ TITLE = "Tablacus Explorer";
 ssfRESULTSFOLDER = 0x40;
 FILTER_IMAGE = "*.jpg;*.jpeg;*.png;*.bmp;*.gif;*.ico;data:*";
 REGEXP_IMAGE = /^data:|\.jpe?g$|\.png$|\.bmp$|\.gif$|\.ico$/i;
-XHRBODY = 'responseBody';
 
 BUTTONS = WINVER > 0x603 ?
 {

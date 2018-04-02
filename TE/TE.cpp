@@ -1207,6 +1207,11 @@ TEmethod methodPD[] = {
 	{ 0, NULL }
 };
 
+TEmethod methodCO[] = {
+	{ 0x60010001, "Free" },
+	{ 0, NULL }
+};
+
 // Forward declarations of functions included in this code module:
 ATOM MyRegisterClass(HINSTANCE hInstance, LPWSTR szClassName, WNDPROC lpfnWndProc);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -4129,8 +4134,7 @@ BOOL teCreateSafeArray(VARIANT *pv, PVOID pSrc, DWORD dwSize, BOOL bBSTR)
 			::CopyMemory(pv->bstrVal, pSrc, dwSize);
 		}
 		return TRUE;
-	}
-	else {
+	} else {
 		pv->parray = SafeArrayCreateVector(VT_UI1, 0, dwSize);
 		if (pv->parray) {
 			pv->vt = VT_ARRAY | VT_UI1;
@@ -9549,23 +9553,29 @@ VOID teApiPlaySound(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *
 
 VOID teApiSHCreateStreamOnFileEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	IUnknown *punk;
+	IUnknown *punk = NULL;
 	IStream *pStream0 = NULL;
-	if (FindUnknown(&pDispParams->rgvarg[nArg - 4], &punk)) {
+	if (nArg >= 4 && FindUnknown(&pDispParams->rgvarg[nArg - 4], &punk)) {
 		punk->QueryInterface(IID_PPV_ARGS(&pStream0));
 	}
 	IStream *pStream = NULL;
-	teSetLong(pVarResult, SHCreateStreamOnFileEx(param[0].lpcwstr, param[1].dword, param[2].dword, param[3].boolVal, pStream0, &pStream));
-	if (pStream) {
-		if (FindUnknown(&pDispParams->rgvarg[nArg - 5], &punk)) {
-			VARIANT v;
-			v.vt = VT_DISPATCH;
-			v.pdispVal = new CteObject(IID_IStream, pStream);
-			tePutPropertyAt(punk, 0, &v);
-			VariantClear(&v);
+	if (nArg >= 5) {
+		teSetLong(pVarResult, SHCreateStreamOnFileEx(param[0].lpcwstr, param[1].dword, param[2].dword, param[3].boolVal, pStream0, &pStream));
+		if (pStream) {
+			if (FindUnknown(&pDispParams->rgvarg[nArg - 5], &punk)) {
+				VARIANT v;
+				v.vt = VT_DISPATCH;
+				v.pdispVal = new CteObject(pStream);
+				tePutPropertyAt(punk, 0, &v);
+				VariantClear(&v);
+			}
+			pStream->Release();
 		}
-		pStream->Release();
+		return;
 	}
+	SHCreateStreamOnFileEx(param[0].lpcwstr, param[1].dword, param[2].dword, param[3].boolVal, pStream0, &pStream);
+	teSetObjectRelease(pVarResult, new CteObject(pStream));
+	SafeRelease(&pStream);
 }
 
 /*
@@ -9892,7 +9902,7 @@ TEDispatchApi dispAPI[] = {
 	{ 4,  3, -1, -1, "CreateEvent", teApiCreateEvent },
 	{ 1, -1, -1, -1, "SetEvent", teApiSetEvent },
 	{ 3,  0, -1, -1, "PlaySound", teApiPlaySound },
-	{ 6,  0, -1, -1, "SHCreateStreamOnFileEx", teApiSHCreateStreamOnFileEx },	
+	{ 4,  0, -1, -1, "SHCreateStreamOnFileEx", teApiSHCreateStreamOnFileEx },	
 //	{ 0, -1, -1, -1, "", teApi },
 //	{ 0, -1, -1, -1, "Test", teApiTest },
 };
@@ -10420,7 +10430,7 @@ VOID CALLBACK teTimerProcSort(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTi
 	TESortColumns *pSC = (TESortColumns *)idEvent;
 	try {
 		CteShellBrowser *pSB = SBfromhwnd(hwnd);
-		if (pSB) {
+		if (pSB && pSB->m_dwSessionId == pSC->dwSessionId) {
 			IFolderView2 *pFV2;
 			if SUCCEEDED(pSB->m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
 				pSB->m_nSorting = TESORTING;
@@ -10442,13 +10452,14 @@ VOID CALLBACK teTimerProcSort(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTi
 VOID CALLBACK teTimerProcGroupBy(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 {
 	KillTimer(hwnd, idEvent);
-	BSTR bs = (BSTR)idEvent;
+	TEGroupBy *pGB = (TEGroupBy *)idEvent;
 	try {
 		CteShellBrowser *pSB = SBfromhwnd(hwnd);
-		if (pSB) {
-			pSB->SetGroupBy(bs);
+		if (pSB && pSB->m_dwSessionId == pGB->dwSessionId) {
+			pSB->SetGroupBy(pGB->bs);
 		}
-		::SysFreeString(bs);
+		::SysFreeString(pGB->bs);
+		delete [] pGB;
 	} catch (...) {
 		g_nException = 0;
 #ifdef _DEBUG
@@ -16082,6 +16093,7 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 					TESortColumns *pSC = new TESortColumns[1];
 					pSC->pSC = new SORTCOLUMN[nCount];
 					pSC->nCount = nCount;
+					pSC->dwSessionId = m_dwSessionId;
 					if SUCCEEDED(pFV2->GetSortColumns(pSC->pSC, pSC->nCount)) {
 						m_pTC->LockUpdate(TRUE);
 						col.propkey = PKEY_ItemNameDisplay;
@@ -16182,7 +16194,10 @@ VOID CteShellBrowser::SetGroupBy(BSTR bs)
 		if SUCCEEDED(PropertyKeyFromName(szNew, &propKey)) {
 			if (m_nSorting && ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
 				m_nSorting--;
-				SetTimer(m_hwnd, (UINT_PTR)::SysAllocString(bs), 100, teTimerProcGroupBy);
+				TEGroupBy *pGB = new TEGroupBy[1];
+				pGB->bs = ::SysAllocString(bs);
+				pGB->dwSessionId = m_dwSessionId;
+				SetTimer(m_hwnd, (UINT_PTR)pGB, 100, teTimerProcGroupBy);
 			} else {
 				pFV2->SetGroupBy(propKey, !dir);
 			}
@@ -22578,7 +22593,8 @@ VOID CteWICBitmap::FromStreamRelease(IStream *pStream, LPWSTR lpfn, BOOL bExtend
 				if (InterlockedIncrement(&g_nProcIMG) < 8) {
 					VARIANTARG *pv = GetNewVARIANT(4);
 					teSetObject(&pv[3], this);
-					teSetObjectRelease(&pv[2], new CteObject(IID_IStream, pStream));
+					CteObject *poStrm = new CteObject(pStream);
+					teSetObject(&pv[2], poStrm);
 					teSetSZ(&pv[1], lpfn);
 					if (pvCX) {
 						::VariantCopy(&pv[0], pvCX);
@@ -23059,12 +23075,12 @@ STDMETHODIMP CteWindowsAPI::QueryInterface(REFIID riid, void **ppvObject)
 
 	if (IsEqualIID(riid, IID_IUnknown) || IsEqualIID(riid, IID_IDispatch)) {
 		*ppvObject = static_cast<IDispatch *>(this);
-	} else {
-		return E_NOINTERFACE;
-	}
-	AddRef();
-
-	return S_OK;
+	static const QITAB qit[] =
+	{
+		QITABENT(CteWindowsAPI, IDispatch),
+		{ 0 },
+	};
+	return QISearch(this, qit, riid, ppvObject);
 }
 
 STDMETHODIMP_(ULONG) CteWindowsAPI::AddRef()
@@ -24154,17 +24170,24 @@ STDMETHODIMP CteProgressDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lc
 }
 
 //CteObject
-CteObject::CteObject(REFIID riid, PVOID pObj)
+CteObject::CteObject(PVOID pObj)
 {
-	m_iid = riid;
-	try {
-		IUnknown *punk = static_cast<IUnknown *>(pObj);
-		punk->QueryInterface(IID_PPV_ARGS(&m_punk));
-	} catch (...) {}
+	m_punk = NULL;
+	if (pObj) {
+		try {
+			IUnknown *punk = static_cast<IUnknown *>(pObj);
+			punk->QueryInterface(IID_PPV_ARGS(&m_punk));
+		} catch (...) {}
+	}
 	m_cRef = 1;
 }
 
 CteObject::~CteObject()
+{
+	Clear();
+}
+
+VOID CteObject::Clear()
 {
 	SafeRelease(&m_punk);
 }
@@ -24175,14 +24198,13 @@ STDMETHODIMP CteObject::QueryInterface(REFIID riid, void **ppvObject)
 
 	if (IsEqualIID(riid, IID_IUnknown) || IsEqualIID(riid, IID_IDispatch)) {
 		*ppvObject = static_cast<IDispatch *>(this);
-	} else if (m_punk && IsEqualIID(riid, m_iid)) {
-		return m_punk->QueryInterface(riid, ppvObject);
-	} else {
-		return E_NOINTERFACE;
+		AddRef();
+		return S_OK;
 	}
-	AddRef();
-
-	return S_OK;
+	if (m_punk) {
+		return m_punk->QueryInterface(riid, ppvObject);
+	}
+	return E_NOINTERFACE;
 }
 
 STDMETHODIMP_(ULONG) CteObject::AddRef()
@@ -24213,18 +24235,14 @@ STDMETHODIMP CteObject::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo)
 
 STDMETHODIMP CteObject::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	if (lstrcmpi(*rgszNames, L"Free") == 0) {
-		*rgDispId = 0x60010001;
-		return S_OK;
-	}
-	return E_NOTIMPL;
+	return teGetDispId(methodCO, 0, NULL, *rgszNames, rgDispId, true);
 }
 
 STDMETHODIMP CteObject::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
 {
 	switch (dispIdMember) {
 		case 0x60010001:
-			SafeRelease(&m_punk);
+			Clear();
 			return S_OK;
 		//this
 		case DISPID_VALUE:

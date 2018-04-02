@@ -530,7 +530,14 @@ struct TEAddItems
 struct TESortColumns
 {
 	SORTCOLUMN *pSC;
-	int   nCount;
+	int nCount;
+	DWORD dwSessionId;
+};
+
+struct TEGroupBy
+{
+	BSTR bs;
+	DWORD dwSessionId;
 };
 
 const CLSID CLSID_ShellShellNameSpace = {0x2F2F1F96, 0x2BC1, 0x4b1c, { 0xBE, 0x28, 0xEA, 0x37, 0x74, 0xF4, 0x67, 0x6A}};
@@ -1649,10 +1656,11 @@ public:
 	STDMETHODIMP GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId);
 	STDMETHODIMP Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr);
 
-	CteObject(REFIID riid, PVOID pObj);
+	CteObject(PVOID pObj);
 	~CteObject();
+
+	VOID Clear();
 public:
 	LONG	m_cRef;
-	IID		m_iid;
 	IUnknown *m_punk;
 };
