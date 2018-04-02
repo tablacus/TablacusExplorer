@@ -22600,6 +22600,8 @@ VOID CteWICBitmap::FromStreamRelease(IStream *pStream, LPWSTR lpfn, BOOL bExtend
 						::VariantCopy(&pv[0], pvCX);
 					}
 					Invoke4(g_pOnFunc[TE_OnFromStream], NULL, 4, pv);
+					poStrm->Clear();
+					SafeRelease(&poStrm);
 				}
 			} catch(...) {}
 			::InterlockedDecrement(&g_nProcIMG);
@@ -23071,10 +23073,6 @@ CteWindowsAPI::~CteWindowsAPI()
 
 STDMETHODIMP CteWindowsAPI::QueryInterface(REFIID riid, void **ppvObject)
 {
-	*ppvObject = NULL;
-
-	if (IsEqualIID(riid, IID_IUnknown) || IsEqualIID(riid, IID_IDispatch)) {
-		*ppvObject = static_cast<IDispatch *>(this);
 	static const QITAB qit[] =
 	{
 		QITABENT(CteWindowsAPI, IDispatch),
