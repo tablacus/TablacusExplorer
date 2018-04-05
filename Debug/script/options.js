@@ -2187,7 +2187,7 @@ function GetTextEx(s)
 
 function GetAddons()
 {
-	OpenHttpRequest(urlAddons + "index.xml", "http", AddonsList);
+	MainWindow.OpenHttpRequest(urlAddons + "index.xml", "http", AddonsList);
 }
 
 function UpdateAddon(Id, o)
@@ -2357,7 +2357,7 @@ function Install(o, bUpdate)
 		return;
 	}
 	var file = o.title.replace(/\./, "") + '.zip';
-	OpenHttpRequest(urlAddons + Id + '/' + file, "http", Install2, o);
+	MainWindow.OpenHttpRequest(urlAddons + Id + '/' + file, "http", Install2, o);
 }
 
 function Install2(xhr, url, o)
@@ -2368,7 +2368,7 @@ function Install2(xhr, url, o)
 	CreateFolder(temp);
 	var dest = fso.BuildPath(temp, Id);
 	DeleteItem(dest);
-	var hr = Extract(fso.BuildPath(temp, file), temp, xhr);
+	var hr = MainWindow.Extract(fso.BuildPath(temp, file), temp, xhr);
 	if (hr) {
 		MessageBox([api.LoadString(hShell32, 4228).replace(/^\t/, "").replace("%d", api.sprintf(99, "0x%08x", hr)), GetText("Extract"), file].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
 		return;

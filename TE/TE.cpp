@@ -4754,6 +4754,7 @@ VOID teCustomDraw(int nFunc, CteShellBrowser *pSB, CteTreeView *pTV, IShellItem 
 			teSetObjectRelease(&pv[0], new CteMemory(sizeof(HANDLE), plres, 1, L"HANDLE"));
 			Invoke4(g_pOnFunc[nFunc], NULL, 5, pv);
 		} else {
+			VariantClear(&pv[4]);
 			SafeRelease(&pvcd2);
 			delete [] pv;
 		}
@@ -10473,10 +10474,10 @@ VOID CALLBACK teTimerProcTabChanged(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWOR
 	KillTimer(hwnd, idEvent);
 	BSTR bs = (BSTR)idEvent;
 	try {
-		CteShellBrowser *pSB = SBfromhwnd(hwnd);
-		if (pSB) {
-			pSB->SetStatusTextSB(NULL);
-			DoFunc(TE_OnSelectionChanged, pSB->m_pTC, E_NOTIMPL);
+		CteTabCtrl *pTC = TCfromhwnd(hwnd);
+		if (pTC) {
+			SetTimer(g_hwndMain, TET_Status, 500, teTimerProc);
+			DoFunc(TE_OnSelectionChanged, pTC, E_NOTIMPL);
 			ArrangeWindow();
 		}
 	} catch (...) {
@@ -12426,7 +12427,7 @@ VOID CteShellBrowser::FocusItem(BOOL bFree)
 			}
 			pFV->Release();
 		}
-		SetTimer(m_hwnd, 1, 64, teTimerProcFocus);
+		SetTimer(m_hwnd, (UINT_PTR)&m_nFocusItem, 64, teTimerProcFocus);
 		m_nFocusItem = 0;
 	}
 }
@@ -18293,12 +18294,12 @@ VOID CteTabCtrl::TabChanged(BOOL bSameTC)
 	CteShellBrowser *pSB = GetShellBrowser(m_nIndex);
 	if (pSB) {
 		if (bSameTC) {
-			KillTimer(pSB->m_hwnd, 2);
+			KillTimer(m_hwnd, (UINT_PTR)this);
 			pSB->SetStatusTextSB(NULL);
 			DoFunc(TE_OnSelectionChanged, pSB->m_pTC, E_NOTIMPL);
 			ArrangeWindow();
 		} else {
-			SetTimer(pSB->m_hwnd, 2, GetDoubleClickTime(), teTimerProcTabChanged);
+			SetTimer(m_hwnd, (UINT_PTR)this, GetDoubleClickTime(), teTimerProcTabChanged);
 		}
 	}
 }

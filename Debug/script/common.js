@@ -2346,7 +2346,7 @@ function GetAddons()
 
 function CheckUpdate(arg)
 {
-	OpenHttpRequest("https://api.github.com/repos/tablacus/TablacusExplorer/releases/latest", "http://www.eonet.ne.jp/~gakana/tablacus/explorer_en.html", CheckUpdate2, arg);
+	MainWindow.OpenHttpRequest("https://api.github.com/repos/tablacus/TablacusExplorer/releases/latest", "http://www.eonet.ne.jp/~gakana/tablacus/explorer_en.html", CheckUpdate2, arg);
 }
 
 function CheckUpdate2(xhr, url, arg1)
@@ -2398,7 +2398,7 @@ function CheckUpdate2(xhr, url, arg1)
 	arg.temp += "\\explorer";
 	DeleteItem(arg.temp);
 	CreateFolder2(arg.temp);
-	OpenHttpRequest(arg.url, "http", CheckUpdate3, arg);
+	MainWindow.OpenHttpRequest(arg.url, "http", CheckUpdate3, arg);
 }
 
 function CheckUpdate3(xhr, url, arg)
