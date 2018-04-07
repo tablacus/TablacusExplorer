@@ -2214,7 +2214,7 @@ function AddonsList(xhr2)
 	if (xhr2) {
 		xhr = xhr2;
 	}
-	var xml = xhr.responseXML;
+	var xml = xhr.get_responseXML ? xhr.get_responseXML() : xhr.responseXML;
 	if (xml) {
 		xmlAddons = xml.getElementsByTagName("Item");
 		AddonsAppend()

@@ -738,9 +738,6 @@ te.OnNavigateComplete = function (Ctrl)
 {
 	RunEvent1("NavigateComplete", Ctrl);
 	ChangeView(Ctrl);
-	if (api.ILIsEqual(Ctrl.FolderItem.Alt, ssfRESULTSFOLDER)) {
-		Ctrl.SortColumn = Ctrl.ItemCount(SVGIO_ALLVIEW) ? "" : "System.Contact.Label";
-	}
 	if (!g_.tid_rf[Ctrl.Id] && Ctrl.FolderItem.Path == "about:blank" && HOME_PATH != "about:blank") {
 		(function (Ctrl) { g_.tid_rf[Ctrl.Id] = setTimeout(function () {
 			delete g_.tid_rf[Ctrl.Id];

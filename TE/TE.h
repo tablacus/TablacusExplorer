@@ -1102,6 +1102,7 @@ public:
 	VOID SetViewModeAndIconSize(BOOL bSetIconSize);
 	VOID SetListColumnWidth();
 	VOID AddItem(LPITEMIDLIST pidl);
+	VOID NavigateComplete(BOOL bBeginNavigate);
 #ifndef _USE_THREADADDITEMS
 	VOID AddItems(IDispatch *pdisp, BOOL bDeleted, IDispatch *pOnCompleted, BOOL bNavigateComplete);
 #endif
@@ -1130,14 +1131,6 @@ public:
 	IExplorerBrowser *m_pExplorerBrowser;
 	LPITEMIDLIST m_pidl;
 	IShellFolder2 *m_pSF2;
-	DWORD		m_dwNameFormat;
-	BOOL	m_bSetListColumnWidth;
-#ifdef _2000XP
-	TEColumn	*m_pColumns;
-	UINT		m_nColumns;
-#endif
-	DWORD		m_param[SB_Count];
-	WORD		*m_pDTColumns;
 	int			m_nForceViewMode;
 	int			m_nFolderSizeIndex;
 	int			m_nLabelIndex;
@@ -1146,10 +1139,13 @@ public:
 	int			m_nUnload;
 	int			m_nFocusItem;
 	int			m_nSorting;
+	DWORD		m_dwNameFormat;
+	DWORD		m_param[SB_Count];
 	DWORD		m_nOpenedType;
 	DWORD		m_dwCookie;
 	DWORD		m_dwSessionId;
 	COLORREF	m_clrBk, m_clrTextBk, m_clrText;
+	BOOL		m_bSetListColumnWidth;
 	BOOL		m_bEmpty;
 	BOOL		m_bInit;
 	BOOL		m_bVisible;
@@ -1158,6 +1154,11 @@ public:
 	BOOL		m_bRefreshing;
 	BOOL		m_bAutoVM;
 	BOOL		m_bBeforeNavigate;
+	WORD		*m_pDTColumns;
+#ifdef _2000XP
+	TEColumn	*m_pColumns;
+	UINT		m_nColumns;
+#endif
 private:
 	VARIANT		m_vData;
 	FolderItem	**m_ppLog;

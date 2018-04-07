@@ -2352,7 +2352,8 @@ function CheckUpdate(arg)
 function CheckUpdate2(xhr, url, arg1)
 {
 	var arg = {};
-	var res = /<td id="te">.*?<a href="([^"]+)">.*?\(([\d\.]+)\s*KB.*?<\/td>/i.exec(xhr.responseText);
+	var Text = xhr.get_responseText ? xhr.get_responseText() : xhr.responseText;
+	var res = /<td id="te">.*?<a href="([^"]+)">.*?\(([\d\.]+)\s*KB.*?<\/td>/i.exec(Text);
 	if (res) {
 		arg.url = res[1];
 		arg.size = res[2];
@@ -2360,7 +2361,7 @@ function CheckUpdate2(xhr, url, arg1)
 			arg.url = url.replace(/[^\/]*$/, '') + arg.url;
 		}
 	} else {
-		var json = window.JSON ? JSON.parse(xhr.responseText) : (new Function('return ' + xhr.responseText))();
+		var json = window.JSON ? JSON.parse(Text) : api.GetScriptDispatch("function fn () { return " + Text + "}", "JScript", {}).fn();
 		var assets = json.assets;
 		if (json.assets && json.assets[0]) {
 			arg.size = json.assets[0].size / 1024;
