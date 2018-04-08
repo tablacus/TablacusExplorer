@@ -1110,7 +1110,7 @@ TEmethod methodFI[] = {
 	{ 3, "Alt" },
 //	{ 4, "FocusedItem" },
 	{ 5, "Unavailable" },
-	{ 6, "ENum" },
+	{ 6, "Enum" },
 	{ 9, "_BLOB" },	//To be necessary
 	{ 0, NULL }
 };
@@ -9284,40 +9284,34 @@ VOID teApiURLDownloadToFile(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 	IDispatch *pdisp = NULL;
 	IUnknown *punk = NULL;
 	if (GetDispatch(&pDispParams->rgvarg[nArg - 1], &pdisp)) {
-		HRESULT hr = E_FAIL;
-		VARIANT v;
-		//XMLHTTPRequest does not support responseStream.
-/*		if SUCCEEDED(teGetProperty(pdisp, L"responseStream", &v)) {
-			if (FindUnknown(&v, &punk)) {
-				IStream *pDst, *pSrc;
-				hr = punk->QueryInterface(IID_PPV_ARGS(&pSrc));
-				if SUCCEEDED(hr) {
-					hr = SHCreateStreamOnFileEx(param[2].bstrVal, STGM_WRITE | STGM_CREATE | STGM_SHARE_DENY_WRITE, FILE_ATTRIBUTE_NORMAL, TRUE, NULL, &pDst);
-					if SUCCEEDED(hr) {
-						teCopyStream(pSrc, pDst);
-						pDst->Release();
-					}
-					pSrc->Release();
-				}
+		IStream *pDst, *pSrc;
+		HRESULT hr = pdisp->QueryInterface(IID_PPV_ARGS(&pSrc));
+		if SUCCEEDED(hr) {
+			hr = SHCreateStreamOnFileEx(param[2].bstrVal, STGM_WRITE | STGM_CREATE | STGM_SHARE_DENY_WRITE, FILE_ATTRIBUTE_NORMAL, TRUE, NULL, &pDst);
+			if SUCCEEDED(hr) {
+				teCopyStream(pSrc, pDst);
+				pDst->Release();
 			}
-			VariantClear(&v);
-		} else
-*/
-		if SUCCEEDED(teGetProperty(pdisp, L"responseBody", &v)) {
-			UCHAR *pc;
-			int nLen = 0;
-			GetpDataFromVariant(&pc, &nLen, &v);
-			if (nLen) {
-				HANDLE hFile = CreateFile(param[2].bstrVal, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-				if (hFile != INVALID_HANDLE_VALUE) {
-					DWORD dwWriteByte;
-					if (WriteFile(hFile, pc, nLen, &dwWriteByte, NULL)) {
-						hr = S_OK;
+			pSrc->Release();
+		}
+		if FAILED(hr) {
+			VARIANT v;
+			if SUCCEEDED(teGetProperty(pdisp, L"responseBody", &v)) {
+				UCHAR *pc;
+				int nLen = 0;
+				GetpDataFromVariant(&pc, &nLen, &v);
+				if (nLen) {
+					HANDLE hFile = CreateFile(param[2].bstrVal, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+					if (hFile != INVALID_HANDLE_VALUE) {
+						DWORD dwWriteByte;
+						if (WriteFile(hFile, pc, nLen, &dwWriteByte, NULL)) {
+							hr = S_OK;
+						}
+						CloseHandle(hFile);
 					}
-					CloseHandle(hFile);
 				}
+				VariantClear(&v);
 			}
-			VariantClear(&v);
 		}
 		pdisp->Release();
 		teSetLong(pVarResult, hr);

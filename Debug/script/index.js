@@ -3339,18 +3339,17 @@ AddEvent("OptionDecode", function (Id, p)
 
 AddEvent("BeginNavigate", function (Ctrl)
 {
-	var fn = Ctrl.FolderItem.ENum;
-	if (fn && !g_.tid_rf[Ctrl.Id]) {
-		g_.tid_rf[Ctrl.Id] = setTimeout(function ()
-		{
-			delete g_.tid_rf[Ctrl.Id];
-			var Items = fn(Ctrl.FolderItem, Ctrl, function (Ctrl, Items) {
-				Ctrl.AddItems(Items, true, true);
-			});
-			if (Items) {
+	var fn = Ctrl.FolderItem.Enum;
+	if (fn) {
+		var SessionId = Ctrl.SessionId;
+		var Items = fn(Ctrl.FolderItem, Ctrl, function (Ctrl, Items) {
+			if (Ctrl.SessionId == SessionId) {
 				Ctrl.AddItems(Items, true, true);
 			}
-		}, 99);
+		}, SessionId);
+		if (Items) {
+			Ctrl.AddItems(Items, true, true);
+		}
 		return S_FALSE;
 	}
 });

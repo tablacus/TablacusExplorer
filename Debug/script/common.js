@@ -95,8 +95,8 @@ FolderMenu =
 					bSep = true;
 				}
 			}
-			if (FolderItem.ENum) {
-				Items = FolderItem.ENum(FolderItem);
+			if (FolderItem.Enum) {
+				Items = FolderItem.Enum(FolderItem);
 			}
 			if (!Items) {
 				var Folder = FolderItem.GetFolder;
