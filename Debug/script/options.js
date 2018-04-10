@@ -53,19 +53,15 @@ function OpenGroup(id)
 
 function LoadChecked(form)
 {
-	for(i = 0; i < form.length; i++) {
+	for(var i = 0; i < form.length; i++) {
 		var o = form[i];
-		if (/=/.test(o.id)) {
-			var ar = o.id.split("=");
-			if (form[ar[0]].value == (api.sscanf(ar[1], "0x%x") || ar[1])) {
-				form[i].checked = true;
-			}
+		var ar = o.id.split("=");
+		if (ar.length > 1 && form[ar[0]].value == (api.sscanf(ar[1], "0x%x") || ar[1])) {
+			form[i].checked = true;
 		}
-		if (/:/.test(o.id)) {
-			var ar = o.id.split(":");
-			if (form[ar[0]].value & (api.sscanf(ar[1], "0x%x") || ar[1])) {
-				form[i].checked = true;
-			}
+		ar = o.id.split(":");
+		if (ar.length > 1 && form[ar[0]].value & (api.sscanf(ar[1], "0x%x") || ar[1])) {
+			form[i].checked = true;
 		}
 	}
 }
@@ -260,16 +256,21 @@ function ClickButton(n, f)
 function SetRadio(o)
 {
 	var ar = o.id.split("=");
-	document.F[ar[0]].value = ar[1];
+	o.form[ar[0]].value = ar[1];
+	var res = /^(Tab|Tree|View|Conf)/.exec(ar[0]);
+	if (res) {
+		MainWindow.g_.OptionsWindow.g_Chg[res[1]] = true;
+		MainWindow.g_.OptionsWindow.g_bChanged = true;
+	}
 }
 
 function SetCheckbox(o)
 {
 	var ar = o.id.split(":");
 	if (o.checked) {
-		document.F[ar[0]].value |= (api.sscanf(ar[1], "0x%x") || ar[1]);
+		o.form[ar[0]].value |= (api.sscanf(ar[1], "0x%x") || ar[1]);
 	} else {
-		document.F[ar[0]].value &= ~(api.sscanf(ar[1], "0x%x") || ar[1]);
+		o.form[ar[0]].value &= ~(api.sscanf(ar[1], "0x%x") || ar[1]);
 	}
 	var res = /^(Tab|Tree|View|Conf)/.exec(ar[0]);
 	if (res) {
@@ -297,7 +298,7 @@ function ChooseColor1(o)
 {
 	setTimeout(function ()
 	{
-		var o2 = document.F[o.id.replace("Color_", "")];
+		var o2 = o.form[o.id.replace("Color_", "")];
 		var c = ChooseColor(o2.value);
 		if (isFinite(c)) {
 			o2.value = c;
@@ -310,7 +311,7 @@ function ChooseColor2(o)
 {
 	setTimeout(function ()
 	{
-		var o2 = document.F[o.id.replace("Color_", "")];
+		var o2 = o.form[o.id.replace("Color_", "")];
 		var c = ChooseColor(GetWinColor(o2.value));
 		if (isFinite(c)) {
 			c = GetWebColor(c);
@@ -453,7 +454,7 @@ function SelectPos(o, s)
 {
 	var v = o[o.selectedIndex].value;
 	if (v != "") {
-		document.F[s].value = v;
+		o.form[s].value = v;
 	}
 }
 
@@ -461,11 +462,11 @@ function SwitchMenus(o)
 {
 	if (g_x.Menus) {
 		g_x.Menus.style.display = "none";
-		var o = document.F.elements.Menus;
+		var o = o.form.elements.Menus;
 		for (var i = o.length; i-- > 0;) {
 			var a = o[i].value.split(",");
 			if ("Menus_" + a[0] == g_x.Menus.name) {
-				s = a[0] + "," + document.F["Menus_Base"].selectedIndex + "," + document.F["Menus_Pos"].value;
+				s = a[0] + "," + o.form["Menus_Base"].selectedIndex + "," + o.form["Menus_Pos"].value;
 				if (s != o[i].value) {
 					g_Chg.Menus = true;
 					o[i].value = s;
@@ -476,10 +477,10 @@ function SwitchMenus(o)
 	}
 	if (o) {
 		var a = o.value.split(",");
-		g_x.Menus = document.F["Menus_" + a[0]];
+		g_x.Menus = o.form["Menus_" + a[0]];
 		g_x.Menus.style.display = "inline";
-		document.F["Menus_Base"].selectedIndex = a[1];
-		document.F["Menus_Pos"].value = api.LowPart(a[2]);
+		o.form["Menus_Base"].selectedIndex = a[1];
+		o.form["Menus_Pos"].value = api.LowPart(a[2]);
 		CancelX("Menus");
 	}
 }
@@ -487,7 +488,7 @@ function SwitchMenus(o)
 function SwitchX(mode, o, form)
 {
 	g_x[mode].style.display = "none";
-	g_x[mode] = (form || document.F)[mode + o.value];
+	g_x[mode] = (form || o.form)[mode + o.value];
 	g_x[mode].style.display = "inline";
 	CancelX(mode);
 }
@@ -1296,7 +1297,7 @@ function CancelOptions()
 InitOptions = function ()
 {
 	ApplyLang(document);
-
+	MainWindow.g_.OptionsWindow = window;
 	var InstallPath = fso.GetParentFolderName(api.GetModuleFileName(null));
 	document.F.ButtonInitConfig.disabled = (InstallPath == te.Data.DataFolder) | !fso.FolderExists(fso.BuildPath(InstallPath, "layout"));
 	for (i in document.F.elements) {
@@ -1798,6 +1799,7 @@ InitLocation = function ()
 			if (window.SaveLocation) {
 				window.SaveLocation();
 			}
+			delete MainWindow.g_.OptionsWindow;
 			var items = te.Data.Addons.getElementsByTagName(dialogArguments.Data.id);
 			if (items.length) {
 				var item = items[0];

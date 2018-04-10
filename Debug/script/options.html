@@ -36,13 +36,6 @@
               <br />
               <div id="tab2_" style="margin-left: 1.667em">
               </div>
-              <a id="tabbtn3" class="treebutton" onclick="ClickButton(3);"></a>
-              <label id="tab3" class="button" style="width: 88%" onmousedown="ClickTree(this, null, 'Tab');">Tabs</label>
-              <br />
-              <div id="tab3_" style="margin-left: 1.667em">
-                <label id="tab3_1" class="button" style="width: 100%" onmousedown="ClickTree(this, null, 'Tab');">Advanced</label>
-                <br />
-              </div>
               <a id="tabbtn4" class="treebutton" onclick="ClickButton(4);"></a>
               <label id="tab4" class="button" style="width: 88%" onmousedown="ClickTree(this, null, 'Tree');">Tree</label>
               <br />
@@ -55,6 +48,13 @@
               <br />
               <div id="tab5_" style="margin-left: 1.667em">
                 <label id="tab5_1" class="button" style="width: 100%" onmousedown="ClickTree(this, null, 'List');">Style</label>
+                <br />
+              </div>
+              <a id="tabbtn3" class="treebutton" onclick="ClickButton(3);"></a>
+              <label id="tab3" class="button" style="width: 88%" onmousedown="ClickTree(this, null, 'Tab');">Tabs</label>
+              <br />
+              <div id="tab3_" style="margin-left: 1.667em">
+                <label id="tab3_1" class="button" style="width: 100%" onmousedown="ClickTree(this, null, 'Tab');">Advanced</label>
                 <br />
               </div>
             </div>
@@ -277,58 +277,10 @@
             </div>
             <!--panel_end-->
             <div class="panel" id="panel3">
-              <input type="hidden" name="Tab_Style"/><label>Style</label><br />
-              <input type="checkbox" id="Tab_Style:0x100" onclick="SetCheckbox(this)" />
-              <label for="Tab_Style:0x100">Buttons</label>
-              <input type="checkbox" id="Tab_Style:0x8" onclick="SetCheckbox(this)" />
-              <label for="Tab_Style:0x8">Flat</label>
-              <input type="checkbox" id="Tab_Style:0x1" onclick="SetCheckbox(this)" />
-              <label for="Tab_Style:0x1">Scroll opposite</label>
-              <br />
-              <input type="checkbox" id="Tab_Style:0x200" onclick="SetCheckbox(this)" />
-              <label for="Tab_Style:0x200">Multi line</label>
-              <input type="checkbox" id="Tab_Style:0x400" onclick="SetCheckbox(this)" />
-              <label for="Tab_Style:0x400">Fixed width</label>
-              <input type="checkbox" id="Tab_Style:0x800" onclick="SetCheckbox(this)" />
-              <label for="Tab_Style:0x800">Ragged right</label>
-              <br />
-              <input type="checkbox" id="Tab_Style:0x2" onclick="SetCheckbox(this)" />
-              <label for="Tab_Style:0x2">Right/Bottom</label>
-              <input type="checkbox" id="Tab_Style:0x80" onclick="SetCheckbox(this)" />
-              <label for="Tab_Style:0x80">Vertical</label>
-              <input type="checkbox" id="Tab_Style:0x40" onclick="SetCheckbox(this)" />
-              <label for="Tab_Style:0x40">Hot track</label>
-              <br />
-              <input type="checkbox" id="Tab_Style:0x4000" onclick="SetCheckbox(this)" />
-              <label for="Tab_Style:0x4000">Tooltips</label>
-              <input type="checkbox" id="Tab_Style:0x10" onclick="SetCheckbox(this)" />
-              <label for="Tab_Style:0x10">Force icon left</label>
-              <input type="checkbox" id="Tab_Style:0x20" onclick="SetCheckbox(this)" />
-              <label for="Tab_Style:0x20">Force label left</label><br /><br />
-              <div>
-                <label>Align</label>
-              </div>
+              <input type="hidden" name="Tab_Style"/>
               <input type="hidden" name="Tab_Align" />
-              <input type="radio" name="Tab_Align_" id="Tab_Align=0" onclick="SetRadio(this)" />
-              <label for="Tab_Align=0">None</label>
-              <input type="radio" name="Tab_Align_" id="Tab_Align=1" onclick="SetRadio(this)" />
-              <label for="Tab_Align=1">Auto</label>
-              <input type="radio" name="Tab_Align_" id="Tab_Align=2" onclick="SetRadio(this)" />
-              <label for="Tab_Align=2">Top</label>
-              <input type="radio" name="Tab_Align_" id="Tab_Align=3" onclick="SetRadio(this)" />
-              <label for="Tab_Align=3">Bottom</label>
-              <input type="radio" name="Tab_Align_" id="Tab_Align=4" onclick="SetRadio(this)" />
-              <label for="Tab_Align=4">Left</label>
-              <input type="radio" name="Tab_Align_" id="Tab_Align=5" onclick="SetRadio(this)" />
-              <label for="Tab_Align=5">Right</label><br /><br />
-              <div>
-                <label>Size</label>
-              </div>
-              <label>Width</label>
-              <input type="text" name="Tab_TabWidth" size="4" />
-              <label>Height</label>
-              <input type="text" name="Tab_TabHeight" size="4" /><br />
-              <br />
+              <input type="hidden" name="Tab_TabWidth" />
+              <input type="hidden" name="Tab_TabHeight" />
               <div>
                 <label>New Tab</label>
               </div>
@@ -346,10 +298,8 @@
                 </tr>
               </table>
               <br />
-              <div>
-                <input type="checkbox" id="Conf_TabDefault" />
-                <label for="Conf_TabDefault">Set Default</label>
-              </div>
+              <input type="checkbox" id="Conf_OpenMode" value="2" /><label for="Conf_OpenMode">Open in New Tab</label>
+              <input type="checkbox" id="Conf_TabDefault" style="display: none" />
             </div>
             <!--panel_end-->
 

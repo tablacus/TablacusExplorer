@@ -4,7 +4,6 @@ te.ClearEvents();
 te.LockUpdate();
 Addon = 1;
 Init = false;
-OpenMode = SBSP_SAMEBROWSER;
 ExtraMenuCommand = [];
 g_arBM = [];
 
@@ -2300,6 +2299,7 @@ function InitMouse()
 	te.NetworkTimeout = te.Data.Conf_NetworkTimeout;
 	te.SizeFormat = Number(te.Data.Conf_SizeFormat);
 	te.DateTimeFormat = te.Data.Conf_DateTimeFormat;
+	OpenMode = te.Data.Conf_OpenMode ? SBSP_NEWBROWSER : SBSP_SAMEBROWSER;
 }
 
 importScripts = function()
