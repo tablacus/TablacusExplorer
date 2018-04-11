@@ -116,10 +116,12 @@
             <div class="panel" id="panel1">
               <table id="Addons" style="width: 100%">
                 <tr>
-                  <th style="height: 35em; height: calc(100vh - 3.5em)">
+                  <th>
                     <label>Please wait.</label>
                   </th>
                 </tr>
+              </table>
+              <table id="SortedAddons" style="width: 100%">
               </table>
             </div>
             <!--panel_end-->
@@ -242,7 +244,7 @@
                         <td style="vertical-align: bottom">
                           <label>Icon</label><input type="hidden" name="IconSize" value="16">
                         </td>
-                        <td id="_Icon" style="width: 20px; height: 20px; overflow: hidden; vertical-align: middle" align="left">
+                        <td id="_Icon" style="width: 15pt; height: 15pt; overflow: hidden; vertical-align: middle" align="left">
                         </td>
                         <td style="white-space: nowrap" align="right">
                           <input type="button" value="Portable" onclick="PortableX('Icon')" title="Icon" />
@@ -659,7 +661,12 @@
               <img src="bitmap:ieframe.dll,216,16,17" hidefocus="true" style="vertical-align: middle; width: 12pt; height: 12pt; position: absolute; left: 10.5em; top: 2pt" onclick="FindText()" />
             </div>
           </td>
-          <td id="MoveButton" align="left" style="display: none; height: 24px; padding-left: 4px">
+          <td id="SortButton" align="left" style="display: none; padding-left: 8pt">
+            <img id="SortButton_0" src="bitmap:ieframe.dll,214,24,24" title="Name" onclick="SortAddons(0)" class="button" onmouseover="MouseOver(this)" onmouseout="MouseOut()" />
+            <img id="SortButton_1" src="bitmap:ieframe.dll,214,26,24" onclick="SortAddons(1)" class="button" onmouseover="MouseOver(this)" onmouseout="MouseOut()" />
+            <img id="SortButton_2" src="bitmap:ieframe.dll,214,27,24" title="Id" onclick="SortAddons(2)" class="button" onmouseover="MouseOver(this)" onmouseout="MouseOut()"/>
+          </td>
+          <td id="MoveButton" align="left" style="display: none; height: 18pt; padding-left: 3pt">
             <input type="button" value="Up" onclick="OptionMove(-1)"/>
             <input type="button" value="Down" onclick="OptionMove(1)"/>
           </td>

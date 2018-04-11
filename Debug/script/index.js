@@ -743,6 +743,7 @@ te.OnNavigateComplete = function (Ctrl)
 			Ctrl.Navigate(HOME_PATH, SBSP_SAMEBROWSER);
 		}, 500);}) (Ctrl);
 	}
+	Ctrl.NavigateComplete();
 	return S_OK;
 }
 

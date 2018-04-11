@@ -986,6 +986,7 @@ TEmethod methodSB[] = {
 	{ 0x10000282, "GetFocusedItem" },
 	{ 0x10000283, "GetItemRect" },
 	{ 0x10000300, "Notify" },
+	{ 0x10000400, "NavigateComplete" },
 	{ 0x10000501, "AddItem" },
 	{ 0x10000502, "RemoveItem" },
 	{ 0x10000503, "AddItems" },
@@ -12541,7 +12542,7 @@ VOID CteShellBrowser::Refresh(BOOL bCheck)
 			}
 			m_bRefreshing = TRUE;
 			if (ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
-				m_bBeforeNavigate = MAXINT;
+				m_bBeforeNavigate = TRUE;
 				RemoveAll();
 				SetTabName();
 				NavigateComplete(TRUE);
@@ -14260,6 +14261,10 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					}
 				}
 				return S_OK;
+			//NavigateComplete
+			case 0x10000400:
+				m_bBeforeNavigate = FALSE;
+				return S_OK;
 			//NavigationComplete
 			case 0x10000500:
 				NavigateComplete(FALSE);
@@ -15401,7 +15406,6 @@ VOID CteShellBrowser::AddItems(IDispatch *pdisp, BOOL bDeleted, IDispatch *pOnCo
 VOID CteShellBrowser::NavigateComplete(BOOL bBeginNavigate)
 {
 	if (!bBeginNavigate || DoFunc(TE_OnBeginNavigate, this, S_OK) != S_FALSE) {
-		m_bBeforeNavigate = FALSE;
 		DoFunc(TE_OnNavigateComplete, this, E_NOTIMPL);
 	}
 }
@@ -16788,7 +16792,7 @@ STDMETHODIMP CTE::QueryContinueDrag(BOOL fEscapePressed, DWORD grfKeyState)
 			}
 			VARIANTARG *pv = GetNewVARIANT(3);
 			teSetObject(&pv[2], g_pDraggingCtrl);
-			teSetObject(&pv[1], g_pDraggingItems);
+			teSetObjectRelease(&pv[1], new CteFolderItems(g_pDraggingItems, NULL));
 			teSetLong(&pv[0], 4);
 			Invoke4(g_pOnFunc[TE_OnBeforeGetData], &v, 3, pv);
 		}

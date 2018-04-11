@@ -15,6 +15,8 @@ g_drag5 = false;
 g_nResult = 0;
 g_bChanged = true;
 g_bClosed = false;
+g_nSort2 = 1;
+
 arLangs = [GetLangId()];
 var res = /(\w+)_/.test(arLangs[0]);
 if (res) {
@@ -48,7 +50,7 @@ function SetDefault(o, v)
 function OpenGroup(id)
 {
 	var o = document.getElementById(id);
-	o.style.display = String(o.style.display).toLowerCase() == "block" ? "none" : "block";
+	o.style.display = /block/i.test(o.style.display) ? "none" : "block";
 }
 
 function LoadChecked(form)
@@ -184,7 +186,7 @@ function ClickTree(o, nMode, strChg, bForce)
 					}, 999);}) (res[3]);
 				}
 			}
-			document.getElementById("MoveButton").style.display = newTab == "1" || res[1] == 2 ? "inline-block" : "none";
+			ShowButtons(/^1$|^1_1$/.test(newTab), res[1] == 2, newTab);
 			if (nMode == 0) {
 				switch (res[1] - 0) {
 					case 1:
@@ -1069,29 +1071,41 @@ function LoadAddons()
 	}
 }
 
-function AddAddon(table, Id, bEnable)
+function AddAddon(table, Id, bEnable, Alt)
 {
-	SetAddon(Id, bEnable, table.insertRow().insertCell());
+	SetAddon(Id, bEnable, table.insertRow().insertCell(), Alt);
+	if (!Alt) {
+		var sorted = document.getElementById("SortedAddons");
+		if (sorted.rows.length) {
+			SetAddon(Id, bEnable, sorted.insertRow().insertCell(), "Sorted_");
+		}
+	}
 }
 
-function SetAddon(Id, bEnable, td)
+function SetAddon(Id, bEnable, td, Alt)
 {
 	if (!td) {
-		td = document.getElementById("Addons_" + Id).parentNode;
+		td = document.getElementById(Alt || "Addons_" + Id).parentNode;
 	}
 	var info = GetAddonInfo(Id);
-	var s = ['<div draggable="true" title="', Id, '" ondragstart="Start5(this)" ondragend="End5(this)" Id="Addons_', Id, '" style="color: ', bEnable ? "": "gray", '">'];
-	s.push('<table><tr style="border-top: 1px solid buttonshadow"><td><input type="radio" name="AddonId" id="_', Id, '"></td><td style="width: 100%"><label for="_', Id, '">', info.Name, "&nbsp;", info.Version, '<br /><a href="#" onclick="return AddonInfo(\'', Id, '\', this)" style="font-size: .9em">', GetText('Details'), ' (', Id, ')</a>');
+	var s = ['<div ', (Alt ? '' : 'draggable="true" ondragstart="Start5(this)" ondragend="End5(this)"'), ' title="', Id, '" Id="', Alt || "Addons_", Id, '" style="color: ', bEnable ? "": "gray", '">'];
+	s.push('<table><tr style="border-top: 1px solid buttonshadow"><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id+ '">'), '</td><td style="width: 100%"><label for="_', Id, '">', info.Name, "&nbsp;", info.Version, '<br /><a href="#" onclick="return AddonInfo(\'', Id, '\', this)" style="font-size: .9em">', GetText('Details'), ' (', Id, ')</a>');
 
 	if (info.Options) {
 		s.push('</td><td style="white-space: nowrap; vertical-align: middle; padding-right: 1em"><a href="#" onclick="AddonOptions(\'', Id, '\'); return false;">', GetText('Options'), '</td>');
 	}
-	s.push('<td style="vertical-align: middle"><input type="checkbox" id="enable_', Id, '" onclick="AddonEnable(this)" ', info.MinVersion && te.Version < CalcVersion(info.MinVersion) ? " disabled" : "", bEnable ? " checked" : "", '></td>');
+	s.push('<td style="vertical-align: middle"><input type="checkbox" ', (Alt ? "" : 'id="enable_' + Id + '"'), ' onclick="AddonEnable(this, \'', Id, '\')" ', info.MinVersion && te.Version < CalcVersion(info.MinVersion) ? " disabled" : "", bEnable ? " checked" : "", '></td>');
 	s.push('<td style="vertical-align: middle"><label for="enable_', Id, '" style="display: block; width: 6em; white-space: nowrap">', GetText(bEnable ? "Enabled" : "Enable"), '</label></td>');
 	s.push('<td style="vertical-align: middle; padding-right: 1em"><input type="image" src="bitmap:ieframe.dll,216,16,10" title="', GetText('Remove'), '" onclick="AddonRemove(\'', Id, '\')" style="width: 12pt"></td>');
 	s.push('</tr></table></label></div>');
 	td.innerHTML = s.join("");
 	ApplyLang(td);
+	if (!Alt) {
+		var div = document.getElementById("Sorted_" + Id);
+		if (div) {
+			SetAddon(Id, bEnable, div.parentNode, "Sorted_");
+		}
+	}
 }
 
 function Start5(o)
@@ -1166,11 +1180,11 @@ function AddonWebsite(Id)
 	wsh.run(info.URL);
 }
 
-function AddonEnable(o)
+function AddonEnable(o, Id)
 {
-	var Id = o.id.replace(/^enable_/i, "");
 	var div = document.getElementById("Addons_" + Id);
 	SetAddon(Id, o.checked);
+	document.getElementById("enable_" + Id).checked = o.checked;
 	g_Chg.Addons = true;
 }
 
@@ -1259,8 +1273,9 @@ function AddonRemove(Id)
 	if (api.SHFileOperation(sf) == 0) {
 		if (!sf.fAnyOperationsAborted) {
 			var table = document.getElementById("Addons");
-			var i = GetRowIndexById("Addons_" + Id);
-			table.deleteRow(i);
+			table.deleteRow(GetRowIndexById("Addons_" + Id));
+			var table = document.getElementById("SortedAddons");
+			table.deleteRow(GetRowIndexById("Sorted_" + Id));
 			g_Chg.Addons = true;
 		}
 	}
@@ -2231,14 +2246,18 @@ function AddonsAppend()
 	try {
 		Progress.SetAnimation(hShell32, 150);
 		Progress.SetLine(1, api.LoadString(hShell32, 13585) || api.LoadString(hShell32, 6478), true);
-		while ( !Progress.HasUserCancelled() && xmlAddons[i]) {
+		while (!Progress.HasUserCancelled() && xmlAddons[i]) {
 			ArrangeAddon(xmlAddons[i++], td, Progress);
 			Progress.SetTitle(Math.floor(100 * i / xmlAddons.length) + "%");
 			Progress.SetProgress(i, xmlAddons.length);
 		}
-		td.sort(function (a,b) {
-			return b[0] - a[0];
-		});
+		if (g_nSort2 == 1) {
+			td.sort(function (a, b) {
+				return b[0] - a[0];
+			});
+		} else {
+			td.sort();
+		}
 		var table = document.getElementById("Addons1");
 		if (table) {
 			while (table.rows.length > 0) {
@@ -2316,7 +2335,7 @@ function ArrangeAddon(xml, td, Progress)
 			s.push('<input type="button" style="color: red" onclick="MainWindow.CheckUpdate()" value="', info.MinVersion.replace(/^20/, "Version ").replace(/\.0/g, '.'), ' ', GetText("is required."), '">');
 		}
 		s.push(strUpdate, '</td></tr></table>');
-		s.unshift(dt2);
+		s.unshift(g_nSort2 == 1 ? dt2 : g_nSort2 ? Id : info.Name);
 		td.push(s);
 	}
 }
@@ -2466,4 +2485,100 @@ function SetTabContents(id, name, value)
 {
 	document.getElementById("tab" + id).value = GetText(name);
 	document.getElementById("panel" + id).innerHTML = value.join ? value.join('') : value;
+}
+
+function ShowButtons(b1, b2, SortMode)
+{
+	if (SortMode) {
+		g_SortMode = SortMode;
+	}
+	var o = document.getElementById("SortButton");
+	o.style.display = b1 ? "inline-block" : "none";
+if (g_SortMode == 1) {
+		var table = document.getElementById("Addons");
+		var bSorted = /none/i.test(table.style.display);
+		document.getElementById("MoveButton").style.display = (b1 || b2) && !bSorted ? "inline-block" : "none";
+		for (var i = 3; i--;) {
+			o = document.getElementById("SortButton_" + i);
+			o.style.border = bSorted && g_nSort == i ? "1px solid highlight" : "";
+			o.style.padding = bSorted && g_nSort == i ? "0" : "";	
+		}
+	} else {
+		document.getElementById("MoveButton").style.display = "none";
+		for (var i = 3; i--;) {
+			o = document.getElementById("SortButton_" + i);
+			o.style.border = g_nSort2 == i ? "1px solid highlight" : "";	
+			o.style.padding = g_nSort2 == i ? "0" : "";	
+		}	
+	}
+}
+
+function SortAddons(n)
+{
+	if (g_SortMode == 1) {
+		var table = document.getElementById("Addons");
+		if (table.rows.length < 2) {
+			return;
+		}
+		var sorted = document.getElementById("SortedAddons");
+		if (/none/i.test(table.style.display) && g_nSort == n) {
+			table.style.display = "";
+			sorted.style.display = "none";
+		} else {
+			g_nSort = n;
+			while (sorted.rows.length > 0) {
+				sorted.deleteRow(0);
+			}
+			var s, ar = [];
+			for (var j = table.rows.length; j--;) {
+				var div = table.rows(j).cells(0).firstChild;
+				var Id = div.id.replace("Addons_", "").toLowerCase();
+				if (g_nSort == 0) {
+					s = table.rows(j).cells(0).innerText;				
+				} else if (g_nSort == 1) {
+					s = "";
+					var info = GetAddonInfo(Id);
+					if (info.pubDate) {
+						var dt = new Date(info.pubDate);
+						s = api.GetDateFormat(LOCALE_USER_DEFAULT, 0, dt, "yyyyMMdd");
+					}
+				} else {
+					s = Id;
+				}
+				ar.push(s + "\t" + Id);
+			}
+			ar.sort();
+			if (g_nSort == 1) {
+				ar = ar.reverse();
+			}
+			var i = 0, td = [];
+			var Progress = te.ProgressDialog;
+			Progress.SetAnimation(hShell32, 150);
+			Progress.StartProgressDialog(te.hwnd, null, 2);
+			try {
+				for (var i in ar) {
+					if (Progress.HasUserCancelled()) {
+						break;
+					}
+					Progress.SetTitle(Math.floor(100 * i / ar.length) + "%");
+					Progress.SetProgress(i, ar.length);
+					var data = ar[i].split("\t");
+					var Id = data[data.length - 1];
+					Progress.SetLine(1, Id, true);
+					AddAddon(sorted, Id, document.getElementById("enable_" + Id).checked, "Sorted_");
+				}
+			} catch (e) {
+				ShowError(e);
+			}
+			Progress.StopProgressDialog();
+			table.style.display = Progress.HasUserCancelled() ? "" : "none";
+			sorted.style.display = Progress.HasUserCancelled() ? "none" : "";	
+		}
+	} else if (g_SortMode == "1_1") {
+		if (n != g_nSort2) {
+			g_nSort2 = n;
+			AddonsSearch();
+		}
+	}
+	ShowButtons(true, true);
 }
