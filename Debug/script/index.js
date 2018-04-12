@@ -735,15 +735,19 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev)
 
 te.OnNavigateComplete = function (Ctrl)
 {
-	RunEvent1("NavigateComplete", Ctrl);
-	ChangeView(Ctrl);
-	if (!g_.tid_rf[Ctrl.Id] && Ctrl.FolderItem.Path == "about:blank" && HOME_PATH != "about:blank") {
+	if (g_.tid_rf[Ctrl.Id]) {
+		return S_OK;
+	}
+	if (Ctrl.FolderItem.Path == "about:blank" && HOME_PATH != "about:blank") {
 		(function (Ctrl) { g_.tid_rf[Ctrl.Id] = setTimeout(function () {
 			delete g_.tid_rf[Ctrl.Id];
 			Ctrl.Navigate(HOME_PATH, SBSP_SAMEBROWSER);
 		}, 500);}) (Ctrl);
+		return S_OK;
 	}
 	Ctrl.NavigateComplete();
+	RunEvent1("NavigateComplete", Ctrl);
+	ChangeView(Ctrl);
 	return S_OK;
 }
 

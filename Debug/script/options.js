@@ -2494,22 +2494,22 @@ function ShowButtons(b1, b2, SortMode)
 	}
 	var o = document.getElementById("SortButton");
 	o.style.display = b1 ? "inline-block" : "none";
-if (g_SortMode == 1) {
+	if (g_SortMode == 1) {
 		var table = document.getElementById("Addons");
 		var bSorted = /none/i.test(table.style.display);
 		document.getElementById("MoveButton").style.display = (b1 || b2) && !bSorted ? "inline-block" : "none";
 		for (var i = 3; i--;) {
 			o = document.getElementById("SortButton_" + i);
 			o.style.border = bSorted && g_nSort == i ? "1px solid highlight" : "";
-			o.style.padding = bSorted && g_nSort == i ? "0" : "";	
+			o.style.padding = bSorted && g_nSort == i ? "0" : "";
 		}
 	} else {
-		document.getElementById("MoveButton").style.display = "none";
+		document.getElementById("MoveButton").style.display = b2 ? "inline-block" : "none";
 		for (var i = 3; i--;) {
 			o = document.getElementById("SortButton_" + i);
-			o.style.border = g_nSort2 == i ? "1px solid highlight" : "";	
-			o.style.padding = g_nSort2 == i ? "0" : "";	
-		}	
+			o.style.border = g_nSort2 == i ? "1px solid highlight" : "";
+			o.style.padding = g_nSort2 == i ? "0" : "";
+		}
 	}
 }
 
@@ -2534,7 +2534,7 @@ function SortAddons(n)
 				var div = table.rows(j).cells(0).firstChild;
 				var Id = div.id.replace("Addons_", "").toLowerCase();
 				if (g_nSort == 0) {
-					s = table.rows(j).cells(0).innerText;				
+					s = table.rows(j).cells(0).innerText;
 				} else if (g_nSort == 1) {
 					s = "";
 					var info = GetAddonInfo(Id);
@@ -2572,7 +2572,7 @@ function SortAddons(n)
 			}
 			Progress.StopProgressDialog();
 			table.style.display = Progress.HasUserCancelled() ? "" : "none";
-			sorted.style.display = Progress.HasUserCancelled() ? "none" : "";	
+			sorted.style.display = Progress.HasUserCancelled() ? "none" : "";
 		}
 	} else if (g_SortMode == "1_1") {
 		if (n != g_nSort2) {
@@ -2580,5 +2580,5 @@ function SortAddons(n)
 			AddonsSearch();
 		}
 	}
-	ShowButtons(true, true);
+	ShowButtons(true);
 }

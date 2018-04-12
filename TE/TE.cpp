@@ -12477,8 +12477,10 @@ HRESULT CteShellBrowser::GetAbsPath(FolderItem *pid, UINT wFlags, FolderItems *p
 		} else {
 			VARIANT v;
 			teSetSZ(&v, PATH_BLANK);
-			m_pFolderItem1 = new CteFolderItem(&v);
+			CteFolderItem *pid0 = new CteFolderItem(&v);
 			VariantClear(&v);
+			pid0->MakeUnavailable();
+			m_pFolderItem1 = pid0;
 		}
 		teILFreeClear(&pidlPrevius);
 		teILFreeClear(&pidl);
