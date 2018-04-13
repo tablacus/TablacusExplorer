@@ -1275,7 +1275,9 @@ function AddonRemove(Id)
 			var table = document.getElementById("Addons");
 			table.deleteRow(GetRowIndexById("Addons_" + Id));
 			var table = document.getElementById("SortedAddons");
-			table.deleteRow(GetRowIndexById("Sorted_" + Id));
+			if (table.rows.length) {
+				table.deleteRow(GetRowIndexById("Sorted_" + Id));
+			}
 			g_Chg.Addons = true;
 		}
 	}
