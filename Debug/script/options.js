@@ -2523,14 +2523,14 @@ function SortAddons(n)
 			return;
 		}
 		var sorted = document.getElementById("SortedAddons");
+		while (sorted.rows.length > 0) {
+			sorted.deleteRow(0);
+		}
 		if (/none/i.test(table.style.display) && g_nSort == n) {
 			table.style.display = "";
 			sorted.style.display = "none";
 		} else {
 			g_nSort = n;
-			while (sorted.rows.length > 0) {
-				sorted.deleteRow(0);
-			}
 			var s, ar = [];
 			for (var j = table.rows.length; j--;) {
 				var div = table.rows(j).cells(0).firstChild;
