@@ -612,7 +612,7 @@ public:
 	LPITEMIDLIST	m_pidl, m_pidlAlt;
 	FolderItem		*m_pFolderItem;
 	LPITEMIDLIST	m_pidlFocused;
-	IDispatch		*m_pENum;
+	IDispatch		*m_pEnum;
 	int				m_nSelected;
 	BOOL			m_bStrict;
 	DWORD			m_dwUnavailable;
@@ -1163,7 +1163,7 @@ private:
 	VARIANT		m_vData;
 	FolderItem	**m_ppLog;
 	FolderItem	**m_ppFocus;
-	IDispatch	*m_pDSFV;
+	IDispatch	*m_pdisp;
 	PROPERTYKEY *m_pDefultColumns;
 	CteDropTarget2 *m_pDropTarget2;
 	BSTR		m_bsFilter;

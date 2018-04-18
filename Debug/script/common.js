@@ -209,8 +209,8 @@ FolderMenu =
 				}
 				return;
 			}
-			if (isFinite(wFlags) && FolderItem.IsFolder) {
-				Navigate(FolderItem, wFlags);
+			if ((window.g_menu_button == 3 || isFinite(wFlags)) && FolderItem.IsFolder) {
+				Navigate(FolderItem, isFinite(wFlags) ? wFlags : GetOpenMode());
 				return;
 			}
 			var FV = te.Ctrl(CTRL_FV);
@@ -3254,7 +3254,7 @@ SetRenameMenu = function (n)
 
 ShowError = function (e, s, i)
 {
-	var sl = s.toLowerCase();
+	var sl = (s || "").toLowerCase();
 	if (isFinite(i)) {
 		if (eventTA[sl][i]) {
 			s = eventTA[sl][i] + " : " + s;
@@ -3442,7 +3442,7 @@ LoadAddon = function (ext, Id, arError, param)
 		if (ar.length == 1) {
 			ar.unshift("script");
 		}
-		var fn = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons") + "\\" + Id + "\\" + ar.join(".");
+		var fn = "addons" + "\\" + Id + "\\" + ar.join(".");
 		var ado = OpenAdodbFromTextFile(fn);
 		if (ado) {
 			var s = ado.ReadText();
@@ -3549,6 +3549,13 @@ OpenContains = function (Ctrl, pt)
 
 OpenAdodbFromTextFile = function (fn)
 {
+	if (/"/.test(fn)) {
+		fn = api.PathUnquoteSpaces(fn);
+	}
+	fn = ExtractMacro(te, fn);
+	if (!/^[A-Z]:\\|^\\\\/i.test(fn)) {
+		fn = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), fn);
+	}
 	var ado = te.CreateObject(api.ADBSTRM);
 	var charset = "_autodetect_all";
 	try {
@@ -3612,13 +3619,6 @@ AddFavoriteEx = function (Ctrl, pt)
 
 importScript = function (fn)
 {
-	if (/"/.test(fn)) {
-		fn = api.PathUnquoteSpaces(fn);
-	}
-	fn = ExtractMacro(te, fn);
-	if (!/^[A-Z]:\\|^\\\\/i.test(fn)) {
-		fn = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), fn);
-	}
 	var hr = E_FAIL;
 	var ado = OpenAdodbFromTextFile(fn);
 	if (ado) {

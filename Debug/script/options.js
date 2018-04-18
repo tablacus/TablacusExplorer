@@ -1787,7 +1787,6 @@ InitLocation = function ()
 	}
 	var a = document.F.MenuName.value.split(/\t/);
 	document.F._MenuName.value = GetText(a[0]);
-	document.F._MenuKey.value = GetKeyName(a[1]) || "";
 
 	try {
 		var ar = dialogArguments.Data.show.split(/,/);
@@ -1830,14 +1829,7 @@ InitLocation = function ()
 					}
 				}
 				var ele = document.F.elements;
-				var a = [GetSourceText(ele._MenuName.value)];
-				if (ele._MenuKey.value) {
-					var s = GetKeyKey(ele._MenuKey.value);
-					if (s) {
-						a.push(api.sprintf(10, "$%x", s));
-					}
-				}
-				ele.MenuName.value = a.join("\t");
+				ele.MenuName.value = GetSourceText(ele._MenuName.value);
 				if (dialogArguments.Data.show == "6") {
 					ele.Set.value = "";
 				}
@@ -2224,12 +2216,19 @@ function CheckAddon(Id)
 
 function AddonsSearch()
 {
-	AddonsAppend()
+	if (xmlAddons) {
+		AddonsAppend()
+	} else {
+		GetAddons();
+	}
 	return true;
 }
 
 function AddonsList(xhr2)
 {
+	if (xmlAddons) {
+		return;
+	}
 	if (xhr2) {
 		xhr = xhr2;
 	}
