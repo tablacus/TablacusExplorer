@@ -49,12 +49,12 @@ FolderMenu =
 		this.Items.length = 0;
 	},
 
-	Open: function (FolderItem, x, y, filter)
+	Open: function (FolderItem, x, y, filter, nParent, hParent, wID)
 	{
 		this.Clear();
 		this.Filter = filter;
 		var hMenu = api.CreatePopupMenu();
-		this.OpenMenu(hMenu, FolderItem);
+		this.OpenMenu(hMenu, FolderItem, hParent, wID, nParent);
 		window.g_menu_click = true;
 		var Verb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, x, y, te.hwnd, null, null);
 		g_popup = null;
