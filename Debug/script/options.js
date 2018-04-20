@@ -231,9 +231,9 @@ function ClickTree(o, nMode, strChg, bForce)
 			}
 			ovTab.className = 'hoverbutton';
 			ovPanel.style.display = 'block';
-			CalcElementHeight(ovPanel, 2.7);
+			CalcElementHeight(ovPanel, 3);
 			var o = document.getElementById("tab_");
-			CalcElementHeight(o, 2.7);
+			CalcElementHeight(o, 3);
 			var i = ovTab.offsetTop - o.scrollTop;
 			if (i < 0 || i >= o.offsetHeight - ovTab.offsetHeight) {
 				ovTab.scrollIntoView(i < 0);
@@ -1569,16 +1569,7 @@ InitDialog = function ()
 	}
 	DialogResize = function ()
 	{
-		var h = document.documentElement.clientHeight || document.body.clientHeight;
-		var i = document.getElementById("buttons").offsetHeight * screen.deviceYDPI / screen.logicalYDPI + 6;
-		h -= i > 34 ? i : 34;
-		if (h > 0) {
-			if (document.documentMode >= 9) {
-				document.getElementById("panel0").style.height = "calc(100vh - " + i + "px";
-			} else {
-				document.getElementById("panel0").style.height = h + 'px';
-			}
-		}
+		CalcElementHeight(document.getElementById("panel0"), 3);
 	};
 	AddEventEx(window, "resize", function ()
 	{
@@ -1715,7 +1706,7 @@ InitLocation = function ()
 			var ar = items[i][j].split("\0");
 			info = GetAddonInfo(ar[0]);
 			if (ar[1]) {
-				locs[i].push('<img src="', ar[1], '" title="', (info.Name || "").replace(/"/g, ""), '" class="img1"> ');
+				locs[i].push('<img src="', ar[1], '" title="', EncodeSC(info.Name || ""), '" class="img1"> ');
 			} else {
 				locs[i].push('<span class="text1">', info.Name, '</span> ');
 			}
