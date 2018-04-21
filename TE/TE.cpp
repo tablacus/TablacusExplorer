@@ -8268,12 +8268,11 @@ VOID teApiTrackPopupMenuEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 			if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pCM))) {
 				IDispatch *pdisp = NULL;
 				GetNewArray(&pdisp);
-				teArrayPush(pdisp, pCM);
+				teArrayPush(pdisp, punk);
 				pCM->Release();
 				pdisp->QueryInterface(IID_PPV_ARGS(&g_pCM));
 				pdisp->Release();
-			}
-			else {
+			} else {
 				punk->QueryInterface(IID_PPV_ARGS(&g_pCM));
 			}
 		}
@@ -11361,7 +11360,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				bDone = true;
 
 				if (g_pOnFunc[TE_OnMenuMessage]) {
-					HRESULT hr = MessageSub(TE_OnMenuMessage, g_pTE, &msg1, S_FALSE);
+					HRESULT hr = MessageSub(TE_OnMenuMessage, g_pCM, &msg1, S_FALSE);
 					if (hr == S_OK) {
 						bDone = false;
 					}
@@ -19984,6 +19983,8 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 							NULL, (LPSTR)szName, MAX_PATH);
 					}
 					teSetSZ(pVarResult, szName);
+				} else {
+					teSetBool(pVarResult, true);
 				}
 				return S_OK;
 			//FolderView

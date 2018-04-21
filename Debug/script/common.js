@@ -2451,7 +2451,7 @@ function CheckUpdate3(xhr, url, arg)
 	api.GetWindowThreadProcessId(te.hwnd, ppid);
 	arg.pid = ppid[0];
 	MainWindow.CreateUpdater(arg);
-	WmiProcess("WHERE ExecutablePath='" + api.GetModuleFileName(null).replace(/\\/g, "\\\\") + "' AND ProcessId!=" + arg.pid, function (item)
+	WmiProcess("WHERE ExecutablePath='" + (api.GetModuleFileName(null).split("\\").join("\\\\")) + "' AND ProcessId!=" + arg.pid, function (item)
 	{
 		item.Terminate();
 	});

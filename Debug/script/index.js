@@ -1134,7 +1134,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 			path = Items.Item(i).ExtendedProperty("linktarget") || Items.Item(i).Path;
 			var cmd = api.AssocQueryString(ASSOCF_NONE, ASSOCSTR_COMMAND, path, strVerb == "default" ? null : strVerb).replace(/"?%1"?|%L/g, api.PathQuoteSpaces(path)).replace(/%\*|%I/g, "");
 			if (cmd) {
-				ShowStatusText(te, Verb + ":" + cmd, 1);
+				ShowStatusText(te, strVerb + ":" + cmd, 0);
 				if (strVerb == "open" && api.PathMatchSpec(cmd, "?:\\Windows\\Explorer.exe;*\\Explorer.exe /idlist,*;rundll32.exe *fldr.dll,RouteTheCall*")) {
 					Navigate(Items.Item(i), NewTab);
 				 	NewTab |= SBSP_NEWBROWSER;
@@ -1164,7 +1164,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 		}
 		return S_OK;
 	}
-	ShowStatusText(te, [Verb || "", Items.Count == 1 ? Items.Item(0).Path : Items.Count].join(":"), 1);
+	ShowStatusText(te, [strVerb || "", Items.Count == 1 ? Items.Item(0).Path : Items.Count].join(":"), 0);
 	return S_FALSE;
 }
 
@@ -1407,7 +1407,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 				case WM_DESTROY:
 					var pid = api.Memory("DWORD");
 					api.GetWindowThreadProcessId(te.hwnd, pid);
-					WmiProcess("WHERE ExecutablePath = '" + api.GetModuleFileName(null).replace(/\\/g, "\\\\") + "' AND ProcessId!=" + pid[0], function (item)
+					WmiProcess("WHERE ExecutablePath = '" + (api.GetModuleFileName(null).split("\\").join("\\\\")) + "' AND ProcessId!=" + pid[0], function (item)
 					{
 						var hwnd = GethwndFromPid(item.ProcessId);
 						api.SetWindowLongPtr(hwnd, GWL_EXSTYLE, api.GetWindowLongPtr(hwnd, GWL_EXSTYLE) & ~0x80);
@@ -1569,6 +1569,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 
 te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 {
+	ShowStatusText(te, "", 0);
 	var hr = RunEvent3("MenuMessage", Ctrl, hwnd, msg, wParam, lParam);
 	if (isFinite(hr)) {
 		return hr;
@@ -1584,15 +1585,27 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 			break;
 		case WM_MENUSELECT:
 			if (lParam) {
-				var s = wParam & 0xffff;
-				var hSubMenu = api.GetSubMenu(lParam, s);
+				var nVerb = wParam & 0xffff;
+				if (Ctrl) {
+					for (var i in Ctrl) {
+						var CM = Ctrl[i];
+						if (nVerb >= CM.idCmdFirst && nVerb <= CM.idCmdLast) {
+							Text = CM.GetCommandString(nVerb - CM.idCmdFirst, GCS_HELPTEXT);
+							if (Text) {
+								ShowStatusText(te, Text, 0);
+								break;
+							}
+						}
+					}
+				}
+				var hSubMenu = api.GetSubMenu(lParam, nVerb);
 				if ((wParam >> 16) & MF_POPUP) {
 					if (hSubMenu) {
 						window.g_menu_handle = lParam;
-						window.g_menu_pos = s;
+						window.g_menu_pos = nVerb;
 					}
 				}
-				window.g_menu_string = api.GetMenuString(lParam, s, hSubMenu ? MF_BYPOSITION : MF_BYCOMMAND);
+				window.g_menu_string = api.GetMenuString(lParam, nVerb, hSubMenu ? MF_BYPOSITION : MF_BYCOMMAND);
 			}
 			break;
 		case WM_EXITMENULOOP:

@@ -9,7 +9,7 @@ var t = new Date().getTime();
 if (server) {
 	for (;;) {
 		var df = new Date().getTime() - t;
-		var cols = server.ExecQuery('SELECT * FROM Win32_Process WHERE ExecutablePath="' + args(0).replace(/\\/g, "\\\\") + '"');
+		var cols = server.ExecQuery('SELECT * FROM Win32_Process WHERE ExecutablePath="' + (args(0).split("\\").join("\\\\")) + '"');
 		if (!cols.Count) {
 			break;
 		}
