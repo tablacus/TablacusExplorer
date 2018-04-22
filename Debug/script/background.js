@@ -40,7 +40,7 @@ function _es(fn)
 	}
 	var s;
 	try {
-		var ado = te.CreateObject(api.ADBSTRM);
+		var ado = api.CreateObject("ads");
 		ado.CharSet = 'utf-8';
 		ado.Open();
 		ado.LoadFromFile(fn);

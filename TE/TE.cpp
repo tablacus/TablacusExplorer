@@ -9519,17 +9519,18 @@ VOID teApiDeleteFile(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 
 VOID teApiCreateObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	if (lstrcmpi(param[0].lpwstr, L"Array") == 0) {
+	LPWSTR lpwstr = param[0].lpwstr;
+	if (lstrcmpi(lpwstr, L"Array") == 0) {
 		IDispatch *pdisp = NULL;
 		GetNewArray(&pdisp);
 		teSetObjectRelease(pVarResult, pdisp);
 		return;
 	}
-	if (lstrcmpi(param[0].lpwstr, L"CommonDialog") == 0) {
+	if (lstrcmpi(lpwstr, L"CommonDialog") == 0) {
 		teSetObjectRelease(pVarResult, new CteCommonDialog());
 		return;
 	}
-	if (lstrcmpi(param[0].lpwstr, L"FolderItems") == 0) {
+	if (lstrcmpi(lpwstr, L"FolderItems") == 0) {
 		IDataObject *pDataObj = NULL;
 		if (nArg >= 1) {
 			GetDataObjFromVariant(&pDataObj, &pDispParams->rgvarg[nArg - 1]);
@@ -9538,30 +9539,39 @@ VOID teApiCreateObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIAN
 		SafeRelease(&pDataObj);
 		return;
 	}
-	if (lstrcmpi(param[0].lpwstr, L"Object") == 0) {
+	if (lstrcmpi(lpwstr, L"Object") == 0) {
 		IDispatch *pdisp = NULL;
 		GetNewObject(&pdisp);
 		teSetObjectRelease(pVarResult, pdisp);
 		return;
 	}
-	if (lstrcmpi(param[0].lpwstr, L"ProgressDialog") == 0) {
+	if (lstrcmpi(lpwstr, L"ProgressDialog") == 0) {
 		teSetObjectRelease(pVarResult, new CteProgressDialog(NULL));
 		return;
 	}
-	if (lstrcmpi(param[0].lpwstr, L"WICBitmap") == 0) {
+	if (lstrcmpi(lpwstr, L"WICBitmap") == 0) {
 		teSetObjectRelease(pVarResult, new CteWICBitmap());
 		return;
 	}
+	if (lstrcmpi(lpwstr, L"api") == 0) {
+		teSetObjectRelease(pVarResult, new CteWindowsAPI(NULL));
+		return;
+	}
+	if (lstrcmpi(lpwstr, L"ads") == 0) {
+		lpwstr = L"ADODB.Stream";
+	} else if (lstrcmpi(lpwstr, L"fso") == 0) {
+		lpwstr = L"Scripting.FileSystemObject";
+	} else if (lstrcmpi(lpwstr, L"sha") == 0) {
+		lpwstr = L"Shell.Application";
+	} else if (lstrcmpi(lpwstr, L"wsh") == 0) {
+		lpwstr = L"WScript.Shell";
+	}
 	CLSID clsid;
 	IUnknown *punk;
-	if SUCCEEDED(teCLSIDFromProgID(param[0].lpwstr, &clsid)) {
+	if SUCCEEDED(teCLSIDFromProgID(lpwstr, &clsid)) {
 		if SUCCEEDED(teCreateInstance(clsid, NULL, NULL, IID_PPV_ARGS(&punk))) {
 			teSetObjectRelease(pVarResult, punk);
 		}
-	}
-	if (lstrcmpi(param[0].lpwstr, L"api") == 0) {
-		teSetObjectRelease(pVarResult, new CteWindowsAPI(NULL));
-		return;
 	}
 }
 

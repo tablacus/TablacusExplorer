@@ -3556,7 +3556,7 @@ OpenAdodbFromTextFile = function (fn)
 	if (!/^[A-Z]:\\|^\\\\/i.test(fn)) {
 		fn = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), fn);
 	}
-	var ado = te.CreateObject(api.ADBSTRM);
+	var ado = api.CreateObject("ads");
 	var charset = "_autodetect_all";
 	try {
 		ado.CharSet = "iso-8859-1";
