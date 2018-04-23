@@ -1088,14 +1088,19 @@ function SetAddon(Id, bEnable, td, Alt)
 		td = document.getElementById(Alt || "Addons_" + Id).parentNode;
 	}
 	var info = GetAddonInfo(Id);
+	var bMinVer = info.MinVersion && te.Version < CalcVersion(info.MinVersion);
+	if (bMinVer) {
+		bEnable = false;
+	}
 	var s = ['<div ', (Alt ? '' : 'draggable="true" ondragstart="Start5(this)" ondragend="End5(this)"'), ' title="', Id, '" Id="', Alt || "Addons_", Id, '" style="color: ', bEnable ? "": "gray", '">'];
 	s.push('<table><tr style="border-top: 1px solid buttonshadow"><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id+ '">'), '</td><td style="width: 100%"><label for="_', Id, '">', info.Name, "&nbsp;", info.Version, '<br /><a href="#" onclick="return AddonInfo(\'', Id, '\', this)" style="font-size: .9em">', GetText('Details'), ' (', Id, ')</a>');
-
-	if (info.Options) {
+	if (bMinVer) {
+		s.push('</td><td style="color: red; align: right; white-space: nowrap; vertical-align: middle">', info.MinVersion.replace(/^20/, "Version ").replace(/\.0/g, '.'), ' ', GetText("is required."), '</td>');
+	} else if (info.Options) {
 		s.push('</td><td style="white-space: nowrap; vertical-align: middle; padding-right: 1em"><a href="#" onclick="AddonOptions(\'', Id, '\'); return false;">', GetText('Options'), '</td>');
 	}
-	s.push('<td style="vertical-align: middle"><input type="checkbox" ', (Alt ? "" : 'id="enable_' + Id + '"'), ' onclick="AddonEnable(this, \'', Id, '\')" ', info.MinVersion && te.Version < CalcVersion(info.MinVersion) ? " disabled" : "", bEnable ? " checked" : "", '></td>');
-	s.push('<td style="vertical-align: middle"><label for="enable_', Id, '" style="display: block; width: 6em; white-space: nowrap">', GetText(bEnable ? "Enabled" : "Enable"), '</label></td>');
+	s.push('<td style="vertical-align: middle', bMinVer ? ';display: none"' : "", '"><input type="checkbox" ', (Alt ? "" : 'id="enable_' + Id + '"'), ' onclick="AddonEnable(this, \'', Id, '\')" ', bEnable ? " checked" : "", '></td>');
+	s.push('<td style="vertical-align: middle', bMinVer ? ';display: none"' : "", '"><label for="enable_', Id, '" style="display: block; width: 6em; white-space: nowrap">', GetText(bEnable ? "Enabled" : "Enable"), '</label></td>');
 	s.push('<td style="vertical-align: middle; padding-right: 1em"><input type="image" src="bitmap:ieframe.dll,216,16,10" title="', GetText('Remove'), '" onclick="AddonRemove(\'', Id, '\')" style="width: 12pt"></td>');
 	s.push('</tr></table></label></div>');
 	td.innerHTML = s.join("");
@@ -1376,7 +1381,7 @@ OpenIcon = function (o)
 		var a = o.id.split(/,/);
 		if (a[0] == "b") {
 			var dllpath = fso.BuildPath(system32, "ieframe.dll");
-			var image = te.WICBitmap;
+			var image = api.CreateObject("WICBitmap");
 			a[0] = fso.GetFileName(dllpath);
 			var a1 = a[1];
 			var hModule = LoadImgDll(a, 0);

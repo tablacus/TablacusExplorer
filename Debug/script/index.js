@@ -524,7 +524,7 @@ OpenSelected = function (Ctrl, NewTab, pt)
 		}
 		if (Exec.length) {
 			if (Selected.Count != Exec.length) {
-				Selected = te.FolderItems();
+				Selected = api.CreateObject("FolderItems");
 				for (var i = 0; i < Exec.length; i++) {
 					Selected.AddItem(Exec[i]);
 				}
@@ -571,7 +571,7 @@ DisableImage = function (img, bDisable)
 				if (!res) {
 					if (/^file:/i.test(s)) {
 						var image;
-						if (image = te.WICBitmap().FromFile(api.PathCreateFromUrl(s))) {
+						if (image = api.CreateObject("WICBitmap").FromFile(api.PathCreateFromUrl(s))) {
 							s = image.DataURI("image/png");
 						}
 					}
@@ -650,7 +650,7 @@ te.OnCreate = function (Ctrl)
 		RunEvent1("Create", Ctrl);
 	} else {
 		if (!Ctrl.Data) {
-			Ctrl.Data = te.Object();
+			Ctrl.Data = api.CreateObject("Object");
 		}
 		RunEvent1("Create", Ctrl);
 	}
@@ -1156,7 +1156,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 	}
 	if (Items.Count != Exec.length) {
 		if (Exec.length) {
-			var Selected = te.FolderItems();
+			var Selected = api.CreateObject("FolderItems");
 			for (var i = 0; i < Exec.length; i++) {
 				Selected.AddItem(Exec[i]);
 			}
@@ -1421,7 +1421,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 					for (var i in te.Data.SHIL) {
 						api.ImageList_Destroy(te.Data.SHIL[i], true);
 					}
-					te.Data.SHIL = te.Array();
+					te.Data.SHIL = api.CreateObject("Array");
 					break;
 				case WM_DEVICECHANGE:
 					if (wParam == DBT_DEVICEARRIVAL || wParam == DBT_DEVICEREMOVECOMPLETE) {
@@ -1589,7 +1589,7 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 				if (Ctrl) {
 					for (var i in Ctrl) {
 						var CM = Ctrl[i];
-						if (nVerb >= CM.idCmdFirst && nVerb <= CM.idCmdLast) {
+						if (CM && nVerb >= CM.idCmdFirst && nVerb <= CM.idCmdLast) {
 							Text = CM.GetCommandString(nVerb - CM.idCmdFirst, GCS_HELPTEXT);
 							if (Text) {
 								ShowStatusText(te, Text, 0);
@@ -1943,8 +1943,7 @@ GetIconImage = function (Ctrl, BGColor)
 	if (document.documentMode) {
 		var sfi = api.Memory("SHFILEINFO");
 		api.SHGetFileInfo(FolderItem, 0, sfi, sfi.Size, SHGFI_ICON | SHGFI_SMALLICON | SHGFI_PIDL);
-		var image = te.WICBitmap();
-		image.FromHICON(sfi.hIcon);
+		var image = api.CreateObject("WICBitmap").FromHICON(sfi.hIcon);
 		api.DestroyIcon(sfi.hIcon);
 		return image.DataURI("image/png");
 	}
@@ -2007,7 +2006,7 @@ function InitMenus()
 
 function ArrangeAddons()
 {
-	te.Data.Locations = te.Object();
+	te.Data.Locations = api.CreateObject("Object");
 	window.IconSize = te.Data.Conf_IconSize || 24 * screen.logicalYDPI / 96;
 	var xml = OpenXml("addons.xml", false, true);
 	te.Data.Addons = xml;
@@ -2095,7 +2094,7 @@ function SetAddon(strName, Location, Tag, strVAlign)
 		}
 		if (strName) {
 			if (!te.Data.Locations[Location]) {
-				te.Data.Locations[Location] = te.Array();
+				te.Data.Locations[Location] = api.CreateObject("Array");
 			}
 			var res = /<img.*?src=["'](.*?)["']/i.exec(String(Tag));
 			if (res) {
@@ -3403,11 +3402,11 @@ function CreateUpdater(arg)
 //Init
 
 if (!te.Data) {
-	te.Data = te.Object();
+	te.Data = api.CreateObject("Object");
 	te.Data.CustColors = api.Memory("int", 16);
-	te.Data.AddonsData = te.Object();
-	te.Data.Fonts = te.Object();
-	te.Data.Exchange = te.Object();
+	te.Data.AddonsData = api.CreateObject("Object");
+	te.Data.Fonts = api.CreateObject("Object");
+	te.Data.Exchange = api.CreateObject("Object");
 	//Default Value
 	te.Data.Tab_Style = TCS_HOTTRACK | TCS_MULTILINE | TCS_RAGGEDRIGHT | TCS_SCROLLOPPOSITE | TCS_HOTTRACK | TCS_TOOLTIPS;
 	te.Data.Tab_Align = TCA_TOP;
@@ -3463,7 +3462,7 @@ if (!te.Data) {
 
 	te.Data.DataFolder = DataFolder;
 	te.Data.Conf_Lang = GetLangId();
-	te.Data.SHIL = te.Array();
+	te.Data.SHIL = api.CreateObject("Array");
 	for (var i = SHIL_JUMBO + 1; i--;) {
 		te.Data.SHIL[i] = api.SHGetImageList(i);
 	}

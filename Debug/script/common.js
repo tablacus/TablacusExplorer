@@ -47,6 +47,7 @@ FolderMenu =
 	Clear: function ()
 	{
 		this.Items.length = 0;
+		delete this.Filter;
 	},
 
 	Open: function (FolderItem, x, y, filter, nParent, hParent, wID)
@@ -100,7 +101,7 @@ FolderMenu =
 		if (!Items && FolderItem.IsFolder) {
 			var Folder = FolderItem.GetFolder;
 			if (Folder) {
-				Items = te.FolderItems(Folder.Items());
+				Items = api.CreateObject("FolderItems", Folder.Items());
 			}
 		}
 		if (Items) {
@@ -186,7 +187,7 @@ FolderMenu =
 				api.GetCursorPos(pt);
 				var FV = te.Ctrl(CTRL_FV);
 				var AltSelectedItems = FV.AltSelectedItems;
-				var Items = te.FolderItems();
+				var Items = api.CreateObject("FolderItems");
 				Items.AddItem(FolderItem);
 				FV.AltSelectedItems = Items;
 				if (ExecMenu(FV, "Context", pt, 1) != S_OK) {
@@ -215,7 +216,7 @@ FolderMenu =
 			}
 			var FV = te.Ctrl(CTRL_FV);
 			var AltSelectedItems = FV.AltSelectedItems;
-			var Items = te.FolderItems();
+			var Items = api.CreateObject("FolderItems");
 			Items.AddItem(FolderItem);
 			FV.AltSelectedItems = Items;
 			if (ExecMenu(FV, "Default", null, 2) != S_OK) {
@@ -513,7 +514,7 @@ function MakeImgData(src, index, h, strBitmap, strIcon)
 {
 	var hIcon = MakeImgIcon(src, index, h, strBitmap, strIcon);
 	if (hIcon) {
-		var image = te.WICBitmap().FromHICON(hIcon);
+		var image = api.CreateObject("WICBitmap").FromHICON(hIcon);
 		api.DestroyIcon(hIcon);
 		return image;
 	}
@@ -705,7 +706,7 @@ LoadXml = function (filename, nGroup)
 					var logs = tab.getElementsByTagName('Log');
 					var nLogCount = logs.length;
 					if (nLogCount > 1) {
-						Path = te.FolderItems();
+						Path = api.CreateObject("FolderItems");
 						for (var i3 = 0; i3 < nLogCount; i3++) {
 							Path.AddItem(logs[i3].getAttribute("Path"));
 						}
@@ -1026,7 +1027,7 @@ ShowDialog = function (fn, opt)
 
 LoadLayout = function ()
 {
-	var commdlg = te.CommonDialog();
+	var commdlg = api.CreateObject("CommonDialog");
 	commdlg.InitDir = fso.BuildPath(te.Data.DataFolder, "layout");
 	commdlg.Filter = "XML Files|*.xml|" + (api.LoadString(hShell32, 34193) || "All Files") + "|*.*";
 	commdlg.Flags = OFN_FILEMUSTEXIST;
@@ -1038,7 +1039,7 @@ LoadLayout = function ()
 
 SaveLayout = function ()
 {
-	var commdlg = te.CommonDialog();
+	var commdlg = api.CreateObject("CommonDialog");
 	commdlg.InitDir = fso.BuildPath(te.Data.DataFolder, "layout");
 	commdlg.Filter = "XML Files|*.xml|" + (api.LoadString(hShell32, 34193) || "All Files") + "|*.*";
 	commdlg.DefExt = "xml";
@@ -1135,7 +1136,7 @@ CreateNew = function (path, fn)
 						path4 = fso.BuildPath(path4, ar[i]);
 					}
 					fn(path4);
-					api.SHFileOperation(FO_MOVE, path3, fso.GetParentFolderName(path), FOF_SILENT | FOF_NOCONFIRMATION, false);
+					api.SHFileOperation(FO_MOVE, path3, fso.GetParentFolderName(path), FOF_SILENT | FOF_NOCONFIRMATION | FOF_NOERRORUI, false);
 				}
 			}
 		}
@@ -2048,7 +2049,7 @@ GetAccelerator = function (s)
 
 AddMenuIconFolderItem = function (mii, FolderItem, nHeight)
 {
-	var image = te.WICBitmap();
+	var image = api.CreateObject("WICBitmap");
 	var sfi = api.Memory("SHFILEINFO");
 	var dwFlags = SHGFI_SYSICONINDEX;
 	var path = FolderItem;
@@ -2095,7 +2096,7 @@ MenusIcon = function (mii, src, nHeight)
 	mii.cbSize = mii.Size;
 	if (src) {
 		src = api.PathUnquoteSpaces(ExtractMacro(te, src));
-		var image = te.WICBitmap();
+		var image = api.CreateObject("WICBitmap");
 		mii.hbmpItem = MainWindow.g_arBM[[src, nHeight].join("\t")];
 		if (mii.hbmpItem) {
 			mii.fMask = mii.fMask | MIIM_BITMAP;
@@ -2671,7 +2672,7 @@ PopupContextMenu = function (Item, FV)
 {
 	if (/string/i.test(typeof Item)) {
 		var arg = api.CommandLineToArgv(Item);
-		Item = te.FolderItems();
+		Item = api.CreateObject("FolderItems");
 		for (var i in arg) {
 			Item.AddItem(arg[i]);
 		}
@@ -2981,7 +2982,7 @@ GetSelectedArray = function (Ctrl, pt, bPlus)
 		}
 	}
 	if (!Selected || Selected.Count == 0) {
-		Selected = te.FolderItems();
+		Selected = api.CreateObject("FolderItems");
 		if (bPlus) {
 			Selected.AddItem(SelItem);
 		}
