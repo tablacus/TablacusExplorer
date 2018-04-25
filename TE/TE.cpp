@@ -3056,6 +3056,22 @@ LPWSTR teGetCommandLine()
 
 HRESULT teCLSIDFromProgID(__in LPCOLESTR lpszProgID, __out LPCLSID lpclsid)
 {
+	if (lstrcmpi(lpszProgID, L"ads") == 0) {
+		*lpclsid = CLSID_ADODBStream;
+		return S_OK;
+	}
+	if (lstrcmpi(lpszProgID, L"fso") == 0) {
+		*lpclsid = CLSID_ScriptingFileSystemObject;
+		return S_OK;
+	}
+	if (lstrcmpi(lpszProgID, L"sha") == 0) {
+		*lpclsid = CLSID_Shell;
+		return S_OK;
+	}
+	if (lstrcmpi(lpszProgID, L"wsh") == 0) {
+		*lpclsid = CLSID_WScriptShell;
+		return S_OK;
+	}
 	if (StrCmpNI(lpszProgID, L"new:", 4) == 0) {
 		return CLSIDFromString(&lpszProgID[4], lpclsid);
 	}
@@ -4195,15 +4211,11 @@ HRESULT GetFolderObjFromIDList(LPITEMIDLIST pidl, Folder** ppsdf)
 	VARIANT v;
 	GetVarArrayFromIDList(&v, pidl);
 	IShellDispatch *psha;
-	CLSID clsid;
-	HRESULT hr = CLSIDFromProgID(L"Shell.Application", &clsid);
+	HRESULT hr = teCreateInstance(CLSID_Shell, NULL, NULL, IID_PPV_ARGS(&psha));
 	if SUCCEEDED(hr) {
-		hr = teCreateInstance(clsid, NULL, NULL, IID_PPV_ARGS(&psha));
-		if SUCCEEDED(hr) {
-			hr = psha->NameSpace(v, ppsdf);
-		}
-		psha->Release();
+		hr = psha->NameSpace(v, ppsdf);
 	}
+	psha->Release();
 	VariantClear(&v);
 	return hr;
 }
@@ -9557,15 +9569,6 @@ VOID teApiCreateObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIAN
 		teSetObjectRelease(pVarResult, new CteWindowsAPI(NULL));
 		return;
 	}
-	if (lstrcmpi(lpwstr, L"ads") == 0) {
-		lpwstr = L"ADODB.Stream";
-	} else if (lstrcmpi(lpwstr, L"fso") == 0) {
-		lpwstr = L"Scripting.FileSystemObject";
-	} else if (lstrcmpi(lpwstr, L"sha") == 0) {
-		lpwstr = L"Shell.Application";
-	} else if (lstrcmpi(lpwstr, L"wsh") == 0) {
-		lpwstr = L"WScript.Shell";
-	}
 	CLSID clsid;
 	IUnknown *punk;
 	if SUCCEEDED(teCLSIDFromProgID(lpwstr, &clsid)) {
@@ -14852,6 +14855,9 @@ HRESULT CteShellBrowser::SelectItemEx(LPITEMIDLIST *ppidl, int dwFlags, BOOL bFr
 #endif
 		}
 		hr = m_pShellView->SelectItem(ILFindLastID(*ppidl), dwFlags);
+		if ((dwFlags & (SVSI_SELECTIONMARK | SVSI_SELECT)) == (SVSI_SELECTIONMARK | SVSI_SELECT)) {
+			hr = m_pShellView->SelectItem(ILFindLastID(*ppidl), dwFlags & (SVSI_NOTAKEFOCUS | SVSI_SELECT));
+		}
 	}
 	if (bFree) {
 		teILFreeClear(ppidl);
@@ -16976,9 +16982,7 @@ CteWebBrowser::CteWebBrowser(HWND hwndParent, WCHAR *szPath, VARIANT *pvArg)
 	MSG        msg;
 	RECT       rc;
 	IOleObject *pOleObject;
-	CLSID clsid;
-	if (SUCCEEDED(CLSIDFromProgID(L"Shell.Explorer", &clsid)) &&
-		SUCCEEDED(teCreateInstance(clsid, NULL, NULL, IID_PPV_ARGS(&m_pWebBrowser))) &&
+	if (SUCCEEDED(teCreateInstance(CLSID_WebBrowser, NULL, NULL, IID_PPV_ARGS(&m_pWebBrowser))) &&
 		SUCCEEDED(m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&pOleObject)))) {
 		pOleObject->SetClientSite(static_cast<IOleClientSite *>(this));
 		SetRectEmpty(&rc);

@@ -3391,7 +3391,7 @@ function CreateUpdater(arg)
 	if (isFinite(RunEvent3("CreateUpdater", arg))) {
 		return;
 	}
-	g_.strUpdate = ['"', api.IsWow64Process(api.GetCurrentProcess()) ? wsh.ExpandEnvironmentStrings("%SystemRoot%\\Sysnative") : system32, "\\", "wscript.exe", '" "', arg.temp, "\\script\\update.js", '" "', api.GetModuleFileName(null), '" "', arg.temp, '" "', api.LoadString(hShell32, 12599), '" "', api.LoadString(hShell32, 12852),'"'].join("");
+	g_.strUpdate = ['"', api.IsWow64Process(api.GetCurrentProcess()) ? wsh.ExpandEnvironmentStrings("%SystemRoot%\\Sysnative") : system32, "\\", "wscript.exe", '" "', arg.temp, "\\script\\update.js", '" "', api.GetModuleFileName(null), '" "', arg.temp, '" "', api.LoadString(hShell32, 12612), '" "', api.LoadString(hShell32, 12852),'"'].join("");
 	DeleteTempFolder = function ()
 	{
 		var oExec = wsh.Exec(g_.strUpdate);
