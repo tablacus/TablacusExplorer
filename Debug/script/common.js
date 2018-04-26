@@ -76,13 +76,8 @@ FolderMenu =
 		if (!FolderItem) {
 			return;
 		}
-		var path = FolderItem.Path || FolderItem;
-		if (path === FolderItem || /^[A-Z]:\\$/i.test(path)) {
-			FolderItem = api.ILCreateFromPath(path);
-		}
-		if (!FolderItem) {
-			FolderItem = {};
-		}
+		var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
+		FolderItem = api.ILCreateFromPath(path) || {};
 		var bSep = false;
 		if (!nParent && !api.ILIsEmpty(FolderItem) && !api.ILIsParent(1, FolderItem, false)) {
 			var Item = api.ILRemoveLastID(FolderItem);
@@ -196,12 +191,13 @@ FolderMenu =
 				FV.AltSelectedItems = AltSelectedItems;
 				return;
 			}
-			var res = /^`(.*)`$/.exec(FolderItem.Path);
+			var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL);
+			var res = /^`(.*)`$/.exec(path);
 			if (res) {
 				ShellExecute(res[1], null, SW_SHOWNORMAL);
 				return;
 			}
-			res = /^javascript:(.*)$/i.exec(FolderItem.Path);
+			res = /^javascript:(.*)$/i.exec(path);
 			if (res) {
 				try {
 					new Function(res[1])();
@@ -210,7 +206,7 @@ FolderMenu =
 				}
 				return;
 			}
-			if ((window.g_menu_button == 3 || isFinite(wFlags)) && FolderItem.IsFolder) {
+			if (FolderItem.Enum || ((window.g_menu_button == 3 || isFinite(wFlags)) && FolderItem.IsFolder)) {
 				Navigate(FolderItem, isFinite(wFlags) ? wFlags : GetOpenMode());
 				return;
 			}
@@ -974,7 +970,7 @@ NavigateFV = function (FV, Path, wFlags)
 
 GetOpenMode = function ()
 {
-	return window.g_menu_button == 3 || api.GetKeyState(VK_CONTROL) < 0 ? SBSP_NEWBROWSER : OpenMode;
+	return window.g_menu_button == 3 ? SBSP_NEWBROWSER : GetNavigateFlags();
 }
 
 IsDrag = function (pt1, pt2)

@@ -1358,6 +1358,7 @@ public:
 	VOID Close();
 	BOOL Create(BOOL bIfVisible);
 	HRESULT getSelected(IDispatch **pItem);
+	VOID SetRootV(VARIANT *pv);
 	VOID SetRoot();
 	VOID Show();
 #ifdef _2000XP

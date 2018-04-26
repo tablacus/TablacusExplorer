@@ -7161,10 +7161,7 @@ VOID teApiILRemoveLastID(int nArg, teParam *param, DISPPARAMS *pDispParams, VARI
 	if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
 		if (!ILIsEmpty(pidl)) {
 			if (::ILRemoveLastID(pidl)) {
-				if (ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
-					teILCloneReplace(&pidl, g_pidls[CSIDL_DESKTOP]);
-				}
-				teSetIDList(pVarResult, pidl);
+				teSetIDList(pVarResult, ILIsEqual(pidl, g_pidls[CSIDL_INTERNET]) ? g_pidls[CSIDL_DESKTOP] : pidl);
 			}
 		}
 		teCoTaskMemFree(pidl);
@@ -13665,9 +13662,6 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					if (nArg >= 1) {
 						wFlags = static_cast<WORD>(GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]));
 					}
-					if (nArg >= SB_Root + 2) {
-						VariantCopy(&m_pTV->m_vRoot, &pDispParams->rgvarg[nArg - 2 - SB_Root]);
-					}
 					for (int i = 0; i <= nArg - 2 && i < SB_DoFunc; i++) {
 						int n = GetIntFromVariant(&pDispParams->rgvarg[nArg - i - 2]);
 						if (i == SB_TreeAlign && n == 0) {
@@ -13681,7 +13675,13 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					param[SB_DoFunc] = 0;
 					CteShellBrowser *pSB = NULL;
 					Navigate3(pFolderItem, wFlags, param, &pSB, pFolderItems);
-					teSetObject(pVarResult, pSB ? pSB : this);
+					if (!pSB) {
+						pSB = this;
+					}
+					if (nArg >= SB_Root + 2) {
+						pSB->m_pTV->SetRootV(&pDispParams->rgvarg[nArg - 2 - SB_Root]);
+					}
+					teSetObject(pVarResult, pSB);
 				}
 				return S_OK;
 			//Index
@@ -15710,7 +15710,7 @@ VOID CteShellBrowser::Suspend(int nMode)
 		m_nUnload = 9;
 		if (nMode == 1 && m_pTV) {
 			m_pTV->Close();
-			m_pTV->m_bSetRoot = true;
+			m_pTV->m_bSetRoot = TRUE;
 		}
 		if (nMode != 2) {
 			CteFolderItem *pid1 = NULL;
@@ -20301,6 +20301,7 @@ CteTreeView::CteTreeView()
 CteTreeView::~CteTreeView()
 {
 	Close();
+	VariantClear(&m_vRoot);
 	if (!m_pFV && m_param) {
 		delete [] m_param;
 		m_param = NULL;
@@ -20381,7 +20382,6 @@ VOID CteTreeView::Close()
 		SafeRelease(&m_pShellNameSpace);
 	}
 #endif
-	VariantClear(&m_vRoot);
 	VariantClear(&m_vData);
 #ifdef _W2000
 	VariantClear(&m_vSelected);
@@ -20855,7 +20855,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 			case 0x20000002:
 				if (pVarResult) {
 					VariantCopy(pVarResult, &m_vRoot);
-					if (pVarResult->vt == VT_NULL) {
+					if (pVarResult->vt == VT_NULL || pVarResult->vt == VT_EMPTY) {
 						teSetLong(pVarResult, 0);
 					}
 					if (nArg < 0) {
@@ -20873,15 +20873,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 							m_param[SB_RootStyle] = GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]);
 						}
 					}
-					LPITEMIDLIST pidl1, pidl2;
-					teGetIDListFromVariant(&pidl1, &m_vRoot);
-					teGetIDListFromVariant(&pidl2, &pDispParams->rgvarg[nArg]);
-					if (!ILIsEqual(pidl1, pidl2)) {
-						VariantCopy(&m_vRoot, &pDispParams->rgvarg[nArg]);
-						SetRoot();
-					}
-					teCoTaskMemFree(pidl1);
-					teCoTaskMemFree(pidl2);
+					SetRootV(&pDispParams->rgvarg[nArg]);
 					return S_OK;
 				}
 				break;
@@ -20971,7 +20963,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 							g_paramFV[dispIdMember - TE_OFFSET] = dw;
 							if (dispIdMember == TE_OFFSET + SB_TreeFlags) {
 								Close();
-								m_bSetRoot = true;
+								m_bSetRoot = TRUE;
 							}
 							ArrangeWindow();
 						}
@@ -21362,6 +21354,24 @@ STDMETHODIMP CteTreeView::InvokeCommand(LPCMINVOKECOMMANDINFO pici)
 }
 //*/
 
+VOID CteTreeView::SetRootV(VARIANT *pv)
+{
+	LPITEMIDLIST pidl1, pidl2;
+	teGetIDListFromVariant(&pidl1, &m_vRoot);
+	teGetIDListFromVariant(&pidl2, pv);
+	if (!ILIsEqual(pidl1, pidl2)) {
+		Close();
+		VariantClear(&m_vRoot);
+		VariantCopy(&m_vRoot, pv);
+		m_bSetRoot = TRUE;
+		if (m_param[SB_TreeAlign] & 2) {
+			SetTimer(g_hwndMain, (UINT_PTR)this, 500, teTimerProcSetRoot);
+		}
+	}
+	teCoTaskMemFree(pidl2);
+	teCoTaskMemFree(pidl1);
+}
+
 VOID CteTreeView::SetRoot()
 {
 	HRESULT hr = E_FAIL;
@@ -21375,7 +21385,6 @@ VOID CteTreeView::SetRoot()
 				pidl = ::ILClone(g_pidls[CSIDL_DESKTOP]);
 			}
 			if SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(&pShellItem))) {
-				m_pNameSpaceTreeControl->RemoveAllRoots();
 				hr = m_pNameSpaceTreeControl->AppendRoot(pShellItem, m_param[SB_EnumFlags], m_param[SB_RootStyle], NULL);
 				pShellItem->Release();
 			}
@@ -21425,7 +21434,7 @@ VOID CteTreeView::SetRoot()
 	}
 #endif
 	if (hr == S_OK) {
-		m_bSetRoot = false;
+		m_bSetRoot = FALSE;
 		DoFunc(TE_OnViewCreated, this, E_NOTIMPL);
 	}
 }
@@ -21843,7 +21852,7 @@ STDMETHODIMP CteFolderItem::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				}
 				teSetLong(pVarResult, i);
 				return S_OK;
-			//ENum
+			//Enum
 			case 6:
 				if (pVarResult || wFlags & DISPATCH_METHOD) {
 					GetAlt();
