@@ -11,7 +11,7 @@
 #define STRING2(str) #str
 #define VER_Y		18
 #define VER_M		4
-#define VER_D		26
+#define VER_D		28
 
 //Define
 #define _USE_BSEARCHAPI

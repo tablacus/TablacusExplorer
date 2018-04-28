@@ -5542,7 +5542,7 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 		if (nCode >= 0 && g_x == MAXINT) {
 			if (nCode == HC_ACTION) {
 				g_dwTickKey = 0;
-				if (wParam != WM_MOUSEWHEEL) {
+				if (wParam != WM_MOUSEWHEEL && !g_nDropState) {
 					if (g_pOnFunc[TE_OnMouseMessage]) {
 						MOUSEHOOKSTRUCTEX *pMHS = (MOUSEHOOKSTRUCTEX *)lParam;
 						if (ControlFromhwnd(&pdisp, pMHS->hwnd) == S_OK) {
@@ -8406,12 +8406,20 @@ VOID teApiSHDoDragDrop(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIAN
 VOID teApiCompareIDs(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	LPITEMIDLIST pidl1, pidl2;
+	LPCITEMIDLIST pidlPart;
 	if (teGetIDListFromVariant(&pidl1, &pDispParams->rgvarg[nArg - 1])) {
 		if (teGetIDListFromVariant(&pidl2, &pDispParams->rgvarg[nArg - 2])) {
-			IShellFolder *pDesktopFolder;
-			SHGetDesktopFolder(&pDesktopFolder);
-			teSetLong(pVarResult, pDesktopFolder->CompareIDs(param[0].lparam, pidl1, pidl2));
-			pDesktopFolder->Release();
+			IShellFolder *pSF;
+			LPITEMIDLIST pidlParent = ::ILClone(pidl1);
+			::ILRemoveLastID(pidlParent);
+			if (ILIsParent(pidlParent, pidl2, true) && SUCCEEDED(SHBindToParent(pidl1, IID_PPV_ARGS(&pSF), &pidlPart))) {
+				teSetLong(pVarResult, pSF->CompareIDs(param[0].lparam, pidlPart, ILFindLastID(pidl2)));
+			} else {
+				SHGetDesktopFolder(&pSF);
+				teSetLong(pVarResult, pSF->CompareIDs(param[0].lparam, pidl1, pidl2));
+			}
+			pSF->Release();
+			teCoTaskMemFree(pidlParent);
 			teCoTaskMemFree(pidl2);
 		}
 		teCoTaskMemFree(pidl1);
@@ -16807,6 +16815,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 STDMETHODIMP CTE::QueryContinueDrag(BOOL fEscapePressed, DWORD grfKeyState)
 {
 	if (fEscapePressed || !g_nDropState || (grfKeyState & (MK_LBUTTON | MK_RBUTTON)) == (MK_LBUTTON | MK_RBUTTON)) {
+		g_nDropState = 0;
 		return DRAGDROP_S_CANCEL;
 	}
 	if ((grfKeyState & (MK_LBUTTON | MK_RBUTTON)) == 0) {
