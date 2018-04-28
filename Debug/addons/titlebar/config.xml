@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<TablacusExplorer>
+  <General>
+    <Version>1.04</Version>
+    <MinVersion>2017.8.10</MinVersion>
+    <pubDate>Sun, 10 Sep 2017 00:00:00 GMT</pubDate>
+    <Creator>Gaku</Creator>
+    <URL>http://tablacus.github.io/TablacusExplorerAddons/</URL>
+    <License>MIT License</License>
+  </General>
+  <en>
+    <Name>Title bar</Name>
+    <Description>Title bar</Description>
+  </en>
+  <ja>
+    <Name>タイトル バー</Name>
+    <Description>タイトル バー</Description>
+  </ja>
+</TablacusExplorer>

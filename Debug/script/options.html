@@ -76,13 +76,14 @@
               <label>Size</label><input type="text" id="Conf_IconSize" align="right" size="4" />px
               <input type="button" value="Set Default" onclick="SetDefault(document.F.Conf_IconSize, '');" />
               <br /><br />
+              <label>Menus</label><br />
+              <input type="checkbox" id="Conf_MenuHidden" /><label for="Conf_MenuHidden">Include hidden items</label>
+              <br /><br />
               <div class="block">
                 <input type="button" name="ButtonInitConfig" value="Initialize config folder" onclick="InitConfig(this);" />
                 <br />
                 <label>If you installed Tablacus Explorer to the Program Files directory, please press this button.</label>
               </div>
-              <label>Information</label>
-              <input type="text" id="_TEInfo" style="width: 100%" onclick="this.select()" readonly />
             </div>
             <!--panel_end-->
 

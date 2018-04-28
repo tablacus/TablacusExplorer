@@ -128,7 +128,7 @@
 	<text s="Enumeration">列挙</text>
 	<text s="Folders">フォルダー</text>
 	<text s="Not folders">フォルダ以外</text>
-	<text s="Include hidden items">隠しオブジェクト</text>
+	<text s="Include hidden items">隠し項目を表示</text>
 
 	<text s="Visible">表示する</text>
 	<text s="Hidden">隠す</text>

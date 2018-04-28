@@ -1,0 +1,128 @@
+<form name="E" style="display: inline;">
+  <table width="100%">
+    <tr>
+      <td width="12.5em" valign="top">
+        <select name="Mouse" style="width: 12.5em" onchange="SwitchX('Mouse', this, document.E)">
+        </select>
+        <br />
+        <select name="MouseAll" size="17" style="width: 12.5em; height: 32em; height: calc(100vh - 7em); min-height: 12em" onclick="EditXEx(EditX, 'Mouse', document.E)" ondblclick="EditX('Mouse')" oncontextmenu="CancelX('Mouse')">
+        </select>
+        <select name="MouseList" size="17" style="width: 12.5em; height: 32em; height: calc(100vh - 7em); min-height: 12em; display: none" onclick="EditXEx(EditX, 'Mouse', document.E)" ondblclick="EditX('Mouse')" oncontextmenu="CancelX('Mouse')">
+        </select>
+        <select name="MouseList_Background" size="17" style="width: 12.5em; height: 32em; height: calc(100vh - 7em); min-height: 12em; display: none" onclick="EditXEx(EditX, 'Mouse', document.E)" ondblclick="EditX('Mouse')" oncontextmenu="CancelX('Mouse')">
+        </select>
+        <select name="MouseTree" size="17" style="width: 12.5em; height: 32em; height: calc(100vh - 7em); min-height: 12em; display: none" onclick="EditXEx(EditX, 'Mouse', document.E)" ondblclick="EditX('Mouse')" oncontextmenu="CancelX('Mouse')">
+        </select>
+        <select name="MouseTabs" size="17" style="width: 12.5em; height: 32em; height: calc(100vh - 7em); min-height: 12em; display: none" onclick="EditXEx(EditX, 'Mouse', document.E)" ondblclick="EditX('Mouse')" oncontextmenu="CancelX('Mouse')">
+        </select>
+        <select name="MouseTabs_Background" size="17" style="width: 12.5em; height: 32em; height: calc(100vh - 7em); min-height: 12em; display: none" onclick="EditXEx(EditX, 'Mouse', document.E)" ondblclick="EditX('Mouse')" oncontextmenu="CancelX('Mouse')">
+        </select>
+        <select name="MouseBrowser" size="17" style="width: 12.5em; height: 32em; height: calc(100vh - 7em); min-height: 12em; display: none" onclick="EditXEx(EditX, 'Mouse', document.E)" ondblclick="EditX('Mouse')" oncontextmenu="CancelX('Mouse')">
+        </select>
+      </td>
+      <td valign="top">
+        <table width="100%" cellspacing="0" cellpadding="0">
+          <tr>
+            <td width="100%" colspan="3">
+              <table width="100%" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td style="vertical-align: bottom; white-space: nowrap">
+                    <label>Mouse</label>
+                  </td>
+                  <td>
+                    <input type="button" value="Input" onclick="InputMouse(document.E.MouseMouse);ChangeX('Mouse');" />
+                  </td>
+                  <td align="right" id="__MOUSEDATA">
+                  </td>
+                </tr>
+              </table>
+            </td>
+            <td align="center">
+              <input type="button" value="LB" title="1" onclick="AddMouse(this)" />
+            </td>
+            <td align="center">
+              <input type="button" value="WB" title="3" onclick="AddMouse(this)" />
+            </td>
+            <td align="center">
+              <input type="button" value="RB" title="2" onclick="AddMouse(this)" />
+            </td>
+          </tr>
+          <tr>
+            <td width="100%">
+              <input type="text" name="MouseMouse" style="width: 100%" onchange="ChangeX('Mouse')" />
+            </td>
+            <td align="center">
+              <input type="button" value="X1" title="4" onclick="AddMouse(this)" />
+            </td>
+            <td align="center">
+              <input type="button" value="WU" title="8" onclick="AddMouse(this)" />
+            </td>
+            <td align="right" rowspan="2" style="vertical-align: middle">
+              <input type="button" value=" L " title="L" onclick="AddMouse(this)" />
+            </td>
+            <td align="center" rowspan="2" style="vertical-align: middle">
+              <input type="button" value=" U " title="U" onclick="AddMouse(this)" />
+              <br />
+              <input type="button" value=" D " title="D" onclick="AddMouse(this)" width="100%" />
+            </td>
+            <td align="left" rowspan="2" style="vertical-align: middle">
+              <input type="button" value=" R " title="R" onclick="AddMouse(this)" />
+            </td>
+          </tr>
+          <tr>
+            <td style="vertical-align: bottom">
+              <label>Name</label>
+              <input type="text" name="MouseName" style="width: 100%" />
+              <label>Type</label>
+            </td>
+            <td align="center">
+              <input type="button" value="X2" title="5" onclick="AddMouse(this)" />
+            </td>
+            <td align="center">
+              <input type="button" value="WD" title="9" onclick="AddMouse(this)" />
+            </td>
+          </tr>
+        </table>
+        <select name="MouseType" onchange="ChangeX('Mouse')">
+        </select>
+        <table class="layout">
+          <tr>
+            <td style="width: 100%; vertical-align: bottom">
+              <label>Options</label>
+            </td>
+            <td class="buttons">
+              <input type="button" value="Portable" onclick="PortableX('MousePath')" title="Options" />
+            </td>
+            <td>
+              <input type="button" value="Browse..." onclick="RefX('MousePath', true, this)" title="Options" />
+            </td>
+          </tr>
+        </table>
+        <textarea name="MousePath" style="width: 100%; height: 18em; height: calc(100vh - 19em); min-height: 2em" onchange="ChangeX('Mouse')"></textarea>
+      </td>
+    </tr>
+  </table>
+  <table width="100%">
+    <tr>
+      <td class="buttons">
+        <input type="button" value="Remove" onclick="RemoveX('Mouse')" />
+      </td>
+      <td class="buttons">
+        <input type="button" value="Up" onclick="MoveX('Mouse', -1)" />
+      </td>
+      <td class="buttons">
+        <input type="button" value="Down" onclick="MoveX('Mouse', 1)" />
+      </td>
+      <td style="width: 100%; vertical-align: middle">
+        <input type="checkbox" id="_EDIT" checked /><label for="_EDIT">Edit</label>
+      </td>
+      <td class="buttons">
+        <input type="button" value="Add" onclick="AddX('Mouse', null, document.E)" />
+      </td>
+      <td>
+        <input type="button" value="Replace" onclick="ReplaceX('Mouse', document.E)" />
+      </td>
+      </td>
+    </tr>
+  </table>
+</form>

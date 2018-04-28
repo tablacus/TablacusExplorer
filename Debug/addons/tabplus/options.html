@@ -1,0 +1,64 @@
+<div class="panel" style="display: block;">
+  <label>View</label>
+  <br />
+  <input type="checkbox" id="Icon" />
+  <label for="Icon">Icon</label>
+  <br />
+  <input type="checkbox" id="Drive" />
+  <label for="Drive" id="_Drive">Drive</label>
+  <br />
+  <input type="checkbox" id="Close" />
+  <label for="Close">Close Tab</label>
+  <br />
+  <input type="checkbox" id="New" />
+  <label for="New">New Tab</label>
+  <br />
+  <input type="checkbox" id="Active" />
+  <label for="Active">Background</label>
+  <br />
+  <input type="checkbox" id="Tooltips" />
+  <label for="Tooltips">Tooltips</label>
+  <br />
+  <input type="checkbox" id="Fix" />
+  <label for="Fix">Fixed width</label>
+  <br />
+  <label>Width</label>
+  <input type="text" name="Width" style="width: 60px" />
+  px
+  <br />
+  <label>Align</label>&nbsp;
+  <select name="Align">
+    <option value="" />
+    Top
+    <option value="1" />Bottom
+    <option value="2" />Left
+    <option value="3" />Right
+  </select>
+  <br />
+</div>
+<div class="panel" style="display: block;">
+  <label>Icon</label> (13px)
+  <br />
+  <label>Lock</label>
+  <table style="width: 100%; line-height: 1.2em">
+    <tr>
+      <td style="width: 100%">
+        <input type="text" name="IconLock" onchange="SetImage();" style="width: 100%" />
+      </td>
+      <td style="white-space: nowrap">
+        <input type="button" value="Browse..." onclick="RefX('IconLock');" />
+      </td>
+    </tr>
+  </table>
+  <label>Close</label>
+  <table style="width: 100%; line-height: 1.2em">
+    <tr>
+      <td style="width: 100%">
+        <input type="text" name="IconClose" onchange="SetImage();" style="width: 100%" />
+      </td>
+      <td style="white-space: nowrap">
+        <input type="button" value="Browse..." onclick="RefX('IconClose');" />
+      </td>
+    </tr>
+  </table>
+</div>

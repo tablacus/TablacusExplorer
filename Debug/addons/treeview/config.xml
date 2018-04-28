@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<TablacusExplorer>
+  <General>
+    <Version>1.27</Version>
+    <MinVersion>2017.9.17</MinVersion>
+    <pubDate>Sun, 24 Sep 2017 00:00:00 GMT</pubDate>
+    <Options>Common:0,5,6,7,8,9:0</Options>
+    <Creator>Gaku</Creator>
+    <URL>http://tablacus.github.io/TablacusExplorerAddons/</URL>
+    <License>MIT License</License>
+  </General>
+  <en>
+    <Name>Tree view</Name>
+    <Description>Tree view</Description>
+  </en>
+  <ja>
+    <Name>ツリー</Name>
+    <Description>ツリー</Description>
+  </ja>
+</TablacusExplorer>

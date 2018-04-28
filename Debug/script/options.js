@@ -121,7 +121,6 @@ function ResetForm()
 		o.innerHTML = api.PSGetDisplayName("System.ItemDate");
 	}
 	document.getElementById("_EDIT").checked = true;
-	document.getElementById("_TEInfo").value = GetTEInfo();
 }
 
 function ResizeTabPanel()

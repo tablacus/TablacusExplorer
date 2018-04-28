@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<TablacusExplorer>
+  <General>
+    <Version>1.31</Version>
+    <MinVersion>2018.4.12</MinVersion>
+    <pubDate>Thu, 12 Apr 2018 00:00:00 GMT</pubDate>
+    <Options>Common:0:0</Options>
+    <Creator>Gaku</Creator>
+    <URL>http://tablacus.github.io/TablacusExplorerAddons/</URL>
+    <License>MIT License</License>
+  </General>
+  <en>
+    <Name>Remember folder view settings</Name>
+    <Description>Automatically remember folder view settings.</Description>
+  </en>
+  <ja>
+    <Name>フォルダの表示設定を覚える</Name>
+    <Description>自動的にフォルダの表示設定を覚えます。</Description>
+  </ja>
+</TablacusExplorer>

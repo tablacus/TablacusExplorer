@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TablacusExplorer><All Key="$3f" Type="Tabs">Refresh</All><All Key="$200f" Type="Tabs">Next Tab</All><All Key="$300f" Type="Tabs">Previous Tab</All><All Key="$214b" Type="JScript">var TC = external.Ctrl(CTRL_TC);
+if (TC)  {
+  if (TC.Selected.CurrentViewMode == FVM_DETAILS) {
+    ChangeTab(TC, -1);
+    return S_OK;
+  }
+}
+return S_FALSE;</All><All Key="$214d" Type="JScript">var TC = external.Ctrl(CTRL_TC);
+if (TC)  {
+  if (TC.Selected.CurrentViewMode == FVM_DETAILS) {
+    ChangeTab(TC, 1);
+    return S_OK;
+  }
+}
+return S_FALSE;</All><All Key="$2002" Type="Tabs">0</All><All Key="$2003" Type="Tabs">1</All><All Key="$2004" Type="Tabs">2</All><All Key="$2005" Type="Tabs">3</All><All Key="$2006" Type="Tabs">4</All><All Key="$2007" Type="Tabs">5</All><All Key="$2008" Type="Tabs">6</All><All Key="$2009" Type="Tabs">7</All><All Key="$200a" Type="Tabs">-1</All><All Key="$2021" Type="Tools">Search</All><All Key="$414b" Type="Tabs">Back</All><All Key="$414d" Type="Tabs">Forward</All><All Key="$4148" Type="Tabs">Up</All><List Key="$e" Type="Tabs">Up</List><List Key="$35" Type="JScript">Ctrl.SelectItem(null, SVSI_DESELECTOTHERS);</List><List Key="$73,$7d" Type="Open">\</List><List Key="$41" Type="Tools">New Folder</List><List Key="$44" Type="Tools">Run Dialog</List><List Key="$57" Type="Tools">Copy Full Path</List><List Key="$2020" Type="Tools">Add to Favorites</List><List Key="$2025" Type="Tools">New Folder</List><List Key="$2011" Type="Tabs">Close Tab</List><List Key="$201f" Type="Tools">New File</List><List Key="$2014" Type="Tabs">New Tab</List><List Key="$103c" Type="Selected Items">Notepad.exe</List><List Key="$100b" Type="Open">ssfDESKTOP</List><List Key="$1002" Type="Open">A:\</List><List Key="$1003" Type="Open">ssfDRIVES</List><List Key="$1004" Type="Open">C:\</List><List Key="$1005" Type="Open">D:\</List><List Key="$1006" Type="Open">E:\</List><List Key="$1007" Type="Open">F:\</List><List Key="$1008" Type="Open">G:\</List><List Key="$1009" Type="Open">H:\</List><List Key="$100a" Type="Open">I:\</List></TablacusExplorer>

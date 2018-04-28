@@ -43,6 +43,8 @@ g_ = {
 FolderMenu =
 {
 	Items: [],
+	SortMode: 0,
+	SortReverse: false,
 
 	Clear: function ()
 	{
@@ -96,7 +98,13 @@ FolderMenu =
 		if (!Items && FolderItem.IsFolder) {
 			var Folder = FolderItem.GetFolder;
 			if (Folder) {
-				Items = api.CreateObject("FolderItems", Folder.Items());
+				Items = Folder.Items();
+				if ((te.Data.Conf_MenuHidden || api.GetKeyState(VK_SHIFT) < 0)) {
+					try {
+						Items.Filter(SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN, "*");
+					} catch (e) {}
+				}
+				Items = api.CreateObject("FolderItems", Items);
 			}
 		}
 		if (Items) {
@@ -113,10 +121,7 @@ FolderMenu =
 			for (var i = nCount; i--;) {
 				ar[i] = i;
 			}
-			ar.sort(function (a, b) {
-				var r = api.CompareIDs(0, Items.Item(a), Items.Item(b));
-				return r ? r > 32767 ? - 1 : 1 : 0;
-			});
+			this.Sort(Items, ar);
 			for (var i = 0; i < nCount; i++) {
 				Item = Items.Item(ar[i]);
 				var bMatch = IsFolderEx(Item);
@@ -144,6 +149,17 @@ FolderMenu =
 			api.DestroyMenu(hMenu);
 		}
 		MainWindow.RunEvent1("FolderMenuCreated", hMenu, FolderItem, hParent);
+	},
+
+	Sort: function (Items, ar)
+	{
+		ar.sort(function (a, b) {
+			var r = api.CompareIDs(FolderMenu.SortMode, Items.Item(a), Items.Item(b));
+			return r ? r > 32767 ? - 1 : 1 : 0;
+		});
+		if (FolderMenu.SortReverse) {
+			ar = ar.reverse();
+		}
 	},
 
 	AddMenuItem: function (hMenu, FolderItem, Name, bSelect, bParent)

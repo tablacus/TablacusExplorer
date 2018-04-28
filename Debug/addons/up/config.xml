@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<TablacusExplorer>
+  <General>
+    <Version>1.11</Version>
+    <MinVersion>2017.7.27</MinVersion>
+    <pubDate>Thu, 27 Jul 2017 00:00:00 GMT</pubDate>
+    <Options>Common:5,6,7,8,9:5</Options>
+    <Creator>Gaku</Creator>
+    <URL>http://www.eonet.ne.jp/~gakana/tablacus/addons/</URL>
+    <License>MIT License</License>
+  </General>
+  <en>
+    <Name>Up</Name>
+    <Description>Up Button</Description>
+  </en>
+  <ja>
+    <Name>上へ</Name>
+    <Description>上へ</Description>
+  </ja>
+</TablacusExplorer>

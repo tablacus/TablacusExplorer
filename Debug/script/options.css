@@ -76,3 +76,7 @@ input[type="text"] {
 	max-width: 1.333em;
 	max-height: 1.333em;
 }
+
+.location {
+	width: calc(100vh / 3);
+}

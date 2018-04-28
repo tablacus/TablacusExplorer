@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<TablacusExplorer>
+  <General>
+    <Version>1.15</Version>
+    <MinVersion>2017.8.27</MinVersion>
+    <pubDate>Mon, 28 Aug 2017 00:00:00 GMT</pubDate>
+    <Options>Common:0:0</Options>
+    <Creator>Gaku</Creator>
+    <URL>http://www.eonet.ne.jp/~gakana/tablacus/addons/</URL>
+    <License>MIT License</License>
+  </General>
+  <en>
+    <Name>Multi Thread</Name>
+    <Description>Multi-threaded file operation.</Description>
+  </en>
+  <ja>
+    <Name>マルチスレッド</Name>
+    <Description>マルチスレッドでファイル操作を行います。</Description>
+  </ja>
+</TablacusExplorer>

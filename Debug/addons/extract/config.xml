@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<TablacusExplorer>
+  <General>
+    <Version>1.08</Version>
+    <MinVersion>2017.8.19</MinVersion>
+    <pubDate>Sat, 19 Aug 2017 00:00:00 GMT</pubDate>
+    <Options>Common:0:0</Options>
+    <Creator>Gaku</Creator>
+    <URL>http://tablacus.github.io/TablacusExplorerAddons/</URL>
+    <License>MIT License</License>
+  </General>
+  <en>
+    <Name>Extract</Name>
+    <Description>Extract the compressed files.</Description>
+  </en>
+  <ja>
+    <Name>展開</Name>
+    <Description>圧縮ファイルの展開</Description>
+  </ja>
+</TablacusExplorer>

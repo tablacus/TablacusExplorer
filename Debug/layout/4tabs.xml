@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TablacusExplorer>
+<Ctrl Type="196608" Left="0" Top="0" Width="50%" Height="50%" Style="1409337921" Align="2" TabWidth="96" TabHeight="0" SelectedIndex="0" Visible="1">
+<Ctrl Type="1" Path="C:\" FolderFlags="73728" ViewMode="4" IconSize="16" Options="6" ViewFlags="0" Lock="0" Align="1" Width="200" Flags="32931" EnumFlags="32" RootStyle="2" Root="0"/>
+</Ctrl>
+<Ctrl Type="196608" Left="50%" Top="0" Width="50%" Height="50%" Style="1409337921" Align="2" TabWidth="96" TabHeight="0" SelectedIndex="0" Visible="1">
+<Ctrl Type="1" Path="C:\" FolderFlags="73728" ViewMode="4" IconSize="16" Options="6" ViewFlags="0" Lock="0" Align="1" Width="200" Flags="32931" EnumFlags="32" RootStyle="2" Root="0"/>
+</Ctrl>
+<Ctrl Type="196608" Left="0" Top="50%" Width="50%" Height="50%" Style="1409337921" Align="2" TabWidth="96" TabHeight="0" SelectedIndex="0" Visible="1">
+<Ctrl Type="1" Path="C:\" FolderFlags="73728" ViewMode="4" IconSize="16" Options="6" ViewFlags="0" Lock="0" Align="1" Width="200" Flags="32931" EnumFlags="32" RootStyle="2" Root="0"/>
+</Ctrl>
+<Ctrl Type="196608" Left="50%" Top="50%" Width="50%" Height="50%" Style="1409337921" Align="2" TabWidth="96" TabHeight="0" SelectedIndex="0" Visible="1">
+<Ctrl Type="1" Path="C:\" FolderFlags="73728" ViewMode="4" IconSize="16" Options="6" ViewFlags="0" Lock="0" Align="1" Width="200" Flags="32931" EnumFlags="32" RootStyle="2" Root="0"/>
+</Ctrl>
+</TablacusExplorer>
