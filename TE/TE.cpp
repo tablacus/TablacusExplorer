@@ -78,11 +78,12 @@ LPITEMIDLIST g_pidls[MAX_CSIDL2];
 BSTR		 g_bsPidls[MAX_CSIDL2];
 
 IDispatch	*g_pOnFunc[Count_OnFunc];
-IDispatch	*g_pUnload  = NULL;
+IDispatch	*g_pUnload = NULL;
 IDispatch	*g_pFreeLibrary = NULL;
-IDispatch	*g_pJS		= NULL;
+IDispatch	*g_pJS = NULL;
 IDispatch	*g_pSubWindows = NULL;
-IStream		*g_pStrmJS		= NULL;
+IStream		*g_pStrmJS = NULL;
+IDispatch	*g_pFolderSize = NULL;
 IDropTargetHelper *g_pDropTargetHelper = NULL;
 IUnknown	*g_pRelease = NULL;
 IUnknown	*g_pDraggingCtrl = NULL;
@@ -105,7 +106,7 @@ SORTCOLUMN g_pSortColumnNull[3];
 UINT	g_uCrcTable[256];
 LONG	g_nSize = MAXWORD;
 LONG	g_nLockUpdate = 0;
-LONG	nUpdate = 0;
+LONG    g_nCountOfThreadFolderSize = 0;
 DWORD	g_paramFV[SB_Count];
 DWORD	g_dwMainThreadId;
 DWORD	g_dwSWCookie = 0;
@@ -3483,37 +3484,6 @@ static void threadFileOperation(void *args)
 	::SysFreeString(const_cast<BSTR>(pFO->pFrom));
 	delete [] pFO;
 	SetTimer(g_hwndMain, TET_EndThread, 100, teTimerProc);
-	::CoUninitialize();
-	::_endthread();
-}
-
-static void threadFolderSize(void *args)
-{
-	::CoInitialize(NULL);
-	TEFS *pFS = (TEFS *)args;
-	IDispatch *pTotalFileSize;
-	CoGetInterfaceAndReleaseStream(pFS->pStrmTotalFileSize, IID_PPV_ARGS(&pTotalFileSize));
-	VARIANT v;
-	VariantInit(&v);
-	try {
-		teSetLL(&v, teGetFolderSize(pFS->bsPath, 128, pFS->ppidl, pFS->pidl));
-		if (*pFS->ppidl == pFS->pidl) {
-			tePutProperty(pTotalFileSize, pFS->bsPath, &v);
-			if (pFS->hwnd) {
-				InvalidateRect(pFS->hwnd, NULL, FALSE);
-			}
-			SetTimer(g_hwndMain, TET_Status, 100, teTimerProc);
-		}
-	} catch (...) {
-		g_nException = 0;
-#ifdef _DEBUG
-		g_strException = L"threadFolderSize";
-#endif
-	}
-	VariantClear(&v);
-	SafeRelease(&pTotalFileSize);
-	::SysFreeString(pFS->bsPath);
-	delete [] pFS;
 	::CoUninitialize();
 	::_endthread();
 }
@@ -10960,6 +10930,7 @@ function _c(s) {\
 	CoMarshalInterThreadInterfaceInStream(IID_IDispatch, g_pJS, &g_pStrmJS);
 	GetNewArray(&g_pUnload);
 	GetNewArray(&g_pFreeLibrary);
+	GetNewArray(&g_pFolderSize);
 	//WindowsAPI
 #ifdef _USE_OBJECTAPI
 	GetNewObject(&g_pAPI);
@@ -11091,6 +11062,7 @@ function _c(s) {\
 		VariantClear(&vWindow);
 #endif
 		teFreeLibraries();
+		SafeRelease(&g_pFolderSize);
 		SafeRelease(&g_pFreeLibrary);
 		SafeRelease(&g_pSubWindows);
 		SafeRelease(&g_pUnload);
@@ -12779,6 +12751,43 @@ VOID CteShellBrowser::SetSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch)
 	}
 }
 
+static void threadFolderSize(void *args)
+{
+	::CoInitialize(NULL);
+	IDispatch *pdisp;
+	CoGetInterfaceAndReleaseStream((LPSTREAM)args, IID_PPV_ARGS(&pdisp));
+	VARIANT v;
+	VariantInit(&v);
+	try {
+		while (teExecMethod(pdisp, L"pop", &v, 0, NULL) == S_OK && v.vt != VT_EMPTY) {
+			TEFS *pFS = (TEFS *)GetPtrFromVariantClear(&v);
+			IDispatch *pTotalFileSize;
+			CoGetInterfaceAndReleaseStream(pFS->pStrmTotalFileSize, IID_PPV_ARGS(&pTotalFileSize));
+			teSetLL(&v, teGetFolderSize(pFS->bsPath, 128, pFS->ppidl, pFS->pidl));
+			if (*pFS->ppidl == pFS->pidl) {
+				tePutProperty(pTotalFileSize, pFS->bsPath, &v);
+				if (pFS->hwnd) {
+					InvalidateRect(pFS->hwnd, NULL, FALSE);
+				}
+				SetTimer(g_hwndMain, TET_Status, 100, teTimerProc);
+			}
+			VariantClear(&v);
+			SafeRelease(&pTotalFileSize);
+			::SysFreeString(pFS->bsPath);
+			delete [] pFS;
+		}
+	} catch (...) {
+		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"threadFolderSize";
+#endif
+	}
+	SafeRelease(&pdisp);
+	g_nCountOfThreadFolderSize--;
+	::CoUninitialize();
+	::_endthread();
+}
+
 VOID CteShellBrowser::SetFolderSize(IShellFolder2 *pSF2, LPCITEMIDLIST pidl, LPWSTR szText, int cch)
 {
 	if (pSF2) {
@@ -12803,13 +12812,15 @@ VOID CteShellBrowser::SetFolderSize(IShellFolder2 *pSF2, LPCITEMIDLIST pidl, LPW
 				pFS->ppidl = &m_pidl;
 				pFS->pidl = m_pidl;
 				pFS->hwnd = m_hwndLV;
+				teSetPtr(&v, (HANDLE)pFS);
+				teExecMethod(g_pFolderSize, L"push", NULL, -1, &v);
+				VariantClear(&v);
 				CoMarshalInterThreadInterfaceInStream(IID_IDispatch, m_ppDispatch[SB_TotalFileSize], &pFS->pStrmTotalFileSize);
-				if (_beginthread(&threadFolderSize, 0, pFS) == -1) {
-					pFS->pStrmTotalFileSize->Release();
-					teSysFreeString(&pFS->bsPath);
-					delete [] pFS;
-					VariantClear(&v);
-					tePutProperty(m_ppDispatch[SB_TotalFileSize], bsPath, &v);
+				if (g_nCountOfThreadFolderSize < 8) {
+					IStream *pStream;
+					CoMarshalInterThreadInterfaceInStream(IID_IDispatch, g_pFolderSize, &pStream);
+					g_nCountOfThreadFolderSize++;
+					_beginthread(&threadFolderSize, 0, pStream);
 				}
 			}
 			teSysFreeString(&bsPath);

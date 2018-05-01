@@ -5,23 +5,21 @@ var AddonName = "ToolBar";
 if (window.Addon == 1) {
 	Addons.ToolBar =
 	{
-		Click: function (i)
+		Click: function (i, bNew)
 		{
 			var items = te.Data.xmlToolBar.getElementsByTagName("Item");
 			var item = items[i];
 			if (item) {
-				Exec(te, item.text, item.getAttribute("Type"), te.hwnd, null);
+				var type = item.getAttribute("Type");
+				Exec(te, item.text, (bNew && api.PathMatchSpec(type, "Open;Open in background")) ? "Open in new tab": item.getAttribute("Type"), te.hwnd, null);
 			}
-			return S_OK;
+			return false;
 		},
 
 		Down: function (i)
 		{
 			if (api.GetKeyState(VK_MBUTTON) < 0) {
-				var items = te.Data.xmlToolBar.getElementsByTagName("Item");
-				var item = items[i];
-				Exec(te, items[i].text, "Open in New Tab", te.hwnd);
-				return false;
+				return this.Click(i, true);
 			}
 		},
 
