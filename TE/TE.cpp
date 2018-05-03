@@ -1232,20 +1232,17 @@ BOOL GetVarArrayFromIDList(VARIANT *pv, LPITEMIDLIST pidl);
 BOOL teIsSameSort(IFolderView2 *pFV2, SORTCOLUMN *pCol1, int nCount1)
 {
 	int nCount2;
-	pFV2->GetSortColumnCount(&nCount2);
-	if (nCount1 != nCount2) {
+	if (FAILED(pFV2->GetSortColumnCount(&nCount2)) || (nCount1 != nCount2)) {
 		return FALSE;
 	}
+	BOOL bResult = TRUE;
 	SORTCOLUMN *pCol2 = new SORTCOLUMN[nCount2];
 	pFV2->GetSortColumns(pCol2, nCount2);
-	for (int i = nCount1; i-- > 0;) {
-		if (pCol1[i].direction != pCol2[i].direction || !IsEqualPropertyKey(pCol1[i].propkey, pCol2[i].propkey)) {
-			delete [] pCol2;
-			return FALSE;
-		}
+	for (int i = nCount2; bResult && i-- > 0;) {
+		bResult = (pCol1[i].direction == pCol2[i].direction && IsEqualPropertyKey(pCol1[i].propkey, pCol2[i].propkey));
 	}
 	delete [] pCol2;
-	return TRUE;
+	return bResult;
 }
 
 HRESULT teGetCodecInfo(IWICBitmapCodecInfo *pCodecInfo, int nMode, UINT cch, WCHAR *wz, UINT *pcchActual)
@@ -2123,9 +2120,9 @@ LPITEMIDLIST teSHSimpleIDListFromPathEx(LPWSTR lpstr, BOOL bFolder, WORD wAttr, 
 	return pidl;
 }
 
-ULONGLONG teGetFolderSize(LPCWSTR szPath, int nLevel, LPITEMIDLIST *ppidl, LPITEMIDLIST pidl)
+ULONGLONG teGetFolderSize(LPCWSTR szPath, int nLevel, PDWORD pdwSessionId, DWORD dwSessionId)
 {
-	if (*ppidl != pidl) {
+	if (*pdwSessionId != dwSessionId) {
 		return 0;
 	}
 	if (PathIsRoot(szPath)) {
@@ -2148,7 +2145,7 @@ ULONGLONG teGetFolderSize(LPCWSTR szPath, int nLevel, LPITEMIDLIST *ppidl, LPITE
 			if ((wfd.dwFileAttributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT)) == FILE_ATTRIBUTE_DIRECTORY) {
 				if (nLevel) {
 					tePathAppend(&bs, szPath, wfd.cFileName);
-					Result += teGetFolderSize(bs, nLevel - 1, ppidl, pidl);
+					Result += teGetFolderSize(bs, nLevel - 1, pdwSessionId, dwSessionId);
 					teSysFreeString(&bs);
 				}
 				continue;
@@ -2157,7 +2154,7 @@ ULONGLONG teGetFolderSize(LPCWSTR szPath, int nLevel, LPITEMIDLIST *ppidl, LPITE
 			uli.HighPart = wfd.nFileSizeHigh;
 			uli.LowPart = wfd.nFileSizeLow;
 			Result += uli.QuadPart;
-		} while (*ppidl == pidl && FindNextFile(hFind, &wfd));
+		} while (*pdwSessionId == dwSessionId && FindNextFile(hFind, &wfd));
 	}
 	FindClose(hFind);
 	return Result;
@@ -12763,8 +12760,8 @@ static void threadFolderSize(void *args)
 			TEFS *pFS = (TEFS *)GetPtrFromVariantClear(&v);
 			IDispatch *pTotalFileSize;
 			CoGetInterfaceAndReleaseStream(pFS->pStrmTotalFileSize, IID_PPV_ARGS(&pTotalFileSize));
-			teSetLL(&v, teGetFolderSize(pFS->bsPath, 128, pFS->ppidl, pFS->pidl));
-			if (*pFS->ppidl == pFS->pidl) {
+			teSetLL(&v, teGetFolderSize(pFS->bsPath, 128, pFS->pdwSessionId, pFS->dwSessionId));
+			if (*pFS->pdwSessionId == pFS->dwSessionId) {
 				tePutProperty(pTotalFileSize, pFS->bsPath, &v);
 				if (pFS->hwnd) {
 					InvalidateRect(pFS->hwnd, NULL, FALSE);
@@ -12809,8 +12806,8 @@ VOID CteShellBrowser::SetFolderSize(IShellFolder2 *pSF2, LPCITEMIDLIST pidl, LPW
 				tePutProperty(m_ppDispatch[SB_TotalFileSize], bsPath, &v);
 				TEFS *pFS = new TEFS[1];
 				pFS->bsPath = ::SysAllocString(bsPath);
-				pFS->ppidl = &m_pidl;
-				pFS->pidl = m_pidl;
+				pFS->pdwSessionId = &m_dwSessionId;
+				pFS->dwSessionId = m_dwSessionId;
 				pFS->hwnd = m_hwndLV;
 				teSetPtr(&v, (HANDLE)pFS);
 				teExecMethod(g_pFolderSize, L"push", NULL, -1, &v);
@@ -13975,10 +13972,11 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			//SortColumn
 			case 0x10000104:
 				if (nArg >= 0) {
-					if (pDispParams->rgvarg[nArg].vt == VT_BSTR && !m_dwUnavailable) {
+					if (wFlags & DISPATCH_METHOD) {
+						nFormat = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+					} else if (pDispParams->rgvarg[nArg].vt == VT_BSTR) {
 						SetSort(pDispParams->rgvarg[nArg].bstrVal);
 					}
-					nFormat = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 				}
 				if (pVarResult) {
 					pVarResult->vt = VT_BSTR;
@@ -16019,7 +16017,7 @@ VOID CteShellBrowser::GetSort(BSTR* pbs, int nFormat)
 VOID CteShellBrowser::GetGroupBy(BSTR* pbs)
 {
 	*pbs = NULL;
-	if (!m_pShellView) {
+	if (!m_pShellView || m_dwUnavailable) {
 		return;
 	}
 	IFolderView2 *pFV2;
@@ -16115,6 +16113,9 @@ FOLDERVIEWOPTIONS CteShellBrowser::teGetFolderViewOptions(LPITEMIDLIST pidl, UIN
 
 VOID CteShellBrowser::SetSort(BSTR bs)
 {
+	if (!m_pShellView || m_dwUnavailable) {
+		return;
+	}
 	IFolderView2 *pFV2;
 	SORTCOLUMN col;
 	SORTCOLUMN *pCol = &col;
@@ -16122,8 +16123,6 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 	int dir = (bs[0] == '-') ? 1 : 0;
 	LPWSTR szNew = &bs[dir];
 	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
-		BOOL fAscending;
-		pFV2->GetGroupBy(&col.propkey, &fAscending);
 		if SUCCEEDED(PropertyKeyFromName(szNew, &col.propkey)) {
 			col.direction = dir ? SORT_DESCENDING : SORT_ASCENDING;
 			if (IsEqualPropertyKey(col.propkey, PKEY_Null)) {
@@ -16183,6 +16182,9 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 
 VOID CteShellBrowser::SetGroupBy(BSTR bs)
 {
+	if (!m_pShellView || m_dwUnavailable) {
+		return;
+	}
 	BSTR bs0;
 	GetGroupBy(&bs0);
 	if (teStrSameIFree(bs0, bs)) {

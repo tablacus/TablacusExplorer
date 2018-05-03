@@ -487,7 +487,7 @@ function ImgBase64(o, index)
 function MakeImgSrc(src, index, bSrc, h, strBitmap, strIcon)
 {
 	var fn;
-	src = ExtractMacro(te, src);
+	src = api.PathUnquoteSpaces(ExtractMacro(te, src));
 	if (!/^file:/i.test(src) && REGEXP_IMAGE.test(src)) {
 		return src;
 	}
@@ -570,7 +570,7 @@ function MakeImgIcon(src, index, h, strBitmap, strIcon)
 			return phIcon[0];
 		}
 	}
-	if (src && !REGEXP_IMAGE.test(src)) {
+	if (src && (/\*/.test(src) || !REGEXP_IMAGE.test(src))) {
 		var sfi = api.Memory("SHFILEINFO");
 		var uFlags = SHGFI_ICON;
 		if (h) {
@@ -2375,27 +2375,18 @@ function GetAddons()
 
 function CheckUpdate(arg)
 {
-	MainWindow.OpenHttpRequest("https://api.github.com/repos/tablacus/TablacusExplorer/releases/latest", "http://www.eonet.ne.jp/~gakana/tablacus/explorer_en.html", CheckUpdate2, arg);
+	MainWindow.OpenHttpRequest("https://api.github.com/repos/tablacus/TablacusExplorer/releases/latest", "http://tablacus.github.io/TablacusExplorerAddons/te/releases.json", CheckUpdate2, arg);
 }
 
 function CheckUpdate2(xhr, url, arg1)
 {
 	var arg = {};
 	var Text = xhr.get_responseText ? xhr.get_responseText() : xhr.responseText;
-	var res = /<td id="te">.*?<a href="([^"]+)">.*?\(([\d\.]+)\s*KB.*?<\/td>/i.exec(Text);
-	if (res) {
-		arg.url = res[1];
-		arg.size = res[2];
-		if (!/^https?:/i.test(arg.url)) {
-			arg.url = url.replace(/[^\/]*$/, '') + arg.url;
-		}
-	} else {
-		var json = window.JSON ? JSON.parse(Text) : api.GetScriptDispatch("function fn () { return " + Text + "}", "JScript", {}).fn();
-		var assets = json.assets;
-		if (json.assets && json.assets[0]) {
-			arg.size = json.assets[0].size / 1024;
-			arg.url = json.assets[0].browser_download_url;
-		}
+	var json = window.JSON ? JSON.parse(Text) : api.GetScriptDispatch("function fn () { return " + Text + "}", "JScript", {}).fn();
+	var assets = json.assets;
+	if (json.assets && json.assets[0]) {
+		arg.size = json.assets[0].size / 1024;
+		arg.url = json.assets[0].browser_download_url;
 	}
 	if (!arg.url) {
 		return;
@@ -2428,7 +2419,7 @@ function CheckUpdate2(xhr, url, arg1)
 	arg.temp += "\\explorer";
 	DeleteItem(arg.temp);
 	CreateFolder2(arg.temp);
-	MainWindow.OpenHttpRequest(arg.url, "http", CheckUpdate3, arg);
+	MainWindow.OpenHttpRequest(arg.url, "http://tablacus.github.io/TablacusExplorerAddons/te/" + (arg.url.replace(/^.*\//, "")), CheckUpdate3, arg);
 }
 
 function CheckUpdate3(xhr, url, arg)
@@ -3146,8 +3137,11 @@ function MouseOut(s)
 
 InsertTab = function(e)
 {
-	var ot = (e || event).srcElement;
-	if (event.keyCode == VK_TAB) {
+	if (!e) {
+		e = event;
+	}
+	var ot = e.srcElement;
+	if (e.keyCode == VK_TAB) {
 		ot.focus();
 		if (document.all && document.selection) {
 			var selection = document.selection.createRange();

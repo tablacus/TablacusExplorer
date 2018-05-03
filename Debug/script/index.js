@@ -251,6 +251,7 @@ LoadConfig = function (bDog)
 				te.Data[key + "_" + item.getAttribute("Id")] = s;
 			}
 		}
+		delete te.Data.View_SizeFormat;
 		var items = xml.getElementsByTagName('Window');
 		if  (items.length) {
 			var item = items[0];
@@ -710,6 +711,7 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev)
 		clearTimeout(g_.tid_rf[Ctrl.Id]);
 		delete g_.tid_rf[Ctrl.Id];
 	}
+	delete Ctrl.Data.Setting;
 	var path = api.GetDisplayNameOf(Ctrl.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL);
 	var res = /javascript:(.*)/im.exec(path);
 	if (res) {
@@ -3426,7 +3428,6 @@ if (!te.Data) {
 	te.Data.View_Options = EBO_SHOWFRAMES | EBO_ALWAYSNAVIGATE;
 	te.Data.View_ViewFlags = CDB2GVF_SHOWALLFILES;
 	te.Data.View_IconSize = 0;
-	te.Data.View_SizeFormat = 0;
 
 	te.Data.Tree_Align = 0;
 	te.Data.Tree_Width = 200;

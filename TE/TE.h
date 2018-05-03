@@ -493,8 +493,10 @@ struct TEFS
 {
 	BSTR bsPath;
 	IStream *pStrmTotalFileSize;
-	LPITEMIDLIST *ppidl;
-	LPITEMIDLIST pidl;
+	PDWORD pdwSessionId;
+	DWORD dwSessionId;
+//	LPITEMIDLIST *ppidl;
+//	LPITEMIDLIST pidl;
 	HWND hwnd;
 };
 
