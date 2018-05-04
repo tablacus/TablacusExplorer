@@ -12533,6 +12533,7 @@ VOID CteShellBrowser::Refresh(BOOL bCheck)
 				m_bBeforeNavigate = TRUE;
 				RemoveAll();
 				SetTabName();
+				OnBeforeNavigate(m_pFolderItem, SBSP_SAMEBROWSER | SBSP_ABSOLUTE);
 				NavigateComplete(TRUE);
 			} else {
 				m_pShellView->Refresh();

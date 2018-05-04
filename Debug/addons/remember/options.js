@@ -6,5 +6,4 @@ s.push('<input type="radio" id="Format=1" name="_Format" onclick="SetRadio(this)
 s.push('<label for="Format=1">Path</label>');
 s.push('<input type="radio" id="Format=2" name="_Format" onclick="SetRadio(this)" />');
 s.push('<label for="Format=2">Key</label>');
-var info = GetAddonInfo(Addon_Id);
-SetTabContents(0, info.Name, s);
+SetTabContents(0, "General", s);

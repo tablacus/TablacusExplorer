@@ -495,8 +495,6 @@ struct TEFS
 	IStream *pStrmTotalFileSize;
 	PDWORD pdwSessionId;
 	DWORD dwSessionId;
-//	LPITEMIDLIST *ppidl;
-//	LPITEMIDLIST pidl;
 	HWND hwnd;
 };
 

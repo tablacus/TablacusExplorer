@@ -50,7 +50,7 @@ if (window.Addon == 1) {
 
 	AddEvent("BeforeNavigate", function (Ctrl, fs, wFlags, Prev)
 	{
-		if (Ctrl.Type <= CTRL_EB) {
+		if (Ctrl.Data && !Ctrl.Data.Setting) {
 			if (Prev && !Prev.Unavailable) {
 				var path = Addons.Remember.GetPath(Prev);
 				var col = Ctrl.Columns(Addons.Remember.nFormat);
@@ -62,8 +62,8 @@ if (window.Addon == 1) {
 			if (ar) {
 				fs.ViewMode = ar[1];
 				fs.ImageSize = ar[2];
+				Ctrl.Data.Setting = 'Remember';
 			}
-			Ctrl.Data.Setting = 'Remember';
 			Ctrl.Data.Remember = "";
 		}
 	});
