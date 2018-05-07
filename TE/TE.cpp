@@ -1231,17 +1231,12 @@ BOOL GetVarArrayFromIDList(VARIANT *pv, LPITEMIDLIST pidl);
 
 BOOL teIsSameSort(IFolderView2 *pFV2, SORTCOLUMN *pCol1, int nCount1)
 {
-	int nCount2;
-	if (FAILED(pFV2->GetSortColumnCount(&nCount2)) || (nCount1 != nCount2)) {
-		return FALSE;
-	}
-	BOOL bResult = TRUE;
-	SORTCOLUMN *pCol2 = new SORTCOLUMN[nCount2];
-	pFV2->GetSortColumns(pCol2, nCount2);
-	for (int i = nCount2; bResult && i-- > 0;) {
+	int i;
+	SORTCOLUMN pCol2[8];
+	BOOL bResult = SUCCEEDED(pFV2->GetSortColumnCount(&i)) && nCount1 == i && i <= _countof(pCol2) && SUCCEEDED(pFV2->GetSortColumns(pCol2, i));
+	while (bResult && i-- > 0) {
 		bResult = (pCol1[i].direction == pCol2[i].direction && IsEqualPropertyKey(pCol1[i].propkey, pCol2[i].propkey));
 	}
-	delete [] pCol2;
 	return bResult;
 }
 
@@ -15953,10 +15948,10 @@ VOID CteShellBrowser::GetSort(BSTR* pbs, int nFormat)
 		if (teIsSameSort(pFV2, g_pSortColumnNull, _countof(g_pSortColumnNull))) {
 			*pbs = ::SysAllocString(L"System.Null");
 		} else {
-			SORTCOLUMN col;
-			if SUCCEEDED(pFV2->GetSortColumns(&col, 1)) {
-				*pbs = tePSGetNameFromPropertyKeyEx(col.propkey, nFormat, m_pShellView);
-				if (col.direction < 0) {
+			SORTCOLUMN pCol[1];
+			if SUCCEEDED(pFV2->GetSortColumns(pCol, _countof(pCol))) {
+				*pbs = tePSGetNameFromPropertyKeyEx(pCol[0].propkey, nFormat, m_pShellView);
+				if (pCol[0].direction < 0) {
 					ToMinus(pbs);
 				}
 			}
@@ -16114,19 +16109,19 @@ FOLDERVIEWOPTIONS CteShellBrowser::teGetFolderViewOptions(LPITEMIDLIST pidl, UIN
 
 VOID CteShellBrowser::SetSort(BSTR bs)
 {
-	if (!m_pShellView || m_dwUnavailable) {
+	if (!m_pShellView || m_dwUnavailable || lstrlen(bs) == 0) {
 		return;
 	}
 	IFolderView2 *pFV2;
-	SORTCOLUMN col;
-	SORTCOLUMN *pCol = &col;
-	int nSortColumns = 1;
+	SORTCOLUMN pCol1[1];
+	SORTCOLUMN *pCol = pCol1;
+	int nSortColumns = _countof(pCol1);
 	int dir = (bs[0] == '-') ? 1 : 0;
 	LPWSTR szNew = &bs[dir];
 	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
-		if SUCCEEDED(PropertyKeyFromName(szNew, &col.propkey)) {
-			col.direction = dir ? SORT_DESCENDING : SORT_ASCENDING;
-			if (IsEqualPropertyKey(col.propkey, PKEY_Null)) {
+		if SUCCEEDED(PropertyKeyFromName(szNew, &pCol1[0].propkey)) {
+			pCol1[0].direction = dir ? SORT_DESCENDING : SORT_ASCENDING;
+			if (IsEqualPropertyKey(pCol1[0].propkey, PKEY_Null)) {
 				pCol = g_pSortColumnNull;
 				nSortColumns = _countof(g_pSortColumnNull);
 			}
@@ -16183,7 +16178,7 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 
 VOID CteShellBrowser::SetGroupBy(BSTR bs)
 {
-	if (!m_pShellView || m_dwUnavailable) {
+	if (!m_pShellView || m_dwUnavailable || lstrlen(bs) == 0) {
 		return;
 	}
 	BSTR bs0;
