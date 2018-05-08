@@ -70,10 +70,10 @@ if (window.Addon == 1) {
 
 	AddEvent("NavigateComplete", function (Ctrl)
 	{
-		if (Ctrl.Data && Ctrl.Data.Setting == 'Remember') {
-			var path = Addons.Remember.GetPath(Ctrl);
-			if (path) {
-				Ctrl.Data.Remember = path;
+		var path = Addons.Remember.GetPath(Ctrl);
+		if (path) {
+			Ctrl.Data.Remember = path;
+			if (Ctrl.Data && Ctrl.Data.Setting == 'Remember') {
 				var ar = Addons.Remember.db[Ctrl.Data.Remember];
 				if (ar) {
 					Ctrl.CurrentViewMode(ar[1], ar[2]);

@@ -3150,7 +3150,7 @@ InsertTab = function(e)
 				return false;
 			}
 		}
-		var i = ot.selectionEnd || s.length;
+		var i = ot.selectionEnd;
 		var s = ot.value;
 		ot.value = s.substr(0, i) + "\t" + s.substr(i, s.length);
 		ot.selectionStart = ++i;
