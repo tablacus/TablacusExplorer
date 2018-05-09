@@ -17541,9 +17541,6 @@ STDMETHODIMP CteWebBrowser::DragEnter(IDataObject *pDataObj, DWORD grfKeyState, 
 			hr = S_OK;
 		}
 	}
-	if (hr == S_OK && *pdwEffect) {
-		m_pDragItems->Regenerate(FALSE);
-	}
 	return hr;
 }
 
@@ -23771,9 +23768,6 @@ STDMETHODIMP CteDropTarget2::DragEnter(IDataObject *pDataObj, DWORD grfKeyState,
 		if (m_pDropTarget->DragEnter(pDataObj, grfKeyState, pt, pdwEffect) == S_OK) {
 			hr = S_OK;
 		}
-	}
-	if (hr == S_OK && *pdwEffect) {
-		m_pDragItems->Regenerate(FALSE);
 	}
 	if (g_pDropTargetHelper && m_hwnd) {
 		g_pDropTargetHelper->DragEnter(m_hwnd, pDataObj, (LPPOINT)&pt, *pdwEffect);
