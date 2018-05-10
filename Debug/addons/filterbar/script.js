@@ -135,7 +135,7 @@ if (window.Addon == 1) {
 				}
 				s = ar.join(";");
 			}
-			return s;
+			return s || "";
 		},
 
 		FilterList: function (o)

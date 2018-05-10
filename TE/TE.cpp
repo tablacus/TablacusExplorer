@@ -104,7 +104,7 @@ HANDLE	g_hMutex = NULL;
 HTREEITEM	g_hItemDown = NULL;
 SORTCOLUMN g_pSortColumnNull[3];
 UINT	g_uCrcTable[256];
-LONG	g_nSize = MAXWORD;
+LONG	g_nSize = 0;
 LONG	g_nLockUpdate = 0;
 LONG    g_nCountOfThreadFolderSize = 0;
 DWORD	g_paramFV[SB_Count];
@@ -4315,7 +4315,6 @@ BOOL GetDataObjFromObject(IDataObject **ppDataObj, IUnknown *punk)
 		if (lCount) {
 			CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL);
 			VARIANT v, v2;
-			VariantInit(&v);
 			VariantInit(&v2);
 			v.vt = VT_I4;
 			for (v.lVal = 0; v.lVal < lCount; v.lVal++) {
@@ -4955,7 +4954,6 @@ static void threadAddItems(void *args)
 				pItems->get_Count(&lCount);
 				if (lCount) {
 					VARIANT v;
-					VariantInit(&v);
 					v.vt = VT_I4;
 					for (v.lVal = 0; v.lVal < lCount && !ppd->HasUserCancelled(); v.lVal++) {
 						teSetProgress(ppd, v.lVal, lCount);
@@ -7022,7 +7020,6 @@ VOID teApiOleGetClipboard(int nArg, teParam *param, DISPPARAMS *pDispParams, VAR
 				STGMEDIUM Medium;
 				if (pDataObj->GetData(&DROPEFFECTFormat, &Medium) == S_OK) {
 					VARIANT v;
-					VariantInit(&v);
 					DWORD *pdwEffect = (DWORD *)GlobalLock(Medium.hGlobal);
 					try {
 						teSetLong(&v, *pdwEffect);
@@ -8319,19 +8316,14 @@ VOID teApiDoDragDrop(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 {
 	IDataObject *pDataObj;
 	if (GetDataObjFromVariant(&pDataObj, &pDispParams->rgvarg[nArg])) {
-		g_pDraggingItems = pDataObj;
-		g_pDraggingCtrl = static_cast<IDispatch *>(g_pTE);
 		DWORD dwEffect = param[1].dword;
-		VARIANT v;
-		VariantInit(&v);
+		g_nDropState = 1;
 		try {
-			g_nDropState = param[3].boolVal ? 2 : 1;
 			teSetLong(pVarResult, SHDoDragDrop(NULL, pDataObj, static_cast<IDropSource *>(g_pTE), dwEffect, &dwEffect));
 		} catch(...) {}
-		g_pDraggingCtrl = NULL;
-		g_pDraggingItems = NULL;
 		IDispatch *pEffect;
 		if (nArg >= 2 && GetDispatch(&pDispParams->rgvarg[nArg - 2], &pEffect)) {
+			VARIANT v;
 			teSetLong(&v, dwEffect);
 			tePutPropertyAt(pEffect, 0, &v);
 			pEffect->Release();
@@ -8347,16 +8339,15 @@ VOID teApiSHDoDragDrop(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIAN
 		g_pDraggingItems = pDataObj;
 		FindUnknown(&pDispParams->rgvarg[nArg - 2], &g_pDraggingCtrl);
 		DWORD dwEffect = param[3].dword;
-		VARIANT v;
-		VariantInit(&v);
+		g_nDropState = param[5].boolVal ? 2 : 1;
 		try {
-			g_nDropState = param[5].boolVal ? 2 : 1;
 			teSetLong(pVarResult, SHDoDragDrop(param[0].hwnd, pDataObj, static_cast<IDropSource *>(g_pTE), dwEffect, &dwEffect));
 		} catch(...) {}
 		g_pDraggingCtrl = NULL;
 		g_pDraggingItems = NULL;
 		IDispatch *pEffect;
 		if (nArg >= 4 && GetDispatch(&pDispParams->rgvarg[nArg - 4], &pEffect)) {
+			VARIANT v;
 			teSetLong(&v, dwEffect);
 			tePutPropertyAt(pEffect, 0, &v);
 			pEffect->Release();
@@ -8824,6 +8815,7 @@ VOID teApiSHChangeNotification_Lock(int nArg, teParam *param, DISPPARAMS *pDispP
 					pPF->Initialize(ppidl[i]);
 					teSetObjectRelease(&v, pPF);
 					tePutPropertyAt(pdisp, i, &v);
+					VariantClear(&v);
 				}
 			}
 			SHChangeNotification_Unlock(hLock);
@@ -9787,7 +9779,7 @@ TEDispatchApi dispAPI[] = {
 	{ 6, -1, -1, -1, "MultiByteToWideChar", teApiMultiByteToWideChar },
 	{ 8,  2, -1, -1, "WideCharToMultiByte", teApiWideCharToMultiByte },
 	{ 2, -1, -1, -1, "GetAttributesOf", teApiGetAttributesOf },
-	{ 2, -1, -1, -1, "DoDragDrop", teApiDoDragDrop },
+	{ 2, -1, -1, -1, "DoDragDrop", teApiDoDragDrop },//Deprecated
 	{ 4, -1, -1, -1, "SHDoDragDrop", teApiSHDoDragDrop },
 	{ 3, -1, -1, -1, "CompareIDs", teApiCompareIDs },
 	{ 2,  0,  1, -1, "ExecScript", teApiExecScript },
@@ -12480,9 +12472,10 @@ VOID CteShellBrowser::Refresh(BOOL bCheck)
 	GetNewObject(&m_ppDispatch[SB_TotalFileSize]);
 	SafeRelease(&m_ppDispatch[SB_AltSelectedItems]);
 	if (bCheck) {
-		VARIANT v, vResult;
+		VARIANT v;
 		VariantInit(&v);
 		if SUCCEEDED(m_pFolderItem->QueryInterface(IID_PPV_ARGS(&v.pdispVal))) {
+			VARIANT vResult;
 			v.vt = VT_DISPATCH;
 			VariantInit(&vResult);
 			teGetDisplayNameOf(&v, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING, &vResult);
@@ -12498,7 +12491,6 @@ VOID CteShellBrowser::Refresh(BOOL bCheck)
 					pInvoke->wErrorHandling = 1;
 					pInvoke->wMode = 0;
 					pInvoke->pidl = NULL;
-					VariantInit(&pInvoke->pv[0]);
 					pInvoke->pv[0].vt = VT_BSTR;
 					pInvoke->pv[0].bstrVal = ::SysAllocString(vResult.bstrVal);
 					VariantClear(&vResult);
@@ -12739,8 +12731,8 @@ VOID CteShellBrowser::SetSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch)
 		VariantInit(&v);
 		if (SUCCEEDED(m_pSF2->GetDetailsEx(pidl, &PKEY_Size, &v))) {
 			teStrFormatSize(g_param[TE_SizeFormat], GetLLFromVariant(&v), szText, cch);
+			VariantClear(&v);
 		}
-		VariantClear(&v);
 	}
 }
 
@@ -14444,19 +14436,21 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				return DoFunc(TE_OnViewModeChanged, this, S_OK);
 			case DISPID_BEGINDRAG://XP+
 				DoFunc1(TE_OnBeginDrag, this, pVarResult);
-				if (m_bRegenerateItems && pVarResult && pVarResult->boolVal) {
+				if (m_bRegenerateItems && pVarResult && (pVarResult->vt != VT_BOOL || pVarResult->boolVal)) {
 					FolderItems *pid;
 					if SUCCEEDED(SelectedItems(&pid)) {
 						IDataObject *pDataObj = NULL;
 						if SUCCEEDED(pid->QueryInterface(IID_PPV_ARGS(&pDataObj))) {
-							g_nDropState = 1;
 							DWORD dwEffect = DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK;
-							SHDoDragDrop(m_hwndDV, pDataObj, static_cast<IDropSource *>(g_pTE), dwEffect, &dwEffect);
+							g_nDropState = 1;
+							try {
+								SHDoDragDrop(NULL, pDataObj, static_cast<IDropSource *>(g_pTE), dwEffect, &dwEffect);
+							} catch(...) {}
 							pDataObj->Release();
+							teSetBool(pVarResult, FALSE);
 						}
 						pid->Release();
 					}
-					teSetBool(pVarResult, FALSE);
 				}
 				return S_OK;
 			case DISPID_COLUMNSCHANGED://XP-
@@ -16752,25 +16746,21 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				if (::InterlockedDecrement(&g_nLockUpdate) <= 0) {
 					g_nLockUpdate = 0;
 					teSetRedraw(TRUE);
-					if (g_nSize >= MAXWORD) {
-						g_nSize -= MAXWORD;
-					} else {
-						for (int i = MAX_TC; i-- && g_ppTC[i];) {
-							CteTabCtrl *pTC = g_ppTC[i];
-							if (pTC->m_bVisible) {
-								CteShellBrowser *pSB = pTC->GetShellBrowser(pTC->m_nIndex);
-								if (pSB && !pSB->m_bEmpty) {
-									if (pSB->m_nUnload & 5) {
-										pSB->Show(TRUE, 0);
-									}
-									if (pTC->m_bRedraw) {
-										pTC->RedrawUpdate();
-									}
+					for (int i = MAX_TC; i-- && g_ppTC[i];) {
+						CteTabCtrl *pTC = g_ppTC[i];
+						if (pTC->m_bVisible) {
+							CteShellBrowser *pSB = pTC->GetShellBrowser(pTC->m_nIndex);
+							if (pSB && !pSB->m_bEmpty) {
+								if (pSB->m_nUnload & 5) {
+									pSB->Show(TRUE, 0);
+								}
+								if (pTC->m_bRedraw) {
+									pTC->RedrawUpdate();
 								}
 							}
 						}
-						ArrangeWindow();
 					}
+					ArrangeWindow();
 				}
 				return S_OK;
 			//HookDragDrop//Deprecated
@@ -21025,9 +21015,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 STDMETHODIMP CteTreeView::OnItemClick(IShellItem *psi, NSTCEHITTEST nstceHitTest, NSTCSTYLE nsctsFlags)
 {
 	if (g_pOnFunc[TE_OnItemClick]) {
-		VARIANTARG *pv;
-		VARIANT vResult;
-		pv = GetNewVARIANT(4);
+		VARIANTARG *pv = GetNewVARIANT(4);
 		teSetObject(&pv[3], this);
 
 		if (m_pNameSpaceTreeControl) {
@@ -21044,6 +21032,7 @@ STDMETHODIMP CteTreeView::OnItemClick(IShellItem *psi, NSTCEHITTEST nstceHitTest
 		}
 		teSetLong(&pv[1], nstceHitTest);
 		teSetLong(&pv[0], nsctsFlags);
+		VARIANT vResult;
 		VariantInit(&vResult);
 		Invoke4(g_pOnFunc[TE_OnItemClick], &vResult, 4, pv);
 		if (vResult.vt != VT_EMPTY) {
@@ -21101,14 +21090,13 @@ STDMETHODIMP CteTreeView::OnEndLabelEdit(IShellItem *psi)
 STDMETHODIMP CteTreeView::OnGetToolTip(IShellItem *psi, LPWSTR pszTip, int cchTip)
 {
 	if (g_pOnFunc[TE_OnToolTip]) {
-		VARIANTARG *pv;
-		VARIANT vResult;
-		pv = GetNewVARIANT(2);
+		VARIANTARG *pv = GetNewVARIANT(2);
 		teSetObject(&pv[1], this);
 		FolderItem *pid;
 		if SUCCEEDED(GetFolderItemFromObject(&pid, psi)) {
 			teSetObjectRelease(&pv[0], pid);
 		}
+		VARIANT vResult;
 		VariantInit(&vResult);
 		Invoke4(g_pOnFunc[TE_OnToolTip], &vResult, 2, pv);
 		if (vResult.vt == VT_BSTR) {
@@ -22441,7 +22429,6 @@ HRESULT CteWICBitmap::CreateStream(IStream *pStream, ULARGE_INTEGER *puliSize, C
 						PROPBAG2 option = { 0 };
 						option.pstrName = L"ImageQuality";
 						VARIANT v;
-						VariantInit(&v);
 						v.vt = VT_R4;
 						v.fltVal = FLOAT(lQuality) / 100;
 						pPropBag->Write(1, &option, &v);
@@ -22746,7 +22733,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
 						SIZE size;
 						int cx = nArg >= 1 ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) : 0;
-						size.cx = cx ? cx : 0xffff;
+						size.cx = cx ? cx : 0x1000;
 						IShellFolder *pSF;
 						LPCITEMIDLIST pidlPart;
 						if SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &pidlPart)) {
@@ -22754,17 +22741,25 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 							WTS_ALPHATYPE alphaType = WTSAT_ARGB;
 							IExtractImage *pEI;
 							IThumbnailProvider *pTP;
-							if (pSF->GetUIObjectOf(NULL, 1, (LPCITEMIDLIST *)&pidlPart, IID_IThumbnailProvider, NULL, (void **)&pTP) == S_OK) {
+							if (pSF->GetUIObjectOf(NULL, 1, &pidlPart, IID_IThumbnailProvider, NULL, (void **)&pTP) == S_OK) {
 								pTP->GetThumbnail(size.cx, &hBM, &alphaType);
 								pTP->Release();
-							} else if (pSF->GetUIObjectOf(NULL, 1, (LPCITEMIDLIST *)&pidlPart, IID_IExtractImage, NULL, (void **)&pEI) == S_OK) {
+							} else if (pSF->GetUIObjectOf(NULL, 1, &pidlPart, IID_IExtractImage, NULL, (void **)&pEI) == S_OK) {
+								alphaType = WTSAT_RGB;
 								size.cy = size.cx;
 								DWORD dwFlags = cx ? IEIFLAG_SCREEN : IEIFLAG_ASPECT | IEIFLAG_ORIGSIZE | IEIFLAG_QUALITY;
 								WCHAR pszPath[MAX_PATH];
-								if (pEI->GetLocation(pszPath, MAX_PATH, NULL, &size, 32, &dwFlags) == S_OK) {
+								pEI->GetLocation(pszPath, MAX_PATH, NULL, &size, 24, &dwFlags);
+								pEI->Extract(&hBM);
+								//Fix for Acrobat Reader DC
+								if (!hBM && size.cx > 600) {
+									size.cx = 600;
+									size.cy = size.cx;
+									pEI->GetLocation(pszPath, MAX_PATH, NULL, &size, 24, &dwFlags);
 									pEI->Extract(&hBM);
 								}
 								pEI->Release();
+
 							}
 							if (hBM) {
 								IWICBitmap *pBitmap;
