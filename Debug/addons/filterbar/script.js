@@ -110,11 +110,13 @@ if (window.Addon == 1) {
 
 		GetFilter: function (Ctrl)
 		{
-			clearTimeout(Addons.FilterBar.tid);
-			var s = Addons.FilterBar.GetString(Ctrl.FilterView);
-			if (s != Addons.FilterBar.GetString(document.F.filter.value)) {
-				document.F.filter.value = s;
-				Addons.FilterBar.ShowButton();
+			if (Ctrl.Type <= CTRL_EB) {
+				clearTimeout(Addons.FilterBar.tid);
+				var s = Addons.FilterBar.GetString(Ctrl.FilterView);
+				if (s != Addons.FilterBar.GetString(document.F.filter.value)) {
+					document.F.filter.value = s;
+					Addons.FilterBar.ShowButton();
+				}
 			}
 		},
 
@@ -135,7 +137,7 @@ if (window.Addon == 1) {
 				}
 				s = ar.join(";");
 			}
-			return s || "";
+			return s;
 		},
 
 		FilterList: function (o)

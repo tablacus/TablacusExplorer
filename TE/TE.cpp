@@ -22749,15 +22749,14 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 								size.cy = size.cx;
 								DWORD dwFlags = cx ? IEIFLAG_SCREEN : IEIFLAG_ASPECT | IEIFLAG_ORIGSIZE | IEIFLAG_QUALITY;
 								WCHAR pszPath[MAX_PATH];
-								pEI->GetLocation(pszPath, MAX_PATH, NULL, &size, 24, &dwFlags);
-								pEI->Extract(&hBM);
+								HRESULT hr = pEI->GetLocation(pszPath, MAX_PATH, NULL, &size, 24, &dwFlags);
 								//Fix for Acrobat Reader DC
-								if (!hBM && size.cx > 600) {
-									size.cx = 600;
+								if (FAILED(hr) && size.cx > 512) {
+									size.cx = 512;
 									size.cy = size.cx;
 									pEI->GetLocation(pszPath, MAX_PATH, NULL, &size, 24, &dwFlags);
-									pEI->Extract(&hBM);
 								}
+								pEI->Extract(&hBM);
 								pEI->Release();
 
 							}

@@ -121,7 +121,12 @@ FolderMenu =
 			for (var i = nCount; i--;) {
 				ar[i] = i;
 			}
-			this.Sort(Items, ar);
+			if (this.SortMode || this.Filter) {
+				this.Sort(Items, ar);
+			}
+			if (this.SortReverse) {
+				ar = ar.reverse();
+			}
 			for (var i = 0; i < nCount; i++) {
 				Item = Items.Item(ar[i]);
 				var bMatch = IsFolderEx(Item);
@@ -157,9 +162,6 @@ FolderMenu =
 			var r = api.CompareIDs(FolderMenu.SortMode, Items.Item(a), Items.Item(b));
 			return r ? r > 32767 ? - 1 : 1 : 0;
 		});
-		if (FolderMenu.SortReverse) {
-			ar = ar.reverse();
-		}
 	},
 
 	AddMenuItem: function (hMenu, FolderItem, Name, bSelect, bParent)
