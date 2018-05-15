@@ -189,7 +189,7 @@ IsSavePath = function (path)
 			ShowError(e, en, i);
 		}
 	}
-	return !IsSearchPath(path);
+	return true;
 }
 
 AddEvent("IsSavePath", function (path)
@@ -747,6 +747,12 @@ te.OnNavigateComplete = function (Ctrl)
 		}, 500);}) (Ctrl);
 		return S_OK;
 	}
+	var res = /search\-ms:.*?crumb=([^&]+)/.exec(Ctrl.FilterView);
+	if (res) {
+		Ctrl.FilterView = null;
+		Ctrl.FilterView(decodeURIComponent(res[1]));
+		return S_OK;
+	}
 	Ctrl.NavigateComplete();
 	RunEvent1("NavigateComplete", Ctrl);
 	ChangeView(Ctrl);
@@ -1005,6 +1011,15 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 	if (msg == WM_MOUSEMOVE && !/[45]/.test(g_.mouse.str)) {
 		if (api.GetKeyState(VK_ESCAPE) < 0) {
 			g_.mouse.EndGesture(false);
+		}
+		if (FolderMenu.MenuLoop) {
+			if (g_.mouse.ptDown && IsDrag(pt, g_.mouse.ptDown) && (api.GetKeyState(VK_LBUTTON) < 0 || api.GetKeyState(VK_RBUTTON) < 0)) {
+				window.g_menu_click = 4;
+				window.g_menu_button = 4;
+				var lParam = pt.x + (pt.y << 16);
+				api.PostMessage(hwnd, WM_LBUTTONDOWN, 0, lParam);
+				api.PostMessage(hwnd, WM_LBUTTONUP, 0, lParam);
+			}
 		}
 		if (g_.mouse.str.length && (te.Data.Conf_Gestures > 1 && api.GetKeyState(VK_RBUTTON) < 0) || (te.Data.Conf_Gestures && (api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_XBUTTON1) < 0 || api.GetKeyState(VK_XBUTTON2) < 0))) {
 			if (g_.mouse.ptGesture.x == -1 && g_.mouse.ptGesture.y == -1) {
@@ -1781,6 +1796,31 @@ te.OnILGetParent = function (FolderItem)
 	}
 }
 
+te.OnReplacePath = function (Ctrl, Path)
+{
+	if (/^[A-Z]:\\.+?\\|^\\\\.+?\\/i.test(Path)) {
+		var i = Path.indexOf("\\/");
+		if (i > 0) {
+			var fn = Path.substr(i + 1);
+			if (/\//.test(fn)) {
+				Ctrl.FilterView = fn;
+				return Path.substr(0, i);
+			}
+		}
+		var fn = fso.GetFileName(Path);
+		if (/[\*\?]/.test(fn)) {
+			Ctrl.FilterView = fn;
+			return fso.GetParentFolderName(Path);
+		}
+	}
+	var res = /search\-ms:.*?&crumb=location:([^&]+)/.exec(Path);
+	if (res) {
+		Ctrl.FilterView = Path.replace(/displayname=[^&]+&|&crumb=location:[^&]+/g, "");
+		return api.PathCreateFromUrl("file:" + res[1]);
+	}
+	return RunEvent4("ReplacePath", Ctrl, Path);
+}
+
 ShowStatusText = function (Ctrl, Text, iPart)
 {
 	RunEvent1("StatusText", Ctrl, Text, iPart);
@@ -1871,11 +1911,6 @@ g_.event.beginlabeledit = function (Ctrl)
 g_.event.endlabeledit = function (Ctrl, Name)
 {
 	return RunEvent4("EndLabelEdit", Ctrl, Name);
-}
-
-g_.event.replacepath = function (FolderItem)
-{
-	return RunEvent4("ReplacePath", FolderItem, api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 }
 
 g_.event.sort = function (Ctrl)
@@ -2840,22 +2875,22 @@ g_basic =
 					var FV = GetFolderView(Ctrl, pt);
 					FV && ChangeTab(FV.Parent, 1);
 				},
-				"Up": function (Ctrl, pt)
+				Up: function (Ctrl, pt)
 				{
 					var FV = GetFolderView(Ctrl, pt);
 					FV && FV.Navigate(null, SBSP_PARENT | GetNavigateFlags(FV));
 				},
-				"Back": function (Ctrl, pt)
+				Back: function (Ctrl, pt)
 				{
 					var FV = GetFolderView(Ctrl, pt);
 					FV && FV.Navigate(null, SBSP_NAVIGATEBACK);
 				},
-				"Forward": function (Ctrl, pt)
+				Forward: function (Ctrl, pt)
 				{
 					var FV = GetFolderView(Ctrl, pt);
 					FV && FV.Navigate(null, SBSP_NAVIGATEFORWARD);
 				},
-				"Refresh": function (Ctrl, pt)
+				Refresh: function (Ctrl, pt)
 				{
 					var FV = GetFolderView(Ctrl, pt);
 					FV && FV.Refresh();

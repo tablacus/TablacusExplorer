@@ -1106,6 +1106,7 @@ public:
 	VOID SetListColumnWidth();
 	VOID AddItem(LPITEMIDLIST pidl);
 	VOID NavigateComplete(BOOL bBeginNavigate);
+	VOID InitFilter();
 #ifndef _USE_THREADADDITEMS
 	VOID AddItems(IDispatch *pdisp, BOOL bDeleted, IDispatch *pOnCompleted, BOOL bNavigateComplete);
 #endif
@@ -1114,9 +1115,6 @@ public:
 	int PSGetColumnIndexXP(LPWSTR pszName, int *pcxChar);
 	BSTR PSGetNameXP(LPWSTR pszName, int nFormat);
 	VOID AddColumnDataXP(LPWSTR pszColumns, LPWSTR pszName, int nWidth, int nFormat);
-#endif
-#ifdef _FIXWIN10IPBUG1
-	VOID FixWin10IPBug1();
 #endif
 public:
 	HWND		m_hwnd;
@@ -1170,6 +1168,7 @@ private:
 	PROPERTYKEY *m_pDefultColumns;
 	CteDropTarget2 *m_pDropTarget2;
 	BSTR		m_bsFilter;
+	BSTR		m_bsNextFilter;
 
 	LONG		m_cRef;
 	LONG		m_nCreate;

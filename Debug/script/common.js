@@ -59,7 +59,9 @@ FolderMenu =
 		var hMenu = api.CreatePopupMenu();
 		this.OpenMenu(hMenu, FolderItem, hParent, wID, nParent);
 		window.g_menu_click = true;
+		this.MenuLoop = true;
 		var Verb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, x, y, te.hwnd, null, null);
+		delete this.MenuLoop;
 		g_popup = null;
 		api.DestroyMenu(hMenu);
 		Verb = Verb ? this.Items[Verb - 1] : null;
@@ -195,6 +197,11 @@ FolderMenu =
 	Invoke: function (FolderItem, wFlags)
 	{
 		if (FolderItem) {
+			if (window.g_menu_button == 4) {
+				var pdwEffect = [DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK];
+				api.SHDoDragDrop(null, FolderItem, te, pdwEffect[0], pdwEffect, true);
+				return;
+			}
 			if (window.g_menu_button == 2) {
 				var pt = api.Memory("POINT");
 				api.GetCursorPos(pt);
@@ -727,9 +734,11 @@ LoadXml = function (filename, nGroup)
 						Path.Index = tab.getAttribute("LogIndex");
 					}
 					var FV = TC.Selected.Navigate2(Path, SBSP_NEWBROWSER, tab.getAttribute("Type"), tab.getAttribute("ViewMode"), tab.getAttribute("FolderFlags"), tab.getAttribute("Options"), tab.getAttribute("ViewFlags"), tab.getAttribute("IconSize"), tab.getAttribute("Align"), tab.getAttribute("Width"), tab.getAttribute("Flags"), tab.getAttribute("EnumFlags"), tab.getAttribute("RootStyle"), tab.getAttribute("Root"));
-					FV.FilterView = tab.getAttribute("FilterView");
-					FV.Data.Lock = api.LowPart(tab.getAttribute("Lock")) != 0;
-					Lock(TC, i2, false);
+					if (!FV.FilterView) {
+						FV.FilterView = tab.getAttribute("FilterView");
+						FV.Data.Lock = api.LowPart(tab.getAttribute("Lock")) != 0;
+						Lock(TC, i2, false);
+					}
 				}
 				TC.SelectedIndex = item.getAttribute("SelectedIndex");
 				TC.Visible = api.LowPart(item.getAttribute("Visible"));
@@ -970,7 +979,6 @@ NavigateFV = function (FV, Path, wFlags)
 				FV.Refresh();
 				return;
 			}
-			res = /^([A-Z]:\\[^\?\*]*)\\([^\\]+)/i.exec(Path) || /^(\\\\[A-Z][^\?\*]*)\\([^\\]+)/i.exec(Path)
 		}
 	}
 	if (FV.Data.Lock) {
@@ -2748,7 +2756,7 @@ OpenInExplorer = function (pid1)
 			ar.unshift(path);
 		}
 		if (!ar.length) {
-			ar = [pid1.Path];
+			ar = [api.GetDisplayNameOf(pid1, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)];
 		}
 		api.CreateProcess([api.PathQuoteSpaces(wsh.ExpandEnvironmentStrings("%SystemRoot%\\explorer.exe")), api.PathQuoteSpaces(ar.join("\\"))].join(" "), null, 0, 1, 0);
 	}
@@ -3411,9 +3419,9 @@ GetSavePath = function (FolderItem)
 {
 	var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
 	if (!/^[A-Z]:\\|^\\\\[A-Z]/i.test(path)) {
-		var res = /search\-ms:.*?&crumb=location:([^&]*)/.exec(api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
+		var res = IsSearchPath(FolderItem);
 		if (res) {
-			return api.PathCreateFromUrl("file:" + res[1]);
+			return res[0];
 		}
 	}
 	if (/\?/.test(path)) {

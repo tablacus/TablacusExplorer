@@ -5207,7 +5207,12 @@ HRESULT DragSub(int nFunc, PVOID pObj, CteFolderItems *pDragItems, PDWORD pgrfKe
 				Invoke4(g_pOnFunc[nFunc], &vResult, 5, pv);
 				hr = GetIntFromVariant(&vResult);
 			}
-		} catch(...) {}
+		} catch(...) {
+			g_nException = 0;
+#ifdef _DEBUG
+			g_strException = L"DragSub";
+#endif
+		}
 		::InterlockedDecrement(&g_nProcDrag);
 	}
 	return hr;
@@ -5571,7 +5576,12 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 									}
 #endif
 								}
-							} catch(...) {}
+							} catch(...) {
+								g_nException = 0;
+#ifdef _DEBUG
+								g_strException = L"MouseProc1";
+#endif
+							}
 							::InterlockedDecrement(&g_nProcMouse);
 							pdisp->Release();
 						}
@@ -5582,7 +5592,7 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 	} catch (...) {
 		g_nException = 0;
 #ifdef _DEBUG
-		g_strException = L"MouseProc";
+		g_strException = L"MouseProc2";
 #endif
 	}
 	return (hrResult != S_OK) ? CallNextHookEx(g_hMouseHook, nCode, wParam, lParam) : TRUE;
@@ -5629,7 +5639,12 @@ LRESULT CALLBACK TETVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							bHandled = TRUE;
 						}
 					}
-				} catch(...) {}
+				} catch(...) {
+					g_nException = 0;
+#ifdef _DEBUG
+					g_strException = L"NM_RCLICK";
+#endif
+				}
 				::InterlockedDecrement(&g_nProcTV);
 			}
 		}
@@ -5668,7 +5683,12 @@ LRESULT CALLBACK TETVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				if (InterlockedIncrement(&g_nProcTV) == 1) {
 					Result = teDoCommand(pTV, hwnd, msg, wParam, lParam);
 				}
-			} catch(...) {}
+			} catch(...) {
+				g_nException = 0;
+#ifdef _DEBUG
+				g_strException = L"TETVProc2/DoCommand";
+#endif
+			}
 			::InterlockedDecrement(&g_nProcTV);
 			if (Result == 0) {
 				return 0;
@@ -6362,7 +6382,12 @@ HRESULT MessageProc(MSG *pMsg)
 					pdisp->Release();
 				}
 			}
-		} catch(...) {}
+		} catch(...) {
+			g_nException = 0;
+#ifdef _DEBUG
+			g_strException = L"MessageProc1";
+#endif
+		}
 		::InterlockedDecrement(&g_nProcMouse);
 	}
 
@@ -6409,7 +6434,12 @@ HRESULT MessageProc(MSG *pMsg)
 					VariantClear(&v);
 				}
 			}
-		} catch(...) {}
+		} catch(...) {
+			g_nException = 0;
+#ifdef _DEBUG
+			g_strException = L"MessageProc2";
+#endif
+		}
 		::InterlockedDecrement(&g_nProcKey);
 	}
 	return hrResult;
@@ -8320,7 +8350,12 @@ VOID teApiDoDragDrop(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 		g_nDropState = 1;
 		try {
 			teSetLong(pVarResult, SHDoDragDrop(NULL, pDataObj, static_cast<IDropSource *>(g_pTE), dwEffect, &dwEffect));
-		} catch(...) {}
+		} catch(...) {
+			g_nException = 0;
+#ifdef _DEBUG
+			g_strException = L"DoDragDrop";
+#endif
+		}
 		IDispatch *pEffect;
 		if (nArg >= 2 && GetDispatch(&pDispParams->rgvarg[nArg - 2], &pEffect)) {
 			VARIANT v;
@@ -8342,7 +8377,12 @@ VOID teApiSHDoDragDrop(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIAN
 		g_nDropState = param[5].boolVal ? 2 : 1;
 		try {
 			teSetLong(pVarResult, SHDoDragDrop(param[0].hwnd, pDataObj, static_cast<IDropSource *>(g_pTE), dwEffect, &dwEffect));
-		} catch(...) {}
+		} catch(...) {
+			g_nException = 0;
+#ifdef _DEBUG
+			g_strException = L"SHDoDragDrop";
+#endif
+		}
 		g_pDraggingCtrl = NULL;
 		g_pDraggingItems = NULL;
 		IDispatch *pEffect;
@@ -11499,7 +11539,12 @@ LRESULT CALLBACK WndProc2(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					if (GetForegroundWindow() == pWB->m_hwndParent) {
 						teSetForegroundWindow((HWND)GetWindowLongPtr(pWB->m_hwndParent, GWLP_HWNDPARENT));
 					}
-				} catch(...) {}
+				} catch(...) {
+					g_nException = 0;
+#ifdef _DEBUG
+					g_strException = L"WM_CLOSE";
+#endif
+				}
 				DestroyWindow(hWnd);
 				return 0;
 			case WM_SIZE:
@@ -11539,6 +11584,7 @@ CteShellBrowser::CteShellBrowser(CteTabCtrl *pTC)
 	m_bEmpty = TRUE;
 	m_bInit = FALSE;
 	m_bsFilter = NULL;
+	m_bsNextFilter = NULL;
 	m_pTV = new CteTreeView();
 	m_dwCookie = 0;
 	VariantInit(&m_vData);
@@ -11624,6 +11670,7 @@ void CteShellBrowser::Clear()
 			SafeRelease(&m_ppLog[m_nLogCount]);
 		}
 		teSysFreeString(&m_bsFilter);
+		teSysFreeString(&m_bsNextFilter);
 		teUnadviseAndRelease(m_pdisp, DIID_DShellFolderViewEvents, &m_dwCookie);
 		m_pdisp = NULL;
 #ifdef _2000XP
@@ -12003,12 +12050,24 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	m_nPrevLogIndex = m_nLogIndex;
 	SaveFocusedItemToHistory();
 	if ((wFlags & (SBSP_PARENT | SBSP_NAVIGATEBACK | SBSP_NAVIGATEFORWARD | SBSP_RELATIVE)) == 0) {
-		VARIANT v;
-		VariantInit(&v);
-		if SUCCEEDED(DoFunc1(TE_OnReplacePath, pFolderItem, &v)) {
-			if (v.vt != VT_EMPTY) {
-				pFolderItem->Release();
-				pFolderItem = new CteFolderItem(&v);
+		if (g_pOnFunc[TE_OnReplacePath]) {
+			CteFolderItem *pid1;
+			if SUCCEEDED(pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1)) {
+				if (pid1->m_v.vt == VT_BSTR && !m_bsNextFilter) {
+					VARIANTARG *pv = GetNewVARIANT(2);
+					teSetObject(&pv[1], this);
+					teSetSZ(&pv[0], pid1->m_v.bstrVal);
+					m_bsNextFilter = ::SysAllocString(L"");
+					VARIANT vResult;
+					VariantInit(&vResult);
+					Invoke4(g_pOnFunc[TE_OnReplacePath], &vResult, 2, pv);
+					if (vResult.vt != VT_EMPTY) {
+						VariantClear(&pid1->m_v);
+						VariantCopy(&pid1->m_v, &vResult);
+						VariantClear(&vResult);
+					}
+				}
+				pid1->Release();
 			}
 		}
 	}
@@ -12147,12 +12206,10 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 			m_nLogIndex = m_nPrevLogIndex;
 			return hr;
 		}
-		if (!teILIsEqual(m_pFolderItem, pPrevious)) {
-			teSysFreeString(&m_bsFilter);
-			SafeRelease(&m_ppDispatch[SB_OnIncludeObject]);
-		}
 	}
-
+	if (m_bsNextFilter || !teILIsEqual(m_pFolderItem, pPrevious)) {
+		InitFilter();
+	}
 	SetRectEmpty(&rc);
 
 	//History / Management
@@ -13807,6 +13864,9 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 							}
 #endif
 						}
+					} else if (m_bsNextFilter && lstrlen(v.bstrVal)) {
+						teSysFreeString(&m_bsNextFilter);
+						m_bsNextFilter = ::SysAllocString(v.bstrVal);
 					} else if (lstrcmpi(m_bsFilter, v.bstrVal)) {
 						teSysFreeString(&m_bsFilter);
 						if (lstrlen(v.bstrVal)) {
@@ -13817,7 +13877,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					}
 					VariantClear(&v);
 				}
-				teSetSZ(pVarResult, m_bsFilter);
+				teSetSZ(pVarResult, m_bsFilter ? m_bsFilter : m_bsNextFilter);
 				return S_OK;
 			//FolderItem
 			case 0x10000020:
@@ -14127,7 +14187,12 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						CteContextMenu *pdispCM = new CteContextMenu(pCM, NULL, static_cast<IShellBrowser *>(this));
 						teSetObject(pVarResult, pdispCM);
 					}
-				} catch(...) {}
+				} catch(...) {
+					g_nException = 0;
+#ifdef _DEBUG
+					g_strException = L"ViewMenu";
+#endif
+				}
 				SafeRelease(&pdispCM);
 				SafeRelease(&pCM);
 				return S_OK;
@@ -14445,7 +14510,12 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 							g_nDropState = 1;
 							try {
 								SHDoDragDrop(NULL, pDataObj, static_cast<IDropSource *>(g_pTE), dwEffect, &dwEffect);
-							} catch(...) {}
+							} catch(...) {
+								g_nException = 0;
+#ifdef _DEBUG
+								g_strException = L"BeginDrag";
+#endif
+							}
 							pDataObj->Release();
 							teSetBool(pVarResult, FALSE);
 						}
@@ -14930,6 +15000,10 @@ int CteShellBrowser::GetTabIndex()
 STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 {
 	if (ILIsEqual(m_pidl, pidlFolder)) {
+		if (m_bsNextFilter) {
+			InitFilter();
+			Refresh(FALSE);
+		}
 		return S_OK;
 	}
 	if (!m_pFolderItem1 && !m_dwUnavailable && ILIsEqual(pidlFolder, g_pidls[CSIDL_RESULTSFOLDER])) {
@@ -14963,9 +15037,8 @@ STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 		m_nSuspendMode = 0;
 		return hr;
 	}
-	if (!ILIsEqual(m_pidl, pidlPrevius)) {
-		teSysFreeString(&m_bsFilter);
-		SafeRelease(&m_ppDispatch[SB_OnIncludeObject]);
+	if (m_bsNextFilter || !ILIsEqual(m_pidl, pidlPrevius)) {
+		InitFilter();
 	}
 	teILFreeClear(&pidlPrevius);
 	ResetPropEx();
@@ -15444,6 +15517,22 @@ VOID CteShellBrowser::NavigateComplete(BOOL bBeginNavigate)
 	}
 }
 
+
+VOID CteShellBrowser::InitFilter()
+{
+	teSysFreeString(&m_bsFilter);
+	SafeRelease(&m_ppDispatch[SB_OnIncludeObject]);
+	if (m_bsNextFilter) {
+		m_bsFilter = m_bsNextFilter;
+		m_bsNextFilter = NULL;
+		if (::SysStringLen(m_bsFilter)) {
+			DoFunc(TE_OnFilterChanged, this, S_OK);
+		} else {
+			teSysFreeString(&m_bsFilter);
+		}
+	}
+}
+
 STDMETHODIMP CteShellBrowser::OnNavigationFailed(PCIDLIST_ABSOLUTE pidlFolder)
 {
 	if (m_nSuspendMode) {
@@ -15710,6 +15799,9 @@ VOID CteShellBrowser::Suspend(int nMode)
 		SaveFocusedItemToHistory();
 		teDoCommand(this, m_hwnd, WM_NULL, 0, 0);//Save folder setings
 	}
+	teSysFreeString(&m_bsNextFilter);
+	m_bsNextFilter = m_bsFilter;
+	m_bsFilter = NULL;
 	DestroyView(0);
 	if (nMode == 4) {
 		m_nUnload = 8;
@@ -21638,7 +21730,12 @@ LPITEMIDLIST CteFolderItem::GetAlt()
 						}
 						VariantClear(&vPath);
 					}
-				} catch(...) {}
+				} catch(...) {
+					g_nException = 0;
+#ifdef _DEBUG
+					g_strException = L"TranslatePath";
+#endif
+				}
 				::InterlockedDecrement(&g_nProcFI);
 			}
 		}
@@ -22592,7 +22689,12 @@ VOID CteWICBitmap::FromStreamRelease(IStream *pStream, LPWSTR lpfn, BOOL bExtend
 					poStrm->Clear();
 					SafeRelease(&poStrm);
 				}
-			} catch(...) {}
+			} catch(...) {
+				g_nException = 0;
+#ifdef _DEBUG
+				g_strException = L"FromStream";
+#endif
+			}
 			::InterlockedDecrement(&g_nProcIMG);
 		}
 	}
@@ -22670,7 +22772,12 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 									}
 									Invoke4(g_pOnFunc[TE_OnFromFile], NULL, 3, pv);
 								}
-							} catch(...) {}
+							} catch(...) {
+								g_nException = 0;
+#ifdef _DEBUG
+								g_strException = L"FromFile";
+#endif
+							}
 							::InterlockedDecrement(&g_nProcIMG);
 						}
 					}
@@ -24168,7 +24275,12 @@ CteObject::CteObject(PVOID pObj)
 		try {
 			IUnknown *punk = static_cast<IUnknown *>(pObj);
 			punk->QueryInterface(IID_PPV_ARGS(&m_punk));
-		} catch (...) {}
+		} catch (...) {
+			g_nException = 0;
+#ifdef _DEBUG
+			g_strException = L"CteObject";
+#endif
+		}
 	}
 	m_cRef = 1;
 }
