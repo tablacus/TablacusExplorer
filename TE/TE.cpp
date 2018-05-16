@@ -79,11 +79,12 @@ BSTR		 g_bsPidls[MAX_CSIDL2];
 
 IDispatch	*g_pOnFunc[Count_OnFunc];
 IDispatch	*g_pUnload = NULL;
-IDispatch	*g_pFreeLibrary = NULL;
+std::list<HMODULE>	g_pFreeLibrary;
 IDispatch	*g_pJS = NULL;
 IDispatch	*g_pSubWindows = NULL;
 IStream		*g_pStrmJS = NULL;
-IDispatch	*g_pFolderSize = NULL;
+std::list<TEFS *>	g_pFolderSize;
+CRITICAL_SECTION g_csFolderSize;
 IDropTargetHelper *g_pDropTargetHelper = NULL;
 IUnknown	*g_pRelease = NULL;
 IUnknown	*g_pDraggingCtrl = NULL;
@@ -220,9 +221,9 @@ TEmethod tesDIBSECTION[] =
 {
 	{ (VT_PTR << TE_VT) + offsetof(DIBSECTION, dsBm), "dsBm" },
 	{ (VT_PTR << TE_VT) + offsetof(DIBSECTION, dsBmih), "dsBmih" },
-	{ (VT_I4 << TE_VT) + offsetof(DIBSECTION, dsBitfields[0]), "dsBitfields0" },
-	{ (VT_I4 << TE_VT) + offsetof(DIBSECTION, dsBitfields[1]), "dsBitfields1" },
-	{ (VT_I4 << TE_VT) + offsetof(DIBSECTION, dsBitfields[2]), "dsBitfields2" },
+	{ (VT_I4 << TE_VT) + offsetof(DIBSECTION, dsBitfields), "dsBitfields0" },
+	{ (VT_I4 << TE_VT) + offsetof(DIBSECTION, dsBitfields) + sizeof(DWORD), "dsBitfields1" },
+	{ (VT_I4 << TE_VT) + offsetof(DIBSECTION, dsBitfields) + sizeof(DWORD) * 2, "dsBitfields2" },
 	{ (VT_PTR << TE_VT) + offsetof(DIBSECTION, dshSection), "dshSection" },
 	{ (VT_I4 << TE_VT) + offsetof(DIBSECTION, dsOffset), "dsOffset" },
 	{ 0, NULL }
@@ -1229,6 +1230,40 @@ BOOL GetVarArrayFromIDList(VARIANT *pv, LPITEMIDLIST pidl);
 
 //Unit
 
+VOID PushFolderSizeList(TEFS* pFS)
+{
+	EnterCriticalSection(&g_csFolderSize);
+	try {
+		g_pFolderSize.push_front(pFS);
+	} catch (...) {
+		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"PushFolderSizeList";
+#endif
+	}
+	LeaveCriticalSection(&g_csFolderSize);
+}
+
+BOOL PopFolderSizeList(TEFS** ppFS)
+{
+	BOOL bResult = FALSE;
+	EnterCriticalSection(&g_csFolderSize);
+	try {
+		bResult = !g_pFolderSize.empty();
+		if (bResult) {
+			*ppFS = *g_pFolderSize.begin();
+			g_pFolderSize.pop_front();
+		}
+	} catch (...) {
+		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"PopFolderSizeList";
+#endif
+	}
+	LeaveCriticalSection(&g_csFolderSize);
+	return bResult;
+}
+
 BOOL teIsSameSort(IFolderView2 *pFV2, SORTCOLUMN *pCol1, int nCount1)
 {
 	int i;
@@ -2115,11 +2150,8 @@ LPITEMIDLIST teSHSimpleIDListFromPathEx(LPWSTR lpstr, BOOL bFolder, WORD wAttr, 
 	return pidl;
 }
 
-ULONGLONG teGetFolderSize(LPCWSTR szPath, int nLevel, PDWORD pdwSessionId, DWORD dwSessionId)
+ULONGLONG teGetFolderSize(LPCWSTR szPath, int nItems, PDWORD pdwSessionId, DWORD dwSessionId)
 {
-	if (*pdwSessionId != dwSessionId) {
-		return 0;
-	}
 	if (PathIsRoot(szPath)) {
 		ULARGE_INTEGER FreeBytesOfAvailable;
 		ULARGE_INTEGER TotalNumberOfBytes;
@@ -2127,31 +2159,44 @@ ULONGLONG teGetFolderSize(LPCWSTR szPath, int nLevel, PDWORD pdwSessionId, DWORD
 		return GetDiskFreeSpaceEx(szPath, &FreeBytesOfAvailable, &TotalNumberOfBytes, &TotalNumberOfFreeBytes) ? TotalNumberOfBytes.QuadPart - TotalNumberOfFreeBytes.QuadPart : 0;
 	}
 	ULONGLONG Result = 0;
-	BSTR bs;
+	std::list<BSTR>	pFolders;
 	WIN32_FIND_DATA wfd;
-	tePathAppend(&bs, szPath, L"*");
-	HANDLE hFind = FindFirstFile(bs, &wfd);
-	teSysFreeString(&bs);
-	if (hFind != INVALID_HANDLE_VALUE) {
-		do {
-			if (tePathMatchSpec(wfd.cFileName, L".;..")) {
-				continue;
-			}
-			if ((wfd.dwFileAttributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT)) == FILE_ATTRIBUTE_DIRECTORY) {
-				if (nLevel) {
-					tePathAppend(&bs, szPath, wfd.cFileName);
-					Result += teGetFolderSize(bs, nLevel - 1, pdwSessionId, dwSessionId);
-					teSysFreeString(&bs);
+	pFolders.push_front(::SysAllocString(szPath));
+
+	while (g_bMessageLoop && *pdwSessionId == dwSessionId && !pFolders.empty()) {
+		BSTR bsPath = *pFolders.begin();
+		pFolders.pop_front();
+		BSTR bs2;
+		tePathAppend(&bs2, bsPath, L"*");
+		HANDLE hFind = FindFirstFile(bs2, &wfd);
+		teSysFreeString(&bs2);
+		if (hFind != INVALID_HANDLE_VALUE) {
+			do {
+				if (nItems-- < 0) {
+					dwSessionId++;
+					break;
 				}
-				continue;
-			}
-			ULARGE_INTEGER uli;
-			uli.HighPart = wfd.nFileSizeHigh;
-			uli.LowPart = wfd.nFileSizeLow;
-			Result += uli.QuadPart;
-		} while (*pdwSessionId == dwSessionId && FindNextFile(hFind, &wfd));
+				if (tePathMatchSpec(wfd.cFileName, L".;..")) {
+					continue;
+				}
+				if ((wfd.dwFileAttributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT)) == FILE_ATTRIBUTE_DIRECTORY) {
+					tePathAppend(&bs2, bsPath, wfd.cFileName);
+					pFolders.push_back(bs2);
+					continue;
+				}
+				ULARGE_INTEGER uli;
+				uli.HighPart = wfd.nFileSizeHigh;
+				uli.LowPart = wfd.nFileSizeLow;
+				Result += uli.QuadPart;
+			} while (g_bMessageLoop && *pdwSessionId == dwSessionId && FindNextFile(hFind, &wfd));
+		}
+		FindClose(hFind);
+		teSysFreeString(&bsPath);
 	}
-	FindClose(hFind);
+	while (!pFolders.empty()) {
+		::SysFreeString(*pFolders.begin());
+		pFolders.pop_front();
+	}
 	return Result;
 }
 
@@ -4781,9 +4826,7 @@ BOOL teFreeLibrary(HMODULE hDll, UINT uElpase)
 {
 	if (hDll) {
 		if (uElpase) {
-			VARIANT *pv = GetNewVARIANT(1);
-			teSetPtr(pv, (HANDLE)hDll);
-			teExecMethod(g_pFreeLibrary, L"push", NULL, 1, pv);
+			g_pFreeLibrary.push_back(hDll);
 			SetTimer(g_hwndMain, TET_FreeLibrary, uElpase, teTimerProc);
 			return TRUE;
 		}
@@ -6590,10 +6633,9 @@ BOOL teLocalizePath(LPWSTR pszPath, BSTR *pbsPath)
 
 VOID teFreeLibraries()
 {
-	VARIANT v;
-	VariantInit(&v);
-	while (teExecMethod(g_pFreeLibrary, L"shift", &v, 0, NULL) == S_OK && v.vt != VT_EMPTY) {
-		FreeLibrary((HMODULE)GetPtrFromVariantClear(&v));
+	while (!g_pFreeLibrary.empty()) {
+		FreeLibrary(*g_pFreeLibrary.begin());
+		g_pFreeLibrary.pop_front();
 	}
 }
 
@@ -10953,8 +10995,7 @@ function _c(s) {\
 	teSysFreeString(&bsScript);
 	CoMarshalInterThreadInterfaceInStream(IID_IDispatch, g_pJS, &g_pStrmJS);
 	GetNewArray(&g_pUnload);
-	GetNewArray(&g_pFreeLibrary);
-	GetNewArray(&g_pFolderSize);
+	InitializeCriticalSection(&g_csFolderSize);
 	//WindowsAPI
 #ifdef _USE_OBJECTAPI
 	GetNewObject(&g_pAPI);
@@ -11078,6 +11119,7 @@ function _c(s) {\
 	}
 	//At the end of processing
 	try {
+		g_bMessageLoop = FALSE;
 		RevokeDragDrop(g_hwndMain);
 #ifdef _USE_HTMLDOC
 		SafeRelease(&pHtmlDoc);
@@ -11086,8 +11128,6 @@ function _c(s) {\
 		VariantClear(&vWindow);
 #endif
 		teFreeLibraries();
-		SafeRelease(&g_pFolderSize);
-		SafeRelease(&g_pFreeLibrary);
 		SafeRelease(&g_pSubWindows);
 		SafeRelease(&g_pUnload);
 #ifdef _USE_OBJECTAPI
@@ -11098,6 +11138,7 @@ function _c(s) {\
 		SafeRelease(&g_pAutomation);
 		SafeRelease(&g_pWICFactory);
 		SafeRelease(&g_pDropTargetHelper);
+		DeleteCriticalSection(&g_csFolderSize);
 		UnhookWindowsHookEx(g_hMouseHook);
 		UnhookWindowsHookEx(g_hHook);
 		if (g_hMenu) {
@@ -12796,24 +12837,23 @@ VOID CteShellBrowser::SetSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch)
 static void threadFolderSize(void *args)
 {
 	::CoInitialize(NULL);
-	IDispatch *pdisp;
-	CoGetInterfaceAndReleaseStream((LPSTREAM)args, IID_PPV_ARGS(&pdisp));
-	VARIANT v;
-	VariantInit(&v);
 	try {
-		while (teExecMethod(pdisp, L"pop", &v, 0, NULL) == S_OK && v.vt != VT_EMPTY) {
-			TEFS *pFS = (TEFS *)GetPtrFromVariantClear(&v);
+		TEFS *pFS;
+		while (PopFolderSizeList(&pFS)) {
 			IDispatch *pTotalFileSize;
 			CoGetInterfaceAndReleaseStream(pFS->pStrmTotalFileSize, IID_PPV_ARGS(&pTotalFileSize));
-			teSetLL(&v, teGetFolderSize(pFS->bsPath, 128, pFS->pdwSessionId, pFS->dwSessionId));
-			if (*pFS->pdwSessionId == pFS->dwSessionId) {
-				tePutProperty(pTotalFileSize, pFS->bsPath, &v);
-				if (pFS->hwnd) {
-					InvalidateRect(pFS->hwnd, NULL, FALSE);
+			if (g_bMessageLoop) {
+				VARIANT v;
+				teSetLL(&v, teGetFolderSize(pFS->bsPath, MAXINT, pFS->pdwSessionId, pFS->dwSessionId));
+				if (*pFS->pdwSessionId == pFS->dwSessionId) {
+					tePutProperty(pTotalFileSize, pFS->bsPath, &v);
+					if (pFS->hwnd) {
+						InvalidateRect(pFS->hwnd, NULL, FALSE);
+					}
+					SetTimer(g_hwndMain, TET_Status, 100, teTimerProc);
 				}
-				SetTimer(g_hwndMain, TET_Status, 100, teTimerProc);
+				VariantClear(&v);
 			}
-			VariantClear(&v);
 			SafeRelease(&pTotalFileSize);
 			::SysFreeString(pFS->bsPath);
 			delete [] pFS;
@@ -12824,7 +12864,6 @@ static void threadFolderSize(void *args)
 		g_strException = L"threadFolderSize";
 #endif
 	}
-	SafeRelease(&pdisp);
 	g_nCountOfThreadFolderSize--;
 	::CoUninitialize();
 	::_endthread();
@@ -12854,15 +12893,11 @@ VOID CteShellBrowser::SetFolderSize(IShellFolder2 *pSF2, LPCITEMIDLIST pidl, LPW
 				pFS->pdwSessionId = &m_dwSessionId;
 				pFS->dwSessionId = m_dwSessionId;
 				pFS->hwnd = m_hwndLV;
-				teSetPtr(&v, (HANDLE)pFS);
-				teExecMethod(g_pFolderSize, L"push", NULL, -1, &v);
-				VariantClear(&v);
 				CoMarshalInterThreadInterfaceInStream(IID_IDispatch, m_ppDispatch[SB_TotalFileSize], &pFS->pStrmTotalFileSize);
+				PushFolderSizeList(pFS);
 				if (g_nCountOfThreadFolderSize < 8) {
-					IStream *pStream;
-					CoMarshalInterThreadInterfaceInStream(IID_IDispatch, g_pFolderSize, &pStream);
 					g_nCountOfThreadFolderSize++;
-					_beginthread(&threadFolderSize, 0, pStream);
+					_beginthread(&threadFolderSize, 0, NULL);
 				}
 			}
 			teSysFreeString(&bsPath);

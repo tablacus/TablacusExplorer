@@ -27,6 +27,7 @@
 #include <wincodecsdk.h>
 #include <Thumbcache.h>
 #include <mmsystem.h>
+#include <list>
 #ifndef _2000XP
 #include <Propsys.h>
 #include <Propvarutil.h>
