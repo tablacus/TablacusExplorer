@@ -1043,8 +1043,8 @@ ShowDialog = function (fn, opt)
 	if (!/:/.test(fn)) {
 		fn = location.href.replace(/[^\/]*$/, fn);
 	}
-	var r = Math.abs(MainWindow.DefaultFont.lfHeight) / 12;
-	return te.CreateCtrl(CTRL_SW, fn, opt, document, (opt.width || 750) * r, (opt.height || 530) * r);
+	var r = opt.r || Math.abs(MainWindow.DefaultFont.lfHeight) / 12;
+	return te.CreateCtrl(CTRL_SW, fn, opt, document, (opt.width || 750) * r, (opt.height || 530) * r, opt.left, opt.top);
 }
 
 LoadLayout = function ()

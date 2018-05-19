@@ -5169,7 +5169,6 @@ VOID GetNewObject(IDispatch **ppObj)
 VOID ClearEvents()
 {
 	g_dwSessionId++;
-	GetNewObject(&g_pSubWindows);
 	for (int j = Count_OnFunc; j-- > 1;) {
 		SafeRelease(&g_pOnFunc[j]);
 	}
@@ -11091,6 +11090,7 @@ function _c(s) {\
 		bVisible = (vResult.vt == VT_BSTR) && (lstrcmpi(vResult.bstrVal, L"wait") == 0);
 		VariantClear(&vResult);
 	}
+	GetNewObject(&g_pSubWindows);
 	if (!bVisible) {
 		PostMessage(g_hwndMain, WM_CLOSE, 0, 0);
 	}
@@ -11575,10 +11575,10 @@ LRESULT CALLBACK WndProc2(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 							teSysFreeString(&pWB->m_bstrPath);
 							return 0;
 						}
+						if (GetForegroundWindow() == pWB->m_hwndParent) {
+							teSetForegroundWindow((HWND)GetWindowLongPtr(pWB->m_hwndParent, GWLP_HWNDPARENT));
+						}
 						pWB->Close();
-					}
-					if (GetForegroundWindow() == pWB->m_hwndParent) {
-						teSetForegroundWindow((HWND)GetWindowLongPtr(pWB->m_hwndParent, GWLP_HWNDPARENT));
 					}
 				} catch(...) {
 					g_nException = 0;
@@ -16768,13 +16768,19 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 								int b = rcWindow.bottom - rc.bottom + rc.top - rcWindow.top;
 								int w = GetIntFromVariant(&pDispParams->rgvarg[nArg - 4]) + a;
 								int h = GetIntFromVariant(&pDispParams->rgvarg[nArg - 5]) + b;
-								int x = rc.left + (rc.right - rc.left - w) / 2;
-								int y = rc.top + (rc.bottom - rc.top - h) / 2;
-								if (w == rcWindow.right - rcWindow.left) {
-									x += a;
+								int x = nArg >= 6 ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 6]) : 0;
+								int y = nArg >= 7 ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 7]) : 0;
+								if (!x) {
+									x = rc.left + (rc.right - rc.left - w) / 2;
+									if (w == rcWindow.right - rcWindow.left) {
+										x += a;
+									}
 								}
-								if (h == rcWindow.bottom - rcWindow.top) {
-									y += b / 2;
+								if (!y) {
+									y = rc.top + (rc.bottom - rc.top - h) / 2;
+									if (h == rcWindow.bottom - rcWindow.top) {
+										y += b / 2;
+									}
 								}
 								HMONITOR hMonitor = MonitorFromRect(&rcWindow, MONITOR_DEFAULTTONEAREST);
 								MONITORINFO mi;

@@ -3528,6 +3528,7 @@ if (!te.Data) {
 		window.focus();
 	}, 500);
 }
+te.Data.window = window;
 Exchange = te.Data.Exchange;
 
 InitCode();
