@@ -1463,6 +1463,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 					}
 					if (te.Data.bReload) {
 						te.Data.bReload = false;
+						CloseSubWindows();
 						te.Reload();
 					}
 					if (g_.TEData) {

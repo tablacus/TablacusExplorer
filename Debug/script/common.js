@@ -3487,7 +3487,7 @@ LoadAddon = function (ext, Id, arError, param)
 	return r;
 }
 
-AddEventEx(window, "beforeunload", function ()
+function CloseSubWindows()
 {
 	var hwnd = api.GetWindow(document);
 	var hwnd1 = hwnd;
@@ -3499,7 +3499,9 @@ AddEventEx(window, "beforeunload", function ()
 			api.PostMessage(hwnd1, WM_CLOSE, 0, 0);
 		}
 	}
-});
+}
+
+AddEventEx(window, "beforeunload", CloseSubWindows);
 
 GetTEInfo = function ()
 {

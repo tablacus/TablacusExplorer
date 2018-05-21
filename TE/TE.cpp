@@ -1230,6 +1230,24 @@ BOOL GetVarArrayFromIDList(VARIANT *pv, LPITEMIDLIST pidl);
 
 //Unit
 
+VOID teTranslateAccelerator(IDispatch *pdisp, MSG *pMsg, HRESULT *phr)
+{
+	if (pMsg->message == WM_KEYDOWN && GetKeyState(VK_CONTROL) < 0 && StrChrW(L"LNOP\x6b\x6d\xbb\xbd", (WCHAR)pMsg->wParam)) {
+		return;
+	}
+	IWebBrowser2 *pWB = NULL;
+	if SUCCEEDED(pdisp->QueryInterface(IID_PPV_ARGS(&pWB))) {
+		IOleInPlaceActiveObject *pActiveObject = NULL;
+		if SUCCEEDED(pWB->QueryInterface(IID_PPV_ARGS(&pActiveObject))) {
+			if (pActiveObject->TranslateAcceleratorW(pMsg) == S_OK) {
+				*phr = S_OK;
+			}
+			pActiveObject->Release();
+		}
+		pWB->Release();
+	}
+}
+
 VOID PushFolderSizeList(TEFS* pFS)
 {
 	EnterCriticalSection(&g_csFolderSize);
@@ -6411,8 +6429,6 @@ HRESULT MessageProc(MSG *pMsg)
 	IDispatch *pdisp = NULL;
 	IShellBrowser *pSB = NULL;
 	IShellView *pSV = NULL;
-	IWebBrowser2 *pWB = NULL;
-	IOleInPlaceActiveObject *pActiveObject = NULL;
 
 	if (pMsg->message == WM_MOUSEWHEEL) {
 		try {
@@ -6451,28 +6467,14 @@ HRESULT MessageProc(MSG *pMsg)
 							pSV->Release();
 						}
 						pSB->Release();
-					} else if SUCCEEDED(pdisp->QueryInterface(IID_PPV_ARGS(&pWB))) {
-						if SUCCEEDED(pWB->QueryInterface(IID_PPV_ARGS(&pActiveObject))) {
-							if (pActiveObject->TranslateAcceleratorW(pMsg) == S_OK) {
-								hrResult = S_OK;
-							}
-							pActiveObject->Release();
-						}
-						pWB->Release();
+					} else {
+						teTranslateAccelerator(pdisp, pMsg, &hrResult);
 					}
 					pdisp->Release();
 				}
 				VARIANT v;
 				if SUCCEEDED(teGetPropertyAtLLX(g_pSubWindows, (LONGLONG)GetParent((HWND)GetWindowLongPtr(GetParent(pMsg->hwnd), GWLP_HWNDPARENT)), &v)) {
-					if SUCCEEDED(v.punkVal->QueryInterface(IID_PPV_ARGS(&pWB))) {
-						if SUCCEEDED(pWB->QueryInterface(IID_PPV_ARGS(&pActiveObject))) {
-							if (pActiveObject->TranslateAcceleratorW(pMsg) == S_OK) {
-								hrResult = S_OK;
-							}
-							pActiveObject->Release();
-						}
-						pWB->Release();
-					}
+					teTranslateAccelerator(v.pdispVal, pMsg, &hrResult);
 					VariantClear(&v);
 				}
 			}

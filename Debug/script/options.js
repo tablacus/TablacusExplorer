@@ -1452,10 +1452,14 @@ InitDialog = function ()
 	if (Query == "key") {
 		returnValue = false;
 		document.getElementById("Content").innerHTML = '<div style="padding: 8px;" style="display: block;"><label>Key</label><br /><input type="text" name="q" autocomplete="off" style="width: 100%; ime-mode: disabled" onfocus="this.blur()" /></div>';
-		AddEventEx(document.body, "keydown", function (e)
+		var fn = function (e)
 		{
 			var key = (e || event).keyCode;
-			var s = api.sprintf(10, "$%x", (api.MapVirtualKey(key, 0) | ((key >= 33 && key <= 46 || key >= 91 && key <= 93 || key == 111 || key == 144) ? 256 : 0) | GetKeyShift()));
+			var k = api.MapVirtualKey(key, 0) | ((key >= 33 && key <= 46 || key >= 91 && key <= 93 || key == 111 || key == 144) ? 256 : 0);
+			if (k == 42 || k == 29 || k == 56 || k == 347) {
+				return false;
+			}
+			var s = api.sprintf(10, "$%x", k | GetKeyShift());
 			returnValue = GetKeyName(s);
 			if (/^\$\w02a$|^\$\w01d$|^\$\w038$/i.test(returnValue)) {
 				returnValue = GetKeyName(s.substr(0, 3) + "1e").replace(/\+A$/, "");
@@ -1464,7 +1468,9 @@ InitDialog = function ()
 			document.F.q.title = s;
 			document.F.ButtonOk.disabled = false;
 			return false;
-		});
+		}
+		AddEventEx(document.body, "keydown", fn);
+		AddEventEx(document.body, "keyup", fn);
 	}
 	if (Query == "new") {
 		returnValue = false;
