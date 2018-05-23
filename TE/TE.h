@@ -28,6 +28,7 @@
 #include <Thumbcache.h>
 #include <mmsystem.h>
 #include <list>
+#include <vector>
 #ifndef _2000XP
 #include <Propsys.h>
 #include <Propvarutil.h>
@@ -260,9 +261,6 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define MAX_CSIDL2				0x41
 
 #define MAX_FORMATS				1024
-#define MAX_TC					128
-#define MAX_TV					128
-#define MAX_FV					1024
 #define MAX_PATHEX				32768
 #define MAX_PROP				4096
 #define MAX_STATUS				1024

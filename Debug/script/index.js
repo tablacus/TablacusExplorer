@@ -1462,9 +1462,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 						SaveXmlEx("addons.xml", te.Data.Addons);
 					}
 					if (te.Data.bReload) {
-						te.Data.bReload = false;
-						CloseSubWindows();
-						te.Reload();
+						Exec(Ctrl, "Reload customize", "Tools");
 					}
 					if (g_.TEData) {
 						te.Layout = g_.TEData.Layout;
@@ -3071,6 +3069,8 @@ g_basic =
 				"Add to favorites": AddFavoriteEx,
 				"Reload customize": function ()
 				{
+					te.Data.bReload = false;
+					CloseSubWindows();
 					te.Reload();
 					return S_OK;
 				},
