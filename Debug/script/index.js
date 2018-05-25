@@ -589,7 +589,7 @@ DisableImage = function (img, bDisable)
 
 function SetFolderViewData(FV, FVD)
 {
-	if (FV) {
+	if (FV && FVD) {
 		var t = FV.Type;
 		for (var i in FVD) {
 			try {

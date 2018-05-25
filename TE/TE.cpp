@@ -2462,25 +2462,28 @@ LPITEMIDLIST teILCreateFromPath3(IShellFolder *pSF, LPWSTR pszPath, HWND hwnd, i
 							pidlResult = teILCreateFromPath3(pSF1, &lpDelimiter[1], NULL, nDog);
 							pSF1->Release();
 						}
+						if (!pidlResult) {
+							BSTR bsFull;
+							if SUCCEEDED(teGetDisplayNameBSTR(pSF, pidlPart, SHGDN_FORPARSING, &bsFull)) {
+								LPITEMIDLIST pidlFull = teILCreateFromPathEx(bsFull);
+								teSysFreeString(&bsFull);
+								if (pidlFull) {
+									if (GetShellFolder(&pSF1, pidlFull)) {
+										pidlResult = teILCreateFromPath3(pSF1, &lpDelimiter[1], NULL, nDog);
+										pSF1->Release();
+									}
+									teILFreeClear(&pidlFull);
+								}
+							}
+						}
 						continue;
 					}
 					if (lstrcmpi(lpfn, pszPath) == 0) {
 						LPITEMIDLIST pidlParent;
 						if (teGetIDListFromObject(pSF, &pidlParent)) {
 							pidlResult = ILCombine(pidlParent, pidlPart);
-							if (ILIsEqual(pidlParent, g_pidls[CSIDL_LIBRARY])) {
-								BSTR bs2;
-								if SUCCEEDED(teGetDisplayNameFromIDList(&bs2, pidlResult, SHGDN_FORPARSING)) {
-									LPITEMIDLIST pidl1 = ILCreateFromPath(bs2);
-									if (pidl1) {
-										teILFreeClear(&pidlResult);
-										pidlResult = pidl1;
-									}
-									teSysFreeString(&bs2);
-								}
-							}
-							teCoTaskMemFree(pidlParent);
 						}
+						teCoTaskMemFree(pidlParent);
 						continue;
 					}
 				}
@@ -2488,7 +2491,7 @@ LPITEMIDLIST teILCreateFromPath3(IShellFolder *pSF, LPWSTR pszPath, HWND hwnd, i
 			teCoTaskMemFree(pidlPart);
 		}
 		peidl->Release();
-	}
+	}	
 	return pidlResult;
 }
 
@@ -4150,7 +4153,7 @@ HRESULT teSHGetDataFromIDList(IShellFolder *pSF, LPCITEMIDLIST pidlPart, int nFo
 				teGetFileTimeFromItem(pSF2, pidlPart, &PKEY_DateCreated, &pwfd->ftCreationTime);
 				teGetFileTimeFromItem(pSF2, pidlPart, &PKEY_DateAccessed, &pwfd->ftLastAccessTime);
 				teGetFileTimeFromItem(pSF2, pidlPart, &PKEY_DateModified, &pwfd->ftLastWriteTime);
-				SafeRelease(&pSF2);
+				pSF2->Release();
 			}
 		}
 	}
@@ -5177,8 +5180,8 @@ VOID GetNewObject1(LPOLESTR sz, IDispatch **ppObj)
 				return;
 			}
 		}
+		pJS->Release();
 	}
-	SafeRelease(&pJS);
 #ifdef _DEBUG
 	MessageBox(g_hwndMain, L"Failed to get object.", NULL, MB_ICONERROR | MB_OK);
 #endif
@@ -5535,7 +5538,7 @@ LRESULT CALLBACK MenuKeyProc(int nCode, WPARAM wParam, LPARAM lParam)
 			g_dwTickKey = GetTickCount();
 			MSG msg;
 			msg.hwnd = GetFocus();
-			msg.message = (lParam >= 0) ? WM_KEYDOWN : WM_KEYUP;
+			msg.message = (lParam & 0xc0000000) ? WM_KEYUP : WM_KEYDOWN;
 			msg.wParam = wParam;
 			msg.lParam = lParam;
 			try {
@@ -10438,6 +10441,11 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 						SetTimer(g_hwndMain, TET_Status, 1000, teTimerProc);
 						break;
 					}
+					if (pSB->m_bRedraw) {
+						pSB->m_bRedraw = FALSE;
+						pSB->SetRedraw(TRUE);
+						RedrawWindow(pSB->m_hwnd, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+					}
 					g_szStatus[0] = NULL;
 					IFolderView *pFV;
 					if (pSB->m_pShellView && SUCCEEDED(pSB->m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV)))) {
@@ -14526,7 +14534,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 				if (!m_hwndLV && m_pExplorerBrowser) {
 					SetRedraw(TRUE);
-					RedrawWindow(m_hwndDV, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+					RedrawWindow(m_hwnd, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
 				}
 				SetTimer(g_hwndMain, TET_Status, 500, teTimerProc);
 				return S_OK;
@@ -15198,10 +15206,11 @@ HRESULT CteShellBrowser::GetShellFolder2(LPITEMIDLIST *ppidl)
 {
 	HRESULT hr = E_FAIL;
 	IShellFolder *pSF = NULL;
-	if (m_bsFilter && g_pidls[CSIDL_LIBRARY] && ILIsParent(g_pidls[CSIDL_LIBRARY], *ppidl, FALSE)) {
+	BOOL bLibrary1 = g_pidls[CSIDL_LIBRARY] && ILIsParent(g_pidls[CSIDL_LIBRARY], *ppidl, TRUE);
+	if (bLibrary1 || m_bsFilter && g_pidls[CSIDL_LIBRARY] && ILIsParent(g_pidls[CSIDL_LIBRARY], *ppidl, FALSE)) {
 		BSTR bs;
 		teGetDisplayNameFromIDList(&bs, const_cast<LPITEMIDLIST>(*ppidl), SHGDN_FORPARSING);
-		if (teIsFileSystem(bs)) {
+		if (bLibrary1 || teIsFileSystem(bs)) {
 			LPITEMIDLIST pidl2 = teILCreateFromPath(bs);
 			if (pidl2) {
 				if (GetShellFolder(&pSF, pidl2)) {
@@ -15379,11 +15388,9 @@ VOID CteShellBrowser::AddItem(LPITEMIDLIST pidl)
             teSysFreeString(&bs);
         }
         if (hr == S_OK) {
-			BOOL bLock = this == g_pTC->GetShellBrowser(g_pTC->m_nIndex);
-			if (bLock) {
-				SetTimer(g_hwndMain, TET_Status, 500, teTimerProc);
-				m_pTC->LockUpdate(FALSE);
-			}
+			m_bRedraw = TRUE;
+			SetRedraw(FALSE);
+			SetTimer(g_hwndMain, TET_Status, 500, teTimerProc);
             try {
                 IResultsFolder *pRF;
                 if (SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) && SUCCEEDED(pFV->GetFolder(IID_PPV_ARGS(&pRF)))) {
@@ -15436,9 +15443,6 @@ VOID CteShellBrowser::AddItem(LPITEMIDLIST pidl)
                 g_strException = L"AddItem";
 #endif
             }
-			if (bLock) {
-	            m_pTC->UnlockUpdate(FALSE);
-			}
         }
         SafeRelease(&pFV);
 		teILFreeClear(&pidlChild);
@@ -16363,28 +16367,12 @@ VOID CteShellBrowser::SetGroupBy(BSTR bs)
 #endif
 }
 
-HRESULT CteShellBrowser::SetRedraw(BOOL bRedraw)
+VOID CteShellBrowser::SetRedraw(BOOL bRedraw)
 {
-	HRESULT hr = E_FAIL;
-	if (m_pShellView) {
-		IFolderView2 *pFV2;
-		if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
-			hr = pFV2->SetRedraw(bRedraw);
-			pFV2->Release();
-		} else {
-#ifdef _2000XP
-			IShellFolderView *pSFV;
-			if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pSFV))) {
-				hr = pSFV->SetRedraw(bRedraw);
-				pSFV->Release();
-			}
-#endif
-		}
-	}
+	SendMessage(m_hwnd, WM_SETREDRAW, bRedraw, 0);
 	if (m_hwndAlt) {
 		BringWindowToTop(m_hwndAlt);
 	}
-	return hr;
 }
 
 //CTE

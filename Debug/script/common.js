@@ -80,8 +80,6 @@ FolderMenu =
 		if (!FolderItem) {
 			return;
 		}
-		var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
-		FolderItem = api.ILCreateFromPath(path) || {};
 		var bSep = false;
 		if (!nParent && !api.ILIsEmpty(FolderItem) && !api.ILIsParent(1, FolderItem, false)) {
 			var Item = api.ILRemoveLastID(FolderItem);

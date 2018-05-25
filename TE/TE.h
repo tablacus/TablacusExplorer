@@ -1068,7 +1068,7 @@ public:
 	VOID SetSort(BSTR bs);
 	VOID GetGroupBy(BSTR* pbs);
 	VOID SetGroupBy(BSTR bs);
-	HRESULT SetRedraw(BOOL bRedraw);
+	VOID SetRedraw(BOOL bRedraw);
 	VOID SetColumnsStr(BSTR bsColumns);
 	BSTR GetColumnsStr(int nFormat);
 	VOID GetDefaultColumns();
@@ -1155,6 +1155,7 @@ public:
 	BOOL		m_bAutoVM;
 	BOOL		m_bBeforeNavigate;
 	WORD		*m_pDTColumns;
+	BOOL		m_bRedraw;
 #ifdef _2000XP
 	TEColumn	*m_pColumns;
 	UINT		m_nColumns;
