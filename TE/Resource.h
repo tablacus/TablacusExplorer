@@ -4,14 +4,15 @@
 #define IDC_STATIC (-1)
 #endif
 
-#define IDI_TE		128
-
 //Version
 #define STRING(str) STRING2(str)
 #define STRING2(str) #str
 #define VER_Y		18
-#define VER_M		5
-#define VER_D		25
+#define VER_M		6
+#define VER_D		2
+
+//Icon
+#define IDI_TE		1
 
 //Define
 #define _USE_BSEARCHAPI

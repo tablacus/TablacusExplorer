@@ -1621,14 +1621,17 @@ AdjustMenuBreak = function (hMenu)
 	for (var i = api.GetMenuItemCount(hMenu); i-- > 0;) {
 		mii.fMask = MIIM_FTYPE | MIIM_SUBMENU;
 		api.GetMenuItemInfo(hMenu, i, true, mii);
-		if (mii.hSubMenu) {
-			AdjustMenuBreak(mii.hSubMenu);
-			continue;
-		}
 		if (api.GetMenuString(hMenu, i, MF_BYPOSITION) != "") {
 			mii.fType |= uFlags;
 			api.SetMenuItemInfo(hMenu, i, true, mii);
 			uFlags = 0;
+			if (mii.hSubMenu) {
+				AdjustMenuBreak(mii.hSubMenu);
+			}
+			continue;
+		}
+		if (mii.hSubMenu) {
+			AdjustMenuBreak(mii.hSubMenu);
 			continue;
 		}
 		var u = mii.fType & (MFT_MENUBREAK | MFT_MENUBARBREAK);
@@ -1739,7 +1742,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec)
 			if (nBase < 5) {
 				AdjustMenuBreak(hMenu);
 			}
-			g_nPos = MakeMenus(hMenu, menus, arMenu, items, Ctrl, pt);
+			g_nPos = MakeMenus(hMenu, menus, arMenu, items, Ctrl, pt, 0, null, true);
 			var eo = eventTE[Name.toLowerCase()];
 			for (var i in eo) {
 				try {
@@ -2135,7 +2138,7 @@ MenusIcon = function (mii, src, nHeight)
 	}
 }
 
-MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem)
+MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem, bTrans)
 {
 	var hMenus = [hMenu];
 	var nPos = menus ? Number(menus[0].getAttribute("Pos")) : 0;
@@ -2160,7 +2163,7 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem)
 			}
 		} else {
 			var ar = s.split(/\t/);
-			if (!item.getAttribute("Org")) {
+			if (bTrans && !item.getAttribute("Org")) {
 				ar[0] = GetText(ar[0]);
 			}
 			if (ar.length > 1) {
@@ -2745,13 +2748,15 @@ OpenInExplorer = function (pid1)
 		var ar = [];
 		pid1 = pid1.FolderItem || pid1;
 		var pid = pid1;
-		for (var n = 99; !api.ILIsEmpty(pid) && n--; pid = api.ILGetParent(pid)) {
-			var path = api.GetDisplayNameOf(pid, SHGDN_FORPARSING | SHGDN_INFOLDER | SHGDN_ORIGINAL);
-			if (!path || /\\/.test(path)) {
-				ar = [];
-				break;
+		if (!api.ILIsParent(ssfNETWORK, pid, false)) {
+			for (var n = 99; !api.ILIsEmpty(pid) && n--; pid = api.ILGetParent(pid)) {
+				var path = api.GetDisplayNameOf(pid, SHGDN_FORPARSING | SHGDN_INFOLDER | SHGDN_ORIGINAL);
+				if (!path || /\\/.test(path)) {
+					ar = [];
+					break;
+				}
+				ar.unshift(path);
 			}
-			ar.unshift(path);
 		}
 		if (!ar.length) {
 			ar = [api.GetDisplayNameOf(pid1, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)];
