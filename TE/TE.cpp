@@ -21015,7 +21015,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 					}
 					LPITEMIDLIST pidl;
 					teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg]);
-					if (::ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER]) || ::ILIsParent(g_pidls[CSIDL_INTERNET], pidl, FALSE)) {
+					if (::ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER]) || ::ILIsParent(g_pidls[CSIDL_INTERNET], pidl, FALSE) || teILFolderExists(pidl) != S_OK) {
 						teCoTaskMemFree(pidl);
 						return S_OK;
 					}

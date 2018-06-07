@@ -80,9 +80,12 @@ FolderMenu =
 		if (!FolderItem) {
 			return;
 		}
+		if (!/object/i.test(typeof FolderItem)) {
+			FolderItem = api.ILCreateFromPath(FolderItem);
+		}
 		var bSep = false;
 		if (!nParent && !api.ILIsEmpty(FolderItem) && !api.ILIsParent(1, FolderItem, false)) {
-			var Item = api.ILRemoveLastID(FolderItem);
+			Item = api.ILRemoveLastID(FolderItem);
 			var bMatch = IsFolderEx(Item);
 			if (this.Filter) {
 				bMatch = PathMatchEx(bMatch ? Item.Name + ".folder" : Item.Name, this.Filter);
@@ -1550,7 +1553,7 @@ PathMatchEx = function (path, s)
 
 IsFolderEx = function (Item)
 {
-	if (Item && Item.IsFolder) {
+	if (Item && Item.IsFolder && !api.ILIsParent(ssfBITBUCKET, Item, true)) {
 		var wfd = api.Memory("WIN32_FIND_DATA");
 		var hr = api.SHGetDataFromIDList(Item, SHGDFIL_FINDDATA, wfd, wfd.Size);
 		return (hr < 0) || (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 || !/^[A-Z]:\\|^\\\\[A-Z].*\\.*\\/i.test(Item.Path);

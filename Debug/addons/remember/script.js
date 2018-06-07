@@ -10,6 +10,7 @@ if (window.Addon == 1) {
 		db: {},
 		ID: ["Time", "ViewMode", "IconSize", "Columns", "SortColumn", "Group", "SortColumns", "Path"],
 		nFormat: api.QuadPart(GetAddonOption(Addon_Id, "Format")),
+		nSM: api.GetSystemMetrics(SM_CXSMICON) * 96 / screen.deviceXDPI,
 
 		RememberFolder: function (FV)
 		{
@@ -61,6 +62,9 @@ if (window.Addon == 1) {
 			var ar = Addons.Remember.db[Addons.Remember.GetPath(Ctrl)];
 			if (ar) {
 				fs.ViewMode = ar[1];
+				if (ar[2] > Addons.Remember.nSM && (ar[1] > FVM_ICON && ar[1] <= FVM_DETAILS)) {
+					ar[2] = Addons.Remember.nSM;
+				}
 				fs.ImageSize = ar[2];
 				Ctrl.Data.Setting = 'Remember';
 			}
@@ -76,6 +80,9 @@ if (window.Addon == 1) {
 			if (Ctrl.Data && Ctrl.Data.Setting == 'Remember') {
 				var ar = Addons.Remember.db[Ctrl.Data.Remember];
 				if (ar) {
+					if (ar[2] > Addons.Remember.nSM && (ar[1] > FVM_ICON && ar[1] <= FVM_DETAILS)) {
+						ar[2] = Addons.Remember.nSM;
+					}
 					Ctrl.CurrentViewMode(ar[1], ar[2]);
 					Ctrl.Columns = ar[3];
 					var col = Ctrl.Columns(Addons.Remember.nFormat);

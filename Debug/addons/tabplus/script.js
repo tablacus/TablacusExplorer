@@ -532,12 +532,12 @@ if (window.Addon == 1) {
 			if (TC) {
 				var nIndex = Addons.TabPlus.FromPt(TC.Id, pt);
 				if (nIndex >= 0) {
+					if (IsDrag(pt, g_ptDrag)) {
+						clearTimeout(Addons.TabPlus.tid);
+						g_ptDrag = pt.Clone();
+						Addons.TabPlus.tid = setTimeout("Addons.TabPlus.Over(" + TC.Id + ");" , 300);
+					}
 					if (dataObj.Count) {
-						if (IsDrag(pt, g_ptDrag)) {
-							clearTimeout(Addons.TabPlus.tid);
-							g_ptDrag = pt.Clone();
-							Addons.TabPlus.tid = setTimeout("Addons.TabPlus.Over(" + TC.Id + ");" , 300);
-						}
 						var Target = TC.Item(nIndex).FolderItem;
 						if (!api.ILIsEqual(dataObj.Item(-1), Target)) {
 							var DropTarget = api.DropTarget(Target);
@@ -671,7 +671,7 @@ if (window.Addon == 1) {
 	Addons.TabPlus.ImgLock = MakeImgSrc(item.getAttribute("IconLock") || "bitmap:ieframe.dll,545,13,2", 0, true, 13);
 	Addons.TabPlus.ImgClose = MakeImgSrc(item.getAttribute("IconClose") || "bitmap:ieframe.dll,545,13,1", 0, true, 13);
 } else {
-	var ado = OpenAdodbFromTextFile(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\"+ Addon_Id + "\\options.html"));
+	var ado = OpenAdodbFromTextFile("addons\\"+ Addon_Id + "\\options.html");
 	if (ado) {
 		var Icon = document.F.Icon;
 		if (Icon) {
