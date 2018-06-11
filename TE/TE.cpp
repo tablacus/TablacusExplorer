@@ -15297,14 +15297,12 @@ VOID CteShellBrowser::SetViewModeAndIconSize(BOOL bSetIconSize)
 				pFV2->SetViewModeAndIconSize(static_cast<FOLDERVIEWMODE>(m_param[SB_ViewMode]), m_param[SB_IconSize]);
 			}
 			pFV2->Release();
-#ifdef _2000XP
 		} else {
 			IFolderView *pFV;
 			if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
 				pFV->SetCurrentViewMode(m_param[SB_ViewMode]);
 				pFV->Release();
 			}
-#endif
 		}
 	}
 }
