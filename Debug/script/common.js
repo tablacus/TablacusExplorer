@@ -132,7 +132,7 @@ FolderMenu =
 			}
 			for (var i = 0; i < nCount; i++) {
 				Item = Items.Item(ar[i]);
-				var bMatch = IsFolderEx(Item);
+				var bMatch = IsFolderEx(Item) || api.ILIsParent(WINVER >= 0x600 ? "::{26EE0668-A00A-44D7-9371-BEB064C98683}" : ssfCONTROLS, Item, false);
 				if (this.Filter) {
 					bMatch = PathMatchEx(bMatch ? Item.Name + ".folder" : Item.Name, this.Filter);
 				}

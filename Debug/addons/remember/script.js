@@ -10,13 +10,15 @@ if (window.Addon == 1) {
 		db: {},
 		ID: ["Time", "ViewMode", "IconSize", "Columns", "SortColumn", "Group", "SortColumns", "Path"],
 		nFormat: api.QuadPart(GetAddonOption(Addon_Id, "Format")),
+		Filter: (GetAddonOption(Addon_Id, "Filter") || "*").replace(/\s+$/, "").replace(/\r\n/g, ";"),
+		Disable: (GetAddonOption(Addon_Id, "Disable") || "-").replace(/\s+$/, "").replace(/\r\n/g, ";"),
 		nSM: api.GetSystemMetrics(SM_CXSMICON) * 96 / screen.deviceXDPI,
 
 		RememberFolder: function (FV)
 		{
 			if (FV && FV.FolderItem && !FV.FolderItem.Unavailable && FV.Data && FV.Data.Remember) {
 				var path = Addons.Remember.GetPath(FV);
-				if (path == FV.Data.Remember) {
+				if (path == FV.Data.Remember && PathMatchEx(path, Addons.Remember.Filter) && !PathMatchEx(path, Addons.Remember.Disable)) {
 					var col = FV.Columns(Addons.Remember.nFormat);
 					if (col) {
 						Addons.Remember.db[path] = [new Date().getTime(), FV.CurrentViewMode, FV.IconSize, col, FV.SortColumn(Addons.Remember.nFormat), FV.GroupBy, FV.SortColumns];
@@ -43,7 +45,10 @@ if (window.Addon == 1) {
 				ar[j] = item.getAttribute(Addons.Remember.ID[j]);
 			}
 			if (ar[1]) {
-				Addons.Remember.db[Addons.Remember.GetPath(String(ar.pop()))] = ar;
+				var path = Addons.Remember.GetPath(String(ar.pop()));
+				if (PathMatchEx(path, Addons.Remember.Filter) && !PathMatchEx(path, Addons.Remember.Disable)) {
+					Addons.Remember.db[path] = ar;
+				}
 			}
 		}
 		xml = null;
@@ -55,7 +60,7 @@ if (window.Addon == 1) {
 			if (Prev && !Prev.Unavailable) {
 				var path = Addons.Remember.GetPath(Prev);
 				var col = Ctrl.Columns(Addons.Remember.nFormat);
-				if (col) {
+				if (col && PathMatchEx(path, Addons.Remember.Filter) && !PathMatchEx(path, Addons.Remember.Disable)) {
 					Addons.Remember.db[path] = [new Date().getTime(), Ctrl.CurrentViewMode, Ctrl.IconSize, col, Ctrl.SortColumn(Addons.Remember.nFormat), Ctrl.GroupBy, Ctrl.SortColumns];
 				}
 			}
@@ -120,7 +125,7 @@ if (window.Addon == 1) {
 
 		var arFV = [];
 		for (var path in Addons.Remember.db) {
-			if (path) {
+			if (path && PathMatchEx(path, Addons.Remember.Filter) && !PathMatchEx(path, Addons.Remember.Disable)) {
 				var ar = Addons.Remember.db[path];
 				ar.push(path);
 				arFV.push(ar);

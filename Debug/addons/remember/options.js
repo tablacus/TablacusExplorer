@@ -1,4 +1,6 @@
 var s = ['<label>Number of items</label><br /><input type="text" id="Save" style="width: 100%" /><br /><br />'];
+s.push('<label>Filter</label><br /><textarea rows="6" name="Filter" style="width: 100%"></textarea><br /><br />');
+s.push('<label>Disable</label><br /><textarea rows="6" name="Disable" style="width: 100%"></textarea><br /><br />');
 s.push('<label>Advanced</label><br /><input type="hidden" name="Format" />');
 s.push('<input type="radio" id="Format=0" name="_Format" onclick="SetRadio(this)" checked />');
 s.push('<label for="Format=0">Normal</label>');
