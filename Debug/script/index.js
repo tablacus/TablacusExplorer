@@ -3004,6 +3004,7 @@ g_basic =
 				if (FV) {
 					var ContextMenu = FV.ViewMenu();
 					if (ContextMenu) {
+						FV.Focus();
 						var hMenu = api.CreatePopupMenu();
 						ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_EXTENDEDVERBS);
 						var nVerb = GetCommandId(hMenu, s, ContextMenu);

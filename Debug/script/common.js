@@ -124,9 +124,7 @@ FolderMenu =
 			for (var i = nCount; i--;) {
 				ar[i] = i;
 			}
-			if (this.SortMode || this.Filter) {
-				this.Sort(Items, ar);
-			}
+			this.Sort(Items, ar);
 			if (this.SortReverse) {
 				ar = ar.reverse();
 			}
