@@ -1917,6 +1917,11 @@ g_.event.sort = function (Ctrl)
 	return RunEvent1("Sort", Ctrl);
 }
 
+g_.event.sorting = function (Ctrl, Name)
+{
+	return RunEvent3("sorting", Ctrl, Name);
+}
+
 g_.event.fromfile = function (image, file, cx)
 {
 	var alt;

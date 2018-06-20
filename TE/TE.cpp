@@ -976,6 +976,7 @@ TEmethod methodSB[] = {
 	{ 0x10000106, "Focus" },
 	{ 0x10000107, "HitTest" },
 	{ 0x10000108, "hwndAlt" },
+	{ 0x10000109, "AltSortColumn" },
 	{ 0x10000110, "ItemCount" },
 	{ 0x10000111, "Item" },
 	{ 0x10000206, "Refresh" },
@@ -11644,6 +11645,7 @@ CteShellBrowser::CteShellBrowser(CteTabCtrl *pTC)
 	m_bInit = FALSE;
 	m_bsFilter = NULL;
 	m_bsNextFilter = NULL;
+	m_bsAltSortColumn = NULL;
 	m_pTV = new CteTreeView();
 	m_dwCookie = 0;
 	VariantInit(&m_vData);
@@ -11730,6 +11732,7 @@ void CteShellBrowser::Clear()
 		}
 		teSysFreeString(&m_bsFilter);
 		teSysFreeString(&m_bsNextFilter);
+		teSysFreeString(&m_bsAltSortColumn);
 		teUnadviseAndRelease(m_pdisp, DIID_DShellFolderViewEvents, &m_dwCookie);
 		m_pdisp = NULL;
 #ifdef _2000XP
@@ -14161,6 +14164,13 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 				teSetPtr(pVarResult, m_hwndAlt);
 				return S_OK;
+			//AltSortColumn
+			case 0x10000109:
+				if (nArg >= 0 && pDispParams->rgvarg[nArg].vt == VT_BSTR) {
+					m_bsAltSortColumn = ::SysAllocString(pDispParams->rgvarg[nArg].bstrVal);
+				}
+				teSetSZ(pVarResult, m_bsAltSortColumn);
+				return S_OK;
 			//ItemCount
 			case 0x10000110:
 				if (pVarResult && m_pShellView) {
@@ -16068,6 +16078,10 @@ VOID CteShellBrowser::GetSort(BSTR* pbs, int nFormat)
 	if (!m_pShellView || m_dwUnavailable) {
 		return;
 	}
+	if (m_bsAltSortColumn) {
+		*pbs = ::SysAllocString(m_bsAltSortColumn);
+		return;
+	}
 	IFolderView2 *pFV2;
 	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
 		if (teIsSameSort(pFV2, g_pSortColumnNull, _countof(g_pSortColumnNull))) {
@@ -16236,6 +16250,18 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 {
 	if (!m_pShellView || m_dwUnavailable || lstrlen(bs) == 0) {
 		return;
+	}
+	teSysFreeString(&m_bsAltSortColumn);
+	if (g_pOnFunc[TE_OnSorting]) {
+		VARIANT v;
+		VariantInit(&v);
+		VARIANTARG *pv = GetNewVARIANT(2);
+		teSetObject(&pv[1], this);
+		teSetSZ(&pv[0], bs);
+		Invoke4(g_pOnFunc[TE_OnSorting], &v, 3, pv);
+		if (GetIntFromVariantClear(&v) != S_OK) {
+			return;
+		}
 	}
 	IFolderView2 *pFV2;
 	SORTCOLUMN pCol1[1];

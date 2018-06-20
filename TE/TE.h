@@ -331,7 +331,8 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TE_OnEndThread			48
 #define TE_OnItemPostPaint		49
 #define TE_OnHandleIcon			50
-#define Count_OnFunc			51
+#define TE_OnSorting			51
+#define Count_OnFunc			52
 #define SB_TotalFileSize		0
 #define SB_OnIncludeObject		1
 #define SB_AltSelectedItems		2
@@ -1169,6 +1170,7 @@ private:
 	CteDropTarget2 *m_pDropTarget2;
 	BSTR		m_bsFilter;
 	BSTR		m_bsNextFilter;
+	BSTR		m_bsAltSortColumn;
 
 	LONG		m_cRef;
 	LONG		m_nCreate;

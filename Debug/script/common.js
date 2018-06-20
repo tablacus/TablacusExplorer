@@ -124,13 +124,22 @@ FolderMenu =
 			for (var i = nCount; i--;) {
 				ar[i] = i;
 			}
-			this.Sort(Items, ar);
+			if (this.SortMode >= 0) {
+				try {
+					var d = fso.GetDrive(fso.GetDriveName(FolderItem.Path));
+				} catch (e) {
+					d = {};
+				}
+				if (!/NTFS/i.test(d.FileSystem) || this.SortMode || this.Filter || FolderItem.IsBrowsable) { 
+					this.Sort(Items, ar);
+				}
+			}
 			if (this.SortReverse) {
 				ar = ar.reverse();
 			}
 			for (var i = 0; i < nCount; i++) {
 				Item = Items.Item(ar[i]);
-				var bMatch = IsFolderEx(Item) || api.ILIsParent(WINVER >= 0x600 ? "::{26EE0668-A00A-44D7-9371-BEB064C98683}" : ssfCONTROLS, Item, false);
+				var bMatch = IsFolderEx(Item) || api.ILIsParent(g_pidlCP, Item, false);
 				if (this.Filter) {
 					bMatch = PathMatchEx(bMatch ? Item.Name + ".folder" : Item.Name, this.Filter);
 				}
