@@ -937,6 +937,7 @@ TEmethod methodTE[] = {
 	{ START_OnFunc + TE_OnEndThread, "OnEndThread" },
 	{ START_OnFunc + TE_OnItemPostPaint, "OnItemPostPaint" },
 	{ START_OnFunc + TE_OnHandleIcon, "OnHandleIcon" },
+	{ START_OnFunc + TE_OnSorting, "OnSorting" },
 	{ 0, NULL }
 };
 
@@ -976,7 +977,6 @@ TEmethod methodSB[] = {
 	{ 0x10000106, "Focus" },
 	{ 0x10000107, "HitTest" },
 	{ 0x10000108, "hwndAlt" },
-	{ 0x10000109, "AltSortColumn" },
 	{ 0x10000110, "ItemCount" },
 	{ 0x10000111, "Item" },
 	{ 0x10000206, "Refresh" },
@@ -14164,13 +14164,6 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 				teSetPtr(pVarResult, m_hwndAlt);
 				return S_OK;
-			//AltSortColumn
-			case 0x10000109:
-				if (nArg >= 0 && pDispParams->rgvarg[nArg].vt == VT_BSTR) {
-					m_bsAltSortColumn = ::SysAllocString(pDispParams->rgvarg[nArg].bstrVal);
-				}
-				teSetSZ(pVarResult, m_bsAltSortColumn);
-				return S_OK;
 			//ItemCount
 			case 0x10000110:
 				if (pVarResult && m_pShellView) {
@@ -14527,10 +14520,15 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					return S_OK;
 				}
 				IFolderView2 *pFV2;
-				if (m_bRefreshing || m_bNavigateComplete) {
+				if (m_bRefreshing) {
 					m_bRefreshing = FALSE;
-					OnNavigationComplete2();
+					if (!m_bNavigateComplete && m_bsAltSortColumn) {
+						BSTR bs = ::SysAllocString(m_bsAltSortColumn);
+						SetSort(bs);
+						::SysFreeString(bs);
+					}
 				}
+				OnNavigationComplete2();
 				SetListColumnWidth();
 				if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
 					WCHAR pszFormat[MAX_STATUS];
@@ -14586,6 +14584,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				return DoFunc(TE_OnIconSizeChanged, this, S_OK);
 			case DISPID_SORTDONE://XP-
 				m_nSorting = 0;
+				teSysFreeString(&m_bsAltSortColumn);
 				if (m_nFocusItem < 0) {
 					FocusItem(FALSE);
 				}
@@ -16258,8 +16257,9 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 		VARIANTARG *pv = GetNewVARIANT(2);
 		teSetObject(&pv[1], this);
 		teSetSZ(&pv[0], bs);
-		Invoke4(g_pOnFunc[TE_OnSorting], &v, 3, pv);
-		if (GetIntFromVariantClear(&v) != S_OK) {
+		Invoke4(g_pOnFunc[TE_OnSorting], &v, 2, pv);
+		if (GetIntFromVariantClear(&v)) {
+			m_bsAltSortColumn = ::SysAllocString(bs);
 			return;
 		}
 	}
