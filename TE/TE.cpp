@@ -9675,6 +9675,29 @@ VOID teApiSHCreateStreamOnFileEx(int nArg, teParam *param, DISPPARAMS *pDispPara
 	SafeRelease(&pStream);
 }
 
+VOID teApiHasThumbnail(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	LPITEMIDLIST pidl;
+	if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
+		IShellFolder *pSF;
+		LPCITEMIDLIST pidlPart;
+		if SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &pidlPart)) {
+			IExtractImage *pEI;
+			IThumbnailProvider *pTP;
+			if (pSF->GetUIObjectOf(NULL, 1, &pidlPart, IID_IThumbnailProvider, NULL, (void **)&pTP) == S_OK) {
+				teSetLong(pVarResult, 1);
+				pTP->Release();
+			} else if (pSF->GetUIObjectOf(NULL, 1, &pidlPart, IID_IExtractImage, NULL, (void **)&pEI) == S_OK) {
+				teSetLong(pVarResult, 2);
+				pEI->Release();
+			} else {
+				teSetLong(pVarResult, 0);
+			}
+			pSF->Release();
+		}
+	}
+}
+
 /*
 VOID teApi(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -10000,6 +10023,7 @@ TEDispatchApi dispAPI[] = {
 	{ 1, -1, -1, -1, "SetEvent", teApiSetEvent },
 	{ 3,  0, -1, -1, "PlaySound", teApiPlaySound },
 	{ 4,  0, -1, -1, "SHCreateStreamOnFileEx", teApiSHCreateStreamOnFileEx },	
+	{ 1, -1, -1, -1, "HasThumbnail", teApiHasThumbnail },
 //	{ 0, -1, -1, -1, "", teApi },
 //	{ 0, -1, -1, -1, "Test", teApiTest },
 };
