@@ -412,7 +412,7 @@ function ApplyLang(doc)
 		ApplyLangTag(o);
 		for (i = o.length; i--;) {
 			if (!h && o[i].type == "text") {
-				h = o[i].offsetHeight * screen.deviceYDPI / screen.logicalYDPI;
+				h = o[i].offsetHeight;
 			}
 			o[i].placeholder = GetTextR(o[i].placeholder);
 			if (o[i].type == "button") {
@@ -844,6 +844,7 @@ SaveXml = function (filename, all)
 		item.setAttribute("Width", g_.rcWindow.right - g_.rcWindow.left);
 		item.setAttribute("Height", g_.rcWindow.bottom - g_.rcWindow.top);
 		item.setAttribute("CmdShow", api.IsZoomed(te.hwnd) ? SW_SHOWMAXIMIZED : te.CmdShow);
+		item.setAttribute("DPI", screen.deviceYDPI);
 		root.appendChild(item);
 	}
 	var TC = te.Ctrl(CTRL_TC);
@@ -1035,6 +1036,7 @@ ShowOptions = function (s)
 	} catch (e) {}
 	g_.dlgs.Options = ShowDialog("options.html",
 	{
+		width: te.Data.Conf_OptWidth, height: te.Data.Conf_OptHeight,
 		Data: s, event:
 		{
 			onbeforeunload: function ()
@@ -1103,8 +1105,8 @@ GetPos = function (o, bScreen, bAbs, bPanel, bBottom)
 		}
 	}
 	var pt = api.Memory("POINT");
-	pt.x = x * screen.deviceXDPI / screen.logicalXDPI;
-	pt.y = y * screen.deviceYDPI / screen.logicalYDPI;
+	pt.x = x;
+	pt.y = y;
 	return pt;
 }
 
@@ -1112,10 +1114,10 @@ HitTest = function (o, pt)
 {
 	if (o) {
 		var p = GetPos(o, 1);
-		if (pt.x >= p.x && pt.x < p.x + o.offsetWidth && pt.y >= p.y && pt.y < p.y + o.offsetHeight * screen.deviceYDPI / screen.logicalYDPI) {
+		if (pt.x >= p.x && pt.x < p.x + o.offsetWidth && pt.y >= p.y && pt.y < p.y + o.offsetHeight) {
 			o = o.offsetParent;
 			p = GetPos(o, 1);
-			return pt.x >= p.x && pt.x < p.x + o.offsetWidth * screen.deviceXDPI / screen.logicalXDPI && pt.y >= p.y && pt.y < p.y + o.offsetHeight * screen.deviceYDPI / screen.logicalYDPI;
+			return pt.x >= p.x && pt.x < p.x + o.offsetWidth && pt.y >= p.y && pt.y < p.y + o.offsetHeight;
 		}
 	}
 	return false;
@@ -2789,6 +2791,7 @@ ShowDialogEx = function (mode, w, h, ele)
 {
 	ShowDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\dialog.html"), { MainWindow: MainWindow, Query: mode, width: w, height: h, element: ele});
 }
+
 ShowNew = function (Ctrl, pt, Mode)
 {
 	var FV = GetFolderView(Ctrl, pt);
@@ -3633,7 +3636,7 @@ function CalcElementHeight(o, em)
 		if (document.documentMode >= 9) {
 			o.style.height = "calc(100vh - " + em + "em)";
 		} else {
-			var h = document.documentElement.clientHeight || document.body.clientHeight;
+			var h = (document.documentElement || document.body).clientHeight;
 			h += MainWindow.DefaultFont.lfHeight * em;
 			if (h > 0) {
 				o.style.height = h + 'px';

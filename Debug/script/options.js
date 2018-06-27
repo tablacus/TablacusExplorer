@@ -1289,6 +1289,9 @@ function AddonRemove(Id)
 
 function ApplyOptions()
 {
+	var o = api.GetKeyState(VK_SHIFT) >= 0 ? document.documentElement || document.body : {};
+	te.Data.Conf_OptWidth = api.LowPart(o.offsetWidth) * 96 / screen.deviceXDPI;
+	te.Data.Conf_OptHeight = api.LowPart(o.offsetHeight) * 96 / screen.deviceYDPI;
 	SetChanged(ReplaceMenus);
 	for (var i in document.F.elements) {
 		if (!/=|:/.test(i)) {
@@ -1943,9 +1946,7 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter)
 				var pt;
 				if (oButton) {
 					pt = GetPos(oButton, true);
-					pt = {x: pt.x, y: pt.y + oButton.offsetHeight * screen.deviceYDPI / screen.logicalYDPI,
-						width: oButton.offsetWidth * screen.deviceXDPI / screen.logicalXDPI
-					};
+					pt = {x: pt.x, y: pt.y + oButton.offsetHeight, width: oButton.offsetWidth };
 				} else {
 					pt = api.Memory("POINT");
 					api.GetCursorPos(pt);

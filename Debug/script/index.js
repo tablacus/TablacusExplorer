@@ -260,6 +260,13 @@ LoadConfig = function (bDog)
 			if (x > -30000 && y > -30000) {
 				var w = api.LowPart(item.getAttribute("Width"));
 				var h = api.LowPart(item.getAttribute("Height"));
+				var z = api.LowPart(item.getAttribute("DPI")) / screen.deviceYDPI;
+				if (z && z != 1) {
+					x /= z;
+					y /= z;
+					w /= z;
+					h /= z;
+				}
 				var pt = {x: x + w / 2, y: y};
 				if (!api.MonitorFromPoint(pt, MONITOR_DEFAULTTONULL)) {
 					var hMonitor = api.MonitorFromPoint(pt, MONITOR_DEFAULTTOPRIMARY);
@@ -340,8 +347,9 @@ Resize2 = function ()
 	o = document.getElementById("bottombar");
 	var offsetBottom = o.offsetHeight;
 	o = document.getElementById("client");
+	var ode = document.documentElement || document.body;
 	if (o) {
-		h = (document.documentElement ? document.documentElement.offsetHeight : document.body.offsetHeight) - offsetBottom - offsetTop;
+		h = ode.offsetHeight - offsetBottom - offsetTop;
 		if (h < 0) {
 			h = 0;
 		}
@@ -351,11 +359,11 @@ Resize2 = function ()
 	ResizeSizeBar("Right", h);
 	o = document.getElementById("Background");
 	pt = GetPos(o);
-	te.offsetLeft = Math.ceil(pt.x * screen.deviceXDPI / screen.logicalXDPI);
-	te.offsetRight = Math.ceil(((document.documentElement ? document.documentElement.offsetWidth : document.body.offsetWidth) - o.offsetWidth - te.offsetLeft) * screen.deviceXDPI / screen.logicalXDPI);
-	te.offsetTop = Math.ceil(pt.y * screen.deviceYDPI / screen.logicalYDPI);
+	te.offsetLeft = pt.x;
+	te.offsetRight = ode.offsetWidth - o.offsetWidth - te.offsetLeft;
+	te.offsetTop = pt.y;
 	pt = GetPos(document.getElementById("bottombar"));
-	te.offsetBottom = Math.ceil(((document.documentElement ? document.documentElement.offsetHeight : document.body.offsetHeight) - pt.y) * screen.deviceYDPI / screen.logicalYDPI);
+	te.offsetBottom = ode.offsetHeight - pt.y;
 	RunEvent1("Resize");
 	api.PostMessage(te.hwnd, WM_SIZE, 0, 0);
 }
@@ -367,7 +375,7 @@ function ResizeSizeBar(z, h)
 	o = document.getElementById(z.toLowerCase() + "bar");
 	if (w > 0) {
 		o.style.display = "";
-		if (w != o.offsetWidth * screen.deviceXDPI / screen.logicalXDPI) {
+		if (w != o.offsetWidth) {
 			o.style.width = w + "px";
 			for (var i = 1; i <= 3; i++) {
 				document.getElementById(z + "Bar" + i).style.width = w + "px";
@@ -862,7 +870,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 			if (pt2.x < 1) {
 				pt2.x = 1;
 			}
-			var w = document.documentElement ? document.documentElement.offsetWidth : document.body.offsetWidth;
+			var w = (document.documentElement || document.body).offsetWidth;
 			if (pt2.x >= w) {
 				pt2.x = w - 1;
 			}
