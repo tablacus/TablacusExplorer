@@ -95,7 +95,7 @@ IWICImagingFactory *g_pWICFactory = NULL;
 HHOOK	g_hHook;
 HHOOK	g_hMouseHook;
 HHOOK	g_hMessageHook;
-HHOOK	g_hMenuKeyHook = NULL;
+HHOOK	g_hMenuKeyHook;
 HMENU	g_hMenu = NULL;
 BSTR	g_bsCmdLine = NULL;
 BSTR	g_bsDocumentWrite = NULL;
@@ -8315,7 +8315,6 @@ VOID teApiGetAsyncKeyState(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 VOID teApiTrackPopupMenuEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	IUnknown *punk;
-	BOOL bHook = FALSE;
 	if (nArg >= 6) {
 		if (FindUnknown(&pDispParams->rgvarg[nArg - 6], &punk)) {
 			IContextMenu *pCM;
@@ -8331,16 +8330,10 @@ VOID teApiTrackPopupMenuEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 			}
 		}
 	}
-	if (!g_hMenuKeyHook) {
-		g_hMenuKeyHook = SetWindowsHookEx(WH_KEYBOARD, (HOOKPROC)MenuKeyProc, hInst, g_dwMainThreadId);
-		bHook = TRUE;
-	}
+	g_hMenuKeyHook = SetWindowsHookEx(WH_KEYBOARD, (HOOKPROC)MenuKeyProc, hInst, g_dwMainThreadId);
 	teSetLong(pVarResult, TrackPopupMenuEx(param[0].hmenu, param[1].uintVal, param[2].intVal, param[3].intVal,
 		param[4].hwnd, param[5].lptpmparams));
-	if (bHook) {
-		UnhookWindowsHookEx(g_hMenuKeyHook);
-		g_hMenuKeyHook = NULL;
-	}
+	UnhookWindowsHookEx(g_hMenuKeyHook);
 	SafeRelease(&g_pCM);
 }
 
@@ -11534,6 +11527,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			case WM_USERCHANGED:
 			case WM_QUERYENDSESSION:
 			case WM_HOTKEY:
+			case WM_DPICHANGED:
 			case TWM_CLIPBOARDUPDATE:
 				if (g_pOnFunc[TE_OnSystemMessage]) {
 					msg1.hwnd = hWnd;
