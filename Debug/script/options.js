@@ -1290,8 +1290,16 @@ function AddonRemove(Id)
 function ApplyOptions()
 {
 	var o = api.GetKeyState(VK_SHIFT) >= 0 ? document.documentElement || document.body : {};
-	te.Data.Conf_OptWidth = api.LowPart(o.offsetWidth) * 96 / screen.deviceXDPI;
-	te.Data.Conf_OptHeight = api.LowPart(o.offsetHeight) * 96 / screen.deviceYDPI;
+	var hwnd = api.GetWindow(document);
+	var hwnd1 = hwnd;
+	while (hwnd1 = api.GetParent(hwnd)) {
+		hwnd = hwnd1;
+	}
+	if (!api.IsZoomed(hwnd) && !api.IsIconic(hwnd)) {
+		var r = Math.abs(MainWindow.DefaultFont.lfHeight) / 1152;
+		te.Data.Conf_OptWidth = api.LowPart(o.offsetWidth) / screen.deviceXDPI / r;
+		te.Data.Conf_OptHeight = api.LowPart(o.offsetHeight) / screen.deviceYDPI / r;
+	}
 	SetChanged(ReplaceMenus);
 	for (var i in document.F.elements) {
 		if (!/=|:/.test(i)) {
