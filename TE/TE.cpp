@@ -12021,7 +12021,7 @@ HRESULT CteShellBrowser::Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *
 				wFlags = (wFlags | SBSP_NEWBROWSER) & (~SBSP_ACTIVATE_NOFOCUS);
 			}
 		}
-		if (wFlags & SBSP_NEWBROWSER || m_bEmpty) {
+		if (hr != E_ABORT && (wFlags & SBSP_NEWBROWSER || m_bEmpty)) {
 			CteShellBrowser *pSB = this;
 			BOOL bNew = !m_bEmpty && (wFlags & SBSP_NEWBROWSER);
 			if (bNew) {
@@ -12268,6 +12268,9 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 
 	if (param[SB_DoFunc]) {
 		hr = OnBeforeNavigate(pPrevious, wFlags);
+		if (hr == E_ABORT && Close(FALSE)) {
+			return hr;
+		}
 		if (hr == E_ACCESSDENIED && teILIsEqual(m_pFolderItem, pPrevious)) {
 			hr = S_OK;
 		}
@@ -15095,6 +15098,9 @@ STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 
 	HRESULT hr = OnBeforeNavigate(pPrevious, SBSP_SAMEBROWSER | SBSP_ABSOLUTE);
 	if FAILED(hr) {
+		if (hr == E_ABORT && Close(FALSE)) {
+			return hr;
+		}
 		teCoTaskMemFree(m_pidl);
 		m_pidl = pidlPrevius;
 		FolderItem *pid = m_pFolderItem;
