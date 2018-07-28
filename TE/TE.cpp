@@ -4067,6 +4067,12 @@ BOOL teILIsEqual(IUnknown *punk1, IUnknown *punk2)
 			if (teGetIDListFromObject(punk2, &pidl2)) {
 				bResult = ::ILIsEqual(pidl1, pidl2);
 				teCoTaskMemFree(pidl2);
+				if (bResult && ::ILIsEqual(pidl1, g_pidls[CSIDL_RESULTSFOLDER])) {
+					BSTR bs1, bs2;
+					teGetStrFromFolderItem(&bs2, punk1);
+					teGetStrFromFolderItem(&bs1, punk2);
+					bResult = lstrcmpi(bs1, bs2) == 0;
+				}
 			}
 			teCoTaskMemFree(pidl1);
 		}

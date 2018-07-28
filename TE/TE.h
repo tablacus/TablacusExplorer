@@ -64,6 +64,9 @@
 #else
 #define CP_TE CP_ACP
 #endif
+#ifndef WM_DPICHANGED
+#define WM_DPICHANGED       0x02E0
+#endif
 
 class CteShellBrowser;
 class CteTreeView;
