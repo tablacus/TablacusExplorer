@@ -168,12 +168,12 @@ if (window.Addon == 1) {
 					}
 					var n = "";
 					if (FV.FolderItem) {
-						n = GetTabName(FV).replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+						n = EncodeSC(GetTabName(FV));
 						if (this.opt.Tooltips) {
-							s.push('" title="', FV.FolderItem.Path.replace(/"/g, "&quot;"));
+							s.push('" title="', EncodeSC(FV.FolderItem.Path));
 						}
 					}
-					s.push('" >', n.replace(/</g, "&lt;"), '</div></td>');
+					s.push('" >', n, '</div></td>');
 					if (this.opt.Close && !FV.Data.Lock) {
 						s.push('<td style="vertical-align: middle; width: 13px" align="right"><img class="button" src="', this.ImgClose, '" style="width: 13px" id="tabplus_', FV.Parent.Id, '_', i, 'x" title="', this.opt.Tooltips ? GetText("Close Tab") : "", '" onmouseover="MouseOver(this)" onmouseout="MouseOut()"></td>');
 					}
@@ -618,12 +618,12 @@ if (window.Addon == 1) {
 					if (TC.Count + (Addons.TabPlus.opt.New ? 1 : 0) != tabs.length) {
 						o = null;
 					}
-				}
+				}		
 			}
 			if (!o) {
 				Addons.TabPlus.SelectionChanged(TC, TC.Id);
 			}
-		}
+11		}
 	});
 
 	AddEvent("Create", function (Ctrl)
@@ -671,7 +671,7 @@ if (window.Addon == 1) {
 	Addons.TabPlus.ImgLock = MakeImgSrc(item.getAttribute("IconLock") || "bitmap:ieframe.dll,545,13,2", 0, true, 13);
 	Addons.TabPlus.ImgClose = MakeImgSrc(item.getAttribute("IconClose") || "bitmap:ieframe.dll,545,13,1", 0, true, 13);
 } else {
-	var ado = OpenAdodbFromTextFile("addons\\"+ Addon_Id + "\\options.html");
+	var ado = OpenAdodbFromTextFile("addons\\" + Addon_Id + "\\options.html");
 	if (ado) {
 		var Icon = document.F.Icon;
 		if (Icon) {

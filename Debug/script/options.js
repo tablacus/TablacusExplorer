@@ -1296,9 +1296,9 @@ function ApplyOptions()
 		hwnd = hwnd1;
 	}
 	if (!api.IsZoomed(hwnd) && !api.IsIconic(hwnd)) {
-		var r = Math.abs(MainWindow.DefaultFont.lfHeight) / 1152;
-		te.Data.Conf_OptWidth = api.LowPart(o.offsetWidth) / screen.deviceXDPI / r;
-		te.Data.Conf_OptHeight = api.LowPart(o.offsetHeight) / screen.deviceYDPI / r;
+		var r = 12 / (Math.abs(MainWindow.DefaultFont.lfHeight) || 12);
+		te.Data.Conf_OptWidth = api.LowPart(o.offsetWidth) * r;
+		te.Data.Conf_OptHeight = api.LowPart(o.offsetHeight) * r;
 	}
 	SetChanged(ReplaceMenus);
 	for (var i in document.F.elements) {
