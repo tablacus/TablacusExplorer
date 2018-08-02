@@ -556,8 +556,9 @@ function SetOptions(fnYes, fnNo)
 					if (fnYes) {
 						fnYes();
 					}
+					return true;
 				}
-				return true;
+				return false;
 			default:
 				return false;
 		}
