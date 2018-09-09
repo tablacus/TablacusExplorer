@@ -22,10 +22,8 @@ if (server) {
 		}
 		if (df < 6000) {
 			WScript.Sleep(500);
-		} else {
-			if (wsh.Popup(args(2), 5, TITLE, 1) == 2) {
-				WScript.Quit();
-			}
+		} else if (wsh.Popup(args(2), 5, TITLE, 1) == 2) {
+			WScript.Quit();
 		}
 	}
 } else {

@@ -3781,7 +3781,7 @@ BOOL AdjustIDList(LPITEMIDLIST *ppidllist, int nCount)
 			ILRemoveLastID(ppidllist[0]);
 			nCommon--;
 		}
-		while (!ILIsEqual(pidl, ppidllist[0])) {
+		while (nCommon > 0 && !ILIsEqual(pidl, ppidllist[0])) {
 			ILRemoveLastID(pidl);
 			ILRemoveLastID(ppidllist[0]);
 			nCommon--;
