@@ -144,7 +144,7 @@ if (window.Addon == 1) {
 								s.push('<span class="drive">', res[1], '</span>');
 							}
 						}
-						s.push('<img src="', img, '" /></td>');
+						s.push('<img src="', img, '" style="width: 1pc; height: 1pc"/></td>');
 						w -= 20;
 					} else if (this.opt.Drive) {
 						s.push('<td style="padding-right: 3px; vertical-align: middle; width: 12px">');

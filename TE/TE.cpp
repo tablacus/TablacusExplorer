@@ -998,6 +998,7 @@ TEmethod methodSB[] = {
 	{ START_OnFunc + SB_TotalFileSize, "TotalFileSize" },
 	{ START_OnFunc + SB_OnIncludeObject, "OnIncludeObject" },
 	{ START_OnFunc + SB_AltSelectedItems, "AltSelectedItems" },
+	{ START_OnFunc + SB_VirtualName, "VirtualName" },
 	{ 0, NULL }
 };
 
@@ -4824,7 +4825,7 @@ VOID teCustomDraw(int nFunc, CteShellBrowser *pSB, CteTreeView *pTV, IShellItem 
 		} else {
 			teSetObject(&pv[4], pTV);
 			pvcd2 = new CteMemory(sizeof(NMTVCUSTOMDRAW), pvcd, 1, L"NMTVCUSTOMDRAW");
-			if (psi) {
+			if (psi && lpnmcd->rc.bottom) {
 				teGetIDListFromObject(psi, &pidl);
 				TVHITTESTINFO ht = { 0 };
 				ht.pt.x = (lpnmcd->rc.left + lpnmcd->rc.right) / 2;
@@ -5796,6 +5797,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		if (hwnd != pSB->m_hwndDV) {
 			return 0;
 		}
+		BOOL bDoCallProc = TRUE;
 		LRESULT lResult = S_FALSE;
 		if (msg == WM_NOTIFY) {
 			if (((LPNMHDR)lParam)->code == LVN_GETDISPINFO) {
@@ -5803,6 +5805,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				if (lpDispInfo->item.mask & LVIF_TEXT) {
 					if (pSB->m_param[SB_ViewMode] == FVM_DETAILS) {
 						if (lpDispInfo->item.iSubItem == pSB->m_nFolderSizeIndex) {
+							bDoCallProc = FALSE;
 							lResult = CallWindowProc((WNDPROC)pSB->m_DefProc, hwnd, msg, wParam, lParam);
 							IFolderView *pFV;
 							LPITEMIDLIST pidl;
@@ -5813,7 +5816,6 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 								}
 								pFV->Release();
 							}
-							return lResult;
 						}
 						if (lpDispInfo->item.iSubItem == pSB->m_nLabelIndex && g_pOnFunc[TE_Labels]) {
 							IFolderView *pFV;
@@ -5828,7 +5830,10 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							return 0;
 						}
 						if (lpDispInfo->item.iSubItem == pSB->m_nSizeIndex && g_param[TE_SizeFormat]) {
-							lResult = CallWindowProc((WNDPROC)pSB->m_DefProc, hwnd, msg, wParam, lParam);
+							if (bDoCallProc) {
+								bDoCallProc = FALSE;
+								lResult = CallWindowProc((WNDPROC)pSB->m_DefProc, hwnd, msg, wParam, lParam);
+							}
 							if (lpDispInfo->item.pszText[0]) {
 								IFolderView *pFV;
 								LPITEMIDLIST pidl;
@@ -5840,11 +5845,13 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 									pFV->Release();
 								}
 							}
-							return lResult;
 						}
 					}
 					if (lpDispInfo->item.iSubItem == 0 && pSB->m_dwNameFormat) {
-						lResult = CallWindowProc((WNDPROC)pSB->m_DefProc, hwnd, msg, wParam, lParam);
+						if (bDoCallProc) {
+							bDoCallProc = FALSE;
+							lResult = CallWindowProc((WNDPROC)pSB->m_DefProc, hwnd, msg, wParam, lParam);
+						}
 						if (pSB->m_dwNameFormat & 1) {
 							LPWSTR lpEsc = StrChr(lpDispInfo->item.pszText, '%');
 							try {
@@ -5860,7 +5867,39 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 #endif
 							}
 						}
-						return lResult;
+						if (pSB->m_ppDispatch[SB_VirtualName]) {
+							IShellFolder2 *pSF2;
+							BSTR bs;
+							VARIANT v;
+							VariantInit(&v);
+							if SUCCEEDED(pSB->QueryInterface(IID_PPV_ARGS(&pSF2))) {
+								IFolderView *pFV;
+								LPITEMIDLIST pidl;
+								if SUCCEEDED(pSB->m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
+									if SUCCEEDED(pFV->Item(lpDispInfo->item.iItem, &pidl)) {
+										if SUCCEEDED(teGetDisplayNameBSTR(pSF2, pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING, &bs)) {
+											if (::SysStringLen(bs)) {
+												if (pSB->m_dwNameFormat & 0x10000) {
+													teGetProperty(pSB->m_ppDispatch[SB_VirtualName], bs, &v);
+												} else {
+													VARIANTARG *pv = GetNewVARIANT(1);
+													teSetBSTR(&pv[0], &bs, -1);
+													Invoke4(pSB->m_ppDispatch[SB_VirtualName], &v, 1, pv);
+												}
+												if (v.vt == VT_BSTR) {
+													lstrcpyn(lpDispInfo->item.pszText, v.bstrVal, lpDispInfo->item.cchTextMax);
+												}
+												::VariantClear(&v);
+											}
+											teSysFreeString(&bs);
+										}
+									}
+									teCoTaskMemFree(pidl);
+									pFV->Release();
+								}
+								pSF2->Release();
+							}
+						}
 					}
 					if (g_bsDateTimeFormat && pSB->m_pDTColumns && lpDispInfo->item.iSubItem >= 0) {
 						WORD ix = pSB->m_pDTColumns[lpDispInfo->item.iSubItem];
@@ -5912,10 +5951,12 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						pFV->Release();
 						if (GetIntFromVariantClear(&vResult)) {
 							lpDispInfo->item.mask &= ~LVIF_IMAGE;
-							lResult = CallWindowProc((WNDPROC)pSB->m_DefProc, hwnd, msg, wParam, lParam);
+							if (bDoCallProc) {
+								bDoCallProc = FALSE;
+								lResult = CallWindowProc((WNDPROC)pSB->m_DefProc, hwnd, msg, wParam, lParam);
+							}
 							lpDispInfo->item.mask |= LVIF_IMAGE;
 							lpDispInfo->item.iImage = -1;
-							return lResult;
 						}
 					}
 				}
@@ -6104,7 +6145,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		if (hwnd != pSB->m_hwndDV) {
 			return 0;
 		}
-		return lResult ? CallWindowProc((WNDPROC)pSB->m_DefProc, hwnd, msg, wParam, lParam) : 0;
+		return bDoCallProc && lResult ? CallWindowProc((WNDPROC)pSB->m_DefProc, hwnd, msg, wParam, lParam) : lResult;
 	} catch (...) {
 		g_nException = 0;
 #ifdef _DEBUG
@@ -11727,6 +11768,7 @@ void CteShellBrowser::Init(CteTabCtrl *pTC, BOOL bNew)
 	m_nFolderSizeIndex = MAXINT;
 	m_nLabelIndex = MAXINT;
 	m_nSizeIndex = MAXINT;
+	m_dwNameFormat = 0;
 
 	m_pTV->Init(this, m_pTC->m_hwndStatic);
 	DoFunc(TE_OnCreate, this, E_NOTIMPL);
@@ -12253,7 +12295,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	m_clrText = GetSysColor(COLOR_WINDOWTEXT);
 	m_clrBk = GetSysColor(COLOR_WINDOW);
 	m_clrTextBk = m_clrBk;
-	m_dwNameFormat = 0;
+	m_dwNameFormat &= 0xffff0000;
 	m_bSetListColumnWidth = TRUE;
 	teCoTaskMemFree(m_pidl);
 	m_pidl = pidl;
@@ -13897,7 +13939,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			//NameFormat
 			case 0x10000014:
 				if (nArg >= 0) {
-					m_dwNameFormat = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+					m_dwNameFormat = (m_dwNameFormat & 0xffff0000) | (GetIntFromVariant(&pDispParams->rgvarg[nArg]) & 0xffff);
 				}
 				teSetLong(pVarResult, m_dwNameFormat);
 				return S_OK;
@@ -14627,6 +14669,16 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			default:
 				if (dispIdMember >= START_OnFunc && dispIdMember < START_OnFunc + Count_SBFunc) {
 					teInvokeObject(&m_ppDispatch[dispIdMember - START_OnFunc], wFlags, pVarResult, nArg, pDispParams->rgvarg);
+					if (nArg >= 0 && dispIdMember == SB_VirtualName + START_OnFunc) {
+						m_dwNameFormat &= 0xffff;
+						if (m_ppDispatch[SB_VirtualName]) {
+							VARIANT v;
+							VariantInit(&v);
+							teGetProperty(m_ppDispatch[SB_VirtualName], L"call", &v);
+							m_dwNameFormat |= v.vt != VT_DISPATCH ? 0x10000 : 0x20000;
+							VariantClear(&v);
+						}
+					}
 					return S_OK;
 				}
 		}
