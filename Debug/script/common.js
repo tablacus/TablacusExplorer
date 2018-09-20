@@ -2277,7 +2277,7 @@ GetAddonInfo = function (Id)
 {
 	var info = [];
 
-	var path = fso.GetParentFolderName(api.GetModuleFileName(null));
+	var path = te.Data.Installed;
 	var xml = te.CreateObject("Msxml2.DOMDocument");
 	xml.async = false;
 	var xmlfile = fso.BuildPath(path, "addons\\" + Id + "\\config.xml");
@@ -2323,7 +2323,7 @@ OpenXml = function (strFile, bAppData, bEmpty, strInit)
 		return xml;
 	}
 	if (!bAppData) {
-		path = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "config\\" + strFile);
+		path = fso.BuildPath(te.Data.Installed, "config\\" + strFile);
 		if (fso.FileExists(path) && xml.load(path)) {
 			api.SHFileOperation(FO_MOVE, path, fso.BuildPath(te.Data.DataFolder, "config"), FOF_SILENT | FOF_NOCONFIRMATION, false);
 			return xml;
@@ -2335,7 +2335,7 @@ OpenXml = function (strFile, bAppData, bEmpty, strInit)
 			return xml;
 		}
 	}
-	path = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "init\\" + strFile);
+	path = fso.BuildPath(te.Data.Installed, "init\\" + strFile);
 	if (fso.FileExists(path) && xml.load(path)) {
 		return xml;
 	}
@@ -2437,7 +2437,7 @@ function CheckUpdate2(xhr, url, arg1)
 	arg.temp = fso.BuildPath(fso.GetSpecialFolder(2).Path, "tablacus");
 	CreateFolder2(arg.temp);
 	wsh.CurrentDirectory = arg.temp;
-	arg.InstalledFolder = fso.GetParentFolderName(api.GetModuleFileName(null));
+	arg.InstalledFolder = te.Data.Installed;
 	arg.zipfile = fso.BuildPath(arg.temp, arg.file);
 	arg.temp += "\\explorer";
 	DeleteItem(arg.temp);
@@ -2487,7 +2487,7 @@ function CheckUpdate3(xhr, url, arg)
 
 function ShowAbout()
 {
-	ShowDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\dialog.html"), { MainWindow: MainWindow, Query: "about", Modal: false, width: 640, height: 360});
+	ShowDialog(fso.BuildPath(te.Data.Installed, "script\\dialog.html"), { MainWindow: MainWindow, Query: "about", Modal: false, width: 640, height: 360});
 }
 
 function EscapeUpdateFile(s)
@@ -2556,7 +2556,7 @@ InputDialog = function (text, defaultText)
 
 AddonOptions = function (Id, fn, Data, bNew)
 {
-	var sParent = fso.GetParentFolderName(api.GetModuleFileName(null));
+	var sParent = te.Data.Installed;
 	LoadLang2(fso.BuildPath(sParent, "addons\\" + Id + "\\lang\\" + GetLangId() + ".xml"));
 	var items = te.Data.Addons.getElementsByTagName(Id);
 	if (!items.length) {
@@ -2582,7 +2582,7 @@ AddonOptions = function (Id, fn, Data, bNew)
 		Data.index = res[2];
 		sFeatures = 'Default';
 	}
-	sURL = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), sURL);
+	sURL = fso.BuildPath(te.Data.Installed, sURL);
 	var opt = {MainWindow: MainWindow, Data: Data, event: {}};
 	if (fn) {
 		opt.event.TEOk = fn;
@@ -2789,7 +2789,7 @@ CancelWindowRegistered = function ()
 
 ShowDialogEx = function (mode, w, h, ele)
 {
-	ShowDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\dialog.html"), { MainWindow: MainWindow, Query: mode, width: w, height: h, element: ele});
+	ShowDialog(fso.BuildPath(te.Data.Installed, "script\\dialog.html"), { MainWindow: MainWindow, Query: mode, width: w, height: h, element: ele});
 }
 
 ShowNew = function (Ctrl, pt, Mode)
@@ -2797,7 +2797,7 @@ ShowNew = function (Ctrl, pt, Mode)
 	var FV = GetFolderView(Ctrl, pt);
 	var path = api.GetDisplayNameOf(FV, SHGDN_FORPARSING | SHGDN_ORIGINAL);
 	if (/^[A-Z]:\\|^\\\\/i.test(path)) {
-		ShowDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\dialog.html"), { MainWindow: MainWindow, Query: "new", Mode: Mode, path: path, FV: FV, Modal: false, width: 480, height: 120});
+		ShowDialog(fso.BuildPath(te.Data.Installed, "script\\dialog.html"), { MainWindow: MainWindow, Query: "new", Mode: Mode, path: path, FV: FV, Modal: false, width: 480, height: 120});
 	}
 }
 
@@ -2830,7 +2830,7 @@ ShowIconEx = function (o)
 
 ShowLocationEx = function (s)
 {
-	ShowDialog(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\location.html"), {MainWindow: MainWindow, Data: s});
+	ShowDialog(fso.BuildPath(te.Data.Installed, "script\\location.html"), {MainWindow: MainWindow, Data: s});
 }
 
 function MakeKeySelect()
@@ -2919,7 +2919,7 @@ GetLangId = function (nDefault)
 	}
 	var lang = navigator.userLanguage.replace(/\-/, '_').toLowerCase();
 	if (nDefault != 2) {
-		if (!fso.FileExists(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "lang\\" + lang + ".xml"))) {
+		if (!fso.FileExists(fso.BuildPath(te.Data.Installed, "lang\\" + lang + ".xml"))) {
 			lang = lang.replace(/_.*/,"");
 		}
 	}
@@ -3204,7 +3204,7 @@ FindText = function ()
 OpenDialogEx = function (path, filter, bFilesOnly)
 {
 	var commdlg = te.CommonDialog;
-	var te_path = fso.GetParentFolderName(api.GetModuleFileName(null));
+	var te_path = te.Data.Installed;
 	var res = /^\.\.(\/.*)/.exec(path);
 	if (res) {
 		path = te_path + (res[1].replace(/\//g, "\\"));
@@ -3589,7 +3589,7 @@ OpenAdodbFromTextFile = function (fn)
 	}
 	fn = ExtractMacro(te, fn);
 	if (!/^[A-Z]:\\|^\\\\/i.test(fn)) {
-		fn = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), fn);
+		fn = fso.BuildPath(te.Data.Installed, fn);
 	}
 	var ado = api.CreateObject("ads");
 	var charset = "_autodetect_all";

@@ -402,7 +402,7 @@ LoadLang = function (bAppend)
 		MainWindow.Lang = {};
 		MainWindow.LangSrc = {};
 	}
-	var filename = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "lang\\" + GetLangId() + ".xml");
+	var filename = fso.BuildPath(te.Data.Installed, "lang\\" + GetLangId() + ".xml");
 	LoadLang2(filename);
 }
 
@@ -2086,7 +2086,7 @@ function ArrangeAddons()
 				if (!AddonId[Id]) {
 					var Enabled = api.LowPart(item.getAttribute("Enabled"));
 					if (Enabled & 6) {
-						LoadLang2(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\" + Id + "\\lang\\" + GetLangId() + ".xml"));
+						LoadLang2(fso.BuildPath(te.Data.Installed, "addons\\" + Id + "\\lang\\" + GetLangId() + ".xml"));
 					}
 					if (Enabled & 8) {
 						LoadAddon("vbs", Id, arError);
@@ -3491,34 +3491,43 @@ if (!te.Data) {
 	te.Data.Conf_ListDefault = true;
 
 	te.Data.Installed = fso.GetParentFolderName(api.GetModuleFileName(null));
-	var DataFolder = te.Data.Installed;
+	te.Data.DataFolder = te.Data.Installed;
+
+	var fn = function ()
+	{
+		te.Data.DataFolder = fso.BuildPath(api.GetDisplayNameOf(ssfAPPDATA, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), "Tablacus\\Explorer");
+		var ParentFolder = fso.GetParentFolderName(te.Data.DataFolder);
+		if (!fso.FolderExists(ParentFolder)) {
+			if (fso.CreateFolder(ParentFolder)) {
+				CreateFolder2(te.Data.DataFolder);
+			}
+		}
+	}
 
 	var pf = [ssfPROGRAMFILES, ssfPROGRAMFILESx86];
 	var x = api.sizeof("HANDLE") / 4;
 	for (var i = 0; i < x; i++) {
 		var s = api.GetDisplayNameOf(pf[i], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
 		var l = s.replace(/\s*\(x86\)$/i, "").length;
-		if (api.StrCmpNI(s, DataFolder, l) == 0) {
-			DataFolder = fso.BuildPath(api.GetDisplayNameOf(ssfAPPDATA, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), "Tablacus\\Explorer");
-			var ParentFolder = fso.GetParentFolderName(DataFolder);
-			if (!fso.FolderExists(ParentFolder)) {
-				if (fso.CreateFolder(ParentFolder)) {
-					CreateFolder2(DataFolder);
-				}
-			}
+		if (api.StrCmpNI(s, te.Data.DataFolder, l) == 0) {
+			fn();
 			break;
 		}
 	}
-	CreateFolder2(fso.BuildPath(DataFolder, "config"));
+	delete fn;
+	var s = fso.BuildPath(te.Data.DataFolder, "config");
+	CreateFolder2(s);
+	if (!fso.FolderExists(s)) {
+		fn();
+	}
 	if (!document.documentMode) {
-		var s = fso.BuildPath(DataFolder, "cache");
+		var s = fso.BuildPath(te.Data.DataFolder, "cache");
 		CreateFolder2(s);
 		CreateFolder2(fso.BuildPath(s, "bitmap"));
 		CreateFolder2(fso.BuildPath(s, "icon"));
 		CreateFolder2(fso.BuildPath(s, "file"));
 	}
 
-	te.Data.DataFolder = DataFolder;
 	te.Data.Conf_Lang = GetLangId();
 	te.Data.SHIL = api.CreateObject("Array");
 	for (var i = SHIL_JUMBO + 1; i--;) {
