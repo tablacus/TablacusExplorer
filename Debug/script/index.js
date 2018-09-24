@@ -2890,7 +2890,7 @@ g_basic =
 				Up: function (Ctrl, pt)
 				{
 					var FV = GetFolderView(Ctrl, pt);
-					FV && FV.Navigate(null, SBSP_PARENT | GetNavigateFlags(FV));
+					FV && FV.Navigate(null, SBSP_PARENT | GetNavigateFlags(FV, true));
 				},
 				Back: function (Ctrl, pt)
 				{

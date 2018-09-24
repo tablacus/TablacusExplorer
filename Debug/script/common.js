@@ -3346,12 +3346,12 @@ FindChildByClass = function (hwnd, s)
 	return null;
 }
 
-GetNavigateFlags = function (FV)
+GetNavigateFlags = function (FV, bParent)
 {
 	if (!FV && OpenMode != SBSP_NEWBROWSER) {
 		FV = te.Ctrl(CTRL_FV);
 	}
-	return api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_CONTROL) < 0 || (FV && FV.Data.Lock) ? SBSP_NEWBROWSER : OpenMode;
+	return (!bParent && api.GetKeyState(VK_MBUTTON) < 0) || api.GetKeyState(VK_CONTROL) < 0 || (FV && FV.Data.Lock) ? SBSP_NEWBROWSER : OpenMode;
 }
 
 AddEvent("ConfigChanged", function (s)
