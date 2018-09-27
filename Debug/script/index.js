@@ -926,19 +926,6 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 					}
 				}
 			}
-			if (msg == WM_MBUTTONUP) {
-				if (bLV && api.GetKeyState(VK_SHIFT) >= 0 && api.GetKeyState(VK_CONTROL) >= 0) {
-					var ar = eventTE.Mouse.List[g_.mouse.str];
-					if (ar && /^Selected Items$/i.test(ar[0][1])) {
-						var iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
-						if (iItem >= 0) {
-							Ctrl.SelectItem(iItem, SVSI_SELECT | SVSI_FOCUSED | SVSI_DESELECTOTHERS);
-						} else {
-							Ctrl.SelectItem(null, SVSI_DESELECTOTHERS);
-						}
-					}
-				}
-			}
 			if (g_.mouse.str.length >= 2 || /[45]/.test(g_.mouse.str) || (!IsDrag(pt, te.Data.pt) && strClass != WC_HEADER)) {
 				if (msg != WM_RBUTTONUP || g_.mouse.str.length < 2) {
 					hr = g_.mouse.Exec(te.CtrlFromWindow(g_.mouse.hwndGesture), g_.mouse.hwndGesture, pt);
@@ -995,6 +982,16 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 					g_.mouse.RButton = iItem;
 					g_.mouse.StartGestureTimer();
 					return S_OK;
+				}
+			}
+		}
+		if (msg == WM_MBUTTONDOWN) {
+			if (bLV && te.Data.Conf_WheelSelect && api.GetKeyState(VK_SHIFT) >= 0 && api.GetKeyState(VK_CONTROL) >= 0) {
+				var iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
+				if (iItem >= 0) {
+					Ctrl.SelectItem(iItem, SVSI_SELECT | SVSI_FOCUSED | SVSI_DESELECTOTHERS);
+				} else {
+					Ctrl.SelectItem(null, SVSI_DESELECTOTHERS);
 				}
 			}
 		}
@@ -2358,6 +2355,7 @@ KeyExecEx = function (Ctrl, mode, nKey, hwnd)
 function InitMouse()
 {
 	te.Data.Conf_Gestures = isFinite(te.Data.Conf_Gestures) ? Number(te.Data.Conf_Gestures) : 2;
+	te.Data.Conf_WheelSelect = isFinite(te.Data.Conf_WheelSelect) ? Number(te.Data.Conf_WheelSelect) : 1;
 	if (/string/i.test(typeof te.Data.Conf_TrailColor)) {
 		te.Data.Conf_TrailColor = GetWinColor(te.Data.Conf_TrailColor);
 	}

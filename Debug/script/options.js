@@ -275,8 +275,8 @@ function SetCheckbox(o)
 	}
 	var res = /^(Tab|Tree|View|Conf)/.exec(ar[0]);
 	if (res) {
-		g_Chg[res[1]] = true;
-		g_bChanged = true;
+		MainWindow.g_.OptionsWindow.g_Chg[res[1]] = true;
+		MainWindow.g_.OptionsWindow.g_bChanged = true;
 	}
 }
 
