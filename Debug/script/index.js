@@ -282,7 +282,7 @@ LoadConfig = function (bDog)
 				if (w && h) {
 					api.MoveWindow(te.hwnd, x, y, w, h, true);
 				}
-				api.GetWindowRect(te.hwnd, g_.rcWindow);
+				api.GetWindowRect(te.hwnd, te.Data.rcWindow);
 			}
 			te.CmdShow = item.getAttribute("CmdShow");
 		}
@@ -1536,7 +1536,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 						}
 					} else {
 						if (!api.IsZoomed(te.hwnd) && !api.IsIconic(te.hwnd)) {
-							api.GetWindowRect(te.hwnd, g_.rcWindow);
+							api.GetWindowRect(te.hwnd, te.Data.rcWindow);
 						}
 					}
 					break;
@@ -3464,6 +3464,7 @@ if (!te.Data) {
 	te.Data.AddonsData = api.CreateObject("Object");
 	te.Data.Fonts = api.CreateObject("Object");
 	te.Data.Exchange = api.CreateObject("Object");
+	te.Data.rcWindow = api.Memory("RECT");
 	//Default Value
 	te.Data.Tab_Style = TCS_HOTTRACK | TCS_MULTILINE | TCS_RAGGEDRIGHT | TCS_SCROLLOPPOSITE | TCS_HOTTRACK | TCS_TOOLTIPS;
 	te.Data.Tab_Align = TCA_TOP;

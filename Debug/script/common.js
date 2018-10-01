@@ -17,7 +17,6 @@ g_ptDrag = api.Memory("POINT");
 objHover = null;
 Addons = {"_stack": []};
 g_ = {
-	rcWindow: api.Memory("RECT"),
 	Colors: {},
 	Panels: {},
 	KeyCode: {},
@@ -837,12 +836,12 @@ SaveXml = function (filename, all)
 	if (all) {
 		var item = xml.createElement("Window");
 		if (!api.IsZoomed(te.hwnd) && !api.IsIconic(te.hwnd)) {
-			api.GetWindowRect(te.hwnd, g_.rcWindow);
+			api.GetWindowRect(te.hwnd, te.Data.rcWindow);
 		}
-		item.setAttribute("Left", g_.rcWindow.left);
-		item.setAttribute("Top", g_.rcWindow.top);
-		item.setAttribute("Width", g_.rcWindow.right - g_.rcWindow.left);
-		item.setAttribute("Height", g_.rcWindow.bottom - g_.rcWindow.top);
+		item.setAttribute("Left", te.Data.rcWindow.left);
+		item.setAttribute("Top", te.Data.rcWindow.top);
+		item.setAttribute("Width", te.Data.rcWindow.right - te.Data.rcWindow.left);
+		item.setAttribute("Height", te.Data.rcWindow.bottom - te.Data.rcWindow.top);
 		item.setAttribute("CmdShow", api.IsZoomed(te.hwnd) ? SW_SHOWMAXIMIZED : te.CmdShow);
 		item.setAttribute("DPI", screen.deviceYDPI);
 		root.appendChild(item);
