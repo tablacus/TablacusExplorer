@@ -1895,24 +1895,21 @@ function GetElementValue(o)
 
 function SetElementValue(o, s)
 {
-	if (o.type) {
+	if (o && o.type) {
 		if (/checkbox/i.test(o.type)) {
 			o.checked = api.LowPart(s);
 			return;
 		}
-		if (/text|number|url|password|range|color|date|time/i.test(o.type)) {
-			o.value = s;
-			return;
-		}
 		if (/select/i.test(o.type)) {
-			var i = o.length;
-			while (--i >= 0) {
-				if (o(i).value == s) {
+			for (var i = o.options.length; i-- > 0;) {
+				if (o.options[i].value == s) {
 					o.selectedIndex = i;
 					break;
 				}
 			}
+			return;
 		}
+		o.value = s;
 	}
 }
 

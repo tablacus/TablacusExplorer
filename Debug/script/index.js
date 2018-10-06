@@ -1470,11 +1470,11 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 						Exec(Ctrl, "Reload customize", "Tools");
 					}
 					if (g_.TEData) {
-						te.Layout = g_.TEData.Layout;
 						var FV = te.Ctrl(CTRL_FV);
 						if (FV) {
 							FV.CurrentViewMode = g_.TEData.ViewMode;
 						}
+						te.Layout = g_.TEData.Layout;
 						delete g_.TEData;
 					}
 					if (g_.FVData) {
@@ -2107,6 +2107,14 @@ function ArrangeAddons()
 	}
 	RunEvent1("Load");
 	delete eventTE.load;
+	var hwnd, p = api.Memory("WCHAR", 11);
+	p.Write(0, VT_LPWSTR, "ShellState");
+	var cFV = te.Ctrls(CTRL_FV);
+	for (var i in cFV) {
+		if (hwnd = cFV[i].hwndView) {
+			api.SendMessage(hwnd, WM_SETTINGCHANGE, 0, p);
+		}
+	}
 	DeviceChanged(te);
 }
 
