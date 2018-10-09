@@ -463,7 +463,7 @@ function SwitchMenus(o)
 {
 	if (g_x.Menus) {
 		g_x.Menus.style.display = "none";
-		var o = o.form.elements.Menus;
+		var o = o || document.F.elements.Menus;
 		for (var i = o.length; i-- > 0;) {
 			var a = o[i].value.split(",");
 			if ("Menus_" + a[0] == g_x.Menus.name) {
