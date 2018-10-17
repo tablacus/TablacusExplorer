@@ -1990,7 +1990,7 @@ function PortableX(Id)
 	}
 	var o = GetElement(Id);
 	var s = fso.GetDriveName(api.GetModuleFileName(null));
-	SetValue(o, o.value.replace(new RegExp('^("?)' + s, "igm"), "$1%Installed%").replace(new RegExp('( "?)' + s, "igm"), "$1%Installed%"));
+	SetValue(o, o.value.replace(wsh.ExpandEnvironmentStrings("%UserProfile%"), "%UserProfile%").replace(new RegExp('^("?)' + s, "igm"), "$1%Installed%").replace(new RegExp('( "?)' + s, "igm"), "$1%Installed%"));
 }
 
 function GetElement(Id)
