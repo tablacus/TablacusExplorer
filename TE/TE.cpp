@@ -10463,6 +10463,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 										}
 										pSB->Show(TRUE, 0);
 									}
+									pSB->SetFolderFlags(FALSE);
 									MoveWindow(pSB->m_hwnd, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, FALSE);
 									if (pSB->m_hwndAlt) {
 										MoveWindow(pSB->m_hwndAlt, 0, 0, rc.right - rc.left, rc.bottom - rc.top, FALSE);
@@ -10976,7 +10977,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	//Initialize FolderView & TreeView settings
 	g_paramFV[SB_Type] = 1;
 	g_paramFV[SB_ViewMode] = FVM_DETAILS;
-	g_paramFV[SB_FolderFlags] = FWF_SHOWSELALWAYS | FWF_AUTOARRANGE;
+	g_paramFV[SB_FolderFlags] = FWF_SHOWSELALWAYS;
 	g_paramFV[SB_IconSize] = 0;
 	g_paramFV[SB_Options] = EBO_ALWAYSNAVIGATE;
 	g_paramFV[SB_ViewFlags] = 0;
@@ -12823,7 +12824,11 @@ VOID CteShellBrowser::SetFolderFlags(BOOL bGetIconSize)
 	if (m_pShellView) {
 		IFolderView2 *pFV2;
 		if (SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2)))) {
-			pFV2->SetCurrentFolderFlags(~(FWF_NOENUMREFRESH | FWF_USESEARCHFOLDER), m_param[SB_FolderFlags]);
+			DWORD dwFolderFlags = m_param[SB_FolderFlags];
+			if (!m_bVisible) {
+				dwFolderFlags &= ~FWF_AUTOARRANGE;
+			}
+			pFV2->SetCurrentFolderFlags(~(FWF_NOENUMREFRESH | FWF_USESEARCHFOLDER), dwFolderFlags);
 			pFV2->Release();
 #ifdef _2000XP
 		} else {

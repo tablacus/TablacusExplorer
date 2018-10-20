@@ -3481,7 +3481,7 @@ if (!te.Data) {
 
 	te.Data.View_Type = CTRL_SB;
 	te.Data.View_ViewMode = FVM_DETAILS;
-	te.Data.View_fFlags = FWF_SHOWSELALWAYS | FWF_AUTOARRANGE;
+	te.Data.View_fFlags = FWF_SHOWSELALWAYS;
 	te.Data.View_Options = EBO_SHOWFRAMES | EBO_ALWAYSNAVIGATE;
 	te.Data.View_ViewFlags = CDB2GVF_SHOWALLFILES;
 	te.Data.View_IconSize = 0;
