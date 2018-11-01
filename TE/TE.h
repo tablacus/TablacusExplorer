@@ -27,6 +27,8 @@
 #include <wincodecsdk.h>
 #include <Thumbcache.h>
 #include <mmsystem.h>
+#include <WinIoCtl.h>
+
 #include <list>
 #include <vector>
 #ifndef _2000XP
@@ -237,7 +239,14 @@ typedef LSTATUS (APIENTRY* LPFNRegQueryValueExW)(HKEY hKey, LPCWSTR lpValueName,
 #define LOAD_LIBRARY_SEARCH_USER_DIRS 0x00000400
 #endif
 
-	
+#ifndef IsReparseTagMicrosoft
+#define IsReparseTagMicrosoft(_tag)             (((_tag) & 0x80000000))
+#endif
+
+#ifndef IO_REPARSE_TAG_MOUNT_POINT
+#define IO_REPARSE_TAG_MOUNT_POINT              (0xA0000003L)
+#endif
+
 //Tablacus DLL Add-ons
 typedef VOID (WINAPI * LPFNGetProcObjectW)(VARIANT *pVarResult);
 
@@ -543,6 +552,32 @@ struct TEGroupBy
 	BSTR bs;
 	DWORD dwSessionId;
 };
+
+typedef struct _REPARSE_DATA_BUFFER {
+  ULONG  ReparseTag;
+  USHORT ReparseDataLength;
+  USHORT Reserved;
+  union {
+    struct {
+      USHORT SubstituteNameOffset;
+      USHORT SubstituteNameLength;
+      USHORT PrintNameOffset;
+      USHORT PrintNameLength;
+      ULONG  Flags;
+      WCHAR  PathBuffer[1];
+    } SymbolicLinkReparseBuffer;
+    struct {
+      USHORT SubstituteNameOffset;
+      USHORT SubstituteNameLength;
+      USHORT PrintNameOffset;
+      USHORT PrintNameLength;
+      WCHAR  PathBuffer[1];
+    } MountPointReparseBuffer;
+    struct {
+      UCHAR DataBuffer[1];
+    } GenericReparseBuffer;
+  } DUMMYUNIONNAME;
+} REPARSE_DATA_BUFFER, *PREPARSE_DATA_BUFFER;
 
 const CLSID CLSID_ShellShellNameSpace       = {0x2F2F1F96, 0x2BC1, 0x4b1c, { 0xBE, 0x28, 0xEA, 0x37, 0x74, 0xF4, 0x67, 0x6A}};
 const CLSID CLSID_JScriptChakra             = {0x16d51579, 0xa30b, 0x4c8b, { 0xa2, 0x76, 0x0f, 0xf4, 0xdc, 0x41, 0xe7, 0x55}};
@@ -1140,6 +1175,7 @@ public:
 	int			m_nFolderSizeIndex;
 	int			m_nLabelIndex;
 	int			m_nSizeIndex;
+	int			m_nLinkTargetIndex;
 	int			m_nSB;
 	int			m_nUnload;
 	int			m_nFocusItem;

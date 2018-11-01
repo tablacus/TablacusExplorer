@@ -5846,6 +5846,50 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 								}
 							}
 						}
+						if (lpDispInfo->item.iSubItem == pSB->m_nLinkTargetIndex) {
+							if (bDoCallProc) {
+								bDoCallProc = FALSE;
+								lResult = CallWindowProc((WNDPROC)pSB->m_DefProc, hwnd, msg, wParam, lParam);
+							}
+							if (!lpDispInfo->item.pszText[0]) {
+								IFolderView *pFV;
+								LPITEMIDLIST pidl;
+								if SUCCEEDED(pSB->m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
+									if SUCCEEDED(pFV->Item(lpDispInfo->item.iItem, &pidl)) {
+										WIN32_FIND_DATA wfd;
+										if SUCCEEDED(SHGetDataFromIDList(pSB->m_pSF2, pidl, SHGDFIL_FINDDATA, &wfd, sizeof(WIN32_FIND_DATA))) {
+											if (wfd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
+												BSTR bs;
+												if SUCCEEDED(teGetDisplayNameBSTR(pSB->m_pSF2, pidl, SHGDN_FORPARSING, &bs)) {
+													HANDLE hFile = CreateFile(bs, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, NULL);
+													if (hFile != INVALID_HANDLE_VALUE) {
+														BYTE buf[MAXIMUM_REPARSE_DATA_BUFFER_SIZE];
+														REPARSE_DATA_BUFFER *tpReparseDataBuffer = (_REPARSE_DATA_BUFFER*)buf;
+														DWORD dwRet = 0;
+														if (DeviceIoControl(hFile, FSCTL_GET_REPARSE_POINT, NULL, 0, tpReparseDataBuffer,
+															MAXIMUM_REPARSE_DATA_BUFFER_SIZE, &dwRet, NULL)) {
+															if (IsReparseTagMicrosoft(tpReparseDataBuffer->ReparseTag)) {
+																if (tpReparseDataBuffer->ReparseTag == IO_REPARSE_TAG_MOUNT_POINT) {
+																	LPWSTR lpPathBuffer = (LPWSTR)tpReparseDataBuffer->MountPointReparseBuffer.PathBuffer;
+																	LPWSTR lpPath = &lpPathBuffer[tpReparseDataBuffer->MountPointReparseBuffer.SubstituteNameOffset / 2];
+																	if (teStartsText(L"\\??\\", lpPath)) {
+																		lpPath += 4;
+																	}
+																	lstrcpyn(lpDispInfo->item.pszText, lpPath, lpDispInfo->item.cchTextMax);
+																}
+															}
+														}
+														CloseHandle(hFile);
+													}
+												}
+											}
+										}
+									}
+									teCoTaskMemFree(pidl);
+									pFV->Release();
+								}
+							}
+						}
 					}
 					if (lpDispInfo->item.iSubItem == 0 && pSB->m_dwNameFormat) {
 						if (bDoCallProc) {
@@ -11769,6 +11813,7 @@ void CteShellBrowser::Init(CteTabCtrl *pTC, BOOL bNew)
 	m_nFolderSizeIndex = MAXINT;
 	m_nLabelIndex = MAXINT;
 	m_nSizeIndex = MAXINT;
+	m_nLinkTargetIndex = MAXINT;
 	m_dwNameFormat = 0;
 
 	m_pTV->Init(this, m_pTC->m_hwndStatic);
@@ -12161,6 +12206,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	m_bRefreshLator = FALSE;
 	m_nFolderSizeIndex = MAXINT;
 	m_nLabelIndex = MAXINT;
+	m_nLinkTargetIndex = MAXINT;
 	m_bRegenerateItems = FALSE;
 	m_nSorting = TESORTING;
 	GetNewObject(&m_ppDispatch[SB_TotalFileSize]);
@@ -12744,6 +12790,13 @@ BOOL CteShellBrowser::SetActive(BOOL bForce)
 		}
 	}
 	if (m_pShellView) {
+		BYTE lpKeyState[256];
+		GetKeyboardState(lpKeyState);
+		BYTE ksShift = lpKeyState[VK_SHIFT];
+		if (ksShift & 0x80) {
+			lpKeyState[VK_SHIFT] &= ~0x80;
+			SetKeyboardState(lpKeyState);
+		}
 		if (IsChild(m_hwnd, hwnd)) {
 			SetFocus(m_hwnd);
 		}
@@ -12756,6 +12809,10 @@ BOOL CteShellBrowser::SetActive(BOOL bForce)
 #ifdef _DEBUG
 		g_strException = L"SetActive";
 #endif
+		}
+		if (ksShift & 0x80) {
+			lpKeyState[VK_SHIFT] = ksShift;
+			SetKeyboardState(lpKeyState);
 		}
 	}
 	return TRUE;
@@ -12845,6 +12902,7 @@ VOID CteShellBrowser::InitFolderSize()
 	m_nFolderSizeIndex = MAXINT;
 	m_nLabelIndex = MAXINT;
 	m_nSizeIndex = MAXINT;
+	m_nLinkTargetIndex = MAXINT;
 	if (m_pDTColumns) {
 		delete [] m_pDTColumns;
 		m_pDTColumns = NULL;
@@ -12856,6 +12914,7 @@ VOID CteShellBrowser::InitFolderSize()
 			BSTR bsTotalFileSize = tePSGetNameFromPropertyKeyEx(PKEY_TotalFileSize, 0, m_pShellView);
 			BSTR bsLabel = g_pOnFunc[TE_Labels] ? tePSGetNameFromPropertyKeyEx(PKEY_Contact_Label, 0, m_pShellView) : NULL;
 			BSTR bsSize = tePSGetNameFromPropertyKeyEx(PKEY_Size, 0, m_pShellView);
+			BSTR bsLinkTarget = tePSGetNameFromPropertyKeyEx(PKEY_Link_TargetParsingPath, 0, m_pShellView);
 			WCHAR szText[MAX_COLUMN_NAME_LEN];
 			HD_ITEM hdi = { HDI_TEXT | HDI_FORMAT, 0, szText, NULL, MAX_COLUMN_NAME_LEN };
 			m_pDTColumns = new WORD[nHeader];
@@ -12877,6 +12936,10 @@ VOID CteShellBrowser::InitFolderSize()
 						}
 						if (lstrcmpi(szText, bsLabel) == 0) {
 							m_nLabelIndex = i;
+							continue;
+						}
+						if (lstrcmpi(szText, bsLinkTarget) == 0) {
+							m_nLinkTargetIndex = i;
 							continue;
 						}
 #ifdef _2000XP
@@ -12908,6 +12971,7 @@ VOID CteShellBrowser::InitFolderSize()
 				SysFreeString(pColumns[i].name);
 			}
 
+			teSysFreeString(&bsLinkTarget);
 			teSysFreeString(&bsSize);
 			teSysFreeString(&bsLabel);
 			::SysFreeString(bsTotalFileSize);

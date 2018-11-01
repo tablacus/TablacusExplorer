@@ -8,8 +8,8 @@
 #define STRING(str) STRING2(str)
 #define STRING2(str) #str
 #define VER_Y		18
-#define VER_M		10
-#define VER_D		20
+#define VER_M		11
+#define VER_D		1
 
 //Icon
 #define IDI_TE		1
