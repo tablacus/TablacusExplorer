@@ -661,6 +661,7 @@ public:
 private:
 	LONG			m_cRef;
 	DWORD			m_dwSessionId;
+	DISPID			m_dispExtendedProperty;
 };
 
 class CteFolderItems : public FolderItems, public IDispatchEx, public IDataObject

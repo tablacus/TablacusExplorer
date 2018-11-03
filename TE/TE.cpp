@@ -1232,6 +1232,7 @@ BOOL GetVarArrayFromIDList(VARIANT *pv, LPITEMIDLIST pidl);
 HRESULT teGetDisplayNameFromIDList(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags);
 
 //Unit
+
 VOID teTranslateAccelerator(IDispatch *pdisp, MSG *pMsg, HRESULT *phr)
 {
 	if (pMsg->message == WM_KEYDOWN && GetKeyState(VK_CONTROL) < 0 && StrChrW(L"LNOP\x6b\x6d\xbb\xbd", (WCHAR)pMsg->wParam)) {
@@ -1988,6 +1989,34 @@ BOOL teStartsText(LPWSTR pszSub, LPCWSTR pszFile)
 		bResult = towlower(wc) == towlower(*pszFile++);
 	}
 	return bResult;
+}
+
+VOID teGetJunctionLinkTarget(BSTR bsPath, LPWSTR *ppszText, int cchTextMax)
+{
+	HANDLE hFile = CreateFile(bsPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, NULL);
+	if (hFile != INVALID_HANDLE_VALUE) {
+		BYTE buf[MAXIMUM_REPARSE_DATA_BUFFER_SIZE];
+		REPARSE_DATA_BUFFER *tpReparseDataBuffer = (_REPARSE_DATA_BUFFER*)buf;
+		DWORD dwRet = 0;
+		if (DeviceIoControl(hFile, FSCTL_GET_REPARSE_POINT, NULL, 0, tpReparseDataBuffer,
+			MAXIMUM_REPARSE_DATA_BUFFER_SIZE, &dwRet, NULL)) {
+			if (IsReparseTagMicrosoft(tpReparseDataBuffer->ReparseTag)) {
+				if (tpReparseDataBuffer->ReparseTag == IO_REPARSE_TAG_MOUNT_POINT) {
+					LPWSTR lpPathBuffer = (LPWSTR)tpReparseDataBuffer->MountPointReparseBuffer.PathBuffer;
+					LPWSTR lpPath = &lpPathBuffer[tpReparseDataBuffer->MountPointReparseBuffer.SubstituteNameOffset / 2];
+					if (teStartsText(L"\\??\\", lpPath)) {
+						lpPath += 4;
+					}
+					if (*ppszText) {
+						lstrcpyn(*ppszText, lpPath, cchTextMax);
+					} else {
+						*ppszText = ::SysAllocString(lpPath);
+					}
+				}
+			}
+		}
+		CloseHandle(hFile);
+	}
 }
 
 BOOL tePathMatchSpec1(LPCWSTR pszFile, LPWSTR pszSpec, WCHAR wSpecEnd)
@@ -4310,10 +4339,7 @@ BOOL GetFolderItemFromIDList2(FolderItem **ppid, LPITEMIDLIST pidl)
 
 BOOL GetFolderItemFromIDList(FolderItem **ppid, LPITEMIDLIST pidl)
 {
-	if (pidl && GetFolderItemFromIDList2(ppid, pidl)) {
-		return TRUE;
-	}
-	BOOL Result;
+	BOOL Result = FALSE;
 	CteFolderItem *pPF = new CteFolderItem(NULL);
 	if SUCCEEDED(pPF->Initialize(pidl)) {
 		Result = SUCCEEDED(pPF->QueryInterface(IID_PPV_ARGS(ppid)));
@@ -5861,26 +5887,8 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 											if (wfd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
 												BSTR bs;
 												if SUCCEEDED(teGetDisplayNameBSTR(pSB->m_pSF2, pidl, SHGDN_FORPARSING, &bs)) {
-													HANDLE hFile = CreateFile(bs, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, NULL);
-													if (hFile != INVALID_HANDLE_VALUE) {
-														BYTE buf[MAXIMUM_REPARSE_DATA_BUFFER_SIZE];
-														REPARSE_DATA_BUFFER *tpReparseDataBuffer = (_REPARSE_DATA_BUFFER*)buf;
-														DWORD dwRet = 0;
-														if (DeviceIoControl(hFile, FSCTL_GET_REPARSE_POINT, NULL, 0, tpReparseDataBuffer,
-															MAXIMUM_REPARSE_DATA_BUFFER_SIZE, &dwRet, NULL)) {
-															if (IsReparseTagMicrosoft(tpReparseDataBuffer->ReparseTag)) {
-																if (tpReparseDataBuffer->ReparseTag == IO_REPARSE_TAG_MOUNT_POINT) {
-																	LPWSTR lpPathBuffer = (LPWSTR)tpReparseDataBuffer->MountPointReparseBuffer.PathBuffer;
-																	LPWSTR lpPath = &lpPathBuffer[tpReparseDataBuffer->MountPointReparseBuffer.SubstituteNameOffset / 2];
-																	if (teStartsText(L"\\??\\", lpPath)) {
-																		lpPath += 4;
-																	}
-																	lstrcpyn(lpDispInfo->item.pszText, lpPath, lpDispInfo->item.cchTextMax);
-																}
-															}
-														}
-														CloseHandle(hFile);
-													}
+													teGetJunctionLinkTarget(bs, &lpDispInfo->item.pszText, lpDispInfo->item.cchTextMax);
+													teSysFreeString(&bs);
 												}
 											}
 										}
@@ -12810,7 +12818,8 @@ BOOL CteShellBrowser::SetActive(BOOL bForce)
 		g_strException = L"SetActive";
 #endif
 		}
-		if (ksShift & 0x80) {
+		if (ksShift & 0x80 && GetAsyncKeyState(VK_SHIFT) < 0) {
+			GetKeyboardState(lpKeyState);
 			lpKeyState[VK_SHIFT] = ksShift;
 			SetKeyboardState(lpKeyState);
 		}
@@ -21966,6 +21975,7 @@ VOID CteFolderItem::Clear()
 	teILFreeClear(&m_pidl);
 	teILFreeClear(&m_pidlAlt);
 	m_dwUnavailable = 0;
+	m_dispExtendedProperty = -1;
 }
 
 BSTR CteFolderItem::GetStrPath()
@@ -22092,6 +22102,9 @@ STDMETHODIMP CteFolderItem::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT
 	if (GetFolderItem()) {
 		hr = m_pFolderItem->GetIDsOfNames(riid, rgszNames, cNames, lcid, rgDispId);
 		if (SUCCEEDED(hr) && *rgDispId > 0) {
+			if (lstrcmpi(*rgszNames, L"ExtendedProperty") == 0) {
+				m_dispExtendedProperty = *rgDispId;
+			}
 			*rgDispId += 10;
 		}
 	}
@@ -22189,7 +22202,23 @@ STDMETHODIMP CteFolderItem::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			if (dispIdMember > 10) {
 				dispIdMember -= 10;
 			}
-			return m_pFolderItem->Invoke(dispIdMember, riid, lcid, wFlags, pDispParams, pVarResult, pExcepInfo, puArgErr);
+			hr = m_pFolderItem->Invoke(dispIdMember, riid, lcid, wFlags, pDispParams, pVarResult, pExcepInfo, puArgErr);
+			if (dispIdMember == m_dispExtendedProperty && pVarResult && nArg >= 0 && !pVarResult->bstrVal && pDispParams->rgvarg[nArg].vt == VT_BSTR) {
+				PROPERTYKEY propKey;
+				if SUCCEEDED(lpfnPSPropertyKeyFromStringEx(pDispParams->rgvarg[nArg].bstrVal, &propKey)) {
+					if (IsEqualPropertyKey(propKey, PKEY_Link_TargetParsingPath)) {
+						BSTR bs;
+						if SUCCEEDED(get_Path(&bs)) {
+							teGetJunctionLinkTarget(bs, &pVarResult->bstrVal, -1);
+							if (pVarResult->bstrVal) {
+								pVarResult->vt = VT_BSTR;
+							}
+							teSysFreeString(&bs);
+						}
+					}
+				}
+			}
+			return hr;
 		}
 	} catch (...) {
 		return teException(pExcepInfo, "FolderItem", methodFI, dispIdMember);
