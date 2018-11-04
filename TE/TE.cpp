@@ -9790,6 +9790,27 @@ VOID teApiHasThumbnail(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIAN
 	}
 }
 
+VOID teApiGetDiskFreeSpaceEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	ULARGE_INTEGER FreeBytesOfAvailable;
+	ULARGE_INTEGER TotalNumberOfBytes;
+	ULARGE_INTEGER TotalNumberOfFreeBytes;
+	if (pVarResult && GetDiskFreeSpaceEx(param[0].lpcwstr, &FreeBytesOfAvailable, &TotalNumberOfBytes, &TotalNumberOfFreeBytes)) {
+		pVarResult->vt = VT_DISPATCH;
+		GetNewObject(&pVarResult->pdispVal);
+		VARIANT v;
+		teSetLL(&v, FreeBytesOfAvailable.QuadPart);
+		tePutProperty(pVarResult->pdispVal, L"FreeBytesOfAvailable", &v);
+		VariantClear(&v);
+		teSetLL(&v, TotalNumberOfBytes.QuadPart);
+		tePutProperty(pVarResult->pdispVal, L"TotalNumberOfBytes", &v);
+		VariantClear(&v);
+		teSetLL(&v, TotalNumberOfFreeBytes.QuadPart);
+		tePutProperty(pVarResult->pdispVal, L"TotalNumberOfFreeBytes", &v);
+		VariantClear(&v);
+	}
+}
+
 /*
 VOID teApi(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -10116,6 +10137,7 @@ TEDispatchApi dispAPI[] = {
 	{ 3,  0, -1, -1, "PlaySound", teApiPlaySound },
 	{ 4,  0, -1, -1, "SHCreateStreamOnFileEx", teApiSHCreateStreamOnFileEx },	
 	{ 1, -1, -1, -1, "HasThumbnail", teApiHasThumbnail },
+	{ 1,  0, -1, -1, "GetDiskFreeSpaceEx", teApiGetDiskFreeSpaceEx },
 //	{ 0, -1, -1, -1, "", teApi },
 //	{ 0, -1, -1, -1, "Test", teApiTest },
 };
