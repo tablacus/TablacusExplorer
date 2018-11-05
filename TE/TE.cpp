@@ -9797,6 +9797,7 @@ VOID teApiGetDiskFreeSpaceEx(int nArg, teParam *param, DISPPARAMS *pDispParams, 
 	ULARGE_INTEGER TotalNumberOfFreeBytes;
 	if (pVarResult && GetDiskFreeSpaceEx(param[0].lpcwstr, &FreeBytesOfAvailable, &TotalNumberOfBytes, &TotalNumberOfFreeBytes)) {
 		pVarResult->vt = VT_DISPATCH;
+		pVarResult->pdispVal = NULL;
 		GetNewObject(&pVarResult->pdispVal);
 		VARIANT v;
 		teSetLL(&v, FreeBytesOfAvailable.QuadPart);
@@ -22033,7 +22034,7 @@ STDMETHODIMP CteFolderItem::QueryInterface(REFIID riid, void **ppvObject)
 		AddRef();
 		return S_OK;
 	}
-	if (IsEqualIID(riid, IID_FolderItem2) && GetFolderItem()) {
+	if ((IsEqualIID(riid, IID_FolderItem2) || IsEqualIID(riid, CLSID_ShellFolderItem)) && GetFolderItem()) {
 		return m_pFolderItem->QueryInterface(riid, ppvObject);
 	}
 	return QISearch(this, qit, riid, ppvObject);
