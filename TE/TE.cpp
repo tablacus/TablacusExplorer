@@ -1235,7 +1235,7 @@ HRESULT teGetDisplayNameFromIDList(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags);
 
 VOID teTranslateAccelerator(IDispatch *pdisp, MSG *pMsg, HRESULT *phr)
 {
-	if (pMsg->message == WM_KEYDOWN && GetKeyState(VK_CONTROL) < 0 && StrChrW(L"LNOP\x6b\x6d\xbb\xbd", (WCHAR)pMsg->wParam)) {
+	if (pMsg->message == WM_KEYDOWN && GetKeyState(VK_CONTROL) < 0 && StrChr(L"LNOP\x6b\x6d\xbb\xbd", (WCHAR)pMsg->wParam)) {
 		return;
 	}
 	IWebBrowser2 *pWB = NULL;
@@ -6066,8 +6066,8 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					if (lpDispInfo->item.pszText[0] == '.' && !StrChr(&lpDispInfo->item.pszText[1], '.')) {
 						int i = lstrlen(lpDispInfo->item.pszText);
 						if (i > 1 && i < lpDispInfo->item.cchTextMax - 1) {
-							lpDispInfo->item.pszText[i++] = '.';
-							lpDispInfo->item.pszText[i] = NULL;
+							lpDispInfo->item.pszText[i] = '.';
+							lpDispInfo->item.pszText[i + 1] = NULL;
 						}
 					}
 				}
@@ -15085,6 +15085,11 @@ STDMETHODIMP CteShellBrowser::get_FocusedItem(FolderItem **ppid)
 		IShellFolderViewDual *pSFVD;
 		if SUCCEEDED(m_pdisp->QueryInterface(IID_PPV_ARGS(&pSFVD))) {
 			hr = pSFVD->get_FocusedItem(ppid);
+			if SUCCEEDED(hr) {
+				CteFolderItem *pid1;
+				teQueryFolderItem(ppid, &pid1);
+				pid1->Release();
+			}
 			pSFVD->Release();
 		}
 	}
@@ -22034,10 +22039,16 @@ STDMETHODIMP CteFolderItem::QueryInterface(REFIID riid, void **ppvObject)
 		AddRef();
 		return S_OK;
 	}
-	if ((IsEqualIID(riid, IID_FolderItem2) || IsEqualIID(riid, CLSID_ShellFolderItem)) && GetFolderItem()) {
-		return m_pFolderItem->QueryInterface(riid, ppvObject);
+	HRESULT hr = QISearch(this, qit, riid, ppvObject);
+	if FAILED(hr) {
+		if (IsEqualIID(riid, IID_FolderItem2) || IsEqualIID(riid, CLSID_ShellFolderItem)) {
+			GetFolderItem();
+		}
+		if (m_pFolderItem) {
+			hr = m_pFolderItem->QueryInterface(riid, ppvObject);
+		}
 	}
-	return QISearch(this, qit, riid, ppvObject);
+	return hr;
 }
 
 STDMETHODIMP_(ULONG) CteFolderItem::AddRef()
@@ -22147,14 +22158,15 @@ STDMETHODIMP CteFolderItem::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			//Name
 			case 1:
 				if (nArg >= 0) {
-					put_Name(pDispParams->rgvarg[nArg].bstrVal);
+					hr = put_Name(pDispParams->rgvarg[nArg].bstrVal);
 				}
 				if (pVarResult) {
-					if SUCCEEDED(get_Name(&pVarResult->bstrVal)) {
+					hr = get_Name(&pVarResult->bstrVal);
+					if SUCCEEDED(hr) {
 						pVarResult->vt = VT_BSTR;
 					}
 				}
-				return S_OK;
+				return hr;
 			//Path
 			case 2:
 				if (pVarResult) {
@@ -22274,7 +22286,21 @@ STDMETHODIMP CteFolderItem::get_Name(BSTR *pbs)
 
 STDMETHODIMP CteFolderItem::put_Name(BSTR bs)
 {
-	return GetFolderItem() ? m_pFolderItem->put_Name(bs) : E_FAIL;
+	HRESULT hr = E_FAIL;
+	if (GetFolderItem()) {
+		if (bs[0] == '.' && !StrChr(&bs[1], '.')) {
+			int i = ::SysStringLen(bs);
+			BSTR bs2 = ::SysAllocStringLen(NULL, i);
+			lstrcpy(bs2, bs);
+			bs2[i] = '.';
+			bs2[i + 1] = NULL;
+			hr = m_pFolderItem->put_Name(bs2);
+			::SysFreeString(bs2);
+		} else {
+			hr = m_pFolderItem->put_Name(bs);
+		}
+	}
+	return hr;
 }
 
 STDMETHODIMP CteFolderItem::get_Path(BSTR *pbs)
