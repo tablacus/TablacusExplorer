@@ -15085,7 +15085,7 @@ STDMETHODIMP CteShellBrowser::get_FocusedItem(FolderItem **ppid)
 		IShellFolderViewDual *pSFVD;
 		if SUCCEEDED(m_pdisp->QueryInterface(IID_PPV_ARGS(&pSFVD))) {
 			hr = pSFVD->get_FocusedItem(ppid);
-			if SUCCEEDED(hr) {
+			if (hr == S_OK) {
 				CteFolderItem *pid1;
 				teQueryFolderItem(ppid, &pid1);
 				pid1->Release();
