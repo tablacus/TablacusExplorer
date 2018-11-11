@@ -1775,7 +1775,7 @@ InitLocation = function ()
 		for (var i = ele.length; i--;) {
 			var n = ele[i].id || ele[i].name;
 			if (n && !/=/.test(n)) {
-				s = item.getAttribute(n);
+				s = /^!/.test(n) ? !item.getAttribute(n.substr(1)) : item.getAttribute(n);
 				if (/Name$/.test(n)) {
 					s = GetText(s);
 				}
@@ -1871,6 +1871,10 @@ InitLocation = function ()
 
 function SetAttrib(item, n, s)
 {
+	if (/^!/.test(n)) {
+		n = n.substr(1);
+		s = !s;
+	}
 	if (s) {
 		item.setAttribute(n, s);
 	} else {
@@ -1925,6 +1929,7 @@ function SetAttribEx(item, f, n)
 
 function GetAttribEx(item, f, n)
 {
+	var s;
 	var res  = /([^=]*)=(.*)/.exec(n);
 	if (res) {
 		s = item.getAttribute(res[1]);
@@ -1933,7 +1938,7 @@ function GetAttribEx(item, f, n)
 		}
 		return;
 	}
-	s = item.getAttribute(n);
+	s = /^!/.test(n) ? !item.getAttribute(n.substr(1)) : item.getAttribute(n);
 	if (s || s === 0) {
 		if (n == "Key") {
 			s = GetKeyName(s);

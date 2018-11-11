@@ -23,7 +23,7 @@ if (window.Addon == 1) {
 		bXP: false,
 		nPos: 0,
 		nWidth: 0,
-		strName: "Address Bar",
+		strName: "Address bar",
 
 		KeyDown: function (o)
 		{
@@ -229,33 +229,7 @@ if (window.Addon == 1) {
 		Popup3: function (o)
 		{
 			if (Addons.AddressBar.CanPopup()) {
-				FolderMenu.Clear();
-				var hMenu = api.CreatePopupMenu();
-				FolderMenu.AddMenuItem(hMenu, api.ILCreateFromPath(ssfDESKTOP));
-				FolderMenu.AddMenuItem(hMenu, api.ILCreateFromPath(ssfDRIVES));
-				var Items = sha.NameSpace(ssfDRIVES).Items();
-				var path0 = api.GetDisplayNameOf(ssfDESKTOP, SHGDN_FORPARSING);
-				for (var i = 0; i < Items.Count; i++) {
-					var Item = Items.Item(i);
-					if (IsFolderEx(Item)) {
-						var path = api.GetDisplayNameOf(Item, SHGDN_FORPARSING);
-						if (path && path != path0) {
-							FolderMenu.AddMenuItem(hMenu, Item);
-						}
-					}
-				}
-				FolderMenu.AddMenuItem(hMenu, api.ILCreateFromPath(ssfBITBUCKET), api.GetDisplayNameOf(ssfBITBUCKET, SHGDN_INFOLDER), true);
-
-				var pt = GetPos(o, true);
-				window.g_menu_click = true;
-				var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x + o.offsetWidth * screen.deviceXDPI / screen.logicalXDPI, pt.y + o.offsetHeight * screen.deviceYDPI / screen.logicalYDPI, te.hwnd, null, null);
-				api.DestroyMenu(hMenu);
-				FolderItem = null;
-				if (nVerb) {
-					FolderItem = FolderMenu.Items[nVerb - 1];
-				}
-				FolderMenu.Clear();
-				FolderMenu.Invoke(FolderItem);
+				FolderMenu.Location(o);
 			}
 		},
 

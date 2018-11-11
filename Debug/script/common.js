@@ -75,7 +75,7 @@ FolderMenu =
 
 	OpenMenu: function (hMenu, FolderItem, hParent, wID, nParent)
 	{
-		var Items, Item;
+		var Item;
 		if (!FolderItem) {
 			return;
 		}
@@ -94,31 +94,9 @@ FolderMenu =
 				bSep = true;
 			}
 		}
-		if (FolderItem.Enum) {
-			Items = FolderItem.Enum(FolderItem);
-		}
-		if (!Items && FolderItem.IsFolder) {
-			var Folder = FolderItem.GetFolder;
-			if (Folder) {
-				Items = Folder.Items();
-				if ((te.Data.Conf_MenuHidden || api.GetKeyState(VK_SHIFT) < 0)) {
-					try {
-						Items.Filter(SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN, "*");
-					} catch (e) {}
-				}
-				Items = api.CreateObject("FolderItems", Items);
-			}
-		}
+		var Items = this.Enum(FolderItem);
 		if (Items) {
-			MainWindow.RunEvent1("AddItems", Items, FolderItem);
 			var nCount = Items.Count;
-			if (!nCount) {
-				Items.Item = function (i)
-				{
-					return api.ILCreateFromPath(Items[i]);
-				}
-				nCount = Items.length;
-			}
 			var ar = new Array(nCount);
 			for (var i = nCount; i--;) {
 				ar[i] = i;
@@ -127,7 +105,7 @@ FolderMenu =
 				try {
 					var d = fso.GetDrive(fso.GetDriveName(FolderItem.Path));
 				} catch (e) {
-					d = {};
+					d = { FileSystem: "NTFS" };
 				}
 				if (!/NTFS/i.test(d.FileSystem) || this.SortMode || this.Filter || FolderItem.IsBrowsable) {
 					this.Sort(Items, ar);
@@ -165,7 +143,39 @@ FolderMenu =
 		MainWindow.RunEvent1("FolderMenuCreated", hMenu, FolderItem, hParent);
 	},
 
+	Enum: function (FolderItem)
+	{
+		var Items;
+		if (FolderItem.Enum) {
+			Items = FolderItem.Enum(FolderItem);
+		}
+		if (!Items && FolderItem.IsFolder) {
+			var Folder = FolderItem.GetFolder;
+			if (Folder) {
+				Items = Folder.Items();
+				if ((te.Data.Conf_MenuHidden || api.GetKeyState(VK_SHIFT) < 0)) {
+					try {
+						Items.Filter(SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN, "*");
+					} catch (e) {}
+				}
+				Items = api.CreateObject("FolderItems", Items);
+			}
+		}
+		if (Items) {
+			MainWindow.RunEvent1("AddItems", Items, FolderItem);
+			if (!Items.Count) {
+				Items.Item = function (i)
+				{
+					return api.ILCreateFromPath(Items[i]);
+				}
+				Items.Count = Items.length;
+			}
+		}
+		return Items;
+	},
+
 	Sort: function (Items, ar)
+
 	{
 		ar.sort(function (a, b) {
 			var r = api.CompareIDs(FolderMenu.SortMode, Items.Item(a), Items.Item(b));
@@ -191,7 +201,7 @@ FolderMenu =
 			try {
 				var o = fso.GetDrive(fso.GetDriveName(FolderItem.Path));
 			} catch (e) {
-				o = { IsReady: true };
+				o = { IsReady: !FolderItem.Unavailable };
 			}
 			if (o.IsReady) {
 				mii.hSubMenu = api.CreateMenu();
@@ -252,6 +262,34 @@ FolderMenu =
 			}
 			FV.AltSelectedItems = AltSelectedItems;
 		}
+	},
+
+	Location: function (o)
+	{
+		this.Clear();
+		var hMenu = api.CreatePopupMenu();
+		this.AddMenuItem(hMenu, api.ILCreateFromPath(ssfDESKTOP));
+		this.AddMenuItem(hMenu, api.ILCreateFromPath(ssfDRIVES));
+		var Items = this.Enum(api.ILCreateFromPath(ssfDRIVES));
+		var path0 = api.GetDisplayNameOf(ssfDESKTOP, SHGDN_ORIGINAL | SHGDN_FORPARSING);
+		for (var i = 0; i < Items.Count; i++) {
+			var Item = Items.Item(i);
+			if (IsFolderEx(Item)) {
+				var path = api.GetDisplayNameOf(Item, SHGDN_ORIGINAL | SHGDN_FORPARSING);
+				if (path && path != path0) {
+					this.AddMenuItem(hMenu, Item);
+				}
+			}
+		}
+		this.AddMenuItem(hMenu, api.ILCreateFromPath(ssfBITBUCKET), api.GetDisplayNameOf(ssfBITBUCKET, SHGDN_INFOLDER), true);
+
+		var pt = GetPos(o, true);
+		window.g_menu_click = true;
+		var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x + o.offsetWidth * screen.deviceXDPI / screen.logicalXDPI, pt.y + o.offsetHeight * screen.deviceYDPI / screen.logicalYDPI, te.hwnd, null, null);
+		api.DestroyMenu(hMenu);
+		var FolderItem = nVerb ? this.Items[nVerb - 1] : null;
+		this.Clear();
+		this.Invoke(FolderItem);
 	}
 };
 
@@ -2090,6 +2128,10 @@ AddMenuIconFolderItem = function (mii, FolderItem, nHeight)
 	if (!/string/i.test(typeof FolderItem)) {
 		path = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_ORIGINAL);
 		dwFlags |=  SHGFI_PIDL;
+	}
+	if (FolderItem.Unavailable) {
+		MenusIcon(mii, "icon:shell32.dll,3");
+		return;
 	}
 	if (api.PathIsNetworkPath(path)) {
 		if (fso.GetDriveName(path) != path.replace(/\\$/, "")) {

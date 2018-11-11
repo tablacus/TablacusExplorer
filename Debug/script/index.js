@@ -1924,7 +1924,12 @@ g_.event.sort = function (Ctrl)
 
 g_.event.sorting = function (Ctrl, Name)
 {
-	return RunEvent3("sorting", Ctrl, Name);
+	return RunEvent3("Sorting", Ctrl, Name);
+}
+
+g_.event.setname = function (pid, Name)
+{
+	return RunEvent3("SetName", pid, Name);
 }
 
 g_.event.fromfile = function (image, file, cx)
@@ -2363,7 +2368,6 @@ KeyExecEx = function (Ctrl, mode, nKey, hwnd)
 function InitMouse()
 {
 	te.Data.Conf_Gestures = isFinite(te.Data.Conf_Gestures) ? Number(te.Data.Conf_Gestures) : 2;
-	te.Data.Conf_WheelSelect = isFinite(te.Data.Conf_WheelSelect) ? Number(te.Data.Conf_WheelSelect) : 1;
 	if (/string/i.test(typeof te.Data.Conf_TrailColor)) {
 		te.Data.Conf_TrailColor = GetWinColor(te.Data.Conf_TrailColor);
 	}
