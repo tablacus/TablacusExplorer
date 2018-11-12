@@ -4830,6 +4830,9 @@ VOID Invoke4(IDispatch *pdisp, VARIANT *pvResult, int nArgs, VARIANTARG *pvArgs)
 
 VOID teCustomDraw(int nFunc, CteShellBrowser *pSB, CteTreeView *pTV, IShellItem *psi, LPNMCUSTOMDRAW lpnmcd, PVOID pvcd, LRESULT *plres)
 {
+	if (lpnmcd->rc.top == 0 && lpnmcd->rc.bottom == 0) {
+		return;
+	}
 	LPITEMIDLIST pidl = NULL;
 	PVOID pvcd2 = NULL;
 	if (nFunc == TE_OnItemPrePaint && g_pOnFunc[TE_OnItemPostPaint]) {
@@ -6103,7 +6106,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							teCustomDraw(TE_OnItemPrePaint, pSB, NULL, NULL, &lplvcd->nmcd, lplvcd, &lRes);
 							return lRes;
 						}
-						if (lplvcd->nmcd.dwDrawStage == CDDS_ITEMPOSTPAINT && lplvcd->iStateId == 0) {
+						if (lplvcd->nmcd.dwDrawStage == CDDS_ITEMPOSTPAINT) {
 							LRESULT lRes = CDRF_DODEFAULT;
 							teCustomDraw(TE_OnItemPostPaint, pSB, NULL, NULL, &lplvcd->nmcd, lplvcd, &lRes);
 							return lRes;
