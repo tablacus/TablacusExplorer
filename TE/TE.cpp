@@ -938,6 +938,7 @@ TEmethod methodTE[] = {
 	{ START_OnFunc + TE_OnItemPostPaint, "OnItemPostPaint" },
 	{ START_OnFunc + TE_OnHandleIcon, "OnHandleIcon" },
 	{ START_OnFunc + TE_OnSorting, "OnSorting" },
+	{ START_OnFunc + TE_OnSetName, "OnSetName" },
 	{ 0, NULL }
 };
 
@@ -4097,7 +4098,7 @@ BOOL teILIsEqual(IUnknown *punk1, IUnknown *punk2)
 			if (teGetIDListFromObject(punk2, &pidl2)) {
 				bResult = ::ILIsEqual(pidl1, pidl2);
 				teCoTaskMemFree(pidl2);
-				if (bResult && ::ILIsEqual(pidl1, g_pidls[CSIDL_RESULTSFOLDER])) {
+				if (bResult && (::ILIsEqual(pidl1, g_pidls[CSIDL_RESULTSFOLDER]) || ILIsEmpty(pidl1))) {
 					BSTR bs1, bs2;
 					teGetStrFromFolderItem(&bs2, punk1);
 					teGetStrFromFolderItem(&bs1, punk2);
@@ -7321,13 +7322,13 @@ VOID teApiILFindLastID(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIAN
 
 VOID teApiILIsEmpty(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	BOOL b = TRUE;
-	LPITEMIDLIST pidl;
-	if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
-		b = ILIsEmpty(pidl);
-		teCoTaskMemFree(pidl);
-	}
-	teSetBool(pVarResult, b);
+	FolderItem *pid1;
+	GetFolderItemFromVariant(&pid1, &pDispParams->rgvarg[nArg]);
+	CteFolderItem *pid2 = new CteFolderItem(NULL);
+	pid2->Initialize(g_pidls[CSIDL_DESKTOP]);
+	teSetBool(pVarResult, teILIsEqual(pid1, static_cast<FolderItem *>(pid2)));
+	pid2->Release();
+	pid1->Release();
 }
 
 VOID teApiILGetParent(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -16698,8 +16699,8 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 								CteShellBrowser *pSB;
 								pSB = NULL;
 								if (nArg >= 1) {
-									int nId = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
-									if (nId) {
+									UINT nId = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
+									if (nId && nId < g_ppSB.size()) {
 										pSB = g_ppSB[nId - 1];
 									}
 								}
@@ -22287,17 +22288,34 @@ STDMETHODIMP CteFolderItem::get_Name(BSTR *pbs)
 STDMETHODIMP CteFolderItem::put_Name(BSTR bs)
 {
 	HRESULT hr = E_FAIL;
-	if (GetFolderItem()) {
-		if (bs[0] == '.' && !StrChr(&bs[1], '.')) {
-			int i = ::SysStringLen(bs);
-			BSTR bs2 = ::SysAllocStringLen(NULL, i);
-			lstrcpy(bs2, bs);
-			bs2[i] = '.';
-			bs2[i + 1] = NULL;
-			hr = m_pFolderItem->put_Name(bs2);
-			::SysFreeString(bs2);
-		} else {
-			hr = m_pFolderItem->put_Name(bs);
+	if (g_pOnFunc[TE_OnSetName]) {
+		VARIANT v;
+		VariantInit(&v);
+		VARIANTARG *pv = GetNewVARIANT(2);
+		teSetObject(&pv[1], this);
+		teSetSZ(&pv[0], bs);
+		Invoke4(g_pOnFunc[TE_OnSetName], &v, 2, pv);
+		if (v.vt != VT_EMPTY) {
+			return GetIntFromVariantClear(&v);
+		}
+	}
+	if (GetPidl() && m_pidl) {
+		IShellFolder *pSF;
+		LPCITEMIDLIST pidlPart;
+		if SUCCEEDED(SHBindToParent(m_pidl, IID_PPV_ARGS(&pSF), &pidlPart)) {
+			BSTR bs2 = bs;
+			if (bs[0] == '.' && !StrChr(&bs[1], '.')) {
+				int i = ::SysStringLen(bs);
+				bs2 = ::SysAllocStringLen(NULL, i);
+				lstrcpy(bs2, bs);
+				bs2[i] = '.';
+				bs2[i + 1] = NULL;
+			}
+			hr = pSF->SetNameOf(g_hwndMain, pidlPart, bs2, SHGDN_NORMAL, NULL);
+			if (bs != bs2) {
+				::SysFreeString(bs2);
+			}
+			pSF->Release();
 		}
 	}
 	return hr;
