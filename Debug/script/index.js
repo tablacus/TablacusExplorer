@@ -1118,6 +1118,9 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 {
 	var path;
 	var strVerb = (isFinite(Verb) ? ContextMenu.GetCommandString(Verb, GCS_VERB) : Verb).toLowerCase();
+	if (strVerb == "open" && ContextMenu.GetCommandString(Verb, GCS_HELPTEXT) != api.LoadString(hShell32, 12850)) {
+		strVerb = "";
+	}
 	var hr = RunEvent3("InvokeCommand", ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon, strVerb);
 	if (isNaN(hr) && strVerb == "cut") {
 		var FV = ContextMenu.FolderView;
@@ -1150,11 +1153,12 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 		CancelWindowRegistered();
 	}
 
-	NewTab = GetNavigateFlags();
+	var NewTab = GetNavigateFlags();
 	for (var i = 0; i < Items.Count; i++) {
 		if (Verb && strVerb != "runas") {
-			path = Items.Item(i).ExtendedProperty("linktarget") || Items.Item(i).Path;
-			var cmd = api.AssocQueryString(ASSOCF_NONE, ASSOCSTR_COMMAND, path, strVerb == "default" ? null : strVerb).replace(/"?%1"?|%L/g, api.PathQuoteSpaces(path)).replace(/%\*|%I/g, "");
+			var Item = Items.Item(i);
+			path = Item.ExtendedProperty("linktarget") || Item.Path;
+			var cmd = api.AssocQueryString(ASSOCF_NONE, ASSOCSTR_COMMAND, Item.ExtendedProperty("linktarget") || Item, strVerb == "default" ? null : strVerb).replace(/"?%1"?|%L/g, api.PathQuoteSpaces(path)).replace(/%\*|%I/g, "");
 			if (cmd) {
 				ShowStatusText(te, strVerb + ":" + cmd, 0);
 				if (strVerb == "open" && api.PathMatchSpec(cmd, "?:\\Windows\\Explorer.exe;*\\Explorer.exe /idlist,*;rundll32.exe *fldr.dll,RouteTheCall*")) {
@@ -1167,11 +1171,6 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 					ShellExecute(cmd2, null, nShow, Directory);
 					continue;
 				}
-			}
-			if (strVerb == "open" && IsFolderEx(Items.Item(i))) {
-				Navigate(Items.Item(i), NewTab);
-				NewTab |= SBSP_NEWBROWSER;
-				continue;
 			}
 		}
 		Exec.push(Items.Item(i));
@@ -1190,9 +1189,8 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 	return S_FALSE;
 }
 
-AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon)
+AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon, strVerb)
 {
-	var strVerb = String(isFinite(Verb) ? ContextMenu.GetCommandString(Verb, GCS_VERB) : Verb).toLowerCase();
 	if (strVerb == "opencontaining") {
 		var Items = ContextMenu.Items();
 		for (var j in Items) {

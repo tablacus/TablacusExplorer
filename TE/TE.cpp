@@ -9219,14 +9219,37 @@ VOID teApiLoadString(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 
 VOID teApiAssocQueryString(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
+	IQueryAssociations *pQA = NULL;
 	DWORD cch = 0;
-	AssocQueryString(param[0].assocf, param[1].assocstr, param[2].lpcwstr, param[3].lpcwstr, NULL, &cch);
 	BSTR bsResult = NULL;
 	int nLen = -1;
-	if (cch) {
-		nLen = cch - 1;
-		bsResult = ::SysAllocStringLen(NULL, nLen);
-		AssocQueryString(param[0].assocf, param[1].assocstr, param[2].lpcwstr, param[3].lpcwstr, bsResult, &cch);
+	IDataObject *pDataObj;
+	if (GetDataObjFromVariant(&pDataObj, &pDispParams->rgvarg[nArg - 2])) {
+		LPITEMIDLIST *ppidllist;
+		long nCount;
+		ppidllist = IDListFormDataObj(pDataObj, &nCount);
+		AdjustIDList(ppidllist, nCount);
+		if (nCount >= 1) {
+			IShellFolder *pSF;
+			if (GetShellFolder(&pSF, ppidllist[0])) {
+				if SUCCEEDED(pSF->GetUIObjectOf(g_hwndMain, nCount, const_cast<LPCITEMIDLIST *>(&ppidllist[1]), IID_IQueryAssociations, NULL, (LPVOID*)&pQA)) {
+					if SUCCEEDED(pQA->GetString(param[0].assocf, param[1].assocstr, param[3].lpcwstr, NULL, &cch)) {
+						if (cch) {
+							nLen = cch - 1;
+							bsResult = ::SysAllocStringLen(NULL, nLen);
+							pQA->GetString(param[0].assocf, param[1].assocstr, param[3].lpcwstr, bsResult, &cch);
+						}
+						SafeRelease(&pQA);
+					}
+				}
+				pSF->Release();
+			}
+			do {
+				teCoTaskMemFree(ppidllist[nCount]);
+			} while (--nCount >= 0);
+		}
+		delete [] ppidllist;
+		pDataObj->Release();
 	}
 	teSetBSTR(pVarResult, &bsResult, nLen);
 }

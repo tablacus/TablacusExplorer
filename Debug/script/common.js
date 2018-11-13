@@ -1604,7 +1604,7 @@ IsFolderEx = function (Item)
 		var hr = api.SHGetDataFromIDList(Item, SHGDFIL_FINDDATA, wfd, wfd.Size);
 		return (hr < 0) || (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 || !/^[A-Z]:\\|^\\\\[A-Z].*\\.*\\/i.test(Item.Path);
 	}
-	return false;
+	return Item.IsBrowsable;
 }
 
 OpenMenu = function (items, SelItem)
@@ -1886,12 +1886,6 @@ ExecMenu4 = function (Ctrl, Name, pt, hMenu, arContextMenu, nVerb, FV)
 			if (FolderView) {
 				FolderView.Focus();
 			}
-			if (Name != "Default" && (ContextMenu.GetCommandString(nVerb - ContextMenu.idCmdFirst, GCS_VERB) || "").toLowerCase() == "open") {
-				if (ExecMenu(Ctrl, "Default", null, 2) == S_OK) {
-					api.DestroyMenu(hMenu);
-					return S_OK;
-				}
-			}
 			if (ContextMenu.InvokeCommand(0, te.hwnd, nVerb - ContextMenu.idCmdFirst, null, null, SW_SHOWNORMAL, 0, 0) == S_OK) {
 				api.DestroyMenu(hMenu);
 				return S_OK;
@@ -2129,16 +2123,16 @@ AddMenuIconFolderItem = function (mii, FolderItem, nHeight)
 		path = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_ORIGINAL);
 		dwFlags |=  SHGFI_PIDL;
 	}
-	if (FolderItem.Unavailable) {
-		MenusIcon(mii, "icon:shell32.dll,3");
-		return;
-	}
 	if (api.PathIsNetworkPath(path)) {
 		if (fso.GetDriveName(path) != path.replace(/\\$/, "")) {
 			MenusIcon(mii, WINVER >= 0x600 ? "icon:shell32.dll,275" : "icon:shell32.dll,85");
 			return;
 		}
 		MenusIcon(mii, WINVER >= 0x600 ? "icon:shell32.dll,273" : "icon:shell32.dll,9");
+		return;
+	}
+	if (FolderItem.Unavailable || FolderItem.IsBrowsable) {
+		MenusIcon(mii, "icon:shell32.dll,3");
 		return;
 	}
 	api.SHGetFileInfo(FolderItem, 0, sfi, sfi.Size, dwFlags);
