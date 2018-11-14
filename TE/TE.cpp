@@ -4831,7 +4831,13 @@ VOID Invoke4(IDispatch *pdisp, VARIANT *pvResult, int nArgs, VARIANTARG *pvArgs)
 VOID teCustomDraw(int nFunc, CteShellBrowser *pSB, CteTreeView *pTV, IShellItem *psi, LPNMCUSTOMDRAW lpnmcd, PVOID pvcd, LRESULT *plres)
 {
 	if (lpnmcd->rc.top == 0 && lpnmcd->rc.bottom == 0) {
+#ifdef _2000XP
+		if (g_bUpperVista) {
+			return;
+		}
+#else
 		return;
+#endif
 	}
 	LPITEMIDLIST pidl = NULL;
 	PVOID pvcd2 = NULL;
