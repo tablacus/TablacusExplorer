@@ -1604,7 +1604,7 @@ IsFolderEx = function (Item)
 		var hr = api.SHGetDataFromIDList(Item, SHGDFIL_FINDDATA, wfd, wfd.Size);
 		return (hr < 0) || (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 || !/^[A-Z]:\\|^\\\\[A-Z].*\\.*\\/i.test(Item.Path);
 	}
-	return Item.IsBrowsable;
+	return !Item.IsFileSystem && Item.IsBrowsable;
 }
 
 OpenMenu = function (items, SelItem)

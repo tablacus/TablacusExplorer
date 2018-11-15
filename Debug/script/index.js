@@ -1158,9 +1158,9 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 		if (Verb && strVerb != "runas") {
 			var Item = Items.Item(i);
 			path = Item.ExtendedProperty("linktarget") || Item.Path;
-			var cmd = api.AssocQueryString(ASSOCF_NONE, ASSOCSTR_COMMAND, Item.ExtendedProperty("linktarget") || Item, strVerb == "default" ? null : strVerb).replace(/"?%1"?|%L/g, api.PathQuoteSpaces(path)).replace(/%\*|%I/g, "");
+			var cmd = api.AssocQueryString(ASSOCF_NONE, ASSOCSTR_COMMAND, Item.ExtendedProperty("linktarget") || Item, strVerb == "default" ? null : strVerb);
 			if (cmd) {
-				ShowStatusText(te, strVerb + ":" + cmd, 0);
+				ShowStatusText(te, strVerb + ":" + cmd.replace(/"?%1"?|%L/g, api.PathQuoteSpaces(path)).replace(/%\*|%I/g, ""), 0);
 				if (strVerb == "open" && api.PathMatchSpec(cmd, "?:\\Windows\\Explorer.exe;*\\Explorer.exe /idlist,*;rundll32.exe *fldr.dll,RouteTheCall*")) {
 					Navigate(Items.Item(i), NewTab);
 				 	NewTab |= SBSP_NEWBROWSER;
@@ -1168,7 +1168,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 				}
 				var cmd2 = ExtractMacro(te, cmd);
 				if (api.StrCmpI(cmd, cmd2)) {
-					ShellExecute(cmd2, null, nShow, Directory);
+					ShellExecute(cmd2.replace(/"?%1"?|%L/g, api.PathQuoteSpaces(path)).replace(/%\*|%I/g, ""), null, nShow, Directory);
 					continue;
 				}
 			}
