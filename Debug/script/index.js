@@ -864,7 +864,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 {
 	if (g_.mouse.Capture) {
 		if (msg == WM_LBUTTONUP || api.GetKeyState(VK_LBUTTON) >= 0) {
-			api.ReleaseCapture(te.Ctrl(CTRL_WB).hwnd);
+			api.ReleaseCapture();
 			var pt2 = pt.Clone();
 			api.ScreenToClient(te.hwnd, pt2);
 			if (pt2.x < 1) {
@@ -1590,7 +1590,6 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 			return S_OK;
 		}
 	}
-	return 0;
 };
 
 te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam)
@@ -1726,18 +1725,18 @@ te.OnArrange = function (Ctrl, rc)
 			ApplyLang(o);
 			ChangeView(Ctrl.Selected);
 		}
-		o.style.left = (rc.Left * screen.logicalXDPI / screen.deviceXDPI) + "px";
-		o.style.top = (rc.Top * screen.logicalYDPI / screen.deviceYDPI) + "px";
+		o.style.left = rc.left + "px";
+		o.style.top = rc.top + "px";
 		if (Ctrl.Visible) {
 			o.style.display = (document.documentMode && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
 		} else {
 			o.style.display = "none";
 		}
-		var i = rc.Right - rc.Left
+		var i = rc.right - rc.left
 		o.style.width = i > 0 ? i + "px" : 0;
-		i = rc.Bottom - rc.Top;
+		i = rc.bottom - rc.top;
 		o.style.height = i > 0 ? i + "px" : 0;
-		rc.Top += document.getElementById("InnerTop_" + Ctrl.Id).offsetHeight + document.getElementById("InnerTop2_" + Ctrl.Id).offsetHeight;
+		rc.top += document.getElementById("InnerTop_" + Ctrl.Id).offsetHeight + document.getElementById("InnerTop2_" + Ctrl.Id).offsetHeight;
 		var w1 = 0;
 		var w2 = 0;
 		var x = '';
@@ -1746,13 +1745,13 @@ te.OnArrange = function (Ctrl, rc)
 			w2 += api.LowPart(document.getElementById("Inner" + x + "Right_" + Ctrl.Id).style.width.replace(/\D/g, ""));
 			x = '2';
 		}
-		rc.Left += w1;
-		rc.Right -= w2;
-		rc.Bottom -= document.getElementById("InnerBottom_" + Ctrl.Id).offsetHeight;
+		rc.left += w1;
+		rc.right -= w2;
+		rc.bottom -= document.getElementById("InnerBottom_" + Ctrl.Id).offsetHeight;
 		o = document.getElementById("Inner2Center_" + Ctrl.Id).style;
-		i = rc.Right - rc.Left;
+		i = rc.right - rc.left;
 		o.width = i > 0 ? i + "px" : 0;
-		i = rc.Bottom - rc.Top;
+		i = rc.bottom - rc.top;
 		o.height = i > 0 ? i + "px" : 0;
 	}
 	RunEvent1("Arrange", Ctrl, rc);
@@ -2356,8 +2355,8 @@ KeyExecEx = function (Ctrl, mode, nKey, hwnd)
 	if (Ctrl.Type <= CTRL_EB || Ctrl.Type == CTRL_TV) {
 		var rc = api.Memory("RECT");
 		Ctrl.GetItemRect(Ctrl.FocusedItem || Ctrl.SelectedItem, rc);
-		pt.x = rc.Left;
-		pt.y = rc.Top;
+		pt.x = rc.left;
+		pt.y = rc.top;
 	}
 	api.ClientToScreen(Ctrl.hwnd, pt);
 	return ArExec(Ctrl, eventTE.Key[mode][nKey], pt, hwnd);

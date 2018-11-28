@@ -285,7 +285,7 @@ FolderMenu =
 
 		var pt = GetPos(o, true);
 		window.g_menu_click = true;
-		var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x + o.offsetWidth * screen.deviceXDPI / screen.logicalXDPI, pt.y + o.offsetHeight * screen.deviceYDPI / screen.logicalYDPI, te.hwnd, null, null);
+		var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x + o.offsetWidth, pt.y + o.offsetHeight, te.hwnd, null, null);
 		api.DestroyMenu(hMenu);
 		var FolderItem = nVerb ? this.Items[nVerb - 1] : null;
 		this.Clear();
@@ -1162,7 +1162,7 @@ HitTest = function (o, pt)
 
 PtInRect = function (rc, pt)
 {
-	return pt.x >= rc.Left && pt.x < rc.Right && pt.y >= rc.Top && pt.y < rc.Bottom;
+	return pt.x >= rc.left && pt.x < rc.right && pt.y >= rc.top && pt.y < rc.bottom;
 }
 
 DeleteItem = function (path, fFlags)
@@ -1824,8 +1824,8 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec)
 						api.GetCursorPos(pt);
 						api.ScreenToClient(Ctrl.hwnd, pt);
 						if (!PtInRect(rc, pt)) {
-							pt.x = rc.Left;
-							pt.y = rc.Top;
+							pt.x = rc.left;
+							pt.y = rc.top;
 						}
 						api.ClientToScreen(Ctrl.hwnd, pt);
 						break;
@@ -3738,4 +3738,97 @@ function AddonBeforeRemove(Id)
 		MessageBox(arError.join("\n\n"), TITLE, MB_OK);
 	}
 	return r;
+}
+function ColumnsReplace(Ctrl, pid, fmt, fn, priority)
+{
+	if (!Ctrl.ColumnsReplace) {
+		try {
+			Ctrl.ColumnsReplace = api.CreateObject("Object");
+		} catch (e) {
+			return;
+		}
+		if (!Ctrl.ColumnsReplace) {
+			return;
+		}
+	}
+	var n = api.PSGetDisplayName(pid);
+	fn.fmt = fmt;
+	if (Ctrl.ColumnsReplace[n] && priority != 2) {
+		if (Ctrl.ColumnsReplace[n] === fn) {
+			return;
+		}
+		if (!Ctrl.ColumnsReplace[n].push) {
+			Ctrl.ColumnsReplace[n] = [Ctrl.ColumnsReplace[n]];
+			Ctrl.ColumnsReplace[n].fmt = Ctrl.ColumnsReplace[n][0].fmt;
+		}
+		for (var i = Ctrl.ColumnsReplace[n]; i--;) {
+			if (Ctrl.ColumnsReplace[n][i] === fn) {
+				return;
+			}
+		}
+		if (priority) {
+			Ctrl.ColumnsReplace[n].push(fn);
+		} else {
+			Ctrl.ColumnsReplace[n].unshift(fn);
+		}
+	} else {
+		Ctrl.ColumnsReplace[n] = fn;
+	}
+}
+
+function CustomSort(FV, id, r, fnAdd, fnComp)
+{
+	var Progress = api.CreateObject("ProgressDialog");
+	Progress.StartProgressDialog(te.hwnd, null, 2);
+	var Name = api.PSGetDisplayName(id) || id;
+	Progress.SetLine(1, api.LoadString(hShell32, 13585) || api.LoadString(hShell32, 6478), true);
+	FV.Parent.LockUpdate();
+	try {
+		var Items = FV.Items();
+		var List = [];
+		for (var i = Items.Count; i--;) {
+			List.push([i, fnAdd(Items.Item(i), FV)]);
+		}
+		List.sort(fnComp);
+		if (r) {
+			List = List.reverse();
+		}
+		var ViewMode = api.SendMessage(FV.hwndList, LVM_GETVIEW, 0, 0);
+		if (ViewMode == 1 || ViewMode == 3) {
+			api.SendMessage(FV.hwndList, LVM_SETVIEW, 4, 0);
+		}
+		var FolderFlags = FV.FolderFlags;
+		FV.FolderFlags = FolderFlags | FWF_AUTOARRANGE;
+		FV.GroupBy = "System.Null";
+		var pt = api.Memory("POINT");
+		FV.GetItemPosition(Items.Item(0), pt);
+		var nMax = List.length;
+		var p = nMax / 100;
+		Progress.SetLine(1, api.LoadString(hShell32, 50690) + Name, true);
+		for (var i = 0; i < nMax && !Progress.HasUserCancelled(); i++) {
+			Progress.SetTitle((i / p).toFixed(1) + "%");
+			Progress.SetProgress(i, nMax);
+			FV.SelectAndPositionItem(Items.Item(List[i][0]), 0, pt);
+		}
+		api.SendMessage(FV.hwndList, LVM_SETVIEW, ViewMode, 0);
+		FV.FolderFlags = FolderFlags;
+		var hHeader = api.SendMessage(FV.hwndList, LVM_GETHEADER, 0, 0);
+		var item = api.Memory("HDITEM");
+		item.mask = HDI_TEXT | HDI_FORMAT;
+		item.pszText = api.Memory("WCHAR", 260);
+		item.cchTextMax = 260;
+		if (id) {
+			for (var i = api.SendMessage(hHeader, HDM_GETITEMCOUNT, 0, 0); i-- > 0;) {
+				api.SendMessage(hHeader, HDM_GETITEM, i, item);
+				if (Name == api.SysAllocString(item.pszText)) {
+					item.mask = HDI_FORMAT;
+					item.fmt |= r ? HDF_SORTDOWN : HDF_SORTUP;
+					api.SendMessage(hHeader, HDM_SETITEM, i, item);
+					break;
+				}
+			}
+		}
+	} catch (e) {}
+	FV.Parent.UnlockUpdate(true);
+	Progress.StopProgressDialog();
 }
