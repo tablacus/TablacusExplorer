@@ -293,7 +293,7 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define SHGDN_FORPARSINGEX	0x80000000
 #define START_OnFunc			5000
 #define TE_Labels				0
-#define TE_OnMouseMessage		1
+#define TE_ColumnsReplace		1
 #define TE_OnViewCreated		2
 #define TE_OnDefaultCommand		3
 #define TE_OnCreate				4
@@ -345,12 +345,14 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TE_OnHandleIcon			50
 #define TE_OnSorting			51
 #define TE_OnSetName			52
-#define Count_OnFunc			53
+#define TE_OnMouseMessage		53
+#define Count_OnFunc			54
 #define SB_TotalFileSize		0
-#define SB_OnIncludeObject		1
+#define SB_ColumnsReplace		1
 #define SB_AltSelectedItems		2
 #define SB_VirtualName			3
-#define Count_SBFunc			4
+#define SB_OnIncludeObject		4
+#define Count_SBFunc			5
 
 #define CTRL_FV          0
 #define CTRL_SB          1
@@ -1133,6 +1135,7 @@ public:
 	VOID SetSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch);
 	VOID SetFolderSize(IShellFolder2 *pSF2, LPCITEMIDLIST pidl, LPWSTR szText, int cch);
 	VOID SetLabel(LPCITEMIDLIST pidl, LPWSTR szText, int cch);
+	BOOL ReplaceColumns(IDispatch *pdisp, NMLVDISPINFO *lpDispInfo);
 	HRESULT PropertyKeyFromName(BSTR bs, PROPERTYKEY *pkey);
 	FOLDERVIEWOPTIONS teGetFolderViewOptions(LPITEMIDLIST pidl, UINT uViewMode);
 	VOID OnNavigationComplete2();
@@ -1168,11 +1171,13 @@ public:
 	LONG_PTR	m_DefProc;
 	IShellView  *m_pShellView;
 	IDispatch	*m_ppDispatch[Count_SBFunc];
+	IDispatch	**m_ppColumns;
 	FolderItem *m_pFolderItem;
 	FolderItem *m_pFolderItem1;
 	IExplorerBrowser *m_pExplorerBrowser;
 	LPITEMIDLIST m_pidl;
 	IShellFolder2 *m_pSF2;
+	WORD		*m_pDTColumns;
 	int			m_nForceViewMode;
 	int			m_nFolderSizeIndex;
 	int			m_nLabelIndex;
@@ -1182,7 +1187,7 @@ public:
 	int			m_nUnload;
 	int			m_nFocusItem;
 	int			m_nSorting;
-	DWORD		m_dwNameFormat;
+	int			m_iColumns;
 	DWORD		m_param[SB_Count];
 	DWORD		m_nOpenedType;
 	DWORD		m_dwCookie;
@@ -1197,7 +1202,6 @@ public:
 	BOOL		m_bRefreshing;
 	BOOL		m_bAutoVM;
 	BOOL		m_bBeforeNavigate;
-	WORD		*m_pDTColumns;
 	BOOL		m_bRedraw;
 #ifdef _2000XP
 	TEColumn	*m_pColumns;
