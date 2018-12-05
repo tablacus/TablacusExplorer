@@ -2789,6 +2789,13 @@ HRESULT tePutProperty(IUnknown *punk, LPOLESTR sz, VARIANT *pv)
 	return hr;
 }
 
+BOOL teHasProperty(IDispatch *pdisp, LPOLESTR sz)
+{
+	DISPID dispid;
+	HRESULT hr = pdisp->GetIDsOfNames(IID_NULL, &sz, 1, LOCALE_USER_DEFAULT, &dispid);
+	return hr == S_OK;
+}
+
 HRESULT teGetProperty(IDispatch *pdisp, LPOLESTR sz, VARIANT *pv)
 {
 	DISPID dispid;
@@ -5853,11 +5860,9 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						if (pdisp) {
 							bDoCallProc = FALSE;
 							lResult = CallWindowProc((WNDPROC)pSB->m_DefProc, hwnd, msg, wParam, lParam);
-							VARIANT v;
-							VariantClear(&v);
-							teGetProperty(pdisp, L"push", &v);
-							if  (v.vt == VT_DISPATCH) {
-								VariantClear(&v);
+							if (teHasProperty(pdisp, L"push")) {
+								VARIANT v;
+								VariantInit(&v);
 								for (int nLen = teGetObjectLength(pdisp); nLen-- > 0;) {
 									if SUCCEEDED(teGetPropertyAt(pdisp, nLen, &v)) {
 										IDispatch *pdisp2;
@@ -5871,13 +5876,14 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 									}
 								}
 							} else {
-								VariantClear(&v);
 								pSB->ReplaceColumns(pdisp, lpDispInfo);
 							}
 						}
 						if (lpDispInfo->item.iSubItem == pSB->m_nFolderSizeIndex) {
-							bDoCallProc = FALSE;
-							lResult = CallWindowProc((WNDPROC)pSB->m_DefProc, hwnd, msg, wParam, lParam);
+							if (bDoCallProc) {
+								bDoCallProc = FALSE;
+								lResult = CallWindowProc((WNDPROC)pSB->m_DefProc, hwnd, msg, wParam, lParam);
+							}
 							IFolderView *pFV;
 							LPITEMIDLIST pidl;
 							if SUCCEEDED(pSB->m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
@@ -17195,11 +17201,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				if (dispIdMember >= START_OnFunc && dispIdMember < START_OnFunc + Count_OnFunc) {
 					teInvokeObject(&g_pOnFunc[dispIdMember - START_OnFunc], wFlags, pVarResult, nArg, pDispParams->rgvarg);
 					if (nArg >= 0 && dispIdMember == TE_Labels + START_OnFunc && g_pOnFunc[TE_Labels]) {
-						VARIANT v;
-						VariantInit(&v);
-						teGetProperty(g_pOnFunc[TE_Labels], L"call", &v);
-						g_bLabelsMode = v.vt != VT_DISPATCH;
-						VariantClear(&v);
+						g_bLabelsMode = !teHasProperty(g_pOnFunc[TE_Labels], L"call");
 					}
 					return S_OK;
 				}
