@@ -867,23 +867,49 @@ SaveXmlTC = function (Ctrl, xml, nGroup)
 	xml.documentElement.appendChild(item);
 }
 
-SaveXml = function (filename, all)
+SaveConfigXML = function (filename)
 {
 	var xml = CreateXml(true);
 	var root = xml.documentElement;
-	if (all) {
-		var item = xml.createElement("Window");
-		if (!api.IsZoomed(te.hwnd) && !api.IsIconic(te.hwnd)) {
-			api.GetWindowRect(te.hwnd, te.Data.rcWindow);
+
+	for (var i in te.Data) {
+		var res = /^(Tab|Tree|View|Conf)_(.*)/.exec(i);
+		if (res) {
+			if (isFinite(te.Data[i]) || te.Data[i] != "") {
+				var item = xml.createElement(res[1]);
+				item.setAttribute("Id", res[2]);
+				item.text = te.Data[i];
+				root.appendChild(item);
+			}
 		}
-		item.setAttribute("Left", te.Data.rcWindow.left);
-		item.setAttribute("Top", te.Data.rcWindow.top);
-		item.setAttribute("Width", te.Data.rcWindow.right - te.Data.rcWindow.left);
-		item.setAttribute("Height", te.Data.rcWindow.bottom - te.Data.rcWindow.top);
-		item.setAttribute("CmdShow", api.IsZoomed(te.hwnd) ? SW_SHOWMAXIMIZED : te.CmdShow);
-		item.setAttribute("DPI", screen.deviceYDPI);
-		root.appendChild(item);
 	}
+
+	MainWindow.RunEvent1("SaveConfig", xml);
+	try {
+		xml.save(api.PathUnquoteSpaces(filename));
+	} catch (e) {
+		if (e.number != E_ACCESSDENIED) {
+			ShowError(e, [GetText("Save"), filename].join(": "));
+		}
+	}
+}
+
+SaveXml = function (filename)
+{
+	var xml = CreateXml(true);
+	var root = xml.documentElement;
+	var item = xml.createElement("Window");
+	if (!api.IsZoomed(te.hwnd) && !api.IsIconic(te.hwnd)) {
+		api.GetWindowRect(te.hwnd, te.Data.rcWindow);
+	}
+	item.setAttribute("Left", te.Data.rcWindow.left);
+	item.setAttribute("Top", te.Data.rcWindow.top);
+	item.setAttribute("Width", te.Data.rcWindow.right - te.Data.rcWindow.left);
+	item.setAttribute("Height", te.Data.rcWindow.bottom - te.Data.rcWindow.top);
+	item.setAttribute("CmdShow", api.IsZoomed(te.hwnd) ? SW_SHOWMAXIMIZED : te.CmdShow);
+	item.setAttribute("DPI", screen.deviceYDPI);
+	root.appendChild(item);
+
 	var TC = te.Ctrl(CTRL_TC);
 	var cTC = te.Ctrls(CTRL_TC);
 	for (var i in cTC) {
@@ -893,20 +919,7 @@ SaveXml = function (filename, all)
 	}
 	SaveXmlTC(TC, xml);
 
-	if (all) {
-		for (var i in te.Data) {
-			var res = /^(Tab|Tree|View|Conf)_(.*)/.exec(i);
-			if (res) {
-				if (isFinite(te.Data[i]) || te.Data[i] != "") {
-					var item = xml.createElement(res[1]);
-					item.setAttribute("Id", res[2]);
-					item.text = te.Data[i];
-					root.appendChild(item);
-				}
-			}
-		}
-	}
-	MainWindow.RunEvent1("SaveWindow", xml, all);
+	MainWindow.RunEvent1("SaveWindow", xml);
 	try {
 		xml.save(api.PathUnquoteSpaces(filename));
 	} catch (e) {

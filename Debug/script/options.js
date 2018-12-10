@@ -1314,7 +1314,20 @@ function ApplyOptions()
 	SetTabControls();
 	SetTreeControls();
 	SetFolderViews();
-	te.Data.bReload = true;
+	MainWindow.RunEvent1("ConfigChanged", "Config");
+
+	var sw = sha.Windows();
+	for (var i = sw.Count; i--;) {
+		var x = sw.Item(i);
+		if (x) {
+			var w = x.Document.parentWindow;
+			if (w && w.te && w.te.Data) {
+				if (te.Data.DataFolder == w.te.Data.DataFolder) {
+					w.te.Data.bReload = true;
+				}
+			}
+		}
+	}
 	api.EnableWindow(te.Ctrl(CTRL_WB).hwnd, false);
 }
 

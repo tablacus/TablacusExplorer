@@ -4,7 +4,7 @@ g_Types = {Mouse: ["All", "List", "List_Background", "Tree", "Tabs", "Tabs_Backg
 g_nResult = 3;
 g_bChanged = false;
 
-var ado = OpenAdodbFromTextFile(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\mouse\\options.html"));
+var ado = OpenAdodbFromTextFile("addons\\mouse\\options.html");
 if (ado) {
 	SetTabContents(4, "General", ado.ReadText(adReadAll));
 	ado.Close();

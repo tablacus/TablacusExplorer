@@ -27,7 +27,7 @@ ChangeView = function (Ctrl)
 		ChangeTabName(Ctrl);
 		RunEvent1("ChangeView", Ctrl);
 	}
-	RunEvent1("ConfigChanged", "Config");
+	RunEvent1("ConfigChanged", "Window");
 }
 
 SetAddress = function (s)
@@ -234,7 +234,6 @@ LoadConfig = function (bDog)
 				}
 			}
 		}
-		g_.xmlWindow = xml;
 		var arKey = ["Conf", "Tab", "Tree", "View"];
 		for (var j in arKey) {
 			var key = arKey[j];
@@ -252,6 +251,17 @@ LoadConfig = function (bDog)
 			}
 		}
 		delete te.Data.View_SizeFormat;
+		g_.xmlWindow = xml;
+		if (fso.FileExists(te.Data.WindowSetting)) {
+			xml = te.CreateObject("Msxml2.DOMDocument");
+			xml.async = false;
+			xml.load(te.Data.WindowSetting);
+			if (xml) {
+				g_.xmlWindow = xml;
+			}
+		} else {
+			RunEvent1("ConfigChanged", "Config");
+		}
 		var items = xml.getElementsByTagName('Window');
 		if  (items.length) {
 			var item = items[0];
@@ -304,13 +314,17 @@ SaveConfig = function ()
 	}
 	if (te.Data.bSaveConfig) {
 		te.Data.bSaveConfig = false;
+		SaveConfigXML(fso.BuildPath(te.Data.DataFolder, "config\\window.xml"));
+	}
+	if (te.Data.bSaveWindow) {
+		te.Data.bSaveWindow = false;
 		if (document.msFullscreenElement) {
 			while (g_.stack_TC.length) {
 				g_.stack_TC.pop().Visible = true;
 			}
 			document.msExitFullscreen();
 		}
-		SaveXml(fso.BuildPath(te.Data.DataFolder, "config\\window.xml"), true);
+		SaveXml(te.Data.WindowSetting);
 	}
 }
 
@@ -625,44 +639,10 @@ function SetTreeViewData(FV, TVD)
 
 te.OnCreate = function (Ctrl)
 {
-	if (Ctrl.Type == CTRL_TE) {
-		if (g_.xmlWindow && !/string/i.test(typeof g_.xmlWindow)) {
-			LoadXml(g_.xmlWindow);
-		}
-		if (te.Ctrls(CTRL_TC).length == 0) {
-			var TC = te.CreateCtrl(CTRL_TC, 0, 0, "100%", "100%", te.Data.Tab_Style, te.Data.Tab_Align, te.Data.Tab_TabWidth, te.Data.Tab_TabHeight);
-			TC.Selected.Navigate2(HOME_PATH, SBSP_NEWBROWSER, te.Data.View_Type, te.Data.View_ViewMode, te.Data.View_fFlags, te.Data.View_Options, te.Data.View_ViewFlags, te.Data.View_IconSize, te.Data.Tree_Align, te.Data.Tree_Width, te.Data.Tree_Style, te.Data.Tree_EnumFlags, te.Data.Tree_RootStyle, te.Data.Tree_Root);
-		}
-		g_.xmlWindow = null;
-		setTimeout(function ()
-		{
-			var a, i, j, menus, items;
-			Resize();
-			var cTC = te.Ctrls(CTRL_TC);
-			for (var i in cTC) {
-				if (cTC[i].SelectedIndex >= 0) {
-					ChangeView(cTC[i].Selected);
-				}
-			}
-			api.ShowWindow(te.hwnd, te.CmdShow);
-			if (te.CmdShow == SW_SHOWNOACTIVATE) {
-				api.SetWindowPos(te.hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-			}
-			te.CmdShow = SW_SHOWNORMAL;
-			te.UnlockUpdate();
-			setTimeout(function ()
-			{
-				RunCommandLine(api.GetCommandLine());
-				api.PostMessage(te.hwnd, WM_SIZE, 0, 0);
-			}, 500);
-		}, 99);
-		RunEvent1("Create", Ctrl);
-	} else {
-		if (!Ctrl.Data) {
-			Ctrl.Data = api.CreateObject("Object");
-		}
-		RunEvent1("Create", Ctrl);
+	if (!Ctrl.Data) {
+		Ctrl.Data = api.CreateObject("Object");
 	}
+	RunEvent1("Create", Ctrl);
 }
 
 te.OnClose = function (Ctrl)
@@ -1110,7 +1090,7 @@ te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam)
 	if (!isFinite(hr) && Ctrl.Type <= CTRL_EB && (wParam & 0xfff) + 1 == CommandID_PROPERTIES) {
 		hr = InvokeCommand(Ctrl.SelectedItems(), 0, te.hwnd, "properties", null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
 	}
-	RunEvent1("ConfigChanged", "Config");
+	RunEvent1("ConfigChanged", "Window");
 	return hr;
 }
 
@@ -1140,7 +1120,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 			}
 		}
 	}
-	RunEvent1("ConfigChanged", "Config");
+	RunEvent1("ConfigChanged", "Window");
 	if (isFinite(hr)) {
 		return hr;
 	}
@@ -1463,6 +1443,10 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 					if (te.Data.bSaveAddons) {
 						te.Data.bSaveAddons = false;
 						SaveXmlEx("addons.xml", te.Data.Addons);
+					}
+					if (te.Data.bSaveConfig) {
+						te.Data.bSaveConfig = false;
+						SaveConfigXML(fso.BuildPath(te.Data.DataFolder, "config\\window.xml"));
 					}
 					if (te.Data.bReload) {
 						Exec(Ctrl, "Reload customize", "Tools");
@@ -2040,6 +2024,40 @@ AddEventEx(document, "MSFullscreenChange", function ()
 });
 
 //
+
+function InitWindow()
+{
+	if (g_.xmlWindow && !/string/i.test(typeof g_.xmlWindow)) {
+		LoadXml(g_.xmlWindow);
+	}
+	if (te.Ctrls(CTRL_TC).length == 0) {
+		var TC = te.CreateCtrl(CTRL_TC, 0, 0, "100%", "100%", te.Data.Tab_Style, te.Data.Tab_Align, te.Data.Tab_TabWidth, te.Data.Tab_TabHeight);
+		TC.Selected.Navigate2(HOME_PATH, SBSP_NEWBROWSER, te.Data.View_Type, te.Data.View_ViewMode, te.Data.View_fFlags, te.Data.View_Options, te.Data.View_ViewFlags, te.Data.View_IconSize, te.Data.Tree_Align, te.Data.Tree_Width, te.Data.Tree_Style, te.Data.Tree_EnumFlags, te.Data.Tree_RootStyle, te.Data.Tree_Root);
+	}
+	delete g_.xmlWindow;
+	setTimeout(function ()
+	{
+		var a, i, j, menus, items;
+		Resize();
+		var cTC = te.Ctrls(CTRL_TC);
+		for (var i in cTC) {
+			if (cTC[i].SelectedIndex >= 0) {
+				ChangeView(cTC[i].Selected);
+			}
+		}
+		api.ShowWindow(te.hwnd, te.CmdShow);
+		if (te.CmdShow == SW_SHOWNOACTIVATE) {
+			api.SetWindowPos(te.hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+		}
+		te.CmdShow = SW_SHOWNORMAL;
+		te.UnlockUpdate();
+		setTimeout(function ()
+		{
+			RunCommandLine(api.GetCommandLine());
+			api.PostMessage(te.hwnd, WM_SIZE, 0, 0);
+		}, 500);
+	}, 99);
+}
 
 function InitMenus()
 {
@@ -3541,6 +3559,25 @@ if (!te.Data) {
 	for (var i = SHIL_JUMBO + 1; i--;) {
 		te.Data.SHIL[i] = api.SHGetImageList(i);
 	}
+	var o = {};
+	var sw = sha.Windows();
+	for (var i = sw.Count; i--;) {
+		var x = sw.Item(i);
+		if (x) {
+			var w = x.Document.parentWindow;
+			if (w && w.te && w.te.Data) {
+				o[w.te.Data.WindowSetting] = 1;
+			}
+		}
+	}
+	te.Data.WindowSetting = fso.BuildPath(te.Data.DataFolder, "config\\window0.xml");
+	for (var i = 1; i < 999; i++) {
+		var fn = fso.BuildPath(te.Data.DataFolder, "config\\window" + i + ".xml");
+		if (!o[fn]) {
+			te.Data.WindowSetting = fn;
+			break;
+		}
+	}
 	if (api.GetKeyState(VK_SHIFT) < 0 && api.GetKeyState(VK_CONTROL) < 0) {
 		g_.xmlWindow = "Init";
 	} else {
@@ -3559,6 +3596,8 @@ if (!te.Data) {
 		setTimeout(Resize, 99);
 		window.focus();
 	}, 500);
+	LoadConfig();
+	delete g_.xmlWindow;
 }
 te.Data.window = window;
 Exchange = te.Data.Exchange;
@@ -3568,3 +3607,4 @@ InitMouse();
 InitMenus();
 LoadLang();
 ArrangeAddons();
+setTimeout(InitWindow, 9);

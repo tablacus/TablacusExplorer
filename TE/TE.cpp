@@ -101,7 +101,6 @@ BSTR	g_bsCmdLine = NULL;
 BSTR	g_bsDocumentWrite = NULL;
 BSTR	g_bsClipRoot = NULL;
 BSTR	g_bsDateTimeFormat = NULL;
-HANDLE	g_hMutex = NULL;
 HTREEITEM	g_hItemDown = NULL;
 SORTCOLUMN g_pSortColumnNull[3];
 UINT	g_uCrcTable[256];
@@ -2155,9 +2154,66 @@ VOID tePathAppend(BSTR *pbsPath, LPCWSTR pszPath, LPWSTR pszFile)
 	teSysFreeString(&bsPath);
 }
 
+BOOL GetShellFolder(IShellFolder **ppSF, LPCITEMIDLIST pidl)
+{
+	if (ILIsEmpty(pidl)) {
+		SHGetDesktopFolder(ppSF);
+		return TRUE;
+	}
+	IShellFolder *pSF;
+	LPCITEMIDLIST pidlPart;
+	if SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &pidlPart)) {
+		pSF->BindToObject(pidlPart, NULL, IID_PPV_ARGS(ppSF));
+		pSF->Release();
+	}
+	if (*ppSF == NULL) {
+		return FALSE;
+	}
+#ifdef _2000XP
+	if (!g_bUpperVista) {
+		if (ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
+			IPersistFolder *pPF;
+			if SUCCEEDED((*ppSF)->QueryInterface(IID_PPV_ARGS(&pPF))) {
+				pPF->Initialize(pidl);
+				pPF->Release();
+			}
+		}
+	}
+#endif
+	return TRUE;
+}
+
+BOOL teSFIsShellFSFolder(IShellFolder *pSF)
+{
+	BOOL bResult = FALSE;
+	IPersist *pPersist;
+	if SUCCEEDED(pSF->QueryInterface(IID_PPV_ARGS(&pPersist))) {
+		CLSID clsid;
+		if SUCCEEDED(pPersist->GetClassID(&clsid)) {
+			bResult = IsEqualCLSID(clsid, CLSID_ShellFSFolder);
+		}
+		pPersist->Release();
+	}
+	return bResult;
+}
+
+BOOL teIsShellFSFolder(LPITEMIDLIST pidl, BOOL bParent)
+{
+	BOOL bResult = FALSE;
+	if (pidl) {
+		IShellFolder *pSF;
+		LPCITEMIDLIST pidlPart;
+		if (bParent ? SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &pidlPart)) : GetShellFolder(&pSF, pidl)) {
+			bResult = teSFIsShellFSFolder(pSF);
+			pSF->Release();
+		}
+	}
+	return bResult;
+}
+
 LPITEMIDLIST teSHSimpleIDListFromPath(LPWSTR lpstr, BOOL bFolder, WORD wAttr)
 {
-	LPITEMIDLIST pidl;
+	LPITEMIDLIST pidl = NULL;
 	int n = lstrlen(lpstr);
 	if (bFolder || (n > 0 && lpstr[n - 1] == '\\')) {
 		BSTR bs;
@@ -2165,13 +2221,16 @@ LPITEMIDLIST teSHSimpleIDListFromPath(LPWSTR lpstr, BOOL bFolder, WORD wAttr)
 		pidl = SHSimpleIDListFromPath(bs);
 		ILRemoveLastID(pidl);
 		::SysFreeString(bs);
-	} else {
+		if (!teIsShellFSFolder(pidl, FALSE)) {
+			teILFreeClear(&pidl);
+		}
+	}
+	if (!pidl) {
 		pidl = SHSimpleIDListFromPath(lpstr);
 	}
-	if (wAttr) {
-		int nSize = ILGetSize(pidl);
-		if (nSize > 16) {
-			LPWORD pwIdl = (LPWORD)ILFindLastID(pidl);
+	if (wAttr && teIsShellFSFolder(pidl, TRUE)) {
+		LPWORD pwIdl = (LPWORD)ILFindLastID(pidl);
+		if (pwIdl[6] == 0) {
 			pwIdl[6] = wAttr;
 		}
 	}
@@ -2181,24 +2240,25 @@ LPITEMIDLIST teSHSimpleIDListFromPath(LPWSTR lpstr, BOOL bFolder, WORD wAttr)
 LPITEMIDLIST teSHSimpleIDListFromPathEx(LPWSTR lpstr, BOOL bFolder, WORD wAttr, DWORD nSizeLow, DWORD nSizeHigh, FILETIME ft)
 {
 	LPITEMIDLIST pidl = teSHSimpleIDListFromPath(lpstr, bFolder, wAttr);
-	if (pidl) {
-		int nSize = ILGetSize(pidl);
-		if (nSize > 16) {
-			LPWORD pwIdl = (LPWORD)ILFindLastID(pidl);
-			if (ft.dwLowDateTime || ft.dwHighDateTime) {
+	if (teIsShellFSFolder(pidl, TRUE)) {
+		LPWORD pwIdl = (LPWORD)ILFindLastID(pidl);
+		if (ft.dwLowDateTime || ft.dwHighDateTime) {
+			if (*((DWORD *)&pwIdl[4]) == 0) {
 				::FileTimeToDosDateTime(&ft, &pwIdl[4], &pwIdl[5]);
 			}
-			*((DWORD *)&pwIdl[2]) = nSizeLow;
-#ifdef _2000XP
-			if (g_bUpperVista) {
-#endif
-				if (nSize > 0x39 && nSizeHigh) {
-					*((DWORD *)&pwIdl[27]) =  nSizeHigh;
-				}
-#ifdef _2000XP
-			}
-#endif
 		}
+		if (nSizeLow && *((DWORD *)&pwIdl[2]) == 0) {
+			*((DWORD *)&pwIdl[2]) = nSizeLow;
+		}
+#ifdef _2000XP
+		if (g_bUpperVista) {
+#endif
+			if (nSizeHigh && *((DWORD *)&pwIdl[27]) == 0) {
+				*((DWORD *)&pwIdl[27]) = nSizeHigh;
+			}
+#ifdef _2000XP
+		}
+#endif
 	}
 	return pidl;
 }
@@ -2417,35 +2477,6 @@ HRESULT teGetDisplayNameBSTR(IShellFolder *pSF, PCUITEMID_CHILD pidl, SHGDNF uFl
 		hr = StrRetToBSTR(&strret, pidl, pbs);
 	}
 	return hr;
-}
-
-BOOL GetShellFolder(IShellFolder **ppSF, LPCITEMIDLIST pidl)
-{
-	if (ILIsEmpty(pidl)) {
-		SHGetDesktopFolder(ppSF);
-		return TRUE;
-	}
-	IShellFolder *pSF;
-	LPCITEMIDLIST pidlPart;
-	if SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &pidlPart)) {
-		pSF->BindToObject(pidlPart, NULL, IID_PPV_ARGS(ppSF));
-		pSF->Release();
-	}
-	if (*ppSF == NULL) {
-		return FALSE;
-	}
-#ifdef _2000XP
-	if (!g_bUpperVista) {
-		if (ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
-			IPersistFolder *pPF;
-			if SUCCEEDED((*ppSF)->QueryInterface(IID_PPV_ARGS(&pPF))) {
-				pPF->Initialize(pidl);
-				pPF->Release();
-			}
-		}
-	}
-#endif
-	return TRUE;
 }
 
 LPITEMIDLIST teILCreateFromPathEx(LPWSTR pszPath)
@@ -3945,15 +3976,8 @@ LPITEMIDLIST teILCreateResultsXP(LPITEMIDLIST pidl)
 			*(PDWORD)&p[uSize2 + 2] = 0xbeef0005;
 			::CopyMemory(&p[uSize2 + 22], pidl, uSize3);
 			*(PUSHORT)&p[uSize - 4] = uSize2 - 2;
-			CLSID clsid;
-			IPersist *pPersist;
-			if SUCCEEDED(pSF->QueryInterface(IID_PPV_ARGS(&pPersist))) {
-				if SUCCEEDED(pPersist->GetClassID(&clsid)) {
-					if (IsEqualCLSID(clsid, CLSID_ShellFSFolder)) {
-						*(PUSHORT)&p[uSize2 + 24 + uSize3] = *(PUSHORT)&p[uSize2 - 4];
-					}
-				}
-				pPersist->Release();
+			if (teSFIsShellFSFolder(pSF)) {
+				*(PUSHORT)&p[uSize2 + 24 + uSize3] = *(PUSHORT)&p[uSize2 - 4];
 			}
 			STRRET strret;
 			if SUCCEEDED(pSF->GetDisplayNameOf(pidl2, SHGDN_NORMAL, &strret)) {
@@ -6606,11 +6630,6 @@ HRESULT MessageProc(MSG *pMsg)
 VOID Finalize()
 {
 	try {
-		if (g_hMutex) {
-			ReleaseMutex(g_hMutex);
-			::CloseHandle(g_hMutex);
-			g_hMutex = NULL;
-		}
 		teRevoke();
 		for (int i = _countof(g_maps); i--;) {
 			delete [] g_maps[i];
@@ -7584,6 +7603,7 @@ VOID teApiPathCreateFromUrl(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 			teSetBSTR(pVarResult, &bsResult, dwLen);
 		} else {
 			::SysFreeString(bsResult);
+			teSetSZ(pVarResult, NULL);
 		}
 	}
 }
@@ -11048,25 +11068,22 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	if (bVisible && !bNewProcess) {
 		//Multiple Launch
 		szClass = WINDOW_CLASS;
-		g_hMutex = CreateMutex(NULL, FALSE, bsPath);
-		if (WaitForSingleObject(g_hMutex, 0) == WAIT_TIMEOUT) {
-			HWND hwndTE = NULL;
-			while (hwndTE = FindWindowEx(NULL, hwndTE, szClass, NULL)) {
-				if (GetWindowLongPtr(hwndTE, GWLP_USERDATA) == nCrc32) {
-					BSTR bs = teGetCommandLine();
-					COPYDATASTRUCT cd;
-					cd.dwData = 0;
-					cd.lpData = bs;
-					cd.cbData = ::SysStringByteLen(bs) + sizeof(WCHAR);
-					DWORD_PTR dwResult;
-					LRESULT lResult = SendMessageTimeout(hwndTE, WM_COPYDATA, nCmdShow, LPARAM(&cd), SMTO_ABORTIFHUNG, 1000 * 30, &dwResult);
-					teSysFreeString(&bs);
-					if (lResult && dwResult == S_OK) {
-						SysFreeString(bsPath);
-						Finalize();
-						teSetForegroundWindow(hwndTE);
-						return FALSE;
-					}
+		HWND hwndTE = NULL;
+		while (hwndTE = FindWindowEx(NULL, hwndTE, szClass, NULL)) {
+			if (GetWindowLongPtr(hwndTE, GWLP_USERDATA) == nCrc32) {
+				BSTR bs = teGetCommandLine();
+				COPYDATASTRUCT cd;
+				cd.dwData = 0;
+				cd.lpData = bs;
+				cd.cbData = ::SysStringByteLen(bs) + sizeof(WCHAR);
+				DWORD_PTR dwResult;
+				LRESULT lResult = SendMessageTimeout(hwndTE, WM_COPYDATA, nCmdShow, LPARAM(&cd), SMTO_ABORTIFHUNG, 1000 * 30, &dwResult);
+				teSysFreeString(&bs);
+				if (lResult && dwResult == S_OK) {
+					SysFreeString(bsPath);
+					Finalize();
+					teSetForegroundWindow(hwndTE);
+					return FALSE;
 				}
 			}
 		}
