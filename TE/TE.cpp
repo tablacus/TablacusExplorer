@@ -2841,15 +2841,15 @@ HRESULT teGetProperty(IDispatch *pdisp, LPOLESTR sz, VARIANT *pv)
 HRESULT teGetPropertyI(IDispatch *pdisp, LPOLESTR sz, VARIANT *pv)
 {
 	DISPID dispid;
-	HRESULT hr = DISP_E_MEMBERNOTFOUND;
-	IDispatchEx *pdex;
-	if SUCCEEDED(pdisp->QueryInterface(IID_PPV_ARGS(&pdex))) {
-		BSTR bs = ::SysAllocString(sz);
-		hr = pdex->GetDispID(bs, fdexNameCaseInsensitive, &dispid);
-		::SysFreeString(bs);
-		pdex->Release();
-	} else {
-		hr = pdisp->GetIDsOfNames(IID_NULL, &sz, 1, LOCALE_USER_DEFAULT, &dispid);
+	HRESULT hr = pdisp->GetIDsOfNames(IID_NULL, &sz, 1, LOCALE_USER_DEFAULT, &dispid);
+	if FAILED(hr) {
+		IDispatchEx *pdex;
+		if SUCCEEDED(pdisp->QueryInterface(IID_PPV_ARGS(&pdex))) {
+			BSTR bs = ::SysAllocString(sz);
+			hr = pdex->GetDispID(bs, fdexNameCaseInsensitive, &dispid);
+			::SysFreeString(bs);
+			pdex->Release();
+		}
 	}
 	if (hr == S_OK) {
 		hr = Invoke5(pdisp, dispid, DISPATCH_PROPERTYGET, pv, 0, NULL);
@@ -13560,7 +13560,7 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 	}
 	TEmethodW *methodArgs = new TEmethodW[nCount + 1];
 	BOOL *pbAlloc = new BOOL[nCount + 1];
-	BSTR bsName = tePSGetNameFromPropertyKeyEx(PKEY_ItemNameDisplay, 0, m_pShellView);
+	BSTR bsName = NULL;
 	BOOL bNoName = TRUE;
 	for (int i = nCount; i-- > 0;) {
 		pbAlloc[i] = FALSE;
@@ -13570,7 +13570,7 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 			methodArgs[i].name = tePSGetNameFromPropertyKeyEx(propKey, 0, m_pShellView);
 			pbAlloc[i] = TRUE;
 		}
-		if (lstrcmpi(methodArgs[i].name, bsName) == 0) {
+		if (IsEqualPropertyKey(propKey, PKEY_ItemNameDisplay)) {
 			bNoName = FALSE;
 		}
 		int n;
@@ -13585,6 +13585,7 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 		methodArgs[i].id = n;
 	}
 	if (bNoName && nAllWidth) {
+		bsName = tePSGetNameFromPropertyKeyEx(PKEY_ItemNameDisplay, 0, m_pShellView);
 		methodArgs[nCount].name = bsName;
 		methodArgs[nCount++].id = -1;
 		nAllWidth += 100;
@@ -13618,6 +13619,7 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 						if (teGetPropertyI(pdispColumns, methodArgs[i].name, &v) == S_OK) {
 							pPropKey2[k] = pPropKey[GetIntFromVariantClear(&v)];
 							pnWidth[k++] = methodArgs[i].id;
+							teDelProperty(pdispColumns, methodArgs[i].name);
 						}
 					}
 					if (bNoName && k == 1) {
@@ -14843,7 +14845,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				return DoFunc(TE_OnViewModeChanged, this, S_OK);
 			case DISPID_BEGINDRAG://XP+
 				DoFunc1(TE_OnBeginDrag, this, pVarResult);
-				if (m_bRegenerateItems && pVarResult && (pVarResult->vt != VT_BOOL || pVarResult->boolVal)) {
+				if ((m_bRegenerateItems || ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) && pVarResult && (pVarResult->vt != VT_BOOL || pVarResult->boolVal)) {
 					FolderItems *pid;
 					if SUCCEEDED(SelectedItems(&pid)) {
 						IDataObject *pDataObj = NULL;

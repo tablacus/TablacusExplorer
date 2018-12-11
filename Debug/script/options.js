@@ -714,7 +714,11 @@ function RemoveX(mode)
 		return;
 	}
 	var i = g_x[mode].selectedIndex;
-	g_x[mode][i] = null;
+	var j = i;
+	while (j >= 0 && g_x[mode][j]) {
+		g_x[mode][j] = null;
+		j = g_x[mode].selectedIndex;
+	}
 	g_Chg[mode] = true;
 	g_bChanged = true;
 	if (i >= g_x[mode].length) {
@@ -728,18 +732,31 @@ function RemoveX(mode)
 
 function MoveX(mode, n)
 {
-	if (g_x[mode].selectedIndex < 0 || g_x[mode].selectedIndex + n < 0 || g_x[mode].selectedIndex + n >= g_x[mode].length) {
-		return;
+	if (n < 0) {
+		for (var i = 0; i < g_x[mode].length + n; i++) {
+			if (!g_x[mode][i].selected && g_x[mode][i + 1].selected) {
+				var ar = [g_x[mode][i].text, g_x[mode][i].value];
+				g_x[mode][i].text = g_x[mode][i + 1].text;
+				g_x[mode][i].value = g_x[mode][i + 1].value;
+				g_x[mode][i + 1].text = ar[0];
+				g_x[mode][i + 1].value = ar[1];
+				g_x[mode][i + 1].selected = false;
+				g_x[mode][i].selected = true;
+			}
+		}
+	} else {
+		for (var i = g_x[mode].length; i-- > n;) {
+			if (!g_x[mode][i].selected && g_x[mode][i - 1].selected) {
+				var ar = [g_x[mode][i].text, g_x[mode][i].value];
+				g_x[mode][i].text = g_x[mode][i - 1].text;
+				g_x[mode][i].value = g_x[mode][i - 1].value;
+				g_x[mode][i - 1].text = ar[0];
+				g_x[mode][i - 1].value = ar[1];
+				g_x[mode][i - 1].selected = false;
+				g_x[mode][i].selected = true;
+			}
+		}
 	}
-	var src = g_x[mode][g_x[mode].selectedIndex];
-	var dist = g_x[mode][g_x[mode].selectedIndex + n];
-	var text = dist.text;
-	var value = dist.value;
-	dist.text = src.text;
-	dist.value = src.value;
-	src.text = text;
-	src.value = value;
-	g_x[mode].selectedIndex += n;
 	g_Chg[mode] = true;
 	g_bChanged = true;
 	EnableSelectTag(g_x[mode]);
@@ -772,7 +789,7 @@ function LoadMenus(nSelected)
 
 		for (var j in g_arMenuTypes) {
 			var s = g_arMenuTypes[j];
-			document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", ['<select name="Menus_', s, '" size="17" style="width: 12em; height: 34em; height: calc(100vh - 6em); min-height: 20em; display: none" onchange="EditXEx(EditMenus)" ondblclick="EditMenus()" oncontextmenu="CancelX(\'Menus\')"></select>'].join(""));
+			document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", ['<select name="Menus_', s, '" size="17" style="width: 12em; height: 34em; height: calc(100vh - 6em); min-height: 20em; display: none" onchange="EditXEx(EditMenus)" ondblclick="EditMenus()" oncontextmenu="CancelX(\'Menus\')" multiple></select>'].join(""));
 			var menus = teMenuGetElementsByTagName(s);
 			if (menus && menus.length) {
 				oa[++oa.length - 1].value = s + "," + menus[0].getAttribute("Base") + "," + menus[0].getAttribute("Pos");
@@ -1216,16 +1233,7 @@ function OptionMove(dir)
 		if (g_x.Menus.selectedIndex < 0 || g_x.Menus.selectedIndex + dir < 0 || g_x.Menus.selectedIndex + dir >= g_x.Menus.length) {
 			return;
 		}
-		var src = g_x.Menus[g_x.Menus.selectedIndex];
-		var dist = g_x.Menus[g_x.Menus.selectedIndex + dir];
-		var text = dist.text;
-		var value = dist.value;
-		dist.text = src.text;
-		dist.value = src.value;
-		src.text = text;
-		src.value = value;
-		g_x.Menus.selectedIndex += dir;
-		g_Chg.Menus = true;
+		MoveX("Menus", dir);
 	}
 }
 
@@ -1319,12 +1327,10 @@ function ApplyOptions()
 	var sw = sha.Windows();
 	for (var i = sw.Count; i--;) {
 		var x = sw.Item(i);
-		if (x) {
+		if (x && x.Document) {
 			var w = x.Document.parentWindow;
-			if (w && w.te && w.te.Data) {
-				if (te.Data.DataFolder == w.te.Data.DataFolder) {
-					w.te.Data.bReload = true;
-				}
+			if (w && w.te && w.te.Data && te.Data.DataFolder == w.te.Data.DataFolder) {
+				w.te.Data.bReload = true;
 			}
 		}
 	}

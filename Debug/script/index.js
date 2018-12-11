@@ -3563,7 +3563,7 @@ if (!te.Data) {
 	var sw = sha.Windows();
 	for (var i = sw.Count; i--;) {
 		var x = sw.Item(i);
-		if (x) {
+		if (x && x.Document) {
 			var w = x.Document.parentWindow;
 			if (w && w.te && w.te.Data) {
 				o[w.te.Data.WindowSetting] = 1;
