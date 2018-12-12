@@ -13548,104 +13548,94 @@ STDMETHODIMP CteShellBrowser::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UI
 
 VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 {
-	int nCount = 0;
-	int nAllWidth = 0;
-	LPTSTR *lplpszArgs = NULL;
 	if (m_dwUnavailable) {
 		return;
 	}
+	int nAllWidth = 0;
+	int nArgs = 0;
+	LPTSTR *lplpszArgs = NULL;
 	if (bsColumns && bsColumns[0]) {
-		lplpszArgs = CommandLineToArgvW(bsColumns, &nCount);
-		nCount /= 2;
+		lplpszArgs = CommandLineToArgvW(bsColumns, &nArgs);
+		nArgs /= 2;
 	}
-	TEmethodW *methodArgs = new TEmethodW[nCount + 1];
-	BOOL *pbAlloc = new BOOL[nCount + 1];
-	BSTR bsName = NULL;
+	int nAlloc = nArgs >= (int)m_nDefultColumns ? nArgs + 1 : m_nDefultColumns;
+	PROPERTYKEY *pPropKey0 = new PROPERTYKEY[nAlloc];	
+	PROPERTYKEY *pPropKey = &pPropKey0[1];
+	TEmethodW *methodArgs0 = new TEmethodW[nAlloc];
+	TEmethodW *methodArgs = &methodArgs0[1];
+#ifdef _2000XP
+	for (int i = nArgs; i-- > 0;) {
+		methodArgs[i].name = NULL;
+	}
+#endif
 	BOOL bNoName = TRUE;
-	for (int i = nCount; i-- > 0;) {
-		pbAlloc[i] = FALSE;
-		methodArgs[i].name = lplpszArgs[i * 2];
-		PROPERTYKEY propKey;
-		if SUCCEEDED(lpfnPSPropertyKeyFromStringEx(lplpszArgs[i * 2], &propKey)) {
-			methodArgs[i].name = tePSGetNameFromPropertyKeyEx(propKey, 0, m_pShellView);
-			pbAlloc[i] = TRUE;
+	int nCount = 0;
+	for (int i = 0; i < nArgs; i++) {
+		if SUCCEEDED(PropertyKeyFromName(lplpszArgs[i * 2], &pPropKey[nCount])) {
+			BOOL bExist = FALSE;
+			for (int j = nCount; j-- > 0;) {
+				if (IsEqualPropertyKey(pPropKey[nCount], pPropKey[j])) {
+					bExist = true;
+					break;
+				}
+			}
+			if (bExist) {
+				continue;
+			}
+#ifdef _2000XP
+			if (!g_bUpperVista) {
+				methodArgs[i].name = tePSGetNameFromPropertyKeyEx(pPropKey[nCount], 0, m_pShellView);
+			}
+#endif
+			if (IsEqualPropertyKey(pPropKey[nCount], PKEY_ItemNameDisplay)) {
+				bNoName = FALSE;
+			}
+			int n;
+			if (StrToIntEx(lplpszArgs[i * 2 + 1], STIF_DEFAULT, &n) && n < 32768) {
+				nAllWidth += n;
+			} else {
+				n = -1;
+			}
+			if (n < 0) {
+				nAllWidth += 100;
+			}
+			methodArgs[nCount++].id = n;
 		}
-		if (IsEqualPropertyKey(propKey, PKEY_ItemNameDisplay)) {
-			bNoName = FALSE;
-		}
-		int n;
-		if (StrToIntEx(lplpszArgs[i * 2 + 1], STIF_DEFAULT, &n) && n < 32768) {
-			nAllWidth += n;
-		} else {
-			n = -1;
-		}
-		if (n < 0) {
+	}
+	if (bNoName) {
+		pPropKey = pPropKey0;
+		methodArgs = methodArgs0;
+		if (nCount) {
+			pPropKey[0] = PKEY_ItemNameDisplay;
+#ifdef _2000XP
+			if (!g_bUpperVista) {
+				methodArgs[0].name = tePSGetNameFromPropertyKeyEx(PKEY_ItemNameDisplay, 0, m_pShellView);
+			}
+#endif
+			methodArgs[0].id = -1;
+			nCount++;
 			nAllWidth += 100;
 		}
-		methodArgs[i].id = n;
-	}
-	if (bNoName && nAllWidth) {
-		bsName = tePSGetNameFromPropertyKeyEx(PKEY_ItemNameDisplay, 0, m_pShellView);
-		methodArgs[nCount].name = bsName;
-		methodArgs[nCount++].id = -1;
-		nAllWidth += 100;
 	}
 	if (nCount == 0 || nAllWidth > nCount + 4) {
 		IColumnManager *pColumnManager;
 		if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pColumnManager))) {
-			UINT uCount;
-			if SUCCEEDED(pColumnManager->GetColumnCount(CM_ENUM_ALL, &uCount)) {
-				PROPERTYKEY *pPropKey = new PROPERTYKEY[uCount];
-				if SUCCEEDED(pColumnManager->GetColumns(CM_ENUM_ALL, pPropKey, uCount)) {
-					VARIANT v;
-					VariantInit(&v);
-					IDispatch *pdispColumns = NULL;
-					GetNewObject(&pdispColumns);
-					CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_NAME };
-					for (int i = uCount; i-- > 0;) {
-						if (pColumnManager->GetColumnInfo(pPropKey[i], &cmci) == S_OK) {
-							if (cmci.wszName[0]) {
-								VariantClear(&v);
-								teSetLong(&v, i);
-								tePutProperty(pdispColumns, cmci.wszName, &v);
-							}
-						}
-					}
-					int k = 0;
-					PROPERTYKEY *pPropKey2 = new PROPERTYKEY[uCount];
-					int *pnWidth = new int[uCount];
-					VariantClear(&v);
-					for (int i = 0; i < nCount; i++) {
-						if (teGetPropertyI(pdispColumns, methodArgs[i].name, &v) == S_OK) {
-							pPropKey2[k] = pPropKey[GetIntFromVariantClear(&v)];
-							pnWidth[k++] = methodArgs[i].id;
-							teDelProperty(pdispColumns, methodArgs[i].name);
-						}
-					}
-					if (bNoName && k == 1) {
-						k = 0;
-					}
-					if (k == 0) {	//Default Columns
-						while (k < (int)m_nDefultColumns && k < (int)uCount) {
-							pPropKey2[k] = m_pDefultColumns[k];
-							pnWidth[k++] = -1;
-						}
-					}
-					if (k > 0) {
-						if SUCCEEDED(pColumnManager->SetColumns(pPropKey2, k)) {
-							CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_WIDTH };
-							while (k--) {
-								cmci.uWidth = pnWidth[k];
-								pColumnManager->SetColumnInfo(pPropKey2[k], &cmci);
-							}
-						}
-					}
-					delete [] pnWidth;
-					delete [] pPropKey2;
-					pdispColumns->Release();
-					VariantClear(&v);
+			//Default Columns
+			if (nCount == 0) {
+				pPropKey = pPropKey0;
+				methodArgs = methodArgs0;
+				nCount = m_nDefultColumns;
+				for (int i = nCount; i--;) {
+					pPropKey[i] = m_pDefultColumns[i];
+					methodArgs[i].id = -1;
 				}
-				delete [] pPropKey;
+			}
+			if SUCCEEDED(pColumnManager->SetColumns(pPropKey, nCount)) {
+				CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_WIDTH };
+				for (int i = nCount; i--;) {
+					cmci.uWidth = methodArgs[i].id;
+					pColumnManager->SetColumnInfo(pPropKey[i], &cmci);
+				}
 			}
 			pColumnManager->Release();
 #ifdef _2000XP
@@ -13787,18 +13777,19 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 			}
 #endif
 		}
-		if (lplpszArgs) {
-			for (int i = nCount; i-- > 0;) {
-				if (pbAlloc[i]) {
-					teSysFreeString(&methodArgs[i].name);
-				}
-			}
-			delete [] pbAlloc;
-			delete [] methodArgs;
-			LocalFree(lplpszArgs);
-		}
-		teSysFreeString(&bsName);
 	}
+	if (lplpszArgs) {
+		LocalFree(lplpszArgs);
+	}
+#ifdef _2000XP
+	if (!g_bUpperVista) {
+		for (int i = nCount; i-- > 0;) {
+			teSysFreeString(&methodArgs[i].name);
+		}
+	}
+#endif
+	delete [] methodArgs0;
+	delete [] pPropKey0;
 }
 
 VOID AddColumnData(LPWSTR pszColumns, LPWSTR pszName, int nWidth)
@@ -16501,32 +16492,25 @@ VOID CteShellBrowser::GetGroupBy(BSTR* pbs)
 
 HRESULT CteShellBrowser::PropertyKeyFromName(BSTR bs, PROPERTYKEY *pkey)
 {
-	HRESULT hr = tePSPropertyKeyFromStringEx(bs, pkey);
-	if SUCCEEDED(hr) {
-		return hr;
-	}
-	IColumnManager *pColumnManager;
-	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pColumnManager))) {
-		UINT uCount;
-		if SUCCEEDED(pColumnManager->GetColumnCount(CM_ENUM_VISIBLE, &uCount)) {
-			if (uCount) {
-				PROPERTYKEY *pPropKey = new PROPERTYKEY[uCount];
-				if SUCCEEDED(pColumnManager->GetColumns(CM_ENUM_VISIBLE, pPropKey, uCount)) {
-					CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_NAME };
-					for (UINT i = 0; i < uCount; i++) {
-						if SUCCEEDED(pColumnManager->GetColumnInfo(pPropKey[i], &cmci)) {
-							if (lstrcmpi(bs, cmci.wszName) == 0 || teStrSameIFree(tePSGetNameFromPropertyKeyEx(pPropKey[i], 0, NULL), bs)) {
-								*pkey = pPropKey[i];
-								hr = S_OK;
-								break;
-							}
-						}
-					}
+	HRESULT hr = lpfnPSPropertyKeyFromStringEx(bs, pkey);
+	if (m_pSF2) {
+		SHELLDETAILS sd;
+		for (UINT i = 0; hr != S_OK && i < MAX_COLUMNS && 
+#ifndef _2000XP
+				m_pSF2->
+#endif
+				GetDetailsOf(NULL, i, &sd)== S_OK; i++) {
+			BSTR bs1;
+			if SUCCEEDED(StrRetToBSTR(&sd.str, NULL, &bs1)) {
+				if (teStrSameIFree(bs1, bs)) {
+					hr =
+#ifndef _2000XP
+						m_pSF2->
+#endif
+						MapColumnToSCID(i, pkey);
 				}
-				delete [] pPropKey;
 			}
 		}
-		pColumnManager->Release();
 	}
 	return hr;
 }
