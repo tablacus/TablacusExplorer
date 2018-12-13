@@ -408,7 +408,11 @@ function ApplyLangTag(o)
 		for (i = o.length; i--;) {
 			var s = o[i].innerHTML;
 			if (s) {
-				o[i].innerHTML = amp2ul(GetTextR(s.replace(/&amp;/ig, "&")));
+				o[i].innerHTML = s.replace(/(\s*<[^>]*?>\s*)|([^<>]*)|/gm, function (strMatch, ref1, ref2)
+				{
+					var r = ref1 || ref2;
+					return /^\s*</.test(r) ? r : amp2ul(GetTextR(r.replace(/&amp;/ig, "&")));
+				});
 			}
 			s = o[i].title;
 			if (s) {
@@ -2889,7 +2893,7 @@ function MakeKeySelect()
 		var ar = [];
 		for (var i = 0; i < 4; i++) {
 			var s = MainWindow.g_.KeyState[i][0];
-			ar.push('<input type="checkbox" onclick="KeyShift(this)" id="_Key', s, '"><label for="_Key', s, '">', s, '&nbsp;</label>');
+			ar.push('<label><input type="checkbox" onclick="KeyShift(this)" id="_Key', s, '">', s, '&nbsp;</label>');
 		}
 		oa.insertAdjacentHTML("AfterBegin", ar.join(""));
 	}

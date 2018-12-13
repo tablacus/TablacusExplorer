@@ -958,9 +958,9 @@ public:
 	int		m_param[9];
 	int		m_nTC;
 	int		m_nScrollWidth;
+	int		m_nRedraw;
 	BOOL	m_bEmpty;
 	BOOL	m_bVisible;
-	BOOL	m_bRedraw;
 private:
 	VARIANT m_vData;
 	CteDropTarget2 *m_pDropTarget2;

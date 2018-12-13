@@ -12289,7 +12289,6 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	m_nLabelIndex = MAXINT;
 	m_nLinkTargetIndex = MAXINT;
 	m_bRegenerateItems = FALSE;
-	m_nSorting = TESORTING;
 	GetNewObject(&m_ppDispatch[SB_TotalFileSize]);
 	SafeRelease(&m_ppDispatch[SB_AltSelectedItems]);
 	CteFolderItem *pid1 = NULL;
@@ -12469,7 +12468,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		InitFilter();
 	}
 	SetRectEmpty(&rc);
-
+	m_nSorting = ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER]) ? TESORTING : 0;
 	//History / Management
 	SetHistory(pFolderItems, wFlags);
 	SetRedraw(FALSE);
@@ -12485,7 +12484,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 #endif
 	}
 	try {
-		m_pTC->m_bRedraw = TRUE;
+		m_pTC->m_nRedraw |= 0x10;
 		hr = E_FAIL;
 		if (dwFrame || teGetFolderViewOptions(m_pidl, m_param[SB_ViewMode]) == FVO_DEFAULT) {
 			//ExplorerBrowser
@@ -13575,7 +13574,7 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 			BOOL bExist = FALSE;
 			for (int j = nCount; j-- > 0;) {
 				if (IsEqualPropertyKey(pPropKey[nCount], pPropKey[j])) {
-					bExist = true;
+					bExist = TRUE;
 					break;
 				}
 			}
@@ -13630,11 +13629,34 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 					methodArgs[i].id = -1;
 				}
 			}
-			if SUCCEEDED(pColumnManager->SetColumns(pPropKey, nCount)) {
-				CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_WIDTH };
-				for (int i = nCount; i--;) {
-					cmci.uWidth = methodArgs[i].id;
-					pColumnManager->SetColumnInfo(pPropKey[i], &cmci);
+			//Current Columns
+			BOOL bSame = FALSE;
+			UINT uCurCount;
+			if SUCCEEDED(pColumnManager->GetColumnCount(CM_ENUM_VISIBLE, &uCurCount)) {
+				PROPERTYKEY *pPropKey2 = new PROPERTYKEY[uCurCount];
+				if SUCCEEDED(pColumnManager->GetColumns(CM_ENUM_VISIBLE, pPropKey2, uCurCount)) {
+					CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH };
+					bSame = nCount == uCurCount;
+					for (UINT i = 0; bSame && i < uCurCount; i++) {
+						if (bSame = IsEqualPropertyKey(pPropKey[i], pPropKey2[i])) {
+							if SUCCEEDED(pColumnManager->GetColumnInfo(pPropKey2[i], &cmci)) {
+								bSame = (methodArgs[i].id == -1) ? cmci.uWidth == cmci.uWidth == cmci.uDefaultWidth : cmci.uWidth == methodArgs[i].id;
+							}
+						}
+					}
+				}
+				delete [] pPropKey2;
+			}
+			if (!bSame) {
+				if (m_pTC->m_nRedraw) {
+					m_pTC->m_nRedraw |= 0x10000;
+				}
+				if SUCCEEDED(pColumnManager->SetColumns(pPropKey, nCount)) {
+					CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_WIDTH };
+					for (int i = nCount; i--;) {
+						cmci.uWidth = methodArgs[i].id;
+						pColumnManager->SetColumnInfo(pPropKey[i], &cmci);
+					}
 				}
 			}
 			pColumnManager->Release();
@@ -15482,7 +15504,7 @@ VOID CteShellBrowser::OnNavigationComplete2()
 	m_bCheckLayout = TRUE;
 	SetFolderFlags(FALSE);
 	InitFolderSize();
-	if (m_pTC->m_bRedraw) {
+	if (m_pTC->m_nRedraw && (m_pTC->m_nRedraw & 0x3100) != 0x3100) {
 		SetTimer(g_hwndMain, TET_Redraw, 24, teTimerProc);
 	}
 }
@@ -16499,7 +16521,7 @@ HRESULT CteShellBrowser::PropertyKeyFromName(BSTR bs, PROPERTYKEY *pkey)
 #ifndef _2000XP
 				m_pSF2->
 #endif
-				GetDetailsOf(NULL, i, &sd)== S_OK; i++) {
+				GetDetailsOf(NULL, i, &sd) == S_OK; i++) {
 			BSTR bs1;
 			if SUCCEEDED(StrRetToBSTR(&sd.str, NULL, &bs1)) {
 				if (teStrSameIFree(bs1, bs)) {
@@ -16563,6 +16585,9 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 			if (!teIsSameSort(pFV2, pCol, nSortColumns)) {
 				m_nFocusItem = -1;
 				m_nSorting = TESORTING;
+				if (m_pTC->m_nRedraw) {
+					m_pTC->m_nRedraw |= 0x100;
+				}
 				pFV2->SetSortColumns(pCol, nSortColumns);
 			}
 		}
@@ -16620,6 +16645,14 @@ VOID CteShellBrowser::SetGroupBy(BSTR bs)
 	GetGroupBy(&bs0);
 	if (teStrSameIFree(bs0, bs)) {
 		return;
+	}
+	if (m_pTC->m_nRedraw) {
+		if (m_pTC->m_nRedraw & 0x100) {
+			m_pTC->m_nRedraw |= 0x3000;
+			SetTimer(g_hwndMain, TET_Redraw, 500, teTimerProc);
+		} else {
+			m_pTC->m_nRedraw |= 0x1000;
+		}
 	}
 	IFolderView2 *pFV2;
 	PROPERTYKEY propKey;
@@ -17184,7 +17217,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 								if (pSB->m_nUnload & 5) {
 									pSB->Show(TRUE, 0);
 								}
-								if (pTC->m_bRedraw) {
+								if (pTC->m_nRedraw) {
 									pTC->RedrawUpdate();
 								}
 							}
@@ -18123,7 +18156,7 @@ void CteTabCtrl::Init()
 	m_DefTCProc = NULL;
 	m_DefBTProc = NULL;
 	m_DefSTProc = NULL;
-	m_bRedraw = FALSE;
+	m_nRedraw = 0;
 }
 
 VOID CteTabCtrl::GetItem(int i, VARIANT *pVarResult)
@@ -18169,7 +18202,7 @@ BOOL CteTabCtrl::Close(BOOL bForce)
 			}
 		}
 		Show(FALSE);
-		if (m_bRedraw) {
+		if (m_nRedraw) {
 			KillTimer(m_hwnd, (UINT_PTR)this);
 		}
 		RevokeDragDrop(m_hwnd);
@@ -18671,22 +18704,22 @@ VOID CteTabCtrl::UnlockUpdate(BOOL bDirect)
 		return;
 	}
 	m_nLockUpdate = 0;
-	m_bRedraw = TRUE;
-	if (bDirect) {
+	m_nRedraw |= 1;
+	if (bDirect && !(m_nRedraw & 0x13110)) {
 		RedrawUpdate();
 		return;
 	}
-	SetTimer(g_hwndMain, TET_Redraw, 500, teTimerProc);
+	SetTimer(g_hwndMain, TET_Redraw, bDirect && (m_nRedraw & 0x3100) != 0x3100 ? 24 : 500, teTimerProc);
 }
 
 VOID CteTabCtrl::RedrawUpdate()
 {
-	if (m_bRedraw) {
+	if (m_nRedraw) {
 		if (g_nLockUpdate) {
 			SetTimer(g_hwndMain, TET_Redraw, 500, teTimerProc);
 			return;
 		}
-		m_bRedraw = FALSE;
+		m_nRedraw = 0;
 		SendMessage(m_hwndStatic, WM_SETREDRAW, TRUE, 0);
 		SendMessage(m_hwnd, WM_SETREDRAW, TRUE, 0);
 		CteShellBrowser *pSB = GetShellBrowser(m_nIndex);

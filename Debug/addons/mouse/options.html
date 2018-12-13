@@ -5,19 +5,19 @@
         <select name="Mouse" style="width: 12.5em" onchange="SwitchX('Mouse', this, document.E)">
         </select>
         <br />
-        <select name="MouseAll" size="17" style="width: 12.5em; height: 32em; height: calc(100vh - 7em); min-height: 12em" onchange="EditXEx(EditX, 'Mouse', document.E)" ondblclick="EditX('Mouse')" oncontextmenu="CancelX('Mouse')" multiple>
+        <select name="MouseAll" size="17" style="width: 12.5em; height: 32em; height: calc(100vh - 7em); min-height: 12em" onchange="EditXEx(EditX, 'Mouse', document.E)" ondblclick="EditX('Mouse', document.E)" oncontextmenu="CancelX('Mouse')" multiple>
         </select>
-        <select name="MouseList" size="17" style="width: 12.5em; height: 32em; height: calc(100vh - 7em); min-height: 12em; display: none" onchange="EditXEx(EditX, 'Mouse', document.E)" ondblclick="EditX('Mouse')" oncontextmenu="CancelX('Mouse')" multiple>
+        <select name="MouseList" size="17" style="width: 12.5em; height: 32em; height: calc(100vh - 7em); min-height: 12em; display: none" onchange="EditXEx(EditX, 'Mouse', document.E)" ondblclick="EditX('Mouse', document.E)" oncontextmenu="CancelX('Mouse')" multiple>
         </select>
-        <select name="MouseList_Background" size="17" style="width: 12.5em; height: 32em; height: calc(100vh - 7em); min-height: 12em; display: none" onchange="EditXEx(EditX, 'Mouse', document.E)" ondblclick="EditX('Mouse')" oncontextmenu="CancelX('Mouse')" multiple>
+        <select name="MouseList_Background" size="17" style="width: 12.5em; height: 32em; height: calc(100vh - 7em); min-height: 12em; display: none" onchange="EditXEx(EditX, 'Mouse', document.E)" ondblclick="EditX('Mouse', document.E)" oncontextmenu="CancelX('Mouse')" multiple>
         </select>
-        <select name="MouseTree" size="17" style="width: 12.5em; height: 32em; height: calc(100vh - 7em); min-height: 12em; display: none" onchange="EditXEx(EditX, 'Mouse', document.E)" ondblclick="EditX('Mouse')" oncontextmenu="CancelX('Mouse')" multiple>
+        <select name="MouseTree" size="17" style="width: 12.5em; height: 32em; height: calc(100vh - 7em); min-height: 12em; display: none" onchange="EditXEx(EditX, 'Mouse', document.E)" ondblclick="EditX('Mouse', document.E)" oncontextmenu="CancelX('Mouse')" multiple>
         </select>
-        <select name="MouseTabs" size="17" style="width: 12.5em; height: 32em; height: calc(100vh - 7em); min-height: 12em; display: none" onchange="EditXEx(EditX, 'Mouse', document.E)" ondblclick="EditX('Mouse')" oncontextmenu="CancelX('Mouse')" multiple>
+        <select name="MouseTabs" size="17" style="width: 12.5em; height: 32em; height: calc(100vh - 7em); min-height: 12em; display: none" onchange="EditXEx(EditX, 'Mouse', document.E)" ondblclick="EditX('Mouse', document.E)" oncontextmenu="CancelX('Mouse')" multiple>
         </select>
-        <select name="MouseTabs_Background" size="17" style="width: 12.5em; height: 32em; height: calc(100vh - 7em); min-height: 12em; display: none" onchange="EditXEx(EditX, 'Mouse', document.E)" ondblclick="EditX('Mouse')" oncontextmenu="CancelX('Mouse')" multiple>
+        <select name="MouseTabs_Background" size="17" style="width: 12.5em; height: 32em; height: calc(100vh - 7em); min-height: 12em; display: none" onchange="EditXEx(EditX, 'Mouse', document.E)" ondblclick="EditX('Mouse', document.E)" oncontextmenu="CancelX('Mouse')" multiple>
         </select>
-        <select name="MouseBrowser" size="17" style="width: 12.5em; height: 32em; height: calc(100vh - 7em); min-height: 12em; display: none" onchange="EditXEx(EditX, 'Mouse', document.E)" ondblclick="EditX('Mouse')" oncontextmenu="CancelX('Mouse')" multiple>
+        <select name="MouseBrowser" size="17" style="width: 12.5em; height: 32em; height: calc(100vh - 7em); min-height: 12em; display: none" onchange="EditXEx(EditX, 'Mouse', document.E)" ondblclick="EditX('Mouse', document.E)" oncontextmenu="CancelX('Mouse')" multiple>
         </select>
       </td>
       <td valign="top">
@@ -114,7 +114,7 @@
         <input type="button" value="Down" onclick="MoveX('Mouse', 1)" />
       </td>
       <td style="width: 100%; vertical-align: middle">
-        <input type="checkbox" id="_EDIT" checked /><label for="_EDIT">Edit</label>
+        <label><input type="checkbox" id="_EDIT" checked />Edit</label>
       </td>
       <td class="buttons">
         <input type="button" value="Add" onclick="AddX('Mouse', null, document.E)" />

@@ -1506,7 +1506,7 @@ InitDialog = function ()
 	if (Query == "new") {
 		returnValue = false;
 		var s = [];
-		s.push('<div style="padding: 8px;" style="display: block;"><input type="radio" name="mode" id="folder" onclick="document.F.path.focus()"><label for="folder">New Folder</label> <input type="radio" name="mode" id="file" onclick="document.F.path.focus()"><label for="file">New File</label><br />', dialogArguments.path ,'<br /><input type="text" name="path" style="width: 100%" /></div>');
+		s.push('<div style="padding: 8px;" style="display: block;"><label><input type="radio" name="mode" id="folder" onclick="document.F.path.focus()">New Folder</label> <label><input type="radio" name="mode" id="file" onclick="document.F.path.focus()">New File</label><br />', dialogArguments.path ,'<br /><input type="text" name="path" style="width: 100%" /></div>');
 		document.getElementById("Content").innerHTML = s.join("");
 		AddEventEx(document.body, "keydown", function (e)
 		{

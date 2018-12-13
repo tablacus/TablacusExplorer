@@ -10,13 +10,14 @@ function _s()
 		wsh = api.CreateObject("wsh");
 		arg = api.CommandLineToArgv(api.GetCommandLine());
 		location = {href: arg[2], hash: ''};
+		var parent = fso.GetParentFolderName(arg[0]);
 		if (!/^[A-Z]:\\|^\\\\/i.test(location.href)) {
-			location.href = fso.BuildPath(fso.GetParentFolderName(arg[0]), location.href);
+			location.href = fso.BuildPath(parent, location.href);
 		}
 		var sw = sha.Windows();
 		for (var i = sw.Count; i--;) {
 			var x = sw.Item(i);
-			if (x && api.StrCmpI(x.FullName, arg[0]) == 0) {
+			if (x && api.StrCmpI(fso.GetParentFolderName(x.FullName), parent) == 0) {
 				var w = x.Document.parentWindow;
 				if (!window.MainWindow || window.MainWindow.Exchange && window.MainWindow.Exchange[arg[3]]) {
 					window.MainWindow = w;
