@@ -406,13 +406,15 @@ function ApplyLangTag(o)
 {
 	if (o) {
 		for (i = o.length; i--;) {
-			var s = o[i].innerHTML;
-			if (s) {
-				o[i].innerHTML = s.replace(/(\s*<[^>]*?>\s*)|([^<>]*)|/gm, function (strMatch, ref1, ref2)
+			var s, s1;
+			if (s = o[i].innerHTML) {
+				if (s != (s1 = s.replace(/(\s*<[^>]*?>\s*)|([^<>]*)|/gm, function (strMatch, ref1, ref2)
 				{
 					var r = ref1 || ref2;
 					return /^\s*</.test(r) ? r : amp2ul(GetTextR(r.replace(/&amp;/ig, "&")));
-				});
+				}))) {
+					o[i].innerHTML = s1;
+				}
 			}
 			s = o[i].title;
 			if (s) {

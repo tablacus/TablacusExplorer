@@ -415,6 +415,9 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define	TVVERBS 16
 #define TESORTING 10
 
+#define TEREDRAW_NORMAL   1
+#define TEREDRAW_NAVIGATE 2
+
 #define MAP_TE	0
 #define MAP_SB	1
 #define MAP_TC	2

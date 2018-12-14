@@ -12484,7 +12484,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 #endif
 	}
 	try {
-		m_pTC->m_nRedraw |= 0x10;
+		m_pTC->m_nRedraw |= TEREDRAW_NAVIGATE;
 		hr = E_FAIL;
 		if (dwFrame || teGetFolderViewOptions(m_pidl, m_param[SB_ViewMode]) == FVO_DEFAULT) {
 			//ExplorerBrowser
@@ -13629,34 +13629,11 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 					methodArgs[i].id = -1;
 				}
 			}
-			//Current Columns
-			BOOL bSame = FALSE;
-			UINT uCurCount;
-			if SUCCEEDED(pColumnManager->GetColumnCount(CM_ENUM_VISIBLE, &uCurCount)) {
-				PROPERTYKEY *pPropKey2 = new PROPERTYKEY[uCurCount];
-				if SUCCEEDED(pColumnManager->GetColumns(CM_ENUM_VISIBLE, pPropKey2, uCurCount)) {
-					CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_WIDTH | CM_MASK_DEFAULTWIDTH };
-					bSame = nCount == uCurCount;
-					for (UINT i = 0; bSame && i < uCurCount; i++) {
-						if (bSame = IsEqualPropertyKey(pPropKey[i], pPropKey2[i])) {
-							if SUCCEEDED(pColumnManager->GetColumnInfo(pPropKey2[i], &cmci)) {
-								bSame = (methodArgs[i].id == -1) ? cmci.uWidth == cmci.uWidth == cmci.uDefaultWidth : cmci.uWidth == methodArgs[i].id;
-							}
-						}
-					}
-				}
-				delete [] pPropKey2;
-			}
-			if (!bSame) {
-				if (m_pTC->m_nRedraw) {
-					m_pTC->m_nRedraw |= 0x10000;
-				}
-				if SUCCEEDED(pColumnManager->SetColumns(pPropKey, nCount)) {
-					CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_WIDTH };
-					for (int i = nCount; i--;) {
-						cmci.uWidth = methodArgs[i].id;
-						pColumnManager->SetColumnInfo(pPropKey[i], &cmci);
-					}
+			if SUCCEEDED(pColumnManager->SetColumns(pPropKey, nCount)) {
+				CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_WIDTH };
+				for (int i = nCount; i--;) {
+					cmci.uWidth = methodArgs[i].id;
+					pColumnManager->SetColumnInfo(pPropKey[i], &cmci);
 				}
 			}
 			pColumnManager->Release();
@@ -14315,15 +14292,17 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				return S_OK;
 			//Columns
 			case 0x10000059:
-				if (nArg >= 0) {
-					if (pDispParams->rgvarg[nArg].vt == VT_BSTR) {
-						SetColumnsStr(pDispParams->rgvarg[nArg].bstrVal);
+				if (m_hwndDV) {
+					if (nArg >= 0) {
+						if (pDispParams->rgvarg[nArg].vt == VT_BSTR) {
+							SetColumnsStr(pDispParams->rgvarg[nArg].bstrVal);
+						}
+						nFormat = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 					}
-					nFormat = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
-				}
-				if (pVarResult) {
-					pVarResult->vt = VT_BSTR;
-					pVarResult->bstrVal = GetColumnsStr(nFormat);
+					if (pVarResult) {
+						pVarResult->vt = VT_BSTR;
+						pVarResult->bstrVal = GetColumnsStr(nFormat);
+					}
 				}
 				return S_OK;
 /*			//Searches //test
@@ -14887,6 +14866,9 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				return DoFunc(TE_OnIconSizeChanged, this, S_OK);
 			case DISPID_SORTDONE://XP-
 				m_nSorting = 0;
+				if (m_pTC->m_nRedraw) {
+					SetTimer(g_hwndMain, TET_Redraw, 24, teTimerProc);
+				}
 				teSysFreeString(&m_bsAltSortColumn);
 				if (m_nFocusItem < 0) {
 					FocusItem(FALSE);
@@ -15504,7 +15486,7 @@ VOID CteShellBrowser::OnNavigationComplete2()
 	m_bCheckLayout = TRUE;
 	SetFolderFlags(FALSE);
 	InitFolderSize();
-	if (m_pTC->m_nRedraw && (m_pTC->m_nRedraw & 0x3100) != 0x3100) {
+	if (m_pTC->m_nRedraw && m_nSorting == 0) {
 		SetTimer(g_hwndMain, TET_Redraw, 24, teTimerProc);
 	}
 }
@@ -16584,10 +16566,7 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 			}
 			if (!teIsSameSort(pFV2, pCol, nSortColumns)) {
 				m_nFocusItem = -1;
-				m_nSorting = TESORTING;
-				if (m_pTC->m_nRedraw) {
-					m_pTC->m_nRedraw |= 0x100;
-				}
+				m_nSorting = TESORTING * 10;
 				pFV2->SetSortColumns(pCol, nSortColumns);
 			}
 		}
@@ -16645,14 +16624,6 @@ VOID CteShellBrowser::SetGroupBy(BSTR bs)
 	GetGroupBy(&bs0);
 	if (teStrSameIFree(bs0, bs)) {
 		return;
-	}
-	if (m_pTC->m_nRedraw) {
-		if (m_pTC->m_nRedraw & 0x100) {
-			m_pTC->m_nRedraw |= 0x3000;
-			SetTimer(g_hwndMain, TET_Redraw, 500, teTimerProc);
-		} else {
-			m_pTC->m_nRedraw |= 0x1000;
-		}
 	}
 	IFolderView2 *pFV2;
 	PROPERTYKEY propKey;
@@ -18704,12 +18675,12 @@ VOID CteTabCtrl::UnlockUpdate(BOOL bDirect)
 		return;
 	}
 	m_nLockUpdate = 0;
-	m_nRedraw |= 1;
-	if (bDirect && !(m_nRedraw & 0x13110)) {
+	m_nRedraw |= TEREDRAW_NORMAL;
+	if (bDirect && !(m_nRedraw & TEREDRAW_NAVIGATE)) {
 		RedrawUpdate();
 		return;
 	}
-	SetTimer(g_hwndMain, TET_Redraw, bDirect && (m_nRedraw & 0x3100) != 0x3100 ? 24 : 500, teTimerProc);
+	SetTimer(g_hwndMain, TET_Redraw, 500, teTimerProc);
 }
 
 VOID CteTabCtrl::RedrawUpdate()
