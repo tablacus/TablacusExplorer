@@ -258,7 +258,7 @@ FolderMenu =
 			Items.AddItem(FolderItem);
 			FV.AltSelectedItems = Items;
 			if (ExecMenu(FV, "Default", null, 2) != S_OK) {
-				ShellExecute(api.PathQuoteSpaces(FolderItem.Path), null, SW_SHOWNORMAL);
+				ShellExecute(api.PathQuoteSpaces(api.GetDisplayNameOf(FolderItem, SHGDN_ORIGINAL | SHGDN_FORPARSING)), null, SW_SHOWNORMAL);
 			}
 			FV.AltSelectedItems = AltSelectedItems;
 		}

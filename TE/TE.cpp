@@ -10428,9 +10428,8 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 				rcClient.right -= g_param[TE_Width];
 				rcClient.bottom -= g_param[TE_Height];
 				CteShellBrowser *pSB;
-				BOOL bRedraw, bDirect;
+				BOOL bRedraw;
 				bRedraw = FALSE;
-				bDirect = TRUE;
 				g_nSize--;
 				for (UINT i = 0; i < g_ppTC.size(); i++) {
 					CteTabCtrl *pTC = g_ppTC[i];
@@ -10579,9 +10578,6 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 										teSetParent(pSB->m_pTV->m_hwnd, pSB->m_pTC->m_hwndStatic);
 										ShowWindow(pSB->m_pTV->m_hwnd, (pSB->m_param[SB_TreeAlign] & 2) ? SW_SHOWNA : SW_HIDE);
 									} else {
-										if (!pSB->m_hwnd) {
-											bDirect = FALSE;
-										}
 										pSB->Show(TRUE, 0);
 									}
 									pSB->SetFolderFlags(FALSE);
@@ -10597,7 +10593,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 							g_strException = L"TimerProc/LockUpdate";
 #endif
 						}
-						pTC->UnlockUpdate(bDirect);
+						pTC->UnlockUpdate();
 					}
 				}
 				if (g_pWebBrowser) {
@@ -12500,7 +12496,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	g_strException = L"NavigateSB/EB";
 #endif
 	}
-	m_pTC->UnlockUpdate(FALSE);
+	m_pTC->UnlockUpdate();
 
 	if (m_pTC && GetTabIndex() == m_pTC->m_nIndex) {
 		m_nUnload = 0;
@@ -18468,7 +18464,7 @@ STDMETHODIMP CteTabCtrl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WOR
 				return S_OK;
 			//UnlockUpdate
 			case 14:
-				UnlockUpdate(nArg >= 0 && GetIntFromVariant(&pDispParams->rgvarg[nArg]));
+				UnlockUpdate();
 				return S_OK;
 			//Item
 			case DISPID_TE_ITEM:
@@ -18669,18 +18665,18 @@ VOID CteTabCtrl::LockUpdate(BOOL bTE)
 	}
 }
 
-VOID CteTabCtrl::UnlockUpdate(BOOL bDirect)
+VOID CteTabCtrl::UnlockUpdate()
 {
 	if (::InterlockedDecrement(&m_nLockUpdate) > 0) {
 		return;
 	}
 	m_nLockUpdate = 0;
-	m_nRedraw |= TEREDRAW_NORMAL;
-	if (bDirect && !(m_nRedraw & TEREDRAW_NAVIGATE)) {
-		RedrawUpdate();
+	if (m_nRedraw & TEREDRAW_NAVIGATE) {
+		SetTimer(g_hwndMain, TET_Redraw, 500, teTimerProc);
 		return;
 	}
-	SetTimer(g_hwndMain, TET_Redraw, 500, teTimerProc);
+	m_nRedraw |= TEREDRAW_NORMAL;
+	RedrawUpdate();
 }
 
 VOID CteTabCtrl::RedrawUpdate()

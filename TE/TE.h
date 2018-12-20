@@ -939,7 +939,7 @@ public:
 	BOOL Close(BOOL bForce);
 	VOID Move(int nSrc, int nDest, CteTabCtrl *pDestTab);
 	VOID LockUpdate(BOOL bTE);
-	VOID UnlockUpdate(BOOL bDirect);
+	VOID UnlockUpdate();
 	VOID RedrawUpdate();
 	VOID Show(BOOL bVisible);
 	VOID GetItem(int i, VARIANT *pVarResult);
