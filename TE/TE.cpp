@@ -21571,7 +21571,6 @@ STDMETHODIMP CteTreeView::OnAfterContextMenu(IShellItem *psi, IContextMenu *pcmI
 		msg1.pt.y = (rc.top + rc.bottom) / 2;
 	}
 	if (g_pOnFunc[TE_OnShowContextMenu]) {
-		m_pNameSpaceTreeControl->SetItemState(psi, NSTCIS_SELECTED, NSTCIS_SELECTED);
 		if (MessageSubPt(TE_OnShowContextMenu, this, &msg1) == S_OK) {
 			return QueryInterface(IID_IContextMenu, ppv);
 		}

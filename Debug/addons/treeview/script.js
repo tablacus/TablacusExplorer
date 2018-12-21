@@ -94,9 +94,9 @@ if (window.Addon == 1) {
 	var s = ['<span class="button" onclick="Addons.TreeView.Exec(this)" oncontextmenu="Addons.TreeView.Popup(this); return false" onmouseover="MouseOver(this)" onmouseout="MouseOut()"><img title="Tree" src="', src.replace(/"/g, ""), '" width="', h, 'px" height="', h, 'px"></span>'];
 	SetAddon(Addon_Id, Default, s);
 
-	SetGestureExec("Tree", "1", function ()
+	SetGestureExec("Tree", "1", function (Ctrl, pt)
 	{
-		var Item = Ctrl.HitTest(pt);
+		var Item = Ctrl.SelectedItem;
 		if (Item) {
 			var FV = Ctrl.FolderView;
 			if (!api.ILIsEqual(FV.FolderItem, Item)) {
@@ -109,9 +109,9 @@ if (window.Addon == 1) {
 		return S_OK;
 	}, "Func", true);
 
-	SetGestureExec("Tree", "3", function ()
+	SetGestureExec("Tree", "3", function (Ctrl, pt)
 	{
-		var Item = Ctrl.HitTest(pt);
+		var Item = Ctrl.SelectedItem;
 		if (Item) {
 			setTimeout(function ()
 			{
