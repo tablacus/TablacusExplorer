@@ -2192,14 +2192,13 @@ MenusIcon = function (mii, src, nHeight)
 			mii.fMask = mii.fMask | MIIM_BITMAP;
 			return;
 		}
-		if (image.FromFile(src)) {
-			if (nHeight && nHeight != image.GetHeight()) {
-				image = image.GetThumbnailImage(nHeight * image.GetWidth() / image.GetHeight(), nHeight);
-			}
-		} else {
+		if (!image.FromFile(src)) {
 			var hIcon = MakeImgIcon(src, 0, nHeight || api.GetSystemMetrics(SM_CYSMICON));
 			image.FromHICON(hIcon);
 			api.DestroyIcon(hIcon);
+		}
+		if (nHeight && nHeight != image.GetHeight()) {
+			image = image.GetThumbnailImage(nHeight * image.GetWidth() / image.GetHeight(), nHeight) || image;
 		}
 		AddMenuImage(mii, image, src);
 	}
@@ -2230,6 +2229,7 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem, bTran
 			}
 		} else {
 			var ar = s.split(/\t/);
+			ar[0] = ExtractMacro(te, ar[0]);
 			if (bTrans && !item.getAttribute("Org")) {
 				ar[0] = GetText(ar[0]);
 			}
