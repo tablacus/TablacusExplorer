@@ -77,7 +77,8 @@
               <input type="button" value="Set Default" onclick="SetDefault(document.F.Conf_IconSize, '');" />
               <br /><br />
               <label>Menus</label><br />
-              <label><input type="checkbox" id="Conf_MenuHidden" />Include hidden items</label>
+              <label><input type="checkbox" id="Conf_MenuHidden" />Include hidden items</label>&nbsp;
+              <label><input type="checkbox" id="Conf_MenuIcon" />Icon</label>
               <br /><br />
               <div class="block">
                 <input type="button" name="ButtonInitConfig" value="Initialize config folder" onclick="InitConfig(this);" />
@@ -238,8 +239,8 @@
                     <textarea name="Menus_Path" style="width: 100%; height: 16em; height: calc(100vh - 24em); min-height: 2em" onchange="ChangeX('Menus')"></textarea>
                     <table class="layout">
                       <tr>
-                        <td style="vertical-align: bottom">
-                          <label>Icon</label><input type="hidden" name="IconSize" value="16">
+                        <td style="vertical-align: bottom; white-space: nowrap">
+                          <label>Icon</label><input type="hidden" name="Height" value="16">
                         </td>
                         <td id="_Icon" style="width: 15pt; height: 15pt; overflow: hidden; vertical-align: middle" align="left">
                         </td>
@@ -260,9 +261,13 @@
               </table>
               <table style="width: 100%">
                 <tr>
-                  <td>
+                  <td style="width: 12em">
                     <input type="button" value="Remove" onclick="RemoveX('Menus')" />
                     <label><input type="checkbox" id="_EDIT" />Edit</label>
+                  </td>
+                  <td align="left" style="white-space: nowrap">
+                    <label>Height</label>
+                    <input type="text" name="IconSize" style="width: 4em" onchange="ChangeX('Menus'); SetImage();" />
                   </td>
                   <td align="center">
                     <input type="button" value="Test" onclick="TestX('Menus_')" />

@@ -2184,7 +2184,7 @@ AddMenuImage = function (mii, image, id, nHeight)
 MenusIcon = function (mii, src, nHeight)
 {
 	mii.cbSize = mii.Size;
-	if (src) {
+	if (src && src != "-") {
 		src = api.PathUnquoteSpaces(ExtractMacro(te, src));
 		var image = api.CreateObject("WICBitmap");
 		mii.hbmpItem = MainWindow.g_arBM[[src, nHeight].join("\t")];
@@ -2193,7 +2193,7 @@ MenusIcon = function (mii, src, nHeight)
 			return;
 		}
 		if (!image.FromFile(src)) {
-			var hIcon = MakeImgIcon(src, 0, nHeight || api.GetSystemMetrics(SM_CYSMICON));
+			var hIcon = MakeImgIcon(src, 0, nHeight || 16);
 			image.FromHICON(hIcon);
 			api.DestroyIcon(hIcon);
 		}
@@ -2221,7 +2221,22 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem, bTran
 	for (var i = 0; i < nLen; i++) {
 		var item = items[arMenu[i]];
 		var s = (item.getAttribute("Name") || item.getAttribute("Mouse") || GetKeyName(item.getAttribute("Key")) || "").replace(/\\t/i, "\t");
-		var strFlag = String(item.getAttribute("Type")).toLowerCase() == "menus" ? item.text.toLowerCase() : "";
+		var strType = String(item.getAttribute("Type")).toLowerCase();
+		var path = api.PathUnquoteSpaces(ExtractMacro(te, item.text));
+		var strFlag = strType == "menus" ? item.text.toLowerCase() : "";
+		var icon = item.getAttribute("Icon");
+		if (!icon && te.Data.Conf_MenuIcon && api.PathMatchSpec(strType, "Open;Open in New Tab;Open in Background;Exec")) {
+			var pidl = api.ILCreateFromPath(path);
+			if (!api.PathIsNetworkPath(path)) {
+				if (api.ILIsEmpty(pidl) || pidl.Unavailable) {
+					var res = /"([^"]*)"/.exec(path) || /([^ ]*)/.exec(path);
+					if (res) {
+						pidl = api.ILCreateFromPath(res[1]);
+					}
+				}
+			}
+			icon = MainWindow.GetIconImage(pidl, GetSysColor(COLOR_WINDOW));
+		}
 		if (strFlag == "close") {
 			hMenus.pop();
 			if (!hMenus.length) {
@@ -2242,7 +2257,7 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem, bTran
 				mii.fType = 0;
 				mii.dwTypeData = ar.join("\t");
 				mii.hSubMenu = api.CreateMenu();
-				MenusIcon(mii, item.getAttribute("Icon"), item.getAttribute("Height"));
+				MenusIcon(mii, icon, item.getAttribute("Height"));
 				api.InsertMenuItem(hMenus[hMenus.length - 1], nPos++, true, mii);
 				hMenus.push(mii.hSubMenu);
 			} else {
@@ -2258,7 +2273,7 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem, bTran
 					mii.fMask = MIIM_STRING | MIIM_ID;
 					mii.wID = nResult;
 					mii.dwTypeData = ar.join("\t");
-					MenusIcon(mii, item.getAttribute("Icon"), item.getAttribute("Height"));
+					MenusIcon(mii, icon, item.getAttribute("Height"));
 					RunEvent3(["MenuState", item.getAttribute("Type"), item.text].join(":"), Ctrl, pt, mii);
 					if (arItem) {
 						arItem[nResult - 1] = items[arMenu[i]];
@@ -3826,7 +3841,7 @@ function CustomSort(FV, id, r, fnAdd, fnComp)
 		var p = nMax / 100;
 		Progress.SetLine(1, api.LoadString(hShell32, 50690) + Name, true);
 		for (var i = 0; i < nMax && !Progress.HasUserCancelled(); i++) {
-			Progress.SetTitle((i / p).toFixed(1) + "%");
+			Progress.SetTitle((i / p).toFixed(0) + "%");
 			Progress.SetProgress(i, nMax);
 			FV.SelectAndPositionItem(Items.Item(List[i][0]), 0, pt);
 		}
@@ -3851,4 +3866,35 @@ function CustomSort(FV, id, r, fnAdd, fnComp)
 	} catch (e) {}
 	FV.Parent.UnlockUpdate(true);
 	Progress.StopProgressDialog();
+}
+
+function GetImgTag(o, h)
+{
+	if (o.src) {
+		var ar = ['<img'];
+		for (var n in o) {
+			if (o[n]) {
+				ar.push(' ', n, '="', EncodeSC(o[n]), '"');
+			}
+		}
+		if (h) {
+			h = Number(h) ? h + 'px' : EncodeSC(h);
+			ar.push(' width="', h, '" height="', h, '"');
+		}
+		ar.push('>');
+		return ar.join("");
+	}
+	var ar = ['<span'];
+	for (var n in o) {
+		if (n != "title" && o[n]) {
+			ar.push(' ', n, '="', EncodeSC(o[n]), '"');
+		}
+	}
+	ar.push('>', o.title, '</span>');
+	return ar.join("");
+}
+
+function GetIconSize(h)
+{
+	return h || window.IconSize;
 }

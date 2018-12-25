@@ -1963,10 +1963,6 @@ g_.event.handleicon = function (Ctrl, pid)
 
 GetIconImage = function (Ctrl, BGColor)
 {
-	var img = RunEvent4("GetIconImage", Ctrl, BGColor);
-	if (img) {
-		return img;
-	}
 	var nSize = api.GetSystemMetrics(SM_CYSMICON);
 	var FolderItem = Ctrl.FolderItem || Ctrl;
 	if (!FolderItem || FolderItem.Unavailable) {
@@ -1978,6 +1974,14 @@ GetIconImage = function (Ctrl, BGColor)
 			return MakeImgSrc(WINVER >= 0x600 ? "icon:shell32.dll,275" : "icon:shell32.dll,85", 0, false, nSize);
 		}
 		return MakeImgSrc(WINVER >= 0x600 ? "icon:shell32.dll,273" : "icon:shell32.dll,9", 0, false, nSize);
+	}
+	var img = RunEvent4("GetIconImage", Ctrl, BGColor);
+	if (img) {
+		return img;
+	}
+	api.ILIsEmpty(FolderItem);
+	if (FolderItem.Unavailable) {
+		return MakeImgSrc("icon:shell32.dll,234", 0, false, nSize);
 	}
 	if (document.documentMode) {
 		var sfi = api.Memory("SHFILEINFO");

@@ -1121,6 +1121,7 @@ TEmethod methodFI[] = {
 	{ 5, "Unavailable" },
 	{ 6, "Enum" },
 	{ 9, "_BLOB" },	//To be necessary
+	{ 9, "FolderItem" },
 	{ 0, NULL }
 };
 
@@ -6957,9 +6958,8 @@ VOID teApiContextMenu(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT
 		}
 		teFreeLibrary(hDll, 0);
 	} else if (GetDataObjFromVariant(&pDataObj, &pDispParams->rgvarg[nArg])) {
-		LPITEMIDLIST *ppidllist;
 		long nCount;
-		ppidllist = IDListFormDataObj(pDataObj, &nCount);
+		LPITEMIDLIST *ppidllist = IDListFormDataObj(pDataObj, &nCount);
 #ifdef _2000XP
 		if (nCount >= 2 && !g_bUpperVista && ppidllist[0] && ILIsEmpty(ppidllist[0])) {
 			for (int i = nCount; i-- > 0;) {
@@ -8490,9 +8490,8 @@ VOID teApiGetAttributesOf(int nArg, teParam *param, DISPPARAMS *pDispParams, VAR
 	ULONG lResult = 0;
 	IDataObject *pDataObj;
 	if (GetDataObjFromVariant(&pDataObj, &pDispParams->rgvarg[nArg])) {
-		LPITEMIDLIST *ppidllist;
 		long nCount;
-		ppidllist = IDListFormDataObj(pDataObj, &nCount);
+		LPITEMIDLIST *ppidllist = IDListFormDataObj(pDataObj, &nCount);
 		if (ppidllist) {
 			AdjustIDList(ppidllist, nCount);
 			if (nCount >= 1) {
@@ -9248,9 +9247,8 @@ VOID teApiAssocQueryString(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 	int nLen = -1;
 	IDataObject *pDataObj;
 	if (GetDataObjFromVariant(&pDataObj, &pDispParams->rgvarg[nArg - 2])) {
-		LPITEMIDLIST *ppidllist;
 		long nCount;
-		ppidllist = IDListFormDataObj(pDataObj, &nCount);
+		LPITEMIDLIST *ppidllist = IDListFormDataObj(pDataObj, &nCount);
 		AdjustIDList(ppidllist, nCount);
 		if (nCount >= 1) {
 			IShellFolder *pSF;
@@ -14572,15 +14570,16 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						VariantInit(&vMem);
 						LPPOINT ppt = (LPPOINT)GetpcFromVariant(&pDispParams->rgvarg[nArg - 2], &vMem);
 						if (ppt) {
-							LPITEMIDLIST pidl = NULL;
-							teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg]);
-							UINT uFlags = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
-							IShellView2 *pSV2;
-							if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pSV2))) {
-								hr = pSV2->SelectAndPositionItem(ILFindLastID(pidl), uFlags, ppt);
-								pSV2->Release();
+							IFolderView *pFV;
+							if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
+								LPITEMIDLIST pidl = NULL;
+								if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
+									LPCITEMIDLIST pidlLast = ILFindLastID(pidl);
+									hr = pFV->SelectAndPositionItems(1, &pidlLast, ppt, GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]));
+									teCoTaskMemFree(pidl);
+								}
+								pFV->Release();
 							}
-							teCoTaskMemFree(pidl);
 						}
 						VariantClear(&vMem);
 					}
@@ -15510,7 +15509,7 @@ HRESULT CteShellBrowser::GetShellFolder2(LPITEMIDLIST *ppidl)
 	IShellFolder *pSF = NULL;
 	if (g_pidls[CSIDL_LIBRARY]) {
 		BOOL bLibrary1 = ILIsParent(g_pidls[CSIDL_LIBRARY], *ppidl, TRUE);
-		if (bLibrary1 || m_bsFilter && ILIsParent(g_pidls[CSIDL_LIBRARY], *ppidl, FALSE)) {
+		if (bLibrary1 || (m_bsFilter || m_ppDispatch[SB_OnIncludeObject]) && ILIsParent(g_pidls[CSIDL_LIBRARY], *ppidl, FALSE)) {
 			BSTR bs;
 			teGetDisplayNameFromIDList(&bs, *ppidl, SHGDN_FORPARSING | SHGDN_ORIGINAL);
 			if (bLibrary1 || teIsFileSystem(bs)) {
@@ -15570,14 +15569,7 @@ HRESULT CteShellBrowser::RemoveAll()
 		IShellFolderView *pSFV;
 		if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pSFV))) {
 			UINT ui;
-			pSFV->GetObjectCount(&ui);
-			SetRedraw(FALSE);
-			for (int i = ui; i-- > 0;) {
-				LPITEMIDLIST pidl;
-				pSFV->GetObjectW(&pidl, i);
-				hr = pSFV->RemoveObject(pidl, &ui);
-			}
-			SetRedraw(TRUE);
+			hr = pSFV->RemoveObject(NULL, &ui);//the removal of all objects
 			pSFV->Release();
 		}
 #endif
@@ -15855,7 +15847,6 @@ VOID CteShellBrowser::NavigateComplete(BOOL bBeginNavigate)
 		DoFunc(TE_OnNavigateComplete, this, E_NOTIMPL);
 	}
 }
-
 
 VOID CteShellBrowser::InitFilter()
 {
@@ -22233,6 +22224,11 @@ STDMETHODIMP CteFolderItem::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT
 			*rgDispId += 10;
 		}
 	}
+#ifdef _DEBUG
+	if FAILED(hr) {
+		Sleep(0);
+	}
+#endif
 	return hr;
 }
 
@@ -23150,28 +23146,45 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				if (nArg >= 0) {
 					IStream *pStream;
 					LPWSTR lpfn = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]);
-					if SUCCEEDED(SHCreateStreamOnFileEx(lpfn, STGM_READ | STGM_SHARE_DENY_NONE, FILE_ATTRIBUTE_NORMAL, FALSE, NULL, &pStream)) {
-						FromStreamRelease(pStream, lpfn, FALSE, nArg >= 1 ? &pDispParams->rgvarg[nArg - 1] : NULL);
+					if (teStartsText(L"data:", lpfn)) {
+						LPWSTR lpBase64 = StrChr(lpfn, ',');
+						if (lpBase64) {
+							DWORD dwData;
+							DWORD dwLen = lstrlen(++lpBase64);
+							if (CryptStringToBinary(lpBase64, dwLen, CRYPT_STRING_BASE64, NULL, &dwData, NULL, NULL) && dwData > 0) {
+								BSTR bs = ::SysAllocStringByteLen(NULL, dwData);
+								CryptStringToBinary(lpBase64, dwLen, CRYPT_STRING_BASE64, (BYTE *)bs, &dwData, NULL, NULL);
+								IStream *pStream = SHCreateMemStream(NULL, NULL);
+								pStream->Write(bs, dwData, NULL);
+								::SysFreeString(bs);
+								FromStreamRelease(pStream, lpfn, FALSE, nArg >= 1 ? &pDispParams->rgvarg[nArg - 1] : NULL);
+							}
+						}
 					}
 					if (!HasImage()) {
-						if (g_pOnFunc[TE_OnFromFile]) {
-							try {
-								if (InterlockedIncrement(&g_nProcIMG) < 8) {
-									VARIANTARG *pv = GetNewVARIANT(3);
-									teSetObject(&pv[2], this);
-									VariantCopy(&pv[1], &pDispParams->rgvarg[nArg]);
-									if (nArg >= 1) {
-										VariantCopy(&pv[0], &pDispParams->rgvarg[nArg - 1]);
+						if SUCCEEDED(SHCreateStreamOnFileEx(lpfn, STGM_READ | STGM_SHARE_DENY_NONE, FILE_ATTRIBUTE_NORMAL, FALSE, NULL, &pStream)) {
+							FromStreamRelease(pStream, lpfn, FALSE, nArg >= 1 ? &pDispParams->rgvarg[nArg - 1] : NULL);
+						}
+						if (!HasImage()) {
+							if (g_pOnFunc[TE_OnFromFile]) {
+								try {
+									if (InterlockedIncrement(&g_nProcIMG) < 8) {
+										VARIANTARG *pv = GetNewVARIANT(3);
+										teSetObject(&pv[2], this);
+										VariantCopy(&pv[1], &pDispParams->rgvarg[nArg]);
+										if (nArg >= 1) {
+											VariantCopy(&pv[0], &pDispParams->rgvarg[nArg - 1]);
+										}
+										Invoke4(g_pOnFunc[TE_OnFromFile], NULL, 3, pv);
 									}
-									Invoke4(g_pOnFunc[TE_OnFromFile], NULL, 3, pv);
-								}
-							} catch(...) {
-								g_nException = 0;
+								} catch(...) {
+									g_nException = 0;
 #ifdef _DEBUG
-								g_strException = L"FromFile";
+									g_strException = L"FromFile";
 #endif
+								}
+								::InterlockedDecrement(&g_nProcIMG);
 							}
-							::InterlockedDecrement(&g_nProcIMG);
 						}
 					}
 					teSetObject(pVarResult, GetBitmapObj());

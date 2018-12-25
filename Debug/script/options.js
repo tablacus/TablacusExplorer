@@ -588,6 +588,7 @@ function EditMenus()
 	document.F.Menus_Path.value = p.s;
 	SetType(document.F.Menus_Type, a[3]);
 	document.F.Icon.value = a[4] || "";
+	document.F.IconSize.value = a[6] || "";
 	SetImage();
 }
 
@@ -680,7 +681,7 @@ function ReplaceMenus()
 	}
 	var p = { s: document.F.Menus_Path.value };
 	MainWindow.OptionEncode(o[o.selectedIndex].value, p);
-	SetMenus(sel, [s, document.F.Menus_Filter.value, p.s, o[o.selectedIndex].value, document.F.Icon.value, org]);
+	SetMenus(sel, [s, document.F.Menus_Filter.value, p.s, o[o.selectedIndex].value, document.F.Icon.value, org, document.F.IconSize.value]);
 	g_Chg.Menus = true;
 }
 
@@ -800,7 +801,7 @@ function LoadMenus(nSelected)
 					o.length = i;
 					while (--i >= 0) {
 						var item = items[i];
-						SetMenus(o[i], [item.getAttribute("Name"), item.getAttribute("Filter"), item.text, item.getAttribute("Type"), item.getAttribute("Icon"), item.getAttribute("Org")]);
+						SetMenus(o[i], [item.getAttribute("Name"), item.getAttribute("Filter"), item.text, item.getAttribute("Type"), item.getAttribute("Icon"), item.getAttribute("Org"), item.getAttribute("Height")]);
 					}
 				}
 			} else {
@@ -925,6 +926,9 @@ function SaveMenus()
 				item.setAttribute("Icon", a[4]);
 				if (a[5]) {
 					item.setAttribute("Org", 1);
+				}
+				if (a[6]) {
+					item.setAttribute("Height", a[6]);
 				}
 				items.appendChild(item);
 			}
@@ -1747,7 +1751,7 @@ InitLocation = function ()
 			var ar = items[i][j].split("\0");
 			info = GetAddonInfo(ar[0]);
 			if (ar[1]) {
-				locs[i].push('<img src="', ar[1], '" title="', EncodeSC(info.Name || ""), '" class="img1"> ');
+				locs[i].push(GetImgTag({ src: ar[1], title: info.Name, class: "img1" }));
 			} else {
 				locs[i].push('<span class="text1">', info.Name, '</span> ');
 			}
@@ -2169,10 +2173,7 @@ SetImage = function ()
 {
 	var o = document.getElementById("_Icon");
 	if (o) {
-		var h = api.LowPart(document.F.IconSize ? document.F.IconSize.value : document.F.Height.value);
-		if (!h) {
-			h = window.IconSize ? window.IconSize : 24;
-		}
+		var h = api.LowPart(document.F.IconSize && document.F.IconSize.value || document.F.Height && document.F.Height.value || window.IconSize && window.IconSize || 24);
 		var src = MakeImgSrc(api.PathUnquoteSpaces(document.F.Icon.value), 0, true, h);
 		o.innerHTML = src ? '<img src="' + src + '" ' + (h ? 'height="' + h + 'px"' : "") + '>' : "";
 	}
