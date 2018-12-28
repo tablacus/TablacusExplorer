@@ -14,7 +14,6 @@ Input = null;
 eventTE = { Environment: {} };
 eventTA = {};
 g_ptDrag = api.Memory("POINT");
-objHover = null;
 Addons = {"_stack": []};
 g_ = {
 	Colors: {},
@@ -2229,7 +2228,7 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem, bTran
 			var pidl = api.ILCreateFromPath(path);
 			if (!api.PathIsNetworkPath(path)) {
 				if (api.ILIsEmpty(pidl) || pidl.Unavailable) {
-					var res = /"([^"]*)"/.exec(path) || /([^ ]*)/.exec(path);
+					var res = /"([^"]*)"/.exec(path) || /([^\s]*)/.exec(path);
 					if (res) {
 						pidl = api.ILCreateFromPath(res[1]);
 					}
@@ -3204,14 +3203,15 @@ SetCursor = function (o, s)
 
 function MouseOver(o)
 {
-	if (api.PathMatchSpec(o.className, 'button;menu')) {
-		if (objHover && o != objHover) {
+	o = o.srcElement || o;
+	if (/^button$|^menu$/i.test(o.className)) {
+		if (g_.objHover && o != g_.objHover) {
 			MouseOut();
 		}
 		var pt = api.Memory("POINT");
 		api.GetCursorPos(pt, true);
 		if (HitTest(o, pt)) {
-			objHover = o;
+			g_.objHover = o;
 			o.className = 'hover' + o.className;
 		}
 	}
@@ -3219,14 +3219,14 @@ function MouseOver(o)
 
 function MouseOut(s)
 {
-	if (objHover) {
-		if (!s || objHover.id.indexOf(s) >= 0) {
-			if (objHover.className == 'hoverbutton') {
-				objHover.className = 'button';
-			} else if (objHover.className == 'hovermenu') {
-				objHover.className = 'menu';
+	if (g_.objHover) {
+		if (!s || g_.objHover.id.indexOf(s) >= 0) {
+			if (g_.objHover.className == 'hoverbutton') {
+				g_.objHover.className = 'button';
+			} else if (g_.objHover.className == 'hovermenu') {
+				g_.objHover.className = 'menu';
 			}
-			objHover = null;
+			g_.objHover = null;
 		}
 	}
 }
@@ -3874,7 +3874,7 @@ function GetImgTag(o, h)
 		var ar = ['<img'];
 		for (var n in o) {
 			if (o[n]) {
-				ar.push(' ', n, '="', EncodeSC(o[n]), '"');
+				ar.push(' ', n, '="', EncodeSC(api.PathUnquoteSpaces(o[n])), '"');
 			}
 		}
 		if (h) {
@@ -3894,7 +3894,7 @@ function GetImgTag(o, h)
 	return ar.join("");
 }
 
-function GetIconSize(h)
+function GetIconSize(h, a)
 {
-	return h || window.IconSize;
+	return h || a * screen.logicalYDPI / 96 || window.IconSize;
 }

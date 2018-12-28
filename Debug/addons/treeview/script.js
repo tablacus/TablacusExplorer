@@ -48,7 +48,7 @@ if (window.Addon == 1) {
 					{
 						delete Addons.TreeView.tid[TV.Id];
 						TV.Expand(Ctrl.FolderItem, 0);
-					}, 500);
+					}, 99);
 				}
 			}
 		},
@@ -63,6 +63,7 @@ if (window.Addon == 1) {
 					TV.Align = true;
 				}
 			}
+			return false;
 		}
 	};
 
@@ -89,9 +90,9 @@ if (window.Addon == 1) {
 	if (item.getAttribute("MouseExec")) {
 		SetGestureExec(item.getAttribute("MouseOn"), item.getAttribute("Mouse"), Addons.TreeView.Exec, "Func");
 	}
-	var h = item.getAttribute("IconSize") || window.IconSize || (item.getAttribute("Location") == "Inner" ? 16 : 24);
+	var h = GetIconSize(item.getAttribute("IconSize"), item.getAttribute("Location") == "Inner" && 16);
 	var src = item.getAttribute("Icon") || (h <= 16 ? "bitmap:ieframe.dll,216,16,43" : "bitmap:ieframe.dll,214,24,43");
-	var s = ['<span class="button" onclick="Addons.TreeView.Exec(this)" oncontextmenu="Addons.TreeView.Popup(this); return false" onmouseover="MouseOver(this)" onmouseout="MouseOut()"><img title="Tree" src="', src.replace(/"/g, ""), '" width="', h, 'px" height="', h, 'px"></span>'];
+	var s = ['<span class="button" onclick="Addons.TreeView.Exec(this)" oncontextmenu="return Addons.TreeView.Popup(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', GetImgTag({ title: "Tree", src: src }, h), '</span>'];
 	SetAddon(Addon_Id, Default, s);
 
 	SetGestureExec("Tree", "1", function (Ctrl, pt)
