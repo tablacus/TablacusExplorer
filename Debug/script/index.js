@@ -1655,6 +1655,11 @@ te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 			api.SHChangeNotification_Unlock(hLock);
 			ChangeNotifyFV(pidls.lEvent, pidls[0], pidls[1]);
 			RunEvent1("ChangeNotify", Ctrl, pidls, wParam, lParam);
+			if (pidls.lEvent & (SHCNE_UPDATEITEM | SHCNE_RENAMEITEM)) {
+				var n = pidls.lEvent & SHCNE_RENAMEITEM ? 1 : 0;
+				var path = api.GetDisplayNameOf(pidls[n], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL);
+				RunEvent1("ChangeNotifyItem:" + path, api.ILCreateFromPath(path) || pidls[n]);
+			}
 		}
 		return S_OK;
 	}
@@ -2139,7 +2144,6 @@ function ArrangeAddons()
 			api.SendMessage(hwnd, WM_SETTINGCHANGE, 0, p);
 		}
 	}
-	DeviceChanged(te);
 }
 
 function GetAddonLocation(strName)

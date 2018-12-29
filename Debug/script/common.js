@@ -2370,6 +2370,12 @@ GetAddonInfo = function (Id)
 	return info;
 }
 
+GetAddonInfoName = function (Id)
+{
+	var info = GetAddonInfo(Id);
+	return info.Name;
+}
+
 GetAddonInfo2 = function (xml, info, Tag, bTrans)
 {
 	var items = xml.getElementsByTagName(Tag);
@@ -3229,6 +3235,7 @@ function MouseOut(s)
 			g_.objHover = null;
 		}
 	}
+	return S_OK;
 }
 
 InsertTab = function(e)
@@ -3890,7 +3897,7 @@ function GetImgTag(o, h)
 			ar.push(' ', n, '="', EncodeSC(o[n]), '"');
 		}
 	}
-	ar.push('>', o.title, '</span>');
+	ar.push('>', EncodeSC(o.title), '</span>');
 	return ar.join("");
 }
 
