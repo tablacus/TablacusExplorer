@@ -1032,7 +1032,7 @@ function SetChanged(fn, form)
 function SetData(sel, a, t)
 {
 	sel.value = PackData(a);
-	if (/boolean/.test(typeof t)) {
+	if (/^boolean$/i.test(typeof t)) {
 		t = (t ? String.fromCharCode(9745, 32) : String.fromCharCode(9744, 32)) + a[0];
 	}
 	sel.text = t || a[0];
@@ -1986,7 +1986,7 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter)
 					api.GetCursorPos(pt);
 				}
 				var r = MainWindow.OptionRef(o[o.selectedIndex].value, GetElement(Id).value, pt);
-				if (/string/i.test(typeof r)) {
+				if (/^string$/i.test(typeof r)) {
 					var p = { s: r };
 					MainWindow.OptionDecode(o[o.selectedIndex].value, p);
 					if (bMultiLine && api.GetKeyState(VK_CONTROL) < 0 && api.ILCreateFromPath(p.s)) {

@@ -474,7 +474,7 @@ CancelFilterView = function (FV)
 
 IsSearchPath = function (pid)
 {
-	return /search\-ms:.*?&crumb=location:([^&]*)/.exec(/string/i.test(typeof pid) ? pid : api.GetDisplayNameOf(pid, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
+	return /search\-ms:.*?&crumb=location:([^&]*)/.exec(/^string$/i.test(typeof pid) ? pid : api.GetDisplayNameOf(pid, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 }
 
 GetCommandId = function (hMenu, s, ContextMenu)
@@ -1124,7 +1124,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 	if (isFinite(hr)) {
 		return hr;
 	}
-	if (/string/i.test(typeof Directory) && !fso.FolderExists(Directory)) {
+	if (/^string$/i.test(typeof Directory) && !fso.FolderExists(Directory)) {
 		return S_FALSE;
 	}
 	var Items = ContextMenu.Items();
@@ -2036,7 +2036,7 @@ AddEventEx(document, "MSFullscreenChange", function ()
 
 function InitWindow()
 {
-	if (g_.xmlWindow && !/string/i.test(typeof g_.xmlWindow)) {
+	if (g_.xmlWindow && !/^string$/i.test(typeof g_.xmlWindow)) {
 		LoadXml(g_.xmlWindow);
 	}
 	if (te.Ctrls(CTRL_TC).length == 0) {
@@ -2166,7 +2166,7 @@ function SetAddon(strName, Location, Tag, strVAlign)
 		}
 		var o = document.getElementById(Location);
 		if (o) {
-			if (/string/i.test(typeof Tag)) {
+			if (/^string$/i.test(typeof Tag)) {
 				o.insertAdjacentHTML("BeforeEnd", Tag);
 			} else {
 				o.appendChild(Tag);
@@ -2391,7 +2391,7 @@ KeyExecEx = function (Ctrl, mode, nKey, hwnd)
 function InitMouse()
 {
 	te.Data.Conf_Gestures = isFinite(te.Data.Conf_Gestures) ? Number(te.Data.Conf_Gestures) : 2;
-	if (/string/i.test(typeof te.Data.Conf_TrailColor)) {
+	if (/^string$/i.test(typeof te.Data.Conf_TrailColor)) {
 		te.Data.Conf_TrailColor = GetWinColor(te.Data.Conf_TrailColor);
 	}
 	if (!isFinite(te.Data.Conf_TrailColor)) {
@@ -2622,7 +2622,7 @@ g_basic =
 				if (res) {
 					var Id = GetSourceText(res[1]);
 					var r = OptionRef(Id, "", pt);
-					if (/string/i.test(typeof r)) {
+					if (/^string$/i.test(typeof r)) {
 						return s + r + "\n";
 					}
 					return r;

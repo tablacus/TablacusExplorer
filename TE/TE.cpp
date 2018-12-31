@@ -14861,9 +14861,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				return DoFunc(TE_OnIconSizeChanged, this, S_OK);
 			case DISPID_SORTDONE://XP-
 				m_nSorting = 0;
-				if (m_pTC->m_nRedraw) {
-					SetTimer(g_hwndMain, TET_Redraw, 24, teTimerProc);
-				}
+				m_pTC->RedrawUpdate();
 				teSysFreeString(&m_bsAltSortColumn);
 				if (m_nFocusItem < 0) {
 					FocusItem(FALSE);
@@ -15481,8 +15479,8 @@ VOID CteShellBrowser::OnNavigationComplete2()
 	m_bCheckLayout = TRUE;
 	SetFolderFlags(FALSE);
 	InitFolderSize();
-	if (m_pTC->m_nRedraw && m_nSorting == 0) {
-		SetTimer(g_hwndMain, TET_Redraw, 24, teTimerProc);
+	if (m_nSorting == 0) {
+		m_pTC->RedrawUpdate();
 	}
 }
 

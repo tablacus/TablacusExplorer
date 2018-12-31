@@ -78,7 +78,7 @@ FolderMenu =
 		if (!FolderItem) {
 			return;
 		}
-		if (!/object/i.test(typeof FolderItem)) {
+		if (!/^object$/i.test(typeof FolderItem)) {
 			FolderItem = api.ILCreateFromPath(FolderItem);
 		}
 		var bSep = false;
@@ -744,7 +744,7 @@ LoadXml = function (filename, nGroup)
 {
 	var items;
 	var xml = filename;
-	if (/string/i.test(typeof filename)) {
+	if (/^string$/i.test(typeof filename)) {
 		filename = api.PathUnquoteSpaces(filename);
 		if (fso.FileExists(filename)) {
 			xml = te.CreateObject("Msxml2.DOMDocument");
@@ -1035,7 +1035,7 @@ NavigateFV = function (FV, Path, wFlags)
 		FV = TC.Selected;
 	}
 	var res;
-	if (/string/i.test(typeof Path)) {
+	if (/^string$/i.test(typeof Path)) {
 		Path = ExtractMacro(FV, Path);
 		if (/\?|\*/.test(Path)) {
 			if (!/\\\\\?\\|:/.test(Path)) {
@@ -1140,7 +1140,7 @@ SaveLayout = function ()
 
 GetPos = function (o, bScreen, bAbs, bPanel, bBottom)
 {
-	if (/number/i.test(typeof bScreen)) {
+	if (/^number$/i.test(typeof bScreen)) {
 		bAbs = bScreen & 2;
 		bPanel = bScreen & 4;
 		bBottom = bScreen & 8;
@@ -1505,7 +1505,7 @@ ExtractMacro2 = function (Ctrl, s)
 			var res = re.exec(s);
 			if (res) {
 				var r = eventTE.replacemacro[i][1](Ctrl, re, res);
-				if (/string|number/i.test(typeof r)) {
+				if (/^string$|^number$/i.test(typeof r)) {
 					s = s.replace(re, r);
 				}
 			}
@@ -1519,12 +1519,12 @@ ExtractMacro2 = function (Ctrl, s)
 		s = s.replace(/%([\w\-_]+)%/g, function (strMatch, ref)
 		{
 			var fn = eventTE.Environment[ref.toLowerCase()];
-			if (/string|number/i.test(typeof fn)) {
+			if (/^string$|^number$/i.test(typeof fn)) {
 				return fn;
 			} else if (fn) {
 				try {
 					var r = fn(Ctrl);
-					if (/string|number/i.test(typeof r)) {
+					if (/^string$|^number$/i.test(typeof r)) {
 						return r;
 					}
 				} catch (e) {}
@@ -1541,7 +1541,7 @@ ExtractMacro2 = function (Ctrl, s)
 
 ExtractMacro = function (Ctrl, s)
 {
-	if (/string/i.test(typeof s)) {
+	if (/^string$/i.test(typeof s)) {
 		s = ExtractMacro2(Ctrl, s);
 		if (!/\t/.test(s) && /%/.test(s)) {
 			do {
@@ -1631,7 +1631,7 @@ OpenMenu = function (items, SelItem)
 	var arMenu;
 	var path = "";
 	if (SelItem) {
-		if (/object/i.test(typeof SelItem)) {
+		if (/^object$/i.test(typeof SelItem)) {
 			var link = SelItem.ExtendedProperty("linktarget");
 			path = link || String(api.GetDisplayNameOf(SelItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX));
 			arMenu = OpenMenu(items, path);
@@ -2138,7 +2138,7 @@ AddMenuIconFolderItem = function (mii, FolderItem, nHeight)
 	var sfi = api.Memory("SHFILEINFO");
 	var dwFlags = SHGFI_SYSICONINDEX;
 	var path = FolderItem;
-	if (!/string/i.test(typeof FolderItem)) {
+	if (!/^string$/i.test(typeof FolderItem)) {
 		path = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_ORIGINAL);
 		dwFlags |=  SHGFI_PIDL;
 	}
@@ -2185,6 +2185,9 @@ MenusIcon = function (mii, src, nHeight)
 	mii.cbSize = mii.Size;
 	if (src && src != "-") {
 		src = api.PathUnquoteSpaces(ExtractMacro(te, src));
+		if (!/^[A-Z]:\\|^\\\\|^data:/i.test(src)) {
+			src = fso.BuildPath(te.Data.Installed, "script\\" + src);
+		}
 		var image = api.CreateObject("WICBitmap");
 		mii.hbmpItem = MainWindow.g_arBM[[src, nHeight].join("\t")];
 		if (mii.hbmpItem) {
@@ -2771,7 +2774,7 @@ GethwndFromPid = function (ProcessId, bDT)
 
 PopupContextMenu = function (Item, FV)
 {
-	if (/string/i.test(typeof Item)) {
+	if (/^string$/i.test(typeof Item)) {
 		var arg = api.CommandLineToArgv(Item);
 		Item = api.CreateObject("FolderItems");
 		for (var i in arg) {
@@ -3226,7 +3229,7 @@ function MouseOver(o)
 function MouseOut(s)
 {
 	if (g_.objHover) {
-		if (!s || g_.objHover.id.indexOf(s) >= 0) {
+		if (!/^string$/i.test(typeof s) || g_.objHover.id.indexOf(s) >= 0) {
 			if (g_.objHover.className == 'hoverbutton') {
 				g_.objHover.className = 'button';
 			} else if (g_.objHover.className == 'hovermenu') {
