@@ -36,7 +36,7 @@ Ferhat Aydin
 https://www.penflip.com/LightTempler/tablacus-explorer
 
 //Build
-Visual C++ 2010 Express Edition SP1
+Visual Studio Express 2017 for Windows Desktop
 Windows SDK v7.1
 
 https://tablacus.github.io/

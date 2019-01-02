@@ -7,9 +7,9 @@
 //Version
 #define STRING(str) STRING2(str)
 #define STRING2(str) #str
-#define VER_Y		18
-#define VER_M		12
-#define VER_D		30
+#define VER_Y		19
+#define VER_M		1
+#define VER_D		1
 
 //Icon
 #define IDI_TE		1

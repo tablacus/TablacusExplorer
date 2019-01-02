@@ -1,7 +1,7 @@
-﻿// TE.cpp
+// TE.cpp
 // Tablacus Explorer (C)2011 Gaku
 // MIT Lisence
-// Visual C++ 2010 Express Edition SP1
+// Visual Studio Express 2017 for Windows Desktop
 // Windows SDK v7.1
 // https://tablacus.github.io/
 

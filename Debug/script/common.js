@@ -2185,7 +2185,7 @@ MenusIcon = function (mii, src, nHeight)
 	mii.cbSize = mii.Size;
 	if (src && src != "-") {
 		src = api.PathUnquoteSpaces(ExtractMacro(te, src));
-		if (!/^[A-Z]:\\|^\\\\|^data:/i.test(src)) {
+		if (!/:|^\\\\/i.test(src)) {
 			src = fso.BuildPath(te.Data.Installed, "script\\" + src);
 		}
 		var image = api.CreateObject("WICBitmap");
@@ -2194,13 +2194,15 @@ MenusIcon = function (mii, src, nHeight)
 			mii.fMask = mii.fMask | MIIM_BITMAP;
 			return;
 		}
+		var h16 = GetIconSize(0, 16);
+		var h = nHeight < h16 ? GetIconSize(0, nHeight || 16) : nHeight || h16;
 		if (!image.FromFile(src)) {
-			var hIcon = MakeImgIcon(src, 0, nHeight || 16);
+			var hIcon = MakeImgIcon(src, 0, h);
 			image.FromHICON(hIcon);
 			api.DestroyIcon(hIcon);
 		}
-		if (nHeight && nHeight != image.GetHeight()) {
-			image = image.GetThumbnailImage(nHeight * image.GetWidth() / image.GetHeight(), nHeight) || image;
+		if (h != image.GetHeight()) {
+			image = image.GetThumbnailImage(h * image.GetWidth() / image.GetHeight(), h) || image;
 		}
 		AddMenuImage(mii, image, src);
 	}
