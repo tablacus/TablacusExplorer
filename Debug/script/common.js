@@ -816,6 +816,7 @@ SaveXmlTC = function (Ctrl, xml, nGroup)
 	item.setAttribute("SelectedIndex", Ctrl.SelectedIndex);
 	item.setAttribute("Visible", api.LowPart(Ctrl.Visible));
 	item.setAttribute("Group", api.LowPart(nGroup || Ctrl.Data.Group));
+	MainWindow.RunEvent1("SaveTab", xml, Ctrl);
 
 	var bEmpty = true;
 	var nCount2 = Ctrl.Count;
@@ -1018,9 +1019,10 @@ function SendShortcutKeyFV(Key)
 	}
 }
 
-CreateTab = function ()
+CreateTab = function (Ctrl, pt)
 {
-	Navigate(HOME_PATH || te.Ctrl(CTRL_FV), SBSP_NEWBROWSER);
+	var FV = GetFolderView(Ctrl, pt);
+	NavigateFV(FV, HOME_PATH || FV, SBSP_NEWBROWSER);
 }
 
 Navigate = function (Path, wFlags)
@@ -2226,20 +2228,30 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem, bTran
 		var item = items[arMenu[i]];
 		var s = (item.getAttribute("Name") || item.getAttribute("Mouse") || GetKeyName(item.getAttribute("Key")) || "").replace(/\\t/i, "\t");
 		var strType = String(item.getAttribute("Type")).toLowerCase();
-		var path = api.PathUnquoteSpaces(ExtractMacro(te, item.text));
+		var path = ExtractMacro(te, item.text);
 		var strFlag = strType == "menus" ? item.text.toLowerCase() : "";
 		var icon = item.getAttribute("Icon");
-		if (!icon && te.Data.Conf_MenuIcon && api.PathMatchSpec(strType, "Open;Open in New Tab;Open in Background;Exec")) {
-			var pidl = api.ILCreateFromPath(path);
-			if (!api.PathIsNetworkPath(path)) {
-				if (api.ILIsEmpty(pidl) || pidl.Unavailable) {
-					var res = /"([^"]*)"/.exec(path) || /([^\s]*)/.exec(path);
-					if (res) {
-						pidl = api.ILCreateFromPath(res[1]);
+		if (!icon && te.Data.Conf_MenuIcon ) {
+			if (api.PathMatchSpec(strType, "Open;Open in New Tab;Open in Background")) {
+				var pidl = api.ILCreateFromPath(path);
+				if (!api.PathIsNetworkPath(api.PathUnquoteSpaces(path))) {
+					if (api.ILIsEmpty(pidl) || pidl.Unavailable) {
+						var res = /(.*?)\n/.exec(path);
+						if (res) {
+							pidl = api.ILCreateFromPath(res[1]);
+						}
+					}
+				}
+				icon = MainWindow.GetIconImage(pidl, GetSysColor(COLOR_WINDOW));
+			} else if (api.PathMatchSpec(strType, "Exec;Selected items")) {
+				var arg = api.CommandLineToArgv(path);
+				if (!api.PathIsNetworkPath(arg[0])) {
+					var pidl = api.ILCreateFromPath(arg[0]);
+					if (!api.ILIsEmpty(pidl) && !pidl.Unavailable) {
+						icon = MainWindow.GetIconImage(pidl, GetSysColor(COLOR_WINDOW));
 					}
 				}
 			}
-			icon = MainWindow.GetIconImage(pidl, GetSysColor(COLOR_WINDOW));
 		}
 		if (strFlag == "close") {
 			hMenus.pop();

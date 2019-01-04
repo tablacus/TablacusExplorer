@@ -1504,7 +1504,7 @@ VOID teStrFormatSize(DWORD dwFormat, LONGLONG qdw, LPWSTR pszBuf, UINT cchBuf)
 BSTR teSysAllocStringLen(const OLECHAR *strIn, UINT uSize)
 {
 	UINT uOrg = lstrlen(strIn);
-	if (uSize > uOrg) {
+	if (strIn && uSize > uOrg) {
 		BSTR bs = ::SysAllocStringLen(NULL, uSize);
 		lstrcpy(bs, strIn);
 		return bs;
