@@ -1743,18 +1743,13 @@ InitLocation = function ()
 			}
 		}
 	}
-	var locs = [];
+	var locs = {};
 	items = te.Data.Locations;
 	for (var i in items) {
 		locs[i] = [];
-		for (var j in items[i]) {
+		for (var j = items[i].length; j--;) {
 			var ar = items[i][j].split("\0");
-			info = GetAddonInfo(ar[0]);
-			if (ar[1]) {
-				locs[i].push(GetImgTag({ src: ar[1], title: info.Name, class: "img1" }));
-			} else {
-				locs[i].push('<span class="text1">', info.Name, '</span> ');
-			}
+			locs[i].unshift(GetImgTag({ src: ar[1], title: GetAddonInfo(ar[0]).Name, "class": "img1" }));
 		}
 	}
 	for (var i in locs) {

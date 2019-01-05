@@ -59,10 +59,10 @@ form {
 .hoverbutton {
 	display: inline-block;
 	text-decoration: none;
-	color: #000;
+	color: buttontext;
 	cursor: default;
-	background-color: #E5EBEF;
-	border: 1px solid #7F9DB9;
+	background-color: threedlightshadow;
+	border: 1px solid buttonshadow;
 	padding: 0;
 	outline: 0;
 	white-space: nowrap;
@@ -83,9 +83,9 @@ form {
 	cursor: default;
 	text-decoration: none;
 	white-space: nowrap;
-	color: #000;
-	background-color: #E5EBEF;
-	border: 1px solid #7F9DB9;
+	color: buttontext;
+	background-color: threedlightshadow;
+	border: 1px solid buttonshadow;
 	padding: 0 4px;
 }
 
@@ -179,9 +179,9 @@ form {
 	margin: 0;
 	padding: 0 8px;
 	color: #000;
-	background-color: #ddd;
 	height: 2em;
 	outline: 0;
+	background: #ddd;
 	background: linear-gradient(to bottom, #fff, #ccc);
 	vertical-align: bottom;
 	box-shadow: 0 1em 1em 0 rgba(255,255,255,0.2) inset;
@@ -200,8 +200,8 @@ form {
 	border-bottom: 0;
 	margin: 0 -1px;
 	padding: 0 9px;
-	color: #000;
-	background-color: #fff;
+	color: windowtext;
+	background-color: window;
 	height: 2.167em;
 	outline: 0;
 	z-index: 9999;
@@ -209,7 +209,7 @@ form {
 }
 
 .treebutton, .treespace {
-	color: #666;
+	color: threeddarkshadow;
 	font-family: monospace;
 	margin: 0 2px 0 1px;
 	text-decoration: none;
@@ -242,7 +242,7 @@ a.treebutton:hover {
 }
 
 .separator {
-	color: gray;
+	color: buttonshadow;
 }
 
 .splitter {
@@ -260,9 +260,9 @@ a.treebutton:hover {
 
 .drive {
   position: absolute;
-	color: #000;
+	color: windowtext;
   font-weight: bold;
   font-size: 6.75pt;
-  text-shadow: 1px 1px 0 #fff, -1px 1px 0 #fff, 1px -1px 0 #fff, -1px -1px 0 #fff;
-  filter: glow(color=#fff,strength=1);
+  text-shadow: 1px 1px 0 window, -1px 1px 0 window, 1px -1px 0 window, -1px -1px 0 window;
+  filter: glow(color=window,strength=1);
 }

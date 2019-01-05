@@ -3466,16 +3466,15 @@ SetSysColor = function (i, color)
 
 ShellExecute = function (s, vOperation, nShow, vDir2, pt)
 {
-	var arg = api.CommandLineToArgv(ExtractMacro(te, s));
-	var s = arg.shift();
-	var vDir = fso.GetParentFolderName(s) || vDir2;
-	if (pt && vDir.Type) {
-		vDir = (GetFolderView(Ctrl, pt) || {FolderItem: {}}).FolderItem.Path;
+	var cmd = ExtractMacro(te, s);
+	var res = /^\s*"([^"]*)"\s*(.*)/.exec(cmd) || /^\s*([^\s]*)\s*(.*)/.exec(cmd);
+	if (res) {
+		var vDir = fso.GetParentFolderName(res[1]) || vDir2;
+		if (pt && vDir.Type) {
+			vDir = (GetFolderView(Ctrl, pt) || {FolderItem: {}}).FolderItem.Path;
+		}
+		return sha.ShellExecute(res[1], res[2], vDir, vOperation, nShow);
 	}
-	for (var i = arg.length; i-- > 0;) {
-		arg[i] = api.PathQuoteSpaces(arg[i]);
-	}
-	return sha.ShellExecute(s, arg.join(" "), vDir, vOperation, nShow);
 }
 
 CreateFont = function (LogFont)

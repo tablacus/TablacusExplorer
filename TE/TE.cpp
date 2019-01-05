@@ -12388,7 +12388,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 #ifdef _2000XP
 	if (g_bUpperVista) {
 #endif
-		if (m_param[SB_Type] == 2) {
+		if (m_param[SB_Type] == CTRL_EB) {
 			dwFrame = EBO_SHOWFRAMES;
 		}
 		//ExplorerBrowser
@@ -12403,7 +12403,17 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 							pOptions->Release();
 						}
 						m_pExplorerBrowser->SetOptions(static_cast<EXPLORER_BROWSER_OPTIONS>((m_param[SB_Options] & ~(EBO_SHOWFRAMES | EBO_NAVIGATEONCE | EBO_ALWAYSNAVIGATE)) | dwFrame | EBO_NOTRAVELLOG));
-						BrowseToObject();
+						m_pTC->LockUpdate(TRUE);
+						try {
+							m_pTC->m_nRedraw |= TEREDRAW_NAVIGATE;
+							BrowseToObject();
+						} catch (...) {
+#ifdef _DEBUG
+							g_nException = 0;
+							g_strException = L"BrowseToObject";
+#endif
+						}
+						m_pTC->UnlockUpdate();
 						teCoTaskMemFree(pidl);
 						return S_OK;
 					}
@@ -13276,7 +13286,7 @@ VOID CteShellBrowser::GetViewModeAndIconSize(BOOL bGetIconSize)
 					}
 					pOptions->Release();
 				}
-			} else if (m_param[SB_Type] == 2 || fvo == FVO_DEFAULT) {
+			} else if (m_param[SB_Type] == CTRL_EB || fvo == FVO_DEFAULT) {
 				m_bCheckLayout = FALSE;
 			}
 			if (!m_bCheckLayout) {

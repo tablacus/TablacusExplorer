@@ -20,22 +20,22 @@ input[type="text"] {
 }
 
 .color {
-	border: 1px solid #7F9DB9;
+	border: 1px solid buttonshadow;
 	width: 2em;
 }
 
 .block {
 	padding: 8px;
-	border: 1px solid gray;
+	border: 1px solid buttonshadow;
 	margin-bottom: 8px;
 	display: block;
 }
 
 .group {
 	padding: 8px;
-	border-left: 1px solid gray;
-	border-right: 1px solid gray;
-	border-bottom: 1px solid gray;
+	border-left: 1px solid buttonshadow;
+	border-right: 1px solid buttonshadow;
+	border-bottom: 1px solid buttonshadow;
 	margin-bottom: 8px;
 	display: none;
 }
@@ -45,8 +45,8 @@ input[type="text"] {
 }
 
 .oddline {
-	color: #000;
-	background-color: #ddd;
+	color: infotext;
+	background-color: infobackground;
 }
 
 .color {
@@ -62,7 +62,8 @@ input[type="text"] {
 }
 
 .footer {
-	width: 100%; line-height: 1.5em
+  width: 100%;
+  line-height: 1.5em
 }
 
 .text1 {
@@ -73,8 +74,8 @@ input[type="text"] {
 }
 
 .img1 {
-	max-width: 1.333em;
-	max-height: 1.333em;
+	max-width: 16pt;
+	max-height: 16pt;
 }
 
 .location {
