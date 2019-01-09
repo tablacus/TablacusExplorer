@@ -12302,6 +12302,16 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		if (g_pOnFunc[TE_OnReplacePath]) {
 			CteFolderItem *pid1;
 			if SUCCEEDED(pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1)) {
+				if (pid1->m_pidl && pid1->m_v.vt == VT_EMPTY) {
+					VARIANT_BOOL bFolder = VARIANT_FALSE;
+					pid1->get_IsFolder(&bFolder);
+					if (!bFolder) {
+						if SUCCEEDED(pid1->get_Path(&pid1->m_v.bstrVal)) {
+							pid1->m_v.vt = VT_BSTR;
+							teILFreeClear(&pid1->m_pidl);
+						}
+					}
+				}
 				if (pid1->m_v.vt == VT_BSTR && !m_bsNextFilter) {
 					VARIANTARG *pv = GetNewVARIANT(2);
 					teSetObject(&pv[1], this);
@@ -21318,7 +21328,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 					}
 					LPITEMIDLIST pidl;
 					teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg]);
-					if (::ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER]) || ::ILIsParent(g_pidls[CSIDL_INTERNET], pidl, FALSE) || teILFolderExists(pidl) != S_OK) {
+					if (::ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER]) || ::ILIsParent(g_pidls[CSIDL_INTERNET], pidl, FALSE)) {
 						teCoTaskMemFree(pidl);
 						return S_OK;
 					}

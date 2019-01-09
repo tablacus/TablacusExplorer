@@ -1,4 +1,5 @@
-﻿var Addon_Id = "undoclosetab";
+var Addon_Id = "undoclosetab";
+var Default = "None";
 
 var item = GetAddonElement(Addon_Id);
 if (!item.getAttribute("Set")) {
@@ -18,9 +19,10 @@ if (!item.getAttribute("Set")) {
 if (window.Addon == 1) {
 	Addons.UndoCloseTab =
 	{
-		Save: 30,
-		db: [],
-		bSave: false,
+		Items: item.getAttribute("Save") || 30,
+		strName: item.getAttribute("MenuName") || GetAddonInfo(Addon_Id).Name,
+		nPos: api.LowPart(item.getAttribute("MenuPos")),
+		CONFIG: fso.BuildPath(te.Data.DataFolder, "config\\closedtabs.xml"),
 
 		Exec: function (Ctrl, pt)
 		{
@@ -45,13 +47,13 @@ if (window.Addon == 1) {
 				var Items = Addons.UndoCloseTab.Get(i);
 				Addons.UndoCloseTab.db.splice(i, 1);
 				FV.Navigate(Items, SBSP_NEWBROWSER);
-				Addons.UndoCloseTab.bSave = true;
+				Addons.UndoCloseTab.Save();
 			}
 		},
 
 		Get: function (nIndex)
 		{
-			Addons.UndoCloseTab.db.splice(Addons.UndoCloseTab.Save, MAXINT);
+			Addons.UndoCloseTab.db.splice(Addons.UndoCloseTab.Items, MAXINT);
 			var s = Addons.UndoCloseTab.db[nIndex];
 			if (typeof(s) == "string") {
 				var a = s.split(/\n/);
@@ -63,71 +65,92 @@ if (window.Addon == 1) {
 				Addons.UndoCloseTab.db[nIndex] = s;
 			}
 			return s;
-		}
+		},
 
-	}
+		Load: function ()
+		{
+			Addons.UndoCloseTab.db = [];
+			var xml = OpenXml("closedtabs.xml", true, false);
+			if (xml) {
+				var items = xml.getElementsByTagName('Item');
+				for (i = items.length; i--;) {
+					Addons.UndoCloseTab.db.unshift(items[i].text);
+				}
+			}
+			xml = null;
+			Addons.UndoCloseTab.ModifyDate = api.ILCreateFromPath(Addons.UndoCloseTab.CONFIG).ModifyDate;
+		},
 
-	var xml = OpenXml("closedtabs.xml", true, false);
-	if (xml) {
-		var items = xml.getElementsByTagName('Item');
-		for (i = items.length; i--;) {
-			Addons.UndoCloseTab.db.unshift(items[i].text);
+		Save: function ()
+		{
+			if (Addons.UndoCloseTab.tid) {
+				clearTimeout(Addons.UndoCloseTab.tid);
+			}
+			Addons.UndoCloseTab.bSave = true;
+			Addons.UndoCloseTab.tid = setTimeout(Addons.UndoCloseTab.SaveEx, 999);
+		},
+
+		SaveEx: function ()
+		{
+			if (Addons.UndoCloseTab.bSave) {
+				Addons.UndoCloseTab.bSave = false;
+				if (Addons.UndoCloseTab.tid) {
+					clearTimeout(Addons.UndoCloseTab.tid);
+					delete Addons.UndoCloseTab.tid;
+				}
+				var xml = CreateXml();
+				var root = xml.createElement("TablacusExplorer");
+
+				var db = Addons.UndoCloseTab.db;
+				for (var i = 0; i < db.length; i++) {
+					var item = xml.createElement("Item");
+					var s = db[i];
+					if (typeof(s) != "string") {
+						var a = [];
+						for (var j in s) {
+							a.push(api.GetDisplayNameOf(s[j], SHGDN_FORPARSING | SHGDN_FORPARSINGEX));
+						}
+						a.push(s.Index);
+						s = a.join("\n");
+					}
+					item.text = s;
+					root.appendChild(item);
+					item = null;
+				}
+				xml.appendChild(root);
+				SaveXmlEx("closedtabs.xml", xml, true);
+				xml = null;
+				Addons.UndoCloseTab.ModifyDate = api.ILCreateFromPath(Addons.UndoCloseTab.CONFIG).ModifyDate;
+			}
 		}
 	}
-	xml = null;
+	Addons.UndoCloseTab.Load();
 
 	AddEvent("CloseView", function (Ctrl)
 	{
 		if (Ctrl.FolderItem) {
 			if (Addons.UndoCloseTab.bLock) {
 				Addons.UndoCloseTab.bFail = true;
-			}
-			else {
+			} else {
 				Addons.UndoCloseTab.db.unshift(Ctrl.History);
-				Addons.UndoCloseTab.db.splice(Addons.UndoCloseTab.Save, MAXINT);
-				Addons.UndoCloseTab.bSave = true;
+				Addons.UndoCloseTab.db.splice(Addons.UndoCloseTab.Items, MAXINT);
+				Addons.UndoCloseTab.Save();
 			}
 		}
 		return S_OK;
 	});
 
-	AddEvent("SaveConfig", function ()
-	{
-		if (Addons.UndoCloseTab.bSave) {
-			Addons.UndoCloseTab.bSave = false;
-			var xml = CreateXml();
-			var root = xml.createElement("TablacusExplorer");
+	AddEvent("SaveConfig", Addons.UndoCloseTab.SaveEx);
 
-			var db = Addons.UndoCloseTab.db;
-			for (var i = 0; i < db.length; i++) {
-				var item = xml.createElement("Item");
-				var s = db[i];
-				if (typeof(s) != "string") {
-					var a = [];
-					for (var j in s) {
-						a.push(api.GetDisplayNameOf(s[j], SHGDN_FORPARSING | SHGDN_FORPARSINGEX));
-					}
-					a.push(s.Index);
-					s = a.join("\n");
-				}
-				item.text = s;
-				root.appendChild(item);
-				item = null;
-			}
-			xml.appendChild(root);
-			SaveXmlEx("closedtabs.xml", xml, true);
-			xml = null;
+	AddEvent("ChangeNotifyItem:" + Addons.UndoCloseTab.CONFIG, function (pid)
+	{
+		if (pid.ModifyDate - Addons.UndoCloseTab.ModifyDate) {
+			Addons.UndoCloseTab.Load();
 		}
 	});
 
-	Addons.UndoCloseTab.Save = item.getAttribute("Save") || 30;
-	var s = item.getAttribute("MenuName");
-	if (s && s != "") {
-		Addons.UndoCloseTab.strName = s;
-	}
 	//Menu
 	if (item.getAttribute("MenuExec")) {
-		Addons.UndoCloseTab.nPos = api.LowPart(item.getAttribute("MenuPos"));
 		AddEvent(item.getAttribute("Menu"), function (Ctrl, hMenu, nPos)
 		{
 			api.InsertMenu(hMenu, Addons.UndoCloseTab.nPos, MF_BYPOSITION | MF_STRING | ((Addons.UndoCloseTab.db.length) ? MF_ENABLED : MF_DISABLED), ++nPos, GetText(Addons.UndoCloseTab.strName));
@@ -145,6 +168,11 @@ if (window.Addon == 1) {
 	}
 
 	AddTypeEx("Add-ons", "Undo close tab", Addons.UndoCloseTab.Exec);
+
+	var h = GetIconSize(item.getAttribute("IconSize"), item.getAttribute("Location") == "Inner" && 16);
+	var s = GetAddonOption(Addon_Id, "Icon");
+	SetAddon(Addon_Id, Default, ['<span class="button" onclick="Addons.UndoCloseTab.Exec(this)" oncontextmenu="return false;" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', GetImgTag({ title: Addons.UndoCloseTab.strName, src: s }, h), '</span>']);
 } else {
-	SetTabContents(0, "General", '<label>Save</label><br /><input type="text" name="Save" size="4" />');
+	EnableInner();
+	SetTabContents(0, "General", '<label>Number of items</label><br /><input type="text" name="Save" size="4" />');
 }
