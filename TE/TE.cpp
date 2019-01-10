@@ -3763,9 +3763,11 @@ CteTreeView* TVfromhwnd2(HWND hwnd)
 {
 	for (UINT i = 0; i < g_ppTV.size(); i++) {
 		CteTreeView *pTV = g_ppTV[i];
-		HWND hwndTV = pTV->m_hwnd;
-		if (hwndTV == hwnd || IsChild(hwndTV, hwnd)) {
-			return pTV->m_bMain ? pTV : NULL;
+		if (pTV) {
+			HWND hwndTV = pTV->m_hwnd;
+			if (hwndTV == hwnd || IsChild(hwndTV, hwnd)) {
+				return pTV->m_bMain ? pTV : NULL;
+			}
 		}
 	}
 	return NULL;

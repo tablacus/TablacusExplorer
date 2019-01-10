@@ -73,11 +73,6 @@ input[type="text"] {
 	white-space: nowrap;
 }
 
-.img1 {
-	max-width: 16pt;
-	max-height: 16pt;
-}
-
 .location {
 	width: calc(100vh / 3);
 }

@@ -1749,7 +1749,7 @@ InitLocation = function ()
 		locs[i] = [];
 		for (var j = items[i].length; j--;) {
 			var ar = items[i][j].split("\0");
-			locs[i].unshift(GetImgTag({ src: ar[1], title: GetAddonInfo(ar[0]).Name, "class": "img1" }));
+			locs[i].unshift(GetImgTag({ src: ar[1], title: GetAddonInfo(ar[0]).Name, "class": ar[1] ? "" : "text1" }, 16) + '<span style="font-size: 1px"> </span>');
 		}
 	}
 	for (var i in locs) {

@@ -3741,6 +3741,7 @@ function CalcElementHeight(o, em)
 
 AddFavoriteEx = function (Ctrl, pt)
 {
+	GetFolderView(Ctrl, pt).Focus();
 	AddFavorite();
 	return S_OK
 }
