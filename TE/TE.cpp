@@ -1238,6 +1238,17 @@ HRESULT teGetDisplayNameFromIDList(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags);
 
 //Unit
 
+HRESULT teGetWindow(PVOID pObj, HWND *phwnd)
+{
+	IOleWindow *pOleWindow;
+	HRESULT hr = static_cast<IUnknown *>(pObj)->QueryInterface(IID_PPV_ARGS(&pOleWindow));
+	if SUCCEEDED(hr) {
+		hr = pOleWindow->GetWindow(phwnd);
+		pOleWindow->Release();
+	}
+	return hr;
+}
+
 VOID teTranslateAccelerator(IDispatch *pdisp, MSG *pMsg, HRESULT *phr)
 {
 	if (pMsg->message == WM_KEYDOWN && GetKeyState(VK_CONTROL) < 0 && StrChr(L"LNOP\x6b\x6d\xbb\xbd", (WCHAR)pMsg->wParam)) {
@@ -3763,11 +3774,9 @@ CteTreeView* TVfromhwnd2(HWND hwnd)
 {
 	for (UINT i = 0; i < g_ppTV.size(); i++) {
 		CteTreeView *pTV = g_ppTV[i];
-		if (pTV) {
-			HWND hwndTV = pTV->m_hwnd;
-			if (hwndTV == hwnd || IsChild(hwndTV, hwnd)) {
-				return pTV->m_bMain ? pTV : NULL;
-			}
+		HWND hwndTV = pTV->m_hwnd;
+		if (hwndTV == hwnd || IsChild(hwndTV, hwnd)) {
+			return pTV->m_bMain ? pTV : NULL;
 		}
 	}
 	return NULL;
@@ -11560,14 +11569,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 						MessageSub(TE_OnSystemMessage, g_pTE, &msg1, NULL);
 					}
 					//Close Tab
-					for (UINT i = 0; i < g_ppTC.size(); i++) {
-						CteTabCtrl *pTC = g_ppTC[i];
+					while (!g_ppTC.empty()) {
+						CteTabCtrl *pTC = g_ppTC[g_ppTC.size() - 1];
 						pTC->Close(TRUE);
 						SafeRelease(&pTC);
+						g_ppTC.pop_back();
 					}
 					//Close Tree
-					for (UINT i = 0; i < g_ppTV.size(); i++) {
-						SafeRelease(&g_ppTV[i]);
+					while (!g_ppTV.empty()) {
+						CteTreeView *pTV = g_ppTV[g_ppTV.size() - 1];
+						SafeRelease(&pTV);
+						g_ppTV.pop_back();
 					}
 					//Close Browser
 					if (g_pWebBrowser) {
@@ -14843,7 +14855,9 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 				if (!m_hwndLV && m_pExplorerBrowser) {
 					SetRedraw(TRUE);
-					RedrawWindow(m_hwnd, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+					if (teGetWindow(m_pExplorerBrowser, &m_hwnd) == S_OK && m_hwnd) {
+						RedrawWindow(m_hwnd, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+					}
 				}
 				SetTimer(g_hwndMain, TET_Status, 500, teTimerProc);
 				return S_OK;
@@ -15223,19 +15237,23 @@ STDMETHODIMP CteShellBrowser::SelectItem(VARIANT *pvfi, int dwFlags)
 		HRESULT hr = E_FAIL;
 		IFolderView *pFV;
 		if (m_pShellView && SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV)))) {
-			if (m_hwndLV && (dwFlags & SVSI_FOCUSED)) {// bug fix
+			int nCount = 0;
+			pFV->ItemCount(SVGIO_ALLVIEW, &nCount);
+			if (nCount) {
+				if (m_hwndLV && (dwFlags & SVSI_FOCUSED)) {// bug fix
 #ifdef _2000XP
-				if (g_bUpperVista) {
+					if (g_bUpperVista) {
 #endif
-					int nFocused = ListView_GetNextItem(m_hwndLV, -1, LVNI_ALL | LVNI_FOCUSED);
-					if (nFocused >= 0) {
-						ListView_SetItemState(m_hwndLV, nFocused, 0, LVIS_FOCUSED);
+						int nFocused = ListView_GetNextItem(m_hwndLV, -1, LVNI_ALL | LVNI_FOCUSED);
+						if (nFocused >= 0) {
+							ListView_SetItemState(m_hwndLV, nFocused, 0, LVIS_FOCUSED);
+						}
+#ifdef _2000XP
 					}
-#ifdef _2000XP
-				}
 #endif
+				}
+				hr = pFV->SelectItem(pvfi->lVal, dwFlags);
 			}
-			hr = pFV->SelectItem(pvfi->lVal, dwFlags);
 			pFV->Release();
 			if (hr == S_OK) {
 				return hr;
@@ -15421,11 +15439,7 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 	}
 	GetShellFolderView();
 	if (m_pExplorerBrowser) {
-		IOleWindow *pOleWindow;
-		if SUCCEEDED(m_pExplorerBrowser->QueryInterface(IID_PPV_ARGS(&pOleWindow))) {
-			pOleWindow->GetWindow(&m_hwnd);
-			pOleWindow->Release();
-		}
+		teGetWindow(m_pExplorerBrowser, &m_hwnd);
 	}
 	m_bNavigateComplete = TRUE;
 	m_dwSessionId = MAKELONG(GetTickCount(), rand());
@@ -15511,11 +15525,7 @@ HRESULT CteShellBrowser::BrowseToObject()
 	m_nSuspendMode = 2;
 	HRESULT hr = m_pExplorerBrowser->BrowseToObject(m_pSF2, SBSP_ABSOLUTE);
 	if SUCCEEDED(hr) {
-		IOleWindow *pOleWindow;
-		if SUCCEEDED(m_pExplorerBrowser->QueryInterface(IID_PPV_ARGS(&pOleWindow))) {
-			pOleWindow->GetWindow(&m_hwnd);
-			pOleWindow->Release();
-		}
+		teGetWindow(m_pExplorerBrowser, &m_hwnd);
 		if (!m_pShellView) {
 			m_pExplorerBrowser->GetCurrentView(IID_PPV_ARGS(&m_pShellView));
 		}
@@ -17612,11 +17622,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				break;
 			case DISPID_DOCUMENTCOMPLETE:
 				if (m_bstrPath) {
-					IOleWindow *pOleWindow;
-					if SUCCEEDED(m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&pOleWindow))) {
-						pOleWindow->GetWindow(&m_hwndBrowser);
-						pOleWindow->Release();
-					}
+					teGetWindow(m_pWebBrowser, &m_hwndBrowser);
 					if (g_bsDocumentWrite) {
 						g_pWebBrowser->write(g_bsDocumentWrite);
 						teSysFreeString(&g_bsDocumentWrite);
@@ -18031,13 +18037,7 @@ STDMETHODIMP CteWebBrowser::Drop(IDataObject *pDataObj, DWORD grfKeyState, POINT
 HWND CteWebBrowser::get_HWND()
 {
 	HWND hwnd = 0;
-	IOleWindow *pOleWindow;
-	if (m_pWebBrowser) {
-		if SUCCEEDED(m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&pOleWindow))) {
-			pOleWindow->GetWindow(&hwnd);
-			pOleWindow->Release();
-		}
-	}
+	teGetWindow(m_pWebBrowser, &hwnd);
 	return hwnd;
 }
 
@@ -20802,11 +20802,8 @@ VOID CteTreeView::Close()
 		m_pNameSpaceTreeControl->TreeUnadvise(m_dwCookie);
 		m_dwCookie = 0;
 
-		IOleWindow *pOleWindow;
 		HWND hwnd;
-		if SUCCEEDED(m_pNameSpaceTreeControl->QueryInterface(IID_PPV_ARGS(&pOleWindow))) {
-			pOleWindow->GetWindow(&hwnd);
-			pOleWindow->Release();
+		if (teGetWindow(m_pNameSpaceTreeControl, &hwnd) == S_OK) {
 			PostMessage(hwnd, WM_CLOSE, 0, 0);
 		}
 		teDelayRelease(&m_pNameSpaceTreeControl);
@@ -20844,26 +20841,22 @@ BOOL CteTreeView::Create(BOOL bIfVisible)
 		SetRectEmpty(&rc);
 		if SUCCEEDED(m_pNameSpaceTreeControl->Initialize(m_hwndParent, &rc, m_param[SB_TreeFlags])) {
 			m_pNameSpaceTreeControl->TreeAdvise(static_cast<INameSpaceTreeControlEvents *>(this), &m_dwCookie);
-			IOleWindow *pOleWindow;
-			if SUCCEEDED(m_pNameSpaceTreeControl->QueryInterface(IID_PPV_ARGS(&pOleWindow))) {
-				if (pOleWindow->GetWindow(&m_hwnd) == S_OK) {
-					m_hwndTV = FindTreeWindow(m_hwnd);
-					if (m_hwndTV) {
-						SetWindowLongPtr(m_hwndTV, GWLP_USERDATA, (LONG_PTR)this);
-						m_DefProc = (WNDPROC)GetWindowLongPtr(GetParent(m_hwndTV), GWLP_WNDPROC);
-						m_DefProc2 = (WNDPROC)SetWindowLongPtr(m_hwndTV, GWLP_WNDPROC, (LONG_PTR)TETVProc2);
-						if (!m_pDropTarget2) {
-							m_pDropTarget2 = new CteDropTarget2(NULL, static_cast<IDispatch *>(this));
-							teRegisterDragDrop(m_hwndTV, m_pDropTarget2, &m_pDropTarget2->m_pDropTarget);
-						}
-						if (m_param[SB_TreeFlags] & NSTCS_NOEDITLABELS) {
-							SetWindowLongPtr(m_hwndTV, GWL_STYLE, GetWindowLongPtr(m_hwndTV, GWL_STYLE) & ~TVS_EDITLABELS);
-						}
+			if (teGetWindow(m_pNameSpaceTreeControl, &m_hwnd) == S_OK) {
+				m_hwndTV = FindTreeWindow(m_hwnd);
+				if (m_hwndTV) {
+					SetWindowLongPtr(m_hwndTV, GWLP_USERDATA, (LONG_PTR)this);
+					m_DefProc = (WNDPROC)GetWindowLongPtr(GetParent(m_hwndTV), GWLP_WNDPROC);
+					m_DefProc2 = (WNDPROC)SetWindowLongPtr(m_hwndTV, GWLP_WNDPROC, (LONG_PTR)TETVProc2);
+					if (!m_pDropTarget2) {
+						m_pDropTarget2 = new CteDropTarget2(NULL, static_cast<IDispatch *>(this));
+						teRegisterDragDrop(m_hwndTV, m_pDropTarget2, &m_pDropTarget2->m_pDropTarget);
 					}
-					BringWindowToTop(m_hwnd);
-					ArrangeWindow();
+					if (m_param[SB_TreeFlags] & NSTCS_NOEDITLABELS) {
+						SetWindowLongPtr(m_hwndTV, GWL_STYLE, GetWindowLongPtr(m_hwndTV, GWL_STYLE) & ~TVS_EDITLABELS);
+					}
 				}
-				pOleWindow->Release();
+				BringWindowToTop(m_hwnd);
+				ArrangeWindow();
 			}
 /*// Too heavy.
 			INameSpaceTreeControl2 *pNSTC2;
@@ -20939,74 +20932,70 @@ BOOL CteTreeView::Create(BOOL bIfVisible)
 	pOleObject->DoVerb(OLEIVERB_INPLACEACTIVATE, NULL, static_cast<IOleClientSite *>(this), 0, m_hwndParent, &rc);
 	pOleObject->Release();
 
-	IOleWindow *pOleWindow;
-	if SUCCEEDED(m_pShellNameSpace->QueryInterface(IID_PPV_ARGS(&pOleWindow))) {
-		HWND hwnd;
-		if (pOleWindow->GetWindow(&hwnd) == S_OK) {
-			m_pShellNameSpace->put_Flags(m_param[SB_TreeFlags] & NSTCS_FAVORITESMODE);
-			m_hwndTV = FindTreeWindow(hwnd);
-			if (m_hwndTV) {
-				HWND hwndParent = GetParent(m_hwndTV);
-				SetWindowLongPtr(hwndParent, GWLP_USERDATA, (LONG_PTR)this);
-				m_DefProc = (WNDPROC)SetWindowLongPtr(hwndParent, GWLP_WNDPROC, (LONG_PTR)TETVProc);
-				SetWindowLongPtr(m_hwndTV, GWLP_USERDATA, (LONG_PTR)this);
-				m_DefProc2 = (WNDPROC)SetWindowLongPtr(m_hwndTV, GWLP_WNDPROC, (LONG_PTR)TETVProc2);
-				if (!m_pDropTarget2) {
-					m_pDropTarget2 = new CteDropTarget2(NULL, static_cast<IDispatch *>(this));
-					teRegisterDragDrop(m_hwndTV, m_pDropTarget2, &m_pDropTarget2->m_pDropTarget);
-				}
-
-				DWORD dwStyle = GetWindowLong(m_hwndTV, GWL_STYLE);
-				struct
-				{
-					DWORD nstc;
-					DWORD nsc;
-				} style[] = {
-					{ NSTCS_HASEXPANDOS, TVS_HASBUTTONS },
-					{ NSTCS_HASLINES, TVS_HASLINES },
-					{ NSTCS_SINGLECLICKEXPAND, TVS_TRACKSELECT },
-					{ NSTCS_FULLROWSELECT, TVS_FULLROWSELECT },
-					{ NSTCS_SPRINGEXPAND, TVS_SINGLEEXPAND },
-					{ NSTCS_HORIZONTALSCROLL, TVS_NOHSCROLL },//Opposite
-					//NSTCS_ROOTHASEXPANDO
-					{ NSTCS_SHOWSELECTIONALWAYS, TVS_SHOWSELALWAYS },
-					{ NSTCS_NOINFOTIP, TVS_INFOTIP },//Opposite
-					{ NSTCS_EVENHEIGHT, TVS_NONEVENHEIGHT },//Opposite
-					//NSTCS_NOREPLACEOPEN
-					{ NSTCS_DISABLEDRAGDROP, TVS_DISABLEDRAGDROP },
-					//NSTCS_NOORDERSTREAM
-					{ NSTCS_BORDER, WS_BORDER },
-					{ NSTCS_NOEDITLABELS, TVS_EDITLABELS },//Opposite
-					//NSTCS_FADEINOUTEXPANDOS
-					//NSTCS_EMPTYTEXT
-					{ NSTCS_CHECKBOXES, TVS_CHECKBOXES },
-					//NSTCS_NOINDENTCHECKS
-					//NSTCS_ALLOWJUNCTIONS
-					//NSTCS_SHOWTABSBUTTON
-					//NSTCS_SHOWDELETEBUTTON
-					//NSTCS_SHOWREFRESHBUTTON
-				};
-				for (int i = _countof(style); i--;) {
-					if (m_param[SB_TreeFlags] & style[i].nstc) {
-						dwStyle |= style[i].nsc;
-					} else {
-						dwStyle &= ~style[i].nsc;
-					}
-				}
-				dwStyle ^= (TVS_NOHSCROLL | TVS_INFOTIP | TVS_NONEVENHEIGHT | TVS_EDITLABELS);//Opposite
-				SetWindowLongPtr(m_hwndTV, GWL_STYLE, dwStyle & ~WS_BORDER);
-				DWORD dwExStyle = GetWindowLong(m_hwnd, GWL_EXSTYLE);
-				if (dwStyle & WS_BORDER) {
-					dwExStyle |= WS_EX_CLIENTEDGE;
-				} else {
-					dwExStyle &= ~WS_EX_CLIENTEDGE;
-				}
-				SetWindowLong(m_hwnd, GWL_EXSTYLE, dwExStyle);
+	HWND hwnd;
+	if (teGetWindow(m_pShellNameSpace, &hwnd) == S_OK) {
+		m_pShellNameSpace->put_Flags(m_param[SB_TreeFlags] & NSTCS_FAVORITESMODE);
+		m_hwndTV = FindTreeWindow(hwnd);
+		if (m_hwndTV) {
+			HWND hwndParent = GetParent(m_hwndTV);
+			SetWindowLongPtr(hwndParent, GWLP_USERDATA, (LONG_PTR)this);
+			m_DefProc = (WNDPROC)SetWindowLongPtr(hwndParent, GWLP_WNDPROC, (LONG_PTR)TETVProc);
+			SetWindowLongPtr(m_hwndTV, GWLP_USERDATA, (LONG_PTR)this);
+			m_DefProc2 = (WNDPROC)SetWindowLongPtr(m_hwndTV, GWLP_WNDPROC, (LONG_PTR)TETVProc2);
+			if (!m_pDropTarget2) {
+				m_pDropTarget2 = new CteDropTarget2(NULL, static_cast<IDispatch *>(this));
+				teRegisterDragDrop(m_hwndTV, m_pDropTarget2, &m_pDropTarget2->m_pDropTarget);
 			}
-			BringWindowToTop(m_hwnd);
-			ArrangeWindow();
+
+			DWORD dwStyle = GetWindowLong(m_hwndTV, GWL_STYLE);
+			struct
+			{
+				DWORD nstc;
+				DWORD nsc;
+			} style[] = {
+				{ NSTCS_HASEXPANDOS, TVS_HASBUTTONS },
+				{ NSTCS_HASLINES, TVS_HASLINES },
+				{ NSTCS_SINGLECLICKEXPAND, TVS_TRACKSELECT },
+				{ NSTCS_FULLROWSELECT, TVS_FULLROWSELECT },
+				{ NSTCS_SPRINGEXPAND, TVS_SINGLEEXPAND },
+				{ NSTCS_HORIZONTALSCROLL, TVS_NOHSCROLL },//Opposite
+				//NSTCS_ROOTHASEXPANDO
+				{ NSTCS_SHOWSELECTIONALWAYS, TVS_SHOWSELALWAYS },
+				{ NSTCS_NOINFOTIP, TVS_INFOTIP },//Opposite
+				{ NSTCS_EVENHEIGHT, TVS_NONEVENHEIGHT },//Opposite
+				//NSTCS_NOREPLACEOPEN
+				{ NSTCS_DISABLEDRAGDROP, TVS_DISABLEDRAGDROP },
+				//NSTCS_NOORDERSTREAM
+				{ NSTCS_BORDER, WS_BORDER },
+				{ NSTCS_NOEDITLABELS, TVS_EDITLABELS },//Opposite
+				//NSTCS_FADEINOUTEXPANDOS
+				//NSTCS_EMPTYTEXT
+				{ NSTCS_CHECKBOXES, TVS_CHECKBOXES },
+				//NSTCS_NOINDENTCHECKS
+				//NSTCS_ALLOWJUNCTIONS
+				//NSTCS_SHOWTABSBUTTON
+				//NSTCS_SHOWDELETEBUTTON
+				//NSTCS_SHOWREFRESHBUTTON
+			};
+			for (int i = _countof(style); i--;) {
+				if (m_param[SB_TreeFlags] & style[i].nstc) {
+					dwStyle |= style[i].nsc;
+				} else {
+					dwStyle &= ~style[i].nsc;
+				}
+			}
+			dwStyle ^= (TVS_NOHSCROLL | TVS_INFOTIP | TVS_NONEVENHEIGHT | TVS_EDITLABELS);//Opposite
+			SetWindowLongPtr(m_hwndTV, GWL_STYLE, dwStyle & ~WS_BORDER);
+			DWORD dwExStyle = GetWindowLong(m_hwnd, GWL_EXSTYLE);
+			if (dwStyle & WS_BORDER) {
+				dwExStyle |= WS_EX_CLIENTEDGE;
+			} else {
+				dwExStyle &= ~WS_EX_CLIENTEDGE;
+			}
+			SetWindowLong(m_hwnd, GWL_EXSTYLE, dwExStyle);
 		}
-		pOleWindow->Release();
+		BringWindowToTop(m_hwnd);
+		ArrangeWindow();
 	}
 	DoFunc(TE_OnCreate, this, E_NOTIMPL);
 	return TRUE;

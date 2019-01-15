@@ -2276,7 +2276,9 @@ function ChangeNotifyFV(lEvent, item1, item2)
 							(function (FV, nPos) { setTimeout(function ()
 							{
 								var nCount = FV.ItemCount(SVGIO_ALLVIEW);
-								FV.SelectItem(nPos < nCount ? nPos : nCount - 1, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | (FV.Id == te.Ctrl(CTRL_FV).Id ? 0 : SVSI_NOTAKEFOCUS));
+								if (nCount) {
+									FV.SelectItem(nPos < nCount ? nPos : nCount - 1, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | (FV.Id == te.Ctrl(CTRL_FV).Id ? 0 : SVSI_NOTAKEFOCUS));
+								}
 							}, 99);}) (FV, nPos);
 						}
 					}
@@ -3568,8 +3570,13 @@ if (!te.Data) {
 		te.Data.SHIL[i] = api.SHGetImageList(i);
 	}
 	var o = {};
-	var sw = sha.Windows();
-	for (var i = sw.Count; i--;) {
+	var sw;
+	try {
+		sw = sha.Windows();
+	} catch (e) {
+		sw = { Count: 0 };
+	}
+	for (var i = sw.Count; i-- > 0;) {
 		var x = sw.Item(i);
 		if (x && x.Document) {
 			var w = x.Document.parentWindow;
