@@ -30,7 +30,7 @@ if (server) {
 	wsh.Popup(args(2), 9, TITLE, 0);
 }
 var v = fso.GetFileVersion(args(0));
-sha.NameSpace(fso.GetParentFolderName(args(0))).CopyHere(sha.NameSpace(args(1)).Items(), 0x0210);
-if (v != fso.GetFileVersion(args(0)) || wsh.Popup(args(3), 0, TITLE, 0x21) == 1) {
+sha.NameSpace(args(4) || fso.GetParentFolderName(args(0))).CopyHere(sha.NameSpace(args(1)).Items(), 0x0210);
+if (!args(3) || v != fso.GetFileVersion(args(0)) || wsh.Popup(args(3), 0, TITLE, 0x21) == 1) {
 	wsh.Run('"' + args(0) + '"');
 }

@@ -115,7 +115,7 @@ FolderMenu =
 			}
 			for (var i = 0; i < nCount; i++) {
 				Item = Items.Item(ar[i]);
-				var bMatch = IsFolderEx(Item) || api.ILIsParent(g_pidlCP, Item, false);
+				var bMatch = IsFolderEx(Item) || api.ILIsParent(MainWindow.g_pidlCP, Item, false);
 				if (this.Filter) {
 					bMatch = PathMatchEx(bMatch ? Item.Name + ".folder" : Item.Name, this.Filter);
 				}
@@ -190,7 +190,7 @@ FolderMenu =
 		if (bSelect && Name) {
 			mii.dwTypeData = Name;
 		} else {
-			mii.dwTypeData = (Name || "") + GetFolderItemName(FolderItem);
+			mii.dwTypeData = (Name || "") + MainWindow.GetFolderItemName(FolderItem);
 		}
 		AddMenuIconFolderItem(mii, FolderItem);
 		this.Items.push(FolderItem);
@@ -3659,6 +3659,13 @@ DeleteTempFolder = function ()
 {
 	DeleteItem(fso.BuildPath(fso.GetSpecialFolder(2).Path, "tablacus"));
 }
+
+PerformUpdate = function ()
+{
+	var oExec = wsh.Exec(g_.strUpdate);
+	wsh.AppActivate(oExec.ProcessID);
+}
+
 
 OpenContains = function (Ctrl, pt)
 {

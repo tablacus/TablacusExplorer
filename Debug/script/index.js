@@ -1176,19 +1176,12 @@ AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, 
 		for (var j in Items) {
 			var Item = Items.Item(j);
 			var path = Item.ExtendedProperty("linktarget") || Item.Path;
-		 	api.PathIsDirectory(function (hr, path)
-		 	{
-				if (hr >= 0) {
-					Navigate(path, SBSP_NEWBROWSER);
-				} else {
-					Navigate(fso.GetParentFolderName(path), SBSP_NEWBROWSER);
-					setTimeout(function ()
-					{
-						var FV = te.Ctrl(CTRL_FV);
-						FV.SelectItem(path, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
-					}, 99);
-				}
-			}, -1, path, path);
+			Navigate(fso.GetParentFolderName(path), SBSP_NEWBROWSER);
+			setTimeout(function ()
+			{
+				var FV = te.Ctrl(CTRL_FV);
+				FV.SelectItem(path, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
+			}, 99);
 			return S_OK;
 		}
 	}
@@ -2273,13 +2266,10 @@ function ChangeNotifyFV(lEvent, item1, item2)
 					if (WINVER >= 0x600 && (lEvent & (SHCNE_DELETE | SHCNE_RMDIR))) {
 						var nPos = FV.GetFocusedItem - 1;
 						if (nPos > 0 && api.ILIsEqual(item1, FV.FocusedItem)) {
-							(function (FV, nPos) { setTimeout(function ()
-							{
-								var nCount = FV.ItemCount(SVGIO_ALLVIEW);
-								if (nCount) {
-									FV.SelectItem(nPos < nCount ? nPos : nCount - 1, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | (FV.Id == te.Ctrl(CTRL_FV).Id ? 0 : SVSI_NOTAKEFOCUS));
-								}
-							}, 99);}) (FV, nPos);
+							var nCount = FV.ItemCount(SVGIO_ALLVIEW);
+							if (nCount) {
+								FV.SelectItem(nPos < nCount ? nPos : nCount - 1, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | (FV.Id == te.Ctrl(CTRL_FV).Id ? 0 : SVSI_NOTAKEFOCUS));
+							}
 						}
 					}
 					if ((lEvent & fAdd) && FV.FolderItem.Unavailable) {
@@ -3486,11 +3476,7 @@ function CreateUpdater(arg)
 		return;
 	}
 	g_.strUpdate = ['"', api.IsWow64Process(api.GetCurrentProcess()) ? wsh.ExpandEnvironmentStrings("%SystemRoot%\\Sysnative") : system32, "\\", "wscript.exe", '" "', arg.temp, "\\script\\update.js", '" "', api.GetModuleFileName(null), '" "', arg.temp, '" "', api.LoadString(hShell32, 12612), '" "', api.LoadString(hShell32, 12852),'"'].join("");
-	DeleteTempFolder = function ()
-	{
-		var oExec = wsh.Exec(g_.strUpdate);
-		wsh.AppActivate(oExec.ProcessID);
-	};
+	DeleteTempFolder = PerformUpdate;
 }
 
 //Init
