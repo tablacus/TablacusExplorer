@@ -12320,7 +12320,9 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 					VARIANT_BOOL bFolder = VARIANT_FALSE;
 					pid1->get_IsFolder(&bFolder);
 					if (!bFolder) {
-						if SUCCEEDED(pid1->get_Path(&pid1->m_v.bstrVal)) {
+						if (::ILIsEqual(pid1->m_pidl, g_pidls[CSIDL_INTERNET])) {
+							::ILRemoveLastID(pid1->m_pidl);
+						} else if SUCCEEDED(pid1->get_Path(&pid1->m_v.bstrVal)) {
 							pid1->m_v.vt = VT_BSTR;
 							teILFreeClear(&pid1->m_pidl);
 						}
@@ -12429,7 +12431,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 						m_pExplorerBrowser->SetOptions(static_cast<EXPLORER_BROWSER_OPTIONS>((m_param[SB_Options] & ~(EBO_SHOWFRAMES | EBO_NAVIGATEONCE | EBO_ALWAYSNAVIGATE)) | dwFrame | EBO_NOTRAVELLOG));
 						m_pTC->LockUpdate(TRUE);
 						try {
-							m_pTC->m_nRedraw |= TEREDRAW_NAVIGATE;
+							m_pTC->m_nRedraw = TEREDRAW_NAVIGATE | TEREDRAW_NORMAL;
 							BrowseToObject();
 						} catch (...) {
 #ifdef _DEBUG
@@ -12450,7 +12452,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	m_clrText = GetSysColor(COLOR_WINDOWTEXT);
 	m_clrBk = GetSysColor(COLOR_WINDOW);
 	m_clrTextBk = m_clrBk;
-	m_bSetListColumnWidth = TRUE;
+	m_bSetListColumnWidth = FALSE;
 	teCoTaskMemFree(m_pidl);
 	m_pidl = pidl;
 	m_pFolderItem = m_pFolderItem1;
@@ -12499,7 +12501,6 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	m_nSorting = ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER]) ? TESORTING : 0;
 	//History / Management
 	SetHistory(pFolderItems, wFlags);
-	SetRedraw(FALSE);
 	m_bBeforeNavigate = TRUE;
 	m_pTC->LockUpdate(TRUE);
 	try {
@@ -12512,7 +12513,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 #endif
 	}
 	try {
-		m_pTC->m_nRedraw |= TEREDRAW_NAVIGATE;
+		m_pTC->m_nRedraw = TEREDRAW_NAVIGATE | TEREDRAW_NORMAL;
 		hr = E_FAIL;
 		if (dwFrame || teGetFolderViewOptions(m_pidl, m_param[SB_ViewMode]) == FVO_DEFAULT) {
 			//ExplorerBrowser
@@ -14827,6 +14828,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				SetStatusTextSB(NULL);
 				return DoFunc(TE_OnSelectionChanged, this, S_OK);
 			case DISPID_FILELISTENUMDONE://XP+
+				m_pTC->m_nRedraw &= ~TEREDRAW_NAVIGATE;
 				if (!m_bNavigateComplete && ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
 					return S_OK;
 				}
@@ -21319,9 +21321,8 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 					}
 					LPITEMIDLIST pidl;
 					teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg]);
-					if (::ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER]) || ::ILIsParent(g_pidls[CSIDL_INTERNET], pidl, FALSE)) {
-						teCoTaskMemFree(pidl);
-						return S_OK;
+					if (::ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
+						::ILRemoveLastID(pidl);
 					}
 					if (m_pNameSpaceTreeControl
 #ifdef _2000XP
