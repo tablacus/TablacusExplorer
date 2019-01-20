@@ -1,10 +1,8 @@
 var Addon_Id = "remember";
 
-var item = GetAddonElement(Addon_Id);
-if (!item.getAttribute("Save")) {
-	item.setAttribute("Save", 1000);
-}
 if (window.Addon == 1) {
+	var item = GetAddonElement(Addon_Id);
+
 	Addons.Remember =
 	{
 		db: {},
@@ -12,7 +10,9 @@ if (window.Addon == 1) {
 		nFormat: api.QuadPart(GetAddonOption(Addon_Id, "Format")),
 		Filter: (GetAddonOption(Addon_Id, "Filter") || "*").replace(/\s+$/, "").replace(/\r\n/g, ";"),
 		Disable: (GetAddonOption(Addon_Id, "Disable") || "-").replace(/\s+$/, "").replace(/\r\n/g, ";"),
-		nSM: api.GetSystemMetrics(SM_CXSMICON) * 96 / screen.deviceXDPI,
+		nIcon: api.GetSystemMetrics(SM_CYICON) * 96 / screen.deviceXDPI,
+		nSM: api.GetSystemMetrics(SM_CYSMICON) * 96 / screen.deviceXDPI,
+		nSave: item.getAttribute("Save") || 1000,
 
 		RememberFolder: function (FV)
 		{
@@ -41,7 +41,7 @@ if (window.Addon == 1) {
 		for (var i = items.length; i-- > 0;) {
 			var item = items[i];
 			var ar = [];
-			for (var j in Addons.Remember.ID) {
+			for (var j = Addons.Remember.ID.length; j--;) {
 				ar[j] = item.getAttribute(Addons.Remember.ID[j]);
 			}
 			if (ar[1]) {
@@ -67,7 +67,7 @@ if (window.Addon == 1) {
 			var ar = Addons.Remember.db[Addons.Remember.GetPath(Ctrl)];
 			if (ar) {
 				fs.ViewMode = ar[1];
-				if (ar[2] > Addons.Remember.nSM && (ar[1] > FVM_ICON && ar[1] <= FVM_DETAILS)) {
+				if (ar[2] > Addons.Remember.nIcon && (ar[1] > FVM_ICON && ar[1] <= FVM_DETAILS)) {
 					ar[2] = Addons.Remember.nSM;
 				}
 				fs.ImageSize = ar[2];
@@ -85,12 +85,11 @@ if (window.Addon == 1) {
 			if (Ctrl.Data && Ctrl.Data.Setting == 'Remember') {
 				var ar = Addons.Remember.db[Ctrl.Data.Remember];
 				if (ar) {
-					if (ar[2] > Addons.Remember.nSM && (ar[1] > FVM_ICON && ar[1] <= FVM_DETAILS)) {
+					if (ar[2] > Addons.Remember.nIcon && (ar[1] > FVM_ICON && ar[1] <= FVM_DETAILS)) {
 						ar[2] = Addons.Remember.nSM;
 					}
 					Ctrl.CurrentViewMode(ar[1], ar[2]);
 					Ctrl.Columns = ar[3];
-					var col = Ctrl.Columns(Addons.Remember.nFormat);
 					if (Ctrl.GroupBy && ar[5]) {
 						Ctrl.GroupBy = ar[5];
 					}
@@ -137,10 +136,7 @@ if (window.Addon == 1) {
 				return b[0] - a[0];
 			}
 		);
-		var items = te.Data.Addons.getElementsByTagName("remember");
-		if (items.length) {
-			arFV.splice(items[0].getAttribute("Save"), arFV.length);
-		}
+		arFV.splice(Addons.Remember.nSave, arFV.length);
 		var xml = CreateXml();
 		var root = xml.createElement("TablacusExplorer");
 
@@ -156,5 +152,9 @@ if (window.Addon == 1) {
 		SaveXmlEx("remember.xml", xml, true);
 	});
 } else {
-	importScript("addons\\" + Addon_Id + "\\options.js");
+	var ado = OpenAdodbFromTextFile("addons\\" + Addon_Id + "\\options.html");
+	if (ado) {
+		SetTabContents(0, "General", ado.ReadText(adReadAll));
+		ado.Close();
+	}
 }

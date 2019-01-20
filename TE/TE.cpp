@@ -13180,7 +13180,9 @@ VOID CteShellBrowser::SetFolderSize(IShellFolder2 *pSF2, LPCITEMIDLIST pidl, LPW
 			teGetDisplayNameBSTR(pSF2, pidl, SHGDN_FORPARSING, &bsPath);
 			teGetProperty(m_ppDispatch[SB_TotalFileSize], bsPath, &v);
 			if (v.vt == VT_BSTR) {
-				lstrcpyn(szText, v.bstrVal, cch);
+				if (v.bstrVal) {
+					lstrcpyn(szText, v.bstrVal, cch);
+				}
 			} else if (v.vt != VT_EMPTY) {
 				teStrFormatSize(g_param[TE_SizeFormat], GetLLFromVariant(&v), szText, cch);
 			} else if (m_ppDispatch[SB_TotalFileSize]) {

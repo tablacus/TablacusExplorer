@@ -3462,6 +3462,105 @@ AddEvent("UseExplorer", function (pid)
 	}
 });
 
+AddEnv("Selected", function(Ctrl)
+{
+	var ar = [];
+	var Selected = GetSelectedItems(Ctrl);
+	if (Selected) {
+		for (var i = Selected.Count; i > 0; ar.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(Selected.Item(--i), SHGDN_FORPARSING | SHGDN_ORIGINAL)))) {
+		}
+	}
+	return ar.join(" ");
+});
+
+AddEnv("Current", function(Ctrl)
+{
+	var strSel = "";
+	var FV = GetFolderView(Ctrl);
+	if (FV) {
+		strSel = api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORPARSING | SHGDN_ORIGINAL));
+	}
+	return strSel;
+});
+
+AddEnv("TreeSelected", function(Ctrl)
+{
+	var strSel = "";
+	if (!Ctrl || Ctrl.Type != CTRL_TV) {
+		var FV = GetFolderView(Ctrl);
+		if (FV) {
+			Ctrl = FV.TreeView;
+		}
+	}
+	if (Ctrl) {
+		strSel = api.PathQuoteSpaces(api.GetDisplayNameOf(Ctrl.SelectedItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
+	}
+	return strSel;
+});
+
+AddEnv("Installed", fso.GetDriveName(api.GetModuleFileName(null)));
+
+AddEnv("TE_Config", function ()
+{
+	return fso.BuildPath(te.Data.DataFolder, "config");
+});
+
+AddEvent("ReplaceMacroEx", [/%res:(.+)%/ig, function (strMatch, ref1)
+{
+	return api.LoadString(hShell32, ref1) || GetTextR(ref1);
+}]);
+
+AddEvent("ReplaceMacroEx", [/%AddonStatus:([^%]*)%/ig, function (strMatch, ref1)
+{
+	return api.LowPart(GetAddonElement(ref1).getAttribute("Enabled")) ? "on" : "off";
+}]);
+
+ExtractMacro2 = function (Ctrl, s)
+{
+	for (var j = 99; j--;) {
+		var s1 = s;
+		for (var i in eventTE.replacemacroex) {
+			s = s.replace(eventTE.replacemacroex[i][0], eventTE.replacemacroex[i][1]);
+		}
+		for (var i in eventTE.replacemacro) {
+			var re = eventTE.replacemacro[i][0];
+			var res = re.exec(s);
+			if (res) {
+				var r = eventTE.replacemacro[i][1](Ctrl, re, res);
+				if (/^string$|^number$/i.test(typeof r)) {
+					s = s.replace(re, r);
+				}
+			}
+		}
+		for (var i in eventTE.extractmacro) {
+			var re = eventTE.extractmacro[i][0];
+			if (re.test(s)) {
+				s = eventTE.extractmacro[i][1](Ctrl, s, re);
+			}
+		}
+		s = s.replace(/%([\w\-_]+)%/g, function (strMatch, ref)
+		{
+			var fn = eventTE.Environment[ref.toLowerCase()];
+			if (/^string$|^number$/i.test(typeof fn)) {
+				return fn;
+			} else if (fn) {
+				try {
+					var r = fn(Ctrl);
+					if (/^string$|^number$/i.test(typeof r)) {
+						return r;
+					}
+				} catch (e) {}
+			}
+			return strMatch;
+		});
+		s = wsh.ExpandEnvironmentStrings(s);
+		if (s == s1) {
+			break;
+		}
+	}
+	return s;
+}
+
 function RunSplitter(n)
 {
 	if (event.buttons !== undefined ? event.buttons & 1 : event.button == 0) {
