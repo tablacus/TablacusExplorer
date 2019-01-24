@@ -9867,6 +9867,11 @@ VOID teApiGetDiskFreeSpaceEx(int nArg, teParam *param, DISPPARAMS *pDispParams, 
 	}
 }
 
+VOID teApiSetSysColors(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetBool(pVarResult, SetSysColors(param[0].intVal, (INT *)GetpcFromVariant(&pDispParams->rgvarg[nArg - 1], NULL), (COLORREF *)GetpcFromVariant(&pDispParams->rgvarg[nArg - 2], NULL)));
+}
+
 /*
 VOID teApi(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -10194,6 +10199,7 @@ TEDispatchApi dispAPI[] = {
 	{ 4,  0, -1, -1, "SHCreateStreamOnFileEx", teApiSHCreateStreamOnFileEx },	
 	{ 1, -1, -1, -1, "HasThumbnail", teApiHasThumbnail },
 	{ 1,  0, -1, -1, "GetDiskFreeSpaceEx", teApiGetDiskFreeSpaceEx },
+	{ 3, -1, -1, -1, "SetSysColors", teApiSetSysColors },
 //	{ 0, -1, -1, -1, "", teApi },
 //	{ 0, -1, -1, -1, "Test", teApiTest },
 };

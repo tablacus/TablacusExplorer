@@ -32,6 +32,8 @@ urlAddons = "https://tablacus.github.io/TablacusExplorerAddons/";
 xhr = null;
 xmlAddons = null;
 
+MainWindow.RunEvent1("BrowserCreated", document);
+
 function SetDefaultLangID()
 {
 	SetDefault(document.F.Conf_Lang, GetLangId(true));
@@ -1328,16 +1330,17 @@ function ApplyOptions()
 	SetFolderViews();
 	MainWindow.RunEvent1("ConfigChanged", "Config");
 
-	var sw = sha.Windows();
-	for (var i = sw.Count; i--;) {
-		var x = sw.Item(i);
-		if (x && x.Document) {
-			var w = x.Document.parentWindow;
-			if (w && w.te && w.te.Data && te.Data.DataFolder == w.te.Data.DataFolder) {
-				w.te.Data.bReload = true;
+	try {
+		for (var esw = new Enumerator(sha.Windows()); !esw.atEnd(); esw.moveNext()) {
+			var x = esw.item();
+			if (x && x.Document) {
+				var w = x.Document.parentWindow;
+				if (w && w.te && w.te.Data && te.Data.DataFolder == w.te.Data.DataFolder) {
+					w.te.Data.bReload = true;
+				}
 			}
 		}
-	}
+	} catch (e) {}
 	api.EnableWindow(te.Ctrl(CTRL_WB).hwnd, false);
 }
 

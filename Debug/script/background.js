@@ -14,9 +14,8 @@ function _s()
 		if (!/^[A-Z]:\\|^\\\\/i.test(location.href)) {
 			location.href = fso.BuildPath(parent, location.href);
 		}
-		var sw = sha.Windows();
-		for (var i = sw.Count; i--;) {
-			var x = sw.Item(i);
+		for (var esw = new Enumerator(sha.Windows()); !esw.atEnd(); esw.moveNext()) {
+			var x = esw.item();
 			if (x && api.StrCmpI(fso.GetParentFolderName(x.FullName), parent) == 0) {
 				var w = x.Document.parentWindow;
 				if (!window.MainWindow || window.MainWindow.Exchange && window.MainWindow.Exchange[arg[3]]) {

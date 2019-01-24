@@ -37,9 +37,8 @@ wnw = api.CreateObject("WScript.Network");
 
 if (g_uid) {
 	(function () {
-		var wins = sha.Windows();
-		for (var i = wins.Count; i--;) {
-			var x = wins.Item(i);
+		for (var esw = new Enumerator(sha.Windows()); !esw.atEnd(); esw.moveNext()) {
+			var x = esw.item();
 			if (x && x.Document) {
 				var w = x.Document.parentWindow;
 				if (w && w.te && w.Exchange) {

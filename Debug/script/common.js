@@ -3071,6 +3071,10 @@ GetGestureButton = function ()
 
 GetWebColor = function (c)
 {
+	var res = /(\d{1,3}) (\d{1,3}) (\d{1,3})/.exec(c);
+	if (res) {
+		c = res[3] * 65536 + res[2] * 256 + res[1] * 1;
+	}
 	return isNaN(c) && /^#[0-9a-f]{3,6}$/i ? c : api.sprintf(8, "#%06x", ((c & 0xff) << 16) | (c & 0xff00) | ((c & 0xff0000) >> 16));
 }
 
@@ -3083,6 +3087,10 @@ GetWinColor = function (c)
 	res = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/i.exec(c);
 	if (res) {
 		return Number(["0x", res[3], res[3], res[2], res[2], res[1], res[1]].join(""));
+	}
+	res = /(\d{1,3}) (\d{1,3}) (\d{1,3})/.exec(c);
+	if (res) {
+		return res[3] * 65536 + res[2] * 256 + res[1] * 1;
 	}
 	return c;
 }

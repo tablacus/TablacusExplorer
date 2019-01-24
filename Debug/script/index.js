@@ -2127,6 +2127,7 @@ function ArrangeAddons()
 			}
 		}
 	}
+	RunEvent1("BrowserCreated", document);
 	RunEvent1("Load");
 	delete eventTE.load;
 	var hwnd, p = api.Memory("WCHAR", 11);
@@ -3655,21 +3656,17 @@ if (!te.Data) {
 		te.Data.SHIL[i] = api.SHGetImageList(i);
 	}
 	var o = {};
-	var sw;
 	try {
-		sw = sha.Windows();
-	} catch (e) {
-		sw = { Count: 0 };
-	}
-	for (var i = sw.Count; i-- > 0;) {
-		var x = sw.Item(i);
-		if (x && x.Document) {
-			var w = x.Document.parentWindow;
-			if (w && w.te && w.te.Data) {
-				o[w.te.Data.WindowSetting] = 1;
+		for (var esw = new Enumerator(sha.Windows()); !esw.atEnd(); esw.moveNext()) {
+			var x = esw.item();
+			if (x && x.Document) {
+				var w = x.Document.parentWindow;
+				if (w && w.te && w.te.Data) {
+					o[w.te.Data.WindowSetting] = 1;
+				}
 			}
 		}
-	}
+	} catch (e) {}
 	te.Data.WindowSetting = fso.BuildPath(te.Data.DataFolder, "config\\window0.xml");
 	for (var i = 1; i < 999; i++) {
 		var fn = fso.BuildPath(te.Data.DataFolder, "config\\window" + i + ".xml");
