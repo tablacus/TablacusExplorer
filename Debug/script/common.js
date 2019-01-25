@@ -3371,6 +3371,9 @@ GetSysColor = function (i)
 SetSysColor = function (i, color)
 {
 	g_.Colors[i] = color;
+	if(i == COLOR_BTNFACE) {
+		te.Background = isFinite(color) ? api.CreateSolidBrush(color) : null;
+	}
 }
 
 ShellExecute = function (s, vOperation, nShow, vDir2, pt)

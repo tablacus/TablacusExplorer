@@ -103,6 +103,8 @@ BSTR	g_bsClipRoot = NULL;
 BSTR	g_bsDateTimeFormat = NULL;
 HTREEITEM	g_hItemDown = NULL;
 SORTCOLUMN g_pSortColumnNull[3];
+HBRUSH	g_hbrBackground = NULL;
+
 UINT	g_uCrcTable[256];
 LONG	g_nSize = 0;
 LONG	g_nLockUpdate = 0;
@@ -862,6 +864,7 @@ TEmethod methodTE[] = {
 	{ 1132, "GdiplusBitmap" },
 	{ 1137, "ProgressDialog" },
 	{ 1138, "DateTimeFormat" },
+	{ 1140, "Background" },
 	{ TE_METHOD + 1133, "FolderItems" },
 	{ TE_METHOD + 1134, "Object" },
 	{ TE_METHOD + 1135, "Array" },
@@ -11334,6 +11337,9 @@ function _c(s) {\
 	//At the end of processing
 	try {
 		g_bMessageLoop = FALSE;
+		if (g_hbrBackground) {
+			DeleteObject(g_hbrBackground);
+		}
 		RevokeDragDrop(g_hwndMain);
 #ifdef _USE_HTMLDOC
 		SafeRelease(&pHtmlDoc);
@@ -11756,6 +11762,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					}
 				}
 				return DefWindowProc(hWnd, message, wParam, lParam);
+			case WM_CTLCOLORSTATIC:
+				if (g_hbrBackground) {
+					return (LRESULT)g_hbrBackground;
+				}
+				break;
 		}//end_switch
 	} catch (...) {
 		g_nException = 0;
@@ -17038,6 +17049,16 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 					}
 				}
 				teSetSZ(pVarResult, g_bsDateTimeFormat);
+				return S_OK;
+			//Background
+			case 1140:
+				if (nArg >= 0) {
+					if (g_hbrBackground) {
+						DeleteObject(g_hbrBackground);
+					}
+					g_hbrBackground = (HBRUSH)GetLLFromVariant(&pDispParams->rgvarg[nArg]);
+				}
+				teSetPtr(pVarResult, g_hbrBackground);
 				return S_OK;
 #ifdef _USE_TESTOBJECT
 			//TestObj

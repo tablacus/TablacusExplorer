@@ -302,7 +302,7 @@ function ChooseColor1(o)
 	setTimeout(function ()
 	{
 		var o2 = o.form[o.id.replace("Color_", "")];
-		var c = ChooseColor(o2.value);
+		var c = ChooseColor(o2.value || o2.placeholder);
 		if (isFinite(c)) {
 			o2.value = c;
 			o.style.backgroundColor = GetWebColor(c);
@@ -315,7 +315,7 @@ function ChooseColor2(o)
 	setTimeout(function ()
 	{
 		var o2 = o.form[o.id.replace("Color_", "")];
-		var c = ChooseColor(GetWinColor(o2.value));
+		var c = ChooseColor(GetWinColor(o2.value || o2.placeholder));
 		if (isFinite(c)) {
 			c = GetWebColor(c);
 			o2.value = c;
@@ -2479,7 +2479,7 @@ function InitColor1(item)
 			if (res) {
 				var o = document.F[res[1]];
 				if (o) {
-					ele[i].style.backgroundColor = GetWebColor(o.value);
+					ele[i].style.backgroundColor = GetWebColor(o.value || o.placeholder);
 				}
 			}
 		}
@@ -2490,7 +2490,7 @@ function ChangeColor1(ele)
 {
 	var o = document.getElementById("Color_" + (ele.id || ele.name));
 	if (o) {
-		o.style.backgroundColor = GetWebColor(ele.value);
+		o.style.backgroundColor = GetWebColor(ele.value || ele.placeholder);
 	}
 }
 
