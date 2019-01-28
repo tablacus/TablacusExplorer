@@ -14704,22 +14704,26 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					for (int i = 1; i < (lEvent & (SHCNE_RENAMEITEM | SHCNE_RENAMEFOLDER) ? 3 : 2); i++) {
 						LPITEMIDLIST pidl;
 						if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg - i])) {
-							IShellFolder2 *pSF2;
-							LPCITEMIDLIST pidlLast;
-							if SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF2), &pidlLast)) {
-								if (bTFS) {
-									WCHAR szBuf[MAX_COLUMN_NAME_LEN];
-									SetFolderSize(pSF2, pidlLast, szBuf, _countof(szBuf));
-								} else {
-									BSTR bsPath;
-									if SUCCEEDED(teGetDisplayNameBSTR(pSF2, pidl, SHGDN_FORPARSING, &bsPath)) {
-										if SUCCEEDED(teDelProperty(m_ppDispatch[SB_TotalFileSize], bsPath) && m_hwndLV) {
-											InvalidateRect(m_hwndLV, NULL, FALSE);
+							if (!ILIsEmpty(pidl)) {
+								IShellFolder2 *pSF2;
+								LPCITEMIDLIST pidlLast;
+								if SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF2), &pidlLast)) {
+									if (bTFS) {
+										WCHAR szBuf[MAX_COLUMN_NAME_LEN];
+										SetFolderSize(pSF2, pidlLast, szBuf, _countof(szBuf));
+									} else {
+										BSTR bsPath;
+										if SUCCEEDED(teGetDisplayNameBSTR(pSF2, pidl, SHGDN_FORPARSING, &bsPath)) {
+											if SUCCEEDED(teDelProperty(m_ppDispatch[SB_TotalFileSize], bsPath)) {
+												if (m_hwndLV) {
+													InvalidateRect(m_hwndLV, NULL, FALSE);
+												}
+											}
+											teSysFreeString(&bsPath);
 										}
-										teSysFreeString(&bsPath);
 									}
+									pSF2->Release();
 								}
-								pSF2->Release();
 							}
 							teCoTaskMemFree(pidl);
 						}
