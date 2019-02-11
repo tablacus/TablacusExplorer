@@ -2421,7 +2421,7 @@ function CheckUpdate2(xhr, url, arg1)
 			}
 		}
 	}
-	if (arg1 && !arg1.noconfirm) {
+	if (!(arg1 && arg1.noconfirm)) {
 		var s = api.sprintf(99, "Version %d.%d.%d (%.1lfKB)", ver / 10000 % 100, ver / 100 % 100, ver % 100, arg.size);
 		if (!confirmOk([GetText("Update available"), s, GetText("Do you want to install it now?")].join("\n"))) {
 			return;
@@ -2869,7 +2869,7 @@ function MakeKeySelect()
 
 function SetKeyShift()
 {
-	var key = (document.F.elements.KeyKey || document.F.elements.Key).value;
+	var key = (document.E.elements.KeyKey || document.F.elements.KeyKey || document.F.elements.Key).value;
 	for (var i = 0; i < MainWindow.g_.KeyState.length; i++) {
 		var s = MainWindow.g_.KeyState[i][0];
 		var o = document.getElementById("_Key" + s);
@@ -2889,7 +2889,7 @@ function SetKeyShift()
 
 function KeyShift(o)
 {
-	var oKey = document.F.elements.KeyKey || document.F.elements.Key;
+	var oKey = document.E.elements.KeyKey || document.F.elements.KeyKey || document.F.elements.Key;
 	var key = oKey.value;
 	var shift = o.id.replace(/^_Key(.*)/, "$1+");
 	key = key.replace(shift, "");
@@ -2901,7 +2901,7 @@ function KeyShift(o)
 
 function KeySelect(o)
 {
-	var oKey = document.F.elements.KeyKey || document.F.elements.Key;
+	var oKey = document.E.elements.KeyKey || document.F.elements.KeyKey || document.F.elements.Key;
 	oKey.value = oKey.value.replace(/(\+)[^\+]*$|^[^\+]*$/, "$1") + o[o.selectedIndex].value;
 }
 

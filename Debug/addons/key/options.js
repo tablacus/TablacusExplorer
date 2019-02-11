@@ -1,19 +1,16 @@
-﻿var g_x = {Key: null};
-var g_Chg = {Key: false, Data: null};
-g_Types = {Key: ["All", "List", "Tree", "Browser"]};
-g_nResult = 3;
-g_bChanged = false;
+g_Types = { Key: ["All", "List", "Tree", "Browser"] };
 
-function SetKeyOptions()
-{
-	SetOptions(function () {
-		SetChanged();
-		SaveX("Key");
-		TEOk();
-	});
+var ado = OpenAdodbFromTextFile("addons\\" + Addon_Id + "\\options.html");
+if (ado) {
+	SetTabContents(4, "", ado.ReadText(adReadAll));
+	ado.Close();
 }
 
-ApplyLang(document);
-LoadX("Key");
+SaveLocation = function ()
+{
+	SetChanged(null, document.E);
+	SaveX("Key", document.E);
+}
+
+LoadX("Key", null, document.E);
 MakeKeySelect();
-AddEventEx(window, "beforeunload", SetKeyOptions);

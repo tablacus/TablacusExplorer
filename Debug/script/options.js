@@ -129,7 +129,10 @@ function ResizeTabPanel()
 {
 	var h = 4.8;
 	if (g_.Inline && !/\w/.test(document.getElementById('toolbar').innerHTML)) {
-		h = 2.4;
+		h -= 2.4;
+	}
+	if (g_.NoTab) {
+		h -= 2.4;
 	}
 	CalcElementHeight(g_ovPanel, h);
 }
@@ -1595,7 +1598,7 @@ InitDialog = function ()
 			var ar = [
 				'Navigate(api.GetModuleFileName(null) + "\\\\..", SBSP_NEWBROWSER)',
 				'Navigate(fso.BuildPath(te.Data.DataFolder, "config"), SBSP_NEWBROWSER)',
-				'wsh.Run("http://www.eonet.ne.jp/~gakana/tablacus/explorer_en.html")',
+				'wsh.Run("https://tablacus.github.io/explorer_en.html")',
 				'CheckUpdate()'
 			];
 			MainWindow.setTimeout(ar[n], 500);
@@ -2515,7 +2518,16 @@ function ChangeForm(ar)
 
 function SetTabContents(id, name, value)
 {
-	document.getElementById("tab" + id).value = GetText(name);
+	var o = document.getElementById("tab" + id);
+	if (name) {
+		o.value = GetText(name);
+	} else {
+		g_.NoTab = true;
+		setTimeout(function ()
+		{
+			o.style.display = "none";
+		}, 99);
+	}
 	document.getElementById("panel" + id).innerHTML = value.join ? value.join('') : value;
 }
 

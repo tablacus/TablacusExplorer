@@ -3636,12 +3636,13 @@ if (!te.Data) {
 			break;
 		}
 	}
-	delete fn;
 	var s = fso.BuildPath(te.Data.DataFolder, "config");
 	CreateFolder2(s);
 	if (!fso.FolderExists(s)) {
 		fn();
+		CreateFolder2(fso.BuildPath(te.Data.DataFolder, "config"));
 	}
+	delete fn;
 	if (!document.documentMode) {
 		var s = fso.BuildPath(te.Data.DataFolder, "cache");
 		CreateFolder2(s);

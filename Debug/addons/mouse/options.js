@@ -1,12 +1,13 @@
-var g_x = {Mouse: null};
-var g_Chg = {Mouse: false, Data: null};
-g_Types = {Mouse: ["All", "List", "List_Background", "Tree", "Tabs", "Tabs_Background", "Browser"]};
-g_nResult = 3;
-g_bChanged = false;
+g_Types = { Mouse: ["All", "List", "List_Background", "Tree", "Tabs", "Tabs_Background", "Browser"] };
 
-var ado = OpenAdodbFromTextFile("addons\\mouse\\options.html");
+var ado = OpenAdodbFromTextFile("addons\\" + Addon_Id + "\\options.html");
 if (ado) {
-	SetTabContents(4, "General", ado.ReadText(adReadAll));
+	var ar = [];
+	var s = "CSA";
+	for (var i = s.length; i--;) {
+		ar.unshift('<input type="button" value="', MainWindow.g_.KeyState[i][0],'" title="', s.charAt(i), '" onclick="AddMouse(this)" />');
+	}
+	SetTabContents(4, "", ado.ReadText(adReadAll).replace("%s", ar.join("")));
 	ado.Close();
 }
 
@@ -22,12 +23,4 @@ SaveLocation = function ()
 	SaveX("Mouse", document.E);
 }
 
-var ar = [];
-var s = "CSA";
-for (var i = 0; i < s.length; i++) {
-	ar.push('<input type="button" value="', MainWindow.g_.KeyState[i][0],'" title="', s.charAt(i), '" onclick="AddMouse(this)" />');
-}
-document.getElementById("__MOUSEDATA").innerHTML = ar.join("");
-LoadLang2(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\mouse\\lang\\" + te.Data.Conf_Lang + ".xml"));
-ApplyLang(document);
 LoadX("Mouse", null, document.E);

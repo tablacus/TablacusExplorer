@@ -1,4 +1,4 @@
-﻿if (window.Addon == 1) {
+if (window.Addon == 1) {
 	Addons.Key =
 	{
 		Menus: [],
@@ -61,4 +61,6 @@
 			SetKeyExec(mode, strKey, strOpt, strType);
 		}
 	}
+} else {
+	importScript("addons\\" + Addon_Id + "\\options.js");
 }
