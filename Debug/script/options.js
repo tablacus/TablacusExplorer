@@ -2519,6 +2519,7 @@ function ChangeForm(ar)
 function SetTabContents(id, name, value)
 {
 	var o = document.getElementById("tab" + id);
+	var oPanel = document.getElementById("panel" + id);
 	if (name) {
 		o.value = GetText(name);
 	} else {
@@ -2526,9 +2527,10 @@ function SetTabContents(id, name, value)
 		setTimeout(function ()
 		{
 			o.style.display = "none";
+			oPanel.style.border = "0";
 		}, 99);
 	}
-	document.getElementById("panel" + id).innerHTML = value.join ? value.join('') : value;
+	oPanel.innerHTML = value.join ? value.join('') : value;
 }
 
 function ShowButtons(b1, b2, SortMode)

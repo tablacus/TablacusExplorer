@@ -7622,6 +7622,20 @@ VOID teApiPathCreateFromUrl(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 	}
 }
 
+VOID teApiUrlCreateFromPath(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	if (param[0].bstrVal) {
+		DWORD dwLen = ::SysStringLen(param[0].bstrVal) + MAX_PATH;
+		BSTR bsResult = ::SysAllocStringLen(NULL, dwLen);
+		if SUCCEEDED(UrlCreateFromPath(param[0].lpcwstr, bsResult, &dwLen, NULL)) {
+			teSetBSTR(pVarResult, &bsResult, dwLen);
+		} else {
+			::SysFreeString(bsResult);
+			teSetSZ(pVarResult, NULL);
+		}
+	}
+}
+
 VOID teApiPathSearchAndQualify(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	if (param[0].bstrVal) {
@@ -9935,6 +9949,7 @@ TEDispatchApi dispAPI[] = {
 	{ 1,  0, -1, -1, "PathUnquoteSpaces", teApiPathUnquoteSpaces },
 	{ 1,  0, -1, -1, "GetShortPathName", teApiGetShortPathName },
 	{ 1,  0, -1, -1, "PathCreateFromUrl", teApiPathCreateFromUrl },
+	{ 1,  0, -1, -1, "UrlCreateFromPath", teApiUrlCreateFromPath },
 	{ 1,  0, -1, -1, "PathSearchAndQualify", teApiPathSearchAndQualify },
 	{ 3,  0, -1, -1, "PSFormatForDisplay", teApiPSFormatForDisplay },
 	{ 1,  0, -1, -1, "PSGetDisplayName", teApiPSGetDisplayName },

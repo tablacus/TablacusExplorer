@@ -2808,12 +2808,12 @@ CreateNewFile = function (Ctrl, pt)
 
 InputMouse = function (o)
 {
-	ShowDialogEx("mouse", 500, 420, o || document.F.MouseMouse || document.F.Mouse);
+	ShowDialogEx("mouse", 500, 420, o || (document.E && document.E.MouseMouse) || document.F.MouseMouse || document.F.Mouse);
 }
 
 InputKey = function(o)
 {
-	ShowDialogEx("key", 320, 120, o || document.F.KeyKey || document.F.Key);
+	ShowDialogEx("key", 320, 120, o || (document.E && document.E.KeyKey) || document.F.KeyKey || document.F.Key);
 }
 
 ShowIconEx = function (o)
@@ -2869,7 +2869,7 @@ function MakeKeySelect()
 
 function SetKeyShift()
 {
-	var key = (document.E.elements.KeyKey || document.F.elements.KeyKey || document.F.elements.Key).value;
+	var key = ((document.E && document.E.KeyKey) || document.F.KeyKey || document.F.Key).value;
 	for (var i = 0; i < MainWindow.g_.KeyState.length; i++) {
 		var s = MainWindow.g_.KeyState[i][0];
 		var o = document.getElementById("_Key" + s);
@@ -2889,7 +2889,7 @@ function SetKeyShift()
 
 function KeyShift(o)
 {
-	var oKey = document.E.elements.KeyKey || document.F.elements.KeyKey || document.F.elements.Key;
+	var oKey = (document.E && document.E.KeyKey) || document.F.KeyKey || document.F.Key;
 	var key = oKey.value;
 	var shift = o.id.replace(/^_Key(.*)/, "$1+");
 	key = key.replace(shift, "");
@@ -2901,7 +2901,7 @@ function KeyShift(o)
 
 function KeySelect(o)
 {
-	var oKey = document.E.elements.KeyKey || document.F.elements.KeyKey || document.F.elements.Key;
+	var oKey = (document.E && document.E.KeyKey) || document.F.KeyKey || document.F.Key;
 	oKey.value = oKey.value.replace(/(\+)[^\+]*$|^[^\+]*$/, "$1") + o[o.selectedIndex].value;
 }
 
