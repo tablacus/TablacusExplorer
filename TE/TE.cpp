@@ -13787,7 +13787,7 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 						SetPropEx();
 					}
 					//Columns Order and Width;
-					if (m_hwndLV) {
+					if (m_hwndLV && ListView_GetView(m_hwndLV) == LV_VIEW_DETAILS) {
 						HWND hHeader = ListView_GetHeader(m_hwndLV);
 						if (hHeader) {
 							UINT nHeader = Header_GetItemCount(hHeader);
