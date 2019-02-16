@@ -9,6 +9,10 @@ input[type="text"] {
 	min-height: 1.4em;
 }
 
+textarea {
+  min-height: 2em
+}
+
 .panel {
 	border: 1px solid buttonshadow;
 	padding: 4px;

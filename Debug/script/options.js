@@ -443,6 +443,27 @@ function MoveTabControl()
 	}
 }
 
+function SwapTabControl()
+{
+	var TC1 = te.Ctrl(CTRL_TC);
+	var cTC = te.Ctrls(CTRL_TC, false);
+	for (var i in cTC) {
+		var TC = cTC[i];
+		if (TC != TC1 && TC.Left == document.F.Tab_Left.value && TC.Top == document.F.Tab_Top.value &&
+			TC.Width == document.F.Tab_Width.value && TC.Height == document.F.Tab_Height.value) {
+			TC.Left = TC1.Left;
+			TC.Top = TC1.Top;
+			TC.Width = TC1.Width;
+			TC.Height = TC1.Height;
+			TC1.Left = document.F.Tab_Left.value;
+			TC1.Top = document.F.Tab_Top.value;
+			TC1.Width = document.F.Tab_Width.value;
+			TC1.Height = document.F.Tab_Height.value;
+			break;
+		}
+	}
+}
+
 function InitConfig(o)
 {
 	var InstallPath = fso.GetParentFolderName(api.GetModuleFileName(null));
@@ -2518,15 +2539,14 @@ function ChangeForm(ar)
 
 function SetTabContents(id, name, value)
 {
-	var o = document.getElementById("tab" + id);
 	var oPanel = document.getElementById("panel" + id);
 	if (name) {
-		o.value = GetText(name);
+		document.getElementById("tab" + id).value = GetText(name);
 	} else {
 		g_.NoTab = true;
 		setTimeout(function ()
 		{
-			o.style.display = "none";
+			document.getElementById("tabs").style.display = "none";
 			oPanel.style.border = "0";
 		}, 99);
 	}
