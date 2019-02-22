@@ -449,7 +449,7 @@ function SwapTabControl()
 	var cTC = te.Ctrls(CTRL_TC, false);
 	for (var i in cTC) {
 		var TC = cTC[i];
-		if (TC != TC1 && TC.Left == document.F.Tab_Left.value && TC.Top == document.F.Tab_Top.value &&
+		if (TC.Visible && TC != TC1 && TC.Left == document.F.Tab_Left.value && TC.Top == document.F.Tab_Top.value &&
 			TC.Width == document.F.Tab_Width.value && TC.Height == document.F.Tab_Height.value) {
 			TC.Left = TC1.Left;
 			TC.Top = TC1.Top;
@@ -1462,8 +1462,11 @@ OpenIcon = function (o)
 				api.FreeLibrary(hModule);
 			}
 		} else {
-			dllpath = fso.BuildPath(system32, a[1]);
-			var nCount = api.ExtractIconEx(dllpath, -1, null, null, 0);
+			dllPath = ExtractMacro(te, a[1]);
+			if (!/^[A-Z]:\\|^\\\\/i.test(dllPath)) {
+				dllPath = fso.BuildPath(system32, a[1]);
+			}
+			var nCount = api.ExtractIconEx(dllPath, -1, null, null, 0);
 			for (var i = 0; i < nCount; i++) {
 				var s = ["icon:" + a[1], i].join(",");
 				var src = MakeImgSrc(s, 0, false, 32);
@@ -1577,14 +1580,20 @@ InitDialog = function ()
 					if (!/^[A-Z]:\\|^\\/i.test(path)) {
 						path = fso.BuildPath(dialogArguments.path, path.replace(/^\s+/, ""));
 					}
-					if (document.getElementById("folder").checked) {
+					if (GetElement("folder").checked) {
 						CreateFolder(path);
-					} else if (document.getElementById("file").checked) {
+					} else if (GetElement("file").checked) {
 						CreateFile(path);
 					}
 				}
 			}
 		});
+	}
+	if (Query == "fileicon" && dialogArguments.element) {
+		var s = api.PathUnquoteSpaces(dialogArguments.element.value);
+		document.title = s + " - " + TITLE;
+		GetElement("Content").innerHTML = '<div id="i,' + s + '" style="cursor: pointer"></div>';
+		OpenIcon(GetElement("i," + s));
 	}
 	if (Query == "about") {
 		returnValue = false;
@@ -2022,12 +2031,21 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter)
 		}
 
 		var o = GetElement(Id);
-		var path = OpenDialogEx(o.value, Filter, api.LowPart(bFilesOnly));
+		var path = o.value;
+		var res = /^icon:([^,]*)|^bitmap:([^,]*)/i.exec(path) || [];
+		path = OpenDialogEx(res[1] || res[2] || path, Filter, api.LowPart(bFilesOnly));
 		if (path) {
 			if (bMultiLine) {
 				AddPath(Id, path);
-			} else {
-				SetValue(o, path);
+				return;
+			}
+			SetValue(o, path);
+			if (/Icon/i.test(Id)) {
+				var s = api.PathUnquoteSpaces(ExtractMacro(te, path));
+				if (api.ExtractIconEx(s, -1, null, null, 0) > 1) {
+					ShowDialogEx("fileicon", 640, 480, o);
+					return;
+				}
 			}
 		}
 	}, 99);

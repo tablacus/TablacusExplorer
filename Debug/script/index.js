@@ -744,6 +744,12 @@ te.OnNavigateComplete = function (Ctrl)
 	Ctrl.NavigateComplete();
 	RunEvent1("NavigateComplete", Ctrl);
 	ChangeView(Ctrl);
+	if (g_.focused) {
+		g_.focused.Focus();
+		if (--g_.fTCs <= 0) {
+			delete g_.focused;
+		}
+	}
 	return S_OK;
 }
 
@@ -1429,6 +1435,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 					}
 					break;
 				case WM_ACTIVATE:
+					delete g_.focused;
 					if (te.Data.bSaveMenus) {
 						te.Data.bSaveMenus = false;
 						SaveXmlEx("menus.xml", te.Data.xmlMenus);

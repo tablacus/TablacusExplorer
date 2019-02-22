@@ -744,6 +744,7 @@ LoadXml = function (filename, nGroup)
 {
 	var items;
 	var xml = filename;
+	g_.fTCs = 0;
 	if (/^string$/i.test(typeof filename)) {
 		filename = api.PathUnquoteSpaces(filename);
 		if (fso.FileExists(filename)) {
@@ -792,6 +793,10 @@ LoadXml = function (filename, nGroup)
 				}
 				TC.SelectedIndex = item.getAttribute("SelectedIndex");
 				TC.Visible = api.LowPart(item.getAttribute("Visible"));
+				if (TC.Visible) {
+					g_.focused = TC.Selected;
+					g_.fTCs++;
+				}
 				break;
 		}
 	}
