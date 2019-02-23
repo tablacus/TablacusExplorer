@@ -702,8 +702,7 @@ function ReplaceMenus()
 	var s = GetSourceText(document.F.Menus_Name.value.replace(/\\/g, "/"));
 	var org = (s.toLowerCase() == document.F.Menus_Name.value.toLowerCase() && api.GetKeyState(VK_SHIFT) >= 0) ? "1" : ""
 	if (document.F.Menus_Key.value.length) {
-		var n = GetKeyKey(document.F.Menus_Key.value);
-		s += "\\t" + (n ? api.sprintf(8, "$%x", n) : document.F.Menus_Key.value);
+		s += "\\t" + GetKeyKeyG(document.F.Menus_Key.value);
 	}
 	var p = { s: document.F.Menus_Path.value };
 	MainWindow.OptionEncode(o[o.selectedIndex].value, p);
@@ -897,7 +896,7 @@ function LoadX(mode, fn, form)
 					if (api.StrCmpI(mode, "Key") == 0) {
 						var ar = /,$/.test(s) ? [s] : s.split(",");
 						for (var k = ar.length; k--;) {
-							ar[k] = GetKeyName(ar[k]);
+							ar[k] = GetKeyNameG(ar[k]);
 						}
 						s = ar.join(",");
 					}
@@ -966,6 +965,24 @@ function SaveMenus()
 	}
 }
 
+function GetKeyKeyEx(s)
+{
+	var n = GetKeyKey(s);
+	return n & 0xff ? api.sprintf(9, "$%x", n) : s;
+}
+
+function GetKeyKeyG(s)
+{
+	var n = GetKeyKeyEx(s);
+	var s = GetKeyName(n, true);
+	return /^\w$|\+\w$/i.test(s) ? s : n;
+}
+
+function GetKeyNameG(s)
+{
+	return GetKeyName(/^$/.test(s) ? s : GetKeyKeyEx(s));
+}
+
 function SaveX(mode, form)
 {
 	if (g_Chg[mode]) {
@@ -980,10 +997,7 @@ function SaveX(mode, form)
 				if (mode.toLowerCase() == "key") {
 					var ar = /,$/.test(s) ? [s] : s.split(",");
 					for (var k = ar.length; k--;) {
-						var n = GetKeyKey(ar[k]);
-						if (n) {
-							ar[k] = api.sprintf(8, "$%x", n);
-						}
+						ar[k] = GetKeyKeyG(ar[k]);
 					}
 					s = ar.join(",");
 				} else {
@@ -1829,12 +1843,12 @@ InitLocation = function ()
 		for (var i = ele.length; i--;) {
 			var n = ele[i].id || ele[i].name;
 			if (n && !/=/.test(n)) {
-				s = /^!/.test(n) ? !item.getAttribute(n.substr(1)) : item.getAttribute(n);
+				s = (/^!/.test(n) ? !item.getAttribute(n.substr(1)) : item.getAttribute(n)) || "";
 				if (/Name$/.test(n)) {
 					s = GetText(s);
 				}
 				if (n == "Key") {
-					s = GetKeyName(s);
+					s = GetKeyNameG(s);
 				}
 				if (s || s === 0) {
 					SetElementValue(ele[n], s);
@@ -1904,10 +1918,7 @@ InitLocation = function ()
 					var n = ele[i].id || ele[i].name;
 					if (n && n.charAt(0) != "_") {
 						if (n == "Key") {
-							var s = GetKeyKey(document.F[n].value);
-							if (s) {
-								document.F[n].value = api.sprintf(10, "$%x", s);
-							}
+							document.F[n].value = GetKeyKeyG(document.F[n].value);
 						}
 						if (SetAttribEx(item, document.F, n)) {
 							te.Data.bReload = true;

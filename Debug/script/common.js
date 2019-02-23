@@ -11,10 +11,14 @@ grfKeyState = null;
 pdwEffect = [0];
 bDrop = null;
 Input = null;
-eventTE = { Environment: {} };
+eventTE = {
+	Environment: {}
+};
 eventTA = {};
 g_ptDrag = api.Memory("POINT");
-Addons = {"_stack": []};
+Addons = {
+	"_stack": []
+};
 g_ = {
 	Colors: {},
 	Panels: {},
@@ -947,7 +951,7 @@ GetKeyKey = function (strKey)
 		return nShift;
 	}
 	strKey = strKey.toUpperCase();
-	for (var j in MainWindow.g_.KeyState) {
+	for (var j = 0; j < MainWindow.g_.KeyState.length; j++) {
 		var s = MainWindow.g_.KeyState[j][0].toUpperCase() + "+";
 		var i = strKey.indexOf(s);
 		if (i >= 0) {
@@ -958,14 +962,15 @@ GetKeyKey = function (strKey)
 	return nShift | MainWindow.g_.KeyCode[strKey];
 }
 
-GetKeyName = function (strKey)
+GetKeyName = function (strKey, bEn)
 {
 	var nKey = api.sscanf(strKey, "$%x");
 	if (nKey) {
 		var s = api.GetKeyNameText((nKey & 0x17f) << 16);
 		if (s) {
 			var arKey = [];
-			for (var j in MainWindow.g_.KeyState) {
+			for (var i = 0, z = MainWindow.g_.KeyState.length; i < z; i++) {
+				var j = bEn ? (i + 3) % z : i;
 				if (nKey & MainWindow.g_.KeyState[j][1]) {
 					nKey -= MainWindow.g_.KeyState[j][1];
 					arKey.push(MainWindow.g_.KeyState[j][0]);
