@@ -3231,7 +3231,7 @@ OpenDialogEx = function (path, filter, bFilesOnly)
 	}
 	commdlg.InitDir = path;
 	var s = (api.LoadString(hShell32, 34193) || "All Files") + "|*.*";
-	commdlg.Filter = filter ? ExtractMacro(te, filter).replace(/#/g, "|") + "|" + s : s;
+	commdlg.Filter = filter ? ExtractMacro(te, filter).replace(/#/g, "|").replace(/[\0\|]$/, "") + "|" + s : s;
 	commdlg.Flags = OFN_FILEMUSTEXIST | OFN_EXPLORER | OFN_ENABLESIZING | (bFilesOnly ? 0 : OFN_ENABLEHOOK);
 	if (commdlg.ShowOpen()) {
 		return api.PathQuoteSpaces(commdlg.FileName);

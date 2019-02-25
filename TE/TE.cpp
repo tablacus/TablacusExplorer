@@ -22626,9 +22626,10 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					pVarResult->vt = VT_BSTR;
 				}
 				return S_OK;
-			//FilterView
+			//Filter
 			case 13:
 				if (nArg >= 0) {
+					teSysFreeString(const_cast<BSTR *>(&m_ofn.lpstrFilter));
 					if (pDispParams->rgvarg[nArg].vt == VT_BSTR) {
 						teSysFreeString(const_cast<BSTR *>(&m_ofn.lpstrFilter));
 						int i = ::SysStringLen(pDispParams->rgvarg[nArg].bstrVal);

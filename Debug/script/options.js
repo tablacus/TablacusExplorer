@@ -2051,7 +2051,7 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter)
 				return;
 			}
 			SetValue(o, path);
-			if (/Icon/i.test(Id)) {
+			if (/Icon|Large|Small/i.test(Id)) {
 				var s = api.PathUnquoteSpaces(ExtractMacro(te, path));
 				if (api.ExtractIconEx(s, -1, null, null, 0) > 1) {
 					ShowDialogEx("fileicon", 640, 480, o);
@@ -2069,7 +2069,7 @@ function PortableX(Id)
 	}
 	var o = GetElement(Id);
 	var s = fso.GetDriveName(api.GetModuleFileName(null));
-	SetValue(o, o.value.replace(wsh.ExpandEnvironmentStrings("%UserProfile%"), "%UserProfile%").replace(new RegExp('^("?)' + s, "igm"), "$1%Installed%").replace(new RegExp('( "?)' + s, "igm"), "$1%Installed%"));
+	SetValue(o, o.value.replace(wsh.ExpandEnvironmentStrings("%UserProfile%"), "%UserProfile%").replace(new RegExp('^("?)' + s, "igm"), "$1%Installed%").replace(new RegExp('( "?)' + s, "igm"), "$1%Installed%").replace(new RegExp('(:)' + s, "igm"), "$1%Installed%"));
 }
 
 function GetElement(Id)
