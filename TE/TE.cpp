@@ -3551,7 +3551,6 @@ BOOL GetDestAndName(LPWSTR pszPath, IShellItem **ppSI, LPWSTR *ppsz)
 	if (PathRemoveFileSpec(bs)) {
 		Result = teCreateItemFromPath(bs, ppSI);
 		*ppsz = PathFindFileName(pszPath);
-		Result = TRUE;
 	}
 	::SysFreeString(bs);
 	return Result;
@@ -3582,16 +3581,14 @@ int teSHFileOperation(LPSHFILEOPSTRUCT pFOS)
 							} else if (pszTo && *pszTo) {
 								if (pFOS->wFunc == FO_RENAME) {
 									hr = pFO->RenameItem(psiFrom, pszTo, NULL);
-								} else {
-									if (psiTo || GetDestAndName(pszTo, &psiTo, &pszName)) {
-										if (pFOS->wFunc == FO_COPY) {
-											hr = pFO->CopyItem(psiFrom, psiTo, pszName, NULL);
-										} else if (pFOS->wFunc == FO_MOVE) {
-											if (!pszName || PathFindFileName(pszFrom) - pszFrom != pszName - pszTo || StrCmpNI(pszFrom, pszTo, (int)(pszName - pszTo))) {
-												hr = pFO->MoveItem(psiFrom, psiTo, pszName, NULL);
-											} else {
-												hr = pFO->RenameItem(psiFrom, pszName, NULL);
-											}
+								} else if (psiTo || GetDestAndName(pszTo, &psiTo, &pszName)) {
+									if (pFOS->wFunc == FO_COPY) {
+										hr = pFO->CopyItem(psiFrom, psiTo, pszName, NULL);
+									} else if (pFOS->wFunc == FO_MOVE) {
+										if (!pszName || PathFindFileName(pszFrom) - pszFrom != pszName - pszTo || StrCmpNI(pszFrom, pszTo, (int)(pszName - pszTo))) {
+											hr = pFO->MoveItem(psiFrom, psiTo, pszName, NULL);
+										} else {
+											hr = pFO->RenameItem(psiFrom, pszName, NULL);
 										}
 									}
 								}

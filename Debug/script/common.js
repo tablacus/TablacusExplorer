@@ -2063,7 +2063,7 @@ AddMenuIconFolderItem = function (mii, FolderItem, nHeight)
 		MenusIcon(mii, WINVER >= 0x600 ? "icon:shell32.dll,273" : "icon:shell32.dll,9");
 		return;
 	}
-	if (FolderItem.Unavailable || FolderItem.IsBrowsable) {
+	if (FolderItem.Unavailable) {
 		MenusIcon(mii, "icon:shell32.dll,3");
 		return;
 	}
