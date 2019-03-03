@@ -2688,8 +2688,8 @@ GethwndFromPid = function (ProcessId, bDT)
 	do {
 		if ((api.GetWindowLongPtr(hwnd, nIndex) & nFilter) == nValue && api.IsWindowVisible(hwnd)) {
 			var pProcessId = api.Memory("DWORD");
-			api.GetWindowThreadProcessId(hwnd, pProcessId);
-			if (ProcessId == pProcessId[0]) {
+			api.GetWindowThreadProcessId(hwnd, ppid);
+			if (ProcessId == ppid[0]) {
 				return hwnd;
 			}
 		}

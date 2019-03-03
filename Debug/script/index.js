@@ -1495,6 +1495,16 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 								}
 							}, 99);
 						}
+						var hwnd1 = api.FindWindow("OperationStatusWindow", null);
+						if (hwnd1 && api.IsWindowVisible(hwnd1)) {
+							var ppid = api.Memory("DWORD");
+							var ppid1 = api.Memory("DWORD");
+							api.GetWindowThreadProcessId(te.hwnd, ppid);
+							api.GetWindowThreadProcessId(hwnd1, ppid1);
+							if (ppid[0] == ppid1[0]) {
+								api.SetForegroundWindow(hwnd1);
+							}
+						}
 					} else  {
 						g_.mouse.str = "";
 						SetGestureText(Ctrl, "");

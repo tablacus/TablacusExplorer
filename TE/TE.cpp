@@ -2317,8 +2317,8 @@ ULONGLONG teGetFolderSize(LPCWSTR szPath, int nItems, PDWORD pdwSessionId, DWORD
 				uli.LowPart = wfd.nFileSizeLow;
 				Result += uli.QuadPart;
 			} while (g_bMessageLoop && *pdwSessionId == dwSessionId && FindNextFile(hFind, &wfd));
+			FindClose(hFind);
 		}
-		FindClose(hFind);
 		teSysFreeString(&bsPath);
 	}
 	while (!pFolders.empty()) {
@@ -3427,14 +3427,19 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 						pidl = teILCreateFromPathEx(pszPath);
 					}
 				} else if (tePathMatchSpec(pszPath, L"\\\\*\\*")) {
-					LPWSTR lpDelimiter = StrChr(&pszPath[2], '\\');
-					BSTR bsServer = teSysAllocStringLen(pszPath, int(lpDelimiter - pszPath));
-					LPITEMIDLIST pidlServer = teILCreateFromPathEx(bsServer);
-					if (pidlServer) {
-						pidl = teILCreateFromPath2(pidlServer, &lpDelimiter[1], g_hwndMain);
-						teCoTaskMemFree(pidlServer);
+					WIN32_FIND_DATA wfd;
+					HANDLE hFind = FindFirstFile(pszPath, &wfd);
+					if (hFind != INVALID_HANDLE_VALUE) {
+						FindClose(hFind);
+						LPWSTR lpDelimiter = StrChr(&pszPath[2], '\\');
+						BSTR bsServer = teSysAllocStringLen(pszPath, int(lpDelimiter - pszPath));
+						LPITEMIDLIST pidlServer = teILCreateFromPathEx(bsServer);
+						if (pidlServer) {
+							pidl = teILCreateFromPath2(pidlServer, &lpDelimiter[1], g_hwndMain);
+							teCoTaskMemFree(pidlServer);
+						}
+						::SysFreeString(bsServer);
 					}
-					::SysFreeString(bsServer);
 				}
 			}
 			if (pidl == NULL && !teIsFileSystem(pszPath)) {
