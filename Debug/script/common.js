@@ -1531,12 +1531,15 @@ PathMatchEx = function (path, s)
 
 IsFolderEx = function (Item)
 {
-	if (Item && Item.IsFolder && !api.ILIsParent(ssfBITBUCKET, Item, true)) {
-		var wfd = api.Memory("WIN32_FIND_DATA");
-		var hr = api.SHGetDataFromIDList(Item, SHGDFIL_FINDDATA, wfd, wfd.Size);
-		return (hr < 0) || (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 || !/^[A-Z]:\\|^\\\\[A-Z].*\\.*\\/i.test(Item.Path);
+	if (Item) {
+		if (Item.IsFolder && !api.ILIsParent(ssfBITBUCKET, Item, true)) {
+			var wfd = api.Memory("WIN32_FIND_DATA");
+			var hr = api.SHGetDataFromIDList(Item, SHGDFIL_FINDDATA, wfd, wfd.Size);
+			return (hr < 0) || (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 || !/^[A-Z]:\\|^\\\\[A-Z].*\\.*\\/i.test(Item.Path);
+		}
+		return !Item.IsFileSystem && Item.IsBrowsable;
 	}
-	return !Item.IsFileSystem && Item.IsBrowsable;
+	return false;
 }
 
 OpenMenu = function (items, SelItem)
@@ -2687,7 +2690,7 @@ GethwndFromPid = function (ProcessId, bDT)
 	var hwnd = api.GetTopWindow(null);
 	do {
 		if ((api.GetWindowLongPtr(hwnd, nIndex) & nFilter) == nValue && api.IsWindowVisible(hwnd)) {
-			var pProcessId = api.Memory("DWORD");
+			var ppid = api.Memory("DWORD");
 			api.GetWindowThreadProcessId(hwnd, ppid);
 			if (ProcessId == ppid[0]) {
 				return hwnd;
