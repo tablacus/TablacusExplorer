@@ -12396,8 +12396,12 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 			pid1->Release();
 		}
 	}
-	if (m_dwUnavailable && m_pShellView) {
-		hr = S_FALSE;
+	if (m_dwUnavailable) {
+		if (m_pShellView) {
+			hr = S_FALSE;
+		} else if (ILIsEmpty(pidl)) {
+			teILCloneReplace(&pidl, g_pidls[CSIDL_RESULTSFOLDER]);
+		}
 	}
 	if (hr != S_OK) {
 		if (hr == S_FALSE) {

@@ -194,7 +194,11 @@ FolderMenu =
 		if (bSelect && Name) {
 			mii.dwTypeData = Name;
 		} else {
-			mii.dwTypeData = (Name || "") + MainWindow.GetFolderItemName(FolderItem);
+			var s = (Name || "") + MainWindow.GetFolderItemName(FolderItem);
+			if (!s) {
+				return;
+			}
+			mii.dwTypeData = s;
 		}
 		AddMenuIconFolderItem(mii, FolderItem);
 		this.Items.push(FolderItem);
@@ -204,7 +208,7 @@ FolderMenu =
 			try {
 				var o = fso.GetDrive(fso.GetDriveName(FolderItem.Path));
 			} catch (e) {
-				o = { IsReady: !FolderItem.Unavailable };
+				o = { IsReady: FolderItem && !FolderItem.Unavailable };
 			}
 			if (o.IsReady) {
 				mii.hSubMenu = api.CreateMenu();
