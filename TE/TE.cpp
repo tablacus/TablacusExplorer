@@ -18706,7 +18706,6 @@ VOID CteTabCtrl::Move(int nSrc, int nDest, CteTabCtrl *pDestTab)
 					TabCtrl_SetCurSel(m_hwnd, nSrc);
 				} else {
 					TabCtrl_SetCurSel(m_hwnd, nDest);
-					TabChanged(TRUE);
 				}
 			}
 		}
@@ -18715,6 +18714,7 @@ VOID CteTabCtrl::Move(int nSrc, int nDest, CteTabCtrl *pDestTab)
 			TabCtrl_SetCurSel(pDestTab->m_hwnd, nDest);
 			ArrangeWindow();
 		}
+		TabChanged(TRUE);
 	}
 }
 

@@ -412,7 +412,9 @@ if (window.Addon == 1) {
 					res = /^tabplus_(\d+)_(\d+)/.exec(Addons.TabPlus.Drag5);
 					if (res) {
 						if (res[1] != Id || res[2] != nDrop) {
-							te.Ctrl(CTRL_TC, res[1]).Move(res[2], nDrop, TC);
+							var TC1 = te.Ctrl(CTRL_TC, res[1]);
+							TC1.Move(res[2], nDrop, TC);
+							TC1.SelectedIndex = nDrop;
 							this.Drop = [];
 						}
 					}
