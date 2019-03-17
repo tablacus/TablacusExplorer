@@ -2879,7 +2879,7 @@ function MakeKeySelect()
 			j = s[i];
 			var o = oa[++oa.length - 1];
 			o.value = j;
-			o.text = j + " ";
+			o.text = j + "\x80";
 		}
 	}
 }
