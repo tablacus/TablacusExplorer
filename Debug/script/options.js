@@ -1154,9 +1154,9 @@ function SetAddon(Id, bEnable, td, Alt)
 		bEnable = false;
 	}
 	var s = ['<div ', (Alt ? '' : 'draggable="true" ondragstart="Start5(this)" ondragend="End5(this)"'), ' title="', Id, '" Id="', Alt || "Addons_", Id, '" style="color: ', bEnable ? "": "gray", '">'];
-	s.push('<table><tr style="border-top: 1px solid buttonshadow"><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id+ '">'), '</td><td style="width: 100%"><label for="_', Id, '">', info.Name, "&nbsp;", info.Version, '<br /><a href="#" onclick="return AddonInfo(\'', Id, '\', this)" style="font-size: .9em">', GetText('Details'), ' (', Id, ')</a>');
+	s.push('<table><tr style="border-top: 1px solid buttonshadow"><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id+ '">'), '</td><td style="width: 100%"><label for="_', Id, '">', info.Name, "&nbsp;", info.Version, '<br><a href="#" onclick="return AddonInfo(\'', Id, '\', this)" style="font-size: .9em">', GetText('Details'), ' (', Id, ')</a>');
 	if (bMinVer) {
-		s.push('</td><td style="color: red; align: right; white-space: nowrap; vertical-align: middle">', info.MinVersion.replace(/^20/, "Version ").replace(/\.0/g, '.'), ' ', GetText("is required."), '</td>');
+		s.push('</td><td style="color: red; align: right; white-space: nowrap; vertical-align: middle">', info.MinVersion.replace(/^20/, (api.LoadString(hShell32, 60) || "%").replace(/%.*/, "")).replace(/\.0/g, '.'), ' ', GetText("is required."), '</td>');
 	} else if (info.Options) {
 		s.push('</td><td style="white-space: nowrap; vertical-align: middle; padding-right: 1em"><a href="#" onclick="AddonOptions(\'', Id, '\'); return false;">', GetText('Options'), '</td>');
 	}
@@ -1394,6 +1394,7 @@ function CancelOptions()
 InitOptions = function ()
 {
 	ApplyLang(document);
+	document.title = GetText("Options") + " - " + TITLE;
 	MainWindow.g_.OptionsWindow = window;
 	var InstallPath = fso.GetParentFolderName(api.GetModuleFileName(null));
 	document.F.ButtonInitConfig.disabled = (InstallPath == te.Data.DataFolder) | !fso.FolderExists(fso.BuildPath(InstallPath, "layout"));
@@ -1411,7 +1412,7 @@ InitOptions = function ()
 	var s = [];
 	for (var i in g_arMenuTypes) {
 		var j = g_arMenuTypes[i];
-		s.push('<label id="tab2_' + i + '" class="button" style="width: 100%" onmousedown="ClickTree(this, null, \'Menus\');">' + GetText(j) + '</label><br />');
+		s.push('<label id="tab2_' + i + '" class="button" style="width: 100%" onmousedown="ClickTree(this, null, \'Menus\');">' + GetText(j) + '</label><br>');
 	}
 	document.getElementById("tab2_").innerHTML = s.join("");
 
@@ -1526,11 +1527,11 @@ InitDialog = function ()
 	}
 	if (Query == "mouse") {
 		document.getElementById("Content").innerHTML = '<div id="Gesture" style="width: 100%; height: 100%; text-align: center" onmousedown="return MouseDown()" onmouseup="return MouseUp()" onmousemove="return MouseMove()" ondblclick="MouseDbl()" onmousewheel="return MouseWheel()"></div>';
-		document.getElementById("Selected").innerHTML = '<input type="text" name="q" style="width: 100%" autocomplete="off" onkeydown="setTimeout(\'returnValue=document.F.q.value\',100)" />';
+		document.getElementById("Selected").innerHTML = '<input type="text" name="q" style="width: 100%" autocomplete="off" onkeydown="setTimeout(\'returnValue=document.F.q.value\',100)">';
 	}
 	if (Query == "key") {
 		returnValue = false;
-		document.getElementById("Content").innerHTML = '<div style="padding: 8px;" style="display: block;"><label>Key</label><br /><input type="text" name="q" autocomplete="off" style="width: 100%; ime-mode: disabled" onfocus="this.blur()" /></div>';
+		document.getElementById("Content").innerHTML = '<div style="padding: 8px;" style="display: block;"><label>Key</label><br><input type="text" name="q" autocomplete="off" style="width: 100%; ime-mode: disabled" onfocus="this.blur()"></div>';
 		var fn = function (e)
 		{
 			var key = (e || event).keyCode;
@@ -1554,7 +1555,7 @@ InitDialog = function ()
 	if (Query == "new") {
 		returnValue = false;
 		var s = [];
-		s.push('<div style="padding: 8px;" style="display: block;"><label><input type="radio" name="mode" id="folder" onclick="document.F.path.focus()">New Folder</label> <label><input type="radio" name="mode" id="file" onclick="document.F.path.focus()">New File</label><br />', dialogArguments.path ,'<br /><input type="text" name="path" style="width: 100%" /></div>');
+		s.push('<div style="padding: 8px;" style="display: block;"><label><input type="radio" name="mode" id="folder" onclick="document.F.path.focus()">New Folder</label> <label><input type="radio" name="mode" id="file" onclick="document.F.path.focus()">New File</label><br>', dialogArguments.path ,'<br><input type="text" name="path" style="width: 100%"></div>');
 		document.getElementById("Content").innerHTML = s.join("");
 		AddEventEx(document.body, "keydown", function (e)
 		{
@@ -1616,7 +1617,7 @@ InitDialog = function ()
 		s.push('<img src="', src , '"></td><td><span style="font-weight: bold; font-size: 120%">', te.About, '</span> (', (api.sizeof("HANDLE") * 8), 'bit)<br>');
 		s.push('<br><a href="javascript:Run(0)">', api.GetModuleFileName(null), '</a><br>');
 		s.push('<br><a href="javascript:Run(1)">', fso.BuildPath(te.Data.DataFolder, "config"), '</a><br>');
-		s.push('<br><label>Information</label><input type="text" value="', GetTEInfo(), '" style="width: 100%" onclick="this.select()" readonly /><br>');
+		s.push('<br><label>Information</label><input type="text" value="', GetTEInfo(), '" style="width: 100%" onclick="this.select()" readonly><br>');
 		var root = te.Data.Addons.documentElement;
 		if (root) {
 			var ar = [];
@@ -1628,7 +1629,7 @@ InitDialog = function ()
 					}
 				}
 			}
-			s.push('<br><label>Add-ons</label><input type="text" value="', ar.join(","), '" style="width: 100%" onclick="this.select()" /><br>');
+			s.push('<br><label>Add-ons</label><input type="text" value="', ar.join(","), '" style="width: 100%" onclick="this.select()"><br>');
 		}
 		s.push('<br><input type="button" value="Visit website" onclick="Run(2)">');
 		s.push('&nbsp;<input type="button" value="Check for updates" onclick="Run(3)">');
@@ -1773,7 +1774,7 @@ InitLocation = function ()
 	ar = [];
 	var s = "CSA";
 	for (var i = 0; i < s.length; i++) {
-		ar.push('<input type="button" value="', MainWindow.g_.KeyState[i][0],'" title="', s.charAt(i), '" onclick="AddMouse(this)" />');
+		ar.push('<input type="button" value="', MainWindow.g_.KeyState[i][0],'" title="', s.charAt(i), '" onclick="AddMouse(this)">');
 	}
 	document.getElementById("__MOUSEDATA").innerHTML = ar.join("");
 	ApplyLang(document);
@@ -2382,9 +2383,9 @@ function ArrangeAddon(xml, td, Progress)
 		if (info.pubDate) {
 			pubDate = api.GetDateFormat(LOCALE_USER_DEFAULT, 0, dt, api.GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SSHORTDATE)) + " ";
 		}
-		s.push('<table width="100%"><tr><td width="100%"><b style="font-size: 1.3em">', info.Name, "</b>&nbsp;", info.Version, "&nbsp;", info.Creator, "<br />", info.Description, "<br />");
+		s.push('<table width="100%"><tr><td width="100%"><b style="font-size: 1.3em">', info.Name, "</b>&nbsp;", info.Version, "&nbsp;", info.Creator, "<br>", info.Description, "<br>");
 		if (info.Details) {
-			s.push('<a href="#" title="', info.Details, '" onclick="wsh.run(this.title); return false;">', GetText('Details'), '</a><br />');
+			s.push('<a href="#" title="', info.Details, '" onclick="wsh.run(this.title); return false;">', GetText('Details'), '</a><br>');
 		}
 		s.push(pubDate, '</td><td align="right">');
 		var filename = info.filename;
@@ -2408,7 +2409,7 @@ function ArrangeAddon(xml, td, Progress)
 					return;
 				}
 			}
-			strUpdate = '<br /><b id="_Addons_' + Id + '" style="color: red; white-space: nowrap;">' + GetText('Update available') + '</b>';
+			strUpdate = '<br><b id="_Addons_' + Id + '" style="color: red; white-space: nowrap;">' + GetText('Update available') + '</b>';
 			dt2 += MAXINT * 2;
 			bUpdate = true;
 		} else {
@@ -2417,7 +2418,7 @@ function ArrangeAddon(xml, td, Progress)
 		if (info.MinVersion && te.Version >= CalcVersion(info.MinVersion)) {
 			s.push('<input type="button" onclick="Install(this,', bUpdate, ')" title="', Id, '_', info.Version, '" value="', GetText("Install"), '">');
 		} else {
-			s.push('<input type="button" style="color: red" onclick="MainWindow.CheckUpdate()" value="', info.MinVersion.replace(/^20/, "Version ").replace(/\.0/g, '.'), ' ', GetText("is required."), '">');
+			s.push('<input type="button" style="color: red" onclick="MainWindow.CheckUpdate()" value="', info.MinVersion.replace(/^20/, (api.LoadString(hShell32, 60) || "%").replace(/%.*/, "")).replace(/\.0/g, '.'), ' ', GetText("is required."), '">');
 		}
 		s.push(strUpdate, '</td></tr></table>');
 		s.unshift(g_nSort2 == 1 ? dt2 : g_nSort2 ? Id : info.Name);

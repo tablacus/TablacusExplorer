@@ -2439,7 +2439,7 @@ function CheckUpdate2(xhr, url, arg1)
 		}
 	}
 	if (!(arg1 && arg1.noconfirm)) {
-		var s = api.sprintf(99, "Version %d.%d.%d (%.1lfKB)", ver / 10000 % 100, ver / 100 % 100, ver % 100, arg.size);
+		var s = (api.LoadString(hShell32, 60) || "%").replace(/%.*/, api.sprintf(99, "%d.%d.%d (%.1lfKB)", ver / 10000 % 100, ver / 100 % 100, ver % 100, arg.size));
 		if (!confirmOk([GetText("Update available"), s, GetText("Do you want to install it now?")].join("\n"))) {
 			return;
 		}
@@ -2659,7 +2659,7 @@ AddonOptions = function (Id, fn, Data, bNew)
 		o.style.display = "block";
 		o.appendChild(el);
 		o = document.getElementById('tab1_');
-		o.insertAdjacentHTML("BeforeEnd", '<label id="tab1_' + Id + '" class="button" style="width: 100%" onmousedown="ClickTree(this);">'+ info.Name +'</label><br />');
+		o.insertAdjacentHTML("BeforeEnd", '<label id="tab1_' + Id + '" class="button" style="width: 100%" onmousedown="ClickTree(this);">'+ info.Name +'</label><br>');
 	}
 	ClickTree(document.getElementById('tab1_' + Id));
 }

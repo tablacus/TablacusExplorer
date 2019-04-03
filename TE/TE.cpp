@@ -15562,7 +15562,11 @@ VOID CteShellBrowser::OnNavigationComplete2()
 	SetFolderFlags(FALSE);
 	InitFolderSize();
 	if (m_nSorting == 0) {
-		m_pTC->RedrawUpdate();
+		if (m_pExplorerBrowser) {
+			m_pTC->RedrawUpdate();
+		} else if (m_pTC->m_nRedraw) {
+			SetTimer(g_hwndMain, TET_Redraw, 1, teTimerProc);
+		}
 	}
 }
 
