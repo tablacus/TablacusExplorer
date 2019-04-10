@@ -12458,29 +12458,27 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		//ExplorerBrowser
 		if (m_pExplorerBrowser) {
 			m_pExplorerBrowser->GetOptions((EXPLORER_BROWSER_OPTIONS *)&m_param[SB_Options]);
-			if (dwFrame == (m_param[SB_Options] & EBO_SHOWFRAMES)) {
-				if (!ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER]) || !ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
-					if (GetShellFolder2(&pidl) == S_OK) {
-						IFolderViewOptions *pOptions;
-						if SUCCEEDED(m_pExplorerBrowser->QueryInterface(IID_PPV_ARGS(&pOptions))) {
-							pOptions->SetFolderViewOptions(FVO_VISTALAYOUT, teGetFolderViewOptions(pidl, uViewMode));
-							pOptions->Release();
-						}
-						m_pExplorerBrowser->SetOptions(static_cast<EXPLORER_BROWSER_OPTIONS>((m_param[SB_Options] & ~(EBO_SHOWFRAMES | EBO_NAVIGATEONCE | EBO_ALWAYSNAVIGATE)) | dwFrame | EBO_NOTRAVELLOG));
-						m_pTC->LockUpdate(TRUE);
-						try {
-							m_pTC->m_nRedraw = TEREDRAW_NAVIGATE | TEREDRAW_NORMAL;
-							BrowseToObject();
-						} catch (...) {
-#ifdef _DEBUG
-							g_nException = 0;
-							g_strException = L"BrowseToObject";
-#endif
-						}
-						m_pTC->UnlockUpdate();
-						teCoTaskMemFree(pidl);
-						return S_OK;
+			if (!ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER]) || !ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
+				if (GetShellFolder2(&pidl) == S_OK) {
+					IFolderViewOptions *pOptions;
+					if SUCCEEDED(m_pExplorerBrowser->QueryInterface(IID_PPV_ARGS(&pOptions))) {
+						pOptions->SetFolderViewOptions(FVO_VISTALAYOUT, teGetFolderViewOptions(pidl, uViewMode));
+						pOptions->Release();
 					}
+					m_pExplorerBrowser->SetOptions(static_cast<EXPLORER_BROWSER_OPTIONS>((m_param[SB_Options] & ~(EBO_SHOWFRAMES | EBO_NAVIGATEONCE | EBO_ALWAYSNAVIGATE)) | dwFrame | EBO_NOTRAVELLOG));
+					m_pTC->LockUpdate(TRUE);
+					try {
+						m_pTC->m_nRedraw = TEREDRAW_NAVIGATE | TEREDRAW_NORMAL;
+						BrowseToObject();
+					} catch (...) {
+#ifdef _DEBUG
+						g_nException = 0;
+						g_strException = L"BrowseToObject";
+#endif
+					}
+					m_pTC->UnlockUpdate();
+					teCoTaskMemFree(pidl);
+					return S_OK;
 				}
 			}
 		}
@@ -12553,10 +12551,10 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	try {
 		m_pTC->m_nRedraw = TEREDRAW_NAVIGATE | TEREDRAW_NORMAL;
 		hr = E_FAIL;
-		if (dwFrame || teGetFolderViewOptions(m_pidl, m_param[SB_ViewMode]) == FVO_DEFAULT) {
+//		if (dwFrame || teGetFolderViewOptions(m_pidl, m_param[SB_ViewMode]) == FVO_DEFAULT) {
 			//ExplorerBrowser
 			hr = NavigateEB(dwFrame);
-		}
+//		}
 		if FAILED(hr) {
 			//ShellBrowser
 			hr = NavigateSB(pPreviousView, pPrevious);
@@ -16266,12 +16264,22 @@ VOID CteShellBrowser::SetPropEx()
 		m_hwndLV = FindWindowExA(m_hwndDV, 0, WC_LISTVIEWA, NULL);
 		m_hwndDT = m_hwndLV;
 		if (m_pExplorerBrowser) {
-			if (m_param[SB_FolderFlags] & FWF_NOCLIENTEDGE) {
-				SetWindowLong(m_hwnd, GWL_STYLE, GetWindowLong(m_hwnd, GWL_STYLE) & ~WS_BORDER);
+			if (m_param[SB_Type] != CTRL_EB || m_param[SB_FolderFlags] & FWF_NOCLIENTEDGE) {
+				SetWindowLong(m_hwnd, GWL_EXSTYLE, GetWindowLong(m_hwnd, GWL_EXSTYLE) & ~WS_EX_CLIENTEDGE);
+			}
+			if (m_param[SB_Type] <= CTRL_SB) {
+				if (m_param[SB_FolderFlags] & FWF_NOCLIENTEDGE) {
+					SetWindowLong(m_hwnd, GWL_STYLE, GetWindowLong(m_hwnd, GWL_STYLE) & ~WS_BORDER);
+				} else {
+					SetWindowLong(m_hwnd, GWL_STYLE, GetWindowLong(m_hwnd, GWL_STYLE) | WS_BORDER);
+				}
 			}
 		}
 		if (m_hwndLV) {
-			if (!(m_param[SB_FolderFlags] & FWF_NOCLIENTEDGE)) {
+			SetWindowLong(m_hwndLV, GWL_STYLE, GetWindowLong(m_hwndLV, GWL_STYLE) & ~WS_BORDER);
+			if (m_param[SB_Type] <= CTRL_SB || m_param[SB_FolderFlags] & FWF_NOCLIENTEDGE) {
+				SetWindowLong(m_hwndLV, GWL_EXSTYLE, GetWindowLong(m_hwndLV, GWL_EXSTYLE) & ~WS_EX_CLIENTEDGE);
+			} else {
 				SetWindowLong(m_hwndLV, GWL_EXSTYLE, GetWindowLong(m_hwndLV, GWL_EXSTYLE) | WS_EX_CLIENTEDGE);
 			}
 		} else {
