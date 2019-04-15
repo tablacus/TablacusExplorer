@@ -12456,7 +12456,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 			dwFrame = EBO_SHOWFRAMES;
 		}
 		//ExplorerBrowser
-		if (m_pExplorerBrowser) {
+		if (m_pExplorerBrowser && !pFolderItems) {
 			m_pExplorerBrowser->GetOptions((EXPLORER_BROWSER_OPTIONS *)&m_param[SB_Options]);
 			if (!ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER]) || !ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
 				if (GetShellFolder2(&pidl) == S_OK) {
@@ -12550,11 +12550,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	}
 	try {
 		m_pTC->m_nRedraw = TEREDRAW_NAVIGATE | TEREDRAW_NORMAL;
-		hr = E_FAIL;
-//		if (dwFrame || teGetFolderViewOptions(m_pidl, m_param[SB_ViewMode]) == FVO_DEFAULT) {
-			//ExplorerBrowser
-			hr = NavigateEB(dwFrame);
-//		}
+		hr =  NavigateEB(dwFrame);
 		if FAILED(hr) {
 			//ShellBrowser
 			hr = NavigateSB(pPreviousView, pPrevious);

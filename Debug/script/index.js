@@ -1453,10 +1453,11 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 					}
 					if (g_.TEData) {
 						var FV = te.Ctrl(CTRL_FV);
+						var Layout = g_.TEData.Layout;
 						if (FV) {
 							FV.CurrentViewMode = g_.TEData.ViewMode;
 						}
-						te.Layout = g_.TEData.Layout;
+						te.Layout = Layout;
 						delete g_.TEData;
 					}
 					if (g_.FVData) {

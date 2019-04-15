@@ -708,6 +708,10 @@ GetTextR = function (id)
 			return s;
 		}
 	}
+	res = /^(\d+)\-bit$/i.exec(id);
+	if (res) {
+		return (api.LoadString(hShell32, 31092) || "%s (32-bit)").replace(/^%s\s\(|\)$/g, "").replace(/\d+/, res[1]);
+	}
 	return GetText(id);
 }
 
@@ -1133,7 +1137,7 @@ LoadLayout = function ()
 {
 	var commdlg = api.CreateObject("CommonDialog");
 	commdlg.InitDir = fso.BuildPath(te.Data.DataFolder, "layout");
-	commdlg.Filter = "XML Files|*.xml|" + (api.LoadString(hShell32, 34193) || "All Files") + "|*.*";
+	commdlg.Filter = MakeCommDlgFilter("*.xml");
 	commdlg.Flags = OFN_FILEMUSTEXIST;
 	if (commdlg.ShowOpen()) {
 		LoadXml(commdlg.FileName);
@@ -1145,7 +1149,7 @@ SaveLayout = function ()
 {
 	var commdlg = api.CreateObject("CommonDialog");
 	commdlg.InitDir = fso.BuildPath(te.Data.DataFolder, "layout");
-	commdlg.Filter = "XML Files|*.xml|" + (api.LoadString(hShell32, 34193) || "All Files") + "|*.*";
+	commdlg.Filter = MakeCommDlgFilter("*.xml");
 	commdlg.DefExt = "xml";
 	commdlg.Flags = OFN_OVERWRITEPROMPT;
 	if (commdlg.ShowSave()) {
@@ -3237,8 +3241,7 @@ OpenDialogEx = function (path, filter, bFilesOnly)
 		}
 	}
 	commdlg.InitDir = path;
-	var s = (api.LoadString(hShell32, 34193) || "All Files") + "|*.*";
-	commdlg.Filter = filter ? ExtractMacro(te, filter).replace(/#/g, "|").replace(/[\0\|]$/, "") + "|" + s : s;
+	commdlg.Filter = MakeCommDlgFilter(filter);
 	commdlg.Flags = OFN_FILEMUSTEXIST | OFN_EXPLORER | OFN_ENABLESIZING | (bFilesOnly ? 0 : OFN_ENABLEHOOK);
 	if (commdlg.ShowOpen()) {
 		return api.PathQuoteSpaces(commdlg.FileName);
@@ -3857,4 +3860,26 @@ function GetImgTag(o, h)
 function GetIconSize(h, a)
 {
 	return h || a * screen.logicalYDPI / 96 || window.IconSize;
+}
+
+function MakeCommDlgFilter(arg)
+{
+	var ar = arg ? arg.join ? arg : [arg] : [];
+	var result = [];
+	var bAll = true;
+	for (var i = 0; i < ar.length; i++) {
+		var s = ar[i];
+		bAll &= s.indexOf("*.*") < 0;
+		if (/[\|#]/.test(s)) {
+			result.push(s.replace(/#/g, "|").replace(/[\0\|]$/, ""));
+			continue;
+		}
+		var sfi = api.Memory("SHFILEINFO");
+		api.SHGetFileInfo(s, 0, sfi, sfi.Size, SHGFI_TYPENAME | SHGFI_USEFILEATTRIBUTES);
+		result.push(sfi.szTypeName + " (" + s + ")", s);
+	}
+	if (bAll) {
+		result.push(api.LoadString(hShell32, 34193) || "All files", "*.*");
+	}
+	return result.join("|");
 }

@@ -1614,7 +1614,7 @@ InitDialog = function ()
 		returnValue = false;
 		var s = ['<table style="border-spacing: 2em; border-collapse: separate; width: 100%"><tr><td>'];
 		var src = MakeImgSrc(api.GetModuleFileName(null), 0, 32);
-		s.push('<img src="', src , '"></td><td><span style="font-weight: bold; font-size: 120%">', te.About, '</span> (', (api.sizeof("HANDLE") * 8), 'bit)<br>');
+		s.push('<img src="', src , '"></td><td><span style="font-weight: bold; font-size: 120%">', te.About, '</span> (', GetTextR((api.sizeof("HANDLE") * 8) + '-bit'), ')<br>');
 		s.push('<br><a href="javascript:Run(0)">', api.GetModuleFileName(null), '</a><br>');
 		s.push('<br><a href="javascript:Run(1)">', fso.BuildPath(te.Data.DataFolder, "config"), '</a><br>');
 		s.push('<br><label>Information</label><input type="text" value="', GetTEInfo(), '" style="width: 100%" onclick="this.select()" readonly><br>');
