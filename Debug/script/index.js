@@ -5,7 +5,7 @@ te.LockUpdate();
 Addon = 1;
 Init = false;
 ExtraMenuCommand = [];
-g_arBM = [];
+g_arBM = {};
 
 GetAddress = null;
 ShowContextMenu = null;
@@ -148,7 +148,7 @@ SetGestureText = function (Ctrl, Text)
 		}
 	}
 	RunEvent3("SetGestureText", Ctrl, Text);
-	if (!te.Data.Conf_NoInfotip && Text.length > 1 && !/^[a-z]+\d$/i.test(Text)) {
+	if (!te.Data.Conf_NoInfotip && Text.length > 1 && !/^[A-Z]+\d$/i.test(Text)) {
 		g_.mouse.bTrail = true;
 		var hdc = api.GetWindowDC(te.hwnd);
 		if (hdc) {
@@ -1130,7 +1130,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 	if (isFinite(hr)) {
 		return hr;
 	}
-	if (/^string$/i.test(typeof Directory) && !fso.FolderExists(Directory)) {
+	if (/^string$/i.test(typeof Directory) && !api.PathIsDirectory(Directory)) {
 		return S_FALSE;
 	}
 	var Items = ContextMenu.Items();
@@ -1424,7 +1424,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 						api.DeleteObject(te.Data.Fonts[i]);
 					}
 					te.Data.Fonts = null;
-					for (var i in te.Data.SHIL) {
+					for (var i = SHIL_JUMBO + 1; i--;) {
 						api.ImageList_Destroy(te.Data.SHIL[i], true);
 					}
 					te.Data.SHIL = api.CreateObject("Array");
@@ -1642,7 +1642,7 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 			for (var i in g_arBM) {
 				api.DeleteObject(g_arBM[i]);
 			}
-			g_arBM = [];
+			g_arBM = {};
 			break;
 		case WM_MENUCHAR:
 			if (window.g_menu_click && (wParam & 0xffff) == VK_LBUTTON) {
@@ -1977,36 +1977,36 @@ g_.event.handleicon = function (Ctrl, pid)
 
 //Tablacus Events
 
-GetIconImage = function (Ctrl, BGColor)
+GetIconImage = function (Ctrl, BGColor, bSimple)
 {
 	var nSize = api.GetSystemMetrics(SM_CYSMICON);
 	var FolderItem = Ctrl.FolderItem || Ctrl;
 	if (!FolderItem || FolderItem.Unavailable) {
-		return MakeImgSrc("icon:shell32.dll,234", 0, false, nSize);
+		return MakeImgDataEx("icon:shell32.dll,234", bSimple, false, nSize);
 	}
-	var path = FolderItem.Path;
-	if (api.PathIsNetworkPath(path)) {
-		if (fso.GetDriveName(path) != path.replace(/\\$/, "")) {
-			return MakeImgSrc(WINVER >= 0x600 ? "icon:shell32.dll,275" : "icon:shell32.dll,85", 0, false, nSize);
-		}
-		return MakeImgSrc(WINVER >= 0x600 ? "icon:shell32.dll,273" : "icon:shell32.dll,9", 0, false, nSize);
+	var r = GetNetworkIcon(FolderItem.Path);
+	if (r) {
+		return MakeImgDataEx(r, bSimple, nSize);
 	}
 	var img = RunEvent4("GetIconImage", Ctrl, BGColor);
 	if (img) {
-		return img;
+		return MakeImgDataEx(img, bSimple, false, nSize);
 	}
 	api.ILIsEmpty(FolderItem);
 	if (FolderItem.Unavailable) {
-		return MakeImgSrc("icon:shell32.dll,234", 0, false, nSize);
+		return MakeImgDataEx("icon:shell32.dll,234", bSimple, false, nSize);
 	}
 	if (document.documentMode) {
+		if (bSimple) {
+			return api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL);
+		}
 		var sfi = api.Memory("SHFILEINFO");
 		api.SHGetFileInfo(FolderItem, 0, sfi, sfi.Size, SHGFI_ICON | SHGFI_SMALLICON | SHGFI_PIDL);
-		var image = api.CreateObject("WICBitmap").FromHICON(sfi.hIcon);
+		img = api.CreateObject("WICBitmap").FromHICON(sfi.hIcon);
 		api.DestroyIcon(sfi.hIcon);
-		return image.DataURI("image/png");
+		return img.DataURI("image/png");
 	}
-	return MakeImgSrc("icon:shell32.dll,3", 0, false, nSize);
+	return MakeImgDataEx("icon:shell32.dll,3", bSimple, false, nSize);
 }
 
 // Browser Events

@@ -425,11 +425,11 @@ function ApplyLangTag(o)
 			}
 			s = o[i].title;
 			if (s) {
-				o[i].title = GetTextR(s);
+				o[i].title = GetTextR(s).replace(/\(&\w\)|&/, "");
 			}
 			s = o[i].alt;
 			if (s) {
-				o[i].alt = GetTextR(s);
+				o[i].alt = GetTextR(s).replace(/\(&\w\)|&/, "");
 			}
 		}
 	}
@@ -464,9 +464,9 @@ function ApplyLang(doc)
 			if (!h && o[i].type == "text") {
 				h = o[i].offsetHeight;
 			}
-			o[i].placeholder = GetTextR(o[i].placeholder);
+			o[i].placeholder = GetTextR(o[i].placeholder).replace(/\(&\w\)|&/, "");
 			if (o[i].type == "button") {
-				o[i].value = GetTextR(o[i].value);
+				o[i].value = GetTextR(o[i].value).replace(/\(&\w\)|&/, "");
 			}
 			var s = ImgBase64(o[i], 0);
 			if (s) {
@@ -551,7 +551,12 @@ function ImgBase64(o, index)
 	return s;
 }
 
-function MakeImgSrc(src, index, bSrc, h, strBitmap, strIcon)
+function MakeImgDataEx(src, bSimple, h)
+{
+	return bSimple || REGEXP_IMAGE.test(src) ? src : MakeImgSrc(src, 0, false, h);
+}
+
+function MakeImgSrc(src, index, bSrc, h)
 {
 	var fn;
 	src = api.PathUnquoteSpaces(ExtractMacro(te, src));
@@ -559,15 +564,13 @@ function MakeImgSrc(src, index, bSrc, h, strBitmap, strIcon)
 		return src;
 	}
 	if (!document.documentMode) {
-		var res = /^bitmap:(.*)/i.exec(src);
-		var value = res ? res[1] : strBitmap;
-		if (value) {
-			fn = fso.BuildPath(te.Data.DataFolder, "cache\\bitmap\\" + value.replace(/[:\\\/]/g, "$") + ".png");
+		var res = /^bitmap:(.+)/i.exec(src);
+		if (res) {
+			fn = fso.BuildPath(te.Data.DataFolder, "cache\\bitmap\\" + res[1].replace(/[:\\\/]/g, "$") + ".png");
 		} else {
-			res = /^icon:(.*)/i.exec(src);
-			value = res ? res[1] : strIcon;
-			if (value) {
-				fn = fso.BuildPath(te.Data.DataFolder, "cache\\icon\\" + (value.replace(/[:\\\/]/g, "$")) + ".png");
+			res = /^icon:(.+)/i.exec(src);
+			if (res) {
+				fn = fso.BuildPath(te.Data.DataFolder, "cache\\icon\\" + (res[1].replace(/[:\\\/]/g, "$")) + ".png");
 			} else if (src && !REGEXP_IMAGE.test(src)) {
 				fn = fso.BuildPath(te.Data.DataFolder, "cache\\file\\" + (api.PathCreateFromUrl(src).replace(/[:\\\/]/g, "$")) + ".png");
 			}
@@ -576,7 +579,7 @@ function MakeImgSrc(src, index, bSrc, h, strBitmap, strIcon)
 			return fn;
 		}
 	}
-	var image = MakeImgData(src, index, h, strBitmap, strIcon);
+	var image = MakeImgData(src, index, h);
 	if (image) {
 		if (document.documentMode) {
 			return image.DataURI("image/png");
@@ -589,24 +592,22 @@ function MakeImgSrc(src, index, bSrc, h, strBitmap, strIcon)
 	return bSrc ? src : "";
 }
 
-function MakeImgData(src, index, h, strBitmap, strIcon)
+function MakeImgData(src, index, h)
 {
-	var hIcon = MakeImgIcon(src, index, h, strBitmap, strIcon);
+	var hIcon = MakeImgIcon(src, index, h);
 	if (hIcon) {
 		var image = api.CreateObject("WICBitmap").FromHICON(hIcon);
 		api.DestroyIcon(hIcon);
 		return image;
 	}
-	return null;
 }
 
-function MakeImgIcon(src, index, h, strBitmap, strIcon)
+function MakeImgIcon(src, index, h)
 {
 	var hIcon = null;
-	var res = /^bitmap:(.*)/i.exec(src);
-	var value = res ? res[1] : strBitmap;
-	if (value) {
-		var icon = value.split(",");
+	var res = /^bitmap:(.+)/i.exec(src);
+	if (res) {
+		var icon = res[1].split(",");
 		var hModule = LoadImgDll(icon, index);
 		if (hModule) {
 			var himl = api.ImageList_LoadImage(hModule, isFinite(icon[index * 4 + 1]) ? Number(icon[index * 4 + 1]) : icon[index * 4 + 1], icon[index * 4 + 2], 0, CLR_DEFAULT, IMAGE_BITMAP, LR_CREATEDIBSECTION);
@@ -618,10 +619,17 @@ function MakeImgIcon(src, index, h, strBitmap, strIcon)
 			return hIcon;
 		}
 	}
-	res = /^icon:(.*)/i.exec(src);
-	value = res ? res[1] : strIcon;
-	if (value) {
-		var icon = value.split(",");
+	res = /^icon:(.+)/i.exec(src);
+	if (res) {
+		var icon = res[1].split(",");
+		if (icon == "shell32.dll") {
+			var dw = { 3: SHGFI_SYSICONINDEX | SHGFI_USEFILEATTRIBUTES, 4: SHGFI_SYSICONINDEX | SHGFI_OPENICON | SHGFI_USEFILEATTRIBUTES }[res[1]];
+			if (dw) {
+				var sfi = api.Memory("SHFILEINFO");
+				api.SHGetFileInfo("*", FILE_ATTRIBUTE_DIRECTORY, sfi, sfi.Size, dw);
+				return hIcon = api.ImageList_GetIcon(te.Data.SHIL[h <= 16 ? SHIL_SMALL : h <=32 ? SHIL_LARGE : h <= 48 ? SHIL_EXTRALARGE : SHIL_JUMBO], sfi.iIcon, ILD_NORMAL);
+			}
+		}
 		var phIcon = api.Memory("HANDLE");
 		if (icon[index * 4 + 2]) {
 			h = icon[index * 4 + 2];
@@ -663,7 +671,6 @@ function MakeImgIcon(src, index, h, strBitmap, strIcon)
 		}
 		return sfi.hIcon;
 	}
-	return null;
 }
 
 LoadImgDll = function (icon, index)
@@ -690,7 +697,7 @@ GetText = function (id)
 
 GetTextR = function (id)
 {
-	var res = /^\@(.+\.dll),-(\d+)(\[[^\]]+\])?$/i.exec(id);
+	var res = /^\@(.+),-(\d+)(\[[^\]]+\])?$/i.exec(id);
 	if (res) {
 		var hModule = api.LoadLibraryEx(res[1], 0, LOAD_LIBRARY_AS_DATAFILE);
 		var s = api.LoadString(hModule, api.LowPart(res[2]));
@@ -698,7 +705,7 @@ GetTextR = function (id)
 			var ar = res[3].substr(1, res[3].length - 2).split("|");
 			for (var i = 0; i < ar.length && !s; i++) {
 				res = /^-(\d+)$/.exec(ar[i]);
-				s = res ? api.LoadString(hModule, api.LowPart(res[1])) : ar[i];
+				s = res ? api.LoadString(hModule, api.LowPart(res[1])) : GetTextR(ar[i]);
 			}
 		}
 		if (hModule) {
@@ -707,6 +714,11 @@ GetTextR = function (id)
 		if (s) {
 			return s;
 		}
+	}
+	res = /^({[0-9a-f\-]+} \d+)\|?(.*)$/i.exec(id);
+	if (res) {
+		var s =  api.PSGetDisplayName(res[1]);
+		return (s && s.indexOf("{") < 0) ? s : GetTextR(res[2]);
 	}
 	res = /^(\d+)\-bit$/i.exec(id);
 	if (res) {
@@ -2056,28 +2068,41 @@ GetAccelerator = function (s)
 	return res ? res[1] : "";
 }
 
+GetNetworkIcon = function (path)
+{
+	if (api.PathIsNetworkPath(path)) {
+		if (/^\\\\[^\\]+$/.test(path)) {
+			return "icon:shell32.dll,15";
+		}
+		if (fso.GetDriveName(path) == path.replace(/\\$/, "")) {
+			if (/^\\\\/.test(path)) {
+				return WINVER >= 0x600 ? "icon:shell32.dll,275" : "icon:shell32.dll,85";
+			}
+			return WINVER >= 0x600 ? "icon:shell32.dll,273" : "icon:shell32.dll,9";
+		}
+		return "folder:closed";
+	}
+}
+
 AddMenuIconFolderItem = function (mii, FolderItem, nHeight)
 {
-	var image = api.CreateObject("WICBitmap");
-	var sfi = api.Memory("SHFILEINFO");
 	var dwFlags = SHGFI_SYSICONINDEX;
 	var path = FolderItem;
 	if (!/^string$/i.test(typeof FolderItem)) {
 		path = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_ORIGINAL);
 		dwFlags |=  SHGFI_PIDL;
 	}
+	var r = GetNetworkIcon(path);
 	if (api.PathIsNetworkPath(path)) {
-		if (fso.GetDriveName(path) != path.replace(/\\$/, "")) {
-			MenusIcon(mii, WINVER >= 0x600 ? "icon:shell32.dll,275" : "icon:shell32.dll,85");
-			return;
-		}
-		MenusIcon(mii, WINVER >= 0x600 ? "icon:shell32.dll,273" : "icon:shell32.dll,9");
+		MenusIcon(mii, r);
 		return;
 	}
 	if (!FolderItem || FolderItem.Unavailable) {
 		MenusIcon(mii, "icon:shell32.dll,3");
 		return;
 	}
+	var image = api.CreateObject("WICBitmap");
+	var sfi = api.Memory("SHFILEINFO");
 	api.SHGetFileInfo(FolderItem, 0, sfi, sfi.Size, dwFlags);
 	var id = sfi.iIcon;
 	mii.hbmpItem = MainWindow.g_arBM[[id, nHeight].join("\t")];
@@ -2088,7 +2113,7 @@ AddMenuIconFolderItem = function (mii, FolderItem, nHeight)
 	var hIcon = api.ImageList_GetIcon(te.Data.SHIL[SHIL_SMALL], id, ILD_NORMAL);
 	image.FromHICON(hIcon);
 	api.DestroyIcon(hIcon);
-	AddMenuImage(mii, image, id);
+	AddMenuImage(mii, image, id, nHeight);
 }
 
 AddMenuImage = function (mii, image, id, nHeight)
@@ -2106,24 +2131,31 @@ AddMenuImage = function (mii, image, id, nHeight)
 
 MenusIcon = function (mii, src, nHeight)
 {
+	var image;
 	mii.cbSize = mii.Size;
 	if (src && src != "-") {
-		src = api.PathUnquoteSpaces(ExtractMacro(te, src));
-		if (!/:|^\\\\/i.test(src)) {
-			src = fso.BuildPath(te.Data.Installed, "script\\" + src);
-		}
-		var image = api.CreateObject("WICBitmap");
-		mii.hbmpItem = MainWindow.g_arBM[[src, nHeight].join("\t")];
-		if (mii.hbmpItem) {
-			mii.fMask = mii.fMask | MIIM_BITMAP;
-			return;
+		if (/^string$/.test(typeof src)) {
+			src = api.PathUnquoteSpaces(ExtractMacro(te, src));
+			if (!/:|^\\\\/i.test(src)) {
+				src = fso.BuildPath(te.Data.Installed, "script\\" + src);
+			}
+			mii.hbmpItem = MainWindow.g_arBM[[src, nHeight].join("\t")];
+			if (mii.hbmpItem) {
+				mii.fMask = mii.fMask | MIIM_BITMAP;
+				return;
+			}
 		}
 		var h16 = GetIconSize(0, 16);
 		var h = nHeight < h16 ? GetIconSize(0, nHeight || 16) : nHeight || h16;
-		if (!image.FromFile(src)) {
-			var hIcon = MakeImgIcon(src, 0, h);
-			image.FromHICON(hIcon);
-			api.DestroyIcon(hIcon);
+		if (/^object$/.test(src)) {
+			image = src;
+		} else {
+			image = api.CreateObject("WICBitmap");
+			if (!image.FromFile(src)) {
+				var hIcon = MakeImgIcon(src, 0, h);
+				image.FromHICON(hIcon);
+				api.DestroyIcon(hIcon);
+			}
 		}
 		if (h != image.GetHeight()) {
 			image = image.GetThumbnailImage(h * image.GetWidth() / image.GetHeight(), h) || image;
@@ -2164,13 +2196,13 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem, bTran
 						}
 					}
 				}
-				icon = MainWindow.GetIconImage(pidl, GetSysColor(COLOR_WINDOW));
+				icon = MainWindow.GetIconImage(pidl, GetSysColor(COLOR_WINDOW), true);
 			} else if (api.PathMatchSpec(strType, "Exec;Selected items")) {
 				var arg = api.CommandLineToArgv(path);
 				if (!api.PathIsNetworkPath(arg[0])) {
 					var pidl = api.ILCreateFromPath(arg[0]);
 					if (!api.ILIsEmpty(pidl) && !pidl.Unavailable) {
-						icon = MainWindow.GetIconImage(pidl, GetSysColor(COLOR_WINDOW));
+						icon = MainWindow.GetIconImage(pidl, GetSysColor(COLOR_WINDOW), true);
 					}
 				}
 			}
@@ -3234,9 +3266,9 @@ OpenDialogEx = function (path, filter, bFilesOnly)
 		path = te_path + (res[1].replace(/\//g, "\\"));
 	}
 	path = api.PathUnquoteSpaces(ExtractMacro(te, path));
-	if (!fso.FolderExists(path)) {
+	if (!api.PathIsDirectory(path)) {
 		path = fso.GetParentFolderName(path);
-		if (!fso.FolderExists(path)) {
+		if (!api.PathIsDirectory(path)) {
 			path = fso.GetDriveName(te_path);
 		}
 	}
@@ -3871,7 +3903,12 @@ function MakeCommDlgFilter(arg)
 		var s = ar[i];
 		bAll &= s.indexOf("*.*") < 0;
 		if (/[\|#]/.test(s)) {
-			result.push(s.replace(/#/g, "|").replace(/[\0\|]$/, ""));
+			result.push(s.replace(/[#@]/g, "|").replace(/[\0\|]$/, ""));
+			continue;
+		}
+		var res = /\(([^\)]+)\)/.exec(s);
+		if (res) {
+			result.push(s, res[1]);
 			continue;
 		}
 		var sfi = api.Memory("SHFILEINFO");

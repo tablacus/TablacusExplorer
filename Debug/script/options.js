@@ -117,11 +117,6 @@ function ResetForm()
 	var s = GetWebColor(document.F.Conf_TrailColor.value);
 	document.F.Conf_TrailColor.value = s;
 	document.F.Color_Conf_TrailColor.style.backgroundColor = s;
-
-	var o = document.getElementById("_DateTimeFormat");
-	if (/\@/.test(o.innerHTML)) {
-		o.innerHTML = api.PSGetDisplayName("System.ItemDate");
-	}
 	document.getElementById("_EDIT").checked = true;
 }
 

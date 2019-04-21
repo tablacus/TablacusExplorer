@@ -62,18 +62,18 @@
           <td style="width: 100%">
             <!--panel_start-->
             <div class="panel" id="panel0">
-              <label>Language</label><br>
+              <label>@wmploc.dll,-1735</label><br>
               <input type="text" name="Conf_Lang" size="3">
               <input type="button" value="Browse..." onclick="SelectLangID(this)"><br>
               <label>Default LanguageID</label>:
               <span id="DefaultLangID"></span>&nbsp;<input type="button" value="Set Default" onclick="SetDefaultLangID()"><br>
               <br>
               <label>Left bar</label><br>
-              <label>Width</label><input type="text" id="Conf_LeftBarWidth" align="right" size="4">px<br><br>
+              <label>Width</label><input type="text" id="Conf_LeftBarWidth" align="right" size="4"><label>@mspaint.exe,-50047[px]</label><br><br>
               <label>Right bar</label><br>
-              <label>Width</label><input type="text" id="Conf_RightBarWidth" align="right" size="4">px<br><br>
+              <label>Width</label><input type="text" id="Conf_RightBarWidth" align="right" size="4"><label>@mspaint.exe,-50047[px]</label><br><br>
               <label>Tool bar</label> <label>Icon</label><br>
-              <label>Size</label><input type="text" id="Conf_IconSize" align="right" size="4">px
+              <label>Size</label><input type="text" id="Conf_IconSize" align="right" size="4"><label>@mspaint.exe,-50047[px]</label>
               <input type="button" value="Set Default" onclick="SetDefault(document.F.Conf_IconSize, '');">
               <br><br>
               <label>Menus</label><br>
@@ -98,12 +98,12 @@
               <label><input type="radio" name="Conf_Gestures_" id="Conf_Gestures=3" onclick="SetRadio(this)">Priority</label>
               <br><br>
               <label>Timeout</label><br>
-              <input type="text" id="Conf_GestureTimeout" style="width: 6em; text-align:right"><label>ms</label>
+              <input type="text" id="Conf_GestureTimeout" style="width: 6em; text-align:right"><label>@calc.exe,-1721[ms]</label>
               <br><br>
               <label>Trails</label><br>
               <input type="text" id="Conf_TrailColor" title="Color" placeholder="Color" style="width: 9em" onchange="ChangeColor1(this)">
               <input id="Color_Conf_TrailColor" type="button" value=" " class="color" onclick="ChooseColor2(this)"><br>
-              <input type="text" name="Conf_TrailSize" title="Size" placeholder="Size" style="width: 2em; text-align:right">px
+              <input type="text" name="Conf_TrailSize" title="Size" placeholder="Size" style="width: 2em; text-align:right"><label>@mspaint.exe,-50047[px]</label>
               <input type="button" value="-" onclick="AddValue('Conf_TrailSize', -1, 0, 16)">
               <input type="button" value="+" onclick="AddValue('Conf_TrailSize', 1, 0, 16)">
               <br><br>
@@ -457,7 +457,7 @@
             <div class="panel" id="panel5">
               <label>General</label><br>
               <input type="hidden" name="View_ViewFlags">
-              <label><input type="checkbox" id="View_ViewFlags:0x1" onclick="SetCheckbox(this)">Show all files</label>
+              <label><input type="checkbox" id="View_ViewFlags:0x1" onclick="SetCheckbox(this)">Show all files</label> (<label>Include hidden items</label>)
               <input type="hidden" name="View_Type">
               <label><input type="checkbox" id="View_Type=2" onchange="document.F.View_Type.value=this.checked ? 2 : 1">Show frames</label>(*)
               <br><br>
@@ -500,11 +500,11 @@
                 <input type="text" name="Conf_SizeFormat" style="width: 100%">
               </div>
               <br>
-              <label id="_DateTimeFormat">@shell32.dll,-32522</label><br>
+              <label>{F7DB74B4-4287-4103-AFBA-F1B13DCD75CF} 100|@shell32.dll,-32522</label><br>
               <input type="text" id="Conf_DateTimeFormat" style="width: 100%">
               <br><br>
               <label>Timeout</label><br>
-              <input type="text" id="Conf_NetworkTimeout" style="width: 6em; text-align:right"><lebel>ms</label>
+              <input type="text" id="Conf_NetworkTimeout" style="width: 6em; text-align:right"><label>@calc.exe,-1721[ms]</label>
               <br><br>
               <div>
                 <label><input type="checkbox" id="Conf_ListDefault">Set Default</label>
