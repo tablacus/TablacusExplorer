@@ -724,7 +724,7 @@ GetTextR = function (id)
 	if (res) {
 		return (api.LoadString(hShell32, 31092) || "%s (32-bit)").replace(/^%s\s\(|\)$/g, "").replace(/\d+/, res[1]);
 	}
-	return GetText(id);
+	return GetText(id) || "";
 }
 
 function LoadLang2(filename)
