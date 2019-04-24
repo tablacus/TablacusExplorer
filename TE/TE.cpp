@@ -1182,6 +1182,7 @@ TEmethod methodGB[] = {
 	{ 5, "FromStream" },
 	{ 6, "FromArchive" },
 	{ 7, "FromItem" },
+	{ 8, "FromClipboard" },
 	{ 99, "Free" },
 
 	{ 100, "Save" },
@@ -9891,6 +9892,11 @@ VOID teApiSetSysColors(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIAN
 	teSetBool(pVarResult, SetSysColors(param[0].intVal, (INT *)GetpcFromVariant(&pDispParams->rgvarg[nArg - 1], NULL), (COLORREF *)GetpcFromVariant(&pDispParams->rgvarg[nArg - 2], NULL)));
 }
 
+VOID teApiIsClipboardFormatAvailable(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetBool(pVarResult, IsClipboardFormatAvailable(param[0].uintVal));
+}
+
 /*
 VOID teApi(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -10220,6 +10226,7 @@ TEDispatchApi dispAPI[] = {
 	{ 1, -1, -1, -1, "HasThumbnail", teApiHasThumbnail },
 	{ 1,  0, -1, -1, "GetDiskFreeSpaceEx", teApiGetDiskFreeSpaceEx },
 	{ 3, -1, -1, -1, "SetSysColors", teApiSetSysColors },
+	{ 1, -1, -1, -1, "IsClipboardFormatAvailable", teApiIsClipboardFormatAvailable },
 //	{ 0, -1, -1, -1, "", teApi },
 //	{ 0, -1, -1, -1, "Test", teApiTest },
 };
@@ -14465,7 +14472,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 								}
 							}
 						} else if (g_pAutomation) {
-							IUIAutomationElement *pElement, *pElement2;
+							IUIAutomationElement *pElement, *pElement2 = NULL;
 							if SUCCEEDED(g_pAutomation->ElementFromPoint(info.pt, &pElement)) {
 								if SUCCEEDED(pElement->GetCurrentPropertyValue(g_PID_ItemIndex, pVarResult)) {
 									pVarResult->lVal--;
@@ -14473,7 +14480,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 								if (pVarResult->lVal < 0) {
 									IUIAutomationTreeWalker *pWalker = NULL;
 									if SUCCEEDED(g_pAutomation->get_ControlViewWalker(&pWalker)) {
-										if SUCCEEDED(pWalker->GetParentElement(pElement, &pElement2)) {
+										pWalker->GetParentElement(pElement, &pElement2);
+										if (pElement2) {
 											if SUCCEEDED(pElement2->GetCurrentPropertyValue(g_PID_ItemIndex, pVarResult)) {
 												pVarResult->lVal--;
 											}
@@ -20652,7 +20660,8 @@ STDMETHODIMP CteDropTarget::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			case 3:
 				hr = E_INVALIDARG;
 				if (nArg >= 2) {
-					BOOL bSingle = (nArg >= 4) && GetIntFromVariant(&pDispParams->rgvarg[nArg - 4]);
+					BOOL bSingle = FALSE;
+					IUnknown *pObj = this;
 					IDataObject *pDataObj;
 					if (GetDataObjFromVariant(&pDataObj, &pDispParams->rgvarg[nArg])) {
 						try {
@@ -20667,6 +20676,15 @@ STDMETHODIMP CteDropTarget::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 								if (GetDispatch(&pDispParams->rgvarg[nArg - 3], &pEffect)) {
 									teGetPropertyAt(pEffect, 0, &v);
 									dwEffect1 = GetIntFromVariantClear(&v);
+									if (nArg >= 4) {
+										bSingle = GetIntFromVariant(&pDispParams->rgvarg[nArg - 4]);
+										if (nArg >= 5) {
+											IUnknown *punk;
+											if (FindUnknown(&pDispParams->rgvarg[nArg - 5], &punk)) {
+												pObj = punk;
+											}
+										}
+									}
 								} else {
 									dwEffect1 = GetIntFromVariantClear(&pDispParams->rgvarg[nArg - 3]);
 								}
@@ -20687,7 +20705,7 @@ STDMETHODIMP CteDropTarget::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 									}
 									if (m_pFolderItem) {
 										DWORD dwEffect2 = dwEffect;
-										if (DragSub(TE_OnDragEnter, this, pDragItems, &grfKeyState, pt0, &dwEffect2) == S_OK) {
+										if (DragSub(TE_OnDragEnter, pObj, pDragItems, &grfKeyState, pt0, &dwEffect2) == S_OK) {
 											hr = S_OK;
 											dwEffect1 = dwEffect2;
 										}
@@ -20700,7 +20718,7 @@ STDMETHODIMP CteDropTarget::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 										hr = S_FALSE;
 										if (m_pFolderItem) {
 											dwEffect1 = dwEffect;
-											hr = DragSub(TE_OnDragOver, this, pDragItems, &grfKeyState, pt0, &dwEffect1);
+											hr = DragSub(TE_OnDragOver, pObj, pDragItems, &grfKeyState, pt0, &dwEffect1);
 										}
 										if (hr != S_OK && m_pDropTarget) {
 											dwEffect1 = dwEffect;
@@ -20716,7 +20734,7 @@ STDMETHODIMP CteDropTarget::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 											hr = S_FALSE;
 											if (m_pFolderItem) {
 												dwEffect1 = dwEffect;
-												hr = DragSub(TE_OnDrop, this, pDragItems, &grfKeyState, pt0, &dwEffect1);
+												hr = DragSub(TE_OnDrop, pObj, pDragItems, &grfKeyState, pt0, &dwEffect1);
 											}
 											if (hr != S_OK) {
 												dwEffect1 = dwEffect;
@@ -23188,6 +23206,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					WICBitmapAlphaChannelOption nAlpha = (nArg >= 2) ? (WICBitmapAlphaChannelOption)GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]) : WICBitmapIgnoreAlpha;
 					IWICBitmap *pBitmap;
 					if SUCCEEDED(g_pWICFactory->CreateBitmapFromHBITMAP((HBITMAP)GetPtrFromVariant(&pDispParams->rgvarg[nArg]), pal, nAlpha, &pBitmap)) {
+						SafeRelease(&m_pImage);
 						m_pImage = pBitmap;
 					}
 					teSetObject(pVarResult, GetBitmapObj());
@@ -23207,6 +23226,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					if (hBM) {
 						IWICBitmap *pBitmap;
 						if SUCCEEDED(g_pWICFactory->CreateBitmapFromHBITMAP(hBM, 0, WICBitmapIgnoreAlpha, &pBitmap)) {
+							SafeRelease(&m_pImage);
 							m_pImage = pBitmap;
 						}
 						DeleteObject(hBM);
@@ -23349,6 +23369,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 							if (hBM) {
 								IWICBitmap *pBitmap;
 								if SUCCEEDED(g_pWICFactory->CreateBitmapFromHBITMAP(hBM, 0, alphaType == WTSAT_ARGB ? WICBitmapUseAlpha : WICBitmapIgnoreAlpha, &pBitmap)) {
+									SafeRelease(&m_pImage);
 									m_pImage = pBitmap;
 								}
 								DeleteObject(hBM);
@@ -23359,6 +23380,20 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					}
 					teSetObject(pVarResult, GetBitmapObj());
 				}
+				return S_OK;
+			//FromClipboard
+			case 8:
+				if (IsClipboardFormatAvailable(CF_BITMAP)) {
+					::OpenClipboard(NULL);
+					HBITMAP hBM = (HBITMAP)::GetClipboardData(CF_BITMAP);
+					IWICBitmap *pBitmap;
+					if SUCCEEDED(g_pWICFactory->CreateBitmapFromHBITMAP(hBM, 0, WICBitmapUseAlpha, &pBitmap)) {
+						SafeRelease(&m_pImage);
+						m_pImage = pBitmap;
+					}
+					::CloseClipboard();
+				}
+				teSetObject(pVarResult, GetBitmapObj());
 				return S_OK;
 			//Free
 			case 99:

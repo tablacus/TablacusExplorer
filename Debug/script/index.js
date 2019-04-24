@@ -961,7 +961,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 					iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
 					if (iItem < 0) {
 						api.ScreenToClient(hwnd, pt);
-						return pt.y < 32 ? S_FALSE : S_OK;
+						return pt.y < screen.logicalYDPI / 4 ? S_FALSE : S_OK;
 					}
 				}
 				if (te.Data.Conf_Gestures == 3 && Ctrl.Type != CTRL_WB) {
@@ -989,7 +989,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 		}
 	}
 	if (msg == WM_LBUTTONDBLCLK || msg == WM_RBUTTONDBLCLK || msg == WM_MBUTTONDBLCLK || msg == WM_XBUTTONDBLCLK) {
-		if (strClass != WC_HEADER) {
+		if (!IsHeader(Ctrl, pt, hwnd, strClass)) {
 			te.Data.pt = pt.Clone();
 			g_.mouse.str = g_.mouse.GetButton(msg, wParam);
 			g_.mouse.str += g_.mouse.str;
@@ -2100,7 +2100,7 @@ function InitMenus()
 function ArrangeAddons()
 {
 	te.Data.Locations = api.CreateObject("Object");
-	window.IconSize = te.Data.Conf_IconSize || 24 * screen.logicalYDPI / 96;
+	window.IconSize = te.Data.Conf_IconSize || screen.logicalYDPI / 4;
 	var xml = OpenXml("addons.xml", false, true);
 	te.Data.Addons = xml;
 	if (api.GetKeyState(VK_SHIFT) < 0 && api.GetKeyState(VK_CONTROL) < 0) {
@@ -3595,6 +3595,23 @@ function CreateUpdater(arg)
 	}
 	g_.strUpdate = ['"', api.IsWow64Process(api.GetCurrentProcess()) ? wsh.ExpandEnvironmentStrings("%SystemRoot%\\Sysnative") : system32, "\\", "wscript.exe", '" "', arg.temp, "\\script\\update.js", '" "', api.GetModuleFileName(null), '" "', arg.temp, '" "', api.LoadString(hShell32, 12612), '" "', api.LoadString(hShell32, 12852),'"'].join("");
 	DeleteTempFolder = PerformUpdate;
+}
+
+function IsHeader(Ctrl, pt, hwnd, strClass)
+{
+	if (strClass == WC_HEADER) {
+		return true;
+	}
+	if (strClass != "DirectUIHWND") {
+		return false;
+	}
+	var iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
+	if (iItem >= 0) {
+		return false;
+	}
+	var pt2 = pt.Clone();
+	api.ScreenToClient(hwnd, pt2);
+	return pt2.y < screen.logicalYDPI / 4;
 }
 
 //Init
