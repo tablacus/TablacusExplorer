@@ -12515,8 +12515,13 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 
 	if (param[SB_DoFunc]) {
 		hr = OnBeforeNavigate(pPrevious, wFlags);
-		if (hr == E_ABORT && Close(FALSE)) {
-			return hr;
+		if (hr == E_ABORT) {
+			if (m_pFolderItem == pFolderItem) {
+				m_pFolderItem = NULL;
+			}
+			if (Close(FALSE)) {
+				return hr;
+			}
 		}
 		if (hr == E_ACCESSDENIED && teILIsEqual(m_pFolderItem, pPrevious)) {
 			hr = S_OK;

@@ -1358,7 +1358,7 @@ te.OnShowContextMenu = function (Ctrl, hwnd, msg, wParam, pt)
 			if (menus && menus.length) {
 				var items = menus[0].getElementsByTagName("Item");
 				var arMenu = OpenMenu(items, null);
-				MakeMenus(hMenu, menus, arMenu, items, Ctrl, pt);
+				MakeMenus(hMenu, menus, arMenu, items, Ctrl, pt, 0, null, true);
 			}
 			api.DestroyMenu(hMenu);
 			break;
