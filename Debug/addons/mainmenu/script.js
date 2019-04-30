@@ -7,8 +7,8 @@ if (window.Addon == 1) {
 		Menu: [],
 		Item: null,
 		tid: null,
-		bLoop: false,
 		tid2: null,
+		bLoop: false,
 		bClose: false,
 
 		Popup: function (o)
@@ -33,7 +33,7 @@ if (window.Addon == 1) {
 						clearTimeout(Addons.MainMenu.tid2);
 						Addons.MainMenu.tid2 = setTimeout("Addons.MainMenu.bClose = false;", 500);
 					})
-					ExecMenu2(o.id.replace(/^Menu/, ""), p.x, p.y + o.offsetHeight * screen.deviceYDPI / screen.logicalYDPI);
+					ExecMenu2(o.id.replace(/^Menu/, ""), p.x, p.y + o.offsetHeight);
 					MouseOut();
 				}, 99);
 			}

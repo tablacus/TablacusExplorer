@@ -5710,7 +5710,7 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 										}
 									}
 									MSG msg;
-									msg.hwnd = pMHS->hwnd;
+									msg.hwnd = WindowFromPoint(pMHS->pt);
 									msg.message = (LONG)wParam;
 									if (msg.message == WM_LBUTTONDOWN) {
 										CHAR szClassA[MAX_CLASS_NAME];
@@ -12562,11 +12562,11 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	}
 	try {
 		m_pTC->m_nRedraw = TEREDRAW_NAVIGATE | TEREDRAW_NORMAL;
+#ifdef _2000XP
+		hr = g_bUpperVista ? NavigateEB(dwFrame) : NavigateSB(pPreviousView, pPrevious);
+#else
 		hr =  NavigateEB(dwFrame);
-		if FAILED(hr) {
-			//ShellBrowser
-			hr = NavigateSB(pPreviousView, pPrevious);
-		}
+#endif
 	} catch (...) {
 #ifdef _DEBUG
 	g_nException = 0;
@@ -15137,7 +15137,6 @@ VOID CteShellBrowser::AddColumnDataXP(LPWSTR pszColumns, LPWSTR pszName, int nWi
 	}
 	AddColumnData(pszColumns, pszName, nWidth);
 }
-#endif
 
 HRESULT CteShellBrowser::NavigateSB(IShellView *pPreviousView, FolderItem *pPrevious)
 {
@@ -15191,6 +15190,7 @@ HRESULT CteShellBrowser::NavigateSB(IShellView *pPreviousView, FolderItem *pPrev
 	}
 	return hr;
 }
+#endif
 
 HRESULT CteShellBrowser::CreateViewWindowEx(IShellView *pPreviousView)
 {

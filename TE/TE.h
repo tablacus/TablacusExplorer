@@ -1145,7 +1145,6 @@ public:
 	HRESULT BrowseToObject();
 	HRESULT GetShellFolder2(LPITEMIDLIST *ppidl);
 	VOID SetLVSettings();
-	HRESULT NavigateSB(IShellView *pPreviousView, FolderItem *pPrevious);
 	HRESULT CreateViewWindowEx(IShellView *pPreviousView);
 	VOID SetTabName();
 	HRESULT RemoveAll();
@@ -1158,6 +1157,7 @@ public:
 	VOID AddItems(IDispatch *pdisp, BOOL bDeleted, IDispatch *pOnCompleted, BOOL bNavigateComplete);
 #endif
 #ifdef _2000XP
+	HRESULT NavigateSB(IShellView *pPreviousView, FolderItem *pPrevious);
 	VOID AddPathXP(CteFolderItems *pFolderItems, IShellFolderView *pSFV, int nIndex, BOOL bResultsFolder);
 	int PSGetColumnIndexXP(LPWSTR pszName, int *pcxChar);
 	BSTR PSGetNameXP(LPWSTR pszName, int nFormat);
