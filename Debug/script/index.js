@@ -5,7 +5,7 @@ te.LockUpdate();
 Addon = 1;
 Init = false;
 ExtraMenuCommand = [];
-g_arBM = {};
+g_arBM = [];
 
 GetAddress = null;
 ShowContextMenu = null;
@@ -1642,7 +1642,7 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 			for (var i in g_arBM) {
 				api.DeleteObject(g_arBM[i]);
 			}
-			g_arBM = {};
+			g_arBM = [];
 			break;
 		case WM_MENUCHAR:
 			if (window.g_menu_click && (wParam & 0xffff) == VK_LBUTTON) {
