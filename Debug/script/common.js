@@ -2328,9 +2328,10 @@ GetAddonInfo = function (Id)
 		var lang = GetLangId();
 		if (!/^en/.test(lang)) {
 			GetAddonInfo2(xml, info, "en", true);
+			info.Name = GetTextR(info.Name);
 		}
 		var res = /(\w+)_/.exec(lang);
-		if (res) {
+		if (res && !/zh_cn/i.test(lang)) {
 			GetAddonInfo2(xml, info, res[1]);
 		}
 		GetAddonInfo2(xml, info, lang);

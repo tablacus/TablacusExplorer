@@ -5710,7 +5710,7 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 										}
 									}
 									MSG msg;
-									msg.hwnd = WindowFromPoint(pMHS->pt);
+									msg.hwnd = pMHS->hwnd;
 									msg.message = (LONG)wParam;
 									if (msg.message == WM_LBUTTONDOWN) {
 										CHAR szClassA[MAX_CLASS_NAME];
@@ -5722,6 +5722,7 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 											} else {
 												dwDoubleTime = dwTick;
 											}
+											msg.hwnd = WindowFromPoint(pMHS->pt);
 										}
 									}
 
@@ -23372,11 +23373,8 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 
 							}
 							if (hBM) {
-								IWICBitmap *pBitmap;
-								if SUCCEEDED(g_pWICFactory->CreateBitmapFromHBITMAP(hBM, 0, alphaType == WTSAT_ARGB ? WICBitmapUseAlpha : WICBitmapIgnoreAlpha, &pBitmap)) {
-									SafeRelease(&m_pImage);
-									m_pImage = pBitmap;
-								}
+								SafeRelease(&m_pImage);
+								g_pWICFactory->CreateBitmapFromHBITMAP(hBM, 0, alphaType == WTSAT_ARGB ? WICBitmapUseAlpha : WICBitmapIgnoreAlpha, &m_pImage);
 								DeleteObject(hBM);
 							}
 							pSF->Release();
@@ -23391,11 +23389,8 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				if (IsClipboardFormatAvailable(CF_BITMAP)) {
 					::OpenClipboard(NULL);
 					HBITMAP hBM = (HBITMAP)::GetClipboardData(CF_BITMAP);
-					IWICBitmap *pBitmap;
-					if SUCCEEDED(g_pWICFactory->CreateBitmapFromHBITMAP(hBM, 0, WICBitmapUseAlpha, &pBitmap)) {
-						SafeRelease(&m_pImage);
-						m_pImage = pBitmap;
-					}
+					SafeRelease(&m_pImage);
+					g_pWICFactory->CreateBitmapFromHBITMAP(hBM, 0, WICBitmapIgnoreAlpha, &m_pImage);
 					::CloseClipboard();
 				}
 				teSetObject(pVarResult, GetBitmapObj());
