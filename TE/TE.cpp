@@ -5715,7 +5715,9 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 									if (msg.message == WM_LBUTTONDOWN) {
 										CHAR szClassA[MAX_CLASS_NAME];
 										GetClassNameA(msg.hwnd, szClassA, MAX_CLASS_NAME);
-										if (lstrcmpA(szClassA, "DirectUIHWND") == 0) {
+										if (lstrcmpA(szClassA, WC_LISTVIEWA) == 0) {
+											msg.hwnd = WindowFromPoint(pMHS->pt);
+										} else if (lstrcmpA(szClassA, "DirectUIHWND") == 0) {
 											DWORD dwTick = GetTickCount();
 											if (dwTick - dwDoubleTime < GetDoubleClickTime()) {
 												msg.message = WM_LBUTTONDBLCLK;
