@@ -252,16 +252,26 @@ LoadConfig = function (bDog)
 		}
 		delete te.Data.View_SizeFormat;
 		g_.xmlWindow = xml;
-		if (fso.FileExists(te.Data.WindowSetting)) {
-			xml = te.CreateObject("Msxml2.DOMDocument");
-			xml.async = false;
-			xml.load(te.Data.WindowSetting);
-			if (xml) {
-				g_.xmlWindow = xml;
-			}
-		} else {
-			RunEvent1("ConfigChanged", "Config");
+		LoadWindowSettings(xml);
+		return;
+	}
+	g_.xmlWindow = "Init";
+	LoadWindowSettings();
+}
+
+function LoadWindowSettings(xml)
+{
+	if (fso.FileExists(te.Data.WindowSetting)) {
+		xml = te.CreateObject("Msxml2.DOMDocument");
+		xml.async = false;
+		xml.load(te.Data.WindowSetting);
+		if (xml) {
+			g_.xmlWindow = xml;
 		}
+	} else {
+		RunEvent1("ConfigChanged", "Config");
+	}
+	if (xml) {
 		var items = xml.getElementsByTagName('Window');
 		if  (items.length) {
 			var item = items[0];
@@ -296,9 +306,7 @@ LoadConfig = function (bDog)
 			}
 			te.CmdShow = item.getAttribute("CmdShow");
 		}
-		return;
 	}
-	g_.xmlWindow = "Init";
 }
 
 SaveConfig = function ()

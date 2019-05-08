@@ -22,6 +22,7 @@ if (window.Addon == 1) {
 		Exec: function (Ctrl, pt)
 		{
 			var FV = GetFolderView(Ctrl, pt);
+			FV.Focus();
 			FV.Navigate(null, SBSP_PARENT | OpenMode);
 			return S_OK;
 		},
@@ -30,6 +31,7 @@ if (window.Addon == 1) {
 		{
 			var FV = GetFolderView(Ctrl, pt);
 			if (FV) {
+				FV.Focus();
 				FolderMenu.Clear();
 				var hMenu = api.CreatePopupMenu();
 				var FolderItem = FV.FolderItem;
