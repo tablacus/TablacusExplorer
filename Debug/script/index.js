@@ -432,6 +432,7 @@ Refresh = function (Ctrl, pt)
 {
 	var FV = GetFolderView(Ctrl, pt);
 	if (FV) {
+		FV.Focus();
 		FV.Refresh();
 	}
 }

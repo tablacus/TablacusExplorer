@@ -20,6 +20,7 @@ if (window.Addon == 1) {
 		{
 			var FV = GetFolderView(Ctrl, pt);
 			if (FV) {
+				FV.Focus();
 				var TV = FV.TreeView;
 				if (TV) {
 					TV.Visible = !TV.Visible;
@@ -165,5 +166,5 @@ if (window.Addon == 1) {
 	}
 } else {
 	EnableInner();
-	SetTabContents(0, "General", '<input type="checkbox" id="Depth" value="1" /><label for="Depth">Expanded</label><br><input type="checkbox" id="List" value="1" /><label for="List">List</label>');
+	SetTabContents(0, "General", '<input type="checkbox" id="Depth" value="1"><label for="Depth">Expanded</label><br><input type="checkbox" id="List" value="1"><label for="List">List</label>');
 }
