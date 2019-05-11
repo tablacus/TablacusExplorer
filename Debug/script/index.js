@@ -540,7 +540,7 @@ OpenSelected = function (Ctrl, NewTab, pt)
 		var Exec = [];
 		for (var i in Selected) {
 			var Item = Selected.Item(i);
-			var bFolder = Item.IsFolder;
+			var bFolder = Item.IsFolder || (!Item.IsFileSystem && Item.IsBrowsable);
 			if (!bFolder) {
 				var path = Item.ExtendedProperty("linktarget");
 				if (path) {
@@ -548,7 +548,7 @@ OpenSelected = function (Ctrl, NewTab, pt)
 				}
 			}
 			if (bFolder) {
-			 	FV.Navigate(Item, NewTab);
+				FV.Navigate(Item, NewTab);
 			 	NewTab |= SBSP_NEWBROWSER;
 			} else {
 				Exec.push(Item);

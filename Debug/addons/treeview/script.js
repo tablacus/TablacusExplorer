@@ -54,14 +54,18 @@ if (window.Addon == 1) {
 			}
 		},
 
-		Popup: function ()
+		Popup: function (o)
 		{
-			var TV = te.Ctrl(CTRL_TV);
-			if (TV) {
-				var n = InputDialog(GetText("Width"), TV.Width);
-				if (n) {
-					TV.Width = n;
-					TV.Align = true;
+			var FV = GetFolderView(o);
+			if (FV) {
+				FV.Focus();
+				var TV = FV.TreeView;
+				if (TV) {
+					var n = InputDialog(GetText("Width"), TV.Width);
+					if (n) {
+						TV.Width = n;
+						TV.Align = true;
+					}
 				}
 			}
 			return false;
@@ -130,6 +134,7 @@ if (window.Addon == 1) {
 		FV.focus();
 		return S_OK;
 	}, "Func", true);
+
 	//Enter
 	SetKeyExec("Tree", "$1c", function (Ctrl, pt)
 	{
