@@ -18,8 +18,8 @@ g_bClosed = false;
 g_nSort2 = 1;
 
 arLangs = [GetLangId()];
-var res = /(\w+)_/.test(arLangs[0]);
-if (res) {
+var res = /(\w+)_/.exec(arLangs[0]);
+if (res && !/zh_cn/i.test(arLangs[0])) {
 	arLangs.push(res[1]);
 }
 if (!/^en/.test(arLangs[0])) {
@@ -2321,7 +2321,7 @@ function AddonsList(xhr2)
 
 function AddonsAppend()
 {
-	var Progress = te.ProgressDialog;
+	var Progress = api.CreateObject("ProgressDialog");
 	var i = 0, td = [];
 	Progress.StartProgressDialog(te.hwnd, null, 2);
 	try {
