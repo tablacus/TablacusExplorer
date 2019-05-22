@@ -825,24 +825,19 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 				}
 				break;
 			default:
-				if (window.g_menu_click) {
-					if (key == VK_RETURN) {
-						if (window.g_menu_click === true) {
-							var hSubMenu = api.GetSubMenu(window.g_menu_handle, window.g_menu_pos);
-							if (hSubMenu) {
-								var mii = api.Memory("MENUITEMINFO");
-								mii.cbSize = mii.Size;
-								mii.fMask = MIIM_SUBMENU;
-								api.SetMenuItemInfo(window.g_menu_handle, window.g_menu_pos, true, mii);
-								api.DestroyMenu(hSubMenu);
-								api.PostMessage(hwnd, WM_CHAR, VK_LBUTTON, 0);
-							}
-						}
-						window.g_menu_button = api.GetKeyState(VK_SHIFT) >= 0 ? 1 : 2;
-						if (api.GetKeyState(VK_CONTROL) < 0) {
-							window.g_menu_button = 3;
+				if (key == VK_RETURN) {
+					if (window.g_menu_click === true) {
+						var hSubMenu = api.GetSubMenu(window.g_menu_handle, window.g_menu_pos);
+						if (hSubMenu) {
+							var mii = api.Memory("MENUITEMINFO");
+							mii.cbSize = mii.Size;
+							mii.fMask = MIIM_SUBMENU;
+							api.SetMenuItemInfo(window.g_menu_handle, window.g_menu_pos, true, mii);
+							api.DestroyMenu(hSubMenu);
+							api.PostMessage(hwnd, WM_CHAR, VK_LBUTTON, 0);
 						}
 					}
+					window.g_menu_button = api.GetKeyState(VK_CONTROL) < 0 ? 3 : api.GetKeyState(VK_SHIFT) < 0 ? 2 : 1;
 				}
 				break;
 		}
