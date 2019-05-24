@@ -1632,6 +1632,9 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 				window.g_menu_string = api.GetMenuString(lParam, nVerb, hSubMenu ? MF_BYPOSITION : MF_BYCOMMAND);
 			}
 			break;
+		case WM_ENTERMENULOOP:
+			window.g_menu_button = 0;
+			break;
 		case WM_EXITMENULOOP:
 			window.g_menu_click = false;
 			var en = "ExitMenuLoop";

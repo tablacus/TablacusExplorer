@@ -3091,9 +3091,17 @@ EncodeSC = function (s)
 
 DecodeSC = function (s)
 {
-	return String(s).replace(/&#x([\da-f]{2});/g, function (strMatch, ref)
+	return String(s).replace(/&([\w#]+);/g, function (strMatch, ref)
 	{
-		return String.fromCharCode(parseInt(ref, 16));
+		var res = /^#x([\da-f]+)$/.exec(ref)
+		if (res) {
+			return String.fromCharCode(parseInt(res[1], 16));
+		}
+		res = /^#(\d+)$/.exec(ref)
+		if (res) {
+			return String.fromCharCode(res[1]);
+		}
+		return { quot: '"', amp: '&', lt: '<', gt: '>' }[ref.toLowerCase()] || '&' + ref + ';';
 	});
 }
 
