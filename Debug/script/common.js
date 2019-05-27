@@ -221,19 +221,19 @@ FolderMenu =
 	Invoke: function (FolderItem, wFlags)
 	{
 		if (FolderItem) {
+			var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL);
+			var bVirtual = api.ILIsParent(1, FolderItem, false) || FolderItem.Unavailable;
 			if (window.g_menu_button == 4) {
-				if (FolderItem.IsFileSystem) {
+				if (!bVirtual) {
 					var pdwEffect = [DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK];
 					api.SHDoDragDrop(null, FolderItem, te, pdwEffect[0], pdwEffect, true);
 				}
 				return;
 			}
-			var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL);
 			if (window.g_menu_button == 2) {
 				var pt = api.Memory("POINT");
 				api.GetCursorPos(pt);
-				var res = /^`.*`$|^javascript:.*$/.exec(path);
-				if (res || !FolderItem.IsFileSystem) {
+				if (bVirtual) {
 					if (!confirmOk(path, TITLE, MB_OK | MB_ICONINFORMATION)) {
 						return;
 					}
@@ -3085,15 +3085,15 @@ EncodeSC = function (s)
 {
 	return String(s).replace(/[&"<>]/g, function (strMatch)
 	{
-		return api.sprintf(9, "&#x%02x;", strMatch.charCodeAt(0));
+		return "&#" + strMatch.charCodeAt(0) + ";";
 	});
 }
 
 DecodeSC = function (s)
 {
-	return String(s).replace(/&([\w#]+);/g, function (strMatch, ref)
+	return String(s).replace(/&([\w#]{1,5});/g, function (strMatch, ref)
 	{
-		var res = /^#x([\da-f]+)$/.exec(ref)
+		var res = /^#x([\da-f]+)$/i.exec(ref)
 		if (res) {
 			return String.fromCharCode(parseInt(res[1], 16));
 		}

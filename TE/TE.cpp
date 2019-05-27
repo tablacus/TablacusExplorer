@@ -9805,7 +9805,7 @@ VOID teApiCreateObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIAN
 
 VOID teApiCreateEvent(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetPtr(pVarResult, CreateEvent(param[0].lpEventAttributes, param[1].boolVal, param[2].boolVal, param[3].lpcwstr));
+	teSetPtr(pVarResult, CreateEvent(param[0].lpSecurityAttributes, param[1].boolVal, param[2].boolVal, param[3].lpcwstr));
 }
 
 VOID teApiSetEvent(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -9898,6 +9898,11 @@ VOID teApiSetSysColors(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIAN
 VOID teApiIsClipboardFormatAvailable(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	teSetBool(pVarResult, IsClipboardFormatAvailable(param[0].uintVal));
+}
+
+VOID teApiCreateFile(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetPtr(pVarResult, ::CreateFile(param[0].lpcwstr, param[1].dword, param[2].dword, param[3].lpSecurityAttributes, param[4].dword, param[5].dword, param[6].handle));
 }
 
 /*
@@ -10230,6 +10235,7 @@ TEDispatchApi dispAPI[] = {
 	{ 1,  0, -1, -1, "GetDiskFreeSpaceEx", teApiGetDiskFreeSpaceEx },
 	{ 3, -1, -1, -1, "SetSysColors", teApiSetSysColors },
 	{ 1, -1, -1, -1, "IsClipboardFormatAvailable", teApiIsClipboardFormatAvailable },
+	{ 7,  0, -1, -1, "CreateFile", teApiCreateFile },
 //	{ 0, -1, -1, -1, "", teApi },
 //	{ 0, -1, -1, -1, "Test", teApiTest },
 };

@@ -163,7 +163,7 @@ union teParam
 	LPMENUITEMINFO lpmenuiteminfo;
 	LPCMENUITEMINFO lpcmenuiteminfo;
 	LPOSVERSIONINFO lposversioninfo;
-	LPSECURITY_ATTRIBUTES lpEventAttributes;
+	LPSECURITY_ATTRIBUTES lpSecurityAttributes;
 	PRTL_OSVERSIONINFOEXW prtl_osversioninfoexw;
 	PGUITHREADINFO pgui;
 
