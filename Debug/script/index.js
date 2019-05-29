@@ -1987,23 +1987,23 @@ GetIconImage = function (Ctrl, BGColor, bSimple)
 	var nSize = api.GetSystemMetrics(SM_CYSMICON);
 	var FolderItem = Ctrl.FolderItem || Ctrl;
 	if (!FolderItem || FolderItem.Unavailable) {
-		return MakeImgDataEx("icon:shell32.dll,234", bSimple, false, nSize);
+		return MakeImgDataEx("icon:shell32.dll,234", bSimple, nSize);
 	}
 	var r = GetNetworkIcon(FolderItem.Path);
 	if (r) {
 		return MakeImgDataEx(r, bSimple, nSize);
 	}
-	var img = RunEvent4("GetIconImage", Ctrl, BGColor);
+	var img = RunEvent4("GetIconImage", Ctrl, BGColor, bSimple);
 	if (img) {
-		return MakeImgDataEx(img, bSimple, false, nSize);
+		return MakeImgDataEx(img, bSimple, nSize);
 	}
 	api.ILIsEmpty(FolderItem);
 	if (FolderItem.Unavailable) {
-		return MakeImgDataEx("icon:shell32.dll,234", bSimple, false, nSize);
+		return MakeImgDataEx("icon:shell32.dll,234", bSimple, nSize);
 	}
 	if (document.documentMode) {
 		if (bSimple) {
-			return api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL);
+			return api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_ORIGINAL);
 		}
 		var sfi = api.Memory("SHFILEINFO");
 		api.SHGetFileInfo(FolderItem, 0, sfi, sfi.Size, SHGFI_ICON | SHGFI_SMALLICON | SHGFI_PIDL);
@@ -2011,7 +2011,7 @@ GetIconImage = function (Ctrl, BGColor, bSimple)
 		api.DestroyIcon(sfi.hIcon);
 		return img.DataURI("image/png");
 	}
-	return MakeImgDataEx("icon:shell32.dll,3", bSimple, false, nSize);
+	return MakeImgDataEx("icon:shell32.dll,3", bSimple, nSize);
 }
 
 // Browser Events

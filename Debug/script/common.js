@@ -683,7 +683,7 @@ function MakeImgIcon(src, index, h)
 LoadImgDll = function (icon, index)
 {
 	var hModule = api.LoadLibraryEx(fso.BuildPath(system32, icon[index * 4]), 0, LOAD_LIBRARY_AS_DATAFILE);
-	if (!hModule && icon[index * 4].toLowerCase() == "ieframe.dll") {
+	if (!hModule && (icon[index * 4] || "").toLowerCase() == "ieframe.dll") {
 		if (icon[index * 4 + 1] >= 500) {
 			hModule = api.LoadLibraryEx(fso.BuildPath(system32, "browseui.dll"), 0, LOAD_LIBRARY_AS_DATAFILE);
 		} else {
@@ -1709,8 +1709,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec)
 	ExtraMenuCommand = [];
 	ExtraMenuData = [];
 	eventTE.menucommand = [];
-	var arMenu;
-	var item;
+	var arMenu, item;
 	if (items) {
 		arMenu = OpenMenu(items, SelItem);
 		for (var i = 0; i < arMenu.length; i++) {
@@ -1815,11 +1814,11 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec)
 		}
 		if (item && !bNoExec) {
 			var s = item.getAttribute("Type");
-			if (window.g_menu_button == 2 && api.PathMatchSpec(s, "Open;Open in New Tab;Open in Background")) {
+			if (window.g_menu_button == 2 && api.PathMatchSpec(s, "Open;Open in new tab;Open in background")) {
 				PopupContextMenu(item.text);
 				return S_OK;
 			}
-			Exec(Ctrl, item.text, window.g_menu_button == 3 && s == "Open" ? "Open in New Tab" : s, Ctrl.hwnd, pt);
+			Exec(Ctrl, item.text, window.g_menu_button == 3 && s == "Open" ? "Open in new tab" : s, Ctrl.hwnd, pt);
 			return S_OK;
 		}
 		if (Mode != 2) {
@@ -2096,34 +2095,7 @@ GetNetworkIcon = function (path)
 
 AddMenuIconFolderItem = function (mii, FolderItem, nHeight)
 {
-	var dwFlags = SHGFI_SYSICONINDEX;
-	var path = FolderItem;
-	if (!/^string$/i.test(typeof FolderItem)) {
-		path = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_ORIGINAL);
-		dwFlags |=  SHGFI_PIDL;
-	}
-	var r = GetNetworkIcon(path);
-	if (api.PathIsNetworkPath(path)) {
-		MenusIcon(mii, r);
-		return;
-	}
-	if (!FolderItem || FolderItem.Unavailable) {
-		MenusIcon(mii, "icon:shell32.dll,3");
-		return;
-	}
-	var image = api.CreateObject("WICBitmap");
-	var sfi = api.Memory("SHFILEINFO");
-	api.SHGetFileInfo(FolderItem, 0, sfi, sfi.Size, dwFlags);
-	var id = sfi.iIcon;
-	mii.hbmpItem = MainWindow.g_arBM[[id, nHeight].join("\t")];
-	if (mii.hbmpItem) {
-		mii.fMask = mii.fMask | MIIM_BITMAP;
-		return;
-	}
-	var hIcon = api.ImageList_GetIcon(te.Data.SHIL[SHIL_SMALL], id, ILD_NORMAL);
-	image.FromHICON(hIcon);
-	api.DestroyIcon(hIcon);
-	AddMenuImage(mii, image, id, nHeight);
+	MenusIcon(mii, MainWindow.GetIconImage(FolderItem, GetSysColor(COLOR_WINDOW), true), nHeight);
 }
 
 AddMenuImage = function (mii, image, id, nHeight)
@@ -2195,8 +2167,8 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem, bTran
 		var path = ExtractMacro(te, item.text);
 		var strFlag = strType == "menus" ? item.text.toLowerCase() : "";
 		var icon = item.getAttribute("Icon");
-		if (!icon && te.Data.Conf_MenuIcon ) {
-			if (api.PathMatchSpec(strType, "Open;Open in New Tab;Open in Background")) {
+		if (!icon && te.Data.Conf_MenuIcon) {
+			if (api.PathMatchSpec(strType, "Open;Open in new tab;Open in background")) {
 				var pidl = api.ILCreateFromPath(path);
 				if (!api.PathIsNetworkPath(api.PathUnquoteSpaces(path))) {
 					if (api.ILIsEmpty(pidl) || pidl.Unavailable) {
