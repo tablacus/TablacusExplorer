@@ -275,6 +275,7 @@ function LoadWindowSettings(xml)
 		var items = xml.getElementsByTagName('Window');
 		if  (items.length) {
 			var item = items[0];
+			te.CmdShow = item.getAttribute("CmdShow");
 			var x = api.LowPart(item.getAttribute("Left"));
 			var y = api.LowPart(item.getAttribute("Top"));
 			if (x > -30000 && y > -30000) {
@@ -299,12 +300,15 @@ function LoadWindowSettings(xml)
 						y = mi.rcWork.top;
 					}
 				}
-				if (w && h) {
+				if (api.IsZoomed(te.hwnd)) {
+					te.CmdShow = SW_SHOWMAXIMIZED;
+				} else if (api.IsIconic(te.hwnd)) {
+					te.CmdShow = SW_SHOWMINIMIZED;
+				} else if (w && h) {
 					api.MoveWindow(te.hwnd, x, y, w, h, true);
 				}
 				api.GetWindowRect(te.hwnd, te.Data.rcWindow);
 			}
-			te.CmdShow = item.getAttribute("CmdShow");
 		}
 	}
 }
