@@ -15462,11 +15462,13 @@ STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 
 	HRESULT hr = OnBeforeNavigate(pPrevious, SBSP_SAMEBROWSER | SBSP_ABSOLUTE);
 	if FAILED(hr) {
+		m_nLogIndex = m_nPrevLogIndex;
 		if (hr == E_ABORT && Close(FALSE)) {
 			return hr;
 		}
 		teCoTaskMemFree(m_pidl);
 		m_pidl = pidlPrevius;
+		pidlPrevius = NULL;
 		FolderItem *pid = m_pFolderItem;
 		m_pFolderItem = NULL;
 		if (pPrevious) {
