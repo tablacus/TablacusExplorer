@@ -1639,8 +1639,8 @@ VOID teCoTaskMemFree(LPVOID pv)
 		try {
 			::CoTaskMemFree(pv);
 		} catch (...) {
-#ifdef _DEBUG
 			g_nException = 0;
+#ifdef _DEBUG
 			g_strException = L"CoTaskMemFree";
 #endif
 		}
@@ -1864,8 +1864,8 @@ VOID teRevoke()
 				teUnadviseAndRelease(g_pSW, DIID_DShellWindowsEvents, &g_dwSWCookie);
 			}
 		} catch (...) {
-#ifdef _DEBUG
 			g_nException = 0;
+#ifdef _DEBUG
 			g_strException = L"Revoke";
 #endif
 		}
@@ -2343,8 +2343,8 @@ BOOL teSetObject(VARIANT *pv, PVOID pObj)
 				return true;
 			}
 		} catch (...) {
-#ifdef _DEBUG
 			g_nException = 0;
+#ifdef _DEBUG
 			g_strException = L"SetObject";
 #endif
 		}
@@ -2371,8 +2371,8 @@ BOOL teSetObjectRelease(VARIANT *pv, PVOID pObj)
 			}
 			punk->Release();
 		} catch (...) {
-#ifdef _DEBUG
 			g_nException = 0;
+#ifdef _DEBUG
 			g_strException = L"SetObjectRelease";
 #endif
 		}
@@ -3613,8 +3613,8 @@ int teSHFileOperation(LPSHFILEOPSTRUCT pFOS)
 						pFO->GetAnyOperationsAborted(&pFOS->fAnyOperationsAborted);
 					}
 				} catch (...) {
-#ifdef _DEBUG
 					g_nException = 0;
+#ifdef _DEBUG
 					g_strException = L"SHFileOperation";
 #endif
 				}
@@ -6664,16 +6664,16 @@ VOID Finalize()
 		}
 		teSysFreeString(&g_bsCmdLine);
 	} catch (...) {
-#ifdef _DEBUG
 		g_nException = 0;
+#ifdef _DEBUG
 		g_strException = L"Finalize";
 #endif
 	}
 	try {
 		::OleUninitialize();
 	} catch (...) {
-#ifdef _DEBUG
 		g_nException = 0;
+#ifdef _DEBUG
 		g_strException = L"OleUninitialize";
 #endif
 	}
@@ -7185,8 +7185,8 @@ VOID teApiExtract(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pV
 			}
 		}
 	} catch (...) {
-#ifdef _DEBUG
 		g_nException = 0;
+#ifdef _DEBUG
 		g_strException = L"ApiExtract";
 #endif
 	}
@@ -7250,8 +7250,8 @@ VOID teApiOleGetClipboard(int nArg, teParam *param, DISPPARAMS *pDispParams, VAR
 					try {
 						teSetLong(&v, *pdwEffect);
 					} catch (...) {
-#ifdef _DEBUG
 						g_nException = 0;
+#ifdef _DEBUG
 						g_strException = L"ApiOleGetClipboard";
 #endif
 					}
@@ -7849,8 +7849,8 @@ VOID teApiImageList_Destroy(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 		try {
 			teSetLong(pVarResult, param[0].pImageList->Release());
 		} catch (...) {
-#ifdef _DEBUG
 			g_nException = 0;
+#ifdef _DEBUG
 			g_strException = L"ApiImageList_Destroy";
 #endif
 		}
@@ -8170,8 +8170,8 @@ VOID teApiSHFileOperation(int nArg, teParam *param, DISPPARAMS *pDispParams, VAR
 		try {
 			teSetLong(pVarResult, teSHFileOperation(pFO));
 		} catch (...) {
-#ifdef _DEBUG
 			g_nException = 0;
+#ifdef _DEBUG
 			g_strException = L"ApiSHFileOperation";
 #endif
 		}
@@ -8444,8 +8444,8 @@ VOID teApiImageList_GetOverlayImage(int nArg, teParam *param, DISPPARAMS *pDispP
 	try {
 		param[0].pImageList->GetOverlayImage(param[1].intVal, &iResult);
 	} catch (...) {
-#ifdef _DEBUG
 		g_nException = 0;
+#ifdef _DEBUG
 		g_strException = L"ApiImageList_GetOverlayImage";
 #endif
 	}
@@ -9905,6 +9905,11 @@ VOID teApiCreateFile(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 	teSetPtr(pVarResult, ::CreateFile(param[0].lpcwstr, param[1].dword, param[2].dword, param[3].lpSecurityAttributes, param[4].dword, param[5].dword, param[6].handle));
 }
 
+VOID teApiGetPixel(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetLong(pVarResult, ::GetPixel(param[0].hdc, param[1].intVal, param[2].intVal));
+}
+
 /*
 VOID teApi(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -10236,6 +10241,7 @@ TEDispatchApi dispAPI[] = {
 	{ 3, -1, -1, -1, "SetSysColors", teApiSetSysColors },
 	{ 1, -1, -1, -1, "IsClipboardFormatAvailable", teApiIsClipboardFormatAvailable },
 	{ 7,  0, -1, -1, "CreateFile", teApiCreateFile },
+	{ 3, -1, -1, -1, "GetPixel", teApiGetPixel },
 //	{ 0, -1, -1, -1, "", teApi },
 //	{ 0, -1, -1, -1, "Test", teApiTest },
 };
@@ -10639,8 +10645,8 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 								}
 							}
 						} catch (...) {
-#ifdef _DEBUG
 							g_nException = 0;
+#ifdef _DEBUG
 							g_strException = L"TimerProc/LockUpdate";
 #endif
 						}
@@ -11721,8 +11727,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 								//FreeEnvironmentStrings((LPTSTR)lpEnvironment);
 							}
 						} catch (...) {
-#ifdef _DEBUG
 							g_nException = 0;
+#ifdef _DEBUG
 							g_strException = L"RegenerateUserEnvironment";
 #endif
 						}
@@ -11965,8 +11971,8 @@ void CteShellBrowser::Clear()
 	try {
 		DestroyView(0);
 	} catch (...) {
-#ifdef _DEBUG
 		g_nException = 0;
+#ifdef _DEBUG
 		g_strException = L"DestroyView";
 #endif
 	}
@@ -11995,8 +12001,8 @@ void CteShellBrowser::Clear()
 		SafeRelease(&m_pFolderItem);
 		SafeRelease(&m_pFolderItem1);
 	} catch (...) {
-#ifdef _DEBUG
 		g_nException = 0;
+#ifdef _DEBUG
 		g_strException = L"ShellBrowser::Clear";
 #endif
 	}
@@ -12281,8 +12287,8 @@ HRESULT CteShellBrowser::Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		}
 	} catch (...) {
 		hr = E_FAIL;
-#ifdef _DEBUG
 		g_nException = 0;
+#ifdef _DEBUG
 		g_strException = L"Navigate3";
 #endif
 	}
@@ -12487,8 +12493,8 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 						m_pTC->m_nRedraw = TEREDRAW_NAVIGATE | TEREDRAW_NORMAL;
 						BrowseToObject();
 					} catch (...) {
-#ifdef _DEBUG
 						g_nException = 0;
+#ifdef _DEBUG
 						g_strException = L"BrowseToObject";
 #endif
 					}
@@ -12564,8 +12570,8 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		DestroyView(m_param[SB_Type]);
 		Show(FALSE, 2);
 	} catch (...) {
-#ifdef _DEBUG
 		g_nException = 0;
+#ifdef _DEBUG
 		g_strException = L"DestroyView1";
 #endif
 	}
@@ -12577,9 +12583,9 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		hr =  NavigateEB(dwFrame);
 #endif
 	} catch (...) {
+		g_nException = 0;
 #ifdef _DEBUG
-	g_nException = 0;
-	g_strException = L"NavigateSB/EB";
+		g_strException = L"NavigateSB/EB";
 #endif
 	}
 	m_pTC->UnlockUpdate();
@@ -12661,8 +12667,8 @@ HRESULT CteShellBrowser::NavigateEB(DWORD dwFrame)
 		}
 	} catch (...) {
 		hr = E_FAIL;
-#ifdef _DEBUG
 		g_nException = 0;
+#ifdef _DEBUG
 		g_strException = L"NavigateEB";
 #endif
 	}
@@ -12702,8 +12708,8 @@ HRESULT CteShellBrowser::OnBeforeNavigate(FolderItem *pPrevious, UINT wFlags)
 		try {
 			Invoke4(g_pOnFunc[TE_OnBeforeNavigate], &vResult, 4, pv);
 		} catch (...) {
-#ifdef _DEBUG
 			g_nException = 0;
+#ifdef _DEBUG
 			g_strException = L"OnBeforeNavigate";
 #endif
 		}
@@ -13844,8 +13850,8 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 									}
 									ListView_SetColumnOrderArray(m_hwndLV, nHeader, piOrderArray);
 								} catch (...) {
-#ifdef _DEBUG
 									g_nException = 0;
+#ifdef _DEBUG
 									g_strException = L"SetColumnsStr";
 #endif
 								}
@@ -14069,8 +14075,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 								pFolderItems->ItemEx(-1, NULL, &v);
 								VariantClear(&v);
 							} catch (...) {
-#ifdef _DEBUG
 								g_nException = 0;
+#ifdef _DEBUG
 								g_strException = L"History";
 #endif
 							}
@@ -15099,8 +15105,8 @@ VOID CteShellBrowser::AddPathXP(CteFolderItems *pFolderItems, IShellFolderView *
 			}
 		}
 	} catch (...) {
-#ifdef _DEBUG
 		g_nException = 0;
+#ifdef _DEBUG
 		g_strException = L"AddPathXP";
 #endif
 	}
@@ -15184,8 +15190,8 @@ HRESULT CteShellBrowser::NavigateSB(IShellView *pPreviousView, FolderItem *pPrev
 				hr = CreateViewWindowEx(pPreviousView);
 			} catch (...) {
 				hr = E_FAIL;
-#ifdef _DEBUG
 				g_nException = 0;
+#ifdef _DEBUG
 				g_strException = L"NavigateSB";
 #endif
 			}
@@ -15238,8 +15244,8 @@ HRESULT CteShellBrowser::CreateViewWindowEx(IShellView *pPreviousView)
 				}
 			} catch (...) {
 				hr = E_FAIL;
-#ifdef _DEBUG
 				g_nException = 0;
+#ifdef _DEBUG
 				g_strException = L"CreateViewWindowEx";
 #endif
 			}
@@ -15827,8 +15833,8 @@ VOID CteShellBrowser::AddItem(LPITEMIDLIST pidl)
 #endif
                 }
             } catch (...) {
-#ifdef _DEBUG
                 g_nException = 0;
+#ifdef _DEBUG
                 g_strException = L"AddItem";
 #endif
             }
@@ -19329,9 +19335,9 @@ HDROP CteFolderItems::GethDrop(int x, int y, BOOL fNC)
 					lpDropFiles->pt.y = y;
 					lpDropFiles->fNC = fNC;
 				} catch (...) {
+					g_nException = 0;
 #ifdef _DEBUG
-		g_nException = 0;
-		g_strException = L"lpDropFiles";
+					g_strException = L"lpDropFiles";
 #endif
 				}
 				GlobalUnlock(hDrop);
@@ -19390,8 +19396,8 @@ HDROP CteFolderItems::GethDrop(int x, int y, BOOL fNC)
 		*lp = 0;
 		delete [] pbslist;
 	} catch (...) {
-#ifdef _DEBUG
 		g_nException = 0;
+#ifdef _DEBUG
 		g_strException = L"GethDrop";
 #endif
 	}
@@ -19410,8 +19416,8 @@ STDMETHODIMP CteFolderItems::GetData(FORMATETC *pformatetcIn, STGMEDIUM *pmedium
 				*pdwEffect = m_dwEffect;
 			}
 		} catch (...) {
-#ifdef _DEBUG
 			g_nException = 0;
+#ifdef _DEBUG
 			g_strException = L"pdwEffect";
 #endif
 		}
@@ -19471,8 +19477,8 @@ STDMETHODIMP CteFolderItems::GetData(FORMATETC *pformatetcIn, STGMEDIUM *pmedium
 				}
 			}
 		} catch (...) {
-#ifdef _DEBUG
 			g_nException = 0;
+#ifdef _DEBUG
 			g_strException = L"CIDA";
 #endif
 		}
@@ -19513,8 +19519,8 @@ STDMETHODIMP CteFolderItems::GetData(FORMATETC *pformatetcIn, STGMEDIUM *pmedium
 					vStr.bstrVal = NULL;
 				}
 			} catch (...) {
-#ifdef _DEBUG
 				g_nException = 0;
+#ifdef _DEBUG
 				g_strException = L"OnClipboardText";
 #endif
 			}
@@ -19547,8 +19553,8 @@ STDMETHODIMP CteFolderItems::GetData(FORMATETC *pformatetcIn, STGMEDIUM *pmedium
 					::CopyMemory(lp, m_bsText, nLen);
 				}
 			} catch (...) {
-#ifdef _DEBUG
 				g_nException = 0;
+#ifdef _DEBUG
 				g_strException = L"CF_UNICODETEXT";
 #endif
 			}
@@ -19560,8 +19566,8 @@ STDMETHODIMP CteFolderItems::GetData(FORMATETC *pformatetcIn, STGMEDIUM *pmedium
 					WideCharToMultiByte(CP_ACP, 0, (LPCWSTR)m_bsText, nLen, lpA, nLenA, NULL, NULL);
 				}
 			} catch (...) {
-#ifdef _DEBUG
 				g_nException = 0;
+#ifdef _DEBUG
 				g_strException = L"CF_TEXT";
 #endif
 			}
@@ -20766,8 +20772,8 @@ STDMETHODIMP CteDropTarget::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 									}
 								}
 							} catch (...) {
-#ifdef _DEBUG
 								g_nException = 0;
+#ifdef _DEBUG
 								g_strException = L"DropTarget";
 #endif
 							}
@@ -20786,9 +20792,9 @@ STDMETHODIMP CteDropTarget::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 								pEffect->Release();
 							}
 						} catch (...) {
+							g_nException = 0;
 #ifdef _DEBUG
-								g_nException = 0;
-								g_strException = L"DropTarget2";
+							g_strException = L"DropTarget2";
 #endif
 						}
 						pDataObj->Release();
@@ -21353,8 +21359,8 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 						try {
 							CallWindowProc(m_DefProc, GetParent(m_hwndTV), WM_USER + 1, GetPtrFromVariant(&pDispParams->rgvarg[nArg - 3]), GetPtrFromVariant(&pDispParams->rgvarg[nArg - 4]));
 						} catch (...) {
-#ifdef _DEBUG
 							g_nException = 0;
+#ifdef _DEBUG
 							g_strException = L"Notify_CallWindowProc";
 #endif
 						}
@@ -22961,8 +22967,8 @@ HBITMAP CteWICBitmap::GetHBITMAP(COLORREF clBk)
 									}
 								}
 							} catch (...) {
-#ifdef _DEBUG
 								g_nException = 0;
+#ifdef _DEBUG
 								g_strException = L"GetHBITMAP";
 #endif
 							}
