@@ -1990,7 +1990,7 @@ GetIconImage = function (Ctrl, BGColor, bSimple)
 {
 	var nSize = api.GetSystemMetrics(SM_CYSMICON);
 	var FolderItem = Ctrl.FolderItem || Ctrl;
-	if (!FolderItem || FolderItem.Unavailable) {
+	if (!FolderItem) {
 		return MakeImgDataEx("icon:shell32.dll,234", bSimple, nSize);
 	}
 	var r = GetNetworkIcon(FolderItem.Path);
@@ -2007,7 +2007,7 @@ GetIconImage = function (Ctrl, BGColor, bSimple)
 	}
 	if (document.documentMode) {
 		if (bSimple) {
-			return api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_ORIGINAL);
+			return bSimple != 2 ? api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_ORIGINAL) : "";
 		}
 		var sfi = api.Memory("SHFILEINFO");
 		api.SHGetFileInfo(FolderItem, 0, sfi, sfi.Size, SHGFI_ICON | SHGFI_SMALLICON | SHGFI_PIDL);

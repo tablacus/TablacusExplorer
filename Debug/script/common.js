@@ -609,7 +609,7 @@ function MakeImgData(src, index, h)
 	}
 }
 
-function MakeImgIcon(src, index, h)
+function MakeImgIcon(src, index, h, bIcon)
 {
 	var hIcon = null;
 	var res = /^bitmap:(.+)/i.exec(src);
@@ -652,7 +652,7 @@ function MakeImgIcon(src, index, h)
 			return phIcon[0];
 		}
 	}
-	if (src && (/\*/.test(src) || !REGEXP_IMAGE.test(src))) {
+	if (src && (bIcon || /\*/.test(src) || !REGEXP_IMAGE.test(src))) {
 		var sfi = api.Memory("SHFILEINFO");
 		var uFlags = SHGFI_ICON;
 		if (h) {
@@ -2095,7 +2095,8 @@ GetNetworkIcon = function (path)
 
 AddMenuIconFolderItem = function (mii, FolderItem, nHeight)
 {
-	MenusIcon(mii, MainWindow.GetIconImage(FolderItem, GetSysColor(COLOR_WINDOW), true), nHeight);
+	var path = MainWindow.GetIconImage(FolderItem, GetSysColor(COLOR_WINDOW), 2);
+	MenusIcon(mii, path || api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_ORIGINAL), nHeight, !path);
 }
 
 AddMenuImage = function (mii, image, id, nHeight)
@@ -2111,7 +2112,7 @@ AddMenuImage = function (mii, image, id, nHeight)
 	}
 }
 
-MenusIcon = function (mii, src, nHeight)
+MenusIcon = function (mii, src, nHeight, bIcon)
 {
 	var image;
 	mii.cbSize = mii.Size;
@@ -2133,8 +2134,8 @@ MenusIcon = function (mii, src, nHeight)
 			image = src;
 		} else {
 			image = api.CreateObject("WICBitmap");
-			if (!image.FromFile(src)) {
-				var hIcon = MakeImgIcon(src, 0, h);
+			if (bIcon || !image.FromFile(src)) {
+				var hIcon = MakeImgIcon(src, 0, h, bIcon);
 				image.FromHICON(hIcon);
 				api.DestroyIcon(hIcon);
 			}
