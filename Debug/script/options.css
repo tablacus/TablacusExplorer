@@ -80,3 +80,7 @@ textarea {
 .location {
 	width: calc(100vh / 3);
 }
+
+.disabled {
+	color: gray;
+}

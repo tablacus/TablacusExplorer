@@ -122,10 +122,10 @@ REGEXP_IMAGE = /^data:|\.jpe?g$|\.png$|\.bmp$|\.gif$|\.ico$/i;
 BUTTONS = WINVER > 0x603 ?
 {
 	opened: '<b style="font-family: Consolas; transform: scale(1.2,1) rotate(-90deg)">&lt;</b>',
-	closed: '<b style="font-family: Consolas; transform: scale(1,1.2) translateX(1px); opacity: 0.5">&gt;</b>',
+	closed: '<b style="font-family: Consolas; transform: scale(1,1.2) translateX(1px); opacity: 0.6">&gt;</b>',
 	parent: '&laquo;',
-	next: '<b style="font-family: Consolas; color: #666; transform: scale(0.75,0.9); text-shadow: 1px 0px">&gt;</b>',
-	dropdown: '<b style="font-family: Consolas; transform: scale(1.2,1) rotate(-90deg) translateX(2px); opacity: 0.5; width: 1em; display: inline-block">&lt;</b>'
+	next: '<b style="font-family: Consolas; opacity: 0.6; transform: scale(0.75,0.9); text-shadow: 1px 0">&gt;</b>',
+	dropdown: '<b style="font-family: Consolas; transform: scale(1.2,1) rotate(-90deg) translateX(2px); opacity: 0.6; width: 1em; display: inline-block">&lt;</b>'
 } : {
 	opened: '<span style="font-size: 13px; transform: translateY(-3px)">&#x25e2;</span>',
 	closed: '<span style="font-size: 13px; transform: scale(1,1.4)">&#x25b7;</span>',

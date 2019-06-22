@@ -147,6 +147,7 @@ function ClickTab(o, nMode)
 				ovTab.focus();
 			} catch (e) {}
 			ovTab.className = 'activetab';
+			ovTab.style.zIndex = 11;
 			ovPanel.style.display = 'block';
 			g_ovPanel = ovPanel;
 			ResizeTabPanel();
@@ -154,7 +155,8 @@ function ClickTab(o, nMode)
 				OnTabChanged(i);
 			}
 		} else {
-			ovTab.className = 'tab';
+			ovTab.className = i < nTabIndex ? 'tab' : 'tab2';
+			ovTab.style.zIndex = 10 - i;
 			ovPanel.style.display = 'none';
 		}
 		i++;
@@ -1148,12 +1150,12 @@ function SetAddon(Id, bEnable, td, Alt)
 	if (bMinVer) {
 		bEnable = false;
 	}
-	var s = ['<div ', (Alt ? '' : 'draggable="true" ondragstart="Start5(this)" ondragend="End5(this)"'), ' title="', Id, '" Id="', Alt || "Addons_", Id, '" style="color: ', bEnable ? "": "gray", '">'];
-	s.push('<table><tr style="border-top: 1px solid buttonshadow"><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id+ '">'), '</td><td style="width: 100%"><label for="_', Id, '">', info.Name, "&nbsp;", info.Version, '<br><a href="#" onclick="return AddonInfo(\'', Id, '\', this)" style="font-size: .9em">', GetText('Details'), ' (', Id, ')</a>');
+	var s = ['<div ', (Alt ? '' : 'draggable="true" ondragstart="Start5(this)" ondragend="End5(this)"'), ' title="', Id, '" Id="', Alt || "Addons_", Id, '"', bEnable ? "" : ' class="disabled"', '>'];
+	s.push('<table><tr style="border-top: 1px solid buttonshadow"><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id+ '">'), '</td><td style="width: 100%"><label for="_', Id, '">', info.Name, "&nbsp;", info.Version, '<br><a href="#" onclick="return AddonInfo(\'', Id, '\', this)"  class="link" style="font-size: .9em">', GetText('Details'), ' (', Id, ')</a>');
 	if (bMinVer) {
-		s.push('</td><td style="color: red; align: right; white-space: nowrap; vertical-align: middle">', info.MinVersion.replace(/^20/, (api.LoadString(hShell32, 60) || "%").replace(/%.*/, "")).replace(/\.0/g, '.'), ' ', GetText("is required."), '</td>');
+		s.push('</td><td class="danger" style="align: right; white-space: nowrap; vertical-align: middle">', info.MinVersion.replace(/^20/, (api.LoadString(hShell32, 60) || "%").replace(/%.*/, "")).replace(/\.0/g, '.'), ' ', GetText("is required."), '</td>');
 	} else if (info.Options) {
-		s.push('</td><td style="white-space: nowrap; vertical-align: middle; padding-right: 1em"><a href="#" onclick="AddonOptions(\'', Id, '\'); return false;">', GetText('Options'), '</td>');
+		s.push('</td><td style="white-space: nowrap; vertical-align: middle; padding-right: 1em"><a href="#" onclick="AddonOptions(\'', Id, '\'); return false;" class="link">', GetText('Options'), '</td>');
 	}
 	s.push('<td style="vertical-align: middle', bMinVer ? ';display: none"' : "", '"><input type="checkbox" ', (Alt ? "" : 'id="enable_' + Id + '"'), ' onclick="AddonEnable(this, \'', Id, '\')" ', bEnable ? " checked" : "", '></td>');
 	s.push('<td style="vertical-align: middle', bMinVer ? ';display: none"' : "", '"><label for="enable_', Id, '" style="display: block; width: 6em; white-space: nowrap">', GetText(bEnable ? "Enabled" : "Enable"), '</label></td>');
@@ -1610,8 +1612,8 @@ InitDialog = function ()
 		var s = ['<table style="border-spacing: 2em; border-collapse: separate; width: 100%"><tr><td>'];
 		var src = MakeImgSrc(api.GetModuleFileName(null), 0, 32);
 		s.push('<img src="', src , '"></td><td><span style="font-weight: bold; font-size: 120%">', te.About, '</span> (', GetTextR((api.sizeof("HANDLE") * 8) + '-bit'), ')<br>');
-		s.push('<br><a href="javascript:Run(0)">', api.GetModuleFileName(null), '</a><br>');
-		s.push('<br><a href="javascript:Run(1)">', fso.BuildPath(te.Data.DataFolder, "config"), '</a><br>');
+		s.push('<br><a href="javascript:Run(0)" class="link">', api.GetModuleFileName(null), '</a><br>');
+		s.push('<br><a href="javascript:Run(1)" class="link">', fso.BuildPath(te.Data.DataFolder, "config"), '</a><br>');
 		s.push('<br><label>Information</label><input type="text" value="', GetTEInfo(), '" style="width: 100%" onclick="this.select()" readonly><br>');
 		var root = te.Data.Addons.documentElement;
 		if (root) {
@@ -1760,6 +1762,22 @@ InitLocation = function ()
 {
 	var ar = [], param = [];
 	Addon_Id = dialogArguments.Data.id;
+	for (var i = 10; i--;) {
+		var o = document.getElementById('tab' + i);
+		o.className = "tab";
+		o.hidefocus = true;
+		o.style.display = "none";
+		(function (o) {
+			o. onmousedown = function ()
+			{
+				ClickTab(o, 1);
+			};
+			o.onfocus = function ()
+			{
+				o.blur()
+			};
+		})(o);
+	}
 	LoadAddon("js", Addon_Id, ar, param);
 	if (ar.length) {
 		(function (ar) { setTimeout(function () {
@@ -2380,7 +2398,7 @@ function ArrangeAddon(xml, td, Progress)
 		}
 		s.push('<table width="100%"><tr><td width="100%"><b style="font-size: 1.3em">', info.Name, "</b>&nbsp;", info.Version, "&nbsp;", info.Creator, "<br>", info.Description, "<br>");
 		if (info.Details) {
-			s.push('<a href="#" title="', info.Details, '" onclick="wsh.run(this.title); return false;">', GetText('Details'), '</a><br>');
+			s.push('<a href="#" title="', info.Details, '" class="link" onclick="wsh.run(this.title); return false;">', GetText('Details'), '</a><br>');
 		}
 		s.push(pubDate, '</td><td align="right">');
 		var filename = info.filename;
@@ -2404,7 +2422,7 @@ function ArrangeAddon(xml, td, Progress)
 					return;
 				}
 			}
-			strUpdate = '<br><b id="_Addons_' + Id + '" style="color: red; white-space: nowrap;">' + GetText('Update available') + '</b>';
+			strUpdate = '<br><b id="_Addons_' + Id + '"  class="danger" style="white-space: nowrap;">' + GetText('Update available') + '</b>';
 			dt2 += MAXINT * 2;
 			bUpdate = true;
 		} else {
@@ -2413,7 +2431,7 @@ function ArrangeAddon(xml, td, Progress)
 		if (info.MinVersion && te.Version >= CalcVersion(info.MinVersion)) {
 			s.push('<input type="button" onclick="Install(this,', bUpdate, ')" title="', Id, '_', info.Version, '" value="', GetText("Install"), '">');
 		} else {
-			s.push('<input type="button" style="color: red" onclick="MainWindow.CheckUpdate()" value="', info.MinVersion.replace(/^20/, (api.LoadString(hShell32, 60) || "%").replace(/%.*/, "")).replace(/\.0/g, '.'), ' ', GetText("is required."), '">');
+			s.push('<input type="button"  class="danger" onclick="MainWindow.CheckUpdate()" value="', info.MinVersion.replace(/^20/, (api.LoadString(hShell32, 60) || "%").replace(/%.*/, "")).replace(/\.0/g, '.'), ' ', GetText("is required."), '">');
 		}
 		s.push(strUpdate, '</td></tr></table>');
 		s.unshift(g_nSort2 == 1 ? dt2 : g_nSort2 ? Id : info.Name);
@@ -2566,7 +2584,7 @@ function SetTabContents(id, name, value)
 {
 	var oPanel = document.getElementById("panel" + id);
 	if (name) {
-		document.getElementById("tab" + id).value = GetText(name);
+		document.getElementById("tab" + id).innerHTML = GetText(name);
 	} else {
 		g_.NoTab = true;
 		setTimeout(function ()

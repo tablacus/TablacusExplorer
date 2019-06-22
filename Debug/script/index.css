@@ -46,7 +46,7 @@ form {
 	margin: 0;
 }
 
-.button {
+.button, .button1 {
 	display: inline-block;
 	padding: 1px 1px;
 	text-decoration: none;
@@ -56,7 +56,7 @@ form {
 	vertical-align: middle;
 }
 
-.hoverbutton {
+.button:hover, .hoverbutton, .activebutton {
 	display: inline-block;
 	text-decoration: none;
 	color: buttontext;
@@ -78,7 +78,7 @@ form {
 	white-space: nowrap;
 }
 
-.hovermenu {
+.menu:hover, .hovermenu, .activemenu {
 	display: inline-block;
 	cursor: default;
 	text-decoration: none;
@@ -87,6 +87,7 @@ form {
 	background-color: threedlightshadow;
 	border: 1px solid buttonshadow;
 	padding: 0 4px;
+	margin: 0;
 }
 
 .toolbar1 {
@@ -158,10 +159,10 @@ form {
 	padding: 0;
 }
 
-.tab0 {
-    list-style: none;
-    margin: 0;
-    padding: 0 1px;
+.tab0, .button0, .menu0 {
+	list-style: none;
+	margin: 0;
+	padding: 0 1px;
 	cursor: default;
 	position: relative;
 }
@@ -181,12 +182,13 @@ form {
 	color: #000;
 	height: 2em;
 	outline: 0;
-	background: #ddd;
-	background: linear-gradient(to bottom, #fff, #ccc);
+	background: #eee;
 	vertical-align: bottom;
-	box-shadow: 0 1em 1em 0 rgba(255,255,255,0.2) inset;
 	opacity: 0.85;
-	filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,startcolorstr=#ffffff, endcolorstr=#cccccc), alpha(style=0,opacity=85);
+}
+
+.tab div, .tab2 div, .tab3 div, .activetab div {
+	text-overflow: ellipsis;
 }
 
 .tab:hover, .tab2:hover, .tab3:hover {
@@ -255,14 +257,25 @@ a.treebutton:hover {
 }
 
 .favicon {
-  height: 12pt;
+	height: 12pt;
 }
 
 .drive {
-  position: absolute;
+	position: absolute;
 	color: windowtext;
-  font-weight: bold;
-  font-size: 6.75pt;
-  text-shadow: 1px 1px 0 window, -1px 1px 0 window, 1px -1px 0 window, -1px -1px 0 window;
-  filter: glow(color=window,strength=1);
+	font-weight: bold;
+	font-size: 6.75pt;
+	text-shadow: 1px 1px 0 window, -1px 1px 0 window, 1px -1px 0 window, -1px -1px 0 window;
+	filter: glow(color=window,strength=1);
+}
+
+.pane {
+	width: 100%;
+	color: windowtext;
+	background-color: window;
+	border: 1px solid windowframe;
+}
+
+.danger {
+	color: red;
 }

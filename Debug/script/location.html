@@ -13,24 +13,24 @@
     </script>
   </head>
   <body>
-    <div id="tabs">
-      <input type="button" id="tab0" class="tab" onmousedown="ClickTab(this, 1);" hidefocus="true" style="display: none" onfocus="this.blur()"/><!--
-      --><input type="button" id="tab1" class="tab" onmousedown="ClickTab(this, 1);" hidefocus="true" style="display: none"><!--
-      --><input type="button" id="tab2" class="tab" onmousedown="ClickTab(this, 1);" hidefocus="true" style="display: none"><!--
-      --><input type="button" id="tab3" class="tab" onmousedown="ClickTab(this, 1);" hidefocus="true" style="display: none"><!--
-      --><input type="button" id="tab4" class="tab" onmousedown="ClickTab(this, 1);" hidefocus="true" style="display: none"><!--
-      --><input type="button" id="tab5" value="Icon" class="tab" onmousedown="ClickTab(this, 1);" hidefocus="true" style="display: none"><!--
-      --><input type="button" id="tab6" value="Position" class="tab" onmousedown="ClickTab(this, 1);" hidefocus="true" style="display: none"><!--
-      --><input type="button" id="tab7" value="Menus" class="tab" onmousedown="ClickTab(this, 1);" hidefocus="true" style="display: none"><!--
-      --><input type="button" id="tab8" value="Key" class="tab" onmousedown="ClickTab(this, 1);" hidefocus="true" style="display: none"><!--
-      --><input type="button" id="tab9" value="Mouse" class="tab" onmousedown="ClickTab(this, 1);" hidefocus="true" style="display: none"><!--
-    --></div>
+    <ul id="tabs" class="tab0"><!--
+    --><li id="tab0"></li><!--
+    --><li id="tab1"></li><!--
+    --><li id="tab2"></li><!--
+    --><li id="tab3"></li><!--
+    --><li id="tab4"></li><!--
+    --><li id="tab5">Icon</li><!--
+    --><li id="tab6">Position</li><!--
+    --><li id="tab7">Menus</li><!--
+    --><li id="tab8">Key</li><!--
+    --><li id="tab9">Mouse</li><!--
+    --></ul>
 
-    <div class="panel" id="panel6" style="background-color: AppWorkspace">
+    <div class="panel" id="panel6" style="background-color: appworkspace">
       <form name="L">
-        <table class="window" id="tewin" border="1" style="width: 100%; color: ButtonText; background-color: ButtonFace; border: 2px ridge windowframe">
+        <table class="window" id="tewin" border="1" style="width: 100%; color: ButtonText; background-color: buttonface; border: 2px ridge windowframe">
           <tr>
-            <th colspan="3" style="color: CaptionText; background-color: ActiveCaption; align: center">
+            <th colspan="3" style="color: captiontext; background-color: activecaption; text-align: center">
               <label>Title bar</label>
             </th>
           </tr>
@@ -161,7 +161,7 @@
                 <label>Left bar</label> 2
               </span>
             </td>
-            <td rowspan="2" style="background-color: AppWorkspace" class="location">
+            <td rowspan="2" style="background-color: appworkspace" class="location">
               <input name="Location" type="radio" value="Background">
               <label>Background</label>
             </td>

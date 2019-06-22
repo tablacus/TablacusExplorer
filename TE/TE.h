@@ -212,8 +212,12 @@ typedef BOOL (WINAPI* LPFNAddClipboardFormatListener)(__in HWND hwnd);
 typedef BOOL (WINAPI* LPFNRemoveClipboardFormatListener)(__in HWND hwnd);
 //typedef HRESULT (STDAPICALLTYPE * LPFNPSFormatForDisplayAlloc)(__in REFPROPERTYKEY key, __in REFPROPVARIANT propvar, __in PROPDESC_FORMAT_FLAGS pdff, __deref_out PWSTR *ppszDisplay);
 //typedef BOOL (WINAPI * LPFNChangeWindowMessageFilter)(UINT message, DWORD dwFlag);
-
 #endif
+typedef HRESULT (STDAPICALLTYPE * LPFNDwmSetWindowAttribute)(HWND hwnd, DWORD dwAttribute, LPCVOID pvAttribute, DWORD   cbAttribute);
+typedef BOOL (WINAPI* LPFNAllowDarkModeForApp)(BOOL allow);
+typedef BOOL (WINAPI* LPFNAllowDarkModeForWindow)(HWND hwnd, BOOL allow);
+typedef BOOL (WINAPI* LPFNShouldAppsUseDarkMode)();
+typedef BOOL (WINAPI* LPFNIsDarkModeAllowedForWindow)(HWND hwnd);
 
 //7 or higher
 typedef BOOL (WINAPI* LPFNChangeWindowMessageFilterEx)(__in HWND hwnd, __in UINT message, __in DWORD action, __inout_opt PCHANGEFILTERSTRUCT pChangeFilterStruct);
@@ -223,6 +227,7 @@ typedef BOOL (WINAPI* LPFNSetDefaultDllDirectories)(__in DWORD DirectoryFlags);
 
 //RTL
 typedef NTSTATUS (WINAPI* LPFNRtlGetVersion)(PRTL_OSVERSIONINFOEXW lpVersionInformation);
+
 //DLL
 typedef HRESULT (STDAPICALLTYPE * LPFNDllGetClassObject)(REFCLSID rclsid, REFIID riid, LPVOID* ppv);
 typedef HRESULT (STDAPICALLTYPE * LPFNDllCanUnloadNow)(void);

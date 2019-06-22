@@ -26,6 +26,11 @@ LPFNRegenerateUserEnvironment lpfnRegenerateUserEnvironment = NULL;
 LPFNChangeWindowMessageFilterEx lpfnChangeWindowMessageFilterEx = NULL;
 LPFNRtlGetVersion lpfnRtlGetVersion = NULL;
 LPFNSetDefaultDllDirectories lpfnSetDefaultDllDirectories = NULL;
+LPFNAllowDarkModeForApp lpfnAllowDarkModeForApp = NULL;
+LPFNAllowDarkModeForWindow lpfnAllowDarkModeForWindow = NULL;
+LPFNDwmSetWindowAttribute lpfnDwmSetWindowAttribute = NULL;
+LPFNShouldAppsUseDarkMode lpfnShouldAppsUseDarkMode = NULL;
+LPFNIsDarkModeAllowedForWindow lpfnIsDarkModeAllowedForWindow = NULL;
 #ifdef _2000XP
 LPFNSetDllDirectoryW lpfnSetDllDirectoryW = NULL;
 LPFNIsWow64Process lpfnIsWow64Process = NULL;
@@ -104,6 +109,7 @@ BSTR	g_bsDateTimeFormat = NULL;
 HTREEITEM	g_hItemDown = NULL;
 SORTCOLUMN g_pSortColumnNull[3];
 HBRUSH	g_hbrBackground = NULL;
+HMODULE	g_hDwmapi = NULL;
 
 UINT	g_uCrcTable[256];
 LONG	g_nSize = 0;
@@ -141,6 +147,7 @@ BOOL	g_bShowParseError = TRUE;
 BOOL	g_bDragging = FALSE;
 BOOL	g_bCanLayout = FALSE;
 BOOL	g_bUpper10;
+BOOL	g_bDarkMode = FALSE;
 #ifdef _2000XP
 int		g_nCharWidth = 7;
 BOOL	g_bCharWidth = FALSE;
@@ -5638,6 +5645,26 @@ HRESULT ControlFromhwnd(IDispatch **ppdisp, HWND hwnd)
 	return E_FAIL;
 }
 
+VOID teSetDarkMode(HWND hwnd)
+{
+	if (lpfnAllowDarkModeForWindow) {
+		lpfnAllowDarkModeForWindow(hwnd, g_bDarkMode);
+	}
+	if (lpfnDwmSetWindowAttribute) {
+		lpfnDwmSetWindowAttribute(hwnd, 19, &g_bDarkMode, sizeof(g_bDarkMode));
+	}
+}
+
+BOOL teVerifyVersion(int nMajor, int nMinor, int nBuild)
+{
+	DWORDLONG dwlConditionMask = 0;
+    VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
+   VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
+	VER_SET_CONDITION(dwlConditionMask, VER_BUILDNUMBER, VER_GREATER_EQUAL);
+	OSVERSIONINFOEX osvi = { sizeof(OSVERSIONINFOEX), nMajor, nMinor, nBuild };
+	return VerifyVersionInfo(&osvi, VER_MAJORVERSION | VER_BUILDNUMBER, dwlConditionMask);
+}
+
 LRESULT CALLBACK MenuKeyProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
 	LRESULT lResult = 1;
@@ -6653,7 +6680,7 @@ VOID Finalize()
 	try {
 		teRevoke();
 		for (int i = _countof(g_maps); i--;) {
-			delete [] g_maps[i];
+			delete[] g_maps[i];
 		}
 #ifdef _2000XP
 		lpfnSHCreateItemFromIDList = NULL;
@@ -6663,6 +6690,9 @@ VOID Finalize()
 			teSysFreeString(&g_bsPidls[i]);
 		}
 		teSysFreeString(&g_bsCmdLine);
+		if (g_hDwmapi) {
+			FreeLibrary(g_hDwmapi);
+		}
 	} catch (...) {
 		g_nException = 0;
 #ifdef _DEBUG
@@ -9910,6 +9940,11 @@ VOID teApiGetPixel(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *p
 	teSetLong(pVarResult, ::GetPixel(param[0].hdc, param[1].intVal, param[2].intVal));
 }
 
+VOID teApiShouldAppsUseDarkMode(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetBool(pVarResult, g_bDarkMode);
+}
+
 /*
 VOID teApi(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -10242,6 +10277,7 @@ TEDispatchApi dispAPI[] = {
 	{ 1, -1, -1, -1, "IsClipboardFormatAvailable", teApiIsClipboardFormatAvailable },
 	{ 7,  0, -1, -1, "CreateFile", teApiCreateFile },
 	{ 3, -1, -1, -1, "GetPixel", teApiGetPixel },
+	{ 0, -1, -1, -1, "ShouldAppsUseDarkMode", teApiShouldAppsUseDarkMode },
 //	{ 0, -1, -1, -1, "", teApi },
 //	{ 0, -1, -1, -1, "Test", teApiTest },
 };
@@ -10406,6 +10442,22 @@ void teCalcClientRect(int *param, LPRECT rc, LPRECT rcClient)
 	}
 	if (rc->bottom > rcClient->bottom) {
 		rc->bottom = rcClient->bottom;
+	}
+}
+
+BOOL teIsHighContrast()
+{
+	HIGHCONTRAST highContrast = { sizeof(HIGHCONTRAST) };
+	return SystemParametersInfoW(SPI_GETHIGHCONTRAST, sizeof(highContrast), &highContrast, FALSE) && (highContrast.dwFlags & HCF_HIGHCONTRASTON);
+}
+
+VOID teGetDarkMode()
+{
+
+	if (lpfnShouldAppsUseDarkMode && lpfnAllowDarkModeForWindow && lpfnAllowDarkModeForApp) {
+		g_bDarkMode = lpfnShouldAppsUseDarkMode() && IsAppThemed() && !teIsHighContrast();
+		lpfnAllowDarkModeForApp(g_bDarkMode);
+		teSetDarkMode(g_hwndMain);
 	}
 }
 
@@ -10863,6 +10915,14 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 								pSB->m_bSetListColumnWidth = FALSE;
 							}
 							break;
+						case WM_DRAWITEM:
+							if (lpfnIsDarkModeAllowedForWindow && lpfnIsDarkModeAllowedForWindow(pcwp->hwnd)) {
+								pSB = SBfromhwnd(pcwp->hwnd);
+								if (pSB) {
+									SetTextColor(((LPDRAWITEMSTRUCT)pcwp->lParam)->hDC, 0xffffff);
+								}
+							}
+							break;
 					}//end_switch
 				}
 			}
@@ -10961,23 +11021,14 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 			}
 		}
 	}
-	DWORDLONG dwlConditionMask = 0;
-    VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
-	OSVERSIONINFOEX osvi = { sizeof(OSVERSIONINFOEX), 10 };
-	g_bUpper10 = VerifyVersionInfo(&osvi, VER_MAJORVERSION, dwlConditionMask);
+	g_bUpper10 = teVerifyVersion(10, 0, 0);
 #ifdef _2000XP
-	osvi.dwMajorVersion = 6;
-	g_bUpperVista = VerifyVersionInfo(&osvi, VER_MAJORVERSION, dwlConditionMask);
+	g_bUpperVista = teVerifyVersion(6, 0, 0);
 #else
 	g_pidls[CSIDL_RESULTSFOLDER] = ILCreateFromPathA("shell:::{2965E715-EB66-4719-B53F-1672673BBEFA}");
 #endif
 #ifdef _W2000
-    dwlConditionMask = 0;
-	VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_EQUAL);
-    VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
-	osvi.dwMajorVersion = 5;
-    osvi.dwMinorVersion = 1;
-	g_bIsXP = VerifyVersionInfo(&osvi, VER_MAJORVERSION | VER_MINORVERSION, dwlConditionMask);
+	g_bIsXP = teVerifyVersion(5, 1, 0);
 	g_bIs2000 = !g_bUpperVista && !g_bIsXP;
 #endif
 #ifdef _2000XP
@@ -11049,6 +11100,25 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	hDll = GetModuleHandle(bsLib);
 	if (hDll) {
 		lpfnRtlGetVersion = (LPFNRtlGetVersion)GetProcAddress(hDll, "RtlGetVersion");
+	}
+	SysFreeString(bsLib);
+
+	if (teVerifyVersion(10, 0, 17763)) {
+		tePathAppend(&bsLib, bsPath, L"uxtheme.dll");
+		hDll = GetModuleHandle(bsLib);
+		if (hDll) {
+			lpfnShouldAppsUseDarkMode = (LPFNShouldAppsUseDarkMode)GetProcAddress(hDll, MAKEINTRESOURCEA(132));
+			lpfnAllowDarkModeForWindow = (LPFNAllowDarkModeForWindow)GetProcAddress(hDll, MAKEINTRESOURCEA(133));
+			lpfnAllowDarkModeForApp = (LPFNAllowDarkModeForApp)GetProcAddress(hDll, MAKEINTRESOURCEA(135));
+			lpfnIsDarkModeAllowedForWindow = (LPFNIsDarkModeAllowedForWindow)GetProcAddress(hDll, MAKEINTRESOURCEA(137));
+			teGetDarkMode();
+		}
+		SysFreeString(bsLib);
+	}
+	tePathAppend(&bsLib, bsPath, L"dwmapi.dll");
+	g_hDwmapi = LoadLibrary(bsLib);
+	if (g_hDwmapi) {
+		lpfnDwmSetWindowAttribute = (LPFNDwmSetWindowAttribute)GetProcAddress(g_hDwmapi, "DwmSetWindowAttribute");
 	}
 	SysFreeString(bsLib);
 
@@ -11190,6 +11260,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		Finalize();
 		return FALSE;
 	}
+	teGetDarkMode();
 	// ClipboardFormat
 	IDLISTFormat.cfFormat = (CLIPFORMAT)RegisterClipboardFormat(CFSTR_SHELLIDLIST);
 	DROPEFFECTFormat.cfFormat = (CLIPFORMAT)RegisterClipboardFormat(CFSTR_PREFERREDDROPEFFECT);
@@ -11718,6 +11789,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			case WM_SETTINGCHANGE:
 				if (message == WM_SETTINGCHANGE) {
 					teRegister(FALSE);
+					teGetDarkMode();
 					if (lpfnRegenerateUserEnvironment) {
 						try {
 							if (lstrcmpi((LPCWSTR)lParam, L"Environment") == 0) {
@@ -13086,6 +13158,10 @@ VOID CteShellBrowser::InitFolderSize()
 		HWND hHeader = ListView_GetHeader(m_hwndLV);
 		if (hHeader) {
 			UINT nHeader = Header_GetItemCount(hHeader);
+			if (lpfnAllowDarkModeForWindow) {
+				lpfnAllowDarkModeForWindow(hHeader, g_bDarkMode);
+			}
+			SetWindowTheme(hHeader, L"itemsview", NULL);
 			m_iColumns = nHeader;
 			BSTR bsTotalFileSize = tePSGetNameFromPropertyKeyEx(PKEY_TotalFileSize, 0, m_pShellView);
 			BSTR bsLabel = g_pOnFunc[TE_Labels] ? tePSGetNameFromPropertyKeyEx(PKEY_Contact_Label, 0, m_pShellView) : NULL;
@@ -13102,6 +13178,10 @@ VOID CteShellBrowser::InitFolderSize()
 				m_pDTColumns[i] = 0;
 				m_ppColumns[i] = NULL;
 				Header_GetItem(hHeader, i, &hdi);
+				if (g_bDarkMode) {
+					hdi.fmt |= HDF_OWNERDRAW;
+					Header_SetItem(hHeader, i, &hdi);
+				}
 				if (szText[0]) {
 					pColumns[i].name = ::SysAllocString(szText);
 					if (m_ppDispatch[SB_ColumnsReplace]) {
@@ -13327,6 +13407,12 @@ VOID CteShellBrowser::GetViewModeAndIconSize(BOOL bGetIconSize)
 	if (!m_pShellView || (m_dwUnavailable && !m_bCheckLayout)) {
 		return;
 	}
+	IVisualProperties *pVP;
+	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pVP))) {
+		pVP->SetItemHeight(64);
+		pVP->Release();
+	}
+
 	FOLDERSETTINGS fs;
 	UINT uViewMode = m_param[SB_ViewMode];
 	int iImageSize = m_param[SB_IconSize];
@@ -13367,7 +13453,7 @@ VOID CteShellBrowser::GetViewModeAndIconSize(BOOL bGetIconSize)
 					FOLDERVIEWOPTIONS fvo0 = fvo;
 					pOptions->GetFolderViewOptions(&fvo0);
 					m_pExplorerBrowser->GetOptions((EXPLORER_BROWSER_OPTIONS *)&m_param[SB_Options]);
-					if ((fvo ^ fvo0 & FVO_VISTALAYOUT) || (m_param[SB_Options] & EBO_SHOWFRAMES) != (m_param[SB_Type] == 2 ? EBO_SHOWFRAMES : 0)) {
+					if ((fvo ^ fvo0 & FVO_VISTALAYOUT) || (m_param[SB_Options] & EBO_SHOWFRAMES) != (m_param[SB_Type] == CTRL_EB ? EBO_SHOWFRAMES : 0)) {
 						m_bCheckLayout = FALSE;
 					}
 					pOptions->Release();
@@ -16308,6 +16394,11 @@ VOID CteShellBrowser::SetPropEx()
 			} else {
 				SetWindowLong(m_hwndLV, GWL_EXSTYLE, GetWindowLong(m_hwndLV, GWL_EXSTYLE) | WS_EX_CLIENTEDGE);
 			}
+			if (lpfnAllowDarkModeForWindow) {
+				lpfnAllowDarkModeForWindow(m_hwndLV, g_bDarkMode);
+			}
+			SetWindowTheme(m_hwndLV, L"explorer", NULL);
+			SendMessage(m_hwndLV, WM_CHANGEUISTATE, MAKELONG(UIS_SET, UISF_HIDEFOCUS), 0);
 		} else {
 			m_hwndDT = FindWindowExA(m_hwndDV, NULL, "DirectUIHWND", NULL);
 		}
@@ -17214,6 +17305,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 								MyRegisterClass(hInst, WINDOW_CLASS2, WndProc2);
 								HWND hwnd = CreateWindow(WINDOW_CLASS2, g_szTE, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
 									x, y, w, h, hwndParent, NULL, hInst, NULL);
+								teSetDarkMode(hwnd);
 								CteWebBrowser *pWB = new CteWebBrowser(hwnd, v.bstrVal, &pDispParams->rgvarg[nArg - 2]);
 								VariantClear(&v);
 								teSetObject(&v, pWB);
@@ -20958,6 +21050,11 @@ BOOL CteTreeView::Create(BOOL bIfVisible)
 					if (m_param[SB_TreeFlags] & NSTCS_NOEDITLABELS) {
 						SetWindowLongPtr(m_hwndTV, GWL_STYLE, GetWindowLongPtr(m_hwndTV, GWL_STYLE) & ~TVS_EDITLABELS);
 					}
+					TreeView_SetTextColor(m_hwndTV, GetSysColor(COLOR_WINDOWTEXT));
+					if (lpfnAllowDarkModeForWindow) {
+						lpfnAllowDarkModeForWindow(m_hwndTV, g_bDarkMode);
+					}
+					SetWindowTheme(m_hwndTV, L"explorer", NULL);
 				}
 				BringWindowToTop(m_hwnd);
 				ArrangeWindow();

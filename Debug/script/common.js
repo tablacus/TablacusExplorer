@@ -450,7 +450,6 @@ function ApplyLang(doc)
 		doc.body.style.fontFamily = FaceName;
 		doc.body.style.fontSize = Math.abs(MainWindow.DefaultFont.lfHeight) + "px";
 		doc.body.style.fontWeight = MainWindow.DefaultFont.lfWeight;
-		doc.body.style.backgroundColor = 'buttonface';
 	}
 	ApplyLangTag(doc.getElementsByTagName("label"));
 	ApplyLangTag(doc.getElementsByTagName("button"));
