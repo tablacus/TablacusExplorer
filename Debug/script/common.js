@@ -3569,7 +3569,7 @@ AddEventEx(window, "beforeunload", CloseSubWindows);
 
 GetTEInfo = function ()
 {
-	var ar = [""];
+	var ar = [document.documentMode || (document.body.style.maxHeight === undefined ? 6 : 7), GetLangId(2), screen.deviceYDPI];
 	var server = te.GetObject("winmgmts:\\\\.\\root\\SecurityCenter" + (WINVER >= 0x600 ? "2" : ""));
 	if (server) {
 		var cols = server.ExecQuery("SELECT * FROM AntiVirusProduct");
@@ -3577,7 +3577,7 @@ GetTEInfo = function ()
 			ar.push(list.item().displayName);
 		}
 	}
-	return api.sprintf(99, "TE%d %d.%d.%d Win %d.%d.%d%s %s %x%s IE %d %s %s", api.sizeof("HANDLE") * 8, (te.Version / 10000) % 100, (te.Version / 100) % 100, te.Version % 100, osInfo.dwMajorVersion, osInfo.dwMinorVersion, osInfo.dwBuildNumber, api.IsWow64Process(api.GetCurrentProcess()) ? " Wow64" : "", ["WS", "DC", "SV"][osInfo.wProductType - 1] || osInfo.wProductType, osInfo.wSuiteMask, api.SHTestTokenMembership(null, 0x220) ? " Admin" : "", document.documentMode || (document.body.style.maxHeight === undefined ? 6 : 7), GetLangId(2), screen.deviceYDPI) + ar.join(" ");
+	return api.sprintf(99, "TE%d %d.%d.%d Win %d.%d.%d%s %s %x%s%s IE", api.sizeof("HANDLE") * 8, (te.Version / 10000) % 100, (te.Version / 100) % 100, te.Version % 100, osInfo.dwMajorVersion, osInfo.dwMinorVersion, osInfo.dwBuildNumber, api.IsWow64Process(api.GetCurrentProcess()) ? " Wow64" : "", ["WS", "DC", "SV"][osInfo.wProductType - 1] || osInfo.wProductType, osInfo.wSuiteMask, api.SHTestTokenMembership(null, 0x220) ? " Admin" : "", api.ShouldAppsUseDarkMode() ? " Dark" : "") + ar.join(" ");
 }
 
 FireEvent = function (o, event)

@@ -5655,6 +5655,16 @@ VOID teSetDarkMode(HWND hwnd)
 	}
 }
 
+VOID teSetDarkTheme(HWND hwnd, LPCWSTR pszApp)
+{
+	if (lpfnIsDarkModeAllowedForWindow && lpfnAllowDarkModeForWindow) {
+		if ((lpfnIsDarkModeAllowedForWindow(hwnd) ^ g_bDarkMode) & 1) {
+			lpfnAllowDarkModeForWindow(hwnd, g_bDarkMode);
+			SetWindowTheme(hwnd, pszApp, NULL);
+		}
+	}
+}
+
 BOOL teVerifyVersion(int nMajor, int nMinor, int nBuild)
 {
 	DWORDLONG dwlConditionMask = 0;
@@ -10453,7 +10463,6 @@ BOOL teIsHighContrast()
 
 VOID teGetDarkMode()
 {
-
 	if (lpfnShouldAppsUseDarkMode && lpfnAllowDarkModeForWindow && lpfnAllowDarkModeForApp) {
 		g_bDarkMode = lpfnShouldAppsUseDarkMode() && IsAppThemed() && !teIsHighContrast();
 		lpfnAllowDarkModeForApp(g_bDarkMode);
@@ -10916,10 +10925,14 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 							}
 							break;
 						case WM_DRAWITEM:
-							if (lpfnIsDarkModeAllowedForWindow && lpfnIsDarkModeAllowedForWindow(pcwp->hwnd)) {
-								pSB = SBfromhwnd(pcwp->hwnd);
-								if (pSB) {
-									SetTextColor(((LPDRAWITEMSTRUCT)pcwp->lParam)->hDC, 0xffffff);
+							if (lpfnIsDarkModeAllowedForWindow) {
+								LPDRAWITEMSTRUCT pDrawItem = (LPDRAWITEMSTRUCT)pcwp->lParam;
+								if (lpfnIsDarkModeAllowedForWindow(pDrawItem->hwndItem)) {
+									CHAR szClassA[MAX_CLASS_NAME];
+									GetClassNameA(pDrawItem->hwndItem, szClassA, MAX_CLASS_NAME);
+									if (lstrcmpA(szClassA, WC_HEADERA) == 0) {
+										SetTextColor(pDrawItem->hDC, 0xffffff);
+									}
 								}
 							}
 							break;
@@ -13158,10 +13171,7 @@ VOID CteShellBrowser::InitFolderSize()
 		HWND hHeader = ListView_GetHeader(m_hwndLV);
 		if (hHeader) {
 			UINT nHeader = Header_GetItemCount(hHeader);
-			if (lpfnAllowDarkModeForWindow) {
-				lpfnAllowDarkModeForWindow(hHeader, g_bDarkMode);
-			}
-			SetWindowTheme(hHeader, L"itemsview", NULL);
+			teSetDarkTheme(hHeader, L"itemsview");
 			m_iColumns = nHeader;
 			BSTR bsTotalFileSize = tePSGetNameFromPropertyKeyEx(PKEY_TotalFileSize, 0, m_pShellView);
 			BSTR bsLabel = g_pOnFunc[TE_Labels] ? tePSGetNameFromPropertyKeyEx(PKEY_Contact_Label, 0, m_pShellView) : NULL;
@@ -13407,12 +13417,6 @@ VOID CteShellBrowser::GetViewModeAndIconSize(BOOL bGetIconSize)
 	if (!m_pShellView || (m_dwUnavailable && !m_bCheckLayout)) {
 		return;
 	}
-	IVisualProperties *pVP;
-	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pVP))) {
-		pVP->SetItemHeight(64);
-		pVP->Release();
-	}
-
 	FOLDERSETTINGS fs;
 	UINT uViewMode = m_param[SB_ViewMode];
 	int iImageSize = m_param[SB_IconSize];
@@ -15738,7 +15742,10 @@ VOID CteShellBrowser::SetLVSettings()
 		ListView_SetBkColor(m_hwndLV, m_clrBk);
 		ListView_SetTextBkColor(m_hwndLV, m_clrTextBk);
 		ListView_SetTextColor(m_hwndLV, m_clrText);
-//		TreeView_SetTextColor(m_pTV->m_hwndTV, 0xff);
+		teSetDarkTheme(m_hwndLV, L"explorer");
+	}
+	if (m_pTV && m_pTV->m_hwndTV) {
+		teSetDarkTheme(m_pTV->m_hwndTV, L"explorer");
 	}
 }
 
@@ -16394,10 +16401,6 @@ VOID CteShellBrowser::SetPropEx()
 			} else {
 				SetWindowLong(m_hwndLV, GWL_EXSTYLE, GetWindowLong(m_hwndLV, GWL_EXSTYLE) | WS_EX_CLIENTEDGE);
 			}
-			if (lpfnAllowDarkModeForWindow) {
-				lpfnAllowDarkModeForWindow(m_hwndLV, g_bDarkMode);
-			}
-			SetWindowTheme(m_hwndLV, L"explorer", NULL);
 			SendMessage(m_hwndLV, WM_CHANGEUISTATE, MAKELONG(UIS_SET, UISF_HIDEFOCUS), 0);
 		} else {
 			m_hwndDT = FindWindowExA(m_hwndDV, NULL, "DirectUIHWND", NULL);
@@ -21051,10 +21054,6 @@ BOOL CteTreeView::Create(BOOL bIfVisible)
 						SetWindowLongPtr(m_hwndTV, GWL_STYLE, GetWindowLongPtr(m_hwndTV, GWL_STYLE) & ~TVS_EDITLABELS);
 					}
 					TreeView_SetTextColor(m_hwndTV, GetSysColor(COLOR_WINDOWTEXT));
-					if (lpfnAllowDarkModeForWindow) {
-						lpfnAllowDarkModeForWindow(m_hwndTV, g_bDarkMode);
-					}
-					SetWindowTheme(m_hwndTV, L"explorer", NULL);
 				}
 				BringWindowToTop(m_hwnd);
 				ArrangeWindow();
