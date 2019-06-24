@@ -5658,7 +5658,7 @@ VOID teSetDarkMode(HWND hwnd)
 VOID teSetDarkTheme(HWND hwnd, LPCWSTR pszApp)
 {
 	if (lpfnIsDarkModeAllowedForWindow && lpfnAllowDarkModeForWindow) {
-		if ((lpfnIsDarkModeAllowedForWindow(hwnd) ^ g_bDarkMode) & 1) {
+		if ((lpfnIsDarkModeAllowedForWindow(hwnd) != bool(g_bDarkMode))) {
 			lpfnAllowDarkModeForWindow(hwnd, g_bDarkMode);
 			SetWindowTheme(hwnd, pszApp, NULL);
 		}

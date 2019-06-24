@@ -214,10 +214,10 @@ typedef BOOL (WINAPI* LPFNRemoveClipboardFormatListener)(__in HWND hwnd);
 //typedef BOOL (WINAPI * LPFNChangeWindowMessageFilter)(UINT message, DWORD dwFlag);
 #endif
 typedef HRESULT (STDAPICALLTYPE * LPFNDwmSetWindowAttribute)(HWND hwnd, DWORD dwAttribute, LPCVOID pvAttribute, DWORD   cbAttribute);
-typedef BOOL (WINAPI* LPFNAllowDarkModeForApp)(BOOL allow);
-typedef BOOL (WINAPI* LPFNAllowDarkModeForWindow)(HWND hwnd, BOOL allow);
-typedef BOOL (WINAPI* LPFNShouldAppsUseDarkMode)();
-typedef BOOL (WINAPI* LPFNIsDarkModeAllowedForWindow)(HWND hwnd);
+typedef bool (WINAPI* LPFNAllowDarkModeForApp)(BOOL allow);
+typedef bool (WINAPI* LPFNAllowDarkModeForWindow)(HWND hwnd, BOOL allow);
+typedef bool (WINAPI* LPFNShouldAppsUseDarkMode)();
+typedef bool (WINAPI* LPFNIsDarkModeAllowedForWindow)(HWND hwnd);
 
 //7 or higher
 typedef BOOL (WINAPI* LPFNChangeWindowMessageFilterEx)(__in HWND hwnd, __in UINT message, __in DWORD action, __inout_opt PCHANGEFILTERSTRUCT pChangeFilterStruct);
