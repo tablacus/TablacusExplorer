@@ -147,7 +147,7 @@ BOOL	g_bShowParseError = TRUE;
 BOOL	g_bDragging = FALSE;
 BOOL	g_bCanLayout = FALSE;
 BOOL	g_bUpper10;
-BOOL	g_bDarkMode = FALSE;
+bool	g_bDarkMode = FALSE;
 #ifdef _2000XP
 int		g_nCharWidth = 7;
 BOOL	g_bCharWidth = FALSE;
@@ -3453,7 +3453,7 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 			if (pidl == NULL && !teIsFileSystem(pszPath)) {
 				for (int i = 0; i < MAX_CSIDL; i++) {
 					if (g_pidls[i]) {
-						if (!lstrcmpi(bstr, g_bsPidls[i])) {
+						if (!lstrcmpi(pszPath, g_bsPidls[i])) {
 							pidl = ILClone(g_pidls[i]);
 							break;
 						}
@@ -5651,14 +5651,15 @@ VOID teSetDarkMode(HWND hwnd)
 		lpfnAllowDarkModeForWindow(hwnd, g_bDarkMode);
 	}
 	if (lpfnDwmSetWindowAttribute) {
-		lpfnDwmSetWindowAttribute(hwnd, 19, &g_bDarkMode, sizeof(g_bDarkMode));
+		BOOL bDarkMode = g_bDarkMode;
+		lpfnDwmSetWindowAttribute(hwnd, 19, &bDarkMode, sizeof(bDarkMode));
 	}
 }
 
 VOID teSetDarkTheme(HWND hwnd, LPCWSTR pszApp)
 {
 	if (lpfnIsDarkModeAllowedForWindow && lpfnAllowDarkModeForWindow) {
-		if ((lpfnIsDarkModeAllowedForWindow(hwnd) != bool(g_bDarkMode))) {
+		if ((lpfnIsDarkModeAllowedForWindow(hwnd) != g_bDarkMode)) {
 			lpfnAllowDarkModeForWindow(hwnd, g_bDarkMode);
 			SetWindowTheme(hwnd, pszApp, NULL);
 		}
