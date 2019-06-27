@@ -147,7 +147,7 @@ BOOL	g_bShowParseError = TRUE;
 BOOL	g_bDragging = FALSE;
 BOOL	g_bCanLayout = FALSE;
 BOOL	g_bUpper10;
-bool	g_bDarkMode = FALSE;
+BOOL	g_bDarkMode = FALSE;
 #ifdef _2000XP
 int		g_nCharWidth = 7;
 BOOL	g_bCharWidth = FALSE;
@@ -5651,15 +5651,14 @@ VOID teSetDarkMode(HWND hwnd)
 		lpfnAllowDarkModeForWindow(hwnd, g_bDarkMode);
 	}
 	if (lpfnDwmSetWindowAttribute) {
-		BOOL bDarkMode = g_bDarkMode;
-		lpfnDwmSetWindowAttribute(hwnd, 19, &bDarkMode, sizeof(bDarkMode));
+		lpfnDwmSetWindowAttribute(hwnd, 19, &g_bDarkMode, sizeof(g_bDarkMode));
 	}
 }
 
 VOID teSetDarkTheme(HWND hwnd, LPCWSTR pszApp)
 {
 	if (lpfnIsDarkModeAllowedForWindow && lpfnAllowDarkModeForWindow) {
-		if ((lpfnIsDarkModeAllowedForWindow(hwnd) != g_bDarkMode)) {
+		if ((BOOL(lpfnIsDarkModeAllowedForWindow(hwnd)) ^ g_bDarkMode & 1)) {
 			lpfnAllowDarkModeForWindow(hwnd, g_bDarkMode);
 			SetWindowTheme(hwnd, pszApp, NULL);
 		}
