@@ -18279,6 +18279,7 @@ void CteWebBrowser::Close()
 			if SUCCEEDED(m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&pOleObject))) {
 				RECT rc;
 				SetRectEmpty(&rc);
+				pOleObject->SetClientSite(NULL);
 				pOleObject->DoVerb(OLEIVERB_HIDE, NULL, NULL, 0, m_hwndParent, &rc);
 				pOleObject->Close(OLECLOSE_NOSAVE);
 				pOleObject->Release();
@@ -21013,9 +21014,9 @@ VOID CteTreeView::Close()
 		if SUCCEEDED(m_pShellNameSpace->QueryInterface(IID_PPV_ARGS(&pOleObject))) {
 			RECT rc;
 			SetRectEmpty(&rc);
+			pOleObject->SetClientSite(NULL);
 			pOleObject->DoVerb(OLEIVERB_HIDE, NULL, NULL, 0, g_hwndMain, &rc);
 			pOleObject->Close(OLECLOSE_NOSAVE);
-			pOleObject->SetClientSite(NULL);
 			pOleObject->Release();
 			DestroyWindow(m_hwnd);
 		}
