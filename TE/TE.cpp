@@ -2343,11 +2343,11 @@ BOOL teSetObject(VARIANT *pv, PVOID pObj)
 			IUnknown *punk = static_cast<IUnknown *>(pObj);
 			if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pv->pdispVal))) {
 				pv->vt = VT_DISPATCH;
-				return true;
+				return TRUE;
 			}
 			if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pv->punkVal))) {
 				pv->vt = VT_UNKNOWN;
-				return true;
+				return TRUE;
 			}
 		} catch (...) {
 			g_nException = 0;
@@ -2368,12 +2368,12 @@ BOOL teSetObjectRelease(VARIANT *pv, PVOID pObj)
 				if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pv->pdispVal))) {
 					pv->vt = VT_DISPATCH;
 					punk->Release();
-					return true;
+					return TRUE;
 				}
 				if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pv->punkVal))) {
 					pv->vt = VT_UNKNOWN;
 					punk->Release();
-					return true;
+					return TRUE;
 				}
 			}
 			punk->Release();
@@ -4414,16 +4414,16 @@ BOOL GetFolderItemFromFolderItems(FolderItem **ppFolderItem, FolderItems *pFolde
 	VARIANT v;
 	teSetLong(&v, nIndex);
 	if (pFolderItems->Item(v, ppFolderItem) == S_OK) {
-		return true;
+		return TRUE;
 	}
 	GetFolderItemFromIDList(ppFolderItem, g_pidls[CSIDL_DESKTOP]);
-	return true;
+	return TRUE;
 }
 
 /*//
 VOID GetFolderItemsFromPCZZSTR(CteFolderItems **ppFolderItems, LPCWSTR pszPath)
 {
-	*ppFolderItems = new CteFolderItems(NULL, NULL, true);
+	*ppFolderItems = new CteFolderItems(NULL, NULL, TRUE);
 	VARIANT v;
 	VariantInit(&v);
 	while (pszPath[0]) {
@@ -6410,7 +6410,7 @@ LRESULT TETCProc2(CteTabCtrl *pTC, HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
 			}
 		case WM_SETFOCUS:
 		case WM_RBUTTONDOWN:
-			CheckChangeTabTC(hwnd, true);
+			CheckChangeTabTC(hwnd, TRUE);
 			break;
 		case WM_MOUSEMOVE:
 			if (g_x == MAXINT) {
@@ -6547,7 +6547,7 @@ LRESULT CALLBACK TETCProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					CallWindowProc(pTC->m_DefTCProc, hwnd, msg, wParam, lParam);
 					Result = 0;
 					if (pSB) {
-						pSB->Close(true);
+						pSB->Close(TRUE);
 					}
 					nIndex = TabCtrl_GetCurSel(hwnd);
 					if (nIndex >= 0) {
@@ -8653,7 +8653,7 @@ VOID teApiCompareIDs(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 			IShellFolder *pSF;
 			LPITEMIDLIST pidlParent = ::ILClone(pidl1);
 			::ILRemoveLastID(pidlParent);
-			if (ILIsParent(pidlParent, pidl2, true) && SUCCEEDED(SHBindToParent(pidl1, IID_PPV_ARGS(&pSF), &pidlPart))) {
+			if (ILIsParent(pidlParent, pidl2, TRUE) && SUCCEEDED(SHBindToParent(pidl1, IID_PPV_ARGS(&pSF), &pidlPart))) {
 				teSetLong(pVarResult, pSF->CompareIDs(param[0].lparam, pidlPart, ILFindLastID(pidl2)));
 			} else {
 				SHGetDesktopFolder(&pSF);
@@ -11150,7 +11150,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		DWORD_PTR dwBase = (DWORD_PTR)hDll;
 		DWORD dwIdataSize, dwDummy;
 		PIMAGE_IMPORT_DESCRIPTOR pImgDesc = (PIMAGE_IMPORT_DESCRIPTOR)ImageDirectoryEntryToData((HMODULE)dwBase,
-			true, IMAGE_DIRECTORY_ENTRY_IMPORT, &dwIdataSize);
+			TRUE, IMAGE_DIRECTORY_ENTRY_IMPORT, &dwIdataSize);
 		while(pImgDesc->Name) {
 			char *lpModule = (char*)(dwBase + pImgDesc->Name);
 			if (!_strcmpi(lpModule, "advapi32.dll")) {
@@ -11757,12 +11757,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				msg1.wParam = wParam;
 				msg1.lParam = lParam;
 				BOOL bDone;
-				bDone = true;
+				bDone = TRUE;
 
 				if (g_pOnFunc[TE_OnMenuMessage]) {
 					HRESULT hr = S_FALSE;
 					if (MessageSub(TE_OnMenuMessage, g_pCM, &msg1, &hr) && hr == S_OK) {
-						bDone = false;
+						bDone = FALSE;
 					}
 					if (message == WM_MENUCHAR && hr & 0xffff0000) {
 						return hr;
@@ -12356,7 +12356,7 @@ HRESULT CteShellBrowser::Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *
 			for (int i = SB_Count; i--;) {
 				pSB->m_param[i] = param[i];
 			}
-			pSB->m_bEmpty = false;
+			pSB->m_bEmpty = FALSE;
 			hr = pSB->Navigate2(pFolderItem, wFlags, param, pFolderItems, m_pFolderItem, this);
 			if SUCCEEDED(hr) {
 				if (bNew && (wFlags & SBSP_ACTIVATE_NOFOCUS) == 0) {
@@ -12367,7 +12367,7 @@ HRESULT CteShellBrowser::Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *
 					m_pTC->TabChanged(TRUE);
 				}
 			} else {
-				pSB->Close(true);
+				pSB->Close(TRUE);
 			}
 		}
 	} catch (...) {
@@ -12789,7 +12789,7 @@ HRESULT CteShellBrowser::OnBeforeNavigate(FolderItem *pPrevious, UINT wFlags)
 		}
 		DWORD nViewMode = m_param[SB_ViewMode];
 		m_param[SB_ViewMode] = FVM_AUTO;
-		m_bInit = true;
+		m_bInit = TRUE;
 		try {
 			Invoke4(g_pOnFunc[TE_OnBeforeNavigate], &vResult, 4, pv);
 		} catch (...) {
@@ -12798,7 +12798,7 @@ HRESULT CteShellBrowser::OnBeforeNavigate(FolderItem *pPrevious, UINT wFlags)
 			g_strException = L"OnBeforeNavigate";
 #endif
 		}
-		m_bInit = false;
+		m_bInit = FALSE;
 		hr = GetIntFromVariantClear(&vResult);
 		if (m_param[SB_ViewMode] == FVM_AUTO) {
 			m_param[SB_ViewMode] = nViewMode;
@@ -13718,7 +13718,7 @@ STDMETHODIMP CteShellBrowser::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **pp
 
 STDMETHODIMP CteShellBrowser::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	HRESULT hr = teGetDispId(methodSB, _countof(methodSB), g_maps[MAP_SB], *rgszNames, rgDispId, true);
+	HRESULT hr = teGetDispId(methodSB, _countof(methodSB), g_maps[MAP_SB], *rgszNames, rgDispId, TRUE);
 	if (hr != S_OK && m_pdisp) {
 		return m_pdisp->GetIDsOfNames(riid, rgszNames, cNames, lcid, rgDispId);
 	}
@@ -13847,7 +13847,7 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 						int *piCur = SortTEMethodW(methodColumns, nCur);
 						for (int i = nCur; i-- > 0;) {
 							if (lstrcmpi(methodArgs[piArgs[i]].name, methodColumns[piCur[i]].name)) {
-								bDiff = true;
+								bDiff = TRUE;
 								break;
 							}
 						}
@@ -13868,7 +13868,7 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 					}
 					if (bDiff) {
 						int nIndex;
-						BOOL bDefault = true;
+						BOOL bDefault = TRUE;
 						if (nCount) {
 							for (UINT i = 0; i < m_nColumns && GetDetailsOf(NULL, i, &sd) == S_OK; i++) {
 								BSTR bs;
@@ -13946,7 +13946,7 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 #endif
 								}
 								delete [] piOrderArray;
-								SetRedraw(true);
+								SetRedraw(TRUE);
 							}
 						}
 					}
@@ -15550,8 +15550,7 @@ STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 	m_pidl = ::ILClone(pidlFolder);
 	FolderItem *pPrevious = m_pFolderItem;
 	if (m_pFolderItem1) {
-		m_pFolderItem = m_pFolderItem1;
-		m_pFolderItem1 = NULL;
+		m_pFolderItem1->QueryInterface(IID_PPV_ARGS(&m_pFolderItem));
 	} else if (!m_dwUnavailable) {
 		GetFolderItemFromIDList(&m_pFolderItem, m_pidl);
 	}
@@ -15564,17 +15563,15 @@ STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 		}
 		teCoTaskMemFree(m_pidl);
 		m_pidl = pidlPrevius;
-		pidlPrevius = NULL;
-		FolderItem *pid = m_pFolderItem;
-		m_pFolderItem = NULL;
-		if (pPrevious) {
-			pPrevious->QueryInterface(IID_PPV_ARGS(&m_pFolderItem));
-			pPrevious->Release();
-		}
+//		pidlPrevius = NULL;
+		FolderItem *pid;
+		m_pFolderItem->QueryInterface(IID_PPV_ARGS(&pid));
+		m_pFolderItem = pPrevious;
+//		pPrevious = NULL;
 		if (hr == E_ACCESSDENIED) {
 			BrowseObject2(pid, SBSP_NEWBROWSER | SBSP_ABSOLUTE);
 		}
-		pid ->Release();
+		pid->Release();
 		m_nSuspendMode = 0;
 		return hr;
 	}
@@ -16509,7 +16506,7 @@ BOOL CteShellBrowser::Close(BOOL bForce)
 {
 	if (!m_bEmpty && (CanClose(this) || bForce)) {
 		int i = GetTabIndex();
-		m_bEmpty = true;
+		m_bEmpty = TRUE;
 		if (i >= 0)	{
 			SendMessage(m_pTC->m_hwnd, TCM_DELETEITEM, i, 0);
 		}
@@ -16942,7 +16939,7 @@ STDMETHODIMP CTE::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo)
 
 STDMETHODIMP CTE::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	return teGetDispId(methodTE, _countof(methodTE), g_maps[MAP_TE], *rgszNames, rgDispId, true);
+	return teGetDispId(methodTE, _countof(methodTE), g_maps[MAP_TE], *rgszNames, rgDispId, TRUE);
 }
 
 STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
@@ -17346,7 +17343,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 									}
 								}
 								pDesktopFolder->Release();
-								pSB->Close(true);
+								pSB->Close(TRUE);
 							}
 *///
 						}
@@ -17703,7 +17700,7 @@ STDMETHODIMP CteWebBrowser::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTI
 
 STDMETHODIMP CteWebBrowser::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	return teGetDispId(methodWB, 0, NULL, *rgszNames, rgDispId, true);
+	return teGetDispId(methodWB, 0, NULL, *rgszNames, rgDispId, TRUE);
 }
 
 STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
@@ -18310,7 +18307,7 @@ CteTabCtrl::CteTabCtrl()
 void CteTabCtrl::Init()
 {
 	m_nIndex = -1;
-	m_bEmpty = false;
+	m_bEmpty = FALSE;
 	VariantInit(&m_vData);
 	m_param[TE_Left] = 0;
 	m_param[TE_Top] = 0;
@@ -18386,7 +18383,7 @@ BOOL CteTabCtrl::Close(BOOL bForce)
 		SetWindowLongPtr(m_hwndStatic, GWLP_WNDPROC, (LONG_PTR)m_DefSTProc);
 		DestroyWindow(m_hwndStatic);
 		m_hwndStatic = NULL;
-		m_bEmpty = true;
+		m_bEmpty = TRUE;
 		if (this == g_pTC) {
 			for (UINT i = 0; i < g_ppTC.size(); i++) {
 				CteTabCtrl *pTC = g_ppTC[i];
@@ -18480,12 +18477,12 @@ BOOL CteTabCtrl::Create()
 	DoFunc(TE_OnCreate, this, E_NOTIMPL);
 	DoFunc(TE_OnViewCreated, this, E_NOTIMPL);
 	ArrangeWindow();
-	return true;
+	return TRUE;
 }
 
 CteTabCtrl::~CteTabCtrl()
 {
-	Close(true);
+	Close(TRUE);
 	VariantClear(&m_vData);
 	SafeRelease(&m_pDropTarget2);
 }
@@ -18534,7 +18531,7 @@ STDMETHODIMP CteTabCtrl::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo
 
 STDMETHODIMP CteTabCtrl::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	return teGetDispId(methodTC, _countof(methodTC), g_maps[MAP_TC], *rgszNames, rgDispId, true);
+	return teGetDispId(methodTC, _countof(methodTC), g_maps[MAP_TC], *rgszNames, rgDispId, TRUE);
 }
 
 STDMETHODIMP CteTabCtrl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
@@ -18771,7 +18768,7 @@ STDMETHODIMP CteTabCtrl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WOR
 //IDispatchEx
 STDMETHODIMP CteTabCtrl::GetDispID(BSTR bstrName, DWORD grfdex, DISPID *pid)
 {
-	return teGetDispId(methodTC, _countof(methodTC), g_maps[MAP_TC], bstrName, pid, true);
+	return teGetDispId(methodTC, _countof(methodTC), g_maps[MAP_TC], bstrName, pid, TRUE);
 }
 
 STDMETHODIMP CteTabCtrl::InvokeEx(DISPID id, LCID lcid, WORD wFlags, DISPPARAMS *pdp, VARIANT *pvarRes, EXCEPINFO *pei, IServiceProvider *pspCaller)
@@ -19133,7 +19130,7 @@ STDMETHODIMP CteFolderItems::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UIN
 	if (m_pFolderItems) {
 		return m_pFolderItems->GetIDsOfNames(riid, rgszNames, cNames, lcid, rgDispId);
 	}
-	return teGetDispId(methodFIs, _countof(methodFIs), g_maps[MAP_FIs], *rgszNames, rgDispId, true);
+	return teGetDispId(methodFIs, _countof(methodFIs), g_maps[MAP_FIs], *rgszNames, rgDispId, TRUE);
 }
 
 STDMETHODIMP CteFolderItems::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
@@ -19378,7 +19375,7 @@ STDMETHODIMP CteFolderItems::_NewEnum(IUnknown **ppunk)
 //IDispatchEx
 STDMETHODIMP CteFolderItems::GetDispID(BSTR bstrName, DWORD grfdex, DISPID *pid)
 {
-	return teGetDispId(methodFIs, _countof(methodFIs), g_maps[MAP_FIs], bstrName, pid, true);
+	return teGetDispId(methodFIs, _countof(methodFIs), g_maps[MAP_FIs], bstrName, pid, TRUE);
 }
 
 STDMETHODIMP CteFolderItems::InvokeEx(DISPID id, LCID lcid, WORD wFlags, DISPPARAMS *pdp, VARIANT *pvarRes, EXCEPINFO *pei, IServiceProvider *pspCaller)
@@ -20089,7 +20086,7 @@ STDMETHODIMP CteMemory::GetDispID(BSTR bstrName, DWORD grfdex, DISPID *pid)
 	if (m_nStructIndex >= 0 && teGetDispId(pTEStructs[m_nStructIndex].pMethod, 0, NULL, bstrName, pid, false) == S_OK) {
 		return S_OK;
 	}
-	if (teGetDispId(methodMem, _countof(methodMem), g_maps[MAP_Mem], bstrName, pid, true) == S_OK) {
+	if (teGetDispId(methodMem, _countof(methodMem), g_maps[MAP_Mem], bstrName, pid, TRUE) == S_OK) {
 		return S_OK;
 	}
 	return teGetDispId(methodMem2, 0, NULL, m_bsStruct, pid, false);
@@ -20499,7 +20496,7 @@ STDMETHODIMP CteContextMenu::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppT
 
 STDMETHODIMP CteContextMenu::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	return teGetDispId(methodCM, 0, NULL, *rgszNames, rgDispId, true);
+	return teGetDispId(methodCM, 0, NULL, *rgszNames, rgDispId, TRUE);
 }
 
 STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
@@ -20632,7 +20629,7 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 					}
 					teSetSZ(pVarResult, szName);
 				} else {
-					teSetBool(pVarResult, true);
+					teSetBool(pVarResult, TRUE);
 				}
 				return S_OK;
 			//FolderView
@@ -20757,7 +20754,7 @@ STDMETHODIMP CteDropTarget::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTI
 
 STDMETHODIMP CteDropTarget::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	return teGetDispId(methodDT, 0, NULL, *rgszNames, rgDispId, true);
+	return teGetDispId(methodDT, 0, NULL, *rgszNames, rgDispId, TRUE);
 }
 
 STDMETHODIMP CteDropTarget::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
@@ -21006,7 +21003,7 @@ VOID CteTreeView::Close()
 		if (teGetWindow(m_pNameSpaceTreeControl, &hwnd) == S_OK) {
 			PostMessage(hwnd, WM_CLOSE, 0, 0);
 		}
-		teDelayRelease(&m_pNameSpaceTreeControl);
+		SafeRelease(&m_pNameSpaceTreeControl);
 	}
 #ifdef _2000XP
 	if (m_pShellNameSpace) {
@@ -21267,7 +21264,7 @@ STDMETHODIMP CteTreeView::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInf
 
 STDMETHODIMP CteTreeView::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	return teGetDispId(methodTV, _countof(methodTV), g_maps[MAP_TV], *rgszNames, rgDispId, true);
+	return teGetDispId(methodTV, _countof(methodTV), g_maps[MAP_TV], *rgszNames, rgDispId, TRUE);
 }
 
 STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
@@ -22420,7 +22417,7 @@ STDMETHODIMP CteFolderItem::SetParentAndItem(PCIDLIST_ABSOLUTE pidlParent, IShel
 //IDispatch
 STDMETHODIMP CteFolderItem::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	HRESULT hr = teGetDispId(methodFI, 0, NULL, *rgszNames, rgDispId, true);
+	HRESULT hr = teGetDispId(methodFI, 0, NULL, *rgszNames, rgDispId, TRUE);
 	if SUCCEEDED(hr) {
 		return S_OK;
 	}
@@ -22747,7 +22744,7 @@ STDMETHODIMP CteCommonDialog::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **pp
 
 STDMETHODIMP CteCommonDialog::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	return teGetDispId(methodCD, _countof(methodCD), g_maps[MAP_CD], *rgszNames, rgDispId, true);
+	return teGetDispId(methodCD, _countof(methodCD), g_maps[MAP_CD], *rgszNames, rgDispId, TRUE);
 }
 
 STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
@@ -22996,7 +22993,7 @@ STDMETHODIMP CteWICBitmap::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTIn
 
 STDMETHODIMP CteWICBitmap::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	return teGetDispId(methodGB, _countof(methodGB), g_maps[MAP_GB], *rgszNames, rgDispId, true);
+	return teGetDispId(methodGB, _countof(methodGB), g_maps[MAP_GB], *rgszNames, rgDispId, TRUE);
 }
 
 HBITMAP CteWICBitmap::GetHBITMAP(COLORREF clBk)
@@ -24809,7 +24806,7 @@ STDMETHODIMP CteProgressDialog::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **
 
 STDMETHODIMP CteProgressDialog::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	return teGetDispId(methodPD, 0, NULL, *rgszNames, rgDispId, true);
+	return teGetDispId(methodPD, 0, NULL, *rgszNames, rgDispId, TRUE);
 }
 
 STDMETHODIMP CteProgressDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
@@ -24965,7 +24962,7 @@ STDMETHODIMP CteObject::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo)
 
 STDMETHODIMP CteObject::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	return teGetDispId(methodCO, 0, NULL, *rgszNames, rgDispId, true);
+	return teGetDispId(methodCO, 0, NULL, *rgszNames, rgDispId, TRUE);
 }
 
 STDMETHODIMP CteObject::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
