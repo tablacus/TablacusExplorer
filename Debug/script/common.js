@@ -633,7 +633,7 @@ function MakeImgIcon(src, index, h, bIcon)
 			if (dw) {
 				var sfi = api.Memory("SHFILEINFO");
 				api.SHGetFileInfo("*", FILE_ATTRIBUTE_DIRECTORY, sfi, sfi.Size, dw);
-				return hIcon = api.ImageList_GetIcon(te.Data.SHIL[h <= 16 ? SHIL_SMALL : h <=32 ? SHIL_LARGE : h <= 48 ? SHIL_EXTRALARGE : SHIL_JUMBO], sfi.iIcon, ILD_NORMAL);
+				return GetHICON(sfi.iIcon, h, ILD_NORMAL);
 			}
 		}
 		var phIcon = api.Memory("HANDLE");
@@ -653,29 +653,18 @@ function MakeImgIcon(src, index, h, bIcon)
 	}
 	if (src && (bIcon || /\*/.test(src) || !REGEXP_IMAGE.test(src))) {
 		var sfi = api.Memory("SHFILEINFO");
-		var uFlags = SHGFI_ICON;
-		if (h) {
-			if (h <= 16) {
-				uFlags |= SHGFI_SMALLICON;
-			} else if (h >= 48) {
-				uFlags = SHGFI_SYSICONINDEX;
-			}
-		}
 		if (/\*/.test(src)) {
-			api.SHGetFileInfo(src, 0, sfi, sfi.Size, uFlags | SHGFI_USEFILEATTRIBUTES);
+			api.SHGetFileInfo(src, 0, sfi, sfi.Size, SHGFI_SYSICONINDEX | SHGFI_USEFILEATTRIBUTES);
 		} else {
 			if (/^file:/i.test(src)) {
 				src = api.PathCreateFromUrl(src) || src;
 			}
 			var pidl = api.ILCreateFromPath(api.PathUnquoteSpaces(src));
 			if (pidl) {
-				api.SHGetFileInfo(pidl, 0, sfi, sfi.Size, uFlags | SHGFI_PIDL);
+				api.SHGetFileInfo(pidl, 0, sfi, sfi.Size, SHGFI_SYSICONINDEX | SHGFI_PIDL);
 			}
 		}
-		if (uFlags & SHGFI_SYSICONINDEX) {
-			sfi.hIcon = api.ImageList_GetIcon(te.Data.SHIL[SHIL_EXTRALARGE], sfi.iIcon, ILD_NORMAL);
-		}
-		return sfi.hIcon;
+		return sfi.iIcon ? GetHICON(sfi.iIcon, h, ILD_NORMAL) : null;
 	}
 }
 
@@ -3910,4 +3899,15 @@ function MakeCommDlgFilter(arg)
 		result.push(api.LoadString(hShell32, 34193) || "All files", "*.*");
 	}
 	return result.join("|");
+}
+
+function GetHICON(iIcon, h, flags)
+{
+	var size = api.Memory("SIZE");
+	var ar = [SHIL_JUMBO, SHIL_EXTRALARGE, SHIL_LARGE, SHIL_SMALL]	
+	var i = ar.length;
+	do {
+		api.ImageList_GetIconSize(te.Data.SHIL[ar[--i]], size);
+	} while(h > size.cy && i);
+	return api.ImageList_GetIcon(te.Data.SHIL[ar[i]], iIcon, flags);
 }

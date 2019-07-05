@@ -147,7 +147,7 @@ if (window.Addon == 1) {
 				api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, 4, GetText("Open in background"));
 				api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_SEPARATOR, 0, null);
 				api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, 5,  GetText("&Edit"));
-				var nVerb = api.TrackPopupMenuEx(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y + o.offsetHeight * screen.deviceYDPI / screen.logicalYDPI, te.hwnd, null, null);
+				var nVerb = api.TrackPopupMenuEx(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y + o.offsetHeight, te.hwnd, null, null);
 				api.DestroyMenu(hMenu);
 				switch (nVerb) {
 					case 1:
@@ -191,7 +191,7 @@ if (window.Addon == 1) {
 				Addons.AddressBar.Item = o;
 				var pt = GetPos(o, true);
 				MouseOver(o);
-				FolderMenu.Invoke(FolderMenu.Open(this.GetPath(n), pt.x, pt.y + o.offsetHeight * screen.deviceYDPI / screen.logicalYDPI, null, 1));
+				FolderMenu.Invoke(FolderMenu.Open(this.GetPath(n), pt.x, pt.y + o.offsetHeight, null, 1));
 			}
 		},
 
@@ -215,7 +215,7 @@ if (window.Addon == 1) {
 				MouseOver(o);
 				var pt = GetPos(o, true);
 				window.g_menu_click = true;
-				var nVerb = api.TrackPopupMenuEx(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y + o.offsetHeight * screen.deviceYDPI / screen.logicalYDPI, te.hwnd, null, null);
+				var nVerb = api.TrackPopupMenuEx(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y + o.offsetHeight, te.hwnd, null, null);
 				api.DestroyMenu(hMenu);
 				FolderItem = null;
 				if (nVerb) {
@@ -332,7 +332,7 @@ if (window.Addon == 1) {
 	var nSize = api.GetSystemMetrics(SM_CYSMICON);
 	s = ['<div style="position: relative; overflow: hidden"><div id="breadcrumbbuttons" class="breadcrumb" style="position: absolute; left: 1px; top: 1px; padding-left: ', nSize + 4, 'px" onfocus="Addons.AddressBar.Focus()" onclick="return Addons.AddressBar.Exec();"></div><input id="addressbar" type="text" onkeydown="return Addons.AddressBar.KeyDown(this)" onfocus="Addons.AddressBar.Focus()" onblur="Addons.AddressBar.Blur()" onresize="Addons.AddressBar.Resize()" style="width: ', s.replace(/;"<>/g, ''), '; vertical-align: middle; padding-left: ', nSize + 4, 'px; padding-right: 16px" /><div class="breadcrumb"><div id="addressbarselect" class="button" style="position: absolute; top: 1px" onmouseover="MouseOver(this);" onmouseout="MouseOut()" onclick="Addons.AddressBar.Popup3(this)">', BUTTONS.dropdown,'</div></div>'];
 
-	s.push('<img id="addr_img" src="icon:shell32.dll,3"');
+	s.push('<img id="addr_img" src="folder:closed"');
 	s.push(' onclick="return Addons.AddressBar.Exec();"');
 	s.push(' oncontextmenu="Addons.AddressBar.Exec(); return false;"');
 	s.push(' style="position: absolute; left: 4px; top: 1.5pt; width: ', nSize, 'px; height: ', nSize, 'px; z-index: 3; border: 0px" /></div>');

@@ -1,8 +1,8 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <TablacusExplorer>
   <General>
-    <Version>1.42</Version>
-    <MinVersion>2018.11.11</MinVersion>
+    <Version>1.43</Version>
+    <MinVersion>2019.7.5</MinVersion>
     <pubDate>Sun, 11 Nov 2018 00:00:00 GMT</pubDate>
     <Options>Common:0,6,7,8,9:0</Options>
     <Creator>Gaku</Creator>
@@ -17,4 +17,7 @@
     <Name>アドレス バー</Name>
     <Description>パンくずリストかXPスタイルが選べます。</Description>
   </ja>
+  <zh>
+    <Name>位址列</Name>
+  </zh>
 </TablacusExplorer>

@@ -2010,11 +2010,14 @@ GetIconImage = function (Ctrl, BGColor, bSimple)
 			return bSimple != 2 ? api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_ORIGINAL) : "";
 		}
 		var sfi = api.Memory("SHFILEINFO");
-		api.SHGetFileInfo(FolderItem, 0, sfi, sfi.Size, SHGFI_ICON | SHGFI_SMALLICON | SHGFI_PIDL);
-		img = api.CreateObject("WICBitmap").FromHICON(sfi.hIcon);
-		api.DestroyIcon(sfi.hIcon);
-		return img.DataURI("image/png");
-	}
+		api.SHGetFileInfo(FolderItem, 0, sfi, sfi.Size, SHGFI_SYSICONINDEX | SHGFI_PIDL);
+		var hIcon = GetHICON(sfi.iIcon, nSize, ILD_NORMAL);
+		if (hIcon) {
+			img = api.CreateObject("WICBitmap").FromHICON(hIcon);
+			api.DestroyIcon(hIcon);
+			return img.DataURI("image/png");
+		}
+s	}
 	return MakeImgDataEx("icon:shell32.dll,3", bSimple, nSize);
 }
 
@@ -2421,6 +2424,7 @@ function InitMouse()
 	te.Data.Conf_GestureTimeout = isFinite(te.Data.Conf_GestureTimeout) ? Number(te.Data.Conf_GestureTimeout) : 3000;
 	te.Data.Conf_Layout = isFinite(te.Data.Conf_Layout) ? Number(te.Data.Conf_Layout) : 0x80;
 	te.Data.Conf_NetworkTimeout = isFinite(te.Data.Conf_NetworkTimeout) ? Number(te.Data.Conf_NetworkTimeout) : 2000;
+	te.Data.Conf_WheelSelect = isFinite(te.Data.Conf_WheelSelect) ? Number(te.Data.Conf_WheelSelect) : 1;
 	te.Layout = te.Data.Conf_Layout;
 	te.NetworkTimeout = te.Data.Conf_NetworkTimeout;
 	te.SizeFormat = Number(te.Data.Conf_SizeFormat);

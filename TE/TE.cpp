@@ -2599,6 +2599,7 @@ VOID teReleaseILCreate(TEILCreate *pILC)
 {
 	if (::InterlockedDecrement(&pILC->cRef) == 0) {
 		teCoTaskMemFree(pILC->pidlResult);
+		CloseHandle(pILC->hEvent);
 		delete [] pILC;
 	}
 }
@@ -8290,11 +8291,7 @@ VOID teApiEndPaint(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *p
 
 VOID teApiImageList_GetIconSize(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	if (nArg >= 2) {
-		teSetBool(pVarResult, ImageList_GetIconSize(param[0].himagelist, param[1].pintVal, param[2].pintVal));
-	} else {
-		teSetBool(pVarResult, ImageList_GetIconSize(param[0].himagelist, (int *)&(param[1].lpsize->cx), (int *)&(param[1].lpsize->cy)));
-	}
+	teSetBool(pVarResult, ImageList_GetIconSize(param[0].himagelist, (int *)&(param[1].lpsize->cx), (int *)&(param[1].lpsize->cy)));
 }
 
 VOID teApiGetMenuInfo(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -9004,16 +9001,17 @@ VOID teApiImageList_LoadImage(int nArg, teParam *param, DISPPARAMS *pDispParams,
 
 VOID teApiSHGetFileInfo(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	LPITEMIDLIST pidl;
+	teParam	Path;
 	IUnknown *punk;
-	if (FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
-		teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg]);
+	BOOL bItemIDList = FindUnknown(&pDispParams->rgvarg[nArg], &punk);
+	if (bItemIDList) {
+		bItemIDList = teGetIDListFromVariant(&Path.lpitemidlist, &pDispParams->rgvarg[nArg]);
 	} else {
-		pidl = param[0].lpitemidlist;//string
+		Path.lpcwstr = param[0].lpcwstr;
 	}
-	teSetPtr(pVarResult, SHGetFileInfo((LPCWSTR)pidl, param[1].dword, param[2].lpshfileinfo, param[3].uintVal, param[4].uintVal));
-	if (pidl != param[0].lpitemidlist) {
-		teCoTaskMemFree(pidl);
+	teSetPtr(pVarResult, SHGetFileInfo(Path.lpcwstr, param[1].dword, param[2].lpshfileinfo, param[3].uintVal, param[4].uintVal));
+	if (bItemIDList) {
+		teCoTaskMemFree(Path.lpitemidlist);
 	}
 }
 
@@ -14340,6 +14338,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						if (m_pdisp) {
 							IShellFolderViewDual3 *pSFVD3;
 							if SUCCEEDED(m_pdisp->QueryInterface(IID_PPV_ARGS(&pSFVD3))) {
+								SafeRelease(&m_pFolderItem1);
 								pSFVD3->FilterView(v.bstrVal);
 								pSFVD3->Release();
 #ifdef _2000XP
