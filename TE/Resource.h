@@ -9,7 +9,7 @@
 #define STRING2(str) #str
 #define VER_Y		19
 #define VER_M		7
-#define VER_D		5
+#define VER_D		11
 
 //Icon
 #define IDI_TE		1
@@ -22,6 +22,7 @@
 //#define _USE_HTMLDOC
 //#define _USE_TESTOBJECT
 //#define _USE_TESTPATHMATCHSPEC
+//#define _CHECK_HANDLELEAK
 //#define _LOG
 #define _Emulate_XP_	//FALSE &&
 #ifndef _WIN64

@@ -166,6 +166,10 @@ BOOL	g_bIs2000;
 LPWSTR	g_strException;
 WCHAR	g_pszException[MAX_PATH];
 #endif
+#ifdef _CHECK_HANDLELEAK
+int g_nLeak = 0;
+#endif
+
 TEmethod tesNULL[] =
 {
 	{ 0, NULL }
@@ -3160,7 +3164,26 @@ HRESULT teInvokeAPI(TEDispatchApi *pApi, DISPPARAMS *pDispParams, VARIANT *pVarR
 				param[i].llVal = GetLLPFromVariant(&pDispParams->rgvarg[nArg - i], &vParam[i]);
 			}
 		}
-		pApi->fn(nArg, param, pDispParams, pVarResult);
+#ifdef _CHECK_HANDLELEAK
+		HANDLE hProcess;
+		DWORD dwHandle1, dwHandle2;
+		if (hProcess = OpenProcess(PROCESS_QUERY_INFORMATION,FALSE, GetCurrentProcessId())) {
+			GetProcessHandleCount(hProcess, &dwHandle1);
+			++g_nLeak;
+			if (g_nLeak == 19357) {
+				Sleep(0);
+			}
+#endif
+			pApi->fn(nArg, param, pDispParams, pVarResult);
+#ifdef _CHECK_HANDLELEAK
+			GetProcessHandleCount(hProcess, &dwHandle2);
+			if (dwHandle2 > dwHandle1) {
+				LPWSTR lpwstr = param[0].lpwstr;
+				Sleep(0 * param[0].uintVal * param[1].uintVal * param[2].uintVal * param[3].uintVal * param[4].uintVal * g_nLeak);
+			}
+			CloseHandle(hProcess);
+		}
+#endif
 		for (int i = nArg < 11 ? nArg : 11; i >= 0; i--) {
 			if (i != pApi->nStr1 && i != pApi->nStr2 && i != pApi->nStr3) {
 				teWriteBack(&pDispParams->rgvarg[nArg - i], &vParam[i]);
@@ -3355,6 +3378,9 @@ HRESULT tePathIsDirectory(LPWSTR pszPath, int dwms, int iUseFS)
 		if (dwms <= 0) {
 			dwms = g_param[TE_NetworkTimeout];
 		}
+#ifdef _CHECK_HANDLELEAK
+		dwms = 0;
+#endif
 		if (dwms) {
 			TEExists *pExists = new TEExists[1];
 			pExists->cRef = 2;
@@ -3506,6 +3532,9 @@ LPITEMIDLIST teILCreateFromPath0(LPWSTR pszPath, BOOL bForceLimit)
 	if (bForceLimit && (!dwms || dwms > 500)) {
 		dwms = 500;
 	}
+#ifdef _CHECK_HANDLELEAK
+	dwms = 0;
+#endif
 	if (dwms && (bForceLimit || g_dwMainThreadId == GetCurrentThreadId())) {
 		TEILCreate *pILC = new TEILCreate[1];
 		pILC->cRef = 2;
@@ -4099,6 +4128,11 @@ BOOL teGetIDListFromObject(IUnknown *punk, LPITEMIDLIST *ppidl)
 	if (!punk) {
 		return FALSE;
 	}
+#ifdef _CHECK_HANDLELEAK
+	if SUCCEEDED(teGetIDListFromObjectXP(punk, ppidl)) {
+		return TRUE;
+	}
+#endif
 	if SUCCEEDED(lpfnSHGetIDListFromObject(punk, ppidl)) {
 		return TRUE;
 	}
@@ -14338,7 +14372,6 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						if (m_pdisp) {
 							IShellFolderViewDual3 *pSFVD3;
 							if SUCCEEDED(m_pdisp->QueryInterface(IID_PPV_ARGS(&pSFVD3))) {
-								SafeRelease(&m_pFolderItem1);
 								pSFVD3->FilterView(v.bstrVal);
 								pSFVD3->Release();
 #ifdef _2000XP
@@ -15549,7 +15582,8 @@ STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 	m_pidl = ::ILClone(pidlFolder);
 	FolderItem *pPrevious = m_pFolderItem;
 	if (m_pFolderItem1) {
-		m_pFolderItem1->QueryInterface(IID_PPV_ARGS(&m_pFolderItem));
+		m_pFolderItem = m_pFolderItem1;
+		m_pFolderItem1 = NULL;
 	} else if (!m_dwUnavailable) {
 		GetFolderItemFromIDList(&m_pFolderItem, m_pidl);
 	}

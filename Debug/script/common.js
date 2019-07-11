@@ -1182,7 +1182,7 @@ GetPos = function (o, bScreen, bAbs, bPanel, bBottom)
 		y += o.offsetHeight;
 	}
 	while (o) {
-		if (bAbs || !bPanel || String(o.style.position).toLowerCase() != "absolute") {
+		if (bAbs || !bPanel || !/absolute/i.test(o.style.position)) {
 			x += o.offsetLeft - (bAbs ? 0 : o.scrollLeft);
 			y += o.offsetTop - (bAbs ? 0 : o.scrollTop);
 			o = o.offsetParent;
@@ -3175,7 +3175,9 @@ function MouseOver(o)
 		}
 		var pt = api.Memory("POINT");
 		api.GetCursorPos(pt, true);
-		if (HitTest(o, pt)) {
+		var ptc = pt.Clone();
+		api.ScreenToClient(api.GetWindow(document), ptc);
+		if (o == document.elementFromPoint(ptc.x, ptc.y) || HitTest(o, pt)) {
 			g_.objHover = o;
 			o.className = 'hover' + o.className;
 		}
@@ -3904,7 +3906,7 @@ function MakeCommDlgFilter(arg)
 function GetHICON(iIcon, h, flags)
 {
 	var size = api.Memory("SIZE");
-	var ar = [SHIL_JUMBO, SHIL_EXTRALARGE, SHIL_LARGE, SHIL_SMALL]	
+	var ar = [SHIL_JUMBO, SHIL_EXTRALARGE, SHIL_LARGE, SHIL_SMALL]
 	var i = ar.length;
 	do {
 		api.ImageList_GetIconSize(te.Data.SHIL[ar[--i]], size);
