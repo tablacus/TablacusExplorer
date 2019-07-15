@@ -1211,6 +1211,7 @@ public:
 	BOOL		m_bAutoVM;
 	BOOL		m_bBeforeNavigate;
 	BOOL		m_bRedraw;
+	BOOL		m_bViewCreated;
 #ifdef _2000XP
 	TEColumn	*m_pColumns;
 	UINT		m_nColumns;

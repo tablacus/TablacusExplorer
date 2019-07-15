@@ -751,7 +751,7 @@ te.OnNavigateComplete = function (Ctrl)
 	var res = /search\-ms:.*?crumb=([^&]+)/.exec(Ctrl.FilterView);
 	if (res) {
 		Ctrl.FilterView = null;
-		Ctrl.FilterView(decodeURIComponent(res[1]));
+		Ctrl.FilterView(decodeURIComponent(res[1]).replace(/~</, ""));
 		return S_OK;
 	}
 	Ctrl.NavigateComplete();

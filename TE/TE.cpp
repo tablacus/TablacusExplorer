@@ -15098,6 +15098,9 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					return S_OK;
 				}
 				SetFolderFlags(FALSE);
+				if (m_bViewCreated) {
+					OnViewCreated(NULL);
+				}
 				return S_OK;
 /*			case DISPID_CONTENTSCHANGED://XP-
 				return S_OK;*/
@@ -15619,11 +15622,13 @@ STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 	if (!m_bAutoVM) {
 		SetViewModeAndIconSize(TRUE);
 	}
+	m_bViewCreated = TRUE;
 	return hr;
 }
 
 STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 {
+	m_bViewCreated = FALSE;
 	if (psv) {
 		psv->QueryInterface(IID_PPV_ARGS(&m_pShellView));
 	}
