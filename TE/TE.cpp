@@ -15097,10 +15097,10 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				if (ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
 					return S_OK;
 				}
-				SetFolderFlags(FALSE);
 				if (m_bViewCreated) {
-					OnViewCreated(NULL);
+					return OnViewCreated(NULL);
 				}
+				SetFolderFlags(FALSE);
 				return S_OK;
 /*			case DISPID_CONTENTSCHANGED://XP-
 				return S_OK;*/

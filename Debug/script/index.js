@@ -738,7 +738,7 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev)
 
 te.OnNavigateComplete = function (Ctrl)
 {
-	if (g_.tid_rf[Ctrl.Id]) {
+	if (g_.tid_rf[Ctrl.Id] || !Ctrl.FolderItem) {
 		return S_OK;
 	}
 	if (Ctrl.FolderItem.Path == "about:blank" && HOME_PATH != "about:blank") {
@@ -751,7 +751,7 @@ te.OnNavigateComplete = function (Ctrl)
 	var res = /search\-ms:.*?crumb=([^&]+)/.exec(Ctrl.FilterView);
 	if (res) {
 		Ctrl.FilterView = null;
-		Ctrl.FilterView(decodeURIComponent(res[1]).replace(/~</, ""));
+		Ctrl.FilterView(decodeURIComponent(res[1]).replace(/~<\*/, "*"));
 		return S_OK;
 	}
 	Ctrl.NavigateComplete();
