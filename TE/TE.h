@@ -1158,6 +1158,7 @@ public:
 	VOID AddItem(LPITEMIDLIST pidl);
 	VOID NavigateComplete(BOOL bBeginNavigate);
 	VOID InitFilter();
+	HRESULT OnNavigationPending2(LPITEMIDLIST pidlFolder);
 #ifndef _USE_THREADADDITEMS
 	VOID AddItems(IDispatch *pdisp, BOOL bDeleted, IDispatch *pOnCompleted, BOOL bNavigateComplete);
 #endif

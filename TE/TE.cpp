@@ -12619,6 +12619,16 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 					teCoTaskMemFree(pidl);
 					return S_OK;
 				}
+			} else {
+				m_bBeforeNavigate = TRUE;
+				hr = OnNavigationPending2(pidl);
+				if SUCCEEDED(hr) {
+					RemoveAll();
+					SetTabName();
+					OnViewCreated(NULL);
+					NavigateComplete(TRUE);
+					return hr;
+				}
 			}
 		}
 #ifdef _2000XP
@@ -15581,6 +15591,11 @@ STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 		m_nSuspendMode = 4;
 		return E_FAIL;
 	}
+	return OnNavigationPending2((LPITEMIDLIST)pidlFolder);
+}
+
+HRESULT CteShellBrowser::OnNavigationPending2(LPITEMIDLIST pidlFolder)
+{
 	LPITEMIDLIST pidlPrevius = m_pidl;
 	m_pidl = ::ILClone(pidlFolder);
 	FolderItem *pPrevious = m_pFolderItem;
