@@ -1146,7 +1146,7 @@ function SetAddon(Id, bEnable, td, Alt)
 		td = document.getElementById(Alt || "Addons_" + Id).parentNode;
 	}
 	var info = GetAddonInfo(Id);
-	var bMinVer = info.MinVersion && te.Version < CalcVersion(info.MinVersion);
+	var bMinVer = info.MinVersion && AboutTE(0) < CalcVersion(info.MinVersion);
 	if (bMinVer) {
 		bEnable = false;
 	}
@@ -1611,7 +1611,7 @@ InitDialog = function ()
 		returnValue = false;
 		var s = ['<table style="border-spacing: 2em; border-collapse: separate; width: 100%"><tr><td>'];
 		var src = MakeImgSrc(api.GetModuleFileName(null), 0, 32);
-		s.push('<img src="', src , '"></td><td><span style="font-weight: bold; font-size: 120%">', te.About, '</span> (', GetTextR((api.sizeof("HANDLE") * 8) + '-bit'), ')<br>');
+		s.push('<img src="', src , '"></td><td><span style="font-weight: bold; font-size: 120%">', AboutTE(2), '</span> (', GetTextR((api.sizeof("HANDLE") * 8) + '-bit'), ')<br>');
 		s.push('<br><a href="javascript:Run(0)" class="link">', api.GetModuleFileName(null), '</a><br>');
 		s.push('<br><a href="javascript:Run(1)" class="link">', fso.BuildPath(te.Data.DataFolder, "config"), '</a><br>');
 		s.push('<br><label>Information</label><input type="text" value="', GetTEInfo(), '" style="width: 100%" onclick="this.select()" readonly><br>');
@@ -2428,7 +2428,7 @@ function ArrangeAddon(xml, td, Progress)
 		} else {
 			dt2 += MAXINT;
 		}
-		if (info.MinVersion && te.Version >= CalcVersion(info.MinVersion)) {
+		if (info.MinVersion && AboutTE(0) >= CalcVersion(info.MinVersion)) {
 			s.push('<input type="button" onclick="Install(this,', bUpdate, ')" title="', Id, '_', info.Version, '" value="', GetText("Install"), '">');
 		} else {
 			s.push('<input type="button"  class="danger" onclick="MainWindow.CheckUpdate()" value="', info.MinVersion.replace(/^20/, (api.LoadString(hShell32, 60) || "%").replace(/%.*/, "")).replace(/\.0/g, '.'), ' ', GetText("is required."), '">');

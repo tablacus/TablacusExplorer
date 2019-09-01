@@ -1,5 +1,17 @@
 //Tablacus Explorer
 
+function AboutTE(n)
+{
+	if (n == 0) {
+		return te.Version < 20190805 ? te.Version : 20190901;
+	}
+	if (n == 1) {
+		var v = AboutTE(0);
+		return api.sprintf(99, "%d.%d.%d", (v / 10000) % 100, (v / 100) % 100, v % 100);
+	}
+	return "Tablacus Explorer " + AboutTE(1) + " Gaku";
+}
+
 Ctrl = null;
 g_temp = null;
 g_sep = "` ~";
@@ -282,21 +294,7 @@ FolderMenu =
 	{
 		this.Clear();
 		var hMenu = api.CreatePopupMenu();
-		this.AddMenuItem(hMenu, api.ILCreateFromPath(ssfDESKTOP));
-		this.AddMenuItem(hMenu, api.ILCreateFromPath(ssfDRIVES));
-		var Items = this.Enum(api.ILCreateFromPath(ssfDRIVES));
-		var path0 = api.GetDisplayNameOf(ssfDESKTOP, SHGDN_ORIGINAL | SHGDN_FORPARSING);
-		for (var i = 0; i < Items.Count; i++) {
-			var Item = Items.Item(i);
-			if (IsFolderEx(Item)) {
-				var path = api.GetDisplayNameOf(Item, SHGDN_ORIGINAL | SHGDN_FORPARSING);
-				if (path && path != path0) {
-					this.AddMenuItem(hMenu, Item);
-				}
-			}
-		}
-		this.AddMenuItem(hMenu, api.ILCreateFromPath(ssfBITBUCKET), api.GetDisplayNameOf(ssfBITBUCKET, SHGDN_INFOLDER), true);
-
+		RunEvent3("LocationPopup", hMenu);
 		var pt = GetPos(o, true);
 		window.g_menu_click = true;
 		var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x + o.offsetWidth, pt.y + o.offsetHeight, te.hwnd, null, null);
@@ -1055,7 +1053,7 @@ Navigate = function (Path, wFlags)
 	NavigateFV(te.Ctrl(CTRL_FV), Path, wFlags);
 }
 
-NavigateFV = function (FV, Path, wFlags)
+NavigateFV = function (FV, Path, wFlags, bInputed)
 {
 	if (!FV) {
 		var TC = te.CreateCtrl(CTRL_TC, 0, 0, "100%", "100%", te.Data.Tab_Style, te.Data.Tab_Align, te.Data.Tab_TabWidth, te.Data.Tab_TabHeight);
@@ -1078,13 +1076,10 @@ NavigateFV = function (FV, Path, wFlags)
 	if (FV.Data.Lock) {
 		wFlags |= SBSP_NEWBROWSER;
 	}
-	if (res) {
-		FV.Navigate(res[1], wFlags);
-		FV.FilterView = res[2];
-		FV.Refresh();
-	} else {
-		FV.Navigate(Path, wFlags);
+	if (bInputed) {
+		RunEvent1("LocationEntered", FV, Path, wFlags);
 	}
+	FV.Navigate(Path, wFlags);
 	FV.Focus();
 }
 
@@ -2438,8 +2433,8 @@ function CheckUpdate2(xhr, url, arg1)
 	if (res) {
 		ver = api.Add(20000000, res[1]);
 	}
-	if (ver <= te.Version) {
-		if ((arg1 && arg1.silent) || MessageBox(te.About + "\n" + GetText("the latest version"), TITLE, MB_ICONINFORMATION)) {
+	if (ver <= AboutTE(0)) {
+		if ((arg1 && arg1.silent) || MessageBox(AboutTE(2) + "\n" + GetText("the latest version"), TITLE, MB_ICONINFORMATION)) {
 			if (api.GetKeyState(VK_SHIFT) >= 0 || api.GetKeyState(VK_CONTROL) >= 0) {
 				MainWindow.RunEvent1("CheckUpdate", arg1);
 				return;
@@ -3568,7 +3563,7 @@ GetTEInfo = function ()
 			ar.push(list.item().displayName);
 		}
 	}
-	return api.sprintf(99, "TE%d %d.%d.%d Win %d.%d.%d%s %s %x%s%s IE", api.sizeof("HANDLE") * 8, (te.Version / 10000) % 100, (te.Version / 100) % 100, te.Version % 100, osInfo.dwMajorVersion, osInfo.dwMinorVersion, osInfo.dwBuildNumber, api.IsWow64Process(api.GetCurrentProcess()) ? " Wow64" : "", ["WS", "DC", "SV"][osInfo.wProductType - 1] || osInfo.wProductType, osInfo.wSuiteMask, api.SHTestTokenMembership(null, 0x220) ? " Admin" : "", api.ShouldAppsUseDarkMode() ? " Dark" : "") + ar.join(" ");
+	return api.sprintf(99, "TE%d %s Win %d.%d.%d%s %s %x%s%s IE", api.sizeof("HANDLE") * 8, AboutTE(1), osInfo.dwMajorVersion, osInfo.dwMinorVersion, osInfo.dwBuildNumber, api.IsWow64Process(api.GetCurrentProcess()) ? " Wow64" : "", ["WS", "DC", "SV"][osInfo.wProductType - 1] || osInfo.wProductType, osInfo.wSuiteMask, api.SHTestTokenMembership(null, 0x220) ? " Admin" : "", api.ShouldAppsUseDarkMode() ? " Dark" : "") + ar.join(" ");
 }
 
 FireEvent = function (o, event)

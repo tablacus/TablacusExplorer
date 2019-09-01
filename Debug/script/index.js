@@ -3494,6 +3494,24 @@ AddEvent("UseExplorer", function (pid)
 	}
 });
 
+AddEvent("LocationPopup", function (hMenu)
+{
+	FolderMenu.AddMenuItem(hMenu, api.ILCreateFromPath(ssfDESKTOP));
+	FolderMenu.AddMenuItem(hMenu, api.ILCreateFromPath(ssfDRIVES));
+	var Items = FolderMenu.Enum(api.ILCreateFromPath(ssfDRIVES));
+	var path0 = api.GetDisplayNameOf(ssfDESKTOP, SHGDN_ORIGINAL | SHGDN_FORPARSING);
+	for (var i = 0; i < Items.Count; i++) {
+		var Item = Items.Item(i);
+		if (IsFolderEx(Item)) {
+			var path = api.GetDisplayNameOf(Item, SHGDN_ORIGINAL | SHGDN_FORPARSING);
+			if (path && path != path0) {
+				FolderMenu.AddMenuItem(hMenu, Item);
+			}
+		}
+	}
+	FolderMenu.AddMenuItem(hMenu, api.ILCreateFromPath(ssfBITBUCKET), api.GetDisplayNameOf(ssfBITBUCKET, SHGDN_INFOLDER), true);
+});
+
 AddEnv("Selected", function(Ctrl)
 {
 	var ar = [];

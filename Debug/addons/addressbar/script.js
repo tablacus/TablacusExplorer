@@ -35,7 +35,7 @@ if (window.Addon == 1) {
 				pt.y = screenTop + p.y + o.offsetHeight;
 				window.Input = o.value;
 				if (ExecMenu(te.Ctrl(CTRL_WB), "Alias", pt, 2) != S_OK) {
-					Navigate(o.value, GetNavigateFlags());
+					NavigateFV(te.Ctrl(CTRL_FV), o.value, GetNavigateFlags(), true);
 				}
 				return false;
 			}
