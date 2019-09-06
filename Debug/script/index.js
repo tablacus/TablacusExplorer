@@ -2,6 +2,8 @@
 
 te.ClearEvents();
 te.LockUpdate();
+te.About = AboutTE(2);
+api.SetWindowText(te.hwnd, AboutTE(2));
 Addon = 1;
 Init = false;
 ExtraMenuCommand = [];
@@ -3624,8 +3626,18 @@ function CreateUpdater(arg)
 	if (isFinite(RunEvent3("CreateUpdater", arg))) {
 		return;
 	}
+	if (!IsExists(fso.BuildPath(arg.temp, fso.GetFileName(api.GetModuleFileName(null))))) {
+		api.SHFileOperation(FO_MOVE, arg.temp + "\\*", fso.GetParentFolderName(api.GetModuleFileName(null)), FOF_NOCONFIRMATION, false);
+		te.Reload();
+		return;
+	}
 	g_.strUpdate = ['"', api.IsWow64Process(api.GetCurrentProcess()) ? wsh.ExpandEnvironmentStrings("%SystemRoot%\\Sysnative") : system32, "\\", "wscript.exe", '" "', arg.temp, "\\script\\update.js", '" "', api.GetModuleFileName(null), '" "', arg.temp, '" "', api.LoadString(hShell32, 12612), '" "', api.LoadString(hShell32, 12852),'"'].join("");
 	DeleteTempFolder = PerformUpdate;
+	WmiProcess("WHERE ExecutablePath='" + (api.GetModuleFileName(null).split("\\").join("\\\\")) + "' AND ProcessId!=" + arg.pid, function (item)
+	{
+		item.Terminate();
+	});
+	api.PostMessage(te.hwnd, WM_CLOSE, 0, 0);
 }
 
 function IsHeader(Ctrl, pt, hwnd, strClass)

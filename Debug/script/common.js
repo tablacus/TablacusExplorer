@@ -3,13 +3,24 @@
 function AboutTE(n)
 {
 	if (n == 0) {
-		return te.Version < 20190805 ? te.Version : 20190901;
+		return te.Version < 20190805 ? te.Version : 20190906;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
 		return api.sprintf(99, "%d.%d.%d", (v / 10000) % 100, (v / 100) % 100, v % 100);
 	}
-	return "Tablacus Explorer " + AboutTE(1) + " Gaku";
+	if (n == 2) {
+		return "Tablacus Explorer " + AboutTE(1) + " Gaku";
+	}
+	var ar = [document.documentMode || (document.body.style.maxHeight === undefined ? 6 : 7), GetLangId(2), screen.deviceYDPI];
+	var server = te.GetObject("winmgmts:\\\\.\\root\\SecurityCenter" + (WINVER >= 0x600 ? "2" : ""));
+	if (server) {
+		var cols = server.ExecQuery("SELECT * FROM AntiVirusProduct");
+		for (var list = new Enumerator(cols); !list.atEnd(); list.moveNext()) {
+			ar.push(list.item().displayName);
+		}
+	}
+	return api.sprintf(99, "TE%d %s Win %d.%d.%d%s %s %x%s%s IE", api.sizeof("HANDLE") * 8, AboutTE(1), osInfo.dwMajorVersion, osInfo.dwMinorVersion, osInfo.dwBuildNumber, api.IsWow64Process(api.GetCurrentProcess()) ? " Wow64" : "", ["WS", "DC", "SV"][osInfo.wProductType - 1] || osInfo.wProductType, osInfo.wSuiteMask, api.SHTestTokenMembership(null, 0x220) ? " Admin" : "", api.ShouldAppsUseDarkMode() ? " Dark" : "") + ar.join(" ");
 }
 
 Ctrl = null;
@@ -2465,9 +2476,9 @@ function CheckUpdate3(xhr, url, arg)
 		MessageBox([api.LoadString(hShell32, 4228).replace(/^\t/, "").replace("%d", api.sprintf(99, "0x%08x", hr)), GetText("Extract"), fso.GetFileName(arg.zipfile)].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
 		return;
 	}
-	var te64exe = arg.temp + "\\te64.exe";
+	var te_exe = arg.temp + "\\te64.exe";
 	var nDog = 300;
-	while (!fso.FileExists(te64exe)) {
+	while (!fso.FileExists(te_exe)) {
 		if (wsh.Popup(GetText("Please wait."), 1, TITLE, MB_OKCANCEL) == IDCANCEL || nDog-- == 0) {
 			return;
 		}
@@ -2476,6 +2487,12 @@ function CheckUpdate3(xhr, url, arg)
 	var addons = arg.temp + "\\addons";
 	if (fso.FolderExists(arg.temp + "\\config")) {
 		arDel.push(arg.temp + "\\config");
+	}
+	for (var i = 32; i <= 64; i+= 32) {
+		te_exe = arg.temp + '\\te' + i + '.exe';
+		if (fso.GetFileVersion(te_exe) == fso.GetFileVersion(fso.BuildPath(te.Data.Installed, 'te' + i + '.exe'))) {
+			arDel.push(te_exe);
+		}
 	}
 	for (var list = new Enumerator(fso.GetFolder(addons).SubFolders); !list.atEnd(); list.moveNext()) {
 		var n = list.item().Name;
@@ -2491,11 +2508,6 @@ function CheckUpdate3(xhr, url, arg)
 	api.GetWindowThreadProcessId(te.hwnd, ppid);
 	arg.pid = ppid[0];
 	MainWindow.CreateUpdater(arg);
-	WmiProcess("WHERE ExecutablePath='" + (api.GetModuleFileName(null).split("\\").join("\\\\")) + "' AND ProcessId!=" + arg.pid, function (item)
-	{
-		item.Terminate();
-	});
-	api.PostMessage(te.hwnd, WM_CLOSE, 0, 0);
 }
 
 function ShowAbout()
@@ -3329,7 +3341,7 @@ ShowError = function (e, s, i)
 		g_.ShowError = true;
 		setTimeout(function ()
 		{
-			g_.ShowError = MessageBox([e.stack || e.description || e.toString(), s, GetTEInfo()].join("\n\n"), TITLE, MB_OKCANCEL) != IDOK;
+			g_.ShowError = MessageBox([e.stack || e.description || e.toString(), s, AboutTE(3)].join("\n\n"), TITLE, MB_OKCANCEL) != IDOK;
 		}, 99);
 	}
 }
@@ -3552,19 +3564,6 @@ function CloseSubWindows()
 }
 
 AddEventEx(window, "beforeunload", CloseSubWindows);
-
-GetTEInfo = function ()
-{
-	var ar = [document.documentMode || (document.body.style.maxHeight === undefined ? 6 : 7), GetLangId(2), screen.deviceYDPI];
-	var server = te.GetObject("winmgmts:\\\\.\\root\\SecurityCenter" + (WINVER >= 0x600 ? "2" : ""));
-	if (server) {
-		var cols = server.ExecQuery("SELECT * FROM AntiVirusProduct");
-		for (var list = new Enumerator(cols); !list.atEnd(); list.moveNext()) {
-			ar.push(list.item().displayName);
-		}
-	}
-	return api.sprintf(99, "TE%d %s Win %d.%d.%d%s %s %x%s%s IE", api.sizeof("HANDLE") * 8, AboutTE(1), osInfo.dwMajorVersion, osInfo.dwMinorVersion, osInfo.dwBuildNumber, api.IsWow64Process(api.GetCurrentProcess()) ? " Wow64" : "", ["WS", "DC", "SV"][osInfo.wProductType - 1] || osInfo.wProductType, osInfo.wSuiteMask, api.SHTestTokenMembership(null, 0x220) ? " Admin" : "", api.ShouldAppsUseDarkMode() ? " Dark" : "") + ar.join(" ");
-}
 
 FireEvent = function (o, event)
 {
