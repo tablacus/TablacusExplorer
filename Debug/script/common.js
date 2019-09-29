@@ -3,7 +3,7 @@
 function AboutTE(n)
 {
 	if (n == 0) {
-		return te.Version < 20190805 ? te.Version : 20190906;
+		return te.Version < 20190805 ? te.Version : 20190929;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -316,24 +316,28 @@ FolderMenu =
 	}
 };
 
-RunEvent1 = function (en, a1, a2, a3, a4)
+RunEvent1 = function ()
 {
+	var args = Array.apply(null, arguments);
+	var en = args.shift();
 	var eo = eventTE[en.toLowerCase()];
 	for (var i in eo) {
 		try {
-			eo[i](a1, a2, a3, a4);
+			eo[i].apply(eo[i], args);
 		} catch (e) {
 			ShowError(e, en, i);
 		}
 	}
 }
 
-RunEvent2 = function (en, a1, a2, a3, a4)
+RunEvent2 = function ()
 {
+	var args = Array.apply(null, arguments);
+	var en = args.shift();
 	var eo = eventTE[en.toLowerCase()];
 	for (var i in eo) {
 		try {
-			var hr = eo[i](a1, a2, a3, a4);
+			var hr = eo[i].apply(null, args);
 			if (isFinite(hr) && hr != S_OK) {
 				return hr;
 			}
@@ -344,12 +348,14 @@ RunEvent2 = function (en, a1, a2, a3, a4)
 	return S_OK;
 }
 
-RunEvent3 = function (en, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)
+RunEvent3 = function ()
 {
+	var args = Array.apply(null, arguments);
+	var en = args.shift();
 	var eo = eventTE[en.toLowerCase()];
 	for (var i in eo) {
 		try {
-			var hr = eo[i](a1, a2, a3, a4, a5, a6, a7, a8, a9, a10);
+			var hr = eo[i].apply(null, args);
 			if (isFinite(hr)) {
 				return hr;
 			}
@@ -359,12 +365,14 @@ RunEvent3 = function (en, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)
 	}
 }
 
-RunEvent4 = function (en, a1, a2, a3)
+RunEvent4 = function ()
 {
+	var args = Array.apply(null, arguments);
+	var en = args.shift();
 	var eo = eventTE[en.toLowerCase()];
 	for (var i in eo) {
 		try {
-			var r = eo[i](a1, a2, a3);
+			var r = eo[i].apply(null, args);
 			if (r !== undefined) {
 				return r;
 			}
@@ -383,7 +391,7 @@ AddEvent = function (Name, fn, priority)
 			te["On" + s] = g_.event[s];
 		}
 		if (!eventTE[en]) {
-			eventTE[en] = [];
+			eventTE[en] = api.CreateObject("Array");
 		}
 		if (!eventTA[en]) {
 			eventTA[en] = [];
@@ -774,7 +782,7 @@ LoadXml = function (filename, nGroup)
 	var xml = filename;
 	g_.fTCs = 0;
 	if (/^string$/i.test(typeof filename)) {
-		filename = api.PathUnquoteSpaces(filename);
+		filename = api.PathUnquoteSpaces(ExtractMacro(te, filename));
 		if (fso.FileExists(filename)) {
 			xml = te.CreateObject("Msxml2.DOMDocument");
 			xml.async = false;
@@ -960,7 +968,7 @@ SaveXml = function (filename)
 
 	MainWindow.RunEvent1("SaveWindow", xml);
 	try {
-		xml.save(api.PathUnquoteSpaces(filename));
+		xml.save(api.PathUnquoteSpaces(ExtractMacro(te, filename)));
 	} catch (e) {
 		if (e.number != E_ACCESSDENIED) {
 			ShowError(e, [GetText("Save"), filename].join(": "));

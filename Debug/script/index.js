@@ -778,7 +778,7 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 		SetGestureText(Ctrl, GetGestureKey() + g_.mouse.str);
 	}
 	if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) {
-		var nKey = ((keydata >> 16) & 0x17f) | GetKeyShift();
+		var nKey = (((keydata >> 16) & 0x17f) || (api.MapVirtualKey(key, 0) | ((key >= 33 && key <= 46 || key >= 91 && key <= 93 || key == 111 || key == 144) ? 256 : 0))) | GetKeyShift();
 		if (nKey == 0x15d) {
 			g_.mouse.CancelContextMenu = false;
 		}
