@@ -3061,7 +3061,7 @@ g_basic =
 					var ContextMenu = api.ContextMenu(Selected, FV);
 					if (ContextMenu) {
 						var hMenu = api.CreatePopupMenu();
-						ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_EXTENDEDVERBS | CMF_CANRENAME | CMF_DONOTPICKDEFAULT);
+						ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_EXTENDEDVERBS | CMF_CANRENAME);
 						return g_basic.PopupMenu(hMenu, ContextMenu, pt);
 					}
 				}
@@ -3094,7 +3094,7 @@ g_basic =
 					var ContextMenu = FV.ViewMenu();
 					if (ContextMenu) {
 						var hMenu = api.CreatePopupMenu();
-						ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_EXTENDEDVERBS | CMF_DONOTPICKDEFAULT);
+						ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_EXTENDEDVERBS);
 						return g_basic.PopupMenu(hMenu, ContextMenu, pt);
 					}
 				}
@@ -3777,6 +3777,23 @@ if (!te.Data) {
 }
 te.Data.window = window;
 Exchange = te.Data.Exchange;
+var ado = OpenAdodbFromTextFile("script\\threads.js");
+if (ado) {
+	Threads = {
+		Codes: [],
+		hEvent: api.CreateEvent(null, true, false, null),
+		AddCode: function (s)
+		{
+			Threads.Codes.push(s);
+		}
+	}
+	api.ExecScript(ado.ReadText(), "JScript",
+		{
+			MainWindow: window,
+		}, true
+	);
+	ado.Close();
+}
 
 InitCode();
 InitMouse();

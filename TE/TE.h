@@ -28,6 +28,7 @@
 #include <Thumbcache.h>
 #include <mmsystem.h>
 #include <WinIoCtl.h>
+#include <tlhelp32.h>
 
 #include <list>
 #include <vector>
@@ -1495,6 +1496,7 @@ public:
 //	HRESULT CreateBMPStream(IStream *pStream, ULARGE_INTEGER *puliSize, LPWSTR szMime);
 private:
 	IWICBitmap *m_pImage;
+	IWICImagingFactory *m_pWICFactory;
 	IStream *m_pStream;
 	CLSID m_guidSrc;
 	IWICMetadataQueryReader *m_ppMetadataQueryReader[2];

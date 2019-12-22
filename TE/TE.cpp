@@ -96,7 +96,6 @@ IUnknown	*g_pDraggingCtrl = NULL;
 IDataObject	*g_pDraggingItems = NULL;
 IDispatchEx *g_pCM = NULL;
 ULONG_PTR g_Token;
-IWICImagingFactory *g_pWICFactory = NULL;
 HHOOK	g_hHook;
 HHOOK	g_hMouseHook;
 HHOOK	g_hMessageHook;
@@ -1252,6 +1251,24 @@ BOOL GetVarArrayFromIDList(VARIANT *pv, LPITEMIDLIST pidl);
 HRESULT teGetDisplayNameFromIDList(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags);
 
 //Unit
+
+int teGetthreadCount(DWORD dwProcessId)
+{
+	int nThread = 0;
+	HANDLE hSnapshot;
+	if ((hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPALL, dwProcessId)) != INVALID_HANDLE_VALUE) {
+		THREADENTRY32  te32 = { sizeof(THREADENTRY32) };
+
+		if (Thread32First(hSnapshot, &te32)) {
+			do {
+				if (dwProcessId == te32.th32OwnerProcessID) {
+					nThread++;
+				}
+			} while (Thread32Next(hSnapshot, &te32));
+		}		CloseHandle(hSnapshot);
+	}
+	return nThread;
+}
 
 HRESULT teGetWindow(PVOID pObj, HWND *phwnd)
 {
@@ -7477,7 +7494,7 @@ VOID teApiWindowFromPoint(int nArg, teParam *param, DISPPARAMS *pDispParams, VAR
 
 VOID teApiGetThreadCount(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLong(pVarResult, g_nThreads);
+	teSetLong(pVarResult, param[0].dword ? teGetthreadCount(param[0].dword): g_nThreads);
 }
 
 VOID teApiDoEvents(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -9885,6 +9902,11 @@ VOID teApiSetEvent(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *p
 	teSetBool(pVarResult, SetEvent(param[0].handle));
 }
 
+VOID teApiResetEvent(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetBool(pVarResult, ResetEvent(param[0].handle));
+}
+
 VOID teApiPlaySound(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	teSetBool(pVarResult, PlaySound(param[0].lpcwstr, param[1].hmodule, param[2].dword));
@@ -10311,6 +10333,7 @@ TEDispatchApi dispAPI[] = {
 	{ 1,  0, -1, -1, "DeleteFile", teApiDeleteFile },
 	{ 4,  3, -1, -1, "CreateEvent", teApiCreateEvent },
 	{ 1, -1, -1, -1, "SetEvent", teApiSetEvent },
+	{ 1, -1, -1, -1, "ResetEvent", teApiResetEvent },
 	{ 3,  0, -1, -1, "PlaySound", teApiPlaySound },
 	{ 4,  0, -1, -1, "SHCreateStreamOnFileEx", teApiSHCreateStreamOnFileEx },	
 	{ 1, -1, -1, -1, "HasThumbnail", teApiHasThumbnail },
@@ -10409,13 +10432,13 @@ BOOL teFindType(LPWSTR pszText, LPWSTR pszFind)
 	return FALSE;
 }
 
-BOOL GetEncoderClsid(LPWSTR pszName, CLSID* pClsid, LPWSTR pszMimeType)
+BOOL GetEncoderClsid(LPWSTR pszName, CLSID* pClsid, LPWSTR pszMimeType, IWICImagingFactory *m_pWICFactory)
 {
 	IEnumUnknown *pEnum;
 	WCHAR pszType[MAX_PATH];
 	WCHAR pszExt[MAX_PATH];
 	LPWSTR pszExt0 = PathFindExtension(pszName);
-	HRESULT hr = g_pWICFactory->CreateComponentEnumerator(WICEncoder, WICComponentEnumerateDefault, &pEnum);
+	HRESULT hr = m_pWICFactory->CreateComponentEnumerator(WICEncoder, WICComponentEnumerateDefault, &pEnum);
 	if SUCCEEDED(hr) {
 		ULONG cbActual = 0;
 		IUnknown *punk;
@@ -11274,10 +11297,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	g_paramFV[SB_EnumFlags] = SHCONTF_FOLDERS;
 	g_paramFV[SB_RootStyle] = NSTCRS_VISIBLE | NSTCRS_EXPANDED;
 
-	// Windows Imaging Component
-	if FAILED(teCreateInstance(CLSID_WICImagingFactory, NULL, NULL, IID_PPV_ARGS(&g_pWICFactory))) {
-		g_pWICFactory = NULL;
-	}
 	MyRegisterClass(hInstance, szClass, WndProc);
 
 	g_pSortColumnNull[0].propkey = PKEY_Search_Rank;
@@ -11466,6 +11485,7 @@ function _c(s) {\
 	if (!bVisible) {
 		PostMessage(g_hwndMain, WM_CLOSE, 0, 0);
 	}
+
 	teSysFreeString(&bsIndex);
 	teSysFreeString(&bsPath);
 
@@ -11511,7 +11531,6 @@ function _c(s) {\
 		SafeRelease(&g_pStrmJS);
 		SafeRelease(&g_pJS);
 		SafeRelease(&g_pAutomation);
-		SafeRelease(&g_pWICFactory);
 		SafeRelease(&g_pDropTargetHelper);
 		DeleteCriticalSection(&g_csFolderSize);
 		UnhookWindowsHookEx(g_hMouseHook);
@@ -11538,6 +11557,10 @@ VOID ArrangeWindow()
 {
 	if (g_nSize <= 0) {
 		g_nSize++;
+		SetTimer(g_hwndMain, TET_Size, 1, teTimerProc);
+		SetTimer(g_hwndMain, TET_Size, 1, teTimerProc);
+		SetTimer(g_hwndMain, TET_Size, 1, teTimerProc);
+		SetTimer(g_hwndMain, TET_Size, 1, teTimerProc);
 		SetTimer(g_hwndMain, TET_Size, 1, teTimerProc);
 	}
 }
@@ -17028,6 +17051,9 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				return S_OK;
 			//About
 			case 1004:
+				if (nArg >= 0 && pDispParams->rgvarg[nArg].vt == VT_BSTR) {
+					StrNCpy(g_szTE, pDispParams->rgvarg[nArg].bstrVal, MAX_LOADSTRING);
+				}
 				teSetSZ(pVarResult, g_szTE);
 				return S_OK;
 			//Ctrl
@@ -22990,11 +23016,15 @@ CteWICBitmap::CteWICBitmap()
 	m_pStream = NULL;
 	m_ppMetadataQueryReader[0] = NULL;
 	m_ppMetadataQueryReader[1] = NULL;
+	if FAILED(teCreateInstance(CLSID_WICImagingFactory, NULL, NULL, IID_PPV_ARGS(&m_pWICFactory))) {
+		m_pWICFactory = NULL;
+	}
 }
 
 CteWICBitmap::~CteWICBitmap()
 {
 	ClearImage(TRUE);
+	SafeRelease(&m_pWICFactory);
 }
 
 VOID CteWICBitmap::ClearImage(BOOL bAll)
@@ -23073,7 +23103,7 @@ HBITMAP CteWICBitmap::GetHBITMAP(COLORREF clBk)
 			if SUCCEEDED(pBitmapLock->GetStride(&cbStride)) {
 				UINT uCount = 0;
 				IWICPalette *pPalette = NULL;
-				if SUCCEEDED(g_pWICFactory->CreatePalette(&pPalette)) {
+				if SUCCEEDED(m_pWICFactory->CreatePalette(&pPalette)) {
 					if SUCCEEDED(m_pImage->CopyPalette(pPalette)) {
 						pPalette->GetColorCount(&uCount);
 					}
@@ -23139,12 +23169,12 @@ BOOL CteWICBitmap::Get(WICPixelFormatGUID guidNewPF)
 	}
 	BOOL b = FALSE;
 	IWICFormatConverter *pConverter;
-	if SUCCEEDED(g_pWICFactory->CreateFormatConverter(&pConverter)) {
+	if SUCCEEDED(m_pWICFactory->CreateFormatConverter(&pConverter)) {
 		if SUCCEEDED(pConverter->Initialize(m_pImage, guidNewPF, WICBitmapDitherTypeNone, NULL, 0.0f, WICBitmapPaletteTypeMedianCut)) {
 			pConverter->GetPixelFormat(&guidPF);
 			if (IsEqualGUID(guidPF, guidNewPF)) {
 				ClearImage(FALSE);
-				b = SUCCEEDED(g_pWICFactory->CreateBitmapFromSource(pConverter, WICBitmapCacheOnDemand, &m_pImage));
+				b = SUCCEEDED(m_pWICFactory->CreateBitmapFromSource(pConverter, WICBitmapCacheOnDemand, &m_pImage));
 			}
 			SafeRelease(&pConverter);
 		}
@@ -23157,7 +23187,7 @@ HRESULT CteWICBitmap::CreateStream(IStream *pStream, ULARGE_INTEGER *puliSize, C
 	HRESULT hr = E_FAIL;
 	if (pStream) {
 		IWICBitmapEncoder *pEncoder;
-		if SUCCEEDED(g_pWICFactory->CreateEncoder(encoderClsid, NULL, &pEncoder)) {
+		if SUCCEEDED(m_pWICFactory->CreateEncoder(encoderClsid, NULL, &pEncoder)) {
 			if (lQuality == 0 && m_pStream && IsEqualGUID(encoderClsid, m_guidSrc)) {
 				teCopyStream(m_pStream, pStream);
 				hr = S_OK;
@@ -23184,7 +23214,7 @@ HRESULT CteWICBitmap::CreateStream(IStream *pStream, ULARGE_INTEGER *puliSize, C
 						pFrameEncode->SetSize(w, h);
 						pFrameEncode->SetPixelFormat(&guidPF);
 						IWICPalette *pPalette = NULL;
-						if SUCCEEDED(g_pWICFactory->CreatePalette(&pPalette)) {
+						if SUCCEEDED(m_pWICFactory->CreatePalette(&pPalette)) {
 							if SUCCEEDED(m_pImage->CopyPalette(pPalette)) {
 								pFrameEncode->SetPalette(pPalette);
 							}
@@ -23293,7 +23323,7 @@ VOID CteWICBitmap::GetFrameFromStream(IStream *pStream, UINT uFrame, BOOL bInit)
 	liOffset.QuadPart = 0;
 	pStream->Seek(liOffset, SEEK_SET, NULL);
 	IWICBitmapDecoder *pDecoder;
-	if SUCCEEDED(g_pWICFactory->CreateDecoderFromStream(pStream, NULL, WICDecodeMetadataCacheOnDemand, &pDecoder)) {
+	if SUCCEEDED(m_pWICFactory->CreateDecoderFromStream(pStream, NULL, WICDecodeMetadataCacheOnDemand, &pDecoder)) {
 		SafeRelease(&m_ppMetadataQueryReader[0]);
 		pDecoder->GetMetadataQueryReader(&m_ppMetadataQueryReader[0]);
 		IWICBitmapFrameDecode *pFrameDecode;
@@ -23301,7 +23331,7 @@ VOID CteWICBitmap::GetFrameFromStream(IStream *pStream, UINT uFrame, BOOL bInit)
 		if (m_uFrameCount) {
 			if SUCCEEDED(pDecoder->GetFrame(uFrame, &pFrameDecode)) {
 				ClearImage(FALSE);
-				g_pWICFactory->CreateBitmapFromSource(pFrameDecode, WICBitmapCacheOnDemand, &m_pImage);
+				m_pWICFactory->CreateBitmapFromSource(pFrameDecode, WICBitmapCacheOnDemand, &m_pImage);
 				SafeRelease(&m_ppMetadataQueryReader[1]);
 				pFrameDecode->GetMetadataQueryReader(&m_ppMetadataQueryReader[1]);
 				SafeRelease(&pFrameDecode);
@@ -23358,7 +23388,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 		if (pVarResult) {
 			VariantInit(pVarResult);
 		}
-		if (!g_pWICFactory) {
+		if (!m_pWICFactory) {
 			return S_OK;
 		}
 		if (dispIdMember < 100) {
@@ -23374,7 +23404,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					HPALETTE pal = (nArg >= 1) ? (HPALETTE)GetPtrFromVariant(&pDispParams->rgvarg[nArg - 1]) : 0;
 					WICBitmapAlphaChannelOption nAlpha = (nArg >= 2) ? (WICBitmapAlphaChannelOption)GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]) : WICBitmapIgnoreAlpha;
 					IWICBitmap *pBitmap;
-					if SUCCEEDED(g_pWICFactory->CreateBitmapFromHBITMAP((HBITMAP)GetPtrFromVariant(&pDispParams->rgvarg[nArg]), pal, nAlpha, &pBitmap)) {
+					if SUCCEEDED(m_pWICFactory->CreateBitmapFromHBITMAP((HBITMAP)GetPtrFromVariant(&pDispParams->rgvarg[nArg]), pal, nAlpha, &pBitmap)) {
 						SafeRelease(&m_pImage);
 						m_pImage = pBitmap;
 					}
@@ -23384,7 +23414,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 			//FromHICON
 			case 2:
 				if (nArg >= 0) {
-					g_pWICFactory->CreateBitmapFromHICON((HICON)GetPtrFromVariant(&pDispParams->rgvarg[nArg]), &m_pImage);
+					m_pWICFactory->CreateBitmapFromHICON((HICON)GetPtrFromVariant(&pDispParams->rgvarg[nArg]), &m_pImage);
 					teSetObject(pVarResult, GetBitmapObj());
 				}
 				return S_OK;
@@ -23394,7 +23424,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					HBITMAP hBM = (HBITMAP)LoadImage((HINSTANCE)GetPtrFromVariant(&pDispParams->rgvarg[nArg]), GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 					if (hBM) {
 						IWICBitmap *pBitmap;
-						if SUCCEEDED(g_pWICFactory->CreateBitmapFromHBITMAP(hBM, 0, WICBitmapIgnoreAlpha, &pBitmap)) {
+						if SUCCEEDED(m_pWICFactory->CreateBitmapFromHBITMAP(hBM, 0, WICBitmapIgnoreAlpha, &pBitmap)) {
 							SafeRelease(&m_pImage);
 							m_pImage = pBitmap;
 						}
@@ -23537,7 +23567,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 							}
 							if (hBM) {
 								SafeRelease(&m_pImage);
-								g_pWICFactory->CreateBitmapFromHBITMAP(hBM, 0, alphaType == WTSAT_ARGB ? WICBitmapUseAlpha : WICBitmapIgnoreAlpha, &m_pImage);
+								m_pWICFactory->CreateBitmapFromHBITMAP(hBM, 0, alphaType == WTSAT_ARGB ? WICBitmapUseAlpha : WICBitmapIgnoreAlpha, &m_pImage);
 								DeleteObject(hBM);
 							}
 							pSF->Release();
@@ -23553,7 +23583,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					::OpenClipboard(NULL);
 					HBITMAP hBM = (HBITMAP)::GetClipboardData(CF_BITMAP);
 					SafeRelease(&m_pImage);
-					g_pWICFactory->CreateBitmapFromHBITMAP(hBM, 0, WICBitmapIgnoreAlpha, &m_pImage);
+					m_pWICFactory->CreateBitmapFromHBITMAP(hBM, 0, WICBitmapIgnoreAlpha, &m_pImage);
 					::CloseClipboard();
 				}
 				teSetObject(pVarResult, GetBitmapObj());
@@ -23567,7 +23597,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					VARIANT vText;
 					teVariantChangeType(&vText, &pDispParams->rgvarg[nArg], VT_BSTR);
 					CLSID encoderClsid;
-					if (GetEncoderClsid(vText.bstrVal, &encoderClsid, NULL)) {
+					if (GetEncoderClsid(vText.bstrVal, &encoderClsid, NULL, m_pWICFactory)) {
 						LONG lQuality = nArg ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) : 0;
 						ULARGE_INTEGER uliSize;
 						IStream *pStream;
@@ -23589,7 +23619,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					teVariantChangeType(&vText, &pDispParams->rgvarg[nArg], VT_BSTR);
 					CLSID encoderClsid;
 					WCHAR szMime[16];
-					if (GetEncoderClsid(vText.bstrVal, &encoderClsid, szMime)) {
+					if (GetEncoderClsid(vText.bstrVal, &encoderClsid, szMime, m_pWICFactory)) {
 						ULARGE_INTEGER uliSize;
 						IStream *pStream = SHCreateMemStream(NULL, NULL);
 						hr = CreateStream(pStream, &uliSize, encoderClsid, 0);
@@ -23701,14 +23731,14 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					UINT w = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 					UINT h = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
 					IWICBitmapScaler *pScaler;
-					if SUCCEEDED(g_pWICFactory->CreateBitmapScaler(&pScaler)) {
+					if SUCCEEDED(m_pWICFactory->CreateBitmapScaler(&pScaler)) {
 						int mode = nArg >= 2 ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]) : 4;
 						if (!g_bUpper10 && mode > 3) {
 							mode = 3;
 						}
 						if SUCCEEDED(pScaler->Initialize(m_pImage, w, h, WICBitmapInterpolationMode(mode))) {
 							CteWICBitmap *pGB = new CteWICBitmap();
-							g_pWICFactory->CreateBitmapFromSource(pScaler, WICBitmapCacheOnDemand, &pGB->m_pImage);
+							m_pWICFactory->CreateBitmapFromSource(pScaler, WICBitmapCacheOnDemand, &pGB->m_pImage);
 							SafeRelease(&pScaler);
 							teSetObjectRelease(pVarResult, pGB);
 						}
@@ -23719,10 +23749,10 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 			case 130:
 				if (nArg >= 0) {
 					IWICBitmapFlipRotator *pFlipRotator;
-					if SUCCEEDED(g_pWICFactory->CreateBitmapFlipRotator(&pFlipRotator)) {
+					if SUCCEEDED(m_pWICFactory->CreateBitmapFlipRotator(&pFlipRotator)) {
 						if SUCCEEDED(pFlipRotator->Initialize(m_pImage, static_cast<WICBitmapTransformOptions>(GetIntFromVariant(&pDispParams->rgvarg[nArg])))) {
 							ClearImage(TRUE);
-							g_pWICFactory->CreateBitmapFromSource(pFlipRotator, WICBitmapCacheOnDemand, &m_pImage);
+							m_pWICFactory->CreateBitmapFromSource(pFlipRotator, WICBitmapCacheOnDemand, &m_pImage);
 						}
 						SafeRelease(&pFlipRotator);
 					}
@@ -23802,7 +23832,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				IDispatch *pdisp;
 				if (nArg >= 2 && GetDispatch(&pDispParams->rgvarg[nArg - 2], &pdisp)) {
 					IEnumUnknown *pEnum;
-					HRESULT hr = g_pWICFactory->CreateComponentEnumerator(WICComponentType(GetIntFromVariant(&pDispParams->rgvarg[nArg])), WICComponentEnumerateDefault, &pEnum);
+					HRESULT hr = m_pWICFactory->CreateComponentEnumerator(WICComponentType(GetIntFromVariant(&pDispParams->rgvarg[nArg])), WICComponentEnumerateDefault, &pEnum);
 					if SUCCEEDED(hr) {
 						int nMode = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
 						ULONG cbActual = 0;

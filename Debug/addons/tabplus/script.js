@@ -131,9 +131,10 @@ if (window.Addon == 1) {
 				}
 				var s = ['<table style="width: 100%"><tr style="width: 100%">'];
 				try {
-					var w = FV.Data.Lock || this.opt.Close ? -13 : 0;
+					var r0 = Math.round(13 * screen.deviceYDPI / 96);
+					var w = FV.Data.Lock || this.opt.Close ? -r0 : 0;
 					if (FV.Data.Lock && !this.opt.NoLock) {
-						s.push('<td style="padding-right: 2px; vertical-align: middle; width: 13px"><img src="', this.ImgLock, '" style="width: 13px"></td>');
+						s.push('<td style="padding-right: 2px; vertical-align: middle; width: ', r0, 'px"><img src="', this.ImgLock, '" style="width: ', r0, 'px"></td>');
 						w -= 2;
 					}
 					if (this.opt.Icon && (img = GetIconImage(FV, api.GetSysColor(COLOR_BTNFACE)))) {
@@ -157,7 +158,7 @@ if (window.Addon == 1) {
 					}
 					s.push('<td style="vertical-align: middle;"><div style="overflow: hidden; white-space: nowrap;');
 					if (this.opt.Close && !FV.Data.Lock && this.opt.Align > 1 && this.opt.Width) {
-						w -= 13;
+						w -= r0;
 					}
 					w += Number(this.opt.Width) || 0;
 					if (w > 0) {
@@ -175,7 +176,7 @@ if (window.Addon == 1) {
 					}
 					s.push('" >', n, '</div></td>');
 					if (this.opt.Close && !FV.Data.Lock) {
-						s.push('<td style="vertical-align: middle; width: 13px" align="right"><img class="button" src="', this.ImgClose, '" style="width: 13px" id="tabplus_', FV.Parent.Id, '_', i, 'x" title="', this.opt.Tooltips ? GetText("Close Tab") : "", '" onmouseover="MouseOver(this)" onmouseout="MouseOut()"></td>');
+						s.push('<td style="vertical-align: middle; width: ', r0, 'px" align="right">', this.ImgClose, r0, 'px" id="tabplus_', FV.Parent.Id, '_', i, 'x" class="button" title="', this.opt.Tooltips ? GetText("Close Tab") : "", '" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', this.ImgClose2 , '</td>');
 					}
 				} catch (e) {}
 				s.push('</tr></table>');
@@ -439,14 +440,12 @@ if (window.Addon == 1) {
 		{
 			var ptc = pt.Clone();
 			api.ScreenToClient(api.GetWindow(document), ptc);
-			var elem = document.elementFromPoint(ptc.x, ptc.y);
 			var re = new RegExp("tabplus_" + Id + "_(\\d+)", "");
-			while (elem && !/UL/i.test(elem.tagName)) {
-				var res = re.exec(elem.id);
+			for (var el = document.elementFromPoint(ptc.x, ptc.y); el && !/UL/i.test(el.tagName); el = el.parentElement) {
+				var res = re.exec(el.id);
 				if (res) {
 					return res[1];
 				}
-				elem = elem.parentElement;
 			}
 			return -1;
 		},
@@ -670,8 +669,16 @@ if (window.Addon == 1) {
 	for (var i = attrs.length; i-- > 0;) {
 		Addons.TabPlus.opt[attrs[i].name] = attrs[i].value;
 	}
-	Addons.TabPlus.ImgLock = MakeImgSrc(item.getAttribute("IconLock") || "bitmap:ieframe.dll,545,13,2", 0, true, 13);
-	Addons.TabPlus.ImgClose = MakeImgSrc(item.getAttribute("IconClose") || "bitmap:ieframe.dll,545,13,1", 0, true, 13);
+	var r0 = Math.round(13 * screen.deviceYDPI / 96);
+	Addons.TabPlus.ImgLock = MakeImgSrc(item.getAttribute("IconLock") || "bitmap:ieframe.dll,545,13,2", 0, true, r0);
+	var s = item.getAttribute("IconClose");
+	if (s) {
+		Addons.TabPlus.ImgClose = '<img src="' + MakeImgSrc(s, 0, true, r0) + '" style="width: ';
+		Addons.TabPlus.ImgClose2 = '';
+	} else {
+		Addons.TabPlus.ImgClose = '<span style="font-family: marlett; font-size: ';
+		Addons.TabPlus.ImgClose2 = '&#x72;</span>';
+	}
 } else {
 	var ado = OpenAdodbFromTextFile("addons\\" + Addon_Id + "\\options.html");
 	if (ado) {

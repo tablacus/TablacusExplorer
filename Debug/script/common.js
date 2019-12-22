@@ -3,7 +3,7 @@
 function AboutTE(n)
 {
 	if (n == 0) {
-		return te.Version < 20190805 ? te.Version : 20190929;
+		return te.Version < 20191222 ? te.Version : 20191222;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -1925,13 +1925,13 @@ GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arCon
 					}
 				}
 				if (ContextMenu) {
-					ContextMenu.QueryContextMenu(hMenu, 0, 0x6001, 0x6fff, uCMF | CMF_DONOTPICKDEFAULT | CMF_ITEMMENU);
+					ContextMenu.QueryContextMenu(hMenu, 0, 0x6001, 0x6fff, uCMF | CMF_ITEMMENU);
 					if (!Items.Count) {
 						SetRenameMenu(ContextMenu.idCmdFirst);
 					}
 				}
 			} else if (FV) {
-				ContextMenu = GetViewMenu(arContextMenu, FV, hMenu, uCMF | CMF_DONOTPICKDEFAULT);
+				ContextMenu = GetViewMenu(arContextMenu, FV, hMenu, uCMF);
 				var mii = api.Memory("MENUITEMINFO");
 				mii.cbSize = mii.Size;
 				mii.fMask = MIIM_FTYPE | MIIM_SUBMENU;
@@ -1947,7 +1947,7 @@ GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arCon
 			break;
 		case 3:
 			if (FV) {
-				ContextMenu = GetViewMenu(arContextMenu, FV, hMenu, uCMF | CMF_DONOTPICKDEFAULT);
+				ContextMenu = GetViewMenu(arContextMenu, FV, hMenu, uCMF);
 			}
 			break;
 		case 5:

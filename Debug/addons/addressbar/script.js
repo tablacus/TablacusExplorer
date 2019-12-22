@@ -76,7 +76,7 @@ if (window.Addon == 1) {
 						if (n || api.GetAttributesOf(FolderItem, SFGAO_HASSUBFOLDER)) {
 							s.unshift('<span id="addressbar' + n + '" class="button" style="line-height: ' + height + 'px; vertical-align: middle" onclick="Addons.AddressBar.Popup(this,' + n + ')" onmouseover="MouseOver(this)" onmouseout="MouseOut()" oncontextmenu="Addons.AddressBar.Exec(); return false;">' + BUTTONS.next + '</span>');
 						}
-						s.unshift('<span class="button" style="line-height: ' + height + 'px" onclick="Addons.AddressBar.Go(this, ' + n + ')" onmousedown="return Addons.AddressBar.GoEx(this, ' + n + ')" onmouseover="MouseOver(this)" onmouseout="MouseOut()" oncontextmenu="Addons.AddressBar.Exec(); return false;">' + EncodeSC(GetFolderItemName(FolderItem)) + '</span>');
+						s.unshift('<span id="addressbar' + n + '_" class="button" style="line-height: ' + height + 'px" onclick="Addons.AddressBar.Go(this, ' + n + ')" onmousedown="return Addons.AddressBar.GoEx(this, ' + n + ')" onmouseover="MouseOver(this)" onmouseout="MouseOut()" oncontextmenu="Addons.AddressBar.Exec(); return false;">' + EncodeSC(GetFolderItemName(FolderItem)) + '</span>');
 						FolderItem = api.ILGetParent(FolderItem);
 						o.innerHTML = s.join("");
 						if (o.offsetWidth > width && n > 0) {
@@ -177,8 +177,7 @@ if (window.Addon == 1) {
 			var FolderItem = 0;
 			var FV = te.Ctrl(CTRL_FV);
 			if (FV) {
-				FolderItem = FV.FolderItem;
-				while (n--) {
+				for (FolderItem = FV.FolderItem; n > 0; n--) {
 					FolderItem = api.ILGetParent(FolderItem);
 				}
 			}
@@ -290,6 +289,60 @@ if (window.Addon == 1) {
 	AddEvent("SetAddress", function (s)
 	{
 		document.F.addressbar.value = s;
+	});
+
+	AddEvent("DragEnter", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
+		if (Ctrl.Type == CTRL_WB) {
+			return S_OK;
+		}
+	});
+
+	AddEvent("DragOver", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
+		if (Ctrl.Type == CTRL_WB && dataObj.Count) {
+			var ptc = pt.Clone();
+			api.ScreenToClient(api.GetWindow(document), ptc);
+			var el = document.elementFromPoint(ptc.x, ptc.y);
+			if (el) {
+				var res = /^addressbar(\d+)_$/.exec(el.id);
+				if (res) {
+					var Target = Addons.AddressBar.GetPath(res[1] - 0);
+					if (!api.ILIsEqual(dataObj.Item(-1), Target)) {
+						var DropTarget = api.DropTarget(Target);
+						if (DropTarget) {
+							return DropTarget.DragOver(dataObj, grfKeyState, pt, pdwEffect);
+						}
+					}
+					pdwEffect[0] = DROPEFFECT_NONE;
+					return S_OK;
+				}
+			}
+		}
+	});
+
+	AddEvent("Drop", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
+		if (Ctrl.Type == CTRL_WB && dataObj.Count) {
+			var ptc = pt.Clone();
+			api.ScreenToClient(api.GetWindow(document), ptc);
+			var el = document.elementFromPoint(ptc.x, ptc.y);
+			if (el) {
+				var res = /^addressbar(\d+)_$/.exec(el.id);
+				if (res) {
+					var hr = S_FALSE;
+					var Target = Addons.AddressBar.GetPath(res[1] - 0);
+					if (!api.ILIsEqual(dataObj.Item(-1), Target)) {
+						var DropTarget = api.DropTarget(Target);
+						if (DropTarget) {
+							hr = DropTarget.Drop(dataObj, grfKeyState, pt, pdwEffect);
+						}
+					}
+					return hr;
+				}
+			}
+		}
+	});
+
+	AddEvent("DragLeave", function (Ctrl) {
+		return S_OK;
 	});
 
 	GetAddress = function ()

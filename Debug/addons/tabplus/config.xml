@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <TablacusExplorer>
   <General>
-    <Version>1.49</Version>
-    <MinVersion>2019.4.21</MinVersion>
-    <pubDate>Sun, 21 Apr 2019 00:00:00 GMT</pubDate>
+    <Version>1.50</Version>
+    <MinVersion>2019.9.29</MinVersion>
+    <pubDate>Thu, 24 Oct 2019 00:00:00 GMT</pubDate>
     <Options>Common:0:0</Options>
     <Creator>Gaku</Creator>
     <URL>http://tablacus.github.io/TablacusExplorerAddons/</URL>
@@ -15,6 +15,8 @@
   </en>
   <ja>
     <Name>タブプラス</Name>
-    <Description>タブプラス</Description>
   </ja>
+  <zh>
+    <Name>進階頁籤</Name>
+  </zh>
 </TablacusExplorer>
