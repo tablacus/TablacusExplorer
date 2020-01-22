@@ -114,6 +114,7 @@ Finalize = function ()
 {
 	RunEvent1("Finalize");
 	SaveConfig();
+	Threads.Finalize();
 
 	for (var i in g_.dlgs) {
 		var dlg = g_.dlgs[i];
@@ -1981,9 +1982,9 @@ g_.event.itempostpaint = function (Ctrl, pid, nmcd, vcd)
 	RunEvent1("ItemPostPaint2", Ctrl, pid, nmcd, vcd);
 }
 
-g_.event.handleicon = function (Ctrl, pid)
+g_.event.handleicon = function (Ctrl, pid, iItem)
 {
-	return RunEvent3("HandleIcon", Ctrl, pid);
+	return RunEvent3("HandleIcon", Ctrl, pid, iItem);
 }
 
 //Tablacus Events
@@ -3777,22 +3778,60 @@ if (!te.Data) {
 }
 te.Data.window = window;
 Exchange = te.Data.Exchange;
-var ado = OpenAdodbFromTextFile("script\\threads.js");
-if (ado) {
-	Threads = {
-		Codes: [],
-		hEvent: api.CreateEvent(null, true, false, null),
-		AddCode: function (s)
-		{
-			Threads.Codes.push(s);
+
+Threads = api.CreateObject("Object");
+Threads.Images = api.CreateObject("Array");
+Threads.Data = api.CreateObject("Array");
+Threads.nBase = 1;
+Threads.nMax = 3;
+Threads.nTI = 500;
+
+Threads.GetImage = function (o)
+{
+	Threads.Images.push(o);
+	Threads.Run();
+}
+
+Threads.Run = function ()
+{
+	if (Threads.Data.length >= Threads.nMax) {
+		return;
+	}
+	var tm = new Date().getTime();
+	if (Threads.Data.length >= Threads.nBase && tm - Threads.Data[0].Data.tm < Threads.nTI) {
+		return;
+	}
+	var o = api.CreateObject("Object");
+	o.Data = api.CreateObject("Object");
+	o.Data.Threads = Threads;
+	o.Data.Id = Math.random();
+	o.Data.tm = tm;
+	Threads.Data.unshift(o);
+	if (!Threads.src) {
+		var ado = OpenAdodbFromTextFile("script\\threads.js");
+		if (ado) {
+			Threads.src = [ado.ReadText(), GetThumbnail.toString()].join("\n");
+			ado.Close();
 		}
 	}
-	api.ExecScript(ado.ReadText(), "JScript",
-		{
-			MainWindow: window,
-		}, true
-	);
-	ado.Close();
+	api.ExecScript(Threads.src, "JScript", o, true);
+}
+
+Threads.End = function (Id)
+{
+	for (var i = Threads.Data.length; i--;) {
+		if (Id === Threads.Data[i].Data.Id) {
+			Threads.Data.splice(i, 1);
+			return;
+		}
+	}
+	Threads.Data.pop();
+}
+
+Threads.Finalize = function ()
+{
+	Threads.GetImage = function () {};
+	Threads.Images.length = 0;
 }
 
 InitCode();

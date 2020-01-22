@@ -233,6 +233,9 @@ typedef NTSTATUS (WINAPI* LPFNRtlGetVersion)(PRTL_OSVERSIONINFOEXW lpVersionInfo
 typedef HRESULT (STDAPICALLTYPE * LPFNDllGetClassObject)(REFCLSID rclsid, REFIID riid, LPVOID* ppv);
 typedef HRESULT (STDAPICALLTYPE * LPFNDllCanUnloadNow)(void);
 
+//Plug in(Image)
+typedef HRESULT (WINAPI* LPFNGetImage)(IStream *pStream, LPWSTR lpfn, int cx, HBITMAP *phBM, int *pnAlpha);
+
 #ifdef _USE_APIHOOK
 //API Hook
 typedef LSTATUS (APIENTRY* LPFNRegQueryValueExW)(HKEY hKey, LPCWSTR lpValueName, LPDWORD lpReserved, LPDWORD lpType, LPBYTE lpData, LPDWORD lpcbData);
@@ -1492,12 +1495,13 @@ public:
 	VOID ClearImage(BOOL bAll);
 	HBITMAP GetHBITMAP(COLORREF clBk);
 	BOOL Get(WICPixelFormatGUID guidNewPF);
-	HRESULT CreateStream(IStream *pStream, ULARGE_INTEGER *puliSize, CLSID encoderClsid, LONG lQuality);
+	HRESULT CreateStream(IStream *pStream, CLSID encoderClsid, LONG lQuality);
 //	HRESULT CreateBMPStream(IStream *pStream, ULARGE_INTEGER *puliSize, LPWSTR szMime);
 private:
 	IWICBitmap *m_pImage;
 	IWICImagingFactory *m_pWICFactory;
 	IStream *m_pStream;
+	LARGE_INTEGER m_liOffset;
 	CLSID m_guidSrc;
 	IWICMetadataQueryReader *m_ppMetadataQueryReader[2];
 	LONG	m_cRef;
@@ -1727,4 +1731,5 @@ public:
 public:
 	LONG	m_cRef;
 	IUnknown *m_punk;
+	LARGE_INTEGER m_liOffset;
 };

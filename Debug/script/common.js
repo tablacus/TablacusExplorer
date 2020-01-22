@@ -3,7 +3,7 @@
 function AboutTE(n)
 {
 	if (n == 0) {
-		return te.Version < 20191222 ? te.Version : 20191222;
+		return te.Version < 20200122 ? te.Version : 20200122;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -422,6 +422,7 @@ AddEventId = function (Name, Id, fn)
 
 AddonDisabled = function (Id)
 {
+	SaveConfig();
 	RunEvent1("AddonDisabled", Id);
 	if (eventTE.addondisabledex) {
 		var fn = eventTE.addondisabledex[Id.toLowerCase()];
