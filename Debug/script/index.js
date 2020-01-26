@@ -3788,6 +3788,8 @@ Threads.nTI = 500;
 
 Threads.GetImage = function (o)
 {
+	o.OnFromFile = te.OnFromFile;
+	o.OnFromStream = te.OnFromStream;
 	Threads.Images.push(o);
 	Threads.Run();
 }
@@ -3822,10 +3824,12 @@ Threads.End = function (Id)
 	for (var i = Threads.Data.length; i--;) {
 		if (Id === Threads.Data[i].Data.Id) {
 			Threads.Data.splice(i, 1);
+			CollectGarbage();
 			return;
 		}
 	}
 	Threads.Data.pop();
+	CollectGarbage();
 }
 
 Threads.Finalize = function ()

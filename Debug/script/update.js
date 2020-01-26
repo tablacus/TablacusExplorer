@@ -29,7 +29,11 @@ if (server) {
 } else {
 	wsh.Popup(args(2), 9, TITLE, 0);
 }
-sha.NameSpace(args.length < 5 ? fso.GetParentFolderName(args(0)) : args(4)).CopyHere(sha.NameSpace(args(1)).Items(), 0x0210);
+if (args.length < 5 || !args(4)) {
+	sha.NameSpace(fso.GetParentFolderName(args(0))).MoveHere(sha.NameSpace(args(1)).Items(), 0x0210);
+} else {
+	sha.NameSpace(args(4)).CopyHere(sha.NameSpace(args(1)).Items(), 0x0210);
+}
 if (!args(3) || sha.NameSpace(args(1)).Items().Count == 0 || wsh.Popup(args(3), 0, TITLE, 0x21) == 1) {
-	wsh.Run('"' + args(0) + '"');
+	server.Get("Win32_Process").Create('"' + args(0) + '"');
 }

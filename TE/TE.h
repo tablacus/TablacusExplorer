@@ -362,6 +362,9 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define SB_VirtualName			3
 #define SB_OnIncludeObject		4
 #define Count_SBFunc			5
+#define WIC_OnFromFile			0
+#define WIC_OnFromStream		1
+#define Count_WICFunc			2
 
 #define CTRL_FV          0
 #define CTRL_SB          1
@@ -599,6 +602,12 @@ const CLSID CLSID_JScriptChakra             = {0x16d51579, 0xa30b, 0x4c8b, { 0xa
 const CLSID CLSID_ADODBStream               = {0x00000566, 0x0000, 0x0010, { 0x80, 0x00, 0x00, 0xAA, 0x00, 0x6D, 0x2E, 0xA4}};
 const CLSID CLSID_ScriptingFileSystemObject = {0x0D43FE01, 0xF093, 0x11CF, { 0x89, 0x40, 0x00, 0xA0, 0xC9, 0x05, 0x42, 0x28}};
 const CLSID CLSID_WScriptShell              = {0x72C24DD5, 0xD70A, 0x438B, { 0x8A, 0x42, 0x98, 0x42, 0x4B, 0x88, 0xAF, 0xB8}};
+#ifndef CLSID_PhotoThumbnailProvider
+CLSID CLSID_PhotoThumbnailProvider          = {0xC7657C4A, 0x9F68, 0x40fa, { 0xA4, 0xDF, 0x96, 0xBC, 0x08, 0xEB, 0x35, 0x51}};
+#endif
+#ifndef IID_IWICBitmap
+const IID IID_IWICBitmap                    = {0x00000121, 0xa8f2, 0x4877, { 0xba, 0x0a, 0xfd, 0x2b, 0x66, 0x45, 0xfb, 0x94}};
+#endif
 
 class CteDll : public IUnknown
 {
@@ -1495,15 +1504,17 @@ public:
 	VOID ClearImage(BOOL bAll);
 	HBITMAP GetHBITMAP(COLORREF clBk);
 	BOOL Get(WICPixelFormatGUID guidNewPF);
+	BOOL GetEncoderClsid(LPWSTR pszName, CLSID* pClsid, LPWSTR pszMimeType);
+	HRESULT CreateBitmapFromHBITMAP(HBITMAP hBitmap, HPALETTE hPalette, int nAlpha);
 	HRESULT CreateStream(IStream *pStream, CLSID encoderClsid, LONG lQuality);
-//	HRESULT CreateBMPStream(IStream *pStream, ULARGE_INTEGER *puliSize, LPWSTR szMime);
+//	HRESULT CreateBMPStream(IStream *pStream, LPWSTR szMime);
 private:
 	IWICBitmap *m_pImage;
 	IWICImagingFactory *m_pWICFactory;
 	IStream *m_pStream;
-	LARGE_INTEGER m_liOffset;
 	CLSID m_guidSrc;
 	IWICMetadataQueryReader *m_ppMetadataQueryReader[2];
+	IDispatch	*m_ppDispatch[Count_WICFunc];
 	LONG	m_cRef;
 	UINT m_uFrameCount, m_uFrame;
 };

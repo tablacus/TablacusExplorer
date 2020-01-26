@@ -3,7 +3,7 @@
 function AboutTE(n)
 {
 	if (n == 0) {
-		return te.Version < 20200122 ? te.Version : 20200122;
+		return Math.max(te.Version, 20200126);
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -2104,7 +2104,7 @@ AddMenuIconFolderItem = function (mii, FolderItem, nHeight)
 
 AddMenuImage = function (mii, image, id, nHeight)
 {
-	mii.hbmpItem = image.GetHBITMAP(WINVER >= 0x600 ? -1 : GetSysColor(COLOR_MENU));
+	mii.hbmpItem = image.GetHBITMAP(WINVER >= 0x600 ? -2 : GetSysColor(COLOR_MENU));
 	if (mii.hbmpItem) {
 		mii.fMask = mii.fMask | MIIM_BITMAP;
 		if (id) {
@@ -3243,10 +3243,11 @@ InsertTab = function(e)
 RegEnumKey = function(hKey, Name)
 {
 	var server = te.GetObject("winmgmts:\\\\.\\root\\default:StdRegProv");
-	var iParams = server.Methods_.Item("EnumKey").InParameters.SpawnInstance_();
+	var method = server.Methods_.Item("EnumKey");
+	var iParams = method.InParameters.SpawnInstance_();
 	iParams.hDefKey = hKey;
 	iParams.sSubKeyName = Name;
-	var r = server.ExecMethod_("EnumKey", iParams).sNames;
+	var r = server.ExecMethod_(method.Name, iParams).sNames;
 	return r !== null ? r.toArray() : [];
 }
 
