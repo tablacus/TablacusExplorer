@@ -230,12 +230,15 @@ typedef BOOL (WINAPI* LPFNSetDefaultDllDirectories)(__in DWORD DirectoryFlags);
 typedef NTSTATUS (WINAPI* LPFNRtlGetVersion)(PRTL_OSVERSIONINFOEXW lpVersionInformation);
 
 //DLL
-typedef HRESULT (STDAPICALLTYPE * LPFNDllGetClassObject)(REFCLSID rclsid, REFIID riid, LPVOID* ppv);
-typedef HRESULT (STDAPICALLTYPE * LPFNDllCanUnloadNow)(void);
+typedef HRESULT (STDAPICALLTYPE* LPFNDllGetClassObject)(REFCLSID rclsid, REFIID riid, LPVOID* ppv);
+typedef HRESULT (STDAPICALLTYPE* LPFNDllCanUnloadNow)(void);
 
+//EntoryPoint
+typedef void (__stdcall* LPFNEntryPointW)(HWND hwnd, HINSTANCE hinst, LPWSTR lpszCmdLine, int nCmdShow);
+//Plug in(Archive)
+typedef HRESULT(WINAPI* LPFNGetArchive)(LPCWSTR lpArcPath, LPCWSTR lpItem, IStream **ppStream, LPVOID lpReserved);
 //Plug in(Image)
-typedef HRESULT (WINAPI* LPFNGetImage)(IStream *pStream, LPWSTR lpfn, int cx, HBITMAP *phBM, int *pnAlpha);
-
+typedef HRESULT (WINAPI* LPFNGetImage)(IStream *pStream, LPCWSTR lpPath, int cx, HBITMAP *phBM, int *pnAlpha);
 #ifdef _USE_APIHOOK
 //API Hook
 typedef LSTATUS (APIENTRY* LPFNRegQueryValueExW)(HKEY hKey, LPCWSTR lpValueName, LPDWORD lpReserved, LPDWORD lpType, LPBYTE lpData, LPDWORD lpcbData);
@@ -349,13 +352,14 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TE_OnSort				45
 #define TE_OnFromFile			46
 #define TE_OnFromStream			47
-#define TE_OnEndThread			48
+#define	TE_OnGetAlt				48
 #define TE_OnItemPostPaint		49
 #define TE_OnHandleIcon			50
 #define TE_OnSorting			51
 #define TE_OnSetName			52
 #define TE_OnMouseMessage		53
-#define Count_OnFunc			54
+#define TE_OnEndThread			54
+#define Count_OnFunc			55
 #define SB_TotalFileSize		0
 #define SB_ColumnsReplace		1
 #define SB_AltSelectedItems		2
@@ -364,7 +368,8 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define Count_SBFunc			5
 #define WIC_OnFromFile			0
 #define WIC_OnFromStream		1
-#define Count_WICFunc			2
+#define WIC_OnGetAlt			2
+#define Count_WICFunc			3
 
 #define CTRL_FV          0
 #define CTRL_SB          1
@@ -602,9 +607,6 @@ const CLSID CLSID_JScriptChakra             = {0x16d51579, 0xa30b, 0x4c8b, { 0xa
 const CLSID CLSID_ADODBStream               = {0x00000566, 0x0000, 0x0010, { 0x80, 0x00, 0x00, 0xAA, 0x00, 0x6D, 0x2E, 0xA4}};
 const CLSID CLSID_ScriptingFileSystemObject = {0x0D43FE01, 0xF093, 0x11CF, { 0x89, 0x40, 0x00, 0xA0, 0xC9, 0x05, 0x42, 0x28}};
 const CLSID CLSID_WScriptShell              = {0x72C24DD5, 0xD70A, 0x438B, { 0x8A, 0x42, 0x98, 0x42, 0x4B, 0x88, 0xAF, 0xB8}};
-#ifndef CLSID_PhotoThumbnailProvider
-CLSID CLSID_PhotoThumbnailProvider          = {0xC7657C4A, 0x9F68, 0x40fa, { 0xA4, 0xDF, 0x96, 0xBC, 0x08, 0xEB, 0x35, 0x51}};
-#endif
 #ifndef IID_IWICBitmap
 const IID IID_IWICBitmap                    = {0x00000121, 0xa8f2, 0x4877, { 0xba, 0x0a, 0xfd, 0x2b, 0x66, 0x45, 0xfb, 0x94}};
 #endif
@@ -1497,7 +1499,8 @@ public:
 
 	CteWICBitmap();
 	~CteWICBitmap();
-	VOID FromStreamRelease(IStream *pStream, LPWSTR lpfn, BOOL bExtend, VARIANT *pvCX);
+	VOID FromStreamRelease(IStream *pStream, LPWSTR lpfn, BOOL bExtend, int cx);
+	HRESULT GetArchive(LPWSTR lpfn, int cx);
 	VOID GetFrameFromStream(IStream *pStream, UINT uFrame, BOOL bInit);
 	BOOL HasImage();
 	CteWICBitmap* GetBitmapObj();

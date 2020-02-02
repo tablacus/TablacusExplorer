@@ -18,13 +18,11 @@ if (api.ILIsEmpty(g_pidlCP) || api.ILIsEqual(g_pidlCP, ssfDRIVES)) {
 	g_pidlCP = ssfCONTROLS;
 }
 
-PanelCreated = function (Ctrl)
-{
+PanelCreated = function (Ctrl) {
 	RunEvent1("PanelCreated", Ctrl);
 }
 
-ChangeView = function (Ctrl)
-{
+ChangeView = function (Ctrl) {
 	if (Ctrl && Ctrl.FolderItem) {
 		ChangeTabName(Ctrl);
 		RunEvent1("ChangeView", Ctrl);
@@ -32,20 +30,17 @@ ChangeView = function (Ctrl)
 	RunEvent1("ConfigChanged", "Window");
 }
 
-SetAddress = function (s)
-{
+SetAddress = function (s) {
 	RunEvent1("SetAddress", s);
 }
 
-ChangeTabName = function (Ctrl)
-{
+ChangeTabName = function (Ctrl) {
 	if (Ctrl.FolderItem) {
 		Ctrl.Title = GetTabName(Ctrl);
 	}
 }
 
-GetTabName = function (Ctrl)
-{
+GetTabName = function (Ctrl) {
 	if (Ctrl.FolderItem) {
 		var en = "GetTabName";
 		var eo = eventTE[en.toLowerCase()];
@@ -63,55 +58,45 @@ GetTabName = function (Ctrl)
 	}
 }
 
-GetFolderItemName = function (pid)
-{
+GetFolderItemName = function (pid) {
 	return pid ? RunEvent4("GetFolderItemName", pid) || api.GetDisplayNameOf(pid, SHGDN_INFOLDER | SHGDN_ORIGINAL) : "";
 }
 
-IsUseExplorer = function (pid)
-{
+IsUseExplorer = function (pid) {
 	return RunEvent3("UseExplorer", pid);
 }
 
-CloseView = function (Ctrl)
-{
+CloseView = function (Ctrl) {
 	return RunEvent2("CloseView", Ctrl);
 }
 
-DeviceChanged = function (Ctrl)
-{
+DeviceChanged = function (Ctrl) {
 	RunEvent1("DeviceChanged", Ctrl);
 }
 
-ListViewCreated = function (Ctrl)
-{
+ListViewCreated = function (Ctrl) {
 	RunEvent1("ListViewCreated", Ctrl);
 }
 
-TabViewCreated = function (Ctrl)
-{
+TabViewCreated = function (Ctrl) {
 	RunEvent1("TabViewCreated", Ctrl);
 }
 
-TreeViewCreated = function (Ctrl)
-{
+TreeViewCreated = function (Ctrl) {
 	RunEvent1("TreeViewCreated", Ctrl);
 }
 
-SetAddrss = function (s)
-{
+SetAddrss = function (s) {
 	RunEvent1("SetAddrss", s);
 }
 
-RestoreFromTray = function ()
-{
+RestoreFromTray = function () {
 	api.ShowWindow(te.hwnd, api.IsIconic(te.hwnd) ? SW_RESTORE : SW_SHOW);
 	api.SetForegroundWindow(te.hwnd);
 	RunEvent1("RestoreFromTray");
 }
 
-Finalize = function ()
-{
+Finalize = function () {
 	RunEvent1("Finalize");
 	SaveConfig();
 	Threads.Finalize();
@@ -128,12 +113,11 @@ Finalize = function ()
 					dlg.close();
 				}
 			}
-		} catch (e) {}
+		} catch (e) { }
 	}
 }
 
-SetGestureText = function (Ctrl, Text)
-{
+SetGestureText = function (Ctrl, Text) {
 	var mode = g_.mouse.GetMode(Ctrl, g_.mouse.ptGesture);
 	if (mode) {
 		var s = eventTE.Mouse[mode][Text];
@@ -179,8 +163,7 @@ SetGestureText = function (Ctrl, Text)
 	}
 }
 
-IsSavePath = function (path)
-{
+IsSavePath = function (path) {
 	var en = "IsSavePath";
 	var eo = eventTE[en.toLowerCase()];
 	for (var i in eo) {
@@ -195,13 +178,11 @@ IsSavePath = function (path)
 	return true;
 }
 
-AddEvent("IsSavePath", function (path)
-{
+AddEvent("IsSavePath", function (path) {
 	return path != "about:blank";
 });
 
-Lock = function (Ctrl, nIndex, turn)
-{
+Lock = function (Ctrl, nIndex, turn) {
 	var FV = Ctrl[nIndex];
 	if (FV) {
 		if (turn) {
@@ -211,22 +192,19 @@ Lock = function (Ctrl, nIndex, turn)
 	}
 }
 
-FontChanged = function ()
-{
+FontChanged = function () {
 	RunEvent1("FontChanged");
 }
 
-FavoriteChanged = function ()
-{
+FavoriteChanged = function () {
 	RunEvent1("FavoriteChanged");
 }
 
-LoadConfig = function (bDog)
-{
+LoadConfig = function (bDog) {
 	var xml = OpenXml("window.xml", true, false);
 	if (xml) {
 		var items = xml.getElementsByTagName('Data');
-		if  (items.length && !bDog) {
+		if (items.length && !bDog) {
 			var path = items[0].getAttribute("Path");
 			if (path) {
 				path = ExtractMacro(te, path);
@@ -262,8 +240,7 @@ LoadConfig = function (bDog)
 	LoadWindowSettings();
 }
 
-function LoadWindowSettings(xml)
-{
+function LoadWindowSettings(xml) {
 	if (fso.FileExists(te.Data.WindowSetting)) {
 		xml = te.CreateObject("Msxml2.DOMDocument");
 		xml.async = false;
@@ -276,7 +253,7 @@ function LoadWindowSettings(xml)
 	}
 	if (xml) {
 		var items = xml.getElementsByTagName('Window');
-		if  (items.length) {
+		if (items.length) {
 			var item = items[0];
 			te.CmdShow = item.getAttribute("CmdShow");
 			var x = api.LowPart(item.getAttribute("Left"));
@@ -291,7 +268,7 @@ function LoadWindowSettings(xml)
 					w /= z;
 					h /= z;
 				}
-				var pt = {x: x + w / 2, y: y};
+				var pt = { x: x + w / 2, y: y };
 				if (!api.MonitorFromPoint(pt, MONITOR_DEFAULTTONULL)) {
 					var hMonitor = api.MonitorFromPoint(pt, MONITOR_DEFAULTTOPRIMARY);
 					var mi = api.Memory("MONITORINFOEX");
@@ -316,8 +293,7 @@ function LoadWindowSettings(xml)
 	}
 }
 
-SaveConfig = function ()
-{
+SaveConfig = function () {
 	RunEvent1("SaveConfig");
 	if (te.Data.bSaveMenus) {
 		te.Data.bSaveMenus = false;
@@ -343,23 +319,20 @@ SaveConfig = function ()
 	}
 }
 
-ResetScroll = function ()
-{
+ResetScroll = function () {
 	if (document.documentElement && document.documentElement.scrollLeft) {
 		document.documentElement.scrollLeft = 0;
 	}
 }
 
-Resize = function ()
-{
+Resize = function () {
 	if (!g_.tidResize) {
 		clearTimeout(g_.tidResize);
 		g_.tidResize = setTimeout(Resize2, 500);
 	}
 }
 
-Resize2 = function ()
-{
+Resize2 = function () {
 	if (g_.tidResize) {
 		clearTimeout(g_.tidResize);
 		delete g_.tidResize;
@@ -397,10 +370,9 @@ Resize2 = function ()
 	api.PostMessage(te.hwnd, WM_SIZE, 0, 0);
 }
 
-function ResizeSizeBar(z, h)
-{
+function ResizeSizeBar(z, h) {
 	var o = te.Data.Locations;
-	var w =(o[z + "Bar1"] || o[z + "Bar2"] || o[z + "Bar3"]) ? te.Data["Conf_" + z + "BarWidth"] : 0;
+	var w = (o[z + "Bar1"] || o[z + "Bar2"] || o[z + "Bar3"]) ? te.Data["Conf_" + z + "BarWidth"] : 0;
 	o = document.getElementById(z.toLowerCase() + "bar");
 	if (w > 0) {
 		o.style.display = "";
@@ -425,8 +397,7 @@ function ResizeSizeBar(z, h)
 	document.getElementById(z + "Bar2").style.height = Math.abs(h2 - i) + "px";
 }
 
-LoadLang = function (bAppend)
-{
+LoadLang = function (bAppend) {
 	if (!bAppend) {
 		MainWindow.Lang = {};
 		MainWindow.LangSrc = {};
@@ -435,8 +406,7 @@ LoadLang = function (bAppend)
 	LoadLang2(filename);
 }
 
-Refresh = function (Ctrl, pt)
-{
+Refresh = function (Ctrl, pt) {
 	var FV = GetFolderView(Ctrl, pt);
 	if (FV) {
 		FV.Focus();
@@ -444,8 +414,7 @@ Refresh = function (Ctrl, pt)
 	}
 }
 
-AddFavorite = function (FolderItem)
-{
+AddFavorite = function (FolderItem) {
 	var xml = te.Data.xmlMenus;
 	var menus = xml.getElementsByTagName("Favorites");
 	if (menus && menus.length) {
@@ -479,8 +448,7 @@ AddFavorite = function (FolderItem)
 	return false;
 }
 
-CancelFilterView = function (FV)
-{
+CancelFilterView = function (FV) {
 	if (IsSearchPath(FV) || FV.FilterView) {
 		FV.Navigate(null, SBSP_PARENT);
 		return S_OK;
@@ -488,13 +456,11 @@ CancelFilterView = function (FV)
 	return S_FALSE;
 }
 
-IsSearchPath = function (pid)
-{
+IsSearchPath = function (pid) {
 	return /search\-ms:.*?&crumb=location:([^&]*)/.exec(/^string$/i.test(typeof pid) ? pid : api.GetDisplayNameOf(pid, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 }
 
-GetCommandId = function (hMenu, s, ContextMenu)
-{
+GetCommandId = function (hMenu, s, ContextMenu) {
 	var arMenu = [hMenu];
 	var wId = 0;
 	if (s) {
@@ -537,8 +503,7 @@ GetCommandId = function (hMenu, s, ContextMenu)
 	return wId;
 };
 
-OpenSelected = function (Ctrl, NewTab, pt)
-{
+OpenSelected = function (Ctrl, NewTab, pt) {
 	var ar = GetSelectedArray(Ctrl, pt, true);
 	var Selected = ar.shift();
 	var SelItem = ar.shift();
@@ -556,7 +521,7 @@ OpenSelected = function (Ctrl, NewTab, pt)
 			}
 			if (bFolder) {
 				FV.Navigate(Item, NewTab);
-			 	NewTab |= SBSP_NEWBROWSER;
+				NewTab |= SBSP_NEWBROWSER;
 			} else {
 				Exec.push(Item);
 			}
@@ -574,8 +539,7 @@ OpenSelected = function (Ctrl, NewTab, pt)
 	return S_OK;
 }
 
-SendCommand = function (Ctrl, nVerb)
-{
+SendCommand = function (Ctrl, nVerb) {
 	if (nVerb) {
 		var hwnd = Ctrl.hwndView;
 		if (!hwnd) {
@@ -588,20 +552,17 @@ SendCommand = function (Ctrl, nVerb)
 	}
 }
 
-IncludeObject = function (FV, Item)
-{
+IncludeObject = function (FV, Item) {
 	if (api.PathMatchSpec(Item.Name, FV.Data.Filter)) {
 		return S_OK;
 	}
 	return S_FALSE;
 }
 
-EnableDragDrop = function ()
-{
+EnableDragDrop = function () {
 }
 
-DisableImage = function (img, bDisable)
-{
+DisableImage = function (img, bDisable) {
 	if (img) {
 		if (document.documentMode > 9) {
 			var s = decodeURIComponent(img.src);
@@ -614,25 +575,24 @@ DisableImage = function (img, bDisable)
 							s = image.DataURI("image/png");
 						}
 					}
-					img.src = "data:image/svg+xml," + encodeURIComponent(['<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ', img.offsetWidth, ' ', img.offsetHeight, '"><filter id="G"><feColorMatrix type="saturate" values="0.1" /></filter><image width="', img.width, '" height="', img.height, '" opacity=".48" xlink:href="', s,'" filter="url(#G)"></image></svg>'].join(""));
+					img.src = "data:image/svg+xml," + encodeURIComponent(['<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ', img.offsetWidth, ' ', img.offsetHeight, '"><filter id="G"><feColorMatrix type="saturate" values="0.1" /></filter><image width="', img.width, '" height="', img.height, '" opacity=".48" xlink:href="', s, '" filter="url(#G)"></image></svg>'].join(""));
 				}
 			} else if (res) {
 				img.src = res[1];
 			}
 		} else {
-			img.style.filter = bDisable ? "gray(), alpha(style=0,opacity=48);": "";
+			img.style.filter = bDisable ? "gray(), alpha(style=0,opacity=48);" : "";
 		}
 	}
 }
 
-function SetFolderViewData(FV, FVD)
-{
+function SetFolderViewData(FV, FVD) {
 	if (FV && FVD) {
 		var t = FV.Type;
 		for (var i in FVD) {
 			try {
 				FV[i] = FVD[i];
-			} catch (e) {}
+			} catch (e) { }
 		}
 		if (t == FVD.Type) {
 			FV.Refresh();
@@ -640,8 +600,7 @@ function SetFolderViewData(FV, FVD)
 	}
 }
 
-function SetTreeViewData(FV, TVD)
-{
+function SetTreeViewData(FV, TVD) {
 	var TV = FV.TreeView;
 	if (TV && TVD) {
 		TV.Align = TVD.Align;
@@ -653,21 +612,18 @@ function SetTreeViewData(FV, TVD)
 
 //Events
 
-te.OnCreate = function (Ctrl)
-{
+te.OnCreate = function (Ctrl) {
 	if (!Ctrl.Data) {
 		Ctrl.Data = api.CreateObject("Object");
 	}
 	RunEvent1("Create", Ctrl);
 }
 
-te.OnClose = function (Ctrl)
-{
+te.OnClose = function (Ctrl) {
 	return RunEvent2("Close", Ctrl);
 }
 
-AddEvent("Close", function (Ctrl)
-{
+AddEvent("Close", function (Ctrl) {
 	switch (Ctrl.Type) {
 		case CTRL_TE:
 			Finalize();
@@ -692,8 +648,7 @@ AddEvent("Close", function (Ctrl)
 	}
 });
 
-te.OnViewCreated = function (Ctrl)
-{
+te.OnViewCreated = function (Ctrl) {
 	switch (Ctrl.Type) {
 		case CTRL_SB:
 		case CTRL_EB:
@@ -709,8 +664,7 @@ te.OnViewCreated = function (Ctrl)
 	RunEvent1("ViewCreated", Ctrl);
 }
 
-te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev)
-{
+te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 	if (g_.tid_rf[Ctrl.Id]) {
 		clearTimeout(g_.tid_rf[Ctrl.Id]);
 		delete g_.tid_rf[Ctrl.Id];
@@ -728,9 +682,11 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev)
 	}
 	var hr = RunEvent2("BeforeNavigate", Ctrl, fs, wFlags, Prev);
 	if (hr == S_OK && IsUseExplorer(Ctrl.FolderItem)) {
-		(function (Path) { setTimeout(function () {
-			OpenInExplorer(Path);
-		}, 99);}) (Ctrl.FolderItem);
+		(function (Path) {
+			setTimeout(function () {
+				OpenInExplorer(Path);
+			}, 99);
+		})(Ctrl.FolderItem);
 		return E_NOTIMPL;
 	}
 	if (Ctrl.Data && Ctrl.Data.Lock && (wFlags & SBSP_NEWBROWSER) == 0) {
@@ -739,16 +695,17 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev)
 	return hr;
 }
 
-te.OnNavigateComplete = function (Ctrl)
-{
+te.OnNavigateComplete = function (Ctrl) {
 	if (g_.tid_rf[Ctrl.Id] || !Ctrl.FolderItem) {
 		return S_OK;
 	}
 	if (Ctrl.FolderItem.Path == "about:blank" && HOME_PATH != "about:blank") {
-		(function (Ctrl) { g_.tid_rf[Ctrl.Id] = setTimeout(function () {
+		(function (Ctrl) {
+		g_.tid_rf[Ctrl.Id] = setTimeout(function () {
 			delete g_.tid_rf[Ctrl.Id];
 			Ctrl.Navigate(HOME_PATH, SBSP_SAMEBROWSER);
-		}, 500);}) (Ctrl);
+		}, 500);
+		})(Ctrl);
 		return S_OK;
 	}
 	var res = /search\-ms:.*?crumb=([^&]+)/.exec(Ctrl.FilterView);
@@ -769,8 +726,7 @@ te.OnNavigateComplete = function (Ctrl)
 	return S_OK;
 }
 
-te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
-{
+te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata) {
 	var hr = RunEvent3("KeyMessage", Ctrl, hwnd, msg, key, keydata);
 	if (isFinite(hr)) {
 		return hr;
@@ -798,12 +754,14 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 						return S_OK;
 					}
 					if (key == VK_TAB && Ctrl.hwndList) {
-						(function (FV) { setTimeout(function () {
-							if (!api.SendMessage(FV.hwndList, LVM_GETEDITCONTROL, 0, 0) || WINVER < 0x600) {
-								var Items = FV.Items;
-								FV.SelectItem(Items.Item(FV.GetFocusedItem() + (api.GetKeyState(VK_SHIFT) < 0 ? -1 : 1)) || FV.Items.Item(api.GetKeyState(VK_SHIFT) < 0 ? Items.Count - 1: 0), SVSI_EDIT | SVSI_FOCUSED | SVSI_SELECT | SVSI_DESELECTOTHERS);
-							}
-						}, 99);}) (Ctrl);
+						(function (FV) {
+							setTimeout(function () {
+								if (!api.SendMessage(FV.hwndList, LVM_GETEDITCONTROL, 0, 0) || WINVER < 0x600) {
+									var Items = FV.Items;
+									FV.SelectItem(Items.Item(FV.GetFocusedItem() + (api.GetKeyState(VK_SHIFT) < 0 ? -1 : 1)) || FV.Items.Item(api.GetKeyState(VK_SHIFT) < 0 ? Items.Count - 1 : 0), SVSI_EDIT | SVSI_FOCUSED | SVSI_SELECT | SVSI_DESELECTOTHERS);
+								}
+							}, 99);
+						})(Ctrl);
 					}
 					return S_FALSE;
 				}
@@ -855,8 +813,7 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata)
 	return S_FALSE;
 }
 
-te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
-{
+te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 	if (g_.mouse.Capture) {
 		if (msg == WM_LBUTTONUP || api.GetKeyState(VK_LBUTTON) >= 0) {
 			api.ReleaseCapture();
@@ -928,9 +885,11 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 						hr = S_FALSE;
 					}
 				} else {
-					(function (Ctrl, hwnd, pt, str) { setTimeout(function () {
-						hr = g_.mouse.Exec(Ctrl, hwnd, pt, str);
-					}, 99);}) (te.CtrlFromWindow(g_.mouse.hwndGesture), g_.mouse.hwndGesture, pt, g_.mouse.str);
+					(function (Ctrl, hwnd, pt, str) {
+						setTimeout(function () {
+							hr = g_.mouse.Exec(Ctrl, hwnd, pt, str);
+						}, 99);
+					})(te.CtrlFromWindow(g_.mouse.hwndGesture), g_.mouse.hwndGesture, pt, g_.mouse.str);
 					hr = S_OK;
 				}
 			}
@@ -1072,13 +1031,12 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt)
 	return g_.mouse.str.length >= 2 ? S_OK : S_FALSE;
 }
 
-te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam)
-{
+te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam) {
 	if (Ctrl.Type <= CTRL_EB) {
 		switch ((wParam & 0xfff) + 1) {
 			case CommandID_DELETE:
 				var Items = Ctrl.SelectedItems();
-				for (var i = Items.Count; i--; ) {
+				for (var i = Items.Count; i--;) {
 					UnlockFV(Items.Item(i));
 				}
 				break;
@@ -1109,8 +1067,7 @@ te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam)
 	return hr;
 }
 
-te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon)
-{
+te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon) {
 	var path;
 	var strVerb = (isFinite(Verb) ? ContextMenu.GetCommandString(Verb, GCS_VERB) : Verb).toLowerCase();
 	if (strVerb == "open" && ContextMenu.GetCommandString(Verb, GCS_HELPTEXT) != api.LoadString(hShell32, 12850)) {
@@ -1158,7 +1115,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 				ShowStatusText(te, strVerb + ":" + cmd.replace(/"?%1"?|%L/g, api.PathQuoteSpaces(path)).replace(/%\*|%I/g, ""), 0);
 				if (strVerb == "open" && api.PathMatchSpec(cmd, "?:\\Windows\\Explorer.exe;*\\Explorer.exe /idlist,*;rundll32.exe *fldr.dll,RouteTheCall*")) {
 					Navigate(Items.Item(i), NewTab);
-				 	NewTab |= SBSP_NEWBROWSER;
+					NewTab |= SBSP_NEWBROWSER;
 					continue;
 				}
 				var cmd2 = ExtractMacro(te, cmd);
@@ -1184,16 +1141,14 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 	return S_FALSE;
 }
 
-AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon, strVerb)
-{
+AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon, strVerb) {
 	if (strVerb == "opencontaining") {
 		var Items = ContextMenu.Items();
 		for (var j in Items) {
 			var Item = Items.Item(j);
 			var path = Item.ExtendedProperty("linktarget") || Item.Path;
 			Navigate(fso.GetParentFolderName(path), SBSP_NEWBROWSER);
-			setTimeout(function ()
-			{
+			setTimeout(function () {
 				var FV = te.Ctrl(CTRL_FV);
 				FV.SelectItem(path, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
 			}, 99);
@@ -1203,7 +1158,7 @@ AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, 
 	var FV = ContextMenu.FolderView;
 	var Items = ContextMenu.Items();
 	if (strVerb == "delete") {
-		for (var i = Items.Count; i--; ) {
+		for (var i = Items.Count; i--;) {
 			UnlockFV(Items.Item(i));
 		}
 	}
@@ -1214,8 +1169,7 @@ AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, 
 	}
 });
 
-te.OnDragEnter = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect)
-{
+te.OnDragEnter = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect) {
 	var hr = E_NOTIMPL;
 	var dwEffect = pdwEffect[0];
 	var en = "DragEnter";
@@ -1235,8 +1189,7 @@ te.OnDragEnter = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect)
 	return hr;
 }
 
-te.OnDragOver = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect)
-{
+te.OnDragOver = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect) {
 	var dwEffect = pdwEffect[0];
 	var en = "DragOver";
 	var eo = eventTE[en.toLowerCase()];
@@ -1254,8 +1207,7 @@ te.OnDragOver = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect)
 	return E_NOTIMPL;
 }
 
-te.OnDrop = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect)
-{
+te.OnDrop = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect) {
 	var dwEffect = pdwEffect[0];
 	var en = "Drop";
 	var eo = eventTE[en.toLowerCase()];
@@ -1273,8 +1225,7 @@ te.OnDrop = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect)
 	return E_NOTIMPL;
 }
 
-te.OnDragLeave = function (Ctrl)
-{
+te.OnDragLeave = function (Ctrl) {
 	var hr = E_NOTIMPL;
 	var en = "DragLeave";
 	var eo = eventTE[en.toLowerCase()];
@@ -1292,8 +1243,7 @@ te.OnDragLeave = function (Ctrl)
 	return hr;
 }
 
-te.OnSelectionChanged = function (Ctrl, uChange)
-{
+te.OnSelectionChanged = function (Ctrl, uChange) {
 	if (Ctrl.Type == CTRL_TC && Ctrl.SelectedIndex >= 0) {
 		ShowStatusText(Ctrl.Selected, "", 0);
 		ChangeView(Ctrl.Selected);
@@ -1301,8 +1251,7 @@ te.OnSelectionChanged = function (Ctrl, uChange)
 	return RunEvent3("SelectionChanged", Ctrl, uChange);
 }
 
-te.OnFilterChanged = function (Ctrl)
-{
+te.OnFilterChanged = function (Ctrl) {
 	if (isFinite(RunEvent3("FilterChanged", Ctrl))) {
 		return;
 	}
@@ -1310,17 +1259,15 @@ te.OnFilterChanged = function (Ctrl)
 	if (res) {
 		try {
 			Ctrl.Data.RE = new RegExp((window.migemo && migemo.query(res[1])) || res[1], res[2]);
-			Ctrl.OnIncludeObject = function (Ctrl, Path1, Path2, Item)
-			{
+			Ctrl.OnIncludeObject = function (Ctrl, Path1, Path2, Item) {
 				return Ctrl.Data.RE.test(Path1) || (Path1 != Path2 && Ctrl.Data.RE.test(Path2)) ? S_OK : S_FALSE;
 			}
 			return;
-		} catch (e) {}
+		} catch (e) { }
 	}
 }
 
-te.OnShowContextMenu = function (Ctrl, hwnd, msg, wParam, pt)
-{
+te.OnShowContextMenu = function (Ctrl, hwnd, msg, wParam, pt) {
 	if (g_.mouse.CancelContextMenu) {
 		return S_OK;
 	}
@@ -1375,8 +1322,7 @@ te.OnShowContextMenu = function (Ctrl, hwnd, msg, wParam, pt)
 	return S_FALSE;
 }
 
-te.OnDefaultCommand = function (Ctrl)
-{
+te.OnDefaultCommand = function (Ctrl) {
 	if (api.GetKeyState(VK_MENU) < 0) {
 		api.SendMessage(Ctrl.hwndView, WM_COMMAND, CommandID_PROPERTIES - 1, 0);
 		return S_OK;
@@ -1399,8 +1345,7 @@ te.OnDefaultCommand = function (Ctrl)
 	return S_OK;
 }
 
-te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
-{
+te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 	var hr = RunEvent3("SystemMessage", Ctrl, hwnd, msg, wParam, lParam);
 	if (isFinite(hr)) {
 		return hr;
@@ -1422,8 +1367,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 				case WM_DESTROY:
 					var pid = api.Memory("DWORD");
 					api.GetWindowThreadProcessId(te.hwnd, pid);
-					WmiProcess("WHERE ExecutablePath = '" + (api.GetModuleFileName(null).split("\\").join("\\\\")) + "' AND ProcessId!=" + pid[0], function (item)
-					{
+					WmiProcess("WHERE ExecutablePath = '" + (api.GetModuleFileName(null).split("\\").join("\\\\")) + "' AND ProcessId!=" + pid[0], function (item) {
 						var hwnd = GethwndFromPid(item.ProcessId);
 						api.SetWindowLongPtr(hwnd, GWL_EXSTYLE, api.GetWindowLongPtr(hwnd, GWL_EXSTYLE) & ~0x80);
 						api.ShowWindow(hwnd, SW_SHOWNORMAL);
@@ -1494,8 +1438,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 					}
 					if (wParam & 0xffff) {
 						if (g_.mouse.str == "") {
-							setTimeout(function ()
-							{
+							setTimeout(function () {
 								var hFocus = api.GetFocus();
 								if (!hFocus || hFocus == te.hwnd) {
 									var FV = te.Ctrl(CTRL_FV);
@@ -1515,7 +1458,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 								api.SetForegroundWindow(hwnd1);
 							}
 						}
-					} else  {
+					} else {
 						g_.mouse.str = "";
 						SetGestureText(Ctrl, "");
 					}
@@ -1596,8 +1539,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 	}
 };
 
-te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam)
-{
+te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 	ShowStatusText(te, "", 0);
 	var hr = RunEvent3("MenuMessage", Ctrl, hwnd, msg, wParam, lParam);
 	if (isFinite(hr)) {
@@ -1665,8 +1607,7 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 	return S_FALSE;
 };
 
-te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam)
-{
+te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 	var hr = RunEvent3("AppMessage", Ctrl, hwnd, msg, wParam, lParam);
 	if (isFinite(hr)) {
 		return hr;
@@ -1689,8 +1630,7 @@ te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam)
 	return S_FALSE;
 }
 
-te.OnNewWindow = function (Ctrl, dwFlags, UrlContext, Url)
-{
+te.OnNewWindow = function (Ctrl, dwFlags, UrlContext, Url) {
 	var hr = RunEvent3("NewWindow", Ctrl, dwFlags, UrlContext, Url);
 	if (isFinite(hr)) {
 		return hr;
@@ -1703,8 +1643,7 @@ te.OnNewWindow = function (Ctrl, dwFlags, UrlContext, Url)
 	return S_FALSE;
 }
 
-te.OnClipboardText = function (Items)
-{
+te.OnClipboardText = function (Items) {
 	if (!Items) {
 		return "";
 	}
@@ -1719,8 +1658,7 @@ te.OnClipboardText = function (Items)
 	return s.join(" ");
 }
 
-te.OnArrange = function (Ctrl, rc)
-{
+te.OnArrange = function (Ctrl, rc) {
 	if (Ctrl.Type == CTRL_TC) {
 		var o = g_.Panels[Ctrl.Id];
 		if (!o) {
@@ -1769,8 +1707,7 @@ te.OnArrange = function (Ctrl, rc)
 	RunEvent1("Arrange", Ctrl, rc);
 }
 
-te.OnVisibleChanged = function (Ctrl)
-{
+te.OnVisibleChanged = function (Ctrl) {
 	if (Ctrl.Type == CTRL_TC) {
 		var o = g_.Panels[Ctrl.Id];
 		if (o) {
@@ -1790,8 +1727,7 @@ te.OnVisibleChanged = function (Ctrl)
 	RunEvent1("VisibleChanged", Ctrl);
 }
 
-te.OnILGetParent = function (FolderItem)
-{
+te.OnILGetParent = function (FolderItem) {
 	var r = RunEvent4("ILGetParent", FolderItem);
 	if (r !== undefined) {
 		return r;
@@ -1809,8 +1745,7 @@ te.OnILGetParent = function (FolderItem)
 	}
 }
 
-te.OnReplacePath = function (Ctrl, Path)
-{
+te.OnReplacePath = function (Ctrl, Path) {
 	if (/^[A-Z]:\\.+?\\|^\\\\.+?\\/i.test(Path)) {
 		var i = Path.indexOf("\\/");
 		if (i > 0) {
@@ -1834,163 +1769,132 @@ te.OnReplacePath = function (Ctrl, Path)
 	return RunEvent4("ReplacePath", Ctrl, Path);
 }
 
-ShowStatusText = function (Ctrl, Text, iPart)
-{
+te.OnGetAlt = function (dwSessionId, s) {
+	var cFV = te.Ctrls(CTRL_FV);
+	for (var i in cFV) {
+		var FV = cFV[i];
+		if (dwSessionId == FV.SessionId) {
+			return fso.BuildPath(FV.FolderItem.Path, fso.GetFileName(s));
+		}
+	}
+}
+
+ShowStatusText = function (Ctrl, Text, iPart) {
 	RunEvent1("StatusText", Ctrl, Text, iPart);
 	return S_OK;
 }
 
 g_.event.statustext = ShowStatusText;
 
-g_.event.beginnavigate = function (Ctrl)
-{
+g_.event.beginnavigate = function (Ctrl) {
 	ShowStatusText(Ctrl, "", 0);
 	return RunEvent2("BeginNavigate", Ctrl);
 }
 
-g_.event.selectionchanging = function (Ctrl)
-{
+g_.event.selectionchanging = function (Ctrl) {
 	return RunEvent3("SelectionChanging", Ctrl);
 }
 
-g_.event.viewmodechanged = function (Ctrl)
-{
+g_.event.viewmodechanged = function (Ctrl) {
 	RunEvent1("ViewModeChanged", Ctrl);
 }
 
-g_.event.columnschanged = function (Ctrl)
-{
+g_.event.columnschanged = function (Ctrl) {
 	RunEvent1("ColumnsChanged", Ctrl);
 }
 
-g_.event.iconsizechanged = function (Ctrl)
-{
+g_.event.iconsizechanged = function (Ctrl) {
 	RunEvent1("IconSizeChanged", Ctrl);
 }
 
-g_.event.itemclick = function (Ctrl, Item, HitTest, Flags)
-{
+g_.event.itemclick = function (Ctrl, Item, HitTest, Flags) {
 	return RunEvent3("ItemClick", Ctrl, Item, HitTest, Flags);
 }
 
-g_.event.columnclick = function (Ctrl, iItem)
-{
+g_.event.columnclick = function (Ctrl, iItem) {
 	return RunEvent3("ColumnClick", Ctrl, iItem);
 }
 
-g_.event.windowregistered = function (Ctrl)
-{
+g_.event.windowregistered = function (Ctrl) {
 	if (g_.bWindowRegistered) {
 		RunEvent1("WindowRegistered", Ctrl);
 	}
 	g_.bWindowRegistered = true;
 }
 
-g_.event.tooltip = function (Ctrl, Index)
-{
+g_.event.tooltip = function (Ctrl, Index) {
 	return RunEvent4("ToolTip", Ctrl, Index);
 }
 
-g_.event.hittest = function (Ctrl, pt, flags)
-{
+g_.event.hittest = function (Ctrl, pt, flags) {
 	return RunEvent3("HitTest", Ctrl, pt, flags);
 }
 
-g_.event.getpanestate = function (Ctrl, ep, peps)
-{
+g_.event.getpanestate = function (Ctrl, ep, peps) {
 	return RunEvent3("GetPaneState", Ctrl, ep, peps);
 }
 
-g_.event.translatepath = function (Ctrl, Path)
-{
+g_.event.translatepath = function (Ctrl, Path) {
 	return RunEvent4("TranslatePath", Ctrl, Path);
 }
 
-g_.event.begindrag = function (Ctrl)
-{
+g_.event.begindrag = function (Ctrl) {
 	return !isFinite(RunEvent3("BeginDrag", Ctrl));
 }
 
-g_.event.beforegetdata = function (Ctrl, Items, nMode)
-{
+g_.event.beforegetdata = function (Ctrl, Items, nMode) {
 	return RunEvent2("BeforeGetData", Ctrl, Items, nMode);
 }
 
-g_.event.beginlabeledit = function (Ctrl)
-{
+g_.event.beginlabeledit = function (Ctrl) {
 	return RunEvent4("BeginLabelEdit", Ctrl);
 }
 
-g_.event.endlabeledit = function (Ctrl, Name)
-{
+g_.event.endlabeledit = function (Ctrl, Name) {
 	return RunEvent4("EndLabelEdit", Ctrl, Name);
 }
 
-g_.event.sort = function (Ctrl)
-{
+g_.event.sort = function (Ctrl) {
 	return RunEvent1("Sort", Ctrl);
 }
 
-g_.event.sorting = function (Ctrl, Name)
-{
+g_.event.sorting = function (Ctrl, Name) {
 	return RunEvent3("Sorting", Ctrl, Name);
 }
 
-g_.event.setname = function (pid, Name)
-{
+g_.event.setname = function (pid, Name) {
 	return RunEvent3("SetName", pid, Name);
 }
 
-g_.event.fromfile = function (image, file, cx)
-{
-	var alt;
-	var s = fso.BuildPath(fso.GetSpecialFolder(2).Path, "tablacus\\");
-	if (api.StrCmpNI(file, s, s.length) == 0) {
-		var s = file.substr(s.length);
-		var dwSessionId = api.sscanf(s, "%llx");
-		var cFV = te.Ctrls(CTRL_FV);
-		for (var i in cFV) {
-			var FV = cFV[i];
-			if (dwSessionId == FV.SessionId) {
-				alt = fso.BuildPath(FV.FolderItem.Path, fso.GetFileName(s));
-				break;
-			}
-		}
-	}
+g_.event.fromfile = function (image, file, alt, cx) {
 	return RunEvent3("FromFile", image, file, alt, cx);
 }
 
-g_.event.fromstream = function (image, stream, filename, cx)
-{
+g_.event.fromstream = function (image, stream, filename, cx) {
 	return RunEvent3("FromStream", image, stream, filename, cx);
 }
 
-g_.event.endthread = function (Ctrl)
-{
+g_.event.endthread = function (Ctrl) {
 	return RunEvent1("EndThread", api.GetThreadCount());
 }
 
-g_.event.itemprepaint = function (Ctrl, pid, nmcd, vcd, plRes)
-{
+g_.event.itemprepaint = function (Ctrl, pid, nmcd, vcd, plRes) {
 	RunEvent3("ItemPrePaint", Ctrl, pid, nmcd, vcd, plRes);
 	RunEvent1("ItemPrePaint2", Ctrl, pid, nmcd, vcd, plRes);
 }
 
-g_.event.itempostpaint = function (Ctrl, pid, nmcd, vcd)
-{
+g_.event.itempostpaint = function (Ctrl, pid, nmcd, vcd) {
 	RunEvent3("ItemPostPaint", Ctrl, pid, nmcd, vcd);
 	RunEvent1("ItemPostPaint2", Ctrl, pid, nmcd, vcd);
 }
 
-g_.event.handleicon = function (Ctrl, pid, iItem)
-{
+g_.event.handleicon = function (Ctrl, pid, iItem) {
 	return RunEvent3("HandleIcon", Ctrl, pid, iItem);
 }
 
 //Tablacus Events
 
-GetIconImage = function (Ctrl, BGColor, bSimple)
-{
+GetIconImage = function (Ctrl, BGColor, bSimple) {
 	var nSize = api.GetSystemMetrics(SM_CYSMICON);
 	var FolderItem = Ctrl.FolderItem || Ctrl;
 	if (!FolderItem) {
@@ -2020,14 +1924,13 @@ GetIconImage = function (Ctrl, BGColor, bSimple)
 			api.DestroyIcon(hIcon);
 			return img.DataURI("image/png");
 		}
-s	}
+	}
 	return MakeImgDataEx("icon:shell32.dll,3", bSimple, nSize);
 }
 
 // Browser Events
 
-AddEventEx(window, "load", function ()
-{
+AddEventEx(window, "load", function () {
 	ApplyLang(document);
 	if (api.GetKeyState(VK_SHIFT) < 0 && api.GetKeyState(VK_CONTROL) < 0) {
 		ShowOptions("Tab=Add-ons");
@@ -2040,8 +1943,7 @@ AddEventEx(window, "beforeunload", Finalize);
 
 AddEventEx(window, "blur", ResetScroll);
 
-AddEventEx(document, "MSFullscreenChange", function ()
-{
+AddEventEx(document, "MSFullscreenChange", function () {
 	if (document.msFullscreenElement) {
 		var cTC = te.Ctrls(CTRL_TC);
 		for (var i in cTC) {
@@ -2060,8 +1962,7 @@ AddEventEx(document, "MSFullscreenChange", function ()
 
 //
 
-function InitWindow()
-{
+function InitWindow() {
 	if (g_.xmlWindow && !/^string$/i.test(typeof g_.xmlWindow)) {
 		LoadXml(g_.xmlWindow);
 	}
@@ -2070,8 +1971,7 @@ function InitWindow()
 		TC.Selected.Navigate2(HOME_PATH, SBSP_NEWBROWSER, te.Data.View_Type, te.Data.View_ViewMode, te.Data.View_fFlags, te.Data.View_Options, te.Data.View_ViewFlags, te.Data.View_IconSize, te.Data.Tree_Align, te.Data.Tree_Width, te.Data.Tree_Style, te.Data.Tree_EnumFlags, te.Data.Tree_RootStyle, te.Data.Tree_Root);
 	}
 	delete g_.xmlWindow;
-	setTimeout(function ()
-	{
+	setTimeout(function () {
 		var a, i, j, menus, items;
 		Resize();
 		var cTC = te.Ctrls(CTRL_TC);
@@ -2086,16 +1986,14 @@ function InitWindow()
 		}
 		te.CmdShow = SW_SHOWNORMAL;
 		te.UnlockUpdate();
-		setTimeout(function ()
-		{
+		setTimeout(function () {
 			RunCommandLine(api.GetCommandLine());
 			api.PostMessage(te.hwnd, WM_SIZE, 0, 0);
 		}, 500);
 	}, 99);
 }
 
-function InitMenus()
-{
+function InitMenus() {
 	te.Data.xmlMenus = OpenXml("menus.xml", false, true);
 	var root = te.Data.xmlMenus.documentElement;
 	if (root) {
@@ -2112,15 +2010,13 @@ function InitMenus()
 	}
 }
 
-function ArrangeAddons()
-{
+function ArrangeAddons() {
 	te.Data.Locations = api.CreateObject("Object");
 	window.IconSize = te.Data.Conf_IconSize || screen.logicalYDPI / 4;
 	var xml = OpenXml("addons.xml", false, true);
 	te.Data.Addons = xml;
 	if (api.GetKeyState(VK_SHIFT) < 0 && api.GetKeyState(VK_CONTROL) < 0) {
-		IsSavePath = function (path)
-		{
+		IsSavePath = function (path) {
 			return false;
 		}
 		return;
@@ -2151,12 +2047,14 @@ function ArrangeAddons()
 				window.Error_source = "";
 			}
 			if (arError.length) {
-				(function (arError) { setTimeout(function () {
-					if (MessageBox(arError.join("\n\n"), TITLE, MB_OKCANCEL) != IDCANCEL) {
-						te.Data.bErrorAddons = true;
-						ShowOptions("Tab=Add-ons");
-					}
-				}, 500);}) (arError);
+				(function (arError) {
+					setTimeout(function () {
+						if (MessageBox(arError.join("\n\n"), TITLE, MB_OKCANCEL) != IDCANCEL) {
+							te.Data.bErrorAddons = true;
+							ShowOptions("Tab=Add-ons");
+						}
+					}, 500);
+				})(arError);
 			}
 		}
 	}
@@ -2173,14 +2071,12 @@ function ArrangeAddons()
 	}
 }
 
-function GetAddonLocation(strName)
-{
+function GetAddonLocation(strName) {
 	var items = te.Data.Addons.getElementsByTagName(strName);
 	return (items.length ? items[0].getAttribute("Location") : null);
 }
 
-function SetAddon(strName, Location, Tag, strVAlign)
-{
+function SetAddon(strName, Location, Tag, strVAlign) {
 	if (strName) {
 		var s = GetAddonLocation(strName);
 		if (s) {
@@ -2203,8 +2099,7 @@ function SetAddon(strName, Location, Tag, strVAlign)
 				o.style.verticalAlign = strVAlign;
 			}
 		} else if (Location == "Inner") {
-			AddEvent("PanelCreated", function (Ctrl)
-			{
+			AddEvent("PanelCreated", function (Ctrl) {
 				SetAddon(null, "Inner1Left_" + Ctrl.Id, Tag.replace(/\$/g, Ctrl.Id));
 			});
 		}
@@ -2222,11 +2117,10 @@ function SetAddon(strName, Location, Tag, strVAlign)
 	return Location;
 }
 
-function InitCode()
-{
+function InitCode() {
 	var types =
 	{
-		Key:   ["All", "List", "Tree", "Browser", "Edit"],
+		Key: ["All", "List", "Tree", "Browser", "Edit"],
 		Mouse: ["All", "List", "List_Background", "Tree", "Tabs", "Tabs_Background", "Browser"]
 	};
 	var i;
@@ -2256,8 +2150,7 @@ function InitCode()
 	HOME_PATH = te.Data.Conf_NewTab || HOME_PATH;
 }
 
-function UnlockFV(Item)
-{
+function UnlockFV(Item) {
 	var cFV = te.Ctrls(CTRL_FV);
 	for (var i in cFV) {
 		var FV = cFV[i];
@@ -2267,8 +2160,7 @@ function UnlockFV(Item)
 	}
 }
 
-function ChangeNotifyFV(lEvent, item1, item2)
-{
+function ChangeNotifyFV(lEvent, item1, item2) {
 	var fAdd = SHCNE_DRIVEADD | SHCNE_MEDIAINSERTED | SHCNE_NETSHARE | SHCNE_MKDIR;
 	var fRemove = SHCNE_DRIVEREMOVED | SHCNE_MEDIAREMOVED | SHCNE_NETUNSHARE | SHCNE_RENAMEFOLDER | SHCNE_RMDIR | SHCNE_SERVERDISCONNECT;
 	if (lEvent & (SHCNE_DISKEVENTS | fAdd | fRemove)) {
@@ -2312,17 +2204,15 @@ function ChangeNotifyFV(lEvent, item1, item2)
 				}
 				if (lEvent & SHCNE_UPDATEDIR) {
 					if (/^[A-Z]:\\|^\\/i.test(path) && api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"))) {
-					 	if (!FV.FolderItem.Unavailable) {
-						 	api.PathIsDirectory(function (hr, FV, FolderItem)
-						 	{
+						if (!FV.FolderItem.Unavailable) {
+							api.PathIsDirectory(function (hr, FV, FolderItem) {
 								if (hr < 0 && api.ILIsEqual(FV.FolderItem, FolderItem)) {
 									FV.Suspend(2);
 								}
 							}, 0, FV.FolderItem, FV, FV.FolderItem);
 						} else if (FV.FolderItem.Unavailable > 3000) {
 							FV.FolderItem.Unavailable = 1;
-						 	api.PathIsDirectory(function (hr, FV)
-						 	{
+							api.PathIsDirectory(function (hr, FV) {
 								if (hr >= 0 && FV.FolderItem.Unavailable) {
 									FV.Refresh();
 								}
@@ -2335,8 +2225,7 @@ function ChangeNotifyFV(lEvent, item1, item2)
 	}
 }
 
-SetKeyExec = function (mode, strKey, path, type, bLast)
-{
+SetKeyExec = function (mode, strKey, path, type, bLast) {
 	if (/,/.test(strKey) && !/,$/.test(strKey)) {
 		var ar = strKey.split(",");
 		for (var i in ar) {
@@ -2356,8 +2245,7 @@ SetKeyExec = function (mode, strKey, path, type, bLast)
 	}
 }
 
-SetGestureExec = function (mode, strGesture, path, type, bLast, Name)
-{
+SetGestureExec = function (mode, strGesture, path, type, bLast, Name) {
 	if (/,/.test(strGesture) && !/,$/.test(strGesture)) {
 		var ar = strGesture.split(",");
 		for (var i in ar) {
@@ -2377,8 +2265,7 @@ SetGestureExec = function (mode, strGesture, path, type, bLast, Name)
 	}
 }
 
-ArExec = function (Ctrl, ar, pt, hwnd)
-{
+ArExec = function (Ctrl, ar, pt, hwnd) {
 	for (var i in ar) {
 		var cmd = ar[i];
 		if (Exec(Ctrl, cmd[0], cmd[1], hwnd, pt) === S_OK) {
@@ -2388,21 +2275,18 @@ ArExec = function (Ctrl, ar, pt, hwnd)
 	return S_FALSE;
 }
 
-GestureExec = function (Ctrl, mode, str, pt, hwnd)
-{
+GestureExec = function (Ctrl, mode, str, pt, hwnd) {
 	if (hwnd && Ctrl.Type != CTRL_TC && Ctrl.Type != CTRL_WB) {
 		api.SetFocus(hwnd);
 	}
 	return ArExec(Ctrl, api.ObjGetI(eventTE.Mouse[mode], str), pt, hwnd || Ctrl.hwnd);
 }
 
-KeyExec = function (Ctrl, mode, str, hwnd)
-{
+KeyExec = function (Ctrl, mode, str, hwnd) {
 	return KeyExecEx(Ctrl, mode, GetKeyKey(str), hwnd || Ctrl.hwnd);
 }
 
-KeyExecEx = function (Ctrl, mode, nKey, hwnd)
-{
+KeyExecEx = function (Ctrl, mode, nKey, hwnd) {
 	var pt = api.Memory("POINT");
 	if (Ctrl.Type <= CTRL_EB || Ctrl.Type == CTRL_TV) {
 		var rc = api.Memory("RECT");
@@ -2414,8 +2298,7 @@ KeyExecEx = function (Ctrl, mode, nKey, hwnd)
 	return ArExec(Ctrl, eventTE.Key[mode][nKey], pt, hwnd);
 }
 
-function InitMouse()
-{
+function InitMouse() {
 	te.Data.Conf_Gestures = isFinite(te.Data.Conf_Gestures) ? Number(te.Data.Conf_Gestures) : 2;
 	if (/^string$/i.test(typeof te.Data.Conf_TrailColor)) {
 		te.Data.Conf_TrailColor = GetWinColor(te.Data.Conf_TrailColor);
@@ -2435,8 +2318,7 @@ function InitMouse()
 	OpenMode = te.Data.Conf_OpenMode ? SBSP_NEWBROWSER : SBSP_SAMEBROWSER;
 }
 
-importScripts = function()
-{
+importScripts = function () {
 	for (var i = 0; i < arguments.length; i++) {
 		importScript(arguments[i]);
 	}
@@ -2454,8 +2336,7 @@ g_.mouse =
 	bTrail: false,
 	bDblClk: false,
 
-	StartGestureTimer: function ()
-	{
+	StartGestureTimer: function () {
 		var i = te.Data.Conf_GestureTimeout;
 		if (i) {
 			clearTimeout(this.tidGesture);
@@ -2463,8 +2344,7 @@ g_.mouse =
 		}
 	},
 
-	EndGesture: function (button)
-	{
+	EndGesture: function (button) {
 		clearTimeout(this.tidGesture);
 		if (this.bCapture) {
 			api.ReleaseCapture();
@@ -2483,8 +2363,7 @@ g_.mouse =
 		}
 	},
 
-	RButtonDown: function (mode)
-	{
+	RButtonDown: function (mode) {
 		if (this.str == "2") {
 			var item = api.Memory("LVITEM");
 			item.iItem = this.RButton;
@@ -2506,8 +2385,7 @@ g_.mouse =
 		this.RButton = -1;
 	},
 
-	GetButton: function (msg, wParam)
-	{
+	GetButton: function (msg, wParam) {
 		var s = "";
 		if (msg >= WM_LBUTTONDOWN && msg <= WM_LBUTTONDBLCLK) {
 			if (api.GetKeyState(VK_RBUTTON) < 0) {
@@ -2540,8 +2418,7 @@ g_.mouse =
 		return this.str.length ? s : GetGestureButton().replace(s, "") + s;
 	},
 
-	GetMode: function (Ctrl, pt)
-	{
+	GetMode: function (Ctrl, pt) {
 		switch (Ctrl ? Ctrl.Type : 0) {
 			case CTRL_SB:
 			case CTRL_EB:
@@ -2555,8 +2432,7 @@ g_.mouse =
 		}
 	},
 
-	Exec: function (Ctrl, hwnd, pt, str)
-	{
+	Exec: function (Ctrl, hwnd, pt, str) {
 		var str = GetGestureKey() + (str || this.str);
 		this.EndGesture(false);
 		te.Data.cmdMouse = str;
@@ -2609,14 +2485,12 @@ g_.mouse =
 
 g_basic =
 {
-	FuncI: function (s)
-	{
+	FuncI: function (s) {
 		s = s.replace(/&|\.\.\.$/g, "");
 		return this.Func[s] || api.ObjGetI(this.Func, s);
 	},
 
-	CmdI: function (s, s2)
-	{
+	CmdI: function (s, s2) {
 		var type = this.FuncI(s);
 		if (type) {
 			return type.Cmd[s2] || api.ObjGetI(type.Cmd, s2);
@@ -2627,8 +2501,7 @@ g_basic =
 	{
 		"":
 		{
-			Exec: function (Ctrl, s, type, hwnd, pt)
-			{
+			Exec: function (Ctrl, s, type, hwnd, pt) {
 				var lines = s.split(/\r?\n/);
 				for (var i in lines) {
 					var cmd = lines[i].split(",");
@@ -2641,8 +2514,7 @@ g_basic =
 				return S_OK;
 			},
 
-			Ref: function (s, pt)
-			{
+			Ref: function (s, pt) {
 				var lines = s.split(/\r?\n/);
 				var last = lines.length ? lines[lines.length - 1] : "";
 				var res = /^([^,]+),$/.exec(last);
@@ -2664,8 +2536,7 @@ g_basic =
 
 		Open:
 		{
-			Exec: function (Ctrl, s, type, hwnd, pt)
-			{
+			Exec: function (Ctrl, s, type, hwnd, pt) {
 				return ExecOpen(Ctrl, s, type, hwnd, pt, GetNavigateFlags(GetFolderView(Ctrl, pt)));
 			},
 
@@ -2675,8 +2546,7 @@ g_basic =
 
 		"Open in new tab":
 		{
-			Exec: function (Ctrl, s, type, hwnd, pt)
-			{
+			Exec: function (Ctrl, s, type, hwnd, pt) {
 				return ExecOpen(Ctrl, s, type, hwnd, pt, SBSP_NEWBROWSER);
 			},
 
@@ -2686,8 +2556,7 @@ g_basic =
 
 		"Open in background":
 		{
-			Exec: function (Ctrl, s, type, hwnd, pt)
-			{
+			Exec: function (Ctrl, s, type, hwnd, pt) {
 				return ExecOpen(Ctrl, s, type, hwnd, pt, SBSP_NEWBROWSER | SBSP_ACTIVATE_NOFOCUS);
 			},
 
@@ -2697,22 +2566,20 @@ g_basic =
 
 		Filter:
 		{
-			Exec: function (Ctrl, s, type, hwnd, pt)
-			{
+			Exec: function (Ctrl, s, type, hwnd, pt) {
 				var FV = GetFolderView(Ctrl, pt);
 				if (FV) {
 					var s = ExtractMacro(Ctrl, s);
-				 	FV.FilterView = s != "*" ? s : null;
-				 	FV.Refresh();
-				 }
+					FV.FilterView = s != "*" ? s : null;
+					FV.Refresh();
+				}
 				return S_OK;
 			}
 		},
 
 		Exec:
 		{
-			Exec: function (Ctrl, s, type, hwnd, pt)
-			{
+			Exec: function (Ctrl, s, type, hwnd, pt) {
 				var lines = ExtractMacro(Ctrl, s).split(/\r?\n/);
 				for (var i in lines) {
 					try {
@@ -2724,8 +2591,7 @@ g_basic =
 				return S_OK;
 			},
 
-			Drop: function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop)
-			{
+			Drop: function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop) {
 				if (!pdwEffect) {
 					pdwEffect = api.Memory("DWORD");
 				}
@@ -2751,8 +2617,7 @@ g_basic =
 
 		RunAs:
 		{
-			Exec: function (Ctrl, s, type, hwnd, pt)
-			{
+			Exec: function (Ctrl, s, type, hwnd, pt) {
 				s = ExtractMacro(Ctrl, s);
 				try {
 					ShellExecute(s, "RunAs", SW_SHOWNORMAL, Ctrl, pt);
@@ -2781,8 +2646,7 @@ g_basic =
 
 		"Selected items":
 		{
-			Exec: function (Ctrl, s, type, hwnd, pt)
-			{
+			Exec: function (Ctrl, s, type, hwnd, pt) {
 				var fn = g_basic.CmdI(type, s);
 				if (fn) {
 					return fn(Ctrl, pt);
@@ -2791,8 +2655,7 @@ g_basic =
 				}
 			},
 
-			Drop: function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop)
-			{
+			Drop: function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop) {
 				var fn = g_basic.CmdI(type, s);
 				if (fn) {
 					pdwEffect[0] = DROPEFFECT_NONE;
@@ -2801,8 +2664,7 @@ g_basic =
 				return g_basic.Func.Exec.Drop(Ctrl, s + " %Selected%", "Exec", hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop)
 			},
 
-			Ref: function (s, pt)
-			{
+			Ref: function (s, pt) {
 				var r = g_basic.Popup(g_basic.Func["Selected items"].Cmd, s, pt);
 				if (api.StrCmpI(r, GetText("Send to...")) == 0) {
 					var Folder = sha.NameSpace(ssfSENDTO);
@@ -2831,20 +2693,16 @@ g_basic =
 
 			Cmd:
 			{
-				Open: function (Ctrl, pt)
-				{
+				Open: function (Ctrl, pt) {
 					return OpenSelected(Ctrl, GetNavigateFlags(GetFolderView(Ctrl)), pt);
 				},
-				"Open in new tab": function (Ctrl, pt)
-				{
+				"Open in new tab": function (Ctrl, pt) {
 					return OpenSelected(Ctrl, SBSP_NEWBROWSER, pt);
 				},
-				"Open in background": function (Ctrl, pt)
-				{
+				"Open in background": function (Ctrl, pt) {
 					return OpenSelected(Ctrl, SBSP_NEWBROWSER | SBSP_ACTIVATE_NOFOCUS, pt);
 				},
-				Exec: function (Ctrl, pt)
-				{
+				Exec: function (Ctrl, pt) {
 					var Selected = GetSelectedArray(Ctrl, pt, true).shift();
 					if (Selected) {
 						InvokeCommand(Selected, 0, te.hwnd, null, null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
@@ -2859,8 +2717,7 @@ g_basic =
 
 		Tabs:
 		{
-			Exec: function (Ctrl, s, type, hwnd, pt)
-			{
+			Exec: function (Ctrl, s, type, hwnd, pt) {
 				var fn = g_basic.CmdI(type, s);
 				if (fn) {
 					fn(Ctrl, pt);
@@ -2878,13 +2735,11 @@ g_basic =
 			},
 			Cmd:
 			{
-				"Close tab": function (Ctrl, pt)
-				{
+				"Close tab": function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt, true);
 					FV && FV.Close();
 				},
-				"Close other tabs": function (Ctrl, pt)
-				{
+				"Close other tabs": function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt);
 					if (FV) {
 						var TC = FV.Parent;
@@ -2896,8 +2751,7 @@ g_basic =
 						}
 					}
 				},
-				"Close tabs on left": function (Ctrl, pt)
-				{
+				"Close tabs on left": function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt, true);
 					if (FV) {
 						var TC = FV.Parent;
@@ -2906,8 +2760,7 @@ g_basic =
 						}
 					}
 				},
-				"Close tabs on right": function (Ctrl, pt)
-				{
+				"Close tabs on right": function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt, true);
 					if (FV) {
 						var TC = FV.Parent;
@@ -2917,8 +2770,7 @@ g_basic =
 						}
 					}
 				},
-				"Close all tabs": function (Ctrl, pt)
-				{
+				"Close all tabs": function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt);
 					if (FV) {
 						var TC = FV.Parent;
@@ -2927,62 +2779,51 @@ g_basic =
 						}
 					}
 				},
-				"New tab": function (Ctrl, pt)
-				{
+				"New tab": function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt);
 					NavigateFV(FV, HOME_PATH || FV, SBSP_NEWBROWSER);
 				},
-				Lock: function (Ctrl, pt)
-				{
+				Lock: function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt);
 					FV && Lock(FV.Parent, FV.Index, true);
 				},
-				"Previous tab": function (Ctrl, pt)
-				{
+				"Previous tab": function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt);
 					FV && ChangeTab(FV.Parent, -1);
 				},
-				"Next tab": function (Ctrl, pt)
-				{
+				"Next tab": function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt);
 					FV && ChangeTab(FV.Parent, 1);
 				},
-				Up: function (Ctrl, pt)
-				{
+				Up: function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt);
 					FV && FV.Navigate(null, SBSP_PARENT | GetNavigateFlags(FV, true));
 				},
-				Back: function (Ctrl, pt)
-				{
+				Back: function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt);
 					FV && FV.Navigate(null, SBSP_NAVIGATEBACK);
 				},
-				Forward: function (Ctrl, pt)
-				{
+				Forward: function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt);
 					FV && FV.Navigate(null, SBSP_NAVIGATEFORWARD);
 				},
-				Refresh: function (Ctrl, pt)
-				{
+				Refresh: function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt);
 					FV && FV.Refresh();
 				},
-				"Show frames": function (Ctrl, pt)
-				{
+				"Show frames": function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt);
 					if (FV) {
 						FV.Type = (FV.Type == CTRL_SB) ? CTRL_EB : CTRL_SB;
 					}
 				},
-				"Switch Explorer engine": function (Ctrl, pt)
-				{
+				"Switch Explorer engine": function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt);
 					if (FV) {
 						FV.Type = (FV.Type == CTRL_SB) ? CTRL_EB : CTRL_SB;
 					}
 				},
-				"Open in Explorer": function (Ctrl, pt)
-				{
+				"Open in Explorer": function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt);
 					FV && OpenInExplorer(FV);
 				}
@@ -2993,8 +2834,7 @@ g_basic =
 
 		Edit:
 		{
-			Exec: function (Ctrl, s, type, hwnd, pt)
-			{
+			Exec: function (Ctrl, s, type, hwnd, pt) {
 				var hMenu = te.MainMenu(FCIDM_MENU_EDIT);
 				var nVerb = GetCommandId(hMenu, s);
 				SendCommand(Ctrl, nVerb);
@@ -3002,16 +2842,14 @@ g_basic =
 				return S_OK;
 			},
 
-			Ref: function (s, pt)
-			{
+			Ref: function (s, pt) {
 				return g_basic.PopupMenu(te.MainMenu(FCIDM_MENU_EDIT), null, pt);
 			}
 		},
 
 		View:
 		{
-			Exec: function (Ctrl, s, type, hwnd, pt)
-			{
+			Exec: function (Ctrl, s, type, hwnd, pt) {
 				var hMenu = te.MainMenu(FCIDM_MENU_VIEW);
 				var nVerb = GetCommandId(hMenu, s);
 				SendCommand(Ctrl, nVerb);
@@ -3019,16 +2857,14 @@ g_basic =
 				return S_OK;
 			},
 
-			Ref: function (s, pt)
-			{
+			Ref: function (s, pt) {
 				return g_basic.PopupMenu(te.MainMenu(FCIDM_MENU_VIEW), null, pt);
 			}
 		},
 
 		Context:
 		{
-			Exec: function (Ctrl, s, type, hwnd, pt)
-			{
+			Exec: function (Ctrl, s, type, hwnd, pt) {
 				var Selected;
 				var FV = Ctrl;
 				if (Ctrl.Type <= CTRL_EB || Ctrl.Type == CTRL_TV) {
@@ -3051,8 +2887,7 @@ g_basic =
 				return S_OK;
 			},
 
-			Ref: function (s, pt)
-			{
+			Ref: function (s, pt) {
 				var FV = te.Ctrl(CTRL_FV);
 				if (FV) {
 					var Selected = FV.SelectedItems();
@@ -3071,8 +2906,7 @@ g_basic =
 
 		Background:
 		{
-			Exec: function (Ctrl, s, type, hwnd, pt)
-			{
+			Exec: function (Ctrl, s, type, hwnd, pt) {
 				var FV = te.Ctrl(CTRL_FV);
 				if (FV) {
 					var ContextMenu = FV.ViewMenu();
@@ -3088,8 +2922,7 @@ g_basic =
 				return S_OK;
 			},
 
-			Ref: function (s, pt)
-			{
+			Ref: function (s, pt) {
 				var FV = te.Ctrl(CTRL_FV);
 				if (FV) {
 					var ContextMenu = FV.ViewMenu();
@@ -3108,8 +2941,7 @@ g_basic =
 			{
 				"New folder": CreateNewFolder,
 				"New file": CreateNewFile,
-				"Copy full path": function (Ctrl, pt)
-				{
+				"Copy full path": function (Ctrl, pt) {
 					var Selected = GetSelectedItems(Ctrl, pt);
 					var s = "";
 					var nCount = Selected.Count;
@@ -3121,14 +2953,12 @@ g_basic =
 					clipboardData.setData("text", s);
 					return S_OK;
 				},
-				"Run dialog": function (Ctrl, pt)
-				{
+				"Run dialog": function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt);
 					api.ShRunDialog(te.hwnd, 0, FV ? FV.FolderItem.Path : null, null, null, 0);
 					return S_OK;
 				},
-				Search: function (Ctrl, pt)
-				{
+				Search: function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt);
 					if (FV) {
 						var s = InputDialog("Search", IsSearchPath(FV) ? GetFolderItemName(FV.FolderItem) : "");
@@ -3141,8 +2971,7 @@ g_basic =
 					return S_OK;
 				},
 				"Add to favorites": AddFavoriteEx,
-				"Reload customize": function ()
-				{
+				"Reload customize": function () {
 					te.Data.bReload = false;
 					CloseSubWindows();
 					te.Reload();
@@ -3150,8 +2979,7 @@ g_basic =
 				},
 				"Load layout": LoadLayout,
 				"Save layout": SaveLayout,
-				"Close application": function ()
-				{
+				"Close application": function () {
 					api.PostMessage(te.hwnd, WM_CLOSE, 0, 0);
 					return S_OK;
 				}
@@ -3162,14 +2990,12 @@ g_basic =
 
 		Options:
 		{
-			Exec: function (Ctrl, s, type, hwnd, pt)
-			{
+			Exec: function (Ctrl, s, type, hwnd, pt) {
 				ShowOptions("Tab=" + s);
 				return S_OK;
 			},
 
-			Ref: function (s, pt)
-			{
+			Ref: function (s, pt) {
 				return g_basic.Popup(g_basic.Func.Options.List, s, pt);
 			},
 
@@ -3180,8 +3006,7 @@ g_basic =
 
 		Key:
 		{
-			Exec: function (Ctrl, s, type, hwnd, pt)
-			{
+			Exec: function (Ctrl, s, type, hwnd, pt) {
 				api.SetFocus(Ctrl.hwnd);
 				wsh.SendKeys(s);
 				return S_OK;
@@ -3190,8 +3015,7 @@ g_basic =
 
 		"Load layout":
 		{
-			Exec: function (Ctrl, s, type, hwnd, pt)
-			{
+			Exec: function (Ctrl, s, type, hwnd, pt) {
 				if (s) {
 					LoadXml(s);
 				} else {
@@ -3205,8 +3029,7 @@ g_basic =
 
 		"Save layout":
 		{
-			Exec: function (Ctrl, s, type, hwnd, pt)
-			{
+			Exec: function (Ctrl, s, type, hwnd, pt) {
 				if (s) {
 					SaveXml(s);
 				} else {
@@ -3226,8 +3049,7 @@ g_basic =
 
 		Menus:
 		{
-			Ref: function (s, pt)
-			{
+			Ref: function (s, pt) {
 				return g_basic.Popup(g_basic.Func.Menus.List, s, pt);
 			},
 
@@ -3237,8 +3059,7 @@ g_basic =
 		}
 	},
 
-	Exec: function (Ctrl, s, type, hwnd, pt)
-	{
+	Exec: function (Ctrl, s, type, hwnd, pt) {
 		var fn = g_basic.CmdI(type, s);
 		if (!pt) {
 			pt = api.Memory("POINT");
@@ -3248,8 +3069,7 @@ g_basic =
 		return S_OK;
 	},
 
-	Popup: function (Cmd, strDefault, pt)
-	{
+	Popup: function (Cmd, strDefault, pt) {
 		var i, j, s;
 		var ar = [];
 		if (Cmd.length) {
@@ -3274,8 +3094,7 @@ g_basic =
 		return s;
 	},
 
-	PopupMenu: function (hMenu, ContextMenu, pt)
-	{
+	PopupMenu: function (hMenu, ContextMenu, pt) {
 		var Verb;
 		for (var i = api.GetMenuItemCount(hMenu); i--;) {
 			if (api.GetMenuString(hMenu, i, MF_BYPOSITION)) {
@@ -3305,8 +3124,7 @@ g_basic =
 	}
 };
 
-AddEvent("Exec", function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop)
-{
+AddEvent("Exec", function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop) {
 	var FV = GetFolderView(Ctrl, pt);
 	var hr = te.OnBeforeGetData(FV, dataObj || FV.SelectedItems(), 3);
 	if (hr) {
@@ -3328,8 +3146,7 @@ AddEvent("Exec", function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEff
 	}
 });
 
-AddEvent("MenuState:Tabs:Close Tab", function (Ctrl, pt, mii)
-{
+AddEvent("MenuState:Tabs:Close Tab", function (Ctrl, pt, mii) {
 	var FV = GetFolderView(Ctrl, pt);
 	if (FV && FV.Data.Lock) {
 		mii.fMask |= MIIM_STATE;
@@ -3337,8 +3154,7 @@ AddEvent("MenuState:Tabs:Close Tab", function (Ctrl, pt, mii)
 	}
 });
 
-AddEvent("MenuState:Tabs:Close Tabs on Left", function (Ctrl, pt, mii)
-{
+AddEvent("MenuState:Tabs:Close Tabs on Left", function (Ctrl, pt, mii) {
 	var FV = GetFolderView(Ctrl, pt, true);
 	if (FV && FV.Index == 0) {
 		mii.fMask |= MIIM_STATE;
@@ -3346,8 +3162,7 @@ AddEvent("MenuState:Tabs:Close Tabs on Left", function (Ctrl, pt, mii)
 	}
 });
 
-AddEvent("MenuState:Tabs:Close Tabs on Right", function (Ctrl, pt, mii)
-{
+AddEvent("MenuState:Tabs:Close Tabs on Right", function (Ctrl, pt, mii) {
 	var FV = GetFolderView(Ctrl, pt, true);
 	if (FV) {
 		var TC = FV.Parent;
@@ -3358,8 +3173,7 @@ AddEvent("MenuState:Tabs:Close Tabs on Right", function (Ctrl, pt, mii)
 	}
 });
 
-AddEvent("MenuState:Tabs:Up", function (Ctrl, pt, mii)
-{
+AddEvent("MenuState:Tabs:Up", function (Ctrl, pt, mii) {
 	var FV = GetFolderView(Ctrl, pt);
 	if (!FV || api.ILIsEmpty(FV)) {
 		mii.fMask |= MIIM_STATE;
@@ -3367,8 +3181,7 @@ AddEvent("MenuState:Tabs:Up", function (Ctrl, pt, mii)
 	}
 });
 
-AddEvent("MenuState:Tabs:Lock", function (Ctrl, pt, mii)
-{
+AddEvent("MenuState:Tabs:Lock", function (Ctrl, pt, mii) {
 	var FV = GetFolderView(Ctrl, pt);
 	if (FV && FV.Data.Lock) {
 		mii.fMask |= MIIM_STATE;
@@ -3376,8 +3189,7 @@ AddEvent("MenuState:Tabs:Lock", function (Ctrl, pt, mii)
 	}
 });
 
-AddEvent("MenuState:Tabs:Show frames", function (Ctrl, pt, mii)
-{
+AddEvent("MenuState:Tabs:Show frames", function (Ctrl, pt, mii) {
 	if (WINVER < 0x600) {
 		mii.fMask = 0;
 		return S_OK;
@@ -3389,28 +3201,24 @@ AddEvent("MenuState:Tabs:Show frames", function (Ctrl, pt, mii)
 	}
 });
 
-AddEvent("AddType", function (arFunc)
-{
+AddEvent("AddType", function (arFunc) {
 	for (var i in g_basic.Func) {
 		arFunc.push(i);
 	}
 });
 
-AddType = function (strType, o)
-{
+AddType = function (strType, o) {
 	api.ObjPutI(g_basic.Func, strType.replace(/&|\.\.\.$/g, ""), o);
 };
 
-AddTypeEx = function (strType, strTitle, fn)
-{
+AddTypeEx = function (strType, strTitle, fn) {
 	var type = g_basic.FuncI(strType);
 	if (type && type.Cmd) {
 		api.ObjPutI(type.Cmd, strTitle, fn);
 	}
 };
 
-AddEvent("OptionRef", function (Id, s, pt)
-{
+AddEvent("OptionRef", function (Id, s, pt) {
 	var fn = g_basic.FuncI(Id);
 	if (fn) {
 		var r;
@@ -3423,8 +3231,7 @@ AddEvent("OptionRef", function (Id, s, pt)
 	}
 });
 
-AddEvent("OptionEncode", function (Id, p)
-{
+AddEvent("OptionEncode", function (Id, p) {
 	if (Id === "") {
 		var lines = p.s.split(/\r?\n/);
 		for (var i in lines) {
@@ -3446,8 +3253,7 @@ AddEvent("OptionEncode", function (Id, p)
 	}
 });
 
-AddEvent("OptionDecode", function (Id, p)
-{
+AddEvent("OptionDecode", function (Id, p) {
 	if (Id === "") {
 		var lines = p.s.split(/\r?\n/);
 		for (var i in lines) {
@@ -3473,8 +3279,7 @@ AddEvent("OptionDecode", function (Id, p)
 	}
 });
 
-AddEvent("BeginNavigate", function (Ctrl)
-{
+AddEvent("BeginNavigate", function (Ctrl) {
 	var fn = Ctrl.FolderItem.Enum;
 	if (fn) {
 		var SessionId = Ctrl.SessionId;
@@ -3490,15 +3295,13 @@ AddEvent("BeginNavigate", function (Ctrl)
 	}
 });
 
-AddEvent("UseExplorer", function (pid)
-{
+AddEvent("UseExplorer", function (pid) {
 	if (pid.Path && !api.GetAttributesOf(pid.Alt || pid, SFGAO_FILESYSTEM | SFGAO_FILESYSANCESTOR | SFGAO_STORAGEANCESTOR | SFGAO_NONENUMERATED | SFGAO_DROPTARGET) && !api.ILIsParent(1, pid, false)) {
 		return true;
 	}
 });
 
-AddEvent("LocationPopup", function (hMenu)
-{
+AddEvent("LocationPopup", function (hMenu) {
 	FolderMenu.AddMenuItem(hMenu, api.ILCreateFromPath(ssfDESKTOP));
 	FolderMenu.AddMenuItem(hMenu, api.ILCreateFromPath(ssfDRIVES));
 	var Items = FolderMenu.Enum(api.ILCreateFromPath(ssfDRIVES));
@@ -3515,8 +3318,7 @@ AddEvent("LocationPopup", function (hMenu)
 	FolderMenu.AddMenuItem(hMenu, api.ILCreateFromPath(ssfBITBUCKET), api.GetDisplayNameOf(ssfBITBUCKET, SHGDN_INFOLDER), true);
 });
 
-AddEnv("Selected", function(Ctrl)
-{
+AddEnv("Selected", function (Ctrl) {
 	var ar = [];
 	var Selected = GetSelectedItems(Ctrl);
 	if (Selected) {
@@ -3526,8 +3328,7 @@ AddEnv("Selected", function(Ctrl)
 	return ar.join(" ");
 });
 
-AddEnv("Current", function(Ctrl)
-{
+AddEnv("Current", function (Ctrl) {
 	var strSel = "";
 	var FV = GetFolderView(Ctrl);
 	if (FV) {
@@ -3536,8 +3337,7 @@ AddEnv("Current", function(Ctrl)
 	return strSel;
 });
 
-AddEnv("TreeSelected", function(Ctrl)
-{
+AddEnv("TreeSelected", function (Ctrl) {
 	var strSel = "";
 	if (!Ctrl || Ctrl.Type != CTRL_TV) {
 		var FV = GetFolderView(Ctrl);
@@ -3553,23 +3353,19 @@ AddEnv("TreeSelected", function(Ctrl)
 
 AddEnv("Installed", fso.GetDriveName(api.GetModuleFileName(null)));
 
-AddEnv("TE_Config", function ()
-{
+AddEnv("TE_Config", function () {
 	return fso.BuildPath(te.Data.DataFolder, "config");
 });
 
-AddEvent("ReplaceMacroEx", [/%res:(.+)%/ig, function (strMatch, ref1)
-{
+AddEvent("ReplaceMacroEx", [/%res:(.+)%/ig, function (strMatch, ref1) {
 	return api.LoadString(hShell32, ref1) || GetTextR(ref1);
 }]);
 
-AddEvent("ReplaceMacroEx", [/%AddonStatus:([^%]*)%/ig, function (strMatch, ref1)
-{
+AddEvent("ReplaceMacroEx", [/%AddonStatus:([^%]*)%/ig, function (strMatch, ref1) {
 	return api.LowPart(GetAddonElement(ref1).getAttribute("Enabled")) ? "on" : "off";
 }]);
 
-ExtractMacro2 = function (Ctrl, s)
-{
+ExtractMacro2 = function (Ctrl, s) {
 	for (var j = 99; j--;) {
 		var s1 = s;
 		for (var i in eventTE.replacemacroex) {
@@ -3591,8 +3387,7 @@ ExtractMacro2 = function (Ctrl, s)
 				s = eventTE.extractmacro[i][1](Ctrl, s, re);
 			}
 		}
-		s = s.replace(/%([\w\-_]+)%/g, function (strMatch, ref)
-		{
+		s = s.replace(/%([\w\-_]+)%/g, function (strMatch, ref) {
 			var fn = eventTE.Environment[ref.toLowerCase()];
 			if (/^string$|^number$/i.test(typeof fn)) {
 				return fn;
@@ -3602,7 +3397,7 @@ ExtractMacro2 = function (Ctrl, s)
 					if (/^string$|^number$/i.test(typeof r)) {
 						return r;
 					}
-				} catch (e) {}
+				} catch (e) { }
 			}
 			return strMatch;
 		});
@@ -3614,16 +3409,14 @@ ExtractMacro2 = function (Ctrl, s)
 	return s;
 }
 
-function RunSplitter(n)
-{
+function RunSplitter(n) {
 	if (event.buttons !== undefined ? event.buttons & 1 : event.button == 0) {
 		g_.mouse.Capture = n;
 		api.SetCapture(te.hwnd);
 	}
 }
 
-function CreateUpdater(arg)
-{
+function CreateUpdater(arg) {
 	if (isFinite(RunEvent3("CreateUpdater", arg))) {
 		return;
 	}
@@ -3632,17 +3425,15 @@ function CreateUpdater(arg)
 		te.Reload();
 		return;
 	}
-	g_.strUpdate = ['"', api.IsWow64Process(api.GetCurrentProcess()) ? wsh.ExpandEnvironmentStrings("%SystemRoot%\\Sysnative") : system32, "\\", "wscript.exe", '" "', arg.temp, "\\script\\update.js", '" "', api.GetModuleFileName(null), '" "', arg.temp, '" "', api.LoadString(hShell32, 12612), '" "', api.LoadString(hShell32, 12852),'"'].join("");
+	g_.strUpdate = ['"', api.IsWow64Process(api.GetCurrentProcess()) ? wsh.ExpandEnvironmentStrings("%SystemRoot%\\Sysnative") : system32, "\\", "wscript.exe", '" "', arg.temp, "\\script\\update.js", '" "', api.GetModuleFileName(null), '" "', arg.temp, '" "', api.LoadString(hShell32, 12612), '" "', api.LoadString(hShell32, 12852), '"'].join("");
 	DeleteTempFolder = PerformUpdate;
-	WmiProcess("WHERE ExecutablePath='" + (api.GetModuleFileName(null).split("\\").join("\\\\")) + "' AND ProcessId!=" + arg.pid, function (item)
-	{
+	WmiProcess("WHERE ExecutablePath='" + (api.GetModuleFileName(null).split("\\").join("\\\\")) + "' AND ProcessId!=" + arg.pid, function (item) {
 		item.Terminate();
 	});
 	api.PostMessage(te.hwnd, WM_CLOSE, 0, 0);
 }
 
-function IsHeader(Ctrl, pt, hwnd, strClass)
-{
+function IsHeader(Ctrl, pt, hwnd, strClass) {
 	if (strClass == WC_HEADER) {
 		return true;
 	}
@@ -3694,8 +3485,7 @@ if (!te.Data) {
 	te.Data.Installed = fso.GetParentFolderName(api.GetModuleFileName(null));
 	te.Data.DataFolder = te.Data.Installed;
 
-	var fn = function ()
-	{
+	var fn = function () {
 		te.Data.DataFolder = fso.BuildPath(api.GetDisplayNameOf(ssfAPPDATA, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), "Tablacus\\Explorer");
 		var ParentFolder = fso.GetParentFolderName(te.Data.DataFolder);
 		if (!fso.FolderExists(ParentFolder)) {
@@ -3746,7 +3536,7 @@ if (!te.Data) {
 				}
 			}
 		}
-	} catch (e) {}
+	} catch (e) { }
 	te.Data.WindowSetting = fso.BuildPath(te.Data.DataFolder, "config\\window0.xml");
 	for (var i = 1; i < 999; i++) {
 		var fn = fso.BuildPath(te.Data.DataFolder, "config\\window" + i + ".xml");
@@ -3767,8 +3557,7 @@ if (!te.Data) {
 			delete te.Data[i];
 		}
 	}
-	setTimeout(function ()
-	{
+	setTimeout(function () {
 		te.UnlockUpdate();
 		setTimeout(Resize, 99);
 		window.focus();
@@ -3786,16 +3575,15 @@ Threads.nBase = 1;
 Threads.nMax = 3;
 Threads.nTI = 500;
 
-Threads.GetImage = function (o)
-{
+Threads.GetImage = function (o) {
 	o.OnFromFile = te.OnFromFile;
 	o.OnFromStream = te.OnFromStream;
+	o.OnGetAlt = te.OnGetAlt;
 	Threads.Images.push(o);
 	Threads.Run();
 }
 
-Threads.Run = function ()
-{
+Threads.Run = function () {
 	if (Threads.Data.length >= Threads.nMax) {
 		return;
 	}
@@ -3819,8 +3607,7 @@ Threads.Run = function ()
 	api.ExecScript(Threads.src, "JScript", o, true);
 }
 
-Threads.End = function (Id)
-{
+Threads.End = function (Id) {
 	for (var i = Threads.Data.length; i--;) {
 		if (Id === Threads.Data[i].Data.Id) {
 			Threads.Data.splice(i, 1);
@@ -3832,9 +3619,8 @@ Threads.End = function (Id)
 	CollectGarbage();
 }
 
-Threads.Finalize = function ()
-{
-	Threads.GetImage = function () {};
+Threads.Finalize = function () {
+	Threads.GetImage = function () { };
 	Threads.Images.length = 0;
 }
 
