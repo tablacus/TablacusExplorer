@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <TablacusExplorer>
   <General>
-    <Version>1.31</Version>
-    <MinVersion>2019.5.11</MinVersion>
-    <pubDate>Sat, 11 May 2019 00:00:00 GMT</pubDate>
+    <Version>1.32</Version>
+    <MinVersion>2020.2.2</MinVersion>
+    <pubDate>Tue, 04 Feb 2020 00:00:00 GMT</pubDate>
     <Options>Common:0,5,6,7,8,9:0</Options>
     <Creator>Gaku</Creator>
     <URL>http://tablacus.github.io/TablacusExplorerAddons/</URL>
@@ -15,10 +15,8 @@
   </en>
   <ja>
     <Name>ツリー</Name>
-    <Description>ツリー</Description>
   </ja>
   <zh>
     <Name>樹狀目錄</Name>
-    <Description>樹狀目錄</Description>
   </zh>
 </TablacusExplorer>

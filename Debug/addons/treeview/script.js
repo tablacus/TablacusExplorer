@@ -16,8 +16,7 @@ if (window.Addon == 1) {
 		Depth: api.LowPart(item.getAttribute("Depth")),
 		tid: {},
 
-		Exec: function (Ctrl, pt)
-		{
+		Exec: function (Ctrl, pt) {
 			var FV = GetFolderView(Ctrl, pt);
 			if (FV) {
 				FV.Focus();
@@ -35,8 +34,7 @@ if (window.Addon == 1) {
 			return S_OK;
 		},
 
-		Expand: function (Ctrl)
-		{
+		Expand: function (Ctrl) {
 			if (Ctrl.FolderItem && !IsSearchPath(Ctrl.FolderItem)) {
 				var TV = Ctrl.TreeView;
 				if (TV) {
@@ -45,8 +43,7 @@ if (window.Addon == 1) {
 						delete Addons.TreeView.tid[TV.Id];
 					}
 					TV.Expand(Ctrl.FolderItem, Addons.TreeView.Depth);
-					Addons.TreeView.tid[TV.Id] = setTimeout(function ()
-					{
+					Addons.TreeView.tid[TV.Id] = setTimeout(function () {
 						delete Addons.TreeView.tid[TV.Id];
 						TV.Expand(Ctrl.FolderItem, 0);
 					}, 99);
@@ -54,8 +51,7 @@ if (window.Addon == 1) {
 			}
 		},
 
-		Popup: function (o)
-		{
+		Popup: function (o) {
 			var FV = GetFolderView(o);
 			if (FV) {
 				FV.Focus();
@@ -80,8 +76,7 @@ if (window.Addon == 1) {
 	if (item.getAttribute("MenuExec")) {
 		Addons.TreeView.nPos = api.LowPart(item.getAttribute("MenuPos"));
 		Addons.TreeView.strName = item.getAttribute("MenuName") || Addons.TreeView.strName;
-		AddEvent(item.getAttribute("Menu"), function (Ctrl, hMenu, nPos)
-		{
+		AddEvent(item.getAttribute("Menu"), function (Ctrl, hMenu, nPos) {
 			api.InsertMenu(hMenu, Addons.TreeView.nPos, MF_BYPOSITION | MF_STRING, ++nPos, GetText(Addons.TreeView.strName));
 			ExtraMenuCommand[nPos] = Addons.TreeView.Exec;
 			return nPos;
@@ -100,14 +95,12 @@ if (window.Addon == 1) {
 	var s = ['<span class="button" onclick="Addons.TreeView.Exec(this)" oncontextmenu="return Addons.TreeView.Popup(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', GetImgTag({ title: "Tree", src: src }, h), '</span>'];
 	SetAddon(Addon_Id, Default, s);
 
-	SetGestureExec("Tree", "1", function (Ctrl, pt)
-	{
+	SetGestureExec("Tree", "1", function (Ctrl, pt) {
 		var Item = Ctrl.SelectedItem;
 		if (Item) {
 			var FV = Ctrl.FolderView;
 			if (!api.ILIsEqual(FV.FolderItem, Item)) {
-				setTimeout(function ()
-				{
+				setTimeout(function () {
 					FV.Navigate(Item, GetNavigateFlags(FV));
 				}, 99);
 			}
@@ -115,12 +108,10 @@ if (window.Addon == 1) {
 		return S_OK;
 	}, "Func", true);
 
-	SetGestureExec("Tree", "3", function (Ctrl, pt)
-	{
+	SetGestureExec("Tree", "3", function (Ctrl, pt) {
 		var Item = Ctrl.SelectedItem;
 		if (Item) {
-			setTimeout(function ()
-			{
+			setTimeout(function () {
 				Ctrl.FolderView.Navigate(Item, SBSP_NEWBROWSER);
 			}, 99);
 		}
@@ -128,26 +119,23 @@ if (window.Addon == 1) {
 	}, "Func", true);
 
 	//Tab
-	SetKeyExec("Tree", "$f", function (Ctrl, pt)
-	{
+	SetKeyExec("Tree", "$f", function (Ctrl, pt) {
 		var FV = GetFolderView(Ctrl, pt);
 		FV.focus();
 		return S_OK;
 	}, "Func", true);
 
 	//Enter
-	SetKeyExec("Tree", "$1c", function (Ctrl, pt)
-	{
+	SetKeyExec("Tree", "$1c", function (Ctrl, pt) {
 		var FV = GetFolderView(Ctrl, pt);
 		FV.Navigate(Ctrl.SelectedItem, GetNavigateFlags(FV));
 		return S_OK;
 	}, "Func", true);
 
-	AddTypeEx("Add-ons", Addons.TreeView.strName, Addons.TreeView.Exec);
+	AddTypeEx("Add-ons", "Tree", Addons.TreeView.Exec);
 
 	if (WINVER >= 0x600) {
-		AddEvent("AppMessage", function (Ctrl, hwnd, msg, wParam, lParam)
-		{
+		AddEvent("AppMessage", function (Ctrl, hwnd, msg, wParam, lParam) {
 			if (msg == Addons.TreeView.WM) {
 				var pidls = {};
 				var hLock = api.SHChangeNotification_Lock(wParam, lParam, pidls);
@@ -162,8 +150,7 @@ if (window.Addon == 1) {
 			}
 		});
 
-		AddEvent("Finalize", function ()
-		{
+		AddEvent("Finalize", function () {
 			api.SHChangeNotifyDeregister(Addons.TreeView.uRegisterId);
 		});
 

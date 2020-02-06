@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return Math.min(te.Version, 20200202);
+		return Math.min(te.Version, 20200206);
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -2322,7 +2322,6 @@ function CheckUpdate2(xhr, url, arg1) {
 	var arg = {};
 	var Text = xhr.get_responseText ? xhr.get_responseText() : xhr.responseText;
 	var json = window.JSON ? JSON.parse(Text) : api.GetScriptDispatch("function fn () { return " + Text + "}", "JScript", {}).fn();
-	var assets = json.assets;
 	if (json.assets && json.assets[0]) {
 		arg.size = json.assets[0].size / 1024;
 		arg.url = json.assets[0].browser_download_url;

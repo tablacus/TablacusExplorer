@@ -3,7 +3,7 @@ indent_style = tab
 end_of_line = crlf
 charset = utf-8
 trim_trailing_whitespace = true
-insert_final_newline = false
+insert_final_newline = true
 indent_size = 4
 
 [*.{html,css,xml}]
@@ -11,5 +11,5 @@ indent_style = space
 end_of_line = crlf
 charset = utf-8
 trim_trailing_whitespace = true
-insert_final_newline = false
+insert_final_newline = true
 indent_size = 2

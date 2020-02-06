@@ -3,7 +3,6 @@
 te.ClearEvents();
 te.LockUpdate();
 te.About = AboutTE(2);
-api.SetWindowText(te.hwnd, AboutTE(2));
 Addon = 1;
 Init = false;
 ExtraMenuCommand = [];
@@ -179,7 +178,7 @@ IsSavePath = function (path) {
 }
 
 AddEvent("IsSavePath", function (path) {
-	return path != "about:blank";
+	return true;
 });
 
 Lock = function (Ctrl, nIndex, turn) {
@@ -638,7 +637,7 @@ AddEvent("Close", function (Ctrl) {
 			break;
 		case CTRL_SB:
 		case CTRL_EB:
-			return Ctrl.Data.Lock ? S_FALSE : CloseView(Ctrl);
+			return Ctrl.Data.Lock || api.ILIsEqual(Ctrl, "about:blank") ? S_FALSE : CloseView(Ctrl);
 		case CTRL_TC:
 			var o = document.getElementById("Panel_" + Ctrl.Id);
 			if (o) {
@@ -697,15 +696,6 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 
 te.OnNavigateComplete = function (Ctrl) {
 	if (g_.tid_rf[Ctrl.Id] || !Ctrl.FolderItem) {
-		return S_OK;
-	}
-	if (Ctrl.FolderItem.Path == "about:blank" && HOME_PATH != "about:blank") {
-		(function (Ctrl) {
-		g_.tid_rf[Ctrl.Id] = setTimeout(function () {
-			delete g_.tid_rf[Ctrl.Id];
-			Ctrl.Navigate(HOME_PATH, SBSP_SAMEBROWSER);
-		}, 500);
-		})(Ctrl);
 		return S_OK;
 	}
 	var res = /search\-ms:.*?crumb=([^&]+)/.exec(Ctrl.FilterView);
