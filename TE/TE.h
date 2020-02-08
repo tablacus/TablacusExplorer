@@ -30,7 +30,6 @@
 #include <WinIoCtl.h>
 #include <tlhelp32.h>
 
-#include <list>
 #include <vector>
 #ifndef _2000XP
 #include <Propsys.h>
@@ -504,6 +503,7 @@ struct TEInvoke
 	int	cArgs;
 	HRESULT hr;
 	LONG cRef;
+	LONG cDo;
 	WORD wErrorHandling;
 	WORD wMode;
 };
@@ -1234,7 +1234,7 @@ public:
 #endif
 private:
 	VARIANT		m_vData;
-	FolderItem	**m_ppLog;
+	std::vector<FolderItem *> m_ppLog;
 	FolderItem	**m_ppFocus;
 	IDispatch	*m_pdisp;
 	PROPERTYKEY *m_pDefultColumns;
@@ -1247,9 +1247,8 @@ private:
 	LONG		m_nCreate;
 	LONG		m_dwUnavailable;
 	DWORD		m_dwEventCookie;
-	int			m_nLogCount;
-	int			m_nLogIndex;
-	int			m_nPrevLogIndex;
+	UINT		m_uLogIndex;
+	UINT		m_uPrevLogIndex;
 	int			m_nSuspendMode;
 	UINT		m_nDefultColumns;
 	BOOL		m_bIconSize;

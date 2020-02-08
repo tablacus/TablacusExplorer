@@ -21,9 +21,30 @@ PanelCreated = function (Ctrl) {
 	RunEvent1("PanelCreated", Ctrl);
 }
 
+function RefreshEx(FV, tm)
+{
+	var dt = new Date().getTime();
+	if (dt > (FV.Data.tmChk || 0) && FV.FolderItem && /^[A-Z]:\\|^\\/i.test(FV.FolderItem.Path)) {
+		FV.Data.tmChk = dt + 9999999;
+		api.PathIsDirectory(function (hr, FV, FolderItem) {
+			if (api.ILIsEqual(FV.FolderItem, FolderItem)) {
+				FV.Data.tmChk = new Date().getTime() + 3000;
+				if (hr < 0) {
+					if (RunEvent4("Error", FV) === undefined) {
+						FV.Suspend();
+					}
+				} else if (FV.FolderItem.Unavailable) {
+					FV.Refresh();
+				}
+			}
+		}, tm || -1, FV.FolderItem.Path, FV, FV.FolderItem);
+	}
+}
+
 ChangeView = function (Ctrl) {
 	if (Ctrl && Ctrl.FolderItem) {
 		ChangeTabName(Ctrl);
+		RefreshEx(Ctrl);
 		RunEvent1("ChangeView", Ctrl);
 	}
 	RunEvent1("ConfigChanged", "Window");
@@ -637,7 +658,7 @@ AddEvent("Close", function (Ctrl) {
 			break;
 		case CTRL_SB:
 		case CTRL_EB:
-			return Ctrl.Data.Lock || api.ILIsEqual(Ctrl, "about:blank") ? S_FALSE : CloseView(Ctrl);
+			return Ctrl.Data && Ctrl.Data.Lock || api.ILIsEqual(Ctrl, "about:blank") && Ctrl.Parent.Count < 2 ? S_FALSE : CloseView(Ctrl);
 		case CTRL_TC:
 			var o = document.getElementById("Panel_" + Ctrl.Id);
 			if (o) {
@@ -688,7 +709,7 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 		})(Ctrl.FolderItem);
 		return E_NOTIMPL;
 	}
-	if (Ctrl.Data && Ctrl.Data.Lock && (wFlags & SBSP_NEWBROWSER) == 0) {
+	if (Ctrl.Data && Ctrl.Data.Lock && (wFlags & SBSP_NEWBROWSER) == 0 && !api.ILIsEqual(Prev, "about:blank")) {
 		hr = E_ACCESSDENIED;
 	}
 	return hr;
@@ -1727,7 +1748,8 @@ te.OnILGetParent = function (FolderItem) {
 		return api.PathCreateFromUrl("file:" + res[1]);
 	}
 	if (api.ILIsEqual(FolderItem.Alt, ssfRESULTSFOLDER)) {
-		var ar = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX).split("\\");
+		var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
+		var ar = path.split && path.split("\\") || [];
 		if (ar.length > 1 && ar.pop()) {
 			return ar.join("\\");
 		}
@@ -2159,57 +2181,45 @@ function ChangeNotifyFV(lEvent, item1, item2) {
 		for (var i in cFV) {
 			var FV = cFV[i];
 			var path = String(api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
+			var bRefresh = false, tm = -1;
 			if (lEvent == SHCNE_RENAMEFOLDER && FV.Data && !FV.Data.Lock) {
 				if (api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"))) {
 					FV.Navigate(path.replace(path1, api.GetDisplayNameOf(item2, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)), SBSP_SAMEBROWSER);
 					continue;
 				}
 			}
+			var bCheck = ((lEvent & fAdd) && FV.FolderItem.Unavailable) || (lEvent & fRemove);
+			if (api.ILIsParent(FV, item1, true)) {
+				if (bCheck) {
+					bRefresh = true;
+					tm = 500;
+				} else if (lEvent & SHCNE_UPDATEDIR) {
+					bRefresh = api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"));
+				}
+				if (FV.hwndList) {
+					var item = api.Memory("LVITEM");
+					item.stateMask = LVIS_CUT;
+					api.SendMessage(FV.hwndList, LVM_SETITEMSTATE, -1, item);
+				}
+				if (WINVER >= 0x600 && (lEvent & (SHCNE_DELETE | SHCNE_RMDIR))) {
+					var nPos = FV.GetFocusedItem - 1;
+					if (nPos > 0 && api.ILIsEqual(item1, FV.FocusedItem)) {
+						var nCount = FV.ItemCount(SVGIO_ALLVIEW);
+						if (nCount) {
+							FV.SelectItem(nPos < nCount ? nPos : nCount - 1, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | (FV.Id == te.Ctrl(CTRL_FV).Id ? 0 : SVSI_NOTAKEFOCUS));
+						}
+					}
+				}
+			}
+			if (!bRefresh && bCheck && api.ILIsParent(item1, FV, false)) {
+				bRefresh = true;
+				tm = 500;
+			}
+			if (bRefresh) {
+				RefreshEx(FV, tm);
+			}
 			if (FV.hwndView) {
-				if (lEvent & fRemove) {
-					if (api.ILIsParent(item1, FV, false)) {
-						FV.Suspend();
-						continue;
-					}
-				}
 				FV.Notify(lEvent, item1, item2);
-				if (api.ILIsParent(FV, item1, true)) {
-					if (FV.hwndList) {
-						var item = api.Memory("LVITEM");
-						item.stateMask = LVIS_CUT;
-						api.SendMessage(FV.hwndList, LVM_SETITEMSTATE, -1, item);
-					}
-					if (WINVER >= 0x600 && (lEvent & (SHCNE_DELETE | SHCNE_RMDIR))) {
-						var nPos = FV.GetFocusedItem - 1;
-						if (nPos > 0 && api.ILIsEqual(item1, FV.FocusedItem)) {
-							var nCount = FV.ItemCount(SVGIO_ALLVIEW);
-							if (nCount) {
-								FV.SelectItem(nPos < nCount ? nPos : nCount - 1, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | (FV.Id == te.Ctrl(CTRL_FV).Id ? 0 : SVSI_NOTAKEFOCUS));
-							}
-						}
-					}
-					if ((lEvent & fAdd) && FV.FolderItem.Unavailable) {
-						FV.Refresh();
-					}
-				}
-				if (lEvent & SHCNE_UPDATEDIR) {
-					if (/^[A-Z]:\\|^\\/i.test(path) && api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"))) {
-						if (!FV.FolderItem.Unavailable) {
-							api.PathIsDirectory(function (hr, FV, FolderItem) {
-								if (hr < 0 && api.ILIsEqual(FV.FolderItem, FolderItem)) {
-									FV.Suspend(2);
-								}
-							}, 0, FV.FolderItem, FV, FV.FolderItem);
-						} else if (FV.FolderItem.Unavailable > 3000) {
-							FV.FolderItem.Unavailable = 1;
-							api.PathIsDirectory(function (hr, FV) {
-								if (hr >= 0 && FV.FolderItem.Unavailable) {
-									FV.Refresh();
-								}
-							}, -1, path, FV);
-						}
-					}
-				}
 			}
 		}
 	}
@@ -2769,10 +2779,7 @@ g_basic =
 						}
 					}
 				},
-				"New tab": function (Ctrl, pt) {
-					var FV = GetFolderView(Ctrl, pt);
-					NavigateFV(FV, HOME_PATH || FV, SBSP_NEWBROWSER);
-				},
+				"New tab": CreateTab,
 				Lock: function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt);
 					FV && Lock(FV.Parent, FV.Index, true);

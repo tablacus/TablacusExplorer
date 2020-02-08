@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return Math.min(te.Version, 20200206);
+		return te.Version < 20200208 ? te.Version : 20200208
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -1019,7 +1019,7 @@ function SendShortcutKeyFV(Key) {
 
 CreateTab = function (Ctrl, pt) {
 	var FV = GetFolderView(Ctrl, pt);
-	NavigateFV(FV, HOME_PATH || FV, SBSP_NEWBROWSER);
+	NavigateFV(FV, HOME_PATH || api.ILIsEqual(FV, "about:blank") ? HOME_PATH : FV, SBSP_NEWBROWSER);
 }
 
 Navigate = function (Path, wFlags) {
