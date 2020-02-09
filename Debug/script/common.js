@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200208 ? te.Version : 20200208
+		return te.Version < 20200208 ? te.Version : 20200209
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -1188,7 +1188,7 @@ CreateNew = function (path, fn) {
 		try {
 			fn(path);
 		} catch (e) {
-			if (/^[A-Z]:\\|^\\\\[A-Z]/i.test(path)) {
+			if (/^[A-Z]:\\|^\\\\\w/i.test(path)) {
 				var path1, path2, path3, path4;
 				path1 = path;
 				path2 = "";
@@ -1487,7 +1487,7 @@ IsFolderEx = function (Item) {
 		if (Item.IsFolder && !api.ILIsParent(ssfBITBUCKET, Item, true)) {
 			var wfd = api.Memory("WIN32_FIND_DATA");
 			var hr = api.SHGetDataFromIDList(Item, SHGDFIL_FINDDATA, wfd, wfd.Size);
-			return (hr < 0) || (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 || !/^[A-Z]:\\|^\\\\[A-Z].*\\.*\\/i.test(Item.Path);
+			return (hr < 0) || (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 || !/^[A-Z]:\\|^\\\\\w.*\\.*\\/i.test(Item.Path);
 		}
 		return !Item.IsFileSystem && Item.IsBrowsable;
 	}
@@ -2686,7 +2686,7 @@ ShowDialogEx = function (mode, w, h, ele) {
 ShowNew = function (Ctrl, pt, Mode) {
 	var FV = GetFolderView(Ctrl, pt);
 	var path = api.GetDisplayNameOf(FV, SHGDN_FORPARSING | SHGDN_ORIGINAL);
-	if (/^[A-Z]:\\|^\\\\/i.test(path)) {
+	if (/^[A-Z]:\\|^\\\\\w/i.test(path)) {
 		ShowDialog(fso.BuildPath(te.Data.Installed, "script\\dialog.html"), { MainWindow: MainWindow, Query: "new", Mode: Mode, path: path, FV: FV, Modal: false, width: 480, height: 120 });
 	}
 }
@@ -3283,7 +3283,7 @@ Alt = function () {
 
 GetSavePath = function (FolderItem) {
 	var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
-	if (!/^[A-Z]:\\|^\\\\[A-Z]/i.test(path)) {
+	if (!/^[A-Z]:\\|^\\\\\w/i.test(path)) {
 		var res = IsSearchPath(FolderItem);
 		if (res) {
 			return res[0];
@@ -3422,7 +3422,7 @@ OpenAdodbFromTextFile = function (fn) {
 		fn = api.PathUnquoteSpaces(fn);
 	}
 	fn = ExtractMacro(te, fn);
-	if (!/^[A-Z]:\\|^\\\\/i.test(fn)) {
+	if (!/^[A-Z]:\\|^\\\\\w/i.test(fn)) {
 		fn = fso.BuildPath(te.Data.Installed, fn);
 	}
 	var ado = api.CreateObject("ads");

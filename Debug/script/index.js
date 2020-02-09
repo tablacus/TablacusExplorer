@@ -24,27 +24,35 @@ PanelCreated = function (Ctrl) {
 function RefreshEx(FV, tm)
 {
 	var dt = new Date().getTime();
-	if (dt > (FV.Data.tmChk || 0) && FV.FolderItem && /^[A-Z]:\\|^\\/i.test(FV.FolderItem.Path)) {
-		FV.Data.tmChk = dt + 9999999;
-		api.PathIsDirectory(function (hr, FV, FolderItem) {
-			if (api.ILIsEqual(FV.FolderItem, FolderItem)) {
-				FV.Data.tmChk = new Date().getTime() + 3000;
-				if (hr < 0) {
-					if (RunEvent4("Error", FV) === undefined) {
-						FV.Suspend();
-					}
-				} else if (FV.FolderItem.Unavailable) {
-					FV.Refresh();
+	if (dt > (FV.Data.tmChk || 0)) {
+		if  (FV.FolderItem && /^[A-Z]:\\|^\\\\\w/i.test(FV.FolderItem.Path)) {
+			if (RunEvent4("RefreshEx", FV) === undefined) {
+				if (!FV.hwndView || api.ILIsEqual(FV.FolderItem, FV.FolderItem.Alt)) {
+					FV.Data.tmChk = dt + 9999999;
+					api.PathIsDirectory(function (hr, FV, FolderItem) {
+						FV.Data.tmChk = new Date().getTime() + 3000;
+						if (api.ILIsEqual(FV.FolderItem, FolderItem) && api.ILIsEqual(FolderItem, FolderItem.Alt)) {
+							if (hr < 0) {
+								if (RunEvent4("Error", FV) === undefined) {
+									FV.Suspend();
+								}
+							} else if (FV.FolderItem.Unavailable) {
+								FV.Refresh();
+							}
+						}
+					}, tm || -1, FV.FolderItem.Path, FV, FV.FolderItem);
 				}
 			}
-		}, tm || -1, FV.FolderItem.Path, FV, FV.FolderItem);
+		}
 	}
 }
 
 ChangeView = function (Ctrl) {
 	if (Ctrl && Ctrl.FolderItem) {
 		ChangeTabName(Ctrl);
-		RefreshEx(Ctrl);
+		if (Ctrl.hwndView) {
+			RefreshEx(Ctrl);
+		}
 		RunEvent1("ChangeView", Ctrl);
 	}
 	RunEvent1("ConfigChanged", "Window");
