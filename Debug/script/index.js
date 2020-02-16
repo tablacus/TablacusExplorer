@@ -2208,7 +2208,7 @@ function ChangeNotifyFV(lEvent, item1, item2) {
 		var cFV = te.Ctrls(CTRL_FV);
 		for (var i in cFV) {
 			var FV = cFV[i];
-			var path = String(api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
+			var path = String(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 			var bRefresh = false, tm = -1;
 			if (lEvent == SHCNE_RENAMEFOLDER && FV.Data && !FV.Data.Lock) {
 				if (api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"))) {
@@ -2216,37 +2216,37 @@ function ChangeNotifyFV(lEvent, item1, item2) {
 					continue;
 				}
 			}
-			var bCheck = ((lEvent & fAdd) && FV.FolderItem.Unavailable) || (lEvent & fRemove);
-			if (api.ILIsParent(FV, item1, true)) {
-				if (bCheck) {
-					bRefresh = true;
-					tm = 500;
-				} else if (lEvent & SHCNE_UPDATEDIR) {
-					bRefresh = api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"));
-				}
-				if (FV.hwndList) {
-					var item = api.Memory("LVITEM");
-					item.stateMask = LVIS_CUT;
-					api.SendMessage(FV.hwndList, LVM_SETITEMSTATE, -1, item);
-				}
-				if (WINVER >= 0x600 && (lEvent & (SHCNE_DELETE | SHCNE_RMDIR))) {
-					var nPos = FV.GetFocusedItem - 1;
-					if (nPos > 0 && api.ILIsEqual(item1, FV.FocusedItem)) {
-						var nCount = FV.ItemCount(SVGIO_ALLVIEW);
-						if (nCount) {
-							FV.SelectItem(nPos < nCount ? nPos : nCount - 1, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | (FV.Id == te.Ctrl(CTRL_FV).Id ? 0 : SVSI_NOTAKEFOCUS));
+			if (FV.FolderItem && FV.hwndView) {
+				var bCheck = ((lEvent & fAdd) && FV.FolderItem.Unavailable) || (lEvent & fRemove);
+				if (api.ILIsParent(FV.FolderItem, item1, true)) {
+					if (bCheck) {
+						bRefresh = true;
+						tm = 500;
+					} else if (lEvent & SHCNE_UPDATEDIR) {
+						bRefresh = api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"));
+					}
+					if (FV.hwndList) {
+						var item = api.Memory("LVITEM");
+						item.stateMask = LVIS_CUT;
+						api.SendMessage(FV.hwndList, LVM_SETITEMSTATE, -1, item);
+					}
+					if (WINVER >= 0x600 && (lEvent & (SHCNE_DELETE | SHCNE_RMDIR))) {
+						var nPos = FV.GetFocusedItem - 1;
+						if (nPos > 0 && api.ILIsEqual(item1, FV.FocusedItem)) {
+							var nCount = FV.ItemCount(SVGIO_ALLVIEW);
+							if (nCount) {
+								FV.SelectItem(nPos < nCount ? nPos : nCount - 1, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | (FV.Id == te.Ctrl(CTRL_FV).Id ? 0 : SVSI_NOTAKEFOCUS));
+							}
 						}
 					}
 				}
-			}
-			if (!bRefresh && bCheck && api.ILIsParent(item1, FV, false)) {
-				bRefresh = true;
-				tm = 500;
-			}
-			if (bRefresh) {
-				RefreshEx(FV, tm);
-			}
-			if (FV.hwndView) {
+				if (!bRefresh && bCheck && api.ILIsParent(item1, FV.FolderItem, false)) {
+					bRefresh = true;
+					tm = 500;
+				}
+				if (bRefresh) {
+					RefreshEx(FV, tm);
+				}
 				FV.Notify(lEvent, item1, item2);
 			}
 		}
