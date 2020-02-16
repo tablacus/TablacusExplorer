@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200208 ? te.Version : 20200209
+		return te.Version < 20200216 ? te.Version : 20200216
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -3266,7 +3266,8 @@ Activate = function (o, id) {
 }
 
 function DetectProcessTag(e) {
-	return /input|textarea/i.test((e || event).srcElement.tagName);
+	var el = (e || event).srcElement;
+	return /input|textarea/i.test(el.tagName) || /selectable/i.test(el.className);
 }
 
 AddEventEx(window, "load", function () {

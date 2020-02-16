@@ -30,14 +30,16 @@ function RefreshEx(FV, tm)
 				if (!FV.hwndView || api.ILIsEqual(FV.FolderItem, FV.FolderItem.Alt)) {
 					FV.Data.tmChk = dt + 9999999;
 					api.PathIsDirectory(function (hr, FV, FolderItem) {
-						FV.Data.tmChk = new Date().getTime() + 3000;
-						if (api.ILIsEqual(FV.FolderItem, FolderItem) && api.ILIsEqual(FolderItem, FolderItem.Alt)) {
-							if (hr < 0) {
-								if (RunEvent4("Error", FV) === undefined) {
-									FV.Suspend();
+						if (FV.Data) {
+							FV.Data.tmChk = new Date().getTime() + 3000;
+							if (api.ILIsEqual(FV.FolderItem, FolderItem) && api.ILIsEqual(FolderItem, FolderItem.Alt)) {
+								if (hr < 0) {
+									if (RunEvent4("Error", FV) === undefined) {
+										FV.Suspend();
+									}
+								} else if (FV.FolderItem.Unavailable) {
+									FV.Refresh();
 								}
-							} else if (FV.FolderItem.Unavailable) {
-								FV.Refresh();
 							}
 						}
 					}, tm || -1, FV.FolderItem.Path, FV, FV.FolderItem);
@@ -418,7 +420,7 @@ function ResizeSizeBar(z, h) {
 
 	o = document.getElementById(z.toLowerCase() + "barT");
 	var i = h;
-	o.style.height = ((i >= 0) ? i : 0) + "px";
+	o.style.height = Math.max(i, 0) + "px";
 	i = o.clientHeight - o.style.height.replace(/\D/g, "");
 
 	var h2 = o.clientHeight - document.getElementById(z + "Bar1").offsetHeight - document.getElementById(z + "Bar3").offsetHeight;
@@ -820,6 +822,9 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata) {
 						api.PostMessage(hwnd, WM_CHAR, VK_LBUTTON, 0);
 					}
 				}
+				if (key == VK_TAB) {
+					wsh.SendKeys(api.GetKeyState(VK_SHIFT) < 0 ? "{UP}" : "{DOWN}");
+				}
 				window.g_menu_button = api.GetKeyState(VK_CONTROL) < 0 ? 3 : api.GetKeyState(VK_SHIFT) < 0 ? 2 : 1;
 				break;
 		}
@@ -827,6 +832,11 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata) {
 			if (KeyExecEx(Ctrl, "All", nKey, hwnd) === S_OK) {
 				return S_OK;
 			}
+		}
+	}
+	if (msg == WM_KEYUP || msg == WM_SYSKEYUP) {
+		if (g_.menu_state == 5 && key == VK_CONTROL) {
+			wsh.SendKeys("{ENTER}");
 		}
 	}
 	return S_FALSE;
@@ -1589,17 +1599,22 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					}
 				}
 				var hSubMenu = api.GetSubMenu(lParam, nVerb);
-				if ((wParam >> 16) & MF_POPUP) {
+				var mf = wParam >> 16;
+				if (mf & MF_POPUP) {
 					if (hSubMenu) {
 						window.g_menu_handle = lParam;
 						window.g_menu_pos = nVerb;
 					}
+				}
+				if (!(mf & MF_MOUSESELECT)) {
+					g_.menu_state |= 1;
 				}
 				window.g_menu_string = api.GetMenuString(lParam, nVerb, hSubMenu ? MF_BYPOSITION : MF_BYCOMMAND);
 			}
 			break;
 		case WM_ENTERMENULOOP:
 			window.g_menu_button = 0;
+			g_.menu_state = api.GetKeyState(VK_CONTROL) < 0 ? 4 : 0;
 			break;
 		case WM_EXITMENULOOP:
 			window.g_menu_click = false;
@@ -1697,19 +1712,24 @@ te.OnArrange = function (Ctrl, rc) {
 		o.style.left = rc.left + "px";
 		o.style.top = rc.top + "px";
 		if (Ctrl.Visible) {
+			var s = [rc.left, rc.top, rc.right, rc.bottom].join(",");
+			if (g_.TCPos[s] && g_.TCPos[s] != Ctrl.Id) {
+				Ctrl.Close();
+				return;
+			} else {
+				g_.TCPos[s] = Ctrl.Id;
+			}
 			o.style.display = (document.documentMode && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
 		} else {
 			o.style.display = "none";
 		}
-		var i = rc.right - rc.left
-		o.style.width = i > 0 ? i + "px" : 0;
-		i = rc.bottom - rc.top;
-		o.style.height = i > 0 ? i + "px" : 0;
+		o.style.width = Math.max(rc.right - rc.left, 0) + "px";
+		o.style.height = Math.max(rc.bottom - rc.top, 0) + "px";
 		rc.top += document.getElementById("InnerTop_" + Ctrl.Id).offsetHeight + document.getElementById("InnerTop2_" + Ctrl.Id).offsetHeight;
 		var w1 = 0;
 		var w2 = 0;
 		var x = '';
-		for (i = 0; i <= 1; i++) {
+		for (var i = 0; i <= 1; i++) {
 			w1 += api.LowPart(document.getElementById("Inner" + x + "Left_" + Ctrl.Id).style.width.replace(/\D/g, ""));
 			w2 += api.LowPart(document.getElementById("Inner" + x + "Right_" + Ctrl.Id).style.width.replace(/\D/g, ""));
 			x = '2';
@@ -1718,10 +1738,10 @@ te.OnArrange = function (Ctrl, rc) {
 		rc.right -= w2;
 		rc.bottom -= document.getElementById("InnerBottom_" + Ctrl.Id).offsetHeight;
 		o = document.getElementById("Inner2Center_" + Ctrl.Id).style;
-		i = rc.right - rc.left;
-		o.width = i > 0 ? i + "px" : 0;
-		i = rc.bottom - rc.top;
-		o.height = i > 0 ? i + "px" : 0;
+		o.width = Math.max(rc.right - rc.left, 0) + "px";
+		o.height = Math.max(rc.bottom - rc.top, 0) + "px";
+	} else if (Ctrl.Type == CTRL_TE) {
+		g_.TCPos = {};
 	}
 	RunEvent1("Arrange", Ctrl, rc);
 }

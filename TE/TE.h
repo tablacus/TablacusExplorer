@@ -73,6 +73,15 @@
 class CteShellBrowser;
 class CteTreeView;
 
+#ifndef MONITOR_DPI_TYPE
+typedef enum MONITOR_DPI_TYPE {
+  MDT_EFFECTIVE_DPI,
+  MDT_ANGULAR_DPI,
+  MDT_RAW_DPI,
+  MDT_DEFAULT
+};
+#endif
+
 union teParam
 {
     LONGLONG llVal;
@@ -180,6 +189,7 @@ union teParam
 	IID iid;
 	VARIANT variant;
 	EXCEPINFO *pExcepInfo;
+	MONITOR_DPI_TYPE MonitorDpiType;
 };
 
 //Unnamed function
@@ -224,6 +234,9 @@ typedef BOOL (WINAPI* LPFNChangeWindowMessageFilterEx)(__in HWND hwnd, __in UINT
 
 //8 or higher
 typedef BOOL (WINAPI* LPFNSetDefaultDllDirectories)(__in DWORD DirectoryFlags);
+
+//8.1 or higher
+typedef HRESULT (WINAPI* LPFNGetDpiForMonitor)(HMONITOR hmonitor, MONITOR_DPI_TYPE dpiType, UINT *dpiX, UINT *dpiY);
 
 //RTL
 typedef NTSTATUS (WINAPI* LPFNRtlGetVersion)(PRTL_OSVERSIONINFOEXW lpVersionInformation);
@@ -294,11 +307,10 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TET_Size				0x1fa3
 #define TET_Redraw				0x1fa4
 #define TET_Status				0x1fa5
-#define TET_Unload				0x1fa6
+#define TET_EndThread			0x1fa6
 #define TET_Title				0x1fa7
 #define TET_FreeLibrary			0x1fa8
 #define TET_Refresh				0x1fa9
-#define TET_EndThread			0x1faa
 #define TWM_CLIPBOARDUPDATE		WM_APP
 #define SHGDN_ORIGINAL		0x40000000
 #define SHGDN_FORPARSINGEX	0x80000000
@@ -611,20 +623,6 @@ const CLSID CLSID_WScriptShell              = {0x72C24DD5, 0xD70A, 0x438B, { 0x8
 const IID IID_IWICBitmap                    = {0x00000121, 0xa8f2, 0x4877, { 0xba, 0x0a, 0xfd, 0x2b, 0x66, 0x45, 0xfb, 0x94}};
 #endif
 
-class CteDll : public IUnknown
-{
-public:
-	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
-	STDMETHODIMP_(ULONG) AddRef();
-	STDMETHODIMP_(ULONG) Release();
-
-	CteDll(HMODULE hDll);
-	~CteDll();
-public:
-	LONG		m_cRef;
-	HMODULE		m_hDll;
-};
-
 class CteFolderItem : public FolderItem, public IPersistFolder2, public IParentAndItem
 {
 public:
@@ -924,6 +922,12 @@ private:
 	DWORD	m_grfKeyState;
 	DWORD	m_dwEffect;
 	DWORD	m_dwEffectTE;
+};
+
+struct TEWebBrowsers
+{
+	CteWebBrowser	*pWB;
+	HWND			hwnd;
 };
 
 class CteTabCtrl : public IDispatchEx
@@ -1323,7 +1327,7 @@ public:
 	BOOL GetFolderVew(IShellBrowser **ppSB);
 public:
 	IContextMenu *m_pContextMenu;
-	CteDll *m_pDll;
+	HMODULE m_hDll;
 private:
 	IDataObject *m_pDataObj;
 
@@ -1585,7 +1589,7 @@ public:
 	VOID Clear();
 public:
 	IActiveScript *m_pActiveScript;
-	CteDll		*m_pDll;
+	HMODULE m_hDll;
 	DISPID		m_dispIdMember;
 	int			m_nIndex;
 private:
