@@ -822,8 +822,9 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata) {
 						api.PostMessage(hwnd, WM_CHAR, VK_LBUTTON, 0);
 					}
 				}
-				if (key == VK_TAB) {
+				if (g_.menu_loop && key == VK_TAB) {
 					wsh.SendKeys(api.GetKeyState(VK_SHIFT) < 0 ? "{UP}" : "{DOWN}");
+					return S_OK;
 				}
 				window.g_menu_button = api.GetKeyState(VK_CONTROL) < 0 ? 3 : api.GetKeyState(VK_SHIFT) < 0 ? 2 : 1;
 				break;
@@ -835,8 +836,10 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata) {
 		}
 	}
 	if (msg == WM_KEYUP || msg == WM_SYSKEYUP) {
-		if (g_.menu_state == 5 && key == VK_CONTROL) {
-			wsh.SendKeys("{ENTER}");
+		if (g_.menu_loop) {
+			if ((g_.menu_state & 0x2001) == 0x2001 && api.GetKeyState(VK_CONTROL) >= 0) {
+				wsh.SendKeys("{ENTER}");
+			}
 		}
 	}
 	return S_FALSE;
@@ -1607,14 +1610,14 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					}
 				}
 				if (!(mf & MF_MOUSESELECT)) {
-					g_.menu_state |= 1;
+					window.g_.menu_state |= 1;
 				}
 				window.g_menu_string = api.GetMenuString(lParam, nVerb, hSubMenu ? MF_BYPOSITION : MF_BYCOMMAND);
 			}
 			break;
 		case WM_ENTERMENULOOP:
-			window.g_menu_button = 0;
-			g_.menu_state = api.GetKeyState(VK_CONTROL) < 0 ? 4 : 0;
+			g_.menu_loop = true;
+			g_.menu_state = te.Data.cmdKey & 0xf000;
 			break;
 		case WM_EXITMENULOOP:
 			window.g_menu_click = false;
@@ -1631,6 +1634,7 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 				api.DeleteObject(g_arBM[i]);
 			}
 			g_arBM = [];
+			g_.menu_loop = false;
 			break;
 		case WM_MENUCHAR:
 			if (window.g_menu_click && (wParam & 0xffff) == VK_LBUTTON) {
@@ -1713,7 +1717,7 @@ te.OnArrange = function (Ctrl, rc) {
 		o.style.top = rc.top + "px";
 		if (Ctrl.Visible) {
 			var s = [rc.left, rc.top, rc.right, rc.bottom].join(",");
-			if (g_.TCPos[s] && g_.TCPos[s] != Ctrl.Id) {
+			if (!api.IsIconic(te.hwnd) && g_.TCPos[s] && g_.TCPos[s] != Ctrl.Id) {
 				Ctrl.Close();
 				return;
 			} else {
@@ -1726,9 +1730,7 @@ te.OnArrange = function (Ctrl, rc) {
 		o.style.width = Math.max(rc.right - rc.left, 0) + "px";
 		o.style.height = Math.max(rc.bottom - rc.top, 0) + "px";
 		rc.top += document.getElementById("InnerTop_" + Ctrl.Id).offsetHeight + document.getElementById("InnerTop2_" + Ctrl.Id).offsetHeight;
-		var w1 = 0;
-		var w2 = 0;
-		var x = '';
+		var w1 = 0, w2 = 0, x = '';
 		for (var i = 0; i <= 1; i++) {
 			w1 += api.LowPart(document.getElementById("Inner" + x + "Left_" + Ctrl.Id).style.width.replace(/\D/g, ""));
 			w2 += api.LowPart(document.getElementById("Inner" + x + "Right_" + Ctrl.Id).style.width.replace(/\D/g, ""));
@@ -2201,30 +2203,24 @@ function UnlockFV(Item) {
 }
 
 function ChangeNotifyFV(lEvent, item1, item2) {
-	var fAdd = SHCNE_DRIVEADD | SHCNE_MEDIAINSERTED | SHCNE_NETSHARE | SHCNE_MKDIR;
+	var fAdd = SHCNE_DRIVEADD | SHCNE_MEDIAINSERTED | SHCNE_NETSHARE | SHCNE_MKDIR | SHCNE_UPDATEDIR;
 	var fRemove = SHCNE_DRIVEREMOVED | SHCNE_MEDIAREMOVED | SHCNE_NETUNSHARE | SHCNE_RENAMEFOLDER | SHCNE_RMDIR | SHCNE_SERVERDISCONNECT;
 	if (lEvent & (SHCNE_DISKEVENTS | fAdd | fRemove)) {
 		var path1 = String(api.GetDisplayNameOf(item1, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 		var cFV = te.Ctrls(CTRL_FV);
 		for (var i in cFV) {
 			var FV = cFV[i];
-			var path = String(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
-			var bRefresh = false, tm = -1;
-			if (lEvent == SHCNE_RENAMEFOLDER && FV.Data && !FV.Data.Lock) {
-				if (api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"))) {
-					FV.Navigate(path.replace(path1, api.GetDisplayNameOf(item2, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)), SBSP_SAMEBROWSER);
-					continue;
-				}
-			}
-			if (FV.FolderItem && FV.hwndView) {
-				var bCheck = ((lEvent & fAdd) && FV.FolderItem.Unavailable) || (lEvent & fRemove);
-				if (api.ILIsParent(FV.FolderItem, item1, true)) {
-					if (bCheck) {
-						bRefresh = true;
-						tm = 500;
-					} else if (lEvent & SHCNE_UPDATEDIR) {
-						bRefresh = api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"));
+			if (FV.FolderItem) {
+				var path = String(api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
+				var bChild = !api.StrCmpI(fso.GetParentFolderName(path1), path);
+				var bParent = api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"));
+				if (lEvent == SHCNE_RENAMEFOLDER && FV.Data && !FV.Data.Lock) {
+					if (bParent) {
+						FV.Navigate(path.replace(path1, api.GetDisplayNameOf(item2, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)), SBSP_SAMEBROWSER);
+						continue;
 					}
+				}
+				if (bChild) {
 					if (FV.hwndList) {
 						var item = api.Memory("LVITEM");
 						item.stateMask = LVIS_CUT;
@@ -2240,14 +2236,14 @@ function ChangeNotifyFV(lEvent, item1, item2) {
 						}
 					}
 				}
-				if (!bRefresh && bCheck && api.ILIsParent(item1, FV.FolderItem, false)) {
-					bRefresh = true;
-					tm = 500;
+				if (bChild || bParent) {
+					if ((lEvent & fRemove) || ((lEvent & fAdd) && FV.FolderItem.Unavailable)) {
+						RefreshEx(FV, 500);
+					}
 				}
-				if (bRefresh) {
-					RefreshEx(FV, tm);
+				if (FV.hwndView) {
+					FV.Notify(lEvent, item1, item2);
 				}
-				FV.Notify(lEvent, item1, item2);
 			}
 		}
 	}

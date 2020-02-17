@@ -3493,7 +3493,7 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 	BSTR bstr = NULL;
 	int n;
 
-	if (pszPath) {
+	if (pszPath && !teStartsText(L"\\\\\\", pszPath)) {
 		BSTR bsPath2 = NULL;
 		if (pszPath[0] == _T('"')) {
 			bsPath2 = teSysAllocStringLen(pszPath, lstrlen(pszPath) + 1);
