@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200218 ? te.Version : 20200218
+		return te.Version < 20200222 ? te.Version : 20200222
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -157,7 +157,7 @@ FolderMenu =
 			mii.fMask = MIIM_SUBMENU | MIIM_FTYPE;
 			api.GetMenuItemInfo(hParent, wID, false, mii);
 			mii.hSubMenu = 0;
-			mii.fType = mii.fType & ~MF_POPUP;
+			mii.fType &= ~MF_POPUP;
 			api.SetMenuItemInfo(hParent, wID, false, mii);
 			api.DestroyMenu(hMenu);
 		}
@@ -228,6 +228,7 @@ FolderMenu =
 				api.InsertMenu(mii.hSubMenu, 0, MF_BYPOSITION | MF_STRING, 0, api.sprintf(99, '\tJScript\tFolderMenu.OpenSubMenu("%llx",%d,"%llx",%d)', hMenu, mii.wID, mii.hSubMenu, !bParent));
 			}
 		}
+		MainWindow.RunEvent1("FolderMenuAddMenuItem", hMenu, mii, FolderItem, bSelect);
 		api.InsertMenuItem(hMenu, MAXINT, false, mii);
 	},
 
@@ -3680,11 +3681,7 @@ function MakeCommDlgFilter(arg) {
 }
 
 function GetHICON(iIcon, h, flags) {
-	var size = api.Memory("SIZE");
 	var ar = [SHIL_JUMBO, SHIL_EXTRALARGE, SHIL_LARGE, SHIL_SMALL]
-	var i = ar.length;
-	do {
-		api.ImageList_GetIconSize(te.Data.SHIL[ar[--i]], size);
-	} while (h > size.cy && i);
+	for (var i = ar.length; h > te.Data.SHILS[ar[--i]].cy && i;) { }
 	return api.ImageList_GetIcon(te.Data.SHIL[ar[i]], iIcon, flags);
 }

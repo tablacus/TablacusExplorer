@@ -1716,8 +1716,8 @@ te.OnArrange = function (Ctrl, rc) {
 		o.style.left = rc.left + "px";
 		o.style.top = rc.top + "px";
 		if (Ctrl.Visible) {
-			var s = [rc.left, rc.top, rc.right, rc.bottom].join(",");
-			if (!api.IsIconic(te.hwnd) && g_.TCPos[s] && g_.TCPos[s] != Ctrl.Id) {
+			var s = [Ctrl.Left, Ctrl.Top, Ctrl.Width, Ctrl.Height].join(",");
+			if (g_.TCPos[s] && g_.TCPos[s] != Ctrl.Id) {
 				Ctrl.Close();
 				return;
 			} else {
@@ -1906,14 +1906,6 @@ g_.event.sorting = function (Ctrl, Name) {
 
 g_.event.setname = function (pid, Name) {
 	return RunEvent3("SetName", pid, Name);
-}
-
-g_.event.fromfile = function (image, file, alt, cx) {
-	return RunEvent3("FromFile", image, file, alt, cx);
-}
-
-g_.event.fromstream = function (image, stream, filename, cx) {
-	return RunEvent3("FromStream", image, stream, filename, cx);
 }
 
 g_.event.endthread = function (Ctrl) {
@@ -3543,8 +3535,11 @@ if (!te.Data) {
 
 	te.Data.Conf_Lang = GetLangId();
 	te.Data.SHIL = api.CreateObject("Array");
+	te.Data.SHILS = api.CreateObject("Array");
 	for (var i = SHIL_JUMBO + 1; i--;) {
 		te.Data.SHIL[i] = api.SHGetImageList(i);
+		te.Data.SHILS[i] = api.Memory("SIZE");
+		api.ImageList_GetIconSize(te.Data.SHIL[i], te.Data.SHILS[i]);
 	}
 	var o = {};
 	try {
@@ -3597,8 +3592,6 @@ Threads.nMax = 3;
 Threads.nTI = 500;
 
 Threads.GetImage = function (o) {
-	o.OnFromFile = te.OnFromFile;
-	o.OnFromStream = te.OnFromStream;
 	o.OnGetAlt = te.OnGetAlt;
 	Threads.Images.push(o);
 	Threads.Run();

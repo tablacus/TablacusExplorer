@@ -2,8 +2,6 @@ try {
 	while (Threads.Images.length) {
 		var o = Threads.Images.pop();
 		var image = api.CreateObject("WICBitmap");
-		image.OnFromFile = o.OnFromFile;
-		image.OnFromStream = o.OnFromStream;
 		image.OnGetAlt = o.OnGetAlt;
 		if (image.FromFile(o.path, o.cx)) {
 			if (o.cx) {
