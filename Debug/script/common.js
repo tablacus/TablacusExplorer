@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200222 ? te.Version : 20200222
+		return te.Version < 20200222 ? te.Version : 20200223
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -151,16 +151,7 @@ FolderMenu =
 				}
 			}
 		}
-		if (hParent && wID) {
-			var mii = api.Memory("MENUITEMINFO");
-			mii.cbSize = mii.Size;
-			mii.fMask = MIIM_SUBMENU | MIIM_FTYPE;
-			api.GetMenuItemInfo(hParent, wID, false, mii);
-			mii.hSubMenu = 0;
-			mii.fType &= ~MF_POPUP;
-			api.SetMenuItemInfo(hParent, wID, false, mii);
-			api.DestroyMenu(hMenu);
-		}
+		RemoveSubMenu(hParent, wID);
 		MainWindow.RunEvent1("FolderMenuCreated", hMenu, FolderItem, hParent);
 	},
 
@@ -364,6 +355,22 @@ RunEvent4 = function () {
 		} catch (e) {
 			ShowError(e, en, i);
 		}
+	}
+}
+
+RunEvent5 = function () {
+	var args = Array.apply(null, arguments);
+	var en = args.shift();
+	var eo = eventTE[en.toLowerCase()];
+	if (eo) {
+		for (var i in eo) {
+			try {
+				eo[i].apply(eo[i], args);
+			} catch (e) {
+				ShowError(e, en, i);
+			}
+		}
+		eo.length = 0;
 	}
 }
 
@@ -652,7 +659,7 @@ function MakeImgIcon(src, index, h, bIcon) {
 				api.SHGetFileInfo(pidl, 0, sfi, sfi.Size, SHGFI_SYSICONINDEX | SHGFI_PIDL);
 			}
 		}
-		return sfi.iIcon ? GetHICON(sfi.iIcon, h, ILD_NORMAL) : null;
+		return GetHICON(sfi.iIcon, h, ILD_NORMAL);
 	}
 }
 
@@ -1997,6 +2004,20 @@ GetNetworkIcon = function (path) {
 			return WINVER >= 0x600 ? "icon:shell32.dll,273" : "icon:shell32.dll,9";
 		}
 		return "folder:closed";
+	}
+}
+
+RemoveSubMenu = function (hMenu, wID) {
+	if (hMenu && wID) {
+		var mii = api.Memory("MENUITEMINFO");
+		mii.cbSize = mii.Size;
+		mii.fMask = MIIM_SUBMENU | MIIM_FTYPE;
+		if (api.GetMenuItemInfo(hMenu, wID, false, mii)) {
+			api.DestroyMenu(mii.hSubMenu);
+			mii.hSubMenu = 0;
+			mii.fType &= ~MF_POPUP;
+			api.SetMenuItemInfo(hMenu, wID, false, mii);
+		}
 	}
 }
 

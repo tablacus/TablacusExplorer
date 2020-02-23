@@ -761,6 +761,7 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata) {
 			g_.mouse.CancelContextMenu = false;
 		}
 		te.Data.cmdKey = nKey;
+		te.Data.cmdKeyF = true;
 		switch (Ctrl.Type) {
 			case CTRL_SB:
 			case CTRL_EB:
@@ -823,8 +824,9 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata) {
 					}
 				}
 				if (g_.menu_loop && key == VK_TAB) {
-					wsh.SendKeys(api.GetKeyState(VK_SHIFT) < 0 ? "{UP}" : "{DOWN}");
-					return S_OK;
+					var wParam = api.GetKeyState(VK_SHIFT) < 0 ? VK_UP : VK_DOWN;
+					api.PostMessage(hwnd, WM_KEYDOWN, wParam, 0);
+					api.PostMessage(hwnd, WM_KEYUP, wParam, 0);
 				}
 				window.g_menu_button = api.GetKeyState(VK_CONTROL) < 0 ? 3 : api.GetKeyState(VK_SHIFT) < 0 ? 2 : 1;
 				break;
@@ -838,7 +840,9 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata) {
 	if (msg == WM_KEYUP || msg == WM_SYSKEYUP) {
 		if (g_.menu_loop) {
 			if ((g_.menu_state & 0x2001) == 0x2001 && api.GetKeyState(VK_CONTROL) >= 0) {
-				wsh.SendKeys("{ENTER}");
+				g_.menu_state = 0;
+				api.PostMessage(hwnd, WM_KEYDOWN, VK_RETURN, 0);
+				api.PostMessage(hwnd, WM_KEYUP, VK_RETURN, 0);
 			}
 		}
 	}
@@ -867,6 +871,9 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 			Resize();
 		}
 		return S_OK;
+	}
+	if (msg != WM_MOUSEMOVE) {
+		te.Data.cmdKeyF = false;
 	}
 	var hr = RunEvent3("MouseMessage", Ctrl, hwnd, msg, wParam, pt);
 	if (isFinite(hr)) {
@@ -1412,7 +1419,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					for (var i = SHIL_JUMBO + 1; i--;) {
 						api.ImageList_Destroy(te.Data.SHIL[i], true);
 					}
-					te.Data.SHIL = api.CreateObject("Array");
+					te.Data.SHIL.length = 0;
 					break;
 				case WM_DEVICECHANGE:
 					if (wParam == DBT_DEVICEARRIVAL || wParam == DBT_DEVICEREMOVECOMPLETE) {
@@ -1617,19 +1624,12 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 			break;
 		case WM_ENTERMENULOOP:
 			g_.menu_loop = true;
-			g_.menu_state = te.Data.cmdKey & 0xf000;
+			g_.menu_state = te.Data.cmdKey & (te.Data.cmdKeyF && te.Data.cmdKey != 0x201d) ? 0xf000 : 0;
+			RunEvent5("EnterMenuLoop", Ctrl, hwnd, msg, wParam, lParam);
 			break;
 		case WM_EXITMENULOOP:
 			window.g_menu_click = false;
-			var en = "ExitMenuLoop";
-			var eo = eventTE[en.toLowerCase()];
-			try {
-				while (eo && eo.length) {
-					eo.shift()();
-				}
-			} catch (e) {
-				ShowError(e, en);
-			}
+			RunEvent5("ExitMenuLoop", Ctrl, hwnd, msg, wParam, lParam);
 			for (var i in g_arBM) {
 				api.DeleteObject(g_arBM[i]);
 			}
