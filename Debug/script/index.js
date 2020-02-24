@@ -72,19 +72,7 @@ ChangeTabName = function (Ctrl) {
 
 GetTabName = function (Ctrl) {
 	if (Ctrl.FolderItem) {
-		var en = "GetTabName";
-		var eo = eventTE[en.toLowerCase()];
-		for (var i in eo) {
-			try {
-				var s = eo[i](Ctrl);
-				if (s) {
-					return s;
-				}
-			} catch (e) {
-				ShowError(e, en, i);
-			}
-		}
-		return GetFolderItemName(Ctrl.FolderItem);
+		return RunEvent4("GetTabName", Ctrl) || GetFolderItemName(Ctrl.FolderItem);
 	}
 }
 
@@ -1594,6 +1582,7 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 			}
 			break;
 		case WM_MENUSELECT:
+			RunEvent1("MenuSelect", Ctrl, hwnd, msg, wParam, lParam);
 			if (lParam) {
 				var nVerb = wParam & 0xffff;
 				if (Ctrl) {
@@ -1624,12 +1613,19 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 			break;
 		case WM_ENTERMENULOOP:
 			g_.menu_loop = true;
-			g_.menu_state = te.Data.cmdKey & (te.Data.cmdKeyF && te.Data.cmdKey != 0x201d) ? 0xf000 : 0;
-			RunEvent5("EnterMenuLoop", Ctrl, hwnd, msg, wParam, lParam);
+			g_.menu_state = te.Data.cmdKey & ((te.Data.cmdKeyF && (te.Data.cmdKey & 0x17f) == 15) ? 0xf000 : 0);
+			RunEvent1("EnterMenuLoop", Ctrl, hwnd, msg, wParam, lParam);
 			break;
 		case WM_EXITMENULOOP:
 			window.g_menu_click = false;
-			RunEvent5("ExitMenuLoop", Ctrl, hwnd, msg, wParam, lParam);
+			var ar = ["ExitMenuLoop", "EnterMenuLoop", "MenuSelect", "MenuChar"];
+			RunEvent1(ar[0], Ctrl, hwnd, msg, wParam, lParam);
+			for (var i = ar.length; i--;) {
+				var eo = eventTE[ar[0].toLowerCase()];
+				if (eo) {
+					eo.length = 0;
+				}
+			}
 			for (var i in g_arBM) {
 				api.DeleteObject(g_arBM[i]);
 			}
@@ -1637,6 +1633,10 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 			g_.menu_loop = false;
 			break;
 		case WM_MENUCHAR:
+			var hr = RunEvent4("MenuChar", Ctrl, hwnd, msg, wParam, lParam);
+			if (hr !== undefined) {
+				return hr;
+			}
 			if (window.g_menu_click && (wParam & 0xffff) == VK_LBUTTON) {
 				return MNC_EXECUTE << 16 + window.g_menu_pos;
 			}

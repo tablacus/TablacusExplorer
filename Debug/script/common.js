@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200222 ? te.Version : 20200223
+		return te.Version < 20200222 ? te.Version : 20200224
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -355,22 +355,6 @@ RunEvent4 = function () {
 		} catch (e) {
 			ShowError(e, en, i);
 		}
-	}
-}
-
-RunEvent5 = function () {
-	var args = Array.apply(null, arguments);
-	var en = args.shift();
-	var eo = eventTE[en.toLowerCase()];
-	if (eo) {
-		for (var i in eo) {
-			try {
-				eo[i].apply(eo[i], args);
-			} catch (e) {
-				ShowError(e, en, i);
-			}
-		}
-		eo.length = 0;
 	}
 }
 
