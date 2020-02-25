@@ -115,6 +115,7 @@ RestoreFromTray = function () {
 }
 
 Finalize = function () {
+	Finalize = function () {};
 	RunEvent1("Finalize");
 	SaveConfig();
 	Threads.Finalize();
@@ -1429,7 +1430,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 						SaveConfigXML(fso.BuildPath(te.Data.DataFolder, "config\\window.xml"));
 					}
 					if (te.Data.bReload) {
-						Exec(Ctrl, "Reload customize", "Tools");
+						ReloadCustomize();
 					}
 					if (g_.TEData) {
 						var FV = te.Ctrl(CTRL_FV);
@@ -2984,12 +2985,7 @@ g_basic =
 					return S_OK;
 				},
 				"Add to favorites": AddFavoriteEx,
-				"Reload customize": function () {
-					te.Data.bReload = false;
-					CloseSubWindows();
-					te.Reload();
-					return S_OK;
-				},
+				"Reload customize": ReloadCustomize,
 				"Load layout": LoadLayout,
 				"Save layout": SaveLayout,
 				"Close application": function () {
@@ -3435,7 +3431,7 @@ function CreateUpdater(arg) {
 	}
 	if (!IsExists(fso.BuildPath(arg.temp, fso.GetFileName(api.GetModuleFileName(null))))) {
 		api.SHFileOperation(FO_MOVE, arg.temp + "\\*", fso.GetParentFolderName(api.GetModuleFileName(null)), FOF_NOCONFIRMATION, false);
-		te.Reload();
+		ReloadCustomize();
 		return;
 	}
 	g_.strUpdate = ['"', api.IsWow64Process(api.GetCurrentProcess()) ? wsh.ExpandEnvironmentStrings("%SystemRoot%\\Sysnative") : system32, "\\", "wscript.exe", '" "', arg.temp, "\\script\\update.js", '" "', api.GetModuleFileName(null), '" "', arg.temp, '" "', api.LoadString(hShell32, 12612), '" "', api.LoadString(hShell32, 12852), '"'].join("");

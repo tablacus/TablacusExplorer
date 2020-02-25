@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200222 ? te.Version : 20200224
+		return te.Version < 20200222 ? te.Version : 20200225
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -1116,6 +1116,14 @@ SaveLayout = function () {
 	if (commdlg.ShowSave()) {
 		SaveXml(commdlg.FileName);
 	}
+	return S_OK;
+}
+
+ReloadCustomize = function () {
+	te.Data.bReload = false;
+	CloseSubWindows();
+	Finalize();
+	te.Reload();
 	return S_OK;
 }
 
