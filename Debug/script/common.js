@@ -11,7 +11,7 @@ function AboutTE(n) {
 	if (n == 2) {
 		return "Tablacus Explorer " + AboutTE(1) + " Gaku";
 	}
-	var ar = [document.documentMode || (document.body.style.maxHeight === undefined ? 6 : 7), GetLangId(2), screen.deviceYDPI];
+	var ar = [g_.IEVer, GetLangId(2), screen.deviceYDPI];
 	var server = te.GetObject("winmgmts:\\\\.\\root\\SecurityCenter" + (WINVER >= 0x600 ? "2" : ""));
 	if (server) {
 		var cols = server.ExecQuery("SELECT * FROM AntiVirusProduct");
@@ -61,7 +61,8 @@ g_ = {
 	xmlWindow: null,
 	elAddons: {},
 	event: {},
-	tid_rf: []
+	tid_rf: [],
+	IEVer: document.documentMode || (document.body.style.maxHeight === void 0 ? 6 : 7)
 };
 
 FolderMenu =
@@ -100,7 +101,7 @@ FolderMenu =
 		if (!FolderItem) {
 			return;
 		}
-		if (!/^object$/i.test(typeof FolderItem)) {
+		if ("object" !== typeof FolderItem) {
 			FolderItem = api.ILCreateFromPath(FolderItem);
 		}
 		var bSep = false;
@@ -349,7 +350,7 @@ RunEvent4 = function () {
 	for (var i in eo) {
 		try {
 			var r = eo[i].apply(null, args);
-			if (r !== undefined) {
+			if (r !== void 0) {
 				return r;
 			}
 		} catch (e) {
@@ -373,10 +374,10 @@ AddEvent = function (Name, fn, priority) {
 		}
 		if (priority) {
 			eventTE[en].unshift(fn);
-			eventTA[en].unshift(window.Error_source);
+			eventTA[en].unshift(g_.Error_source);
 		} else {
 			eventTE[en].push(fn);
-			eventTA[en].push(window.Error_source);
+			eventTA[en].push(g_.Error_source);
 		}
 	}
 }
@@ -550,7 +551,7 @@ function MakeImgSrc(src, index, bSrc, h) {
 	if (!/^file:/i.test(src) && REGEXP_IMAGE.test(src)) {
 		return src;
 	}
-	if (!document.documentMode) {
+	if (g_.IEVer < 8) {
 		var res = /^bitmap:(.+)/i.exec(src);
 		if (res) {
 			fn = fso.BuildPath(te.Data.DataFolder, "cache\\bitmap\\" + res[1].replace(/[:\\\/]/g, "$") + ".png");
@@ -568,7 +569,7 @@ function MakeImgSrc(src, index, bSrc, h) {
 	}
 	var image = MakeImgData(src, index, h);
 	if (image) {
-		if (document.documentMode) {
+		if (g_.IEVer >= 8) {
 			return image.DataURI();
 		}
 		if (fn) {
@@ -737,7 +738,7 @@ LoadXml = function (filename, nGroup) {
 	var items;
 	var xml = filename;
 	g_.fTCs = 0;
-	if (/^string$/i.test(typeof filename)) {
+	if ("string" === typeof filename) {
 		filename = api.PathUnquoteSpaces(ExtractMacro(te, filename));
 		if (fso.FileExists(filename)) {
 			xml = te.CreateObject("Msxml2.DOMDocument");
@@ -1023,8 +1024,7 @@ NavigateFV = function (FV, Path, wFlags, bInputed) {
 		var TC = te.CreateCtrl(CTRL_TC, 0, 0, "100%", "100%", te.Data.Tab_Style, te.Data.Tab_Align, te.Data.Tab_TabWidth, te.Data.Tab_TabHeight);
 		FV = TC.Selected;
 	}
-	var res;
-	if (/^string$/i.test(typeof Path)) {
+	if ("string" === typeof Path) {
 		Path = ExtractMacro(FV, Path);
 		if (/\?|\*/.test(Path)) {
 			if (!/\\\\\?\\|:/.test(Path)) {
@@ -1128,7 +1128,7 @@ ReloadCustomize = function () {
 }
 
 GetPos = function (o, bScreen, bAbs, bPanel, bBottom) {
-	if (/^number$/i.test(typeof bScreen)) {
+	if ("number" === typeof bScreen) {
 		bAbs = bScreen & 2;
 		bPanel = bScreen & 4;
 		bBottom = bScreen & 8;
@@ -1250,7 +1250,7 @@ SetFileAttributes = function (path, attr) {
 
 CreateFolder = function (path) {
 	var r = MainWindow.RunEvent4("CreateFolder", path);
-	if (r !== undefined) {
+	if (r !== void 0) {
 		return r;
 	}
 	CreateNew(path, function (strPath) {
@@ -1260,7 +1260,7 @@ CreateFolder = function (path) {
 
 CreateFile = function (path) {
 	var r = MainWindow.RunEvent4("CreateFile", path);
-	if (r !== undefined) {
+	if (r !== void 0) {
 		return r;
 	}
 	CreateNew(path, CreateFile2);
@@ -1323,7 +1323,7 @@ FormatDateTime = function (s) {
 
 GetConsts = function (s) {
 	var Result = window[s.replace(/\s/, "")];
-	if (Result !== undefined) {
+	if (Result !== void 0) {
 		return Result;
 	}
 	return s;
@@ -1461,7 +1461,7 @@ ExtractPath = function (Ctrl, s, pt) {
 }
 
 ExtractMacro = MainWindow.ExtractMacro || function (Ctrl, s) {
-	if (/^string$/i.test(typeof s)) {
+	if ("string" ===  typeof s) {
 		s = ExtractMacro2(Ctrl, s);
 		if (!/\t/.test(s) && /%/.test(s)) {
 			do {
@@ -1498,7 +1498,7 @@ OpenMenu = function (items, SelItem) {
 	var arMenu;
 	var path = "";
 	if (SelItem) {
-		if (/^object$/i.test(typeof SelItem)) {
+		if ("object" === typeof SelItem) {
 			var link = SelItem.ExtendedProperty("linktarget");
 			path = link || String(api.GetDisplayNameOf(SelItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX));
 			arMenu = OpenMenu(items, path);
@@ -1815,7 +1815,7 @@ GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arCon
 	var ContextMenu;
 	for (var i in eventTE.getbasemenuex) {
 		ContextMenu = eventTE.getbasemenuex[i](hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arContextMenu);
-		if (ContextMenu !== undefined) {
+		if (ContextMenu !== void 0) {
 			return ContextMenu;
 		}
 	}
@@ -2021,7 +2021,7 @@ AddMenuIconFolderItem = function (mii, FolderItem, nHeight) {
 AddMenuImage = function (mii, image, id, nHeight) {
 	mii.hbmpItem = image.GetHBITMAP(WINVER >= 0x600 ? -2 : GetSysColor(COLOR_MENU));
 	if (mii.hbmpItem) {
-		mii.fMask = mii.fMask | MIIM_BITMAP;
+		mii.fMask |= MIIM_BITMAP;
 		if (id) {
 			MainWindow.g_arBM[[id, nHeight].join("\t")] = mii.hbmpItem;
 		} else {
@@ -2033,8 +2033,8 @@ AddMenuImage = function (mii, image, id, nHeight) {
 MenusIcon = function (mii, src, nHeight, bIcon) {
 	var image;
 	mii.cbSize = mii.Size;
-	if (src && src != "-") {
-		if (/^string$/.test(typeof src)) {
+	if (src && src !== "-") {
+		if ("string" === typeof src) {
 			src = api.PathUnquoteSpaces(ExtractMacro(te, src));
 			if (!/:|^\\\\/i.test(src)) {
 				src = fso.BuildPath(te.Data.Installed, "script\\" + src);
@@ -2436,7 +2436,7 @@ MessageBox = function (s, title, uType) {
 
 createHttpRequest = function () {
 	try {
-		return window.XMLHttpRequest && document.documentMode >= 9 ? new XMLHttpRequest() : te.CreateObject("Msxml2.XMLHTTP");
+		return window.XMLHttpRequest && g_.IEVer >= 9 ? new XMLHttpRequest() : te.CreateObject("Msxml2.XMLHTTP");
 	} catch (e) {
 		return te.CreateObject("Microsoft.XMLHTTP");
 	}
@@ -2609,7 +2609,7 @@ GethwndFromPid = function (ProcessId, bDT) {
 }
 
 PopupContextMenu = function (Item, FV) {
-	if (/^string$/i.test(typeof Item)) {
+	if ("string" === typeof Item) {
 		var arg = api.CommandLineToArgv(Item);
 		Item = api.CreateObject("FolderItems");
 		for (var i in arg) {
@@ -3039,7 +3039,7 @@ function MouseOver(o) {
 
 function MouseOut(s) {
 	if (g_.objHover) {
-		if (!/^string$/i.test(typeof s) || g_.objHover.id.indexOf(s) >= 0) {
+		if ("string" !== typeof s || g_.objHover.id.indexOf(s) >= 0) {
 			if (g_.objHover.className == 'hoverbutton') {
 				g_.objHover.className = 'button';
 			} else if (g_.objHover.className == 'hovermenu') {
@@ -3191,7 +3191,7 @@ ApiStruct = function (oTypedef, nAli, oMemory) {
 	}
 	n = api.LowPart(nAli);
 	this.Size += (n - (this.Size % n)) % n;
-	this.Memory = /^object$/i.test(typeof oMemory) ? oMemory : api.Memory("BYTE", this.Size);
+	this.Memory = "object" === typeof oMemory ? oMemory : api.Memory("BYTE", this.Size);
 	this.Read = function (Id) {
 		var ar = this.Typedef[Id];
 		if (ar) {
@@ -3232,7 +3232,7 @@ AddEvent("ConfigChanged", function (s) {
 
 GetSysColor = function (i) {
 	var c = g_.Colors[i];
-	return c !== undefined ? c : api.GetSysColor(i);
+	return c !== void 0 ? c : api.GetSysColor(i);
 }
 
 SetSysColor = function (i, color) {
@@ -3480,7 +3480,7 @@ WmiProcess = function (arg, fn) {
 
 function CalcElementHeight(o, em) {
 	if (o) {
-		if (document.documentMode >= 9) {
+		if (g_.IEVer >= 9) {
 			o.style.height = "calc(100vh - " + em + "em)";
 		} else {
 			var h = (document.documentElement || document.body).clientHeight;

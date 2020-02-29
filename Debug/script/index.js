@@ -26,7 +26,7 @@ function RefreshEx(FV, tm)
 	var dt = new Date().getTime();
 	if (dt > (FV.Data.tmChk || 0)) {
 		if  (FV.FolderItem && /^[A-Z]:\\|^\\\\\w/i.test(FV.FolderItem.Path)) {
-			if (RunEvent4("RefreshEx", FV) === undefined) {
+			if (RunEvent4("RefreshEx", FV) === void 0) {
 				if (!FV.hwndView || api.ILIsEqual(FV.FolderItem, FV.FolderItem.Alt)) {
 					FV.Data.tmChk = dt + 9999999;
 					api.PathIsDirectory(function (hr, FV, FolderItem) {
@@ -34,7 +34,7 @@ function RefreshEx(FV, tm)
 							FV.Data.tmChk = new Date().getTime() + 3000;
 							if (api.ILIsEqual(FV.FolderItem, FolderItem) && api.ILIsEqual(FolderItem, FolderItem.Alt)) {
 								if (hr < 0) {
-									if (RunEvent4("Error", FV) === undefined) {
+									if (RunEvent4("Error", FV) === void 0) {
 										FV.Suspend();
 									}
 								} else if (FV.FolderItem.Unavailable) {
@@ -476,7 +476,7 @@ CancelFilterView = function (FV) {
 }
 
 IsSearchPath = function (pid) {
-	return /search\-ms:.*?&crumb=location:([^&]*)/.exec(/^string$/i.test(typeof pid) ? pid : api.GetDisplayNameOf(pid, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
+	return /search\-ms:.*?&crumb=location:([^&]*)/.exec("string" === typeof pid ? pid : api.GetDisplayNameOf(pid, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 }
 
 GetCommandId = function (hMenu, s, ContextMenu) {
@@ -583,7 +583,7 @@ EnableDragDrop = function () {
 
 DisableImage = function (img, bDisable) {
 	if (img) {
-		if (document.documentMode > 9) {
+		if (g_.IEVer >= 10) {
 			var s = decodeURIComponent(img.src);
 			var res = /^data:image\/svg.*?href="([^"]*)/i.exec(s);
 			if (bDisable) {
@@ -802,12 +802,12 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata) {
 				break;
 			default:
 				if (key == VK_RETURN && window.g_menu_click === true) {
-					var hSubMenu = api.GetSubMenu(window.g_menu_handle, window.g_menu_pos);
+					var hSubMenu = api.GetSubMenu(g_.menu_handle, g_.menu_pos);
 					if (hSubMenu) {
 						var mii = api.Memory("MENUITEMINFO");
 						mii.cbSize = mii.Size;
 						mii.fMask = MIIM_SUBMENU;
-						api.SetMenuItemInfo(window.g_menu_handle, window.g_menu_pos, true, mii);
+						api.SetMenuItemInfo(g_.menu_handle, g_.menu_pos, true, mii);
 						api.DestroyMenu(hSubMenu);
 						api.PostMessage(hwnd, WM_CHAR, VK_LBUTTON, 0);
 					}
@@ -1124,7 +1124,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 	if (isFinite(hr)) {
 		return hr;
 	}
-	if (/^string$/i.test(typeof Directory) && !api.PathIsDirectory(Directory)) {
+	if ("string" === typeof Directory && !api.PathIsDirectory(Directory)) {
 		return S_FALSE;
 	}
 	var Items = ContextMenu.Items();
@@ -1602,8 +1602,8 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 				var mf = wParam >> 16;
 				if (mf & MF_POPUP) {
 					if (hSubMenu) {
-						window.g_menu_handle = lParam;
-						window.g_menu_pos = nVerb;
+						g_.menu_handle = lParam;
+						g_.menu_pos = nVerb;
 					}
 				}
 				if (!(mf & MF_MOUSESELECT)) {
@@ -1635,11 +1635,11 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 			break;
 		case WM_MENUCHAR:
 			var hr = RunEvent4("MenuChar", Ctrl, hwnd, msg, wParam, lParam);
-			if (hr !== undefined) {
+			if (hr !== void 0) {
 				return hr;
 			}
 			if (window.g_menu_click && (wParam & 0xffff) == VK_LBUTTON) {
-				return MNC_EXECUTE << 16 + window.g_menu_pos;
+				return MNC_EXECUTE << 16 + g_.menu_pos;
 			}
 			break;
 	}
@@ -1687,7 +1687,7 @@ te.OnClipboardText = function (Items) {
 		return "";
 	}
 	var r = RunEvent4("ClipboardText", Items);
-	if (r !== undefined) {
+	if (r !== void 0) {
 		return r;
 	}
 	var s = [];
@@ -1724,7 +1724,7 @@ te.OnArrange = function (Ctrl, rc) {
 			} else {
 				g_.TCPos[s] = Ctrl.Id;
 			}
-			o.style.display = (document.documentMode && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
+			o.style.display = (g_.IEVer >= 8 && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
 		} else {
 			o.style.display = "none";
 		}
@@ -1754,7 +1754,7 @@ te.OnVisibleChanged = function (Ctrl) {
 		var o = g_.Panels[Ctrl.Id];
 		if (o) {
 			if (Ctrl.Visible) {
-				o.style.display = (document.documentMode && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
+				o.style.display = (g_.IEVer >= 8 && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
 			} else {
 				o.style.display = "none";
 			}
@@ -1771,7 +1771,7 @@ te.OnVisibleChanged = function (Ctrl) {
 
 te.OnILGetParent = function (FolderItem) {
 	var r = RunEvent4("ILGetParent", FolderItem);
-	if (r !== undefined) {
+	if (r !== void 0) {
 		return r;
 	}
 	var res = IsSearchPath(FolderItem);
@@ -1947,7 +1947,7 @@ GetIconImage = function (Ctrl, BGColor, bSimple) {
 	if (FolderItem.Unavailable) {
 		return MakeImgDataEx("icon:shell32.dll,234", bSimple, nSize);
 	}
-	if (document.documentMode) {
+	if (g_.IEVer >= 8) {
 		if (bSimple) {
 			return bSimple != 2 ? api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_ORIGINAL) : "";
 		}
@@ -1998,7 +1998,7 @@ AddEventEx(document, "MSFullscreenChange", function () {
 //
 
 function InitWindow() {
-	if (g_.xmlWindow && !/^string$/i.test(typeof g_.xmlWindow)) {
+	if (g_.xmlWindow && "string" !== typeof g_.xmlWindow) {
 		LoadXml(g_.xmlWindow);
 	}
 	if (te.Ctrls(CTRL_TC).length == 0) {
@@ -2065,7 +2065,7 @@ function ArrangeAddons() {
 			for (var i = 0; i < items.length; i++) {
 				var item = items[i];
 				var Id = item.nodeName;
-				window.Error_source = Id;
+				g_.Error_source = Id;
 				if (!AddonId[Id]) {
 					var Enabled = api.LowPart(item.getAttribute("Enabled"));
 					if (Enabled & 6) {
@@ -2079,7 +2079,7 @@ function ArrangeAddons() {
 					}
 					AddonId[Id] = true;
 				}
-				window.Error_source = "";
+				g_.Error_source = "";
 			}
 			if (arError.length) {
 				(function (arError) {
@@ -2124,12 +2124,12 @@ function SetAddon(strName, Location, Tag, strVAlign) {
 		}
 		var o = document.getElementById(Location);
 		if (o) {
-			if (/^string$/i.test(typeof Tag)) {
+			if ("string" === typeof Tag) {
 				o.insertAdjacentHTML("BeforeEnd", Tag);
 			} else {
 				o.appendChild(Tag);
 			}
-			o.style.display = (document.documentMode && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
+			o.style.display = (g_.IEVer >= 8 && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
 			if (strVAlign && !o.style.verticalAlign) {
 				o.style.verticalAlign = strVAlign;
 			}
@@ -2317,10 +2317,10 @@ KeyExecEx = function (Ctrl, mode, nKey, hwnd) {
 
 function InitMouse() {
 	te.Data.Conf_Gestures = isFinite(te.Data.Conf_Gestures) ? Number(te.Data.Conf_Gestures) : 2;
-	if (/^string$/i.test(typeof te.Data.Conf_TrailColor)) {
+	if ("string" === typeof te.Data.Conf_TrailColor) {
 		te.Data.Conf_TrailColor = GetWinColor(te.Data.Conf_TrailColor);
 	}
-	if (!isFinite(te.Data.Conf_TrailColor)) {
+	if (!isFinite(te.Data.Conf_TrailColor) || te.Data.Conf_TrailColor === "") {
 		te.Data.Conf_TrailColor = 0xff00;
 	}
 	te.Data.Conf_TrailSize = isFinite(te.Data.Conf_TrailSize) ? Number(te.Data.Conf_TrailSize) : 2;
@@ -2472,12 +2472,12 @@ g_.mouse =
 				window.g_menu_button = str;
 				if (window.g_menu_click) {
 					if (window.g_menu_click === true) {
-						var hSubMenu = api.GetSubMenu(window.g_menu_handle, window.g_menu_pos);
+						var hSubMenu = api.GetSubMenu(g_.menu_handle, g_.menu_pos);
 						if (hSubMenu) {
 							var mii = api.Memory("MENUITEMINFO");
 							mii.cbSize = mii.Size;
 							mii.fMask = MIIM_SUBMENU;
-							if (api.SetMenuItemInfo(window.g_menu_handle, window.g_menu_pos, true, mii)) {
+							if (api.SetMenuItemInfo(g_.menu_handle, g_.menu_pos, true, mii)) {
 								api.DestroyMenu(hSubMenu);
 							}
 						}
@@ -2538,7 +2538,7 @@ g_basic =
 				if (res) {
 					var Id = GetSourceText(res[1]);
 					var r = OptionRef(Id, "", pt);
-					if (/^string$/i.test(typeof r)) {
+					if ("string" === typeof r) {
 						return s + r + "\n";
 					}
 					return r;
@@ -2726,8 +2726,8 @@ g_basic =
 					}
 					return S_OK;
 				},
-				"Open with...": undefined,
-				"Send to...": undefined
+				"Open with...": void 0,
+				"Send to...": void 0
 			},
 			Enc: true
 		},
@@ -3419,7 +3419,7 @@ ExtractMacro2 = function (Ctrl, s) {
 }
 
 function RunSplitter(n) {
-	if (event.buttons !== undefined ? event.buttons & 1 : event.button == 0) {
+	if (event.buttons !== void 0 ? event.buttons & 1 : event.button == 0) {
 		g_.mouse.Capture = n;
 		api.SetCapture(te.hwnd);
 	}
@@ -3521,7 +3521,7 @@ if (!te.Data) {
 		CreateFolder2(fso.BuildPath(te.Data.DataFolder, "config"));
 	}
 	delete fn;
-	if (!document.documentMode) {
+	if (g_.IEVer < 8) {
 		var s = fso.BuildPath(te.Data.DataFolder, "cache");
 		CreateFolder2(s);
 		CreateFolder2(fso.BuildPath(s, "bitmap"));

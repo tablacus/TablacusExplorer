@@ -1069,7 +1069,7 @@ function SetChanged(fn, form)
 function SetData(sel, a, t)
 {
 	sel.value = PackData(a);
-	if (/^boolean$/i.test(typeof t)) {
+	if ("boolean" === typeof t) {
 		t = (t ? String.fromCharCode(9745, 32) : String.fromCharCode(9744, 32)) + a[0];
 	}
 	sel.text = t || a[0];
@@ -1218,7 +1218,7 @@ function GetRowIndexById(id)
 		var o = document.getElementById(id);
 		if (o) {
 			while (o = o.parentNode) {
-				if (o.rowIndex !== undefined) {
+				if (o.rowIndex !== void 0) {
 					return o.rowIndex;
 				}
 			}
@@ -1398,7 +1398,7 @@ InitOptions = function ()
 	for (i in document.F.elements) {
 		if (!/=|:/.test(i)) {
 			if (/^Tab_|^Tree_|^View_|^Conf_/.test(i)) {
-				if (te.Data[i] !== undefined) {
+				if (te.Data[i] !== void 0) {
 					SetElementValue(document.F[i], te.Data[i]);
 				}
 			}
@@ -1908,7 +1908,7 @@ InitLocation = function ()
 	{
 		SetOptions(function () {
 			if (window.SaveLocation) {
-				window.SaveLocation();
+				SaveLocation();
 			}
 			delete MainWindow.g_.OptionsWindow;
 			var items = te.Data.Addons.getElementsByTagName(dialogArguments.Data.id);
@@ -2042,7 +2042,7 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter)
 					api.GetCursorPos(pt);
 				}
 				var r = MainWindow.OptionRef(o[o.selectedIndex].value, GetElement(Id).value, pt);
-				if (/^string$/i.test(typeof r)) {
+				if ("string" === typeof r) {
 					var p = { s: r };
 					MainWindow.OptionDecode(o[o.selectedIndex].value, p);
 					if (bMultiLine && api.GetKeyState(VK_CONTROL) < 0 && api.ILCreateFromPath(p.s)) {
@@ -2238,7 +2238,7 @@ SetImage = function ()
 {
 	var o = document.getElementById("_Icon");
 	if (o) {
-		var h = api.LowPart(document.F.IconSize && document.F.IconSize.value || document.F.Height && document.F.Height.value || window.IconSize && window.IconSize || 24);
+		var h = api.LowPart(document.F.IconSize && document.F.IconSize.value || document.F.Height && document.F.Height.value || window.IconSize || 24);
 		var src = MakeImgSrc(api.PathUnquoteSpaces(document.F.Icon.value), 0, true, h);
 		o.innerHTML = src ? '<img src="' + src + '" ' + (h ? 'height="' + h + 'px"' : "") + '>' : "";
 	}
