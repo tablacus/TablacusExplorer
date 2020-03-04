@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <TablacusExplorer>
   <General>
-    <Version>1.36</Version>
-    <MinVersion>2019.1.20</MinVersion>
-    <pubDate>Sun, 20 Jan 2019 00:00:00 GMT</pubDate>
+    <Version>1.37</Version>
+    <MinVersion>2020.2.29</MinVersion>
+    <pubDate>Tue, 03 Mar 2020 00:00:00 GMT</pubDate>
     <Options>Common:0:0</Options>
     <Creator>Gaku</Creator>
     <URL>http://tablacus.github.io/TablacusExplorerAddons/</URL>
@@ -17,4 +17,7 @@
     <Name>フォルダの表示設定を覚える</Name>
     <Description>自動的にフォルダの表示設定を覚えます。</Description>
   </ja>
+  <zh>
+    <Name>記住每個資料夾檢視</Name>
+  </zh>
 </TablacusExplorer>

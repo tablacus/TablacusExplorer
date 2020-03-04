@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200229 ? te.Version : 20200229
+		return te.Version < 20200304 ? te.Version : 20200304
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -2723,8 +2723,8 @@ InputKey = function (o) {
 	ShowDialogEx("key", 320, 120, o || (document.E && document.E.KeyKey) || document.F.KeyKey || document.F.Key);
 }
 
-ShowIconEx = function (o) {
-	ShowDialogEx("icon", 640, 480, o || document.F.Icon);
+ShowIconEx = function (o, mode) {
+	ShowDialogEx("icon" + (mode || ""), 640, 480, o || document.F.Icon);
 }
 
 ShowLocationEx = function (s) {
@@ -3684,7 +3684,7 @@ function MakeCommDlgFilter(arg) {
 			continue;
 		}
 		var sfi = api.Memory("SHFILEINFO");
-		api.SHGetFileInfo(s, 0, sfi, sfi.Size, SHGFI_TYPENAME | SHGFI_USEFILEATTRIBUTES);
+		api.SHGetFileInfo(s, 0, sfi, sfi.Size, SHGFI_TYPENAME);
 		result.push(sfi.szTypeName + " (" + s + ")", s);
 	}
 	if (bAll) {

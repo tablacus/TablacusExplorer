@@ -10,12 +10,11 @@ if (window.Addon == 1) {
 		nFormat: api.QuadPart(GetAddonOption(Addon_Id, "Format")),
 		Filter: (GetAddonOption(Addon_Id, "Filter") || "*").replace(/\s+$/, "").replace(/\r\n/g, ";"),
 		Disable: (GetAddonOption(Addon_Id, "Disable") || "-").replace(/\s+$/, "").replace(/\r\n/g, ";"),
-		nIcon: api.GetSystemMetrics(SM_CYICON) * 96 / screen.deviceXDPI,
-		nSM: api.GetSystemMetrics(SM_CYSMICON) * 96 / screen.deviceXDPI,
+		nIcon: api.GetSystemMetrics(SM_CYICON) * 96 / screen.deviceYDPI,
+		nSM: api.GetSystemMetrics(SM_CYSMICON) * 96 / screen.deviceYDPI,
 		nSave: item.getAttribute("Save") || 1000,
 
-		RememberFolder: function (FV)
-		{
+		RememberFolder: function (FV) {
 			if (FV && FV.FolderItem && !FV.FolderItem.Unavailable && FV.Data && FV.Data.Remember) {
 				var path = Addons.Remember.GetPath(FV);
 				if (path == FV.Data.Remember && PathMatchEx(path, Addons.Remember.Filter) && !PathMatchEx(path, Addons.Remember.Disable)) {
@@ -27,9 +26,8 @@ if (window.Addon == 1) {
 			}
 		},
 
-		GetPath: function (pid)
-		{
-			var path = (typeof(pid) == "string" ? pid : String(api.GetDisplayNameOf(pid, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX))).toLowerCase();
+		GetPath: function (pid) {
+			var path = ("string" === typeof pid ? pid : String(api.GetDisplayNameOf(pid, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX))).toLowerCase();
 			var res = /^([a-z][a-z\-_]+:).*/i.exec(path);
 			return res ? res[1] : path;
 		}
@@ -54,8 +52,7 @@ if (window.Addon == 1) {
 		xml = null;
 	}
 
-	AddEvent("BeforeNavigate", function (Ctrl, fs, wFlags, Prev)
-	{
+	AddEvent("BeforeNavigate", function (Ctrl, fs, wFlags, Prev) {
 		if (Ctrl.Data && !Ctrl.Data.Setting) {
 			if (Prev && !Prev.Unavailable) {
 				var path = Addons.Remember.GetPath(Prev);
@@ -64,23 +61,27 @@ if (window.Addon == 1) {
 					Addons.Remember.db[path] = [new Date().getTime(), Ctrl.CurrentViewMode, Ctrl.IconSize, col, Ctrl.SortColumn(Addons.Remember.nFormat), Ctrl.GroupBy, Ctrl.SortColumns];
 				}
 			}
-			var ar = Addons.Remember.db[Addons.Remember.GetPath(Ctrl)];
+			var path = Addons.Remember.GetPath(Ctrl);
+			var ar = Addons.Remember.db[path];
 			if (ar) {
-				fs.ViewMode = ar[1];
-				if (ar[2] > Addons.Remember.nIcon && (ar[1] > FVM_ICON && ar[1] <= FVM_DETAILS)) {
-					ar[2] = Addons.Remember.nSM;
+				if (PathMatchEx(path, Addons.Remember.Filter) && !PathMatchEx(path, Addons.Remember.Disable)) {
+					fs.ViewMode = ar[1];
+					if (ar[2] > Addons.Remember.nIcon && (ar[1] > FVM_ICON && ar[1] <= FVM_DETAILS)) {
+						ar[2] = Addons.Remember.nSM;
+					}
+					fs.ImageSize = ar[2];
+					Ctrl.Data.Setting = 'Remember';
+				} else {
+					delete Addons.Remember.db[path];
 				}
-				fs.ImageSize = ar[2];
-				Ctrl.Data.Setting = 'Remember';
 			}
 			Ctrl.Data.Remember = "";
 		}
 	});
 
-	AddEvent("NavigateComplete", function (Ctrl)
-	{
+	AddEvent("NavigateComplete", function (Ctrl) {
 		var path = Addons.Remember.GetPath(Ctrl);
-		if (path) {
+		if (path && PathMatchEx(path, Addons.Remember.Filter) && !PathMatchEx(path, Addons.Remember.Disable)) {
 			Ctrl.Data.Remember = path;
 			if (Ctrl.Data && Ctrl.Data.Setting == 'Remember') {
 				var ar = Addons.Remember.db[Ctrl.Data.Remember];
@@ -110,16 +111,14 @@ if (window.Addon == 1) {
 	AddEvent("ViewModeChanged", Addons.Remember.RememberFolder);
 	AddEvent("ColumnsChanged", Addons.Remember.RememberFolder);
 
-	AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon)
-	{
+	AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon) {
 		var Ctrl = te.Ctrl(CTRL_FV);
 		if (Ctrl) {
 			Addons.Remember.RememberFolder(Ctrl);
 		}
 	});
 
-	AddEvent("SaveConfig", function ()
-	{
+	AddEvent("SaveConfig", function () {
 		Addons.Remember.RememberFolder(te.Ctrl(CTRL_FV));
 
 		var arFV = [];
@@ -132,7 +131,7 @@ if (window.Addon == 1) {
 		}
 
 		arFV.sort(
-			function(a, b) {
+			function (a, b) {
 				return b[0] - a[0];
 			}
 		);

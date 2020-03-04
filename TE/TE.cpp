@@ -1197,6 +1197,7 @@ TEmethod methodGB[] = {
 	{ 7, "FromItem" },//Deprecated
 	{ 8, "FromClipboard" },
 	{ 9, "FromSource" },
+	{ 90, "Create" },
 	{ 99, "Free" },
 
 	{ 100, "Save" },
@@ -1208,6 +1209,7 @@ TEmethod methodGB[] = {
 	{ 112, "GetPixel" },
 	{ 113, "SetPixel" },
 	{ 114, "GetPixelFormat" },
+	{ 115, "FillRect" },
 	{ 120, "GetThumbnailImage" },
 	{ 130, "RotateFlip" },
 	{ 140, "GetFrameCount" },
@@ -1741,7 +1743,7 @@ HRESULT teCreateInstance(CLSID clsid, LPWSTR lpszDllFile, HMODULE *phDll, REFIID
 			teCoTaskMemFree(lpClsid);
 			lstrcat(pszPath, L"\\InprocServer32");
 			if (RegOpenKeyEx(HKEY_CLASSES_ROOT, pszPath, 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-				DWORD dwSize = sizeof(pszPath);
+				DWORD dwSize = ARRAYSIZE(pszPath);
 				if (RegQueryValueEx(hKey, NULL, NULL, NULL, (LPBYTE)&pszPath, &dwSize) == ERROR_SUCCESS) {
 					ExpandEnvironmentStrings(pszPath, pszPath, MAX_PATH);
 					lpszDllFile = pszPath;
@@ -3416,7 +3418,7 @@ HRESULT tePathIsDirectory2(LPWSTR pszPath, int iUseFS)
 		WCHAR pszDrive[0x80];
 		lstrcpyn(pszDrive, pszPath, 4);
 		if (pszDrive[0] >= 'A' && pszDrive[1] == ':' && pszDrive[2] == '\\') {
-			if (!GetVolumeInformation(pszDrive, NULL, 0, NULL, NULL, NULL, pszDrive, sizeof(pszDrive))) {
+			if (!GetVolumeInformation(pszDrive, NULL, 0, NULL, NULL, NULL, pszDrive, ARRAYSIZE(pszDrive))) {
 				return E_NOT_READY;
 			}
 		}
@@ -4695,7 +4697,7 @@ int teBSearchApi(TEDispatchApi *method, int nSize, int* pMap, LPOLESTR bs)
 	int nMax = nSize - 1;
 	int nIndex, nCC;
 	CHAR pszNameA[32];
-	WideCharToMultiByte(CP_TE, 0, (LPCWSTR)bs, -1, pszNameA, sizeof(pszNameA) - 1, NULL, NULL);
+	WideCharToMultiByte(CP_TE, 0, (LPCWSTR)bs, -1, pszNameA, ARRAYSIZE(pszNameA) - 1, NULL, NULL);
 
 	while (nMin <= nMax) {
 		nIndex = (nMin + nMax) / 2;
@@ -4745,7 +4747,7 @@ int teBSearch(TEmethod *method, int nSize, int* pMap, LPOLESTR bs)
 	int nMax = nSize - 1;
 	int nIndex, nCC;
 	CHAR pszNameA[32];
-	WideCharToMultiByte(CP_TE, 0, (LPCWSTR)bs, -1, pszNameA, sizeof(pszNameA) - 1, NULL, NULL);
+	WideCharToMultiByte(CP_TE, 0, (LPCWSTR)bs, -1, pszNameA, ARRAYSIZE(pszNameA) - 1, NULL, NULL);
 
 	while (nMin <= nMax) {
 		nIndex = (nMin + nMax) / 2;
@@ -4794,7 +4796,7 @@ int teBSearchStruct(TEStruct *method, int nSize, int* pMap, LPOLESTR bs)
 	int nMax = nSize - 1;
 	int nIndex, nCC;
 	CHAR pszNameA[32];
-	WideCharToMultiByte(CP_TE, 0, (LPCWSTR)bs, -1, pszNameA, sizeof(pszNameA) - 1, NULL, NULL);
+	WideCharToMultiByte(CP_TE, 0, (LPCWSTR)bs, -1, pszNameA, ARRAYSIZE(pszNameA) - 1, NULL, NULL);
 
 	while (nMin <= nMax) {
 		nIndex = (nMin + nMax) / 2;
@@ -4869,7 +4871,7 @@ HRESULT teGetDispId(TEmethod *method, int nCount, int* pMap, LPOLESTR bs, DISPID
 		}
 	} else {
 		CHAR pszNameA[32];
-		WideCharToMultiByte(CP_TE, 0, (LPCWSTR)bs, -1, pszNameA, sizeof(pszNameA) - 1, NULL, NULL);
+		WideCharToMultiByte(CP_TE, 0, (LPCWSTR)bs, -1, pszNameA, ARRAYSIZE(pszNameA) - 1, NULL, NULL);
 		for (int i = 0; method[i].name; i++) {
 			if (lstrcmpiA(pszNameA, method[i].name) == 0) {
 				*rgDispId = method[i].id;
@@ -5134,14 +5136,12 @@ HRESULT ParseScript(LPOLESTR lpScript, LPOLESTR lpLang, VARIANT *pv, IDispatch *
 				IDispatchEx *pdex;
 				if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pdex))) {
 					DISPID dispid;
-					HRESULT hr2 = pdex->GetNextDispID(fdexEnumAll, DISPID_STARTENUM, &dispid);
-					while (hr2 == S_OK) {
+					for (HRESULT hr2 = pdex->GetNextDispID(fdexEnumAll, DISPID_STARTENUM, &dispid); hr2 == S_OK; hr2 = pdex->GetNextDispID(fdexEnumAll, dispid, &dispid)) {
 						BSTR bs;
 						if (pdex->GetMemberName(dispid, &bs) == S_OK) {
 							pas->AddNamedItem(bs, SCRIPTITEM_ISVISIBLE | SCRIPTITEM_ISSOURCE | SCRIPTITEM_GLOBALMEMBERS);
 							::SysFreeString(bs);
 						}
-						hr2 = pdex->GetNextDispID(fdexEnumAll, dispid, &dispid);
 					}
 					pdex->Release();
 				}
@@ -9581,7 +9581,7 @@ VOID teApiGlobalAddAtom(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 VOID teApiGlobalGetAtomName(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	TCHAR szBuf[256];
-	UINT uSize = GlobalGetAtomName(param[0].atom, szBuf, sizeof(szBuf) / sizeof(TCHAR));
+	UINT uSize = GlobalGetAtomName(param[0].atom, szBuf, ARRAYSIZE(szBuf));
 	teSetSZ(pVarResult, szBuf);
 }
 
@@ -23695,7 +23695,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 						}
 					}
 					HPALETTE pal = (nArg >= 1) ? (HPALETTE)GetPtrFromVariant(&pDispParams->rgvarg[nArg - 1]) : 0;
-					int nAlpha = (nArg >= 2) ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]) : 2;
+					int nAlpha = (nArg >= 2) ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]) : 3;
 					CreateBitmapFromHBITMAP((HBITMAP)GetPtrFromVariant(&pDispParams->rgvarg[nArg]), pal, nAlpha);
 					teSetObject(pVarResult, GetBitmapObj());
 				}
@@ -23709,8 +23709,8 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				return S_OK;
 			//FromResource
 			case 3:
-				if (nArg >= 1) {
-					HBITMAP hBM = (HBITMAP)LoadImage((HINSTANCE)GetPtrFromVariant(&pDispParams->rgvarg[nArg]), GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+				if (nArg >= 5) {
+					HBITMAP hBM = (HBITMAP)LoadImage((HINSTANCE)GetPtrFromVariant(&pDispParams->rgvarg[nArg]), GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 3]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 4]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 5]));
 					if (hBM) {
 						CreateBitmapFromHBITMAP(hBM, 0, 3);
 						::DeleteObject(hBM);
@@ -23847,6 +23847,21 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					::CloseClipboard();
 				}
 				teSetObject(pVarResult, GetBitmapObj());
+				return S_OK;
+			//Create
+			case 90:
+				if (nArg >= 1) {
+					IWICBitmap *pIBitmap;
+					int x = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+					int y = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
+					HRESULT hr = m_pWICFactory->CreateBitmap(GetIntFromVariant(&pDispParams->rgvarg[nArg]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]),
+						GUID_WICPixelFormat32bppBGRA, WICBitmapCacheOnLoad, &pIBitmap);
+					if SUCCEEDED(hr) {
+						ClearImage(FALSE);
+						m_pImage = pIBitmap;
+					}
+					teSetObject(pVarResult, GetBitmapObj());
+				}
 				return S_OK;
 			//Free
 			case 99:
@@ -23992,6 +24007,50 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				WCHAR pszBuff[40];
 				StringFromGUID2(guidPF, pszBuff, 39);
 				teSetSZ(pVarResult, pszBuff);
+				return S_OK;
+			//FillRect
+			case 115:
+				if (nArg >= 4) {
+					if (Get(GUID_WICPixelFormat32bppBGRA)) {
+						int w = 0, h = 0;
+						m_pImage->GetSize((UINT *)&w, (UINT *)&h);
+						IWICBitmapLock *pBitmapLock;
+						WICRect rc = {0, 0, w, h};
+						if SUCCEEDED(m_pImage->Lock(&rc, WICBitmapLockWrite, &pBitmapLock)) {
+							UINT cbSize = 0;
+							LONG *pbData = NULL;
+							if SUCCEEDED(pBitmapLock->GetDataPointer(&cbSize, (PBYTE *)&pbData)) {
+								int w0 = GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]);
+								int h0 = GetIntFromVariant(&pDispParams->rgvarg[nArg - 3]);
+								int x0 = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+								if (x0 < 0) {
+									w0 -= x0;
+									x0 = 0;
+								}
+								int y0 = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
+								if (y0 < 0) {
+									h0 -= y0;
+									y0 = 0;
+								}
+								UINT cl = GetIntFromVariant(&pDispParams->rgvarg[nArg - 4]);
+								for (int j = h0, y = y0; j-- > 0; y++) {
+									if (y < h) {
+										for (int i = w0, x = x0; i-- > 0; x++) {
+											if (x < w) {
+												pbData[x + y * w] = cl;
+											} else {
+												break;
+											}
+										}
+									} else {
+										break;
+									}
+								}
+							}
+							SafeRelease(&pBitmapLock);
+						}
+					}
+				}
 				return S_OK;
 			//GetThumbnailImage
 			case 120:

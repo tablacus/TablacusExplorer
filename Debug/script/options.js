@@ -1496,7 +1496,8 @@ OpenIcon = function (o)
 InitDialog = function ()
 {
 	var Query = String(dialogArguments.Query || location.search.replace(/\?/, "")).toLowerCase();
-	if (Query == "icon") {
+	var res = /^icon(.*)/.exec(Query);
+	if (res) {
 		var a =
 		{
 			"16px ieframe,206" : "b,206,16",
@@ -1518,7 +1519,9 @@ InitDialog = function ()
 		};
 		var s = [];
 		for (var i in a) {
-			s.push('<div id="' + a[i] + '" onclick="OpenIcon(this)" style="cursor: pointer"><span class="tab">' + i + '</span></div>');
+			if (a[i].charAt(0) == "i" || res[1] != "2") {
+				s.push('<div id="' + a[i] + '" onclick="OpenIcon(this)" style="cursor: pointer"><span class="tab">' + i + '</span></div>');
+			}
 		}
 		document.getElementById("Content").innerHTML = s.join("");
 	}
