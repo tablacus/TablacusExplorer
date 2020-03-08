@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<TablacusExplorer><All Key="$3f" Type="Tabs">Refresh</All><All Key="$200f" Type="Tabs">Next Tab</All><All Key="$300f" Type="Tabs">Previous Tab</All><All Key="$214b" Type="JScript">var TC = te.Ctrl(CTRL_TC);
+<TablacusExplorer><All Key="$3f,Ctrl+R" Type="Tabs">Refresh</All><All Key="$200f" Type="Tabs">Next Tab</All><All Key="$300f" Type="Tabs">Previous Tab</All><All Key="$214b" Type="JScript">var TC = te.Ctrl(CTRL_TC);
 if (TC)  {
   if (TC.Selected.CurrentViewMode == FVM_DETAILS) {
     ChangeTab(TC, -1);

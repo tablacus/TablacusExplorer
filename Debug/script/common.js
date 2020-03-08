@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200304 ? te.Version : 20200304
+		return te.Version < 20200308 ? te.Version : 20200308
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -3337,7 +3337,7 @@ LoadAddon = function (ext, Id, arError, param) {
 			ar.unshift("script");
 		}
 		var fn = "addons" + "\\" + Id + "\\" + ar.join(".");
-		var ado = OpenAdodbFromTextFile(fn);
+		var ado = OpenAdodbFromTextFile(fn, "utf-8");
 		if (ado) {
 			var s = ado.ReadText();
 			ado.Close();
@@ -3416,7 +3416,6 @@ PerformUpdate = function () {
 	wsh.AppActivate(oExec.ProcessID);
 }
 
-
 OpenContains = function (Ctrl, pt) {
 	var Items = GetSelectedItems(Ctrl, pt);
 	for (var j in Items) {
@@ -3432,16 +3431,33 @@ OpenContains = function (Ctrl, pt) {
 	}
 }
 
-OpenAdodbFromTextFile = function (fn) {
+function OrganizePath(fn, base)
+{
 	if (/"/.test(fn)) {
 		fn = api.PathUnquoteSpaces(fn);
 	}
 	fn = ExtractMacro(te, fn);
-	if (!/^[A-Z]:\\|^\\\\\w/i.test(fn)) {
-		fn = fso.BuildPath(te.Data.Installed, fn);
+	if (base && !/^[A-Z]:\\|^\\\\\w/i.test(fn)) {
+		fn = fso.BuildPath(base, fn);
 	}
+	return fn;
+}
+
+OpenAdodbFromTextFile = function (fn, charset) {
+	fn = OrganizePath(fn, te.Data.Installed);
 	var ado = api.CreateObject("ads");
-	var charset = "_autodetect_all";
+	if (charset) {
+		try {
+			ado.CharSet = charset;
+			ado.Open();
+			ado.LoadFromFile(fn);
+		} catch (e) {
+			ado.Close();
+			return;
+		}
+		return ado;
+	}
+	charset = "_autodetect_all";
 	try {
 		ado.CharSet = "iso-8859-1";
 		ado.Open();
@@ -3501,7 +3517,7 @@ AddFavoriteEx = function (Ctrl, pt) {
 
 importScript = function (fn) {
 	var hr = E_FAIL;
-	var ado = OpenAdodbFromTextFile(fn);
+	var ado = OpenAdodbFromTextFile(fn, "utf-8");
 	if (ado) {
 		hr = ExecScriptEx(window.Ctrl, ado.ReadText(), /\.vbs/i.test(fn) ? "VBScript" : "JScript", window.pt, window.dataObj, window.grfKeyState, window.pdwEffect, window.bDrop);
 		ado.Close();
@@ -3698,3 +3714,90 @@ function GetHICON(iIcon, h, flags) {
 	for (var i = ar.length; h > te.Data.SHILS[ar[--i]].cy && i;) { }
 	return api.ImageList_GetIcon(te.Data.SHIL[ar[i]], iIcon, flags);
 }
+
+function GetBGRA (c, a) {
+	return ((c & 0xff) << 16) | (c & 0xff00) | ((c & 0xff0000) >> 16) | a << 24;
+}
+
+function LoadDBFromTSV(DB, fn)
+{
+	var ado = OpenAdodbFromTextFile(fn, "utf-8");
+	if (ado) {
+		while (!ado.EOS) {
+			var res = /^([^\t]*)\t(.*)$/.exec(ado.ReadText(adReadLine));
+			if (res) {
+				DB.Set(res[1], res[2]);
+			}
+		}
+		ado.Close();
+	}
+}
+
+function SaveDBToTSV(DB, fn)
+{
+	try {
+		var ado = api.CreateObject("ads");
+		ado.CharSet = "utf-8";
+		ado.Open();
+		DB.ENumCB(function (n, s) {
+			ado.WriteText([n, s].join("\t") + "\r\n");
+		});
+		ado.SaveToFile(fn, adSaveCreateOverWrite);
+		ado.Close();
+	} catch (e) { }
+}
+
+function BasicDB(name)
+{
+	this.DB = api.CreateObject("Object");
+
+	this.Get = function (n) {
+		return this.DB[n] || "";
+	}
+
+	this.Set = function (n, s) {
+		var s0 = this.DB[n];
+		if (s0 != s) {
+			if (s) {
+				this.DB[n] = s;
+			} else {
+				delete this.DB[n];
+			}
+			this.bChanged = true;
+			var fn = api.ObjGetI(this, "OnChange");;
+			fn && fn(n, s, s0);
+		}
+	}
+
+	this.ENumCB = function (fncb) {
+		for (var n in this.DB) {
+			fncb(n, this.DB[n]);
+		}
+	}
+
+	this.Clear = function () {
+		for (var n in this.DB) {
+			delete this.DB[n];
+		}
+		return this;
+	}
+
+	this.Load = function ()
+	{
+		LoadDBFromTSV(this, this.path);
+		return this;
+	}
+
+	this.Save = function () {
+		if (this.bChanged) {
+			SaveDBToTSV(this, this.path);
+			this.bChanged = false;
+		}
+	}
+
+	this.Close = function () {}
+
+	this.path = OrganizePath(name, fso.BuildPath(te.Data.DataFolder, "config")) + ".tsv";
+}
+
+SimpleDB = BasicDB;

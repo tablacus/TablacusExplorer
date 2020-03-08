@@ -2417,8 +2417,14 @@ function ArrangeAddon(xml, td, Progress)
 					if (!installed.DllVersion) {
 						return;
 					}
-					var path = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\" + Id + "\\t" + Id + (api.sizeof("HANDLE") * 8) + ".dll");
-					if (CalcVersion(installed.DllVersion) <= CalcVersion(fso.GetFileVersion(path))) {
+					var path = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\" + Id);
+					var wfd = api.Memory("WIN32_FIND_DATA");
+					var hFind = api.FindFirstFile(fso.BuildPath(path, "*" + (api.sizeof("HANDLE") * 8) + ".dll"), wfd);
+					api.FindClose(hFind);
+					if (hFind == INVALID_HANDLE_VALUE) {
+						return;
+					}
+					if (CalcVersion(installed.DllVersion) <= CalcVersion(fso.GetFileVersion(fso.BuildPath(path, wfd.cFileName)))) {
 						return;
 					}
 				} catch (e) {

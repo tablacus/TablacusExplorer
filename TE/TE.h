@@ -1174,6 +1174,7 @@ public:
 	VOID NavigateComplete(BOOL bBeginNavigate);
 	VOID InitFilter();
 	HRESULT OnNavigationPending2(LPITEMIDLIST pidlFolder);
+	int GetSizeFormat();
 #ifndef _USE_THREADADDITEMS
 	VOID AddItems(IDispatch *pdisp, BOOL bDeleted, IDispatch *pOnCompleted, BOOL bNavigateComplete);
 #endif
@@ -1212,6 +1213,7 @@ public:
 	int			m_nFocusItem;
 	int			m_nSorting;
 	int			m_iColumns;
+	int			m_nSizeFormat;
 	DWORD		m_param[SB_Count];
 	DWORD		m_nOpenedType;
 	DWORD		m_dwCookie;

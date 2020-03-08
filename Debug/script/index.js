@@ -591,7 +591,7 @@ DisableImage = function (img, bDisable) {
 					if (/^file:/i.test(s)) {
 						var image;
 						if (image = api.CreateObject("WICBitmap").FromFile(api.PathCreateFromUrl(s))) {
-							s = image.DataURI("image/png");
+							s = image.DataURI();
 						}
 					}
 					img.src = "data:image/svg+xml," + encodeURIComponent(['<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ', img.offsetWidth, ' ', img.offsetHeight, '"><filter id="G"><feColorMatrix type="saturate" values="0.1" /></filter><image width="', img.width, '" height="', img.height, '" opacity=".48" xlink:href="', s, '" filter="url(#G)"></image></svg>'].join(""));
@@ -688,7 +688,9 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 		clearTimeout(g_.tid_rf[Ctrl.Id]);
 		delete g_.tid_rf[Ctrl.Id];
 	}
-	delete Ctrl.Data.Setting;
+	if (Ctrl.Data) {
+		delete Ctrl.Data.Setting;
+	}
 	var path = api.GetDisplayNameOf(Ctrl.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL);
 	var res = /javascript:(.*)/im.exec(path);
 	if (res) {
@@ -1957,7 +1959,7 @@ GetIconImage = function (Ctrl, BGColor, bSimple) {
 		if (hIcon) {
 			img = api.CreateObject("WICBitmap").FromHICON(hIcon);
 			api.DestroyIcon(hIcon);
-			return img.DataURI("image/png");
+			return img.DataURI();
 		}
 	}
 	return MakeImgDataEx("icon:shell32.dll,3", bSimple, nSize);
@@ -2330,7 +2332,7 @@ function InitMouse() {
 	te.Data.Conf_WheelSelect = isFinite(te.Data.Conf_WheelSelect) ? Number(te.Data.Conf_WheelSelect) : 1;
 	te.Layout = te.Data.Conf_Layout;
 	te.NetworkTimeout = te.Data.Conf_NetworkTimeout;
-	te.SizeFormat = Number(te.Data.Conf_SizeFormat);
+	te.SizeFormat = (te.Data.Conf_SizeFormat || "").replace(/^0x/i, "");
 	te.DateTimeFormat = te.Data.Conf_DateTimeFormat;
 	OpenMode = te.Data.Conf_OpenMode ? SBSP_NEWBROWSER : SBSP_SAMEBROWSER;
 }
@@ -3608,7 +3610,7 @@ Threads.Run = function () {
 	o.Data.tm = tm;
 	Threads.Data.unshift(o);
 	if (!Threads.src) {
-		var ado = OpenAdodbFromTextFile("script\\threads.js");
+		var ado = OpenAdodbFromTextFile("script\\threads.js", "utf-8");
 		if (ado) {
 			Threads.src = [ado.ReadText(), GetThumbnail.toString()].join("\n");
 			ado.Close();
