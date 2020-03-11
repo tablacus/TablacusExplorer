@@ -54,6 +54,8 @@ LPFNRemoveClipboardFormatListener lpfnRemoveClipboardFormatListener = NULL;
 #define lpfnPSPropertyKeyFromStringEx tePSPropertyKeyFromStringEx
 #define lpfnSHCreateItemFromIDList SHCreateItemFromIDList
 #define lpfnSHGetIDListFromObject SHGetIDListFromObject
+#define lpfnPropVariantToVariant PropVariantToVariant
+#define lpfnVariantToPropVariant VariantToPropVariant
 #endif
 #ifdef _USE_APIHOOK
 LPFNRegQueryValueExW lpfnRegQueryValueExW = NULL;
@@ -4165,6 +4167,11 @@ HRESULT STDAPICALLTYPE tePSPropertyKeyFromStringXP(__in LPCWSTR pszString,  __ou
 	return hr;
 }
 
+HRESULT STDAPICALLTYPE teVariantToVariantXP(VARIANTARG *pvSrc, VARIANTARG *pvDest)
+{
+	return VariantCopy(pvDest, pvSrc);
+}
+
 VOID teStripAmp(LPWSTR lpstr)
 {
 	LPWSTR lp1 = lpstr;
@@ -5105,7 +5112,7 @@ VOID teLog(HANDLE hFile, LPWSTR lpLog)
 BOOL teFreeLibrary2(HMODULE hDll)
 {
 	LPFNDllCanUnloadNow lpfnDllCanUnloadNow = (LPFNDllCanUnloadNow)GetProcAddress(hDll, "DllCanUnloadNow");
-	if (lpfnDllCanUnloadNow && lpfnDllCanUnloadNow() != S_OK) {
+	if (g_nReload || (lpfnDllCanUnloadNow && lpfnDllCanUnloadNow() != S_OK)) {
 		g_pFreeLibrary.insert(g_pFreeLibrary.begin(), hDll);
 		SetTimer(g_hwndMain, TET_FreeLibrary, (++g_dwFreeLibrary) * 100, teTimerProc);
 		return FALSE;
@@ -5658,15 +5665,8 @@ HRESULT tePSFormatForDisplay(PROPERTYKEY *ppropKey, VARIANT *pv, DWORD pdfFlags,
 		return S_OK;
 	}
 	PROPVARIANT propVar;
-#ifdef _2000XP
-	if (lpfnVariantToPropVariant) {
-		lpfnVariantToPropVariant(pv, &propVar);
-	} else {
-		propVar = *((PROPVARIANT *)pv);
-	}
-#else
-	VariantToPropVariant(pv, &propVar);
-#endif
+	PropVariantInit(&propVar);
+	lpfnVariantToPropVariant(pv, &propVar);
 #ifdef _2000XP
 	if (lpfnPSGetPropertyDescription) {
 #endif
@@ -5686,12 +5686,8 @@ HRESULT tePSFormatForDisplay(PROPERTYKEY *ppropKey, VARIANT *pv, DWORD pdfFlags,
 			pPUI->Release();
 		}
 	}
-	if (lpfnVariantToPropVariant) {
 #endif
-		PropVariantClear(&propVar);
-#ifdef _2000XP
-	}
-#endif
+	PropVariantClear(&propVar);
 	return hr;
 }
 
@@ -9290,7 +9286,6 @@ VOID teApiSHChangeNotification_Lock(int nArg, teParam *param, DISPPARAMS *pDispP
 					pPF->Initialize(ppidl[i]);
 					teSetObjectRelease(&v, pPF);
 					tePutPropertyAt(pdisp, i, &v);
-					VariantClear(&v);
 				}
 			}
 			SHChangeNotification_Unlock(hLock);
@@ -9937,6 +9932,7 @@ VOID teApiCreateProcess(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 	sa.lpSecurityDescriptor	= 0;
 	sa.bInheritHandle = TRUE;
 
+	teSetLong(pVarResult, -1);
 	if(!CreatePipe(&hRead, &hWrite, &sa, 0)) {
 		return;
 	}
@@ -9949,6 +9945,7 @@ VOID teApiCreateProcess(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 		dwms = INFINITE;
 	}
 	if (CreateProcess(NULL, param[0].lpwstr, NULL, NULL, TRUE, nArg >= 4 ? param[4].dword : CREATE_NO_WINDOW, NULL, param[1].lpwstr, &si, &pi)) {
+		teSetSZ(pVarResult, NULL);
 		if (WaitForInputIdle(pi.hProcess, dwms)) {
 			if (WaitForSingleObject(pi.hProcess, dwms) != WAIT_TIMEOUT) {
 				if (PeekNamedPipe(hRead, NULL, 0, NULL, &dwLen, NULL)) {
@@ -10063,7 +10060,6 @@ VOID teApiSHCreateStreamOnFileEx(int nArg, teParam *param, DISPPARAMS *pDispPara
 				v.vt = VT_DISPATCH;
 				v.pdispVal = new CteObject(pStream);
 				tePutPropertyAt(punk, 0, &v);
-				VariantClear(&v);
 			}
 			pStream->Release();
 		}
@@ -10125,13 +10121,10 @@ VOID teApiGetDiskFreeSpaceEx(int nArg, teParam *param, DISPPARAMS *pDispParams, 
 		VARIANT v;
 		teSetLL(&v, FreeBytesOfAvailable.QuadPart);
 		tePutProperty(pVarResult->pdispVal, L"FreeBytesOfAvailable", &v);
-		VariantClear(&v);
 		teSetLL(&v, TotalNumberOfBytes.QuadPart);
 		tePutProperty(pVarResult->pdispVal, L"TotalNumberOfBytes", &v);
-		VariantClear(&v);
 		teSetLL(&v, TotalNumberOfFreeBytes.QuadPart);
 		tePutProperty(pVarResult->pdispVal, L"TotalNumberOfFreeBytes", &v);
-		VariantClear(&v);
 	}
 }
 
@@ -11316,6 +11309,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		lpfnVariantToPropVariant = (LPFNVariantToPropVariant)GetProcAddress(hDll, "VariantToPropVariant");
 		lpfnPSPropertyKeyFromStringEx = tePSPropertyKeyFromStringEx;
 	} else {
+		lpfnPropVariantToVariant = (LPFNPropVariantToVariant)teVariantToVariantXP;
+		lpfnVariantToPropVariant = (LPFNVariantToPropVariant)teVariantToVariantXP;
 		lpfnPSPropertyKeyFromStringEx = tePSPropertyKeyFromStringXP;
 	}
 #endif
@@ -11561,7 +11556,6 @@ function _c(s) {\
 	}
 	teSetSZ(&v, L"ADODB.Stream");
 	tePutProperty(g_pAPI, L"ADBSTRM", &v);
-	VariantClear(&v);
 #endif
 	// CTE
 	g_pTE = new CTE(nCmdShow);
@@ -13237,9 +13231,28 @@ VOID CteShellBrowser::Refresh(BOOL bCheck)
 				OnBeforeNavigate(m_pFolderItem, SBSP_SAMEBROWSER | SBSP_ABSOLUTE);
 				NavigateComplete(TRUE);
 			} else {
-				ResetPropEx();
-				m_pShellView->Refresh();
-				SetPropEx();
+				int nCount = -1;
+				IFolderView *pFV;
+				if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
+					pFV->ItemCount(SVGIO_ALLVIEW, &nCount);
+					pFV->Release();
+				}
+				if (nCount == 0) {
+					BSTR bs;
+					if SUCCEEDED(teGetDisplayNameFromIDList(&bs, m_pidl, SHGDN_FORPARSING)) {
+						if (!tePathIsNetworkPath(bs)) {
+							nCount = -1;
+						}
+						teSysFreeString(&bs);
+					}
+				}
+				if (nCount) {
+					ResetPropEx();
+					m_pShellView->Refresh();
+					SetPropEx();
+				} else {
+					Suspend(0);
+				}
 			}
 		} else if (m_nUnload == 0) {
 			m_nUnload = 4;
@@ -17436,7 +17449,6 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				BSTR bs;
 				bs = teMultiByteToWideChar(CP_UTF8, dispAPI[0].name, -1);
 				tePutProperty(pAPI, bs, &v);
-				VariantClear(&v);
 				::SysFreeString(bs);
 				teSetObject(pVarResult, pAPI);
 				return S_OK;
@@ -24166,15 +24178,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 						PROPVARIANT propVar;
 						PropVariantInit(&propVar);
 						if SUCCEEDED(m_ppMetadataQueryReader[dispIdMember - 160]->GetMetadataByName(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]), &propVar)) {
-#ifdef _2000XP
-							if (lpfnPropVariantToVariant) {
-								lpfnPropVariantToVariant(&propVar, pVarResult);
-							} else {
-								VariantCopy(pVarResult, (VARIANT *)&propVar);
-							}
-#else
-							PropVariantToVariant(&propVar, pVarResult);
-#endif
+							lpfnPropVariantToVariant(&propVar, pVarResult);
 							PropVariantClear(&propVar);
 						}
 					}
@@ -24182,11 +24186,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				return S_OK;
 			//GetHBITMAP
 			case 210:
-				if (pVarResult) {
-					HBITMAP hBM;
-					hBM = GetHBITMAP(nArg >= 0 ? GetIntFromVariant(&pDispParams->rgvarg[nArg]) : -1);
-					teSetPtr(pVarResult, hBM);
-				}
+				teSetPtr(pVarResult, GetHBITMAP(nArg >= 0 ? GetIntFromVariant(&pDispParams->rgvarg[nArg]) : -1));
 				return S_OK;
 			//GetHICON
 			case 211:
