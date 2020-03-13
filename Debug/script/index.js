@@ -591,7 +591,7 @@ DisableImage = function (img, bDisable) {
 					if (/^file:/i.test(s)) {
 						var image;
 						if (image = api.CreateObject("WICBitmap").FromFile(api.PathCreateFromUrl(s))) {
-							s = image.DataURI();
+							s = image.DataURI("image/png");
 						}
 					}
 					img.src = "data:image/svg+xml," + encodeURIComponent(['<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ', img.offsetWidth, ' ', img.offsetHeight, '"><filter id="G"><feColorMatrix type="saturate" values="0.1" /></filter><image width="', img.width, '" height="', img.height, '" opacity=".48" xlink:href="', s, '" filter="url(#G)"></image></svg>'].join(""));

@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200311 ? te.Version : 20200311
+		return te.Version < 20200311 ? te.Version : 20200313
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -570,7 +570,7 @@ function MakeImgSrc(src, index, bSrc, h) {
 	var image = MakeImgData(src, index, h);
 	if (image) {
 		if (g_.IEVer >= 8) {
-			return image.DataURI();
+			return image.DataURI("image/png");
 		}
 		if (fn) {
 			image.Save(fn);
@@ -2394,7 +2394,8 @@ function CheckUpdate3(xhr, url, arg) {
 	}
 	for (var i = 32; i <= 64; i += 32) {
 		te_exe = arg.temp + '\\te' + i + '.exe';
-		if (fso.GetFileVersion(te_exe) == fso.GetFileVersion(fso.BuildPath(te.Data.Installed, 'te' + i + '.exe'))) {
+		var te_old = fso.BuildPath(te.Data.Installed, 'te' + i + '.exe');
+		if (!fso.FileExists(te_old) || fso.GetFileVersion(te_exe) == fso.GetFileVersion(te_old)) {
 			arDel.push(te_exe);
 		}
 	}
