@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200311 ? te.Version : 20200313
+		return te.Version < 20200314 ? te.Version : 20200314
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -783,6 +783,7 @@ LoadXml = function (filename, nGroup) {
 						FV.Data.Lock = api.LowPart(tab.getAttribute("Lock")) != 0;
 						Lock(TC, i2, false);
 					}
+					ChangeTabName(FV);
 				}
 				TC.SelectedIndex = item.getAttribute("SelectedIndex");
 				TC.Visible = api.LowPart(item.getAttribute("Visible"));

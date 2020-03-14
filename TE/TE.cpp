@@ -9945,7 +9945,7 @@ VOID teApiCreateProcess(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 		dwms = INFINITE;
 	}
 	if (CreateProcess(NULL, param[0].lpwstr, NULL, NULL, TRUE, nArg >= 4 ? param[4].dword : CREATE_NO_WINDOW, NULL, param[1].lpwstr, &si, &pi)) {
-		teSetSZ(pVarResult, NULL);
+		BSTR bsStdOut = NULL;
 		if (WaitForInputIdle(pi.hProcess, dwms)) {
 			if (WaitForSingleObject(pi.hProcess, dwms) != WAIT_TIMEOUT) {
 				if (PeekNamedPipe(hRead, NULL, 0, NULL, &dwLen, NULL)) {
@@ -9953,16 +9953,30 @@ VOID teApiCreateProcess(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 					if (dwLen) {
 						ReadFile(hRead, bs, dwLen, &dwLen, NULL);
 						if (param[2].intVal == 2 || (param[2].intVal != 1 && IsTextUnicode(bs, dwLen, NULL))) {
-							teSetBSTR(pVarResult, &bs, dwLen);
+							bsStdOut = bs;
+							bs = NULL;
 						} else {
-							BSTR bs2 = teMultiByteToWideChar(CP_ACP, (LPCSTR)bs, dwLen);
-							teSetBSTR(pVarResult, &bs2, -1);
-							teSysFreeString(&bs);
+							bsStdOut = teMultiByteToWideChar(CP_ACP, (LPCSTR)bs, dwLen);
 						}
 					}
+					teSysFreeString(&bs);
 				}
 			}
 		}
+		if (param[5].boolVal) {
+			IDispatch *pdisp = NULL;
+			GetNewObject(&pdisp);
+			VARIANT v;
+			VariantInit(&v);
+			teSetSZ(&v, bsStdOut);
+			tePutProperty(pdisp, L"StdOut", &v);
+			teSetPtr(&v, GetProcessId(pi.hProcess));
+			tePutProperty(pdisp, L"ProcessId", &v);
+			teSetObjectRelease(pVarResult, pdisp);
+		} else {
+			teSetSZ(pVarResult, bsStdOut);
+		}
+		teSysFreeString(&bsStdOut);
 		CloseHandle(pi.hThread);
 		CloseHandle(pi.hProcess);
 	}

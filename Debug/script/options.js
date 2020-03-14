@@ -2059,7 +2059,7 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter)
 		}
 
 		var o = GetElement(Id);
-		var path = o.value;
+		var path = o.value || o.getAttribute("placeholder") || "";
 		var res = /^icon:([^,]*)|^bitmap:([^,]*)/i.exec(path) || [];
 		path = OpenDialogEx(res[1] || res[2] || path, Filter, api.LowPart(bFilesOnly));
 		if (path) {
