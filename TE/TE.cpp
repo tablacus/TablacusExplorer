@@ -7050,6 +7050,9 @@ VOID teGetDisplayNameOf(VARIANT *pv, int uFlags, VARIANT *pVarResult)
 		g_strException = L"teGetDisplayNameOf";
 #endif
 	}
+	if (pVarResult && pVarResult->vt == VT_EMPTY) {
+		teSetSZ(pVarResult, L"");
+	}
 }
 
 BOOL GetVarPathFromFolderItem(FolderItem *pFolderItem, VARIANT *pVarResult)
@@ -13771,6 +13774,9 @@ VOID CteShellBrowser::SetHistory(FolderItems *pFolderItems, UINT wFlags)
 		SafeRelease(&pFolderItems);
 	} else if ((wFlags & (SBSP_NAVIGATEBACK | SBSP_NAVIGATEFORWARD | SBSP_WRITENOHISTORY)) == 0) {
 		if (ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
+			if (!m_pFolderItem) {
+				return;
+			}
 			BOOL bInvalid = TRUE;
 			CteFolderItem *pid1 = NULL;
 			if SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1)) {

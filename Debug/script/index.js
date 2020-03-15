@@ -24,7 +24,7 @@ PanelCreated = function (Ctrl) {
 function RefreshEx(FV, tm)
 {
 	var dt = new Date().getTime();
-	if (dt > (FV.Data.tmChk || 0)) {
+	if (dt > (FV.Data && FV.Data.tmChk || 0)) {
 		if  (FV.FolderItem && /^[A-Z]:\\|^\\\\\w/i.test(FV.FolderItem.Path)) {
 			if (RunEvent4("RefreshEx", FV) === void 0) {
 				if (!FV.hwndView || api.ILIsEqual(FV.FolderItem, FV.FolderItem.Alt)) {
@@ -494,7 +494,9 @@ GetCommandId = function (hMenu, s, ContextMenu) {
 			}
 			var i = api.GetMenuItemCount(hMenu);
 			if (i == 1 && ContextMenu && WINVER >= 0x600) {
-				setTimeout('api.EndMenu()', 200);
+				setTimeout(function () {
+					api.EndMenu();
+				}, 200);
 				api.TrackPopupMenuEx(hMenu, TPM_RETURNCMD, 0, 0, te.hwnd, null, ContextMenu);
 				i = api.GetMenuItemCount(hMenu);
 			}
@@ -626,6 +628,20 @@ function SetTreeViewData(FV, TVD) {
 		TV.Style = TVD.Style;
 		TV.Width = TVD.Width;
 		TV.SetRoot(TVD.Root, TVD.EnumFlags, TVD.RootStyle);
+	}
+}
+
+FixIconSpacing = function (Ctrl)
+{
+	var hwnd = Ctrl.hwndList;
+	if (hwnd) {
+		if (api.SendMessage(hwnd, LVM_GETVIEW, 0, 0) == 0) {
+			var s = Ctrl.IconSize;
+			var cx = s + (256 - s * (screen.deviceXDPI / 96)) / (8 * 96 / screen.deviceXDPI);
+			var cy = s + (256 - s * (screen.deviceYDPI / 96)) / (Math.max(13.5 - Math.sqrt(s), 4) * 96 / screen.deviceYDPI);
+			api.SendMessage(hwnd, LVM_SETICONSPACING, 0, cx + (cy << 16));
+			api.InvalidateRect(hwnd, null, true);
+		}
 	}
 }
 
@@ -2359,7 +2375,9 @@ g_.mouse =
 		var i = te.Data.Conf_GestureTimeout;
 		if (i) {
 			clearTimeout(this.tidGesture);
-			this.tidGesture = setTimeout("g_.mouse.EndGesture(true)", i);
+			this.tidGesture = setTimeout(function () {
+				g_.mouse.EndGesture(true);
+			}, i);
 		}
 	},
 
@@ -2518,8 +2536,7 @@ g_basic =
 
 	Func:
 	{
-		"":
-		{
+		"": {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
 				var lines = s.split(/\r?\n/);
 				for (var i in lines) {
@@ -2553,8 +2570,7 @@ g_basic =
 			}
 		},
 
-		Open:
-		{
+		Open: {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
 				return ExecOpen(Ctrl, s, type, hwnd, pt, GetNavigateFlags(GetFolderView(Ctrl, pt)));
 			},
@@ -2563,8 +2579,7 @@ g_basic =
 			Ref: BrowseForFolder
 		},
 
-		"Open in new tab":
-		{
+		"Open in new tab": {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
 				return ExecOpen(Ctrl, s, type, hwnd, pt, SBSP_NEWBROWSER);
 			},
@@ -2573,8 +2588,7 @@ g_basic =
 			Ref: BrowseForFolder
 		},
 
-		"Open in background":
-		{
+		"Open in background": {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
 				return ExecOpen(Ctrl, s, type, hwnd, pt, SBSP_NEWBROWSER | SBSP_ACTIVATE_NOFOCUS);
 			},
@@ -2583,8 +2597,7 @@ g_basic =
 			Ref: BrowseForFolder
 		},
 
-		Filter:
-		{
+		Filter: {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
 				var FV = GetFolderView(Ctrl, pt);
 				if (FV) {
@@ -2596,8 +2609,7 @@ g_basic =
 			}
 		},
 
-		Exec:
-		{
+		Exec: {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
 				var lines = ExtractMacro(Ctrl, s).split(/\r?\n/);
 				for (var i in lines) {
@@ -2634,8 +2646,7 @@ g_basic =
 			Ref: OpenDialog
 		},
 
-		RunAs:
-		{
+		RunAs: {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
 				s = ExtractMacro(Ctrl, s);
 				try {
@@ -2649,22 +2660,19 @@ g_basic =
 			Ref: OpenDialog
 		},
 
-		JScript:
-		{
+		JScript: {
 			Exec: ExecScriptEx,
 			Drop: DropScript,
 			Ref: OpenDialog
 		},
 
-		VBScript:
-		{
+		VBScript: {
 			Exec: ExecScriptEx,
 			Drop: DropScript,
 			Ref: OpenDialog
 		},
 
-		"Selected items":
-		{
+		"Selected items": {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
 				var fn = g_basic.CmdI(type, s);
 				if (fn) {
@@ -2710,8 +2718,7 @@ g_basic =
 				return r;
 			},
 
-			Cmd:
-			{
+			Cmd: {
 				Open: function (Ctrl, pt) {
 					return OpenSelected(Ctrl, GetNavigateFlags(GetFolderView(Ctrl)), pt);
 				},
@@ -2734,8 +2741,7 @@ g_basic =
 			Enc: true
 		},
 
-		Tabs:
-		{
+		Tabs: {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
 				var fn = g_basic.CmdI(type, s);
 				if (fn) {
@@ -2752,8 +2758,8 @@ g_basic =
 				}
 				return S_OK;
 			},
-			Cmd:
-			{
+
+			Cmd: {
 				"Close tab": function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt, true);
 					FV && FV.Close();
@@ -2848,8 +2854,7 @@ g_basic =
 			Enc: true
 		},
 
-		Edit:
-		{
+		Edit: {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
 				var hMenu = te.MainMenu(FCIDM_MENU_EDIT);
 				var nVerb = GetCommandId(hMenu, s);
@@ -2863,8 +2868,7 @@ g_basic =
 			}
 		},
 
-		View:
-		{
+		View: {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
 				var hMenu = te.MainMenu(FCIDM_MENU_VIEW);
 				var nVerb = GetCommandId(hMenu, s);
@@ -2878,8 +2882,7 @@ g_basic =
 			}
 		},
 
-		Context:
-		{
+		Context: {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
 				var Selected;
 				var FV = Ctrl;
@@ -2920,8 +2923,7 @@ g_basic =
 			}
 		},
 
-		Background:
-		{
+		Background: {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
 				var FV = te.Ctrl(CTRL_FV);
 				if (FV) {
@@ -2951,10 +2953,8 @@ g_basic =
 			}
 		},
 
-		Tools:
-		{
-			Cmd:
-			{
+		Tools: {
+			Cmd: {
 				"New folder": CreateNewFolder,
 				"New file": CreateNewFile,
 				"Copy full path": function (Ctrl, pt) {
@@ -2999,8 +2999,7 @@ g_basic =
 			Enc: true
 		},
 
-		Options:
-		{
+		Options: {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
 				ShowOptions("Tab=" + s);
 				return S_OK;
@@ -3015,8 +3014,7 @@ g_basic =
 			Enc: true
 		},
 
-		Key:
-		{
+		Key: {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
 				api.SetFocus(Ctrl.hwnd);
 				wsh.SendKeys(s);
@@ -3024,8 +3022,7 @@ g_basic =
 			}
 		},
 
-		"Load layout":
-		{
+		"Load layout": {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
 				if (s) {
 					LoadXml(s);
@@ -3038,8 +3035,7 @@ g_basic =
 			Ref: OpenDialog
 		},
 
-		"Save layout":
-		{
+		"Save layout": {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
 				if (s) {
 					SaveXml(s);
@@ -3052,14 +3048,12 @@ g_basic =
 			Ref: OpenDialog
 		},
 
-		"Add-ons":
-		{
+		"Add-ons": {
 			Cmd: {},
 			Enc: true
 		},
 
-		Menus:
-		{
+		Menus: {
 			Ref: function (s, pt) {
 				return g_basic.Popup(g_basic.Func.Menus.List, s, pt);
 			},
@@ -3137,10 +3131,6 @@ g_basic =
 
 AddEvent("Exec", function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop) {
 	var FV = GetFolderView(Ctrl, pt);
-	var hr = te.OnBeforeGetData(FV, dataObj || FV.SelectedItems(), 3);
-	if (hr) {
-		return hr;
-	}
 	var fn = g_basic.FuncI(type);
 	if (fn) {
 		if (dataObj) {
@@ -3149,6 +3139,12 @@ AddEvent("Exec", function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEff
 			}
 			pdwEffect[0] = DROPEFFECT_NONE;
 			return E_NOTIMPL;
+		}
+		if (!/Background|Tabs|Tools|View/i.test(type)) {
+			var hr = te.OnBeforeGetData(FV, dataObj || FV.SelectedItems(), 3);
+			if (hr) {
+				return hr;
+			}
 		}
 		if (fn.Exec) {
 			return fn.Exec(Ctrl, s, type, hwnd, pt);
@@ -3307,7 +3303,7 @@ AddEvent("BeginNavigate", function (Ctrl) {
 });
 
 AddEvent("UseExplorer", function (pid) {
-	if (pid.Path && !api.GetAttributesOf(pid.Alt || pid, SFGAO_FILESYSTEM | SFGAO_FILESYSANCESTOR | SFGAO_STORAGEANCESTOR | SFGAO_NONENUMERATED | SFGAO_DROPTARGET) && !api.ILIsParent(1, pid, false)) {
+	if (pid && pid.Path && !api.GetAttributesOf(pid.Alt || pid, SFGAO_FILESYSTEM | SFGAO_FILESYSANCESTOR | SFGAO_STORAGEANCESTOR | SFGAO_NONENUMERATED | SFGAO_DROPTARGET) && !api.ILIsParent(1, pid, false)) {
 		return true;
 	}
 });
@@ -3328,6 +3324,12 @@ AddEvent("LocationPopup", function (hMenu) {
 	}
 	FolderMenu.AddMenuItem(hMenu, api.ILCreateFromPath(ssfBITBUCKET), api.GetDisplayNameOf(ssfBITBUCKET, SHGDN_INFOLDER), true);
 });
+
+if (WINVER >= 0x600 && screen.deviceYDPI > 96) {
+	AddEvent("NavigateComplete", FixIconSpacing);
+	AddEvent("IconSizeChanged", FixIconSpacing);
+	AddEvent("ViewModeChanged", FixIconSpacing);
+}
 
 AddEnv("Selected", function (Ctrl) {
 	var ar = [];
@@ -3367,14 +3369,6 @@ AddEnv("Installed", fso.GetDriveName(api.GetModuleFileName(null)));
 AddEnv("TE_Config", function () {
 	return fso.BuildPath(te.Data.DataFolder, "config");
 });
-
-AddEvent("ReplaceMacroEx", [/%res:(.+)%/ig, function (strMatch, ref1) {
-	return api.LoadString(hShell32, ref1) || GetTextR(ref1);
-}]);
-
-AddEvent("ReplaceMacroEx", [/%AddonStatus:([^%]*)%/ig, function (strMatch, ref1) {
-	return api.LowPart(GetAddonElement(ref1).getAttribute("Enabled")) ? "on" : "off";
-}]);
 
 ExtractMacro2 = function (Ctrl, s) {
 	for (var j = 99; j--;) {
@@ -3641,4 +3635,4 @@ InitMouse();
 InitMenus();
 LoadLang();
 ArrangeAddons();
-setTimeout(InitWindow, 9);
+setTimeout(InitWindow);
