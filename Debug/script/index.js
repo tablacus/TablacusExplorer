@@ -3325,6 +3325,14 @@ AddEvent("LocationPopup", function (hMenu) {
 	FolderMenu.AddMenuItem(hMenu, api.ILCreateFromPath(ssfBITBUCKET), api.GetDisplayNameOf(ssfBITBUCKET, SHGDN_INFOLDER), true);
 });
 
+AddEvent("ReplaceMacroEx", [/%res:(.+)%/ig, function (strMatch, ref1) {
+	return api.LoadString(hShell32, ref1) || GetTextR(ref1);
+}]);
+
+AddEvent("ReplaceMacroEx", [/%AddonStatus:([^%]*)%/ig, function (strMatch, ref1) {
+	return api.LowPart(GetAddonElement(ref1).getAttribute("Enabled")) ? "on" : "off";
+}]);
+
 if (WINVER >= 0x600 && screen.deviceYDPI > 96) {
 	AddEvent("NavigateComplete", FixIconSpacing);
 	AddEvent("IconSizeChanged", FixIconSpacing);
