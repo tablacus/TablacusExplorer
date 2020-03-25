@@ -216,4 +216,5 @@
 	<text s="Root style">Style</text>
 	<text s="View mode">Mode d'affichage</text>
   <text s="Disable">Désactiver</text>
+	<text s="Drag-and-Drop">Glisser-Déplacer</text>
 </resources>

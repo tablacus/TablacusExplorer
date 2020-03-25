@@ -216,4 +216,5 @@
 	<text s="Root style">ルートスタイル</text>
 	<text s="View mode">表示モード</text>
 	<text s="Disable">無効にする</text>
+	<text s="Drag-and-Drop">ドラッグ＆ドロップ</text>
 </resources>

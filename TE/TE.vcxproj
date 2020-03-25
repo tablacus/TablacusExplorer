@@ -187,7 +187,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="te.ico" />
-    <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="TE.manifest" />

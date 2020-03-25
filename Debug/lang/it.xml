@@ -216,4 +216,5 @@
 	<text s="Root style">Stile Radice</text>
 	<text s="View mode">Modifica visualizzazione</text>
   <text s="Disable">Disabilita</text>
+ 	<text s="Drag-and-Drop">Drag-and-Drop</text>
 </resources>

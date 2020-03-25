@@ -216,4 +216,5 @@
 	<text s="Root style">Estilo raiz</text>
 	<text s="View mode">Modo de visualização</text>
   <text s="Disable">Desabilitar</text>
+	<text s="Drag-and-Drop">Arrastar-e-soltar</text>
 </resources>

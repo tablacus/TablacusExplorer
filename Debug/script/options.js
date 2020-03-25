@@ -104,11 +104,10 @@ function ResetForm()
 		document.F.View_ViewFlags.value = FV.ViewFlags;
 	}
 	document.F.Conf_SizeFormat.value = te.Data.Conf_SizeFormat || 0;
-
 	for(i = 0; i < document.F.length; i++) {
 		o = document.F[i];
 		if (String(o.type).toLowerCase() == 'checkbox') {
-			if (!/^Conf_/.test(o.id)) {
+			if (!/^!?Conf_/.test(o.id)) {
 				o.checked = false;
 			}
 		}
@@ -1353,8 +1352,10 @@ function ApplyOptions()
 	SetChanged(ReplaceMenus);
 	for (var i in document.F.elements) {
 		if (!/=|:/.test(i)) {
-			if (/^Tab_|^Tree_|^View_|^Conf_/.test(i) && !/_$/.test(i)) {
-				te.Data[i] = GetElementValue(document.F[i]);
+			var res = /^(!?)(Tab_.+|Tree_.+|View_.+|Conf_.+)/.exec(i);
+			if (res && !/_$/.test(i)) {
+				var v = GetElementValue(document.F[i]);
+				te.Data[res[2]] = res[1] ? !v : v;
 			}
 		}
 	}
@@ -1397,9 +1398,11 @@ InitOptions = function ()
 	document.F.ButtonInitConfig.disabled = (InstallPath == te.Data.DataFolder) | !fso.FolderExists(fso.BuildPath(InstallPath, "layout"));
 	for (i in document.F.elements) {
 		if (!/=|:/.test(i)) {
-			if (/^Tab_|^Tree_|^View_|^Conf_/.test(i)) {
-				if (te.Data[i] !== void 0) {
-					SetElementValue(document.F[i], te.Data[i]);
+			var res = /^(!?)(Tab_.+|Tree_.+|View_.+|Conf_.+)/.exec(i);
+			if (res) {
+				var v = te.Data[res[2]];
+				if (v !== void 0 || res[1]) {
+					SetElementValue(document.F[i], res[1] ? !v : v);
 				}
 			}
 		}

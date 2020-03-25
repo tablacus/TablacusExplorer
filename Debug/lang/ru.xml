@@ -216,4 +216,5 @@
 	<text s="Root style">Стиль корневой папки</text>
 	<text s="View mode">Режим просмотра</text>
 	<text s="Disable">Отключить</text>
+	<text s="Drag-and-Drop">Drag-and-Drop</text>
 </resources>

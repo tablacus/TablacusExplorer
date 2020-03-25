@@ -40,7 +40,6 @@
     <None Include="te.ico">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="TE.manifest">

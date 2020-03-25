@@ -1,9 +1,9 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <TablacusExplorer>
   <General>
-    <Version>1.08</Version>
-    <MinVersion>2017.8.19</MinVersion>
-    <pubDate>Sat, 19 Aug 2017 00:00:00 GMT</pubDate>
+    <Version>1.09</Version>
+    <MinVersion>2020.3.16</MinVersion>
+    <pubDate>Mon, 23 Mar 2020 00:00:00 GMT</pubDate>
     <Options>Common:0:0</Options>
     <Creator>Gaku</Creator>
     <URL>http://tablacus.github.io/TablacusExplorerAddons/</URL>
@@ -17,4 +17,8 @@
     <Name>展開</Name>
     <Description>圧縮ファイルの展開</Description>
   </ja>
+  <zh>
+    <Name>解壓縮</Name>
+  </zh>
+  
 </TablacusExplorer>

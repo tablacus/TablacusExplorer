@@ -216,4 +216,5 @@
 	<text s="Root style">根目录样式</text>
 	<text s="View mode">查看模式</text>
   <text s="Disable">禁用</text>
+	<text s="Drag-and-Drop">拖放</text>
 </resources>

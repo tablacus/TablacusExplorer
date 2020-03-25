@@ -216,4 +216,5 @@
 	<text s="Root style">根節點樣式</text>
 	<text s="View mode">檢視模式</text>
   <text s="Disable">停用</text>
+	<text s="Drag-and-Drop">拖放</text>
 </resources>

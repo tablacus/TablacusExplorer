@@ -2350,6 +2350,7 @@ function InitMouse() {
 	te.NetworkTimeout = te.Data.Conf_NetworkTimeout;
 	te.SizeFormat = (te.Data.Conf_SizeFormat || "").replace(/^0x/i, "");
 	te.DateTimeFormat = te.Data.Conf_DateTimeFormat;
+	te.DragIcon = !api.LowPart(te.Data.Conf_NoDragIcon);
 	OpenMode = te.Data.Conf_OpenMode ? SBSP_NEWBROWSER : SBSP_SAMEBROWSER;
 }
 
