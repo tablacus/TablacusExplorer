@@ -1174,6 +1174,8 @@ public:
 	VOID NavigateComplete(BOOL bBeginNavigate);
 	VOID InitFilter();
 	HRESULT OnNavigationPending2(LPITEMIDLIST pidlFolder);
+	HRESULT IncludeObject2(IShellFolder *pSF, LPCITEMIDLIST pidl);
+	BOOL HasFilter();
 	int GetSizeFormat();
 #ifndef _USE_THREADADDITEMS
 	VOID AddItems(IDispatch *pdisp, BOOL bDeleted, IDispatch *pOnCompleted, BOOL bNavigateComplete);

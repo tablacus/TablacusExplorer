@@ -174,8 +174,8 @@ function ClickTree(o, nMode, strChg, bForce)
 		var res = /tab([^_]+)(_?)(.*)/.exec(o.id);
 		if (res) {
 			newTab = res[1] + res[2] + res[3];
+			ClickButton(res[1], true);
 			if (res[3]) {
-				ClickButton(res[1], true);
 				if (res[1] == 1) {
 					(function (Id) { setTimeout(function () {
 						if (g_.elAddons[Id]) {
@@ -246,7 +246,7 @@ function ClickButton(n, f)
 {
 	var o = document.getElementById("tabbtn" + n);
 	var op = document.getElementById("tab" + n + "_");
-	if (f || op.style.display.toLowerCase() == "none") {
+	if (f || (f === void 0 && /none/i.test(op.style.display))) {
 		o.innerHTML = BUTTONS.opened;
 		op.style.display = "block";
 	} else {
@@ -1418,6 +1418,9 @@ InitOptions = function ()
 
 	AddEventEx(window, "load", function ()
 	{
+		for (var i = 6; i--;) {
+			ClickButton(i, false);
+		}
 		SetTab(dialogArguments.Data);
 	});
 

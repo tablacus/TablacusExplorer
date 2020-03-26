@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200325 ? te.Version : 20200325
+		return te.Version < 20200326 ? te.Version : 20200326
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -3719,6 +3719,10 @@ function GetHICON(iIcon, h, flags) {
 
 function GetBGRA (c, a) {
 	return ((c & 0xff) << 16) | (c & 0xff00) | ((c & 0xff0000) >> 16) | a << 24;
+}
+
+function ExtractFilter(s) {
+	return (ExtractMacro(te, s) || "").replace(/[\r\n;]+/g, ";").replace(/^;+|;+$|"/g, "");
 }
 
 function LoadDBFromTSV(DB, fn)

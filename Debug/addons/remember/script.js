@@ -7,9 +7,9 @@ if (window.Addon == 1) {
 	{
 		db: {},
 		ID: ["Time", "ViewMode", "IconSize", "Columns", "SortColumn", "Group", "SortColumns", "Path"],
-		nFormat: api.QuadPart(GetAddonOption(Addon_Id, "Format")),
-		Filter: (GetAddonOption(Addon_Id, "Filter") || "*").replace(/\s+$/, "").replace(/\r\n/g, ";"),
-		Disable: (GetAddonOption(Addon_Id, "Disable") || "-").replace(/\s+$/, "").replace(/\r\n/g, ";"),
+		nFormat: api.LowPart(GetAddonOption(Addon_Id, "Format")),
+		Filter: ExtractFilter(GetAddonOption(Addon_Id, "Filter") || "*"),
+		Disable: ExtractFilter(GetAddonOption(Addon_Id, "Disable") || "-"),
 		nIcon: api.GetSystemMetrics(SM_CYICON) * 96 / screen.deviceYDPI,
 		nSM: api.GetSystemMetrics(SM_CYSMICON) * 96 / screen.deviceYDPI,
 		nSave: item.getAttribute("Save") || 1000,

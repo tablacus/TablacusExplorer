@@ -17,43 +17,45 @@
       <table class="layout" style="width: 100%">
         <tr>
           <td style="vertical-align: top">
-            <div id="tab_" class="pane" style="width: 12em; white-space: nowrap">
+            <div id="tab_" class="pane" style="width: 12em; white-space: nowrap; overflow-x: hidden; overflow-y: auto;">
               <a id="tabbtn0" class="treebutton" onclick="ClickButton(0);"></a>
               <label id="tab0" class="button" style="width: 88%" onmousedown="ClickTree(this);">General</label>
               <br>
-              <div id="tab0_" style="margin-left: 1.667em">
+              <div id="tab0_" style="margin-left: 1.667em; display: none">
                 <label id="tab0_1" class="button" style="width: 100%" onmousedown="ClickTree(this);">Mouse</label>
                 <br>
               </div>
               <a id="tabbtn1" class="treebutton" onclick="ClickButton(1);"></a>
               <label id="tab1" class="button" style="width: 88%" onmousedown="ClickTree(this);">Add-ons</label>
               <br>
-              <div id="tab1_" style="margin-left: 1.667em">
+              <div id="tab1_" style="margin-left: 1.667em; display: none">
                 <label id="tab1_1" class="button" style="width: 100%" onmousedown="ClickTree(this);">Get Add-ons</label><br>
               </div>
               <a id="tabbtn2" class="treebutton" onclick="ClickButton(2);"></a>
               <label id="tab2" class="button" style="width: 88%" onmousedown="ClickButton(2, true);ClickTree(document.getElementById('tab2_0'), null, 'Menus');">Menus</label>
               <br>
-              <div id="tab2_" style="margin-left: 1.667em">
+              <div id="tab2_" style="margin-left: 1.667em; display: none">
               </div>
               <a id="tabbtn4" class="treebutton" onclick="ClickButton(4);"></a>
               <label id="tab4" class="button" style="width: 88%" onmousedown="ClickTree(this, null, 'Tree');">Tree</label>
               <br>
-              <div id="tab4_" style="margin-left: 1.667em">
+              <div id="tab4_" style="margin-left: 1.667em; display: none">
                 <label id="tab4_1" class="button" style="width: 100%" onmousedown="ClickTree(this, null, 'Tree');">Root</label>
                 <br>
               </div>
               <a id="tabbtn5" class="treebutton" onclick="ClickButton(5);"></a>
               <label id="tab5" class="button" style="width: 88%" onmousedown="ClickTree(this, null, 'View');">List</label>
               <br>
-              <div id="tab5_" style="margin-left: 1.667em">
+              <div id="tab5_" style="margin-left: 1.667em; display: none">
                 <label id="tab5_1" class="button" style="width: 100%" onmousedown="ClickTree(this, null, 'List');">Style</label>
+                <br>
+                <label id="tab5_2" class="button" style="width: 100%" onmousedown="ClickTree(this, null, 'List');">Filter</label>
                 <br>
               </div>
               <a id="tabbtn3" class="treebutton" onclick="ClickButton(3);"></a>
               <label id="tab3" class="button" style="width: 88%" onmousedown="ClickTree(this, null, 'Tab');">Tabs</label>
               <br>
-              <div id="tab3_" style="margin-left: 1.667em">
+              <div id="tab3_" style="margin-left: 1.667em; display: none">
                 <label id="tab3_1" class="button" style="width: 100%" onmousedown="ClickTree(this, null, 'Tab');">Advanced</label>
                 <br>
               </div>
@@ -561,6 +563,10 @@
             <input type="hidden" name="View_Options">
             <!--panel_end-->
 
+            <div class="panel" id="panel5_2">
+              <label>Hidden</label>
+              <textarea name="Conf_HiddenFilter" style="width: 100%; height: 90%; height: calc(100% - 2em)"></textarea>
+            </div>
             <!-- - - - - - - - - - -  -->
           </td>
         </tr>
