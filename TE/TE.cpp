@@ -1111,6 +1111,7 @@ TEmethod methodTV[] = {
 	{ 0x10000009, "Visible" },
 	{ 0x10000106, "Focus" },
 	{ 0x10000107, "HitTest" },
+	{ 0x10000206, "Refresh" },
 	{ 0x10000283, "GetItemRect" },
 	{ 0x10000300, "Notify" },
 	{ TE_OFFSET + SB_TreeWidth, "Width" },
@@ -6425,14 +6426,6 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							break;
 						case WM_COMMAND:
 							lResult = teDoCommand(pSB, hwnd, msg, wParam, lParam);
-							if (wParam == 0x7103) {//Refresh
-								if (ILIsEqual(pSB->m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
-//									pSB->BrowseObject(NULL, SBSP_RELATIVE | SBSP_SAMEBROWSER);
-									pSB->Refresh(FALSE);
-								} else {
-									pSB->m_bRefreshing = TRUE;
-								}
-							}
 							break;
 						case WM_COPYDATA:
 							if (g_pOnFunc[TE_OnSystemMessage]) {
@@ -13026,6 +13019,7 @@ HRESULT CteShellBrowser::OnBeforeNavigate(FolderItem *pPrevious, UINT wFlags)
 			m_pExplorerBrowser->GetOptions((EXPLORER_BROWSER_OPTIONS *)&m_param[SB_Options]);
 		}
 	}
+	m_bFiltered = FALSE;
 #ifdef _2000XP
 	m_bAutoVM = g_bUpperVista && (g_param[TE_Layout] & TE_AutoViewMode);
 #else
@@ -13253,12 +13247,8 @@ VOID CteShellBrowser::Refresh(BOOL bCheck)
 				BrowseObject(NULL, SBSP_RELATIVE | SBSP_SAMEBROWSER);
 				return;
 			}
-			IFolderView2 *pFV2;
-			if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
-				pFV2->SetText(FVST_EMPTYTEXT, HasFilter() ? L"" : NULL);
-				pFV2->Release();
-			}
 			m_bRefreshing = TRUE;
+			m_bFiltered = FALSE;
 			if (ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
 				m_bBeforeNavigate = TRUE;
 				RemoveAll();
@@ -15217,12 +15207,28 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			case DISPID_SELECTIONCHANGED://XP+
 				SetStatusTextSB(NULL);
 				return DoFunc(TE_OnSelectionChanged, this, S_OK);
+
+			case DISPID_CONTENTSCHANGED://XP-
+				IFolderView2 *pFV2;
+				if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
+					WCHAR pszFormat[MAX_STATUS];
+					pszFormat[0] = NULL;
+					LPWSTR lpBuf = pszFormat;
+					if (m_dwUnavailable) {
+						LoadString(g_hShell32, 4157, pszFormat, MAX_STATUS);
+					} else if (!m_bFiltered) {
+						lpBuf = NULL;
+					}
+					pFV2->SetText(FVST_EMPTYTEXT, lpBuf);
+					pFV2->Release();
+				}
+				break;
+
 			case DISPID_FILELISTENUMDONE://XP+
 				m_pTC->m_nRedraw &= ~TEREDRAW_NAVIGATE;
 				if (!m_bNavigateComplete && ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
 					return S_OK;
 				}
-				IFolderView2 *pFV2;
 				if (m_bRefreshing) {
 					m_bRefreshing = FALSE;
 					if (!m_bNavigateComplete && m_bsAltSortColumn) {
@@ -15233,18 +15239,6 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 				OnNavigationComplete2();
 				SetListColumnWidth();
-				if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
-					WCHAR pszFormat[MAX_STATUS];
-					pszFormat[0] = NULL;
-					LPWSTR lpBuf = pszFormat;
-					if (m_dwUnavailable) {
-						LoadString(g_hShell32, 4157, pszFormat, MAX_STATUS);
-					} else if (!m_bsFilter && !m_ppDispatch[SB_OnIncludeObject]) {
-						lpBuf = NULL;
-					}
-					pFV2->SetText(FVST_EMPTYTEXT, lpBuf);
-					pFV2->Release();
-				}
 				if (!m_hwndLV && m_pExplorerBrowser) {
 					SetRedraw(TRUE);
 					if (teGetWindow(m_pExplorerBrowser, &m_hwnd) == S_OK && m_hwnd) {
@@ -15844,6 +15838,7 @@ HRESULT CteShellBrowser::IncludeObject2(IShellFolder *pSF, LPCITEMIDLIST pidl)
 			WIN32_FIND_DATA wfd;
 			if SUCCEEDED(SHGetDataFromIDList(pSF, pidl, SHGDFIL_FINDDATA, &wfd, sizeof(WIN32_FIND_DATA))) {
 				if (wfd.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) {
+					m_bFiltered = TRUE;
 					return S_FALSE;
 				}
 			}
@@ -15883,6 +15878,9 @@ HRESULT CteShellBrowser::IncludeObject2(IShellFolder *pSF, LPCITEMIDLIST pidl)
 		}
 		teSysFreeString(&bs2);
 		teSysFreeString(&bs);
+	}
+	if (hr != S_OK) {
+		m_bFiltered = TRUE;
 	}
 	return hr;
 }
@@ -18952,7 +18950,7 @@ STDMETHODIMP CteTabCtrl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WOR
 				return S_OK;
 			//Move
 			case 7:
-				if (nArg >= 1 && !g_nLockUpdate) {
+				if (nArg >= 1) {
 					int nSrc, nDest;
 					nDest = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
 					CteShellBrowser *pSB;
@@ -21763,6 +21761,13 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 					teSetPtr(pVarResult, hItem);
 				}
 				return S_OK;
+
+			case 0x10000206://Refresh
+				Close();
+				m_bSetRoot = TRUE;
+				Show();
+				return S_OK;
+
 			//GetItemRect
 			case 0x10000283:
 				if (nArg >= 1) {

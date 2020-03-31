@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200326 ? te.Version : 20200326
+		return te.Version < 20200331 ? te.Version : 20200331
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -62,6 +62,7 @@ g_ = {
 	elAddons: {},
 	event: {},
 	tid_rf: [],
+	Autocomplete: {},
 	IEVer: document.documentMode || (document.body.style.maxHeight === void 0 ? 6 : 7)
 };
 
@@ -157,22 +158,7 @@ FolderMenu =
 	},
 
 	Enum: function (FolderItem) {
-		var Items;
-		if (FolderItem.Enum) {
-			Items = FolderItem.Enum(FolderItem);
-		}
-		if (!Items && FolderItem.IsFolder) {
-			var Folder = FolderItem.GetFolder;
-			if (Folder) {
-				Items = Folder.Items();
-				if ((te.Data.Conf_MenuHidden || api.GetKeyState(VK_SHIFT) < 0)) {
-					try {
-						Items.Filter(SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN, "*");
-					} catch (e) { }
-				}
-				Items = api.CreateObject("FolderItems", Items);
-			}
-		}
+		var Items = GetEnum(FolderItem);
 		if (Items) {
 			MainWindow.RunEvent1("AddItems", Items, FolderItem);
 			if (!Items.Count) {
@@ -3723,6 +3709,25 @@ function GetBGRA (c, a) {
 
 function ExtractFilter(s) {
 	return (ExtractMacro(te, s) || "").replace(/[\r\n;]+/g, ";").replace(/^;+|;+$|"/g, "");
+}
+
+function GetEnum(FolderItem)
+{
+	if (FolderItem.Enum) {
+		return FolderItem.Enum(FolderItem);
+	}
+	if (FolderItem.IsFolder) {
+		var Folder = FolderItem.GetFolder;
+		if (Folder) {
+			var Items = Folder.Items();
+			if (te.Data.Conf_MenuHidden || api.GetKeyState(VK_SHIFT) < 0) {
+				try {
+					Items.Filter(SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN, "*");
+				} catch (e) { }
+			}
+			return api.CreateObject("FolderItems", Items);
+		}
+	}
 }
 
 function LoadDBFromTSV(DB, fn)

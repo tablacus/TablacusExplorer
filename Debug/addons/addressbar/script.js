@@ -20,7 +20,7 @@ if (window.Addon == 1) {
 		nLevel: 0,
 		tid2: null,
 		bClose: false,
-		bXP: false,
+		XP: item.getAttribute("XP"),
 		nPos: 0,
 		nWidth: 0,
 		strName: "Address bar",
@@ -28,16 +28,20 @@ if (window.Addon == 1) {
 		KeyDown: function (o)
 		{
 			if (event.keyCode == VK_RETURN) {
-				var o = document.F.addressbar;
-				var p = GetPos(o);
-				var pt = api.Memory("POINT");
-				pt.x = screenLeft + p.x;
-				pt.y = screenTop + p.y + o.offsetHeight;
-				window.Input = o.value;
-				if (ExecMenu(te.Ctrl(CTRL_WB), "Alias", pt, 2) != S_OK) {
-					NavigateFV(te.Ctrl(CTRL_FV), o.value, GetNavigateFlags(), true);
-				}
-				return false;
+				(function (o, str) {
+					setTimeout(function () {
+						if (str == o.value) {
+							var p = GetPos(o);
+							var pt = api.Memory("POINT");
+							pt.x = screenLeft + p.x;
+							pt.y = screenTop + p.y + o.offsetHeight;
+							window.Input = str;
+							if (ExecMenu(te.Ctrl(CTRL_WB), "Alias", pt, 2) != S_OK) {
+								NavigateFV(te.Ctrl(CTRL_FV), str, GetNavigateFlags(), true);
+							}
+						}
+					}, 99);
+				})(o, o.value);
 			}
 			return true;
 		},
@@ -67,7 +71,7 @@ if (window.Addon == 1) {
 				var oPopup = document.getElementById("addressbarselect");
 				var width = oAddr.offsetWidth - oImg.offsetWidth + oPopup.offsetWidth - 2;
 				var height = oAddr.offsetHeight - (6 * screen.deviceYDPI / 96);
-				if (Addons.AddressBar.bXP) {
+				if (Addons.AddressBar.XP) {
 					oAddr.style.color = "WindowText";
 				} else {
 					o.style.width = "auto";
@@ -121,7 +125,7 @@ if (window.Addon == 1) {
 
 		Blur: function ()
 		{
-			if (!Addons.AddressBar.bXP) {
+			if (!Addons.AddressBar.XP) {
 				document.getElementById("breadcrumbbuttons").style.display = "inline-block";
 			}
 		},
@@ -350,7 +354,6 @@ if (window.Addon == 1) {
 		return document.F.addressbar.value;
 	}
 
-	Addons.AddressBar.bXP = item.getAttribute("XP");
 	//Menu
 	if (item.getAttribute("MenuExec")) {
 		Addons.AddressBar.nPos = api.LowPart(item.getAttribute("MenuPos"));
@@ -383,15 +386,19 @@ if (window.Addon == 1) {
 		s = "100%";
 	}
 	var nSize = api.GetSystemMetrics(SM_CYSMICON);
-	s = ['<div style="position: relative; overflow: hidden"><div id="breadcrumbbuttons" class="breadcrumb" style="position: absolute; left: 1px; top: 1px; padding-left: ', nSize + 4, 'px" onfocus="Addons.AddressBar.Focus()" onclick="return Addons.AddressBar.Exec();"></div><input id="addressbar" type="text" onkeydown="return Addons.AddressBar.KeyDown(this)" onfocus="Addons.AddressBar.Focus()" onblur="Addons.AddressBar.Blur()" onresize="Addons.AddressBar.Resize()" style="width: ', s.replace(/;"<>/g, ''), '; vertical-align: middle; padding-left: ', nSize + 4, 'px; padding-right: 16px" /><div class="breadcrumb"><div id="addressbarselect" class="button" style="position: absolute; top: 1px" onmouseover="MouseOver(this);" onmouseout="MouseOut()" onclick="Addons.AddressBar.Popup3(this)">', BUTTONS.dropdown,'</div></div>'];
+	s = ['<div style="position: relative; overflow: hidden"><div id="breadcrumbbuttons" class="breadcrumb" style="position: absolute; left: 1px; top: 1px; padding-left: ', nSize + 4, 'px" onfocus="Addons.AddressBar.Focus()" onclick="return Addons.AddressBar.Exec();"></div><input id="addressbar" type="text" autocomplate="on" list="AddressList" onkeydown="return Addons.AddressBar.KeyDown(this)" onfocus="Addons.AddressBar.Focus()" onblur="Addons.AddressBar.Blur()" onresize="Addons.AddressBar.Resize()" oninput="AdjustAutocomplete(this.value)" style="width: ', s.replace(/;"<>/g, ''), '; vertical-align: middle; padding-left: ', nSize + 4, 'px; padding-right: 16px"><div class="breadcrumb"><div id="addressbarselect" class="button" style="position: absolute; top: 1px" onmouseover="MouseOver(this);" onmouseout="MouseOut()" onclick="Addons.AddressBar.Popup3(this)">', BUTTONS.dropdown,'</div></div>'];
 
 	s.push('<img id="addr_img" src="folder:closed"');
 	s.push(' onclick="return Addons.AddressBar.Exec();"');
 	s.push(' oncontextmenu="Addons.AddressBar.Exec(); return false;"');
-	s.push(' style="position: absolute; left: 4px; top: 1.5pt; width: ', nSize, 'px; height: ', nSize, 'px; z-index: 3; border: 0px" /></div>');
+	s.push(' style="position: absolute; left: 4px; top: 1.5pt; width: ', nSize, 'px; height: ', nSize, 'px; z-index: 3; border: 0px"></div>');
 
 	SetAddon(Addon_Id, Default, s, "middle");
 	Addons.AddressBar.Resize();
 } else {
-	SetTabContents(0, "General", ['<table style="width: 100%"><tr><td><input type="checkbox" id="XP" /><label for="XP">XP ', GetText("Style").toLowerCase(), '</label></td></tr><tr><td><label>', GetText("Width"), '</label></td></tr><tr><td><input type="text" name="Width" size="10" /></td><td><input type="button" value="', GetText("Auto"), '" onclick="document.F.Width.value=\'\'" /></td></tr></table>']);
+	var ado = OpenAdodbFromTextFile("addons\\" + Addon_Id + "\\options.html");
+	if (ado) {
+		SetTabContents(0, "General", ado.ReadText(adReadAll));
+		ado.Close();
+	}
 }

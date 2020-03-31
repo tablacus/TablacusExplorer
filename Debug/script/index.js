@@ -426,12 +426,16 @@ LoadLang = function (bAppend) {
 }
 
 Refresh = function (Ctrl, pt) {
+	return RunEvent4("Refresh", Ctrl, pt);
+}
+
+AddEvent("Refresh", function (Ctrl, pt) {
 	var FV = GetFolderView(Ctrl, pt);
 	if (FV) {
 		FV.Focus();
 		FV.Refresh();
 	}
-}
+});
 
 AddFavorite = function (FolderItem) {
 	var xml = te.Data.xmlMenus;
@@ -1103,6 +1107,10 @@ te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam) {
 					}
 				}
 				break;
+		}
+		if (wParam === 0x7103) {
+			Refresh();
+			return S_OK;
 		}
 	}
 	var hr = RunEvent3("Command", Ctrl, hwnd, msg, wParam, lParam);
@@ -2831,10 +2839,8 @@ g_basic =
 					var FV = GetFolderView(Ctrl, pt);
 					FV && FV.Navigate(null, SBSP_NAVIGATEFORWARD);
 				},
-				Refresh: function (Ctrl, pt) {
-					var FV = GetFolderView(Ctrl, pt);
-					FV && FV.Refresh();
-				},
+				Refresh: Refresh,
+
 				"Show frames": function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt);
 					if (FV) {
@@ -3462,6 +3468,35 @@ function IsHeader(Ctrl, pt, hwnd, strClass) {
 	var pt2 = pt.Clone();
 	api.ScreenToClient(hwnd, pt2);
 	return pt2.y < screen.logicalYDPI / 4;
+}
+
+function AdjustAutocomplete(path)
+{
+	if (te.Data.Conf_NoAutocomplete) {
+		return;
+	}
+	var pid = api.ILCreateFromPath(path);
+	if (!pid.IsFolder && !pid.Enum) {
+		pid = api.ILCreateFromPath(fso.GetParentFolderName(path));
+	}
+	if (api.ILIsEqual(pid, g_.Autocomplete.pid)) {
+		return;
+	}
+	Items = GetEnum(pid);
+	if (Items) {
+		g_.Autocomplete.pid = pid;
+		var dl = document.getElementById("AddressList");
+		while (dl.lastChild) {
+			dl.removeChild(dl.lastChild);
+		}
+		for (var i = 0; i < Items.Count; i++) {
+			if (Items.Item(i).IsFolder) {
+				var el = document.createElement("option");
+				el.value = Items.Item(i).Path;
+				dl.appendChild(el);
+			}
+		}
+	}
 }
 
 //Init

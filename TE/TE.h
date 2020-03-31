@@ -1232,6 +1232,7 @@ public:
 	BOOL		m_bBeforeNavigate;
 	BOOL		m_bRedraw;
 	BOOL		m_bViewCreated;
+	BOOL		m_bFiltered;
 #ifdef _2000XP
 	TEColumn	*m_pColumns;
 	UINT		m_nColumns;

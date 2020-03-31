@@ -65,8 +65,23 @@ if (window.Addon == 1) {
 				}
 			}
 			return false;
+		},
+
+		Refresh: function (Ctrl, pt) {
+			var FV = GetFolderView(Ctrl, pt);
+			FV.TreeView.Refresh();
+			Addons.TreeView.Expand(FV);
 		}
 	};
+
+	if (api.LowPart(item.getAttribute("Refresh"))) {
+		AddEvent("Refresh", Addons.TreeView.Refresh);
+	} else {
+		SetKeyExec("Tree", "$3f,Ctrl+R", function (Ctrl, pt) {
+			Addons.TreeView.Refresh(Ctrl, pt);
+			return S_OK;
+		}, "Func", true);
+	}
 
 	if (item.getAttribute("List")) {
 		AddEvent("ChangeView", Addons.TreeView.Expand);
@@ -158,5 +173,9 @@ if (window.Addon == 1) {
 	}
 } else {
 	EnableInner();
-	SetTabContents(0, "General", '<input type="checkbox" id="Depth" value="1"><label for="Depth">Expanded</label><br><input type="checkbox" id="List" value="1"><label for="List">List</label>');
+	var ado = OpenAdodbFromTextFile("addons\\" + Addon_Id + "\\options.html");
+	if (ado) {
+		SetTabContents(0, "General", ado.ReadText(adReadAll));
+		ado.Close();
+	}
 }

@@ -53,18 +53,16 @@ if (window.Addon == 1) {
 							this.SetActiveColor(Id);
 						}
 					} catch (e) { }
-					for (var i = this.nCount[Id]; i--;) {
-						this.Style(TC, i);
-					}
-					if (this.Drag.length) {
-						if (api.GetKeyState(VK_LBUTTON) < 0) {
+					if (api.GetKeyState(VK_LBUTTON) < 0) {
+						if (this.Drag.length) {
 							this.Cursor2("move");
-						} else {
-							this.Drag = [];
-							this.Cursor("default");
 						}
 					} else {
+						this.Drag = [];
 						this.Cursor("default");
+						for (var i = this.nCount[Id]; i--;) {
+							this.Style(TC, i);
+						}
 					}
 				}
 			}
@@ -125,9 +123,9 @@ if (window.Addon == 1) {
 				var s = ['<table style="width: 100%"><tr style="width: 100%">'];
 				try {
 					var r0 = Math.round(13 * screen.deviceYDPI / 96);
-					var w = FV.Data.Lock || this.opt.Close ? -r0 : 0;
+					var w = (FV.Data.Lock || this.opt.Close) ? -r0 : 0;
 					if (FV.Data.Lock && !this.opt.NoLock) {
-						s.push('<td style="padding-right: 2px; vertical-align: middle; width: ', r0, 'px"><img src="', this.ImgLock, '" style="width: ', r0, 'px"></td>');
+						s.push('<td style="padding-right: 2px; vertical-align: middle; width: ', r0, 'px"><img draggable="false" src="', this.ImgLock, '" style="width: ', r0, 'px"></td>');
 						w -= 2;
 					}
 					if (this.opt.Icon && (img = GetIconImage(FV, api.GetSysColor(COLOR_BTNFACE)))) {
@@ -138,7 +136,7 @@ if (window.Addon == 1) {
 								s.push('<span class="drive">', res[1], '</span>');
 							}
 						}
-						s.push('<img src="', img, '" style="width: 1pc; height: 1pc"/></td>');
+						s.push('<img draggable="false" src="', img, '" style="width: 1pc; height: 1pc"></td>');
 						w -= 20;
 					} else if (this.opt.Drive) {
 						s.push('<td style="padding-right: 3px; vertical-align: middle; width: 12px">');
@@ -177,7 +175,7 @@ if (window.Addon == 1) {
 				var style = o.style;
 				var cl = RunEvent4("GetTabColor", FV);
 				if (cl) {
-					if (document.documentMode >= 10) {
+					if (g_.IEVer >= 10) {
 						style.background = "none";
 					} else {
 						style.filter = "none";
@@ -221,23 +219,26 @@ if (window.Addon == 1) {
 					if (api.GetKeyState(VK_LBUTTON) < 0) {
 						var o = document.getElementById('tabplus_' + Id + '_' + n + 'x');
 						if (o && HitTest(o, this.pt)) {
-							TC.Item(n).Close();
 						} else {
 							TC.SelectedIndex = n;
+							var o = document.getElementById("tabplus_" + TC.Id + "_" + n);
+							o.className = "activetab";
 						}
-						(function (Id, n) {
-						this.tidDrag = setTimeout(function () {
-							delete Addons.TabPlus.tidDrag;
-							if (api.GetKeyState(VK_LBUTTON) < 0) {
-								var pt = api.Memory("POINT");
-								api.GetCursorPos(pt);
-								if (n == Addons.TabPlus.FromPt(Id, pt)) {
-									Addons.TabPlus.Cursor2("move");
-									Addons.TabPlus.Drag = Addons.TabPlus.Click.slice(0);
-								}
-							}
-						}, 99);
-						})(Id, n);
+						if (g_.IEVer < 10) {
+							(function (Id, n) {
+								this.tidDrag = setTimeout(function () {
+									delete Addons.TabPlus.tidDrag;
+									if (api.GetKeyState(VK_LBUTTON) < 0) {
+										var pt = api.Memory("POINT");
+										api.GetCursorPos(pt);
+										if (n == Addons.TabPlus.FromPt(Id, pt)) {
+											Addons.TabPlus.Cursor2("move");
+											Addons.TabPlus.Drag = Addons.TabPlus.Click.slice(0);
+										}
+									}
+								}, 99);
+							})(Id, n);
+						}
 						return false;
 					}
 				}
@@ -250,16 +251,27 @@ if (window.Addon == 1) {
 			if (TC) {
 				var pt = api.Memory("POINT");
 				api.GetCursorPos(pt);
-				if (this.Button[Id] && /3/.test(this.Button[Id])) {
+				if (/3/.test(this.Button[Id])) {
 					Addons.TabPlus.GestureExec(TC, Id, this.Button[Id], pt);
 					return false;
 				}
 				var nDrop = this.FromPt(Id, pt);
 				if (nDrop < 0) {
 					nDrop = TC.Count;
+				} else if (/1/.test(this.Button[Id]) && !IsDrag(pt, this.pt)) {
+					var o = document.getElementById('tabplus_' + Id + '_' + nDrop + 'x');
+					if (o && HitTest(o, this.pt)) {
+						TC.Item(nDrop).Close();
+					} else {
+						setTimeout(function () {
+							Addons.TabPlus.Arrange(Id);
+						}, wsh.RegRead("HKCU\\Control Panel\\Mouse\\DoubleClickSpeed"));
+					}
 				}
 				if (this.Drag.length && (this.Drag[0] != Id || this.Drag[1] != nDrop)) {
-					te.Ctrl(CTRL_TC, this.Drag[0]).Move(this.Drag[1], nDrop, TC);
+					if (g_.IEVer < 10) {
+						te.Ctrl(CTRL_TC, this.Drag[0]).Move(this.Drag[1], nDrop, TC);
+					}
 					this.Drop = [];
 				} else {
 					setTimeout(function () {
@@ -276,7 +288,7 @@ if (window.Addon == 1) {
 		},
 
 		Move: function (o, Id) {
-			if (this.Drag.length) {
+			if (this.Drag.length && g_.IEVer < 10) {
 				if (api.GetKeyState(VK_LBUTTON) < 0) {
 					this.Drop = [Id, o.id.replace(/^.*_\d+_/, '') - 0];
 				} else {
@@ -287,11 +299,13 @@ if (window.Addon == 1) {
 		},
 
 		Cursor: function (s) {
-			clearTimeout(Addons.TabPlus.tidCursor);
-			var cTC = te.Ctrls(CTRL_TC);
-			for (var j in cTC) {
-				if (cTC[j].Visible) {
-					SetCursor(document.getElementById('tabplus_' + cTC[j].Id), s);
+			if (g_.IEVer < 10) {
+				clearTimeout(Addons.TabPlus.tidCursor);
+				var cTC = te.Ctrls(CTRL_TC);
+				for (var j in cTC) {
+					if (cTC[j].Visible) {
+						SetCursor(document.getElementById('tabplus_' + cTC[j].Id), s);
+					}
 				}
 			}
 		},
@@ -333,7 +347,7 @@ if (window.Addon == 1) {
 		Over: function (Id) {
 			var pt = api.Memory("POINT");
 			api.GetCursorPos(pt);
-			if (!IsDrag(pt, g_ptDrag)) {
+			if (!IsDrag(pt, g_ptDrag) && !this.Drag5) {
 				var nIndex = this.FromPt(Id, pt);
 				if (nIndex >= 0) {
 					te.Ctrl(CTRL_TC, Id).SelectedIndex = nIndex;
@@ -366,7 +380,6 @@ if (window.Addon == 1) {
 			}
 			this.Drag5 = null;
 			this.Drag = [];
-			this.Cursor("default");
 		},
 
 		Over5: function (o) {
@@ -635,7 +648,7 @@ if (window.Addon == 1) {
 	Addons.TabPlus.ImgLock = MakeImgSrc(item.getAttribute("IconLock") || "bitmap:ieframe.dll,545,13,2", 0, true, r0);
 	var s = item.getAttribute("IconClose");
 	if (s) {
-		Addons.TabPlus.ImgClose = '<img src="' + MakeImgSrc(s, 0, true, r0) + '" style="width: ';
+		Addons.TabPlus.ImgClose = '<img draggable="false" src="' + MakeImgSrc(s, 0, true, r0) + '" style="width: ';
 		Addons.TabPlus.ImgClose2 = '';
 	} else {
 		Addons.TabPlus.ImgClose = '<span style="font-family: marlett; font-size: ';
