@@ -53,16 +53,24 @@ if (window.Addon == 1) {
 							this.SetActiveColor(Id);
 						}
 					} catch (e) { }
-					if (api.GetKeyState(VK_LBUTTON) < 0) {
-						if (this.Drag.length) {
-							this.Cursor2("move");
+					if (g_.IEVer < 10) {
+						var n = (this.dtDown || 0) + 90000 - new Date().getTime();
+						if (n >= 0) {
+							var pt = api.Memory("POINT");
+							api.GetCursorPos(pt);
+							n = this.FromPt(Id, this.pt);
 						}
-					} else {
-						this.Drag = [];
-						this.Cursor("default");
-						for (var i = this.nCount[Id]; i--;) {
-							this.Style(TC, i);
+						if (n >= 0) {
+							if (this.Drag.length) {
+								this.Cursor2("move");
+							}
+						} else {
+							this.Drag = [];
+							this.Cursor("default");
 						}
+					}
+					for (var i = this.nCount[Id]; i--;) {
+						this.Style(TC, i);
 					}
 				}
 			}
@@ -76,7 +84,7 @@ if (window.Addon == 1) {
 			}
 		},
 
-		SetActiveColor: function (Id, s) {
+		SetActiveColor: function (Id) {
 			this.SetActiveColor2(this.nFocused, "");
 			if (this.opt.Active) {
 				this.SetActiveColor2(Id, "ActiveCaption");
@@ -116,6 +124,15 @@ if (window.Addon == 1) {
 			var FV = TC.Item(i);
 			var o = document.getElementById("tabplus_" + TC.Id + "_" + i);
 			if (FV && o) {
+				if (g_.IEVer >= 10) {
+					if ((this.dtDown || 0) + 90000 - new Date().getTime() > 0) {
+						var pt = api.Memory("POINT");
+						api.GetCursorPos(pt);
+						if (i == this.FromPt(TC.Id, this.pt)) {
+							return;
+						}
+					}
+				}
 				var path = api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
 				if (this.opt.Tooltips) {
 					o.title = path;
@@ -208,6 +225,7 @@ if (window.Addon == 1) {
 				clearTimeout(this.tidDrag);
 				delete this.tidDrag;
 			}
+			this.dtDown = new Date().getTime();
 			var TC = te.Ctrl(CTRL_TC, Id);
 			if (TC) {
 				api.GetCursorPos(this.pt);
@@ -247,6 +265,7 @@ if (window.Addon == 1) {
 		},
 
 		Up: function (Id) {
+			delete this.dtDown;
 			var TC = te.Ctrl(CTRL_TC, Id);
 			if (TC) {
 				var pt = api.Memory("POINT");
@@ -361,6 +380,7 @@ if (window.Addon == 1) {
 				event.dataTransfer.effectAllowed = 'move';
 				event.dataTransfer.setData("text", o.title);
 				this.Drag5 = o.id;
+				delete this.dtDown;
 				return true;
 			}
 			return false;

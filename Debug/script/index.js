@@ -3470,33 +3470,46 @@ function IsHeader(Ctrl, pt, hwnd, strClass) {
 	return pt2.y < screen.logicalYDPI / 4;
 }
 
+function AutocompleteThread() {
+	var pid = api.ILCreateFromPath(path);
+	if (!pid.IsFolder) {
+		pid = api.ILCreateFromPath(api.CreateObject("fso").GetParentFolderName(path));
+	}
+	if (pid.IsFolder && pid.Path != Autocomplete.Path) {
+		Autocomplete.Path = pid.Path;
+		var Folder = pid.GetFolder;
+		if (Folder) {
+			var Items = Folder.Items();
+			try {
+				Items.Filter(fflag, "*");
+			} catch (e) { }
+			var dl = document.getElementById("AddressList");
+			while (dl.lastChild) {
+				dl.removeChild(dl.lastChild);
+			}
+			for (var i = 0; i < Items.Count && Autocomplete.Path == pid.Path; i++) {
+				if (Items.Item(i).IsFolder) {
+					var el = document.createElement("option");
+					el.value = Items.Item(i).Path;
+					dl.appendChild(el);
+				}
+			}
+		}
+	}
+}
+
 function AdjustAutocomplete(path)
 {
 	if (te.Data.Conf_NoAutocomplete) {
 		return;
 	}
-	var pid = api.ILCreateFromPath(path);
-	if (!pid.IsFolder && !pid.Enum) {
-		pid = api.ILCreateFromPath(fso.GetParentFolderName(path));
-	}
-	if (api.ILIsEqual(pid, g_.Autocomplete.pid)) {
-		return;
-	}
-	Items = GetEnum(pid);
-	if (Items) {
-		g_.Autocomplete.pid = pid;
-		var dl = document.getElementById("AddressList");
-		while (dl.lastChild) {
-			dl.removeChild(dl.lastChild);
-		}
-		for (var i = 0; i < Items.Count; i++) {
-			if (Items.Item(i).IsFolder) {
-				var el = document.createElement("option");
-				el.value = Items.Item(i).Path;
-				dl.appendChild(el);
-			}
-		}
-	}
+	var o = api.CreateObject("Object");
+	o.Data = api.CreateObject("Object");
+	o.Data.path = path;
+	o.Data.Autocomplete = g_.Autocomplete;
+	o.Data.document = document;
+	o.Data.fflag = SHCONTF_FOLDERS | ((te.Ctrl(CTRL_FV).ViewFlags & CDB2GVF_SHOWALLFILES) ? SHCONTF_INCLUDEHIDDEN : 0);
+	api.ExecScript(AutocompleteThread.toString().replace(/^[^{]+{|}$/g, ""), "JScript", o, true);
 }
 
 //Init

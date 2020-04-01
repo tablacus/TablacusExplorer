@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200331 ? te.Version : 20200331
+		return te.Version < 20200401 ? te.Version : 20200401
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -158,7 +158,7 @@ FolderMenu =
 	},
 
 	Enum: function (FolderItem) {
-		var Items = GetEnum(FolderItem);
+		var Items = GetEnum(FolderItem, te.Data.Conf_MenuHidden);
 		if (Items) {
 			MainWindow.RunEvent1("AddItems", Items, FolderItem);
 			if (!Items.Count) {
@@ -384,9 +384,13 @@ AddonDisabled = function (Id) {
 	SaveConfig();
 	RunEvent1("AddonDisabled", Id);
 	if (eventTE.addondisabledex) {
-		var fn = eventTE.addondisabledex[Id.toLowerCase()];
+		Id = Id.toLowerCase();
+		if (Id == "tabgroups") {
+			return;
+		}
+		var fn = eventTE.addondisabledex[Id];
 		if (fn) {
-			delete eventTE.addondisabledex[Id.toLowerCase()];
+			delete eventTE.addondisabledex[Id];
 			AddEventEx(window, "beforeunload", fn);
 		}
 	}
@@ -1012,7 +1016,7 @@ NavigateFV = function (FV, Path, wFlags, bInputed) {
 		FV = TC.Selected;
 	}
 	if ("string" === typeof Path) {
-		Path = ExtractMacro(FV, Path);
+		Path = ExtractMacro(FV, Path).replace(/^\s+|\s*$/g, "");
 		if (/\?|\*/.test(Path)) {
 			if (!/\\\\\?\\|:/.test(Path)) {
 				FV.FilterView = Path;
@@ -3711,7 +3715,7 @@ function ExtractFilter(s) {
 	return (ExtractMacro(te, s) || "").replace(/[\r\n;]+/g, ";").replace(/^;+|;+$|"/g, "");
 }
 
-function GetEnum(FolderItem)
+function GetEnum(FolderItem, bShowHidden)
 {
 	if (FolderItem.Enum) {
 		return FolderItem.Enum(FolderItem);
@@ -3720,7 +3724,7 @@ function GetEnum(FolderItem)
 		var Folder = FolderItem.GetFolder;
 		if (Folder) {
 			var Items = Folder.Items();
-			if (te.Data.Conf_MenuHidden || api.GetKeyState(VK_SHIFT) < 0) {
+			if (bShowHidden || api.GetKeyState(VK_SHIFT) < 0) {
 				try {
 					Items.Filter(SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN, "*");
 				} catch (e) { }
