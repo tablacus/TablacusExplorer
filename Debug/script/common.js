@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200401 ? te.Version : 20200401
+		return te.Version < 20200401 ? te.Version : 20200403
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -774,6 +774,7 @@ LoadXml = function (filename, nGroup) {
 						Lock(TC, i2, false);
 					}
 					ChangeTabName(FV);
+					MainWindow.RunEvent1("LoadFV", FV, tab);
 				}
 				TC.SelectedIndex = item.getAttribute("SelectedIndex");
 				TC.Visible = api.LowPart(item.getAttribute("Visible"));
@@ -781,6 +782,7 @@ LoadXml = function (filename, nGroup) {
 					g_.focused = TC.Selected;
 					g_.fTCs++;
 				}
+				MainWindow.RunEvent1("LoadTC", TC, item);
 				break;
 		}
 	}
@@ -804,7 +806,6 @@ SaveXmlTC = function (Ctrl, xml, nGroup) {
 	item.setAttribute("SelectedIndex", Ctrl.SelectedIndex);
 	item.setAttribute("Visible", api.LowPart(Ctrl.Visible));
 	item.setAttribute("Group", api.LowPart(nGroup || Ctrl.Data.Group));
-	MainWindow.RunEvent1("SaveTab", xml, Ctrl);
 
 	var bEmpty = true;
 	var nCount2 = Ctrl.Count;
@@ -854,10 +855,12 @@ SaveXmlTC = function (Ctrl, xml, nGroup) {
 					}
 				}
 			}
+			MainWindow.RunEvent1("SaveFV", FV, item2);
 			item.appendChild(item2);
 			bEmpty = false;
 		}
 	}
+	MainWindow.RunEvent1("SaveTC", Ctrl, item);
 	xml.documentElement.appendChild(item);
 }
 
