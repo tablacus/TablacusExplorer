@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200401 ? te.Version : 20200403
+		return te.Version < 20200401 ? te.Version : 20200404
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -741,6 +741,7 @@ LoadXml = function (filename, nGroup) {
 	} catch (e) {
 		return;
 	}
+	g_.LockUpdate = true;
 	te.LockUpdate();
 	if (!nGroup) {
 		var cTC = te.Ctrls(CTRL_TC);
@@ -790,6 +791,7 @@ LoadXml = function (filename, nGroup) {
 		MainWindow.RunEvent1("LoadWindow", xml);
 	}
 	te.UnlockUpdate();
+	g_.LockUpdate = false;
 }
 
 SaveXmlTC = function (Ctrl, xml, nGroup) {
