@@ -2833,11 +2833,29 @@ g_basic =
 				},
 				Back: function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt);
-					FV && FV.Navigate(null, SBSP_NAVIGATEBACK);
+					if (FV) {
+						if (FV.Data.Lock || api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_CONTROL) < 0) {
+							var Log = FV.History;
+							if (Log && Log.Index < Log.Count - 1) {
+								FV.Navigate(Log[Log.Index + 1], SBSP_NEWBROWSER);
+							}
+						} else {
+							FV.Navigate(null, SBSP_NAVIGATEBACK);
+						}
+					}
 				},
 				Forward: function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt);
-					FV && FV.Navigate(null, SBSP_NAVIGATEFORWARD);
+					if (FV) {
+						if (FV.Data.Lock || api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_CONTROL) < 0) {
+							var Log = FV.History;
+							if (Log && Log.Index > 0) {
+								FV.Navigate(Log[Log.Index - 1], SBSP_NEWBROWSER);
+							}
+						} else {
+							FV && FV.Navigate(null, SBSP_NAVIGATEFORWARD);
+						}
+					}
 				},
 				Refresh: Refresh,
 

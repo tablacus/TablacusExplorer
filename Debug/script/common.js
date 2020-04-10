@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200401 ? te.Version : 20200406
+		return te.Version < 20200401 ? te.Version : 20200410
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -63,7 +63,7 @@ g_ = {
 	event: {},
 	tid_rf: [],
 	Autocomplete: {},
-	IEVer: window.document ? (document.documentMode || (document.body.style.maxHeight === void 0 ? 6 : 7)) : 0
+	IEVer: window.document && (document.documentMode || (document.body.style.maxHeight === void 0 ? 6 : 7))
 };
 
 FolderMenu =
@@ -2697,7 +2697,7 @@ ShowDialogEx = function (mode, w, h, ele) {
 ShowNew = function (Ctrl, pt, Mode) {
 	var FV = GetFolderView(Ctrl, pt);
 	var path = api.GetDisplayNameOf(FV, SHGDN_FORPARSING | SHGDN_ORIGINAL);
-	if (/^[A-Z]:\\|^\\\\\w/i.test(path)) {
+	if (/^[A-Z]:\\|^\\\\/i.test(path)) {
 		ShowDialog(fso.BuildPath(te.Data.Installed, "script\\dialog.html"), { MainWindow: MainWindow, Query: "new", Mode: Mode, path: path, FV: FV, Modal: false, width: 480, height: 120 });
 	}
 }

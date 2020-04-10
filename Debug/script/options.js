@@ -2,13 +2,13 @@
 
 nTabMax = 0;
 TabIndex = -1;
-g_x = {Menu: null, Addons: null};
-g_Chg = {Menus: false, Addons: false, Tab: false, Tree: false, View: false, Data: null};
+g_x = { Menu: null, Addons: null };
+g_Chg = { Menus: false, Addons: false, Tab: false, Tree: false, View: false, Data: null };
 g_arMenuTypes = ["Default", "Context", "Background", "Tabs", "Tree", "File", "Edit", "View", "Favorites", "Tools", "Help", "Systray", "System", "Alias"];
 g_MenuType = "";
 g_dlgAddons = null;
 g_bDrag = false;
-g_pt = {x: 0, y: 0};
+g_pt = { x: 0, y: 0 };
 g_Gesture = null;
 g_tidResize = null;
 g_drag5 = false;
@@ -34,30 +34,25 @@ xmlAddons = null;
 
 MainWindow.RunEvent1("BrowserCreated", document);
 
-function SetDefaultLangID()
-{
+function SetDefaultLangID() {
 	SetDefault(document.F.Conf_Lang, GetLangId(true));
 }
 
-function SetDefault(o, v)
-{
-	setTimeout(function ()
-	{
+function SetDefault(o, v) {
+	setTimeout(function () {
 		if (confirmOk()) {
 			SetValue(o, v);
 		}
 	}, 99);
 }
 
-function OpenGroup(id)
-{
+function OpenGroup(id) {
 	var o = document.getElementById(id);
 	o.style.display = /block/i.test(o.style.display) ? "none" : "block";
 }
 
-function LoadChecked(form)
-{
-	for(var i = 0; i < form.length; i++) {
+function LoadChecked(form) {
+	for (var i = 0; i < form.length; i++) {
 		var o = form[i];
 		var ar = o.id.split("=");
 		if (ar.length > 1 && form[ar[0]].value == (api.sscanf(ar[1], "0x%x") || ar[1])) {
@@ -70,8 +65,7 @@ function LoadChecked(form)
 	}
 }
 
-function ResetForm()
-{
+function ResetForm() {
 	var TV = te.Ctrl(CTRL_TV);
 	if (TV) {
 		document.F.Tree_Align.value = TV.Align;
@@ -104,7 +98,7 @@ function ResetForm()
 		document.F.View_ViewFlags.value = FV.ViewFlags;
 	}
 	document.F.Conf_SizeFormat.value = te.Data.Conf_SizeFormat || 0;
-	for(i = 0; i < document.F.length; i++) {
+	for (i = 0; i < document.F.length; i++) {
 		o = document.F[i];
 		if (String(o.type).toLowerCase() == 'checkbox') {
 			if (!/^!?Conf_/.test(o.id)) {
@@ -119,8 +113,7 @@ function ResetForm()
 	document.getElementById("_EDIT").checked = true;
 }
 
-function ResizeTabPanel()
-{
+function ResizeTabPanel() {
 	var h = 4.8;
 	if (g_.Inline && !/\w/.test(document.getElementById('toolbar').innerHTML)) {
 		h -= 2.4;
@@ -131,8 +124,7 @@ function ResizeTabPanel()
 	CalcElementHeight(g_ovPanel, h);
 }
 
-function ClickTab(o, nMode)
-{
+function ClickTab(o, nMode) {
 	nMode = api.LowPart(nMode);
 	if (o && o.id) {
 		nTabIndex = o.id.replace(new RegExp('tab', 'g'), '') - 0;
@@ -144,7 +136,7 @@ function ClickTab(o, nMode)
 		if (i == nTabIndex) {
 			try {
 				ovTab.focus();
-			} catch (e) {}
+			} catch (e) { }
 			ovTab.className = 'activetab';
 			ovTab.style.zIndex = 11;
 			ovPanel.style.display = 'block';
@@ -163,8 +155,7 @@ function ClickTab(o, nMode)
 	nTabMax = i;
 }
 
-function ClickTree(o, nMode, strChg, bForce)
-{
+function ClickTree(o, nMode, strChg, bForce) {
 	if (strChg) {
 		g_Chg[strChg] = true;
 	}
@@ -177,13 +168,15 @@ function ClickTree(o, nMode, strChg, bForce)
 			ClickButton(res[1], true);
 			if (res[3]) {
 				if (res[1] == 1) {
-					(function (Id) { setTimeout(function () {
-						if (g_.elAddons[Id]) {
-							if (!g_.elAddons[Id].contentWindow || !g_.elAddons[Id].contentWindow.document.body.innerHTML) {
-								AddonOptions(Id, null, null, true);
+					(function (Id) {
+						setTimeout(function () {
+							if (g_.elAddons[Id]) {
+								if (!g_.elAddons[Id].contentWindow || !g_.elAddons[Id].contentWindow.document.body.innerHTML) {
+									AddonOptions(Id, null, null, true);
+								}
 							}
-						}
-					}, 999);}) (res[3]);
+						}, 999);
+					})(res[3]);
 				}
 			}
 			ShowButtons(/^1$|^1_1$/.test(newTab), res[1] == 2, newTab);
@@ -242,8 +235,7 @@ function ClickTree(o, nMode, strChg, bForce)
 	}
 }
 
-function ClickButton(n, f)
-{
+function ClickButton(n, f) {
 	var o = document.getElementById("tabbtn" + n);
 	var op = document.getElementById("tab" + n + "_");
 	if (f || (f === void 0 && /none/i.test(op.style.display))) {
@@ -255,8 +247,7 @@ function ClickButton(n, f)
 	}
 }
 
-function SetRadio(o)
-{
+function SetRadio(o) {
 	var ar = o.id.split("=");
 	o.form[ar[0]].value = ar[1];
 	var res = /^(Tab|Tree|View|Conf)/.exec(ar[0]);
@@ -266,8 +257,7 @@ function SetRadio(o)
 	}
 }
 
-function SetCheckbox(o)
-{
+function SetCheckbox(o) {
 	var ar = o.id.split(":");
 	if (o.checked) {
 		o.form[ar[0]].value |= (api.sscanf(ar[1], "0x%x") || ar[1]);
@@ -281,25 +271,21 @@ function SetCheckbox(o)
 	}
 }
 
-function SetValue(n, v)
-{
+function SetValue(n, v) {
 	if (v.value != '!') {
 		n.value = v.value.replace(/\\n/, "\n");
 	}
 }
 
-function AddValue(name, i, min, max)
-{
+function AddValue(name, i, min, max) {
 	var o = document.F[name];
 	i += api.LowPart(o.value);
 	i = (i < min) ? min : i;
 	o.value = (i < max) ? i : max;
 }
 
-function ChooseColor1(o)
-{
-	setTimeout(function ()
-	{
+function ChooseColor1(o) {
+	setTimeout(function () {
 		var o2 = o.form[o.id.replace("Color_", "")];
 		var c = ChooseColor(o2.value || o2.placeholder);
 		if (isFinite(c)) {
@@ -309,10 +295,8 @@ function ChooseColor1(o)
 	}, 99);
 }
 
-function ChooseColor2(o)
-{
-	setTimeout(function ()
-	{
+function ChooseColor2(o) {
+	setTimeout(function () {
 		var o2 = o.form[o.id.replace("Color_", "")];
 		var c = ChooseColor(GetWinColor(o2.value || o2.placeholder));
 		if (isFinite(c)) {
@@ -323,10 +307,8 @@ function ChooseColor2(o)
 	}, 99);
 }
 
-function ChooseFolder1(o)
-{
-	setTimeout(function ()
-	{
+function ChooseFolder1(o) {
+	setTimeout(function () {
 		var r = BrowseForFolder(o.value);
 		if (r) {
 			o.value = r;
@@ -334,8 +316,7 @@ function ChooseFolder1(o)
 	}, 99);
 }
 
-function AddTabControl()
-{
+function AddTabControl() {
 	if (document.F.Tab_Width.value == 0) {
 		MessageBox("Please enter the width.", TITLE, MB_ICONEXCLAMATION);
 		return;
@@ -348,16 +329,14 @@ function AddTabControl()
 	TC.Selected.Navigate2("C:\\", SBSP_NEWBROWSER, document.F.View_Type.value, document.F.View_ViewMode.value, document.F.View_fFlags.value, 0, document.F.View_Options.value, document.F.View_ViewFlags.value);
 }
 
-function DelTabControl()
-{
+function DelTabControl() {
 	var TC = te.Ctrl(CTRL_TC);
 	if (TC) {
 		TC.Close();
 	}
 }
 
-function SetTabControls()
-{
+function SetTabControls() {
 	if (g_Chg.Tab) {
 		if (document.getElementById("Conf_TabDefault").checked) {
 			var cTC = te.Ctrls(CTRL_TC);
@@ -373,8 +352,7 @@ function SetTabControls()
 	}
 }
 
-function SetFolderViews()
-{
+function SetFolderViews() {
 	if (g_Chg.View) {
 		var o = te.Object();
 		o.Layout = te.Data.Conf_Layout;
@@ -390,8 +368,7 @@ function SetFolderViews()
 	}
 }
 
-function SetTreeControls()
-{
+function SetTreeControls() {
 	if (g_Chg.Tree) {
 		var o = te.Object();
 		o.All = document.getElementById("Conf_TreeDefault").checked;
@@ -405,8 +382,7 @@ function SetTreeControls()
 	}
 }
 
-function SetTabControl(TC)
-{
+function SetTabControl(TC) {
 	if (TC) {
 		TC.Style = document.F.Tab_Style.value;
 		TC.Align = document.F.Tab_Align.value;
@@ -415,8 +391,7 @@ function SetTabControl(TC)
 	}
 }
 
-function GetTabControl()
-{
+function GetTabControl() {
 	var TC = te.Ctrl(CTRL_TC);
 	if (TC) {
 		document.F.Tab_Left.value = TC.Left;
@@ -426,8 +401,7 @@ function GetTabControl()
 	}
 }
 
-function MoveTabControl()
-{
+function MoveTabControl() {
 	var TC = te.Ctrl(CTRL_TC);
 	if (TC) {
 		if (document.F.Tab_Width.value != "" && document.F.Tab_Height.value != "") {
@@ -439,8 +413,7 @@ function MoveTabControl()
 	}
 }
 
-function SwapTabControl()
-{
+function SwapTabControl() {
 	var TC1 = te.Ctrl(CTRL_TC);
 	var cTC = te.Ctrls(CTRL_TC, false);
 	for (var i in cTC) {
@@ -460,8 +433,7 @@ function SwapTabControl()
 	}
 }
 
-function InitConfig(o)
-{
+function InitConfig(o) {
 	var InstallPath = fso.GetParentFolderName(api.GetModuleFileName(null));
 	if (InstallPath == te.Data.DataFolder) {
 		return;
@@ -473,16 +445,14 @@ function InitConfig(o)
 	o.disabled = true;
 }
 
-function SelectPos(o, s)
-{
+function SelectPos(o, s) {
 	var v = o[o.selectedIndex].value;
 	if (v != "") {
 		o.form[s].value = v;
 	}
 }
 
-function SwitchMenus(o)
-{
+function SwitchMenus(o) {
 	if (g_x.Menus) {
 		g_x.Menus.style.display = "none";
 		var o = o || document.F.elements.Menus;
@@ -508,45 +478,39 @@ function SwitchMenus(o)
 	}
 }
 
-function SwitchX(mode, o, form)
-{
+function SwitchX(mode, o, form) {
 	g_x[mode].style.display = "none";
 	g_x[mode] = (form || o.form)[mode + o.value];
 	g_x[mode].style.display = "inline";
 	CancelX(mode);
 }
 
-function ClearX(mode)
-{
+function ClearX(mode) {
 	g_Chg.Data = null;
 }
 
-function CancelX(mode)
-{
+function CancelX(mode) {
 	g_x[mode].selectedIndex = -1;
 	EnableSelectTag(g_x[mode]);
 }
 
-ChangeX = function (mode)
-{
+ChangeX = function (mode) {
 	g_Chg.Data = mode;
 	g_bChanged = true;
 }
 
-function ConfirmX(bCancel, fn)
-{
+function ConfirmX(bCancel, fn) {
 	g_bChanged |= g_Chg.Data;
-	return SetOptions(function() {
+	return SetOptions(function () {
 		SetChanged(fn);
 	},
-	function() {
-		g_bChanged = false;
-		ClearX(g_Chg.Data);
-	}, !bCancel, true);
+		function () {
+			g_bChanged = false;
+			ClearX(g_Chg.Data);
+		}, !bCancel, true);
 }
 
-function SetOptions(fnYes, fnNo)
-{
+function SetOptions(fnYes, fnNo) {
 	if (g_nResult == 2 || document.activeElement && api.StrCmpI(document.activeElement.value, GetText("Cancel")) == 0) {
 		if (fnNo) {
 			fnNo();
@@ -562,7 +526,7 @@ function SetOptions(fnYes, fnNo)
 		}
 		return true;
 	}
- 	if (g_bChanged || g_Chg.Data) {
+	if (g_bChanged || g_Chg.Data) {
 		switch (MessageBox("Do you want to replace?", TITLE, MB_ICONQUESTION | MB_YESNO)) {
 			case IDYES:
 				if (fnYes) {
@@ -591,8 +555,7 @@ function SetOptions(fnYes, fnNo)
 	return false;
 }
 
-function EditMenus()
-{
+function EditMenus() {
 	if (g_x.Menus.selectedIndex < 0) {
 		return;
 	}
@@ -614,15 +577,13 @@ function EditMenus()
 	SetImage();
 }
 
-function EditXEx(o, s, form)
-{
+function EditXEx(o, s, form) {
 	if (document.getElementById("_EDIT").checked) {
 		o(s, form);
 	}
 }
 
-EditX = function (mode, form)
-{
+EditX = function (mode, form) {
 	if (g_x[mode].selectedIndex < 0) {
 		return;
 	}
@@ -637,7 +598,7 @@ EditX = function (mode, form)
 	form[mode + "Path"].value = p.s;
 	SetType(form[mode + "Type"], a[2]);
 	if (api.StrCmpI(mode, "key") == 0) {
-	 	SetKeyShift();
+		SetKeyShift();
 	}
 	var o = form[mode + "Name"];
 	if (o) {
@@ -645,8 +606,7 @@ EditX = function (mode, form)
 	}
 }
 
-function SetType(o, value)
-{
+function SetType(o, value) {
 	value = value.replace(/&|\.\.\.$/g, "");
 	var i = o.length;
 	while (--i >= 0) {
@@ -663,8 +623,7 @@ function SetType(o, value)
 	}
 }
 
-function InsertX(sel)
-{
+function InsertX(sel) {
 	if (!sel) {
 		return;
 	}
@@ -680,15 +639,13 @@ function InsertX(sel)
 	}
 }
 
-function AddX(mode, fn, form)
-{
+function AddX(mode, fn, form) {
 	InsertX(g_x[mode]);
 	(fn || ReplaceX)(mode, form);
 	EnableSelectTag(g_x[mode]);
 }
 
-function ReplaceMenus()
-{
+function ReplaceMenus() {
 	ClearX("Menus");
 	if (g_x.Menus.selectedIndex < 0) {
 		InsertX(g_x.Menus);
@@ -706,8 +663,7 @@ function ReplaceMenus()
 	g_Chg.Menus = true;
 }
 
-function ReplaceX(mode, form)
-{
+function ReplaceX(mode, form) {
 	if (!g_x[mode]) {
 		return;
 	}
@@ -729,8 +685,7 @@ function ReplaceX(mode, form)
 	g_bChanged = true;
 }
 
-function RemoveX(mode)
-{
+function RemoveX(mode) {
 	ClearX(mode);
 	if (g_x[mode].selectedIndex < 0 || !confirmOk()) {
 		return;
@@ -752,8 +707,7 @@ function RemoveX(mode)
 	}
 }
 
-function MoveX(mode, n)
-{
+function MoveX(mode, n) {
 	if (n < 0) {
 		for (var i = 0; i < g_x[mode].length + n; i++) {
 			if (!g_x[mode][i].selected && g_x[mode][i + 1].selected) {
@@ -784,8 +738,7 @@ function MoveX(mode, n)
 	EnableSelectTag(g_x[mode]);
 }
 
-function SetMenus(sel, a)
-{
+function SetMenus(sel, a) {
 	sel.value = PackData(a);
 	var a2 = a[0].split(/\\t/);
 	sel.text = [a[5] ? a2[0] : GetText(a2[0]), a[1]].join(" ").replace(/[\r\n].*/, "");
@@ -794,8 +747,7 @@ function SetMenus(sel, a)
 	}
 }
 
-function LoadMenus(nSelected)
-{
+function LoadMenus(nSelected) {
 	var oa = document.F.Menus_Type;
 	if (!g_x.Menus) {
 		var arFunc = [];
@@ -838,26 +790,27 @@ function LoadMenus(nSelected)
 			nSelected = oa.length - 1;
 			oa[nSelected].selected = true;
 			g_MenuType = j;
-			(function (o, v) { setTimeout(function () {
-				ClickTree(document.getElementById("tab2_" + g_MenuType));
-				EditMenus();
-				g_MenuType = "";
-				if (isFinite(v)) {
-					o.selectedIndex = v;
-					EnableSelectTag(o);
-					FireEvent(o, "change");
-				}
-			}, 99);}) (document.F["Menus_" + ar[0]], ar[1]);
+			(function (o, v) {
+				setTimeout(function () {
+					ClickTree(document.getElementById("tab2_" + g_MenuType));
+					EditMenus();
+					g_MenuType = "";
+					if (isFinite(v)) {
+						o.selectedIndex = v;
+						EnableSelectTag(o);
+						FireEvent(o, "change");
+					}
+				}, 99);
+			})(document.F["Menus_" + ar[0]], ar[1]);
 		}
 	}
 }
 
-function LoadX(mode, fn, form)
-{
+function LoadX(mode, fn, form) {
 	if (!g_x[mode]) {
-        if (!form) {
-            form = document.F;
-        }
+		if (!form) {
+			form = document.F;
+		}
 		var arFunc = [];
 		MainWindow.RunEvent1("AddType", arFunc);
 		var oa = form[mode + "Type"] || form.Type;
@@ -925,8 +878,7 @@ function LoadX(mode, fn, form)
 	}
 }
 
-function SaveMenus()
-{
+function SaveMenus() {
 	if (g_Chg.Menus) {
 		var xml = CreateXml();
 
@@ -961,26 +913,22 @@ function SaveMenus()
 	}
 }
 
-function GetKeyKeyEx(s)
-{
+function GetKeyKeyEx(s) {
 	var n = GetKeyKey(s);
 	return n & 0xff ? api.sprintf(9, "$%x", n) : s;
 }
 
-function GetKeyKeyG(s)
-{
+function GetKeyKeyG(s) {
 	var n = GetKeyKeyEx(s);
 	var s = GetKeyName(n, true);
 	return /^\w$|\+\w$/i.test(s) ? s : n;
 }
 
-function GetKeyNameG(s)
-{
+function GetKeyNameG(s) {
 	return GetKeyName(/^$/.test(s) ? s : GetKeyKeyEx(s));
 }
 
-function SaveX(mode, form)
-{
+function SaveX(mode, form) {
 	if (g_Chg[mode]) {
 		var xml = CreateXml();
 		var root = xml.createElement("TablacusExplorer");
@@ -1010,8 +958,7 @@ function SaveX(mode, form)
 	}
 }
 
-function SaveAddons()
-{
+function SaveAddons() {
 	try {
 		if (g_Chg.Addons || te.Data.bErrorAddons) {
 			te.Data.bErrorAddons = false;
@@ -1050,11 +997,10 @@ function SaveAddons()
 			te.Data.Addons = xml;
 			MainWindow.RunEvent1("ConfigChanged", "Addons");
 		}
-	} catch (e) {}
+	} catch (e) { }
 }
 
-function SetChanged(fn, form)
-{
+function SetChanged(fn, form) {
 	if (g_Chg.Data) {
 		g_bChanged = true;
 		if (g_x[g_Chg.Data] && g_x[g_Chg.Data].selectedIndex >= 0) {
@@ -1065,8 +1011,7 @@ function SetChanged(fn, form)
 	}
 }
 
-function SetData(sel, a, t)
-{
+function SetData(sel, a, t) {
 	sel.value = PackData(a);
 	if ("boolean" === typeof t) {
 		t = (t ? String.fromCharCode(9745, 32) : String.fromCharCode(9744, 32)) + a[0];
@@ -1074,16 +1019,14 @@ function SetData(sel, a, t)
 	sel.text = t || a[0];
 }
 
-function PackData(a)
-{
+function PackData(a) {
 	for (var i = a.length; i-- > 0;) {
 		a[i] = String(a[i] || "").replace(g_sep, "`  ~");
 	}
 	return a.join(g_sep);
 }
 
-function LoadAddons()
-{
+function LoadAddons() {
 	if (g_x.Addons) {
 		return;
 	}
@@ -1128,8 +1071,7 @@ function LoadAddons()
 	}
 }
 
-function AddAddon(table, Id, bEnable, Alt)
-{
+function AddAddon(table, Id, bEnable, Alt) {
 	SetAddon(Id, bEnable, table.insertRow().insertCell(), Alt);
 	if (!Alt) {
 		var sorted = document.getElementById("SortedAddons");
@@ -1139,8 +1081,7 @@ function AddAddon(table, Id, bEnable, Alt)
 	}
 }
 
-function SetAddon(Id, bEnable, td, Alt)
-{
+function SetAddon(Id, bEnable, td, Alt) {
 	if (!td) {
 		td = document.getElementById(Alt || "Addons_" + Id).parentNode;
 	}
@@ -1150,7 +1091,7 @@ function SetAddon(Id, bEnable, td, Alt)
 		bEnable = false;
 	}
 	var s = ['<div ', (Alt ? '' : 'draggable="true" ondragstart="Start5(this)" ondragend="End5(this)"'), ' title="', Id, '" Id="', Alt || "Addons_", Id, '"', bEnable ? "" : ' class="disabled"', '>'];
-	s.push('<table><tr style="border-top: 1px solid buttonshadow"><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id+ '">'), '</td><td style="width: 100%"><label for="_', Id, '">', info.Name, "&nbsp;", info.Version, '<br><a href="#" onclick="return AddonInfo(\'', Id, '\', this)"  class="link" style="font-size: .9em">', GetText('Details'), ' (', Id, ')</a>');
+	s.push('<table><tr style="border-top: 1px solid buttonshadow"><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id + '">'), '</td><td style="width: 100%"><label for="_', Id, '">', info.Name, "&nbsp;", info.Version, '<br><a href="#" onclick="return AddonInfo(\'', Id, '\', this)"  class="link" style="font-size: .9em">', GetText('Details'), ' (', Id, ')</a>');
 	if (bMinVer) {
 		s.push('</td><td class="danger" style="align: right; white-space: nowrap; vertical-align: middle">', info.MinVersion.replace(/^20/, (api.LoadString(hShell32, 60) || "%").replace(/%.*/, "")).replace(/\.0/g, '.'), ' ', GetText("is required."), '</td>');
 	} else if (info.Options) {
@@ -1170,8 +1111,7 @@ function SetAddon(Id, bEnable, td, Alt)
 	}
 }
 
-function Start5(o)
-{
+function Start5(o) {
 	if (api.GetKeyState(VK_LBUTTON) < 0) {
 		event.dataTransfer.effectAllowed = 'move';
 		g_drag5 = o.id;
@@ -1180,39 +1120,37 @@ function Start5(o)
 	return false;
 }
 
-function End5()
-{
+function End5() {
 	g_drag5 = false;
 }
 
-function Over5()
-{
+function Over5() {
 	if (g_drag5) {
 		if (event.preventDefault) {
 			event.preventDefault();
 		} else {
- 			event.returnValue = false;
+			event.returnValue = false;
 		}
 	}
 }
 
-function Drop5(e)
-{
+function Drop5(e) {
 	if (g_drag5) {
 		var o = document.elementFromPoint(e.clientX, e.clientY);
 		do {
 			if (/Addons_/i.test(o.id)) {
-				(function (src, dest) { setTimeout(function () {
-					AddonMoveEx(src, dest);
-				}, 99);}) (GetRowIndexById(g_drag5) , GetRowIndexById(o.id));
+				(function (src, dest) {
+					setTimeout(function () {
+						AddonMoveEx(src, dest);
+					}, 99);
+				})(GetRowIndexById(g_drag5), GetRowIndexById(o.id));
 				break;
 			}
 		} while (o = o.parentNode);
 	}
 }
 
-function GetRowIndexById(id)
-{
+function GetRowIndexById(id) {
 	try {
 		var o = document.getElementById(id);
 		if (o) {
@@ -1222,11 +1160,10 @@ function GetRowIndexById(id)
 				}
 			}
 		}
-	} catch (e) {}
+	} catch (e) { }
 }
 
-function AddonInfo(Id, o)
-{
+function AddonInfo(Id, o) {
 	o.style.textDecoration = "none";
 	o.style.color = "windowtext";
 	o.style.cursor = "default";
@@ -1236,22 +1173,19 @@ function AddonInfo(Id, o)
 	return false;
 }
 
-function AddonWebsite(Id)
-{
+function AddonWebsite(Id) {
 	var info = GetAddonInfo(Id);
 	wsh.run(info.URL);
 }
 
-function AddonEnable(o, Id)
-{
+function AddonEnable(o, Id) {
 	var div = document.getElementById("Addons_" + Id);
 	SetAddon(Id, o.checked);
 	document.getElementById("enable_" + Id).checked = o.checked;
 	g_Chg.Addons = true;
 }
 
-function OptionMove(dir)
-{
+function OptionMove(dir) {
 	if (/^1/.test(TabIndex)) {
 		var r = document.F.AddonId;
 		for (i = 0; i < r.length; i++) {
@@ -1265,8 +1199,8 @@ function OptionMove(dir)
 				}
 				try {
 					AddonMoveEx(i, i + dir);
-				} catch (e) {}
-	 			break;
+				} catch (e) { }
+				break;
 			}
 		}
 	} else if (/^2/.test(TabIndex)) {
@@ -1277,8 +1211,7 @@ function OptionMove(dir)
 	}
 }
 
-function AddonMoveEx(src, dest)
-{
+function AddonMoveEx(src, dest) {
 	var table = document.getElementById("Addons");
 	if (dest < 0 || dest >= table.rows.length || src == dest) {
 		return false;
@@ -1309,8 +1242,7 @@ function AddonMoveEx(src, dest)
 	return false;
 }
 
-function AddonRemove(Id)
-{
+function AddonRemove(Id) {
 	if (!confirmOk()) {
 		return;
 	}
@@ -1322,7 +1254,7 @@ function AddonRemove(Id)
 	sf.hwnd = api.GetForegroundWindow();
 	sf.wFunc = FO_DELETE;
 	sf.fFlags = 0;
-	sf.pFrom = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\"+ Id) + "\0";
+	sf.pFrom = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\" + Id) + "\0";
 	if (api.SHFileOperation(sf) == 0) {
 		if (!sf.fAnyOperationsAborted) {
 			var table = document.getElementById("Addons");
@@ -1336,8 +1268,7 @@ function AddonRemove(Id)
 	}
 }
 
-function ApplyOptions()
-{
+function ApplyOptions() {
 	var o = api.GetKeyState(VK_SHIFT) >= 0 ? document.documentElement || document.body : {};
 	var hwnd = api.GetWindow(document);
 	var hwnd1 = hwnd;
@@ -1376,12 +1307,11 @@ function ApplyOptions()
 				}
 			}
 		}
-	} catch (e) {}
+	} catch (e) { }
 	api.EnableWindow(te.Ctrl(CTRL_WB).hwnd, false);
 }
 
-function CancelOptions()
-{
+function CancelOptions() {
 	if (te.Data.bErrorAddons) {
 		SaveAddons();
 		te.Data.bReload = true;
@@ -1389,8 +1319,7 @@ function CancelOptions()
 	}
 }
 
-InitOptions = function ()
-{
+InitOptions = function () {
 	ApplyLang(document);
 	document.title = GetText("Options") + " - " + TITLE;
 	MainWindow.g_.OptionsWindow = window;
@@ -1416,26 +1345,22 @@ InitOptions = function ()
 	}
 	document.getElementById("tab2_").innerHTML = s.join("");
 
-	AddEventEx(window, "load", function ()
-	{
+	AddEventEx(window, "load", function () {
 		for (var i = 6; i--;) {
 			ClickButton(i, false);
 		}
 		SetTab(dialogArguments.Data);
 	});
 
-	AddEventEx(window, "resize", function ()
-	{
+	AddEventEx(window, "resize", function () {
 		clearTimeout(g_tidResize);
-		g_tidResize = setTimeout(function ()
-		{
+		g_tidResize = setTimeout(function () {
 			ClickTree(null, null, null, true);
 		}, 500);
 	});
 
 	SetOnChangeHandler();
-	AddEventEx(window, "beforeunload", function ()
-	{
+	AddEventEx(window, "beforeunload", function () {
 		for (var i in g_.elAddons) {
 			try {
 				var w = g_.elAddons[i].contentWindow;
@@ -1444,7 +1369,7 @@ InitOptions = function ()
 					w.TEOk();
 				}
 				w.close();
-			} catch (e) {}
+			} catch (e) { }
 		}
 		g_.elAddons = {};
 		g_bChanged |= g_Chg.Addons || g_Chg.Menus || g_Chg.Tab || g_Chg.Tree || g_Chg.View;
@@ -1452,10 +1377,8 @@ InitOptions = function ()
 	});
 }
 
-OpenIcon = function (o)
-{
-	setTimeout(function ()
-	{
+OpenIcon = function (o) {
+	setTimeout(function () {
 		var data = [];
 		var a = o.id.split(/,/);
 		if (a[0] == "b") {
@@ -1499,29 +1422,28 @@ OpenIcon = function (o)
 	document.body.style.cursor = "wait";
 }
 
-InitDialog = function ()
-{
+InitDialog = function () {
 	var Query = String(dialogArguments.Query || location.search.replace(/\?/, "")).toLowerCase();
 	var res = /^icon(.*)/.exec(Query);
 	if (res) {
 		var a =
 		{
-			"16px ieframe,206" : "b,206,16",
-			"24px ieframe,204" : "b,204,24",
-			"16px ieframe,216" : "b,216,16",
-			"24px ieframe,214" : "b,214,24",
-			"16px ieframe,699" : "b,699,16",
-			"24px ieframe,697" : "b,697,24",
+			"16px ieframe,206": "b,206,16",
+			"24px ieframe,204": "b,204,24",
+			"16px ieframe,216": "b,216,16",
+			"24px ieframe,214": "b,214,24",
+			"16px ieframe,699": "b,699,16",
+			"24px ieframe,697": "b,697,24",
 
-			"shell32" : "i,shell32.dll",
-			"imageres" : "i,imageres.dll",
-			"wmploc" : "i,wmploc.dll",
-			"setupapi" : "i,setupapi.dll",
-			"dsuiext" : "i,dsuiext.dll",
-			"inetcpl" : "i,inetcpl.cpl",
+			"shell32": "i,shell32.dll",
+			"imageres": "i,imageres.dll",
+			"wmploc": "i,wmploc.dll",
+			"setupapi": "i,setupapi.dll",
+			"dsuiext": "i,dsuiext.dll",
+			"inetcpl": "i,inetcpl.cpl",
 
-			"25px TRAVEL_ENABLED_XP" : "b,TRAVEL_ENABLED_XP.BMP,25",
-			"30px TRAVEL_ENABLED_XP" : "b,TRAVEL_ENABLED_XP_120.BMP,30"
+			"25px TRAVEL_ENABLED_XP": "b,TRAVEL_ENABLED_XP.BMP,25",
+			"30px TRAVEL_ENABLED_XP": "b,TRAVEL_ENABLED_XP_120.BMP,30"
 		};
 		var s = [];
 		for (var i in a) {
@@ -1538,8 +1460,7 @@ InitDialog = function ()
 	if (Query == "key") {
 		returnValue = false;
 		document.getElementById("Content").innerHTML = '<div style="padding: 8px;" style="display: block;"><label>Key</label><br><input type="text" name="q" autocomplete="off" style="width: 100%; ime-mode: disabled" onfocus="this.blur()"></div>';
-		var fn = function (e)
-		{
+		var fn = function (e) {
 			var key = (e || event).keyCode;
 			var k = api.MapVirtualKey(key, 0) | ((key >= 33 && key <= 46 || key >= 91 && key <= 93 || key == 111 || key == 144) ? 256 : 0);
 			if (k == 42 || k == 29 || k == 56 || k == 347) {
@@ -1561,12 +1482,10 @@ InitDialog = function ()
 	if (Query == "new") {
 		returnValue = false;
 		var s = [];
-		s.push('<div style="padding: 8px;" style="display: block;"><label><input type="radio" name="mode" id="folder" onclick="document.F.path.focus()">New Folder</label> <label><input type="radio" name="mode" id="file" onclick="document.F.path.focus()">New File</label><br>', dialogArguments.path ,'<br><input type="text" name="path" style="width: 100%"></div>');
+		s.push('<div style="padding: 8px;" style="display: block;"><label><input type="radio" name="mode" id="folder" onclick="document.F.path.focus()">New Folder</label> <label><input type="radio" name="mode" id="file" onclick="document.F.path.focus()">New File</label><br>', dialogArguments.path, '<br><input type="text" name="path" style="width: 100%"></div>');
 		document.getElementById("Content").innerHTML = s.join("");
-		AddEventEx(document.body, "keydown", function (e)
-		{
-			setTimeout(function ()
-			{
+		AddEventEx(document.body, "keydown", function (e) {
+			setTimeout(function () {
 				document.F.ButtonOk.disabled = !document.F.path.value;
 			}, 99);
 			var key = (e || event).keyCode;
@@ -1579,22 +1498,18 @@ InitDialog = function ()
 			return true;
 		});
 
-		AddEventEx(document.body, "paste", function ()
-		{
-			setTimeout(function ()
-			{
+		AddEventEx(document.body, "paste", function () {
+			setTimeout(function () {
 				document.F.ButtonOk.disabled = !document.F.path.value;
 			}, 99);
 		});
 
-		setTimeout(function ()
-		{
+		setTimeout(function () {
 			document.F[dialogArguments.Mode].checked = true;
 			document.F.path.focus();
 		}, 99);
 
-		AddEventEx(window, "beforeunload", function ()
-		{
+		AddEventEx(window, "beforeunload", function () {
 			if (g_nResult == 1) {
 				path = document.F.path.value;
 				if (path) {
@@ -1620,7 +1535,7 @@ InitDialog = function ()
 		returnValue = false;
 		var s = ['<table style="border-spacing: 2em; border-collapse: separate; width: 100%"><tr><td>'];
 		var src = MakeImgSrc(api.GetModuleFileName(null), 0, true, 48);
-		s.push('<img src="', src , '"></td><td><span style="font-weight: bold; font-size: 120%">', AboutTE(2), '</span> (', GetTextR((api.sizeof("HANDLE") * 8) + '-bit'), ')<br>');
+		s.push('<img src="', src, '"></td><td><span style="font-weight: bold; font-size: 120%">', AboutTE(2), '</span> (', GetTextR((api.sizeof("HANDLE") * 8) + '-bit'), ')<br>');
 		s.push('<br><a href="javascript:Run(0)" class="link">', api.GetModuleFileName(null), '</a> (', fso.GetFileVersion(api.GetModuleFileName(null)), ')<br>');
 		s.push('<br><a href="javascript:Run(1)" class="link">', fso.BuildPath(te.Data.DataFolder, "config"), '</a><br>');
 		s.push('<br><label>Information</label><input type="text" value="', AboutTE(3), '" style="width: 100%" onclick="this.select()" readonly><br>');
@@ -1644,8 +1559,7 @@ InitDialog = function ()
 		document.F.ButtonOk.disabled = false;
 		document.getElementById("buttonCancel").style.display = "none";
 
-		Run = function (n)
-		{
+		Run = function (n) {
 			var ar = [
 				'Navigate(api.GetModuleFileName(null) + "\\\\..", SBSP_NEWBROWSER)',
 				'Navigate(fso.BuildPath(te.Data.DataFolder, "config"), SBSP_NEWBROWSER)',
@@ -1657,8 +1571,7 @@ InitDialog = function ()
 		}
 	}
 	if (dialogArguments.element) {
-		AddEventEx(window, "beforeunload", function ()
-		{
+		AddEventEx(window, "beforeunload", function () {
 			try {
 				if (g_nResult == 1) {
 					dialogArguments.element.value = returnValue;
@@ -1666,15 +1579,13 @@ InitDialog = function ()
 						dialogArguments.element.onchange();
 					}
 				}
-			} catch (e) {}
+			} catch (e) { }
 		});
 	}
-	DialogResize = function ()
-	{
+	DialogResize = function () {
 		CalcElementHeight(document.getElementById("panel0"), 3);
 	};
-	AddEventEx(window, "resize", function ()
-	{
+	AddEventEx(window, "resize", function () {
 		clearTimeout(g_tidResize);
 		g_tidResize = setTimeout(DialogResize, 500);
 	});
@@ -1682,8 +1593,7 @@ InitDialog = function ()
 	DialogResize();
 }
 
-MouseDown = function ()
-{
+MouseDown = function () {
 	if (g_Gesture) {
 		var n = 1;
 		var ar = [0, 0, 2, 1];
@@ -1711,20 +1621,18 @@ MouseDown = function ()
 	return false;
 }
 
-MouseUp = function ()
-{
+MouseUp = function () {
 	g_Gesture = GetGestureButton();
 	return false;
 }
 
-MouseMove = function ()
-{
+MouseMove = function () {
 	if (api.GetKeyState(VK_XBUTTON1) < 0 || api.GetKeyState(VK_XBUTTON2) < 0) {
 		returnValue = GetGestureKey() + GetGestureButton();
 		document.F.q.value = returnValue;
 	}
 	if (document.F.q.value.length && (api.GetKeyState(VK_RBUTTON) < 0 || (te.Data.Conf_Gestures && (api.GetKeyState(VK_MBUTTON) < 0)))) {
-		var pt = {x: event.clientX, y: event.clientY};
+		var pt = { x: event.clientX, y: event.clientY };
 		var x = (pt.x - g_pt.x);
 		var y = (pt.y - g_pt.y);
 		if (Math.abs(x) + Math.abs(y) >= 20) {
@@ -1742,7 +1650,7 @@ MouseMove = function ()
 				}
 			}
 			g_pt = pt;
-			var s = (Math.abs(x) >= Math.abs(y)) ? ((x < 0) ? "L" : "R") :  ((y < 0) ? "U" : "D");
+			var s = (Math.abs(x) >= Math.abs(y)) ? ((x < 0) ? "L" : "R") : ((y < 0) ? "U" : "D");
 			if (s != document.F.q.value.charAt(document.F.q.value.length - 1)) {
 				returnValue += s;
 				document.F.q.value = returnValue;
@@ -1752,23 +1660,20 @@ MouseMove = function ()
 	return false;
 }
 
-MouseDbl = function ()
-{
+MouseDbl = function () {
 	returnValue += returnValue.replace(/\D/g, "");
 	document.F.q.value = returnValue;
 	return false;
 }
 
-MouseWheel = function ()
-{
+MouseWheel = function () {
 	returnValue = GetGestureKey() + GetGestureButton() + (event.wheelDelta > 0 ? "8" : "9");
 	document.F.q.value = returnValue;
 	document.F.ButtonOk.disabled = false;
 	return false;
 }
 
-InitLocation = function ()
-{
+InitLocation = function () {
 	var ar = [], param = [];
 	Addon_Id = dialogArguments.Data.id;
 	for (var i = 10; i--;) {
@@ -1777,26 +1682,26 @@ InitLocation = function ()
 		o.hidefocus = true;
 		o.style.display = "none";
 		(function (o) {
-			o. onmousedown = function ()
-			{
+			o.onmousedown = function () {
 				ClickTab(o, 1);
 			};
-			o.onfocus = function ()
-			{
+			o.onfocus = function () {
 				o.blur()
 			};
 		})(o);
 	}
 	LoadAddon("js", Addon_Id, ar, param);
 	if (ar.length) {
-		(function (ar) { setTimeout(function () {
-			MessageBox(ar.join("\n\n"), TITLE, MB_OK);
-		}, 500);}) (ar);
+		(function (ar) {
+			setTimeout(function () {
+				MessageBox(ar.join("\n\n"), TITLE, MB_OK);
+			}, 500);
+		})(ar);
 	}
 	ar = [];
 	var s = "CSA";
 	for (var i = 0; i < s.length; i++) {
-		ar.push('<input type="button" value="', MainWindow.g_.KeyState[i][0],'" title="', s.charAt(i), '" onclick="AddMouse(this)">');
+		ar.push('<input type="button" value="', MainWindow.g_.KeyState[i][0], '" title="', s.charAt(i), '" onclick="AddMouse(this)">');
 	}
 	document.getElementById("__MOUSEDATA").innerHTML = ar.join("");
 	ApplyLang(document);
@@ -1832,7 +1737,7 @@ InitLocation = function ()
 			ApplyLang(o);
 			o.parentNode.title = o.innerHTML.replace(/<[^>]*>|[\r\n]|\s\s+/g, "");
 			o.innerHTML = s;
-		} catch (e) {}
+		} catch (e) { }
 	}
 	var oa = document.F.Menu;
 	oa.length = 0;
@@ -1898,23 +1803,20 @@ InitLocation = function ()
 			document.getElementById("tab" + ar[i]).style.display = "inline";
 		}
 		nTabIndex = dialogArguments.Data.index;
-	} catch (e) {}
+	} catch (e) { }
 	SetImage();
 
 	SetOnChangeHandler();
-	AddEventEx(window, "load", function ()
-	{
+	AddEventEx(window, "load", function () {
 		ApplyLang(document);
 		ClickTab(null, 1);
 	});
-	AddEventEx(window, "resize", function ()
-	{
+	AddEventEx(window, "resize", function () {
 		clearTimeout(g_tidResize);
 		g_tidResize = setTimeout(ResizeTabPanel, 500);
 	});
 
-	AddEventEx(window, "beforeunload", function ()
-	{
+	AddEventEx(window, "beforeunload", function () {
 		SetOptions(function () {
 			if (window.SaveLocation) {
 				SaveLocation();
@@ -1957,8 +1859,7 @@ InitLocation = function ()
 	}
 }
 
-function SetAttrib(item, n, s)
-{
+function SetAttrib(item, n, s) {
 	if (/^!/.test(n)) {
 		n = n.substr(1);
 		s = !s;
@@ -1970,8 +1871,7 @@ function SetAttrib(item, n, s)
 	}
 }
 
-function GetElementValue(o)
-{
+function GetElementValue(o) {
 	if (o.type) {
 		if (/checkbox/i.test(o.type)) {
 			return o.checked ? 1 : 0;
@@ -1985,8 +1885,7 @@ function GetElementValue(o)
 	}
 }
 
-function SetElementValue(o, s)
-{
+function SetElementValue(o, s) {
 	if (o && o.type) {
 		if (/checkbox/i.test(o.type)) {
 			o.checked = api.LowPart(s);
@@ -2005,8 +1904,7 @@ function SetElementValue(o, s)
 	}
 }
 
-function SetAttribEx(item, f, n)
-{
+function SetAttribEx(item, f, n) {
 	var s = GetElementValue(f[n]);
 	if (s != GetAttribEx(item, f, n)) {
 		SetAttrib(item, n, s);
@@ -2015,10 +1913,9 @@ function SetAttribEx(item, f, n)
 	return false;
 }
 
-function GetAttribEx(item, f, n)
-{
+function GetAttribEx(item, f, n) {
 	var s;
-	var res  = /([^=]*)=(.*)/.exec(n);
+	var res = /([^=]*)=(.*)/.exec(n);
 	if (res) {
 		s = item.getAttribute(res[1]);
 		if (s == res[2]) {
@@ -2035,8 +1932,7 @@ function GetAttribEx(item, f, n)
 	}
 }
 
-function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter)
-{
+function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter) {
 	setTimeout(function () {
 		if (/Path/.test(Id)) {
 			var s = Id.replace("Path", "Type");
@@ -2045,7 +1941,7 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter)
 				var pt;
 				if (oButton) {
 					pt = GetPos(oButton, true);
-					pt = {x: pt.x, y: pt.y + oButton.offsetHeight, width: oButton.offsetWidth };
+					pt = { x: pt.x, y: pt.y + oButton.offsetHeight, width: oButton.offsetWidth };
 				} else {
 					pt = api.Memory("POINT");
 					api.GetCursorPos(pt);
@@ -2085,8 +1981,7 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter)
 	}, 99);
 }
 
-function PortableX(Id)
-{
+function PortableX(Id) {
 	if (!confirmOk()) {
 		return;
 	}
@@ -2095,13 +1990,11 @@ function PortableX(Id)
 	SetValue(o, o.value.replace(wsh.ExpandEnvironmentStrings("%UserProfile%"), "%UserProfile%").replace(new RegExp('^("?)' + s, "igm"), "$1%Installed%").replace(new RegExp('( "?)' + s, "igm"), "$1%Installed%").replace(new RegExp('(:)' + s, "igm"), "$1%Installed%"));
 }
 
-function GetElement(Id)
-{
+function GetElement(Id) {
 	return (document.F && document.F[Id]) || document.getElementById(Id) || (document.E && document.E[Id]);
 }
 
-function AddPath(Id, strValue)
-{
+function AddPath(Id, strValue) {
 	var o = GetElement(Id);
 	if (o) {
 		var s = o.value;
@@ -2114,16 +2007,14 @@ function AddPath(Id, strValue)
 	}
 }
 
-function SetValue(o, s)
-{
+function SetValue(o, s) {
 	if (o.value != s) {
 		o.value = s;
 		FireEvent(o, "change");
 	}
 }
 
-function GetCurrentSetting(s)
-{
+function GetCurrentSetting(s) {
 	var FV = te.Ctrl(CTRL_FV);
 
 	if (confirmOk()) {
@@ -2131,8 +2022,7 @@ function GetCurrentSetting(s)
 	}
 }
 
-function SetTab(s)
-{
+function SetTab(s) {
 	var o = null;
 	var arg = String(s).split(/&/);
 	for (var i in arg) {
@@ -2156,13 +2046,11 @@ function SetTab(s)
 	ClickTree(o);
 }
 
-function AddMouse(o)
-{
+function AddMouse(o) {
 	(document.F["MouseMouse"] || document.F["Mouse"]).value += o.title;
 }
 
-function InitAddonOptions(bFlag)
-{
+function InitAddonOptions(bFlag) {
 	returnValue = false;
 	LoadLang2(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\" + Addon_Id + "\\lang\\" + GetLangId() + ".xml"));
 
@@ -2170,8 +2058,7 @@ function InitAddonOptions(bFlag)
 	info = GetAddonInfo(Addon_Id);
 	document.title = info.Name;
 	SetOnChangeHandler();
-	AddEventEx(window, "beforeunload", function ()
-	{
+	AddEventEx(window, "beforeunload", function () {
 		SetOptions(SetAddonOptions);
 	});
 	var items = te.Data.Addons.getElementsByTagName(Addon_Id);
@@ -2180,8 +2067,7 @@ function InitAddonOptions(bFlag)
 	}
 }
 
-function SetOnChangeHandler()
-{
+function SetOnChangeHandler() {
 	g_nResult = 3;
 	g_bChanged = false;
 	var ar = ["input", "select", "textarea"];
@@ -2190,8 +2076,7 @@ function SetOnChangeHandler()
 		if (o) {
 			for (var i = o.length; i--;) {
 				if ((o[i].name || o[i].id) && o[i].name != "List" && !/^_/.test(o[i].id)) {
-					AddEventEx(o[i], "change", function ()
-					{
+					AddEventEx(o[i], "change", function () {
 						g_bChanged = true;
 					});
 				}
@@ -2199,8 +2084,7 @@ function SetOnChangeHandler()
 		}
 	}
 }
-function SetAddonOptions()
-{
+function SetAddonOptions() {
 	if (!g_bClosed) {
 		var items = te.Data.Addons.getElementsByTagName(Addon_Id);
 		if (items.length) {
@@ -2223,16 +2107,14 @@ function SetAddonOptions()
 	}
 }
 
-function SelectIcon(o)
-{
+function SelectIcon(o) {
 	returnValue = o.title;
 	document.F.ButtonOk.disabled = false;
 	document.getElementById("Selected").innerHTML = o.outerHTML;
 	DialogResize();
 }
 
-TestX = function (id)
-{
+TestX = function (id) {
 	if (confirmOk()) {
 		var o = document.F[id + "Type"];
 		var p = { s: document.F[id + "Path"].value };
@@ -2243,8 +2125,7 @@ TestX = function (id)
 	}
 }
 
-SetImage = function ()
-{
+SetImage = function () {
 	var o = document.getElementById("_Icon");
 	if (o) {
 		var h = api.LowPart(document.F.IconSize && document.F.IconSize.value || document.F.Height && document.F.Height.value || window.IconSize || 24);
@@ -2255,8 +2136,7 @@ SetImage = function ()
 
 ShowIcon = ShowIconEx;
 
-function SelectLangID(o)
-{
+function SelectLangID(o) {
 	var i = 0;
 	var Langs = [];
 	var wfd = api.Memory("WIN32_FIND_DATA");
@@ -2293,8 +2173,7 @@ function SelectLangID(o)
 	api.DestroyMenu(hMenu);
 }
 
-function GetTextEx(s)
-{
+function GetTextEx(s) {
 	var ar = s.split(/_/);
 	var s = GetText(ar.shift());
 	if (ar && ar.length) {
@@ -2303,26 +2182,22 @@ function GetTextEx(s)
 	return s;
 }
 
-function GetAddons()
-{
+function GetAddons() {
 	MainWindow.OpenHttpRequest(urlAddons + "index.xml", "http", AddonsList);
 }
 
-function UpdateAddon(Id, o)
-{
+function UpdateAddon(Id, o) {
 	if (!o) {
 		AddAddon(document.getElementById("Addons"), Id, "Disable");
 		g_Chg.Addons = true;
 	}
 }
 
-function CheckAddon(Id)
-{
+function CheckAddon(Id) {
 	return fso.FileExists(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\" + Id + "\\config.xml"));
 }
 
-function AddonsSearch()
-{
+function AddonsSearch() {
 	if (xmlAddons) {
 		AddonsAppend()
 	} else {
@@ -2331,8 +2206,14 @@ function AddonsSearch()
 	return true;
 }
 
-function AddonsList(xhr2)
-{
+function AddonsKeyDown() {
+	if (event.keyCode == VK_RETURN) {
+		AddonsSearch();
+	}
+	return true;
+}
+
+function AddonsList(xhr2) {
 	if (xmlAddons) {
 		return;
 	}
@@ -2346,8 +2227,7 @@ function AddonsList(xhr2)
 	}
 }
 
-function AddonsAppend()
-{
+function AddonsAppend() {
 	var Progress = api.CreateObject("ProgressDialog");
 	var i = 0, td = [];
 	Progress.StartProgressDialog(te.hwnd, null, 2);
@@ -2388,8 +2268,7 @@ function AddonsAppend()
 	Progress.StopProgressDialog();
 }
 
-function ArrangeAddon(xml, td, Progress)
-{
+function ArrangeAddon(xml, td, Progress) {
 	var Id = xml.getAttribute("Id");
 	var s = [];
 	var strUpdate = "";
@@ -2454,8 +2333,7 @@ function ArrangeAddon(xml, td, Progress)
 	}
 }
 
-function Search(xml)
-{
+function Search(xml) {
 	var q = document.getElementById('_GetAddonsQ');
 	if (!q) {
 		return true;
@@ -2481,8 +2359,7 @@ function Search(xml)
 	return false;
 }
 
-function Install(o, bUpdate)
-{
+function Install(o, bUpdate) {
 	if (!bUpdate && !confirmOk("Do you want to install it now?")) {
 		return;
 	}
@@ -2495,8 +2372,7 @@ function Install(o, bUpdate)
 	MainWindow.OpenHttpRequest(urlAddons + Id + '/' + file, "http", Install2, o);
 }
 
-function Install2(xhr, url, o)
-{
+function Install2(xhr, url, o) {
 	var Id = o.title.replace(/_.*$/, "");
 	var file = o.title.replace(/\./, "") + '.zip';
 	var temp = fso.BuildPath(wsh.ExpandEnvironmentStrings("%TEMP%"), "tablacus");
@@ -2525,8 +2401,7 @@ function Install2(xhr, url, o)
 	UpdateAddon(Id, o);
 }
 
-function EnableSelectTag(o)
-{
+function EnableSelectTag(o) {
 	if (o) {
 		var hwnd = api.GetWindow(document);
 		api.SendMessage(hwnd, WM_SETREDRAW, false, 0);
@@ -2539,14 +2414,12 @@ function EnableSelectTag(o)
 	}
 }
 
-SetResult = function (i)
-{
+SetResult = function (i) {
 	g_nResult = i;
 	window.close();
 }
 
-function InitColor1(item)
-{
+function InitColor1(item) {
 	var ele = document.F.elements;
 	for (var i = ele.length; i--;) {
 		var n = ele[i].id || ele[i].name;
@@ -2568,23 +2441,19 @@ function InitColor1(item)
 	}
 }
 
-function ChangeColor1(ele)
-{
+function ChangeColor1(ele) {
 	var o = document.getElementById("Color_" + (ele.id || ele.name));
 	if (o) {
 		o.style.backgroundColor = GetWebColor(ele.value || ele.placeholder);
 	}
 }
 
-function EnableInner()
-{
+function EnableInner() {
 	ChangeForm([["__Inner", "disabled", false]]);
 }
 
-function ChangeForm(ar)
-{
-	AddEventEx(window, "load", function ()
-	{
+function ChangeForm(ar) {
+	AddEventEx(window, "load", function () {
 		for (var i in ar) {
 			var o = document.getElementById(ar[i][0]);
 			for (var s = ar[i][1].split("/"); s.length > 1;) {
@@ -2595,15 +2464,13 @@ function ChangeForm(ar)
 	});
 }
 
-function SetTabContents(id, name, value)
-{
+function SetTabContents(id, name, value) {
 	var oPanel = document.getElementById("panel" + id);
 	if (name) {
 		document.getElementById("tab" + id).innerHTML = GetText(name);
 	} else {
 		g_.NoTab = true;
-		setTimeout(function ()
-		{
+		setTimeout(function () {
 			document.getElementById("tabs").style.display = "none";
 			oPanel.style.border = "0";
 		}, 99);
@@ -2611,8 +2478,7 @@ function SetTabContents(id, name, value)
 	oPanel.innerHTML = value.join ? value.join('') : value;
 }
 
-function ShowButtons(b1, b2, SortMode)
-{
+function ShowButtons(b1, b2, SortMode) {
 	if (SortMode) {
 		g_SortMode = SortMode;
 	}
@@ -2637,8 +2503,7 @@ function ShowButtons(b1, b2, SortMode)
 	}
 }
 
-function SortAddons(n)
-{
+function SortAddons(n) {
 	if (g_SortMode == 1) {
 		var table = document.getElementById("Addons");
 		if (table.rows.length < 2) {

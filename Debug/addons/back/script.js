@@ -6,21 +6,18 @@ if (window.Addon == 1) {
 
 	Addons.Back =
 	{
-		Exec: function (Ctrl, pt)
-		{
+		Exec: function (Ctrl, pt) {
 			Exec(Ctrl, "Back", "Tabs", 0, pt);
 		},
 
-		Popup: function (o)
-		{
+		Popup: function (o) {
 			var FV = te.Ctrl(CTRL_FV);
 			if (FV) {
 				var Log = FV.History;
 				var hMenu = api.CreatePopupMenu();
 				var mii = api.Memory("MENUITEMINFO");
 				mii.cbSize = mii.Size;
-				mii.fMask  = MIIM_ID | MIIM_STRING | MIIM_BITMAP;
-				var arBM = [];
+				mii.fMask = MIIM_ID | MIIM_STRING | MIIM_BITMAP;
 				for (var i = Log.Index + 1; i < Log.Count; i++) {
 					var FolderItem = Log.Item(i);
 					AddMenuIconFolderItem(mii, FolderItem);
@@ -33,16 +30,19 @@ if (window.Addon == 1) {
 				var nVerb = api.TrackPopupMenuEx(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, null);
 				api.DestroyMenu(hMenu);
 				if (nVerb) {
-					Log.Index = nVerb;
-					FV.History = Log;
+					if (FV.Data.Lock || api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_CONTROL) < 0) {
+						FV.Navigate(Log[nVerb], SBSP_NEWBROWSER);
+					} else {
+						Log.Index = nVerb;
+						FV.History = Log;
+					}
 				}
 			}
 			return false;
 		}
 	};
 
-	AddEvent("ChangeView", function (Ctrl)
-	{
+	AddEvent("ChangeView", function (Ctrl) {
 		if (Ctrl.Id == Ctrl.Parent.Selected.Id) {
 			var Log = Ctrl.History;
 			DisableImage(document.getElementById("ImgBack"), Log && Log.Index >= Log.Count - 1);
