@@ -22,7 +22,7 @@ if (window.Addon == 1) {
 } else {
 	var ado = OpenAdodbFromTextFile(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\" + Addon_Id + "\\options.html"));
 	if (ado) {
-		SetTabContents(0, "General", ado.ReadText(adReadAll));
+		SetTabContents(0, "", ado.ReadText(adReadAll));
 		ado.Close();
 	}
 	document.getElementById("_7zip").value = api.sprintf(99, GetText("Get %s..."), "7-Zip");

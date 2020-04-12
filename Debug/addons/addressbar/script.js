@@ -72,7 +72,7 @@ if (window.Addon == 1) {
 				var width = oAddr.offsetWidth - oImg.offsetWidth + oPopup.offsetWidth - 2;
 				var height = oAddr.offsetHeight - (6 * screen.deviceYDPI / 96);
 				if (Addons.AddressBar.XP) {
-					oAddr.style.color = "WindowText";
+					oAddr.style.color = "";
 				} else {
 					o.style.width = "auto";
 					var n = 0;

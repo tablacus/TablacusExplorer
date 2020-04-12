@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200401 ? te.Version : 20200410
+		return te.Version < 20200401 ? te.Version : 20200412
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -1038,6 +1038,10 @@ NavigateFV = function (FV, Path, wFlags, bInputed) {
 	}
 	if (bInputed) {
 		RunEvent1("LocationEntered", FV, Path, wFlags);
+		var r = MainWindow.RunEvent4("LocationEntered2", FV, Path, wFlags);
+		if (r !== void 0) {
+			return r;
+		}
 	}
 	FV.Navigate(Path, wFlags);
 	FV.Focus();
