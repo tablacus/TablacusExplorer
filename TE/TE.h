@@ -745,6 +745,7 @@ private:
 	LONG			m_cRef;
 	LONG			m_nCount;
 	BOOL			m_bUseILF;
+	BOOL			m_bUseText;
 };
 
 class CteDropTarget2 : public IDropTarget

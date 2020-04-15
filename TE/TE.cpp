@@ -1087,6 +1087,7 @@ TEmethod methodFIs[] = {
 	{ 0x10000001, "dwEffect" },
 	{ 0x10000002, "pdwEffect" },
 	{ 0x10000003, "Data" },
+	{ 0x10000004, "UseText" },
 	{ 0, NULL }
 };
 
@@ -19300,6 +19301,7 @@ CteFolderItems::CteFolderItems(IDataObject *pDataObj, FolderItems *pFolderItems)
 	m_pidllist = NULL;
 	m_nCount = -1;
 	m_bsText = NULL;
+	m_bUseText = FALSE;
 	m_pFolderItems = pFolderItems;
 	m_nIndex = 0;
 	m_dwEffect = (DWORD)-1;
@@ -19619,7 +19621,14 @@ STDMETHODIMP CteFolderItems::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 					VariantCopy(pVarResult, &m_vData);
 				}
 				return S_OK;
-			//this
+			//Text
+			case 0x10000004:
+				if (nArg >= 0) {
+					m_bUseText = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+				}
+				teSetBool(pVarResult, m_bUseText);
+				return S_OK;
+				//this
 			case DISPID_VALUE:
 				teSetObject(pVarResult, this);
 				return S_OK;
@@ -20060,11 +20069,14 @@ STDMETHODIMP CteFolderItems::QueryGetData(FORMATETC *pformatetc)
 
 HRESULT CteFolderItems::QueryGetData2(FORMATETC *pformatetc)
 {
-	if (pformatetc->cfFormat == CF_UNICODETEXT) {
-		return S_OK;
-	}
-	if (pformatetc->cfFormat == CF_TEXT) {
-		return S_OK;
+	if (m_bUseText) {
+		if (pformatetc->cfFormat == CF_UNICODETEXT) {
+			return S_OK;
+		}
+		if (pformatetc->cfFormat == CF_TEXT) {
+			return S_OK;
+		}
+
 	}
 	if (m_nCount > 0) {
 		if (pformatetc->cfFormat == CF_HDROP) {
@@ -20096,28 +20108,51 @@ STDMETHODIMP CteFolderItems::SetData(FORMATETC *pformatetc, STGMEDIUM *pmedium, 
 STDMETHODIMP CteFolderItems::EnumFormatEtc(DWORD dwDirection, IEnumFORMATETC **ppenumFormatEtc)
 {
 	if (dwDirection == DATADIR_GET) {
+		BOOL bIDListFormat = m_bUseILF;
+		BOOL bHDROPFormat = TRUE;
+		BOOL bUNICODEFormat = m_bUseText;
+		BOOL bTEXTFormat = m_bUseText;
+		BOOL bDROPEFFECTFormat = m_dwEffect != (DWORD)-1;
 		FORMATETC formats[MAX_FORMATS];
-		FORMATETC teformats[] = { IDLISTFormat, HDROPFormat, UNICODEFormat, TEXTFormat, DROPEFFECTFormat };
 		UINT nFormat = 0;
 
 		if (m_pDataObj) {
 			IEnumFORMATETC *penumFormatEtc;
 			if SUCCEEDED(m_pDataObj->EnumFormatEtc(DATADIR_GET, &penumFormatEtc)) {
-				while (nFormat < MAX_FORMATS - _countof(teformats) && penumFormatEtc->Next(1, &formats[nFormat], NULL) == S_OK) {
-					if (QueryGetData2(&formats[nFormat]) != S_OK) {
-						nFormat++;
+				while (nFormat < MAX_FORMATS - 5 && penumFormatEtc->Next(1, &formats[nFormat], NULL) == S_OK) {
+					if (formats[nFormat].cfFormat == IDLISTFormat.cfFormat) {
+						bIDListFormat = FALSE;
+					} else if (formats[nFormat].cfFormat == HDROPFormat.cfFormat) {
+						bHDROPFormat = FALSE;
+					} else if (formats[nFormat].cfFormat == CF_UNICODETEXT) {
+						bUNICODEFormat = FALSE;
+					} else if (formats[nFormat].cfFormat == CF_TEXT) {
+						bTEXTFormat = FALSE;
+					} else if (formats[nFormat].cfFormat == DROPEFFECTFormat.cfFormat) {
+						bDROPEFFECTFormat = FALSE;
 					}
+					nFormat++;
 				}
 				penumFormatEtc->Release();
 			}
 		}
 		AdjustIDListEx();
-		int nMax = _countof(teformats);
-		if (m_dwEffect == (DWORD)-1) {
-			nMax--;
+		if (m_nCount) {
+			if (bIDListFormat) {
+				formats[nFormat++] = IDLISTFormat;
+			}
+			if (bHDROPFormat) {
+				formats[nFormat++] = HDROPFormat;
+			}
 		}
-		for (int i = m_nCount ? (m_bUseILF ? 0 : 1) : 2 ; i < nMax; i++) {
-			formats[nFormat++] = teformats[i];
+		if (bUNICODEFormat) {
+			formats[nFormat++] = UNICODEFormat;
+		}
+		if (bTEXTFormat) {
+			formats[nFormat++] = TEXTFormat;
+		}
+		if (bDROPEFFECTFormat) {
+			formats[nFormat++] = DROPEFFECTFormat;
 		}
 		return CreateFormatEnumerator(nFormat, formats, ppenumFormatEtc);
 	}
