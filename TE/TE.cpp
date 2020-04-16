@@ -3995,22 +3995,22 @@ void CheckChangeTabTC(HWND hwnd, BOOL bFocusSB)
 	}
 }
 
-BOOL AdjustIDList(LPITEMIDLIST *ppidllist, int nCount)
+VOID AdjustIDList(LPITEMIDLIST *ppidllist, int nCount)
 {
 	if (ppidllist == NULL || nCount <= 0) {
-		return FALSE;
+		return;
 	}
 	if (ppidllist[0]) {
 #ifdef _2000XP
 		if (g_bUpperVista || !ILIsEqual(ppidllist[0], g_pidls[CSIDL_RESULTSFOLDER])) {
-			return FALSE;
+			return;
 		}
 		for (int i = nCount; i > 1; i--) {
 			teILCloneReplace(&ppidllist[i], ILCombine(ppidllist[0], ppidllist[i]));
 		}
 		teILFreeClear(&ppidllist[0]);
 #else
-		return FALSE;
+		return;
 #endif
 	}
 	ppidllist[0] = ::ILClone(ppidllist[1]);
@@ -4047,7 +4047,6 @@ BOOL AdjustIDList(LPITEMIDLIST *ppidllist, int nCount)
 			teILCloneReplace(&ppidllist[i], pidl);
 		}
 	}
-	return nCommon == nBase;
 }
 
 LPITEMIDLIST* IDListFormDataObj(IDataObject *pDataObj, long *pnCount)
@@ -12571,8 +12570,7 @@ HRESULT CteShellBrowser::Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *
 {
 	HRESULT hr = E_FAIL;
 	try {
-		BOOL bBlank = teILIsBlank(m_pFolderItem);
-		if (bBlank) {
+		if ((wFlags & SBSP_NEWBROWSER) && !(m_pTC->m_nRedraw & TEREDRAW_NAVIGATE) && teILIsBlank(m_pFolderItem)) {
 			wFlags &= ~SBSP_NEWBROWSER;
 		}
 		if (!(wFlags & SBSP_NEWBROWSER)) {
@@ -19305,7 +19303,7 @@ CteFolderItems::CteFolderItems(IDataObject *pDataObj, FolderItems *pFolderItems)
 	m_pFolderItems = pFolderItems;
 	m_nIndex = 0;
 	m_dwEffect = (DWORD)-1;
-	m_bUseILF = TRUE;
+	m_nUseIDListFormat = -1;
 	VariantInit(&m_vData);
 }
 
@@ -19406,27 +19404,47 @@ VOID CteFolderItems::ItemEx(long nIndex, VARIANT *pVarResult, VARIANT *pVarNew)
 	}
 }
 
-VOID CteFolderItems::AdjustIDListEx()
+BOOL CteFolderItems::CanIDListFormat()
 {
-	m_bUseILF = TRUE;
-	if (!m_pidllist && m_oFolderItems) {
-		get_Count(&m_nCount);
-		m_pidllist = new LPITEMIDLIST[m_nCount + 1];
-		m_pidllist[0] = NULL;
-		VARIANT v;
-		teSetLong(&v, m_nCount);
-		FolderItem *pid = NULL;
-		while (--v.lVal >= 0) {
-			if (Item(v, &pid) == S_OK) {
-				if (!teGetIDListFromObject(pid, &m_pidllist[v.lVal + 1])) {
-					m_pidllist[v.lVal + 1] = ::ILClone(g_pidls[CSIDL_DESKTOP]);
-					m_bUseILF = FALSE;
-				}
-				pid->Release();
-			}
+	if (m_nUseIDListFormat >= 0) {
+		return m_nUseIDListFormat;
+	}
+	AdjustIDListEx();
+	for (int i = m_nCount; i > 0; i--) {
+		if (ILGetCount(m_pidllist[i]) != 1) {
+			m_nUseIDListFormat = 0;
+			return FALSE;
 		}
 	}
-	m_bUseILF &= AdjustIDList(m_pidllist, m_nCount);
+	m_nUseIDListFormat = 1;
+	return TRUE;
+}
+
+VOID CteFolderItems::AdjustIDListEx()
+{
+	if (!m_pidllist) {
+		m_nUseIDListFormat = -1;
+		if (m_oFolderItems) {
+			get_Count(&m_nCount);
+			m_pidllist = new LPITEMIDLIST[m_nCount + 1];
+			m_pidllist[0] = NULL;
+			VARIANT v;
+			teSetLong(&v, m_nCount);
+			FolderItem *pid = NULL;
+			while (--v.lVal >= 0) {
+				if (Item(v, &pid) == S_OK) {
+					if (!teGetIDListFromObject(pid, &m_pidllist[v.lVal + 1])) {
+						m_pidllist[v.lVal + 1] = ::ILClone(g_pidls[CSIDL_DESKTOP]);
+						m_nUseIDListFormat = 0;
+					}
+					pid->Release();
+				}
+			}
+		} else if (m_pDataObj) {
+			m_pidllist = IDListFormDataObj(m_pDataObj, &m_nCount);
+		}
+	}
+	AdjustIDList(m_pidllist, m_nCount);
 }
 
 STDMETHODIMP CteFolderItems::QueryInterface(REFIID riid, void **ppvObject)
@@ -19436,27 +19454,9 @@ STDMETHODIMP CteFolderItems::QueryInterface(REFIID riid, void **ppvObject)
 		QITABENTMULTI(CteFolderItems, IDispatch, IDispatchEx),
 		QITABENT(CteFolderItems, IDispatchEx),
 		QITABENT(CteFolderItems, FolderItems),
+		QITABENT(CteFolderItems, IDataObject),
 		{ 0 },
 	};
-	*ppvObject = NULL;
-	if (IsEqualIID(riid, IID_IDataObject)) {
-		if (!m_pDataObj && m_pidllist && m_nCount) {
-			m_bUseILF = AdjustIDList(m_pidllist, m_nCount);
-			IShellFolder *pSF;
-			if (GetShellFolder(&pSF, m_pidllist[0])) {
-				pSF->GetUIObjectOf(g_hwndMain, m_nCount, const_cast<LPCITEMIDLIST *>(&m_pidllist[1]), IID_IDataObject, NULL, (LPVOID *)&m_pDataObj);
-				pSF->Release();
-			}
-		}
-		if (m_pDataObj) {
-			if (m_pDataObj->QueryGetData(&UNICODEFormat) == S_OK || m_pDataObj->QueryGetData(&TEXTFormat) == S_OK) {
-				return m_pDataObj->QueryInterface(riid, ppvObject);
-			}
-		}
-		*ppvObject = static_cast<IDataObject *>(this);
-		AddRef();
-		return S_OK;
-	}
 	return QISearch(this, qit, riid, ppvObject);
 }
 
@@ -20082,7 +20082,7 @@ HRESULT CteFolderItems::QueryGetData2(FORMATETC *pformatetc)
 		if (pformatetc->cfFormat == CF_HDROP) {
 			return S_OK;
 		}
-		if (pformatetc->cfFormat == IDLISTFormat.cfFormat && m_bUseILF) {
+		if (pformatetc->cfFormat == IDLISTFormat.cfFormat && CanIDListFormat()) {
 			return S_OK;
 		}
 	}
@@ -20108,53 +20108,72 @@ STDMETHODIMP CteFolderItems::SetData(FORMATETC *pformatetc, STGMEDIUM *pmedium, 
 STDMETHODIMP CteFolderItems::EnumFormatEtc(DWORD dwDirection, IEnumFORMATETC **ppenumFormatEtc)
 {
 	if (dwDirection == DATADIR_GET) {
-		BOOL bIDListFormat = m_bUseILF;
-		BOOL bHDROPFormat = TRUE;
+		BOOL bIDListFormat = CanIDListFormat();
+		BOOL bHDROPFormat = m_nCount > 0;
 		BOOL bUNICODEFormat = m_bUseText;
 		BOOL bTEXTFormat = m_bUseText;
 		BOOL bDROPEFFECTFormat = m_dwEffect != (DWORD)-1;
-		FORMATETC formats[MAX_FORMATS];
-		UINT nFormat = 0;
-
+		std::vector<FORMATETC> formats;
+		if (!m_pDataObj && m_pidllist && m_nCount > 0) {
+			IShellFolder *pSF;
+			if (GetShellFolder(&pSF, m_pidllist[0])) {
+				pSF->GetUIObjectOf(g_hwndMain, m_nCount, const_cast<LPCITEMIDLIST *>(&m_pidllist[1]), IID_IDataObject, NULL, (LPVOID *)&m_pDataObj);
+				pSF->Release();
+			}
+		}
 		if (m_pDataObj) {
 			IEnumFORMATETC *penumFormatEtc;
 			if SUCCEEDED(m_pDataObj->EnumFormatEtc(DATADIR_GET, &penumFormatEtc)) {
-				while (nFormat < MAX_FORMATS - 5 && penumFormatEtc->Next(1, &formats[nFormat], NULL) == S_OK) {
-					if (formats[nFormat].cfFormat == IDLISTFormat.cfFormat) {
-						bIDListFormat = FALSE;
-					} else if (formats[nFormat].cfFormat == HDROPFormat.cfFormat) {
-						bHDROPFormat = FALSE;
-					} else if (formats[nFormat].cfFormat == CF_UNICODETEXT) {
-						bUNICODEFormat = FALSE;
-					} else if (formats[nFormat].cfFormat == CF_TEXT) {
-						bTEXTFormat = FALSE;
-					} else if (formats[nFormat].cfFormat == DROPEFFECTFormat.cfFormat) {
-						bDROPEFFECTFormat = FALSE;
+				FORMATETC format1;
+				while (penumFormatEtc->Next(1, &format1, NULL) == S_OK) {
+					if (format1.cfFormat == IDLISTFormat.cfFormat) {
+						if (bIDListFormat) {
+							bIDListFormat = FALSE;
+							formats.push_back(format1);
+						}
+					} else if (format1.cfFormat == HDROPFormat.cfFormat) {
+						if (bHDROPFormat) {
+							bHDROPFormat = FALSE;
+							formats.push_back(format1);
+						}
+					} else if (format1.cfFormat == CF_UNICODETEXT) {
+						if (bUNICODEFormat) {
+							bUNICODEFormat = FALSE;
+							formats.push_back(format1);
+						}
+					} else if (format1.cfFormat == CF_TEXT) {
+						if (bTEXTFormat) {
+							bTEXTFormat = FALSE;
+							formats.push_back(format1);
+						}
+					} else if (format1.cfFormat == DROPEFFECTFormat.cfFormat) {
+						if (bDROPEFFECTFormat) {
+							bDROPEFFECTFormat = FALSE;
+							formats.push_back(format1);
+						}
+					} else {
+						formats.push_back(format1);
 					}
-					nFormat++;
 				}
 				penumFormatEtc->Release();
 			}
 		}
-		AdjustIDListEx();
-		if (m_nCount) {
-			if (bIDListFormat) {
-				formats[nFormat++] = IDLISTFormat;
-			}
-			if (bHDROPFormat) {
-				formats[nFormat++] = HDROPFormat;
-			}
+		if (bIDListFormat) {
+			formats.push_back(IDLISTFormat);
+		}
+		if (bHDROPFormat) {
+			formats.push_back(HDROPFormat);
 		}
 		if (bUNICODEFormat) {
-			formats[nFormat++] = UNICODEFormat;
+			formats.push_back(UNICODEFormat);
 		}
 		if (bTEXTFormat) {
-			formats[nFormat++] = TEXTFormat;
+			formats.push_back(TEXTFormat);
 		}
 		if (bDROPEFFECTFormat) {
-			formats[nFormat++] = DROPEFFECTFormat;
+			formats.push_back(DROPEFFECTFormat);
 		}
-		return CreateFormatEnumerator(nFormat, formats, ppenumFormatEtc);
+		return CreateFormatEnumerator(formats.size(), &formats[0], ppenumFormatEtc);
 	}
 	if (m_pDataObj) {
 		return m_pDataObj->EnumFormatEtc(dwDirection, ppenumFormatEtc);

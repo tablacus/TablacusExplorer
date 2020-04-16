@@ -605,6 +605,12 @@ if (window.Addon == 1) {
 		}
 	});
 
+	AddEvent("Arrange", function (Ctrl) {
+		if (Ctrl.Type == CTRL_TC) {
+			Addons.TabPlus.Arrange(Ctrl.Id);
+		}
+	});
+
 	AddEvent("ChangeView", function (Ctrl) {
 		var TC = Ctrl.Parent;
 		if (TC) {

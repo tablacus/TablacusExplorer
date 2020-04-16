@@ -261,7 +261,7 @@ LoadConfig = function (bDog) {
 
 function LoadWindowSettings(xml) {
 	if (fso.FileExists(te.Data.WindowSetting)) {
-		xml = te.CreateObject("Msxml2.DOMDocument");
+		xml = api.CreateObject("Msxml2.DOMDocument");
 		xml.async = false;
 		xml.load(te.Data.WindowSetting);
 		if (xml) {
@@ -534,6 +534,7 @@ OpenSelected = function (Ctrl, NewTab, pt) {
 	var SelItem = ar.shift();
 	var FV = ar.shift();
 	if (Selected) {
+		g_.LockUpdate++;
 		var Exec = [];
 		for (var i in Selected) {
 			var Item = Selected.Item(i);
@@ -560,6 +561,7 @@ OpenSelected = function (Ctrl, NewTab, pt) {
 			}
 			InvokeCommand(Selected, 0, te.hwnd, null, null, null, SW_SHOWNORMAL, 0, 0, FV, CMF_DEFAULTONLY);
 		}
+		g_.LockUpdate--;
 	}
 	return S_OK;
 }
@@ -3166,7 +3168,7 @@ AddEvent("Exec", function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEff
 			pdwEffect[0] = DROPEFFECT_NONE;
 			return E_NOTIMPL;
 		}
-		if (!/Background|Tabs|Tools|View/i.test(type)) {
+		if (FV && !/Background|Tabs|Tools|View|.*Script/i.test(type)) {
 			var hr = te.OnBeforeGetData(FV, dataObj || FV.SelectedItems(), 3);
 			if (hr) {
 				return hr;

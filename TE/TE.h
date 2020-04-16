@@ -296,7 +296,6 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define CSIDL_RESULTSFOLDER		0x40
 #define MAX_CSIDL2				0x41
 
-#define MAX_FORMATS				1024
 #define MAX_PATHEX				32768
 #define MAX_PROP				4096
 #define MAX_STATUS				1024
@@ -727,6 +726,7 @@ public:
 	HDROP GethDrop(int x, int y, BOOL fNC);
 	VOID Regenerate(BOOL bFull);
 	VOID ItemEx(long nIndex, VARIANT *pVarResult, VARIANT *pVarNew);
+	BOOL CanIDListFormat();
 	VOID AdjustIDListEx();
 	VOID Clear();
 	HRESULT QueryGetData2(FORMATETC *pformatetc);
@@ -744,7 +744,7 @@ private:
 
 	LONG			m_cRef;
 	LONG			m_nCount;
-	BOOL			m_bUseILF;
+	int				m_nUseIDListFormat;
 	BOOL			m_bUseText;
 };
 

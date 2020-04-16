@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200415 ? te.Version : 20200415
+		return te.Version < 20200416 ? te.Version : 20200416
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -63,6 +63,7 @@ g_ = {
 	event: {},
 	tid_rf: [],
 	Autocomplete: {},
+	LockUpdate: 0,
 	IEVer: window.document && (document.documentMode || (document.body.style.maxHeight === void 0 ? 6 : 7))
 };
 
@@ -690,7 +691,7 @@ GetTextR = function (id) {
 }
 
 function LoadLang2(filename) {
-	var xml = te.CreateObject("Msxml2.DOMDocument");
+	var xml = api.CreateObject("Msxml2.DOMDocument");
 	xml.async = false;
 	if (!fso.FileExists(filename)) {
 		if (/_\w+\.xml$/.test(filename)) {
@@ -731,7 +732,7 @@ LoadXml = function (filename, nGroup) {
 	if ("string" === typeof filename) {
 		filename = api.PathUnquoteSpaces(ExtractMacro(te, filename));
 		if (fso.FileExists(filename)) {
-			xml = te.CreateObject("Msxml2.DOMDocument");
+			xml = api.CreateObject("Msxml2.DOMDocument");
 			xml.async = false;
 			xml.load(filename);
 		}
@@ -741,7 +742,7 @@ LoadXml = function (filename, nGroup) {
 	} catch (e) {
 		return;
 	}
-	g_.LockUpdate = true;
+	g_.LockUpdate++;
 	te.LockUpdate();
 	if (!nGroup) {
 		var cTC = te.Ctrls(CTRL_TC);
@@ -791,7 +792,7 @@ LoadXml = function (filename, nGroup) {
 		MainWindow.RunEvent1("LoadWindow", xml);
 	}
 	te.UnlockUpdate();
-	g_.LockUpdate = false;
+	g_.LockUpdate--;
 }
 
 SaveXmlTC = function (Ctrl, xml, nGroup) {
@@ -1341,6 +1342,7 @@ Navigate2 = function (path, NewTab) {
 }
 
 ExecOpen = function (Ctrl, s, type, hwnd, pt, NewTab) {
+	g_.LockUpdate++;
 	var line = s.split("\n");
 	for (var i = (NewTab & SBSP_ACTIVATE_NOFOCUS) ? line.length - 1 : 0; i < line.length && i >= 0; i += (NewTab & SBSP_ACTIVATE_NOFOCUS) ? -1 : 1) {
 		if (line[i] != "") {
@@ -1348,6 +1350,7 @@ ExecOpen = function (Ctrl, s, type, hwnd, pt, NewTab) {
 			NewTab |= SBSP_NEWBROWSER;
 		}
 	}
+	g_.LockUpdate--;
 	return S_OK;
 }
 
@@ -2213,7 +2216,7 @@ GetAddonInfo = function (Id) {
 	var info = [];
 
 	var path = te.Data.Installed;
-	var xml = te.CreateObject("Msxml2.DOMDocument");
+	var xml = api.CreateObject("Msxml2.DOMDocument");
 	xml.async = false;
 	var xmlfile = fso.BuildPath(path, "addons\\" + Id + "\\config.xml");
 	if (fso.FileExists(xmlfile)) {
@@ -2255,7 +2258,7 @@ GetAddonInfo2 = function (xml, info, Tag, bTrans) {
 }
 
 OpenXml = function (strFile, bAppData, bEmpty, strInit) {
-	var xml = te.CreateObject("Msxml2.DOMDocument");
+	var xml = api.CreateObject("Msxml2.DOMDocument");
 	xml.async = false;
 	var path = fso.BuildPath(te.Data.DataFolder, "config\\" + strFile);
 	if (fso.FileExists(path) && xml.load(path)) {
@@ -2282,7 +2285,7 @@ OpenXml = function (strFile, bAppData, bEmpty, strInit) {
 }
 
 CreateXml = function (bRoot) {
-	var xml = te.CreateObject("Msxml2.DOMDocument");
+	var xml = api.CreateObject("Msxml2.DOMDocument");
 	xml.async = false;
 	xml.appendChild(xml.createProcessingInstruction("xml", 'version="1.0" encoding="UTF-8"'));
 	if (bRoot) {
@@ -2437,9 +2440,9 @@ MessageBox = function (s, title, uType) {
 
 createHttpRequest = function () {
 	try {
-		return window.XMLHttpRequest && g_.IEVer >= 9 ? new XMLHttpRequest() : te.CreateObject("Msxml2.XMLHTTP");
+		return window.XMLHttpRequest && g_.IEVer >= 9 ? new XMLHttpRequest() : api.CreateObject("Msxml2.XMLHTTP");
 	} catch (e) {
-		return te.CreateObject("Microsoft.XMLHTTP");
+		return api.CreateObject("Microsoft.XMLHTTP");
 	}
 }
 
