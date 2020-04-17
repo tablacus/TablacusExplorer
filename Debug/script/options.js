@@ -2128,7 +2128,7 @@ TestX = function (id) {
 SetImage = function () {
 	var o = document.getElementById("_Icon");
 	if (o) {
-		var h = api.LowPart(document.F.IconSize && document.F.IconSize.value || document.F.Height && document.F.Height.value || window.IconSize || 24);
+		var h = api.LowPart((document.F.IconSize || document.F.Height || { value: window.IconSize || 24 }).value);
 		var src = MakeImgSrc(api.PathUnquoteSpaces(document.F.Icon.value), 0, true, h);
 		o.innerHTML = src ? '<img src="' + src + '" ' + (h ? 'height="' + h + 'px"' : "") + '>' : "";
 	}
