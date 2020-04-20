@@ -52,7 +52,7 @@ function OpenGroup(id) {
 }
 
 function LoadChecked(form) {
-	for (var i = 0; i < form.length; i++) {
+	for (var i = 0; i < form.length; ++i) {
 		var o = form[i];
 		var ar = o.id.split("=");
 		if (ar.length > 1 && form[ar[0]].value == (api.sscanf(ar[1], "0x%x") || ar[1])) {
@@ -98,7 +98,7 @@ function ResetForm() {
 		document.F.View_ViewFlags.value = FV.ViewFlags;
 	}
 	document.F.Conf_SizeFormat.value = te.Data.Conf_SizeFormat || 0;
-	for (i = 0; i < document.F.length; i++) {
+	for (i = 0; i < document.F.length; ++i) {
 		o = document.F[i];
 		if (String(o.type).toLowerCase() == 'checkbox') {
 			if (!/^!?Conf_/.test(o.id)) {
@@ -150,7 +150,7 @@ function ClickTab(o, nMode) {
 			ovTab.style.zIndex = 10 - i;
 			ovPanel.style.display = 'none';
 		}
-		i++;
+		++i;
 	}
 	nTabMax = i;
 }
@@ -340,7 +340,7 @@ function SetTabControls() {
 	if (g_Chg.Tab) {
 		if (document.getElementById("Conf_TabDefault").checked) {
 			var cTC = te.Ctrls(CTRL_TC);
-			for (i = 0; i < cTC.Count; i++) {
+			for (i = 0; i < cTC.Count; ++i) {
 				SetTabControl(cTC.Item(i));
 			}
 		} else {
@@ -627,11 +627,11 @@ function InsertX(sel) {
 	if (!sel) {
 		return;
 	}
-	sel.length++;
+	++sel.length;
 	if (sel.selectedIndex < 0) {
 		sel.selectedIndex = sel.length - 1;
 	} else {
-		sel.selectedIndex++;
+		++sel.selectedIndex;
 		for (var i = sel.length; i-- > sel.selectedIndex;) {
 			sel[i].text = sel[i - 1].text;
 			sel[i].value = sel[i - 1].value;
@@ -709,7 +709,7 @@ function RemoveX(mode) {
 
 function MoveX(mode, n) {
 	if (n < 0) {
-		for (var i = 0; i < g_x[mode].length + n; i++) {
+		for (var i = 0; i < g_x[mode].length + n; ++i) {
 			if (!g_x[mode][i].selected && g_x[mode][i + 1].selected) {
 				var ar = [g_x[mode][i].text, g_x[mode][i].value];
 				g_x[mode][i].text = g_x[mode][i + 1].text;
@@ -752,7 +752,7 @@ function LoadMenus(nSelected) {
 	if (!g_x.Menus) {
 		var arFunc = [];
 		MainWindow.RunEvent1("AddType", arFunc);
-		for (var i = 0; i < arFunc.length; i++) {
+		for (var i = 0; i < arFunc.length; ++i) {
 			var o = oa[++oa.length - 1];
 			o.value = arFunc[i];
 			o.innerText = GetText(arFunc[i]);
@@ -817,7 +817,7 @@ function LoadX(mode, fn, form) {
 		while (oa.length) {
 			oa.removeChild(oa[0]);
 		}
-		for (var i = 0; i < arFunc.length; i++) {
+		for (var i = 0; i < arFunc.length; ++i) {
 			var o = oa[++oa.length - 1];
 			o.value = arFunc[i];
 			o.innerText = GetText(arFunc[i]);
@@ -889,7 +889,7 @@ function SaveMenus() {
 			var a = document.F.elements.Menus[j].value.split(",");
 			items.setAttribute("Base", api.LowPart(a[1]));
 			items.setAttribute("Pos", api.LowPart(a[2]));
-			for (var i = 0; i < o.length; i++) {
+			for (var i = 0; i < o.length; ++i) {
 				var item = xml.createElement("Item");
 				var a = o[i].value.split(g_sep);
 				item.setAttribute("Name", a[0]);
@@ -934,7 +934,7 @@ function SaveX(mode, form) {
 		var root = xml.createElement("TablacusExplorer");
 		for (var j in g_Types[mode]) {
 			var o = (form || document.F)[mode + g_Types[mode][j]];
-			for (var i = 0; i < o.length; i++) {
+			for (var i = 0; i < o.length; ++i) {
 				var item = xml.createElement(g_Types[mode][j]);
 				var a = o[i].value.split(g_sep);
 				var s = a[0];
@@ -965,7 +965,7 @@ function SaveAddons() {
 			var xml = CreateXml();
 			var root = xml.createElement("TablacusExplorer");
 			var table = document.getElementById("Addons");
-			for (var j = 0; j < table.rows.length; j++) {
+			for (var j = 0; j < table.rows.length; ++j) {
 				var div = table.rows(j).cells(0).firstChild;
 				var Id = div.id.replace("Addons_", "").toLowerCase();
 				var item = null;
@@ -1054,7 +1054,7 @@ function LoadAddons() {
 	if (root) {
 		var items = root.childNodes;
 		if (items) {
-			for (var i = 0; i < items.length; i++) {
+			for (var i = 0; i < items.length; ++i) {
 				var item = items[i];
 				var Id = item.nodeName;
 				if (AddonId[Id]) {
@@ -1165,7 +1165,7 @@ function GetRowIndexById(id) {
 
 function AddonInfo(Id, o) {
 	o.style.textDecoration = "none";
-	o.style.color = "windowtext";
+	o.style.color = GetWebColor(MainWindow.GetSysColor(COLOR_WINDOWTEXT));
 	o.style.cursor = "default";
 	o.onclick = null;
 	var info = GetAddonInfo(Id);
@@ -1188,7 +1188,7 @@ function AddonEnable(o, Id) {
 function OptionMove(dir) {
 	if (/^1/.test(TabIndex)) {
 		var r = document.F.AddonId;
-		for (i = 0; i < r.length; i++) {
+		for (i = 0; i < r.length; ++i) {
 			if (r[i].checked) {
 				if (api.GetKeyState(VK_CONTROL) < 0) {
 					if (dir < 0) {
@@ -1408,7 +1408,7 @@ OpenIcon = function (o) {
 				dllPath = fso.BuildPath(system32, a[1]);
 			}
 			var nCount = api.ExtractIconEx(dllPath, -1, null, null, 0);
-			for (var i = 0; i < nCount; i++) {
+			for (var i = 0; i < nCount; ++i) {
 				var s = ["icon:" + a[1], i].join(",");
 				var src = MakeImgSrc(s, 0, false, 32);
 				data.push('<img src="' + src + '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="' + s + '"> ');
@@ -1544,7 +1544,7 @@ InitDialog = function () {
 			var ar = [];
 			var items = root.childNodes;
 			if (items) {
-				for (var i = 0; i < items.length; i++) {
+				for (var i = 0; i < items.length; ++i) {
 					if (api.LowPart(items[i].getAttribute("Enabled"))) {
 						ar.push(items[i].nodeName);
 					}
@@ -1597,7 +1597,7 @@ MouseDown = function () {
 	if (g_Gesture) {
 		var n = 1;
 		var ar = [0, 0, 2, 1];
-		for (i = 1; i < 6; i++) {
+		for (i = 1; i < 6; ++i) {
 			if (g_Gesture.indexOf(i + "") < 0) {
 				if ((event.buttons && event.buttons & n) || event.button == ar[i]) {
 					returnValue += i + "";
@@ -1700,7 +1700,7 @@ InitLocation = function () {
 	}
 	ar = [];
 	var s = "CSA";
-	for (var i = 0; i < s.length; i++) {
+	for (var i = 0; i < s.length; ++i) {
 		ar.push('<input type="button" value="', MainWindow.g_.KeyState[i][0], '" title="', s.charAt(i), '" onclick="AddMouse(this)">');
 	}
 	document.getElementById("__MOUSEDATA").innerHTML = ar.join("");
@@ -2033,7 +2033,7 @@ function SetTab(s) {
 			}
 			var s = GetText(ar[1]);
 			var ovTab;
-			for (var j = 0; ovTab = document.getElementById('tab' + j); j++) {
+			for (var j = 0; ovTab = document.getElementById('tab' + j); ++j) {
 				if (api.StrCmpI(s, ovTab.innerText) == 0) {
 					o = ovTab;
 					break;
@@ -2251,7 +2251,7 @@ function AddonsAppend() {
 			while (table.rows.length > 0) {
 				table.deleteRow(0);
 			}
-			for (i = 0; i < td.length; i++) {
+			for (i = 0; i < td.length; ++i) {
 				var tr = table.insertRow(i);
 				var td1 = tr.insertCell(0);
 				td[i].shift();

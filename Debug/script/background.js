@@ -63,7 +63,7 @@ function _es(fn)
 
 function importScripts()
 {
-	for (var i = 0; i < arguments.length; i++) {
+	for (var i = 0; i < arguments.length; ++i) {
 		_es(arguments[i]);
 	}
 }

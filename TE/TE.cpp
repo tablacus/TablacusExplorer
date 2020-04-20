@@ -1310,7 +1310,7 @@ int teGetthreadCount(DWORD dwProcessId)
 		if (Thread32First(hSnapshot, &te32)) {
 			do {
 				if (dwProcessId == te32.th32OwnerProcessID) {
-					nThread++;
+					++nThread;
 				}
 			} while (Thread32Next(hSnapshot, &te32));
 		}		CloseHandle(hSnapshot);
@@ -2062,7 +2062,7 @@ HRESULT teException(EXCEPINFO *pExcepInfo, LPCSTR pszObjA, TEmethod* pMethod, DI
 	if (pMethod) {
 		int i = 0;
 		while (pMethod[i].id && pMethod[i].id != dispIdMember) {
-			i++;
+			++i;
 		}
 		pszNameA = pMethod[i].name;
 	}
@@ -2164,7 +2164,7 @@ BOOL tePathMatchSpec1(LPCWSTR pszFile, LPWSTR pszSpec, WCHAR wSpecEnd)
 	if (!*pszFile && wc != '*') {
 		return FALSE;
 	}
-	for (; *pszFile; pszFile++) {
+	for (; *pszFile; ++pszFile) {
 		wc = *pszSpec++;
 		if (wc == '*') {
 			wc = towlower(*pszSpec++);
@@ -2250,7 +2250,7 @@ HRESULT STDAPICALLTYPE tePSPropertyKeyFromStringEx(__in LPCWSTR pszString,  __ou
 int CalcCrc32(BYTE *pc, int nLen, UINT c)
 {
 	c ^= MAXUINT;
-	for (int i = 0; i < nLen; i++) {
+	for (int i = 0; i < nLen; ++i) {
 		c = g_uCrcTable[LOBYTE(c ^ pc[i])] ^ (c >> 8);
 	}
 	return c ^ MAXUINT;
@@ -2427,7 +2427,7 @@ ULONGLONG teGetFolderSize(LPCWSTR szPath, int nItems, PDWORD pdwSessionId, DWORD
 		if (hFind != INVALID_HANDLE_VALUE) {
 			do {
 				if (nItems-- < 0) {
-					dwSessionId++;
+					++dwSessionId;
 					break;
 				}
 				if (tePathMatchSpec(wfd.cFileName, L".;..")) {
@@ -2819,13 +2819,13 @@ HRESULT teGetDisplayNameFromIDList(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags)
 			int j = 0;
 			for (int i = ::SysStringLen(*pbs); i-- > 0;) {
 				if (((uFlags & SHGDN_INFOLDER) && pbs[0][i] == '\\') || pbs[0][i] < 0x20 || StrChr(L"\"<>|", pbs[0][i])) {
-					j++;
+					++j;
 				}
 			}
 			if (j) {
 				BSTR bs = ::SysAllocStringLen(NULL, ::SysStringLen(*pbs) + j * 2);
 				j = 0;
-				for (UINT i = 0; i < ::SysStringLen(*pbs); i++) {
+				for (UINT i = 0; i < ::SysStringLen(*pbs); ++i) {
 					if (((uFlags & SHGDN_INFOLDER) && pbs[0][i] == '\\') || pbs[0][i] < 0x20 || StrChr(L"\"<>|", pbs[0][i])) {
 						swprintf_s(&bs[j], 4, L"%%%02hhX", pbs[0][i]);
 						j += 3;
@@ -2874,7 +2874,7 @@ void GetVarPathFromIDList(VARIANT *pVarResult, LPITEMIDLIST pidl, int uFlags)
 	int i;
 
 	if (uFlags & SHGDN_FORPARSINGEX) {
-		for (i = 0; i < MAX_CSIDL; i++) {
+		for (i = 0; i < MAX_CSIDL; ++i) {
 			if (g_pidls[i] && ::ILIsEqual(pidl, g_pidls[i])) {
 				LPITEMIDLIST pidl2 = SHSimpleIDListFromPath(g_bsPidls[i]);
 				if (!::ILIsEqual(pidl, pidl2)) {
@@ -3270,7 +3270,7 @@ HRESULT teInvokeAPI(TEDispatchApi *pApi, DISPPARAMS *pDispParams, VARIANT *pVarR
 	param[TE_EXCEPINFO].pExcepInfo = pExcepInfo;
 	if (nArg-- >= pApi->nArgs) {
 		VARIANT vParam[12] = { 0 };
-		for (int i = nArg < 11 ? nArg : 11; i >= 0; i--) {
+		for (int i = nArg < 11 ? nArg : 11; i >= 0; --i) {
 			VariantInit(&vParam[i]);
 			if (i == (pApi->nStr1 % 10) || i == (pApi->nStr2 % 10) || i == (pApi->nStr3 % 10)) {
 				teVariantChangeType(&vParam[i], &pDispParams->rgvarg[nArg - i], VT_BSTR);
@@ -3302,7 +3302,7 @@ HRESULT teInvokeAPI(TEDispatchApi *pApi, DISPPARAMS *pDispParams, VARIANT *pVarR
 			CloseHandle(hProcess);
 		}
 #endif
-		for (int i = nArg < 11 ? nArg : 11; i >= 0; i--) {
+		for (int i = nArg < 11 ? nArg : 11; i >= 0; --i) {
 			if (i != pApi->nStr1 && i != pApi->nStr2 && i != pApi->nStr3) {
 				teWriteBack(&pDispParams->rgvarg[nArg - i], &vParam[i]);
 			} else {
@@ -3347,7 +3347,7 @@ LPWSTR teGetCommandLine()
 					VariantClear(&v);
 					VariantClear(&v2);
 					while (strCmdLine[j] && strCmdLine[j] != _T(',')) {
-						j++;
+						++j;
 					}
 				}
 #endif
@@ -3509,7 +3509,7 @@ HRESULT tePathIsDirectory(LPWSTR pszPath, int dwms, int iUseFS)
 			if (_beginthread(&threadExists, 0, pExists) != -1) {
 				WaitForSingleObject(pExists->hEvent, dwms);
 			} else {
-				pExists->cRef--;
+				--pExists->cRef;
 			}
 			HRESULT hr = pExists->hr;
 			teReleaseExists(pExists);
@@ -3596,7 +3596,7 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 				}
 			}
 			if (pidl == NULL && !teIsFileSystem(pszPath)) {
-				for (int i = 0; i < MAX_CSIDL; i++) {
+				for (int i = 0; i < MAX_CSIDL; ++i) {
 					if (g_pidls[i]) {
 						if (!lstrcmpi(pszPath, g_bsPidls[i])) {
 							pidl = ILClone(g_pidls[i]);
@@ -3670,7 +3670,7 @@ LPITEMIDLIST teILCreateFromPath0(LPWSTR pszPath, BOOL bForceLimit)
 				}
 			}
 		} else {
-			pILC->cRef--;
+			--pILC->cRef;
 			pidl = teILCreateFromPath1(pszPath);
 		}
 		teReleaseILCreate(pILC);
@@ -3819,7 +3819,7 @@ VOID teMenuText(LPWSTR sz)
 	int i = 0, j = 0;
 	while (sz[i]) {
 		if (sz[i] == '&') {
-			i++;
+			++i;
 			continue;
 		}
 		if (sz[i] == '(') {
@@ -3837,7 +3837,7 @@ int tePos(WCHAR wc, WCHAR *sz)
 		if (sz[i] == wc) {
 			return i;
 		}
-		i++;
+		++i;
 	}
 	return -1;
 }
@@ -3911,7 +3911,7 @@ void teCopyMenu(HMENU hDest, HMENU hSrc, UINT fState)
 
 CteShellBrowser* SBfromhwnd(HWND hwnd)
 {
-	for (UINT i = 0; i < g_ppSB.size(); i++) {
+	for (UINT i = 0; i < g_ppSB.size(); ++i) {
 		CteShellBrowser *pSB = g_ppSB[i];
 		if (pSB->m_hwnd == hwnd || IsChild(pSB->m_hwnd, hwnd)) {
 			return pSB;
@@ -3922,7 +3922,7 @@ CteShellBrowser* SBfromhwnd(HWND hwnd)
 
 CteTabCtrl* TCfromhwnd(HWND hwnd)
 {
-	for (UINT i = 0; i < g_ppTC.size(); i++) {
+	for (UINT i = 0; i < g_ppTC.size(); ++i) {
 		CteTabCtrl *pTC = g_ppTC[i];
 		if (!pTC) {
 			continue;
@@ -3936,7 +3936,7 @@ CteTabCtrl* TCfromhwnd(HWND hwnd)
 
 CteTreeView* TVfromhwnd2(HWND hwnd)
 {
-	for (UINT i = 0; i < g_ppTV.size(); i++) {
+	for (UINT i = 0; i < g_ppTV.size(); ++i) {
 		CteTreeView *pTV = g_ppTV[i];
 		HWND hwndTV = pTV->m_hwnd;
 		if (hwndTV == hwnd || IsChild(hwndTV, hwnd)) {
@@ -3948,7 +3948,7 @@ CteTreeView* TVfromhwnd2(HWND hwnd)
 
 CteTreeView* TVfromhwnd(HWND hwnd)
 {
-	for (UINT i = 0; i < g_ppSB.size(); i++) {
+	for (UINT i = 0; i < g_ppSB.size(); ++i) {
 		CteShellBrowser *pSB = g_ppSB[i];
 		HWND hwndTV = pSB->m_pTV->m_hwnd;
 		if (hwndTV == hwnd || IsChild(hwndTV, hwnd)) {
@@ -4005,7 +4005,7 @@ VOID AdjustIDList(LPITEMIDLIST *ppidllist, int nCount)
 		if (g_bUpperVista || !ILIsEqual(ppidllist[0], g_pidls[CSIDL_RESULTSFOLDER])) {
 			return;
 		}
-		for (int i = nCount; i > 1; i--) {
+		for (int i = nCount; i > 1; --i) {
 			teILCloneReplace(&ppidllist[i], ILCombine(ppidllist[0], ppidllist[i]));
 		}
 		teILFreeClear(&ppidllist[0]);
@@ -4018,28 +4018,28 @@ VOID AdjustIDList(LPITEMIDLIST *ppidllist, int nCount)
 	int nCommon = ILGetCount(ppidllist[0]);
 	int nBase = nCommon;
 
-	for (int i = nCount; i > 1 && nCommon; i--) {
+	for (int i = nCount; i > 1 && nCommon; --i) {
 		LPITEMIDLIST pidl = ::ILClone(ppidllist[i]);
 		ILRemoveLastID(pidl);
 		int nLevel = ILGetCount(pidl);
 		while (nLevel > nCommon) {
 			ILRemoveLastID(pidl);
-			nLevel--;
+			--nLevel;
 		}
 		while (nLevel < nCommon) {
 			ILRemoveLastID(ppidllist[0]);
-			nCommon--;
+			--nCommon;
 		}
 		while (nCommon > 0 && !ILIsEqual(pidl, ppidllist[0])) {
 			ILRemoveLastID(pidl);
 			ILRemoveLastID(ppidllist[0]);
-			nCommon--;
+			--nCommon;
 		}
 		teCoTaskMemFree(pidl);
 	}
 
 	if (nCommon) {
-		for (int i = nCount; i > 0; i--) {
+		for (int i = nCount; i > 0; --i) {
 			LPITEMIDLIST pidl = ppidllist[i];
 			for (int j = nCommon; j-- > 0;) {
 				pidl = ILGetNext(pidl);
@@ -4061,7 +4061,7 @@ LPITEMIDLIST* IDListFormDataObj(IDataObject *pDataObj, long *pnCount)
 				if (pIDA) {
 					*pnCount = pIDA->cidl;
 					ppidllist = new LPITEMIDLIST[*pnCount + 1];
-					for (int i = *pnCount; i >= 0; i--) {
+					for (int i = *pnCount; i >= 0; --i) {
 						ppidllist[i] = ::ILClone((LPCITEMIDLIST)((BYTE *)pIDA + pIDA->aoffset[i]));
 					}
 				}
@@ -4203,7 +4203,7 @@ VOID teStripAmp(LPWSTR lpstr)
 			return;
 		}
 		if (wc != '&') {
-			lp1++;
+			++lp1;
 		}
 	}
 }
@@ -4647,7 +4647,7 @@ BOOL GetDataObjFromObject(IDataObject **ppDataObj, IUnknown *punk)
 			VARIANT v, v2;
 			VariantInit(&v2);
 			v.vt = VT_I4;
-			for (v.lVal = 0; v.lVal < lCount; v.lVal++) {
+			for (v.lVal = 0; v.lVal < lCount; ++v.lVal) {
 				FolderItem *pItem;
 				if SUCCEEDED(pItems->Item(v, &pItem)) {
 					teSetObjectRelease(&v2, pItem);
@@ -4670,7 +4670,7 @@ BOOL GetDataObjFromObject(IDataObject **ppDataObj, IUnknown *punk)
 			VARIANT v;
 			VariantInit(&v);
 			CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL);
-			for (int i = 0; i < lCount; i++) {
+			for (int i = 0; i < lCount; ++i) {
 				teGetPropertyAt(pdex, i, &v);
 				pFolderItems->ItemEx(-1, NULL, &v);
 				VariantClear(&v);
@@ -4711,7 +4711,7 @@ int* teSortDispatchApi(TEDispatchApi *method, int nCount)
 {
 	int *pi = new int[nCount];
 
-	for (int j = 0; j < nCount; j++) {
+	for (int j = 0; j < nCount; ++j) {
 		LPSTR pszNameA = method[j].name;
 		int nMin = 0;
 		int nMax = j - 1;
@@ -4724,7 +4724,7 @@ int* teSortDispatchApi(TEDispatchApi *method, int nCount)
 				nMin = nIndex + 1;
 			}
 		}
-		for (int i = j; i > nMin; i--) {
+		for (int i = j; i > nMin; --i) {
 			pi[i] = pi[i - 1];
 		}
 		pi[nMin] = j;
@@ -4761,7 +4761,7 @@ int* SortTEMethod(TEmethod *method, int nCount)
 {
 	int *pi = new int[nCount];
 
-	for (int j = 0; j < nCount; j++) {
+	for (int j = 0; j < nCount; ++j) {
 		LPSTR pszNameA = method[j].name;
 		int nMin = 0;
 		int nMax = j - 1;
@@ -4774,7 +4774,7 @@ int* SortTEMethod(TEmethod *method, int nCount)
 				nMin = nIndex + 1;
 			}
 		}
-		for (int i = j; i > nMin; i--) {
+		for (int i = j; i > nMin; --i) {
 			pi[i] = pi[i - 1];
 		}
 		pi[nMin] = j;
@@ -4810,7 +4810,7 @@ int* SortTEStruct(TEStruct *method, int nCount)
 {
 	int *pi = new int[nCount];
 
-	for (int j = 0; j < nCount; j++) {
+	for (int j = 0; j < nCount; ++j) {
 		LPSTR pszNameA = method[j].name;
 		int nMin = 0;
 		int nMax = j - 1;
@@ -4823,7 +4823,7 @@ int* SortTEStruct(TEStruct *method, int nCount)
 				nMin = nIndex + 1;
 			}
 		}
-		for (int i = j; i > nMin; i--) {
+		for (int i = j; i > nMin; --i) {
 			pi[i] = pi[i - 1];
 		}
 		pi[nMin] = j;
@@ -4859,7 +4859,7 @@ int* SortTEMethodW(TEmethodW *method, int nCount)
 {
 	int *pi = new int[nCount];
 
-	for (int j = 0; j < nCount; j++) {
+	for (int j = 0; j < nCount; ++j) {
 		BSTR bs = method[j].name;
 		int nMin = 0;
 		int nMax = j - 1;
@@ -4872,7 +4872,7 @@ int* SortTEMethodW(TEmethodW *method, int nCount)
 				nMin = nIndex + 1;
 			}
 		}
-		for (int i = j; i > nMin; i--) {
+		for (int i = j; i > nMin; --i) {
 			pi[i] = pi[i - 1];
 		}
 		pi[nMin] = j;
@@ -4913,7 +4913,7 @@ HRESULT teGetDispId(TEmethod *method, int nCount, int* pMap, LPOLESTR bs, DISPID
 	} else {
 		CHAR pszNameA[32];
 		WideCharToMultiByte(CP_TE, 0, (LPCWSTR)bs, -1, pszNameA, ARRAYSIZE(pszNameA) - 1, NULL, NULL);
-		for (int i = 0; method[i].name; i++) {
+		for (int i = 0; method[i].name; ++i) {
 			if (lstrcmpiA(pszNameA, method[i].name) == 0) {
 				*rgDispId = method[i].id;
 				return S_OK;
@@ -5317,7 +5317,7 @@ static void threadAddItems(void *args)
 				if (lCount) {
 					VARIANT v;
 					v.vt = VT_I4;
-					for (v.lVal = 0; v.lVal < lCount && !ppd->HasUserCancelled(); v.lVal++) {
+					for (v.lVal = 0; v.lVal < lCount && !ppd->HasUserCancelled(); ++v.lVal) {
 						teSetProgress(ppd, v.lVal, lCount);
 						FolderItem *pItem;
 						if SUCCEEDED(pItems->Item(v, &pItem)) {
@@ -5350,7 +5350,7 @@ static void threadAddItems(void *args)
 				pItems->Release();
 			} else {
 				int nCount = teGetObjectLength(pArray);
-				for (int nCurrent = 0; nCurrent < nCount && !ppd->HasUserCancelled(); nCurrent++) {
+				for (int nCurrent = 0; nCurrent < nCount && !ppd->HasUserCancelled(); ++nCurrent) {
 					teSetProgress(ppd, nCurrent, nCount);
 					if (SUCCEEDED(teGetPropertyAt(pArray, nCurrent, &pAddItems->pv[1])) && pAddItems->pv[1].vt != VT_EMPTY) {
 						if (!teGetIDListFromVariant(&pidl, &pAddItems->pv[1], TRUE) && pAddItems->bDeleted && pAddItems->pv[1].vt == VT_BSTR) {
@@ -5493,12 +5493,12 @@ VOID GetNewObject(IDispatch **ppObj)
 
 VOID ClearEvents()
 {
-	g_dwSessionId++;
+	++g_dwSessionId;
 	for (int j = Count_OnFunc; j-- > 1;) {
 		SafeRelease(&g_pOnFunc[j]);
 	}
 
-	for (UINT i = 0; i < g_ppSB.size(); i++) {
+	for (UINT i = 0; i < g_ppSB.size(); ++i) {
 		CteShellBrowser *pSB = g_ppSB[i];
 		for (int j = Count_SBFunc; j-- > 1;) {
 			SafeRelease(&pSB->m_ppDispatch[j]);
@@ -5651,7 +5651,7 @@ HRESULT tePSFormatForDisplay(PROPERTYKEY *ppropKey, VARIANT *pv, DWORD pdfFlags,
 			*ppszDisplay = pszDisplay;
 			BOOL bDate = TRUE;
 			WCHAR wc = 0xffff;
-			for (int i = 0, j = 0; wc; i++) {
+			for (int i = 0, j = 0; wc; ++i) {
 				wc = g_bsDateTimeFormat[i];
 				if (bDate) {
 					if (!wc || StrChr(L"hHmst", wc)) {
@@ -5735,7 +5735,7 @@ HRESULT MessageSubPt(int nFunc, PVOID pObj, MSG *pMsg)
 
 int GetShellBrowser2(CteShellBrowser *pSB1)
 {
-	for (UINT i = 0; i < g_ppSB.size(); i++) {
+	for (UINT i = 0; i < g_ppSB.size(); ++i) {
 		CteShellBrowser *pSB = g_ppSB[i];
 		if (pSB == pSB1 && !pSB->m_bEmpty) {
 			return i;
@@ -5748,7 +5748,7 @@ CteShellBrowser* GetNewShellBrowser(CteTabCtrl *pTC)
 {
 	CteShellBrowser *pSB = NULL;
 	BOOL bNew = TRUE;
-	for (UINT i = 0; i < g_ppSB.size(); i++) {
+	for (UINT i = 0; i < g_ppSB.size(); ++i) {
 		if (g_ppSB[i]->m_bEmpty) {
 			pSB = g_ppSB[i];
 			pSB->Init(pTC, FALSE);
@@ -5777,7 +5777,7 @@ CteShellBrowser* GetNewShellBrowser(CteTabCtrl *pTC)
 
 CteTabCtrl* GetNewTC()
 {
-	for (UINT i = 0; i < g_ppTC.size(); i++) {
+	for (UINT i = 0; i < g_ppTC.size(); ++i) {
 		if (g_ppTC[i]->m_bEmpty) {
 			return g_ppTC[i];
 		}
@@ -5790,7 +5790,7 @@ CteTabCtrl* GetNewTC()
 
 CteTreeView* GetNewTV()
 {
-	for (UINT i = 0; i < g_ppTV.size(); i++) {
+	for (UINT i = 0; i < g_ppTV.size(); ++i) {
 		if (g_ppTV[i]->m_bEmpty) {
 			return g_ppTV[i];
 		}
@@ -6733,7 +6733,7 @@ LRESULT CALLBACK TETCProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						nCount = TabCtrl_GetItemCount(hwnd);
 						nIndex = pTC->m_nIndex;
 						if ((int)wParam > nIndex) {
-							nIndex--;
+							--nIndex;
 						}
 						if (nIndex >= nCount) {
 							nIndex = nCount - 1;
@@ -6924,7 +6924,7 @@ HRESULT teExtract(IStorage *pStorage, LPWSTR lpszFolderPath, IProgressDialog *pp
 			pStorageNew->Release();
 		} else if (statstg.type == STGTY_STREAM) {
 			ppd->SetLine(2, &bsPath[nBase], TRUE, NULL);
-			pnItems[0]++;
+			++pnItems[0];
 			if (ppd->HasUserCancelled()) {
 				hr = E_ABORT;
 			} else if (nCount >= 0) {
@@ -7671,7 +7671,7 @@ VOID teApisscanf(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVa
 			while (pszFormat[nPos] && pszFormat[nPos++] != '%') {
 			}
 			while (WCHAR wc = pszFormat[nPos]) {
-				nPos++;
+				++nPos;
 				if (wc == '%') {
 					break;
 				}
@@ -9426,7 +9426,7 @@ VOID teApisprintf(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pV
 			while (pszFormat[nPos] && pszFormat[nPos++] != '%') {
 			}
 			while (WCHAR wc = pszFormat[nPos]) {
-				nPos++;
+				++nPos;
 				if (wc == '%') {//Escape %
 					lstrcpyn(&bsResult[nLen], pszFormat, nPos);
 					nLen += nPos - 1;
@@ -10603,7 +10603,7 @@ VOID Initlize()
 	g_maps[MAP_SS] = SortTEStruct(pTEStructs, _countof(pTEStructs));
 /*/// For order check
 	int *map = g_maps[MAP_SS];
-	for (int i = 0; i < _countof(pTEStructs); i++) {
+	for (int i = 0; i < _countof(pTEStructs); ++i) {
 		int j = map[i];
 		if (i != j) {
 			LPSTR lpi = pTEStructs[i].name;
@@ -10808,8 +10808,8 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 				CteShellBrowser *pSB;
 				BOOL bRedraw;
 				bRedraw = FALSE;
-				g_nSize--;
-				for (UINT i = 0; i < g_ppTC.size(); i++) {
+				--g_nSize;
+				for (UINT i = 0; i < g_ppTC.size(); ++i) {
 					CteTabCtrl *pTC = g_ppTC[i];
 					if (pTC->m_bVisible) {
 						pTC->LockUpdate(TRUE);
@@ -10825,7 +10825,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 							if (!pTC->m_bEmpty && pTC->m_bVisible) {
 								int nAlign = g_param[TE_Tab] ? pTC->m_param[TC_Align] : 0;
 								if (rc.left) {
-									rc.left++;
+									++rc.left;
 								}
 								if (teSetRect(pTC->m_hwndStatic, rc.left, rc.top, rc.right, rc.bottom)) {
 									bRedraw = TRUE;
@@ -10990,7 +10990,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 					SetTimer(g_hwndMain, TET_Redraw, 500, teTimerProc);
 					break;
 				}
-				for (UINT i = 0; i < g_ppTC.size(); i++) {
+				for (UINT i = 0; i < g_ppTC.size(); ++i) {
 					g_ppTC[i]->RedrawUpdate();
 				}
 				break;
@@ -11407,11 +11407,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 						WriteProcessMemory(GetCurrentProcess(), &pIAT->u1.Function, &NewProc, sizeof(pIAT->u1.Function), &dwDummy);
 						break;
 					}
-					pIAT++;
+					++pIAT;
 				}
 				break;
 			}
-			pImgDesc++;
+			++pImgDesc;
 		}
 	}
 	teSysFreeString(&bsLib);
@@ -11425,7 +11425,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 #endif
 	InitCommonControls();
 
-	for (UINT i = 0; i < 256; i++) {
+	for (UINT i = 0; i < 256; ++i) {
 		UINT c = i;
 		for (int j = 8; j--;) {
 			c = (c & 1) ? (0xedb88320 ^ (c >> 1)) : (c >> 1);
@@ -11435,7 +11435,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	g_dwMainThreadId = GetCurrentThreadId();
 	BSTR bsPath = NULL;
 	teGetModuleFileName(NULL, &bsPath);//Executable Path
-	for (int i = 0; bsPath[i]; i++) {
+	for (int i = 0; bsPath[i]; ++i) {
 		if (bsPath[i] == '\\') {
 			bsPath[i] = '/';
 		}
@@ -11706,11 +11706,11 @@ function _c(s) {\
 		SafeRelease(&pJS);
 		VariantClear(&vWindow);
 #endif
-		for (size_t u = 0; u < g_pFreeLibrary.size(); u++) {
+		for (size_t u = 0; u < g_pFreeLibrary.size(); ++u) {
 			FreeLibrary(g_pFreeLibrary[u]);
 		}
 		g_pFreeLibrary.clear();
-		for (size_t u = 0; u < g_phModule.size(); u++) {
+		for (size_t u = 0; u < g_phModule.size(); ++u) {
 			FreeLibrary(g_phModule[u]);
 		}
 		g_phModule.clear();
@@ -11750,7 +11750,7 @@ function _c(s) {\
 VOID ArrangeWindow()
 {
 	if (g_nSize <= 0) {
-		g_nSize++;
+		++g_nSize;
 		SetTimer(g_hwndMain, TET_Size, 1, teTimerProc);
 	}
 }
@@ -12453,7 +12453,7 @@ STDMETHODIMP CteShellBrowser::InsertMenusSB(HMENU hmenuShared, LPOLEMENUGROUPWID
 				{ FCIDM_MENU_TOOLS, L"&Tools" },
 				{ FCIDM_MENU_HELP, L"&Help" },
 			};
-			for (size_t i = 0; i < 5; i++) {
+			for (size_t i = 0; i < 5; ++i) {
 				InitializeMenuItem(hmenuShared, pull_downs[i].name, pull_downs[i].id, CreatePopupMenu());
 				lpMenuWidths->width[i] = 0;
 			}
@@ -13351,7 +13351,7 @@ VOID CteShellBrowser::SetTitle(BSTR szName, int nIndex)
 		nCount = MAX_PATH - 1;
 	}
 	int j = 0;
-	for (int i = 0; i < nCount; i++) {
+	for (int i = 0; i < nCount; ++i) {
 		bsText[j++] = szName[i];
 		if (szName[i] == '&') {
 			bsText[j++] = '&';
@@ -13446,13 +13446,13 @@ VOID CteShellBrowser::InitFolderSize()
 			WCHAR szText[MAX_COLUMN_NAME_LEN];
 			HD_ITEM hdi = { HDI_TEXT | HDI_FORMAT, 0, szText, NULL, MAX_COLUMN_NAME_LEN };
 			m_pDTColumns = new WORD[nHeader];
+			::ZeroMemory(m_pDTColumns, sizeof(WORD) * nHeader);
 			m_ppColumns = (IDispatch **)new PVOID[nHeader];
+			::ZeroMemory(m_ppColumns, sizeof(PVOID) * nHeader);
 			TEmethodW *pColumns = new TEmethodW[nHeader + 1];
 			VARIANT v;
 			VariantInit(&v);
 			for (int i = nHeader; i-- > 0;) {
-				m_pDTColumns[i] = 0;
-				m_ppColumns[i] = NULL;
 				Header_GetItem(hHeader, i, &hdi);
 				if (g_bDarkMode) {
 					hdi.fmt |= HDF_OWNERDRAW;
@@ -13511,7 +13511,7 @@ VOID CteShellBrowser::InitFolderSize()
 				int *piColumns = SortTEMethodW(pColumns, nHeader);
 				int nIndex;
 				SHELLDETAILS sd;
-				for (UINT i = 0; m_pSF2->GetDetailsOf(NULL, i, &sd) == S_OK && i < MAX_COLUMNS; i++) {
+				for (UINT i = 0; m_pSF2->GetDetailsOf(NULL, i, &sd) == S_OK && i < MAX_COLUMNS; ++i) {
 					BSTR bs;
 					if SUCCEEDED(StrRetToBSTR(&sd.str, NULL, &bs)) {
 						nIndex = teBSearchW(pColumns, nHeader, piColumns, bs);
@@ -13578,7 +13578,7 @@ static void threadFolderSize(void *args)
 		g_strException = L"threadFolderSize";
 #endif
 	}
-	g_nCountOfThreadFolderSize--;
+	--g_nCountOfThreadFolderSize;
 	::CoUninitialize();
 	::_endthread();
 }
@@ -13612,7 +13612,7 @@ VOID CteShellBrowser::SetFolderSize(IShellFolder2 *pSF2, LPCITEMIDLIST pidl, LPW
 				CoMarshalInterThreadInterfaceInStream(IID_IDispatch, m_ppDispatch[SB_TotalFileSize], &pFS->pStrmTotalFileSize);
 				PushFolderSizeList(pFS);
 				if (g_nCountOfThreadFolderSize < 8) {
-					g_nCountOfThreadFolderSize++;
+					++g_nCountOfThreadFolderSize;
 					_beginthread(&threadFolderSize, 0, NULL);
 				}
 			}
@@ -13971,7 +13971,7 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 #endif
 	BOOL bNoName = TRUE;
 	int nCount = 0;
-	for (int i = 0; i < nArgs; i++) {
+	for (int i = 0; i < nArgs; ++i) {
 		if SUCCEEDED(PropertyKeyFromName(lplpszArgs[i * 2], &pPropKey[nCount])) {
 			BOOL bExist = FALSE;
 			for (int j = nCount; j-- > 0;) {
@@ -14014,7 +14014,7 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 			}
 #endif
 			methodArgs[0].id = -1;
-			nCount++;
+			++nCount;
 			nAllWidth += 100;
 		}
 	}
@@ -14092,7 +14092,7 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 						int nIndex;
 						BOOL bDefault = TRUE;
 						if (nCount) {
-							for (UINT i = 0; i < m_nColumns && GetDetailsOf(NULL, i, &sd) == S_OK; i++) {
+							for (UINT i = 0; i < m_nColumns && GetDetailsOf(NULL, i, &sd) == S_OK; ++i) {
 								BSTR bs;
 								if SUCCEEDED(StrRetToBSTR(&sd.str, NULL, &bs)) {
 									nIndex = teBSearchW(methodArgs, nCount, piArgs, bs);
@@ -14221,7 +14221,7 @@ BSTR CteShellBrowser::GetColumnsStr(int nFormat)
 				PROPERTYKEY *pPropKey = new PROPERTYKEY[uCount];
 				if SUCCEEDED(pColumnManager->GetColumns(CM_ENUM_VISIBLE, pPropKey, uCount)) {
 					CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_WIDTH | CM_MASK_NAME };
-					for (UINT i = 0; i < uCount; i++) {
+					for (UINT i = 0; i < uCount; ++i) {
 						if SUCCEEDED(pColumnManager->GetColumnInfo(pPropKey[i], &cmci)) {
 							AddColumnDataEx(szColumns, tePSGetNameFromPropertyKeyEx(pPropKey[i], nFormat, this), cmci.uWidth);
 						}
@@ -14241,7 +14241,7 @@ BSTR CteShellBrowser::GetColumnsStr(int nFormat)
 				ListView_GetColumnOrderArray(m_hwndLV, nHeader, piOrderArray);
 				WCHAR szText[MAX_COLUMN_NAME_LEN];
 				HD_ITEM hdi = { HDI_TEXT | HDI_WIDTH, 0, szText, NULL, MAX_COLUMN_NAME_LEN };
-				for (UINT i = 0; i < nHeader; i++) {
+				for (UINT i = 0; i < nHeader; ++i) {
 					Header_GetItem(hHeader, piOrderArray[i], &hdi);
 					AddColumnDataXP(szColumns, szText, hdi.cxy, nFormat);
 				}
@@ -14251,7 +14251,7 @@ BSTR CteShellBrowser::GetColumnsStr(int nFormat)
 			SHCOLSTATEF csFlags;
 			SHELLDETAILS sd;
 			BSTR bs;
-			for (UINT i = 0; i < m_nColumns && GetDefaultColumnState(i, &csFlags) == S_OK; i++) {
+			for (UINT i = 0; i < m_nColumns && GetDefaultColumnState(i, &csFlags) == S_OK; ++i) {
 				if (csFlags & SHCOLSTATE_ONBYDEFAULT) {
 					if (GetDetailsOf(NULL, i, &sd) == S_OK) {
 						if SUCCEEDED(StrRetToBSTR(&sd.str, NULL, &bs)) {
@@ -14375,7 +14375,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					if (pVarResult) {
 						CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL);
 						VARIANT v;
-						for (UINT i = 1; i <= m_ppLog.size(); i++) {
+						for (UINT i = 1; i <= m_ppLog.size(); ++i) {
 							try {
 								teSetObject(&v, m_ppLog[m_ppLog.size() - i]);
 								pFolderItems->ItemEx(-1, NULL, &v);
@@ -14441,7 +14441,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					if (nArg >= 1) {
 						wFlags = static_cast<WORD>(GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]));
 					}
-					for (int i = 0; i <= nArg - 2 && i < SB_DoFunc; i++) {
+					for (int i = 0; i <= nArg - 2 && i < SB_DoFunc; ++i) {
 						int n = GetIntFromVariant(&pDispParams->rgvarg[nArg - i - 2]);
 						if (i == SB_TreeAlign && n == 0) {
 							break;
@@ -14637,10 +14637,10 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						int nCount = lstrlen(tcItem.pszText);
 						int j = 0;
 						WCHAR c = NULL;
-						for (int i = 0; i < nCount; i++) {
+						for (int i = 0; i < nCount; ++i) {
 							bsText[j] = bsText[i];
 							if (c != '&' || bsText[i] != '&') {
-								j++;
+								++j;
 								c = bsText[i];
 							} else {
 								c = NULL;
@@ -14808,7 +14808,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 							IUIAutomationElement *pElement, *pElement2 = NULL;
 							if SUCCEEDED(g_pAutomation->ElementFromPoint(info.pt, &pElement)) {
 								if SUCCEEDED(pElement->GetCurrentPropertyValue(g_PID_ItemIndex, pVarResult)) {
-									pVarResult->lVal--;
+									--pVarResult->lVal;
 								}
 								if (pVarResult->lVal < 0) {
 									IUIAutomationTreeWalker *pWalker = NULL;
@@ -14816,7 +14816,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 										pWalker->GetParentElement(pElement, &pElement2);
 										if (pElement2) {
 											if SUCCEEDED(pElement2->GetCurrentPropertyValue(g_PID_ItemIndex, pVarResult)) {
-												pVarResult->lVal--;
+												--pVarResult->lVal;
 											}
 											pElement2->Release();
 										}
@@ -15057,7 +15057,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				if (nArg >= 2) {
 					long lEvent = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 					BOOL bTFS = (nArg >= 3 && GetIntFromVariant(&pDispParams->rgvarg[nArg - 3]));
-					for (int i = 1; i < (lEvent & (SHCNE_RENAMEITEM | SHCNE_RENAMEFOLDER) ? 3 : 2); i++) {
+					for (int i = 1; i < (lEvent & (SHCNE_RENAMEITEM | SHCNE_RENAMEFOLDER) ? 3 : 2); ++i) {
 						LPITEMIDLIST pidl;
 						if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg - i])) {
 							if (!ILIsEmpty(pidl)) {
@@ -15377,7 +15377,7 @@ HRESULT CteShellBrowser::Items(UINT uItem, FolderItems **ppid)
 						} else {
 							UINT uCount = 0;
 							pSFV->GetObjectCount(&uCount);
-							for (UINT u = 0; u < uCount; u++) {
+							for (UINT u = 0; u < uCount; ++u) {
 								AddPathXP(pFolderItems, pSFV, u, bResultsFolder);
 							}
 						}
@@ -15439,7 +15439,7 @@ int CteShellBrowser::PSGetColumnIndexXP(LPWSTR pszName, int *pcxChar)
 {
 	SHELLDETAILS sd;
 	BSTR bs;
-	for (UINT i = 0; i < m_nColumns && GetDetailsOf(NULL, i, &sd) == S_OK; i++) {
+	for (UINT i = 0; i < m_nColumns && GetDetailsOf(NULL, i, &sd) == S_OK; ++i) {
 		if SUCCEEDED(StrRetToBSTR(&sd.str, NULL, &bs)) {
 			if (teStrSameIFree(bs, pszName)) {
 				if (pcxChar) {
@@ -15491,7 +15491,7 @@ HRESULT CteShellBrowser::NavigateSB(IShellView *pPreviousView, FolderItem *pPrev
 				}
 				SHCOLUMNID scid;
 				while (m_pSF2->MapColumnToSCID(m_nColumns, &scid) == S_OK && m_nColumns < MAX_COLUMNS) {
-					m_nColumns++;
+					++m_nColumns;
 				}
 				m_nColumns += 2;
 				m_pColumns = new TEColumn[m_nColumns];
@@ -15522,7 +15522,7 @@ HRESULT CteShellBrowser::NavigateSB(IShellView *pPreviousView, FolderItem *pPrev
 		if (hr != S_OK) {
 			teILCloneReplace(&m_pidl, g_pidls[CSIDL_RESULTSFOLDER]);
 			m_dwUnavailable = GetTickCount();
-			nCreate++;
+			++nCreate;
 			hr = S_FALSE;
 		}
 	}
@@ -16232,7 +16232,7 @@ VOID CteShellBrowser::AddItems(IDispatch *pdisp, BOOL bDeleted, IDispatch *pOnCo
 				pItems->get_Count(&lCount);
 				if (lCount) {
 					v.vt = VT_I4;
-					for (v.lVal = 0; v.lVal < lCount && !ppd->HasUserCancelled(); v.lVal++) {
+					for (v.lVal = 0; v.lVal < lCount && !ppd->HasUserCancelled(); ++v.lVal) {
 						teSetProgress(ppd, v.lVal, lCount);
 						FolderItem *pItem;
 						if SUCCEEDED(pItems->Item(v, &pItem)) {
@@ -16259,7 +16259,7 @@ VOID CteShellBrowser::AddItems(IDispatch *pdisp, BOOL bDeleted, IDispatch *pOnCo
 				pItems->Release();
 			} else {
 				int nCount = teGetObjectLength(pdisp);
-				for (int nCurrent = 0; nCurrent < nCount && !ppd->HasUserCancelled(); nCurrent++) {
+				for (int nCurrent = 0; nCurrent < nCount && !ppd->HasUserCancelled(); ++nCurrent) {
 					teSetProgress(ppd, nCurrent, nCount);
 					if (SUCCEEDED(teGetPropertyAt(pdisp, nCurrent, &v)) && v.vt != VT_EMPTY) {
 						if (!teGetIDListFromVariant(&pidl, &v) && bDeleted && v.vt == VT_BSTR) {
@@ -16643,7 +16643,7 @@ VOID CteShellBrowser::SetPropEx()
 		if (!m_DefProc) {
 			SetWindowLongPtr(m_hwndDV, GWLP_USERDATA, (LONG_PTR)this);
 			m_DefProc = SetWindowLongPtr(m_hwndDV, GWLP_WNDPROC, (LONG_PTR)TELVProc);
-			for (int i = WM_USER + 173; i <= WM_USER + 175; i++) {
+			for (int i = WM_USER + 173; i <= WM_USER + 175; ++i) {
 				teChangeWindowMessageFilterEx(m_hwndDV, i, MSGFLT_ALLOW, NULL);
 			}
 		}
@@ -16873,7 +16873,7 @@ VOID CteShellBrowser::GetSort(BSTR* pbs, int nFormat)
 		HWND hHeader = ListView_GetHeader(m_hwndLV);
 		if (hHeader) {
 			int nCount = Header_GetItemCount(hHeader);
-			for (int i = 0; i < nCount; i++) {
+			for (int i = 0; i < nCount; ++i) {
 #ifdef _W2000
 				HD_ITEM hdi = { HDI_FORMAT | HDI_BITMAP };
 #else
@@ -16943,7 +16943,7 @@ VOID CteShellBrowser::GetGroupBy(BSTR* pbs)
 			mii.fMask = MIIM_STATE | MIIM_STRING;
 			mii.dwTypeData = szName;
 			mii.cch = MAX_COLUMN_NAME_LEN;
-			for (int i = 0; i < nCount; i++) {
+			for (int i = 0; i < nCount; ++i) {
 				GetMenuItemInfo(hSubMenu, i, TRUE, &mii);
 				if (mii.fState & MFS_CHECKED) {
 					teStripAmp(szName);
@@ -16969,7 +16969,7 @@ HRESULT CteShellBrowser::PropertyKeyFromName(BSTR bs, PROPERTYKEY *pkey)
 #ifndef _2000XP
 				m_pSF2->
 #endif
-				GetDetailsOf(NULL, i, &sd) == S_OK; i++) {
+				GetDetailsOf(NULL, i, &sd) == S_OK; ++i) {
 			BSTR bs1;
 			if SUCCEEDED(StrRetToBSTR(&sd.str, NULL, &bs1)) {
 				if (teStrSameIFree(bs1, bs)) {
@@ -17098,7 +17098,7 @@ VOID CteShellBrowser::SetGroupBy(BSTR bs)
 	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
 		if SUCCEEDED(PropertyKeyFromName(szNew, &propKey)) {
 			if (m_nSorting) {
-				m_nSorting--;
+				--m_nSorting;
 				TEGroupBy *pGB = new TEGroupBy[1];
 				pGB->bs = ::SysAllocString(bs);
 				pGB->dwSessionId = m_dwSessionId;
@@ -17124,7 +17124,7 @@ VOID CteShellBrowser::SetGroupBy(BSTR bs)
 			int wID = mii.wID;
 			HMENU hSubMenu = mii.hSubMenu;
 			int nCount = GetMenuItemCount(hSubMenu);
-			for (int i = 0; i < nCount; i++) {
+			for (int i = 0; i < nCount; ++i) {
 				WCHAR szName[MAX_COLUMN_NAME_LEN];
 				mii.fMask = MIIM_ID | MIIM_STRING;
 				mii.cch = MAX_COLUMN_NAME_LEN;
@@ -17319,7 +17319,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 						case CTRL_SB:
 						case CTRL_EB:
 						case CTRL_TV:
-							for (UINT i = 0; i < g_ppSB.size(); i++) {
+							for (UINT i = 0; i < g_ppSB.size(); ++i) {
 								CteShellBrowser *pSB = g_ppSB[i];
 								if (!pSB->m_bEmpty && (bAll || pSB->m_pTC->m_bVisible)) {
 									if (nCtrl == CTRL_TV) {
@@ -17332,7 +17332,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 								}
 							}
 							if (nCtrl == CTRL_TV) {
-								for (UINT i = 0; i < g_ppTV.size(); i++) {
+								for (UINT i = 0; i < g_ppTV.size(); ++i) {
 									CteTreeView *pTV = g_ppTV[i];
 									if (!pTV->m_bEmpty && (bAll || pTV->m_param[SB_TreeAlign] & 2)) {
 										teArrayPush(pArray, pTV);
@@ -17341,7 +17341,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 							}
 							break;
 						case CTRL_TC:
-							for (UINT i = 0; i < g_ppTC.size(); i++) {
+							for (UINT i = 0; i < g_ppTC.size(); ++i) {
 								CteTabCtrl *pTC = g_ppTC[i];
 								if (!pTC->m_bEmpty && (bAll || pTC->m_bVisible)) {
 									teArrayPush(pArray, pTC);
@@ -17593,7 +17593,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 								pTC = GetNewTC();
 								pTC->Init();
 								int i = _countof(pTC->m_param) - 1;
-								for (i = nArg < i ? nArg : i; i >= 0; i--) {
+								for (i = nArg < i ? nArg : i; i >= 0; --i) {
 									pTC->m_param[i] = GetIntFromVariantPP(&pDispParams->rgvarg[nArg - i], i);
 								}
 								if (pTC->Create()) {
@@ -17741,7 +17741,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				if (::InterlockedDecrement(&g_nLockUpdate) <= 0) {
 					g_nLockUpdate = 0;
 					teSetRedraw(TRUE);
-					for (UINT i = 0; i < g_ppTC.size(); i++) {
+					for (UINT i = 0; i < g_ppTC.size(); ++i) {
 						CteTabCtrl *pTC = g_ppTC[i];
 						if (pTC->m_bVisible) {
 							CteShellBrowser *pSB = pTC->GetShellBrowser(pTC->m_nIndex);
@@ -17783,7 +17783,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 								ArrangeWindow();
 							}
 							if (dispIdMember == TE_OFFSET + TE_Layout) {
-								for (UINT i = 0; i < g_ppSB.size(); i++) {
+								for (UINT i = 0; i < g_ppSB.size(); ++i) {
 									CteShellBrowser *pSB = g_ppSB[i];
 									if (!pSB->m_bEmpty) {
 										pSB->m_bCheckLayout = TRUE;
@@ -18750,7 +18750,7 @@ BOOL CteTabCtrl::Close(BOOL bForce)
 		m_hwndStatic = NULL;
 		m_bEmpty = TRUE;
 		if (this == g_pTC) {
-			for (UINT i = 0; i < g_ppTC.size(); i++) {
+			for (UINT i = 0; i < g_ppTC.size(); ++i) {
 				CteTabCtrl *pTC = g_ppTC[i];
 				if (pTC && !pTC->m_bEmpty && pTC->m_bVisible) {
 					g_pTC =  pTC;
@@ -19080,7 +19080,7 @@ STDMETHODIMP CteTabCtrl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WOR
 								CreateTC();
 								SendMessage(m_hwnd, WM_SETFONT, (WPARAM)hFont, 0);
 								TabCtrl_SetImageList(m_hwnd, hImage);
-								for (int i = 0; i < nTabs; i++) {
+								for (int i = 0; i < nTabs; ++i) {
 									TabCtrl_InsertItem(m_hwnd, i, &tabs[i]);
 									delete [] ppszText[i];
 								}
@@ -19190,7 +19190,7 @@ VOID CteTabCtrl::Move(int nSrc, int nDest, CteTabCtrl *pDestTab)
 				m_nIndex = -1;
 				if (bOtherTab) {
 					if (nSrc > 0) {
-						nSrc--;
+						--nSrc;
 					}
 					TabCtrl_SetCurSel(m_hwnd, nSrc);
 				} else {
@@ -19315,7 +19315,7 @@ CteFolderItems::~CteFolderItems()
 VOID CteFolderItems::Clear()
 {
 	if (m_pidllist) {
-		for (int i = m_nCount; i >= 0; i--) {
+		for (int i = m_nCount; i >= 0; --i) {
 			teCoTaskMemFree(m_pidllist[i]);
 		}
 		delete [] m_pidllist;
@@ -19338,7 +19338,7 @@ VOID CteFolderItems::Regenerate(BOOL bFull)
 			VARIANT v;
 			v.vt = VT_I4;
 			FolderItem *pid;
-			for (v.lVal = 0; v.lVal < nCount; v.lVal++) {
+			for (v.lVal = 0; v.lVal < nCount; ++v.lVal) {
 				if (Item(v, &pid) == S_OK) {
 					if (bFull) {
 						CteFolderItem *pid1;
@@ -19410,7 +19410,7 @@ BOOL CteFolderItems::CanIDListFormat()
 		return m_nUseIDListFormat;
 	}
 	AdjustIDListEx();
-	for (int i = m_nCount; i > 0; i--) {
+	for (int i = m_nCount; i > 0; --i) {
 		if (ILGetCount(m_pidllist[i]) != 1) {
 			m_nUseIDListFormat = 0;
 			return FALSE;
@@ -19553,7 +19553,7 @@ STDMETHODIMP CteFolderItems::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 			case 9:
 				if (pVarResult) {
 					int pi[3] = { 0 };
-					for (int i = nArg; i >= 0; i--) {
+					for (int i = nArg; i >= 0; --i) {
 						if (i < 3) {
 							pi[i] = GetIntFromVariant(&pDispParams->rgvarg[nArg - i]);
 						}
@@ -19849,7 +19849,7 @@ HDROP CteFolderItems::GethDrop(int x, int y, BOOL fNC)
 		lpDropFiles->fWide = TRUE;
 
 		LPWSTR lp = (LPWSTR)&lpDropFiles[1];
-		for (int i = 0; i< m_nCount; i++) {
+		for (int i = 0; i< m_nCount; ++i) {
 			if (pbslist[i]) {
 				lstrcpy(lp, pbslist[i]);
 				lp += (SysStringByteLen(pbslist[i]) / 2) + 1;
@@ -19923,7 +19923,7 @@ STDMETHODIMP CteFolderItems::GetData(FORMATETC *pformatetcIn, STGMEDIUM *pmedium
 		AdjustIDListEx();
 		UINT uIndex = sizeof(UINT) * (m_nCount + 2);
 		UINT uSize = uIndex;
-		for (int i = 0; i <= m_nCount; i++) {
+		for (int i = 0; i <= m_nCount; ++i) {
 			uSize += ILGetSize(m_pidllist[i]);
 		}
 		HGLOBAL hGlobal = GlobalAlloc(GHND, uSize);
@@ -19931,7 +19931,7 @@ STDMETHODIMP CteFolderItems::GetData(FORMATETC *pformatetcIn, STGMEDIUM *pmedium
 		try {
 			if (pIDA) {
 				pIDA->cidl = m_nCount;
-				for (int i = 0; i <= m_nCount; i++) {
+				for (int i = 0; i <= m_nCount; ++i) {
 					pIDA->aoffset[i] = uIndex;
 					UINT u = ILGetSize(m_pidllist[i]);
 					char *pc = (char *)pIDA + uIndex;
@@ -19990,24 +19990,7 @@ STDMETHODIMP CteFolderItems::GetData(FORMATETC *pformatetcIn, STGMEDIUM *pmedium
 		}
 		HGLOBAL hMem;
 		int nLen = ::SysStringLen(m_bsText) + 1;
-		int nLenA = WideCharToMultiByte(CP_ACP, 0, (LPCWSTR)m_bsText, nLen, NULL, 0, NULL, NULL);
 		if (pformatetcIn->cfFormat == CF_UNICODETEXT) {
-/*/// For paste problem at file open dialog.
-			if (m_nCount) {
-				LPSTR lpA = new char[nLenA + 1];
-				WideCharToMultiByte(CP_ACP, 0, (LPCWSTR)m_bsText, nLen, lpA, nLenA, NULL, NULL);
-				int nLenW = MultiByteToWideChar(CP_ACP, 0, lpA, nLenA, NULL, NULL);
-				LPWSTR lpW = new WCHAR[nLenW];
-				MultiByteToWideChar(CP_ACP, 0, lpA, nLenA, lpW, nLenW);
-				if (lstrcmpi(m_bsText, lpW) == 0) {
-					delete [] lpA;
-					delete [] lpW;
-					return DATA_E_FORMATETC;
-				}
-				delete [] lpA;
-				delete [] lpW;
-			}
-//*/
 			nLen = ::SysStringByteLen(m_bsText) + sizeof(WCHAR);
 			hMem = GlobalAlloc(GHND, nLen);
 			try {
@@ -20022,6 +20005,7 @@ STDMETHODIMP CteFolderItems::GetData(FORMATETC *pformatetcIn, STGMEDIUM *pmedium
 #endif
 			}
 		} else {
+			int nLenA = WideCharToMultiByte(CP_ACP, 0, (LPCWSTR)m_bsText, nLen, NULL, 0, NULL, NULL);
 			hMem = GlobalAlloc(GHND, nLenA);
 			try {
 				LPSTR lpA = static_cast<LPSTR>(GlobalLock(hMem));
@@ -20114,6 +20098,7 @@ STDMETHODIMP CteFolderItems::EnumFormatEtc(DWORD dwDirection, IEnumFORMATETC **p
 		BOOL bTEXTFormat = m_bUseText;
 		BOOL bDROPEFFECTFormat = m_dwEffect != (DWORD)-1;
 		std::vector<FORMATETC> formats;
+		formats.reserve(m_nCount);
 		if (!m_pDataObj && m_pidllist && m_nCount > 0) {
 			IShellFolder *pSF;
 			if (GetShellFolder(&pSF, m_pidllist[0])) {
@@ -20941,7 +20926,7 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 						VariantInit(&vResult);
 						VARIANTARG *pv = GetNewVARIANT(nArg + 2);
 						teSetObject(&pv[nArg + 1], this);
-						for (int i = nArg; i >= 0; i--) {
+						for (int i = nArg; i >= 0; --i) {
 							VariantCopy(&pv[i], &pDispParams->rgvarg[i]);
 						}
 						Invoke4(g_pOnFunc[TE_OnInvokeCommand], &vResult, nArg + 2, pv);
@@ -20954,7 +20939,7 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 					WCHAR **ppwc = new WCHAR*[3];
 					char **ppc = new char*[3];
 					BOOL bExec = TRUE;
-					for (int i = 0; i <= 2; i++) {
+					for (int i = 0; i <= 2; ++i) {
 						if (pDispParams->rgvarg[nArg - i - 2].vt == VT_I4) {
 							UINT_PTR nVerb = (UINT_PTR)pDispParams->rgvarg[nArg - i - 2].lVal;
 							ppwc[i] = (WCHAR *)nVerb;
@@ -23219,7 +23204,7 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 							if (bs[i] == '|') {
 								bs[i] = NULL;
 							}
-							i--;
+							--i;
 						}
 						m_ofn.lpstrFilter = bs;
 					}
@@ -23479,7 +23464,7 @@ HBITMAP CteWICBitmap::GetHBITMAP(COLORREF clBk)
 					int r0 = GetRValue(clBk);
 					int g0 = GetGValue(clBk);
 					int b0 = GetBValue(clBk);
-					for (int i = w * h; i--; pcl++) {
+					for (int i = w * h; i--; ++pcl) {
 						int a = pcl->rgbReserved;
 						pcl->rgbBlue = (pcl->rgbBlue - b0) * a / 0xff + b0;
 						pcl->rgbGreen = (pcl->rgbGreen - g0) * a / 0xff + g0;
@@ -23585,7 +23570,7 @@ HRESULT CteWICBitmap::CreateBitmapFromHBITMAP(HBITMAP hBM, HPALETTE hPalette, in
 			RGBQUAD *pcl = (RGBQUAD *)bm.bmBits;
 			if (pcl) {
 				try {
-					for (int i = bm.bmWidth * bm.bmHeight; i--; pcl++) {
+					for (int i = bm.bmWidth * bm.bmHeight; i--; ++pcl) {
 						if (pcl->rgbReserved) {
 							nAlpha = 0;
 							break;
@@ -23769,7 +23754,7 @@ VOID CteWICBitmap::FromStreamRelease(IStream *pStream, LPWSTR lpfn, BOOL bExtend
 	if (!HasImage()) {
 		HRESULT hr = E_FAIL;
 		try {
-			for (UINT i = 0; i < g_ppGetImage.size(); i++) {
+			for (UINT i = 0; i < g_ppGetImage.size(); ++i) {
 				pStream->Seek(liOffset, STREAM_SEEK_SET, NULL);
 				HBITMAP hBM = NULL;
 				int nAlpha = 3;
@@ -23798,7 +23783,7 @@ HRESULT CteWICBitmap::GetArchive(LPWSTR lpfn, int cx)
 	BSTR bsItem = NULL;
 	if (teGetArchiveSpec(lpfn, &bsArcPath, &bsItem)) {
 		try {
-			for (UINT i = 0; i < g_ppGetArchive.size(); i++) {
+			for (UINT i = 0; i < g_ppGetArchive.size(); ++i) {
 				IStream *pStreamOut = NULL;
 				LPFNGetArchive lpfnGetArchive = (LPFNGetArchive)g_ppGetArchive[i];
 				hr = lpfnGetArchive(bsArcPath, bsItem, &pStreamOut, NULL);
@@ -24207,9 +24192,9 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 									y0 = 0;
 								}
 								UINT cl = GetIntFromVariant(&pDispParams->rgvarg[nArg - 4]);
-								for (int j = h0, y = y0; j-- > 0; y++) {
+								for (int j = h0, y = y0; j-- > 0; ++y) {
 									if (y < h) {
-										for (int i = w0, x = x0; i-- > 0; x++) {
+										for (int i = w0, x = x0; i-- > 0; ++x) {
 											if (x < w) {
 												pbData[x + y * w] = cl;
 											} else {

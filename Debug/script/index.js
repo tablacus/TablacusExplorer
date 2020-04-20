@@ -241,7 +241,7 @@ LoadConfig = function (bDog) {
 			if (items.length == 0 && j == 0) {
 				items = xml.getElementsByTagName('Config');
 			}
-			for (var i = 0; i < items.length; i++) {
+			for (var i = 0; i < items.length; ++i) {
 				var item = items[i];
 				var s = item.text;
 				if (s == "0") {
@@ -397,7 +397,7 @@ function ResizeSizeBar(z, h) {
 		o.style.display = "";
 		if (w != o.offsetWidth) {
 			o.style.width = w + "px";
-			for (var i = 1; i <= 3; i++) {
+			for (var i = 1; i <= 3; ++i) {
 				document.getElementById(z + "Bar" + i).style.width = w + "px";
 			}
 			document.getElementById(z.toLowerCase() + "barT").style.width = w + "px";
@@ -555,7 +555,7 @@ OpenSelected = function (Ctrl, NewTab, pt) {
 		if (Exec.length) {
 			if (Selected.Count != Exec.length) {
 				Selected = api.CreateObject("FolderItems");
-				for (var i = 0; i < Exec.length; i++) {
+				for (var i = 0; i < Exec.length; ++i) {
 					Selected.AddItem(Exec[i]);
 				}
 			}
@@ -1162,7 +1162,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 	}
 
 	var NewTab = GetNavigateFlags();
-	for (var i = 0; i < Items.Count; i++) {
+	for (var i = 0; i < Items.Count; ++i) {
 		if (Verb && strVerb != "runas") {
 			var Item = Items.Item(i);
 			path = Item.ExtendedProperty("linktarget") || Item.Path;
@@ -1186,7 +1186,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 	if (Items.Count != Exec.length) {
 		if (Exec.length) {
 			var Selected = api.CreateObject("FolderItems");
-			for (var i = 0; i < Exec.length; i++) {
+			for (var i = 0; i < Exec.length; ++i) {
 				Selected.AddItem(Exec[i]);
 			}
 			InvokeCommand(Selected, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon, ContextMenu.FolderView);
@@ -1760,7 +1760,7 @@ te.OnArrange = function (Ctrl, rc) {
 		o.style.height = Math.max(rc.bottom - rc.top, 0) + "px";
 		rc.top += document.getElementById("InnerTop_" + Ctrl.Id).offsetHeight + document.getElementById("InnerTop2_" + Ctrl.Id).offsetHeight;
 		var w1 = 0, w2 = 0, x = '';
-		for (var i = 0; i <= 1; i++) {
+		for (var i = 0; i <= 1; ++i) {
 			w1 += api.LowPart(document.getElementById("Inner" + x + "Left_" + Ctrl.Id).style.width.replace(/\D/g, ""));
 			w2 += api.LowPart(document.getElementById("Inner" + x + "Right_" + Ctrl.Id).style.width.replace(/\D/g, ""));
 			x = '2';
@@ -2090,7 +2090,7 @@ function ArrangeAddons() {
 		var items = root.childNodes;
 		if (items) {
 			var arError = [];
-			for (var i = 0; i < items.length; i++) {
+			for (var i = 0; i < items.length; ++i) {
 				var item = items[i];
 				var Id = item.nodeName;
 				g_.Error_source = Id;
@@ -2187,7 +2187,7 @@ function InitCode() {
 		Mouse: ["All", "List", "List_Background", "Tree", "Tabs", "Tabs_Background", "Browser"]
 	};
 	var i;
-	for (i = 0; i < 3; i++) {
+	for (i = 0; i < 3; ++i) {
 		g_.KeyState[i][0] = api.GetKeyNameText(g_.KeyState[i][0]);
 	}
 	i = g_.KeyState.length;
@@ -2366,7 +2366,7 @@ function InitMouse() {
 }
 
 importScripts = function () {
-	for (var i = 0; i < arguments.length; i++) {
+	for (var i = 0; i < arguments.length; ++i) {
 		importScript(arguments[i]);
 	}
 }
@@ -2710,7 +2710,7 @@ g_basic =
 					if (Folder) {
 						var Items = Folder.Items();
 						var hMenu = api.CreatePopupMenu();
-						for (i = 0; i < Items.Count; i++) {
+						for (i = 0; i < Items.Count; ++i) {
 							api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, i + 1, Items.Item(i).Name);
 						}
 						var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD | (pt.width ? TPM_RIGHTALIGN : 0), pt.x + pt.width, pt.y, te.hwnd, null, null);
@@ -3113,7 +3113,7 @@ g_basic =
 			}
 		}
 		var hMenu = api.CreatePopupMenu();
-		for (i = 0; i < ar.length; i++) {
+		for (i = 0; i < ar.length; ++i) {
 			if (ar[i]) {
 				api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, i + 1, GetTextR(ar[i]));
 			}
@@ -3341,7 +3341,7 @@ AddEvent("LocationPopup", function (hMenu) {
 	FolderMenu.AddMenuItem(hMenu, api.ILCreateFromPath(ssfDRIVES));
 	var Items = FolderMenu.Enum(api.ILCreateFromPath(ssfDRIVES));
 	var path0 = api.GetDisplayNameOf(ssfDESKTOP, SHGDN_ORIGINAL | SHGDN_FORPARSING);
-	for (var i = 0; i < Items.Count; i++) {
+	for (var i = 0; i < Items.Count; ++i) {
 		var Item = Items.Item(i);
 		if (IsFolderEx(Item)) {
 			var path = api.GetDisplayNameOf(Item, SHGDN_ORIGINAL | SHGDN_FORPARSING);
@@ -3507,7 +3507,7 @@ function AutocompleteThread() {
 			while (dl.lastChild) {
 				dl.removeChild(dl.lastChild);
 			}
-			for (var i = 0; i < Items.Count && Autocomplete.Path == pid.Path; i++) {
+			for (var i = 0; i < Items.Count && Autocomplete.Path == pid.Path; ++i) {
 				if (Items.Item(i).IsFolder) {
 					var el = document.createElement("option");
 					el.value = Items.Item(i).Path;
@@ -3580,7 +3580,7 @@ if (!te.Data) {
 
 	var pf = [ssfPROGRAMFILES, ssfPROGRAMFILESx86];
 	var x = api.sizeof("HANDLE") / 4;
-	for (var i = 0; i < x; i++) {
+	for (var i = 0; i < x; ++i) {
 		var s = api.GetDisplayNameOf(pf[i], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
 		var l = s.replace(/\s*\(x86\)$/i, "").length;
 		if (api.StrCmpNI(s, te.Data.DataFolder, l) == 0) {
@@ -3624,7 +3624,7 @@ if (!te.Data) {
 		}
 	} catch (e) { }
 	te.Data.WindowSetting = fso.BuildPath(te.Data.DataFolder, "config\\window0.xml");
-	for (var i = 1; i < 999; i++) {
+	for (var i = 1; i < 999; ++i) {
 		var fn = fso.BuildPath(te.Data.DataFolder, "config\\window" + i + ".xml");
 		if (!o[fn]) {
 			te.Data.WindowSetting = fn;

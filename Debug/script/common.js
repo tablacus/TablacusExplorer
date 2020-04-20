@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200416 ? te.Version : 20200417
+		return te.Version < 20200420 ? te.Version : 20200420
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -138,7 +138,7 @@ FolderMenu =
 			if (this.SortReverse) {
 				ar = ar.reverse();
 			}
-			for (var i = 0; i < nCount; i++) {
+			for (var i = 0; i < nCount; ++i) {
 				Item = Items.Item(ar[i]);
 				var bMatch = IsFolderEx(Item) || api.ILIsParent(MainWindow.g_pidlCP, Item, false);
 				if (this.Filter) {
@@ -479,7 +479,7 @@ function ApplyLang(doc) {
 	if (o) {
 		for (i = o.length; i--;) {
 			o[i].title = delamp(GetTextR(o[i].title));
-			for (var j = 0; j < o[i].length; j++) {
+			for (var j = 0; j < o[i].length; ++j) {
 				o[i][j].text = GetTextR(o[i][j].text.replace(/^\n/, "").replace(/\n$/, ""));
 			}
 		}
@@ -666,7 +666,7 @@ GetTextR = function (id) {
 		var s = api.LoadString(hModule, api.LowPart(res[2]));
 		if (!s && res[3]) {
 			var ar = res[3].substr(1, res[3].length - 2).split("|");
-			for (var i = 0; i < ar.length && !s; i++) {
+			for (var i = 0; i < ar.length && !s; ++i) {
 				res = /^-(\d+)$/.exec(ar[i]);
 				s = res ? api.LoadString(hModule, api.LowPart(res[1])) : GetTextR(ar[i]);
 			}
@@ -705,7 +705,7 @@ function LoadLang2(filename) {
 	}
 	xml.load(filename);
 	var items = xml.getElementsByTagName('text');
-	for (var i = 0; i < items.length; i++) {
+	for (var i = 0; i < items.length; ++i) {
 		var item = items[i];
 		SetLang2(item.getAttribute("s").replace("\\t", "\t").replace("\\n", "\n"), item.text.replace("\\t", "\t").replace("\\n", "\n"));
 	}
@@ -742,7 +742,7 @@ LoadXml = function (filename, nGroup) {
 	} catch (e) {
 		return;
 	}
-	g_.LockUpdate++;
+	++g_.LockUpdate;
 	te.LockUpdate();
 	if (!nGroup) {
 		var cTC = te.Ctrls(CTRL_TC);
@@ -750,21 +750,21 @@ LoadXml = function (filename, nGroup) {
 			cTC[i].Close();
 		}
 	}
-	for (var i = 0; i < items.length; i++) {
+	for (var i = 0; i < items.length; ++i) {
 		var item = items[i];
 		switch (item.getAttribute("Type") - 0) {
 			case CTRL_TC:
 				var TC = te.CreateCtrl(CTRL_TC, item.getAttribute("Left"), item.getAttribute("Top"), item.getAttribute("Width"), item.getAttribute("Height"), item.getAttribute("Style"), item.getAttribute("Align"), item.getAttribute("TabWidth"), item.getAttribute("TabHeight"));
 				TC.Data.Group = nGroup || Number(item.getAttribute("Group")) || 0;
 				var tabs = item.getElementsByTagName('Ctrl');
-				for (var i2 = 0; i2 < tabs.length; i2++) {
+				for (var i2 = 0; i2 < tabs.length; ++i2) {
 					var tab = tabs[i2];
 					var Path = tab.getAttribute("Path");
 					var logs = tab.getElementsByTagName('Log');
 					var nLogCount = logs.length;
 					if (nLogCount > 1) {
 						Path = api.CreateObject("FolderItems");
-						for (var i3 = 0; i3 < nLogCount; i3++) {
+						for (var i3 = 0; i3 < nLogCount; ++i3) {
 							Path.AddItem(logs[i3].getAttribute("Path"));
 						}
 						Path.Index = tab.getAttribute("LogIndex");
@@ -782,7 +782,7 @@ LoadXml = function (filename, nGroup) {
 				TC.Visible = api.LowPart(item.getAttribute("Visible"));
 				if (TC.Visible) {
 					g_.focused = TC.Selected;
-					g_.fTCs++;
+					++g_.fTCs;
 				}
 				MainWindow.RunEvent1("LoadTC", TC, item);
 				break;
@@ -792,7 +792,7 @@ LoadXml = function (filename, nGroup) {
 		MainWindow.RunEvent1("LoadWindow", xml);
 	}
 	te.UnlockUpdate();
-	g_.LockUpdate--;
+	--g_.LockUpdate;
 }
 
 SaveXmlTC = function (Ctrl, xml, nGroup) {
@@ -850,7 +850,7 @@ SaveXmlTC = function (Ctrl, xml, nGroup) {
 							item2.appendChild(item3);
 							bLogSaved = true;
 						} else if (i3 < nLogIndex) {
-							nLogIndex--;
+							--nLogIndex;
 						}
 					}
 					if (bLogSaved) {
@@ -933,7 +933,7 @@ GetKeyKey = function (strKey) {
 		return nShift;
 	}
 	strKey = strKey.toUpperCase();
-	for (var j = 0; j < MainWindow.g_.KeyState.length; j++) {
+	for (var j = 0; j < MainWindow.g_.KeyState.length; ++j) {
 		var s = MainWindow.g_.KeyState[j][0].toUpperCase() + "+";
 		var i = strKey.indexOf(s);
 		if (i >= 0) {
@@ -950,7 +950,7 @@ GetKeyName = function (strKey, bEn) {
 		var s = api.GetKeyNameText((nKey & 0x17f) << 16);
 		if (s) {
 			var arKey = [];
-			for (var i = 0, z = MainWindow.g_.KeyState.length; i < z; i++) {
+			for (var i = 0, z = MainWindow.g_.KeyState.length; i < z; ++i) {
 				var j = bEn ? (i + 3) % z : i;
 				if (nKey & MainWindow.g_.KeyState[j][1]) {
 					nKey -= MainWindow.g_.KeyState[j][1];
@@ -1203,7 +1203,7 @@ CreateNew = function (path, fn) {
 					path3 = fso.BuildPath(fso.GetSpecialFolder(2).Path, ar[0]);
 					DeleteItem(path3);
 					path4 = path3;
-					for (var i = 1; i < ar.length; i++) {
+					for (var i = 1; i < ar.length; ++i) {
 						fso.CreateFolder(path4);
 						path4 = fso.BuildPath(path4, ar[i]);
 					}
@@ -1354,8 +1354,8 @@ ExecOpen = function (Ctrl, s, type, hwnd, pt, NewTab) {
 				NewTab &= ~SBSP_ACTIVATE_NOFOCUS;
 				bFirst = true;
 			}
-			g_.LockUpdate++;
-			nLock++;
+			++g_.LockUpdate;
+			++nLock;
 			bRev = false;
 		}
 		var s = bRev ? line.pop() : line.shift();
@@ -1532,7 +1532,7 @@ OpenMenu = function (items, SelItem) {
 	}
 	arMenu = [];
 	var arLevel = [];
-	for (var i = 0; i < items.length; i++) {
+	for (var i = 0; i < items.length; ++i) {
 		var item = items[i];
 		var strType = String(item.getAttribute("Type")).toLowerCase();
 		var strFlag = strType == "menus" ? item.text.toLowerCase() : "";
@@ -1588,7 +1588,7 @@ AdjustMenuBreak = function (hMenu) {
 		}
 		var u = mii.fType & (MFT_MENUBREAK | MFT_MENUBARBREAK);
 		if (u && api.DeleteMenu(hMenu, i, MF_BYPOSITION)) {
-			i++;
+			++i;
 			uFlags = u;
 		} else {
 			uFlags = 0;
@@ -1648,7 +1648,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec) {
 	var arMenu, item;
 	if (items) {
 		arMenu = OpenMenu(items, SelItem);
-		for (var i = 0; i < arMenu.length; i++) {
+		for (var i = 0; i < arMenu.length; ++i) {
 			item = items[arMenu[i]];
 			if (!/^menus$/i.test(item.getAttribute("Type"))) {
 				break;
@@ -1671,7 +1671,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec) {
 						if (/^menus$/i.test(items[arMenu[i]].getAttribute("Type"))) {
 							var s = String(items[arMenu[i]].text).toLowerCase();
 							if (s == "close") {
-								nLevel++;
+								++nLevel;
 							}
 							if (s == "open") {
 								if (--nLevel < 0) {
@@ -1909,7 +1909,7 @@ GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arCon
 			break;
 		case 7:
 			var dir = [GetText("Check for updates"), GetText("Get Add-ons"), null, api.sprintf(99, GetText("&About %s"), "Tablacus Explorer")];
-			for (var i = 0; i < dir.length; i++) {
+			for (var i = 0; i < dir.length; ++i) {
 				var s = dir[i];
 				api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | (s === null ? MF_SEPARATOR : MF_STRING), i + 0x4011, s);
 			}
@@ -2097,7 +2097,7 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem, bTran
 		nPos = nLen;
 	}
 	nLen = arMenu.length;
-	for (var i = 0; i < nLen; i++) {
+	for (var i = 0; i < nLen; ++i) {
 		var item = items[arMenu[i]];
 		var s = (item.getAttribute("Name") || item.getAttribute("Mouse") || GetKeyName(item.getAttribute("Key")) || "").replace(/\\t/i, "\t");
 		var strType = String(item.getAttribute("Type")).toLowerCase();
@@ -2266,7 +2266,7 @@ GetAddonInfo2 = function (xml, info, Tag, bTrans) {
 	var items = xml.getElementsByTagName(Tag);
 	if (items.length) {
 		var item = items[0].childNodes;
-		for (var i = 0; i < item.length; i++) {
+		for (var i = 0; i < item.length; ++i) {
 			var n = item[i].tagName;
 			var s = item[i].textContent || item[i].text;
 			info[n] = (bTrans && /Name|Description/i.test(n) ? GetText(s) : s);
@@ -2468,7 +2468,7 @@ OpenHttpRequest = function (url, alt, fn, arg) {
 	xhr.onreadystatechange = function () {
 		if (xhr.readyState == 4) {
 			if (arg && arg.pcRef) {
-				arg.pcRef[0]--;
+				--arg.pcRef[0];
 			}
 			if (xhr.status == 200) {
 				return fn(xhr, url, arg);
@@ -2483,7 +2483,7 @@ OpenHttpRequest = function (url, alt, fn, arg) {
 		url += "?" + Math.floor(new Date().getTime() / 60000);
 	}
 	if (arg && arg.pcRef) {
-		arg.pcRef[0]++;
+		++arg.pcRef[0];
 	}
 	xhr.open("GET", url, false);
 	try {
@@ -2756,7 +2756,7 @@ function MakeKeySelect() {
 	var oa = document.getElementById("_KeyState");
 	if (oa) {
 		var ar = [];
-		for (var i = 0; i < 4; i++) {
+		for (var i = 0; i < 4; ++i) {
 			var s = MainWindow.g_.KeyState[i][0];
 			ar.push('<label><input type="checkbox" onclick="KeyShift(this)" id="_Key', s, '">', s, '&nbsp;</label>');
 		}
@@ -2794,7 +2794,7 @@ function MakeKeySelect() {
 
 function SetKeyShift() {
 	var key = ((document.E && document.E.KeyKey) || document.F.KeyKey || document.F.Key).value;
-	for (var i = 0; i < MainWindow.g_.KeyState.length; i++) {
+	for (var i = 0; i < MainWindow.g_.KeyState.length; ++i) {
 		var s = MainWindow.g_.KeyState[i][0];
 		var o = document.getElementById("_Key" + s);
 		if (o) {
@@ -3647,7 +3647,7 @@ function CustomSort(FV, id, r, fnAdd, fnComp) {
 		var nMax = List.length;
 		var p = nMax / 100;
 		Progress.SetLine(1, api.LoadString(hShell32, 50690) + Name, true);
-		for (var i = 0; i < nMax && !Progress.HasUserCancelled(); i++) {
+		for (var i = 0; i < nMax && !Progress.HasUserCancelled(); ++i) {
 			Progress.SetTitle((i / p).toFixed(0) + "%");
 			Progress.SetProgress(i, nMax);
 			FV.SelectAndPositionItem(Items.Item(List[i][0]), 0, pt);
@@ -3708,7 +3708,7 @@ function MakeCommDlgFilter(arg) {
 	var ar = arg ? arg.join ? arg : [arg] : [];
 	var result = [];
 	var bAll = true;
-	for (var i = 0; i < ar.length; i++) {
+	for (var i = 0; i < ar.length; ++i) {
 		var s = ar[i];
 		bAll &= s.indexOf("*.*") < 0;
 		if (/[\|#]/.test(s)) {
