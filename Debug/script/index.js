@@ -534,7 +534,6 @@ OpenSelected = function (Ctrl, NewTab, pt) {
 	var SelItem = ar.shift();
 	var FV = ar.shift();
 	if (Selected) {
-		te.LockUpdate();
 		var Exec = [];
 		for (var i in Selected) {
 			var Item = Selected.Item(i);
@@ -561,7 +560,6 @@ OpenSelected = function (Ctrl, NewTab, pt) {
 			}
 			InvokeCommand(Selected, 0, te.hwnd, null, null, null, SW_SHOWNORMAL, 0, 0, FV, CMF_DEFAULTONLY);
 		}
-		te.UnlockUpdate();
 	}
 	return S_OK;
 }
