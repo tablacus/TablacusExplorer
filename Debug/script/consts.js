@@ -127,7 +127,11 @@ if (WINVER > 0x603) {
 		dropdown: '<b style="font-family: Consolas; transform: scale(1.2,1) rotate(-90deg) translateX(2px); opacity: 0.6; width: 1em; display: inline-block">&lt;</b>'
 	};
 } else {
-	var s = wsh.regRead("HKCU\\Software\\Microsoft\\Internet Explorer\\Settings\\Always Use My Font Face");
+	try {
+		var s = wsh.regRead("HKCU\\Software\\Microsoft\\Internet Explorer\\Settings\\Always Use My Font Face");
+	} catch (e) {
+		s = 0;
+	}
 	BUTTONS = {
 		opened: '<span style="font-size: 10pt; transform: translateY(-2pt)">&#x25e2;</span>',
 		closed: '<span style="font-size: 10pt; transform: scale(1,1.4)">&#x25b7;</span>',
