@@ -111,26 +111,31 @@ TWM_APP = 0x8001; //WM_APP+1
 TWM_CHANGENOTIFY = TWM_APP++;
 
 SHGDN_ORIGINAL = 0x40000000;
-SHGDN_FORPARSINGEX = Ox80000000 | SHGDN_ORIGINAL;
+SHGDN_FORPARSINGEX = 0x80000000 | SHGDN_ORIGINAL;
 HOME_PATH = 0;//Desktop
 TITLE = "Tablacus Explorer";
 ssfRESULTSFOLDER = 0x40;
 FILTER_IMAGE = "*.jpg;*.jpeg;*.png;*.bmp;*.gif;*.ico;data:*";
 REGEXP_IMAGE = /^data:|\.jpe?g$|\.png$|\.bmp$|\.gif$|\.ico$/i;
 
-BUTTONS = WINVER > 0x603 ?
-{
-	opened: '<b style="font-family: Consolas; transform: scale(1.2,1) rotate(-90deg)">&lt;</b>',
-	closed: '<b style="font-family: Consolas; transform: scale(1,1.2) translateX(1px); opacity: 0.6">&gt;</b>',
-	parent: '&laquo;',
-	next: '<b style="font-family: Consolas; opacity: 0.6; transform: scale(0.75,0.9); text-shadow: 1px 0">&gt;</b>',
-	dropdown: '<b style="font-family: Consolas; transform: scale(1.2,1) rotate(-90deg) translateX(2px); opacity: 0.6; width: 1em; display: inline-block">&lt;</b>'
-} : {
-	opened: '<span style="font-size: 13px; transform: translateY(-3px)">&#x25e2;</span>',
-	closed: '<span style="font-size: 13px; transform: scale(1,1.4)">&#x25b7;</span>',
-	parent: '&laquo;',
-	next: '<span style="font-family: Marlett">4</span>',
-	dropdown: '<span style="font-family: Marlett">6</span>'
+if (WINVER > 0x603) {
+	BUTTONS = {
+		opened: '<b style="font-family: Consolas; transform: scale(1.2,1) rotate(-90deg)">&lt;</b>',
+		closed: '<b style="font-family: Consolas; transform: scale(1,1.2) translateX(1px); opacity: 0.6">&gt;</b>',
+		parent: '&laquo;',
+		next: '<b style="font-family: Consolas; opacity: 0.6; transform: scale(0.75,0.9); text-shadow: 1px 0">&gt;</b>',
+		dropdown: '<b style="font-family: Consolas; transform: scale(1.2,1) rotate(-90deg) translateX(2px); opacity: 0.6; width: 1em; display: inline-block">&lt;</b>'
+	};
+} else {
+	var s = wsh.regRead("HKCU\\Software\\Microsoft\\Internet Explorer\\Settings\\Always Use My Font Face");
+	BUTTONS = {
+		opened: '<span style="font-size: 10pt; transform: translateY(-2pt)">&#x25e2;</span>',
+		closed: '<span style="font-size: 10pt; transform: scale(1,1.4)">&#x25b7;</span>',
+		parent: '&laquo;',
+		next: s ? '&#x25ba;' : '<span style="font-family: Marlett">4</span>',
+		dropdown: s ? '&#x25bc;' : '<span style="font-family: Marlett">6</span>'
+	};
+	delete s;
 }
 
 //Windows

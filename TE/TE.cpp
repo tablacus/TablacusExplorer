@@ -13271,7 +13271,6 @@ VOID CteShellBrowser::Refresh(BOOL bCheck)
 					}
 				}
 				if (nCount) {
-					ResetPropEx();
 					m_pShellView->Refresh();
 					SetPropEx();
 				} else {
@@ -16640,7 +16639,8 @@ VOID CteShellBrowser::Suspend(int nMode)
 VOID CteShellBrowser::SetPropEx()
 {
 	if (m_pShellView->GetWindow(&m_hwndDV) == S_OK) {
-		if (!m_DefProc) {
+		LONG_PTR DefProc = GetWindowLongPtr(m_hwndDV, GWLP_WNDPROC);
+		if (DefProc != (LONG_PTR)TELVProc) {
 			SetWindowLongPtr(m_hwndDV, GWLP_USERDATA, (LONG_PTR)this);
 			m_DefProc = SetWindowLongPtr(m_hwndDV, GWLP_WNDPROC, (LONG_PTR)TELVProc);
 			for (int i = WM_USER + 173; i <= WM_USER + 175; ++i) {
