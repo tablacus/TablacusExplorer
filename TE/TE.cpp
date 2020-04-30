@@ -12057,12 +12057,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			//System
 			case WM_SETTINGCHANGE:
 				teRegister(FALSE);
+				BOOL bDarkMode;
+				bDarkMode = g_bDarkMode;
 				teGetDarkMode();
-				for (UINT i = g_ppSB.size(); i--;) {
-					CteShellBrowser *pSB = g_ppSB[i];
-					if (!pSB->m_bEmpty && pSB->m_hwndLV) {
-						pSB->SetLVSettings();
-						pSB->InitFolderSize();
+				if (bDarkMode != g_bDarkMode) {
+					for (UINT i = g_ppSB.size(); i--;) {
+						CteShellBrowser *pSB = g_ppSB[i];
+						if (!pSB->m_bEmpty && pSB->m_hwndLV) {
+							pSB->SetLVSettings();
+							pSB->InitFolderSize();
+						}
 					}
 				}
 				if (lpfnRegenerateUserEnvironment) {
