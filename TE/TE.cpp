@@ -5836,9 +5836,11 @@ VOID teSetDarkMode(HWND hwnd)
 
 VOID teSetDarkTheme(HWND hwnd, LPCWSTR pszApp)
 {
-	if (lpfnAllowDarkModeForWindow) {
-		lpfnAllowDarkModeForWindow(hwnd, g_bDarkMode);
-		SetWindowTheme(hwnd, pszApp, NULL);
+	if (lpfnIsDarkModeAllowedForWindow && lpfnAllowDarkModeForWindow) {
+		if ((BOOL(lpfnIsDarkModeAllowedForWindow(hwnd)) ^ g_bDarkMode & 1)) {
+			lpfnAllowDarkModeForWindow(hwnd, g_bDarkMode);
+			SetWindowTheme(hwnd, pszApp, NULL);
+		}
 	}
 }
 
@@ -12057,18 +12059,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			//System
 			case WM_SETTINGCHANGE:
 				teRegister(FALSE);
-				BOOL bDarkMode;
-				bDarkMode = g_bDarkMode;
 				teGetDarkMode();
-				if (bDarkMode != g_bDarkMode) {
-					for (UINT i = g_ppSB.size(); i--;) {
-						CteShellBrowser *pSB = g_ppSB[i];
-						if (!pSB->m_bEmpty && pSB->m_hwndLV) {
-							pSB->SetLVSettings();
-							pSB->InitFolderSize();
-						}
-					}
-				}
 				if (lpfnRegenerateUserEnvironment) {
 					try {
 						if (lstrcmpi((LPCWSTR)lParam, L"Environment") == 0) {
