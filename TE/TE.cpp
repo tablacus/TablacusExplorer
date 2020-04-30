@@ -12060,7 +12060,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				teGetDarkMode();
 				for (UINT i = g_ppSB.size(); i--;) {
 					CteShellBrowser *pSB = g_ppSB[i];
-					if (!pSB->m_bEmpty && pSB->m_bVisible) {
+					if (!pSB->m_bEmpty && pSB->m_hwndLV) {
 						pSB->SetLVSettings();
 						pSB->InitFolderSize();
 					}
@@ -16701,7 +16701,6 @@ VOID CteShellBrowser::ResetPropEx()
 		SetWindowLongPtr(m_hwndDV, GWLP_WNDPROC, (LONG_PTR)m_DefProc);
 		m_DefProc = NULL;
 	}
-	m_DefProc = NULL;
 	if (m_pDropTarget2) {
 //		SetProp(m_hwndDT, L"OleDropTargetInterface", (HANDLE)m_pDropTarget2->m_pDropTarget);
 		RevokeDragDrop(m_hwndDT);
