@@ -1133,6 +1133,7 @@ public:
 	HRESULT OnBeforeNavigate(FolderItem *pPrevious, UINT wFlags);
 //	void InitializeMenuItem(HMENU hmenu, LPTSTR lpszItemName, int nId, HMENU hmenuSub);
 	VOID GetSort(BSTR* pbs, int nFormat);
+	VOID GetSort2(BSTR* pbs, int nFormat);
 	VOID SetSort(BSTR bs);
 	VOID GetGroupBy(BSTR* pbs);
 	VOID SetGroupBy(BSTR bs);

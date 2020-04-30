@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200427 ? te.Version : 20200428
+		return te.Version < 20200430 ? te.Version : 20200430
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -3478,27 +3478,27 @@ OpenAdodbFromTextFile = function (fn, charset) {
 		}
 		return ado;
 	}
-	charset = "_autodetect_all";
 	try {
-		ado.CharSet = "iso-8859-1";
+		ado.Type = adTypeBinary;
 		ado.Open();
 		ado.LoadFromFile(fn);
-		var s = ado.ReadText(999);
+		var s = ado.Read(8192);
 	} catch (e) {
 		ado.Close();
 		return;
 	}
-	if (/^\xEF\xBB\xBF/.test(s)) {
-		charset = 'utf-8';
-	} else if (/^\xFF\xFE|^\xFE\xFF/.test(s)) {
-		charset = 'unicode';
-	} else {
-		var res = /<meta[^>]*charset\s*=([\w_\-]+)|\@charset.*?([\w_\-]+)|<\?xml[^>]*encoding\s*=[^\w_\->]*([\w_\-]+)/i.exec(s);
-		if (res) {
-			charset = res[1] || res[2] || res[3];
+	charset = MainWindow.RunEvent4("DetectCharSet", s, fn);
+	if (!charset) {
+		s = api.SysAllocString(s, 28591);
+		charset = "_autodetect_all";
+		if (/^\xEF\xBB\xBF|^([\x09\x0A\x0D\x20-\x7E]|[\xC2-\xDF][\x80-\xBF]|\xE0[\xA0-\xBF][\x80-\xBF]|[\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}|\xED[\x80-\x9F][\x80-\xBF]|\xF0[\x90-\xBF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}|\xF4[\x80-\x8F][\x80-\xBF]{2})*[\x80-\xBF]{0,3}$/.test(s)) {
+			charset = 'utf-8';
+		} else if (/^\xFF\xFE|^\xFE\xFF/.test(s)) {
+			charset = 'unicode';
 		}
 	}
 	ado.Position = 0;
+	ado.Type = adTypeText;
 	ado.CharSet = charset;
 	return ado;
 }

@@ -5836,11 +5836,9 @@ VOID teSetDarkMode(HWND hwnd)
 
 VOID teSetDarkTheme(HWND hwnd, LPCWSTR pszApp)
 {
-	if (lpfnIsDarkModeAllowedForWindow && lpfnAllowDarkModeForWindow) {
-		if ((BOOL(lpfnIsDarkModeAllowedForWindow(hwnd)) ^ g_bDarkMode & 1)) {
-			lpfnAllowDarkModeForWindow(hwnd, g_bDarkMode);
-			SetWindowTheme(hwnd, pszApp, NULL);
-		}
+	if (lpfnAllowDarkModeForWindow) {
+		lpfnAllowDarkModeForWindow(hwnd, g_bDarkMode);
+		SetWindowTheme(hwnd, pszApp, NULL);
 	}
 }
 
@@ -6449,9 +6447,6 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		}
 		if (msg == WM_WINDOWPOSCHANGED) {
 			pSB->SetFolderFlags(FALSE);
-		}
-		if (msg == WM_SETTINGCHANGE) {
-			pSB->InitFolderSize();
 		}
 		if (hwnd != pSB->m_hwndDV) {
 			return 0;
@@ -9390,6 +9385,18 @@ VOID teApiDragQueryFile(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 
 VOID teApiSysAllocString(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
+	if (nArg >= 1 && pDispParams->rgvarg[nArg - 1].vt == VT_I4) {
+		if (pVarResult) {
+			UCHAR *pc;
+			int nLen = 0;
+			GetpDataFromVariant(&pc, &nLen, &pDispParams->rgvarg[nArg]);
+			if (nLen >= 0) {
+				pVarResult->vt = VT_BSTR;
+				pVarResult->bstrVal = teMultiByteToWideChar(param[1].lVal, (LPCSTR)pc, nLen);
+			}
+		}
+		return;
+	}
 	teSetSZ(pVarResult, GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]));
 }
 
@@ -12049,23 +12056,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				break;
 			//System
 			case WM_SETTINGCHANGE:
-				if (message == WM_SETTINGCHANGE) {
-					teRegister(FALSE);
-					teGetDarkMode();
-					if (lpfnRegenerateUserEnvironment) {
-						try {
-							if (lstrcmpi((LPCWSTR)lParam, L"Environment") == 0) {
-								LPVOID lpEnvironment;
-								lpfnRegenerateUserEnvironment(&lpEnvironment, TRUE);
-								//Not permitted to free lpEnvironment!
-								//FreeEnvironmentStrings((LPTSTR)lpEnvironment);
-							}
-						} catch (...) {
-							g_nException = 0;
-#ifdef _DEBUG
-							g_strException = L"RegenerateUserEnvironment";
-#endif
+				teRegister(FALSE);
+				teGetDarkMode();
+				for (UINT i = g_ppSB.size(); i--;) {
+					CteShellBrowser *pSB = g_ppSB[i];
+					if (!pSB->m_bEmpty && pSB->m_bVisible) {
+						pSB->SetLVSettings();
+						pSB->InitFolderSize();
+					}
+				}
+				if (lpfnRegenerateUserEnvironment) {
+					try {
+						if (lstrcmpi((LPCWSTR)lParam, L"Environment") == 0) {
+							LPVOID lpEnvironment;
+							lpfnRegenerateUserEnvironment(&lpEnvironment, TRUE);
+							//Not permitted to free lpEnvironment!
+							//FreeEnvironmentStrings((LPTSTR)lpEnvironment);
 						}
+					} catch (...) {
+						g_nException = 0;
+#ifdef _DEBUG
+						g_strException = L"RegenerateUserEnvironment";
+#endif
 					}
 				}
 			case WM_COPYDATA:
@@ -13272,7 +13284,6 @@ VOID CteShellBrowser::Refresh(BOOL bCheck)
 				}
 				if (nCount) {
 					m_pShellView->Refresh();
-					SetPropEx();
 				} else {
 					Suspend(0);
 				}
@@ -15282,7 +15293,14 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			case DISPID_SORTDONE://XP-
 				m_nSorting = 0;
 				m_pTC->RedrawUpdate();
-				teSysFreeString(&m_bsAltSortColumn);
+				if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
+					BSTR bs = NULL;
+					GetSort2(&bs, 0);
+					if (bs) {
+						teSysFreeString(&m_bsAltSortColumn);
+						teSysFreeString(&bs);
+					}
+				}
 				if (m_nFocusItem < 0) {
 					FocusItem(FALSE);
 				}
@@ -15296,8 +15314,6 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 				SetFolderFlags(FALSE);
 				return S_OK;
-/*			case DISPID_CONTENTSCHANGED://XP-
-				return S_OK;*/
 			default:
 				if (dispIdMember >= START_OnFunc && dispIdMember < START_OnFunc + Count_SBFunc) {
 					teInvokeObject(&m_ppDispatch[dispIdMember - START_OnFunc], wFlags, pVarResult, nArg, pDispParams->rgvarg);
@@ -16639,8 +16655,7 @@ VOID CteShellBrowser::Suspend(int nMode)
 VOID CteShellBrowser::SetPropEx()
 {
 	if (m_pShellView->GetWindow(&m_hwndDV) == S_OK) {
-		LONG_PTR DefProc = GetWindowLongPtr(m_hwndDV, GWLP_WNDPROC);
-		if (DefProc != (LONG_PTR)TELVProc) {
+		if (!m_DefProc) {
 			SetWindowLongPtr(m_hwndDV, GWLP_USERDATA, (LONG_PTR)this);
 			m_DefProc = SetWindowLongPtr(m_hwndDV, GWLP_WNDPROC, (LONG_PTR)TELVProc);
 			for (int i = WM_USER + 173; i <= WM_USER + 175; ++i) {
@@ -16686,6 +16701,7 @@ VOID CteShellBrowser::ResetPropEx()
 		SetWindowLongPtr(m_hwndDV, GWLP_WNDPROC, (LONG_PTR)m_DefProc);
 		m_DefProc = NULL;
 	}
+	m_DefProc = NULL;
 	if (m_pDropTarget2) {
 //		SetProp(m_hwndDT, L"OleDropTargetInterface", (HANDLE)m_pDropTarget2->m_pDropTarget);
 		RevokeDragDrop(m_hwndDT);
@@ -16842,6 +16858,11 @@ VOID CteShellBrowser::GetSort(BSTR* pbs, int nFormat)
 		*pbs = ::SysAllocString(m_bsAltSortColumn);
 		return;
 	}
+	GetSort2(pbs, nFormat);
+}
+
+VOID CteShellBrowser::GetSort2(BSTR* pbs, int nFormat)
+{
 	IFolderView2 *pFV2;
 	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
 		if (teIsSameSort(pFV2, g_pSortColumnNull, _countof(g_pSortColumnNull))) {
