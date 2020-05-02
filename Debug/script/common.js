@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200433 ? te.Version : 20200433
+		return te.Version < 20200502 ? te.Version : 20200502
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -1094,7 +1094,7 @@ ShowDialog = function (fn, opt) {
 	}
 	var r = opt.r || Math.abs(MainWindow.DefaultFont.lfHeight) / 12;
 	var h = api.GetWindowLongPtr(te.hwnd, GWL_STYLE) & WS_CAPTION ? 0 : api.GetSystemMetrics(SM_CYCAPTION);
-	return te.CreateCtrl(CTRL_SW, fn, opt, document, (opt.width || 750) * r, (opt.height || 530) * r + h, opt.left, opt.top);
+	return te.CreateCtrl(CTRL_SW, fn, opt, document, (opt.width > 99 ? opt.width : 750) * r, (opt.height > 99 ? opt.height : 530) * r + h, opt.left, opt.top);
 }
 
 LoadLayout = function () {

@@ -558,7 +558,6 @@ struct TEILCreate
 	LONG cRef;
 };
 
-#ifdef _USE_THREADADDITEMS
 struct TEAddItems
 {
 	VARIANTARG *pv;
@@ -568,7 +567,6 @@ struct TEAddItems
 	BOOL	bDeleted;
 	BOOL	bNavigateComplete;
 };
-#endif
 
 struct TESortColumns
 {
@@ -1179,9 +1177,6 @@ public:
 	HRESULT IncludeObject2(IShellFolder *pSF, LPCITEMIDLIST pidl);
 	BOOL HasFilter();
 	int GetSizeFormat();
-#ifndef _USE_THREADADDITEMS
-	VOID AddItems(IDispatch *pdisp, BOOL bDeleted, IDispatch *pOnCompleted, BOOL bNavigateComplete);
-#endif
 #ifdef _2000XP
 	HRESULT NavigateSB(IShellView *pPreviousView, FolderItem *pPrevious);
 	VOID AddPathXP(CteFolderItems *pFolderItems, IShellFolderView *pSFV, int nIndex, BOOL bResultsFolder);
