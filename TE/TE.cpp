@@ -2324,6 +2324,7 @@ BOOL GetShellFolder(IShellFolder **ppSF, LPCITEMIDLIST pidl)
 	return TRUE;
 }
 
+#ifdef _2000XP
 BOOL teSFIsShellFSFolder(IShellFolder *pSF)
 {
 	BOOL bResult = FALSE;
@@ -2337,69 +2338,38 @@ BOOL teSFIsShellFSFolder(IShellFolder *pSF)
 	}
 	return bResult;
 }
+#endif
 
-BOOL teIsShellFSFolder(LPITEMIDLIST pidl, BOOL bParent)
-{
-	BOOL bResult = FALSE;
-	if (pidl) {
-		IShellFolder *pSF;
-		LPCITEMIDLIST pidlPart;
-		if (bParent ? SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &pidlPart)) : GetShellFolder(&pSF, pidl)) {
-			bResult = teSFIsShellFSFolder(pSF);
-			pSF->Release();
-		}
-	}
-	return bResult;
-}
-
-LPITEMIDLIST teSHSimpleIDListFromPath(LPWSTR lpstr, BOOL bFolder, WORD wAttr)
+LPITEMIDLIST teSHSimpleIDListFromPathEx(LPWSTR lpstr, DWORD dwAttr, DWORD nSizeLow, DWORD nSizeHigh, FILETIME *pft)
 {
 	LPITEMIDLIST pidl = NULL;
-	int n = lstrlen(lpstr);
-	if (bFolder || (n > 0 && lpstr[n - 1] == '\\')) {
-		BSTR bs = NULL;
-		tePathAppend(&bs, lpstr, L"a");
-		pidl = SHSimpleIDListFromPath(bs);
-		ILRemoveLastID(pidl);
-		::SysFreeString(bs);
-		if (!teIsShellFSFolder(pidl, FALSE)) {
-			teILFreeClear(&pidl);
-		}
-	}
-	if (!pidl) {
-		pidl = SHSimpleIDListFromPath(lpstr);
-	}
-	if (wAttr && teIsShellFSFolder(pidl, TRUE)) {
-		LPWORD pwIdl = (LPWORD)ILFindLastID(pidl);
-		if (pwIdl[6] == 0) {
-			pwIdl[6] = wAttr;
-		}
-	}
-	return pidl;
-}
-
-LPITEMIDLIST teSHSimpleIDListFromPathEx(LPWSTR lpstr, BOOL bFolder, WORD wAttr, DWORD nSizeLow, DWORD nSizeHigh, FILETIME ft)
-{
-	LPITEMIDLIST pidl = teSHSimpleIDListFromPath(lpstr, bFolder, wAttr);
-	if (teIsShellFSFolder(pidl, TRUE)) {
-		LPWORD pwIdl = (LPWORD)ILFindLastID(pidl);
-		if (ft.dwLowDateTime || ft.dwHighDateTime) {
-			if (*((DWORD *)&pwIdl[4]) == 0) {
-				::FileTimeToDosDateTime(&ft, &pwIdl[4], &pwIdl[5]);
+	IBindCtx *pbc = NULL;
+	ULONG chEaten;
+	ULONG dwAttributes;
+	IShellFolder *pSF;
+	if SUCCEEDED(SHGetDesktopFolder(&pSF)) {
+		if SUCCEEDED(CreateBindCtx(0, &pbc)) {
+			pbc->RegisterObjectParam(STR_PARSE_PREFER_FOLDER_BROWSING, static_cast<IDropSource *>(g_pTE));
+			WIN32_FIND_DATA wfd = { 0 };
+			int n = lstrlen(lpstr);
+			wfd.dwFileAttributes = dwAttr | ((n > 0 && lpstr[n - 1] == '\\') ? FILE_ATTRIBUTE_DIRECTORY : 0);
+			wfd.nFileSizeLow = nSizeLow;
+			wfd.nFileSizeHigh = nSizeHigh;
+			if (pft) {
+				wfd.ftLastWriteTime = *pft;
 			}
+			IFileSystemBindData *pFSBD = new CteFileSystemBindData();
+			pFSBD->SetFindData(&wfd);
+			pbc->RegisterObjectParam(STR_FILE_SYS_BIND_DATA, pFSBD);
+			pFSBD->Release();
 		}
-		if (nSizeLow && *((DWORD *)&pwIdl[2]) == 0) {
-			*((DWORD *)&pwIdl[2]) = nSizeLow;
+		try {
+			pSF->ParseDisplayName(NULL, pbc, lpstr, &chEaten, &pidl, &dwAttributes);
+		} catch (...) {
+			pidl = NULL;
 		}
-#ifdef _2000XP
-		if (g_bUpperVista) {
-#endif
-			if (nSizeHigh && *((DWORD *)&pwIdl[27]) == 0) {
-				*((DWORD *)&pwIdl[27]) = nSizeHigh;
-			}
-#ifdef _2000XP
-		}
-#endif
+		SafeRelease(&pbc);
+		pSF->Release();
 	}
 	return pidl;
 }
@@ -5353,7 +5323,7 @@ static void threadAddItems(void *args)
 					teSetProgress(ppd, nCurrent, nCount);
 					if (SUCCEEDED(teGetPropertyAt(pArray, nCurrent, &pAddItems->pv[1])) && pAddItems->pv[1].vt != VT_EMPTY) {
 						if (!teGetIDListFromVariant(&pidl, &pAddItems->pv[1], TRUE) && pAddItems->bDeleted && pAddItems->pv[1].vt == VT_BSTR) {
-							pidl = teSHSimpleIDListFromPath(pAddItems->pv[1].bstrVal, FALSE, FILE_ATTRIBUTE_HIDDEN);
+							pidl = teSHSimpleIDListFromPathEx(pAddItems->pv[1].bstrVal, FILE_ATTRIBUTE_HIDDEN, -1, -1, NULL);
 						}
 						if (pidl) {
 							if (SHGetPathFromIDList(pidl, pszMsg)) {
@@ -9731,7 +9701,7 @@ VOID teApiSHSimpleIDListFromPath(int nArg, teParam *param, DISPPARAMS *pDispPara
 			teVariantTimeToFileTime(dt, &ft);
 		}
 	}
-	LPITEMIDLIST pidl = teSHSimpleIDListFromPathEx(param[0].lpwstr, nArg >= 1 && (param[1].dword & FILE_ATTRIBUTE_DIRECTORY), param[1].word, param[3].uintVal, param[3].uli.HighPart, ft);
+	LPITEMIDLIST pidl = teSHSimpleIDListFromPathEx(param[0].lpwstr, param[1].dword, param[3].uintVal, param[3].uli.HighPart, &ft);
 	teSetIDListRelease(pVarResult, &pidl);
 }
 
@@ -13534,8 +13504,7 @@ VOID CteShellBrowser::InitFolderSize()
 			teSysFreeString(&bsLabel);
 			::SysFreeString(bsTotalFileSize);
 			if (lpfnAllowDarkModeForWindow) {
-				lpfnAllowDarkModeForWindow(hHeader, g_bDarkMode);
-				SetWindowTheme(hHeader, L"itemsview", NULL);
+				SetWindowTheme(hHeader, g_bDarkMode ? L"darkmode_itemsview" : L"explorer", NULL);
 			}
 			if (bInvalidate) {
 				InvalidateRect(m_hwndLV, NULL, FALSE);
@@ -16162,7 +16131,7 @@ VOID CteShellBrowser::AddItem(LPITEMIDLIST pidl)
 									WIN32_FIND_DATA wfd;
 									teSHGetDataFromIDList(pSF, pidlPart, SHGDFIL_FINDDATA, &wfd, sizeof(WIN32_FIND_DATA));
 									teILFreeClear(&pidl);
-									pidl = teSHSimpleIDListFromPathEx(bs2, sfAttr & SFGAO_FOLDER, (WORD)wfd.dwFileAttributes, wfd.nFileSizeLow, wfd.nFileSizeHigh, wfd.ftLastWriteTime);
+									pidl = teSHSimpleIDListFromPathEx(bs2, wfd.dwFileAttributes | ((sfAttr & SFGAO_FOLDER) ? FILE_ATTRIBUTE_DIRECTORY : 0), wfd.nFileSizeLow, wfd.nFileSizeHigh, &wfd.ftLastWriteTime);
 									m_bRegenerateItems = TRUE;
 								}
 							}
@@ -22548,7 +22517,7 @@ LPITEMIDLIST CteFolderItem::GetPidl()
 			}
 			if (!teGetIDListFromVariant(&m_pidl, &m_v)) {
 				if (m_v.vt == VT_BSTR) {
-					m_pidl = teSHSimpleIDListFromPath(m_v.bstrVal, FALSE, FILE_ATTRIBUTE_HIDDEN);
+					m_pidl = teSHSimpleIDListFromPathEx(m_v.bstrVal, FILE_ATTRIBUTE_HIDDEN, -1, -1, NULL);
 				}
 				if (!m_pidlAlt) {
 					m_dwUnavailable = GetTickCount();
@@ -25422,4 +25391,51 @@ STDMETHODIMP CteObject::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD
 			return S_OK;
 	}//end_switch
 	return DISP_E_MEMBERNOTFOUND;
+}
+
+//CteFileSystemBindData
+CteFileSystemBindData::CteFileSystemBindData()
+{
+	m_cRef = 1;
+}
+
+CteFileSystemBindData::~CteFileSystemBindData()
+{
+}
+
+STDMETHODIMP CteFileSystemBindData::QueryInterface(REFIID riid, void **ppvObject)
+{
+	static const QITAB qit[] =
+	{
+		QITABENT(CteFileSystemBindData, IFileSystemBindData),
+		{ 0 },
+	};
+	return QISearch(this, qit, riid, ppvObject);
+}
+
+STDMETHODIMP_(ULONG) CteFileSystemBindData::AddRef()
+{
+	return ::InterlockedIncrement(&m_cRef);
+}
+
+STDMETHODIMP_(ULONG) CteFileSystemBindData::Release()
+{
+	if (::InterlockedDecrement(&m_cRef) == 0) {
+		delete this;
+		return 0;
+	}
+
+	return m_cRef;
+}
+
+STDMETHODIMP CteFileSystemBindData::SetFindData(const WIN32_FIND_DATAW *pfd)
+{
+	m_wfd = *pfd;
+	return S_OK;
+}
+
+STDMETHODIMP CteFileSystemBindData::GetFindData(WIN32_FIND_DATAW *pfd)
+{
+	*pfd = m_wfd;
+	return S_OK;
 }

@@ -1748,3 +1748,20 @@ public:
 	IUnknown *m_punk;
 	LARGE_INTEGER m_liOffset;
 };
+
+class CteFileSystemBindData : public IFileSystemBindData
+{
+public:
+	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
+	STDMETHODIMP_(ULONG) AddRef();
+	STDMETHODIMP_(ULONG) Release();
+	//IFileSystemBindData
+	STDMETHODIMP SetFindData(const WIN32_FIND_DATAW *pfd);
+	STDMETHODIMP GetFindData(WIN32_FIND_DATAW *pfd);
+
+	CteFileSystemBindData();
+	~CteFileSystemBindData();
+public:
+	LONG	m_cRef;
+	WIN32_FIND_DATA m_wfd;
+};

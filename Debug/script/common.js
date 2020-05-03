@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200502 ? te.Version : 20200502
+		return te.Version < 20200503 ? te.Version : 20200503
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -64,7 +64,7 @@ g_ = {
 	tid_rf: [],
 	Autocomplete: {},
 	LockUpdate: 0,
-	IEVer: window.document && (document.documentMode || (document.body.style.maxHeight === void 0 ? 6 : 7))
+	IEVer: window.document && (document.documentMode || (/MSIE 6/.test(navigator.appVersion) ? 6 : 7))
 };
 
 FolderMenu =
