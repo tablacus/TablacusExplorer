@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200503 ? te.Version : 20200503
+		return te.Version < 20200503 ? te.Version : 20200505
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -1520,7 +1520,17 @@ OpenMenu = function (items, SelItem) {
 	if (SelItem) {
 		if ("object" === typeof SelItem) {
 			var link = SelItem.ExtendedProperty("linktarget");
-			path = link || String(api.GetDisplayNameOf(SelItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX));
+			path = String(api.GetDisplayNameOf(SelItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX));
+			if (link && /\.lnk$/i.test(path)) {
+				for (var i = items.length; --i >= 0;) {
+					var s = items[i].getAttribute("Filter");
+					if (/\.lnk/i.test(s) && PathMatchEx(path, s)) {
+						link = path;
+						break;
+					}
+				}
+				path = link;
+			}
 			arMenu = OpenMenu(items, path);
 			if (!IsFolderEx(SelItem) && (!link || !api.PathIsDirectory(path))) {
 				return arMenu;
