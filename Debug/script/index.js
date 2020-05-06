@@ -2006,13 +2006,11 @@ AddEventEx(window, "blur", ResetScroll);
 
 AddEventEx(document, "MSFullscreenChange", function () {
 	if (document.msFullscreenElement) {
-		var cTC = te.Ctrls(CTRL_TC);
+		var cTC = te.Ctrls(CTRL_TC, true);
 		for (var i in cTC) {
 			var TC = cTC[i];
-			if (TC.Visible) {
-				g_.stack_TC.push(TC);
-				TC.Visible = false;
-			}
+			g_.stack_TC.push(TC);
+			TC.Visible = false;
 		}
 	} else {
 		while (g_.stack_TC.length) {
@@ -2229,7 +2227,7 @@ function ChangeNotifyFV(lEvent, item1, item2) {
 		var cFV = te.Ctrls(CTRL_FV);
 		for (var i in cFV) {
 			var FV = cFV[i];
-			if (FV.FolderItem) {
+			if (FV && FV.FolderItem) {
 				var path = String(api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 				var bChild = !api.StrCmpI(fso.GetParentFolderName(path1), path);
 				var bParent = api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"));
