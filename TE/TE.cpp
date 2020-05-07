@@ -5861,7 +5861,7 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 		if (nCode >= 0 && g_x == MAXINT) {
 			if (nCode == HC_ACTION) {
 				g_dwTickKey = 0;
-				if (wParam != WM_MOUSEWHEEL && !g_nDropState) {
+				if (!g_nDropState) {
 					if (g_bDragging) {
 						if (wParam == WM_LBUTTONUP || wParam == WM_RBUTTONUP) {
 							g_bDragging = FALSE;
@@ -6767,26 +6767,6 @@ HRESULT MessageProc(MSG *pMsg)
 	IDispatch *pdisp = NULL;
 	IShellBrowser *pSB = NULL;
 	IShellView *pSV = NULL;
-
-	if (pMsg->message == WM_MOUSEWHEEL) {
-		try {
-			if (InterlockedIncrement(&g_nProcMouse) < 5) {
-				if (ControlFromhwnd(&pdisp, pMsg->hwnd) == S_OK) {
-					if (MessageSubPt(TE_OnMouseMessage, pdisp, pMsg) == S_OK) {
-						hrResult = S_OK;
-					}
-					pdisp->Release();
-				}
-			}
-		} catch(...) {
-			g_nException = 0;
-#ifdef _DEBUG
-			g_strException = L"MessageProc1";
-#endif
-		}
-		::InterlockedDecrement(&g_nProcMouse);
-	}
-
 	if (pMsg->message >= WM_KEYFIRST && pMsg->message <= WM_KEYLAST) {
 		try {
 			g_dwTickKey = GetTickCount();
@@ -13360,6 +13340,9 @@ VOID CteShellBrowser::GetFocusedIndex(int *piItem)
 	}
 #endif
 	*piItem = -1;
+	if (!m_pShellView) {
+		return;
+	}
 	IFolderView *pFV;
 	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
 		pFV->GetFocusedItem(piItem);
@@ -13369,23 +13352,24 @@ VOID CteShellBrowser::GetFocusedIndex(int *piItem)
 
 VOID CteShellBrowser::SetFolderFlags(BOOL bGetIconSize)
 {
-	if (m_pShellView) {
-		IFolderView2 *pFV2;
-		if (SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2)))) {
-			DWORD dwFolderFlags = m_param[SB_FolderFlags];
-			if (!m_bVisible) {
-				dwFolderFlags &= ~FWF_AUTOARRANGE;
-			}
-			pFV2->SetCurrentFolderFlags(~(FWF_NOENUMREFRESH | FWF_USESEARCHFOLDER), dwFolderFlags);
-			pFV2->Release();
-#ifdef _2000XP
-		} else {
-			ListView_SetExtendedListViewStyleEx(m_hwndLV, LVS_EX_FULLROWSELECT | LVS_EX_CHECKBOXES, HIWORD(m_param[SB_FolderFlags]));
-#endif
-		}
-		GetViewModeAndIconSize(bGetIconSize);
-		SetLVSettings();
+	if (!m_pShellView) {
+		return;
 	}
+	IFolderView2 *pFV2;
+	if (SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2)))) {
+		DWORD dwFolderFlags = m_param[SB_FolderFlags];
+		if (!m_bVisible) {
+			dwFolderFlags &= ~FWF_AUTOARRANGE;
+		}
+		pFV2->SetCurrentFolderFlags(~(FWF_NOENUMREFRESH | FWF_USESEARCHFOLDER), dwFolderFlags);
+		pFV2->Release();
+#ifdef _2000XP
+	} else {
+		ListView_SetExtendedListViewStyleEx(m_hwndLV, LVS_EX_FULLROWSELECT | LVS_EX_CHECKBOXES, HIWORD(m_param[SB_FolderFlags]));
+#endif
+	}
+	GetViewModeAndIconSize(bGetIconSize);
+	SetLVSettings();
 }
 
 VOID CteShellBrowser::InitFolderSize()
