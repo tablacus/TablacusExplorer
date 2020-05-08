@@ -6340,6 +6340,51 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							teCustomDraw(TE_OnItemPostPaint, pSB, NULL, NULL, &lplvcd->nmcd, lplvcd, &lRes);
 							return lRes;
 						}
+						if (lplvcd->nmcd.dwDrawStage == CDDS_POSTPAINT) {
+							if (lplvcd->dwItemType) {
+								int h = lplvcd->rcText.bottom - lplvcd->rcText.top;
+								if (h) {//fix Groups
+									int r0 = GetRValue(pSB->m_clrBk);
+									int g0 = GetGValue(pSB->m_clrBk);
+									int b0 = GetBValue(pSB->m_clrBk);
+									if (299 * r0 + 587 * g0 + 114 * b0 < 128 * 1000) {
+										int w = lplvcd->rcText.right - lplvcd->rcText.left;
+										BITMAPINFO bmi;
+										RGBQUAD *pcl = NULL;
+										::ZeroMemory(&bmi.bmiHeader, sizeof(BITMAPINFOHEADER));
+										bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+										bmi.bmiHeader.biWidth = w;
+										bmi.bmiHeader.biHeight = -(LONG)h;
+										bmi.bmiHeader.biPlanes = 1;
+										bmi.bmiHeader.biBitCount = 32;
+										HBITMAP hBM = CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, (void **)&pcl, NULL, 0);
+										HDC hmdc = CreateCompatibleDC(lplvcd->nmcd.hdc);
+										HGDIOBJ hOld = SelectObject(hmdc, hBM);
+										BitBlt(hmdc, 0, 0, w, h, lplvcd->nmcd.hdc, lplvcd->rcText.left, lplvcd->rcText.top, SRCCOPY);
+										for (int i = w * h; --i >= 0; ++pcl) {
+											int r = pcl->rgbRed - r0;
+											int g = pcl->rgbGreen - g0;
+											int b = pcl->rgbBlue - b0;
+											int a = b > g ? b : g;
+											if (a < r) {
+												a = r;
+											}
+											a *= 2;
+											int cl = a + r0;
+											pcl->rgbRed = cl < 0 ? 0 : cl < 256 ? cl : 255;
+											cl = a + g0;
+											pcl->rgbGreen = cl < 0 ? 0 : cl < 256 ? cl : 255;
+											cl = a + b0;
+											pcl->rgbBlue = cl < 0 ? 0 : cl < 256 ? cl : 255;
+										}
+										BitBlt(lplvcd->nmcd.hdc, lplvcd->rcText.left, lplvcd->rcText.top, w, h, hmdc, 0, 0, SRCCOPY);
+										SelectObject(hmdc, hOld);
+										DeleteDC(hmdc);
+										DeleteObject(hBM);
+									}
+								}
+							}
+						}
 					}
 				}
 			}
@@ -13407,7 +13452,6 @@ VOID CteShellBrowser::InitFolderSize()
 			TEmethodW *pColumns = new TEmethodW[nHeader + 1];
 			VARIANT v;
 			VariantInit(&v);
-			BOOL bInvalidate = FALSE;
 			for (int i = nHeader; --i >= 0;) {
 				hdi.mask = HDI_TEXT | HDI_FORMAT;
 				Header_GetItem(hHeader, i, &hdi);
@@ -13459,7 +13503,6 @@ VOID CteShellBrowser::InitFolderSize()
 				if (fmt != hdi.fmt) {
 					hdi.mask = HDI_FORMAT;
 					Header_SetItem(hHeader, i, &hdi);
-					bInvalidate = TRUE;
 				}
 			}
 
@@ -13490,9 +13533,7 @@ VOID CteShellBrowser::InitFolderSize()
 			if (lpfnAllowDarkModeForWindow) {
 				SetWindowTheme(hHeader, g_bDarkMode ? L"darkmode_itemsview" : L"explorer", NULL);
 			}
-			if (bInvalidate) {
-				InvalidateRect(m_hwndLV, NULL, FALSE);
-			}
+			InvalidateRect(m_hwndLV, NULL, FALSE);
 		}
 	}
 }
@@ -23321,7 +23362,7 @@ HBITMAP CteWICBitmap::GetHBITMAP(COLORREF clBk)
 					int r0 = GetRValue(clBk);
 					int g0 = GetGValue(clBk);
 					int b0 = GetBValue(clBk);
-					for (int i = w * h; i--; ++pcl) {
+					for (int i = w * h; --i >= 0; ++pcl) {
 						int a = pcl->rgbReserved;
 						pcl->rgbBlue = (pcl->rgbBlue - b0) * a / 0xff + b0;
 						pcl->rgbGreen = (pcl->rgbGreen - g0) * a / 0xff + g0;
