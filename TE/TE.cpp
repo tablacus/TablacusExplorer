@@ -6324,9 +6324,9 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			}
 /// Custom Draw
 			if (pSB->m_pShellView) {
-				if (g_pOnFunc[TE_OnItemPrePaint] || g_pOnFunc[TE_OnItemPostPaint]) {
-					LPNMLVCUSTOMDRAW lplvcd = (LPNMLVCUSTOMDRAW)lParam;
-					if (lplvcd->nmcd.hdr.code == NM_CUSTOMDRAW) {
+				LPNMLVCUSTOMDRAW lplvcd = (LPNMLVCUSTOMDRAW)lParam;
+				if (lplvcd->nmcd.hdr.code == NM_CUSTOMDRAW) {
+					if (g_pOnFunc[TE_OnItemPrePaint] || g_pOnFunc[TE_OnItemPostPaint]) {
 						if (lplvcd->nmcd.dwDrawStage == CDDS_PREPAINT) {
 							return CDRF_NOTIFYITEMDRAW;
 						}
@@ -6340,48 +6340,56 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							teCustomDraw(TE_OnItemPostPaint, pSB, NULL, NULL, &lplvcd->nmcd, lplvcd, &lRes);
 							return lRes;
 						}
-						if (lplvcd->nmcd.dwDrawStage == CDDS_POSTPAINT) {
-							if (lplvcd->dwItemType) {
-								int h = lplvcd->rcText.bottom - lplvcd->rcText.top;
-								if (h) {//fix Groups
-									int r0 = GetRValue(pSB->m_clrBk);
-									int g0 = GetGValue(pSB->m_clrBk);
-									int b0 = GetBValue(pSB->m_clrBk);
-									if (299 * r0 + 587 * g0 + 114 * b0 < 128 * 1000) {
-										int w = lplvcd->rcText.right - lplvcd->rcText.left;
-										BITMAPINFO bmi;
-										RGBQUAD *pcl = NULL;
-										::ZeroMemory(&bmi.bmiHeader, sizeof(BITMAPINFOHEADER));
-										bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-										bmi.bmiHeader.biWidth = w;
-										bmi.bmiHeader.biHeight = -(LONG)h;
-										bmi.bmiHeader.biPlanes = 1;
-										bmi.bmiHeader.biBitCount = 32;
-										HBITMAP hBM = CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, (void **)&pcl, NULL, 0);
-										HDC hmdc = CreateCompatibleDC(lplvcd->nmcd.hdc);
-										HGDIOBJ hOld = SelectObject(hmdc, hBM);
-										BitBlt(hmdc, 0, 0, w, h, lplvcd->nmcd.hdc, lplvcd->rcText.left, lplvcd->rcText.top, SRCCOPY);
-										for (int i = w * h; --i >= 0; ++pcl) {
-											int r = pcl->rgbRed - r0;
-											int g = pcl->rgbGreen - g0;
-											int b = pcl->rgbBlue - b0;
+					}
+					if (lplvcd->nmcd.dwDrawStage == CDDS_POSTPAINT) {
+						if (lplvcd->dwItemType) {
+							int h = lplvcd->rcText.bottom - lplvcd->rcText.top;
+							if (h) {//fix Groups
+								int r0 = GetRValue(pSB->m_clrBk);
+								int g0 = GetGValue(pSB->m_clrBk);
+								int b0 = GetBValue(pSB->m_clrBk);
+								if (299 * r0 + 587 * g0 + 114 * b0 < 128000) {
+									int w = lplvcd->rcText.right - lplvcd->rcText.left;
+									BITMAPINFO bmi;
+									RGBQUAD *pcl = NULL;
+									::ZeroMemory(&bmi.bmiHeader, sizeof(BITMAPINFOHEADER));
+									bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+									bmi.bmiHeader.biWidth = w;
+									bmi.bmiHeader.biHeight = -(LONG)h;
+									bmi.bmiHeader.biPlanes = 1;
+									bmi.bmiHeader.biBitCount = 32;
+									HBITMAP hBM = CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, (void **)&pcl, NULL, 0);
+									HDC hmdc = CreateCompatibleDC(lplvcd->nmcd.hdc);
+									HGDIOBJ hOld = SelectObject(hmdc, hBM);
+									BitBlt(hmdc, 0, 0, w, h, lplvcd->nmcd.hdc, lplvcd->rcText.left, lplvcd->rcText.top, SRCCOPY);
+									for (int i = w * h; --i >= 0; ++pcl) {
+										int r = pcl->rgbRed - r0;
+										int g = pcl->rgbGreen - g0;
+										int b = pcl->rgbBlue - b0;
+										if (r || g || b) {
+											if (r < 0) {
+												r = -r;
+											}
+											if (g < 0) {
+												g = -g;
+											}
+											if (b < 0) {
+												b = -b;
+											}
 											int a = b > g ? b : g;
 											if (a < r) {
 												a = r;
 											}
-											a *= 2;
-											int cl = a + r0;
-											pcl->rgbRed = cl < 0 ? 0 : cl < 256 ? cl : 255;
-											cl = a + g0;
-											pcl->rgbGreen = cl < 0 ? 0 : cl < 256 ? cl : 255;
-											cl = a + b0;
-											pcl->rgbBlue = cl < 0 ? 0 : cl < 256 ? cl : 255;
+											int cl = a + 64;
+											pcl->rgbRed = cl < r0 || cl > 0xff ? 0xff : cl;
+											pcl->rgbGreen = cl < g0 || cl > 0xff ? 0xff : cl;
+											pcl->rgbBlue = cl < b0 || cl > 0xff ? 0xff : cl;
 										}
-										BitBlt(lplvcd->nmcd.hdc, lplvcd->rcText.left, lplvcd->rcText.top, w, h, hmdc, 0, 0, SRCCOPY);
-										SelectObject(hmdc, hOld);
-										DeleteDC(hmdc);
-										DeleteObject(hBM);
 									}
+									BitBlt(lplvcd->nmcd.hdc, lplvcd->rcText.left, lplvcd->rcText.top, w, h, hmdc, 0, 0, SRCCOPY);
+									SelectObject(hmdc, hOld);
+									DeleteDC(hmdc);
+									DeleteObject(hBM);
 								}
 							}
 						}
@@ -15798,6 +15806,7 @@ HRESULT CteShellBrowser::OnNavigationPending2(LPITEMIDLIST pidlFolder)
 		}
 		teCoTaskMemFree(m_pidl);
 		m_pidl = pidlPrevius;
+		GetShellFolder2(&m_pidl);
 //		pidlPrevius = NULL;
 		FolderItem *pid;
 		m_pFolderItem->QueryInterface(IID_PPV_ARGS(&pid));

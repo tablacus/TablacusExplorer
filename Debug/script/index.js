@@ -211,6 +211,11 @@ Lock = function (Ctrl, nIndex, turn) {
 	}
 }
 
+GetLock = function (FV)
+{
+	return FV && FV.Data && FV.Data.Lock;
+}
+
 FontChanged = function () {
 	RunEvent1("FontChanged");
 }
@@ -730,7 +735,7 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 		})(Ctrl.FolderItem);
 		return E_NOTIMPL;
 	}
-	if (Ctrl.Data && Ctrl.Data.Lock && (wFlags & SBSP_NEWBROWSER) == 0 && !api.ILIsEqual(Prev, "about:blank")) {
+	if (GetLock(Ctrl) && (wFlags & SBSP_NEWBROWSER) == 0 && !api.ILIsEqual(Prev, "about:blank")) {
 		hr = E_ACCESSDENIED;
 	}
 	return hr;
@@ -2231,7 +2236,7 @@ function ChangeNotifyFV(lEvent, item1, item2) {
 				var path = String(api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 				var bChild = !api.StrCmpI(fso.GetParentFolderName(path1), path);
 				var bParent = api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"));
-				if (lEvent == SHCNE_RENAMEFOLDER && FV.Data && !FV.Data.Lock) {
+				if (lEvent == SHCNE_RENAMEFOLDER && !GetLock(FV.Data)) {
 					if (bParent) {
 						FV.Navigate(path.replace(path1, api.GetDisplayNameOf(item2, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)), SBSP_SAMEBROWSER);
 						continue;
@@ -2832,7 +2837,7 @@ g_basic =
 				Back: function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt);
 					if (FV) {
-						if (FV.Data.Lock || api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_CONTROL) < 0) {
+						if (GetLock(FV) || api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_CONTROL) < 0) {
 							var Log = FV.History;
 							if (Log && Log.Index < Log.Count - 1) {
 								FV.Navigate(Log[Log.Index + 1], SBSP_NEWBROWSER);
@@ -2845,7 +2850,7 @@ g_basic =
 				Forward: function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt);
 					if (FV) {
-						if (FV.Data.Lock || api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_CONTROL) < 0) {
+						if (GetLock(FV) || api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_CONTROL) < 0) {
 							var Log = FV.History;
 							if (Log && Log.Index > 0) {
 								FV.Navigate(Log[Log.Index - 1], SBSP_NEWBROWSER);

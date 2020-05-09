@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200508 ? te.Version : 20200508
+		return te.Version < 20200509 ? te.Version : 20200509
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -1034,7 +1034,7 @@ NavigateFV = function (FV, Path, wFlags, bInputed) {
 			Path = decodeURI(Path);
 		}
 	}
-	if (FV.Data.Lock) {
+	if (GetLock(FV)) {
 		wFlags |= SBSP_NEWBROWSER;
 	}
 	if (bInputed) {
@@ -3254,7 +3254,7 @@ GetNavigateFlags = function (FV, bParent) {
 	if (!FV && OpenMode != SBSP_NEWBROWSER) {
 		FV = te.Ctrl(CTRL_FV);
 	}
-	return (!bParent && api.GetKeyState(VK_MBUTTON) < 0) || api.GetKeyState(VK_CONTROL) < 0 || (FV && FV.Data.Lock) ? SBSP_NEWBROWSER : OpenMode;
+	return (!bParent && api.GetKeyState(VK_MBUTTON) < 0) || api.GetKeyState(VK_CONTROL) < 0 || GetLock() ? SBSP_NEWBROWSER : OpenMode;
 }
 
 AddEvent("ConfigChanged", function (s) {
