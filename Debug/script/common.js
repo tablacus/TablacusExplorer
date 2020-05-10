@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200509 ? te.Version : 20200509
+		return te.Version < 20200510 ? te.Version : 20200510
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -3410,8 +3410,7 @@ function CloseSubWindows() {
 
 AddEventEx(window, "beforeunload", CloseSubWindows);
 
-FireEvent = function (o, event) {
-
+function FireEvent(o, event) {
 	if (o) {
 		if (o.fireEvent) {
 			return o.fireEvent('on' + event);

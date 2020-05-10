@@ -19,16 +19,14 @@ if (window.Addon == 1) {
 		nPos: api.LowPart(item.getAttribute("MenuPos")),
 		strName: item.getAttribute("MenuName") || GetText("Up"),
 
-		Exec: function (Ctrl, pt)
-		{
+		Exec: function (Ctrl, pt) {
 			var FV = GetFolderView(Ctrl, pt);
 			FV.Focus();
-			FV.Navigate(null, SBSP_PARENT | OpenMode);
+			Exec(Ctrl, "Up", "Tabs", 0, pt);
 			return S_OK;
 		},
 
-		Popup: function (Ctrl, pt)
-		{
+		Popup: function (Ctrl, pt) {
 			var FV = GetFolderView(Ctrl, pt);
 			if (FV) {
 				FV.Focus();
@@ -57,8 +55,7 @@ if (window.Addon == 1) {
 	};
 	//Menu
 	if (item.getAttribute("MenuExec")) {
-		AddEvent(item.getAttribute("Menu"), function (Ctrl, hMenu, nPos)
-		{
+		AddEvent(item.getAttribute("Menu"), function (Ctrl, hMenu, nPos) {
 			api.InsertMenu(hMenu, Addons.Up.nPos, MF_BYPOSITION | MF_STRING, ++nPos, Addons.Up.strName);
 			ExtraMenuCommand[nPos] = Addons.Up.Exec;
 			return nPos;

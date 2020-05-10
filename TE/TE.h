@@ -82,6 +82,8 @@ typedef enum MONITOR_DPI_TYPE {
 };
 #endif
 
+//#define FVO_TABLACUS (FVO_VISTALAYOUT | FVO_CUSTOMPOSITION | FVO_CUSTOMORDERING)
+
 union teParam
 {
     LONGLONG llVal;

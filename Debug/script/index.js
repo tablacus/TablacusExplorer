@@ -974,6 +974,16 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 			g_.mouse.ptDown = pt.Clone();
 		}
 		g_.mouse.str += s;
+		if (msg == WM_MBUTTONDOWN) {
+			if (bLV && te.Data.Conf_WheelSelect && api.GetKeyState(VK_SHIFT) >= 0 && api.GetKeyState(VK_CONTROL) >= 0) {
+				var iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
+				if (iItem >= 0) {
+					Ctrl.SelectItem(iItem, SVSI_SELECT | SVSI_FOCUSED | SVSI_DESELECTOTHERS);
+				} else {
+					Ctrl.SelectItem(null, SVSI_DESELECTOTHERS);
+				}
+			}
+		}
 		g_.mouse.StartGestureTimer();
 		SetGestureText(Ctrl, GetGestureKey() + g_.mouse.str);
 		if (msg == WM_RBUTTONDOWN) {
@@ -991,16 +1001,6 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 					g_.mouse.RButton = iItem;
 					g_.mouse.StartGestureTimer();
 					return S_OK;
-				}
-			}
-		}
-		if (msg == WM_MBUTTONDOWN) {
-			if (bLV && te.Data.Conf_WheelSelect && api.GetKeyState(VK_SHIFT) >= 0 && api.GetKeyState(VK_CONTROL) >= 0) {
-				var iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
-				if (iItem >= 0) {
-					Ctrl.SelectItem(iItem, SVSI_SELECT | SVSI_FOCUSED | SVSI_DESELECTOTHERS);
-				} else {
-					Ctrl.SelectItem(null, SVSI_DESELECTOTHERS);
 				}
 			}
 		}
@@ -2236,7 +2236,7 @@ function ChangeNotifyFV(lEvent, item1, item2) {
 				var path = String(api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 				var bChild = !api.StrCmpI(fso.GetParentFolderName(path1), path);
 				var bParent = api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"));
-				if (lEvent == SHCNE_RENAMEFOLDER && !GetLock(FV.Data)) {
+				if (lEvent == SHCNE_RENAMEFOLDER && FV.Data && !FV.Data.Lock) {
 					if (bParent) {
 						FV.Navigate(path.replace(path1, api.GetDisplayNameOf(item2, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)), SBSP_SAMEBROWSER);
 						continue;
