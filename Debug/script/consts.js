@@ -1,9 +1,8 @@
 //Tablacus Explorer
-AddEventEx = function (w, Name, fn)
-{
+AddEventEx = function (w, Name, fn) {
 	if (w.addEventListener) {
 		w.addEventListener(Name, fn, false);
-	} else if (w.attachEvent){
+	} else if (w.attachEvent) {
 		w.attachEvent("on" + Name, fn);
 	}
 }
@@ -18,7 +17,7 @@ if (!window.te && window.external && external.Type) {
 		te = te.TE;
 		try {
 			window.external = te;
-		} catch (e) {}
+		} catch (e) { }
 	}
 	api = te.WindowsAPI0.CreateObject("api");
 	if (api) {
@@ -47,18 +46,17 @@ if (g_uid) {
 						dialogArguments = a;
 						MainWindow = w;
 						te = w.te;
-						AddEventEx(window, "beforeunload", function ()
-						{
+						AddEventEx(window, "beforeunload", function () {
 							try {
 								delete MainWindow.Exchange[g_uid];
-							} catch (e) {}
+							} catch (e) { }
 						});
 						break;
 					}
 				}
 			}
 		}
-	}) ();
+	})();
 }
 
 if (!window.MainWindow) {
@@ -84,7 +82,7 @@ api.GetVersionEx(osInfo);
 WINVER = osInfo.dwMajorVersion * 0x100 + osInfo.dwMinorVersion;
 try {
 	wsh.CurrentDirectory = fso.GetSpecialFolder(2).Path;
-} catch (e) {}
+} catch (e) { }
 
 //Tablacus
 Ox80000000 = 0x80000000 | 0;
@@ -1763,7 +1761,7 @@ SVGIO_SELECTION = 1;
 SVGIO_ALLVIEW = 2;
 SVGIO_CHECKED = 3;
 SVGIO_TYPE_MASK = 0xf;
-SVGIO_FLAG_VIEWORDER= Ox80000000;
+SVGIO_FLAG_VIEWORDER = Ox80000000;
 
 ASFW_ANY = -1;
 
@@ -1824,8 +1822,8 @@ PDFF_LONGDATE = 0x100;
 PDFF_HIDEDATE = 0x200;
 PDFF_RELATIVEDATE = 0x400;
 PDFF_USEEDITINVITATION = 0x800;
-PDFF_READONLY= 0x1000;
-PDFF_NOAUTOREADINGORDER= 0x2000;
+PDFF_READONLY = 0x1000;
+PDFF_NOAUTOREADINGORDER = 0x2000;
 
 MOD_ALT = 1;
 MOD_CONTROL = 2;

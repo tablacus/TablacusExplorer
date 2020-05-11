@@ -1422,6 +1422,26 @@ OpenIcon = function (o) {
 	document.body.style.cursor = "wait";
 }
 
+function SearchIcon(o) {
+	o.onclick = null;
+	var s = [];
+	var wfd = api.Memory("WIN32_FIND_DATA");
+	var hFind = api.FindFirstFile(fso.BuildPath(system32, "*"), wfd);
+	var bFind = hFind != INVALID_HANDLE_VALUE;
+	while (bFind) {
+		var nCount = api.ExtractIconEx(fso.BuildPath(system32, wfd.cFileName), -1, null, null, 0);
+		if (nCount) {
+			var id = "i," + wfd.cFileName.toLowerCase();
+			if (!document.getElementById(id)) {
+				s.push('<div id="', id, '" onclick="OpenIcon(this)" style="cursor: pointer"><span class="tab">', wfd.cFileName, ' : ', nCount, '</span></div>');
+			}
+		}
+		bFind = api.FindNextFile(hFind, wfd);
+	}
+	api.FindClose(hFind);
+	o.innerHTML = s.join("");
+}
+
 InitDialog = function () {
 	var Query = String(dialogArguments.Query || location.search.replace(/\?/, "")).toLowerCase();
 	var res = /^icon(.*)/.exec(Query);
@@ -1451,6 +1471,7 @@ InitDialog = function () {
 				s.push('<div id="' + a[i] + '" onclick="OpenIcon(this)" style="cursor: pointer"><span class="tab">' + i + '</span></div>');
 			}
 		}
+		s.push('<div onclick="SearchIcon(this)" style="cursor: pointer"><span class="tab">' + GetText("Search") + '</span></div>');
 		document.getElementById("Content").innerHTML = s.join("");
 	}
 	if (Query == "mouse") {

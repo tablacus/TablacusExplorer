@@ -216,6 +216,17 @@ GetLock = function (FV)
 	return FV && FV.Data && FV.Data.Lock;
 }
 
+CanClose = function (FV)
+{
+	if (FV && FV.Data) {
+		if (FV.Data.Lock) {
+			return S_FALSE;
+		}
+		return RunEvent2("CanClose", FV);
+	}
+	return S_OK;
+}
+
 FontChanged = function () {
 	RunEvent1("FontChanged");
 }
@@ -682,7 +693,7 @@ AddEvent("Close", function (Ctrl) {
 			break;
 		case CTRL_SB:
 		case CTRL_EB:
-			return Ctrl.Data && Ctrl.Data.Lock || api.ILIsEqual(Ctrl, "about:blank") && Ctrl.Parent.Count < 2 ? S_FALSE : CloseView(Ctrl);
+			return CanClose(Ctrl) || api.ILIsEqual(Ctrl, "about:blank") && Ctrl.Parent.Count < 2 ? S_FALSE : CloseView(Ctrl);
 		case CTRL_TC:
 			var o = document.getElementById("Panel_" + Ctrl.Id);
 			if (o) {
@@ -2236,7 +2247,7 @@ function ChangeNotifyFV(lEvent, item1, item2) {
 				var path = String(api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 				var bChild = !api.StrCmpI(fso.GetParentFolderName(path1), path);
 				var bParent = api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"));
-				if (lEvent == SHCNE_RENAMEFOLDER && FV.Data && !FV.Data.Lock) {
+				if (lEvent == SHCNE_RENAMEFOLDER && CanClose(FV) == S_OK) {
 					if (bParent) {
 						FV.Navigate(path.replace(path1, api.GetDisplayNameOf(item2, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)), SBSP_SAMEBROWSER);
 						continue;
@@ -2837,10 +2848,11 @@ g_basic =
 				Back: function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt);
 					if (FV) {
-						if (GetLock(FV) || api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_CONTROL) < 0) {
+						var wFlags = GetNavigateFlags(FV);
+						if (wFlags & SBSP_NEWBROWSER) {
 							var Log = FV.History;
 							if (Log && Log.Index < Log.Count - 1) {
-								FV.Navigate(Log[Log.Index + 1], SBSP_NEWBROWSER);
+								FV.Navigate(Log[Log.Index + 1], wFlags);
 							}
 						} else {
 							FV.Navigate(null, SBSP_NAVIGATEBACK);
@@ -2850,10 +2862,11 @@ g_basic =
 				Forward: function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt);
 					if (FV) {
-						if (GetLock(FV) || api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_CONTROL) < 0) {
+						var wFlags = GetNavigateFlags(FV);
+						if (wFlags & SBSP_NEWBROWSER) {
 							var Log = FV.History;
 							if (Log && Log.Index > 0) {
-								FV.Navigate(Log[Log.Index - 1], SBSP_NEWBROWSER);
+								FV.Navigate(Log[Log.Index - 1], wFlags);
 							}
 						} else {
 							FV && FV.Navigate(null, SBSP_NAVIGATEFORWARD);
@@ -3184,7 +3197,7 @@ AddEvent("Exec", function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEff
 
 AddEvent("MenuState:Tabs:Close Tab", function (Ctrl, pt, mii) {
 	var FV = GetFolderView(Ctrl, pt);
-	if (FV && FV.Data.Lock) {
+	if (CanClose(FV)) {
 		mii.fMask |= MIIM_STATE;
 		mii.fState |= MFS_DISABLED;
 	}

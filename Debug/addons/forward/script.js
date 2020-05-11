@@ -30,8 +30,9 @@ if (window.Addon == 1) {
 				var nVerb = api.TrackPopupMenuEx(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, null);
 				api.DestroyMenu(hMenu);
 				if (nVerb) {
-					if (FV.Data.Lock || api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_CONTROL) < 0) {
-						FV.Navigate(Log[nVerb - 1], SBSP_NEWBROWSER);
+					var wFlags = GetNavigateFlags(FV);
+					if (wFlags & SBSP_NEWBROWSER) {
+						FV.Navigate(Log[nVerb - 1], wFlags);
 					} else {
 						Log.Index = nVerb - 1;
 						FV.History = Log;

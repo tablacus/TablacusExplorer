@@ -145,7 +145,7 @@ if (window.Addon == 1) {
 						s.push('<td style="padding-right: 2px; vertical-align: middle; width: ', r0, 'px"><img draggable="false" src="', this.ImgLock, '" style="width: ', r0, 'px"></td>');
 						w -= 2;
 					}
-					if (this.opt.Icon && (img = GetIconImage(FV, api.GetSysColor(COLOR_BTNFACE)))) {
+					if (this.opt.Icon && (img = GetIconImage(FV, GetSysColor(COLOR_BTNFACE)))) {
 						s.push('<td style="padding-right: 3px; vertical-align: middle; width: 20px">');
 						if (this.opt.Drive) {
 							var res = /^([A-Z]):/i.exec(path);
@@ -165,7 +165,7 @@ if (window.Addon == 1) {
 						w -= 12;
 					}
 					s.push('<td style="vertical-align: middle;"><div style="overflow: hidden; white-space: nowrap;');
-					if (this.opt.Close && !FV.Data.Lock && this.opt.Align > 1 && this.opt.Width) {
+					if (this.opt.Close && CanClose(FV) == S_OK && this.opt.Align > 1 && this.opt.Width) {
 						w -= r0;
 					}
 					w += Number(this.opt.Width) || 0;
@@ -183,7 +183,7 @@ if (window.Addon == 1) {
 						}
 					}
 					s.push('" >', n, '</div></td>');
-					if (this.opt.Close && !FV.Data.Lock) {
+					if (this.opt.Close && CanClose(FV) == S_OK) {
 						s.push('<td style="vertical-align: middle; width: ', r0, 'px" align="right">', this.ImgClose, r0, 'px" id="tabplus_', FV.Parent.Id, '_', i, 'x" class="button" title="', this.opt.Tooltips ? GetText("Close Tab") : "", '" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', this.ImgClose2, '</td>');
 					}
 				} catch (e) { }
