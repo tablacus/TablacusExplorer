@@ -30,7 +30,7 @@ LPFNAllowDarkModeForApp lpfnAllowDarkModeForApp = NULL;
 LPFNAllowDarkModeForWindow lpfnAllowDarkModeForWindow = NULL;
 LPFNDwmSetWindowAttribute lpfnDwmSetWindowAttribute = NULL;
 LPFNShouldAppsUseDarkMode lpfnShouldAppsUseDarkMode = NULL;
-LPFNIsDarkModeAllowedForWindow lpfnIsDarkModeAllowedForWindow = NULL;
+//LPFNIsDarkModeAllowedForWindow lpfnIsDarkModeAllowedForWindow = NULL;
 LPFNGetDpiForMonitor lpfnGetDpiForMonitor = NULL;
 #ifdef _2000XP
 LPFNSetDllDirectoryW lpfnSetDllDirectoryW = NULL;
@@ -47,6 +47,9 @@ LPFNSHGetIDListFromObject lpfnSHGetIDListFromObject = NULL;
 LPFNChangeWindowMessageFilter lpfnChangeWindowMessageFilter = NULL;
 LPFNAddClipboardFormatListener lpfnAddClipboardFormatListener = NULL;
 LPFNRemoveClipboardFormatListener lpfnRemoveClipboardFormatListener = NULL;
+//LPFNGetWindowTheme lpfnGetWindowTheme = NULL;
+//LPFNGetThemeColor lpfnGetThemeColor = NULL;
+//LPFNCloseThemeData lpfnCloseThemeData = NULL;
 #else
 #define lpfnPSPropertyKeyFromString PSPropertyKeyFromString
 #define lpfnPSGetPropertyKeyFromName PSGetPropertyKeyFromName
@@ -56,6 +59,8 @@ LPFNRemoveClipboardFormatListener lpfnRemoveClipboardFormatListener = NULL;
 #define lpfnSHGetIDListFromObject SHGetIDListFromObject
 #define lpfnPropVariantToVariant PropVariantToVariant
 #define lpfnVariantToPropVariant VariantToPropVariant
+//#define lpgnGetWindowTheme GetWindowTheme
+//#define lpfnGetThemeColor GetThemeColor
 #endif
 #ifdef _USE_APIHOOK
 LPFNRegQueryValueExW lpfnRegQueryValueExW = NULL;
@@ -139,6 +144,7 @@ int		g_param[Count_TE_params];
 int		g_x = MAXINT;
 int		g_nTCCount = 0;
 int		g_nTCIndex = 0;
+int		g_nWindowTheme = 0;
 BOOL	g_nDropState = 0;
 BOOL	g_bLabelsMode;
 BOOL	g_bMessageLoop = TRUE;
@@ -1269,6 +1275,11 @@ BOOL GetVarArrayFromIDList(VARIANT *pv, LPITEMIDLIST pidl);
 HRESULT teGetDisplayNameFromIDList(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags);
 
 //Unit
+
+BOOL teIsDarkColor(COLORREF cl)
+{
+	return 299 * GetRValue(cl) + 587 * GetGValue(cl) + 114 * GetBValue(cl) < 127500;
+}
 
 HRESULT teDoDragDrop(HWND hwnd, IDataObject *pDataObj, DWORD *pdwEffect)
 {
@@ -2679,7 +2690,7 @@ LPITEMIDLIST teILCreateFromPath3(IShellFolder *pSF, LPWSTR pszPath, HWND hwnd, i
 			teCoTaskMemFree(pidlPart);
 		}
 		peidl->Release();
-	}	
+	}
 	return pidlResult;
 }
 
@@ -4217,7 +4228,7 @@ BOOL teGetIDListFromObject(IUnknown *punk, LPITEMIDLIST *ppidl)
 	if SUCCEEDED(lpfnSHGetIDListFromObject(punk, ppidl)) {
 		return TRUE;
 	}
-	IShellBrowser *pSB;		
+	IShellBrowser *pSB;
 	if SUCCEEDED(IUnknown_QueryService(punk, SID_SShellBrowser, IID_PPV_ARGS(&pSB))) {
 		IShellView *pSV;
 		if SUCCEEDED(pSB->QueryActiveShellView(&pSV)) {
@@ -5662,6 +5673,28 @@ HRESULT tePSFormatForDisplay(PROPERTYKEY *ppropKey, VARIANT *pv, DWORD pdfFlags,
 	PropVariantClear(&propVar);
 	return hr;
 }
+HRESULT MessageSubPtV(int nFunc, PVOID pObj, MSG *pMsg, VARIANT* pv0)
+{
+	VARIANT vResult;
+	if (g_pOnFunc[nFunc]) {
+		VARIANTARG *pv = GetNewVARIANT(6);
+		teSetObject(&pv[5], pObj);
+		teSetPtr(&pv[4], pMsg->hwnd);
+		teSetLong(&pv[3], pMsg->message);
+		teSetLong(&pv[2], (LONG)pMsg->wParam);
+		CteMemory *pstPt = new CteMemory(2 * sizeof(int), NULL, 1, L"POINT");
+		pstPt->SetPoint(pMsg->pt.x, pMsg->pt.y);
+		teSetObjectRelease(&pv[1], pstPt);
+		VariantCopy(&pv[0], pv0);
+		VariantClear(pv0);
+		Invoke4(g_pOnFunc[nFunc], &vResult, 6, pv);
+		if (vResult.vt != VT_EMPTY) {
+			return GetIntFromVariantClear(&vResult);
+		}
+	}
+	VariantClear(pv0);
+	return S_FALSE;
+}
 
 HRESULT MessageSubPt(int nFunc, PVOID pObj, MSG *pMsg)
 {
@@ -5781,17 +5814,6 @@ VOID teSetDarkMode(HWND hwnd)
 	}
 	if (lpfnDwmSetWindowAttribute) {
 		lpfnDwmSetWindowAttribute(hwnd, 19, &g_bDarkMode, sizeof(g_bDarkMode));
-	}
-}
-
-VOID teSetDarkTheme(HWND hwnd, LPCWSTR pszApp)
-{
-	if (lpfnIsDarkModeAllowedForWindow && lpfnAllowDarkModeForWindow) {
-		BOOL bDarkMode = lpfnIsDarkModeAllowedForWindow(hwnd);
-		if (bDarkMode ^ g_bDarkMode & 1) {
-			lpfnAllowDarkModeForWindow(hwnd, g_bDarkMode);
-			SetWindowTheme(hwnd, pszApp, NULL);
-		}
 	}
 }
 
@@ -6010,6 +6032,15 @@ LRESULT CALLBACK TETVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		if (hwnd != pTV->m_hwndTV) {
 			return 0;
 		}
+		if (msg == TVM_SETBKCOLOR) {
+			if (lpfnAllowDarkModeForWindow) {
+				if (lParam != SendMessage(hwnd, TVM_GETBKCOLOR, 0, 0)) {
+					BOOL bDarkMode = teIsDarkColor(lParam);
+					lpfnAllowDarkModeForWindow(hwnd, bDarkMode);
+					SetWindowTheme(hwnd, bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
+				}
+			}
+		}
 		if (pTV->m_bMain) {
 			if (msg == WM_ENTERMENULOOP) {
 				pTV->m_bMain = FALSE;
@@ -6073,7 +6104,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				NMLVDISPINFO *lpDispInfo = (NMLVDISPINFO *)lParam;
 				if (lpDispInfo->item.mask & LVIF_TEXT) {
 					if (pSB->m_param[SB_ViewMode] == FVM_DETAILS || lpDispInfo->item.iSubItem == 0) {
-						IDispatch *pdisp = lpDispInfo->item.iSubItem < pSB->m_iColumns ? pSB->m_ppColumns[lpDispInfo->item.iSubItem] : NULL;
+						IDispatch *pdisp = (size_t)lpDispInfo->item.iSubItem < pSB->m_ppColumns.size() ? pSB->m_ppColumns[lpDispInfo->item.iSubItem] : NULL;
 						if (pdisp) {
 							bDoCallProc = FALSE;
 							lResult = CallWindowProc((WNDPROC)pSB->m_DefProc, hwnd, msg, wParam, lParam);
@@ -6167,8 +6198,8 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							}
 						}
 					}
-					if (g_bsDateTimeFormat && pSB->m_pDTColumns && lpDispInfo->item.iSubItem >= 0) {
-						WORD ix = pSB->m_pDTColumns[lpDispInfo->item.iSubItem];
+					if (g_bsDateTimeFormat && (size_t)lpDispInfo->item.iSubItem < pSB->m_pDTColumns.size()) {
+						UINT ix = pSB->m_pDTColumns[lpDispInfo->item.iSubItem];
 						if (ix) {
 							VARIANT v;
 							VariantInit(&v);
@@ -6195,7 +6226,9 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							}
 							if (v.vt != VT_EMPTY) {
 								VariantClear(&v);
-								pSB->m_pDTColumns[lpDispInfo->item.iSubItem] = 0;
+								if ((size_t)lpDispInfo->item.iSubItem < pSB->m_pDTColumns.size()) {
+									pSB->m_pDTColumns[lpDispInfo->item.iSubItem] = 0;
+								}
 							}
 						}
 					}
@@ -6302,83 +6335,74 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					VariantClear(&vResult);
 				}
 			} else if (((LPNMHDR)lParam)->code == HDN_ITEMCHANGED) {
-				pSB->SetLVSettings();
+				if (pSB->m_hwndLV && pSB->m_param[SB_ViewFlags] & CDB2GVF_NOSELECTVERB) {
+					ListView_SetSelectedColumn(pSB->m_hwndLV, -1);
+				}
 			}
 /// Custom Draw
 			if (pSB->m_pShellView) {
 				LPNMLVCUSTOMDRAW lplvcd = (LPNMLVCUSTOMDRAW)lParam;
 				if (lplvcd->nmcd.hdr.code == NM_CUSTOMDRAW) {
+					if (g_nWindowTheme != 2 && teIsDarkColor(pSB->m_clrBk) && lplvcd->dwItemType == LVCDI_GROUP) { //Fix groups in dark background
+						if (lplvcd->nmcd.dwDrawStage == CDDS_PREPAINT) {
+							FillRect(lplvcd->nmcd.hdc, &lplvcd->rcText, GetStockBrush(WHITE_BRUSH));
+						} else if (lplvcd->nmcd.dwDrawStage == CDDS_POSTPAINT) {
+							int w = lplvcd->rcText.right - lplvcd->rcText.left;
+							int h = lplvcd->rcText.bottom - lplvcd->rcText.top;
+							BYTE r0 = GetRValue(pSB->m_clrBk);
+							BYTE g0 = GetGValue(pSB->m_clrBk);
+							BYTE b0 = GetBValue(pSB->m_clrBk);
+							BITMAPINFO bmi;
+							RGBQUAD *pcl = NULL;
+							::ZeroMemory(&bmi.bmiHeader, sizeof(BITMAPINFOHEADER));
+							bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+							bmi.bmiHeader.biWidth = w;
+							bmi.bmiHeader.biHeight = -(LONG)h;
+							bmi.bmiHeader.biPlanes = 1;
+							bmi.bmiHeader.biBitCount = 32;
+							HBITMAP hBM = CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, (void **)&pcl, NULL, 0);
+							HDC hmdc = CreateCompatibleDC(lplvcd->nmcd.hdc);
+							HGDIOBJ hOld = SelectObject(hmdc, hBM);
+							BitBlt(hmdc, 0, 0, w, h, lplvcd->nmcd.hdc, lplvcd->rcText.left, lplvcd->rcText.top, NOTSRCCOPY);
+							for (int i = w * h; --i >= 0; ++pcl) {
+								if (pcl->rgbRed || pcl->rgbGreen || pcl->rgbBlue) {
+									WORD cl = pcl->rgbRed > pcl->rgbGreen ? pcl->rgbRed : pcl->rgbGreen;
+									if (cl < pcl->rgbBlue) {
+										cl = pcl->rgbBlue;
+									}
+									cl += 48;
+									pcl->rgbRed = pcl->rgbGreen = pcl->rgbBlue = cl > 0xff ? 0xff : cl;
+								} else {
+									pcl->rgbRed = r0;
+									pcl->rgbGreen = g0;
+									pcl->rgbBlue = b0;
+								}
+							}
+							BitBlt(lplvcd->nmcd.hdc, lplvcd->rcText.left, lplvcd->rcText.top, w, h, hmdc, 0, 0, SRCCOPY);
+							SelectObject(hmdc, hOld);
+							DeleteDC(hmdc);
+							DeleteObject(hBM);
+						}
+					}
 					if (g_pOnFunc[TE_OnItemPrePaint] || g_pOnFunc[TE_OnItemPostPaint]) {
 						if (lplvcd->nmcd.dwDrawStage == CDDS_PREPAINT) {
 							return CDRF_NOTIFYITEMDRAW;
 						}
-						if (lplvcd->nmcd.dwDrawStage == CDDS_ITEMPREPAINT) {
-							LRESULT lRes = CDRF_DODEFAULT;
-							teCustomDraw(TE_OnItemPrePaint, pSB, NULL, NULL, &lplvcd->nmcd, lplvcd, &lRes);
-							return lRes;
-						}
-						if (lplvcd->nmcd.dwDrawStage == CDDS_ITEMPOSTPAINT) {
-							LRESULT lRes = CDRF_DODEFAULT;
-							teCustomDraw(TE_OnItemPostPaint, pSB, NULL, NULL, &lplvcd->nmcd, lplvcd, &lRes);
-							return lRes;
-						}
-					}
-					if (lplvcd->nmcd.dwDrawStage == CDDS_POSTPAINT) {
-						if (lplvcd->dwItemType) {
-							int h = lplvcd->rcText.bottom - lplvcd->rcText.top;
-							if (h) {//fix Groups
-								int r0 = GetRValue(pSB->m_clrBk);
-								int g0 = GetGValue(pSB->m_clrBk);
-								int b0 = GetBValue(pSB->m_clrBk);
-								if (299 * r0 + 587 * g0 + 114 * b0 < 128000) {
-									int w = lplvcd->rcText.right - lplvcd->rcText.left;
-									BITMAPINFO bmi;
-									RGBQUAD *pcl = NULL;
-									::ZeroMemory(&bmi.bmiHeader, sizeof(BITMAPINFOHEADER));
-									bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-									bmi.bmiHeader.biWidth = w;
-									bmi.bmiHeader.biHeight = -(LONG)h;
-									bmi.bmiHeader.biPlanes = 1;
-									bmi.bmiHeader.biBitCount = 32;
-									HBITMAP hBM = CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, (void **)&pcl, NULL, 0);
-									HDC hmdc = CreateCompatibleDC(lplvcd->nmcd.hdc);
-									HGDIOBJ hOld = SelectObject(hmdc, hBM);
-									BitBlt(hmdc, 0, 0, w, h, lplvcd->nmcd.hdc, lplvcd->rcText.left, lplvcd->rcText.top, SRCCOPY);
-									for (int i = w * h; --i >= 0; ++pcl) {
-										int r = pcl->rgbRed - r0;
-										int g = pcl->rgbGreen - g0;
-										int b = pcl->rgbBlue - b0;
-										if (r || g || b) {
-											if (r < 0) {
-												r = -r;
-											}
-											if (g < 0) {
-												g = -g;
-											}
-											if (b < 0) {
-												b = -b;
-											}
-											int a = b > g ? b : g;
-											if (a < r) {
-												a = r;
-											}
-											int cl = a + 64;
-											pcl->rgbRed = cl < r0 || cl > 0xff ? 0xff : cl;
-											pcl->rgbGreen = cl < g0 || cl > 0xff ? 0xff : cl;
-											pcl->rgbBlue = cl < b0 || cl > 0xff ? 0xff : cl;
-										}
-									}
-									BitBlt(lplvcd->nmcd.hdc, lplvcd->rcText.left, lplvcd->rcText.top, w, h, hmdc, 0, 0, SRCCOPY);
-									SelectObject(hmdc, hOld);
-									DeleteDC(hmdc);
-									DeleteObject(hBM);
-								}
+						if (lplvcd->dwItemType != LVCDI_GROUP) {
+							if (lplvcd->nmcd.dwDrawStage == CDDS_ITEMPREPAINT) {
+								LRESULT lRes = CDRF_DODEFAULT;
+								teCustomDraw(TE_OnItemPrePaint, pSB, NULL, NULL, &lplvcd->nmcd, lplvcd, &lRes);
+								return lRes;
+							}
+							if (lplvcd->nmcd.dwDrawStage == CDDS_ITEMPOSTPAINT) {
+								LRESULT lRes = CDRF_DODEFAULT;
+								teCustomDraw(TE_OnItemPostPaint, pSB, NULL, NULL, &lplvcd->nmcd, lplvcd, &lRes);
+								return lRes;
 							}
 						}
 					}
 				}
 			}
-//*/
 		}
 		if (msg == WM_CONTEXTMENU || msg == SB_SETTEXT || msg == WM_COMMAND || msg == WM_COPYDATA) {
 			if (pSB->m_hwndAlt && msg == WM_CONTEXTMENU) {
@@ -8677,7 +8701,19 @@ VOID teApiImageList_GetBkColor(int nArg, teParam *param, DISPPARAMS *pDispParams
 
 VOID teApiSetWindowTheme(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLong(pVarResult, SetWindowTheme(param[0].hwnd, param[1].lpcwstr, param[2].lpcwstr));
+	CteShellBrowser *pSB = SBfromhwnd(param[0].hwnd);
+	if (pSB) {
+		if (param[1].lpcwstr == NULL || tePathMatchSpec(param[1].lpcwstr, L"darkmode_explorer")) {
+			g_nWindowTheme = 1;
+		} else if (tePathMatchSpec(param[1].lpcwstr, L"*itemsview")) {
+			g_nWindowTheme = 2;
+		} else {
+			g_nWindowTheme = 0;
+		}
+		teSetLong(pVarResult, pSB->SetTheme());
+	} else {
+		teSetLong(pVarResult, SetWindowTheme(param[0].hwnd, param[1].lpcwstr, param[2].lpcwstr));
+	}
 }
 
 VOID teApiImmGetVirtualKey(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -9933,7 +9969,7 @@ VOID teApiPlgBlt(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVa
 
 VOID teApiRoundRect(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetBool(pVarResult, RoundRect(param[0].hdc, param[1].intVal, param[2].intVal, param[3].intVal, param[4].intVal, param[5].intVal, param[6].intVal)); 
+	teSetBool(pVarResult, RoundRect(param[0].hdc, param[1].intVal, param[2].intVal, param[3].intVal, param[4].intVal, param[5].intVal, param[6].intVal));
 }
 
 VOID teApiCreateProcess(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -10249,6 +10285,16 @@ VOID teApiHashData(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *p
 		pVarResult->bstrVal = ::SysAllocStringByteLen(NULL, param[1].uintVal);
 		HashData(pc, nLen, pVarResult->pbVal, param[1].dword);
 	}
+}
+
+VOID teApiSetDCPenColor(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetLong(pVarResult, SetDCPenColor(param[0].hdc, param[1].colorref));
+}
+
+VOID teApiSetDCBrushColor(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetLong(pVarResult, SetDCBrushColor(param[0].hdc, param[1].colorref));
 }
 
 /*
@@ -10583,7 +10629,7 @@ TEDispatchApi dispAPI[] = {
 	{ 1, -1, -1, -1, "SetEvent", teApiSetEvent },
 	{ 1, -1, -1, -1, "ResetEvent", teApiResetEvent },
 	{ 3,  0, -1, -1, "PlaySound", teApiPlaySound },
-	{ 4,  0, -1, -1, "SHCreateStreamOnFileEx", teApiSHCreateStreamOnFileEx },	
+	{ 4,  0, -1, -1, "SHCreateStreamOnFileEx", teApiSHCreateStreamOnFileEx },
 	{ 1, -1, -1, -1, "HasThumbnail", teApiHasThumbnail },
 	{ 1,  0, -1, -1, "GetDiskFreeSpaceEx", teApiGetDiskFreeSpaceEx },
 	{ 3, -1, -1, -1, "SetSysColors", teApiSetSysColors },
@@ -10596,6 +10642,8 @@ TEDispatchApi dispAPI[] = {
 	{ 0, -1, -1, -1, "GetCurrentThreadId", teApiGetCurrentThreadId },
 	{ 0, -1, -1, -1, "GetDpiForMonitor", teApiGetDpiForMonitor },
 	{ 2, -1, -1, -1, "HashData", teApiHashData },
+	{ 2, -1, -1, -1, "SetDCPenColor", teApiSetDCPenColor },
+	{ 2, -1, -1, -1, "SetDCBrushColor", teApiSetDCBrushColor },
 //	{ 0, -1, -1, -1, "", teApi },
 //	{ 0, -1, -1, -1, "Test", teApiTest },
 };
@@ -11171,7 +11219,10 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 							pSB = SBfromhwnd(pcwp->hwnd);
 							if (pSB) {
 								if (!pSB->m_bRefreshing) {
-									pSB->m_clrBk = (COLORREF)pcwp->lParam;
+									if (pSB->m_clrBk != (COLORREF)pcwp->lParam) {
+										pSB->m_clrBk = (COLORREF)pcwp->lParam;
+										pSB->SetTheme();
+									}
 								}
 							}
 							break;
@@ -11370,23 +11421,30 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	if (teVerifyVersion(10, 0, 17763)) {
 		if (hDll = teLoadLibrary(L"uxtheme.dll")) {
+#ifdef _2000XP
+//			lpfnGetWindowTheme = (LPFNGetWindowTheme)GetProcAddress(hDll, "GetWindowTheme");
+//			lpfnCloseThemeData = (LPFNCloseThemeData)GetProcAddress(hDll, "CloseThemeData");
+//			lpfnGetThemeColor = (LPFNGetThemeColor)GetProcAddress(hDll, "GetThemeColor");
+#endif
 			lpfnShouldAppsUseDarkMode = (LPFNShouldAppsUseDarkMode)GetProcAddress(hDll, MAKEINTRESOURCEA(132));
 			lpfnAllowDarkModeForWindow = (LPFNAllowDarkModeForWindow)GetProcAddress(hDll, MAKEINTRESOURCEA(133));
 			lpfnAllowDarkModeForApp = (LPFNAllowDarkModeForApp)GetProcAddress(hDll, MAKEINTRESOURCEA(135));
-			lpfnIsDarkModeAllowedForWindow = (LPFNIsDarkModeAllowedForWindow)GetProcAddress(hDll, MAKEINTRESOURCEA(137));
+//			lpfnIsDarkModeAllowedForWindow = (LPFNIsDarkModeAllowedForWindow)GetProcAddress(hDll, MAKEINTRESOURCEA(137));
 			teGetDarkMode();
 		}
 	}
+#ifdef _2000XP
 	if (hDll = teLoadLibrary(L"dwmapi.dll")) {
 		lpfnDwmSetWindowAttribute = (LPFNDwmSetWindowAttribute)GetProcAddress(hDll, "DwmSetWindowAttribute");
 	}
+#endif
 	if (hDll = teLoadLibrary(L"shcore.dll")) {
 		lpfnGetDpiForMonitor = (LPFNGetDpiForMonitor)GetProcAddress(hDll, "GetDpiForMonitor");
 	}
 	if (!lpfnGetDpiForMonitor) {
 		lpfnGetDpiForMonitor = teGetDpiForMonitor;
 	}
-	
+
 // API Hook test
 #ifdef _USE_APIHOOK
 	tePathAppend(&bsLib, bsPath, L"advapi32.dll");
@@ -11889,6 +11947,23 @@ VOID CALLBACK teTimerProcSetRoot(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD d
 	}
 }
 
+VOID CALLBACK teTimerProcRedraw(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+{
+	KillTimer(hwnd, idEvent);
+	CteTabCtrl *pTC = (CteTabCtrl *)idEvent;
+	try {
+		CteShellBrowser *pSB = pTC->GetShellBrowser(pTC->m_nIndex);
+		if (!pSB || IsWindowVisible(pSB->m_hwnd)) {
+			RedrawWindow(hwnd, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+		}
+	} catch (...) {
+		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"teTimerProcRedraw";
+#endif
+	}
+}
+
 static void threadParseDisplayName(void *args)
 {
 	::OleInitialize(NULL);
@@ -12251,8 +12326,6 @@ void CteShellBrowser::Init(CteTabCtrl *pTC, BOOL bNew)
 	m_pdisp = NULL;
 	m_pSF2 = NULL;
 	m_bRefreshing = FALSE;
-	m_pDTColumns = NULL;
-	m_ppColumns = NULL;
 #ifdef _2000XP
 	m_pSFVCB = NULL;
 	m_nColumns = 0;
@@ -12260,8 +12333,6 @@ void CteShellBrowser::Init(CteTabCtrl *pTC, BOOL bNew)
 	m_bCheckLayout = FALSE;
 	m_bRefreshLator = FALSE;
 	m_nCreate = 0;
-	m_nDefultColumns = 0;
-	m_pDefultColumns = NULL;
 	m_bNavigateComplete = FALSE;
 	m_dwUnavailable = 0;
 	VariantClear(&m_vData);
@@ -12321,10 +12392,6 @@ void CteShellBrowser::Clear()
 		}
 #endif
 		SafeRelease(&m_pSF2);
-		if (m_pDefultColumns) {
-			delete [] m_pDefultColumns;
-			m_pDefultColumns = NULL;
-		}
 		teILFreeClear(&m_pidl);
 		SafeRelease(&m_pFolderItem);
 		SafeRelease(&m_pFolderItem1);
@@ -12335,16 +12402,8 @@ void CteShellBrowser::Clear()
 #endif
 	}
 	VariantClear(&m_vData);
-	if (m_pDTColumns) {
-		delete [] m_pDTColumns;
-		m_pDTColumns = NULL;
-	}
-	if (m_ppColumns) {
-		while (m_iColumns > 0) {
-			SafeRelease(&m_ppColumns[--m_iColumns]);
-		}
-		delete [] m_ppColumns;
-		m_ppColumns = NULL;
+	for (size_t n = m_ppColumns.size(); n;) {
+		SafeRelease(&m_ppColumns[--n]);
 	}
 	m_dwSessionId = 0;
 }
@@ -12819,7 +12878,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 					m_pExplorerBrowser->SetOptions(static_cast<EXPLORER_BROWSER_OPTIONS>((m_param[SB_Options] & ~(EBO_SHOWFRAMES | EBO_NAVIGATEONCE | EBO_ALWAYSNAVIGATE)) | dwFrame | EBO_NOTRAVELLOG));
 					m_pTC->LockUpdate(TRUE);
 					try {
-						m_pTC->m_nRedraw = TEREDRAW_NAVIGATE | TEREDRAW_NORMAL;
+						m_pTC->m_nRedraw |= TEREDRAW_NAVIGATE | TEREDRAW_NORMAL;
 						BrowseToObject();
 					} catch (...) {
 						g_nException = 0;
@@ -12915,7 +12974,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 #endif
 	}
 	try {
-		m_pTC->m_nRedraw = TEREDRAW_NAVIGATE | TEREDRAW_NORMAL;
+		m_pTC->m_nRedraw |= TEREDRAW_NAVIGATE | TEREDRAW_NORMAL;
 #ifdef _2000XP
 		hr = g_bUpperVista ? NavigateEB(dwFrame) : NavigateSB(pPreviousView, pPrevious);
 #else
@@ -13425,32 +13484,22 @@ VOID CteShellBrowser::InitFolderSize()
 	m_nLabelIndex = MAXINT;
 	m_nSizeIndex = MAXINT;
 	m_nLinkTargetIndex = MAXINT;
-	if (m_pDTColumns) {
-		delete [] m_pDTColumns;
-		m_pDTColumns = NULL;
-	}
-	if (m_ppColumns) {
-		while (m_iColumns > 0) {
-			SafeRelease(&m_ppColumns[--m_iColumns]);
-		}
-		delete [] m_ppColumns;
-		m_ppColumns = NULL;
-	}
 	if (m_hwndLV) {
 		HWND hHeader = ListView_GetHeader(m_hwndLV);
 		if (hHeader) {
 			UINT nHeader = Header_GetItemCount(hHeader);
-			m_iColumns = nHeader;
 			BSTR bsTotalFileSize = tePSGetNameFromPropertyKeyEx(PKEY_TotalFileSize, 0, this);
 			BSTR bsLabel = g_pOnFunc[TE_Labels] ? tePSGetNameFromPropertyKeyEx(PKEY_Contact_Label, 0, this) : NULL;
 			BSTR bsSize = tePSGetNameFromPropertyKeyEx(PKEY_Size, 0, this);
 			BSTR bsLinkTarget = tePSGetNameFromPropertyKeyEx(PKEY_Link_TargetParsingPath, 0, this);
 			WCHAR szText[MAX_COLUMN_NAME_LEN];
 			HD_ITEM hdi = { HDI_TEXT | HDI_FORMAT, 0, szText, NULL, MAX_COLUMN_NAME_LEN };
-			m_pDTColumns = new WORD[nHeader];
-			::ZeroMemory(m_pDTColumns, sizeof(WORD) * nHeader);
-			m_ppColumns = (IDispatch **)new PVOID[nHeader];
-			::ZeroMemory(m_ppColumns, sizeof(PVOID) * nHeader);
+			if (!m_pDTColumns.empty()) {
+				::ZeroMemory(&m_pDTColumns[0], sizeof(UINT) * m_pDTColumns.size());
+			}
+			for (size_t n = m_ppColumns.size(); n;) {
+				SafeRelease(&m_ppColumns[--n]);
+			}
 			TEmethodW *pColumns = new TEmethodW[nHeader + 1];
 			VARIANT v;
 			VariantInit(&v);
@@ -13458,7 +13507,7 @@ VOID CteShellBrowser::InitFolderSize()
 				hdi.mask = HDI_TEXT | HDI_FORMAT;
 				Header_GetItem(hHeader, i, &hdi);
 				int fmt = hdi.fmt;
-				if (g_bDarkMode) {
+				if (teIsDarkColor(m_clrBk)) {
 					hdi.fmt |= HDF_OWNERDRAW;
 				} else {
 					hdi.fmt &= ~HDF_OWNERDRAW;
@@ -13470,6 +13519,9 @@ VOID CteShellBrowser::InitFolderSize()
 					}
 					if (v.vt == VT_EMPTY && g_pOnFunc[TE_ColumnsReplace]) {
 						teGetProperty(g_pOnFunc[TE_ColumnsReplace], szText, &v);
+					}
+					if (m_ppColumns.size() < (size_t)i + 1) {
+						m_ppColumns.resize(i + 1, NULL);
 					}
 					GetDispatch(&v, &m_ppColumns[i]);
 					VariantClear(&v);
@@ -13510,13 +13562,15 @@ VOID CteShellBrowser::InitFolderSize()
 
 			if (g_bsDateTimeFormat && m_pSF2) {
 				int *piColumns = SortTEMethodW(pColumns, nHeader);
-				int nIndex;
 				SHELLDETAILS sd;
 				for (UINT i = 0; m_pSF2->GetDetailsOf(NULL, i, &sd) == S_OK && i < MAX_COLUMNS; ++i) {
 					BSTR bs;
 					if SUCCEEDED(StrRetToBSTR(&sd.str, NULL, &bs)) {
-						nIndex = teBSearchW(pColumns, nHeader, piColumns, bs);
+						int nIndex = teBSearchW(pColumns, nHeader, piColumns, bs);
 						if (nIndex >= 0) {
+							if (m_pDTColumns.size() < (size_t)nIndex + 1) {
+								m_pDTColumns.resize(nIndex + 1, 0);
+							}
 							m_pDTColumns[nIndex] = i;
 						}
 						::SysFreeString(bs);
@@ -13533,7 +13587,9 @@ VOID CteShellBrowser::InitFolderSize()
 			teSysFreeString(&bsLabel);
 			::SysFreeString(bsTotalFileSize);
 			if (lpfnAllowDarkModeForWindow) {
-				SetWindowTheme(hHeader, g_bDarkMode ? L"darkmode_itemsview" : L"explorer", NULL);
+				BOOL bDarkMode = teIsDarkColor(m_clrBk);
+				lpfnAllowDarkModeForWindow(hHeader, bDarkMode);
+				SetWindowTheme(hHeader, bDarkMode ? L"darkmode_itemsview" : L"explorer", NULL);
 			}
 			InvalidateRect(m_hwndLV, NULL, FALSE);
 		}
@@ -13963,8 +14019,8 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 		lplpszArgs = CommandLineToArgvW(bsColumns, &nArgs);
 		nArgs /= 2;
 	}
-	int nAlloc = nArgs >= (int)m_nDefultColumns ? nArgs + 1 : m_nDefultColumns;
-	PROPERTYKEY *pPropKey0 = new PROPERTYKEY[nAlloc];	
+	int nAlloc = nArgs >= (int)m_pDefultColumns.size() ? nArgs + 1 : m_pDefultColumns.size();
+	PROPERTYKEY *pPropKey0 = new PROPERTYKEY[nAlloc];
 	PROPERTYKEY *pPropKey = &pPropKey0[1];
 	TEmethodW *methodArgs0 = new TEmethodW[nAlloc];
 	TEmethodW *methodArgs = &methodArgs0[1];
@@ -14029,7 +14085,7 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 			if (nCount == 0) {
 				pPropKey = pPropKey0;
 				methodArgs = methodArgs0;
-				nCount = m_nDefultColumns;
+				nCount = m_pDefultColumns.size();
 				for (int i = nCount; i--;) {
 					pPropKey[i] = m_pDefultColumns[i];
 					methodArgs[i].id = -1;
@@ -14210,7 +14266,11 @@ VOID AddColumnDataEx(LPWSTR pszColumns, BSTR bsName, int nWidth)
 
 BSTR CteShellBrowser::GetColumnsStr(int nFormat)
 {
-	if (m_dwUnavailable || m_nDefultColumns == 0) {
+	if (m_dwUnavailable || (
+#ifdef _2000XP
+		g_bUpperVista &&
+#endif
+		m_pDefultColumns.empty())) {
 		return NULL;
 	}
 	WCHAR szColumns[SIZE_BUFF];
@@ -14277,21 +14337,19 @@ BSTR CteShellBrowser::GetColumnsStr(int nFormat)
 
 VOID CteShellBrowser::GetDefaultColumns()
 {
-	if (m_pDefultColumns) {
-		delete [] m_pDefultColumns;
-		m_pDefultColumns = NULL;
-	}
-	m_nDefultColumns = 0;
 	IColumnManager *pColumnManager;
 	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pColumnManager))) {
-		if SUCCEEDED(pColumnManager->GetColumnCount(CM_ENUM_VISIBLE, &m_nDefultColumns)) {
-			m_pDefultColumns = new PROPERTYKEY[m_nDefultColumns];
-			pColumnManager->GetColumns(CM_ENUM_VISIBLE, m_pDefultColumns, m_nDefultColumns);
+		UINT uColumns = 0;
+		if SUCCEEDED(pColumnManager->GetColumnCount(CM_ENUM_VISIBLE, &uColumns)) {
+			if (m_pDefultColumns.size() != uColumns) {
+				m_pDefultColumns.resize(uColumns);
+			}
+			pColumnManager->GetColumns(CM_ENUM_VISIBLE, &m_pDefultColumns[0], uColumns);
 		}
 		pColumnManager->Release();
 #ifdef _2000XP
 	} else {
-		m_nDefultColumns = -1;
+		m_pDefultColumns.clear();
 #endif
 	}
 }
@@ -15217,10 +15275,10 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				break;
 
 			case DISPID_FILELISTENUMDONE://XP+
-				m_pTC->m_nRedraw &= ~TEREDRAW_NAVIGATE;
 				if (!m_bNavigateComplete && ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
 					return S_OK;
 				}
+				m_pTC->m_nRedraw &= ~TEREDRAW_NAVIGATE;
 				if (m_bRefreshing) {
 					m_bRefreshing = FALSE;
 					if (!m_bNavigateComplete && m_bsAltSortColumn) {
@@ -15809,6 +15867,7 @@ HRESULT CteShellBrowser::OnNavigationPending2(LPITEMIDLIST pidlFolder)
 		if (hr == E_ACCESSDENIED) {
 			BrowseObject2(pid, SBSP_NEWBROWSER | SBSP_ABSOLUTE);
 		}
+		InitFolderSize();
 		pid->Release();
 		m_nSuspendMode = 0;
 		return hr;
@@ -15919,6 +15978,7 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 		}
 	}
 #endif
+	SetTheme();
 	SetTabName();
 	return S_OK;
 }
@@ -16036,13 +16096,9 @@ VOID CteShellBrowser::SetLVSettings()
 		if (m_param[SB_ViewFlags] & CDB2GVF_NOSELECTVERB) {
 			ListView_SetSelectedColumn(m_hwndLV, -1);
 		}
-		ListView_SetBkColor(m_hwndLV, m_clrBk);
 		ListView_SetTextBkColor(m_hwndLV, m_clrTextBk);
 		ListView_SetTextColor(m_hwndLV, m_clrText);
-		teSetDarkTheme(m_hwndLV, L"explorer");
-	}
-	if (m_pTV && m_pTV->m_hwndTV) {
-		teSetDarkTheme(m_pTV->m_hwndTV, L"explorer");
+		ListView_SetBkColor(m_hwndLV, m_clrBk);
 	}
 }
 
@@ -16221,6 +16277,23 @@ VOID CteShellBrowser::InitFilter()
 			teSysFreeString(&m_bsFilter);
 		}
 	}
+}
+
+HRESULT CteShellBrowser::SetTheme()
+{
+	if (lpfnAllowDarkModeForWindow) {
+		BOOL bDarkMode = teIsDarkColor(m_clrBk);
+		lpfnAllowDarkModeForWindow(m_hwndLV, bDarkMode);
+		if (g_nWindowTheme == 0) { //Normal style
+			return SetWindowTheme(m_hwndLV, L"explorer", NULL);
+		}
+		if (g_nWindowTheme == 1) { //Classic style
+			return SetWindowTheme(m_hwndLV, bDarkMode ? L"darkmode_explorer" : NULL, NULL);
+		}
+		//Items view style
+		return SetWindowTheme(m_hwndLV, bDarkMode ? L"darkmode_itemsview" : L"itemsview", NULL);
+	}
+	return E_NOTIMPL;
 }
 
 STDMETHODIMP CteShellBrowser::OnNavigationFailed(PCIDLIST_ABSOLUTE pidlFolder)
@@ -16665,6 +16738,11 @@ void CteShellBrowser::Show(BOOL bShow, DWORD dwOptions)
 		} else {
 			m_bVisible = FALSE;
 		}
+		if (!m_bVisible) {
+			m_pTC->LockUpdate(TRUE);
+			m_pTC->m_nRedraw |= TEREDRAW_DELAYED;
+			m_pTC->UnlockUpdate();
+		}
 	}
 }
 
@@ -16672,7 +16750,7 @@ BOOL CteShellBrowser::Close(BOOL bForce)
 {
 	if (CanClose(this) || bForce) {
 		int i = GetTabIndex();
-		if (i >= 0)	{
+		if (i >= 0) {
 			TC_ITEM tcItem;
 			::ZeroMemory(&tcItem, sizeof(TC_ITEM));
 			tcItem.mask = TCIF_PARAM;
@@ -16866,7 +16944,7 @@ HRESULT CteShellBrowser::PropertyKeyFromName(BSTR bs, PROPERTYKEY *pkey)
 	HRESULT hr = lpfnPSPropertyKeyFromStringEx(bs, pkey);
 	if (m_pSF2) {
 		SHELLDETAILS sd;
-		for (UINT i = 0; hr != S_OK && i < MAX_COLUMNS && 
+		for (UINT i = 0; hr != S_OK && i < MAX_COLUMNS &&
 #ifndef _2000XP
 				m_pSF2->
 #endif
@@ -16998,6 +17076,9 @@ VOID CteShellBrowser::SetGroupBy(BSTR bs)
 	LPWSTR szNew = &bs[dir];
 	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
 		if SUCCEEDED(PropertyKeyFromName(szNew, &propKey)) {
+			if (IsEqualPropertyKey(propKey, PKEY_Null)) {
+				m_nSorting = 0;
+			}
 			if (m_nSorting) {
 				--m_nSorting;
 				TEGroupBy *pGB = new TEGroupBy[1];
@@ -17650,7 +17731,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 								if (pSB->m_nUnload & 5) {
 									pSB->Show(TRUE, 0);
 								}
-								if (pTC->m_nRedraw) {
+								if (pTC->m_nRedraw & TEREDRAW_NORMAL) {
 									pTC->RedrawUpdate();
 								}
 							}
@@ -19120,6 +19201,7 @@ VOID CteTabCtrl::LockUpdate(BOOL bTE)
 	if (!bTE) {
 		SendMessage(g_pWebBrowser->m_hwndBrowser, WM_SETREDRAW, TRUE, 0);
 	}
+	KillTimer(m_hwndStatic, (UINT_PTR)this);
 }
 
 VOID CteTabCtrl::UnlockUpdate()
@@ -19138,20 +19220,28 @@ VOID CteTabCtrl::UnlockUpdate()
 
 VOID CteTabCtrl::RedrawUpdate()
 {
-	if (m_nRedraw) {
+	if (m_nRedraw & TEREDRAW_NORMAL) {
 		if (g_nLockUpdate) {
 			SetTimer(g_hwndMain, TET_Redraw, 500, teTimerProc);
 			return;
 		}
-		m_nRedraw = 0;
 		SendMessage(m_hwndStatic, WM_SETREDRAW, TRUE, 0);
 		SendMessage(m_hwnd, WM_SETREDRAW, TRUE, 0);
 		CteShellBrowser *pSB = GetShellBrowser(m_nIndex);
 		if (pSB) {
 			pSB->SetRedraw(TRUE);
+			if (pSB->m_dwUnavailable || !IsWindowVisible(pSB->m_hwnd)) {
+				m_nRedraw |= TEREDRAW_DELAYED;
+			}
 		}
-		RedrawWindow(m_hwndStatic, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+		if (m_nRedraw & TEREDRAW_DELAYED) {
+			SetTimer(m_hwndStatic, (UINT_PTR)this, 100, teTimerProcRedraw);
+		} else {
+			KillTimer(m_hwndStatic, (UINT_PTR)this);
+			RedrawWindow(m_hwndStatic, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+		}
 		teSetRedraw(TRUE);
+		m_nRedraw = 0;
 	}
 }
 
@@ -19182,7 +19272,7 @@ CteShellBrowser* CteTabCtrl::GetShellBrowser(int nPage)
 		if (pSB->m_pTC == this) {
 			return pSB;
 		}
-		SendMessage(m_hwnd, TCM_DELETEITEM, nPage, 1);		
+		SendMessage(m_hwnd, TCM_DELETEITEM, nPage, 1);
 	}
 	return NULL;
 }
@@ -20188,8 +20278,6 @@ CteMemory::CteMemory(int nSize, void *pc, int nCount, LPWSTR lpStruct)
 			}
 		}
 	}
-	m_nbs = 0;
-	m_ppbs = NULL;
 }
 
 CteMemory::~CteMemory()
@@ -20201,12 +20289,10 @@ void CteMemory::Free(BOOL bpbs)
 {
 	teSysFreeString(&m_bsAlloc);
 	teSysFreeString(&m_bsStruct);
-	if (bpbs && m_ppbs) {
-		while (--m_nbs >= 0) {
-			teSysFreeString(&m_ppbs[m_nbs]);
-		}
-		delete [] m_ppbs;
-		m_ppbs = NULL;
+	while (!m_ppbs.empty()) {
+		BSTR bs = m_ppbs.back();
+		m_ppbs.pop_back();
+		teSysFreeString(&bs);
 	}
 	m_pc = NULL;
 }
@@ -20483,13 +20569,9 @@ VOID CteMemory::ItemEx(int i, VARIANT *pVarResult, VARIANT *pVarNew)
 
 BSTR CteMemory::AddBSTR(BSTR bs)
 {
-	BSTR *p = new BSTR[m_nbs + 1];
-	if (m_ppbs) {
-		::CopyMemory(p, m_ppbs, m_nbs * sizeof(BSTR));
-		delete [] m_ppbs;
-	}
-	m_ppbs = p;
-	return m_ppbs[m_nbs++] = ::SysAllocStringByteLen((char *)bs, ::SysStringByteLen(bs));
+	BSTR bsNew = ::SysAllocStringByteLen((char *)bs, ::SysStringByteLen(bs));
+	m_ppbs.push_back(bsNew);
+	return bsNew;
 }
 
 VOID CteMemory::Read(int nIndex, int nLen, VARIANT *pVarResult)
@@ -20762,6 +20844,7 @@ STDMETHODIMP CteContextMenu::QueryInterface(REFIID riid, void **ppvObject)
 	static const QITAB qit[] =
 	{
 		QITABENT(CteContextMenu, IDispatch),
+//		QITABENT(CteContextMenu, IContextMenu),
 		{ 0 },
 	};
 	if (IsEqualIID(riid, IID_IContextMenu) || IsEqualIID(riid, IID_IContextMenu2) || IsEqualIID(riid, IID_IContextMenu3)) {
@@ -20992,6 +21075,23 @@ BOOL CteContextMenu::GetFolderVew(IShellBrowser **ppSB)
 	}
 	return bResult;
 }
+
+/*// IContextMenu
+STDMETHODIMP CteContextMenu::QueryContextMenu(HMENU hmenu, UINT indexMenu, UINT idCmdFirst, UINT idCmdLast, UINT uFlags)
+{
+	return m_pContextMenu->QueryContextMenu(hmenu, indexMenu, idCmdFirst, idCmdLast, uFlags);
+}
+
+STDMETHODIMP CteContextMenu::GetCommandString(UINT_PTR idCmd, UINT uFlags, UINT *pwReserved, LPSTR pszName, UINT cchMax)
+{
+	return m_pContextMenu->GetCommandString(idCmd, uFlags, pwReserved, pszName, cchMax);
+}
+
+STDMETHODIMP CteContextMenu::InvokeCommand(LPCMINVOKECOMMANDINFO pici)
+{
+	return m_pContextMenu->InvokeCommand(pici);
+}
+//*/
 
 //CteDropTarget
 
@@ -21520,7 +21620,10 @@ STDMETHODIMP CteTreeView::QueryInterface(REFIID riid, void **ppvObject)
 #endif
 		{ 0 },
 	};
-
+/*	if (IsEqualIID(riid, IID_IServiceProvider)) {
+		*ppvObject = static_cast<IServiceProvider *>(new CteServiceProvider(static_cast<IDispatch *>(this), static_cast<IDispatch *>(m_pFV)));
+		return S_OK;
+	}*/
 	if (m_pNameSpaceTreeControl && IsEqualIID(riid, IID_INameSpaceTreeControl)) {
 		return m_pNameSpaceTreeControl->QueryInterface(riid, ppvObject);
 	}
@@ -22086,23 +22189,14 @@ STDMETHODIMP CteTreeView::OnAfterContextMenu(IShellItem *psi, IContextMenu *pcmI
 		msg1.pt.x = (rc.left + rc.right) / 2;
 		msg1.pt.y = (rc.top + rc.bottom) / 2;
 	}
-	if (g_pOnFunc[TE_OnShowContextMenu]) {
-		if (MessageSubPt(TE_OnShowContextMenu, this, &msg1) == S_OK) {
-			return QueryInterface(IID_IContextMenu, ppv);
-		}
-	}
-/*/// For check
-	if (pcmIn) {
-		HMENU hMenu = CreatePopupMenu();
-		if SUCCEEDED(pcmIn->QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_EXPLORE)) {
-			int nVerb = TrackPopupMenuEx(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, msg1.pt.x, msg1.pt.y, g_hwndMain, NULL);
-
-		}
-		DestroyMenu(hMenu);
-		return QueryInterface(IID_IContextMenu, ppv);
-	}
-*///
 	*ppv = NULL;
+	if (g_pOnFunc[TE_OnShowContextMenu]) {
+		VARIANT v;
+		teSetObjectRelease(&v, new CteContextMenu(pcmIn, NULL, NULL));
+		if (MessageSubPtV(TE_OnShowContextMenu, this, &msg1, &v) == S_OK) {
+			return E_ABORT;
+		}
+	}
 	return E_NOTIMPL;
 }
 
@@ -22282,23 +22376,6 @@ STDMETHODIMP CteTreeView::ShowPropertyFrame()
 }
 //*/
 #endif
-
-/*/// IContextMenu
-STDMETHODIMP CteTreeView::QueryContextMenu(HMENU hmenu, UINT indexMenu, UINT idCmdFirst, UINT idCmdLast, UINT uFlags)
-{
-	return S_OK;
-}
-
-STDMETHODIMP CteTreeView::GetCommandString(UINT_PTR idCmd, UINT uFlags, UINT *pwReserved, LPSTR pszName, UINT cchMax)
-{
-	return E_NOTIMPL;
-}
-
-STDMETHODIMP CteTreeView::InvokeCommand(LPCMINVOKECOMMANDINFO pici)
-{
-	return S_OK;
-}
-//*/
 
 VOID CteTreeView::SetRootV(VARIANT *pv)
 {

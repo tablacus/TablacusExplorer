@@ -5,6 +5,7 @@
   <input type="checkbox" id="Drive"><label for="Drive" id="_Drive">Drive</label><br>
   <label><input type="checkbox" id="Close">Close Tab</label><br>
   <label><input type="checkbox" id="!NoLock">Lock</label><br>
+  <label><input type="checkbox" id="Protected">@wmploc.dll,-1714[Protected]</label><br>
   <label><input type="checkbox" id="New">New Tab</label><br>
   <label><input type="checkbox" id="Active">Background</label><br>
   <label><input type="checkbox" id="Tooltips">Tooltips</label><br>
@@ -44,6 +45,17 @@
       </td>
       <td style="white-space: nowrap">
         <input type="button" value="Browse..." onclick="RefX('IconClose');">
+      </td>
+    </tr>
+  </table>
+  <label>@wmploc.dll,-1714[Protected]</label>
+  <table style="width: 100%; line-height: 1.2em">
+    <tr>
+      <td style="width: 100%">
+        <input type="text" name="IconProtect" onchange="SetImage();" style="width: 100%">
+      </td>
+      <td style="white-space: nowrap">
+        <input type="button" value="Browse..." onclick="RefX('IconProtect');">
       </td>
     </tr>
   </table>

@@ -29,6 +29,7 @@
 #include <mmsystem.h>
 #include <WinIoCtl.h>
 #include <tlhelp32.h>
+//#include <Vssym32.h>
 
 #include <vector>
 #ifndef _2000XP
@@ -222,14 +223,13 @@ typedef HRESULT (STDAPICALLTYPE* LPFNSHGetIDListFromObject)(__in IUnknown *punk,
 typedef BOOL (WINAPI* LPFNChangeWindowMessageFilter)(__in UINT message, __in DWORD dwFlag);
 typedef BOOL (WINAPI* LPFNAddClipboardFormatListener)(__in HWND hwnd);
 typedef BOOL (WINAPI* LPFNRemoveClipboardFormatListener)(__in HWND hwnd);
+//typedef HTHEME (WINAPI * LPFNGetWindowTheme)(HWND hwnd);
+//typedef HRESULT(WINAPI * LPFNCloseThemeData)(HTHEME hTheme);
+//typedef HRESULT (WINAPI * LPFNGetThemeColor)(HTHEME hTheme, int iPartId, int iStateId, int iPropId, COLORREF *pColor);
 //typedef HRESULT (STDAPICALLTYPE * LPFNPSFormatForDisplayAlloc)(__in REFPROPERTYKEY key, __in REFPROPVARIANT propvar, __in PROPDESC_FORMAT_FLAGS pdff, __deref_out PWSTR *ppszDisplay);
 //typedef BOOL (WINAPI * LPFNChangeWindowMessageFilter)(UINT message, DWORD dwFlag);
 #endif
 typedef HRESULT (STDAPICALLTYPE * LPFNDwmSetWindowAttribute)(HWND hwnd, DWORD dwAttribute, LPCVOID pvAttribute, DWORD   cbAttribute);
-typedef bool (WINAPI* LPFNAllowDarkModeForApp)(BOOL allow);
-typedef bool (WINAPI* LPFNAllowDarkModeForWindow)(HWND hwnd, BOOL allow);
-typedef bool (WINAPI* LPFNShouldAppsUseDarkMode)();
-typedef bool (WINAPI* LPFNIsDarkModeAllowedForWindow)(HWND hwnd);
 
 //7 or higher
 typedef BOOL (WINAPI* LPFNChangeWindowMessageFilterEx)(__in HWND hwnd, __in UINT message, __in DWORD action, __inout_opt PCHANGEFILTERSTRUCT pChangeFilterStruct);
@@ -239,6 +239,12 @@ typedef BOOL (WINAPI* LPFNSetDefaultDllDirectories)(__in DWORD DirectoryFlags);
 
 //8.1 or higher
 typedef HRESULT (WINAPI* LPFNGetDpiForMonitor)(HMONITOR hmonitor, MONITOR_DPI_TYPE dpiType, UINT *dpiX, UINT *dpiY);
+
+//10 Dark mode
+typedef bool (WINAPI* LPFNAllowDarkModeForApp)(BOOL allow);
+typedef bool (WINAPI* LPFNAllowDarkModeForWindow)(HWND hwnd, BOOL allow);
+typedef bool (WINAPI* LPFNShouldAppsUseDarkMode)();
+//typedef bool (WINAPI* LPFNIsDarkModeAllowedForWindow)(HWND hwnd);
 
 //RTL
 typedef NTSTATUS (WINAPI* LPFNRtlGetVersion)(PRTL_OSVERSIONINFOEXW lpVersionInformation);
@@ -442,6 +448,7 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 
 #define TEREDRAW_NORMAL   1
 #define TEREDRAW_NAVIGATE 2
+#define TEREDRAW_DELAYED  4
 
 #define MAP_TE	0
 #define MAP_SB	1
@@ -1002,7 +1009,6 @@ public:
 
 	CteServiceProvider(IUnknown *punk, IUnknown *punk2);
 	~CteServiceProvider();
-
 public:
 	IUnknown *m_pUnk;
 	IUnknown *m_pUnk2;
@@ -1175,6 +1181,7 @@ public:
 	VOID AddItem(LPITEMIDLIST pidl);
 	VOID NavigateComplete(BOOL bBeginNavigate);
 	VOID InitFilter();
+	HRESULT SetTheme();
 	HRESULT OnNavigationPending2(LPITEMIDLIST pidlFolder);
 	HRESULT IncludeObject2(IShellFolder *pSF, LPCITEMIDLIST pidl);
 	BOOL HasFilter();
@@ -1197,13 +1204,13 @@ public:
 	LONG_PTR	m_DefProc;
 	IShellView  *m_pShellView;
 	IDispatch	*m_ppDispatch[Count_SBFunc];
-	IDispatch	**m_ppColumns;
+	std::vector<IDispatch *> m_ppColumns;
 	FolderItem *m_pFolderItem;
 	FolderItem *m_pFolderItem1;
 	IExplorerBrowser *m_pExplorerBrowser;
 	LPITEMIDLIST m_pidl;
 	IShellFolder2 *m_pSF2;
-	WORD		*m_pDTColumns;
+	std::vector<UINT> m_pDTColumns;
 	int			m_nForceViewMode;
 	int			m_nFolderSizeIndex;
 	int			m_nLabelIndex;
@@ -1213,8 +1220,8 @@ public:
 	int			m_nUnload;
 	int			m_nFocusItem;
 	int			m_nSorting;
-	int			m_iColumns;
 	int			m_nSizeFormat;
+	LONG		m_dwUnavailable;
 	DWORD		m_param[SB_Count];
 	DWORD		m_nOpenedType;
 	DWORD		m_dwCookie;
@@ -1232,6 +1239,7 @@ public:
 	BOOL		m_bRedraw;
 	BOOL		m_bViewCreated;
 	BOOL		m_bFiltered;
+	BOOL		m_bNavigateComplete;
 #ifdef _2000XP
 	TEColumn	*m_pColumns;
 	UINT		m_nColumns;
@@ -1239,9 +1247,8 @@ public:
 private:
 	VARIANT		m_vData;
 	std::vector<FolderItem *> m_ppLog;
-	FolderItem	**m_ppFocus;
 	IDispatch	*m_pdisp;
-	PROPERTYKEY *m_pDefultColumns;
+	std::vector< PROPERTYKEY> m_pDefultColumns;
 	CteDropTarget2 *m_pDropTarget2;
 	BSTR		m_bsFilter;
 	BSTR		m_bsNextFilter;
@@ -1249,14 +1256,11 @@ private:
 
 	LONG		m_cRef;
 	LONG		m_nCreate;
-	LONG		m_dwUnavailable;
 	DWORD		m_dwEventCookie;
 	UINT		m_uLogIndex;
 	UINT		m_uPrevLogIndex;
 	int			m_nSuspendMode;
-	UINT		m_nDefultColumns;
 	BOOL		m_bIconSize;
-	BOOL		m_bNavigateComplete;
 	BOOL		m_bRegenerateItems;
 #ifdef _2000XP
 	IShellFolderViewCB	*m_pSFVCB;
@@ -1300,16 +1304,15 @@ public:
 	int		m_nSize;
 	int		m_nCount;
 private:
-	BSTR	*m_ppbs;
+	std::vector<BSTR> m_ppbs;
 	BSTR	m_bsStruct;
 	BSTR	m_bsAlloc;
 
 	LONG	m_cRef;
-	int		m_nbs;
 	int		m_nStructIndex;
 };
 
-class CteContextMenu : public IDispatch
+class CteContextMenu : public IDispatch//, IContextMenu
 {
 public:
 	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
@@ -1320,7 +1323,11 @@ public:
 	STDMETHODIMP GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo);
 	STDMETHODIMP GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId);
 	STDMETHODIMP Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr);
-
+/*	//IContexMenun
+	STDMETHODIMP QueryContextMenu(HMENU hmenu, UINT indexMenu, UINT idCmdFirst, UINT idCmdLast, UINT uFlags);
+	STDMETHODIMP GetCommandString(UINT_PTR idCmd, UINT uFlags, UINT *pwReserved, LPSTR pszName, UINT cchMax);
+	STDMETHODIMP InvokeCommand(LPCMINVOKECOMMANDINFO pici);
+//*/
 	CteContextMenu(IUnknown *punk, IDataObject *pDataObj, IUnknown *pSB);
 	~CteContextMenu();
 

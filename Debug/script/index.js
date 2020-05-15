@@ -1037,7 +1037,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 		if (api.GetKeyState(VK_ESCAPE) < 0) {
 			g_.mouse.EndGesture(false);
 		}
-		if (FolderMenu.MenuLoop) {
+		if (g_.menu_loop) {
 			if (g_.mouse.ptDown && IsDrag(pt, g_.mouse.ptDown) && (api.GetKeyState(VK_LBUTTON) < 0 || api.GetKeyState(VK_RBUTTON) < 0)) {
 				window.g_menu_click = 4;
 				window.g_menu_button = 4;
@@ -1337,11 +1337,11 @@ te.OnFilterChanged = function (Ctrl) {
 	}
 }
 
-te.OnShowContextMenu = function (Ctrl, hwnd, msg, wParam, pt) {
+te.OnShowContextMenu = function (Ctrl, hwnd, msg, wParam, pt, ContextMenu) {
 	if (g_.mouse.CancelContextMenu) {
 		return S_OK;
 	}
-	var hr = RunEvent3("ShowContextMenu", Ctrl, hwnd, msg, wParam, pt);
+	var hr = RunEvent3("ShowContextMenu", Ctrl, hwnd, msg, wParam, pt, ContextMenu);
 	if (isFinite(hr)) {
 		return hr;
 	}
@@ -1360,7 +1360,7 @@ te.OnShowContextMenu = function (Ctrl, hwnd, msg, wParam, pt) {
 			}
 			break;
 		case CTRL_TV:
-			if (ExecMenu(Ctrl, "Tree", pt, 1) == S_OK) {
+			if (ExecMenu(Ctrl, "Tree", pt, 1, false, ContextMenu) == S_OK) {
 				return S_OK;
 			}
 			break;
@@ -1402,17 +1402,17 @@ te.OnDefaultCommand = function (Ctrl) {
 	if (isFinite(hr)) {
 		return hr;
 	}
-	if (ExecMenu(Ctrl, "Default", null, 2) != S_OK) {
-		if (Selected.Count == 1) {
-			var pid = api.ILCreateFromPath(api.GetDisplayNameOf(Selected.Item(0), SHGDN_FORPARSING | SHGDN_FORADDRESSBAR | SHGDN_ORIGINAL));
-			if (pid.Enum) {
-				Ctrl.Navigate(pid, GetNavigateFlags(Ctrl));
-				return S_OK;
-			}
-		}
-		return InvokeCommand(Selected, 0, te.hwnd, null, null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
+	if (ExecMenu(Ctrl, "Default", null, 2) == S_OK) {
+		return S_OK;
 	}
-	return S_OK;
+	if (Selected.Count == 1) {
+		var pid = api.ILCreateFromPath(api.GetDisplayNameOf(Selected.Item(0), SHGDN_FORPARSING | SHGDN_FORADDRESSBAR | SHGDN_ORIGINAL));
+		if (pid.Enum) {
+			Ctrl.Navigate(pid, GetNavigateFlags(Ctrl));
+			return S_OK;
+		}
+	}
+	return InvokeCommand(Selected, 0, te.hwnd, null, null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
 }
 
 te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
@@ -2744,7 +2744,7 @@ g_basic =
 
 			Cmd: {
 				Open: function (Ctrl, pt) {
-					return OpenSelected(Ctrl, GetNavigateFlags(GetFolderView(Ctrl)), pt);
+					return OpenSelected(Ctrl, GetNavigateFlags(GetFolderView(Ctrl, pt)), pt);
 				},
 				"Open in new tab": function (Ctrl, pt) {
 					return OpenSelected(Ctrl, SBSP_NEWBROWSER, pt);
@@ -3247,6 +3247,16 @@ AddEvent("MenuState:Tabs:Show frames", function (Ctrl, pt, mii) {
 	if (!FV || FV.Type == CTRL_EB) {
 		mii.fMask |= MIIM_STATE;
 		mii.fState = MFS_CHECKED;
+	}
+});
+
+AddEvent("ChangeNotify", function (Ctrl, pidls, wParam, lParam) {
+	if (pidls.lEvent & SHCNE_MKDIR) {
+		if (g_.NewFolderTime > new Date().getTime()) {
+			delete g_.NewFolderTime;
+			g_.NewFolderTV.Expand(pidls[0], 0);
+			wsh.SendKeys("{F2}");
+		}
 	}
 });
 

@@ -217,13 +217,8 @@ if (window.Addon == 1) {
 				};
 				MouseOver(o);
 				var pt = GetPos(o, true);
-				window.g_menu_click = true;
-				var nVerb = api.TrackPopupMenuEx(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y + o.offsetHeight, te.hwnd, null, null);
-				api.DestroyMenu(hMenu);
-				FolderItem = null;
-				if (nVerb) {
-					FolderItem = FolderMenu.Items[nVerb - 1];
-				}
+				var nVerb = FolderMenu.TrackPopupMenu(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y + o.offsetHeight);
+				FolderItem = nVerb ? FolderMenu.Items[nVerb - 1] : null;
 				FolderMenu.Clear();
 				FolderMenu.Invoke(FolderItem);
 			}
