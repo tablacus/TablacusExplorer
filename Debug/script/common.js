@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200515 ? te.Version : 20200515
+		return te.Version < 20200515 ? te.Version : 20200516
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -176,8 +176,7 @@ FolderMenu =
 
 	Sort: function (Items, ar) {
 		ar.sort(function (a, b) {
-			var r = api.CompareIDs(FolderMenu.SortMode, Items.Item(a), Items.Item(b));
-			return r ? r > 32767 ? - 1 : 1 : 0;
+			return api.CompareIDs(FolderMenu.SortMode, Items.Item(a), Items.Item(b));
 		});
 	},
 
@@ -209,8 +208,9 @@ FolderMenu =
 				api.InsertMenu(mii.hSubMenu, 0, MF_BYPOSITION | MF_STRING, 0, api.sprintf(99, '\tJScript\tFolderMenu.OpenSubMenu("%llx",%d,"%llx",%d)', hMenu, mii.wID, mii.hSubMenu, !bParent));
 			}
 		}
-		MainWindow.RunEvent1("FolderMenuAddMenuItem", hMenu, mii, FolderItem, bSelect);
-		api.InsertMenuItem(hMenu, MAXINT, false, mii);
+		if (MainWindow.RunEvent2("FolderMenuAddMenuItem", hMenu, mii, FolderItem, bSelect) == S_OK) {
+			api.InsertMenuItem(hMenu, MAXINT, false, mii);
+		}
 	},
 
 	Invoke: function (FolderItem, wFlags, FV) {
@@ -3158,7 +3158,7 @@ OpenDialog = function (path, bFilesOnly) {
 	return OpenDialogEx(path, null, bFilesOnly);
 }
 
-ChooseFolder = function (path, pt) {
+ChooseFolder = function (path, pt, uFlags) {
 	if (!pt) {
 		pt = api.Memory("POINT");
 		api.GetCursorPos(pt);
@@ -3166,7 +3166,7 @@ ChooseFolder = function (path, pt) {
 	var FolderItem = api.ILCreateFromPath(path);
 	FolderItem = FolderMenu.Open(FolderItem.IsFolder ? FolderItem : ssfDRIVES, pt.x, pt.y);
 	if (FolderItem) {
-		return api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
+		return api.GetDisplayNameOf(FolderItem, uFlags || SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
 	}
 }
 

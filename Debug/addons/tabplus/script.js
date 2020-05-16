@@ -683,7 +683,7 @@ if (window.Addon == 1) {
 		Addons.TabPlus.ImgClose = '<span style="font-family: marlett; font-size: ';
 		Addons.TabPlus.ImgClose2 = '&#x72;</span>';
 	}
-	Addons.TabPlus.ImgProtect = MakeImgSrc(item.getAttribute("ImgProtect") || "icon:imageres.dll,1", 0, true, r0);
+	Addons.TabPlus.ImgProtect = MakeImgSrc(item.getAttribute("IconProtect") || "icon:imageres.dll,1", 0, true, r0);
 } else {
 	var ado = OpenAdodbFromTextFile("addons\\" + Addon_Id + "\\options.html");
 	if (ado) {
