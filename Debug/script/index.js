@@ -2136,6 +2136,13 @@ function ArrangeAddons() {
 	RunEvent1("BrowserCreated", document);
 	RunEvent1("Load");
 	delete eventTE.load;
+	var cHwnd = [te.Ctrl(CTRL_WB).hwnd, te.hwnd];
+	for (var i = cHwnd.length; i--;) {
+		var hOld = api.SetClassLongPtr(cHwnd[i], GCLP_HBRBACKGROUND, api.CreateSolidBrush(GetSysColor(COLOR_BTNFACE)));
+		if (hOld) {
+			api.DeleteObject(hOld);
+		}
+	}
 	var hwnd, p = api.Memory("WCHAR", 11);
 	p.Write(0, VT_LPWSTR, "ShellState");
 	var cFV = te.Ctrls(CTRL_FV);

@@ -6033,12 +6033,8 @@ LRESULT CALLBACK TETVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			return 0;
 		}
 		if (msg == TVM_SETBKCOLOR) {
-			if (lpfnAllowDarkModeForWindow) {
-				if (lParam != SendMessage(hwnd, TVM_GETBKCOLOR, 0, 0)) {
-					BOOL bDarkMode = teIsDarkColor(lParam);
-					lpfnAllowDarkModeForWindow(hwnd, bDarkMode);
-					SetWindowTheme(hwnd, bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
-				}
+			if (lParam != SendMessage(hwnd, TVM_GETBKCOLOR, 0, 0)) {
+				pTV->SetTheme((COLORREF)lParam);
 			}
 		}
 		if (pTV->m_bMain) {
@@ -10710,7 +10706,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance, LPWSTR szClassName, WNDPROC lpfnWndPro
 	wcex.hIcon			= LoadIcon(hInstance, MAKEINTRESOURCE(IDI_TE));
 	wcex.hIconSm		= LoadIcon(hInstance, MAKEINTRESOURCE(IDI_TE));
 	wcex.hCursor		= LoadCursor(NULL, IDC_ARROW);
-	wcex.hbrBackground	= (HBRUSH)(COLOR_BTNFACE + 1);
+	wcex.hbrBackground  = (HBRUSH)(COLOR_BTNFACE + 1);
 	wcex.lpszMenuName	= 0;
 	wcex.lpszClassName	= szClassName;
 
@@ -11433,11 +11429,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 			teGetDarkMode();
 		}
 	}
-#ifdef _2000XP
 	if (hDll = teLoadLibrary(L"dwmapi.dll")) {
 		lpfnDwmSetWindowAttribute = (LPFNDwmSetWindowAttribute)GetProcAddress(hDll, "DwmSetWindowAttribute");
 	}
-#endif
 	if (hDll = teLoadLibrary(L"shcore.dll")) {
 		lpfnGetDpiForMonitor = (LPFNGetDpiForMonitor)GetProcAddress(hDll, "GetDpiForMonitor");
 	}
@@ -16282,18 +16276,22 @@ VOID CteShellBrowser::InitFilter()
 HRESULT CteShellBrowser::SetTheme()
 {
 	if (lpfnAllowDarkModeForWindow) {
-		BOOL bDarkMode = teIsDarkColor(m_clrBk);
-		lpfnAllowDarkModeForWindow(m_hwndLV, bDarkMode);
-		if (g_nWindowTheme == 0) { //Normal style
-			return SetWindowTheme(m_hwndLV, L"explorer", NULL);
-		}
-		if (g_nWindowTheme == 1) { //Classic style
-			return SetWindowTheme(m_hwndLV, bDarkMode ? L"darkmode_explorer" : NULL, NULL);
-		}
-		//Items view style
-		return SetWindowTheme(m_hwndLV, bDarkMode ? L"darkmode_itemsview" : L"itemsview", NULL);
+		lpfnAllowDarkModeForWindow(m_hwndLV, teIsDarkColor(m_clrBk));
 	}
-	return E_NOTIMPL;
+	return SetWindowTheme(m_hwndLV, GetThemeName(), NULL);
+}
+
+LPWSTR CteShellBrowser::GetThemeName()
+{
+	BOOL bDarkMode = lpfnAllowDarkModeForWindow && teIsDarkColor(m_clrBk);
+	if (g_nWindowTheme == 0) { //Normal style
+		return L"explorer";
+	}
+	if (g_nWindowTheme == 1) { //Classic style
+		return bDarkMode ? L"darkmode_explorer" : NULL;
+	}
+	//Items view style
+	return bDarkMode ? L"darkmode_itemsview" : L"itemsview";
 }
 
 STDMETHODIMP CteShellBrowser::OnNavigationFailed(PCIDLIST_ABSOLUTE pidlFolder)
@@ -21442,6 +21440,7 @@ BOOL CteTreeView::Create(BOOL bIfVisible)
 			if (IUnknown_GetWindow(m_pNameSpaceTreeControl, &m_hwnd) == S_OK) {
 				m_hwndTV = FindTreeWindow(m_hwnd);
 				if (m_hwndTV) {
+					SetTheme(SendMessage(m_hwndTV, TVM_GETBKCOLOR, 0, 0));
 					SetWindowLongPtr(m_hwndTV, GWLP_USERDATA, (LONG_PTR)this);
 					m_DefProc = (WNDPROC)GetWindowLongPtr(GetParent(m_hwndTV), GWLP_WNDPROC);
 					m_DefProc2 = (WNDPROC)SetWindowLongPtr(m_hwndTV, GWLP_WNDPROC, (LONG_PTR)TETVProc2);
@@ -22489,6 +22488,15 @@ VOID CteTreeView::SetObjectRect()
 	}
 }
 #endif
+
+VOID CteTreeView::SetTheme(COLORREF cl)
+{
+	if (lpfnAllowDarkModeForWindow) {
+		BOOL bDarkMode = teIsDarkColor(cl);
+		lpfnAllowDarkModeForWindow(m_hwndTV, bDarkMode);
+		SetWindowTheme(m_hwndTV, bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
+	}
+}
 
 HRESULT CteTreeView::getSelected(IDispatch **ppid)
 {

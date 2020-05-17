@@ -1182,6 +1182,7 @@ public:
 	VOID NavigateComplete(BOOL bBeginNavigate);
 	VOID InitFilter();
 	HRESULT SetTheme();
+	LPWSTR GetThemeName();
 	HRESULT OnNavigationPending2(LPITEMIDLIST pidlFolder);
 	HRESULT IncludeObject2(IShellFolder *pSF, LPCITEMIDLIST pidl);
 	BOOL HasFilter();
@@ -1443,6 +1444,7 @@ public:
 	VOID SetRootV(VARIANT *pv);
 	VOID SetRoot();
 	VOID Show();
+	VOID SetTheme(COLORREF cl);
 #ifdef _2000XP
 	VOID SetObjectRect();
 #endif
