@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200517 ? te.Version : 20200517;
+		return te.Version < 20200518 ? te.Version : 20200518;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -64,6 +64,7 @@ g_ = {
 	tid_rf: [],
 	Autocomplete: {},
 	LockUpdate: 0,
+	ptPopup: api.Memory("POINT"),
 	IEVer: window.document && (document.documentMode || (/MSIE 6/.test(navigator.appVersion) ? 6 : 7))
 };
 
@@ -90,7 +91,7 @@ FolderMenu =
 	},
 
 	TrackPopupMenu: function (hMenu, uFlags, x, y) {
-		window.g_menu_click = true;
+		MainWindow.g_menu_click = true;
 		var nVerb = api.TrackPopupMenuEx(hMenu, uFlags, x, y, te.hwnd, null, null);
 		api.DestroyMenu(hMenu);
 		return nVerb;
@@ -217,14 +218,14 @@ FolderMenu =
 		if (FolderItem) {
 			var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL);
 			var bVirtual = api.ILIsParent(1, FolderItem, false) || FolderItem.Unavailable;
-			if (window.g_menu_button == 4) {
+			if (MainWindow.g_menu_button == 4) {
 				if (!bVirtual) {
 					var pdwEffect = [DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK];
 					api.SHDoDragDrop(null, FolderItem, te, pdwEffect[0], pdwEffect, true);
 				}
 				return;
 			}
-			if (window.g_menu_button == 2) {
+			if (MainWindow.g_menu_button == 2) {
 				var pt = api.Memory("POINT");
 				api.GetCursorPos(pt);
 				if (bVirtual) {
@@ -256,7 +257,7 @@ FolderMenu =
 				}
 				return;
 			}
-			if (FolderItem.Enum || ((window.g_menu_button == 3 || isFinite(wFlags)) && (FolderItem.IsFolder || (!FolderItem.IsFileSystem && FolderItem.IsBrowsable)))) {
+			if (FolderItem.Enum || ((MainWindow.g_menu_button == 3 || isFinite(wFlags)) && (FolderItem.IsFolder || (!FolderItem.IsFileSystem && FolderItem.IsBrowsable)))) {
 				Navigate(FolderItem, isFinite(wFlags) ? wFlags : GetOpenMode());
 				return;
 			}
@@ -1051,7 +1052,7 @@ NavigateFV = function (FV, Path, wFlags, bInputed) {
 }
 
 GetOpenMode = function () {
-	return window.g_menu_button == 3 ? SBSP_NEWBROWSER : GetNavigateFlags();
+	return MainWindow.g_menu_button == 3 ? SBSP_NEWBROWSER : GetNavigateFlags();
 }
 
 IsDrag = function (pt1, pt2) {
@@ -1751,7 +1752,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec, ContextMenu) {
 				}
 			}
 			AdjustMenuBreak(hMenu);
-			window.g_menu_click = bNoExec ? true : 2;
+			MainWindow.g_menu_click = bNoExec ? true : 2;
 			var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, ContextMenu);
 			if (bNoExec) {
 				return nVerb > 0 ? S_OK : S_FALSE;
@@ -1766,11 +1767,11 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec, ContextMenu) {
 		}
 		if (item && !bNoExec) {
 			var s = item.getAttribute("Type");
-			if (window.g_menu_button == 2 && api.PathMatchSpec(s, "Open;Open in new tab;Open in background")) {
+			if (MainWindow.g_menu_button == 2 && api.PathMatchSpec(s, "Open;Open in new tab;Open in background")) {
 				PopupContextMenu(item.text);
 				return S_OK;
 			}
-			Exec(Ctrl, item.text, window.g_menu_button == 3 && s == "Open" ? "Open in new tab" : s, Ctrl.hwnd, pt);
+			Exec(Ctrl, item.text, MainWindow.g_menu_button == 3 && s == "Open" ? "Open in new tab" : s, Ctrl.hwnd, pt);
 			return S_OK;
 		}
 		if (Mode != 2) {
@@ -1803,7 +1804,12 @@ ExecMenu4 = function (Ctrl, Name, pt, hMenu, arContextMenu, nVerb, FV) {
 			}
 			if (Ctrl.Type == CTRL_TV) {
 				var sVerb = String(ContextMenu.GetCommandString(nVerb - ContextMenu.idCmdFirst, GCS_VERB)).toLowerCase();
-				if (sVerb == "rename") {
+				if (sVerb == "open") {
+					var FV = FolderView || te.Ctrl(CTRL_FV);
+					FV.Navigate(Ctrl.SelectedItem, GetNavigateFlags(FV));
+					api.DestroyMenu(hMenu);
+					return S_OK;
+				} else if (sVerb == "rename") {
 					Ctrl.Focus();
 					wsh.SendKeys("{F2}");
 				} else if (sVerb == "newfolder") {

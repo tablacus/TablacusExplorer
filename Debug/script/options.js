@@ -1308,14 +1308,12 @@ function ApplyOptions() {
 			}
 		}
 	} catch (e) { }
-	api.EnableWindow(te.Ctrl(CTRL_WB).hwnd, false);
 }
 
 function CancelOptions() {
 	if (te.Data.bErrorAddons) {
 		SaveAddons();
 		te.Data.bReload = true;
-		api.EnableWindow(te.Ctrl(CTRL_WB).hwnd, false);
 	}
 }
 

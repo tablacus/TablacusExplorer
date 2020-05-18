@@ -375,7 +375,8 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TE_OnHandleIcon			50
 #define TE_OnSorting			51
 #define TE_OnSetName			52
-#define Count_OnFunc			53
+#define TE_OnIncludeItem		53
+#define Count_OnFunc			54
 #define SB_TotalFileSize		0
 #define SB_ColumnsReplace		1
 #define SB_AltSelectedItems		2
@@ -966,7 +967,7 @@ public:
 	VOID Init();
 	BOOL Close(BOOL bForce);
 	VOID Move(int nSrc, int nDest, CteTabCtrl *pDestTab);
-	VOID LockUpdate(BOOL bTE);
+	VOID LockUpdate();
 	VOID UnlockUpdate();
 	VOID RedrawUpdate();
 	VOID Show(BOOL bVisible);
@@ -1369,7 +1370,7 @@ class CteTreeView : public IDispatch,
 #ifdef _2000XP
 	public IOleClientSite, public IOleInPlaceSite,
 #endif
-	public INameSpaceTreeControlEvents, public INameSpaceTreeControlCustomDraw
+	public INameSpaceTreeControlEvents, public INameSpaceTreeControlCustomDraw, public IShellItemFilter
 {
 public:
 	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
@@ -1404,6 +1405,9 @@ public:
 	STDMETHODIMP PostPaint(HDC hdc, RECT *prc);
 	STDMETHODIMP ItemPrePaint(HDC hdc, RECT *prc, NSTCCUSTOMDRAW *pnstccdItem, COLORREF *pclrText, COLORREF *pclrTextBk, LRESULT *plres);
 	STDMETHODIMP ItemPostPaint(HDC hdc, RECT *prc, NSTCCUSTOMDRAW *pnstccdItem);
+	//IShellItemFilter
+	STDMETHODIMP IncludeItem(IShellItem *psi);
+	STDMETHODIMP GetEnumFlagsForItem(IShellItem *psi, SHCONTF *pgrfFlags);
 #ifdef _2000XP
 	//IOleClientSite
 	STDMETHODIMP SaveObject();

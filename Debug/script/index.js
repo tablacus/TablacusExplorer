@@ -1037,14 +1037,12 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 		if (api.GetKeyState(VK_ESCAPE) < 0) {
 			g_.mouse.EndGesture(false);
 		}
-		if (g_.menu_loop) {
-			if (g_.mouse.ptDown && IsDrag(pt, g_.mouse.ptDown) && (api.GetKeyState(VK_LBUTTON) < 0 || api.GetKeyState(VK_RBUTTON) < 0)) {
-				window.g_menu_click = 4;
-				window.g_menu_button = 4;
-				var lParam = pt.x + (pt.y << 16);
-				api.PostMessage(hwnd, WM_LBUTTONDOWN, 0, lParam);
-				api.PostMessage(hwnd, WM_LBUTTONUP, 0, lParam);
-			}
+		if (g_.menu_loop && IsDrag(pt, g_.ptPopup) && (api.GetKeyState(VK_LBUTTON) < 0 || api.GetKeyState(VK_RBUTTON) < 0 || api.GetKeyState(VK_MBUTTON) < 0)) {
+			window.g_menu_click = 4;
+			window.g_menu_button = 4;
+			var lParam = pt.x + (pt.y << 16);
+			api.PostMessage(hwnd, WM_LBUTTONDOWN, 0, lParam);
+			api.PostMessage(hwnd, WM_LBUTTONUP, 0, lParam);
 		}
 		if (g_.mouse.str.length && (te.Data.Conf_Gestures > 1 && api.GetKeyState(VK_RBUTTON) < 0) || (te.Data.Conf_Gestures && (api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_XBUTTON1) < 0 || api.GetKeyState(VK_XBUTTON2) < 0))) {
 			if (g_.mouse.ptGesture.x == -1 && g_.mouse.ptGesture.y == -1) {
@@ -1649,12 +1647,13 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					}
 				}
 				if (!(mf & MF_MOUSESELECT)) {
-					window.g_.menu_state |= 1;
+					g_.menu_state |= 1;
 				}
 				window.g_menu_string = api.GetMenuString(lParam, nVerb, hSubMenu ? MF_BYPOSITION : MF_BYCOMMAND);
 			}
 			break;
 		case WM_ENTERMENULOOP:
+			api.GetCursorPos(g_.ptPopup);
 			g_.menu_loop = true;
 			g_.menu_state = te.Data.cmdKey & ((te.Data.cmdKeyF && (te.Data.cmdKey & 0x17f) == 15) ? 0xf000 : 0);
 			RunEvent1("EnterMenuLoop", Ctrl, hwnd, msg, wParam, lParam);
@@ -1797,14 +1796,12 @@ te.OnVisibleChanged = function (Ctrl) {
 		if (o) {
 			if (Ctrl.Visible) {
 				o.style.display = (g_.IEVer >= 8 && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
+				ChangeView(Ctrl.Selected);
+				for (var i = Ctrl.Count; i--;) {
+					ChangeTabName(Ctrl[i])
+				}
 			} else {
 				o.style.display = "none";
-			}
-		}
-		if (Ctrl.Visible && Ctrl.SelectedIndex >= 0) {
-			ChangeView(Ctrl.Selected);
-			for (var i = Ctrl.Count; i--;) {
-				ChangeTabName(Ctrl[i])
 			}
 		}
 	}
@@ -1949,6 +1946,10 @@ g_.event.sorting = function (Ctrl, Name) {
 
 g_.event.setname = function (pid, Name) {
 	return RunEvent3("SetName", pid, Name);
+}
+
+g_.event.includeitem = function (Ctrl, pid) {
+	return RunEvent2("IncludeItem", Ctrl, pid);
 }
 
 g_.event.endthread = function (Ctrl) {
@@ -2137,8 +2138,9 @@ function ArrangeAddons() {
 	RunEvent1("Load");
 	delete eventTE.load;
 	var cHwnd = [te.Ctrl(CTRL_WB).hwnd, te.hwnd];
+	var cl = document.body.currentStyle ? GetWinColor(document.body.currentStyle.BackgroundColor) : GetSysColor(COLOR_BTNFACE);
 	for (var i = cHwnd.length; i--;) {
-		var hOld = api.SetClassLongPtr(cHwnd[i], GCLP_HBRBACKGROUND, api.CreateSolidBrush(GetSysColor(COLOR_BTNFACE)));
+		var hOld = api.SetClassLongPtr(cHwnd[i], GCLP_HBRBACKGROUND, api.CreateSolidBrush(cl));
 		if (hOld) {
 			api.DeleteObject(hOld);
 		}
