@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200518 ? te.Version : 20200518;
+		return te.Version < 20200518 ? te.Version : 20200519;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -3031,6 +3031,12 @@ GetWinColor = function (c) {
 	if (res) {
 		return res[3] * 65536 + res[2] * 256 + res[1] * 1;
 	}
+	try {
+		res = /(\d{1,3}) (\d{1,3}) (\d{1,3})/.exec(wsh.regRead(["HKCU", "Control Panel", "Colors", c].join("\\")));
+		if (res) {
+			return res[3] * 65536 + res[2] * 256 + res[1] * 1;
+		}
+	} catch (e) { }
 	return c;
 }
 

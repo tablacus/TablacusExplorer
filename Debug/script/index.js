@@ -2138,7 +2138,7 @@ function ArrangeAddons() {
 	RunEvent1("Load");
 	delete eventTE.load;
 	var cHwnd = [te.Ctrl(CTRL_WB).hwnd, te.hwnd];
-	var cl = document.body.currentStyle ? GetWinColor(document.body.currentStyle.BackgroundColor) : GetSysColor(COLOR_BTNFACE);
+	var cl = GetWinColor(document.body.currentStyle && document.body.currentStyle.backgroundColor);
 	for (var i = cHwnd.length; i--;) {
 		var hOld = api.SetClassLongPtr(cHwnd[i], GCLP_HBRBACKGROUND, api.CreateSolidBrush(cl));
 		if (hOld) {
