@@ -658,7 +658,7 @@ FixIconSpacing = function (Ctrl)
 		if (api.SendMessage(hwnd, LVM_GETVIEW, 0, 0) == 0) {
 			var s = Ctrl.IconSize;
 			var cx = s + (256 - s * (screen.deviceXDPI / 96)) / (8 * 96 / screen.deviceXDPI);
-			var cy = s + (256 - s * (screen.deviceYDPI / 96)) / (Math.max(13.5 - Math.sqrt(s), 4) * 96 / screen.deviceYDPI);
+			var cy = s + Math.max((256 - s * (screen.deviceYDPI / 96)) / (Math.max(13.5 - Math.sqrt(s), 4) * 96 / screen.deviceYDPI), -94);
 			api.SendMessage(hwnd, LVM_SETICONSPACING, 0, cx + (cy << 16));
 			api.InvalidateRect(hwnd, null, true);
 		}
