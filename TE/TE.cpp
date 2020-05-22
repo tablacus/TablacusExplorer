@@ -1449,6 +1449,15 @@ BSTR teMultiByteToWideChar(UINT CodePage, LPCSTR lpA, int nLenA)
 	return bs;
 }
 
+
+LPSTR teWideCharToMultiByte(UINT CodePage, LPCWSTR lpW, int nLenW)
+{
+	int nLenA = WideCharToMultiByte(CodePage, 0, lpW, nLenW, NULL, 0, NULL, NULL);
+	LPSTR bsA = (LPSTR)::SysAllocStringByteLen(NULL, nLenA);
+	WideCharToMultiByte(CodePage, 0, lpW, nLenW, bsA, nLenA, NULL, NULL);
+	return bsA;
+}
+
 BSTR teSysAllocStringByteLen(LPCSTR psz, UINT len, UINT org)
 {
 	if (!len) {
@@ -1470,8 +1479,8 @@ BSTR teLoadFromFile(BSTR bsFile)
 		dwFileSize = GetFileSize(hFile, &dwFileSize2);
 		if(dwFileSize != INVALID_FILE_SIZE) {
 			BSTR bsUTF8 = ::SysAllocStringByteLen(NULL, dwFileSize);
-			if (ReadFile(hFile, bsUTF8, dwFileSize, &dwFileSize2, NULL)) {
-				bsResult = teMultiByteToWideChar(CP_UTF8, (LPCSTR)bsUTF8, -1);
+			if (::ReadFile(hFile, bsUTF8, dwFileSize, &dwFileSize2, NULL)) {
+				bsResult = teMultiByteToWideChar(CP_UTF8, (LPCSTR)bsUTF8, dwFileSize2);
 			}
 			::SysFreeString(bsUTF8);
 		}
@@ -4977,15 +4986,14 @@ BSTR GetLPWSTRFromVariant(VARIANT *pv)
 	}//end_switch
 }
 
-VOID GetpDataFromVariant(UCHAR **ppc, int *pnLen, VARIANT *pv)
+UINT GetpDataFromVariant(UCHAR **ppc, VARIANT *pv)
 {
 	if (pv->vt == (VT_VARIANT | VT_BYREF)) {
-		return GetpDataFromVariant(ppc, pnLen, pv->pvarVal);
+		return GetpDataFromVariant(ppc, pv->pvarVal);
 	}
 	if (pv->vt & VT_ARRAY) {
 		*ppc = (UCHAR *)pv->parray->pvData;
-		*pnLen = pv->parray->rgsabound[0].cElements * SizeOfvt(pv->vt);
-		return;
+		return pv->parray->rgsabound[0].cElements * SizeOfvt(pv->vt);
 	}
 	char *pc = GetpcFromVariant(pv, NULL);
 	if (pc) {
@@ -4995,16 +5003,16 @@ VOID GetpDataFromVariant(UCHAR **ppc, int *pnLen, VARIANT *pv)
 			VariantInit(&v);
 			if (teGetProperty(pdisp, L"Size", &v) == S_OK) {
 				*ppc = (UCHAR *)pc;
-				*pnLen = GetIntFromVariantClear(&v);
 			}
 			pdisp->Release();
-			return;
+			return GetIntFromVariantClear(&v);
 		}
 	}
 	*ppc = (UCHAR *)GetLPWSTRFromVariant(pv);
 	if (pv->vt == VT_BSTR) {
-		*pnLen = ::SysStringByteLen(pv->bstrVal);
+		return ::SysStringByteLen(pv->bstrVal);
 	}
+	return 0;
 }
 
 VOID Invoke4(IDispatch *pdisp, VARIANT *pvResult, int nArgs, VARIANTARG *pvArgs)
@@ -8663,8 +8671,7 @@ VOID teApiSetMenuDefaultItem(int nArg, teParam *param, DISPPARAMS *pDispParams, 
 VOID teApiCRC32(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	BYTE *pc;
-	int nLen = 0;
-	GetpDataFromVariant(&pc, &nLen, &pDispParams->rgvarg[nArg]);
+	UINT nLen = GetpDataFromVariant(&pc, &pDispParams->rgvarg[nArg]);
 	teSetLong(pVarResult, CalcCrc32(pc, nLen, param[1].uintVal));
 }
 
@@ -8761,14 +8768,26 @@ VOID teApiGetObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *
 
 VOID teApiMultiByteToWideChar(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLong(pVarResult, MultiByteToWideChar(param[0].uintVal, param[1].dword,
-		param[2].lpcstr, param[3].intVal, param[4].lpwstr, param[5].intVal));
+	if (pVarResult) {
+		UCHAR *pc;
+		UINT nLen = GetpDataFromVariant(&pc, &pDispParams->rgvarg[nArg - 1]);
+		if (nLen) {
+			pVarResult->bstrVal = teMultiByteToWideChar(param[0].uintVal, (LPSTR)pc, param[2].intVal ? param[2].intVal : nLen);
+			pVarResult->vt = VT_BSTR;
+		}
+	}
 }
 
 VOID teApiWideCharToMultiByte(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLong(pVarResult, WideCharToMultiByte(param[0].uintVal, param[1].dword, param[2].lpcwstr, param[3].intVal,
-		param[4].lpstr, param[5].intVal, param[6].lpcstr, param[7].lpbool));
+	if (pVarResult) {
+		UCHAR *pc;
+		UINT nLen = GetpDataFromVariant(&pc, &pDispParams->rgvarg[nArg - 1]);
+		if (nLen) {
+			pVarResult->bstrVal = (BSTR)teWideCharToMultiByte(param[0].uintVal, (LPCWSTR)pc, param[2].intVal ? param[2].intVal : -1);
+			pVarResult->vt = VT_BSTR;
+		}
+	}
 }
 
 VOID teApiGetAttributesOf(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -9412,12 +9431,9 @@ VOID teApiSysAllocString(int nArg, teParam *param, DISPPARAMS *pDispParams, VARI
 	if (nArg >= 1 && pDispParams->rgvarg[nArg - 1].vt == VT_I4) {
 		if (pVarResult) {
 			UCHAR *pc;
-			int nLen = 0;
-			GetpDataFromVariant(&pc, &nLen, &pDispParams->rgvarg[nArg]);
-			if (nLen >= 0) {
-				pVarResult->vt = VT_BSTR;
-				pVarResult->bstrVal = teMultiByteToWideChar(param[1].lVal, (LPCSTR)pc, nLen);
-			}
+			UINT nLen = GetpDataFromVariant(&pc, &pDispParams->rgvarg[nArg]);
+			pVarResult->vt = VT_BSTR;
+			pVarResult->bstrVal = teMultiByteToWideChar(param[1].lVal, (LPCSTR)pc, nLen);
 		}
 		return;
 	}
@@ -9437,8 +9453,7 @@ VOID teApiSysAllocStringByteLen(int nArg, teParam *param, DISPPARAMS *pDispParam
 {
 	if (pVarResult) {
 		UCHAR *pc;
-		int nLen = param[2].intVal;
-		GetpDataFromVariant(&pc, &nLen, &pDispParams->rgvarg[nArg]);
+		UINT nLen = GetpDataFromVariant(&pc, &pDispParams->rgvarg[nArg]);
 		pVarResult->bstrVal = teSysAllocStringByteLen((LPCSTR)pc, param[1].uintVal, nLen);
 		pVarResult->vt = VT_BSTR;
 	}
@@ -9522,8 +9537,7 @@ VOID teApisprintf(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pV
 VOID teApibase64_encode(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	UCHAR *pc;
-	int nLen = 0;
-	GetpDataFromVariant(&pc, &nLen, &pDispParams->rgvarg[nArg]);
+	UINT nLen = GetpDataFromVariant(&pc, &pDispParams->rgvarg[nArg]);
 	if (nLen) {
 		DWORD dwSize;
 		CryptBinaryToString(pc, nLen, CRYPT_STRING_BASE64, NULL, &dwSize);
@@ -9805,8 +9819,7 @@ VOID teApiURLDownloadToFile(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 				VARIANT v;
 				if SUCCEEDED(teGetProperty(pdisp, L"responseBody", &v)) {
 					UCHAR *pc;
-					int nLen = 0;
-					GetpDataFromVariant(&pc, &nLen, &v);
+					UINT nLen = GetpDataFromVariant(&pc, &v);
 					if (nLen) {
 						HANDLE hFile = CreateFile(param[2].bstrVal, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 						if (hFile != INVALID_HANDLE_VALUE) {
@@ -9879,8 +9892,7 @@ VOID teApiCryptProtectData(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 VOID teApiCryptUnprotectData(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	UCHAR *pc;
-	int nLen = 0;
-	GetpDataFromVariant(&pc, &nLen, &pDispParams->rgvarg[nArg]);
+	UINT nLen = GetpDataFromVariant(&pc, &pDispParams->rgvarg[nArg]);
 	if (nLen && pVarResult) {
 		DATA_BLOB blob[3];
 		blob[0].cbData = nLen;
@@ -10001,7 +10013,7 @@ VOID teApiCreateProcess(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 				if (PeekNamedPipe(hRead, NULL, 0, NULL, &dwLen, NULL)) {
 					BSTR bs = ::SysAllocStringByteLen(NULL, dwLen);
 					if (dwLen) {
-						ReadFile(hRead, bs, dwLen, &dwLen, NULL);
+						::ReadFile(hRead, bs, dwLen, &dwLen, NULL);
 						if (param[2].intVal == 2 || (param[2].intVal != 1 && IsTextUnicode(bs, dwLen, NULL))) {
 							bsStdOut = bs;
 							bs = NULL;
@@ -10277,8 +10289,7 @@ VOID teApiHashData(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *p
 {
 	if (pVarResult) {
 		BYTE *pc;
-		int nLen = 0;
-		GetpDataFromVariant(&pc, &nLen, &pDispParams->rgvarg[nArg]);
+		UINT nLen = GetpDataFromVariant(&pc, &pDispParams->rgvarg[nArg]);
 		pVarResult->vt = VT_BSTR;
 		pVarResult->bstrVal = ::SysAllocStringByteLen(NULL, param[1].uintVal);
 		HashData(pc, nLen, pVarResult->pbVal, param[1].dword);
@@ -10293,6 +10304,71 @@ VOID teApiSetDCPenColor(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 VOID teApiSetDCBrushColor(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	teSetLong(pVarResult, SetDCBrushColor(param[0].hdc, param[1].colorref));
+}
+
+VOID teApiWriteFile(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	UCHAR *pc;
+	UINT nLen = GetpDataFromVariant(&pc, &pDispParams->rgvarg[nArg - 1]);
+	if (nLen) {
+		DWORD dwWriteByte;
+		IUnknown *punk;
+		IStream *pStream;
+		if (FindUnknown(&pDispParams->rgvarg[nArg], &punk) && SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pStream)))) {
+			teSetLong(pVarResult, pStream->Write(pc, nLen, &dwWriteByte));
+			return;
+		}
+		teSetBool(pVarResult, ::WriteFile(param[0].handle, pc, nLen, &dwWriteByte, NULL));
+	}
+}
+
+VOID teApiReadFile(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	if (pVarResult) {
+		pVarResult->vt = VT_BSTR;
+		pVarResult->bstrVal = ::SysAllocStringByteLen(NULL, param[1].uintVal);
+		DWORD dwReadByte;
+		BOOL bOK = FALSE;
+		IUnknown *punk;
+		IStream *pStream;
+		if (FindUnknown(&pDispParams->rgvarg[nArg], &punk) && SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pStream)))) {
+			bOK = SUCCEEDED(pStream->Read(pVarResult->bstrVal, param[1].uintVal, &dwReadByte));
+		} else {
+			bOK = ::ReadFile(param[0].handle, pVarResult->bstrVal, param[1].uintVal, &dwReadByte, NULL);
+		}
+		if (bOK) {
+			BSTR bs = ::SysAllocStringByteLen(NULL, dwReadByte);
+			::CopyMemory(bs, pVarResult->bstrVal, dwReadByte);
+			teSysFreeString(&pVarResult->bstrVal);
+			pVarResult->bstrVal = bs;
+		} else {
+			teSysFreeString(&pVarResult->bstrVal);
+			pVarResult->vt = VT_EMPTY;
+		}
+	}
+}
+
+VOID teApiSetFilePointer(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	IUnknown *punk;
+	IStream *pStream;
+	if (FindUnknown(&pDispParams->rgvarg[nArg], &punk) && SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pStream)))) {
+		ULARGE_INTEGER uli;
+		if SUCCEEDED(pStream->Seek(param[1].li, param[2].dword, &uli)) {
+			teSetLL(pVarResult, uli.QuadPart);
+		}
+	} else {
+		LARGE_INTEGER li;
+		li.HighPart = param[1].li.HighPart;
+		li.LowPart = ::SetFilePointer(param[0].handle, param[1].li.LowPart, &li.HighPart, param[2].dword);
+		teSetLL(pVarResult, li.QuadPart);
+	}
+}
+
+VOID teApiSysStringByteLen(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	UCHAR *pc;
+	teSetLong(pVarResult, GetpDataFromVariant(&pc, &pDispParams->rgvarg[nArg]));
 }
 
 /*
@@ -10499,8 +10575,8 @@ TEDispatchApi dispAPI[] = {
 	{ 6, -1, -1, -1, "TrackPopupMenuEx", teApiTrackPopupMenuEx },
 	{ 5,  0, -1, -1, "ExtractIconEx", teApiExtractIconEx },
 	{ 3, -1, -1, -1, "GetObject", teApiGetObject },
-	{ 6, -1, -1, -1, "MultiByteToWideChar", teApiMultiByteToWideChar },
-	{ 8,  2, -1, -1, "WideCharToMultiByte", teApiWideCharToMultiByte },
+	{ 2, -1, -1, -1, "MultiByteToWideChar", teApiMultiByteToWideChar },
+	{ 2, -1, -1, -1, "WideCharToMultiByte", teApiWideCharToMultiByte },
 	{ 2, -1, -1, -1, "GetAttributesOf", teApiGetAttributesOf },
 	{ 2, -1, -1, -1, "DoDragDrop", teApiDoDragDrop },//Deprecated
 	{ 4, -1, -1, -1, "SHDoDragDrop", teApiSHDoDragDrop },
@@ -10642,6 +10718,10 @@ TEDispatchApi dispAPI[] = {
 	{ 2, -1, -1, -1, "HashData", teApiHashData },
 	{ 2, -1, -1, -1, "SetDCPenColor", teApiSetDCPenColor },
 	{ 2, -1, -1, -1, "SetDCBrushColor", teApiSetDCBrushColor },
+	{ 2, -1, -1, -1, "WriteFile", teApiWriteFile },
+	{ 2, -1, -1, -1, "ReadFile", teApiReadFile },
+	{ 3, -1, -1, -1, "SetFilePointer", teApiSetFilePointer },
+	{ 1, -1, -1, -1, "SysStringByteLen", teApiSysStringByteLen },
 //	{ 0, -1, -1, -1, "", teApi },
 //	{ 0, -1, -1, -1, "Test", teApiTest },
 };
@@ -13504,10 +13584,12 @@ VOID CteShellBrowser::InitFolderSize()
 				hdi.mask = HDI_TEXT | HDI_FORMAT;
 				Header_GetItem(hHeader, i, &hdi);
 				int fmt = hdi.fmt;
-				if (teIsDarkColor(m_clrBk)) {
-					hdi.fmt |= HDF_OWNERDRAW;
-				} else {
-					hdi.fmt &= ~HDF_OWNERDRAW;
+				if (lpfnAllowDarkModeForWindow) {
+					if (teIsDarkColor(m_clrBk)) {
+						hdi.fmt |= HDF_OWNERDRAW;
+					} else {
+						hdi.fmt &= ~HDF_OWNERDRAW;
+					}
 				}
 				if (szText[0]) {
 					pColumns[i].name = ::SysAllocString(szText);
@@ -20965,13 +21047,8 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 								}
 							}
 							if ((ULONG_PTR)ppwc[i] > MAXWORD) {
-								int nLenW = ::SysStringLen(ppwc[i]) + 1;
-								int nLenA = WideCharToMultiByte(CP_ACP, 0, ppwc[i], nLenW, NULL, 0, NULL, NULL);
-								ppc[i] = new char[nLenA];
-								WideCharToMultiByte(CP_ACP, 0, ppwc[i], nLenW, ppc[i], nLenA, NULL, NULL);
-								BSTR bs = ::SysAllocStringLen(NULL, nLenW);
-								MultiByteToWideChar(CP_ACP, 0, ppc[i], nLenA, bs, nLenW);
-								if (!teStrSameIFree(bs, ppwc[i])) {
+								ppc[i] = teWideCharToMultiByte(CP_ACP, ppwc[i], -1);
+								if (!teStrSameIFree(teMultiByteToWideChar(CP_ACP, ppc[i], -1), ppwc[i])) {
 									cmi.fMask = CMIC_MASK_UNICODE;
 								}
 							} else {
@@ -21001,7 +21078,7 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 					for (int i = 3; i--;) {
 						VariantClear(&pv[i]);
 						if ((ULONG_PTR)ppc[i] >= MAXWORD) {
-							delete [] ppc[i];
+							teSysFreeString((BSTR *)&ppc[i]);
 						}
 					}
 					delete [] pv;
