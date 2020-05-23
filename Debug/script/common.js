@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200522 ? te.Version : 20200522;
+		return te.Version < 20200523 ? te.Version : 20200523;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -3027,7 +3027,7 @@ GetWinColor = function (c) {
 	if (res) {
 		return Number(["0x", res[3], res[3], res[2], res[2], res[1], res[1]].join(""));
 	}
-	res = /(\d{1,3}) (\d{1,3}) (\d{1,3})/.exec(c);
+	res = /(\d{1,3})[ ,]+(\d{1,3})[ ,]+(\d{1,3})/.exec(c);
 	if (res) {
 		return res[3] * 65536 + res[2] * 256 + res[1] * 1;
 	}
@@ -3253,7 +3253,7 @@ ApiStruct = function (oTypedef, nAli, oMemory) {
 FindChildByClass = function (hwnd, s) {
 	var hwnd1, hwnd2;
 	while (hwnd1 = api.FindWindowEx(hwnd, hwnd1, null, null)) {
-		if (api.GetClassName(hwnd1) == s) {
+		if (api.PathMatchSpec(api.GetClassName(hwnd1), s)) {
 			return hwnd1;
 		}
 		if (hwnd2 = FindChildByClass(hwnd1, s)) {

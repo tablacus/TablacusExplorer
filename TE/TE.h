@@ -967,7 +967,7 @@ public:
 	VOID Init();
 	BOOL Close(BOOL bForce);
 	VOID Move(int nSrc, int nDest, CteTabCtrl *pDestTab);
-	VOID LockUpdate();
+	VOID LockUpdate(int nRedraw);
 	VOID UnlockUpdate();
 	VOID RedrawUpdate();
 	VOID Show(BOOL bVisible);
@@ -979,10 +979,6 @@ public:
 	HWND	m_hwnd;
 	HWND	m_hwndStatic;
 	HWND	m_hwndButton;
-
-	WNDPROC	m_DefTCProc;
-	WNDPROC	m_DefBTProc;
-	WNDPROC	m_DefSTProc;
 
 	DWORD	m_dwSize;
 	LONG	m_nLockUpdate;
@@ -1203,7 +1199,6 @@ public:
 	HWND		m_hwndAlt;
 	CteTabCtrl		*m_pTC;
 	CteTreeView	*m_pTV;
-	LONG_PTR	m_DefProc;
 	IShellView  *m_pShellView;
 	IDispatch	*m_ppDispatch[Count_SBFunc];
 	std::vector<IDispatch *> m_ppColumns;
@@ -1463,9 +1458,6 @@ public:
 #ifdef _2000XP
 	IShellNameSpace *m_pShellNameSpace;
 #endif
-	WNDPROC		m_DefProc;
-	WNDPROC		m_DefProc2;
-
 	BOOL		m_bMain;
 	BOOL		m_bSetRoot;
 private:

@@ -21,17 +21,19 @@ PanelCreated = function (Ctrl) {
 	RunEvent1("PanelCreated", Ctrl);
 }
 
-function RefreshEx(FV, tm)
+function RefreshEx(FV)
 {
 	var dt = new Date().getTime();
-	if (dt > (FV.Data && FV.Data.tmChk || 0)) {
+	if (FV.Data && dt > (FV.Data.tmChk || 0)) {
 		if  (FV.FolderItem && /^[A-Z]:\\|^\\\\\w/i.test(FV.FolderItem.Path)) {
 			if (RunEvent4("RefreshEx", FV) === void 0) {
-				if (!FV.hwndView || api.ILIsEqual(FV.FolderItem, FV.FolderItem.Alt)) {
-					FV.Data.tmChk = dt + 9999999;
-					api.PathIsDirectory(function (hr, FV, FolderItem) {
-						if (FV.Data) {
+				if (FV.Data.pathChk != FV.FolderItem.Path) {
+					if (!FV.hwndView || api.ILIsEqual(FV.FolderItem, FV.FolderItem.Alt)) {
+						FV.Data.tmChk = dt + 9999999;
+						FV.Data.pathChk = FV.FolderItem.Path;
+						api.PathIsDirectory(function (hr, FV, FolderItem) {
 							FV.Data.tmChk = new Date().getTime() + 3000;
+							delete FV.Data.pathChk;
 							if (api.ILIsEqual(FV.FolderItem, FolderItem) && api.ILIsEqual(FolderItem, FolderItem.Alt)) {
 								if (hr < 0) {
 									if (RunEvent4("Error", FV) === void 0) {
@@ -41,8 +43,8 @@ function RefreshEx(FV, tm)
 									FV.Refresh();
 								}
 							}
-						}
-					}, tm || -1, FV.FolderItem.Path, FV, FV.FolderItem);
+						}, -1, FV.FolderItem.Path, FV, FV.FolderItem);
+					}
 				}
 			}
 		}
@@ -1037,13 +1039,6 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 	if (msg == WM_MOUSEMOVE && !/[45]/.test(g_.mouse.str)) {
 		if (api.GetKeyState(VK_ESCAPE) < 0) {
 			g_.mouse.EndGesture(false);
-		}
-		if (g_.menu_loop && IsDrag(pt, g_.ptPopup) && (api.GetKeyState(VK_LBUTTON) < 0 || api.GetKeyState(VK_RBUTTON) < 0 || api.GetKeyState(VK_MBUTTON) < 0)) {
-			window.g_menu_click = 4;
-			window.g_menu_button = 4;
-			var lParam = pt.x + (pt.y << 16);
-			api.PostMessage(hwnd, WM_LBUTTONDOWN, 0, lParam);
-			api.PostMessage(hwnd, WM_LBUTTONUP, 0, lParam);
 		}
 		if (g_.mouse.str.length && (te.Data.Conf_Gestures > 1 && api.GetKeyState(VK_RBUTTON) < 0) || (te.Data.Conf_Gestures && (api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_XBUTTON1) < 0 || api.GetKeyState(VK_XBUTTON2) < 0))) {
 			if (g_.mouse.ptGesture.x == -1 && g_.mouse.ptGesture.y == -1) {
@@ -2139,7 +2134,7 @@ function ArrangeAddons() {
 	RunEvent1("Load");
 	delete eventTE.load;
 	var cHwnd = [te.Ctrl(CTRL_WB).hwnd, te.hwnd];
-	var cl = GetWinColor(document.body.currentStyle && document.body.currentStyle.backgroundColor);
+	var cl = GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor);
 	for (var i = cHwnd.length; i--;) {
 		var hOld = api.SetClassLongPtr(cHwnd[i], GCLP_HBRBACKGROUND, api.CreateSolidBrush(cl));
 		if (hOld) {
@@ -2281,7 +2276,7 @@ function ChangeNotifyFV(lEvent, item1, item2) {
 				}
 				if (bChild || bParent) {
 					if ((lEvent & fRemove) || ((lEvent & fAdd) && FV.FolderItem.Unavailable)) {
-						RefreshEx(FV, 500);
+						RefreshEx(FV);
 					}
 				}
 				if (FV.hwndView) {
