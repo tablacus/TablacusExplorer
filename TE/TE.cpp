@@ -11301,9 +11301,9 @@ VOID CALLBACK teTimerProcSW(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime
 
 VOID CALLBACK teTimerProcGroupBy(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 {
-	KillTimer(hwnd, idEvent);
-	TEGroupBy *pGB = (TEGroupBy *)idEvent;
 	try {
+		KillTimer(hwnd, idEvent);
+		TEGroupBy *pGB = (TEGroupBy *)idEvent;
 		CteShellBrowser *pSB = SBfromhwnd(hwnd);
 		if (pSB && pSB->m_dwSessionId == pGB->dwSessionId) {
 			pSB->SetGroupBy(pGB->bs);
@@ -12039,9 +12039,9 @@ VOID CALLBACK teTimerProcParse(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 
 VOID CALLBACK teTimerProcSetRoot(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 {
-	KillTimer(hwnd, idEvent);
-	CteTreeView *pTV = (CteTreeView *)idEvent;
 	try {
+		KillTimer(hwnd, idEvent);
+		CteTreeView *pTV = (CteTreeView *)idEvent;
 		if (pTV->m_param[SB_TreeAlign] & 2) {
 			pTV->Show();
 		}
@@ -12056,16 +12056,35 @@ VOID CALLBACK teTimerProcSetRoot(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD d
 VOID CALLBACK teTimerProcRedraw(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 {
 	KillTimer(hwnd, idEvent);
-	CteTabCtrl *pTC = (CteTabCtrl *)idEvent;
 	try {
-		CteShellBrowser *pSB = pTC->GetShellBrowser(pTC->m_nIndex);
-		if (!pSB || IsWindowVisible(pSB->m_hwnd)) {
-			RedrawWindow(hwnd, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+		CteTabCtrl *pTC = TCfromhwnd(hwnd);
+		if (pTC && !pTC->m_nLockUpdate && !g_nLockUpdate) {
+			CteShellBrowser *pSB = pTC->GetShellBrowser(pTC->m_nIndex);
+			if (!pSB || IsWindowVisible(pSB->m_hwnd)) {
+				RedrawWindow(hwnd, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+			}
 		}
 	} catch (...) {
 		g_nException = 0;
 #ifdef _DEBUG
 		g_strException = L"teTimerProcRedraw";
+#endif
+	}
+}
+
+VOID CALLBACK teTimerProcVisibleChanged(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+{
+	KillTimer(hwnd, idEvent);
+	try {
+		CteTabCtrl *pTC = TCfromhwnd(hwnd);
+		if (pTC) {
+			DoFunc(TE_OnVisibleChanged, pTC, E_NOTIMPL);
+			ArrangeWindow();
+		}
+	} catch (...) {
+		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"teTimerProcVisibleChanged";
 #endif
 	}
 }
@@ -13435,8 +13454,8 @@ VOID CteShellBrowser::Refresh(BOOL bCheck)
 				if (nCount) {
 					m_pTC->LockUpdate(TEREDRAW_DELAYED);
 					m_pShellView->Refresh();
-					m_pTC->UnlockUpdate();
 					InitFolderSize();
+					m_pTC->UnlockUpdate();
 				} else {
 					Suspend(0);
 				}
@@ -16140,7 +16159,9 @@ VOID CteShellBrowser::OnNavigationComplete2()
 HRESULT CteShellBrowser::BrowseToObject()
 {
 	m_nSuspendMode = 2;
+	::InterlockedIncrement(&m_pTC->m_lNavigating);
 	HRESULT hr = m_pExplorerBrowser->BrowseToObject(m_pSF2, SBSP_ABSOLUTE);
+	::InterlockedDecrement(&m_pTC->m_lNavigating);
 	if SUCCEEDED(hr) {
 		IUnknown_GetWindow(m_pExplorerBrowser, &m_hwnd);
 		if (!m_pShellView) {
@@ -18771,6 +18792,7 @@ void CteTabCtrl::Init()
 	m_param[TC_TabHeight] = 0;
 	m_nScrollWidth = 0;
 	m_nRedraw = 0;
+	m_lNavigating = 0;
 }
 
 VOID CteTabCtrl::GetItem(int i, VARIANT *pVarResult)
@@ -18801,12 +18823,15 @@ VOID CteTabCtrl::Show(BOOL bVisible)
 			}
 		}
 		m_bVisible = bVisible;
-		DoFunc(TE_OnVisibleChanged, this, E_NOTIMPL);
+		SetTimer(m_hwndStatic, 2, 100, teTimerProcVisibleChanged);
 	}
 }
 
 BOOL CteTabCtrl::Close(BOOL bForce)
 {
+	if (m_lNavigating) {
+		return FALSE;
+	}
 	if (CanClose(this) || bForce) {
 		int nCount = TabCtrl_GetItemCount(m_hwnd);
 		while (nCount--) {
@@ -19299,7 +19324,6 @@ VOID CteTabCtrl::LockUpdate(int nRedraw)
 		SendMessage(m_hwnd, WM_SETREDRAW, FALSE, 0);
 		teSetRedraw(FALSE);
 	}
-	KillTimer(m_hwndStatic, (UINT_PTR)this);
 }
 
 VOID CteTabCtrl::UnlockUpdate()
@@ -19333,9 +19357,9 @@ VOID CteTabCtrl::RedrawUpdate()
 			}
 		}
 		if (m_nRedraw & TEREDRAW_DELAYED) {
-			SetTimer(m_hwndStatic, (UINT_PTR)this, 100, teTimerProcRedraw);
+			SetTimer(m_hwndStatic, 1, 100, teTimerProcRedraw);
 		} else {
-			KillTimer(m_hwndStatic, (UINT_PTR)this);
+			KillTimer(m_hwndStatic, 1);
 			RedrawWindow(m_hwndStatic, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
 		}
 		teSetRedraw(TRUE);

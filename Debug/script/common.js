@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200523 ? te.Version : 20200523;
+		return te.Version < 20200525 ? te.Version : 20200525;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -11,7 +11,25 @@ function AboutTE(n) {
 	if (n == 2) {
 		return "Tablacus Explorer " + AboutTE(1) + " Gaku";
 	}
-	var ar = [g_.IEVer, GetLangId(2), screen.deviceYDPI];
+	var ar = ["TE" + (api.sizeof("HANDLE") * 8), AboutTE(1)];
+	var s = "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\";
+	try {
+		ar.push(wsh.regRead(s + "ProductName"));
+		if (s = wsh.regRead(s + "ReleaseId")) {
+			ar.push(s);
+		}
+	} catch (e) { }
+	ar.push(api.sprintf(99, "(%d.%d.%d)", osInfo.dwMajorVersion, osInfo.dwMinorVersion, osInfo.dwBuildNumber));
+	if (api.IsWow64Process(api.GetCurrentProcess())) {
+		ar.push("Wow64");
+	}
+	if (api.SHTestTokenMembership(null, 0x220)) {
+		ar.push("Admin");
+	}
+	if (api.ShouldAppsUseDarkMode()) {
+		ar.push("Dark");
+	}
+	ar.push('IE' + g_.IEVer, GetLangId(2), screen.deviceYDPI);
 	var server = te.GetObject("winmgmts:\\\\.\\root\\SecurityCenter" + (WINVER >= 0x600 ? "2" : ""));
 	if (server) {
 		var cols = server.ExecQuery("SELECT * FROM AntiVirusProduct");
@@ -19,7 +37,7 @@ function AboutTE(n) {
 			ar.push(list.item().displayName);
 		}
 	}
-	return api.sprintf(99, "TE%d %s Win %d.%d.%d%s %s %x%s%s IE", api.sizeof("HANDLE") * 8, AboutTE(1), osInfo.dwMajorVersion, osInfo.dwMinorVersion, osInfo.dwBuildNumber, api.IsWow64Process(api.GetCurrentProcess()) ? " Wow64" : "", ["WS", "DC", "SV"][osInfo.wProductType - 1] || osInfo.wProductType, osInfo.wSuiteMask, api.SHTestTokenMembership(null, 0x220) ? " Admin" : "", api.ShouldAppsUseDarkMode() ? " Dark" : "") + ar.join(" ");
+	return ar.join(" ");
 }
 
 Ctrl = null;

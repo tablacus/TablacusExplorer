@@ -987,6 +987,7 @@ public:
 	int		m_nTC;
 	int		m_nScrollWidth;
 	int		m_nRedraw;
+	long	m_lNavigating;
 	BOOL	m_bEmpty;
 	BOOL	m_bVisible;
 private:
