@@ -1444,7 +1444,6 @@ public:
 	VOID SetRootV(VARIANT *pv);
 	VOID SetRoot();
 	VOID Show();
-	VOID SetTheme(COLORREF cl);
 #ifdef _2000XP
 	VOID SetObjectRect();
 #endif

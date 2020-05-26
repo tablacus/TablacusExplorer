@@ -1282,6 +1282,15 @@ BOOL teIsDarkColor(COLORREF cl)
 	return 299 * GetRValue(cl) + 587 * GetGValue(cl) + 114 * GetBValue(cl) < 127500;
 }
 
+VOID teSetTreeTheme(HWND hwnd, COLORREF cl)
+{
+	if (lpfnAllowDarkModeForWindow) {
+		BOOL bDarkMode = teIsDarkColor(cl);
+		lpfnAllowDarkModeForWindow(hwnd, bDarkMode);
+		SetWindowTheme(hwnd, bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
+	}
+}
+
 HRESULT teDoDragDrop(HWND hwnd, IDataObject *pDataObj, DWORD *pdwEffect)
 {
 	if (g_bDragIcon) {
@@ -3376,6 +3385,23 @@ HWND FindTreeWindow(HWND hwnd)
 {
 	HWND hwnd1 = FindWindowExA(hwnd, 0, WC_TREEVIEWA, NULL);
 	return hwnd1 ? hwnd1 : FindWindowExA(FindWindowExA(hwnd, 0, "NamespaceTreeControl", NULL), 0, WC_TREEVIEWA, NULL);
+}
+
+HWND teFindChildByClassA(HWND hwnd, LPCSTR lpClassA)
+{
+	HWND hwnd1 = NULL;
+	while (hwnd1 = FindWindowEx(hwnd, hwnd1, NULL, NULL)) {
+		CHAR szClassA[MAX_CLASS_NAME];
+		GetClassNameA(hwnd1, szClassA, MAX_CLASS_NAME);
+		if (lstrcmpiA(szClassA, lpClassA) == 0) {
+			return hwnd1;
+		}
+		HWND hwnd2;
+		if (hwnd2 = teFindChildByClassA(hwnd1, lpClassA)) {
+			return hwnd2;
+		}
+	}
+	return NULL;
 }
 
 BOOL teSetRect(HWND hwnd, int left, int top, int right, int bottom)
@@ -6044,7 +6070,7 @@ LRESULT CALLBACK TETVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 		}
 		if (msg == TVM_SETBKCOLOR) {
 			if (lParam != SendMessage(hwnd, TVM_GETBKCOLOR, 0, 0)) {
-				pTV->SetTheme((COLORREF)lParam);
+				teSetTreeTheme(pTV->m_hwndTV, (COLORREF)lParam);
 			}
 		}
 		if (pTV->m_bMain) {
@@ -6519,6 +6545,10 @@ LRESULT CALLBACK TELVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 				if (pSB->m_clrBk != (COLORREF)lParam) {
 					pSB->m_clrBk = (COLORREF)lParam;
 					pSB->SetTheme();
+				}
+				HWND hTree = teFindChildByClassA(pSB->m_hwnd, WC_TREEVIEWA);
+				if (hTree) {
+					teSetTreeTheme(hTree, SendMessage(hwnd, TVM_GETBKCOLOR, 0, 0));
 				}
 			}
 			break;
@@ -21551,7 +21581,7 @@ BOOL CteTreeView::Create(BOOL bIfVisible)
 			if (IUnknown_GetWindow(m_pNameSpaceTreeControl, &m_hwnd) == S_OK) {
 				m_hwndTV = FindTreeWindow(m_hwnd);
 				if (m_hwndTV) {
-					SetTheme(SendMessage(m_hwndTV, TVM_GETBKCOLOR, 0, 0));
+					teSetTreeTheme(m_hwndTV, SendMessage(m_hwndTV, TVM_GETBKCOLOR, 0, 0));
 					SetWindowLongPtr(m_hwndTV, GWLP_USERDATA, (LONG_PTR)this);
 					SetWindowSubclass(m_hwndTV, TETVProc2, 1, 0);
 					if (!m_pDropTarget2) {
@@ -22663,15 +22693,6 @@ VOID CteTreeView::SetObjectRect()
 	}
 }
 #endif
-
-VOID CteTreeView::SetTheme(COLORREF cl)
-{
-	if (lpfnAllowDarkModeForWindow) {
-		BOOL bDarkMode = teIsDarkColor(cl);
-		lpfnAllowDarkModeForWindow(m_hwndTV, bDarkMode);
-		SetWindowTheme(m_hwndTV, bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
-	}
-}
 
 HRESULT CteTreeView::getSelected(IDispatch **ppid)
 {

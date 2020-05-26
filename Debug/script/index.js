@@ -21,30 +21,31 @@ PanelCreated = function (Ctrl) {
 	RunEvent1("PanelCreated", Ctrl);
 }
 
-function RefreshEx(FV)
+function RefreshEx(FV, tm, df)
 {
-	var dt = new Date().getTime();
-	if (FV.Data && dt > (FV.Data.tmChk || 0)) {
-		if  (FV.FolderItem && /^[A-Z]:\\|^\\\\\w/i.test(FV.FolderItem.Path)) {
-			if (RunEvent4("RefreshEx", FV) === void 0) {
-				if (FV.Data.pathChk != FV.FolderItem.Path) {
-					if (!FV.hwndView || api.ILIsEqual(FV.FolderItem, FV.FolderItem.Alt)) {
-						FV.Data.tmChk = dt + 9999999;
-						FV.Data.pathChk = FV.FolderItem.Path;
-						api.PathIsDirectory(function (hr, FV, FolderItem) {
-							FV.Data.tmChk = new Date().getTime() + 3000;
+	if  (FV.Data && FV.FolderItem && /^[A-Z]:\\|^\\\\\w/i.test(FV.FolderItem.Path)) {
+		if (RunEvent4("RefreshEx", FV, tm, df) === void 0) {
+			if (new Date().getTime() - (FV.Data.AccessTime || 0) > (df || 5000) || FV.Data.pathChk != FV.FolderItem.Path) {
+				if (FV.FolderItem.Unavailable || api.ILIsEqual(FV.FolderItem, FV.FolderItem.Alt)) {
+					FV.Data.AccessTime = "!";
+					FV.Data.pathChk = FV.FolderItem.Path;
+					api.PathIsDirectory(function (hr, FV, Path) {
+						if (FV.Data) {
+							FV.Data.AccessTime = new Date().getTime();
 							delete FV.Data.pathChk;
-							if (api.ILIsEqual(FV.FolderItem, FolderItem) && api.ILIsEqual(FolderItem, FolderItem.Alt)) {
-								if (hr < 0) {
+							if (Path == FV.FolderItem.Path) {
+								if (FV.FolderItem.Unavailable) {
+									if (hr >= 0) {
+										FV.Refresh();
+									}
+								} else if (hr < 0) {
 									if (RunEvent4("Error", FV) === void 0) {
 										FV.Suspend();
 									}
-								} else if (FV.FolderItem.Unavailable) {
-									FV.Refresh();
 								}
 							}
-						}, -1, FV.FolderItem.Path, FV, FV.FolderItem);
-					}
+						}
+					}, tm || -1, FV.FolderItem.Path, FV, FV.FolderItem.Path);
 				}
 			}
 		}
@@ -55,7 +56,7 @@ ChangeView = function (Ctrl) {
 	if (Ctrl && Ctrl.FolderItem) {
 		ChangeTabName(Ctrl);
 		if (Ctrl.hwndView) {
-			RefreshEx(Ctrl);
+			RefreshEx(Ctrl, 5000, 5000);
 		}
 		RunEvent1("ChangeView", Ctrl);
 	}
@@ -95,6 +96,7 @@ DeviceChanged = function (Ctrl) {
 }
 
 ListViewCreated = function (Ctrl) {
+	Ctrl.Data.AccessTime = "#";
 	RunEvent1("ListViewCreated", Ctrl);
 }
 
@@ -756,6 +758,7 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 }
 
 te.OnNavigateComplete = function (Ctrl) {
+	Ctrl.Data.AccessTime = new Date().getTime();
 	if (g_.tid_rf[Ctrl.Id] || !Ctrl.FolderItem) {
 		return S_OK;
 	}
@@ -1971,11 +1974,11 @@ g_.event.handleicon = function (Ctrl, pid, iItem) {
 GetIconImage = function (Ctrl, BGColor, bSimple) {
 	var nSize = api.GetSystemMetrics(SM_CYSMICON);
 	var FolderItem = Ctrl.FolderItem || Ctrl;
-	if (!FolderItem) {
-		return MakeImgDataEx("icon:shell32.dll,234", bSimple, nSize);
-	}
 	var r = GetNetworkIcon(FolderItem.Path);
 	if (r) {
+		if (FolderItem.Unavailable) {
+			return MakeImgDataEx("icon:shell32.dll,234", bSimple, nSize);
+		}
 		return MakeImgDataEx(r, bSimple, nSize);
 	}
 	var img = RunEvent4("GetIconImage", Ctrl, BGColor, bSimple);
@@ -2242,16 +2245,17 @@ function UnlockFV(Item) {
 
 function ChangeNotifyFV(lEvent, item1, item2) {
 	var fAdd = SHCNE_DRIVEADD | SHCNE_MEDIAINSERTED | SHCNE_NETSHARE | SHCNE_MKDIR | SHCNE_UPDATEDIR;
-	var fRemove = SHCNE_DRIVEREMOVED | SHCNE_MEDIAREMOVED | SHCNE_NETUNSHARE | SHCNE_RENAMEFOLDER | SHCNE_RMDIR | SHCNE_SERVERDISCONNECT;
+	var fRemove = SHCNE_DRIVEREMOVED | SHCNE_MEDIAREMOVED | SHCNE_NETUNSHARE | SHCNE_RENAMEFOLDER | SHCNE_RMDIR | SHCNE_SERVERDISCONNECT | SHCNE_UPDATEDIR;
 	if (lEvent & (SHCNE_DISKEVENTS | fAdd | fRemove)) {
 		var path1 = String(api.GetDisplayNameOf(item1, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
+		var bNetwork = api.ILIsEqual(item1, ssfNETWORK);
 		var cFV = te.Ctrls(CTRL_FV);
 		for (var i in cFV) {
 			var FV = cFV[i];
-			if (FV && FV.FolderItem) {
+			if (FV && FV.FolderItem && FV.hwndView) {
 				var path = String(api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 				var bChild = !api.StrCmpI(fso.GetParentFolderName(path1), path);
-				var bParent = api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;"));
+				var bParent = api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;")) || bNetwork && api.PathIsNetworkPath(path);
 				if (lEvent == SHCNE_RENAMEFOLDER && CanClose(FV) == S_OK) {
 					if (bParent) {
 						FV.Navigate(path.replace(path1, api.GetDisplayNameOf(item2, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)), SBSP_SAMEBROWSER);
@@ -2276,12 +2280,10 @@ function ChangeNotifyFV(lEvent, item1, item2) {
 				}
 				if (bChild || bParent) {
 					if ((lEvent & fRemove) || ((lEvent & fAdd) && FV.FolderItem.Unavailable)) {
-						RefreshEx(FV);
+						RefreshEx(FV, 500, 500);
 					}
 				}
-				if (FV.hwndView) {
-					FV.Notify(lEvent, item1, item2);
-				}
+				FV.Notify(lEvent, item1, item2);
 			}
 		}
 	}
