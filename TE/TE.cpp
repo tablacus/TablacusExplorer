@@ -6548,7 +6548,7 @@ LRESULT CALLBACK TELVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 				}
 				HWND hTree = teFindChildByClassA(pSB->m_hwnd, WC_TREEVIEWA);
 				if (hTree) {
-					teSetTreeTheme(hTree, SendMessage(hwnd, TVM_GETBKCOLOR, 0, 0));
+					teSetTreeTheme(hTree, (COLORREF)lParam);
 				}
 			}
 			break;
