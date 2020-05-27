@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200527 ? te.Version : 20200527;
+		return te.Version < 20200528 ? te.Version : 20200528;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -82,7 +82,7 @@ g_ = {
 	tid_rf: [],
 	Autocomplete: {},
 	LockUpdate: 0,
-	ptPopup: api.Memory("POINT"),
+	ptMenuDrag: api.Memory("POINT"),
 	IEVer: window.document && (document.documentMode || (/MSIE 6/.test(navigator.appVersion) ? 6 : 7))
 };
 
@@ -110,7 +110,9 @@ FolderMenu =
 
 	TrackPopupMenu: function (hMenu, uFlags, x, y) {
 		MainWindow.g_menu_click = true;
+		this.MenuLoop = true;
 		var nVerb = api.TrackPopupMenuEx(hMenu, uFlags, x, y, te.hwnd, null, null);
+		delete this.MenuLoop;
 		api.DestroyMenu(hMenu);
 		return nVerb;
 	},

@@ -445,7 +445,6 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define	SB_Count	13
 
 #define	TVVERBS 16
-#define TESORTING 10
 
 #define TEREDRAW_NORMAL   1
 #define TEREDRAW_NAVIGATE 2
@@ -582,12 +581,6 @@ struct TESortColumns
 {
 	SORTCOLUMN *pSC;
 	int nCount;
-	DWORD dwSessionId;
-};
-
-struct TEGroupBy
-{
-	BSTR bs;
 	DWORD dwSessionId;
 };
 
@@ -1209,6 +1202,7 @@ public:
 	LPITEMIDLIST m_pidl;
 	IShellFolder2 *m_pSF2;
 	std::vector<UINT> m_pDTColumns;
+	BSTR		m_bsNextGroup;
 	int			m_nForceViewMode;
 	int			m_nFolderSizeIndex;
 	int			m_nLabelIndex;
@@ -1217,7 +1211,6 @@ public:
 	int			m_nSB;
 	int			m_nUnload;
 	int			m_nFocusItem;
-	int			m_nSorting;
 	int			m_nSizeFormat;
 	LONG		m_dwUnavailable;
 	DWORD		m_param[SB_Count];
@@ -1225,6 +1218,7 @@ public:
 	DWORD		m_dwCookie;
 	DWORD		m_dwSessionId;
 	COLORREF	m_clrBk, m_clrTextBk, m_clrText;
+	BOOL		m_bSorting;
 	BOOL		m_bSetListColumnWidth;
 	BOOL		m_bEmpty;
 	BOOL		m_bInit;

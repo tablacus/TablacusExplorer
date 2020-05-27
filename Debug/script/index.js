@@ -1043,6 +1043,27 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 		if (api.GetKeyState(VK_ESCAPE) < 0) {
 			g_.mouse.EndGesture(false);
 		}
+		if (FolderMenu.MenuLoop) {
+			if (api.GetKeyState(VK_LBUTTON) < 0 || api.GetKeyState(VK_RBUTTON) < 0) {
+				if (g_.ptMenuDrag && IsDrag(pt, g_.ptMenuDrag)) {
+					var hSubMenu = api.GetSubMenu(g_.menu_handle, g_.menu_pos);
+					if (hSubMenu) {
+						var mii = api.Memory("MENUITEMINFO");
+						mii.cbSize = mii.Size;
+						mii.fMask = MIIM_SUBMENU;
+						api.SetMenuItemInfo(g_.menu_handle, g_.menu_pos, true, mii);
+						api.DestroyMenu(hSubMenu);
+					}
+					window.g_menu_click = 4;
+					window.g_menu_button = 4;
+					var lParam = pt.x + (pt.y << 16);
+					api.PostMessage(hwnd, WM_LBUTTONDOWN, 0, lParam);
+					api.PostMessage(hwnd, WM_LBUTTONUP, 0, lParam);
+				}
+			} else {
+				g_.ptMenuDrag = pt.Clone();
+			}
+		}
 		if (g_.mouse.str.length && (te.Data.Conf_Gestures > 1 && api.GetKeyState(VK_RBUTTON) < 0) || (te.Data.Conf_Gestures && (api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_XBUTTON1) < 0 || api.GetKeyState(VK_XBUTTON2) < 0))) {
 			if (g_.mouse.ptGesture.x == -1 && g_.mouse.ptGesture.y == -1) {
 				g_.mouse.ptGesture = pt.Clone();
@@ -1607,9 +1628,10 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 };
 
 te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
-	ShowStatusText(te, "", 0);
-	var hr = RunEvent3("MenuMessage", Ctrl, hwnd, msg, wParam, lParam);
+	var pStatus = [te, "", 0];
+	var hr = RunEvent3("MenuMessage", Ctrl, hwnd, msg, wParam, lParam, pStatus);
 	if (isFinite(hr)) {
+		ShowStatusText(pStatus[0], pStatus[1], pStatus[2], pStatus[3]);
 		return hr;
 	}
 	switch (msg) {
@@ -1631,10 +1653,16 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 						if (CM && nVerb >= CM.idCmdFirst && nVerb <= CM.idCmdLast) {
 							Text = CM.GetCommandString(nVerb - CM.idCmdFirst, GCS_HELPTEXT);
 							if (Text) {
-								ShowStatusText(te, Text, 0);
+								pStatus = [te, Text, 0];
 								break;
 							}
 						}
+					}
+				}
+				if (FolderMenu.MenuLoop) {
+					var pid = FolderMenu.Items[nVerb - 1];
+					if (pid) {
+						pStatus = [pid, pid.Name, 0, 200];
 					}
 				}
 				var hSubMenu = api.GetSubMenu(lParam, nVerb);
@@ -1652,7 +1680,6 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 			}
 			break;
 		case WM_ENTERMENULOOP:
-			api.GetCursorPos(g_.ptPopup);
 			g_.menu_loop = true;
 			g_.menu_state = te.Data.cmdKey & ((te.Data.cmdKeyF && (te.Data.cmdKey & 0x17f) == 15) ? 0xf000 : 0);
 			RunEvent1("EnterMenuLoop", Ctrl, hwnd, msg, wParam, lParam);
@@ -1672,17 +1699,21 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 			}
 			g_arBM = [];
 			g_.menu_loop = false;
+			delete g_.ptMenuDrag;
 			break;
 		case WM_MENUCHAR:
 			var hr = RunEvent4("MenuChar", Ctrl, hwnd, msg, wParam, lParam);
 			if (hr !== void 0) {
+				ShowStatusText(pStatus[0], pStatus[1], pStatus[2], pStatus[3]);
 				return hr;
 			}
 			if (window.g_menu_click && (wParam & 0xffff) == VK_LBUTTON) {
+				ShowStatusText(pStatus[0], pStatus[1], pStatus[2], pStatus[3]);
 				return MNC_EXECUTE << 16 + g_.menu_pos;
 			}
 			break;
 	}
+	ShowStatusText(pStatus[0], pStatus[1], pStatus[2], pStatus[3]);
 	return S_FALSE;
 };
 
@@ -1860,7 +1891,22 @@ te.OnGetAlt = function (dwSessionId, s) {
 	}
 }
 
-ShowStatusText = function (Ctrl, Text, iPart) {
+ShowStatusText = function (Ctrl, Text, iPart, tm) {
+	if (g_.Status && g_.Status[5]) {
+		clearTimeout(g_.Status[5]);
+		delete g_.Status;
+	}
+	if (tm) {
+		g_.Status = [Ctrl, Text, iPart, tm, new Date().getTime(), setTimeout(function() {
+			if (g_.Status) {
+				if (new Date().getTime() - g_.Status[4] > g_.Status[3] / 2) {
+					ShowStatusText(g_.Status[0], g_.Status[1], g_.Status[2]);
+					delete g_.Status;
+				}
+			}
+		}, tm)];
+		return S_OK;
+	}
 	RunEvent1("StatusText", Ctrl, Text, iPart);
 	return S_OK;
 }
