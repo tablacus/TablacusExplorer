@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <TablacusExplorer>
   <General>
-    <Version>1.19</Version>
-    <MinVersion>2019.2.10</MinVersion>
-    <pubDate>Sun, 10 Feb 2019 00:00:00 GMT</pubDate>
+    <Version>1.20</Version>
+    <MinVersion>2020.5.29</MinVersion>
+    <pubDate>Thu, 28 May 2020 00:00:00 GMT</pubDate>
     <Options>Common:4:4</Options>
     <Creator>Gaku</Creator>
     <URL>http://tablacus.github.io/TablacusExplorerAddons/</URL>
@@ -15,6 +15,5 @@
   </en>
   <ja>
     <Name>キー</Name>
-    <Description>キー</Description>
   </ja>
 </TablacusExplorer>

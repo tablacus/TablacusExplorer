@@ -114,6 +114,7 @@ BSTR	g_bsDocumentWrite = NULL;
 BSTR	g_bsClipRoot = NULL;
 BSTR	g_bsDateTimeFormat = NULL;
 BSTR	g_bsHiddenFilter = NULL;
+BSTR	g_bsExplorerBrowserFilter = NULL;
 HTREEITEM	g_hItemDown = NULL;
 SORTCOLUMN g_pSortColumnNull[3];
 HBRUSH	g_hbrBackground = NULL;
@@ -150,7 +151,7 @@ BOOL	g_bLabelsMode;
 BOOL	g_bMessageLoop = TRUE;
 BOOL	g_bDialogOk = FALSE;
 BOOL	g_bInit = FALSE;
-BOOL	g_bSetRedraw;
+BOOL	g_bSetRedraw = TRUE;
 BOOL	g_bShowParseError = TRUE;
 BOOL	g_bDragging = FALSE;
 BOOL	g_bCanLayout = FALSE;
@@ -893,6 +894,7 @@ TEmethod methodTE[] = {
 //	{ 1150, "ThumbnailProvider" },//Deprecated
 	{ 1160, "DragIcon" },
 	{ 1170, "UseHiddenFilter" },
+	{ 1180, "ExplorerBrowserFilter" },
 	{ TE_METHOD + 1133, "FolderItems" },
 	{ TE_METHOD + 1134, "Object" },
 	{ TE_METHOD + 1135, "Array" },
@@ -2040,14 +2042,14 @@ VOID teRegister(BOOL bInit)
 
 VOID teSetRedraw(BOOL bSetRedraw)
 {
-	bSetRedraw |= g_bDragging;
 	if (g_pWebBrowser) {
-		SendMessage(g_pWebBrowser->m_hwndBrowser, WM_SETREDRAW, bSetRedraw, 0);
-		if (bSetRedraw && !g_bSetRedraw) {
+		bSetRedraw |= g_bDragging;
+		if ((bSetRedraw ^ g_bSetRedraw) & 1) {
+			SendMessage(g_pWebBrowser->m_hwndBrowser, WM_SETREDRAW, bSetRedraw, 0);
 			RedrawWindow(g_pWebBrowser->m_hwndBrowser, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
 		}
+		g_bSetRedraw = bSetRedraw;
 	}
-	g_bSetRedraw = bSetRedraw;
 }
 
 HRESULT teExceptionEx(EXCEPINFO *pExcepInfo, LPCSTR pszObjA, LPCSTR pszNameA)
@@ -5887,7 +5889,7 @@ LRESULT CALLBACK MenuKeyProc(int nCode, WPARAM wParam, LPARAM lParam)
 			::InterlockedDecrement(&g_nProcKey);
 		}
 	}
-	return lResult ? CallNextHookEx(g_hMenuKeyHook, nCode, wParam, lParam) : lResult;
+	return lResult ? CallNextHookEx(g_hMenuKeyHook, nCode, wParam, lParam) : TRUE;
 }
 
 LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
@@ -11200,6 +11202,9 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 										ShowWindow(pSB->m_pTV->m_hwnd, (pSB->m_param[SB_TreeAlign] & 2) ? SW_SHOWNA : SW_HIDE);
 									} else {
 										pSB->Show(TRUE, 0);
+										if (!g_nLockUpdate && pSB->m_pTC->m_nRedraw == TEREDRAW_DELAYED) {
+											pSB->m_pTC->m_nRedraw = 0;
+										}
 									}
 									pSB->SetFolderFlags(FALSE);
 									MoveWindow(pSB->m_hwnd, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, FALSE);
@@ -13938,7 +13943,6 @@ VOID CteShellBrowser::GetViewModeAndIconSize(BOOL bGetIconSize)
 			}
 			if (!m_bCheckLayout) {
 				m_nForceViewMode = uViewMode;
-				SetRedraw(FALSE);
 				Suspend(4);
 			}
 		}
@@ -16726,45 +16730,49 @@ VOID CteShellBrowser::Suspend(int nMode)
 	teSysFreeString(&m_bsNextFilter);
 	m_bsNextFilter = m_bsFilter;
 	m_bsFilter = NULL;
-	DestroyView(0);
-	if (nMode == 4) {
-		m_nUnload = 8;
-	} else {
-		m_nUnload = 9;
-		if (nMode == 1 && m_pTV) {
-			m_pTV->Close();
-			m_pTV->m_bSetRoot = TRUE;
-		}
-		if (nMode != 2) {
-			CteFolderItem *pid1 = NULL;
-			if SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1)) {
-				if (pid1->m_v.vt == VT_BSTR) {
-					teILFreeClear(&m_pidl);
-					pid1->Clear();
+	m_pTC->LockUpdate(TEREDRAW_DELAYED);
+	try {
+		DestroyView(0);
+		if (nMode == 4) {
+			m_nUnload = 8;
+		} else {
+			m_nUnload = 9;
+			if (nMode == 1 && m_pTV) {
+				m_pTV->Close();
+				m_pTV->m_bSetRoot = TRUE;
+			}
+			if (nMode != 2) {
+				CteFolderItem *pid1 = NULL;
+				if SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1)) {
+					if (pid1->m_v.vt == VT_BSTR) {
+						teILFreeClear(&m_pidl);
+						pid1->Clear();
+						pid1->Release();
+					}
+				}
+			}
+			if (m_pidl) {
+				VARIANT v;
+				if (GetVarPathFromFolderItem(m_pFolderItem, &v)) {
+					CteFolderItem *pid1;
+					teQueryFolderItem(&m_pFolderItem, &pid1);
+					if (nMode == 2) {
+						pid1->MakeUnavailable();
+						m_nUnload = 8;
+					} else {
+						pid1->Clear();
+						VariantClear(&pid1->m_v);
+						VariantCopy(&pid1->m_v, &v);
+					}
 					pid1->Release();
+					teILFreeClear(&m_pidl);
+					VariantClear(&v);
 				}
 			}
 		}
-		if (m_pidl) {
-			VARIANT v;
-			if (GetVarPathFromFolderItem(m_pFolderItem, &v)) {
-				CteFolderItem *pid1;
-				teQueryFolderItem(&m_pFolderItem, &pid1);
-				if (nMode == 2) {
-					pid1->MakeUnavailable();
-					m_nUnload = 8;
-				} else {
-					pid1->Clear();
-					VariantClear(&pid1->m_v);
-					VariantCopy(&pid1->m_v, &v);
-				}
-				pid1->Release();
-				teILFreeClear(&m_pidl);
-				VariantClear(&v);
-			}
-		}
-	}
-	Show(bVisible, 0);
+		Show(bVisible, 0);
+	} catch (...) {}
+	m_pTC->UnlockUpdate();
 }
 
 VOID CteShellBrowser::SetPropEx()
@@ -17132,6 +17140,13 @@ FOLDERVIEWOPTIONS CteShellBrowser::teGetFolderViewOptions(LPITEMIDLIST pidl, UIN
 		if (uFlag & g_param[TE_Layout]) {
 			return FVO_DEFAULT;
 		}
+	}
+	if (g_bsExplorerBrowserFilter) {
+		BSTR bsPath;
+		teGetDisplayNameFromIDList(&bsPath, pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL);
+		FOLDERVIEWOPTIONS fvo = tePathMatchSpec(bsPath, g_bsExplorerBrowserFilter) ? FVO_DEFAULT : FVO_VISTALAYOUT;
+		teSysFreeString(&bsPath);
+		return fvo;
 	}
 	return FVO_VISTALAYOUT;
 }
@@ -17658,7 +17673,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 						g_bsHiddenFilter = ::SysAllocString(pDispParams->rgvarg[nArg].bstrVal);
 					}
 				}
-				teSetSZ(pVarResult, g_bsDateTimeFormat);
+				teSetSZ(pVarResult, g_bsHiddenFilter);
 				return S_OK;
 			//Background
 			case 1140:
@@ -17700,6 +17715,16 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 					g_bUseHiddenFilter = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 				}
 				teSetBool(pVarResult, g_bUseHiddenFilter);
+				return S_OK;
+
+			case 1180://ExplorerBrowserFilter
+				if (nArg >= 0) {
+					teSysFreeString(&g_bsExplorerBrowserFilter);
+					if (pDispParams->rgvarg[nArg].vt == VT_BSTR && ::SysStringLen(pDispParams->rgvarg[nArg].bstrVal)) {
+						g_bsExplorerBrowserFilter = ::SysAllocString(pDispParams->rgvarg[nArg].bstrVal);
+					}
+				}
+				teSetSZ(pVarResult, g_bsExplorerBrowserFilter);
 				return S_OK;
 
 #ifdef _USE_TESTOBJECT
@@ -22403,7 +22428,9 @@ STDMETHODIMP CteTreeView::ItemPrePaint(HDC hdc, RECT *prc, NSTCCUSTOMDRAW *pnstc
 {
 	NMTVCUSTOMDRAW tvcd = { { { 0, 0, NM_CUSTOMDRAW }, CDDS_ITEMPREPAINT, hdc, *prc, 0, pnstccdItem->uItemState }, *pclrText, *pclrTextBk, pnstccdItem->iLevel };
 	teCustomDraw(TE_OnItemPrePaint, NULL, this, pnstccdItem->psi, &tvcd.nmcd, &tvcd, plres);
-	*pclrText = tvcd.clrText;
+	if (!(pnstccdItem->uItemState & CDIS_SELECTED) || IsAppThemed()) {
+		*pclrText = tvcd.clrText;
+	}
 	*pclrTextBk = tvcd.clrTextBk;
 	return S_OK;
 }

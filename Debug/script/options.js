@@ -1441,6 +1441,7 @@ function SearchIcon(o) {
 }
 
 InitDialog = function () {
+	document.title = TITLE;
 	var Query = String(dialogArguments.Query || location.search.replace(/\?/, "")).toLowerCase();
 	var res = /^icon(.*)/.exec(Query);
 	if (res) {

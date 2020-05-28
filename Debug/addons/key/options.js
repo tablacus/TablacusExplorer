@@ -1,4 +1,4 @@
-g_Types = { Key: ["All", "List", "Tree", "Browser"] };
+g_Types = { Key: ["All", "List", "Tree", "Browser", "Edit", "Menus"] };
 
 var ado = OpenAdodbFromTextFile("addons\\" + Addon_Id + "\\options.html");
 if (ado) {
@@ -6,8 +6,7 @@ if (ado) {
 	ado.Close();
 }
 
-SaveLocation = function ()
-{
+SaveLocation = function () {
 	SetChanged(null, document.E);
 	SaveX("Key", document.E);
 }

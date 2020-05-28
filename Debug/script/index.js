@@ -862,6 +862,11 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata) {
 					api.PostMessage(hwnd, WM_KEYUP, wParam, 0);
 				}
 				window.g_menu_button = api.GetKeyState(VK_CONTROL) < 0 ? 3 : api.GetKeyState(VK_SHIFT) < 0 ? 2 : 1;
+				if (FolderMenu.MenuLoop) {
+					if (KeyExecEx(Ctrl, "Menus", nKey, hwnd) === S_OK) {
+						return S_OK;
+					}
+				}
 				break;
 		}
 		if (Ctrl.Type != CTRL_TE) {
@@ -1659,14 +1664,23 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 						}
 					}
 				}
+				var mf = wParam >> 16;
 				if (FolderMenu.MenuLoop) {
-					var pid = FolderMenu.Items[nVerb - 1];
+					var wId = nVerb;
+					if (mf & MF_POPUP) {
+						var mii = api.Memory("MENUITEMINFO");
+						mii.cbSize = mii.Size;
+						mii.fMask = MIIM_ID;
+						api.GetMenuItemInfo(lParam, nVerb, true, mii);
+						wId = mii.wId;
+					}
+					var pid = FolderMenu.Items[wId - 1];
 					if (pid) {
+						g_.MenuSelected = pid;
 						pStatus = [pid, pid.Name, 0, 200];
 					}
 				}
 				var hSubMenu = api.GetSubMenu(lParam, nVerb);
-				var mf = wParam >> 16;
 				if (mf & MF_POPUP) {
 					if (hSubMenu) {
 						g_.menu_handle = lParam;
@@ -1689,7 +1703,7 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 			var ar = ["ExitMenuLoop", "EnterMenuLoop", "MenuSelect", "MenuChar"];
 			RunEvent1(ar[0], Ctrl, hwnd, msg, wParam, lParam);
 			for (var i = ar.length; i--;) {
-				var eo = eventTE[ar[0].toLowerCase()];
+				var eo = eventTE[ar[i].toLowerCase()];
 				if (eo) {
 					eo.length = 0;
 				}
@@ -1700,6 +1714,7 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 			g_arBM = [];
 			g_.menu_loop = false;
 			delete g_.ptMenuDrag;
+			delete g_.MenuSelected
 			break;
 		case WM_MENUCHAR:
 			var hr = RunEvent4("MenuChar", Ctrl, hwnd, msg, wParam, lParam);
@@ -2249,7 +2264,7 @@ function SetAddon(strName, Location, Tag, strVAlign) {
 function InitCode() {
 	var types =
 	{
-		Key: ["All", "List", "Tree", "Browser", "Edit"],
+		Key: ["All", "List", "Tree", "Browser", "Edit", "Menus"],
 		Mouse: ["All", "List", "List_Background", "Tree", "Tabs", "Tabs_Background", "Browser"]
 	};
 	var i;
@@ -3475,6 +3490,10 @@ AddEnv("TreeSelected", function (Ctrl) {
 		strSel = api.PathQuoteSpaces(api.GetDisplayNameOf(Ctrl.SelectedItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 	}
 	return strSel;
+});
+
+AddEnv("MenuSelected", function (Ctrl) {
+	return g_.MenuSelected ? api.PathQuoteSpaces(g_.MenuSelected.Path) : "";
 });
 
 AddEnv("Installed", fso.GetDriveName(api.GetModuleFileName(null)));

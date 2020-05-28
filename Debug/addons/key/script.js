@@ -3,9 +3,8 @@ if (window.Addon == 1) {
 	{
 		Menus: [],
 
-		OpenMenu: function (Ctrl, pt, nIndex)
-		{
-			var ar =this.Menus[nIndex];
+		OpenMenu: function (Ctrl, pt, nIndex) {
+			var ar = this.Menus[nIndex];
 			var items = ar[0];
 			if (items) {
 				var arMenu = ar[1];
