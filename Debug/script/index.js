@@ -26,7 +26,7 @@ function RefreshEx(FV, tm, df)
 	if  (FV.Data && FV.FolderItem && /^[A-Z]:\\|^\\\\\w/i.test(FV.FolderItem.Path)) {
 		if (RunEvent4("RefreshEx", FV, tm, df) === void 0) {
 			if (new Date().getTime() - (FV.Data.AccessTime || 0) > (df || 5000) || FV.Data.pathChk != FV.FolderItem.Path) {
-				if (FV.FolderItem.Unavailable || api.ILIsEqual(FV.FolderItem, FV.FolderItem.Alt)) {
+				if (!FV.hwndView || FV.FolderItem.Unavailable || api.ILIsEqual(FV.FolderItem, FV.FolderItem.Alt)) {
 					FV.Data.AccessTime = "!";
 					FV.Data.pathChk = FV.FolderItem.Path;
 					api.PathIsDirectory(function (hr, FV, Path) {
@@ -34,14 +34,12 @@ function RefreshEx(FV, tm, df)
 							FV.Data.AccessTime = new Date().getTime();
 							delete FV.Data.pathChk;
 							if (Path == FV.FolderItem.Path) {
-								if (FV.FolderItem.Unavailable) {
-									if (hr >= 0) {
-										FV.Refresh();
-									}
-								} else if (hr < 0) {
+								if (hr < 0) {
 									if (RunEvent4("Error", FV) === void 0) {
 										FV.Suspend();
 									}
+								} else if (FV.FolderItem.Unavailable) {
+									FV.Refresh();
 								}
 							}
 						}
@@ -2313,7 +2311,7 @@ function ChangeNotifyFV(lEvent, item1, item2) {
 		var cFV = te.Ctrls(CTRL_FV);
 		for (var i in cFV) {
 			var FV = cFV[i];
-			if (FV && FV.FolderItem && FV.hwndView) {
+			if (FV && FV.FolderItem) {
 				var path = String(api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 				var bChild = !api.StrCmpI(fso.GetParentFolderName(path1), path);
 				var bParent = api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;")) || bNetwork && api.PathIsNetworkPath(path);
@@ -2323,7 +2321,7 @@ function ChangeNotifyFV(lEvent, item1, item2) {
 						continue;
 					}
 				}
-				if (bChild) {
+				if (bChild && FV.hwndView) {
 					if (FV.hwndList) {
 						var item = api.Memory("LVITEM");
 						item.stateMask = LVIS_CUT;
@@ -3719,6 +3717,7 @@ if (!te.Data) {
 			}
 		}
 	} catch (e) { }
+	api.SetWindowText(te.hwnd, TITLE);
 	te.Data.WindowSetting = fso.BuildPath(te.Data.DataFolder, "config\\window0.xml");
 	for (var i = 1; i < 999; ++i) {
 		var fn = fso.BuildPath(te.Data.DataFolder, "config\\window" + i + ".xml");

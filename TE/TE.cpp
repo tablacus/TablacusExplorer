@@ -8570,15 +8570,14 @@ VOID teApiFillRect(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *p
 	HBITMAP hBM = CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, (void **)&pcl, NULL, 0);
 	HDC hmdc = CreateCompatibleDC(param[0].hdc);
 	HGDIOBJ hOld = SelectObject(hmdc, hBM);
-	int a = (LOBYTE(param[3].colorref >> 24));
-	pcl->rgbReserved = a;
-	pcl->rgbRed = GetRValue(param[3].colorref) * a / 0xff;
-	pcl->rgbGreen = GetGValue(param[3].colorref) * a / 0xff;
-	pcl->rgbBlue = GetBValue(param[3].colorref) * a / 0xff;
+	pcl->rgbReserved = 0xff;
+	pcl->rgbRed = GetRValue(param[3].colorref);
+	pcl->rgbGreen = GetGValue(param[3].colorref);
+	pcl->rgbBlue = GetBValue(param[3].colorref);
 	BLENDFUNCTION blendFunction;
 	blendFunction.BlendOp = AC_SRC_OVER;
 	blendFunction.BlendFlags = 0;
-	blendFunction.SourceConstantAlpha = 128;
+	blendFunction.SourceConstantAlpha = LOBYTE(param[3].colorref >> 24);
 	blendFunction.AlphaFormat = 0;
 	AlphaBlend(param[0].hdc, param[1].lprect->left, param[1].lprect->top, param[1].lprect->right - param[1].lprect->left, param[1].lprect->bottom - param[1].lprect->top,
 		hmdc, 0, 0, 1, 1, blendFunction);
@@ -11202,9 +11201,6 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 										ShowWindow(pSB->m_pTV->m_hwnd, (pSB->m_param[SB_TreeAlign] & 2) ? SW_SHOWNA : SW_HIDE);
 									} else {
 										pSB->Show(TRUE, 0);
-										if (!g_nLockUpdate && pSB->m_pTC->m_nRedraw == TEREDRAW_DELAYED) {
-											pSB->m_pTC->m_nRedraw = 0;
-										}
 									}
 									pSB->SetFolderFlags(FALSE);
 									MoveWindow(pSB->m_hwnd, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, FALSE);
@@ -15427,7 +15423,6 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				if (!m_bNavigateComplete && ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
 					return S_OK;
 				}
-				m_pTC->m_nRedraw &= ~TEREDRAW_NAVIGATE;
 				if (m_bRefreshing) {
 					m_bRefreshing = FALSE;
 					if (!m_bNavigateComplete && m_bsAltSortColumn) {
@@ -16416,6 +16411,9 @@ VOID CteShellBrowser::NavigateComplete(BOOL bBeginNavigate)
 {
 	if (!bBeginNavigate || DoFunc(TE_OnBeginNavigate, this, S_OK) != S_FALSE) {
 		DoFunc(TE_OnNavigateComplete, this, E_NOTIMPL);
+		if (!g_nLockUpdate) {
+			m_pTC->m_nRedraw &= ~TEREDRAW_NAVIGATE;
+		}
 	}
 }
 
@@ -16861,6 +16859,9 @@ void CteShellBrowser::Show(BOOL bShow, DWORD dwOptions)
 					Refresh(TRUE);
 				}
 			}
+		} else {
+			m_pTC->LockUpdate(TEREDRAW_DELAYED);
+			m_pTC->UnlockUpdate();
 		}
 		if (m_pShellView) {
 			m_bVisible = bShow;
@@ -16905,10 +16906,9 @@ void CteShellBrowser::Show(BOOL bShow, DWORD dwOptions)
 		} else {
 			m_bVisible = FALSE;
 		}
-		if (!m_bVisible) {
-			m_pTC->LockUpdate(TEREDRAW_DELAYED);
-			m_pTC->UnlockUpdate();
-		}
+	}
+	if (bShow && !g_nLockUpdate && m_pTC->m_nRedraw == TEREDRAW_DELAYED) {
+		m_pTC->m_nRedraw = 0;
 	}
 }
 
