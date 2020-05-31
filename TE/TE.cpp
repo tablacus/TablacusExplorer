@@ -2,8 +2,7 @@
 // Tablacus Explorer (C)2011 Gaku
 // MIT Lisence
 // Visual Studio Express 2017 for Windows Desktop
-// Visual Studio 2017 v141(x64)
-// Windows SDK v7.1(x86)
+// Windows SDK v7.1
 // https://tablacus.github.io/
 
 #include "stdafx.h"
