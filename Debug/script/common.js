@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200530 ? te.Version : 20200530;
+		return te.Version < 20200531 ? te.Version : 20200531;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -1236,15 +1236,8 @@ CreateNew = function (path, fn) {
 			}
 		}
 	}
-	MainWindow.setTimeout(
-		'path="' + path.replace(/\\/g, "\\\\") + '";\
-		var FV = te.Ctrl(CTRL_FV);\
-		if (FV) {\
-			if (!api.StrCmpI(FV.FolderItem.Path, fso.GetParentFolderName(path))) {\
-				FV.SelectItem(path, SVSI_SELECT | SVSI_DESELECTOTHERS | SVSI_ENSUREVISIBLE | SVSI_FOCUSED | SVSI_NOTAKEFOCUS);\
-			}\
-		}', 99
-	);
+	MainWindow.g_.NewItemTime = new Date().getTime() + 5000;
+	MainWindow.g_.NewItemPath = path;
 }
 
 SetFileTime = function (path, ctime, atime, mtime) {

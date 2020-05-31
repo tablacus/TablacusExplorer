@@ -75,7 +75,7 @@ class CteShellBrowser;
 class CteTreeView;
 
 #ifndef MONITOR_DPI_TYPE
-typedef enum MONITOR_DPI_TYPE {
+enum MONITOR_DPI_TYPE {
   MDT_EFFECTIVE_DPI,
   MDT_ANGULAR_DPI,
   MDT_RAW_DPI,
@@ -1163,7 +1163,6 @@ public:
 	VOID OnNavigationComplete2();
 	HRESULT BrowseToObject();
 	HRESULT GetShellFolder2(LPITEMIDLIST *ppidl);
-	VOID SetLVSettings();
 	HRESULT CreateViewWindowEx(IShellView *pPreviousView);
 	VOID SetTabName();
 	HRESULT RemoveAll();

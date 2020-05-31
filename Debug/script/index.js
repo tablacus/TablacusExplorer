@@ -2035,7 +2035,7 @@ GetIconImage = function (Ctrl, BGColor, bSimple) {
 	var FolderItem = Ctrl.FolderItem || Ctrl;
 	var r = GetNetworkIcon(FolderItem.Path);
 	if (r) {
-		if (FolderItem.Unavailable) {
+		if (FolderItem.Unavailable > 500) {
 			return MakeImgDataEx("icon:shell32.dll,234", bSimple, nSize);
 		}
 		return MakeImgDataEx(r, bSimple, nSize);
@@ -3317,8 +3317,19 @@ AddEvent("MenuState:Tabs:Show frames", function (Ctrl, pt, mii) {
 });
 
 AddEvent("ChangeNotify", function (Ctrl, pidls, wParam, lParam) {
-	if (pidls.lEvent & SHCNE_MKDIR) {
-		if (g_.NewFolderTime > new Date().getTime()) {
+	if (pidls.lEvent & (SHCNE_MKDIR | SHCNE_CREATE)) {
+		var tm = new Date().getTime();
+		if (g_.NewItemTime > tm) {
+			delete g_.NewItemTime;
+			setTimeout(function () {
+				var FV = te.Ctrl(CTRL_FV);
+				if (FV) {
+					if (!api.StrCmpI(FV.FolderItem.Path, fso.GetParentFolderName(g_.NewItemPath))) {
+						FV.SelectItem(g_.NewItemPath, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK | SVSI_SELECT);
+					}
+				}
+			}, 800);
+		} else if (g_.NewFolderTime > tm) {
 			delete g_.NewFolderTime;
 			g_.NewFolderTV.Expand(pidls[0], 0);
 			wsh.SendKeys("{F2}");
@@ -3717,7 +3728,7 @@ if (!te.Data) {
 			}
 		}
 	} catch (e) { }
-	api.SetWindowText(te.hwnd, TITLE);
+	document.title = TITLE;
 	te.Data.WindowSetting = fso.BuildPath(te.Data.DataFolder, "config\\window0.xml");
 	for (var i = 1; i < 999; ++i) {
 		var fn = fso.BuildPath(te.Data.DataFolder, "config\\window" + i + ".xml");

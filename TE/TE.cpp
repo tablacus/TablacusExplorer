@@ -2,7 +2,8 @@
 // Tablacus Explorer (C)2011 Gaku
 // MIT Lisence
 // Visual Studio Express 2017 for Windows Desktop
-// Windows SDK v7.1
+// Visual Studio 2017 v141(x64)
+// Windows SDK v7.1(x86)
 // https://tablacus.github.io/
 
 #include "stdafx.h"
@@ -130,6 +131,7 @@ DWORD   g_dwCookieJS = 0;
 DWORD	g_dwSessionId = 0;
 DWORD	g_dwTickKey;
 DWORD	g_dwFreeLibrary = 0;
+DWORD	g_dwTickFocus;
 long	g_nProcKey	   = 0;
 long	g_nProcMouse   = 0;
 long	g_nProcDrag    = 0;
@@ -2011,7 +2013,7 @@ VOID teRegister(BOOL bInit)
 				teRevoke();
 				g_pSW = pSW;
 				if (g_pWebBrowser) {
-					pSW->Register(g_pWebBrowser->m_pWebBrowser, (LONG)g_hwndMain, SWC_3RDPARTY, &g_lSWCookie);
+					pSW->Register(g_pWebBrowser->m_pWebBrowser, HandleToLong(g_hwndMain), SWC_3RDPARTY, &g_lSWCookie);
 					BSTR bsPath;
 					teGetModuleFileName(NULL, &bsPath);//Executable Path
 					LPITEMIDLIST pidl = SHSimpleIDListFromPath(bsPath);
@@ -3315,10 +3317,10 @@ LPWSTR teGetCommandLine()
 				LONGLONG hData;
 				DWORD dwProcessId;
 				WCHAR sz[MAX_PATH + 2];
-				swscanf_s(&strCmdLine[j + 9], L"%32[1234567890]s", sz, _countof(sz));
+				swscanf_s(&strCmdLine[j + 9], L"%32[1234567890]s", sz, UINT(_countof(sz)));
 				swscanf_s(sz, L"%lld", &hData);
 				int k = lstrlen(sz);
-				swscanf_s(&strCmdLine[j + k + 10], L"%32[1234567890]s", sz, _countof(sz));
+				swscanf_s(&strCmdLine[j + k + 10], L"%32[1234567890]s", sz, UINT(_countof(sz)));
 				swscanf_s(sz, L"%d", &dwProcessId);
 				j += k + lstrlen(sz) + 11;
 #ifdef _2000XP
@@ -5855,13 +5857,13 @@ VOID teSetDarkMode(HWND hwnd)
 	}
 }
 
-BOOL teVerifyVersion(int nMajor, int nMinor, int nBuild)
+BOOL teVerifyVersion(DWORD dwMajor, DWORD dwMinor, DWORD dwBuild)
 {
 	DWORDLONG dwlConditionMask = 0;
     VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
    VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
 	VER_SET_CONDITION(dwlConditionMask, VER_BUILDNUMBER, VER_GREATER_EQUAL);
-	OSVERSIONINFOEX osvi = { sizeof(OSVERSIONINFOEX), nMajor, nMinor, nBuild };
+	OSVERSIONINFOEX osvi = { sizeof(OSVERSIONINFOEX), dwMajor, dwMinor, dwBuild };
 	return VerifyVersionInfo(&osvi, VER_MAJORVERSION | VER_BUILDNUMBER, dwlConditionMask);
 }
 
@@ -6316,6 +6318,9 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 								}
 							}
 						}
+					}
+					if (pSB->m_param[SB_ViewFlags] & CDB2GVF_NOSELECTVERB) {
+						ListView_SetSelectedColumn(pSB->m_hwndLV, -1);
 					}
 				}
 			} else if (((LPNMHDR)lParam)->code == LVN_INCREMENTALSEARCH) {
@@ -10989,6 +10994,23 @@ VOID CALLBACK teTimerProcFocus(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 	}
 }
 
+VOID CALLBACK teTimerProcFocus2(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+{
+	try {
+		KillTimer(hwnd, idEvent);
+		CteShellBrowser *pSB = SBfromhwnd(hwnd);
+		if (pSB) {
+			pSB->SaveFocusedItemToHistory();
+			pSB->FocusItem(TRUE);
+		}
+	} catch (...) {
+		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"teTimerProcFocus2";
+#endif
+	}
+}
+
 VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 {
 	RECT rc, rcTab, rcClient;
@@ -11203,6 +11225,13 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 										pSB->Show(TRUE, 0);
 									}
 									pSB->SetFolderFlags(FALSE);
+									if (pSB->m_hwndDV) {// #290
+										RECT rc;
+										GetWindowRect(pSB->m_hwndDV, &rc);
+										if (rc.left == rc.right) {
+											MoveWindow(pSB->m_hwnd, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top + 1, FALSE);
+										}
+									}
 									MoveWindow(pSB->m_hwnd, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, FALSE);
 									if (pSB->m_hwndAlt) {
 										MoveWindow(pSB->m_hwndAlt, 0, 0, rc.right - rc.left, rc.bottom - rc.top, FALSE);
@@ -11679,8 +11708,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	g_paramFV[SB_FolderFlags] = FWF_SHOWSELALWAYS;
 	g_paramFV[SB_IconSize] = 0;
 	g_paramFV[SB_Options] = EBO_ALWAYSNAVIGATE;
-	g_paramFV[SB_ViewFlags] = 0;
-
+#ifdef _2000XP
+	g_paramFV[SB_ViewFlags] = g_bUpperVista ? CDB2GVF_NOSELECTVERB : 0;
+#else
+	g_paramFV[SB_ViewFlags] = CDB2GVF_NOSELECTVERB;
+#endif
 	g_paramFV[SB_TreeAlign] = 1;
 	g_paramFV[SB_TreeWidth] = 200;
 	g_paramFV[SB_TreeFlags] = NSTCS_HASEXPANDOS | NSTCS_SHOWSELECTIONALWAYS | NSTCS_BORDER | NSTCS_HASLINES | NSTCS_NOINFOTIP | NSTCS_HORIZONTALSCROLL;
@@ -13014,6 +13046,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	}
 	DWORD dwFrame = 0;
 	UINT uViewMode = m_param[SB_ViewMode];
+	g_dwTickFocus = GetTickCount() - 3000;
 #ifdef _2000XP
 	if (g_bUpperVista) {
 #endif
@@ -13631,7 +13664,14 @@ VOID CteShellBrowser::SetFolderFlags(BOOL bGetIconSize)
 #endif
 	}
 	GetViewModeAndIconSize(bGetIconSize);
-	SetLVSettings();
+	if (m_hwndLV) {
+		if (m_param[SB_ViewFlags] & CDB2GVF_NOSELECTVERB) {
+			ListView_SetSelectedColumn(m_hwndLV, -1);
+		}
+		ListView_SetTextBkColor(m_hwndLV, m_clrTextBk);
+		ListView_SetTextColor(m_hwndLV, m_clrText);
+		ListView_SetBkColor(m_hwndLV, m_clrBk);
+	}
 }
 
 VOID CteShellBrowser::InitFolderSize()
@@ -14429,7 +14469,7 @@ BSTR CteShellBrowser::GetColumnsStr(int nFormat)
 			if (uCount) {
 				PROPERTYKEY *pPropKey = new PROPERTYKEY[uCount];
 				if SUCCEEDED(pColumnManager->GetColumns(CM_ENUM_VISIBLE, pPropKey, uCount)) {
-					CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_WIDTH | CM_MASK_NAME };
+					CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), (DWORD)(CM_MASK_WIDTH | CM_MASK_NAME) };
 					for (UINT i = 0; i < uCount; ++i) {
 						if SUCCEEDED(pColumnManager->GetColumnInfo(pPropKey[i], &cmci)) {
 							AddColumnDataEx(szColumns, tePSGetNameFromPropertyKeyEx(pPropKey[i], nFormat, this), cmci.uWidth);
@@ -15417,6 +15457,12 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					pFV2->SetText(FVST_EMPTYTEXT, lpBuf);
 					pFV2->Release();
 				}
+				if (m_hwndLV) { // Fixed a problem with focus on auto refresh.
+					DWORD diff = GetTickCount() - g_dwTickFocus;
+					if (diff < 3000) {
+						SetTimer(m_hwnd, (UINT_PTR)&m_nFocusItem, 64, teTimerProcFocus2);
+					}
+				}
 				break;
 
 			case DISPID_FILELISTENUMDONE://XP+
@@ -15477,6 +15523,11 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				return DoFunc(TE_OnIconSizeChanged, this, S_OK);
 			case DISPID_SORTDONE://XP-
 				m_bSorting = FALSE;
+				if (m_hwndLV) {
+					if (m_param[SB_ViewFlags] & CDB2GVF_NOSELECTVERB) {
+						ListView_SetSelectedColumn(m_hwndLV, -1);
+					}
+				}
 				if (m_bsNextGroup) {
 					SetTimer(m_hwnd, (UINT_PTR)&m_bsNextGroup, 250, teTimerProcGroupBy);
 				}
@@ -15899,6 +15950,7 @@ HRESULT CteShellBrowser::SelectItemEx(LPITEMIDLIST *ppidl, int dwFlags, BOOL bFr
 				if (nFocused >= 0) {
 					ListView_SetItemState(m_hwndLV, nFocused, 0, LVIS_FOCUSED);
 				}
+				g_dwTickFocus = GetTickCount();
 #ifdef _2000XP
 			}
 #endif
@@ -16240,18 +16292,6 @@ HRESULT CteShellBrowser::GetShellFolder2(LPITEMIDLIST *ppidl)
 	return hr;
 }
 
-VOID CteShellBrowser::SetLVSettings()
-{
-	if (m_hwndLV) {
-		if (m_param[SB_ViewFlags] & CDB2GVF_NOSELECTVERB) {
-			ListView_SetSelectedColumn(m_hwndLV, -1);
-		}
-		ListView_SetTextBkColor(m_hwndLV, m_clrTextBk);
-		ListView_SetTextColor(m_hwndLV, m_clrText);
-		ListView_SetBkColor(m_hwndLV, m_clrBk);
-	}
-}
-
 HRESULT CteShellBrowser::RemoveAll()
 {
 	HRESULT hr = E_NOTIMPL;
@@ -16413,6 +16453,13 @@ VOID CteShellBrowser::NavigateComplete(BOOL bBeginNavigate)
 		DoFunc(TE_OnNavigateComplete, this, E_NOTIMPL);
 		if (!g_nLockUpdate) {
 			m_pTC->m_nRedraw &= ~TEREDRAW_NAVIGATE;
+			if (m_bVisible && m_hwndDV) { // #290
+				RECT rc;
+				GetWindowRect(m_hwndDV, &rc);
+				if (rc.left == rc.right) {
+					ArrangeWindow();
+				}
+			}
 		}
 	}
 }
@@ -18410,7 +18457,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				}
 				return S_OK;
 			case DISPID_TITLECHANGE:
-				if (m_hwndParent != g_hwndMain && m_bstrPath && nArg >= 0 && pDispParams->rgvarg[nArg].vt == VT_BSTR) {
+				if (m_bstrPath && nArg >= 0 && pDispParams->rgvarg[nArg].vt == VT_BSTR) {
 					SetWindowText(m_hwndParent, pDispParams->rgvarg[nArg].bstrVal);
 				}
 				return S_OK;
@@ -18867,7 +18914,9 @@ VOID CteTabCtrl::Show(BOOL bVisible)
 	}
 	if (bVisible ^ m_bVisible) {
 		if (m_bVisible) {
-			MoveWindow(m_hwndStatic, -1, -1, 0, 0, FALSE);
+			RECT rc;
+			GetWindowRect(m_hwndStatic, &rc);
+			MoveWindow(m_hwndStatic, -rc.right, -rc.bottom, rc.right - rc.left, rc.bottom - rc.top, FALSE);
 			for (int i = TabCtrl_GetItemCount(m_hwnd); i--;) {
 				CteShellBrowser *pSB = GetShellBrowser(i);
 				if (pSB) {
@@ -24324,7 +24373,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					UINT w = 0, h = 0;
 					m_pImage->GetSize(&w, &h);
 					IWICBitmapLock *pBitmapLock;
-					WICRect rc = {0, 0, w, h};
+					WICRect rc = {0, 0, (INT)w, (INT)h};
 					if SUCCEEDED(m_pImage->Lock(&rc, WICBitmapLockRead, &pBitmapLock)) {
 						UINT cbSize = 0;
 						LONG *pbData = NULL;
@@ -24348,7 +24397,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 						UINT w = 0, h = 0;
 						m_pImage->GetSize(&w, &h);
 						IWICBitmapLock *pBitmapLock;
-						WICRect rc = {0, 0, w, h};
+						WICRect rc = {0, 0, (INT)w, (INT)h};
 						if SUCCEEDED(m_pImage->Lock(&rc, WICBitmapLockWrite, &pBitmapLock)) {
 							UINT cbSize = 0;
 							LONG *pbData = NULL;
