@@ -36,7 +36,9 @@ function RefreshEx(FV, tm, df)
 							if (Path == FV.FolderItem.Path) {
 								if (hr < 0) {
 									if (RunEvent4("Error", FV) === void 0) {
-										FV.Suspend();
+										if (FV.Unavailable > 3000) {
+											FV.Suspend(2);
+										}
 									}
 								} else if (FV.FolderItem.Unavailable) {
 									FV.Refresh();
@@ -1863,10 +1865,10 @@ te.OnILGetParent = function (FolderItem) {
 	if (api.ILIsEqual(FolderItem.Alt, ssfRESULTSFOLDER)) {
 		var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
 		var ar = path.split && path.split("\\") || [];
-		if (ar.length > 1 && ar.pop()) {
+		if (ar.length > (/^\\\\\w/i.test(path) ? 3 : 1) && ar.pop()) {
 			return ar.join("\\");
 		}
-		return ssfDESKTOP;
+		return /^[A-Z]:\\/i.test(path) ? ssfDRIVES : /^\\\\\w/i.test(path) ? ssfNETWORK : ssfDESKTOP;
 	}
 }
 

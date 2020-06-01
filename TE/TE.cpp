@@ -130,7 +130,8 @@ DWORD   g_dwCookieJS = 0;
 DWORD	g_dwSessionId = 0;
 DWORD	g_dwTickKey;
 DWORD	g_dwFreeLibrary = 0;
-DWORD	g_dwTickFocus;
+DWORD	g_dwTickFocus = 0;
+DWORD	g_dwTickMount = 0;
 long	g_nProcKey	   = 0;
 long	g_nProcMouse   = 0;
 long	g_nProcDrag    = 0;
@@ -1431,6 +1432,7 @@ VOID teQueryFolderItem(FolderItem **ppfi, CteFolderItem **ppid)
 				(*ppfi)->Release();
 				(*ppid)->QueryInterface(IID_PPV_ARGS(ppfi));
 			}
+			::CoTaskMemFree(pidl);
 		}
 	}
 }
@@ -12560,10 +12562,10 @@ void CteShellBrowser::Clear()
 #endif
 	}
 	try {
-		for (int i = int(m_ppLog.size()); --i >= 0;) {
-			m_ppLog[i]->Release();
+		while (!m_ppLog.empty()) {
+			m_ppLog.back()->Release();
+			m_ppLog.pop_back();
 		}
-		m_ppLog.clear();
 		teSysFreeString(&m_bsFilter);
 		teSysFreeString(&m_bsNextFilter);
 		teSysFreeString(&m_bsAltSortColumn);
@@ -13045,7 +13047,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	}
 	DWORD dwFrame = 0;
 	UINT uViewMode = m_param[SB_ViewMode];
-	g_dwTickFocus = GetTickCount() - 3000;
+	g_dwTickFocus = 0;
 #ifdef _2000XP
 	if (g_bUpperVista) {
 #endif
@@ -14008,10 +14010,10 @@ VOID CteShellBrowser::SetHistory(FolderItems *pFolderItems, UINT wFlags)
 		if (Invoke5(pFolderItems, DISPID_TE_INDEX, DISPATCH_PROPERTYGET, &v, 0, NULL) == S_OK) {
 			uLogIndex = GetIntFromVariantClear(&v);
 		}
-		for (int i = int(m_ppLog.size()); --i >= 0;) {
-			m_ppLog[i]->Release();
+		while (!m_ppLog.empty()) {
+			m_ppLog.back()->Release();
+			m_ppLog.pop_back();
 		}
-		m_ppLog.clear();
 		if SUCCEEDED(pFolderItems->get_Count(&v.lVal)) {
 			v.vt = VT_I4;
 			while (--v.lVal >= 0) {
@@ -14059,11 +14061,15 @@ VOID CteShellBrowser::SetHistory(FolderItems *pFolderItems, UINT wFlags)
 		if (m_pFolderItem) {
 			FolderItem *pid;
 			if SUCCEEDED(m_pFolderItem->QueryInterface(IID_PPV_ARGS(&pid))) {
+				if (g_dwTickMount && GetTickCount() - g_dwTickMount < 500) { //#248
+					pid->AddRef();
+				}
 				m_uLogIndex = UINT(m_ppLog.size());
 				m_ppLog.push_back(pid);
 			}
 		}
 	}
+	g_dwTickMount = 0;
 }
 
 STDMETHODIMP CteShellBrowser::GetViewStateStream(DWORD grfMode, IStream **ppStrm)
@@ -15457,9 +15463,11 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					pFV2->Release();
 				}
 				if (m_hwndLV) { // Fixed a problem with focus on auto refresh.
-					DWORD diff = GetTickCount() - g_dwTickFocus;
-					if (diff < 3000) {
-						SetTimer(m_hwnd, (UINT_PTR)&m_nFocusItem, 64, teTimerProcFocus2);
+					if (g_dwTickFocus) {
+						if (GetTickCount() - g_dwTickFocus < 3000) {
+							SetTimer(m_hwnd, (UINT_PTR)&m_nFocusItem, 64, teTimerProcFocus2);
+						}
+						g_dwTickFocus = 0;
 					}
 				}
 				break;
@@ -20513,9 +20521,8 @@ void CteMemory::Free(BOOL bpbs)
 	teSysFreeString(&m_bsAlloc);
 	teSysFreeString(&m_bsStruct);
 	while (!m_ppbs.empty()) {
-		BSTR bs = m_ppbs.back();
+		::SysFreeString(m_ppbs.back());
 		m_ppbs.pop_back();
-		teSysFreeString(&bs);
 	}
 	m_pc = NULL;
 }
@@ -21198,6 +21205,16 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 						cmi.nShow = GetIntFromVariant(&pDispParams->rgvarg[nArg - 5]);
 						cmi.dwHotKey = (DWORD)GetIntFromVariant(&pDispParams->rgvarg[nArg - 6]);
 						cmi.hIcon =(HANDLE)GetPtrFromVariant(&pDispParams->rgvarg[nArg - 7]);
+						if (cmi.lpVerb) {//#248
+							CHAR szNameA[MAX_PATH];
+							szNameA[0] = NULL;
+							if ((UINT_PTR)cmi.lpVerb <= MAXWORD) {
+								m_pContextMenu->GetCommandString((UINT_PTR)cmi.lpVerb, GCS_VERBA, NULL, szNameA, MAX_PATH);
+								if (lstrcmpiA((UINT_PTR)cmi.lpVerb <= MAXWORD ? szNameA : cmi.lpVerb , "mount") == 0) {
+									g_dwTickMount = GetTickCount();
+								}
+							}
+						}
 						try {
 							hr = m_pContextMenu->InvokeCommand((LPCMINVOKECOMMANDINFO)&cmi);
 						} catch (...) {
