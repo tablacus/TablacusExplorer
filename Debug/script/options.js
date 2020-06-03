@@ -1489,7 +1489,7 @@ InitDialog = function () {
 			var s = api.sprintf(10, "$%x", k | GetKeyShift());
 			returnValue = GetKeyName(s);
 			if (/^\$\w02a$|^\$\w01d$|^\$\w038$/i.test(returnValue)) {
-				returnValue = GetKeyName(s.substr(0, 3) + "1e").replace(/\+A$/, "");
+				returnValue = GetKeyName(s.slice(0, 3) + "1e").replace(/\+A$/, "");
 			}
 			document.F.q.value = returnValue;
 			document.F.q.title = s;
@@ -1791,7 +1791,7 @@ InitLocation = function () {
 		for (var i = ele.length; i--;) {
 			var n = ele[i].id || ele[i].name;
 			if (n && !/=/.test(n)) {
-				s = (/^!/.test(n) ? !item.getAttribute(n.substr(1)) : item.getAttribute(n)) || "";
+				s = (/^!/.test(n) ? !item.getAttribute(n.slice(1)) : item.getAttribute(n)) || "";
 				if (/Name$/.test(n)) {
 					s = GetText(s);
 				}
@@ -1881,7 +1881,7 @@ InitLocation = function () {
 
 function SetAttrib(item, n, s) {
 	if (/^!/.test(n)) {
-		n = n.substr(1);
+		n = n.slice(1);
 		s = !s;
 	}
 	if (s) {
@@ -1943,7 +1943,7 @@ function GetAttribEx(item, f, n) {
 		}
 		return;
 	}
-	s = /^!/.test(n) ? !item.getAttribute(n.substr(1)) : item.getAttribute(n);
+	s = /^!/.test(n) ? !item.getAttribute(n.slice(1)) : item.getAttribute(n);
 	if (s || s === 0) {
 		if (n == "Key") {
 			s = GetKeyName(s);

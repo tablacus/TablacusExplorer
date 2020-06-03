@@ -449,6 +449,7 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TEREDRAW_NORMAL   1
 #define TEREDRAW_NAVIGATE 2
 #define TEREDRAW_DELAYED  4
+#define TEREDRAW_SUSPEND  8
 
 #define MAP_TE	0
 #define MAP_SB	1
@@ -967,6 +968,7 @@ public:
 	VOID GetItem(int i, VARIANT *pVarResult);
 	DWORD GetStyle();
 	VOID SetItemSize();
+	BOOL SetDefault();
 public:
 	SCROLLINFO m_si;
 	HWND	m_hwnd;

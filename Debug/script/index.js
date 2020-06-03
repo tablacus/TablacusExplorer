@@ -40,7 +40,7 @@ function RefreshEx(FV, tm, df)
 											FV.Suspend(2);
 										}
 									}
-								} else if (FV.FolderItem.Unavailable) {
+								} else if (hr == S_OK && FV.FolderItem.Unavailable) {
 									FV.Refresh();
 								}
 							}
@@ -1864,9 +1864,9 @@ te.OnILGetParent = function (FolderItem) {
 	}
 	if (api.ILIsEqual(FolderItem.Alt, ssfRESULTSFOLDER)) {
 		var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
-		var ar = path.split && path.split("\\") || [];
-		if (ar.length > (/^\\\\\w/i.test(path) ? 3 : 1) && ar.pop()) {
-			return ar.join("\\");
+		var ar = path.split && path.slice(3).split("\\") || [];
+		if (ar.pop() && ar.join("\\")) {
+			return path.slice(0, 3) + ar.join("\\");
 		}
 		return /^[A-Z]:\\/i.test(path) ? ssfDRIVES : /^\\\\\w/i.test(path) ? ssfNETWORK : ssfDESKTOP;
 	}
@@ -1876,10 +1876,10 @@ te.OnReplacePath = function (Ctrl, Path) {
 	if (/^[A-Z]:\\.+?\\|^\\\\.+?\\/i.test(Path)) {
 		var i = Path.indexOf("\\/");
 		if (i > 0) {
-			var fn = Path.substr(i + 1);
+			var fn = Path.slice(i + 1);
 			if (/\//.test(fn)) {
 				Ctrl.FilterView = fn;
-				return Path.substr(0, i);
+				return Path.slice(0, i);
 			}
 		}
 		var fn = fso.GetFileName(Path);

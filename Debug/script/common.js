@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200601 ? te.Version : 20200601;
+		return te.Version < 20200603 ? te.Version : 20200603;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -688,7 +688,7 @@ GetTextR = function (id) {
 		var hModule = api.LoadLibraryEx(res[1], 0, LOAD_LIBRARY_AS_DATAFILE);
 		var s = api.LoadString(hModule, api.LowPart(res[2]));
 		if (!s && res[3]) {
-			var ar = res[3].substr(1, res[3].length - 2).split("|");
+			var ar = res[3].slice(1, -1).split("|");
 			for (var i = 0; i < ar.length && !s; ++i) {
 				res = /^-(\d+)$/.exec(ar[i]);
 				s = res ? api.LoadString(hModule, api.LowPart(res[1])) : GetTextR(ar[i]);
@@ -960,7 +960,7 @@ GetKeyKey = function (strKey) {
 		var s = MainWindow.g_.KeyState[j][0].toUpperCase() + "+";
 		var i = strKey.indexOf(s);
 		if (i >= 0) {
-			strKey = strKey.substr(0, i) + strKey.substr(i + s.length);
+			strKey = strKey.slice(0, i) + strKey.slice(i + s.length);
 			nShift |= MainWindow.g_.KeyState[j][1];
 		}
 	}
@@ -3135,7 +3135,7 @@ InsertTab = function (e) {
 		}
 		var i = ot.selectionEnd;
 		var s = ot.value;
-		ot.value = s.substr(0, i) + "\t" + s.substr(i, s.length);
+		ot.value = s.slice(0, i) + "\t" + s.slice(i);
 		ot.selectionStart = ++i;
 		ot.selectionEnd = i;
 		return false;
