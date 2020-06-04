@@ -83,6 +83,14 @@ enum MONITOR_DPI_TYPE {
 };
 #endif
 
+#ifndef WINDOWCOMPOSITIONATTRIBDATA
+struct WINDOWCOMPOSITIONATTRIBDATA
+{
+	DWORD dwAttrib;
+	PVOID pvData;
+	SIZE_T cbData;
+};
+#endif
 //#define FVO_TABLACUS (FVO_VISTALAYOUT | FVO_CUSTOMPOSITION | FVO_CUSTOMORDERING)
 
 union teParam
@@ -229,6 +237,7 @@ typedef BOOL (WINAPI* LPFNRemoveClipboardFormatListener)(__in HWND hwnd);
 //typedef HRESULT (STDAPICALLTYPE * LPFNPSFormatForDisplayAlloc)(__in REFPROPERTYKEY key, __in REFPROPVARIANT propvar, __in PROPDESC_FORMAT_FLAGS pdff, __deref_out PWSTR *ppszDisplay);
 //typedef BOOL (WINAPI * LPFNChangeWindowMessageFilter)(UINT message, DWORD dwFlag);
 #endif
+typedef BOOL(WINAPI* LPFNSetWindowCompositionAttribute)(HWND hWnd, WINDOWCOMPOSITIONATTRIBDATA*);
 typedef HRESULT (STDAPICALLTYPE * LPFNDwmSetWindowAttribute)(HWND hwnd, DWORD dwAttribute, LPCVOID pvAttribute, DWORD   cbAttribute);
 
 //7 or higher

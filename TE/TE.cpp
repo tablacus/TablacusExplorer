@@ -28,6 +28,7 @@ LPFNRtlGetVersion lpfnRtlGetVersion = NULL;
 LPFNSetDefaultDllDirectories lpfnSetDefaultDllDirectories = NULL;
 LPFNAllowDarkModeForApp lpfnAllowDarkModeForApp = NULL;
 LPFNAllowDarkModeForWindow lpfnAllowDarkModeForWindow = NULL;
+LPFNSetWindowCompositionAttribute lpfnSetWindowCompositionAttribute = NULL;
 LPFNDwmSetWindowAttribute lpfnDwmSetWindowAttribute = NULL;
 LPFNShouldAppsUseDarkMode lpfnShouldAppsUseDarkMode = NULL;
 //LPFNIsDarkModeAllowedForWindow lpfnIsDarkModeAllowedForWindow = NULL;
@@ -5888,7 +5889,10 @@ VOID teSetDarkMode(HWND hwnd)
 	if (lpfnAllowDarkModeForWindow) {
 		lpfnAllowDarkModeForWindow(hwnd, g_bDarkMode);
 	}
-	if (lpfnDwmSetWindowAttribute) {
+	if (lpfnSetWindowCompositionAttribute) {
+		WINDOWCOMPOSITIONATTRIBDATA wcpad = { 26, &g_bDarkMode, sizeof(g_bDarkMode) };
+		lpfnSetWindowCompositionAttribute(hwnd, &wcpad);
+	} else if (lpfnDwmSetWindowAttribute) {
 		lpfnDwmSetWindowAttribute(hwnd, 19, &g_bDarkMode, sizeof(g_bDarkMode));
 	}
 }
@@ -11593,6 +11597,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 #endif
 	if (hDll = teLoadLibrary(L"user32.dll")) {
 		lpfnChangeWindowMessageFilterEx = (LPFNChangeWindowMessageFilterEx)GetProcAddress(hDll, "ChangeWindowMessageFilterEx");
+		lpfnSetWindowCompositionAttribute = (LPFNSetWindowCompositionAttribute)GetProcAddress(hDll, "SetWindowCompositionAttribute");
 #ifdef _2000XP
 		lpfnChangeWindowMessageFilter = (LPFNChangeWindowMessageFilter)GetProcAddress(hDll, "ChangeWindowMessageFilter");
 		lpfnRemoveClipboardFormatListener = (LPFNRemoveClipboardFormatListener)GetProcAddress(hDll, "RemoveClipboardFormatListener");
@@ -11619,8 +11624,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 			teGetDarkMode();
 		}
 	}
-	if (hDll = teLoadLibrary(L"dwmapi.dll")) {
-		lpfnDwmSetWindowAttribute = (LPFNDwmSetWindowAttribute)GetProcAddress(hDll, "DwmSetWindowAttribute");
+	if (!lpfnSetWindowCompositionAttribute) {
+		if (hDll = teLoadLibrary(L"dwmapi.dll")) {
+			lpfnDwmSetWindowAttribute = (LPFNDwmSetWindowAttribute)GetProcAddress(hDll, "DwmSetWindowAttribute");
+		}
 	}
 	if (hDll = teLoadLibrary(L"shcore.dll")) {
 		lpfnGetDpiForMonitor = (LPFNGetDpiForMonitor)GetProcAddress(hDll, "GetDpiForMonitor");
