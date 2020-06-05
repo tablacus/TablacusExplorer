@@ -327,6 +327,9 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TET_Title				0x1fa7
 #define TET_FreeLibrary			0x1fa8
 #define TET_Refresh				0x1fa9
+#define TET_VisibleChanged		0x1faa
+#define TET_Check				0x1fab
+
 #define TWM_CLIPBOARDUPDATE		WM_APP
 #define SHGDN_ORIGINAL		0x40000000
 #define SHGDN_FORPARSINGEX	0x80000000
@@ -459,6 +462,10 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TEREDRAW_NAVIGATE 2
 #define TEREDRAW_DELAYED  4
 #define TEREDRAW_SUSPEND  8
+
+#define TESORTING_SORT    1
+#define TESORTING_GROUP   2
+#define TESORTING_RESULTS 3
 
 #define MAP_TE	0
 #define MAP_SB	1
@@ -978,6 +985,7 @@ public:
 	DWORD GetStyle();
 	VOID SetItemSize();
 	BOOL SetDefault();
+	VOID CheckRedraw();
 public:
 	SCROLLINFO m_si;
 	HWND	m_hwnd;
@@ -1227,8 +1235,8 @@ public:
 	DWORD		m_nOpenedType;
 	DWORD		m_dwCookie;
 	DWORD		m_dwSessionId;
+	DWORD		m_dwSorting;
 	COLORREF	m_clrBk, m_clrTextBk, m_clrText;
-	BOOL		m_bSorting;
 	BOOL		m_bSetListColumnWidth;
 	BOOL		m_bEmpty;
 	BOOL		m_bInit;
