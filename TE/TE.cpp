@@ -13145,6 +13145,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	if (param[SB_DoFunc]) {
 		hr = OnBeforeNavigate(pPrevious, wFlags);
 		if (hr == E_ABORT) {
+			m_pTC->CheckRedraw();
 			if (m_pFolderItem == pFolderItem) {
 				m_pFolderItem = NULL;
 			}
@@ -13160,6 +13161,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 			m_dwUnavailable = GetTickCount();
 		}
 		if (hr != S_OK && m_nUnload != 2) {
+			m_pTC->CheckRedraw();
 			teILFreeClear(&m_pidl);
 			if (pPrevious) {
 				teGetIDListFromObject(pPrevious, &m_pidl);
@@ -16094,6 +16096,7 @@ HRESULT CteShellBrowser::OnNavigationPending2(LPITEMIDLIST pidlFolder)
 
 	HRESULT hr = OnBeforeNavigate(pPrevious, SBSP_SAMEBROWSER | SBSP_ABSOLUTE);
 	if FAILED(hr) {
+		m_pTC->CheckRedraw();
 		m_uLogIndex = m_uPrevLogIndex;
 		if (hr == E_ABORT && Close(FALSE)) {
 			return hr;
@@ -16113,7 +16116,6 @@ HRESULT CteShellBrowser::OnNavigationPending2(LPITEMIDLIST pidlFolder)
 		InitFolderSize();
 		pid->Release();
 		m_nSuspendMode = 0;
-		m_pTC->CheckRedraw();
 		return hr;
 	}
 	if (m_bsNextFilter || !ILIsEqual(m_pidl, pidlPrevius)) {
