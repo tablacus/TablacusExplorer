@@ -465,7 +465,6 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 
 #define TESORTING_SORT    1
 #define TESORTING_GROUP   2
-#define TESORTING_RESULTS 3
 
 #define MAP_TE	0
 #define MAP_SB	1
@@ -1220,7 +1219,7 @@ public:
 	LPITEMIDLIST m_pidl;
 	IShellFolder2 *m_pSF2;
 	std::vector<UINT> m_pDTColumns;
-	BSTR		m_bsNextGroup;
+	BSTR		m_bsNextValue;
 	int			m_nForceViewMode;
 	int			m_nFolderSizeIndex;
 	int			m_nLabelIndex;
@@ -1237,6 +1236,7 @@ public:
 	DWORD		m_dwSessionId;
 	DWORD		m_dwSorting;
 	COLORREF	m_clrBk, m_clrTextBk, m_clrText;
+	DISPID      m_dispidSortColumns, m_dispidSortOrGroup;
 	BOOL		m_bSetListColumnWidth;
 	BOOL		m_bEmpty;
 	BOOL		m_bInit;

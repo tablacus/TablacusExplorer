@@ -1205,7 +1205,6 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 			path = Item.ExtendedProperty("linktarget") || Item.Path;
 			var cmd = api.AssocQueryString(ASSOCF_NONE, ASSOCSTR_COMMAND, Item.ExtendedProperty("linktarget") || Item, strVerb == "default" ? null : strVerb);
 			if (cmd) {
-				ShowStatusText(te, strVerb + ":" + cmd.replace(/"?%1"?|%L/g, api.PathQuoteSpaces(path)).replace(/%\*|%I/g, ""), 0);
 				if (strVerb == "open" && api.PathMatchSpec(cmd, "?:\\Windows\\Explorer.exe;*\\Explorer.exe /idlist,*;rundll32.exe *fldr.dll,RouteTheCall*")) {
 					Navigate(Items.Item(i), NewTab);
 					NewTab |= SBSP_NEWBROWSER;
@@ -1230,7 +1229,6 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 		}
 		return S_OK;
 	}
-	ShowStatusText(te, [strVerb || "", Items.Count == 1 ? Items.Item(0).Path : Items.Count].join(":"), 0);
 	return S_FALSE;
 }
 
@@ -1836,20 +1834,6 @@ te.OnArrange = function (Ctrl, rc) {
 }
 
 te.OnVisibleChanged = function (Ctrl) {
-	if (Ctrl.Type == CTRL_TC) {
-		var o = g_.Panels[Ctrl.Id];
-		if (o) {
-			if (Ctrl.Visible) {
-				o.style.display = (g_.IEVer >= 8 && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
-				ChangeView(Ctrl.Selected);
-				for (var i = Ctrl.Count; i--;) {
-					ChangeTabName(Ctrl[i])
-				}
-			} else {
-				o.style.display = "none";
-			}
-		}
-	}
 	RunEvent1("VisibleChanged", Ctrl);
 }
 
@@ -3430,6 +3414,23 @@ AddEvent("BeginNavigate", function (Ctrl) {
 			Ctrl.AddItems(Items, true, true);
 		}
 		return S_FALSE;
+	}
+});
+
+AddEvent("VisibleChanged", function (Ctrl) {
+	if (Ctrl.Type == CTRL_TC) {
+		var o = g_.Panels[Ctrl.Id];
+		if (o) {
+			if (Ctrl.Visible) {
+				o.style.display = (g_.IEVer >= 8 && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
+				ChangeView(Ctrl.Selected);
+				for (var i = Ctrl.Count; i--;) {
+					ChangeTabName(Ctrl[i])
+				}
+			} else {
+				o.style.display = "none";
+			}
+		}
 	}
 });
 

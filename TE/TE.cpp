@@ -8900,7 +8900,7 @@ VOID teApiExtractIconEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 
 VOID teApiGetObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLong(pVarResult, GetObject(param[0].hwnd, param[1].intVal, param[2].lpvoid));
+	teSetLong(pVarResult, GetObject(param[0].handle, param[1].intVal, param[2].lpvoid));
 }
 
 VOID teApiMultiByteToWideChar(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -11380,19 +11380,22 @@ VOID CALLBACK teTimerProcSW(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime
 	}
 }
 
-VOID CALLBACK teTimerProcGroupBy(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+VOID CALLBACK teTimerProcSortOrGroup(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 {
 	try {
 		KillTimer(hwnd, idEvent);
 		CteShellBrowser *pSB = SBfromhwnd(hwnd);
-		if (pSB && pSB->m_bsNextGroup && idEvent == (UINT_PTR)&pSB->m_bsNextGroup) {
+		if (pSB && pSB->m_bsNextValue && idEvent == (UINT_PTR)&pSB->m_bsNextValue) {
 			pSB->m_dwSorting = 0;
-			pSB->SetGroupBy(pSB->m_bsNextGroup);
+			VARIANT *pv = GetNewVARIANT(1);
+			teSetSZ(&pv[0], pSB->m_bsNextValue);
+			teSysFreeString(&pSB->m_bsNextValue);
+			Invoke5(pSB, pSB->m_dispidSortOrGroup, DISPATCH_PROPERTYPUT, NULL, 1, pv);
 		}
 	} catch (...) {
 		g_nException = 0;
 #ifdef _DEBUG
-		g_strException = L"teTimerProcGroupBy";
+		g_strException = L"teTimerProcSortOrGroup";
 #endif
 	}
 }
@@ -12513,7 +12516,7 @@ CteShellBrowser::CteShellBrowser(CteTabCtrl *pTC)
 	m_bsFilter = NULL;
 	m_bsNextFilter = NULL;
 	m_bsAltSortColumn = NULL;
-	m_bsNextGroup = NULL;
+	m_bsNextValue = NULL;
 	m_pTV = new CteTreeView();
 	m_dwCookie = 0;
 	VariantInit(&m_vData);
@@ -12543,6 +12546,7 @@ void CteShellBrowser::Init(CteTabCtrl *pTC, BOOL bNew)
 #ifdef _2000XP
 	m_pSFVCB = NULL;
 	m_nColumns = 0;
+	m_dispidSortColumns = 0;
 #endif
 	m_bCheckLayout = FALSE;
 	m_bRefreshLator = FALSE;
@@ -12596,7 +12600,7 @@ void CteShellBrowser::Clear()
 		teSysFreeString(&m_bsFilter);
 		teSysFreeString(&m_bsNextFilter);
 		teSysFreeString(&m_bsAltSortColumn);
-		teSysFreeString(&m_bsNextGroup);
+		teSysFreeString(&m_bsNextValue);
 		teUnadviseAndRelease(m_pdisp, DIID_DShellFolderViewEvents, &m_dwCookie);
 		m_pdisp = NULL;
 #ifdef _2000XP
@@ -13075,7 +13079,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	DWORD dwFrame = 0;
 	UINT uViewMode = m_param[SB_ViewMode];
 	g_dwTickFocus = 0;
-	m_dwSorting = ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER]) ? TESORTING_RESULTS : 0;
+	m_dwSorting = 0;
 #ifdef _2000XP
 	if (g_bUpperVista) {
 #endif
@@ -13153,14 +13157,16 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 				return hr;
 			}
 		}
-		if (hr == E_ACCESSDENIED && teILIsEqual(m_pFolderItem, pPrevious)) {
-			hr = S_OK;
+		if (hr == E_ACCESSDENIED || (hr == E_FAIL && m_nUnload == 2)) {
+			if (teILIsEqual(m_pFolderItem, pPrevious)) {
+				hr = S_OK;
+			}
 		}
 		if (!m_pShellView && FAILED(hr)) {
 			teILCloneReplace(&m_pidl, g_pidls[CSIDL_RESULTSFOLDER]);
 			m_dwUnavailable = GetTickCount();
 		}
-		if (hr != S_OK && m_nUnload != 2) {
+		if (hr != S_OK) {
 			m_pTC->CheckRedraw();
 			teILFreeClear(&m_pidl);
 			if (pPrevious) {
@@ -13177,7 +13183,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		InitFilter();
 	}
 	SetRectEmpty(&rc);
-	teSysFreeString(&m_bsNextGroup);
+	teSysFreeString(&m_bsNextValue);
 	//History / Management
 	SetHistory(pFolderItems, wFlags);
 	m_bBeforeNavigate = TRUE;
@@ -14223,7 +14229,11 @@ STDMETHODIMP CteShellBrowser::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UI
 {
 	HRESULT hr = teGetDispId(methodSB, _countof(methodSB), g_maps[MAP_SB], *rgszNames, rgDispId, TRUE);
 	if (hr != S_OK && m_pdisp) {
-		return m_pdisp->GetIDsOfNames(riid, rgszNames, cNames, lcid, rgDispId);
+		hr = m_pdisp->GetIDsOfNames(riid, rgszNames, cNames, lcid, rgDispId);
+		if (hr == S_OK && lstrcmpi(*rgszNames, L"SortColumns") == 0) {
+			m_dispidSortColumns = *rgDispId;
+		}
+		return hr;
 	}
 	return hr;
 }
@@ -15480,6 +15490,10 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				return DoFunc(TE_OnSelectionChanged, this, S_OK);
 
 			case DISPID_CONTENTSCHANGED://XP-
+				m_dwSorting &= ~TESORTING_GROUP;
+				if (m_bsNextValue) {
+					teTimerProcSortOrGroup(m_hwnd, 0, (UINT_PTR)&m_bsNextValue, 0);
+				}
 				if (m_pShellView) {
 					IFolderView2 *pFV2;
 					if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
@@ -15563,14 +15577,14 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			case DISPID_ICONSIZECHANGED://XP-
 				return DoFunc(TE_OnIconSizeChanged, this, S_OK);
 			case DISPID_SORTDONE://XP-
-				m_dwSorting = 0;
+				m_dwSorting &= ~TESORTING_SORT;
 				if (m_hwndLV) {
 					if (m_param[SB_ViewFlags] & CDB2GVF_NOSELECTVERB) {
 						ListView_SetSelectedColumn(m_hwndLV, -1);
 					}
 				}
-				if (m_bsNextGroup) {
-					SetTimer(m_hwnd, (UINT_PTR)&m_bsNextGroup, 250, teTimerProcGroupBy);
+				if (m_bsNextValue && m_dispidSortOrGroup == 0x10000105/*GroupBy*/) {
+					SetTimer(m_hwnd, (UINT_PTR)&m_bsNextValue, 250, teTimerProcSortOrGroup);
 				}
 				m_pTC->RedrawUpdate();
 				if (m_pShellView) {
@@ -15605,6 +15619,25 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 		}
 		if (m_pdisp) {
+			if (dispIdMember == m_dispidSortColumns && (wFlags & DISPATCH_PROPERTYPUT) && nArg >= 0 && pDispParams->rgvarg[nArg].vt == VT_BSTR) {
+				VARIANT v;
+				VariantInit(&v);
+				Invoke5(m_pdisp, dispIdMember, DISPATCH_PROPERTYGET, &v, 0, NULL);
+				int iChanged = v.vt == VT_BSTR ? lstrcmpi(pDispParams->rgvarg[nArg].bstrVal, v.bstrVal) : 1;
+				VariantClear(&v);
+				if (iChanged) {
+					if (m_dwSorting & TESORTING_GROUP) {
+						teSysFreeString(&m_bsNextValue);
+						m_bsNextValue = ::SysAllocString(pDispParams->rgvarg[nArg].bstrVal);
+						m_dispidSortOrGroup = dispIdMember;
+						SetTimer(m_hwnd, (UINT_PTR)&m_bsNextValue, 10000, teTimerProcSortOrGroup);
+					} else {
+						m_dwSorting |= TESORTING_SORT;
+					}
+				} else {
+					return S_OK;
+				}
+			}
 			return m_pdisp->Invoke(dispIdMember, riid, lcid, wFlags, pDispParams, pVarResult, pExcepInfo, puArgErr);
 		}
 	} catch (...) {
@@ -16285,7 +16318,7 @@ VOID CteShellBrowser::OnNavigationComplete2()
 	m_bCheckLayout = TRUE;
 	SetFolderFlags(FALSE);
 	InitFolderSize();
-	if (!(m_dwSorting & (TESORTING_SORT | TESORTING_GROUP))
+	if (!m_dwSorting
 #ifdef _2000XP
 		|| !g_bUpperVista
 #endif
@@ -16350,7 +16383,7 @@ HRESULT CteShellBrowser::RemoveAll()
 	HRESULT hr = E_NOTIMPL;
 	IFolderView2 *pFV2 = NULL;
 	IResultsFolder *pRF;
-	m_dwSorting = TESORTING_RESULTS;
+	m_dwSorting = 0;
 	m_dwSessionId = MAKELONG(GetTickCount(), rand());
 	if (SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) && SUCCEEDED(pFV2->GetFolder(IID_PPV_ARGS(&pRF)))) {
 		hr = pRF->RemoveAll();
@@ -16551,6 +16584,7 @@ LPWSTR CteShellBrowser::GetThemeName()
 
 STDMETHODIMP CteShellBrowser::OnNavigationFailed(PCIDLIST_ABSOLUTE pidlFolder)
 {
+	m_pTC->CheckRedraw();
 	if (m_nSuspendMode) {
 		Suspend(m_nSuspendMode);
 	}
@@ -16805,7 +16839,9 @@ VOID CteShellBrowser::Suspend(int nMode)
 	BOOL bVisible = m_bVisible;
 	if (nMode == 2) {
 		if (m_dwUnavailable || ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
-			return;
+			if (IsWindowEnabled(m_hwnd)) {
+				return;
+			}
 		}
 		Show(FALSE, 0);
 		m_dwUnavailable = GetTickCount();
@@ -16818,7 +16854,7 @@ VOID CteShellBrowser::Suspend(int nMode)
 	teSysFreeString(&m_bsNextFilter);
 	m_bsNextFilter = m_bsFilter;
 	m_bsFilter = NULL;
-	m_pTC->LockUpdate(TEREDRAW_SUSPEND);
+	m_pTC->LockUpdate(TEREDRAW_NORMAL | TEREDRAW_SUSPEND);
 	try {
 		DestroyView(0);
 		if (nMode == 4) {
@@ -17269,9 +17305,16 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 				nSortColumns = _countof(g_pSortColumnNull);
 			}
 			if (!teIsSameSort(pFV2, pCol, nSortColumns)) {
-				m_nFocusItem = -1;
-				m_dwSorting = TESORTING_SORT;
-				pFV2->SetSortColumns(pCol, nSortColumns);
+				if (m_dwSorting & TESORTING_GROUP) {
+					teSysFreeString(&m_bsNextValue);
+					m_bsNextValue = ::SysAllocString(bs);
+					m_dispidSortOrGroup = 0x10000104;//SortColumn
+					SetTimer(m_hwnd, (UINT_PTR)&m_bsNextValue, 10000, teTimerProcSortOrGroup);
+				} else {
+					m_dwSorting |= TESORTING_SORT;
+					m_nFocusItem = -1;
+					pFV2->SetSortColumns(pCol, nSortColumns);
+				}
 			}
 		}
 		pFV2->Release();
@@ -17335,13 +17378,14 @@ VOID CteShellBrowser::SetGroupBy(BSTR bs)
 	LPWSTR szNew = &bs[dir];
 	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
 		if SUCCEEDED(PropertyKeyFromName(szNew, &propKey)) {
-			if (m_dwSorting && !IsEqualPropertyKey(propKey, PKEY_Null)) {
-				teSysFreeString(&m_bsNextGroup);
-				m_bsNextGroup = ::SysAllocString(bs);
-				SetTimer(m_hwnd, (UINT_PTR)&m_bsNextGroup, 10000, teTimerProcGroupBy);
+			if (m_dwSorting & TESORTING_SORT) {
+				teSysFreeString(&m_bsNextValue);
+				m_bsNextValue = ::SysAllocString(bs);
+				m_dispidSortOrGroup = 0x10000105/*GroupBy*/;
+				SetTimer(m_hwnd, (UINT_PTR)&m_bsNextValue, 10000, teTimerProcSortOrGroup);
 			} else {
+				m_dwSorting |= TESORTING_GROUP;
 				pFV2->SetGroupBy(propKey, !dir);
-				teSysFreeString(&m_bsNextGroup);
 			}
 		}
 		pFV2->Release();
@@ -18986,14 +19030,13 @@ BOOL CteTabCtrl::Close(BOOL bForce)
 		return FALSE;
 	}
 	if (CanClose(this) || bForce) {
-		int nCount = TabCtrl_GetItemCount(m_hwnd);
-		while (nCount--) {
-			CteShellBrowser *pSB = GetShellBrowser(0);
+		Show(FALSE);
+		for (int nCount = TabCtrl_GetItemCount(m_hwnd); nCount--;) {
+			CteShellBrowser *pSB = GetShellBrowser(nCount);
 			if (pSB) {
 				pSB->Close(TRUE);
 			}
 		}
-		Show(FALSE);
 		if (m_nRedraw) {
 			KillTimer(m_hwnd, (UINT_PTR)this);
 		}
