@@ -463,8 +463,9 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TEREDRAW_DELAYED  4
 #define TEREDRAW_SUSPEND  8
 
-#define TESORTING_SORT    1
-#define TESORTING_GROUP   2
+#define TEGROUPBYDELAY_SORT    1
+#define TEGROUPBYDELAY_GROUPED 2
+#define TEGROUPBYDELAY_RESULTS 3
 
 #define MAP_TE	0
 #define MAP_SB	1
@@ -1219,7 +1220,7 @@ public:
 	LPITEMIDLIST m_pidl;
 	IShellFolder2 *m_pSF2;
 	std::vector<UINT> m_pDTColumns;
-	BSTR		m_bsNextValue;
+	BSTR		m_bsNextGroup;
 	int			m_nForceViewMode;
 	int			m_nFolderSizeIndex;
 	int			m_nLabelIndex;
@@ -1234,9 +1235,9 @@ public:
 	DWORD		m_nOpenedType;
 	DWORD		m_dwCookie;
 	DWORD		m_dwSessionId;
-	DWORD		m_dwSorting;
+	DWORD		m_dwGroupByDelay;
 	COLORREF	m_clrBk, m_clrTextBk, m_clrText;
-	DISPID      m_dispidSortColumns, m_dispidSortOrGroup;
+	DISPID      m_dispidSortColumns;
 	BOOL		m_bSetListColumnWidth;
 	BOOL		m_bEmpty;
 	BOOL		m_bInit;
