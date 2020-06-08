@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200608 ? te.Version : 20200608;
+		return te.Version < 20200609 ? te.Version : 20200609;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -3756,7 +3756,7 @@ function MakeCommDlgFilter(arg) {
 			continue;
 		}
 		var sfi = api.Memory("SHFILEINFO");
-		api.SHGetFileInfo(s, 0, sfi, sfi.Size, SHGFI_TYPENAME);
+		api.SHGetFileInfo(s, 0, sfi, sfi.Size, SHGFI_TYPENAME | SHGFI_USEFILEATTRIBUTES);
 		result.push(sfi.szTypeName + " (" + s + ")", s);
 	}
 	if (bAll) {

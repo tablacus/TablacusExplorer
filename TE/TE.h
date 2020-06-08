@@ -463,10 +463,6 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TEREDRAW_DELAYED  4
 #define TEREDRAW_SUSPEND  8
 
-#define TEGROUPBYDELAY_SORT    1
-#define TEGROUPBYDELAY_GROUPED 2
-#define TEGROUPBYDELAY_RESULTS 3
-
 #define MAP_TE	0
 #define MAP_SB	1
 #define MAP_TC	2
@@ -1235,7 +1231,6 @@ public:
 	DWORD		m_nOpenedType;
 	DWORD		m_dwCookie;
 	DWORD		m_dwSessionId;
-	DWORD		m_dwGroupByDelay;
 	COLORREF	m_clrBk, m_clrTextBk, m_clrText;
 	DISPID      m_dispidSortColumns;
 	BOOL		m_bSetListColumnWidth;
@@ -1251,6 +1246,7 @@ public:
 	BOOL		m_bViewCreated;
 	BOOL		m_bFiltered;
 	BOOL		m_bNavigateComplete;
+	DWORD		m_bSorting;
 #ifdef _2000XP
 	TEColumn	*m_pColumns;
 	UINT		m_nColumns;

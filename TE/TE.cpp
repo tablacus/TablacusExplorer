@@ -6619,8 +6619,7 @@ LRESULT CALLBACK TELVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 			}
 			break;
 		case WM_NOTIFY:
-			LPNMHDR pnmhdr = (LPNMHDR)lParam;
-			if (lpfnAllowDarkModeForWindow && pnmhdr->code == NM_CUSTOMDRAW) {
+			if (lpfnAllowDarkModeForWindow && ((LPNMHDR)lParam)->code == NM_CUSTOMDRAW) {
 				if (teIsDarkColor(pSB->m_clrBk)) {
 					LPNMCUSTOMDRAW pnmcd = (LPNMCUSTOMDRAW)lParam;
 					if (pnmcd->dwDrawStage == CDDS_PREPAINT) {
@@ -11381,7 +11380,6 @@ VOID CALLBACK teTimerProcGroupBy(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD d
 		CteShellBrowser *pSB = SBfromhwnd(hwnd);
 		if (pSB && pSB->m_bsNextGroup && idEvent == (UINT_PTR)&pSB->m_bsNextGroup) {
 			pSB->SetGroupBy(pSB->m_bsNextGroup);
-			pSB->m_dwGroupByDelay = 0;
 		}
 	} catch (...) {
 		g_nException = 0;
@@ -13070,7 +13068,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	DWORD dwFrame = 0;
 	UINT uViewMode = m_param[SB_ViewMode];
 	g_dwTickFocus = 0;
-	m_dwGroupByDelay = 0;
+	m_bSorting = FALSE;
 #ifdef _2000XP
 	if (g_bUpperVista) {
 #endif
@@ -15564,9 +15562,9 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			case DISPID_ICONSIZECHANGED://XP-
 				return DoFunc(TE_OnIconSizeChanged, this, S_OK);
 			case DISPID_SORTDONE://XP-
-				if (m_dwGroupByDelay & TEGROUPBYDELAY_SORT) {
-					m_dwGroupByDelay &= ~TEGROUPBYDELAY_SORT;
-					if (m_bsNextGroup && !m_dwGroupByDelay) {
+				if (m_bSorting) {
+					m_bSorting = FALSE;
+					if (m_bsNextGroup) {
 						SetTimer(m_hwnd, (UINT_PTR)&m_bsNextGroup, 250, teTimerProcGroupBy);
 					}
 				}
@@ -15617,7 +15615,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				int iChanged = v.vt == VT_BSTR ? lstrcmpi(pDispParams->rgvarg[nArg].bstrVal, v.bstrVal) : 1;
 				VariantClear(&v);
 				if (iChanged) {
-					m_dwGroupByDelay |= TEGROUPBYDELAY_SORT;
+					m_bSorting = TRUE;
 				} else {
 					return S_OK;
 				}
@@ -16225,12 +16223,6 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 	SetPropEx();
 	BSTR bsGroup;
 	GetGroupBy(&bsGroup);
-	if (!teStrSameIFree(bsGroup, L"System.Null")) {
-		m_dwGroupByDelay |= TEGROUPBYDELAY_GROUPED;
-	}
-	if (ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
-		m_dwGroupByDelay |= TEGROUPBYDELAY_RESULTS;
-	}
 #ifdef _2000XP
 	if (g_bCharWidth) {
 		if (m_hwndLV) {
@@ -16310,7 +16302,7 @@ VOID CteShellBrowser::OnNavigationComplete2()
 	m_bCheckLayout = TRUE;
 	SetFolderFlags(FALSE);
 	InitFolderSize();
-	if (!m_dwGroupByDelay
+	if (!m_bSorting
 #ifdef _2000XP
 		|| !g_bUpperVista
 #endif
@@ -16375,7 +16367,7 @@ HRESULT CteShellBrowser::RemoveAll()
 	HRESULT hr = E_NOTIMPL;
 	IFolderView2 *pFV2 = NULL;
 	IResultsFolder *pRF;
-	m_dwGroupByDelay = TEGROUPBYDELAY_RESULTS;
+	m_bSorting = FALSE;
 	m_dwSessionId = MAKELONG(GetTickCount(), rand());
 	if (SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) && SUCCEEDED(pFV2->GetFolder(IID_PPV_ARGS(&pRF)))) {
 		hr = pRF->RemoveAll();
@@ -16539,7 +16531,7 @@ VOID CteShellBrowser::NavigateComplete(BOOL bBeginNavigate)
 		if (bsAltSortColumn) {
 			SetSort(bsAltSortColumn);
 			::SysFreeString(bsAltSortColumn);
-			if (m_dwGroupByDelay & TEGROUPBYDELAY_SORT) {
+			if (m_bSorting) {
 				m_bRefreshing = TRUE;
 			}
 		}
@@ -17311,7 +17303,7 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 				nSortColumns = _countof(g_pSortColumnNull);
 			}
 			if (!teIsSameSort(pFV2, pCol, nSortColumns)) {
-				m_dwGroupByDelay |= TEGROUPBYDELAY_SORT;
+				m_bSorting = TRUE;
 				m_nFocusItem = -1;
 				pFV2->SetSortColumns(pCol, nSortColumns);
 			}
@@ -17378,11 +17370,15 @@ VOID CteShellBrowser::SetGroupBy(BSTR bs)
 	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
 		if SUCCEEDED(PropertyKeyFromName(szNew, &propKey)) {
 			teSysFreeString(&m_bsNextGroup);
-			if (m_dwGroupByDelay) {
+			if (m_bSorting) {
 				m_bsNextGroup = ::SysAllocString(bs);
-				SetTimer(m_hwnd, (UINT_PTR)&m_bsNextGroup, 500, teTimerProcGroupBy);
 			} else {
 				pFV2->SetGroupBy(propKey, !dir);
+				if (m_hwndLV) {
+					if (IsEqualPropertyKey(propKey, PKEY_Null)) {
+						ListView_EnableGroupView(m_hwndLV, FALSE);
+					}
+				}
 			}
 		}
 		pFV2->Release();
