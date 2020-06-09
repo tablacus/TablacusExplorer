@@ -11379,6 +11379,7 @@ VOID CALLBACK teTimerProcGroupBy(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD d
 		KillTimer(hwnd, idEvent);
 		CteShellBrowser *pSB = SBfromhwnd(hwnd);
 		if (pSB && pSB->m_bsNextGroup && idEvent == (UINT_PTR)&pSB->m_bsNextGroup) {
+			--pSB->m_nGroupByDelay;
 			pSB->SetGroupBy(pSB->m_bsNextGroup);
 		}
 	} catch (...) {
@@ -13068,7 +13069,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	DWORD dwFrame = 0;
 	UINT uViewMode = m_param[SB_ViewMode];
 	g_dwTickFocus = 0;
-	m_bSorting = FALSE;
+	m_nGroupByDelay = 0;
 #ifdef _2000XP
 	if (g_bUpperVista) {
 #endif
@@ -15562,8 +15563,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			case DISPID_ICONSIZECHANGED://XP-
 				return DoFunc(TE_OnIconSizeChanged, this, S_OK);
 			case DISPID_SORTDONE://XP-
-				if (m_bSorting) {
-					m_bSorting = FALSE;
+				if (m_nGroupByDelay) {
+					m_nGroupByDelay -= 10;
 					if (m_bsNextGroup) {
 						SetTimer(m_hwnd, (UINT_PTR)&m_bsNextGroup, 250, teTimerProcGroupBy);
 					}
@@ -15615,7 +15616,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				int iChanged = v.vt == VT_BSTR ? lstrcmpi(pDispParams->rgvarg[nArg].bstrVal, v.bstrVal) : 1;
 				VariantClear(&v);
 				if (iChanged) {
-					m_bSorting = TRUE;
+					m_nGroupByDelay += 10;
 				} else {
 					return S_OK;
 				}
@@ -16221,8 +16222,9 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 	m_bNavigateComplete = TRUE;
 	m_dwSessionId = MAKELONG(GetTickCount(), rand());
 	SetPropEx();
-	BSTR bsGroup;
-	GetGroupBy(&bsGroup);
+	if (ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
+		++m_nGroupByDelay;
+	}
 #ifdef _2000XP
 	if (g_bCharWidth) {
 		if (m_hwndLV) {
@@ -16302,7 +16304,7 @@ VOID CteShellBrowser::OnNavigationComplete2()
 	m_bCheckLayout = TRUE;
 	SetFolderFlags(FALSE);
 	InitFolderSize();
-	if (!m_bSorting
+	if (!m_nGroupByDelay
 #ifdef _2000XP
 		|| !g_bUpperVista
 #endif
@@ -16367,7 +16369,7 @@ HRESULT CteShellBrowser::RemoveAll()
 	HRESULT hr = E_NOTIMPL;
 	IFolderView2 *pFV2 = NULL;
 	IResultsFolder *pRF;
-	m_bSorting = FALSE;
+	m_nGroupByDelay = 1;
 	m_dwSessionId = MAKELONG(GetTickCount(), rand());
 	if (SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) && SUCCEEDED(pFV2->GetFolder(IID_PPV_ARGS(&pRF)))) {
 		hr = pRF->RemoveAll();
@@ -16531,7 +16533,7 @@ VOID CteShellBrowser::NavigateComplete(BOOL bBeginNavigate)
 		if (bsAltSortColumn) {
 			SetSort(bsAltSortColumn);
 			::SysFreeString(bsAltSortColumn);
-			if (m_bSorting) {
+			if (m_nGroupByDelay) {
 				m_bRefreshing = TRUE;
 			}
 		}
@@ -17303,7 +17305,7 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 				nSortColumns = _countof(g_pSortColumnNull);
 			}
 			if (!teIsSameSort(pFV2, pCol, nSortColumns)) {
-				m_bSorting = TRUE;
+				m_nGroupByDelay += 10;
 				m_nFocusItem = -1;
 				pFV2->SetSortColumns(pCol, nSortColumns);
 			}
@@ -17370,8 +17372,9 @@ VOID CteShellBrowser::SetGroupBy(BSTR bs)
 	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
 		if SUCCEEDED(PropertyKeyFromName(szNew, &propKey)) {
 			teSysFreeString(&m_bsNextGroup);
-			if (m_bSorting) {
+			if (m_nGroupByDelay > 0) {
 				m_bsNextGroup = ::SysAllocString(bs);
+				SetTimer(m_hwnd, (UINT_PTR)&m_bsNextGroup, 500, teTimerProcGroupBy);
 			} else {
 				pFV2->SetGroupBy(propKey, !dir);
 				if (m_hwndLV) {

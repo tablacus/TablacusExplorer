@@ -1226,6 +1226,7 @@ public:
 	int			m_nUnload;
 	int			m_nFocusItem;
 	int			m_nSizeFormat;
+	int			m_nGroupByDelay;
 	LONG		m_dwUnavailable;
 	DWORD		m_param[SB_Count];
 	DWORD		m_nOpenedType;
@@ -1246,7 +1247,6 @@ public:
 	BOOL		m_bViewCreated;
 	BOOL		m_bFiltered;
 	BOOL		m_bNavigateComplete;
-	DWORD		m_bSorting;
 #ifdef _2000XP
 	TEColumn	*m_pColumns;
 	UINT		m_nColumns;
