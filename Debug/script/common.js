@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200610 ? te.Version : 20200610;
+		return te.Version < 20200611 ? te.Version : 20200611;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -262,6 +262,7 @@ FolderMenu =
 						PopupContextMenu(FolderItem);
 					}
 					FV.AltSelectedItems = AltSelectedItems;
+					MainWindow.ShowStatusText(FV, "", 0);
 					return;
 				}
 			}
@@ -1767,6 +1768,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec, ContextMenu) {
 			AdjustMenuBreak(hMenu);
 			MainWindow.g_menu_click = bNoExec ? true : 2;
 			var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, ContextMenu);
+			MainWindow.ShowStatusText(GetFolderView(), "OK", 0);
 			if (bNoExec) {
 				return nVerb > 0 ? S_OK : S_FALSE;
 			} else {

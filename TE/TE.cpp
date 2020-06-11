@@ -2862,27 +2862,25 @@ HRESULT teGetDisplayNameFromIDList(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags)
 		pSF->Release();
 	}
 	if (hr == S_OK && !(uFlags & SHGDN_ORIGINAL)) {
-		if (!::ILIsParent(g_pidls[CSIDL_INTERNET], pidl, FALSE) && !tePathMatchSpec(*pbs, L"ftp:*;http:*;https:*")) {
-			int j = 0;
-			for (int i = ::SysStringLen(*pbs); --i >= 0;) {
-				if (((uFlags & SHGDN_INFOLDER) && pbs[0][i] == '\\') || pbs[0][i] < 0x20 || StrChr(L"\"<>|", pbs[0][i])) {
-					++j;
+		int j = 0;
+		for (int i = ::SysStringLen(*pbs); --i >= 0;) {
+			if (pbs[0][i] < 0x20 || StrChr(L"\"<>|", pbs[0][i])) {
+				++j;
+			}
+		}
+		if (j) {
+			BSTR bs = ::SysAllocStringLen(NULL, ::SysStringLen(*pbs) + j * 2);
+			j = 0;
+			for (UINT i = 0; i < ::SysStringLen(*pbs); ++i) {
+				if (pbs[0][i] < 0x20 || StrChr(L"\"<>|", pbs[0][i])) {
+					swprintf_s(&bs[j], 4, L"%%%02hhX", pbs[0][i]);
+					j += 3;
+				} else {
+					bs[j++] = pbs[0][i];
 				}
 			}
-			if (j) {
-				BSTR bs = ::SysAllocStringLen(NULL, ::SysStringLen(*pbs) + j * 2);
-				j = 0;
-				for (UINT i = 0; i < ::SysStringLen(*pbs); ++i) {
-					if (((uFlags & SHGDN_INFOLDER) && pbs[0][i] == '\\') || pbs[0][i] < 0x20 || StrChr(L"\"<>|", pbs[0][i])) {
-						swprintf_s(&bs[j], 4, L"%%%02hhX", pbs[0][i]);
-						j += 3;
-					} else {
-						bs[j++] = pbs[0][i];
-					}
-				}
-				teSysFreeString(pbs);
-				*pbs = bs;
-			}
+			teSysFreeString(pbs);
+			*pbs = bs;
 		}
 	}
 	return hr;

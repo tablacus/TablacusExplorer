@@ -1631,7 +1631,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 };
 
 te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
-	var pStatus = [te, "", 0];
+	var pStatus = [null, "", 0];
 	var hr = RunEvent3("MenuMessage", Ctrl, hwnd, msg, wParam, lParam, pStatus);
 	if (isFinite(hr)) {
 		ShowStatusText(pStatus[0], pStatus[1], pStatus[2], pStatus[3]);
@@ -1713,6 +1713,7 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 			g_.menu_loop = false;
 			delete g_.ptMenuDrag;
 			delete g_.MenuSelected
+			pStatus = [GetFolderView(), "", 0];
 			break;
 		case WM_MENUCHAR:
 			var hr = RunEvent4("MenuChar", Ctrl, hwnd, msg, wParam, lParam);
@@ -1891,6 +1892,9 @@ te.OnGetAlt = function (dwSessionId, s) {
 }
 
 ShowStatusText = function (Ctrl, Text, iPart, tm) {
+	if (!Ctrl) {
+		return;
+	}
 	if (g_.Status && g_.Status[5]) {
 		clearTimeout(g_.Status[5]);
 		delete g_.Status;
