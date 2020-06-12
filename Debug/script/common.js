@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200611 ? te.Version : 20200611;
+		return te.Version < 20200611 ? te.Version : 20200612;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -1768,7 +1768,6 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec, ContextMenu) {
 			AdjustMenuBreak(hMenu);
 			MainWindow.g_menu_click = bNoExec ? true : 2;
 			var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, ContextMenu);
-			MainWindow.ShowStatusText(GetFolderView(), "OK", 0);
 			if (bNoExec) {
 				return nVerb > 0 ? S_OK : S_FALSE;
 			} else {

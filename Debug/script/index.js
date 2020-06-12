@@ -1539,16 +1539,6 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 								}
 							}, 99);
 						}
-						var hwnd1 = api.FindWindow("OperationStatusWindow", null);
-						if (hwnd1 && api.IsWindowVisible(hwnd1)) {
-							var ppid = api.Memory("DWORD");
-							var ppid1 = api.Memory("DWORD");
-							api.GetWindowThreadProcessId(te.hwnd, ppid);
-							api.GetWindowThreadProcessId(hwnd1, ppid1);
-							if (ppid[0] == ppid1[0]) {
-								api.SetForegroundWindow(hwnd1);
-							}
-						}
 					} else {
 						g_.mouse.str = "";
 						SetGestureText(Ctrl, "");
@@ -1647,7 +1637,8 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 			}
 			break;
 		case WM_MENUSELECT:
-			RunEvent1("MenuSelect", Ctrl, hwnd, msg, wParam, lParam);
+			pStatus[0] = te;
+			RunEvent1("MenuSelect", Ctrl, hwnd, msg, wParam, lParam, pStatus);
 			if (lParam) {
 				var nVerb = wParam & 0xffff;
 				if (Ctrl) {
@@ -1656,7 +1647,7 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 						if (CM && nVerb >= CM.idCmdFirst && nVerb <= CM.idCmdLast) {
 							Text = CM.GetCommandString(nVerb - CM.idCmdFirst, GCS_HELPTEXT);
 							if (Text) {
-								pStatus = [te, Text, 0];
+								pStatus[1] = Text;
 								break;
 							}
 						}

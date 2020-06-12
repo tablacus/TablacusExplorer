@@ -19,10 +19,6 @@ if (window.Addon == 1) {
 			if (!(grfKeyState & MK_LBUTTON) || Items.Count == 0) {
 				return false;
 			}
-			var Parent = Items.Item(-1);
-			if (!bDelete && api.ILIsParent(wsh.ExpandEnvironmentStrings("%TEMP%"), Parent, false)) {
-				return false;
-			}
 			try {
 				path = Dest.ExtendedProperty("linktarget") || Dest.Path || Dest;
 			} catch (e) {
@@ -30,9 +26,22 @@ if (window.Addon == 1) {
 			}
 			if (bDelete || (path && fso.FolderExists(path))) {
 				var arFrom = [];
-				for (i = Items.Count - 1; i >= 0; i--) {
+				var strTemp = (fso.GetSpecialFolder(2).Path + "\\").replace(/\\\\$/, "\\");
+				var strTemp2;
+				var arRen1 = [], arRen2 = [];
+				for (var i = Items.Count; i-- > 0;) {
 					var path1 = Items.Item(i).Path;
 					if (IsExists(path1)) {
+						if (!bDelete && !api.StrCmpNI(path1, strTemp, strTemp.length)) {
+							if (!arRen1.length) {
+								strTemp2 = strTemp + "tablacus\\" + fso.GetTempName() + "\\";
+								DeleteItem(strTemp2);
+							}
+							arRen1.unshift(path1);
+							path1 = strTemp2 + path1.slice(strTemp.length);
+							arRen2.unshift(path1);
+							CreateFolder(fso.GetParentFolderName(path1));
+						}
 						arFrom.unshift(path1);
 					} else {
 						pdwEffect[0] = DROPEFFECT_NONE;
@@ -69,8 +78,14 @@ if (window.Addon == 1) {
 							if (api.GetKeyState(VK_SHIFT) < 0) {
 								fFlags = 0;
 							}
-						} else if (api.ILIsEqual(path, Parent)) {
+						} else if (api.ILIsEqual(path, Items.Item(-1))) {
 							fFlags |= FOF_RENAMEONCOLLISION;
+						}
+						if (arRen1.length) {
+							api.SHFileOperation(FO_MOVE, arRen1.join("\0"), arRen2.join("\0"), FOF_MULTIDESTFILES | FOF_SILENT, false);
+							if (wFunc == FO_COPY) {
+								wFunc = FO_MOVE;
+							}
 						}
 						api.SHFileOperation(wFunc, arFrom.join("\0"), path, fFlags, true);
 						return true;
