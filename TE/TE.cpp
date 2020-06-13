@@ -977,6 +977,7 @@ TEmethod methodTE[] = {
 	{ START_OnFunc + TE_OnSorting, "OnSorting" },
 	{ START_OnFunc + TE_OnSetName, "OnSetName" },
 	{ START_OnFunc + TE_OnIncludeItem, "OnIncludeItem" },
+	{ START_OnFunc + TE_OnContentsChanged, "OnContentsChanged" },
 	{ 0, NULL }
 };
 
@@ -4024,14 +4025,15 @@ void CheckChangeTabSB(HWND hwnd)
 {
 	if (g_pTC) {
 		CteShellBrowser *pSB = SBfromhwnd(hwnd);
-		if (pSB) {
-			if (pSB->m_pTC->SetDefault()) {
-				pSB->m_pTC->TabChanged(FALSE);
-			}
-		} else {
+		if (!pSB) {
 			CteTreeView *pTV = TVfromhwnd(hwnd);
 			if (pTV) {
 				pSB = pTV->m_pFV;
+			}
+		}
+		if (pSB) {
+			if (pSB->m_pTC->SetDefault()) {
+				pSB->m_pTC->TabChanged(FALSE);
 			}
 		}
 	}
@@ -15501,7 +15503,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						g_dwTickFocus = 0;
 					}
 				}
-				break;
+				return DoFunc(TE_OnContentsChanged, this, S_OK);
 
 			case DISPID_FILELISTENUMDONE://XP+
 				m_pTC->CheckRedraw();
