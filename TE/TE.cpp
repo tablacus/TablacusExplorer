@@ -131,7 +131,6 @@ DWORD   g_dwCookieJS = 0;
 DWORD	g_dwSessionId = 0;
 DWORD	g_dwTickKey;
 DWORD	g_dwFreeLibrary = 0;
-DWORD	g_dwTickFocus = 0;
 DWORD	g_dwTickMount = 0;
 DWORD	g_dwTickBoot = GetTickCount();
 long	g_nProcKey	   = 0;
@@ -3539,6 +3538,7 @@ VOID teReleaseExists(TEExists *pExists)
 
 static void threadExists(void *args)
 {
+	::CoInitialize(NULL);
 	try {
 		TEExists *pExists = (TEExists *)args;
 		pExists->hr = tePathIsDirectory2(pExists->pszPath, pExists->iUseFS);
@@ -3550,6 +3550,7 @@ static void threadExists(void *args)
 		g_strException = L"threadExists";
 #endif
 	}
+	::CoUninitialize();
 	::_endthread();
 }
 
@@ -3693,6 +3694,7 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 
 static void threadILCreate(void *args)
 {
+	::CoInitialize(NULL);
 	try {
 		TEILCreate *pILC = (TEILCreate *)args;
 		pILC->pidlResult = teILCreateFromPath1(pILC->pszPath);
@@ -3704,6 +3706,7 @@ static void threadILCreate(void *args)
 		g_strException = L"threadILCreate";
 #endif
 	}
+	::CoUninitialize();
 	::_endthread();
 }
 
@@ -5339,7 +5342,7 @@ VOID teSetProgress(IProgressDialog *ppd, int nCurrent, int nCount)
 
 static void threadAddItems(void *args)
 {
-	::OleInitialize(NULL);
+	::CoInitialize(NULL);
 	WCHAR pszMsg[MAX_PATH];
 	LPITEMIDLIST pidl;
 	IProgressDialog *ppd = NULL;
@@ -5456,7 +5459,7 @@ static void threadAddItems(void *args)
 		ppd->StopProgressDialog();
 		SafeRelease(&ppd);
 	}
-	::OleUninitialize();
+	::CoUninitialize();
 	::_endthread();
 }
 
@@ -9046,7 +9049,7 @@ VOID teApiCompareIDs(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 
 static void threadExecScript(void *args)
 {
-	::OleInitialize(NULL);
+	::CoInitialize(NULL);
 	VARIANT v;
 	VariantInit(&v);
 	TEExecScript *pES = (TEExecScript *)args;
@@ -9066,7 +9069,7 @@ static void threadExecScript(void *args)
 	VariantClear(&v);
 	teSysFreeString(&pES->bsLang);
 	teSysFreeString(&pES->bsScript);
-	::OleUninitialize();
+	::CoUninitialize();
 	::_endthread();
 }
 
@@ -11007,39 +11010,6 @@ BOOL CanClose(PVOID pObj)
 	return DoFunc(TE_OnClose, pObj, S_OK) != S_FALSE;
 }
 
-VOID CALLBACK teTimerProcFocus(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
-{
-	try {
-		KillTimer(hwnd, idEvent);
-		CteShellBrowser *pSB = SBfromhwnd(hwnd);
-		if (pSB) {
-			pSB->FocusItem(TRUE);
-		}
-	} catch (...) {
-		g_nException = 0;
-#ifdef _DEBUG
-		g_strException = L"teTimerProcFocus";
-#endif
-	}
-}
-
-VOID CALLBACK teTimerProcFocus2(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
-{
-	try {
-		KillTimer(hwnd, idEvent);
-		CteShellBrowser *pSB = SBfromhwnd(hwnd);
-		if (pSB) {
-			pSB->SaveFocusedItemToHistory();
-			pSB->FocusItem(TRUE);
-		}
-	} catch (...) {
-		g_nException = 0;
-#ifdef _DEBUG
-		g_strException = L"teTimerProcFocus2";
-#endif
-	}
-}
-
 VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 {
 	RECT rc, rcTab, rcClient;
@@ -12165,7 +12135,7 @@ VOID CALLBACK teTimerProcForStatic(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD
 
 static void threadParseDisplayName(void *args)
 {
-	::OleInitialize(NULL);
+	::CoInitialize(NULL);
 	TEInvoke *pInvoke = (TEInvoke *)args;
 	try {
 		if (!pInvoke->pidl) {
@@ -12186,7 +12156,7 @@ static void threadParseDisplayName(void *args)
 		g_strException = L"threadParseDisplayName";
 #endif
 	}
-	::OleUninitialize();
+	::CoUninitialize();
 	::_endthread();
 }
 
@@ -13068,7 +13038,6 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	}
 	DWORD dwFrame = 0;
 	UINT uViewMode = m_param[SB_ViewMode];
-	g_dwTickFocus = 0;
 	m_nGroupByDelay = 0;
 #ifdef _2000XP
 	if (g_bUpperVista) {
@@ -13378,7 +13347,6 @@ VOID CteShellBrowser::FocusItem(BOOL bFree)
 			}
 			pFV->Release();
 		}
-		SetTimer(m_hwnd, (UINT_PTR)&m_nFocusItem, 64, teTimerProcFocus);
 		m_nFocusItem = 0;
 	}
 }
@@ -15495,14 +15463,6 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						pFV2->Release();
 					}
 				}
-				if (m_hwndLV) { // Fixed a problem with focus on auto refresh.
-					if (g_dwTickFocus) {
-						if (GetTickCount() - g_dwTickFocus < 3000) {
-							SetTimer(m_hwnd, (UINT_PTR)&m_nFocusItem, 64, teTimerProcFocus2);
-						}
-						g_dwTickFocus = 0;
-					}
-				}
 				return DoFunc(TE_OnContentsChanged, this, S_OK);
 
 			case DISPID_FILELISTENUMDONE://XP+
@@ -16011,7 +15971,6 @@ HRESULT CteShellBrowser::SelectItemEx(LPITEMIDLIST *ppidl, int dwFlags, BOOL bFr
 				if (nFocused >= 0) {
 					ListView_SetItemState(m_hwndLV, nFocused, 0, LVIS_FOCUSED);
 				}
-				g_dwTickFocus = GetTickCount();
 #ifdef _2000XP
 			}
 #endif
