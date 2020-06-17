@@ -161,7 +161,6 @@ BOOL	g_bCanLayout = FALSE;
 BOOL	g_bUpper10;
 BOOL	g_bDarkMode = FALSE;
 BOOL	g_bDragIcon = TRUE;
-BOOL	g_bUseHiddenFilter = TRUE;
 #ifdef _2000XP
 std::vector <IUnknown *> g_pRelease;
 int		g_nCharWidth = 7;
@@ -878,7 +877,6 @@ TEmethod methodTE[] = {
 	{ 1004, "About" },
 	{ TE_METHOD + 1005, "Ctrl" },
 	{ TE_METHOD + 1006, "Ctrls" },
-	{ 1007, "Version" },
 	{ TE_METHOD + 1008, "ClearEvents" },
 	{ TE_METHOD + 1009, "Reload" },
 	{ TE_METHOD + 1010, "CreateObject" },
@@ -896,7 +894,6 @@ TEmethod methodTE[] = {
 	{ 1140, "Background" },
 //	{ 1150, "ThumbnailProvider" },//Deprecated
 	{ 1160, "DragIcon" },
-	{ 1170, "UseHiddenFilter" },
 	{ 1180, "ExplorerBrowserFilter" },
 	{ TE_METHOD + 1133, "FolderItems" },
 	{ TE_METHOD + 1134, "Object" },
@@ -922,6 +919,11 @@ TEmethod methodTE[] = {
 	{ TE_OFFSET + TE_Layout, "Layout" },
 	{ TE_OFFSET + TE_NetworkTimeout, "NetworkTimeout" },
 	{ TE_OFFSET + TE_SizeFormat, "SizeFormat" },
+	{ TE_OFFSET + TE_Version, "Version" },
+	{ TE_OFFSET + TE_UseHiddenFilter, "UseHiddenFilter" },
+	{ TE_OFFSET + TE_ColumnEmphasis, "ColumnEmphasis" },
+	{ TE_OFFSET + TE_ViewOrder, "ViewOrder" },
+
 	{ START_OnFunc + TE_Labels, "Labels" },
 	{ START_OnFunc + TE_ColumnsReplace, "ColumnsReplace" },
 	{ START_OnFunc + TE_OnBeforeNavigate, "OnBeforeNavigate" },
@@ -1077,7 +1079,7 @@ TEmethod methodTC[] = {
 	{ TE_OFFSET + TE_Top, "Top" },
 	{ TE_OFFSET + TE_Width, "Width" },
 	{ TE_OFFSET + TE_Height, "Height" },
-	{ TE_OFFSET + TE_Flags, "Style" },
+	{ TE_OFFSET + TC_Flags, "Style" },
 	{ TE_OFFSET + TC_Align, "Align" },
 	{ TE_OFFSET + TC_TabWidth, "TabWidth" },
 	{ TE_OFFSET + TC_TabHeight, "TabHeight" },
@@ -5566,6 +5568,10 @@ VOID ClearEvents()
 	g_ppGetArchive.clear();
 
 	g_param[TE_Tab] = TRUE;
+	g_param[TE_Version] = 20000000 + VER_Y * 10000 + VER_M * 100 + VER_D;
+	g_param[TE_ColumnEmphasis] = FALSE;
+	g_param[TE_ViewOrder] = FALSE;
+
 	EnableWindow(g_pWebBrowser->get_HWND(), TRUE);
 	SetWindowPos(g_hwndMain, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 }
@@ -6372,7 +6378,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 							}
 						}
 					}
-					if (pSB->m_param[SB_ViewFlags] & CDB2GVF_NOSELECTVERB) {
+					if (!g_param[TE_ColumnEmphasis]) {
 						ListView_SetSelectedColumn(pSB->m_hwndLV, -1);
 					}
 				}
@@ -6427,7 +6433,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 					VariantClear(&vResult);
 				}
 			} else if (((LPNMHDR)lParam)->code == HDN_ITEMCHANGED) {
-				if (pSB->m_hwndLV && pSB->m_param[SB_ViewFlags] & CDB2GVF_NOSELECTVERB) {
+				if (pSB->m_hwndLV && !g_param[TE_ColumnEmphasis]) {
 					ListView_SetSelectedColumn(pSB->m_hwndLV, -1);
 				}
 			}
@@ -6898,14 +6904,14 @@ LRESULT CALLBACK TETCProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 					Result = 0;
 					pTC->TabChanged(TRUE);
 					if (g_param[TE_Tab] && pTC->m_param[TC_Align] == 1) {
-						if (pTC->m_param[TE_Flags] & TCS_SCROLLOPPOSITE) {
+						if (pTC->m_param[TC_Flags] & TCS_SCROLLOPPOSITE) {
 							ArrangeWindow();
 						}
 					}
 				}
 				break;
 			case TCM_SETITEM:
-				if (pTC->m_param[TE_Flags] & TCS_FIXEDWIDTH) {
+				if (pTC->m_param[TC_Flags] & TCS_FIXEDWIDTH) {
 					DefSubclassProc(hwnd, msg, wParam, lParam);
 					Result = 0;
 					DefSubclassProc(pTC->m_hwnd, TCM_SETITEMSIZE, 0, MAKELPARAM(pTC->m_param[TC_TabWidth], pTC->m_param[TC_TabHeight] + 1));
@@ -6915,7 +6921,7 @@ LRESULT CALLBACK TETCProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 		}//end_switch
 
 		//Fix for high CPU usage on single line tab.
-		if (!(pTC->m_param[TE_Flags] & TCS_MULTILINE)) {
+		if (!(pTC->m_param[TC_Flags] & TCS_MULTILINE)) {
 			if (msg == WM_PAINT) {
 				if (bCancelPaint) {
 					Result = 0;
@@ -11178,13 +11184,13 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 										pTC->m_si.nMax = h;
 										pTC->m_si.nPage = rcTab.bottom;
 										SetScrollInfo(pTC->m_hwndButton, SB_VERT, &pTC->m_si, TRUE);
-										if (pTC->m_param[TE_Flags] & TCS_FIXEDWIDTH) {
+										if (pTC->m_param[TC_Flags] & TCS_FIXEDWIDTH) {
 											pTC->SetItemSize();
 										}
 										rcTab.right -= pTC->m_nScrollWidth;
 									} else {
 										ShowScrollBar(pTC->m_hwndButton, SB_VERT, FALSE);
-										if (pTC->m_si.nTrackPos && pTC->m_param[TE_Flags] & TCS_FIXEDWIDTH) {
+										if (pTC->m_si.nTrackPos && pTC->m_param[TC_Flags] & TCS_FIXEDWIDTH) {
 											pTC->SetItemSize();
 										}
 										pTC->m_si.nTrackPos = 0;
@@ -11192,7 +11198,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 									}
 									if (teSetRect(pTC->m_hwnd, 0, -pTC->m_si.nPos, rcTab.right - rcTab.left, (nBottom - rcTab.top) + pTC->m_si.nPos)) {
 										ArrangeWindow();
-										if (!(pTC->m_param[TE_Flags] & TCS_MULTILINE)) {
+										if (!(pTC->m_param[TC_Flags] & TCS_MULTILINE)) {
 											int i = TabCtrl_GetCurSel(pTC->m_hwnd);
 											TabCtrl_SetCurSel(pTC->m_hwnd, 0);
 											TabCtrl_SetCurSel(pTC->m_hwnd, i);
@@ -11695,16 +11701,14 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	g_paramFV[SB_FolderFlags] = FWF_SHOWSELALWAYS;
 	g_paramFV[SB_IconSize] = 0;
 	g_paramFV[SB_Options] = EBO_ALWAYSNAVIGATE;
-#ifdef _2000XP
-	g_paramFV[SB_ViewFlags] = g_bUpperVista ? CDB2GVF_NOSELECTVERB : 0;
-#else
-	g_paramFV[SB_ViewFlags] = CDB2GVF_NOSELECTVERB;
-#endif
+	g_paramFV[SB_ViewFlags] = 0;
 	g_paramFV[SB_TreeAlign] = 1;
 	g_paramFV[SB_TreeWidth] = 200;
 	g_paramFV[SB_TreeFlags] = NSTCS_HASEXPANDOS | NSTCS_SHOWSELECTIONALWAYS | NSTCS_BORDER | NSTCS_HASLINES | NSTCS_NOINFOTIP | NSTCS_HORIZONTALSCROLL;
 	g_paramFV[SB_EnumFlags] = SHCONTF_FOLDERS;
 	g_paramFV[SB_RootStyle] = NSTCRS_VISIBLE | NSTCRS_EXPANDED;
+
+	g_param[TE_UseHiddenFilter] = TRUE;
 
 	MyRegisterClass(hInstance, szClass, WndProc);
 
@@ -13076,7 +13080,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 					RemoveAll();
 					SetTabName();
 					OnViewCreated(NULL);
-					NavigateComplete(TRUE);
+					OnNavigationComplete2();
 					return hr;
 				}
 			}
@@ -13659,7 +13663,7 @@ VOID CteShellBrowser::SetFolderFlags(BOOL bGetIconSize)
 	}
 	GetViewModeAndIconSize(bGetIconSize);
 	if (m_hwndLV) {
-		if (m_param[SB_ViewFlags] & CDB2GVF_NOSELECTVERB) {
+		if (!g_param[TE_ColumnEmphasis]) {
 			ListView_SetSelectedColumn(m_hwndLV, -1);
 		}
 		ListView_SetTextBkColor(m_hwndLV, m_clrTextBk);
@@ -14798,6 +14802,9 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			case 0x10000016:
 				if (nArg >= 0) {
 					m_param[SB_ViewFlags] = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+					if (m_param[SB_ViewFlags] & CDB2GVF_NOSELECTVERB) {
+						g_param[TE_ColumnEmphasis] = FALSE;
+					}
 				}
 				teSetLong(pVarResult, m_param[SB_ViewFlags]);
 				return S_OK;
@@ -14915,7 +14922,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				return S_OK;
 			//SelectedItems
 			case 0x10000041:
-				if SUCCEEDED(Items(SVGIO_SELECTION, &pFolderItems)) {
+				if SUCCEEDED(SelectedItems(&pFolderItems)) {
 					teSetObjectRelease(pVarResult, pFolderItems);
 				}
 				return S_OK;
@@ -15495,7 +15502,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				return DoFunc(TE_OnViewModeChanged, this, S_OK);
 			case DISPID_BEGINDRAG://XP+
 				DoFunc1(TE_OnBeginDrag, this, pVarResult);
-				if ((!g_bDragIcon || m_bRegenerateItems || ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) && pVarResult && (pVarResult->vt != VT_BOOL || pVarResult->boolVal)) {
+				if ((!g_bDragIcon || g_param[TE_ViewOrder] || m_bRegenerateItems || ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) && pVarResult && (pVarResult->vt != VT_BOOL || pVarResult->boolVal)) {
 					FolderItems *pid;
 					if SUCCEEDED(SelectedItems(&pid)) {
 						IDataObject *pDataObj = NULL;
@@ -15530,7 +15537,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					}
 				}
 				if (m_hwndLV) {
-					if (m_param[SB_ViewFlags] & CDB2GVF_NOSELECTVERB) {
+					if (!g_param[TE_ColumnEmphasis]) {
 						ListView_SetSelectedColumn(m_hwndLV, -1);
 					}
 				}
@@ -15618,7 +15625,7 @@ STDMETHODIMP CteShellBrowser::get_Folder(Folder **ppid)
 
 STDMETHODIMP CteShellBrowser::SelectedItems(FolderItems **ppid)
 {
-	return Items(SVGIO_SELECTION, ppid);
+	return Items(g_param[TE_ViewOrder] ? SVGIO_SELECTION | SVGIO_FLAG_VIEWORDER : SVGIO_SELECTION, ppid);
 }
 
 HRESULT CteShellBrowser::Items(UINT uItem, FolderItems **ppid)
@@ -16146,7 +16153,7 @@ HRESULT CteShellBrowser::IncludeObject2(IShellFolder *pSF, LPCITEMIDLIST pidl)
 				}
 			}
 		}
-		if (hr == S_OK && g_bsHiddenFilter && g_bUseHiddenFilter) {
+		if (hr == S_OK && g_bsHiddenFilter && g_param[TE_UseHiddenFilter]) {
 			if (tePathMatchSpec(bs, g_bsHiddenFilter) || tePathMatchSpec(bs2, g_bsHiddenFilter)) {
 				hr = S_FALSE;
 			}
@@ -16475,7 +16482,7 @@ VOID CteShellBrowser::AddItem(LPITEMIDLIST pidl)
 
 BOOL CteShellBrowser::HasFilter()
 {
-	return m_bsFilter || m_ppDispatch[SB_OnIncludeObject]|| (g_bsHiddenFilter && g_bUseHiddenFilter);
+	return m_bsFilter || m_ppDispatch[SB_OnIncludeObject]|| (g_bsHiddenFilter && g_param[TE_UseHiddenFilter]);
 }
 
 VOID CteShellBrowser::NavigateComplete(BOOL bBeginNavigate)
@@ -17596,10 +17603,6 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 					pArray->Release();
 				}
 				return S_OK;
-			//Version
-			case 1007:
-				teSetLong(pVarResult, 20000000 + VER_Y * 10000 + VER_M * 100 + VER_D);
-				return S_OK;
 			//ClearEvents
 			case TE_METHOD + 1008:
 				ClearEvents();
@@ -17795,13 +17798,6 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 #endif
 				}
 				teSetBool(pVarResult, g_bDragIcon);
-				return S_OK;
-
-			case 1170://UseHiddenFilter
-				if (nArg >= 0) {
-					g_bUseHiddenFilter = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
-				}
-				teSetBool(pVarResult, g_bUseHiddenFilter);
 				return S_OK;
 
 			case 1180://ExplorerBrowserFilter
@@ -18908,7 +18904,7 @@ void CteTabCtrl::Init()
 	m_param[TE_Top] = 0;
 	m_param[TE_Width] = 100;
 	m_param[TE_Height] = 100;
-	m_param[TE_Flags] = TCS_FOCUSNEVER | TCS_HOTTRACK | TCS_MULTILINE | TCS_RAGGEDRIGHT | TCS_SCROLLOPPOSITE | TCS_TOOLTIPS;
+	m_param[TC_Flags] = TCS_FOCUSNEVER | TCS_HOTTRACK | TCS_MULTILINE | TCS_RAGGEDRIGHT | TCS_SCROLLOPPOSITE | TCS_TOOLTIPS;
 	m_param[TC_Align] = 0;
 	m_param[TC_TabWidth] = 0;
 	m_param[TC_TabHeight] = 0;
@@ -19025,7 +19021,7 @@ VOID CteTabCtrl::SetItemSize()
 
 DWORD CteTabCtrl::GetStyle()
 {
-	DWORD dwStyle = WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | TCS_FOCUSNEVER | m_param[TE_Flags];
+	DWORD dwStyle = WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | TCS_FOCUSNEVER | m_param[TC_Flags];
 	if ((dwStyle & (TCS_SCROLLOPPOSITE | TCS_BUTTONS)) == TCS_SCROLLOPPOSITE) {
 		if (m_param[TC_Align] == 4 || m_param[TC_Align] == 5) {
 			dwStyle |= TCS_BUTTONS;
@@ -19305,7 +19301,7 @@ STDMETHODIMP CteTabCtrl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WOR
 			if (nArg >= 0 && dispIdMember != TE_OFFSET) {
 				m_param[dispIdMember - TE_OFFSET] = GetIntFromVariantPP(&pDispParams->rgvarg[nArg], dispIdMember - TE_OFFSET);
 				if (m_hwnd) {
-					if (dispIdMember == TE_OFFSET + TE_Flags) {
+					if (dispIdMember == TE_OFFSET + TC_Flags) {
 						DWORD dwStyle = GetWindowLong(m_hwnd, GWL_STYLE);
 						DWORD dwPrev = GetStyle();
 						if ((dwStyle ^ dwPrev) & 0x7fff) {

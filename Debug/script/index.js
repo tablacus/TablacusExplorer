@@ -1836,7 +1836,7 @@ te.OnILGetParent = function (FolderItem) {
 	}
 	var res = IsSearchPath(FolderItem);
 	if (res) {
-		return api.PathCreateFromUrl("file:" + res[1]);
+		return decodeURIComponent(res[1]);
 	}
 	if (api.ILIsEqual(FolderItem.Alt, ssfRESULTSFOLDER)) {
 		var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
@@ -1922,6 +1922,10 @@ g_.event.viewmodechanged = function (Ctrl) {
 
 g_.event.columnschanged = function (Ctrl) {
 	RunEvent1("ColumnsChanged", Ctrl);
+}
+
+g_.event.contentschanged = function (Ctrl) {
+	RunEvent1("ContentsChanged", Ctrl);
 }
 
 g_.event.iconsizechanged = function (Ctrl) {
@@ -2284,7 +2288,7 @@ function UnlockFV(Item) {
 }
 
 function ChangeNotifyFV(lEvent, item1, item2) {
-	var fAdd = SHCNE_DRIVEADD | SHCNE_MEDIAINSERTED | SHCNE_NETSHARE | SHCNE_MKDIR | SHCNE_UPDATEDIR;
+	var fAdd = SHCNE_DRIVEADD | SHCNE_MEDIAINSERTED | SHCNE_NETSHARE | SHCNE_MKDIR | SHCNE_UPDATEDIR | SHCNE_UPDATEITEM;
 	var fRemove = SHCNE_DRIVEREMOVED | SHCNE_MEDIAREMOVED | SHCNE_NETUNSHARE | SHCNE_RENAMEFOLDER | SHCNE_RMDIR | SHCNE_SERVERDISCONNECT | SHCNE_UPDATEDIR;
 	if (lEvent & (SHCNE_DISKEVENTS | fAdd | fRemove)) {
 		var path1 = String(api.GetDisplayNameOf(item1, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
@@ -2421,6 +2425,8 @@ function InitMouse() {
 	te.DateTimeFormat = te.Data.Conf_DateTimeFormat;
 	te.HiddenFilter = ExtractFilter(te.Data.Conf_HiddenFilter);
 	te.DragIcon = !api.LowPart(te.Data.Conf_NoDragIcon);
+	te.ViewOrder = te.Data.Conf_ViewOrder;
+	te.ColumnEmphasis = te.Data.Conf_ColumnEmphasis;
 	OpenMode = te.Data.Conf_OpenMode ? SBSP_NEWBROWSER : SBSP_SAMEBROWSER;
 }
 
