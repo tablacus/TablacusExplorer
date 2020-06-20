@@ -172,8 +172,10 @@
     <ClCompile Include="TE.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="common.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="idsofnames.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TE.h" />
   </ItemGroup>
