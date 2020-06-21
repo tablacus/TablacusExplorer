@@ -393,8 +393,9 @@ class CteShellBrowser : public IShellBrowser, public ICommDlgBrowser2,
 	public IShellFolderViewDual,
 //	public IFolderFilter,
 	public IExplorerBrowserEvents, public IExplorerPaneVisibility,
+	public IShellFolderViewCB,
 #ifdef _2000XP
-	public IShellFolder2, public IShellFolderViewCB,
+	public IShellFolder2,
 #endif
 	public IPersistFolder2
 {
@@ -476,9 +477,9 @@ public:
 	STDMETHODIMP GetDetailsEx(PCUITEMID_CHILD pidl, const SHCOLUMNID *pscid, VARIANT *pv);
 	STDMETHODIMP GetDetailsOf(PCUITEMID_CHILD pidl, UINT iColumn, SHELLDETAILS *psd);
 	STDMETHODIMP MapColumnToSCID(UINT iColumn, SHCOLUMNID *pscid);
+#endif
 	//IShellFolderViewCB
 	STDMETHODIMP MessageSFVCB(UINT uMsg, WPARAM wParam, LPARAM lParam);
-#endif
 	//IDropTarget
 	STDMETHODIMP DragEnter(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
 	STDMETHODIMP DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
@@ -637,8 +638,8 @@ private:
 	int			m_nSuspendMode;
 	BOOL		m_bIconSize;
 	BOOL		m_bRegenerateItems;
-#ifdef _2000XP
 	IShellFolderViewCB	*m_pSFVCB;
+#ifdef _2000XP
 	int			m_nFolderName;
 #endif
 };

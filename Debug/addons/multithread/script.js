@@ -12,6 +12,7 @@ if (window.Addon == 1) {
 		Copy: api.LowPart(item.getAttribute("Copy")),
 		Move: api.LowPart(item.getAttribute("Move")),
 		Delete: api.LowPart(item.getAttribute("Delete")),
+		NoTemp: item.getAttribute("NoTemp"),
 
 		FO: function (Ctrl, Items, Dest, grfKeyState, pt, pdwEffect, bOver, bDelete)
 		{
@@ -34,6 +35,9 @@ if (window.Addon == 1) {
 					if (IsExists(path1)) {
 						if (!bDelete && !api.StrCmpNI(path1, strTemp, strTemp.length)) {
 							if (!arRen1.length) {
+								if (Addons.MultiThread.NoTemp) {
+									return false;
+								}
 								strTemp2 = strTemp + "tablacus\\" + fso.GetTempName() + "\\";
 								DeleteItem(strTemp2);
 							}
@@ -166,5 +170,5 @@ if (window.Addon == 1) {
 		}
 	});
 } else {
-	SetTabContents(0, "General", '<input type="checkbox" id="Copy" /><label for="Copy">Copy</label><br /><input type="checkbox" id="Move" /><label for="Move">Move</label><br /><input type="checkbox" id="Delete" /><label for="Delete">Delete</label><br />');
+	SetTabContents(0, "", '<label><input type="checkbox" id="Copy">Copy</label><br><label><input type="checkbox" id="Move">Move</label><br><label><input type="checkbox" id="Delete">Delete</label><br><label><input type="checkbox" id="!NoTemp">@shell32.dll,-21815[Temporary Burn Folder]</label><br>');
 }
