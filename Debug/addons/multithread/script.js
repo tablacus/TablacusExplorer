@@ -1,4 +1,4 @@
-﻿var Addon_Id = "multithread";
+var Addon_Id = "multithread";
 var item = GetAddonElement(Addon_Id);
 if (!item.getAttribute("Set")) {
 	item.setAttribute("Copy", 1);
@@ -27,7 +27,9 @@ if (window.Addon == 1) {
 			}
 			if (bDelete || (path && fso.FolderExists(path))) {
 				var arFrom = [];
-				var strTemp = (fso.GetSpecialFolder(2).Path + "\\").replace(/\\\\$/, "\\");
+				var pidTemp = api.ILCreateFromPath(fso.GetSpecialFolder(2).Path);
+				pidTemp.IsFolder;
+				var strTemp = pidTemp.Path + "\\";
 				var strTemp2;
 				var arRen1 = [], arRen2 = [];
 				for (var i = Items.Count; i-- > 0;) {

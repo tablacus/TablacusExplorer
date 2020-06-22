@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200621 ? te.Version : 20200621;
+		return te.Version < 20200622 ? te.Version : 20200622;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
