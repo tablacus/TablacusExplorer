@@ -741,6 +741,7 @@ TEmethod methodTE[] = {
 	{ TE_OFFSET + TE_UseHiddenFilter, "UseHiddenFilter" },
 	{ TE_OFFSET + TE_ColumnEmphasis, "ColumnEmphasis" },
 	{ TE_OFFSET + TE_ViewOrder, "ViewOrder" },
+	{ TE_OFFSET + TE_LibraryFilter, "LibraryFilter" },
 
 	{ START_OnFunc + TE_Labels, "Labels" },
 	{ START_OnFunc + TE_ColumnsReplace, "ColumnsReplace" },

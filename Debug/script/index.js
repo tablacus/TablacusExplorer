@@ -2426,6 +2426,7 @@ function InitMouse() {
 	te.HiddenFilter = ExtractFilter(te.Data.Conf_HiddenFilter);
 	te.DragIcon = !api.LowPart(te.Data.Conf_NoDragIcon);
 	te.ViewOrder = te.Data.Conf_ViewOrder;
+	te.LibraryFilter = te.Data.Conf_LibraryFilter;
 	te.ColumnEmphasis = te.Data.Conf_ColumnEmphasis;
 	OpenMode = te.Data.Conf_OpenMode ? SBSP_NEWBROWSER : SBSP_SAMEBROWSER;
 }
