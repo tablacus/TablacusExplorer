@@ -134,7 +134,6 @@ DWORD	g_dwSessionId = 0;
 DWORD	g_dwTickKey;
 DWORD	g_dwFreeLibrary = 0;
 DWORD	g_dwTickMount = 0;
-DWORD	g_dwTickBoot = GetTickCount();
 long	g_nProcKey	   = 0;
 long	g_nProcMouse   = 0;
 long	g_nProcDrag    = 0;
@@ -979,36 +978,33 @@ VOID teRegister(BOOL bInit)
 VOID teSetRedraw(BOOL bSetRedraw)
 {
 	if (g_pWebBrowser) {
-		if (bSetRedraw) {
-			if (g_pTC && (g_pTC->m_nRedraw & TEREDRAW_NAVIGATE)) {
-				return;
-			}
-		} else if (g_bDragging) {
-			return;
-		}
-		if ((bSetRedraw ^ g_bSetRedraw) & 1) {
-			SendMessage(g_pWebBrowser->m_hwndBrowser, WM_SETREDRAW, bSetRedraw, 0);
-			if (bSetRedraw) {
+		if (bSetRedraw || g_bDragging || g_bInit) {
+			if (!g_bSetRedraw) {
+				g_bSetRedraw = TRUE;
+				SendMessage(g_pWebBrowser->m_hwndBrowser, WM_SETREDRAW, TRUE, 0);
 				RedrawWindow(g_pWebBrowser->m_hwndBrowser, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
-			} else if (!g_nSize) {
+			}
+		} else {
+			if (g_bSetRedraw) {
+				g_bSetRedraw = FALSE;
+				SendMessage(g_pWebBrowser->m_hwndBrowser, WM_SETREDRAW, FALSE, 0);
+			}
+			if (!g_nSize) {
 				SetTimer(g_hwndMain, TET_Size, 1000, teTimerProc);
 			}
 		}
-		g_bSetRedraw = bSetRedraw;
 	}
 }
 
 VOID teLockUpdate(int nStep)
 {
 	g_nLockUpdate += nStep;
-	if (g_nLockUpdate == nStep) {
-		if (GetTickCount() - g_dwTickBoot > 5000) {
-			teSetRedraw(FALSE);
-		}
+	if (g_nLockUpdate > 1) {
+		teSetRedraw(FALSE);
 	}
 }
 
-VOID teUnlockUpadte(int nStep, BOOL bRedraw)
+VOID teUnlockUpadte(int nStep)
 {
 	g_nLockUpdate -= nStep;
 	if (g_nLockUpdate <= 0) {
@@ -9995,8 +9991,6 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 				rcClient.right -= g_param[TE_Width];
 				rcClient.bottom -= g_param[TE_Height];
 				CteShellBrowser *pSB;
-				BOOL bRedraw;
-				bRedraw = FALSE;
 				--g_nSize;
 				teLockUpdate(1);
 				try {
@@ -10018,9 +10012,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 									if (rc.left) {
 										++rc.left;
 									}
-									if (teSetRect(pTC->m_hwndStatic, rc.left, rc.top, rc.right, rc.bottom)) {
-										bRedraw = TRUE;
-									}
+									teSetRect(pTC->m_hwndStatic, rc.left, rc.top, rc.right, rc.bottom);
 									int left = rc.left;
 									int top = rc.top;
 
@@ -10174,7 +10166,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 						}
 					}
 				} catch (...) {}
-				teUnlockUpadte(1, bRedraw);
+				teUnlockUpadte(1);
 				break;
 			case TET_FreeLibrary:
 				while (!g_pFreeLibrary.empty()) {
@@ -10293,8 +10285,8 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 			if (nCode == HC_ACTION) {
 				if (wParam == NULL) {
 					pcwp = (LPCWPSTRUCT)lParam;
-					if (pcwp->message == WM_ACTIVATE) {
-						ArrangeWindow();
+					if (pcwp->message == WM_ACTIVATE && g_pTC) {
+						g_pTC->CheckRedraw();
 					}
 					switch (pcwp->message)
 					{
@@ -12390,43 +12382,51 @@ VOID CteShellBrowser::Refresh(BOOL bCheck)
 			if (m_nUnload == 4) {
 				m_nUnload = 0;
 			}
-			if (m_dwUnavailable || ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
+			if (m_dwUnavailable) {
 				BrowseObject(NULL, SBSP_RELATIVE | SBSP_SAMEBROWSER);
 				return;
 			}
 			m_bRefreshing = TRUE;
 			m_bFiltered = FALSE;
-			int nCount = -1;
-			IFolderView *pFV;
-			if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
-				pFV->ItemCount(SVGIO_ALLVIEW, &nCount);
-				pFV->Release();
-			}
-			if (nCount == 0) {
-				BSTR bs;
-				if SUCCEEDED(teGetDisplayNameFromIDList(&bs, m_pidl, SHGDN_FORPARSING)) {
-					if (!tePathIsNetworkPath(bs)) {
-						nCount = -1;
-					}
-					teSysFreeString(&bs);
-				}
-			}
-			if (nCount) {
-				m_pTC->LockUpdate(TEREDRAW_NAVIGATE);
-				try {
-					m_pShellView->Refresh();
-					InitFolderSize();
-					SetFolderFlags(FALSE);
-				} catch (...) {
-					g_nException = 0;
-#ifdef _DEBUG
-					g_strException = L"Refresh";
-#endif
-				}
-				m_pTC->UnlockUpdate();
-				ArrangeWindow();
+			if (ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
+				m_bBeforeNavigate = TRUE;
+				RemoveAll();
+				SetTabName();
+				OnBeforeNavigate(m_pFolderItem, SBSP_SAMEBROWSER | SBSP_ABSOLUTE);
+				NavigateComplete(TRUE);
 			} else {
-				Suspend(0);
+				int nCount = -1;
+				IFolderView *pFV;
+				if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
+					pFV->ItemCount(SVGIO_ALLVIEW, &nCount);
+					pFV->Release();
+				}
+				if (nCount == 0) {
+					BSTR bs;
+					if SUCCEEDED(teGetDisplayNameFromIDList(&bs, m_pidl, SHGDN_FORPARSING)) {
+						if (!tePathIsNetworkPath(bs)) {
+							nCount = -1;
+						}
+						teSysFreeString(&bs);
+					}
+				}
+				if (nCount) {
+					m_pTC->LockUpdate(TEREDRAW_NAVIGATE);
+					try {
+						m_pShellView->Refresh();
+						InitFolderSize();
+						SetFolderFlags(FALSE);
+					} catch (...) {
+						g_nException = 0;
+#ifdef _DEBUG
+						g_strException = L"Refresh";
+#endif
+					}
+					m_pTC->UnlockUpdate();
+					ArrangeWindow();
+				} else {
+					Suspend(0);
+				}
 			}
 		} else if (m_nUnload == 0) {
 			m_nUnload = 4;
@@ -16917,7 +16917,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				return S_OK;
 			//UnlockUpdate
 			case TE_METHOD + 1090:
-				teUnlockUpadte(2, TRUE);
+				teUnlockUpadte(2);
 				ArrangeWindow();
 				return S_OK;
 			//HookDragDrop//Deprecated
@@ -17871,7 +17871,7 @@ BOOL CteTabCtrl::SetDefault()
 VOID CteTabCtrl::CheckRedraw()
 {
 	if (m_nRedraw & TEREDRAW_NAVIGATE) {
-		m_nRedraw = (m_nRedraw & ~TEREDRAW_NAVIGATE) | TEREDRAW_NORMAL;
+		m_nRedraw = TEREDRAW_NORMAL;
 		RedrawUpdate();
 	}
 }
@@ -18395,6 +18395,8 @@ VOID CteTabCtrl::LockUpdate(int nRedraw)
 	m_nRedraw |= nRedraw;
 	if (InterlockedIncrement(&m_nLockUpdate) == 1) {
 		SendMessage(m_hwndStatic, WM_SETREDRAW, FALSE, 0);
+	}
+	if (m_nLockUpdate && (nRedraw & TEREDRAW_NAVIGATE)) {
 		teSetRedraw(FALSE);
 	}
 }
