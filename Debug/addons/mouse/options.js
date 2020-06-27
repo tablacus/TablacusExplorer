@@ -5,20 +5,18 @@ if (ado) {
 	var ar = [];
 	var s = "CSA";
 	for (var i = s.length; i--;) {
-		ar.unshift('<input type="button" value="', MainWindow.g_.KeyState[i][0],'" title="', s.charAt(i), '" onclick="AddMouse(this)" />');
+		ar.unshift('<input type="button" value="', MainWindow.g_.KeyState[i][0], '" title="', s.charAt(i), '" onclick="AddMouse(this)" />');
 	}
 	SetTabContents(4, "", ado.ReadText(adReadAll).replace("%s", ar.join("")));
 	ado.Close();
 }
 
-AddMouse = function(o)
-{
+AddMouse = function (o) {
 	document.E.MouseMouse.value += o.title;
 	ChangeX("Mouse");
 }
 
-SaveLocation = function ()
-{
+SaveLocation = function () {
 	SetChanged(null, document.E);
 	SaveX("Mouse", document.E);
 }

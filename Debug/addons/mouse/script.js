@@ -5,24 +5,25 @@ if (window.Addon == 1) {
 	{
 		Menus: [],
 
-		OpenMenu: function (Ctrl, pt, nIndex)
-		{
+		OpenMenu: function (Ctrl, pt, nIndex) {
 			var ar = this.Menus[nIndex];
 			var items = ar[0];
 			if (items) {
-				var arMenu = ar[1];
-				var hMenu = api.CreatePopupMenu();
-				MakeMenus(hMenu, null, arMenu, items, Ctrl, pt);
-				AdjustMenuBreak(hMenu);
-				window.g_menu_click = 2;
-				var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null);
-				api.DestroyMenu(hMenu);
-				if (nVerb == 0) {
-					return S_OK;
-				}
-				item = items[nVerb - 1];
-				var s = item.getAttribute("Type");
-				Exec(Ctrl, item.text, window.g_menu_button == 3 && s == "Open" ? "Open in New Tab" : s, Ctrl.hwnd, pt);
+				setTimeout(function () {
+					var arMenu = ar[1];
+					var hMenu = api.CreatePopupMenu();
+					MakeMenus(hMenu, null, arMenu, items, Ctrl, pt);
+					AdjustMenuBreak(hMenu);
+					window.g_menu_click = 2;
+					var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null);
+					api.DestroyMenu(hMenu);
+					if (nVerb == 0) {
+						return;
+					}
+					item = items[nVerb - 1];
+					var s = item.getAttribute("Type");
+					Exec(Ctrl, item.text, window.g_menu_button == 3 && s == "Open" ? "Open in New Tab" : s, Ctrl.hwnd, pt);
+				}, 99);
 			}
 			return S_OK;
 		}

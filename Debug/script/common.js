@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200624 ? te.Version : 20200624;
+		return te.Version < 20200627 ? te.Version : 20200627;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -2650,22 +2650,21 @@ function CalcVersion(s) {
 	return r;
 }
 
-GethwndFromPid = function (ProcessId, bDT) {
+GethwndFromPid = function (ProcessId, nDT) {
 	var hProcess = api.OpenProcess(PROCESS_QUERY_INFORMATION, false, ProcessId);
 	if (hProcess) {
 		api.WaitForInputIdle(hProcess, 9999);
 		api.CloseHandle(hProcess);
 	}
-	var nIndex = bDT ? GWL_EXSTYLE : GWLP_HWNDPARENT;
-	var nFilter = bDT ? 16 : -1;
-	var nValue = bDT ? 16 : 0;
 	var hwnd = api.GetTopWindow(null);
+	var ppid = api.Memory("DWORD");
 	do {
-		if ((api.GetWindowLongPtr(hwnd, nIndex) & nFilter) == nValue && api.IsWindowVisible(hwnd)) {
-			var ppid = api.Memory("DWORD");
+		if (api.IsWindowVisible(hwnd)) {
 			api.GetWindowThreadProcessId(hwnd, ppid);
 			if (ProcessId == ppid[0]) {
-				return hwnd;
+				if ((!nDT && !api.GetWindowLongPtr(hwnd, GWLP_HWNDPARENT)) || ((nDT & 1) && (api.GetWindowLongPtr(hwnd, GWL_EXSTYLE) & 16)) || ((nDT & 2) && api.GetProp(hwnd, 'OleDropTargetInterface'))) {
+					return hwnd;
+				}
 			}
 		}
 	} while (hwnd = api.GetWindow(hwnd, GW_HWNDNEXT));

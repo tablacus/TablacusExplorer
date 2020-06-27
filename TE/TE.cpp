@@ -9436,6 +9436,11 @@ VOID teApiSysStringByteLen(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 	teSetLong(pVarResult, GetpDataFromVariant(&pc, &pDispParams->rgvarg[nArg]));
 }
 
+VOID teApiGetProp(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetPtr(pVarResult, GetProp(param[0].hwnd, param[1].lpcwstr));
+}
+
 /*
 VOID teApiTest(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -9787,6 +9792,8 @@ TEDispatchApi dispAPI[] = {
 	{ 2, -1, -1, -1, "ReadFile", teApiReadFile },
 	{ 3, -1, -1, -1, "SetFilePointer", teApiSetFilePointer },
 	{ 1, -1, -1, -1, "SysStringByteLen", teApiSysStringByteLen },
+	{ 2,  1, -1, -1, "GetProp", teApiGetProp },
+
 //	{ 0, -1, -1, -1, "", teApi },
 //	{ 0, -1, -1, -1, "Test", teApiTest },
 };
