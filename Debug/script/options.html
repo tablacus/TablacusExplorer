@@ -537,12 +537,13 @@
               <label><input type="checkbox" id="Conf_WheelSelect">Wheel<i> </i>Select</label>
               <br>
               <label><input type="checkbox" id="Conf_ViewOrder">@shell32.dll,-50690[Arrange by:]<i> </i>View<i>(</i>Selected items<i>)</i></label>
-              <label><input type="checkbox" id="Conf_LibraryFilter">@shell32.dll,-23349[Library]<i> </i>Filter</label>
+              <label><input type="checkbox" id="Conf_LibraryFilter">@shell32.dll,-23349[Library]<i> </i>Filter</label>(*)<br>
+              <label><input type="checkbox" id="View_fFlags:0x8000000" onclick="SetCheckbox(this)">Auto check select</label>(*)
+              <label><input type="checkbox" id="Conf_ColumnEmphasis">Column emphasis</label>
               <div>
                 <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_FWF")'>
               </div>
               <div class="group" id="_Advanced_FWF">
-                FWF_...<br>
                 <label><input type="checkbox" id="View_fFlags:0x80" onclick="SetCheckbox(this)">No subfolders</label>
                 <label><input type="checkbox" id="View_fFlags:0x800" onclick="SetCheckbox(this)">Align left</label>
                 <label><input type="checkbox" id="View_fFlags:0x20000" onclick="SetCheckbox(this)">Hide filenames</label>
@@ -554,14 +555,10 @@
                 <label><input type="checkbox" id="View_fFlags:0x1000000" onclick="SetCheckbox(this)">No header in all views</label>(*)
                 <br>
                 <label><input type="checkbox" id="View_fFlags:0x2000000" onclick="SetCheckbox(this)">Extended tiles</label>(*)
-                <label><input type="checkbox" id="View_fFlags:0x8000000" onclick="SetCheckbox(this)">Auto check select</label>(*)
-                <br>
                 <label><input type="checkbox" id="View_fFlags:0x10000000" onclick="SetCheckbox(this)">No browser view state</label>(*)
                 <br>
                 <label><input type="checkbox" id="View_fFlags:0x20000000" onclick="SetCheckbox(this)">Subset groups</label>(*)
                 <label><input type="checkbox" id="View_fFlags:0x80000000" onclick="SetCheckbox(this)">Allow RTL reading</label>(*)
-                <br>
-                <label><input type="checkbox" id="Conf_ColumnEmphasis">Column emphasis</label>
                 </div>
               <div>
                 (*)Windows Vista <label>or higher.</label>

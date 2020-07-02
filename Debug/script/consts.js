@@ -1711,7 +1711,7 @@ SHCNF_FLUSHNOWAIT = 0x3000;
 
 system32 = api.GetDisplayNameOf(ssfSYSTEM, SHGDN_FORPARSING);
 hShell32 = api.GetModuleHandle(fso.BuildPath(system32, "shell32.dll"));
-if (api.SHTestTokenMembership(null, 0x220)) {
+if (api.SHTestTokenMembership(null, 0x220) && WINVER >= 0x600) {
 	TITLE += ' [' + (api.LoadString(hShell32, 25167) || "Admin").replace(/;.*$/, "") + ']';
 }
 

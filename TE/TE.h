@@ -394,6 +394,9 @@ class CteShellBrowser : public IShellBrowser, public ICommDlgBrowser2,
 //	public IFolderFilter,
 	public IExplorerBrowserEvents, public IExplorerPaneVisibility,
 	public IShellFolderViewCB,
+#ifdef _USE_SHELLBROWSER
+	public IShellFolder,
+#endif
 #ifdef _2000XP
 	public IShellFolder2,
 #endif
@@ -457,7 +460,7 @@ public:
 	STDMETHODIMP OnNavigationFailed(PCIDLIST_ABSOLUTE pidlFolder);
 	//IExplorerPaneVisibility
 	STDMETHODIMP GetPaneState(REFEXPLORERPANE ep, EXPLORERPANESTATE *peps);
-#ifdef _2000XP
+#if defined(_USE_SHELLBROWSER) || defined(_2000XP)
 	//IShellFolder
 	STDMETHODIMP ParseDisplayName(HWND hwnd, IBindCtx *pbc, LPWSTR pszDisplayName, ULONG *pchEaten, PIDLIST_RELATIVE *ppidl, ULONG *pdwAttributes);
 	STDMETHODIMP EnumObjects(HWND hwndOwner, SHCONTF grfFlags, IEnumIDList **ppenumIDList);
@@ -561,7 +564,9 @@ public:
 	HRESULT IncludeObject2(IShellFolder *pSF, LPCITEMIDLIST pidl);
 	BOOL HasFilter();
 	int GetSizeFormat();
+#if defined(_USE_SHELLBROWSER) || defined(_2000XP)
 	HRESULT NavigateSB(IShellView *pPreviousView, FolderItem *pPrevious);
+#endif
 #ifdef _2000XP
 	VOID AddPathXP(CteFolderItems *pFolderItems, IShellFolderView *pSFV, int nIndex, BOOL bResultsFolder);
 	int PSGetColumnIndexXP(LPWSTR pszName, int *pcxChar);

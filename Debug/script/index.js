@@ -2419,15 +2419,13 @@ function InitMouse() {
 	te.Data.Conf_Layout = isFinite(te.Data.Conf_Layout) ? Number(te.Data.Conf_Layout) : 0x80;
 	te.Data.Conf_NetworkTimeout = isFinite(te.Data.Conf_NetworkTimeout) ? Number(te.Data.Conf_NetworkTimeout) : 2000;
 	te.Data.Conf_WheelSelect = isFinite(te.Data.Conf_WheelSelect) ? Number(te.Data.Conf_WheelSelect) : 1;
-	te.Layout = te.Data.Conf_Layout;
-	te.NetworkTimeout = te.Data.Conf_NetworkTimeout;
 	te.SizeFormat = (te.Data.Conf_SizeFormat || "").replace(/^0x/i, "");
-	te.DateTimeFormat = te.Data.Conf_DateTimeFormat;
 	te.HiddenFilter = ExtractFilter(te.Data.Conf_HiddenFilter);
 	te.DragIcon = !api.LowPart(te.Data.Conf_NoDragIcon);
-	te.ViewOrder = te.Data.Conf_ViewOrder;
-	te.LibraryFilter = te.Data.Conf_LibraryFilter;
-	te.ColumnEmphasis = te.Data.Conf_ColumnEmphasis;
+	var ar = ['ColumnEmphasis', 'DateTimeFormat', 'Layout', 'LibraryFilter', 'NetworkTimeout', 'ViewOrder'];
+	for (var i = ar.length; i--;) {
+		te[ar[i]] = te.Data['Conf_' + ar[i]];
+	}
 	OpenMode = te.Data.Conf_OpenMode ? SBSP_NEWBROWSER : SBSP_SAMEBROWSER;
 }
 
