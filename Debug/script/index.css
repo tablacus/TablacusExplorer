@@ -47,7 +47,7 @@ form {
 }
 
 .button, .button1 {
-	display: inline-block;
+	display: inline-block; _display: inline; _zoom: 1; *display: inline; *zoom: 1;
 	padding: 1px 1px;
 	text-decoration: none;
 	cursor: default;
@@ -57,7 +57,7 @@ form {
 }
 
 .button:hover, .hoverbutton, .activebutton {
-	display: inline-block;
+	display: inline-block; _display: inline; _zoom: 1; *display: inline; *zoom: 1;
 	text-decoration: none;
 	color: buttontext;
 	cursor: default;
@@ -70,7 +70,7 @@ form {
 }
 
 .menu {
-	display: inline-block;
+	display: inline-block; _display: inline; _zoom: 1; *display: inline; *zoom: 1;
 	margin: 1px 5px;
 	text-decoration: none;
 	color: buttontext;
@@ -79,7 +79,7 @@ form {
 }
 
 .menu:hover, .hovermenu, .activemenu {
-	display: inline-block;
+	display: inline-block; _display: inline; _zoom: 1; *display: inline; *zoom: 1;
 	cursor: default;
 	text-decoration: none;
 	white-space: nowrap;
@@ -107,8 +107,8 @@ form {
 
 .toolbar3 {
 	display: none;
-	margin: 1px 1px 1px 0;
-	padding: 1px 1px 1px 0;
+	margin: 1px 0 1px 0;
+	padding: 1px 0 1px 0;
 	text-align: right;
 	white-space: nowrap;
 	vertical-align: middle;
@@ -168,8 +168,7 @@ form {
 }
 
 .tab0 li {
-	display: inline;
-	display: inline-block;
+	display: inline-block; _display: inline; _zoom: 1; *display: inline; *zoom: 1;
 	line-height: 2em;
 	position: relative;
 	white-space: nowrap;

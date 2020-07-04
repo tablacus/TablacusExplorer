@@ -763,7 +763,7 @@ function LoadMenus(nSelected) {
 
 		for (var j in g_arMenuTypes) {
 			var s = g_arMenuTypes[j];
-			document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", ['<select name="Menus_', s, '" size="17" style="width: 12em; height: 34em; height: calc(100vh - 6em); min-height: 20em; display: none" onchange="EditXEx(EditMenus)" ondblclick="EditMenus()" oncontextmenu="CancelX(\'Menus\')" multiple></select>'].join(""));
+			document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", ['<select name="Menus_', s, '" size="17" style="width: 12em; height: 32em; height: calc(100vh - 6em); min-height: 20em; display: none" onchange="EditXEx(EditMenus)" ondblclick="EditMenus()" oncontextmenu="CancelX(\'Menus\')" multiple></select>'].join(""));
 			var menus = teMenuGetElementsByTagName(s);
 			if (menus && menus.length) {
 				oa[++oa.length - 1].value = s + "," + menus[0].getAttribute("Base") + "," + menus[0].getAttribute("Pos");
@@ -1269,16 +1269,15 @@ function AddonRemove(Id) {
 }
 
 function ApplyOptions() {
-	var o = api.GetKeyState(VK_SHIFT) >= 0 ? document.documentElement || document.body : {};
 	var hwnd = api.GetWindow(document);
 	var hwnd1 = hwnd;
 	while (hwnd1 = api.GetParent(hwnd)) {
 		hwnd = hwnd1;
 	}
-	if (!api.IsZoomed(hwnd) && !api.IsIconic(hwnd)) {
+	if (api.GetKeyState(VK_SHIFT) >= 0 && !api.IsZoomed(hwnd) && !api.IsIconic(hwnd)) {
 		var r = 12 / (Math.abs(MainWindow.DefaultFont.lfHeight) || 12);
-		te.Data.Conf_OptWidth = api.LowPart(o.offsetWidth) * r;
-		te.Data.Conf_OptHeight = api.LowPart(o.offsetHeight) * r;
+		te.Data.Conf_OptWidth = api.LowPart(document.documentElement.offsetWidth || document.body.offsetWidth) * r;
+		te.Data.Conf_OptHeight = api.LowPart(document.documentElement.offsetHeight || document.body.offsetHeight) * r;
 	}
 	SetChanged(ReplaceMenus);
 	for (var i in document.F.elements) {

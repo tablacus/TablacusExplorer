@@ -4493,6 +4493,7 @@ VOID ClearEvents()
 	g_param[TE_ColumnEmphasis] = FALSE;
 	g_param[TE_ViewOrder] = FALSE;
 	g_param[TE_LibraryFilter] = FALSE;
+	g_param[TE_AutoArrange] = FALSE;
 
 	EnableWindow(g_pWebBrowser->get_HWND(), TRUE);
 	SetWindowPos(g_hwndMain, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
@@ -9894,34 +9895,43 @@ BOOL teFindType(LPWSTR pszText, LPWSTR pszFind)
 	return FALSE;
 }
 
-void teCalcClientRect(int *param, LPRECT rc, LPRECT rcClient)
+void teCalcClientRect(int *param, LPRECT prc, LPRECT prcClient)
 {
 	if (param[TE_Left] & 0x3fff) {
-		rc->left = (param[TE_Left] * (rcClient->right - rcClient->left)) / 10000 + rcClient->left;
+		prc->left = (param[TE_Left] * (prcClient->right - prcClient->left)) / 10000 + prcClient->left;
 	} else {
-		rc->left = param[TE_Left] / 0x4000 + (param[TE_Left] >= 0 ? rcClient->left : rcClient->right);
+		prc->left = param[TE_Left] / 0x4000 + (param[TE_Left] >= 0 ? prcClient->left : prcClient->right);
+	}
+	if (param[TE_Left]) {
+		++prc->left;
 	}
 	if (param[TE_Top] & 0x3fff) {
-		rc->top = (param[TE_Top] * (rcClient->bottom - rcClient->top)) / 10000 + rcClient->top;
+		prc->top = (param[TE_Top] * (prcClient->bottom - prcClient->top)) / 10000 + prcClient->top;
 	} else {
-		rc->top = param[TE_Top] / 0x4000 + (param[TE_Top] >= 0 ? rcClient->top : rcClient->bottom);
+		prc->top = param[TE_Top] / 0x4000 + (param[TE_Top] >= 0 ? prcClient->top : prcClient->bottom);
+	}
+	if (param[TE_Top]) {
+		++prc->top;
 	}
 	if (param[TE_Width] & 0x3fff) {
-		rc->right = param[TE_Width] * (rcClient->right - rcClient->left) / 10000 + rc->left;
+		prc->right = param[TE_Width] * (prcClient->right - prcClient->left) / 10000 + prc->left;
 	} else {
-		rc->right = param[TE_Width] / 0x4000 + (param[TE_Width] >= 0 ? rc->left : rcClient->right);
+		prc->right = param[TE_Width] / 0x4000 + (param[TE_Width] >= 0 ? prc->left : prcClient->right);
 	}
-
-	if (rc->right > rcClient->right) {
-		rc->right = rcClient->right;
+	if (prc->right >= prcClient->right) {
+		prc->right = prcClient->right;
+	} else {
+		--prc->right;
 	}
 	if (param[TE_Height] & 0x3fff) {
-		rc->bottom = param[TE_Height] * (rcClient->bottom - rcClient->top) / 10000 + rc->top;
+		prc->bottom = param[TE_Height] * (prcClient->bottom - prcClient->top) / 10000 + prc->top;
 	} else {
-		rc->bottom = param[TE_Height] / 0x4000 + (param[TE_Height] >= 0 ? rc->top : rcClient->bottom);
+		prc->bottom = param[TE_Height] / 0x4000 + (param[TE_Height] >= 0 ? prc->top : prcClient->bottom);
 	}
-	if (rc->bottom > rcClient->bottom) {
-		rc->bottom = rcClient->bottom;
+	if (prc->bottom >= prcClient->bottom) {
+		prc->bottom = prcClient->bottom;
+	} else {
+		--prc->bottom;
 	}
 }
 
@@ -10024,13 +10034,9 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 								}
 								if (!pTC->m_bEmpty && pTC->m_bVisible) {
 									int nAlign = g_param[TE_Tab] ? pTC->m_param[TC_Align] : 0;
-									if (rc.left) {
-										++rc.left;
-									}
 									teSetRect(pTC->m_hwndStatic, rc.left, rc.top, rc.right, rc.bottom);
 									int left = rc.left;
 									int top = rc.top;
-
 									OffsetRect(&rc, -left, -top);
 									CopyRect(&rcTab, &rc);
 									int nCount = TabCtrl_GetItemCount(pTC->m_hwnd);
@@ -15711,7 +15717,7 @@ STDMETHODIMP CteShellBrowser::MapColumnToSCID(UINT iColumn, SHCOLUMNID *pscid)
 //IShellFolderViewCB
 STDMETHODIMP CteShellBrowser::MessageSFVCB(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	if (uMsg == SFVM_FSNOTIFY && lParam == SHCNE_UPDATEITEM) {
+	if (uMsg == SFVM_FSNOTIFY && lParam == SHCNE_UPDATEITEM && !g_param[TE_AutoArrange]) {
 		try {
 			if (ILIsEqual(m_pidl, *(LPITEMIDLIST *)wParam)) {
 				return S_FALSE;
@@ -18264,49 +18270,52 @@ STDMETHODIMP CteTabCtrl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WOR
 		}
 		if (dispIdMember >= TE_OFFSET && dispIdMember <= TE_OFFSET + TC_TabHeight) {
 			if (nArg >= 0 && dispIdMember != TE_OFFSET) {
-				m_param[dispIdMember - TE_OFFSET] = GetIntFromVariantPP(&pDispParams->rgvarg[nArg], dispIdMember - TE_OFFSET);
-				if (m_hwnd) {
-					if (dispIdMember == TE_OFFSET + TC_Flags) {
-						DWORD dwStyle = GetWindowLong(m_hwnd, GWL_STYLE);
-						DWORD dwPrev = GetStyle();
-						if ((dwStyle ^ dwPrev) & 0x7fff) {
-							if ((dwStyle ^ dwPrev) & (TCS_SCROLLOPPOSITE | TCS_BUTTONS | TCS_TOOLTIPS)) {
-								//Remake
-								int nTabs = TabCtrl_GetItemCount(m_hwnd);
-								int nSel = TabCtrl_GetCurFocus(m_hwnd);
-								TC_ITEM *tabs = new TC_ITEM[nTabs];
-								LPWSTR *ppszText = new LPWSTR[nTabs];
-								for (int i = nTabs; --i >= 0;) {
-									ppszText[i] = new WCHAR[MAX_PATH];
-									tabs[i].cchTextMax = MAX_PATH;
-									tabs[i].pszText = ppszText[i];
-									tabs[i].mask = TCIF_IMAGE | TCIF_PARAM | TCIF_TEXT;
-									TabCtrl_GetItem(m_hwnd, i, &tabs[i]);
-								}
-								HIMAGELIST hImage = TabCtrl_GetImageList(m_hwnd);
-								HFONT hFont = (HFONT)SendMessage(m_hwnd, WM_GETFONT, 0, 0);
-								RevokeDragDrop(m_hwnd);
-								RemoveWindowSubclass(m_hwnd, TETCProc, 1);
-								DestroyWindow(m_hwnd);
+				int iValue = GetIntFromVariantPP(&pDispParams->rgvarg[nArg], dispIdMember - TE_OFFSET);
+				if (m_param[dispIdMember - TE_OFFSET] != iValue) {
+					m_param[dispIdMember - TE_OFFSET] = iValue;
+					if (m_hwnd) {
+						if (dispIdMember == TE_OFFSET + TC_Flags) {
+							DWORD dwStyle = GetWindowLong(m_hwnd, GWL_STYLE);
+							DWORD dwPrev = GetStyle();
+							if ((dwStyle ^ dwPrev) & 0x7fff) {
+								if ((dwStyle ^ dwPrev) & (TCS_SCROLLOPPOSITE | TCS_BUTTONS | TCS_TOOLTIPS)) {
+									//Remake
+									int nTabs = TabCtrl_GetItemCount(m_hwnd);
+									int nSel = TabCtrl_GetCurFocus(m_hwnd);
+									TC_ITEM *tabs = new TC_ITEM[nTabs];
+									LPWSTR *ppszText = new LPWSTR[nTabs];
+									for (int i = nTabs; --i >= 0;) {
+										ppszText[i] = new WCHAR[MAX_PATH];
+										tabs[i].cchTextMax = MAX_PATH;
+										tabs[i].pszText = ppszText[i];
+										tabs[i].mask = TCIF_IMAGE | TCIF_PARAM | TCIF_TEXT;
+										TabCtrl_GetItem(m_hwnd, i, &tabs[i]);
+									}
+									HIMAGELIST hImage = TabCtrl_GetImageList(m_hwnd);
+									HFONT hFont = (HFONT)SendMessage(m_hwnd, WM_GETFONT, 0, 0);
+									RevokeDragDrop(m_hwnd);
+									RemoveWindowSubclass(m_hwnd, TETCProc, 1);
+									DestroyWindow(m_hwnd);
 
-								CreateTC();
-								SendMessage(m_hwnd, WM_SETFONT, (WPARAM)hFont, 0);
-								TabCtrl_SetImageList(m_hwnd, hImage);
-								for (int i = 0; i < nTabs; ++i) {
-									TabCtrl_InsertItem(m_hwnd, i, &tabs[i]);
-									delete [] ppszText[i];
+									CreateTC();
+									SendMessage(m_hwnd, WM_SETFONT, (WPARAM)hFont, 0);
+									TabCtrl_SetImageList(m_hwnd, hImage);
+									for (int i = 0; i < nTabs; ++i) {
+										TabCtrl_InsertItem(m_hwnd, i, &tabs[i]);
+										delete[] ppszText[i];
+									}
+									delete[] ppszText;
+									delete[] tabs;
+									TabCtrl_SetCurSel(m_hwnd, nSel);
+									DoFunc(TE_OnViewCreated, this, E_NOTIMPL);
 								}
-								delete [] ppszText;
-								delete [] tabs;
-								TabCtrl_SetCurSel(m_hwnd, nSel);
-								DoFunc(TE_OnViewCreated, this, E_NOTIMPL);
 							}
+						} else if (dispIdMember == TE_OFFSET + TC_TabWidth || dispIdMember == TE_OFFSET + TC_TabHeight) {
+							SetItemSize();
 						}
-					} else if (dispIdMember == TE_OFFSET + TC_TabWidth || dispIdMember == TE_OFFSET + TC_TabHeight) {
-						SetItemSize();
+						SetWindowLong(m_hwnd, GWL_STYLE, GetStyle());
+						ArrangeWindow();
 					}
-					SetWindowLong(m_hwnd, GWL_STYLE, GetStyle());
-					ArrangeWindow();
 				}
 			}
 			if (pVarResult) {

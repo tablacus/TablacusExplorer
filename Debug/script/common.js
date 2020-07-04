@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200702 ? te.Version : 20200702;
+		return te.Version < 20200704 ? te.Version : 20200704;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -3095,7 +3095,7 @@ function MouseOver(o) {
 			MouseOut();
 		}
 		var pt = api.Memory("POINT");
-		api.GetCursorPos(pt, true);
+		api.GetCursorPos(pt);
 		var ptc = pt.Clone();
 		api.ScreenToClient(api.GetWindow(document), ptc);
 		if (o == document.elementFromPoint(ptc.x, ptc.y) || HitTest(o, pt)) {
@@ -3555,7 +3555,7 @@ function CalcElementHeight(o, em) {
 		if (g_.IEVer >= 9) {
 			o.style.height = "calc(100vh - " + em + "em)";
 		} else {
-			var h = (document.documentElement || document.body).clientHeight;
+			var h = document.documentElement.clientHeight || document.body.clientHeight;
 			h += MainWindow.DefaultFont.lfHeight * em;
 			if (h > 0) {
 				o.style.height = h + 'px';

@@ -891,23 +891,23 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 	if (g_.mouse.Capture) {
 		if (msg == WM_LBUTTONUP || api.GetKeyState(VK_LBUTTON) >= 0) {
 			api.ReleaseCapture();
-			var pt2 = pt.Clone();
-			api.ScreenToClient(te.hwnd, pt2);
-			if (pt2.x < 1) {
-				pt2.x = 1;
-			}
-			var w = (document.documentElement || document.body).offsetWidth;
-			if (pt2.x >= w) {
-				pt2.x = w - 1;
-			}
-			if (g_.mouse.Capture == 1) {
-				te.Data["Conf_LeftBarWidth"] = pt2.x;
-			} else if (g_.mouse.Capture == 2) {
-				te.Data["Conf_RightBarWidth"] = w - pt2.x;
-			}
 			g_.mouse.Capture = 0;
-			Resize();
 		}
+		var pt2 = pt.Clone();
+		api.ScreenToClient(te.hwnd, pt2);
+		if (pt2.x < 1) {
+			pt2.x = 1;
+		}
+		var w = document.documentElement.offsetWidth || document.body.offsetWidth;
+		if (pt2.x >= w) {
+			pt2.x = w - 1;
+		}
+		if (g_.mouse.Capture == 1) {
+			te.Data["Conf_LeftBarWidth"] = pt2.x;
+		} else if (g_.mouse.Capture == 2) {
+			te.Data["Conf_RightBarWidth"] = w - pt2.x;
+		}
+		Resize();
 		return S_OK;
 	}
 	if (msg != WM_MOUSEMOVE) {
@@ -2422,7 +2422,7 @@ function InitMouse() {
 	te.SizeFormat = (te.Data.Conf_SizeFormat || "").replace(/^0x/i, "");
 	te.HiddenFilter = ExtractFilter(te.Data.Conf_HiddenFilter);
 	te.DragIcon = !api.LowPart(te.Data.Conf_NoDragIcon);
-	var ar = ['ColumnEmphasis', 'DateTimeFormat', 'Layout', 'LibraryFilter', 'NetworkTimeout', 'ViewOrder'];
+	var ar = ['AutoArrange', 'ColumnEmphasis', 'DateTimeFormat', 'Layout', 'LibraryFilter', 'NetworkTimeout', 'ViewOrder'];
 	for (var i = ar.length; i--;) {
 		te[ar[i]] = te.Data['Conf_' + ar[i]];
 	}

@@ -43,16 +43,11 @@ if (window.Addon == 1) {
 							if (this.opt.Align > 1 && this.opt.Width) {
 								s.push(' style="text-align: center; width: 100%"');
 							}
-							s.push(' />+</li>');
+							s.push('>+</li>');
 						}
 						o.innerHTML = s.join("").replace(/\$/g, Id);
 					}
-					try {
-						var FocusedId = te.Ctrl(CTRL_TC).Id;
-						if (Id == FocusedId) {
-							this.SetActiveColor(Id);
-						}
-					} catch (e) { }
+					this.SetActiveColor(Id);
 					if (g_.IEVer < 10) {
 						var n = (this.dtDown || 0) + 90000 - new Date().getTime();
 						if (n >= 0) {
@@ -85,6 +80,9 @@ if (window.Addon == 1) {
 		},
 
 		SetActiveColor: function (Id) {
+			if (Id != (te.Ctrl(CTRL_TC) || {}).Id) {
+				return;
+			}
 			this.SetActiveColor2(this.nFocused, "");
 			if (this.opt.Active) {
 				this.SetActiveColor2(Id, "ActiveCaption");
@@ -137,7 +135,7 @@ if (window.Addon == 1) {
 				if (this.opt.Tooltips) {
 					o.title = path;
 				}
-				var s = ['<table style="width: 100%"><tr style="width: 100%">'];
+				var s = ['<table><tr style="width: 100%">'];
 				try {
 					var r0 = Math.round(13 * screen.deviceYDPI / 96);
 					var w = (FV.Data.Lock || FV.Data.Protect || this.opt.Close) ? -r0 : 0;
