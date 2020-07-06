@@ -606,6 +606,7 @@ public:
 	DWORD		m_nOpenedType;
 	DWORD		m_dwCookie;
 	DWORD		m_dwSessionId;
+	DWORD		m_dwTickNotify;
 	COLORREF	m_clrBk, m_clrTextBk, m_clrText;
 	DISPID      m_dispidSortColumns;
 	BOOL		m_bSetListColumnWidth;

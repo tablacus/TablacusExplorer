@@ -11436,6 +11436,7 @@ void CteShellBrowser::Init(CteTabCtrl *pTC, BOOL bNew)
 	m_nCreate = 0;
 	m_bNavigateComplete = FALSE;
 	m_dwUnavailable = 0;
+	m_dwTickNotify = 0;
 	VariantClear(&m_vData);
 
 	for (int i = SB_Count; i--;) {
@@ -15121,20 +15122,20 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 	m_bViewCreated = FALSE;
 	if (psv) {
 		psv->QueryInterface(IID_PPV_ARGS(&m_pShellView));
-	}
-	if (!ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
-		IShellFolderView *pSFV;
-		if (m_pShellView->QueryInterface(IID_PPV_ARGS(&pSFV)) == S_OK) {
-			IShellFolderViewCB *pSFVCB;
-			if (pSFV->SetCallback((IShellFolderViewCB *)this, &pSFVCB) == S_OK) {
-				if (pSFVCB != (IShellFolderViewCB *)this) {
-					SafeRelease(&m_pSFVCB);
-					m_pSFVCB = pSFVCB;
-				} else {
-					SafeRelease(&pSFVCB);
+		if (!ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
+			IShellFolderView *pSFV;
+			if (m_pShellView->QueryInterface(IID_PPV_ARGS(&pSFV)) == S_OK) {
+				IShellFolderViewCB *pSFVCB;
+				if (pSFV->SetCallback((IShellFolderViewCB *)this, &pSFVCB) == S_OK) {
+					if (pSFVCB != (IShellFolderViewCB *)this) {
+						SafeRelease(&m_pSFVCB);
+						m_pSFVCB = pSFVCB;
+					} else {
+						SafeRelease(&pSFVCB);
+					}
 				}
+				pSFV->Release();
 			}
-			pSFV->Release();
 		}
 	}
 	GetShellFolderView();
@@ -15563,17 +15564,27 @@ STDMETHODIMP CteShellBrowser::CompareIDs(LPARAM lParam, PCUIDLIST_RELATIVE pidl1
 
 STDMETHODIMP CteShellBrowser::CreateViewObject(HWND hwndOwner, REFIID riid, void **ppv)
 {
-#ifdef _2000XP
-	if (!g_bUpperVista && IsEqualIID(riid, IID_IShellView)) {
-#else
 	if (IsEqualIID(riid, IID_IShellView)) {
-#endif
 		SafeRelease(&m_pSFVCB);
 		SFV_CREATE sfvc;
 		sfvc.cbSize = sizeof(SFV_CREATE);
 		sfvc.pshf = static_cast<IShellFolder *>(this);
-		sfvc.psfvcb = NULL;
+		sfvc.psfvcb = static_cast<IShellFolderViewCB *>(this);
 		sfvc.psvOuter = NULL;
+		IShellView *pSV;
+		if SUCCEEDED(m_pSF2->CreateViewObject(hwndOwner, IID_PPV_ARGS(&pSV))) {
+			IShellFolderView *pSFV;
+			if (pSV->QueryInterface(IID_PPV_ARGS(&pSFV)) == S_OK) {
+				pSFV->SetCallback(NULL, &m_pSFVCB);
+				pSFV->Release();
+			}
+			if (m_pSFVCB) {
+				pSV->Release();
+			} else {
+				*ppv = pSV;
+				return S_OK;
+			}
+		}
 		return SHCreateShellFolderView(&sfvc, (IShellView **)ppv);
 	}
 	return m_pSF2->CreateViewObject(hwndOwner, riid, ppv);
@@ -15717,14 +15728,57 @@ STDMETHODIMP CteShellBrowser::MapColumnToSCID(UINT iColumn, SHCOLUMNID *pscid)
 //IShellFolderViewCB
 STDMETHODIMP CteShellBrowser::MessageSFVCB(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	if (uMsg == SFVM_FSNOTIFY && lParam == SHCNE_UPDATEITEM && !g_param[TE_AutoArrange]) {
-		try {
-			if (ILIsEqual(m_pidl, *(LPITEMIDLIST *)wParam)) {
-				return S_FALSE;
+	if (uMsg == SFVM_FSNOTIFY) {
+		if (!g_param[TE_AutoArrange] && m_pSF2) {
+			if (lParam & (SHCNE_CREATE | SHCNE_MKDIR)) {
+				m_dwTickNotify = GetTickCount();
 			}
-		} catch (...) {
-			return S_FALSE;
+			if (lParam & SHCNE_UPDATEITEM) {
+				try {
+					if (ILIsEqual(m_pidl, *(LPITEMIDLIST *)wParam)) {
+						if (m_dwTickNotify && GetTickCount() - m_dwTickNotify < 500) {
+							m_dwTickNotify = 0;
+							return S_FALSE;
+						}
+						int iExists = 0, iNew = 0;
+						IFolderView *pFV;
+						if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
+							pFV->ItemCount(SVGIO_ALLVIEW, &iExists);
+							pFV->Release();
+							if (iExists > 99999) {
+								return S_FALSE;
+							}
+							SHCONTF grfFlags = SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN;
+							HKEY hKey;
+							if (RegOpenKeyExA(HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+								DWORD dwData;
+								DWORD dwSize = sizeof(DWORD);
+								if (RegQueryValueExA(hKey, "ShowSuperHidden", NULL, NULL, (LPBYTE)&dwData, &dwSize) == S_OK) {
+									if (dwData) {
+										grfFlags |= SHCONTF_INCLUDESUPERHIDDEN;
+									}
+								}
+							}
+							IEnumIDList *peidl;
+							if SUCCEEDED(m_pSF2->EnumObjects(NULL, grfFlags, &peidl)) {
+								LPITEMIDLIST pidlPart;
+								while (iNew <= iExists && peidl->Next(1, &pidlPart, NULL) == S_OK) {
+									if (IncludeObject2(m_pSF2, pidlPart) == S_OK) {
+										iNew++;
+									}
+									teCoTaskMemFree(pidlPart);
+								}
+								peidl->Release();
+							}
+							if (iExists == iNew) {
+								return S_FALSE;
+							}
+						}
+					}
+				} catch (...) {}
+			}
 		}
+		return S_OK;
 	}
 	if (!m_pSFVCB) {
 		return E_NOTIMPL;
