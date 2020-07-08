@@ -1030,6 +1030,7 @@ VOID teSetRedraw(BOOL bSetRedraw)
 			if (g_bSetRedraw) {
 				g_bSetRedraw = FALSE;
 				SendMessage(g_pWebBrowser->m_hwndBrowser, WM_SETREDRAW, FALSE, 0);
+				SetTimer(g_hwndMain, TET_SetRedraw, 500, teTimerProc);
 			}
 			if (!g_nSize) {
 				SetTimer(g_hwndMain, TET_Size, 1000, teTimerProc);
@@ -18514,7 +18515,6 @@ VOID CteTabCtrl::LockUpdate(int nRedraw)
 
 VOID CteTabCtrl::UnlockUpdate()
 {
-	SetTimer(g_hwndMain, TET_SetRedraw, 500, teTimerProc);
 	if (::InterlockedDecrement(&m_nLockUpdate) > 0) {
 		return;
 	}
