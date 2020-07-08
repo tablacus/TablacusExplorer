@@ -320,6 +320,7 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TET_Create				0x1fa1
 #define TET_Reload				0x1fa2
 #define TET_Size				0x1fa3
+#define TET_SetRedraw			0x1fa4
 #define TET_Status				0x1fa5
 #define TET_EndThread			0x1fa6
 #define TET_Title				0x1fa7

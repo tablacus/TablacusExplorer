@@ -278,3 +278,45 @@ a.treebutton:hover {
 .danger {
 	color: red;
 }
+
+.panel {
+	border: 1px solid buttonshadow;
+	padding: 4px;
+	width: 100%;
+	line-height: 1.5em;
+	overflow-y: auto;
+	clear:both;
+}
+
+.color {
+	border: 1px solid buttonshadow;
+	width: 2em;
+}
+
+.block {
+	padding: 8px;
+	border: 1px solid buttonshadow;
+	margin-bottom: 8px;
+	display: block;
+}
+
+.hide {
+	display: none;
+}
+
+.full, .groupbutton {
+	width: 100%;
+}
+
+.group {
+	padding: 8px;
+	border-left: 1px solid buttonshadow;
+	border-right: 1px solid buttonshadow;
+	border-bottom: 1px solid buttonshadow;
+	margin-bottom: 8px;
+	display: none;
+}
+
+.disabled {
+	color: gray;
+}

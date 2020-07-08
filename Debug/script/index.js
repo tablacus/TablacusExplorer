@@ -2290,7 +2290,7 @@ function UnlockFV(Item) {
 function ChangeNotifyFV(lEvent, item1, item2) {
 	var fAdd = SHCNE_DRIVEADD | SHCNE_MEDIAINSERTED | SHCNE_NETSHARE | SHCNE_MKDIR | SHCNE_UPDATEDIR | SHCNE_UPDATEITEM;
 	var fRemove = SHCNE_DRIVEREMOVED | SHCNE_MEDIAREMOVED | SHCNE_NETUNSHARE | SHCNE_RENAMEFOLDER | SHCNE_RMDIR | SHCNE_SERVERDISCONNECT | SHCNE_UPDATEDIR;
-	if (lEvent & (SHCNE_DISKEVENTS | fAdd | fRemove)) {
+	if (lEvent & (SHCNE_DISKEVENTS | fAdd | fRemove) && item1.IsFileSystem) {
 		var path1 = String(api.GetDisplayNameOf(item1, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 		var bNetwork = api.ILIsEqual(item1, ssfNETWORK);
 		var cFV = te.Ctrls(CTRL_FV);
@@ -3303,7 +3303,7 @@ AddEvent("MenuState:Tabs:Show frames", function (Ctrl, pt, mii) {
 });
 
 AddEvent("ChangeNotify", function (Ctrl, pidls, wParam, lParam) {
-	if (pidls.lEvent & (SHCNE_MKDIR | SHCNE_CREATE)) {
+	if (pidls.lEvent & (SHCNE_MKDIR | SHCNE_CREATE) && pidls[0].IsFileSystem) {
 		var tm = new Date().getTime();
 		if (g_.NewItemTime > tm) {
 			delete g_.NewItemTime;
