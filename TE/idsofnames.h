@@ -743,6 +743,7 @@ TEmethod methodTE[] = {
 	{ TE_OFFSET + TE_ViewOrder, "ViewOrder" },
 	{ TE_OFFSET + TE_LibraryFilter, "LibraryFilter" },
 	{ TE_OFFSET + TE_AutoArrange, "AutoArrange" },
+	{ TE_OFFSET + TE_ShowInternet, "ShowInternet" },
 
 	{ START_OnFunc + TE_Labels, "Labels" },
 	{ START_OnFunc + TE_ColumnsReplace, "ColumnsReplace" },

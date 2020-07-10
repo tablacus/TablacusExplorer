@@ -1030,7 +1030,7 @@ VOID teSetRedraw(BOOL bSetRedraw)
 			if (g_bSetRedraw) {
 				g_bSetRedraw = FALSE;
 				SendMessage(g_pWebBrowser->m_hwndBrowser, WM_SETREDRAW, FALSE, 0);
-				SetTimer(g_hwndMain, TET_SetRedraw, 500, teTimerProc);
+				SetTimer(g_hwndMain, TET_SetRedraw, 5000, teTimerProc);
 			}
 			if (!g_nSize) {
 				SetTimer(g_hwndMain, TET_Size, 1000, teTimerProc);
@@ -4522,6 +4522,7 @@ VOID ClearEvents()
 	g_param[TE_ViewOrder] = FALSE;
 	g_param[TE_LibraryFilter] = FALSE;
 	g_param[TE_AutoArrange] = FALSE;
+	g_param[TE_ShowInternet] = FALSE;
 
 	EnableWindow(g_pWebBrowser->get_HWND(), TRUE);
 	SetWindowPos(g_hwndMain, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
@@ -4929,6 +4930,9 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 						if (wParam == WM_LBUTTONUP || wParam == WM_RBUTTONUP) {
 							g_bDragging = FALSE;
 						}
+					}
+					if (wParam == WM_MOUSEMOVE) {
+						SendMessage(g_pWebBrowser->m_hwndBrowser, WM_SETREDRAW, TRUE, 0);
 					}
 					if (g_pOnFunc[TE_OnMouseMessage]) {
 						MOUSEHOOKSTRUCTEX *pMHS = (MOUSEHOOKSTRUCTEX *)lParam;
@@ -10339,6 +10343,7 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 					pcwp = (LPCWPSTRUCT)lParam;
 					if (pcwp->message == WM_ACTIVATE && g_pTC) {
 						g_pTC->CheckRedraw();
+						SendMessage(g_pWebBrowser->m_hwndBrowser, WM_SETREDRAW, TRUE, 0);
 					}
 					switch (pcwp->message)
 					{
@@ -14524,17 +14529,16 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 				if (m_nFocusItem < 0) {
 					FocusItem(FALSE);
-				} else {
-					IFolderView *pFV;
-					if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
-						int i = 0;
-						if SUCCEEDED(pFV->ItemCount(SVGIO_SELECTION, &i)) {
-							if (i == 0) {
-								pFV->SelectItem(0, SVSI_FOCUSED | SVSI_NOTAKEFOCUS);
-							}
+				}
+				IFolderView *pFV;
+				if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
+					int i = 0;
+					if SUCCEEDED(pFV->ItemCount(SVGIO_SELECTION, &i)) {
+						if (i == 0) {
+							pFV->SelectItem(0, SVSI_FOCUSED | SVSI_NOTAKEFOCUS);
 						}
-						pFV->Release();
 					}
+					pFV->Release();
 				}
 				return DoFunc(TE_OnSort, this, S_OK);
 			case DISPID_INITIALENUMERATIONDONE://XP-
@@ -21237,6 +21241,11 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 					pid->Release();
 					if (::ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
 						::ILRemoveLastID(pidl);
+					}
+					if (!g_param[TE_ShowInternet]) {
+						while (::ILIsEqual(pidl, g_pidls[CSIDL_INTERNET]) || ::ILIsParent(g_pidls[CSIDL_INTERNET], pidl, FALSE)) {
+							::ILRemoveLastID(pidl);
+						}
 					}
 					if (m_pNameSpaceTreeControl
 #ifdef _2000XP

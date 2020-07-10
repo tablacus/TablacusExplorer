@@ -2422,7 +2422,7 @@ function InitMouse() {
 	te.SizeFormat = (te.Data.Conf_SizeFormat || "").replace(/^0x/i, "");
 	te.HiddenFilter = ExtractFilter(te.Data.Conf_HiddenFilter);
 	te.DragIcon = !api.LowPart(te.Data.Conf_NoDragIcon);
-	var ar = ['AutoArrange', 'ColumnEmphasis', 'DateTimeFormat', 'Layout', 'LibraryFilter', 'NetworkTimeout', 'ViewOrder'];
+	var ar = ['AutoArrange', 'ColumnEmphasis', 'DateTimeFormat', 'Layout', 'LibraryFilter', 'NetworkTimeout', 'ShowInternet', 'ViewOrder'];
 	for (var i = ar.length; i--;) {
 		te[ar[i]] = te.Data['Conf_' + ar[i]];
 	}

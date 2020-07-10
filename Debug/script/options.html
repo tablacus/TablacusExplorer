@@ -348,61 +348,49 @@
               <br>
               <label>Enumeration</label><br>
               <input type="hidden" name="Tree_EnumFlags">
-              <label><input type="checkbox" id="Tree_EnumFlags:0x20" onclick="SetCheckbox(this)">Folders</label>
-              <label><input type="checkbox" id="Tree_EnumFlags:0x40" onclick="SetCheckbox(this)">Not folders</label>
-              <label><input type="checkbox" id="Tree_EnumFlags:0x80" onclick="SetCheckbox(this)">Include hidden items</label>
-              <br><br>
+              <label><input type="checkbox" id="Tree_EnumFlags:0x20" onclick="SetCheckbox(this)">Folders</label><br>
+              <label><input type="checkbox" id="Tree_EnumFlags:0x40" onclick="SetCheckbox(this)">Not folders</label><br>
+              <label><input type="checkbox" id="Tree_EnumFlags:0x80" onclick="SetCheckbox(this)">Include hidden items</label><br>
+              <label><input type="checkbox" id="Conf_ShowInternet">@shell32.dll,-4262</label><br>
+              <br>
               <label>Style</label>
               <br>
               <input type="hidden" name="Tree_Style">
-              <label><input type="checkbox" id="Tree_Style:1" onclick="SetCheckbox(this)">Buttons</label>
-              <label><input type="checkbox" id="Tree_Style:2" onclick="SetCheckbox(this)">Lines</label>
-              <label><input type="checkbox" id="Tree_Style:0x10000" onclick="SetCheckbox(this)">No edit labels</label>
-              <br>
-              <label><input type="checkbox" id="Tree_Style:0x1000" onclick="SetCheckbox(this)">Disable Drag-and-Drop</label>
-              <label><input type="checkbox" id="Tree_Style:0x200" onclick="SetCheckbox(this)">No infotip</label>
-              <br>
-              <label><input type="checkbox" id="Tree_Style:4" onclick="SetCheckbox(this)">Single click expand</label>
-              <label><input type="checkbox" id="Tree_Style:0x10" onclick="SetCheckbox(this)">Spring expand</label>
-              <br>
-              <label><input type="checkbox" id="Tree_Style:8" onclick="SetCheckbox(this)">Full row select</label>
-              <label><input type="checkbox" id="Tree_Style:0x80" onclick="SetCheckbox(this)">Show selection always</label>
-              <br>
-              <label><input type="checkbox" id="Tree_Style:0x20" onclick="SetCheckbox(this)">Horizontal scroll</label>
-              <label><input type="checkbox" id="Tree_Style:0x8000" onclick="SetCheckbox(this)">Border</label>
-
+              <label><input type="checkbox" id="Tree_Style:1" onclick="SetCheckbox(this)">Buttons</label><br>
+              <label><input type="checkbox" id="Tree_Style:2" onclick="SetCheckbox(this)">Lines</label><br>
+              <label><input type="checkbox" id="Tree_Style:0x10000" onclick="SetCheckbox(this)">No edit labels</label><br>
+              <label><input type="checkbox" id="Tree_Style:0x1000" onclick="SetCheckbox(this)">Disable Drag-and-Drop</label><br>
+              <label><input type="checkbox" id="Tree_Style:0x200" onclick="SetCheckbox(this)">No infotip</label><br>
+              <label><input type="checkbox" id="Tree_Style:4" onclick="SetCheckbox(this)">Single click expand</label><br>
+              <label><input type="checkbox" id="Tree_Style:0x10" onclick="SetCheckbox(this)">Spring expand</label><br>
+              <label><input type="checkbox" id="Tree_Style:8" onclick="SetCheckbox(this)">Full row select</label><br>
+              <label><input type="checkbox" id="Tree_Style:0x80" onclick="SetCheckbox(this)">Show selection always</label><br>
+              <label><input type="checkbox" id="Tree_Style:0x20" onclick="SetCheckbox(this)">Horizontal scroll</label><br>
+              <label><input type="checkbox" id="Tree_Style:0x8000" onclick="SetCheckbox(this)">Border</label><br>
               <div>
                 <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_Tree_Style")'>
               </div>
               <div class="group" id="_Advanced_Tree_Style">
-                NSTCS_...<br>
-                <label><input type="checkbox" id="Tree_Style:0x40" onclick="SetCheckbox(this)">Root has expando</label>(*)
+                <label><input type="checkbox" id="Tree_Style:0x40" onclick="SetCheckbox(this)">Root has expando</label>(*)<br>
                 <label><input type="checkbox" id="Tree_Style:0x400" onclick="SetCheckbox(this)">Even height</label>
                 <br>
-                <label><input type="checkbox" id="Tree_Style:0x800" onclick="SetCheckbox(this)">No replace open</label>(*)
-                <label><input type="checkbox" id="Tree_Style:0x2000" onclick="SetCheckbox(this)">No order stream</label>(*)
-                <br>
-                <label><input type="checkbox" id="Tree_Style:0x4000" onclick="SetCheckbox(this)">Rich tooltip</label>(*)
-                <label><input type="checkbox" id="Tree_Style:0x20000" onclick="SetCheckbox(this)">Tab stop</label>
-                <label><input type="checkbox" id="Tree_Style:0x40000" onclick="SetCheckbox(this)">Favorites mode</label>
-                <br>
-                <label><input type="checkbox" id="Tree_Style:0x100000" onclick="SetCheckbox(this)">Auto h scroll</label>
-                <label><input type="checkbox" id="Tree_Style:0x200000" onclick="SetCheckbox(this)">Fade in out expandos</label>(*)
-                <br>
-                <label><input type="checkbox" id="Tree_Style:0x400000" onclick="SetCheckbox(this)">Empty text</label>(*)
-                <label><input type="checkbox" id="Tree_Style:0x800000" onclick="SetCheckbox(this)">Checkboxes</label>
-                <br>
-                <label><input type="checkbox" id="Tree_Style:0x1000000" onclick="SetCheckbox(this)">Partialcheckboxes</label>
-                <label><input type="checkbox" id="Tree_Style:0x2000000" onclick="SetCheckbox(this)">Exclusion checkboxes</label>(*)
-                <br>
-                <label><input type="checkbox" id="Tree_Style:0x4000000" onclick="SetCheckbox(this)">Dimmed checkboxes</label>(*)
-                <label><input type="checkbox" id="Tree_Style:0x8000000" onclick="SetCheckbox(this)">No indent checks</label>(*)
-                <br>
-                <label><input type="checkbox" id="Tree_Style:0x10000000" onclick="SetCheckbox(this)">Allow junctions</label>(*)
-                <label><input type="checkbox" id="Tree_Style:0x20000000" onclick="SetCheckbox(this)">Show tabs button</label>(*)
-                <br>
-                <label><input type="checkbox" id="Tree_Style:0x40000000" onclick="SetCheckbox(this)">Show delete button</label>(*)
-                <label><input type="checkbox" id="Tree_Style:0x80000000" onclick="SetCheckbox(this)">Show refresh button</label>(*)
+                <label><input type="checkbox" id="Tree_Style:0x800" onclick="SetCheckbox(this)">No replace open</label>(*)<br>
+                <label><input type="checkbox" id="Tree_Style:0x2000" onclick="SetCheckbox(this)">No order stream</label>(*)<br>
+                <label><input type="checkbox" id="Tree_Style:0x4000" onclick="SetCheckbox(this)">Rich tooltip</label>(*)<br>
+                <label><input type="checkbox" id="Tree_Style:0x20000" onclick="SetCheckbox(this)">Tab stop</label><br>
+                <label><input type="checkbox" id="Tree_Style:0x40000" onclick="SetCheckbox(this)">Favorites mode</label><br>
+                <label><input type="checkbox" id="Tree_Style:0x100000" onclick="SetCheckbox(this)">Auto H scroll</label><br>
+                <label><input type="checkbox" id="Tree_Style:0x200000" onclick="SetCheckbox(this)">Fade in out expandos</label>(*)<br>
+                <label><input type="checkbox" id="Tree_Style:0x400000" onclick="SetCheckbox(this)">Empty text</label>(*)<br>
+                <label><input type="checkbox" id="Tree_Style:0x800000" onclick="SetCheckbox(this)">Checkboxes</label><br>
+                <label><input type="checkbox" id="Tree_Style:0x1000000" onclick="SetCheckbox(this)">Partialcheckboxes</label><br>
+                <label><input type="checkbox" id="Tree_Style:0x2000000" onclick="SetCheckbox(this)">Exclusion checkboxes</label>(*)<br>
+                <label><input type="checkbox" id="Tree_Style:0x4000000" onclick="SetCheckbox(this)">Dimmed checkboxes</label>(*)<br>
+                <label><input type="checkbox" id="Tree_Style:0x8000000" onclick="SetCheckbox(this)">No indent checks</label>(*)<br>
+                <label><input type="checkbox" id="Tree_Style:0x10000000" onclick="SetCheckbox(this)">Allow junctions</label>(*)<br>
+                <label><input type="checkbox" id="Tree_Style:0x20000000" onclick="SetCheckbox(this)">Show tabs button</label>(*)<br>
+                <label><input type="checkbox" id="Tree_Style:0x40000000" onclick="SetCheckbox(this)">Show delete button</label>(*)<br>
+                <label><input type="checkbox" id="Tree_Style:0x80000000" onclick="SetCheckbox(this)">Show refresh button</label>(*)<br>
               </div>
               <br>
               <div>
@@ -438,20 +426,15 @@
                 <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_Tree_EnumFlags")'>
               </div>
               <div class="group" id="_Advanced_Tree_EnumFlags">
-                SHCONTF_...<br>
-                <label><input type="checkbox" id="Tree_EnumFlags:0x10" onclick="SetCheckbox(this)">Checking for_children</label>(*7)
-                <label><input type="checkbox" id="Tree_EnumFlags:0x100" onclick="SetCheckbox(this)">Init on first next</label>
-                <br>
-                <label><input type="checkbox" id="Tree_EnumFlags:0x200" onclick="SetCheckbox(this)">Net printer search</label>
-                <br>
-                <label><input type="checkbox" id="Tree_EnumFlags:0x400" onclick="SetCheckbox(this)">Shareable</label>
-                <label><input type="checkbox" id="Tree_EnumFlags:0x800" onclick="SetCheckbox(this)">Storage</label>
-                <label><input type="checkbox" id="Tree_EnumFlags:0x1000" onclick="SetCheckbox(this)">Navigation emun</label>(*7)
-                <br>
-                <label><input type="checkbox" id="Tree_EnumFlags:0x2000" onclick="SetCheckbox(this)">Fast items</label>(*)
-                <label><input type="checkbox" id="Tree_EnumFlags:0x4000" onclick="SetCheckbox(this)">Flat</label>(*)
-                <label><input type="checkbox" id="Tree_EnumFlags:0x8000" onclick="SetCheckbox(this)">Enable async</label>(*)
-                <br>
+                <label><input type="checkbox" id="Tree_EnumFlags:0x10" onclick="SetCheckbox(this)">Checking for_children</label>(*7)<br>
+                <label><input type="checkbox" id="Tree_EnumFlags:0x100" onclick="SetCheckbox(this)">Init on first next</label><br>
+                <label><input type="checkbox" id="Tree_EnumFlags:0x200" onclick="SetCheckbox(this)">Net printer search</label><br>
+                <label><input type="checkbox" id="Tree_EnumFlags:0x400" onclick="SetCheckbox(this)">Shareable</label><br>
+                <label><input type="checkbox" id="Tree_EnumFlags:0x800" onclick="SetCheckbox(this)">Storage</label><br>
+                <label><input type="checkbox" id="Tree_EnumFlags:0x1000" onclick="SetCheckbox(this)">Navigation emun</label>(*7)<br>
+                <label><input type="checkbox" id="Tree_EnumFlags:0x2000" onclick="SetCheckbox(this)">Fast items</label>(*)<br>
+                <label><input type="checkbox" id="Tree_EnumFlags:0x4000" onclick="SetCheckbox(this)">Flat</label>(*)<br>
+                <label><input type="checkbox" id="Tree_EnumFlags:0x8000" onclick="SetCheckbox(this)">Enable async</label>(*)<br>
                 <label><input type="checkbox" id="Tree_EnumFlags:0x10000" onclick="SetCheckbox(this)">Include super hidden</label>(*7)
               </div>
               <div>
@@ -464,7 +447,7 @@
             <div class="panel hide" id="panel5">
               <label>General</label><br>
               <input type="hidden" name="View_ViewFlags">
-              <label><input type="checkbox" id="View_ViewFlags:0x1" onclick="SetCheckbox(this)">Show all files</label> (<label>Include hidden items</label>)
+              <label><input type="checkbox" id="View_ViewFlags:0x1" onclick="SetCheckbox(this)">Show all files</label> (<label>Include hidden items</label>)<br>
               <input type="hidden" name="View_Type">
               <label><input type="checkbox" id="View_Type=2" onchange="document.F.View_Type.value=this.checked ? 2 : 1">Show frames</label>(*)
               <br><br>
@@ -481,17 +464,6 @@
               <label><input type="radio" name="View_ViewMode_" id="View_ViewMode=8" onclick="SetRadio(this)">Content</label>(*7)
               <br>
               <label><input type="checkbox" id="Conf_Layout:0x10000" onclick="SetCheckbox(this)">Auto</label>(*)
-              <br><br>
-              <label>Explorer Browser</label>(*7)<br>
-              <input type="text" name="Conf_Layout" style="display: none">
-              <label><input type="checkbox" id="Conf_Layout:0x1" onclick="SetCheckbox(this)">Icon</label>
-              <label><input type="checkbox" id="Conf_Layout:0x2" onclick="SetCheckbox(this)">Small icon</label>
-              <label><input type="checkbox" id="Conf_Layout:0x4" onclick="SetCheckbox(this)">List</label>
-              <label><input type="checkbox" id="Conf_Layout:0x8" onclick="SetCheckbox(this)">Details</label>
-              <br>
-              <label><input type="checkbox" id="Conf_Layout:0x20" onclick="SetCheckbox(this)">Tile</label>
-              <label><input type="checkbox" id="Conf_Layout:0x40" onclick="SetCheckbox(this)">Thumbstrip</label>
-              <label><input type="checkbox" id="Conf_Layout:0x80" onclick="SetCheckbox(this)">Content</label>
               <br><br>
               <label>Size</label><br>
               <label><input type="radio" name="Conf_SizeFormat_" id="Conf_SizeFormat=0" onclick="SetRadio(this)">Default</label>
@@ -526,41 +498,44 @@
             <div class="panel hide" id="panel5_1">
               <label>Style</label><br>
               <input type="hidden" name="View_fFlags">
-              <label><input type="checkbox" id="View_fFlags:0x1" onclick="SetCheckbox(this)">Auto arrange</label>
-              <label><input type="checkbox" id="View_fFlags:0x40" onclick="SetCheckbox(this)">Single selection</label>
-              <label><input type="checkbox" id="View_fFlags:0x200" onclick="SetCheckbox(this)">No client edge</label>
-              <br>
-              <label><input type="checkbox" id="View_fFlags:0x2000" onclick="SetCheckbox(this)">Show selection always</label>
-              <label><input type="checkbox" id="View_fFlags:0x8000" onclick="SetCheckbox(this)">Single click activate</label>
-              <br>
-              <label><input type="checkbox" id="View_fFlags:0x200000" onclick="SetCheckbox(this)">Full row select</label>
-              <label><input type="checkbox" id="Conf_WheelSelect">Wheel<i> </i>Select</label>
-              <br>
-              <label><input type="checkbox" id="Conf_ViewOrder">@shell32.dll,-50690[Arrange by:]<i> </i>View<span>(</span>Selected items<span>)</span></label>
+              <label><input type="checkbox" id="View_fFlags:0x1" onclick="SetCheckbox(this)">Auto arrange</label><br>
+              <label><input type="checkbox" id="View_fFlags:0x40" onclick="SetCheckbox(this)">Single selection</label><br>
+              <label><input type="checkbox" id="View_fFlags:0x200" onclick="SetCheckbox(this)">No client edge</label><br>
+              <label><input type="checkbox" id="View_fFlags:0x2000" onclick="SetCheckbox(this)">Show selection always</label><br>
+              <label><input type="checkbox" id="View_fFlags:0x8000" onclick="SetCheckbox(this)">Single click activate</label><br>
+              <label><input type="checkbox" id="View_fFlags:0x200000" onclick="SetCheckbox(this)">Full row select</label><br>
+              <label><input type="checkbox" id="Conf_WheelSelect">Wheel<i> </i>Select</label><br>
+              <label><input type="checkbox" id="Conf_ViewOrder">@shell32.dll,-50690[Arrange by:]<i> </i>View<span>(</span>Selected items<span>)</span></label><br>
               <label><input type="checkbox" id="Conf_LibraryFilter">@shell32.dll,-23349[Library]<i> </i>Filter</label>(*)<br>
               <label><input type="checkbox" id="Conf_AutoArrange">Auto arrange<span>(</span>Refresh<span>)</span></label><br>
-              <label><input type="checkbox" id="View_fFlags:0x8000000" onclick="SetCheckbox(this)">Auto check select</label>(*)
+              <label><input type="checkbox" id="View_fFlags:0x8000000" onclick="SetCheckbox(this)">Auto check select</label>(*)<br>
               <label><input type="checkbox" id="Conf_ColumnEmphasis">Column emphasis</label>
               <div>
                 <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_FWF")'>
               </div>
               <div class="group" id="_Advanced_FWF">
-                <label><input type="checkbox" id="View_fFlags:0x80" onclick="SetCheckbox(this)">No subfolders</label>
-                <label><input type="checkbox" id="View_fFlags:0x800" onclick="SetCheckbox(this)">Align left</label>
-                <label><input type="checkbox" id="View_fFlags:0x20000" onclick="SetCheckbox(this)">Hide filenames</label>
-                <br>
-                <label><input type="checkbox" id="View_fFlags:0x40000" onclick="SetCheckbox(this)">Check select</label>
-                <label><input type="checkbox" id="View_fFlags:0x80000" onclick="SetCheckbox(this)">No grouping</label>(*)
-                <br>
-                <label><input type="checkbox" id="View_fFlags:0x800000" onclick="SetCheckbox(this)">No column header</label>(*)
-                <label><input type="checkbox" id="View_fFlags:0x1000000" onclick="SetCheckbox(this)">No header in all views</label>(*)
-                <br>
-                <label><input type="checkbox" id="View_fFlags:0x2000000" onclick="SetCheckbox(this)">Extended tiles</label>(*)
-                <label><input type="checkbox" id="View_fFlags:0x10000000" onclick="SetCheckbox(this)">No browser view state</label>(*)
-                <br>
-                <label><input type="checkbox" id="View_fFlags:0x20000000" onclick="SetCheckbox(this)">Subset groups</label>(*)
+                <label><input type="checkbox" id="View_fFlags:0x80" onclick="SetCheckbox(this)">No subfolders</label><br>
+                <label><input type="checkbox" id="View_fFlags:0x800" onclick="SetCheckbox(this)">Align left</label><br>
+                <label><input type="checkbox" id="View_fFlags:0x20000" onclick="SetCheckbox(this)">Hide filenames</label><br>
+                <label><input type="checkbox" id="View_fFlags:0x40000" onclick="SetCheckbox(this)">Check select</label><br>
+                <label><input type="checkbox" id="View_fFlags:0x80000" onclick="SetCheckbox(this)">No grouping</label>(*)<br>
+                <label><input type="checkbox" id="View_fFlags:0x800000" onclick="SetCheckbox(this)">No column header</label>(*)<br>
+                <label><input type="checkbox" id="View_fFlags:0x1000000" onclick="SetCheckbox(this)">No header in all views</label>(*)<br>
+                <label><input type="checkbox" id="View_fFlags:0x2000000" onclick="SetCheckbox(this)">Extended tiles</label>(*)<br>
+                <label><input type="checkbox" id="View_fFlags:0x10000000" onclick="SetCheckbox(this)">No browser view state</label>(*)<br>
+                <label><input type="checkbox" id="View_fFlags:0x20000000" onclick="SetCheckbox(this)">Subset groups</label>(*)<br>
                 <label><input type="checkbox" id="View_fFlags:0x80000000" onclick="SetCheckbox(this)">Allow RTL reading</label>(*)
-                </div>
+              </div>
+              <label>Explorer Browser</label>(*7)<br>
+              <input type="text" name="Conf_Layout" style="display: none">
+              <label><input type="checkbox" id="Conf_Layout:0x1" onclick="SetCheckbox(this)">Icon</label><br>
+              <label><input type="checkbox" id="Conf_Layout:0x2" onclick="SetCheckbox(this)">Small icon</label><br>
+              <label><input type="checkbox" id="Conf_Layout:0x4" onclick="SetCheckbox(this)">List</label><br>
+              <label><input type="checkbox" id="Conf_Layout:0x8" onclick="SetCheckbox(this)">Details</label><br>
+              <label><input type="checkbox" id="Conf_Layout:0x20" onclick="SetCheckbox(this)">Tile</label><br>
+              <label><input type="checkbox" id="Conf_Layout:0x40" onclick="SetCheckbox(this)">Thumbstrip</label><br>
+              <label><input type="checkbox" id="Conf_Layout:0x80" onclick="SetCheckbox(this)">Content</label><br>
+              <br><br>
               <div>
                 (*)Windows Vista <label>or higher.</label>
               </div>
