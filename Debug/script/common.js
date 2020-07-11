@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200710 ? te.Version : 20200710;
+		return te.Version < 20200711 ? te.Version : 20200711;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -3294,9 +3294,6 @@ GetSysColor = function (i) {
 
 SetSysColor = function (i, color) {
 	g_.Colors[i] = color;
-	if (i == COLOR_BTNFACE) {
-		te.Background = isFinite(color) ? api.CreateSolidBrush(color) : null;
-	}
 }
 
 ShellExecute = function (s, vOperation, nShow, vDir2, pt) {

@@ -367,11 +367,11 @@
               <label><input type="checkbox" id="Tree_Style:0x80" onclick="SetCheckbox(this)">Show selection always</label><br>
               <label><input type="checkbox" id="Tree_Style:0x20" onclick="SetCheckbox(this)">Horizontal scroll</label><br>
               <label><input type="checkbox" id="Tree_Style:0x8000" onclick="SetCheckbox(this)">Border</label><br>
+              <label><input type="checkbox" id="Tree_Style:0x40" onclick="SetCheckbox(this)">Root has expando</label>(*)<br>
               <div>
                 <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_Tree_Style")'>
               </div>
               <div class="group" id="_Advanced_Tree_Style">
-                <label><input type="checkbox" id="Tree_Style:0x40" onclick="SetCheckbox(this)">Root has expando</label>(*)<br>
                 <label><input type="checkbox" id="Tree_Style:0x400" onclick="SetCheckbox(this)">Even height</label>
                 <br>
                 <label><input type="checkbox" id="Tree_Style:0x800" onclick="SetCheckbox(this)">No replace open</label>(*)<br>
@@ -403,11 +403,9 @@
             <!--panel_end-->
 
             <div class="panel hide" id="panel4_1">
-              <label>Root</label><br>
               <table style="width: 100%">
                 <tr>
-                  <td style="width: 100%">
-                    <input type="text" name="Tree_Root" style="width: 100%">
+                  <td style="width: 100%"><label>Root</label>
                   </td>
                   <td>
                     <input type="button" value="Browse..." onclick="ChooseFolder1(document.F.Tree_Root)">
@@ -416,7 +414,8 @@
                     <input type="button" value="Set Default" onclick="SetDefault(document.F.Tree_Root, '0');">
                   </td>
                 </tr>
-              </table><br>
+              </table>
+              <textarea name="Tree_Root" style="width: 100%; height: 16em"></textarea>
               <label>Style</label><br>
               <input type="hidden" name="Tree_RootStyle">
               <label><input type="radio" name="Tree_RootStyle_" id="Tree_RootStyle=0" onclick="SetRadio(this)">Visible</label>

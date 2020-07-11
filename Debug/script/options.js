@@ -311,7 +311,13 @@ function ChooseFolder1(o) {
 	setTimeout(function () {
 		var r = BrowseForFolder(o.value);
 		if (r) {
-			o.value = r;
+			if (api.GetKeyState(VK_CONTROL) < 0 && /textarea/i.test(o.tagName)) {
+				var ar = o.value.replace(/\s+$/g, "").split(/\n/);
+				ar.push(r);
+				o.value = ar.join("\n");
+			} else {
+				o.value = r;
+			}
 		}
 	}, 99);
 }

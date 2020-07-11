@@ -827,12 +827,13 @@ public:
 	HRESULT getSelected(IDispatch **pItem);
 	VOID SetRootV(VARIANT *pv);
 	VOID SetRoot();
+	VOID SetRoot2();
 	VOID Show();
 #ifdef _2000XP
 	VOID SetObjectRect();
 #endif
 public:
-	VARIANT		m_vRoot;
+	BSTR		m_bsRoot;
 	HWND        m_hwnd;
 	HWND        m_hwndTV;
 	INameSpaceTreeControl	*m_pNameSpaceTreeControl;

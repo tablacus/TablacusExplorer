@@ -120,7 +120,6 @@ BSTR	g_bsHiddenFilter = NULL;
 BSTR	g_bsExplorerBrowserFilter = NULL;
 HTREEITEM	g_hItemDown = NULL;
 SORTCOLUMN g_pSortColumnNull[3];
-HBRUSH	g_hbrBackground = NULL;
 
 UINT	g_uCrcTable[256];
 LONG	g_nSize = 0;
@@ -134,6 +133,7 @@ DWORD	g_dwSessionId = 0;
 DWORD	g_dwTickKey;
 DWORD	g_dwFreeLibrary = 0;
 DWORD	g_dwTickMount = 0;
+DWORD	g_dwTickRedraw = 0;
 long	g_nProcKey	   = 0;
 long	g_nProcMouse   = 0;
 long	g_nProcDrag    = 0;
@@ -155,7 +155,6 @@ BOOL	g_bLabelsMode;
 BOOL	g_bMessageLoop = TRUE;
 BOOL	g_bDialogOk = FALSE;
 BOOL	g_bInit = FALSE;
-BOOL	g_bSetRedraw = TRUE;
 BOOL	g_bShowParseError = TRUE;
 BOOL	g_bDragging = FALSE;
 BOOL	g_bCanLayout = FALSE;
@@ -199,6 +198,7 @@ int teGetModuleFileName(HMODULE hModule, BSTR *pbsPath);
 BOOL GetVarArrayFromIDList(VARIANT *pv, LPITEMIDLIST pidl);
 HRESULT teGetDisplayNameFromIDList(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags);
 HRESULT STDAPICALLTYPE tePSPropertyKeyFromStringEx(__in LPCWSTR pszString, __out PROPERTYKEY *pkey);
+VOID teGetDarkMode();
 
 //Unit
 
@@ -1021,14 +1021,15 @@ VOID teSetRedraw(BOOL bSetRedraw)
 {
 	if (g_pWebBrowser) {
 		if (bSetRedraw || g_bDragging || g_bInit) {
-			if (!g_bSetRedraw) {
-				g_bSetRedraw = TRUE;
+			if (g_dwTickRedraw) {
+				g_dwTickRedraw = 0;
 				SendMessage(g_pWebBrowser->m_hwndBrowser, WM_SETREDRAW, TRUE, 0);
 				RedrawWindow(g_pWebBrowser->m_hwndBrowser, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+				KillTimer(g_hwndMain, TET_SetRedraw);
 			}
 		} else {
-			if (g_bSetRedraw) {
-				g_bSetRedraw = FALSE;
+			if (g_dwTickRedraw == 0) {
+				g_dwTickRedraw = GetTickCount();
 				SendMessage(g_pWebBrowser->m_hwndBrowser, WM_SETREDRAW, FALSE, 0);
 				SetTimer(g_hwndMain, TET_SetRedraw, 5000, teTimerProc);
 			}
@@ -1053,7 +1054,7 @@ VOID teUnlockUpadte(int nStep)
 	if (g_nLockUpdate <= 0) {
 		g_nLockUpdate = 0;
 		teSetRedraw(TRUE);
-		if (g_bSetRedraw) {
+		if (g_dwTickRedraw == 0) {
 			for (UINT i = 0; i < g_ppTC.size(); ++i) {
 				CteTabCtrl *pTC = g_ppTC[i];
 				if (pTC->m_bVisible) {
@@ -4870,7 +4871,7 @@ VOID teSetDarkMode(HWND hwnd)
 		lpfnAllowDarkModeForWindow(hwnd, g_bDarkMode);
 	}
 	if (lpfnSetWindowCompositionAttribute) {
-		WINDOWCOMPOSITIONATTRIBDATA wcpad = { 26, &g_bDarkMode, sizeof(g_bDarkMode) };
+		WINCOMPATTRDATA wcpad = { 26, &g_bDarkMode, sizeof(g_bDarkMode) };
 		lpfnSetWindowCompositionAttribute(hwnd, &wcpad);
 	} else if (lpfnDwmSetWindowAttribute) {
 		lpfnDwmSetWindowAttribute(hwnd, 19, &g_bDarkMode, sizeof(g_bDarkMode));
@@ -4931,8 +4932,12 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 							g_bDragging = FALSE;
 						}
 					}
-					if (wParam == WM_MOUSEMOVE) {
-						SendMessage(g_pWebBrowser->m_hwndBrowser, WM_SETREDRAW, TRUE, 0);
+					if (wParam == WM_MOUSEMOVE && g_dwTickRedraw) {
+						DWORD dwTick = GetTickCount();
+						if (dwTick - g_dwTickRedraw > 5000) {
+							g_dwTickRedraw = dwTick;
+							SetTimer(g_hwndMain, TET_SetRedraw, 500, teTimerProc);
+						}
 					}
 					if (g_pOnFunc[TE_OnMouseMessage]) {
 						MOUSEHOOKSTRUCTEX *pMHS = (MOUSEHOOKSTRUCTEX *)lParam;
@@ -6919,8 +6924,18 @@ VOID teApiStrCmpLogical(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 VOID teApiPathQuoteSpaces(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	if (param[0].bstrVal) {
-		BSTR bsResult = teSysAllocStringLen(param[0].bstrVal, ::SysStringLen(param[0].bstrVal) + 2);
+		int nLen = lstrlen(param[0].bstrVal);
+		BSTR bsResult = teSysAllocStringLen(param[0].bstrVal, nLen + 2);
 		PathQuoteSpaces(bsResult);
+		if (bsResult[0] != '"' && nLen) {
+			for (int i = nLen; i--;) {
+				if (bsResult[i] == ',') {
+					lstrcpyn(&bsResult[1], param[0].bstrVal, nLen + 1);
+					bsResult[0] = bsResult[nLen + 1] = '"';
+					break;
+				}
+			}
+		}
 		teSetBSTR(pVarResult, &bsResult, -1);
 	}
 }
@@ -7434,7 +7449,7 @@ VOID teApiSetWindowText(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 
 VOID teApiRedrawWindow(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	if (!g_bSetRedraw && g_hwndMain == param[0].hwnd) {
+	if (g_dwTickRedraw && g_hwndMain == param[0].hwnd) {
 		teSetBool(pVarResult, FALSE);
 	} else {
 		teSetBool(pVarResult, RedrawWindow(param[0].hwnd, param[1].lprect, param[2].hrgn, param[3].uintVal));
@@ -10343,7 +10358,6 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 					pcwp = (LPCWPSTRUCT)lParam;
 					if (pcwp->message == WM_ACTIVATE && g_pTC) {
 						g_pTC->CheckRedraw();
-						SendMessage(g_pWebBrowser->m_hwndBrowser, WM_SETREDRAW, TRUE, 0);
 					}
 					switch (pcwp->message)
 					{
@@ -10885,9 +10899,6 @@ function _c(s) {\
 	//At the end of processing
 	try {
 		g_bMessageLoop = FALSE;
-		if (g_hbrBackground) {
-			DeleteObject(g_hbrBackground);
-		}
 		RevokeDragDrop(g_hwndMain);
 #ifdef _USE_HTMLDOC
 		SafeRelease(&pHtmlDoc);
@@ -11353,9 +11364,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				}
 				return DefWindowProc(hWnd, message, wParam, lParam);
 			case WM_CTLCOLORSTATIC:
-				if (g_hbrBackground) {
+				return (LRESULT)GetClassLongPtr(hWnd, GCLP_HBRBACKGROUND);
+/*				if (g_hbrBackground) {
 					return (LRESULT)g_hbrBackground;
-				}
+				}*/
 				break;
 		}//end_switch
 	} catch (...) {
@@ -11797,7 +11809,7 @@ HRESULT CteShellBrowser::Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *
 			if (bNew) {
 				pSB = GetNewShellBrowser(m_pTC);
 				*ppSB = pSB;
-				VariantCopy(&pSB->m_pTV->m_vRoot, &m_pTV->m_vRoot);
+				pSB->m_pTV->m_bsRoot = ::SysAllocString(m_pTV->m_bsRoot);
 			}
 			for (int i = SB_Count; i--;) {
 				pSB->m_param[i] = param[i];
@@ -16819,16 +16831,6 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				}
 				teSetSZ(pVarResult, g_bsHiddenFilter);
 				return S_OK;
-			//Background
-			case 1140:
-				if (nArg >= 0) {
-					if (g_hbrBackground) {
-						DeleteObject(g_hbrBackground);
-					}
-					g_hbrBackground = (HBRUSH)GetLLFromVariant(&pDispParams->rgvarg[nArg]);
-				}
-				teSetPtr(pVarResult, g_hbrBackground);
-				return S_OK;
 			//ThumbnailProvider//Deprecated
 /*			case 1150:
 				teSetPtr(pVarResult, teThumbnailProvider);
@@ -17990,6 +17992,13 @@ VOID CteTabCtrl::CheckRedraw()
 	if (m_nRedraw & TEREDRAW_NAVIGATE) {
 		m_nRedraw = TEREDRAW_NORMAL;
 		RedrawUpdate();
+	}
+	if (g_dwTickRedraw && !g_nLockUpdate) {
+		DWORD dwTick = GetTickCount();
+		if (dwTick - g_dwTickRedraw > 5000) {
+			g_dwTickRedraw = dwTick;
+			SetTimer(g_hwndMain, TET_SetRedraw, 500, teTimerProc);
+		}
 	}
 }
 
@@ -20636,7 +20645,7 @@ CteTreeView::CteTreeView()
 	m_bMain = TRUE;
 	m_pDropTarget2 = NULL;
 	VariantInit(&m_vData);
-	VariantInit(&m_vRoot);
+	m_bsRoot = ::SysAllocString(L"0");
 #ifdef _W2000
 	VariantInit(&m_vSelected);
 #endif
@@ -20645,7 +20654,7 @@ CteTreeView::CteTreeView()
 CteTreeView::~CteTreeView()
 {
 	Close();
-	VariantClear(&m_vRoot);
+	teSysFreeString(&m_bsRoot);
 	if (!m_pFV && m_param) {
 		delete [] m_param;
 		m_param = NULL;
@@ -20668,7 +20677,6 @@ VOID CteTreeView::Init(CteShellBrowser *pFV, HWND hwnd)
 	m_hwndTV = NULL;
 	m_pNameSpaceTreeControl = NULL;
 	m_bSetRoot = TRUE;
-	teSetLong(&m_vRoot, 0);
 #ifdef _2000XP
 	m_pShellNameSpace = NULL;
 #endif
@@ -21034,9 +21042,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 				if (nArg >= 0) {
 					m_param[SB_TreeAlign] = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 					ArrangeWindow();
-					if (m_bSetRoot && m_param[SB_TreeAlign] & 2) {
-						SetTimer(g_hwndMain, (UINT_PTR)this, 500, teTimerProcSetRoot);
-					}
+					SetRoot2();
 				}
 				teSetLong(pVarResult, m_param[SB_TreeAlign]);
 				return S_OK;
@@ -21045,9 +21051,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 				if (nArg >= 0) {
 					m_param[SB_TreeAlign] = GetIntFromVariant(&pDispParams->rgvarg[nArg]) ? 3 : 1;
 					ArrangeWindow();
-					if (m_bSetRoot && m_param[SB_TreeAlign] & 2) {
-						SetTimer(g_hwndMain, (UINT_PTR)this, 500, teTimerProcSetRoot);
-					}
+					SetRoot2();
 				}
 				teSetBool(pVarResult, m_param[SB_TreeAlign] & 2);
 				return S_OK;
@@ -21200,10 +21204,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 			//Root
 			case 0x20000002:
 				if (pVarResult) {
-					VariantCopy(pVarResult, &m_vRoot);
-					if (pVarResult->vt == VT_NULL || pVarResult->vt == VT_EMPTY) {
-						teSetLong(pVarResult, 0);
-					}
+					teSetSZ(pVarResult, m_bsRoot);
 					if (nArg < 0) {
 						return S_OK;
 					}
@@ -21213,13 +21214,27 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 				if (nArg >= 0) {
 					m_param[SB_EnumFlags] = g_paramFV[SB_EnumFlags];
 					m_param[SB_RootStyle] = g_paramFV[SB_RootStyle];
+					BOOL bChanged = FALSE;
 					if (nArg >= 1) {
-						m_param[SB_EnumFlags] = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
+						DWORD dwEnumFlags = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
+						if (m_param[SB_EnumFlags] != dwEnumFlags) {
+							m_param[SB_EnumFlags] = dwEnumFlags;
+							bChanged = TRUE;
+						}
 						if (nArg >= 2) {
-							m_param[SB_RootStyle] = GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]);
+							DWORD dwRootStyle = GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]);
+							if (m_param[SB_RootStyle] != dwRootStyle) {
+								m_param[SB_RootStyle] = dwRootStyle;
+								bChanged = TRUE;
+							}
 						}
 					}
 					SetRootV(&pDispParams->rgvarg[nArg]);
+					if (bChanged && !m_bSetRoot) {
+						Close();
+						m_bSetRoot = TRUE;
+						SetRoot2();
+					}
 					return S_OK;
 				}
 				break;
@@ -21345,7 +21360,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 						if (dw != m_param[dispIdMember - TE_OFFSET]) {
 							m_param[dispIdMember - TE_OFFSET] = dw;
 							g_paramFV[dispIdMember - TE_OFFSET] = dw;
-							if (dispIdMember == TE_OFFSET + SB_TreeFlags) {
+							if (dispIdMember >= TE_OFFSET + SB_TreeFlags) {
 								Close();
 								m_bSetRoot = TRUE;
 							}
@@ -21738,20 +21753,16 @@ STDMETHODIMP CteTreeView::ShowPropertyFrame()
 
 VOID CteTreeView::SetRootV(VARIANT *pv)
 {
-	LPITEMIDLIST pidl1, pidl2;
-	teGetIDListFromVariant(&pidl1, &m_vRoot);
-	teGetIDListFromVariant(&pidl2, pv);
-	if (!ILIsEqual(pidl1, pidl2)) {
+	VARIANT v;
+	teVariantChangeType(&v, pv, VT_BSTR);
+	if (lstrcmpi(v.bstrVal, m_bsRoot)) {
 		Close();
-		VariantClear(&m_vRoot);
-		VariantCopy(&m_vRoot, pv);
+		teSysFreeString(&m_bsRoot);
+		m_bsRoot = ::SysAllocString(v.bstrVal);
 		m_bSetRoot = TRUE;
-		if (m_param[SB_TreeAlign] & 2) {
-			SetTimer(g_hwndMain, (UINT_PTR)this, 500, teTimerProcSetRoot);
-		}
+		SetRoot2();
 	}
-	teCoTaskMemFree(pidl2);
-	teCoTaskMemFree(pidl1);
+	VariantClear(&v);
 }
 
 VOID CteTreeView::SetRoot()
@@ -21762,15 +21773,36 @@ VOID CteTreeView::SetRoot()
 #ifdef _2000XP
 		if (lpfnSHCreateItemFromIDList) {
 #endif
-			LPITEMIDLIST pidl;
-			if (!teGetIDListFromVariant(&pidl, &m_vRoot)) {
-				pidl = ::ILClone(g_pidls[CSIDL_DESKTOP]);
+			int nRoots = 0;
+			BSTR bs = ::SysAllocString(m_bsRoot);
+			LPWSTR pszPath = bs;
+			for (int i = 0; i <= ::SysStringLen(bs); ++i) {
+				if (bs[i] < 0x20) {
+					bs[i] = 0;
+					PathUnquoteSpaces(pszPath);
+					if (lstrlen(pszPath)) {
+						LPITEMIDLIST pidl = teILCreateFromPath(pszPath);
+						pszPath = &bs[i + 1];
+						if (pidl) {
+							if SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(&pShellItem))) {
+								hr = m_pNameSpaceTreeControl->AppendRoot(pShellItem, m_param[SB_EnumFlags], m_param[SB_RootStyle], this);
+								pShellItem->Release();
+								if SUCCEEDED(hr) {
+									++nRoots;
+								}
+							}
+							teCoTaskMemFree(pidl);
+						}
+					}
+				}
 			}
-			if SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(&pShellItem))) {
-				hr = m_pNameSpaceTreeControl->AppendRoot(pShellItem, m_param[SB_EnumFlags], m_param[SB_RootStyle], this);
-				pShellItem->Release();
+			teSysFreeString(&bs);
+			if (!nRoots) {
+				if SUCCEEDED(lpfnSHCreateItemFromIDList(g_pidls[CSIDL_DESKTOP], IID_PPV_ARGS(&pShellItem))) {
+					hr = m_pNameSpaceTreeControl->AppendRoot(pShellItem, m_param[SB_EnumFlags], m_param[SB_RootStyle], this);
+					pShellItem->Release();
+				}
 			}
-			teCoTaskMemFree(pidl);
 #ifdef _2000XP
 		}
 #endif
@@ -21787,37 +21819,29 @@ VOID CteTreeView::SetRoot()
 
 		//running to call DISPID_FAVSELECTIONCHANGE SetRoot(Windows 2000)
 		m_pShellNameSpace->put_EnumOptions(m_param[SB_EnumFlags]);
-
-		LPITEMIDLIST pidl;
-		if (teGetIDListFromVariant(&pidl, &m_vRoot)) {
-			BSTR bs;
-			if SUCCEEDED(teGetDisplayNameFromIDList(&bs, pidl, SHGDN_FORPARSING)) {
-				if (::SysStringLen(bs) && bs[0] == ':') {
-					hr = m_pShellNameSpace->SetRoot(bs);
-				}
-				::SysFreeString(bs);
-			}
-			teCoTaskMemFree(pidl);
-		}
+		hr = m_pShellNameSpace->SetRoot(m_bsRoot);
 		if (hr != S_OK) {
-			if (m_vRoot.vt == VT_BSTR) {
-				hr = m_pShellNameSpace->SetRoot(m_vRoot.bstrVal);
-				if (hr != S_OK) {
-					VARIANT v;
-					teVariantChangeType(&v, &m_vRoot, VT_I4);
-					hr = m_pShellNameSpace->put_Root(v);
-					m_pShellNameSpace->SetRoot(NULL);
-				}
-			} else {
-				hr = m_pShellNameSpace->put_Root(m_vRoot);
-				m_pShellNameSpace->SetRoot(NULL);
-			}
+			VARIANT v, v0;
+			v0.bstrVal = m_bsRoot;
+			v0.vt = VT_I4;
+			teVariantChangeType(&v, &v0, VT_I4);
+			hr = m_pShellNameSpace->put_Root(v);
+			m_pShellNameSpace->SetRoot(NULL);
 		}
 	}
 #endif
 	if (hr == S_OK) {
 		m_bSetRoot = FALSE;
 		DoFunc(TE_OnViewCreated, this, E_NOTIMPL);
+	}
+}
+
+VOID CteTreeView::SetRoot2()
+{
+	if (IsWindowVisible(m_hwnd)) {
+		if (m_param[SB_TreeAlign] & 2) {
+			SetTimer(g_hwndMain, (UINT_PTR)this, 500, teTimerProcSetRoot);
+		}
 	}
 }
 

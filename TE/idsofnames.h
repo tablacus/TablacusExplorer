@@ -709,7 +709,7 @@ TEmethod methodTE[] = {
 	{ 1137, "ProgressDialog" },
 	{ 1138, "DateTimeFormat" },
 	{ 1139, "HiddenFilter" },
-	{ 1140, "Background" },
+//	{ 1140, "Background" },,//Deprecated
 //	{ 1150, "ThumbnailProvider" },//Deprecated
 	{ 1160, "DragIcon" },
 	{ 1180, "ExplorerBrowserFilter" },
