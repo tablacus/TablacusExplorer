@@ -762,28 +762,55 @@ BOOL teStrSameIFree(BSTR bs, LPWSTR lpstr2)
 	return b;
 }
 
+BOOL teCompareSFClass(IShellFolder *pSF, const CLSID *pclsid)
+{
+	BOOL bResult = FALSE;
+	if (pSF) {
+		IPersist *pPersist;
+		if SUCCEEDED(pSF->QueryInterface(IID_PPV_ARGS(&pPersist))) {
+			CLSID clsid;
+			if SUCCEEDED(pPersist->GetClassID(&clsid)) {
+				bResult = IsEqualCLSID(clsid, *pclsid);
+			}
+			pPersist->Release();
+		}
+	}
+	return bResult;
+}
+
 HRESULT teGetPropertyKeyFromName(IShellFolder2 *pSF2, BSTR bs, PROPERTYKEY *pkey)
 {
 	HRESULT hr = lpfnPSPropertyKeyFromStringEx(bs, pkey);
 	if FAILED(hr) {
-		IShellFolder *pSF = NULL;
-		if (!pSF) {
-			if SUCCEEDED(SHGetDesktopFolder(&pSF)) {
-				if SUCCEEDED(pSF->QueryInterface(IID_PPV_ARGS(&pSF2))) {
+		if (pSF2) {
+			SHELLDETAILS sd;
+			for (UINT i = 0; i < MAX_COLUMNS && pSF2->GetDetailsOf(NULL, i, &sd) == S_OK; ++i) {
+				BSTR bs1;
+				if SUCCEEDED(StrRetToBSTR(&sd.str, NULL, &bs1)) {
+					if (teStrSameIFree(bs1, bs)) {
+						hr = pSF2->MapColumnToSCID(i, pkey);
+						if (hr == S_OK) {
+							break;
+						}
+					}
+				}
+			}
+		}
+		if FAILED(hr) {
+			if (!teCompareSFClass(pSF2, &CLSID_ShellFSFolder) && !teCompareSFClass(pSF2, &CLSID_ShellDesktop)) {
+				IShellFolder *pSF;
+				if SUCCEEDED(SHGetDesktopFolder(&pSF)) {
+					if (teCompareSFClass(pSF, &CLSID_ShellDesktop)) {
+						IShellFolder2 *pSF2a;
+						if SUCCEEDED(pSF->QueryInterface(IID_PPV_ARGS(&pSF2a))) {
+							hr = teGetPropertyKeyFromName(pSF2a, bs, pkey);
+							pSF2a->Release();
+						}
+					}
 					pSF->Release();
 				}
 			}
 		}
-		SHELLDETAILS sd;
-		for (UINT i = 0; hr != S_OK && i < MAX_COLUMNS && pSF2->GetDetailsOf(NULL, i, &sd) == S_OK; ++i) {
-			BSTR bs1;
-			if SUCCEEDED(StrRetToBSTR(&sd.str, NULL, &bs1)) {
-				if (teStrSameIFree(bs1, bs)) {
-					hr = pSF2->MapColumnToSCID(i, pkey);
-				}
-			}
-		}
-		SafeRelease(&pSF);
 	}
 	return hr;
 }
@@ -1353,20 +1380,6 @@ BOOL GetShellFolder(IShellFolder **ppSF, LPCITEMIDLIST pidl)
 	}
 #endif
 	return TRUE;
-}
-
-BOOL teCompareSFClass(IShellFolder *pSF, const CLSID *pclsid)
-{
-	BOOL bResult = FALSE;
-	IPersist *pPersist;
-	if SUCCEEDED(pSF->QueryInterface(IID_PPV_ARGS(&pPersist))) {
-		CLSID clsid;
-		if SUCCEEDED(pPersist->GetClassID(&clsid)) {
-			bResult = IsEqualCLSID(clsid, *pclsid);
-		}
-		pPersist->Release();
-	}
-	return bResult;
 }
 
 LPITEMIDLIST teSHSimpleIDListFromPathEx(LPWSTR lpstr, DWORD dwAttr, DWORD nSizeLow, DWORD nSizeHigh, FILETIME *pft)
@@ -2632,6 +2645,11 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 								lstrcat(bsPath4, pszPath);
 								pidl = teILCreateFromPathEx(bsPath4);
 								::SysFreeString(bsPath4);
+								if SUCCEEDED(teGetDisplayNameFromIDList(&bsPath4, pidl, SHGDN_INFOLDER | SHGDN_ORIGINAL)) {
+									::SysFreeString(bsPath4);
+								} else {
+									teILFreeClear(&pidl);
+								}
 							}
 						}
 					}
@@ -20645,7 +20663,7 @@ CteTreeView::CteTreeView()
 	m_bMain = TRUE;
 	m_pDropTarget2 = NULL;
 	VariantInit(&m_vData);
-	m_bsRoot = ::SysAllocString(L"0");
+	m_bsRoot = ::SysAllocString(L"::{679F85CB-0220-4080-B29B-5540CC05AAB6}\n0");
 #ifdef _W2000
 	VariantInit(&m_vSelected);
 #endif
