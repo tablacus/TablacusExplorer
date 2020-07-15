@@ -456,6 +456,22 @@ VOID SafeRelease(PVOID ppObj)
 	}
 }
 
+HRESULT teSetSFVCB(IShellView *pSV, IShellFolderViewCB* pNewCB, IShellFolderViewCB** ppOldCB)
+{
+	HRESULT hr = E_NOTIMPL;
+	IShellFolderView *pSFV;
+	if (pSV->QueryInterface(IID_PPV_ARGS(&pSFV)) == S_OK) {
+		IShellFolderViewCB *pSFVCB = NULL;
+		if (ppOldCB == NULL) {
+			ppOldCB = &pSFVCB;
+		}
+		hr = pSFV->SetCallback(pNewCB, ppOldCB);
+		SafeRelease(&pSFVCB);
+		pSFV->Release();
+	}
+	return hr;
+}
+
 LONGLONG teGetStreamPos(IStream *pStream)
 {
 	ULARGE_INTEGER uliPos;
@@ -1850,18 +1866,18 @@ HRESULT teGetDisplayNameFromIDList(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags)
 	}
 	return hr;
 }
-/*
-BOOL teILIsFileSystem(LPITEMIDLIST pidl)
+
+BOOL teILIsSearchFolder(LPITEMIDLIST pidl)
 {
 	BOOL bResult = FALSE;
 	BSTR bs;
-	if SUCCEEDED(teGetDisplayNameFromIDList(&bs, pidl, SHGDN_FORPARSING)) {
-		bResult = teIsFileSystem(bs);
+	if SUCCEEDED(teGetDisplayNameFromIDList(&bs, pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)) {
+		bResult = teStartsText(L"search-ms:", bs);
 		::SysFreeString(bs);
 	}
 	return bResult;
 }
-*/
+
 BOOL teILIsFileSystemEx(LPCITEMIDLIST pidl)
 {
 	LPCITEMIDLIST pidlPart;
@@ -11553,7 +11569,6 @@ void CteShellBrowser::Clear()
 		teSysFreeString(&m_bsNextGroup);
 		teUnadviseAndRelease(m_pdisp, DIID_DShellFolderViewEvents, &m_dwCookie);
 		m_pdisp = NULL;
-		SafeRelease(&m_pSFVCB);
 #ifdef _2000XP
 		if (m_nColumns) {
 			delete [] m_pColumns;
@@ -15192,25 +15207,21 @@ int CteShellBrowser::GetSizeFormat()
 	return m_nSizeFormat != -1 ? m_nSizeFormat : g_param[TE_SizeFormat];
 }
 
+
 STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 {
 	m_bViewCreated = FALSE;
 	if (psv) {
-		psv->QueryInterface(IID_PPV_ARGS(&m_pShellView));
-		if (teCompareSFClass(m_pSF2, &CLSID_ShellFSFolder)) {
-			IShellFolderView *pSFV;
-			if (m_pShellView->QueryInterface(IID_PPV_ARGS(&pSFV)) == S_OK) {
-				IShellFolderViewCB *pSFVCB;
-				if (pSFV->SetCallback((IShellFolderViewCB *)this, &pSFVCB) == S_OK) {
-					if (pSFVCB != (IShellFolderViewCB *)this) {
-						SafeRelease(&m_pSFVCB);
-						m_pSFVCB = pSFVCB;
-					} else {
-						SafeRelease(&pSFVCB);
-					}
-				}
-				pSFV->Release();
+		if (m_pShellView) {
+			if (m_pSFVCB) {
+				teSetSFVCB(m_pShellView, m_pSFVCB, NULL);
+				SafeRelease(&m_pSFVCB);
 			}
+			SafeRelease(&m_pShellView);
+		}
+		psv->QueryInterface(IID_PPV_ARGS(&m_pShellView));
+		if (teCompareSFClass(m_pSF2, &CLSID_ShellFSFolder) && !teILIsSearchFolder(m_pidl)) {
+			teSetSFVCB(psv, (IShellFolderViewCB *)this, &m_pSFVCB);
 		}
 	}
 	GetShellFolderView();
@@ -15648,17 +15659,11 @@ STDMETHODIMP CteShellBrowser::CreateViewObject(HWND hwndOwner, REFIID riid, void
 		sfvc.psvOuter = NULL;
 		IShellView *pSV;
 		if SUCCEEDED(m_pSF2->CreateViewObject(hwndOwner, IID_PPV_ARGS(&pSV))) {
-			IShellFolderView *pSFV;
-			if (pSV->QueryInterface(IID_PPV_ARGS(&pSFV)) == S_OK) {
-				pSFV->SetCallback(NULL, &m_pSFVCB);
-				pSFV->Release();
-			}
-			if (m_pSFVCB) {
-				pSV->Release();
-			} else {
+			if (teSetSFVCB(pSV, NULL, &m_pSFVCB) == S_OK) {
 				*ppv = pSV;
 				return S_OK;
 			}
+			pSV->Release();
 		}
 		return SHCreateShellFolderView(&sfvc, (IShellView **)ppv);
 	}
@@ -16147,6 +16152,10 @@ VOID CteShellBrowser::DestroyView(int nFlags)
 	}
 	if (m_pShellView) {
 		try {
+			if (m_pSFVCB) {
+				teSetSFVCB(m_pShellView, m_pSFVCB, NULL);
+				SafeRelease(&m_pSFVCB);
+			}
 			if (bCloseSB && (nFlags & 1) == 0) {
 				Show(FALSE, 0);
 				m_pShellView->DestroyViewWindow();
