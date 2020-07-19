@@ -6656,6 +6656,31 @@ VOID teApiPathMatchSpec(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 	teSetBool(pVarResult, tePathMatchSpec(param[0].lpcwstr, param[1].lpwstr));
 }
 
+VOID teSzToArgv(IDispatch *pArray, LPTSTR lpsz)
+{
+	BSTR bs = ::SysAllocString(lpsz);
+	LPWSTR lpszQuote = StrChr(bs, '"');
+	if (lpszQuote) {
+		lpszQuote[0] = '\\';
+		int i = 0;
+		while (lpszQuote[++i] == ' ') {}
+		if (i > 1) {
+			lpszQuote[1] = NULL;
+			teSzToArgv(pArray, bs);
+			if (lpszQuote[i]) {
+				teSzToArgv(pArray, &lpszQuote[i]);
+			}
+			teSysFreeString(&bs);
+			return;
+		}
+	}
+	VARIANT v;
+	v.vt = VT_BSTR;
+	v.bstrVal = bs;
+	teExecMethod(pArray, L"push", NULL, -1, &v);
+	VariantClear(&v);
+}
+
 VOID teApiCommandLineToArgv(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	int nLen = 0;
@@ -6664,14 +6689,8 @@ VOID teApiCommandLineToArgv(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 	GetNewArray(&pArray);
 	if (param[0].lpcwstr && param[0].lpcwstr[0]) {
 		lplpszArgs = CommandLineToArgvW(param[0].lpcwstr, &nLen);
-		for (int i = nLen; --i >= 0;) {
-			VARIANT v;
-			teSetSZ(&v, lplpszArgs[i]);
-			int n = ::SysStringLen(v.bstrVal);
-			if (v.bstrVal[n - 1] == '"') {
-				v.bstrVal[n - 1] = '\\';
-			}
-			tePutPropertyAt(pArray, i, &v);
+		for (int i = 0; i < nLen; ++i) {
+			teSzToArgv(pArray, lplpszArgs[i]);
 		}
 		LocalFree(lplpszArgs);
 	}
@@ -13289,7 +13308,7 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 			nAllWidth += 100;
 		}
 	}
-	if (nCount == 0 || nAllWidth > nCount + 4) {
+	if (m_pShellView && (nCount == 0 || nAllWidth > nCount + 4)) {
 		IColumnManager *pColumnManager;
 		if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pColumnManager))) {
 			//Default Columns

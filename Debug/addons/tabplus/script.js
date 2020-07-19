@@ -39,7 +39,7 @@ if (window.Addon == 1) {
 							this.Tab(s, TC, i);
 						}
 						if (this.opt.New) {
-							s.push('<li class="tab3" onclick="Addons.TabPlus.New(', Id, ');return false" title="', this.opt.Tooltips ? GetText("New Tab") : "", '"');
+							s.push('<li class="tab3" onclick="Addons.TabPlus.New(', Id, ');return false" title="', this.opt.Tooltips ? GetText("New tab") : "", '"');
 							if (this.opt.Align > 1 && this.opt.Width) {
 								s.push(' style="text-align: center; width: 100%"');
 							}
@@ -211,13 +211,29 @@ if (window.Addon == 1) {
 					style.color = "";
 					style.backgroundColor = "";
 				}
-				if (i == TC.SelectedIndex) {
-					o.className = 'activetab';
-					style.zIndex = TC.Count + 1;
-				} else {
-					o.className = i < TC.SelectedIndex ? 'tab' : 'tab2';
-					style.zIndex = TC.Count - i;
+				this.Class(TC, i);
+			}
+		},
+
+		Class: function (TC, i) {
+			var o = document.getElementById("tabplus_" + TC.Id + "_" + i);
+			if (o) {
+				arClass = [];
+				var FV = TC[i];
+				if (FV.Data.Lock) {
+					arClass.push("locked");
 				}
+				if (FV.Data.Protect) {
+					arClass.push("protected");
+				}
+				if (i == TC.SelectedIndex) {
+					arClass.unshift('activetab');
+					o.style.zIndex = TC.Count + 1;
+				} else {
+					arClass.push(i < TC.SelectedIndex ? 'tab' : 'tab2');
+					o.style.zIndex = TC.Count - i;
+				}
+				o.className = arClass.join(" ");;
 			}
 		},
 
@@ -240,8 +256,7 @@ if (window.Addon == 1) {
 						if (o && HitTest(o, this.pt)) {
 						} else {
 							TC.SelectedIndex = n;
-							var o = document.getElementById("tabplus_" + TC.Id + "_" + n);
-							o.className = "activetab";
+							this.Class(TC, n);
 						}
 						if (g_.IEVer < 10) {
 							(function (Id, n) {
