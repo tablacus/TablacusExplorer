@@ -1063,7 +1063,7 @@ VOID teRegister(BOOL bInit)
 VOID teSetRedraw(BOOL bSetRedraw)
 {
 	if (g_pWebBrowser) {
-		if (bSetRedraw || g_bDragging || g_bInit) {
+		if (bSetRedraw || g_bInit) {
 			if (g_dwTickRedraw) {
 				g_dwTickRedraw = 0;
 				SendMessage(g_pWebBrowser->m_hwndBrowser, WM_SETREDRAW, TRUE, 0);
@@ -21216,11 +21216,11 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 					}
 					if (nArg >= 4 && lEvent & (SHCNE_DRIVEREMOVED | SHCNE_MEDIAREMOVED | SHCNE_NETUNSHARE | SHCNE_RENAMEFOLDER | SHCNE_RMDIR | SHCNE_SERVERDISCONNECT | SHCNE_UPDATEDIR)) {
 						try {
-							DefSubclassProc(GetParent(m_hwndTV), WM_USER + 1, GetPtrFromVariant(&pDispParams->rgvarg[nArg - 3]), GetPtrFromVariant(&pDispParams->rgvarg[nArg - 4]));
+							SendMessage(GetParent(m_hwndTV), WM_USER + 1, GetPtrFromVariant(&pDispParams->rgvarg[nArg - 3]), GetPtrFromVariant(&pDispParams->rgvarg[nArg - 4]));
 						} catch (...) {
 							g_nException = 0;
 #ifdef _DEBUG
-							g_strException = L"Notify_CallWindowProc";
+							g_strException = L"Notify_Tree";
 #endif
 						}
 					}
