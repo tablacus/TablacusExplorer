@@ -11156,6 +11156,34 @@ VOID CALLBACK teTimerProcForStatic(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD
 	}
 }
 
+VOID CALLBACK teTimerProcForTree(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+{
+	KillTimer(hwnd, idEvent);
+	try {
+		CteTreeView *pTV = TVfromhwnd(hwnd);
+		if (pTV && pTV->m_pNameSpaceTreeControl) {
+			switch (idEvent) {
+			case TET_EnsureVisible:
+				IShellItemArray *psia;
+				if SUCCEEDED(pTV->m_pNameSpaceTreeControl->GetSelectedItems(&psia)) {
+					IShellItem *psi;
+					if SUCCEEDED(psia->GetItemAt(0, &psi)) {
+						pTV->m_pNameSpaceTreeControl->EnsureItemVisible(psi);
+						psi->Release();
+					}
+					psia->Release();
+				}
+				break;
+			}
+		}
+	} catch (...) {
+		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"teTimerProcForTree";
+#endif
+	}
+}
+
 static void threadParseDisplayName(void *args)
 {
 	::CoInitialize(NULL);
@@ -20806,13 +20834,11 @@ BOOL CteTreeView::Create(BOOL bIfVisible)
 				BringWindowToTop(m_hwnd);
 				ArrangeWindow();
 			}
-/*// Too heavy.
 			INameSpaceTreeControl2 *pNSTC2;
 			if SUCCEEDED(m_pNameSpaceTreeControl->QueryInterface(IID_PPV_ARGS(&pNSTC2))) {
-				pNSTC2->SetControlStyle2(NSTCS2_INTERRUPTNOTIFICATIONS, NSTCS2_INTERRUPTNOTIFICATIONS);
+				pNSTC2->SetControlStyle2(NSTCS2_ALLMASK, NSTCS2_DEFAULT);
 				pNSTC2->Release();
 			}
-*///
 			DoFunc(TE_OnCreate, this, E_NOTIMPL);
 			return TRUE;
 		}
@@ -21287,10 +21313,6 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 			//Expand
 			case 0x20000004:
 				if (nArg >= 1) {
-					if (g_nLockUpdate || (m_pFV && m_pFV->m_pTC->m_nLockUpdate)) {
-						teSetLong(pVarResult, E_PENDING);
-						return S_OK;
-					}
 					FolderItem *pid;
 					GetFolderItemFromVariant(&pid, &pDispParams->rgvarg[nArg]);
 					if (teILIsBlank(pid)) {
@@ -21300,6 +21322,10 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 					LPITEMIDLIST pidl;
 					teGetIDListFromObject(pid, &pidl);
 					pid->Release();
+					if (teILIsSearchFolder(pidl)) {
+						teCoTaskMemFree(pidl);
+						return S_OK;
+					}
 					if (::ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
 						::ILRemoveLastID(pidl);
 					}
@@ -21319,45 +21345,9 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 							dwState |= NSTCIS_EXPANDED;
 						}
 						if SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(&pShellItem))) {
-							BOOL bSetState = TRUE;
-							if (!(dwState & NSTCIS_EXPANDED)) {
-								IShellItemArray *psia;
-								if SUCCEEDED(m_pNameSpaceTreeControl->GetSelectedItems(&psia)) {
-									IShellItem *psi;
-									if SUCCEEDED(psia->GetItemAt(0, &psi)) {
-										int iOrder;
-										if SUCCEEDED(psi->Compare(pShellItem, SICHINT_ALLFIELDS, &iOrder)) {
-											if (iOrder == 0) {
-												HTREEITEM hItem = TreeView_GetNextSelected(m_hwndTV, NULL);
-												if (hItem) {
-													RECT rc, rcItem;
-													if (GetWindowRect(m_hwndTV, &rc)) {
-														TreeView_GetItemRect(m_hwndTV, hItem, &rcItem, TRUE);
-														bSetState = rcItem.top < 0 || rcItem.bottom > rc.bottom - rc.top ||
-															rcItem.left < 0 || rcItem.left > rc.right - rc.left;
-													}
-												}
-											}
-										}
-										psi->Release();
-									}
-									psia->Release();
-								}
-							}
-							if (bSetState) {
-								m_pNameSpaceTreeControl->SetItemState(pShellItem, dwState, dwState);
-								HTREEITEM hItem = TreeView_GetNextSelected(m_hwndTV, NULL);
-								RECT rc;
-								int w = TreeView_GetItemHeight(m_hwndTV);
-								for (int i = 9; i--;) {
-									TreeView_GetItemRect(m_hwndTV, hItem, &rc, TRUE);
-									if (rc.left >= w) {
-										break;
-									}
-									SendMessage(m_hwndTV, WM_HSCROLL, SB_LINELEFT, 0);
-								}
-							}
+							m_pNameSpaceTreeControl->SetItemState(pShellItem, dwState, dwState);
 							pShellItem->Release();
+							SetTimer(m_hwndTV, TET_EnsureVisible, 500, teTimerProcForTree);
 						}
 						teCoTaskMemFree(pidl);
 						return S_OK;

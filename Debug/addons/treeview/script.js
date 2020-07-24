@@ -35,18 +35,10 @@ if (window.Addon == 1) {
 		},
 
 		Expand: function (Ctrl) {
-			if (Ctrl.FolderItem && !IsSearchPath(Ctrl.FolderItem)) {
+			if (Ctrl.FolderItem) {
 				var TV = Ctrl.TreeView;
 				if (TV) {
-					if (Addons.TreeView.tid[TV.Id]) {
-						clearTimeout(Addons.TreeView.tid[TV.Id]);
-						delete Addons.TreeView.tid[TV.Id];
-					}
 					TV.Expand(Ctrl.FolderItem, Addons.TreeView.Depth);
-					Addons.TreeView.tid[TV.Id] = setTimeout(function () {
-						delete Addons.TreeView.tid[TV.Id];
-						TV.Expand(Ctrl.FolderItem, 0);
-					}, 99);
 				}
 			}
 		},
@@ -156,9 +148,9 @@ if (window.Addon == 1) {
 				var hLock = api.SHChangeNotification_Lock(wParam, lParam, pidls);
 				if (hLock) {
 					api.SHChangeNotification_Unlock(hLock);
-					var cTV = te.Ctrls(CTRL_TV);
-					for (var i in cTV) {
-						cTV[i].Notify(pidls.lEvent, pidls[0], pidls[1], wParam, lParam);
+					var cFV = te.Ctrls(CTRL_FV);
+					for (var i in cFV) {
+						cFV[i].TreeView.Notify(pidls.lEvent, pidls[0], pidls[1], wParam, lParam);
 					}
 				}
 				return S_OK;
