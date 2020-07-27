@@ -32,8 +32,8 @@ Hunter User
 Türkçe / Turkish
 Ferhat Aydin
 
-//Documents
-https://www.penflip.com/LightTempler/tablacus-explorer
+//Wiki
+https://github.com/tablacus/TablacusExplorer/wiki
 
 //Build
 Visual Studio Express 2017 for Windows Desktop
