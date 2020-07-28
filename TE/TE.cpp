@@ -13884,26 +13884,38 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					teVariantChangeType(&v, &pDispParams->rgvarg[nArg], VT_BSTR);
 					if (wFlags & DISPATCH_METHOD) {
 						if (m_pdisp) {
-							IShellFolderViewDual3 *pSFVD3;
-							if SUCCEEDED(m_pdisp->QueryInterface(IID_PPV_ARGS(&pSFVD3))) {
-								pSFVD3->FilterView(v.bstrVal);
-								pSFVD3->Release();
+							HRESULT hr = S_FALSE;
+							if (g_pOnFunc[TE_OnFilterView]) {
+								VARIANT vResult;
+								VariantInit(&vResult);
+								VARIANTARG *pv = GetNewVARIANT(2);
+								teSetObject(&pv[1], this);
+								VariantCopy(&pv[0], &v);
+								Invoke4(g_pOnFunc[TE_OnFilterView], &vResult, 2, pv);
+								hr = GetIntFromVariantClear(&vResult);
+							}
+							if (hr != S_OK) {
+								IShellFolderViewDual3 *pSFVD3;
+								if SUCCEEDED(m_pdisp->QueryInterface(IID_PPV_ARGS(&pSFVD3))) {
+									pSFVD3->FilterView(v.bstrVal);
+									pSFVD3->Release();
 #ifdef _2000XP
-							} else {
-								teSysFreeString(&m_bsFilter);
-								if (lstrlen(v.bstrVal)) {
-									if (StrChr(v.bstrVal, '*')) {
-										m_bsFilter = ::SysAllocString(v.bstrVal);
-									} else {
-										int nLen = ::SysStringLen(v.bstrVal);
-										m_bsFilter = ::SysAllocStringLen(NULL, nLen + 2);
-										lstrcpy(&m_bsFilter[1], v.bstrVal);
-										m_bsFilter[0] = m_bsFilter[nLen + 1] = '*';
-										m_bsFilter[nLen + 2] = NULL;
+								} else {
+									teSysFreeString(&m_bsFilter);
+									if (lstrlen(v.bstrVal)) {
+										if (StrChr(v.bstrVal, '*')) {
+											m_bsFilter = ::SysAllocString(v.bstrVal);
+										} else {
+											int nLen = ::SysStringLen(v.bstrVal);
+											m_bsFilter = ::SysAllocStringLen(NULL, nLen + 2);
+											lstrcpy(&m_bsFilter[1], v.bstrVal);
+											m_bsFilter[0] = m_bsFilter[nLen + 1] = '*';
+											m_bsFilter[nLen + 2] = NULL;
+										}
 									}
-								}
-								Refresh(TRUE);
+									Refresh(TRUE);
 #endif
+								}
 							}
 						}
 					} else if (m_bsNextFilter && lstrlen(v.bstrVal)) {

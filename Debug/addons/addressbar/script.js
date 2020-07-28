@@ -127,6 +127,7 @@ if (window.Addon == 1) {
 		{
 			if (!Addons.AddressBar.XP) {
 				document.getElementById("breadcrumbbuttons").style.display = "inline-block";
+				ClearAutocomplete();
 			}
 		},
 

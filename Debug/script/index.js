@@ -217,13 +217,13 @@ Lock = function (Ctrl, nIndex, turn) {
 
 GetLock = function (FV)
 {
-	return FV && FV.Data && FV.Data.Lock;
+	return FV && FV.Data && (FV.Data.Lock || /search\-ms:.*?crumb=[^&]+/.test(FV.FilterView));
 }
 
 CanClose = function (FV)
 {
 	if (FV && FV.Data) {
-		if (FV.Data.Lock) {
+		if (GetLock(FV)) {
 			return S_FALSE;
 		}
 		return RunEvent2("CanClose", FV);
@@ -492,8 +492,13 @@ AddFavorite = function (FolderItem) {
 }
 
 CancelFilterView = function (FV) {
-	if (IsSearchPath(FV) || FV.FilterView) {
+	if (IsSearchPath(FV)) {
 		FV.Navigate(null, SBSP_PARENT);
+		return S_OK;
+	}
+	if (FV.FilterView) {
+		FV.FilterView = null;
+		FV.Refresh();
 		return S_OK;
 	}
 	return S_FALSE;
@@ -1343,7 +1348,7 @@ te.OnSelectionChanged = function (Ctrl, uChange) {
 }
 
 te.OnFilterChanged = function (Ctrl) {
-	if (isFinite(RunEvent3("FilterChanged", Ctrl))) {
+	if (/search\-ms:.*?crumb=[^&]+/.test(Ctrl.FilterView) || isFinite(RunEvent3("FilterChanged", Ctrl))) {
 		return;
 	}
 	var res = /\/(.*)\/(.*)/.exec(Ctrl.FilterView);
@@ -1880,6 +1885,15 @@ te.OnGetAlt = function (dwSessionId, s) {
 			return fso.BuildPath(FV.FolderItem.Path, fso.GetFileName(s));
 		}
 	}
+}
+
+te.OnFilterView = function (FV, s)
+{
+	if (GetLock(FV) && /^[A-Z]:\\|^\\\\\w/i.test(FV.FolderItem.Path)) {
+		FV.Navigate(["search-ms:crumb=", encodeURI(s), "&crumb=location:" + encodeURI(FV.FolderItem.Path)].join(""), SBSP_NEWBROWSER);
+		return S_OK;
+	}
+	return S_FALSE;
 }
 
 ShowStatusText = function (Ctrl, Text, iPart, tm) {
@@ -3596,6 +3610,13 @@ function IsHeader(Ctrl, pt, hwnd, strClass) {
 	var pt2 = pt.Clone();
 	api.ScreenToClient(hwnd, pt2);
 	return pt2.y < screen.logicalYDPI / 4;
+}
+
+function ClearAutocomplete() {
+	var dl = document.getElementById("AddressList");
+	while (dl.lastChild) {
+		dl.removeChild(dl.lastChild);
+	}
 }
 
 function AutocompleteThread() {
