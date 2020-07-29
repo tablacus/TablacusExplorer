@@ -75,6 +75,10 @@ ChangeTabName = function (Ctrl) {
 
 GetTabName = function (Ctrl) {
 	if (Ctrl.FolderItem) {
+		var res = /search\-ms:.*?crumb=([^&]+)/.exec(Ctrl.FilterView);
+		if (res) {
+			return decodeURIComponent(res[1]).replace(/~<(\*?)/, "$1");
+		}
 		return RunEvent4("GetTabName", Ctrl) || GetFolderItemName(Ctrl.FolderItem);
 	}
 }
@@ -82,6 +86,13 @@ GetTabName = function (Ctrl) {
 GetFolderItemName = function (pid) {
 	return pid ? RunEvent4("GetFolderItemName", pid) || api.GetDisplayNameOf(pid, SHGDN_INFOLDER | SHGDN_ORIGINAL) : "";
 }
+
+AddEvent("GetFolderItemName", function (pid) {
+	var res = /search\-ms:.*?crumb=([^&]+)/.exec(pid.Path);
+	if (res) {
+		return decodeURIComponent(res[1]).replace(/~<(\*?)/, "$1");
+	}
+});
 
 IsUseExplorer = function (pid) {
 	return RunEvent3("UseExplorer", pid);
@@ -97,6 +108,12 @@ DeviceChanged = function (Ctrl) {
 
 ListViewCreated = function (Ctrl) {
 	Ctrl.Data.AccessTime = "#";
+	var res = /search\-ms:.*?crumb=([^&]+)/.exec(Ctrl.FilterView);
+	if (res) {
+		Ctrl.FilterView = null;
+		Ctrl.FilterView(decodeURIComponent(res[1]).replace(/~<(\*?)/, "$1"));
+		return S_OK;
+	}
 	RunEvent1("ListViewCreated", Ctrl);
 }
 
@@ -217,7 +234,7 @@ Lock = function (Ctrl, nIndex, turn) {
 
 GetLock = function (FV)
 {
-	return FV && FV.Data && (FV.Data.Lock || /search\-ms:.*?crumb=[^&]+/.test(FV.FilterView));
+	return FV && FV.Data && FV.Data.Lock;
 }
 
 CanClose = function (FV)
@@ -767,12 +784,6 @@ te.OnNavigateComplete = function (Ctrl) {
 	if (g_.tid_rf[Ctrl.Id] || !Ctrl.FolderItem) {
 		return S_OK;
 	}
-	var res = /search\-ms:.*?crumb=([^&]+)/.exec(Ctrl.FilterView);
-	if (res) {
-		Ctrl.FilterView = null;
-		Ctrl.FilterView(decodeURIComponent(res[1]).replace(/~<\*/, "*"));
-		return S_OK;
-	}
 	Ctrl.NavigateComplete();
 	RunEvent1("NavigateComplete", Ctrl);
 	ChangeView(Ctrl);
@@ -897,6 +908,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 		if (msg == WM_LBUTTONUP || api.GetKeyState(VK_LBUTTON) >= 0) {
 			api.ReleaseCapture();
 			g_.mouse.Capture = 0;
+			te.Data.bSaveConfig = true;
 		}
 		var pt2 = pt.Clone();
 		api.ScreenToClient(te.hwnd, pt2);
@@ -1869,10 +1881,10 @@ te.OnReplacePath = function (Ctrl, Path) {
 			return fso.GetParentFolderName(Path);
 		}
 	}
-	var res = /search\-ms:.*?&crumb=location:([^&]+)/.exec(Path);
+	var res = IsSearchPath(Path);
 	if (res) {
 		Ctrl.FilterView = Path.replace(/displayname=[^&]+&|&crumb=location:[^&]+/g, "");
-		return api.PathCreateFromUrl("file:" + res[1]);
+		return;
 	}
 	return RunEvent4("ReplacePath", Ctrl, Path);
 }
@@ -1889,8 +1901,11 @@ te.OnGetAlt = function (dwSessionId, s) {
 
 te.OnFilterView = function (FV, s)
 {
-	if (GetLock(FV) && /^[A-Z]:\\|^\\\\\w/i.test(FV.FolderItem.Path)) {
-		FV.Navigate(["search-ms:crumb=", encodeURI(s), "&crumb=location:" + encodeURI(FV.FolderItem.Path)].join(""), SBSP_NEWBROWSER);
+	if (GetLock(FV) && !IsSearchPath(FV)) {
+		var fn = function (strMatch, ref) {
+			return encodeURIComponent(ref)
+		};
+		FV.Navigate(["search-ms:crumb=", s.replace(/([ -\\]+)/g, fn), "&crumb=location:", FV.FolderItem.Path.replace(/([ -\\]+)/g, fn)].join(""), SBSP_NEWBROWSER);
 		return S_OK;
 	}
 	return S_FALSE;

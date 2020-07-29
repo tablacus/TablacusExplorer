@@ -6159,7 +6159,7 @@ VOID teGetDisplayNameOf(VARIANT *pv, int uFlags, VARIANT *pVarResult)
 					if (bs && lstrlen(bs) > 2) {
 						LPWSTR pszName = PathFindFileName(bs);
 						if (pszName && pszName[0] != ':') {
-							teSetSZ(pVarResult, PathFindFileName(bs));
+							teSetSZ(pVarResult, pszName);
 							return;
 						}
 					}
@@ -6980,13 +6980,10 @@ VOID teApiPathQuoteSpaces(int nArg, teParam *param, DISPPARAMS *pDispParams, VAR
 		int nLen = lstrlen(param[0].bstrVal);
 		BSTR bsResult = teSysAllocStringLen(param[0].bstrVal, nLen + 2);
 		PathQuoteSpaces(bsResult);
-		if (bsResult[0] != '"' && nLen) {
-			for (int i = nLen; i--;) {
-				if (bsResult[i] == ',') {
-					lstrcpyn(&bsResult[1], param[0].bstrVal, nLen + 1);
-					bsResult[0] = bsResult[nLen + 1] = '"';
-					break;
-				}
+		if (!StrChr(bsResult, '"')) {
+			if (StrChr(bsResult, ',') || StrChr(bsResult, '&')) {
+				lstrcpyn(&bsResult[1], param[0].bstrVal, nLen + 1);
+				bsResult[0] = bsResult[nLen + 1] = '"';
 			}
 		}
 		teSetBSTR(pVarResult, &bsResult, -1);
@@ -11161,17 +11158,19 @@ VOID CALLBACK teTimerProcForTree(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD d
 	KillTimer(hwnd, idEvent);
 	try {
 		CteTreeView *pTV = TVfromhwnd(hwnd);
-		if (pTV && pTV->m_pNameSpaceTreeControl) {
+		if (pTV) {
 			switch (idEvent) {
 			case TET_EnsureVisible:
-				IShellItemArray *psia;
-				if SUCCEEDED(pTV->m_pNameSpaceTreeControl->GetSelectedItems(&psia)) {
-					IShellItem *psi;
-					if SUCCEEDED(psia->GetItemAt(0, &psi)) {
-						pTV->m_pNameSpaceTreeControl->EnsureItemVisible(psi);
-						psi->Release();
+				if (pTV->m_pNameSpaceTreeControl) {
+					IShellItemArray *psia;
+					if SUCCEEDED(pTV->m_pNameSpaceTreeControl->GetSelectedItems(&psia)) {
+						IShellItem *psi;
+						if SUCCEEDED(psia->GetItemAt(0, &psi)) {
+							pTV->m_pNameSpaceTreeControl->EnsureItemVisible(psi);
+							psi->Release();
+						}
+						psia->Release();
 					}
-					psia->Release();
 				}
 				break;
 			}
@@ -11446,9 +11445,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				return DefWindowProc(hWnd, message, wParam, lParam);
 			case WM_CTLCOLORSTATIC:
 				return (LRESULT)GetClassLongPtr(hWnd, GCLP_HBRBACKGROUND);
-/*				if (g_hbrBackground) {
-					return (LRESULT)g_hbrBackground;
-				}*/
 				break;
 		}//end_switch
 	} catch (...) {
@@ -13897,6 +13893,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 							if (hr != S_OK) {
 								IShellFolderViewDual3 *pSFVD3;
 								if SUCCEEDED(m_pdisp->QueryInterface(IID_PPV_ARGS(&pSFVD3))) {
+									SetRedraw(FALSE);
 									pSFVD3->FilterView(v.bstrVal);
 									pSFVD3->Release();
 #ifdef _2000XP
@@ -15203,6 +15200,8 @@ HRESULT CteShellBrowser::OnNavigationPending2(LPITEMIDLIST pidlFolder)
 	if (!m_bAutoVM) {
 		SetViewModeAndIconSize(TRUE);
 	}
+	m_bSetRedraw = FALSE;
+	SetRedraw(FALSE);
 	return hr;
 }
 
@@ -15266,7 +15265,6 @@ int CteShellBrowser::GetSizeFormat()
 	return m_nSizeFormat != -1 ? m_nSizeFormat : g_param[TE_SizeFormat];
 }
 
-
 STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 {
 	m_bViewCreated = FALSE;
@@ -15323,6 +15321,8 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 	if (m_pTC->m_nRedraw & TEREDRAW_NAVIGATE) {
 		ArrangeWindow();
 	}
+	m_bSetRedraw = TRUE;
+	SetRedraw(TRUE);
 	return S_OK;
 }
 
@@ -15365,6 +15365,7 @@ VOID CteShellBrowser::OnNavigationComplete2()
 			m_pTV->SetRoot();
 		}
 	}
+	m_bSetRedraw = TRUE;
 	SetRedraw(TRUE);
 	SetActive(FALSE);
 	m_nFocusItem = 1;
@@ -16541,7 +16542,7 @@ VOID CteShellBrowser::SetGroupBy(BSTR bs)
 
 VOID CteShellBrowser::SetRedraw(BOOL bRedraw)
 {
-	SendMessage(m_hwnd, WM_SETREDRAW, bRedraw, 0);
+	SendMessage(m_hwnd, WM_SETREDRAW, bRedraw && m_bSetRedraw, 0);
 	if (m_hwndAlt) {
 		BringWindowToTop(m_hwndAlt);
 	}
@@ -22121,7 +22122,7 @@ VOID CteFolderItem::Clear()
 BSTR CteFolderItem::GetStrPath()
 {
 	if (m_v.vt == VT_BSTR) {
-		if (m_pidl == NULL || (m_pidlAlt && !ILIsEqual(m_pidl, m_pidlAlt))) {
+		if (m_pidl == NULL || (m_pidlAlt && !ILIsEqual(m_pidl, m_pidlAlt)) || teStartsText(L"search-ms:", m_v.bstrVal)) {
 			return m_v.bstrVal;
 		}
 	}

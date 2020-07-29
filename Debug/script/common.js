@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200728 ? te.Version : 20200728;
+		return te.Version < 20200729 ? te.Version : 20200729;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -2730,7 +2730,7 @@ OpenInExplorer = function (pid1) {
 		var ar = [];
 		pid1 = pid1.FolderItem || pid1;
 		var pid = pid1;
-		if (!api.ILIsParent(ssfNETWORK, pid, false)) {
+		if (!api.ILIsParent(ssfNETWORK, pid, false) && !IsSearchPath(pid)) {
 			for (var n = 99; !api.ILIsEmpty(pid) && n--; pid = api.ILGetParent(pid)) {
 				var path = api.GetDisplayNameOf(pid, SHGDN_FORPARSING | SHGDN_INFOLDER | SHGDN_ORIGINAL);
 				if (!path || /\\/.test(path)) {
