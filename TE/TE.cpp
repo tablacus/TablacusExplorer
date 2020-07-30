@@ -6683,16 +6683,18 @@ VOID teSzToArgv(IDispatch *pArray, LPTSTR lpsz)
 
 VOID teApiCommandLineToArgv(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	int nLen = 0;
-	LPTSTR *lplpszArgs = NULL;
 	IDispatch *pArray = NULL;
-	GetNewArray(&pArray);
-	if (param[0].lpcwstr && param[0].lpcwstr[0]) {
-		lplpszArgs = CommandLineToArgvW(param[0].lpcwstr, &nLen);
-		for (int i = 0; i < nLen; ++i) {
-			teSzToArgv(pArray, lplpszArgs[i]);
+	if (!GetDispatch(&pDispParams->rgvarg[nArg], &pArray)) {
+		int nLen = 0;
+		LPTSTR *lplpszArgs = NULL;
+		GetNewArray(&pArray);
+		if (param[0].lpcwstr && param[0].lpcwstr[0]) {
+			lplpszArgs = CommandLineToArgvW(param[0].lpcwstr, &nLen);
+			for (int i = 0; i < nLen; ++i) {
+				teSzToArgv(pArray, lplpszArgs[i]);
+			}
+			LocalFree(lplpszArgs);
 		}
-		LocalFree(lplpszArgs);
 	}
 	teSetObjectRelease(pVarResult, new CteDispatchEx(pArray));
 	pArray->Release();
@@ -11161,16 +11163,8 @@ VOID CALLBACK teTimerProcForTree(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD d
 		if (pTV) {
 			switch (idEvent) {
 			case TET_EnsureVisible:
-				if (pTV->m_pNameSpaceTreeControl) {
-					IShellItemArray *psia;
-					if SUCCEEDED(pTV->m_pNameSpaceTreeControl->GetSelectedItems(&psia)) {
-						IShellItem *psi;
-						if SUCCEEDED(psia->GetItemAt(0, &psi)) {
-							pTV->m_pNameSpaceTreeControl->EnsureItemVisible(psi);
-							psi->Release();
-						}
-						psia->Release();
-					}
+				if (pTV->m_pNameSpaceTreeControl && pTV->m_psiFocus) {
+					pTV->m_pNameSpaceTreeControl->EnsureItemVisible(pTV->m_psiFocus);
 				}
 				break;
 			}
@@ -20731,6 +20725,7 @@ CteTreeView::CteTreeView()
 	m_param = NULL;
 	m_bMain = TRUE;
 	m_pDropTarget2 = NULL;
+	m_psiFocus = NULL;
 	VariantInit(&m_vData);
 	m_bsRoot = ::SysAllocString(L"::{679F85CB-0220-4080-B29B-5540CC05AAB6}\n0");
 #ifdef _W2000
@@ -20764,6 +20759,7 @@ VOID CteTreeView::Init(CteShellBrowser *pFV, HWND hwnd)
 	m_hwndTV = NULL;
 	m_pNameSpaceTreeControl = NULL;
 	m_bSetRoot = TRUE;
+
 #ifdef _2000XP
 	m_pShellNameSpace = NULL;
 #endif
@@ -20812,6 +20808,7 @@ VOID CteTreeView::Close()
 	}
 #endif
 	VariantClear(&m_vData);
+	SafeRelease(&m_psiFocus);
 #ifdef _W2000
 	VariantClear(&m_vSelected);
 #endif
@@ -21353,13 +21350,13 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 #endif
 					) {
 						IShellItem *pShellItem;
-						DWORD dwState = NSTCIS_SELECTED;
+						m_dwState = NSTCIS_SELECTED;
 						if (GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) != 0) {
-							dwState |= NSTCIS_EXPANDED;
+							m_dwState |= NSTCIS_EXPANDED;
 						}
-						if SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(&pShellItem))) {
-							m_pNameSpaceTreeControl->SetItemState(pShellItem, dwState, dwState);
-							pShellItem->Release();
+						SafeRelease(&m_psiFocus);
+						if SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(&m_psiFocus))) {
+							m_pNameSpaceTreeControl->SetItemState(m_psiFocus, m_dwState, m_dwState);
 							SetTimer(m_hwndTV, TET_EnsureVisible, 500, teTimerProcForTree);
 						}
 						teCoTaskMemFree(pidl);
@@ -21851,6 +21848,10 @@ VOID CteTreeView::SetRoot()
 					hr = m_pNameSpaceTreeControl->AppendRoot(pShellItem, m_param[SB_EnumFlags], m_param[SB_RootStyle], this);
 					pShellItem->Release();
 				}
+			}
+			if (m_psiFocus) {
+				m_pNameSpaceTreeControl->SetItemState(m_psiFocus, m_dwState, m_dwState);
+				SetTimer(m_hwndTV, TET_EnsureVisible, 500, teTimerProcForTree);
 			}
 #ifdef _2000XP
 		}

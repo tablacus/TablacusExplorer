@@ -622,6 +622,7 @@ public:
 	BOOL		m_bViewCreated;
 	BOOL		m_bFiltered;
 	BOOL		m_bNavigateComplete;
+	BOOL		m_bSetRedraw;
 #ifdef _2000XP
 	TEColumn	*m_pColumns;
 	UINT		m_nColumns;
@@ -838,7 +839,9 @@ public:
 	HWND        m_hwndTV;
 	INameSpaceTreeControl	*m_pNameSpaceTreeControl;
 	CteShellBrowser	*m_pFV;
+	IShellItem *m_psiFocus;
 	DWORD	*m_param;
+	DWORD	m_dwState;
 	BOOL	m_bEmpty;
 #ifdef _2000XP
 	IShellNameSpace *m_pShellNameSpace;

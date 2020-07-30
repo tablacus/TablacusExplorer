@@ -11,6 +11,7 @@ if (window.Addon == 1) {
 	Addons.TreeView =
 	{
 		strName: "Tree",
+		List: item.getAttribute("List"),
 		nPos: 0,
 		WM: TWM_APP++,
 		Depth: api.LowPart(item.getAttribute("Depth")),
@@ -35,7 +36,7 @@ if (window.Addon == 1) {
 		},
 
 		Expand: function (Ctrl) {
-			if (Ctrl.FolderItem) {
+			if (Ctrl.FolderItem && Addons.TreeView.List) {
 				var TV = Ctrl.TreeView;
 				if (TV) {
 					TV.Expand(Ctrl.FolderItem, Addons.TreeView.Depth);
@@ -75,7 +76,7 @@ if (window.Addon == 1) {
 		}, "Func", true);
 	}
 
-	if (item.getAttribute("List")) {
+	if (Addons.TreeView.List) {
 		AddEvent("ChangeView", Addons.TreeView.Expand);
 	}
 
@@ -103,7 +104,7 @@ if (window.Addon == 1) {
 	SetAddon(Addon_Id, Default, s);
 
 	SetGestureExec("Tree", "1", function (Ctrl, pt) {
-		var Item = Ctrl.SelectedItem;
+		var Item = Ctrl.HitTest(pt);
 		if (Item) {
 			var FV = Ctrl.FolderView;
 			if (!api.ILIsEqual(FV.FolderItem, Item)) {
