@@ -21147,7 +21147,8 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 					TVHITTESTINFO info;
 					HTREEITEM hItem;
 					GetPointFormVariant(&info.pt, &pDispParams->rgvarg[nArg]);
-					UINT flags = nArg >= 1 ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) : TVHT_ONITEM;
+					UINT flags = nArg >= 1 ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) :
+						(m_param[SB_TreeFlags] & NSTCS_FULLROWSELECT) ? TVHT_ONITEM | TVHT_ONITEMRIGHT : TVHT_ONITEM;
 					LONG_PTR r = DoHitTest(this, info.pt, flags);
 					if (r != -1) {
 						hItem = (HTREEITEM)r;

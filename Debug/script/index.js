@@ -3628,10 +3628,10 @@ function IsHeader(Ctrl, pt, hwnd, strClass) {
 }
 
 function ClearAutocomplete() {
-	var dl = document.getElementById("AddressList");
-	while (dl.lastChild) {
+	for (var dl = document.getElementById("AddressList"); dl.lastChild;) {
 		dl.removeChild(dl.lastChild);
 	}
+	g_.Autocomplete.Path = "";
 }
 
 function AutocompleteThread() {

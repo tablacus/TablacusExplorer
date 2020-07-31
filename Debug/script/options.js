@@ -6,6 +6,7 @@ g_x = { Menu: null, Addons: null };
 g_Chg = { Menus: false, Addons: false, Tab: false, Tree: false, View: false, Data: null };
 g_arMenuTypes = ["Default", "Context", "Background", "Tabs", "Tree", "File", "Edit", "View", "Favorites", "Tools", "Help", "Systray", "System", "Alias"];
 g_MenuType = "";
+g_Id = "";
 g_dlgAddons = null;
 g_bDrag = false;
 g_pt = { x: 0, y: 0 };
@@ -1034,6 +1035,7 @@ function PackData(a) {
 
 function LoadAddons() {
 	if (g_x.Addons) {
+		OpenAddonsOptions();
 		return;
 	}
 	g_x.Addons = true;
@@ -1075,6 +1077,16 @@ function LoadAddons() {
 			AddAddon(table, Id, false);
 		}
 	}
+	OpenAddonsOptions();
+}
+
+function OpenAddonsOptions() {
+	if (g_Id) {
+		if (document.getElementById("opt_" + g_Id)) {
+			AddonOptions(g_Id);
+		}
+		g_Id = "";
+	}
 }
 
 function AddAddon(table, Id, bEnable, Alt) {
@@ -1101,7 +1113,7 @@ function SetAddon(Id, bEnable, td, Alt) {
 	if (bMinVer) {
 		s.push('</td><td class="danger" style="align: right; white-space: nowrap; vertical-align: middle">', info.MinVersion.replace(/^20/, (api.LoadString(hShell32, 60) || "%").replace(/%.*/, "")).replace(/\.0/g, '.'), ' ', GetText("is required."), '</td>');
 	} else if (info.Options) {
-		s.push('</td><td style="white-space: nowrap; vertical-align: middle; padding-right: 1em"><a href="#" onclick="AddonOptions(\'', Id, '\'); return false;" class="link">', GetText('Options'), '</td>');
+		s.push('</td><td style="white-space: nowrap; vertical-align: middle; padding-right: 1em"><a href="#" onclick="AddonOptions(\'', Id, '\'); return false;" class="link" id="opt_', Id, '">', GetText('Options'), '</td>');
 	}
 	s.push('<td style="vertical-align: middle', bMinVer ? ';display: none"' : "", '"><input type="checkbox" ', (Alt ? "" : 'id="enable_' + Id + '"'), ' onclick="AddonEnable(this, \'', Id, '\')" ', bEnable ? " checked" : "", '></td>');
 	s.push('<td style="vertical-align: middle', bMinVer ? ';display: none"' : "", '"><label for="enable_', Id, '" style="display: block; width: 6em; white-space: nowrap">', GetText(bEnable ? "Enabled" : "Enable"), '</label></td>');
@@ -2052,20 +2064,23 @@ function SetTab(s) {
 	var arg = String(s).split(/&/);
 	for (var i in arg) {
 		var ar = arg[i].split(/=/);
-		if (ar[0].toLowerCase() == "tab") {
+		var n = ar[0].toLowerCase();
+		if (n == "tab") {
 			if (api.StrCmpI(ar[1], "Get Addons") == 0) {
 				o = document.getElementById('tab1_1');
 			}
-			var s = GetText(ar[1]);
+			var s = GetText(ar[1]).toLowerCase();
 			var ovTab;
 			for (var j = 0; ovTab = document.getElementById('tab' + j); ++j) {
-				if (api.StrCmpI(s, ovTab.innerText) == 0) {
+				if (s == ovTab.innerText.toLowerCase()) {
 					o = ovTab;
 					break;
 				}
 			}
-		} else if (api.StrCmpI(ar[0], "menus") == 0) {
+		} else if (n == "menus") {
 			g_MenuType = ar[1];
+		} else if (n == "id") {
+			g_Id = ar[1];
 		}
 	}
 	ClickTree(o);
