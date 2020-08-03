@@ -2170,7 +2170,7 @@ SetImage = function () {
 	if (o) {
 		var h = api.LowPart((document.F.IconSize || document.F.Height || { value: window.IconSize || 24 }).value);
 		var src = MakeImgSrc(api.PathUnquoteSpaces(document.F.Icon.value), 0, true, h);
-		o.innerHTML = src ? '<img src="' + src + '" ' + (h ? 'height="' + h + 'px"' : "") + '>' : "";
+		o.innerHTML = src ? '<img src="' + src + '" ' + (h ? 'height="' + h + 'px"' : "") + ' style="max-width: 32pt; max-height: 32pt">' : "";
 	}
 }
 

@@ -21889,8 +21889,8 @@ VOID CteTreeView::SetRoot()
 
 VOID CteTreeView::SetRoot2()
 {
-	if (!m_pFV || IsWindowVisible(m_hwnd)) {
-		if (m_param[SB_TreeAlign] & 2) {
+	if (m_param[SB_TreeAlign] & 2) {
+		if (!m_pFV || IsWindowVisible(m_pFV->m_hwnd)) {
 			SetTimer(g_hwndMain, (UINT_PTR)this, 500, teTimerProcSetRoot);
 		}
 	}

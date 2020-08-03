@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200731 ? te.Version : 20200731;
+		return te.Version < 20200803 ? te.Version : 20200803;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -1406,7 +1406,10 @@ DropOpen = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, b
 }
 
 Exec = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop) {
-	if (!s) {
+	if (!s || (dataObj && !dataObj.Count)) {
+		if (pdwEffect) {
+			pdwEffect[0] = DROPEFFECT_NONE;
+		}
 		return S_FALSE;
 	}
 	window.Ctrl = Ctrl;
