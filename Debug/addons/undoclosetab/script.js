@@ -24,8 +24,7 @@ if (window.Addon == 1) {
 		nPos: api.LowPart(item.getAttribute("MenuPos")),
 		CONFIG: fso.BuildPath(te.Data.DataFolder, "config\\closedtabs.xml"),
 
-		Exec: function (Ctrl, pt)
-		{
+		Exec: function (Ctrl, pt) {
 			var FV = GetFolderView(Ctrl, pt);
 			if (FV) {
 				Addons.UndoCloseTab.bLock = true;
@@ -41,8 +40,7 @@ if (window.Addon == 1) {
 			return S_OK;
 		},
 
-		Open: function (FV, i)
-		{
+		Open: function (FV, i) {
 			if (FV) {
 				var Items = Addons.UndoCloseTab.Get(i);
 				Addons.UndoCloseTab.db.splice(i, 1);
@@ -51,11 +49,10 @@ if (window.Addon == 1) {
 			}
 		},
 
-		Get: function (nIndex)
-		{
+		Get: function (nIndex) {
 			Addons.UndoCloseTab.db.splice(Addons.UndoCloseTab.Items, MAXINT);
 			var s = Addons.UndoCloseTab.db[nIndex];
-			if (typeof(s) == "string") {
+			if ("string" === typeof s) {
 				var a = s.split(/\n/);
 				s = te.FolderItems();
 				s.Index = a.pop();
@@ -67,8 +64,7 @@ if (window.Addon == 1) {
 			return s;
 		},
 
-		Load: function ()
-		{
+		Load: function () {
 			Addons.UndoCloseTab.db = [];
 			var xml = OpenXml("closedtabs.xml", true, false);
 			if (xml) {
@@ -81,8 +77,7 @@ if (window.Addon == 1) {
 			Addons.UndoCloseTab.ModifyDate = api.ILCreateFromPath(Addons.UndoCloseTab.CONFIG).ModifyDate;
 		},
 
-		Save: function ()
-		{
+		Save: function () {
 			if (Addons.UndoCloseTab.tid) {
 				clearTimeout(Addons.UndoCloseTab.tid);
 			}
@@ -90,8 +85,7 @@ if (window.Addon == 1) {
 			Addons.UndoCloseTab.tid = setTimeout(Addons.UndoCloseTab.SaveEx, 999);
 		},
 
-		SaveEx: function ()
-		{
+		SaveEx: function () {
 			if (Addons.UndoCloseTab.bSave) {
 				Addons.UndoCloseTab.bSave = false;
 				if (Addons.UndoCloseTab.tid) {
@@ -105,7 +99,7 @@ if (window.Addon == 1) {
 				for (var i = 0; i < db.length; i++) {
 					var item = xml.createElement("Item");
 					var s = db[i];
-					if (typeof(s) != "string") {
+					if ("string" !== typeof s) {
 						var a = [];
 						for (var j in s) {
 							a.push(api.GetDisplayNameOf(s[j], SHGDN_FORPARSING | SHGDN_FORPARSINGEX));
@@ -126,12 +120,11 @@ if (window.Addon == 1) {
 	}
 	Addons.UndoCloseTab.Load();
 
-	AddEvent("CloseView", function (Ctrl)
-	{
+	AddEvent("CloseView", function (Ctrl) {
 		if (Ctrl.FolderItem) {
 			if (Addons.UndoCloseTab.bLock) {
 				Addons.UndoCloseTab.bFail = true;
-			} else {
+			} else if (Ctrl.History.Count) {
 				Addons.UndoCloseTab.db.unshift(Ctrl.History);
 				Addons.UndoCloseTab.db.splice(Addons.UndoCloseTab.Items, MAXINT);
 				Addons.UndoCloseTab.Save();
@@ -142,8 +135,7 @@ if (window.Addon == 1) {
 
 	AddEvent("SaveConfig", Addons.UndoCloseTab.SaveEx);
 
-	AddEvent("ChangeNotifyItem:" + Addons.UndoCloseTab.CONFIG, function (pid)
-	{
+	AddEvent("ChangeNotifyItem:" + Addons.UndoCloseTab.CONFIG, function (pid) {
 		if (pid.ModifyDate - Addons.UndoCloseTab.ModifyDate) {
 			Addons.UndoCloseTab.Load();
 		}
@@ -151,8 +143,7 @@ if (window.Addon == 1) {
 
 	//Menu
 	if (item.getAttribute("MenuExec")) {
-		AddEvent(item.getAttribute("Menu"), function (Ctrl, hMenu, nPos)
-		{
+		AddEvent(item.getAttribute("Menu"), function (Ctrl, hMenu, nPos) {
 			api.InsertMenu(hMenu, Addons.UndoCloseTab.nPos, MF_BYPOSITION | MF_STRING | ((Addons.UndoCloseTab.db.length) ? MF_ENABLED : MF_DISABLED), ++nPos, GetText(Addons.UndoCloseTab.strName));
 			ExtraMenuCommand[nPos] = Addons.UndoCloseTab.Exec;
 			return nPos;
@@ -174,5 +165,5 @@ if (window.Addon == 1) {
 	SetAddon(Addon_Id, Default, ['<span class="button" onclick="Addons.UndoCloseTab.Exec(this)" oncontextmenu="return false;" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', GetImgTag({ title: Addons.UndoCloseTab.strName, src: s }, h), '</span>']);
 } else {
 	EnableInner();
-	SetTabContents(0, "General", '<label>Number of items</label><br /><input type="text" name="Save" size="4" />');
+	SetTabContents(0, "General", '<label>Number of items</label><br><input type="text" name="Save" size="4">');
 }
