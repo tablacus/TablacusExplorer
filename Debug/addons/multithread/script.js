@@ -90,7 +90,7 @@ if (window.Addon == 1) {
 							if (api.GetKeyState(VK_SHIFT) < 0) {
 								fFlags = 0;
 							}
-						} else if (api.ILIsEqual(path, Items.Item(-1))) {
+						} else if (api.StrCmpI(path, Items.Item(-1).Path) == 0) {
 							fFlags |= FOF_RENAMEONCOLLISION;
 						}
 						api.SHFileOperation(wFunc, arFrom.join("\0"), path, fFlags, true);
