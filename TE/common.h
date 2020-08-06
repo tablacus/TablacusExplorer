@@ -202,6 +202,16 @@ union teParam
 	MONITOR_DPI_TYPE MonitorDpiType;
 };
 
+
+enum PreferredAppMode
+{
+	APPMODE_DEFAULT = 0,
+	APPMODE_ALLOWDARK = 1,
+	APPMODE_FORCEDARK = 2,
+	APPMODE_FORCELIGHT = 3,
+	APPMODE_MAX = 4
+};
+
 //Unnamed function
 typedef VOID (WINAPI * LPFNSHRunDialog)(HWND hwnd, HICON hIcon, LPWSTR pszPath, LPWSTR pszTitle, LPWSTR pszPrompt, DWORD dwFlags);
 
@@ -249,10 +259,14 @@ typedef BOOL (WINAPI* LPFNSetDefaultDllDirectories)(__in DWORD DirectoryFlags);
 typedef HRESULT (WINAPI* LPFNGetDpiForMonitor)(HMONITOR hmonitor, MONITOR_DPI_TYPE dpiType, UINT *dpiX, UINT *dpiY);
 
 //10 Dark mode
-typedef bool (WINAPI* LPFNAllowDarkModeForApp)(BOOL allow);
+typedef bool (WINAPI* LPFNAllowDarkModeForApp)(BOOL allow); //Deprecated since 18334
+typedef PreferredAppMode (WINAPI* LPFNSetPreferredAppMode)(PreferredAppMode appMode);
 typedef bool (WINAPI* LPFNAllowDarkModeForWindow)(HWND hwnd, BOOL allow);
 typedef bool (WINAPI* LPFNShouldAppsUseDarkMode)();
+typedef void (WINAPI* LPFNRefreshImmersiveColorPolicyState)();
 //typedef bool (WINAPI* LPFNIsDarkModeAllowedForWindow)(HWND hwnd);
+//Scroll bar
+typedef HTHEME (WINAPI *LPFNOpenNcThemeData)(HWND hWnd, LPCWSTR pszClassList);
 
 //RTL
 typedef NTSTATUS (WINAPI* LPFNRtlGetVersion)(PRTL_OSVERSIONINFOEXW lpVersionInformation);
@@ -270,6 +284,8 @@ typedef HRESULT (WINAPI* LPFNGetImage)(IStream *pStream, LPCWSTR lpPath, int cx,
 #ifdef _USE_APIHOOK
 //API Hook
 typedef LSTATUS (APIENTRY* LPFNRegQueryValueExW)(HKEY hKey, LPCWSTR lpValueName, LPDWORD lpReserved, LPDWORD lpType, LPBYTE lpData, LPDWORD lpcbData);
+typedef LSTATUS(APIENTRY* LPFNRegQueryValueW)(HKEY hKey, LPCWSTR lpSubKey, LPWSTR lpData, PLONG lpcbData);
+typedef DWORD (WINAPI* LPFNGetSysColor)(int nIndex);
 #endif
 
 #ifndef LOAD_LIBRARY_SEARCH_SYSTEM32

@@ -23,50 +23,54 @@ HINSTANCE	g_hShell32 = NULL;
 HWND		g_hDialog = NULL;
 IShellWindows *g_pSW = NULL;
 
-LPFNSHRunDialog lpfnSHRunDialog = NULL;
-LPFNRegenerateUserEnvironment lpfnRegenerateUserEnvironment = NULL;
-LPFNChangeWindowMessageFilterEx lpfnChangeWindowMessageFilterEx = NULL;
-LPFNRtlGetVersion lpfnRtlGetVersion = NULL;
-LPFNSetDefaultDllDirectories lpfnSetDefaultDllDirectories = NULL;
-LPFNAllowDarkModeForApp lpfnAllowDarkModeForApp = NULL;
-LPFNAllowDarkModeForWindow lpfnAllowDarkModeForWindow = NULL;
-LPFNSetWindowCompositionAttribute lpfnSetWindowCompositionAttribute = NULL;
-LPFNDwmSetWindowAttribute lpfnDwmSetWindowAttribute = NULL;
-LPFNShouldAppsUseDarkMode lpfnShouldAppsUseDarkMode = NULL;
-//LPFNIsDarkModeAllowedForWindow lpfnIsDarkModeAllowedForWindow = NULL;
-LPFNGetDpiForMonitor lpfnGetDpiForMonitor = NULL;
+LPFNSHRunDialog _SHRunDialog = NULL;
+LPFNRegenerateUserEnvironment _RegenerateUserEnvironment = NULL;
+LPFNChangeWindowMessageFilterEx _ChangeWindowMessageFilterEx = NULL;
+LPFNRtlGetVersion _RtlGetVersion = NULL;
+LPFNSetDefaultDllDirectories _SetDefaultDllDirectories = NULL;
+LPFNSetPreferredAppMode _SetPreferredAppMode = NULL;
+LPFNAllowDarkModeForWindow _AllowDarkModeForWindow = NULL;
+LPFNSetWindowCompositionAttribute _SetWindowCompositionAttribute = NULL;
+LPFNDwmSetWindowAttribute _DwmSetWindowAttribute = NULL;
+LPFNShouldAppsUseDarkMode _ShouldAppsUseDarkMode = NULL;
+LPFNRefreshImmersiveColorPolicyState _RefreshImmersiveColorPolicyState = NULL;
+//LPFNIsDarkModeAllowedForWindow _IsDarkModeAllowedForWindow = NULL;
+LPFNGetDpiForMonitor _GetDpiForMonitor = NULL;
 #ifdef _2000XP
-LPFNSetDllDirectoryW lpfnSetDllDirectoryW = NULL;
-LPFNIsWow64Process lpfnIsWow64Process = NULL;
-LPFNPSPropertyKeyFromString lpfnPSPropertyKeyFromString = NULL;
-LPFNPSGetPropertyKeyFromName lpfnPSGetPropertyKeyFromName = NULL;
-LPFNPSPropertyKeyFromString lpfnPSPropertyKeyFromStringEx = NULL;
-LPFNPSGetPropertyDescription lpfnPSGetPropertyDescription = NULL;
-LPFNPSStringFromPropertyKey lpfnPSStringFromPropertyKey = NULL;
-LPFNPropVariantToVariant lpfnPropVariantToVariant = NULL;
-LPFNVariantToPropVariant lpfnVariantToPropVariant = NULL;
-LPFNSHCreateItemFromIDList lpfnSHCreateItemFromIDList = NULL;
-LPFNSHGetIDListFromObject lpfnSHGetIDListFromObject = NULL;
-LPFNChangeWindowMessageFilter lpfnChangeWindowMessageFilter = NULL;
-LPFNAddClipboardFormatListener lpfnAddClipboardFormatListener = NULL;
-LPFNRemoveClipboardFormatListener lpfnRemoveClipboardFormatListener = NULL;
-//LPFNGetWindowTheme lpfnGetWindowTheme = NULL;
-//LPFNGetThemeColor lpfnGetThemeColor = NULL;
-//LPFNCloseThemeData lpfnCloseThemeData = NULL;
+LPFNSetDllDirectoryW _SetDllDirectoryW = NULL;
+LPFNIsWow64Process _IsWow64Process = NULL;
+LPFNPSPropertyKeyFromString _PSPropertyKeyFromString = NULL;
+LPFNPSGetPropertyKeyFromName _PSGetPropertyKeyFromName = NULL;
+LPFNPSPropertyKeyFromString _PSPropertyKeyFromStringEx = NULL;
+LPFNPSGetPropertyDescription _PSGetPropertyDescription = NULL;
+LPFNPSStringFromPropertyKey _PSStringFromPropertyKey = NULL;
+LPFNPropVariantToVariant _PropVariantToVariant = NULL;
+LPFNVariantToPropVariant _VariantToPropVariant = NULL;
+LPFNSHCreateItemFromIDList _SHCreateItemFromIDList = NULL;
+LPFNSHGetIDListFromObject _SHGetIDListFromObject = NULL;
+LPFNChangeWindowMessageFilter _ChangeWindowMessageFilter = NULL;
+LPFNAddClipboardFormatListener _AddClipboardFormatListener = NULL;
+LPFNRemoveClipboardFormatListener _RemoveClipboardFormatListener = NULL;
+//LPFNGetWindowTheme _GetWindowTheme = NULL;
+//LPFNGetThemeColor _GetThemeColor = NULL;
+//LPFNCloseThemeData _CloseThemeData = NULL;
 #else
-#define lpfnPSPropertyKeyFromString PSPropertyKeyFromString
-#define lpfnPSGetPropertyKeyFromName PSGetPropertyKeyFromName
-#define lpfnPSGetPropertyDescription PSGetPropertyDescription
-#define lpfnPSPropertyKeyFromStringEx tePSPropertyKeyFromStringEx
-#define lpfnSHCreateItemFromIDList SHCreateItemFromIDList
-#define lpfnSHGetIDListFromObject SHGetIDListFromObject
-#define lpfnPropVariantToVariant PropVariantToVariant
-#define lpfnVariantToPropVariant VariantToPropVariant
+#define _PSPropertyKeyFromString PSPropertyKeyFromString
+#define _PSGetPropertyKeyFromName PSGetPropertyKeyFromName
+#define _PSGetPropertyDescription PSGetPropertyDescription
+#define _PSPropertyKeyFromStringEx tePSPropertyKeyFromStringEx
+#define _SHCreateItemFromIDList SHCreateItemFromIDList
+#define _SHGetIDListFromObject SHGetIDListFromObject
+#define _PropVariantToVariant PropVariantToVariant
+#define _VariantToPropVariant VariantToPropVariant
 //#define lpgnGetWindowTheme GetWindowTheme
-//#define lpfnGetThemeColor GetThemeColor
+//#define _GetThemeColor GetThemeColor
 #endif
 #ifdef _USE_APIHOOK
-LPFNRegQueryValueExW lpfnRegQueryValueExW = NULL;
+LPFNRegQueryValueExW _RegQueryValueExW = NULL;
+LPFNRegQueryValueW _RegQueryValueW = NULL;
+LPFNGetSysColor _GetSysColor = NULL;
+LPFNOpenNcThemeData _OpenNcThemeData = NULL;
 #endif
 
 FORMATETC HDROPFormat = {CF_HDROP, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
@@ -217,9 +221,9 @@ BOOL teIsDarkColor(COLORREF cl)
 
 VOID teSetTreeTheme(HWND hwnd, COLORREF cl)
 {
-	if (lpfnAllowDarkModeForWindow) {
+	if (_AllowDarkModeForWindow) {
 		BOOL bDarkMode = teIsDarkColor(cl);
-		lpfnAllowDarkModeForWindow(hwnd, bDarkMode);
+		_AllowDarkModeForWindow(hwnd, bDarkMode);
 		SetWindowTheme(hwnd, bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
 	}
 }
@@ -752,10 +756,10 @@ HRESULT teCreateInstance(CLSID clsid, LPWSTR lpszDllFile, HMODULE *phDll, REFIID
 		}
 		hDll = LoadLibrary(lpszDllFile);
 		if (hDll) {
-			LPFNDllGetClassObject lpfnDllGetClassObject = (LPFNDllGetClassObject)GetProcAddress(hDll, "DllGetClassObject");
-			if (lpfnDllGetClassObject) {
+			LPFNDllGetClassObject _DllGetClassObject = (LPFNDllGetClassObject)GetProcAddress(hDll, "DllGetClassObject");
+			if (_DllGetClassObject) {
 				IClassFactory *pCF;
-				hr = lpfnDllGetClassObject(clsid, IID_PPV_ARGS(&pCF));
+				hr = _DllGetClassObject(clsid, IID_PPV_ARGS(&pCF));
 				if (hr == S_OK) {
 					hr = pCF->CreateInstance(NULL, riid, ppvObj);
 					pCF->Release();
@@ -796,7 +800,7 @@ BOOL teCompareSFClass(IShellFolder *pSF, const CLSID *pclsid)
 
 HRESULT teGetPropertyKeyFromName(IShellFolder2 *pSF2, BSTR bs, PROPERTYKEY *pkey)
 {
-	HRESULT hr = lpfnPSPropertyKeyFromStringEx(bs, pkey);
+	HRESULT hr = _PSPropertyKeyFromStringEx(bs, pkey);
 	if FAILED(hr) {
 		if (pSF2) {
 			SHELLDETAILS sd;
@@ -836,8 +840,8 @@ BSTR tePSGetNameFromPropertyKeyEx(PROPERTYKEY propKey, int nFormat, CteShellBrow
 	if (nFormat == 2) {
 		WCHAR szProp[64];
 #ifdef _2000XP
-		if (lpfnPSStringFromPropertyKey) {
-			lpfnPSStringFromPropertyKey(propKey, szProp, 64);
+		if (_PSStringFromPropertyKey) {
+			_PSStringFromPropertyKey(propKey, szProp, 64);
 		} else {
 			StringFromGUID2(propKey.fmtid, szProp, 39);
 			wchar_t pszId[8];
@@ -850,11 +854,11 @@ BSTR tePSGetNameFromPropertyKeyEx(PROPERTYKEY propKey, int nFormat, CteShellBrow
 		return ::SysAllocString(szProp);
 	}
 #ifdef _2000XP
-	if (lpfnPSGetPropertyDescription) {
+	if (_PSGetPropertyDescription) {
 #endif
 		BSTR bs = NULL;
 		IPropertyDescription *pdesc;
-		if SUCCEEDED(lpfnPSGetPropertyDescription(propKey, IID_PPV_ARGS(&pdesc))) {
+		if SUCCEEDED(_PSGetPropertyDescription(propKey, IID_PPV_ARGS(&pdesc))) {
 			LPWSTR psz = NULL;
 			CM_COLUMNINFO cmci = { sizeof(CM_COLUMNINFO), CM_MASK_NAME };
 			cmci.wszName[0] = NULL;
@@ -946,12 +950,12 @@ BOOL teSetForegroundWindow(HWND hwnd)
 
 BOOL teChangeWindowMessageFilterEx(HWND hwnd, UINT message, DWORD action, PCHANGEFILTERSTRUCT pChangeFilterStruct)
 {
-	if (lpfnChangeWindowMessageFilterEx && hwnd) {
-		return lpfnChangeWindowMessageFilterEx(hwnd, message, action, pChangeFilterStruct);
+	if (_ChangeWindowMessageFilterEx && hwnd) {
+		return _ChangeWindowMessageFilterEx(hwnd, message, action, pChangeFilterStruct);
 	}
 #ifdef _2000XP
-	if (lpfnChangeWindowMessageFilter) {
-		return lpfnChangeWindowMessageFilter(message, action);
+	if (_ChangeWindowMessageFilter) {
+		return _ChangeWindowMessageFilter(message, action);
 	}
 #else
 	return ChangeWindowMessageFilter(message, action);
@@ -1201,6 +1205,11 @@ BOOL teStartsText(LPWSTR pszSub, LPCWSTR pszFile)
 	return bResult;
 }
 
+BOOL teIsSearchFolder(LPWSTR lpszPath)
+{
+	return teStartsText(L"search-ms:", lpszPath);
+}
+
 VOID teGetJunctionLinkTarget(BSTR bsPath, LPWSTR *ppszText, int cchTextMax)
 {
 	HANDLE hFile = CreateFile(bsPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, NULL);
@@ -1317,8 +1326,8 @@ HRESULT STDAPICALLTYPE teGetDpiForMonitor(HMONITOR hmonitor, MONITOR_DPI_TYPE dp
 
 HRESULT STDAPICALLTYPE tePSPropertyKeyFromStringEx(__in LPCWSTR pszString, __out PROPERTYKEY *pkey)
 {
-	HRESULT hr = lpfnPSPropertyKeyFromString(pszString, pkey);
-	return SUCCEEDED(hr) ? hr : lpfnPSGetPropertyKeyFromName(pszString, pkey);
+	HRESULT hr = _PSPropertyKeyFromString(pszString, pkey);
+	return SUCCEEDED(hr) ? hr : _PSGetPropertyKeyFromName(pszString, pkey);
 }
 
 int CalcCrc32(BYTE *pc, int nLen, UINT c)
@@ -1830,7 +1839,7 @@ HRESULT teGetDisplayNameFromIDList(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags)
 					}
 				}
 			} else if (((uFlags & (SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)) == (SHGDN_FORADDRESSBAR | SHGDN_FORPARSING))) {
-				if (ILGetCount(pidl) == 1 || tePathMatchSpec(*pbs, L"search-ms:*\\*")) {
+				if (ILGetCount(pidl) == 1) {
 					LPITEMIDLIST pidl2 = teILCreateFromPath2(g_pidls[CSIDL_DESKTOP], *pbs, NULL);
 					if (!ILIsEqual(pidl, pidl2)) {
 						teSysFreeString(pbs);
@@ -1872,7 +1881,7 @@ BOOL teILIsSearchFolder(LPITEMIDLIST pidl)
 	BOOL bResult = FALSE;
 	BSTR bs;
 	if SUCCEEDED(teGetDisplayNameFromIDList(&bs, pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)) {
-		bResult = teStartsText(L"search-ms:", bs);
+		bResult = teIsSearchFolder(bs);
 		::SysFreeString(bs);
 	}
 	return bResult;
@@ -2578,21 +2587,13 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 			pszPath = bsPath2;
 		}
 		BSTR bsPath3 = NULL;
-		if (tePathMatchSpec(pszPath, L"search-ms:*&crumb=location:*")) {
-			LPWSTR lp1, lp2;
-			lp1 = StrChr(pszPath, ':');
-			while (lp2 = StrChr(lp1 + 1, ':')) {
-				lp1 = lp2;
+		LPWSTR pszPath1 = StrStrI(pszPath, L"&crumb=location:");
+		if (pszPath1 && teIsSearchFolder(pszPath)) {
+			bsPath3 = ::SysAllocString(pszPath1 + 16);
+			if (pszPath1 = StrChr(bsPath3, '&')) {
+				pszPath1[0] = NULL;
 			}
-			lp1 -= 4;
-			BSTR bs = ::SysAllocString(lp1);
-			bs[0] = 'f';
-			bs[1] = 'i';
-			bs[2] = 'l';
-			bs[3] = 'e';
-			DWORD dwLen = ::SysStringLen(bs);
-			bsPath3 = ::SysAllocStringLen(NULL, dwLen);
-			if SUCCEEDED(PathCreateFromUrl(bs, bsPath3, &dwLen, 0)) {
+			if SUCCEEDED(UrlUnescape(bsPath3, NULL, NULL, URL_UNESCAPE_INPLACE)) {
 				pszPath = bsPath3;
 			}
 		} else if (tePathMatchSpec(pszPath, L"*\\..\\*;*\\..;*\\.\\*;*\\.;*%*%*")) {
@@ -2740,11 +2741,11 @@ BOOL teCreateItemFromPath(LPWSTR pszPath, IShellItem **ppSI)
 {
 	BOOL Result = FALSE;
 #ifdef _2000XP
-	if (lpfnSHCreateItemFromIDList) {
+	if (_SHCreateItemFromIDList) {
 #endif
 		LPITEMIDLIST pidl = teILCreateFromPath(const_cast<LPWSTR>(pszPath));
 		if (pidl) {
-			Result = SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(ppSI)));
+			Result = SUCCEEDED(_SHCreateItemFromIDList(pidl, IID_PPV_ARGS(ppSI)));
 			teCoTaskMemFree(pidl);
 		}
 #ifdef _2000XP
@@ -2777,7 +2778,7 @@ int teSHFileOperation(LPSHFILEOPSTRUCT pFOS)
 		IFileOperation *pFO;
 		if (
 #ifdef _2000XP
-			lpfnSHCreateItemFromIDList &&
+			_SHCreateItemFromIDList &&
 #endif
 			SUCCEEDED(teCreateInstance(CLSID_FileOperation, NULL, NULL, IID_PPV_ARGS(&pFO)))) {
 			if SUCCEEDED(pFO->SetOperationFlags(pFOS->fFlags & ~FOF_MULTIDESTFILES)) {
@@ -3145,9 +3146,29 @@ LPITEMIDLIST* IDListFormDataObj(IDataObject *pDataObj, long *pnCount)
 }
 
 #ifdef _USE_APIHOOK
+
+HTHEME WINAPI teOpenNcThemeData(HWND hWnd, LPCWSTR pszClassList)
+{
+	if (lstrcmpi(pszClassList, L"ScrollBar") == 0) {
+		hWnd = NULL;
+		pszClassList = L"Explorer::ScrollBar";
+	}
+	return _OpenNcThemeData(hWnd, pszClassList);
+}
+
 LSTATUS APIENTRY teRegQueryValueExW(HKEY hKey, LPCWSTR lpValueName, LPDWORD lpReserved, LPDWORD lpType, LPBYTE lpData, LPDWORD lpcbData)
 {
-	return lpfnRegQueryValueExW(hKey, lpValueName, lpReserved, lpType, lpData, lpcbData);
+	return _RegQueryValueExW(hKey, lpValueName, lpReserved, lpType, lpData, lpcbData);
+}
+
+LSTATUS APIENTRY teRegQueryValueW(HKEY hKey, LPCWSTR lpSubKey, LPWSTR lpData, PLONG lpcbData)
+{
+	return _RegQueryValueW(hKey, lpSubKey, lpData, lpcbData);
+}
+
+DWORD WINAPI teGetSysColor(int nIndex)
+{
+	return _GetSysColor(nIndex);
 }
 #endif
 
@@ -3308,14 +3329,14 @@ BOOL teGetIDListFromObject(IUnknown *punk, LPITEMIDLIST *ppidl)
 		return TRUE;
 	}
 #endif
-	if SUCCEEDED(lpfnSHGetIDListFromObject(punk, ppidl)) {
+	if SUCCEEDED(_SHGetIDListFromObject(punk, ppidl)) {
 		return TRUE;
 	}
 	IShellBrowser *pSB;
 	if SUCCEEDED(IUnknown_QueryService(punk, SID_SShellBrowser, IID_PPV_ARGS(&pSB))) {
 		IShellView *pSV;
 		if SUCCEEDED(pSB->QueryActiveShellView(&pSV)) {
-			if FAILED(lpfnSHGetIDListFromObject(pSV, ppidl)) {
+			if FAILED(_SHGetIDListFromObject(pSV, ppidl)) {
 #ifdef _W2000
 				//Windows 2000
 				IDataObject *pDataObj;
@@ -4177,8 +4198,8 @@ VOID teLog(HANDLE hFile, LPWSTR lpLog)
 
 BOOL teFreeLibrary2(HMODULE hDll)
 {
-	LPFNDllCanUnloadNow lpfnDllCanUnloadNow = (LPFNDllCanUnloadNow)GetProcAddress(hDll, "DllCanUnloadNow");
-	if (g_nReload || (lpfnDllCanUnloadNow && lpfnDllCanUnloadNow() != S_OK)) {
+	LPFNDllCanUnloadNow _DllCanUnloadNow = (LPFNDllCanUnloadNow)GetProcAddress(hDll, "DllCanUnloadNow");
+	if (g_nReload || (_DllCanUnloadNow && _DllCanUnloadNow() != S_OK)) {
 		g_pFreeLibrary.insert(g_pFreeLibrary.begin(), hDll);
 		SetTimer(g_hwndMain, TET_FreeLibrary, (++g_dwFreeLibrary) * 100, teTimerProc);
 		return FALSE;
@@ -4738,12 +4759,12 @@ HRESULT tePSFormatForDisplay(PROPERTYKEY *ppropKey, VARIANT *pv, DWORD pdfFlags,
 	}
 	PROPVARIANT propVar;
 	PropVariantInit(&propVar);
-	lpfnVariantToPropVariant(pv, &propVar);
+	_VariantToPropVariant(pv, &propVar);
 #ifdef _2000XP
-	if (lpfnPSGetPropertyDescription) {
+	if (_PSGetPropertyDescription) {
 #endif
 		IPropertyDescription *pdesc;
-		hr = lpfnPSGetPropertyDescription(*ppropKey, IID_PPV_ARGS(&pdesc));
+		hr = _PSGetPropertyDescription(*ppropKey, IID_PPV_ARGS(&pdesc));
 		if SUCCEEDED(hr) {
 			hr = pdesc->FormatForDisplay(propVar, (PROPDESC_FORMAT_FLAGS)pdfFlags, ppszDisplay);
 			pdesc->Release();
@@ -4901,25 +4922,25 @@ HRESULT ControlFromhwnd(IDispatch **ppdisp, HWND hwnd)
 
 VOID teSetDarkMode(HWND hwnd)
 {
-	if (lpfnAllowDarkModeForWindow) {
-		lpfnAllowDarkModeForWindow(hwnd, g_bDarkMode);
+	if (_AllowDarkModeForWindow) {
+		_AllowDarkModeForWindow(hwnd, g_bDarkMode);
 	}
-	if (lpfnSetWindowCompositionAttribute) {
+	if (_SetWindowCompositionAttribute) {
 		WINCOMPATTRDATA wcpad = { 26, &g_bDarkMode, sizeof(g_bDarkMode) };
-		lpfnSetWindowCompositionAttribute(hwnd, &wcpad);
-	} else if (lpfnDwmSetWindowAttribute) {
-		lpfnDwmSetWindowAttribute(hwnd, 19, &g_bDarkMode, sizeof(g_bDarkMode));
+		_SetWindowCompositionAttribute(hwnd, &wcpad);
+	} else if (_DwmSetWindowAttribute) {
+		_DwmSetWindowAttribute(hwnd, 19, &g_bDarkMode, sizeof(g_bDarkMode));
 	}
 }
 
 BOOL teVerifyVersion(DWORD dwMajor, DWORD dwMinor, DWORD dwBuild)
 {
 	DWORDLONG dwlConditionMask = 0;
-    VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
-   VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
+	VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
+	VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
 	VER_SET_CONDITION(dwlConditionMask, VER_BUILDNUMBER, VER_GREATER_EQUAL);
 	OSVERSIONINFOEX osvi = { sizeof(OSVERSIONINFOEX), dwMajor, dwMinor, dwBuild };
-	return VerifyVersionInfo(&osvi, VER_MAJORVERSION | VER_BUILDNUMBER, dwlConditionMask);
+	return VerifyVersionInfo(&osvi, VER_MAJORVERSION | VER_MINORVERSION | VER_BUILDNUMBER, dwlConditionMask);
 }
 
 LRESULT CALLBACK MenuKeyProc(int nCode, WPARAM wParam, LPARAM lParam)
@@ -5622,7 +5643,7 @@ LRESULT CALLBACK TELVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 			}
 			break;
 		case WM_NOTIFY:
-			if (lpfnAllowDarkModeForWindow && ((LPNMHDR)lParam)->code == NM_CUSTOMDRAW) {
+			if (_AllowDarkModeForWindow && ((LPNMHDR)lParam)->code == NM_CUSTOMDRAW) {
 				if (teIsDarkColor(pSB->m_clrBk)) {
 					LPNMCUSTOMDRAW pnmcd = (LPNMCUSTOMDRAW)lParam;
 					if (pnmcd->dwDrawStage == CDDS_PREPAINT) {
@@ -5994,7 +6015,7 @@ VOID Finalize()
 			delete[] g_maps[i];
 		}
 #ifdef _2000XP
-		lpfnSHCreateItemFromIDList = NULL;
+		_SHCreateItemFromIDList = NULL;
 #endif
 		for (int i = MAX_CSIDL2; i--;) {
 			teILFreeClear(&g_pidls[i]);
@@ -6205,7 +6226,7 @@ BOOL GetVarPathFromFolderItem(FolderItem *pFolderItem, VARIANT *pVarResult)
 			VariantInit(pVarResult);
 			teGetDisplayNameOf(&v, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX | SHGDN_ORIGINAL, pVarResult);
 			VariantClear(&v);
-			if (pVarResult->vt == VT_BSTR && teStartsText(L"search-ms:", pVarResult->bstrVal)) {
+			if (pVarResult->vt == VT_BSTR && teIsSearchFolder(pVarResult->bstrVal)) {
 				LPITEMIDLIST pidl;
 				if (teGetIDListFromObject(pFolderItem, &pidl)) {
 					VariantClear(pVarResult);
@@ -6910,12 +6931,12 @@ VOID teApiGetProcObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 		} else {
 			lpProcNameA = MAKEINTRESOURCEA(param[1].word);
 		}
-		LPFNGetProcObjectW lpfnGetProcObjectW = (LPFNGetProcObjectW)GetProcAddress(hDll, lpProcNameA);
-		if (lpfnGetProcObjectW) {
+		LPFNGetProcObjectW _GetProcObjectW = (LPFNGetProcObjectW)GetProcAddress(hDll, lpProcNameA);
+		if (_GetProcObjectW) {
 			if (nArg >= 2) {
 				VariantCopy(pVarResult, &pDispParams->rgvarg[nArg - 2]);
 			}
-			lpfnGetProcObjectW(pVarResult);
+			_GetProcObjectW(pVarResult);
 			IDispatch *pdisp;
 			if (GetDispatch(pVarResult, &pdisp)) {
 				CteDispatch *odisp = new CteDispatch(pdisp, 4);
@@ -6938,8 +6959,8 @@ VOID teApiSetCurrentDirectory(int nArg, teParam *param, DISPPARAMS *pDispParams,
 VOID teApiSetDllDirectory(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 #ifdef _2000XP
-	if (lpfnSetDllDirectoryW) {
-		teSetBool(pVarResult, lpfnSetDllDirectoryW(param[0].lpcwstr));
+	if (_SetDllDirectoryW) {
+		teSetBool(pVarResult, _SetDllDirectoryW(param[0].lpcwstr));
 	}
 #else
 	teSetBool(pVarResult, SetDllDirectory(param[0].lpcwstr));
@@ -7053,7 +7074,7 @@ VOID teApiPSFormatForDisplay(int nArg, teParam *param, DISPPARAMS *pDispParams, 
 {
 	if (param[0].lpcwstr) {
 		PROPERTYKEY propKey;
-		if SUCCEEDED(lpfnPSPropertyKeyFromStringEx(param[0].lpcwstr, &propKey)) {
+		if SUCCEEDED(_PSPropertyKeyFromStringEx(param[0].lpcwstr, &propKey)) {
 			LPWSTR psz;
 			if SUCCEEDED(tePSFormatForDisplay(&propKey, &pDispParams->rgvarg[nArg - 1], param[2].dword, &psz, g_param[TE_SizeFormat])) {
 				teSetSZ(pVarResult, psz);
@@ -7096,7 +7117,7 @@ VOID teApiSetKeyboardState(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 
 VOID teApiGetVersionEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetBool(pVarResult, lpfnRtlGetVersion ? !lpfnRtlGetVersion(param[0].prtl_osversioninfoexw) : GetVersionEx(param[0].lposversioninfo));
+	teSetBool(pVarResult, _RtlGetVersion ? !_RtlGetVersion(param[0].prtl_osversioninfoexw) : GetVersionEx(param[0].lposversioninfo));
 }
 
 VOID teApiChooseFont(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -7169,8 +7190,8 @@ VOID teApiSleep(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVar
 
 VOID teApiShRunDialog(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	if (lpfnSHRunDialog) {
-		lpfnSHRunDialog(param[0].hwnd, param[1].hicon, param[2].lpwstr, param[3].lpwstr, param[4].lpwstr, param[5].dword);
+	if (_SHRunDialog) {
+		_SHRunDialog(param[0].hwnd, param[1].hicon, param[2].lpwstr, param[3].lpwstr, param[4].lpwstr, param[5].dword);
 	}
 }
 
@@ -7443,8 +7464,8 @@ VOID teApiIsWow64Process(int nArg, teParam *param, DISPPARAMS *pDispParams, VARI
 {
 	BOOL bResult = FALSE;
 #ifdef _2000XP
-	if (lpfnIsWow64Process) {
-		lpfnIsWow64Process(param[0].handle, &bResult);
+	if (_IsWow64Process) {
+		_IsWow64Process(param[0].handle, &bResult);
 	}
 #else
 	IsWow64Process(param[0].handle, &bResult);
@@ -9345,7 +9366,7 @@ VOID teApiHasThumbnail(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIAN
 		WTS_THUMBNAILID thumbnailId;
 		if SUCCEEDED(CoCreateInstance(CLSID_LocalThumbnailCache, NULL, CLSCTX_INPROC, IID_PPV_ARGS(&pThumbnailCache))) {
 			IShellItem *pShellItem;
-			if SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(&pShellItem))) {
+			if SUCCEEDED(_SHCreateItemFromIDList(pidl, IID_PPV_ARGS(&pShellItem))) {
 				if (pThumbnailCache->GetThumbnail(pShellItem, 96, WTS_EXTRACTDONOTCACHE, &pSharedBitmap, &cacheFlags, &thumbnailId) == S_OK) {
 					nResult |= 4;
 					pSharedBitmap->Release();
@@ -9429,9 +9450,9 @@ VOID teApiRunDLL(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVa
 	} else {
 		lpProcNameA = MAKEINTRESOURCEA(param[1].word);
 	}
-	LPFNEntryPointW lpfnEntryPointW = (LPFNEntryPointW)GetProcAddress(param[0].hmodule, lpProcNameA);
-	if (lpfnEntryPointW) {
-		lpfnEntryPointW(param[2].hwnd, param[3].hinstance, param[4].lpwstr, param[5].intVal);
+	LPFNEntryPointW _EntryPointW = (LPFNEntryPointW)GetProcAddress(param[0].hmodule, lpProcNameA);
+	if (_EntryPointW) {
+		_EntryPointW(param[2].hwnd, param[3].hinstance, param[4].lpwstr, param[5].intVal);
 	}
 }
 
@@ -9453,7 +9474,7 @@ VOID teApiGetDpiForMonitor(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 	}
 	CteMemory *pstPt = new CteMemory(2 * sizeof(int), NULL, 1, L"POINT");
 	UINT ux, uy;
-	lpfnGetDpiForMonitor(hMonitor, nArg >= 1 ? param[1].MonitorDpiType : MDT_EFFECTIVE_DPI, &ux, &uy);
+	_GetDpiForMonitor(hMonitor, nArg >= 1 ? param[1].MonitorDpiType : MDT_EFFECTIVE_DPI, &ux, &uy);
 	pstPt->SetPoint(ux, uy);
 	teSetObjectRelease(pVarResult, pstPt);
 }
@@ -10042,9 +10063,16 @@ BOOL teIsHighContrast()
 
 VOID teGetDarkMode()
 {
-	if (lpfnShouldAppsUseDarkMode && lpfnAllowDarkModeForWindow && lpfnAllowDarkModeForApp) {
-		g_bDarkMode = lpfnShouldAppsUseDarkMode() && IsAppThemed() && !teIsHighContrast();
-		lpfnAllowDarkModeForApp(g_bDarkMode);
+	if (_ShouldAppsUseDarkMode && _AllowDarkModeForWindow && _SetPreferredAppMode) {
+		g_bDarkMode = _ShouldAppsUseDarkMode() && IsAppThemed() && !teIsHighContrast();
+		if (teVerifyVersion(10, 0, 18334)) {
+			_SetPreferredAppMode(g_bDarkMode ? APPMODE_FORCEDARK : APPMODE_FORCELIGHT);
+		} else {
+			((LPFNAllowDarkModeForApp)_SetPreferredAppMode)(g_bDarkMode);
+		}
+		if (_RefreshImmersiveColorPolicyState) {
+			_RefreshImmersiveColorPolicyState();
+		}
 		teSetDarkMode(g_hwndMain);
 	}
 }
@@ -10493,6 +10521,38 @@ UINT_PTR CALLBACK OFNHookProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	}
     return FALSE;
 }
+#ifdef _USE_APIHOOK
+VOID teAPIHook(LPWSTR pszTargetDll, LPVOID lpfnSrcProc, LPVOID lpfnNewProc)
+{
+	HMODULE hDll = pszTargetDll ? teLoadLibrary(pszTargetDll) : GetModuleHandle(NULL);
+	if (hDll) {
+		DWORD_PTR dwBase = (DWORD_PTR)hDll;
+		DWORD dwIdataSize, dwOldProtect;
+		for (PIMAGE_IMPORT_DESCRIPTOR pImgDesc = (PIMAGE_IMPORT_DESCRIPTOR)ImageDirectoryEntryToData(hDll,
+			TRUE, IMAGE_DIRECTORY_ENTRY_IMPORT, &dwIdataSize); pImgDesc->Name; ++pImgDesc) {
+			::OutputDebugStringA((char*)(dwBase + pImgDesc->Name));
+			::OutputDebugStringA("\n");
+			PIMAGE_THUNK_DATA pIAT = (PIMAGE_THUNK_DATA)(dwBase + pImgDesc->FirstThunk);
+			PIMAGE_THUNK_DATA pINT = (PIMAGE_THUNK_DATA)(dwBase + pImgDesc->OriginalFirstThunk);
+			while (pIAT->u1.Function) {
+				PIMAGE_IMPORT_BY_NAME pImportName = (PIMAGE_IMPORT_BY_NAME)(dwBase+(DWORD)pINT->u1.AddressOfData);
+				if (!IMAGE_SNAP_BY_ORDINAL(pINT->u1.Ordinal)) {
+					::OutputDebugStringA((char*)pImportName->Name);
+					::OutputDebugStringA("\n");
+				}
+				if ((LPVOID)pIAT->u1.Function == lpfnSrcProc) {
+					VirtualProtect(&pIAT->u1.Function, sizeof(pIAT->u1.Function), PAGE_EXECUTE_READWRITE, &dwOldProtect);
+					WriteProcessMemory(GetCurrentProcess(), &pIAT->u1.Function, &lpfnNewProc, sizeof(pIAT->u1.Function), &dwOldProtect);
+					VirtualProtect(&pIAT->u1.Function, sizeof(pIAT->u1.Function), dwOldProtect, &dwOldProtect);
+				}
+				++pIAT;
+				++pINT;
+			}
+			//			}
+		}
+	}
+}
+#endif
 
 int APIENTRY _tWinMain(HINSTANCE hInstance,
 					HINSTANCE hPrevInstance,
@@ -10510,16 +10570,16 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	//Late Binding
 	HINSTANCE hDll = GetModuleHandleA("kernel32.dll");
 	if (hDll) {
-		lpfnSetDefaultDllDirectories = (LPFNSetDefaultDllDirectories)GetProcAddress(hDll, "SetDefaultDllDirectories");
-		if (lpfnSetDefaultDllDirectories) {
-			lpfnSetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS);
+		*(FARPROC *)&_SetDefaultDllDirectories = GetProcAddress(hDll, "SetDefaultDllDirectories");
+		if (_SetDefaultDllDirectories) {
+			_SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS);
 		}
 #ifdef _2000XP
-		lpfnSetDllDirectoryW = (LPFNSetDllDirectoryW)GetProcAddress(hDll, "SetDllDirectoryW");
-		if (lpfnSetDllDirectoryW) {
-			lpfnSetDllDirectoryW(L"");
+		*(FARPROC *)&_SetDllDirectoryW = GetProcAddress(hDll, "SetDllDirectoryW");
+		if (_SetDllDirectoryW) {
+			_SetDllDirectoryW(L"");
 		}
-		lpfnIsWow64Process = (LPFNIsWow64Process)GetProcAddress(hDll, "IsWow64Process");
+		*(FARPROC *)&_IsWow64Process = GetProcAddress(hDll, "IsWow64Process");
 #else
 		SetDllDirectory(L"");
 #endif
@@ -10563,114 +10623,102 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	if (g_hShell32 = teLoadLibrary(L"shell32.dll")) {
 #ifdef _2000XP
-		lpfnSHCreateItemFromIDList = (LPFNSHCreateItemFromIDList)GetProcAddress(g_hShell32, "SHCreateItemFromIDList");
-		lpfnSHGetIDListFromObject = (LPFNSHGetIDListFromObject)GetProcAddress(g_hShell32, "SHGetIDListFromObject");
+		*(FARPROC *)&_SHCreateItemFromIDList = GetProcAddress(g_hShell32, "SHCreateItemFromIDList");
+		*(FARPROC *)&_SHGetIDListFromObject = GetProcAddress(g_hShell32, "SHGetIDListFromObject");
 #endif
-		lpfnSHRunDialog = (LPFNSHRunDialog)GetProcAddress(g_hShell32, MAKEINTRESOURCEA(61));
-		lpfnRegenerateUserEnvironment = (LPFNRegenerateUserEnvironment)GetProcAddress(g_hShell32, "RegenerateUserEnvironment");
+		*(FARPROC *)&_SHRunDialog = GetProcAddress(g_hShell32, MAKEINTRESOURCEA(61));
+		*(FARPROC *)&_RegenerateUserEnvironment = GetProcAddress(g_hShell32, "RegenerateUserEnvironment");
 	}
 #ifdef _2000XP
-	if (!lpfnSHGetIDListFromObject) {
-		lpfnSHGetIDListFromObject = teGetIDListFromObjectXP;
+	if (!_SHGetIDListFromObject) {
+		_SHGetIDListFromObject = teGetIDListFromObjectXP;
 	}
 #endif
 #ifdef _W2000
-	if (!lpfnSHGetImageList) {
-		lpfnSHGetImageList = teSHGetImageList2000;
+	if (!_SHGetImageList) {
+		_SHGetImageList = teSHGetImageList2000;
 	}
 #endif
 #ifdef _2000XP
 	if (hDll = teLoadLibrary(L"propsys.dll")) {
-		lpfnPSPropertyKeyFromString = (LPFNPSPropertyKeyFromString)GetProcAddress(hDll, "PSPropertyKeyFromString");
-		lpfnPSGetPropertyKeyFromName = (LPFNPSGetPropertyKeyFromName)GetProcAddress(hDll, "PSGetPropertyKeyFromName");
-		lpfnPSGetPropertyDescription = (LPFNPSGetPropertyDescription)GetProcAddress(hDll, "PSGetPropertyDescription");
-		lpfnPSStringFromPropertyKey = (LPFNPSStringFromPropertyKey)GetProcAddress(hDll, "PSStringFromPropertyKey");
-		lpfnPropVariantToVariant = (LPFNPropVariantToVariant)GetProcAddress(hDll, "PropVariantToVariant");
-		lpfnVariantToPropVariant = (LPFNVariantToPropVariant)GetProcAddress(hDll, "VariantToPropVariant");
-		lpfnPSPropertyKeyFromStringEx = tePSPropertyKeyFromStringEx;
+		*(FARPROC *)&_PSPropertyKeyFromString = GetProcAddress(hDll, "PSPropertyKeyFromString");
+		*(FARPROC *)&_PSGetPropertyKeyFromName = GetProcAddress(hDll, "PSGetPropertyKeyFromName");
+		*(FARPROC *)&_PSGetPropertyDescription = GetProcAddress(hDll, "PSGetPropertyDescription");
+		*(FARPROC *)&_PSStringFromPropertyKey = GetProcAddress(hDll, "PSStringFromPropertyKey");
+		*(FARPROC *)&_PropVariantToVariant = GetProcAddress(hDll, "PropVariantToVariant");
+		*(FARPROC *)&_VariantToPropVariant = GetProcAddress(hDll, "VariantToPropVariant");
+		_PSPropertyKeyFromStringEx = tePSPropertyKeyFromStringEx;
 	} else {
-		lpfnPropVariantToVariant = (LPFNPropVariantToVariant)teVariantToVariantXP;
-		lpfnVariantToPropVariant = (LPFNVariantToPropVariant)teVariantToVariantXP;
-		lpfnPSPropertyKeyFromStringEx = tePSPropertyKeyFromStringXP;
+		_PropVariantToVariant = (LPFNPropVariantToVariant)teVariantToVariantXP;
+		_VariantToPropVariant = (LPFNVariantToPropVariant)teVariantToVariantXP;
+		_PSPropertyKeyFromStringEx = tePSPropertyKeyFromStringXP;
 	}
 #endif
 	if (hDll = teLoadLibrary(L"user32.dll")) {
-		lpfnChangeWindowMessageFilterEx = (LPFNChangeWindowMessageFilterEx)GetProcAddress(hDll, "ChangeWindowMessageFilterEx");
-		lpfnSetWindowCompositionAttribute = (LPFNSetWindowCompositionAttribute)GetProcAddress(hDll, "SetWindowCompositionAttribute");
+		*(FARPROC *)&_ChangeWindowMessageFilterEx = GetProcAddress(hDll, "ChangeWindowMessageFilterEx");
+		*(FARPROC *)&_SetWindowCompositionAttribute = GetProcAddress(hDll, "SetWindowCompositionAttribute");
 #ifdef _2000XP
-		lpfnChangeWindowMessageFilter = (LPFNChangeWindowMessageFilter)GetProcAddress(hDll, "ChangeWindowMessageFilter");
-		lpfnRemoveClipboardFormatListener = (LPFNRemoveClipboardFormatListener)GetProcAddress(hDll, "RemoveClipboardFormatListener");
-		if (lpfnRemoveClipboardFormatListener) {
-			lpfnAddClipboardFormatListener = (LPFNAddClipboardFormatListener)GetProcAddress(hDll, "AddClipboardFormatListener");
+		*(FARPROC *)&_ChangeWindowMessageFilter = GetProcAddress(hDll, "ChangeWindowMessageFilter");
+		*(FARPROC *)&_RemoveClipboardFormatListener = GetProcAddress(hDll, "RemoveClipboardFormatListener");
+		if (_RemoveClipboardFormatListener) {
+			*(FARPROC *)&_AddClipboardFormatListener = GetProcAddress(hDll, "AddClipboardFormatListener");
+		}
+#endif
+#ifdef _USE_APIHOOK
+		*(FARPROC *)&_GetSysColor = GetProcAddress(hDll, "GetSysColor");
+//		teAPIHook(L"shell32.dll", (LPVOID)_GetSysColor, &teGetSysColor);
+//		teAPIHook(L"ieframe.dll", (LPVOID)_GetSysColor, &teGetSysColor);
+//		teAPIHook(L"shlwapi.dll", (LPVOID)_GetSysColor, &teGetSysColor);
+//		teAPIHook(L"user32.dll", (LPVOID)_GetSysColor, &teGetSysColor);
+//		teAPIHook(L"comctl32.dll", (LPVOID)_GetSysColor, &teGetSysColor);
+//		teAPIHook(NULL, (LPVOID)_GetSysColor, &teGetSysColor);
+		if (hDll = teLoadLibrary(L"advapi32.dll")) {
+			*(FARPROC *)&_RegQueryValueW = GetProcAddress(hDll, "RegQueryValueW");
+//			teAPIHook(L"comctl32.dll", (LPVOID)_RegQueryValueW, &teRegQueryValueW);
+//			teAPIHook(L"ieframe.dll", (LPVOID)_RegQueryValueW, &teRegQueryValueW);
+//			teAPIHook(L"shlwapi.dll", (LPVOID)_RegQueryValueW, &teRegQueryValueW);
+//			teAPIHook(L"shell32.dll", (LPVOID)_RegQueryValueW, &teRegQueryValueW);
+			*(FARPROC *)&_RegQueryValueExW = GetProcAddress(hDll, "RegQueryValueExW");
+//			teAPIHook(L"ieframe.dll", (LPVOID)_RegQueryValueExW, &teRegQueryValueExW);
+//			teAPIHook(NULL, (LPVOID)_RegQueryValueW, &teRegQueryValueW);
 		}
 #endif
 	}
 	if (hDll = teLoadLibrary(L"ntdll.dll")) {
-		lpfnRtlGetVersion = (LPFNRtlGetVersion)GetProcAddress(hDll, "RtlGetVersion");
+		*(FARPROC *)&_RtlGetVersion = GetProcAddress(hDll, "RtlGetVersion");
 	}
 
 	if (teVerifyVersion(10, 0, 17763)) {
 		if (hDll = teLoadLibrary(L"uxtheme.dll")) {
 #ifdef _2000XP
-//			lpfnGetWindowTheme = (LPFNGetWindowTheme)GetProcAddress(hDll, "GetWindowTheme");
-//			lpfnCloseThemeData = (LPFNCloseThemeData)GetProcAddress(hDll, "CloseThemeData");
-//			lpfnGetThemeColor = (LPFNGetThemeColor)GetProcAddress(hDll, "GetThemeColor");
+//			*(FARPROC *)&_GetWindowTheme = GetProcAddress(hDll, "GetWindowTheme");
+//			*(FARPROC *)&_CloseThemeData = GetProcAddress(hDll, "CloseThemeData");
+//			*(FARPROC *)&_GetThemeColor = GetProcAddress(hDll, "GetThemeColor");
 #endif
-			lpfnShouldAppsUseDarkMode = (LPFNShouldAppsUseDarkMode)GetProcAddress(hDll, MAKEINTRESOURCEA(132));
-			lpfnAllowDarkModeForWindow = (LPFNAllowDarkModeForWindow)GetProcAddress(hDll, MAKEINTRESOURCEA(133));
-			lpfnAllowDarkModeForApp = (LPFNAllowDarkModeForApp)GetProcAddress(hDll, MAKEINTRESOURCEA(135));
-//			lpfnIsDarkModeAllowedForWindow = (LPFNIsDarkModeAllowedForWindow)GetProcAddress(hDll, MAKEINTRESOURCEA(137));
+			*(FARPROC *)&_ShouldAppsUseDarkMode = GetProcAddress(hDll, MAKEINTRESOURCEA(132));
+			*(FARPROC *)&_AllowDarkModeForWindow = GetProcAddress(hDll, MAKEINTRESOURCEA(133));
+			*(FARPROC *)&_SetPreferredAppMode = GetProcAddress(hDll, MAKEINTRESOURCEA(135));
+			*(FARPROC *)&_RefreshImmersiveColorPolicyState = GetProcAddress(hDll, MAKEINTRESOURCEA(104));
+//			*(FARPROC *)&_IsDarkModeAllowedForWindow = (LPFNIsDarkModeAllowedForWindow)GetProcAddress(hDll, MAKEINTRESOURCEA(137));
+#ifdef _USE_APIHOOK
+			*(FARPROC *)&_OpenNcThemeData = GetProcAddress(hDll, MAKEINTRESOURCEA(49));
+			teAPIHook(L"comctl32.dll", (LPVOID)_OpenNcThemeData, &teOpenNcThemeData);
+#endif
 			teGetDarkMode();
 		}
 	}
-	if (!lpfnSetWindowCompositionAttribute) {
+	if (!_SetWindowCompositionAttribute) {
 		if (hDll = teLoadLibrary(L"dwmapi.dll")) {
-			lpfnDwmSetWindowAttribute = (LPFNDwmSetWindowAttribute)GetProcAddress(hDll, "DwmSetWindowAttribute");
+			*(FARPROC *)&_DwmSetWindowAttribute = GetProcAddress(hDll, "DwmSetWindowAttribute");
 		}
 	}
 	if (hDll = teLoadLibrary(L"shcore.dll")) {
-		lpfnGetDpiForMonitor = (LPFNGetDpiForMonitor)GetProcAddress(hDll, "GetDpiForMonitor");
+		*(FARPROC *)&_GetDpiForMonitor = GetProcAddress(hDll, "GetDpiForMonitor");
 	}
-	if (!lpfnGetDpiForMonitor) {
-		lpfnGetDpiForMonitor = teGetDpiForMonitor;
+	if (!_GetDpiForMonitor) {
+		_GetDpiForMonitor = teGetDpiForMonitor;
 	}
 
-// API Hook test
-#ifdef _USE_APIHOOK
-	tePathAppend(&bsLib, bsPath, L"advapi32.dll");
-	hDll = GetModuleHandle(bsLib);
-	if (hDll) {
-		lpfnRegQueryValueExW = (LPFNRegQueryValueExW)GetProcAddress(hDll, "RegQueryValueExW");
-	}
-	teSysFreeString(&bsLib);
-
-	tePathAppend(&bsLib, bsPath, L"comctl32.dll");
-	hDll = GetModuleHandle(NULL);
-	if (hDll) {
-		DWORD_PTR dwBase = (DWORD_PTR)hDll;
-		DWORD dwIdataSize, dwDummy;
-		PIMAGE_IMPORT_DESCRIPTOR pImgDesc = (PIMAGE_IMPORT_DESCRIPTOR)ImageDirectoryEntryToData((HMODULE)dwBase,
-			TRUE, IMAGE_DIRECTORY_ENTRY_IMPORT, &dwIdataSize);
-		while(pImgDesc->Name) {
-			char *lpModule = (char*)(dwBase + pImgDesc->Name);
-			if (!_strcmpi(lpModule, "advapi32.dll")) {
-				PIMAGE_THUNK_DATA pIAT = (PIMAGE_THUNK_DATA)(dwBase + pImgDesc->FirstThunk);
-				while (pIAT->u1.Function) {
-					if ((LPFNRegQueryValueExW)pIAT->u1.Function == lpfnRegQueryValueExW) {
-						VirtualProtect(&pIAT->u1.Function, sizeof(pIAT->u1.Function), PAGE_EXECUTE_READWRITE, &dwDummy);
-						LPVOID NewProc = &teRegQueryValueExW;
-						WriteProcessMemory(GetCurrentProcess(), &pIAT->u1.Function, &NewProc, sizeof(pIAT->u1.Function), &dwDummy);
-						break;
-					}
-					++pIAT;
-				}
-				break;
-			}
-			++pImgDesc;
-		}
-	}
-	teSysFreeString(&bsLib);
-#endif
 #ifdef _2000XP
 	if (g_bUpperVista) {
 #endif
@@ -10792,8 +10840,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		pUIAR->Release();
 	}
 #ifdef _2000XP
-	if (lpfnAddClipboardFormatListener) {
-		lpfnAddClipboardFormatListener(g_hwndMain);
+	if (_AddClipboardFormatListener) {
+		_AddClipboardFormatListener(g_hwndMain);
 	} else {
 		g_hwndNextClip = SetClipboardViewer(g_hwndMain);
 	}
@@ -10985,8 +11033,8 @@ function _c(s) {\
 			DestroyMenu(g_hMenu);
 		}
 #ifdef	_2000XP
-		if (lpfnAddClipboardFormatListener) {
-			lpfnRemoveClipboardFormatListener(g_hwndMain);
+		if (_AddClipboardFormatListener) {
+			_RemoveClipboardFormatListener(g_hwndMain);
 		} else {
 			ChangeClipboardChain(g_hwndMain, g_hwndNextClip);
 		}
@@ -11355,11 +11403,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			case WM_SETTINGCHANGE:
 				teRegister(FALSE);
 				teGetDarkMode();
-				if (lpfnRegenerateUserEnvironment) {
+				if (_RegenerateUserEnvironment) {
 					try {
 						if (lstrcmpi((LPCWSTR)lParam, L"Environment") == 0) {
 							LPVOID lpEnvironment;
-							lpfnRegenerateUserEnvironment(&lpEnvironment, TRUE);
+							_RegenerateUserEnvironment(&lpEnvironment, TRUE);
 							//Not permitted to free lpEnvironment!
 							//FreeEnvironmentStrings((LPTSTR)lpEnvironment);
 						}
@@ -15622,21 +15670,21 @@ VOID CteShellBrowser::InitFilter()
 
 HRESULT CteShellBrowser::SetTheme()
 {
-	if (lpfnAllowDarkModeForWindow) {
+	if (_AllowDarkModeForWindow) {
 		BOOL bDarkMode = teIsDarkColor(m_clrBk);
 		HWND hHeader = ListView_GetHeader(m_hwndLV);
 		if (hHeader) {
-			lpfnAllowDarkModeForWindow(hHeader, bDarkMode);
+			_AllowDarkModeForWindow(hHeader, bDarkMode);
 			SetWindowTheme(hHeader, bDarkMode ? L"darkmode_itemsview" : L"explorer", NULL);
 		}
-		lpfnAllowDarkModeForWindow(m_hwndLV, bDarkMode);
+		_AllowDarkModeForWindow(m_hwndLV, bDarkMode);
 	}
 	return SetWindowTheme(m_hwndLV, GetThemeName(), NULL);
 }
 
 LPWSTR CteShellBrowser::GetThemeName()
 {
-	BOOL bDarkMode = lpfnAllowDarkModeForWindow && teIsDarkColor(m_clrBk);
+	BOOL bDarkMode = _AllowDarkModeForWindow && teIsDarkColor(m_clrBk);
 	if (g_nWindowTheme == 0) { //Normal style
 		return L"explorer";
 	}
@@ -16431,7 +16479,7 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 	}
 	BSTR bsName = NULL;
 	PROPERTYKEY propKey;
-	if SUCCEEDED(lpfnPSPropertyKeyFromStringEx(szNew, &propKey)) {
+	if SUCCEEDED(_PSPropertyKeyFromStringEx(szNew, &propKey)) {
 		bsName = tePSGetNameFromPropertyKeyEx(propKey, 0, this);
 		szNew = bsName;
 	}
@@ -21209,11 +21257,11 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 						if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
 							if (m_pNameSpaceTreeControl
 #ifdef _2000XP
-								&& lpfnSHCreateItemFromIDList
+								&& _SHCreateItemFromIDList
 #endif
 							) {
 								IShellItem *pShellItem;
-								if SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(&pShellItem))) {
+								if SUCCEEDED(_SHCreateItemFromIDList(pidl, IID_PPV_ARGS(&pShellItem))) {
 									teSetLong(pVarResult, m_pNameSpaceTreeControl->GetItemRect(pShellItem, prc));
 									pShellItem->Release();
 								}
@@ -21228,7 +21276,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 			case 0x10000300:
 				if (nArg >= 2 && m_hwndTV && m_pNameSpaceTreeControl
 #ifdef _2000XP
-					&& lpfnSHCreateItemFromIDList
+					&& _SHCreateItemFromIDList
 #endif
 				) {
 					long lEvent = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
@@ -21236,7 +21284,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 						LPITEMIDLIST pidl;
 						if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg - 1])) {
 							IShellItem *psi, *psiParent;
-							if SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(&psi))) {
+							if SUCCEEDED(_SHCreateItemFromIDList(pidl, IID_PPV_ARGS(&psi))) {
 								DWORD dwState;
 								if FAILED(m_pNameSpaceTreeControl->GetItemState(psi, NSTCIS_EXPANDED, &dwState)) {
 									if SUCCEEDED(psi->GetParent(&psiParent)) {
@@ -21347,7 +21395,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 					}
 					if (m_pNameSpaceTreeControl
 #ifdef _2000XP
-						&& lpfnSHCreateItemFromIDList
+						&& _SHCreateItemFromIDList
 #endif
 					) {
 						IShellItem *pShellItem;
@@ -21356,7 +21404,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 							m_dwState |= NSTCIS_EXPANDED;
 						}
 						SafeRelease(&m_psiFocus);
-						if SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(&m_psiFocus))) {
+						if SUCCEEDED(_SHCreateItemFromIDList(pidl, IID_PPV_ARGS(&m_psiFocus))) {
 							m_pNameSpaceTreeControl->SetItemState(m_psiFocus, m_dwState, m_dwState);
 							SetTimer(m_hwndTV, TET_EnsureVisible, 500, teTimerProcForTree);
 						}
@@ -21818,7 +21866,7 @@ VOID CteTreeView::SetRoot()
 	if (m_pNameSpaceTreeControl) {
 		IShellItem *pShellItem;
 #ifdef _2000XP
-		if (lpfnSHCreateItemFromIDList) {
+		if (_SHCreateItemFromIDList) {
 #endif
 			int nRoots = 0;
 			BSTR bs = ::SysAllocString(m_bsRoot);
@@ -21831,7 +21879,7 @@ VOID CteTreeView::SetRoot()
 						LPITEMIDLIST pidl = teILCreateFromPath(pszPath);
 						pszPath = &bs[i + 1];
 						if (pidl) {
-							if SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(&pShellItem))) {
+							if SUCCEEDED(_SHCreateItemFromIDList(pidl, IID_PPV_ARGS(&pShellItem))) {
 								hr = m_pNameSpaceTreeControl->AppendRoot(pShellItem, m_param[SB_EnumFlags], m_param[SB_RootStyle], this);
 								pShellItem->Release();
 								if SUCCEEDED(hr) {
@@ -21845,7 +21893,7 @@ VOID CteTreeView::SetRoot()
 			}
 			teSysFreeString(&bs);
 			if (!nRoots) {
-				if SUCCEEDED(lpfnSHCreateItemFromIDList(g_pidls[CSIDL_DESKTOP], IID_PPV_ARGS(&pShellItem))) {
+				if SUCCEEDED(_SHCreateItemFromIDList(g_pidls[CSIDL_DESKTOP], IID_PPV_ARGS(&pShellItem))) {
 					hr = m_pNameSpaceTreeControl->AppendRoot(pShellItem, m_param[SB_EnumFlags], m_param[SB_RootStyle], this);
 					pShellItem->Release();
 				}
@@ -22124,7 +22172,7 @@ VOID CteFolderItem::Clear()
 BSTR CteFolderItem::GetStrPath()
 {
 	if (m_v.vt == VT_BSTR) {
-		if (m_pidl == NULL || (m_pidlAlt && !ILIsEqual(m_pidl, m_pidlAlt)) || teStartsText(L"search-ms:", m_v.bstrVal)) {
+		if (m_pidl == NULL || (m_pidlAlt && !ILIsEqual(m_pidl, m_pidlAlt)) || teIsSearchFolder(m_v.bstrVal)) {
 			return m_v.bstrVal;
 		}
 	}
@@ -22360,7 +22408,7 @@ STDMETHODIMP CteFolderItem::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			hr = m_pFolderItem->Invoke(dispIdMember, riid, lcid, wFlags, pDispParams, pVarResult, pExcepInfo, puArgErr);
 			if (dispIdMember == m_dispExtendedProperty && pVarResult && nArg >= 0 && !pVarResult->bstrVal && pDispParams->rgvarg[nArg].vt == VT_BSTR) {
 				PROPERTYKEY propKey;
-				if SUCCEEDED(lpfnPSPropertyKeyFromStringEx(pDispParams->rgvarg[nArg].bstrVal, &propKey)) {
+				if SUCCEEDED(_PSPropertyKeyFromStringEx(pDispParams->rgvarg[nArg].bstrVal, &propKey)) {
 					if (IsEqualPropertyKey(propKey, PKEY_Link_TargetParsingPath)) {
 						BSTR bs;
 						if SUCCEEDED(get_Path(&bs)) {
@@ -22647,11 +22695,11 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				case 42:
 					{
 						IFileOpenDialog *pFileOpenDialog;
-						if (lpfnSHCreateItemFromIDList && SUCCEEDED(teCreateInstance(CLSID_FileOpenDialog, NULL, NULL, IID_PPV_ARGS(&pFileOpenDialog)))) {
+						if (_SHCreateItemFromIDList && SUCCEEDED(teCreateInstance(CLSID_FileOpenDialog, NULL, NULL, IID_PPV_ARGS(&pFileOpenDialog)))) {
 							IShellItem *psi;
 							LPITEMIDLIST pidl = teILCreateFromPath(const_cast<LPWSTR>(m_ofn.lpstrInitialDir));
 							if (pidl) {
-								if SUCCEEDED(lpfnSHCreateItemFromIDList(pidl, IID_PPV_ARGS(&psi))) {
+								if SUCCEEDED(_SHCreateItemFromIDList(pidl, IID_PPV_ARGS(&psi))) {
 									pFileOpenDialog->SetFolder(psi);
 									psi->Release();
 								}
@@ -23167,8 +23215,8 @@ VOID CteWICBitmap::FromStreamRelease(IStream *pStream, LPWSTR lpfn, BOOL bExtend
 				pStream->Seek(liOffset, STREAM_SEEK_SET, NULL);
 				HBITMAP hBM = NULL;
 				int nAlpha = 3;
-				LPFNGetImage lpfnGetImage = (LPFNGetImage)g_ppGetImage[i];
-				hr = lpfnGetImage(pStream, lpfn, cx, &hBM, &nAlpha);
+				LPFNGetImage _GetImage = (LPFNGetImage)g_ppGetImage[i];
+				hr = _GetImage(pStream, lpfn, cx, &hBM, &nAlpha);
 				if (hr == S_OK) {
 					CreateBitmapFromHBITMAP(hBM, 0, nAlpha);
 					::DeleteObject(hBM);
@@ -23682,7 +23730,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 						PROPVARIANT propVar;
 						PropVariantInit(&propVar);
 						if SUCCEEDED(m_ppMetadataQueryReader[dispIdMember - 160]->GetMetadataByName(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]), &propVar)) {
-							lpfnPropVariantToVariant(&propVar, pVarResult);
+							_PropVariantToVariant(&propVar, pVarResult);
 							PropVariantClear(&propVar);
 						}
 					}

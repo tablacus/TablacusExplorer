@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200803 ? te.Version : 20200803;
+		return te.Version < 20200806 ? te.Version : 20200806;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -1058,6 +1058,9 @@ NavigateFV = function (FV, Path, wFlags, bInputed) {
 			Path = decodeURI(Path);
 		}
 	}
+	if (wFlags === void 0) {
+		wFlags = GetOpenMode(FV);
+	}
 	if (GetLock(FV)) {
 		wFlags |= SBSP_NEWBROWSER;
 	}
@@ -1072,8 +1075,8 @@ NavigateFV = function (FV, Path, wFlags, bInputed) {
 	FV.Focus();
 }
 
-GetOpenMode = function () {
-	return MainWindow.g_menu_button == 3 ? SBSP_NEWBROWSER : GetNavigateFlags();
+GetOpenMode = function (FV) {
+	return MainWindow.g_menu_button == 3 ? SBSP_NEWBROWSER : GetNavigateFlags(FV);
 }
 
 IsDrag = function (pt1, pt2) {
