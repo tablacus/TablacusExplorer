@@ -91,6 +91,9 @@ if (window.Addon == 1) {
 								fFlags = 0;
 							}
 						} else if (api.StrCmpI(path, Items.Item(-1).Path) == 0) {
+							if (wFunc == FO_MOVE) {
+								return false;
+							}
 							fFlags |= FOF_RENAMEONCOLLISION;
 						}
 						api.SHFileOperation(wFunc, arFrom.join("\0"), path, fFlags, true);

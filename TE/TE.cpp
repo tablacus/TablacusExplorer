@@ -15206,6 +15206,17 @@ HRESULT CteShellBrowser::OnNavigationPending2(LPITEMIDLIST pidlFolder)
 	}
 
 	HRESULT hr = OnBeforeNavigate(pPrevious, SBSP_SAMEBROWSER | SBSP_ABSOLUTE);
+	if (hr == E_ACCESSDENIED) {
+		if (teILIsSearchFolder(m_pidl) && !teILIsSearchFolder(pidlPrevius)) {
+			BSTR bs;
+			if SUCCEEDED(pPrevious->get_Path(&bs)) {
+				if (teIsSearchFolder(bs)) {
+					hr = S_OK;
+				}
+				teSysFreeString(&bs);
+			}
+		}
+	}
 	if FAILED(hr) {
 		m_uLogIndex = m_uPrevLogIndex;
 		if (hr == E_ABORT && Close(FALSE)) {
@@ -15219,7 +15230,7 @@ HRESULT CteShellBrowser::OnNavigationPending2(LPITEMIDLIST pidlFolder)
 		m_pFolderItem->QueryInterface(IID_PPV_ARGS(&pid));
 		m_pFolderItem = pPrevious;
 //		pPrevious = NULL;
-		if (hr == E_ACCESSDENIED) {	
+		if (hr == E_ACCESSDENIED) {
 			HRESULT hr2 = BrowseObject2(pid, SBSP_NEWBROWSER | SBSP_ABSOLUTE);
 			if (ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
 				hr = hr2;

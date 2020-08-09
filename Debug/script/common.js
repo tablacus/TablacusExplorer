@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200806 ? te.Version : 20200806;
+		return te.Version < 20200809 ? te.Version : 20200809;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -796,9 +796,9 @@ LoadXml = function (filename, nGroup) {
 					var FV = TC.Selected.Navigate2(Path, SBSP_NEWBROWSER, tab.getAttribute("Type"), tab.getAttribute("ViewMode"), tab.getAttribute("FolderFlags"), tab.getAttribute("Options"), tab.getAttribute("ViewFlags"), tab.getAttribute("IconSize"), tab.getAttribute("Align"), tab.getAttribute("Width"), tab.getAttribute("Flags"), tab.getAttribute("EnumFlags"), tab.getAttribute("RootStyle"), tab.getAttribute("Root"));
 					if (!FV.FilterView) {
 						FV.FilterView = tab.getAttribute("FilterView");
-						FV.Data.Lock = api.LowPart(tab.getAttribute("Lock")) != 0;
-						Lock(TC, i2, false);
 					}
+					FV.Data.Lock = api.LowPart(tab.getAttribute("Lock")) != 0;
+					Lock(TC, i2, false);
 					ChangeTabName(FV);
 					MainWindow.RunEvent1("LoadFV", FV, tab);
 				}
@@ -3358,11 +3358,9 @@ Alt = function () {
 
 GetSavePath = function (FolderItem) {
 	var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
-	if (!/^[A-Z]:\\|^\\\\\w/i.test(path)) {
-		var res = IsSearchPath(FolderItem);
-		if (res) {
-			return res[0];
-		}
+	var res = IsSearchPath(FolderItem);
+	if (res) {
+		return res[0];
 	}
 	if (/\?/.test(path)) {
 		var nCount = api.ILGetCount(FolderItem);

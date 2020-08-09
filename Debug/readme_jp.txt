@@ -81,7 +81,7 @@ https://tablacus.github.io/explorer.html
 
 
 Documents
-https://www.penflip.com/LightTempler/tablacus-explorer
+https://github.com/tablacus/TablacusExplorer/wiki
 
 
 ソース
