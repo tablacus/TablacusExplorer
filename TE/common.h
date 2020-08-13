@@ -336,13 +336,11 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TET_Create				0x1fa1
 #define TET_Reload				0x1fa2
 #define TET_Size				0x1fa3
-#define TET_SetRedraw			0x1fa4
 #define TET_Status				0x1fa5
 #define TET_EndThread			0x1fa6
 #define TET_Title				0x1fa7
 #define TET_FreeLibrary			0x1fa8
 #define TET_Refresh				0x1fa9
-#define TET_VisibleChanged		0x1faa
 #define TET_EnsureVisible		0x1fab
 
 #define TWM_CLIPBOARDUPDATE		WM_APP
@@ -481,9 +479,6 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define	SB_Count	13
 
 #define	TVVERBS 16
-
-#define TEREDRAW_NORMAL   1
-#define TEREDRAW_NAVIGATE 2
 
 #define MAP_TE	0
 #define MAP_SB	1

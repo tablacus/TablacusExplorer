@@ -341,7 +341,7 @@ public:
 	VOID Init();
 	BOOL Close(BOOL bForce);
 	VOID Move(int nSrc, int nDest, CteTabCtrl *pDestTab);
-	VOID LockUpdate(int nRedraw);
+	VOID LockUpdate();
 	VOID UnlockUpdate();
 	VOID RedrawUpdate();
 	VOID Show(BOOL bVisible);
@@ -349,7 +349,6 @@ public:
 	DWORD GetStyle();
 	VOID SetItemSize();
 	BOOL SetDefault();
-	VOID CheckRedraw();
 public:
 	SCROLLINFO m_si;
 	HWND	m_hwnd;
@@ -362,8 +361,8 @@ public:
 	int		m_param[9];
 	int		m_nTC;
 	int		m_nScrollWidth;
-	int		m_nRedraw;
 	long	m_lNavigating;
+	BOOL	m_bRedraw;
 	BOOL	m_bEmpty;
 	BOOL	m_bVisible;
 private:
@@ -1157,6 +1156,7 @@ public:
 	CteFileSystemBindData();
 	~CteFileSystemBindData();
 public:
-	LONG	m_cRef;
 	WIN32_FIND_DATA m_wfd;
+	LONG	m_cRef;
 };
+

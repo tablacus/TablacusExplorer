@@ -2327,7 +2327,6 @@ function ChangeNotifyFV(lEvent, item1, item2) {
 			var FV = cFV[i];
 			if (FV && FV.FolderItem) {
 				var path = String(api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
-				var bChild = !api.StrCmpI(fso.GetParentFolderName(path1), path);
 				var bParent = api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;")) || bNetwork && api.PathIsNetworkPath(path);
 				if (lEvent == SHCNE_RENAMEFOLDER && CanClose(FV) == S_OK) {
 					if (bParent) {
@@ -2335,28 +2334,31 @@ function ChangeNotifyFV(lEvent, item1, item2) {
 						continue;
 					}
 				}
-				if (bChild && FV.hwndView) {
-					if (FV.hwndList) {
-						var item = api.Memory("LVITEM");
-						item.stateMask = LVIS_CUT;
-						api.SendMessage(FV.hwndList, LVM_SETITEMSTATE, -1, item);
-					}
-					if (WINVER >= 0x600 && (lEvent & (SHCNE_DELETE | SHCNE_RMDIR))) {
-						var nPos = FV.GetFocusedItem - 1;
-						if (nPos > 0 && api.ILIsEqual(item1, FV.FocusedItem)) {
-							var nCount = FV.ItemCount(SVGIO_ALLVIEW);
-							if (nCount) {
-								FV.SelectItem(nPos < nCount ? nPos : nCount - 1, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | (FV.Id == te.Ctrl(CTRL_FV).Id ? 0 : SVSI_NOTAKEFOCUS));
+				if (FV.hwndView) {
+					var bChild = !api.StrCmpI(fso.GetParentFolderName(path1), path);
+					if (bChild) {
+						if (FV.hwndList) {
+							var item = api.Memory("LVITEM");
+							item.stateMask = LVIS_CUT;
+							api.SendMessage(FV.hwndList, LVM_SETITEMSTATE, -1, item);
+						}
+						if (WINVER >= 0x600 && (lEvent & (SHCNE_DELETE | SHCNE_RMDIR))) {
+							var nPos = FV.GetFocusedItem - 1;
+							if (nPos > 0 && api.ILIsEqual(item1, FV.FocusedItem)) {
+								var nCount = FV.ItemCount(SVGIO_ALLVIEW);
+								if (nCount) {
+									FV.SelectItem(nPos < nCount ? nPos : nCount - 1, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | (FV.Id == te.Ctrl(CTRL_FV).Id ? 0 : SVSI_NOTAKEFOCUS));
+								}
 							}
 						}
 					}
-				}
-				if (bChild || bParent) {
-					if ((lEvent & fRemove) || ((lEvent & fAdd) && FV.FolderItem.Unavailable)) {
-						RefreshEx(FV, 500, 500);
+					if (bChild || bParent) {
+						if ((lEvent & fRemove) || ((lEvent & fAdd) && FV.FolderItem.Unavailable)) {
+							RefreshEx(FV, 500, 500);
+						}
 					}
+					FV.Notify(lEvent, item1, item2);
 				}
-				FV.Notify(lEvent, item1, item2);
 			}
 		}
 	}

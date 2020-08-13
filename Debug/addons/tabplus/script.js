@@ -233,7 +233,7 @@ if (window.Addon == 1) {
 					arClass.push(i < TC.SelectedIndex ? 'tab' : 'tab2');
 					o.style.zIndex = TC.Count - i;
 				}
-				o.className = arClass.join(" ");;
+				o.className = arClass.join(" ");
 			}
 		},
 
@@ -300,7 +300,7 @@ if (window.Addon == 1) {
 					} else {
 						setTimeout(function () {
 							Addons.TabPlus.Arrange(Id);
-						}, wsh.RegRead("HKCU\\Control Panel\\Mouse\\DoubleClickSpeed"));
+						}, sha.GetSystemInformation("DoubleClickTime"));
 					}
 				}
 				if (this.Drag.length && (this.Drag[0] != Id || this.Drag[1] != nDrop)) {
@@ -618,6 +618,7 @@ if (window.Addon == 1) {
 	AddEvent("SelectionChanged", function (Ctrl) {
 		if (Ctrl.Type == CTRL_TC) {
 			Addons.TabPlus.Arrange(Ctrl.Id);
+			Addons.TabPlus.Class(Ctrl, Ctrl.SelectedIndex);
 		}
 	});
 
