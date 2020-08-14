@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200813 ? te.Version : 20200813;
+		return te.Version < 20200814 ? te.Version : 20200814;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -2733,23 +2733,7 @@ GetInnerFV = function (id) {
 OpenInExplorer = function (pid1) {
 	if (pid1) {
 		CancelWindowRegistered();
-		var ar = [];
-		pid1 = pid1.FolderItem || pid1;
-		var pid = pid1;
-		if (!api.ILIsParent(ssfNETWORK, pid, false) && !IsSearchPath(pid)) {
-			for (var n = 99; !api.ILIsEmpty(pid) && n--; pid = api.ILGetParent(pid)) {
-				var path = api.GetDisplayNameOf(pid, SHGDN_FORPARSING | SHGDN_INFOLDER | SHGDN_ORIGINAL);
-				if (!path || /\\/.test(path)) {
-					ar = [];
-					break;
-				}
-				ar.unshift(path);
-			}
-		}
-		if (!ar.length) {
-			ar = [api.GetDisplayNameOf(pid1, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)];
-		}
-		api.CreateProcess([api.PathQuoteSpaces(wsh.ExpandEnvironmentStrings("%SystemRoot%\\explorer.exe")), api.PathQuoteSpaces(ar.join("\\"))].join(" "), null, 0, 1, 0);
+		sha.Explore(pid1.FolderItem || pid1);
 	}
 }
 
