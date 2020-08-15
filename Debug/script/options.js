@@ -1827,6 +1827,13 @@ InitLocation = function () {
 		dialogArguments.Data.show = "6";
 		dialogArguments.Data.index = 6;
 	}
+	if (!/,/.test(dialogArguments.Data.show)) {
+		g_.NoTab = true;
+		setTimeout(function () {
+			document.getElementById("tabs").style.display = "none";
+			//oPanel.style.border = "0";
+		}, 99);
+	}
 	if (/[8]/.test(dialogArguments.Data.show)) {
 		MakeKeySelect();
 		SetKeyShift();
@@ -2508,12 +2515,6 @@ function SetTabContents(id, name, value) {
 	var oPanel = document.getElementById("panel" + id);
 	if (name) {
 		document.getElementById("tab" + id).innerHTML = GetText(name);
-	} else {
-		g_.NoTab = true;
-		setTimeout(function () {
-			document.getElementById("tabs").style.display = "none";
-			oPanel.style.border = "0";
-		}, 99);
 	}
 	oPanel.innerHTML = value.join ? value.join('') : value;
 }

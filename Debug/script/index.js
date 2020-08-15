@@ -1,7 +1,6 @@
 //Tablacus Explorer
 
 te.ClearEvents();
-te.LockUpdate();
 te.About = AboutTE(2);
 Addon = 1;
 Init = false;
@@ -2133,7 +2132,6 @@ function InitWindow() {
 			api.SetWindowPos(te.hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 		}
 		te.CmdShow = SW_SHOWNORMAL;
-		te.UnlockUpdate();
 		setTimeout(function () {
 			RunCommandLine(api.GetCommandLine());
 			api.PostMessage(te.hwnd, WM_SIZE, 0, 0);
@@ -3790,13 +3788,10 @@ if (!te.Data) {
 			delete te.Data[i];
 		}
 	}
-	setTimeout(function () {
-		te.UnlockUpdate();
-		setTimeout(Resize, 99);
-		window.focus();
-	}, 500);
 	LoadConfig();
 	delete g_.xmlWindow;
+	Resize();
+	window.focus();
 }
 te.Data.window = window;
 Exchange = te.Data.Exchange;

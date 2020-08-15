@@ -152,7 +152,7 @@ int		g_x = MAXINT;
 int		g_nTCCount = 0;
 int		g_nTCIndex = 0;
 int		g_nWindowTheme = 0;
-BOOL	g_bArranging = FALSE;
+int		g_nArranging = 0;
 BOOL	g_nDropState = 0;
 BOOL	g_bLabelsMode;
 BOOL	g_bMessageLoop = TRUE;
@@ -5701,6 +5701,9 @@ VOID teCalcClientRect(int *param, LPRECT prc, LPRECT prcClient)
 VOID ArrangeWindowEx()
 {
 	RECT rc, rcTab, rcClient;
+	if (g_nArranging & 2) {
+		return;
+	}
 	if (g_pOnFunc[TE_OnArrange]) {
 		VARIANTARG *pv;
 		pv = GetNewVARIANT(1);
@@ -5708,13 +5711,13 @@ VOID ArrangeWindowEx()
 		Invoke4(g_pOnFunc[TE_OnArrange], NULL, 1, pv);
 	}
 	KillTimer(g_hwndMain, TET_Size);
-	g_bArranging = FALSE;
 	GetClientRect(g_hwndMain, &rcClient);
 	rcClient.left += g_param[TE_Left];
 	rcClient.top += g_param[TE_Top];
 	rcClient.right -= g_param[TE_Width];
 	rcClient.bottom -= g_param[TE_Height];
 	CteShellBrowser *pSB;
+	g_nArranging = 2;
 	teLockUpdate(1);
 	try {
 		for (size_t i = 0; i < g_ppTC.size(); ++i) {
@@ -5886,6 +5889,7 @@ VOID ArrangeWindowEx()
 		}
 	} catch (...) {}
 	teUnlockUpadte(1);
+	g_nArranging &= ~2;
 }
 
 LRESULT CALLBACK TESTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
@@ -6108,7 +6112,7 @@ LRESULT CALLBACK TETCProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 							ArrangeWindow();
 						}
 					}
-					if (g_bArranging && !g_nLockUpdate && !pTC->m_nLockUpdate) {
+					if (g_nArranging == 1 && !g_nLockUpdate && !pTC->m_nLockUpdate) {
 						CteShellBrowser *pSB = pTC->GetShellBrowser(pTC->m_nIndex);
 						if (pSB && pSB->m_hwndDV) {
 							ArrangeWindowEx();
@@ -10246,7 +10250,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 					"<h1>500 Internal Script Error</h1>" : "<h1>404 File Not Found</h1>" : "<h1>303 Exec Other</h1>",
 					-1, g_bsDocumentWrite, MAX_STATUS);
 				lstrcat(g_bsDocumentWrite, g_pWebBrowser->m_bstrPath);
-				g_bArranging = FALSE;
+				g_nArranging = 0;
 				g_nLockUpdate = 0;
 				::SysReAllocString(&g_pWebBrowser->m_bstrPath, PATH_BLANK);
 				g_pWebBrowser->m_pWebBrowser->Navigate(g_pWebBrowser->m_bstrPath, NULL, NULL, NULL, NULL);
@@ -10278,7 +10282,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 				}
 				break;
 			case TET_Size:
-				if (g_bArranging) {
+				if (g_nArranging == 1) {
 					ArrangeWindowEx();
 				}
 				break;
@@ -11008,10 +11012,10 @@ function _c(s) {\
 }
 VOID ArrangeWindow()
 {
-	if (g_bArranging) {
+	if (g_nArranging & 1) {
 		return;
 	}
-	g_bArranging = TRUE;
+	g_nArranging |= 1;
 	SetTimer(g_hwndMain, TET_Size, 1, teTimerProc);
 }
 
@@ -11208,7 +11212,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		switch (message)
 		{
 			case WM_CLOSE:
-				g_nLockUpdate += 1000;
+				g_nLockUpdate += 10000;
 				try {
 					if (CanClose(g_pTE)) {
 						teRevoke();
@@ -11221,7 +11225,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				} catch (...) {
 					DestroyWindow(hWnd);
 				}
-				g_nLockUpdate -= 1000;
+				g_nLockUpdate -= 10000;
 				return 0;
 			case WM_SIZE:
 				if (g_pWebBrowser) {
@@ -13025,6 +13029,7 @@ VOID CteShellBrowser::GetViewModeAndIconSize(BOOL bGetIconSize)
 				m_nForceViewMode = uViewMode;
 				Suspend(4);
 			}
+			m_bCheckLayout = FALSE;
 		}
 	}
 }
@@ -15310,7 +15315,7 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 			ArrangeWindow();
 		}
 	}
-	if (g_bArranging && !g_nLockUpdate && !m_pTC->m_nLockUpdate) {
+	if (g_nArranging == 1 && !g_nLockUpdate && !m_pTC->m_nLockUpdate) {
 		ArrangeWindowEx();
 	}
 	m_bSetRedraw = TRUE;
@@ -15580,7 +15585,7 @@ VOID CteShellBrowser::AddItem(LPITEMIDLIST pidl)
 					pFV->ItemCount(SVGIO_ALLVIEW, &iItems);
 					pFV->Release();
 				}
-				if ((iItems & 0xff) == 0xff) {
+				if (!(iItems & 0xff)) {
 					SetRedraw(TRUE);
 				}
 			}
@@ -16147,7 +16152,7 @@ void CteShellBrowser::Show(BOOL bShow, DWORD dwOptions)
 					m_pShellView->UIActivate(SVUIA_ACTIVATE_NOFOCUS);
 				}
 				BringWindowToTop(m_hwnd);
-				ArrangeWindowEx();
+				ArrangeWindow();
 				if (m_nUnload == 4) {
 					Refresh(FALSE);
 				}
@@ -16549,7 +16554,7 @@ VOID CteShellBrowser::SetGroupBy(BSTR bs)
 
 VOID CteShellBrowser::SetRedraw(BOOL bRedraw)
 {
-	SendMessage(m_hwnd, WM_SETREDRAW, bRedraw && m_bSetRedraw, 0);
+	SendMessage(m_hwnd, WM_SETREDRAW, m_bSetRedraw && (bRedraw || !m_bRedraw), 0);
 	if (m_hwndAlt) {
 		BringWindowToTop(m_hwndAlt);
 	}
@@ -17126,12 +17131,19 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				return S_OK;
 			//LockUpdate
 			case TE_METHOD + 1080:
-				teLockUpdate(2);
+				if (g_nLockUpdate < 16 && g_pWebBrowser) {
+					SendMessage(g_pWebBrowser->m_hwndBrowser, WM_SETREDRAW, FALSE, 0);
+				}
+				teLockUpdate(16);
 				return S_OK;
 			//UnlockUpdate
 			case TE_METHOD + 1090:
-				teUnlockUpadte(2);
-				ArrangeWindow();
+				teUnlockUpadte(16);
+				if (g_nLockUpdate < 16 && g_pWebBrowser) {
+					SendMessage(g_pWebBrowser->m_hwndBrowser, WM_SETREDRAW, TRUE, 0);
+					ArrangeWindow();
+					RedrawWindow(g_pWebBrowser->m_hwndBrowser, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+				}
 				return S_OK;
 			//HookDragDrop//Deprecated
 			case TE_METHOD + 1100:
@@ -18086,7 +18098,7 @@ VOID CteTabCtrl::Show(BOOL bVisible)
 	bVisible &= 1;
 	if (bVisible) {
 		SetDefault();
-		ArrangeWindowEx();
+		ArrangeWindow();
 	}
 	if (bVisible ^ m_bVisible) {
 		if (m_bVisible) {
