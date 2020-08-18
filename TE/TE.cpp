@@ -1648,6 +1648,17 @@ HRESULT teGetDisplayNameBSTR(IShellFolder *pSF, PCUITEMID_CHILD pidl, SHGDNF uFl
 	HRESULT hr = pSF->GetDisplayNameOf(pidl, uFlags & 0x3fffffff, &strret);
 	if SUCCEEDED(hr) {
 		hr = StrRetToBSTR(&strret, pidl, pbs);
+		if (hr == S_OK && (uFlags & SHGDN_FORADDRESSBAR) && teIsSearchFolder(*pbs) && StrChr(*pbs, '\\')) {
+			BSTR bs;
+			if (teGetDisplayNameBSTR(pSF, pidl, uFlags & ~SHGDN_FORADDRESSBAR, &bs) == S_OK) {
+				if (teIsFileSystem(bs)) {
+					teSysFreeString(pbs);
+					*pbs = bs;
+				} else {
+					teSysFreeString(&bs);
+				}
+			}
+		}
 	}
 	return hr;
 }

@@ -1251,14 +1251,14 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon, strVerb) {
 	if (strVerb == "opencontaining") {
 		var Items = ContextMenu.Items();
-		for (var j in Items) {
-			var Item = Items.Item(j);
+		for (var i = 0; i < Items.Count; ++i) {
+			var Item = Items.Item(i);
 			var path = Item.ExtendedProperty("linktarget") || Item.Path;
 			Navigate(fso.GetParentFolderName(path), SBSP_NEWBROWSER);
-			setTimeout(function () {
+			setTimeout(function (path) {
 				var FV = te.Ctrl(CTRL_FV);
 				FV.SelectItem(path, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
-			}, 99);
+			}, 99, path);
 			return S_OK;
 		}
 	}

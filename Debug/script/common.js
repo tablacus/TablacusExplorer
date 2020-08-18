@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200815 ? te.Version : 20200815;
+		return te.Version < 20200818 ? te.Version : 20200818;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -307,6 +307,24 @@ FolderMenu =
 		this.Invoke(FolderItem);
 	}
 };
+
+(function (f) {
+	if (f) {
+		window.setTimeout = function (fn, tm) {
+			var args = Array.prototype.slice.call(arguments, 2);
+			f(function () {
+				try {
+					if ("string" === typeof fn) {
+						fn = new Function(fn);
+					}
+					fn.apply(fn, args);
+				} catch (e) {
+					ShowError(e, fn.toString());
+				}
+			}, tm);
+		}
+	}
+})(window.setTimeout);
 
 RunEvent1 = function () {
 	var args = Array.apply(null, arguments);
@@ -2244,12 +2262,10 @@ RunCommandLine = function (s) {
 	if (re) {
 		var arg = api.CommandLineToArgv(re[1]);
 		Navigate(fso.GetParentFolderName(arg[0]), SBSP_NEWBROWSER);
-		(function (Item) {
-			setTimeout(function () {
-				var FV = te.Ctrl(CTRL_FV);
-				FV.SelectItem(Item, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
-			}, 99);
-		})(arg[0]);
+		setTimeout(function () {
+			var FV = te.Ctrl(CTRL_FV);
+			FV.SelectItem(Item, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
+		}, 99, arg[0]);
 		return;
 	}
 	var arg = api.CommandLineToArgv(s.replace(/^\/e,|^\/n,|^\/root,/ig, ""));
@@ -3463,12 +3479,10 @@ OpenContains = function (Ctrl, pt) {
 		var Item = Items.Item(j);
 		var path = Item.Path;
 		Navigate(fso.GetParentFolderName(path), SBSP_NEWBROWSER);
-		(function (Item) {
-			setTimeout(function () {
-				var FV = te.Ctrl(CTRL_FV);
-				FV.SelectItem(Item, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
-			}, 99);
-		})(Item);
+		setTimeout(function (Item) {
+			var FV = te.Ctrl(CTRL_FV);
+			FV.SelectItem(Item, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
+		}, 99, Item);
 	}
 }
 
