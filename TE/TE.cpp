@@ -11865,7 +11865,7 @@ HRESULT CteShellBrowser::Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *
 {
 	HRESULT hr = E_FAIL;
 	try {
-		if ((wFlags & SBSP_NEWBROWSER) && teILIsBlank(m_pFolderItem)) {
+		if ((wFlags & SBSP_NEWBROWSER) && teILIsBlank(m_pFolderItem) && teILIsBlank(m_pFolderItem1)) {
 			wFlags &= ~SBSP_NEWBROWSER;
 		}
 		if (!(wFlags & SBSP_NEWBROWSER)) {
@@ -12153,6 +12153,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	}
 	//Previous display
 	IShellView *pPreviousView = m_pShellView;
+	m_pShellView = NULL;
 	EXPLORER_BROWSER_OPTIONS dwflag;
 	dwflag = static_cast<EXPLORER_BROWSER_OPTIONS>(m_param[SB_Options]);
 

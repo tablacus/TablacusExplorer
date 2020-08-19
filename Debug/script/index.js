@@ -1790,6 +1790,7 @@ te.OnClipboardText = function (Items) {
 }
 
 te.OnArrange = function (Ctrl, rc) {
+	RunEvent1("Arrange", Ctrl, rc);
 	if (Ctrl.Type == CTRL_TC) {
 		var o = g_.Panels[Ctrl.Id];
 		if (!o) {
@@ -1838,7 +1839,6 @@ te.OnArrange = function (Ctrl, rc) {
 	} else if (Ctrl.Type == CTRL_TE) {
 		g_.TCPos = {};
 	}
-	RunEvent1("Arrange", Ctrl, rc);
 }
 
 te.OnVisibleChanged = function (Ctrl) {
