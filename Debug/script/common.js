@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200819 ? te.Version : 20200819;
+		return te.Version < 20200821 ? te.Version : 20200821;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -312,16 +312,20 @@ FolderMenu =
 	if (f) {
 		window.setTimeout = function (fn, tm) {
 			var args = Array.prototype.slice.call(arguments, 2);
-			f(function () {
-				try {
-					if ("string" === typeof fn) {
-						fn = new Function(fn);
+			try {
+				return f(function () {
+					try {
+						if ("string" === typeof fn) {
+							fn = new Function(fn);
+						}
+						fn.apply(fn, args);
+					} catch (e) {
+						ShowError(e, fn.toString());
 					}
-					fn.apply(fn, args);
-				} catch (e) {
-					ShowError(e, fn.toString());
-				}
-			}, tm);
+				}, tm);
+			} catch (e) {
+				ShowError(e);
+			}
 		}
 	}
 })(window.setTimeout);

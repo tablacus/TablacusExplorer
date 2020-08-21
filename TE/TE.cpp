@@ -2721,17 +2721,11 @@ LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath)
 BOOL teCreateItemFromPath(LPWSTR pszPath, IShellItem **ppSI)
 {
 	BOOL Result = FALSE;
-#ifdef _2000XP
-	if (_SHCreateItemFromIDList) {
-#endif
-		LPITEMIDLIST pidl = teILCreateFromPath(const_cast<LPWSTR>(pszPath));
-		if (pidl) {
-			Result = SUCCEEDED(_SHCreateItemFromIDList(pidl, IID_PPV_ARGS(ppSI)));
-			teCoTaskMemFree(pidl);
-		}
-#ifdef _2000XP
+	LPITEMIDLIST pidl = teILCreateFromPath(const_cast<LPWSTR>(pszPath));
+	if (pidl) {
+		Result = SUCCEEDED(_SHCreateItemFromIDList(pidl, IID_PPV_ARGS(ppSI)));
+		teCoTaskMemFree(pidl);
 	}
-#endif
 	return Result;
 }
 
@@ -2757,11 +2751,7 @@ int teSHFileOperation(LPSHFILEOPSTRUCT pFOS)
 	LPWSTR pszFrom = const_cast<LPWSTR>(pFOS->pFrom);
 	if (pszFrom && !(pFOS->fFlags & FOF_WANTMAPPINGHANDLE)) {
 		IFileOperation *pFO;
-		if (
-#ifdef _2000XP
-			_SHCreateItemFromIDList &&
-#endif
-			SUCCEEDED(teCreateInstance(CLSID_FileOperation, NULL, NULL, IID_PPV_ARGS(&pFO)))) {
+		if SUCCEEDED(teCreateInstance(CLSID_FileOperation, NULL, NULL, IID_PPV_ARGS(&pFO))) {
 			if SUCCEEDED(pFO->SetOperationFlags(pFOS->fFlags & ~FOF_MULTIDESTFILES)) {
 				try {
 					pFO->SetOwnerWindow(pFOS->hwnd);
@@ -3177,6 +3167,14 @@ HRESULT STDAPICALLTYPE teGetIDListFromObjectXP(IUnknown *punk, PIDLIST_ABSOLUTE 
 		}
 		pFI->Release();
 		return *ppidl ? S_OK : E_FAIL;
+	}
+	return E_NOTIMPL;
+}
+
+HRESULT STDAPICALLTYPE teSHCreateItemFromIDListXP(PCIDLIST_ABSOLUTE pidl, REFIID riid, void **ppv)
+{
+	if (ppv) {
+		*ppv = NULL;
 	}
 	return E_NOTIMPL;
 }
@@ -5914,7 +5912,9 @@ LRESULT CALLBACK TESTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 			switch (msg) {
 				case WM_MOUSEMOVE:
 					if (g_x == MAXINT) {
-						SetCursor(LoadCursor(NULL, IDC_SIZEWE));
+						if (IsWindowVisible(pSB->m_hwndDV)) {
+							SetCursor(LoadCursor(NULL, IDC_SIZEWE));
+						}
 					} else {
 						teSetTreeWidth(pSB, hwnd, lParam);
 					}
@@ -6220,9 +6220,6 @@ VOID Finalize()
 		for (int i = _countof(g_maps); i--;) {
 			delete[] g_maps[i];
 		}
-#ifdef _2000XP
-		_SHCreateItemFromIDList = NULL;
-#endif
 		for (int i = MAX_CSIDL2; i--;) {
 			teILFreeClear(&g_pidls[i]);
 			teSysFreeString(&g_bsPidls[i]);
@@ -10360,6 +10357,9 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 			case TET_EndThread:
 				DoFunc(TE_OnEndThread, g_pTE, S_OK);
 				break;
+			case TET_Redraw:
+				RedrawWindow(g_pWebBrowser->m_hwndBrowser, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+				break;
 		}//end_switch
 	} catch (...) {
 		g_nException = 0;
@@ -10607,6 +10607,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 #ifdef _2000XP
 	if (!_SHGetIDListFromObject) {
 		_SHGetIDListFromObject = teGetIDListFromObjectXP;
+	}
+	if (!_SHCreateItemFromIDList) {
+		_SHCreateItemFromIDList = teSHCreateItemFromIDListXP;
 	}
 #endif
 #ifdef _W2000
@@ -11163,6 +11166,12 @@ VOID CALLBACK teTimerProcForTree(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD d
 		CteTreeView *pTV = TVfromhwnd(hwnd);
 		if (pTV) {
 			switch (idEvent) {
+			case TET_Expand:
+				if (pTV->m_pNameSpaceTreeControl && pTV->m_psiFocus) {
+					pTV->m_pNameSpaceTreeControl->SetItemState(pTV->m_psiFocus, pTV->m_dwState, pTV->m_dwState);
+					SetTimer(hwnd, TET_EnsureVisible, 500, teTimerProcForTree);
+				}
+				break;
 			case TET_EnsureVisible:
 				if (pTV->m_pNameSpaceTreeControl && pTV->m_psiFocus) {
 					pTV->m_pNameSpaceTreeControl->EnsureItemVisible(pTV->m_psiFocus);
@@ -17154,7 +17163,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				if (g_nLockUpdate < 16 && g_pWebBrowser) {
 					SendMessage(g_pWebBrowser->m_hwndBrowser, WM_SETREDRAW, TRUE, 0);
 					ArrangeWindow();
-					RedrawWindow(g_pWebBrowser->m_hwndBrowser, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+					SetTimer(g_hwndMain, TET_Redraw, 500, teTimerProc);
 				}
 				return S_OK;
 			//HookDragDrop//Deprecated
@@ -18643,10 +18652,20 @@ VOID CteTabCtrl::RedrawUpdate()
 	if (pSB) {
 		pSB->SetRedraw(TRUE);
 	}
-	if (m_nLockUpdate || g_nLockUpdate) {
+	if (m_nLockUpdate || g_nLockUpdate || !pSB || !IsWindowVisible(pSB->m_hwndDV)) {
 		return;
 	}
-	RedrawWindow(m_hwndStatic, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+	RedrawWindow(pSB->m_hwnd, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_FRAME | RDW_ALLCHILDREN);
+	if ((pSB->m_param[SB_TreeAlign] & 2) && pSB->m_pTV) {
+		RedrawWindow(pSB->m_pTV->m_hwnd, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_FRAME | RDW_ALLCHILDREN);
+		RECT rc;
+		GetWindowRect(pSB->m_pTV->m_hwnd, &rc);
+		rc.left = rc.right - rc.left;
+		rc.right = rc.left + 2;
+		rc.bottom = rc.bottom - rc.top;
+		rc.top = 0;
+		RedrawWindow(m_hwndStatic, &rc, 0, RDW_NOERASE | RDW_INVALIDATE);
+	}
 	m_bRedraw = FALSE;
 }
 
@@ -21222,11 +21241,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 					if (prc) {
 						LPITEMIDLIST pidl;
 						if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
-							if (m_pNameSpaceTreeControl
-#ifdef _2000XP
-								&& _SHCreateItemFromIDList
-#endif
-							) {
+							if (m_pNameSpaceTreeControl) {
 								IShellItem *pShellItem;
 								if SUCCEEDED(_SHCreateItemFromIDList(pidl, IID_PPV_ARGS(&pShellItem))) {
 									teSetLong(pVarResult, m_pNameSpaceTreeControl->GetItemRect(pShellItem, prc));
@@ -21241,11 +21256,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 				return S_OK;
 			//Notify
 			case 0x10000300:
-				if (nArg >= 2 && m_hwndTV && m_pNameSpaceTreeControl
-#ifdef _2000XP
-					&& _SHCreateItemFromIDList
-#endif
-				) {
+				if (nArg >= 2 && m_hwndTV && m_pNameSpaceTreeControl) {
 					long lEvent = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 					if (lEvent & (SHCNE_MKDIR | SHCNE_MEDIAINSERTED | SHCNE_DRIVEADD | SHCNE_NETSHARE)) {
 						LPITEMIDLIST pidl;
@@ -21360,25 +21371,17 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 							::ILRemoveLastID(pidl);
 						}
 					}
-					if (m_pNameSpaceTreeControl
-#ifdef _2000XP
-						&& _SHCreateItemFromIDList
-#endif
-					) {
-						IShellItem *pShellItem;
-						m_dwState = NSTCIS_SELECTED;
-						if (GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) != 0) {
-							m_dwState |= NSTCIS_EXPANDED;
-						}
-						SafeRelease(&m_psiFocus);
-						if SUCCEEDED(_SHCreateItemFromIDList(pidl, IID_PPV_ARGS(&m_psiFocus))) {
-							m_pNameSpaceTreeControl->SetItemState(m_psiFocus, m_dwState, m_dwState);
-							SetTimer(m_hwndTV, TET_EnsureVisible, 500, teTimerProcForTree);
-						}
-						teCoTaskMemFree(pidl);
+					m_dwState = NSTCIS_SELECTED;
+					if (GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) != 0) {
+						m_dwState |= NSTCIS_EXPANDED;
+					}
+					SafeRelease(&m_psiFocus);
+					_SHCreateItemFromIDList(pidl, IID_PPV_ARGS(&m_psiFocus));
+					teCoTaskMemFree(pidl);
+					if (m_pNameSpaceTreeControl && m_psiFocus) {
+						SetTimer(m_hwndTV, TET_Expand, 100, teTimerProcForTree);
 						return S_OK;
 					}
-					teCoTaskMemFree(pidl);
 				}
 				break;
 			//DIID_DShellNameSpaceEvents
@@ -21832,46 +21835,39 @@ VOID CteTreeView::SetRoot()
 	HRESULT hr = E_FAIL;
 	if (m_pNameSpaceTreeControl) {
 		IShellItem *pShellItem;
-#ifdef _2000XP
-		if (_SHCreateItemFromIDList) {
-#endif
-			int nRoots = 0;
-			BSTR bs = ::SysAllocString(m_bsRoot);
-			LPWSTR pszPath = bs;
-			for (int i = 0; i <= ::SysStringLen(bs); ++i) {
-				if (bs[i] < 0x20) {
-					bs[i] = 0;
-					PathUnquoteSpaces(pszPath);
-					if (lstrlen(pszPath)) {
-						LPITEMIDLIST pidl = teILCreateFromPath(pszPath);
-						pszPath = &bs[i + 1];
-						if (pidl) {
-							if SUCCEEDED(_SHCreateItemFromIDList(pidl, IID_PPV_ARGS(&pShellItem))) {
-								hr = m_pNameSpaceTreeControl->AppendRoot(pShellItem, m_param[SB_EnumFlags], m_param[SB_RootStyle], this);
-								pShellItem->Release();
-								if SUCCEEDED(hr) {
-									++nRoots;
-								}
+		int nRoots = 0;
+		BSTR bs = ::SysAllocString(m_bsRoot);
+		LPWSTR pszPath = bs;
+		for (int i = 0; i <= ::SysStringLen(bs); ++i) {
+			if (bs[i] < 0x20) {
+				bs[i] = 0;
+				PathUnquoteSpaces(pszPath);
+				if (lstrlen(pszPath)) {
+					LPITEMIDLIST pidl = teILCreateFromPath(pszPath);
+					pszPath = &bs[i + 1];
+					if (pidl) {
+						if SUCCEEDED(_SHCreateItemFromIDList(pidl, IID_PPV_ARGS(&pShellItem))) {
+							hr = m_pNameSpaceTreeControl->AppendRoot(pShellItem, m_param[SB_EnumFlags], m_param[SB_RootStyle], this);
+							pShellItem->Release();
+							if SUCCEEDED(hr) {
+								++nRoots;
 							}
-							teCoTaskMemFree(pidl);
 						}
+						teCoTaskMemFree(pidl);
 					}
 				}
 			}
-			teSysFreeString(&bs);
-			if (!nRoots) {
-				if SUCCEEDED(_SHCreateItemFromIDList(g_pidls[CSIDL_DESKTOP], IID_PPV_ARGS(&pShellItem))) {
-					hr = m_pNameSpaceTreeControl->AppendRoot(pShellItem, m_param[SB_EnumFlags], m_param[SB_RootStyle], this);
-					pShellItem->Release();
-				}
-			}
-			if (m_psiFocus) {
-				m_pNameSpaceTreeControl->SetItemState(m_psiFocus, m_dwState, m_dwState);
-				SetTimer(m_hwndTV, TET_EnsureVisible, 500, teTimerProcForTree);
-			}
-#ifdef _2000XP
 		}
-#endif
+		teSysFreeString(&bs);
+		if (!nRoots) {
+			if SUCCEEDED(_SHCreateItemFromIDList(g_pidls[CSIDL_DESKTOP], IID_PPV_ARGS(&pShellItem))) {
+				hr = m_pNameSpaceTreeControl->AppendRoot(pShellItem, m_param[SB_EnumFlags], m_param[SB_RootStyle], this);
+				pShellItem->Release();
+			}
+		}
+		if (m_psiFocus) {
+			SetTimer(m_hwndTV, TET_Expand, 100, teTimerProcForTree);
+		}
 	}
 #ifdef _2000XP
 	if (hr != S_OK && m_pShellNameSpace) {
