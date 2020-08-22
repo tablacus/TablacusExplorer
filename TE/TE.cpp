@@ -152,7 +152,7 @@ int		g_x = MAXINT;
 int		g_nTCCount = 0;
 int		g_nTCIndex = 0;
 int		g_nWindowTheme = 0;
-int		g_nArranging = 0;
+BOOL	g_bArranging = FALSE;
 BOOL	g_nDropState = 0;
 BOOL	g_bLabelsMode;
 BOOL	g_bMessageLoop = TRUE;
@@ -204,14 +204,6 @@ HRESULT STDAPICALLTYPE tePSPropertyKeyFromStringEx(__in LPCWSTR pszString, __out
 VOID teGetDarkMode();
 
 //Unit
-
-VOID teHideWindow(HWND hwnd)
-{
-	RECT rc;
-	GetWindowRect(hwnd, &rc);
-	MoveWindow(hwnd, short(MINSHORT), short(MINSHORT), rc.right - rc.left, rc.bottom - rc.top, FALSE);
-	ShowWindow(hwnd, SW_HIDE);
-}
 
 BOOL teIsDarkColor(COLORREF cl)
 {
@@ -5710,7 +5702,7 @@ VOID teCalcClientRect(int *param, LPRECT prc, LPRECT prcClient)
 VOID ArrangeWindowEx()
 {
 	RECT rc, rcTab, rcClient;
-	if (g_nArranging & 2) {
+	if (!g_bArranging) {
 		return;
 	}
 	if (g_pOnFunc[TE_OnArrange]) {
@@ -5726,7 +5718,7 @@ VOID ArrangeWindowEx()
 	rcClient.right -= g_param[TE_Width];
 	rcClient.bottom -= g_param[TE_Height];
 	CteShellBrowser *pSB;
-	g_nArranging = 2;
+	g_bArranging = FALSE;
 	teLockUpdate(1);
 	try {
 		for (size_t i = 0; i < g_ppTC.size(); ++i) {
@@ -5797,14 +5789,6 @@ VOID ArrangeWindowEx()
 								rcTab.left = rc.right;
 								nBottom = h;
 								break;
-							}
-							while (--nCount >= 0) {
-								if (nCount != pTC->m_nIndex) {
-									pSB = pTC->GetShellBrowser(nCount);
-									if (pSB && pSB->m_bVisible) {
-										pSB->Show(FALSE, 1);
-									}
-								}
 							}
 						}
 						pTC->m_nScrollWidth = 0;
@@ -5886,6 +5870,14 @@ VOID ArrangeWindowEx()
 						}
 						MoveWindow(pTC->m_hwndButton, rcTab.left, rcTab.top,
 							rcTab.right - rcTab.left, rcTab.bottom - rcTab.top, FALSE);
+						while (--nCount >= 0) {
+							if (nCount != pTC->m_nIndex) {
+								pSB = pTC->GetShellBrowser(nCount);
+								if (pSB && pSB->m_bVisible) {
+									pSB->Show(FALSE, 1);
+								}
+							}
+						}
 					}
 				} catch (...) {
 					g_nException = 0;
@@ -5898,7 +5890,6 @@ VOID ArrangeWindowEx()
 		}
 	} catch (...) {}
 	teUnlockUpadte(1);
-	g_nArranging &= ~2;
 }
 
 LRESULT CALLBACK TESTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
@@ -6123,7 +6114,7 @@ LRESULT CALLBACK TETCProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 							ArrangeWindow();
 						}
 					}
-					if (g_nArranging == 1 && !g_nLockUpdate && !pTC->m_nLockUpdate) {
+					if (g_bArranging && !g_nLockUpdate && !pTC->m_nLockUpdate) {
 						CteShellBrowser *pSB = pTC->GetShellBrowser(pTC->m_nIndex);
 						if (pSB && pSB->m_hwndDV) {
 							ArrangeWindowEx();
@@ -10258,7 +10249,6 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 					"<h1>500 Internal Script Error</h1>" : "<h1>404 File Not Found</h1>" : "<h1>303 Exec Other</h1>",
 					-1, g_bsDocumentWrite, MAX_STATUS);
 				lstrcat(g_bsDocumentWrite, g_pWebBrowser->m_bstrPath);
-				g_nArranging = 0;
 				g_nLockUpdate = 0;
 				::SysReAllocString(&g_pWebBrowser->m_bstrPath, PATH_BLANK);
 				g_pWebBrowser->m_pWebBrowser->Navigate(g_pWebBrowser->m_bstrPath, NULL, NULL, NULL, NULL);
@@ -10290,9 +10280,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 				}
 				break;
 			case TET_Size:
-				if (g_nArranging == 1) {
-					ArrangeWindowEx();
-				}
+				ArrangeWindowEx();
 				break;
 			case TET_FreeLibrary:
 				while (!g_pFreeLibrary.empty()) {
@@ -11026,10 +11014,10 @@ function _c(s) {\
 }
 VOID ArrangeWindow()
 {
-	if (g_nArranging & 1) {
+	if (g_bArranging) {
 		return;
 	}
-	g_nArranging |= 1;
+	g_bArranging = TRUE;
 	SetTimer(g_hwndMain, TET_Size, 1, teTimerProc);
 }
 
@@ -11889,6 +11877,7 @@ HRESULT CteShellBrowser::Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *
 			if (bNew) {
 				pSB = GetNewShellBrowser(m_pTC);
 				*ppSB = pSB;
+				teSysFreeString(&pSB->m_pTV->m_bsRoot);
 				pSB->m_pTV->m_bsRoot = ::SysAllocString(m_pTV->m_bsRoot);
 			}
 			for (int i = SB_Count; i--;) {
@@ -12119,16 +12108,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 						pOptions->SetFolderViewOptions(FVO_VISTALAYOUT, teGetFolderViewOptions(pidl, m_param[SB_ViewMode]));
 						pOptions->Release();
 					}
-					m_pTC->LockUpdate();
-					try {
-						BrowseToObject();
-					} catch (...) {
-						g_nException = 0;
-#ifdef _DEBUG
-						g_strException = L"BrowseToObject";
-#endif
-					}
-					m_pTC->UnlockUpdate();
+					BrowseToObject();
 					teCoTaskMemFree(pidl);
 					return S_OK;
 				}
@@ -12202,7 +12182,6 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	//History / Management
 	SetHistory(pFolderItems, wFlags);
 	m_bBeforeNavigate = TRUE;
-	m_pTC->LockUpdate();
 	try {
 		DestroyView(m_param[SB_Type]);
 		Show(FALSE, 2);
@@ -12240,7 +12219,6 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		m_nUnload = 0;
 		Show(TRUE, 0);
 	}
-	m_pTC->UnlockUpdate();
 	if (hr != S_OK) {
 		SafeRelease(&m_pShellView);
 		m_pShellView = pPreviousView;
@@ -15336,7 +15314,7 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 			ArrangeWindow();
 		}
 	}
-	if (g_nArranging == 1 && !g_nLockUpdate && !m_pTC->m_nLockUpdate) {
+	if (g_bArranging && !g_nLockUpdate && !m_pTC->m_nLockUpdate) {
 		ArrangeWindowEx();
 	}
 	m_bSetRedraw = TRUE;
@@ -16212,7 +16190,7 @@ BOOL CteShellBrowser::Close(BOOL bForce)
 			TabCtrl_SetItem(m_pTC->m_hwnd, i, &tcItem);
 			SendMessage(m_pTC->m_hwnd, TCM_DELETEITEM, i, 0);
 		}
-		teHideWindow(m_pTV->m_hwnd);
+		ShowWindow(m_pTV->m_hwnd, SW_HIDE);
 		Clear();
 		m_bEmpty = TRUE;
 		return TRUE;
@@ -18124,7 +18102,7 @@ VOID CteTabCtrl::Show(BOOL bVisible)
 	if (bVisible ^ m_bVisible) {
 		if (m_bVisible) {
 			SendMessage(m_hwndStatic, WM_SETREDRAW, FALSE, 0);
-			teHideWindow(m_hwndStatic);
+			ShowWindow(m_hwndStatic, SW_HIDE);
 			CteShellBrowser *pSB = GetShellBrowser(m_nIndex);
 			if (pSB) {
 				pSB->Show(FALSE, 1);
@@ -18665,6 +18643,9 @@ VOID CteTabCtrl::RedrawUpdate()
 		rc.bottom = rc.bottom - rc.top;
 		rc.top = 0;
 		RedrawWindow(m_hwndStatic, &rc, 0, RDW_NOERASE | RDW_INVALIDATE);
+	}
+	if (g_param[TE_Tab] && m_hwnd) {
+		RedrawWindow(m_hwnd, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_FRAME | RDW_ALLCHILDREN);
 	}
 	m_bRedraw = FALSE;
 }
