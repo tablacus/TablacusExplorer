@@ -65,6 +65,15 @@ Hunter User
 * Turkish / Türkçe
 Ferhat Aydin
 
+Español latino / Spanish la
+DasinFlameS
+
+українська / Ukrainian
+Henaro aka Ironwool
+
+Nederlands / Nederlands
+mlohnen
+
 
 License:
 

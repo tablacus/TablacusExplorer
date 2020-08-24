@@ -142,7 +142,7 @@ public:
 	STDMETHODIMP DragLeave();
 	STDMETHODIMP Drop(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
 
-	CteDropTarget2(HWND hwnd, IUnknown *punk);
+	CteDropTarget2(HWND hwnd, IUnknown *punk, BOOL bUseHelper);
 	~CteDropTarget2();
 public:
 	CteFolderItems *m_pDragItems;
@@ -153,6 +153,7 @@ public:
 	DWORD	m_grfKeyState;
 	HRESULT m_DragLeave;
 	LONG	m_cRef;
+	BOOL	m_bUseHelper;
 };
 
 class CTE : public IDispatch, public IDropSource
@@ -393,11 +394,10 @@ class CteShellBrowser : public IShellBrowser, public ICommDlgBrowser2,
 //	public IFolderFilter,
 	public IExplorerBrowserEvents, public IExplorerPaneVisibility,
 	public IShellFolderViewCB,
-#ifdef _USE_SHELLBROWSER
-	public IShellFolder,
-#endif
 #ifdef _2000XP
 	public IShellFolder2,
+#elif _USE_SHELLBROWSER
+	public IShellFolder,
 #endif
 	public IPersistFolder2
 {

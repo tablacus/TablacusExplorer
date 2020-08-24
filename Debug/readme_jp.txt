@@ -67,7 +67,16 @@ Tablacus Explorerの特徴
 翻訳者 : Hunter User
 
 * トルコ語
-Ferhat Aydin
+翻訳者 : Ferhat Aydin
+
+* スペイン語(ラテンアメリカ)
+翻訳者 : DasinFlameS
+
+* ウクライナ語
+翻訳者 : Henaro aka Ironwool
+
+* オランダ語
+翻訳者 : mlohnen
 
 
 ライセンス

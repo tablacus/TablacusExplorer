@@ -169,15 +169,13 @@ function ClickTree(o, nMode, strChg, bForce) {
 			ClickButton(res[1], true);
 			if (res[3]) {
 				if (res[1] == 1) {
-					(function (Id) {
-						setTimeout(function () {
-							if (g_.elAddons[Id]) {
-								if (!g_.elAddons[Id].contentWindow || !g_.elAddons[Id].contentWindow.document.body.innerHTML) {
-									AddonOptions(Id, null, null, true);
-								}
+					setTimeout(function (Id) {
+						if (g_.elAddons[Id]) {
+							if (!g_.elAddons[Id].contentWindow || !g_.elAddons[Id].contentWindow.document.body.innerHTML) {
+								AddonOptions(Id, null, null, true);
 							}
-						}, 999);
-					})(res[3]);
+						}
+					}, 999, res[3]);
 				}
 			}
 			ShowButtons(/^1$|^1_1$/.test(newTab), res[1] == 2, newTab);
@@ -797,18 +795,16 @@ function LoadMenus(nSelected) {
 			nSelected = oa.length - 1;
 			oa[nSelected].selected = true;
 			g_MenuType = j;
-			(function (o, v) {
-				setTimeout(function () {
-					ClickTree(document.getElementById("tab2_" + g_MenuType));
-					EditMenus();
-					g_MenuType = "";
-					if (isFinite(v)) {
-						o.selectedIndex = v;
-						EnableSelectTag(o);
-						FireEvent(o, "change");
-					}
-				}, 99);
-			})(document.F["Menus_" + ar[0]], ar[1]);
+			setTimeout(function (o, v) {
+				ClickTree(document.getElementById("tab2_" + g_MenuType));
+				EditMenus();
+				g_MenuType = "";
+				if (isFinite(v)) {
+					o.selectedIndex = v;
+					EnableSelectTag(o);
+					FireEvent(o, "change");
+				}
+			}, 99, document.F["Menus_" + ar[0]], ar[1]);
 		}
 	}
 }
@@ -1157,11 +1153,9 @@ function Drop5(e) {
 		var o = document.elementFromPoint(e.clientX, e.clientY);
 		do {
 			if (/Addons_/i.test(o.id)) {
-				(function (src, dest) {
-					setTimeout(function () {
-						AddonMoveEx(src, dest);
-					}, 99);
-				})(GetRowIndexById(g_drag5), GetRowIndexById(o.id));
+				setTimeout(function (src, dest) {
+					AddonMoveEx(src, dest);
+				}, 99, GetRowIndexById(g_drag5), GetRowIndexById(o.id));
 				break;
 			}
 		} while (o = o.parentNode);
@@ -1729,11 +1723,9 @@ InitLocation = function () {
 	}
 	LoadAddon("js", Addon_Id, ar, param);
 	if (ar.length) {
-		(function (ar) {
-			setTimeout(function () {
-				MessageBox(ar.join("\n\n"), TITLE, MB_OK);
-			}, 500);
-		})(ar);
+		setTimeout(function (ar) {
+			MessageBox(ar.join("\n\n"), TITLE, MB_OK);
+		}, 500, ar);
 	}
 	ar = [];
 	var s = "CSA";

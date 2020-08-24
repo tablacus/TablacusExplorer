@@ -32,6 +32,15 @@ Hunter User
 Türkçe / Turkish
 Ferhat Aydin
 
+Español latino / Spanish la
+DasinFlameS
+
+українська / Ukrainian
+Henaro aka Ironwool
+
+Nederlands / Nederlands
+mlohnen
+
 //Wiki
 https://github.com/tablacus/TablacusExplorer/wiki
 

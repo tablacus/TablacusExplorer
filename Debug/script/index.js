@@ -765,12 +765,10 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 	}
 	var hr = RunEvent2("BeforeNavigate", Ctrl, fs, wFlags, Prev);
 	if (hr == S_OK && IsUseExplorer(Ctrl.FolderItem)) {
-		(function (Path) {
-			setTimeout(function () {
-				OpenInExplorer(Path);
-			}, 99);
-		})(Ctrl.FolderItem);
-		return E_NOTIMPL;
+		setTimeout(function (Path) {
+			OpenInExplorer(Path);
+		}, 99, Ctrl.FolderItem);
+		return E_ABORT;
 	}
 	if (GetLock(Ctrl) && (wFlags & SBSP_NEWBROWSER) == 0 && !api.ILIsEqual(Prev, "about:blank")) {
 		hr = E_ACCESSDENIED;
@@ -976,11 +974,9 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 						hr = S_FALSE;
 					}
 				} else {
-					(function (Ctrl, hwnd, pt, str) {
-						setTimeout(function () {
-							hr = g_.mouse.Exec(Ctrl, hwnd, pt, str);
-						}, 99);
-					})(te.CtrlFromWindow(g_.mouse.hwndGesture), g_.mouse.hwndGesture, pt, g_.mouse.str);
+					setTimeout(function (Ctrl, hwnd, pt, str) {
+						g_.mouse.Exec(Ctrl, hwnd, pt, str);
+					}, 99, te.CtrlFromWindow(g_.mouse.hwndGesture), g_.mouse.hwndGesture, pt, g_.mouse.str);
 					hr = S_OK;
 				}
 			}
@@ -1044,7 +1040,6 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 			var iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
 			g_.mouse.Select = iItem >= 0 ? Ctrl.Items.Item(iItem) : null;
 			g_.mouse.Deselect = Ctrl;
-			return S_OK;
 		}
 	}
 	if (msg == WM_LBUTTONDBLCLK || msg == WM_RBUTTONDBLCLK || msg == WM_MBUTTONDBLCLK || msg == WM_XBUTTONDBLCLK) {
@@ -1281,7 +1276,9 @@ te.OnDragEnter = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect) {
 	var eo = eventTE[en.toLowerCase()];
 	for (var i in eo) {
 		try {
-			pdwEffect[0] = dwEffect;
+			if (pdwEffect[0]) {
+				pdwEffect[0] = dwEffect;
+			}
 			var hr2 = eo[i](Ctrl, dataObj, pgrfKeyState[0], pt, pdwEffect, pgrfKeyState);
 			if (isFinite(hr2) && hr != S_OK) {
 				hr = hr2;
@@ -1309,7 +1306,7 @@ te.OnDragOver = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect) {
 			ShowError(e, en, i);
 		}
 	}
-	return E_NOTIMPL;
+	return hr;
 }
 
 te.OnDrop = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect) {
@@ -2191,14 +2188,12 @@ function ArrangeAddons() {
 				g_.Error_source = "";
 			}
 			if (arError.length) {
-				(function (arError) {
-					setTimeout(function () {
-						if (MessageBox(arError.join("\n\n"), TITLE, MB_OKCANCEL) != IDCANCEL) {
-							te.Data.bErrorAddons = true;
-							ShowOptions("Tab=Add-ons");
-						}
-					}, 500);
-				})(arError);
+				setTimeout(function (arError) {
+					if (MessageBox(arError.join("\n\n"), TITLE, MB_OKCANCEL) != IDCANCEL) {
+						te.Data.bErrorAddons = true;
+						ShowOptions("Tab=Add-ons");
+					}
+				}, 500, arError);
 			}
 		}
 	}
@@ -2872,20 +2867,32 @@ g_basic =
 					if (FV) {
 						var TC = FV.Parent;
 						var nIndex = GetFolderView(Ctrl, pt, true) ? FV.Index : -1;
-						for (var i = TC.Count; i--;) {
-							if (i != nIndex) {
-								TC[i].Close();
+						TC.LockUpdate();
+						try {
+							for (var i = TC.Count; i--;) {
+								if (i != nIndex) {
+									TC[i].Close();
+								}
 							}
+						} catch (e) {
+							ShowError(e);
 						}
+						TC.UnlockUpdate();
 					}
 				},
 				"Close tabs on left": function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt, true);
 					if (FV) {
 						var TC = FV.Parent;
-						for (var i = FV.Index; i--;) {
-							TC[i].Close();
+						TC.LockUpdate();
+						try {
+							for (var i = FV.Index; i--;) {
+								TC[i].Close();
+							}
+						} catch (e) {
+							ShowError(e);
 						}
+						TC.UnlockUpdate();
 					}
 				},
 				"Close tabs on right": function (Ctrl, pt) {
@@ -2893,18 +2900,30 @@ g_basic =
 					if (FV) {
 						var TC = FV.Parent;
 						var nIndex = FV.Index;
-						for (var i = TC.Count; --i > nIndex;) {
-							TC[i].Close();
+						TC.LockUpdate();
+						try {
+							for (var i = TC.Count; --i > nIndex;) {
+								TC[i].Close();
+							}
+						} catch (e) {
+							ShowError(e);
 						}
+						TC.UnlockUpdate();
 					}
 				},
 				"Close all tabs": function (Ctrl, pt) {
 					var FV = GetFolderView(Ctrl, pt);
 					if (FV) {
 						var TC = FV.Parent;
-						for (var i = TC.Count; i--;) {
-							TC[i].Close();
+						TC.LockUpdate();
+						try {
+							for (var i = TC.Count; i--;) {
+								TC[i].Close();
+							}
+						} catch (e) {
+							ShowError(e);
 						}
+						TC.UnlockUpdate();
 					}
 				},
 				"New tab": CreateTab,
@@ -3451,9 +3470,6 @@ AddEvent("VisibleChanged", function (Ctrl) {
 			if (Ctrl.Visible) {
 				o.style.display = (g_.IEVer >= 8 && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
 				ChangeView(Ctrl.Selected);
-				for (var i = Ctrl.Count; i--;) {
-					ChangeTabName(Ctrl[i])
-				}
 			} else {
 				o.style.display = "none";
 			}

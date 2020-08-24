@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200822 ? te.Version : 20200822;
+		return te.Version < 20200824 ? te.Version : 20200824;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -1386,30 +1386,33 @@ Navigate2 = function (path, NewTab) {
 ExecOpen = function (Ctrl, s, type, hwnd, pt, NewTab) {
 	var nLock = 0;
 	var line = s.split("\n");
-	var bLast = (Addons.TabPositon || {}).nNew;
-	var bRev = (NewTab & SBSP_ACTIVATE_NOFOCUS) && !bLast;
-	var bFirst = false;
+	var bRev = (NewTab & SBSP_ACTIVATE_NOFOCUS);
 	var FV = GetFolderView(Ctrl, pt);
-	while (line.length) {
-		if (line.length > 1 && api.ILIsEqual(FV, "about:blank")) {
-			if (NewTab & SBSP_ACTIVATE_NOFOCUS) {
-				NewTab &= ~SBSP_ACTIVATE_NOFOCUS;
-				bFirst = true;
+	if (line.length > 1) {
+		++g_.LockUpdate;
+		++nLock;
+		te.LockUpdate();
+		if (api.ILIsEqual(FV, "about:blank")) {
+			if (bRev) {
+				line.push(line.shift());
 			}
-			++g_.LockUpdate;
-			++nLock;
-			bRev = false;
-		}
-		var s = bRev ? line.pop() : line.shift();
-		if (s) {
-			NavigateFV(FV, ExtractPath(Ctrl, s, pt), NewTab);
-			NewTab |= SBSP_NEWBROWSER;
 		}
 	}
-	if (bFirst) {
-		FV.Parent.SelectedIndex = 0;
+	try {
+		while (line.length) {
+			var s = bRev ? line.pop() : line.shift();
+			if (s) {
+				NavigateFV(FV, ExtractPath(Ctrl, s, pt), NewTab);
+				NewTab |= SBSP_NEWBROWSER;
+			}
+		}
+	} catch (e) {
+		ShowError(e);
 	}
-	g_.LockUpdate -= nLock;
+	if (nLock) {
+		g_.LockUpdate -= nLock;
+		te.UnlockUpdate();
+	}
 	return S_OK;
 }
 
