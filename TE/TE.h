@@ -559,6 +559,7 @@ public:
 	VOID InitFilter();
 	HRESULT SetTheme();
 	LPWSTR GetThemeName();
+	VOID FixColumnEmphasis();
 	HRESULT OnNavigationPending2(LPITEMIDLIST pidlFolder);
 	HRESULT IncludeObject2(IShellFolder *pSF, LPCITEMIDLIST pidl);
 	BOOL HasFilter();
