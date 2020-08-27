@@ -102,7 +102,7 @@ if (window.Addon == 1) {
 		},
 
 		GetFilter: function (Ctrl) {
-			if (Ctrl.Type <= CTRL_EB) {
+			if (Ctrl.Type <= CTRL_EB && Ctrl.Id == Ctrl.Parent.Selected.Id && Ctrl.Parent.Id == te.Ctrl(CTRL_TC).Id) {
 				clearTimeout(Addons.FilterBar.tid);
 				var s = Addons.FilterBar.GetString(Ctrl.FilterView);
 				if (s != Addons.FilterBar.GetString(document.F.filter.value)) {

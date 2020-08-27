@@ -1078,21 +1078,6 @@ VOID teUnlockUpdate(int nStep)
 				}
 			}
 		}
-
-		for (size_t i = 0; i < g_ppTV.size(); ++i) {
-			CteTreeView *pTV = g_ppTV[i];
-			if (!pTV->m_bEmpty) {
-				if (pTV->m_param[SB_TreeAlign] & 2) {
-					if (!pTV->m_pFV) {
-						if (pTV->m_bSetRoot) {
-							SetTimer(pTV->m_hwndTV, TET_SetRoot, 100, teTimerProcForTree);
-						} else if (pTV->m_pNameSpaceTreeControl && pTV->m_psiFocus) {
-							SetTimer(pTV->m_hwndTV, TET_Expand, 100, teTimerProcForTree);
-						}
-					}
-				}
-			}
-		}
 	}
 }
 
@@ -2445,7 +2430,7 @@ BOOL teSetRect(HWND hwnd, int left, int top, int right, int bottom)
 {
 	RECT rc;
 	GetClientRect(hwnd, &rc);
-	MoveWindow(hwnd, left, top, right - left, bottom - top, FALSE);
+	MoveWindow(hwnd, left, top, right - left, bottom - top, TRUE);
 	return (rc.right - rc.left != right - left || rc.bottom - rc.top != bottom - top);
 }
 
@@ -5842,13 +5827,6 @@ VOID ArrangeWindowEx()
 						}
 						if (pSB) {
 							if (pSB->m_param[SB_TreeAlign] & 2) {
-								if (pSB->m_pTV->m_bSetRoot && (pSB->m_pTV->m_pNameSpaceTreeControl
-#ifdef _2000XP
-									|| pSB->m_pTV->m_pShellNameSpace
-#endif
-									)) {
-									SetTimer(pSB->m_pTV->m_hwndTV, TET_SetRoot, 100, teTimerProcForTree);
-								}
 								RECT rcTree = rc;
 								rcTree.right = rc.left + pSB->m_param[SB_TreeWidth] - 2;
 								MoveWindow(pSB->m_pTV->m_hwnd, rcTree.left, rcTree.top, rcTree.right - rcTree.left, rcTree.bottom - rcTree.top, TRUE);
@@ -5869,16 +5847,16 @@ VOID ArrangeWindowEx()
 								GetWindowRect(pSB->m_hwnd, &rc1);// 5ch#6-896
 								GetWindowRect(pSB->m_hwndDV, &rc2);
 								if (rc1.left == rc1.right || rc2.left == rc2.right) {
-									MoveWindow(pSB->m_hwnd, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top + 1, FALSE);
+									MoveWindow(pSB->m_hwnd, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top + 1, TRUE);
 								}
 							}
-							MoveWindow(pSB->m_hwnd, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, FALSE);
+							MoveWindow(pSB->m_hwnd, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, TRUE);
 							if (pSB->m_hwndAlt) {
-								MoveWindow(pSB->m_hwndAlt, 0, 0, rc.right - rc.left, rc.bottom - rc.top, FALSE);
+								MoveWindow(pSB->m_hwndAlt, 0, 0, rc.right - rc.left, rc.bottom - rc.top, TRUE);
 							}
 						}
 						MoveWindow(pTC->m_hwndButton, rcTab.left, rcTab.top,
-							rcTab.right - rcTab.left, rcTab.bottom - rcTab.top, FALSE);
+							rcTab.right - rcTab.left, rcTab.bottom - rcTab.top, TRUE);
 						BringWindowToTop(pTC->m_hwndStatic);
 						while (--nCount >= 0) {
 							if (nCount != pTC->m_nIndex) {
@@ -5898,6 +5876,20 @@ VOID ArrangeWindowEx()
 #endif
 				}
 				pTC->UnlockUpdate();
+			}
+		}
+		for (size_t i = 0; i < g_ppTV.size(); ++i) {
+			CteTreeView *pTV = g_ppTV[i];
+			if (!pTV->m_bEmpty) {
+				if (pTV->m_param[SB_TreeAlign] & 2) {
+					if (!pTV->m_pFV || pTV->m_pFV->m_pTC->m_bVisible) {
+						if (pTV->m_bSetRoot) {
+							SetTimer(pTV->m_hwndTV, TET_SetRoot, 100, teTimerProcForTree);
+						} else if (pTV->m_pNameSpaceTreeControl && pTV->m_psiFocus) {
+							SetTimer(pTV->m_hwndTV, TET_Expand, 100, teTimerProcForTree);
+						}
+					}
+				}
 			}
 		}
 	} catch (...) {}
@@ -11139,22 +11131,6 @@ VOID CALLBACK teTimerProcParse(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 		g_nException = 0;
 #ifdef _DEBUG
 		g_strException = L"teTimerProcParse2";
-#endif
-	}
-}
-
-VOID CALLBACK teTimerProcSetRoot(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
-{
-	try {
-		KillTimer(hwnd, idEvent);
-		CteTreeView *pTV = (CteTreeView *)idEvent;
-		if (pTV->m_param[SB_TreeAlign] & 2) {
-			pTV->Show();
-		}
-	} catch (...) {
-		g_nException = 0;
-#ifdef _DEBUG
-		g_strException = L"teTimerProcSetRoot";
 #endif
 	}
 }
@@ -18683,28 +18659,8 @@ VOID CteTabCtrl::RedrawUpdate()
 	if (g_nLockUpdate || m_nLockUpdate) {
 		return;
 	}
-	if (!pSB->m_bViewCreated) {
-		RedrawWindow(pSB->m_hwnd, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_FRAME | RDW_ALLCHILDREN);
-		m_bRedraw = FALSE;
-	}
-	if ((pSB->m_param[SB_TreeAlign] & 2) && pSB->m_pTV) {
-		RedrawWindow(pSB->m_pTV->m_hwnd, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_FRAME | RDW_ALLCHILDREN);
-		RECT rc;
-		GetWindowRect(m_hwndStatic, &rc);
-		rc.right = pSB->m_param[SB_TreeWidth];
-		rc.left = rc.right - 2;
-		rc.bottom = rc.bottom - rc.top;
-		rc.top = 0;
-		RedrawWindow(m_hwndStatic, &rc, 0, RDW_NOERASE | RDW_INVALIDATE);
-		if (pSB->m_pTV->m_bSetRoot) {
-			SetTimer(pSB->m_pTV->m_hwndTV, TET_SetRoot, 100, teTimerProcForTree);
-		} else if (pSB->m_pTV->m_psiFocus) {
-			SetTimer(pSB->m_pTV->m_hwndTV, TET_Expand, 100, teTimerProcForTree);
-		}
-	}
-	if (g_param[TE_Tab] && m_hwnd) {
-		RedrawWindow(m_hwnd, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
-	}
+	RedrawWindow(m_hwndStatic, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_FRAME | RDW_ALLCHILDREN);
+	m_bRedraw = FALSE;
 }
 
 VOID CteTabCtrl::TabChanged(BOOL bSameTC)
@@ -21940,7 +21896,7 @@ VOID CteTreeView::SetRoot2()
 {
 	if (m_param[SB_TreeAlign] & 2) {
 		if (!m_pFV || IsWindowVisible(m_pFV->m_hwnd)) {
-			SetTimer(g_hwndMain, (UINT_PTR)this, 500, teTimerProcSetRoot);
+			Show();
 		}
 	}
 }
@@ -21953,6 +21909,17 @@ VOID CteTreeView::Show()
 #endif
 	) {
 		Create(FALSE);
+		if (m_pFV) {
+			teSetParent(m_hwnd, m_pFV->m_pTC->m_hwndStatic);
+			RECT rc;
+			int h = 0;
+			if (g_param[TE_Tab]) {
+				GetWindowRect(m_pFV->m_pTC->m_hwnd, &rc);
+				h = rc.bottom - rc.top;
+			}
+			GetWindowRect(m_pFV->m_pTC->m_hwndStatic, &rc);
+			MoveWindow(m_hwnd, 0, h, m_pFV->m_param[SB_TreeWidth] - 2, rc.bottom - rc.top - h, TRUE);
+		}
 	}
 	if (m_bSetRoot) {
 		SetTimer(m_hwndTV, TET_SetRoot, 100, teTimerProcForTree);
