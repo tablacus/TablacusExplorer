@@ -1454,18 +1454,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 	}
 	switch (Ctrl.Type) {
 		case CTRL_WB:
-			if (msg == WM_SETFOCUS) {
-				var o = document.activeElement;
-				if (o) {
-					if (!/input|textarea/i.test(o.tagName)) {
-						setTimeout(function () {
-							if (o === document.activeElement) {
-								GetFolderView().Focus();
-							}
-						}, 99, o);
-					}
-				}
-			} else if (msg == WM_KILLFOCUS) {
+			if (msg == WM_KILLFOCUS) {
 				var o = document.activeElement;
 				if (o) {
 					var s = o.style.visibility;
@@ -3736,7 +3725,6 @@ if (!te.Data) {
 
 	te.Data.Installed = fso.GetParentFolderName(api.GetModuleFileName(null));
 	te.Data.DataFolder = te.Data.Installed;
-	te.Data.window = window;
 
 	var fn = function () {
 		te.Data.DataFolder = fso.BuildPath(api.GetDisplayNameOf(ssfAPPDATA, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), "Tablacus\\Explorer");
@@ -3814,7 +3802,6 @@ if (!te.Data) {
 			delete te.Data[i];
 		}
 	}
-	te.Data.window = window;
 	LoadConfig();
 	delete g_.xmlWindow;
 	Resize();

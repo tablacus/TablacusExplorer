@@ -10335,6 +10335,10 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 				break;
 			case TET_Redraw:
 				RedrawWindow(g_hwndMain, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+				CteShellBrowser *pSB = g_pTC->GetShellBrowser(g_pTC->m_nIndex);
+				if (pSB) {
+					pSB->SetActive(TRUE);
+				}
 				break;
 		}//end_switch
 	} catch (...) {
