@@ -824,12 +824,12 @@ public:
 
 	VOID Init(CteShellBrowser *pFV, HWND hwnd);
 	VOID Close();
-	BOOL Create(BOOL bIfVisible);
+	VOID Create();
 	HRESULT getSelected(IDispatch **pItem);
 	VOID SetRootV(VARIANT *pv);
 	VOID SetRoot();
-	VOID SetRoot2();
 	VOID Show();
+	VOID Expand();
 #ifdef _2000XP
 	VOID SetObjectRect();
 #endif
@@ -843,6 +843,7 @@ public:
 	DWORD	*m_param;
 	DWORD	m_dwState;
 	BOOL	m_bEmpty;
+	BOOL	m_bExpand;
 #ifdef _2000XP
 	IShellNameSpace *m_pShellNameSpace;
 #endif

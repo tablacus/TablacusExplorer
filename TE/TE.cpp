@@ -2993,19 +2993,12 @@ void CheckChangeTabSB(HWND hwnd)
 	}
 }
 
-void CheckChangeTabTC(HWND hwnd, BOOL bFocusSB)
+VOID CheckChangeTabTC(HWND hwnd)
 {
 	CteTabCtrl *pTC = TCfromhwnd(hwnd);
 	if (pTC && pTC->m_bVisible) {
 		if (pTC->SetDefault()) {
 			pTC->TabChanged(FALSE);
-		}
-		if (bFocusSB) {
-			CteShellBrowser *pSB;
-			pSB = pTC->GetShellBrowser(pTC->m_nIndex);
-			if (pSB) {
-				pSB->SetActive(TRUE);
-			}
 		}
 	}
 }
@@ -5878,20 +5871,6 @@ VOID ArrangeWindowEx()
 				pTC->UnlockUpdate();
 			}
 		}
-		for (size_t i = 0; i < g_ppTV.size(); ++i) {
-			CteTreeView *pTV = g_ppTV[i];
-			if (!pTV->m_bEmpty) {
-				if (pTV->m_param[SB_TreeAlign] & 2) {
-					if (!pTV->m_pFV || pTV->m_pFV->m_pTC->m_bVisible) {
-						if (pTV->m_bSetRoot) {
-							SetTimer(pTV->m_hwndTV, TET_SetRoot, 100, teTimerProcForTree);
-						} else if (pTV->m_pNameSpaceTreeControl && pTV->m_psiFocus) {
-							SetTimer(pTV->m_hwndTV, TET_Expand, 100, teTimerProcForTree);
-						}
-					}
-				}
-			}
-		}
 	} catch (...) {}
 	teUnlockUpdate(1);
 }
@@ -5952,7 +5931,12 @@ LRESULT TETCProc2(CteTabCtrl *pTC, HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
 			}
 		case WM_SETFOCUS:
 		case WM_RBUTTONDOWN:
-			CheckChangeTabTC(hwnd, TRUE);
+			CheckChangeTabTC(hwnd);
+			CteShellBrowser *pSB;
+			pSB = pTC->GetShellBrowser(pTC->m_nIndex);
+			if (pSB) {
+				pSB->SetActive(TRUE);
+			}
 			break;
 		case WM_MOUSEMOVE:
 			if (g_x == MAXINT) {
@@ -10408,6 +10392,8 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 					pcwp = (LPCWPSTRUCT)lParam;
 					switch (pcwp->message)
 					{
+						case WM_SETFOCUS:
+							CheckChangeTabSB(pcwp->hwnd);
 						case WM_KILLFOCUS:
 							if (!IsChild(g_pWebBrowser->get_HWND(), pcwp->hwnd)) {
 								break;
@@ -10427,9 +10413,6 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 									MessageSub(TE_OnSystemMessage, pdisp, &msg1, NULL);
 								}
 							}
-							break;
-						case WM_SETFOCUS:
-							CheckChangeTabSB(pcwp->hwnd);
 							break;
 						case WM_COMMAND:
 							if (pcwp->message == WM_COMMAND && g_hDialog == pcwp->hwnd) {
@@ -11149,32 +11132,7 @@ VOID CALLBACK teTimerProcForTree(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD d
 				pTV->SetRoot();
 				//break;//Expand after SetRoot
 			case TET_Expand:
-				if (!pTV->m_psiFocus || pTV->m_bSetRoot) {
-					return;
-				}
-				if (pTV->m_pNameSpaceTreeControl) {
-					pTV->m_pNameSpaceTreeControl->SetItemState(pTV->m_psiFocus, pTV->m_dwState, pTV->m_dwState);
-					SetTimer(hwnd, TET_EnsureVisible, 500, teTimerProcForTree);
-#ifdef _2000XP
-				} else if (pTV->m_pShellNameSpace) {
-					LPITEMIDLIST pidl = NULL;
-					if (teGetIDListFromObject(pTV->m_psiFocus, &pidl)) {
-						VARIANT v;
-						VariantInit(&v);
-						teSetIDList(&v, pidl);
-						teILFreeClear(&pidl);
-						pTV->m_pShellNameSpace->Expand(v, (pTV->m_dwState & NSTCIS_EXPANDED) ? 1 : 0);
-						VariantClear(&v);
-					}
-					SafeRelease(&pTV->m_psiFocus);
-#endif
-				}
-				break;
-			case TET_EnsureVisible:
-				if (pTV->m_pNameSpaceTreeControl && pTV->m_psiFocus) {
-					pTV->m_pNameSpaceTreeControl->EnsureItemVisible(pTV->m_psiFocus);
-					SafeRelease(&pTV->m_psiFocus);
-				}
+				pTV->Expand();
 				break;
 			}
 		}
@@ -13169,7 +13127,7 @@ STDMETHODIMP CteShellBrowser::QueryActiveShellView(IShellView **ppshv)
 STDMETHODIMP CteShellBrowser::OnViewWindowActive(IShellView *ppshv)
 {
 	if (m_pTC) {
-		CheckChangeTabTC(m_pTC->m_hwnd, false);
+		CheckChangeTabTC(m_pTC->m_hwnd);
 	}
 /*/// For check
 	BSTR bsPath;
@@ -15379,11 +15337,6 @@ VOID CteShellBrowser::OnNavigationComplete2()
 	m_bNavigateComplete = FALSE;
 	SetViewModeAndIconSize(TRUE);
 	m_bIconSize = TRUE;
-	if (m_pTV->m_bSetRoot) {
-		if (m_pTV->Create(TRUE)) {
-			SetTimer(m_pTV->m_hwndTV, TET_SetRoot, 100, teTimerProcForTree);
-		}
-	}
 	m_bSetRedraw = TRUE;
 	SetRedraw(TRUE);
 	SetActive(FALSE);
@@ -18670,6 +18623,7 @@ VOID CteTabCtrl::TabChanged(BOOL bSameTC)
 	}
 	CteShellBrowser *pSB = GetShellBrowser(m_nIndex);
 	if (pSB) {
+		pSB->SetActive(FALSE);
 		pSB->SetStatusTextSB(NULL);
 		DoFunc(TE_OnSelectionChanged, pSB->m_pTC, E_NOTIMPL);
 		ArrangeWindow();
@@ -20842,16 +20796,8 @@ VOID CteTreeView::Close()
 #endif
 }
 
-BOOL CteTreeView::Create(BOOL bIfVisible)
+VOID CteTreeView::Create()
 {
-	if (bIfVisible) {
-		if ((m_param[SB_TreeAlign] & 2) == 0 || (m_pFV && !m_pFV->m_bVisible)) {
-			return FALSE;
-		}
-		if (m_hwnd) {
-			return TRUE;
-		}
-	}
 	if (_Emulate_XP_ SUCCEEDED(teCreateInstance(CLSID_NamespaceTreeControl, NULL, NULL, IID_PPV_ARGS(&m_pNameSpaceTreeControl)))) {
 		RECT rc;
 		SetRectEmpty(&rc);
@@ -20881,7 +20827,7 @@ BOOL CteTreeView::Create(BOOL bIfVisible)
 				pNSTC2->Release();
 			}
 			DoFunc(TE_OnCreate, this, E_NOTIMPL);
-			return TRUE;
+			return;
 		}
 	}
 #ifdef _2000XP
@@ -20891,12 +20837,12 @@ BOOL CteTreeView::Create(BOOL bIfVisible)
 		m_hwndParent, (HMENU)0, hInst, NULL);
 	if FAILED(teCreateInstance(CLSID_ShellShellNameSpace, NULL, NULL, IID_PPV_ARGS(&m_pShellNameSpace))) {
 		if FAILED(teCreateInstance(CLSID_ShellNameSpace, NULL, NULL, IID_PPV_ARGS(&m_pShellNameSpace))) {
-			return FALSE;
+			return;
 		}
 	}
 	IQuickActivate *pQuickActivate;
 	if (FAILED(m_pShellNameSpace->QueryInterface(IID_PPV_ARGS(&pQuickActivate)))) {
-		return FALSE;
+		return;
 	}
 	QACONTAINER qaContainer = { sizeof(QACONTAINER), static_cast<IOleClientSite *>(this), NULL, NULL, static_cast<IDispatch *>(this) };
 	QACONTROL qaControl = { sizeof(QACONTROL) };
@@ -20925,7 +20871,7 @@ BOOL CteTreeView::Create(BOOL bIfVisible)
 	}
 //*/
 	else {
-		return FALSE;
+		return;
 	}
 /*/// Not use in IShellNameSpace
 	IRunnableObject *pRunnableObject;
@@ -20942,7 +20888,7 @@ BOOL CteTreeView::Create(BOOL bIfVisible)
 
 	IOleObject *pOleObject;
 	if FAILED(m_pShellNameSpace->QueryInterface(IID_PPV_ARGS(&pOleObject))) {
-		return FALSE;
+		return;
 	}
 	pOleObject->DoVerb(OLEIVERB_INPLACEACTIVATE, NULL, static_cast<IOleClientSite *>(this), 0, m_hwndParent, &rc);
 	pOleObject->Release();
@@ -21013,9 +20959,6 @@ BOOL CteTreeView::Create(BOOL bIfVisible)
 		ArrangeWindow();
 	}
 	DoFunc(TE_OnCreate, this, E_NOTIMPL);
-	return TRUE;
-#else
-	return FALSE;
 #endif
 }
 
@@ -21103,7 +21046,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 					&& !m_pShellNameSpace
 #endif
 				) {
-					Create(TRUE);
+					Create();
 				}
 			} else if (dispIdMember != 0x20000002 && dispIdMember != 0x20000003) {
 				return S_FALSE;
@@ -21155,7 +21098,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 				if (nArg >= 0) {
 					m_param[SB_TreeAlign] = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 					ArrangeWindow();
-					SetRoot2();
+					Show();
 				}
 				teSetLong(pVarResult, m_param[SB_TreeAlign]);
 				return S_OK;
@@ -21164,7 +21107,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 				if (nArg >= 0) {
 					m_param[SB_TreeAlign] = GetIntFromVariant(&pDispParams->rgvarg[nArg]) ? 3 : 1;
 					ArrangeWindow();
-					SetRoot2();
+					Show();
 				}
 				teSetBool(pVarResult, m_param[SB_TreeAlign] & 2);
 				return S_OK;
@@ -21218,11 +21161,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 				return S_OK;
 
 			case 0x10000206://Refresh
-				if (!m_bSetRoot && (m_pNameSpaceTreeControl
-#ifdef _2000XP
-					|| m_pShellNameSpace
-#endif
-				)) {
+				if (!m_bSetRoot) {
 					m_bSetRoot = TRUE;
 					SetTimer(m_hwndTV, TET_SetRoot, 100, teTimerProcForTree);
 				}
@@ -21319,27 +21258,21 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 				if (nArg >= 0) {
 					m_param[SB_EnumFlags] = g_paramFV[SB_EnumFlags];
 					m_param[SB_RootStyle] = g_paramFV[SB_RootStyle];
-					BOOL bChanged = FALSE;
 					if (nArg >= 1) {
 						DWORD dwEnumFlags = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
 						if (m_param[SB_EnumFlags] != dwEnumFlags) {
 							m_param[SB_EnumFlags] = dwEnumFlags;
-							bChanged = TRUE;
+							m_bSetRoot = TRUE;
 						}
 						if (nArg >= 2) {
 							DWORD dwRootStyle = GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]);
 							if (m_param[SB_RootStyle] != dwRootStyle) {
 								m_param[SB_RootStyle] = dwRootStyle;
-								bChanged = TRUE;
+								m_bSetRoot = TRUE;
 							}
 						}
 					}
 					SetRootV(&pDispParams->rgvarg[nArg]);
-					if (bChanged && !m_bSetRoot) {
-						Close();
-						m_bSetRoot = TRUE;
-						SetRoot2();
-					}
 					return S_OK;
 				}
 				break;
@@ -21375,6 +21308,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 					_SHCreateItemFromIDList(pidl, IID_PPV_ARGS(&m_psiFocus));
 					teCoTaskMemFree(pidl);
 					if (m_psiFocus) {
+						m_bExpand = TRUE;
 						SetTimer(m_hwndTV, TET_Expand, 100, teTimerProcForTree);
 						return S_OK;
 					}
@@ -21821,9 +21755,9 @@ VOID CteTreeView::SetRootV(VARIANT *pv)
 		teSysFreeString(&m_bsRoot);
 		m_bsRoot = ::SysAllocString(v.bstrVal);
 		m_bSetRoot = TRUE;
-		SetRoot2();
 	}
 	VariantClear(&v);
+	Show();
 }
 
 VOID CteTreeView::SetRoot()
@@ -21892,37 +21826,64 @@ VOID CteTreeView::SetRoot()
 	}
 }
 
-VOID CteTreeView::SetRoot2()
-{
-	if (m_param[SB_TreeAlign] & 2) {
-		if (!m_pFV || IsWindowVisible(m_pFV->m_hwnd)) {
-			Show();
-		}
-	}
-}
-
 VOID CteTreeView::Show()
 {
+	if ((m_pFV && !m_pFV->m_bVisible) || !(m_param[SB_TreeAlign] & 2)) {
+		return;
+	}
 	if (!m_pNameSpaceTreeControl
 #ifdef _2000XP
 		&& !m_pShellNameSpace
 #endif
 	) {
-		Create(FALSE);
-		if (m_pFV) {
-			teSetParent(m_hwnd, m_pFV->m_pTC->m_hwndStatic);
-			RECT rc;
-			int h = 0;
-			if (g_param[TE_Tab]) {
-				GetWindowRect(m_pFV->m_pTC->m_hwnd, &rc);
-				h = rc.bottom - rc.top;
-			}
-			GetWindowRect(m_pFV->m_pTC->m_hwndStatic, &rc);
-			MoveWindow(m_hwnd, 0, h, m_pFV->m_param[SB_TreeWidth] - 2, rc.bottom - rc.top - h, TRUE);
-		}
+		Create();
 	}
 	if (m_bSetRoot) {
 		SetTimer(m_hwndTV, TET_SetRoot, 100, teTimerProcForTree);
+	}
+}
+
+VOID  CteTreeView::Expand()
+{
+	if (!m_psiFocus || m_bSetRoot) {
+		return;
+	}
+	if (m_pNameSpaceTreeControl) {
+		int iOrder = 1;
+		if (m_bExpand) {
+			IShellItemArray *psia;
+			if SUCCEEDED(m_pNameSpaceTreeControl->GetSelectedItems(&psia)) {
+				IShellItem *psi;
+				if SUCCEEDED(psia->GetItemAt(0, &psi)) {
+					psi->Compare(m_psiFocus, SICHINT_CANONICAL, &iOrder);
+					psi->Release();
+				}
+				psia->Release();
+			}
+		} else {
+			iOrder = 0;
+		}
+		if (iOrder) {
+			m_pNameSpaceTreeControl->SetItemState(m_psiFocus, m_dwState, m_dwState);
+			SetTimer(m_hwndTV, TET_Expand, 500, teTimerProcForTree);
+		} else {
+			m_pNameSpaceTreeControl->EnsureItemVisible(m_psiFocus);
+			SafeRelease(&m_psiFocus);
+		}
+		m_bExpand = FALSE;
+#ifdef _2000XP
+	} else if (m_pShellNameSpace) {
+		LPITEMIDLIST pidl = NULL;
+		if (teGetIDListFromObject(m_psiFocus, &pidl)) {
+			VARIANT v;
+			VariantInit(&v);
+			teSetIDList(&v, pidl);
+			teILFreeClear(&pidl);
+			m_pShellNameSpace->Expand(v, (m_dwState & NSTCIS_EXPANDED) ? 1 : 0);
+			VariantClear(&v);
+		}
+		SafeRelease(&m_psiFocus);
+#endif
 	}
 }
 
