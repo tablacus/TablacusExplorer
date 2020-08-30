@@ -106,6 +106,7 @@ DeviceChanged = function (Ctrl) {
 }
 
 ListViewCreated = function (Ctrl) {
+	ChangeTabName(Ctrl);
 	Ctrl.Data.AccessTime = "#";
 	var res = /search\-ms:.*?crumb=([^&]+)/.exec(Ctrl.FilterView);
 	if (res) {
@@ -984,6 +985,18 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 			if (g_.mouse.bCapture) {
 				api.ReleaseCapture();
 				g_.mouse.bCapture = false;
+			}
+			if (Ctrl.Type == CTRL_WB) {
+				var o = document.activeElement;
+				if (o) {
+					if (!/input|textarea/i.test(o.tagName)) {
+						setTimeout(function () {
+							if (o === document.activeElement) {
+								GetFolderView().Focus();
+							}
+						}, 99, o);
+					}
+				}
 			}
 			if (bButton) {
 				api.PostMessage(g_.mouse.hwndGesture, WM_CONTEXTMENU, g_.mouse.hwndGesture, pt.x + (pt.y << 16));

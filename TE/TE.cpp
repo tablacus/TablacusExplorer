@@ -5537,7 +5537,26 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 		if (hwnd != pSB->m_hwndDV) {
 			return 0;
 		}
-		return bDoCallProc && lResult ? DefSubclassProc(hwnd, msg, wParam, lParam) : lResult;
+		if (bDoCallProc && lResult) {
+			lResult = DefSubclassProc(hwnd, msg, wParam, lParam);
+		}
+		if (msg == WM_COMMAND) {
+			IFolderView2 *pFV2;
+			if (SUCCEEDED(pSB->m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2)))) {
+				UINT uViewMode;
+				if SUCCEEDED(pFV2->GetCurrentViewMode(&uViewMode)) {
+					DWORD dwFlags;
+					pFV2->GetCurrentFolderFlags(&dwFlags);
+					if (!pSB->m_hwndLV || uViewMode == FVM_LIST || uViewMode == FVM_DETAILS || uViewMode == FVM_CONTENT) {
+						pSB->m_param[SB_FolderFlags] = (pSB->m_param[SB_FolderFlags] & (FWF_AUTOARRANGE | FWF_SNAPTOGRID)) | (dwFlags & ~(FWF_AUTOARRANGE | FWF_SNAPTOGRID));
+					} else {
+						pSB->m_param[SB_FolderFlags] = dwFlags;
+					}
+				}
+				pFV2->Release();
+			}
+		}
+		return lResult;
 	} catch (...) {
 		g_nException = 0;
 #ifdef _DEBUG
@@ -8254,16 +8273,33 @@ VOID teApiCompareIDs(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 	if (teGetIDListFromVariant(&pidl1, &pDispParams->rgvarg[nArg - 1])) {
 		if (teGetIDListFromVariant(&pidl2, &pDispParams->rgvarg[nArg - 2])) {
 			HRESULT hr = E_FAIL;
-			IShellFolder *pSF;
+			IShellFolder *pSF = NULL;
 			LPITEMIDLIST pidlParent = ::ILClone(pidl1);
 			::ILRemoveLastID(pidlParent);
-			if (ILIsParent(pidlParent, pidl2, TRUE) && SUCCEEDED(SHBindToParent(pidl1, IID_PPV_ARGS(&pSF), &pidlPart))) {
+			BOOL bInternet1 = ::ILIsParent(g_pidls[CSIDL_INTERNET], pidl1, FALSE);
+			BOOL bInternet2 = ::ILIsParent(g_pidls[CSIDL_INTERNET], pidl2, FALSE);
+			if (bInternet1 || bInternet2) {
+				if (!bInternet1) {
+					hr = (WORD)-1;
+				} else if (!bInternet2) {
+					hr = 1;
+				} else {
+					BSTR bs1, bs2;
+					if SUCCEEDED(teGetDisplayNameFromIDList(&bs1, pidl1, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)) {
+						if SUCCEEDED(teGetDisplayNameFromIDList(&bs2, pidl2, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)) {
+							hr = (WORD)StrCmpLogicalW(bs1, bs2);
+							teSysFreeString(&bs2);
+						}
+						teSysFreeString(&bs1);
+					}
+				}
+			} else if (ILIsParent(pidlParent, pidl2, TRUE) && SUCCEEDED(SHBindToParent(pidl1, IID_PPV_ARGS(&pSF), &pidlPart))) {
 				hr = pSF->CompareIDs(param[0].lparam, pidlPart, ILFindLastID(pidl2));
 			} else {
 				SHGetDesktopFolder(&pSF);
 				hr = pSF->CompareIDs(param[0].lparam, pidl1, pidl2);
 			}
-			pSF->Release();
+			SafeRelease(&pSF);
 			teCoTaskMemFree(pidlParent);
 			teCoTaskMemFree(pidl2);
 			if SUCCEEDED(hr) {
@@ -10335,10 +10371,6 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 				break;
 			case TET_Redraw:
 				RedrawWindow(g_hwndMain, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
-				CteShellBrowser *pSB = g_pTC->GetShellBrowser(g_pTC->m_nIndex);
-				if (pSB) {
-					pSB->SetActive(TRUE);
-				}
 				break;
 		}//end_switch
 	} catch (...) {
@@ -12683,11 +12715,7 @@ VOID CteShellBrowser::SetFolderFlags(BOOL bGetIconSize)
 	}
 	IFolderView2 *pFV2;
 	if (SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2)))) {
-		DWORD dwFolderFlags = m_param[SB_FolderFlags];
-		if (!m_bVisible) {
-			dwFolderFlags &= ~FWF_AUTOARRANGE;
-		}
-		pFV2->SetCurrentFolderFlags(~(FWF_NOENUMREFRESH | FWF_USESEARCHFOLDER), dwFolderFlags);
+		pFV2->SetCurrentFolderFlags(~(FWF_NOENUMREFRESH | FWF_USESEARCHFOLDER), m_param[SB_FolderFlags]);
 		SafeRelease(&pFV2);
 #ifdef _2000XP
 	} else {
@@ -15313,13 +15341,7 @@ VOID CteShellBrowser::SetTabName()
 	int i = GetTabIndex();
 	if (i >= 0) {
 		SafeRelease(&m_ppDispatch[SB_ColumnsReplace]);
-		if (DoFunc(TE_OnViewCreated, this, E_NOTIMPL) != S_OK) {
-			BSTR bstr;
-			if (m_pFolderItem && SUCCEEDED(m_pFolderItem->get_Name(&bstr))) {
-				SetTitle(bstr, i);
-				::SysFreeString(bstr);
-			}
-		}
+		DoFunc(TE_OnViewCreated, this, E_NOTIMPL);
 		InitFolderSize();
 	}
 	SetStatusTextSB(NULL);

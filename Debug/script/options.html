@@ -425,7 +425,7 @@
                 <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_Tree_EnumFlags")'>
               </div>
               <div class="group" id="_Advanced_Tree_EnumFlags">
-                <label><input type="checkbox" id="Tree_EnumFlags:0x10" onclick="SetCheckbox(this)">Checking for_children</label>(*7)<br>
+                <label><input type="checkbox" id="Tree_EnumFlags:0x10" onclick="SetCheckbox(this)">Checking for children</label>(*7)<br>
                 <label><input type="checkbox" id="Tree_EnumFlags:0x100" onclick="SetCheckbox(this)">Init on first next</label><br>
                 <label><input type="checkbox" id="Tree_EnumFlags:0x200" onclick="SetCheckbox(this)">Net printer search</label><br>
                 <label><input type="checkbox" id="Tree_EnumFlags:0x400" onclick="SetCheckbox(this)">Shareable</label><br>
@@ -497,7 +497,8 @@
             <div class="panel hide" id="panel5_1">
               <label>Style</label><br>
               <input type="hidden" name="View_fFlags">
-              <label><input type="checkbox" id="View_fFlags:0x1" onclick="SetCheckbox(this)">Auto arrange</label><br>
+              <label><input type="checkbox" id="View_fFlags:0x1" onclick="SetCheckbox(this)">@shell32.dll,-31157[-4433]</label><br>
+              <label><input type="checkbox" id="View_fFlags:0x4" onclick="SetCheckbox(this)">@shell32.dll,-31158[-4434]</label><br>
               <label><input type="checkbox" id="View_fFlags:0x40" onclick="SetCheckbox(this)">Single selection</label><br>
               <label><input type="checkbox" id="View_fFlags:0x200" onclick="SetCheckbox(this)">No client edge</label><br>
               <label><input type="checkbox" id="View_fFlags:0x2000" onclick="SetCheckbox(this)">Show selection always</label><br>
@@ -507,7 +508,7 @@
               <label><input type="checkbox" id="Conf_ViewOrder">@shell32.dll,-50690[Arrange by:]<i> </i>View<span>(</span>Selected items<span>)</span></label><br>
               <label><input type="checkbox" id="Conf_LibraryFilter">@shell32.dll,-23349[Library]<i> </i>Filter</label>(*)<br>
               <label><input type="checkbox" id="Conf_AutoArrange">Auto arrange<span>(</span>Refresh<span>)</span></label><br>
-              <label><input type="checkbox" id="View_fFlags:0x8000000" onclick="SetCheckbox(this)">Auto check select</label>(*)<br>
+              <label><input type="checkbox" id="View_fFlags:0x8000000" onclick="SetCheckbox(this)">@shell32.dll,-37588[Auto check select]</label>(*)<br>
               <label><input type="checkbox" id="Conf_ColumnEmphasis">Column emphasis</label>
               <div>
                 <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_FWF")'>
@@ -534,7 +535,7 @@
               <label><input type="checkbox" id="Conf_Layout:0x20" onclick="SetCheckbox(this)">Tile</label><br>
               <label><input type="checkbox" id="Conf_Layout:0x40" onclick="SetCheckbox(this)">Thumbstrip</label><br>
               <label><input type="checkbox" id="Conf_Layout:0x80" onclick="SetCheckbox(this)">Content</label><br>
-              <br><br>
+              <br>
               <div>
                 (*)Windows Vista <label>or higher.</label>
               </div>
