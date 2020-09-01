@@ -5542,15 +5542,14 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 		}
 		if (msg == WM_COMMAND) {
 			IFolderView2 *pFV2;
-			if (SUCCEEDED(pSB->m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2)))) {
+			if (pSB->m_hwndLV && SUCCEEDED(pSB->m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2)))) {
 				UINT uViewMode;
 				if SUCCEEDED(pFV2->GetCurrentViewMode(&uViewMode)) {
-					DWORD dwFlags;
-					pFV2->GetCurrentFolderFlags(&dwFlags);
-					if (!pSB->m_hwndLV || uViewMode == FVM_LIST || uViewMode == FVM_DETAILS || uViewMode == FVM_CONTENT) {
-						pSB->m_param[SB_FolderFlags] = (pSB->m_param[SB_FolderFlags] & (FWF_AUTOARRANGE | FWF_SNAPTOGRID)) | (dwFlags & ~(FWF_AUTOARRANGE | FWF_SNAPTOGRID));
-					} else {
-						pSB->m_param[SB_FolderFlags] = dwFlags;
+					if (uViewMode == FVM_ICON || uViewMode == FVM_SMALLICON || uViewMode == FVM_TILE) {
+						DWORD dwFlags;
+						if SUCCEEDED(pFV2->GetCurrentFolderFlags(&dwFlags)) {
+							pSB->m_param[SB_FolderFlags] = (pSB->m_param[SB_FolderFlags] & ~(FWF_AUTOARRANGE | FWF_SNAPTOGRID)) | (dwFlags & (FWF_AUTOARRANGE | FWF_SNAPTOGRID));
+						}
 					}
 				}
 				pFV2->Release();
@@ -12156,17 +12155,13 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 
 	if (param[SB_DoFunc]) {
 		hr = OnBeforeNavigate(pPrevious, wFlags);
-		if (hr == E_ABORT) {
+		if FAILED(hr) {
 			if (m_pFolderItem == pFolderItem) {
 				m_pFolderItem = NULL;
 			}
-			if (Close(FALSE)) {
+			if (teILIsBlank(pPrevious) && Close(FALSE)) {
 				return hr;
 			}
-		}
-		if (!m_pShellView && FAILED(hr)) {
-			teILCloneReplace(&m_pidl, g_pidls[CSIDL_RESULTSFOLDER]);
-			m_dwUnavailable = GetTickCount();
 		}
 		if (hr != S_OK) {
 			teILFreeClear(&m_pidl);
@@ -12175,6 +12170,9 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 				pPrevious->AddRef();
 				SafeRelease(&m_pFolderItem);
 				m_pFolderItem = pPrevious;
+				SafeRelease(&m_pShellView);
+				m_pShellView = pPreviousView;
+				pPreviousView = NULL;
 			}
 			m_uLogIndex = m_uPrevLogIndex;
 			return hr;
@@ -15173,10 +15171,10 @@ HRESULT CteShellBrowser::OnNavigationPending2(LPITEMIDLIST pidlFolder)
 		}
 	}
 	if FAILED(hr) {
-		m_uLogIndex = m_uPrevLogIndex;
-		if (hr == E_ABORT && Close(FALSE)) {
+		if (teILIsBlank(m_pFolderItem) && Close(FALSE)) {
 			return hr;
 		}
+		m_uLogIndex = m_uPrevLogIndex;
 		teCoTaskMemFree(m_pidl);
 		m_pidl = pidlPrevius;
 		GetShellFolder2(&m_pidl);
