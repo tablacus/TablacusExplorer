@@ -236,6 +236,7 @@ if (window.Addon == 1) {
 		{
 			if (!Addons.AddressBar.bClose) {
 				Addons.AddressBar.bLoop = true;
+				Addons.AddressBar.bClose = true;
 				AddEvent("ExitMenuLoop", function () {
 					Addons.AddressBar.bLoop = false;
 					Addons.AddressBar.bClose = true;
@@ -256,7 +257,7 @@ if (window.Addon == 1) {
 			document.F.addressbar.value = api.GetDisplayNameOf(Ctrl.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
 			Addons.AddressBar.Arrange(Ctrl.FolderItem);
 			document.getElementById("addr_img").src = GetIconImage(Ctrl, api.GetSysColor(COLOR_WINDOW));
-			setTimeout("Addons.AddressBar.Blur()", 99);
+			setTimeout(Addons.AddressBar.Blur, 99);
 		}
 	});
 
@@ -275,10 +276,10 @@ if (window.Addon == 1) {
 					if (o) {
 						if (HitTest(o, pt)) {
 							api.PostMessage(hwnd, WM_KEYDOWN, VK_ESCAPE, 0);
-							(function (o) { setTimeout(function () {
+							setTimeout(function (o) {
 								Addons.AddressBar.bClose = false;
 								o.click();
-							}, 99);}) (o);
+							}, 99, o);
 						}
 					}
 				}
