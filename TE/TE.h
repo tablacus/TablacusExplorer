@@ -121,13 +121,14 @@ private:
 	VARIANT m_vData;
 	IDataObject		*m_pDataObj;
 	FolderItems		*m_pFolderItems;
-	IDispatch		*m_oFolderItems;
 	BSTR			m_bsText;
+	std::vector<FolderItem *>	m_ovFolderItems;
 
 	LONG			m_cRef;
 	LONG			m_nCount;
 	int				m_nUseIDListFormat;
 	BOOL			m_bUseText;
+	BOOL			m_oFolderItems;
 };
 
 class CteDropTarget2 : public IDropTarget
@@ -977,7 +978,7 @@ public:
 	STDMETHODIMP Reset(void);
 	STDMETHODIMP Clone(IEnumVARIANT **ppEnum);
 
-	CteDispatch(IDispatch *pDispatch, int nMode);
+	CteDispatch(IDispatch *pDispatch, int nMode, DISPID dispId);
 	~CteDispatch();
 
 	VOID Clear();
@@ -1013,13 +1014,17 @@ public:
 	STDMETHODIMP GetMemberName(DISPID id, BSTR *pbstrName);
 	STDMETHODIMP GetNextDispID(DWORD grfdex, DISPID id, DISPID *pid);
 	STDMETHODIMP GetNameSpaceParent(IUnknown **ppunk);
+	//
+	VOID GetLegacyDispId(BSTR bstrName, DISPID *pid, BOOL bDispatchEx, HRESULT *phr);
+	VOID InvokeLegacy(DISPID id, WORD wFlags, DISPPARAMS *pdp, VARIANT *pvarRes, HRESULT *phr);
 
-	CteDispatchEx(IUnknown *punk);
+	CteDispatchEx(IUnknown *punk, BOOL bLegacy);
 	~CteDispatchEx();
 private:
 	IDispatchEx *m_pdex;
 	LONG	m_cRef;
-	DISPID	m_dispItem;
+	BOOL	m_bDispathEx;
+	BOOL	m_bLegacy;
 };
 
 class CteActiveScriptSite : public IActiveScriptSite, public IActiveScriptSiteWindow
@@ -1162,3 +1167,27 @@ public:
 	LONG	m_cRef;
 };
 
+class CteEnumerator : public IDispatch
+{
+public:
+	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
+	STDMETHODIMP_(ULONG) AddRef();
+	STDMETHODIMP_(ULONG) Release();
+	//IDispatch
+	STDMETHODIMP GetTypeInfoCount(UINT *pctinfo);
+	STDMETHODIMP GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo);
+	STDMETHODIMP GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId);
+	STDMETHODIMP Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr);
+
+	VOID GetItem();
+
+	CteEnumerator(VARIANT *pvObject);
+	~CteEnumerator();
+public:
+	VARIANT	m_vItem;
+	IEnumVARIANT *m_pEnumVARIANT;
+	IDispatchEx *m_pdex;
+	LONG	m_cRef;
+	HRESULT m_hr;
+	DISPID m_dispIdMember;
+};

@@ -113,6 +113,7 @@ IDropTargetHelper *g_pDropTargetHelper = NULL;
 IUnknown	*g_pDraggingCtrl = NULL;
 IDataObject	*g_pDraggingItems = NULL;
 IDispatchEx *g_pCM = NULL;
+IServiceProvider *g_pSP = NULL;
 ULONG_PTR g_Token;
 HHOOK	g_hHook;
 HHOOK	g_hMouseHook;
@@ -208,6 +209,20 @@ HRESULT STDAPICALLTYPE tePSPropertyKeyFromStringEx(__in LPCWSTR pszString, __out
 VOID teGetDarkMode();
 
 //Unit
+
+IDispatch* teAddLegacySupport(IDispatch *pdisp)
+{
+	DISPID id;
+	LPWSTR sz = L"Item";
+	if SUCCEEDED(pdisp->GetIDsOfNames(IID_NULL, &sz, 1, LOCALE_USER_DEFAULT, &id)) {
+		if (id != DISPID_UNKNOWN) {
+			return pdisp;
+		}
+	}
+	IDispatch *pArray = new CteDispatchEx(pdisp, TRUE);
+	pdisp->Release();
+	return pArray;
+}
 
 BOOL teIsDarkColor(COLORREF cl)
 {
@@ -1989,6 +2004,16 @@ HRESULT tePutProperty0(IUnknown *punk, LPOLESTR sz, VARIANT *pv, DWORD grfdex)
 		::SysFreeString(bs);
 		pdex->Release();
 	}
+	if FAILED(hr) {
+		IDispatch *pdisp;
+		if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pdisp))) {
+			DISPID dispIdMember;
+			if SUCCEEDED(pdisp->GetIDsOfNames(IID_NULL, &sz, 1, LOCALE_USER_DEFAULT, &dispIdMember)) {
+				hr = Invoke5(pdisp, dispIdMember, DISPATCH_PROPERTYPUT, NULL, -1, pv);
+			}
+			pdisp->Release();
+		}
+	}
 	return hr;
 }
 
@@ -3491,7 +3516,7 @@ BOOL teGetIDListFromVariant(LPITEMIDLIST *ppidl, VARIANT *pv, BOOL bForceLimit =
 		case VT_VARIANT | VT_BYREF:
 			return teGetIDListFromVariant(ppidl, pv->pvarVal, bForceLimit);
 	}
-	if (*ppidl == NULL) {
+	if (*ppidl == NULL && pv->vt != VT_DISPATCH) {
 		VARIANT v;
 		VariantInit(&v);
 		if (SUCCEEDED(VariantChangeType(&v, pv, 0, VT_I4))) {
@@ -3966,7 +3991,29 @@ HRESULT teGetDispId(TEmethod *method, int nCount, int* pMap, LPOLESTR bs, DISPID
 	}
 	return DISP_E_UNKNOWNNAME;
 }
-
+/*
+HRESULT teGetDispIdUm(std::unorderd_map<std::wstring, LONG> method, LPOLESTR bs, DISPID *rgDispId, BOOL bNum)
+{
+	auto itr = method.find(bs);
+	if(itr != method.end()) {
+		*rgDispId = itr->second;
+		return S_OK;
+	}
+	if (bNum) {
+		VARIANT v, vo;
+		teSetSZ(&v, bs);
+		VariantInit(&vo);
+		if (SUCCEEDED(VariantChangeType(&vo, &v, 0, VT_I4))) {
+			*rgDispId = vo.lVal + DISPID_COLLECTION_MIN;
+			VariantClear(&vo);
+			VariantClear(&v);
+			return *rgDispId < DISPID_TE_MAX ? S_OK : S_FALSE;
+		}
+		VariantClear(&v);
+	}
+	return DISP_E_UNKNOWNNAME;
+}
+*/
 HRESULT teGetMemberName(DISPID id, BSTR *pbstrName)
 {
 	if (id >= DISPID_COLLECTION_MIN && id <= DISPID_TE_MAX) {
@@ -4245,7 +4292,7 @@ HRESULT ParseScript(LPOLESTR lpScript, LPOLESTR lpLang, VARIANT *pv, IDispatch *
 					hr = E_FAIL;
 					IDispatch *pdisp;
 					if (pas->GetScriptDispatch(NULL, &pdisp) == S_OK) {
-						CteDispatch *odisp = new CteDispatch(pdisp, 2);
+						CteDispatch *odisp = new CteDispatch(pdisp, 2, DISPID_UNKNOWN);
 						pdisp->Release();
 						if SUCCEEDED(pas->QueryInterface(IID_PPV_ARGS(&odisp->m_pActiveScript))) {
 							hr = odisp->QueryInterface(IID_PPV_ARGS(ppdisp));
@@ -4362,7 +4409,7 @@ static void threadAddItems(void *args)
 							if (bAdd) {
 								VariantClear(&pAddItems->pv[1]);
 								teSetObjectRelease(&pAddItems->pv[1], pItem);
-								if (Invoke5(pSB, 0x10000501, DISPATCH_METHOD, NULL, -2, pAddItems->pv) == E_ACCESSDENIED) {
+								if (Invoke5(pSB, TE_METHOD + 0xf501, DISPATCH_METHOD, NULL, -2, pAddItems->pv) == E_ACCESSDENIED) {
 									break;
 								}
 							} else {
@@ -4384,7 +4431,7 @@ static void threadAddItems(void *args)
 						if (pidl) {
 							VariantClear(&pAddItems->pv[1]);
 							teSetIDListRelease(&pAddItems->pv[1], &pidl);
-							if (Invoke5(pSB, 0x10000501, DISPATCH_METHOD, NULL, -2, pAddItems->pv) == E_ACCESSDENIED) {
+							if (Invoke5(pSB, TE_METHOD + 0xf501, DISPATCH_METHOD, NULL, -2, pAddItems->pv) == E_ACCESSDENIED) {
 								break;
 							}
 						}
@@ -4396,7 +4443,7 @@ static void threadAddItems(void *args)
 			ppd->SetLine(2, L"", TRUE, NULL);
 
 			if (pAddItems->bNavigateComplete) {
-				Invoke5(pSB, 0x10000500, DISPATCH_METHOD, NULL, 0, NULL);
+				Invoke5(pSB, TE_METHOD + 0xf500, DISPATCH_METHOD, NULL, 0, NULL);
 			}
 			if (pOnCompleted) {
 				VARIANT *pv = GetNewVARIANT(3);
@@ -4502,6 +4549,7 @@ VOID GetNewObject1(LPOLESTR sz, IDispatch **ppdisp)
 	}
 }
 
+
 VOID GetNewArray(IDispatch **ppArray)
 {
 	GetNewObject1(L"_a", ppArray);
@@ -4510,6 +4558,52 @@ VOID GetNewArray(IDispatch **ppArray)
 VOID GetNewObject(IDispatch **ppObj)
 {
 	GetNewObject1(L"_o", ppObj);
+}
+
+IDispatch* teCreateObj(LONG lId, VARIANT *pvArg)
+{
+	IDispatch *pdisp = NULL;
+	IDispatch *pdispResult = NULL;
+	switch (lId) {
+	case 1://Object
+		if (!g_pSP || g_pSP->QueryService(SID_TablacusObject, IID_PPV_ARGS(&pdisp)) != S_OK) {
+			GetNewObject(&pdisp);
+		}
+		return pdisp;
+
+	case 2://Array
+		if (!g_pSP || g_pSP->QueryService(SID_TablacusArray, IID_PPV_ARGS(&pdisp)) != S_OK) {
+			GetNewArray(&pdisp);
+		}
+		return pdisp;
+
+	case 3://Enum
+		return new CteEnumerator(pvArg);
+
+	case 4://api
+		return new CteWindowsAPI(NULL);
+
+	case 5://CommonDialog
+		return new CteCommonDialog();
+
+	case 6://FolderItems
+		IDataObject *pDataObj;
+		pDataObj = NULL;
+		if (pvArg) {
+			GetDataObjFromVariant(&pDataObj, pvArg);
+		}
+		pdispResult = static_cast<FolderItems *>(new CteFolderItems(pDataObj, NULL));
+		SafeRelease(&pDataObj);
+		return pdispResult;
+
+	case 7://ProgressDialog
+		return new CteProgressDialog(NULL);
+
+	case 8://WICBitmap
+		return new CteWICBitmap();
+
+	}
+	return pdispResult;
 }
 
 VOID ClearEvents()
@@ -6909,9 +7003,9 @@ VOID teApiCommandLineToArgv(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 {
 	IDispatch *pArray = NULL;
 	if (!GetDispatch(&pDispParams->rgvarg[nArg], &pArray)) {
+		pArray = teCreateObj(2, NULL);
 		int nLen = 0;
 		LPTSTR *lplpszArgs = NULL;
-		GetNewArray(&pArray);
 		if (param[0].lpcwstr && param[0].lpcwstr[0]) {
 			lplpszArgs = CommandLineToArgvW(param[0].lpcwstr, &nLen);
 			for (int i = 0; i < nLen; ++i) {
@@ -6920,8 +7014,7 @@ VOID teApiCommandLineToArgv(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 			LocalFree(lplpszArgs);
 		}
 	}
-	teSetObjectRelease(pVarResult, new CteDispatchEx(pArray));
-	pArray->Release();
+	teSetObjectRelease(pVarResult, teAddLegacySupport(pArray));
 }
 
 VOID teApiILIsEqual(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -7142,7 +7235,7 @@ VOID teApiGetProcObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 			_GetProcObjectW(pVarResult);
 			IDispatch *pdisp;
 			if (GetDispatch(pVarResult, &pdisp)) {
-				CteDispatch *odisp = new CteDispatch(pdisp, 4);
+				CteDispatch *odisp = new CteDispatch(pdisp, 4, DISPID_UNKNOWN);
 				pdisp->Release();
 				odisp->m_hDll = hDll;
 				hDll = NULL;
@@ -7465,7 +7558,9 @@ VOID teApiImageList_Destroy(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 {
 	if (nArg >= 0 && param[1].boolVal) {
 		try {
-			teSetLong(pVarResult, param[0].pImageList->Release());
+			if (param[0].pImageList) {
+				teSetLong(pVarResult, param[0].pImageList->Release());
+			}
 		} catch (...) {
 			g_nException = 0;
 #ifdef _DEBUG
@@ -8379,10 +8474,8 @@ VOID teApiGetDispatch(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT
 			DISPID dispid = DISPID_UNKNOWN;
 			LPOLESTR lp = param[1].lpolestr;
 			if (pdisp->GetIDsOfNames(IID_NULL, &lp, 1, LOCALE_USER_DEFAULT, &dispid) == S_OK) {
-				CteDispatch *oDisp = new CteDispatch(pdisp, 0);
+				teSetObjectRelease(pVarResult, new CteDispatch(pdisp, 0, dispid));
 				pdisp->Release();
-				oDisp->m_dispIdMember = dispid;
-				teSetObjectRelease(pVarResult, oDisp);
 			}
 			pdisp->Release();
 		}
@@ -9192,7 +9285,7 @@ VOID teApiDllGetClassObject(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 	IDispatch *pdisp;
 	HMODULE hDll = teCreateInstanceV(&pDispParams->rgvarg[nArg], &pDispParams->rgvarg[nArg - 1], IID_PPV_ARGS(&pdisp));
 	if (hDll) {
-		CteDispatch *odisp = new CteDispatch(pdisp, 4);
+		CteDispatch *odisp = new CteDispatch(pdisp, 4, DISPID_UNKNOWN);
 		pdisp->Release();
 		odisp->m_hDll = hDll;
 		teSetObjectRelease(pVarResult, odisp);
@@ -9259,16 +9352,17 @@ VOID teApiMoveFileEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 
 VOID teApiObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	IDispatch *pdisp = NULL;
-	GetNewObject(&pdisp);
-	teSetObjectRelease(pVarResult, pdisp);
+	teSetObjectRelease(pVarResult, teCreateObj(1, NULL));
 }
 
 VOID teApiArray(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	IDispatch *pdisp = NULL;;
-	GetNewArray(&pdisp);
-	teSetObjectRelease(pVarResult, pdisp);
+	teSetObjectRelease(pVarResult, teCreateObj(2, NULL));
+/*	SAFEARRAY *psa = SafeArrayCreateVector(VT_VARIANT, 0, 0);
+	if (psa) {
+		pVarResult->vt = VT_ARRAY | VT_VARIANT;
+		pVarResult->parray = psa;
+	}*/
 }
 
 VOID teApiPathIsRoot(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -9436,8 +9530,7 @@ VOID teApiCreateProcess(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 			}
 		}
 		if (param[5].boolVal) {
-			IDispatch *pdisp = NULL;
-			GetNewObject(&pdisp);
+			IDispatch *pdisp = teCreateObj(1, NULL);
 			VARIANT v;
 			VariantInit(&v);
 			teSetSZ(&v, bsStdOut);
@@ -9463,47 +9556,17 @@ VOID teApiDeleteFile(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 
 VOID teApiCreateObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	LPWSTR lpwstr = param[0].lpwstr;
-	if (lstrcmpi(lpwstr, L"Array") == 0) {
-		IDispatch *pdisp = NULL;
-		GetNewArray(&pdisp);
-		teSetObjectRelease(pVarResult, pdisp);
-		return;
-	}
-	if (lstrcmpi(lpwstr, L"CommonDialog") == 0) {
-		teSetObjectRelease(pVarResult, new CteCommonDialog());
-		return;
-	}
-	if (lstrcmpi(lpwstr, L"FolderItems") == 0) {
-		IDataObject *pDataObj = NULL;
-		if (nArg >= 1) {
-			GetDataObjFromVariant(&pDataObj, &pDispParams->rgvarg[nArg - 1]);
+	CHAR pszNameA[16];
+	::WideCharToMultiByte(CP_TE, 0, param[0].lpcwstr, -1, pszNameA, ARRAYSIZE(pszNameA) - 1, NULL, NULL);
+	for (int i = 0; methodObject[i].name; ++i) {
+		if (lstrcmpiA(pszNameA, methodObject[i].name) == 0) {
+			teSetObjectRelease(pVarResult, teCreateObj(methodObject[i].id, nArg >= 1 ? &pDispParams->rgvarg[nArg - 1] : NULL));
+			return;
 		}
-		teSetObjectRelease(pVarResult, new CteFolderItems(pDataObj, NULL));
-		SafeRelease(&pDataObj);
-		return;
-	}
-	if (lstrcmpi(lpwstr, L"Object") == 0) {
-		IDispatch *pdisp = NULL;
-		GetNewObject(&pdisp);
-		teSetObjectRelease(pVarResult, pdisp);
-		return;
-	}
-	if (lstrcmpi(lpwstr, L"ProgressDialog") == 0) {
-		teSetObjectRelease(pVarResult, new CteProgressDialog(NULL));
-		return;
-	}
-	if (lstrcmpi(lpwstr, L"WICBitmap") == 0) {
-		teSetObjectRelease(pVarResult, new CteWICBitmap());
-		return;
-	}
-	if (lstrcmpi(lpwstr, L"api") == 0) {
-		teSetObjectRelease(pVarResult, new CteWindowsAPI(NULL));
-		return;
 	}
 	CLSID clsid;
 	IUnknown *punk;
-	if SUCCEEDED(teCLSIDFromProgID(lpwstr, &clsid)) {
+	if SUCCEEDED(teCLSIDFromProgID(param[0].lpwstr, &clsid)) {
 		if SUCCEEDED(teCreateInstance(clsid, NULL, NULL, IID_PPV_ARGS(&punk))) {
 			teSetObjectRelease(pVarResult, punk);
 		}
@@ -9601,9 +9664,7 @@ VOID teApiGetDiskFreeSpaceEx(int nArg, teParam *param, DISPPARAMS *pDispParams, 
 	ULARGE_INTEGER TotalNumberOfBytes;
 	ULARGE_INTEGER TotalNumberOfFreeBytes;
 	if (pVarResult && GetDiskFreeSpaceEx(param[0].lpcwstr, &FreeBytesOfAvailable, &TotalNumberOfBytes, &TotalNumberOfFreeBytes)) {
-		pVarResult->vt = VT_DISPATCH;
-		pVarResult->pdispVal = NULL;
-		GetNewObject(&pVarResult->pdispVal);
+		teSetObjectRelease(pVarResult, teCreateObj(1, NULL));
 		VARIANT v;
 		teSetLL(&v, FreeBytesOfAvailable.QuadPart);
 		tePutProperty(pVarResult->pdispVal, L"FreeBytesOfAvailable", &v);
@@ -10433,7 +10494,7 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 						case WM_SETFOCUS:
 							CheckChangeTabSB(pcwp->hwnd);
 						case WM_KILLFOCUS:
-							if (!IsChild(g_pWebBrowser->get_HWND(), pcwp->hwnd)) {
+							if (g_pWebBrowser && !IsChild(g_pWebBrowser->get_HWND(), pcwp->hwnd)) {
 								break;
 							}
 						case WM_SHOWWINDOW:
@@ -11944,7 +12005,7 @@ VOID CteShellBrowser::Navigate1Ex(LPOLESTR pstr, FolderItems *pFolderItems, UINT
 	QueryInterface(IID_PPV_ARGS(&pInvoke->pdisp));
 	pInvoke->cRef = 2;
 	pInvoke->cDo = 1;
-	pInvoke->dispid = 0x20000007;//Navigate2Ex
+	pInvoke->dispid = TE_METHOD + 0xfb07;//Navigate2Ex
 	pInvoke->cArgs = 4;
 	pInvoke->pv = GetNewVARIANT(4);
 	pInvoke->wErrorHandling = g_nLockUpdate || m_nUnload == 2 || !g_bShowParseError ? 1 : nErrorHandling;
@@ -11973,7 +12034,8 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	m_nLinkTargetIndex = MAXINT;
 	m_bRegenerateItems = FALSE;
 	m_nSizeFormat = -1;
-	GetNewObject(&m_ppDispatch[SB_TotalFileSize]);
+	SafeRelease(&m_ppDispatch[SB_TotalFileSize]);
+	m_ppDispatch[SB_TotalFileSize] = teCreateObj(1, NULL);
 	SafeRelease(&m_ppDispatch[SB_AltSelectedItems]);
 	CteFolderItem *pid1 = NULL;
 	if (m_hwnd) {
@@ -12514,7 +12576,8 @@ VOID CteShellBrowser::Refresh(BOOL bCheck)
 		SaveFocusedItemToHistory();
 		teDoCommand(this, m_hwnd, WM_NULL, 0, 0);//Save folder setings
 	}
-	GetNewObject(&m_ppDispatch[SB_TotalFileSize]);
+	SafeRelease(&m_ppDispatch[SB_TotalFileSize]);
+	m_ppDispatch[SB_TotalFileSize] = teCreateObj(1, NULL);
 	SafeRelease(&m_ppDispatch[SB_AltSelectedItems]);
 	if (bCheck) {
 		VARIANT v;
@@ -12529,7 +12592,7 @@ VOID CteShellBrowser::Refresh(BOOL bCheck)
 				if (!m_pShellView || tePathIsNetworkPath(vResult.bstrVal) || m_dwUnavailable) {
 					TEInvoke *pInvoke = new TEInvoke[1];
 					QueryInterface(IID_PPV_ARGS(&pInvoke->pdisp));
-					pInvoke->dispid = 0x20000206;//Refresh2Ex
+					pInvoke->dispid = TE_METHOD + 0xfb06;//Refresh2Ex
 					pInvoke->cRef = 2;
 					pInvoke->cDo = 1;
 					pInvoke->cArgs = 1;
@@ -13615,15 +13678,20 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 		if (pVarResult) {
 			VariantInit(pVarResult);
 		}
-		if ((m_nUnload == 1 || (m_nUnload & 8)) && dispIdMember >= 0x10000100 && dispIdMember) {
-			return S_OK;
-		}
 		if (!m_pFolderItem && dispIdMember >= DISPID_SELECTIONCHANGED && dispIdMember <= DISPID_INITIALENUMERATIONDONE) {
 			return  S_OK;
 		}
+		if (wFlags == DISPATCH_PROPERTYGET && dispIdMember >= TE_METHOD + 0xf000 && dispIdMember <= TE_METHOD_MAX) {
+			teSetObjectRelease(pVarResult, new CteDispatch(this, 0, dispIdMember));
+			return S_OK;
+		}
+		if (m_nUnload == 1 || (m_nUnload & 8)) {
+			if (dispIdMember >= TE_PROPERTY + 0xf000 && (dispIdMember & 0xfff) >= 0x100) {
+				return S_OK;
+			}
+		}
 		switch (dispIdMember) {
-			//Data
-		case 0x10000001:
+		case TE_PROPERTY + 0xf001://Data
 			if (nArg >= 0) {
 				VariantClear(&m_vData);
 				VariantCopy(&m_vData, &pDispParams->rgvarg[nArg]);
@@ -13632,12 +13700,12 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				VariantCopy(pVarResult, &m_vData);
 			}
 			return S_OK;
-			//hwnd
-		case 0x10000002:
+			
+		case TE_PROPERTY + 0xf002://hwnd
 			teSetPtr(pVarResult, m_hwnd);
 			return S_OK;
-			//Type
-		case 0x10000003:
+			
+		case TE_PROPERTY + 0xf003://Type
 			if (nArg >= 0) {
 				DWORD dwType = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 				if (dwType == CTRL_SB || dwType == CTRL_EB) {
@@ -13651,10 +13719,9 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			teSetLong(pVarResult, m_param[SB_Type]);
 			return S_OK;
 
-			//Navigate
-		case 0x10000004:
-			//History
-		case 0x1000000B:
+			
+		case TE_METHOD + 0xf004://Navigate
+		case TE_PROPERTY + 0xf00B://History
 			if (nArg >= 0) {
 				UINT wFlags = 0;
 				FolderItem *pFolderItem = NULL;
@@ -13676,7 +13743,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 
 				if (pVarResult) {
 					//Navigate
-					if (dispIdMember == 0x10000004) {
+					if (dispIdMember == TE_METHOD + 0xf004) {
 						teSetObject(pVarResult, pSB ? pSB : this);
 					} else if (pSB) {
 						pSB->Release();
@@ -13684,7 +13751,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 			}
 			//History
-			if (dispIdMember == 0x1000000B) {
+			if (dispIdMember == TE_PROPERTY + 0xf00B) {
 				if (pVarResult) {
 					CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL);
 					VARIANT v;
@@ -13705,8 +13772,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 			}
 			return S_OK;
-			//Navigate2Ex
-		case 0x20000007:
+			
+		case TE_METHOD + 0xfb07://Navigate2Ex
 			if (nArg >= 3) {
 				FolderItem *pFolderItem = NULL;
 				IUnknown *punk;
@@ -13735,8 +13802,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 			}
 			return S_OK;
-			//Navigate2
-		case 0x10000007:
+			
+		case TE_METHOD + 0xf007://Navigate2
 			if (nArg >= 0) {
 				DWORD param[SB_Count];
 				for (int i = SB_Count; i--;) {
@@ -13776,8 +13843,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				teSetObject(pVarResult, pSB);
 			}
 			return S_OK;
-			//Index
-		case 0x10000008:
+			
+		case TE_PROPERTY + 0xf008://Index
 			if (nArg >= 0) {
 				m_pTC->Move(GetTabIndex(), GetIntFromVariant(&pDispParams->rgvarg[nArg]), m_pTC);
 			}
@@ -13785,16 +13852,17 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				teSetLong(pVarResult, GetTabIndex());
 			}
 			return S_OK;
-			//FolderFlags
-		case 0x10000009:
+			
+		case TE_PROPERTY + 0xf009://FolderFlags
 			if (nArg >= 0) {
 				m_param[SB_FolderFlags] = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 				SetFolderFlags(FALSE);
 			}
 			teSetLong(pVarResult, m_param[SB_FolderFlags]);
 			return S_OK;
-			//CurrentViewMode
-		case 0x10000010:
+			
+		case TE_PROPERTY + 0xf010://CurrentViewMode
+		case TE_METHOD + 0xf010://SetViewMode
 			if (nArg >= 0) {
 				m_param[SB_ViewMode] = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 				if (nArg >= 1) {
@@ -13805,8 +13873,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			SetFolderFlags(FALSE);
 			teSetLong(pVarResult, m_param[SB_ViewMode]);
 			return S_OK;
-			//IconSize
-		case 0x10000011:
+			
+		case TE_PROPERTY + 0xf011://IconSize
 			if (m_pShellView && m_bIconSize) {
 				GetViewModeAndIconSize(TRUE);
 				if (nArg >= 0) {
@@ -13827,8 +13895,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			teSetLong(pVarResult, m_param[SB_IconSize]);
 			return S_OK;
-			//Options
-		case 0x10000012:
+			
+		case TE_PROPERTY + 0xf012://Options
 			if (nArg >= 0) {
 				m_param[SB_Options] = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 				if (m_pExplorerBrowser) {
@@ -13843,8 +13911,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				teSetLong(pVarResult, m_param[SB_Options]);
 			}
 			return S_OK;
-			//SizeFormat
-		case 0x10000013:
+			
+		case TE_PROPERTY + 0xf013://SizeFormat
 			if (nArg >= 0) {
 				m_nSizeFormat = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 				if (m_hwndLV) {
@@ -13853,11 +13921,11 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			teSetLong(pVarResult, m_nSizeFormat);
 			return S_OK;
-			//NameFormat //Deprecated
-		case 0x10000014:
+			
+		case TE_PROPERTY + 0xf014://NameFormat //Deprecated
 			return S_OK;
-			//ViewFlags
-		case 0x10000016:
+			
+		case TE_PROPERTY + 0xf016://ViewFlags
 			if (nArg >= 0) {
 				m_param[SB_ViewFlags] = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 				if (m_param[SB_ViewFlags] & CDB2GVF_NOSELECTVERB) {
@@ -13866,12 +13934,13 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			teSetLong(pVarResult, m_param[SB_ViewFlags]);
 			return S_OK;
-			//Id
-		case 0x10000017:
+			
+		case TE_PROPERTY + 0xf017://Id
 			teSetLong(pVarResult, m_nSB);
 			return S_OK;
-			//FilterView
-		case 0x10000018:
+			
+		case TE_PROPERTY + 0xf018://FilterView
+		case TE_METHOD + 0xf018://Search
 			if (nArg >= 0) {
 				VARIANT v;
 				teVariantChangeType(&v, &pDispParams->rgvarg[nArg], VT_BSTR);
@@ -13927,30 +13996,30 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			teSetSZ(pVarResult, m_bsFilter ? m_bsFilter : m_bsNextFilter);
 			return S_OK;
-			//FolderItem
-		case 0x10000020:
+			
+		case  TE_PROPERTY + 0xf020://FolderItem
 			teSetObject(pVarResult, m_pFolderItem);
 			return S_OK;
-			//TreeView
-		case 0x10000021:
+			
+		case  TE_PROPERTY + 0xf021://TreeView
 			teSetObject(pVarResult, m_pTV);
 			return S_OK;
-			//Parent
-		case 0x10000024:
+			
+		case  TE_PROPERTY + 0xf024://Parent
 			IDispatch *pdisp;
 			if SUCCEEDED(get_Parent(&pdisp)) {
 				teSetObjectRelease(pVarResult, pdisp);
 			}
 			return S_OK;
-			//Close
-		case 0x10000031:
+			
+		case TE_METHOD + 0xf031://Close
 			teSetBool(pVarResult, Close(FALSE));
 			if (!m_pTC->m_nLockUpdate) {
 				ArrangeWindowEx();
 			}
 			return S_OK;
-			//Title
-		case 0x10000032:
+			
+		case TE_PROPERTY + 0xf032://Title
 			nIndex = GetTabIndex();
 			if (nIndex >= 0) {
 				if (nArg >= 0) {
@@ -13983,29 +14052,29 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 			}
 			return S_OK;
-			//Suspend
-		case 0x10000033:
+			
+		case TE_METHOD + 0xf033://Suspend
 			Suspend(nArg >= 0 ? GetIntFromVariant(&pDispParams->rgvarg[nArg]) : 0);
 			return S_OK;
-			//Items
-		case 0x10000040:
+			
+		case TE_METHOD + 0xf040://Items
 			FolderItems *pFolderItems;
 			if SUCCEEDED(Items(nArg >= 0 ? GetIntFromVariant(&pDispParams->rgvarg[nArg]) : SVGIO_ALLVIEW | SVGIO_FLAG_VIEWORDER, &pFolderItems)) {
 				teSetObjectRelease(pVarResult, pFolderItems);
 			}
 			return S_OK;
-			//SelectedItems
-		case 0x10000041:
+			
+		case TE_METHOD + 0xf041://SelectedItems
 			if SUCCEEDED(SelectedItems(&pFolderItems)) {
 				teSetObjectRelease(pVarResult, pFolderItems);
 			}
 			return S_OK;
-			//ShellFolderView
-		case 0x10000050:
+			
+		case TE_PROPERTY + 0xf050://ShellFolderView
 			teSetObject(pVarResult, m_pdisp);
 			return S_OK;
-			//DropTarget
-		case 0x10000058:
+			
+		case TE_PROPERTY + 0xf058://DropTarget
 			IDropTarget *pDT;
 			pDT = NULL;
 			if (!m_pDropTarget2 || FAILED(m_pDropTarget2->QueryInterface(IID_PPV_ARGS(&pDT)))) {
@@ -14025,8 +14094,9 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				pDT->Release();
 			}
 			return S_OK;
-			//Columns
-		case 0x10000059:
+			
+		case TE_PROPERTY + 0xf059://Columns
+		case TE_METHOD + 0xf059://GetColumns
 			if (m_hwndDV) {
 				if (nArg >= 0) {
 					if (pDispParams->rgvarg[nArg].vt == VT_BSTR) {
@@ -14040,8 +14110,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 			}
 			return S_OK;
-			/*			//Searches //test
-						case 0x1000005A:
+			/*//Searches //test
+						case TE_PROPERTY + 0x005A:
 							IDispatch *pArray;
 							GetNewArray(&pArray);
 							IEnumExtraSearch *pees;
@@ -14062,8 +14132,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 							}
 							teSetObjectRelease(pVarResult, pArray);
 							return S_OK;*/
-							//MapColumnToSCID
-		case 0x1000005B:
+							
+		case TE_METHOD + 0xf05B://MapColumnToSCID
 			if (nArg >= 1 && pVarResult) {
 				SHCOLUMNID scid;
 #ifdef _2000XP
@@ -14076,16 +14146,17 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 			}
 			return S_OK;
-			//hwndList
-		case 0x10000102:
+			
+		case TE_PROPERTY + 0xf102://hwndList
 			teSetPtr(pVarResult, m_hwndLV);
 			return S_OK;
-			//hwndView
-		case 0x10000103:
+			
+		case TE_PROPERTY + 0xf103://hwndView
 			teSetPtr(pVarResult, m_hwndDV);
 			return S_OK;
-			//SortColumn
-		case 0x10000104:
+			
+		case TE_PROPERTY + 0xf104://SortColumn
+		case TE_METHOD + 0xf104://GetSortColumn
 			if (nArg >= 0) {
 				if (wFlags & DISPATCH_METHOD) {
 					nFormat = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
@@ -14098,8 +14169,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				GetSort(&pVarResult->bstrVal, nFormat);
 			}
 			return S_OK;
-			//GroupBy
-		case 0x10000105:
+			
+		case TE_PROPERTY + 0xf105://GroupBy
 			if (nArg >= 0) {
 				if (pDispParams->rgvarg[nArg].vt == VT_BSTR) {
 					SetGroupBy(pDispParams->rgvarg[nArg].bstrVal);
@@ -14110,12 +14181,12 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				GetGroupBy(&pVarResult->bstrVal);
 			}
 			return S_OK;
-			//Focus
-		case 0x10000106:
+			
+		case TE_METHOD + 0xf106://Focus
 			SetActive(TRUE);
 			return S_OK;
-			//HitTest (Screen coordinates)
-		case 0x10000107:
+			
+		case TE_METHOD + 0xf107://HitTest (Screen coordinates)
 			if (nArg >= 0 && pVarResult) {
 				LVHITTESTINFO info;
 				GetPointFormVariant(&info.pt, &pDispParams->rgvarg[nArg]);
@@ -14174,16 +14245,16 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 			}
 			return S_OK;
-			//hwndAlt
-		case 0x10000108:
+			
+		case TE_PROPERTY + 0xf108://hwndAlt
 			if (nArg >= 0) {
 				m_hwndAlt = (HWND)GetPtrFromVariant(&pDispParams->rgvarg[nArg]);
 				ArrangeWindow();
 			}
 			teSetPtr(pVarResult, m_hwndAlt);
 			return S_OK;
-			//ItemCount
-		case 0x10000110:
+			
+		case TE_METHOD + 0xf110://ItemCount
 			if (pVarResult && m_pShellView) {
 				UINT uItem = (nArg >= 0) ? GetIntFromVariant(&pDispParams->rgvarg[nArg]) : SVGIO_ALLVIEW;
 				if (m_ppDispatch[SB_AltSelectedItems] && uItem == SVGIO_SELECTION) {
@@ -14205,8 +14276,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 			}
 			return S_OK;
-			//Item
-		case 0x10000111:
+			
+		case TE_METHOD + 0xf111://Item
 			if (pVarResult && m_pShellView && nArg >= 0) {
 				IFolderView *pFV;
 				if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
@@ -14220,16 +14291,16 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 			}
 			return S_OK;
-			//Refresh
-		case 0x10000206:
+			
+		case TE_METHOD + 0xf206://Refresh
 			if (!m_bVisible && nArg >= 0 && GetIntFromVariant(&pDispParams->rgvarg[nArg])) {
 				m_bRefreshLator = TRUE;
 				return S_OK;
 			}
 			Refresh(TRUE);
 			return S_OK;
-			//Refresh2Ex
-		case 0x20000206:
+			
+		case TE_METHOD + 0xfb06://Refresh2Ex
 			if (nArg >= 0) {
 				FolderItem *pid = NULL;
 				GetFolderItemFromVariant(&pid, &pDispParams->rgvarg[nArg]);
@@ -14244,8 +14315,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				Refresh(FALSE);
 			}
 			return S_OK;
-			//ViewMenu
-		case 0x10000207:
+			
+		case TE_METHOD + 0xf207://ViewMenu
 			IContextMenu *pCM;
 			CteContextMenu *pdispCM;
 			pCM = NULL;
@@ -14264,8 +14335,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			SafeRelease(&pdispCM);
 			SafeRelease(&pCM);
 			return S_OK;
-			//TranslateAccelerator
-		case 0x10000208:
+			
+		case TE_METHOD + 0xf208://TranslateAccelerator
 			HRESULT hr;
 			hr = E_NOTIMPL;
 			if (m_pShellView) {
@@ -14280,7 +14351,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			teSetLong(pVarResult, hr);
 			return S_OK;
-		case 0x10000209:// GetItemPosition
+
+		case TE_METHOD + 0xf209:// GetItemPosition
 			hr = E_NOTIMPL;
 			if (m_pShellView) {
 				if (nArg >= 1) {
@@ -14303,8 +14375,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			teSetLong(pVarResult, hr);
 			return S_OK;
-			//SelectAndPositionItem
-		case 0x1000020A:
+			
+		case TE_METHOD + 0xf20A://SelectAndPositionItem
 			hr = E_NOTIMPL;
 			if (m_pShellView) {
 				if (nArg >= 2) {
@@ -14328,28 +14400,28 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			teSetLong(pVarResult, hr);
 			return S_OK;
-			//SelectItem
-		case 0x10000280:
+			
+		case TE_METHOD + 0xf280://SelectItem
 			if (nArg >= 1) {
 				SelectItem(&pDispParams->rgvarg[nArg], GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]));
 			}
 			return S_OK;
-			//FocusedItem
-		case 0x10000281:
+			
+		case TE_PROPERTY + 0x0281://FocusedItem
 			FolderItem *pFolderItem;
 			if (get_FocusedItem(&pFolderItem) == S_OK) {
 				teSetObjectRelease(pVarResult, pFolderItem);
 			}
 			return S_OK;
-			//GetFocusedItem
-		case 0x10000282:
+			
+		case TE_PROPERTY + 0xf282://GetFocusedItem
 			if (pVarResult) {
 				GetFocusedIndex(&pVarResult->intVal);
 				pVarResult->vt = VT_I4;
 			}
 			return S_OK;
-			//GetItemRect
-		case 0x10000283:
+			
+		case TE_METHOD + 0xf283://GetItemRect
 			hr = E_NOTIMPL;
 			if (m_pShellView && m_hwndLV) {
 				if (nArg >= 1) {
@@ -14384,8 +14456,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			teSetLong(pVarResult, hr);
 			return S_OK;
-			//Notify
-		case 0x10000300:
+			
+		case TE_METHOD + 0xf300://Notify
 			if (nArg >= 2) {
 				long lEvent = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 				BOOL bTFS = (nArg >= 3 && GetIntFromVariant(&pDispParams->rgvarg[nArg - 3]));
@@ -14418,16 +14490,16 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 			}
 			return S_OK;
-			//NavigateComplete
-		case 0x10000400:
+			
+		case TE_METHOD + 0xf400://NavigateComplete
 			m_bBeforeNavigate = FALSE;
 			return S_OK;
-			//NavigationComplete
-		case 0x10000500:
+			
+		case TE_METHOD + 0xf500://NavigationComplete
 			NavigateComplete(FALSE);
 			return S_OK;
-			//AddItem
-		case 0x10000501:
+			
+		case TE_METHOD + 0xf501://AddItem
 			if (nArg >= 0) {
 				if (nArg >= 1) {
 					DWORD dwSessionId = GetIntFromVariant(&pDispParams->rgvarg[0]);
@@ -14441,8 +14513,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 			}
 			return S_OK;
-			//RemoveItem
-		case 0x10000502:
+			
+		case TE_METHOD + 0xf502://RemoveItem
 			hr = E_NOTIMPL;
 			if (nArg >= 0 && m_pShellView) {
 				LPITEMIDLIST pidl;
@@ -14478,8 +14550,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				SetTimer(g_hwndMain, TET_Status, 500, teTimerProc);
 			}
 			return S_OK;
-			//AddItems
-		case 0x10000503:
+			
+		case TE_METHOD + 0xf503://AddItems
 			if (nArg >= 0) {
 				if (GetDispatch(&pDispParams->rgvarg[nArg], &pdisp) || teGetDispatchFromString(&pDispParams->rgvarg[nArg], &pdisp)) {
 					if (!LoadString(g_hShell32, 13585, g_szStatus, _countof(g_szStatus))) {
@@ -14507,12 +14579,12 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 			}
 			return S_OK;
-			//RemoveAll
-		case 0x10000504:
+			
+		case TE_METHOD + 0xf504://RemoveAll
 			teSetLong(pVarResult, RemoveAll());
 			return S_OK;
-			//SessionId
-		case 0x10000505:
+			
+		case TE_PROPERTY + 0xf505://SessionId
 			teSetLong(pVarResult, m_dwSessionId);
 			return S_OK;
 			//
@@ -16654,10 +16726,8 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 		if (pVarResult) {
 			VariantInit(pVarResult);
 		}
-		if (dispIdMember >= TE_METHOD && wFlags == DISPATCH_PROPERTYGET) {
-			CteDispatch *pClone = new CteDispatch(this, 0);
-			pClone->m_dispIdMember = dispIdMember;
-			teSetObjectRelease(pVarResult, pClone);
+		if (wFlags == DISPATCH_PROPERTYGET && dispIdMember >= TE_METHOD) {
+			teSetObjectRelease(pVarResult, new CteDispatch(this, 0, dispIdMember));
 			return S_OK;
 		}
 		switch(dispIdMember) {
@@ -16739,9 +16809,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				if (nArg >= 0) {
 					int nCtrl = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 					BOOL bAll = nArg >= 1 ? !GetIntFromVariant(&pDispParams->rgvarg[nArg -  1]) : TRUE;
-					IDispatch *pArray = NULL;
-					GetNewArray(&pArray);
-
+					IDispatch *pArray = teCreateObj(2, NULL);
 					switch (nCtrl) {
 						case CTRL_FV:
 						case CTRL_SB:
@@ -16784,8 +16852,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 							}
 							break;
 					}//end_switch
-					teSetObjectRelease(pVarResult, new CteDispatchEx(pArray));
-					pArray->Release();
+					teSetObjectRelease(pVarResult, teAddLegacySupport(pArray));
 				}
 				return S_OK;
 			//ClearEvents
@@ -16910,21 +16977,11 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				return S_OK;
 			//Object
 			case TE_METHOD + 1134:
-				GetNewObject(&pdisp);
-				teSetObjectRelease(pVarResult, pdisp);
+				teSetObjectRelease(pVarResult, teCreateObj(1, NULL));
 				return S_OK;
 			//Array
 			case TE_METHOD + 1135:
-				GetNewArray(&pdisp);
-				teSetObjectRelease(pVarResult, pdisp);
-				return S_OK;
-			//Collection
-			case TE_METHOD + 1136:
-				if (nArg >= 0 && GetDispatch(&pDispParams->rgvarg[nArg], &pdisp)) {
-					CteDispatch *oDisp = new CteDispatch(pdisp, 1);
-					pdisp->Release();
-					teSetObjectRelease(pVarResult, oDisp);
-				}
+				teSetObjectRelease(pVarResult, teCreateObj(2, NULL));
 				return S_OK;
 			//ProgressDialog
 			case 1137:
@@ -17375,7 +17432,7 @@ CteWebBrowser::CteWebBrowser(HWND hwndParent, WCHAR *szPath, VARIANT *pvArg)
 		VariantCopy(&m_vData, pvArg);
 		VARIANT v;
 		VariantInit(&v);
-		GetNewObject(&m_pExternal);
+		m_pExternal = teCreateObj(1, NULL);
 		teSetObject(&v, g_pTE);
 		tePutProperty(m_pExternal, L"TE", &v);
 		teSetObject(&v, this);
@@ -17389,7 +17446,14 @@ CteWebBrowser::CteWebBrowser(HWND hwndParent, WCHAR *szPath, VARIANT *pvArg)
 	RECT       rc;
 	IOleObject *pOleObject;
 #ifdef _DEBUG
-	HRESULT hr = teCreateInstance(CLSID_WebBrowserExt, L"C:\\cpp\\tewv\\Debug\\tewv32d.dll", &g_hTEWV, IID_PPV_ARGS(&m_pWebBrowser));
+	HRESULT hr = E_FAIL;
+	if (!g_pWebBrowser) {
+		HMODULE hDll = LoadLibrary(L"C:\\cpp\\tewv\\Debug\\WebView2Loader.dll");
+		hr = teCreateInstance(CLSID_WebBrowserExt, L"C:\\cpp\\tewv\\Debug\\tewv32d.dll", &g_hTEWV, IID_PPV_ARGS(&m_pWebBrowser));
+		if (hr == S_OK && !g_pSP) {
+			m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&g_pSP));
+		}
+	}
 	if FAILED(hr) {
 		hr = teCreateInstance(CLSID_WebBrowser, NULL, NULL, IID_PPV_ARGS(&m_pWebBrowser));
 	}
@@ -17482,190 +17546,193 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 		if (pVarResult) {
 			VariantInit(pVarResult);
 		}
-		switch(dispIdMember) {
-			//Data
-			case 0x10000001:
-				if (nArg >= 0) {
-					VariantClear(&m_vData);
-					VariantCopy(&m_vData, &pDispParams->rgvarg[nArg]);
+		if (wFlags == DISPATCH_PROPERTYGET && dispIdMember >= TE_METHOD &&  dispIdMember <= TE_METHOD_MAX) {
+			teSetObjectRelease(pVarResult, new CteDispatch(this, 0, dispIdMember));
+			return S_OK;
+		}
+		switch(dispIdMember) {		
+		case TE_PROPERTY + 1://Data
+			if (nArg >= 0) {
+				VariantClear(&m_vData);
+				VariantCopy(&m_vData, &pDispParams->rgvarg[nArg]);
+			}
+			if (pVarResult) {
+				VariantCopy(pVarResult, &m_vData);
+			}
+			return S_OK;
+			
+		case TE_PROPERTY + 2://hwnd
+			teSetPtr(pVarResult, get_HWND());
+			return S_OK;
+			
+		case TE_PROPERTY + 3://Type
+			teSetLong(pVarResult, m_hwndParent == g_hwndMain ? CTRL_WB : CTRL_SW);
+			return S_OK;
+			
+		case TE_METHOD + 4://TranslateAccelerator
+			HRESULT hr;
+			hr = E_NOTIMPL;
+			if (nArg >= 3) {
+				IOleInPlaceActiveObject *pActiveObject = NULL;
+				if SUCCEEDED(QueryInterface(IID_PPV_ARGS(&pActiveObject))) {
+					MSG msg;
+					msg.hwnd = (HWND)GetPtrFromVariant(&pDispParams->rgvarg[nArg]);
+					msg.message = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
+					msg.wParam = (WPARAM)GetPtrFromVariant(&pDispParams->rgvarg[nArg - 2]);
+					msg.lParam = (LPARAM)GetPtrFromVariant(&pDispParams->rgvarg[nArg - 3]);
+					hr = pActiveObject->TranslateAcceleratorW(&msg);
+					pActiveObject->Release();
 				}
-				if (pVarResult) {
-					VariantCopy(pVarResult, &m_vData);
-				}
-				return S_OK;
-			//hwnd
-			case 0x10000002:
-				teSetPtr(pVarResult, get_HWND());
-				return S_OK;
-			//Type
-			case 0x10000003:
-				teSetLong(pVarResult, m_hwndParent == g_hwndMain ? CTRL_WB : CTRL_SW);
-				return S_OK;
-			//TranslateAccelerator
-			case 0x10000004:
-				HRESULT hr;
-				hr = E_NOTIMPL;
-				if (nArg >= 3) {
-					IOleInPlaceActiveObject *pActiveObject = NULL;
-					if SUCCEEDED(QueryInterface(IID_PPV_ARGS(&pActiveObject))) {
-						MSG msg;
-						msg.hwnd = (HWND)GetPtrFromVariant(&pDispParams->rgvarg[nArg]);
-						msg.message = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
-						msg.wParam = (WPARAM)GetPtrFromVariant(&pDispParams->rgvarg[nArg - 2]);
-						msg.lParam = (LPARAM)GetPtrFromVariant(&pDispParams->rgvarg[nArg - 3]);
-						hr = pActiveObject->TranslateAcceleratorW(&msg);
-						pActiveObject->Release();
-					}
-				}
-				teSetLong(pVarResult, hr);
-				return S_OK;
-			//Application
-			case 0x10000005:
-				IDispatch *pdisp;
-				if SUCCEEDED(m_pWebBrowser->get_Application(&pdisp)) {
-					teSetObjectRelease(pVarResult, pdisp);
-				}
-				return S_OK;
+			}
+			teSetLong(pVarResult, hr);
+			return S_OK;
+			
+		case TE_PROPERTY + 5://Application
+			IDispatch *pdisp;
+			if SUCCEEDED(m_pWebBrowser->get_Application(&pdisp)) {
+				teSetObjectRelease(pVarResult, pdisp);
+			}
+			return S_OK;
 			//Document
-			case 0x10000006:
-				if SUCCEEDED(m_pWebBrowser->get_Document(&pdisp)) {
-					teSetObjectRelease(pVarResult, pdisp);
-				}
-				return S_OK;
+		case TE_PROPERTY + 6:
+			if SUCCEEDED(m_pWebBrowser->get_Document(&pdisp)) {
+				teSetObjectRelease(pVarResult, pdisp);
+			}
+			return S_OK;
 			//Window
-			case 0x10000007:
-				if (teGetHTMLWindow(m_pWebBrowser, IID_PPV_ARGS(&pdisp))) {
-					teSetObjectRelease(pVarResult, pdisp);
-				}
-				return S_OK;
+		case TE_PROPERTY + 7:
+			if (teGetHTMLWindow(m_pWebBrowser, IID_PPV_ARGS(&pdisp))) {
+				teSetObjectRelease(pVarResult, pdisp);
+			}
+			return S_OK;
 			//Focus
-			case 0x10000008:
-				teSetForegroundWindow(m_hwndParent);
-				return S_OK;
+		case TE_METHOD + 8:
+			teSetForegroundWindow(m_hwndParent);
+			return S_OK;
 			//Close
-/*			case 0x10000009:
-				PostMessage(m_hwndParent, WM_CLOSE, 0, 0);
-				return S_OK;*/
+			/*			case 0x10000009:
+			PostMessage(m_hwndParent, WM_CLOSE, 0, 0);
+			return S_OK;*/
 			//DIID_DWebBrowserEvents2
-			case DISPID_DOWNLOADCOMPLETE:
-				if (g_nReload == 1 && m_hwndParent == g_hwndMain) {
-					g_nReload = 2;
-					SetTimer(g_hwndMain, TET_Reload, 2000, teTimerProc);
-				}
-				return S_OK;
-			case DISPID_BEFORENAVIGATE2:
-				if (nArg >= 6 && m_hwndParent == g_hwndMain && pDispParams->rgvarg[nArg].pdispVal == m_pWebBrowser) {
-					if (pDispParams->rgvarg[nArg - 6].vt == (VT_BYREF | VT_BOOL)) {
-						VARIANT vURL;
-						teVariantChangeType(&vURL, &pDispParams->rgvarg[nArg - 1], VT_BSTR);
-						VARIANT_BOOL bSB = VARIANT_FALSE;
-						FolderItem *pid = new CteFolderItem(&vURL);
-						pid->get_IsFolder(&bSB);
-						if (bSB || StrChr(vURL.bstrVal, '/')) {
-							*pDispParams->rgvarg[nArg - 6].pboolVal = VARIANT_TRUE;
-							if (bSB) {
-								CteShellBrowser *pSB = NULL;
-								if (g_pTC) {
-									pSB = g_pTC->GetShellBrowser(g_pTC->m_nIndex);
-									if (pSB) {
-										pSB->BrowseObject2(pid, SBSP_SAMEBROWSER);
-									}
+		case DISPID_DOWNLOADCOMPLETE:
+			if (g_nReload == 1 && m_hwndParent == g_hwndMain) {
+				g_nReload = 2;
+				SetTimer(g_hwndMain, TET_Reload, 2000, teTimerProc);
+			}
+			return S_OK;
+		case DISPID_BEFORENAVIGATE2:
+			if (nArg >= 6 && m_hwndParent == g_hwndMain && pDispParams->rgvarg[nArg].pdispVal == m_pWebBrowser) {
+				if (pDispParams->rgvarg[nArg - 6].vt == (VT_BYREF | VT_BOOL)) {
+					VARIANT vURL;
+					teVariantChangeType(&vURL, &pDispParams->rgvarg[nArg - 1], VT_BSTR);
+					VARIANT_BOOL bSB = VARIANT_FALSE;
+					FolderItem *pid = new CteFolderItem(&vURL);
+					pid->get_IsFolder(&bSB);
+					if (bSB || StrChr(vURL.bstrVal, '/')) {
+						*pDispParams->rgvarg[nArg - 6].pboolVal = VARIANT_TRUE;
+						if (bSB) {
+							CteShellBrowser *pSB = NULL;
+							if (g_pTC) {
+								pSB = g_pTC->GetShellBrowser(g_pTC->m_nIndex);
+								if (pSB) {
+									pSB->BrowseObject2(pid, SBSP_SAMEBROWSER);
 								}
 							}
 						}
-						pid->Release();
-						VariantClear(&vURL);
 					}
+					pid->Release();
+					VariantClear(&vURL);
 				}
-				break;
-			case DISPID_DOCUMENTCOMPLETE:
-				if (m_bstrPath) {
-					IUnknown_GetWindow(m_pWebBrowser, &m_hwndBrowser);
-					if (g_bsDocumentWrite) {
-						g_pWebBrowser->write(g_bsDocumentWrite);
-						teSysFreeString(&g_bsDocumentWrite);
-						teShowWindow(m_hwndParent, SW_SHOWNORMAL);
-						return S_OK;
-					}
-					if (g_bInit) {
-						g_bInit = FALSE;
-						SetTimer(g_hwndMain, TET_Create, 100, teTimerProc);
-					}
-					if (g_hwndMain != m_hwndParent) {
-						teShowWindow(m_hwndParent, SW_SHOWNORMAL);
-					}
+			}
+			break;
+		case DISPID_DOCUMENTCOMPLETE:
+			if (m_bstrPath) {
+				IUnknown_GetWindow(m_pWebBrowser, &m_hwndBrowser);
+				if (g_bsDocumentWrite) {
+					g_pWebBrowser->write(g_bsDocumentWrite);
+					teSysFreeString(&g_bsDocumentWrite);
+					teShowWindow(m_hwndParent, SW_SHOWNORMAL);
 					return S_OK;
 				}
-				PostMessage(m_hwndParent, WM_CLOSE, 0, 0);
-				return S_OK;
-/*/// XP(IE8) does not work.
-			case DISPID_NAVIGATECOMPLETE2:
+				if (g_bInit) {
+					g_bInit = FALSE;
+					SetTimer(g_hwndMain, TET_Create, 100, teTimerProc);
+				}
 				if (g_hwndMain != m_hwndParent) {
-					HRESULT hr = E_NOTIMPL;
-					IDispatch *pdisp;
-					if (m_pWebBrowser->get_Document(&pdisp) == S_OK) {
-						IHTMLDocument2 *pdoc;
-						if SUCCEEDED(pdisp->QueryInterface(IID_PPV_ARGS(&pdoc))) {
-							IHTMLWindow2 *pwin;
-							if SUCCEEDED(pdoc->get_parentWindow(&pwin)) {
-								hr = tePutProperty(pwin, L"dialogArguments", &m_vData);
-								pwin->Release();
-							}
-							pdoc->Release();
-						}
-						pdisp->Release();
-					}
+					teShowWindow(m_hwndParent, SW_SHOWNORMAL);
 				}
 				return S_OK;
-//*///
-			case DISPID_SECURITYDOMAIN:
-				return S_OK;
-			case DISPID_AMBIENT_DLCONTROL:
-				teSetLong(pVarResult, DLCTL_DLIMAGES | DLCTL_VIDEOS | DLCTL_BGSOUNDS);
-				return S_OK;
-/*///
+			}
+			PostMessage(m_hwndParent, WM_CLOSE, 0, 0);
+			return S_OK;
+			/*/// XP(IE8) does not work.
+			case DISPID_NAVIGATECOMPLETE2:
+			if (g_hwndMain != m_hwndParent) {
+			HRESULT hr = E_NOTIMPL;
+			IDispatch *pdisp;
+			if (m_pWebBrowser->get_Document(&pdisp) == S_OK) {
+			IHTMLDocument2 *pdoc;
+			if SUCCEEDED(pdisp->QueryInterface(IID_PPV_ARGS(&pdoc))) {
+			IHTMLWindow2 *pwin;
+			if SUCCEEDED(pdoc->get_parentWindow(&pwin)) {
+			hr = tePutProperty(pwin, L"dialogArguments", &m_vData);
+			pwin->Release();
+			}
+			pdoc->Release();
+			}
+			pdisp->Release();
+			}
+			}
+			return S_OK;
+			//*///
+		case DISPID_SECURITYDOMAIN:
+			return S_OK;
+		case DISPID_AMBIENT_DLCONTROL:
+			teSetLong(pVarResult, DLCTL_DLIMAGES | DLCTL_VIDEOS | DLCTL_BGSOUNDS);
+			return S_OK;
+			/*///
 			case DISPID_AMBIENT_USERAGENT:
-				teSetSZ(pVarResult, g_szTE);
-				return S_OK;
-//*///
-			case DISPID_NEWWINDOW3:
-				if (g_pOnFunc[TE_OnNewWindow]) {
-					VARIANT vResult;
-					VariantInit(&vResult);
-					VARIANTARG *pv = GetNewVARIANT(4);
-					teSetObject(&pv[3], g_pWebBrowser);
-					for (int i = 3; i--;) {
-						VariantCopy(&pv[2 - i], &pDispParams->rgvarg[nArg - i - 2]);
-					}
-					Invoke4(g_pOnFunc[TE_OnNewWindow], &vResult, 4, pv);
-					if (GetIntFromVariantClear(&vResult) == S_OK) {
-						*pDispParams->rgvarg[nArg - 1].pboolVal = VARIANT_TRUE;
-					}
+			teSetSZ(pVarResult, g_szTE);
+			return S_OK;
+			//*///
+		case DISPID_NEWWINDOW3:
+			if (g_pOnFunc[TE_OnNewWindow]) {
+				VARIANT vResult;
+				VariantInit(&vResult);
+				VARIANTARG *pv = GetNewVARIANT(4);
+				teSetObject(&pv[3], g_pWebBrowser);
+				for (int i = 3; i--;) {
+					VariantCopy(&pv[2 - i], &pDispParams->rgvarg[nArg - i - 2]);
 				}
-				return S_OK;
-/*			case DISPID_QUIT:
-				return S_OK;
+				Invoke4(g_pOnFunc[TE_OnNewWindow], &vResult, 4, pv);
+				if (GetIntFromVariantClear(&vResult) == S_OK) {
+					*pDispParams->rgvarg[nArg - 1].pboolVal = VARIANT_TRUE;
+				}
+			}
+			return S_OK;
+			/*			case DISPID_QUIT:
+			return S_OK;
 			case DISPID_NAVIGATEERROR:
-				return S_OK;*/
-			case DISPID_WINDOWCLOSING:
-				if (nArg >= 1 && pDispParams->rgvarg[nArg - 1].vt == (VT_BYREF | VT_BOOL)) {
-					pDispParams->rgvarg[nArg - 1].pboolVal[0] = VARIANT_TRUE;
-				}
-				PostMessage(m_hwndParent, WM_CLOSE, 0, 0);
-				return S_FALSE;
-			case DISPID_FILEDOWNLOAD:
-				if (nArg >= 1 && pDispParams->rgvarg[nArg - 1].vt == (VT_BYREF | VT_BOOL)) {
-					pDispParams->rgvarg[nArg - 1].pboolVal[0] = VARIANT_TRUE;
-				}
-				return S_OK;
-			case DISPID_TITLECHANGE:
-				if (m_bstrPath && nArg >= 0 && pDispParams->rgvarg[nArg].vt == VT_BSTR) {
-					teSetWindowText(m_hwndParent, pDispParams->rgvarg[nArg].bstrVal);
-				}
-				return S_OK;
-			case DISPID_VALUE:
-				teSetObject(pVarResult, this);
-				return S_OK;
+			return S_OK;*/
+		case DISPID_WINDOWCLOSING:
+			if (nArg >= 1 && pDispParams->rgvarg[nArg - 1].vt == (VT_BYREF | VT_BOOL)) {
+				pDispParams->rgvarg[nArg - 1].pboolVal[0] = VARIANT_TRUE;
+			}
+			PostMessage(m_hwndParent, WM_CLOSE, 0, 0);
+			return S_FALSE;
+		case DISPID_FILEDOWNLOAD:
+			if (nArg >= 1 && pDispParams->rgvarg[nArg - 1].vt == (VT_BYREF | VT_BOOL)) {
+				pDispParams->rgvarg[nArg - 1].pboolVal[0] = VARIANT_TRUE;
+			}
+			return S_OK;
+		case DISPID_TITLECHANGE:
+			if (m_bstrPath && nArg >= 0 && pDispParams->rgvarg[nArg].vt == VT_BSTR) {
+				teSetWindowText(m_hwndParent, pDispParams->rgvarg[nArg].bstrVal);
+			}
+			return S_OK;
+		case DISPID_VALUE:
+			teSetObject(pVarResult, this);
+			return S_OK;
 		}
 	} catch (...) {
 		return teException(pExcepInfo, "WebBrowser", methodWB, dispIdMember);
@@ -18124,6 +18191,9 @@ VOID CteTabCtrl::Show(BOOL bVisible)
 		ShowWindow(m_hwndStatic, SW_SHOW);
 		ArrangeWindow();
 	} else {
+		RECT rc;
+		GetWindowRect(m_hwndStatic, &rc);
+		MoveWindow(m_hwndStatic, rc.left - rc.right, rc.top - rc.bottom, rc.right - rc.left, rc.bottom - rc.top, TRUE);
 		ShowWindow(m_hwndStatic, SW_HIDE);
 	}
 	if (bVisible ^ m_bVisible) {
@@ -18315,6 +18385,8 @@ STDMETHODIMP CteTabCtrl::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo
 STDMETHODIMP CteTabCtrl::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
 	return teGetDispId(methodTC, _countof(methodTC), g_maps[MAP_TC], *rgszNames, rgDispId, TRUE);
+//	HRESULT hr = teGetDispId(methodTC, _countof(methodTC), g_maps[MAP_TC], *rgszNames, rgDispId, TRUE);
+//	return hr;
 }
 
 STDMETHODIMP CteTabCtrl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
@@ -18326,147 +18398,150 @@ STDMETHODIMP CteTabCtrl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WOR
 		if (pVarResult) {
 			VariantInit(pVarResult);
 		}
-		switch(dispIdMember) {
-			//Data
-			case 1:
-				if (nArg >= 0) {
-					VariantClear(&m_vData);
-					VariantCopy(&m_vData, &pDispParams->rgvarg[nArg]);
-				}
-				if (pVarResult) {
-					VariantCopy(pVarResult, &m_vData);
-				}
-				return S_OK;
-			//hwnd
-			case 2:
-				teSetPtr(pVarResult, m_hwnd);
-				return S_OK;
-			//Type
-			case 3:
-				teSetLong(pVarResult, CTRL_TC);
-				return S_OK;
-			//HitTest (Screen coordinates)
-			case 6:
-				if (nArg >= 0 && pVarResult) {
-					TCHITTESTINFO info;
-					GetPointFormVariant(&info.pt, &pDispParams->rgvarg[nArg]);
-					UINT flags = nArg >= 1 ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) : TCHT_ONITEM;
-					teSetLong(pVarResult, static_cast<int>(DoHitTest(this, info.pt, flags)));
-					if (g_param[TE_Tab] && pVarResult->lVal < 0) {
-						ScreenToClient(m_hwnd, &info.pt);
-						info.flags = flags;
-						pVarResult->lVal = TabCtrl_HitTest(m_hwnd, &info);
-						if (!(info.flags & flags)) {
-							pVarResult->lVal = -1;
-						}
+		if (wFlags == DISPATCH_PROPERTYGET && dispIdMember >= TE_METHOD) {
+			teSetObjectRelease(pVarResult, new CteDispatch(this, 0, dispIdMember));
+			return S_OK;
+		}
+		switch(dispIdMember) {			
+		case TE_PROPERTY + 1://Data
+			if (nArg >= 0) {
+				VariantClear(&m_vData);
+				VariantCopy(&m_vData, &pDispParams->rgvarg[nArg]);
+			}
+			if (pVarResult) {
+				VariantCopy(pVarResult, &m_vData);
+			}
+			return S_OK;
+
+		case TE_PROPERTY + 2://hwnd
+			teSetPtr(pVarResult, m_hwnd);
+			return S_OK;
+
+		case TE_PROPERTY + 3://Type
+			teSetLong(pVarResult, CTRL_TC);
+			return S_OK;
+
+		case TE_METHOD + 6://HitTest (Screen coordinates)
+			if (nArg >= 0 && pVarResult) {
+				TCHITTESTINFO info;
+				GetPointFormVariant(&info.pt, &pDispParams->rgvarg[nArg]);
+				UINT flags = nArg >= 1 ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) : TCHT_ONITEM;
+				teSetLong(pVarResult, static_cast<int>(DoHitTest(this, info.pt, flags)));
+				if (g_param[TE_Tab] && pVarResult->lVal < 0) {
+					ScreenToClient(m_hwnd, &info.pt);
+					info.flags = flags;
+					pVarResult->lVal = TabCtrl_HitTest(m_hwnd, &info);
+					if (!(info.flags & flags)) {
+						pVarResult->lVal = -1;
 					}
-					if (nArg == 0) {
-						GetItem(GetIntFromVariantClear(pVarResult), pVarResult);
+				}
+				if (nArg == 0) {
+					GetItem(GetIntFromVariantClear(pVarResult), pVarResult);
+				}
+			}
+			return S_OK;
+
+		case TE_METHOD + 7://Move
+			if (nArg >= 1) {
+				int nSrc, nDest;
+				nDest = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
+				CteShellBrowser *pSB;
+				if (FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
+					if SUCCEEDED(punk->QueryInterface(g_ClsIdSB, (LPVOID *)&pSB)) {
+						pSB->m_pTC->Move(pSB->GetTabIndex(), nDest, this);
+						pSB->Release();
+						return S_OK;
 					}
 				}
-				return S_OK;
-			//Move
-			case 7:
-				if (nArg >= 1) {
-					int nSrc, nDest;
-					nDest = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
-					CteShellBrowser *pSB;
-					if (FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
-						if SUCCEEDED(punk->QueryInterface(g_ClsIdSB, (LPVOID *)&pSB)) {
-							pSB->m_pTC->Move(pSB->GetTabIndex(), nDest, this);
-							pSB->Release();
+				nSrc = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+				if (nArg >= 2) {
+					if (FindUnknown(&pDispParams->rgvarg[nArg - 2], &punk)) {
+						CteTabCtrl *pTC;
+						if SUCCEEDED(punk->QueryInterface(g_ClsIdTC, (LPVOID *)&pTC)) {
+							Move(nSrc, nDest, pTC);
+							pTC->Release();
 							return S_OK;
 						}
 					}
-					nSrc = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
-					if (nArg >= 2) {
-						if (FindUnknown(&pDispParams->rgvarg[nArg - 2], &punk)) {
-							CteTabCtrl *pTC;
-							if SUCCEEDED(punk->QueryInterface(g_ClsIdTC, (LPVOID *)&pTC)) {
-								Move(nSrc, nDest, pTC);
-								pTC->Release();
-								return S_OK;
-							}
-						}
-					}
-					Move(nSrc, nDest, this);
 				}
-				return S_OK;
-			//Selected
-			case 8:
-				if (nArg >= 0) {
-					int nIndex = -1;
-					if (FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
-						CteShellBrowser *pSB;
-						if SUCCEEDED(punk->QueryInterface(g_ClsIdSB, (LPVOID *)&pSB)) {
-							nIndex = pSB->GetTabIndex();
-							pSB->Release();
-						}
-					}
-					if (nIndex >= 0) {
-						TabCtrl_SetCurSel(m_hwnd, nIndex);
+				Move(nSrc, nDest, this);
+			}
+			return S_OK;
+
+		case TE_PROPERTY + 8://Selected
+			if (nArg >= 0) {
+				int nIndex = -1;
+				if (FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
+					CteShellBrowser *pSB;
+					if SUCCEEDED(punk->QueryInterface(g_ClsIdSB, (LPVOID *)&pSB)) {
+						nIndex = pSB->GetTabIndex();
+						pSB->Release();
 					}
 				}
-				if (pVarResult) {
-					CteShellBrowser *pSB = GetShellBrowser(m_nIndex);
-					if (!pSB) {
-						pSB = GetNewShellBrowser(this);
-					}
-					teSetObject(pVarResult, pSB);
+				if (nIndex >= 0) {
+					TabCtrl_SetCurSel(m_hwnd, nIndex);
 				}
-				return S_OK;
-			//Close
-			case 9:
-				Close(FALSE);
-				return S_OK;
-			//SelectedIndex
-			case 10:
-				if (nArg >= 0) {
-					TabCtrl_SetCurSel(m_hwnd, GetIntFromVariant(&pDispParams->rgvarg[nArg]));
+			}
+			if (pVarResult) {
+				CteShellBrowser *pSB = GetShellBrowser(m_nIndex);
+				if (!pSB) {
+					pSB = GetNewShellBrowser(this);
 				}
-				if (pVarResult) {
-					teSetLong(pVarResult, TabCtrl_GetCurSel(m_hwnd));
-				}
-				return S_OK;
-			//Visible
-			case 11:
-				if (nArg >= 0) {
-					Show(GetIntFromVariant(&pDispParams->rgvarg[nArg]));
-				}
-				teSetBool(pVarResult, m_bVisible);
-				return S_OK;
-			//Id
-			case 12:
-				teSetLong(pVarResult, m_nTC);
-				return S_OK;
+				teSetObject(pVarResult, pSB);
+			}
+			return S_OK;
+
+		case TE_METHOD + 9://Close
+			Close(FALSE);
+			return S_OK;
+
+		case TE_PROPERTY + 10://SelectedIndex
+			if (nArg >= 0) {
+				TabCtrl_SetCurSel(m_hwnd, GetIntFromVariant(&pDispParams->rgvarg[nArg]));
+			}
+			if (pVarResult) {
+				teSetLong(pVarResult, TabCtrl_GetCurSel(m_hwnd));
+			}
+			return S_OK;
+
+		case TE_PROPERTY + 11://Visible
+			if (nArg >= 0) {
+				Show(GetIntFromVariant(&pDispParams->rgvarg[nArg]));
+			}
+			teSetBool(pVarResult, m_bVisible);
+			return S_OK;
+
+		case TE_PROPERTY + 12://Id
+			teSetLong(pVarResult, m_nTC);
+			return S_OK;
 			//LockUpdate
-			case 13:
-				LockUpdate();
-				return S_OK;
+		case TE_METHOD + 13:
+			LockUpdate();
+			return S_OK;
 			//UnlockUpdate
-			case 14:
-				UnlockUpdate();
-				return S_OK;
+		case TE_METHOD + 14:
+			UnlockUpdate();
+			return S_OK;
 			//Item
-			case DISPID_TE_ITEM:
-				if (nArg >= 0) {
-					GetItem(GetIntFromVariant(&pDispParams->rgvarg[nArg]), pVarResult);
-				}
-				return S_OK;
+		case DISPID_TE_ITEM:
+			if (nArg >= 0) {
+				GetItem(GetIntFromVariant(&pDispParams->rgvarg[nArg]), pVarResult);
+			}
+			return S_OK;
 			//Count
-			case DISPID_TE_COUNT:
-				if (pVarResult) {
-					teSetLong(pVarResult, TabCtrl_GetItemCount(m_hwnd));
-				}
-				return S_OK;
+		case DISPID_TE_COUNT:
+			if (pVarResult) {
+				teSetLong(pVarResult, TabCtrl_GetItemCount(m_hwnd));
+			}
+			return S_OK;
 			//_NewEnum
-			case DISPID_NEWENUM:
-				teSetObjectRelease(pVarResult, new CteDispatch(this, 0));
-				return S_OK;
+		case DISPID_NEWENUM:
+			teSetObjectRelease(pVarResult, new CteDispatch(this, 0, DISPID_UNKNOWN));
+			return S_OK;
 			//this
-			case DISPID_VALUE:
-				teSetObject(pVarResult, this);
-				return S_OK;
+		case DISPID_VALUE:
+			teSetObject(pVarResult, this);
+			return S_OK;
 		}
 		if (dispIdMember >= TE_OFFSET && dispIdMember <= TE_OFFSET + TC_TabHeight) {
 			if (nArg >= 0 && dispIdMember != TE_OFFSET) {
@@ -18701,9 +18776,9 @@ CteShellBrowser* CteTabCtrl::GetShellBrowser(int nPage)
 CteFolderItems::CteFolderItems(IDataObject *pDataObj, FolderItems *pFolderItems)
 {
 	m_cRef = 1;
-	m_oFolderItems = NULL;
+	m_oFolderItems = FALSE;
 	if (!pDataObj || FAILED(pDataObj->QueryInterface(IID_PPV_ARGS(&m_pDataObj)))) {
-		GetNewArray(&m_oFolderItems);
+		m_oFolderItems = TRUE;
 		m_pDataObj = NULL;
 	}
 	m_pidllist = NULL;
@@ -18731,11 +18806,17 @@ VOID CteFolderItems::Clear()
 		delete [] m_pidllist;
 		m_pidllist = NULL;
 	}
-	SafeRelease(&m_oFolderItems);
 	SafeRelease(&m_pDataObj);
 	SafeRelease(&m_pFolderItems);
 	teSysFreeString(&m_bsText);
 	VariantClear(&m_vData);
+	if (m_oFolderItems) {
+		while (!m_ovFolderItems.empty()) {
+			m_ovFolderItems.back()->Release();
+			m_ovFolderItems.pop_back();
+		}
+		m_oFolderItems = FALSE;
+	}
 }
 
 VOID CteFolderItems::Regenerate(BOOL bFull)
@@ -18743,8 +18824,6 @@ VOID CteFolderItems::Regenerate(BOOL bFull)
 	if (!m_oFolderItems) {
 		long nCount;
 		if SUCCEEDED(get_Count(&nCount)) {
-			IDispatch *oFolderItems = NULL;
-			GetNewArray(&oFolderItems);
 			VARIANT v;
 			v.vt = VT_I4;
 			FolderItem *pid;
@@ -18770,12 +18849,11 @@ VOID CteFolderItems::Regenerate(BOOL bFull)
 						}
 						pid1->Release();
 					}
-					teArrayPush(oFolderItems, pid);
-					pid->Release();
+					m_ovFolderItems.push_back(pid);
 				}
 			}
 			Clear();
-			m_oFolderItems = oFolderItems;
+			m_oFolderItems = TRUE;
 		}
 	}
 }
@@ -18796,13 +18874,13 @@ VOID CteFolderItems::ItemEx(long nIndex, VARIANT *pVarResult, VARIANT *pVarNew)
 			if (pid == NULL) {
 				pid = new CteFolderItem(pVarNew);
 			}
-			VARIANT vNew;
-			teSetObjectRelease(&vNew, pid);
 			if (nIndex >= 0) {
-				tePutPropertyAt(m_oFolderItems, nIndex, &vNew);
+				if (m_ovFolderItems[nIndex]) {
+					m_ovFolderItems[nIndex]->Release();
+				}
+				m_ovFolderItems[nIndex] = pid;
 			} else {
-				teExecMethod(m_oFolderItems, L"push", NULL, -1, &vNew);
-				VariantClear(&vNew);
+				m_ovFolderItems.push_back(pid);
 			}
 		}
 	}
@@ -18913,135 +18991,138 @@ STDMETHODIMP CteFolderItems::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 		if (pVarResult) {
 			VariantInit(pVarResult);
 		}
+		if (m_pFolderItems) {
+			return m_pFolderItems->Invoke(dispIdMember, riid, lcid, wFlags, pDispParams, pVarResult, pExcepInfo, puArgErr);
+		}
 		if (dispIdMember >= DISPID_COLLECTION_MIN && dispIdMember <= DISPID_TE_MAX) {
 			ItemEx(dispIdMember - DISPID_COLLECTION_MIN, pVarResult, nArg >= 0 ? &pDispParams->rgvarg[nArg] : NULL);
 			return S_OK;
 		}
-		if (m_pFolderItems) {
-			return m_pFolderItems->Invoke(dispIdMember, riid, lcid, wFlags, pDispParams, pVarResult, pExcepInfo, puArgErr);
+		if (wFlags == DISPATCH_PROPERTYGET && dispIdMember >= TE_METHOD) {
+			teSetObjectRelease(pVarResult, new CteDispatch(static_cast<FolderItems *>(this), 0, dispIdMember));
+			return S_OK;
 		}
 		switch(dispIdMember) {
-			//Application
-			case 2:
-				IDispatch *pdisp;
-				if SUCCEEDED(get_Application(&pdisp)) {
-					teSetObject(pVarResult, pdisp);
-					pdisp->Release();
-				}
-				return S_OK;
-			//Parent
-			case 3:
-				return S_OK;
-			//Item
-			case DISPID_TE_ITEM:
-				if (nArg >= 0) {
-					ItemEx(GetIntFromVariant(&pDispParams->rgvarg[nArg]), pVarResult, nArg >= 1 ? &pDispParams->rgvarg[nArg - 1] : NULL);
-				}
-				return S_OK;
-			//Count
-			case DISPID_TE_COUNT:
-				if (pVarResult) {
-					pVarResult->vt = VT_I4;
-					get_Count(&pVarResult->lVal);
-				}
-				return S_OK;
-			//_NewEnum
-			case DISPID_NEWENUM:
-				IUnknown *punk;
-				if SUCCEEDED(_NewEnum(&punk)) {
-					teSetObject(pVarResult, punk);
-					punk->Release();
-				}
-				return S_OK;
-			//AddItem
-			case 8:
-				if (nArg >= 0) {
-					ItemEx(-1, NULL, &pDispParams->rgvarg[nArg]);
-				}
-				return S_OK;
-			//hDrop
-			case 9:
-				if (pVarResult) {
-					int pi[3] = { 0 };
-					for (int i = nArg; i >= 0; --i) {
-						if (i < 3) {
-							pi[i] = GetIntFromVariant(&pDispParams->rgvarg[nArg - i]);
-						}
-					}
-					teSetPtr(pVarResult, GethDrop(pi[0], pi[1], pi[2]));
-				}
-				return S_OK;
-			//GetData
-			case 10:
-				if (pVarResult) {
-					IDataObject *pDataObj;
-					if SUCCEEDED(QueryInterface(IID_PPV_ARGS(&pDataObj))) {
-						STGMEDIUM Medium;
-						if (pDataObj->GetData(&UNICODEFormat, &Medium) == S_OK) {
-							teSetSZ(pVarResult, static_cast<LPCWSTR>(GlobalLock(Medium.hGlobal)));
-							GlobalUnlock(Medium.hGlobal);
-							ReleaseStgMedium(&Medium);
-						} else if (pDataObj->GetData(&TEXTFormat, &Medium) == S_OK) {
-							pVarResult->bstrVal = teMultiByteToWideChar(CP_ACP, static_cast<LPCSTR>(GlobalLock(Medium.hGlobal)), -1);
-							pVarResult->vt = VT_BSTR;
-							GlobalUnlock(Medium.hGlobal);
-							ReleaseStgMedium(&Medium);
-						}
-						pDataObj->Release();
-					}
-				}
-				return S_OK;
-			//SetData
-			case 11:
-				if (nArg >= 0) {
-					teSysFreeString(&m_bsText);
-					VARIANT v;
-					teVariantChangeType(&v, &pDispParams->rgvarg[0], VT_BSTR);
-					m_bsText = v.bstrVal;
-					v.bstrVal = NULL;
-				}
-				return S_OK;
-			//Index
-			case DISPID_TE_INDEX:
-				if (nArg >= 0) {
-					m_nIndex = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
-				}
-				teSetLong(pVarResult, m_nIndex);
-				return S_OK;
-			//dwEffect
-			case 0x10000001:
-				if (nArg >= 0) {
-					m_dwEffect = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
-				}
-				teSetLong(pVarResult, m_dwEffect);
-				return S_OK;
-			//pdwEffect
-			case 0x10000002:
-				punk = new CteMemory(sizeof(int), &m_dwEffect, 1, L"DWORD");
+		case TE_PROPERTY + 2://Application
+			IDispatch *pdisp;
+			if SUCCEEDED(get_Application(&pdisp)) {
+				teSetObject(pVarResult, pdisp);
+				pdisp->Release();
+			}
+			return S_OK;
+
+		case TE_PROPERTY + 3://Parent
+			return S_OK;
+
+		case DISPID_TE_ITEM://Item
+			if (nArg >= 0) {
+				ItemEx(GetIntFromVariant(&pDispParams->rgvarg[nArg]), pVarResult, nArg >= 1 ? &pDispParams->rgvarg[nArg - 1] : NULL);
+			}
+			return S_OK;
+
+		case DISPID_TE_COUNT://Count
+			if (pVarResult) {
+				pVarResult->vt = VT_I4;
+				get_Count(&pVarResult->lVal);
+			}
+			return S_OK;
+
+		case DISPID_NEWENUM://_NewEnum
+			IUnknown *punk;
+			if SUCCEEDED(_NewEnum(&punk)) {
 				teSetObject(pVarResult, punk);
 				punk->Release();
-				return S_OK;
-			//Data
-			case 0x10000003:
-				if (nArg >= 0) {
-					VariantClear(&m_vData);
-					VariantCopy(&m_vData, &pDispParams->rgvarg[nArg]);
+			}
+			return S_OK;
+
+		case TE_METHOD + 8://AddItem
+			if (nArg >= 0) {
+				ItemEx(-1, NULL, &pDispParams->rgvarg[nArg]);
+			}
+			return S_OK;
+
+		case TE_PROPERTY + 9://hDrop
+			if (pVarResult) {
+				int pi[3] = { 0 };
+				for (int i = nArg; i >= 0; --i) {
+					if (i < 3) {
+						pi[i] = GetIntFromVariant(&pDispParams->rgvarg[nArg - i]);
+					}
 				}
-				if (pVarResult) {
-					VariantCopy(pVarResult, &m_vData);
+				teSetPtr(pVarResult, GethDrop(pi[0], pi[1], pi[2]));
+			}
+			return S_OK;
+
+		case TE_METHOD + 10://GetData
+			if (pVarResult) {
+				IDataObject *pDataObj;
+				if SUCCEEDED(QueryInterface(IID_PPV_ARGS(&pDataObj))) {
+					STGMEDIUM Medium;
+					if (pDataObj->GetData(&UNICODEFormat, &Medium) == S_OK) {
+						teSetSZ(pVarResult, static_cast<LPCWSTR>(GlobalLock(Medium.hGlobal)));
+						GlobalUnlock(Medium.hGlobal);
+						ReleaseStgMedium(&Medium);
+					} else if (pDataObj->GetData(&TEXTFormat, &Medium) == S_OK) {
+						pVarResult->bstrVal = teMultiByteToWideChar(CP_ACP, static_cast<LPCSTR>(GlobalLock(Medium.hGlobal)), -1);
+						pVarResult->vt = VT_BSTR;
+						GlobalUnlock(Medium.hGlobal);
+						ReleaseStgMedium(&Medium);
+					}
+					pDataObj->Release();
 				}
-				return S_OK;
-			//Text
-			case 0x10000004:
-				if (nArg >= 0) {
-					m_bUseText = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
-				}
-				teSetBool(pVarResult, m_bUseText);
-				return S_OK;
-				//this
-			case DISPID_VALUE:
-				teSetObject(pVarResult, this);
-				return S_OK;
+			}
+			return S_OK;
+
+		case TE_METHOD + 11://SetData
+			if (nArg >= 0) {
+				teSysFreeString(&m_bsText);
+				VARIANT v;
+				teVariantChangeType(&v, &pDispParams->rgvarg[0], VT_BSTR);
+				m_bsText = v.bstrVal;
+				v.bstrVal = NULL;
+			}
+			return S_OK;
+
+		case DISPID_TE_INDEX://Index
+			if (nArg >= 0) {
+				m_nIndex = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+			}
+			teSetLong(pVarResult, m_nIndex);
+			return S_OK;
+
+		case TE_PROPERTY + 0x1001://dwEffect
+			if (nArg >= 0) {
+				m_dwEffect = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+			}
+			teSetLong(pVarResult, m_dwEffect);
+			return S_OK;
+
+		case TE_PROPERTY + 0x1002://pdwEffect
+			punk = new CteMemory(sizeof(int), &m_dwEffect, 1, L"DWORD");
+			teSetObject(pVarResult, punk);
+			punk->Release();
+			return S_OK;
+
+		case TE_PROPERTY + 0x1003://Data
+			if (nArg >= 0) {
+				VariantClear(&m_vData);
+				VariantCopy(&m_vData, &pDispParams->rgvarg[nArg]);
+			}
+			if (pVarResult) {
+				VariantCopy(pVarResult, &m_vData);
+			}
+			return S_OK;
+
+		case TE_PROPERTY + 0x1004://Text
+			if (nArg >= 0) {
+				m_bUseText = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+			}
+			teSetBool(pVarResult, m_bUseText);
+			return S_OK;
+			//this
+		case DISPID_VALUE:
+			teSetObject(pVarResult, this);
+			return S_OK;
 		}
 	} catch (...) {
 		return teException(pExcepInfo, "FolderItems", methodFIs, dispIdMember);
@@ -19055,7 +19136,7 @@ STDMETHODIMP CteFolderItems::get_Count(long *plCount)
 		return m_pFolderItems->get_Count(plCount);
 	}
 	if (m_oFolderItems) {
-		*plCount = teGetObjectLength(m_oFolderItems);
+		*plCount = m_ovFolderItems.size();
 		return S_OK;
 	}
 	if (m_nCount < 0) {
@@ -19106,15 +19187,7 @@ STDMETHODIMP CteFolderItems::Item(VARIANT index, FolderItem **ppid)
 			return m_pFolderItems->Item(index, ppid);
 		}
 		if (m_oFolderItems) {
-			VARIANT v;
-			VariantInit(&v);
-			teGetPropertyAt(m_oFolderItems, i, &v);
-			IUnknown *punk;
-			if (FindUnknown(&v, &punk)) {
-				HRESULT hr = punk->QueryInterface(IID_PPV_ARGS(ppid));
-				VariantClear(&v);
-				return hr;
-			}
+			return m_ovFolderItems[i]->QueryInterface(IID_PPV_ARGS(ppid));
 		}
 	}
 	if (!m_pidllist) {
@@ -19148,7 +19221,7 @@ STDMETHODIMP CteFolderItems::_NewEnum(IUnknown **ppunk)
 	if (m_pFolderItems) {
 		return m_pFolderItems->_NewEnum(ppunk);
 	}
-	*ppunk = static_cast<IDispatch *>(new CteDispatch(static_cast<FolderItems *>(this), 0));
+	*ppunk = static_cast<IDispatch *>(new CteDispatch(static_cast<FolderItems *>(this), 0, DISPID_UNKNOWN));
 	return S_OK;
 }
 
@@ -19765,13 +19838,17 @@ STDMETHODIMP CteMemory::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNa
 STDMETHODIMP CteMemory::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
 {
 	try {
+		if (wFlags == DISPATCH_PROPERTYGET && dispIdMember >= TE_METHOD && dispIdMember <= TE_METHOD_MAX) {
+			teSetObjectRelease(pVarResult, new CteDispatch(this, 0, dispIdMember));
+			return S_OK;
+		}
 		int nArg = pDispParams ? pDispParams->cArgs - 1 : -1;
 		if (pVarResult) {
 			VariantInit(pVarResult);
 		}
 		switch(dispIdMember) {
 			//P
-			case 1:
+			case TE_PROPERTY + 0xfff1:
 				teSetPtr(pVarResult, m_pc);
 				return S_OK;
 			//Item
@@ -19786,10 +19863,10 @@ STDMETHODIMP CteMemory::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD
 				return S_OK;
 			//_NewEnum
 			case DISPID_NEWENUM:
-				teSetObjectRelease(pVarResult, new CteDispatch(this, 0));
+				teSetObjectRelease(pVarResult, new CteDispatch(this, 0, DISPID_UNKNOWN));
 				return S_OK;
 			//Read
-			case 4:
+			case TE_METHOD + 4:
 				if (pVarResult) {
 					if (nArg >= 1) {
 						pVarResult->vt = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
@@ -19802,7 +19879,7 @@ STDMETHODIMP CteMemory::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD
 				}
 				return S_OK;
 			//Write
-			case 5:
+			case TE_METHOD + 5:
 				if (nArg >= 2) {
 					int nLen = -1;
 					if (nArg >= 3) {
@@ -19812,15 +19889,15 @@ STDMETHODIMP CteMemory::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD
 				}
 				return S_OK;
 			//Size
-			case 6:
+			case TE_PROPERTY + 0xfff6:
 				teSetLong(pVarResult, m_nSize);
 				return S_OK;
 			//Free
-			case 7:
+			case TE_METHOD + 7:
 				Free(TRUE);
 				return S_OK;
 			//Clone
-			case 8:
+			case TE_METHOD + 8:
 				if (m_nSize) {
 					CteMemory *pMem = new CteMemory(m_nSize, NULL, m_nCount, m_bsStruct);
 					::CopyMemory(pMem->m_pc, m_pc, m_nSize);
@@ -19828,7 +19905,7 @@ STDMETHODIMP CteMemory::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD
 				}
 				return S_OK;
 			//_BLOB
-			case 9:
+			case TE_PROPERTY + 0xfff9:
 				if (m_bsAlloc) {
 					if (nArg >= 0 && pDispParams->rgvarg[nArg].vt == VT_BSTR) {
 						int nSize = ::SysStringByteLen(pDispParams->rgvarg[nArg].bstrVal);
@@ -19937,27 +20014,25 @@ VOID CteMemory::ItemEx(int i, VARIANT *pVarResult, VARIANT *pVarNew)
 {
 	if (i >= 0 && i < m_nCount) {
 		if (pVarNew) {
-			if (m_nCount) {
-				int nSize = m_nSize / m_nCount;
-				if (nSize >= 1 && nSize <= 8) {
-					LARGE_INTEGER li;
-					li.QuadPart = GetLLFromVariant(pVarNew);
-					if (li.QuadPart == 0 && pVarNew->vt == VT_BSTR && pVarNew->bstrVal &&
-					(lstrcmpi(m_bsStruct, L"BSTR") == 0 || lstrcmpi(m_bsStruct, L"LPWSTR") == 0)) {
-						li.QuadPart = (LONGLONG)AddBSTR(pVarNew->bstrVal);
-					}
-					if (nSize == 1) {//BYTE
-						m_pc[i] = LOBYTE(li.LowPart);
-					} else if (nSize == 2) {//WORD
-						WORD *p = (WORD *)m_pc;
-						p[i] = LOWORD(li.LowPart);
-					} else if (nSize == 4) {//DWORD
-						int *p = (int *)m_pc;
-						p[i] = li.LowPart;
-					} else if (nSize == 8) {//LONGLONG
-						LONGLONG *p = (LONGLONG *)m_pc;
-						p[i] = li.QuadPart;
-					}
+			int nSize = m_nSize / m_nCount;
+			if (nSize >= 1 && nSize <= 8) {
+				LARGE_INTEGER li;
+				li.QuadPart = GetLLFromVariant(pVarNew);
+				if (li.QuadPart == 0 && pVarNew->vt == VT_BSTR && pVarNew->bstrVal &&
+				(lstrcmpi(m_bsStruct, L"BSTR") == 0 || lstrcmpi(m_bsStruct, L"LPWSTR") == 0)) {
+					li.QuadPart = (LONGLONG)AddBSTR(pVarNew->bstrVal);
+				}
+				if (nSize == 1) {//BYTE
+					m_pc[i] = LOBYTE(li.LowPart);
+				} else if (nSize == 2) {//WORD
+					WORD *p = (WORD *)m_pc;
+					p[i] = LOWORD(li.LowPart);
+				} else if (nSize == 4) {//DWORD
+					int *p = (int *)m_pc;
+					p[i] = li.LowPart;
+				} else if (nSize == 8) {//LONGLONG
+					LONGLONG *p = (LONGLONG *)m_pc;
+					p[i] = li.QuadPart;
 				}
 			}
 		}
@@ -20310,177 +20385,176 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 		if (pVarResult) {
 			VariantInit(pVarResult);
 		}
-		switch(dispIdMember) {
-			//QueryContextMenu
-			case 1:
-				if (nArg >= 4) {
-					for (int i = 5; i--;) {
-						m_param[i].llVal = GetLLFromVariant(&pDispParams->rgvarg[nArg - i]);
-					}
-					teSetLong(pVarResult, m_pContextMenu->QueryContextMenu(m_param[0].hmenu, m_param[1].uintVal, m_param[2].uintVal, m_param[3].uintVal, m_param[4].uintVal));
+		switch(dispIdMember) {			
+		case TE_METHOD + 1://QueryContextMenu
+			if (nArg >= 4) {
+				for (int i = 5; i--;) {
+					m_param[i].llVal = GetLLFromVariant(&pDispParams->rgvarg[nArg - i]);
 				}
-				return S_OK;
-			//InvokeCommand
-			case 2:
-				if (nArg >= 7) {
-					if (g_pOnFunc[TE_OnInvokeCommand]) {
-						VARIANT vResult;
-						VariantInit(&vResult);
-						VARIANTARG *pv = GetNewVARIANT(nArg + 2);
-						teSetObject(&pv[nArg + 1], this);
-						for (int i = nArg; i >= 0; --i) {
-							VariantCopy(&pv[i], &pDispParams->rgvarg[i]);
-						}
-						Invoke4(g_pOnFunc[TE_OnInvokeCommand], &vResult, nArg + 2, pv);
-						if (GetIntFromVariantClear(&vResult) == S_OK) {
-							return S_OK;
-						}
+				teSetLong(pVarResult, m_pContextMenu->QueryContextMenu(m_param[0].hmenu, m_param[1].uintVal, m_param[2].uintVal, m_param[3].uintVal, m_param[4].uintVal));
+			}
+			return S_OK;
+
+		case TE_METHOD + 2://InvokeCommand
+			if (nArg >= 7) {
+				if (g_pOnFunc[TE_OnInvokeCommand]) {
+					VARIANT vResult;
+					VariantInit(&vResult);
+					VARIANTARG *pv = GetNewVARIANT(nArg + 2);
+					teSetObject(&pv[nArg + 1], this);
+					for (int i = nArg; i >= 0; --i) {
+						VariantCopy(&pv[i], &pDispParams->rgvarg[i]);
 					}
-					CMINVOKECOMMANDINFOEX cmi = { sizeof(cmi) };
-					VARIANTARG *pv = GetNewVARIANT(3);
-					WCHAR **ppwc = new WCHAR*[3];
-					char **ppc = new char*[3];
-					BOOL bExec = TRUE;
-					for (int i = 0; i <= 2; ++i) {
-						if (pDispParams->rgvarg[nArg - i - 2].vt == VT_I4) {
-							UINT_PTR nVerb = (UINT_PTR)pDispParams->rgvarg[nArg - i - 2].lVal;
-							ppwc[i] = (WCHAR *)nVerb;
-							ppc[i] = (char *)nVerb;
-							if (nVerb > MAXWORD) {
-								bExec = FALSE;
+					Invoke4(g_pOnFunc[TE_OnInvokeCommand], &vResult, nArg + 2, pv);
+					if (GetIntFromVariantClear(&vResult) == S_OK) {
+						return S_OK;
+					}
+				}
+				CMINVOKECOMMANDINFOEX cmi = { sizeof(cmi) };
+				VARIANTARG *pv = GetNewVARIANT(3);
+				WCHAR **ppwc = new WCHAR*[3];
+				char **ppc = new char*[3];
+				BOOL bExec = TRUE;
+				for (int i = 0; i <= 2; ++i) {
+					if (pDispParams->rgvarg[nArg - i - 2].vt == VT_I4) {
+						UINT_PTR nVerb = (UINT_PTR)pDispParams->rgvarg[nArg - i - 2].lVal;
+						ppwc[i] = (WCHAR *)nVerb;
+						ppc[i] = (char *)nVerb;
+						if (nVerb > MAXWORD) {
+							bExec = FALSE;
+						}
+					} else {
+						teVariantChangeType(&pv[i], &pDispParams->rgvarg[nArg - i - 2], VT_BSTR);
+						ppwc[i] = pv[i].bstrVal;
+						if (i == 2) {
+							if (!ppwc[i]) {
+								IShellBrowser *pSB;
+								if (GetFolderVew(&pSB)) {
+									LPITEMIDLIST pidl;
+									if (teGetIDListFromObject(pSB, &pidl)) {
+										teGetDisplayNameFromIDList(&ppwc[i], pidl, SHGDN_FORPARSING);
+										VariantClear(&pv[i]);
+										pv[i].bstrVal = ppwc[i];
+										pv[i].vt = VT_BSTR;
+										teCoTaskMemFree(pidl);
+									}
+									pSB->Release();
+								}
+							}
+							if (!teIsFileSystem(ppwc[i]) || tePathIsDirectory(ppwc[i], 0, TRUE) != S_OK) {
+								ppwc[i] = NULL;
+							}
+						}
+						if ((ULONG_PTR)ppwc[i] > MAXWORD) {
+							ppc[i] = teWideCharToMultiByte(CP_ACP, ppwc[i], -1);
+							if (!teStrSameIFree(teMultiByteToWideChar(CP_ACP, ppc[i], -1), ppwc[i])) {
+								cmi.fMask = CMIC_MASK_UNICODE;
 							}
 						} else {
-							teVariantChangeType(&pv[i], &pDispParams->rgvarg[nArg - i - 2], VT_BSTR);
-							ppwc[i] = pv[i].bstrVal;
-							if (i == 2) {
-								if (!ppwc[i]) {
-									IShellBrowser *pSB;
-									if (GetFolderVew(&pSB)) {
-										LPITEMIDLIST pidl;
-										if (teGetIDListFromObject(pSB, &pidl)) {
-											teGetDisplayNameFromIDList(&ppwc[i], pidl, SHGDN_FORPARSING);
-											VariantClear(&pv[i]);
-											pv[i].bstrVal = ppwc[i];
-											pv[i].vt = VT_BSTR;
-											teCoTaskMemFree(pidl);
-										}
-										pSB->Release();
-									}
-								}
-								if (!teIsFileSystem(ppwc[i]) || tePathIsDirectory(ppwc[i], 0, TRUE) != S_OK) {
-									ppwc[i] = NULL;
-								}
-							}
-							if ((ULONG_PTR)ppwc[i] > MAXWORD) {
-								ppc[i] = teWideCharToMultiByte(CP_ACP, ppwc[i], -1);
-								if (!teStrSameIFree(teMultiByteToWideChar(CP_ACP, ppc[i], -1), ppwc[i])) {
-									cmi.fMask = CMIC_MASK_UNICODE;
-								}
-							} else {
-								ppc[i] = (char *)ppwc[i];
+							ppc[i] = (char *)ppwc[i];
+						}
+					}
+				}
+				if (bExec) {
+					cmi.fMask |= (DWORD)GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+					cmi.hwnd  = (HWND)GetPtrFromVariant(&pDispParams->rgvarg[nArg - 1]);
+					cmi.lpVerbW = ppwc[0];
+					cmi.lpVerb = ppc[0];
+					cmi.lpParametersW = ppwc[1];
+					cmi.lpParameters = ppc[1];
+					cmi.lpDirectoryW = ppwc[2];
+					cmi.lpDirectory = ppc[2];
+					cmi.nShow = GetIntFromVariant(&pDispParams->rgvarg[nArg - 5]);
+					cmi.dwHotKey = (DWORD)GetIntFromVariant(&pDispParams->rgvarg[nArg - 6]);
+					cmi.hIcon =(HANDLE)GetPtrFromVariant(&pDispParams->rgvarg[nArg - 7]);
+					if (cmi.lpVerb) {//#248
+						CHAR szNameA[MAX_PATH];
+						szNameA[0] = NULL;
+						if ((UINT_PTR)cmi.lpVerb <= MAXWORD) {
+							m_pContextMenu->GetCommandString((UINT_PTR)cmi.lpVerb, GCS_VERBA, NULL, szNameA, MAX_PATH);
+							if (lstrcmpiA((UINT_PTR)cmi.lpVerb <= MAXWORD ? szNameA : cmi.lpVerb , "mount") == 0) {
+								g_dwTickMount = GetTickCount();
 							}
 						}
 					}
-					if (bExec) {
-						cmi.fMask |= (DWORD)GetIntFromVariant(&pDispParams->rgvarg[nArg]);
-						cmi.hwnd  = (HWND)GetPtrFromVariant(&pDispParams->rgvarg[nArg - 1]);
-						cmi.lpVerbW = ppwc[0];
-						cmi.lpVerb = ppc[0];
-						cmi.lpParametersW = ppwc[1];
-						cmi.lpParameters = ppc[1];
-						cmi.lpDirectoryW = ppwc[2];
-						cmi.lpDirectory = ppc[2];
-						cmi.nShow = GetIntFromVariant(&pDispParams->rgvarg[nArg - 5]);
-						cmi.dwHotKey = (DWORD)GetIntFromVariant(&pDispParams->rgvarg[nArg - 6]);
-						cmi.hIcon =(HANDLE)GetPtrFromVariant(&pDispParams->rgvarg[nArg - 7]);
-						if (cmi.lpVerb) {//#248
-							CHAR szNameA[MAX_PATH];
-							szNameA[0] = NULL;
-							if ((UINT_PTR)cmi.lpVerb <= MAXWORD) {
-								m_pContextMenu->GetCommandString((UINT_PTR)cmi.lpVerb, GCS_VERBA, NULL, szNameA, MAX_PATH);
-								if (lstrcmpiA((UINT_PTR)cmi.lpVerb <= MAXWORD ? szNameA : cmi.lpVerb , "mount") == 0) {
-									g_dwTickMount = GetTickCount();
-								}
-							}
-						}
-						try {
-							hr = m_pContextMenu->InvokeCommand((LPCMINVOKECOMMANDINFO)&cmi);
-						} catch (...) {
-							hr = E_UNEXPECTED;
-						}
-					}
-					teSetLong(pVarResult, hr);
-					for (int i = 3; i--;) {
-						VariantClear(&pv[i]);
-						if ((ULONG_PTR)ppc[i] >= MAXWORD) {
-							teSysFreeString((BSTR *)&ppc[i]);
-						}
-					}
-					delete [] pv;
-				}
-				return S_OK;
-			//Items
-			case 3:
-				teSetObjectRelease(pVarResult, new CteFolderItems(m_pDataObj, NULL));
-				return S_OK;
-			//GetCommandString
-			case 4:
-				if (nArg >= 1) {
-					WCHAR szName[MAX_PATH];
-					szName[0] = NULL;
-					UINT idCmd = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
-					if (idCmd <= MAXWORD) {
-						m_pContextMenu->GetCommandString(idCmd,
-							GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]),
-							NULL, (LPSTR)szName, MAX_PATH);
-					}
-					teSetSZ(pVarResult, szName);
-				} else {
-					teSetBool(pVarResult, TRUE);
-				}
-				return S_OK;
-			//FolderView
-			case 5:
-				IShellBrowser *pSB;
-				if (GetFolderVew(&pSB)) {
-					teSetObjectRelease(pVarResult, pSB);
-				}
-				return S_OK;
-			//HandleMenuMsg
-			case 6:
-				LRESULT lResult;
-				IContextMenu3 *pCM3;
-				IContextMenu2 *pCM2;
-				lResult = 0;
-				if (nArg >= 2) {
-					if SUCCEEDED(QueryInterface(IID_PPV_ARGS(&pCM3))) {
-						pCM3->HandleMenuMsg2(
-							(UINT)GetIntFromVariant(&pDispParams->rgvarg[nArg]),
-							(WPARAM)GetPtrFromVariant(&pDispParams->rgvarg[nArg - 1]),
-							(LPARAM)GetPtrFromVariant(&pDispParams->rgvarg[nArg - 2]), &lResult
-						);
-						pCM3->Release();
-					} else if SUCCEEDED(QueryInterface(IID_PPV_ARGS(&pCM2))) {
-						pCM2->HandleMenuMsg(
-							(UINT)GetIntFromVariant(&pDispParams->rgvarg[nArg]),
-							(WPARAM)GetPtrFromVariant(&pDispParams->rgvarg[nArg - 1]),
-							(LPARAM)GetPtrFromVariant(&pDispParams->rgvarg[nArg - 2])
-						);
-						pCM2->Release();
+					try {
+						hr = m_pContextMenu->InvokeCommand((LPCMINVOKECOMMANDINFO)&cmi);
+					} catch (...) {
+						hr = E_UNEXPECTED;
 					}
 				}
-				teSetPtr(pVarResult, lResult);
-				return S_OK;
+				teSetLong(pVarResult, hr);
+				for (int i = 3; i--;) {
+					VariantClear(&pv[i]);
+					if ((ULONG_PTR)ppc[i] >= MAXWORD) {
+						teSysFreeString((BSTR *)&ppc[i]);
+					}
+				}
+				delete [] pv;
+			}
+			return S_OK;
 
-			case DISPID_VALUE:
-				teSetObject(pVarResult, this);
-				return S_OK;
-			default:
-				if (dispIdMember >= 10 && dispIdMember <= 14) {
-					teSetPtr(pVarResult, m_param[dispIdMember - 10].long_ptr);
-					return S_OK;
+		case TE_METHOD + 3://Items
+			teSetObjectRelease(pVarResult, new CteFolderItems(m_pDataObj, NULL));
+			return S_OK;
+
+		case TE_METHOD + 4://GetCommandString
+			if (nArg >= 1) {
+				WCHAR szName[MAX_PATH];
+				szName[0] = NULL;
+				UINT idCmd = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+				if (idCmd <= MAXWORD) {
+					m_pContextMenu->GetCommandString(idCmd,
+						GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]),
+						NULL, (LPSTR)szName, MAX_PATH);
 				}
-				break;
+				teSetSZ(pVarResult, szName);
+			} else {
+				teSetBool(pVarResult, TRUE);
+			}
+			return S_OK;
+
+		case TE_PROPERTY + 5://FolderView
+			IShellBrowser *pSB;
+			if (GetFolderVew(&pSB)) {
+				teSetObjectRelease(pVarResult, pSB);
+			}
+			return S_OK;
+
+		case TE_METHOD + 6://HandleMenuMsg
+			LRESULT lResult;
+			IContextMenu3 *pCM3;
+			IContextMenu2 *pCM2;
+			lResult = 0;
+			if (nArg >= 2) {
+				if SUCCEEDED(QueryInterface(IID_PPV_ARGS(&pCM3))) {
+					pCM3->HandleMenuMsg2(
+						(UINT)GetIntFromVariant(&pDispParams->rgvarg[nArg]),
+						(WPARAM)GetPtrFromVariant(&pDispParams->rgvarg[nArg - 1]),
+						(LPARAM)GetPtrFromVariant(&pDispParams->rgvarg[nArg - 2]), &lResult
+					);
+					pCM3->Release();
+				} else if SUCCEEDED(QueryInterface(IID_PPV_ARGS(&pCM2))) {
+					pCM2->HandleMenuMsg(
+						(UINT)GetIntFromVariant(&pDispParams->rgvarg[nArg]),
+						(WPARAM)GetPtrFromVariant(&pDispParams->rgvarg[nArg - 1]),
+						(LPARAM)GetPtrFromVariant(&pDispParams->rgvarg[nArg - 2])
+					);
+					pCM2->Release();
+				}
+			}
+			teSetPtr(pVarResult, lResult);
+			return S_OK;
+
+		case DISPID_VALUE:
+			teSetObject(pVarResult, this);
+			return S_OK;
+		default:
+			if (dispIdMember >= TE_PROPERTY + 10 && dispIdMember <= TE_PROPERTY + 14) {
+				teSetPtr(pVarResult, m_param[dispIdMember - TE_PROPERTY - 10].long_ptr);
+				return S_OK;
+			}
+			break;
 		}
 	} catch (...) {
 		return teException(pExcepInfo, "ContextMenu", methodCM, dispIdMember);
@@ -20585,160 +20659,160 @@ STDMETHODIMP CteDropTarget::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 {
 	try {
 		HRESULT hr;
-
 		int nArg = pDispParams ? pDispParams->cArgs - 1 : -1;
 		if (pVarResult) {
 			VariantInit(pVarResult);
 		}
+		if (wFlags == DISPATCH_PROPERTYGET && dispIdMember >= TE_METHOD) {
+			teSetObjectRelease(pVarResult, new CteDispatch(this, 0, dispIdMember));
+			return S_OK;
+		}
 		switch(dispIdMember) {
-			//DragEnter
-			case 1:
-			//DragOver
-			case 2:
-			//Drop
-			case 3:
-				hr = E_INVALIDARG;
-				if (nArg >= 2) {
-					BOOL bSingle = FALSE;
-					IUnknown *pObj = this;
-					IDataObject *pDataObj;
-					if (GetDataObjFromVariant(&pDataObj, &pDispParams->rgvarg[nArg])) {
-						try {
-							DWORD grfKeyState = (DWORD)GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
-							POINTL pt;
-							GetPointFormVariant((POINT *)&pt, &pDispParams->rgvarg[nArg - 2]);
-							DWORD dwEffect1 = DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK;
-							VARIANT v;
-							VariantInit(&v);
-							IDispatch *pEffect = NULL;
-							if (nArg >= 3) {
-								if (GetDispatch(&pDispParams->rgvarg[nArg - 3], &pEffect)) {
-									teGetPropertyAt(pEffect, 0, &v);
-									dwEffect1 = GetIntFromVariantClear(&v);
-									if (nArg >= 4) {
-										bSingle = GetIntFromVariant(&pDispParams->rgvarg[nArg - 4]);
-										if (nArg >= 5) {
-											IUnknown *punk;
-											if (FindUnknown(&pDispParams->rgvarg[nArg - 5], &punk)) {
-												pObj = punk;
-											}
+		case TE_METHOD + 1://DragEnter
+		case TE_METHOD + 2://DragOver
+		case TE_METHOD + 3://Drop
+			hr = E_INVALIDARG;
+			if (nArg >= 2) {
+				BOOL bSingle = FALSE;
+				IUnknown *pObj = this;
+				IDataObject *pDataObj;
+				if (GetDataObjFromVariant(&pDataObj, &pDispParams->rgvarg[nArg])) {
+					try {
+						DWORD grfKeyState = (DWORD)GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
+						POINTL pt;
+						GetPointFormVariant((POINT *)&pt, &pDispParams->rgvarg[nArg - 2]);
+						DWORD dwEffect1 = DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK;
+						VARIANT v;
+						VariantInit(&v);
+						IDispatch *pEffect = NULL;
+						if (nArg >= 3) {
+							if (GetDispatch(&pDispParams->rgvarg[nArg - 3], &pEffect)) {
+								teGetPropertyAt(pEffect, 0, &v);
+								dwEffect1 = GetIntFromVariantClear(&v);
+								if (nArg >= 4) {
+									bSingle = GetIntFromVariant(&pDispParams->rgvarg[nArg - 4]);
+									if (nArg >= 5) {
+										IUnknown *punk;
+										if (FindUnknown(&pDispParams->rgvarg[nArg - 5], &punk)) {
+											pObj = punk;
 										}
 									}
-								} else {
-									dwEffect1 = GetIntFromVariantClear(&pDispParams->rgvarg[nArg - 3]);
 								}
+							} else {
+								dwEffect1 = GetIntFromVariantClear(&pDispParams->rgvarg[nArg - 3]);
 							}
-							DWORD dwEffect = dwEffect1;
-							CteFolderItems *pDragItems = new CteFolderItems(pDataObj, NULL);
-							try {
-								POINTL pt0 = {0, 0};
-								if (!bSingle || dispIdMember == 1) {//DragEnter
-									if (m_pDropTarget) {
+						}
+						DWORD dwEffect = dwEffect1;
+						CteFolderItems *pDragItems = new CteFolderItems(pDataObj, NULL);
+						try {
+							POINTL pt0 = {0, 0};
+							if (!bSingle || dispIdMember == TE_METHOD + 1) {//DragEnter
+								if (m_pDropTarget) {
+									try {
+										hr = m_pDropTarget->DragEnter(pDataObj, grfKeyState, pt, &dwEffect1);
+									} catch (...) {
+										hr = E_UNEXPECTED;
+									}
+								} else {
+									dwEffect1 = 0;
+								}
+								if (m_pFolderItem) {
+									DWORD dwEffect2 = dwEffect;
+									if (DragSub(TE_OnDragEnter, pObj, pDragItems, &grfKeyState, pt0, &dwEffect2) == S_OK) {
+										hr = S_OK;
+										dwEffect1 = dwEffect2;
+									}
+								}
+							} else {
+								hr = S_OK;
+							}
+							if (hr == S_OK && dispIdMember >= TE_METHOD + 2) {
+								if (!bSingle || dispIdMember == TE_METHOD + 2) {//DragOver
+									hr = S_FALSE;
+									if (m_pFolderItem) {
+										dwEffect1 = dwEffect;
+										hr = DragSub(TE_OnDragOver, pObj, pDragItems, &grfKeyState, pt0, &dwEffect1);
+									}
+									if ((hr != S_OK || dwEffect1 == dwEffect) && m_pDropTarget) {
+										dwEffect1 = dwEffect;
 										try {
-											hr = m_pDropTarget->DragEnter(pDataObj, grfKeyState, pt, &dwEffect1);
+											hr = m_pDropTarget->DragOver(grfKeyState, pt, &dwEffect1);
 										} catch (...) {
 											hr = E_UNEXPECTED;
 										}
-									} else {
-										dwEffect1 = 0;
 									}
-									if (m_pFolderItem) {
-										DWORD dwEffect2 = dwEffect;
-										if (DragSub(TE_OnDragEnter, pObj, pDragItems, &grfKeyState, pt0, &dwEffect2) == S_OK) {
-											hr = S_OK;
-											dwEffect1 = dwEffect2;
-										}
-									}
-								} else {
-									hr = S_OK;
 								}
-								if (hr == S_OK && dispIdMember >= 2) {
-									if (!bSingle || dispIdMember == 2) {//DragOver
+								if (hr == S_OK && dispIdMember >= TE_METHOD + 3) {
+									if (!bSingle || dispIdMember == TE_METHOD + 3) {//Drop
 										hr = S_FALSE;
 										if (m_pFolderItem) {
 											dwEffect1 = dwEffect;
-											hr = DragSub(TE_OnDragOver, pObj, pDragItems, &grfKeyState, pt0, &dwEffect1);
+											hr = DragSub(TE_OnDrop, pObj, pDragItems, &grfKeyState, pt0, &dwEffect1);
 										}
-										if ((hr != S_OK || dwEffect1 == dwEffect) && m_pDropTarget) {
+										if (hr != S_OK) {
 											dwEffect1 = dwEffect;
-											try {
-												hr = m_pDropTarget->DragOver(grfKeyState, pt, &dwEffect1);
-											} catch (...) {
-												hr = E_UNEXPECTED;
-											}
-										}
-									}
-									if (hr == S_OK && dispIdMember >= 3) {
-										if (!bSingle || dispIdMember == 3) {//Drop
-											hr = S_FALSE;
-											if (m_pFolderItem) {
-												dwEffect1 = dwEffect;
-												hr = DragSub(TE_OnDrop, pObj, pDragItems, &grfKeyState, pt0, &dwEffect1);
-											}
-											if (hr != S_OK) {
-												dwEffect1 = dwEffect;
-												if (m_pDropTarget) {
-													try {
-														hr = m_pDropTarget->Drop(pDataObj, grfKeyState, pt, &dwEffect1);
-													} catch (...) {
-														hr = E_UNEXPECTED;
-													}
+											if (m_pDropTarget) {
+												try {
+													hr = m_pDropTarget->Drop(pDataObj, grfKeyState, pt, &dwEffect1);
+												} catch (...) {
+													hr = E_UNEXPECTED;
 												}
 											}
 										}
 									}
 								}
-							} catch (...) {
-								g_nException = 0;
-#ifdef _DEBUG
-								g_strException = L"DropTarget";
-#endif
-							}
-							pDragItems->Release();
-							if (!bSingle) {
-								if (m_pDropTarget) {
-									m_pDropTarget->DragLeave();
-								}
-								if (dispIdMember >= 3) {
-									DragLeaveSub(this, NULL);
-								}
-							}
-							if (pEffect) {
-								teSetLong(&v, dwEffect1);
-								tePutPropertyAt(pEffect, 0, &v);
-								pEffect->Release();
 							}
 						} catch (...) {
 							g_nException = 0;
 #ifdef _DEBUG
-							g_strException = L"DropTarget2";
+							g_strException = L"DropTarget";
 #endif
 						}
-						pDataObj->Release();
+						pDragItems->Release();
+						if (!bSingle) {
+							if (m_pDropTarget) {
+								m_pDropTarget->DragLeave();
+							}
+							if (dispIdMember >= TE_METHOD + 3) {
+								DragLeaveSub(this, NULL);
+							}
+						}
+						if (pEffect) {
+							teSetLong(&v, dwEffect1);
+							tePutPropertyAt(pEffect, 0, &v);
+							pEffect->Release();
+						}
+					} catch (...) {
+						g_nException = 0;
+#ifdef _DEBUG
+						g_strException = L"DropTarget2";
+#endif
 					}
+					pDataObj->Release();
 				}
-				teSetLong(pVarResult, hr);
-				return S_OK;
-			//DragLeave
-			case 4:
-				if (m_pDropTarget) {
-					hr = m_pDropTarget->DragLeave();
-				}
-				DragLeaveSub(this, NULL);
-				teSetLong(pVarResult, hr);
-				return S_OK;
-			//Type
-			case 5:
-				teSetLong(pVarResult, CTRL_DT);
-				return S_OK;
-			//FolderItem
-			case 6:
-				teSetObject(pVarResult, m_pFolderItem);
-				return S_OK;
+			}
+			teSetLong(pVarResult, hr);
+			return S_OK;
 
-			case DISPID_VALUE:
-				teSetObject(pVarResult, this);
-				return S_OK;
+		case TE_METHOD + 4://DragLeave
+			if (m_pDropTarget) {
+				hr = m_pDropTarget->DragLeave();
+			}
+			DragLeaveSub(this, NULL);
+			teSetLong(pVarResult, hr);
+			return S_OK;
+
+		case TE_PROPERTY + 5://Type
+			teSetLong(pVarResult, CTRL_DT);
+			return S_OK;
+
+		case TE_PROPERTY + 6://FolderItem
+			teSetObject(pVarResult, m_pFolderItem);
+			return S_OK;
+
+		case DISPID_VALUE:
+			teSetObject(pVarResult, this);
+			return S_OK;
 		}
 	} catch (...) {
 		return teException(pExcepInfo, "DropTarget", methodDT, dispIdMember);
@@ -21085,8 +21159,11 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 		if (pVarResult) {
 			VariantInit(pVarResult);
 		}
-
-		if (dispIdMember >= 0x10000101 && dispIdMember < TE_OFFSET) {
+		if (wFlags == DISPATCH_PROPERTYGET && dispIdMember >= TE_METHOD) {
+			teSetObjectRelease(pVarResult, new CteDispatch(this, 0, dispIdMember));
+			return S_OK;
+		}
+		if (dispIdMember >= TE_PROPERTY + 0x1101 && dispIdMember < TE_METHOD_MAX) {
 			if (m_param[SB_TreeAlign] & 2) {
 				if (!m_pNameSpaceTreeControl
 #ifdef _2000XP
@@ -21095,326 +21172,325 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 				) {
 					Create();
 				}
-			} else if (dispIdMember != 0x20000002 && dispIdMember != 0x20000003) {
+			} else if (dispIdMember != TE_PROPERTY + 0x2002 && dispIdMember != TE_METHOD + 0x2003) {
 				return S_FALSE;
 			}
 		}
 
 		switch(dispIdMember) {
-			//Data
-			case 0x10000001:
-				if (nArg >= 0) {
-					VariantClear(&m_vData);
-					VariantCopy(&m_vData, &pDispParams->rgvarg[nArg]);
-				}
-				if (pVarResult) {
-					VariantCopy(pVarResult, &m_vData);
-				}
-				return S_OK;
-			//Type
-			case 0x10000002:
-				teSetLong(pVarResult, CTRL_TV);
-				return S_OK;
-			//hwnd
-			case 0x10000003:
-				teSetPtr(pVarResult, m_hwnd);
-				return S_OK;
-			//Close
-			case 0x10000004:
-				if (m_param) {
-					m_param[SB_TreeAlign] = 0;
-					ArrangeWindow();
-					m_bEmpty = TRUE;
-					Close();
-				}
-				return S_OK;
-			//hwnd
-			case 0x10000005:
-				teSetPtr(pVarResult, m_hwndTV);
-				return S_OK;
-			//FolderView
-			case 0x10000007:
-				if (m_pFV) {
-					teSetObject(pVarResult, m_pFV);
-				} else if (g_pTC) {
-					teSetObject(pVarResult, g_pTC->GetShellBrowser(g_pTC->m_nIndex));
-				}
-				return S_OK;
-			//Align
-			case 0x10000008:
-				if (nArg >= 0) {
-					m_param[SB_TreeAlign] = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
-					ArrangeWindow();
-					Show();
-				}
-				teSetLong(pVarResult, m_param[SB_TreeAlign]);
-				return S_OK;
-			//Visible
-			case 0x10000009:
-				if (nArg >= 0) {
-					m_param[SB_TreeAlign] = GetIntFromVariant(&pDispParams->rgvarg[nArg]) ? 3 : 1;
-					ArrangeWindow();
-					Show();
-				}
-				teSetBool(pVarResult, m_param[SB_TreeAlign] & 2);
-				return S_OK;
-			//Focus
-			case 0x10000106:
-				SetFocus(m_hwndTV);
-				return S_OK;
-			//HitTest (Screen coordinates)
-			case 0x10000107:
-				if (nArg >= 0 && pVarResult) {
-					TVHITTESTINFO info;
-					HTREEITEM hItem;
-					GetPointFormVariant(&info.pt, &pDispParams->rgvarg[nArg]);
-					UINT flags = nArg >= 1 ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) :
-						(m_param[SB_TreeFlags] & NSTCS_FULLROWSELECT) ? TVHT_ONITEM | TVHT_ONITEMRIGHT : TVHT_ONITEM;
-					LONG_PTR r = DoHitTest(this, info.pt, flags);
-					if (r != -1) {
-						hItem = (HTREEITEM)r;
-					} else {
-						ScreenToClient(m_hwndTV, &info.pt);
-						info.flags = flags;
-						hItem = TreeView_HitTest(m_hwndTV, &info);
-						if (!(info.flags & flags)) {
-							hItem = 0;
-						}
-						if (nArg == 0 && hItem) {
-							if (m_pNameSpaceTreeControl) {
-								IShellItem *pSI;
-								if (m_pNameSpaceTreeControl->HitTest(&info.pt, &pSI) == S_OK) {
-									FolderItem *pFI;
-									if SUCCEEDED(GetFolderItemFromObject(&pFI, pSI)) {
-										teSetObjectRelease(pVarResult, pFI);
-									}
-									pSI->Release();
+		case TE_PROPERTY + 0x1001://Data
+			if (nArg >= 0) {
+				VariantClear(&m_vData);
+				VariantCopy(&m_vData, &pDispParams->rgvarg[nArg]);
+			}
+			if (pVarResult) {
+				VariantCopy(pVarResult, &m_vData);
+			}
+			return S_OK;
+
+		case TE_PROPERTY + 0x1002://Type
+			teSetLong(pVarResult, CTRL_TV);
+			return S_OK;
+
+		case TE_PROPERTY + 0x1003://hwnd
+			teSetPtr(pVarResult, m_hwnd);
+			return S_OK;
+
+		case TE_METHOD + 0x1004://Close
+			if (m_param) {
+				m_param[SB_TreeAlign] = 0;
+				ArrangeWindow();
+				m_bEmpty = TRUE;
+				Close();
+			}
+			return S_OK;
+
+		case TE_PROPERTY + 0x1005://hwnd
+			teSetPtr(pVarResult, m_hwndTV);
+			return S_OK;
+
+		case TE_PROPERTY + 0x1007://FolderView
+			if (m_pFV) {
+				teSetObject(pVarResult, m_pFV);
+			} else if (g_pTC) {
+				teSetObject(pVarResult, g_pTC->GetShellBrowser(g_pTC->m_nIndex));
+			}
+			return S_OK;
+
+		case TE_PROPERTY + 0x1008://Align
+			if (nArg >= 0) {
+				m_param[SB_TreeAlign] = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+				ArrangeWindow();
+				Show();
+			}
+			teSetLong(pVarResult, m_param[SB_TreeAlign]);
+			return S_OK;
+
+		case TE_PROPERTY + 0x1009://Visible
+			if (nArg >= 0) {
+				m_param[SB_TreeAlign] = GetIntFromVariant(&pDispParams->rgvarg[nArg]) ? 3 : 1;
+				ArrangeWindow();
+				Show();
+			}
+			teSetBool(pVarResult, m_param[SB_TreeAlign] & 2);
+			return S_OK;
+
+		case TE_METHOD + 0x1106://Focus
+			SetFocus(m_hwndTV);
+			return S_OK;
+
+		case TE_METHOD + 0x1107://HitTest (Screen coordinates)
+			if (nArg >= 0 && pVarResult) {
+				TVHITTESTINFO info;
+				HTREEITEM hItem;
+				GetPointFormVariant(&info.pt, &pDispParams->rgvarg[nArg]);
+				UINT flags = nArg >= 1 ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) :
+					(m_param[SB_TreeFlags] & NSTCS_FULLROWSELECT) ? TVHT_ONITEM | TVHT_ONITEMRIGHT : TVHT_ONITEM;
+				LONG_PTR r = DoHitTest(this, info.pt, flags);
+				if (r != -1) {
+					hItem = (HTREEITEM)r;
+				} else {
+					ScreenToClient(m_hwndTV, &info.pt);
+					info.flags = flags;
+					hItem = TreeView_HitTest(m_hwndTV, &info);
+					if (!(info.flags & flags)) {
+						hItem = 0;
+					}
+					if (nArg == 0 && hItem) {
+						if (m_pNameSpaceTreeControl) {
+							IShellItem *pSI;
+							if (m_pNameSpaceTreeControl->HitTest(&info.pt, &pSI) == S_OK) {
+								FolderItem *pFI;
+								if SUCCEEDED(GetFolderItemFromObject(&pFI, pSI)) {
+									teSetObjectRelease(pVarResult, pFI);
 								}
+								pSI->Release();
+							}
+							return S_OK;
+						}
+#ifdef _2000XP
+						if (hItem == TreeView_GetSelection(m_hwndTV)) {
+							IDispatch *pdisp;
+							if (getSelected(&pdisp) == S_OK) {
+								teSetObjectRelease(pVarResult, pdisp);
 								return S_OK;
 							}
-#ifdef _2000XP
-							if (hItem == TreeView_GetSelection(m_hwndTV)) {
-								IDispatch *pdisp;
-								if (getSelected(&pdisp) == S_OK) {
-									teSetObjectRelease(pVarResult, pdisp);
-									return S_OK;
-								}
-							}
+						}
 #endif
-						}
 					}
-					teSetPtr(pVarResult, hItem);
 				}
-				return S_OK;
+				teSetPtr(pVarResult, hItem);
+			}
+			return S_OK;
 
-			case 0x10000206://Refresh
-				if (!m_bSetRoot) {
-					m_bSetRoot = TRUE;
-					SetTimer(m_hwndTV, TET_SetRoot, 100, teTimerProcForTree);
-				}
-				return S_OK;
+		case TE_METHOD + 0x1206://Refresh
+			if (!m_bSetRoot) {
+				m_bSetRoot = TRUE;
+				SetTimer(m_hwndTV, TET_SetRoot, 100, teTimerProcForTree);
+			}
+			return S_OK;
 
-			//GetItemRect
-			case 0x10000283:
-				if (nArg >= 1) {
-					VARIANT vMem;
-					VariantInit(&vMem);
-					LPRECT prc = (LPRECT)GetpcFromVariant(&pDispParams->rgvarg[nArg - 1], &vMem);
-					if (prc) {
-						LPITEMIDLIST pidl;
-						if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
-							if (m_pNameSpaceTreeControl) {
-								IShellItem *pShellItem;
-								if SUCCEEDED(_SHCreateItemFromIDList(pidl, IID_PPV_ARGS(&pShellItem))) {
-									teSetLong(pVarResult, m_pNameSpaceTreeControl->GetItemRect(pShellItem, prc));
-									pShellItem->Release();
-								}
+		case TE_METHOD + 0x1283://GetItemRect
+			if (nArg >= 1) {
+				VARIANT vMem;
+				VariantInit(&vMem);
+				LPRECT prc = (LPRECT)GetpcFromVariant(&pDispParams->rgvarg[nArg - 1], &vMem);
+				if (prc) {
+					LPITEMIDLIST pidl;
+					if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
+						if (m_pNameSpaceTreeControl) {
+							IShellItem *pShellItem;
+							if SUCCEEDED(_SHCreateItemFromIDList(pidl, IID_PPV_ARGS(&pShellItem))) {
+								teSetLong(pVarResult, m_pNameSpaceTreeControl->GetItemRect(pShellItem, prc));
+								pShellItem->Release();
 							}
-							teCoTaskMemFree(pidl);
 						}
+						teCoTaskMemFree(pidl);
 					}
-					teWriteBack(&pDispParams->rgvarg[nArg - 1], &vMem);
 				}
-				return S_OK;
-			//Notify
-			case 0x10000300:
-				if (nArg >= 2 && m_hwndTV && m_pNameSpaceTreeControl) {
-					long lEvent = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
-					if (lEvent & (SHCNE_MKDIR | SHCNE_MEDIAINSERTED | SHCNE_DRIVEADD | SHCNE_NETSHARE)) {
-						LPITEMIDLIST pidl;
-						if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg - 1])) {
-							IShellItem *psi, *psiParent;
-							if SUCCEEDED(_SHCreateItemFromIDList(pidl, IID_PPV_ARGS(&psi))) {
-								DWORD dwState;
-								if FAILED(m_pNameSpaceTreeControl->GetItemState(psi, NSTCIS_EXPANDED, &dwState)) {
-									if SUCCEEDED(psi->GetParent(&psiParent)) {
-										if SUCCEEDED(m_pNameSpaceTreeControl->GetItemState(psiParent, NSTCIS_EXPANDED, &dwState)) {
-											m_pNameSpaceTreeControl->SetItemState(psi, NSTCIS_EXPANDED, NSTCIS_EXPANDED);
-										}
-										psiParent->Release();
+				teWriteBack(&pDispParams->rgvarg[nArg - 1], &vMem);
+			}
+			return S_OK;
+
+		case TE_METHOD + 0x1300://Notify
+			if (nArg >= 2 && m_hwndTV && m_pNameSpaceTreeControl) {
+				long lEvent = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+				if (lEvent & (SHCNE_MKDIR | SHCNE_MEDIAINSERTED | SHCNE_DRIVEADD | SHCNE_NETSHARE)) {
+					LPITEMIDLIST pidl;
+					if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg - 1])) {
+						IShellItem *psi, *psiParent;
+						if SUCCEEDED(_SHCreateItemFromIDList(pidl, IID_PPV_ARGS(&psi))) {
+							DWORD dwState;
+							if FAILED(m_pNameSpaceTreeControl->GetItemState(psi, NSTCIS_EXPANDED, &dwState)) {
+								if SUCCEEDED(psi->GetParent(&psiParent)) {
+									if SUCCEEDED(m_pNameSpaceTreeControl->GetItemState(psiParent, NSTCIS_EXPANDED, &dwState)) {
+										m_pNameSpaceTreeControl->SetItemState(psi, NSTCIS_EXPANDED, NSTCIS_EXPANDED);
 									}
+									psiParent->Release();
 								}
-								psi->Release();
 							}
-							teCoTaskMemFree(pidl);
+							psi->Release();
 						}
+						teCoTaskMemFree(pidl);
 					}
-					if (nArg >= 4 && lEvent & (SHCNE_DRIVEREMOVED | SHCNE_MEDIAREMOVED | SHCNE_NETUNSHARE | SHCNE_RENAMEFOLDER | SHCNE_RMDIR | SHCNE_SERVERDISCONNECT | SHCNE_UPDATEDIR)) {
-						try {
-							SendMessage(GetParent(m_hwndTV), WM_USER + 1, GetPtrFromVariant(&pDispParams->rgvarg[nArg - 3]), GetPtrFromVariant(&pDispParams->rgvarg[nArg - 4]));
-						} catch (...) {
-							g_nException = 0;
+				}
+				if (nArg >= 4 && lEvent & (SHCNE_DRIVEREMOVED | SHCNE_MEDIAREMOVED | SHCNE_NETUNSHARE | SHCNE_RENAMEFOLDER | SHCNE_RMDIR | SHCNE_SERVERDISCONNECT | SHCNE_UPDATEDIR)) {
+					try {
+						SendMessage(GetParent(m_hwndTV), WM_USER + 1, GetPtrFromVariant(&pDispParams->rgvarg[nArg - 3]), GetPtrFromVariant(&pDispParams->rgvarg[nArg - 4]));
+					} catch (...) {
+						g_nException = 0;
 #ifdef _DEBUG
-							g_strException = L"Notify_Tree";
+						g_strException = L"Notify_Tree";
 #endif
-						}
 					}
 				}
-				return S_OK;
+			}
+			return S_OK;
 			//SelectedItem
-			case 0x20000000:
-				IDispatch *pdisp;
-				if (getSelected(&pdisp) == S_OK) {
-					teSetObjectRelease(pVarResult, pdisp);
-					return S_OK;
-				}
-				break;
+		case TE_METHOD + 0x2000:
+			IDispatch *pdisp;
+			if (getSelected(&pdisp) == S_OK) {
+				teSetObjectRelease(pVarResult, pdisp);
+				return S_OK;
+			}
+			break;
 			//SelectedItems
-			case 0x20000001:
-				if (getSelected(&pdisp) == S_OK) {
-					CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL);
-					VARIANT v;
-					VariantInit(&v);
-					teSetObjectRelease(&v, pdisp);
-					pFolderItems->ItemEx(-1, NULL, &v);
-					VariantClear(&v);
-					teSetObjectRelease(pVarResult, pFolderItems);
+		case TE_METHOD + 0x2001:
+			if (getSelected(&pdisp) == S_OK) {
+				CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL);
+				VARIANT v;
+				VariantInit(&v);
+				teSetObjectRelease(&v, pdisp);
+				pFolderItems->ItemEx(-1, NULL, &v);
+				VariantClear(&v);
+				teSetObjectRelease(pVarResult, pFolderItems);
+				return S_OK;
+			}
+			break;
+			//Root
+		case TE_PROPERTY + 0x2002:
+			if (pVarResult) {
+				teSetSZ(pVarResult, m_bsRoot);
+				if (nArg < 0) {
 					return S_OK;
 				}
-				break;
-			//Root
-			case 0x20000002:
-				if (pVarResult) {
-					teSetSZ(pVarResult, m_bsRoot);
-					if (nArg < 0) {
-						return S_OK;
-					}
-				}
+			}
 			//SetRoot
-			case 0x20000003:
-				if (nArg >= 0) {
-					m_param[SB_EnumFlags] = g_paramFV[SB_EnumFlags];
-					m_param[SB_RootStyle] = g_paramFV[SB_RootStyle];
-					if (nArg >= 1) {
-						DWORD dwEnumFlags = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
-						if (m_param[SB_EnumFlags] != dwEnumFlags) {
-							m_param[SB_EnumFlags] = dwEnumFlags;
+		case TE_METHOD + 0x2003:
+			if (nArg >= 0) {
+				m_param[SB_EnumFlags] = g_paramFV[SB_EnumFlags];
+				m_param[SB_RootStyle] = g_paramFV[SB_RootStyle];
+				if (nArg >= 1) {
+					DWORD dwEnumFlags = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
+					if (m_param[SB_EnumFlags] != dwEnumFlags) {
+						m_param[SB_EnumFlags] = dwEnumFlags;
+						m_bSetRoot = TRUE;
+					}
+					if (nArg >= 2) {
+						DWORD dwRootStyle = GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]);
+						if (m_param[SB_RootStyle] != dwRootStyle) {
+							m_param[SB_RootStyle] = dwRootStyle;
 							m_bSetRoot = TRUE;
 						}
-						if (nArg >= 2) {
-							DWORD dwRootStyle = GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]);
-							if (m_param[SB_RootStyle] != dwRootStyle) {
-								m_param[SB_RootStyle] = dwRootStyle;
-								m_bSetRoot = TRUE;
-							}
-						}
 					}
-					SetRootV(&pDispParams->rgvarg[nArg]);
+				}
+				SetRootV(&pDispParams->rgvarg[nArg]);
+				return S_OK;
+			}
+			break;
+			//Expand
+		case TE_METHOD + 0x2004:
+			if (nArg >= 1) {
+				FolderItem *pid;
+				GetFolderItemFromVariant(&pid, &pDispParams->rgvarg[nArg]);
+				if (teILIsBlank(pid)) {
+					pid->Release();
 					return S_OK;
 				}
-				break;
-			//Expand
-			case 0x20000004:
-				if (nArg >= 1) {
-					FolderItem *pid;
-					GetFolderItemFromVariant(&pid, &pDispParams->rgvarg[nArg]);
-					if (teILIsBlank(pid)) {
-						pid->Release();
-						return S_OK;
-					}
-					LPITEMIDLIST pidl;
-					teGetIDListFromObject(pid, &pidl);
-					pid->Release();
-					if (teILIsSearchFolder(pidl)) {
-						teCoTaskMemFree(pidl);
-						return S_OK;
-					}
-					if (::ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
+				LPITEMIDLIST pidl;
+				teGetIDListFromObject(pid, &pidl);
+				pid->Release();
+				if (teILIsSearchFolder(pidl)) {
+					teCoTaskMemFree(pidl);
+					return S_OK;
+				}
+				if (::ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
+					::ILRemoveLastID(pidl);
+				}
+				if (!g_param[TE_ShowInternet]) {
+					while (::ILIsEqual(pidl, g_pidls[CSIDL_INTERNET]) || ::ILIsParent(g_pidls[CSIDL_INTERNET], pidl, FALSE)) {
 						::ILRemoveLastID(pidl);
 					}
-					if (!g_param[TE_ShowInternet]) {
-						while (::ILIsEqual(pidl, g_pidls[CSIDL_INTERNET]) || ::ILIsParent(g_pidls[CSIDL_INTERNET], pidl, FALSE)) {
-							::ILRemoveLastID(pidl);
-						}
-					}
-					m_dwState = NSTCIS_SELECTED;
-					if (GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) != 0) {
-						m_dwState |= NSTCIS_EXPANDED;
-					}
-					SafeRelease(&m_psiFocus);
-					_SHCreateItemFromIDList(pidl, IID_PPV_ARGS(&m_psiFocus));
-					teCoTaskMemFree(pidl);
-					if (m_psiFocus) {
-						m_bExpand = TRUE;
-						SetTimer(m_hwndTV, TET_Expand, 100, teTimerProcForTree);
-						return S_OK;
-					}
 				}
-				break;
-			//DIID_DShellNameSpaceEvents
-#ifdef _W2000
-			case DISPID_FAVSELECTIONCHANGE://(for Windows 2000)
-				//SelectedItem is empty (Windows 2000)
-				//Be sure to set a route in SetRoot (Windows 2000)
-				if (nArg >= 3) {
-					::VariantCopy(&m_vSelected, &pDispParams->rgvarg[nArg - 3]);
+				m_dwState = NSTCIS_SELECTED;
+				if (GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) != 0) {
+					m_dwState |= NSTCIS_EXPANDED;
 				}
-				return E_NOTIMPL;
-#endif
-#ifdef _2000XP
-			case DISPID_SELECTIONCHANGE:
-				return DoFunc(TE_OnSelectionChanged, this, E_NOTIMPL);
-			case DISPID_DOUBLECLICK:
-				return S_OK;
-			case DISPID_READYSTATECHANGE:
-				return S_OK;
-/*			case DISPID_AMBIENT_BACKCOLOR:
-				return S_OK;*/
-/*			case DISPID_INITIALIZED:
-				return E_NOTIMPL;*/
-			case DISPID_AMBIENT_LOCALEID:
-				teSetLong(pVarResult, (SHORT)GetThreadLocale());
-				return S_OK;
-			case DISPID_AMBIENT_USERMODE:
-				teSetBool(pVarResult, TRUE);
-				return S_OK;
-			case DISPID_AMBIENT_DISPLAYASDEFAULT:
-				teSetBool(pVarResult, FALSE);
-				return S_OK;
-#endif
-			case DISPID_VALUE:
-				teSetObject(pVarResult, this);
-				return S_OK;
-			default:
-				if (dispIdMember >= TE_OFFSET && dispIdMember <= TE_OFFSET + SB_RootStyle) {
-					if (nArg >= 0) {
-						DWORD dw = GetIntFromVariantPP(&pDispParams->rgvarg[nArg], dispIdMember - TE_OFFSET);
-						if (dw != m_param[dispIdMember - TE_OFFSET]) {
-							m_param[dispIdMember - TE_OFFSET] = dw;
-							g_paramFV[dispIdMember - TE_OFFSET] = dw;
-							if (dispIdMember >= TE_OFFSET + SB_TreeFlags) {
-								Close();
-								m_bSetRoot = TRUE;
-							}
-							ArrangeWindow();
-						}
-					}
-					teSetLong(pVarResult, m_param[dispIdMember - TE_OFFSET]);
+				SafeRelease(&m_psiFocus);
+				_SHCreateItemFromIDList(pidl, IID_PPV_ARGS(&m_psiFocus));
+				teCoTaskMemFree(pidl);
+				if (m_psiFocus) {
+					m_bExpand = TRUE;
+					SetTimer(m_hwndTV, TET_Expand, 100, teTimerProcForTree);
 					return S_OK;
 				}
-				break;
+			}
+			break;
+			//DIID_DShellNameSpaceEvents
+#ifdef _W2000
+		case DISPID_FAVSELECTIONCHANGE://(for Windows 2000)
+									   //SelectedItem is empty (Windows 2000)
+									   //Be sure to set a route in SetRoot (Windows 2000)
+			if (nArg >= 3) {
+				::VariantCopy(&m_vSelected, &pDispParams->rgvarg[nArg - 3]);
+			}
+			return E_NOTIMPL;
+#endif
+#ifdef _2000XP
+		case DISPID_SELECTIONCHANGE:
+			return DoFunc(TE_OnSelectionChanged, this, E_NOTIMPL);
+		case DISPID_DOUBLECLICK:
+			return S_OK;
+		case DISPID_READYSTATECHANGE:
+			return S_OK;
+			/*			case DISPID_AMBIENT_BACKCOLOR:
+			return S_OK;*/
+			/*			case DISPID_INITIALIZED:
+			return E_NOTIMPL;*/
+		case DISPID_AMBIENT_LOCALEID:
+			teSetLong(pVarResult, (SHORT)GetThreadLocale());
+			return S_OK;
+		case DISPID_AMBIENT_USERMODE:
+			teSetBool(pVarResult, TRUE);
+			return S_OK;
+		case DISPID_AMBIENT_DISPLAYASDEFAULT:
+			teSetBool(pVarResult, FALSE);
+			return S_OK;
+#endif
+		case DISPID_VALUE:
+			teSetObject(pVarResult, this);
+			return S_OK;
+		default:
+			if (dispIdMember >= TE_OFFSET && dispIdMember <= TE_OFFSET + SB_RootStyle) {
+				if (nArg >= 0) {
+					DWORD dw = GetIntFromVariantPP(&pDispParams->rgvarg[nArg], dispIdMember - TE_OFFSET);
+					if (dw != m_param[dispIdMember - TE_OFFSET]) {
+						m_param[dispIdMember - TE_OFFSET] = dw;
+						g_paramFV[dispIdMember - TE_OFFSET] = dw;
+						if (dispIdMember >= TE_OFFSET + SB_TreeFlags) {
+							Close();
+							m_bSetRoot = TRUE;
+						}
+						ArrangeWindow();
+					}
+				}
+				teSetLong(pVarResult, m_param[dispIdMember - TE_OFFSET]);
+				return S_OK;
+			}
+			break;
 		}
-		if (dispIdMember >= 0x20000000 && dispIdMember < 0x20000000 + TVVERBS) {
+		if ((dispIdMember >= TE_PROPERTY && dispIdMember < TE_PROPERTY + TVVERBS) ||
+			(dispIdMember >= TE_METHOD && dispIdMember < TE_METHOD + TVVERBS)) {
 #ifdef _2000XP
 			if (m_pNameSpaceTreeControl) {
 				return S_OK;
@@ -22299,83 +22375,81 @@ STDMETHODIMP CteFolderItem::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			VariantInit(pVarResult);
 		}
 		switch(dispIdMember) {
-			//Name
-			case 1:
-				if (nArg >= 0) {
-					hr = put_Name(pDispParams->rgvarg[nArg].bstrVal);
+		case 1://Name
+			if (nArg >= 0) {
+				hr = put_Name(pDispParams->rgvarg[nArg].bstrVal);
+			}
+			if (pVarResult) {
+				hr = get_Name(&pVarResult->bstrVal);
+				if SUCCEEDED(hr) {
+					pVarResult->vt = VT_BSTR;
 				}
-				if (pVarResult) {
-					hr = get_Name(&pVarResult->bstrVal);
-					if SUCCEEDED(hr) {
-						pVarResult->vt = VT_BSTR;
-					}
+			}
+			return hr;
+
+		case 2://Path
+			if (pVarResult) {
+				if SUCCEEDED(get_Path(&pVarResult->bstrVal)) {
+					pVarResult->vt = VT_BSTR;
 				}
-				return hr;
-			//Path
-			case 2:
-				if (pVarResult) {
-					if SUCCEEDED(get_Path(&pVarResult->bstrVal)) {
-						pVarResult->vt = VT_BSTR;
-					}
+			}
+			return S_OK;
+
+		case 3://Alt
+			if (nArg >= 0) {
+				teILFreeClear(&m_pidlAlt);
+				if (teGetIDListFromVariant(&m_pidlAlt, &pDispParams->rgvarg[nArg])) {
+					m_dwUnavailable = 0;
 				}
-				return S_OK;
-			//Alt
-			case 3:
-				if (nArg >= 0) {
-					teILFreeClear(&m_pidlAlt);
-					if (teGetIDListFromVariant(&m_pidlAlt, &pDispParams->rgvarg[nArg])) {
-						m_dwUnavailable = 0;
-					}
-				}
-				if (pVarResult) {
-					teSetIDList(pVarResult, GetAlt());
-				}
-				return S_OK;
-			//Unavailable
-			case 5:
-				i = 0;
-				if (nArg >= 0) {
-					m_dwUnavailable = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
-					if (m_dwUnavailable) {
-						m_dwUnavailable += GetTickCount();
-					}
-				}
+			}
+			if (pVarResult) {
+				teSetIDList(pVarResult, GetAlt());
+			}
+			return S_OK;
+
+		case 5://Unavailable
+			i = 0;
+			if (nArg >= 0) {
+				m_dwUnavailable = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 				if (m_dwUnavailable) {
-					i = GetTickCount() - m_dwUnavailable;
-					if (i == 0) {
-						i = 1;
-					}
-					if (i < 0) {
-						i = MAXINT;
-					}
+					m_dwUnavailable += GetTickCount();
 				}
-				teSetLong(pVarResult, i);
-				return S_OK;
-			//Enum
-			case 6:
-				if (pVarResult || wFlags & DISPATCH_METHOD) {
-					GetAlt();
+			}
+			if (m_dwUnavailable) {
+				i = GetTickCount() - m_dwUnavailable;
+				if (i == 0) {
+					i = 1;
 				}
-				teInvokeObject(&m_pEnum, wFlags, pVarResult, nArg, pDispParams->rgvarg);
-				return S_OK;
-			//_BLOB ** To be necessary
-			case 9:
-				return S_OK;
-/*/// Reserved future
-			//FocusedItem
-			case 8:
-				if (nArg >= 0) {
-					teILFreeClear(&m_pidlFocused);
-					teGetIDListFromVariant(&m_pidlFocused, &pDispParams->rgvarg[nArg]);
+				if (i < 0) {
+					i = MAXINT;
 				}
-				if (pVarResult) {
-					teSetIDList(pVarResult, m_pidlFocused);
-				}
-				return S_OK;
-//*/
-			case DISPID_VALUE:
-				teSetObject(pVarResult, this);
-				return S_OK;
+			}
+			teSetLong(pVarResult, i);
+			return S_OK;
+
+		case 6://Enum
+			if (pVarResult || wFlags & DISPATCH_METHOD) {
+				GetAlt();
+			}
+			teInvokeObject(&m_pEnum, wFlags, pVarResult, nArg, pDispParams->rgvarg);
+			return S_OK;
+
+		case 9://_BLOB ** To be necessary
+			return S_OK;
+			/*/
+			case 8://FocusedItem //Reserved future
+			if (nArg >= 0) {
+			teILFreeClear(&m_pidlFocused);
+			teGetIDListFromVariant(&m_pidlFocused, &pDispParams->rgvarg[nArg]);
+			}
+			if (pVarResult) {
+			teSetIDList(pVarResult, m_pidlFocused);
+			}
+			return S_OK;
+			//*/
+		case DISPID_VALUE:
+			teSetObject(pVarResult, this);
+			return S_OK;
 		}
 		if (GetFolderItem()) {
 			if (dispIdMember > 10) {
@@ -22607,9 +22681,12 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 		if (pVarResult) {
 			VariantInit(pVarResult);
 		}
+		if (wFlags == DISPATCH_PROPERTYGET && dispIdMember >= TE_METHOD) {
+			teSetObjectRelease(pVarResult, new CteDispatch(this, 0, dispIdMember));
+			return S_OK;
+		}
 		switch(dispIdMember) {
-			//FileName
-			case 10:
+			case TE_PROPERTY + 10://FileName
 				if (nArg >= 0) {
 					VARIANT vFile;
 					teVariantChangeType(&vFile, &pDispParams->rgvarg[nArg], VT_BSTR);
@@ -22625,8 +22702,8 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					pVarResult->vt = VT_BSTR;
 				}
 				return S_OK;
-			//Filter
-			case 13:
+			
+			case TE_PROPERTY + 13://Filter
 				if (nArg >= 0) {
 					teSysFreeString(const_cast<BSTR *>(&m_ofn.lpstrFilter));
 					if (pDispParams->rgvarg[nArg].vt == VT_BSTR) {
@@ -22648,7 +22725,7 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				teSetObject(pVarResult, this);
 				return S_OK;
 		}
-		if (dispIdMember >= 40) {
+		if (dispIdMember >= TE_METHOD + 40) {
 			if (!m_ofn.lpstrFile) {
 				m_ofn.lpstrFile = ::SysAllocStringLen(NULL, m_ofn.nMaxFile);
 				m_ofn.lpstrFile[0] = NULL;
@@ -22656,7 +22733,7 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			BOOL bResult = FALSE;
 			switch (dispIdMember) {
 				//ShowOpen
-				case 40:
+				case TE_METHOD + 40:
 					if (m_ofn.Flags & OFN_ENABLEHOOK) {
 						m_ofn.lpfnHook = OFNHookProc;
 					}
@@ -22664,7 +22741,7 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					bResult = GetOpenFileName(&m_ofn) || g_bDialogOk;
 					break;
 				//ShowSave
-				case 41:
+				case TE_METHOD + 41:
 					bResult = GetSaveFileName(&m_ofn);
 					break;
 /*/// IFileOpenDialog
@@ -22730,18 +22807,18 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			teSetBool(pVarResult, bResult);
 			return S_OK;
 		}
-		if (dispIdMember >= 30) {
+		if (dispIdMember >= TE_PROPERTY + 30) {
 			switch (dispIdMember) {
-				case 30:
+				case TE_PROPERTY + 30:
 					pdw = &m_ofn.nMaxFile;
 					break;
-				case 31:
+				case TE_PROPERTY + 31:
 					pdw = &m_ofn.Flags;
 					break;
-				case 32:
+				case TE_PROPERTY + 32:
 					pdw = &m_ofn.nFilterIndex;
 					break;
-				case 33:
+				case TE_PROPERTY + 33:
 					pdw = &m_ofn.FlagsEx;
 					break;
 			}//end_switch
@@ -22751,15 +22828,15 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			teSetLong(pVarResult, *pdw);
 			return S_OK;
 		}
-		if (dispIdMember >= 20) {
+		if (dispIdMember >= TE_PROPERTY + 20) {
 			switch (dispIdMember) {
-				case 20:
+				case TE_PROPERTY + 20:
 					pbs = &m_ofn.lpstrInitialDir;
 					break;
-				case 21:
+				case TE_PROPERTY + 21:
 					pbs = &m_ofn.lpstrDefExt;
 					break;
-				case 22:
+				case TE_PROPERTY + 22:
 					pbs = &m_ofn.lpstrTitle;
 					break;
 			}//end_switch
@@ -23249,19 +23326,23 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 		if (!m_pWICFactory) {
 			return S_OK;
 		}
-		if (dispIdMember < 100) {
+		DISPID dispid = dispIdMember & TE_METHOD_MASK;
+		if (dispid < 100) {
 			ClearImage(TRUE);
-		} else if (!m_pImage && dispIdMember < 900) {
+		} else if (!m_pImage && dispid < 900) {
 			return S_OK;
 		}
-
+		if (wFlags == DISPATCH_PROPERTYGET && dispIdMember >= TE_METHOD) {
+			teSetObjectRelease(pVarResult, new CteDispatch(this, 0, dispIdMember));
+			return S_OK;
+		}
 		switch(dispIdMember) {
 			//FromHBITMAP
-			case 1:
+			case TE_METHOD + 1:
 			//FromStream
-			case 5:
+			case TE_METHOD + 5:
 			//FromSource
-			case 9:
+			case TE_METHOD + 9:
 				if (nArg >= 0) {
 					IUnknown *punk;
 					if (FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
@@ -23269,7 +23350,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 						if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pStream))) {
 							LPWSTR lpfn = NULL;
 							int cx = 0;
-							if (dispIdMember == 5 && nArg >= 1) {
+							if (dispIdMember == TE_METHOD + 5 && nArg >= 1) {
 								lpfn = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]);
 								cx = (nArg >= 2) ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]) : 0;
 							}
@@ -23293,14 +23374,14 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				}
 				return S_OK;
 			//FromHICON
-			case 2:
+			case TE_METHOD + 2:
 				if (nArg >= 0) {
 					m_pWICFactory->CreateBitmapFromHICON((HICON)GetPtrFromVariant(&pDispParams->rgvarg[nArg]), &m_pImage);
 					teSetObject(pVarResult, GetBitmapObj());
 				}
 				return S_OK;
 			//FromResource
-			case 3:
+			case TE_METHOD + 3:
 				if (nArg >= 5) {
 					HBITMAP hBM = (HBITMAP)LoadImage((HINSTANCE)GetPtrFromVariant(&pDispParams->rgvarg[nArg]), GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 3]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 4]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 5]));
 					if (hBM) {
@@ -23311,7 +23392,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				}
 				return S_OK;
 			//FromFile
-			case 4:
+			case TE_METHOD + 4:
 				if (nArg >= 0) {
 					int cx = (nArg >= 1) ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) : 0;
 					LPWSTR lpfn = NULL;
@@ -23392,7 +23473,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				}
 				return S_OK;
 			//FromArchive
-			case 6:
+			case TE_METHOD + 6:
 				if (nArg >= 3) {
 					IStorage *pStorage = NULL;
 					HMODULE hDll;
@@ -23428,10 +23509,10 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				}
 				return S_OK;
 			//FromItem//Deprecated
-			case 7:
+			case TE_METHOD + 7:
 				return S_OK;
 			//FromClipboard
-			case 8:
+			case TE_METHOD + 8:
 				if (IsClipboardFormatAvailable(CF_BITMAP)) {
 					::OpenClipboard(NULL);
 					HBITMAP hBM = (HBITMAP)::GetClipboardData(CF_BITMAP);
@@ -23441,7 +23522,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				teSetObject(pVarResult, GetBitmapObj());
 				return S_OK;
 			//Create
-			case 90:
+			case TE_METHOD + 90:
 				if (nArg >= 1) {
 					IWICBitmap *pIBitmap;
 					int x = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
@@ -23456,10 +23537,10 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				}
 				return S_OK;
 			//Free
-			case 99:
+			case TE_METHOD + 99:
 				return S_OK;
 			//Save
-			case 100:
+			case TE_METHOD + 100:
 				if (nArg >= 0) {
 					VARIANT vText;
 					teVariantChangeType(&vText, &pDispParams->rgvarg[nArg], VT_BSTR);
@@ -23478,11 +23559,11 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				teSetLong(pVarResult, hr);
 				return S_OK;
 			//Base64
-			case 101:
+			case TE_METHOD + 101:
 			//DataURI
-			case 102:
+			case TE_METHOD + 102:
 			//GetStream
-			case 103:
+			case TE_METHOD + 103:
 				VARIANT vText;
 				vText.bstrVal = NULL;
 				vText.vt = VT_BSTR;
@@ -23501,7 +23582,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 //					hr = CreateBMPStream(pStream, szMime);
 				}
 				if SUCCEEDED(hr) {
-					if (dispIdMember == 103) { //GetStream
+					if (dispIdMember == TE_METHOD + 103) { //GetStream
 						teSetObjectRelease(pVarResult, new CteObject(pStream));
 					} else {
 						DWORD dwSize = teGetStreamSize(pStream);
@@ -23511,7 +23592,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 							if SUCCEEDED(pStream->Read(bsBuff, dwSize, &ulBytesRead)) {
 								wchar_t szHead[32];
 								szHead[0] = NULL;
-								if (dispIdMember == 102) {
+								if (dispIdMember == TE_METHOD + 102) {
 									swprintf_s(szHead, 32, L"data:%s;base64,", szMime);
 								}
 								int nDest = lstrlen(szHead);
@@ -23532,20 +23613,20 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				VariantClear(&vText);
 				return S_OK;
 			//GetWidth
-			case 110:
+			case TE_METHOD + 110:
 				UINT w, h;
 				w = 0;
 				m_pImage->GetSize(&w, &h);
 				teSetLong(pVarResult, w);
 				return S_OK;
 			//GetHeight
-			case 111:
+			case TE_METHOD + 111:
 				h = 0;
 				m_pImage->GetSize(&w, &h);
 				teSetLong(pVarResult, h);
 				return S_OK;
 			//GetPixel
-			case 112:
+			case TE_METHOD + 112:
 				if (nArg >= 1 && Get(GUID_WICPixelFormat32bppBGRA)) {
 					UINT w = 0, h = 0;
 					m_pImage->GetSize(&w, &h);
@@ -23568,7 +23649,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				}
 				return S_OK;
 			//SetPixel
-			case 113:
+			case TE_METHOD + 113:
 				if (nArg >= 2) {
 					if (Get(GUID_WICPixelFormat32bppBGRA)) {
 						UINT w = 0, h = 0;
@@ -23593,7 +23674,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				}
 				return S_OK;
 			//GetPixelFormat
-			case 114:
+			case TE_METHOD + 114:
 				WICPixelFormatGUID guidPF;
 				m_pImage->GetPixelFormat(&guidPF);
 				WCHAR pszBuff[40];
@@ -23601,7 +23682,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				teSetSZ(pVarResult, pszBuff);
 				return S_OK;
 			//FillRect
-			case 115:
+			case TE_METHOD + 115:
 				if (nArg >= 4) {
 					if (Get(GUID_WICPixelFormat32bppBGRA)) {
 						int w = 0, h = 0;
@@ -23645,7 +23726,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				}
 				return S_OK;
 			//GetThumbnailImage
-			case 120:
+			case TE_METHOD + 120:
 				if (nArg >= 1) {
 					//WIC
 					UINT w = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
@@ -23666,7 +23747,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				}
 				return S_OK;
 			//RotateFlip
-			case 130:
+			case TE_METHOD + 130:
 				if (nArg >= 0) {
 					IWICBitmapFlipRotator *pFlipRotator;
 					if SUCCEEDED(m_pWICFactory->CreateBitmapFlipRotator(&pFlipRotator)) {
@@ -23682,11 +23763,11 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				}
 				return S_OK;
 			//GetFrameCount
-			case 140:
+			case TE_METHOD + 140:
 				teSetLong(pVarResult, HasImage() ? m_uFrameCount : 1);
 				return S_OK;
 			//Frame
-			case 150:
+			case TE_PROPERTY + 150:
 				if (nArg >= 0 && m_pStream) {
 					UINT uFrame = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 					if (m_uFrame != uFrame) {
@@ -23698,14 +23779,14 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				}
 				return S_OK;
 			//GetMetadata
-			case 160:
+			case TE_METHOD + 160:
 			//GetFrameMetadata
-			case 161:
+			case TE_METHOD + 161:
 				if (nArg >= 0 && pVarResult) {
-					if (m_ppMetadataQueryReader[dispIdMember - 160]) {
+					if (m_ppMetadataQueryReader[dispIdMember - TE_METHOD - 160]) {
 						PROPVARIANT propVar;
 						PropVariantInit(&propVar);
-						if SUCCEEDED(m_ppMetadataQueryReader[dispIdMember - 160]->GetMetadataByName(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]), &propVar)) {
+						if SUCCEEDED(m_ppMetadataQueryReader[dispIdMember - TE_METHOD - 160]->GetMetadataByName(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]), &propVar)) {
 							_PropVariantToVariant(&propVar, pVarResult);
 							PropVariantClear(&propVar);
 						}
@@ -23713,13 +23794,13 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				}
 				return S_OK;
 			//GetHBITMAP
-			case 210:
+			case TE_METHOD + 210:
 				teSetPtr(pVarResult, GetHBITMAP(nArg >= 0 ? GetIntFromVariant(&pDispParams->rgvarg[nArg]) : -1));
 				return S_OK;
 			//GetHICON
-			case 211:
+			case TE_METHOD + 211:
 			//DrawEx
-			case 212:
+			case TE_METHOD + 212:
 				HBITMAP hBM;
 				if (hBM = GetHBITMAP(-1)) {
 					BITMAP bm;
@@ -23727,9 +23808,9 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					HIMAGELIST himl = ImageList_Create(bm.bmWidth, bm.bmHeight, ILC_COLOR32, 0, 0);
 					ImageList_Add(himl, hBM, NULL);
 					DeleteObject(hBM);
-					if (dispIdMember == 211) {
+					if (dispIdMember == TE_METHOD + 211) {
 						teSetPtr(pVarResult, ImageList_GetIcon(himl, 0, nArg >= 0 ? GetIntFromVariant(&pDispParams->rgvarg[nArg]) : ILD_NORMAL));
-					} else if (dispIdMember == 212 && nArg >= 7) {
+					} else if (dispIdMember == TE_METHOD + 212 && nArg >= 7) {
 						teSetBool(pVarResult, ImageList_DrawEx(himl, 0, (HDC)GetPtrFromVariant(&pDispParams->rgvarg[nArg]),
 							GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]),
 							GetIntFromVariant(&pDispParams->rgvarg[nArg - 3]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 4]),
@@ -23741,7 +23822,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				}
 				return S_OK;
 			//GetCodecInfo
-			case 900:
+			case TE_METHOD + 900:
 				IDispatch *pdisp;
 				if (nArg >= 2 && GetDispatch(&pDispParams->rgvarg[nArg - 2], &pdisp)) {
 					IEnumUnknown *pEnum;
@@ -23839,11 +23920,11 @@ STDMETHODIMP CteWindowsAPI::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT
 {
 	int nIndex = teBSearchApi(dispAPI, _countof(dispAPI), g_maps[MAP_API], *rgszNames);
 	if (nIndex >= 0) {
-		*rgDispId = nIndex + 0x60010000;
+		*rgDispId = nIndex + TE_METHOD;
 		return S_OK;
 	}
 	if (lstrcmpi(*rgszNames, L"ADBSTRM") == 0) {
-		*rgDispId = 0x40010000;
+		*rgDispId = TE_PROPERTY;
 		return S_OK;
 	}
 	return DISP_E_UNKNOWNNAME;
@@ -23852,7 +23933,7 @@ STDMETHODIMP CteWindowsAPI::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT
 STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
 {
 	if (wFlags & DISPATCH_METHOD) {
-		TEDispatchApi *pApi = (dispIdMember >= 0x60010000 && dispIdMember < _countof(dispAPI) + 0x60010000) ? &dispAPI[dispIdMember - 0x60010000] : m_pApi;
+		TEDispatchApi *pApi = (dispIdMember >= TE_METHOD && dispIdMember < _countof(dispAPI) + TE_METHOD) ? &dispAPI[dispIdMember - TE_METHOD] : m_pApi;
 		if (pApi) {
 			try {
 				return teInvokeAPI(pApi, pDispParams, pVarResult, pExcepInfo);
@@ -23863,10 +23944,10 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 	} else if (dispIdMember == DISPID_VALUE) {
 		teSetObject(pVarResult, this);
 		return S_OK;
-	} else if (dispIdMember >= 0x60010000 && dispIdMember < _countof(dispAPI) + 0x60010000) {
-		teSetObjectRelease(pVarResult, new CteWindowsAPI(&dispAPI[dispIdMember - 0x60010000]));
+	} else if (dispIdMember >= TE_METHOD && dispIdMember < _countof(dispAPI) + TE_METHOD) {
+		teSetObjectRelease(pVarResult, new CteWindowsAPI(&dispAPI[dispIdMember - TE_METHOD]));
 		return S_OK;
-	} else if (dispIdMember == 0x40010000) {
+	} else if (dispIdMember == TE_PROPERTY) {
 		teSetSZ(pVarResult, L"ADODB.Stream");
 		return S_OK;
 	}
@@ -23875,12 +23956,12 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 #endif
 //CteDispatch
 
-CteDispatch::CteDispatch(IDispatch *pDispatch, int nMode)
+CteDispatch::CteDispatch(IDispatch *pDispatch, int nMode, DISPID dispId)
 {
 	m_cRef = 1;
 	pDispatch->QueryInterface(IID_PPV_ARGS(&m_pDispatch));
 	m_nMode = nMode;
-	m_dispIdMember = DISPID_UNKNOWN;
+	m_dispIdMember = dispId;
 	m_nIndex = 0;
 	m_pActiveScript = NULL;
 	m_hDll = NULL;
@@ -23906,13 +23987,17 @@ VOID CteDispatch::Clear()
 
 STDMETHODIMP CteDispatch::QueryInterface(REFIID riid, void **ppvObject)
 {
-	static const QITAB qit[] =
-	{
-		QITABENT(CteDispatch, IDispatch),
-		QITABENT(CteDispatch, IEnumVARIANT),
-		{ 0 },
-	};
-	return QISearch(this, qit, riid, ppvObject);
+	if (IsEqualIID(riid, IID_IUnknown) || IsEqualIID(riid, IID_IDispatch)) {
+		*ppvObject = static_cast<IDispatch *>(this);
+		AddRef();
+		return S_OK;
+	}
+	if (m_dispIdMember == DISPID_UNKNOWN && IsEqualIID(riid, IID_IEnumVARIANT)) {
+		*ppvObject = static_cast<IEnumVARIANT *>(this);
+		AddRef();
+		return S_OK;
+	}
+	return E_NOINTERFACE;
 }
 
 STDMETHODIMP_(ULONG) CteDispatch::AddRef()
@@ -23943,8 +24028,10 @@ STDMETHODIMP CteDispatch::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInf
 
 STDMETHODIMP CteDispatch::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	if (m_nMode && m_pDispatch) {
-		return m_pDispatch->GetIDsOfNames(riid, rgszNames, cNames, lcid, rgDispId);
+	if (m_pDispatch) {
+		if (m_nMode || tePathMatchSpec(*rgszNames, L"Item;Count")) {
+			return m_pDispatch->GetIDsOfNames(riid, rgszNames, cNames, lcid, rgDispId);
+		}
 	}
 	return DISP_E_UNKNOWNNAME;
 }
@@ -23990,7 +24077,7 @@ STDMETHODIMP CteDispatch::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 			teSetObject(pVarResult, this);
 			return S_OK;
 		}
-		return m_pDispatch->Invoke(m_nMode ? dispIdMember : m_dispIdMember, riid, lcid, wFlags, pDispParams, pVarResult, pExcepInfo, puArgErr);
+		return m_pDispatch->Invoke((dispIdMember != DISPID_VALUE || m_nMode) ? dispIdMember : m_dispIdMember, riid, lcid, wFlags, pDispParams, pVarResult, pExcepInfo, puArgErr);
 	} catch (...) {
 		return teException(pExcepInfo, "Dispatch", NULL, dispIdMember);
 	}
@@ -24048,9 +24135,7 @@ STDMETHODIMP CteDispatch::Reset(void)
 STDMETHODIMP CteDispatch::Clone(IEnumVARIANT **ppEnum)
 {
 	if (ppEnum && m_pDispatch) {
-		CteDispatch *pdisp = new CteDispatch(m_pDispatch, m_nMode);
-		pdisp->m_dispIdMember = m_dispIdMember;
-		pdisp->m_nMode = m_nMode;
+		CteDispatch *pdisp = new CteDispatch(m_pDispatch, m_nMode, m_dispIdMember);
 		*ppEnum = static_cast<IEnumVARIANT *>(pdisp);
 		return S_OK;
 	}
@@ -24278,13 +24363,13 @@ STDMETHODIMP CteAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wF
 
 ///CteDispatchEx
 
-CteDispatchEx::CteDispatchEx(IUnknown *punk)
+CteDispatchEx::CteDispatchEx(IUnknown *punk, BOOL bLegacy)
 {
 	m_cRef = 1;
+	m_bDispathEx = FALSE;
 	punk->QueryInterface(IID_PPV_ARGS(&m_pdex));
-	m_dispItem = 0;
+	m_bLegacy = bLegacy;
 }
-
 
 CteDispatchEx::~CteDispatchEx()
 {
@@ -24299,6 +24384,9 @@ STDMETHODIMP CteDispatchEx::QueryInterface(REFIID riid, void **ppvObject)
 		QITABENT(CteDispatchEx, IDispatchEx),
 		{ 0 },
 	};
+	if (IsEqualIID(riid, IID_IDispatchEx)) {
+		m_bDispathEx = TRUE;
+	}
 	return QISearch(this, qit, riid, ppvObject);
 }
 
@@ -24329,12 +24417,38 @@ STDMETHODIMP CteDispatchEx::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTI
 
 STDMETHODIMP CteDispatchEx::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	return GetDispID(*rgszNames, fdexNameCaseSensitive, rgDispId);
+	HRESULT hr = m_bDispathEx ?
+		m_pdex->GetIDsOfNames(riid, rgszNames, cNames, lcid, rgDispId) :
+		m_pdex->GetDispID(*rgszNames, fdexNameEnsure | fdexNameCaseSensitive, rgDispId);
+	if FAILED(hr) {
+		GetLegacyDispId(*rgszNames, rgDispId, !m_bDispathEx, &hr);
+	}
+	return hr;
 }
 
 STDMETHODIMP CteDispatchEx::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
 {
-	return InvokeEx(dispIdMember, lcid, wFlags, pDispParams, pVarResult, pExcepInfo, NULL);
+	if (wFlags == DISPATCH_PROPERTYPUT) {
+		if (pDispParams->cArgs > 0) {
+			if (pDispParams->rgvarg[pDispParams->cArgs - 1].vt == VT_DISPATCH) {
+				wFlags = DISPATCH_PROPERTYPUTREF;
+			}
+		}
+	}
+	HRESULT hr = m_bDispathEx ?
+		m_pdex->Invoke(dispIdMember, riid, lcid, wFlags, pDispParams, pVarResult, pExcepInfo, puArgErr) :
+		m_pdex->InvokeEx(dispIdMember, lcid, wFlags, pDispParams, pVarResult, pExcepInfo, NULL);
+	if FAILED(hr) {
+		InvokeLegacy(dispIdMember, wFlags, pDispParams, pVarResult, &hr);
+	}
+	if (wFlags == DISPATCH_PROPERTYPUT) {
+		VARIANT v;
+		VariantInit(&v);
+		if (Invoke5(m_pdex, dispIdMember, DISPATCH_PROPERTYGET, &v, 0, NULL) == S_OK) {
+			VariantClear(&v);
+		}
+	}
+	return hr;
 }
 
 //IDispatchEx
@@ -24342,32 +24456,24 @@ STDMETHODIMP CteDispatchEx::GetDispID(BSTR bstrName, DWORD grfdex, DISPID *pid)
 {
 	HRESULT hr = m_pdex->GetDispID(bstrName, grfdex, pid);
 	if FAILED(hr) {
-		if (lstrcmpi(bstrName, L"Count") == 0) {
-			BSTR bs = ::SysAllocString(L"length");
-			hr = m_pdex->GetDispID(bs, fdexNameCaseSensitive, pid);
-			::SysFreeString(bs);
-		} else if (lstrcmp(bstrName, L"Item") == 0) {
-			m_dispItem = DISPID_COLLECT;
-			*pid = m_dispItem;
-			hr = S_OK;
-		} else if (grfdex & fdexNameCaseSensitive) {
-			hr = m_pdex->GetDispID(bstrName, (grfdex & fdexNameCaseSensitive) | fdexNameCaseInsensitive, pid);
-		}
+		GetLegacyDispId(bstrName, pid, TRUE, &hr);
 	}
 	return hr;
 }
 
 STDMETHODIMP CteDispatchEx::InvokeEx(DISPID id, LCID lcid, WORD wFlags, DISPPARAMS *pdp, VARIANT *pvarRes, EXCEPINFO *pei, IServiceProvider *pspCaller)
 {
-	if (m_dispItem && id == m_dispItem && (wFlags & DISPATCH_METHOD) && pdp && pdp->cArgs > 0) {
-		return teGetPropertyAt(m_pdex, GetIntFromVariant(&pdp->rgvarg[pdp->cArgs - 1]), pvarRes);
+	HRESULT hr = m_pdex->InvokeEx(id, lcid, wFlags, pdp, pvarRes, pei, pspCaller);
+	if FAILED(hr) {
+		InvokeLegacy(id, wFlags, pdp, pvarRes, &hr);
 	}
-	return m_pdex->InvokeEx(id, lcid, wFlags, pdp, pvarRes, pei, pspCaller);
+	return hr;
 }
 
 STDMETHODIMP CteDispatchEx::DeleteMemberByName(BSTR bstrName, DWORD grfdex)
 {
-	return m_pdex->DeleteMemberByName(bstrName, grfdex);
+	m_pdex->DeleteMemberByName(bstrName, grfdex);
+	return S_OK;
 }
 
 STDMETHODIMP CteDispatchEx::DeleteMemberByDispID(DISPID id)
@@ -24394,6 +24500,41 @@ STDMETHODIMP CteDispatchEx::GetNameSpaceParent(IUnknown **ppunk)
 {
 	return m_pdex->GetNameSpaceParent(ppunk);
 }
+
+VOID CteDispatchEx::GetLegacyDispId(BSTR bstrName, DISPID *pid, BOOL bDispatchEx, HRESULT *phr)
+{
+	if (!m_bLegacy) {
+		return;
+	}
+	if (lstrcmpi(bstrName, L"Count") == 0) {
+		BSTR bs = ::SysAllocString(L"length");
+		if (bDispatchEx) {
+			*phr = m_pdex->GetDispID(bs, fdexNameCaseSensitive, pid);
+		} else {
+			*phr = m_pdex->GetIDsOfNames(IID_NULL, &bs, 1, LOCALE_USER_DEFAULT, pid);
+		}
+		::SysFreeString(bs);
+	} else if (lstrcmp(bstrName, L"Item") == 0) {
+		*pid = DISPID_COLLECT;
+		*phr = S_OK;
+	}
+}
+
+VOID CteDispatchEx::InvokeLegacy(DISPID id, WORD wFlags, DISPPARAMS *pdp, VARIANT *pvarRes, HRESULT *phr)
+{
+	if (!m_bLegacy || id != DISPID_COLLECT) {
+		return;
+	}
+	if ((wFlags & DISPATCH_METHOD) && pdp && pdp->cArgs > 0) {
+		*phr = teGetPropertyAt(m_pdex, GetIntFromVariant(&pdp->rgvarg[pdp->cArgs - 1]), pvarRes);
+		return;
+	}
+	if (wFlags == DISPATCH_PROPERTYGET) {
+		teSetObjectRelease(pvarRes, new CteDispatch(this, 0, DISPID_COLLECT));
+		*phr = S_OK;
+	}
+}
+
 //*///
 
 CteDropTarget2::CteDropTarget2(HWND hwnd, IUnknown *punk, BOOL bUseHelper)
@@ -24773,14 +24914,18 @@ STDMETHODIMP CteProgressDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lc
 		if (pVarResult) {
 			VariantInit(pVarResult);
 		}
+		if (wFlags == DISPATCH_PROPERTYGET && dispIdMember >= TE_METHOD) {
+			teSetObjectRelease(pVarResult, new CteDispatch(this, 0, dispIdMember));
+			return S_OK;
+		}
 		VARIANT v;
 		switch(dispIdMember) {
 			//HasUserCancelled
-			case 0x60010001:
+			case TE_METHOD + 1:
 				teSetBool(pVarResult, m_ppd->HasUserCancelled());
 				return S_OK;
 			//SetCancelMsg
-			case 0x60010002:
+			case TE_METHOD + 2:
 				if (nArg >= 0) {
 					teVariantChangeType(&v, &pDispParams->rgvarg[nArg], VT_BSTR);
 					teSetLong(pVarResult, m_ppd->SetCancelMsg(v.bstrVal, NULL));
@@ -24788,7 +24933,7 @@ STDMETHODIMP CteProgressDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lc
 				}
 				return S_OK;
 			//SetLine
-			case 0x60010003:
+			case TE_METHOD + 3:
 				if (nArg >= 2) {
 					teVariantChangeType(&v, &pDispParams->rgvarg[nArg - 1], VT_BSTR);
 					teSetLong(pVarResult, m_ppd->SetLine(GetIntFromVariant(&pDispParams->rgvarg[nArg]), v.bstrVal, GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]), NULL));
@@ -24796,13 +24941,13 @@ STDMETHODIMP CteProgressDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lc
 				}
 				return S_OK;
 			//SetProgress
-			case 0x60010004:
+			case TE_METHOD + 4:
 				if (nArg >= 1) {
 					teSetLong(pVarResult, m_ppd->SetProgress64(GetLLFromVariant(&pDispParams->rgvarg[nArg]), GetLLFromVariant(&pDispParams->rgvarg[nArg - 1])));
 				}
 				return S_OK;
 			//SetTitle
-			case 0x60010005:
+			case TE_METHOD + 5:
 				if (nArg >= 0) {
 					teVariantChangeType(&v, &pDispParams->rgvarg[nArg], VT_BSTR);
 					teSetLong(pVarResult, m_ppd->SetTitle(v.bstrVal));
@@ -24810,7 +24955,7 @@ STDMETHODIMP CteProgressDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lc
 				}
 				return S_OK;
 			//StartProgressDialog
-			case 0x60010006:
+			case TE_METHOD + 6:
 				if (nArg >= 2) {
 					IUnknown *punk = NULL;
 					FindUnknown(&pDispParams->rgvarg[nArg - 1], &punk);
@@ -24818,18 +24963,18 @@ STDMETHODIMP CteProgressDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lc
 				}
 				return S_OK;
 			//StopProgressDialog
-			case 0x60010007:
+			case TE_METHOD + 7:
 				m_ppd->SetLine(2, L"", TRUE, NULL);
 				teSetLong(pVarResult, m_ppd->StopProgressDialog());
 				return S_OK;
 			//Timer
-			case 0x60010008:
+			case TE_METHOD + 8:
 				if (nArg >= 0) {
 					teSetLong(pVarResult, m_ppd->Timer(GetIntFromVariant(&pDispParams->rgvarg[nArg]), NULL));
 				}
 				return S_OK;
 			//SetAnimation
-			case 0x60010009:
+			case TE_METHOD + 9:
 #ifdef _2000XP
 				if (nArg >= 1) {
 					teSetLong(pVarResult, m_ppd->SetAnimation((HINSTANCE)GetPtrFromVariant(&pDispParams->rgvarg[nArg]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 1])));
@@ -24935,8 +25080,12 @@ STDMETHODIMP CteObject::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNa
 
 STDMETHODIMP CteObject::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
 {
+	if (wFlags == DISPATCH_PROPERTYGET && dispIdMember >= TE_METHOD) {
+		teSetObjectRelease(pVarResult, new CteDispatch(this, 0, dispIdMember));
+		return S_OK;
+	}
 	switch (dispIdMember) {
-		case 0x60010001:
+		case TE_METHOD + 1:
 			Clear();
 			return S_OK;
 		//this
@@ -24992,4 +25141,131 @@ STDMETHODIMP CteFileSystemBindData::GetFindData(WIN32_FIND_DATAW *pfd)
 {
 	*pfd = m_wfd;
 	return S_OK;
+}
+
+//CteEnumerator
+CteEnumerator::CteEnumerator(VARIANT *pvObject)
+{
+	m_cRef = 1;
+	VariantInit(&m_vItem);
+	m_pEnumVARIANT = NULL;
+	m_pdex = NULL;
+	m_hr = E_NOTIMPL;
+	IDispatch *pdisp;
+	m_dispIdMember = DISPID_UNKNOWN;
+	if (GetDispatch(pvObject, &pdisp)) {
+		pdisp->QueryInterface(IID_PPV_ARGS(&m_pdex));
+		VARIANT v;
+		VariantInit(&v);
+		if SUCCEEDED(Invoke5(pdisp, DISPID_NEWENUM, DISPATCH_PROPERTYGET, &v, 0, NULL)) {
+			IUnknown *punk;
+			if (FindUnknown(&v, &punk)) {
+				punk->QueryInterface(IID_PPV_ARGS(&m_pEnumVARIANT));
+			}
+			VariantClear(&v);
+		}
+		pdisp->Release();
+	}
+	GetItem();
+}
+
+CteEnumerator::~CteEnumerator()
+{
+	VariantClear(&m_vItem);
+	SafeRelease(&m_pEnumVARIANT);
+	SafeRelease(&m_pdex);
+}
+
+STDMETHODIMP CteEnumerator::QueryInterface(REFIID riid, void **ppvObject)
+{
+	static const QITAB qit[] =
+	{
+		QITABENT(CTE, IDispatch),
+		{ 0 },
+	};
+	return QISearch(this, qit, riid, ppvObject);
+}
+
+STDMETHODIMP_(ULONG) CteEnumerator::AddRef()
+{
+	return ::InterlockedIncrement(&m_cRef);
+}
+
+STDMETHODIMP_(ULONG) CteEnumerator::Release()
+{
+	if (::InterlockedDecrement(&m_cRef) == 0) {
+		delete this;
+		return 0;
+	}
+
+	return m_cRef;
+}
+
+STDMETHODIMP CteEnumerator::GetTypeInfoCount(UINT *pctinfo)
+{
+	*pctinfo = 0;
+	return S_OK;
+}
+
+STDMETHODIMP CteEnumerator::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo)
+{
+	return E_NOTIMPL;
+}
+
+STDMETHODIMP CteEnumerator::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
+{
+	return teGetDispId(methodEN, 0, NULL, *rgszNames, rgDispId, TRUE);
+}
+
+STDMETHODIMP CteEnumerator::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
+{
+	if (wFlags == DISPATCH_PROPERTYGET && dispIdMember >= TE_METHOD) {
+		teSetObjectRelease(pVarResult, new CteDispatch(this, 0, dispIdMember));
+		return S_OK;
+	}
+	switch (dispIdMember) {
+	case TE_METHOD + 1://atEnd
+		teSetBool(pVarResult, m_hr);
+		return S_OK;
+
+	case TE_METHOD + 2://item
+		VariantCopy(pVarResult, &m_vItem);
+		return S_OK;
+
+	case TE_METHOD + 3://moveFirst
+		if (m_pEnumVARIANT) {
+			m_pEnumVARIANT->Reset();
+		}
+		m_dispIdMember = DISPID_UNKNOWN;
+		GetItem();
+		return S_OK;
+
+	case TE_METHOD + 4://moveNext
+		GetItem();
+		return S_OK;
+
+	case DISPID_VALUE://this
+		teSetObject(pVarResult, this);
+		return S_OK;
+	}//end_switch
+	return DISP_E_MEMBERNOTFOUND;
+}
+
+VOID CteEnumerator::GetItem()
+{
+	if (m_pEnumVARIANT) {
+		ULONG uFetched;
+		m_hr = m_pEnumVARIANT->Next(1, &m_vItem, &uFetched);
+		return;
+	}
+
+	if (m_pdex) {
+		m_hr = m_pdex->GetNextDispID(0, m_dispIdMember, &m_dispIdMember);
+		if (m_hr == S_OK) {
+			m_hr = m_pdex->GetMemberName(m_dispIdMember, &m_vItem.bstrVal);
+			if (m_hr == S_OK) {
+				m_vItem.vt = VT_BSTR;
+			}
+		}
+	}
 }
