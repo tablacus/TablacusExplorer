@@ -9,13 +9,14 @@
 #define STRING2(str) #str
 #define VER_Y		20
 #define VER_M		9
-#define VER_D		3
+#define VER_D		10
 
 //Icon
 #define IDI_TE		1
 
 //Define
 #define _USE_BSEARCHAPI
+#define _USE_TEOBJ
 //#define _USE_SHELLBROWSER
 //#define _USE_OBJECTAPI
 //#define _USE_APIHOOK

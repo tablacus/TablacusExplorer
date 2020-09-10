@@ -31,6 +31,9 @@
 #include <tlhelp32.h>
 //#include <Vssym32.h>
 #include <vector>
+#ifdef _USE_TEOBJ
+#include <map>
+#endif
 #ifndef _2000XP
 #include <Propsys.h>
 #include <Propvarutil.h>
@@ -39,7 +42,7 @@
 #include <imagehlp.h>
 #endif
 
-#import <shdocvw.dll> exclude("OLECMDID", "OLECMDF", "OLECMDEXECOPT", "tagREADYSTATE") auto_rename
+//#import <shdocvw.dll> exclude("OLECMDID", "OLECMDF", "OLECMDEXECOPT", "tagREADYSTATE") auto_rename
 //#import <mshtml.tlb>
 #pragma comment(lib, "comctl32.lib")
 #pragma comment(lib, "shlwapi.lib")
@@ -348,7 +351,6 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TWM_CLIPBOARDUPDATE		WM_APP
 #define SHGDN_ORIGINAL		0x40000000
 #define SHGDN_FORPARSINGEX	0x80000000
-#define START_OnFunc			5000
 #define TE_Labels				0
 #define TE_ColumnsReplace		1
 #define TE_OnViewCreated		2
@@ -428,11 +430,15 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 
 #define TE_VT 24
 #define TE_VI 0xffffff
-#define TE_METHOD		0x40000000
-#define TE_OFFSET		0x30000000
-#define DISPID_TE_ITEM  0x3fffffff
-#define DISPID_TE_COUNT 0x3ffffffe
-#define DISPID_TE_INDEX 0x3ffffffd
+#define TE_METHOD		0x60010000
+#define TE_METHOD_MAX	0x6001ffff
+#define TE_METHOD_MASK	0x0000ffff
+#define TE_PROPERTY		0x40010000
+#define START_OnFunc	0x4001fc00
+#define TE_OFFSET		0x4001ff00
+#define DISPID_TE_ITEM  0x6001ffff
+#define DISPID_TE_COUNT 0x4001ffff
+#define DISPID_TE_INDEX 0x4001fffe
 #define DISPID_TE_MAX TE_VI
 
 #define TE_Type		0
@@ -648,8 +654,14 @@ const CLSID CLSID_ADODBStream               = {0x00000566, 0x0000, 0x0010, { 0x8
 const CLSID CLSID_ScriptingFileSystemObject = {0x0D43FE01, 0xF093, 0x11CF, { 0x89, 0x40, 0x00, 0xA0, 0xC9, 0x05, 0x42, 0x28}};
 const CLSID CLSID_WScriptShell              = {0x72C24DD5, 0xD70A, 0x438B, { 0x8A, 0x42, 0x98, 0x42, 0x4B, 0x88, 0xAF, 0xB8}};
 const CLSID CLSID_LibraryFolder             = {0xa5a3563a, 0x5755, 0x4a6f, { 0x85, 0x4e, 0xaf, 0xa3, 0x23, 0x0b, 0x19, 0x9f}};
-const CLSID CLSID_WebBrowserExt             = {0x55bbf1b8, 0x0d30, 0x4908, { 0xbe, 0x0c, 0xd5, 0x76, 0x61, 0x2a, 0x0f, 0x48}};
 
 #ifndef IID_IWICBitmap
 const IID IID_IWICBitmap                    = {0x00000121, 0xa8f2, 0x4877, { 0xba, 0x0a, 0xfd, 0x2b, 0x66, 0x45, 0xfb, 0x94}};
 #endif
+
+//Tablacus Explorer (Edge)
+const CLSID CLSID_WebBrowserExt             = {0x55bbf1b8, 0x0d30, 0x4908, { 0xbe, 0x0c, 0xd5, 0x76, 0x61, 0x2a, 0x0f, 0x48}};
+// {BD34E79B-963F-4AFB-B03E-C5BD289B5080}
+const IID SID_TablacusObject                = {0xbd34e79b, 0x963f, 0x4afb, { 0xb0, 0x3e, 0xc5, 0xbd, 0x28, 0x9b, 0x50, 0x80}};
+// {A7A52B88-B449-47BB-BD92-ABCCD8A6FED7}
+const IID SID_TablacusArray                 = {0xa7a52b88, 0xb449, 0x47bb, { 0xbd, 0x92, 0xab, 0xcc, 0xd8, 0xa6, 0xfe, 0xd7 }};

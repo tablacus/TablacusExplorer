@@ -207,6 +207,7 @@ BOOL GetVarArrayFromIDList(VARIANT *pv, LPITEMIDLIST pidl);
 HRESULT teGetDisplayNameFromIDList(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags);
 HRESULT STDAPICALLTYPE tePSPropertyKeyFromStringEx(__in LPCWSTR pszString, __out PROPERTYKEY *pkey);
 VOID teGetDarkMode();
+IDispatch* teCreateObj(LONG lId, VARIANT *pvArg);
 
 //Unit
 
@@ -1625,6 +1626,10 @@ BOOL GetDispatch(VARIANT *pv, IDispatch **ppdisp)
 	if (FindUnknown(pv, &punk)) {
 		return SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(ppdisp)));
 	}
+	if (pv->vt == (VT_ARRAY | VT_VARIANT)) {
+		*ppdisp = teCreateObj(2, pv);
+		return TRUE;
+	}
 	return FALSE;
 }
 
@@ -1952,6 +1957,11 @@ HRESULT Invoke5(IDispatch *pdisp, DISPID dispid, WORD wFlags, VARIANT *pvResult,
 	} catch (...) {
 		hr = E_FAIL;
 	}
+/*	if (hr == HRESULT_FROM_WIN32(ERROR_POSSIBLE_DEADLOCK)) {
+		if (g_pSP) {
+			hr = g_pWebBrowser->m_pWebBrowser->GetProperty(L"test2();", pvResult);
+		}
+	}*/
 	teClearVariantArgs(nArgs, pvArgs);
 	return hr;
 }
@@ -4574,6 +4584,8 @@ IDispatch* teCreateObj(LONG lId, VARIANT *pvArg)
 	case 2://Array
 		if (!g_pSP || g_pSP->QueryService(SID_TablacusArray, IID_PPV_ARGS(&pdisp)) != S_OK) {
 			GetNewArray(&pdisp);
+		} else if (pvArg) {
+			Invoke5(pdisp, DISPID_PROPERTYPUT, DISPATCH_PROPERTYPUT, NULL, -1, pvArg);
 		}
 		return pdisp;
 
@@ -9358,11 +9370,6 @@ VOID teApiObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVa
 VOID teApiArray(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	teSetObjectRelease(pVarResult, teCreateObj(2, NULL));
-/*	SAFEARRAY *psa = SafeArrayCreateVector(VT_VARIANT, 0, 0);
-	if (psa) {
-		pVarResult->vt = VT_ARRAY | VT_VARIANT;
-		pVarResult->parray = psa;
-	}*/
 }
 
 VOID teApiPathIsRoot(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -9560,7 +9567,18 @@ VOID teApiCreateObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIAN
 	::WideCharToMultiByte(CP_TE, 0, param[0].lpcwstr, -1, pszNameA, ARRAYSIZE(pszNameA) - 1, NULL, NULL);
 	for (int i = 0; methodObject[i].name; ++i) {
 		if (lstrcmpiA(pszNameA, methodObject[i].name) == 0) {
-			teSetObjectRelease(pVarResult, teCreateObj(methodObject[i].id, nArg >= 1 ? &pDispParams->rgvarg[nArg - 1] : NULL));
+			if (!g_pSP || methodObject[i].id != 2) {
+				teSetObjectRelease(pVarResult, teCreateObj(methodObject[i].id, nArg >= 1 ? &pDispParams->rgvarg[nArg - 1] : NULL));
+				return;
+			}
+			if (pVarResult) {
+				SAFEARRAYBOUND sab = { 0, 0 };
+				SAFEARRAY *psa = SafeArrayCreate(VT_VARIANT, 1, &sab);
+				if (psa) {
+					pVarResult->vt = VT_ARRAY | VT_VARIANT;
+					pVarResult->parray = psa;
+				}
+			}
 			return;
 		}
 	}
@@ -9847,12 +9865,16 @@ VOID teApiGetProp(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pV
 	teSetPtr(pVarResult, GetProp(param[0].hwnd, param[1].lpcwstr));
 }
 
-/*
+
 VOID teApiTest(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetBool(pVarResult, g_dwMainThreadId == GetCurrentThreadId());
+	if (g_pOnFunc[TE_OnHitTest] && nArg >= 0 && pDispParams->rgvarg[nArg].vt == VT_BSTR) {
+		if (g_pSP) {
+			g_pWebBrowser->m_pWebBrowser->GetProperty(pDispParams->rgvarg[nArg].bstrVal, pVarResult);
+		}
+	}
 }
-*/
+//*/
 /*
 VOID teApi(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -10199,9 +10221,8 @@ TEDispatchApi dispAPI[] = {
 	{ 3, -1, -1, -1, "SetFilePointer", teApiSetFilePointer },
 	{ 1, -1, -1, -1, "SysStringByteLen", teApiSysStringByteLen },
 	{ 2,  1, -1, -1, "GetProp", teApiGetProp },
-
 //	{ 0, -1, -1, -1, "", teApi },
-//	{ 0, -1, -1, -1, "Test", teApiTest },
+	{ 0, -1, -1, -1, "Test", teApiTest },
 };
 
 VOID Initlize()
@@ -16852,7 +16873,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 							}
 							break;
 					}//end_switch
-					teSetObjectRelease(pVarResult, teAddLegacySupport(pArray));
+					teSetObjectRelease(pVarResult, pArray);
 				}
 				return S_OK;
 			//ClearEvents
