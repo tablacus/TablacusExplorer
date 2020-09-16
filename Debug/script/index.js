@@ -1797,7 +1797,7 @@ te.OnClipboardText = function (Items) {
 	return s.join(" ");
 }
 
-te.OnArrange = function (Ctrl, rc) {
+te.OnArrange = function (Ctrl, rc, cb) {
 	RunEvent1("Arrange", Ctrl, rc);
 	if (Ctrl.Type == CTRL_TC) {
 		var o = g_.Panels[Ctrl.Id];
@@ -1847,6 +1847,7 @@ te.OnArrange = function (Ctrl, rc) {
 	} else if (Ctrl.Type == CTRL_TE) {
 		g_.TCPos = {};
 	}
+	cb(Ctrl, rc);
 }
 
 te.OnVisibleChanged = function (Ctrl) {

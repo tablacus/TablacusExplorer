@@ -801,6 +801,7 @@ TEmethod methodTE[] = {
 	{ START_OnFunc + TE_OnIncludeItem, "OnIncludeItem" },
 	{ START_OnFunc + TE_OnContentsChanged, "OnContentsChanged" },
 	{ START_OnFunc + TE_OnFilterView, "OnFilterView" },
+	{ START_OnFunc + TE_FN, "fn" },
 	{ 0, NULL }
 };
 
