@@ -988,7 +988,7 @@ public:
 	DISPID		m_dispIdMember;
 	int			m_nIndex;
 private:
-	IDispatch	*m_pDispatch;
+	IDispatch	*m_pDispatch, *m_pDispatch2;
 
 	LONG		m_cRef;
 	int			m_nMode;//0: Clone 1:Collection 2:IActiveScript 4:DLL

@@ -24051,6 +24051,7 @@ CteDispatch::CteDispatch(IDispatch *pDispatch, int nMode, DISPID dispId)
 {
 	m_cRef = 1;
 	pDispatch->QueryInterface(IID_PPV_ARGS(&m_pDispatch));
+	m_pDispatch2 = NULL;
 	m_nMode = nMode;
 	m_dispIdMember = dispId;
 	m_nIndex = 0;
@@ -24065,6 +24066,7 @@ CteDispatch::~CteDispatch()
 
 VOID CteDispatch::Clear()
 {
+	SafeRelease(&m_pDispatch2);
 	SafeRelease(&m_pDispatch);
 	if (m_pActiveScript) {
 		m_pActiveScript->SetScriptState(SCRIPTSTATE_CLOSED);
@@ -24120,8 +24122,22 @@ STDMETHODIMP CteDispatch::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInf
 STDMETHODIMP CteDispatch::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
 	if (m_pDispatch) {
-		if (m_nMode || tePathMatchSpec(*rgszNames, L"Item;Count")) {
+		if (m_nMode) {
 			return m_pDispatch->GetIDsOfNames(riid, rgszNames, cNames, lcid, rgDispId);
+		} else {
+			if (!m_pDispatch2) {
+				VARIANT v;
+				VariantInit(&v);
+				Invoke5(m_pDispatch, m_dispIdMember, DISPATCH_METHOD, &v, 0, NULL);
+				if (v.vt == VT_DISPATCH) {
+					m_pDispatch2 = v.pdispVal;
+				} else {
+					VariantClear(&v);
+				}
+			}
+			if (m_pDispatch2) {
+				return m_pDispatch2->GetIDsOfNames(riid, rgszNames, cNames, lcid, rgDispId);
+			}
 		}
 	}
 	return DISP_E_UNKNOWNNAME;
@@ -24163,6 +24179,8 @@ STDMETHODIMP CteDispatch::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 				return S_OK;
 			}
 			return m_pDispatch->Invoke(dispIdMember, riid, lcid, wFlags, pDispParams, pVarResult, pExcepInfo, puArgErr);
+		} else if (dispIdMember != DISPID_VALUE && m_pDispatch2) {
+			return m_pDispatch2->Invoke(dispIdMember, riid, lcid, wFlags, pDispParams, pVarResult, pExcepInfo, puArgErr);
 		}
 		if (wFlags & DISPATCH_PROPERTYGET && dispIdMember == DISPID_VALUE) {
 			teSetObject(pVarResult, this);

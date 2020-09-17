@@ -826,7 +826,7 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata) {
 						setTimeout(function (FV) {
 							if (!api.SendMessage(FV.hwndList, LVM_GETEDITCONTROL, 0, 0) || WINVER < 0x600) {
 								var Items = FV.Items;
-								FV.SelectItem(Items.Item(FV.GetFocusedItem() + (api.GetKeyState(VK_SHIFT) < 0 ? -1 : 1)) || FV.Items.Item(api.GetKeyState(VK_SHIFT) < 0 ? Items.Count - 1 : 0), SVSI_EDIT | SVSI_FOCUSED | SVSI_SELECT | SVSI_DESELECTOTHERS);
+								FV.SelectItem(Items.Item(FV.GetFocusedItem() + (api.GetKeyState(VK_SHIFT) < 0 ? -1 : 1)) || FV.Item(api.GetKeyState(VK_SHIFT) < 0 ? FV.ItemCount(SVGIO_ALLVIEW) - 1 : 0), SVSI_EDIT | SVSI_FOCUSED | SVSI_SELECT | SVSI_DESELECTOTHERS);
 							}
 						}, 99, Ctrl);
 					}
@@ -2571,7 +2571,7 @@ g_.mouse =
 		switch (Ctrl ? Ctrl.Type : 0) {
 			case CTRL_SB:
 			case CTRL_EB:
-				return Ctrl.SelectedItems.Count ? "List" : "List_Background";
+				return Ctrl.ItemCount(SVGIO_SELECTION) ? "List" : "List_Background";
 			case CTRL_TV:
 				return "Tree";
 			case CTRL_TC:
