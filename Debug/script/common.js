@@ -2,7 +2,7 @@
 
 function AboutTE(n) {
 	if (n == 0) {
-		return te.Version < 20200917 ? te.Version : 20200917;
+		return te.Version < 20200918 ? te.Version : 20200918;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -633,10 +633,39 @@ function MakeImgIcon(src, index, h, bIcon) {
 		var icon = res[1].split(",");
 		var hModule = LoadImgDll(icon, index);
 		if (hModule) {
-			var himl = api.ImageList_LoadImage(hModule, isFinite(icon[index * 4 + 1]) ? Number(icon[index * 4 + 1]) : icon[index * 4 + 1], icon[index * 4 + 2], 0, CLR_DEFAULT, IMAGE_BITMAP, LR_CREATEDIBSECTION);
+			var himl = api.ImageList_LoadImage(hModule, isFinite(icon[index * 4 + 1]) ? Number(icon[index * 4 + 1]) : icon[index * 4 + 1], icon[index * 4 + 2], CLR_NONE, CLR_NONE, IMAGE_BITMAP, LR_CREATEDIBSECTION | LR_LOADTRANSPARENT);
 			if (himl) {
 				hIcon = api.ImageList_GetIcon(himl, icon[index * 4 + 3], ILD_NORMAL);
 				api.ImageList_Destroy(himl);
+			} else if ((icon[index * 4] || "").toLowerCase() == "ieframe.dll") {
+				var ar = [
+					["bitmap:ieframe.dll,206,16,", "bitmap:ExplorerFrame.dll,264,16,", 16],
+					["bitmap:ieframe.dll,204,24,", "bitmap:ExplorerFrame.dll,264,16,", 16],
+					["bitmap:ieframe.dll,216,16,", "bitmap:comctl32.dll,130,16,", 16],
+					["bitmap:ieframe.dll,214,24,", "bitmap:comctl32.dll,131,24,", 24]
+				];
+				for (var i in ar) {
+					var a2 = ar[i];
+					if (api.StrCmpNI(src, a2[0], a2[0].length) == 0) {
+						api.DestroyIcon(hIcon);
+						src = src.replace(a2[0], a2[1]);
+						if (i > 1) {
+							var a3 = src.split(",");
+							if (a3[3] == 43) {
+								a3[3] -= 39;
+							} else if (a3[3] > 19) {
+								a3[1] -= 6;
+								a3[3] -= 20;
+							} else if (a3[3] > 4) {
+								a3[1] -= 10;
+								a3[3] -= 5;
+							}
+							src = a3.join(",");
+						}
+						hIcon = MakeImgIcon(src, index, a2[2], bIcon);
+						break;
+					}
+				}
 			}
 			api.FreeLibrary(hModule);
 			return hIcon;

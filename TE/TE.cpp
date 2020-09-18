@@ -1957,8 +1957,22 @@ HRESULT Invoke5(IDispatch *pdisp, DISPID dispid, WORD wFlags, VARIANT *pvResult,
 		dispParams.cNamedArgs = 0;
 	}
 	try {
+#ifdef _DEBUG
+		::OutputDebugString(L"Invoke:\n");
+#endif
 		hr = pdisp->Invoke(dispid, IID_NULL, LOCALE_USER_DEFAULT,
 			wFlags, &dispParams, pvResult, NULL, NULL);
+#ifdef _DEBUG
+		WCHAR pszFunc[12];
+		swprintf_s(pszFunc, 12, L"%x\n", hr);
+		::OutputDebugString(pszFunc);
+		if (hr == E_ACCESSDENIED) {
+			Sleep(1);
+		}
+		if (hr == E_UNEXPECTED) {
+			Sleep(1);
+		}
+#endif
 	} catch (...) {
 		hr = E_FAIL;
 	}
@@ -1982,7 +1996,13 @@ HRESULT Invoke5(IDispatch *pdisp, DISPID dispid, WORD wFlags, VARIANT *pvResult,
 				}
 				teExecMethod(g_pOnFunc[TE_FN], L"push", NULL, -1, &v);
 				VariantClear(&v);
+#ifdef _DEBUG
+				OutputDebugString(L"_InvokeMethod();\n");
+#endif
 				hr = g_pWebBrowser->m_pWebBrowser->GetProperty(L"_InvokeMethod();", pvResult);
+#ifdef _DEBUG
+				OutputDebugString(L"OK");
+#endif
 			}
 		}
 	}
@@ -6008,6 +6028,11 @@ VOID ArrangeWindowTE()
 	rcClient.top += g_param[TE_Top];
 	rcClient.right -= g_param[TE_Width];
 	rcClient.bottom -= g_param[TE_Height];
+#ifdef _DEBUG
+	if (g_pSP) {
+		rcClient.top += 32;
+	}
+#endif
 	CteShellBrowser *pSB;
 	teLockUpdate(1);
 	try {
@@ -17541,8 +17566,8 @@ CteWebBrowser::CteWebBrowser(HWND hwndParent, WCHAR *szPath, VARIANT *pvArg)
 		hr = teCreateInstance(CLSID_WebBrowserExt, L"C:\\cpp\\tewv\\Debug\\tewv32d.dll", &g_hTEWV, IID_PPV_ARGS(&m_pWebBrowser));
 		if (hr == S_OK && !g_pSP) {
 			m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&g_pSP));
-//			m_pWebBrowser->Release();
-//			hr = E_FAIL;
+/*			m_pWebBrowser->Release();
+			hr = E_FAIL;//*/
 		}
 	}
 	if FAILED(hr) {
@@ -19278,7 +19303,11 @@ STDMETHODIMP CteFolderItems::Item(VARIANT index, FolderItem **ppid)
 			return m_pFolderItems->Item(index, ppid);
 		}
 		if (m_oFolderItems) {
-			return m_ovFolderItems[i]->QueryInterface(IID_PPV_ARGS(ppid));
+			if (i < m_ovFolderItems.size()) {
+				return m_ovFolderItems[i]->QueryInterface(IID_PPV_ARGS(ppid));
+			}
+			*ppid = NULL;
+			return E_FAIL;
 		}
 	}
 	if (!m_pidllist) {

@@ -1397,16 +1397,24 @@ OpenIcon = function (o) {
 			var a1 = a[1];
 			var hModule = LoadImgDll(a, 0);
 			if (hModule) {
-				var himl = api.ImageList_LoadImage(hModule, isFinite(a[1]) ? a[1] - 0 : a[1], a[2], 0, CLR_DEFAULT, IMAGE_BITMAP, LR_CREATEDIBSECTION);
-				if (himl) {
-					a[1] = a1;
-					var nCount = api.ImageList_GetImageCount(himl);
-					a[0] = fso.GetFileName(dllpath);
-					for (a[3] = 0; a[3] < nCount; a[3]++) {
-						var s = "bitmap:" + a.join(",");
-						var src = MakeImgSrc(s, 0, false, a[2]);
-						data.push('<img src="' + src + '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="' + s + '"> ');
+				var lpbmp = isFinite(a[1]) ? a[1] - 0 : a[1];
+				var himl = api.ImageList_LoadImage(hModule, lpbmp, a[2], CLR_NONE, CLR_NONE, IMAGE_BITMAP, LR_CREATEDIBSECTION | LR_LOADTRANSPARENT);
+				a[1] = a1;
+				var nCount = himl ? api.ImageList_GetImageCount(himl) : 0;
+				if (nCount == 0) {
+					if (lpbmp == 206 || lpbmp == 204) {
+						nCount = 20;
+					} else if (lpbmp == 216 || lpbmp == 214) {
+						nCount = 32;
 					}
+				}
+				a[0] = fso.GetFileName(dllpath);
+				for (a[3] = 0; a[3] < nCount; a[3]++) {
+					var s = "bitmap:" + a.join(",");
+					var src = MakeImgSrc(s, 0, false, a[2]);
+					data.push('<img src="' + src + '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="' + s + '"> ');
+				}
+				if (himl) {
 					api.ImageList_Destroy(himl);
 				}
 				api.FreeLibrary(hModule);
@@ -1458,10 +1466,10 @@ InitDialog = function () {
 	if (res) {
 		var a =
 		{
-			"16px ieframe,206": "b,206,16",
-			"24px ieframe,204": "b,204,24",
 			"16px ieframe,216": "b,216,16",
 			"24px ieframe,214": "b,214,24",
+			"16px ieframe,206": "b,206,16",
+			"24px ieframe,204": "b,204,24",
 			"16px ieframe,699": "b,699,16",
 			"24px ieframe,697": "b,697,24",
 
@@ -1471,9 +1479,6 @@ InitDialog = function () {
 			"setupapi": "i,setupapi.dll",
 			"dsuiext": "i,dsuiext.dll",
 			"inetcpl": "i,inetcpl.cpl",
-
-			"25px TRAVEL_ENABLED_XP": "b,TRAVEL_ENABLED_XP.BMP,25",
-			"30px TRAVEL_ENABLED_XP": "b,TRAVEL_ENABLED_XP_120.BMP,30"
 		};
 		var s = [];
 		for (var i in a) {
