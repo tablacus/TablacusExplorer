@@ -1483,7 +1483,7 @@ InitDialog = function () {
 		var s = [];
 		for (var i in a) {
 			if (a[i].charAt(0) == "i" || res[1] != "2") {
-				s.push('<div id="' + a[i] + '" onclick="OpenIcon(this)" style="cursor: pointer"><span class="tab">' + i + '</span></div>');
+				s.push('<div id="' + a[i] + '" onclick="OpenIcon(this)" style="cursor: pointer"><span class="tab">' + i.replace(/ieframe,21\d/, GetText("General")).replace(/ieframe,20\d/, GetText("Browser")) + '</span></div>');
 			}
 		}
 		s.push('<div onclick="SearchIcon(this)" style="cursor: pointer"><span class="tab">' + GetText("Search") + '</span></div>');

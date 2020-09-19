@@ -1844,10 +1844,66 @@ te.OnArrange = function (Ctrl, rc, cb) {
 		o = document.getElementById("Inner2Center_" + Ctrl.Id).style;
 		o.width = Math.max(rc.right - rc.left, 0) + "px";
 		o.height = Math.max(rc.bottom - rc.top, 0) + "px";
+		cb(Ctrl, rc);
 	} else if (Ctrl.Type == CTRL_TE) {
-		g_.TCPos = {};
+		g_.TCPos = api.CreateObject("Object");
+		var rcClient = api.Memory("RECT");
+		api.GetClientRect(te.hwnd, rcClient);
+		rcClient.left += te.offsetLeft;
+		rcClient.top += te.offsetTop;
+		rcClient.right -= te.offsetRight;
+		rcClient.bottom -= te.offsetBottom;
+		te.LockUpdate(1);
+		try {
+			var cTC = te.Ctrls(CTRL_TC, true);
+			for (var i = 0; i < cTC.Count; ++i) {
+				var TC = cTC[i];
+				var rc = api.Memory("RECT");
+				var res = /(\d+)%/.exec(TC.Left);
+				if (res) {
+					rc.left = res[1] * (rcClient.right - rcClient.left) / 100 + rcClient.left;
+				} else {
+					rc.left = TC.Left + (TC.Left >= 0 ? rcClient.left : rcClient.right);
+				}
+				if (TC.Left) {
+					++rc.left;
+				}
+				res = /(\d+)%/.exec(TC.Top);
+				if (res) {
+					rc.top = res[1] * (rcClient.bottom - rcClient.top) / 100 + rcClient.top;
+				} else {
+					rc.top = TC.Top + (TC.Top >= 0 ? rcClient.top : rcClient.bottom);
+				}
+				if (TC.Top) {
+					++rc.top;
+				}
+				res = /(\d+)%/.exec(TC.Width);
+				if (res) {
+					rc.right = res[1] * (rcClient.right - rcClient.left) / 100 + rc.left;
+				} else {
+					rc.right = TC.Width + (TC.Width >= 0 ? rc.left : rcClient.right);
+				}
+				if (rc.right >= rcClient.right) {
+					rc.right = rcClient.right;
+				} else {
+					--rc.right;
+				}
+				res = /(\d+)%/.exec(TC.Height);
+				if (res) {
+					rc.bottom = res[1] * (rcClient.bottom - rcClient.top) / 100 + rc.top;
+				} else {
+					rc.bottom = TC.Height + (TC.Height >= 0 ? rc.top : rcClient.bottom);
+				}
+				if (rc.bottom >= rcClient.bottom) {
+					rc.bottom = rcClient.bottom;
+				} else {
+					--rc.bottom;
+				}
+				te.OnArrange(TC, rc, cb);
+			}
+		} catch (e) { }
+		te.UnlockUpdate(1);
 	}
-	cb(Ctrl, rc);
 }
 
 te.OnVisibleChanged = function (Ctrl) {

@@ -168,6 +168,7 @@ BOOL	g_bCanLayout = FALSE;
 BOOL	g_bUpper10;
 BOOL	g_bDarkMode = FALSE;
 BOOL	g_bDragIcon = TRUE;
+BOOL	g_bBlink = FALSE;
 #ifdef _2000XP
 std::vector <IUnknown *> g_pRelease;
 int		g_nCharWidth = 7;
@@ -210,6 +211,8 @@ VOID teGetDarkMode();
 IDispatch* teCreateObj(LONG lId, VARIANT *pvArg);
 VOID teArrayPush(IDispatch *pdisp, PVOID pObj);
 HRESULT teExecMethod(IDispatch *pdisp, LPOLESTR sz, VARIANT *pvResult, int nArg, VARIANTARG *pvArgs);
+VOID Invoke4(IDispatch *pdisp, VARIANT *pvResult, int nArgs, VARIANTARG *pvArgs);
+int teGetObjectLength(IDispatch *pdisp);
 
 //Unit
 
@@ -1941,6 +1944,44 @@ VOID teClearVariantArgs(int nArgs, VARIANTARG *pvArgs)
 	}
 }
 
+VOID teInvokeUI(IDispatch *pdisp, int nArgs, VARIANTARG *pvArgs)
+{
+	if (g_bBlink) {
+		int nArgsA = abs(nArgs);
+		SAFEARRAY *psa = SafeArrayCreateVector(VT_VARIANT, 0, nArgsA + 1);
+		LONG l = 0;
+		VARIANT v;
+		v.pdispVal = pdisp;
+		v.vt = VT_DISPATCH;
+		SafeArrayPutElement(psa, &l, &v);
+		while (l < nArgsA) {
+			++l;
+			SafeArrayPutElement(psa, &l, &pvArgs[nArgsA - l]);
+		}
+		v.parray = psa;
+		v.vt = VT_ARRAY | VT_VARIANT;
+		if (!g_pOnFunc[TE_FN]) {
+			g_pOnFunc[TE_FN] = teCreateObj(TE_ARRAY, NULL);
+		}
+		teExecMethod(g_pOnFunc[TE_FN], L"push", NULL, -1, &v);
+		VariantClear(&v);
+		if (teGetObjectLength(g_pOnFunc[TE_FN]) < 2) {
+#ifdef _DEBUG
+			HRESULT hr =
+#endif
+			g_pWebBrowser->m_pWebBrowser->GetProperty(L"_InvokeMethod();", NULL);
+#ifdef _DEBUG
+			wchar_t psz[99];
+			swprintf_s(psz, 99, L"InvokeUI: %x\n", hr);
+			OutputDebugString(psz);
+#endif
+		}
+		teClearVariantArgs(nArgs, pvArgs);
+	} else {
+		Invoke4(pdisp, NULL, nArgs, pvArgs);
+	}
+}
+
 HRESULT Invoke5(IDispatch *pdisp, DISPID dispid, WORD wFlags, VARIANT *pvResult, int nArgs, VARIANTARG *pvArgs)
 {
 	HRESULT hr;
@@ -1957,20 +1998,19 @@ HRESULT Invoke5(IDispatch *pdisp, DISPID dispid, WORD wFlags, VARIANT *pvResult,
 		dispParams.cNamedArgs = 0;
 	}
 	try {
-#ifdef _DEBUG
-		::OutputDebugString(L"Invoke:\n");
-#endif
 		hr = pdisp->Invoke(dispid, IID_NULL, LOCALE_USER_DEFAULT,
 			wFlags, &dispParams, pvResult, NULL, NULL);
 #ifdef _DEBUG
-		WCHAR pszFunc[12];
-		swprintf_s(pszFunc, 12, L"%x\n", hr);
-		::OutputDebugString(pszFunc);
-		if (hr == E_ACCESSDENIED) {
-			Sleep(1);
-		}
-		if (hr == E_UNEXPECTED) {
-			Sleep(1);
+		if (hr) {
+			WCHAR pszFunc[99];
+			swprintf_s(pszFunc, 99, L"Invoke: %x\n", hr);
+			::OutputDebugString(pszFunc);
+			if (hr == E_ACCESSDENIED) {
+				Sleep(1);
+			}
+			if (hr == E_UNEXPECTED) {
+				Sleep(1);
+			}
 		}
 #endif
 	} catch (...) {
@@ -1978,31 +2018,8 @@ HRESULT Invoke5(IDispatch *pdisp, DISPID dispid, WORD wFlags, VARIANT *pvResult,
 	}
 	if (hr == HRESULT_FROM_WIN32(ERROR_POSSIBLE_DEADLOCK)) {
 		if (wFlags & DISPATCH_METHOD) {
-			if (g_pSP && dispid == DISPID_VALUE) {
-				SAFEARRAY *psa = SafeArrayCreateVector(VT_VARIANT, 0, nArgs + 1);
-				LONG l = 0;
-				VARIANT v;
-				v.pdispVal = pdisp;
-				v.vt = VT_DISPATCH;
-				SafeArrayPutElement(psa, &l, &v);
-				while (l < nArgs) {
-					++l;
-					SafeArrayPutElement(psa, &l, &pvArgs[nArgs - l]);
-				}
-				v.parray = psa;
-				v.vt = VT_ARRAY | VT_VARIANT;
-				if (!g_pOnFunc[TE_FN]) {
-					g_pOnFunc[TE_FN] = teCreateObj(TE_ARRAY, NULL);
-				}
-				teExecMethod(g_pOnFunc[TE_FN], L"push", NULL, -1, &v);
-				VariantClear(&v);
-#ifdef _DEBUG
-				OutputDebugString(L"_InvokeMethod();\n");
-#endif
-				hr = g_pWebBrowser->m_pWebBrowser->GetProperty(L"_InvokeMethod();", pvResult);
-#ifdef _DEBUG
-				OutputDebugString(L"OK");
-#endif
+			if (g_bBlink && dispid == DISPID_VALUE) {
+				teInvokeUI(pdisp, -abs(nArgs), pvArgs);
 			}
 		}
 	}
@@ -4410,6 +4427,15 @@ HRESULT DoFunc(int nFunc, PVOID pObj, HRESULT hr)
 	return hr;
 }
 
+VOID DoFuncUI(int nFunc, PVOID pObj)
+{
+	if (g_pOnFunc[nFunc]) {
+		VARIANTARG *pv = GetNewVARIANT(1);
+		teSetObject(&pv[0], pObj);
+		teInvokeUI(g_pOnFunc[nFunc], 1, pv);
+	}
+}
+
 VOID teSetProgress(IProgressDialog *ppd, int nCurrent, int nCount)
 {
 	WCHAR pszMsg[8];
@@ -4625,7 +4651,7 @@ IDispatch* teCreateObj(LONG lId, VARIANT *pvArg)
 	IDispatch *pdispResult = NULL;
 	switch (lId) {
 	case TE_OBJECT:
-		if (!g_pSP || g_pSP->QueryService(SID_TablacusObject, IID_PPV_ARGS(&pdisp)) != S_OK) {
+		if (!g_bBlink || g_pSP->QueryService(SID_TablacusObject, IID_PPV_ARGS(&pdisp)) != S_OK) {
 			GetNewObject(&pdisp);
 		}
 		return pdisp;
@@ -5822,46 +5848,6 @@ VOID teSetTabWidth(CteTabCtrl *pTC, LPARAM lParam)
 	}
 }
 
-VOID teCalcClientRect(int *param, LPRECT prc, LPRECT prcClient)
-{
-	if (param[TE_Left] & 0x3fff) {
-		prc->left = (param[TE_Left] * (prcClient->right - prcClient->left)) / 10000 + prcClient->left;
-	} else {
-		prc->left = param[TE_Left] / 0x4000 + (param[TE_Left] >= 0 ? prcClient->left : prcClient->right);
-	}
-	if (param[TE_Left]) {
-		++prc->left;
-	}
-	if (param[TE_Top] & 0x3fff) {
-		prc->top = (param[TE_Top] * (prcClient->bottom - prcClient->top)) / 10000 + prcClient->top;
-	} else {
-		prc->top = param[TE_Top] / 0x4000 + (param[TE_Top] >= 0 ? prcClient->top : prcClient->bottom);
-	}
-	if (param[TE_Top]) {
-		++prc->top;
-	}
-	if (param[TE_Width] & 0x3fff) {
-		prc->right = param[TE_Width] * (prcClient->right - prcClient->left) / 10000 + prc->left;
-	} else {
-		prc->right = param[TE_Width] / 0x4000 + (param[TE_Width] >= 0 ? prc->left : prcClient->right);
-	}
-	if (prc->right >= prcClient->right) {
-		prc->right = prcClient->right;
-	} else {
-		--prc->right;
-	}
-	if (param[TE_Height] & 0x3fff) {
-		prc->bottom = param[TE_Height] * (prcClient->bottom - prcClient->top) / 10000 + prc->top;
-	} else {
-		prc->bottom = param[TE_Height] / 0x4000 + (param[TE_Height] >= 0 ? prc->top : prcClient->bottom);
-	}
-	if (prc->bottom >= prcClient->bottom) {
-		prc->bottom = prcClient->bottom;
-	} else {
-		--prc->bottom;
-	}
-}
-
 VOID ArrangeWindowTC(CteTabCtrl *pTC, RECT *prc)
 {
 	if (!prc) {
@@ -6020,55 +6006,18 @@ VOID ArrangeWindowTC(CteTabCtrl *pTC, RECT *prc)
 	pTC->UnlockUpdate();
 }
 
-VOID ArrangeWindowTE()
-{
-	RECT rc, rcClient;
-	GetClientRect(g_hwndMain, &rcClient);
-	rcClient.left += g_param[TE_Left];
-	rcClient.top += g_param[TE_Top];
-	rcClient.right -= g_param[TE_Width];
-	rcClient.bottom -= g_param[TE_Height];
-#ifdef _DEBUG
-	if (g_pSP) {
-		rcClient.top += 32;
-	}
-#endif
-	CteShellBrowser *pSB;
-	teLockUpdate(1);
-	try {
-		g_bArrange = FALSE;
-		KillTimer(g_hwndMain, TET_Size);
-		for (size_t i = 0; i < g_ppTC.size(); ++i) {
-			CteTabCtrl *pTC = g_ppTC[i];
-			if (pTC && pTC->m_bVisible) {
-				teCalcClientRect(pTC->m_param, &rc, &rcClient);
-				if (g_pOnFunc[TE_OnArrange]) {
-					VARIANTARG *pv;
-					pv = GetNewVARIANT(3);
-					teSetObject(&pv[2], pTC);
-					CteMemory *pstRect = new CteMemory(sizeof(RECT), NULL, 1, L"RECT");
-					::CopyMemory(pstRect->m_pc, &rc, sizeof(RECT));
-					teSetObjectRelease(&pv[1], pstRect);
-					teSetObjectRelease(&pv[0], new CteDispatch(g_pTE, 0, DISPID_CB_ARANGE));
-					Invoke4(g_pOnFunc[TE_OnArrange], NULL, 3, pv);
-				}
-			}
-		}
-	} catch (...) {}
-	teUnlockUpdate(1);
-}
-
 VOID ArrangeWindowEx()
 {
 	if (!g_bArrange || g_nLockUpdate) {
 		return;
 	}
+	g_bArrange = FALSE;
 	if (g_pOnFunc[TE_OnArrange]) {
 		VARIANTARG *pv;
 		pv = GetNewVARIANT(3);
 		teSetObject(&pv[2], g_pTE);
 		teSetObjectRelease(&pv[0], new CteDispatch(g_pTE, 0, DISPID_CB_ARANGE));
-		Invoke4(g_pOnFunc[TE_OnArrange], NULL, 3, pv);
+		teInvokeUI(g_pOnFunc[TE_OnArrange], 3, pv);
 	}
 }
 
@@ -17311,12 +17260,12 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				return S_OK;
 			//LockUpdate
 			case TE_METHOD + 1080:
-				teLockUpdate(16);
+				teLockUpdate(nArg < 0 ? 16 :1);
 				return S_OK;
 			//UnlockUpdate
 			case TE_METHOD + 1090:
-				teUnlockUpdate(16);
-				if (g_nLockUpdate < 16) {
+				teUnlockUpdate(nArg < 0 ? 16 :1);
+				if (nArg < 0 && g_nLockUpdate < 16) {
 					ArrangeWindowEx();
 					SetTimer(g_hwndMain, TET_Redraw, 500, teTimerProc);
 				}
@@ -17329,8 +17278,6 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 						CteTabCtrl *pTC;
 						if SUCCEEDED(punk->QueryInterface(g_ClsIdTC, (LPVOID *)&pTC)) {
 							ArrangeWindowTC(pTC, (LPRECT)GetpcFromVariant(&pDispParams->rgvarg[nArg - 1], NULL));
-						} else {
-							ArrangeWindowTE();
 						}
 					}
 				}
@@ -17560,21 +17507,22 @@ CteWebBrowser::CteWebBrowser(HWND hwndParent, WCHAR *szPath, VARIANT *pvArg)
 	MSG        msg;
 	RECT       rc;
 	IOleObject *pOleObject;
-#ifdef _DEBUG
 	HRESULT hr = E_FAIL;
-	if (!g_pWebBrowser) {
-		hr = teCreateInstance(CLSID_WebBrowserExt, L"C:\\cpp\\tewv\\Debug\\tewv32d.dll", &g_hTEWV, IID_PPV_ARGS(&m_pWebBrowser));
-		if (hr == S_OK && !g_pSP) {
-			m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&g_pSP));
-/*			m_pWebBrowser->Release();
-			hr = E_FAIL;//*/
-		}
+#ifdef _DEBUG
+	hr = teCreateInstance(CLSID_WebBrowserExt, L"C:\\cpp\\tewv\\Debug\\tewv32d.dll", &g_hTEWV, IID_PPV_ARGS(&m_pWebBrowser));
+	if (hr == S_OK && !g_pSP) {
+		g_bBlink = TRUE;
+		m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&g_pSP));
+/*
+		m_pWebBrowser->Release();
+		hr = E_FAIL;//*/
 	}
 	if FAILED(hr) {
+		g_bBlink = FALSE;
 		hr = teCreateInstance(CLSID_WebBrowser, NULL, NULL, IID_PPV_ARGS(&m_pWebBrowser));
 	}
 #else
-	HRESULT hr = teCreateInstance(CLSID_WebBrowser, NULL, NULL, IID_PPV_ARGS(&m_pWebBrowser));
+	 hr = teCreateInstance(CLSID_WebBrowser, NULL, NULL, IID_PPV_ARGS(&m_pWebBrowser));
 #endif
 	if (SUCCEEDED(hr) && SUCCEEDED(m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&pOleObject)))) {
 		pOleObject->SetClientSite(static_cast<IOleClientSite *>(this));
@@ -18331,7 +18279,7 @@ VOID CteTabCtrl::Show(BOOL bVisible)
 			}
 		}
 		m_bVisible = bVisible;
-		DoFunc(TE_OnVisibleChanged, this, E_NOTIMPL);
+		DoFuncUI(TE_OnVisibleChanged, this);
 	}
 }
 
