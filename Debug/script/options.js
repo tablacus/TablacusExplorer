@@ -2158,10 +2158,13 @@ function SelectIcon(o) {
 	DialogResize();
 }
 
-TestX = function (id) {
+TestX = function (id, f) {
 	if (confirmOk()) {
-		var o = document.F[id + "Type"];
-		var p = { s: document.F[id + "Path"].value };
+		if (!f) {
+			f = document.F;
+		}
+		var o = f[id + "Type"];
+		var p = { s: f[id + "Path"].value };
 		MainWindow.OptionEncode(o[o.selectedIndex].value, p);
 		MainWindow.focus();
 		MainWindow.Exec(te.Ctrl(CTRL_FV), p.s, o[o.selectedIndex].value);
@@ -2169,11 +2172,14 @@ TestX = function (id) {
 	}
 }
 
-SetImage = function () {
+SetImage = function (f) {
 	var o = document.getElementById("_Icon");
 	if (o) {
-		var h = api.LowPart((document.F.IconSize || document.F.Height || { value: window.IconSize || 24 }).value);
-		var src = MakeImgSrc(api.PathUnquoteSpaces(document.F.Icon.value), 0, true, h);
+		if (!f) {
+			f = document.F;
+		}
+		var h = api.LowPart((f.IconSize || f.Height || { value: window.IconSize || 24 }).value);
+		var src = MakeImgSrc(api.PathUnquoteSpaces(f.Icon.value), 0, true, h);
 		o.innerHTML = src ? '<img src="' + src + '" ' + (h ? 'height="' + h + 'px"' : "") + ' style="max-width: 32pt; max-height: 32pt">' : "";
 	}
 }

@@ -14458,7 +14458,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			return S_OK;
 			
-		case TE_PROPERTY + 0x0281://FocusedItem
+		case TE_PROPERTY + 0xf281://FocusedItem
 			FolderItem *pFolderItem;
 			if (get_FocusedItem(&pFolderItem) == S_OK) {
 				teSetObjectRelease(pVarResult, pFolderItem);
