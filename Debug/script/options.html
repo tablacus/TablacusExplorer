@@ -5,12 +5,11 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>Options</title>
     <link rel="stylesheet" type="text/css" href="options.css">
-    <script type="text/javascript" charset="utf-8" src="consts.js">
-    </script>
-    <script type="text/javascript" charset="utf-8" src="common.js">
-    </script>
-    <script type="text/javascript" charset="utf-8" src="options.js">
-    </script>
+    <script type="text/javascript" charset="utf-8" src="consts.js"></script>
+    <script type="text/javascript" charset="utf-8" src="ui.js"></script>
+    <script type="text/javascript" charset="utf-8" src="common.js"></script>
+    <script type="text/javascript" charset="utf-8" src="sync.js"></script>
+    <script type="text/javascript" charset="utf-8" src="options.js"></script>
   </head>
   <body>
     <form name="F">
@@ -30,6 +29,7 @@
               <br>
               <div id="tab1_" style="margin-left: 1.667em; display: none">
                 <label id="tab1_1" class="button" style="width: 100%" onmousedown="ClickTree(this);">Get Add-ons</label><br>
+                <label id="tab1_3" class="button" style="width: 100%" onmousedown="ClickTree(this);">Get Icons</label><br>
               </div>
               <a id="tabbtn2" class="treebutton" onclick="ClickButton(2);"></a>
               <label id="tab2" class="button" style="width: 88%" onmousedown="ClickButton(2, true);ClickTree(document.getElementById('tab2_0'), null, 'Menus');">Menus</label>
@@ -139,7 +139,7 @@
                       <input type="text" name="_GetAddonsQ" id="_GetAddonsQ" style="width: 100%" onkeydown="AddonsKeyDown()">
                     </td>
                     <td>
-                      <input type="button" value="Filter" onclick="AddonsSearch()">
+                      <input type="button" value="Search" onclick="AddonsSearch()">
                     </td>
                   </tr>
                 </table>
@@ -157,6 +157,31 @@
             <!--panel_end-->
 
             <div class="panel hide" id="panel1_2" style="padding: 0">
+            </div>
+            <!--panel_end-->
+
+            <div class="panel hide" id="panel1_3">
+              <div>
+                <table>
+                  <tr>
+                    <td style="width: 100%">
+                      <input type="text" id="_GetIconsQ" style="width: 100%" onkeydown="IconsKeyDown()">
+                    </td>
+                    <td>
+                      <input type="button" value="Search" onclick="IconPacksList()">
+                    </td>
+                  </tr>
+                </table>
+              </div>
+              <div id="panel1_3_1" style="width: 100%">
+                <table id="IconPacks1" style="width: 100%">
+                  <tr>
+                    <td>
+                      <label>Please wait.</label>
+                    </td>
+                  </tr>
+                </table>
+              </div>
             </div>
             <!--panel_end-->
 

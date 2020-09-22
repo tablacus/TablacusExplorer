@@ -1,4 +1,5 @@
 //Tablacus Explorer
+
 AddEventEx = function (w, Name, fn) {
 	if (w.addEventListener) {
 		w.addEventListener(Name, fn, false);
@@ -6,12 +7,11 @@ AddEventEx = function (w, Name, fn) {
 		w.attachEvent("on" + Name, fn);
 	}
 }
-
 //Objects
 g_uid = location.hash.replace(/\D/g, "");
 
-if (!window.te && window.external && external.Type) {
-	te = external;
+if (!window.te && ((window.external && external.Type) || window.chrome)) {
+	te = window.chrome ? window.chrome.webview.hostObjects.sync.te : external;
 	if (te.Type == 0x2ffff) {
 		dialogArguments = te.WB.Data;
 		te = te.TE;
@@ -60,7 +60,7 @@ if (g_uid) {
 }
 
 if (!window.MainWindow) {
-	MainWindow = window;
+	window.MainWindow = window;
 	while (MainWindow.dialogArguments || MainWindow.opener) {
 		MainWindow = MainWindow.dialogArguments || MainWindow.opener;
 		if (MainWindow.MainWindow) {
@@ -75,6 +75,8 @@ if (ParentWindow || !window.te) {
 if (!window.api) {
 	api = te.WindowsAPI;
 }
+
+$ = window.chrome ? api.CreateObject("Object") : window;
 
 osInfo = api.Memory("OSVERSIONINFOEX");
 osInfo.dwOSVersionInfoSize = osInfo.Size;

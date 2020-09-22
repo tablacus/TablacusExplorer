@@ -17,3 +17,11 @@ try {
 try {
 	Threads.End(Id);
 } catch (e) { }
+
+function GetThumbnail (image, m, f) {
+	var w = image.GetWidth(), h = image.GetHeight(), z = m / Math.max(w, h);
+	if (z == 1 || (f && z > 1)) {
+		return image;
+	}
+	return image.GetThumbnailImage(w * z, h * z);
+}

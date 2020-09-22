@@ -16,7 +16,10 @@ g_drag5 = false;
 g_nResult = 0;
 g_bChanged = true;
 g_bClosed = false;
-g_nSort2 = 1;
+g_nSort = {
+	"1_1" : 1,
+	"1_3" : 1
+}
 
 arLangs = [GetLangId()];
 var res = /(\w+)_/.exec(arLangs[0]);
@@ -30,6 +33,7 @@ arLangs.push("General");
 g_ovPanel = null;
 
 urlAddons = "https://tablacus.github.io/TablacusExplorerAddons/";
+urlIcons = urlAddons + "te/iconpacks/";
 xhr = null;
 xmlAddons = null;
 
@@ -178,13 +182,16 @@ function ClickTree(o, nMode, strChg, bForce) {
 					}, 999, res[3]);
 				}
 			}
-			ShowButtons(/^1$|^1_1$/.test(newTab), res[1] == 2, newTab);
+			ShowButtons(/^1$|^1_1|^1_3$/.test(newTab), res[1] == 2, newTab);
 			if (nMode == 0) {
 				switch (res[1] - 0) {
 					case 1:
 						setTimeout(LoadAddons, 9);
 						if (newTab == '1_1') {
 							setTimeout(GetAddons, 9);
+						}
+						if (newTab == '1_3') {
+							setTimeout(GetIconPacks, 9);
 						}
 						break;
 					case 2:
@@ -1106,7 +1113,7 @@ function SetAddon(Id, bEnable, td, Alt) {
 	}
 	var s = ['<div ', (Alt ? '' : 'draggable="true" ondragstart="Start5(this)" ondragend="End5(this)"'), ' title="', Id, '" Id="', Alt || "Addons_", Id, '"', bEnable ? "" : ' class="disabled"', '>'];
 	s.push('<table><tr style="border-top: 1px solid buttonshadow"><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id + '">'), '</td><td style="width: 100%"><label for="_', Id, '">', info.Name, "&nbsp;", info.Version, '<br><a href="#" onclick="return AddonInfo(\'', Id, '\', this)"  class="link" style="font-size: .9em">', GetText('Details'), ' (', Id, ')</a>');
-	s.push(' <a href="#" onclick="AddonRemove(\'', Id, '\'); return false;" style="color: red; font-size: .9em">', GetText('Delete'), "</a>");
+	s.push(' <a href="#" onclick="AddonRemove(\'', Id, '\'); return false;" style="color: red; font-size: .9em; white-space: nowrap; margin-left: 2em">', GetText('Delete'), "</a>");
 	if (bMinVer) {
 		s.push('</td><td class="danger" style="align: right; white-space: nowrap; vertical-align: middle">', info.MinVersion.replace(/^20/, (api.LoadString(hShell32, 60) || "%").replace(/%.*/, "")).replace(/\.0/g, '.'), ' ', GetText("is required."), '</td>');
 	} else if (info.Options) {
@@ -1330,6 +1337,7 @@ function CancelOptions() {
 
 InitOptions = function () {
 	ApplyLang(document);
+	document.getElementById("tab1_3").innerHTML = api.sprintf(99, GetText("Get %s"), GetText("Icon"));
 	document.title = GetText("Options") + " - " + TITLE;
 	MainWindow.g_.OptionsWindow = window;
 	var InstallPath = fso.GetParentFolderName(api.GetModuleFileName(null));
@@ -1428,7 +1436,7 @@ OpenIcon = function (o) {
 			for (var i = 0; i < nCount; ++i) {
 				var s = ["icon:" + a[1], i].join(",");
 				var src = MakeImgSrc(s, 0, false, 32);
-				data.push('<img src="' + src + '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="' + s + '"> ');
+				data.push('<img src="' + src + '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="' + s + '" style="max-height: 24pt"> ');
 			}
 		}
 		o.innerHTML = data.join("");
@@ -1481,6 +1489,27 @@ InitDialog = function () {
 			"inetcpl": "i,inetcpl.cpl",
 		};
 		var s = [];
+		var wfd = api.Memory("WIN32_FIND_DATA");
+		var path = fso.BuildPath(te.Data.DataFolder, "icons");
+		var hFind = api.FindFirstFile(path + "\\*", wfd);
+		var bFind = hFind != INVALID_HANDLE_VALUE;
+		while (bFind) {
+			if ((wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && /^[a-z]/i.test(wfd.cFileName)) {
+				var path2 = fso.BuildPath(path, wfd.cFileName);
+				var hFind2 = api.FindFirstFile(path2 + "\\*", wfd);
+				var bFind2 = hFind != INVALID_HANDLE_VALUE;
+				while (bFind2) {
+					var res2 = /(\d+)\.png/.exec(wfd.cFileName);
+					if (res2) {
+						var src = ["icon:" + fso.GetFileName(path2), res2[1]].join(",");
+						s.push('<img src="', fso.BuildPath(path2, wfd.cFileName), '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="', src, '" style="max-height: 24pt"> ');
+					}
+					bFind2 = api.FindNextFile(hFind2, wfd);
+				}
+				s.push("<br>");
+			}
+			bFind = api.FindNextFile(hFind, wfd);
+		}
 		for (var i in a) {
 			if (a[i].charAt(0) == "i" || res[1] != "2") {
 				s.push('<div id="' + a[i] + '" onclick="OpenIcon(this)" style="cursor: pointer"><span class="tab">' + i.replace(/ieframe,21\d/, GetText("General")).replace(/ieframe,20\d/, GetText("Browser")) + '</span></div>');
@@ -1756,7 +1785,7 @@ InitLocation = function () {
 		}
 	}
 	var locs = {};
-	items = te.Data.Locations;
+	items = MainWindow.g_.Locations;
 	for (var i in items) {
 		locs[i] = [];
 		for (var j = items[i].length; j--;) {
@@ -1845,7 +1874,6 @@ InitLocation = function () {
 		}
 		nTabIndex = dialogArguments.Data.index;
 	} catch (e) { }
-	SetImage();
 
 	SetOnChangeHandler();
 	AddEventEx(window, "load", function () {
@@ -1973,11 +2001,11 @@ function GetAttribEx(item, f, n) {
 	}
 }
 
-function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter) {
+function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter, f) {
 	setTimeout(function () {
+		var o = GetElement(Id, f);
 		if (/Path/.test(Id)) {
 			var s = Id.replace("Path", "Type");
-			var o = GetElement(s);
 			if (o) {
 				var pt;
 				if (oButton) {
@@ -2001,7 +2029,6 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter) {
 			}
 		}
 
-		var o = GetElement(Id);
 		var path = o.value || o.getAttribute("placeholder") || "";
 		var res = /^icon:([^,]*)|^bitmap:([^,]*)/i.exec(path) || [];
 		path = OpenDialogEx(res[1] || res[2] || path, Filter, api.LowPart(bFilesOnly));
@@ -2031,8 +2058,8 @@ function PortableX(Id) {
 	SetValue(o, o.value.replace(wsh.ExpandEnvironmentStrings("%UserProfile%"), "%UserProfile%").replace(new RegExp('^("?)' + s, "igm"), "$1%Installed%").replace(new RegExp('( "?)' + s, "igm"), "$1%Installed%").replace(new RegExp('(:)' + s, "igm"), "$1%Installed%"));
 }
 
-function GetElement(Id) {
-	return (document.F && document.F[Id]) || document.getElementById(Id) || (document.E && document.E[Id]);
+function GetElement(Id, o) {
+	return (o && o[Id]) || (document.F && document.F[Id]) || document.getElementById(Id) || (document.E && document.E[Id]);
 }
 
 function AddPath(Id, strValue) {
@@ -2072,6 +2099,9 @@ function SetTab(s) {
 		if (n == "tab") {
 			if (api.StrCmpI(ar[1], "Get Addons") == 0) {
 				o = document.getElementById('tab1_1');
+			}
+			if (api.StrCmpI(ar[1], "Get Icons") == 0) {
+				o = document.getElementById('tab1_3');
 			}
 			var s = GetText(ar[1]).toLowerCase();
 			var ovTab;
@@ -2172,8 +2202,8 @@ TestX = function (id, f) {
 	}
 }
 
-SetImage = function (f) {
-	var o = document.getElementById("_Icon");
+SetImage = function (f, n) {
+	var o = document.getElementById(n || "_Icon");
 	if (o) {
 		if (!f) {
 			f = document.F;
@@ -2236,6 +2266,10 @@ function GetAddons() {
 	MainWindow.OpenHttpRequest(urlAddons + "index.xml", "http", AddonsList);
 }
 
+function GetIconPacks() {
+	MainWindow.OpenHttpRequest(urlIcons + "index.json", "http", IconPacksList);
+}
+
 function UpdateAddon(Id, o) {
 	if (!o) {
 		AddAddon(document.getElementById("Addons"), Id, "Disable");
@@ -2277,6 +2311,24 @@ function AddonsList(xhr2) {
 	}
 }
 
+function SetTable(table, td) {
+	if (table) {
+		while (table.rows.length > 0) {
+			table.deleteRow(0);
+		}
+		for (var i = 0; i < td.length; ++i) {
+			var tr = table.insertRow(i);
+			var td1 = tr.insertCell(0);
+			td[i].shift();
+			td1.innerHTML = td[i].join("");
+			ApplyLang(td1);
+			td1.className = (i & 1) ? "oddline" : "";
+			td1.style.borderTop = "1px solid buttonshadow";
+			td1.style.padding = "3px";
+		}
+	}
+}
+
 function AddonsAppend() {
 	var Progress = api.CreateObject("ProgressDialog");
 	var i = 0, td = [];
@@ -2289,29 +2341,14 @@ function AddonsAppend() {
 			Progress.SetTitle(Math.floor(100 * i / xmlAddons.length) + "%");
 			Progress.SetProgress(i, xmlAddons.length);
 		}
-		if (g_nSort2 == 1) {
+		if (g_nSort["1_1"] == 1) {
 			td.sort(function (a, b) {
 				return b[0] - a[0];
 			});
 		} else {
 			td.sort();
 		}
-		var table = document.getElementById("Addons1");
-		if (table) {
-			while (table.rows.length > 0) {
-				table.deleteRow(0);
-			}
-			for (i = 0; i < td.length; ++i) {
-				var tr = table.insertRow(i);
-				var td1 = tr.insertCell(0);
-				td[i].shift();
-				td1.innerHTML = td[i].join("");
-				ApplyLang(td1);
-				td1.className = (i & 1) ? "oddline" : "";
-				td1.style.borderTop = "1px solid buttonshadow";
-				td1.style.padding = "3px";
-			}
-		}
+		SetTable(document.getElementById("Addons1"), td);
 	} catch (e) {
 		ShowError(e);
 	}
@@ -2378,7 +2415,7 @@ function ArrangeAddon(xml, td, Progress) {
 			s.push('<input type="button"  class="danger" onclick="MainWindow.CheckUpdate()" value="', info.MinVersion.replace(/^20/, (api.LoadString(hShell32, 60) || "%").replace(/%.*/, "")).replace(/\.0/g, '.'), ' ', GetText("is required."), '">');
 		}
 		s.push(strUpdate, '</td></tr></table>');
-		s.unshift(g_nSort2 == 1 ? dt2 : g_nSort2 ? Id : info.Name);
+		s.unshift(g_nSort["1_1"] == 1 ? dt2 : g_nSort["1_1"] ? Id : info.Name);
 		td.push(s);
 	}
 }
@@ -2449,6 +2486,134 @@ function Install2(xhr, url, o) {
 		o.style.display = "none";
 	}
 	UpdateAddon(Id, o);
+}
+
+function IconsKeyDown() {
+	if (event.keyCode == VK_RETURN) {
+		IconPacksList();
+	}
+	return true;
+}
+
+function InstallIcon(o) {
+	if (!confirmOk("Do you want to install it now?")) {
+		return;
+	}
+	var Id = o.title.replace(/_[^_]*$/, "");
+	MainWindow.OpenHttpRequest(urlIcons + Id + '/' + o.title.replace(/\./g, "") + '.zip', "http", InstallIcon2, o);
+}
+
+function InstallIcon2(xhr, url, o) {
+	var Id = o.title.replace(/_[^_]*$/, "");
+	var file = o.title.replace(/\./, "") + '.zip';
+	var temp = fso.BuildPath(wsh.ExpandEnvironmentStrings("%TEMP%"), "tablacus");
+	CreateFolder(temp);
+	var dest = fso.BuildPath(te.Data.DataFolder, "icons");
+	CreateFolder(dest);
+	var hr = MainWindow.Extract(fso.BuildPath(temp, file), dest, xhr);
+	if (hr) {
+		MessageBox([api.LoadString(hShell32, 4228).replace(/^\t/, "").replace("%d", api.sprintf(99, "0x%08x", hr)), GetText("Extract"), file].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
+		return;
+	}
+	IconPacksList();
+}
+
+function IconPacksList1(s, Id, info, json) {
+	var q = document.getElementById('_GetIconsQ').value;
+	if (q && !json) {
+		if (!api.PathMatchSpec(JSON.stringify(info), "*" + q + "*")) {
+			return false;
+		}
+	}
+	s.push('<img src="', urlIcons, Id, '/preview.png" align="left" style="margin-right: 8px"><b style="font-size: 1.3em">', info.name[GetLangId()] || info.name.en, '</b> ');
+	s.push(info.version, " ");
+	if (info.URL) {
+		s.push('<a href="#" class="link" onclick="wsh.run(\'', info.URL, '\'); return false;">');
+	}
+	s.push(info.creator[GetLangId()] || info.creator.en);
+	if (info.URL) {
+		s.push('</a>');
+	}
+	s.push("<br>", info.descprition[GetLangId()] || info.descprition.en, "<br>");
+	if (json) {
+		s.push(GetText("Installed"));
+		s.push('<input type="button" onclick="DeleteIconPacks()" value="Delete" style="float: right;">');
+		if (json[Id] && Number(json[Id].info.version) > Number(info.version)) {
+			s.push('<hr><b class="danger" style="white-space: nowrap;">', GetText('Update available'), '</b> ', json[Id].info.version);
+			info = json[Id].info;
+			json = false;
+		}
+	}
+	if (!json) {
+		s.push('<input type="button" onclick="InstallIcon(this)" title="', Id, '_', info.version, '" value="', GetText("Install"), '" style="float: right;">');
+	}
+	s.push("<br>", api.GetDateFormat(LOCALE_USER_DEFAULT, 0, new Date(info.pubDate), api.GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SSHORTDATE)));
+	return true;
+}
+
+function IconPacksList(xhr) {
+	if (xhr) {
+		g_xhrIcons = xhr;
+	} else {
+		xhr = window.g_xhrIcons;
+	}
+	if (!xhr) {
+		return;
+	}
+	var s;
+	var ado = OpenAdodbFromTextFile(fso.BuildPath(te.Data.DataFolder, "icons\\config.json"), "utf-8");
+	if (ado) {
+		s = ado.ReadText();
+		ado.Close();
+	}
+	var json1 = JSON.parse(s || '{}');
+	var text = xhr.get_responseText ? xhr.get_responseText() : xhr.responseText;
+	var json = JSON.parse(text);
+	var td = [];
+	var Installed = "";
+	if (json1.info) {
+		Installed = json1.info.id || json1.info.name.en.replace(/\W/g, "_");
+	}
+	for (var n in json) {
+		if (n != Installed) {
+			var s1;
+			var s = [];
+			info = json[n].info;
+			if (IconPacksList1(s, n, info)) {
+				if (g_nSort["1_3"] == 0) {
+					s1 = info.name[GetLangId()] || info.name.en;
+				} else if (g_nSort["1_3"] == 1) {
+					if (json.pubDate) {
+						s1 = api.GetDateFormat(LOCALE_USER_DEFAULT, 0, new Date(info.pubDate), "yyyyMMdd");
+					}
+				} else {
+					s1 = n;
+				}
+				td.push([s1 + "\t" + n, s.join("")]);
+			}
+		}
+	}
+	if (g_nSort["1_3"] == 1) {
+		td.sort(function (a, b) {
+			return b[0] - a[0];
+		});
+	} else {
+		td.sort();
+	}
+	if (json1.info) {
+		s = [];
+		if (IconPacksList1(s, Installed, json1.info, json)) {
+			td.unshift(["", s.join("")]);
+		}
+	}
+	SetTable(document.getElementById("IconPacks1"), td);
+}
+
+function DeleteIconPacks() {
+	if (confirmOk()) {
+		DeleteItem(fso.BuildPath(te.Data.DataFolder, "icons"));
+		IconPacksList();
+	}
 }
 
 function EnableSelectTag(o) {
@@ -2534,15 +2699,15 @@ function ShowButtons(b1, b2, SortMode) {
 		document.getElementById("MoveButton").style.display = (b1 || b2) && !bSorted ? "inline-block" : "none";
 		for (var i = 3; i--;) {
 			o = document.getElementById("SortButton_" + i);
-			o.style.border = bSorted && g_nSort == i ? "1px solid highlight" : "";
-			o.style.padding = bSorted && g_nSort == i ? "0" : "";
+			o.style.border = bSorted && g_nSort[1] == i ? "1px solid highlight" : "";
+			o.style.padding = bSorted && g_nSort[1] == i ? "0" : "";
 		}
 	} else {
 		document.getElementById("MoveButton").style.display = b2 ? "inline-block" : "none";
 		for (var i = 3; i--;) {
 			o = document.getElementById("SortButton_" + i);
-			o.style.border = g_nSort2 == i ? "1px solid highlight" : "";
-			o.style.padding = g_nSort2 == i ? "0" : "";
+			o.style.border = g_nSort[g_SortMode] == i ? "1px solid highlight" : "";
+			o.style.padding = g_nSort[g_SortMode] == i ? "0" : "";
 		}
 	}
 }
@@ -2557,18 +2722,18 @@ function SortAddons(n) {
 		while (sorted.rows.length > 0) {
 			sorted.deleteRow(0);
 		}
-		if (/none/i.test(table.style.display) && g_nSort == n) {
+		if (/none/i.test(table.style.display) && g_nSort[1] == n) {
 			table.style.display = "";
 			sorted.style.display = "none";
 		} else {
-			g_nSort = n;
+			g_nSort[1] = n;
 			var s, ar = [];
 			for (var j = table.rows.length; j--;) {
 				var div = table.rows(j).cells(0).firstChild;
 				var Id = div.id.replace("Addons_", "").toLowerCase();
-				if (g_nSort == 0) {
+				if (g_nSort[1] == 0) {
 					s = table.rows(j).cells(0).innerText;
-				} else if (g_nSort == 1) {
+				} else if (g_nSort[1] == 1) {
 					s = "";
 					var info = GetAddonInfo(Id);
 					if (info.pubDate) {
@@ -2581,7 +2746,7 @@ function SortAddons(n) {
 				ar.push(s + "\t" + Id);
 			}
 			ar.sort();
-			if (g_nSort == 1) {
+			if (g_nSort[1] == 1) {
 				ar = ar.reverse();
 			}
 			var i = 0, td = [];
@@ -2608,9 +2773,14 @@ function SortAddons(n) {
 			sorted.style.display = Progress.HasUserCancelled() ? "none" : "";
 		}
 	} else if (g_SortMode == "1_1") {
-		if (n != g_nSort2) {
-			g_nSort2 = n;
+		if (n != g_nSort["1_1"]) {
+			g_nSort["1_1"] = n;
 			AddonsSearch();
+		}
+	} else if (g_SortMode == "1_3") {
+		if (n != g_nSort["1_3"]) {
+			g_nSort["1_3"] = n;
+			IconPacksList();
 		}
 	}
 	ShowButtons(true);

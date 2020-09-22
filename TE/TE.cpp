@@ -1944,44 +1944,6 @@ VOID teClearVariantArgs(int nArgs, VARIANTARG *pvArgs)
 	}
 }
 
-VOID teInvokeUI(IDispatch *pdisp, int nArgs, VARIANTARG *pvArgs)
-{
-	if (g_bBlink) {
-		int nArgsA = abs(nArgs);
-		SAFEARRAY *psa = SafeArrayCreateVector(VT_VARIANT, 0, nArgsA + 1);
-		LONG l = 0;
-		VARIANT v;
-		v.pdispVal = pdisp;
-		v.vt = VT_DISPATCH;
-		SafeArrayPutElement(psa, &l, &v);
-		while (l < nArgsA) {
-			++l;
-			SafeArrayPutElement(psa, &l, &pvArgs[nArgsA - l]);
-		}
-		v.parray = psa;
-		v.vt = VT_ARRAY | VT_VARIANT;
-		if (!g_pOnFunc[TE_FN]) {
-			g_pOnFunc[TE_FN] = teCreateObj(TE_ARRAY, NULL);
-		}
-		teExecMethod(g_pOnFunc[TE_FN], L"push", NULL, -1, &v);
-		VariantClear(&v);
-		if (teGetObjectLength(g_pOnFunc[TE_FN]) < 2) {
-#ifdef _DEBUG
-			HRESULT hr =
-#endif
-			g_pWebBrowser->m_pWebBrowser->GetProperty(L"_InvokeMethod();", NULL);
-#ifdef _DEBUG
-			wchar_t psz[99];
-			swprintf_s(psz, 99, L"InvokeUI: %x\n", hr);
-			OutputDebugString(psz);
-#endif
-		}
-		teClearVariantArgs(nArgs, pvArgs);
-	} else {
-		Invoke4(pdisp, NULL, nArgs, pvArgs);
-	}
-}
-
 HRESULT Invoke5(IDispatch *pdisp, DISPID dispid, WORD wFlags, VARIANT *pvResult, int nArgs, VARIANTARG *pvArgs)
 {
 	HRESULT hr;
@@ -2019,7 +1981,35 @@ HRESULT Invoke5(IDispatch *pdisp, DISPID dispid, WORD wFlags, VARIANT *pvResult,
 	if (hr == HRESULT_FROM_WIN32(ERROR_POSSIBLE_DEADLOCK)) {
 		if (wFlags & DISPATCH_METHOD) {
 			if (g_bBlink && dispid == DISPID_VALUE) {
-				teInvokeUI(pdisp, -abs(nArgs), pvArgs);
+				int nArgsA = abs(nArgs);
+				SAFEARRAY *psa = SafeArrayCreateVector(VT_VARIANT, 0, nArgsA + 1);
+				LONG l = 0;
+				VARIANT v;
+				v.pdispVal = pdisp;
+				v.vt = VT_DISPATCH;
+				SafeArrayPutElement(psa, &l, &v);
+				while (l < nArgsA) {
+					++l;
+					SafeArrayPutElement(psa, &l, &pvArgs[nArgsA - l]);
+				}
+				v.parray = psa;
+				v.vt = VT_ARRAY | VT_VARIANT;
+				if (!g_pOnFunc[TE_FN]) {
+					g_pOnFunc[TE_FN] = teCreateObj(TE_ARRAY, NULL);
+				}
+				teExecMethod(g_pOnFunc[TE_FN], L"push", NULL, -1, &v);
+				VariantClear(&v);
+				if (teGetObjectLength(g_pOnFunc[TE_FN]) < 2) {
+#ifdef _DEBUG
+					HRESULT hr =
+#endif
+						g_pWebBrowser->m_pWebBrowser->GetProperty(L"_InvokeMethod();", NULL);
+#ifdef _DEBUG
+					wchar_t psz[99];
+					swprintf_s(psz, 99, L"InvokeUI: %x\n", hr);
+					OutputDebugString(psz);
+#endif
+				}
 			}
 		}
 	}
@@ -4427,15 +4417,6 @@ HRESULT DoFunc(int nFunc, PVOID pObj, HRESULT hr)
 	return hr;
 }
 
-VOID DoFuncUI(int nFunc, PVOID pObj)
-{
-	if (g_pOnFunc[nFunc]) {
-		VARIANTARG *pv = GetNewVARIANT(1);
-		teSetObject(&pv[0], pObj);
-		teInvokeUI(g_pOnFunc[nFunc], 1, pv);
-	}
-}
-
 VOID teSetProgress(IProgressDialog *ppd, int nCurrent, int nCount)
 {
 	WCHAR pszMsg[8];
@@ -6017,7 +5998,7 @@ VOID ArrangeWindowEx()
 		pv = GetNewVARIANT(3);
 		teSetObject(&pv[2], g_pTE);
 		teSetObjectRelease(&pv[0], new CteDispatch(g_pTE, 0, DISPID_CB_ARANGE));
-		teInvokeUI(g_pOnFunc[TE_OnArrange], 3, pv);
+		Invoke4(g_pOnFunc[TE_OnArrange], NULL, 3, pv);
 	}
 }
 
@@ -9893,16 +9874,15 @@ VOID teApiInvoke(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVa
 		pdisp->Release();
 	}
 }
-
-/*
+#ifdef _DEBUG
 VOID teApiTest(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	if (g_pOnFunc[TE_OnHitTest] && nArg >= 0 && pDispParams->rgvarg[nArg].vt == VT_BSTR) {
-		if (g_pSP) {
-			g_pWebBrowser->m_pWebBrowser->GetProperty(pDispParams->rgvarg[nArg].bstrVal, pVarResult);
-		}
+	if (g_pOnFunc[TE_OnHitTest]) {
+		Invoke4(g_pOnFunc[TE_OnHitTest], NULL, -pDispParams->cArgs, pDispParams->rgvarg);
+		teSetSZ(pVarResult, L"OK");
 	}
 }
+#endif
 //*/
 /*
 VOID teApi(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -10252,7 +10232,9 @@ TEDispatchApi dispAPI[] = {
 	{ 2,  1, -1, -1, "GetProp", teApiGetProp },
 	{ 1, -1, -1, -1, "Invoke", teApiInvoke },
 	//{ 0, -1, -1, -1, "", teApi },
-	//{ 0, -1, -1, -1, "Test", teApiTest },
+#ifdef _DEBUG
+	{ 0, -1, -1, -1, "Test", teApiTest },
+#endif
 };
 
 VOID Initlize()
@@ -18279,7 +18261,7 @@ VOID CteTabCtrl::Show(BOOL bVisible)
 			}
 		}
 		m_bVisible = bVisible;
-		DoFuncUI(TE_OnVisibleChanged, this);
+		DoFunc(TE_OnVisibleChanged, this, E_NOTIMPL);
 	}
 }
 
@@ -21241,7 +21223,9 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 					Create();
 				}
 			} else if (dispIdMember != TE_PROPERTY + 0x2002 && dispIdMember != TE_METHOD + 0x2003) {
-				return S_FALSE;
+				if (dispIdMember < TE_OFFSET || dispIdMember > TE_OFFSET + 0xff) {
+					return S_FALSE;
+				}
 			}
 		}
 
