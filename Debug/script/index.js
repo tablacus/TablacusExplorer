@@ -7,10 +7,6 @@ function Resize2() {
 		clearTimeout(ui_.tidResize);
 		ui_.tidResize = void 0;
 	}
-	if (!te.Ctrl(CTRL_FV)) {
-		Resize();
-		return;
-	}
 	ResetScroll();
 	var o = document.getElementById("toolbar");
 	var offsetTop = o ? o.offsetHeight : 0;
@@ -41,7 +37,7 @@ function Resize2() {
 }
 
 function ResizeSizeBar (z, h) {
-	var o = g_.Locations;
+	var o = ui_.Locations;
 	var w = (o[z + "Bar1"] || o[z + "Bar2"] || o[z + "Bar3"]) ? te.Data["Conf_" + z + "BarWidth"] : 0;
 	o = document.getElementById(z.toLowerCase() + "bar");
 	if (w > 0) {
@@ -110,14 +106,14 @@ SetAddon = function (strName, Location, Tag, strVAlign) {
 			});
 		}
 		if (strName) {
-			if (!g_.Locations[Location]) {
-				g_.Locations[Location] = [];
+			if (!ui_.Locations[Location]) {
+				ui_.Locations[Location] = [];
 			}
 			var res = /<img.*?src=["'](.*?)["']/i.exec(String(Tag));
 			if (res) {
 				strName += "\0" + res[1];
 			}
-			g_.Locations[Location].push(strName);
+			ui_.Locations[Location].push(strName);
 		}
 	}
 	return Location;
@@ -126,8 +122,8 @@ SetAddon = function (strName, Location, Tag, strVAlign) {
 UI.Resize = function () {
 	if (!ui_.tidResize) {
 		clearTimeout(ui_.tidResize);
-		ui_.tidResize = setTimeout(Resize2, 500);
 	}
+	ui_.tidResize = setTimeout(Resize2, 500);
 }
 
 Resize = UI.Resize;
@@ -165,7 +161,7 @@ UI.FocusFV = function (tm) {
 				FV.Focus();
 			}
 		}
-	}, tm);
+	}, tm || sha.GetSystemInformation("DoubleClickTime"));
 }
 
 UI.FocusWB = function () {
@@ -176,7 +172,7 @@ UI.FocusWB = function () {
 				if (o === document.activeElement) {
 					GetFolderView().Focus();
 				}
-			}, 99, o);
+			}, sha.GetSystemInformation("DoubleClickTime"), o);
 		}
 	}
 }
@@ -275,9 +271,8 @@ if (window.chrome) {
 
 	var o = api.CreateObject("Object");
 	o.window = $;
-	$JS = api.GetScriptDispatch(s.join(""), "JScript", o);
+	$.$JS = api.GetScriptDispatch(s.join(""), "JScript", o);
 	CopyObj(window, $, ["g_", "Addons", "AboutTE", "AddEvent", "ClearEvent", "AddEnv", "AddEventId", "eventTE", "eventTA", "Threads", "BlurId", "ChangeView", "ShowError", "ShowStatusText"]);
-	$.g_.$JS = $JS;
 } else {
 	$ = window;
 	$JS = new Function(s.join(""));
@@ -286,6 +281,7 @@ if (window.chrome) {
 MainWindow = $;
 
 te.OnArrange = function (Ctrl, rc, cb) {
+	debugger;
 	UI.RunEvent1("Arrange", Ctrl, rc);
 	if (Ctrl.Type == CTRL_TC) {
 		var o = ui_.Panels[Ctrl.Id];
@@ -310,11 +306,11 @@ te.OnArrange = function (Ctrl, rc, cb) {
 		o.style.top = rc.top + "px";
 		if (Ctrl.Visible) {
 			var s = [Ctrl.Left, Ctrl.Top, Ctrl.Width, Ctrl.Height].join(",");
-			if (g_.TCPos[s] && g_.TCPos[s] != Ctrl.Id) {
+			if (ui_.TCPos[s] && ui_.TCPos[s] != Ctrl.Id) {
 				Ctrl.Close();
 				return;
 			} else {
-				g_.TCPos[s] = Ctrl.Id;
+				ui_.TCPos[s] = Ctrl.Id;
 			}
 			o.style.display = (g_.IEVer >= 8 && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
 		} else {
@@ -335,10 +331,9 @@ te.OnArrange = function (Ctrl, rc, cb) {
 		o = document.getElementById("Inner2Center_" + Ctrl.Id).style;
 		o.width = Math.max(rc.right - rc.left, 0) + "px";
 		o.height = Math.max(rc.bottom - rc.top, 0) + "px";
-		api.OutputDebugString(["Arrange OK",rc.left, rc.top, rc.right, rc.bottom, "\n"].join(","));
 		cb(Ctrl, rc);
 	} else if (Ctrl.Type == CTRL_TE) {
-		g_.TCPos = api.CreateObject("Object");
+		ui_.TCPos = {};
 		var rcClient = api.Memory("RECT");
 		api.GetClientRect(te.hwnd, rcClient);
 		rcClient.left += te.offsetLeft;
@@ -399,14 +394,13 @@ te.OnArrange = function (Ctrl, rc, cb) {
 }
 
 te.OnVisibleChanged = function (Ctrl) {
-	api.OutputDebugString(["OnVisibleChanged", Ctrl.id,"\n"].join(","));
 	UI.RunEvent1("VisibleChanged", Ctrl);
 }
 
 UI.OnLoad();
 
 ArrangeAddons = function () {
-	g_.Locations = {};
+	ui_.Locations = {};
 	$.IconSize = te.Data.Conf_IconSize || screen.logicalYDPI / 4;
 	var xml = OpenXml("addons.xml", false, true);
 	te.Data.Addons = xml;
@@ -581,10 +575,8 @@ InitWindow = function () {
 
 AddEvent("VisibleChanged", function (Ctrl) {
 	if (Ctrl.Type == CTRL_TC) {
-		api.OutputDebugString([Ctrl.Id, Ctrl.Visible, "\n"].join(","))
 		var o = ui_.Panels[Ctrl.Id];
 		if (o) {
-			api.OutputDebugString([Ctrl.Visible, "\n"].join(","))
 			if (Ctrl.Visible) {
 				o.style.display = (g_.IEVer >= 8 && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
 				ChangeView(Ctrl.Selected);

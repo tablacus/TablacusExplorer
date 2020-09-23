@@ -201,7 +201,10 @@ GetPos = function (o, bScreen, bAbs, bPanel, bBottom) {
 			break;
 		}
 	}
-	return { x: x, y: y };
+	var pt = api.Memory("POINT");
+	pt.x = x;
+	pt.y = y;
+	return pt;
 }
 
 HitTest = function (o, pt) {

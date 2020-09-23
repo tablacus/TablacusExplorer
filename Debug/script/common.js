@@ -2,7 +2,7 @@
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20200922 ? te.Version : 20200922;
+		return te.Version < 20200922 ? te.Version : 20200923;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -1001,8 +1001,18 @@ MakeImgSrc = function (src, index, bSrc, h) {
 	if (!/^file:/i.test(src) && REGEXP_IMAGE.test(src)) {
 		return src;
 	}
+	var res = /^icon:(.+)/i.exec(src);
+	if (res) {
+		var icon = res[1].split(",");
+		if (!/\\/.test(icon[0])) {
+			fn = fso.BuildPath(te.Data.DataFolder, ["icons", icon[0].replace(/\..*/, ""), icon[1] + ".png"].join("\\"));
+			if (fso.FileExists(fn)) {
+				return fn;
+			}
+		}
+	}
 	if (g_.IEVer < 8) {
-		var res = /^bitmap:(.+)/i.exec(src);
+		res = /^bitmap:(.+)/i.exec(src);
 		if (res) {
 			fn = fso.BuildPath(te.Data.DataFolder, "cache\\bitmap\\" + res[1].replace(/[:\\\/]/g, "$") + ".png");
 		} else {
@@ -1069,12 +1079,6 @@ function MakeImgIcon(src, index, h, bIcon) {
 				hIcon = api.ImageList_GetIcon(himl, icon[index * 4 + 3], ILD_NORMAL);
 				api.ImageList_Destroy(himl);
 			} else if ((icon[index * 4] || "").toLowerCase() == "ieframe.dll") {
-				var ar = [
-					["bitmap:ieframe.dll,206,16,", "bitmap:ExplorerFrame.dll,264,16,", 16],
-					["bitmap:ieframe.dll,204,24,", "bitmap:ExplorerFrame.dll,264,16,", 16],
-					["bitmap:ieframe.dll,216,16,", "bitmap:comctl32.dll,130,16,", 16],
-					["bitmap:ieframe.dll,214,24,", "bitmap:comctl32.dll,131,24,", 24]
-				];
 				for (var i in ar) {
 					var a2 = ar[i];
 					if (api.StrCmpNI(src, a2[0], a2[0].length) == 0) {
@@ -1102,7 +1106,7 @@ function MakeImgIcon(src, index, h, bIcon) {
 	res = /^icon:(.+)/i.exec(src);
 	if (res) {
 		var icon = res[1].split(",");
-		if (!/\\/.test(icon)) {
+		if (!/\\/.test(icon[0])) {
 			var path = fso.BuildPath(te.Data.DataFolder, ["icons", icon[0].replace(/\..*/, ""), icon[1] + ".png"].join("\\"));
 			var image = api.CreateObject("WICBitmap").FromFile(path);
 			if (image) {

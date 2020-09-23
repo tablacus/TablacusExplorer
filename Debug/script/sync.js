@@ -153,10 +153,10 @@ AddEvent = function (Name, fn, priority) {
 			te["On" + s] = g_.event[s];
 		}
 		if (!eventTE[en]) {
-			eventTE[en] = [];
+			eventTE[en] = api.CreateObject("Array");
 		}
 		if (!eventTA[en]) {
-			eventTA[en] = [];
+			eventTA[en] = api.CreateObject("Array");
 		}
 		if (priority) {
 			eventTE[en].unshift(fn);

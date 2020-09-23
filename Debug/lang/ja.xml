@@ -206,7 +206,7 @@
 	<text s="Extract">展開</text>
 	<text s="Save">保存</text>
 	<text s="Load">読み込み</text>
-	<text s="Get %s...">%s を入手...</text>
+	<text s="Get %s...">%sを入手...</text>
 	<text s="Results">結果</text>
 	<text s="Number of items">項目数</text>
 	<text s="&amp;About %s">%s について(&amp;A)</text>

@@ -1492,23 +1492,23 @@ InitDialog = function () {
 		var wfd = api.Memory("WIN32_FIND_DATA");
 		var path = fso.BuildPath(te.Data.DataFolder, "icons");
 		var hFind = api.FindFirstFile(path + "\\*", wfd);
-		var bFind = hFind != INVALID_HANDLE_VALUE;
-		while (bFind) {
+		for (var bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = api.FindNextFile(hFind, wfd)) {
 			if ((wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && /^[a-z]/i.test(wfd.cFileName)) {
+				var arfn = [];
 				var path2 = fso.BuildPath(path, wfd.cFileName);
-				var hFind2 = api.FindFirstFile(path2 + "\\*", wfd);
-				var bFind2 = hFind != INVALID_HANDLE_VALUE;
-				while (bFind2) {
-					var res2 = /(\d+)\.png/.exec(wfd.cFileName);
-					if (res2) {
-						var src = ["icon:" + fso.GetFileName(path2), res2[1]].join(",");
-						s.push('<img src="', fso.BuildPath(path2, wfd.cFileName), '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="', src, '" style="max-height: 24pt"> ');
-					}
-					bFind2 = api.FindNextFile(hFind2, wfd);
+				var hFind2 = api.FindFirstFile(path2 + "\\*.png", wfd);
+				for (var bFind2 = hFind != INVALID_HANDLE_VALUE; bFind2; bFind2 = api.FindNextFile(hFind2, wfd)) {
+					arfn.push(wfd.cFileName);
+				}
+				arfn.sort(function (a, b) {
+					return api.StrCmpLogical(a, b);
+				});
+				for (var i = 0; i < arfn.length; ++i) {
+					var src = ["icon:" + fso.GetFileName(path2), arfn[i].replace(/\.png$/i, "")].join(",");
+					s.push('<img src="', fso.BuildPath(path2, arfn[i]), '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="', src, '" style="max-height: 24pt"> ');
 				}
 				s.push("<br>");
 			}
-			bFind = api.FindNextFile(hFind, wfd);
 		}
 		for (var i in a) {
 			if (a[i].charAt(0) == "i" || res[1] != "2") {
@@ -1785,7 +1785,7 @@ InitLocation = function () {
 		}
 	}
 	var locs = {};
-	items = MainWindow.g_.Locations;
+	items = MainWindow.ui_.Locations;
 	for (var i in items) {
 		locs[i] = [];
 		for (var j = items[i].length; j--;) {
