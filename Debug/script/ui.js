@@ -73,14 +73,12 @@ UI.Blur = function (Id) {
 }
 
 function _InvokeMethod() {
+	debugger;
 	var args;
 	var ar = api.ObjGetI(te, "fn");
 	while (args = ar.shift()) {
-		api.OutputDebugString(["InvokeMethod:", api.ObjGetI(ar, "length"), "\n"].join(","));
 		var fn = args.shift();
-		api.OutputDebugString(["InvokeMethod:", fn.toString().split("\n")[0]].join(","));
 		fn.apply(fn, args);
-		api.OutputDebugString("InvokeMethod: OK:" + api.ObjGetI(ar, "length") + "\n");
 	}
 }
 

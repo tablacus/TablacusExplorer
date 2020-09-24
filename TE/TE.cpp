@@ -2301,7 +2301,7 @@ VOID teVariantChangeType(__out VARIANTARG * pvargDest,
 		}
 		return;
 	}
-	if FAILED(VariantChangeType(pvargDest, pvarSrc, 0, vt)) {
+	if (pvarSrc->vt == VT_DISPATCH || FAILED(VariantChangeType(pvargDest, pvarSrc, 0, vt))) {
 		pvargDest->llVal = 0;
 	}
 }
@@ -3466,16 +3466,18 @@ int GetIntFromVariant(VARIANT *pv)
 		if (pv->vt == VT_R8) {
 			return (int)(LONGLONG)pv->dblVal;
 		}
-		VARIANT vo;
-		VariantInit(&vo);
-		if SUCCEEDED(VariantChangeType(&vo, pv, 0, VT_I4)) {
-			return vo.lVal;
-		}
-		if SUCCEEDED(VariantChangeType(&vo, pv, 0, VT_I8)) {
-			return (int)vo.llVal;
-		}
-		if SUCCEEDED(VariantChangeType(&vo, pv, 0, VT_R8)) {
-			return (int)(LONGLONG)vo.dblVal;
+		if (pv->vt != VT_DISPATCH) {
+			VARIANT vo;
+			VariantInit(&vo);
+			if SUCCEEDED(VariantChangeType(&vo, pv, 0, VT_I4)) {
+				return vo.lVal;
+			}
+			if SUCCEEDED(VariantChangeType(&vo, pv, 0, VT_I8)) {
+				return (int)vo.llVal;
+			}
+			if SUCCEEDED(VariantChangeType(&vo, pv, 0, VT_R8)) {
+				return (int)(LONGLONG)vo.dblVal;
+			}
 		}
 	}
 	return 0;
@@ -4027,6 +4029,10 @@ int teBSearchW(TEmethodW *method, int nSize, int* pMap, LPOLESTR bs)
 
 HRESULT teGetDispId(TEmethod *method, int nCount, int* pMap, LPOLESTR bs, DISPID *rgDispId, BOOL bNum)
 {
+#ifdef _DEBUG_
+	::OutputDebugString(bs);
+	::OutputDebugString(L"\n");
+#endif
 	if (pMap) {
 		int nIndex = teBSearch(method, nCount, pMap, bs);
 		if (nIndex >= 0) {
@@ -4394,6 +4400,21 @@ VOID GetPointFormVariant(POINT *ppt, VARIANT *pv)
 	int npt = GetIntFromVariant(pv);
 	ppt->x = GET_X_LPARAM(npt);
 	ppt->y = GET_Y_LPARAM(npt);
+}
+
+VOID PutPointToVariant(POINT *ppt, VARIANT *pv)
+{
+	IUnknown *punk;
+	if (FindUnknown(pv, &punk)) {
+		VARIANT v;
+		VariantInit(&v);
+		teSetLong(&v, ppt->x);
+		tePutProperty(punk, L"x", &v);
+		VariantClear(&v);
+		teSetLong(&v, ppt->y);
+		tePutProperty(punk, L"y", &v);
+		VariantClear(&v);
+	}
 }
 
 HRESULT DoFunc1(int nFunc, PVOID pObj, VARIANT *pVarResult)
@@ -7410,7 +7431,9 @@ VOID teApiPSGetDisplayName(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 
 VOID teApiGetCursorPos(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetBool(pVarResult, GetCursorPos(param[0].lppoint));
+	POINT pt;
+	teSetBool(pVarResult, GetCursorPos(&pt));
+	PutPointToVariant(&pt, &pDispParams->rgvarg[nArg]);
 }
 
 VOID teApiGetKeyboardState(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -7922,7 +7945,10 @@ VOID teApiSendInput(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *
 
 VOID teApiScreenToClient(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetBool(pVarResult, ScreenToClient(param[0].hwnd, param[1].lppoint));
+	POINT pt;
+	GetPointFormVariant(&pt, &pDispParams->rgvarg[nArg - 1]);
+	teSetBool(pVarResult, ScreenToClient(param[0].hwnd, &pt));
+	PutPointToVariant(&pt, &pDispParams->rgvarg[nArg - 1]);
 }
 
 VOID teApiMsgWaitForMultipleObjectsEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -7932,7 +7958,10 @@ VOID teApiMsgWaitForMultipleObjectsEx(int nArg, teParam *param, DISPPARAMS *pDis
 
 VOID teApiClientToScreen(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetBool(pVarResult, ClientToScreen(param[0].hwnd, param[1].lppoint));
+	POINT pt;
+	GetPointFormVariant(&pt, &pDispParams->rgvarg[nArg - 1]);
+	teSetBool(pVarResult, ClientToScreen(param[0].hwnd, &pt));
+	PutPointToVariant(&pt, &pDispParams->rgvarg[nArg - 1]);
 }
 
 VOID teApiGetIconInfo(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -9877,7 +9906,7 @@ VOID teApiInvoke(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVa
 #ifdef _DEBUG
 VOID teApiTest(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	if (g_pOnFunc[TE_OnHitTest]) {
+	if (g_pOnFunc[TE_OnHitTest] && false) {
 		Invoke4(g_pOnFunc[TE_OnHitTest], NULL, -pDispParams->cArgs, pDispParams->rgvarg);
 		teSetSZ(pVarResult, L"OK");
 	}
@@ -14389,21 +14418,17 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			hr = E_NOTIMPL;
 			if (m_pShellView) {
 				if (nArg >= 1) {
-					VARIANT vMem;
-					VariantInit(&vMem);
-					LPPOINT ppt = (LPPOINT)GetpcFromVariant(&pDispParams->rgvarg[nArg - 1], &vMem);
-					if (ppt) {
-						IFolderView *pFV;
-						if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
-							LPITEMIDLIST pidl;
-							if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
-								hr = pFV->GetItemPosition(ILFindLastID(pidl), ppt);
-								teCoTaskMemFree(pidl);
-							}
-							pFV->Release();
+					IFolderView *pFV;
+					if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
+						LPITEMIDLIST pidl;
+						if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
+							POINT pt;
+							hr = pFV->GetItemPosition(ILFindLastID(pidl), &pt);
+							PutPointToVariant(&pt, &pDispParams->rgvarg[nArg - 1]);
+							teCoTaskMemFree(pidl);
 						}
+						pFV->Release();
 					}
-					teWriteBack(&pDispParams->rgvarg[nArg - 1], &vMem);
 				}
 			}
 			teSetLong(pVarResult, hr);

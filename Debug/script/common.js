@@ -2,7 +2,7 @@
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20200922 ? te.Version : 20200923;
+		return te.Version < 20200924 ? te.Version : 20200924;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -381,7 +381,7 @@ FolderMenu =
 		this.Clear();
 		var hMenu = api.CreatePopupMenu();
 		RunEvent3("LocationPopup", hMenu);
-		var pt = UI.GetPos(o, true);
+		var pt = GetPos(o, true);
 		var nVerb = this.TrackPopupMenu(hMenu, TPM_RIGHTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x + o.offsetWidth, pt.y + o.offsetHeight);
 		var FolderItem = nVerb ? this.Items[nVerb - 1] : null;
 		this.Clear();

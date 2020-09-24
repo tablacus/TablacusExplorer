@@ -11,7 +11,7 @@ AddEventEx = function (w, Name, fn) {
 g_uid = location.hash.replace(/\D/g, "");
 
 if (!window.te && ((window.external && external.Type) || window.chrome)) {
-	te = window.chrome ? window.chrome.webview.hostObjects.sync.te : external;
+	te = window.chrome ? chrome.webview.hostObjects.sync.te : external;
 	if (te.Type == 0x2ffff) {
 		dialogArguments = te.WB.Data;
 		te = te.TE;

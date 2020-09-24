@@ -281,7 +281,6 @@ if (window.chrome) {
 MainWindow = $;
 
 te.OnArrange = function (Ctrl, rc, cb) {
-	debugger;
 	UI.RunEvent1("Arrange", Ctrl, rc);
 	if (Ctrl.Type == CTRL_TC) {
 		var o = ui_.Panels[Ctrl.Id];
