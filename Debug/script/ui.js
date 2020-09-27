@@ -1,9 +1,20 @@
 // Tablacus Explorer
 
 ui_ = {
+	IEVer: window.chrome ? (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 : 12) : window.document && (document.documentMode || (/MSIE 6/.test(navigator.appVersion) ? 6 : 7)),
+	bWindowRegistered: true,
 	Panels: {}
 };
-UI = api.CreateObject("Object");
+(function () {
+	ui_.DoubleClickTime = sha.GetSystemInformation("DoubleClickTime");
+})();
+
+UI = {
+	setTimeoutAsync: function (fn, tm, a, b, c, d) {
+		setTimeout(fn, tm, a, b, c, d);
+	}
+};
+
 UI.Addons = api.CreateObject("Object");
 
 UI.clearTimeout = clearTimeout;
@@ -22,19 +33,8 @@ UI.RunEvent1 = function () {
 	}
 }
 
-UI.ShowError = function (e, s, i) {
-	var sl = (s || "").toLowerCase();
-	if (isFinite(i)) {
-		if (eventTA[sl][i]) {
-			s = eventTA[sl][i] + " : " + s;
-		}
-	}
-	if (!g_.ShowError) {
-		g_.ShowError = true;
-		setTimeout(function () {
-			g_.ShowError = MessageBox([e.stack || e.description || e.toString(), s, AboutTE(3)].join("\n\n"), TITLE, MB_OKCANCEL) != IDOK;
-		}, 99);
-	}
+UI.ShowError = function (cb, e, s) {
+	setTimeout(cb, 99, cb, e, s);
 }
 
 UI.SetDisplay = function (Id, s) {
@@ -44,41 +44,41 @@ UI.SetDisplay = function (Id, s) {
 	}
 }
 
-UI.ApplyLangTag = function (o) {
-    if (o) {
-        for (i = o.length; i--;) {
-            var s, s1;
-            if (s = o[i].innerHTML) {
-                if (s != (s1 = s.replace(/(\s*<[^>]*?>\s*)|([^<>]*)|/gm, function (strMatch, ref1, ref2) {
-                    var r = ref1 || ref2;
-                    return /^\s*</.test(r) ? r : amp2ul(GetTextR(r.replace(/&amp;/ig, "&")));
-                }))) {
-                    o[i].innerHTML = s1;
-                }
-            }
-            s = o[i].title;
-            if (s) {
-                o[i].title = GetTextR(s).replace(/\(&\w\)|&/, "");
-            }
-            s = o[i].alt;
-            if (s) {
-                o[i].alt = GetTextR(s).replace(/\(&\w\)|&/, "");
-            }
-        }
-    }
-}
-
 UI.Blur = function (Id) {
 	document.getElementById(Id).blur();
 }
 
 function _InvokeMethod() {
-	debugger;
+	
 	var args;
 	var ar = api.ObjGetI(te, "fn");
 	while (args = ar.shift()) {
 		var fn = args.shift();
 		fn.apply(fn, args);
+	}
+}
+
+ApplyLangTag = function (o) {
+	if (o) {
+		for (i = o.length; i--;) {
+			var s, s1;
+			if (s = o[i].innerHTML) {
+				if (s != (s1 = s.replace(/(\s*<[^>]*?>\s*)|([^<>]*)|/gm, function (strMatch, ref1, ref2) {
+					var r = ref1 || ref2;
+					return /^\s*</.test(r) ? r : amp2ul(GetTextR(r.replace(/&amp;/ig, "&")));
+				}))) {
+					o[i].innerHTML = s1;
+				}
+			}
+			s = o[i].title;
+			if (s) {
+				o[i].title = GetTextR(s).replace(/\(&\w\)|&/, "");
+			}
+			s = o[i].alt;
+			if (s) {
+				o[i].alt = GetTextR(s).replace(/\(&\w\)|&/, "");
+			}
+		}
 	}
 }
 
@@ -90,12 +90,12 @@ ApplyLang = function (doc) {
 		doc.body.style.fontSize = Math.abs(MainWindow.DefaultFont.lfHeight) + "px";
 		doc.body.style.fontWeight = MainWindow.DefaultFont.lfWeight;
 	}
-	UI.ApplyLangTag(doc.getElementsByTagName("label"));
-	UI.ApplyLangTag(doc.getElementsByTagName("button"));
-	UI.ApplyLangTag(doc.getElementsByTagName("li"));
+	ApplyLangTag(doc.getElementsByTagName("label"));
+	ApplyLangTag(doc.getElementsByTagName("button"));
+	ApplyLangTag(doc.getElementsByTagName("li"));
 	o = doc.getElementsByTagName("a");
 	if (o) {
-		UI.ApplyLangTag(o);
+		ApplyLangTag(o);
 		for (i = o.length; i--;) {
 			if (o[i].className == "treebutton" && o[i].innerHTML == "") {
 				o[i].innerHTML = BUTTONS.opened;
@@ -104,7 +104,7 @@ ApplyLang = function (doc) {
 	}
 	o = doc.getElementsByTagName("input");
 	if (o) {
-		UI.ApplyLangTag(o);
+		ApplyLangTag(o);
 		for (i = o.length; i--;) {
 			if (!h && o[i].type == "text") {
 				h = o[i].offsetHeight;
@@ -124,7 +124,7 @@ ApplyLang = function (doc) {
 	}
 	o = doc.getElementsByTagName("img");
 	if (o) {
-		UI.ApplyLangTag(o);
+		ApplyLangTag(o);
 		for (i = o.length; i--;) {
 			var s = ImgBase64(o[i], 0);
 			if (s) {
@@ -199,10 +199,7 @@ GetPos = function (o, bScreen, bAbs, bPanel, bBottom) {
 			break;
 		}
 	}
-	var pt = api.Memory("POINT");
-	pt.x = x;
-	pt.y = y;
-	return pt;
+	return { x: x, y: y };
 }
 
 HitTest = function (o, pt) {
@@ -217,6 +214,10 @@ HitTest = function (o, pt) {
 	return false;
 }
 
+GetBrowserWindow = function () {
+	return api.GetWindow(document);
+}
+
 MouseOver = function (o) {
 	o = o.srcElement || o;
 	if (/^button$|^menu$/i.test(o.className)) {
@@ -226,7 +227,7 @@ MouseOver = function (o) {
 		var pt = api.Memory("POINT");
 		api.GetCursorPos(pt);
 		var ptc = pt.Clone();
-		api.ScreenToClient(api.GetWindow(document), ptc);
+		api.ScreenToClient(GetBrowserWindow, ptc);
 		if (o == document.elementFromPoint(ptc.x, ptc.y) || HitTest(o, pt)) {
 			ui_.objHover = o;
 			o.className = 'hover' + o.className;
@@ -328,19 +329,6 @@ GetImgTag = function (o, h) {
 	return ar.join("");
 }
 
-CloseSubWindows = function () {
-	var hwnd = api.GetWindow(document);
-	var hwnd1 = hwnd;
-	while (hwnd1 = api.GetParent(hwnd)) {
-		hwnd = hwnd1;
-	}
-	while (hwnd1 = api.FindWindowEx(null, hwnd1, null, null)) {
-		if (hwnd == api.GetWindowLongPtr(hwnd1, GWLP_HWNDPARENT)) {
-			api.PostMessage(hwnd1, WM_CLOSE, 0, 0);
-		}
-	}
-}
-
 LoadAddon = function (ext, Id, arError, param) {
 	var r;
 	try {
@@ -377,9 +365,8 @@ LoadAddon = function (ext, Id, arError, param) {
 	return r;
 }
 
-AddEventEx(window, "beforeunload", CloseSubWindows);
-
 UI.OnLoad = function () {
+	AddEventEx(window, "beforeunload", CloseSubWindows);
 }
 
 //Options
@@ -465,6 +452,7 @@ AddonOptions = function (Id, fn, Data, bNew) {
 			el.contentWindow.g_.Inline = true;
 		}
 		external.WB.Data = opt;
+
 		var el = document.createElement('iframe');
 		el.id = 'panel1_' + Id;
 		el.src = sURL;
@@ -556,7 +544,7 @@ SetKeyShift = function () {
 
 CalcElementHeight = function (o, em) {
 	if (o) {
-		if (g_.IEVer >= 9) {
+		if (ui_.IEVer >= 9) {
 			o.style.height = "calc(100vh - " + em + "em)";
 		} else {
 			var h = document.documentElement.clientHeight || document.body.clientHeight;

@@ -32,7 +32,7 @@ function Resize2() {
 	te.offsetTop = pt.y;
 	pt = GetPos(document.getElementById("bottombar"));
 	te.offsetBottom = ode.offsetHeight - pt.y;
-	UI.RunEvent1("Resize");
+	RunEvent1("Resize");
 	api.PostMessage(te.hwnd, WM_SIZE, 0, 0);
 }
 
@@ -75,7 +75,7 @@ function PanelCreated (Ctrl) {
 
 GetAddonLocation = function (strName) {
 	var items = te.Data.Addons.getElementsByTagName(strName);
-	return (items.length ? items[0].getAttribute("Location") : null);
+	return (api.ObjGetI(items, "length") ? items[0].getAttribute("Location") : null);
 }
 
 SetAddon = function (strName, Location, Tag, strVAlign) {
@@ -96,7 +96,7 @@ SetAddon = function (strName, Location, Tag, strVAlign) {
 			} else {
 				o.appendChild(Tag);
 			}
-			o.style.display = (g_.IEVer >= 8 && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
+			o.style.display = (ui_.IEVer >= 8 && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
 			if (strVAlign && !o.style.verticalAlign) {
 				o.style.verticalAlign = strVAlign;
 			}
@@ -161,7 +161,7 @@ UI.FocusFV = function (tm) {
 				FV.Focus();
 			}
 		}
-	}, tm || sha.GetSystemInformation("DoubleClickTime"));
+	}, tm || ui_.DoubleClickTime);
 }
 
 UI.FocusWB = function () {
@@ -172,7 +172,7 @@ UI.FocusWB = function () {
 				if (o === document.activeElement) {
 					GetFolderView().Focus();
 				}
-			}, sha.GetSystemInformation("DoubleClickTime"), o);
+			}, ui_.DoubleClickTime, o);
 		}
 	}
 }
@@ -209,21 +209,25 @@ UI.EndMenu = function () {
 }
 
 UI.ShowStatusText = function (Ctrl, Text, iPart, tm) {
-	g_.Status = [Ctrl, Text, iPart, tm, new Date().getTime(), setTimeout(function () {
-		if (g_.Status) {
-			if (new Date().getTime() - g_.Status[4] > g_.Status[3] / 2) {
-				$.ShowStatusText(g_.Status[0], g_.Status[1], g_.Status[2]);
-				delete g_.Status;
+	if (ui_.Status && ui_.Status[5]) {
+		clearTimeout(ui_.Status[5]);
+		delete ui_.Status;
+	}
+	ui_.Status = [Ctrl, Text, iPart, tm, new Date().getTime(), setTimeout(function () {
+		if (ui_.Status) {
+			if (new Date().getTime() - ui_.Status[4] > ui_.Status[3] / 2) {
+				$.ShowStatusText(ui_.Status[0], ui_.Status[1], ui_.Status[2]);
+				delete ui_.Status;
 			}
 		}
 	}, tm)];
 }
 
 UI.CancelWindowRegistered = function () {
-	clearTimeout(g_.tidWindowRegistered);
-	g_.bWindowRegistered = false;
-	g_.tidWindowRegistered = setTimeout(function () {
-		g_.bWindowRegistered = true;
+	clearTimeout(ui_.tidWindowRegistered);
+	ui_.bWindowRegistered = false;
+	ui_.tidWindowRegistered = setTimeout(function () {
+		ui_.bWindowRegistered = true;
 	}, 9999);
 }
 
@@ -232,394 +236,64 @@ UI.ExecGesture = function (Ctrl, hwnd, pt, str) {
 		g_.mouse.Exec(Ctrl, hwnd, pt, str);
 	}, 99);
 }
-
-var args = ["script\\sync.js", "script\\sync1.js"];
-if (window.chrome) {
-	te.fn = api.CreateObject("Array");
-	args.unshift("script\\consts.js", "script\\common.js");
-}
-
-var s = ["MainWindow = window;"];
-for (var i = 0; i < args.length; i++) {
-	var fn = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), args[i]);
-	var ado = api.CreateObject("ads");
-	if (ado) {
-		ado.CharSet = "utf-8";
-		ado.Open();
-		ado.LoadFromFile(fn);
-		var line = s.join("").split("\n").length;
-		s.push(ado.ReadText());
-		ado.Close();
-		api.OutputDebugString([fso.GetFileName(args[i]), "Start line:", line, "\n"].join(""));
-	}
-}
-if (window.chrome) {
-	var CopyObj = function (to, o, ar) {
-		if (!to) {
-			to = api.CreateObject("Object");
-		}
-		ar.forEach(function (key) {
-			to[key] = o[key];
-		});
-		return to;
-	}
-	document.documentMode = (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 : 12);
-	CopyObj($, window, ["te", "api", "chrome", "document", "UI"]);
-	$.location = CopyObj(null, location, ["hash", "href"]);
-	$.navigator = CopyObj(null, navigator, ["appVersion", "language"]);
-	$.screen = CopyObj(null, screen, ["deviceXDPI", "deviceYDPI"]);
-
-	var o = api.CreateObject("Object");
-	o.window = $;
-	$.$JS = api.GetScriptDispatch(s.join(""), "JScript", o);
-	CopyObj(window, $, ["g_", "Addons", "AboutTE", "AddEvent", "ClearEvent", "AddEnv", "AddEventId", "eventTE", "eventTA", "Threads", "BlurId", "ChangeView", "ShowError", "ShowStatusText"]);
-} else {
-	$ = window;
-	$JS = new Function(s.join(""));
-	$JS();
-}
-MainWindow = $;
-
-te.OnArrange = function (Ctrl, rc, cb) {
-	UI.RunEvent1("Arrange", Ctrl, rc);
-	if (Ctrl.Type == CTRL_TC) {
-		var o = ui_.Panels[Ctrl.Id];
-		if (!o) {
-			o = document.createElement("table");
-			o.id = "Panel_" + Ctrl.Id;
-			o.className = "layout";
-			o.style.position = "absolute";
-			o.style.zIndex =  1;
-			var s = '<tr><td id="InnerLeft_$" class="sidebar" style="width: 0; display: none; overflow: auto"></td><td style="width: 100%"><div id="InnerTop_$" style="display: none"></div>';
-			s += '<table id="InnerTop2_$" class="layout"><tr><td id="Inner1Left_$" class="toolbar1"></td><td id="Inner1Center_$" class="toolbar2" style="white-space: nowrap"></td><td id="Inner1Right_$" class="toolbar3"></td></tr></table>';
-			s += '<table id="InnerView_$" class="layout" style="width: 100%"><tr><td id="Inner2Left_$" style="width: 0"></td><td id="Inner2Center_$"></td><td id="Inner2Right_$" style="width: 0; overflow: auto"></td></tr></table>';
-			s += '<div id="InnerBottom_$"></div></td><td id="InnerRight_$" class="sidebar" style="width: 0; display: none"></td></tr>';
-			o.innerHTML = s.replace(/\$/g, Ctrl.Id);
-			document.getElementById("Panel").appendChild(o);
-			PanelCreated(Ctrl);
-			ui_.Panels[Ctrl.Id] = o;
-			ApplyLang(o);
-			ChangeView(Ctrl.Selected);
-		}
-		o.style.left = rc.left + "px";
-		o.style.top = rc.top + "px";
-		if (Ctrl.Visible) {
-			var s = [Ctrl.Left, Ctrl.Top, Ctrl.Width, Ctrl.Height].join(",");
-			if (ui_.TCPos[s] && ui_.TCPos[s] != Ctrl.Id) {
-				Ctrl.Close();
-				return;
-			} else {
-				ui_.TCPos[s] = Ctrl.Id;
-			}
-			o.style.display = (g_.IEVer >= 8 && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
-		} else {
-			o.style.display = "none";
-		}
-		o.style.width = Math.max(rc.right - rc.left, 0) + "px";
-		o.style.height = Math.max(rc.bottom - rc.top, 0) + "px";
-		rc.top += document.getElementById("InnerTop_" + Ctrl.Id).offsetHeight + document.getElementById("InnerTop2_" + Ctrl.Id).offsetHeight;
-		var w1 = 0, w2 = 0, x = '';
-		for (var i = 0; i <= 1; ++i) {
-			w1 += api.LowPart(document.getElementById("Inner" + x + "Left_" + Ctrl.Id).style.width.replace(/\D/g, ""));
-			w2 += api.LowPart(document.getElementById("Inner" + x + "Right_" + Ctrl.Id).style.width.replace(/\D/g, ""));
-			x = '2';
-		}
-		rc.left += w1;
-		rc.right -= w2;
-		rc.bottom -= document.getElementById("InnerBottom_" + Ctrl.Id).offsetHeight;
-		o = document.getElementById("Inner2Center_" + Ctrl.Id).style;
-		o.width = Math.max(rc.right - rc.left, 0) + "px";
-		o.height = Math.max(rc.bottom - rc.top, 0) + "px";
-		cb(Ctrl, rc);
-	} else if (Ctrl.Type == CTRL_TE) {
-		ui_.TCPos = {};
-		var rcClient = api.Memory("RECT");
-		api.GetClientRect(te.hwnd, rcClient);
-		rcClient.left += te.offsetLeft;
-		rcClient.top += te.offsetTop;
-		rcClient.right -= te.offsetRight;
-		rcClient.bottom -= te.offsetBottom;
-		te.LockUpdate(1);
-		try {
-			var cTC = te.Ctrls(CTRL_TC, true);
-			for (var i = 0; i < cTC.Count; ++i) {
-				var TC = cTC[i];
-				var rc = api.Memory("RECT");
-				var res = /(\d+)%/.exec(TC.Left);
-				if (res) {
-					rc.left = res[1] * (rcClient.right - rcClient.left) / 100 + rcClient.left;
-				} else {
-					rc.left = TC.Left + (TC.Left >= 0 ? rcClient.left : rcClient.right);
+;
+(function () {
+	var args = ["sync.js", "sync1.js"];
+	if (window.chrome) {
+		args.unshift("consts.js", "common.js");
+		var s = ["MainWindow = window;"];
+		var arFN = [];
+		var line = 1;
+		for (var i = 0; i < args.length; i++) {
+			var fn = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\" + args[i]);
+			var ado = api.CreateObject("ads");
+			if (ado) {
+				ado.CharSet = "utf-8";
+				ado.Open();
+				ado.LoadFromFile(fn);
+				var src = ado.ReadText();
+				s.push(src);
+				ado.Close();
+				if (window.chrome && src && /sync/.test(fn)) {
+					arFN = arFN.concat(src.match(/\s\w+\s*=\s*function/g).map(function (s) {
+						return s.replace(/^\s|\s*=.*$/g, "");
+					}));
 				}
-				if (TC.Left) {
-					++rc.left;
-				}
-				res = /(\d+)%/.exec(TC.Top);
-				if (res) {
-					rc.top = res[1] * (rcClient.bottom - rcClient.top) / 100 + rcClient.top;
-				} else {
-					rc.top = TC.Top + (TC.Top >= 0 ? rcClient.top : rcClient.bottom);
-				}
-				if (TC.Top) {
-					++rc.top;
-				}
-				res = /(\d+)%/.exec(TC.Width);
-				if (res) {
-					rc.right = res[1] * (rcClient.right - rcClient.left) / 100 + rc.left;
-				} else {
-					rc.right = TC.Width + (TC.Width >= 0 ? rc.left : rcClient.right);
-				}
-				if (rc.right >= rcClient.right) {
-					rc.right = rcClient.right;
-				} else {
-					--rc.right;
-				}
-				res = /(\d+)%/.exec(TC.Height);
-				if (res) {
-					rc.bottom = res[1] * (rcClient.bottom - rcClient.top) / 100 + rc.top;
-				} else {
-					rc.bottom = TC.Height + (TC.Height >= 0 ? rc.top : rcClient.bottom);
-				}
-				if (rc.bottom >= rcClient.bottom) {
-					rc.bottom = rcClient.bottom;
-				} else {
-					--rc.bottom;
-				}
-				te.OnArrange(TC, rc, cb);
-			}
-		} catch (e) { }
-		te.UnlockUpdate(1);
-	}
-}
-
-te.OnVisibleChanged = function (Ctrl) {
-	UI.RunEvent1("VisibleChanged", Ctrl);
-}
-
-UI.OnLoad();
-
-ArrangeAddons = function () {
-	ui_.Locations = {};
-	$.IconSize = te.Data.Conf_IconSize || screen.logicalYDPI / 4;
-	var xml = OpenXml("addons.xml", false, true);
-	te.Data.Addons = xml;
-	if (api.GetKeyState(VK_SHIFT) < 0 && api.GetKeyState(VK_CONTROL) < 0) {
-		IsSavePath = function (path) {
-			return false;
-		}
-		return;
-	}
-	var AddonId = [];
-	var root = xml.documentElement;
-	if (root) {
-		var items = root.childNodes;
-		if (items) {
-			var arError = [];
-			for (var i = 0; i < api.ObjGetI(items, "length"); ++i) {
-				var item = items[i];
-				var Id = item.nodeName;
-				g_.Error_source = Id;
-				if (!AddonId[Id]) {
-					var Enabled = api.LowPart(item.getAttribute("Enabled"));
-					if (Enabled & 6) {
-						LoadLang2(fso.BuildPath(te.Data.Installed, "addons\\" + Id + "\\lang\\" + GetLangId() + ".xml"));
-					}
-					if (Enabled & 8) {
-						LoadAddon("vbs", Id, arError);
-					}
-					if (Enabled & 1) {
-						LoadAddon("js", Id, arError);
-					}
-					AddonId[Id] = true;
-				}
-				g_.Error_source = "";
-			}
-			if (arError.length) {
-				setTimeout(function (arError) {
-					if (MessageBox(arError.join("\n\n"), TITLE, MB_OKCANCEL) != IDCANCEL) {
-						te.Data.bErrorAddons = true;
-						ShowOptions("Tab=Add-ons");
-					}
-				}, 500, arError);
+				api.OutputDebugString([fso.GetFileName(args[i]), "Start line:", line, "\n"].join(""));
+				line += src.split("\n").length;
 			}
 		}
-	}
-	UI.RunEvent1("BrowserCreated", document);
-	UI.RunEvent1("Load");
-	ClearEvent("Load");
-	var cHwnd = [te.Ctrl(CTRL_WB).hwnd, te.hwnd];
-	var cl = $.GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor);
-	for (var i = cHwnd.length; i--;) {
-		var hOld = api.SetClassLongPtr(cHwnd[i], GCLP_HBRBACKGROUND, api.CreateSolidBrush(cl));
-		if (hOld) {
-			api.DeleteObject(hOld);
-		}
-	}
-	var hwnd, p = api.Memory("WCHAR", 11);
-	p.Write(0, VT_LPWSTR, "ShellState");
-	var cFV = te.Ctrls(CTRL_FV);
-	for (var i in cFV) {
-		if (hwnd = cFV[i].hwndView) {
-			api.SendMessage(hwnd, WM_SETTINGCHANGE, 0, p);
-		}
-	}
-}
-
-InitCode = function () {
-	var types =
-	{
-		Key: ["All", "List", "Tree", "Browser", "Edit", "Menus"],
-		Mouse: ["All", "List", "List_Background", "Tree", "Tabs", "Tabs_Background", "Browser"]
-	};
-	var i;
-	for (i = 0; i < 3; ++i) {
-		g_.KeyState[i][0] = api.GetKeyNameText(g_.KeyState[i][0]);
-	}
-	i = g_.KeyState.length;
-	while (i-- > 4 && g_.KeyState[i][0] == g_.KeyState[i - 4][0]) {
-		g_.KeyState.pop();
-	}
-	for (var j = 256; j >= 0; j -= 256) {
-		for (var i = 128; i > 0; i--) {
-			var v = api.GetKeyNameText((i + j) * 0x10000);
-			if (v && v.charCodeAt(0) > 32) {
-				g_.KeyCode[v.toUpperCase()] = i + j;
+		var CopyObj = function (to, o, ar) {
+			if (!to) {
+				to = api.CreateObject("Object");
 			}
+			ar.forEach(function (key) {
+				to[key] = o[key];
+			});
+			return to;
 		}
-	}
-	for (var i in types) {
-		eventTE[i] = api.CreateObject("Object");
-		for (var j in types[i]) {
-			eventTE[i][types[i][j]] = api.CreateObject("Object");
-		}
-	}
-	DefaultFont = api.Memory("LOGFONT");
-	$.DefaultFont = DefaultFont;
-	api.SystemParametersInfo(SPI_GETICONTITLELOGFONT, DefaultFont.Size, DefaultFont, 0);
-	HOME_PATH = te.Data.Conf_NewTab || HOME_PATH;
-	$.HOME_PATH = HOME_PATH;
-}
+		document.documentMode = (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 : 12);
+		CopyObj($, window, ["te", "api", "chrome", "document", "UI"]);
+		$.location = CopyObj(null, location, ["hash", "href"]);
+		$.navigator = CopyObj(null, navigator, ["appVersion", "language"]);
+		$.screen = CopyObj(null, screen, ["deviceXDPI", "deviceYDPI"]);
 
-InitMouse = function () {
-	te.Data.Conf_Gestures = isFinite(te.Data.Conf_Gestures) ? Number(te.Data.Conf_Gestures) : 2;
-	if ("string" === typeof te.Data.Conf_TrailColor) {
-		te.Data.Conf_TrailColor = GetWinColor(te.Data.Conf_TrailColor);
-	}
-	if (!isFinite(te.Data.Conf_TrailColor) || te.Data.Conf_TrailColor === "") {
-		te.Data.Conf_TrailColor = 0xff00;
-	}
-	te.Data.Conf_TrailSize = isFinite(te.Data.Conf_TrailSize) ? Number(te.Data.Conf_TrailSize) : 2;
-	te.Data.Conf_GestureTimeout = isFinite(te.Data.Conf_GestureTimeout) ? Number(te.Data.Conf_GestureTimeout) : 3000;
-	te.Data.Conf_Layout = isFinite(te.Data.Conf_Layout) ? Number(te.Data.Conf_Layout) : 0x80;
-	te.Data.Conf_NetworkTimeout = isFinite(te.Data.Conf_NetworkTimeout) ? Number(te.Data.Conf_NetworkTimeout) : 2000;
-	te.Data.Conf_WheelSelect = isFinite(te.Data.Conf_WheelSelect) ? Number(te.Data.Conf_WheelSelect) : 1;
-	te.SizeFormat = (te.Data.Conf_SizeFormat || "").replace(/^0x/i, "");
-	te.HiddenFilter = ExtractFilter(te.Data.Conf_HiddenFilter);
-	te.DragIcon = !api.LowPart(te.Data.Conf_NoDragIcon);
-	var ar = ['AutoArrange', 'ColumnEmphasis', 'DateTimeFormat', 'Layout', 'LibraryFilter', 'NetworkTimeout', 'ShowInternet', 'ViewOrder'];
-	for (var i = ar.length; i--;) {
-		te[ar[i]] = te.Data['Conf_' + ar[i]];
-	}
-	OpenMode = te.Data.Conf_OpenMode ? SBSP_NEWBROWSER : SBSP_SAMEBROWSER;
-}
-
-InitMenus = function () {
-	te.Data.xmlMenus = OpenXml("menus.xml", false, true);
-	var root = te.Data.xmlMenus.documentElement;
-	if (root) {
-		menus = root.childNodes;
-		for (var i = api.ObjGetI(menus, "length"); i--;) {
-			items = menus[i].getElementsByTagName("Item");
-			for (var j = api.ObjGetI(items, "length"); j--;) {
-				a = items[j].getAttribute("Name").split(/\\t/);
-				if (a.length > 1) {
-					$.SetKeyExec("List", a[1], items[j].text, items[j].getAttribute("Type"), true);
-				}
-			}
-		}
-	}
-}
-
-InitWindow = function () {
-	if (g_.xmlWindow && "string" !== typeof g_.xmlWindow) {
-		$.LoadXml(g_.xmlWindow);
-	}
-	if (te.Ctrls(CTRL_TC).Count == 0) {
-		var TC = te.CreateCtrl(CTRL_TC, 0, 0, "100%", "100%", te.Data.Tab_Style, te.Data.Tab_Align, te.Data.Tab_TabWidth, te.Data.Tab_TabHeight);
-		TC.Selected.Navigate2(HOME_PATH, SBSP_NEWBROWSER, te.Data.View_Type, te.Data.View_ViewMode, te.Data.View_fFlags, te.Data.View_Options, te.Data.View_ViewFlags, te.Data.View_IconSize, te.Data.Tree_Align, te.Data.Tree_Width, te.Data.Tree_Style, te.Data.Tree_EnumFlags, te.Data.Tree_RootStyle, te.Data.Tree_Root);
-	}
-	g_.xmlWindow = void 0;
-	setTimeout(function () {
-		var a, i, j, menus, items;
-		Resize();
-		var cTC = te.Ctrls(CTRL_TC);
-		for (var i in cTC) {
-			if (cTC[i].SelectedIndex >= 0) {
-				ChangeView(cTC[i].Selected);
-			}
-		}
-		api.ShowWindow(te.hwnd, te.CmdShow);
-		if (te.CmdShow == SW_SHOWNOACTIVATE) {
-			api.SetWindowPos(te.hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-		}
-		te.CmdShow = SW_SHOWNORMAL;
-		setTimeout(function () {
-			$.RunCommandLine(api.GetCommandLine());
-			api.PostMessage(te.hwnd, WM_SIZE, 0, 0);
-		}, 500);
-	}, 99);
-}
-
-// Events
-
-AddEvent("VisibleChanged", function (Ctrl) {
-	if (Ctrl.Type == CTRL_TC) {
-		var o = ui_.Panels[Ctrl.Id];
-		if (o) {
-			if (Ctrl.Visible) {
-				o.style.display = (g_.IEVer >= 8 && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
-				ChangeView(Ctrl.Selected);
-			} else {
-				o.style.display = "none";
-			}
-		}
-	}
-});
-
-// Browser Events
-
-AddEventEx(window, "load", function () {
-	ApplyLang(document);
-	if (api.GetKeyState(VK_SHIFT) < 0 && api.GetKeyState(VK_CONTROL) < 0) {
-		$.ShowOptions("Tab=Add-ons");
-	}
-});
-
-AddEventEx(window, "resize", Resize);
-
-AddEventEx(window, "beforeunload", $.Finalize);
-
-AddEventEx(window, "blur", ResetScroll);
-
-AddEventEx(document, "MSFullscreenChange", function () {
-	if (document.msFullscreenElement) {
-		var cTC = te.Ctrls(CTRL_TC, true);
-		for (var i in cTC) {
-			var TC = cTC[i];
-			g_.stack_TC.push(TC);
-			TC.Visible = false;
-		}
+		var o = api.CreateObject("Object");
+		o.window = $;
+		$.$JS = api.GetScriptDispatch(s.join(""), "JScript", o);
+		CopyObj(window, $, ["g_", "Addons", "eventTE", "eventTA", "Threads", "SimpleDB", "BasicDB;"]);
+		CopyObj(window, $, arFN);
 	} else {
-		while (api.ObjGetI(g_.stack_TC, "length")) {
-			g_.stack_TC.pop().Visible = true;
+		$ = window;
+		for (var i = 0; i < args.length; ++i) {
+			var el = document.createElement("script");
+			el.src = args[i];
+			document.body.appendChild(el);
 		}
 	}
-});
+	MainWindow = $;
+	var el = document.createElement("script");
+	el.src = "ui1.js";
+	document.body.appendChild(el);
+})();
 
-//
-InitCode();
-InitMouse();
-InitMenus();
-LoadLang();
-ArrangeAddons();
-setTimeout(InitWindow);

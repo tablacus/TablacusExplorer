@@ -11,7 +11,7 @@ AddEventEx = function (w, Name, fn) {
 g_uid = location.hash.replace(/\D/g, "");
 
 if (!window.te && ((window.external && external.Type) || window.chrome)) {
-	te = window.chrome ? chrome.webview.hostObjects.sync.te : external;
+	te = window.chrome ? chrome.webview.hostObjects.te : external;
 	if (te.Type == 0x2ffff) {
 		dialogArguments = te.WB.Data;
 		te = te.TE;
@@ -78,14 +78,6 @@ if (!window.api) {
 
 $ = window.chrome ? api.CreateObject("Object") : window;
 
-osInfo = api.Memory("OSVERSIONINFOEX");
-osInfo.dwOSVersionInfoSize = osInfo.Size;
-api.GetVersionEx(osInfo);
-WINVER = osInfo.dwMajorVersion * 0x100 + osInfo.dwMinorVersion;
-try {
-	wsh.CurrentDirectory = fso.GetSpecialFolder(2).Path;
-} catch (e) { }
-
 //Tablacus
 Ox80000000 = 0x80000000 | 0;
 CTRL_FV = 0;
@@ -117,30 +109,6 @@ TITLE = "Tablacus Explorer";
 ssfRESULTSFOLDER = 0x40;
 FILTER_IMAGE = "*.jpg;*.jpeg;*.png;*.bmp;*.gif;*.ico;data:*";
 REGEXP_IMAGE = /^data:|\.jpe?g$|\.png$|\.bmp$|\.gif$|\.ico$/i;
-
-if (WINVER > 0x603) {
-	BUTTONS = {
-		opened: '<b style="font-family: Consolas; transform: scale(1.2,1) rotate(-90deg)">&lt;</b>',
-		closed: '<b style="font-family: Consolas; transform: scale(1,1.2) translateX(1px); opacity: 0.6">&gt;</b>',
-		parent: '&laquo;',
-		next: '<b style="font-family: Consolas; opacity: 0.6; transform: scale(0.75,0.9); text-shadow: 1px 0">&gt;</b>',
-		dropdown: '<b style="font-family: Consolas; transform: scale(1.2,1) rotate(-90deg) translateX(2px); opacity: 0.6; width: 1em; display: inline-block">&lt;</b>'
-	};
-} else {
-	try {
-		var s = wsh.regRead("HKCU\\Software\\Microsoft\\Internet Explorer\\Settings\\Always Use My Font Face");
-	} catch (e) {
-		s = 0;
-	}
-	BUTTONS = {
-		opened: '<span style="font-size: 10pt; transform: translateY(-2pt)">&#x25e2;</span>',
-		closed: '<span style="font-size: 10pt; transform: scale(1,1.4)">&#x25b7;</span>',
-		parent: '&laquo;',
-		next: s ? '&#x25ba;' : '<span style="font-family: Marlett">4</span>',
-		dropdown: s ? '&#x25bc;' : '<span style="font-family: Marlett">6</span>'
-	};
-	delete s;
-}
 
 //Windows
 MAXINT = 0x7fffffff;
@@ -766,7 +734,7 @@ CMF_NOVERBS = 8;
 CMF_CANRENAME = 0x10;
 CMF_NODEFAULT = 0x20;
 CMF_INCLUDESTATIC = 0x40;
-CMF_ITEMMENU = WINVER >= 0x600 ? 0x80 : 0;
+CMF_ITEMMENU = 0x80;
 CMF_EXTENDEDVERBS = 0x0100;
 CMF_DISABLEDVERBS = 0x0200;
 CMF_ASYNCVERBSTATE = 0x0400;
@@ -1711,12 +1679,6 @@ SHCNF_TYPE = 0xFF;
 SHCNF_FLUSH = 0x1000;
 SHCNF_FLUSHNOWAIT = 0x3000;
 
-system32 = api.GetDisplayNameOf(ssfSYSTEM, SHGDN_FORPARSING);
-hShell32 = api.GetModuleHandle(fso.BuildPath(system32, "shell32.dll"));
-if (api.SHTestTokenMembership(null, 0x220) && WINVER >= 0x600) {
-	TITLE += ' [' + (api.LoadString(hShell32, 25167) || "Admin").replace(/;.*$/, "") + ']';
-}
-
 SRCCOPY = 0xCC0020;
 SRCPAINT = 0xEE0086;
 SRCAND = 0x8800C6;
@@ -1915,4 +1877,8 @@ if (window.dialogArguments) {
 			}
 		}
 	})();
+}
+if (!window.chrome) {
+	system32 = api.GetDisplayNameOf(ssfSYSTEM, SHGDN_FORPARSING);
+	hShell32 = api.GetModuleHandle(fso.BuildPath(system32, "shell32.dll"));
 }

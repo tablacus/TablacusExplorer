@@ -2552,19 +2552,19 @@ te.OnFilterView = function (FV, s)
 	return S_FALSE;
 }
 
+te.OnVisibleChanged = function (Ctrl) {
+	RunEvent1("VisibleChanged", Ctrl);
+}
+
 ShowStatusText = function (Ctrl, Text, iPart, tm) {
 	if (!Ctrl) {
 		return;
-	}
-	if (g_.Status && g_.Status[5]) {
-		clearTimeout(g_.Status[5]);
-		delete g_.Status;
 	}
 	if (tm) {
 		api.Invoke(UI.ShowStatusText, Ctrl, Text, iPart, tm);
 		return S_OK;
 	}
-	RunEvent1("StatusText", Ctrl, Text, iPart);
+	api.Invoke(UI.RunEvent1, "StatusText", Ctrl, Text, iPart);
 	return S_OK;
 }
 
@@ -2601,13 +2601,6 @@ g_.event.itemclick = function (Ctrl, Item, HitTest, Flags) {
 
 g_.event.columnclick = function (Ctrl, iItem) {
 	return RunEvent3("ColumnClick", Ctrl, iItem);
-}
-
-g_.event.windowregistered = function (Ctrl) {
-	if (g_.bWindowRegistered) {
-		RunEvent1("WindowRegistered", Ctrl);
-	}
-	g_.bWindowRegistered = true;
 }
 
 g_.event.tooltip = function (Ctrl, Index) {
@@ -2849,6 +2842,69 @@ importScripts = function () {
 		importScript(arguments[i]);
 	}
 }
+
+AddEvent("Arrange", function (Ctrl, rc, cb) {
+	if (Ctrl.Type == CTRL_TE) {
+		var rcClient = api.Memory("RECT");
+		api.GetClientRect(te.hwnd, rcClient);
+		rcClient.left += te.offsetLeft;
+		rcClient.top += te.offsetTop;
+		rcClient.right -= te.offsetRight;
+		rcClient.bottom -= te.offsetBottom;
+		te.LockUpdate(1);
+		try {
+			var cTC = te.Ctrls(CTRL_TC, true);
+			for (var i = 0; i < cTC.Count; ++i) {
+				var TC = cTC[i];
+				var rc = api.Memory("RECT");
+				var w = (rcClient.right - rcClient.left) / 100;
+				var h = (rcClient.bottom - rcClient.top) / 100;
+				var s = TC.Left;
+				if ("string" === typeof s) {
+					rc.left = s.replace(/%$/g, "") * w + rcClient.left;
+				} else {
+					rc.left = s + (s >= 0 ? rcClient.left : rcClient.right);
+				}
+				if (s) {
+					++rc.left;
+				}
+				s = TC.Top;
+				if ("string" === typeof s) {
+					rc.top = s.replace(/%$/g, "") * h + rcClient.top;
+				} else {
+					rc.top = s + (s >= 0 ? rcClient.top : rcClient.bottom);
+				}
+				if (s) {
+					++rc.top;
+				}
+				s = TC.Width;
+				if ("string" === typeof s) {
+					rc.right = s.replace(/%$/g, "") * w + rc.left;
+				} else {
+					rc.right = s + (s >= 0 ? rc.left : rcClient.right);
+				}
+				if (rc.right >= rcClient.right) {
+					rc.right = rcClient.right;
+				} else {
+					--rc.right;
+				}
+				s = TC.Height;
+				if ("string" === typeof s) {
+					rc.bottom = s.replace(/%$/g, "") * h + rc.top;
+				} else {
+					rc.bottom = s + (s >= 0 ? rc.top : rcClient.bottom);
+				}
+				if (rc.bottom >= rcClient.bottom) {
+					rc.bottom = rcClient.bottom;
+				} else {
+					--rc.bottom;
+				}
+				te.OnArrange(TC, rc, cb);
+			}
+		} catch (e) { }
+		te.UnlockUpdate(1);
+	}
+});
 
 AddEvent("Exec", function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop) {
 	var FV = GetFolderView(Ctrl, pt);
@@ -3204,6 +3260,144 @@ AdjustAutocomplete = function (path) {
 	api.ExecScript(AutocompleteThread.toString().replace(/^[^{]+{|}$/g, ""), "JScript", o, true);
 }
 
+FullscreenChanged = function (bVisible) {
+	if (document.msFullscreenElement) {
+		var cTC = te.Ctrls(CTRL_TC, true);
+		for (var i in cTC) {
+			var TC = cTC[i];
+			g_.stack_TC.push(TC);
+			TC.Visible = false;
+		}
+	} else {
+		while (api.ObjGetI(g_.stack_TC, "length")) {
+			g_.stack_TC.pop().Visible = true;
+		}
+	}
+}	
+
+ArrangeAddons1 = function () {
+	RunEvent1("Load");
+	ClearEvent("Load");
+	var cHwnd = [te.Ctrl(CTRL_WB).hwnd, te.hwnd];
+	var cl = GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor);
+	for (var i = cHwnd.length; i--;) {
+		var hOld = api.SetClassLongPtr(cHwnd[i], GCLP_HBRBACKGROUND, api.CreateSolidBrush(cl));
+		if (hOld) {
+			api.DeleteObject(hOld);
+		}
+	}
+	var hwnd, p = api.Memory("WCHAR", 11);
+	p.Write(0, VT_LPWSTR, "ShellState");
+	var cFV = te.Ctrls(CTRL_FV);
+	for (var i in cFV) {
+		if (hwnd = cFV[i].hwndView) {
+			api.SendMessage(hwnd, WM_SETTINGCHANGE, 0, p);
+		}
+	}
+}
+
+InitCode = function () {
+	var types =
+	{
+		Key: ["All", "List", "Tree", "Browser", "Edit", "Menus"],
+		Mouse: ["All", "List", "List_Background", "Tree", "Tabs", "Tabs_Background", "Browser"]
+	};
+	var i;
+	for (i = 0; i < 3; ++i) {
+		g_.KeyState[i][0] = api.GetKeyNameText(g_.KeyState[i][0]);
+	}
+	i = g_.KeyState.length;
+	while (i-- > 4 && g_.KeyState[i][0] == g_.KeyState[i - 4][0]) {
+		g_.KeyState.pop();
+	}
+	for (var j = 256; j >= 0; j -= 256) {
+		for (var i = 128; i > 0; i--) {
+			var v = api.GetKeyNameText((i + j) * 0x10000);
+			if (v && v.charCodeAt(0) > 32) {
+				g_.KeyCode[v.toUpperCase()] = i + j;
+			}
+		}
+	}
+	for (var i in types) {
+		eventTE[i] = api.CreateObject("Object");
+		for (var j in types[i]) {
+			eventTE[i][types[i][j]] = api.CreateObject("Object");
+		}
+	}
+	DefaultFont = api.Memory("LOGFONT");
+	api.SystemParametersInfo(SPI_GETICONTITLELOGFONT, DefaultFont.Size, DefaultFont, 0);
+	HOME_PATH = te.Data.Conf_NewTab || HOME_PATH;
+}
+
+InitMouse = function () {
+	te.Data.Conf_Gestures = isFinite(te.Data.Conf_Gestures) ? Number(te.Data.Conf_Gestures) : 2;
+	if ("string" === typeof te.Data.Conf_TrailColor) {
+		te.Data.Conf_TrailColor = GetWinColor(te.Data.Conf_TrailColor);
+	}
+	if (!isFinite(te.Data.Conf_TrailColor) || te.Data.Conf_TrailColor === "") {
+		te.Data.Conf_TrailColor = 0xff00;
+	}
+	te.Data.Conf_TrailSize = isFinite(te.Data.Conf_TrailSize) ? Number(te.Data.Conf_TrailSize) : 2;
+	te.Data.Conf_GestureTimeout = isFinite(te.Data.Conf_GestureTimeout) ? Number(te.Data.Conf_GestureTimeout) : 3000;
+	te.Data.Conf_Layout = isFinite(te.Data.Conf_Layout) ? Number(te.Data.Conf_Layout) : 0x80;
+	te.Data.Conf_NetworkTimeout = isFinite(te.Data.Conf_NetworkTimeout) ? Number(te.Data.Conf_NetworkTimeout) : 2000;
+	te.Data.Conf_WheelSelect = isFinite(te.Data.Conf_WheelSelect) ? Number(te.Data.Conf_WheelSelect) : 1;
+	te.SizeFormat = (te.Data.Conf_SizeFormat || "").replace(/^0x/i, "");
+	te.HiddenFilter = ExtractFilter(te.Data.Conf_HiddenFilter);
+	te.DragIcon = !api.LowPart(te.Data.Conf_NoDragIcon);
+	var ar = ['AutoArrange', 'ColumnEmphasis', 'DateTimeFormat', 'Layout', 'LibraryFilter', 'NetworkTimeout', 'ShowInternet', 'ViewOrder'];
+	for (var i = ar.length; i--;) {
+		te[ar[i]] = te.Data['Conf_' + ar[i]];
+	}
+	OpenMode = te.Data.Conf_OpenMode ? SBSP_NEWBROWSER : SBSP_SAMEBROWSER;
+}
+
+InitMenus = function () {
+	te.Data.xmlMenus = OpenXml("menus.xml", false, true);
+	var root = te.Data.xmlMenus.documentElement;
+	if (root) {
+		menus = root.childNodes;
+		for (var i = menus.length; i--;) {
+			items = menus[i].getElementsByTagName("Item");
+			for (var j = api.ObjGetI(items, "length"); j--;) {
+				a = items[j].getAttribute("Name").split(/\\t/);
+				if (a.length > 1) {
+					SetKeyExec("List", a[1], items[j].text, items[j].getAttribute("Type"), true);
+				}
+			}
+		}
+	}
+}
+
+InitWindow = function () {
+	if (g_.xmlWindow && "string" !== typeof g_.xmlWindow) {
+		LoadXml(g_.xmlWindow);
+	}
+	if (te.Ctrls(CTRL_TC).Count == 0) {
+		var TC = te.CreateCtrl(CTRL_TC, 0, 0, "100%", "100%", te.Data.Tab_Style, te.Data.Tab_Align, te.Data.Tab_TabWidth, te.Data.Tab_TabHeight);
+		TC.Selected.Navigate2(HOME_PATH, SBSP_NEWBROWSER, te.Data.View_Type, te.Data.View_ViewMode, te.Data.View_fFlags, te.Data.View_Options, te.Data.View_ViewFlags, te.Data.View_IconSize, te.Data.Tree_Align, te.Data.Tree_Width, te.Data.Tree_Style, te.Data.Tree_EnumFlags, te.Data.Tree_RootStyle, te.Data.Tree_Root);
+	}
+	g_.xmlWindow = void 0;
+	UI.setTimeoutAsync(function () {
+		Resize();
+		var cTC = te.Ctrls(CTRL_TC);
+		for (var i in cTC) {
+			if (cTC[i].SelectedIndex >= 0) {
+				ChangeView(cTC[i].Selected);
+			}
+		}
+		api.ShowWindow(te.hwnd, te.CmdShow);
+		if (te.CmdShow == SW_SHOWNOACTIVATE) {
+			api.SetWindowPos(te.hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+		}
+		te.CmdShow = SW_SHOWNORMAL;
+		UI.setTimeoutAsync(function () {
+			RunCommandLine(api.GetCommandLine());
+			api.PostMessage(te.hwnd, WM_SIZE, 0, 0);
+		}, 500);
+	}, 99);
+}
+
 //Init
 
 if (!te.Data) {
@@ -3378,3 +3572,4 @@ Threads.Finalize = function () {
 	Threads.GetImage = function () { };
 	Threads.Images.Count = 0;
 }
+

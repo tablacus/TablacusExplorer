@@ -2009,7 +2009,7 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter, f) {
 			if (o) {
 				var pt;
 				if (oButton) {
-					pt = GetPos(oButton, true);
+					pt = GetPos(oButton, 1);
 					pt = { x: pt.x, y: pt.y + oButton.offsetHeight, width: oButton.offsetWidth };
 				} else {
 					pt = api.Memory("POINT");
@@ -2244,7 +2244,7 @@ function SelectLangID(o) {
 		}
 		api.InsertMenu(hMenu, i, MF_BYPOSITION | MF_STRING, api.LowPart(i) + 1, title);
 	}
-	var pt = GetPos(o, true);
+	var pt = GetPos(o, 1);
 	var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y + o.offsetHeight, te.hwnd, null, null);
 	if (nVerb) {
 		document.F.Conf_Lang.value = Langs[nVerb - 1];
