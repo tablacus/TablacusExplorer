@@ -6,8 +6,6 @@
     <title>Tablacus Explorer</title>
     <link rel="stylesheet" type="text/css" href="index.css">
     <script type="text/javascript" charset="utf-8" src="consts.js"></script>
-    <script type="text/javascript" charset="utf-8" src="ui.js"></script>
-    <script type="text/javascript" charset="utf-8" src="common.js"></script>
   </head>
   <body>
     <noscript>
@@ -103,7 +101,12 @@
         <datalist id="AddressList"></datalist>
       </div>
       <span id="Size" style="white-space: nowrap"></span>
-      <script type="text/javascript" charset="utf-8" src="index.js"></script>
     </form>
+    <script type="text/javascript">
+      Addon = 1;
+      LoadScript(["ui.js", "common.js"], function () {
+        LoadScripts(["sync.js", "sync1.js"], ["index.js"], true);
+      });
+    </script>
   </body>
 </html>

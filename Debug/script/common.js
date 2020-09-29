@@ -8,9 +8,6 @@
 	osInfo.dwOSVersionInfoSize = osInfo.Size;
 	api.GetVersionEx(osInfo);
 	WINVER = osInfo.dwMajorVersion * 0x100 + osInfo.dwMinorVersion;
-	try {
-		wsh.CurrentDirectory = fso.GetSpecialFolder(2).Path;
-	} catch (e) { }
 
 	if (WINVER > 0x603) {
 		BUTTONS = {
@@ -39,7 +36,7 @@
 	if (api.SHTestTokenMembership(null, 0x220) && WINVER >= 0x600) {
 		TITLE += ' [' + (api.LoadString(hShell32, 25167) || "Admin").replace(/;.*$/, "") + ']';
 	}
-})(1);
+})();
 
 importScript = function (fn) {
 	var hr = E_FAIL;
@@ -70,6 +67,10 @@ importScript = function (fn) {
 if (!window.UI) {
 	importScript("script\\sync.js");
 	importScript("script\\ui.js");
+}
+
+GetInt = function (s) {
+	return "number" === typeof s ? s : Number("string" === typeof s ? s.replace(/\D.*/, "") : s) || 0;
 }
 
 StripAmp = function (s) {

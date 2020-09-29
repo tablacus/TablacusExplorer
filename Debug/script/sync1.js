@@ -1121,12 +1121,12 @@ LoadWindowSettings = function (xml) {
 		if (items.length) {
 			var item = items[0];
 			te.CmdShow = item.getAttribute("CmdShow");
-			var x = api.LowPart(item.getAttribute("Left"));
-			var y = api.LowPart(item.getAttribute("Top"));
+			var x = GetInt(item.getAttribute("Left"));
+			var y = GetInt(item.getAttribute("Top"));
 			if (x > -30000 && y > -30000) {
-				var w = api.LowPart(item.getAttribute("Width"));
-				var h = api.LowPart(item.getAttribute("Height"));
-				var z = api.LowPart(item.getAttribute("DPI")) / screen.deviceYDPI;
+				var w = GetInt(item.getAttribute("Width"));
+				var h = GetInt(item.getAttribute("Height"));
+				var z = GetInt(item.getAttribute("DPI")) / screen.deviceYDPI;
 				if (z && z != 1) {
 					x /= z;
 					y /= z;
@@ -1174,11 +1174,11 @@ SaveConfig = function () {
 	}
 	if (te.Data.bSaveWindow) {
 		te.Data.bSaveWindow = false;
-		if (document.msFullscreenElement) {
+		if (g_.Fullscreen) {
 			while (g_.stack_TC.length) {
 				g_.stack_TC.pop().Visible = true;
 			}
-			document.msExitFullscreen();
+			api.Invoke(UI.ExitFullscreen);
 		}
 		SaveXml(te.Data.WindowSetting);
 	}
@@ -1461,7 +1461,7 @@ te.OnViewCreated = function (Ctrl) {
 
 te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 	if (g_.tid_rf[Ctrl.Id]) {
-		api.Invoke(UI.clearTimeout, g_.tid_rf[Ctrl.Id]);
+		UI.clearTimeout(g_.tid_rf[Ctrl.Id]);
 		delete g_.tid_rf[Ctrl.Id];
 	}
 	if (Ctrl.Data) {
@@ -2167,17 +2167,6 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 		return hr;
 	}
 	switch (Ctrl.Type) {
-		case CTRL_WB:
-			if (msg == WM_KILLFOCUS) {
-				var o = document.activeElement;
-				if (o) {
-					var s = o.style.visibility;
-					o.style.visibility = "hidden";
-					o.style.visibility = s;
-					FireEvent(o, "blur");
-				}
-			}
-			break;
 		case CTRL_TE:
 			switch (msg) {
 				case WM_DESTROY:
@@ -3120,7 +3109,7 @@ AddEvent("ReplaceMacroEx", [/%res:(.+)%/ig, function (strMatch, ref1) {
 }]);
 
 AddEvent("ReplaceMacroEx", [/%AddonStatus:([^%]*)%/ig, function (strMatch, ref1) {
-	return api.LowPart(GetAddonElement(ref1).getAttribute("Enabled")) ? "on" : "off";
+	return GetInt(GetAddonElement(ref1).getAttribute("Enabled")) ? "on" : "off";
 }]);
 
 if (WINVER >= 0x600 && screen.deviceYDPI > 96) {
@@ -3260,8 +3249,9 @@ AdjustAutocomplete = function (path) {
 	api.ExecScript(AutocompleteThread.toString().replace(/^[^{]+{|}$/g, ""), "JScript", o, true);
 }
 
-FullscreenChanged = function (bVisible) {
-	if (document.msFullscreenElement) {
+FullscreenChanged = function (bFullscreen) {
+	g_.Fullscreen = bFullscreen;
+	if (bFullscreen) {
 		var cTC = te.Ctrls(CTRL_TC, true);
 		for (var i in cTC) {
 			var TC = cTC[i];
@@ -3273,13 +3263,12 @@ FullscreenChanged = function (bVisible) {
 			g_.stack_TC.pop().Visible = true;
 		}
 	}
-}	
+}
 
-ArrangeAddons1 = function () {
+ArrangeAddons1 = function (cl) {
 	RunEvent1("Load");
 	ClearEvent("Load");
 	var cHwnd = [te.Ctrl(CTRL_WB).hwnd, te.hwnd];
-	var cl = GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor);
 	for (var i = cHwnd.length; i--;) {
 		var hOld = api.SetClassLongPtr(cHwnd[i], GCLP_HBRBACKGROUND, api.CreateSolidBrush(cl));
 		if (hOld) {
@@ -3344,7 +3333,7 @@ InitMouse = function () {
 	te.Data.Conf_WheelSelect = isFinite(te.Data.Conf_WheelSelect) ? Number(te.Data.Conf_WheelSelect) : 1;
 	te.SizeFormat = (te.Data.Conf_SizeFormat || "").replace(/^0x/i, "");
 	te.HiddenFilter = ExtractFilter(te.Data.Conf_HiddenFilter);
-	te.DragIcon = !api.LowPart(te.Data.Conf_NoDragIcon);
+	te.DragIcon = !GetInt(te.Data.Conf_NoDragIcon);
 	var ar = ['AutoArrange', 'ColumnEmphasis', 'DateTimeFormat', 'Layout', 'LibraryFilter', 'NetworkTimeout', 'ShowInternet', 'ViewOrder'];
 	for (var i = ar.length; i--;) {
 		te[ar[i]] = te.Data['Conf_' + ar[i]];
@@ -3378,8 +3367,7 @@ InitWindow = function () {
 		TC.Selected.Navigate2(HOME_PATH, SBSP_NEWBROWSER, te.Data.View_Type, te.Data.View_ViewMode, te.Data.View_fFlags, te.Data.View_Options, te.Data.View_ViewFlags, te.Data.View_IconSize, te.Data.Tree_Align, te.Data.Tree_Width, te.Data.Tree_Style, te.Data.Tree_EnumFlags, te.Data.Tree_RootStyle, te.Data.Tree_Root);
 	}
 	g_.xmlWindow = void 0;
-	UI.setTimeoutAsync(function () {
-		Resize();
+	UI.InitWindow(function () {
 		var cTC = te.Ctrls(CTRL_TC);
 		for (var i in cTC) {
 			if (cTC[i].SelectedIndex >= 0) {
@@ -3391,11 +3379,64 @@ InitWindow = function () {
 			api.SetWindowPos(te.hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 		}
 		te.CmdShow = SW_SHOWNORMAL;
-		UI.setTimeoutAsync(function () {
-			RunCommandLine(api.GetCommandLine());
-			api.PostMessage(te.hwnd, WM_SIZE, 0, 0);
-		}, 500);
-	}, 99);
+	}, function () {
+		RunCommandLine(api.GetCommandLine());
+		api.PostMessage(te.hwnd, WM_SIZE, 0, 0);
+	});
+}
+
+Threads = api.CreateObject("Object");
+Threads.Images = api.CreateObject("Array");
+Threads.Data = api.CreateObject("Array");
+Threads.nBase = 1;
+Threads.nMax = 3;
+Threads.nTI = 500;
+
+Threads.GetImage = function (o) {
+	o.OnGetAlt = te.OnGetAlt;
+	Threads.Images.push(o);
+	Threads.Run();
+}
+
+Threads.Run = function () {
+	if (Threads.Data.length >= Threads.nMax) {
+		return;
+	}
+	var tm = new Date().getTime();
+	if (Threads.Data.length >= Threads.nBase && tm - Threads.Data[0].Data.tm < Threads.nTI) {
+		return;
+	}
+	var o = api.CreateObject("Object");
+	o.Data = api.CreateObject("Object");
+	o.Data.Threads = Threads;
+	o.Data.Id = Math.random();
+	o.Data.tm = tm;
+	Threads.Data.unshift(o);
+	if (!Threads.src) {
+		var ado = OpenAdodbFromTextFile("script\\threads.js", "utf-8");
+		if (ado) {
+			Threads.src = ado.ReadText();
+			ado.Close();
+		}
+	}
+	api.ExecScript(Threads.src, "JScript", o, true);
+}
+
+Threads.End = function (Id) {
+	for (var i = Threads.Data.Count; i--;) {
+		if (Id === Threads.Data[i].Data.Id) {
+			delete Threads.Data.splice(i, 1);
+			CollectGarbage();
+			return;
+		}
+	}
+	Threads.Data.pop();
+	CollectGarbage();
+}
+
+Threads.Finalize = function () {
+	Threads.GetImage = function () { };
+	Threads.Images.Count = 0;
 }
 
 //Init
@@ -3515,61 +3556,6 @@ if (!te.Data) {
 	LoadConfig();
 	delete g_.xmlWindow;
 	Resize();
-	window.focus();
 }
 Exchange = te.Data.Exchange;
-
-Threads = api.CreateObject("Object");
-Threads.Images = api.CreateObject("Array");
-Threads.Data = api.CreateObject("Array");
-Threads.nBase = 1;
-Threads.nMax = 3;
-Threads.nTI = 500;
-
-Threads.GetImage = function (o) {
-	o.OnGetAlt = te.OnGetAlt;
-	Threads.Images.push(o);
-	Threads.Run();
-}
-
-Threads.Run = function () {
-	if (Threads.Data.length >= Threads.nMax) {
-		return;
-	}
-	var tm = new Date().getTime();
-	if (Threads.Data.length >= Threads.nBase && tm - Threads.Data[0].Data.tm < Threads.nTI) {
-		return;
-	}
-	var o = api.CreateObject("Object");
-	o.Data = api.CreateObject("Object");
-	o.Data.Threads = Threads;
-	o.Data.Id = Math.random();
-	o.Data.tm = tm;
-	Threads.Data.unshift(o);
-	if (!Threads.src) {
-		var ado = OpenAdodbFromTextFile("script\\threads.js", "utf-8");
-		if (ado) {
-			Threads.src = ado.ReadText();
-			ado.Close();
-		}
-	}
-	api.ExecScript(Threads.src, "JScript", o, true);
-}
-
-Threads.End = function (Id) {
-	for (var i = Threads.Data.Count; i--;) {
-		if (Id === Threads.Data[i].Data.Id) {
-			delete Threads.Data.splice(i, 1);
-			CollectGarbage();
-			return;
-		}
-	}
-	Threads.Data.pop();
-	CollectGarbage();
-}
-
-Threads.Finalize = function () {
-	Threads.GetImage = function () { };
-	Threads.Images.Count = 0;
-}
 

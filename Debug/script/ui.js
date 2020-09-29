@@ -9,13 +9,11 @@ ui_ = {
 	ui_.DoubleClickTime = sha.GetSystemInformation("DoubleClickTime");
 })();
 
-UI = {
-	setTimeoutAsync: function (fn, tm, a, b, c, d) {
-		setTimeout(fn, tm, a, b, c, d);
-	}
-};
+UI = api.CreateObject("Object");
 
-UI.Addons = api.CreateObject("Object");
+UI.setTimeoutAsync = function (fn, tm, a, b, c, d) {
+	setTimeout(fn, tm, a, b, c, d);
+}
 
 UI.clearTimeout = clearTimeout;
 
@@ -48,15 +46,70 @@ UI.Blur = function (Id) {
 	document.getElementById(Id).blur();
 }
 
-function _InvokeMethod() {
-	
-	var args;
-	var ar = api.ObjGetI(te, "fn");
-	while (args = ar.shift()) {
-		var fn = args.shift();
-		fn.apply(fn, args);
+LoadScripts = function (js1, js2, bIndex, cb) {
+	if (window.chrome) {
+		js1.unshift("consts.js", "common.js");
+		var s = bIndex ? ["MainWindow = window;"] : [];
+		var arFN = [];
+		var line = 1;
+		var strParent = (fso.GetParentFolderName(api.GetModuleFileName(null))).replace(/\\$/, "");
+		for (var i = 0; i < js1.length; i++) {
+			var fn = strParent + "\\script\\" + js1[i];
+			var ado = api.CreateObject("ads");
+			if (ado) {
+				ado.CharSet = "utf-8";
+				ado.Open();
+				ado.LoadFromFile(fn);
+				var src = RemoveAsync(ado.ReadText());
+				s.push(src);
+				ado.Close();
+				if (src && /sync/.test(fn)) {
+					arFN = arFN.concat(src.match(/\s\w+\s*=\s*function/g).map(function (s) {
+						return s.replace(/^\s|\s*=.*$/g, "");
+					}));
+				}
+				api.OutputDebugString([js1[i], "Start line:", line, "\n"].join(" "));
+				line += src.split("\n").length;
+			}
+		}
+		js1.length = 0;
+		var CopyObj = function (to, o, ar) {
+			if (!to) {
+				to = api.CreateObject("Object");
+			}
+			var denyList = {
+				setTimeout: 1,
+				clearTimeout: 1
+			}
+			ar.forEach(function (key) {
+				if (!denyList[key]) {
+					var a = o[key];
+					if (a !== void 0) {
+						to[key] = a;
+					}
+				}
+			});
+			return to;
+		}
+		document.documentMode = (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 : 12);
+		CopyObj($, window, ["te", "api", "chrome", "document", "UI"]);
+		$.location = CopyObj(null, location, ["hash", "href"]);
+		$.navigator = CopyObj(null, navigator, ["appVersion", "language"]);
+		$.screen = CopyObj(null, screen, ["deviceXDPI", "deviceYDPI"]);
+
+		var o = api.CreateObject("Object");
+		o.window = $;
+		$.$JS = api.GetScriptDispatch(s.join(""), "JScript", o);
+		CopyObj(window, $, ["g_", "Addons", "eventTE", "eventTA", "Threads", "SimpleDB", "BasicDB;"]);
+		CopyObj(window, $, arFN);
+	} else {
+		$ = window;
 	}
-}
+	if (bIndex) {
+		MainWindow = $;
+	}
+	LoadScript(js1.concat(js2), cb);
+};
 
 ApplyLangTag = function (o) {
 	if (o) {
@@ -366,6 +419,7 @@ LoadAddon = function (ext, Id, arError, param) {
 }
 
 UI.OnLoad = function () {
+	UI.Addons = api.CreateObject("Object");
 	AddEventEx(window, "beforeunload", CloseSubWindows);
 }
 

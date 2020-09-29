@@ -1978,6 +1978,7 @@ HRESULT Invoke5(IDispatch *pdisp, DISPID dispid, WORD wFlags, VARIANT *pvResult,
 	} catch (...) {
 		hr = E_FAIL;
 	}
+#ifdef _USE_SYNC // Use sync object for Blink.
 	if (hr == HRESULT_FROM_WIN32(ERROR_POSSIBLE_DEADLOCK)) {
 		if (wFlags & DISPATCH_METHOD) {
 			if (g_bBlink && dispid == DISPID_VALUE) {
@@ -2013,6 +2014,7 @@ HRESULT Invoke5(IDispatch *pdisp, DISPID dispid, WORD wFlags, VARIANT *pvResult,
 			}
 		}
 	}
+#endif
 	teClearVariantArgs(nArgs, pvArgs);
 	return hr;
 }
@@ -2207,10 +2209,12 @@ LONGLONG GetLLFromVariant(VARIANT *pv)
 				return ll;
 			}
 		}
-		VARIANT vo;
-		VariantInit(&vo);
-		if SUCCEEDED(VariantChangeType(&vo, pv, 0, VT_I8)) {
-			return vo.llVal;
+		if (pv->vt != VT_DISPATCH) {
+			VARIANT vo;
+			VariantInit(&vo);
+			if SUCCEEDED(VariantChangeType(&vo, pv, 0, VT_I8)) {
+				return vo.llVal;
+			}
 		}
 #ifdef _W2000
 		if SUCCEEDED(VariantChangeType(&vo, pv, 0, VT_R8)) {
@@ -9906,10 +9910,7 @@ VOID teApiInvoke(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVa
 #ifdef _DEBUG
 VOID teApiTest(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	if (g_pOnFunc[TE_OnHitTest] && false) {
-		Invoke4(g_pOnFunc[TE_OnHitTest], NULL, -pDispParams->cArgs, pDispParams->rgvarg);
-		teSetSZ(pVarResult, L"OK");
-	}
+	DoFunc(TE_OnHitTest, g_pTE, E_NOTIMPL);
 }
 #endif
 //*/
@@ -24353,6 +24354,9 @@ STDMETHODIMP CteActiveScriptSite::OnScriptError(IActiveScriptError *pscripterror
 		}
 #ifdef _DEBUG
 		::OutputDebugString(bs);
+		if (g_bBlink) {
+			MessageBox(NULL, bs, L"Tablacus Explorer", MB_OK);
+		}
 #endif
 		*m_phr = m_pExcepInfo->scode;
 	}
@@ -24472,7 +24476,7 @@ CteDispatchEx::CteDispatchEx(IUnknown *punk, BOOL bLegacy)
 
 CteDispatchEx::~CteDispatchEx()
 {
-	m_pdex->Release();
+	SafeRelease(&m_pdex);
 }
 
 STDMETHODIMP CteDispatchEx::QueryInterface(REFIID riid, void **ppvObject)

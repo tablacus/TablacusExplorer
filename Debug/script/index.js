@@ -1,6 +1,4 @@
-//Tablacus Explorer
-
-Addon = 1;
+// Tablacus Explorer
 
 function Resize2() {
 	if (ui_.tidResize) {
@@ -36,7 +34,7 @@ function Resize2() {
 	api.PostMessage(te.hwnd, WM_SIZE, 0, 0);
 }
 
-function ResizeSizeBar (z, h) {
+function ResizeSizeBar(z, h) {
 	var o = ui_.Locations;
 	var w = (o[z + "Bar1"] || o[z + "Bar2"] || o[z + "Bar3"]) ? te.Data["Conf_" + z + "BarWidth"] : 0;
 	o = document.getElementById(z.toLowerCase() + "bar");
@@ -55,12 +53,11 @@ function ResizeSizeBar (z, h) {
 	document.getElementById(z.toLowerCase() + "splitter").style.display = w ? "" : "none";
 
 	o = document.getElementById(z.toLowerCase() + "barT");
-	var i = h;
-	o.style.height = Math.max(i, 0) + "px";
-	i = o.clientHeight - o.style.height.replace(/\D/g, "");
+	var th = Math.round(Math.max(h, 0));
+	o.style.height = th + "px";
 
 	var h2 = o.clientHeight - document.getElementById(z + "Bar1").offsetHeight - document.getElementById(z + "Bar3").offsetHeight;
-	document.getElementById(z + "Bar2").style.height = Math.abs(h2 - i) + "px";
+	document.getElementById(z + "Bar2").style.height = Math.abs(h2 - o.clientHeight - th) + "px";
 }
 
 function ResetScroll() {
@@ -69,7 +66,7 @@ function ResetScroll() {
 	}
 }
 
-function PanelCreated (Ctrl) {
+function PanelCreated(Ctrl) {
 	UI.RunEvent1("PanelCreated", Ctrl);
 }
 
@@ -236,64 +233,200 @@ UI.ExecGesture = function (Ctrl, hwnd, pt, str) {
 		g_.mouse.Exec(Ctrl, hwnd, pt, str);
 	}, 99);
 }
-;
-(function () {
-	var args = ["sync.js", "sync1.js"];
-	if (window.chrome) {
-		args.unshift("consts.js", "common.js");
-		var s = ["MainWindow = window;"];
-		var arFN = [];
-		var line = 1;
-		for (var i = 0; i < args.length; i++) {
-			var fn = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "script\\" + args[i]);
-			var ado = api.CreateObject("ads");
-			if (ado) {
-				ado.CharSet = "utf-8";
-				ado.Open();
-				ado.LoadFromFile(fn);
-				var src = ado.ReadText();
-				s.push(src);
-				ado.Close();
-				if (window.chrome && src && /sync/.test(fn)) {
-					arFN = arFN.concat(src.match(/\s\w+\s*=\s*function/g).map(function (s) {
-						return s.replace(/^\s|\s*=.*$/g, "");
-					}));
-				}
-				api.OutputDebugString([fso.GetFileName(args[i]), "Start line:", line, "\n"].join(""));
-				line += src.split("\n").length;
-			}
-		}
-		var CopyObj = function (to, o, ar) {
-			if (!to) {
-				to = api.CreateObject("Object");
-			}
-			ar.forEach(function (key) {
-				to[key] = o[key];
-			});
-			return to;
-		}
-		document.documentMode = (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 : 12);
-		CopyObj($, window, ["te", "api", "chrome", "document", "UI"]);
-		$.location = CopyObj(null, location, ["hash", "href"]);
-		$.navigator = CopyObj(null, navigator, ["appVersion", "language"]);
-		$.screen = CopyObj(null, screen, ["deviceXDPI", "deviceYDPI"]);
 
-		var o = api.CreateObject("Object");
-		o.window = $;
-		$.$JS = api.GetScriptDispatch(s.join(""), "JScript", o);
-		CopyObj(window, $, ["g_", "Addons", "eventTE", "eventTA", "Threads", "SimpleDB", "BasicDB;"]);
-		CopyObj(window, $, arFN);
-	} else {
-		$ = window;
-		for (var i = 0; i < args.length; ++i) {
-			var el = document.createElement("script");
-			el.src = args[i];
-			document.body.appendChild(el);
+UI.InitWindow = function (cb, cb2) {
+	setTimeout(function (cb) {
+		Resize();
+		(cb)(cb);
+		setTimeout(function (cb2) {
+			(cb2)();
+		}, 500, cb2);
+	}, 99, cb);
+}
+
+UI.ExitFullscreen = function () {
+	if (document.msExitFullscreen) {
+		document.msExitFullscreen();
+	}
+}
+
+te.OnArrange = function (Ctrl, rc, cb) {
+	var Type = Ctrl.Type;
+	if (Type == CTRL_TE) {
+		ui_.TCPos = {};
+	}
+	RunEvent1("Arrange", Ctrl, rc, cb);
+	if (Type == CTRL_TC) {
+		var Id = Ctrl.Id;
+		var o = ui_.Panels[Id];
+		if (!o) {
+			o = document.createElement("table");
+			o.id = "Panel_" + Id;
+			o.className = "layout";
+			o.style.position = "absolute";
+			o.style.zIndex = 1;
+			var s = '<tr><td id="InnerLeft_$" class="sidebar" style="width: 0; display: none; overflow: auto"></td><td style="width: 100%"><div id="InnerTop_$" style="display: none"></div>';
+			s += '<table id="InnerTop2_$" class="layout"><tr><td id="Inner1Left_$" class="toolbar1"></td><td id="Inner1Center_$" class="toolbar2" style="white-space: nowrap"></td><td id="Inner1Right_$" class="toolbar3"></td></tr></table>';
+			s += '<table id="InnerView_$" class="layout" style="width: 100%"><tr><td id="Inner2Left_$" style="width: 0"></td><td id="Inner2Center_$"></td><td id="Inner2Right_$" style="width: 0; overflow: auto"></td></tr></table>';
+			s += '<div id="InnerBottom_$"></div></td><td id="InnerRight_$" class="sidebar" style="width: 0; display: none"></td></tr>';
+			o.innerHTML = s.replace(/\$/g, Id);
+			document.getElementById("Panel").appendChild(o);
+			PanelCreated(Ctrl);
+			ui_.Panels[Id] = o;
+			ApplyLang(o);
+			ChangeView(Ctrl.Selected);
+		}
+		o.style.left = rc.left + "px";
+		o.style.top = rc.top + "px";
+		if (Ctrl.Visible) {
+			var s = [Ctrl.Left, Ctrl.Top, Ctrl.Width, Ctrl.Height].join(",");
+			if (ui_.TCPos[s] && ui_.TCPos[s] != Id) {
+				Ctrl.Close();
+				return;
+			} else {
+				ui_.TCPos[s] = Id;
+			}
+			o.style.display = (ui_.IEVer >= 8 && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
+		} else {
+			o.style.display = "none";
+		}
+		o.style.width = Math.max(rc.right - rc.left, 0) + "px";
+		o.style.height = Math.max(rc.bottom - rc.top, 0) + "px";
+		rc.top = rc.top + document.getElementById("InnerTop_" + Id).offsetHeight + document.getElementById("InnerTop2_" + Id).offsetHeight;
+		var w1 = 0, w2 = 0, x = '';
+		for (var i = 0; i <= 1; ++i) {
+			w1 += Number(document.getElementById("Inner" + x + "Left_" + Id).style.width.replace(/\D/g, "")) || 0;
+			w2 += Number(document.getElementById("Inner" + x + "Right_" + Id).style.width.replace(/\D/g, "")) || 0;
+			x = '2';
+		}
+		rc.left = rc.left + w1;
+		rc.right = rc.right - w2;
+		rc.bottom = rc.bottom - document.getElementById("InnerBottom_" + Id).offsetHeight;
+		o = document.getElementById("Inner2Center_" + Id).style;
+		o.width = Math.max(rc.right - rc.left, 0) + "px";
+		o.height = Math.max(rc.bottom - rc.top, 0) + "px";
+		(cb)(Ctrl, rc);
+	}
+}
+
+g_.event.windowregistered = function (Ctrl) {
+	if (ui_.bWindowRegistered) {
+		RunEvent1("WindowRegistered", Ctrl);
+	}
+	ui_.bWindowRegistered = true;
+}
+
+ArrangeAddons = function () {
+	ui_.Locations = {};
+	$.IconSize = te.Data.Conf_IconSize || screen.logicalYDPI / 4;
+	var xml = OpenXml("addons.xml", false, true);
+	te.Data.Addons = xml;
+	if (api.GetKeyState(VK_SHIFT) < 0 && api.GetKeyState(VK_CONTROL) < 0) {
+		IsSavePath = function (path) {
+			return false;
+		}
+		return;
+	}
+	var AddonId = [];
+	var root = xml.documentElement;
+	if (root) {
+		var items = root.childNodes;
+		if (items) {
+			var arError = api.CreateObject("Array");
+			for (var i = 0; i < api.ObjGetI(items, "length"); ++i) {
+				var item = items[i];
+				var Id = item.nodeName;
+				g_.Error_source = Id;
+				if (!AddonId[Id]) {
+					var Enabled = GetInt(item.getAttribute("Enabled"));
+					if (Enabled & 6) {
+						LoadLang2(fso.BuildPath(te.Data.Installed, "addons\\" + Id + "\\lang\\" + GetLangId() + ".xml"));
+					}
+					if (Enabled & 8) {
+						LoadAddon("vbs", Id, arError);
+					}
+					if (Enabled & 1) {
+						LoadAddon("js", Id, arError);
+					}
+					AddonId[Id] = true;
+				}
+				g_.Error_source = "";
+			}
+			if (arError.length || arError.Count) {
+				setTimeout(function (arError) {
+					if (MessageBox(arError.join("\n\n"), TITLE, MB_OKCANCEL) != IDCANCEL) {
+						te.Data.bErrorAddons = true;
+						ShowOptions("Tab=Add-ons");
+					}
+				}, 500, arError);
+			}
 		}
 	}
-	MainWindow = $;
-	var el = document.createElement("script");
-	el.src = "ui1.js";
-	document.body.appendChild(el);
-})();
+	UI.RunEvent1("BrowserCreated", document);
+	var cl = GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor);
+	ArrangeAddons1(cl);
+}
 
+// Events
+
+AddEvent("VisibleChanged", function (Ctrl) {
+	if (Ctrl.Type == CTRL_TC) {
+		var o = ui_.Panels[Ctrl.Id];
+		if (o) {
+			if (Ctrl.Visible) {
+				o.style.display = (ui_.IEVer >= 8 && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
+				ChangeView(Ctrl.Selected);
+			} else {
+				o.style.display = "none";
+			}
+		}
+	}
+});
+
+AddEvent("SystemMessage", function (Ctrl, hwnd, msg, wParam, lParam) {
+	if (Ctrl.Type == CTRL_WB) {
+		if (msg == WM_KILLFOCUS) {
+			var o = document.activeElement;
+			if (o) {
+				var s = o.style.visibility;
+				o.style.visibility = "hidden";
+				o.style.visibility = s;
+				FireEvent(o, "blur");
+			}
+		}
+	}
+});
+
+// Browser Events
+
+AddEventEx(window, "load", function () {
+	ApplyLang(document);
+	if (api.GetKeyState(VK_SHIFT) < 0 && api.GetKeyState(VK_CONTROL) < 0) {
+		ShowOptions("Tab=Add-ons");
+	}
+});
+
+AddEventEx(window, "resize", Resize);
+
+AddEventEx(window, "beforeunload", Finalize);
+
+AddEventEx(window, "blur", ResetScroll);
+
+AddEventEx(document, "MSFullscreenChange", function () {
+	FullscreenChanged(document.msFullscreenElement != void 0);
+});
+
+//
+
+(function () {
+	UI.OnLoad();
+	InitCode();
+	DefaultFont = $.DefaultFont;
+	HOME_PATH = $.HOME_PATH;
+	InitMouse();
+	OpenMode = $.OpenMode;
+	InitMenus();
+	LoadLang();
+	ArrangeAddons();
+	setTimeout(InitWindow, 9, setTimeout);
+})();

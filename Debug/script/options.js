@@ -2015,14 +2015,15 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter, f) {
 					pt = api.Memory("POINT");
 					api.GetCursorPos(pt);
 				}
-				var r = MainWindow.OptionRef(o[o.selectedIndex].value, GetElement(Id).value, pt);
+				var oType = o.form[s];
+				var r = MainWindow.OptionRef(oType[oType.selectedIndex].value, o.value, pt);
 				if ("string" === typeof r) {
 					var p = { s: r };
-					MainWindow.OptionDecode(o[o.selectedIndex].value, p);
+					MainWindow.OptionDecode(oType[oType.selectedIndex].value, p);
 					if (bMultiLine && api.GetKeyState(VK_CONTROL) < 0 && api.ILCreateFromPath(p.s)) {
-						AddPath(Id, p.s);
+						AddPath(Id, p.s, f);
 					} else {
-						SetValue(GetElement(Id), p.s);
+						SetValue(o, p.s);
 					}
 				}
 				return;
@@ -2062,8 +2063,8 @@ function GetElement(Id, o) {
 	return (o && o[Id]) || (document.F && document.F[Id]) || document.getElementById(Id) || (document.E && document.E[Id]);
 }
 
-function AddPath(Id, strValue) {
-	var o = GetElement(Id);
+function AddPath(Id, strValue, f) {
+	var o = GetElement(Id, f);
 	if (o) {
 		var s = o.value;
 		if (/\n$/.test(s) || s == "") {

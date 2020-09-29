@@ -6,10 +6,6 @@
     <title>Options</title>
     <link rel="stylesheet" type="text/css" href="options.css">
     <script type="text/javascript" charset="utf-8" src="consts.js"></script>
-    <script type="text/javascript" charset="utf-8" src="ui.js"></script>
-    <script type="text/javascript" charset="utf-8" src="common.js"></script>
-    <script type="text/javascript" charset="utf-8" src="sync.js"></script>
-    <script type="text/javascript" charset="utf-8" src="options.js"></script>
   </head>
   <body>
     <form name="F">
@@ -607,7 +603,11 @@
       </table>
     </form>
     <script type="text/javascript">
-      InitOptions();
+      LoadScript(["ui.js", "common.js"], function () {
+        LoadScripts(["sync.js"], ["options.js"], false, function () {
+          InitOptions();
+        });
+      });
     </script>
   </body>
 </html>

@@ -1866,6 +1866,11 @@ STGM_FAILIFTHERE = 0;
 STGM_NOSNAPSHOT = 0x200000;
 STGM_DIRECT_SWMR = 0x400000;
 
+if (!window.chrome) {
+	system32 = api.GetDisplayNameOf(ssfSYSTEM, SHGDN_FORPARSING);
+	hShell32 = api.GetModuleHandle(fso.BuildPath(system32, "shell32.dll"));
+}
+
 if (window.dialogArguments) {
 	(function () {
 		for (var j in dialogArguments.event) {
@@ -1878,7 +1883,22 @@ if (window.dialogArguments) {
 		}
 	})();
 }
-if (!window.chrome) {
-	system32 = api.GetDisplayNameOf(ssfSYSTEM, SHGDN_FORPARSING);
-	hShell32 = api.GetModuleHandle(fso.BuildPath(system32, "shell32.dll"));
+
+RemoveAsync = function (s) {
+	return s.replace(/([^\.\w])(||)/g, "$1");
+}
+
+LoadScript = function (js, cb) {
+	var fn;
+	while (fn = js.shift()) {
+		var el = document.createElement("script");
+		el.type = "text/javascript";
+		el.charset = "utf-8";
+		el.src = fn;
+		el.async = false;
+		if (js.length == 0) {
+			el.onload = cb;
+		}
+		document.body.appendChild(el);
+	}
 }
