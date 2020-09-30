@@ -1121,12 +1121,12 @@ LoadWindowSettings = function (xml) {
 		if (items.length) {
 			var item = items[0];
 			te.CmdShow = item.getAttribute("CmdShow");
-			var x = GetInt(item.getAttribute("Left"));
-			var y = GetInt(item.getAttribute("Top"));
+			var x = GetNum(item.getAttribute("Left"));
+			var y = GetNum(item.getAttribute("Top"));
 			if (x > -30000 && y > -30000) {
-				var w = GetInt(item.getAttribute("Width"));
-				var h = GetInt(item.getAttribute("Height"));
-				var z = GetInt(item.getAttribute("DPI")) / screen.deviceYDPI;
+				var w = GetNum(item.getAttribute("Width"));
+				var h = GetNum(item.getAttribute("Height"));
+				var z = GetNum(item.getAttribute("DPI")) / screen.deviceYDPI;
 				if (z && z != 1) {
 					x /= z;
 					y /= z;
@@ -3057,7 +3057,7 @@ AddEvent("OptionDecode", function (Id, p) {
 	var type = g_basic.FuncI(Id);
 	if (type && type.Enc) {
 		var s = GetText(p.s);
-		if (GetSourceText(s).toLowerCase() == p.s.toLowerCase()) {
+		if (SameText(GetSourceText(s), p.s)) {
 			p.s = GetText(p.s);
 			return S_OK;
 		}
@@ -3109,7 +3109,7 @@ AddEvent("ReplaceMacroEx", [/%res:(.+)%/ig, function (strMatch, ref1) {
 }]);
 
 AddEvent("ReplaceMacroEx", [/%AddonStatus:([^%]*)%/ig, function (strMatch, ref1) {
-	return GetInt(GetAddonElement(ref1).getAttribute("Enabled")) ? "on" : "off";
+	return GetNum(GetAddonElement(ref1).getAttribute("Enabled")) ? "on" : "off";
 }]);
 
 if (WINVER >= 0x600 && screen.deviceYDPI > 96) {
@@ -3333,7 +3333,7 @@ InitMouse = function () {
 	te.Data.Conf_WheelSelect = isFinite(te.Data.Conf_WheelSelect) ? Number(te.Data.Conf_WheelSelect) : 1;
 	te.SizeFormat = (te.Data.Conf_SizeFormat || "").replace(/^0x/i, "");
 	te.HiddenFilter = ExtractFilter(te.Data.Conf_HiddenFilter);
-	te.DragIcon = !GetInt(te.Data.Conf_NoDragIcon);
+	te.DragIcon = !GetNum(te.Data.Conf_NoDragIcon);
 	var ar = ['AutoArrange', 'ColumnEmphasis', 'DateTimeFormat', 'Layout', 'LibraryFilter', 'NetworkTimeout', 'ShowInternet', 'ViewOrder'];
 	for (var i = ar.length; i--;) {
 		te[ar[i]] = te.Data['Conf_' + ar[i]];
@@ -3362,9 +3362,12 @@ InitWindow = function () {
 	if (g_.xmlWindow && "string" !== typeof g_.xmlWindow) {
 		LoadXml(g_.xmlWindow);
 	}
-	if (te.Ctrls(CTRL_TC).Count == 0) {
+	var cTC = te.Ctrls(CTRL_TC);
+	if (cTC.Count == 0) {
 		var TC = te.CreateCtrl(CTRL_TC, 0, 0, "100%", "100%", te.Data.Tab_Style, te.Data.Tab_Align, te.Data.Tab_TabWidth, te.Data.Tab_TabHeight);
 		TC.Selected.Navigate2(HOME_PATH, SBSP_NEWBROWSER, te.Data.View_Type, te.Data.View_ViewMode, te.Data.View_fFlags, te.Data.View_Options, te.Data.View_ViewFlags, te.Data.View_IconSize, te.Data.Tree_Align, te.Data.Tree_Width, te.Data.Tree_Style, te.Data.Tree_EnumFlags, te.Data.Tree_RootStyle, te.Data.Tree_Root);
+	} else if (te.Ctrls(CTRL_TC, true).Count == 0) {
+		cTC[0].Visible = true;
 	}
 	g_.xmlWindow = void 0;
 	UI.InitWindow(function () {

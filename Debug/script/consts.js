@@ -7,6 +7,26 @@ AddEventEx = function (w, Name, fn) {
 		w.attachEvent("on" + Name, fn);
 	}
 }
+
+RemoveAsync = function (s) {
+	return s.replace(/([^\.\w])(||)/g, "$1");
+}
+
+LoadScript = function (js, cb) {
+	var fn;
+	while (fn = js.shift()) {
+		var el = document.createElement("script");
+		el.type = "text/javascript";
+		el.charset = "utf-8";
+		el.src = fn;
+		el.async = false;
+		if (js.length == 0) {
+			el.onload = cb;
+		}
+		document.body.appendChild(el);
+	}
+}
+
 //Objects
 g_uid = location.hash.replace(/\D/g, "");
 
@@ -1883,22 +1903,7 @@ if (window.dialogArguments) {
 		}
 	})();
 }
-
-RemoveAsync = function (s) {
-	return s.replace(/([^\.\w])(||)/g, "$1");
-}
-
-LoadScript = function (js, cb) {
-	var fn;
-	while (fn = js.shift()) {
-		var el = document.createElement("script");
-		el.type = "text/javascript";
-		el.charset = "utf-8";
-		el.src = fn;
-		el.async = false;
-		if (js.length == 0) {
-			el.onload = cb;
-		}
-		document.body.appendChild(el);
-	}
+if (!window.chrome) {
+	system32 = api.GetDisplayNameOf(ssfSYSTEM, SHGDN_FORPARSING);
+	hShell32 = api.GetModuleHandle(fso.BuildPath(system32, "shell32.dll"));
 }

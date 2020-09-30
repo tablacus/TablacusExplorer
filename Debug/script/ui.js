@@ -77,16 +77,10 @@ LoadScripts = function (js1, js2, bIndex, cb) {
 			if (!to) {
 				to = api.CreateObject("Object");
 			}
-			var denyList = {
-				setTimeout: 1,
-				clearTimeout: 1
-			}
 			ar.forEach(function (key) {
-				if (!denyList[key]) {
-					var a = o[key];
-					if (a !== void 0) {
-						to[key] = a;
-					}
+				var a = o[key];
+				if (!to[key] && a !== void 0) {
+					to[key] = a;
 				}
 			});
 			return to;
@@ -96,7 +90,6 @@ LoadScripts = function (js1, js2, bIndex, cb) {
 		$.location = CopyObj(null, location, ["hash", "href"]);
 		$.navigator = CopyObj(null, navigator, ["appVersion", "language"]);
 		$.screen = CopyObj(null, screen, ["deviceXDPI", "deviceYDPI"]);
-
 		var o = api.CreateObject("Object");
 		o.window = $;
 		$.$JS = api.GetScriptDispatch(s.join(""), "JScript", o);
@@ -211,7 +204,7 @@ ApplyLang = function (doc) {
 	}
 	doc.title = GetTextR(doc.title);
 	setTimeout(function () {
-		var hwnd = api.GetParent(api.GetWindow(doc));
+		var hwnd = api.GetParent(GetBrowserWindow(doc));
 		var s = api.GetWindowText(hwnd);
 		if (/ \-+ .*$/.test(s)) {
 			api.SetWindowText(hwnd, s.replace(/ \-+ .*$/, ""));
@@ -267,8 +260,8 @@ HitTest = function (o, pt) {
 	return false;
 }
 
-GetBrowserWindow = function () {
-	return api.GetWindow(document);
+GetBrowserWindow = function (doc) {
+	return api.GetWindow(doc);
 }
 
 MouseOver = function (o) {
@@ -399,7 +392,11 @@ LoadAddon = function (ext, Id, arError, param) {
 				if (ar[1] == "js") {
 					sc = new Function(s);
 				} else if (ar[1] == "vbs") {
-					sc = ExecAddonScript("VBScript", s, fn, arError, { "_Addon_Id": { "Addon_Id": Id }, window: window }, Addons["_stack"]);
+					var o = api.CreateObject("Object");
+					o["_Addon_Id"] = api.CreateObject("Object");
+					o["_Addon_Id"].Addon_Id = Id;
+					o.window = window;
+					sc = ExecAddonScript("VBScript", s, fn, arError, o, Addons["_stack"]);
 				}
 				if (sc) {
 					r = sc(Id);

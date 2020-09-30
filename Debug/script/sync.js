@@ -86,7 +86,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20200929 ? te.Version : 20200929;
+		return te.Version < 20200929 ? te.Version : 20200930;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -612,13 +612,13 @@ LoadXml = function (filename, nGroup) {
 					if (!FV.FilterView) {
 						FV.FilterView = tab.getAttribute("FilterView");
 					}
-					FV.Data.Lock = GetInt(tab.getAttribute("Lock")) != 0;
+					FV.Data.Lock = GetNum(tab.getAttribute("Lock")) != 0;
 					Lock(TC, i2, false);
 					ChangeTabName(FV);
 					MainWindow.RunEvent1("LoadFV", FV, tab);
 				}
 				TC.SelectedIndex = item.getAttribute("SelectedIndex");
-				TC.Visible = GetInt(item.getAttribute("Visible"));
+				TC.Visible = GetNum(item.getAttribute("Visible"));
 				if (TC.Visible) {
 					g_.focused = TC.Selected;
 					++g_.fTCs;
@@ -646,8 +646,8 @@ SaveXmlTC = function (Ctrl, xml, nGroup) {
 	item.setAttribute("TabWidth", Ctrl.TabWidth);
 	item.setAttribute("TabHeight", Ctrl.TabHeight);
 	item.setAttribute("SelectedIndex", Ctrl.SelectedIndex);
-	item.setAttribute("Visible", GetInt(Ctrl.Visible));
-	item.setAttribute("Group", GetInt(nGroup || Ctrl.Data.Group));
+	item.setAttribute("Visible", GetNum(Ctrl.Visible));
+	item.setAttribute("Group", GetNum(nGroup || Ctrl.Data.Group));
 
 	var bEmpty = true;
 	var nCount2 = Ctrl.Count;
@@ -668,7 +668,7 @@ SaveXmlTC = function (Ctrl, xml, nGroup) {
 			item2.setAttribute("Options", FV.Options);
 			item2.setAttribute("ViewFlags", FV.ViewFlags);
 			item2.setAttribute("FilterView", FV.FilterView);
-			item2.setAttribute("Lock", GetInt(FV.Data.Lock));
+			item2.setAttribute("Lock", GetNum(FV.Data.Lock));
 			var TV = FV.TreeView;
 			item2.setAttribute("Align", TV.Align);
 			item2.setAttribute("Width", TV.Width);
@@ -923,7 +923,7 @@ ApiStruct = function (oTypedef, nAli, oMemory) {
 		ar[3] = this.Size;
 		this.Size += n * (ar[2] || 1);
 	}
-	n = GetInt(nAli);
+	n = GetNum(nAli);
 	this.Size += (n - (this.Size % n)) % n;
 	this.Memory = "object" === typeof oMemory ? oMemory : api.Memory("BYTE", this.Size);
 	this.Read = function (Id) {
@@ -1438,7 +1438,7 @@ MakeImgIcon = function (src, index, h, bIcon) {
 			if (himl) {
 				hIcon = api.ImageList_GetIcon(himl, icon[index * 4 + 3], ILD_NORMAL);
 				api.ImageList_Destroy(himl);
-			} else if ((icon[index * 4] || "").toLowerCase() == "ieframe.dll") {
+			} else if (SameText(icon[index * 4], "ieframe.dll")) {
 				for (var i in ar) {
 					var a2 = ar[i];
 					if (api.StrCmpNI(src, a2[0], a2[0].length) == 0) {
@@ -1473,7 +1473,7 @@ MakeImgIcon = function (src, index, h, bIcon) {
 				return image.GetHICON();
 			}
 		}
-		if (icon[0].toLowerCase() == "shell32.dll") {
+		if (SameText(icon[0], "shell32.dll")) {
 			var dw = { 3: SHGFI_SYSICONINDEX | SHGFI_USEFILEATTRIBUTES, 4: SHGFI_SYSICONINDEX | SHGFI_OPENICON | SHGFI_USEFILEATTRIBUTES }[res[1]];
 			if (dw) {
 				var sfi = api.Memory("SHFILEINFO");
@@ -1515,7 +1515,7 @@ MakeImgIcon = function (src, index, h, bIcon) {
 
 LoadImgDll = function (icon, index) {
 	var hModule = api.LoadLibraryEx(fso.BuildPath(system32, icon[index * 4]), 0, LOAD_LIBRARY_AS_DATAFILE);
-	if (!hModule && (icon[index * 4] || "").toLowerCase() == "ieframe.dll") {
+	if (!hModule && SameText(icon[index * 4], "ieframe.dll")) {
 		if (icon[index * 4 + 1] >= 500) {
 			hModule = api.LoadLibraryEx(fso.BuildPath(system32, "browseui.dll"), 0, LOAD_LIBRARY_AS_DATAFILE);
 		} else {
@@ -2175,9 +2175,9 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec, ContextMenu) {
 			}
 			item = null;
 		}
-		var nBase = GetInt(menus[0].getAttribute("Base"));
+		var nBase = GetNum(menus[0].getAttribute("Base"));
 		if (nBase == 1) {
-			if (GetInt(menus[0].getAttribute("Pos")) < 0) {
+			if (GetNum(menus[0].getAttribute("Pos")) < 0) {
 				for (var i = arMenu.length; i-- > 0;) {
 					item = items[arMenu[i]];
 					if (!/^menus$/i.test(item.getAttribute("Type"))) {
@@ -2757,7 +2757,7 @@ OpenNewProcess = function (fn, ex, mode, vOperation) {
 }
 
 GetAddonInfo = function (Id) {
-	var info = [];
+	var info = api.CreateObject("Object");
 
 	var path = te.Data.Installed;
 	var xml = api.CreateObject("Msxml2.DOMDocument");
@@ -2933,7 +2933,7 @@ GetAddonOption = function (id, strTag) {
 }
 
 GetAddonOptionEx = function (id, strTag) {
-	return GetInt(GetAddonOption(id, strTag));
+	return GetNum(GetAddonOption(id, strTag));
 }
 
 GetInnerFV = function (id) {
@@ -3001,12 +3001,12 @@ GetTextR = function (id) {
 	var res = /^\@(.+),-(\d+)(\[[^\]]+\])?$/i.exec(id);
 	if (res) {
 		var hModule = api.LoadLibraryEx(res[1], 0, LOAD_LIBRARY_AS_DATAFILE);
-		var s = api.LoadString(hModule, GetInt(res[2]));
+		var s = api.LoadString(hModule, GetNum(res[2]));
 		if (!s && res[3]) {
 			var ar = res[3].slice(1, -1).split("|");
 			for (var i = 0; i < ar.length && !s; ++i) {
 				res = /^-(\d+)$/.exec(ar[i]);
-				s = res ? api.LoadString(hModule, GetInt(res[1])) : GetTextR(ar[i]);
+				s = res ? api.LoadString(hModule, GetNum(res[1])) : GetTextR(ar[i]);
 			}
 		}
 		if (hModule) {

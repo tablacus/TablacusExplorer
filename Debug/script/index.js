@@ -35,7 +35,7 @@ function Resize2() {
 }
 
 function ResizeSizeBar(z, h) {
-	var o = ui_.Locations;
+	var o = g_.Locations;
 	var w = (o[z + "Bar1"] || o[z + "Bar2"] || o[z + "Bar3"]) ? te.Data["Conf_" + z + "BarWidth"] : 0;
 	o = document.getElementById(z.toLowerCase() + "bar");
 	if (w > 0) {
@@ -72,7 +72,7 @@ function PanelCreated(Ctrl) {
 
 GetAddonLocation = function (strName) {
 	var items = te.Data.Addons.getElementsByTagName(strName);
-	return (api.ObjGetI(items, "length") ? items[0].getAttribute("Location") : null);
+	return (GetLength(items) ? items[0].getAttribute("Location") : null);
 }
 
 SetAddon = function (strName, Location, Tag, strVAlign) {
@@ -93,7 +93,7 @@ SetAddon = function (strName, Location, Tag, strVAlign) {
 			} else {
 				o.appendChild(Tag);
 			}
-			o.style.display = (ui_.IEVer >= 8 && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
+			o.style.display = (ui_.IEVer >= 8 && SameText(o.tagName, "td")) ? "table-cell" : "block";
 			if (strVAlign && !o.style.verticalAlign) {
 				o.style.verticalAlign = strVAlign;
 			}
@@ -103,14 +103,14 @@ SetAddon = function (strName, Location, Tag, strVAlign) {
 			});
 		}
 		if (strName) {
-			if (!ui_.Locations[Location]) {
-				ui_.Locations[Location] = [];
+			if (!g_.Locations[Location]) {
+				g_.Locations[Location] = api.CreateObject("Array");
 			}
 			var res = /<img.*?src=["'](.*?)["']/i.exec(String(Tag));
 			if (res) {
 				strName += "\0" + res[1];
 			}
-			ui_.Locations[Location].push(strName);
+			g_.Locations[Location].push(strName);
 		}
 	}
 	return Location;
@@ -286,7 +286,7 @@ te.OnArrange = function (Ctrl, rc, cb) {
 			} else {
 				ui_.TCPos[s] = Id;
 			}
-			o.style.display = (ui_.IEVer >= 8 && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
+			o.style.display = (ui_.IEVer >= 8 && SameText(o.tagName, "td")) ? "table-cell" : "block";
 		} else {
 			o.style.display = "none";
 		}
@@ -317,7 +317,7 @@ g_.event.windowregistered = function (Ctrl) {
 }
 
 ArrangeAddons = function () {
-	ui_.Locations = {};
+	g_.Locations = api.CreateObject("Object");
 	$.IconSize = te.Data.Conf_IconSize || screen.logicalYDPI / 4;
 	var xml = OpenXml("addons.xml", false, true);
 	te.Data.Addons = xml;
@@ -333,12 +333,12 @@ ArrangeAddons = function () {
 		var items = root.childNodes;
 		if (items) {
 			var arError = api.CreateObject("Array");
-			for (var i = 0; i < api.ObjGetI(items, "length"); ++i) {
+			for (var i = 0; i < GetLength(items); ++i) {
 				var item = items[i];
 				var Id = item.nodeName;
 				g_.Error_source = Id;
 				if (!AddonId[Id]) {
-					var Enabled = GetInt(item.getAttribute("Enabled"));
+					var Enabled = GetNum(item.getAttribute("Enabled"));
 					if (Enabled & 6) {
 						LoadLang2(fso.BuildPath(te.Data.Installed, "addons\\" + Id + "\\lang\\" + GetLangId() + ".xml"));
 					}
@@ -374,7 +374,7 @@ AddEvent("VisibleChanged", function (Ctrl) {
 		var o = ui_.Panels[Ctrl.Id];
 		if (o) {
 			if (Ctrl.Visible) {
-				o.style.display = (ui_.IEVer >= 8 && o.tagName.toLowerCase() == "td") ? "table-cell" : "block";
+				o.style.display = (ui_.IEVer >= 8 && SameText(o.tagName, "td")) ? "table-cell" : "block";
 				ChangeView(Ctrl.Selected);
 			} else {
 				o.style.display = "none";
@@ -415,9 +415,7 @@ AddEventEx(window, "blur", ResetScroll);
 AddEventEx(document, "MSFullscreenChange", function () {
 	FullscreenChanged(document.msFullscreenElement != void 0);
 });
-
-//
-
+	
 (function () {
 	UI.OnLoad();
 	InitCode();
@@ -428,5 +426,5 @@ AddEventEx(document, "MSFullscreenChange", function () {
 	InitMenus();
 	LoadLang();
 	ArrangeAddons();
-	setTimeout(InitWindow, 9, setTimeout);
+	setTimeout(InitWindow, 9);
 })();

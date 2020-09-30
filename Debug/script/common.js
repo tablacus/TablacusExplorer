@@ -64,13 +64,21 @@ importScript = function (fn) {
 	return hr;
 }
 
-if (!window.UI) {
+if (!window.UI && !window.chrome) {
 	importScript("script\\sync.js");
 	importScript("script\\ui.js");
 }
 
-GetInt = function (s) {
-	return "number" === typeof s ? s : Number("string" === typeof s ? s.replace(/\D.*/, "") : s) || 0;
+GetNum = function (s) {
+	return "number" === typeof s ? s : Number("string" === typeof s ? s.replace(/[^\d\-\.].*/, "") : s) || 0;
+}
+
+SameText = function (s1, s2) {
+	return String(s1).toLowerCase() == String(s2).toLowerCase();
+}
+
+GetLength = function (o) {
+	return o.length || api.ObjGetI(o, "length");
 }
 
 StripAmp = function (s) {
