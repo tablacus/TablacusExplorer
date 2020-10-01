@@ -5,10 +5,6 @@ ui_ = {
 	bWindowRegistered: true,
 	Panels: {}
 };
-(function () {
-	ui_.DoubleClickTime = sha.GetSystemInformation("DoubleClickTime");
-})();
-
 UI = api.CreateObject("Object");
 
 UI.setTimeoutAsync = function (fn, tm, a, b, c, d) {
@@ -46,10 +42,75 @@ UI.Blur = function (Id) {
 	document.getElementById(Id).blur();
 }
 
-LoadScripts = function (js1, js2, bIndex, cb) {
+InitUI = function () {
+	ui_.DoubleClickTime = sha.GetSystemInformation("DoubleClickTime");
+	var arg = te.Arguments;
+	if (arg) {
+		window.dialogArguments = arg;
+		$.dialogArguments = arg;
+	}
+	if (window.dialogArguments) {
+		for (var list = api.CreateObject("Enum", dialogArguments.event); !list.atEnd(); list.moveNext()) {
+			var j = list.item();
+			var res = /^on(.+)/i.exec(j);
+			if (res) {
+				AddEventEx(window, res[1], dialogArguments.event[j]);
+			} else {
+				window[j] = dialogArguments.event[j];
+			}
+		}
+	}
+	if (!window.MainWindow) {
+		window.MainWindow = $;
+		var x;
+		while (x = MainWindow.dialogArguments || MainWindow.opener) {
+			MainWindow = x;
+			if (x = MainWindow.MainWindow) {
+				MainWindow = x;
+			}
+		}
+	}
+	MainWindow.$ = MainWindow;
+	window.ParentWindow = (window.dialogArguments ? dialogArguments.opener : window.opener);
+	if (ParentWindow || !window.te) {
+		te = MainWindow.te;
+	}
+	var uid = location.hash.replace(/\D/g, "");
+	if (!window.dialogArguments && !window.opener) {
+		var arg = api.CommandLineToArgv(api.GetCommandLine());
+		if (arg.Count > 3 && SameText(arg[1], '/open')) {
+			uid = arg[3];
+		}
+	}
+	if (uid) {
+		for (var esw = api.CreateObject("Enum", sha.Windows()); !esw.atEnd(); esw.moveNext()) {
+			var x = esw.item();
+			if (x && x.Document) {
+				var w = x.Document.parentWindow;
+				if (w && w.te && w.Exchange) {
+					var a = w.Exchange[uid];
+					if (a) {
+						dialogArguments = a;
+						MainWindow = w;
+						te = w.te;
+						AddEventEx(window, "beforeunload", function () {
+							try {
+								delete MainWindow.Exchange[uid];
+							} catch (e) { }
+						});
+						break;
+					}
+				}
+			}
+		}
+	}
+};
+
+LoadScripts = function (js1, js2, cb) {
+	InitUI();
 	if (window.chrome) {
 		js1.unshift("consts.js", "common.js");
-		var s = bIndex ? ["MainWindow = window;"] : [];
+		var s = [];
 		var arFN = [];
 		var line = 1;
 		var strParent = (fso.GetParentFolderName(api.GetModuleFileName(null))).replace(/\\$/, "");
@@ -86,7 +147,7 @@ LoadScripts = function (js1, js2, bIndex, cb) {
 			return to;
 		}
 		document.documentMode = (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 : 12);
-		CopyObj($, window, ["te", "api", "chrome", "document", "UI"]);
+		CopyObj($, window, ["te", "api", "chrome", "document", "UI", "MainWindow"]);
 		$.location = CopyObj(null, location, ["hash", "href"]);
 		$.navigator = CopyObj(null, navigator, ["appVersion", "language"]);
 		$.screen = CopyObj(null, screen, ["deviceXDPI", "deviceYDPI"]);
@@ -98,21 +159,25 @@ LoadScripts = function (js1, js2, bIndex, cb) {
 	} else {
 		$ = window;
 	}
-	if (bIndex) {
-		MainWindow = $;
-	}
 	LoadScript(js1.concat(js2), cb);
 };
 
 ApplyLangTag = function (o) {
 	if (o) {
-		for (i = o.length; i--;) {
+		for (var i = o.length; i--;) {
 			var s, s1;
 			if (s = o[i].innerHTML) {
-				if (s != (s1 = s.replace(/(\s*<[^>]*?>\s*)|([^<>]*)|/gm, function (strMatch, ref1, ref2) {
-					var r = ref1 || ref2;
-					return /^\s*</.test(r) ? r : amp2ul(GetTextR(r.replace(/&amp;/ig, "&")));
-				}))) {
+				var ar = s.split("<");
+				var re1 = /^([^>]*>\s*)(.*)(\s*)$/;
+				var re2 = /^(\s*)(.*)(\s*)$/;
+				for (var j = ar.length; j-- > 0;) {
+					var res = re1.exec(ar[j]) || re2.exec(ar[j])
+					if (res) {
+						ar[j] = res[1] + amp2ul(GetTextR(res[2].replace(/&amp;/ig, "&"))) + res[3];
+					}
+				}
+				s1 = ar.join("<");
+				if (s != s1) {
 					o[i].innerHTML = s1;
 				}
 			}
@@ -449,7 +514,10 @@ AddonOptions = function (Id, fn, Data, bNew) {
 		sFeatures = 'Default';
 	}
 	sURL = fso.BuildPath(te.Data.Installed, sURL);
-	var opt = { MainWindow: MainWindow, Data: Data, event: {} };
+	var opt = api.CreateObject("Object");
+	opt.MainWindow = MainWindow.$;
+	opt.Data = Data;
+	opt.event = api.CreateObject("Object");
 	if (fn) {
 		opt.event.TEOk = fn;
 	} else if (window.g_Chg) {
@@ -470,7 +538,10 @@ AddonOptions = function (Id, fn, Data, bNew) {
 		} catch (e) {
 			delete MainWindow.g_.dlgs[Id];
 		}
-		var opt = { MainWindow: MainWindow, Data: Data, event: {} };
+		opt = api.CreateObject("Object");
+		opt.MainWindow = MainWindow.$;
+		opt.Data = Data;
+		opt.event = api.CreateObject("Object");
 		if (fn) {
 			opt.event.TEOk = fn;
 		} else if (window.g_Chg) {
@@ -502,8 +573,7 @@ AddonOptions = function (Id, fn, Data, bNew) {
 			}
 			el.contentWindow.g_.Inline = true;
 		}
-		external.WB.Data = opt;
-
+		te.Arguments = opt;
 		var el = document.createElement('iframe');
 		el.id = 'panel1_' + Id;
 		el.src = sURL;

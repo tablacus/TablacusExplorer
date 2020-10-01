@@ -128,6 +128,7 @@ BSTR	g_bsHiddenFilter = NULL;
 BSTR	g_bsExplorerBrowserFilter = NULL;
 HTREEITEM	g_hItemDown = NULL;
 SORTCOLUMN g_pSortColumnNull[3];
+VARIANT g_vArguments;
 
 UINT	g_uCrcTable[256];
 LONG	g_nLockUpdate = 0;
@@ -7452,7 +7453,9 @@ VOID teApiSetKeyboardState(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 
 VOID teApiGetVersionEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetBool(pVarResult, _RtlGetVersion ? !_RtlGetVersion(param[0].prtl_osversioninfoexw) : GetVersionEx(param[0].lposversioninfo));
+	if (param[0].prtl_osversioninfoexw) {
+		teSetBool(pVarResult, _RtlGetVersion ? !_RtlGetVersion(param[0].prtl_osversioninfoexw) : GetVersionEx(param[0].lposversioninfo));
+	}
 }
 
 VOID teApiChooseFont(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -10851,6 +10854,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		g_uCrcTable[i] = c;
 	}
 	g_dwMainThreadId = GetCurrentThreadId();
+	VariantInit(&g_vArguments);
 	BSTR bsPath = NULL;
 	teGetModuleFileName(NULL, &bsPath);//Executable Path
 	for (int i = 0; bsPath[i]; ++i) {
@@ -11598,7 +11602,7 @@ LRESULT CALLBACK WndProc2(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 						if (GetForegroundWindow() == pWB->m_hwndParent) {
 							teSetForegroundWindow((HWND)GetWindowLongPtr(pWB->m_hwndParent, GWLP_HWNDPARENT));
 						}
-						pWB->Close();
+						//pWB->Close();
 					}
 				} catch(...) {
 					g_nException = 0;
@@ -16996,16 +17000,16 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 					}
 				}
 				return S_OK;
-			//WindowsAPI
-			case 1030:
+
+			case 1030://WindowsAPI
 #ifdef _USE_OBJECTAPI
 				teSetObject(pVarResult, g_pAPI);
 #else
 				teSetObjectRelease(pVarResult, new CteWindowsAPI(NULL));
 #endif
 				return S_OK;
-			//WindowsAPI0
-			case 1031:
+
+			case 1031://WindowsAPI0
 				IDispatch *pAPI;
 				pAPI = NULL;
 				GetNewObject(&pAPI);
@@ -17017,16 +17021,16 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				::SysFreeString(bs);
 				teSetObject(pVarResult, pAPI);
 				return S_OK;
-			//CommonDialog
-			case 1131:
+
+			case 1131://CommonDialog
 				teSetObjectRelease(pVarResult, new CteCommonDialog());
 				return S_OK;
-			//WICBitmap(GdiplusBitmap)
-			case 1132:
+
+			case 1132://WICBitmap(GdiplusBitmap)
 				teSetObjectRelease(pVarResult, new CteWICBitmap());
 				return S_OK;
-			//FolderItems
-			case TE_METHOD + 1133:
+
+			case TE_METHOD + 1133://FolderItems
 				IDataObject *pDataObj;
 				pDataObj = NULL;
 				if (nArg >= 0) {
@@ -17035,20 +17039,30 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				teSetObjectRelease(pVarResult, new CteFolderItems(pDataObj, NULL));
 				SafeRelease(&pDataObj);
 				return S_OK;
-			//Object
-			case TE_METHOD + 1134:
+
+			case TE_METHOD + 1134://Object
 				teSetObjectRelease(pVarResult, teCreateObj(TE_OBJECT, NULL));
 				return S_OK;
-			//Array
-			case TE_METHOD + 1135:
+
+			case TE_METHOD + 1135://Array
 				teSetObjectRelease(pVarResult, teCreateObj(TE_ARRAY, NULL));
 				return S_OK;
-			//ProgressDialog
-			case 1137:
+
+			case 1136://Arguments
+				if (nArg >= 0) {
+					VariantClear(&g_vArguments);
+					VariantCopy(&g_vArguments, &pDispParams->rgvarg[nArg]);
+				} else {
+					VariantCopy(pVarResult, &g_vArguments);
+					VariantClear(&g_vArguments);
+				}
+				return S_OK;
+
+			case 1137://ProgressDialog
 				teSetObjectRelease(pVarResult, new CteProgressDialog(NULL));
 				return S_OK;
-			//DateTimeFormat
-			case 1138:
+
+			case 1138://DateTimeFormat
 				if (nArg >= 0) {
 					teSysFreeString(&g_bsDateTimeFormat);
 					if (pDispParams->rgvarg[nArg].vt == VT_BSTR && ::SysStringLen(pDispParams->rgvarg[nArg].bstrVal)) {
@@ -17499,19 +17513,9 @@ CteWebBrowser::CteWebBrowser(HWND hwndParent, WCHAR *szPath, VARIANT *pvArg)
 	m_pExternal = NULL;
 	VariantInit(&m_vData);
 	if (pvArg) {
-		VariantCopy(&m_vData, pvArg);
-		VARIANT v;
-		VariantInit(&v);
-		m_pExternal = teCreateObj(TE_OBJECT, NULL);
-		teSetObject(&v, g_pTE);
-		tePutProperty(m_pExternal, L"TE", &v);
-		teSetObject(&v, this);
-		tePutProperty(m_pExternal, L"WB", &v);
-		teSetLong(&v, CTRL_AR);
-		tePutProperty(m_pExternal, L"Type", &v);
-	} else {
-		g_pTE->QueryInterface(IID_PPV_ARGS(&m_pExternal));
+		VariantCopy(&g_vArguments, pvArg);
 	}
+	g_pTE->QueryInterface(IID_PPV_ARGS(&m_pExternal));
 	MSG        msg;
 	RECT       rc;
 	IOleObject *pOleObject;

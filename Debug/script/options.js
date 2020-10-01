@@ -2019,11 +2019,12 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter, f) {
 					api.GetCursorPos(pt);
 				}
 				var oType = o.form[s];
-				var r = MainWindow.OptionRef(oType[oType.selectedIndex].value, o.value, pt);
+				var optId = oType ? oType[oType.selectedIndex].value : "exec";
+				var r = MainWindow.OptionRef(optId, o.value, pt);
 				if ("string" === typeof r) {
 					var p = api.CreateObject("Object");
 					p.s = r;
-					MainWindow.OptionDecode(oType[oType.selectedIndex].value, p);
+					MainWindow.OptionDecode(optId, p);
 					if (bMultiLine && api.GetKeyState(VK_CONTROL) < 0 && api.ILCreateFromPath(p.s)) {
 						AddPath(Id, p.s, f);
 					} else {

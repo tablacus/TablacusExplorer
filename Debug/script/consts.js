@@ -28,75 +28,17 @@ LoadScript = function (js, cb) {
 }
 
 //Objects
-g_uid = location.hash.replace(/\D/g, "");
 
 if (!window.te && ((window.external && external.Type) || window.chrome)) {
 	te = window.chrome ? chrome.webview.hostObjects.te : external;
-	if (te.Type == 0x2ffff) {
-		dialogArguments = te.WB.Data;
-		te = te.TE;
-		try {
-			window.external = te;
-		} catch (e) { }
-	}
 	api = te.WindowsAPI0.CreateObject("api");
-	if (api) {
-		if (!window.dialogArguments && !window.opener) {
-			arg = api.CommandLineToArgv(api.GetCommandLine());
-			if (arg.length > 3 && arg[1].toLowerCase() == '/open') {
-				g_uid = arg[3];
-			}
-		}
-	}
 }
 fso = api.CreateObject("fso");
 sha = api.CreateObject("sha");
 wsh = api.CreateObject("wsh");
 wnw = api.CreateObject("WScript.Network");
 
-if (g_uid) {
-	(function () {
-		for (var esw = new Enumerator(sha.Windows()); !esw.atEnd(); esw.moveNext()) {
-			var x = esw.item();
-			if (x && x.Document) {
-				var w = x.Document.parentWindow;
-				if (w && w.te && w.Exchange) {
-					var a = w.Exchange[g_uid];
-					if (a) {
-						dialogArguments = a;
-						MainWindow = w;
-						te = w.te;
-						AddEventEx(window, "beforeunload", function () {
-							try {
-								delete MainWindow.Exchange[g_uid];
-							} catch (e) { }
-						});
-						break;
-					}
-				}
-			}
-		}
-	})();
-}
-
-if (!window.MainWindow) {
-	window.MainWindow = window;
-	while (MainWindow.dialogArguments || MainWindow.opener) {
-		MainWindow = MainWindow.dialogArguments || MainWindow.opener;
-		if (MainWindow.MainWindow) {
-			MainWindow = MainWindow.MainWindow;
-		}
-	}
-}
-ParentWindow = (window.dialogArguments ? dialogArguments.opener : window.opener);
-if (ParentWindow || !window.te) {
-	te = MainWindow.te;
-}
-if (!window.api) {
-	api = te.WindowsAPI;
-}
-
-$ = window.chrome ? api.CreateObject("Object") : window;
+$ = window.chrome && window.alert ? api.CreateObject("Object") : window;
 
 //Tablacus
 Ox80000000 = 0x80000000 | 0;
@@ -1886,23 +1828,6 @@ STGM_FAILIFTHERE = 0;
 STGM_NOSNAPSHOT = 0x200000;
 STGM_DIRECT_SWMR = 0x400000;
 
-if (!window.chrome) {
-	system32 = api.GetDisplayNameOf(ssfSYSTEM, SHGDN_FORPARSING);
-	hShell32 = api.GetModuleHandle(fso.BuildPath(system32, "shell32.dll"));
-}
-
-if (window.dialogArguments) {
-	(function () {
-		for (var j in dialogArguments.event) {
-			var res = /^on(.+)/i.exec(j);
-			if (res) {
-				AddEventEx(window, res[1], dialogArguments.event[j]);
-			} else {
-				window[j] = dialogArguments.event[j];
-			}
-		}
-	})();
-}
 if (!window.chrome) {
 	system32 = api.GetDisplayNameOf(ssfSYSTEM, SHGDN_FORPARSING);
 	hShell32 = api.GetModuleHandle(fso.BuildPath(system32, "shell32.dll"));

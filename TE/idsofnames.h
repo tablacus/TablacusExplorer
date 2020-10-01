@@ -706,6 +706,7 @@ TEmethod methodTE[] = {
 	{ 1131, "CommonDialog" },
 	{ 1132, "WICBitmap" },
 	{ 1132, "GdiplusBitmap" },//Deprecated
+	{ 1136, "Arguments" },
 	{ 1137, "ProgressDialog" },
 	{ 1138, "DateTimeFormat" },
 	{ 1139, "HiddenFilter" },
@@ -801,7 +802,7 @@ TEmethod methodTE[] = {
 	{ START_OnFunc + TE_OnIncludeItem, "OnIncludeItem" },
 	{ START_OnFunc + TE_OnContentsChanged, "OnContentsChanged" },
 	{ START_OnFunc + TE_OnFilterView, "OnFilterView" },
-	{ START_OnFunc + TE_FN, "fn" },
+	//{ START_OnFunc + TE_FN, "fn" },
 	{ 0, NULL }
 };
 

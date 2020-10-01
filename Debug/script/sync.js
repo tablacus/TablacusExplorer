@@ -86,7 +86,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20200929 ? te.Version : 20200930;
+		return te.Version < 20201001 ? te.Version : 20201001;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -441,12 +441,12 @@ ExtractMacro2 = function (Ctrl, s) {
 	return s;
 }
 
-ExtractMacro = MainWindow.ExtractMacro || function (Ctrl, s) {
+ExtractMacro = function (Ctrl, s) {
 	if ("string" === typeof s) {
-		s = ExtractMacro2(Ctrl, s);
+		s = MainWindow.ExtractMacro2(Ctrl, s);
 		if (!/\t/.test(s) && /%/.test(s)) {
 			do {
-				s = ExtractMacro2(Ctrl, s.replace(/%/, "\t"));
+				s = MainWindow.ExtractMacro2(Ctrl, s.replace(/%/, "\t"));
 			} while (/%/.test(s));
 			s = s.replace(/\t/g, "%");
 		}
@@ -775,16 +775,13 @@ ShowOptions = function (s) {
 			return;
 		}
 	} catch (e) { }
-	g_.dlgs.Options = ShowDialog("options.html",
-		{
-			width: te.Data.Conf_OptWidth, height: te.Data.Conf_OptHeight,
-			Data: s, event:
-			{
-				onbeforeunload: function () {
-					delete MainWindow.g_.dlgs.Options;
-				}
-			}
-		})
+	var opt = api.CreateObject("Object");
+	opt.width = te.Data.Conf_OptWidth;
+	opt.height = te.Data.Conf_OptHeight;
+	opt.Data = s;
+	opt.event = api.CreateObject("Object");
+	opt.event.onbeforeunload = "delete MainWindow.g_.dlgs.Options;";
+	g_.dlgs.Options = ShowDialog("options.html", opt);
 }
 
 ShowDialog = function (fn, opt) {
@@ -910,7 +907,13 @@ CheckUpdate3 = function (xhr, url, arg) {
 }
 
 ShowAbout = function () {
-	ShowDialog(fso.BuildPath(te.Data.Installed, "script\\dialog.html"), { MainWindow: MainWindow, Query: "about", Modal: false, width: 640, height: 360 });
+	var opt = api.CreateObject("Object");
+	opt.MainWindow = MainWindow;
+	opt.Query = "about";
+	opt.Modal = false;
+	opt.width = 640;
+	opt.height = 360;
+	ShowDialog(fso.BuildPath(te.Data.Installed, "script\\dialog.html"), opt);
 }
 
 ApiStruct = function (oTypedef, nAli, oMemory) {
@@ -2952,14 +2955,29 @@ OpenInExplorer = function (pid1) {
 }
 
 ShowDialogEx = function (mode, w, h, ele) {
-	ShowDialog(fso.BuildPath(te.Data.Installed, "script\\dialog.html"), { MainWindow: MainWindow, Query: mode, width: w, height: h, element: ele });
+	var opt = api.CreateObject("Object");
+	opt.MainWindow = MainWindow;
+	opt.Query = mode;
+	opt.width = w;
+	opt.height = h;
+	opt.element = ele;
+	ShowDialog(fso.BuildPath(te.Data.Installed, "script\\dialog.html"), opt);
 }
 
 ShowNew = function (Ctrl, pt, Mode) {
 	var FV = GetFolderView(Ctrl, pt);
 	var path = api.GetDisplayNameOf(FV, SHGDN_FORPARSING | SHGDN_ORIGINAL);
 	if (/^[A-Z]:\\|^\\\\/i.test(path)) {
-		ShowDialog(fso.BuildPath(te.Data.Installed, "script\\dialog.html"), { MainWindow: MainWindow, Query: "new", Mode: Mode, path: path, FV: FV, Modal: false, width: 480, height: 120 });
+		var opt = api.CreateObject("Object");
+		opt.MainWindow = MainWindow;
+		opt.Query = "new";
+		opt.Mode = Mode;
+		opt.path = path;
+		opt.FV = FV;
+		opt.Modal = false;
+		opt.width = 480;
+		opt.height = 120;
+		ShowDialog(fso.BuildPath(te.Data.Installed, "script\\dialog.html"), opt);
 	}
 }
 

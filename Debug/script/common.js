@@ -45,7 +45,7 @@ importScript = function (fn) {
 		ado = OpenAdodbFromTextFile(fn, "utf-8");
 	} else {
 		if (!/^[A-Z]:\\|^\\\\\w/i.test(fn)) {
-			fn = fso.BuildPath(te.Data.Installed, fn);
+			fn = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), fn);
 		}
 		var ado = api.CreateObject("ads");
 		ado.CharSet = "utf-8";
@@ -53,7 +53,7 @@ importScript = function (fn) {
 		ado.LoadFromFile(fn);
 	}
 	if (ado) {
-		if (/\.vbs/i.test(fn)) {
+		if (/\.vbs$/i.test(fn)) {
 			hr = ExecScriptEx(window.Ctrl, ado.ReadText(), "VBScript", $.pt, $.dataObj, $.grfKeyState, $.pdwEffect, $.bDrop);
 		} else {
 			new Function(ado.ReadText())();
@@ -65,8 +65,13 @@ importScript = function (fn) {
 }
 
 if (!window.UI && !window.chrome) {
-	importScript("script\\sync.js");
-	importScript("script\\ui.js");
+	if (window.alert) {
+		importScript("script\\ui.js");
+		InitUI();
+	}
+	if (!window.g_) {
+		importScript("script\\sync.js");
+	}
 }
 
 GetNum = function (s) {
