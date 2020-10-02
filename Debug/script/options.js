@@ -1379,7 +1379,6 @@ InitOptions = function () {
 
 	SetOnChangeHandler();
 	AddEventEx(window, "beforeunload", function () {
-		alert("unload");
 		for (var i in g_.elAddons) {
 			try {
 				var w = g_.elAddons[i].contentWindow;
