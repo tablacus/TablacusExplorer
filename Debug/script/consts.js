@@ -9,21 +9,38 @@ AddEventEx = function (w, Name, fn) {
 }
 
 RemoveAsync = function (s) {
-	return s.replace(/([^\.\w])(||)/g, "$1");
+	return s.replace(/([^\.\w])(async |await |debugger;)/g, "$1");
 }
 
 LoadScript = function (js, cb) {
 	var fn;
 	while (fn = js.shift()) {
-		var el = document.createElement("script");
-		el.type = "text/javascript";
-		el.charset = "utf-8";
-		el.src = fn;
-		el.async = false;
-		if (js.length == 0) {
-			el.onload = cb;
+		if (window.chrome) {
+			var el = document.createElement("script");
+			el.type = "text/javascript";
+			el.charset = "utf-8";
+			el.src = fn;
+			el.async = false;
+			if (js.length == 0) {
+				el.onload = cb;
+			}
+			document.body.appendChild(el);
+		} else {
+			var strParent = (fso.GetParentFolderName(api.GetModuleFileName(null))).replace(/\\$/, "");
+			fn = strParent + "\\script\\" + fn;
+			var ado = api.CreateObject("ads");
+			if (ado) {
+				ado.CharSet = "utf-8";
+				ado.Open();
+				ado.LoadFromFile(fn);
+				var src = RemoveAsync(ado.ReadText());
+				ado.Close();
+				document.write('<script type="text/javascript">\n' + src + '\n</script>');
+			}
 		}
-		document.body.appendChild(el);
+	}
+	if (!window.chrome && cb) {
+		cb();
 	}
 }
 
@@ -928,6 +945,8 @@ VT_LPSTR = 30;
 VT_LPWSTR = 31;
 VT_PTR = 26;
 VT_VARIANT = 12;
+VT_RECORD = 36;
+VT_USERDEFINED = 29;
 VT_ARRAY = 0x2000;
 
 FO_MOVE = 1;

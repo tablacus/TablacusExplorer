@@ -1,8 +1,17 @@
 // Tablacus Explorer
+g_sep = "` ~";
+
+BuildPath = function () {
+	var s = arguments.length ? String(arguments[0]) : "";
+	for (var i = 1; i < arguments.length; ++i) {
+		s = s.replace(/\\+$/, "") + "\\" + arguments[i];
+	}
+	return s;
+};
 
 (function () {
 	system32 = api.GetDisplayNameOf(ssfSYSTEM, SHGDN_FORPARSING);
-	hShell32 = api.GetModuleHandle(fso.BuildPath(system32, "shell32.dll"));
+	hShell32 = api.GetModuleHandle(BuildPath(system32, "shell32.dll"));
 
 	osInfo = api.Memory("OSVERSIONINFOEX");
 	osInfo.dwOSVersionInfoSize = osInfo.Size;
@@ -45,7 +54,7 @@ importScript = function (fn) {
 		ado = OpenAdodbFromTextFile(fn, "utf-8");
 	} else {
 		if (!/^[A-Z]:\\|^\\\\\w/i.test(fn)) {
-			fn = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), fn);
+			fn = BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), fn);
 		}
 		var ado = api.CreateObject("ads");
 		ado.CharSet = "utf-8";
@@ -83,7 +92,7 @@ SameText = function (s1, s2) {
 }
 
 GetLength = function (o) {
-	return o.length || api.ObjGetI(o, "length");
+	return o ? (o.length || api.ObjGetI(o, "length")) : 0;
 }
 
 StripAmp = function (s) {
@@ -169,7 +178,11 @@ GetWinColor = function (c) {
 }
 
 FindText = function () {
-	api.OleCmdExec(document, null, 32, 0, 0);
+	if (window.chrome) {
+		wsh.SendKeys("^f");
+	} else {
+		api.OleCmdExec(document, null, 32, 0, 0);
+	}
 }
 
 SetRenameMenu = function () { }
@@ -195,42 +208,6 @@ GetConsts = function (s) {
 	return s;
 }
 
-createHttpRequest = function () {
-	try {
-		return window.XMLHttpRequest && ui_.IEVer >= 9 ? new XMLHttpRequest() : api.CreateObject("Msxml2.XMLHTTP");
-	} catch (e) {
-		return api.CreateObject("Microsoft.XMLHTTP");
-	}
-}
-
-OpenHttpRequest = function (url, alt, fn, arg) {
-	var xhr = createHttpRequest();
-	xhr.onreadystatechange = function () {
-		if (xhr.readyState == 4) {
-			if (arg && arg.pcRef) {
-				--arg.pcRef[0];
-			}
-			if (xhr.status == 200) {
-				return fn(xhr, url, arg);
-			}
-			if (/^http/.test(alt)) {
-				return OpenHttpRequest(/^https/.test(url) && alt == "http" ? url.replace(/^https/, alt) : alt, '', fn, arg);
-			}
-			MessageBox([api.sprintf(999, api.LoadString(hShell32, 4227).replace(/^\t/, ""), xhr.status), url].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
-		}
-	}
-	if (/ml$/i.test(url)) {
-		url += "?" + Math.floor(new Date().getTime() / 60000);
-	}
-	if (arg && arg.pcRef) {
-		++arg.pcRef[0];
-	}
-	xhr.open("GET", url, false);
-	try {
-		xhr.send(null);
-	} catch (e) { }
-}
-
 InputDialog = function (text, defaultText) {
 	return prompt(GetTextR(text), defaultText);
 }
@@ -254,3 +231,4 @@ CalcVersion = function (s) {
 	}
 	return r;
 }
+

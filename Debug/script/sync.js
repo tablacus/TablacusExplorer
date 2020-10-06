@@ -2,7 +2,6 @@
 
 Ctrl = null;
 g_temp = null;
-g_sep = "` ~";
 Handled = null;
 hwnd = null;
 pt = api.Memory("POINT");
@@ -16,7 +15,7 @@ eventTE.Environment = api.CreateObject("Object");
 eventTA = api.CreateObject("Object");
 
 g_ptDrag = api.Memory("POINT");
-Addons = api.CreateObject("Object");
+window.Addons = api.CreateObject("Object");
 Addons["_stack"] = api.CreateObject("Array");
 
 g_ = api.CreateObject("Object");
@@ -74,19 +73,11 @@ if (g_.IEVer < 10) {
 			}
 		}
 	})(setTimeout);
-} else if (g_.IEVer > 11) {
-	setTimeout = function (fn, tm) {
-		api.OutputDebugString(fn + "\n");
-	}
-
-	clearTimeout = function (tid) {
-		api.Invoke(UI.clearTimeout, tid);
-	}
 }
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201001 ? te.Version : 20201002;
+		return te.Version < 20201006 ? te.Version : 20201006;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -460,7 +451,7 @@ OrganizePath = function (fn, base) {
 	}
 	fn = ExtractMacro(te, fn);
 	if (base && !/^[A-Z]:\\|^\\\\\w/i.test(fn)) {
-		fn = fso.BuildPath(base, fn);
+		fn = BuildPath(base, fn);
 	}
 	return fn;
 }
@@ -780,8 +771,7 @@ ShowOptions = function (s) {
 	opt.height = te.Data.Conf_OptHeight;
 	opt.Data = s;
 	opt.event = api.CreateObject("Object");
-	opt.event.onbeforeunload = "delete MainWindow.g_.dlgs.Options;";
-	g_.dlgs.Options = ShowDialog("options.html", opt);
+	api.Invoke(UI.ShowOptions, opt);
 }
 
 ShowDialog = function (fn, opt) {
@@ -791,24 +781,7 @@ ShowDialog = function (fn, opt) {
 	}
 	var r = opt.r || Math.abs(MainWindow.DefaultFont.lfHeight) / 12;
 	var h = api.GetWindowLongPtr(te.hwnd, GWL_STYLE) & WS_CAPTION ? 0 : api.GetSystemMetrics(SM_CYCAPTION);
-	return te.CreateCtrl(CTRL_SW, fn, opt, document, (opt.width > 99 ? opt.width : 750) * r, (opt.height > 99 ? opt.height : 530) * r + h, opt.left, opt.top);
-}
-
-Extract = function (Src, Dest, xhr) {
-	var hr;
-	if (xhr) {
-		hr = DownloadFile(xhr, Src);
-		if (hr) {
-			return hr;
-		}
-	}
-	for (var i in eventTE.extract) {
-		hr = eventTE.extract[i](Src, Dest);
-		if (isFinite(hr)) {
-			return hr;
-		}
-	}
-	return api.Extract(fso.BuildPath(system32, "zipfldr.dll"), "{E88DCCE0-B7B3-11d1-A9F0-00AA0060FA31}", Src, Dest);
+	return te.CreateCtrl(CTRL_SW, fn, opt, g_.hwndBrowser || document, (opt.width > 99 ? opt.width : 750) * r, (opt.height > 99 ? opt.height : 530) * r + h, opt.left, opt.top);
 }
 
 GetAddons = function () {
@@ -820,90 +793,7 @@ GetIconPacks = function () {
 }
 
 CheckUpdate = function (arg) {
-	MainWindow.OpenHttpRequest("https://api.github.com/repos/tablacus/TablacusExplorer/releases/latest", "http://tablacus.github.io/TablacusExplorerAddons/te/releases.json", CheckUpdate2, arg);
-}
-
-CheckUpdate2 = function (xhr, url, arg1) {
-	var arg = {};
-	var Text = xhr.get_responseText ? xhr.get_responseText() : xhr.responseText;
-	var json = window.JSON ? JSON.parse(Text) : api.GetScriptDispatch("function fn () { return " + Text + "}", "JScript", {}).fn();
-	if (json.assets && json.assets[0]) {
-		arg.size = json.assets[0].size / 1024;
-		arg.url = json.assets[0].browser_download_url;
-	}
-	if (!arg.url) {
-		return;
-	}
-	arg.file = fso.GetFileName(arg.url.replace(/\//g, "\\"));
-	var ver = 0;
-	res = /(\d+)/.exec(arg.file);
-	if (res) {
-		ver = api.Add(20000000, res[1]);
-	}
-	if (ver <= AboutTE(0)) {
-		if ((arg1 && arg1.silent) || MessageBox(AboutTE(2) + "\n" + GetText("the latest version"), TITLE, MB_ICONINFORMATION)) {
-			if (api.GetKeyState(VK_SHIFT) >= 0 || api.GetKeyState(VK_CONTROL) >= 0) {
-				MainWindow.RunEvent1("CheckUpdate", arg1);
-				return;
-			}
-		}
-	}
-	if (!(arg1 && arg1.noconfirm)) {
-		var s = (api.LoadString(hShell32, 60) || "%").replace(/%.*/, api.sprintf(99, "%d.%d.%d (%.1lfKB)", ver / 10000 % 100, ver / 100 % 100, ver % 100, arg.size));
-		if (!confirmOk([GetText("Update available"), s, GetText("Do you want to install it now?")].join("\n"))) {
-			return;
-		}
-	}
-	arg.temp = fso.BuildPath(fso.GetSpecialFolder(2).Path, "tablacus");
-	CreateFolder2(arg.temp);
-	wsh.CurrentDirectory = arg.temp;
-	arg.InstalledFolder = te.Data.Installed;
-	arg.zipfile = fso.BuildPath(arg.temp, arg.file);
-	arg.temp += "\\explorer";
-	DeleteItem(arg.temp);
-	CreateFolder2(arg.temp);
-	MainWindow.OpenHttpRequest(arg.url, "http://tablacus.github.io/TablacusExplorerAddons/te/" + (arg.url.replace(/^.*\//, "")), CheckUpdate3, arg);
-}
-
-CheckUpdate3 = function (xhr, url, arg) {
-	var hr = Extract(arg.zipfile, arg.temp, xhr);
-	if (hr) {
-		MessageBox([api.LoadString(hShell32, 4228).replace(/^\t/, "").replace("%d", api.sprintf(99, "0x%08x", hr)), GetText("Extract"), fso.GetFileName(arg.zipfile)].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
-		return;
-	}
-	var te_exe = arg.temp + "\\te64.exe";
-	var nDog = 300;
-	while (!fso.FileExists(te_exe)) {
-		if (wsh.Popup(GetText("Please wait."), 1, TITLE, MB_OKCANCEL) == IDCANCEL || nDog-- == 0) {
-			return;
-		}
-	}
-	var arDel = [];
-	var addons = arg.temp + "\\addons";
-	if (fso.FolderExists(arg.temp + "\\config")) {
-		arDel.push(arg.temp + "\\config");
-	}
-	for (var i = 32; i <= 64; i += 32) {
-		te_exe = arg.temp + '\\te' + i + '.exe';
-		var te_old = fso.BuildPath(te.Data.Installed, 'te' + i + '.exe');
-		if (!fso.FileExists(te_old) || fso.GetFileVersion(te_exe) == fso.GetFileVersion(te_old)) {
-			arDel.push(te_exe);
-		}
-	}
-	for (var list = api.CreateObject("Enum", fso.GetFolder(addons).SubFolders); !list.atEnd(); list.moveNext()) {
-		var n = list.item().Name;
-		var items = te.Data.Addons.getElementsByTagName(n);
-		if (!items || items.length == 0) {
-			arDel.push(fso.BuildPath(addons, n));
-		}
-	}
-	if (arDel.length) {
-		api.SHFileOperation(FO_DELETE, arDel.join("\0"), null, FOF_SILENT | FOF_NOCONFIRMATION, false);
-	}
-	var ppid = api.Memory("DWORD");
-	api.GetWindowThreadProcessId(te.hwnd, ppid);
-	arg.pid = ppid[0];
-	MainWindow.CreateUpdater(arg);
+	MainWindow.OpenHttpRequest("https://api.github.com/repos/tablacus/TablacusExplorer/releases/latest", "http://tablacus.github.io/TablacusExplorerAddons/te/releases.json", UI.CheckUpdate2, arg);
 }
 
 ShowAbout = function () {
@@ -913,7 +803,7 @@ ShowAbout = function () {
 	opt.Modal = false;
 	opt.width = 640;
 	opt.height = 360;
-	ShowDialog(fso.BuildPath(te.Data.Installed, "script\\dialog.html"), opt);
+	ShowDialog(BuildPath(te.Data.Installed, "script\\dialog.html"), opt);
 }
 
 ApiStruct = function (oTypedef, nAli, oMemory) {
@@ -974,10 +864,6 @@ CreateJScript = function (s) {
 	return new Function(s);
 }
 
-BlurId = function (Id) {
-	api.Invoke(UI.Blur, id);
-}
-
 ShowError = function (e, s, i) {
 	var sl = (s || "").toLowerCase();
 	if (isFinite(i)) {
@@ -997,24 +883,24 @@ ShowError = function (e, s, i) {
 OpenXml = function (strFile, bAppData, bEmpty, strInit) {
 	var xml = api.CreateObject("Msxml2.DOMDocument");
 	xml.async = false;
-	var path = fso.BuildPath(te.Data.DataFolder, "config\\" + strFile);
+	var path = BuildPath(te.Data.DataFolder, "config\\" + strFile);
 	if (fso.FileExists(path) && xml.load(path)) {
 		return xml;
 	}
 	if (!bAppData) {
-		path = fso.BuildPath(te.Data.Installed, "config\\" + strFile);
+		path = BuildPath(te.Data.Installed, "config\\" + strFile);
 		if (fso.FileExists(path) && xml.load(path)) {
-			api.SHFileOperation(FO_MOVE, path, fso.BuildPath(te.Data.DataFolder, "config"), FOF_SILENT | FOF_NOCONFIRMATION, false);
+			api.SHFileOperation(FO_MOVE, path, BuildPath(te.Data.DataFolder, "config"), FOF_SILENT | FOF_NOCONFIRMATION, false);
 			return xml;
 		}
 	}
 	if (strInit) {
-		path = fso.BuildPath(strInit, strFile);
+		path = BuildPath(strInit, strFile);
 		if (fso.FileExists(path) && xml.load(path)) {
 			return xml;
 		}
 	}
-	path = fso.BuildPath(te.Data.Installed, "init\\" + strFile);
+	path = BuildPath(te.Data.Installed, "init\\" + strFile);
 	if (fso.FileExists(path) && xml.load(path)) {
 		return xml;
 	}
@@ -1047,8 +933,7 @@ LoadLang = function (bAppend) {
 		MainWindow.Lang = api.CreateObject("Object");
 		MainWindow.LangSrc = api.CreateObject("Object");
 	}
-	var filename = fso.BuildPath(te.Data.Installed, "lang\\" + GetLangId() + ".xml");
-	LoadLang2(filename);
+	LoadLang2(BuildPath(te.Data.Installed, "lang", GetLangId() + ".xml"));
 }
 
 CloseSubWindows = function () {
@@ -1119,7 +1004,7 @@ RemoveCommand = function (hMenu, ContextMenu, strDelete) {
 }
 
 DeleteTempFolder = function () {
-	DeleteItem(fso.BuildPath(fso.GetSpecialFolder(2).Path, "tablacus"));
+	DeleteItem(BuildPath(fso.GetSpecialFolder(2).Path, "tablacus"));
 }
 
 PerformUpdate = function () {
@@ -1275,10 +1160,6 @@ CustomSort = function (FV, id, r, fnAdd, fnComp) {
 	Progress.StopProgressDialog();
 }
 
-GetIconSize = function (h, a) {
-	return h || a * screen.logicalYDPI / 96 || window.IconSize;
-}
-
 MakeCommDlgFilter = function (arg) {
 	var ar = arg ? arg.join ? arg : [arg] : [];
 	var result = [];
@@ -1287,7 +1168,7 @@ MakeCommDlgFilter = function (arg) {
 		var s = ar[i];
 		bAll &= s.indexOf("*.*") < 0;
 		if (/[\|#]/.test(s)) {
-			result.push(s.replace(/[#@]/g, "|").replace(/[\0\|]$/, ""));
+			result.push(s.replace(/[#\@]/g, "|").replace(/[\0\|]$/, ""));
 			continue;
 		}
 		var res = /\(([^\)]+)\)/.exec(s);
@@ -1345,15 +1226,6 @@ amp2ul = function (s) {
 	return /;/.test(s) ? s : s.replace(/&(.)/ig, "<u>$1</u>");
 }
 
-ImgBase64 = function (o, index) {
-	var src = ExtractMacro(te, o.src);
-	var s = MakeImgSrc(src, index, false, o.height);
-	if (!s && api.StrCmpI(o.src, src)) {
-		return src.replace(location.href.replace(/[^\/]*$/, ""), "file:///");
-	}
-	return s;
-}
-
 MakeImgDataEx = function (src, bSimple, h) {
 	return bSimple || REGEXP_IMAGE.test(src) ? src : MakeImgSrc(src, 0, false, h);
 }
@@ -1368,7 +1240,7 @@ MakeImgSrc = function (src, index, bSrc, h) {
 	if (res) {
 		var icon = res[1].split(",");
 		if (!/\\/.test(icon[0])) {
-			fn = fso.BuildPath(te.Data.DataFolder, ["icons", icon[0].replace(/\..*/, ""), icon[1] + ".png"].join("\\"));
+			fn = BuildPath(te.Data.DataFolder, ["icons", icon[0].replace(/\..*/, ""), icon[1] + ".png"].join("\\"));
 			if (fso.FileExists(fn)) {
 				return fn;
 			}
@@ -1377,13 +1249,13 @@ MakeImgSrc = function (src, index, bSrc, h) {
 	if (g_.IEVer < 8) {
 		res = /^bitmap:(.+)/i.exec(src);
 		if (res) {
-			fn = fso.BuildPath(te.Data.DataFolder, "cache\\bitmap\\" + res[1].replace(/[:\\\/]/g, "$") + ".png");
+			fn = BuildPath(te.Data.DataFolder, "cache\\bitmap\\" + res[1].replace(/[:\\\/]/g, "$") + ".png");
 		} else {
 			res = /^icon:(.+)/i.exec(src);
 			if (res) {
-				fn = fso.BuildPath(te.Data.DataFolder, "cache\\icon\\" + (res[1].replace(/[:\\\/]/g, "$")) + ".png");
+				fn = BuildPath(te.Data.DataFolder, "cache\\icon\\" + (res[1].replace(/[:\\\/]/g, "$")) + ".png");
 			} else if (src && !REGEXP_IMAGE.test(src)) {
-				fn = fso.BuildPath(te.Data.DataFolder, "cache\\file\\" + (api.PathCreateFromUrl(src).replace(/[:\\\/]/g, "$")) + ".png");
+				fn = BuildPath(te.Data.DataFolder, "cache\\file\\" + (api.PathCreateFromUrl(src).replace(/[:\\\/]/g, "$")) + ".png");
 			}
 		}
 		if (fn && fso.FileExists(fn)) {
@@ -1427,7 +1299,7 @@ MakeImgIcon = function (src, index, h, bIcon) {
 			var a2 = ar[i];
 			if (api.StrCmpNI(src, a2[0], a2[0].length) == 0) {
 				var a3 = src.split(",");
-				var path = fso.BuildPath(te.Data.DataFolder, ["icons", a2[3], a3[3] + ".png"].join("\\"));
+				var path = BuildPath(te.Data.DataFolder, ["icons", a2[3], a3[3] + ".png"].join("\\"));
 				var image = api.CreateObject("WICBitmap").FromFile(path);
 				if (image) {
 					image = GetThumbnail(image, a3[2], true);
@@ -1470,7 +1342,7 @@ MakeImgIcon = function (src, index, h, bIcon) {
 	if (res) {
 		var icon = res[1].split(",");
 		if (!/\\/.test(icon[0])) {
-			var path = fso.BuildPath(te.Data.DataFolder, ["icons", icon[0].replace(/\..*/, ""), icon[1] + ".png"].join("\\"));
+			var path = BuildPath(te.Data.DataFolder, ["icons", icon[0].replace(/\..*/, ""), icon[1] + ".png"].join("\\"));
 			var image = api.CreateObject("WICBitmap").FromFile(path);
 			if (image) {
 				return image.GetHICON();
@@ -1517,12 +1389,12 @@ MakeImgIcon = function (src, index, h, bIcon) {
 }
 
 LoadImgDll = function (icon, index) {
-	var hModule = api.LoadLibraryEx(fso.BuildPath(system32, icon[index * 4]), 0, LOAD_LIBRARY_AS_DATAFILE);
+	var hModule = api.LoadLibraryEx(BuildPath(system32, icon[index * 4]), 0, LOAD_LIBRARY_AS_DATAFILE);
 	if (!hModule && SameText(icon[index * 4], "ieframe.dll")) {
 		if (icon[index * 4 + 1] >= 500) {
-			hModule = api.LoadLibraryEx(fso.BuildPath(system32, "browseui.dll"), 0, LOAD_LIBRARY_AS_DATAFILE);
+			hModule = api.LoadLibraryEx(BuildPath(system32, "browseui.dll"), 0, LOAD_LIBRARY_AS_DATAFILE);
 		} else {
-			hModule = api.LoadLibraryEx(fso.BuildPath(system32, "shell32.dll"), 0, LOAD_LIBRARY_AS_DATAFILE);
+			hModule = api.LoadLibraryEx(BuildPath(system32, "shell32.dll"), 0, LOAD_LIBRARY_AS_DATAFILE);
 		}
 	}
 	return hModule;
@@ -1672,7 +1544,7 @@ ChangeTab = function (TC, nMove) {
 
 LoadLayout = function () {
 	var commdlg = api.CreateObject("CommonDialog");
-	commdlg.InitDir = fso.BuildPath(te.Data.DataFolder, "layout");
+	commdlg.InitDir = BuildPath(te.Data.DataFolder, "layout");
 	commdlg.Filter = MakeCommDlgFilter("*.xml");
 	commdlg.Flags = OFN_FILEMUSTEXIST;
 	if (commdlg.ShowOpen()) {
@@ -1683,7 +1555,7 @@ LoadLayout = function () {
 
 SaveLayout = function () {
 	var commdlg = api.CreateObject("CommonDialog");
-	commdlg.InitDir = fso.BuildPath(te.Data.DataFolder, "layout");
+	commdlg.InitDir = BuildPath(te.Data.DataFolder, "layout");
 	commdlg.Filter = MakeCommDlgFilter("*.xml");
 	commdlg.DefExt = "xml";
 	commdlg.Flags = OFN_OVERWRITEPROMPT;
@@ -1728,18 +1600,18 @@ CreateNew = function (path, fn) {
 				path1 = path;
 				path2 = "";
 				do {
-					path2 = fso.BuildPath(fso.GetFileName(path1), path2);
+					path2 = BuildPath(fso.GetFileName(path1), path2);
 					path1 = fso.GetParentFolderName(path1);
 				} while (path1 && !fso.FolderExists(path1));
 				var ar = path2.split("\\");
 				if (ar[0]) {
-					path = fso.BuildPath(path1, ar[0]);
-					path3 = fso.BuildPath(fso.GetSpecialFolder(2).Path, ar[0]);
+					path = BuildPath(path1, ar[0]);
+					path3 = BuildPath(fso.GetSpecialFolder(2).Path, ar[0]);
 					DeleteItem(path3);
 					path4 = path3;
 					for (var i = 1; i < ar.length; ++i) {
 						fso.CreateFolder(path4);
-						path4 = fso.BuildPath(path4, ar[i]);
+						path4 = BuildPath(path4, ar[i]);
 					}
 					fn(path4);
 					api.SHFileOperation(FO_MOVE, path3, fso.GetParentFolderName(path), FOF_SILENT | FOF_NOCONFIRMATION | FOF_NOERRORUI, false);
@@ -1822,7 +1694,7 @@ CreateFile2 = function (path) {
 				}
 				if (s) {
 					if (i == 2) {
-						r = fso.BuildPath(wsh.SpecialFolders("Templates"), s);
+						r = BuildPath(wsh.SpecialFolders("Templates"), s);
 						if (!fso.FileExists(r)) {
 							r = wsh.ExpandEnvironmentStrings("%SystemRoot%\\ShellNew\\") + s;
 						}
@@ -1994,11 +1866,11 @@ ExtractPath = function (Ctrl, s, pt) {
 			}
 			var res = /\.\.\\(.*)/.exec(s);
 			if (res) {
-				return fso.BuildPath(api.GetDisplayNameOf(api.ILGetParent(FV), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL), res[1]);
+				return BuildPath(api.GetDisplayNameOf(api.ILGetParent(FV), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL), res[1]);
 			}
 			res = /\.\\(.*)/.exec(s);
 			if (res) {
-				return fso.BuildPath(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL), res[1]);
+				return BuildPath(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL), res[1]);
 			}
 		}
 	}
@@ -2596,7 +2468,7 @@ MenusIcon = function (mii, src, nHeight, bIcon) {
 		if ("string" === typeof src) {
 			src = api.PathUnquoteSpaces(ExtractMacro(te, src));
 			if (!/:|^\\\\/i.test(src)) {
-				src = fso.BuildPath(te.Data.Installed, "script\\" + src);
+				src = BuildPath(te.Data.Installed, "script\\" + src);
 			}
 			mii.hbmpItem = MainWindow.g_arBM[[src, nHeight].join("\t")];
 			if (mii.hbmpItem) {
@@ -2716,7 +2588,7 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem, bTran
 
 SaveXmlEx = function (filename, xml) {
 	try {
-		filename = fso.BuildPath(te.Data.DataFolder, "config\\" + filename);
+		filename = BuildPath(te.Data.DataFolder, "config\\" + filename);
 		xml.save(filename);
 	} catch (e) {
 		if (e.number != E_ACCESSDENIED) {
@@ -2765,7 +2637,7 @@ GetAddonInfo = function (Id) {
 	var path = te.Data.Installed;
 	var xml = api.CreateObject("Msxml2.DOMDocument");
 	xml.async = false;
-	var xmlfile = fso.BuildPath(path, "addons\\" + Id + "\\config.xml");
+	var xmlfile = BuildPath(path, "addons", Id, "config.xml");
 	if (fso.FileExists(xmlfile)) {
 		xml.load(xmlfile);
 
@@ -2807,24 +2679,24 @@ GetAddonInfo2 = function (xml, info, Tag, bTrans) {
 OpenXml = function (strFile, bAppData, bEmpty, strInit) {
 	var xml = api.CreateObject("Msxml2.DOMDocument");
 	xml.async = false;
-	var path = fso.BuildPath(te.Data.DataFolder, "config\\" + strFile);
+	var path = BuildPath(te.Data.DataFolder, "config\\" + strFile);
 	if (fso.FileExists(path) && xml.load(path)) {
 		return xml;
 	}
 	if (!bAppData) {
-		path = fso.BuildPath(te.Data.Installed, "config\\" + strFile);
+		path = BuildPath(te.Data.Installed, "config\\" + strFile);
 		if (fso.FileExists(path) && xml.load(path)) {
-			api.SHFileOperation(FO_MOVE, path, fso.BuildPath(te.Data.DataFolder, "config"), FOF_SILENT | FOF_NOCONFIRMATION, false);
+			api.SHFileOperation(FO_MOVE, path, BuildPath(te.Data.DataFolder, "config"), FOF_SILENT | FOF_NOCONFIRMATION, false);
 			return xml;
 		}
 	}
 	if (strInit) {
-		path = fso.BuildPath(strInit, strFile);
+		path = BuildPath(strInit, strFile);
 		if (fso.FileExists(path) && xml.load(path)) {
 			return xml;
 		}
 	}
-	path = fso.BuildPath(te.Data.Installed, "init\\" + strFile);
+	path = BuildPath(te.Data.Installed, "init\\" + strFile);
 	if (fso.FileExists(path) && xml.load(path)) {
 		return xml;
 	}
@@ -2839,10 +2711,6 @@ CreateXml = function (bRoot) {
 		xml.appendChild(xml.createElement("TablacusExplorer"));
 	}
 	return xml;
-}
-
-DownloadFile = function (url, fn) {
-	return api.URLDownloadToFile(null, url, fn);
 }
 
 OptionRef = function (Id, s, pt) {
@@ -2961,7 +2829,7 @@ ShowDialogEx = function (mode, w, h, ele) {
 	opt.width = w;
 	opt.height = h;
 	opt.element = ele;
-	ShowDialog(fso.BuildPath(te.Data.Installed, "script\\dialog.html"), opt);
+	ShowDialog(BuildPath(te.Data.Installed, "script\\dialog.html"), opt);
 }
 
 ShowNew = function (Ctrl, pt, Mode) {
@@ -2976,8 +2844,8 @@ ShowNew = function (Ctrl, pt, Mode) {
 		opt.FV = FV;
 		opt.Modal = false;
 		opt.width = 480;
-		opt.height = 120;
-		ShowDialog(fso.BuildPath(te.Data.Installed, "script\\dialog.html"), opt);
+		opt.height = 128;
+		ShowDialog(BuildPath(te.Data.Installed, "script\\dialog.html"), opt);
 	}
 }
 
@@ -3365,7 +3233,7 @@ BasicDB = function (name) {
 
 	this.Close = function () { }
 
-	this.path = OrganizePath(name, fso.BuildPath(te.Data.DataFolder, "config")) + ".tsv";
+	this.path = OrganizePath(name, BuildPath(te.Data.DataFolder, "config")) + ".tsv";
 }
 
 SimpleDB = BasicDB;

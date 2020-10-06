@@ -21,8 +21,8 @@ function Resize2() {
 		}
 		o.style.height = h + "px";
 	}
-	ResizeSizeBar("Left", h);
-	ResizeSizeBar("Right", h);
+	ResizeSideBar("Left", h);
+	ResizeSideBar("Right", h);
 	o = document.getElementById("Background");
 	pt = GetPos(o);
 	te.offsetLeft = pt.x;
@@ -34,7 +34,7 @@ function Resize2() {
 	api.PostMessage(te.hwnd, WM_SIZE, 0, 0);
 }
 
-function ResizeSizeBar(z, h) {
+function ResizeSideBar(z, h) {
 	var o = g_.Locations;
 	var w = (o[z + "Bar1"] || o[z + "Bar2"] || o[z + "Bar3"]) ? te.Data["Conf_" + z + "BarWidth"] : 0;
 	o = document.getElementById(z.toLowerCase() + "bar");
@@ -56,8 +56,8 @@ function ResizeSizeBar(z, h) {
 	var th = Math.round(Math.max(h, 0));
 	o.style.height = th + "px";
 
-	var h2 = o.clientHeight - document.getElementById(z + "Bar1").offsetHeight - document.getElementById(z + "Bar3").offsetHeight;
-	document.getElementById(z + "Bar2").style.height = Math.abs(h2 - o.clientHeight - th) + "px";
+	var h2 = Math.max(o.clientHeight - document.getElementById(z + "Bar1").offsetHeight - document.getElementById(z + "Bar3").offsetHeight, 0);
+	document.getElementById(z + "Bar2").style.height = h2 + "px";
 }
 
 function ResetScroll() {
@@ -108,7 +108,7 @@ SetAddon = function (strName, Location, Tag, strVAlign) {
 			}
 			var res = /<img.*?src=["'](.*?)["']/i.exec(String(Tag));
 			if (res) {
-				strName += "\0" + res[1];
+				strName += "\t" + res[1];
 			}
 			g_.Locations[Location].push(strName);
 		}
@@ -235,13 +235,13 @@ UI.ExecGesture = function (Ctrl, hwnd, pt, str) {
 }
 
 UI.InitWindow = function (cb, cb2) {
-	setTimeout(function (cb) {
+	setTimeout(function () {
 		Resize();
-		(cb)(cb);
-		setTimeout(function (cb2) {
+		(cb)();
+		setTimeout(function () {
 			(cb2)();
-		}, 500, cb2);
-	}, 99, cb);
+		}, 500);
+	}, 99);
 }
 
 UI.ExitFullscreen = function () {
@@ -260,18 +260,15 @@ te.OnArrange = function (Ctrl, rc, cb) {
 		var Id = Ctrl.Id;
 		var o = ui_.Panels[Id];
 		if (!o) {
-			o = document.createElement("table");
-			o.id = "Panel_" + Id;
-			o.className = "layout";
-			o.style.position = "absolute";
-			o.style.zIndex = 1;
-			var s = '<tr><td id="InnerLeft_$" class="sidebar" style="width: 0; display: none; overflow: auto"></td><td style="width: 100%"><div id="InnerTop_$" style="display: none"></div>';
-			s += '<table id="InnerTop2_$" class="layout"><tr><td id="Inner1Left_$" class="toolbar1"></td><td id="Inner1Center_$" class="toolbar2" style="white-space: nowrap"></td><td id="Inner1Right_$" class="toolbar3"></td></tr></table>';
-			s += '<table id="InnerView_$" class="layout" style="width: 100%"><tr><td id="Inner2Left_$" style="width: 0"></td><td id="Inner2Center_$"></td><td id="Inner2Right_$" style="width: 0; overflow: auto"></td></tr></table>';
-			s += '<div id="InnerBottom_$"></div></td><td id="InnerRight_$" class="sidebar" style="width: 0; display: none"></td></tr>';
-			o.innerHTML = s.replace(/\$/g, Id);
-			document.getElementById("Panel").appendChild(o);
+			var s = ['<table id="Panel_$" class="layout" style="position: absolute; z-index: 1;">'];
+			s.push('<tr><td id="InnerLeft_$" class="sidebar" style="width: 0; display: none; overflow: auto"></td><td style="width: 100%"><div id="InnerTop_$" style="display: none"></div>');
+			s.push('<table id="InnerTop2_$" class="layout">');
+			s.push('<tr><td id="Inner1Left_$" class="toolbar1"></td><td id="Inner1Center_$" class="toolbar2" style="white-space: nowrap"></td><td id="Inner1Right_$" class="toolbar3"></td></tr></table>');
+			s.push('<table id="InnerView_$" class="layout" style="width: 100%"><tr><td id="Inner2Left_$" style="width: 0"></td><td id="Inner2Center_$"></td><td id="Inner2Right_$" style="width: 0; overflow: auto"></td></tr></table>');
+			s.push('<div id="InnerBottom_$"></div></td><td id="InnerRight_$" class="sidebar" style="width: 0; display: none"></td></tr></table>');
+			document.getElementById("Panel").insertAdjacentHTML("BeforeEnd", s.join("").replace(/\$/g, Id));
 			PanelCreated(Ctrl);
+			o = document.getElementById("Panel_" + Id);
 			ui_.Panels[Id] = o;
 			ApplyLang(o);
 			ChangeView(Ctrl.Selected);
@@ -316,6 +313,7 @@ g_.event.windowregistered = function (Ctrl) {
 	ui_.bWindowRegistered = true;
 }
 
+
 ArrangeAddons = function () {
 	g_.Locations = api.CreateObject("Object");
 	$.IconSize = te.Data.Conf_IconSize || screen.logicalYDPI / 4;
@@ -340,7 +338,7 @@ ArrangeAddons = function () {
 				if (!AddonId[Id]) {
 					var Enabled = GetNum(item.getAttribute("Enabled"));
 					if (Enabled & 6) {
-						LoadLang2(fso.BuildPath(te.Data.Installed, "addons\\" + Id + "\\lang\\" + GetLangId() + ".xml"));
+						LoadLang2(BuildPath(te.Data.Installed, "addons", Id, "lang", GetLangId() + ".xml"));
 					}
 					if (Enabled & 8) {
 						LoadAddon("vbs", Id, arError);
@@ -415,7 +413,7 @@ AddEventEx(window, "blur", ResetScroll);
 AddEventEx(document, "MSFullscreenChange", function () {
 	FullscreenChanged(document.msFullscreenElement != void 0);
 });
-	
+
 (function () {
 	UI.OnLoad();
 	InitCode();

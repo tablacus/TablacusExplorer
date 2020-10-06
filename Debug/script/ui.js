@@ -5,7 +5,44 @@ ui_ = {
 	bWindowRegistered: true,
 	Panels: {}
 };
+
 UI = api.CreateObject("Object");
+
+UI.OpenHttpRequest = OpenHttpRequest = function (url, alt, fn, arg) {
+	var xhr = createHttpRequest();
+	var fnLoaded = function () {
+		if (arg && arg.pcRef) {
+			arg.pcRef[0] = arg.pcRef[0] - 1;
+		}
+		if (xhr.status == 200) {
+			return fn(xhr, url, arg);
+		}
+		if (/^http/.test(alt)) {
+			return UI.OpenHttpRequest(/^https/.test(url) && alt == "http" ? url.replace(/^https/, alt) : alt, '', fn, arg);
+		}
+		ShowXHRError(url, xhr.status);
+	}
+	if (xhr.onload !== void 0) {
+		xhr.onload = fnLoaded;
+	} else {
+		xhr.onreadystatechange = function () {
+			if (xhr.readyState == 4) {
+				fnLoaded();
+			}
+		}
+	}
+	if (/ml$/i.test(url)) {
+		url += "?" + Math.floor(new Date().getTime() / 60000);
+	}
+	if (arg && arg.pcRef) {
+		arg.pcRef[0] = arg.pcRef[0] + 1;
+	}
+	if (window.chrome && /\.zip$/i.test(url)) {
+		xhr.responseType = "blob";
+	}
+	xhr.open("GET", url, true);
+	xhr.send();
+}
 
 UI.setTimeoutAsync = function (fn, tm, a, b, c, d) {
 	setTimeout(fn, tm, a, b, c, d);
@@ -17,12 +54,13 @@ UI.RunEvent1 = function () {
 	var args = Array.apply(null, arguments);
 	var en = args.shift();
 	var eo = eventTE[en.toLowerCase()];
-	for (var list = api.CreateObject("Enum", eo); !list.atEnd(); list.moveNext()) {
-		var fn = eo[list.item()];
+	var nLen = GetLength(eo);
+	for (var i = 0; i < nLen; ++i) {
+		var fn = eo[i];
 		try {
 			fn.apply(fn, args);
 		} catch (e) {
-			ShowError(e, en, list.item());
+			ShowError(e, en, i);
 		}
 	}
 }
@@ -38,8 +76,142 @@ UI.SetDisplay = function (Id, s) {
 	}
 }
 
-UI.Blur = function (Id) {
+UI.BlurId = BlurId = function (Id) {
 	document.getElementById(Id).blur();
+}
+
+UI.ShowOptions = function (opt) {
+	opt.event.onbeforeunload = function () {
+		MainWindow.g_.dlgs.Options = void 0;
+	};
+	g_.dlgs.Options = ShowDialog("options.html", opt);
+}
+
+function readAsDataURL(blob) {
+	return new Promise(function (resolve, reject) {
+		var reader = new FileReader();
+		reader.onload = function () {
+			resolve(reader.result);
+		};
+		reader.onerror = function () {
+			reject(reader.error);
+		};
+		reader.readAsDataURL(blob);
+	});
+}
+
+UI.Extract = Extract = function (Src, Dest, xhr) {
+	var hr;
+	if (xhr) {
+		if (window.chrome && xhr.response) {
+			xhr = readAsDataURL(xhr.response);
+		}
+		hr = DownloadFile(xhr, Src);
+		if (hr) {
+			return hr;
+		}
+	}
+	var eo = MainWindow.eventTE.extract;
+	var nLen = GetLength(eo);
+	for (var i = 0; i < nLen; ++i) {
+		var fn = eo[i];
+		try {
+			fn.apply(Src, Dest);
+		} catch (e) {
+			ShowError(e, "Extract", i);
+		}
+	}
+	return api.Extract(BuildPath(system32, "zipfldr.dll"), "{E88DCCE0-B7B3-11d1-A9F0-00AA0060FA31}", Src, Dest);
+}
+
+UI.DownloadFile = DownloadFile = function (url, fn) {
+	return api.URLDownloadToFile(null, url, fn);
+}
+
+UI.CheckUpdate2 = function (xhr, url, arg1) {
+	var arg = api.CreateObject("Object");
+	var Text = xhr.get_responseText ? xhr.get_responseText() : xhr.responseText;
+	var json = window.JSON ? JSON.parse(Text) : api.GetScriptDispatch("function fn () { return " + Text + "}", "JScript", {}).fn();
+	if (json.assets && json.assets[0]) {
+		arg.size = json.assets[0].size / 1024;
+		arg.url = json.assets[0].browser_download_url;
+	}
+	if (!arg.url) {
+		return;
+	}
+	arg.file = fso.GetFileName((arg.url).replace(/\//g, "\\"));
+	var ver = 0;
+	res = /(\d+)/.exec(arg.file);
+	if (res) {
+		ver = api.Add(20000000, res[1]);
+	}
+	if (ver <= AboutTE(0)) {
+		if ((arg1 && arg1.silent) || MessageBox(AboutTE(2) + "\n" + GetText("the latest version"), TITLE, MB_ICONINFORMATION)) {
+			if (api.GetKeyState(VK_SHIFT) >= 0 || api.GetKeyState(VK_CONTROL) >= 0) {
+				MainWindow.RunEvent1("CheckUpdate", arg1);
+				return;
+			}
+		}
+	}
+	if (!(arg1 && arg1.noconfirm)) {
+		var s = (api.LoadString(hShell32, 60) || "%").replace(/%.*/, api.sprintf(99, "%d.%d.%d (%.1lfKB)", ver / 10000 % 100, ver / 100 % 100, ver % 100, arg.size));
+		if (!confirmOk([GetText("Update available"), s, GetText("Do you want to install it now?")].join("\n"))) {
+			return;
+		}
+	}
+	arg.temp = BuildPath(wsh.ExpandEnvironmentStrings("%TEMP%"), "tablacus");
+	CreateFolder2(arg.temp);
+	arg.InstalledFolder = te.Data.Installed;
+	arg.zipfile = BuildPath(arg.temp, arg.file);
+	arg.temp = arg.temp + "\\explorer";
+	DeleteItem(arg.temp);
+	CreateFolder2(arg.temp);
+	OpenHttpRequest(arg.url, "http://tablacus.github.io/TablacusExplorerAddons/te/" + ((arg.url).replace(/^.*\//, "")), UI.CheckUpdate3, arg);
+}
+
+UI.CheckUpdate3 = function (xhr, url, arg) {
+	var hr = Extract(arg.zipfile, arg.temp, xhr);
+	if (hr) {
+		MessageBox([(api.LoadString(hShell32, 4228)).replace(/^\t/, "").replace("%d", api.sprintf(99, "0x%08x", hr)), GetText("Extract"), fso.GetFileName(arg.zipfile)].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
+		return;
+	}
+	var te_exe = arg.temp + "\\te64.exe";
+	var nDog = 300;
+	while (!fso.FileExists(te_exe)) {
+		if (wsh.Popup(GetText("Please wait."), 1, TITLE, MB_OKCANCEL) == IDCANCEL || nDog-- == 0) {
+			return;
+		}
+	}
+	var arDel = [];
+	var addons = arg.temp + "\\addons";
+	if (fso.FolderExists(arg.temp + "\\config")) {
+		arDel.push(arg.temp + "\\config");
+	}
+	for (var i = 32; i <= 64; i += 32) {
+		te_exe = arg.temp + '\\te' + i + '.exe';
+		var te_old = BuildPath(te.Data.Installed, 'te' + i + '.exe');
+		if (!fso.FileExists(te_old) || fso.GetFileVersion(te_exe) == fso.GetFileVersion(te_old)) {
+			arDel.push(te_exe);
+		}
+	}
+	for (var list = api.CreateObject("Enum", fso.GetFolder(addons).SubFolders); !list.atEnd(); list.moveNext()) {
+		var n = list.item().Name;
+		var items = te.Data.Addons.getElementsByTagName(n);
+		if (!items || GetLength(items) == 0) {
+			arDel.push(BuildPath(addons, n));
+		}
+	}
+	if (arDel.length) {
+		api.SHFileOperation(FO_DELETE, arDel, null, FOF_SILENT | FOF_NOCONFIRMATION, false);
+	}
+	var ppid = api.Memory("DWORD");
+	api.GetWindowThreadProcessId(te.hwnd, ppid);
+	arg.pid = ppid[0];
+	MainWindow.CreateUpdater(arg);
+}
+
+UI.GetIconSize = GetIconSize = function (h, a) {
+	return h || a * screen.logicalYDPI / 96 || window.IconSize;
 }
 
 InitUI = function () {
@@ -60,20 +232,25 @@ InitUI = function () {
 			}
 		}
 	}
+	var x;
 	if (!window.MainWindow) {
 		window.MainWindow = $;
-		var x;
 		while (x = MainWindow.dialogArguments || MainWindow.opener) {
 			MainWindow = x;
 			if (x = MainWindow.MainWindow) {
 				MainWindow = x;
 			}
 		}
+		if (x = MainWindow.$) {
+			MainWindow = x;
+		}
 	}
-	MainWindow.$ = MainWindow;
 	window.ParentWindow = (window.dialogArguments ? dialogArguments.opener : window.opener);
 	if (ParentWindow || !window.te) {
 		te = MainWindow.te;
+	}
+	if (x = ParentWindow && ParentWindow.$) {
+		ParentWindow = x;
 	}
 	var uid = location.hash.replace(/\D/g, "");
 	if (!window.dialogArguments && !window.opener) {
@@ -109,7 +286,7 @@ InitUI = function () {
 LoadScripts = function (js1, js2, cb) {
 	InitUI();
 	if (window.chrome) {
-		js1.unshift("consts.js", "common.js");
+		js1.unshift("consts.js", "common.js", "syncb.js");
 		var s = [];
 		var arFN = [];
 		var line = 1;
@@ -156,6 +333,8 @@ LoadScripts = function (js1, js2, cb) {
 		$.$JS = api.GetScriptDispatch(s.join(""), "JScript", o);
 		CopyObj(window, $, ["g_", "Addons", "eventTE", "eventTA", "Threads", "SimpleDB", "BasicDB;"]);
 		CopyObj(window, $, arFN);
+		CopyObj($, window, ["fso", "wsh"]);
+		$.g_.hwndBrowser = GetBrowserWindow();
 	} else {
 		$ = window;
 	}
@@ -168,8 +347,8 @@ ApplyLangTag = function (o) {
 			var s, s1;
 			if (s = o[i].innerHTML) {
 				var ar = s.split("<");
-				var re1 = /^([^>]*>\s*)(.*)(\s*)$/;
-				var re2 = /^(\s*)(.*)(\s*)$/;
+				var re1 = /^([^>]*>\s*)(.+)(\s*)$/;
+				var re2 = /^(\s*)(.+)(\s*)$/;
 				for (var j = ar.length; j-- > 0;) {
 					var res = re1.exec(ar[j]) || re2.exec(ar[j])
 					if (res) {
@@ -183,18 +362,18 @@ ApplyLangTag = function (o) {
 			}
 			s = o[i].title;
 			if (s) {
-				o[i].title = GetTextR(s).replace(/\(&\w\)|&/, "");
+				o[i].title = (GetTextR(s)).replace(/\(&\w\)|&/, "");
 			}
 			s = o[i].alt;
 			if (s) {
-				o[i].alt = GetTextR(s).replace(/\(&\w\)|&/, "");
+				o[i].alt = (GetTextR(s)).replace(/\(&\w\)|&/, "");
 			}
 		}
 	}
 }
 
 ApplyLang = function (doc) {
-	var i, o, h = 0;
+	var i, o, s, h = 0;
 	var FaceName = MainWindow.DefaultFont.lfFaceName;
 	if (doc.body) {
 		doc.body.style.fontFamily = FaceName;
@@ -220,12 +399,15 @@ ApplyLang = function (doc) {
 			if (!h && o[i].type == "text") {
 				h = o[i].offsetHeight;
 			}
-			o[i].placeholder = GetTextR(o[i].placeholder).replace(/\(&\w\)|&/, "");
-			if (o[i].type == "button") {
-				o[i].value = GetTextR(o[i].value).replace(/\(&\w\)|&/, "");
+			if (s = o[i].placeholder) {
+				o[i].placeholder = (GetTextR(s)).replace(/\(&\w\)|&/, "");
 			}
-			var s = ImgBase64(o[i], 0);
-			if (s) {
+			if (o[i].type == "button") {
+				if (s = o[i].value) {
+					o[i].value = (GetTextR(s)).replace(/\(&\w\)|&/, "");
+				}
+			}
+			if (s = ImgBase64(o[i], 0)) {
 				o[i].src = s;
 				if (o[i].type == "text") {
 					o[i].style.backgroundImage = "url('" + s + "')";
@@ -251,7 +433,8 @@ ApplyLang = function (doc) {
 		for (i = o.length; i--;) {
 			o[i].title = delamp(GetTextR(o[i].title));
 			for (var j = 0; j < o[i].length; ++j) {
-				o[i][j].text = GetTextR(o[i][j].text.replace(/^\n/, "").replace(/\n$/, ""));
+				var s = GetTextR(o[i][j].text);
+				o[i][j].text = s.replace(/^\n/, "").replace(/\n$/, "");
 			}
 		}
 	}
@@ -268,13 +451,15 @@ ApplyLang = function (doc) {
 		}
 	}
 	doc.title = GetTextR(doc.title);
-	setTimeout(function () {
-		var hwnd = api.GetParent(GetBrowserWindow(doc));
-		var s = api.GetWindowText(hwnd);
-		if (/ \-+ .*$/.test(s)) {
-			api.SetWindowText(hwnd, s.replace(/ \-+ .*$/, ""));
-		}
-	}, 500);
+}
+
+ImgBase64 = function (el, index) {
+	var src = ExtractMacro(te, el.src);
+	var s = MakeImgSrc(src, index, false, el.height);
+	if (!s && !SameText(el.src, src)) {
+		return src.replace(location.href.replace(/[^\/]*$/, ""), "file:///");
+	}
+	return s;
 }
 
 FireEvent = function (o, event) {
@@ -325,8 +510,16 @@ HitTest = function (o, pt) {
 	return false;
 }
 
-GetBrowserWindow = function (doc) {
-	return api.GetWindow(doc);
+GetBrowserWindow = function () {
+	return (window.chrome ? chrome.webview.hostObjects.hwnd : api.GetWindow(document));
+}
+
+GetTopWindow = function (hwnd) {
+	var hwnd1 = hwnd || GetBrowserWindow();
+	while (hwnd1 = api.GetParent(hwnd1)) {
+		hwnd = hwnd1;
+	}
+	return hwnd;
 }
 
 MouseOver = function (o) {
@@ -338,7 +531,7 @@ MouseOver = function (o) {
 		var pt = api.Memory("POINT");
 		api.GetCursorPos(pt);
 		var ptc = pt.Clone();
-		api.ScreenToClient(GetBrowserWindow, ptc);
+		api.ScreenToClient(GetBrowserWindow(), ptc);
 		if (o == document.elementFromPoint(ptc.x, ptc.y) || HitTest(o, pt)) {
 			ui_.objHover = o;
 			o.className = 'hover' + o.className;
@@ -448,7 +641,7 @@ LoadAddon = function (ext, Id, arError, param) {
 		if (ar.length == 1) {
 			ar.unshift("script");
 		}
-		var fn = "addons" + "\\" + Id + "\\" + ar.join(".");
+		var fn = BuildPath("addons", Id, ar.join("."));
 		var ado = OpenAdodbFromTextFile(fn, "utf-8");
 		if (ado) {
 			var s = ado.ReadText();
@@ -488,9 +681,9 @@ UI.OnLoad = function () {
 //Options
 AddonOptions = function (Id, fn, Data, bNew) {
 	var sParent = te.Data.Installed;
-	LoadLang2(fso.BuildPath(sParent, "addons\\" + Id + "\\lang\\" + GetLangId() + ".xml"));
+	LoadLang2(BuildPath(sParent, "addons\\" + Id + "\\lang\\" + GetLangId() + ".xml"));
 	var items = te.Data.Addons.getElementsByTagName(Id);
-	if (!items.length) {
+	if (!GetLength(items)) {
 		var root = te.Data.Addons.documentElement;
 		if (root) {
 			root.appendChild(te.Data.Addons.createElement(Id));
@@ -499,7 +692,7 @@ AddonOptions = function (Id, fn, Data, bNew) {
 	var info = GetAddonInfo(Id);
 	var sURL = "addons\\" + Id + "\\options.html";
 	if (!Data) {
-		Data = {};
+		Data = api.CreateObject("Object");;
 	}
 	Data.id = Id;
 	var sFeatures = info.Options;
@@ -513,7 +706,7 @@ AddonOptions = function (Id, fn, Data, bNew) {
 		Data.index = res[2];
 		sFeatures = 'Default';
 	}
-	sURL = fso.BuildPath(te.Data.Installed, sURL);
+	sURL = BuildPath(te.Data.Installed, sURL);
 	var opt = api.CreateObject("Object");
 	opt.MainWindow = MainWindow.$;
 	opt.Data = Data;
@@ -539,7 +732,7 @@ AddonOptions = function (Id, fn, Data, bNew) {
 			delete MainWindow.g_.dlgs[Id];
 		}
 		opt = api.CreateObject("Object");
-		opt.MainWindow = MainWindow.$;
+		opt.MainWindow = MainWindow;
 		opt.Data = Data;
 		opt.event = api.CreateObject("Object");
 		if (fn) {
@@ -558,7 +751,7 @@ AddonOptions = function (Id, fn, Data, bNew) {
 			}
 		}
 		opt.event.onbeforeunload = function () {
-			delete MainWindow.g_.dlgs[Id];
+			MainWindow.g_.dlgs[Id] = void 0;
 		}
 		MainWindow.g_.dlgs[Id] = ShowDialog(sURL, opt);
 		return;
@@ -601,7 +794,10 @@ ShowIconEx = function (o, mode) {
 }
 
 ShowLocationEx = function (s) {
-	ShowDialog(fso.BuildPath(te.Data.Installed, "script\\location.html"), { MainWindow: MainWindow, Data: s });
+	var opt = api.CreateObject("Object");
+	opt.MainWindow = MainWindow;
+	opt.Data = s;
+	ShowDialog(BuildPath(te.Data.Installed, "script\\location.html"), opt);
 }
 
 MakeKeySelect = function () {
@@ -667,13 +863,13 @@ CalcElementHeight = function (o, em) {
 	if (o) {
 		if (ui_.IEVer >= 9) {
 			o.style.height = "calc(100vh - " + em + "em)";
-		} else {
-			var h = document.documentElement.clientHeight || document.body.clientHeight;
-			h += MainWindow.DefaultFont.lfHeight * em;
-			if (h > 0) {
-				o.style.height = h + 'px';
-				o.style.height = 2 * h - o.offsetHeight + "px";
-			}
+			return;
+		}
+		var h = document.documentElement.clientHeight || document.body.clientHeight;
+		h += MainWindow.DefaultFont.lfHeight * em;
+		if (h > 0) {
+			o.style.height = h + 'px';
+			o.style.height = 2 * h - o.offsetHeight + "px";
 		}
 	}
 }
@@ -692,6 +888,22 @@ KeyShift = function (o) {
 KeySelect = function (o) {
 	var oKey = (document.E && document.E.KeyKey) || document.F.KeyKey || document.F.Key;
 	oKey.value = oKey.value.replace(/(\+)[^\+]*$|^[^\+]*$/, "$1") + o[o.selectedIndex].value;
+}
+
+createHttpRequest = function () {
+	var xhr = RunEvent4("createHttpRequest");
+	if (xhr !== void 0) {
+		return xhr;
+	}
+	try {
+		return window.XMLHttpRequest && ui_.IEVer >= 9 ? new XMLHttpRequest() : api.CreateObject("Msxml2.XMLHTTP");
+	} catch (e) {
+		return api.CreateObject("Microsoft.XMLHTTP");
+	}
+}
+
+ShowXHRError = function (url, status) {
+	MessageBox([api.sprintf(999, (api.LoadString(hShell32, 4227)).replace(/^\t/, ""), status), url].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
 }
 
 if (!window.JSON) {

@@ -1073,7 +1073,7 @@ LoadConfig = function (bDog) {
 			var path = items[0].getAttribute("Path");
 			if (path) {
 				path = ExtractMacro(te, path);
-				if (fso.FolderExists(fso.BuildPath(path, "config"))) {
+				if (fso.FolderExists(BuildPath(path, "config"))) {
 					te.Data.DataFolder = path;
 					LoadConfig(true);
 					return;
@@ -1170,7 +1170,7 @@ SaveConfig = function () {
 	}
 	if (te.Data.bSaveConfig) {
 		te.Data.bSaveConfig = false;
-		SaveConfigXML(fso.BuildPath(te.Data.DataFolder, "config\\window.xml"));
+		SaveConfigXML(BuildPath(te.Data.DataFolder, "config\\window.xml"));
 	}
 	if (te.Data.bSaveWindow) {
 		te.Data.bSaveWindow = false;
@@ -2204,7 +2204,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					}
 					if (te.Data.bSaveConfig) {
 						te.Data.bSaveConfig = false;
-						SaveConfigXML(fso.BuildPath(te.Data.DataFolder, "config\\window.xml"));
+						SaveConfigXML(BuildPath(te.Data.DataFolder, "config\\window.xml"));
 					}
 					if (te.Data.bReload) {
 						ReloadCustomize();
@@ -2524,7 +2524,7 @@ te.OnGetAlt = function (dwSessionId, s) {
 	for (var i in cFV) {
 		var FV = cFV[i];
 		if (dwSessionId == FV.SessionId) {
-			return fso.BuildPath(FV.FolderItem.Path, fso.GetFileName(s));
+			return BuildPath(FV.FolderItem.Path, fso.GetFileName(s));
 		}
 	}
 }
@@ -3158,7 +3158,7 @@ AddEnv("MenuSelected", function (Ctrl) {
 AddEnv("Installed", fso.GetDriveName(api.GetModuleFileName(null)));
 
 AddEnv("TE_Config", function () {
-	return fso.BuildPath(te.Data.DataFolder, "config");
+	return BuildPath(te.Data.DataFolder, "config");
 });
 
 RunSplitter = function (n) {
@@ -3172,7 +3172,7 @@ CreateUpdater = function (arg) {
 	if (isFinite(RunEvent3("CreateUpdater", arg))) {
 		return;
 	}
-	if (!IsExists(fso.BuildPath(arg.temp, fso.GetFileName(api.GetModuleFileName(null))))) {
+	if (!IsExists(BuildPath(arg.temp, fso.GetFileName(api.GetModuleFileName(null))))) {
 		api.SHFileOperation(FO_MOVE, arg.temp + "\\*", fso.GetParentFolderName(api.GetModuleFileName(null)), FOF_NOCONFIRMATION, false);
 		ReloadCustomize();
 		return;
@@ -3479,7 +3479,7 @@ if (!te.Data) {
 	te.Data.DataFolder = te.Data.Installed;
 
 	var fn = function () {
-		te.Data.DataFolder = fso.BuildPath(api.GetDisplayNameOf(ssfAPPDATA, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), "Tablacus\\Explorer");
+		te.Data.DataFolder = BuildPath(api.GetDisplayNameOf(ssfAPPDATA, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), "Tablacus\\Explorer");
 		var ParentFolder = fso.GetParentFolderName(te.Data.DataFolder);
 		if (!fso.FolderExists(ParentFolder)) {
 			if (fso.CreateFolder(ParentFolder)) {
@@ -3498,19 +3498,19 @@ if (!te.Data) {
 			break;
 		}
 	}
-	var s = fso.BuildPath(te.Data.DataFolder, "config");
+	var s = BuildPath(te.Data.DataFolder, "config");
 	CreateFolder2(s);
 	if (!fso.FolderExists(s)) {
 		fn();
-		CreateFolder2(fso.BuildPath(te.Data.DataFolder, "config"));
+		CreateFolder2(BuildPath(te.Data.DataFolder, "config"));
 	}
 	delete fn;
 	if (g_.IEVer < 8) {
-		var s = fso.BuildPath(te.Data.DataFolder, "cache");
+		var s = BuildPath(te.Data.DataFolder, "cache");
 		CreateFolder2(s);
-		CreateFolder2(fso.BuildPath(s, "bitmap"));
-		CreateFolder2(fso.BuildPath(s, "icon"));
-		CreateFolder2(fso.BuildPath(s, "file"));
+		CreateFolder2(BuildPath(s, "bitmap"));
+		CreateFolder2(BuildPath(s, "icon"));
+		CreateFolder2(BuildPath(s, "file"));
 	}
 	te.Data.Conf_Lang = GetLangId();
 	var SHIL = api.CreateObject("Array");
@@ -3536,9 +3536,9 @@ if (!te.Data) {
 		}
 	} catch (e) { }
 	api.SetWindowText(te.hwnd, TITLE);
-	te.Data.WindowSetting = fso.BuildPath(te.Data.DataFolder, "config\\window0.xml");
+	te.Data.WindowSetting = BuildPath(te.Data.DataFolder, "config\\window0.xml");
 	for (var i = 1; i < 999; ++i) {
-		var fn = fso.BuildPath(te.Data.DataFolder, "config\\window" + i + ".xml");
+		var fn = BuildPath(te.Data.DataFolder, "config\\window" + i + ".xml");
 		if (!o[fn]) {
 			te.Data.WindowSetting = fn;
 			break;

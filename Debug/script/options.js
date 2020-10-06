@@ -20,8 +20,8 @@ g_nSort = {
 	"1_1" : 1,
 	"1_3" : 1
 };
-
 g_ovPanel = null;
+g_elAddons = {};
 
 urlAddons = "https://tablacus.github.io/TablacusExplorerAddons/";
 urlIcons = urlAddons + "te/iconpacks/";
@@ -176,8 +176,8 @@ function ClickTree(o, nMode, strChg, bForce) {
 			if (res[3]) {
 				if (res[1] == 1) {
 					setTimeout(function (Id) {
-						if (g_.elAddons[Id]) {
-							if (!g_.elAddons[Id].contentWindow || !g_.elAddons[Id].contentWindow.document.body.innerHTML) {
+						if (g_elAddons[Id]) {
+							if (!g_elAddons[Id].contentWindow || !g_elAddons[Id].contentWindow.document.body.innerHTML) {
 								AddonOptions(Id, null, null, true);
 							}
 						}
@@ -446,14 +446,14 @@ function SwapTabControl() {
 }
 
 function InitConfig(o) {
-	var InstallPath = fso.GetParentFolderName(api.GetModuleFileName(null));
+	var InstallPath = te.Data.Installed;
 	if (InstallPath == te.Data.DataFolder) {
 		return;
 	}
 	if (!confirmOk()) {
 		return;
 	}
-	api.SHFileOperation(FO_MOVE, fso.BuildPath(InstallPath, "layout"), te.Data.DataFolder, 0, false);
+	api.SHFileOperation(FO_MOVE, BuildPath(InstallPath, "layout"), te.Data.DataFolder, 0, false);
 	o.disabled = true;
 }
 
@@ -480,7 +480,7 @@ function SwitchMenus(o) {
 			}
 		}
 	}
-	if (o) {
+	if (o && o.value) {
 		var a = o.value.split(",");
 		g_x.Menus = o.form["Menus_" + a[0]];
 		g_x.Menus.style.display = "inline";
@@ -770,7 +770,7 @@ function LoadMenus(nSelected) {
 		for (var i = 0; i < GetLength(arFunc); ++i) {
 			var o = oa[++oa.length - 1];
 			o.value = arFunc[i];
-			o.innerText = GetText(arFunc[i]);
+			o.innerText = GetText(o.value);
 		}
 
 		oa = document.F.Menus;
@@ -868,12 +868,12 @@ function LoadX(mode, fn, form) {
 		} else {
 			g_x[mode] = form.List;
 			g_x[mode].length = 0;
-			var path = fso.GetParentFolderName(api.GetModuleFileName(null));
+			var path = te.Data.Installed;
 			var xml = te.Data["xml" + AddonName];
 			if (!xml) {
 				xml = api.CreateObject("Msxml2.DOMDocument");
 				xml.async = false;
-				xml.load(fso.BuildPath(path, "config\\" + AddonName + ".xml"));
+				xml.load(BuildPath(path, "config", AddonName + ".xml"));
 				te.Data["xml" + AddonName] = xml;
 			}
 
@@ -979,7 +979,7 @@ function SaveAddons() {
 			var root = xml.createElement("TablacusExplorer");
 			var table = document.getElementById("Addons");
 			for (var j = 0; j < table.rows.length; ++j) {
-				var div = table.rows(j).cells(0).firstChild;
+				var div = table.rows[j].cells[0].firstChild;
 				var Id = div.id.replace("Addons_", "").toLowerCase();
 				var item = null;
 				var items = te.Data.Addons.getElementsByTagName(Id);
@@ -991,7 +991,7 @@ function SaveAddons() {
 				}
 				var Enabled = document.getElementById("enable_" + Id).checked;
 				if (Enabled) {
-					var AddonFolder = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\" + Id);
+					var AddonFolder = BuildPath(te.Data.Installed, "addons", Id);
 					Enabled = fso.FolderExists(AddonFolder + "\\lang") ? 2 : 0;
 					if (fso.FileExists(AddonFolder + "\\script.vbs")) {
 						Enabled |= 8;
@@ -1046,9 +1046,9 @@ function LoadAddons() {
 	}
 	g_x.Addons = true;
 
-	var AddonId = [];
+	var AddonId = {};
 	var wfd = api.Memory("WIN32_FIND_DATA");
-	var path = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\");
+	var path = BuildPath(te.Data.Installed, "addons\\");
 	var hFind = api.FindFirstFile(path + "*", wfd);
 	for (var bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = api.FindNextFile(hFind, wfd)) {
 		var Id = wfd.cFileName;
@@ -1112,11 +1112,11 @@ function SetAddon(Id, bEnable, td, Alt) {
 	if (bMinVer) {
 		bEnable = false;
 	}
-	var s = ['<div ', (Alt ? '' : 'draggable="true" ondragstart="Start5(this)" ondragend="End5(this)"'), ' title="', Id, '" Id="', Alt || "Addons_", Id, '"', bEnable ? "" : ' class="disabled"', '>'];
+	var s = ['<div ', (Alt ? '' : 'draggable="true" ondragstart="Start5(event, this)" ondragend="End5()"'), ' title="', Id, '" Id="', Alt || "Addons_", Id, '"', bEnable ? "" : ' class="disabled"', '>'];
 	s.push('<table><tr style="border-top: 1px solid buttonshadow"><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id + '">'), '</td><td style="width: 100%"><label for="_', Id, '">', info.Name, "&nbsp;", info.Version, '<br><a href="#" onclick="return AddonInfo(\'', Id, '\', this)"  class="link" style="font-size: .9em">', GetText('Details'), ' (', Id, ')</a>');
 	s.push(' <a href="#" onclick="AddonRemove(\'', Id, '\'); return false;" style="color: red; font-size: .9em; white-space: nowrap; margin-left: 2em">', GetText('Delete'), "</a>");
 	if (bMinVer) {
-		s.push('</td><td class="danger" style="align: right; white-space: nowrap; vertical-align: middle">', info.MinVersion.replace(/^20/, (api.LoadString(hShell32, 60) || "%").replace(/%.*/, "")).replace(/\.0/g, '.'), ' ', GetText("is required."), '</td>');
+		s.push('</td><td class="danger" style="align: right; white-space: nowrap; vertical-align: middle">', (info.MinVersion).replace(/^20/, (api.LoadString(hShell32, 60) || "%").replace(/%.*/, "")).replace(/\.0/g, '.'), ' ', GetText("is required."), '</td>');
 	} else if (info.Options) {
 		s.push('</td><td style="white-space: nowrap; vertical-align: middle; padding-right: 1em"><a href="#" onclick="AddonOptions(\'', Id, '\'); return false;" class="link" id="opt_', Id, '">', GetText('Options'), '</td>');
 	}
@@ -1133,25 +1133,22 @@ function SetAddon(Id, bEnable, td, Alt) {
 	}
 }
 
-function Start5(o) {
-	if (api.GetKeyState(VK_LBUTTON) < 0) {
-		event.dataTransfer.effectAllowed = 'move';
-		g_drag5 = o.id;
-		return true;
-	}
-	return false;
+function Start5(e, o) {
+	e.dataTransfer.effectAllowed = 'move';
+	g_drag5 = o.id;
+	return true;
 }
 
 function End5() {
 	g_drag5 = false;
 }
 
-function Over5() {
+function Over5(e) {
 	if (g_drag5) {
-		if (event.preventDefault) {
-			event.preventDefault();
+		if (e.preventDefault) {
+			e.preventDefault();
 		} else {
-			event.returnValue = false;
+			e.returnValue = false;
 		}
 	}
 }
@@ -1236,8 +1233,8 @@ function AddonMoveEx(src, dest) {
 	if (dest < 0 || dest >= table.rows.length || src == dest) {
 		return false;
 	}
-	var tr = table.rows(src);
-	var td = tr.cells(0);
+	var tr = table.rows[src];
+	var td = tr.cells[0];
 
 	var s = td.innerHTML
 	var md = td.onmousedown;
@@ -1274,7 +1271,7 @@ function AddonRemove(Id) {
 	sf.hwnd = api.GetForegroundWindow();
 	sf.wFunc = FO_DELETE;
 	sf.fFlags = 0;
-	sf.pFrom = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\" + Id) + "\0";
+	sf.pFrom = BuildPath(te.Data.Installed, "addons", Id);
 	if (api.SHFileOperation(sf) == 0) {
 		if (!sf.fAnyOperationsAborted) {
 			var table = document.getElementById("Addons");
@@ -1289,22 +1286,20 @@ function AddonRemove(Id) {
 }
 
 function ApplyOptions() {
-	var hwnd = GetBrowserWindow(document);
-	var hwnd1 = hwnd;
-	while (hwnd1 = api.GetParent(hwnd)) {
-		hwnd = hwnd1;
-	}
+	var hwnd = GetTopWindow(document);
 	if (api.GetKeyState(VK_SHIFT) >= 0 && !api.IsZoomed(hwnd) && !api.IsIconic(hwnd)) {
 		var r = 12 / (Math.abs(MainWindow.DefaultFont.lfHeight) || 12);
 		te.Data.Conf_OptWidth = GetNum(document.documentElement.offsetWidth || document.body.offsetWidth) * r;
 		te.Data.Conf_OptHeight = GetNum(document.documentElement.offsetHeight || document.body.offsetHeight) * r;
 	}
 	SetChanged(ReplaceMenus);
-	for (var i in document.F.elements) {
-		if (!/=|:/.test(i)) {
-			var res = /^(!?)(Tab_.+|Tree_.+|View_.+|Conf_.+)/.exec(i);
-			if (res && !/_$/.test(i)) {
-				var v = GetElementValue(document.F[i]);
+	for (var i = 0; i < document.F.elements.length; ++i) {
+		var o = document.F.elements[i];
+		var Id = o.name || o.id;
+		if (!/=|:/.test(Id)) {
+			var res = /^(!?)(Tab_.+|Tree_.+|View_.+|Conf_.+)/.exec(Id);
+			if (res && !/_$/.test(Id)) {
+				var v = GetElementValue(o);
 				te.Data[res[2]] = res[1] ? !v : v;
 			}
 		}
@@ -1340,16 +1335,18 @@ InitOptions = function () {
 	ApplyLang(document);
 	document.getElementById("tab1_3").innerHTML = api.sprintf(99, GetText("Get %s"), GetText("Icon"));
 	document.title = GetText("Options") + " - " + TITLE;
-	MainWindow.g_.OptionsWindow = window;
-	var InstallPath = fso.GetParentFolderName(api.GetModuleFileName(null));
-	document.F.ButtonInitConfig.disabled = (InstallPath == te.Data.DataFolder) | !fso.FolderExists(fso.BuildPath(InstallPath, "layout"));
-	for (i in document.F.elements) {
-		if (!/=|:/.test(i)) {
-			var res = /^(!?)(Tab_.+|Tree_.+|View_.+|Conf_.+)/.exec(i);
+	MainWindow.g_.OptionsWindow = $;
+	var InstallPath = te.Data.Installed;
+	document.F.ButtonInitConfig.disabled = (InstallPath == te.Data.DataFolder) | !fso.FolderExists(BuildPath(InstallPath, "layout"));
+	for (var i = 0; i < document.F.elements.length; ++i) {
+		var o = document.F.elements[i];
+		var Id = o.name || o.id;
+		if (!/=|:/.test(Id)) {
+			var res = /^(!?)(Tab_.+|Tree_.+|View_.+|Conf_.+)/.exec(Id);
 			if (res) {
 				var v = te.Data[res[2]];
 				if (v !== void 0 || res[1]) {
-					SetElementValue(document.F[i], res[1] ? !v : v);
+					SetElementValue(o, res[1] ? !v : v);
 				}
 			}
 		}
@@ -1363,13 +1360,6 @@ InitOptions = function () {
 	}
 	document.getElementById("tab2_").innerHTML = s.join("");
 
-	AddEventEx(window, "load", function () {
-		for (var i = 6; i--;) {
-			ClickButton(i, false);
-		}
-		SetTab(dialogArguments.Data);
-	});
-
 	AddEventEx(window, "resize", function () {
 		clearTimeout(g_tidResize);
 		g_tidResize = setTimeout(function () {
@@ -1379,9 +1369,9 @@ InitOptions = function () {
 
 	SetOnChangeHandler();
 	AddEventEx(window, "beforeunload", function () {
-		for (var i in g_.elAddons) {
+		for (var i in g_elAddons) {
 			try {
-				var w = g_.elAddons[i].contentWindow;
+				var w = g_elAddons[i].contentWindow;
 				w.g_nResult = g_nResult;
 				if (g_nResult == 1) {
 					w.TEOk();
@@ -1389,10 +1379,15 @@ InitOptions = function () {
 				w.close();
 			} catch (e) { }
 		}
-		g_.elAddons = {};
+		g_elAddons = {};
 		g_bChanged |= g_Chg.Addons || g_Chg.Menus || g_Chg.Tab || g_Chg.Tree || g_Chg.View;
 		SetOptions(ApplyOptions, CancelOptions);
 	});
+
+	for (var i = 6; i--;) {
+		ClickButton(i, false);
+	}
+	SetTab(dialogArguments.Data);
 }
 
 OpenIcon = function (o) {
@@ -1400,7 +1395,7 @@ OpenIcon = function (o) {
 		var data = [];
 		var a = o.id.split(/,/);
 		if (a[0] == "b") {
-			var dllpath = fso.BuildPath(system32, "ieframe.dll");
+			var dllpath = BuildPath(system32, "ieframe.dll");
 			a[0] = fso.GetFileName(dllpath);
 			var a1 = a[1];
 			var hModule = LoadImgDll(a, 0);
@@ -1430,7 +1425,7 @@ OpenIcon = function (o) {
 		} else {
 			dllPath = ExtractMacro(te, a[1]);
 			if (!/^[A-Z]:\\|^\\\\/i.test(dllPath)) {
-				dllPath = fso.BuildPath(system32, a[1]);
+				dllPath = BuildPath(system32, a[1]);
 			}
 			var nCount = api.ExtractIconEx(dllPath, -1, null, null, 0);
 			for (var i = 0; i < nCount; ++i) {
@@ -1451,9 +1446,9 @@ function SearchIcon(o) {
 	o.onclick = null;
 	var s = [];
 	var wfd = api.Memory("WIN32_FIND_DATA");
-	var hFind = api.FindFirstFile(fso.BuildPath(system32, "*"), wfd);
+	var hFind = api.FindFirstFile(BuildPath(system32, "*"), wfd);
 	for (var bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = api.FindNextFile(hFind, wfd)) {
-		var nCount = api.ExtractIconEx(fso.BuildPath(system32, wfd.cFileName), -1, null, null, 0);
+		var nCount = api.ExtractIconEx(BuildPath(system32, wfd.cFileName), -1, null, null, 0);
 		if (nCount) {
 			var id = "i," + wfd.cFileName.toLowerCase();
 			if (!document.getElementById(id)) {
@@ -1484,16 +1479,16 @@ InitDialog = function () {
 			"wmploc": "i,wmploc.dll",
 			"setupapi": "i,setupapi.dll",
 			"dsuiext": "i,dsuiext.dll",
-			"inetcpl": "i,inetcpl.cpl",
+			"inetcpl": "i,inetcpl.cpl"
 		};
 		var s = [];
 		var wfd = api.Memory("WIN32_FIND_DATA");
-		var path = fso.BuildPath(te.Data.DataFolder, "icons");
+		var path = BuildPath(te.Data.DataFolder, "icons");
 		var hFind = api.FindFirstFile(path + "\\*", wfd);
 		for (var bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = api.FindNextFile(hFind, wfd)) {
 			if ((wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && /^[a-z]/i.test(wfd.cFileName)) {
 				var arfn = [];
-				var path2 = fso.BuildPath(path, wfd.cFileName);
+				var path2 = BuildPath(path, wfd.cFileName);
 				var hFind2 = api.FindFirstFile(path2 + "\\*.png", wfd);
 				for (var bFind2 = hFind != INVALID_HANDLE_VALUE; bFind2; bFind2 = api.FindNextFile(hFind2, wfd)) {
 					arfn.push(wfd.cFileName);
@@ -1503,7 +1498,7 @@ InitDialog = function () {
 				});
 				for (var i = 0; i < arfn.length; ++i) {
 					var src = ["icon:" + fso.GetFileName(path2), arfn[i].replace(/\.png$/i, "")].join(",");
-					s.push('<img src="', fso.BuildPath(path2, arfn[i]), '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="', src, '" style="max-height: 24pt"> ');
+					s.push('<img src="', BuildPath(path2, arfn[i]), '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="', src, '" style="max-height: 24pt"> ');
 				}
 				s.push("<br>");
 			}
@@ -1517,7 +1512,7 @@ InitDialog = function () {
 		document.getElementById("Content").innerHTML = s.join("");
 	}
 	if (Query == "mouse") {
-		document.getElementById("Content").innerHTML = '<div id="Gesture" style="width: 100%; height: 100%; text-align: center" onmousedown="return MouseDown()" onmouseup="return MouseUp()" onmousemove="return MouseMove()" ondblclick="MouseDbl()" onmousewheel="return MouseWheel()"></div>';
+		document.getElementById("Content").innerHTML = '<div id="Gesture" style="width: 100%; height: 100%; text-align: center" onmousedown="return MouseDown(event)" onmouseup="return MouseUp(event)" onmousemove="return MouseMove(event)" ondblclick="MouseDbl()" onmousewheel="return MouseWheel()"></div>';
 		document.getElementById("Selected").innerHTML = '<input type="text" name="q" style="width: 100%" autocomplete="off" onkeydown="setTimeout(\'returnValue=document.F.q.value\',100)">';
 	}
 	if (Query == "key") {
@@ -1551,7 +1546,7 @@ InitDialog = function () {
 			setTimeout(function () {
 				document.F.ButtonOk.disabled = !document.F.path.value;
 			}, 99);
-			var key = (e || event).keyCode;
+			var key = e.keyCode;
 			if (key == VK_RETURN && document.F.path.value) {
 				SetResult(1);
 			}
@@ -1577,7 +1572,7 @@ InitDialog = function () {
 				path = document.F.path.value;
 				if (path) {
 					if (!/^[A-Z]:\\|^\\/i.test(path)) {
-						path = fso.BuildPath(dialogArguments.path, path.replace(/^\s+/, ""));
+						path = BuildPath(dialogArguments.path, path.replace(/^\s+/, ""));
 					}
 					if (GetElement("folder").checked) {
 						CreateFolder(path);
@@ -1599,8 +1594,8 @@ InitDialog = function () {
 		var s = ['<table style="border-spacing: 2em; border-collapse: separate; width: 100%"><tr><td>'];
 		var src = MakeImgSrc(api.GetModuleFileName(null), 0, true, 48);
 		s.push('<img src="', src, '"></td><td><span style="font-weight: bold; font-size: 120%">', AboutTE(2), '</span> (', GetTextR((api.sizeof("HANDLE") * 8) + '-bit'), ')<br>');
-		s.push('<br><a href="javascript:Run(0)" class="link">', api.GetModuleFileName(null), '</a> (', fso.GetFileVersion(api.GetModuleFileName(null)), ')<br>');
-		s.push('<br><a href="javascript:Run(1)" class="link">', fso.BuildPath(te.Data.DataFolder, "config"), '</a><br>');
+		s.push('<br><a href="#" class="link" onclick="Run(0, this)">', api.GetModuleFileName(null), '</a> (', fso.GetFileVersion(api.GetModuleFileName(null)), ')<br>');
+		s.push('<br><a href="#" class="link" onclick="Run(1, this)">', BuildPath(te.Data.DataFolder, "config"), '</a><br>');
 		s.push('<br><label>Information</label><input type="text" value="', AboutTE(3), '" style="width: 100%" onclick="this.select()" readonly><br>');
 		var root = te.Data.Addons.documentElement;
 		if (root) {
@@ -1622,15 +1617,17 @@ InitDialog = function () {
 		document.F.ButtonOk.disabled = false;
 		document.getElementById("buttonCancel").style.display = "none";
 
-		Run = function (n) {
-			var ar = [
-				'Navigate(api.GetModuleFileName(null) + "\\\\..", SBSP_NEWBROWSER)',
-				'Navigate(fso.BuildPath(te.Data.DataFolder, "config"), SBSP_NEWBROWSER)',
-				'wsh.Run("https://tablacus.github.io/explorer_en.html")',
-				'CheckUpdate()'
-			];
-			MainWindow.setTimeout(ar[n], 500);
-			window.close();
+		Run = function (n, el) {
+			setTimeout(function (n, path, hwnd) {
+				if (n == 2) {
+					wsh.Run("https://tablacus.github.io/explorer_en.html");
+				} else if (n == 3) {
+					MainWindow.CheckUpdate();
+				} else {
+					MainWindow.Navigate(path + (n ? "" : "\\\\.."), SBSP_NEWBROWSER);
+				}
+				CloseWindow();
+			}, 500, n, el && el.innerHTML, GetTopWindow());
 		}
 	}
 	if (dialogArguments.element) {
@@ -1657,13 +1654,13 @@ InitDialog = function () {
 	DialogResize();
 }
 
-MouseDown = function () {
+MouseDown = function (e) {
 	if (g_Gesture) {
 		var n = 1;
 		var ar = [0, 0, 2, 1];
 		for (i = 1; i < 6; ++i) {
 			if (g_Gesture.indexOf(i + "") < 0) {
-				if ((event.buttons && event.buttons & n) || event.button == ar[i]) {
+				if ((e.buttons && e.buttons & n) || e.button == ar[i]) {
 					returnValue += i + "";
 				}
 			}
@@ -1675,8 +1672,8 @@ MouseDown = function () {
 	}
 	document.F.q.value = returnValue;
 	g_Gesture = returnValue;
-	g_pt.x = event.clientX;
-	g_pt.y = event.clientY;
+	g_pt.x = e.clientX;
+	g_pt.y = e.clientY;
 	document.F.ButtonOk.disabled = false;
 	var o = document.getElementById("Gesture");
 	var s = o.style.height;
@@ -1690,13 +1687,13 @@ MouseUp = function () {
 	return false;
 }
 
-MouseMove = function () {
+MouseMove = function (e) {
 	if (api.GetKeyState(VK_XBUTTON1) < 0 || api.GetKeyState(VK_XBUTTON2) < 0) {
 		returnValue = GetGestureKey() + GetGestureButton();
 		document.F.q.value = returnValue;
 	}
 	if (document.F.q.value.length && (api.GetKeyState(VK_RBUTTON) < 0 || (te.Data.Conf_Gestures && (api.GetKeyState(VK_MBUTTON) < 0)))) {
-		var pt = { x: event.clientX, y: event.clientY };
+		var pt = { x: e.clientX, y: e.clientY };
 		var x = (pt.x - g_pt.x);
 		var y = (pt.y - g_pt.y);
 		if (Math.abs(x) + Math.abs(y) >= 20) {
@@ -1790,7 +1787,7 @@ InitLocation = function () {
 		locs[i] = [];
 		var item1 = items[i];
 		for (var j = GetLength(item1); j--;) {
-			var ar = item1[j].split("\0");
+			var ar = item1[j].split("\t");
 			locs[i].unshift(GetImgTag({ src: ar[1], title: GetAddonInfo(ar[0]).Name, "class": ar[1] ? "" : "text1" }, 16) + '<span style="font-size: 1px"> </span>');
 		}
 	}
@@ -2131,7 +2128,7 @@ function AddMouse(o) {
 
 function InitAddonOptions(bFlag) {
 	returnValue = false;
-	LoadLang2(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\" + Addon_Id + "\\lang\\" + GetLangId() + ".xml"));
+	LoadLang2(BuildPath(te.Data.Installed, "addons\\" + Addon_Id + "\\lang\\" + GetLangId() + ".xml"));
 
 	ApplyLang(document);
 	info = GetAddonInfo(Addon_Id);
@@ -2182,7 +2179,7 @@ function SetAddonOptions() {
 		if (returnValue) {
 			TEOk();
 		}
-		window.close();
+		CloseWindow();
 	}
 }
 
@@ -2226,13 +2223,13 @@ function SelectLangID(o) {
 	var i = 0;
 	var Langs = [];
 	var wfd = api.Memory("WIN32_FIND_DATA");
-	var hFind = api.FindFirstFile(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "lang\\*.xml"), wfd);
+	var hFind = api.FindFirstFile(BuildPath(te.Data.Installed, "lang\\*.xml"), wfd);
 	for (var bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = api.FindNextFile(hFind, wfd)) {
-		Langs.push(wfd.cFileName.replace(/\..*$/, ""));
+		Langs.push((wfd.cFileName).replace(/\..*$/, ""));
 	}
 	api.FindClose(hFind);
 	Langs.sort();
-	var path = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "lang\\");
+	var path = BuildPath(te.Data.Installed, "lang\\");
 	var hMenu = api.CreatePopupMenu();
 	for (i in Langs) {
 		var xml = api.CreateObject("Msxml2.DOMDocument");
@@ -2282,7 +2279,7 @@ function UpdateAddon(Id, o) {
 }
 
 function CheckAddon(Id) {
-	return fso.FileExists(fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\" + Id + "\\config.xml"));
+	return fso.FileExists(BuildPath(te.Data.Installed, "addons", Id, "config.xml"));
 }
 
 function AddonsSearch() {
@@ -2294,8 +2291,8 @@ function AddonsSearch() {
 	return true;
 }
 
-function AddonsKeyDown() {
-	if (event.keyCode == VK_RETURN) {
+function AddonsKeyDown(e) {
+	if (e.keyCode == VK_RETURN) {
 		AddonsSearch();
 	}
 	return true;
@@ -2346,12 +2343,9 @@ function AddonsAppend() {
 			Progress.SetTitle(Math.floor(100 * i / nLen) + "%");
 			Progress.SetProgress(i, nLen);
 		}
+		td.sort();
 		if (g_nSort["1_1"] == 1) {
-			td.sort(function (a, b) {
-				return b[0] - a[0];
-			});
-		} else {
-			td.sort();
+			td.reverse();
 		}
 		SetTable(document.getElementById("Addons1"), td);
 	} catch (e) {
@@ -2393,14 +2387,14 @@ function ArrangeAddon(xml, td, Progress) {
 					if (!installed.DllVersion) {
 						return;
 					}
-					var path = fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons\\" + Id);
+					var path = BuildPath(te.Data.Installed, "addons", Id);
 					var wfd = api.Memory("WIN32_FIND_DATA");
-					var hFind = api.FindFirstFile(fso.BuildPath(path, "*" + (api.sizeof("HANDLE") * 8) + ".dll"), wfd);
+					var hFind = api.FindFirstFile(BuildPath(path, "*" + (api.sizeof("HANDLE") * 8) + ".dll"), wfd);
 					api.FindClose(hFind);
 					if (hFind == INVALID_HANDLE_VALUE) {
 						return;
 					}
-					if (CalcVersion(installed.DllVersion) <= CalcVersion(fso.GetFileVersion(fso.BuildPath(path, wfd.cFileName)))) {
+					if (CalcVersion(installed.DllVersion) <= CalcVersion(fso.GetFileVersion(BuildPath(path, wfd.cFileName)))) {
 						return;
 					}
 				} catch (e) {
@@ -2466,11 +2460,11 @@ function Install(o, bUpdate) {
 function Install2(xhr, url, o) {
 	var Id = o.title.replace(/_.*$/, "");
 	var file = o.title.replace(/\./, "") + '.zip';
-	var temp = fso.BuildPath(wsh.ExpandEnvironmentStrings("%TEMP%"), "tablacus");
+	var temp = BuildPath(wsh.ExpandEnvironmentStrings("%TEMP%"), "tablacus");
 	CreateFolder(temp);
-	var dest = fso.BuildPath(temp, Id);
+	var dest = BuildPath(temp, Id);
 	DeleteItem(dest);
-	var hr = MainWindow.Extract(fso.BuildPath(temp, file), temp, xhr);
+	var hr = MainWindow.Extract(BuildPath(temp, file), temp, xhr);
 	if (hr) {
 		MessageBox([api.LoadString(hShell32, 4228).replace(/^\t/, "").replace("%d", api.sprintf(99, "0x%08x", hr)), GetText("Extract"), file].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
 		return;
@@ -2482,7 +2476,7 @@ function Install2(xhr, url, o) {
 			return;
 		}
 	}
-	api.SHFileOperation(FO_MOVE, dest, fso.BuildPath(fso.GetParentFolderName(api.GetModuleFileName(null)), "addons"), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, false);
+	api.SHFileOperation(FO_MOVE, dest, BuildPath(te.Data.Installed, "addons"), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, false);
 	o.disabled = true;
 	o.value = GetText("Installed");
 	o = document.getElementById('_Addons_' + Id);
@@ -2492,8 +2486,8 @@ function Install2(xhr, url, o) {
 	UpdateAddon(Id, o);
 }
 
-function IconsKeyDown() {
-	if (event.keyCode == VK_RETURN) {
+function IconsKeyDown(e) {
+	if (e.keyCode == VK_RETURN) {
 		IconPacksList();
 	}
 	return true;
@@ -2509,13 +2503,13 @@ function InstallIcon(o) {
 
 function InstallIcon2(xhr, url, o) {
 	var file = o.title.replace(/\./, "") + '.zip';
-	var temp = fso.BuildPath(wsh.ExpandEnvironmentStrings("%TEMP%"), "tablacus");
+	var temp = BuildPath(ExtractMacro(te, "%TEMP%"), "tablacus");
 	CreateFolder(temp);
-	var dest = fso.BuildPath(te.Data.DataFolder, "icons");
+	var dest = BuildPath(te.Data.DataFolder, "icons");
 	CreateFolder(dest);
-	var hr = MainWindow.Extract(fso.BuildPath(temp, file), dest, xhr);
+	var hr = Extract(BuildPath(temp, file), dest, xhr);
 	if (hr) {
-		MessageBox([api.LoadString(hShell32, 4228).replace(/^\t/, "").replace("%d", api.sprintf(99, "0x%08x", hr)), GetText("Extract"), file].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
+		MessageBox([(api.LoadString(hShell32, 4228)).replace(/^\t/, "").replace("%d", api.sprintf(99, "0x%08x", hr)), GetText("Extract"), file].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
 		return;
 	}
 	IconPacksList();
@@ -2565,7 +2559,7 @@ function IconPacksList(xhr) {
 		return;
 	}
 	var s;
-	var ado = OpenAdodbFromTextFile(fso.BuildPath(te.Data.DataFolder, "icons\\config.json"), "utf-8");
+	var ado = OpenAdodbFromTextFile(BuildPath(te.Data.DataFolder, "icons\\config.json"), "utf-8");
 	if (ado) {
 		s = ado.ReadText();
 		ado.Close();
@@ -2597,12 +2591,9 @@ function IconPacksList(xhr) {
 			}
 		}
 	}
+	td.sort();
 	if (g_nSort["1_3"] == 1) {
-		td.sort(function (a, b) {
-			return b[0] - a[0];
-		});
-	} else {
-		td.sort();
+		td.reverse();
 	}
 	if (json1.info) {
 		s = [];
@@ -2615,7 +2606,7 @@ function IconPacksList(xhr) {
 
 function DeleteIconPacks() {
 	if (confirmOk()) {
-		DeleteItem(fso.BuildPath(te.Data.DataFolder, "icons"));
+		DeleteItem(BuildPath(te.Data.DataFolder, "icons"));
 		IconPacksList();
 	}
 }
@@ -2635,6 +2626,14 @@ function EnableSelectTag(o) {
 
 SetResult = function (i) {
 	g_nResult = i;
+	CloseWindow();
+}
+
+function CloseWindow() {
+	if (window.chrome) {
+		api.PostMessage(GetTopWindow(), WM_CLOSE, 0, 0);
+		return;
+	}
 	window.close();
 }
 
@@ -2733,10 +2732,10 @@ function SortAddons(n) {
 			g_nSort[1] = n;
 			var s, ar = [];
 			for (var j = table.rows.length; j--;) {
-				var div = table.rows(j).cells(0).firstChild;
-				var Id = div.id.replace("Addons_", "").toLowerCase();
+				var div = table.rows[j].cells[0].firstChild || {};
+				var Id = (div.id || "").replace("Addons_", "").toLowerCase();
 				if (g_nSort[1] == 0) {
-					s = table.rows(j).cells(0).innerText;
+					s = table.rows[j].cells[0].innerText;
 				} else if (g_nSort[1] == 1) {
 					s = "";
 					var info = GetAddonInfo(Id);
@@ -2753,13 +2752,15 @@ function SortAddons(n) {
 			if (g_nSort[1] == 1) {
 				ar = ar.reverse();
 			}
-			var i = 0, td = [];
+			var bCancelled = false;
+			var i = 0;
 			var Progress = api.CreateObject("ProgressDialog");
 			Progress.SetAnimation(hShell32, 150);
 			Progress.StartProgressDialog(te.hwnd, null, 2);
 			try {
 				for (var i in ar) {
-					if (Progress.HasUserCancelled()) {
+					bCancelled = Progress.HasUserCancelled();
+					if (bCancelled) {
 						break;
 					}
 					Progress.SetTitle(Math.floor(100 * i / ar.length) + "%");
@@ -2773,7 +2774,6 @@ function SortAddons(n) {
 				ShowError(e);
 			}
 			Progress.StopProgressDialog();
-			var bCancelled = Progress.HasUserCancelled();
 			table.style.display = bCancelled ? "" : "none";
 			sorted.style.display = bCancelled ? "none" : "";
 		}

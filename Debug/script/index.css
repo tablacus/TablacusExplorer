@@ -90,25 +90,22 @@ form {
 	margin: 0;
 }
 
-.toolbar1 {
+.toolbar1, .toolbar2, .toolbar3 {
 	display: none;
 	margin: 1px 1px 1px 0;
 	padding: 1px 1px 1px 0;
+}
+
+.toolbar1 {
 	white-space: nowrap;
 	vertical-align: middle;
 }
 
 .toolbar2 {
-	display: none;
-	margin: 1px 1px 1px 0;
-	padding: 1px 1px 1px 0;
 	width: 100%
 }
 
 .toolbar3 {
-	display: none;
-	margin: 1px 0 1px 0;
-	padding: 1px 0 1px 0;
 	text-align: right;
 	white-space: nowrap;
 	vertical-align: middle;
@@ -130,7 +127,7 @@ form {
 	overflow: hidden;
 }
 
-.sidebar1 {
+.sidebar1, .sidebar2, .sidebar3 {
 	display: none;
 	word-break: break-all;
 	word-wrap: break-word;
@@ -140,23 +137,11 @@ form {
 }
 
 .sidebar2 {
-	display: none;
-	word-break: break-all;
-	word-wrap: break-word;
-	min-height: 100px;
-	overflow: hidden;
-	margin: 0;
-	padding: 0;
+	min-height: 50pt;
 }
 
 .sidebar3 {
-	display: none;
-	word-break: break-all;
-	word-wrap: break-word;
-	overflow: hidden;
 	vertical-align: bottom;
-	margin: 0;
-	padding: 0;
 }
 
 .tab0, .button0, .menu0 {
