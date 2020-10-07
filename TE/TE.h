@@ -172,13 +172,11 @@ public:
 	STDMETHODIMP QueryContinueDrag(BOOL fEscapePressed, DWORD grfKeyState);
 	STDMETHODIMP GiveFeedback(DWORD dwEffect);
 
-	CTE(int nCmdShow);
+	CTE(HWND hwnd);
 	~CTE();
-public:
-	VARIANT m_vData;
-	CteDropTarget2 *m_pDropTarget2;
 private:
 	LONG	m_cRef;
+	HWND	m_hwnd;
 };
 //
 class CteInternetSecurityManager : public IInternetSecurityManager
@@ -288,16 +286,17 @@ public:
 public:
 	VARIANT m_vData;
 	IWebBrowser2 *m_pWebBrowser;
+	IDispatch	*m_ppDispatch[Count_WBFunc];
 	BSTR	m_bstrPath;
 	HWND	m_hwndParent;
 	HWND	m_hwndBrowser;
 
 	HRESULT m_DragLeave;
 	BOOL	m_bRedraw;
+	BOOL	m_nClose;
 private:
 	CteFolderItems *m_pDragItems;
 	IDropTarget *m_pDropTarget;
-	IDispatch		*m_pExternal;
 	LONG	m_cRef;
 	DWORD	m_dwCookie;
 	DWORD	m_grfKeyState;

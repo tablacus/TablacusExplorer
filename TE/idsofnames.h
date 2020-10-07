@@ -882,8 +882,10 @@ TEmethod methodWB[] = {
 	{ TE_PROPERTY + 6, "Document" },
 	{ TE_PROPERTY + 7, "Window" },
 	{ TE_METHOD + 8, "Focus" },
-//	{ 0x10000009, "Close" },
-{ 0, NULL }
+	{ TE_METHOD + 9, "Close" },
+	{ TE_METHOD + 10, "PreventClose" },
+	{ START_OnFunc + WB_OnClose, "OnClose" },
+	{ 0, NULL }
 };
 
 TEmethod methodTC[] = {
@@ -961,7 +963,7 @@ TEmethod methodTV[] = {
 	{ TE_OFFSET + SB_TreeFlags, "Style" },
 	{ TE_OFFSET + SB_EnumFlags, "EnumFlags" },
 	{ TE_OFFSET + SB_RootStyle, "RootStyle" },
-	{ TE_METHOD + 0x2000, "SelectedItem" },
+	{ TE_PROPERTY + 0x2000, "SelectedItem" },
 	{ TE_METHOD + 0x2001, "SelectedItems" },
 	{ TE_PROPERTY + 0x2002, "Root" },
 	{ TE_METHOD + 0x2003, "SetRoot" },
