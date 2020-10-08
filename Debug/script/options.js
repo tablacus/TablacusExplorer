@@ -2507,7 +2507,7 @@ function InstallIcon2(xhr, url, o) {
 	CreateFolder(temp);
 	var dest = BuildPath(te.Data.DataFolder, "icons");
 	CreateFolder(dest);
-	var hr = Extract(BuildPath(temp, file), dest, xhr);
+	var hr = MainWindow.Extract(BuildPath(temp, file), dest, xhr);
 	if (hr) {
 		MessageBox([(api.LoadString(hShell32, 4228)).replace(/^\t/, "").replace("%d", api.sprintf(99, "0x%08x", hr)), GetText("Extract"), file].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
 		return;
