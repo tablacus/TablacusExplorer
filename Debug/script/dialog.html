@@ -27,8 +27,10 @@
       </table>
     </form>
     <script type="text/javascript">
-      LoadScript(["ui.js", "common.js"], function () {
-        LoadScripts(["sync.js"], ["options.js"], function () {
+      document.body.style.visibility = "hidden";
+      ScriptBase = "..";
+      LoadScript(["script/ui.js", "script/common.js"], function () {
+        LoadScripts(["script/sync.js"], ["script/options.js"], function () {
           InitDialog();
         });
       });

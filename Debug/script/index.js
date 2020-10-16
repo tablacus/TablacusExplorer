@@ -60,14 +60,15 @@ function ResizeSideBar(z, h) {
 	document.getElementById(z + "Bar2").style.height = h2 + "px";
 }
 
-function ResetScroll() {
+function ResetScroll () {
 	if (document.documentElement && document.documentElement.scrollLeft) {
 		document.documentElement.scrollLeft = 0;
 	}
 }
 
+
 function PanelCreated(Ctrl) {
-	UI.RunEvent1("PanelCreated", Ctrl);
+	RunEvent1("PanelCreated", Ctrl);
 }
 
 GetAddonLocation = function (strName) {
@@ -116,14 +117,12 @@ SetAddon = function (strName, Location, Tag, strVAlign) {
 	return Location;
 }
 
-UI.Resize = function () {
+Resize = UI.Resize = function () {
 	if (!ui_.tidResize) {
 		clearTimeout(ui_.tidResize);
 	}
 	ui_.tidResize = setTimeout(Resize2, 500);
 }
-
-Resize = UI.Resize;
 
 UI.OpenInExplorer = function (Path) {
 	setTimeout(function (Path) {
@@ -184,7 +183,7 @@ UI.SelectNewItem = function () {
 	setTimeout(function () {
 		var FV = te.Ctrl(CTRL_FV);
 		if (FV) {
-			if (!api.StrCmpI(FV.FolderItem.Path, fso.GetParentFolderName(g_.NewItemPath))) {
+			if (SameText(FV.FolderItem.Path, GetParentFolderName(g_.NewItemPath))) {
 				FV.SelectItem(g_.NewItemPath, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK | SVSI_SELECT);
 			}
 		}
@@ -239,6 +238,8 @@ UI.InitWindow = function (cb, cb2) {
 		Resize();
 		(cb)();
 		setTimeout(function () {
+			ApplyLang(document);
+			Resize();
 			(cb2)();
 		}, 500);
 	}, 99);
@@ -249,6 +250,8 @@ UI.ExitFullscreen = function () {
 		document.msExitFullscreen();
 	}
 }
+
+importJScript = $.importScript;
 
 te.OnArrange = function (Ctrl, rc, cb) {
 	var Type = Ctrl.Type;
@@ -316,7 +319,7 @@ g_.event.windowregistered = function (Ctrl) {
 
 ArrangeAddons = function () {
 	g_.Locations = api.CreateObject("Object");
-	$.IconSize = te.Data.Conf_IconSize || screen.logicalYDPI / 4;
+	$.IconSize = te.Data.Conf_IconSize || screen.deviceYDPI / 4;
 	var xml = OpenXml("addons.xml", false, true);
 	te.Data.Addons = xml;
 	if (api.GetKeyState(VK_SHIFT) < 0 && api.GetKeyState(VK_CONTROL) < 0) {
@@ -360,7 +363,8 @@ ArrangeAddons = function () {
 			}
 		}
 	}
-	UI.RunEvent1("BrowserCreated", document);
+	RunEventUI("BrowserCreatedEx");
+	RunEvent1("BrowserCreated", document);
 	var cl = GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor);
 	ArrangeAddons1(cl);
 }

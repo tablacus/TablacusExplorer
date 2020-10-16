@@ -3827,12 +3827,14 @@ BOOL GetDataObjFromObject(IDataObject **ppDataObj, IUnknown *punk)
 	return FALSE;
 }
 
-BOOL GetDataObjFromVariant(IDataObject **ppDataObj, VARIANT *pv)
+BOOL GetDataObjFromVariant2(IDataObject **ppDataObj, VARIANT *pv)
 {
 	*ppDataObj = NULL;
 	IUnknown *punk;
-	if (FindUnknown(pv, &punk) && GetDataObjFromObject(ppDataObj, punk)) {
-		return TRUE;
+	if (FindUnknown(pv, &punk)) {
+		if (GetDataObjFromObject(ppDataObj, punk)) {
+			return TRUE;
+		}
 	}
 	LPITEMIDLIST pidl = NULL;
 	if (teGetIDListFromVariant(&pidl, pv)) {
@@ -3843,6 +3845,25 @@ BOOL GetDataObjFromVariant(IDataObject **ppDataObj, VARIANT *pv)
 			pSF->Release();
 		}
 		teCoTaskMemFree(pidl);
+	}
+	return *ppDataObj != NULL;
+}
+
+BOOL GetDataObjFromVariant(IDataObject **ppDataObj, VARIANT *pv)
+{
+	if (GetDataObjFromVariant2(ppDataObj, pv)) {
+		return TRUE;
+	}
+	IDispatch *pdisp;
+	if (GetDispatch(pv, &pdisp)) {
+		VARIANT vResult;
+		VariantInit(&vResult);
+		Invoke4(pdisp, &vResult, 0, NULL);
+		if (vResult.vt != VT_EMPTY) {
+			GetDataObjFromVariant2(ppDataObj, &vResult);
+			VariantClear(&vResult);
+		}
+		pdisp->Release();
 	}
 	return *ppDataObj != NULL;
 }
@@ -5084,8 +5105,11 @@ HRESULT ControlFromhwnd(IDispatch **ppdisp, HWND hwnd)
 	if (g_hwndMain == hwnd && g_pTE) {
 		return g_pTE->QueryInterface(IID_PPV_ARGS(ppdisp));
 	}
-	if (g_pWebBrowser && IsChild(g_pWebBrowser->get_HWND(), hwnd)) {
-		return g_pWebBrowser->QueryInterface(IID_PPV_ARGS(ppdisp));
+	if (g_pWebBrowser) {
+		HWND hwndBrowser = g_pWebBrowser->get_HWND();
+		if (hwnd == hwndBrowser || IsChild(hwndBrowser, hwnd)) {
+			return g_pWebBrowser->QueryInterface(IID_PPV_ARGS(ppdisp));
+		}
 	}
 	return E_FAIL;
 }
@@ -10019,9 +10043,23 @@ VOID teApiGetProp(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pV
 
 VOID teApiInvoke(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	IDispatch *pdisp;
+	IDispatch *pdisp, *pArgs;
 	if (GetDispatch(&pDispParams->rgvarg[nArg], &pdisp)) {
-		Invoke4(pdisp, pVarResult, -nArg, pDispParams->rgvarg);
+		int nLen = 0;
+		if (nArg == 1 && GetDispatch(&pDispParams->rgvarg[nArg - 1], &pArgs)) {
+			nLen = teGetObjectLength(pArgs);
+			if (nLen) {
+				VARIANT *pvArgs = GetNewVARIANT(nLen);
+				for (int i = nLen; i > 0; --i) {
+					teGetPropertyAt(pArgs, i - 1, &pvArgs[nLen - i]);
+				}
+				Invoke4(pdisp, pVarResult, nLen, pvArgs);
+			}
+			SafeRelease(&pArgs);
+		}
+		if (nLen == 0) {
+			Invoke4(pdisp, pVarResult, -nArg, pDispParams->rgvarg);
+		}
 		pdisp->Release();
 	}
 }
@@ -10514,6 +10552,26 @@ VOID teGetDarkMode()
 BOOL CanClose(PVOID pObj)
 {
 	return DoFunc(TE_OnClose, pObj, S_OK) != S_FALSE;
+}
+
+VOID teSetObjectRects(IUnknown *punk, HWND hwnd)
+{
+	IOleInPlaceObject *pOleInPlaceObject;
+	punk->QueryInterface(IID_PPV_ARGS(&pOleInPlaceObject));
+	RECT rc;
+	GetClientRect(hwnd, &rc);
+	pOleInPlaceObject->SetObjectRects(&rc, &rc);
+	pOleInPlaceObject->Release();
+	if (g_bBlink) {
+		IWebBrowser2 *pWB2;
+		if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pWB2))) {
+			POINT pt = { 0, 0 };
+			ClientToScreen(hwnd, &pt);
+			pWB2->put_Left(pt.x);
+			pWB2->put_Top(pt.y);
+			pWB2->Release();
+		}
+	}
 }
 
 VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
@@ -11513,14 +11571,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				return 0;
 			case WM_SIZE:
 				if (g_pWebBrowser) {
-					IOleInPlaceObject *pOleInPlaceObject;
-					g_pWebBrowser->m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&pOleInPlaceObject));
-					RECT rc;
-					GetClientRect(hWnd, &rc);
-					pOleInPlaceObject->SetObjectRects(&rc, &rc);
-					pOleInPlaceObject->Release();
+					teSetObjectRects(g_pWebBrowser->m_pWebBrowser, hWnd);
 				}
 				ArrangeWindow();
+				break;
+			case WM_MOVE:
+				if (g_pWebBrowser) {
+					teSetObjectRects(g_pWebBrowser->m_pWebBrowser, hWnd);
+				}
 				break;
 			case WM_DESTROY:
 				try {
@@ -11763,13 +11821,9 @@ LRESULT CALLBACK WndProc2(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				DestroyWindow(hWnd);
 				return 0;
 			case WM_SIZE:
+			case WM_MOVE:
 				if (teGetSubWindow(hWnd, &pWB)) {
-					RECT rc;
-					GetClientRect(hWnd, &rc);
-					IOleInPlaceObject *pOleInPlaceObject;
-					pWB->m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&pOleInPlaceObject));
-					pOleInPlaceObject->SetObjectRects(&rc, &rc);
-					pOleInPlaceObject->Release();
+					teSetObjectRects(pWB->m_pWebBrowser, hWnd);
 				}
 				break;
 			case WM_ACTIVATE:
@@ -17828,6 +17882,9 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			return S_OK;
 
 		case TE_PROPERTY + 6://Document
+			if (g_bBlink && nArg >= 0) {
+				m_pWebBrowser->PutProperty(L"document", pDispParams->rgvarg[nArg]);
+			}
 			if SUCCEEDED(m_pWebBrowser->get_Document(&pdisp)) {
 				teSetObjectRelease(pVarResult, pdisp);
 			}
@@ -17840,7 +17897,14 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			return S_OK;
 
 		case TE_METHOD + 8://Focus
-			teSetForegroundWindow(m_hwndParent);
+			if (g_bBlink) {
+				IOleInPlaceObject *pOleInPlaceObject;
+				m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&pOleInPlaceObject));
+				pOleInPlaceObject->ReactivateAndUndo();
+				pOleInPlaceObject->Release();
+			} else {
+				teSetForegroundWindow(m_hwndParent);
+			}
 			return S_OK;
 			
 		case TE_METHOD + 9://Close
@@ -17895,7 +17959,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				}
 				if (g_bInit) {
 					g_bInit = FALSE;
-					SetTimer(g_hwndMain, TET_Create, 100, teTimerProc);
+					SetTimer(g_hwndMain, TET_Create, g_bBlink ? 500 : 100, teTimerProc);
 				}
 				if (g_hwndMain != m_hwndParent) {
 					teShowWindow(m_hwndParent, SW_SHOWNORMAL);
@@ -22270,12 +22334,7 @@ VOID  CteTreeView::Expand()
 VOID CteTreeView::SetObjectRect()
 {
 	if (m_pShellNameSpace) {
-		RECT rc;
-		GetClientRect(m_hwnd, &rc);
-		IOleInPlaceObject *pOleInPlaceObject;
-		m_pShellNameSpace->QueryInterface(IID_PPV_ARGS(&pOleInPlaceObject));
-		pOleInPlaceObject->SetObjectRects(&rc, &rc);
-		pOleInPlaceObject->Release();
+		teSetObjectRects(m_pShellNameSpace, m_hwnd);
 	}
 }
 #endif

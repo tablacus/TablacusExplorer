@@ -351,7 +351,7 @@ g_basic =
 
 			Ref: function (s, pt) {
 				var r = g_basic.Popup(g_basic.Func["Selected items"].Cmd, s, pt);
-				if (api.StrCmpI(r, GetText("Send to...")) == 0) {
+				if (SameText(r, GetText("Send to..."))) {
 					var Folder = sha.NameSpace(ssfSENDTO);
 					if (Folder) {
 						var Items = Folder.Items();
@@ -367,7 +367,7 @@ g_basic =
 					}
 					return 1;
 				}
-				if (api.StrCmpI(r, GetText("Open with...")) == 0) {
+				if (SameText(r, GetText("Open with..."))) {
 					r = OpenDialog(s);
 					if (!r) {
 						r = 1;
@@ -1184,6 +1184,41 @@ SaveConfig = function () {
 	}
 }
 
+SaveAddons = function (Addons) {
+	te.Data.bErrorAddons = false;
+	var xml = CreateXml();
+	var root = xml.createElement("TablacusExplorer");
+	for (var Id in Addons) {
+		var item = null;
+		var items = te.Data.Addons.getElementsByTagName(Id);
+		if (items.length) {
+			item = items[0].cloneNode(true);
+		}
+		if (!item) {
+			item = xml.createElement(Id);
+		}
+		var Enabled = Addons[Id];
+		if (Enabled) {
+			var AddonFolder = BuildPath(te.Data.Installed, "addons", Id);
+			Enabled = fso.FolderExists(AddonFolder + "\\lang") ? 2 : 0;
+			if (fso.FileExists(AddonFolder + "\\script.vbs")) {
+				Enabled |= 8;
+			}
+			if (fso.FileExists(AddonFolder + "\\script.js")) {
+				Enabled |= 1;
+			}
+			Enabled = (Enabled & 9) ? Enabled : 4;
+		} else {
+			AddonDisabled(Id);
+		}
+		item.setAttribute("Enabled", Enabled);
+		root.appendChild(item);
+	}
+	xml.appendChild(root);
+	te.Data.Addons = xml;
+	RunEvent1("ConfigChanged", "Addons");
+}
+
 AddEvent("Refresh", function (Ctrl, pt) {
 	var FV = GetFolderView(Ctrl, pt);
 	if (FV) {
@@ -1934,7 +1969,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 					continue;
 				}
 				var cmd2 = ExtractMacro(te, cmd);
-				if (api.StrCmpI(cmd, cmd2)) {
+				if (!SameText(cmd, cmd2)) {
 					ShellExecute(cmd2.replace(/"?%1"?|%L/g, api.PathQuoteSpaces(path)).replace(/%\*|%I/g, ""), null, nShow, Directory);
 					continue;
 				}
@@ -1961,7 +1996,7 @@ AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, 
 		for (var i = 0; i < Items.Count; ++i) {
 			var Item = Items.Item(i);
 			var path = Item.ExtendedProperty("linktarget") || Item.Path;
-			Navigate(fso.GetParentFolderName(path), SBSP_NEWBROWSER);
+			Navigate(GetParentFolderName(path), SBSP_NEWBROWSER);
 			api.Invoke(UI.SelectItem, te.Ctrl(CTRL_FV), path, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS, 99);
 			return S_OK;
 		}
@@ -2193,7 +2228,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					}
 					break;
 				case WM_ACTIVATE:
-					delete g_.focused;
+					g_.focused = void 0;
 					if (te.Data.bSaveMenus) {
 						te.Data.bSaveMenus = false;
 						SaveXmlEx("menus.xml", te.Data.xmlMenus);
@@ -2505,10 +2540,10 @@ te.OnReplacePath = function (Ctrl, Path) {
 				return Path.slice(0, i);
 			}
 		}
-		var fn = fso.GetFileName(Path);
+		var fn = GetFileName(Path);
 		if (/[\*\?]/.test(fn)) {
 			Ctrl.FilterView = fn;
-			return fso.GetParentFolderName(Path);
+			return GetParentFolderName(Path);
 		}
 	}
 	var res = IsSearchPath(Path);
@@ -2524,7 +2559,7 @@ te.OnGetAlt = function (dwSessionId, s) {
 	for (var i in cFV) {
 		var FV = cFV[i];
 		if (dwSessionId == FV.SessionId) {
-			return BuildPath(FV.FolderItem.Path, fso.GetFileName(s));
+			return BuildPath(FV.FolderItem.Path, GetFileName(s));
 		}
 	}
 }
@@ -2724,7 +2759,7 @@ ChangeNotifyFV = function (lEvent, item1, item2) {
 					}
 				}
 				if (FV.hwndView) {
-					var bChild = !api.StrCmpI(fso.GetParentFolderName(path1), path);
+					var bChild = SameText(GetParentFolderName(path1), path);
 					if (bChild) {
 						if (FV.hwndList) {
 							var item = api.Memory("LVITEM");
@@ -3172,8 +3207,8 @@ CreateUpdater = function (arg) {
 	if (isFinite(RunEvent3("CreateUpdater", arg))) {
 		return;
 	}
-	if (!IsExists(BuildPath(arg.temp, fso.GetFileName(api.GetModuleFileName(null))))) {
-		api.SHFileOperation(FO_MOVE, arg.temp + "\\*", fso.GetParentFolderName(api.GetModuleFileName(null)), FOF_NOCONFIRMATION, false);
+	if (!IsExists(BuildPath(arg.temp, GetFileName(api.GetModuleFileName(null))))) {
+		api.SHFileOperation(FO_MOVE, arg.temp + "\\*", GetParentFolderName(api.GetModuleFileName(null)), FOF_NOCONFIRMATION, false);
 		ReloadCustomize();
 		return;
 	}
@@ -3237,7 +3272,7 @@ AutocompleteThread = function () {
 }
 
 AdjustAutocomplete = function (path) {
-	if (te.Data.Conf_NoAutocomplete) {
+	if (te.Data.Conf_NoAutocomplete || window.chrome) {
 		return;
 	}
 	var o = api.CreateObject("Object");
@@ -3359,6 +3394,9 @@ InitMenus = function () {
 }
 
 InitWindow = function () {
+	if (api.GetKeyState(VK_SHIFT) < 0 && api.GetKeyState(VK_CONTROL) < 0) {
+		ShowOptions("Tab=Add-ons");
+	}
 	if (g_.xmlWindow && "string" !== typeof g_.xmlWindow) {
 		LoadXml(g_.xmlWindow);
 	}
@@ -3475,12 +3513,12 @@ if (!te.Data) {
 	te.Data.Conf_TreeDefault = true;
 	te.Data.Conf_ListDefault = true;
 
-	te.Data.Installed = fso.GetParentFolderName(api.GetModuleFileName(null));
+	te.Data.Installed = GetParentFolderName(api.GetModuleFileName(null));
 	te.Data.DataFolder = te.Data.Installed;
 
 	var fn = function () {
 		te.Data.DataFolder = BuildPath(api.GetDisplayNameOf(ssfAPPDATA, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), "Tablacus\\Explorer");
-		var ParentFolder = fso.GetParentFolderName(te.Data.DataFolder);
+		var ParentFolder = GetParentFolderName(te.Data.DataFolder);
 		if (!fso.FolderExists(ParentFolder)) {
 			if (fso.CreateFolder(ParentFolder)) {
 				CreateFolder2(te.Data.DataFolder);

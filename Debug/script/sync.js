@@ -15,8 +15,8 @@ eventTE.Environment = api.CreateObject("Object");
 eventTA = api.CreateObject("Object");
 
 g_ptDrag = api.Memory("POINT");
-window.Addons = api.CreateObject("Object");
-Addons["_stack"] = api.CreateObject("Array");
+window.Common = api.CreateObject("Object");
+Common["_stack"] = api.CreateObject("Array");
 
 g_ = api.CreateObject("Object");
 g_.Colors = api.CreateObject("Object")
@@ -77,7 +77,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201007 ? te.Version : 20201009;
+		return te.Version < 20201016 ? te.Version : 20201016;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -117,17 +117,6 @@ AboutTE = function (n) {
 
 GetFolderView = function (Ctrl, pt, bStrict) {
 	if (!Ctrl) {
-		return te.Ctrl(CTRL_FV);
-	}
-	if (!Ctrl.Type) {
-		var o = Ctrl.offsetParent;
-		while (o) {
-			var res = /^Panel_(\d+)$/.exec(o.id);
-			if (res) {
-				return te.Ctrl(CTRL_TC, res[1]).Selected;
-			}
-			o = o.offsetParent
-		}
 		return te.Ctrl(CTRL_FV);
 	}
 	if (Ctrl.Type <= CTRL_EB) {
@@ -252,7 +241,7 @@ OpenDialogEx = function (path, filter, bFilesOnly) {
 	}
 	path = api.PathUnquoteSpaces(ExtractMacro(te, path));
 	if (!api.PathIsDirectory(path)) {
-		path = fso.GetParentFolderName(path);
+		path = GetParentFolderName(path);
 		if (!api.PathIsDirectory(path)) {
 			path = fso.GetDriveName(te_path);
 		}
@@ -318,7 +307,7 @@ ShellExecute = function (s, vOperation, nShow, vDir2, pt) {
 	var cmd = ExtractMacro(te, s);
 	var res = /^\s*"([^"]*)"\s*(.*)/.exec(cmd) || /^\s*([^\s]*)\s*(.*)/.exec(cmd);
 	if (res) {
-		var vDir = fso.GetParentFolderName(res[1]) || vDir2;
+		var vDir = GetParentFolderName(res[1]) || vDir2;
 		if (pt && vDir.Type) {
 			vDir = (GetFolderView(Ctrl, pt) || { FolderItem: {} }).FolderItem.Path;
 		}
@@ -332,7 +321,7 @@ RunEvent1 = function () {
 	var eo = eventTE[en.toLowerCase()];
 	for (var i in eo) {
 		try {
-			eo[i].apply(eo[i], args);
+			api.Invoke(eo[i], args);
 		} catch (e) {
 			ShowError(e, en, i);
 		}
@@ -345,7 +334,7 @@ RunEvent2 = function () {
 	var eo = eventTE[en.toLowerCase()];
 	for (var i in eo) {
 		try {
-			var hr = eo[i].apply(null, args);
+			var hr = api.Invoke(eo[i], args);
 			if (isFinite(hr) && hr != S_OK) {
 				return hr;
 			}
@@ -362,7 +351,7 @@ RunEvent3 = function () {
 	var eo = eventTE[en.toLowerCase()];
 	for (var i in eo) {
 		try {
-			var hr = eo[i].apply(null, args);
+			var hr = api.Invoke(eo[i], args);
 			if (isFinite(hr)) {
 				return hr;
 			}
@@ -378,13 +367,22 @@ RunEvent4 = function () {
 	var eo = eventTE[en.toLowerCase()];
 	for (var i in eo) {
 		try {
-			var r = eo[i].apply(null, args);
+			var r = api.Invoke(eo[i], args);
 			if (r !== void 0) {
 				return r;
 			}
 		} catch (e) {
 			ShowError(e, en, i);
 		}
+	}
+}
+
+RunEventUI = function () {
+	var args = Array.apply(null, arguments);
+	var eo = MainWindow.eventTE[args[0].toLowerCase()];
+	for (var i in eo) {
+		args[0] = eo[i];
+		api.Invoke(UI.RunEvent, args);
 	}
 }
 
@@ -495,6 +493,21 @@ OpenAdodbFromTextFile = function (fn, charset) {
 	return ado;
 }
 
+ReadTextFile = function (fn) {
+	var src;
+	var ado = api.CreateObject("ads");
+	if (ado) {
+		ado.CharSet = "utf-8";
+		ado.Open();
+		try {
+			ado.LoadFromFile(OrganizePath(fn, te.Data.Installed));
+			src = ado.ReadText();
+		} catch (e) { }
+		ado.Close();
+	}
+	return src;
+}
+
 AddEvent = function (Name, fn, priority) {
 	if (Name) {
 		var en = Name.toLowerCase();
@@ -517,6 +530,7 @@ AddEvent = function (Name, fn, priority) {
 		}
 	}
 }
+
 
 ClearEvent = function (Name) {
 	if (Name) {
@@ -774,16 +788,6 @@ ShowOptions = function (s) {
 	api.Invoke(UI.ShowOptions, opt);
 }
 
-ShowDialog = function (fn, opt) {
-	opt.opener = window;
-	if (!/:/.test(fn)) {
-		fn = location.href.replace(/[^\/]*$/, fn);
-	}
-	var r = opt.r || Math.abs(MainWindow.DefaultFont.lfHeight) / 12;
-	var h = api.GetWindowLongPtr(te.hwnd, GWL_STYLE) & WS_CAPTION ? 0 : api.GetSystemMetrics(SM_CYCAPTION);
-	return te.CreateCtrl(CTRL_SW, fn, opt, g_.hwndBrowser || document, (opt.width > 99 ? opt.width : 750) * r, (opt.height > 99 ? opt.height : 530) * r + h, opt.left, opt.top);
-}
-
 GetAddons = function () {
 	ShowOptions("Tab=Get Addons");
 }
@@ -867,7 +871,7 @@ CreateJScript = function (s) {
 ShowError = function (e, s, i) {
 	var sl = (s || "").toLowerCase();
 	if (isFinite(i)) {
-		var ea = eventTA[sl][i];
+		var ea = (eventTA[sl] || {})[i];
 		if (ea) {
 			s = ea + " : " + s;
 		}
@@ -908,6 +912,7 @@ OpenXml = function (strFile, bAppData, bEmpty, strInit) {
 }
 
 LoadLang2 = function (filename) {
+	filename = OrganizePath(filename, te.Data.Installed);
 	var xml = api.CreateObject("Msxml2.DOMDocument");
 	xml.async = false;
 	if (!fso.FileExists(filename)) {
@@ -934,19 +939,6 @@ LoadLang = function (bAppend) {
 		MainWindow.LangSrc = api.CreateObject("Object");
 	}
 	LoadLang2(BuildPath(te.Data.Installed, "lang", GetLangId() + ".xml"));
-}
-
-CloseSubWindows = function () {
-	var hwnd = api.GetWindow(document);
-	var hwnd1 = hwnd;
-	while (hwnd1 = api.GetParent(hwnd)) {
-		hwnd = hwnd1;
-	}
-	while (hwnd1 = api.FindWindowEx(null, hwnd1, null, null)) {
-		if (hwnd == api.GetWindowLongPtr(hwnd1, GWLP_HWNDPARENT)) {
-			api.PostMessage(hwnd1, WM_CLOSE, 0, 0);
-		}
-	}
 }
 
 CreateFont = function (LogFont) {
@@ -1017,7 +1009,7 @@ OpenContains = function (Ctrl, pt) {
 	for (var j = 0; j < Items.Count; ++j) {
 		var Item = Items.Item(j);
 		var path = Item.Path;
-		Navigate(fso.GetParentFolderName(path), SBSP_NEWBROWSER);
+		Navigate(GetParentFolderName(path), SBSP_NEWBROWSER);
 		api.Invoke(UI.SelectItem, te.Ctrl(CTRL_FV), Item, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS, 99);
 	}
 }
@@ -1214,18 +1206,6 @@ GetEnum = function (FolderItem, bShowHidden) {
 	}
 }
 
-amp2ul = function (s) {
-	s = s.replace(/&amp;/ig, "&");
-	if (/@.*\..*,\-?\d+/.test(s)) {
-		try {
-			var lk = wsh.CreateShortCut(".lnk");
-			lk.Description = s;
-			s = lk.Description;
-		} catch (e) { }
-	}
-	return /;/.test(s) ? s : s.replace(/&(.)/ig, "<u>$1</u>");
-}
-
 MakeImgDataEx = function (src, bSimple, h) {
 	return bSimple || REGEXP_IMAGE.test(src) ? src : MakeImgSrc(src, 0, false, h);
 }
@@ -1386,18 +1366,6 @@ MakeImgIcon = function (src, index, h, bIcon) {
 		}
 		return GetHICON(sfi.iIcon, h, ILD_NORMAL);
 	}
-}
-
-LoadImgDll = function (icon, index) {
-	var hModule = api.LoadLibraryEx(BuildPath(system32, icon[index * 4]), 0, LOAD_LIBRARY_AS_DATAFILE);
-	if (!hModule && SameText(icon[index * 4], "ieframe.dll")) {
-		if (icon[index * 4 + 1] >= 500) {
-			hModule = api.LoadLibraryEx(BuildPath(system32, "browseui.dll"), 0, LOAD_LIBRARY_AS_DATAFILE);
-		} else {
-			hModule = api.LoadLibraryEx(BuildPath(system32, "shell32.dll"), 0, LOAD_LIBRARY_AS_DATAFILE);
-		}
-	}
-	return hModule;
 }
 
 GetKeyKey = function (strKey) {
@@ -1565,14 +1533,6 @@ SaveLayout = function () {
 	return S_OK;
 }
 
-ReloadCustomize = function () {
-	te.Data.bReload = false;
-	CloseSubWindows();
-	Finalize();
-	te.Reload();
-	return S_OK;
-}
-
 PtInRect = function (rc, pt) {
 	return pt.x >= rc.left && pt.x < rc.right && pt.y >= rc.top && pt.y < rc.bottom;
 }
@@ -1600,8 +1560,8 @@ CreateNew = function (path, fn) {
 				path1 = path;
 				path2 = "";
 				do {
-					path2 = BuildPath(fso.GetFileName(path1), path2);
-					path1 = fso.GetParentFolderName(path1);
+					path2 = BuildPath(GetFileName(path1), path2);
+					path1 = GetParentFolderName(path1);
 				} while (path1 && !fso.FolderExists(path1));
 				var ar = path2.split("\\");
 				if (ar[0]) {
@@ -1614,7 +1574,7 @@ CreateNew = function (path, fn) {
 						path4 = BuildPath(path4, ar[i]);
 					}
 					fn(path4);
-					api.SHFileOperation(FO_MOVE, path3, fso.GetParentFolderName(path), FOF_SILENT | FOF_NOCONFIRMATION | FOF_NOERRORUI, false);
+					api.SHFileOperation(FO_MOVE, path3, GetParentFolderName(path), FOF_SILENT | FOF_NOCONFIRMATION | FOF_NOERRORUI, false);
 				}
 			}
 		}
@@ -1806,6 +1766,10 @@ Exec = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop
 
 	if (/^Func$/i.test(type)) {
 		return s(Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop, window.FV);
+	}
+	if (/^Async$/i.test(type)) {
+		api.Invoke(s, [Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop, window.FV]);
+		return S_OK;
 	}
 	var hr = MainWindow.RunEvent3("Exec", Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop, window.FV);
 	return isFinite(hr) ? hr : window.Handled;
@@ -2601,7 +2565,7 @@ RunCommandLine = function (s) {
 	var re = /\/select,([^,]+)/i.exec(s);
 	if (re) {
 		var arg = api.CommandLineToArgv(re[1]);
-		Navigate(fso.GetParentFolderName(arg[0]), SBSP_NEWBROWSER);
+		Navigate(GetParentFolderName(arg[0]), SBSP_NEWBROWSER);
 		api.Invoke(UI.SelectItem, te.Ctrl(CTRL_FV), arg[0], SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS, 99);
 		return;
 	}
@@ -2822,13 +2786,16 @@ OpenInExplorer = function (pid1) {
 	}
 }
 
-ShowDialogEx = function (mode, w, h, ele) {
-	var opt = api.CreateObject("Object");
+ShowDialogEx = function (mode, w, h, Id, opt) {
+	if (!opt) {
+		opt = api.CreateObject("Object");
+	}
 	opt.MainWindow = MainWindow;
 	opt.Query = mode;
 	opt.width = w;
 	opt.height = h;
-	opt.element = ele;
+	opt.Id = Id;
+	opt.UI = UI;
 	ShowDialog(BuildPath(te.Data.Installed, "script\\dialog.html"), opt);
 }
 
@@ -2837,15 +2804,11 @@ ShowNew = function (Ctrl, pt, Mode) {
 	var path = api.GetDisplayNameOf(FV, SHGDN_FORPARSING | SHGDN_ORIGINAL);
 	if (/^[A-Z]:\\|^\\\\/i.test(path)) {
 		var opt = api.CreateObject("Object");
-		opt.MainWindow = MainWindow;
-		opt.Query = "new";
 		opt.Mode = Mode;
 		opt.path = path;
 		opt.FV = FV;
 		opt.Modal = false;
-		opt.width = 480;
-		opt.height = 128;
-		ShowDialog(BuildPath(te.Data.Installed, "script\\dialog.html"), opt);
+		ShowDialogEx("new", 480, 160, null, opt);
 	}
 }
 
@@ -2934,6 +2897,13 @@ SetLang2 = function (s, v) {
 			SetLang2(StripAmp(s), StripAmp(v));
 		}
 	}
+}
+
+CallUI = function () {
+	var args = Array.apply(null, arguments);
+	var eo = args.shift();
+	var en = args.shift();
+	api.Invoke(eo[en], args);
 }
 
 LoadDBFromTSV = function (DB, fn) {
@@ -3172,7 +3142,7 @@ FolderMenu =
 		}
 	},
 
-	Location: function (o) {
+	Location: function (o) {////
 		this.Clear();
 		var hMenu = api.CreatePopupMenu();
 		RunEvent3("LocationPopup", hMenu);

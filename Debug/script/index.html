@@ -104,8 +104,9 @@
     </form>
     <script type="text/javascript">
       Addon = 1;
-      LoadScript(["ui.js", "common.js"], function () {
-        LoadScripts(["sync.js", "sync1.js"], ["index.js"]);
+      ScriptBase = "..";
+      LoadScript(["script/ui.js", "script/common.js"], function () {
+        LoadScripts(["script/sync.js", "script/sync1.js"], ["script/index.js"]);
       });
     </script>
   </body>

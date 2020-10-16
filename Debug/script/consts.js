@@ -12,6 +12,19 @@ RemoveAsync = function (s) {
 	return s.replace(/([^\.\w])(async |await |debugger;)/g, "$1");
 }
 
+BuildPath = function () {
+	var s = arguments.length ? String(arguments[0]) : "";
+	for (var i = 1; i < arguments.length; ++i) {
+		s = s.replace(/\\+$/, "") + "\\" + arguments[i];
+	}
+	return s.replace(/\//g, "\\");
+};
+
+GetParentFolderName = function (s) {
+	var res = /(.*)([\\\/])/.exec(s);
+	return res ? res[1].length < 3 ? res[1] + res[2] : res[1] : "";
+}
+
 LoadScript = function (js, cb) {
 	var fn;
 	while (fn = js.shift()) {
@@ -19,15 +32,15 @@ LoadScript = function (js, cb) {
 			var el = document.createElement("script");
 			el.type = "text/javascript";
 			el.charset = "utf-8";
-			el.src = fn;
+			el.src = BuildPath(ScriptBase, fn.replace(/script/, "scripts")).replace(/\\/g, "/");
 			el.async = false;
 			if (js.length == 0) {
 				el.onload = cb;
 			}
 			document.body.appendChild(el);
 		} else {
-			var strParent = (fso.GetParentFolderName(api.GetModuleFileName(null))).replace(/\\$/, "");
-			fn = strParent + "\\script\\" + fn;
+			var strParent = (GetParentFolderName(api.GetModuleFileName(null))).replace(/\\$/, "");
+			fn = BuildPath(strParent, fn);
 			var ado = api.CreateObject("ads");
 			if (ado) {
 				ado.CharSet = "utf-8";
@@ -43,19 +56,6 @@ LoadScript = function (js, cb) {
 		cb();
 	}
 }
-
-//Objects
-
-if (!window.te && ((window.external && external.Type) || window.chrome)) {
-	te = window.chrome ? chrome.webview.hostObjects.te : external;
-	api = te.WindowsAPI0.CreateObject("api");
-}
-fso = api.CreateObject("fso");
-sha = api.CreateObject("sha");
-wsh = api.CreateObject("wsh");
-wnw = api.CreateObject("WScript.Network");
-
-$ = window.chrome && window.alert ? api.CreateObject("Object") : window;
 
 //Tablacus
 Ox80000000 = 0x80000000 | 0;
@@ -1847,7 +1847,21 @@ STGM_FAILIFTHERE = 0;
 STGM_NOSNAPSHOT = 0x200000;
 STGM_DIRECT_SWMR = 0x400000;
 
-if (!window.chrome) {
+if (!window.chrome || !window.alert) {
+	if (!window.te) {
+		te = external;
+	}
+	api = te.WindowsAPI0.CreateObject("api");
+	fso = api.CreateObject("fso");
+	sha = api.CreateObject("sha");
+	wsh = api.CreateObject("wsh");
+	wnw = api.CreateObject("WScript.Network");
+	WebBrowser = te.Ctrl(CTRL_WB);
 	system32 = api.GetDisplayNameOf(ssfSYSTEM, SHGDN_FORPARSING);
-	hShell32 = api.GetModuleHandle(fso.BuildPath(system32, "shell32.dll"));
+	hShell32 = api.GetModuleHandle(BuildPath(system32, "shell32.dll"));
+	osInfo = api.Memory("OSVERSIONINFOEX");
+	osInfo.dwOSVersionInfoSize = osInfo.Size;
+	api.GetVersionEx(osInfo);
+	WINVER = osInfo.dwMajorVersion * 0x100 + osInfo.dwMinorVersion;
 }
+$ = window;

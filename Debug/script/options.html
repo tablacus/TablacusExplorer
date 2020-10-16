@@ -578,9 +578,9 @@
             <input type="button" style="width: 100%; padding-right: 12pt" value="Search" onclick="FindText()">
           </td>
           <td id="SortButton" align="left" style="display: none; padding-left: 8pt">
-            <img id="SortButton_0" src="bitmap:ieframe.dll,214,24,24" title="Name" style="height: 18pt" onclick="SortAddons(0)" class="button" onmouseover="MouseOver(this)" onmouseout="MouseOut()">
-            <img id="SortButton_1" src="bitmap:ieframe.dll,214,24,26"  style="height: 18pt" onclick="SortAddons(1)" class="button" onmouseover="MouseOver(this)" onmouseout="MouseOut()">
-            <img id="SortButton_2" src="bitmap:ieframe.dll,214,24,27" title="Id" style="height: 18pt" onclick="SortAddons(2)" class="button" onmouseover="MouseOver(this)" onmouseout="MouseOut()">
+            <img id="SortButton_0" data-src="bitmap:ieframe.dll,214,24,24" title="Name" style="height: 18pt" onclick="SortAddons(0)" class="button" onmouseover="MouseOver(this)" onmouseout="MouseOut()">
+            <img id="SortButton_1" data-src="bitmap:ieframe.dll,214,24,26"  style="height: 18pt" onclick="SortAddons(1)" class="button" onmouseover="MouseOver(this)" onmouseout="MouseOut()">
+            <img id="SortButton_2" data-src="bitmap:ieframe.dll,214,24,27" title="Id" style="height: 18pt" onclick="SortAddons(2)" class="button" onmouseover="MouseOver(this)" onmouseout="MouseOut()">
           </td>
           <td id="MoveButton" align="left" style="display: none; height: 18pt; padding-left: 3pt">
             <input type="button" value="Up" onclick="OptionMove(-1)">
@@ -603,8 +603,10 @@
       </table>
     </form>
     <script type="text/javascript">
-      LoadScript(["ui.js", "common.js"], function () {
-        LoadScripts(["sync.js"], ["options.js"], function () {
+      document.body.style.visibility = "hidden";
+      ScriptBase = "..";
+      LoadScript(["script/ui.js", "script/common.js"], function () {
+        LoadScripts(["script/sync.js"], ["script/options.js"], function () {
           InitOptions();
         });
       });
