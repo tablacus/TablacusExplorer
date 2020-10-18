@@ -15,12 +15,19 @@ if (api.ILIsEmpty(g_pidlCP) || api.ILIsEqual(g_pidlCP, ssfDRIVES)) {
 	g_pidlCP = ssfCONTROLS;
 }
 
-Resize = function () {
-	api.Invoke(UI.Resize);
-}
-
 Refresh = function (Ctrl, pt) {
 	return RunEvent4("Refresh", Ctrl, pt);
+}
+
+InputDialog = function (text, defaultText) {
+	var r = RunEvent4("InputDialog", text, defaultText);
+	if (r !== void 0) {
+		return r;
+	}
+	if (window.prompt) {
+		return prompt(GetTextR(text), defaultText);
+	}
+	return api.GetScriptDispatch('Function InputDialog(text, TITLE, defaultText)\nInputDialog = InputBox(text, TITLE, defaultText)\nEnd Function', "VBScript").InputDialog(GetTextR(text), TITLE, defaultText);
 }
 
 g_.mouse =
@@ -2588,7 +2595,7 @@ ShowStatusText = function (Ctrl, Text, iPart, tm) {
 		api.Invoke(UI.ShowStatusText, Ctrl, Text, iPart, tm);
 		return S_OK;
 	}
-	api.Invoke(UI.RunEvent1, "StatusText", Ctrl, Text, iPart);
+	RunEvent1("StatusText", Ctrl, Text, iPart);
 	return S_OK;
 }
 
@@ -3147,6 +3154,10 @@ AddEvent("ReplaceMacroEx", [/%AddonStatus:([^%]*)%/ig, function (strMatch, ref1)
 	return GetNum(GetAddonElement(ref1).getAttribute("Enabled")) ? "on" : "off";
 }]);
 
+if (!window.chrome) {
+	AddEvent("BrowserCreatedEx", 'MainWindow.RunEvent1("BrowserCreated", document);');
+}
+
 if (WINVER >= 0x600 && screen.deviceYDPI > 96) {
 	AddEvent("NavigateComplete", FixIconSpacing);
 	AddEvent("IconSizeChanged", FixIconSpacing);
@@ -3596,7 +3607,6 @@ if (!te.Data) {
 	}
 	LoadConfig();
 	delete g_.xmlWindow;
-	Resize();
 }
 Exchange = te.Data.Exchange;
 

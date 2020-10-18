@@ -47,12 +47,15 @@ function _es(fn)
 		s = ado.ReadText();
 		ado.Close();
 	} catch (e) {
-		if (MainWindow.Exchange) {
-			delete MainWindow.Exchange[arg[3]];
+		if (window.MainWindow && MainWindow.Exchange) {
+			MainWindow.Exchange[arg[3]] = void 0;
 		}
 		wsh.Popup((e.description || e.toString()) + '\n' + fn, 0, 'Tablacus Explorer', 0x10);
 	}
 	if (s) {
+		if (!/consts\.js$/i.test(fn)) {
+			s = RemoveAsync(s);
+		}
 		try {
 			return new Function(s)();
 		} catch (e) {
@@ -66,4 +69,8 @@ function importScripts()
 	for (var i = 0; i < arguments.length; ++i) {
 		_es(arguments[i]);
 	}
+}
+
+function RemoveAsync(s) {
+	return s.replace(/([^\.\w])(async |await |debugger;)/g, "$1");
 }

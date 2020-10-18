@@ -125,7 +125,7 @@ InitUI = function () {
 	UI = api.CreateObject("Object");
 	UI.Addons = api.CreateObject("Object");
 
-	OpenHttpRequest = UI.OpenHttpRequest = function (url, alt, fn, arg) {
+	UI.OpenHttpRequest = OpenHttpRequest = function (url, alt, fn, arg) {
 		var xhr = createHttpRequest();
 		var fnLoaded = function () {
 			if (arg && arg.pcRef) {
@@ -161,7 +161,7 @@ InitUI = function () {
 		xhr.send();
 	}
 
-	ReloadCustomize = UI.ReloadCustomize = function () {
+	UI.ReloadCustomize = ReloadCustomize = function () {
 		te.Data.bReload = false;
 		CloseSubWindows();
 		Finalize();
@@ -198,7 +198,7 @@ InitUI = function () {
 		}
 	}
 
-	BlurId = UI.BlurId = function (Id) {
+	UI.BlurId = BlurId = function (Id) {
 		document.getElementById(Id).blur();
 	}
 
@@ -209,7 +209,7 @@ InitUI = function () {
 		g_.dlgs.Options = ShowDialog("options.html", opt);
 	}
 
-	Extract = UI.Extract = function (Src, Dest, xhr) {
+	UI.Extract = Extract = function (Src, Dest, xhr) {
 		var hr;
 		if (xhr) {
 			if (window.chrome && xhr.response) {
@@ -233,7 +233,7 @@ InitUI = function () {
 		return api.Extract(BuildPath(system32, "zipfldr.dll"), "{E88DCCE0-B7B3-11d1-A9F0-00AA0060FA31}", Src, Dest);
 	}
 
-	DownloadFile = UI.DownloadFile = function (url, fn) {
+	UI.DownloadFile = DownloadFile = function (url, fn) {
 		return api.URLDownloadToFile(null, url, fn);
 	}
 
@@ -330,14 +330,13 @@ InitUI = function () {
 		}
 	}
 
-	ShowDialog = UI.ShowDialog = function (fn, opt) {
+	UI.ShowDialog = ShowDialog = function (fn, opt) {
 		opt.opener = $;
 		if (!/:/.test(fn)) {
 			fn = location.href.replace(/[^\/]*$/, fn);
 		}
 		var r = opt.r || Math.abs(MainWindow.DefaultFont.lfHeight) / 12;
-		var h = api.GetWindowLongPtr(te.hwnd, GWL_STYLE) & WS_CAPTION ? 0 : api.GetSystemMetrics(SM_CYCAPTION);
-		return te.CreateCtrl(CTRL_SW, fn, opt, g_.hwndBrowser, (opt.width > 99 ? opt.width : 750) * r, (opt.height > 99 ? opt.height : 530) * r + h, opt.left, opt.top);
+		return te.CreateCtrl(CTRL_SW, fn, opt, WebBrowser.hwnd, (opt.width > 99 ? opt.width : 750) * r, (opt.height > 99 ? opt.height : 530) * r, opt.left, opt.top);
 	}
 };
 
@@ -405,7 +404,6 @@ LoadScripts = function (js1, js2, cb) {
 		$.$JS = api.GetScriptDispatch(s.join(""), "JScript", o);
 		CopyObj(window, $, ["g_", "Common", "eventTE", "eventTA", "Threads", "SimpleDB", "BasicDB;"]);
 		CopyObj(window, $, arFN);
-		$.g_.hwndBrowser = WebBrowser.hwnd;
 		var doc = api.CreateObject("Object");
 		doc.parentWindow = $;
 		WebBrowser.Document = doc;

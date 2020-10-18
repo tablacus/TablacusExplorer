@@ -77,7 +77,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201016 ? te.Version : 20201016;
+		return te.Version < 20201018 ? te.Version : 20201018;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -180,7 +180,9 @@ GetSelectedArray = function (Ctrl, pt, bPlus) {
 			Selected.AddItem(SelItem);
 		}
 	}
-	return [Selected, SelItem, FV];
+	var r = api.CreateObject("Array");
+	r.push(Selected, SelItem, FV);
+	return r;
 }
 
 ChooseColor = function (c) {
@@ -563,7 +565,7 @@ AddonDisabled = function (Id) {
 		var fn = eventTE.addondisabledex[Id];
 		if (fn) {
 			delete eventTE.addondisabledex[Id];
-			api.Invoke(UI.AddEventEx, null, "beforeunload", fn);
+			AddEvent("Finalize", fn);
 		}
 	}
 	CollectGarbage();
@@ -842,6 +844,10 @@ AddEvent("ConfigChanged", function (s) {
 });
 
 ExecAddonScript = function (type, s, fn, arError, o, arStack) {
+	if (o === true) {
+		o =  api.CreateObject("Object");
+		o.window = $;
+	}
 	var sc = api.GetScriptDispatch(s, type, o,
 		function (ei, SourceLineText, dwSourceContext, lLineNumber, CharacterPosition) {
 			arError.push([api.SysAllocString(ei.bstrDescription), fn, api.sprintf(16, "Line: %d", lLineNumber)].join("\n"));
@@ -1781,7 +1787,9 @@ ExecScriptEx = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffec
 		if (/J.*Script/i.test(type)) {
 			fn = { Handled: new Function(s) };
 		} else if (/VBScript/i.test(type)) {
-			fn = api.GetScriptDispatch('Function Handled(Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop, FV)\n' + s + '\nEnd Function', type, true);
+			var o = api.CreateObject("Object");
+			o.window = $;
+			fn = api.GetScriptDispatch('Function Handled(Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop, FV)\n' + s + '\nEnd Function', type, o);
 		}
 		if (fn) {
 			var r = fn.Handled(Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop, FV);
@@ -2808,7 +2816,7 @@ ShowNew = function (Ctrl, pt, Mode) {
 		opt.path = path;
 		opt.FV = FV;
 		opt.Modal = false;
-		ShowDialogEx("new", 480, 160, null, opt);
+		ShowDialogEx("new", 480, 120, null, opt);
 	}
 }
 

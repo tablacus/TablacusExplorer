@@ -100,7 +100,8 @@ SetAddon = function (strName, Location, Tag, strVAlign) {
 			}
 		} else if (Location == "Inner") {
 			AddEvent("PanelCreated", function (Ctrl) {
-				SetAddon(null, "Inner1Left_" + Ctrl.Id, Tag.replace(/\$/g, Ctrl.Id));
+				var Id = Ctrl.Id;
+				SetAddon(null, "Inner1Left_" + Id, Tag.replace(/\$/g, Id));
 			});
 		}
 		if (strName) {
@@ -117,7 +118,7 @@ SetAddon = function (strName, Location, Tag, strVAlign) {
 	return Location;
 }
 
-Resize = UI.Resize = function () {
+UI.Resize = Resize = function () {
 	if (!ui_.tidResize) {
 		clearTimeout(ui_.tidResize);
 	}
@@ -212,7 +213,7 @@ UI.ShowStatusText = function (Ctrl, Text, iPart, tm) {
 	ui_.Status = [Ctrl, Text, iPart, tm, new Date().getTime(), setTimeout(function () {
 		if (ui_.Status) {
 			if (new Date().getTime() - ui_.Status[4] > ui_.Status[3] / 2) {
-				$.ShowStatusText(ui_.Status[0], ui_.Status[1], ui_.Status[2]);
+				ShowStatusText(ui_.Status[0], ui_.Status[1], ui_.Status[2]);
 				delete ui_.Status;
 			}
 		}
@@ -238,7 +239,6 @@ UI.InitWindow = function (cb, cb2) {
 		Resize();
 		(cb)();
 		setTimeout(function () {
-			ApplyLang(document);
 			Resize();
 			(cb2)();
 		}, 500);
@@ -253,12 +253,12 @@ UI.ExitFullscreen = function () {
 
 importJScript = $.importScript;
 
-te.OnArrange = function (Ctrl, rc, cb) {
+te.OnArrange = function (Ctrl, rc) {
 	var Type = Ctrl.Type;
 	if (Type == CTRL_TE) {
 		ui_.TCPos = {};
 	}
-	RunEvent1("Arrange", Ctrl, rc, cb);
+	RunEvent1("Arrange", Ctrl, rc);
 	if (Type == CTRL_TC) {
 		var Id = Ctrl.Id;
 		var o = ui_.Panels[Id];
@@ -305,7 +305,7 @@ te.OnArrange = function (Ctrl, rc, cb) {
 		o = document.getElementById("Inner2Center_" + Id).style;
 		o.width = Math.max(rc.right - rc.left, 0) + "px";
 		o.height = Math.max(rc.bottom - rc.top, 0) + "px";
-		(cb)(Ctrl, rc);
+		te.ArrangeCB(Ctrl, rc);
 	}
 }
 
@@ -415,10 +415,14 @@ AddEventEx(window, "beforeunload", Finalize);
 AddEventEx(window, "blur", ResetScroll);
 
 AddEventEx(document, "MSFullscreenChange", function () {
-	FullscreenChanged(document.msFullscreenElement != void 0);
+	FullscreenChanged(document.msFullscreenElement != null);
 });
 
-(function () {
+AddEventEx(document, "FullscreenChange", function () {
+	FullscreenChanged(document.fullscreenElement != null);
+});
+
+Init = function () {
 	UI.OnLoad();
 	InitCode();
 	DefaultFont = $.DefaultFont;
@@ -427,6 +431,7 @@ AddEventEx(document, "MSFullscreenChange", function () {
 	OpenMode = $.OpenMode;
 	InitMenus();
 	LoadLang();
+	ApplyLang(document);
 	ArrangeAddons();
-	setTimeout(InitWindow, 9);
-})();
+	InitWindow();
+}

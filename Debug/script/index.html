@@ -106,7 +106,9 @@
       Addon = 1;
       ScriptBase = "..";
       LoadScript(["script/ui.js", "script/common.js"], function () {
-        LoadScripts(["script/sync.js", "script/sync1.js"], ["script/index.js"]);
+        LoadScripts(["script/sync.js", "script/sync1.js"], ["script/index.js"], function () {
+          Init();
+        });
       });
     </script>
   </body>

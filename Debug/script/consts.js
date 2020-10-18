@@ -32,7 +32,7 @@ LoadScript = function (js, cb) {
 			var el = document.createElement("script");
 			el.type = "text/javascript";
 			el.charset = "utf-8";
-			el.src = BuildPath(ScriptBase, fn.replace(/script/, "scripts")).replace(/\\/g, "/");
+			el.src = BuildPath(ScriptBase, fn).replace(/\\/g, "/");
 			el.async = false;
 			if (js.length == 0) {
 				el.onload = cb;

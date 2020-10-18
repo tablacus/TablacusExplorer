@@ -177,10 +177,6 @@ GetConsts = function (s) {
 	return s;
 }
 
-InputDialog = function (text, defaultText) {
-	return prompt(GetTextR(text), defaultText);
-}
-
 CalcVersion = function (s) {
 	var r = 0;
 	var res = /(\d+)\.(\d+)\.(\d+)\.(\d+)/.exec(s);

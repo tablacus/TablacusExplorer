@@ -29,7 +29,6 @@ xhr = null;
 xmlAddons = null;
 
 RunEventUI("BrowserCreatedEx");
-MainWindow.RunEvent1("BrowserCreated", document);
 (function () {
 	arLangs = [GetLangId()];
 	var res = /(\w+)_/.exec(arLangs[0]);
@@ -49,7 +48,7 @@ function SetDefaultLangID() {
 function SetDefault(o, v) {
 	setTimeout(function () {
 		if (confirmOk()) {
-			SetValue(o, v);
+			SetValue(o, "function" === typeof v ? v : v);
 		}
 	}, 99);
 }
@@ -991,8 +990,10 @@ function SaveAddons() {
 		var table = document.getElementById("Addons");
 		for (var j = 0; j < table.rows.length; ++j) {
 			var div = table.rows[j].cells[0].firstChild;
-			var Id = div.id.replace("Addons_", "").toLowerCase();
-			Addons[Id] = document.getElementById("enable_" + Id).checked;
+			if (div) {
+				var Id = div.id.replace("Addons_", "").toLowerCase();
+				Addons[Id] = document.getElementById("enable_" + Id).checked;
+			}
 		}
 		MainWindow.SaveAddons(Addons);
 	}
@@ -1047,25 +1048,38 @@ function LoadAddons() {
 	table.ondragover = Over5;
 	table.ondrop = Drop5;
 	table.deleteRow(0);
-	var root = te.Data.Addons.documentElement;
-	if (root) {
-		var items = root.childNodes;
-		if (items) {
-			for (var i = 0; i < GetLength(items); ++i) {
-				var item = items[i];
-				var Id = item.nodeName;
-				if (AddonId[Id]) {
-					AddAddon(table, Id, GetNum(item.getAttribute("Enabled")));
-					delete AddonId[Id];
+	table.style.display = "none";
+	var Progress = api.CreateObject("ProgressDialog");
+	Progress.StartProgressDialog(te.hwnd, null, 2);
+	Progress.SetAnimation(hShell32, 150);
+	Progress.SetLine(1, api.LoadString(hShell32, 13585) || api.LoadString(hShell32, 6478), true);
+	try {
+		var root = te.Data.Addons.documentElement;
+		if (root) {
+			var items = root.childNodes;
+			if (items) {
+				var nLen = GetLength(items);
+				for (var i = 0; i < nLen; ++i) {
+					Progress.SetTitle(Math.floor(100 * i / nLen) + "%");
+					Progress.SetProgress(i, nLen);
+					var item = items[i];
+					var Id = item.nodeName;
+					Progress.SetLine(2, Id, true);
+					if (AddonId[Id]) {
+						AddAddon(table, Id, GetNum(item.getAttribute("Enabled")));
+						delete AddonId[Id];
+					}
 				}
 			}
 		}
-	}
-	for (var Id in AddonId) {
-		if (fso.FileExists(path + Id + "\\config.xml")) {
-			AddAddon(table, Id, false);
+		for (var Id in AddonId) {
+			if (fso.FileExists(path + Id + "\\config.xml")) {
+				AddAddon(table, Id, false);
+			}
 		}
-	}
+	} catch (e) { }
+	Progress.StopProgressDialog();		
+	table.style.display = "";
 	OpenAddonsOptions();
 }
 
@@ -1538,7 +1552,7 @@ InitDialog = function () {
 		AddEventEx(document.body, "keydown", fn);
 		AddEventEx(document.body, "keyup", fn);
 		setTimeout(function () {
-			api.SetForegroundWindow(WebBrowser.hwnd);
+			WebBrowser.Focus();
 		}, 99);
 		WebBrowser.OnClose = ReturnDialogResult;
 	}
@@ -1552,10 +1566,10 @@ InitDialog = function () {
 				document.F.ButtonOk.disabled = !document.F.path.value;
 			}, 99);
 			var key = e.keyCode;
-			if (key == VK_RETURN && document.F.path.value) {
+			if ((key == VK_RETURN || /^Enter/i.test(e.key)) && document.F.path.value) {
 				SetResult(1);
 			}
-			if (key == VK_ESCAPE) {
+			if (key == VK_ESCAPE || /^Esc/i.test(e.key)) {
 				SetResult(2);
 			}
 			return true;
@@ -2312,7 +2326,7 @@ function AddonsSearch() {
 }
 
 function AddonsKeyDown(e) {
-	if (e.keyCode == VK_RETURN) {
+	if (e.keyCode == VK_RETURN || /^Enter/i.test(e.key)) {
 		AddonsSearch();
 	}
 	return true;
@@ -2507,7 +2521,7 @@ function Install2(xhr, url, o) {
 }
 
 function IconsKeyDown(e) {
-	if (e.keyCode == VK_RETURN) {
+	if (e.keyCode == VK_RETURN || /^Enter/i.test(e.key)) {
 		IconPacksList();
 	}
 	return true;
