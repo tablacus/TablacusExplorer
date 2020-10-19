@@ -984,6 +984,9 @@ function SaveX(mode, form) {
 }
 
 function SaveAddons() {
+	if (window.g_bAddonLoading) {
+		return;
+	}
 	if (g_Chg.Addons || te.Data.bErrorAddons) {
 		te.Data.bErrorAddons = false;
 		var Addons = api.CreateObject("Object");
@@ -1048,38 +1051,28 @@ function LoadAddons() {
 	table.ondragover = Over5;
 	table.ondrop = Drop5;
 	table.deleteRow(0);
-	table.style.display = "none";
-	var Progress = api.CreateObject("ProgressDialog");
-	Progress.StartProgressDialog(te.hwnd, null, 2);
-	Progress.SetAnimation(hShell32, 150);
-	Progress.SetLine(1, api.LoadString(hShell32, 13585) || api.LoadString(hShell32, 6478), true);
-	try {
-		var root = te.Data.Addons.documentElement;
-		if (root) {
-			var items = root.childNodes;
-			if (items) {
-				var nLen = GetLength(items);
-				for (var i = 0; i < nLen; ++i) {
-					Progress.SetTitle(Math.floor(100 * i / nLen) + "%");
-					Progress.SetProgress(i, nLen);
-					var item = items[i];
-					var Id = item.nodeName;
-					Progress.SetLine(2, Id, true);
-					if (AddonId[Id]) {
-						AddAddon(table, Id, GetNum(item.getAttribute("Enabled")));
-						delete AddonId[Id];
-					}
+	g_bAddonLoading = true;
+	var root = te.Data.Addons.documentElement;
+	if (root) {
+		var items = root.childNodes;
+		if (items) {
+			var nLen = GetLength(items);
+			for (var i = 0; i < nLen; ++i) {
+				var item = items[i];
+				var Id = item.nodeName;
+				if (AddonId[Id]) {
+					AddAddon(table, Id, GetNum(item.getAttribute("Enabled")));
+					delete AddonId[Id];
 				}
 			}
 		}
-		for (var Id in AddonId) {
-			if (fso.FileExists(path + Id + "\\config.xml")) {
-				AddAddon(table, Id, false);
-			}
+	}
+	for (var Id in AddonId) {
+		if (fso.FileExists(path + Id + "\\config.xml")) {
+			AddAddon(table, Id, false);
 		}
-	} catch (e) { }
-	Progress.StopProgressDialog();		
-	table.style.display = "";
+	}
+	g_bAddonLoading = false;
 	OpenAddonsOptions();
 }
 

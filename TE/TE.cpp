@@ -1917,6 +1917,10 @@ BOOL teILIsFileSystemEx(LPCITEMIDLIST pidl)
 	return FALSE;
 }
 
+BOOL teVarIsNumber(VARIANT *pv) {
+	return pv->vt == VT_I4 || pv->vt == VT_R8 || (pv->vt == VT_BSTR && ::SysStringLen(pv->bstrVal) == 18 && teStartsText(L"0x", pv->bstrVal));
+}
+
 void GetVarPathFromIDList(VARIANT *pVarResult, LPITEMIDLIST pidl, int uFlags)
 {
 	int i;
@@ -1933,7 +1937,7 @@ void GetVarPathFromIDList(VARIANT *pVarResult, LPITEMIDLIST pidl, int uFlags)
 			}
 		}
 	}
-	if (pVarResult->vt != VT_I4) {
+	if (!teVarIsNumber(pVarResult)) {
 		if SUCCEEDED(teGetDisplayNameFromIDList(&pVarResult->bstrVal, pidl, uFlags)) {
 			pVarResult->vt = VT_BSTR;
 		}
@@ -2205,7 +2209,7 @@ BOOL GetLLFromVariant2(LONGLONG *pll, VARIANT *pv) {
 		*pll = (LONGLONG)pv->dblVal;
 		return TRUE;
 	}
-	if (pv->vt == VT_BSTR && ::SysStringLen(pv->bstrVal) == 18 && teStartsText(L"0x", pv->bstrVal)) {
+	if (teVarIsNumber(pv)) {
 		if (swscanf_s(pv->bstrVal, L"0x%016llx", pll) > 0) {
 			return TRUE;
 		}
@@ -6068,13 +6072,7 @@ VOID ArrangeWindowEx()
 		return;
 	}
 	g_bArrange = FALSE;
-	if (g_pOnFunc[TE_OnArrange]) {
-		VARIANTARG *pv;
-		pv = GetNewVARIANT(3);
-		teSetObject(&pv[2], g_pTE);
-		teSetObjectRelease(&pv[0], new CteDispatch(g_pTE, 0, DISPID_CB_ARANGE));
-		Invoke4(g_pOnFunc[TE_OnArrange], NULL, 3, pv);
-	}
+	DoFunc(TE_OnArrange, g_pTE, E_NOTIMPL);
 }
 
 LRESULT CALLBACK TESTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
@@ -9070,7 +9068,7 @@ VOID teApiDragQueryFile(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 
 VOID teApiSysAllocString(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	if (nArg >= 1 && pDispParams->rgvarg[nArg - 1].vt == VT_I4) {
+	if (nArg >= 1 && teVarIsNumber(&pDispParams->rgvarg[nArg - 1])) {
 		if (pVarResult) {
 			UCHAR *pc;
 			VARIANT vMem;
@@ -15340,7 +15338,7 @@ STDMETHODIMP CteShellBrowser::get_FocusedItem(FolderItem **ppid)
 STDMETHODIMP CteShellBrowser::SelectItem(VARIANT *pvfi, int dwFlags)
 {
 	LPITEMIDLIST pidl;
-	if (pvfi->vt == VT_I4) {
+	if (teVarIsNumber(pvfi)) {
 		HRESULT hr = E_FAIL;
 		IFolderView *pFV;
 		if (m_pShellView && SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV)))) {
@@ -15359,7 +15357,7 @@ STDMETHODIMP CteShellBrowser::SelectItem(VARIANT *pvfi, int dwFlags)
 					}
 #endif
 				}
-				hr = pFV->SelectItem(pvfi->lVal, dwFlags);
+				hr = pFV->SelectItem(GetIntFromVariant(pvfi), dwFlags);
 			}
 			pFV->Release();
 			if (hr == S_OK) {
@@ -17360,7 +17358,6 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 							if (nArg >= 5) {
 								VARIANT v;
 								teVariantChangeType(&v, &pDispParams->rgvarg[nArg - 1], VT_BSTR);
-								RECT rc, rcWindow;
 								HWND hwnd1 = (HWND)GetPtrFromVariant(&pDispParams->rgvarg[nArg - 3]);							
 								if (FindUnknown(&pDispParams->rgvarg[nArg - 3], &punk)) {
 									IUnknown_GetWindow(punk, &hwnd1);
@@ -17368,26 +17365,32 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 								if (!hwnd1) {
 									hwnd1 = g_hwndMain;
 								}
-								GetWindowRect(hwnd1, &rc);
 								HWND hwndParent = hwnd1;
 								while (hwnd1 = GetParent(hwndParent)) {
 									hwndParent = hwnd1;
 								}
+								RECT rc, rcWindow;
 								GetWindowRect(hwndParent, &rcWindow);
-								int a = rcWindow.right - rc.right + rc.left - rcWindow.left;
-								int b = rcWindow.bottom - rc.bottom + rc.top - rcWindow.top;
-								int w = GetIntFromVariant(&pDispParams->rgvarg[nArg - 4]) + a;
-								int h = GetIntFromVariant(&pDispParams->rgvarg[nArg - 5]) + b;
+								int w = GetIntFromVariant(&pDispParams->rgvarg[nArg - 4]);
+								int h = GetIntFromVariant(&pDispParams->rgvarg[nArg - 5]);
 								int x = nArg >= 6 ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 6]) : 0;
 								int y = nArg >= 7 ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 7]) : 0;
+								MyRegisterClass(hInst, WINDOW_CLASS2, WndProc2);
+								HWND hwnd = CreateWindow(WINDOW_CLASS2, g_szTE, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
+									x, y, w, h, hwndParent, NULL, hInst, NULL);
+								GetClientRect(hwnd, &rc);
+								int a = w - (rc.right - rc.left);
+								int b = h - (rc.bottom - rc.top);
+								w += a;
+								h += b;
 								if (!x) {
-									x = rc.left + (rc.right - rc.left - w) / 2;
+									x = rcWindow.left + (rcWindow.right - rcWindow.left - w) / 2;
 									if (w == rcWindow.right - rcWindow.left) {
 										x += a;
 									}
 								}
 								if (!y) {
-									y = rc.top + (rc.bottom - rc.top - h) / 2;
+									y = rcWindow.top + (rcWindow.bottom - rcWindow.top - h) / 2;
 									if (h == rcWindow.bottom - rcWindow.top) {
 										y += b / 2;
 									}
@@ -17409,9 +17412,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 										y = mi.rcWork.top;
 									}
 								}
-								MyRegisterClass(hInst, WINDOW_CLASS2, WndProc2);
-								HWND hwnd = CreateWindow(WINDOW_CLASS2, g_szTE, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
-									x, y, w, h, hwndParent, NULL, hInst, NULL);
+								MoveWindow(hwnd, x, y, w, h, TRUE);
 								teSetDarkMode(hwnd);
 								TEWebBrowsers TEWB;
 								TEWB.hwnd = hwnd;
@@ -17498,7 +17499,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				}
 				return S_OK;
 
-			case DISPID_CB_ARANGE:
+			case TE_METHOD + 1091:
 				if (nArg >= 1) {
 					IUnknown *punk;
 					if (FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
@@ -20734,8 +20735,8 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 				char **ppc = new char*[3];
 				BOOL bExec = TRUE;
 				for (int i = 0; i <= 2; ++i) {
-					if (pDispParams->rgvarg[nArg - i - 2].vt == VT_I4) {
-						UINT_PTR nVerb = (UINT_PTR)pDispParams->rgvarg[nArg - i - 2].lVal;
+					if (teVarIsNumber(&pDispParams->rgvarg[nArg - i - 2])) {
+						UINT_PTR nVerb = (UINT_PTR)GetPtrFromVariant(&pDispParams->rgvarg[nArg - i - 2]);
 						ppwc[i] = (WCHAR *)nVerb;
 						ppc[i] = (char *)nVerb;
 						if (nVerb > MAXWORD) {

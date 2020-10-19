@@ -724,6 +724,7 @@ TEmethod methodTE[] = {
 	{ TE_METHOD + 1070, "CtrlFromWindow" },
 	{ TE_METHOD + 1080, "LockUpdate" },
 	{ TE_METHOD + 1090, "UnlockUpdate" },
+	{ TE_METHOD + 1091, "ArrangeCB" },
 	{ TE_METHOD + 1100, "HookDragDrop" },//Deprecated
 #ifdef _USE_TESTOBJECT
 	{ 1200, "TestObj" },
