@@ -71,6 +71,19 @@ function PanelCreated(Ctrl) {
 	RunEvent1("PanelCreated", Ctrl);
 }
 
+Activate = function (o, id) {
+	var TC = te.Ctrl(CTRL_TC);
+	if (TC && TC.Id != id) {
+		var FV = GetInnerFV(id);
+		if (FV) {
+			FV.Focus();
+			setTimeout(function () {
+				o.focus();
+			}, 99);
+		}
+	}
+}
+
 GetAddonLocation = function (strName) {
 	var items = te.Data.Addons.getElementsByTagName(strName);
 	return (GetLength(items) ? items[0].getAttribute("Location") : null);
@@ -125,12 +138,6 @@ UI.Resize = Resize = function () {
 	ui_.tidResize = setTimeout(Resize2, 500);
 }
 
-UI.OpenInExplorer = function (Path) {
-	setTimeout(function (Path) {
-		$.OpenInExplorer(Path);
-	}, 99, Path);
-}
-
 UI.StartGestureTimer = function () {
 	var i = te.Data.Conf_GestureTimeout;
 	if (i) {
@@ -141,54 +148,27 @@ UI.StartGestureTimer = function () {
 	}
 }
 
-UI.Focus = function (o, tm) {
-	if (o) {
-		setTimeout(function () {
-			o.focus();
-		}, tm)
-	}
-}
-
-UI.FocusFV = function (tm) {
+UI.FocusFV = function () {
 	setTimeout(function () {
-		var hFocus = api.GetFocus();
-		if (!hFocus || hFocus == te.hwnd) {
-			var FV = te.Ctrl(CTRL_FV);
-			if (FV) {
-				FV.Focus();
-			}
+		var el;
+		if (document.activeElement) {
+			var rc = document.activeElement.getBoundingClientRect();
+			el = document.elementFromPoint(rc.left + 2, rc.top + 2);
 		}
-	}, tm || ui_.DoubleClickTime);
-}
-
-UI.FocusWB = function () {
-	var o = document.activeElement;
-	if (o) {
-		if (!/input|textarea/i.test(o.tagName)) {
-			setTimeout(function () {
-				if (o === document.activeElement) {
-					GetFolderView().Focus();
-				}
-			}, ui_.DoubleClickTime, o);
+		if (!el || !/input|textarea/i.test(el.tagName)) {
+			GetFolderView().Focus();
 		}
-	}
+	}, ui_.DoubleClickTime);
 }
 
 UI.SelectItem = function (FV, path, wFlags, tm) {
 	setTimeout(function () {
-		FV.SelectItem(path, wFlags);
-	}, tm);
-}
-
-UI.SelectNewItem = function () {
-	setTimeout(function () {
-		var FV = te.Ctrl(CTRL_FV);
 		if (FV) {
-			if (SameText(FV.FolderItem.Path, GetParentFolderName(g_.NewItemPath))) {
-				FV.SelectItem(g_.NewItemPath, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK | SVSI_SELECT);
+			if (SameText(FV.FolderItem.Path, GetParentFolderName(path))) {
+				FV.SelectItem(path, wFlags);
 			}
 		}
-	}, 800);
+	}, tm);
 }
 
 UI.SelectNext = function (FV) {
@@ -197,12 +177,6 @@ UI.SelectNext = function (FV) {
 			FV.SelectItem(FV.Item(FV.GetFocusedItem + (api.GetKeyState(VK_SHIFT) < 0 ? -1 : 1)) || api.GetKeyState(VK_SHIFT) < 0 ? FV.ItemCount(SVGIO_ALLVIEW) - 1 : 0, SVSI_EDIT | SVSI_FOCUSED | SVSI_SELECT | SVSI_DESELECTOTHERS);
 		}
 	}, 99);
-}
-
-UI.EndMenu = function () {
-	setTimeout(function () {
-		api.EndMenu();
-	}, 200);
 }
 
 UI.ShowStatusText = function (Ctrl, Text, iPart, tm) {
@@ -228,26 +202,11 @@ UI.CancelWindowRegistered = function () {
 	}, 9999);
 }
 
-UI.ExecGesture = function (Ctrl, hwnd, pt, str) {
-	setTimeout(function () {
-		g_.mouse.Exec(Ctrl, hwnd, pt, str);
-	}, 99);
-}
-
-UI.InitWindow = function (cb, cb2) {
-	setTimeout(function () {
-		Resize();
-		(cb)();
-		setTimeout(function () {
-			Resize();
-			(cb2)();
-		}, 500);
-	}, 99);
-}
-
 UI.ExitFullscreen = function () {
 	if (document.msExitFullscreen) {
 		document.msExitFullscreen();
+	} else if (document.exitFullscreen) {
+		document.exitFullscreen();
 	}
 }
 

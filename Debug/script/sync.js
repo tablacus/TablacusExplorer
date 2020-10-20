@@ -77,7 +77,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201019 ? te.Version : 20201019;
+		return te.Version < 20201019 ? te.Version : 20201020;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -957,17 +957,6 @@ CreateFont = function (LogFont) {
 	return hFont;
 }
 
-Activate = function (o, id) {
-	var TC = te.Ctrl(CTRL_TC);
-	if (TC && TC.Id != id) {
-		var FV = GetInnerFV(id);
-		if (FV) {
-			FV.Focus();
-			api.Invoke(UI.Focus, o, 99);
-		}
-	}
-}
-
 GetSavePath = function (FolderItem) {
 	var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
 	var res = IsSearchPath(FolderItem);
@@ -1586,7 +1575,7 @@ CreateNew = function (path, fn) {
 		}
 	}
 	MainWindow.g_.NewItemTime = new Date().getTime() + 5000;
-	MainWindow.g_.NewItemPath = path;
+	api.Invoke(MainWindow.UI.SelectItem, te.Ctrl(CTRL_FV), path, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK | SVSI_SELECT, 800);
 }
 
 SetFileTime = function (path, ctime, atime, mtime) {

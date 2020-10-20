@@ -948,6 +948,9 @@ SetAddrss = function (s) {
 RestoreFromTray = function () {
 	api.ShowWindow(te.hwnd, api.IsIconic(te.hwnd) ? SW_RESTORE : SW_SHOW);
 	api.SetForegroundWindow(te.hwnd);
+	setTimeout(function () {
+		api.RedrawWindow(te.hwnd, null, 0, RDW_INVALIDATE | RDW_FRAME | RDW_ALLCHILDREN);
+	}, 99);
 	RunEvent1("RestoreFromTray");
 }
 
@@ -1252,13 +1255,17 @@ AddFavorite = function (FolderItem) {
 		if (s) {
 			item.setAttribute("Name", s.replace(/\\/g, "/"));
 			item.setAttribute("Filter", "");
-			item.text = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
-			if (fso.FileExists(item.text)) {
-				item.text = api.PathQuoteSpaces(item.text);
+			var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
+			if ("string" === typeof path) {
+				path = FolderItem.Path; 
+			}
+			if (fso.FileExists(path)) {
+				path = api.PathQuoteSpaces(path);
 				item.setAttribute("Type", "Exec");
 			} else {
 				item.setAttribute("Type", "Open");
 			}
+			item.text = path;
 			menus[0].appendChild(item);
 			SaveXmlEx("menus.xml", xml);
 			FavoriteChanged();
@@ -1300,7 +1307,9 @@ GetCommandId = function (hMenu, s, ContextMenu) {
 			}
 			var i = api.GetMenuItemCount(hMenu);
 			if (i == 1 && ContextMenu && WINVER >= 0x600) {
-				api.Invoke(UI.EndMenu);
+				setTimeout(function () {
+					api.EndMenu();
+				}, 200);
 				api.TrackPopupMenuEx(hMenu, TPM_RETURNCMD, 0, 0, te.hwnd, null, ContextMenu);
 				i = api.GetMenuItemCount(hMenu);
 			}
@@ -1521,7 +1530,9 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 	}
 	var hr = RunEvent2("BeforeNavigate", Ctrl, fs, wFlags, Prev);
 	if (hr == S_OK && IsUseExplorer(Ctrl.FolderItem)) {
-		api.Invoke(UI.OpenInExplorer, Ctrl.FolderItem);
+		setTimeout(async function (Path) {
+			OpenInExplorer(Path);
+		}, 99, Ctrl.FolderItem);
 		return E_ABORT;
 	}
 	if (GetLock(Ctrl) && (wFlags & SBSP_NEWBROWSER) == 0 && !api.ILIsEqual(Prev, "about:blank")) {
@@ -1538,6 +1549,7 @@ te.OnNavigateComplete = function (Ctrl) {
 	Ctrl.NavigateComplete();
 	RunEvent1("NavigateComplete", Ctrl);
 	ChangeView(Ctrl);
+	api.Invoke(UI.FocusFV);
 	if (g_.focused) {
 		g_.focused.Focus();
 		if (--g_.fTCs <= 0) {
@@ -1729,7 +1741,9 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 						hr = S_FALSE;
 					}
 				} else {
-					api.Invoke(UI.ExecGesture, te.CtrlFromWindow(g_.mouse.hwndGesture), g_.mouse.hwndGesture, pt, g_.mouse.str);
+					setTimeout(function () {
+						g_.mouse.Exec(te.CtrlFromWindow(g_.mouse.hwndGesture), g_.mouse.hwndGesture, pt, g_.mouse.str);
+					}, 99);
 					hr = S_OK;
 				}
 			}
@@ -1739,7 +1753,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 				g_.mouse.bCapture = false;
 			}
 			if (Ctrl.Type == CTRL_WB) {
-				api.Invoke(UI.FocusWB);
+				api.Invoke(UI.FocusFV);
 			}
 			if (bButton) {
 				api.PostMessage(g_.mouse.hwndGesture, WM_CONTEXTMENU, g_.mouse.hwndGesture, pt.x + (pt.y << 16));
@@ -2004,7 +2018,9 @@ AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, 
 			var Item = Items.Item(i);
 			var path = Item.ExtendedProperty("linktarget") || Item.Path;
 			Navigate(GetParentFolderName(path), SBSP_NEWBROWSER);
-			api.Invoke(UI.SelectItem, te.Ctrl(CTRL_FV), path, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS, 99);
+			setTimeout(function (FV, path) {
+				FV.SelectItem(path, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
+			}, 99, te.Ctrl(CTRL_FV), path);
 			return S_OK;
 		}
 	}
@@ -2285,7 +2301,15 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					}
 					if (wParam & 0xffff) {
 						if (g_.mouse.str == "") {
-							api.Invoke(UI.FocusFV, 99);
+							setTimeout(function () {
+								var hFocus = api.GetFocus();
+								if (!hFocus || hFocus == te.hwnd) {
+									var FV = te.Ctrl(CTRL_FV);
+									if (FV) {
+										FV.Focus();
+									}
+								}
+							}, 99);
 						}
 					} else {
 						g_.mouse.str = "";
@@ -3419,7 +3443,8 @@ InitWindow = function () {
 		cTC[0].Visible = true;
 	}
 	g_.xmlWindow = void 0;
-	UI.InitWindow(function () {
+	setTimeout(function () {
+		Resize();
 		var cTC = te.Ctrls(CTRL_TC);
 		for (var i in cTC) {
 			if (cTC[i].SelectedIndex >= 0) {
@@ -3431,10 +3456,14 @@ InitWindow = function () {
 			api.SetWindowPos(te.hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 		}
 		te.CmdShow = SW_SHOWNORMAL;
-	}, function () {
-		RunCommandLine(api.GetCommandLine());
-		api.PostMessage(te.hwnd, WM_SIZE, 0, 0);
-	});
+		setTimeout(function () {
+			Resize();
+			RunCommandLine(api.GetCommandLine());
+			setTimeout(function () {
+				api.RedrawWindow(te.hwnd, null, 0, RDW_INVALIDATE | RDW_FRAME | RDW_ALLCHILDREN);
+			}, 99);
+		}, 500);
+	}, 99);
 }
 
 Threads = api.CreateObject("Object");
