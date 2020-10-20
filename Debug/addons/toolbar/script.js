@@ -5,26 +5,23 @@ var AddonName = "ToolBar";
 if (window.Addon == 1) {
 	Addons.ToolBar =
 	{
-		Click: function (i, bNew)
-		{
+		Click: function (i, bNew) {
 			var items = te.Data.xmlToolBar.getElementsByTagName("Item");
 			var item = items[i];
 			if (item) {
 				var type = item.getAttribute("Type");
-				Exec(te, item.text, (bNew && api.PathMatchSpec(type, "Open;Open in background")) ? "Open in new tab": item.getAttribute("Type"), te.hwnd, null);
+				Exec(te, item.text, (bNew && api.PathMatchSpec(type, "Open;Open in background")) ? "Open in new tab" : item.getAttribute("Type"), te.hwnd, null);
 			}
 			return false;
 		},
 
-		Down: function (i)
-		{
+		Down: function (i) {
 			if (api.GetKeyState(VK_MBUTTON) < 0) {
 				return this.Click(i, true);
 			}
 		},
 
-		Open: function (i)
-		{
+		Open: function (i) {
 			if (Addons.ToolBar.bClose) {
 				return S_OK;
 			}
@@ -55,8 +52,7 @@ if (window.Addon == 1) {
 			}
 		},
 
-		Popup: function (i)
-		{
+		Popup: function (i) {
 			var items = te.Data.xmlToolBar.getElementsByTagName("Item");
 			if (i >= 0) {
 				var hMenu = api.CreatePopupMenu();
@@ -75,17 +71,14 @@ if (window.Addon == 1) {
 			}
 		},
 
-		ShowOptions: function (nEdit)
-		{
-			AddonOptions("toolbar", function ()
-			{
+		ShowOptions: function (nEdit) {
+			AddonOptions("toolbar", function () {
 				Addons.ToolBar.Arrange();
 				ApplyLang(document);
-			}, {nEdit: nEdit});
+			}, { nEdit: nEdit });
 		},
 
-		FromPt: function (n, pt)
-		{
+		FromPt: function (n, pt) {
 			while (--n >= 0) {
 				if (HitTest(document.getElementById("_toolbar" + n), pt)) {
 					return n;
@@ -94,8 +87,7 @@ if (window.Addon == 1) {
 			return -1;
 		},
 
-		GetPath: function (items, i)
-		{
+		GetPath: function (items, i) {
 			if (i < items.length) {
 				var s = items[i].getAttribute("Type");
 				if (s.match(/^Open$|^Open in New Tab$|Open in Background/i)) {
@@ -106,8 +98,7 @@ if (window.Addon == 1) {
 			return '';
 		},
 
-		Arrange: function ()
-		{
+		Arrange: function () {
 			var s = [];
 			var items = te.Data.xmlToolBar.getElementsByTagName("Item");
 			var menus = 0;
@@ -156,15 +147,13 @@ if (window.Addon == 1) {
 	SetAddon(Addon_Id, Default, '<span id="_' + Addon_Id + '"></span>');
 	Addons.ToolBar.Arrange();
 
-	AddEvent("DragEnter", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect)
-	{
+	AddEvent("DragEnter", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 		if (Ctrl.Type == CTRL_WB) {
 			return S_OK;
 		}
 	});
 
-	AddEvent("DragOver", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect)
-	{
+	AddEvent("DragOver", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 		if (Ctrl.Type == CTRL_WB) {
 			var items = te.Data.xmlToolBar.getElementsByTagName("Item");
 			var i = Addons.ToolBar.FromPt(items.length + 1, pt);
@@ -184,8 +173,7 @@ if (window.Addon == 1) {
 		MouseOut("_toolbar");
 	});
 
-	AddEvent("Drop", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect)
-	{
+	AddEvent("Drop", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 		MouseOut();
 		if (Ctrl.Type == CTRL_WB) {
 			var items = te.Data.xmlToolBar.getElementsByTagName("Item");
@@ -224,9 +212,11 @@ if (window.Addon == 1) {
 		}
 	});
 
-	AddEvent("DragLeave", function (Ctrl)
-	{
+	AddEvent("DragLeave", function (Ctrl) {
 		MouseOut();
 		return S_OK;
 	});
+} else {
+	importScript("addons\\" + Addon_Id + "\\options.js");
 }
+
