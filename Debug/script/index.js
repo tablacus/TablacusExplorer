@@ -278,7 +278,7 @@ g_.event.windowregistered = function (Ctrl) {
 
 ArrangeAddons = function () {
 	g_.Locations = api.CreateObject("Object");
-	$.IconSize = te.Data.Conf_IconSize || screen.deviceYDPI / 4;
+	$.IconSize = IconSize = te.Data.Conf_IconSize || screen.deviceYDPI / 4;
 	var xml = OpenXml("addons.xml", false, true);
 	te.Data.Addons = xml;
 	if (api.GetKeyState(VK_SHIFT) < 0 && api.GetKeyState(VK_CONTROL) < 0) {

@@ -77,7 +77,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201019 ? te.Version : 20201020;
+		return te.Version < 20201019 ? te.Version : 20201021;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -2782,6 +2782,16 @@ OpenInExplorer = function (pid1) {
 		sha.Explore(pid1.FolderItem || pid1);
 	}
 }
+
+ShowDialog = function (fn, opt) {
+	opt.opener = window;
+	if (!/:/.test(fn)) {
+		fn = location.href.replace(/[^\/]*$/, fn);
+	}
+	var r = opt.r || Math.abs(MainWindow.DefaultFont.lfHeight) / 12;
+	return te.CreateCtrl(CTRL_SW, fn, opt, WebBrowser.hwnd, (opt.width > 99 ? opt.width : 750) * r, (opt.height > 99 ? opt.height : 530) * r, opt.left, opt.top);
+}
+
 
 ShowDialogEx = function (mode, w, h, Id, opt) {
 	if (!opt) {

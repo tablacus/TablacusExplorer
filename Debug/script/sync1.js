@@ -1257,7 +1257,7 @@ AddFavorite = function (FolderItem) {
 			item.setAttribute("Filter", "");
 			var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
 			if ("string" === typeof path) {
-				path = FolderItem.Path; 
+				path = FolderItem.Path;
 			}
 			if (fso.FileExists(path)) {
 				path = api.PathQuoteSpaces(path);
@@ -1741,9 +1741,9 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 						hr = S_FALSE;
 					}
 				} else {
-					setTimeout(function () {
-						g_.mouse.Exec(te.CtrlFromWindow(g_.mouse.hwndGesture), g_.mouse.hwndGesture, pt, g_.mouse.str);
-					}, 99);
+					setTimeout(function (Ctrl, hwnd, pt, str) {
+						g_.mouse.Exec(Ctrl, hwnd, pt, str);
+					}, 99, te.CtrlFromWindow(g_.mouse.hwndGesture), g_.mouse.hwndGesture, pt, g_.mouse.str);
 					hr = S_OK;
 				}
 			}
@@ -3271,13 +3271,6 @@ IsHeader = function (Ctrl, pt, hwnd, strClass) {
 	return pt2.y < screen.logicalYDPI / 4;
 }
 
-ClearAutocomplete = function () {
-	for (var dl = document.getElementById("AddressList"); dl.lastChild;) {
-		dl.removeChild(dl.lastChild);
-	}
-	g_.Autocomplete.Path = "";
-}
-
 AutocompleteThread = function () {
 	var pid = api.ILCreateFromPath(path);
 	if (!pid.IsFolder) {
@@ -3291,31 +3284,29 @@ AutocompleteThread = function () {
 			try {
 				Items.Filter(fflag, "*");
 			} catch (e) { }
-			var dl = document.getElementById("AddressList");
-			while (dl.lastChild) {
-				dl.removeChild(dl.lastChild);
-			}
-			for (var i = 0; i < Items.Count && Autocomplete.Path == pid.Path; ++i) {
+			for (var i = 0; i < Items.Count; ++i) {
 				if (Items.Item(i).IsFolder) {
-					var el = document.createElement("option");
-					el.value = Items.Item(i).Path;
-					dl.appendChild(el);
+					ar.push(Items.Item(i).Path);
 				}
 			}
 		}
+		api.Invoke(UI.Autocomplete, ar.join("\t"), pid.Path);
 	}
 }
 
 AdjustAutocomplete = function (path) {
-	if (te.Data.Conf_NoAutocomplete || window.chrome) {
+	if (te.Data.Conf_NoAutocomplete) {
 		return;
 	}
 	var o = api.CreateObject("Object");
 	o.Data = api.CreateObject("Object");
 	o.Data.path = path;
 	o.Data.Autocomplete = g_.Autocomplete;
-	o.Data.document = document;
 	o.Data.fflag = SHCONTF_FOLDERS | ((te.Ctrl(CTRL_FV).ViewFlags & CDB2GVF_SHOWALLFILES) ? SHCONTF_INCLUDEHIDDEN : 0);
+	o.Data.UI = UI;
+	o.Data.api = api;
+	o.Data.wsh = wsh;
+	o.Data.ar = api.CreateObject("Array");
 	api.ExecScript(AutocompleteThread.toString().replace(/^[^{]+{|}$/g, ""), "JScript", o, true);
 }
 

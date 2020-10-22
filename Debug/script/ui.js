@@ -46,7 +46,6 @@ InitUI = function () {
 			next: s ? '&#x25ba;' : '<span style="font-family: Marlett">4</span>',
 			dropdown: s ? '&#x25bc;' : '<span style="font-family: Marlett">6</span>'
 		};
-		delete s;
 	}
 
 	if (api.SHTestTokenMembership(null, 0x220) && WINVER >= 0x600) {
@@ -330,13 +329,27 @@ InitUI = function () {
 		}
 	}
 
-	UI.ShowDialog = ShowDialog = function (fn, opt) {
-		opt.opener = $;
-		if (!/:/.test(fn)) {
-			fn = location.href.replace(/[^\/]*$/, fn);
+	UI.CloseWindow = CloseWindow = function () {
+		if (window.chrome) {
+			api.PostMessage(GetTopWindow(), WM_CLOSE, 0, 0);
+			return;
 		}
-		var r = opt.r || Math.abs(MainWindow.DefaultFont.lfHeight) / 12;
-		return te.CreateCtrl(CTRL_SW, fn, opt, WebBrowser.hwnd, (opt.width > 99 ? opt.width : 750) * r, (opt.height > 99 ? opt.height : 530) * r, opt.left, opt.top);
+		window.close();
+	}
+
+	UI.Autocomplete = function (s, path) {
+		var dl = document.getElementById("AddressList");
+		while (dl.lastChild) {
+			dl.removeChild(dl.lastChild);
+		}
+		if (g_.Autocomplete.Path == path) {
+			var ar = s.split("\t");
+			for (var i = 0; i < ar.length; ++i) {
+				var el = document.createElement("option");
+				el.value = ar[i];
+				dl.appendChild(el);
+			}
+		}
 	}
 };
 
@@ -790,14 +803,6 @@ LoadAddon = function (ext, Id, arError, param) {
 	return r;
 }
 
-CloseWindow = function () {
-	if (window.chrome) {
-		api.PostMessage(GetTopWindow(), WM_CLOSE, 0, 0);
-		return;
-	}
-	window.close();
-}
-
 BrowserCreated = function () {
 	var eo = eventTE["browsercreated"];
 	var nLen = GetLength(eo);
@@ -1058,6 +1063,13 @@ createHttpRequest = function () {
 
 ShowXHRError = function (url, status) {
 	MessageBox([api.sprintf(999, (api.LoadString(hShell32, 4227)).replace(/^\t/, ""), status), url].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
+}
+
+ClearAutocomplete = function () {
+	for (var dl = document.getElementById("AddressList"); dl.lastChild;) {
+		dl.removeChild(dl.lastChild);
+	}
+	g_.Autocomplete.Path = "";
 }
 
 if (!window.JSON) {
