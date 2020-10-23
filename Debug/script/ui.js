@@ -233,7 +233,8 @@ InitUI = function () {
 	}
 
 	UI.DownloadFile = DownloadFile = function (url, fn) {
-		return api.URLDownloadToFile(null, url, fn);
+		var hr = RunEvent4("DownloadFile", url, fn);
+		return hr != null ? hr : api.URLDownloadToFile(null, url, fn);
 	}
 
 	UI.CheckUpdate2 = function (xhr, url, arg1) {
@@ -905,7 +906,7 @@ AddonOptions = function (Id, fn, Data, bNew) {
 		var el = document.createElement('iframe');
 		el.id = 'panel1_' + Id;
 		if (window.chrome) {
-			el.srcdoc = ReadTextFile(sURL);
+			el.srcdoc = (ReadTextFile(sURL)).replace(/(<head[^>]*>)/i, '$1<base href="' + sURL.replace(/[^\/\\]*$/, "") + '">');
 		} else {
 			el.src = sURL;
 		}
@@ -1051,7 +1052,7 @@ KeySelect = function (o) {
 
 createHttpRequest = function () {
 	var xhr = RunEvent4("createHttpRequest");
-	if (xhr !== void 0) {
+	if (xhr != null) {
 		return xhr;
 	}
 	try {

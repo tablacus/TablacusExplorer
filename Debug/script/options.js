@@ -984,9 +984,6 @@ function SaveX(mode, form) {
 }
 
 function SaveAddons() {
-	if (window.g_bAddonLoading) {
-		return;
-	}
 	if (g_Chg.Addons || te.Data.bErrorAddons) {
 		te.Data.bErrorAddons = false;
 		var Addons = api.CreateObject("Object");
@@ -996,6 +993,22 @@ function SaveAddons() {
 			if (div) {
 				var Id = div.id.replace("Addons_", "").toLowerCase();
 				Addons[Id] = document.getElementById("enable_" + Id).checked;
+			}
+		}
+		if (window.g_bAddonLoading) {
+			var root = te.Data.Addons.documentElement;
+			if (root) {
+				var items = root.childNodes;
+				if (items) {
+					var nLen = GetLength(items);
+					for (var i = 0; i < nLen; ++i) {
+						var item = items[i];
+						var Id = item.nodeName;
+						if (Addons[Id] == null) {
+							Addons[Id] = item.getAttribute("Enabled");
+						}
+					}
+				}
 			}
 		}
 		MainWindow.SaveAddons(Addons);
@@ -1100,17 +1113,21 @@ function SetAddon(Id, bEnable, td, Alt) {
 		td = document.getElementById(Alt || "Addons_" + Id).parentNode;
 	}
 	var info = GetAddonInfo(Id);
-	var bMinVer = info.MinVersion && AboutTE(0) < CalcVersion(info.MinVersion);
+	var bLevel = (!window.chrome || info.Level > 1);
+	var MinVersion = info.MinVersion;
+	var bMinVer = !bLevel || MinVersion && AboutTE(0) < CalcVersion(MinVersion);
 	if (bMinVer) {
 		bEnable = false;
 	}
 	var s = ['<div ', (Alt ? '' : 'draggable="true" ondragstart="Start5(event, this)" ondragend="End5()"'), ' title="', Id, '" Id="', Alt || "Addons_", Id, '"', bEnable ? "" : ' class="disabled"', '>'];
 	s.push('<table><tr style="border-top: 1px solid buttonshadow"><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id + '">'), '</td><td style="width: 100%"><label for="_', Id, '">', info.Name, "&nbsp;", info.Version, '<br><a href="#" onclick="return AddonInfo(\'', Id, '\', this)"  class="link" style="font-size: .9em">', GetText('Details'), ' (', Id, ')</a>');
-	s.push(' <a href="#" onclick="AddonRemove(\'', Id, '\'); return false;" style="color: red; font-size: .9em; white-space: nowrap; margin-left: 2em">', GetText('Delete'), "</a>");
-	if (bMinVer) {
-		s.push('</td><td class="danger" style="align: right; white-space: nowrap; vertical-align: middle">', (info.MinVersion).replace(/^20/, (api.LoadString(hShell32, 60) || "%").replace(/%.*/, "")).replace(/\.0/g, '.'), ' ', GetText("is required."), '</td>');
+	s.push(' <a href="#" onclick="AddonRemove(\'', Id, '\'); return false;" style="color: red; font-size: .9em; white-space: nowrap; margin-left: 2em">', GetText('Delete'), "</a></td>");
+	if (!bLevel) {
+		s.push('<td class="danger" style="align: right; white-space: nowrap; vertical-align: middle">Incompatible&nbsp;</td>');
+	} else if (bMinVer) {
+		s.push('<td class="danger" style="align: right; white-space: nowrap; vertical-align: middle">', MinVersion.replace(/^20/, (api.LoadString(hShell32, 60) || "%").replace(/%.*/, "")).replace(/\.0/g, '.'), ' ', GetText("is required."), '</td>');
 	} else if (info.Options) {
-		s.push('</td><td style="white-space: nowrap; vertical-align: middle; padding-right: 1em"><a href="#" onclick="AddonOptions(\'', Id, '\'); return false;" class="link" id="opt_', Id, '">', GetText('Options'), '</td>');
+		s.push('<td style="white-space: nowrap; vertical-align: middle; padding-right: 1em"><a href="#" onclick="AddonOptions(\'', Id, '\'); return false;" class="link" id="opt_', Id, '">', GetText('Options'), '</td>');
 	}
 	s.push('<td style="vertical-align: middle', bMinVer ? ';display: none"' : "", '"><input type="checkbox" ', (Alt ? "" : 'id="enable_' + Id + '"'), ' onclick="AddonEnable(this, \'', Id, '\')" ', bEnable ? " checked" : "", '></td>');
 	s.push('<td style="vertical-align: middle', bMinVer ? ';display: none"' : "", '"><label for="enable_', Id, '" style="display: block; width: 6em; white-space: nowrap">', GetText(bEnable ? "Enabled" : "Enable"), '</label></td>');
@@ -1319,6 +1336,7 @@ function OkOptions() {
 }
 
 function CancelOptions() {
+	g_nResult = 0;
 	if (te.Data.bErrorAddons) {
 		SaveAddons();
 		te.Data.bReload = true;
@@ -1328,7 +1346,6 @@ function CancelOptions() {
 
 function ContinueOptions() {
 	WebBrowser.PreventClose();
-	g_nResult = 0;
 }
 
 InitOptions = function () {
@@ -2639,7 +2656,7 @@ function DeleteIconPacks() {
 }
 
 function EnableSelectTag(o) {
-	if (o) {
+	if (o && !window.chrome) {
 		var hwnd = WebBrowser.hwnd;
 		api.SendMessage(hwnd, WM_SETREDRAW, false, 0);
 		o.style.visibility = "hidden";

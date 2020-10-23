@@ -1222,6 +1222,10 @@ SaveAddons = function (Addons) {
 			AddonDisabled(Id);
 		}
 		item.setAttribute("Enabled", Enabled);
+		var info = await GetAddonInfo(Id);
+		if (info.Level > 0) {
+			item.setAttribute("Level", info.Level);
+		}
 		root.appendChild(item);
 	}
 	xml.appendChild(root);

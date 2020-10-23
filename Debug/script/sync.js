@@ -77,7 +77,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201019 ? te.Version : 20201022;
+		return te.Version < 20201019 ? te.Version : 20201023;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -1005,7 +1005,7 @@ OpenContains = function (Ctrl, pt) {
 		var Item = Items.Item(j);
 		var path = Item.Path;
 		Navigate(GetParentFolderName(path), SBSP_NEWBROWSER);
-		api.Invoke(UI.SelectItem, te.Ctrl(CTRL_FV), Item, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS, 99);
+		api.Invoke(UI.SelectItem, te.Ctrl(CTRL_FV), path, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS, 99);
 	}
 }
 
