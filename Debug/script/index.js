@@ -314,7 +314,10 @@ ArrangeAddons = function () {
 				}
 				g_.Error_source = "";
 			}
-			if (arError.length || arError.Count) {
+			if (window.chrome) {
+				arError = api.CreateObject("SafeArray", arError);
+			}
+			if (arError.length) {
 				setTimeout(function (arError) {
 					if (MessageBox(arError.join("\n\n"), TITLE, MB_OKCANCEL) != IDCANCEL) {
 						te.Data.bErrorAddons = true;
@@ -325,7 +328,6 @@ ArrangeAddons = function () {
 		}
 	}
 	RunEventUI("BrowserCreatedEx");
-	RunEvent1("BrowserCreated", document);
 	var cl = GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor);
 	ArrangeAddons1(cl);
 }

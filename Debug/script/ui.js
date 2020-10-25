@@ -131,20 +131,22 @@ InitUI = function () {
 				arg.pcRef[0] = arg.pcRef[0] - 1;
 			}
 			if (xhr.status == 200) {
-				return fn(xhr, url, arg);
+				if (fn) {
+					fn(xhr, url, arg);
+					fn = void 0;
+				}
+				return;
 			}
 			if (/^http/.test(alt)) {
-				return UI.OpenHttpRequest(/^https/.test(url) && alt == "http" ? url.replace(/^https/, alt) : alt, '', fn, arg);
+				UI.OpenHttpRequest(/^https/.test(url) && alt == "http" ? url.replace(/^https/, alt) : alt, '', fn, arg);
+				return;
 			}
 			ShowXHRError(url, xhr.status);
 		}
-		if (xhr.onload !== void 0) {
-			xhr.onload = fnLoaded;
-		} else {
-			xhr.onreadystatechange = function () {
-				if (xhr.readyState == 4) {
-					fnLoaded();
-				}
+		xhr.onload = fnLoaded;
+		xhr.onreadystatechange = function () {
+			if (xhr.readyState == 4) {
+				fnLoaded();
 			}
 		}
 		if (/ml$/i.test(url)) {
@@ -153,7 +155,7 @@ InitUI = function () {
 		if (arg && arg.pcRef) {
 			arg.pcRef[0] = arg.pcRef[0] + 1;
 		}
-		if (window.chrome && /\.zip$/i.test(url)) {
+		if (window.chrome && /\.zip$|\.nupkg$/i.test(url)) {
 			xhr.responseType = "blob";
 		}
 		xhr.open("GET", url, true);
@@ -233,7 +235,7 @@ InitUI = function () {
 	}
 
 	UI.DownloadFile = DownloadFile = function (url, fn) {
-		var hr = RunEvent4("DownloadFile", url, fn);
+		var hr = MainWindow.RunEvent4("DownloadFile", url, fn);
 		return hr != null ? hr : api.URLDownloadToFile(null, url, fn);
 	}
 
@@ -286,24 +288,24 @@ InitUI = function () {
 		}
 		var te_exe = arg.temp + "\\te64.exe";
 		var nDog = 300;
-		while (!fso.FileExists(te_exe)) {
+		while (!$.fso.FileExists(te_exe)) {
 			if (wsh.Popup(GetText("Please wait."), 1, TITLE, MB_OKCANCEL) == IDCANCEL || nDog-- == 0) {
 				return;
 			}
 		}
 		var arDel = [];
 		var addons = arg.temp + "\\addons";
-		if (fso.FolderExists(arg.temp + "\\config")) {
+		if ($.fso.FolderExists(arg.temp + "\\config")) {
 			arDel.push(arg.temp + "\\config");
 		}
 		for (var i = 32; i <= 64; i += 32) {
 			te_exe = arg.temp + '\\te' + i + '.exe';
 			var te_old = BuildPath(te.Data.Installed, 'te' + i + '.exe');
-			if (!fso.FileExists(te_old) || fso.GetFileVersion(te_exe) == fso.GetFileVersion(te_old)) {
+			if (!$.fso.FileExists(te_old) || $.fso.GetFileVersion(te_exe) == $.fso.GetFileVersion(te_old)) {
 				arDel.push(te_exe);
 			}
 		}
-		for (var list = api.CreateObject("Enum", fso.GetFolder(addons).SubFolders); !list.atEnd(); list.moveNext()) {
+		for (var list = api.CreateObject("Enum", $.fso.GetFolder(addons).SubFolders); !list.atEnd(); list.moveNext()) {
 			var n = list.item().Name;
 			var items = te.Data.Addons.getElementsByTagName(n);
 			if (!items || GetLength(items) == 0) {
@@ -804,15 +806,6 @@ LoadAddon = function (ext, Id, arError, param) {
 	return r;
 }
 
-BrowserCreated = function () {
-	var eo = eventTE["browsercreated"];
-	var nLen = GetLength(eo);
-	for (var i = 0; i < nLen; ++i) {
-		var fn = eo[i];
-		wsh.Popup(fn);
-	}
-}
-
 //Options
 AddonOptions = function (Id, fn, Data, bNew) {
 	LoadLang2(BuildPath("addons", Id, "lang", GetLangId() + ".xml"));
@@ -1001,6 +994,7 @@ MakeKeySelect = function () {
 
 SetKeyShift = function () {
 	var key = ((document.E && document.E.KeyKey) || document.F.KeyKey || document.F.Key).value;
+	key = key.replace(/^(.+),.+/, "$1");
 	var nLen = GetLength(MainWindow.g_.KeyState);
 	for (var i = 0; i < nLen; ++i) {
 		var s = MainWindow.g_.KeyState[i][0];
@@ -1047,11 +1041,13 @@ KeyShift = function (o) {
 
 KeySelect = function (o) {
 	var oKey = (document.E && document.E.KeyKey) || document.F.KeyKey || document.F.Key;
-	oKey.value = oKey.value.replace(/(\+)[^\+]*$|^[^\+]*$/, "$1") + o[o.selectedIndex].value;
+	var ar = oKey.value == "," ? [","] : oKey.value.split(",");
+	ar[0] = ar[0].replace(/(\+)[^\+]*$|^[^\+]*$/, "$1") + o[o.selectedIndex].value;
+	oKey.value = ar.join(",");
 }
 
 createHttpRequest = function () {
-	var xhr = RunEvent4("createHttpRequest");
+	var xhr = MainWindow.RunEvent4("createHttpRequest");
 	if (xhr != null) {
 		return xhr;
 	}

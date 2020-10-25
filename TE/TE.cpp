@@ -2339,7 +2339,14 @@ BOOL teGetVariantTime(VARIANT *pv, DATE *pdt)
 	}
 	if (v.vt != VT_DATE) {
 		VariantClear(&v);
-		teVariantChangeType(&v, pv, VT_DATE);
+		if (teVarIsNumber(pv)) {//UNIX EPOCH
+			teVariantChangeType(&v, pv, VT_UI8);
+			v.ullVal = v.ullVal * 10000 + 116444736000000000LL;
+			teFileTimeToVariantTime((FILETIME *)&v.ullVal, pdt);
+			return TRUE;
+		} else {
+			teVariantChangeType(&v, pv, VT_DATE);
+		}
 	}
 	if (v.vt == VT_DATE) {
 		*pdt = v.date;
@@ -4747,7 +4754,7 @@ IDispatch* teCreateObj(LONG lId, VARIANT *pvArg)
 		return new CteWICBitmap();
 
 	}
-	return pdispResult;
+	return NULL;
 }
 
 VOID ClearEvents()
@@ -9733,17 +9740,27 @@ VOID teApiCreateObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIAN
 		if (lstrcmpiA(pszNameA, methodObject[i].name) == 0) {
 			teSetObjectRelease(pVarResult, teCreateObj(methodObject[i].id, nArg >= 1 ? &pDispParams->rgvarg[nArg - 1] : NULL));
 			return;
-/*			if (!g_pSP || methodObject[i].id != 2) {
-			}
-			if (pVarResult) {
-				SAFEARRAYBOUND sab = { 0, 0 };
-				SAFEARRAY *psa = SafeArrayCreate(VT_VARIANT, 1, &sab);
-				if (psa) {
-					pVarResult->vt = VT_ARRAY | VT_VARIANT;
-					pVarResult->parray = psa;
+		}
+	}
+	if (nArg >= 1 && lstrcmpiA(pszNameA, "SafeArray") == 0) {
+		if (pVarResult) {
+			IDispatch *pdisp;
+			if (GetDispatch(&pDispParams->rgvarg[nArg - 1], &pdisp)) {
+				LONG nLen = teGetObjectLength(pdisp);
+				SAFEARRAY *psa = SafeArrayCreateVector(VT_VARIANT, 0, nLen);
+				VARIANT v;
+				VariantInit(&v);
+				while (--nLen >= 0) {
+					if SUCCEEDED(teGetPropertyAt(pdisp, nLen, &v)) {
+						::SafeArrayPutElement(psa, &nLen, &v);
+						::VariantClear(&v);
+					}
 				}
+				pVarResult->vt = VT_ARRAY | VT_VARIANT;
+				pVarResult->parray = psa;
+				SafeRelease(&pdisp);
+				return;
 			}
-			return;*/
 		}
 	}
 	CLSID clsid;
@@ -17733,11 +17750,16 @@ CteWebBrowser::CteWebBrowser(HWND hwndParent, WCHAR *szPath, VARIANT *pvArg)
 #ifdef _DEBUG
 	hr = teCreateInstance(CLSID_WebBrowserExt, L"C:\\cpp\\tewv\\Debug\\tewv32d.dll", &g_hTEWV, IID_PPV_ARGS(&m_pWebBrowser));
 	if (hr == S_OK && !g_pSP) {
-		g_bBlink = TRUE;
-		m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&g_pSP));
-/*
-		m_pWebBrowser->Release();
-		hr = E_FAIL;//*/
+		VARIANT v;
+		VariantInit(&v);
+		m_pWebBrowser->GetProperty(L"version", &v);
+		if (GetIntFromVariantClear(&v) >= 20102300) {
+			g_bBlink = TRUE;
+			m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&g_pSP));
+		} else {
+			m_pWebBrowser->Release();
+			hr = E_FAIL;
+		}
 	}
 	if FAILED(hr) {
 		g_bBlink = FALSE;

@@ -779,10 +779,13 @@ function LoadMenus(nSelected) {
 	if (!g_x.Menus) {
 		var arFunc = api.CreateObject("Array");
 		MainWindow.RunEvent1("AddType", arFunc);
-		for (var i = 0; i < GetLength(arFunc); ++i) {
+		if (window.chrome) {
+			arFunc = api.CreateObject("SafeArray", arFunc);
+		}
+		for (var i = 0; i < arFunc.length; ++i) {
 			var o = oa[++oa.length - 1];
 			o.value = arFunc[i];
-			o.innerText = GetText(o.value);
+			o.innerText = GetText(arFunc[i]);
 		}
 
 		oa = document.F.Menus;
@@ -838,11 +841,14 @@ function LoadX(mode, fn, form) {
 		}
 		var arFunc = api.CreateObject("Array");
 		MainWindow.RunEvent1("AddType", arFunc);
+		if (window.chrome) {
+			arFunc = api.CreateObject("SafeArray", arFunc);
+		}
 		var oa = form[mode + "Type"] || form.Type;
 		while (oa.length) {
 			oa.removeChild(oa[0]);
 		}
-		for (var i = 0; i < GetLength(arFunc); ++i) {
+		for (var i = 0; i < arFunc.length; ++i) {
 			var o = oa[++oa.length - 1];
 			o.value = arFunc[i];
 			o.innerText = GetText(arFunc[i]);
@@ -1081,7 +1087,7 @@ function LoadAddons() {
 		}
 	}
 	for (var Id in AddonId) {
-		if (fso.FileExists(path + Id + "\\config.xml")) {
+		if ($.fso.FileExists(path + Id + "\\config.xml")) {
 			AddAddon(table, Id, false);
 		}
 	}
@@ -1276,13 +1282,10 @@ function AddonRemove(Id) {
 	if (AddonBeforeRemove(Id) < 0) {
 		return;
 	}
-	var sf = api.Memory("SHFILEOPSTRUCT");
-	sf.hwnd = api.GetForegroundWindow();
-	sf.wFunc = FO_DELETE;
-	sf.fFlags = 0;
-	sf.pFrom = BuildPath(te.Data.Installed, "addons", Id);
-	if (api.SHFileOperation(sf) == 0) {
-		if (!sf.fAnyOperationsAborted) {
+	var path = BuildPath(te.Data.Installed, "addons", Id);
+	DeleteItem(path, 0);
+	setTimeout(function () {
+		if (!IsExists(path)) {
 			var table = document.getElementById("Addons");
 			table.deleteRow(GetRowIndexById("Addons_" + Id));
 			var table = document.getElementById("SortedAddons");
@@ -1291,7 +1294,7 @@ function AddonRemove(Id) {
 			}
 			g_Chg.Addons = true;
 		}
-	}
+	}, 500);
 }
 
 function SetAddonsRssults() {
@@ -1354,7 +1357,7 @@ InitOptions = function () {
 	document.title = GetText("Options") + " - " + TITLE;
 	MainWindow.g_.OptionsWindow = $;
 	var InstallPath = te.Data.Installed;
-	document.F.ButtonInitConfig.disabled = (InstallPath == te.Data.DataFolder) | !fso.FolderExists(BuildPath(InstallPath, "layout"));
+	document.F.ButtonInitConfig.disabled = (InstallPath == te.Data.DataFolder) | !$.fso.FolderExists(BuildPath(InstallPath, "layout"));
 	for (var i = 0; i < document.F.length; ++i) {
 		var o = document.F[i];
 		var Id = o.name || o.id;
@@ -1406,7 +1409,6 @@ InitOptions = function () {
 
 OpenIcon = function (o) {
 	setTimeout(function () {
-		var fso = api.CreateObject("fso");
 		var data = [];
 		var a = o.id.split(/,/);
 		if (a[0] == "b") {
@@ -1625,7 +1627,7 @@ InitDialog = function () {
 		var s = ['<table style="border-spacing: 2em; border-collapse: separate; width: 100%"><tr><td>'];
 		var src = MakeImgSrc(api.GetModuleFileName(null), 0, true, 48);
 		s.push('<img src="', src, '"></td><td><span style="font-weight: bold; font-size: 120%">', AboutTE(2), '</span> (', GetTextR((api.sizeof("HANDLE") * 8) + '-bit'), ')<br>');
-		s.push('<br><a href="#" class="link" onclick="Run(0, this)">', api.GetModuleFileName(null), '</a> (', fso.GetFileVersion(api.GetModuleFileName(null)), ')<br>');
+		s.push('<br><a href="#" class="link" onclick="Run(0, this)">', api.GetModuleFileName(null), '</a> (', $.fso.GetFileVersion(api.GetModuleFileName(null)), ')<br>');
 		s.push('<br><a href="#" class="link" onclick="Run(1, this)">', BuildPath(te.Data.DataFolder, "config"), '</a><br>');
 		s.push('<br><label>Information</label><input type="text" value="', AboutTE(3), '" style="width: 100%" onclick="this.select()" readonly><br>');
 		var root = te.Data.Addons.documentElement;
@@ -1774,7 +1776,10 @@ InitLocation = function () {
 	}
 	LoadLang2(BuildPath("addons", Addon_Id, "lang", GetLangId() + ".xml"));
 	LoadAddon("js", Addon_Id, ar, param);
-	if (GetLength(ar)) {
+	if (window.chrome) {
+		ar = api.CreateObject("SafeArray", ar);
+	}
+	if (ar.length) {
 		setTimeout(function (ar) {
 			MessageBox(ar.join("\n\n"), TITLE, MB_OK);
 		}, 500, ar);
@@ -2091,7 +2096,7 @@ function PortableX(Id) {
 		return;
 	}
 	var o = GetElement(Id);
-	var s = fso.GetDriveName(api.GetModuleFileName(null));
+	var s = $.fso.GetDriveName(api.GetModuleFileName(null));
 	SetValue(o, o.value.replace(wsh.ExpandEnvironmentStrings("%UserProfile%"), "%UserProfile%").replace(new RegExp('^("?)' + s, "igm"), "$1%Installed%").replace(new RegExp('( "?)' + s, "igm"), "$1%Installed%").replace(new RegExp('(:)' + s, "igm"), "$1%Installed%"));
 }
 
@@ -2308,11 +2313,11 @@ function GetTextEx(s) {
 }
 
 function GetAddons() {
-	MainWindow.OpenHttpRequest(urlAddons + "index.xml", "http", AddonsList);
+	(window.chrome ? window : MainWindow).OpenHttpRequest(urlAddons + "index.xml", "http", AddonsList);
 }
 
 function GetIconPacks() {
-	MainWindow.OpenHttpRequest(urlIcons + "index.json", "http", IconPacksList);
+	(window.chrome ? window : MainWindow).OpenHttpRequest(urlIcons + "index.json", "http", IconPacksList);
 }
 
 function UpdateAddon(Id, o) {
@@ -2323,7 +2328,7 @@ function UpdateAddon(Id, o) {
 }
 
 function CheckAddon(Id) {
-	return fso.FileExists(BuildPath(te.Data.Installed, "addons", Id, "config.xml"));
+	return $.fso.FileExists(BuildPath(te.Data.Installed, "addons", Id, "config.xml"));
 }
 
 function AddonsSearch() {
@@ -2376,14 +2381,14 @@ function SetTable(table, td) {
 
 function AddonsAppend() {
 	var Progress = api.CreateObject("ProgressDialog");
-	var i = 0, td = [];
+	var td = [];
 	Progress.StartProgressDialog(te.hwnd, null, 2);
 	try {
 		Progress.SetAnimation(hShell32, 150);
 		Progress.SetLine(1, api.LoadString(hShell32, 13585) || api.LoadString(hShell32, 6478), true);
-		while (!Progress.HasUserCancelled() && xmlAddons[i]) {
-			ArrangeAddon(xmlAddons[i++], td, Progress);
-			var nLen = GetLength(xmlAddons);
+		var nLen = GetLength(xmlAddons);
+		for (var i = 0; i < nLen && !Progress.HasUserCancelled(); ++i) {
+			ArrangeAddon(xmlAddons[i], td, Progress);
 			Progress.SetTitle(Math.floor(100 * i / nLen) + "%");
 			Progress.SetProgress(i, nLen);
 		}
@@ -2398,6 +2403,20 @@ function AddonsAppend() {
 	Progress.StopProgressDialog();
 }
 
+GetAddonInfo3 = function (xml, info, Tag) {
+	var items = xml.getElementsByTagName(Tag);
+	if (GetLength(items)) {
+		var item = items[0].childNodes;
+		var nLen = GetLength(item);
+		for (var i = 0; i < nLen; ++i) {
+			var item1 = item[i];
+			var n = item1.tagName;
+			var s = item1.text || item1.textContent;
+			info[n] = s;
+		}
+	}
+}
+
 function ArrangeAddon(xml, td, Progress) {
 	var Id = xml.getAttribute("Id");
 	var s = [];
@@ -2405,22 +2424,25 @@ function ArrangeAddon(xml, td, Progress) {
 	if (Search(xml)) {
 		var info = api.CreateObject("Object");
 		for (var i = arLangs.length; i--;) {
-			GetAddonInfo2(xml, info, arLangs[i]);
+			GetAddonInfo3(xml, info, arLangs[i]);
 		}
 		var pubDate = "";
 		var dt = new Date(info.pubDate);
 		Progress.SetLine(2, info.Name, true);
 		if (info.pubDate) {
-			pubDate = api.GetDateFormat(LOCALE_USER_DEFAULT, 0, dt, api.GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SSHORTDATE)) + " ";
+			pubDate = api.GetDateFormat(LOCALE_USER_DEFAULT, 0, dt.getTime(), api.GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SSHORTDATE)) + " ";
 		}
-		s.push('<table width="100%"><tr><td width="100%"><b style="font-size: 1.3em">', info.Name, "</b>&nbsp;", info.Version, "&nbsp;", info.Creator, "<br>", info.Description, "<br>");
+		s.push('<table width="100%"><tr><td width="100%"><b style="font-size: 1.3em">', info.Name, "</b>&nbsp;");
+		s.push(info.Version, "&nbsp;");
+		s.push(info.Creator, "<br>")
+		s.push(info.Description, "<br>");
 		if (info.Details) {
 			s.push('<a href="#" title="', info.Details, '" class="link" onclick="wsh.run(this.title); return false;">', GetText('Details'), '</a><br>');
 		}
 		s.push(pubDate, '</td><td align="right">');
 		var filename = info.filename;
 		if (!filename) {
-			filename = Id + '_' + info.Version.replace(/\D/, '') + '.zip';
+			filename = Id + '_' + (info.Version).replace(/\D/, '') + '.zip';
 		}
 		var dt2 = (dt.getTime() / (24 * 60 * 60 * 1000)) - info.Version;
 		var bUpdate = false;
@@ -2438,7 +2460,7 @@ function ArrangeAddon(xml, td, Progress) {
 					if (hFind == INVALID_HANDLE_VALUE) {
 						return;
 					}
-					if (CalcVersion(installed.DllVersion) <= CalcVersion(fso.GetFileVersion(BuildPath(path, wfd.cFileName)))) {
+					if (CalcVersion(installed.DllVersion) <= CalcVersion($.fso.GetFileVersion(BuildPath(path, wfd.cFileName)))) {
 						return;
 					}
 				} catch (e) {
@@ -2498,7 +2520,7 @@ function Install(o, bUpdate) {
 		return;
 	}
 	var file = o.title.replace(/\./, "") + '.zip';
-	MainWindow.OpenHttpRequest(urlAddons + Id + '/' + file, "http", Install2, o);
+	(window.chrome ? window : MainWindow).OpenHttpRequest(urlAddons + Id + '/' + file, "http", Install2, o);
 }
 
 function Install2(xhr, url, o) {
@@ -2508,14 +2530,14 @@ function Install2(xhr, url, o) {
 	CreateFolder(temp);
 	var dest = BuildPath(temp, Id);
 	DeleteItem(dest);
-	var hr = MainWindow.Extract(BuildPath(temp, file), temp, xhr);
+	var hr = (window.chrome ? window : MainWindow).Extract(BuildPath(temp, file), temp, xhr);
 	if (hr) {
 		MessageBox([api.LoadString(hShell32, 4228).replace(/^\t/, "").replace("%d", api.sprintf(99, "0x%08x", hr)), GetText("Extract"), file].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
 		return;
 	}
 	var configxml = dest + "\\config.xml";
 	var nDog = 300;
-	while (!fso.FileExists(configxml)) {
+	while (!$.fso.FileExists(configxml)) {
 		if (wsh.Popup(GetText("Please wait."), 1, TITLE, MB_ICONINFORMATION | MB_OKCANCEL) == IDCANCEL || nDog-- == 0) {
 			return;
 		}
@@ -2542,7 +2564,7 @@ function InstallIcon(o) {
 		return;
 	}
 	var Id = o.title.replace(/_[^_]*$/, "");
-	MainWindow.OpenHttpRequest(urlIcons + Id + '/' + o.title.replace(/\./g, "") + '.zip', "http", InstallIcon2, o);
+	(window.chrome ? window : MainWindow).OpenHttpRequest(urlIcons + Id + '/' + o.title.replace(/\./g, "") + '.zip', "http", InstallIcon2, o);
 }
 
 function InstallIcon2(xhr, url, o) {
@@ -2551,7 +2573,7 @@ function InstallIcon2(xhr, url, o) {
 	CreateFolder(temp);
 	var dest = BuildPath(te.Data.DataFolder, "icons");
 	CreateFolder(dest);
-	var hr = Extract(BuildPath(temp, file), dest, xhr);
+	var hr = (window.chrome ? window : MainWindow).Extract(BuildPath(temp, file), dest, xhr);
 	if (hr) {
 		MessageBox([(api.LoadString(hShell32, 4228)).replace(/^\t/, "").replace("%d", api.sprintf(99, "0x%08x", hr)), GetText("Extract"), file].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
 		return;
@@ -2589,7 +2611,7 @@ function IconPacksList1(s, Id, info, json) {
 	if (!json) {
 		s.push('<input type="button" onclick="InstallIcon(this)" title="', Id, '_', info.version, '" value="', GetText("Install"), '" style="float: right;">');
 	}
-	s.push("<br>", api.GetDateFormat(LOCALE_USER_DEFAULT, 0, new Date(info.pubDate), api.GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SSHORTDATE)));
+	s.push("<br>", api.GetDateFormat(LOCALE_USER_DEFAULT, 0, new Date(info.pubDate).getTime(), api.GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SSHORTDATE)));
 	return true;
 }
 
@@ -2602,12 +2624,7 @@ function IconPacksList(xhr) {
 	if (!xhr) {
 		return;
 	}
-	var s;
-	var ado = OpenAdodbFromTextFile(BuildPath(te.Data.DataFolder, "icons\\config.json"), "utf-8");
-	if (ado) {
-		s = ado.ReadText();
-		ado.Close();
-	}
+	var s = ReadTextFile(BuildPath(te.Data.DataFolder, "icons\\config.json"));
 	var json1 = JSON.parse(s || '{}');
 	var text = xhr.get_responseText ? xhr.get_responseText() : xhr.responseText;
 	var json = JSON.parse(text);
@@ -2626,7 +2643,7 @@ function IconPacksList(xhr) {
 					s1 = info.name[GetLangId()] || info.name.en;
 				} else if (g_nSort["1_3"] == 1) {
 					if (json.pubDate) {
-						s1 = api.GetDateFormat(LOCALE_USER_DEFAULT, 0, new Date(info.pubDate), "yyyyMMdd");
+						s1 = api.GetDateFormat(LOCALE_USER_DEFAULT, 0, new Date(info.pubDate).getTime(), "yyyyMMdd");
 					}
 				} else {
 					s1 = n;
@@ -2781,7 +2798,7 @@ function SortAddons(n) {
 					var info = GetAddonInfo(Id);
 					var pubDate = info.pubDate;
 					if (pubDate) {
-						s = api.GetDateFormat(LOCALE_USER_DEFAULT, 0, new Date(pubDate), "yyyyMMdd");
+						s = api.GetDateFormat(LOCALE_USER_DEFAULT, 0, new Date(pubDate).getTime(), "yyyyMMdd");
 					}
 				} else {
 					s = Id;

@@ -77,7 +77,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201019 ? te.Version : 20201023;
+		return te.Version < 20201015 ? te.Version : 20201025;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -1534,7 +1534,7 @@ PtInRect = function (rc, pt) {
 
 DeleteItem = function (path, fFlags) {
 	if (IsExists(path)) {
-		api.SHFileOperation(FO_DELETE, path, null, fFlags || FOF_SILENT | FOF_NOCONFIRMATION | FOF_NOERRORUI, false);
+		return api.SHFileOperation(FO_DELETE, path, null, fFlags || FOF_SILENT | FOF_NOCONFIRMATION | FOF_NOERRORUI, false);
 	}
 }
 
@@ -2939,8 +2939,8 @@ SaveDBToTSV = function (DB, fn) {
 	} catch (e) { }
 }
 
-FolderMenu =
-{
+
+FolderMenu = {
 	Items: [],
 	SortMode: 0,
 	SortReverse: false,
