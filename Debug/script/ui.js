@@ -204,9 +204,6 @@ InitUI = function () {
 	}
 
 	UI.ShowOptions = function (opt) {
-		opt.event.onbeforeunload = function () {
-			MainWindow.g_.dlgs.Options = void 0;
-		};
 		g_.dlgs.Options = ShowDialog("options.html", opt);
 	}
 

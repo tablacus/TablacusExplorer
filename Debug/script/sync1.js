@@ -124,7 +124,7 @@ g_.mouse =
 		switch (Ctrl ? Ctrl.Type : 0) {
 			case CTRL_SB:
 			case CTRL_EB:
-				return Ctrl.ItemCount(SVGIO_SELECTION) ? "List" : "List_Background";//.itemcount
+				return Ctrl.ItemCount && Ctrl.ItemCount(SVGIO_SELECTION) ? "List" : "List_Background";
 			case CTRL_TV:
 				return "Tree";
 			case CTRL_TC:
@@ -968,7 +968,7 @@ Finalize = function () {
 					if (dlg.oExec.Status == 0) {
 						dlg.oExec.Terminate();
 					}
-				} else if (dlg.window) {
+				} else if (dlg.Document) {
 					dlg.close();
 				}
 			}
@@ -1560,6 +1560,7 @@ te.OnNavigateComplete = function (Ctrl) {
 			delete g_.focused;
 		}
 	}
+	api.PostMessage(te.hwnd, WM_SIZE, 0, 0);
 	return S_OK;
 }
 
@@ -2804,7 +2805,7 @@ ChangeNotifyFV = function (lEvent, item1, item2) {
 						if (WINVER >= 0x600 && (lEvent & (SHCNE_DELETE | SHCNE_RMDIR))) {
 							var nPos = FV.GetFocusedItem - 1;
 							if (nPos > 0 && api.ILIsEqual(item1, FV.FocusedItem)) {
-								var nCount = FV.ItemCount(SVGIO_ALLVIEW);
+								var nCount = FV.ItemCount && FV.ItemCount(SVGIO_ALLVIEW);
 								if (nCount) {
 									FV.SelectItem(nPos < nCount ? nPos : nCount - 1, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | (FV.Id == te.Ctrl(CTRL_FV).Id ? 0 : SVSI_NOTAKEFOCUS));
 								}
@@ -3487,13 +3488,10 @@ Threads.Run = function () {
 	o.Data.Threads = Threads;
 	o.Data.Id = Math.random();
 	o.Data.tm = tm;
+	o.Data.MainWindow = window;
 	Threads.Data.unshift(o);
 	if (!Threads.src) {
-		var ado = OpenAdodbFromTextFile("script\\threads.js", "utf-8");
-		if (ado) {
-			Threads.src = ado.ReadText();
-			ado.Close();
-		}
+		Threads.src = ReadTextFile("script\\threads.js");
 	}
 	api.ExecScript(Threads.src, "JScript", o, true);
 }

@@ -701,6 +701,12 @@ VOID teSetLL(VARIANT *pv, LONGLONG ll)
 			pv->vt = VT_R8;
 			return;
 		}
+		if (g_bBlink) {// Next version
+			pv->bstrVal = ::SysAllocStringLen(NULL, 18);
+			swprintf_s(pv->bstrVal, 19, L"0x%016llx", ll);
+			pv->vt = VT_BSTR;
+			return;
+		}
 		SAFEARRAY *psa = SafeArrayCreateVector(VT_I4, 0, sizeof(LONGLONG) / sizeof(int));
 		if (psa) {
 			PVOID pvData;
@@ -711,11 +717,6 @@ VOID teSetLL(VARIANT *pv, LONGLONG ll)
 				pv->parray = psa;
 			}
 		}
-/*// Next version
-		pv->bstrVal = ::SysAllocStringLen(NULL, 18);
-		swprintf_s(pv->bstrVal, 19, L"0x%016llx", ll);
-		pv->vt = VT_BSTR;
-*/
 	}
 }
 
@@ -1918,7 +1919,7 @@ BOOL teILIsFileSystemEx(LPCITEMIDLIST pidl)
 }
 
 BOOL teVarIsNumber(VARIANT *pv) {
-	return pv->vt == VT_I4 || pv->vt == VT_R8 || (pv->vt == VT_BSTR && ::SysStringLen(pv->bstrVal) == 18 && teStartsText(L"0x", pv->bstrVal));
+	return pv->vt == VT_I4 || pv->vt == VT_R8 || pv->vt == (VT_ARRAY | VT_I4) || (pv->vt == VT_BSTR && ::SysStringLen(pv->bstrVal) == 18 && teStartsText(L"0x", pv->bstrVal));
 }
 
 void GetVarPathFromIDList(VARIANT *pVarResult, LPITEMIDLIST pidl, int uFlags)
@@ -2209,18 +2210,18 @@ BOOL GetLLFromVariant2(LONGLONG *pll, VARIANT *pv) {
 		*pll = (LONGLONG)pv->dblVal;
 		return TRUE;
 	}
-	if (teVarIsNumber(pv)) {
-		if (swscanf_s(pv->bstrVal, L"0x%016llx", pll) > 0) {
-			return TRUE;
-		}
-	}
-	if (pv->vt == (VT_ARRAY | VT_I4)) {//Depercrated
+	if (pv->vt == (VT_ARRAY | VT_I4)) {
 		LONGLONG ll = 0;
 		PVOID pvData;
 		if (::SafeArrayAccessData(pv->parray, &pvData) == S_OK) {
 			::CopyMemory(&ll, pvData, sizeof(LONGLONG));
 			::SafeArrayUnaccessData(pv->parray);
 			return ll;
+		}
+	}
+	if (teVarIsNumber(pv)) {
+		if (swscanf_s(pv->bstrVal, L"0x%016llx", pll) > 0) {
+			return TRUE;
 		}
 	}
 	return FALSE;

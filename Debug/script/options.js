@@ -1335,6 +1335,7 @@ function OkOptions() {
 	MainWindow.RunEvent1("ConfigChanged", "Config");
 
 	te.Data.bReload = true;
+	MainWindow.g_.dlgs.Options = void 0;
 	WebBrowser.Close();
 }
 
@@ -1344,6 +1345,7 @@ function CancelOptions() {
 		SaveAddons();
 		te.Data.bReload = true;
 	}
+	MainWindow.g_.dlgs.Options = void 0;
 	WebBrowser.Close();
 }
 

@@ -77,7 +77,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201015 ? te.Version : 20201025;
+		return te.Version < 20201028 ? te.Version : 20201028;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -777,7 +777,7 @@ ShowOptions = function (s) {
 	try {
 		var dlg = g_.dlgs.Options;
 		if (dlg) {
-			dlg.Window.SetTab(s);
+			dlg.Document.parentWindow.SetTab(s);
 			dlg.Focus();
 			return;
 		}

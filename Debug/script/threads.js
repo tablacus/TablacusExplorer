@@ -7,10 +7,10 @@ try {
 			if (o.cx) {
 				image = GetThumbnail(image, o.cx, o.f);
 			}
-			o.out = image;
-			(o.onload || o.callback)(o);
+			o.out = MainWindow.api.CreateObject("WICBitmap").FromSource(image);
+			api.Invoke(o.onload || o.callback, o);
 		} else if (o.onerror) {
-			o.onerror(o);
+			api.Invoke(o.onerror, o);
 		}
 	}
 } catch (e) { }
