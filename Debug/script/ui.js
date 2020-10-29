@@ -656,9 +656,6 @@ MouseOut = function (s) {
 }
 
 InsertTab = function (e) {
-	if (!e) {
-		e = event;
-	}
 	var ot = e.srcElement;
 	if (e.keyCode == VK_TAB) {
 		ot.focus();
@@ -853,10 +850,10 @@ AddonOptions = function (Id, fn, Data, bNew) {
 				return;
 			}
 		} catch (e) {
-			delete MainWindow.g_.dlgs[Id];
+			MainWindow.g_.dlgs[Id] = void 0;
 		}
 		opt = api.CreateObject("Object");
-		opt.MainWindow = MainWindow;
+		opt.MainWindow = $;
 		opt.Data = Data;
 		opt.event = api.CreateObject("Object");
 		if (fn) {
@@ -874,9 +871,7 @@ AddonOptions = function (Id, fn, Data, bNew) {
 				opt.height = res[1] - 0;
 			}
 		}
-		opt.event.onbeforeunload = function () {
-			MainWindow.g_.dlgs[Id] = void 0;
-		}
+		opt.event.onbeforeunload = "MainWindow.g_.dlgs['" +Id +"'] = void 0;";
 		MainWindow.g_.dlgs[Id] = ShowDialog(sURL, opt);
 		return;
 	}

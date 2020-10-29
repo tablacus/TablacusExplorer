@@ -6038,17 +6038,12 @@ VOID ArrangeWindowTC(CteTabCtrl *pTC, RECT *prc)
 					pSB->Show(TRUE, 0);
 				}
 				pSB->SetFolderFlags(FALSE);
-				if (pSB->m_hwndDV) {// #290
-					RECT rc1, rc2;
-					GetWindowRect(pSB->m_hwnd, &rc1);// 5ch#6-896
-					GetWindowRect(pSB->m_hwndDV, &rc2);
-					if (rc1.left == rc1.right || rc2.left == rc2.right) {
-						MoveWindow(pSB->m_hwnd, prc->left, prc->top, prc->right - prc->left, prc->bottom - prc->top + 1, TRUE);
+				if (pSB->m_hwnd) {
+					CopyRect(&pSB->m_rc, prc);
+					pSB->SetObjectRect();
+					if (pSB->m_hwndAlt) {
+						MoveWindow(pSB->m_hwndAlt, 0, 0, prc->right - prc->left, prc->bottom - prc->top, TRUE);
 					}
-				}
-				MoveWindow(pSB->m_hwnd, prc->left, prc->top, prc->right - prc->left, prc->bottom - prc->top, TRUE);
-				if (pSB->m_hwndAlt) {
-					MoveWindow(pSB->m_hwndAlt, 0, 0, prc->right - prc->left, prc->bottom - prc->top, TRUE);
 				}
 			}
 			MoveWindow(pTC->m_hwndButton, rcTab.left, rcTab.top,
@@ -14902,6 +14897,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			return DoFunc(TE_OnContentsChanged, this, S_OK);
 
 		case DISPID_FILELISTENUMDONE://XP+
+			SetObjectRect();
 			if (!m_bNavigateComplete && ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
 				return S_OK;
 			}
@@ -15640,6 +15636,14 @@ HRESULT CteShellBrowser::IncludeObject2(IShellFolder *pSF, LPCITEMIDLIST pidl)
 int CteShellBrowser::GetSizeFormat()
 {
 	return m_nSizeFormat != -1 ? m_nSizeFormat : g_param[TE_SizeFormat];
+}
+
+VOID CteShellBrowser::SetObjectRect()
+{
+	if (m_hwndDV) {
+		MoveWindow(m_hwnd, m_rc.left, m_rc.top, m_rc.right - m_rc.left, m_rc.bottom - m_rc.top + 1, TRUE);
+	}
+	MoveWindow(m_hwnd, m_rc.left, m_rc.top, m_rc.right - m_rc.left, m_rc.bottom - m_rc.top, TRUE);
 }
 
 STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)

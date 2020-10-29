@@ -1560,7 +1560,6 @@ te.OnNavigateComplete = function (Ctrl) {
 			delete g_.focused;
 		}
 	}
-	api.PostMessage(te.hwnd, WM_SIZE, 0, 0);
 	return S_OK;
 }
 
@@ -1682,16 +1681,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 		if (pt2.x < 1) {
 			pt2.x = 1;
 		}
-		var w = document.documentElement.offsetWidth || document.body.offsetWidth;
-		if (pt2.x >= w) {
-			pt2.x = w - 1;
-		}
-		if (g_.mouse.Capture == 1) {
-			te.Data["Conf_LeftBarWidth"] = pt2.x;
-		} else if (g_.mouse.Capture == 2) {
-			te.Data["Conf_RightBarWidth"] = w - pt2.x;
-		}
-		Resize();
+		api.Invoke(UI.MoveSplitter, pt2.x, pt2.y, g_.mouse.Capture);
 		return S_OK;
 	}
 	if (msg != WM_MOUSEMOVE) {
@@ -3235,13 +3225,6 @@ AddEnv("Installed", fso.GetDriveName(api.GetModuleFileName(null)));
 AddEnv("TE_Config", function () {
 	return BuildPath(te.Data.DataFolder, "config");
 });
-
-RunSplitter = function (n) {
-	if (event.buttons !== void 0 ? event.buttons & 1 : event.button == 0) {
-		g_.mouse.Capture = n;
-		api.SetCapture(te.hwnd);
-	}
-}
 
 CreateUpdater = function (arg) {
 	if (isFinite(RunEvent3("CreateUpdater", arg))) {

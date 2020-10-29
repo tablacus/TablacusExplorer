@@ -564,6 +564,7 @@ public:
 	HRESULT IncludeObject2(IShellFolder *pSF, LPCITEMIDLIST pidl);
 	BOOL HasFilter();
 	int GetSizeFormat();
+	VOID SetObjectRect();
 #if defined(_USE_SHELLBROWSER) || defined(_2000XP)
 	HRESULT NavigateSB(IShellView *pPreviousView, FolderItem *pPrevious);
 #endif
@@ -591,6 +592,7 @@ public:
 	IShellFolder2 *m_pSF2;
 	std::vector<UINT> m_pDTColumns;
 	BSTR		m_bsNextGroup;
+	RECT		m_rc;
 	int			m_nForceViewMode;
 	int			m_nFolderSizeIndex;
 	int			m_nLabelIndex;

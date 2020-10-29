@@ -131,8 +131,15 @@ SetAddon = function (strName, Location, Tag, strVAlign) {
 	return Location;
 }
 
+RunSplitter = function (e, n) {
+	if (e.buttons !== void 0 ? e.buttons & 1 : e.button == 0) {
+		api.ObjPutI(g_.mouse, "Capture", n);
+		api.SetCapture(te.hwnd);
+	}
+}
+
 UI.Resize = Resize = function () {
-	if (!ui_.tidResize) {
+	if (ui_.tidResize) {
 		clearTimeout(ui_.tidResize);
 	}
 	ui_.tidResize = setTimeout(Resize2, 500);
@@ -142,9 +149,9 @@ UI.StartGestureTimer = function () {
 	var i = te.Data.Conf_GestureTimeout;
 	if (i) {
 		clearTimeout(g_.mouse.tidGesture);
-		g_.mouse.tidGesture = setTimeout(function () {
+		api.ObjPutI(g_.mouse, "tidGesture", setTimeout(function () {
 			g_.mouse.EndGesture(true);
-		}, i);
+		}, i));
 	}
 }
 
@@ -208,6 +215,19 @@ UI.ExitFullscreen = function () {
 	} else if (document.exitFullscreen) {
 		document.exitFullscreen();
 	}
+}
+
+UI.MoveSplitter = function (x, y, n) {
+	var w = document.documentElement.offsetWidth || document.body.offsetWidth;
+	if (x >= w) {
+		x = w - 1;
+	}
+	if (n == 1) {
+		te.Data["Conf_LeftBarWidth"] = x;
+	} else if (n == 2) {
+		te.Data["Conf_RightBarWidth"] = w - x;
+	}
+	Resize();
 }
 
 importJScript = $.importScript;
