@@ -77,7 +77,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201029 ? te.Version : 20201029;
+		return te.Version < 20201029 ? te.Version : 20201030;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -119,7 +119,7 @@ GetFolderView = function (Ctrl, pt, bStrict) {
 	if (!Ctrl) {
 		return te.Ctrl(CTRL_FV);
 	}
-	if (Ctrl.Type <= CTRL_EB) {
+	if (Ctrl.Type == CTRL_SB || Ctrl.Type == CTRL_EB) {
 		return Ctrl;
 	}
 	if (Ctrl.Type == CTRL_TV) {
