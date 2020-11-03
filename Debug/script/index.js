@@ -67,8 +67,8 @@ function ResetScroll () {
 }
 
 
-function PanelCreated(Ctrl) {
-	RunEvent1("PanelCreated", Ctrl);
+function PanelCreated(Ctrl, Id) {
+	RunEvent1("PanelCreated", Ctrl, Id);
 }
 
 Activate = function (o, id) {
@@ -112,8 +112,7 @@ SetAddon = function (strName, Location, Tag, strVAlign) {
 				o.style.verticalAlign = strVAlign;
 			}
 		} else if (Location == "Inner") {
-			AddEvent("PanelCreated", function (Ctrl) {
-				var Id = Ctrl.Id;
+			AddEvent("PanelCreated", function (Ctrl, Id) {
 				SetAddon(null, "Inner1Left_" + Id, Tag.replace(/\$/g, Id));
 			});
 		}
@@ -249,7 +248,7 @@ te.OnArrange = function (Ctrl, rc) {
 			s.push('<table id="InnerView_$" class="layout" style="width: 100%"><tr><td id="Inner2Left_$" style="width: 0"></td><td id="Inner2Center_$"></td><td id="Inner2Right_$" style="width: 0; overflow: auto"></td></tr></table>');
 			s.push('<div id="InnerBottom_$"></div></td><td id="InnerRight_$" class="sidebar" style="width: 0; display: none"></td></tr></table>');
 			document.getElementById("Panel").insertAdjacentHTML("BeforeEnd", s.join("").replace(/\$/g, Id));
-			PanelCreated(Ctrl);
+			PanelCreated(Ctrl, Id);
 			o = document.getElementById("Panel_" + Id);
 			ui_.Panels[Id] = o;
 			ApplyLang(o);
@@ -294,7 +293,6 @@ g_.event.windowregistered = function (Ctrl) {
 	}
 	ui_.bWindowRegistered = true;
 }
-
 
 ArrangeAddons = function () {
 	g_.Locations = api.CreateObject("Object");

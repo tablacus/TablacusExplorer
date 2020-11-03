@@ -127,21 +127,21 @@ InitUI = function () {
 	UI.OpenHttpRequest = OpenHttpRequest = function (url, alt, fn, arg) {
 		var xhr = createHttpRequest();
 		var fnLoaded = function () {
-			if (arg && arg.pcRef) {
-				arg.pcRef[0] = arg.pcRef[0] - 1;
-			}
-			if (xhr.status == 200) {
-				if (fn) {
+			if (fn) {
+				if (arg && arg.pcRef) {
+					arg.pcRef[0] = arg.pcRef[0] - 1;
+				}
+				if (xhr.status == 200) {
 					fn(xhr, url, arg);
 					fn = void 0;
+					return;
 				}
-				return;
+				if (/^http/.test(alt)) {
+					UI.OpenHttpRequest(/^https/.test(url) && alt == "http" ? url.replace(/^https/, alt) : alt, '', fn, arg);
+					return;
+				}
+				ShowXHRError(url, xhr.status);
 			}
-			if (/^http/.test(alt)) {
-				UI.OpenHttpRequest(/^https/.test(url) && alt == "http" ? url.replace(/^https/, alt) : alt, '', fn, arg);
-				return;
-			}
-			ShowXHRError(url, xhr.status);
 		}
 		xhr.onload = fnLoaded;
 		xhr.onreadystatechange = function () {
@@ -407,7 +407,8 @@ LoadScripts = function (js1, js2, cb) {
 			return to;
 		}
 		document.documentMode = (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 : 12);
-		screen.deviceYDPI = window.deviceYDPI;
+		screen.deviceYDPI = parent.deviceYDPI;
+		ui_.Zoom = parent.deviceYDPI / 96;
 		CopyObj($, window, ["te", "api", "chrome", "document", "UI", "MainWindow"]);
 		$.location = CopyObj(null, location, ["hash", "href"]);
 		$.navigator = CopyObj(null, navigator, ["appVersion", "language"]);
@@ -415,13 +416,14 @@ LoadScripts = function (js1, js2, cb) {
 		var o = api.CreateObject("Object");
 		o.window = $;
 		$.$JS = api.GetScriptDispatch(s.join(""), "JScript", o);
-		CopyObj(window, $, ["g_", "Common", "eventTE", "eventTA", "Threads", "SimpleDB", "BasicDB;"]);
+		CopyObj(window, $, ["g_", "Common", "Threads"]);
 		CopyObj(window, $, arFN);
 		var doc = api.CreateObject("Object");
 		doc.parentWindow = $;
 		WebBrowser.Document = doc;
 	} else {
 		$ = window;
+		ui_.Zoom = 1;
 	}
 	Addons = {
 		"_stack": api.CreateObject("Array")
@@ -429,33 +431,37 @@ LoadScripts = function (js1, js2, cb) {
 	LoadScript(js1.concat(js2), cb);
 };
 
+function _InvokeMethod() {
+	var args;
+	var ar = api.ObjGetI(te, "fn");
+	while (args = ar.shift()) {
+		api.OutputDebugString(["InvokeMethod:", api.ObjGetI(ar, "length"), "\n"].join(","));
+		var fn = args.shift();
+		api.OutputDebugString(["InvokeMethod:", fn.toString().split("\n")[0]].join(","));
+		var hr = fn.apply(fn, args);
+		api.OutputDebugString("InvokeMethod: " + hr + "," + api.ObjGetI(ar, "length") + "\n");
+	}
+}
+
 ApplyLangTag = function (o) {
 	if (o) {
 		for (var i = 0; i < o.length; ++i) {
-			var s, s1;
-			if (s = o[i].innerHTML) {
-				var ar = s.split("<");
-				var re1 = /^([^>]*>\s*)(.+)(\s*)$/;
-				var re2 = /^(\s*)(.+)(\s*)$/;
-				for (var j = ar.length; j-- > 0;) {
-					var res = re1.exec(ar[j]) || re2.exec(ar[j])
-					if (res) {
-						ar[j] = res[1] + amp2ul(GetTextR(res[2].replace(/&amp;/ig, "&"))) + res[3];
+			(function (el) {
+				var s;
+				if (s = el.childNodes) {
+					for (var j = s.length; j-- > 0;) {
+						if (!s[j].tagName) {
+							s[j].data = amp2ul(GetTextR(s[j].data.replace(/&amp;/ig, "&")));
+						}
 					}
 				}
-				s1 = ar.join("<");
-				if (s != s1) {
-					o[i].innerHTML = s1;
+				if (s = el.title) {
+					el.title = (GetTextR(s)).replace(/\(&\w\)|&/, "");
 				}
-			}
-			s = o[i].title;
-			if (s) {
-				o[i].title = (GetTextR(s)).replace(/\(&\w\)|&/, "");
-			}
-			s = o[i].alt;
-			if (s) {
-				o[i].alt = (GetTextR(s)).replace(/\(&\w\)|&/, "");
-			}
+				if (s = el.alt) {
+					el.alt = (GetTextR(s)).replace(/\(&\w\)|&/, "");
+				}
+			})(o[i]);
 		}
 	}
 }
@@ -484,46 +490,51 @@ ApplyLang = function (doc) {
 	if (o) {
 		ApplyLangTag(o);
 		for (i = o.length; i--;) {
-			if (!h && o[i].type == "text") {
-				h = o[i].offsetHeight;
-			}
-			if (s = o[i].placeholder) {
-				o[i].placeholder = (GetTextR(s)).replace(/\(&\w\)|&/, "");
-			}
-			if (o[i].type == "button") {
-				if (s = o[i].value) {
-					o[i].value = (GetTextR(s)).replace(/\(&\w\)|&/, "");
+			(function (el) {
+				if (!h && SameText(el.type, "text")) {
+					h = el.offsetHeight;
 				}
-			}
-			if (s = ImgBase64(o[i], 0)) {
-				o[i].src = s;
-				if (o[i].type == "text") {
-					o[i].style.backgroundImage = "url('" + s + "')";
+				if (s = el.placeholder) {
+					el.placeholder = (GetTextR(s)).replace(/\(&\w\)|&/, "");
 				}
-			}
+				if (SameText(el.type, "button")) {
+					if (s = el.value) {
+						el.value = (GetTextR(s)).replace(/\(&\w\)|&/, "");
+					}
+				}
+				if (s = ImgBase64(el, 0)) {
+					el.src = s;
+					if (SameText(el.type, "text")) {
+						el.style.backgroundImage = "url('" + s + "')";
+					}
+				}
+			})(o[i]);
 		}
 	}
 	o = doc.getElementsByTagName("img");
 	if (o) {
 		ApplyLangTag(o);
 		for (i = o.length; i--;) {
-			var s = ImgBase64(o[i], 0);
-			if (s) {
-				o[i].src = s;
-			}
-			if (!o[i].ondragstart) {
-				o[i].draggable = false;
-			}
+			(function (el) {
+				var s = ImgBase64(el, 0);
+				if (s) {
+					el.src = s;
+				}
+				if (!el.ondragstart) {
+					el.draggable = false;
+				}
+			})(o[i]);
 		}
 	}
 	o = doc.getElementsByTagName("select");
 	if (o) {
 		for (i = o.length; i--;) {
-			o[i].title = delamp(GetTextR(o[i].title));
-			for (var j = 0; j < o[i].length; ++j) {
-				var s = GetTextR(o[i][j].text);
-				o[i][j].text = s.replace(/^\n/, "").replace(/\n$/, "");
-			}
+			(function (el) {
+				el.title = delamp(GetTextR(el.title));
+				for (var j = 0; j < el.length; ++j) {
+					el[j].text = (GetTextR(el[j].text)).replace(/^\n/, "").replace(/\n$/, "");
+				}
+			})(o[i]);
 		}
 	}
 	o = doc.getElementsByTagName("textarea");
@@ -580,9 +591,8 @@ GetPos = function (o, bScreen, bAbs, bPanel, bBottom) {
 		bBottom = bScreen & 8;
 		bScreen &= 1;
 	}
-	var z = window.deviceYDPI ? deviceYDPI / 96 : 1;
-	var x = bScreen ? screenLeft * z : 0;
-	var y = bScreen ? screenTop * z : 0;
+	var x = bScreen ? screenLeft * ui_.Zoom : 0;
+	var y = bScreen ? screenTop * ui_.Zoom : 0;
 	if (bBottom) {
 		y += o.offsetHeight;
 	}

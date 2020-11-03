@@ -62,11 +62,11 @@ function LoadChecked(form) {
 	for (var i = 0; i < form.length; ++i) {
 		var o = form[i];
 		var ar = o.id.split("=");
-		if (ar.length > 1 && form[ar[0]].value == (/0x/i.test(ar[1]) ? parseInt(ar[1], 16) : ar[1])) {
+		if (ar.length > 1 && form[ar[0]].value == Number(ar[1])) {
 			form[i].checked = true;
 		}
 		ar = o.id.split(":");
-		if (ar.length > 1 && form[ar[0]].value & (/0x/i.test(ar[1]) ? parseInt(ar[1], 16) : ar[1])) {
+		if (ar.length > 1 && form[ar[0]].value & Number(ar[1])) {
 			form[i].checked = true;
 		}
 	}
@@ -257,26 +257,20 @@ function ClickButton(n, f) {
 
 function SetRadio(o) {
 	var ar = o.id.split("=");
-	o.form[ar[0]].value = ar[1];
-	var res = /^(Tab|Tree|View|Conf)/.exec(ar[0]);
-	if (res) {
-		MainWindow.g_.OptionsWindow.g_Chg[res[1]] = true;
-		MainWindow.g_.OptionsWindow.g_bChanged = true;
-	}
+	var el = o.form[ar[0]];
+	el.value = ar[1];
+	FireEvent(el, "change");
 }
 
 function SetCheckbox(o) {
 	var ar = o.id.split(":");
+	var el = o.form[ar[0]];
 	if (o.checked) {
-		o.form[ar[0]].value |= (api.sscanf(ar[1], "0x%x") || ar[1]);
+		el.value |= Number(ar[1]);
 	} else {
-		o.form[ar[0]].value &= ~(api.sscanf(ar[1], "0x%x") || ar[1]);
+		el.value &= ~Number(ar[1]);
 	}
-	var res = /^(Tab|Tree|View|Conf)/.exec(ar[0]);
-	if (res) {
-		MainWindow.g_.OptionsWindow.g_Chg[res[1]] = true;
-		MainWindow.g_.OptionsWindow.g_bChanged = true;
-	}
+	FireEvent(el, "change");
 }
 
 function SetValue(n, v) {
@@ -1065,7 +1059,6 @@ function LoadAddons() {
 		}
 	}
 	api.FindClose(hFind);
-
 	var table = document.getElementById("Addons");
 	table.ondragover = Over5;
 	table.ondrop = Drop5;
@@ -1076,13 +1069,24 @@ function LoadAddons() {
 		var items = root.childNodes;
 		if (items) {
 			var nLen = GetLength(items);
+			var sorted = document.getElementById("SortedAddons");
+			var tcell = [];
+			var scell = [];
 			for (var i = 0; i < nLen; ++i) {
-				var item = items[i];
-				var Id = item.nodeName;
-				if (AddonId[Id]) {
-					AddAddon(table, Id, GetNum(item.getAttribute("Enabled")));
-					delete AddonId[Id];
-				}
+				tcell[i] = table.insertRow().insertCell();
+				scell[i] = sorted.insertRow().insertCell();
+			}
+			for (var i = 0; i < nLen; ++i) {
+				Promise.all([i, items[i].nodeName, items[i].getAttribute("Enabled")]).then(function (r) {
+					var i = r[0];
+					var Id = r[1];
+					if (AddonId[Id]) {
+						var bEnable = GetNum(r[2]);
+						SetAddon(Id, bEnable, tcell[i]);
+						SetAddon(Id, bEnable, scell[i], "Sorted_");
+						delete AddonId[Id];
+					}
+				});
 			}
 		}
 	}
@@ -1355,8 +1359,10 @@ function ContinueOptions() {
 
 InitOptions = function () {
 	ApplyLang(document);
-	document.getElementById("tab1_3").innerHTML = api.sprintf(99, GetText("Get %s"), GetText("Icon"));
-	document.title = GetText("Options") + " - " + TITLE;
+	(function () {
+		document.getElementById("tab1_3").innerHTML = api.sprintf(99, GetText("Get %s"), GetText("Icon"));
+		document.title = GetText("Options") + " - " + TITLE;
+	})();
 	MainWindow.g_.OptionsWindow = $;
 	var InstallPath = te.Data.Installed;
 	document.F.ButtonInitConfig.disabled = (InstallPath == te.Data.DataFolder) | !$.fso.FolderExists(BuildPath(InstallPath, "layout"));
@@ -1406,7 +1412,7 @@ InitOptions = function () {
 		}
 		SetOptions(OkOptions, CancelOptions, ContinueOptions);
 	};
-	document.body.style.visibility = "";
+	document.body.style.display = "";
 }
 
 OpenIcon = function (o) {
@@ -1519,9 +1525,13 @@ InitDialog = function () {
 				for (var bFind2 = hFind != INVALID_HANDLE_VALUE; bFind2; bFind2 = api.FindNextFile(hFind2, wfd)) {
 					arfn.push(wfd.cFileName);
 				}
-				arfn.sort(function (a, b) {
-					return api.StrCmpLogical(a, b);
-				});
+				if (window.chrome) {
+					arfn.sort();
+				} else {
+					arfn.sort(function (a, b) {
+						return api.StrCmpLogical(a, b);
+					});
+				}
 				for (var i = 0; i < arfn.length; ++i) {
 					var src = ["icon:" + GetFileName(path2), arfn[i].replace(/\.png$/i, "")].join(",");
 					s.push('<img src="', BuildPath(path2, arfn[i]), '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="', src, '" style="max-height: 24pt"> ');
@@ -1633,22 +1643,32 @@ InitDialog = function () {
 		s.push('<br><a href="#" class="link" onclick="Run(1, this)">', BuildPath(te.Data.DataFolder, "config"), '</a><br>');
 		s.push('<br><label>Information</label><input type="text" value="', AboutTE(3), '" style="width: 100%" onclick="this.select()" readonly><br>');
 		var root = te.Data.Addons.documentElement;
+		var promise = [];
 		if (root) {
-			var ar = [];
 			var items = root.childNodes;
 			if (items) {
-				for (var i = 0; i < GetLength(items); ++i) {
-					if (GetNum(items[i].getAttribute("Enabled"))) {
-						ar.push(items[i].nodeName);
-					}
+				var nLen = GetLength(items);
+				for (var i = 0; i < nLen; ++i) {
+					promise.push(items[i].getAttribute("Enabled"), items[i].nodeName);
 				}
 			}
-			s.push('<br><label>Add-ons</label><input type="text" value="', ar.join(","), '" style="width: 100%" onclick="this.select()"><br>');
+			s.push('<br><label>Add-ons</label><input id="UsedAddons" type="text" style="width: 100%" onclick="this.select()"><br>');
 		}
 		s.push('<br><input type="button" value="Visit website" onclick="Run(2)">');
 		s.push('&nbsp;<input type="button" value="Check for updates" onclick="Run(3)">');
 		s.push('</td></tr></table>');
 		document.getElementById("Content").innerHTML = s.join("");
+		if (promise.length) {
+			Promise.all(promise).then(function (r) {
+				var ar = [];
+				for (var i = 0; i < r.length; i += 2) {
+					if (GetNum(r[i])) {
+						ar.push(r[i + 1]);
+					}
+				}
+				document.getElementById("UsedAddons").value = ar.join(",");
+			});
+		}
 		document.F.ButtonOk.disabled = false;
 		document.getElementById("buttonCancel").style.display = "none";
 
@@ -1675,7 +1695,7 @@ InitDialog = function () {
 	});
 	ApplyLang(document);
 	DialogResize();
-	document.body.style.visibility = "";
+	document.body.style.display = "";
 }
 
 MouseDown = function (e) {
@@ -1751,8 +1771,8 @@ MouseDbl = function () {
 	return false;
 }
 
-MouseWheel = function () {
-	returnValue = GetGestureKey() + GetGestureButton() + (event.wheelDelta > 0 ? "8" : "9");
+MouseWheel = function (ev) {
+	returnValue = GetGestureKey() + GetGestureButton() + (ev.wheelDelta > 0 ? "8" : "9");
 	document.F.q.value = returnValue;
 	document.F.ButtonOk.disabled = false;
 	return false;
@@ -2202,8 +2222,14 @@ function SetOnChangeHandler() {
 		if (o) {
 			for (var i = o.length; i--;) {
 				if ((o[i].name || o[i].id) && o[i].name != "List" && !/^_/.test(o[i].id)) {
-					AddEventEx(o[i], "change", function () {
+					AddEventEx(o[i], "change", function (e) {
 						g_bChanged = true;
+						if (e.srcElement) {
+							var res = /^(Tab|Tree|View|Conf)/.exec(e.srcElement.name || e.srcElement.id);
+							if (res) {
+								g_Chg[res[1]] = true;
+							}
+						}
 					});
 				}
 			}
@@ -2350,6 +2376,7 @@ function AddonsKeyDown(e) {
 }
 
 function AddonsList(xhr2) {
+	
 	if (xmlAddons) {
 		return;
 	}
@@ -2528,7 +2555,7 @@ function Install(o, bUpdate) {
 function Install2(xhr, url, o) {
 	var Id = o.title.replace(/_.*$/, "");
 	var file = o.title.replace(/\./, "") + '.zip';
-	var temp = BuildPath(wsh.ExpandEnvironmentStrings("%TEMP%"), "tablacus");
+	var temp = BuildPath(ExtractMacro(te, "%TEMP%"), "tablacus");
 	CreateFolder(temp);
 	var dest = BuildPath(temp, Id);
 	DeleteItem(dest);

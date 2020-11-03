@@ -1,5 +1,28 @@
 //Tablacus Explorer
 
+if (!window.Promise) {
+	Promise = function (fn) {
+		this.promise = fn;
+	}
+	Promise.all = function (ar) {
+		return {
+			then: function (fn) {
+				for (var i = 0; i < ar.length; ++i) {
+					if ("function" === typeof ar[i] && ar[i].promise) {
+						(function (ar, i) {
+							ar[i].promise(function (data) {
+								ar[i] = data;
+							});
+						})(ar, i);
+					}
+				}
+				fn(ar);
+				return this;
+			}
+		}
+	}
+}
+
 AddEventEx = function (w, Name, fn) {
 	if (w.addEventListener) {
 		w.addEventListener(Name, fn, false);
@@ -27,20 +50,20 @@ GetParentFolderName = function (s) {
 
 LoadScript = function (js, cb) {
 	var fn;
+	var promise = [];
 	while (fn = js.shift()) {
 		if (window.chrome) {
-			var el = document.createElement("script");
-			el.type = "text/javascript";
-			el.charset = "utf-8";
-			el.src = BuildPath(ScriptBase, fn).replace(/\\/g, "/");
-			el.async = false;
-			if (js.length == 0) {
-				el.onload = cb;
-			}
-			document.body.appendChild(el);
+			(function (fn) {
+				promise.push(new Promise(function (resolve, reject) {
+					var el = document.createElement("script");
+					el.type = "text/javascript";
+					el.src = BuildPath(ScriptBase, fn).replace(/\\/g, "/");
+					el.onload = resolve;
+					document.body.appendChild(el);
+				}));
+			})(fn);
 		} else {
-			var strParent = (GetParentFolderName(api.GetModuleFileName(null))).replace(/\\$/, "");
-			fn = BuildPath(strParent, fn);
+			fn = BuildPath((GetParentFolderName(api.GetModuleFileName(null))).replace(/\\$/, ""), fn);
 			var ado = api.CreateObject("ads");
 			if (ado) {
 				ado.CharSet = "utf-8";
@@ -52,9 +75,11 @@ LoadScript = function (js, cb) {
 			}
 		}
 	}
-	if (!window.chrome && cb) {
-		cb();
-	}
+	Promise.all(promise).then(function () {
+		if (cb) {
+			cb();
+		}
+	});
 }
 
 //Tablacus

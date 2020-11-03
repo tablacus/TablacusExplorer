@@ -77,7 +77,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201029 ? te.Version : 20201030;
+		return te.Version < 20201103 ? te.Version : 20201103;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -119,7 +119,7 @@ GetFolderView = function (Ctrl, pt, bStrict) {
 	if (!Ctrl) {
 		return te.Ctrl(CTRL_FV);
 	}
-	if (Ctrl.Type == CTRL_SB || Ctrl.Type == CTRL_EB) {
+	if (Ctrl.Type <= CTRL_EB) {
 		return Ctrl;
 	}
 	if (Ctrl.Type == CTRL_TV) {
@@ -1529,7 +1529,9 @@ SaveLayout = function () {
 }
 
 PtInRect = function (rc, pt) {
-	return pt.x >= rc.left && pt.x < rc.right && pt.y >= rc.top && pt.y < rc.bottom;
+	if (rc) {
+		return pt.x >= rc.left && pt.x < rc.right && pt.y >= rc.top && pt.y < rc.bottom;
+	}
 }
 
 DeleteItem = function (path, fFlags) {
@@ -3149,15 +3151,24 @@ FolderMenu = {
 		}
 	},
 
-	Location: function (o) {////
-		this.Clear();
+	Location: function (o) {
+		var pt = api.Memory("POINT");
+		if (window.chrome) {
+			api.GetCursorPos(pt);
+		} else {
+			pt = GetPos(o, 9);
+		}
+		FolderMenu.LocationEx(pt.x + o.offsetWidth, pt.y);
+	},
+
+	LocationEx: function (x, y) {
+		FolderMenu.Clear();
 		var hMenu = api.CreatePopupMenu();
 		RunEvent3("LocationPopup", hMenu);
-		var pt = GetPos(o, 1);
-		var nVerb = this.TrackPopupMenu(hMenu, TPM_RIGHTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x + o.offsetWidth, pt.y + o.offsetHeight);
-		var FolderItem = nVerb ? this.Items[nVerb - 1] : null;
-		this.Clear();
-		this.Invoke(FolderItem);
+		var nVerb = FolderMenu.TrackPopupMenu(hMenu, TPM_RIGHTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, x, y);
+		var FolderItem = nVerb ? FolderMenu.Items[nVerb - 1] : null;
+		FolderMenu.Clear();
+		FolderMenu.Invoke(FolderItem);
 	}
 };
 

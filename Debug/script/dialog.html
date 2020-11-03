@@ -10,8 +10,8 @@
   <body>
     <form name="F">
       <div class="panel" id="panel0" style="overflow-y: auto;">
-        <label id="Content">Please wait.</label>
-        <!-- - - - - - - - - - - -->
+      <div id="Content"><label>Please wait.</label></div>
+      <!-- - - - - - - - - - - -->
       </div>
       <!--panel_end-->
       <table id="buttons" class="footer">
@@ -27,7 +27,7 @@
       </table>
     </form>
     <script type="text/javascript">
-      document.body.style.visibility = "hidden";
+      document.body.style.display = "none";
       ScriptBase = "..";
       LoadScript(["script/ui.js", "script/common.js"], function () {
         LoadScripts(["script/sync.js"], ["script/options.js"], function () {

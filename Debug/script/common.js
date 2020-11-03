@@ -86,7 +86,7 @@ DecodeSC = function (s) {
 }
 
 GetIconSize = function (h, a) {
-	return h || a * (window.deviceYDPI || screen.deviceYDPI) / 96 || window.IconSize;
+	return h || a * screen.deviceYDPI / 96 || window.IconSize;
 }
 
 GetGestureX = function (ar) {
@@ -213,6 +213,5 @@ LoadImgDll = function (icon, index) {
 }
 
 amp2ul = function (s) {
-	s = s.replace(/&amp;/ig, "&");
-	return /;/.test(s) ? s : s.replace(/&(.)/ig, "<u>$1</u>");
+	return s.replace(/&amp;|&/ig, "");
 }

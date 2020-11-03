@@ -673,7 +673,7 @@ g_basic =
 					} else {
 						s = api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 					}
-					clipboardData.setData("text", s);
+					api.SetClipboardData(s);
 					return S_OK;
 				},
 				"Run dialog": function (Ctrl, pt) {
