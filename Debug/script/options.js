@@ -1590,10 +1590,10 @@ InitDialog = function () {
 				document.F.ButtonOk.disabled = !document.F.path.value;
 			}, 99);
 			var key = e.keyCode;
-			if ((key == VK_RETURN || /^Enter/i.test(e.key)) && document.F.path.value) {
+			if ((key == VK_RETURN || window.chrome && /^Enter/i.test(e.key)) && document.F.path.value) {
 				SetResult(1);
 			}
-			if (key == VK_ESCAPE || /^Esc/i.test(e.key)) {
+			if (key == VK_ESCAPE || window.chrome && /^Esc/i.test(e.key)) {
 				SetResult(2);
 			}
 			return true;
@@ -2369,7 +2369,7 @@ function AddonsSearch() {
 }
 
 function AddonsKeyDown(e) {
-	if (e.keyCode == VK_RETURN || /^Enter/i.test(e.key)) {
+	if (e.keyCode == VK_RETURN || window.chrome && /^Enter/i.test(e.key)) {
 		AddonsSearch();
 	}
 	return true;
@@ -2582,7 +2582,7 @@ function Install2(xhr, url, o) {
 }
 
 function IconsKeyDown(e) {
-	if (e.keyCode == VK_RETURN || /^Enter/i.test(e.key)) {
+	if (e.keyCode == VK_RETURN || window.chrome && /^Enter/i.test(e.key)) {
 		IconPacksList();
 	}
 	return true;
