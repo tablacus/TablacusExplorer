@@ -23,16 +23,24 @@ if (!window.Promise) {
 	}
 }
 
+RemoveAsync = function (s) {
+	return s.replace(/([^\.\w])(async |await |debugger;)/g, "$1");
+}
+
 AddEventEx = function (w, Name, fn) {
 	if (w.addEventListener) {
+		if ("string" === typeof fn) {
+			if (window.chrome) {
+				fn = "(async () => {" + fn + "\n})();";
+			} else {
+				fn = RemoveAsync(fn);
+			}
+			fn = new Function(fn);
+		}
 		w.addEventListener(Name, fn, false);
 	} else if (w.attachEvent) {
 		w.attachEvent("on" + Name, fn);
 	}
-}
-
-RemoveAsync = function (s) {
-	return s.replace(/([^\.\w])(async |await |debugger;)/g, "$1");
 }
 
 BuildPath = function () {

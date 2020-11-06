@@ -211,7 +211,7 @@ InitUI = function () {
 		var hr;
 		if (xhr) {
 			if (window.chrome && xhr.response) {
-				xhr = readAsDataURL(xhr.response);
+				xhr = ReadAsDataURL(xhr.response);
 			}
 			hr = DownloadFile(xhr, Src);
 			if (hr) {
@@ -353,7 +353,7 @@ InitUI = function () {
 	}
 };
 
-function readAsDataURL(blob) {
+function ReadAsDataURL(blob) {
 	return new Promise(function (resolve, reject) {
 		var reader = new FileReader();
 		reader.onload = function () {
@@ -416,7 +416,7 @@ LoadScripts = function (js1, js2, cb) {
 		var o = api.CreateObject("Object");
 		o.window = $;
 		$.$JS = api.GetScriptDispatch(s.join(""), "JScript", o);
-		CopyObj(window, $, ["g_", "Common", "Threads"]);
+		CopyObj(window, $, ["g_", "Common", "Sync", "Threads"]);
 		CopyObj(window, $, arFN);
 		var doc = api.CreateObject("Object");
 		doc.parentWindow = $;
@@ -435,11 +435,8 @@ function _InvokeMethod() {
 	var args;
 	var ar = api.ObjGetI(te, "fn");
 	while (args = ar.shift()) {
-		api.OutputDebugString(["InvokeMethod:", api.ObjGetI(ar, "length"), "\n"].join(","));
 		var fn = args.shift();
-		api.OutputDebugString(["InvokeMethod:", fn.toString().split("\n")[0]].join(","));
-		var hr = fn.apply(fn, args);
-		api.OutputDebugString("InvokeMethod: " + hr + "," + api.ObjGetI(ar, "length") + "\n");
+		fn.apply(fn, args);
 	}
 }
 
@@ -711,16 +708,19 @@ GetFolderViewEx = function (Ctrl, pt, bStrict) {
 
 AddEventEx(window, "load", function () {
 	document.body.onselectstart = DetectProcessTag;
-	if (!window.chrome) {
-		document.body.oncontextmenu = DetectProcessTag;
-	}
 	if (window.chrome) {
-		document.body.addEventListener('mousewheel', function (e) {
-			if (e.ctrlKey) {
-				e.preventDefault();
+		document.body.addEventListener('mousewheel', function (ev) {
+			if (ev.ctrlKey) {
+				ev.preventDefault();
 			}
 		}, { passive: false });
+		document.body.addEventListener('keydown', function (ev) {
+			if ("F5" === ev.key) {
+				ev.preventDefault();
+			}
+		}, false);
 	} else {
+		document.body.oncontextmenu = DetectProcessTag;
 		document.body.onmousewheel = function (e) {
 			return !e.ctrlKey;
 		};
@@ -856,8 +856,10 @@ AddonOptions = function (Id, fn, Data, bNew) {
 		try {
 			var dlg = MainWindow.g_.dlgs[Id];
 			if (dlg) {
-				dlg.Focus();
-				return;
+				if (api.IsWindowVisible(dlg.Document.parentWindow.WebBrowser.hwnd)) {
+					dlg.Focus();
+					return;
+				}
 			}
 		} catch (e) {
 			MainWindow.g_.dlgs[Id] = void 0;

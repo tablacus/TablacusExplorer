@@ -34,7 +34,7 @@ importScript = function (fn) {
 	return hr;
 }
 
-if (!window.UI && !window.chrome) {
+if (!window.InitUI && !window.chrome) {
 	if (window.alert) {
 		importScript("script\\ui.js");
 		InitUI();

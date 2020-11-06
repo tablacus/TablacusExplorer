@@ -1991,7 +1991,7 @@ HRESULT Invoke5(IDispatch *pdisp, DISPID dispid, WORD wFlags, VARIANT *pvResult,
 	} catch (...) {
 		hr = E_FAIL;
 	}
-#ifdef _USE_SYNC // Use sync object for Blink.
+#ifdef _USE_SYNC
 	if (hr == HRESULT_FROM_WIN32(ERROR_POSSIBLE_DEADLOCK)) {
 		if (wFlags & DISPATCH_METHOD) {
 			if (g_bBlink && dispid == DISPID_VALUE) {
@@ -2014,15 +2014,7 @@ HRESULT Invoke5(IDispatch *pdisp, DISPID dispid, WORD wFlags, VARIANT *pvResult,
 				teExecMethod(g_pOnFunc[TE_FN], L"push", NULL, -1, &v);
 				VariantClear(&v);
 				if (teGetObjectLength(g_pOnFunc[TE_FN]) < 2) {
-#ifdef _DEBUG
-					HRESULT hr =
-#endif
-						g_pWebBrowser->m_pWebBrowser->GetProperty(L"_InvokeMethod();", NULL);
-#ifdef _DEBUG
-					wchar_t psz[99];
-					swprintf_s(psz, 99, L"InvokeUI: %x\n", hr);
-					OutputDebugString(psz);
-#endif
+					g_pWebBrowser->m_pWebBrowser->GetProperty(L"InvokeMethod", NULL);
 				}
 			}
 		}
@@ -4723,9 +4715,17 @@ IDispatch* teCreateObj(LONG lId, VARIANT *pvArg)
 
 	case TE_ARRAY:
 		if (!g_pSP || g_pSP->QueryService(SID_TablacusArray, IID_PPV_ARGS(&pdisp)) != S_OK) {
-			GetNewArray(&pdisp);
+			if (pvArg && pvArg->vt == VT_DISPATCH) {
+				pvArg->pdispVal->QueryInterface(IID_PPV_ARGS(&pdisp));
+			} else {
+				GetNewArray(&pdisp);
+			}
 		} else if (pvArg) {
-			Invoke5(pdisp, DISPID_PROPERTYPUT, DISPATCH_PROPERTYPUT, NULL, -1, pvArg);
+			if (pvArg->vt == VT_DISPATCH) {
+				pvArg->pdispVal->QueryInterface(IID_PPV_ARGS(&pdisp));
+			} else {
+				Invoke5(pdisp, DISPID_PROPERTYPUT, DISPATCH_PROPERTYPUT, NULL, -1, pvArg);
+			}
 		}
 		return pdisp;
 
@@ -10074,6 +10074,40 @@ VOID teApiInvoke(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVa
 		pdisp->Release();
 	}
 }
+
+VOID teApiGetClipboardData(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+
+	if (!IsClipboardFormatAvailable(CF_UNICODETEXT)) {
+		return;
+	}
+	OpenClipboard(g_hwndMain);
+	HGLOBAL hGlobal = (HGLOBAL)GetClipboardData(CF_UNICODETEXT);
+	if (hGlobal) {
+		teSetSZ(pVarResult, (LPWSTR)GlobalLock(hGlobal));
+	}
+	CloseClipboard();
+	GlobalUnlock(hGlobal);
+}
+
+VOID teApiSetClipboardData(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	int nSize = ::SysStringByteLen(param[0].bstrVal) + sizeof(WORD);
+	HGLOBAL hGlobal = GlobalAlloc(GHND, nSize);
+	if (!hGlobal) {
+		return;
+	}
+	::CopyMemory(::GlobalLock(hGlobal), param[0].bstrVal, nSize);
+	GlobalUnlock(hGlobal);
+	if (OpenClipboard(g_hwndMain) == 0) {
+		GlobalFree(hGlobal);
+		return;
+	}
+	EmptyClipboard();
+	SetClipboardData(CF_UNICODETEXT, hGlobal);
+	CloseClipboard();
+}
+
 #ifdef _DEBUG
 VOID teApiTest(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -10444,6 +10478,8 @@ TEDispatchApi dispAPI[] = {
 	{ 1, -1, -1, -1, "SysStringByteLen", teApiSysStringByteLen },
 	{ 2,  1, -1, -1, "GetProp", teApiGetProp },
 	{ 1, -1, -1, -1, "Invoke", teApiInvoke },
+	{ 0, -1, -1, -1, "GetClipboardData", teApiGetClipboardData },
+	{ 1,  0, -1, -1, "SetClipboardData", teApiSetClipboardData },
 	//{ 0, -1, -1, -1, "", teApi },
 #ifdef _DEBUG
 	{ 0, -1, -1, -1, "Test", teApiTest },
@@ -12644,6 +12680,7 @@ HRESULT CteShellBrowser::NavigateEB(DWORD dwFrame)
 #endif
 						}
 						SendMessage(g_pWebBrowser->m_hwndBrowser, WM_SETREDRAW, TRUE, 0);
+						InvalidateRect(g_pWebBrowser->m_hwndBrowser, NULL, FALSE);
 					}
 					if (hr == S_OK) {
 						if (m_pShellView) {
@@ -17944,6 +17981,26 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			m_nClose = 0;
 			return S_OK;
 
+		case TE_PROPERTY + 11://Visible
+			if (m_pWebBrowser) {
+				if (nArg >= 0) {
+					m_pWebBrowser->put_Visible(GetIntFromVariant(&pDispParams->rgvarg[nArg]));
+				}
+				if (pVarResult) {
+					m_pWebBrowser->get_Visible(&pVarResult->boolVal);
+					pVarResult->vt = VT_BOOL;
+				}
+			}
+			return S_OK;
+
+		case TE_PROPERTY + 12://DropMode
+			if (m_pWebBrowser && g_bBlink) {
+				if (nArg >= 0) {
+					m_pWebBrowser->put_RegisterAsDropTarget(GetIntFromVariant(&pDispParams->rgvarg[nArg]));
+				}
+			}
+			return S_OK;
+
 		//DIID_DWebBrowserEvents2
 		case DISPID_DOWNLOADCOMPLETE:
 			if (g_nReload == 1 && m_hwndParent == g_hwndMain) {
@@ -17951,6 +18008,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				SetTimer(g_hwndMain, TET_Reload, 2000, teTimerProc);
 			}
 			return S_OK;
+
 		case DISPID_BEFORENAVIGATE2:
 			if (nArg >= 6 && m_hwndParent == g_hwndMain && pDispParams->rgvarg[nArg].pdispVal == m_pWebBrowser) {
 				if (pDispParams->rgvarg[nArg - 6].vt == (VT_BYREF | VT_BOOL)) {
@@ -18335,6 +18393,9 @@ STDMETHODIMP CteWebBrowser::DragEnter(IDataObject *pDataObj, DWORD grfKeyState, 
 			hr = S_OK;
 		}
 	}
+	if (g_pDropTargetHelper && g_bBlink) {
+		g_pDropTargetHelper->DragEnter(m_hwndBrowser, pDataObj, (LPPOINT)&pt, *pdwEffect);
+	}
 	return hr;
 }
 
@@ -18355,7 +18416,9 @@ STDMETHODIMP CteWebBrowser::DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEff
 	}
 	*pdwEffect |= m_dwEffect;
 	m_grfKeyState = grfKeyState;
-
+	if (g_pDropTargetHelper && g_bBlink) {
+		g_pDropTargetHelper->DragOver((LPPOINT)&pt, *pdwEffect);
+	}
 	return hr;
 }
 
@@ -18370,6 +18433,9 @@ STDMETHODIMP CteWebBrowser::DragLeave()
 				m_DragLeave = hr;
 			}
 		}
+	}
+	if (g_pDropTargetHelper && g_bBlink) {
+		g_pDropTargetHelper->DragLeave();
 	}
 	return m_DragLeave;
 }
@@ -20735,7 +20801,7 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 		case TE_METHOD + 1://QueryContextMenu
 			if (nArg >= 4) {
 				for (int i = 5; i--;) {
-					m_param[i].llVal = GetLLFromVariant(&pDispParams->rgvarg[nArg - i]);
+					m_param[i].uint_ptr = (UINT_PTR)GetPtrFromVariant(&pDispParams->rgvarg[nArg - i]);
 				}
 				teSetLong(pVarResult, m_pContextMenu->QueryContextMenu(m_param[0].hmenu, m_param[1].uintVal, m_param[2].uintVal, m_param[3].uintVal, m_param[4].uintVal));
 			}

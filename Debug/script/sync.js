@@ -17,6 +17,7 @@ eventTA = api.CreateObject("Object");
 g_ptDrag = api.Memory("POINT");
 window.Common = api.CreateObject("Object");
 Common["_stack"] = api.CreateObject("Array");
+window.Sync = api.CreateObject("Object");
 
 g_ = api.CreateObject("Object");
 g_.Colors = api.CreateObject("Object")
@@ -77,7 +78,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201103 ? te.Version : 20201104;
+		return te.Version < 20201106 ? te.Version : 20201106;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);

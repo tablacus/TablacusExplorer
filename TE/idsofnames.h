@@ -803,7 +803,9 @@ TEmethod methodTE[] = {
 	{ START_OnFunc + TE_OnIncludeItem, "OnIncludeItem" },
 	{ START_OnFunc + TE_OnContentsChanged, "OnContentsChanged" },
 	{ START_OnFunc + TE_OnFilterView, "OnFilterView" },
-	//{ START_OnFunc + TE_FN, "fn" },
+#ifdef _USE_SYNC
+	{ START_OnFunc + TE_FN, "fn" },
+#endif
 	{ 0, NULL }
 };
 
@@ -885,6 +887,8 @@ TEmethod methodWB[] = {
 	{ TE_METHOD + 8, "Focus" },
 	{ TE_METHOD + 9, "Close" },
 	{ TE_METHOD + 10, "PreventClose" },
+	{ TE_PROPERTY + 11, "Visible" },
+	{ TE_PROPERTY + 12, "DropMode" },
 	{ START_OnFunc + WB_OnClose, "OnClose" },
 	{ 0, NULL }
 };

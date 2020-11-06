@@ -1074,7 +1074,9 @@ function LoadAddons() {
 			var scell = [];
 			for (var i = 0; i < nLen; ++i) {
 				tcell[i] = table.insertRow().insertCell();
-				scell[i] = sorted.insertRow().insertCell();
+				if (sorted.rows.length) {
+					scell[i] = sorted.insertRow().insertCell();
+				}
 			}
 			for (var i = 0; i < nLen; ++i) {
 				Promise.all([i, items[i].nodeName, items[i].getAttribute("Enabled")]).then(function (r) {
@@ -1083,7 +1085,9 @@ function LoadAddons() {
 					if (AddonId[Id]) {
 						var bEnable = GetNum(r[2]);
 						SetAddon(Id, bEnable, tcell[i]);
-						SetAddon(Id, bEnable, scell[i], "Sorted_");
+						if (sorted.rows.length) {
+							SetAddon(Id, bEnable, scell[i], "Sorted_");
+						}
 						delete AddonId[Id];
 					}
 				});
@@ -1976,6 +1980,7 @@ InitLocation = function () {
 		WebBrowser.OnClose = function (WB) {
 			SetOptions(TEOk, null, ContinueOptions);
 			if (g_nResult != 4) {
+				FireEvent(window, "beforeunload");
 				WB.Close();
 			}
 			g_nResult = 0;
@@ -2202,6 +2207,7 @@ function InitAddonOptions(bFlag) {
 		WebBrowser.OnClose = function (WB) {
 			SetOptions(TEOk, null, ContinueOptions);
 			if (g_nResult != 4) {
+				FireEvent(window, "beforeunload");
 				WB.Close();
 			}
 			g_nResult = 0;

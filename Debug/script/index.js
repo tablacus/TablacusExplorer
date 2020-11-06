@@ -416,4 +416,5 @@ Init = function () {
 	ApplyLang(document);
 	ArrangeAddons();
 	InitWindow();
+	WebBrowser.DropMode = 1;
 }
