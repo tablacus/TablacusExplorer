@@ -78,7 +78,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201106 ? te.Version : 20201106;
+		return te.Version < 20201108 ? te.Version : 20201108;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -1296,7 +1296,9 @@ MakeImgIcon = function (src, index, h, bIcon) {
 						src = src.replace(a2[0], a2[1]);
 						if (i > 1) {
 							var a3 = src.split(",");
-							if (a3[3] > 19) {
+							if (a3[3] == 43) {
+								a3[3] = 4;
+							} else if (a3[3] > 19) {
 								a3[1] -= 6;
 								a3[3] -= 20;
 							} else if (a3[3] > 4) {
@@ -1447,6 +1449,7 @@ SendShortcutKeyFV = function (Key) {
 CreateTab = function (Ctrl, pt) {
 	var FV = GetFolderView(Ctrl, pt);
 	NavigateFV(FV, HOME_PATH || api.ILIsEqual(FV, "about:blank") ? HOME_PATH : FV, SBSP_NEWBROWSER);
+	return S_OK;
 }
 
 Navigate = function (Path, wFlags) {

@@ -331,6 +331,14 @@ g_basic =
 			Ref: OpenDialog
 		},
 
+		JavaScript: {
+			Exec: function (Ctrl, s, type, hwnd, pt) {
+				api.Invoke(UI.ExecJavaScript, Ctrl, s, type, hwnd, pt);
+				return S_OK;
+			},
+			Ref: OpenDialog
+		},
+
 		VBScript: {
 			Exec: ExecScriptEx,
 			Drop: DropScript,
@@ -1809,11 +1817,15 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 	}
 	if (msg == WM_LBUTTONDBLCLK || msg == WM_RBUTTONDBLCLK || msg == WM_MBUTTONDBLCLK || msg == WM_XBUTTONDBLCLK) {
 		if (!IsHeader(Ctrl, pt, hwnd, strClass)) {
-			te.Data.pt = pt.Clone();
-			g_.mouse.str = g_.mouse.GetButton(msg, wParam);
-			g_.mouse.str += g_.mouse.str;
-			if (g_.mouse.Exec(Ctrl, hwnd, pt) == S_OK) {
-				return S_OK;
+			var tm = new Date().getTime();
+			if (tm - (g_.mouse.tmDblClick || 0) > sha.GetSystemInformation("DoubleClickTime")) {
+				g_.mouse.tmDblClick = tm;
+				te.Data.pt = pt.Clone();
+				g_.mouse.str = g_.mouse.GetButton(msg, wParam);
+				g_.mouse.str += g_.mouse.str;
+				if (g_.mouse.Exec(Ctrl, hwnd, pt) == S_OK) {
+					return S_OK;
+				}
 			}
 		}
 	}
@@ -2893,7 +2905,7 @@ importScripts = function () {
 	}
 }
 
-AddEvent("Arrange", function (Ctrl, rc, cb) {
+AddEvent("Arrange", function (Ctrl, rc) {
 	if (Ctrl.Type == CTRL_TE) {
 		var rcClient = api.Memory("RECT");
 		api.GetClientRect(te.hwnd, rcClient);
@@ -2949,7 +2961,7 @@ AddEvent("Arrange", function (Ctrl, rc, cb) {
 				} else {
 					--rc.bottom;
 				}
-				te.OnArrange(TC, rc, cb);
+				te.OnArrange(TC, rc);
 			}
 		} catch (e) { }
 		te.UnlockUpdate(1);
@@ -3423,7 +3435,6 @@ InitWindow = function () {
 	}
 	g_.xmlWindow = void 0;
 	setTimeout(function () {
-		Resize();
 		var cTC = te.Ctrls(CTRL_TC);
 		for (var i in cTC) {
 			if (cTC[i].SelectedIndex >= 0) {
@@ -3436,11 +3447,7 @@ InitWindow = function () {
 		}
 		te.CmdShow = SW_SHOWNORMAL;
 		setTimeout(function () {
-			Resize();
 			RunCommandLine(api.GetCommandLine());
-			setTimeout(function () {
-				api.RedrawWindow(te.hwnd, null, 0, RDW_INVALIDATE | RDW_FRAME | RDW_ALLCHILDREN);
-			}, 99);
 		}, 500);
 	}, 99);
 }

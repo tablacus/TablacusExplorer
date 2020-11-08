@@ -1976,6 +1976,12 @@ InitLocation = function () {
 
 	if (WebBrowser.OnClose) {
 		g_Inline = true;
+		var cel = document.getElementsByTagName("input");
+		for (var i = cel.length; i-- > 0;) {
+			if (/^ok$|^cancel$/.test(cel[i].className)) {
+				cel[i].style.display = "none";
+			}
+		}
 	} else {
 		WebBrowser.OnClose = function (WB) {
 			SetOptions(TEOk, null, ContinueOptions);
@@ -1985,7 +1991,6 @@ InitLocation = function () {
 			}
 			g_nResult = 0;
 		};
-		document.getElementById("buttons").style.display = "block";
 	}
 	if (item) {
 		InitColor1(item);

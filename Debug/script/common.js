@@ -22,12 +22,7 @@ importScript = function (fn) {
 		if (/\.vbs$/i.test(fn)) {
 			hr = ExecScriptEx(window.Ctrl, s, "VBScript", $.pt, $.dataObj, $.grfKeyState, $.pdwEffect, $.bDrop);
 		} else {
-			if (window.chrome && window.alert) {
-				s = "(() => {" + s + "\n})();";
-			} else {
-				s = RemoveAsync(s);
-			}
-			new Function(s)();
+			new Function(window.chrome && window.alert ? "(() => {" + s + "\n})();" : RemoveAsync(s))();
 			hr = S_OK;
 		}
 	}
@@ -148,7 +143,7 @@ GetWinColor = function (c) {
 }
 
 FindText = function () {
-	if (window.chrome) {
+	if (window.chrome || ui_.IEVer < 8) {
 		wsh.SendKeys("^f");
 	} else {
 		api.OleCmdExec(document, null, 32, 0, 0);

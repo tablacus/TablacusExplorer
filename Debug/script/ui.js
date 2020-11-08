@@ -4,7 +4,8 @@ ui_ = {
 	IEVer: window.chrome ? (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 : 12) : window.document && (document.documentMode || (/MSIE 6/.test(navigator.appVersion) ? 6 : 7)),
 	bWindowRegistered: true,
 	Panels: {},
-	eventTE: {}
+	eventTE: {},
+	SyncLine: []
 };
 
 InitUI = function () {
@@ -173,13 +174,13 @@ InitUI = function () {
 	UI.RunEvent = function () {
 		var args = Array.apply(null, arguments);
 		var s = args.shift();
-		if (window.chrome) {
-			s = "(() => {" + s + "\n})();";
-		} else {
-			s = RemoveAsync(s);
-		}
-		var fn = new Function(s);
+		var fn = new Function(window.chrome ? "(() => {" + s + "\n})();" : RemoveAsync(s));
 		fn.apply(fn, args);
+	}
+
+	UI.ExecJavaScript = function (Ctrl, s, type, hwnd, pt) {
+		var fn = new Function(window.chrome ? "(() => {" + s + "\n})();" : RemoveAsync(s));
+		fn.apply(fn, arguments);
 	}
 
 	UI.setTimeoutAsync = function (fn, tm, a, b, c, d) {
@@ -389,7 +390,7 @@ LoadScripts = function (js1, js2, cb) {
 						return s.replace(/^\s|\s*=.*$/g, "");
 					}));
 				}
-				api.OutputDebugString([js1[i], "Start line:", line, "\n"].join(" "));
+				ui_.SyncLine.push([js1[i], "Start:", line].join(" "));
 				line += src.split("\n").length;
 			}
 		}

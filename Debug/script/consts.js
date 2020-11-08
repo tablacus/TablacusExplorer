@@ -30,12 +30,7 @@ RemoveAsync = function (s) {
 AddEventEx = function (w, Name, fn) {
 	if (w.addEventListener) {
 		if ("string" === typeof fn) {
-			if (window.chrome) {
-				fn = "(async () => {" + fn + "\n})();";
-			} else {
-				fn = RemoveAsync(fn);
-			}
-			fn = new Function(fn);
+			fn = new Function(window.chrome ? "(async () => {" + fn + "\n})();" : RemoveAsync(fn));
 		}
 		w.addEventListener(Name, fn, false);
 	} else if (w.attachEvent) {

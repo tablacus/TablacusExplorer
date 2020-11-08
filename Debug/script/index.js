@@ -130,8 +130,8 @@ SetAddon = function (strName, Location, Tag, strVAlign) {
 	return Location;
 }
 
-RunSplitter = function (e, n) {
-	if (e.buttons !== void 0 ? e.buttons & 1 : e.button == 0) {
+RunSplitter = function (ev, n) {
+	if (ev.button == 0) {
 		api.ObjPutI(g_.mouse, "Capture", n);
 		api.SetCapture(te.hwnd);
 	}
@@ -252,7 +252,7 @@ te.OnArrange = function (Ctrl, rc) {
 			o = document.getElementById("Panel_" + Id);
 			ui_.Panels[Id] = o;
 			ApplyLang(o);
-			ChangeView(Ctrl.Selected);
+			Resize();
 		}
 		o.style.left = rc.left + "px";
 		o.style.top = rc.top + "px";
