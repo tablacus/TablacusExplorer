@@ -210,3 +210,36 @@ LoadImgDll = function (icon, index) {
 amp2ul = function (s) {
 	return s.replace(/&amp;|&/ig, "");
 }
+
+EscapeJson = function (s) {
+	return s.replace(/([\\|"|\/])/g, '\\$1').replace(/[\b]/g, '\\b').replace(/[\f]/g, '\\f').replace(/[\n]/g, '\\n').replace(/[\r]/g, '\\r').replace(/[\t]/g, '\\t');
+};
+
+if (!window.JSON) {
+	JSON = {
+		parse: function (s) {
+			return new Function('return ' + (s || {}))();
+		},
+		stringify: function (o) {
+			var ar = [];
+			if (Array.isArray(o)) {
+				for (var i = 0; i < o.length; ++i) {
+					if ("object" === typeof o[i]) {
+						ar.push(this.stringify(o[i]));
+					} else {
+						ar.push('"' + EscapeJson(o[i]) + '"');
+					}
+				}
+				return '[' + ar.join(",") + "]";
+			}
+			for (var n in o) {
+				if ("object" === typeof o[n]) {
+					ar.push('"' + EscapeJson(n) + '":' + this.stringify(o[n]));
+				} else {
+					ar.push('"' + EscapeJson(n) + '":"' + EscapeJson(o[n]) + '"');
+				}
+			}
+			return '{' + ar.join(",") + "}";
+		}
+	}
+}

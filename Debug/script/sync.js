@@ -78,7 +78,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201108 ? te.Version : 20201108;
+		return te.Version < 20201109 ? te.Version : 20201109;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -434,6 +434,9 @@ ExtractMacro2 = function (Ctrl, s) {
 }
 
 ExtractMacro = function (Ctrl, s) {
+	if (!Ctrl) {
+		Ctrl = te;
+	}
 	if ("string" === typeof s) {
 		s = MainWindow.ExtractMacro2(Ctrl, s);
 		if (!/\t/.test(s) && /%/.test(s)) {
@@ -2751,6 +2754,32 @@ PopupContextMenu = function (Item, FV) {
 		}
 	}
 	api.DestroyMenu(hMenu);
+}
+
+XmlItem2Json = function (item) {
+	var json = [];
+	if (item) {
+		if (item.text) {
+			json.push('"text":"' + EscapeJson(item.text) + '"');
+		}
+		var attrs = item.attributes;
+		if (attrs) {
+			for (var i = 0; i < attrs.length; ++i) {
+				json.push('"' + EscapeJson(attrs[i].name) + '":"' + EscapeJson(attrs[i].value) + '"');
+			}
+		}
+	}
+	return "{" + json.join(",") + "}";
+}
+
+XmlItems2Json = function (items) {
+	var json = [];
+	if (items) {
+		for (var i = 0; i < items.length; ++i) {
+			json.push(XmlItem2Json(items[i]))
+		}
+	}
+	return "[" + json.join(",") + "]";
 }
 
 GetAddonElement = function (id) {

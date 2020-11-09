@@ -4,8 +4,7 @@ ui_ = {
 	IEVer: window.chrome ? (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 : 12) : window.document && (document.documentMode || (/MSIE 6/.test(navigator.appVersion) ? 6 : 7)),
 	bWindowRegistered: true,
 	Panels: {},
-	eventTE: {},
-	SyncLine: []
+	eventTE: {}
 };
 
 InitUI = function () {
@@ -240,7 +239,7 @@ InitUI = function () {
 	UI.CheckUpdate2 = function (xhr, url, arg1) {
 		var arg = api.CreateObject("Object");
 		var Text = xhr.get_responseText ? xhr.get_responseText() : xhr.responseText;
-		var json = window.JSON ? JSON.parse(Text) : api.GetScriptDispatch("function fn () { return " + Text + "}", "JScript", {}).fn();
+		var json = JSON.parse(Text);
 		if (json.assets && json.assets[0]) {
 			arg.size = json.assets[0].size / 1024;
 			arg.url = json.assets[0].browser_download_url;
@@ -390,7 +389,7 @@ LoadScripts = function (js1, js2, cb) {
 						return s.replace(/^\s|\s*=.*$/g, "");
 					}));
 				}
-				ui_.SyncLine.push([js1[i], "Start:", line].join(" "));
+				api.OutputDebugString([js1[i], "Start line:", line, "\n"].join(" "));
 				line += src.split("\n").length;
 			}
 		}
@@ -1074,32 +1073,47 @@ ClearAutocomplete = function () {
 	g_.Autocomplete.Path = "";
 }
 
-if (!window.JSON) {
-	JSON = {
-		parse: function (s) {
-			return new Function('return ' + (s || {}))();
-		},
-		stringify: function (o) {
-			var ar = [];
-			if (Array.isArray(o)) {
-				for (var i = 0; i < o.length; ++i) {
-					if ("object" === typeof o[i]) {
-						ar.push('"' + this.stringify(o[i]) + '"');
-					} else {
-						ar.push('"' + o[i] + '"');
+GetXmlItems = window.chrome ? function (items) {
+	return JSON.parse(XmlItems2Json(items));
+} : function (items) {
+	var ar = [];
+	if (items) {
+		for (var i = 0; i < items.length; ++i) {
+			var item = items[i];
+			if (item) {
+				var o = {};
+				if (item.text) {
+					o.text = item.text;
+				}
+				var attrs = item.attributes;
+				if (attrs) {
+					for (var j = 0; j < attrs.length; ++j) {
+						o[attrs[j].name] = attrs[j].value;
 					}
 				}
-				return '[' + ar.join(",") + "]";
+				ar.push(o);
 			}
-			for (var n in o) {
-				if ("object" === typeof o[n]) {
-					ar.push('"' + n + '":"' + this.stringify(o[n]) + '"');
-				} else {
-					ar.push('"' + n + '":"' + o[n] + '"');
-				}
-			}
-			return '{' + ar.join(",") + "}";
 		}
 	}
+	return ar;
 }
 
+if (window.chrome) {
+	GetAddonElement = function (id) {
+		var item = $.GetAddonElement(id);
+		return {
+			item: item,
+			db: JSON.parse(XmlItem2Json(item)),
+			get attributes() {
+				return this.db.keys();
+			},
+			getAttribute: function (s) {
+				return this.db[s];
+			},
+			setAttribute: function (s, v) {
+				this.db[s] = v;
+				item.setAttribute(s, v);
+			}
+		};
+	}
+}
