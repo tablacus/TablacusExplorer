@@ -2324,24 +2324,22 @@ BOOL teGetVariantTime(VARIANT *pv, DATE *pdt)
 	VARIANT v;
 	VariantInit(&v);
 	VariantCopy(&v, pv);
+	if (teVarIsNumber(pv)) {//UNIX EPOCH
+		teVariantChangeType(&v, pv, VT_UI8);
+		v.ullVal = v.ullVal * 10000 + 116444736000000000LL;
+		teFileTimeToVariantTime((FILETIME *)&v.ullVal, pdt);
+		return TRUE;
+	}
 	IDispatch *pdisp;
 	if (GetDispatch(&v, &pdisp)) {
 		VariantClear(&v);
 		teExecMethod(pdisp, L"getVarDate", &v, 0, NULL);
 		pdisp->Release();
-	}
-	if (v.vt != VT_DATE) {
+	} else if (v.vt == VT_BSTR) {
 		VariantClear(&v);
-		if (teVarIsNumber(pv)) {//UNIX EPOCH
-			teVariantChangeType(&v, pv, VT_UI8);
-			v.ullVal = v.ullVal * 10000 + 116444736000000000LL;
-			teFileTimeToVariantTime((FILETIME *)&v.ullVal, pdt);
-			return TRUE;
-		} else {
-			teVariantChangeType(&v, pv, VT_DATE);
-		}
+		teVariantChangeType(&v, pv, VT_DATE);
 	}
-	if (v.vt == VT_DATE) {
+	if (v.vt == VT_DATE && v.date) {
 		*pdt = v.date;
 		return TRUE;
 	}
@@ -9357,8 +9355,13 @@ VOID teApiSHTestTokenMembership(int nArg, teParam *param, DISPPARAMS *pDispParam
 VOID teApiObjGetI(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	IDispatch *pdisp;
-	if (GetDispatch(&pDispParams->rgvarg[nArg], &pdisp)) {
+	if (pVarResult && GetDispatch(&pDispParams->rgvarg[nArg], &pdisp)) {
 		teGetPropertyI(pdisp, param[1].lpolestr, pVarResult);
+		if (pVarResult->vt == VT_DATE) {//UNIX EPOCH
+			ULONGLONG ft;
+			teVariantTimeToFileTime(pVarResult->date, (FILETIME *)&ft);
+			teSetLL(pVarResult, ft / 10000 - 11644473600000LL);
+		}
 		pdisp->Release();
 	}
 }
@@ -20563,9 +20566,10 @@ VOID CteMemory::Read(int nIndex, int nLen, VARIANT *pVarResult)
 				pVarResult->bstrVal = teMultiByteToWideChar(pVarResult->vt != VT_USERDEFINED ? CP_ACP : CP_UTF8, (LPCSTR)pFrom, nLen);
 				pVarResult->vt = VT_BSTR;
 				break;
-			case VT_FILETIME:
-				teFileTimeToVariantTime((LPFILETIME)pFrom, &pVarResult->date);
-				pVarResult->vt = VT_DATE;
+			case VT_FILETIME://UNIX EPOCH
+				teSetLL(pVarResult, *(ULONGLONG *)pFrom / 10000 - 11644473600000LL);
+//				teFileTimeToVariantTime((LPFILETIME)pFrom, &pVarResult->date);
+//				pVarResult->vt = VT_DATE;
 				break;
 			case VT_CY:
 				POINT *ppt;
@@ -20682,7 +20686,9 @@ VOID CteMemory::Write(int nIndex, int nLen, VARTYPE vt, VARIANT *pv)
 				VariantClear(&v);
 				break;
 			case VT_FILETIME:
-				teVariantTimeToFileTime(pv->date, (LPFILETIME)pDest);
+				DATE dt;
+				teGetVariantTime(pv, &dt);
+				teVariantTimeToFileTime(dt, (LPFILETIME)pDest);
 				break;
 			case VT_CY:
 				GetPointFormVariant((LPPOINT)pDest, pv);

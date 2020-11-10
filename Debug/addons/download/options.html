@@ -3,29 +3,29 @@
   <table>
     <tr>
       <td>
-        <input type="button" value="Browse..." onclick="RefX('Path', false, this)" />
+        <input type="button" value="Browse..." onclick="RefX('Path', false, this)">
       </td>
       <td>
-        <input type="button" value="Portable" onclick="PortableX('Path')" />
+        <input type="button" value="Portable" onclick="PortableX('Path')">
       </td>
       <td>
         &nbsp;
       </td>
       <td>
-        <input type="button" value="PowerShell" title='powershell [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri "%url%" -OutFile "%file%"' onclick="SetDL(this)" />
+        <input type="button" value="PowerShell" title='powershell [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri "%url%" -OutFile "%file%"' onclick="SetDL(this)">
       </td>
       <td>
-        <input type="button" value="cURL" title='cURL "%url%" -o "%file%" -L' onclick="SetDL(this)" />
+        <input type="button" value="cURL" title='cURL "%url%" -o "%file%" -L' onclick="SetDL(this)">
       </td>
       <td>
-        <input type="button" value="Wget" title='wget "%url%" -O "%file%"' onclick="SetDL(this)" />
+        <input type="button" value="Wget" title='wget "%url%" -O "%file%"' onclick="SetDL(this)">
       </td>
       <td>
-        <input type="button" value="BITSAdmin" title='bitsadmin.exe /TRANSFER dl "%url%" "%file%"' onclick="SetDL(this)" />
+        <input type="button" value="BITSAdmin" title='bitsadmin.exe /TRANSFER dl "%url%" "%file%"' onclick="SetDL(this)">
       </td>
     </tr>
   </table>
-  <label for="Visible"><input type="checkbox" name="Visible">Visible</label>
+  <label><input type="checkbox" name="Visible">Visible</label>
 </div>
-<input type="button" id="_curl" value="Get cURL..." title="https://curl.haxx.se/" onclick="wsh.Run(this.title)" />
-<input type="button" id="_wget" value="Get Wget..." title="http://www.gnu.org/software/wget/" onclick="wsh.Run(this.title)" />
+<input type="button" id="_curl" value="Get cURL..." title="https://curl.haxx.se/" onclick="wsh.Run(this.title)">
+<input type="button" id="_wget" value="Get Wget..." title="http://www.gnu.org/software/wget/" onclick="wsh.Run(this.title)">

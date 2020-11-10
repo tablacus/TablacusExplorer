@@ -124,52 +124,6 @@ InitUI = function () {
 	UI = api.CreateObject("Object");
 	UI.Addons = api.CreateObject("Object");
 
-	UI.OpenHttpRequest = OpenHttpRequest = function (url, alt, fn, arg) {
-		var xhr = createHttpRequest();
-		var fnLoaded = function () {
-			if (fn) {
-				if (arg && arg.pcRef) {
-					arg.pcRef[0] = arg.pcRef[0] - 1;
-				}
-				if (xhr.status == 200) {
-					fn(xhr, url, arg);
-					fn = void 0;
-					return;
-				}
-				if (/^http/.test(alt)) {
-					UI.OpenHttpRequest(/^https/.test(url) && alt == "http" ? url.replace(/^https/, alt) : alt, '', fn, arg);
-					return;
-				}
-				ShowXHRError(url, xhr.status);
-			}
-		}
-		xhr.onload = fnLoaded;
-		xhr.onreadystatechange = function () {
-			if (xhr.readyState == 4) {
-				fnLoaded();
-			}
-		}
-		if (/ml$/i.test(url)) {
-			url += "?" + Math.floor(new Date().getTime() / 60000);
-		}
-		if (arg && arg.pcRef) {
-			arg.pcRef[0] = arg.pcRef[0] + 1;
-		}
-		if (window.chrome && /\.zip$|\.nupkg$/i.test(url)) {
-			xhr.responseType = "blob";
-		}
-		xhr.open("GET", url, true);
-		xhr.send();
-	}
-
-	UI.ReloadCustomize = ReloadCustomize = function () {
-		te.Data.bReload = false;
-		CloseSubWindows();
-		Finalize();
-		te.Reload();
-		return S_OK;
-	}
-
 	UI.RunEvent = function () {
 		var args = Array.apply(null, arguments);
 		var s = args.shift();
@@ -177,16 +131,25 @@ InitUI = function () {
 		fn.apply(fn, args);
 	}
 
-	UI.ExecJavaScript = function (Ctrl, s, type, hwnd, pt) {
+	UI.ExecJavaScript = function (Ctrl, s) {
 		var fn = new Function(window.chrome ? "(() => {" + s + "\n})();" : RemoveAsync(s));
 		fn.apply(fn, arguments);
+	}
+
+	UI.Invoke = function () {
+		var args = Array.apply(null, arguments);
+		var ar = args.shift().split(".");
+		var fn = window;
+		var s;
+		while (s = ar.shift()) {
+			fn = fn[s];
+		}
+		fn.apply(fn, args);
 	}
 
 	UI.setTimeoutAsync = function (fn, tm, a, b, c, d) {
 		setTimeout(fn, tm, a, b, c, d);
 	}
-
-	UI.clearTimeout = clearTimeout;
 
 	UI.ShowError = function (cb, e, s) {
 		setTimeout(cb, 99, cb, e, s);
@@ -199,41 +162,8 @@ InitUI = function () {
 		}
 	}
 
-	UI.BlurId = BlurId = function (Id) {
-		document.getElementById(Id).blur();
-	}
-
 	UI.ShowOptions = function (opt) {
 		g_.dlgs.Options = ShowDialog("options.html", opt);
-	}
-
-	UI.Extract = Extract = function (Src, Dest, xhr) {
-		var hr;
-		if (xhr) {
-			if (window.chrome && xhr.response) {
-				xhr = ReadAsDataURL(xhr.response);
-			}
-			hr = DownloadFile(xhr, Src);
-			if (hr) {
-				return hr;
-			}
-		}
-		var eo = MainWindow.eventTE.extract;
-		var nLen = GetLength(eo);
-		for (var i = 0; i < nLen; ++i) {
-			var fn = eo[i];
-			try {
-				fn.apply(Src, Dest);
-			} catch (e) {
-				ShowError(e, "Extract", i);
-			}
-		}
-		return api.Extract(BuildPath(system32, "zipfldr.dll"), "{E88DCCE0-B7B3-11d1-A9F0-00AA0060FA31}", Src, Dest);
-	}
-
-	UI.DownloadFile = DownloadFile = function (url, fn) {
-		var hr = MainWindow.RunEvent4("DownloadFile", url, fn);
-		return hr != null ? hr : api.URLDownloadToFile(null, url, fn);
 	}
 
 	UI.CheckUpdate2 = function (xhr, url, arg1) {
@@ -329,14 +259,6 @@ InitUI = function () {
 		}
 	}
 
-	UI.CloseWindow = CloseWindow = function () {
-		if (window.chrome) {
-			api.PostMessage(GetTopWindow(), WM_CLOSE, 0, 0);
-			return;
-		}
-		window.close();
-	}
-
 	UI.Autocomplete = function (s, path) {
 		var dl = document.getElementById("AddressList");
 		while (dl.lastChild) {
@@ -353,7 +275,74 @@ InitUI = function () {
 	}
 };
 
-function ReadAsDataURL(blob) {
+OpenHttpRequest = function (url, alt, fn, arg) {
+	var xhr = createHttpRequest();
+	var fnLoaded = function () {
+		if (fn) {
+			if (arg && arg.pcRef) {
+				arg.pcRef[0] = arg.pcRef[0] - 1;
+			}
+			if (xhr.status == 200) {
+				fn(xhr, url, arg);
+				fn = void 0;
+				return;
+			}
+			if (/^http/.test(alt)) {
+				UI.OpenHttpRequest(/^https/.test(url) && alt == "http" ? url.replace(/^https/, alt) : alt, '', fn, arg);
+				return;
+			}
+			ShowXHRError(url, xhr.status);
+		}
+	}
+	xhr.onload = fnLoaded;
+	xhr.onreadystatechange = function () {
+		if (xhr.readyState == 4) {
+			fnLoaded();
+		}
+	}
+	if (/ml$/i.test(url)) {
+		url += "?" + Math.floor(new Date().getTime() / 60000);
+	}
+	if (arg && arg.pcRef) {
+		arg.pcRef[0] = arg.pcRef[0] + 1;
+	}
+	if (window.chrome && /\.zip$|\.nupkg$/i.test(url)) {
+		xhr.responseType = "blob";
+	}
+	xhr.open("GET", url, true);
+	xhr.send();
+}
+
+Extract = function (Src, Dest, xhr) {
+	var hr;
+	if (xhr) {
+		if (window.chrome && xhr.response) {
+			xhr = ReadAsDataURL(xhr.response);
+		}
+		hr = DownloadFile(xhr, Src);
+		if (hr) {
+			return hr;
+		}
+	}
+	var eo = MainWindow.eventTE.extract;
+	var nLen = GetLength(eo);
+	for (var i = 0; i < nLen; ++i) {
+		var fn = eo[i];
+		try {
+			fn.apply(Src, Dest);
+		} catch (e) {
+			ShowError(e, "Extract", i);
+		}
+	}
+	return api.Extract(BuildPath(system32, "zipfldr.dll"), "{E88DCCE0-B7B3-11d1-A9F0-00AA0060FA31}", Src, Dest);
+}
+
+DownloadFile = function (url, fn) {
+	var hr = MainWindow.RunEvent4("DownloadFile", url, fn);
+	return hr != null ? hr : api.URLDownloadToFile(null, url, fn);
+}
+
+ReadAsDataURL = function (blob) {
 	return new Promise(function (resolve, reject) {
 		var reader = new FileReader();
 		reader.onload = function () {
@@ -617,6 +606,14 @@ GetTopWindow = function (hwnd) {
 	return hwnd;
 }
 
+CloseWindow = function () {
+	if (window.chrome) {
+		api.PostMessage(GetTopWindow(), WM_CLOSE, 0, 0);
+		return;
+	}
+	window.close();
+}
+
 CloseSubWindows = function () {
 	var hwnd = GetTopWindow();;
 	var hwnd1 = hwnd;
@@ -808,6 +805,18 @@ LoadAddon = function (ext, Id, arError, param) {
 		arError.push([e.stack || e.description || e.toString(), fn].join("\n"));
 	}
 	return r;
+}
+
+ReloadCustomize = function () {
+	te.Data.bReload = false;
+	CloseSubWindows();
+	Finalize();
+	te.Reload();
+	return S_OK;
+}
+
+BlurId = function (Id) {
+	document.getElementById(Id).blur();
 }
 
 //Options

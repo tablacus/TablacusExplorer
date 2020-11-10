@@ -78,7 +78,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201109 ? te.Version : 20201109;
+		return te.Version < 20201110 ? te.Version : 20201110;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -316,6 +316,11 @@ ShellExecute = function (s, vOperation, nShow, vDir2, pt) {
 		}
 		return sha.ShellExecute(res[1], res[2], vDir, vOperation, nShow);
 	}
+}
+
+InvokeUI = function () {
+	api.Invoke(UI.Invoke, arguments);
+	return S_OK;
 }
 
 RunEvent1 = function () {
@@ -791,7 +796,7 @@ ShowOptions = function (s) {
 	opt.height = te.Data.Conf_OptHeight;
 	opt.Data = s;
 	opt.event = api.CreateObject("Object");
-	api.Invoke(UI.ShowOptions, opt);
+	api.Invoke(UI.ShowOptions, [opt]);
 }
 
 GetAddons = function () {
@@ -2939,13 +2944,6 @@ SetLang2 = function (s, v) {
 			SetLang2(StripAmp(s), StripAmp(v));
 		}
 	}
-}
-
-CallUI = function () {
-	var args = Array.apply(null, arguments);
-	var eo = args.shift();
-	var en = args.shift();
-	api.Invoke(eo[en], args);
 }
 
 LoadDBFromTSV = function (DB, fn) {

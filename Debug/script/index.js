@@ -137,7 +137,7 @@ RunSplitter = function (ev, n) {
 	}
 }
 
-UI.Resize = Resize = function () {
+Resize = function () {
 	if (ui_.tidResize) {
 		clearTimeout(ui_.tidResize);
 	}

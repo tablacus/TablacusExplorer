@@ -27,11 +27,15 @@ InputDialog = function (text, defaultText) {
 	if (window.prompt) {
 		return prompt(GetTextR(text), defaultText);
 	}
-	return api.GetScriptDispatch('Function InputDialog(text, TITLE, defaultText)\nInputDialog = InputBox(text, TITLE, defaultText)\nEnd Function', "VBScript").InputDialog(GetTextR(text), TITLE, defaultText);
+	var rc = api.Memory("RECT");
+	api.GetWindowRect(te.hwnd, rc);
+	var t = 1440 / screen.deviceYDPI;
+	var x = Math.min((rc.left + (rc.right - rc.left) / 2 - 186) * t, 32767);
+	var y = Math.min((rc.top + (rc.bottom - rc.top) / 2 - 74) * t, 32767);
+	return api.GetScriptDispatch('Function InputDialog(text, TITLE, defaultText, x, y)\nInputDialog = InputBox(text, TITLE, defaultText, x, y)\nEnd Function', "VBScript").InputDialog(GetTextR(text), TITLE, defaultText, x, y);
 }
 
-g_.mouse =
-{
+g_.mouse = {
 	str: "",
 	CancelContextMenu: false,
 	ptGesture: api.Memory("POINT"),
