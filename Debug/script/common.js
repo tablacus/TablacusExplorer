@@ -195,7 +195,6 @@ CalcVersion = function (s) {
 
 LoadImgDll = function (icon, index) {
 	var i4 = (index || 0) * 4;
-	api.OutputDebugString([i4, system32, icon[i4]].join(",") + "\n");
 	var hModule = api.LoadLibraryEx(BuildPath(system32, icon[i4]), 0, LOAD_LIBRARY_AS_DATAFILE);
 	if (!hModule && SameText(icon[i4], "ieframe.dll")) {
 		if (icon[i4 + 1] >= 500) {

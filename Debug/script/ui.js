@@ -746,7 +746,7 @@ GetImgTag = function (o, h) {
 		var ar = ['<img'];
 		for (var n in o) {
 			if (o[n]) {
-				ar.push(' ', n, '="', EncodeSC(api.PathUnquoteSpaces(o[n])), '"');
+				ar.push(' ', n, '="', EncodeSC(GetText(api.PathUnquoteSpaces(o[n]))), '"');
 			}
 		}
 		if (h) {
@@ -1114,14 +1114,20 @@ if (window.chrome) {
 			item: item,
 			db: JSON.parse(XmlItem2Json(item)),
 			get attributes() {
-				return this.db.keys();
+				var ar = [];
+				for (var n in this.db) {
+					ar.push({
+						name: n, value: this.db[n]
+					});
+				}
+				return ar;
 			},
 			getAttribute: function (s) {
 				return this.db[s];
 			},
 			setAttribute: function (s, v) {
 				this.db[s] = v;
-				item.setAttribute(s, v);
+				this.item.setAttribute(s, v);
 			}
 		};
 	}

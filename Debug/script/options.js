@@ -1403,6 +1403,7 @@ InitOptions = function () {
 		ClickButton(i, false);
 	}
 	SetTab(dialogArguments.Data);
+	document.F.style.display = "";
 	WebBrowser.OnClose = function (WB) {
 		g_bChanged |= g_Chg.Addons || g_Chg.Menus || g_Chg.Tab || g_Chg.Tree || g_Chg.View;
 		if (!g_bChanged) {
@@ -1416,7 +1417,6 @@ InitOptions = function () {
 		}
 		SetOptions(OkOptions, CancelOptions, ContinueOptions);
 	};
-	document.body.style.display = "";
 }
 
 OpenIcon = function (o) {
@@ -1698,8 +1698,8 @@ InitDialog = function () {
 		g_tidResize = setTimeout(DialogResize, 500);
 	});
 	ApplyLang(document);
+	document.F.style.display = "";
 	DialogResize();
-	document.body.style.display = "";
 }
 
 MouseDown = function (e) {
@@ -1996,6 +1996,7 @@ InitLocation = function () {
 		InitColor1(item);
 	}
 	ClickTab(null, 1);
+	document.getElementById("P").style.display = "";
 }
 
 function SetAttrib(item, n, s) {

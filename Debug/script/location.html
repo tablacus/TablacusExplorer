@@ -7,7 +7,7 @@
     <link rel="stylesheet" type="text/css" href="options.css">
     <script type="text/javascript" charset="utf-8" src="consts.js"></script>
   </head>
-  <body>
+  <body><div id="P">
     <ul id="tabs" class="tab0 hide"><!--
     --><li id="tab0"></li><!--
     --><li id="tab1"></li><!--
@@ -435,8 +435,9 @@
           <input type="button" value="Cancel" class="cancel" onclick="SetResult(2)">
         </td>
       </tr>
-    </table>
+    </table></div>
     <script type="text/javascript">
+      document.getElementById("P").style.display = "none";
       ScriptBase = "..";
       LoadScript(["script/ui.js", "script/common.js"], function () {
         LoadScripts(["script/sync.js"], ["script/options.js"], function () {

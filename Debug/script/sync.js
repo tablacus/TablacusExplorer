@@ -78,7 +78,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201110 ? te.Version : 20201110;
+		return te.Version < 20201110 ? te.Version : 20201111;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -319,6 +319,12 @@ ShellExecute = function (s, vOperation, nShow, vDir2, pt) {
 }
 
 InvokeUI = function () {
+	if (arguments.length == 2 && arguments[1].length) {
+		var args = Array.apply(null, arguments[1]);
+		args.unshift(arguments[0]);
+		api.Invoke(UI.Invoke, args);
+		return S_OK;
+	}
 	api.Invoke(UI.Invoke, arguments);
 	return S_OK;
 }

@@ -2,62 +2,43 @@ Addon_Id = "mainmenu";
 Default = "ToolBar1Left";
 
 if (window.Addon == 1) {
-	Addons.MainMenu =
-	{
+	Addons.MainMenu = {
 		Menu: [],
-		Item: null,
-		tid: null,
-		tid2: null,
-		bLoop: false,
-		bClose: false,
 
-		Popup: function (o)
-		{
-			if (typeof(o) == "string") {
-				o = document.getElementById("Menu" + o);
-			}
-
-			if (!Addons.MainMenu.bClose) {
-				this.Item = o;
+		Popup: async function (o) {
+			if (!await Common.MainMenu.bClose) {
+				Addons.MainMenu.Item = o;
+				Common.MainMenu.Item = await GetRect(o, 1);
+				for (var i = await GetLength(await Common.MainMenu.Menu); i--;) {
+					Common.MainMenu.Items[i] = await GetRect(document.getElementById(await Common.MainMenu.Menu[i]), 1);
+				}
 				clearTimeout(Addons.MainMenu.tid);
-				Addons.MainMenu.tid = setTimeout(function () {
-					Addons.MainMenu.tid = null;
+				Addons.MainMenu.tid = setTimeout(async function () {
+					delete Addons.MainMenu.tid;
 					var o = Addons.MainMenu.Item;
-					var p = GetPos(o, true);
+					var p = GetPos(o, 9);
 					MouseOver(o);
-					window.Ctrl = te;
-					Addons.MainMenu.bLoop = true;
-					AddEvent("ExitMenuLoop", function () {
-						Addons.MainMenu.bLoop = false;
-						Addons.MainMenu.bClose = true;
+					$.Ctrl = await te;
+					Common.MainMenu.bLoop = true;
+					await Common.MainMenu.bLoop;
+					AddEvent("ExitMenuLoop", async function () {
+						Common.MainMenu.bLoop = false;
+						Common.MainMenu.bClose = true;
 						clearTimeout(Addons.MainMenu.tid2);
-						Addons.MainMenu.tid2 = setTimeout("Addons.MainMenu.bClose = false;", 500);
+						Addons.MainMenu.tid2 = setTimeout("Common.MainMenu.bClose = false;", 500);
 					})
-					ExecMenu2(o.id.replace(/^Menu/, ""), p.x, p.y + o.offsetHeight);
+					ExecMenu2(o.id.replace(/^Menu/, ""), p.x, p.y);
 					MouseOut();
 				}, 99);
 			}
 		}
 	}
-
-	AddEvent("MouseMessage", function (Ctrl, hwnd, msg, mouseData, pt, wHitTestCode, dwExtraInfo)
-	{
-		if (Addons.MainMenu.bLoop && Ctrl.Type == CTRL_TE) {
-			if (msg == WM_MOUSEMOVE) {
-				var Ctrl2 = te.CtrlFromPoint(pt);
-				if (Ctrl2 && Ctrl2.Type == CTRL_WB && !HitTest(Addons.MainMenu.Item, pt)) {
-					for (var i = Addons.MainMenu.Menu.length; i--;) {
-						if (HitTest(Addons.MainMenu.Menu[i], pt)) {
-							Addons.MainMenu.bClose = false;
-							api.PostMessage(hwnd, WM_KEYDOWN, VK_ESCAPE, 0);
-							Addons.MainMenu.Popup(Addons.MainMenu.Menu[i]);
-							break;
-						}
-					}
-				}
-			}
-		}
-	});
+	Common.MainMenu = await api.CreateObject("Object");
+	Common.MainMenu.Menu = await api.CreateObject("Array");
+	Common.MainMenu.Items = await api.CreateObject("Array");
+	Common.MainMenu.Popup = function (s) {
+		Addons.MainMenu.Popup(document.getElementById(s));
+	}
 
 	// Init
 	var used = {};
@@ -65,20 +46,22 @@ if (window.Addon == 1) {
 	var s = [];
 	for (var i = 0; i < strMenus.length; i++) {
 		var s1 = strMenus[i].replace("&", "");
-		var strMenu = GetText(strMenus[i]);
+		var strMenu = amp2ul(await GetText(strMenus[i]));
 		var res = /&(.)/.exec(strMenu);
 		if (res) {
 			var c = res[1];
 			if (!used[c]) {
 				used[c] = true;
-				SetKeyExec("All", "Alt+" + c, 'Addons.MainMenu.Popup("' + s1 + '");', "JScript");
+				SetKeyExec("All", "Alt+" + c, 'Common.MainMenu.Popup("Menu' + s1 + '");', "JScript");
 			}
 		}
-		s.push('<label class="menu" id="Menu', s1, '" onmousedown="Addons.MainMenu.Popup(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', strMenu, '</label>');
+		s.push('<label class="menu" id="Menu', s1, '" onmousedown="Addons.MainMenu.Popup(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', await GetText(strMenu), '</label>');
 	}
 	SetAddon(Addon_Id, Default, s);
 	for (var i = strMenus.length; i--;) {
 		var s1 = strMenus[i].replace("&", "");
 		Addons.MainMenu.Menu[i] = document.getElementById('Menu' + s1);
-	}	
+		Common.MainMenu.Menu[i] = 'Menu' + s1;
+	}
+	importJScript("addons\\" + Addon_Id + "\\sync.js");
 }

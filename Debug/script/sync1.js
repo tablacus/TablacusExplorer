@@ -3328,6 +3328,7 @@ FullscreenChanged = function (bFullscreen) {
 			g_.stack_TC.pop().Visible = true;
 		}
 	}
+	RunEvent1("FullscreenChanged", bFullscreen);
 }
 
 ArrangeAddons1 = function (cl) {
@@ -3439,6 +3440,7 @@ InitWindow = function () {
 	}
 	g_.xmlWindow = void 0;
 	setTimeout(function () {
+		Resize();
 		var cTC = te.Ctrls(CTRL_TC);
 		for (var i in cTC) {
 			if (cTC[i].SelectedIndex >= 0) {
@@ -3451,6 +3453,7 @@ InitWindow = function () {
 		}
 		te.CmdShow = SW_SHOWNORMAL;
 		setTimeout(function () {
+			Resize();
 			RunCommandLine(api.GetCommandLine());
 		}, 500);
 	}, 99);
