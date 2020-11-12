@@ -51,7 +51,8 @@ InitUI = function () {
 	if (api.SHTestTokenMembership(null, 0x220) && WINVER >= 0x600) {
 		TITLE += ' [' + (api.LoadString(hShell32, 25167) || "Admin").replace(/;.*$/, "") + ']';
 	}
-
+	ui_.TEPath = api.GetModuleFileName(null);
+	ui_.Installed = GetParentFolderName(ui_.TEPath);
 	ui_.DoubleClickTime = sha.GetSystemInformation("DoubleClickTime");
 	var arg = te.Arguments;
 	if (arg) {
@@ -199,7 +200,7 @@ InitUI = function () {
 		}
 		arg.temp = BuildPath(wsh.ExpandEnvironmentStrings("%TEMP%"), "tablacus");
 		CreateFolder2(arg.temp);
-		arg.InstalledFolder = te.Data.Installed;
+		arg.InstalledFolder = ui_.Installed;
 		arg.zipfile = BuildPath(arg.temp, arg.file);
 		arg.temp = arg.temp + "\\explorer";
 		DeleteItem(arg.temp);
@@ -227,7 +228,7 @@ InitUI = function () {
 		}
 		for (var i = 32; i <= 64; i += 32) {
 			te_exe = arg.temp + '\\te' + i + '.exe';
-			var te_old = BuildPath(te.Data.Installed, 'te' + i + '.exe');
+			var te_old = BuildPath(ui_.Installed, 'te' + i + '.exe');
 			if (!$.fso.FileExists(te_old) || $.fso.GetFileVersion(te_exe) == $.fso.GetFileVersion(te_old)) {
 				arDel.push(te_exe);
 			}
@@ -746,7 +747,7 @@ GetImgTag = function (o, h) {
 		var ar = ['<img'];
 		for (var n in o) {
 			if (o[n]) {
-				ar.push(' ', n, '="', EncodeSC(GetText(api.PathUnquoteSpaces(o[n]))), '"');
+				ar.push(' ', n, '="', EncodeSC(StripAmp(GetText(api.PathUnquoteSpaces(o[n])))), '"');
 			}
 		}
 		if (h) {
@@ -766,7 +767,7 @@ GetImgTag = function (o, h) {
 	return ar.join("");
 }
 
-LoadAddon = function (ext, Id, arError, param) {
+LoadAddon = function (ext, Id, arError, param, bDisabled) {
 	var r;
 	try {
 		var sc;
@@ -776,7 +777,7 @@ LoadAddon = function (ext, Id, arError, param) {
 		}
 		var fn = BuildPath("addons", Id, ar.join("."));
 		var s = ReadTextFile(fn);
-		if (s) {
+		if (s && (!bDisabled || /await/.test(s))) {
 			if (ar[1] == "js") {
 				if (window.chrome) {
 					s = "(() => {" + s + "\n})();";
@@ -846,7 +847,7 @@ AddonOptions = function (Id, fn, Data, bNew) {
 		Data.index = res[2];
 		sFeatures = 'Default';
 	}
-	sURL = BuildPath(te.Data.Installed, sURL);
+	sURL = BuildPath(ui_.Installed, sURL);
 	var opt = api.CreateObject("Object");
 	opt.MainWindow = MainWindow.$;
 	opt.Data = Data;
@@ -962,7 +963,7 @@ ShowLocationEx = function (s) {
 	var opt = api.CreateObject("Object");
 	opt.MainWindow = MainWindow;
 	opt.Data = s;
-	ShowDialog(BuildPath(te.Data.Installed, "script\\location.html"), opt);
+	ShowDialog(BuildPath(ui_.Installed, "script\\location.html"), opt);
 }
 
 MakeKeySelect = function () {

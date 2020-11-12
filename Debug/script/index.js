@@ -311,21 +311,23 @@ ArrangeAddons = function () {
 		var items = root.childNodes;
 		if (items) {
 			var arError = api.CreateObject("Array");
-			for (var i = 0; i < GetLength(items); ++i) {
+			var LangId = GetLangId();
+			var nLen = GetLength(items);
+			for (var i = 0; i < nLen; ++i) {
 				var item = items[i];
 				var Id = item.nodeName;
 				g_.Error_source = Id;
 				if (!AddonId[Id]) {
 					var Enabled = GetNum(item.getAttribute("Enabled"));
-					if (Enabled && (!window.chrome || item.getAttribute("Level") > 1)) {
+					if (Enabled) {
 						if (Enabled & 6) {
-							LoadLang2(BuildPath(te.Data.Installed, "addons", Id, "lang", GetLangId() + ".xml"));
+							LoadLang2(BuildPath(ui_.Installed, "addons", Id, "lang", LangId + ".xml"));
 						}
 						if (Enabled & 8) {
-							LoadAddon("vbs", Id, arError);
+							LoadAddon("vbs", Id, arError, window.chrome && item.getAttribute("Level") < 2);
 						}
 						if (Enabled & 1) {
-							LoadAddon("js", Id, arError);
+							LoadAddon("js", Id, arError, window.chrome && item.getAttribute("Level") < 2);
 						}
 					}
 					AddonId[Id] = true;

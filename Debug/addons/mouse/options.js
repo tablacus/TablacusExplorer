@@ -1,15 +1,12 @@
 g_Types = { Mouse: ["All", "List", "List_Background", "Tree", "Tabs", "Tabs_Background", "Browser"] };
 
-var ado = OpenAdodbFromTextFile("addons\\" + Addon_Id + "\\options.html");
-if (ado) {
-	var ar = [];
-	var s = "CSA";
-	for (var i = s.length; i--;) {
-		ar.unshift('<input type="button" value="', MainWindow.g_.KeyState[i][0], '" title="', s.charAt(i), '" onclick="AddMouse(this)" />');
-	}
-	SetTabContents(4, "", ado.ReadText(adReadAll).replace("%s", ar.join("")));
-	ado.Close();
+var src = await ReadTextFile(BuildPath("addons", Addon_Id, "options.html"));
+var ar = [];
+var s = "CSA";
+for (var i = s.length; i--;) {
+	ar.unshift('<input type="button" value="', await MainWindow.g_.KeyState[i][0], '" title="', s.charAt(i), '" onclick="AddMouse(this)">');
 }
+await SetTabContents(4, "", src.replace("%s", ar.join("")));
 
 AddMouse = function (o) {
 	document.E.MouseMouse.value += o.title;

@@ -1,9 +1,8 @@
 g_Types = { Key: ["All", "List", "Tree", "Browser", "Edit", "Menus"] };
 
-var ado = OpenAdodbFromTextFile("addons\\" + Addon_Id + "\\options.html");
-if (ado) {
-	SetTabContents(4, "", ado.ReadText(adReadAll));
-	ado.Close();
+var src = await ReadTextFile(BuildPath("addons", Addon_Id, "options.html"));
+if (src) {
+	await SetTabContents(4, "", src);
 }
 
 SaveLocation = function () {

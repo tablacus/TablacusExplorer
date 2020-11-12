@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <TablacusExplorer>
   <General>
-    <Version>1.26</Version>
-    <MinVersion>2020.6.27</MinVersion>
-    <pubDate>Sat, 27 Jun 2020 00:00:00 GMT</pubDate>
+    <Version>1.27</Version>
+    <MinVersion>2020.11.11</MinVersion>
+    <pubDate>Thu, 28 May 2020 00:00:00 GMT</pubDate>
     <Options>Common:4:4</Options>
+    <Level>2</Level>
     <Creator>Gaku</Creator>
-    <URL>http://tablacus.github.io/TablacusExplorerAddons/</URL>
+    <URL>https://tablacus.github.io/TablacusExplorerAddons/</URL>
     <License>MIT License</License>
   </General>
   <en>
@@ -17,4 +18,7 @@
     <Name>マウス</Name>
     <Description>マウスボタンとジェスチャー</Description>
   </ja>
+  <zh>
+    <Name>滑鼠</Name>
+  </zh>
 </TablacusExplorer>

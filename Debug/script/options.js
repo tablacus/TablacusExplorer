@@ -346,7 +346,8 @@ function SetTabControls() {
 	if (g_Chg.Tab) {
 		if (document.getElementById("Conf_TabDefault").checked) {
 			var cTC = te.Ctrls(CTRL_TC);
-			for (var i = 0; i < cTC.Count; ++i) {
+			var nLen = cTC.Count;
+			for (var i = 0; i < nLen; ++i) {
 				SetTabControl(cTC[i]);
 			}
 		} else {
@@ -421,10 +422,11 @@ function MoveTabControl() {
 
 function SwapTabControl() {
 	var TC1 = te.Ctrl(CTRL_TC);
-	var cTC = te.Ctrls(CTRL_TC, false);
-	for (var list = api.CreateObject("Enum", cTC); !list.atEnd(); list.moveNext()) {
-		var TC = cTC[list.item()];
-		if (TC.Visible && TC.Id != TC1.Id && TC.Left == document.F.Tab_Left.value && TC.Top == document.F.Tab_Top.value &&
+	var cTC = te.Ctrls(CTRL_TC, true);
+	var nLen = cTC.Count;
+	for (var i = 0; i < nLen; ++i) {
+		var TC = cTC[i];
+		if (TC.Id != TC1.Id && TC.Left == document.F.Tab_Left.value && TC.Top == document.F.Tab_Top.value &&
 			TC.Width == document.F.Tab_Width.value && TC.Height == document.F.Tab_Height.value) {
 			TC.Left = TC1.Left;
 			TC.Top = TC1.Top;
@@ -440,14 +442,13 @@ function SwapTabControl() {
 }
 
 function InitConfig(o) {
-	var InstallPath = te.Data.Installed;
-	if (InstallPath == te.Data.DataFolder) {
+	if (ui_.Installed == te.Data.DataFolder) {
 		return;
 	}
 	if (!confirmOk()) {
 		return;
 	}
-	api.SHFileOperation(FO_MOVE, BuildPath(InstallPath, "layout"), te.Data.DataFolder, 0, false);
+	api.SHFileOperation(FO_MOVE, BuildPath(ui_.Installed, "layout"), te.Data.DataFolder, 0, false);
 	o.disabled = true;
 }
 
@@ -880,12 +881,11 @@ function LoadX(mode, fn, form) {
 		} else {
 			g_x[mode] = form.List;
 			g_x[mode].length = 0;
-			var path = te.Data.Installed;
 			var xml = te.Data["xml" + AddonName];
 			if (!xml) {
 				xml = api.CreateObject("Msxml2.DOMDocument");
 				xml.async = false;
-				xml.load(BuildPath(path, "config", AddonName + ".xml"));
+				xml.load(BuildPath(ui_.Installed, "config", AddonName + ".xml"));
 				te.Data["xml" + AddonName] = xml;
 			}
 
@@ -1050,7 +1050,7 @@ function LoadAddons() {
 
 	var AddonId = {};
 	var wfd = api.Memory("WIN32_FIND_DATA");
-	var path = BuildPath(te.Data.Installed, "addons\\");
+	var path = BuildPath(ui_.Installed, "addons\\");
 	var hFind = api.FindFirstFile(path + "*", wfd);
 	for (var bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = api.FindNextFile(hFind, wfd)) {
 		var Id = wfd.cFileName;
@@ -1290,7 +1290,7 @@ function AddonRemove(Id) {
 	if (AddonBeforeRemove(Id) < 0) {
 		return;
 	}
-	var path = BuildPath(te.Data.Installed, "addons", Id);
+	var path = BuildPath(ui_.Installed, "addons", Id);
 	DeleteItem(path, 0);
 	setTimeout(function () {
 		if (!IsExists(path)) {
@@ -1368,8 +1368,7 @@ InitOptions = function () {
 		document.title = GetText("Options") + " - " + TITLE;
 	})();
 	MainWindow.g_.OptionsWindow = $;
-	var InstallPath = te.Data.Installed;
-	document.F.ButtonInitConfig.disabled = (InstallPath == te.Data.DataFolder) | !$.fso.FolderExists(BuildPath(InstallPath, "layout"));
+	document.F.ButtonInitConfig.disabled = (ui_.Installed == te.Data.DataFolder) | !$.fso.FolderExists(BuildPath(ui_.Installed, "layout"));
 	for (var i = 0; i < document.F.length; ++i) {
 		var o = document.F[i];
 		var Id = o.name || o.id;
@@ -1641,9 +1640,9 @@ InitDialog = function () {
 	}
 	if (Query == "about") {
 		var s = ['<table style="border-spacing: 2em; border-collapse: separate; width: 100%"><tr><td>'];
-		var src = MakeImgSrc(api.GetModuleFileName(null), 0, true, 48);
+		var src = MakeImgSrc(ui_.TEPath, 0, true, 48);
 		s.push('<img src="', src, '"></td><td><span style="font-weight: bold; font-size: 120%">', AboutTE(2), '</span> (', GetTextR((api.sizeof("HANDLE") * 8) + '-bit'), ')<br>');
-		s.push('<br><a href="#" class="link" onclick="Run(0, this)">', api.GetModuleFileName(null), '</a> (', $.fso.GetFileVersion(api.GetModuleFileName(null)), ')<br>');
+		s.push('<br><a href="#" class="link" onclick="Run(0, this)">', ui_.TEPath, '</a> (', $.fso.GetFileVersion(ui_.TEPath), ')<br>');
 		s.push('<br><a href="#" class="link" onclick="Run(1, this)">', BuildPath(te.Data.DataFolder, "config"), '</a><br>');
 		s.push('<br><label>Information</label><input type="text" value="', AboutTE(3), '" style="width: 100%" onclick="this.select()" readonly><br>');
 		var root = te.Data.Addons.documentElement;
@@ -2129,7 +2128,7 @@ function PortableX(Id) {
 		return;
 	}
 	var o = GetElement(Id);
-	var s = $.fso.GetDriveName(api.GetModuleFileName(null));
+	var s = $.fso.GetDriveName(ui_.TEPath);
 	SetValue(o, o.value.replace(wsh.ExpandEnvironmentStrings("%UserProfile%"), "%UserProfile%").replace(new RegExp('^("?)' + s, "igm"), "$1%Installed%").replace(new RegExp('( "?)' + s, "igm"), "$1%Installed%").replace(new RegExp('(:)' + s, "igm"), "$1%Installed%"));
 }
 
@@ -2200,7 +2199,7 @@ function AddMouse(o) {
 
 function InitAddonOptions(bFlag) {
 	returnValue = false;
-	LoadLang2(BuildPath(te.Data.Installed, "addons", Addon_Id, "lang", GetLangId() + ".xml"));
+	LoadLang2(BuildPath(ui_.Installed, "addons", Addon_Id, "lang", GetLangId() + ".xml"));
 	ApplyLang(document);
 	info = GetAddonInfo(Addon_Id);
 	document.title = info.Name;
@@ -2312,13 +2311,13 @@ function SelectLangID(o) {
 	var i = 0;
 	var Langs = [];
 	var wfd = api.Memory("WIN32_FIND_DATA");
-	var hFind = api.FindFirstFile(BuildPath(te.Data.Installed, "lang\\*.xml"), wfd);
+	var hFind = api.FindFirstFile(BuildPath(ui_.Installed, "lang\\*.xml"), wfd);
 	for (var bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = api.FindNextFile(hFind, wfd)) {
 		Langs.push((wfd.cFileName).replace(/\..*$/, ""));
 	}
 	api.FindClose(hFind);
 	Langs.sort();
-	var path = BuildPath(te.Data.Installed, "lang\\");
+	var path = BuildPath(ui_.Installed, "lang\\");
 	var hMenu = api.CreatePopupMenu();
 	for (i in Langs) {
 		var xml = api.CreateObject("Msxml2.DOMDocument");
@@ -2368,7 +2367,7 @@ function UpdateAddon(Id, o) {
 }
 
 function CheckAddon(Id) {
-	return $.fso.FileExists(BuildPath(te.Data.Installed, "addons", Id, "config.xml"));
+	return $.fso.FileExists(BuildPath(ui_.Installed, "addons", Id, "config.xml"));
 }
 
 function AddonsSearch() {
@@ -2494,7 +2493,7 @@ function ArrangeAddon(xml, td, Progress) {
 					if (!installed.DllVersion) {
 						return;
 					}
-					var path = BuildPath(te.Data.Installed, "addons", Id);
+					var path = BuildPath(ui_.Installed, "addons", Id);
 					var wfd = api.Memory("WIN32_FIND_DATA");
 					var hFind = api.FindFirstFile(BuildPath(path, "*" + (api.sizeof("HANDLE") * 8) + ".dll"), wfd);
 					api.FindClose(hFind);
@@ -2583,7 +2582,7 @@ function Install2(xhr, url, o) {
 			return;
 		}
 	}
-	api.SHFileOperation(FO_MOVE, dest, BuildPath(te.Data.Installed, "addons"), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, false);
+	api.SHFileOperation(FO_MOVE, dest, BuildPath(ui_.Installed, "addons"), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, false);
 	o.disabled = true;
 	o.value = GetText("Installed");
 	o = document.getElementById('_Addons_' + Id);
