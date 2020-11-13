@@ -144,6 +144,45 @@ Resize = function () {
 	ui_.tidResize = setTimeout(Resize2, 500);
 }
 
+DisableImage = function (img, bDisable) {
+	if (img) {
+		if (window.chrome) {
+			if (bDisable) {
+				var ar = [];
+				for (var i = 0; i < img.style.length; ++i) {
+					if (img.style[i] != "filter") {
+						ar.push(img.style[i] + ":" + img.style[img.style[i]]);
+					}
+				}
+				ar.push("filter:grayscale(1);");
+				img.style = ar.join(";");
+				img.style.opacity = .48;
+			} else {
+				img.style.filter  = "";
+				img.style.opacity = 1;
+			}
+		} else if (ui_.IEVer >= 10) {
+			var s = decodeURIComponent(img.src);
+			var res = /^data:image\/svg.*?href="([^"]*)/i.exec(s);
+			if (bDisable) {
+				if (!res) {
+					if (/^file:/i.test(s)) {
+						var image;
+						if (image = api.CreateObject("WICBitmap").FromFile(api.PathCreateFromUrl(s))) {
+							s = image.DataURI("image/png");
+						}
+					}
+					img.src = "data:image/svg+xml," + encodeURIComponent(['<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ', img.offsetWidth, ' ', img.offsetHeight, '"><filter id="G"><feColorMatrix type="saturate" values="0.1" /></filter><image width="', img.width, '" height="', img.height, '" opacity=".48" xlink:href="', s, '" filter="url(#G)"></image></svg>'].join(""));
+				}
+			} else if (res) {
+				img.src = res[1];
+			}
+		} else {
+			img.style.filter = bDisable ? "gray(), alpha(style=0,opacity=48);" : "";
+		}
+	}
+}
+
 UI.StartGestureTimer = function () {
 	var i = te.Data.Conf_GestureTimeout;
 	if (i) {

@@ -1,7 +1,7 @@
 if (window.Addon == 1) {
-	AddEvent("ChangeView", function (Ctrl) {
-		if (Ctrl.Id == Ctrl.Parent.Selected.Id && Ctrl.Parent.Id == te.Ctrl(CTRL_TC).Id) {
-			document.title = Ctrl.Title + ' - ' + TITLE;
+	AddEvent("ChangeView", async function (Ctrl) {
+		if (await Ctrl.Id == await Ctrl.Parent.Selected.Id && await Ctrl.Parent.Id == await te.Ctrl(CTRL_TC).Id) {
+			document.title = await Ctrl.Title + ' - ' + TITLE;
 		}
 	});
 }

@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <TablacusExplorer>
   <General>
-    <Version>1.06</Version>
-    <MinVersion>2020.6.7</MinVersion>
-    <pubDate>Sat, 06 Jun 2020 00:00:00 GMT</pubDate>
+    <Version>1.07</Version>
+    <MinVersion>2020.11.12</MinVersion>
+    <pubDate>Fri, 13 Nov 2020 00:00:00 GMT</pubDate>
+    <Level>2</Level>
     <Creator>Gaku</Creator>
-    <URL>http://tablacus.github.io/TablacusExplorerAddons/</URL>
+    <URL>https://tablacus.github.io/TablacusExplorerAddons/</URL>
     <License>MIT License</License>
   </General>
   <en>
@@ -13,7 +14,7 @@
     <Description>Title bar</Description>
   </en>
   <ja>
-    <Name>タイトル バー</Name>
+    <Name>タイトルバー</Name>
   </ja>
   <zh>
     <Name>標題列</Name>

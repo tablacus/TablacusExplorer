@@ -141,11 +141,12 @@ InitUI = function () {
 		var args = Array.apply(null, arguments);
 		var ar = args.shift().split(".");
 		var fn = window;
-		var s;
+		var s, parent;
 		while (s = ar.shift()) {
+			parent = fn;
 			fn = fn[s];
 		}
-		fn.apply(fn, args);
+		fn.apply(parent, args);
 	}
 
 	UI.setTimeoutAsync = function (fn, tm, a, b, c, d) {
