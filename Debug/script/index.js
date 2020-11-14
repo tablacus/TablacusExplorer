@@ -1,6 +1,6 @@
 // Tablacus Explorer
 
-function Resize2() {
+async function Resize2() {
 	if (ui_.tidResize) {
 		clearTimeout(ui_.tidResize);
 		ui_.tidResize = void 0;
@@ -21,8 +21,8 @@ function Resize2() {
 		}
 		o.style.height = h + "px";
 	}
-	ResizeSideBar("Left", h);
-	ResizeSideBar("Right", h);
+	await ResizeSideBar("Left", h);
+	await ResizeSideBar("Right", h);
 	o = document.getElementById("Background");
 	pt = GetPos(o);
 	te.offsetLeft = pt.x;
@@ -31,12 +31,12 @@ function Resize2() {
 	pt = GetPos(document.getElementById("bottombar"));
 	te.offsetBottom = ode.offsetHeight - pt.y;
 	RunEvent1("Resize");
-	api.PostMessage(te.hwnd, WM_SIZE, 0, 0);
+	api.PostMessage(await te.hwnd, WM_SIZE, 0, 0);
 }
 
-function ResizeSideBar(z, h) {
-	var o = g_.Locations;
-	var w = (o[z + "Bar1"] || o[z + "Bar2"] || o[z + "Bar3"]) ? te.Data["Conf_" + z + "BarWidth"] : 0;
+async function ResizeSideBar(z, h) {
+	var o = await g_.Locations;
+	var w = (await o[z + "Bar1"] || await o[z + "Bar2"] || await o[z + "Bar3"]) ? await te.Data["Conf_" + z + "BarWidth"] : 0;
 	o = document.getElementById(z.toLowerCase() + "bar");
 	if (w > 0) {
 		o.style.display = "";
@@ -71,10 +71,10 @@ function PanelCreated(Ctrl, Id) {
 	RunEvent1("PanelCreated", Ctrl, Id);
 }
 
-Activate = function (o, id) {
-	var TC = te.Ctrl(CTRL_TC);
-	if (TC && TC.Id != id) {
-		var FV = GetInnerFV(id);
+Activate = async function (o, id) {
+	var TC = await te.Ctrl(CTRL_TC);
+	if (TC && await TC.Id != id) {
+		var FV = await GetInnerFV(id);
 		if (FV) {
 			FV.Focus();
 			setTimeout(function () {
@@ -84,14 +84,14 @@ Activate = function (o, id) {
 	}
 }
 
-GetAddonLocation = function (strName) {
-	var items = te.Data.Addons.getElementsByTagName(strName);
-	return (GetLength(items) ? items[0].getAttribute("Location") : null);
+GetAddonLocation = async function (strName) {
+	var items = await te.Data.Addons.getElementsByTagName(strName);
+	return (await GetLength(items) ? await items[0].getAttribute("Location") : null);
 }
 
-SetAddon = function (strName, Location, Tag, strVAlign) {
+SetAddon = async function (strName, Location, Tag, strVAlign) {
 	if (strName) {
-		var s = GetAddonLocation(strName);
+		var s = await GetAddonLocation(strName);
 		if (s) {
 			Location = s;
 		}
@@ -117,23 +117,23 @@ SetAddon = function (strName, Location, Tag, strVAlign) {
 			});
 		}
 		if (strName) {
-			if (!g_.Locations[Location]) {
-				g_.Locations[Location] = api.CreateObject("Array");
+			if (!await g_.Locations[Location]) {
+				g_.Locations[Location] = await api.CreateObject("Array");
 			}
 			var res = /<img.*?src=["'](.*?)["']/i.exec(String(Tag));
 			if (res) {
 				strName += "\t" + res[1];
 			}
-			g_.Locations[Location].push(strName);
+			await g_.Locations[Location].push(strName);
 		}
 	}
 	return Location;
 }
 
-RunSplitter = function (ev, n) {
+RunSplitter = async function (ev, n) {
 	if (ev.button == 0) {
-		api.ObjPutI(g_.mouse, "Capture", n);
-		api.SetCapture(te.hwnd);
+		api.ObjPutI(await g_.mouse, "Capture", n);
+		api.SetCapture(await te.hwnd);
 	}
 }
 
@@ -183,11 +183,11 @@ DisableImage = function (img, bDisable) {
 	}
 }
 
-UI.StartGestureTimer = function () {
-	var i = te.Data.Conf_GestureTimeout;
+UI.StartGestureTimer = async function () {
+	var i = await te.Data.Conf_GestureTimeout;
 	if (i) {
-		clearTimeout(g_.mouse.tidGesture);
-		api.ObjPutI(g_.mouse, "tidGesture", setTimeout(function () {
+		clearTimeout(await g_.mouse.tidGesture);
+		api.ObjPutI(await g_.mouse, "tidGesture", setTimeout(function () {
 			g_.mouse.EndGesture(true);
 		}, i));
 	}
@@ -207,9 +207,9 @@ UI.FocusFV = function () {
 }
 
 UI.SelectItem = function (FV, path, wFlags, tm) {
-	setTimeout(function () {
+	setTimeout(async function () {
 		if (FV) {
-			if (SameText(FV.FolderItem.Path, GetParentFolderName(path))) {
+			if (SameText(await FV.FolderItem.Path, GetParentFolderName(path))) {
 				FV.SelectItem(path, wFlags);
 			}
 		}
@@ -217,14 +217,14 @@ UI.SelectItem = function (FV, path, wFlags, tm) {
 }
 
 UI.SelectNext = function (FV) {
-	setTimeout(function () {
-		if (!api.SendMessage(FV.hwndList, LVM_GETEDITCONTROL, 0, 0) || WINVER < 0x600) {
-			FV.SelectItem(FV.Item(FV.GetFocusedItem + (api.GetKeyState(VK_SHIFT) < 0 ? -1 : 1)) || api.GetKeyState(VK_SHIFT) < 0 ? FV.ItemCount(SVGIO_ALLVIEW) - 1 : 0, SVSI_EDIT | SVSI_FOCUSED | SVSI_SELECT | SVSI_DESELECTOTHERS);
+	setTimeout(async function () {
+		if (!await api.SendMessage(await FV.hwndList, LVM_GETEDITCONTROL, 0, 0) || WINVER < 0x600) {
+			FV.SelectItem(FV.Item(await FV.GetFocusedItem + (await api.GetKeyState(VK_SHIFT) < 0 ? -1 : 1)) || await api.GetKeyState(VK_SHIFT) < 0 ? FV.ItemCount(SVGIO_ALLVIEW) - 1 : 0, SVSI_EDIT | SVSI_FOCUSED | SVSI_SELECT | SVSI_DESELECTOTHERS);
 		}
 	}, 99);
 }
 
-UI.ShowStatusText = function (Ctrl, Text, iPart, tm) {
+UI.ShowStatusText = async function (Ctrl, Text, iPart, tm) {
 	if (ui_.Status && ui_.Status[5]) {
 		clearTimeout(ui_.Status[5]);
 		delete ui_.Status;
@@ -255,7 +255,7 @@ UI.ExitFullscreen = function () {
 	}
 }
 
-UI.MoveSplitter = function (x, y, n) {
+UI.MoveSplitter = async function (x, y, n) {
 	var w = document.documentElement.offsetWidth || document.body.offsetWidth;
 	if (x >= w) {
 		x = w - 1;
@@ -270,14 +270,14 @@ UI.MoveSplitter = function (x, y, n) {
 
 importJScript = $.importScript;
 
-te.OnArrange = function (Ctrl, rc) {
-	var Type = Ctrl.Type;
+te.OnArrange = async function (Ctrl, rc) {
+	var Type = await Ctrl.Type;
 	if (Type == CTRL_TE) {
 		ui_.TCPos = {};
 	}
-	RunEvent1("Arrange", Ctrl, rc);
+	await RunEvent1("Arrange", Ctrl, rc);
 	if (Type == CTRL_TC) {
-		var Id = Ctrl.Id;
+		var Id = await Ctrl.Id;
 		var o = ui_.Panels[Id];
 		if (!o) {
 			var s = ['<table id="Panel_$" class="layout" style="position: absolute; z-index: 1;">'];
@@ -287,16 +287,16 @@ te.OnArrange = function (Ctrl, rc) {
 			s.push('<table id="InnerView_$" class="layout" style="width: 100%"><tr><td id="Inner2Left_$" style="width: 0"></td><td id="Inner2Center_$"></td><td id="Inner2Right_$" style="width: 0; overflow: auto"></td></tr></table>');
 			s.push('<div id="InnerBottom_$"></div></td><td id="InnerRight_$" class="sidebar" style="width: 0; display: none"></td></tr></table>');
 			document.getElementById("Panel").insertAdjacentHTML("BeforeEnd", s.join("").replace(/\$/g, Id));
-			PanelCreated(Ctrl, Id);
+			await PanelCreated(Ctrl, Id);
 			o = document.getElementById("Panel_" + Id);
 			ui_.Panels[Id] = o;
 			ApplyLang(o);
 			Resize();
 		}
-		o.style.left = rc.left + "px";
-		o.style.top = rc.top + "px";
-		if (Ctrl.Visible) {
-			var s = [Ctrl.Left, Ctrl.Top, Ctrl.Width, Ctrl.Height].join(",");
+		o.style.left = await rc.left + "px";
+		o.style.top = await rc.top + "px";
+		if (await Ctrl.Visible) {
+			var s = [await Ctrl.Left, await Ctrl.Top, await Ctrl.Width, await Ctrl.Height].join(",");
 			if (ui_.TCPos[s] && ui_.TCPos[s] != Id) {
 				Ctrl.Close();
 				return;
@@ -307,21 +307,21 @@ te.OnArrange = function (Ctrl, rc) {
 		} else {
 			o.style.display = "none";
 		}
-		o.style.width = Math.max(rc.right - rc.left, 0) + "px";
-		o.style.height = Math.max(rc.bottom - rc.top, 0) + "px";
-		rc.top = rc.top + document.getElementById("InnerTop_" + Id).offsetHeight + document.getElementById("InnerTop2_" + Id).offsetHeight;
+		o.style.width = Math.max(await rc.right - await rc.left, 0) + "px";
+		o.style.height = Math.max(await rc.bottom - await rc.top, 0) + "px";
+		rc.top = await rc.top + document.getElementById("InnerTop_" + Id).offsetHeight + document.getElementById("InnerTop2_" + Id).offsetHeight;
 		var w1 = 0, w2 = 0, x = '';
 		for (var i = 0; i <= 1; ++i) {
 			w1 += Number(document.getElementById("Inner" + x + "Left_" + Id).style.width.replace(/\D/g, "")) || 0;
 			w2 += Number(document.getElementById("Inner" + x + "Right_" + Id).style.width.replace(/\D/g, "")) || 0;
 			x = '2';
 		}
-		rc.left = rc.left + w1;
-		rc.right = rc.right - w2;
-		rc.bottom = rc.bottom - document.getElementById("InnerBottom_" + Id).offsetHeight;
+		rc.left = await rc.left + w1;
+		rc.right = await rc.right - w2;
+		rc.bottom = await rc.bottom - document.getElementById("InnerBottom_" + Id).offsetHeight;
 		o = document.getElementById("Inner2Center_" + Id).style;
-		o.width = Math.max(rc.right - rc.left, 0) + "px";
-		o.height = Math.max(rc.bottom - rc.top, 0) + "px";
+		o.width = Math.max(await rc.right - await rc.left, 0) + "px";
+		o.height = Math.max(await rc.bottom - await rc.top, 0) + "px";
 		te.ArrangeCB(Ctrl, rc);
 	}
 }
@@ -333,40 +333,40 @@ g_.event.windowregistered = function (Ctrl) {
 	ui_.bWindowRegistered = true;
 }
 
-ArrangeAddons = function () {
-	g_.Locations = api.CreateObject("Object");
-	$.IconSize = IconSize = te.Data.Conf_IconSize || screen.deviceYDPI / 4;
-	var xml = OpenXml("addons.xml", false, true);
+ArrangeAddons = async function () {
+	g_.Locations = await api.CreateObject("Object");
+	$.IconSize = IconSize = await te.Data.Conf_IconSize || screen.deviceYDPI / 4;
+	var xml = await OpenXml("addons.xml", false, true);
 	te.Data.Addons = xml;
-	if (api.GetKeyState(VK_SHIFT) < 0 && api.GetKeyState(VK_CONTROL) < 0) {
+	if (await api.GetKeyState(VK_SHIFT) < 0 && await api.GetKeyState(VK_CONTROL) < 0) {
 		IsSavePath = function (path) {
 			return false;
 		}
 		return;
 	}
 	var AddonId = [];
-	var root = xml.documentElement;
+	var root = await xml.documentElement;
 	if (root) {
-		var items = root.childNodes;
+		var items = await root.childNodes;
 		if (items) {
-			var arError = api.CreateObject("Array");
-			var LangId = GetLangId();
-			var nLen = GetLength(items);
+			var arError = await api.CreateObject("Array");
+			var LangId = await GetLangId();
+			var nLen = await GetLength(items);
 			for (var i = 0; i < nLen; ++i) {
-				var item = items[i];
-				var Id = item.nodeName;
+				var item = await items[i];
+				var Id = await item.nodeName;
 				g_.Error_source = Id;
 				if (!AddonId[Id]) {
-					var Enabled = GetNum(item.getAttribute("Enabled"));
+					var Enabled = GetNum(await item.getAttribute("Enabled"));
 					if (Enabled) {
 						if (Enabled & 6) {
 							LoadLang2(BuildPath(ui_.Installed, "addons", Id, "lang", LangId + ".xml"));
 						}
 						if (Enabled & 8) {
-							LoadAddon("vbs", Id, arError, window.chrome && item.getAttribute("Level") < 2);
+							LoadAddon("vbs", Id, arError, window.chrome && await item.getAttribute("Level") < 2);
 						}
 						if (Enabled & 1) {
-							LoadAddon("js", Id, arError, window.chrome && item.getAttribute("Level") < 2);
+							LoadAddon("js", Id, arError, window.chrome && await item.getAttribute("Level") < 2);
 						}
 					}
 					AddonId[Id] = true;
@@ -374,11 +374,11 @@ ArrangeAddons = function () {
 				g_.Error_source = "";
 			}
 			if (window.chrome) {
-				arError = api.CreateObject("SafeArray", arError);
+				arError = await api.CreateObject("SafeArray", arError);
 			}
 			if (arError.length) {
-				setTimeout(function (arError) {
-					if (MessageBox(arError.join("\n\n"), TITLE, MB_OKCANCEL) != IDCANCEL) {
+				setTimeout(async function (arError) {
+					if (await MessageBox(arError.join("\n\n"), TITLE, MB_OKCANCEL) != IDCANCEL) {
 						te.Data.bErrorAddons = true;
 						ShowOptions("Tab=Add-ons");
 					}
@@ -387,19 +387,19 @@ ArrangeAddons = function () {
 		}
 	}
 	RunEventUI("BrowserCreatedEx");
-	var cl = GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor);
+	var cl = await GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor);
 	ArrangeAddons1(cl);
 }
 
 // Events
 
-AddEvent("VisibleChanged", function (Ctrl) {
-	if (Ctrl.Type == CTRL_TC) {
+AddEvent("VisibleChanged", async function (Ctrl) {
+	if (await Ctrl.Type == CTRL_TC) {
 		var o = ui_.Panels[Ctrl.Id];
 		if (o) {
-			if (Ctrl.Visible) {
+			if (await Ctrl.Visible) {
 				o.style.display = (ui_.IEVer >= 8 && SameText(o.tagName, "td")) ? "table-cell" : "block";
-				ChangeView(Ctrl.Selected);
+				ChangeView(await Ctrl.Selected);
 			} else {
 				o.style.display = "none";
 			}
@@ -407,8 +407,8 @@ AddEvent("VisibleChanged", function (Ctrl) {
 	}
 });
 
-AddEvent("SystemMessage", function (Ctrl, hwnd, msg, wParam, lParam) {
-	if (Ctrl.Type == CTRL_WB) {
+AddEvent("SystemMessage", async function (Ctrl, hwnd, msg, wParam, lParam) {
+	if (await Ctrl.Type == CTRL_WB) {
 		if (msg == WM_KILLFOCUS) {
 			var o = document.activeElement;
 			if (o) {
@@ -445,19 +445,19 @@ AddEventEx(document, "FullscreenChange", function () {
 });
 
 document.F.style.display = "none";
-Init = function () {
+Init = async function () {
 	te.Data.MainWindow = $;
 	UI.OnLoad();
-	InitCode();
-	DefaultFont = $.DefaultFont;
-	HOME_PATH = $.HOME_PATH;
-	InitMouse();
-	OpenMode = $.OpenMode;
-	InitMenus();
-	LoadLang();
-	ApplyLang(document);
-	ArrangeAddons();
-	InitWindow();
+	await InitCode();
+	DefaultFont = await $.DefaultFont;
+	HOME_PATH = await $.HOME_PATH;
+	await InitMouse();
+	OpenMode = await $.OpenMode;
+	await InitMenus();
+	await LoadLang();
+	await ApplyLang(document);
+	await ArrangeAddons();
+	await InitWindow();
 	document.F.style.display = "";
 	WebBrowser.DropMode = 1;
 }

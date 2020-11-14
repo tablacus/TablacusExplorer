@@ -20,9 +20,7 @@ HWND	g_hwndMain = NULL;
 CteTabCtrl *g_pTC = NULL;
 std::vector<CteTabCtrl *> g_ppTC;
 HINSTANCE	g_hShell32 = NULL;
-#ifdef _DEBUG
 HINSTANCE	g_hTEWV = NULL;
-#endif
 HWND		g_hDialog = NULL;
 IShellWindows *g_pSW = NULL;
 
@@ -9512,7 +9510,7 @@ VOID teApiURLDownloadToFile(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 				HANDLE hFile = CreateFile(param[2].bstrVal, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 				if (hFile != INVALID_HANDLE_VALUE) {
 					DWORD dwWriteByte;
-					if (WriteFile(hFile, bs, dwLen, &dwWriteByte, NULL)) {
+					if (WriteFile(hFile, bs, dwData, &dwWriteByte, NULL)) {
 						hr = S_OK;
 					}
 					CloseHandle(hFile);
@@ -9964,9 +9962,17 @@ VOID teApiHashData(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *p
 		VARIANT vMem;
 		VariantInit(&vMem);
 		UINT nLen = GetpDataFromVariant(&pc, &pDispParams->rgvarg[nArg], &vMem);
-		pVarResult->vt = VT_BSTR;
-		pVarResult->bstrVal = ::SysAllocStringByteLen(NULL, param[1].uintVal);
-		HashData(pc, nLen, pVarResult->pbVal, param[1].dword);
+		BSTR bs = ::SysAllocStringByteLen(NULL, param[1].uintVal);
+		HashData(pc, nLen, (BYTE *)bs, param[1].dword);
+		DWORD dwSize;
+		CryptBinaryToString(pc, param[1].uintVal, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, NULL, &dwSize);
+		BSTR bsResult = NULL;
+		if (dwSize > 0) {
+			bsResult = ::SysAllocStringLen(NULL, dwSize - 1);
+			CryptBinaryToString((BYTE *)bs, param[1].uintVal, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, bsResult, &dwSize);
+		}
+		::SysFreeString(bs);
+		teSetBSTR(pVarResult, &bsResult, -1);
 		VariantClear(&vMem);
 	}
 }
@@ -17800,13 +17806,28 @@ CteWebBrowser::CteWebBrowser(HWND hwndParent, WCHAR *szPath, VARIANT *pvArg)
 	RECT       rc;
 	IOleObject *pOleObject;
 	HRESULT hr = E_FAIL;
+	WCHAR pszTEWV2[MAX_PATH];
 #ifdef _DEBUG
-	hr = teCreateInstance(CLSID_WebBrowserExt, L"C:\\cpp\\tewv\\Debug\\tewv32d.dll", &g_hTEWV, IID_PPV_ARGS(&m_pWebBrowser));
+#ifdef _WIN64
+	lstrcpy(pszTEWV2, L"C:\\cpp\\tewv\\x64\\Debug\\tewv64d.dll");
+#else
+	lstrcpy(pszTEWV2, L"C:\\cpp\\tewv\\Debug\\tewv32d.dll");
+#endif
+#else
+	GetModuleFileName(NULL, pszTEWV2, MAX_PATH);
+	PathRemoveFileSpec(pszTEWV2);
+#ifdef _WIN64
+	PathAppend(pszTEWV2, L"lib\\tewv64.dll");
+#else
+	PathAppend(pszTEWV2, L"lib\\tewv32.dll");
+#endif
+#endif
+	hr = teCreateInstance(CLSID_WebBrowserExt, pszTEWV2, &g_hTEWV, IID_PPV_ARGS(&m_pWebBrowser));
 	if (hr == S_OK && !g_pSP) {
 		VARIANT v;
 		VariantInit(&v);
 		m_pWebBrowser->GetProperty(L"version", &v);
-		if (GetIntFromVariantClear(&v) >= 20102300) {
+		if (GetIntFromVariantClear(&v) >= 20111400) {
 			g_bBlink = TRUE;
 			m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&g_pSP));
 		} else {
@@ -17818,9 +17839,6 @@ CteWebBrowser::CteWebBrowser(HWND hwndParent, WCHAR *szPath, VARIANT *pvArg)
 		g_bBlink = FALSE;
 		hr = teCreateInstance(CLSID_WebBrowser, NULL, NULL, IID_PPV_ARGS(&m_pWebBrowser));
 	}
-#else
-	 hr = teCreateInstance(CLSID_WebBrowser, NULL, NULL, IID_PPV_ARGS(&m_pWebBrowser));
-#endif
 	if (SUCCEEDED(hr) && SUCCEEDED(m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&pOleObject)))) {
 		pOleObject->SetClientSite(static_cast<IOleClientSite *>(this));
 		SetRectEmpty(&rc);
@@ -18703,7 +18721,7 @@ DWORD CteTabCtrl::GetStyle()
 VOID CteTabCtrl::CreateTC()
 {
 	m_hwnd = CreateWindowEx(
-		WS_EX_TOPMOST, //Extended style
+		WS_EX_TOPMOST | WS_EX_CONTROLPARENT | WS_EX_COMPOSITED, //Extended style
 		WC_TABCONTROL, // Class Name
 		NULL, // Window Name
 		GetStyle(), // Window Style
@@ -19122,18 +19140,18 @@ VOID CteTabCtrl::Move(int nSrc, int nDest, CteTabCtrl *pDestTab)
 
 VOID CteTabCtrl::LockUpdate()
 {
-	if (g_bBlink) {
-		return;
-	}
 	m_bRedraw = TRUE;
 	if (InterlockedIncrement(&m_nLockUpdate) == 1) {
+		if (g_bBlink) {
+			return;
+		}
 		SendMessage(m_hwndStatic, WM_SETREDRAW, FALSE, 0);
 	}
 }
 
 VOID CteTabCtrl::UnlockUpdate()
 {
-	if (g_bBlink || ::InterlockedDecrement(&m_nLockUpdate) > 0) {
+	if (::InterlockedDecrement(&m_nLockUpdate) > 0) {
 		return;
 	}
 	m_nLockUpdate = 0;

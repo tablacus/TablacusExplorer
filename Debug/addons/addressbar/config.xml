@@ -1,21 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <TablacusExplorer>
   <General>
-    <Version>1.50</Version>
-    <MinVersion>2020.9.3</MinVersion>
-    <pubDate>Mon, 07 Sep 2020 00:00:00 GMT</pubDate>
+    <Version>1.51</Version>
+    <MinVersion>2020.11.13</MinVersion>
+    <pubDate>Sat, 14 Nov 2020 00:00:00 GMT</pubDate>
     <Options>Common:0,6,7,8,9:0</Options>
+    <Level>2</Level>
     <Creator>Gaku</Creator>
-    <URL>http://tablacus.github.io/TablacusExplorerAddons/</URL>
+    <URL>https://tablacus.github.io/TablacusExplorerAddons/</URL>
     <License>MIT License</License>
   </General>
   <en>
     <Name>Address bar</Name>
-    <Description>Breadcrumbs or XP style is available.</Description>
+    <Description>Breadcrumbs and XP style is available.</Description>
   </en>
   <ja>
-    <Name>アドレス バー</Name>
-    <Description>パンくずリストかXPスタイルが選べます。</Description>
+    <Name>アドレスバー</Name>
+    <Description>パンくずリスト、XPスタイルが選べます。</Description>
   </ja>
   <zh>
     <Name>位址列</Name>

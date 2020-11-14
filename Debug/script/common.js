@@ -2,27 +2,27 @@
 
 g_sep = "` ~";
 
-importScript = function (fn) {
+importScript = async function (fn) {
 	var hr = E_FAIL;
 	var s;
 	if (window.ReadTextFile) {
-		s = ReadTextFile(fn);
+		s = await ReadTextFile(fn);
 	} else {
 		if (!/^[A-Z]:\\|^\\\\\w/i.test(fn)) {
-			fn = BuildPath(GetParentFolderName(api.GetModuleFileName(null)), fn);
+			fn = BuildPath(GetParentFolderName(await api.GetModuleFileName(null)), fn);
 		}
-		var ado = api.CreateObject("ads");
+		var ado = await api.CreateObject("ads");
 		ado.CharSet = "utf-8";
-		ado.Open();
-		ado.LoadFromFile(fn);
-		s = ado.ReadText();
+		await ado.Open();
+		await ado.LoadFromFile(fn);
+		s = await ado.ReadText();
 		ado.Close();
 	}
 	if (s) {
 		if (/\.vbs$/i.test(fn)) {
-			hr = ExecScriptEx(window.Ctrl, s, "VBScript", $.pt, $.dataObj, $.grfKeyState, $.pdwEffect, $.bDrop);
+			hr = ExecScriptEx(await window.Ctrl, s, "VBScript", await $.pt, await $.dataObj, await $.grfKeyState, await $.pdwEffect, await $.bDrop);
 		} else {
-			new Function(window.chrome && window.alert ? "(() => {" + s + "\n})();" : RemoveAsync(s))();
+			new Function(window.chrome && window.alert ? "(async () => {" + s + "\n})();" : RemoveAsync(s))();
 			hr = S_OK;
 		}
 	}
@@ -47,8 +47,8 @@ SameText = function (s1, s2) {
 	return String(s1).toLowerCase() == String(s2).toLowerCase();
 }
 
-GetLength = function (o) {
-	return o ? (o.length || api.ObjGetI(o, "length")) : 0;
+GetLength = async function (o) {
+	return o ? (o.length || await api.ObjGetI(o, "length")) : 0;
 }
 
 GetFileName = function (s) {
@@ -84,26 +84,26 @@ GetIconSize = function (h, a) {
 	return h || a * screen.deviceYDPI / 96 || window.IconSize;
 }
 
-GetGestureX = function (ar) {
+GetGestureX = async function (ar) {
 	var o, s = "";
-	while (o = ar.shift()) {
-		if (api.GetKeyState(o[1]) < 0) {
+	while (o = await ar.shift()) {
+		if (await api.GetKeyState(o[1]) < 0) {
 			s += o[0];
 		}
 	}
 	return s;
 }
 
-GetGestureKey = function () {
-	return GetGestureX([
+GetGestureKey = async function () {
+	return await GetGestureX([
 		["S", VK_SHIFT],
 		["C", VK_CONTROL],
 		["A", VK_MENU]
 	]);
 }
 
-GetGestureButton = function () {
-	return GetGestureX([
+GetGestureButton = async function () {
+	return await GetGestureX([
 		["1", VK_LBUTTON],
 		["2", VK_RBUTTON],
 		["3", VK_MBUTTON],
@@ -120,7 +120,7 @@ GetWebColor = function (c) {
 	return isNaN(c) && /^#[0-9a-f]{3,6}$/i ? c : "#" + (('00000' + (((c & 0xff) << 16) | (c & 0xff00) | ((c & 0xff0000) >> 16)).toString(16)).substr(-6));
 }
 
-GetWinColor = function (c) {
+GetWinColor = async function (c) {
 	var res = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(c);
 	if (res) {
 		return Number(["0x", res[3], res[2], res[1]].join(""));
@@ -134,7 +134,7 @@ GetWinColor = function (c) {
 		return res[3] * 65536 + res[2] * 256 + res[1] * 1;
 	}
 	try {
-		res = /(\d{1,3}) (\d{1,3}) (\d{1,3})/.exec(wsh.regRead(["HKCU", "Control Panel", "Colors", c].join("\\")));
+		res = /(\d{1,3}) (\d{1,3}) (\d{1,3})/.exec(await wsh.regRead(["HKCU", "Control Panel", "Colors", c].join("\\")));
 		if (res) {
 			return res[3] * 65536 + res[2] * 256 + res[1] * 1;
 		}
@@ -142,7 +142,7 @@ GetWinColor = function (c) {
 	return c;
 }
 
-FindText = function () {
+FindText = async function () {
 	if (window.chrome || ui_.IEVer < 8) {
 		wsh.SendKeys("^f");
 	} else {
@@ -193,14 +193,14 @@ CalcVersion = function (s) {
 	return r;
 }
 
-LoadImgDll = function (icon, index) {
+LoadImgDll = async function (icon, index) {
 	var i4 = (index || 0) * 4;
-	var hModule = api.LoadLibraryEx(BuildPath(system32, icon[i4]), 0, LOAD_LIBRARY_AS_DATAFILE);
+	var hModule = await api.LoadLibraryEx(BuildPath(system32, icon[i4]), 0, LOAD_LIBRARY_AS_DATAFILE);
 	if (!hModule && SameText(icon[i4], "ieframe.dll")) {
 		if (icon[i4 + 1] >= 500) {
-			hModule = api.LoadLibraryEx(BuildPath(system32, "browseui.dll"), 0, LOAD_LIBRARY_AS_DATAFILE);
+			hModule = await api.LoadLibraryEx(BuildPath(system32, "browseui.dll"), 0, LOAD_LIBRARY_AS_DATAFILE);
 		} else {
-			hModule = api.LoadLibraryEx(BuildPath(system32, "shell32.dll"), 0, LOAD_LIBRARY_AS_DATAFILE);
+			hModule = await api.LoadLibraryEx(BuildPath(system32, "shell32.dll"), 0, LOAD_LIBRARY_AS_DATAFILE);
 		}
 	}
 	return hModule;

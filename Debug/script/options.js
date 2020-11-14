@@ -29,8 +29,8 @@ xhr = null;
 xmlAddons = null;
 
 RunEventUI("BrowserCreatedEx");
-(function () {
-	arLangs = [GetLangId()];
+(async function () {
+	arLangs = [await GetLangId()];
 	var res = /(\w+)_/.exec(arLangs[0]);
 	if (res && !/zh_cn/i.test(arLangs[0])) {
 		arLangs.push(res[1]);
@@ -41,14 +41,14 @@ RunEventUI("BrowserCreatedEx");
 	arLangs.push("General");
 })();
 
-function SetDefaultLangID() {
-	SetDefault(document.F.Conf_Lang, GetLangId(true));
+async function SetDefaultLangID() {
+	SetDefault(document.F.Conf_Lang, await GetLangId(true));
 }
 
 function SetDefault(o, v) {
-	setTimeout(function () {
-		if (confirmOk()) {
-			SetValue(o, "function" === typeof v ? v : v);
+	setTimeout(async function () {
+		if (await confirmOk()) {
+			SetValue(o, "function" === typeof v ? await v : v);
 		}
 	}, 99);
 }
@@ -72,39 +72,39 @@ function LoadChecked(form) {
 	}
 }
 
-function ResetForm() {
-	var TV = te.Ctrl(CTRL_TV);
+async function ResetForm() {
+	var TV = await te.Ctrl(CTRL_TV);
 	if (TV) {
-		document.F.Tree_Align.value = TV.Align;
-		document.F.Tree_Style.value = TV.Style;
-		document.F.Tree_EnumFlags.value = TV.EnumFlags;
-		document.F.Tree_RootStyle.value = TV.RootStyle;
-		if (TV.Align & 2) {
-			document.F.Tree_Root.value = TV.Root;
+		document.F.Tree_Align.value = await TV.Align;
+		document.F.Tree_Style.value = await TV.Style;
+		document.F.Tree_EnumFlags.value = await TV.EnumFlags;
+		document.F.Tree_RootStyle.value = await TV.RootStyle;
+		if (await TV.Align & 2) {
+			document.F.Tree_Root.value = await TV.Root;
 		}
-		document.F.Tree_Width.value = TV.Width;
+		document.F.Tree_Width.value = await TV.Width;
 	}
-	var TC = te.Ctrl(CTRL_TC);
+	var TC = await te.Ctrl(CTRL_TC);
 	if (TC) {
-		document.F.Tab_Style.value = TC.Style;
-		document.F.Tab_Align.value = TC.Align;
-		document.F.Tab_TabWidth.value = TC.TabWidth;
-		document.F.Tab_TabHeight.value = TC.TabHeight;
+		document.F.Tab_Style.value = await TC.Style;
+		document.F.Tab_Align.value = await TC.Align;
+		document.F.Tab_TabWidth.value = await TC.TabWidth;
+		document.F.Tab_TabHeight.value = await TC.TabHeight;
 
-		document.F.Tab_Left.value = TC.Left;
-		document.F.Tab_Top.value = TC.Top;
-		document.F.Tab_Width.value = TC.Width;
-		document.F.Tab_Height.value = TC.Height;
+		document.F.Tab_Left.value = await TC.Left;
+		document.F.Tab_Top.value = await TC.Top;
+		document.F.Tab_Width.value = await TC.Width;
+		document.F.Tab_Height.value = await TC.Height;
 	}
-	var FV = te.Ctrl(CTRL_FV);
+	var FV = await te.Ctrl(CTRL_FV);
 	if (FV) {
-		document.F.View_Type.value = FV.Type;
-		document.F.View_ViewMode.value = FV.CurrentViewMode;
-		document.F.View_fFlags.value = FV.FolderFlags;
-		document.F.View_Options.value = FV.Options;
-		document.F.View_ViewFlags.value = FV.ViewFlags;
+		document.F.View_Type.value = await FV.Type;
+		document.F.View_ViewMode.value = await FV.CurrentViewMode;
+		document.F.View_fFlags.value = await FV.FolderFlags;
+		document.F.View_Options.value = await FV.Options;
+		document.F.View_ViewFlags.value = await FV.ViewFlags;
 	}
-	document.F.Conf_SizeFormat.value = te.Data.Conf_SizeFormat || 0;
+	document.F.Conf_SizeFormat.value = await te.Data.Conf_SizeFormat || 0;
 	for (var i = 0; i < document.F.length; ++i) {
 		o = document.F[i];
 		if (SameText(o.type, 'checkbox')) {
@@ -120,7 +120,7 @@ function ResetForm() {
 	document.getElementById("_EDIT").checked = true;
 }
 
-function ResizeTabPanel() {
+async function ResizeTabPanel() {
 	var h = 4.8;
 	if (window.g_Inline && !/\w/.test(document.getElementById('toolbar').innerHTML)) {
 		h -= 2.4;
@@ -131,7 +131,7 @@ function ResizeTabPanel() {
 	CalcElementHeight(g_ovPanel, h);
 }
 
-function ClickTab(o, nMode) {
+async function ClickTab(o, nMode) {
 	nMode = GetNum(nMode);
 	if (o && o.id) {
 		nTabIndex = o.id.replace(new RegExp('tab', 'g'), '') - 0;
@@ -148,7 +148,7 @@ function ClickTab(o, nMode) {
 			ovTab.style.zIndex = 11;
 			ovPanel.style.display = 'block';
 			g_ovPanel = ovPanel;
-			ResizeTabPanel();
+			await ResizeTabPanel();
 			if (window.OnTabChanged) {
 				OnTabChanged(i);
 			}
@@ -162,7 +162,7 @@ function ClickTab(o, nMode) {
 	nTabMax = i;
 }
 
-function ClickTree(o, nMode, strChg, bForce) {
+async function ClickTree(o, nMode, strChg, bForce) {
 	if (strChg) {
 		g_Chg[strChg] = true;
 	}
@@ -207,8 +207,8 @@ function ClickTree(o, nMode, strChg, bForce) {
 		if (newTab == "0") {
 			var o = document.getElementById("DefaultLangID");
 			if (o && o.innerHTML == "") {
-				var s = GetLangId(1);
-				var s2 = GetLangId(2);
+				var s = await GetLangId(1);
+				var s2 = await GetLangId(2);
 				if (s != s2) {
 					s += ' (' + s2 + ')';
 				}
@@ -262,7 +262,7 @@ function SetRadio(o) {
 	FireEvent(el, "change");
 }
 
-function SetCheckbox(o) {
+async function SetCheckbox(o) {
 	var ar = o.id.split(":");
 	var el = o.form[ar[0]];
 	if (o.checked) {
@@ -285,9 +285,9 @@ function AddValue(name, i, min, max) {
 }
 
 function ChooseColor1(o) {
-	setTimeout(function () {
+	setTimeout(async function () {
 		var o2 = o.form[o.id.replace("Color_", "")];
-		var c = ChooseColor(o2.value || o2.placeholder);
+		var c = await ChooseColor(o2.value || o2.placeholder);
 		if (isFinite(c)) {
 			o2.value = c;
 			o.style.backgroundColor = GetWebColor(c);
@@ -296,9 +296,9 @@ function ChooseColor1(o) {
 }
 
 function ChooseColor2(o) {
-	setTimeout(function () {
+	setTimeout(async function () {
 		var o2 = o.form[o.id.replace("Color_", "")];
-		var c = ChooseColor(GetWinColor(o2.value || o2.placeholder));
+		var c = await ChooseColor(await GetWinColor(o2.value || o2.placeholder));
 		if (isFinite(c)) {
 			c = GetWebColor(c);
 			o2.value = c;
@@ -308,10 +308,10 @@ function ChooseColor2(o) {
 }
 
 function ChooseFolder1(o) {
-	setTimeout(function () {
-		var r = BrowseForFolder(o.value);
+	setTimeout(async function () {
+		var r = await BrowseForFolder(o.value);
 		if (r) {
-			if (api.GetKeyState(VK_CONTROL) < 0 && /textarea/i.test(o.tagName)) {
+			if (await api.GetKeyState(VK_CONTROL) < 0 && /textarea/i.test(o.tagName)) {
 				var ar = o.value.replace(/\s+$/g, "").split(/\n/);
 				ar.push(r);
 				o.value = ar.join("\n");
@@ -322,7 +322,7 @@ function ChooseFolder1(o) {
 	}, 99);
 }
 
-function AddTabControl() {
+async function AddTabControl() {
 	if (document.F.Tab_Width.value == 0) {
 		MessageBox("Please enter the width.", TITLE, MB_ICONEXCLAMATION);
 		return;
@@ -331,27 +331,27 @@ function AddTabControl() {
 		MessageBox("Please enter the height.", TITLE, MB_ICONEXCLAMATION);
 		return;
 	}
-	var TC = te.CreateCtrl(CTRL_TC, document.F.Tab_Left.value, document.F.Tab_Top.value, document.F.Tab_Width.value, document.F.Tab_Height.value, document.F.Tab_Style.value, document.F.Tab_Align.value, document.F.Tab_TabWidth.value, document.F.Tab_TabHeight.value);
+	var TC = await te.CreateCtrl(CTRL_TC, document.F.Tab_Left.value, document.F.Tab_Top.value, document.F.Tab_Width.value, document.F.Tab_Height.value, document.F.Tab_Style.value, document.F.Tab_Align.value, document.F.Tab_TabWidth.value, document.F.Tab_TabHeight.value);
 	TC.Selected.Navigate2("C:\\", SBSP_NEWBROWSER, document.F.View_Type.value, document.F.View_ViewMode.value, document.F.View_fFlags.value, 0, document.F.View_Options.value, document.F.View_ViewFlags.value);
 }
 
-function DelTabControl() {
-	var TC = te.Ctrl(CTRL_TC);
+async function DelTabControl() {
+	var TC = await te.Ctrl(CTRL_TC);
 	if (TC) {
 		TC.Close();
 	}
 }
 
-function SetTabControls() {
+async function SetTabControls() {
 	if (g_Chg.Tab) {
 		if (document.getElementById("Conf_TabDefault").checked) {
-			var cTC = te.Ctrls(CTRL_TC);
-			var nLen = cTC.Count;
+			var cTC = await te.Ctrls(CTRL_TC);
+			var nLen = await cTC.Count;
 			for (var i = 0; i < nLen; ++i) {
-				SetTabControl(cTC[i]);
+				SetTabControl(await cTC[i]);
 			}
 		} else {
-			var TC = te.Ctrl(CTRL_TC);
+			var TC = await te.Ctrl(CTRL_TC);
 			if (TC) {
 				SetTabControl(TC);
 			}
@@ -359,13 +359,13 @@ function SetTabControls() {
 	}
 }
 
-function SetFolderViews() {
+async function SetFolderViews() {
 	if (g_Chg.View) {
-		var o = api.CreateObject("Object");
-		o.Layout = te.Data.Conf_Layout;
+		var o = await api.CreateObject("Object");
+		o.Layout = await te.Data.Conf_Layout;
 		o.ViewMode = document.F.View_ViewMode.value;
 		MainWindow.g_.TEData = o;
-		o = api.CreateObject("Object");
+		o = await api.CreateObject("Object");
 		o.All = document.getElementById("Conf_ListDefault").checked;
 		o.FolderFlags = document.F.View_fFlags.value;
 		o.Options = document.F.View_Options.value;
@@ -375,9 +375,9 @@ function SetFolderViews() {
 	}
 }
 
-function SetTreeControls() {
+async function SetTreeControls() {
 	if (g_Chg.Tree) {
-		var o = api.CreateObject("Object");
+		var o = await api.CreateObject("Object");
 		o.All = document.getElementById("Conf_TreeDefault").checked;
 		o.Align = document.F.Tree_Align.value;
 		o.Style = document.F.Tree_Style.value;
@@ -389,7 +389,7 @@ function SetTreeControls() {
 	}
 }
 
-function SetTabControl(TC) {
+async function SetTabControl(TC) {
 	if (TC) {
 		TC.Style = document.F.Tab_Style.value;
 		TC.Align = document.F.Tab_Align.value;
@@ -398,18 +398,18 @@ function SetTabControl(TC) {
 	}
 }
 
-function GetTabControl() {
-	var TC = te.Ctrl(CTRL_TC);
+async function GetTabControl() {
+	var TC = await te.Ctrl(CTRL_TC);
 	if (TC) {
-		document.F.Tab_Left.value = TC.Left;
-		document.F.Tab_Top.value = TC.Top;
-		document.F.Tab_Width.value = TC.Width;
-		document.F.Tab_Height.value = TC.Height;
+		document.F.Tab_Left.value = await TC.Left;
+		document.F.Tab_Top.value = await TC.Top;
+		document.F.Tab_Width.value = await TC.Width;
+		document.F.Tab_Height.value = await TC.Height;
 	}
 }
 
-function MoveTabControl() {
-	var TC = te.Ctrl(CTRL_TC);
+async function MoveTabControl() {
+	var TC = await te.Ctrl(CTRL_TC);
 	if (TC) {
 		if (document.F.Tab_Width.value != "" && document.F.Tab_Height.value != "") {
 			TC.Left = document.F.Tab_Left.value;
@@ -420,18 +420,18 @@ function MoveTabControl() {
 	}
 }
 
-function SwapTabControl() {
-	var TC1 = te.Ctrl(CTRL_TC);
-	var cTC = te.Ctrls(CTRL_TC, true);
-	var nLen = cTC.Count;
+async function SwapTabControl() {
+	var TC1 = await te.Ctrl(CTRL_TC);
+	var cTC = await te.Ctrls(CTRL_TC, true);
+	var nLen = await cTC.Count;
 	for (var i = 0; i < nLen; ++i) {
-		var TC = cTC[i];
-		if (TC.Id != TC1.Id && TC.Left == document.F.Tab_Left.value && TC.Top == document.F.Tab_Top.value &&
-			TC.Width == document.F.Tab_Width.value && TC.Height == document.F.Tab_Height.value) {
-			TC.Left = TC1.Left;
-			TC.Top = TC1.Top;
-			TC.Width = TC1.Width;
-			TC.Height = TC1.Height;
+		var TC = await cTC[i];
+		if (await TC.Id != await TC1.Id && await TC.Left == document.F.Tab_Left.value && await TC.Top == document.F.Tab_Top.value &&
+			await TC.Width == document.F.Tab_Width.value && await TC.Height == document.F.Tab_Height.value) {
+			TC.Left = await TC1.Left;
+			TC.Top = await TC1.Top;
+			TC.Width = await TC1.Width;
+			TC.Height = await TC1.Height;
 			TC1.Left = document.F.Tab_Left.value;
 			TC1.Top = document.F.Tab_Top.value;
 			TC1.Width = document.F.Tab_Width.value;
@@ -441,14 +441,14 @@ function SwapTabControl() {
 	}
 }
 
-function InitConfig(o) {
-	if (ui_.Installed == te.Data.DataFolder) {
+async function InitConfig(o) {
+	if (ui_.Installed == await te.Data.DataFolder) {
 		return;
 	}
-	if (!confirmOk()) {
+	if (!await confirmOk()) {
 		return;
 	}
-	api.SHFileOperation(FO_MOVE, BuildPath(ui_.Installed, "layout"), te.Data.DataFolder, 0, false);
+	await api.SHFileOperation(FO_MOVE, BuildPath(ui_.Installed, "layout"), await te.Data.DataFolder, 0, false);
 	o.disabled = true;
 }
 
@@ -517,13 +517,13 @@ function ConfirmX(bCancel, fn) {
 	}, !bCancel, true);
 }
 
-function SetOptions(fnYes, fnNo, fnCancel) {
-	if (document.activeElement && SameText(document.activeElement.value, GetText("Cancel"))) {
+async function SetOptions(fnYes, fnNo, fnCancel) {
+	if (document.activeElement && SameText(document.activeElement.value, await GetText("Cancel"))) {
 		g_nResult = 2;
 	}
 	if (g_nResult == 2) {
 		if (fnNo) {
-			fnNo();
+			await fnNo();
 		}
 		return false;
 	}
@@ -532,22 +532,22 @@ function SetOptions(fnYes, fnNo, fnCancel) {
 	}
 	if (g_nResult == 1 && !g_Chg.Data) {
 		if (fnYes) {
-			fnYes();
+			await fnYes();
 		}
 		return true;
 	}
 	if (g_bChanged || g_Chg.Data) {
-		switch (MessageBox("Do you want to replace?", TITLE, MB_ICONQUESTION | (fnCancel ? MB_YESNOCANCEL : MB_YESNO))) {
+		switch (await MessageBox("Do you want to replace?", TITLE, MB_ICONQUESTION | (fnCancel ? MB_YESNOCANCEL : MB_YESNO))) {
 			case IDYES:
 				g_nResult = 1;
 				if (fnYes) {
-					fnYes();
+					await fnYes();
 				}
 				return true;
 			case IDNO:
 				g_nResult = 2;
 				if (fnNo) {
-					fnNo();
+					await fnNo();
 				}
 				if (g_nResult == 2) {
 					ClearX();
@@ -560,7 +560,7 @@ function SetOptions(fnYes, fnNo, fnCancel) {
 			case IDCANCEL:
 				g_nResult = 4;
 				if (fnCancel) {
-					fnCancel();
+					await fnCancel();
 				}
 				return;
 			default:
@@ -569,12 +569,12 @@ function SetOptions(fnYes, fnNo, fnCancel) {
 	}
 	g_nResult = 2;
 	if (fnNo) {
-		fnNo();
+		await fnNo();
 	}
 	return false;
 }
 
-function EditMenus() {
+async function EditMenus() {
 	if (g_x.Menus.selectedIndex < 0) {
 		return;
 	}
@@ -582,15 +582,15 @@ function EditMenus() {
 	var a = g_x.Menus[g_x.Menus.selectedIndex].value.split(g_sep);
 	var a2 = a[0].split(/\\t/);
 	if (!a[5]) {
-		a2[0] = GetText(a2[0]);
+		a2[0] = await GetText(a2[0]);
 	}
-	document.F.Menus_Key.value = a2.length > 1 ? GetKeyName(a2.pop()) : "";
+	document.F.Menus_Key.value = a2.length > 1 ? await GetKeyName(a2.pop()) : "";
 	document.F.Menus_Name.value = a2.join("\\t");
 	document.F.Menus_Filter.value = a[1];
-	var p = api.CreateObject("Object");
+	var p = await api.CreateObject("Object");
 	p.s = a[2];
-	MainWindow.OptionDecode(a[3], p);
-	document.F.Menus_Path.value = p.s;
+	await MainWindow.OptionDecode(a[3], p);
+	document.F.Menus_Path.value = await p.s;
 	SetType(document.F.Menus_Type, a[3]);
 	document.F.Icon.value = a[4] || "";
 	document.F.IconSize.value = a[6] || "";
@@ -603,7 +603,7 @@ function EditXEx(o, s, form) {
 	}
 }
 
-EditX = function (mode, form) {
+EditX = async function (mode, form) {
 	if (g_x[mode].selectedIndex < 0) {
 		return;
 	}
@@ -613,17 +613,17 @@ EditX = function (mode, form) {
 	ClearX(mode);
 	var a = g_x[mode][g_x[mode].selectedIndex].value.split(g_sep);
 	form[mode + mode].value = a[0];
-	var p = api.CreateObject("Object");
+	var p = await api.CreateObject("Object");
 	p.s = a[1];
-	MainWindow.OptionDecode(a[2], p);
-	form[mode + "Path"].value = p.s;
+	await MainWindow.OptionDecode(a[2], p);
+	form[mode + "Path"].value = await p.s;
 	SetType(form[mode + "Type"], a[2]);
 	if (SameText(mode, "key")) {
 		SetKeyShift();
 	}
 	var o = form[mode + "Name"];
 	if (o) {
-		o.value = GetText(a[3] || "");
+		o.value = await GetText(a[3] || "");
 	}
 }
 
@@ -666,26 +666,26 @@ function AddX(mode, fn, form) {
 	EnableSelectTag(g_x[mode]);
 }
 
-function ReplaceMenus() {
+async function ReplaceMenus() {
 	ClearX("Menus");
 	if (g_x.Menus.selectedIndex < 0) {
 		InsertX(g_x.Menus);
 	}
 	var sel = g_x.Menus[g_x.Menus.selectedIndex];
 	var o = document.F.Menus_Type;
-	var s = GetSourceText(document.F.Menus_Name.value.replace(/\\/g, "/"));
-	var org = (SameText(s, document.F.Menus_Name.value) && api.GetKeyState(VK_SHIFT) >= 0) ? "1" : ""
+	var s = await GetSourceText(document.F.Menus_Name.value.replace(/\\/g, "/"));
+	var org = (SameText(s, document.F.Menus_Name.value) && await api.GetKeyState(VK_SHIFT) >= 0) ? "1" : ""
 	if (document.F.Menus_Key.value.length) {
-		s += "\\t" + GetKeyKeyG(document.F.Menus_Key.value);
+		s += "\\t" + await GetKeyKeyG(document.F.Menus_Key.value);
 	}
-	var p = api.CreateObject("Object");
+	var p = await api.CreateObject("Object");
 	p.s = document.F.Menus_Path.value;
-	MainWindow.OptionEncode(o[o.selectedIndex].value, p);
-	SetMenus(sel, [s, document.F.Menus_Filter.value, p.s, o[o.selectedIndex].value, document.F.Icon.value, org, document.F.IconSize.value]);
+	await MainWindow.OptionEncode(o[o.selectedIndex].value, p);
+	SetMenus(sel, [s, document.F.Menus_Filter.value, await p.s, o[o.selectedIndex].value, document.F.Icon.value, org, document.F.IconSize.value]);
 	g_Chg.Menus = true;
 }
 
-function ReplaceX(mode, form) {
+async function ReplaceX(mode, form) {
 	if (!g_x[mode]) {
 		return;
 	}
@@ -702,7 +702,7 @@ function ReplaceX(mode, form) {
 	var p = { s: form[mode + "Path"].value };
 	MainWindow.OptionEncode(o[o.selectedIndex].value, p);
 	var o2 = form[mode + "Name"];
-	SetData(sel, [form[mode + mode].value, p.s, o[o.selectedIndex].value, o2 ? GetSourceText(o2.value) : ""]);
+	SetData(sel, [form[mode + mode].value, p.s, o[o.selectedIndex].value, o2 ? await GetSourceText(o2.value) : ""]);
 	g_Chg[mode] = true;
 	g_bChanged = true;
 }
@@ -760,27 +760,27 @@ function MoveX(mode, n) {
 	EnableSelectTag(g_x[mode]);
 }
 
-function SetMenus(sel, a) {
+async function SetMenus(sel, a) {
 	sel.value = PackData(a);
 	var a2 = a[0].split(/\\t/);
-	sel.text = [a[5] ? a2[0] : GetText(a2[0]), a[1]].join(" ").replace(/[\r\n].*/, "");
+	sel.text = [a[5] ? a2[0] : await GetText(a2[0]), a[1]].join(" ").replace(/[\r\n].*/, "");
 	if (!sel.text.length) {
 		sel.text = "********";
 	}
 }
 
-function LoadMenus(nSelected) {
+async function LoadMenus(nSelected) {
 	var oa = document.F.Menus_Type;
 	if (!g_x.Menus) {
-		var arFunc = api.CreateObject("Array");
-		MainWindow.RunEvent1("AddType", arFunc);
+		var arFunc = await api.CreateObject("Array");
+		await MainWindow.RunEvent1("AddType", arFunc);
 		if (window.chrome) {
-			arFunc = api.CreateObject("SafeArray", arFunc);
+			arFunc = await api.CreateObject("SafeArray", arFunc);
 		}
 		for (var i = 0; i < arFunc.length; ++i) {
 			var o = oa[++oa.length - 1];
 			o.value = arFunc[i];
-			o.innerText = GetText(arFunc[i]);
+			o.innerText = await GetText(arFunc[i]);
 		}
 
 		oa = document.F.Menus;
@@ -789,23 +789,23 @@ function LoadMenus(nSelected) {
 		for (var j in g_arMenuTypes) {
 			var s = g_arMenuTypes[j];
 			document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", ['<select name="Menus_', s, '" size="17" style="width: 12em; height: 32em; height: calc(100vh - 6em); min-height: 20em; display: none" onchange="EditXEx(EditMenus)" ondblclick="EditMenus()" oncontextmenu="CancelX(\'Menus\')" multiple></select>'].join(""));
-			var menus = teMenuGetElementsByTagName(s);
-			if (menus && GetLength(menus)) {
-				oa[++oa.length - 1].value = s + "," + menus[0].getAttribute("Base") + "," + menus[0].getAttribute("Pos");
+			var menus = await teMenuGetElementsByTagName(s);
+			if (menus && await GetLength(menus)) {
+				oa[++oa.length - 1].value = s + "," + await menus[0].getAttribute("Base") + "," + await menus[0].getAttribute("Pos");
 				var o = document.F["Menus_" + s];
-				var items = menus[0].getElementsByTagName("Item");
+				var items = await menus[0].getElementsByTagName("Item");
 				if (items) {
-					var i = GetLength(items);
+					var i = await GetLength(items);
 					o.length = i;
 					while (--i >= 0) {
-						var item = items[i];
-						SetMenus(o[i], [item.getAttribute("Name"), item.getAttribute("Filter"), item.text, item.getAttribute("Type"), item.getAttribute("Icon"), item.getAttribute("Org"), item.getAttribute("Height")]);
+						var item = await items[i];
+						SetMenus(o[i], [await item.getAttribute("Name"), await item.getAttribute("Filter"), await item.text, await item.getAttribute("Type"), await item.getAttribute("Icon"), await item.getAttribute("Org"), await item.getAttribute("Height")]);
 					}
 				}
 			} else {
 				oa[++oa.length - 1].value = s;
 			}
-			oa[oa.length - 1].text = GetText(s);
+			oa[oa.length - 1].text = await GetText(s);
 		}
 		SwitchMenus(oa[nSelected]);
 	}
@@ -815,9 +815,9 @@ function LoadMenus(nSelected) {
 			nSelected = oa.length - 1;
 			oa[nSelected].selected = true;
 			g_MenuType = j;
-			setTimeout(function (o, v) {
-				ClickTree(document.getElementById("tab2_" + g_MenuType));
-				EditMenus();
+			setTimeout(async function (o, v) {
+				await ClickTree(document.getElementById("tab2_" + g_MenuType));
+				await EditMenus();
 				g_MenuType = "";
 				if (isFinite(v)) {
 					o.selectedIndex = v;
@@ -829,15 +829,15 @@ function LoadMenus(nSelected) {
 	}
 }
 
-function LoadX(mode, fn, form) {
+async function LoadX(mode, fn, form) {
 	if (!g_x[mode]) {
 		if (!form) {
 			form = document.F;
 		}
-		var arFunc = api.CreateObject("Array");
-		MainWindow.RunEvent1("AddType", arFunc);
+		var arFunc = await api.CreateObject("Array");
+		await MainWindow.RunEvent1("AddType", arFunc);
 		if (window.chrome) {
-			arFunc = api.CreateObject("SafeArray", arFunc);
+			arFunc = await api.CreateObject("SafeArray", arFunc);
 		}
 		var oa = form[mode + "Type"] || form.Type;
 		while (oa.length) {
@@ -846,55 +846,55 @@ function LoadX(mode, fn, form) {
 		for (var i = 0; i < arFunc.length; ++i) {
 			var o = oa[++oa.length - 1];
 			o.value = arFunc[i];
-			o.innerText = GetText(arFunc[i]);
+			o.innerText = await GetText(arFunc[i]);
 		}
 		g_x[mode] = form[mode + "All"];
 		if (g_x[mode]) {
 			oa = form[mode];
 			oa.length = 0;
-			var xml = OpenXml(mode + ".xml", false, true);
+			var xml = await OpenXml(mode + ".xml", false, true);
 			for (var j in g_Types[mode]) {
 				var o = oa[++oa.length - 1];
-				o.text = GetTextEx(g_Types[mode][j]);
+				o.text = await GetTextEx(g_Types[mode][j]);
 				o.value = g_Types[mode][j];
 				o = form[mode + g_Types[mode][j]];
-				var items = xml.getElementsByTagName(g_Types[mode][j]);
-				var i = GetLength(items);
+				var items = await xml.getElementsByTagName(g_Types[mode][j]);
+				var i = await GetLength(items);
 				if (i == 0 && g_Types[mode][j] == "List") {
-					items = xml.getElementsByTagName("Folder");
-					i = GetLength(items);
+					items = await xml.getElementsByTagName("Folder");
+					i = await GetLength(items);
 				}
 				o.length = i;
 				while (--i >= 0) {
-					var item = items[i];
-					var s = item.getAttribute(mode);
+					var item = await items[i];
+					var s = await item.getAttribute(mode);
 					if (SameText(mode, "Key")) {
 						var ar = /,$/.test(s) ? [s] : s.split(",");
 						for (var k = ar.length; k--;) {
-							ar[k] = GetKeyNameG(ar[k]);
+							ar[k] = await GetKeyNameG(ar[k]);
 						}
 						s = ar.join(",");
 					}
-					SetData(o[i], [s, item.text, item.getAttribute("Type"), item.getAttribute("Name")]);
+					SetData(o[i], [s, await item.text, await item.getAttribute("Type"), await item.getAttribute("Name")]);
 				}
 			}
 		} else {
 			g_x[mode] = form.List;
 			g_x[mode].length = 0;
-			var xml = te.Data["xml" + AddonName];
+			var xml = await te.Data["xml" + AddonName];
 			if (!xml) {
-				xml = api.CreateObject("Msxml2.DOMDocument");
+				xml = await api.CreateObject("Msxml2.DOMDocument");
 				xml.async = false;
-				xml.load(BuildPath(ui_.Installed, "config", AddonName + ".xml"));
+				await xml.load(BuildPath(ui_.Installed, "config", AddonName + ".xml"));
 				te.Data["xml" + AddonName] = xml;
 			}
 
-			var items = xml.getElementsByTagName("Item");
-			var i = GetLength(items);
+			var items = await xml.getElementsByTagName("Item");
+			var i = await GetLength(items);
 			g_x[mode].length = i;
 			while (--i >= 0) {
-				var item = items[i];
-				SetData(g_x[mode][i], [item.getAttribute("Name"), item.text, item.getAttribute("Type"), item.getAttribute("Icon"), item.getAttribute("Height")]);
+				var item = await items[i];
+				SetData(g_x[mode][i], [await item.getAttribute("Name"), await item.text, await item.getAttribute("Type"), await item.getAttribute("Icon"), await item.getAttribute("Height")]);
 			}
 			xml = null;
 		}
@@ -903,19 +903,19 @@ function LoadX(mode, fn, form) {
 	}
 }
 
-function SaveMenus() {
+async function SaveMenus() {
 	if (g_Chg.Menus) {
-		var xml = CreateXml();
+		var xml = await CreateXml();
 
-		var root = xml.createElement("TablacusExplorer");
+		var root = await xml.createElement("TablacusExplorer");
 		for (var j in g_arMenuTypes) {
 			var o = document.F["Menus_" + g_arMenuTypes[j]];
-			var items = xml.createElement(g_arMenuTypes[j]);
+			var items = await xml.createElement(g_arMenuTypes[j]);
 			var a = document.F.elements.Menus[j].value.split(",");
 			items.setAttribute("Base", GetNum(a[1]));
 			items.setAttribute("Pos", GetNum(a[2]));
 			for (var i = 0; i < o.length; ++i) {
-				var item = xml.createElement("Item");
+				var item = await xml.createElement("Item");
 				var a = o[i].value.split(g_sep);
 				item.setAttribute("Name", a[0]);
 				item.setAttribute("Filter", a[1]);
@@ -928,45 +928,45 @@ function SaveMenus() {
 				if (a[6]) {
 					item.setAttribute("Height", a[6]);
 				}
-				items.appendChild(item);
+				await items.appendChild(item);
 			}
-			root.appendChild(items);
+			await root.appendChild(items);
 		}
-		xml.appendChild(root);
+		await xml.appendChild(root);
 		te.Data.xmlMenus = xml;
-		MainWindow.RunEvent1("ConfigChanged", "Menus");
+		await MainWindow.RunEvent1("ConfigChanged", "Menus");
 	}
 }
 
-function GetKeyKeyEx(s) {
-	var n = GetKeyKey(s);
-	return n & 0xff ? api.sprintf(9, "$%x", n) : s;
+async function GetKeyKeyEx(s) {
+	var n = await GetKeyKey(s);
+	return n & 0xff ? await api.sprintf(9, "$%x", n) : s;
 }
 
-function GetKeyKeyG(s) {
-	var n = GetKeyKeyEx(s);
-	var s = GetKeyName(n, true);
+async function GetKeyKeyG(s) {
+	var n = await GetKeyKeyEx(s);
+	var s = await GetKeyName(n, true);
 	return /^\w$|\+\w$/i.test(s) ? s : n;
 }
 
-function GetKeyNameG(s) {
-	return GetKeyName(/^$/.test(s) ? s : GetKeyKeyEx(s));
+async function GetKeyNameG(s) {
+	return await GetKeyName(/^$/.test(s) ? s : await GetKeyKeyEx(s));
 }
 
-function SaveX(mode, form) {
+async function SaveX(mode, form) {
 	if (g_Chg[mode]) {
-		var xml = CreateXml();
-		var root = xml.createElement("TablacusExplorer");
+		var xml = await CreateXml();
+		var root = await xml.createElement("TablacusExplorer");
 		for (var j in g_Types[mode]) {
 			var o = (form || document.F)[mode + g_Types[mode][j]];
 			for (var i = 0; i < o.length; ++i) {
-				var item = xml.createElement(g_Types[mode][j]);
+				var item = await xml.createElement(g_Types[mode][j]);
 				var a = o[i].value.split(g_sep);
 				var s = a[0];
 				if (SameText(mode, "key")) {
 					var ar = /,$/.test(s) ? [s] : s.split(",");
 					for (var k = ar.length; k--;) {
-						ar[k] = GetKeyKeyG(ar[k]);
+						ar[k] = await GetKeyKeyG(ar[k]);
 					}
 					s = ar.join(",");
 				} else {
@@ -975,18 +975,18 @@ function SaveX(mode, form) {
 				item.setAttribute(mode, s);
 				item.text = a[1];
 				item.setAttribute("Type", a[2]);
-				root.appendChild(item);
+				await root.appendChild(item);
 			}
 		}
-		xml.appendChild(root);
-		SaveXmlEx(mode.toLowerCase() + ".xml", xml);
+		await xml.appendChild(root);
+		await SaveXmlEx(mode.toLowerCase() + ".xml", xml);
 	}
 }
 
-function SaveAddons() {
-	if (g_Chg.Addons || te.Data.bErrorAddons) {
+async function SaveAddons() {
+	if (g_Chg.Addons || await te.Data.bErrorAddons) {
 		te.Data.bErrorAddons = false;
-		var Addons = api.CreateObject("Object");
+		var Addons = await api.CreateObject("Object");
 		var table = document.getElementById("Addons");
 		for (var j = 0; j < table.rows.length; ++j) {
 			var div = table.rows[j].cells[0].firstChild;
@@ -996,22 +996,22 @@ function SaveAddons() {
 			}
 		}
 		if (window.g_bAddonLoading) {
-			var root = te.Data.Addons.documentElement;
+			var root = await te.Data.Addons.documentElement;
 			if (root) {
-				var items = root.childNodes;
+				var items = await root.childNodes;
 				if (items) {
-					var nLen = GetLength(items);
+					var nLen = await GetLength(items);
 					for (var i = 0; i < nLen; ++i) {
-						var item = items[i];
-						var Id = item.nodeName;
+						var item = await items[i];
+						var Id = await item.nodeName;
 						if (Addons[Id] == null) {
-							Addons[Id] = item.getAttribute("Enabled");
+							Addons[Id] = await item.getAttribute("Enabled");
 						}
 					}
 				}
 			}
 		}
-		MainWindow.SaveAddons(Addons);
+		await MainWindow.SaveAddons(Addons);
 	}
 }
 
@@ -1041,7 +1041,7 @@ function PackData(a) {
 	return a.join(g_sep);
 }
 
-function LoadAddons() {
+async function LoadAddons() {
 	if (g_x.Addons) {
 		OpenAddonsOptions();
 		return;
@@ -1049,11 +1049,11 @@ function LoadAddons() {
 	g_x.Addons = true;
 
 	var AddonId = {};
-	var wfd = api.Memory("WIN32_FIND_DATA");
+	var wfd = await api.Memory("WIN32_FIND_DATA");
 	var path = BuildPath(ui_.Installed, "addons\\");
-	var hFind = api.FindFirstFile(path + "*", wfd);
-	for (var bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = api.FindNextFile(hFind, wfd)) {
-		var Id = wfd.cFileName;
+	var hFind = await api.FindFirstFile(path + "*", wfd);
+	for (var bFind = hFind != INVALID_HANDLE_VALUE; await bFind; bFind = await api.FindNextFile(hFind, wfd)) {
+		var Id = await wfd.cFileName;
 		if (Id != "." && Id != ".." && !AddonId[Id]) {
 			AddonId[Id] = 1;
 		}
@@ -1064,11 +1064,11 @@ function LoadAddons() {
 	table.ondrop = Drop5;
 	table.deleteRow(0);
 	g_bAddonLoading = true;
-	var root = te.Data.Addons.documentElement;
+	var root = await te.Data.Addons.documentElement;
 	if (root) {
-		var items = root.childNodes;
+		var items = await root.childNodes;
 		if (items) {
-			var nLen = GetLength(items);
+			var nLen = await GetLength(items);
 			var sorted = document.getElementById("SortedAddons");
 			var tcell = [];
 			var scell = [];
@@ -1095,7 +1095,7 @@ function LoadAddons() {
 		}
 	}
 	for (var Id in AddonId) {
-		if ($.fso.FileExists(path + Id + "\\config.xml")) {
+		if (await $.fso.FileExists(path + Id + "\\config.xml")) {
 			AddAddon(table, Id, false);
 		}
 	}
@@ -1122,32 +1122,32 @@ function AddAddon(table, Id, bEnable, Alt) {
 	}
 }
 
-function SetAddon(Id, bEnable, td, Alt) {
+async function SetAddon(Id, bEnable, td, Alt) {
 	if (!td) {
 		td = document.getElementById(Alt || "Addons_" + Id).parentNode;
 	}
-	var info = GetAddonInfo(Id);
-	var bLevel = (!window.chrome || info.Level > 1);
-	var MinVersion = info.MinVersion;
-	var bMinVer = !bLevel || MinVersion && AboutTE(0) < CalcVersion(MinVersion);
+	var info = await GetAddonInfo(Id);
+	var bLevel = (!window.chrome || await info.Level > 1);
+	var MinVersion = await info.MinVersion;
+	var bMinVer = !bLevel || MinVersion && await AboutTE(0) < await CalcVersion(MinVersion);
 	if (bMinVer) {
 		bEnable = false;
 	}
 	var s = ['<div ', (Alt ? '' : 'draggable="true" ondragstart="Start5(event, this)" ondragend="End5()"'), ' title="', Id, '" Id="', Alt || "Addons_", Id, '"', bEnable ? "" : ' class="disabled"', '>'];
-	s.push('<table><tr style="border-top: 1px solid buttonshadow"><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id + '">'), '</td><td style="width: 100%"><label for="_', Id, '">', info.Name, "&nbsp;", info.Version, '<br><a href="#" onclick="return AddonInfo(\'', Id, '\', this)"  class="link" style="font-size: .9em">', GetText('Details'), ' (', Id, ')</a>');
-	s.push(' <a href="#" onclick="AddonRemove(\'', Id, '\'); return false;" style="color: red; font-size: .9em; white-space: nowrap; margin-left: 2em">', GetText('Delete'), "</a></td>");
+	s.push('<table><tr style="border-top: 1px solid buttonshadow"><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id + '">'), '</td><td style="width: 100%"><label for="_', Id, '">', await info.Name, "&nbsp;", await info.Version, '<br><a href="#" onclick="return AddonInfo(\'', Id, '\', this)"  class="link" style="font-size: .9em">', await GetText('Details'), ' (', Id, ')</a>');
+	s.push(' <a href="#" onclick="AddonRemove(\'', Id, '\'); return false;" style="color: red; font-size: .9em; white-space: nowrap; margin-left: 2em">', await GetText('Delete'), "</a></td>");
 	if (!bLevel) {
 		s.push('<td class="danger" style="align: right; white-space: nowrap; vertical-align: middle">Incompatible&nbsp;</td>');
 	} else if (bMinVer) {
-		s.push('<td class="danger" style="align: right; white-space: nowrap; vertical-align: middle">', MinVersion.replace(/^20/, (api.LoadString(hShell32, 60) || "%").replace(/%.*/, "")).replace(/\.0/g, '.'), ' ', GetText("is required."), '</td>');
-	} else if (info.Options) {
-		s.push('<td style="white-space: nowrap; vertical-align: middle; padding-right: 1em"><a href="#" onclick="AddonOptions(\'', Id, '\'); return false;" class="link" id="opt_', Id, '">', GetText('Options'), '</td>');
+		s.push('<td class="danger" style="align: right; white-space: nowrap; vertical-align: middle">', MinVersion.replace(/^20/, (await api.LoadString(hShell32, 60) || "%").replace(/%.*/, "")).replace(/\.0/g, '.'), ' ', await GetText("is required."), '</td>');
+	} else if (await info.Options) {
+		s.push('<td style="white-space: nowrap; vertical-align: middle; padding-right: 1em"><a href="#" onclick="AddonOptions(\'', Id, '\'); return false;" class="link" id="opt_', Id, '">', await GetText('Options'), '</td>');
 	}
 	s.push('<td style="vertical-align: middle', bMinVer ? ';display: none"' : "", '"><input type="checkbox" ', (Alt ? "" : 'id="enable_' + Id + '"'), ' onclick="AddonEnable(this, \'', Id, '\')" ', bEnable ? " checked" : "", '></td>');
-	s.push('<td style="vertical-align: middle', bMinVer ? ';display: none"' : "", '"><label for="enable_', Id, '" style="display: block; width: 6em; white-space: nowrap">', GetText(bEnable ? "Enabled" : "Enable"), '</label></td>');
+	s.push('<td style="vertical-align: middle', bMinVer ? ';display: none"' : "", '"><label for="enable_', Id, '" style="display: block; width: 6em; white-space: nowrap">', await GetText(bEnable ? "Enabled" : "Enable"), '</label></td>');
 	s.push('</tr></table></label></div>');
 	td.innerHTML = s.join("");
-	ApplyLang(td);
+	await ApplyLang(td);
 	if (!Alt) {
 		var div = document.getElementById("Sorted_" + Id);
 		if (div) {
@@ -1203,19 +1203,19 @@ function GetRowIndexById(id) {
 	} catch (e) { }
 }
 
-function AddonInfo(Id, o) {
+async function AddonInfo(Id, o) {
 	o.style.textDecoration = "none";
 	o.style.color = GetWebColor(MainWindow.GetSysColor(COLOR_WINDOWTEXT));
 	o.style.cursor = "default";
 	o.onclick = null;
-	var info = GetAddonInfo(Id);
-	o.innerHTML = info.Description;
+	var info = await GetAddonInfo(Id);
+	o.innerHTML = await info.Description;
 	return false;
 }
 
-function AddonWebsite(Id) {
-	var info = GetAddonInfo(Id);
-	wsh.run(info.URL);
+async function AddonWebsite(Id) {
+	var info = await GetAddonInfo(Id);
+	wsh.run(await info.URL);
 }
 
 function AddonEnable(o, Id) {
@@ -1225,12 +1225,12 @@ function AddonEnable(o, Id) {
 	g_Chg.Addons = true;
 }
 
-function OptionMove(dir) {
+async function OptionMove(dir) {
 	if (/^1/.test(TabIndex)) {
 		var r = document.F.AddonId;
 		for (i = 0; i < r.length; ++i) {
 			if (r[i].checked) {
-				if (api.GetKeyState(VK_CONTROL) < 0) {
+				if (await api.GetKeyState(VK_CONTROL) < 0) {
 					if (dir < 0) {
 						dir = -i;
 					} else {
@@ -1282,18 +1282,18 @@ function AddonMoveEx(src, dest) {
 	return false;
 }
 
-function AddonRemove(Id) {
-	if (!confirmOk()) {
+async function AddonRemove(Id) {
+	if (!await confirmOk()) {
 		return;
 	}
 	MainWindow.AddonDisabled(Id);
-	if (AddonBeforeRemove(Id) < 0) {
+	if (await AddonBeforeRemove(Id) < 0) {
 		return;
 	}
 	var path = BuildPath(ui_.Installed, "addons", Id);
-	DeleteItem(path, 0);
-	setTimeout(function () {
-		if (!IsExists(path)) {
+	await DeleteItem(path, 0);
+	setTimeout(async function () {
+		if (!await IsExists(path)) {
 			var table = document.getElementById("Addons");
 			table.deleteRow(GetRowIndexById("Addons_" + Id));
 			var table = document.getElementById("SortedAddons");
@@ -1305,21 +1305,21 @@ function AddonRemove(Id) {
 	}, 500);
 }
 
-function SetAddonsRssults() {
+async function SetAddonsRssults() {
 	for (var i in ui_.elAddons) {
 		var w = ui_.elAddons[i].contentWindow;
 		if (g_nResult == 1) {
-			w.TEOk();
+			await w.TEOk();
 		}
 	}
 	ui_.elAddons = {};
 }
 
-function OkOptions() {
-	SetAddonsRssults();
-	var hwnd = GetTopWindow(document);
-	if (api.GetKeyState(VK_SHIFT) >= 0 && !api.IsZoomed(hwnd) && !api.IsIconic(hwnd)) {
-		var r = 12 / (Math.abs(MainWindow.DefaultFont.lfHeight) || 12);
+async function OkOptions() {
+	await SetAddonsRssults();
+	var hwnd = await GetTopWindow(document);
+	if (await api.GetKeyState(VK_SHIFT) >= 0 && !await api.IsZoomed(hwnd) && !await api.IsIconic(hwnd)) {
+		var r = 12 / (Math.abs(await MainWindow.DefaultFont.lfHeight) || 12);
 		te.Data.Conf_OptWidth = GetNum(document.documentElement.offsetWidth || document.body.offsetWidth) * r;
 		te.Data.Conf_OptHeight = GetNum(document.documentElement.offsetHeight || document.body.offsetHeight) * r;
 	}
@@ -1335,58 +1335,58 @@ function OkOptions() {
 			}
 		}
 	}
-	SaveAddons();
-	SaveMenus();
-	SetTabControls();
-	SetTreeControls();
-	SetFolderViews();
-	MainWindow.RunEvent1("ConfigChanged", "Config");
+	await SaveAddons();
+	await SaveMenus();
+	await SetTabControls();
+	await SetTreeControls();
+	await SetFolderViews();
+	await MainWindow.RunEvent1("ConfigChanged", "Config");
 
 	te.Data.bReload = true;
 	MainWindow.g_.dlgs.Options = void 0;
 	WebBrowser.Close();
 }
 
-function CancelOptions() {
+async function CancelOptions() {
 	g_nResult = 0;
-	if (te.Data.bErrorAddons) {
-		SaveAddons();
+	if (await te.Data.bErrorAddons) {
+		await SaveAddons();
 		te.Data.bReload = true;
 	}
 	MainWindow.g_.dlgs.Options = void 0;
 	WebBrowser.Close();
 }
 
-function ContinueOptions() {
+async function ContinueOptions() {
 	WebBrowser.PreventClose();
 }
 
-InitOptions = function () {
+InitOptions = async function () {
 	ApplyLang(document);
-	(function () {
-		document.getElementById("tab1_3").innerHTML = api.sprintf(99, GetText("Get %s"), GetText("Icon"));
-		document.title = GetText("Options") + " - " + TITLE;
+	(async function () {
+		document.getElementById("tab1_3").innerHTML = await api.sprintf(99, await GetText("Get %s"), await GetText("Icon"));
+		document.title = await GetText("Options") + " - " + TITLE;
 	})();
 	MainWindow.g_.OptionsWindow = $;
-	document.F.ButtonInitConfig.disabled = (ui_.Installed == te.Data.DataFolder) | !$.fso.FolderExists(BuildPath(ui_.Installed, "layout"));
+	document.F.ButtonInitConfig.disabled = (ui_.Installed == await te.Data.DataFolder) | !await $.fso.FolderExists(BuildPath(ui_.Installed, "layout"));
 	for (var i = 0; i < document.F.length; ++i) {
 		var o = document.F[i];
 		var Id = o.name || o.id;
 		if (!/=|:/.test(Id)) {
 			var res = /^(!?)(Tab_.+|Tree_.+|View_.+|Conf_.+)/.exec(Id);
 			if (res) {
-				var v = te.Data[res[2]];
+				var v = await te.Data[res[2]];
 				if (v != null || res[1]) {
 					SetElementValue(o, res[1] ? !v : v);
 				}
 			}
 		}
 	}
-	ResetForm();
+	await ResetForm();
 	var s = [];
 	for (var i in g_arMenuTypes) {
 		var j = g_arMenuTypes[i];
-		s.push('<label id="tab2_' + i + '" class="button" style="width: 100%" onmousedown="ClickTree(this, null, \'Menus\');">' + GetText(j) + '</label><br>');
+		s.push('<label id="tab2_' + i + '" class="button" style="width: 100%" onmousedown="ClickTree(this, null, \'Menus\');">' + await GetText(j) + '</label><br>');
 	}
 	document.getElementById("tab2_").innerHTML = s.join("");
 
@@ -1401,14 +1401,14 @@ InitOptions = function () {
 	for (var i = 6; i--;) {
 		ClickButton(i, false);
 	}
-	SetTab(dialogArguments.Data);
+	SetTab(await dialogArguments.Data);
 	document.F.style.display = "";
-	WebBrowser.OnClose = function (WB) {
+	WebBrowser.OnClose = async function (WB) {
 		g_bChanged |= g_Chg.Addons || g_Chg.Menus || g_Chg.Tab || g_Chg.Tree || g_Chg.View;
 		if (!g_bChanged) {
 			for (var i in ui_.elAddons) {
 				var w = ui_.elAddons[i].contentWindow;
-				if (!w.IsChanged || w.IsChanged()) {
+				if (!w.IsChanged || await w.IsChanged()) {
 					g_bChanged = true;
 					break;
 				}
@@ -1419,19 +1419,19 @@ InitOptions = function () {
 }
 
 OpenIcon = function (o) {
-	setTimeout(function () {
+	setTimeout(async function () {
 		var data = [];
 		var a = o.id.split(/,/);
 		if (a[0] == "b") {
 			var dllpath = BuildPath(system32, "ieframe.dll");
 			a[0] = GetFileName(dllpath);
 			var a1 = a[1];
-			var hModule = LoadImgDll(a, 0);
+			var hModule = await LoadImgDll(a, 0);
 			if (hModule) {
 				var lpbmp = isFinite(a[1]) ? a[1] - 0 : a[1];
-				var himl = api.ImageList_LoadImage(hModule, lpbmp, a[2], CLR_NONE, CLR_NONE, IMAGE_BITMAP, LR_CREATEDIBSECTION | LR_LOADTRANSPARENT);
+				var himl = await api.ImageList_LoadImage(hModule, lpbmp, a[2], CLR_NONE, CLR_NONE, IMAGE_BITMAP, LR_CREATEDIBSECTION | LR_LOADTRANSPARENT);
 				a[1] = a1;
-				var nCount = himl ? api.ImageList_GetImageCount(himl) : 0;
+				var nCount = himl ? await api.ImageList_GetImageCount(himl) : 0;
 				if (nCount == 0) {
 					if (lpbmp == 206 || lpbmp == 204) {
 						nCount = 20;
@@ -1442,7 +1442,7 @@ OpenIcon = function (o) {
 				a[0] = GetFileName(dllpath);
 				for (a[3] = 0; a[3] < nCount; a[3]++) {
 					var s = "bitmap:" + a.join(",");
-					var src = MakeImgSrc(s, 0, false, a[2]);
+					var src = await MakeImgSrc(s, 0, false, a[2]);
 					data.push('<img src="' + src + '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="' + s + '"> ');
 				}
 				if (himl) {
@@ -1451,14 +1451,14 @@ OpenIcon = function (o) {
 				api.FreeLibrary(hModule);
 			}
 		} else {
-			dllPath = ExtractMacro(te, a[1]);
+			dllPath = await ExtractMacro(te, a[1]);
 			if (!/^[A-Z]:\\|^\\\\/i.test(dllPath)) {
 				dllPath = BuildPath(system32, a[1]);
 			}
-			var nCount = api.ExtractIconEx(dllPath, -1, null, null, 0);
+			var nCount = await api.ExtractIconEx(dllPath, -1, null, null, 0);
 			for (var i = 0; i < nCount; ++i) {
 				var s = ["icon:" + a[1], i].join(",");
-				var src = MakeImgSrc(s, 0, false, 32);
+				var src = await MakeImgSrc(s, 0, false, 32);
 				data.push('<img src="' + src + '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="' + s + '" style="max-height: 24pt"> ');
 			}
 		}
@@ -1470,17 +1470,17 @@ OpenIcon = function (o) {
 	document.body.style.cursor = "wait";
 }
 
-function SearchIcon(o) {
+async function SearchIcon(o) {
 	o.onclick = null;
 	var s = [];
-	var wfd = api.Memory("WIN32_FIND_DATA");
-	var hFind = api.FindFirstFile(BuildPath(system32, "*"), wfd);
-	for (var bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = api.FindNextFile(hFind, wfd)) {
-		var nCount = api.ExtractIconEx(BuildPath(system32, wfd.cFileName), -1, null, null, 0);
+	var wfd = await api.Memory("WIN32_FIND_DATA");
+	var hFind = await api.FindFirstFile(BuildPath(system32, "*"), wfd);
+	for (var bFind = hFind != INVALID_HANDLE_VALUE; await bFind; bFind = await api.FindNextFile(hFind, wfd)) {
+		var nCount = await api.ExtractIconEx(BuildPath(system32, await wfd.cFileName), -1, null, null, 0);
 		if (nCount) {
-			var id = "i," + wfd.cFileName.toLowerCase();
+			var id = "i," + await wfd.cFileName.toLowerCase();
 			if (!document.getElementById(id)) {
-				s.push('<div id="', id, '" onclick="OpenIcon(this)" style="cursor: pointer"><span class="tab">', wfd.cFileName, ' : ', nCount, '</span></div>');
+				s.push('<div id="', id, '" onclick="OpenIcon(this)" style="cursor: pointer"><span class="tab">', await wfd.cFileName, ' : ', nCount, '</span></div>');
 			}
 		}
 	}
@@ -1488,16 +1488,16 @@ function SearchIcon(o) {
 	o.innerHTML = s.join("");
 }
 
-ReturnDialogResult = function (WB) {
+ReturnDialogResult = async function (WB) {
 	if (g_nResult == 1) {
-		CallUI(dialogArguments.UI, "DialogResult", dialogArguments, returnValue);
+		await CallUI(await dialogArguments.UI, "DialogResult", dialogArguments, returnValue);
 	}
 	WB.Close();
 }
 
-InitDialog = function () {
+InitDialog = async function () {
 	document.title = TITLE;
-	var Query = String(window.dialogArguments.Query || location.search.replace(/\?/, "")).toLowerCase();
+	var Query = String(await window.dialogArguments.Query || location.search.replace(/\?/, "")).toLowerCase();
 	var res = /^icon(.*)/.exec(Query);
 	if (res) {
 		var a =
@@ -1517,16 +1517,16 @@ InitDialog = function () {
 			"inetcpl": "i,inetcpl.cpl"
 		};
 		var s = [];
-		var wfd = api.Memory("WIN32_FIND_DATA");
-		var path = BuildPath(te.Data.DataFolder, "icons");
-		var hFind = api.FindFirstFile(path + "\\*", wfd);
-		for (var bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = api.FindNextFile(hFind, wfd)) {
-			if ((wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && /^[a-z]/i.test(wfd.cFileName)) {
+		var wfd = await api.Memory("WIN32_FIND_DATA");
+		var path = BuildPath(await te.Data.DataFolder, "icons");
+		var hFind = await api.FindFirstFile(path + "\\*", wfd);
+		for (var bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = await api.FindNextFile(hFind, wfd)) {
+			if ((await wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && /^[a-z]/i.test(await wfd.cFileName)) {
 				var arfn = [];
-				var path2 = BuildPath(path, wfd.cFileName);
-				var hFind2 = api.FindFirstFile(path2 + "\\*.png", wfd);
-				for (var bFind2 = hFind != INVALID_HANDLE_VALUE; bFind2; bFind2 = api.FindNextFile(hFind2, wfd)) {
-					arfn.push(wfd.cFileName);
+				var path2 = BuildPath(path, await wfd.cFileName);
+				var hFind2 = await api.FindFirstFile(path2 + "\\*.png", wfd);
+				for (var bFind2 = hFind != INVALID_HANDLE_VALUE; bFind2; bFind2 = await api.FindNextFile(hFind2, wfd)) {
+					arfn.push(await wfd.cFileName);
 				}
 				if (window.chrome) {
 					arfn.sort();
@@ -1544,10 +1544,10 @@ InitDialog = function () {
 		}
 		for (var i in a) {
 			if (a[i].charAt(0) == "i" || res[1] != "2") {
-				s.push('<div id="', a[i], '" onclick="OpenIcon(this)" style="cursor: pointer"><span class="tab">', i.replace(/ieframe,21\d/, GetText("General")).replace(/ieframe,20\d/, GetText("Browser")), '</span></div>');
+				s.push('<div id="', a[i], '" onclick="OpenIcon(this)" style="cursor: pointer"><span class="tab">', i.replace(/ieframe,21\d/, await GetText("General")).replace(/ieframe,20\d/, await GetText("Browser")), '</span></div>');
 			}
 		}
-		s.push('<div onclick="SearchIcon(this)" style="cursor: pointer"><span class="tab">', GetText("Search"), '</span></div>');
+		s.push('<div onclick="SearchIcon(this)" style="cursor: pointer"><span class="tab">', await GetText("Search"), '</span></div>');
 		document.getElementById("Content").innerHTML = s.join("");
 		WebBrowser.OnClose = ReturnDialogResult;
 	}
@@ -1560,16 +1560,16 @@ InitDialog = function () {
 	if (Query == "key") {
 		returnValue = false;
 		document.getElementById("Content").innerHTML = '<div style="padding: 8px;" style="display: block;"><label>Key</label><br><input type="text" name="q" autocomplete="off" style="width: 100%; ime-mode: disabled" onfocus="this.blur()"></div>';
-		var fn = function (e) {
+		var fn = async function (e) {
 			var key = e.keyCode;
-			var k = api.MapVirtualKey(key, 0) | ((key >= 33 && key <= 46 || key >= 91 && key <= 93 || key == 111 || key == 144) ? 256 : 0);
+			var k = await api.MapVirtualKey(key, 0) | ((key >= 33 && key <= 46 || key >= 91 && key <= 93 || key == 111 || key == 144) ? 256 : 0);
 			if (k == 42 || k == 29 || k == 56 || k == 347) {
 				return false;
 			}
-			var s = api.sprintf(10, "$%x", k | GetKeyShift());
-			returnValue = GetKeyName(s);
+			var s = await api.sprintf(10, "$%x", k | await GetKeyShift());
+			returnValue = await GetKeyName(s);
 			if (/^\$\w02a$|^\$\w01d$|^\$\w038$/i.test(returnValue)) {
-				returnValue = GetKeyName(s.slice(0, 3) + "1e").replace(/\+A$/, "");
+				returnValue = await GetKeyName(s.slice(0, 3) + "1e").replace(/\+A$/, "");
 			}
 			document.F.q.value = returnValue;
 			document.F.q.title = s;
@@ -1586,7 +1586,7 @@ InitDialog = function () {
 	if (Query == "new") {
 		returnValue = false;
 		var s = [];
-		s.push('<div style="padding: 8px;" style="display: block;"><label><input type="radio" name="mode" id="folder" onclick="document.F.path.focus()">New Folder</label> <label><input type="radio" name="mode" id="file" onclick="document.F.path.focus()">New File</label><br>', dialogArguments.path, '<br><input type="text" name="path" style="width: 100%"></div>');
+		s.push('<div style="padding: 8px;" style="display: block;"><label><input type="radio" name="mode" id="folder" onclick="document.F.path.focus()">New Folder</label> <label><input type="radio" name="mode" id="file" onclick="document.F.path.focus()">New File</label><br>', await dialogArguments.path, '<br><input type="text" name="path" style="width: 100%"></div>');
 		document.getElementById("Content").innerHTML = s.join("");
 		AddEventEx(document.body, "keydown", function (e) {
 			setTimeout(function () {
@@ -1608,49 +1608,49 @@ InitDialog = function () {
 			}, 99);
 		});
 
-		setTimeout(function () {
-			document.F[dialogArguments.Mode].checked = true;
-			WebBrowser.Focus();
+		setTimeout(async function () {
+			document.F[await dialogArguments.Mode].checked = true;
+			await WebBrowser.Focus();
 			document.F.path.focus();
 		}, 99);
 
-		WebBrowser.OnClose = function (WB) {
+		WebBrowser.OnClose = async function (WB) {
 			if (g_nResult == 1) {
 				path = document.F.path.value;
 				if (path) {
 					if (!/^[A-Z]:\\|^\\/i.test(path)) {
-						path = BuildPath(dialogArguments.path, path.replace(/^\s+/, ""));
+						path = BuildPath(await dialogArguments.path, path.replace(/^\s+/, ""));
 					}
 					if (GetElement("folder").checked) {
-						CreateFolder(path);
+						await CreateFolder(path);
 					} else if (GetElement("file").checked) {
-						CreateFile(path);
+						await CreateFile(path);
 					}
 				}
 			}
 			WB.Close();
 		};
 	}
-	if (Query == "fileicon" && dialogArguments.element) {
-		var s = api.PathUnquoteSpaces(dialogArguments.element.value);
+	if (Query == "fileicon" && await dialogArguments.element) {
+		var s = await api.PathUnquoteSpaces(await dialogArguments.element.value);
 		document.title = s + " - " + TITLE;
 		GetElement("Content").innerHTML = '<div id="i,' + s + '" style="cursor: pointer"></div>';
-		OpenIcon(GetElement("i," + s));
+		await OpenIcon(GetElement("i," + s));
 		WebBrowser.OnClose = ReturnDialogResult;
 	}
 	if (Query == "about") {
 		var s = ['<table style="border-spacing: 2em; border-collapse: separate; width: 100%"><tr><td>'];
-		var src = MakeImgSrc(ui_.TEPath, 0, true, 48);
-		s.push('<img src="', src, '"></td><td><span style="font-weight: bold; font-size: 120%">', AboutTE(2), '</span> (', GetTextR((api.sizeof("HANDLE") * 8) + '-bit'), ')<br>');
-		s.push('<br><a href="#" class="link" onclick="Run(0, this)">', ui_.TEPath, '</a> (', $.fso.GetFileVersion(ui_.TEPath), ')<br>');
-		s.push('<br><a href="#" class="link" onclick="Run(1, this)">', BuildPath(te.Data.DataFolder, "config"), '</a><br>');
-		s.push('<br><label>Information</label><input type="text" value="', AboutTE(3), '" style="width: 100%" onclick="this.select()" readonly><br>');
-		var root = te.Data.Addons.documentElement;
+		var src = await MakeImgSrc(ui_.TEPath, 0, true, 48);
+		s.push('<img src="', src, '"></td><td><span style="font-weight: bold; font-size: 120%">', await AboutTE(2), '</span> (', await GetTextR((await api.sizeof("HANDLE") * 8) + '-bit'), ')<br>');
+		s.push('<br><a href="#" class="link" onclick="Run(0, this)">', ui_.TEPath, '</a> (', await $.fso.GetFileVersion(ui_.TEPath), ')<br>');
+		s.push('<br><a href="#" class="link" onclick="Run(1, this)">', BuildPath(await te.Data.DataFolder, "config"), '</a><br>');
+		s.push('<br><label>Information</label><input type="text" value="', await AboutTE(3), '" style="width: 100%" onclick="this.select()" readonly><br>');
+		var root = await te.Data.Addons.documentElement;
 		var promise = [];
 		if (root) {
-			var items = root.childNodes;
+			var items = await root.childNodes;
 			if (items) {
-				var nLen = GetLength(items);
+				var nLen = await GetLength(items);
 				for (var i = 0; i < nLen; ++i) {
 					promise.push(items[i].getAttribute("Enabled"), items[i].nodeName);
 				}
@@ -1675,7 +1675,7 @@ InitDialog = function () {
 		document.F.ButtonOk.disabled = false;
 		document.getElementById("buttonCancel").style.display = "none";
 
-		Run = function (n, el) {
+		Run = async function (n, el) {
 			setTimeout(function (n, path, hwnd) {
 				if (n == 2) {
 					wsh.Run("https://tablacus.github.io/explorer_en.html");
@@ -1685,7 +1685,7 @@ InitDialog = function () {
 					MainWindow.Navigate(path + (n ? "" : "\\\\.."), SBSP_NEWBROWSER);
 				}
 				CloseWindow();
-			}, 500, n, el && el.innerHTML, GetTopWindow());
+			}, 500, n, el && el.innerHTML, await GetTopWindow());
 		}
 	}
 
@@ -1696,12 +1696,12 @@ InitDialog = function () {
 		clearTimeout(g_tidResize);
 		g_tidResize = setTimeout(DialogResize, 500);
 	});
-	ApplyLang(document);
+	await ApplyLang(document);
 	document.F.style.display = "";
 	DialogResize();
 }
 
-MouseDown = function (e) {
+MouseDown = async function (e) {
 	if (g_Gesture) {
 		var n = 1;
 		var ar = [0, 0, 2, 1];
@@ -1714,8 +1714,8 @@ MouseDown = function (e) {
 			n *= 2;
 		}
 	} else {
-		returnValue = GetGestureKey() + GetGestureButton();
-		api.RedrawWindow(WebBrowser.hwnd, null, 0, RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN);
+		returnValue = await GetGestureKey() + await GetGestureButton();
+		api.RedrawWindow(await WebBrowser.hwnd, null, 0, RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN);
 	}
 	document.F.q.value = returnValue;
 	g_Gesture = returnValue;
@@ -1729,30 +1729,30 @@ MouseDown = function (e) {
 	return false;
 }
 
-MouseUp = function () {
-	g_Gesture = GetGestureButton();
+MouseUp = async function () {
+	g_Gesture = await GetGestureButton();
 	return false;
 }
 
-MouseMove = function (e) {
-	if (api.GetKeyState(VK_XBUTTON1) < 0 || api.GetKeyState(VK_XBUTTON2) < 0) {
-		returnValue = GetGestureKey() + GetGestureButton();
+MouseMove = async function (e) {
+	if (await api.GetKeyState(VK_XBUTTON1) < 0 || await api.GetKeyState(VK_XBUTTON2) < 0) {
+		returnValue = await GetGestureKey() + await GetGestureButton();
 		document.F.q.value = returnValue;
 	}
-	if (document.F.q.value.length && (api.GetKeyState(VK_RBUTTON) < 0 || (te.Data.Conf_Gestures && (api.GetKeyState(VK_MBUTTON) < 0)))) {
+	if (document.F.q.value.length && (await api.GetKeyState(VK_RBUTTON) < 0 || (await te.Data.Conf_Gestures && (await api.GetKeyState(VK_MBUTTON) < 0)))) {
 		var pt = { x: e.clientX, y: e.clientY };
 		var x = (pt.x - g_pt.x);
 		var y = (pt.y - g_pt.y);
 		if (Math.abs(x) + Math.abs(y) >= 20) {
 			if (te.Data.Conf_TrailSize) {
-				var hwnd = WebBrowser.hwnd;
-				var hdc = api.GetWindowDC(hwnd);
+				var hwnd = await WebBrowser.hwnd;
+				var hdc = await api.GetWindowDC(hwnd);
 				if (hdc) {
-					api.MoveToEx(hdc, g_pt.x, g_pt.y, null);
-					var pen1 = api.CreatePen(PS_SOLID, te.Data.Conf_TrailSize, te.Data.Conf_TrailColor);
-					var hOld = api.SelectObject(hdc, pen1);
-					api.LineTo(hdc, pt.x, pt.y);
-					api.SelectObject(hdc, hOld);
+					await api.MoveToEx(hdc, g_pt.x, g_pt.y, null);
+					var pen1 = await api.CreatePen(PS_SOLID, await te.Data.Conf_TrailSize, await te.Data.Conf_TrailColor);
+					var hOld = await api.SelectObject(hdc, pen1);
+					await api.LineTo(hdc, pt.x, pt.y);
+					await api.SelectObject(hdc, hOld);
 					api.DeleteObject(pen1);
 					api.ReleaseDC(hwnd, hdc);
 				}
@@ -1774,17 +1774,17 @@ MouseDbl = function () {
 	return false;
 }
 
-MouseWheel = function (ev) {
-	returnValue = GetGestureKey() + GetGestureButton() + (ev.wheelDelta > 0 ? "8" : "9");
+MouseWheel = async function (ev) {
+	returnValue = await GetGestureKey() + await GetGestureButton() + (ev.wheelDelta > 0 ? "8" : "9");
 	document.F.q.value = returnValue;
 	document.F.ButtonOk.disabled = false;
 	return false;
 }
 
-InitLocation = function () {
-	var ar = api.CreateObject("Array");
-	var param = api.CreateObject("Object");
-	Addon_Id = dialogArguments.Data.id;
+InitLocation = async function () {
+	var ar = await api.CreateObject("Array");
+	var param = await api.CreateObject("Object");
+	Addon_Id = await dialogArguments.Data.id;
 	for (var i = 10; i--;) {
 		var o = document.getElementById('tab' + i);
 		o.className = "tab";
@@ -1799,10 +1799,10 @@ InitLocation = function () {
 			};
 		})(o);
 	}
-	LoadLang2(BuildPath("addons", Addon_Id, "lang", GetLangId() + ".xml"));
-	LoadAddon("js", Addon_Id, ar, param);
+	await LoadLang2(BuildPath("addons", Addon_Id, "lang", await GetLangId() + ".xml"));
+	await LoadAddon("js", Addon_Id, ar, param);
 	if (window.chrome) {
-		ar = api.CreateObject("SafeArray", ar);
+		ar = await api.CreateObject("SafeArray", ar);
 	}
 	if (ar.length) {
 		setTimeout(function (ar) {
@@ -1812,18 +1812,18 @@ InitLocation = function () {
 	ar = [];
 	var s = "CSA";
 	for (var i = 0; i < s.length; ++i) {
-		ar.push('<input type="button" value="', MainWindow.g_.KeyState[i][0], '" title="', s.charAt(i), '" onclick="AddMouse(this)">');
+		ar.push('<input type="button" value="', await MainWindow.g_.KeyState[i][0], '" title="', s.charAt(i), '" onclick="AddMouse(this)">');
 	}
 	document.getElementById("__MOUSEDATA").innerHTML = ar.join("");
-	var info = GetAddonInfo(Addon_Id);
-	document.title = info.Name;
-	var items = te.Data.Addons.getElementsByTagName(Addon_Id);
+	var info = await GetAddonInfo(Addon_Id);
+	document.title = await info.Name;
+	var items = await te.Data.Addons.getElementsByTagName(Addon_Id);
 	var item = null;
-	if (GetLength(items)) {
-		item = items[0];
-		var Location = item.getAttribute("Location");
+	if (await GetLength(items)) {
+		item = await items[0];
+		var Location = await item.getAttribute("Location");
 		if (!Location) {
-			Location = param.Default;
+			Location = await param.Default;
 		}
 		for (var i = document.L.length; i--;) {
 			if (SameText(Location, document.L[i].value)) {
@@ -1833,37 +1833,37 @@ InitLocation = function () {
 		}
 	}
 	var locs = {};
-	items = MainWindow.g_.Locations;
-	for (var list = api.CreateObject("Enum", items); !list.atEnd(); list.moveNext()) {
-		var i = list.item();
+	items = await MainWindow.g_.Locations;
+	for (var list = await api.CreateObject("Enum", items); !await list.atEnd(); await list.moveNext()) {
+		var i = await list.item();
 		locs[i] = [];
-		var item1 = items[i];
-		for (var j = GetLength(item1); j--;) {
-			var ar = (item1[j]).split("\t");
-			locs[i].unshift(GetImgTag({ src: ar[1], title: GetAddonInfo(ar[0]).Name, "class": ar[1] ? "" : "text1" }, 16) + '<span style="font-size: 1px"> </span>');
+		var item1 = await items[i];
+		for (var j = await GetLength(item1); j--;) {
+			var ar = (await item1[j]).split("\t");
+			locs[i].unshift(await GetImgTag({ src: ar[1], title: await GetAddonInfo(ar[0]).Name, "class": ar[1] ? "" : "text1" }, 16) + '<span style="font-size: 1px"> </span>');
 		}
 	}
 	for (var i in locs) {
 		var s = locs[i].join("");
 		try {
 			var o = document.getElementById('_' + i);
-			ApplyLang(o);
+			await ApplyLang(o);
 			o.parentNode.title = o.innerHTML.replace(/<[^>]*>|[\r\n]|\s\s+/g, "");
 			o.innerHTML = s;
 		} catch (e) { }
 	}
-	ApplyLang(document);
+	await ApplyLang(document);
 	var oa = document.F.Menu;
 	oa.length = 0;
 	var o = oa[++oa.length - 1];
 	o.value = "";
-	o.text = GetText("Select");
+	o.text = await GetText("Select");
 	for (var j in g_arMenuTypes) {
 		var s = g_arMenuTypes[j];
 		if (!/Default|Alias/.test(s)) {
 			o = oa[++oa.length - 1];
 			o.value = s;
-			o.text = GetText(s);
+			o.text = await GetText(s);
 		}
 	}
 	var ar = ["Key", "Mouse"];
@@ -1873,11 +1873,11 @@ InitLocation = function () {
 		oa.length = 0;
 		o = oa[++oa.length - 1];
 		o.value = "";
-		o.text = GetText("Select");
-		for (var list = api.CreateObject("Enum", MainWindow.eventTE[mode]); !list.atEnd(); list.moveNext()) {
-			var j = list.item();
+		o.text = await GetText("Select");
+		for (var list = await api.CreateObject("Enum", await MainWindow.eventTE[mode]); !await list.atEnd(); await list.moveNext()) {
+			var j = await list.item();
 			o = oa[++oa.length - 1];
-			o.text = GetTextEx(j);
+			o.text = await GetTextEx(j);
 			o.value = j;
 		}
 	}
@@ -1886,12 +1886,12 @@ InitLocation = function () {
 		for (var i = ele.length; i--;) {
 			var n = ele[i].id || ele[i].name;
 			if (n && !/=/.test(n)) {
-				s = (/^!/.test(n) ? !item.getAttribute(n.slice(1)) : item.getAttribute(n)) || "";
+				s = (/^!/.test(n) ? !await item.getAttribute(n.slice(1)) : await item.getAttribute(n)) || "";
 				if (/Name$/.test(n)) {
-					s = GetText(s);
+					s = await GetText(s);
 				}
 				if (n == "Key") {
-					s = GetKeyNameG(s);
+					s = await GetKeyNameG(s);
 				}
 				if (s || s === 0) {
 					SetElementValue(ele[n], s);
@@ -1901,11 +1901,11 @@ InitLocation = function () {
 	}
 	LoadChecked(document.F);
 
-	if (!dialogArguments.Data.show) {
+	if (!await dialogArguments.Data.show) {
 		dialogArguments.Data.show = "6";
 		dialogArguments.Data.index = 6;
 	}
-	if (!/,/.test(dialogArguments.Data.show)) {
+	if (!/,/.test(await dialogArguments.Data.show)) {
 		g_NoTab = true;
 	} else {
 		setTimeout(function () {
@@ -1913,20 +1913,20 @@ InitLocation = function () {
 		}, 99);
 		document.getElementById("tabs").style.display = "block";
 	}
-	if (/[8]/.test(dialogArguments.Data.show)) {
-		MakeKeySelect();
-		SetKeyShift();
+	if (/[8]/.test(await dialogArguments.Data.show)) {
+		await MakeKeySelect();
+		await SetKeyShift();
 	}
 	var a = document.F.MenuName.value.split(/\t/);
-	document.F._MenuName.value = GetText(a[0]);
+	document.F._MenuName.value = await GetText(a[0]);
 
-	var ar = (dialogArguments.Data.show).split(/,/);
+	var ar = (await dialogArguments.Data.show).split(/,/);
 	for (var i in ar) {
 		document.getElementById("tab" + ar[i]).style.display = "inline";
 	}
-	nTabIndex = dialogArguments.Data.index;
+	nTabIndex = await dialogArguments.Data.index;
 
-	SetOnChangeHandler();
+	await SetOnChangeHandler();
 	AddEventEx(window, "resize", function () {
 		clearTimeout(g_tidResize);
 		g_tidResize = setTimeout(ResizeTabPanel, 500);
@@ -1936,25 +1936,25 @@ InitLocation = function () {
 		return g_bChanged || g_Chg.Data;
 	};
 
-	TEOk = function () {
+	TEOk = async function () {
 		if (window.SaveLocation) {
-			SaveLocation();
+			await SaveLocation();
 		}
 		MainWindow.g_.OptionsWindow = void 0;
-		var items = te.Data.Addons.getElementsByTagName(Addon_Id);
+		var items = await te.Data.Addons.getElementsByTagName(Addon_Id);
 		if (GetLength(items)) {
-			var item = items[0];
+			var item = await items[0];
 			item.removeAttribute("Location");
 			for (var i = document.L.elements.length; i--;) {
 				if (document.L[i].checked) {
 					item.setAttribute("Location", document.L[i].value);
 					te.Data.bReload = true;
-					MainWindow.RunEvent1("ConfigChanged", "Addons");
+					await MainWindow.RunEvent1("ConfigChanged", "Addons");
 					break;
 				}
 			}
 			var ele = document.F;
-			ele.MenuName.value = GetSourceText(ele._MenuName.value);
+			ele.MenuName.value = await GetSourceText(ele._MenuName.value);
 			if (dialogArguments.Data.show == "6") {
 				ele.Set.value = "";
 			}
@@ -1962,7 +1962,7 @@ InitLocation = function () {
 				var n = ele[i].id || ele[i].name;
 				if (n && n.charAt(0) != "_") {
 					if (n == "Key") {
-						document.F[n].value = GetKeyKeyG(document.F[n].value);
+						document.F[n].value = await GetKeyKeyG(document.F[n].value);
 					}
 					if (SetAttribEx(item, document.F, n)) {
 						te.Data.bReload = true;
@@ -1973,7 +1973,7 @@ InitLocation = function () {
 		}
 	};
 
-	if (WebBrowser.OnClose) {
+	if (await WebBrowser.OnClose) {
 		g_Inline = true;
 		var cel = document.getElementsByTagName("input");
 		for (var i = cel.length; i-- > 0;) {
@@ -1982,8 +1982,8 @@ InitLocation = function () {
 			}
 		}
 	} else {
-		WebBrowser.OnClose = function (WB) {
-			SetOptions(TEOk, null, ContinueOptions);
+		WebBrowser.OnClose = async function (WB) {
+			await SetOptions(TEOk, null, ContinueOptions);
 			if (g_nResult != 4) {
 				FireEvent(window, "beforeunload");
 				WB.Close();
@@ -2043,20 +2043,20 @@ function SetElementValue(o, s) {
 	}
 }
 
-function SetAttribEx(item, f, n) {
+async function SetAttribEx(item, f, n) {
 	var s = GetElementValue(f[n]);
-	if (s != GetAttribEx(item, f, n)) {
+	if (s != await GetAttribEx(item, f, n)) {
 		SetAttrib(item, n, s);
 		return true;
 	}
 	return false;
 }
 
-function GetAttribEx(item, f, n) {
+async function GetAttribEx(item, f, n) {
 	var s;
 	var res = /([^=]*)=(.*)/.exec(n);
 	if (res) {
-		s = item.getAttribute(res[1]);
+		s = await item.getAttribute(res[1]);
 		if (s == res[2]) {
 			document.getElementById(n).checked = true;
 		}
@@ -2065,38 +2065,38 @@ function GetAttribEx(item, f, n) {
 	s = /^!/.test(n) ? !item.getAttribute(n.slice(1)) : item.getAttribute(n);
 	if (s || s === 0) {
 		if (n == "Key") {
-			s = GetKeyName(s);
+			s = await GetKeyName(s);
 		}
 		SetElementValue(f[n], s);
 	}
 }
 
 function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter, f) {
-	setTimeout(function () {
+	setTimeout(async function () {
 		var o = GetElement(Id, f);
 		if (/Path/.test(Id)) {
 			var s = Id.replace("Path", "Type");
 			if (o) {
-				var pt = api.CreateObject("Object");
+				var pt = await api.CreateObject("Object");
 				if (oButton) {
 					var pt1 = GetPos(oButton, 1);
-					pt.x = pt1.x;
-					pt.y = pt1.y + oButton.offsetHeight
+					pt.x = await pt1.x;
+					pt.y = await pt1.y + oButton.offsetHeight
 					pt.width = oButton.offsetWidth;
 				} else {
-					api.GetCursorPos(pt);
+					await api.GetCursorPos(pt);
 				}
 				var oType = o.form[s];
 				var optId = oType ? oType[oType.selectedIndex].value : "exec";
-				var r = MainWindow.OptionRef(optId, o.value, pt);
+				var r = await MainWindow.OptionRef(optId, o.value, pt);
 				if ("string" === typeof r) {
-					var p = api.CreateObject("Object");
+					var p = await api.CreateObject("Object");
 					p.s = r;
-					MainWindow.OptionDecode(optId, p);
-					if (bMultiLine && api.GetKeyState(VK_CONTROL) < 0 && api.ILCreateFromPath(p.s)) {
-						AddPath(Id, p.s, f);
+					await MainWindow.OptionDecode(optId, p);
+					if (bMultiLine && await api.GetKeyState(VK_CONTROL) < 0 && await api.ILCreateFromPath(await p.s)) {
+						AddPath(Id, await p.s, f);
 					} else {
-						SetValue(o, p.s);
+						SetValue(o, await p.s);
 					}
 				}
 				return;
@@ -2105,7 +2105,7 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter, f) {
 
 		var path = o.value || o.getAttribute("placeholder") || "";
 		var res = /^icon:([^,]*)|^bitmap:([^,]*)/i.exec(path) || [];
-		path = OpenDialogEx(res[1] || res[2] || path, Filter, GetNum(bFilesOnly));
+		path = await OpenDialogEx(res[1] || res[2] || path, Filter, GetNum(bFilesOnly));
 		if (path) {
 			if (bMultiLine) {
 				AddPath(Id, path);
@@ -2113,8 +2113,8 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter, f) {
 			}
 			SetValue(o, path);
 			if (/Icon|Large|Small/i.test(Id)) {
-				var s = api.PathUnquoteSpaces(ExtractMacro(te, path));
-				if (api.ExtractIconEx(s, -1, null, null, 0) > 1) {
+				var s = await api.PathUnquoteSpaces(ExtractMacro(te, path));
+				if (await api.ExtractIconEx(s, -1, null, null, 0) > 1) {
 					ShowDialogEx("fileicon", 640, 480, GetElementIdEx(o));
 					return;
 				}
@@ -2123,13 +2123,13 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter, f) {
 	}, 99);
 }
 
-function PortableX(Id) {
-	if (!confirmOk()) {
+async function PortableX(Id) {
+	if (!await confirmOk()) {
 		return;
 	}
 	var o = GetElement(Id);
-	var s = $.fso.GetDriveName(ui_.TEPath);
-	SetValue(o, o.value.replace(wsh.ExpandEnvironmentStrings("%UserProfile%"), "%UserProfile%").replace(new RegExp('^("?)' + s, "igm"), "$1%Installed%").replace(new RegExp('( "?)' + s, "igm"), "$1%Installed%").replace(new RegExp('(:)' + s, "igm"), "$1%Installed%"));
+	var s = await $.fso.GetDriveName(ui_.TEPath);
+	SetValue(o, o.value.replace(await wsh.ExpandEnvironmentStrings("%UserProfile%"), "%UserProfile%").replace(new RegExp('^("?)' + s, "igm"), "$1%Installed%").replace(new RegExp('( "?)' + s, "igm"), "$1%Installed%").replace(new RegExp('(:)' + s, "igm"), "$1%Installed%"));
 }
 
 function GetElement(Id, o) {
@@ -2156,15 +2156,15 @@ function SetValue(o, s) {
 	}
 }
 
-function GetCurrentSetting(s) {
-	var FV = te.Ctrl(CTRL_FV);
+async function GetCurrentSetting(s) {
+	var FV = await te.Ctrl(CTRL_FV);
 
-	if (confirmOk()) {
-		AddPath(s, api.PathQuoteSpaces(api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORPARSINGEX | SHGDN_FORPARSING)));
+	if (await confirmOk()) {
+		AddPath(s, await api.PathQuoteSpaces(await api.GetDisplayNameOf(await FV.FolderItem, SHGDN_FORPARSINGEX | SHGDN_FORPARSING)));
 	}
 }
 
-function SetTab(s) {
+async function SetTab(s) {
 	var o = null;
 	var arg = String(s).split(/&/);
 	for (var i in arg) {
@@ -2176,7 +2176,7 @@ function SetTab(s) {
 			if (SameText(ar[1], "Get Icons")) {
 				o = document.getElementById('tab1_3');
 			}
-			var s = GetText(ar[1]);
+			var s = await GetText(ar[1]);
 			var ovTab;
 			for (var j = 0; ovTab = document.getElementById('tab' + j); ++j) {
 				if (SameText(s, ovTab.innerText.toLowerCase())) {
@@ -2197,20 +2197,20 @@ function AddMouse(o) {
 	(document.F["MouseMouse"] || document.F["Mouse"]).value += o.title;
 }
 
-function InitAddonOptions(bFlag) {
+async function InitAddonOptions(bFlag) {
 	returnValue = false;
-	LoadLang2(BuildPath(ui_.Installed, "addons", Addon_Id, "lang", GetLangId() + ".xml"));
-	ApplyLang(document);
-	info = GetAddonInfo(Addon_Id);
-	document.title = info.Name;
+	await LoadLang2(BuildPath(ui_.Installed, "addons", Addon_Id, "lang", await GetLangId() + ".xml"));
+	await ApplyLang(document);
+	info = await GetAddonInfo(Addon_Id);
+	document.title = await info.Name;
 	SetOnChangeHandler();
 	IsChanged = function () {
 		return g_bChanged || g_Chg.Data;
 	};
 	TEOk = SetAddonOptions;
-	if (!WebBrowser.OnClose) {
-		WebBrowser.OnClose = function (WB) {
-			SetOptions(TEOk, null, ContinueOptions);
+	if (!await WebBrowser.OnClose) {
+		WebBrowser.OnClose = async function (WB) {
+			await SetOptions(TEOk, null, ContinueOptions);
 			if (g_nResult != 4) {
 				FireEvent(window, "beforeunload");
 				WB.Close();
@@ -2218,9 +2218,9 @@ function InitAddonOptions(bFlag) {
 			g_nResult = 0;
 		};
 	}
-	var items = te.Data.Addons.getElementsByTagName(Addon_Id);
+	var items = await te.Data.Addons.getElementsByTagName(Addon_Id);
 	if (GetLength(items)) {
-		InitColor1(items[0]);
+		InitColor1(await items[0]);
 	}
 }
 
@@ -2248,16 +2248,16 @@ function SetOnChangeHandler() {
 	}
 }
 
-function SetAddonOptions() {
+async function SetAddonOptions() {
 	if (!g_bClosed) {
-		var items = te.Data.Addons.getElementsByTagName(Addon_Id);
+		var items = await te.Data.Addons.getElementsByTagName(Addon_Id);
 		if (GetLength(items)) {
-			var item = items[0];
+			var item = await items[0];
 			var ele = document.F.elements;
 			for (var i = ele.length; i--;) {
 				var n = ele[i].id || ele[i].name;
 				if (n) {
-					if (SetAttribEx(item, document.F, n)) {
+					if (await SetAttribEx(item, document.F, n)) {
 						returnValue = true;
 					}
 				}
@@ -2278,63 +2278,64 @@ function SelectIcon(o) {
 	DialogResize();
 }
 
-TestX = function (id, f) {
-	if (confirmOk()) {
+TestX = async function (id, f) {
+	if (await confirmOk()) {
 		if (!f) {
 			f = document.F;
 		}
+		debugger;
 		var o = f[id + "Type"];
-		var p = api.CreateObject("Object");
+		var p = await api.CreateObject("Object");
 		p.s = f[id + "Path"].value;
-		MainWindow.OptionEncode(o[o.selectedIndex].value, p);
-		MainWindow.focus();
-		MainWindow.Exec(te.Ctrl(CTRL_FV), p.s, o[o.selectedIndex].value);
+		await MainWindow.OptionEncode(o[o.selectedIndex].value, p);
+		await MainWindow.InvokeUI("window.focus");
+		await MainWindow.Exec(await te.Ctrl(CTRL_FV), await p.s, o[o.selectedIndex].value);
 		focus();
 	}
 }
 
-SetImage = function (f, n) {
+SetImage = async function (f, n) {
 	var o = document.getElementById(n || "_Icon");
 	if (o) {
 		if (!f) {
 			f = document.F;
 		}
 		var h = GetNum((f.IconSize || f.Height || { value: window.IconSize || 24 }).value);
-		var src = MakeImgSrc(api.PathUnquoteSpaces(f.Icon.value), 0, true, h);
+		var src = await MakeImgSrc(api.PathUnquoteSpaces(f.Icon.value), 0, true, h);
 		o.innerHTML = src ? '<img src="' + src + '" ' + (h ? 'height="' + h + 'px"' : "") + ' style="max-width: 32pt; max-height: 32pt">' : "";
 	}
 }
 
 ShowIcon = ShowIconEx;
 
-function SelectLangID(o) {
+async function SelectLangID(o) {
 	var i = 0;
 	var Langs = [];
-	var wfd = api.Memory("WIN32_FIND_DATA");
-	var hFind = api.FindFirstFile(BuildPath(ui_.Installed, "lang\\*.xml"), wfd);
-	for (var bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = api.FindNextFile(hFind, wfd)) {
-		Langs.push((wfd.cFileName).replace(/\..*$/, ""));
+	var wfd = await api.Memory("WIN32_FIND_DATA");
+	var hFind = await api.FindFirstFile(BuildPath(ui_.Installed, "lang\\*.xml"), wfd);
+	for (var bFind = hFind != INVALID_HANDLE_VALUE; await bFind; bFind = await api.FindNextFile(hFind, wfd)) {
+		Langs.push((await wfd.cFileName).replace(/\..*$/, ""));
 	}
 	api.FindClose(hFind);
 	Langs.sort();
 	var path = BuildPath(ui_.Installed, "lang\\");
-	var hMenu = api.CreatePopupMenu();
+	var hMenu = await api.CreatePopupMenu();
 	for (i in Langs) {
-		var xml = api.CreateObject("Msxml2.DOMDocument");
+		var xml = await api.CreateObject("Msxml2.DOMDocument");
 		xml.async = false;
 		var title = Langs[i];
-		xml.load(path + title + '.xml');
-		var items = xml.getElementsByTagName('lang');
-		if (items && GetLength(items)) {
-			var item = items[0];
-			var en = item.getAttribute("en");
-			en = (en && SameText(item.text, en)) ? "" : ' / ' + en;
-			title = item.text + en + " (" + title + ")\t" + item.getAttribute("author");
+		await xml.load(path + title + '.xml');
+		var items = await xml.getElementsByTagName('lang');
+		if (items && await GetLength(items)) {
+			var item = await items[0];
+			var en = await item.getAttribute("en");
+			en = (en && SameText(await item.text, en)) ? "" : ' / ' + en;
+			title = await item.text + en + " (" + title + ")\t" + await item.getAttribute("author");
 		}
-		api.InsertMenu(hMenu, i, MF_BYPOSITION | MF_STRING, GetNum(i) + 1, title);
+		await api.InsertMenu(hMenu, i, MF_BYPOSITION | MF_STRING, GetNum(i) + 1, title);
 	}
 	var pt = GetPos(o, 1);
-	var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y + o.offsetHeight, te.hwnd, null, null);
+	var nVerb = await api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y + o.offsetHeight, await te.hwnd, null, null);
 	if (nVerb) {
 		document.F.Conf_Lang.value = Langs[nVerb - 1];
 		g_bChanged = true;
@@ -2342,16 +2343,16 @@ function SelectLangID(o) {
 	api.DestroyMenu(hMenu);
 }
 
-function GetTextEx(s) {
+async function GetTextEx(s) {
 	var ar = s.split(/_/);
-	var s = GetText(ar.shift());
+	var s = await GetText(ar.shift());
 	if (ar && ar.length) {
-		s += "(" + GetText(ar.join(" ")) + ")";
+		s += "(" + await GetText(ar.join(" ")) + ")";
 	}
 	return s;
 }
 
-function GetAddons() {
+async function GetAddons() {
 	(window.chrome ? window : MainWindow).OpenHttpRequest(urlAddons + "index.xml", "http", AddonsList);
 }
 
@@ -2366,7 +2367,7 @@ function UpdateAddon(Id, o) {
 	}
 }
 
-function CheckAddon(Id) {
+async function CheckAddon(Id) {
 	return $.fso.FileExists(BuildPath(ui_.Installed, "addons", Id, "config.xml"));
 }
 
@@ -2386,17 +2387,17 @@ function AddonsKeyDown(e) {
 	return true;
 }
 
-function AddonsList(xhr2) {
-	
+async function AddonsList(xhr2) {
+	debugger;
 	if (xmlAddons) {
 		return;
 	}
-	if (xhr2) {
-		xhr = xhr2;
+	if (await xhr2) {
+		xhr = await xhr2;
 	}
-	var xml = xhr.get_responseXML ? xhr.get_responseXML() : xhr.responseXML;
+	var xml = await xhr.get_responseXML ? await xhr.get_responseXML() : await xhr.responseXML;
 	if (xml) {
-		xmlAddons = xml.getElementsByTagName("Item");
+		xmlAddons = await xml.getElementsByTagName("Item");
 		AddonsAppend()
 	}
 }
@@ -2419,16 +2420,16 @@ function SetTable(table, td) {
 	}
 }
 
-function AddonsAppend() {
-	var Progress = api.CreateObject("ProgressDialog");
+async function AddonsAppend() {
+	var Progress = await api.CreateObject("ProgressDialog");
 	var td = [];
-	Progress.StartProgressDialog(te.hwnd, null, 2);
+	Progress.StartProgressDialog(await te.hwnd, null, 2);
 	try {
 		Progress.SetAnimation(hShell32, 150);
-		Progress.SetLine(1, api.LoadString(hShell32, 13585) || api.LoadString(hShell32, 6478), true);
-		var nLen = GetLength(xmlAddons);
-		for (var i = 0; i < nLen && !Progress.HasUserCancelled(); ++i) {
-			ArrangeAddon(xmlAddons[i], td, Progress);
+		Progress.SetLine(1, await api.LoadString(hShell32, 13585) || await api.LoadString(hShell32, 6478), true);
+		var nLen = await GetLength(xmlAddons);
+		for (var i = 0; i < nLen && !await Progress.HasUserCancelled(); ++i) {
+			await ArrangeAddon(await xmlAddons[i], td, Progress);
 			Progress.SetTitle(Math.floor(100 * i / nLen) + "%");
 			Progress.SetProgress(i, nLen);
 		}
@@ -2443,88 +2444,88 @@ function AddonsAppend() {
 	Progress.StopProgressDialog();
 }
 
-GetAddonInfo3 = function (xml, info, Tag) {
-	var items = xml.getElementsByTagName(Tag);
-	if (GetLength(items)) {
-		var item = items[0].childNodes;
-		var nLen = GetLength(item);
+GetAddonInfo3 = async function (xml, info, Tag) {
+	var items = await xml.getElementsByTagName(Tag);
+	if (await GetLength(items)) {
+		var item = await items[0].childNodes;
+		var nLen = await GetLength(item);
 		for (var i = 0; i < nLen; ++i) {
-			var item1 = item[i];
-			var n = item1.tagName;
-			var s = item1.text || item1.textContent;
+			var item1 = await item[i];
+			var n = await item1.tagName;
+			var s = await item1.text || await item1.textContent;
 			info[n] = s;
 		}
 	}
 }
 
-function ArrangeAddon(xml, td, Progress) {
-	var Id = xml.getAttribute("Id");
+async function ArrangeAddon(xml, td, Progress) {
+	var Id = await xml.getAttribute("Id");
 	var s = [];
 	var strUpdate = "";
-	if (Search(xml)) {
-		var info = api.CreateObject("Object");
+	if (await Search(xml)) {
+		var info = await api.CreateObject("Object");
 		for (var i = arLangs.length; i--;) {
-			GetAddonInfo3(xml, info, arLangs[i]);
+			await GetAddonInfo3(xml, info, arLangs[i]);
 		}
 		var pubDate = "";
-		var dt = new Date(info.pubDate);
-		Progress.SetLine(2, info.Name, true);
-		if (info.pubDate) {
-			pubDate = api.GetDateFormat(LOCALE_USER_DEFAULT, 0, dt.getTime(), api.GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SSHORTDATE)) + " ";
+		var dt = new Date(await info.pubDate);
+		Progress.SetLine(2, await info.Name, true);
+		if (await info.pubDate) {
+			pubDate = await api.GetDateFormat(LOCALE_USER_DEFAULT, 0, dt.getTime(), await api.GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SSHORTDATE)) + " ";
 		}
-		s.push('<table width="100%"><tr><td width="100%"><b style="font-size: 1.3em">', info.Name, "</b>&nbsp;");
-		s.push(info.Version, "&nbsp;");
-		s.push(info.Creator, "<br>")
-		s.push(info.Description, "<br>");
-		if (info.Details) {
-			s.push('<a href="#" title="', info.Details, '" class="link" onclick="wsh.run(this.title); return false;">', GetText('Details'), '</a><br>');
+		s.push('<table width="100%"><tr><td width="100%"><b style="font-size: 1.3em">', await info.Name, "</b>&nbsp;");
+		s.push(await info.Version, "&nbsp;");
+		s.push(await info.Creator, "<br>")
+		s.push(await info.Description, "<br>");
+		if (await info.Details) {
+			s.push('<a href="#" title="', await info.Details, '" class="link" onclick="wsh.run(this.title); return false;">', await GetText('Details'), '</a><br>');
 		}
 		s.push(pubDate, '</td><td align="right">');
-		var filename = info.filename;
+		var filename = await info.filename;
 		if (!filename) {
-			filename = Id + '_' + (info.Version).replace(/\D/, '') + '.zip';
+			filename = Id + '_' + (await info.Version).replace(/\D/, '') + '.zip';
 		}
-		var dt2 = (dt.getTime() / (24 * 60 * 60 * 1000)) - info.Version;
+		var dt2 = (dt.getTime() / (24 * 60 * 60 * 1000)) - await info.Version;
 		var bUpdate = false;
-		if (CheckAddon(Id)) {
-			var installed = GetAddonInfo(Id);
-			if (installed.Version >= info.Version) {
+		if (await CheckAddon(Id)) {
+			var installed = await GetAddonInfo(Id);
+			if (await installed.Version >= await info.Version) {
 				try {
-					if (!installed.DllVersion) {
+					if (!await installed.DllVersion) {
 						return;
 					}
 					var path = BuildPath(ui_.Installed, "addons", Id);
-					var wfd = api.Memory("WIN32_FIND_DATA");
-					var hFind = api.FindFirstFile(BuildPath(path, "*" + (api.sizeof("HANDLE") * 8) + ".dll"), wfd);
+					var wfd = await api.Memory("WIN32_FIND_DATA");
+					var hFind = await api.FindFirstFile(BuildPath(path, "*" + (await api.sizeof("HANDLE") * 8) + ".dll"), wfd);
 					api.FindClose(hFind);
 					if (hFind == INVALID_HANDLE_VALUE) {
 						return;
 					}
-					if (CalcVersion(installed.DllVersion) <= CalcVersion($.fso.GetFileVersion(BuildPath(path, wfd.cFileName)))) {
+					if (CalcVersion(await installed.DllVersion) <= CalcVersion(await $.fso.GetFileVersion(BuildPath(path, await wfd.cFileName)))) {
 						return;
 					}
 				} catch (e) {
 					return;
 				}
 			}
-			strUpdate = '<br><b id="_Addons_' + Id + '"  class="danger" style="white-space: nowrap;">' + GetText('Update available') + '</b>';
+			strUpdate = '<br><b id="_Addons_' + Id + '"  class="danger" style="white-space: nowrap;">' + await GetText('Update available') + '</b>';
 			dt2 += MAXINT * 2;
 			bUpdate = true;
 		} else {
 			dt2 += MAXINT;
 		}
-		if (info.MinVersion && AboutTE(0) >= CalcVersion(info.MinVersion)) {
-			s.push('<input type="button" onclick="Install(this,', bUpdate, ')" title="', Id, '_', info.Version, '" value="', GetText("Install"), '">');
+		if (await info.MinVersion && await AboutTE(0) >= CalcVersion(await info.MinVersion)) {
+			s.push('<input type="button" onclick="Install(this,', bUpdate, ')" title="', Id, '_', await info.Version, '" value="', await GetText("Install"), '">');
 		} else {
-			s.push('<input type="button"  class="danger" onclick="MainWindow.CheckUpdate()" value="', info.MinVersion.replace(/^20/, (api.LoadString(hShell32, 60) || "%").replace(/%.*/, "")).replace(/\.0/g, '.'), ' ', GetText("is required."), '">');
+			s.push('<input type="button"  class="danger" onclick="MainWindow.CheckUpdate()" value="', await info.MinVersion.replace(/^20/, (await api.LoadString(hShell32, 60) || "%").replace(/%.*/, "")).replace(/\.0/g, '.'), ' ', await GetText("is required."), '">');
 		}
 		s.push(strUpdate, '</td></tr></table>');
-		s.unshift(g_nSort["1_1"] == 1 ? dt2 : g_nSort["1_1"] ? Id : info.Name);
+		s.unshift(g_nSort["1_1"] == 1 ? dt2 : g_nSort["1_1"] ? Id : await info.Name);
 		td.push(s);
 	}
 }
 
-function Search(xml) {
+async function Search(xml) {
 	var q = document.getElementById('_GetAddonsQ');
 	if (!q) {
 		return true;
@@ -2535,12 +2536,12 @@ function Search(xml) {
 	}
 	for (var k = arLangs.length; k-- > 0;) {
 		var items = xml.getElementsByTagName(arLangs[k]);
-		if (GetLength(items)) {
-			var item = items[0].childNodes;
-			for (var i = GetLength(item); i-- > 0;) {
-				var item1 = item[i];
-				if (item1.tagName) {
-					if ((item1.textContent || item1.text).toUpperCase().indexOf(q) >= 0) {
+		if (await GetLength(items)) {
+			var item = await items[0].childNodes;
+			for (var i = await GetLength(item); i-- > 0;) {
+				var item1 = await item[i];
+				if (await item1.tagName) {
+					if ((await item1.textContent || await item1.text).toUpperCase().indexOf(q) >= 0) {
 						return true;
 					}
 				}
@@ -2550,41 +2551,41 @@ function Search(xml) {
 	return false;
 }
 
-function Install(o, bUpdate) {
-	if (!bUpdate && !confirmOk("Do you want to install it now?")) {
+async function Install(o, bUpdate) {
+	if (!bUpdate && !await confirmOk("Do you want to install it now?")) {
 		return;
 	}
 	var Id = o.title.replace(/_.*$/, "");
-	MainWindow.AddonDisabled(Id);
-	if (AddonBeforeRemove(Id) < 0) {
+	await MainWindow.AddonDisabled(Id);
+	if (await AddonBeforeRemove(Id) < 0) {
 		return;
 	}
 	var file = o.title.replace(/\./, "") + '.zip';
 	(window.chrome ? window : MainWindow).OpenHttpRequest(urlAddons + Id + '/' + file, "http", Install2, o);
 }
 
-function Install2(xhr, url, o) {
+async function Install2(xhr, url, o) {
 	var Id = o.title.replace(/_.*$/, "");
 	var file = o.title.replace(/\./, "") + '.zip';
-	var temp = BuildPath(ExtractMacro(te, "%TEMP%"), "tablacus");
-	CreateFolder(temp);
+	var temp = BuildPath(await ExtractMacro(await te, "%TEMP%"), "tablacus");
+	await CreateFolder(temp);
 	var dest = BuildPath(temp, Id);
-	DeleteItem(dest);
-	var hr = (window.chrome ? window : MainWindow).Extract(BuildPath(temp, file), temp, xhr);
+	await DeleteItem(dest);
+	var hr = await (window.chrome ? window : MainWindow).Extract(BuildPath(temp, file), temp, xhr);
 	if (hr) {
-		MessageBox([api.LoadString(hShell32, 4228).replace(/^\t/, "").replace("%d", api.sprintf(99, "0x%08x", hr)), GetText("Extract"), file].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
+		MessageBox([await api.LoadString(hShell32, 4228).replace(/^\t/, "").replace("%d", await api.sprintf(99, "0x%08x", hr)), await GetText("Extract"), file].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
 		return;
 	}
 	var configxml = dest + "\\config.xml";
 	var nDog = 300;
-	while (!$.fso.FileExists(configxml)) {
-		if (wsh.Popup(GetText("Please wait."), 1, TITLE, MB_ICONINFORMATION | MB_OKCANCEL) == IDCANCEL || nDog-- == 0) {
+	while (!await $.fso.FileExists(configxml)) {
+		if (await wsh.Popup(await GetText("Please wait."), 1, TITLE, MB_ICONINFORMATION | MB_OKCANCEL) == IDCANCEL || nDog-- == 0) {
 			return;
 		}
 	}
-	api.SHFileOperation(FO_MOVE, dest, BuildPath(ui_.Installed, "addons"), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, false);
+	await api.SHFileOperation(FO_MOVE, dest, BuildPath(ui_.Installed, "addons"), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, false);
 	o.disabled = true;
-	o.value = GetText("Installed");
+	o.value = await GetText("Installed");
 	o = document.getElementById('_Addons_' + Id);
 	if (o) {
 		o.style.display = "none";
@@ -2599,36 +2600,36 @@ function IconsKeyDown(e) {
 	return true;
 }
 
-function InstallIcon(o) {
-	if (!confirmOk("Do you want to install it now?")) {
+async function InstallIcon(o) {
+	if (!await confirmOk("Do you want to install it now?")) {
 		return;
 	}
 	var Id = o.title.replace(/_[^_]*$/, "");
 	(window.chrome ? window : MainWindow).OpenHttpRequest(urlIcons + Id + '/' + o.title.replace(/\./g, "") + '.zip', "http", InstallIcon2, o);
 }
 
-function InstallIcon2(xhr, url, o) {
+async function InstallIcon2(xhr, url, o) {
 	var file = o.title.replace(/\./, "") + '.zip';
-	var temp = BuildPath(ExtractMacro(te, "%TEMP%"), "tablacus");
-	CreateFolder(temp);
-	var dest = BuildPath(te.Data.DataFolder, "icons");
-	CreateFolder(dest);
-	var hr = (window.chrome ? window : MainWindow).Extract(BuildPath(temp, file), dest, xhr);
+	var temp = BuildPath(await ExtractMacro(await te, "%TEMP%"), "tablacus");
+	await CreateFolder(temp);
+	var dest = BuildPath(await te.Data.DataFolder, "icons");
+	await CreateFolder(dest);
+	var hr = await (window.chrome ? window : MainWindow).Extract(BuildPath(temp, file), dest, xhr);
 	if (hr) {
-		MessageBox([(api.LoadString(hShell32, 4228)).replace(/^\t/, "").replace("%d", api.sprintf(99, "0x%08x", hr)), GetText("Extract"), file].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
+		MessageBox([(await api.LoadString(hShell32, 4228)).replace(/^\t/, "").replace("%d", await api.sprintf(99, "0x%08x", hr)), await GetText("Extract"), file].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
 		return;
 	}
 	IconPacksList();
 }
 
-function IconPacksList1(s, Id, info, json) {
+async function IconPacksList1(s, Id, info, json) {
 	var q = document.getElementById('_GetIconsQ').value;
 	if (q && !json) {
-		if (!api.PathMatchSpec(JSON.stringify(info), "*" + q + "*")) {
+		if (!await api.PathMatchSpec(JSON.stringify(info), "*" + q + "*")) {
 			return false;
 		}
 	}
-	var langId = GetLangId();
+	var langId = await GetLangId();
 	s.push('<img src="', urlIcons, Id, '/preview.png" align="left" style="margin-right: 8px"><b style="font-size: 1.3em">', info.name[langId] || info.name.en, '</b> ');
 	s.push(info.version, " ");
 	if (info.URL) {
@@ -2640,22 +2641,22 @@ function IconPacksList1(s, Id, info, json) {
 	}
 	s.push("<br>", info.descprition[langId] || info.descprition.en, "<br>");
 	if (json) {
-		s.push(GetText("Installed"));
+		s.push(await GetText("Installed"));
 		s.push('<input type="button" onclick="DeleteIconPacks()" value="Delete" style="float: right;">');
 		if (json[Id] && Number(json[Id].info.version) > Number(info.version)) {
-			s.push('<hr><b class="danger" style="white-space: nowrap;">', GetText('Update available'), '</b> ', json[Id].info.version);
+			s.push('<hr><b class="danger" style="white-space: nowrap;">', await GetText('Update available'), '</b> ', json[Id].info.version);
 			info = json[Id].info;
 			json = false;
 		}
 	}
 	if (!json) {
-		s.push('<input type="button" onclick="InstallIcon(this)" title="', Id, '_', info.version, '" value="', GetText("Install"), '" style="float: right;">');
+		s.push('<input type="button" onclick="InstallIcon(this)" title="', Id, '_', info.version, '" value="', await GetText("Install"), '" style="float: right;">');
 	}
-	s.push("<br>", api.GetDateFormat(LOCALE_USER_DEFAULT, 0, new Date(info.pubDate).getTime(), api.GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SSHORTDATE)));
+	s.push("<br>", await api.GetDateFormat(LOCALE_USER_DEFAULT, 0, new Date(info.pubDate).getTime(), api.GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SSHORTDATE)));
 	return true;
 }
 
-function IconPacksList(xhr) {
+async function IconPacksList(xhr) {
 	if (xhr) {
 		g_xhrIcons = xhr;
 	} else {
@@ -2664,9 +2665,9 @@ function IconPacksList(xhr) {
 	if (!xhr) {
 		return;
 	}
-	var s = ReadTextFile(BuildPath(te.Data.DataFolder, "icons\\config.json"));
+	var s = await ReadTextFile(BuildPath(await te.Data.DataFolder, "icons\\config.json"));
 	var json1 = JSON.parse(s || '{}');
-	var text = xhr.get_responseText ? xhr.get_responseText() : xhr.responseText;
+	var text = await xhr.get_responseText ? await xhr.get_responseText() : xhr.responseText;
 	var json = JSON.parse(text);
 	var td = [];
 	var Installed = "";
@@ -2678,12 +2679,12 @@ function IconPacksList(xhr) {
 			var s1;
 			var s = [];
 			info = json[n].info;
-			if (IconPacksList1(s, n, info)) {
+			if (await IconPacksList1(s, n, info)) {
 				if (g_nSort["1_3"] == 0) {
-					s1 = info.name[GetLangId()] || info.name.en;
+					s1 = info.name[await GetLangId()] || info.name.en;
 				} else if (g_nSort["1_3"] == 1) {
 					if (json.pubDate) {
-						s1 = api.GetDateFormat(LOCALE_USER_DEFAULT, 0, new Date(info.pubDate).getTime(), "yyyyMMdd");
+						s1 = await api.GetDateFormat(LOCALE_USER_DEFAULT, 0, new Date(info.pubDate).getTime(), "yyyyMMdd");
 					}
 				} else {
 					s1 = n;
@@ -2698,34 +2699,34 @@ function IconPacksList(xhr) {
 	}
 	if (json1.info) {
 		s = [];
-		if (IconPacksList1(s, Installed, json1.info, json)) {
+		if (await IconPacksList1(s, Installed, json1.info, json)) {
 			td.unshift(["", s.join("")]);
 		}
 	}
 	SetTable(document.getElementById("IconPacks1"), td);
 }
 
-function DeleteIconPacks() {
-	if (confirmOk()) {
-		DeleteItem(BuildPath(te.Data.DataFolder, "icons"));
+async function DeleteIconPacks() {
+	if (await confirmOk()) {
+		await DeleteItem(BuildPath(await te.Data.DataFolder, "icons"));
 		IconPacksList();
 	}
 }
 
-function EnableSelectTag(o) {
+async function EnableSelectTag(o) {
 	if (o && !window.chrome) {
-		var hwnd = WebBrowser.hwnd;
+		var hwnd = await WebBrowser.hwnd;
 		api.SendMessage(hwnd, WM_SETREDRAW, false, 0);
 		o.style.visibility = "hidden";
-		setTimeout(function () {
+		setTimeout(async function () {
 			o.style.visibility = "visible";
-			api.SendMessage(hwnd, WM_SETREDRAW, true, 0);
+			await api.SendMessage(hwnd, WM_SETREDRAW, true, 0);
 			api.RedrawWindow(hwnd, null, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
 		}, 99);
 	}
 }
 
-SetResult = function (i) {
+SetResult = async function (i) {
 	g_nResult = i;
 	CloseWindow();
 }
@@ -2779,10 +2780,10 @@ function ChangeForm(ar) {
 	fn();
 }
 
-function SetTabContents(id, name, value) {
+async function SetTabContents(id, name, value) {
 	var oPanel = document.getElementById("panel" + id);
 	if (name) {
-		document.getElementById("tab" + id).innerHTML = GetText(name);
+		document.getElementById("tab" + id).innerHTML = await GetText(name);
 	}
 	oPanel.innerHTML = value.join ? value.join('') : value;
 }
@@ -2812,7 +2813,7 @@ function ShowButtons(b1, b2, SortMode) {
 	}
 }
 
-function SortAddons(n) {
+async function SortAddons(n) {
 	if (g_SortMode == 1) {
 		var table = document.getElementById("Addons");
 		if (table.rows.length < 2) {
@@ -2835,10 +2836,10 @@ function SortAddons(n) {
 					s = table.rows[j].cells[0].innerText;
 				} else if (g_nSort[1] == 1) {
 					s = "";
-					var info = GetAddonInfo(Id);
-					var pubDate = info.pubDate;
+					var info = await GetAddonInfo(Id);
+					var pubDate = await info.pubDate;
 					if (pubDate) {
-						s = api.GetDateFormat(LOCALE_USER_DEFAULT, 0, new Date(pubDate).getTime(), "yyyyMMdd");
+						s = await api.GetDateFormat(LOCALE_USER_DEFAULT, 0, new Date(pubDate).getTime(), "yyyyMMdd");
 					}
 				} else {
 					s = Id;
@@ -2851,12 +2852,12 @@ function SortAddons(n) {
 			}
 			var bCancelled = false;
 			var i = 0;
-			var Progress = api.CreateObject("ProgressDialog");
+			var Progress = await api.CreateObject("ProgressDialog");
 			Progress.SetAnimation(hShell32, 150);
-			Progress.StartProgressDialog(te.hwnd, null, 2);
+			Progress.StartProgressDialog(await te.hwnd, null, 2);
 			try {
 				for (var i in ar) {
-					bCancelled = Progress.HasUserCancelled();
+					bCancelled = await Progress.HasUserCancelled();
 					if (bCancelled) {
 						break;
 					}
