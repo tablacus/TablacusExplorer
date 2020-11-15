@@ -83,12 +83,12 @@ InitUI = async function () {
 			MainWindow = x;
 		}
 	}
-	window.ParentWindow = (window.dialogArguments ? dialogArguments.opener : window.opener);
+	window.ParentWindow = (await window.dialogArguments ? await dialogArguments.opener : window.opener);
 	if (ParentWindow || !window.te) {
 		te = MainWindow.te;
 	}
 	if (x = ParentWindow) {
-		if (await x && await x.$) {
+		if (x && await x.$) {
 			ParentWindow = x;
 		}
 	}
@@ -186,14 +186,14 @@ InitUI = async function () {
 			ver = await api.Add(20000000, res[1]);
 		}
 		if (ver <= await AboutTE(0)) {
-			if ((await arg1 && await arg1.silent) || await MessageBox(await AboutTE(2) + "\n" + await GetText("the latest version"), TITLE, MB_ICONINFORMATION)) {
+			if ((arg1 && GetNum(await arg1.silent)) || await MessageBox(await AboutTE(2) + "\n" + await GetText("the latest version"), TITLE, MB_ICONINFORMATION)) {
 				if (await api.GetKeyState(VK_SHIFT) >= 0 || await api.GetKeyState(VK_CONTROL) >= 0) {
 					MainWindow.RunEvent1("CheckUpdate", arg1);
 					return;
 				}
 			}
 		}
-		if (!(await arg1 && await arg1.noconfirm)) {
+		if (!(arg1 && GetNum(await arg1.noconfirm))) {
 			var s = (await api.LoadString(hShell32, 60) || "%").replace(/%.*/, await api.sprintf(99, "%d.%d.%d (%.1lfKB)", ver / 10000 % 100, ver / 100 % 100, ver % 100, await arg.size));
 			if (!await confirmOk([await GetText("Update available"), s, await GetText("Do you want to install it now?")].join("\n"))) {
 				return;
@@ -206,7 +206,7 @@ InitUI = async function () {
 		arg.temp = await arg.temp + "\\explorer";
 		await DeleteItem(await arg.temp);
 		await CreateFolder2(await arg.temp);
-		OpenHttpRequest(await arg.url, "http://tablacus.github.io/TablacusExplorerAddons/te/" + ((await arg.url).replace(/^.*\//, "")), UI.CheckUpdate3, await arg);
+		OpenHttpRequest(await arg.url, "http://tablacus.github.io/TablacusExplorerAddons/te/" + ((await arg.url).replace(/^.*\//, "")), UI.CheckUpdate3, arg);
 	}
 
 	UI.CheckUpdate3 = async function (xhr, url, arg) {
@@ -247,7 +247,7 @@ InitUI = async function () {
 		var ppid = await api.Memory("DWORD");
 		await api.GetWindowThreadProcessId(te.hwnd, ppid);
 		arg.pid = await ppid[0];
-		MainWindow.CreateUpdater(await arg);
+		MainWindow.CreateUpdater(arg);
 	}
 
 	UI.OnLoad = async function () {
@@ -281,16 +281,18 @@ OpenHttpRequest = async function (url, alt, fn, arg) {
 	var xhr = await createHttpRequest();
 	var fnLoaded = async function () {
 		if (fn) {
-			if (await arg && await arg.pcRef) {
+			if (arg && await arg.pcRef) {
 				arg.pcRef[0] = await arg.pcRef[0] - 1;
 			}
 			if (await xhr.status == 200) {
-				fn(xhr, url, await arg);
-				fn = void 0;
+				if (fn) {
+					fn(xhr, url, arg);
+					fn = void 0;
+				}
 				return;
 			}
 			if (/^http/.test(alt)) {
-				UI.OpenHttpRequest(/^https/.test(url) && alt == "http" ? url.replace(/^https/, alt) : alt, '', fn, await arg);
+				UI.OpenHttpRequest(/^https/.test(url) && alt == "http" ? url.replace(/^https/, alt) : alt, '', fn, arg);
 				return;
 			}
 			ShowXHRError(url, await xhr.status);
@@ -305,7 +307,7 @@ OpenHttpRequest = async function (url, alt, fn, arg) {
 	if (/ml$/i.test(url)) {
 		url += "?" + Math.floor(new Date().getTime() / 60000);
 	}
-	if (await arg && await arg.pcRef) {
+	if (arg && await arg.pcRef) {
 		arg.pcRef[0] = await arg.pcRef[0] + 1;
 	}
 	if (window.chrome && /\.zip$|\.nupkg$/i.test(url)) {
@@ -345,7 +347,7 @@ Extract = async function (Src, Dest, xhr) {
 		}
 	}
 	hr = await MainWindow.RunEvent4("Extract", Src, Dest);
-	return await hr != null ? hr : api.Extract(BuildPath(system32, "zipfldr.dll"), "{E88DCCE0-B7B3-11d1-A9F0-00AA0060FA31}", Src, Dest);
+	return hr != null ? hr : api.Extract(BuildPath(system32, "zipfldr.dll"), "{E88DCCE0-B7B3-11d1-A9F0-00AA0060FA31}", Src, Dest);
 }
 
 LoadScripts = async function (js1, js2, cb) {
@@ -577,6 +579,14 @@ GetPos = function (o, bScreen, bAbs, bPanel, bBottom) {
 	}
 	var rc = o.getBoundingClientRect();
 	return { x: x + rc.left, y: y + rc.top };
+}
+
+GetPosEx = async function (el, n) {
+	var p = GetPos(el, n);
+	var pt = await api.Memory("POINT");
+	pt.x = p.x;
+	pt.y = p.y;
+	return pt;
 }
 
 HitTest = async function (o, pt) {

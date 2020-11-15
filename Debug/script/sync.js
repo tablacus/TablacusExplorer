@@ -78,7 +78,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201114 ? te.Version : 20201114;
+		return te.Version < 20201114 ? te.Version : 20201115;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -236,7 +236,7 @@ BrowseForFolder = function (path) {
 }
 
 OpenDialogEx = function (path, filter, bFilesOnly) {
-	var commdlg = te.CommonDialog;
+	var commdlg = api.CreateObect("CommonDialog");
 	var te_path = te.Data.Installed;
 	var res = /^\.\.(\/.*)/.exec(path);
 	if (res) {
@@ -814,7 +814,7 @@ GetIconPacks = function () {
 }
 
 CheckUpdate = function (arg) {
-	MainWindow.OpenHttpRequest("https://api.github.com/repos/tablacus/TablacusExplorer/releases/latest", "http://tablacus.github.io/TablacusExplorerAddons/te/releases.json", UI.CheckUpdate2, arg);
+	OpenHttpRequest("https://api.github.com/repos/tablacus/TablacusExplorer/releases/latest", "http://tablacus.github.io/TablacusExplorerAddons/te/releases.json", UI.CheckUpdate2, arg);
 }
 
 ShowAbout = function () {
@@ -1006,7 +1006,7 @@ RemoveCommand = function (hMenu, ContextMenu, strDelete) {
 }
 
 DeleteTempFolder = function () {
-	DeleteItem(BuildPath(fso.GetSpecialFolder(2).Path, "tablacus"));
+	DeleteItem(te.Data.TempFolder);
 }
 
 PerformUpdate = function () {
@@ -1549,12 +1549,6 @@ SaveLayout = function () {
 PtInRect = function (rc, pt) {
 	if (rc) {
 		return pt.x >= rc.left && pt.x < rc.right && pt.y >= rc.top && pt.y < rc.bottom;
-	}
-}
-
-DeleteItem = function (path, fFlags) {
-	if (IsExists(path)) {
-		return api.SHFileOperation(FO_DELETE, path, null, fFlags || FOF_SILENT | FOF_NOCONFIRMATION | FOF_NOERRORUI, false);
 	}
 }
 

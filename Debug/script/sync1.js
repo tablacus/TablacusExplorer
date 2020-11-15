@@ -3521,6 +3521,7 @@ if (!te.Data) {
 
 	te.Data.Installed = GetParentFolderName(api.GetModuleFileName(null));
 	te.Data.DataFolder = te.Data.Installed;
+	te.Data.TempFolder = BuildPath(fso.GetSpecialFolder(2).Path, "tablacus");
 
 	var fn = function () {
 		te.Data.DataFolder = BuildPath(api.GetDisplayNameOf(ssfAPPDATA, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), "Tablacus\\Explorer");

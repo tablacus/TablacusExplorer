@@ -363,10 +363,10 @@ ArrangeAddons = async function () {
 							LoadLang2(BuildPath(ui_.Installed, "addons", Id, "lang", LangId + ".xml"));
 						}
 						if (Enabled & 8) {
-							LoadAddon("vbs", Id, arError, window.chrome && await item.getAttribute("Level") < 2);
+							LoadAddon("vbs", Id, arError, null, window.chrome && GetNum(await item.getAttribute("Level")) < 2);
 						}
 						if (Enabled & 1) {
-							LoadAddon("js", Id, arError, window.chrome && await item.getAttribute("Level") < 2);
+							LoadAddon("js", Id, arError, null, window.chrome && GetNum(await item.getAttribute("Level")) < 2);
 						}
 					}
 					AddonId[Id] = true;

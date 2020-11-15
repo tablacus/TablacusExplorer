@@ -206,6 +206,15 @@ LoadImgDll = async function (icon, index) {
 	return hModule;
 }
 
+DeleteItem = async function (path, fFlags) {
+	if (/\0/.test(path)) {
+		path = path.split("\0");
+	}
+	if ("string" !== typeof path || await IsExists(path)) {
+		return api.SHFileOperation(FO_DELETE, path, null, fFlags || FOF_SILENT | FOF_NOCONFIRMATION | FOF_NOERRORUI, false);
+	}
+}
+
 amp2ul = function (s) {
 	return s.replace(/&amp;|&/ig, "");
 }
