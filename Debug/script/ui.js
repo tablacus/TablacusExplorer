@@ -137,7 +137,7 @@ InitUI = async function () {
 		fn.apply(fn, arguments);
 	}
 
-	UI.Invoke = function () {
+	UI.Invoke = InvokeUI = function () {
 		var args = Array.apply(null, arguments);
 		var ar = args.shift().split(".");
 		var fn = window;
@@ -157,108 +157,8 @@ InitUI = async function () {
 		setTimeout(cb, 99, cb, e, s);
 	}
 
-	UI.SetDisplay = function (Id, s) {
-		var o = document.getElementById(Id);
-		if (o) {
-			o.style.display = s;
-		}
-	}
-
 	UI.ShowOptions = async function (opt) {
 		g_.dlgs.Options = await ShowDialog("options.html", opt);
-	}
-
-	UI.CheckUpdate2 = async function (xhr, url, arg1) {
-		var arg = await api.CreateObject("Object");
-		var Text = await xhr.get_responseText ? await xhr.get_responseText() : xhr.responseText;
-		var json = JSON.parse(Text);
-		if (json.assets && json.assets[0]) {
-			arg.size = json.assets[0].size / 1024;
-			arg.url = json.assets[0].browser_download_url;
-		}
-		if (!await arg.url) {
-			return;
-		}
-		arg.file = GetFileName((await arg.url).replace(/\//g, "\\"));
-		var ver = 0;
-		res = /(\d+)/.exec(await arg.file);
-		if (res) {
-			ver = await api.Add(20000000, res[1]);
-		}
-		if (ver <= await AboutTE(0)) {
-			if ((arg1 && GetNum(await arg1.silent)) || await MessageBox(await AboutTE(2) + "\n" + await GetText("the latest version"), TITLE, MB_ICONINFORMATION)) {
-				if (await api.GetKeyState(VK_SHIFT) >= 0 || await api.GetKeyState(VK_CONTROL) >= 0) {
-					MainWindow.RunEvent1("CheckUpdate", arg1);
-					return;
-				}
-			}
-		}
-		if (!(arg1 && GetNum(await arg1.noconfirm))) {
-			var s = (await api.LoadString(hShell32, 60) || "%").replace(/%.*/, await api.sprintf(99, "%d.%d.%d (%.1lfKB)", ver / 10000 % 100, ver / 100 % 100, ver % 100, await arg.size));
-			if (!await confirmOk([await GetText("Update available"), s, await GetText("Do you want to install it now?")].join("\n"))) {
-				return;
-			}
-		}
-		arg.temp = BuildPath(await wsh.ExpandEnvironmentStrings("%TEMP%"), "tablacus");
-		await CreateFolder2(await arg.temp);
-		arg.InstalledFolder = ui_.Installed;
-		arg.zipfile = BuildPath(await arg.temp, await arg.file);
-		arg.temp = await arg.temp + "\\explorer";
-		await DeleteItem(await arg.temp);
-		await CreateFolder2(await arg.temp);
-		OpenHttpRequest(await arg.url, "http://tablacus.github.io/TablacusExplorerAddons/te/" + ((await arg.url).replace(/^.*\//, "")), UI.CheckUpdate3, arg);
-	}
-
-	UI.CheckUpdate3 = async function (xhr, url, arg) {
-		var hr = await Extract(await arg.zipfile, await arg.temp, xhr);
-		if (hr) {
-			await MessageBox([(await api.LoadString(hShell32, 4228)).replace(/^\t/, "").replace("%d", await api.sprintf(99, "0x%08x", hr)), await GetText("Extract"), GetFileName(arg.zipfile)].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
-			return;
-		}
-		var te_exe = await arg.temp + "\\te64.exe";
-		var nDog = 300;
-		while (!await $.fso.FileExists(te_exe)) {
-			if (await wsh.Popup(await GetText("Please wait."), 1, TITLE, MB_OKCANCEL) == IDCANCEL || nDog-- == 0) {
-				return;
-			}
-		}
-		var arDel = [];
-		var addons = await arg.temp + "\\addons";
-		if (await $.fso.FolderExists(await arg.temp + "\\config")) {
-			arDel.push(await arg.temp + "\\config");
-		}
-		for (var i = 32; i <= 64; i += 32) {
-			te_exe = await arg.temp + '\\te' + i + '.exe';
-			var te_old = BuildPath(ui_.Installed, 'te' + i + '.exe');
-			if (!await $.fso.FileExists(te_old) || await $.fso.GetFileVersion(te_exe) == await $.fso.GetFileVersion(te_old)) {
-				arDel.push(te_exe);
-			}
-		}
-		for (var list = await api.CreateObject("Enum", await $.fso.GetFolder(addons).SubFolders); !await list.atEnd(); await list.moveNext()) {
-			var n = await list.item().Name;
-			var items = await te.Data.Addons.getElementsByTagName(n);
-			if (!items || GetLength(items) == 0) {
-				arDel.push(BuildPath(addons, n));
-			}
-		}
-		if (arDel.length) {
-			await api.SHFileOperation(FO_DELETE, arDel, null, FOF_SILENT | FOF_NOCONFIRMATION, false);
-		}
-		var ppid = await api.Memory("DWORD");
-		await api.GetWindowThreadProcessId(te.hwnd, ppid);
-		arg.pid = await ppid[0];
-		MainWindow.CreateUpdater(arg);
-	}
-
-	UI.OnLoad = async function () {
-		AddEventEx(window, "beforeunload", CloseSubWindows);
-	}
-
-	UI.DialogResult = async function (opt, returnValue) {
-		var e = GetElementEx(await opt.Id)
-		if (e) {
-			e.value = returnValue;
-		}
 	}
 
 	UI.Autocomplete = async function (s, path) {
@@ -286,13 +186,17 @@ OpenHttpRequest = async function (url, alt, fn, arg) {
 			}
 			if (await xhr.status == 200) {
 				if (fn) {
-					fn(xhr, url, arg);
+					if ("string" === typeof fn) {
+						InvokeUI(fn, xhr, url, arg);
+					} else {
+						fn(xhr, url, arg);
+					}
 					fn = void 0;
 				}
 				return;
 			}
 			if (/^http/.test(alt)) {
-				UI.OpenHttpRequest(/^https/.test(url) && alt == "http" ? url.replace(/^https/, alt) : alt, '', fn, arg);
+				OpenHttpRequest(/^https/.test(url) && alt == "http" ? url.replace(/^https/, alt) : alt, '', fn, arg);
 				return;
 			}
 			ShowXHRError(url, await xhr.status);
@@ -348,6 +252,88 @@ Extract = async function (Src, Dest, xhr) {
 	}
 	hr = await MainWindow.RunEvent4("Extract", Src, Dest);
 	return hr != null ? hr : api.Extract(BuildPath(system32, "zipfldr.dll"), "{E88DCCE0-B7B3-11d1-A9F0-00AA0060FA31}", Src, Dest);
+}
+
+CheckUpdate2 = async function (xhr, url, arg1) {
+	var arg = await api.CreateObject("Object");
+	var Text = await xhr.get_responseText ? await xhr.get_responseText() : xhr.responseText;
+	var json = JSON.parse(Text);
+	if (json.assets && json.assets[0]) {
+		arg.size = json.assets[0].size / 1024;
+		arg.url = json.assets[0].browser_download_url;
+	}
+	if (!await arg.url) {
+		return;
+	}
+	arg.file = GetFileName((await arg.url).replace(/\//g, "\\"));
+	var ver = 0;
+	res = /(\d+)/.exec(await arg.file);
+	if (res) {
+		ver = await api.Add(20000000, res[1]);
+	}
+	if (ver <= await AboutTE(0)) {
+		if ((arg1 && GetNum(await arg1.silent)) || await MessageBox(await AboutTE(2) + "\n" + await GetText("the latest version"), TITLE, MB_ICONINFORMATION)) {
+			if (await api.GetKeyState(VK_SHIFT) >= 0 || await api.GetKeyState(VK_CONTROL) >= 0) {
+				MainWindow.RunEvent1("CheckUpdate", arg1);
+				return;
+			}
+		}
+	}
+	if (!(arg1 && GetNum(await arg1.noconfirm))) {
+		var s = (await api.LoadString(hShell32, 60) || "%").replace(/%.*/, await api.sprintf(99, "%d.%d.%d (%.1lfKB)", ver / 10000 % 100, ver / 100 % 100, ver % 100, await arg.size));
+		if (!await confirmOk([await GetText("Update available"), s, await GetText("Do you want to install it now?")].join("\n"))) {
+			return;
+		}
+	}
+	arg.temp = BuildPath(await wsh.ExpandEnvironmentStrings("%TEMP%"), "tablacus");
+	await CreateFolder2(await arg.temp);
+	arg.InstalledFolder = ui_.Installed;
+	arg.zipfile = BuildPath(await arg.temp, await arg.file);
+	arg.temp = await arg.temp + "\\explorer";
+	await DeleteItem(await arg.temp);
+	await CreateFolder2(await arg.temp);
+	OpenHttpRequest(await arg.url, "http://tablacus.github.io/TablacusExplorerAddons/te/" + ((await arg.url).replace(/^.*\//, "")), "CheckUpdate3", arg);
+}
+
+CheckUpdate3 = async function (xhr, url, arg) {
+	var hr = await Extract(await arg.zipfile, await arg.temp, xhr);
+	if (hr) {
+		await MessageBox([(await api.LoadString(hShell32, 4228)).replace(/^\t/, "").replace("%d", await api.sprintf(99, "0x%08x", hr)), await GetText("Extract"), GetFileName(arg.zipfile)].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
+		return;
+	}
+	var te_exe = await arg.temp + "\\te64.exe";
+	var nDog = 300;
+	while (!await $.fso.FileExists(te_exe)) {
+		if (await wsh.Popup(await GetText("Please wait."), 1, TITLE, MB_OKCANCEL) == IDCANCEL || nDog-- == 0) {
+			return;
+		}
+	}
+	var arDel = [];
+	var addons = await arg.temp + "\\addons";
+	if (await $.fso.FolderExists(await arg.temp + "\\config")) {
+		arDel.push(await arg.temp + "\\config");
+	}
+	for (var i = 32; i <= 64; i += 32) {
+		te_exe = await arg.temp + '\\te' + i + '.exe';
+		var te_old = BuildPath(ui_.Installed, 'te' + i + '.exe');
+		if (!await $.fso.FileExists(te_old) || await $.fso.GetFileVersion(te_exe) == await $.fso.GetFileVersion(te_old)) {
+			arDel.push(te_exe);
+		}
+	}
+	for (var list = await api.CreateObject("Enum", await $.fso.GetFolder(addons).SubFolders); !await list.atEnd(); await list.moveNext()) {
+		var n = await list.item().Name;
+		var items = await te.Data.Addons.getElementsByTagName(n);
+		if (!items || GetLength(items) == 0) {
+			arDel.push(BuildPath(addons, n));
+		}
+	}
+	if (arDel.length) {
+		await api.SHFileOperation(FO_DELETE, arDel, null, FOF_SILENT | FOF_NOCONFIRMATION, false);
+	}
+	var ppid = await api.Memory("DWORD");
+	await api.GetWindowThreadProcessId(te.hwnd, ppid);
+	arg.pid = await ppid[0];
+	MainWindow.CreateUpdater(arg);
 }
 
 LoadScripts = async function (js1, js2, cb) {
@@ -706,6 +692,16 @@ GetFolderViewEx = async function (Ctrl, pt, bStrict) {
 	return await GetFolderView(Ctrl, pt, bStrict);
 }
 
+SelectItem = function (FV, path, wFlags, tm) {
+	setTimeout(async function () {
+		if (FV) {
+			if (SameText(await FV.FolderItem.Path, GetParentFolderName(path))) {
+				FV.SelectItem(path, wFlags);
+			}
+		}
+	}, tm);
+}
+
 AddEventEx(window, "load", function () {
 	document.body.onselectstart = DetectProcessTag;
 	if (window.chrome) {
@@ -822,6 +818,13 @@ BlurId = function (Id) {
 	document.getElementById(Id).blur();
 }
 
+SetDisplay = function (Id, s) {
+	var o = document.getElementById(Id);
+	if (o) {
+		o.style.display = s;
+	}
+}
+
 //Options
 AddonOptions = async function (Id, fn, Data, bNew) {
 	await LoadLang2(BuildPath("addons", Id, "lang", await GetLangId() + ".xml"));
@@ -914,11 +917,7 @@ AddonOptions = async function (Id, fn, Data, bNew) {
 		te.Arguments = opt;
 		var el = document.createElement('iframe');
 		el.id = 'panel1_' + Id;
-		if (window.chrome) {
-			el.srcdoc = (await ReadTextFile(sURL)).replace(/(<head[^>]*>)/i, '$1<base href="' + sURL.replace(/[^\/\\]*$/, "") + '">');
-		} else {
-			el.src = sURL;
-		}
+		el.src = sURL;
 		el.style.cssText = 'width: 100%; border: 0; padding: 0; margin: 0';
 		ui_.elAddons[Id] = el;
 		var o = document.getElementById('panel1_2');
@@ -947,6 +946,10 @@ GetElementIdEx = function (e) {
 		return e.id;
 	}
 	return e.form.name + "::" + e.name;
+}
+
+SetElement = async function (Id, v) {
+	(GetElementEx(Id) || {}).value = v;
 }
 
 InputMouse = function (o) {
@@ -1131,6 +1134,10 @@ if (window.chrome) {
 			setAttribute: function (s, v) {
 				this.db[s] = v;
 				this.item.setAttribute(s, v);
+			},
+			removeAttribute: function (s) {
+				delete this.db[s];
+				this.item.removeAttribute(s, v);
 			}
 		};
 	}

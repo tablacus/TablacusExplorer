@@ -183,7 +183,7 @@ DisableImage = function (img, bDisable) {
 	}
 }
 
-UI.StartGestureTimer = async function () {
+StartGestureTimer = async function () {
 	var i = await te.Data.Conf_GestureTimeout;
 	if (i) {
 		clearTimeout(await g_.mouse.tidGesture);
@@ -193,7 +193,7 @@ UI.StartGestureTimer = async function () {
 	}
 }
 
-UI.FocusFV = function () {
+FocusFV = function () {
 	setTimeout(function () {
 		var el;
 		if (document.activeElement) {
@@ -206,17 +206,7 @@ UI.FocusFV = function () {
 	}, ui_.DoubleClickTime);
 }
 
-UI.SelectItem = function (FV, path, wFlags, tm) {
-	setTimeout(async function () {
-		if (FV) {
-			if (SameText(await FV.FolderItem.Path, GetParentFolderName(path))) {
-				FV.SelectItem(path, wFlags);
-			}
-		}
-	}, tm);
-}
-
-UI.SelectNext = function (FV) {
+SelectNext = function (FV) {
 	setTimeout(async function () {
 		if (!await api.SendMessage(await FV.hwndList, LVM_GETEDITCONTROL, 0, 0) || WINVER < 0x600) {
 			FV.SelectItem(FV.Item(await FV.GetFocusedItem + (await api.GetKeyState(VK_SHIFT) < 0 ? -1 : 1)) || await api.GetKeyState(VK_SHIFT) < 0 ? FV.ItemCount(SVGIO_ALLVIEW) - 1 : 0, SVSI_EDIT | SVSI_FOCUSED | SVSI_SELECT | SVSI_DESELECTOTHERS);
@@ -224,7 +214,36 @@ UI.SelectNext = function (FV) {
 	}, 99);
 }
 
-UI.ShowStatusText = async function (Ctrl, Text, iPart, tm) {
+CancelWindowRegistered = function () {
+	clearTimeout(ui_.tidWindowRegistered);
+	ui_.bWindowRegistered = false;
+	ui_.tidWindowRegistered = setTimeout(function () {
+		ui_.bWindowRegistered = true;
+	}, 9999);
+}
+
+ExitFullscreen = function () {
+	if (document.msExitFullscreen) {
+		document.msExitFullscreen();
+	} else if (document.exitFullscreen) {
+		document.exitFullscreen();
+	}
+}
+
+MoveSplitter = async function (x, n) {
+	var w = document.documentElement.offsetWidth || document.body.offsetWidth;
+	if (x >= w) {
+		x = w - 1;
+	}
+	if (n == 1) {
+		te.Data["Conf_LeftBarWidth"] = x;
+	} else if (n == 2) {
+		te.Data["Conf_RightBarWidth"] = w - x;
+	}
+	Resize();
+}
+
+ShowStatusTextEx = async function (Ctrl, Text, iPart, tm) {
 	if (ui_.Status && ui_.Status[5]) {
 		clearTimeout(ui_.Status[5]);
 		delete ui_.Status;
@@ -237,35 +256,6 @@ UI.ShowStatusText = async function (Ctrl, Text, iPart, tm) {
 			}
 		}
 	}, tm)];
-}
-
-UI.CancelWindowRegistered = function () {
-	clearTimeout(ui_.tidWindowRegistered);
-	ui_.bWindowRegistered = false;
-	ui_.tidWindowRegistered = setTimeout(function () {
-		ui_.bWindowRegistered = true;
-	}, 9999);
-}
-
-UI.ExitFullscreen = function () {
-	if (document.msExitFullscreen) {
-		document.msExitFullscreen();
-	} else if (document.exitFullscreen) {
-		document.exitFullscreen();
-	}
-}
-
-UI.MoveSplitter = async function (x, y, n) {
-	var w = document.documentElement.offsetWidth || document.body.offsetWidth;
-	if (x >= w) {
-		x = w - 1;
-	}
-	if (n == 1) {
-		te.Data["Conf_LeftBarWidth"] = x;
-	} else if (n == 2) {
-		te.Data["Conf_RightBarWidth"] = w - x;
-	}
-	Resize();
 }
 
 importJScript = $.importScript;
@@ -447,7 +437,7 @@ AddEventEx(document, "FullscreenChange", function () {
 document.F.style.display = "none";
 Init = async function () {
 	te.Data.MainWindow = $;
-	UI.OnLoad();
+	AddEventEx(window, "beforeunload", CloseSubWindows);
 	await InitCode();
 	DefaultFont = await $.DefaultFont;
 	HOME_PATH = await $.HOME_PATH;

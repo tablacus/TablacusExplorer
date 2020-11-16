@@ -78,7 +78,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201114 ? te.Version : 20201115;
+		return te.Version < 20201114 ? te.Version : 20201116;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -814,7 +814,7 @@ GetIconPacks = function () {
 }
 
 CheckUpdate = function (arg) {
-	OpenHttpRequest("https://api.github.com/repos/tablacus/TablacusExplorer/releases/latest", "http://tablacus.github.io/TablacusExplorerAddons/te/releases.json", UI.CheckUpdate2, arg);
+	OpenHttpRequest("https://api.github.com/repos/tablacus/TablacusExplorer/releases/latest", "http://tablacus.github.io/TablacusExplorerAddons/te/releases.json", "CheckUpdate2", arg);
 }
 
 ShowAbout = function () {
@@ -1020,7 +1020,7 @@ OpenContains = function (Ctrl, pt) {
 		var Item = Items.Item(j);
 		var path = Item.Path;
 		Navigate(GetParentFolderName(path), SBSP_NEWBROWSER);
-		api.Invoke(UI.SelectItem, te.Ctrl(CTRL_FV), path, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS, 99);
+		SelectItem(te.Ctrl(CTRL_FV), path, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS, 99);
 	}
 }
 
@@ -1589,7 +1589,7 @@ CreateNew = function (path, fn) {
 		}
 	}
 	MainWindow.g_.NewItemTime = new Date().getTime() + 5000;
-	api.Invoke(MainWindow.UI.SelectItem, te.Ctrl(CTRL_FV), path, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK | SVSI_SELECT, 800);
+	MainWindow.SelectItem(te.Ctrl(CTRL_FV), path, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK | SVSI_SELECT, 800);
 }
 
 SetFileTime = function (path, ctime, atime, mtime) {
@@ -2577,7 +2577,7 @@ RunCommandLine = function (s) {
 	if (re) {
 		var arg = api.CommandLineToArgv(re[1]);
 		Navigate(GetParentFolderName(arg[0]), SBSP_NEWBROWSER);
-		api.Invoke(UI.SelectItem, te.Ctrl(CTRL_FV), arg[0], SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS, 99);
+		SelectItem(te.Ctrl(CTRL_FV), arg[0], SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS, 99);
 		return;
 	}
 	var arg = api.CommandLineToArgv(s.replace(/^\/e,|^\/n,|^\/root,/ig, ""));
@@ -2637,18 +2637,6 @@ GetAddonInfo = function (Id) {
 GetAddonInfoName = function (Id) {
 	var info = GetAddonInfo(Id);
 	return info.Name;
-}
-
-GetAddonInfo2 = function (xml, info, Tag, bTrans) {
-	var items = xml.getElementsByTagName(Tag);
-	if (items.length) {
-		var item = items[0].childNodes;
-		for (var i = 0; i < item.length; ++i) {
-			var n = item[i].tagName;
-			var s = item[i].textContent || item[i].text;
-			info[n] = (bTrans && /Name|Description/i.test(n) ? GetText(s) : s);
-		}
-	}
 }
 
 OpenXml = function (strFile, bAppData, bEmpty, strInit) {
@@ -2818,7 +2806,7 @@ GetInnerFV = function (id) {
 
 OpenInExplorer = function (pid1) {
 	if (pid1) {
-		api.Invoke(UI.CancelWindowRegistered);
+		CancelWindowRegistered();
 		sha.Explore(pid1.FolderItem || pid1);
 	}
 }
@@ -2842,7 +2830,7 @@ ShowDialogEx = function (mode, w, h, Id, opt) {
 	opt.width = w;
 	opt.height = h;
 	opt.Id = Id;
-	opt.UI = UI;
+	opt.InvokeUI = InvokeUI;
 	ShowDialog(BuildPath(te.Data.Installed, "script\\dialog.html"), opt);
 }
 

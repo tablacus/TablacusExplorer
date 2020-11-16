@@ -1063,12 +1063,12 @@ async function LoadAddons() {
 	table.ondragover = Over5;
 	table.ondrop = Drop5;
 	table.deleteRow(0);
-	g_bAddonLoading = true;
 	var root = await te.Data.Addons.documentElement;
 	if (root) {
 		var items = await root.childNodes;
 		if (items) {
 			var nLen = await GetLength(items);
+			g_bAddonLoading = nLen;
 			var sorted = document.getElementById("SortedAddons");
 			var tcell = [];
 			var scell = [];
@@ -1090,16 +1090,20 @@ async function LoadAddons() {
 						}
 						delete AddonId[Id];
 					}
+					--g_bAddonLoading;
 				});
 			}
 		}
+	}
+	for (var nDog = 99; nDog && g_bAddonLoading; --nDog) {
+		await api.Sleep(500);
+		await api.DoEvents();
 	}
 	for (var Id in AddonId) {
 		if (await $.fso.FileExists(path + Id + "\\config.xml")) {
 			AddAddon(table, Id, false);
 		}
 	}
-	g_bAddonLoading = false;
 	OpenAddonsOptions();
 }
 
@@ -1490,7 +1494,7 @@ async function SearchIcon(o) {
 
 ReturnDialogResult = async function (WB) {
 	if (g_nResult == 1) {
-		await CallUI(await dialogArguments.UI, "DialogResult", dialogArguments, returnValue);
+		dialogArguments.InvokeUI("SetElement", await dialogArguments.Id, returnValue);
 	}
 	WB.Close();
 }
@@ -1500,8 +1504,7 @@ InitDialog = async function () {
 	var Query = String(await window.dialogArguments.Query || location.search.replace(/\?/, "")).toLowerCase();
 	var res = /^icon(.*)/.exec(Query);
 	if (res) {
-		var a =
-		{
+		var a = {
 			"16px ieframe,216": "b,216,16",
 			"24px ieframe,214": "b,214,24",
 			"16px ieframe,206": "b,206,16",
@@ -2442,20 +2445,6 @@ async function AddonsAppend() {
 	Progress.StopProgressDialog();
 }
 
-GetAddonInfo3 = async function (xml, info, Tag) {
-	var items = await xml.getElementsByTagName(Tag);
-	if (await GetLength(items)) {
-		var item = await items[0].childNodes;
-		var nLen = await GetLength(item);
-		for (var i = 0; i < nLen; ++i) {
-			var item1 = await item[i];
-			var n = await item1.tagName;
-			var s = await item1.text || await item1.textContent;
-			info[n] = s;
-		}
-	}
-}
-
 async function ArrangeAddon(xml, td, Progress) {
 	var Id = await xml.getAttribute("Id");
 	var s = [];
@@ -2463,7 +2452,7 @@ async function ArrangeAddon(xml, td, Progress) {
 	if (await Search(xml)) {
 		var info = {};
 		for (var i = arLangs.length; i--;) {
-			await GetAddonInfo3(xml, info, arLangs[i]);
+			await GetAddonInfo2(xml, info, arLangs[i]);
 		}
 		var pubDate = "";
 		var dt = new Date(info.pubDate);

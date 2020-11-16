@@ -223,6 +223,20 @@ EscapeJson = function (s) {
 	return s.replace(/([\\|"|\/])/g, '\\$1').replace(/[\b]/g, '\\b').replace(/[\f]/g, '\\f').replace(/[\n]/g, '\\n').replace(/[\r]/g, '\\r').replace(/[\t]/g, '\\t');
 };
 
+GetAddonInfo2 = async function (xml, info, Tag, bTrans) {
+	var items = await xml.getElementsByTagName(Tag);
+	if (await GetLength(items)) {
+		var item = await items[0].childNodes;
+		var nLen = await GetLength(item);
+		for (var i = 0; i < nLen; ++i) {
+			var item1 = await item[i];
+			var n = await item1.tagName;
+			var s = await item1.text || await item1.textContent;
+			info[n] = (bTrans && /Name|Description/i.test(n) ? await GetText(s) : s);
+		}
+	}
+}
+
 if (!window.JSON) {
 	JSON = {
 		parse: function (s) {

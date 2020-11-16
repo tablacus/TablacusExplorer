@@ -1,7 +1,7 @@
 // Tablacus Explorer
 
 if (window.UI) {
-	BlurId = function (Id) {
+	BlurId = function () {
 		InvokeUI("BlurId", arguments);
 	}
 
@@ -9,8 +9,24 @@ if (window.UI) {
 		InvokeUI("clearTimeout", arguments);
 	}
 
+	CancelWindowRegistered = function () {
+		InvokeUI("CancelWindowRegistered");
+	}
+
 	CloseWindow = function () {
 		InvokeUI("CloseWindow");
+	}
+
+	ExitFullscreen = function () {
+		InvokeUI("ExitFullscreen");
+	}
+
+	FocusFV = function () {
+		InvokeUI("FocusFV");
+	}
+
+	MoveSplitter = function () {
+		InvokeUI("MoveSplitter", arguments);
 	}
 
 	OpenHttpRequest = function () {
@@ -26,8 +42,23 @@ if (window.UI) {
 		InvokeUI("Resize");
 	}
 
+	SelectItem = function () {
+		InvokeUI("SelectItem", arguments);
+	}
+
+	SelectNext = function () {
+		InvokeUI("SelectNext", arguments);
+	}
+
+	SetDisplay = function () {
+		InvokeUI("SetDisplay", arguments);
+	}
+
 	setTimeout = function () {
 		api.Invoke(UI.setTimeoutAsync, arguments);
 	}
 
+	ShowStatusTextEx = function () {
+		InvokeUI("ShowStatusTextEx", arguments);
+	}
 }

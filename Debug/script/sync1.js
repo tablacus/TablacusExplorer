@@ -47,7 +47,7 @@ g_.mouse = {
 	bDblClk: false,
 
 	StartGestureTimer: function () {
-		api.Invoke(UI.StartGestureTimer);
+		InvokeUI("StartGestureTimer");
 	},
 
 	EndGesture: function (button) {
@@ -1200,7 +1200,7 @@ SaveConfig = function () {
 			while (g_.stack_TC.length) {
 				g_.stack_TC.pop().Visible = true;
 			}
-			api.Invoke(UI.ExitFullscreen);
+			ExitFullscreen();
 		}
 		SaveXml(te.Data.WindowSetting);
 	}
@@ -1481,7 +1481,7 @@ AddEvent("Close", function (Ctrl) {
 		case CTRL_EB:
 			return CanClose(Ctrl) || api.ILIsEqual(Ctrl, "about:blank") && Ctrl.Parent.Count < 2 ? S_FALSE : CloseView(Ctrl);
 		case CTRL_TC:
-			api.Invoke(UI.SetDisplay, "Panel_" + Ctrl.Id, "none");
+			SetDisplay("Panel_" + Ctrl.Id, "none");
 			break;
 	}
 });
@@ -1541,7 +1541,7 @@ te.OnNavigateComplete = function (Ctrl) {
 	Ctrl.NavigateComplete();
 	RunEvent1("NavigateComplete", Ctrl);
 	ChangeView(Ctrl);
-	api.Invoke(UI.FocusFV);
+	FocusFV();
 	if (g_.focused) {
 		g_.focused.Focus();
 		if (--g_.fTCs <= 0) {
@@ -1583,7 +1583,7 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata) {
 						return S_OK;
 					}
 					if (key == VK_TAB && Ctrl.hwndList) {
-						api.Invoke(UI.SelectNext, Ctrl);
+						SelectNext(Ctrl);
 					}
 					return S_FALSE;
 				}
@@ -1669,7 +1669,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 		if (pt2.x < 1) {
 			pt2.x = 1;
 		}
-		api.Invoke(UI.MoveSplitter, pt2.x, pt2.y, g_.mouse.Capture);
+		MoveSplitter(pt2.x, g_.mouse.Capture);
 		return S_OK;
 	}
 	if (msg != WM_MOUSEMOVE) {
@@ -1736,7 +1736,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 				g_.mouse.bCapture = false;
 			}
 			if (Ctrl.Type == CTRL_WB) {
-				api.Invoke(UI.FocusFV);
+				FocusFV();
 			}
 			if (bButton) {
 				api.PostMessage(g_.mouse.hwndGesture, WM_CONTEXTMENU, g_.mouse.hwndGesture, pt.x + (pt.y << 16));
@@ -2351,7 +2351,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 			break;
 		case CTRL_TC:
 			if (msg == WM_SHOWWINDOW && wParam == 0) {
-				api.Invoke(UI.SetDisplay, "Panel_" + Ctrl.Id, "none");
+				SetDisplay("Panel_" + Ctrl.Id, "none");
 			}
 			break;
 		case CTRL_SB:
@@ -2603,7 +2603,7 @@ ShowStatusText = function (Ctrl, Text, iPart, tm) {
 		return;
 	}
 	if (tm) {
-		api.Invoke(UI.ShowStatusText, Ctrl, Text, iPart, tm);
+		ShowStatusTextEx(Ctrl, Text, iPart, tm);
 		return S_OK;
 	}
 	RunEvent1("StatusText", Ctrl, Text, iPart);
