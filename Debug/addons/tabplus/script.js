@@ -1,14 +1,13 @@
 var Addon_Id = "tabplus";
 
-var item = GetAddonElement(Addon_Id);
+var item = await GetAddonElement(Addon_Id);
 if (!item.getAttribute("Set")) {
 	item.setAttribute("Icon", 1);
 	item.setAttribute("Drive", 1);
 	item.setAttribute("New", 1);
 }
 if (window.Addon == 1) {
-	Addons.TabPlus =
-	{
+	Addons.TabPlus = {
 		Click: [],
 		Button: [],
 		Drag: [],
@@ -18,77 +17,79 @@ if (window.Addon == 1) {
 		nIndex: [],
 		bFlag: [],
 		nFocused: -1,
-		opt: [],
+		opt: {},
+		str: {},
 		tids: [],
 		tidResize: null,
-		tidCursor: null,
-		DragOpen: !api.LowPart(item.getAttribute("NoDragOpen")),
-		IconSize: Math.round((api.LowPart(item.getAttribute("IconsSize")) || 13) * screen.deviceYDPI / 96),
 
-		Arrange: function (Id) {
+		Arrange: async function (Id) {
 			delete Addons.TabPlus.tids[Id];
 			var o = document.getElementById("tabplus_" + Id);
 			if (o) {
-				var TC = te.Ctrl(CTRL_TC, Id);
-				if (TC && TC.Visible) {
+				var TC = await te.Ctrl(CTRL_TC, Id);
+				if (TC && await TC.Visible) {
+					var nCount = await TC.Count;
 					Addons.TabPlus.tids[Id] = null;
-					Addons.TabPlus.nIndex[Id] = TC.SelectedIndex;
-					Addons.TabPlus.nCount[Id] = TC.Count;
+					Addons.TabPlus.nIndex[Id] = await TC.SelectedIndex;
+					Addons.TabPlus.nCount[Id] = nCount;
+					if (o.lastChild && Addons.TabPlus.opt.New) {
+						o.removeChild(o.lastChild);
+					}
 					var tabs = o.getElementsByTagName("li");
-					if (TC.Count + (Addons.TabPlus.opt.New ? 1 : 0) != tabs.length) {
-						var s = [];
-						for (var i = 0; i < Addons.TabPlus.nCount[Id]; i++) {
-							Addons.TabPlus.Tab(s, TC, i);
+					var nDisp = tabs.length;
+					while (nDisp > nCount) {
+						o.removeChild(o.lastChild);
+						--nDisp;
+					}
+					while (nDisp < nCount) {
+						var s = ['<li id="tabplus_', Id, '_', nDisp, '"'];
+						if (Addons.TabPlus.opt.DragFolder || ui_.IEVer < 10) {
+							s.push(' onmousemove="Addons.TabPlus.Move(event, this)"');
+						} else {
+							s.push(' draggable = "true" ondragstart = "return Addons.TabPlus.Start5(event, this)" ondragend = "Addons.TabPlus.End5(event)"');
 						}
-						if (Addons.TabPlus.opt.New) {
-							s.push('<li class="tab3" onclick="Addons.TabPlus.New(', Id, ');return false" title="', Addons.TabPlus.opt.Tooltips ? GetText("New tab") : "", '"');
-							if (Addons.TabPlus.opt.Align > 1 && Addons.TabPlus.opt.Width) {
-								s.push(' style="text-align: center; width: 100%"');
-							}
-							s.push('>+</li>');
+						if (Addons.TabPlus.opt.Align > 1 && Addons.TabPlus.opt.Width) {
+							s.push(' style="width: 100%"');
 						}
-						o.innerHTML = s.join("").replace(/\$/g, Id);
+						s.push('></li>');
+						o.insertAdjacentHTML("beforeend", s.join(""));
+						++nDisp;
+					}
+					if (Addons.TabPlus.opt.New) {
+						var s = ['<li class="tab3" onclick="Addons.TabPlus.New(', Id, ');return false" title="', Addons.TabPlus.str.NewTab, '"'];
+						if (Addons.TabPlus.opt.Align > 1 && Addons.TabPlus.opt.Width) {
+							s.push(' style="text-align: center; width: 100%"');
+						}
+						s.push('>+</li>');
+						o.insertAdjacentHTML("beforeend", s.join(""));
 					}
 					Addons.TabPlus.SetActiveColor(Id);
-					if (g_.IEVer < 10) {
-						var n = (Addons.TabPlus.dtDown || 0) + 90000 - new Date().getTime();
-						if (n >= 0) {
-							var pt = api.Memory("POINT");
-							api.GetCursorPos(pt);
-							n = Addons.TabPlus.FromPt(Id, Addons.TabPlus.pt);
-						}
-						if (n >= 0) {
-							if (Addons.TabPlus.Drag.length) {
-								Addons.TabPlus.Cursor2("move");
-							}
-						} else {
-							Addons.TabPlus.Drag = [];
-							Addons.TabPlus.Cursor("default");
-						}
+					var bRedraw = await api.GetKeyState(VK_LBUTTON) >= 0;
+					for (var i = 0; i < nCount; ++i) {
+						Addons.TabPlus.Style(TC, i, bRedraw);
 					}
-					for (var i = Addons.TabPlus.nCount[Id]; i--;) {
-						Addons.TabPlus.Style(TC, i);
-					}
+					Common.TabPlus.rc[Id] = await GetRect(o);
 				}
 			}
 		},
 
-		SelectionChanged: function (TC, Id) {
-			if (TC.Type == CTRL_TC && TC.Visible && !Addons.TabPlus.tids[TC.Id]) {
-				Addons.TabPlus.tids[TC.Id] = setTimeout(function () {
-					Addons.TabPlus.Arrange(TC.Id);
+		SelectionChanged: async function (TC, Id) {
+			if (await TC.Type == CTRL_TC && await TC.Visible && !Addons.TabPlus.tids[Id]) {
+				Addons.TabPlus.tids[Id] = setTimeout(function () {
+					Addons.TabPlus.Arrange(Id);
 				}, 99);
 			}
 		},
 
-		SetActiveColor: function (Id) {
-			if (Id != (te.Ctrl(CTRL_TC) || {}).Id) {
+		SetActiveColor: async function (Id) {
+			var TC = await te.Ctrl(CTRL_TC);
+			if (!TC || Id != await TC.Id) {
 				return;
 			}
-			this.SetActiveColor2(this.nFocused, "");
-			if (this.opt.Active) {
-				this.SetActiveColor2(Id, "ActiveCaption");
-				this.nFocused = Id;
+			Addons.TabPlus.SetActiveColor2(Addons.TabPlus.nFocused, "");
+			if (Addons.TabPlus.opt.Active) {
+				Addons.TabPlus.SetActiveColor2(Id, "activecaption");
+				Addons.TabPlus.nFocused = Id;
 			}
 		},
 
@@ -99,182 +100,163 @@ if (window.Addon == 1) {
 			}
 		},
 
-		New: function (Id) {
-			var TC = te.Ctrl(CTRL_TC, Id);
+		New: async function (Id) {
+			var TC = await te.Ctrl(CTRL_TC, Id);
 			if (TC) {
-				var FV = TC.Selected;
-				CreateTab(FV);
-				TC.Move(TC.SelectedIndex, TC.Count - 1);
+				var FV = await TC.Selected;
+				await CreateTab(FV);
+				TC.Move(await TC.SelectedIndex, await TC.Count - 1);
 			}
 		},
 
-		Tab: function (s, TC, i) {
-			var FV = TC[i];
-			if (FV) {
-				s.push('<li id="tabplus_$_', i, '" draggable="true" ondragstart="return Addons.TabPlus.Start5(this)" ondragend="Addons.TabPlus.End5(this)" onmousemove="Addons.TabPlus.Move(this, $)"');
-				if (this.opt.Align > 1 && this.opt.Width) {
-					s.push(' style="width: 100%"');
-				}
-				s.push('></li>');
-			}
-		},
-
-		Style: function (TC, i) {
+		Style: async function (TC, i, bRedraw) {
 			var img;
-			var FV = TC[i];
-			var o = document.getElementById("tabplus_" + TC.Id + "_" + i);
-			if (FV && o) {
-				if (g_.IEVer >= 10) {
-					if ((this.dtDown || 0) + 90000 - new Date().getTime() > 0) {
-						var pt = api.Memory("POINT");
-						api.GetCursorPos(pt);
-						if (i == this.FromPt(TC.Id, this.pt)) {
-							return;
-						}
-					}
-				}
-				var path = api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
-				if (this.opt.Tooltips) {
+			var FV = await TC[i];
+			var Id = await TC.Id;
+			var o = document.getElementById("tabplus_" + Id + "_" + i);
+			if (FV && o && await FV.FolderItem) {
+				var path = await FV.FolderItem.Path;
+				if (Addons.TabPlus.opt.Tooltips) {
 					o.title = path;
 				}
-				var s = ['<table><tr style="width: 100%">'];
-				try {
-					var r0 = Addons.TabPlus.IconSize;
-					var w = (FV.Data.Lock || FV.Data.Protect || this.opt.Close) ? -r0 : 0;
-					if (FV.Data.Lock && !this.opt.NoLock) {
-						s.push('<td style="padding-right: 2px; vertical-align: middle; width: ', r0, 'px">', this.ImgLock2, '</td>');
-						w -= 2;
-					} else if (FV.Data.Protect && this.opt.Protected) {
-						s.push('<td style="padding-right: 2px; vertical-align: middle; width: ', r0, 'px">', this.ImgProtect, '</td>');
-						w -= 2;
-					}
-					if (this.opt.Icon && (img = GetIconImage(FV, GetSysColor(COLOR_BTNFACE)))) {
-						s.push('<td style="padding-right: 3px; vertical-align: middle; width: 20px">');
-						if (this.opt.Drive) {
-							var res = /^([A-Z]):/i.exec(path);
-							if (res) {
-								s.push('<span class="drive">', res[1], '</span>');
-							}
-						}
-						s.push('<img draggable="false" src="', img, '" style="width: 1pc; height: 1pc"></td>');
-						w -= 20;
-					} else if (this.opt.Drive) {
-						s.push('<td style="padding-right: 3px; vertical-align: middle; width: 12px">');
+				var cl = await RunEvent4("GetTabColor", FV);
+				var s = ['<table><tr style="width: 100%'];
+				if (/^#/.test(cl)) {
+					var c = Number(cl.replace(/^#/, "0x"));
+					c = (c & 0xff0000) * .0045623779296875 + (c & 0xff00) * 2.29296875 + (c & 0xff) * 114;
+					s.push(';color:', c > 127000 ? "#000" : "#fff");
+				}
+				s.push('">');
+				var bLock = await FV.Data.Lock;
+				var bProtect = await FV.Data.Protect;
+				var r0 = Addons.TabPlus.IconSize;
+				var w = (Addons.TabPlus.opt.Close || bLock || bProtect) ? -r0 : 0;
+				if (!Addons.TabPlus.opt.NoLock && bLock) {
+					s.push('<td style="padding-right: 2px; vertical-align: middle; width: ', r0, 'px">', Addons.TabPlus.ImgLock2, '</td>');
+					w -= 2;
+				} else if (Addons.TabPlus.opt.Protected && bProtect) {
+					s.push('<td style="padding-right: 2px; vertical-align: middle; width: ', r0, 'px">', Addons.TabPlus.ImgProtect, '</td>');
+					w -= 2;
+				}
+				if (Addons.TabPlus.opt.Icon && (img = await GetIconImage(await FV, await GetSysColor(COLOR_BTNFACE)))) {
+					s.push('<td style="padding-right: 3px; vertical-align: middle; width: 20px">');
+					if (Addons.TabPlus.opt.Drive) {
 						var res = /^([A-Z]):/i.exec(path);
 						if (res) {
 							s.push('<span class="drive">', res[1], '</span>');
 						}
-						s.push('&nbsp;</td>');
-						w -= 12;
 					}
-					s.push('<td style="vertical-align: middle;"><div style="overflow: hidden; white-space: nowrap;');
-					if (this.opt.Close && CanClose(FV) == S_OK && this.opt.Align > 1 && this.opt.Width) {
-						w -= r0;
+					s.push('<img draggable="false" src="', img, '" style="width: 1pc; height: 1pc"></td>');
+					w -= 20;
+				} else if (Addons.TabPlus.opt.Drive) {
+					s.push('<td style="padding-right: 3px; vertical-align: middle; width: 12px">');
+					var res = /^([A-Z]):/i.exec(path);
+					if (res) {
+						s.push('<span class="drive">', res[1], '</span>');
 					}
-					w += Number(this.opt.Width) || 0;
-					if (w > 0) {
-						s.push((this.opt.Fix ? 'width: ' : 'max-width:'), w, 'px');
+					s.push('&nbsp;</td>');
+					w -= 12;
+				}
+				s.push('<td style="vertical-align: middle;"><div style="overflow: hidden; white-space: nowrap;');
+				var bUseClose = Addons.TabPlus.opt.Close && await CanClose(FV) == S_OK;
+				if (bUseClose && Addons.TabPlus.opt.Align > 1 && Addons.TabPlus.opt.Width) {
+					w -= r0;
+				}
+				w += Number(Addons.TabPlus.opt.Width) || 0;
+				if (w > 0) {
+					s.push((Addons.TabPlus.opt.Fix ? 'width: ' : 'max-width:'), w, 'px');
+				}
+				if (Addons.TabPlus.opt.Align > 1 && Addons.TabPlus.opt.Width) {
+					s.push('; text-align: left; max-width: 100%');
+				}
+				var n = "";
+				if (await FV.FolderItem) {
+					n = EncodeSC(await GetTabName(FV));
+					if (Addons.TabPlus.opt.Tooltips) {
+						s.push('" title="', EncodeSC(await FV.FolderItem.Path));
 					}
-					if (this.opt.Align > 1 && this.opt.Width) {
-						s.push('; text-align: left; max-width: 100%');
-					}
-					var n = "";
-					if (FV.FolderItem) {
-						n = EncodeSC(GetTabName(FV));
-						if (this.opt.Tooltips) {
-							s.push('" title="', EncodeSC(FV.FolderItem.Path));
-						}
-					}
-					s.push('" >', n, '</div></td>');
-					if (this.opt.Close && CanClose(FV) == S_OK) {
-						s.push('<td style="vertical-align: middle; width: ', r0, 'px" align="right">', this.ImgClose, r0, 'px" id="tabplus_', FV.Parent.Id, '_', i, 'x" class="button" title="', this.opt.Tooltips ? GetText("Close Tab") : "", '" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', this.ImgClose2, '</td>');
-					}
-				} catch (e) { }
+				}
+				s.push('" >', n, '</div></td>');
+				if (bUseClose) {
+					s.push('<td style="vertical-align: middle; width: ', r0, 'px" align="right">', Addons.TabPlus.ImgClose, r0, 'px" onclick="Addons.TabPlus.Close(', TC.Id, ",", i, ')" class="button" title="', Addons.TabPlus.str.CloseTab, '" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', Addons.TabPlus.ImgClose2, '</td>');
+				}
 				s.push('</tr></table>');
-				o.innerHTML = s.join("");
+				if (!o.innerHTML || bRedraw) {
+					o.innerHTML = s.join("");
+				}
 				var style = o.style;
-				var cl = RunEvent4("GetTabColor", FV);
 				if (cl) {
-					if (g_.IEVer >= 10) {
+					if (ui_.IEVer >= 10) {
 						style.background = "none";
 					} else {
 						style.filter = "none";
 					}
 					style.backgroundColor = cl;
-					cl = api.sscanf(cl, "#%06x")
-					cl = (cl & 0xff0000) * .0045623779296875 + (cl & 0xff00) * 2.29296875 + (cl & 0xff) * 114;
-					style.color = cl > 127000 ? "black" : "white";
 				} else {
-					if (document.documentMode >= 10) {
+					if (ui_.IEVer >= 10) {
 						style.background = "";
 					} else if (style.filter) {
 						style.filter = "";
 					}
-					style.color = "";
 					style.backgroundColor = "";
 				}
-				this.Class(TC, i);
+				Addons.TabPlus.Class(TC, i, FV);
 			}
 		},
 
-		Class: function (TC, i) {
-			var o = document.getElementById("tabplus_" + TC.Id + "_" + i);
-			if (o) {
-				arClass = [];
-				var FV = TC[i];
-				if (FV.Data.Lock) {
-					arClass.push("locked");
+		Class: async function (TC, i, FV) {
+			if (!FV) {
+				var FV = await TC[i];
+				if (!FV) {
+					return;
 				}
-				if (FV.Data.Protect) {
-					arClass.push("protected");
-				}
-				if (i == TC.SelectedIndex) {
-					arClass.unshift('activetab');
-					o.style.zIndex = TC.Count + 1;
-				} else {
-					arClass.push(i < TC.SelectedIndex ? 'tab' : 'tab2');
-					o.style.zIndex = TC.Count - i;
-				}
-				o.className = arClass.join(" ");
 			}
+			Promise.all([FV.Data.Lock, FV.Data.Protect, TC.SelectedIndex, TC.Count, TC.Id, i]).then(function (r) {
+				var o = document.getElementById("tabplus_" + r[4] + "_" + r[5]);
+				if (o) {
+					var arClass = [];
+					if (r[0]) {
+						arClass.push("locked");
+					}
+					if (r[1]) {
+						arClass.push("protected");
+					}
+					if (i == r[2]) {
+						arClass.unshift('activetab');
+						o.style.zIndex = r[3] + 1;
+					} else {
+						arClass.push(i < r[2] ? 'tab' : 'tab2');
+						o.style.zIndex = r[3] - r[5];
+					}
+					o.className = arClass.join(" ");
+					Addons.TabPlus.SetRect(r[4], r[5], o);
+				}
+			});
 		},
 
-		Down: function (Id) {
-			if (this.tidDrag) {
-				clearTimeout(this.tidDrag);
-				delete this.tidDrag;
+		SetRect: async function (Id, i, o) {
+			var rcItem = await Common.TabPlus.rcItem[Id];
+			if (!rcItem) {
+				rcItem = await api.CreateObject("Array");
+				Common.TabPlus.rcItem[Id] = rcItem;
 			}
-			this.dtDown = new Date().getTime();
-			var TC = te.Ctrl(CTRL_TC, Id);
+			rcItem[i] = await GetRect(o);
+		},
+
+		Down: async function (ev, Id) {
+			Addons.TabPlus.buttons = ev.buttons;
+			Addons.TabPlus.dtDown = new Date().getTime();
+			Addons.TabPlus.pt.x = ev.screenX * ui_.Zoom;
+			Addons.TabPlus.pt.y = ev.screenY * ui_.Zoom;
+			var TC = await te.Ctrl(CTRL_TC, Id);
 			if (TC) {
-				api.GetCursorPos(this.pt);
-				var n = this.FromPt(Id, this.pt);
-				this.Click = [Id, n];
-				this.Drag = [];
-				this.Button[Id] = GetGestureButton();
+				var n = await Sync.TabPlus.FromPt(Id, Addons.TabPlus.pt);
+				Addons.TabPlus.Click = [Id, n];
+				Addons.TabPlus.Button[Id] = await GetGestureButton();
 				if (n >= 0) {
-					if (api.GetKeyState(VK_LBUTTON) < 0) {
-						var o = document.getElementById('tabplus_' + Id + '_' + n + 'x');
-						if (o && HitTest(o, this.pt)) {
-						} else {
-							TC.SelectedIndex = n;
-							this.Class(TC, n);
-						}
-						if (g_.IEVer < 10) {
-							(function (Id, n) {
-								this.tidDrag = setTimeout(function () {
-									delete Addons.TabPlus.tidDrag;
-									if (api.GetKeyState(VK_LBUTTON) < 0) {
-										var pt = api.Memory("POINT");
-										api.GetCursorPos(pt);
-										if (n == Addons.TabPlus.FromPt(Id, pt)) {
-											Addons.TabPlus.Cursor2("move");
-											Addons.TabPlus.Drag = Addons.TabPlus.Click.slice(0);
-										}
-									}
-								}, 99);
-							})(Id, n);
-						}
+					if (ev.button == 0) {
+						TC.SelectedIndex = n;
+						Addons.TabPlus.Class(TC, n);
 						return false;
 					}
 				}
@@ -282,117 +264,77 @@ if (window.Addon == 1) {
 			return true;
 		},
 
-		Up: function (Id) {
-			delete this.dtDown;
-			var TC = te.Ctrl(CTRL_TC, Id);
+		Up: async function (ev, Id) {
+			var TC = await te.Ctrl(CTRL_TC, Id);
 			if (TC) {
-				var pt = api.Memory("POINT");
-				api.GetCursorPos(pt);
-				if (/3/.test(this.Button[Id])) {
-					Addons.TabPlus.GestureExec(TC, Id, this.Button[Id], pt);
+				if (/3/.test(Addons.TabPlus.Button[Id])) {
+					Addons.TabPlus.GestureExec(TC, ev, Addons.TabPlus.Button[Id]);
 					return false;
 				}
-				var nDrop = this.FromPt(Id, pt);
-				if (nDrop < 0) {
-					nDrop = TC.Count;
-				} else if (/1/.test(this.Button[Id]) && !IsDrag(pt, this.pt)) {
-					var o = document.getElementById('tabplus_' + Id + '_' + nDrop + 'x');
-					if (o && HitTest(o, this.pt)) {
-						TC[nDrop].Close();
-					} else {
-						setTimeout(function () {
-							Addons.TabPlus.Arrange(Id);
-						}, sha.GetSystemInformation("DoubleClickTime"));
-					}
-				}
-				if (this.Drag.length && (this.Drag[0] != Id || this.Drag[1] != nDrop)) {
-					if (g_.IEVer < 10) {
-						te.Ctrl(CTRL_TC, this.Drag[0]).Move(this.Drag[1], nDrop, TC);
-					}
-					this.Drop = [];
-				} else {
-					setTimeout(function () {
-						TC.Selected.Focus();
-					}, 99);
-				}
-				if (this.Drag.length) {
-					this.Cursor("default");
-					this.Drag = [];
-				}
 			}
-			this.Click = [];
+			Addons.TabPlus.Click = [];
 			return true;
 		},
 
-		Move: function (o, Id) {
-			if (this.Drag.length && g_.IEVer < 10) {
-				if (api.GetKeyState(VK_LBUTTON) < 0) {
-					this.Drop = [Id, o.id.replace(/^.*_\d+_/, '') - 0];
-				} else {
-					this.Cursor("default");
-					this.Drag = [];
-				}
-			}
-		},
-
-		Cursor: function (s) {
-			if (g_.IEVer < 10) {
-				clearTimeout(Addons.TabPlus.tidCursor);
-				var cTC = te.Ctrls(CTRL_TC);
-				for (var j in cTC) {
-					if (cTC[j].Visible) {
-						SetCursor(document.getElementById('tabplus_' + cTC[j].Id), s);
+		Move: async function (ev, el) {
+			var res = /^tabplus_(\d+)_(\d+)/.exec(el.id);
+			if (res) {
+				if (await api.GetKeyState(VK_LBUTTON) < 0) {
+					var pt = await api.Memory("POINT");
+					pt.x = ev.screenX * ui_.Zoom;
+					pt.y = ev.screenY * ui_.Zoom;
+					if (await IsDrag(pt, Addons.TabPlus.pt)) {
+						Common.TabPlus.Drag5 = el.id;
+						var pdwEffect = [DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK];
+						api.SHDoDragDrop(null, await te.Ctrl(CTRL_TC, res[1])[res[2]].FolderItem, te, pdwEffect[0], pdwEffect);
+						Common.TabPlus.Drag5 = void 0;
 					}
 				}
 			}
 		},
 
-		Cursor2: function (s) {
-			this.tidCursor = setTimeout(function () {
-				Addons.TabPlus.Cursor(s)
-			}, 500);
-		},
-
-		Popup: function (Id) {
-			var pt = api.Memory("POINT");
-			api.GetCursorPos(pt);
-			var TC = te.Ctrl(CTRL_TC, Id);
+		Popup: async function (ev, Id) {
+			var pt = await api.Memory("POINT");
+			pt.x = ev.screenX * ui_.Zoom;
+			pt.y = ev.screenY * ui_.Zoom;
+			var TC = await te.Ctrl(CTRL_TC, Id);
 			if (TC) {
-				var ShowContextMenu = te.OnShowContextMenu;
-				ShowContextMenu(TC, TC.hwnd, WM_CONTEXTMENU, 0, pt);
+				te.OnShowContextMenu(TC, await TC.hwnd, WM_CONTEXTMENU, 0, pt);
 			}
 		},
 
-		GestureExec: function (TC, Id, s, pt) {
+		GestureExec: async function (TC, ev, s) {
 			if (TC) {
-				if (TC.HitTest(pt, TCHT_ONITEM) < 0) {
-					if (GestureExec(TC, "Tabs_Background", GetGestureKey() + s, pt, TC.hwnd) === S_OK) {
-						;
+				var pt = await api.Memory("POINT");
+				pt.x = ev.screenX * ui_.Zoom;
+				pt.y = ev.screenY * ui_.Zoom;
+				s = await GetGestureKey() + s;
+				if (await TC.HitTest(pt, TCHT_ONITEM) < 0) {
+					if (await GestureExec(TC, "Tabs_Background", s, pt, await TC.hwnd) === S_OK) {
 						return;
 					}
 				}
-				GestureExec(TC, "Tabs", GetGestureKey() + s, pt, TC.hwnd);
+				GestureExec(TC, "Tabs", s, pt, await TC.hwnd);
 			}
 		},
 
-		DblClick: function (Id) {
-			api.GetCursorPos(pt);
-			var TC = te.Ctrl(CTRL_TC, Id);
-			Addons.TabPlus.GestureExec(TC, Id, this.Button[Id] + this.Button[Id], pt);
+		DblClick: async function (ev, Id) {
+			if (new Date().getTime() - Addons.TabPlus.dtDown < ui_.DoubleClickTime) {
+				var TC = await te.Ctrl(CTRL_TC, Id);
+				Addons.TabPlus.GestureExec(TC, ev, Addons.TabPlus.Button[Id] + Addons.TabPlus.Button[Id]);
+			}
 		},
 
-		Over: function (Id) {
-			if (Addons.TabPlus.bDropping) {
+		Over: async function (Id, pt) {
+			if (await Common.TabPlus.bDropping) {
 				return;
 			}
-			var pt = api.Memory("POINT");
-			api.GetCursorPos(pt);
-			if (!IsDrag(pt, g_ptDrag) && !Addons.TabPlus.Drag5) {
-				var nIndex = Addons.TabPlus.FromPt(Id, pt);
+			if (!await IsDrag(pt, await g_.ptDrag)) {
+				var nIndex = await Sync.TabPlus.FromPt(Id, pt);
 				if (nIndex >= 0) {
-					var TC = te.Ctrl(CTRL_TC, Id);
-					if (!Addons.TabPlus.DragOpen) {
-						setTimeout(Addons.TabPlus.Select, 500, Id, TC.SelectedIndex);
+					var TC = await te.Ctrl(CTRL_TC, Id);
+					if (Addons.TabPlus.opt.NoDragOpen) {
+						setTimeout(Addons.TabPlus.Select, 500, Id, await TC.SelectedIndex);
 					}
 					TC.SelectedIndex = nIndex;
 				}
@@ -403,138 +345,101 @@ if (window.Addon == 1) {
 			te.Ctrl(CTRL_TC, Id).SelectedIndex = nIndex;
 		},
 
-		Start5: function (o) {
-			if (api.GetKeyState(VK_LBUTTON) < 0) {
-				clearTimeout(Addons.TabPlus.tidCursor);
-				event.dataTransfer.effectAllowed = 'move';
-				event.dataTransfer.setData("text", o.title);
-				this.Drag5 = o.id;
-				delete this.dtDown;
+		Start5: function (ev, o) {
+			if (Addons.TabPlus.buttons == 1) {
+				ev.dataTransfer.effectAllowed = 'move';
+				ev.dataTransfer.setData("text", o.title);
+				Common.TabPlus.Drag5 = o.id;
 				return true;
 			}
 			return false;
 		},
 
-		End5: function (o) {
-			var pt = api.Memory("POINT");
-			api.GetCursorPos(pt);
-			var hwnd = api.WindowFromPoint(pt);
-			if (te.hwnd != hwnd && !api.IsChild(te.hwnd, hwnd) && api.GetKeyState(VK_RBUTTON) >= 0 && api.GetKeyState(VK_ESCAPE) >= 0) {
-				var res = /^tabplus_(\d+)_(\d+)/.exec(this.Drag5);
+		End5: async function (ev) {
+			if (await api.GetKeyState(VK_RBUTTON) >= 0 && await api.GetKeyState(VK_ESCAPE) >= 0) {
+				var res = /^tabplus_(\d+)_(\d+)/.exec(await Common.TabPlus.Drag5);
 				if (res) {
-					var FV = te.Ctrl(CTRL_TC, res[1])[res[2]];
-					OpenInExplorer(FV);
-					FV.Close();
-				}
-			}
-			this.Drag5 = null;
-			this.Drag = [];
-		},
-
-		Over5: function (o) {
-			if (this.Drag5) {
-				if (event.preventDefault) {
-					event.preventDefault();
-				} else {
-					event.returnValue = false;
-				}
-			}
-		},
-
-		Drop5: function (o) {
-			var res = /^tabplus_(\d+)/.exec(o.id);
-			if (res) {
-				var Id = res[1];
-				var TC = te.Ctrl(CTRL_TC, Id);
-				if (TC) {
-					var pt = api.Memory("POINT");
-					api.GetCursorPos(pt);
-					var nDrop = this.FromPt(Id, pt);
-					if (nDrop < 0) {
-						nDrop = TC.Count;
-					}
-					res = /^tabplus_(\d+)_(\d+)/.exec(Addons.TabPlus.Drag5);
-					if (res) {
-						if (res[1] != Id || res[2] != nDrop) {
-							var TC1 = te.Ctrl(CTRL_TC, res[1]);
-							TC1.Move(res[2], nDrop, TC);
-							TC1.SelectedIndex = nDrop;
-							this.Drop = [];
-						}
+					var hwnd = await te.hwnd;
+					var pt = await api.Memory("POINT");
+					pt.x = ev.screenX * ui_.Zoom;
+					pt.y = ev.screenY * ui_.Zoom;
+					var hwnd1 = await api.WindowFromPoint(pt);
+					if (hwnd != hwnd1 && !await api.IsChild(hwnd, hwnd1)) {
+						var FV = await te.Ctrl(CTRL_TC, res[1])[res[2]];
+						await OpenInExplorer(FV);
+						FV.Close();
 					}
 				}
 			}
+			Common.TabPlus.Drag5 = void 0;
 		},
 
-		Wheel: function (Id) {
-			var TC = te.Ctrl(CTRL_TC, Id);
+		Close: function (Id, i) {
+			te.Ctrl(CTRL_TC, Id)[i].Close();
+		},
+
+		Wheel: async function (ev, Id) {
+			var TC = await te.Ctrl(CTRL_TC, Id);
 			if (TC) {
 				var o = document.getElementById("tabplus_" + Id);
 				if (o.clientWidth == o.offsetWidth) {
-					var pt = api.Memory("POINT");
-					api.GetCursorPos(pt);
-					Addons.TabPlus.GestureExec(TC, Id, event.wheelDelta > 0 ? "8" : "9", pt)
-				}
-			}
-		},
-
-		FromPt: function (Id, pt) {
-			var ptc = pt.Clone();
-			api.ScreenToClient(api.GetWindow(document), ptc);
-			var re = new RegExp("tabplus_" + Id + "_(\\d+)", "");
-			for (var el = document.elementFromPoint(ptc.x, ptc.y); el && !/UL/i.test(el.tagName); el = el.parentElement) {
-				var res = re.exec(el.id);
-				if (res) {
-					return res[1];
-				}
-			}
-			return -1;
-		},
-
-		TCFromPt: function (pt) {
-			var cTC = te.Ctrls(CTRL_TC);
-			for (var n in cTC) {
-				var TC = cTC[n];
-				if (TC.Visible) {
-					if (HitTest(document.getElementById("tabplus_" + TC.Id), pt)) {
-						return TC;
-					}
+					Addons.TabPlus.GestureExec(TC, ev, ev.wheelDelta > 0 ? "8" : "9");
 				}
 			}
 		},
 
 		Resize: function () {
-			if (this.opt.Align > 1 && !this.tidResize) {
-				this.tidResize = setTimeout(function () {
-					Addons.TabPlus.tidResize = null;
-					var cTC = te.Ctrls(CTRL_TC);
-					for (var j in cTC) {
-						var TC = cTC[j];
-						if (TC.Visible) {
-							var id = TC.Id;
-							var o = document.getElementById("Panel_" + id);
-							if (o) {
-								document.getElementById("tabplus_" + id).style.height = o.clientHeight + "px";
-							}
+			if (Addons.TabPlus.tidResize) {
+				return;
+			}
+			Addons.TabPlus.tidResize = setTimeout(async function () {
+				Addons.TabPlus.tidResize = null;
+				var cTC = await te.Ctrls(CTRL_TC, true);
+				for (var j = await GetLength(cTC); j-- > 0;) {
+					var TC = await cTC[j];
+					var id = await TC.Id;
+					Addons.TabPlus.Arrange(id);
+					if (Addons.TabPlus.opt.Align > 1) {
+						var o = document.getElementById("Panel_" + id);
+						if (o) {
+							document.getElementById("tabplus_" + id).style.height = o.clientHeight + "px";
 						}
 					}
-				}, 500);
-			}
+				}
+			}, 500);
 		}
 	};
 
-	AddEvent("PanelCreated", function (Ctrl) {
-		var s = ['<ul id="tabplus_$" class="tab0" oncontextmenu="Addons.TabPlus.Popup($);return false"'];
-		s.push(' ondblclick="Addons.TabPlus.DblClick($);return false" onmousewheel="Addons.TabPlus.Wheel($)" onresize="Resize();"');
-		s.push(' onmousedown="Addons.TabPlus.Down($)" onmouseup="return Addons.TabPlus.Up($)" onclick="return false;" ondragover="Addons.TabPlus.Over5(this)" ondrop="Addons.TabPlus.Drop5(this)" style="width: 100%"></ul>');
+	Common.TabPlus = await api.CreateObject("Object");
+	Common.TabPlus.opt = await api.CreateObject("Object");
+
+	Common.TabPlus.DragOver = function (Id, x, y) {
+		if (Addons.TabPlus.tid) {
+			clearTimeout(Addons.TabPlus.tid);
+		}
+		Addons.TabPlus.tid = setTimeout(Addons.TabPlus.Over, 300, Id, x, y);
+	}
+
+	Common.TabPlus.DragLeave = function () {
+		if (Addons.TabPlus.tid) {
+			clearTimeout(Addons.TabPlus.tid);
+			delete Addons.TabPlus.tid;
+		}
+	}
+
+	importJScript("addons\\" + Addon_Id + "\\sync.js");
+
+	AddEvent("PanelCreated", function (Ctrl, Id) {
+		var s = ['<ul id="tabplus_$" class="tab0" oncontextmenu="Addons.TabPlus.Popup(event, $);return false"'];
+		s.push(' ondblclick="Addons.TabPlus.DblClick(event, $);return false" onmousewheel="Addons.TabPlus.Wheel(event, $)" onresize="Resize();"');
+		s.push(' onmousedown="Addons.TabPlus.Down(event, $)" onmouseup="return Addons.TabPlus.Up(event, $)" onclick="return false;" style="width: 100%"></ul>');
 		var n = Addons.TabPlus.opt.Align || 0;
 		var arAlign = ["InnerTop_", "InnerBottom_", "InnerLeft_", "InnerRight_"];
-		var o = document.getElementById(SetAddon(null, arAlign[n] + Ctrl.Id, s.join("").replace(/\$/g, Ctrl.Id)));
+		var o = document.getElementById(SetAddon(null, arAlign[n] + Id, s.join("").replace(/\$/g, Id)));
 		if (n > 1) {
-			var h = o.innerHeight;
 			var w = (Number(Addons.TabPlus.opt.Width || 84) + 17) + "px";
 			o.style.width = w;
-			o = document.getElementById("tabplus_" + Ctrl.Id);
+			o = document.getElementById("tabplus_" + Id);
 			o.style.width = w;
 			o.style.height = "0";
 			o.style.overflow = "auto";
@@ -544,137 +449,62 @@ if (window.Addon == 1) {
 		o.style.overflowX = "hidden";
 	});
 
-	AddEvent("HitTest", function (Ctrl, pt, flags) {
-		if (Ctrl.Type == CTRL_TC) {
-			return Addons.TabPlus.FromPt(Ctrl.Id, pt);
-		}
-	});
-
 	AddEvent("Lock", function (Ctrl, i, bLock) {
-		Addons.TabPlus.Style(Ctrl, i)
+		Addons.TabPlus.Style(Ctrl, i, true)
 	});
 
-	AddEvent("DragEnter", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
-		if (Ctrl.Type == CTRL_WB) {
-			return S_OK;
-		}
-	});
-
-	AddEvent("DragOver", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
-		if (Ctrl.Type == CTRL_WB) {
-			var TC = Addons.TabPlus.TCFromPt(pt);
-			if (TC) {
-				var nIndex = Addons.TabPlus.FromPt(TC.Id, pt);
-				if (nIndex >= 0) {
-					if (IsDrag(pt, g_ptDrag)) {
-						var FV = TC[nIndex];
-						if (Addons.TabPlus.DragOpen || (!FV.hwndView && FV.FolderItem.Enum)) {
-							clearTimeout(Addons.TabPlus.tid);
-							g_ptDrag = pt.Clone();
-							Addons.TabPlus.tid = setTimeout(Addons.TabPlus.Over, 300, TC.Id);
-						}
-					}
-					if (dataObj.Count) {
-						var Target = TC[nIndex].FolderItem;
-						if (!api.ILIsEqual(dataObj.Item(-1), Target)) {
-							var DropTarget = api.DropTarget(Target);
-							if (DropTarget) {
-								return DropTarget.DragOver(dataObj, grfKeyState, pt, pdwEffect);
-							}
-						}
-					}
-					pdwEffect[0] = DROPEFFECT_NONE;
-					return S_OK;
-				} else if (dataObj.Count && dataObj.Item(0).IsFolder) {
-					pdwEffect[0] = DROPEFFECT_LINK;
-					return S_OK;
-				}
-			}
-		}
-	});
-
-	AddEvent("Drop", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
-		if (Ctrl.Type == CTRL_WB && !Addons.TabPlus.Drag5) {
-			var TC = Addons.TabPlus.TCFromPt(pt);
-			if (TC) {
-				var nIndex = Addons.TabPlus.FromPt(TC.Id, pt);
-				if (nIndex >= 0) {
-					var hr = S_FALSE;
-					var DropTarget = TC[nIndex].DropTarget;
-					if (DropTarget) {
-						clearTimeout(Addons.TabPlus.tid);
-						Addons.TabPlus.bDropping = true;
-						hr = DropTarget.Drop(dataObj, grfKeyState, pt, pdwEffect);
-						Addons.TabPlus.bDropping = false;
-					}
-					return hr;
-				} else if (dataObj.Count) {
-					for (var i = 0; i < dataObj.Count; i++) {
-						var FV = TC.Selected.Navigate(dataObj.Item(i), SBSP_NEWBROWSER);
-						TC.Move(FV.Index, TC.Count - 1);
-					}
-				}
-			}
-		}
-	});
-
-	AddEvent("DragLeave", function (Ctrl) {
-		clearTimeout(Addons.TabPlus.tid);
-		Addons.TabPlus.tid = null;
-		return S_OK;
-	});
-
-	AddEvent("VisibleChanged", function (Ctrl) {
-		if (Ctrl.Type == CTRL_TC) {
-			if (Ctrl.Visible) {
-				Addons.TabPlus.SetActiveColor(Ctrl.Id);
+	AddEvent("VisibleChanged", async function (Ctrl) {
+		if (await Ctrl.Type == CTRL_TC) {
+			if (await Ctrl.Visible) {
+				Addons.TabPlus.SetActiveColor(await Ctrl.Id);
 			}
 			Addons.TabPlus.Resize();
 		}
 	});
 
-	AddEvent("SelectionChanged", function (Ctrl) {
-		if (Ctrl.Type == CTRL_TC) {
-			Addons.TabPlus.Arrange(Ctrl.Id);
-			Addons.TabPlus.Class(Ctrl, Ctrl.SelectedIndex);
+	AddEvent("SelectionChanged", async function (Ctrl) {
+		if (await Ctrl.Type == CTRL_TC) {
+			Addons.TabPlus.Arrange(await Ctrl.Id);
+			Addons.TabPlus.Class(Ctrl, await Ctrl.SelectedIndex);
 		}
 	});
 
-	AddEvent("Arrange", function (Ctrl) {
-		if (Ctrl.Type == CTRL_TC) {
-			Addons.TabPlus.Arrange(Ctrl.Id);
+	AddEvent("Arrange", async function (Ctrl) {
+		if (await Ctrl.Type == CTRL_TC) {
+			Addons.TabPlus.Arrange(await Ctrl.Id);
 		}
 	});
 
-	AddEvent("ChangeView", function (Ctrl) {
-		var TC = Ctrl.Parent;
+	AddEvent("ChangeView", async function (Ctrl) {
+		var TC = await Ctrl.Parent;
 		if (TC) {
-			var i = Addons.TabPlus.nIndex[TC.Id];
-			var o = document.getElementById("tabplus_" + TC.Id + "_" + i);
+			var Id = await TC.Id;
+			var i = Addons.TabPlus.nIndex[Id];
+			var o = document.getElementById("tabplus_" + Id + "_" + i);
 			if (o) {
-				Addons.TabPlus.Style(TC, i)
-				var o = document.getElementById("tabplus_" + TC.Id);
+				await Addons.TabPlus.Style(TC, i, true)
+				var o = document.getElementById("tabplus_" + Id);
 				if (o) {
 					var tabs = o.getElementsByTagName("li");
-					if (TC.Count + (Addons.TabPlus.opt.New ? 1 : 0) != tabs.length) {
+					if (await TC.Count + (Addons.TabPlus.opt.New ? 1 : 0) != tabs.length) {
 						o = null;
 					}
 				}
 			}
 			if (!o) {
-				Addons.TabPlus.SelectionChanged(TC, TC.Id);
+				Addons.TabPlus.SelectionChanged(TC, Id);
 			}
 		}
 	});
 
-	AddEvent("Create", function (Ctrl) {
-		Addons.TabPlus.SelectionChanged(Ctrl, Ctrl.Id);
+	AddEvent("Create", async function (Ctrl) {
+		Addons.TabPlus.SelectionChanged(Ctrl, await Ctrl.Id);
 	});
 
-	AddEvent("CloseView", function (Ctrl) {
-		var TC = Ctrl.Parent;
+	AddEvent("CloseView", async function (Ctrl) {
+		var TC = await Ctrl.Parent;
 		if (TC) {
-			Addons.TabPlus.SelectionChanged(TC, TC.Id);
+			Addons.TabPlus.SelectionChanged(TC, await TC.Id);
 		}
 	});
 
@@ -682,58 +512,41 @@ if (window.Addon == 1) {
 		Addons.TabPlus.Resize();
 	});
 
-	AddEvent("MouseMessage", function (Ctrl, hwnd, msg, mouseData, pt, wHitTestCode, dwExtraInfo) {
-		if (msg == WM_MBUTTONDOWN || msg == WM_MBUTTONUP) {
-			if (Ctrl.Type == CTRL_WB) {
-				var TC = Addons.TabPlus.TCFromPt(pt);
-				if (TC) {
-					if (msg == WM_MBUTTONDOWN) {
-						Addons.TabPlus.Down(TC.Id);
-						Addons.TabPlus.Button[TC.Id] = GetGestureKey().replace(/3/, "") + "3";
-					} else {
-						Addons.TabPlus.Up(TC.Id);
-					}
-					return S_OK;
-				}
-			}
-		}
-	});
-
 	//Init
 	te.Tab = false;
 	var attrs = item.attributes;
 	for (var i = attrs.length; i-- > 0;) {
-		Addons.TabPlus.opt[attrs[i].name] = attrs[i].value;
+		Common.TabPlus.opt[attrs[i].name] = Addons.TabPlus.opt[attrs[i].name] = attrs[i].value;
 	}
-	var r0 = Addons.TabPlus.IconSize;
-	var s = item.getAttribute("IconLock");
-	Addons.TabPlus.ImgLock = MakeImgSrc(s || "bitmap:ieframe.dll,545,13,2", 0, true, r0);
+	if (Addons.TabPlus.opt.Tooltips) {
+		Addons.TabPlus.str.CloseTab = await GetText("Close Tab");
+		Addons.TabPlus.str.NewTab = await GetText("New tab");
+	}
+	var r0 = Math.round((GetNum(Addons.TabPlus.opt.IconSize) || 13) * screen.deviceYDPI / 96);
+	var s = Addons.TabPlus.opt.IconLock;
+	Addons.TabPlus.ImgLock = await MakeImgSrc(s || "bitmap:ieframe.dll,545,13,2", 0, true, r0);
 	if (s || WINVER < 0x0602) {
 		Addons.TabPlus.ImgLock2 = '<img draggable="false" src="' + Addons.TabPlus.ImgLock + '" style="width: ' + r0 + 'px">';
 	} else {
 		Addons.TabPlus.ImgLock2 = '<span style="font-size: ' + r0 + 'px">&#128204;</span>';
 	}
-	if (s = item.getAttribute("IconClose")) {
-		Addons.TabPlus.ImgClose = '<img draggable="false" src="' + MakeImgSrc(s, 0, true, r0) + '" style="width: ';
+	if (s = Addons.TabPlus.opt.IconClose) {
+		Addons.TabPlus.ImgClose = '<img draggable="false" src="' + await MakeImgSrc(s, 0, true, r0) + '" style="width: ';
 		Addons.TabPlus.ImgClose2 = '';
 	} else {
 		Addons.TabPlus.ImgClose = '<span style="font-family: marlett; font-size: ';
 		Addons.TabPlus.ImgClose2 = '&#x72;</span>';
 	}
-	if (s = item.getAttribute("IconProtect")) {
-		Addons.TabPlus.ImgProtect = '<img draggable="false" src="' + MakeImgSrc(s, 0, true, r0) + '" style="width: ' + r0 + 'px">';
+	if (s = Addons.TabPlus.opt.IconProtect) {
+		Addons.TabPlus.ImgProtect = '<img draggable="false" src="' + await MakeImgSrc(s, 0, true, r0) + '" style="width: ' + r0 + 'px">';
 	} else {
-		Addons.TabPlus.ImgProtect = '<span style="font-size: '+ r0 + 'px">&#x2764;</span>';
+		Addons.TabPlus.ImgProtect = '<span style="font-size: ' + r0 + 'px">&#x2764;</span>';
 	}
 } else {
-	var ado = OpenAdodbFromTextFile("addons\\" + Addon_Id + "\\options.html");
-	if (ado) {
-		var Icon = document.F.Icon;
-		if (Icon) {
-			Icon.name = "Icon_0";
-		}
-		SetTabContents(0, "General", ado.ReadText(adReadAll));
-		ado.Close();
-		document.getElementById("_Drive").innerHTML = api.LoadString(hShell32, 4122).replace(/ %c:?/, "");
+	var Icon = document.F.Icon;
+	if (Icon) {
+		Icon.name = "Icon_0";
 	}
+	await SetTabContents(0, "General", await ReadTextFile("addons\\" + Addon_Id + "\\options.html"));
+	document.getElementById("_Drive").innerHTML = (await api.LoadString(hShell32, 4122)).replace(/ %c:?/, "");
 }

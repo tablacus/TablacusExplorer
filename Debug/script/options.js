@@ -707,9 +707,9 @@ async function ReplaceX(mode, form) {
 	g_bChanged = true;
 }
 
-function RemoveX(mode) {
+async function RemoveX(mode) {
 	ClearX(mode);
-	if (g_x[mode].selectedIndex < 0 || !confirmOk()) {
+	if (g_x[mode].selectedIndex < 0 || !await confirmOk()) {
 		return;
 	}
 	var i = g_x[mode].selectedIndex;

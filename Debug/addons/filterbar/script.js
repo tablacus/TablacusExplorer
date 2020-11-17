@@ -91,7 +91,7 @@ if (window.Addon == 1) {
 		},
 
 		ShowButton: function () {
-			if (WINVER < 0x602) {
+			if (WINVER < 0x602 || window.chrome) {
 				document.getElementById("ButtonFilterClear").style.display = document.F.filter.value.length ? "inline" : "none";
 			}
 		},

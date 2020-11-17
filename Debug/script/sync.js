@@ -78,7 +78,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201114 ? te.Version : 20201116;
+		return te.Version < 20201117 ? te.Version : 20201117;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -1488,7 +1488,7 @@ NavigateFV = function (FV, Path, wFlags, bInputed) {
 			Path = decodeURI(Path);
 		}
 	}
-	if (wFlags === void 0) {
+	if (wFlags == null) {
 		wFlags = GetOpenMode(FV);
 	}
 	if (GetLock(FV)) {

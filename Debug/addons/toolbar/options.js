@@ -1,34 +1,35 @@
-var ado = OpenAdodbFromTextFile("addons\\" + Addon_Id + "\\options.html");
-if (ado) {
-	var ar = ado.ReadText(adReadAll).split("<!--panel-->");;
-	SetTabContents(0, "View", ar[0]);
-	SetTabContents(4, "General", ar[1]);
-	ado.Close();
-}
+var Addon_Id = "toolbar";
+AddonName = "ToolBar";
 
-SaveLocation = function () {
+var ar = (await ReadTextFile("addons\\" + Addon_Id + "\\options.html")).split("<!--panel-->");
+SetTabContents(0, "View", ar[0]);
+SetTabContents(4, "General", ar[1]);
+
+SaveLocation = async function () {
+	if (g_bChanged) {
+		ReplaceTB('List');
+	}
 	if (g_Chg["List"]) {
-		var xml = CreateXml();
-		var root = xml.createElement("TablacusExplorer");
+		var xml = await CreateXml();
+		var root = await xml.createElement("TablacusExplorer");
 		var o = document.E.List;
 		for (var i = 0; i < o.length; i++) {
-			var item = xml.createElement("Item");
+			var item = await xml.createElement("Item");
 			var a = o[i].value.split(g_sep);
 			item.setAttribute("Name", a[0]);
 			item.text = a[1];
 			item.setAttribute("Type", a[2]);
 			item.setAttribute("Icon", a[3]);
 			item.setAttribute("Height", a[4]);
-			root.appendChild(item);
+			await root.appendChild(item);
 		}
-		xml.appendChild(root);
-		SaveXmlEx(AddonName.toLowerCase() + ".xml", xml);
+		await xml.appendChild(root);
+		SaveXmlEx(Addon_Id + ".xml", xml);
 		te.Data["xml" + AddonName] = xml;
-		xml = null;
 	}
 }
 
-EditTB = function (mode) {
+EditTB = async function () {
 	if (g_x.List.selectedIndex < 0) {
 		return;
 	}
@@ -41,13 +42,14 @@ EditTB = function (mode) {
 			document.E.elements[ix[i]].value = a[i];
 		}
 	}
-	var p = { s: a[1] };
-	MainWindow.OptionDecode(a[2], p);
-	document.E.Path.value = p.s;
+	var p = await api.CreateObject("Object");
+	p.s = a[1];
+	await MainWindow.OptionDecode(a[2], p);
+	document.E.Path.value = await p.s;
 	SetImage(document.E, "_IconE");
 }
 
-ReplaceTB = function (mode) {
+ReplaceTB = async function (mode) {
 	ClearX();
 	if (g_x.List.selectedIndex < 0) {
 		g_x.List.selectedIndex = ++g_x.List.length - 1;
@@ -55,14 +57,14 @@ ReplaceTB = function (mode) {
 	}
 	var sel = g_x.List[g_x.List.selectedIndex];
 	var o = document.E.Type;
-	var p = { s: document.E.Path.value };
-	MainWindow.OptionEncode(o[o.selectedIndex].value, p);
-	SetData(sel, [document.E.Name.value, p.s, o[o.selectedIndex].value, document.E.Icon.value, document.E.Height.value]);
+	var p = await api.CreateObject("Object");
+	p.s = document.E.Path.value;
+	await MainWindow.OptionEncode(o[o.selectedIndex].value, p);
+	SetData(sel, [document.E.Name.value, await p.s, o[o.selectedIndex].value, document.E.Icon.value, document.E.Height.value]);
 	g_Chg[mode] = true;
 }
 
-AddonName = Addon_Id;
-LoadX("List", dialogArguments.Data.nEdit ? function () {
-	g_x.List.selectedIndex = dialogArguments.Data.nEdit - 1;
+LoadX("List", await dialogArguments.Data.nEdit ? async function () {
+	g_x.List.selectedIndex = await dialogArguments.Data.nEdit - 1;
 	EditTB();
 } : null, document.E);

@@ -3,64 +3,63 @@ var Default = "ToolBar2Left";
 var AddonName = "ToolBar";
 
 if (window.Addon == 1) {
-	Addons.ToolBar =
-	{
-		Click: function (i, bNew) {
-			var items = te.Data.xmlToolBar.getElementsByTagName("Item");
+	Addons.ToolBar = {
+		Click: async function (i, bNew) {
+			var items = await GetXmlItems(await te.Data.xmlToolBar.getElementsByTagName("Item"));
 			var item = items[i];
 			if (item) {
-				var type = item.getAttribute("Type");
-				Exec(te, item.text, (bNew && api.PathMatchSpec(type, "Open;Open in background")) ? "Open in new tab" : item.getAttribute("Type"), te.hwnd, null);
+				Exec(te, item.text, (bNew && await api.PathMatchSpec(type, "Open;Open in background")) ? "Open in new tab" : item.Type, await te.hwnd, null);
 			}
 			return false;
 		},
 
-		Down: function (i) {
-			if (api.GetKeyState(VK_MBUTTON) < 0) {
+		Down: function (ev, i) {
+			if (ev.button == 1) {
 				return this.Click(i, true);
 			}
 		},
 
-		Open: function (i) {
+		Open: async function (ev, i) {
 			if (Addons.ToolBar.bClose) {
 				return S_OK;
 			}
-			if (api.GetKeyState(VK_LBUTTON) < 0) {
-				var items = te.Data.xmlToolBar.getElementsByTagName("Item");
+			if (ev.button == 0) {
+				var items = await GetXmlItems(await te.Data.xmlToolBar.getElementsByTagName("Item"));
 				var item = items[i];
-				var hMenu = api.CreatePopupMenu();
-				var arMenu = [];
+				var hMenu = await api.CreatePopupMenu();
+				var arMenu = await api.CreateObject("Array");
 				for (var j = items.length; --j > i;) {
 					arMenu.unshift(j);
 				}
 				var o = document.getElementById("_toolbar" + i);
-				var pt = GetPos(o, true);
-				pt.y += o.offsetHeight * screen.deviceYDPI / screen.logicalYDPI;
-				MakeMenus(hMenu, null, arMenu, items, te, pt);
-				AdjustMenuBreak(hMenu);
+				var p = GetPos(o, 9);
+				var pt = await api.Memory("POINT");
+				pt.x = p.x;
+				pt.y = p.y;
+				await MakeMenus(hMenu, null, arMenu, items, te, pt);
+				await AdjustMenuBreak(hMenu);
 				AddEvent("ExitMenuLoop", function () {
 					Addons.ToolBar.bClose = true;
-					setTimeout("Addons.ToolBar.bClose = false;", 100);
+					setTimeout(function () {
+						Addons.ToolBar.bClose = false;
+					}, 99);
 				});
-				var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null);
+				var nVerb = await api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, await pt.x, await pt.y, await te.hwnd, null);
 				api.DestroyMenu(hMenu);
 				if (nVerb > 0) {
 					item = items[nVerb - 1];
-					Exec(te, item.text, item.getAttribute("Type"), te.hwnd, null);
+					Exec(te, item.text, await item.Type, await te.hwnd, null);
 				}
 				return S_OK;
 			}
 		},
 
-		Popup: function (i) {
-			var items = te.Data.xmlToolBar.getElementsByTagName("Item");
+		Popup: async function (ev, i) {
 			if (i >= 0) {
-				var hMenu = api.CreatePopupMenu();
-				api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, 1, GetText("&Edit"));
-				api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, 2, GetText("Add"));
-				var pt = api.Memory("POINT");
-				api.GetCursorPos(pt);
-				var nVerb = api.TrackPopupMenuEx(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, null);
+				var hMenu = await api.CreatePopupMenu();
+				await api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, 1, await GetText("&Edit"));
+				await api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, 2, await GetText("Add"));
+				var nVerb = await api.TrackPopupMenuEx(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, ev.screenX * ui_.Zoom, ev.screenY * ui_.Zoom, await te.hwnd, null, null);
 				if (nVerb == 1) {
 					this.ShowOptions(i + 1);
 				}
@@ -87,29 +86,19 @@ if (window.Addon == 1) {
 			return -1;
 		},
 
-		GetPath: function (items, i) {
-			if (i < items.length) {
-				var s = items[i].getAttribute("Type");
-				if (s.match(/^Open$|^Open in New Tab$|Open in Background/i)) {
-					var line = items[i].text.split("\n");
-					return api.PathUnquoteSpaces(ExtractMacro(null, line[0]));
-				}
-			}
-			return '';
-		},
-
-		Arrange: function () {
+		Arrange: async function () {
 			var s = [];
-			var items = te.Data.xmlToolBar.getElementsByTagName("Item");
+			var items = await GetXmlItems(await te.Data.xmlToolBar.getElementsByTagName("Item"));
 			var menus = 0;
-			for (var i = 0; i < items.length; i++) {
+			var nLen = items.length;
+			for (var i = 0; i < nLen; ++i) {
 				var item = items[i];
-				var strFlag = (api.StrCmpI(item.getAttribute("Type"), "Menus") ? "" : item.text).toLowerCase();
+				var strType = item.Type;
+				var strFlag = (SameText(strType, "Menus") ? item.text : "").toLowerCase();
 				if (strFlag == "close" && menus) {
 					menus--;
 					continue;
 				}
-				var menus1 = menus;
 				if (strFlag == "open") {
 					if (menus++) {
 						continue;
@@ -117,105 +106,112 @@ if (window.Addon == 1) {
 				} else if (menus) {
 					continue;
 				}
-				var img = EncodeSC(ExtractMacro(te, item.getAttribute("Name")));
+				var img = EncodeSC(await ExtractMacro(null, item.Name));
 				if (img == "/" || strFlag == "break") {
-					s.push('<br class="break" />');
+					s.push('<br class="break">');
 				} else if (img == "//" || strFlag == "barbreak") {
-					s.push('<hr class="barbreak" />');
+					s.push('<hr class="barbreak">');
 				} else if (img == "-" || strFlag == "separator") {
 					s.push('<span class="separator">|</span>');
 				} else {
-					var icon = item.getAttribute("Icon");
+					var icon = item.Icon;
 					if (icon) {
-						var h = EncodeSC(item.getAttribute("Height"));
-						var sh = (h != "" ? ' style="height:' + h + 'px"' : '');
+						var h = EncodeSC(item.Height);
+						var sh = {
+							src: await api.PathUnquoteSpaces(await ExtractMacro(null, icon))
+						};
+						if (h != "") {
+							sh.style = 'height:' + h + 'px';
+						}
 						h -= 0;
-						img = '<img src="' + EncodeSC(api.PathUnquoteSpaces(ExtractMacro(te, icon))) + '"' + sh + '>';
+						img = await GetImgTag(sh, h);
 					}
-					s.push('<span id="_toolbar', i, '" ', api.StrCmpI(item.getAttribute("Type"), "Menus") || api.StrCmpI(item.text, "Open") ? 'onclick="Addons.ToolBar.Click(' + i + ')" onmousedown="Addons.ToolBar.Down(' : 'onmousedown="Addons.ToolBar.Open(');
-					s.push(i, ')" oncontextmenu="Addons.ToolBar.Popup(', i, '); return false" onmouseover="MouseOver(this)" onmouseout="MouseOut()" class="button" title="', EncodeSC(ExtractMacro(te, item.getAttribute("Name"))), '">', img, '</span>');
+					s.push('<span id="_toolbar', i, '" ', !SameText(strType, "Menus") || !SameText(await item.text, "Open") ? 'onclick="Addons.ToolBar.Click(' + i + ')" onmousedown="Addons.ToolBar.Down(event, ' : 'onmousedown="Addons.ToolBar.Open(event, ');
+					s.push(i, ')" oncontextmenu="Addons.ToolBar.Popup(event, ', i, '); return false" onmouseover="MouseOver(this)" onmouseout="MouseOut()" class="button" title="', EncodeSC(await ExtractMacro(te, await item.Name)), '">', img, '</span>');
 				}
 			}
-			if (items.length == 0) {
-				s.push('<label id="_toolbar', items.length, '" title="Edit" onclick="Addons.ToolBar.ShowOptions()" oncontextmenu="Addons.ToolBar.ShowOptions(); return false" onmouseover="MouseOver(this)" onmouseout="MouseOut()" class="button">+</label>');
+			if (nLen == 0) {
+				s.push('<label id="_toolbar', nLen, '" title="Edit" onclick="Addons.ToolBar.ShowOptions()" oncontextmenu="Addons.ToolBar.ShowOptions(); return false" onmouseover="MouseOver(this)" onmouseout="MouseOut()" class="button">+</label>');
 			}
 			document.getElementById('_toolbar').innerHTML = s.join("");
 			Resize();
 		}
 	}
-	te.Data.xmlToolBar = OpenXml("toolbar.xml", false, true);
+	te.Data.xmlToolBar = await OpenXml("toolbar.xml", false, true);
 	SetAddon(Addon_Id, Default, '<span id="_' + Addon_Id + '"></span>');
 	Addons.ToolBar.Arrange();
 
-	AddEvent("DragEnter", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
-		if (Ctrl.Type == CTRL_WB) {
-			return S_OK;
-		}
-	});
-
-	AddEvent("DragOver", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
-		if (Ctrl.Type == CTRL_WB) {
-			var items = te.Data.xmlToolBar.getElementsByTagName("Item");
-			var i = Addons.ToolBar.FromPt(items.length + 1, pt);
-			if (i >= 0) {
-				if (i == items.length) {
-					pdwEffect[0] = DROPEFFECT_LINK;
-					MouseOver(document.getElementById("_toolbar" + i));
-					return S_OK;
-				}
-				hr = Exec(te, items[i].text, items[i].getAttribute("Type"), te.hwnd, pt, dataObj, grfKeyState, pdwEffect);
-				if (hr == S_OK && pdwEffect[0]) {
-					MouseOver(document.getElementById("_toolbar" + i));
-				}
+	if (!window.chrome) {
+		AddEvent("DragEnter", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
+			if (Ctrl.Type == CTRL_WB) {
 				return S_OK;
 			}
-		}
-		MouseOut("_toolbar");
-	});
+		});
 
-	AddEvent("Drop", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
-		MouseOut();
-		if (Ctrl.Type == CTRL_WB) {
-			var items = te.Data.xmlToolBar.getElementsByTagName("Item");
-			var i = Addons.ToolBar.FromPt(items.length + 1, pt);
-			if (i >= 0) {
-				if (i == items.length) {
-					var xml = te.Data.xmlToolBar;
-					var root = xml.documentElement;
-					if (!root) {
-						xml.appendChild(xml.createProcessingInstruction("xml", 'version="1.0" encoding="UTF-8"'));
-						root = xml.createElement("TablacusExplorer");
-						xml.appendChild(root);
+		AddEvent("DragOver", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
+			if (Ctrl.Type == CTRL_WB) {
+				var items = te.Data.xmlToolBar.getElementsByTagName("Item");
+				var i = Addons.ToolBar.FromPt(items.length + 1, pt);
+				if (i >= 0) {
+					if (i == items.length) {
+						pdwEffect[0] = DROPEFFECT_LINK;
+						MouseOver(document.getElementById("_toolbar" + i));
+						return S_OK;
 					}
-					if (root) {
-						for (i = 0; i < dataObj.Count; i++) {
-							var FolderItem = dataObj.Item(i);
-							var item = xml.createElement("Item");
-							item.setAttribute("Name", api.GetDisplayNameOf(FolderItem, SHGDN_INFOLDER));
-							item.text = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSINGEX | SHGDN_FORPARSING);
-							if (fso.FileExists(item.text)) {
-								item.text = api.PathQuoteSpaces(item.text);
-								item.setAttribute("Type", "Exec");
-							} else {
-								item.setAttribute("Type", "Open");
-							}
-							root.appendChild(item);
-						}
-						SaveXmlEx("toolbar.xml", xml);
-						Addons.ToolBar.Arrange();
-						ApplyLang(document);
+					hr = Exec(te, items[i].text, items[i].getAttribute("Type"), te.hwnd, pt, dataObj, grfKeyState, pdwEffect);
+					if (hr == S_OK && pdwEffect[0]) {
+						MouseOver(document.getElementById("_toolbar" + i));
 					}
 					return S_OK;
 				}
-				return Exec(te, items[i].text, items[i].getAttribute("Type"), te.hwnd, pt, dataObj, grfKeyState, pdwEffect, true);
 			}
-		}
-	});
+			MouseOut("_toolbar");
+		});
 
-	AddEvent("DragLeave", function (Ctrl) {
-		MouseOut();
-		return S_OK;
-	});
+		AddEvent("Drop", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
+			MouseOut();
+			if (Ctrl.Type == CTRL_WB) {
+				var items = te.Data.xmlToolBar.getElementsByTagName("Item");
+				var i = Addons.ToolBar.FromPt(items.length + 1, pt);
+				if (i >= 0) {
+					if (i == items.length) {
+						var xml = te.Data.xmlToolBar;
+						var root = xml.documentElement;
+						if (!root) {
+							xml.appendChild(xml.createProcessingInstruction("xml", 'version="1.0" encoding="UTF-8"'));
+							root = xml.createElement("TablacusExplorer");
+							xml.appendChild(root);
+						}
+						if (root) {
+							for (i = 0; i < dataObj.Count; i++) {
+								var FolderItem = dataObj.Item(i);
+								var item = xml.createElement("Item");
+								item.setAttribute("Name", api.GetDisplayNameOf(FolderItem, SHGDN_INFOLDER));
+								item.text = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSINGEX | SHGDN_FORPARSING);
+								if (fso.FileExists(item.text)) {
+									item.text = api.PathQuoteSpaces(item.text);
+									item.setAttribute("Type", "Exec");
+								} else {
+									item.setAttribute("Type", "Open");
+								}
+								root.appendChild(item);
+							}
+							SaveXmlEx("toolbar.xml", xml);
+							Addons.ToolBar.Arrange();
+							ApplyLang(document);
+						}
+						return S_OK;
+					}
+					return Exec(te, items[i].text, items[i].getAttribute("Type"), te.hwnd, pt, dataObj, grfKeyState, pdwEffect, true);
+				}
+			}
+		});
+
+		AddEvent("DragLeave", function (Ctrl) {
+			MouseOut();
+			return S_OK;
+		});
+	}
 } else {
 	importScript("addons\\" + Addon_Id + "\\options.js");
 }

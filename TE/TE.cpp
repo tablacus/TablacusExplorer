@@ -5917,12 +5917,12 @@ VOID ArrangeWindowTC(CteTabCtrl *pTC, RECT *prc)
 	if (!prc) {
 		return;
 	}
-	RECT rcTab;
-	pTC->LockUpdate();
-	try {
-		if (!pTC->m_bEmpty && pTC->m_bVisible) {
-			int nAlign = g_param[TE_Tab] ? pTC->m_param[TC_Align] : 0;
-			teSetRect(pTC->m_hwndStatic, prc->left, prc->top, prc->right, prc->bottom);
+	if (!pTC->m_bEmpty && pTC->m_bVisible) {
+		RECT rcTab;
+		int nAlign = g_param[TE_Tab] ? pTC->m_param[TC_Align] : 0;
+		teSetRect(pTC->m_hwndStatic, prc->left, prc->top, prc->right, prc->bottom);
+		pTC->LockUpdate();
+		try {
 			int left = prc->left;
 			int top = prc->top;
 			OffsetRect(prc, -left, -top);
@@ -6022,9 +6022,9 @@ VOID ArrangeWindowTC(CteTabCtrl *pTC, RECT *prc)
 					RECT rcTree = *prc;
 					rcTree.right = prc->left + pSB->m_param[SB_TreeWidth] - 2;
 					MoveWindow(pSB->m_pTV->m_hwnd, rcTree.left, rcTree.top, rcTree.right - rcTree.left, rcTree.bottom - rcTree.top, TRUE);
-	#ifdef _2000XP
+#ifdef _2000XP
 					pSB->m_pTV->SetObjectRect();
-	#endif
+#endif
 					prc->left += pSB->m_param[SB_TreeWidth];
 				}
 				if (pSB->m_bVisible) {
@@ -6055,16 +6055,13 @@ VOID ArrangeWindowTC(CteTabCtrl *pTC, RECT *prc)
 					}
 				}
 			}
-		}
-	} catch (...) {
-		g_nException = 0;
+		} catch (...) {
+			g_nException = 0;
 #ifdef _DEBUG
-		g_strException = L"ArrangeWindowTC";
+			g_strException = L"ArrangeWindowTC";
 #endif
-	}
-	pTC->UnlockUpdate();
-	if (g_bBlink || pTC->m_nLockUpdate) {
-		return;
+		}
+		pTC->UnlockUpdate();
 	}
 }
 
@@ -17827,7 +17824,7 @@ CteWebBrowser::CteWebBrowser(HWND hwndParent, WCHAR *szPath, VARIANT *pvArg)
 		VARIANT v;
 		VariantInit(&v);
 		m_pWebBrowser->GetProperty(L"version", &v);
-		if (GetIntFromVariantClear(&v) >= 20111400) {
+		if (GetIntFromVariantClear(&v) >= 20111500) {
 			g_bBlink = TRUE;
 			m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&g_pSP));
 		} else {
