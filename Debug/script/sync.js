@@ -78,7 +78,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201117 ? te.Version : 20201117;
+		return te.Version < 20201117 ? te.Version : 20201119;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -2935,6 +2935,7 @@ SetLang2 = function (s, v) {
 }
 
 LoadDBFromTSV = function (DB, fn) {
+	DB.Clear();
 	var ado = OpenAdodbFromTextFile(fn, "utf-8");
 	if (ado) {
 		while (!ado.EOS) {
@@ -3192,14 +3193,14 @@ FolderMenu = {
 };
 
 BasicDB = function (name) {
-	this.DB = api.CreateObject("Object");
+	this.DB = {};
 
 	this.Get = function (n) {
 		return this.DB[n] || "";
 	}
 
 	this.Set = function (n, s) {
-		var s0 = this.DB[n];
+		var s0 = this.DB[n] || "";
 		if (s0 != s) {
 			if (s) {
 				this.DB[n] = s;
@@ -3213,27 +3214,26 @@ BasicDB = function (name) {
 	}
 
 	this.ENumCB = function (fncb) {
-		for (var list = api.CreateObject("Enum", this.DB); !list.atEnd(); list.moveNext()) {
-			var n = list.item();
+		for (var n in this.DB) {
 			fncb(n, this.DB[n]);
 		}
 	}
 
 	this.Clear = function () {
-		for (var list = api.CreateObject("Enum", this.DB); !list.atEnd(); list.moveNext()) {
+		for (var n in this.DB) {
 			delete this.DB[n];
 		}
 		return this;
 	}
 
-	this.Load = function () {
-		LoadDBFromTSV(this, this.path);
+	this.Load = function (fn) {
+		LoadDBFromTSV(this, fn || this.path);
 		return this;
 	}
 
-	this.Save = function () {
+	this.Save = function (fn) {
 		if (this.bChanged) {
-			SaveDBToTSV(this, this.path);
+			SaveDBToTSV(this, fn || this.path);
 			this.bChanged = false;
 		}
 	}

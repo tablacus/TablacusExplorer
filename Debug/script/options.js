@@ -1820,23 +1820,19 @@ InitLocation = async function () {
 	document.getElementById("__MOUSEDATA").innerHTML = ar.join("");
 	var info = await GetAddonInfo(Addon_Id);
 	document.title = await info.Name;
-	var items = await te.Data.Addons.getElementsByTagName(Addon_Id);
-	var item = null;
-	if (await GetLength(items)) {
-		item = await items[0];
-		var Location = await item.getAttribute("Location");
-		if (!Location) {
-			Location = await param.Default;
-		}
-		for (var i = document.L.length; i--;) {
-			if (SameText(Location, document.L[i].value)) {
-				document.L[i].checked = true;
-				break;
-			}
+	var item = await GetAddonElement(Addon_Id);
+	var Location = item.getAttribute("Location");
+	if (!Location) {
+		Location = await param.Default;
+	}
+	for (var i = document.L.length; i--;) {
+		if (SameText(Location, document.L[i].value)) {
+			document.L[i].checked = true;
+			break;
 		}
 	}
 	var locs = {};
-	items = await MainWindow.g_.Locations;
+	var items = await MainWindow.g_.Locations;
 	for (var list = await api.CreateObject("Enum", items); !await list.atEnd(); await list.moveNext()) {
 		var i = await list.item();
 		locs[i] = [];
@@ -1884,21 +1880,19 @@ InitLocation = async function () {
 			o.value = j;
 		}
 	}
-	if (item) {
-		var ele = document.F;
-		for (var i = ele.length; i--;) {
-			var n = ele[i].id || ele[i].name;
-			if (n && !/=/.test(n)) {
-				s = (/^!/.test(n) ? !await item.getAttribute(n.slice(1)) : await item.getAttribute(n)) || "";
-				if (/Name$/.test(n)) {
-					s = await GetText(s);
-				}
-				if (n == "Key") {
-					s = await GetKeyNameG(s);
-				}
-				if (s || s === 0) {
-					SetElementValue(ele[n], s);
-				}
+	var ele = document.F;
+	for (var i = ele.length; i--;) {
+		var n = ele[i].id || ele[i].name;
+		if (n && !/=/.test(n)) {
+			s = (/^!/.test(n) ? !item.getAttribute(n.slice(1)) : item.getAttribute(n)) || "";
+			if (/Name$/.test(n)) {
+				s = await GetText(s);
+			}
+			if (n == "Key") {
+				s = await GetKeyNameG(s);
+			}
+			if (s || s === 0) {
+				SetElementValue(ele[n], s);
 			}
 		}
 	}

@@ -129,7 +129,7 @@ if (window.Addon == 1) {
 				s.push('">');
 				var bLock = await FV.Data.Lock;
 				var bProtect = await FV.Data.Protect;
-				var r0 = Addons.TabPlus.IconSize;
+				var r0 = Addons.TabPlus.opt.IconSize;
 				var w = (Addons.TabPlus.opt.Close || bLock || bProtect) ? -r0 : 0;
 				if (!Addons.TabPlus.opt.NoLock && bLock) {
 					s.push('<td style="padding-right: 2px; vertical-align: middle; width: ', r0, 'px">', Addons.TabPlus.ImgLock2, '</td>');
@@ -162,7 +162,7 @@ if (window.Addon == 1) {
 				if (bUseClose && Addons.TabPlus.opt.Align > 1 && Addons.TabPlus.opt.Width) {
 					w -= r0;
 				}
-				w += Number(Addons.TabPlus.opt.Width) || 0;
+				w += Addons.TabPlus.opt.Width;
 				if (w > 0) {
 					s.push((Addons.TabPlus.opt.Fix ? 'width: ' : 'max-width:'), w, 'px');
 				}
@@ -427,7 +427,7 @@ if (window.Addon == 1) {
 		}
 	}
 
-	importJScript("addons\\" + Addon_Id + "\\sync.js");
+	$.importScript("addons\\" + Addon_Id + "\\sync.js");
 
 	AddEvent("PanelCreated", function (Ctrl, Id) {
 		var s = ['<ul id="tabplus_$" class="tab0" oncontextmenu="Addons.TabPlus.Popup(event, $);return false"'];
@@ -522,7 +522,9 @@ if (window.Addon == 1) {
 		Addons.TabPlus.str.CloseTab = await GetText("Close Tab");
 		Addons.TabPlus.str.NewTab = await GetText("New tab");
 	}
-	var r0 = Math.round((GetNum(Addons.TabPlus.opt.IconSize) || 13) * screen.deviceYDPI / 96);
+	Addons.TabPlus.opt.Width = GetNum(Addons.TabPlus.opt.Width);
+	Addons.TabPlus.opt.IconSize = GetNum(Addons.TabPlus.opt.IconSize) || 13;
+	var r0 = Math.round(Addons.TabPlus.opt.IconSize * screen.deviceYDPI / 96);
 	var s = Addons.TabPlus.opt.IconLock;
 	Addons.TabPlus.ImgLock = await MakeImgSrc(s || "bitmap:ieframe.dll,545,13,2", 0, true, r0);
 	if (s || WINVER < 0x0602) {

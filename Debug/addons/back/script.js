@@ -30,7 +30,7 @@ if (window.Addon == 1) {
 					await api.InsertMenuItem(hMenu, MAXINT, false, mii);
 				}
 				var x = ev.screenX * ui_.Zoom;
-				var y = ev.screenX * ui_.Zoom;
+				var y = ev.screenY * ui_.Zoom;
 				var nVerb = await api.TrackPopupMenuEx(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, x, y, await te.hwnd, null, null);
 				api.DestroyMenu(hMenu);
 				if (nVerb) {

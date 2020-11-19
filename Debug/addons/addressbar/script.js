@@ -80,7 +80,7 @@ if (window.Addon == 1) {
 								arHTML.unshift('<span id="addressbar' + n + '" class="button" style="line-height: ' + height + 'px; vertical-align: middle" onclick="Addons.AddressBar.Popup(this,' + n + ')" onmouseover="MouseOver(this)" onmouseout="MouseOut()" oncontextmenu="Addons.AddressBar.Exec(); return false;">' + BUTTONS.next + '</span>');
 								o.insertAdjacentHTML("afterbegin", arHTML[0]);
 							}
-							arHTML.unshift('<span id="addressbar' + n + '_" class="button" style="line-height: ' + height + 'px" onclick="Addons.AddressBar.Go(this, ' + n + ')" onmousedown="return Addons.AddressBar.GoEx(event, this, ' + n + ')" onmouseover="MouseOver(this)" onmouseout="MouseOut()" oncontextmenu="Addons.AddressBar.Exec(); return false;">' + EncodeSC(Items[n].name) + '</span>');
+							arHTML.unshift('<span id="addressbar' + n + '_" class="button" style="line-height: ' + height + 'px" onclick="Addons.AddressBar.Go(' + n + ')" onmousedown="return Addons.AddressBar.GoEx(event, this, ' + n + ')" onmouseover="MouseOver(this)" onmouseout="MouseOut()" oncontextmenu="Addons.AddressBar.Exec(); return false;">' + EncodeSC(Items[n].name) + '</span>');
 							o.insertAdjacentHTML("afterbegin", arHTML[0]);
 							if (o.offsetWidth > width && n > 0) {
 								arHTML.splice(0, 2);
@@ -128,15 +128,13 @@ if (window.Addon == 1) {
 			}
 		},
 
-		Go: async function (o, n) {
+		Go: async function (n) {
 			Navigate(await Addons.AddressBar.GetPath(n), await GetNavigateFlags());
-			api.OutputDebugString("Go:" + document.activeElement.tagName + "\n");
-
 		},
 
 		GoEx: async function (ev, o, n) {
 			if (ev.button == 1) {
-				Addons.AddressBar.Go(o, n);
+				Addons.AddressBar.Go(n);
 				return false;
 			} else if (ev.button == 2) {
 				var pt = GetPos(o, 9);

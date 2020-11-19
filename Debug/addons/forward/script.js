@@ -29,7 +29,7 @@ if (window.Addon == 1) {
 					await api.InsertMenuItem(hMenu, MAXINT, false, mii);
 				}
 				var x = ev.screenX * ui_.Zoom;
-				var y = ev.screenX * ui_.Zoom;
+				var y = ev.screenY * ui_.Zoom;
 				var nVerb = await api.TrackPopupMenuEx(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, x, y, await te.hwnd, null, null);
 				api.DestroyMenu(hMenu);
 				if (nVerb) {
@@ -53,5 +53,5 @@ if (window.Addon == 1) {
 	});
 	var h = GetIconSize(item.getAttribute("IconSize"));
 	var src = item.getAttribute("Icon") || (h <= 16 ? "bitmap:ieframe.dll,206,16,1" : "bitmap:ieframe.dll,214,24,1");
-	SetAddon(Addon_Id, Default, ['<span class="button" onclick="Addons.Forward.ExecEx(this)" oncontextmenu="return Addons.Forward.Popup(event)" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', await GetImgTag({ id: "ImgForward", title: "Forward", src: src }, h), '</span>']);
+	SetAddon(Addon_Id, Default, ['<span class="button" onclick="Addons.Forward.ExecEx(this)" oncontextmenu="Addons.Forward.Popup(event); return false;" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', await GetImgTag({ id: "ImgForward", title: "Forward", src: src }, h), '</span>']);
 }
