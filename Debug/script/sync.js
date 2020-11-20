@@ -78,7 +78,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201117 ? te.Version : 20201119;
+		return te.Version < 20201117 ? te.Version : 20201120;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);

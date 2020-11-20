@@ -54,6 +54,7 @@ InitUI = async function () {
 	ui_.TEPath = await api.GetModuleFileName(null);
 	ui_.Installed = GetParentFolderName(ui_.TEPath);
 	ui_.DoubleClickTime = await sha.GetSystemInformation("DoubleClickTime");
+	ui_.hwnd = await te.hwnd;
 	var arg = await te.Arguments;
 	if (arg) {
 		window.dialogArguments = arg;
@@ -331,7 +332,7 @@ CheckUpdate3 = async function (xhr, url, arg) {
 		await api.SHFileOperation(FO_DELETE, arDel, null, FOF_SILENT | FOF_NOCONFIRMATION, false);
 	}
 	var ppid = await api.Memory("DWORD");
-	await api.GetWindowThreadProcessId(te.hwnd, ppid);
+	await api.GetWindowThreadProcessId(ui_.hwnd, ppid);
 	arg.pid = await ppid[0];
 	MainWindow.CreateUpdater(arg);
 }

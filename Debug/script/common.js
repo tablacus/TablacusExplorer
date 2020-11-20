@@ -219,8 +219,21 @@ amp2ul = function (s) {
 	return s.replace(/&amp;|&/ig, "");
 }
 
+EscapeJsonObj = {
+	"\\": "\\\\",
+	'"': '\\"',
+	"/": "\\/",
+	"\b": "\\b",
+	"\f": "\\f",
+	"\n": "\\n",
+	"\r": "\\r",
+	"\t": "\\t"
+}
+
 EscapeJson = function (s) {
-	return s.replace(/([\\|"|\/])/g, '\\$1').replace(/[\b]/g, '\\b').replace(/[\f]/g, '\\f').replace(/[\n]/g, '\\n').replace(/[\r]/g, '\\r').replace(/[\t]/g, '\\t');
+	return s.replace(/([\\"\/\b\f\n\r\t])/g, function (all, s) {
+		return EscapeJsonObj[s];
+	});
 };
 
 GetAddonInfo2 = async function (xml, info, Tag, bTrans) {

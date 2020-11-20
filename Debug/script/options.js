@@ -2331,7 +2331,7 @@ async function SelectLangID(o) {
 		await api.InsertMenu(hMenu, i, MF_BYPOSITION | MF_STRING, GetNum(i) + 1, title);
 	}
 	var pt = GetPos(o, 1);
-	var nVerb = await api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y + o.offsetHeight, await te.hwnd, null, null);
+	var nVerb = await api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y + o.offsetHeight, ui_.hwnd, null, null);
 	if (nVerb) {
 		document.F.Conf_Lang.value = Langs[nVerb - 1];
 		g_bChanged = true;
@@ -2418,7 +2418,7 @@ function SetTable(table, td) {
 async function AddonsAppend() {
 	var Progress = await api.CreateObject("ProgressDialog");
 	var td = [];
-	Progress.StartProgressDialog(await te.hwnd, null, 2);
+	Progress.StartProgressDialog(ui_.hwnd, null, 2);
 	try {
 		Progress.SetAnimation(hShell32, 150);
 		Progress.SetLine(1, await api.LoadString(hShell32, 13585) || await api.LoadString(hShell32, 6478), true);
@@ -2835,7 +2835,7 @@ async function SortAddons(n) {
 			var i = 0;
 			var Progress = await api.CreateObject("ProgressDialog");
 			Progress.SetAnimation(hShell32, 150);
-			Progress.StartProgressDialog(await te.hwnd, null, 2);
+			Progress.StartProgressDialog(ui_.hwnd, null, 2);
 			try {
 				for (var i in ar) {
 					bCancelled = await Progress.HasUserCancelled();

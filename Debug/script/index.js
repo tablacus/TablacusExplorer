@@ -31,7 +31,7 @@ async function Resize2() {
 	pt = GetPos(document.getElementById("bottombar"));
 	te.offsetBottom = ode.offsetHeight - pt.y;
 	RunEvent1("Resize");
-	api.PostMessage(await te.hwnd, WM_SIZE, 0, 0);
+	api.PostMessage(ui_.hwnd, WM_SIZE, 0, 0);
 }
 
 async function ResizeSideBar(z, h) {
@@ -133,7 +133,7 @@ SetAddon = async function (strName, Location, Tag, strVAlign) {
 RunSplitter = async function (ev, n) {
 	if (ev.button == 0) {
 		api.ObjPutI(await g_.mouse, "Capture", n);
-		api.SetCapture(await te.hwnd);
+		api.SetCapture(ui_.hwnd);
 	}
 }
 
