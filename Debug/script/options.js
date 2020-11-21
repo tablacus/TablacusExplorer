@@ -995,23 +995,7 @@ async function SaveAddons() {
 				Addons[Id] = document.getElementById("enable_" + Id).checked;
 			}
 		}
-		if (window.g_bAddonLoading) {
-			var root = await te.Data.Addons.documentElement;
-			if (root) {
-				var items = await root.childNodes;
-				if (items) {
-					var nLen = await GetLength(items);
-					for (var i = 0; i < nLen; ++i) {
-						var item = await items[i];
-						var Id = await item.nodeName;
-						if (Addons[Id] == null) {
-							Addons[Id] = await item.getAttribute("Enabled");
-						}
-					}
-				}
-			}
-		}
-		await MainWindow.SaveAddons(Addons);
+		await MainWindow.SaveAddons(Addons, window.g_bAddonLoading);
 	}
 }
 
@@ -1290,6 +1274,7 @@ async function AddonRemove(Id) {
 	if (!await confirmOk()) {
 		return;
 	}
+	MainWindow.SaveConfig();
 	MainWindow.AddonDisabled(Id);
 	if (await AddonBeforeRemove(Id) < 0) {
 		return;
@@ -2537,6 +2522,7 @@ async function Install(o, bUpdate) {
 		return;
 	}
 	var Id = o.title.replace(/_.*$/, "");
+	await MainWindow.SaveConfig();
 	await MainWindow.AddonDisabled(Id);
 	if (await AddonBeforeRemove(Id) < 0) {
 		return;

@@ -413,9 +413,9 @@ AddEvent("SystemMessage", async function (Ctrl, hwnd, msg, wParam, lParam) {
 
 // Browser Events
 
-AddEventEx(window, "load", function () {
+AddEventEx(window, "load", async function () {
 	ApplyLang(document);
-	if (api.GetKeyState(VK_SHIFT) < 0 && api.GetKeyState(VK_CONTROL) < 0) {
+	if (await api.GetKeyState(VK_SHIFT) < 0 && await api.GetKeyState(VK_CONTROL) < 0) {
 		ShowOptions("Tab=Add-ons");
 	}
 });

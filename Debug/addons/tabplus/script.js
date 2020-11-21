@@ -12,7 +12,6 @@ if (window.Addon == 1) {
 		Button: [],
 		Drag: [],
 		Drop: [],
-		pt: api.Memory("POINT"),
 		nCount: [],
 		nIndex: [],
 		bFlag: [],
@@ -22,6 +21,7 @@ if (window.Addon == 1) {
 		tids: [],
 		tidResize: null,
 		nSelected: [],
+		pt: await api.Memory("POINT"),
 
 		Arrange: async function (Id) {
 			delete Addons.TabPlus.tids[Id];
@@ -127,7 +127,7 @@ if (window.Addon == 1) {
 					c = (c & 0xff0000) * .0045623779296875 + (c & 0xff00) * 2.29296875 + (c & 0xff) * 114;
 					s.push(';color:', c > 127000 ? "#000" : "#fff");
 				}
-				s.push('" onmousedown="Addons.TabPlus.Down(event, ', Id, ', ', i, ')" ">');
+				s.push('">');
 				var bLock = await FV.Data.Lock;
 				var bProtect = await FV.Data.Protect;
 				var r0 = Addons.TabPlus.opt.IconSize;
@@ -244,21 +244,20 @@ if (window.Addon == 1) {
 			rcItem[i] = await GetRect(o);
 		},
 
-		Down: async function (ev, Id, i) {
+		Down: async function (ev, Id) {
 			Addons.TabPlus.buttons = ev.buttons;
-			var o = document.getElementById("tabplus_" + Id);
-			if (o) {
-				var TC = await te.Ctrl(CTRL_TC, Id);
-				if (TC) {
-					var TC = await te.Ctrl(CTRL_TC, Id);
-					Addons.TabPlus.Click = [Id, i];
-					Addons.TabPlus.Button[Id] = await GetGestureButton();
+			Addons.TabPlus.pt.x = ev.screenX * ui_.Zoom;
+			Addons.TabPlus.pt.y = ev.screenY * ui_.Zoom;
+			var TC = await te.Ctrl(CTRL_TC, Id);
+			if (TC) {
+				var n = await Sync.TabPlus.FromPt(Id, Addons.TabPlus.pt);
+				Addons.TabPlus.Click = [Id, n];
+				Addons.TabPlus.Button[Id] = await GetGestureButton();
+				if (n >= 0) {
 					if (ev.button == 0) {
-						TC.SelectedIndex = i;
+						TC.SelectedIndex = n;
 						return false;
 					}
-					Common.TabPlus.rc[Id] = await GetRect(o);
-					Addons.TabPlus.SetRect(Id, i, document.getElementById("tabplus_" + Id + "_" + i));
 				}
 			}
 			return true;
@@ -288,6 +287,7 @@ if (window.Addon == 1) {
 						var pdwEffect = [DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK];
 						api.SHDoDragDrop(null, await te.Ctrl(CTRL_TC, res[1])[res[2]].FolderItem, te, pdwEffect[0], pdwEffect);
 						Common.TabPlus.Drag5 = void 0;
+						Addons.TabPlus.pt = pt;
 					}
 				}
 			}
@@ -319,24 +319,14 @@ if (window.Addon == 1) {
 		},
 
 		DblClick: async function (ev, Id) {
-			var TC = await te.Ctrl(CTRL_TC, Id);
-			Addons.TabPlus.GestureExec(TC, ev, Addons.TabPlus.Button[Id] + Addons.TabPlus.Button[Id]);
-		},
-
-		Over: async function (Id, pt) {
-			if (await Common.TabPlus.bDropping) {
+			var pt = await api.Memory("POINT");
+			pt.x = ev.screenX * ui_.Zoom;
+			pt.y = ev.screenY * ui_.Zoom;
+			if (await IsDrag(pt, Addons.TabPlus.pt)) {
 				return;
 			}
-			if (!await IsDrag(pt, await g_.ptDrag)) {
-				var nIndex = await Sync.TabPlus.FromPt(Id, pt);
-				if (nIndex >= 0) {
-					var TC = await te.Ctrl(CTRL_TC, Id);
-					if (Addons.TabPlus.opt.NoDragOpen) {
-						setTimeout(Addons.TabPlus.Select, 500, Id, await TC.SelectedIndex);
-					}
-					TC.SelectedIndex = nIndex;
-				}
-			}
+			var TC = await te.Ctrl(CTRL_TC, Id);
+			Addons.TabPlus.GestureExec(TC, ev, Addons.TabPlus.Button[Id] + Addons.TabPlus.Button[Id]);
 		},
 
 		Select: function (Id, nIndex) {
@@ -405,32 +395,68 @@ if (window.Addon == 1) {
 					}
 				}
 			}, 500);
+		},
+
+		Over: async function (Id, pt) {
+			if (await Common.TabPlus.bDropping) {
+				return;
+			}
+			if (!await IsDrag(pt, await g_.ptDrag)) {
+				var nIndex = await Sync.TabPlus.FromPt(Id, pt);
+				if (nIndex >= 0) {
+					var TC = await te.Ctrl(CTRL_TC, Id);
+					if (Addons.TabPlus.opt.NoDragOpen) {
+						setTimeout(Addons.TabPlus.Select, 500, Id, await TC.SelectedIndex);
+					}
+					TC.SelectedIndex = nIndex;
+				}
+			}
+		},
+
+		DragOver: function (Id, pt) {
+			if (Addons.TabPlus.tid) {
+				clearTimeout(Addons.TabPlus.tid);
+			}
+			Addons.TabPlus.tid = setTimeout(Addons.TabPlus.Over, 300, Id, pt);
+		},
+
+		DragLeave: function () {
+			if (Addons.TabPlus.tid) {
+				clearTimeout(Addons.TabPlus.tid);
+				delete Addons.TabPlus.tid;
+			}
+		},
+
+		GetRects: async function () {
+			var cTC = await te.Ctrls(CTRL_TC, true);
+			var nCount = await cTC.Count;
+			for (var i = 0; i < nCount; ++i) {
+				var TC = await cTC[i];
+				var Id = await TC.Id;
+				var o = document.getElementById("tabplus_" + Id);
+				if (o) {
+					Common.TabPlus.rc[Id] = await GetRect(o);
+					var nCount1 = await TC.Count;
+					for (var j = 0; j < nCount1; ++j) {
+						o = document.getElementById("tabplus_" + Id + "_" + j);
+						if (o) {
+							Addons.TabPlus.SetRect(Id, j, o);
+						}
+					}
+				}
+			}
 		}
 	};
 
 	Common.TabPlus = await api.CreateObject("Object");
 	Common.TabPlus.opt = await api.CreateObject("Object");
 
-	Common.TabPlus.DragOver = function (Id, x, y) {
-		if (Addons.TabPlus.tid) {
-			clearTimeout(Addons.TabPlus.tid);
-		}
-		Addons.TabPlus.tid = setTimeout(Addons.TabPlus.Over, 300, Id, x, y);
-	}
-
-	Common.TabPlus.DragLeave = function () {
-		if (Addons.TabPlus.tid) {
-			clearTimeout(Addons.TabPlus.tid);
-			delete Addons.TabPlus.tid;
-		}
-	}
-
 	$.importScript("addons\\" + Addon_Id + "\\sync.js");
 
 	AddEvent("PanelCreated", function (Ctrl, Id) {
 		var s = ['<ul id="tabplus_$" class="tab0" oncontextmenu="Addons.TabPlus.Popup(event, $);return false"'];
 		s.push(' ondblclick="Addons.TabPlus.DblClick(event, $);return false" onmousewheel="Addons.TabPlus.Wheel(event, $)" onresize="Resize();"');
-		s.push(' onmouseup="return Addons.TabPlus.Up(event, $)" onclick="return false;" style="width: 100%"></ul>');
+		s.push(' onmousedown="Addons.TabPlus.Down(event, $)" onmouseup="return Addons.TabPlus.Up(event, $)" onclick="return false;" style="width: 100%"></ul>');
 		var n = Addons.TabPlus.opt.Align || 0;
 		var arAlign = ["InnerTop_", "InnerBottom_", "InnerLeft_", "InnerRight_"];
 		var o = document.getElementById(SetAddon(null, arAlign[n] + Id, s.join("").replace(/\$/g, Id)));
@@ -468,8 +494,10 @@ if (window.Addon == 1) {
 
 	AddEvent("SelectionChanged", async function (Ctrl) {
 		if (await Ctrl.Type == CTRL_TC) {
+			var Id = await Ctrl.Id;
 			Addons.TabPlus.Class(Ctrl, await Ctrl.SelectedIndex);
-			Addons.TabPlus.Class(Ctrl, Addons.TabPlus.nSelected[await Ctrl.Id]);
+			Addons.TabPlus.Class(Ctrl, Addons.TabPlus.nSelected[Id]);
+			Addons.TabPlus.Arrange(Id);
 		}
 	});
 

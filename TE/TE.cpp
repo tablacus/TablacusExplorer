@@ -2312,7 +2312,7 @@ VOID teVariantChangeType(VARIANTARG * pvargDest, const VARIANTARG * pvarSrc, VAR
 			return;
 		}
 	}
-	if (pvarSrc->vt == VT_DISPATCH || FAILED(VariantChangeType(pvargDest, pvarSrc, 0, vt))) {
+	if (pvarSrc->vt == VT_DISPATCH || pvarSrc->vt == VT_EMPTY || pvarSrc->vt == VT_NULL || FAILED(VariantChangeType(pvargDest, pvarSrc, 0, vt))) {
 		pvargDest->llVal = 0;
 	}
 }

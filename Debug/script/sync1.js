@@ -1206,7 +1206,23 @@ SaveConfig = function () {
 	}
 }
 
-SaveAddons = function (Addons) {
+SaveAddons = function (Addons, bLoading) {
+	if (bLoading) {
+		var root = te.Data.Addons.documentElement;
+		if (root) {
+			var items = root.childNodes;
+			if (items) {
+				var nLen = items.length;
+				for (var i = 0; i < nLen; ++i) {
+					var item = items[i];
+					var Id = item.nodeName;
+					if (Addons[Id] == null) {
+						Addons[Id] = item.getAttribute("Enabled");
+					}
+				}
+			}
+		}
+	}
 	te.Data.bErrorAddons = false;
 	var xml = CreateXml();
 	var root = xml.createElement("TablacusExplorer");

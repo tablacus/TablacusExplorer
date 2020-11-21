@@ -52,7 +52,7 @@ AddEvent("DragOver", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 					var FV = TC[nIndex];
 					if (!Common.TabPlus.opt.NoDragOpen || (!FV.hwndView && FV.FolderItem.Enum)) {
 						g_.ptDrag = pt.Clone();
-						api.Invoke(Common.TabPlus.DragOver, TC.Id, pt);
+						InvokeUI("Addons.TabPlus.DragOver", TC.Id, pt);
 					}
 				}
 				if (Common.TabPlus.Drag5) {
@@ -105,7 +105,7 @@ AddEvent("Drop", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 				var hr = S_FALSE;
 				var DropTarget = TC[nIndex].DropTarget;
 				if (DropTarget) {
-					api.Invoke(Common.TabPlus.DragLeave);
+					InvokeUI("Addons.TabPlus.DragLeave");
 					Common.TabPlus.bDropping = true;
 					hr = DropTarget.Drop(dataObj, grfKeyState, pt, pdwEffect);
 					Common.TabPlus.bDropping = false;
@@ -123,6 +123,12 @@ AddEvent("Drop", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 });
 
 AddEvent("DragLeave", function (Ctrl) {
-	api.Invoke(Common.TabPlus.DragLeave);
+	InvokeUI("Addons.TabPlus.DragLeave");
 	return S_OK;
+});
+
+AddEvent("SystemMessage", function (Ctrl, hwnd, msg, wParam, lParam) {
+	if (Ctrl.Type == CTRL_TE && msg == WM_ACTIVATE) {
+		InvokeUI("Addons.TabPlus.GetRects");
+	}
 });

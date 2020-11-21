@@ -78,7 +78,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201117 ? te.Version : 20201120;
+		return te.Version < 20201121 ? te.Version : 20201121;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -236,7 +236,7 @@ BrowseForFolder = function (path) {
 }
 
 OpenDialogEx = function (path, filter, bFilesOnly) {
-	var commdlg = api.CreateObect("CommonDialog");
+	var commdlg = api.CreateObject("CommonDialog");
 	var te_path = te.Data.Installed;
 	var res = /^\.\.(\/.*)/.exec(path);
 	if (res) {
@@ -570,7 +570,6 @@ AddEventId = function (Name, Id, fn) {
 }
 
 AddonDisabled = function (Id) {
-	SaveConfig();
 	RunEvent1("AddonDisabled", Id);
 	if (eventTE.addondisabledex) {
 		Id = Id.toLowerCase();
@@ -2961,7 +2960,6 @@ SaveDBToTSV = function (DB, fn) {
 	} catch (e) { }
 }
 
-
 FolderMenu = {
 	Items: [],
 	SortMode: 0,
@@ -3192,7 +3190,18 @@ FolderMenu = {
 	}
 };
 
-BasicDB = function (name) {
+CreateSync = function (n, a, b, c, d, e) {
+	var ar = n.split(".");
+	var fn = window;
+	var s, parent;
+	while (s = ar.shift()) {
+		parent = fn;
+		fn = fn[s];
+	}
+	return new fn(a, b ,c ,d , e);
+}
+
+BasicDB = function (name, bLoad) {
 	this.DB = {};
 
 	this.Get = function (n) {
@@ -3208,14 +3217,15 @@ BasicDB = function (name) {
 				delete this.DB[n];
 			}
 			this.bChanged = true;
-			var fn = api.ObjGetI(this, "OnChange");;
-			fn && fn(n, s, s0);
+			if (this.OnChange) {
+				api.Invoke(this.OnChange, [n, s, s0]);
+			}
 		}
 	}
 
 	this.ENumCB = function (fncb) {
 		for (var n in this.DB) {
-			fncb(n, this.DB[n]);
+			api.Invoke(fncb, [n, this.DB[n]]);
 		}
 	}
 
@@ -3226,14 +3236,14 @@ BasicDB = function (name) {
 		return this;
 	}
 
-	this.Load = function (fn) {
-		LoadDBFromTSV(this, fn || this.path);
+	this.Load = function () {
+		LoadDBFromTSV(this, this.path);
 		return this;
 	}
 
-	this.Save = function (fn) {
+	this.Save = function () {
 		if (this.bChanged) {
-			SaveDBToTSV(this, fn || this.path);
+			SaveDBToTSV(this, this.path);
 			this.bChanged = false;
 		}
 	}
@@ -3241,6 +3251,9 @@ BasicDB = function (name) {
 	this.Close = function () { }
 
 	this.path = OrganizePath(name, BuildPath(te.Data.DataFolder, "config")) + ".tsv";
+	if (bLoad) {
+		this.Load();
+	}
 }
 
 SimpleDB = BasicDB;
