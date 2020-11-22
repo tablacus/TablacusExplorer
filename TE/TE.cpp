@@ -17824,7 +17824,7 @@ CteWebBrowser::CteWebBrowser(HWND hwndParent, WCHAR *szPath, VARIANT *pvArg)
 		VARIANT v;
 		VariantInit(&v);
 		m_pWebBrowser->GetProperty(L"version", &v);
-		if (GetIntFromVariantClear(&v) >= 20111500) {
+		if (GetIntFromVariantClear(&v) >= 20112000) {
 			g_bBlink = TRUE;
 			m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&g_pSP));
 		} else {
@@ -20822,10 +20822,13 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 {
 	try {
 		HRESULT hr = NULL;
-
 		int nArg = pDispParams ? pDispParams->cArgs - 1 : -1;
 		if (pVarResult) {
 			VariantInit(pVarResult);
+		}
+		if (wFlags == DISPATCH_PROPERTYGET && dispIdMember >= TE_METHOD) {
+			teSetObjectRelease(pVarResult, new CteDispatch(this, 0, dispIdMember));
+			return S_OK;
 		}
 		switch(dispIdMember) {			
 		case TE_METHOD + 1://QueryContextMenu

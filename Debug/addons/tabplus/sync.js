@@ -37,6 +37,7 @@ AddEvent("HitTest", function (Ctrl, pt, flags) {
 
 AddEvent("DragEnter", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 	if (Ctrl.Type == CTRL_WB) {
+		InvokeUI("Addons.TabPlus.SetRects");
 		pdwEffect[0] = DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK;
 		return S_OK;
 	}
@@ -128,7 +129,7 @@ AddEvent("DragLeave", function (Ctrl) {
 });
 
 AddEvent("SystemMessage", function (Ctrl, hwnd, msg, wParam, lParam) {
-	if (Ctrl.Type == CTRL_TE && msg == WM_ACTIVATE) {
-		InvokeUI("Addons.TabPlus.GetRects");
+	if (Ctrl.Type == CTRL_TE && (msg == WM_ACTIVATE || msg == WM_ACTIVATEAPP)) {
+		InvokeUI("Addons.TabPlus.SetRects");
 	}
 });

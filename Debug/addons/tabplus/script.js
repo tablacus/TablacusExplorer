@@ -12,6 +12,7 @@ if (window.Addon == 1) {
 		Button: [],
 		Drag: [],
 		Drop: [],
+		pt: await api.Memory("POINT"),
 		nCount: [],
 		nIndex: [],
 		bFlag: [],
@@ -21,7 +22,6 @@ if (window.Addon == 1) {
 		tids: [],
 		tidResize: null,
 		nSelected: [],
-		pt: await api.Memory("POINT"),
 
 		Arrange: async function (Id) {
 			delete Addons.TabPlus.tids[Id];
@@ -250,7 +250,7 @@ if (window.Addon == 1) {
 			Addons.TabPlus.pt.y = ev.screenY * ui_.Zoom;
 			var TC = await te.Ctrl(CTRL_TC, Id);
 			if (TC) {
-				var n = await Sync.TabPlus.FromPt(Id, Addons.TabPlus.pt);
+				var n = await Addons.TabPlus.FromPt(Id, Addons.TabPlus.pt);
 				Addons.TabPlus.Click = [Id, n];
 				Addons.TabPlus.Button[Id] = await GetGestureButton();
 				if (n >= 0) {
@@ -376,6 +376,19 @@ if (window.Addon == 1) {
 			}
 		},
 
+		FromPt: async function (Id, pt) {
+			var x = await pt.x - screenLeft * ui_.Zoom;
+			var y = await pt.y - screenTop * ui_.Zoom;
+			var re = new RegExp("tabplus_" + Id + "_(\\d+)", "");
+			for (var el = document.elementFromPoint(x, y); el && !/UL/i.test(el.tagName); el = el.parentElement) {
+				var res = re.exec(el.id);
+				if (res) {
+					return res[1];
+				}
+			}
+			return -1;
+		},
+
 		Resize: function () {
 			if (Addons.TabPlus.tidResize) {
 				return;
@@ -402,7 +415,7 @@ if (window.Addon == 1) {
 				return;
 			}
 			if (!await IsDrag(pt, await g_.ptDrag)) {
-				var nIndex = await Sync.TabPlus.FromPt(Id, pt);
+				var nIndex = await Addons.TabPlus.FromPt(Id, pt);
 				if (nIndex >= 0) {
 					var TC = await te.Ctrl(CTRL_TC, Id);
 					if (Addons.TabPlus.opt.NoDragOpen) {
@@ -427,7 +440,7 @@ if (window.Addon == 1) {
 			}
 		},
 
-		GetRects: async function () {
+		SetRects: async function () {
 			var cTC = await te.Ctrls(CTRL_TC, true);
 			var nCount = await cTC.Count;
 			for (var i = 0; i < nCount; ++i) {

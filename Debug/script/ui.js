@@ -27,7 +27,7 @@ InitUI = async function () {
 
 	if (WINVER > 0x603) {
 		BUTTONS = {
-			opened: '<b style="font-family: Consolas; transform: scale(1.2,1) rotate(-90deg)">&lt;</b>',
+			opened: '<b style="font-family: Consolas; transform: scale(1.2,1) rotate(-90deg); display: inline-block">&lt;</b>',
 			closed: '<b style="font-family: Consolas; transform: scale(1,1.2) translateX(1px); opacity: 0.6">&gt;</b>',
 			parent: '&laquo;',
 			next: '<b style="font-family: Consolas; opacity: 0.6; transform: scale(0.75,0.9); text-shadow: 1px 0">&gt;</b>',
