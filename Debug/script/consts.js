@@ -39,9 +39,16 @@ AddEventEx = function (w, Name, fn) {
 }
 
 BuildPath = function () {
-	var s = arguments.length ? String(arguments[0]) : "";
-	for (var i = 1; i < arguments.length; ++i) {
-		s = s.replace(/\\+$/, "") + "\\" + arguments[i];
+	var s = "";
+	var q;
+	for (var i = 0; i < arguments.length; ++i) {
+		if (q = arguments[i].replace(/[\/\\]$/, "")) {
+			if (s) {
+				s += "\\" + q;
+			} else {
+				s = q;
+			}
+		}
 	}
 	return s.replace(/\//g, "\\");
 };
