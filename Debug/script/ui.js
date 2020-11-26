@@ -675,11 +675,12 @@ DetectProcessTag = function (e) {
 	return /input|textarea/i.test(el.tagName) || /selectable/i.test(el.className);
 }
 
-GetFolderViewEx = async function (Ctrl, pt, bStrict) {
-	if (!await Ctrl) {
+GetFolderView = GetFolderViewEx = async function (Ctrl, pt, bStrict) {
+	if (!Ctrl) {
 		return await te.Ctrl(CTRL_FV);
 	}
-	if (!await Ctrl.Type) {
+	var nType = await Ctrl.Type;
+	if (nType == null) {
 		var o = Ctrl.offsetParent;
 		while (o) {
 			var res = /^Panel_(\d+)$/.exec(o.id);
@@ -690,7 +691,31 @@ GetFolderViewEx = async function (Ctrl, pt, bStrict) {
 		}
 		return await te.Ctrl(CTRL_FV);
 	}
-	return await GetFolderView(Ctrl, pt, bStrict);
+	if (nType <= CTRL_EB) {
+		return Ctrl;
+	}
+	if (nType == CTRL_TV) {
+		return await Ctrl.FolderView;
+	}
+	if (nType != CTRL_TC) {
+		return await te.Ctrl(CTRL_FV);
+	}
+	if (pt) {
+		var FV = await Ctrl.HitTest(pt);
+		if (FV) {
+			return FV;
+		}
+	}
+	if (!bStrict || !pt) {
+		return await Ctrl.Selected;
+	}
+}
+
+AddFavoriteEx = async function (Ctrl, pt) {
+	var FV = await GetFolderViewEx(Ctrl, pt);
+	await FV.Focus();
+	AddFavorite();
+	return S_OK
 }
 
 SelectItem = function (FV, path, wFlags, tm) {

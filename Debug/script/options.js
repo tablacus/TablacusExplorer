@@ -1034,8 +1034,8 @@ async function LoadAddons() {
 
 	var AddonId = {};
 	var wfd = await api.Memory("WIN32_FIND_DATA");
-	var path = BuildPath(ui_.Installed, "addons\\");
-	var hFind = await api.FindFirstFile(path + "*", wfd);
+	var path = BuildPath(ui_.Installed, "addons");
+	var hFind = await api.FindFirstFile(path + "\\*", wfd);
 	for (var bFind = hFind != INVALID_HANDLE_VALUE; await bFind; bFind = await api.FindNextFile(hFind, wfd)) {
 		var Id = await wfd.cFileName;
 		if (Id != "." && Id != ".." && !AddonId[Id]) {
@@ -1084,7 +1084,7 @@ async function LoadAddons() {
 		await api.DoEvents();
 	}
 	for (var Id in AddonId) {
-		if (await $.fso.FileExists(path + Id + "\\config.xml")) {
+		if (await $.fso.FileExists(BuildPath(path, Id, "config.xml"))) {
 			AddAddon(table, Id, false);
 		}
 	}
@@ -2299,13 +2299,13 @@ async function SelectLangID(o) {
 	}
 	api.FindClose(hFind);
 	Langs.sort();
-	var path = BuildPath(ui_.Installed, "lang\\");
+	var path = BuildPath(ui_.Installed, "lang");
 	var hMenu = await api.CreatePopupMenu();
 	for (i in Langs) {
 		var xml = await api.CreateObject("Msxml2.DOMDocument");
 		xml.async = false;
 		var title = Langs[i];
-		await xml.load(path + title + '.xml');
+		await xml.load(BuildPath(path, title + '.xml'));
 		var items = await xml.getElementsByTagName('lang');
 		if (items && await GetLength(items)) {
 			var item = await items[0];

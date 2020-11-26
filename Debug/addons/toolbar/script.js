@@ -8,7 +8,7 @@ if (window.Addon == 1) {
 			var items = await GetXmlItems(await te.Data.xmlToolBar.getElementsByTagName("Item"));
 			var item = items[i];
 			if (item) {
-				Exec(te, item.text, (bNew && await api.PathMatchSpec(type, "Open;Open in background")) ? "Open in new tab" : item.Type, await te.hwnd, null);
+				Exec(te, item.text, (bNew && /^Open$|^Open in background$/i.test(type)) ? "Open in new tab" : item.Type, ui_.hwnd, null);
 			}
 			return false;
 		},
@@ -24,18 +24,15 @@ if (window.Addon == 1) {
 				return S_OK;
 			}
 			if (ev.button == 0) {
-				var items = await GetXmlItems(await te.Data.xmlToolBar.getElementsByTagName("Item"));
-				var item = items[i];
+				var items = await te.Data.xmlToolBar.getElementsByTagName("Item");
+				var item = await items[i];
 				var hMenu = await api.CreatePopupMenu();
 				var arMenu = await api.CreateObject("Array");
-				for (var j = items.length; --j > i;) {
-					arMenu.unshift(j);
+				for (var j = GetLength(items); --j > i;) {
+					await arMenu.unshift(j);
 				}
 				var o = document.getElementById("_toolbar" + i);
-				var p = GetPos(o, 9);
-				var pt = await api.Memory("POINT");
-				pt.x = p.x;
-				pt.y = p.y;
+				var pt = GetPosEx(o, 9);
 				await MakeMenus(hMenu, null, arMenu, items, te, pt);
 				await AdjustMenuBreak(hMenu);
 				AddEvent("ExitMenuLoop", function () {
@@ -44,11 +41,11 @@ if (window.Addon == 1) {
 						Addons.ToolBar.bClose = false;
 					}, 99);
 				});
-				var nVerb = await api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, await pt.x, await pt.y, await te.hwnd, null);
+				var nVerb = await api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, await pt.x, await pt.y, ui_.hwnd, null);
 				api.DestroyMenu(hMenu);
 				if (nVerb > 0) {
-					item = items[nVerb - 1];
-					Exec(te, item.text, await item.Type, await te.hwnd, null);
+					item = await items[nVerb - 1];
+					Exec(te, await item.text, await item.getAttribute("Type"), ui_.hwnd, null);
 				}
 				return S_OK;
 			}
@@ -59,7 +56,7 @@ if (window.Addon == 1) {
 				var hMenu = await api.CreatePopupMenu();
 				await api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, 1, await GetText("&Edit"));
 				await api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, 2, await GetText("Add"));
-				var nVerb = await api.TrackPopupMenuEx(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, ev.screenX * ui_.Zoom, ev.screenY * ui_.Zoom, await te.hwnd, null, null);
+				var nVerb = await api.TrackPopupMenuEx(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, ev.screenX * ui_.Zoom, ev.screenY * ui_.Zoom, ui_.hwnd, null, null);
 				if (nVerb == 1) {
 					this.ShowOptions(i + 1);
 				}
