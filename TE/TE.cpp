@@ -10700,6 +10700,9 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 				}
 				break;
 			case TET_Status:
+				if (!g_pTC) {
+					return;
+				}
 				pSB = g_pTC->GetShellBrowser(g_pTC->m_nIndex);
 				if (pSB) {
 					if (pSB->m_bBeforeNavigate) {

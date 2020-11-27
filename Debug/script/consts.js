@@ -23,14 +23,20 @@ if (!window.Promise) {
 	}
 }
 
-RemoveAsync = function (s) {
-	return s.replace(/([^\.\w])(async |await |debugger;)/g, "$1");
+FixScript = RemoveAsync = function (s, a) {
+	if (a) {
+		return "(async () => {" + s + "\n})();";
+	}
+	if (window.chrome || document.documentMode == 11) {
+		return s.replace(/([^\.\w])(async |await )/g, "$1");
+	}
+	return s.replace(/([^\.\w])(async |await )/g, "$1").replace(/([^\.\w])(const |let )/g, "$1var ");
 }
 
 AddEventEx = function (w, Name, fn) {
 	if (w.addEventListener) {
 		if ("string" === typeof fn) {
-			fn = new Function(window.chrome ? "(async () => {" + fn + "\n})();" : RemoveAsync(fn));
+			fn = new Function(FixScript(fn, window.chrome));
 		}
 		w.addEventListener(Name, fn, false);
 	} else if (w.attachEvent) {
@@ -79,7 +85,7 @@ LoadScript = function (js, cb) {
 				ado.CharSet = "utf-8";
 				ado.Open();
 				ado.LoadFromFile(fn);
-				var src = RemoveAsync(ado.ReadText());
+				var src = FixScript(ado.ReadText());
 				ado.Close();
 				document.write('<script type="text/javascript">\n' + src + '\n</script>');
 			}

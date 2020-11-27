@@ -6,14 +6,14 @@ async function Resize2() {
 		ui_.tidResize = void 0;
 	}
 	ResetScroll();
-	var o = document.getElementById("toolbar");
-	var offsetTop = o ? o.offsetHeight : 0;
+	let o = document.getElementById("toolbar");
+	const offsetTop = o ? o.offsetHeight : 0;
 
-	var h = 0;
+	let h = 0;
 	o = document.getElementById("bottombar");
-	var offsetBottom = o.offsetHeight;
+	const offsetBottom = o.offsetHeight;
 	o = document.getElementById("client");
-	var ode = document.documentElement || document.body;
+	const ode = document.documentElement || document.body;
 	if (o) {
 		h = ode.offsetHeight - offsetBottom - offsetTop;
 		if (h < 0) {
@@ -42,7 +42,7 @@ async function ResizeSideBar(z, h) {
 		o.style.display = "";
 		if (w != o.offsetWidth) {
 			o.style.width = w + "px";
-			for (var i = 1; i <= 3; ++i) {
+			for (let i = 1; i <= 3; ++i) {
 				document.getElementById(z + "Bar" + i).style.width = w + "px";
 			}
 			document.getElementById(z.toLowerCase() + "barT").style.width = w + "px";
@@ -149,7 +149,7 @@ DisableImage = function (img, bDisable) {
 		if (window.chrome) {
 			if (bDisable) {
 				var ar = [];
-				for (var i = 0; i < img.style.length; ++i) {
+				for (let i = 0; i < img.style.length; ++i) {
 					if (img.style[i] != "filter") {
 						ar.push(img.style[i] + ":" + img.style[img.style[i]]);
 					}
@@ -194,14 +194,17 @@ StartGestureTimer = async function () {
 }
 
 FocusFV = function () {
-	setTimeout(function () {
-		var el;
+	setTimeout(async function () {
+		let el;
 		if (document.activeElement) {
-			var rc = document.activeElement.getBoundingClientRect();
+			const rc = document.activeElement.getBoundingClientRect();
 			el = document.elementFromPoint(rc.left + 2, rc.top + 2);
 		}
 		if (!el || !/input|textarea/i.test(el.tagName)) {
-			GetFolderView().Focus();
+			const FV = await GetFolderView();
+			if (FV) {
+				FV.Focus();
+			}
 		}
 	}, ui_.DoubleClickTime);
 }
@@ -274,7 +277,7 @@ te.OnArrange = async function (Ctrl, rc) {
 			s.push('<tr><td id="InnerLeft_$" class="sidebar" style="width: 0; display: none; overflow: auto"></td><td style="width: 100%"><div id="InnerTop_$" style="display: none"></div>');
 			s.push('<table id="InnerTop2_$" class="layout">');
 			s.push('<tr><td id="Inner1Left_$" class="toolbar1"></td><td id="Inner1Center_$" class="toolbar2" style="white-space: nowrap"></td><td id="Inner1Right_$" class="toolbar3"></td></tr></table>');
-			s.push('<table id="InnerView_$" class="layout" style="width: 100%"><tr><td id="Inner2Left_$" style="width: 0"></td><td id="Inner2Center_$"></td><td id="Inner2Right_$" style="width: 0; overflow: auto"></td></tr></table>');
+			s.push('<table id="InnerView_$" class="layout" style="width: 100%"><tr><td id="Inner2Left_$" style="width: 0"></td><td id="Inner2Center_$" style="width: 100%"></td><td id="Inner2Right_$" style="width: 0; overflow: auto"></td></tr></table>');
 			s.push('<div id="InnerBottom_$"></div></td><td id="InnerRight_$" class="sidebar" style="width: 0; display: none"></td></tr></table>');
 			document.getElementById("Panel").insertAdjacentHTML("BeforeEnd", s.join("").replace(/\$/g, Id));
 			await PanelCreated(Ctrl, Id);
@@ -283,36 +286,28 @@ te.OnArrange = async function (Ctrl, rc) {
 			ApplyLang(o);
 			Resize();
 		}
-		o.style.left = await rc.left + "px";
-		o.style.top = await rc.top + "px";
-		if (await Ctrl.Visible) {
-			var s = [await Ctrl.Left, await Ctrl.Top, await Ctrl.Width, await Ctrl.Height].join(",");
-			if (ui_.TCPos[s] && ui_.TCPos[s] != Id) {
-				Ctrl.Close();
-				return;
-			} else {
+		Promise.all([rc.left, rc.top, rc.right, rc.bottom, Ctrl.Visible, Ctrl.Left, Ctrl.Top, Ctrl.Width, Ctrl.Height]).then(function (r) {
+			o.style.left = r[0] + "px";
+			o.style.top = r[1] + "px";
+			if (r[4]) {
+				var s = r.slice(5, 8).join(",");
+				if (ui_.TCPos[s] && ui_.TCPos[s] != Id) {
+					Ctrl.Close();
+					return;
+				}
 				ui_.TCPos[s] = Id;
+				o.style.display = "";
+			} else {
+				o.style.display = "none";
 			}
-			o.style.display = (ui_.IEVer >= 8 && SameText(o.tagName, "td")) ? "table-cell" : "block";
-		} else {
-			o.style.display = "none";
-		}
-		o.style.width = Math.max(await rc.right - await rc.left, 0) + "px";
-		o.style.height = Math.max(await rc.bottom - await rc.top, 0) + "px";
-		rc.top = await rc.top + document.getElementById("InnerTop_" + Id).offsetHeight + document.getElementById("InnerTop2_" + Id).offsetHeight;
-		var w1 = 0, w2 = 0, x = '';
-		for (var i = 0; i <= 1; ++i) {
-			w1 += Number(document.getElementById("Inner" + x + "Left_" + Id).style.width.replace(/\D/g, "")) || 0;
-			w2 += Number(document.getElementById("Inner" + x + "Right_" + Id).style.width.replace(/\D/g, "")) || 0;
-			x = '2';
-		}
-		rc.left = await rc.left + w1;
-		rc.right = await rc.right - w2;
-		rc.bottom = await rc.bottom - document.getElementById("InnerBottom_" + Id).offsetHeight;
-		o = document.getElementById("Inner2Center_" + Id).style;
-		o.width = Math.max(await rc.right - await rc.left, 0) + "px";
-		o.height = Math.max(await rc.bottom - await rc.top, 0) + "px";
-		te.ArrangeCB(Ctrl, rc);
+			o.style.width = Math.max(r[2] - r[0], 0) + "px";
+			o.style.height = Math.max(r[3] - r[1], 0) + "px";
+			rc.left = r[0] + document.getElementById("InnerLeft_" + Id).offsetWidth + document.getElementById("Inner2Left_" + Id).offsetWidth;
+			rc.top = r[1] + document.getElementById("InnerTop_" + Id).offsetHeight + document.getElementById("InnerTop2_" + Id).offsetHeight;
+			rc.right = r[2] - document.getElementById("InnerRight_" + Id).offsetWidth - document.getElementById("Inner2Right_" + Id).offsetWidth;
+			rc.bottom = r[3] - document.getElementById("InnerBottom_" + Id).offsetHeight;
+			te.ArrangeCB(Ctrl, rc);
+		});
 	}
 }
 
@@ -342,7 +337,7 @@ ArrangeAddons = async function () {
 			var arError = await api.CreateObject("Array");
 			var LangId = await GetLangId();
 			var nLen = await GetLength(items);
-			for (var i = 0; i < nLen; ++i) {
+			for (let i = 0; i < nLen; ++i) {
 				var item = await items[i];
 				var Id = await item.nodeName;
 				g_.Error_source = Id;
@@ -414,7 +409,6 @@ AddEvent("SystemMessage", async function (Ctrl, hwnd, msg, wParam, lParam) {
 // Browser Events
 
 AddEventEx(window, "load", async function () {
-	ApplyLang(document);
 	if (await api.GetKeyState(VK_SHIFT) < 0 && await api.GetKeyState(VK_CONTROL) < 0) {
 		ShowOptions("Tab=Add-ons");
 	}
@@ -445,7 +439,7 @@ Init = async function () {
 	OpenMode = await $.OpenMode;
 	await InitMenus();
 	await LoadLang();
-	await ApplyLang(document);
+	await ApplyLang();
 	await ArrangeAddons();
 	await InitWindow();
 	document.F.style.display = "";

@@ -3,15 +3,15 @@
 g_sep = "` ~";
 
 importScript = async function (fn) {
-	var hr = E_FAIL;
-	var s;
+	let hr = E_FAIL;
+	let s;
 	if (window.ReadTextFile) {
 		s = await ReadTextFile(fn);
 	} else {
 		if (!/^[A-Z]:\\|^\\\\\w/i.test(fn)) {
 			fn = BuildPath(GetParentFolderName(await api.GetModuleFileName(null)), fn);
 		}
-		var ado = await api.CreateObject("ads");
+		let ado = await api.CreateObject("ads");
 		ado.CharSet = "utf-8";
 		await ado.Open();
 		await ado.LoadFromFile(fn);
@@ -22,7 +22,7 @@ importScript = async function (fn) {
 		if (/\.vbs$/i.test(fn)) {
 			hr = ExecScriptEx(await window.Ctrl, s, "VBScript", await $.pt, await $.dataObj, await $.grfKeyState, await $.pdwEffect, await $.bDrop);
 		} else {
-			new Function(window.chrome && window.alert ? "(async () => {" + s + "\n})();" : RemoveAsync(s))();
+			new Function(FixScript(s, window.chrome && window.alert))();
 			hr = S_OK;
 		}
 	}
@@ -52,7 +52,7 @@ GetLength = async function (o) {
 }
 
 GetFileName = function (s) {
-	var res = /([^\\\/]*)$/.exec(s);
+	const res = /([^\\\/]*)$/.exec(s);
 	return res ? res[1] : "";
 }
 
@@ -68,7 +68,7 @@ EncodeSC = function (s) {
 
 DecodeSC = function (s) {
 	return String(s).replace(/&([\w#]{1,5});/g, function (strMatch, ref) {
-		var res = /^#x([\da-f]+)$/i.exec(ref)
+		let res = /^#x([\da-f]+)$/i.exec(ref)
 		if (res) {
 			return String.fromCharCode(parseInt(res[1], 16));
 		}
@@ -85,7 +85,7 @@ GetIconSize = function (h, a) {
 }
 
 GetGestureX = async function (ar) {
-	var o, s = "";
+	let o, s = "";
 	while (o = await ar.shift()) {
 		if (await api.GetKeyState(o[1]) < 0) {
 			s += o[0];
@@ -113,7 +113,7 @@ GetGestureButton = async function () {
 }
 
 GetWebColor = function (c) {
-	var res = /(\d{1,3}) (\d{1,3}) (\d{1,3})/.exec(c);
+	const res = /(\d{1,3}) (\d{1,3}) (\d{1,3})/.exec(c);
 	if (res) {
 		c = res[3] * 65536 + res[2] * 256 + res[1] * 1;
 	}
@@ -121,7 +121,7 @@ GetWebColor = function (c) {
 }
 
 GetWinColor = async function (c) {
-	var res = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(c);
+	let res = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(c);
 	if (res) {
 		return Number(["0x", res[3], res[2], res[1]].join(""));
 	}
@@ -166,19 +166,19 @@ delamp = function (s) {
 }
 
 GetConsts = function (s) {
-	var Result = window[s.replace(/\s/, "")];
-	if (Result !== void 0) {
+	const Result = window[s.replace(/\s/, "")];
+	if (Result != null) {
 		return Result;
 	}
 	return s;
 }
 
 CalcVersion = function (s) {
-	var r = 0;
-	var res = /(\d+)\.(\d+)\.(\d+)\.(\d+)/.exec(s);
+	let r = 0;
+	let res = /(\d+)\.(\d+)\.(\d+)\.(\d+)/.exec(s);
 	if (res) {
-		var r = "";
-		for (var i = 1; i < 5; ++i) {
+		r = "";
+		for (let i = 1; i < 5; ++i) {
 			r += ('00000' + res[i]).substr(-6);
 		}
 		return r;
@@ -194,8 +194,8 @@ CalcVersion = function (s) {
 }
 
 LoadImgDll = async function (icon, index) {
-	var i4 = (index || 0) * 4;
-	var hModule = await api.LoadLibraryEx(BuildPath(system32, icon[i4]), 0, LOAD_LIBRARY_AS_DATAFILE);
+	const i4 = (index || 0) * 4;
+	let hModule = await api.LoadLibraryEx(BuildPath(system32, icon[i4]), 0, LOAD_LIBRARY_AS_DATAFILE);
 	if (!hModule && SameText(icon[i4], "ieframe.dll")) {
 		if (icon[i4 + 1] >= 500) {
 			hModule = await api.LoadLibraryEx(BuildPath(system32, "browseui.dll"), 0, LOAD_LIBRARY_AS_DATAFILE);
@@ -237,14 +237,14 @@ EscapeJson = function (s) {
 };
 
 GetAddonInfo2 = async function (xml, info, Tag, bTrans) {
-	var items = await xml.getElementsByTagName(Tag);
+	const items = await xml.getElementsByTagName(Tag);
 	if (await GetLength(items)) {
-		var item = await items[0].childNodes;
-		var nLen = await GetLength(item);
-		for (var i = 0; i < nLen; ++i) {
-			var item1 = await item[i];
-			var n = await item1.tagName;
-			var s = await item1.text || await item1.textContent;
+		const item = await items[0].childNodes;
+		const nLen = await GetLength(item);
+		for (let i = 0; i < nLen; ++i) {
+			const item1 = await item[i];
+			const n = await item1.tagName;
+			const s = await item1.text || await item1.textContent;
 			info[n] = (bTrans && /Name|Description/i.test(n) ? await GetText(s) : s);
 		}
 	}
@@ -256,9 +256,9 @@ if (!window.JSON) {
 			return new Function('return ' + (s || {}))();
 		},
 		stringify: function (o) {
-			var ar = [];
+			const ar = [];
 			if (Array.isArray(o)) {
-				for (var i = 0; i < o.length; ++i) {
+				for (let i = 0; i < o.length; ++i) {
 					if ("object" === typeof o[i]) {
 						ar.push(this.stringify(o[i]));
 					} else {
@@ -267,7 +267,7 @@ if (!window.JSON) {
 				}
 				return '[' + ar.join(",") + "]";
 			}
-			for (var n in o) {
+			for (let n in o) {
 				if ("object" === typeof o[n]) {
 					ar.push('"' + EscapeJson(n) + '":' + this.stringify(o[n]));
 				} else {

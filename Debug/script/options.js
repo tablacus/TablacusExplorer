@@ -31,7 +31,7 @@ xmlAddons = null;
 RunEventUI("BrowserCreatedEx");
 (async function () {
 	arLangs = [await GetLangId()];
-	var res = /(\w+)_/.exec(arLangs[0]);
+	const res = /(\w+)_/.exec(arLangs[0]);
 	if (res && !/zh_cn/i.test(arLangs[0])) {
 		arLangs.push(res[1]);
 	}
@@ -54,12 +54,12 @@ function SetDefault(o, v) {
 }
 
 function OpenGroup(id) {
-	var o = document.getElementById(id);
+	const o = document.getElementById(id);
 	o.style.display = /block/i.test(o.style.display) ? "none" : "block";
 }
 
 function LoadChecked(form) {
-	for (var i = 0; i < form.length; ++i) {
+	for (let i = 0; i < form.length; ++i) {
 		var o = form[i];
 		var ar = o.id.split("=");
 		if (ar.length > 1 && form[ar[0]].value == Number(ar[1])) {
@@ -105,7 +105,7 @@ async function ResetForm() {
 		document.F.View_ViewFlags.value = await FV.ViewFlags;
 	}
 	document.F.Conf_SizeFormat.value = await te.Data.Conf_SizeFormat || 0;
-	for (var i = 0; i < document.F.length; ++i) {
+	for (let i = 0; i < document.F.length; ++i) {
 		o = document.F[i];
 		if (SameText(o.type, 'checkbox')) {
 			if (!/^!?Conf_/.test(o.id)) {
@@ -347,7 +347,7 @@ async function SetTabControls() {
 		if (document.getElementById("Conf_TabDefault").checked) {
 			var cTC = await te.Ctrls(CTRL_TC);
 			var nLen = await cTC.Count;
-			for (var i = 0; i < nLen; ++i) {
+			for (let i = 0; i < nLen; ++i) {
 				SetTabControl(await cTC[i]);
 			}
 		} else {
@@ -424,7 +424,7 @@ async function SwapTabControl() {
 	var TC1 = await te.Ctrl(CTRL_TC);
 	var cTC = await te.Ctrls(CTRL_TC, true);
 	var nLen = await cTC.Count;
-	for (var i = 0; i < nLen; ++i) {
+	for (let i = 0; i < nLen; ++i) {
 		var TC = await cTC[i];
 		if (await TC.Id != await TC1.Id && await TC.Left == document.F.Tab_Left.value && await TC.Top == document.F.Tab_Top.value &&
 			await TC.Width == document.F.Tab_Width.value && await TC.Height == document.F.Tab_Height.value) {
@@ -463,7 +463,7 @@ function SwitchMenus(o) {
 	if (g_x.Menus) {
 		g_x.Menus.style.display = "none";
 		var o = o || document.F.elements.Menus;
-		for (var i = o.length; i-- > 0;) {
+		for (let i = o.length; i-- > 0;) {
 			var a = o[i].value.split(",");
 			if ("Menus_" + a[0] == g_x.Menus.name) {
 				s = a[0] + "," + o.form["Menus_Base"].selectedIndex + "," + o.form["Menus_Pos"].value;
@@ -653,7 +653,7 @@ function InsertX(sel) {
 		sel.selectedIndex = sel.length - 1;
 	} else {
 		++sel.selectedIndex;
-		for (var i = sel.length; i-- > sel.selectedIndex;) {
+		for (let i = sel.length; i-- > sel.selectedIndex;) {
 			sel[i].text = sel[i - 1].text;
 			sel[i].value = sel[i - 1].value;
 		}
@@ -731,7 +731,7 @@ async function RemoveX(mode) {
 
 function MoveX(mode, n) {
 	if (n < 0) {
-		for (var i = 0; i < g_x[mode].length + n; ++i) {
+		for (let i = 0; i < g_x[mode].length + n; ++i) {
 			if (!g_x[mode][i].selected && g_x[mode][i + 1].selected) {
 				var ar = [g_x[mode][i].text, g_x[mode][i].value];
 				g_x[mode][i].text = g_x[mode][i + 1].text;
@@ -743,7 +743,7 @@ function MoveX(mode, n) {
 			}
 		}
 	} else {
-		for (var i = g_x[mode].length; i-- > n;) {
+		for (let i = g_x[mode].length; i-- > n;) {
 			if (!g_x[mode][i].selected && g_x[mode][i - 1].selected) {
 				var ar = [g_x[mode][i].text, g_x[mode][i].value];
 				g_x[mode][i].text = g_x[mode][i - 1].text;
@@ -777,7 +777,7 @@ async function LoadMenus(nSelected) {
 		if (window.chrome) {
 			arFunc = await api.CreateObject("SafeArray", arFunc);
 		}
-		for (var i = 0; i < arFunc.length; ++i) {
+		for (let i = 0; i < arFunc.length; ++i) {
 			var o = oa[++oa.length - 1];
 			o.value = arFunc[i];
 			o.innerText = await GetText(arFunc[i]);
@@ -786,7 +786,7 @@ async function LoadMenus(nSelected) {
 		oa = document.F.Menus;
 		oa.length = 0;
 
-		for (var j in g_arMenuTypes) {
+		for (let j in g_arMenuTypes) {
 			var s = g_arMenuTypes[j];
 			document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", ['<select name="Menus_', s, '" size="17" style="width: 12em; height: 32em; height: calc(100vh - 6em); min-height: 20em; display: none" onchange="EditXEx(EditMenus)" ondblclick="EditMenus()" oncontextmenu="CancelX(\'Menus\')" multiple></select>'].join(""));
 			var menus = await teMenuGetElementsByTagName(s);
@@ -809,7 +809,7 @@ async function LoadMenus(nSelected) {
 		}
 		SwitchMenus(oa[nSelected]);
 	}
-	for (var j in g_arMenuTypes) {
+	for (let j in g_arMenuTypes) {
 		var ar = String(g_MenuType).split(",");
 		if (SameText(ar[0], g_arMenuTypes[j])) {
 			nSelected = oa.length - 1;
@@ -843,7 +843,7 @@ async function LoadX(mode, fn, form) {
 		while (oa.length) {
 			oa.removeChild(oa[0]);
 		}
-		for (var i = 0; i < arFunc.length; ++i) {
+		for (let i = 0; i < arFunc.length; ++i) {
 			var o = oa[++oa.length - 1];
 			o.value = arFunc[i];
 			o.innerText = await GetText(arFunc[i]);
@@ -853,7 +853,7 @@ async function LoadX(mode, fn, form) {
 			oa = form[mode];
 			oa.length = 0;
 			var xml = await OpenXml(mode + ".xml", false, true);
-			for (var j in g_Types[mode]) {
+			for (let j in g_Types[mode]) {
 				var o = oa[++oa.length - 1];
 				o.text = await GetTextEx(g_Types[mode][j]);
 				o.value = g_Types[mode][j];
@@ -870,7 +870,7 @@ async function LoadX(mode, fn, form) {
 					var s = await item.getAttribute(mode);
 					if (SameText(mode, "Key")) {
 						var ar = /,$/.test(s) ? [s] : s.split(",");
-						for (var k = ar.length; k--;) {
+						for (let k = ar.length; k--;) {
 							ar[k] = await GetKeyNameG(ar[k]);
 						}
 						s = ar.join(",");
@@ -908,13 +908,13 @@ async function SaveMenus() {
 		var xml = await CreateXml();
 
 		var root = await xml.createElement("TablacusExplorer");
-		for (var j in g_arMenuTypes) {
+		for (let j in g_arMenuTypes) {
 			var o = document.F["Menus_" + g_arMenuTypes[j]];
 			var items = await xml.createElement(g_arMenuTypes[j]);
 			var a = document.F.elements.Menus[j].value.split(",");
 			items.setAttribute("Base", GetNum(a[1]));
 			items.setAttribute("Pos", GetNum(a[2]));
-			for (var i = 0; i < o.length; ++i) {
+			for (let i = 0; i < o.length; ++i) {
 				var item = await xml.createElement("Item");
 				var a = o[i].value.split(g_sep);
 				item.setAttribute("Name", a[0]);
@@ -957,15 +957,15 @@ async function SaveX(mode, form) {
 	if (g_Chg[mode]) {
 		var xml = await CreateXml();
 		var root = await xml.createElement("TablacusExplorer");
-		for (var j in g_Types[mode]) {
+		for (let j in g_Types[mode]) {
 			var o = (form || document.F)[mode + g_Types[mode][j]];
-			for (var i = 0; i < o.length; ++i) {
+			for (let i = 0; i < o.length; ++i) {
 				var item = await xml.createElement(g_Types[mode][j]);
 				var a = o[i].value.split(g_sep);
 				var s = a[0];
 				if (SameText(mode, "key")) {
 					var ar = /,$/.test(s) ? [s] : s.split(",");
-					for (var k = ar.length; k--;) {
+					for (let k = ar.length; k--;) {
 						ar[k] = await GetKeyKeyG(ar[k]);
 					}
 					s = ar.join(",");
@@ -988,7 +988,7 @@ async function SaveAddons() {
 		te.Data.bErrorAddons = false;
 		var Addons = await api.CreateObject("Object");
 		var table = document.getElementById("Addons");
-		for (var j = 0; j < table.rows.length; ++j) {
+		for (let j = 0; j < table.rows.length; ++j) {
 			var div = table.rows[j].cells[0].firstChild;
 			if (div) {
 				var Id = div.id.replace("Addons_", "").toLowerCase();
@@ -1019,7 +1019,7 @@ function SetData(sel, a, t) {
 }
 
 function PackData(a) {
-	for (var i = a.length; i-- > 0;) {
+	for (let i = a.length; i-- > 0;) {
 		a[i] = String(a[i] || "").replace(g_sep, "`  ~");
 	}
 	return a.join(g_sep);
@@ -1036,7 +1036,7 @@ async function LoadAddons() {
 	var wfd = await api.Memory("WIN32_FIND_DATA");
 	var path = BuildPath(ui_.Installed, "addons");
 	var hFind = await api.FindFirstFile(path + "\\*", wfd);
-	for (var bFind = hFind != INVALID_HANDLE_VALUE; await bFind; bFind = await api.FindNextFile(hFind, wfd)) {
+	for (let bFind = hFind != INVALID_HANDLE_VALUE; await bFind; bFind = await api.FindNextFile(hFind, wfd)) {
 		var Id = await wfd.cFileName;
 		if (Id != "." && Id != ".." && !AddonId[Id]) {
 			AddonId[Id] = 1;
@@ -1056,13 +1056,13 @@ async function LoadAddons() {
 			var sorted = document.getElementById("SortedAddons");
 			var tcell = [];
 			var scell = [];
-			for (var i = 0; i < nLen; ++i) {
+			for (let i = 0; i < nLen; ++i) {
 				tcell[i] = table.insertRow().insertCell();
 				if (sorted.rows.length) {
 					scell[i] = sorted.insertRow().insertCell();
 				}
 			}
-			for (var i = 0; i < nLen; ++i) {
+			for (let i = 0; i < nLen; ++i) {
 				Promise.all([i, items[i].nodeName, items[i].getAttribute("Enabled")]).then(function (r) {
 					var i = r[0];
 					var Id = r[1];
@@ -1079,11 +1079,11 @@ async function LoadAddons() {
 			}
 		}
 	}
-	for (var nDog = 99; nDog && g_bAddonLoading; --nDog) {
+	for (let nDog = 99; nDog && g_bAddonLoading; --nDog) {
 		await api.Sleep(500);
 		await api.DoEvents();
 	}
-	for (var Id in AddonId) {
+	for (let Id in AddonId) {
 		if (await $.fso.FileExists(BuildPath(path, Id, "config.xml"))) {
 			AddAddon(table, Id, false);
 		}
@@ -1295,7 +1295,7 @@ async function AddonRemove(Id) {
 }
 
 async function SetAddonsRssults() {
-	for (var i in ui_.elAddons) {
+	for (let i in ui_.elAddons) {
 		var w = ui_.elAddons[i].contentWindow;
 		if (g_nResult == 1) {
 			await w.TEOk();
@@ -1313,7 +1313,7 @@ async function OkOptions() {
 		te.Data.Conf_OptHeight = GetNum(document.documentElement.offsetHeight || document.body.offsetHeight) * r;
 	}
 	SetChanged(ReplaceMenus);
-	for (var i = 0; i < document.F.length; ++i) {
+	for (let i = 0; i < document.F.length; ++i) {
 		var o = document.F[i];
 		var Id = o.name || o.id;
 		if (!/=|:/.test(Id)) {
@@ -1358,7 +1358,7 @@ InitOptions = async function () {
 	})();
 	MainWindow.g_.OptionsWindow = $;
 	document.F.ButtonInitConfig.disabled = (ui_.Installed == await te.Data.DataFolder) | !await $.fso.FolderExists(BuildPath(ui_.Installed, "layout"));
-	for (var i = 0; i < document.F.length; ++i) {
+	for (let i = 0; i < document.F.length; ++i) {
 		var o = document.F[i];
 		var Id = o.name || o.id;
 		if (!/=|:/.test(Id)) {
@@ -1373,7 +1373,7 @@ InitOptions = async function () {
 	}
 	await ResetForm();
 	var s = [];
-	for (var i in g_arMenuTypes) {
+	for (let i in g_arMenuTypes) {
 		var j = g_arMenuTypes[i];
 		s.push('<label id="tab2_' + i + '" class="button" style="width: 100%" onmousedown="ClickTree(this, null, \'Menus\');">' + await GetText(j) + '</label><br>');
 	}
@@ -1387,7 +1387,7 @@ InitOptions = async function () {
 	});
 
 	SetOnChangeHandler();
-	for (var i = 6; i--;) {
+	for (let i = 6; i--;) {
 		ClickButton(i, false);
 	}
 	SetTab(await dialogArguments.Data);
@@ -1395,7 +1395,7 @@ InitOptions = async function () {
 	WebBrowser.OnClose = async function (WB) {
 		g_bChanged |= g_Chg.Addons || g_Chg.Menus || g_Chg.Tab || g_Chg.Tree || g_Chg.View;
 		if (!g_bChanged) {
-			for (var i in ui_.elAddons) {
+			for (let i in ui_.elAddons) {
 				var w = ui_.elAddons[i].contentWindow;
 				if (!w.IsChanged || await w.IsChanged()) {
 					g_bChanged = true;
@@ -1445,7 +1445,7 @@ OpenIcon = function (o) {
 				dllPath = BuildPath(system32, a[1]);
 			}
 			var nCount = await api.ExtractIconEx(dllPath, -1, null, null, 0);
-			for (var i = 0; i < nCount; ++i) {
+			for (let i = 0; i < nCount; ++i) {
 				var s = ["icon:" + a[1], i].join(",");
 				var src = await MakeImgSrc(s, 0, false, 32);
 				data.push('<img src="' + src + '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="' + s + '" style="max-height: 24pt"> ');
@@ -1464,7 +1464,7 @@ async function SearchIcon(o) {
 	var s = [];
 	var wfd = await api.Memory("WIN32_FIND_DATA");
 	var hFind = await api.FindFirstFile(BuildPath(system32, "*"), wfd);
-	for (var bFind = hFind != INVALID_HANDLE_VALUE; await bFind; bFind = await api.FindNextFile(hFind, wfd)) {
+	for (let bFind = hFind != INVALID_HANDLE_VALUE; await bFind; bFind = await api.FindNextFile(hFind, wfd)) {
 		var nCount = await api.ExtractIconEx(BuildPath(system32, await wfd.cFileName), -1, null, null, 0);
 		if (nCount) {
 			var id = "i," + await wfd.cFileName.toLowerCase();
@@ -1508,12 +1508,12 @@ InitDialog = async function () {
 		var wfd = await api.Memory("WIN32_FIND_DATA");
 		var path = BuildPath(await te.Data.DataFolder, "icons");
 		var hFind = await api.FindFirstFile(path + "\\*", wfd);
-		for (var bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = await api.FindNextFile(hFind, wfd)) {
+		for (let bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = await api.FindNextFile(hFind, wfd)) {
 			if ((await wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && /^[a-z]/i.test(await wfd.cFileName)) {
 				var arfn = [];
 				var path2 = BuildPath(path, await wfd.cFileName);
 				var hFind2 = await api.FindFirstFile(path2 + "\\*.png", wfd);
-				for (var bFind2 = hFind != INVALID_HANDLE_VALUE; bFind2; bFind2 = await api.FindNextFile(hFind2, wfd)) {
+				for (let bFind2 = hFind != INVALID_HANDLE_VALUE; bFind2; bFind2 = await api.FindNextFile(hFind2, wfd)) {
 					arfn.push(await wfd.cFileName);
 				}
 				if (window.chrome) {
@@ -1523,14 +1523,14 @@ InitDialog = async function () {
 						return api.StrCmpLogical(a, b);
 					});
 				}
-				for (var i = 0; i < arfn.length; ++i) {
+				for (let i = 0; i < arfn.length; ++i) {
 					var src = ["icon:" + GetFileName(path2), arfn[i].replace(/\.png$/i, "")].join(",");
 					s.push('<img src="', BuildPath(path2, arfn[i]), '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="', src, '" style="max-height: 24pt"> ');
 				}
 				s.push("<br>");
 			}
 		}
-		for (var i in a) {
+		for (let i in a) {
 			if (a[i].charAt(0) == "i" || res[1] != "2") {
 				s.push('<div id="', a[i], '" onclick="OpenIcon(this)" style="cursor: pointer"><span class="tab">', i.replace(/ieframe,21\d/, await GetText("General")).replace(/ieframe,20\d/, await GetText("Browser")), '</span></div>');
 			}
@@ -1639,7 +1639,7 @@ InitDialog = async function () {
 			var items = await root.childNodes;
 			if (items) {
 				var nLen = await GetLength(items);
-				for (var i = 0; i < nLen; ++i) {
+				for (let i = 0; i < nLen; ++i) {
 					promise.push(items[i].getAttribute("Enabled"), items[i].nodeName);
 				}
 			}
@@ -1652,7 +1652,7 @@ InitDialog = async function () {
 		if (promise.length) {
 			Promise.all(promise).then(function (r) {
 				var ar = [];
-				for (var i = 0; i < r.length; i += 2) {
+				for (let i = 0; i < r.length; i += 2) {
 					if (GetNum(r[i])) {
 						ar.push(r[i + 1]);
 					}
@@ -1773,7 +1773,7 @@ InitLocation = async function () {
 	var ar = await api.CreateObject("Array");
 	var param = await api.CreateObject("Object");
 	Addon_Id = await dialogArguments.Data.id;
-	for (var i = 10; i--;) {
+	for (let i = 10; i--;) {
 		var o = document.getElementById('tab' + i);
 		o.className = "tab";
 		o.hidefocus = true;
@@ -1799,7 +1799,7 @@ InitLocation = async function () {
 	}
 	ar = [];
 	var s = "CSA";
-	for (var i = 0; i < s.length; ++i) {
+	for (let i = 0; i < s.length; ++i) {
 		ar.push('<input type="button" value="', await MainWindow.g_.KeyState[i][0], '" title="', s.charAt(i), '" onclick="AddMouse(this)">');
 	}
 	document.getElementById("__MOUSEDATA").innerHTML = ar.join("");
@@ -1810,7 +1810,7 @@ InitLocation = async function () {
 	if (!Location) {
 		Location = await param.Default;
 	}
-	for (var i = document.L.length; i--;) {
+	for (let i = document.L.length; i--;) {
 		if (SameText(Location, document.L[i].value)) {
 			document.L[i].checked = true;
 			break;
@@ -1818,16 +1818,16 @@ InitLocation = async function () {
 	}
 	var locs = {};
 	var items = await MainWindow.g_.Locations;
-	for (var list = await api.CreateObject("Enum", items); !await list.atEnd(); await list.moveNext()) {
+	for (let list = await api.CreateObject("Enum", items); !await list.atEnd(); await list.moveNext()) {
 		var i = await list.item();
 		locs[i] = [];
 		var item1 = await items[i];
-		for (var j = await GetLength(item1); j--;) {
+		for (let j = await GetLength(item1); j--;) {
 			var ar = (await item1[j]).split("\t");
 			locs[i].unshift(await GetImgTag({ src: ar[1], title: await GetAddonInfo(ar[0]).Name, "class": ar[1] ? "" : "text1" }, 16) + '<span style="font-size: 1px"> </span>');
 		}
 	}
-	for (var i in locs) {
+	for (let i in locs) {
 		var s = locs[i].join("");
 		try {
 			var o = document.getElementById('_' + i);
@@ -1842,7 +1842,7 @@ InitLocation = async function () {
 	var o = oa[++oa.length - 1];
 	o.value = "";
 	o.text = await GetText("Select");
-	for (var j in g_arMenuTypes) {
+	for (let j in g_arMenuTypes) {
 		var s = g_arMenuTypes[j];
 		if (!/Default|Alias/.test(s)) {
 			o = oa[++oa.length - 1];
@@ -1858,7 +1858,7 @@ InitLocation = async function () {
 		o = oa[++oa.length - 1];
 		o.value = "";
 		o.text = await GetText("Select");
-		for (var list = await api.CreateObject("Enum", await MainWindow.eventTE[mode]); !await list.atEnd(); await list.moveNext()) {
+		for (let list = await api.CreateObject("Enum", await MainWindow.eventTE[mode]); !await list.atEnd(); await list.moveNext()) {
 			var j = await list.item();
 			o = oa[++oa.length - 1];
 			o.text = await GetTextEx(j);
@@ -1866,7 +1866,7 @@ InitLocation = async function () {
 		}
 	}
 	var ele = document.F;
-	for (var i = ele.length; i--;) {
+	for (let i = ele.length; i--;) {
 		var n = ele[i].id || ele[i].name;
 		if (n && !/=/.test(n)) {
 			s = (/^!/.test(n) ? !item.getAttribute(n.slice(1)) : item.getAttribute(n)) || "";
@@ -1903,7 +1903,7 @@ InitLocation = async function () {
 	document.F._MenuName.value = await GetText(a[0]);
 
 	var ar = (await dialogArguments.Data.show).split(/,/);
-	for (var i in ar) {
+	for (let i in ar) {
 		document.getElementById("tab" + ar[i]).style.display = "inline";
 	}
 	nTabIndex = await dialogArguments.Data.index;
@@ -1927,7 +1927,7 @@ InitLocation = async function () {
 		if (GetLength(items)) {
 			var item = await items[0];
 			item.removeAttribute("Location");
-			for (var i = document.L.elements.length; i--;) {
+			for (let i = document.L.elements.length; i--;) {
 				if (document.L[i].checked) {
 					item.setAttribute("Location", document.L[i].value);
 					te.Data.bReload = true;
@@ -1940,7 +1940,7 @@ InitLocation = async function () {
 			if (dialogArguments.Data.show == "6") {
 				ele.Set.value = "";
 			}
-			for (var i = ele.length; i--;) {
+			for (let i = ele.length; i--;) {
 				var n = ele[i].id || ele[i].name;
 				if (n && n.charAt(0) != "_") {
 					if (n == "Key") {
@@ -1958,7 +1958,7 @@ InitLocation = async function () {
 	if (await WebBrowser.OnClose) {
 		g_Inline = true;
 		var cel = document.getElementsByTagName("input");
-		for (var i = cel.length; i-- > 0;) {
+		for (let i = cel.length; i-- > 0;) {
 			if (/^ok$|^cancel$/.test(cel[i].className)) {
 				cel[i].style.display = "none";
 			}
@@ -2013,7 +2013,7 @@ function SetElementValue(o, s) {
 			return;
 		}
 		if (/select/i.test(o.type)) {
-			for (var i = o.options.length; i-- > 0;) {
+			for (let i = o.options.length; i-- > 0;) {
 				if (o.options[i].value == s) {
 					o.selectedIndex = i;
 					break;
@@ -2149,7 +2149,7 @@ async function GetCurrentSetting(s) {
 async function SetTab(s) {
 	var o = null;
 	var arg = String(s).split(/&/);
-	for (var i in arg) {
+	for (let i in arg) {
 		var ar = arg[i].split(/=/);
 		if (SameText(ar[0], "tab")) {
 			if (SameText(ar[1], "Get Addons")) {
@@ -2160,7 +2160,7 @@ async function SetTab(s) {
 			}
 			var s = await GetText(ar[1]);
 			var ovTab;
-			for (var j = 0; ovTab = document.getElementById('tab' + j); ++j) {
+			for (let j = 0; ovTab = document.getElementById('tab' + j); ++j) {
 				if (SameText(s, ovTab.innerText.toLowerCase())) {
 					o = ovTab;
 					break;
@@ -2210,10 +2210,10 @@ function SetOnChangeHandler() {
 	g_nResult = 3;
 	g_bChanged = false;
 	var ar = ["input", "select", "textarea"];
-	for (var j in ar) {
+	for (let j in ar) {
 		var o = document.getElementsByTagName(ar[j]);
 		if (o) {
-			for (var i = o.length; i--;) {
+			for (let i = o.length; i--;) {
 				if ((o[i].name || o[i].id) && o[i].name != "List" && !/^_/.test(o[i].id)) {
 					AddEventEx(o[i], "change", function (e) {
 						g_bChanged = true;
@@ -2236,7 +2236,7 @@ async function SetAddonOptions() {
 		if (GetLength(items)) {
 			var item = await items[0];
 			var ele = document.F.elements;
-			for (var i = ele.length; i--;) {
+			for (let i = ele.length; i--;) {
 				var n = ele[i].id || ele[i].name;
 				if (n) {
 					if (await SetAttribEx(item, document.F, n)) {
@@ -2294,7 +2294,7 @@ async function SelectLangID(o) {
 	var Langs = [];
 	var wfd = await api.Memory("WIN32_FIND_DATA");
 	var hFind = await api.FindFirstFile(BuildPath(ui_.Installed, "lang\\*.xml"), wfd);
-	for (var bFind = hFind != INVALID_HANDLE_VALUE; await bFind; bFind = await api.FindNextFile(hFind, wfd)) {
+	for (let bFind = hFind != INVALID_HANDLE_VALUE; await bFind; bFind = await api.FindNextFile(hFind, wfd)) {
 		Langs.push((await wfd.cFileName).replace(/\..*$/, ""));
 	}
 	api.FindClose(hFind);
@@ -2387,7 +2387,7 @@ function SetTable(table, td) {
 		while (table.rows.length > 0) {
 			table.deleteRow(0);
 		}
-		for (var i = 0; i < td.length; ++i) {
+		for (let i = 0; i < td.length; ++i) {
 			var tr = table.insertRow(i);
 			var td1 = tr.insertCell(0);
 			td[i].shift();
@@ -2408,7 +2408,7 @@ async function AddonsAppend() {
 		Progress.SetAnimation(hShell32, 150);
 		Progress.SetLine(1, await api.LoadString(hShell32, 13585) || await api.LoadString(hShell32, 6478), true);
 		var nLen = await GetLength(xmlAddons);
-		for (var i = 0; i < nLen && !await Progress.HasUserCancelled(); ++i) {
+		for (let i = 0; i < nLen && !await Progress.HasUserCancelled(); ++i) {
 			await ArrangeAddon(await xmlAddons[i], td, Progress);
 			Progress.SetTitle(Math.floor(100 * i / nLen) + "%");
 			Progress.SetProgress(i, nLen);
@@ -2430,7 +2430,7 @@ async function ArrangeAddon(xml, td, Progress) {
 	var strUpdate = "";
 	if (await Search(xml)) {
 		var info = {};
-		for (var i = arLangs.length; i--;) {
+		for (let i = arLangs.length; i--;) {
 			await GetAddonInfo2(xml, info, arLangs[i]);
 		}
 		var pubDate = "";
@@ -2500,11 +2500,11 @@ async function Search(xml) {
 	if (q == "") {
 		return true;
 	}
-	for (var k = arLangs.length; k-- > 0;) {
+	for (let k = arLangs.length; k-- > 0;) {
 		var items = xml.getElementsByTagName(arLangs[k]);
 		if (await GetLength(items)) {
 			var item = await items[0].childNodes;
-			for (var i = await GetLength(item); i-- > 0;) {
+			for (let i = await GetLength(item); i-- > 0;) {
 				var item1 = await item[i];
 				if (await item1.tagName) {
 					if ((await item1.textContent || await item1.text).toUpperCase().indexOf(q) >= 0) {
@@ -2641,7 +2641,7 @@ async function IconPacksList(xhr) {
 	if (json1.info) {
 		Installed = json1.info.id || json1.info.name.en.replace(/\W/g, "_");
 	}
-	for (var n in json) {
+	for (let n in json) {
 		if (n != Installed) {
 			var s1;
 			var s = [];
@@ -2700,13 +2700,13 @@ SetResult = async function (i) {
 
 function InitColor1(item) {
 	var ele = document.F.elements;
-	for (var i = ele.length; i--;) {
+	for (let i = ele.length; i--;) {
 		var n = ele[i].id || ele[i].name;
 		if (n) {
 			GetAttribEx(item, document.F, n);
 		}
 	}
-	for (var i = ele.length; i--;) {
+	for (let i = ele.length; i--;) {
 		var n = ele[i].id || ele[i].name;
 		if (n) {
 			var res = /^Color_(.*)/.exec(n);
@@ -2733,10 +2733,11 @@ function EnableInner() {
 
 function ChangeForm(ar) {
 	var fn = function () {
-		for (var i in ar) {
+		for (let i in ar) {
 			var o = document.getElementById(ar[i][0]);
 			if (o) {
-				for (var s = ar[i][1].split("/"); s.length > 1;) {
+				let s = ar[i][1].split("/");
+				while (s.length > 1) {
 					o = o[s.shift()];
 				}
 				o[s[0]] = ar[i][2];
@@ -2765,14 +2766,14 @@ function ShowButtons(b1, b2, SortMode) {
 		var table = document.getElementById("Addons");
 		var bSorted = /none/i.test(table.style.display);
 		document.getElementById("MoveButton").style.display = (b1 || b2) && !bSorted ? "inline-block" : "none";
-		for (var i = 3; i--;) {
+		for (let i = 3; i--;) {
 			o = document.getElementById("SortButton_" + i);
 			o.style.border = bSorted && g_nSort[1] == i ? "1px solid highlight" : "";
 			o.style.padding = bSorted && g_nSort[1] == i ? "0" : "";
 		}
 	} else {
 		document.getElementById("MoveButton").style.display = b2 ? "inline-block" : "none";
-		for (var i = 3; i--;) {
+		for (let i = 3; i--;) {
 			o = document.getElementById("SortButton_" + i);
 			o.style.border = g_nSort[g_SortMode] == i ? "1px solid highlight" : "";
 			o.style.padding = g_nSort[g_SortMode] == i ? "0" : "";
@@ -2796,7 +2797,7 @@ async function SortAddons(n) {
 		} else {
 			g_nSort[1] = n;
 			var s, ar = [];
-			for (var j = table.rows.length; j--;) {
+			for (let j = table.rows.length; j--;) {
 				var div = table.rows[j].cells[0].firstChild || {};
 				var Id = (div.id || "").replace("Addons_", "").toLowerCase();
 				if (g_nSort[1] == 0) {
@@ -2823,7 +2824,7 @@ async function SortAddons(n) {
 			Progress.SetAnimation(hShell32, 150);
 			Progress.StartProgressDialog(ui_.hwnd, null, 2);
 			try {
-				for (var i in ar) {
+				for (let i in ar) {
 					bCancelled = await Progress.HasUserCancelled();
 					if (bCancelled) {
 						break;

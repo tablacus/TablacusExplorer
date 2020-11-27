@@ -34,8 +34,9 @@ InitUI = async function () {
 			dropdown: '<b style="font-family: Consolas; transform: scale(1.2,1) rotate(-90deg) translateX(2px); opacity: 0.6; width: 1em; display: inline-block">&lt;</b>'
 		};
 	} else {
+		let s;
 		try {
-			var s = await wsh.regRead("HKCU\\Software\\Microsoft\\Internet Explorer\\Settings\\Always Use My Font Face");
+			s = await wsh.regRead("HKCU\\Software\\Microsoft\\Internet Explorer\\Settings\\Always Use My Font Face");
 		} catch (e) {
 			s = 0;
 		}
@@ -55,15 +56,15 @@ InitUI = async function () {
 	ui_.Installed = GetParentFolderName(ui_.TEPath);
 	ui_.DoubleClickTime = await sha.GetSystemInformation("DoubleClickTime");
 	ui_.hwnd = await te.hwnd;
-	var arg = await te.Arguments;
+	let arg = await te.Arguments;
 	if (arg) {
 		window.dialogArguments = arg;
 		$.dialogArguments = arg;
 	}
 	if (await window.dialogArguments) {
-		for (var list = await api.CreateObject("Enum", await dialogArguments.event); !await list.atEnd(); await list.moveNext()) {
-			var j = await list.item();
-			var res = /^on(.+)/i.exec(j);
+		for (let list = await api.CreateObject("Enum", await dialogArguments.event); !await list.atEnd(); await list.moveNext()) {
+			const j = await list.item();
+			const res = /^on(.+)/i.exec(j);
 			if (res) {
 				AddEventEx(window, res[1], await dialogArguments.event[j]);
 			} else {
@@ -71,7 +72,7 @@ InitUI = async function () {
 			}
 		}
 	}
-	var x;
+	let x;
 	if (!window.MainWindow) {
 		window.MainWindow = await $;
 		while (x = await MainWindow.dialogArguments || await MainWindow.opener) {
@@ -93,20 +94,20 @@ InitUI = async function () {
 			ParentWindow = x;
 		}
 	}
-	var uid = location.hash.replace(/\D/g, "");
+	let uid = location.hash.replace(/\D/g, "");
 	if (!await window.dialogArguments && !window.opener) {
-		var arg = await api.CommandLineToArgv(await api.GetCommandLine());
+		arg = await api.CommandLineToArgv(await api.GetCommandLine());
 		if (await arg.Count > 3 && SameText(await arg[1], '/open')) {
 			uid = await arg[3];
 		}
 	}
 	if (uid) {
-		for (var esw = await api.CreateObject("Enum", await sha.Windows()); !await esw.atEnd(); await esw.moveNext()) {
-			var x = await esw.item();
+		for (let esw = await api.CreateObject("Enum", await sha.Windows()); !await esw.atEnd(); await esw.moveNext()) {
+			x = await esw.item();
 			if (x && await x.Document) {
-				var w = await x.Document.parentWindow;
+				const w = await x.Document.parentWindow;
 				if (w && await w.te && await w.Exchange) {
-					var a = await w.Exchange[uid];
+					const a = await w.Exchange[uid];
 					if (a) {
 						dialogArguments = a;
 						MainWindow = w;
@@ -127,25 +128,27 @@ InitUI = async function () {
 	UI.Addons = await api.CreateObject("Object");
 
 	UI.RunEvent = async function () {
-		var args = Array.apply(null, arguments);
-		var s = args.shift();
-		var fn = new Function(window.chrome ? "(async () => {" + s + "\n})();" : RemoveAsync(s));
+		const args = Array.apply(null, arguments);
+		const fn = new Function(FixScript(args.shift(), window.chrome));
 		fn.apply(fn, args);
 	}
 
 	UI.ExecJavaScript = function (Ctrl, s) {
-		var fn = new Function(window.chrome ? "(async () => {" + s + "\n})();" : RemoveAsync(s));
+		const fn = new Function(FixScript(s, window.chrome));
 		fn.apply(fn, arguments);
 	}
 
 	UI.Invoke = InvokeUI = function () {
-		var args = Array.apply(null, arguments);
-		var ar = args.shift().split(".");
-		var fn = window;
-		var s, parent;
+		const args = Array.apply(null, arguments);
+		const ar = args.shift().split(".");
+		let fn = window;
+		let s, parent;
 		while (s = ar.shift()) {
 			parent = fn;
 			fn = fn[s];
+			if (!fn) {
+				return;
+			}
 		}
 		fn.apply(parent, args);
 	}
@@ -163,14 +166,14 @@ InitUI = async function () {
 	}
 
 	UI.Autocomplete = async function (s, path) {
-		var dl = document.getElementById("AddressList");
+		const dl = document.getElementById("AddressList");
 		while (dl.lastChild) {
 			dl.removeChild(dl.lastChild);
 		}
 		if (await g_.Autocomplete.Path == path) {
-			var ar = s.split("\t");
-			for (var i = 0; i < ar.length; ++i) {
-				var el = document.createElement("option");
+			const ar = s.split("\t");
+			for (let i = 0; i < ar.length; ++i) {
+				const el = document.createElement("option");
 				el.value = ar[i];
 				dl.appendChild(el);
 			}
@@ -179,8 +182,8 @@ InitUI = async function () {
 };
 
 OpenHttpRequest = async function (url, alt, fn, arg) {
-	var xhr = await createHttpRequest();
-	var fnLoaded = async function () {
+	const xhr = await createHttpRequest();
+	const fnLoaded = async function () {
 		if (fn) {
 			if (arg && await arg.pcRef) {
 				arg.pcRef[0] = await arg.pcRef[0] - 1;
@@ -223,13 +226,13 @@ OpenHttpRequest = async function (url, alt, fn, arg) {
 }
 
 DownloadFile = async function (url, fn) {
-	var hr = await MainWindow.RunEvent4("DownloadFile", url, fn);
+	const hr = await MainWindow.RunEvent4("DownloadFile", url, fn);
 	return hr != null ? hr : await api.URLDownloadToFile(null, url, fn);
 }
 
 ReadAsDataURL = function (blob) {
 	return new Promise(function (resolve, reject) {
-		var reader = new FileReader();
+		const reader = new FileReader();
 		reader.onload = function () {
 			resolve(reader.result);
 		};
@@ -241,7 +244,7 @@ ReadAsDataURL = function (blob) {
 }
 
 Extract = async function (Src, Dest, xhr) {
-	var hr;
+	let hr;
 	if (xhr) {
 		if (window.chrome && await xhr.response) {
 			xhr = await ReadAsDataURL(xhr.response);
@@ -256,9 +259,9 @@ Extract = async function (Src, Dest, xhr) {
 }
 
 CheckUpdate2 = async function (xhr, url, arg1) {
-	var arg = await api.CreateObject("Object");
-	var Text = await xhr.get_responseText ? await xhr.get_responseText() : xhr.responseText;
-	var json = JSON.parse(Text);
+	const arg = await api.CreateObject("Object");
+	const Text = await xhr.get_responseText ? await xhr.get_responseText() : xhr.responseText;
+	const json = JSON.parse(Text);
 	if (json.assets && json.assets[0]) {
 		arg.size = json.assets[0].size / 1024;
 		arg.url = json.assets[0].browser_download_url;
@@ -267,7 +270,7 @@ CheckUpdate2 = async function (xhr, url, arg1) {
 		return;
 	}
 	arg.file = GetFileName((await arg.url).replace(/\//g, "\\"));
-	var ver = 0;
+	let ver = 0;
 	res = /(\d+)/.exec(await arg.file);
 	if (res) {
 		ver = await api.Add(20000000, res[1]);
@@ -281,7 +284,7 @@ CheckUpdate2 = async function (xhr, url, arg1) {
 		}
 	}
 	if (!(arg1 && GetNum(await arg1.noconfirm))) {
-		var s = (await api.LoadString(hShell32, 60) || "%").replace(/%.*/, await api.sprintf(99, "%d.%d.%d (%.1lfKB)", ver / 10000 % 100, ver / 100 % 100, ver % 100, await arg.size));
+		const s = (await api.LoadString(hShell32, 60) || "%").replace(/%.*/, await api.sprintf(99, "%d.%d.%d (%.1lfKB)", ver / 10000 % 100, ver / 100 % 100, ver % 100, await arg.size));
 		if (!await confirmOk([await GetText("Update available"), s, await GetText("Do you want to install it now?")].join("\n"))) {
 			return;
 		}
@@ -314,14 +317,14 @@ CheckUpdate3 = async function (xhr, url, arg) {
 	if (await $.fso.FolderExists(await arg.temp + "\\config")) {
 		arDel.push(await arg.temp + "\\config");
 	}
-	for (var i = 32; i <= 64; i += 32) {
+	for (let i = 32; i <= 64; i += 32) {
 		te_exe = await arg.temp + '\\te' + i + '.exe';
 		var te_old = BuildPath(ui_.Installed, 'te' + i + '.exe');
 		if (!await $.fso.FileExists(te_old) || await $.fso.GetFileVersion(te_exe) == await $.fso.GetFileVersion(te_old)) {
 			arDel.push(te_exe);
 		}
 	}
-	for (var list = await api.CreateObject("Enum", await $.fso.GetFolder(addons).SubFolders); !await list.atEnd(); await list.moveNext()) {
+	for (let list = await api.CreateObject("Enum", await $.fso.GetFolder(addons).SubFolders); !await list.atEnd(); await list.moveNext()) {
 		var n = await list.item().Name;
 		var items = await te.Data.Addons.getElementsByTagName(n);
 		if (!items || GetLength(items) == 0) {
@@ -341,18 +344,17 @@ LoadScripts = async function (js1, js2, cb) {
 	await InitUI();
 	if (window.chrome) {
 		js1.unshift("script/consts.js", "script/common.js", "script/syncb.js");
-		var s = [];
-		var arFN = ["fso", "sha", "wsh", "wnw"];
-		var line = 1;
-		var strParent = GetParentFolderName(await api.GetModuleFileName(null));
-		for (var i = 0; i < js1.length; i++) {
-			var fn = BuildPath(strParent, js1[i]);
-			var ado = await api.CreateObject("ads");
+		const s = [];
+		let arFN = ["fso", "sha", "wsh", "wnw"];
+		let line = 1;
+		for (let i = 0; i < js1.length; i++) {
+			const fn = BuildPath(ui_.Installed, js1[i]);
+			const ado = await api.CreateObject("ads");
 			if (ado) {
 				ado.CharSet = "utf-8";
 				await ado.Open();
 				await ado.LoadFromFile(fn);
-				var src = RemoveAsync(await ado.ReadText());
+				const src = FixScript(await ado.ReadText());
 				s.push(src);
 				ado.Close();
 				if (src && /sync/.test(fn)) {
@@ -365,7 +367,7 @@ LoadScripts = async function (js1, js2, cb) {
 			}
 		}
 		js1.length = 0;
-		var CopyObj = async function (to, o, ar) {
+		const CopyObj = async function (to, o, ar) {
 			if (!to) {
 				to = await api.CreateObject("Object");
 			}
@@ -389,7 +391,7 @@ LoadScripts = async function (js1, js2, cb) {
 		$.$JS = await api.GetScriptDispatch(s.join(""), "JScript", o);
 		await CopyObj(window, $, ["g_", "Common", "Sync", "Threads"]);
 		await CopyObj(window, $, arFN);
-		var doc = await api.CreateObject("Object");
+		const doc = await api.CreateObject("Object");
 		doc.parentWindow = $;
 		WebBrowser.Document = doc;
 	} else {
@@ -413,11 +415,11 @@ async function _InvokeMethod() {
 
 ApplyLangTag = async function (o) {
 	if (o) {
-		for (var i = 0; i < o.length; ++i) {
+		for (let i = 0; i < o.length; ++i) {
 			(async function (el) {
 				var s;
 				if (s = el.childNodes) {
-					for (var j = s.length; j-- > 0;) {
+					for (let j = s.length; j-- > 0;) {
 						if (!s[j].tagName) {
 							s[j].data = amp2ul(await GetTextR(s[j].data.replace(/&amp;/ig, "&")));
 						}
@@ -435,8 +437,11 @@ ApplyLangTag = async function (o) {
 }
 
 ApplyLang = async function (doc) {
-	var i, o, s, h = 0;
-	var FaceName = await MainWindow.DefaultFont.lfFaceName;
+	if (!doc) {
+		doc = document;
+	}
+	let i, o, s, h = 0;
+	const FaceName = await MainWindow.DefaultFont.lfFaceName;
 	if (doc.body) {
 		doc.body.style.fontFamily = FaceName;
 		doc.body.style.fontSize = Math.abs(await MainWindow.DefaultFont.lfHeight) + "px";
@@ -499,7 +504,7 @@ ApplyLang = async function (doc) {
 		for (i = o.length; i--;) {
 			(async function (el) {
 				el.title = delamp(await GetTextR(el.title));
-				for (var j = 0; j < el.length; ++j) {
+				for (let j = 0; j < el.length; ++j) {
 					el[j].text = (await GetTextR(el[j].text)).replace(/^\n/, "").replace(/\n$/, "");
 				}
 			})(o[i]);
@@ -756,7 +761,7 @@ SetCursor = function (o, s) {
 		}
 		if (o.getElementsByTagName) {
 			var e = o.getElementsByTagName("*");
-			for (var i in e) {
+			for (let i in e) {
 				if (e[i].style) {
 					e[i].style.cursor = s;
 				}
@@ -769,7 +774,7 @@ GetImgTag = async function (o, h) {
 	if (o.src) {
 		o.src = await ImgBase64(o, 0, Number(h))
 		var ar = ['<img'];
-		for (var n in o) {
+		for (let n in o) {
 			if (o[n]) {
 				ar.push(' ', n, '="', EncodeSC(StripAmp(await GetText(await api.PathUnquoteSpaces(o[n])))), '"');
 			}
@@ -782,7 +787,7 @@ GetImgTag = async function (o, h) {
 		return ar.join("");
 	}
 	var ar = ['<span'];
-	for (var n in o) {
+	for (let n in o) {
 		if (n != "title" && o[n]) {
 			ar.push(' ', n, '="', EncodeSC(o[n]), '"');
 		}
@@ -799,16 +804,11 @@ LoadAddon = async function (ext, Id, arError, param, bDisabled) {
 		if (ar.length == 1) {
 			ar.unshift("script");
 		}
-		var fn = BuildPath("addons", Id, ar.join("."));
+		const fn = BuildPath("addons", Id, ar.join("."));
 		var s = await ReadTextFile(fn);
 		if (s && (!bDisabled || /await/.test(s))) {
 			if (ar[1] == "js") {
-				if (window.chrome) {
-					s = "(async () => {" + s + "\n})();";
-				} else {
-					s = RemoveAsync(s);
-				}
-				sc = new Function(s);
+				sc = new Function(FixScript(s, window.chrome));
 			} else if (ar[1] == "vbs") {
 				var o = await api.CreateObject("Object");
 				o["_Addon_Id"] = await api.CreateObject("Object");
@@ -932,7 +932,7 @@ AddonOptions = async function (Id, fn, Data, bNew) {
 		if (!/location\.html$/.test(sURL)) {
 			opt.event.onload = function () {
 				var cInput = el.contentWindow.document.getElementsByTagName('input');
-				for (var i in cInput) {
+				for (let i in cInput) {
 					if (/^ok$|^cancel$/i.test(cInput[i].className)) {
 						cInput[i].style.display = 'none';
 					}
@@ -1001,7 +1001,7 @@ MakeKeySelect = async function () {
 	var oa = document.getElementById("_KeyState");
 	if (oa) {
 		var ar = [];
-		for (var i = 0; i < 4; ++i) {
+		for (let i = 0; i < 4; ++i) {
 			var s = await MainWindow.g_.KeyState[i][0];
 			ar.push('<label><input type="checkbox" onclick="KeyShift(this)" id="_Key', s, '">', s, '&nbsp;</label>');
 		}
@@ -1012,8 +1012,8 @@ MakeKeySelect = async function () {
 	oa[++oa.length - 1].value = "";
 	oa[oa.length - 1].text = await GetText("Select");
 	var s = [];
-	for (var j = 256; j >= 0; j -= 256) {
-		for (var i = 128; i > 0; i--) {
+	for (let j = 256; j >= 0; j -= 256) {
+		for (let i = 128; i > 0; i--) {
 			var v = await api.GetKeyNameText((i + j) * 0x10000);
 			if (v && v.charCodeAt(0) > 32) {
 				s.push(v);
@@ -1041,7 +1041,7 @@ SetKeyShift = async function () {
 	var key = ((document.E && document.E.KeyKey) || document.F.KeyKey || document.F.Key).value;
 	key = key.replace(/^(.+),.+/, "$1");
 	var nLen = await GetLength(await MainWindow.g_.KeyState);
-	for (var i = 0; i < nLen; ++i) {
+	for (let i = 0; i < nLen; ++i) {
 		var s = await MainWindow.g_.KeyState[i][0];
 		var o = document.getElementById("_Key" + s);
 		if (o) {
@@ -1050,7 +1050,7 @@ SetKeyShift = async function () {
 		key = key.replace(s + "+", "");
 	}
 	o = document.getElementById("_KeySelect");
-	for (var i = o.length; i--;) {
+	for (let i = o.length; i--;) {
 		if (SameText(key, o[i].value)) {
 			o.selectedIndex = i;
 			break;
@@ -1108,7 +1108,7 @@ ShowXHRError = async function (url, status) {
 }
 
 ClearAutocomplete = function () {
-	for (var dl = document.getElementById("AddressList"); dl.lastChild;) {
+	for (let dl = document.getElementById("AddressList"); dl.lastChild;) {
 		dl.removeChild(dl.lastChild);
 	}
 	g_.Autocomplete.Path = "";
@@ -1119,7 +1119,7 @@ GetXmlItems = window.chrome ? async function (items) {
 } : function (items) {
 	var ar = [];
 	if (items) {
-		for (var i = 0; i < items.length; ++i) {
+		for (let i = 0; i < items.length; ++i) {
 			var item = items[i];
 			if (item) {
 				var o = {};
@@ -1128,7 +1128,7 @@ GetXmlItems = window.chrome ? async function (items) {
 				}
 				var attrs = item.attributes;
 				if (attrs) {
-					for (var j = 0; j < attrs.length; ++j) {
+					for (let j = 0; j < attrs.length; ++j) {
 						o[attrs[j].name] = attrs[j].value;
 					}
 				}
@@ -1141,13 +1141,13 @@ GetXmlItems = window.chrome ? async function (items) {
 
 if (window.chrome) {
 	GetAddonElement = async function (id) {
-		var item = await $.GetAddonElement(id);
+		const item = await $.GetAddonElement(id);
 		return {
 			item: item,
 			db: JSON.parse(await XmlItem2Json(item)),
 			get attributes() {
-				var ar = [];
-				for (var n in this.db) {
+				const ar = [];
+				for (let n in this.db) {
 					ar.push({
 						name: n, value: this.db[n]
 					});

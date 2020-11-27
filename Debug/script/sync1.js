@@ -880,12 +880,19 @@ RefreshEx = function (FV, tm, df)
 }
 
 ChangeView = function (Ctrl) {
-	if (Ctrl && Ctrl.FolderItem) {
+	var TC = te.Ctrl(CTRL_TC);
+	if (TC && Ctrl && Ctrl.FolderItem) {
 		ChangeTabName(Ctrl);
 		if (Ctrl.hwndView) {
 			RefreshEx(Ctrl, 5000, 5000);
 		}
 		RunEvent1("ChangeView", Ctrl);
+		if (Ctrl.Id == Ctrl.Parent.Selected.Id) {
+			if (Ctrl.Parent.Id == TC.Id) {
+				RunEvent1("ChangeView1", Ctrl);
+			}
+			RunEvent1("ChangeView2", Ctrl);
+		}
 	}
 	RunEvent1("ConfigChanged", "Window");
 }
@@ -3439,6 +3446,7 @@ InitWindow = function () {
 				ChangeView(cTC[i].Selected);
 			}
 		}
+		InvokeUI("ApplyLang");
 		api.ShowWindow(te.hwnd, te.CmdShow);
 		if (te.CmdShow == SW_SHOWNOACTIVATE) {
 			api.SetWindowPos(te.hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
