@@ -113,14 +113,13 @@ if (window.Addon == 1) {
 				} else {
 					var icon = item.Icon;
 					if (icon) {
-						var h = EncodeSC(item.Height);
+						var h = (item.Height * screen.deviceYDPI / 96);
 						var sh = {
-							src: await api.PathUnquoteSpaces(await ExtractMacro(null, icon))
+							src: await api.PathUnquoteSpaces(await ExtractMacro(te, icon))
 						};
-						if (h != "") {
-							sh.style = 'height:' + h + 'px';
+						if (h && isFinite(h)) {
+							sh.style = 'width:' + h + 'px; height:' + h + 'px';
 						}
-						h -= 0;
 						img = await GetImgTag(sh, h);
 					}
 					s.push('<span id="_toolbar', i, '" ', !SameText(strType, "Menus") || !SameText(await item.text, "Open") ? 'onclick="Addons.ToolBar.Click(' + i + ')" onmousedown="Addons.ToolBar.Down(event, ' : 'onmousedown="Addons.ToolBar.Open(event, ');

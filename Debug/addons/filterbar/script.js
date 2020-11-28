@@ -92,7 +92,7 @@ if (window.Addon == 1) {
 
 		ShowButton: function () {
 			if (WINVER < 0x602 || window.chrome) {
-				document.getElementById("ButtonFilterClear").style.display = document.F.filter.value.length ? "inline" : "none";
+				document.getElementById("ButtonFilterClear").style.display = document.F.filter.value.length ? "" : "none";
 			}
 		},
 
@@ -149,7 +149,7 @@ if (window.Addon == 1) {
 
 	};
 
-	AddEvent("ChangeView", Addons.FilterBar.GetFilter);
+	AddEvent("ChangeView1", Addons.FilterBar.GetFilter);
 	AddEvent("Command", Addons.FilterBar.GetFilter);
 
 	var width = "176px";
@@ -166,7 +166,7 @@ if (window.Addon == 1) {
 		Common.FilterBar.strMenu = item.getAttribute("Menu");
 		Common.FilterBar.strName = item.getAttribute("MenuName") || await GetAddonInfo(Addon_Id).Name;
 		Common.FilterBar.nPos = GetNum(item.getAttribute("MenuPos"));
-		importJScript("addons\\" + Addon_Id + "\\sync.js");
+		$.importScript("addons\\" + Addon_Id + "\\sync.js");
 	}
 	//Key
 	if (item.getAttribute("KeyExec")) {
@@ -178,7 +178,9 @@ if (window.Addon == 1) {
 	}
 	AddTypeEx("Add-ons", "Filter Bar", Addons.FilterBar.Exec);
 
-	SetAddon(Addon_Id, Default, ['<input type="text" name="filter" placeholder="Filter" onkeydown="return Addons.FilterBar.KeyDown(event, this)" onkeyup="return Addons.FilterBar.KeyUp(event)" onfocus="Addons.FilterBar.Focus(this)" onblur="Addons.FilterBar.ShowButton()" onmouseup="Addons.FilterBar.KeyDown(event, this)" ondblclick="return Addons.FilterBar.FilterList(event, this)" style="width:', EncodeSC(width), '; padding-right: 12pt; vertical-align: middle"><span style="position: relative"><input type="image" src="', icon, '" id="ButtonFilter" hidefocus="true" style="position: absolute; left: -13.5pt; top: 1pt; width: 12pt; height: 12pt" onclick="return Addons.FilterBar.FilterList(event, this,1)" oncontextmenu="return Addons.FilterBar.FilterList(event, this)"><span id="ButtonFilterClear"  class="button" style="font-family: marlett; font-size: 7pt; display: none; position: absolute; left: -21pt; top: 3pt" onclick="Addons.FilterBar.Clear(true)">r</span></span>'], "middle");
+	var z = screen.deviceYDPI / 96;
+	var nSize = item.getAttribute("Icon") ? 16 : 13;
+	SetAddon(Addon_Id, Default, ['<input type="text" name="filter" placeholder="Filter" onkeydown="return Addons.FilterBar.KeyDown(event, this)" onkeyup="return Addons.FilterBar.KeyUp(event)" onfocus="Addons.FilterBar.Focus(this)" onblur="Addons.FilterBar.ShowButton()" onmouseup="Addons.FilterBar.KeyDown(event, this)" ondblclick="return Addons.FilterBar.FilterList(event, this)" style="width:', EncodeSC(width), '; padding-right:', nSize * z, 'px; vertical-align: middle"><span style="position: relative"><input type="image" src="', icon, '" id="ButtonFilter" hidefocus="true" style="position: absolute; left:', -(nSize + 2) * z, 'px; top:', (18 - nSize) / 2 * z, 'px; width:', nSize * z, 'px; height:', nSize * z, 'px" onclick="return Addons.FilterBar.FilterList(event, this,1)" oncontextmenu="return Addons.FilterBar.FilterList(event, this)"><span id="ButtonFilterClear" class="button" style="font-family: marlett; font-size:', 9 * z, 'px; display: none; position: absolute; left:', -(nSize + 12) * z, 'px; top:', 4 * z, 'px" onclick="Addons.FilterBar.Clear(true)">r</span></span>'], "middle");
 } else {
 	SetTabContents(0, "General", '<table style="width: 100%"><tr><td><label>Width</label></td></tr><tr><td><input type="text" name="Width" size="10"></td><td><input type="button" value="Default" onclick="document.F.Width.value=\'\'"></td></tr><tr><td><label>Filter</label></td></tr><tr><td><input type="checkbox" id="RE" name="RE"><label for="RE">Regular Expression</label>/<label for="RE">Migemo</label></td></tr></table>');
 	ChangeForm([["__IconSize", "style/display", "none"]]);

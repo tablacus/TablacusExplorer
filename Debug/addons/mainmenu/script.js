@@ -1,5 +1,5 @@
-Addon_Id = "mainmenu";
-Default = "ToolBar1Left";
+const Addon_Id = "mainmenu";
+const Default = "ToolBar1Left";
 
 if (window.Addon == 1) {
 	Addons.MainMenu = {
@@ -9,14 +9,14 @@ if (window.Addon == 1) {
 			if (!await Common.MainMenu.bClose) {
 				Addons.MainMenu.Item = o;
 				Common.MainMenu.Item = await GetRect(o, 1);
-				for (var i = await GetLength(await Common.MainMenu.Menu); i--;) {
+				for (let i = await GetLength(await Common.MainMenu.Menu); i--;) {
 					Common.MainMenu.Items[i] = await GetRect(document.getElementById(await Common.MainMenu.Menu[i]), 1);
 				}
 				clearTimeout(Addons.MainMenu.tid);
 				Addons.MainMenu.tid = setTimeout(async function () {
 					delete Addons.MainMenu.tid;
-					var o = Addons.MainMenu.Item;
-					var p = GetPos(o, 9);
+					const o = Addons.MainMenu.Item;
+					const p = GetPos(o, 9);
 					MouseOver(o);
 					$.Ctrl = await te;
 					Common.MainMenu.bLoop = true;
@@ -41,25 +41,25 @@ if (window.Addon == 1) {
 	}
 
 	// Init
-	var used = {};
-	var strMenus = ["&File", "&Edit", "&View", "F&avorites", "&Tools", "&Help"];
-	var s = [];
-	for (var i = 0; i < strMenus.length; i++) {
-		var s1 = strMenus[i].replace("&", "");
-		var strMenu = amp2ul(await GetText(strMenus[i]));
-		var res = /&(.)/.exec(strMenu);
+	const used = {};
+	const strMenus = ["&File", "&Edit", "&View", "F&avorites", "&Tools", "&Help"];
+	const s = [];
+	for (let i = 0; i < strMenus.length; i++) {
+		const s1 = strMenus[i].replace("&", "");
+		const strMenu = await GetText(strMenus[i]);
+		const res = /&(.)/.exec(strMenu);
 		if (res) {
-			var c = res[1];
+			const c = res[1];
 			if (!used[c]) {
 				used[c] = true;
 				SetKeyExec("All", "Alt+" + c, 'Common.MainMenu.Popup("Menu' + s1 + '");', "JScript");
 			}
 		}
-		s.push('<label class="menu" id="Menu', s1, '" onmousedown="Addons.MainMenu.Popup(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', await GetText(strMenu), '</label>');
+		s.push('<label class="menu" id="Menu', s1, '" onmousedown="Addons.MainMenu.Popup(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', amp2ul(strMenu), '</label>');
 	}
 	SetAddon(Addon_Id, Default, s);
-	for (var i = strMenus.length; i--;) {
-		var s1 = strMenus[i].replace("&", "");
+	for (let i = strMenus.length; i--;) {
+		const s1 = strMenus[i].replace("&", "");
 		Addons.MainMenu.Menu[i] = document.getElementById('Menu' + s1);
 		Common.MainMenu.Menu[i] = 'Menu' + s1;
 	}

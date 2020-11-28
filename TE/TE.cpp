@@ -157,6 +157,7 @@ int		g_x = MAXINT;
 int		g_nTCCount = 0;
 int		g_nTCIndex = 0;
 int		g_nWindowTheme = 0;
+int		g_nBlink = 0;
 BOOL	g_bArrange = FALSE;
 BOOL	g_nDropState = 0;
 BOOL	g_bLabelsMode;
@@ -169,7 +170,6 @@ BOOL	g_bCanLayout = FALSE;
 BOOL	g_bUpper10;
 BOOL	g_bDarkMode = FALSE;
 BOOL	g_bDragIcon = TRUE;
-BOOL	g_bBlink = FALSE;
 #ifdef _2000XP
 std::vector <IUnknown *> g_pRelease;
 int		g_nCharWidth = 7;
@@ -699,7 +699,7 @@ VOID teSetLL(VARIANT *pv, LONGLONG ll)
 			pv->vt = VT_R8;
 			return;
 		}
-		if (g_bBlink) {// Next version
+		if (g_nBlink == 1) {// Next version
 			pv->bstrVal = ::SysAllocStringLen(NULL, 18);
 			swprintf_s(pv->bstrVal, 19, L"0x%016llx", ll);
 			pv->vt = VT_BSTR;
@@ -1992,7 +1992,7 @@ HRESULT Invoke5(IDispatch *pdisp, DISPID dispid, WORD wFlags, VARIANT *pvResult,
 #ifdef _USE_SYNC
 	if (hr == HRESULT_FROM_WIN32(ERROR_POSSIBLE_DEADLOCK)) {
 		if (wFlags & DISPATCH_METHOD) {
-			if (g_bBlink && dispid == DISPID_VALUE) {
+			if (g_nBlink == 1 && dispid == DISPID_VALUE) {
 				int nArgsA = abs(nArgs);
 				SAFEARRAY *psa = SafeArrayCreateVector(VT_VARIANT, 0, nArgsA + 1);
 				LONG l = 0;
@@ -4363,18 +4363,27 @@ HRESULT ParseScript(LPOLESTR lpScript, LPOLESTR lpLang, VARIANT *pv, IDispatch *
 	CLSID clsid;
 	IActiveScript *pas = NULL;
 
-	if (tePathMatchSpec(lpLang, L"J*Script")) {
-		teCreateInstance(CLSID_JScriptChakra, NULL, NULL, IID_PPV_ARGS(&pas));
+	BOOL bChakra = tePathMatchSpec(lpLang, L"J*Script");
+	if (g_nBlink == 1 && bChakra) {
+		teCreateInstance(CLSID_JScriptEdgeChakra, NULL, NULL, IID_PPV_ARGS(&pas));
+	}
+	if (pas == NULL && bChakra) {
+		teCreateInstance(CLSID_JScript9Chakra, NULL, NULL, IID_PPV_ARGS(&pas));
+		bChakra = FALSE;
 	}
 	if (pas == NULL && teCLSIDFromProgID(lpLang, &clsid) == S_OK) {
 		teCreateInstance(clsid, NULL, NULL, IID_PPV_ARGS(&pas));
+		bChakra = FALSE;
 	}
 	if (pas) {
-		IActiveScriptProperty *paspr;
-		if SUCCEEDED(pas->QueryInterface(IID_PPV_ARGS(&paspr))) {
-			VARIANT v;
-			teSetLong(&v, 0);
-			while (++v.lVal <= 256 && paspr->SetProperty(SCRIPTPROP_INVOKEVERSIONING, NULL, &v) == S_OK) {
+		if (!bChakra) {
+			IActiveScriptProperty *paspr;
+			if SUCCEEDED(pas->QueryInterface(IID_PPV_ARGS(&paspr))) {
+				VARIANT v;
+				teSetLong(&v, 0);
+				while (++v.lVal <= 256 && paspr->SetProperty(SCRIPTPROP_INVOKEVERSIONING, NULL, &v) == S_OK) {
+				}
+				paspr->Release();
 			}
 		}
 		IUnknown *punk = NULL;
@@ -4408,7 +4417,7 @@ HRESULT ParseScript(LPOLESTR lpScript, LPOLESTR lpLang, VARIANT *pv, IDispatch *
 			}
 			VARIANT v;
 			VariantInit(&v);
-			pasp->ParseScriptText(lpScript, NULL, NULL, NULL, 0, 1, SCRIPTTEXT_ISPERSISTENT | SCRIPTTEXT_ISVISIBLE, &v, NULL);
+			pasp->ParseScriptText(lpScript, NULL, NULL, NULL, 0, 0, SCRIPTTEXT_ISPERSISTENT | SCRIPTTEXT_ISVISIBLE, &v, NULL);
 			if (hr == S_OK) {
 				pas->SetScriptState(SCRIPTSTATE_CONNECTED);
 				if (ppdisp) {
@@ -4704,7 +4713,7 @@ IDispatch* teCreateObj(LONG lId, VARIANT *pvArg)
 	IDispatch *pdispResult = NULL;
 	switch (lId) {
 	case TE_OBJECT:
-		if (!g_bBlink || g_pSP->QueryService(SID_TablacusObject, IID_PPV_ARGS(&pdisp)) != S_OK) {
+		if (g_nBlink != 1 || g_pSP->QueryService(SID_TablacusObject, IID_PPV_ARGS(&pdisp)) != S_OK) {
 			GetNewObject(&pdisp);
 		}
 		return pdisp;
@@ -10627,7 +10636,7 @@ VOID teSetObjectRects(IUnknown *punk, HWND hwnd)
 	GetClientRect(hwnd, &rc);
 	pOleInPlaceObject->SetObjectRects(&rc, &rc);
 	pOleInPlaceObject->Release();
-	if (g_bBlink) {
+	if (g_nBlink == 1) {
 		IWebBrowser2 *pWB2;
 		if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pWB2))) {
 			POINT pt = { 0, 0 };
@@ -10925,6 +10934,45 @@ VOID teAPIHook(LPWSTR pszTargetDll, LPVOID lpfnSrcProc, LPVOID lpfnNewProc)
 	}
 }
 #endif
+
+HRESULT teCreateWebView2(IWebBrowser2 **ppWebBrowser)
+{
+	HRESULT hr = E_NOTIMPL;
+	if (g_nBlink == 2) {
+		return hr;
+	}
+	WCHAR pszTEWV2[MAX_PATH];
+#ifdef _DEBUG
+#ifdef _WIN64
+	lstrcpy(pszTEWV2, L"C:\\cpp\\tewv\\x64\\Debug\\tewv64d.dll");
+#else
+	lstrcpy(pszTEWV2, L"C:\\cpp\\tewv\\Debug\\tewv32d.dll");
+#endif
+#else
+	GetModuleFileName(NULL, pszTEWV2, MAX_PATH);
+	PathRemoveFileSpec(pszTEWV2);
+#ifdef _WIN64
+	PathAppend(pszTEWV2, L"lib\\tewv64.dll");
+#else
+	PathAppend(pszTEWV2, L"lib\\tewv32.dll");
+#endif
+#endif
+	hr = teCreateInstance(CLSID_WebBrowserExt, pszTEWV2, &g_hTEWV, IID_PPV_ARGS(ppWebBrowser));
+	if (hr == S_OK && !g_pSP) {
+		VARIANT v;
+		VariantInit(&v);
+		(*ppWebBrowser)->GetProperty(L"version", &v);
+		if (GetIntFromVariantClear(&v) >= 20112000) {
+			g_nBlink = 1;
+			(*ppWebBrowser)->QueryInterface(IID_PPV_ARGS(&g_pSP));
+		} else {
+			(*ppWebBrowser)->Release();
+			g_nBlink = 2;
+			hr = E_FAIL;
+		}
+	}
+	return hr;
+}
 
 int APIENTRY _tWinMain(HINSTANCE hInstance,
 					HINSTANCE hPrevInstance,
@@ -11224,6 +11272,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 #else
 	AddClipboardFormatListener(g_hwndMain);
 #endif
+	//WebView2 Check
+	IWebBrowser2 *pWB;
+	if (teCreateWebView2(&pWB) == S_OK) {
+		pWB->Release();
+	}
 	//Get JScript Object
 	bsScript = teMultiByteToWideChar(CP_UTF8, "\
 function _o() {\
@@ -13082,7 +13135,7 @@ VOID CteShellBrowser::SetTitle(BSTR szName, int nIndex)
 VOID CteShellBrowser::GetShellFolderView()
 {
 	teUnadviseAndRelease(m_pdisp, DIID_DShellFolderViewEvents, &m_dwCookie);
-	if SUCCEEDED(m_pShellView->GetItemObject(SVGIO_BACKGROUND, IID_PPV_ARGS(&m_pdisp))) {
+	if (m_pShellView && SUCCEEDED(m_pShellView->GetItemObject(SVGIO_BACKGROUND, IID_PPV_ARGS(&m_pdisp)))) {
 		teAdvise(m_pdisp, DIID_DShellFolderViewEvents, static_cast<IDispatch *>(this), &m_dwCookie);
 	} else {
 		m_pdisp = NULL;
@@ -15870,26 +15923,28 @@ HRESULT CteShellBrowser::GetShellFolder2(LPITEMIDLIST *ppidl)
 HRESULT CteShellBrowser::RemoveAll()
 {
 	HRESULT hr = E_NOTIMPL;
-	IFolderView2 *pFV2 = NULL;
-	IResultsFolder *pRF;
-	m_nGroupByDelay = 1;
-	m_dwSessionId = MAKELONG(GetTickCount(), rand());
-	if (SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) && SUCCEEDED(pFV2->GetFolder(IID_PPV_ARGS(&pRF)))) {
-		hr = pRF->RemoveAll();
-		pRF->Release();
-		pFV2->SetGroupBy(PKEY_Null, TRUE);
-		pFV2->SetSortColumns(g_pSortColumnNull, _countof(g_pSortColumnNull));
+	if (m_pShellView) {
+		IFolderView2 *pFV2 = NULL;
+		IResultsFolder *pRF;
+		m_nGroupByDelay = 1;
+		m_dwSessionId = MAKELONG(GetTickCount(), rand());
+		if (SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) && SUCCEEDED(pFV2->GetFolder(IID_PPV_ARGS(&pRF)))) {
+			hr = pRF->RemoveAll();
+			pRF->Release();
+			pFV2->SetGroupBy(PKEY_Null, TRUE);
+			pFV2->SetSortColumns(g_pSortColumnNull, _countof(g_pSortColumnNull));
 #ifdef _2000XP
-	} else {
-		IShellFolderView *pSFV;
-		if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pSFV))) {
-			UINT ui;
-			hr = pSFV->RemoveObject(NULL, &ui);//the removal of all objects
-			pSFV->Release();
-		}
+		} else {
+			IShellFolderView *pSFV;
+			if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pSFV))) {
+				UINT ui;
+				hr = pSFV->RemoveObject(NULL, &ui);//the removal of all objects
+				pSFV->Release();
+			}
 #endif
+		}
+		SafeRelease(&pFV2);
 	}
-	SafeRelease(&pFV2);
 	return hr;
 }
 
@@ -16484,7 +16539,7 @@ VOID CteShellBrowser::Suspend(int nMode)
 
 VOID CteShellBrowser::SetPropEx()
 {
-	if (m_pShellView->GetWindow(&m_hwndDV) == S_OK) {
+	if (m_pShellView && m_pShellView->GetWindow(&m_hwndDV) == S_OK) {
 		if (SetWindowLongPtr(m_hwndDV, GWLP_USERDATA, (LONG_PTR)this) != (LONG_PTR)this) {
 			SetWindowSubclass(m_hwndDV, TELVProc, 1, 0);
 			for (int i = WM_USER + 173; i <= WM_USER + 175; ++i) {
@@ -17805,38 +17860,8 @@ CteWebBrowser::CteWebBrowser(HWND hwndParent, WCHAR *szPath, VARIANT *pvArg)
 	MSG        msg;
 	RECT       rc;
 	IOleObject *pOleObject;
-	HRESULT hr = E_FAIL;
-	WCHAR pszTEWV2[MAX_PATH];
-#ifdef _DEBUG
-#ifdef _WIN64
-	lstrcpy(pszTEWV2, L"C:\\cpp\\tewv\\x64\\Debug\\tewv64d.dll");
-#else
-	lstrcpy(pszTEWV2, L"C:\\cpp\\tewv\\Debug\\tewv32d.dll");
-#endif
-#else
-	GetModuleFileName(NULL, pszTEWV2, MAX_PATH);
-	PathRemoveFileSpec(pszTEWV2);
-#ifdef _WIN64
-	PathAppend(pszTEWV2, L"lib\\tewv64.dll");
-#else
-	PathAppend(pszTEWV2, L"lib\\tewv32.dll");
-#endif
-#endif
-	hr = teCreateInstance(CLSID_WebBrowserExt, pszTEWV2, &g_hTEWV, IID_PPV_ARGS(&m_pWebBrowser));
-	if (hr == S_OK && !g_pSP) {
-		VARIANT v;
-		VariantInit(&v);
-		m_pWebBrowser->GetProperty(L"version", &v);
-		if (GetIntFromVariantClear(&v) >= 20112000) {
-			g_bBlink = TRUE;
-			m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&g_pSP));
-		} else {
-			m_pWebBrowser->Release();
-			hr = E_FAIL;
-		}
-	}
+	HRESULT hr = teCreateWebView2(&m_pWebBrowser);
 	if FAILED(hr) {
-		g_bBlink = FALSE;
 		hr = teCreateInstance(CLSID_WebBrowser, NULL, NULL, IID_PPV_ARGS(&m_pWebBrowser));
 	}
 	if (SUCCEEDED(hr) && SUCCEEDED(m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&pOleObject)))) {
@@ -17976,7 +18001,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			return S_OK;
 
 		case TE_PROPERTY + 6://Document
-			if (g_bBlink && nArg >= 0) {
+			if (g_nBlink == 1 && nArg >= 0) {
 				m_pWebBrowser->PutProperty(L"document", pDispParams->rgvarg[nArg]);
 			}
 			if SUCCEEDED(m_pWebBrowser->get_Document(&pdisp)) {
@@ -17991,7 +18016,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			return S_OK;
 
 		case TE_METHOD + 8://Focus
-			if (g_bBlink) {
+			if (g_nBlink == 1) {
 				IOleInPlaceObject *pOleInPlaceObject;
 				m_pWebBrowser->QueryInterface(IID_PPV_ARGS(&pOleInPlaceObject));
 				pOleInPlaceObject->ReactivateAndUndo();
@@ -18023,7 +18048,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			return S_OK;
 
 		case TE_PROPERTY + 12://DropMode
-			if (m_pWebBrowser && g_bBlink) {
+			if (m_pWebBrowser && g_nBlink == 1) {
 				if (nArg >= 0) {
 					m_pWebBrowser->put_RegisterAsDropTarget(GetIntFromVariant(&pDispParams->rgvarg[nArg]));
 				}
@@ -18074,7 +18099,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				}
 				if (g_bInit) {
 					g_bInit = FALSE;
-					SetTimer(g_hwndMain, TET_Create, g_bBlink ? 500 : 100, teTimerProc);
+					SetTimer(g_hwndMain, TET_Create, g_nBlink == 1 ? 500 : 100, teTimerProc);
 				}
 				if (g_hwndMain != m_hwndParent) {
 					teShowWindow(m_hwndParent, SW_SHOWNORMAL);
@@ -18422,7 +18447,7 @@ STDMETHODIMP CteWebBrowser::DragEnter(IDataObject *pDataObj, DWORD grfKeyState, 
 			hr = S_OK;
 		}
 	}
-	if (g_pDropTargetHelper && g_bBlink) {
+	if (g_pDropTargetHelper && g_nBlink == 1) {
 		g_pDropTargetHelper->DragEnter(m_hwndBrowser, pDataObj, (LPPOINT)&pt, *pdwEffect);
 	}
 	return hr;
@@ -18445,7 +18470,7 @@ STDMETHODIMP CteWebBrowser::DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEff
 	}
 	*pdwEffect |= m_dwEffect;
 	m_grfKeyState = grfKeyState;
-	if (g_pDropTargetHelper && g_bBlink) {
+	if (g_pDropTargetHelper && g_nBlink == 1) {
 		g_pDropTargetHelper->DragOver((LPPOINT)&pt, *pdwEffect);
 	}
 	return hr;
@@ -18463,7 +18488,7 @@ STDMETHODIMP CteWebBrowser::DragLeave()
 			}
 		}
 	}
-	if (g_pDropTargetHelper && g_bBlink) {
+	if (g_pDropTargetHelper && g_nBlink == 1) {
 		g_pDropTargetHelper->DragLeave();
 	}
 	return m_DragLeave;
@@ -18512,7 +18537,7 @@ BOOL CteWebBrowser::IsBusy()
 VOID CteWebBrowser::write(LPWSTR pszPath)
 {
 	ClearEvents();
-	if (g_bBlink) {
+	if (g_nBlink == 1) {
 		VARIANT v;
 		teSetLong(&v, 1);
 		m_pWebBrowser->Navigate(pszPath, &v, NULL, NULL, NULL);
@@ -19142,7 +19167,7 @@ VOID CteTabCtrl::LockUpdate()
 {
 	m_bRedraw = TRUE;
 	if (InterlockedIncrement(&m_nLockUpdate) == 1) {
-		if (g_bBlink) {
+		if (g_nBlink == 1) {
 			return;
 		}
 		SendMessage(m_hwndStatic, WM_SETREDRAW, FALSE, 0);
@@ -24721,7 +24746,7 @@ STDMETHODIMP CteActiveScriptSite::OnScriptError(IActiveScriptError *pscripterror
 		}
 #ifdef _DEBUG
 		::OutputDebugString(bs);
-		if (g_bBlink) {
+		if (g_nBlink == 1) {
 			MessageBox(NULL, bs, L"Tablacus Explorer", MB_OK);
 		}
 #endif
@@ -25627,13 +25652,22 @@ CteEnumerator::CteEnumerator(VARIANT *pvObject)
 		pdisp->QueryInterface(IID_PPV_ARGS(&m_pdex));
 		VARIANT v;
 		VariantInit(&v);
-		if SUCCEEDED(Invoke5(pdisp, DISPID_NEWENUM, DISPATCH_PROPERTYGET, &v, 0, NULL)) {
-			IUnknown *punk;
-			if (FindUnknown(&v, &punk)) {
-				punk->QueryInterface(IID_PPV_ARGS(&m_pEnumVARIANT));
-			}
-			VariantClear(&v);
+		IShellWindows *pSW = NULL;
+		FolderItems *pid = NULL;
+		IUnknown *punkEnum = NULL;
+		if SUCCEEDED(pdisp->QueryInterface(IID_PPV_ARGS(&pSW))) {
+			pSW->_NewEnum(&punkEnum);
+		} else if SUCCEEDED(pdisp->QueryInterface(IID_PPV_ARGS(&pid))) {
+			pid->_NewEnum(&punkEnum);
+		} else if SUCCEEDED(Invoke5(pdisp, DISPID_NEWENUM, DISPATCH_PROPERTYGET, &v, 0, NULL)) {
+			FindUnknown(&v, &punkEnum);
 		}
+		if (punkEnum) {
+			punkEnum->QueryInterface(IID_PPV_ARGS(&m_pEnumVARIANT));
+		}
+		VariantClear(&v);
+		SafeRelease(&pid);
+		SafeRelease(&pSW);
 		pdisp->Release();
 	}
 	GetItem();

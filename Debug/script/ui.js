@@ -3,6 +3,7 @@
 ui_ = {
 	IEVer: window.chrome ? (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 : 12) : window.document && (document.documentMode || (/MSIE 6/.test(navigator.appVersion) ? 6 : 7)),
 	bWindowRegistered: true,
+	Zoom: 1,
 	Panels: {},
 	eventTE: {}
 };
@@ -129,13 +130,11 @@ InitUI = async function () {
 
 	UI.RunEvent = async function () {
 		const args = Array.apply(null, arguments);
-		const fn = new Function(FixScript(args.shift(), window.chrome));
-		fn.apply(fn, args);
+		new Function(FixScript(args.shift(), window.chrome)).apply(null, args);
 	}
 
 	UI.ExecJavaScript = function (Ctrl, s) {
-		const fn = new Function(FixScript(s, window.chrome));
-		fn.apply(fn, arguments);
+		new Function(FixScript(s, window.chrome)).apply(null, arguments);
 	}
 
 	UI.Invoke = InvokeUI = function () {
@@ -300,33 +299,33 @@ CheckUpdate2 = async function (xhr, url, arg1) {
 }
 
 CheckUpdate3 = async function (xhr, url, arg) {
-	var hr = await Extract(await arg.zipfile, await arg.temp, xhr);
+	let hr = await Extract(await arg.zipfile, await arg.temp, xhr);
 	if (hr) {
 		await MessageBox([(await api.LoadString(hShell32, 4228)).replace(/^\t/, "").replace("%d", await api.sprintf(99, "0x%08x", hr)), await GetText("Extract"), GetFileName(arg.zipfile)].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
 		return;
 	}
-	var te_exe = await arg.temp + "\\te64.exe";
-	var nDog = 300;
+	let te_exe = await arg.temp + "\\te64.exe";
+	let nDog = 300;
 	while (!await $.fso.FileExists(te_exe)) {
 		if (await wsh.Popup(await GetText("Please wait."), 1, TITLE, MB_OKCANCEL) == IDCANCEL || nDog-- == 0) {
 			return;
 		}
 	}
-	var arDel = [];
-	var addons = await arg.temp + "\\addons";
+	const arDel = [];
+	const addons = await arg.temp + "\\addons";
 	if (await $.fso.FolderExists(await arg.temp + "\\config")) {
 		arDel.push(await arg.temp + "\\config");
 	}
 	for (let i = 32; i <= 64; i += 32) {
 		te_exe = await arg.temp + '\\te' + i + '.exe';
-		var te_old = BuildPath(ui_.Installed, 'te' + i + '.exe');
+		const te_old = BuildPath(ui_.Installed, 'te' + i + '.exe');
 		if (!await $.fso.FileExists(te_old) || await $.fso.GetFileVersion(te_exe) == await $.fso.GetFileVersion(te_old)) {
 			arDel.push(te_exe);
 		}
 	}
 	for (let list = await api.CreateObject("Enum", await $.fso.GetFolder(addons).SubFolders); !await list.atEnd(); await list.moveNext()) {
-		var n = await list.item().Name;
-		var items = await te.Data.Addons.getElementsByTagName(n);
+		const n = await list.item().Name;
+		const items = await te.Data.Addons.getElementsByTagName(n);
 		if (!items || GetLength(items) == 0) {
 			arDel.push(BuildPath(addons, n));
 		}
@@ -334,7 +333,7 @@ CheckUpdate3 = async function (xhr, url, arg) {
 	if (arDel.length) {
 		await api.SHFileOperation(FO_DELETE, arDel, null, FOF_SILENT | FOF_NOCONFIRMATION, false);
 	}
-	var ppid = await api.Memory("DWORD");
+	const ppid = await api.Memory("DWORD");
 	await api.GetWindowThreadProcessId(ui_.hwnd, ppid);
 	arg.pid = await ppid[0];
 	MainWindow.CreateUpdater(arg);
@@ -372,8 +371,8 @@ LoadScripts = async function (js1, js2, cb) {
 				to = await api.CreateObject("Object");
 			}
 			ar.forEach(async function (key) {
-				var a = await o[key];
-				if (!await to[key] && a !== void 0) {
+				const a = await o[key];
+				if (!await to[key] && a != null) {
 					to[key] = a;
 				}
 			});
@@ -385,8 +384,8 @@ LoadScripts = async function (js1, js2, cb) {
 		await CopyObj($, window, ["te", "api", "chrome", "document", "UI", "MainWindow"]);
 		$.location = await CopyObj(null, location, ["hash", "href"]);
 		$.navigator = await CopyObj(null, navigator, ["appVersion", "language"]);
-		$.screen = await CopyObj(null, screen, ["deviceXDPI", "deviceYDPI"]);
-		var o = await api.CreateObject("Object");
+		$.screen = await CopyObj(null, screen, ["deviceYDPI"]);
+		const o = await api.CreateObject("Object");
 		o.window = $;
 		$.$JS = await api.GetScriptDispatch(s.join(""), "JScript", o);
 		await CopyObj(window, $, ["g_", "Common", "Sync", "Threads"]);
@@ -396,7 +395,6 @@ LoadScripts = async function (js1, js2, cb) {
 		WebBrowser.Document = doc;
 	} else {
 		$ = window;
-		ui_.Zoom = 1;
 	}
 	Addons = {
 		"_stack": await api.CreateObject("Array")
@@ -405,10 +403,10 @@ LoadScripts = async function (js1, js2, cb) {
 };
 
 async function _InvokeMethod() {
-	var args;
-	var ar = await api.ObjGetI(te, "fn");
+	let args;
+	const ar = await api.ObjGetI(te, "fn");
 	while (args = await ar.shift()) {
-		var fn = args.shift();
+		const fn = args.shift();
 		await fn.apply(fn, args);
 	}
 }
@@ -417,7 +415,7 @@ ApplyLangTag = async function (o) {
 	if (o) {
 		for (let i = 0; i < o.length; ++i) {
 			(async function (el) {
-				var s;
+				let s;
 				if (s = el.childNodes) {
 					for (let j = s.length; j-- > 0;) {
 						if (!s[j].tagName) {
@@ -489,7 +487,7 @@ ApplyLang = async function (doc) {
 		ApplyLangTag(o);
 		for (i = o.length; i--;) {
 			(async function (el) {
-				var s = await ImgBase64(el, 0);
+				const s = await ImgBase64(el, 0);
 				if (s) {
 					el.src = s;
 				}
@@ -526,9 +524,9 @@ ApplyLang = async function (doc) {
 }
 
 ImgBase64 = async function (el, index, h) {
-	var org = el.src || el.getAttribute("data-src");
-	var src = await ExtractMacro(te, org);
-	var s = await MakeImgSrc(src, index, false, h || el.height);
+	const org = el.src || el.getAttribute("data-src");
+	const src = await ExtractMacro(te, org);
+	const s = await MakeImgSrc(src, index, false, h || el.height);
 	if ("string" === typeof s && org != src) {
 		return src.replace(location.href.replace(/[^\/]*$/, ""), "file:///");
 	}
@@ -540,7 +538,7 @@ FireEvent = function (o, event) {
 		if (o.fireEvent) {
 			return o.fireEvent('on' + event);
 		} else if (document.createEvent) {
-			var evt = document.createEvent("HTMLEvents");
+			const evt = document.createEvent("HTMLEvents");
 			evt.initEvent(event, true, true);
 			return !o.dispatchEvent(evt);
 		}
@@ -548,8 +546,8 @@ FireEvent = function (o, event) {
 }
 
 GetRect = async function (o, f) {
-	var rc = await api.Memory("RECT");
-	var pt = GetPos(o, f);
+	const rc = await api.Memory("RECT");
+	const pt = GetPos(o, f);
 	rc.left = pt.x;
 	rc.top = pt.y;
 	rc.right = pt.x + o.offsetWidth;
@@ -564,18 +562,18 @@ GetPos = function (o, bScreen, bAbs, bPanel, bBottom) {
 		bBottom = bScreen & 8;
 		bScreen &= 1;
 	}
-	var x = bScreen ? screenLeft * ui_.Zoom : 0;
-	var y = bScreen ? screenTop * ui_.Zoom : 0;
+	const x = bScreen ? screenLeft * ui_.Zoom : 0;
+	let y = bScreen ? screenTop * ui_.Zoom : 0;
 	if (bBottom) {
 		y += o.offsetHeight;
 	}
-	var rc = o.getBoundingClientRect();
+	const rc = o.getBoundingClientRect();
 	return { x: x + rc.left, y: y + rc.top };
 }
 
 GetPosEx = async function (el, n) {
-	var p = GetPos(el, n);
-	var pt = await api.Memory("POINT");
+	const p = GetPos(el, n);
+	const pt = await api.Memory("POINT");
 	pt.x = p.x;
 	pt.y = p.y;
 	return pt;
@@ -583,7 +581,7 @@ GetPosEx = async function (el, n) {
 
 HitTest = async function (o, pt) {
 	if (o) {
-		var p = GetPos(o, 1);
+		let p = GetPos(o, 1);
 		if (await pt.x >= p.x && await pt.x < p.x + o.offsetWidth && await pt.y >= p.y && await pt.y < p.y + o.offsetHeight) {
 			o = o.offsetParent;
 			p = GetPos(o, 1);
@@ -594,7 +592,7 @@ HitTest = async function (o, pt) {
 }
 
 GetTopWindow = async function (hwnd) {
-	var hwnd1 = hwnd || await WebBrowser.hwnd;
+	let hwnd1 = hwnd || await WebBrowser.hwnd;
 	while (hwnd1 = await api.GetParent(hwnd1)) {
 		hwnd = hwnd1;
 	}
@@ -610,8 +608,8 @@ CloseWindow = async function () {
 }
 
 CloseSubWindows = async function () {
-	var hwnd = await GetTopWindow();;
-	var hwnd1 = hwnd;
+	const hwnd = await GetTopWindow();;
+	let hwnd1 = hwnd;
 	while (hwnd1 = await api.FindWindowEx(null, hwnd1, null, null)) {
 		if (hwnd == await api.GetWindowLongPtr(hwnd1, GWLP_HWNDPARENT)) {
 			api.PostMessage(hwnd1, WM_CLOSE, 0, 0);
@@ -625,13 +623,13 @@ MouseOver = async function (o) {
 		if (ui_.objHover && o != ui_.objHover) {
 			MouseOut();
 		}
-		var bHover = window.chrome;
+		let bHover = window.chrome;
 		if (!bHover) {
-			var pt = await api.Memory("POINT");
+			const pt = await api.Memory("POINT");
 			api.GetCursorPos(pt);
-			var ptc = pt.Clone();
-			api.ScreenToClient(WebBrowser.hwnd, ptc);
-			bHover = (o == document.elementFromPoint(ptc.x, ptc.y) || HitTest(o, pt));
+			const ptc = await pt.Clone();
+			await api.ScreenToClient(WebBrowser.hwnd, ptc);
+			bHover = (o == document.elementFromPoint(ptc.x, ptc.y) || await HitTest(o, pt));
 		}
 		if (bHover) {
 			ui_.objHover = o;
@@ -655,18 +653,18 @@ MouseOut = function (s) {
 }
 
 InsertTab = function (e) {
-	var ot = e.srcElement;
+	const ot = e.srcElement;
 	if (e.keyCode == VK_TAB) {
 		ot.focus();
 		if (document.all && document.selection) {
-			var selection = document.selection.createRange();
+			const selection = document.selection.createRange();
 			if (selection) {
 				selection.text += "\t";
 				return false;
 			}
 		}
-		var i = ot.selectionEnd;
-		var s = ot.value;
+		let i = ot.selectionEnd;
+		const s = ot.value;
 		ot.value = s.slice(0, i) + "\t" + s.slice(i);
 		ot.selectionStart = ++i;
 		ot.selectionEnd = i;
@@ -676,7 +674,7 @@ InsertTab = function (e) {
 }
 
 DetectProcessTag = function (e) {
-	var el = e.srcElement;
+	const el = e.srcElement;
 	return /input|textarea/i.test(el.tagName) || /selectable/i.test(el.className);
 }
 
@@ -684,11 +682,11 @@ GetFolderView = GetFolderViewEx = async function (Ctrl, pt, bStrict) {
 	if (!Ctrl) {
 		return await te.Ctrl(CTRL_FV);
 	}
-	var nType = await Ctrl.Type;
+	const nType = await Ctrl.Type;
 	if (nType == null) {
-		var o = Ctrl.offsetParent;
+		let o = Ctrl.offsetParent;
 		while (o) {
-			var res = /^Panel_(\d+)$/.exec(o.id);
+			const res = /^Panel_(\d+)$/.exec(o.id);
 			if (res) {
 				return await te.Ctrl(CTRL_TC, res[1]).Selected;
 			}
@@ -706,7 +704,7 @@ GetFolderView = GetFolderViewEx = async function (Ctrl, pt, bStrict) {
 		return await te.Ctrl(CTRL_FV);
 	}
 	if (pt) {
-		var FV = await Ctrl.HitTest(pt);
+		const FV = await Ctrl.HitTest(pt);
 		if (FV) {
 			return FV;
 		}
@@ -717,7 +715,7 @@ GetFolderView = GetFolderViewEx = async function (Ctrl, pt, bStrict) {
 }
 
 AddFavoriteEx = async function (Ctrl, pt) {
-	var FV = await GetFolderViewEx(Ctrl, pt);
+	const FV = await GetFolderViewEx(Ctrl, pt);
 	await FV.Focus();
 	AddFavorite();
 	return S_OK
@@ -760,10 +758,10 @@ SetCursor = function (o, s) {
 			o.style.cursor = s;
 		}
 		if (o.getElementsByTagName) {
-			var e = o.getElementsByTagName("*");
-			for (let i in e) {
-				if (e[i].style) {
-					e[i].style.cursor = s;
+			const el = o.getElementsByTagName("*");
+			for (let i in el) {
+				if (el[i].style) {
+					el[i].style.cursor = s;
 				}
 			}
 		}
@@ -773,7 +771,7 @@ SetCursor = function (o, s) {
 GetImgTag = async function (o, h) {
 	if (o.src) {
 		o.src = await ImgBase64(o, 0, Number(h))
-		var ar = ['<img'];
+		const ar = ['<img'];
 		for (let n in o) {
 			if (o[n]) {
 				ar.push(' ', n, '="', EncodeSC(StripAmp(await GetText(await api.PathUnquoteSpaces(o[n])))), '"');
@@ -786,7 +784,7 @@ GetImgTag = async function (o, h) {
 		ar.push('>');
 		return ar.join("");
 	}
-	var ar = ['<span'];
+	const ar = ['<span'];
 	for (let n in o) {
 		if (n != "title" && o[n]) {
 			ar.push(' ', n, '="', EncodeSC(o[n]), '"');
@@ -797,20 +795,20 @@ GetImgTag = async function (o, h) {
 }
 
 LoadAddon = async function (ext, Id, arError, param, bDisabled) {
-	var r;
+	let r;
 	try {
-		var sc;
-		var ar = ext.split(".");
+		let sc;
+		const ar = ext.split(".");
 		if (ar.length == 1) {
 			ar.unshift("script");
 		}
 		const fn = BuildPath("addons", Id, ar.join("."));
-		var s = await ReadTextFile(fn);
+		const s = await ReadTextFile(fn);
 		if (s && (!bDisabled || /await/.test(s))) {
 			if (ar[1] == "js") {
 				sc = new Function(FixScript(s, window.chrome));
 			} else if (ar[1] == "vbs") {
-				var o = await api.CreateObject("Object");
+				const o = await api.CreateObject("Object");
 				o["_Addon_Id"] = await api.CreateObject("Object");
 				o["_Addon_Id"].Addon_Id = Id;
 				o.window = window;
@@ -819,7 +817,7 @@ LoadAddon = async function (ext, Id, arError, param, bDisabled) {
 			if (sc) {
 				r = await sc(Id);
 				if (param) {
-					var res = /[\r\n\s]Default\s*=\s*["'](.*)["'];/.exec(s);
+					const res = /[\r\n\s]Default\s*=\s*["'](.*)["'];/.exec(s);
 					if (res) {
 						param.Default = res[1];
 					}
@@ -845,7 +843,7 @@ BlurId = function (Id) {
 }
 
 SetDisplay = function (Id, s) {
-	var o = document.getElementById(Id);
+	const o = document.getElementById(Id);
 	if (o) {
 		o.style.display = s;
 	}
@@ -854,24 +852,24 @@ SetDisplay = function (Id, s) {
 //Options
 AddonOptions = async function (Id, fn, Data, bNew) {
 	await LoadLang2(BuildPath("addons", Id, "lang", await GetLangId() + ".xml"));
-	var items = await te.Data.Addons.getElementsByTagName(Id);
+	const items = await te.Data.Addons.getElementsByTagName(Id);
 	if (!GetLength(items)) {
-		var root = await te.Data.Addons.documentElement;
+		const root = await te.Data.Addons.documentElement;
 		if (root) {
 			root.appendChild(await te.Data.Addons.createElement(Id));
 		}
 	}
-	var info = await GetAddonInfo(Id);
-	var sURL = "addons\\" + Id + "\\options.html";
+	const info = await GetAddonInfo(Id);
+	let sURL = "addons\\" + Id + "\\options.html";
 	if (!Data) {
 		Data = await api.CreateObject("Object");;
 	}
 	Data.id = Id;
-	var sFeatures = await info.Options;
+	let sFeatures = await info.Options;
 	if (/^Location$/i.test(sFeatures)) {
 		sFeatures = "Common:6:6";
 	}
-	var res = /Common:([\d,]+):(\d)/i.exec(sFeatures);
+	let res = /Common:([\d,]+):(\d)/i.exec(sFeatures);
 	if (res) {
 		sURL = "script\\location.html";
 		Data.show = res[1];
@@ -879,7 +877,7 @@ AddonOptions = async function (Id, fn, Data, bNew) {
 		sFeatures = 'Default';
 	}
 	sURL = BuildPath(ui_.Installed, sURL);
-	var opt = await api.CreateObject("Object");
+	let opt = await api.CreateObject("Object");
 	opt.MainWindow = MainWindow.$;
 	opt.Data = Data;
 	opt.event = await api.CreateObject("Object");
@@ -895,7 +893,7 @@ AddonOptions = async function (Id, fn, Data, bNew) {
 			sFeatures = 'Width: 640; Height: 480';
 		}
 		try {
-			var dlg = await MainWindow.g_.dlgs[Id];
+			const dlg = await MainWindow.g_.dlgs[Id];
 			if (dlg) {
 				if (await api.IsWindowVisible(await dlg.Document.parentWindow.WebBrowser.hwnd)) {
 					dlg.Focus();
@@ -931,7 +929,7 @@ AddonOptions = async function (Id, fn, Data, bNew) {
 	if (!ui_.elAddons[Id]) {
 		if (!/location\.html$/.test(sURL)) {
 			opt.event.onload = function () {
-				var cInput = el.contentWindow.document.getElementsByTagName('input');
+				const cInput = el.contentWindow.document.getElementsByTagName('input');
 				for (let i in cInput) {
 					if (/^ok$|^cancel$/i.test(cInput[i].className)) {
 						cInput[i].style.display = 'none';
@@ -941,12 +939,12 @@ AddonOptions = async function (Id, fn, Data, bNew) {
 			}
 		}
 		te.Arguments = opt;
-		var el = document.createElement('iframe');
+		const el = document.createElement('iframe');
 		el.id = 'panel1_' + Id;
 		el.src = sURL;
 		el.style.cssText = 'width: 100%; border: 0; padding: 0; margin: 0';
 		ui_.elAddons[Id] = el;
-		var o = document.getElementById('panel1_2');
+		let o = document.getElementById('panel1_2');
 		o.style.display = "block";
 		o.appendChild(el);
 		o = document.getElementById('tab1_');
@@ -956,22 +954,22 @@ AddonOptions = async function (Id, fn, Data, bNew) {
 }
 
 GetElementEx = function (Id) {
-	var e = document.getElementById(Id);
-	if (e) {
-		return e;
+	const el = document.getElementById(Id);
+	if (el) {
+		return el;
 	}
-	var ar = Id.split("::");
+	const ar = Id.split("::");
 	return document.forms[ar[0]].elements[ar[1]];
 }
 
-GetElementIdEx = function (e) {
-	if ("string" === typeof e) {
-		return e;
+GetElementIdEx = function (el) {
+	if ("string" === typeof el) {
+		return el;
 	}
-	if (e.id) {
-		return e.id;
+	if (el.id) {
+		return el.id;
 	}
-	return e.form.name + "::" + e.name;
+	return el.form.name + "::" + el.name;
 }
 
 SetElement = async function (Id, v) {
@@ -991,18 +989,19 @@ ShowIconEx = function (o, mode) {
 }
 
 ShowLocationEx = async function (s) {
-	var opt = await api.CreateObject("Object");
+	const opt = await api.CreateObject("Object");
 	opt.MainWindow = MainWindow;
 	opt.Data = s;
 	ShowDialog(BuildPath(ui_.Installed, "script\\location.html"), opt);
 }
 
 MakeKeySelect = async function () {
-	var oa = document.getElementById("_KeyState");
+	let s;
+	let oa = document.getElementById("_KeyState");
 	if (oa) {
-		var ar = [];
+		const ar = [];
 		for (let i = 0; i < 4; ++i) {
-			var s = await MainWindow.g_.KeyState[i][0];
+			s = await MainWindow.g_.KeyState[i][0];
 			ar.push('<label><input type="checkbox" onclick="KeyShift(this)" id="_Key', s, '">', s, '&nbsp;</label>');
 		}
 		oa.insertAdjacentHTML("AfterBegin", ar.join(""));
@@ -1011,10 +1010,10 @@ MakeKeySelect = async function () {
 	oa.length = 0;
 	oa[++oa.length - 1].value = "";
 	oa[oa.length - 1].text = await GetText("Select");
-	var s = [];
+	s = [];
 	for (let j = 256; j >= 0; j -= 256) {
 		for (let i = 128; i > 0; i--) {
-			var v = await api.GetKeyNameText((i + j) * 0x10000);
+			const v = await api.GetKeyNameText((i + j) * 0x10000);
 			if (v && v.charCodeAt(0) > 32) {
 				s.push(v);
 			}
@@ -1026,11 +1025,11 @@ MakeKeySelect = async function () {
 		}
 		return a > b ? 1 : a < b ? -1 : 0;
 	});
-	var j = "";
+	let j = "";
 	for (i in s) {
 		if (j != s[i]) {
 			j = s[i];
-			var o = oa[++oa.length - 1];
+			const o = oa[++oa.length - 1];
 			o.value = j;
 			o.text = j + "\x20";
 		}
@@ -1038,13 +1037,13 @@ MakeKeySelect = async function () {
 }
 
 SetKeyShift = async function () {
-	var key = ((document.E && document.E.KeyKey) || document.F.KeyKey || document.F.Key).value;
+	let key = ((document.E && document.E.KeyKey) || document.F.KeyKey || document.F.Key).value;
 	key = key.replace(/^(.+),.+/, "$1");
-	var nLen = await GetLength(await MainWindow.g_.KeyState);
+	const nLen = await GetLength(await MainWindow.g_.KeyState);
+	let o;
 	for (let i = 0; i < nLen; ++i) {
-		var s = await MainWindow.g_.KeyState[i][0];
-		var o = document.getElementById("_Key" + s);
-		if (o) {
+		const s = await MainWindow.g_.KeyState[i][0];
+		if (o = document.getElementById("_Key" + s)) {
 			o.checked = key.indexOf(s + "+") >= 0;
 		}
 		key = key.replace(s + "+", "");
@@ -1064,7 +1063,7 @@ CalcElementHeight = function (o, em) {
 			o.style.height = "calc(100vh - " + em + "em)";
 			return;
 		}
-		var h = document.documentElement.clientHeight || document.body.clientHeight;
+		let h = document.documentElement.clientHeight || document.body.clientHeight;
 		h += MainWindow.DefaultFont.lfHeight * em;
 		if (h > 0) {
 			o.style.height = h + 'px';
@@ -1074,9 +1073,9 @@ CalcElementHeight = function (o, em) {
 }
 
 KeyShift = function (o) {
-	var oKey = (document.E && document.E.KeyKey) || document.F.KeyKey || document.F.Key;
-	var key = oKey.value;
-	var shift = o.id.replace(/^_Key(.*)/, "$1+");
+	const oKey = (document.E && document.E.KeyKey) || document.F.KeyKey || document.F.Key;
+	let key = oKey.value;
+	const shift = o.id.replace(/^_Key(.*)/, "$1+");
 	key = key.replace(shift, "");
 	if (o.checked) {
 		key = shift + key;
@@ -1085,14 +1084,14 @@ KeyShift = function (o) {
 }
 
 KeySelect = function (o) {
-	var oKey = (document.E && document.E.KeyKey) || document.F.KeyKey || document.F.Key;
-	var ar = oKey.value == "," ? [","] : oKey.value.split(",");
+	const oKey = (document.E && document.E.KeyKey) || document.F.KeyKey || document.F.Key;
+	const ar = oKey.value == "," ? [","] : oKey.value.split(",");
 	ar[0] = ar[0].replace(/(\+)[^\+]*$|^[^\+]*$/, "$1") + o[o.selectedIndex].value;
 	oKey.value = ar.join(",");
 }
 
 createHttpRequest = async function () {
-	var xhr = await MainWindow.RunEvent4("createHttpRequest");
+	const xhr = await MainWindow.RunEvent4("createHttpRequest");
 	if (xhr != null) {
 		return xhr;
 	}
@@ -1117,16 +1116,16 @@ ClearAutocomplete = function () {
 GetXmlItems = window.chrome ? async function (items) {
 	return JSON.parse(await XmlItems2Json(items));
 } : function (items) {
-	var ar = [];
+	const ar = [];
 	if (items) {
 		for (let i = 0; i < items.length; ++i) {
-			var item = items[i];
+			const item = items[i];
 			if (item) {
-				var o = {};
+				const o = {};
 				if (item.text) {
 					o.text = item.text;
 				}
-				var attrs = item.attributes;
+				const attrs = item.attributes;
 				if (attrs) {
 					for (let j = 0; j < attrs.length; ++j) {
 						o[attrs[j].name] = attrs[j].value;

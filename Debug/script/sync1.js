@@ -3446,7 +3446,6 @@ InitWindow = function () {
 				ChangeView(cTC[i].Selected);
 			}
 		}
-		InvokeUI("ApplyLang");
 		api.ShowWindow(te.hwnd, te.CmdShow);
 		if (te.CmdShow == SW_SHOWNOACTIVATE) {
 			api.SetWindowPos(te.hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);

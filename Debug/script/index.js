@@ -26,7 +26,7 @@ async function Resize2() {
 	o = document.getElementById("Background");
 	pt = GetPos(o);
 	te.offsetLeft = pt.x;
-	te.offsetRight = ode.offsetWidth - o.offsetWidth - te.offsetLeft;
+	te.offsetRight = ode.offsetWidth - o.offsetWidth - pt.x;
 	te.offsetTop = pt.y;
 	pt = GetPos(document.getElementById("bottombar"));
 	te.offsetBottom = ode.offsetHeight - pt.y;
@@ -35,8 +35,8 @@ async function Resize2() {
 }
 
 async function ResizeSideBar(z, h) {
-	var o = await g_.Locations;
-	var w = (await o[z + "Bar1"] || await o[z + "Bar2"] || await o[z + "Bar3"]) ? await te.Data["Conf_" + z + "BarWidth"] : 0;
+	let o = await g_.Locations;
+	const w = (await o[z + "Bar1"] || await o[z + "Bar2"] || await o[z + "Bar3"]) ? await te.Data["Conf_" + z + "BarWidth"] : 0;
 	o = document.getElementById(z.toLowerCase() + "bar");
 	if (w > 0) {
 		o.style.display = "";
@@ -53,10 +53,10 @@ async function ResizeSideBar(z, h) {
 	document.getElementById(z.toLowerCase() + "splitter").style.display = w ? "" : "none";
 
 	o = document.getElementById(z.toLowerCase() + "barT");
-	var th = Math.round(Math.max(h, 0));
+	const th = Math.round(Math.max(h, 0));
 	o.style.height = th + "px";
 
-	var h2 = Math.max(o.clientHeight - document.getElementById(z + "Bar1").offsetHeight - document.getElementById(z + "Bar3").offsetHeight, 0);
+	const h2 = Math.max(o.clientHeight - document.getElementById(z + "Bar1").offsetHeight - document.getElementById(z + "Bar3").offsetHeight, 0);
 	document.getElementById(z + "Bar2").style.height = h2 + "px";
 }
 
@@ -72,9 +72,9 @@ function PanelCreated(Ctrl, Id) {
 }
 
 Activate = async function (o, id) {
-	var TC = await te.Ctrl(CTRL_TC);
+	const TC = await te.Ctrl(CTRL_TC);
 	if (TC && await TC.Id != id) {
-		var FV = await GetInnerFV(id);
+		const FV = await GetInnerFV(id);
 		if (FV) {
 			FV.Focus();
 			setTimeout(function () {
@@ -85,13 +85,13 @@ Activate = async function (o, id) {
 }
 
 GetAddonLocation = async function (strName) {
-	var items = await te.Data.Addons.getElementsByTagName(strName);
+	const items = await te.Data.Addons.getElementsByTagName(strName);
 	return (await GetLength(items) ? await items[0].getAttribute("Location") : null);
 }
 
 SetAddon = async function (strName, Location, Tag, strVAlign) {
 	if (strName) {
-		var s = await GetAddonLocation(strName);
+		const s = await GetAddonLocation(strName);
 		if (s) {
 			Location = s;
 		}
@@ -100,10 +100,10 @@ SetAddon = async function (strName, Location, Tag, strVAlign) {
 		if (Tag.join) {
 			Tag = Tag.join("");
 		}
-		var o = document.getElementById(Location);
+		const o = document.getElementById(Location);
 		if (o) {
 			if ("string" === typeof Tag) {
-				o.insertAdjacentHTML("BeforeEnd", Tag);
+				o.insertAdjacentHTML("beforeend", Tag);
 			} else {
 				o.appendChild(Tag);
 			}
@@ -120,7 +120,7 @@ SetAddon = async function (strName, Location, Tag, strVAlign) {
 			if (!await g_.Locations[Location]) {
 				g_.Locations[Location] = await api.CreateObject("Array");
 			}
-			var res = /<img.*?src=["'](.*?)["']/i.exec(String(Tag));
+			const res = /<img.*?src=["'](.*?)["']/i.exec(String(Tag));
 			if (res) {
 				strName += "\t" + res[1];
 			}
@@ -148,7 +148,7 @@ DisableImage = function (img, bDisable) {
 	if (img) {
 		if (window.chrome) {
 			if (bDisable) {
-				var ar = [];
+				const ar = [];
 				for (let i = 0; i < img.style.length; ++i) {
 					if (img.style[i] != "filter") {
 						ar.push(img.style[i] + ":" + img.style[img.style[i]]);
@@ -156,35 +156,35 @@ DisableImage = function (img, bDisable) {
 				}
 				ar.push("filter:grayscale(1);");
 				img.style = ar.join(";");
-				img.style.opacity = .48;
+				img.style.opacity = .5;
 			} else {
 				img.style.filter  = "";
 				img.style.opacity = 1;
 			}
 		} else if (ui_.IEVer >= 10) {
-			var s = decodeURIComponent(img.src);
-			var res = /^data:image\/svg.*?href="([^"]*)/i.exec(s);
+			let s = decodeURIComponent(img.src);
+			const res = /^data:image\/svg.*?href="([^"]*)/i.exec(s);
 			if (bDisable) {
 				if (!res) {
 					if (/^file:/i.test(s)) {
-						var image;
+						let image;
 						if (image = api.CreateObject("WICBitmap").FromFile(api.PathCreateFromUrl(s))) {
 							s = image.DataURI("image/png");
 						}
 					}
-					img.src = "data:image/svg+xml," + encodeURIComponent(['<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ', img.offsetWidth, ' ', img.offsetHeight, '"><filter id="G"><feColorMatrix type="saturate" values="0.1" /></filter><image width="', img.width, '" height="', img.height, '" opacity=".48" xlink:href="', s, '" filter="url(#G)"></image></svg>'].join(""));
+					img.src = "data:image/svg+xml," + encodeURIComponent(['<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ', img.offsetWidth, ' ', img.offsetHeight, '"><filter id="G"><feColorMatrix type="saturate" values="0.1" /></filter><image width="', img.width, '" height="', img.height, '" opacity=".5" xlink:href="', s, '" filter="url(#G)"></image></svg>'].join(""));
 				}
 			} else if (res) {
 				img.src = res[1];
 			}
 		} else {
-			img.style.filter = bDisable ? "gray(), alpha(style=0,opacity=48);" : "";
+			img.style.filter = bDisable ? "gray(), alpha(style=0,opacity=50);" : "";
 		}
 	}
 }
 
 StartGestureTimer = async function () {
-	var i = await te.Data.Conf_GestureTimeout;
+	const i = await te.Data.Conf_GestureTimeout;
 	if (i) {
 		clearTimeout(await g_.mouse.tidGesture);
 		api.ObjPutI(await g_.mouse, "tidGesture", setTimeout(function () {
@@ -234,7 +234,7 @@ ExitFullscreen = function () {
 }
 
 MoveSplitter = async function (x, n) {
-	var w = document.documentElement.offsetWidth || document.body.offsetWidth;
+	const w = document.documentElement.offsetWidth || document.body.offsetWidth;
 	if (x >= w) {
 		x = w - 1;
 	}
@@ -264,16 +264,16 @@ ShowStatusTextEx = async function (Ctrl, Text, iPart, tm) {
 importJScript = $.importScript;
 
 te.OnArrange = async function (Ctrl, rc) {
-	var Type = await Ctrl.Type;
+	const Type = await Ctrl.Type;
 	if (Type == CTRL_TE) {
 		ui_.TCPos = {};
 	}
 	await RunEvent1("Arrange", Ctrl, rc);
 	if (Type == CTRL_TC) {
-		var Id = await Ctrl.Id;
-		var o = ui_.Panels[Id];
+		const Id = await Ctrl.Id;
+		let o = ui_.Panels[Id];
 		if (!o) {
-			var s = ['<table id="Panel_$" class="layout" style="position: absolute; z-index: 1;">'];
+			const s = ['<table id="Panel_$" class="layout" style="position: absolute; z-index: 1;">'];
 			s.push('<tr><td id="InnerLeft_$" class="sidebar" style="width: 0; display: none; overflow: auto"></td><td style="width: 100%"><div id="InnerTop_$" style="display: none"></div>');
 			s.push('<table id="InnerTop2_$" class="layout">');
 			s.push('<tr><td id="Inner1Left_$" class="toolbar1"></td><td id="Inner1Center_$" class="toolbar2" style="white-space: nowrap"></td><td id="Inner1Right_$" class="toolbar3"></td></tr></table>');
@@ -290,7 +290,7 @@ te.OnArrange = async function (Ctrl, rc) {
 			o.style.left = r[0] + "px";
 			o.style.top = r[1] + "px";
 			if (r[4]) {
-				var s = r.slice(5, 8).join(",");
+				const s = r.slice(5, 8).join(",");
 				if (ui_.TCPos[s] && ui_.TCPos[s] != Id) {
 					Ctrl.Close();
 					return;
@@ -321,7 +321,7 @@ g_.event.windowregistered = function (Ctrl) {
 ArrangeAddons = async function () {
 	g_.Locations = await api.CreateObject("Object");
 	$.IconSize = IconSize = await te.Data.Conf_IconSize || screen.deviceYDPI / 4;
-	var xml = await OpenXml("addons.xml", false, true);
+	const xml = await OpenXml("addons.xml", false, true);
 	te.Data.Addons = xml;
 	if (await api.GetKeyState(VK_SHIFT) < 0 && await api.GetKeyState(VK_CONTROL) < 0) {
 		IsSavePath = function (path) {
@@ -329,20 +329,20 @@ ArrangeAddons = async function () {
 		}
 		return;
 	}
-	var AddonId = [];
-	var root = await xml.documentElement;
+	const AddonId = [];
+	const root = await xml.documentElement;
 	if (root) {
-		var items = await root.childNodes;
+		const items = await root.childNodes;
 		if (items) {
-			var arError = await api.CreateObject("Array");
-			var LangId = await GetLangId();
-			var nLen = await GetLength(items);
+			let arError = await api.CreateObject("Array");
+			const LangId = await GetLangId();
+			const nLen = await GetLength(items);
 			for (let i = 0; i < nLen; ++i) {
-				var item = await items[i];
-				var Id = await item.nodeName;
+				const item = await items[i];
+				const Id = await item.nodeName;
 				g_.Error_source = Id;
 				if (!AddonId[Id]) {
-					var Enabled = GetNum(await item.getAttribute("Enabled"));
+					const Enabled = GetNum(await item.getAttribute("Enabled"));
 					if (Enabled) {
 						if (Enabled & 6) {
 							LoadLang2(BuildPath(ui_.Installed, "addons", Id, "lang", LangId + ".xml"));
@@ -372,7 +372,7 @@ ArrangeAddons = async function () {
 		}
 	}
 	RunEventUI("BrowserCreatedEx");
-	var cl = await GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor);
+	const cl = await GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor);
 	ArrangeAddons1(cl);
 }
 
@@ -380,7 +380,7 @@ ArrangeAddons = async function () {
 
 AddEvent("VisibleChanged", async function (Ctrl) {
 	if (await Ctrl.Type == CTRL_TC) {
-		var o = ui_.Panels[Ctrl.Id];
+		const o = ui_.Panels[Ctrl.Id];
 		if (o) {
 			if (await Ctrl.Visible) {
 				o.style.display = (ui_.IEVer >= 8 && SameText(o.tagName, "td")) ? "table-cell" : "block";
@@ -395,9 +395,9 @@ AddEvent("VisibleChanged", async function (Ctrl) {
 AddEvent("SystemMessage", async function (Ctrl, hwnd, msg, wParam, lParam) {
 	if (await Ctrl.Type == CTRL_WB) {
 		if (msg == WM_KILLFOCUS) {
-			var o = document.activeElement;
+			const o = document.activeElement;
 			if (o) {
-				var s = o.style.visibility;
+				const s = o.style.visibility;
 				o.style.visibility = "hidden";
 				o.style.visibility = s;
 				FireEvent(o, "blur");
@@ -441,6 +441,7 @@ Init = async function () {
 	await LoadLang();
 	await ApplyLang();
 	await ArrangeAddons();
+	ApplyLang();
 	await InitWindow();
 	document.F.style.display = "";
 	WebBrowser.DropMode = 1;
