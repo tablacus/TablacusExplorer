@@ -3,8 +3,7 @@
 g_sep = "` ~";
 
 importScript = async function (fn) {
-	let hr = E_FAIL;
-	let s;
+	let hr = E_FAIL, s;
 	if (window.ReadTextFile) {
 		s = await ReadTextFile(fn);
 	} else {
@@ -37,6 +36,19 @@ if (!window.InitUI && !window.chrome) {
 	if (!window.g_) {
 		importScript("script\\sync.js");
 	}
+}
+
+Invoke = function (args) {
+	const ar = args.shift().split(".");
+	let fn = window, s, parent;
+	while (s = ar.shift()) {
+		parent = fn;
+		fn = fn[s];
+		if (!fn) {
+			return;
+		}
+	}
+	fn.apply(parent, args);
 }
 
 GetNum = function (s) {
@@ -250,7 +262,7 @@ GetAddonInfo2 = async function (xml, info, Tag, bTrans) {
 	}
 }
 
-if (!window.JSON) {
+if ("undefined" === typeof JSON) {
 	JSON = {
 		parse: function (s) {
 			return new Function('return ' + (s || {}))();

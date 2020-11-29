@@ -1,6 +1,6 @@
 //Tablacus Explorer
 
-if (!window.Promise) {
+if ("undefined" === typeof Promise) {
 	Promise = function (fn) {
 		this.promise = fn;
 	}

@@ -66,9 +66,14 @@ function ResetScroll () {
 	}
 }
 
-
 function PanelCreated(Ctrl, Id) {
+	if (/none/i.test(document.F.style.display)) {
+		setTimeout(PanelCreated, 500, Ctrl, Id);
+		return;
+	}
 	RunEvent1("PanelCreated", Ctrl, Id);
+	ApplyLang(document.getElementById("Panel_" + Id));
+	Resize();
 }
 
 Activate = async function (o, id) {
@@ -271,20 +276,17 @@ te.OnArrange = async function (Ctrl, rc) {
 	await RunEvent1("Arrange", Ctrl, rc);
 	if (Type == CTRL_TC) {
 		const Id = await Ctrl.Id;
-		let o = ui_.Panels[Id];
+		let o = document.getElementById("Panel_" + Id);
 		if (!o) {
-			const s = ['<table id="Panel_$" class="layout" style="position: absolute; z-index: 1;">'];
-			s.push('<tr><td id="InnerLeft_$" class="sidebar" style="width: 0; display: none; overflow: auto"></td><td style="width: 100%"><div id="InnerTop_$" style="display: none"></div>');
-			s.push('<table id="InnerTop2_$" class="layout">');
-			s.push('<tr><td id="Inner1Left_$" class="toolbar1"></td><td id="Inner1Center_$" class="toolbar2" style="white-space: nowrap"></td><td id="Inner1Right_$" class="toolbar3"></td></tr></table>');
-			s.push('<table id="InnerView_$" class="layout" style="width: 100%"><tr><td id="Inner2Left_$" style="width: 0"></td><td id="Inner2Center_$" style="width: 100%"></td><td id="Inner2Right_$" style="width: 0; overflow: auto"></td></tr></table>');
-			s.push('<div id="InnerBottom_$"></div></td><td id="InnerRight_$" class="sidebar" style="width: 0; display: none"></td></tr></table>');
-			document.getElementById("Panel").insertAdjacentHTML("BeforeEnd", s.join("").replace(/\$/g, Id));
-			await PanelCreated(Ctrl, Id);
+			const s = ['<table id="Panel_', Id, '" class="layout" style="position: absolute; z-index: 1;">'];
+			s.push('<tr><td id="InnerLeft_', Id, '" class="sidebar" style="width: 0; display: none; overflow: auto"></td><td style="width: 100%"><div id="InnerTop_', Id, '" style="display: none"></div>');
+			s.push('<table id="InnerTop2_', Id, '" class="layout">');
+			s.push('<tr><td id="Inner1Left_', Id, '" class="toolbar1"></td><td id="Inner1Center_', Id, '" class="toolbar2" style="white-space: nowrap"></td><td id="Inner1Right_', Id, '" class="toolbar3"></td></tr></table>');
+			s.push('<table id="InnerView_', Id, '" class="layout" style="width: 100%"><tr><td id="Inner2Left_', Id, '" style="width: 0"></td><td id="Inner2Center_', Id, '" style="width: 100%"></td><td id="Inner2Right_', Id, '" style="width: 0; overflow: auto"></td></tr></table>');
+			s.push('<div id="InnerBottom_', Id, '"></div></td><td id="InnerRight_', Id, '" class="sidebar" style="width: 0; display: none"></td></tr></table>');
+			document.getElementById("Panel").insertAdjacentHTML("beforeend", s.join(""));
 			o = document.getElementById("Panel_" + Id);
-			ui_.Panels[Id] = o;
-			ApplyLang(o);
-			Resize();
+			PanelCreated(Ctrl, Id);
 		}
 		Promise.all([rc.left, rc.top, rc.right, rc.bottom, Ctrl.Visible, Ctrl.Left, Ctrl.Top, Ctrl.Width, Ctrl.Height]).then(function (r) {
 			o.style.left = r[0] + "px";
@@ -380,10 +382,10 @@ ArrangeAddons = async function () {
 
 AddEvent("VisibleChanged", async function (Ctrl) {
 	if (await Ctrl.Type == CTRL_TC) {
-		const o = ui_.Panels[Ctrl.Id];
+		const o = document.getElementById("Panel_" + await Ctrl.Id);
 		if (o) {
 			if (await Ctrl.Visible) {
-				o.style.display = (ui_.IEVer >= 8 && SameText(o.tagName, "td")) ? "table-cell" : "block";
+				o.style.display = "";
 				ChangeView(await Ctrl.Selected);
 			} else {
 				o.style.display = "none";

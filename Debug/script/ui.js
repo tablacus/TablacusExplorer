@@ -4,7 +4,6 @@ ui_ = {
 	IEVer: window.chrome ? (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 : 12) : window.document && (document.documentMode || (/MSIE 6/.test(navigator.appVersion) ? 6 : 7)),
 	bWindowRegistered: true,
 	Zoom: 1,
-	Panels: {},
 	eventTE: {}
 };
 
@@ -128,28 +127,8 @@ InitUI = async function () {
 	UI = await api.CreateObject("Object");
 	UI.Addons = await api.CreateObject("Object");
 
-	UI.RunEvent = async function () {
-		const args = Array.apply(null, arguments);
-		new Function(FixScript(args.shift(), window.chrome)).apply(null, args);
-	}
-
-	UI.ExecJavaScript = function (Ctrl, s) {
-		new Function(FixScript(s, window.chrome)).apply(null, arguments);
-	}
-
-	UI.Invoke = InvokeUI = function () {
-		const args = Array.apply(null, arguments);
-		const ar = args.shift().split(".");
-		let fn = window;
-		let s, parent;
-		while (s = ar.shift()) {
-			parent = fn;
-			fn = fn[s];
-			if (!fn) {
-				return;
-			}
-		}
-		fn.apply(parent, args);
+	UI.Invoke = function () {
+		Invoke(Array.apply(null, arguments));
 	}
 
 	UI.setTimeoutAsync = async function (fn, tm, a, b, c, d) {
@@ -180,6 +159,23 @@ InitUI = async function () {
 	}
 };
 
+InvokeUI = function () {
+	if (arguments.length == 2 && arguments[1].unshift) {
+		const args = Array.apply(null, arguments[1]);
+		args.unshift(arguments[0]);
+		Invoke(args);
+		return S_OK;
+	}
+	Invoke(Array.apply(null, arguments));
+	return S_OK;
+}
+
+ExecJavaScript = async function () {
+	const args = Array.apply(null, arguments);
+	const s = FixScript(args.shift(), window.chrome);
+	new Function(s).apply(null, args);
+}
+
 OpenHttpRequest = async function (url, alt, fn, arg) {
 	const xhr = await createHttpRequest();
 	const fnLoaded = async function () {
@@ -190,7 +186,7 @@ OpenHttpRequest = async function (url, alt, fn, arg) {
 			if (await xhr.status == 200) {
 				if (fn) {
 					if ("string" === typeof fn) {
-						InvokeUI(fn, xhr, url, arg);
+						InvokeUI(fn, [xhr, url, arg]);
 					} else {
 						fn(xhr, url, arg);
 					}

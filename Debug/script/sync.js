@@ -78,7 +78,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201128 ? te.Version : 20201128;
+		return te.Version < 20201128 ? te.Version : 20201129;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -87,8 +87,8 @@ AboutTE = function (n) {
 	if (n == 2) {
 		return "Tablacus Explorer " + AboutTE(1) + " Gaku";
 	}
-	var ar = ["TE" + (api.sizeof("HANDLE") * 8), AboutTE(1)];
-	var s = "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\";
+	const ar = ["TE" + (api.sizeof("HANDLE") * 8), AboutTE(1)];
+	let s = "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\";
 	try {
 		ar.push(wsh.regRead(s + "ProductName"));
 		if (s = wsh.regRead(s + "ReleaseId")) {
@@ -105,11 +105,12 @@ AboutTE = function (n) {
 	if (api.ShouldAppsUseDarkMode()) {
 		ar.push("Dark");
 	}
-	ar.push('IE' + g_.IEVer, GetLangId(2), screen.deviceYDPI);
-	var server = te.GetObject("winmgmts:\\\\.\\root\\SecurityCenter" + (WINVER >= 0x600 ? "2" : ""));
+	const res = window.chrome && /(Edg\/[\d\.]+)/.exec(navigator.appVersion);
+	ar.push(res ? res[1] : 'IE' + g_.IEVer, GetLangId(2), screen.deviceYDPI);
+	const server = te.GetObject("winmgmts:\\\\.\\root\\SecurityCenter" + (WINVER >= 0x600 ? "2" : ""));
 	if (server) {
-		var cols = server.ExecQuery("SELECT * FROM AntiVirusProduct");
-		for (var list = api.CreateObject("Enum", cols); !list.atEnd(); list.moveNext()) {
+		const cols = server.ExecQuery("SELECT * FROM AntiVirusProduct");
+		for (let list = api.CreateObject("Enum", cols); !list.atEnd(); list.moveNext()) {
 			ar.push(list.item().displayName);
 		}
 	}
@@ -319,17 +320,6 @@ ShellExecute = function (s, vOperation, nShow, vDir2, pt) {
 	}
 }
 
-InvokeUI = function () {
-	if (arguments.length == 2 && arguments[1].length) {
-		var args = Array.apply(null, arguments[1]);
-		args.unshift(arguments[0]);
-		api.Invoke(UI.Invoke, args);
-		return S_OK;
-	}
-	api.Invoke(UI.Invoke, arguments);
-	return S_OK;
-}
-
 RunEvent1 = function () {
 	var args = Array.apply(null, arguments);
 	var en = args.shift();
@@ -397,7 +387,7 @@ RunEventUI = function () {
 	var eo = MainWindow.eventTE[args[0].toLowerCase()];
 	for (var i in eo) {
 		args[0] = eo[i];
-		api.Invoke(UI.RunEvent, args);
+		InvokeUI("ExecJavaScript", args);
 	}
 }
 

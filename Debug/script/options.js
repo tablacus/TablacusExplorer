@@ -699,10 +699,11 @@ async function ReplaceX(mode, form) {
 	}
 	var sel = g_x[mode][g_x[mode].selectedIndex];
 	var o = form[mode + "Type"];
-	var p = { s: form[mode + "Path"].value };
-	MainWindow.OptionEncode(o[o.selectedIndex].value, p);
+	var p = await api.CreateObject("Object");
+	p.s = form[mode + "Path"].value;
+	await MainWindow.OptionEncode(o[o.selectedIndex].value, p);
 	var o2 = form[mode + "Name"];
-	SetData(sel, [form[mode + mode].value, p.s, o[o.selectedIndex].value, o2 ? await GetSourceText(o2.value) : ""]);
+	SetData(sel, [form[mode + mode].value, await p.s, o[o.selectedIndex].value, o2 ? await GetSourceText(o2.value) : ""]);
 	g_Chg[mode] = true;
 	g_bChanged = true;
 }

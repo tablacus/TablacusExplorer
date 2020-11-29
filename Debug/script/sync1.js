@@ -203,8 +203,7 @@ g_basic =
 		}
 	},
 
-	Func:
-	{
+	Func: {
 		"": {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
 				var lines = s.split(/\r?\n/);
@@ -337,7 +336,7 @@ g_basic =
 
 		JavaScript: {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
-				api.Invoke(UI.ExecJavaScript, Ctrl, s, type, hwnd, pt);
+				InvokeUI("ExecJavaScript", [s, Ctrl, s, type, hwnd, pt]);
 				return S_OK;
 			},
 			Ref: OpenDialog
@@ -1091,6 +1090,7 @@ FontChanged = function () {
 }
 
 FavoriteChanged = function () {
+	InvokeUI("ExecJavaScript", ["delete ui_.MenuFavorites;"]);
 	RunEvent1("FavoriteChanged");
 }
 
