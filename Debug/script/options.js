@@ -835,17 +835,17 @@ async function LoadX(mode, fn, form) {
 		if (!form) {
 			form = document.F;
 		}
-		var arFunc = await api.CreateObject("Array");
+		let arFunc = await api.CreateObject("Array");
 		await MainWindow.RunEvent1("AddType", arFunc);
 		if (window.chrome) {
 			arFunc = await api.CreateObject("SafeArray", arFunc);
 		}
-		var oa = form[mode + "Type"] || form.Type;
+		let oa = form[mode + "Type"] || form.Type;
 		while (oa.length) {
 			oa.removeChild(oa[0]);
 		}
 		for (let i = 0; i < arFunc.length; ++i) {
-			var o = oa[++oa.length - 1];
+			const o = oa[++oa.length - 1];
 			o.value = arFunc[i];
 			o.innerText = await GetText(arFunc[i]);
 		}
@@ -853,24 +853,24 @@ async function LoadX(mode, fn, form) {
 		if (g_x[mode]) {
 			oa = form[mode];
 			oa.length = 0;
-			var xml = await OpenXml(mode + ".xml", false, true);
+			const xml = await OpenXml(mode + ".xml", false, true);
 			for (let j in g_Types[mode]) {
-				var o = oa[++oa.length - 1];
+				let o = oa[++oa.length - 1];
 				o.text = await GetTextEx(g_Types[mode][j]);
 				o.value = g_Types[mode][j];
 				o = form[mode + g_Types[mode][j]];
-				var items = await xml.getElementsByTagName(g_Types[mode][j]);
-				var i = await GetLength(items);
+				let items = await xml.getElementsByTagName(g_Types[mode][j]);
+				let i = await GetLength(items);
 				if (i == 0 && g_Types[mode][j] == "List") {
 					items = await xml.getElementsByTagName("Folder");
 					i = await GetLength(items);
 				}
 				o.length = i;
 				while (--i >= 0) {
-					var item = await items[i];
-					var s = await item.getAttribute(mode);
+					const item = await items[i];
+					let s = await item.getAttribute(mode);
 					if (SameText(mode, "Key")) {
-						var ar = /,$/.test(s) ? [s] : s.split(",");
+						const ar = /,$/.test(s) ? [s] : s.split(",");
 						for (let k = ar.length; k--;) {
 							ar[k] = await GetKeyNameG(ar[k]);
 						}
@@ -882,7 +882,7 @@ async function LoadX(mode, fn, form) {
 		} else {
 			g_x[mode] = form.List;
 			g_x[mode].length = 0;
-			var xml = await te.Data["xml" + AddonName];
+			let xml = await te.Data["xml" + AddonName];
 			if (!xml) {
 				xml = await api.CreateObject("Msxml2.DOMDocument");
 				xml.async = false;
@@ -890,11 +890,11 @@ async function LoadX(mode, fn, form) {
 				te.Data["xml" + AddonName] = xml;
 			}
 
-			var items = await xml.getElementsByTagName("Item");
-			var i = await GetLength(items);
+			const items = await xml.getElementsByTagName("Item");
+			let i = await GetLength(items);
 			g_x[mode].length = i;
 			while (--i >= 0) {
-				var item = await items[i];
+				const item = await items[i];
 				SetData(g_x[mode][i], [await item.getAttribute("Name"), await item.text, await item.getAttribute("Type"), await item.getAttribute("Icon"), await item.getAttribute("Height")]);
 			}
 			xml = null;
@@ -906,28 +906,27 @@ async function LoadX(mode, fn, form) {
 
 async function SaveMenus() {
 	if (g_Chg.Menus) {
-		var xml = await CreateXml();
-
-		var root = await xml.createElement("TablacusExplorer");
+		const xml = await CreateXml();
+		const root = await xml.createElement("TablacusExplorer");
 		for (let j in g_arMenuTypes) {
-			var o = document.F["Menus_" + g_arMenuTypes[j]];
-			var items = await xml.createElement(g_arMenuTypes[j]);
-			var a = document.F.elements.Menus[j].value.split(",");
-			items.setAttribute("Base", GetNum(a[1]));
-			items.setAttribute("Pos", GetNum(a[2]));
+			const o = document.F["Menus_" + g_arMenuTypes[j]];
+			const items = await xml.createElement(g_arMenuTypes[j]);
+			let a = document.F.elements.Menus[j].value.split(",");
+			await items.setAttribute("Base", GetNum(a[1]));
+			await items.setAttribute("Pos", GetNum(a[2]));
 			for (let i = 0; i < o.length; ++i) {
-				var item = await xml.createElement("Item");
-				var a = o[i].value.split(g_sep);
-				item.setAttribute("Name", a[0]);
-				item.setAttribute("Filter", a[1]);
+				const item = await xml.createElement("Item");
+				a = o[i].value.split(g_sep);
+				await item.setAttribute("Name", a[0]);
+				await item.setAttribute("Filter", a[1]);
 				item.text = a[2];
-				item.setAttribute("Type", a[3]);
-				item.setAttribute("Icon", a[4]);
+				await item.setAttribute("Type", a[3]);
+				await item.setAttribute("Icon", a[4]);
 				if (a[5]) {
-					item.setAttribute("Org", 1);
+					await item.setAttribute("Org", 1);
 				}
 				if (a[6]) {
-					item.setAttribute("Height", a[6]);
+					await item.setAttribute("Height", a[6]);
 				}
 				await items.appendChild(item);
 			}
@@ -956,26 +955,26 @@ async function GetKeyNameG(s) {
 
 async function SaveX(mode, form) {
 	if (g_Chg[mode]) {
-		var xml = await CreateXml();
-		var root = await xml.createElement("TablacusExplorer");
+		const xml = await CreateXml();
+		const root = await xml.createElement("TablacusExplorer");
 		for (let j in g_Types[mode]) {
-			var o = (form || document.F)[mode + g_Types[mode][j]];
+			const o = (form || document.F)[mode + g_Types[mode][j]];
 			for (let i = 0; i < o.length; ++i) {
-				var item = await xml.createElement(g_Types[mode][j]);
-				var a = o[i].value.split(g_sep);
-				var s = a[0];
+				const item = await xml.createElement(g_Types[mode][j]);
+				const a = o[i].value.split(g_sep);
+				let s = a[0];
 				if (SameText(mode, "key")) {
-					var ar = /,$/.test(s) ? [s] : s.split(",");
+					const ar = /,$/.test(s) ? [s] : s.split(",");
 					for (let k = ar.length; k--;) {
 						ar[k] = await GetKeyKeyG(ar[k]);
 					}
 					s = ar.join(",");
 				} else {
-					item.setAttribute("Name", a[3]);
+					await item.setAttribute("Name", a[3]);
 				}
-				item.setAttribute(mode, s);
+				await item.setAttribute(mode, s);
 				item.text = a[1];
-				item.setAttribute("Type", a[2]);
+				await item.setAttribute("Type", a[2]);
 				await root.appendChild(item);
 			}
 		}

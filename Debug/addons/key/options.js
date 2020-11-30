@@ -5,9 +5,9 @@ if (src) {
 	await SetTabContents(4, "", src);
 }
 
-SaveLocation = function () {
+SaveLocation = async function () {
 	SetChanged(null, document.E);
-	SaveX("Key", document.E);
+	await SaveX("Key", document.E);
 }
 
 LoadX("Key", null, document.E);

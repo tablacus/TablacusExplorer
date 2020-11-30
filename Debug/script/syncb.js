@@ -8,16 +8,16 @@ if (window.UI) {
 			api.Invoke(UI.Invoke, args);
 			return S_OK;
 		}
-		api.Invoke(UI.Invoke, arguments);
+		api.Invoke(UI.Invoke, Array.apply(null, arguments));
 		return S_OK;
 	}
 
 	BlurId = function () {
-		InvokeUI("BlurId", arguments);
+		InvokeUI("BlurId", Array.apply(null, arguments));
 	}
 
 	clearTimeout = function () {
-		InvokeUI("clearTimeout", arguments);
+		InvokeUI("clearTimeout", Array.apply(null, arguments));
 	}
 
 	CancelWindowRegistered = function () {
@@ -36,12 +36,16 @@ if (window.UI) {
 		InvokeUI("FocusFV");
 	}
 
-	MoveSplitter = function () {
-		InvokeUI("MoveSplitter", arguments);
+	MouseOut = function () {
+		InvokeUI("MouseOut", Array.apply(null, arguments));
+	}
+
+	MouseOver = function () {
+		InvokeUI("MouseOver", Array.apply(null, arguments));
 	}
 
 	OpenHttpRequest = function () {
-		InvokeUI("OpenHttpRequest", arguments);
+		InvokeUI("OpenHttpRequest", Array.apply(null, arguments));
 	}
 
 	ReloadCustomize = function () {
@@ -54,22 +58,22 @@ if (window.UI) {
 	}
 
 	SelectItem = function () {
-		InvokeUI("SelectItem", arguments);
+		InvokeUI("SelectItem", Array.apply(null, arguments));
 	}
 
 	SelectNext = function () {
-		InvokeUI("SelectNext", arguments);
+		InvokeUI("SelectNext", Array.apply(null, arguments));
 	}
 
 	SetDisplay = function () {
-		InvokeUI("SetDisplay", arguments);
+		InvokeUI("SetDisplay", Array.apply(null, arguments));
 	}
 
 	setTimeout = function () {
-		api.Invoke(UI.setTimeoutAsync, arguments);
+		InvokeUI("setTimeout", Array.apply(null, arguments));
 	}
 
 	ShowStatusTextEx = function () {
-		InvokeUI("ShowStatusTextEx", arguments);
+		InvokeUI("ShowStatusTextEx", Array.apply(null, arguments));
 	}
 }

@@ -131,18 +131,6 @@ InitUI = async function () {
 		Invoke(Array.apply(null, arguments));
 	}
 
-	UI.setTimeoutAsync = async function (fn, tm, a, b, c, d) {
-		setTimeout(fn, tm, a, b, c, d);
-	}
-
-	UI.ShowError = function (cb, e, s) {
-		setTimeout(cb, 99, cb, e, s);
-	}
-
-	UI.ShowOptions = async function (opt) {
-		g_.dlgs.Options = await ShowDialog("options.html", opt);
-	}
-
 	UI.Autocomplete = async function (s, path) {
 		const dl = document.getElementById("AddressList");
 		while (dl.lastChild) {
@@ -392,7 +380,7 @@ LoadScripts = async function (js1, js2, cb) {
 	} else {
 		$ = window;
 	}
-	Addons = {
+	window.Addons = {
 		"_stack": await api.CreateObject("Array")
 	};
 	LoadScript(js1.concat(js2), cb);
@@ -614,6 +602,9 @@ CloseSubWindows = async function () {
 }
 
 MouseOver = async function (o) {
+	if ("string" === typeof o) {
+		o = document.getElementById(o);
+	}
 	o = o.srcElement || o;
 	if (/^button$|^menu$/i.test(o.className)) {
 		if (ui_.objHover && o != ui_.objHover) {
@@ -1137,18 +1128,9 @@ GetXmlItems = window.chrome ? async function (items) {
 if (window.chrome) {
 	GetAddonElement = async function (id) {
 		const item = await $.GetAddonElement(id);
-		return {
+		const o = {
 			item: item,
 			db: JSON.parse(await XmlItem2Json(item)),
-			get attributes() {
-				const ar = [];
-				for (let n in this.db) {
-					ar.push({
-						name: n, value: this.db[n]
-					});
-				}
-				return ar;
-			},
 			getAttribute: function (s) {
 				return this.db[s];
 			},
@@ -1161,5 +1143,15 @@ if (window.chrome) {
 				this.item.removeAttribute(s, v);
 			}
 		};
+		o.__defineGetter__("attributes", function () {
+			const ar = [];
+			for (let n in this.db) {
+				ar.push({
+					name: n, value: this.db[n]
+				});
+			}
+			return ar;
+		});
+		return o;
 	}
 }

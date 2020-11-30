@@ -1692,7 +1692,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 		if (pt2.x < 1) {
 			pt2.x = 1;
 		}
-		MoveSplitter(pt2.x, g_.mouse.Capture);
+		InvokeUI("MoveSplitter", [pt2.x, g_.mouse.Capture]);
 		return S_OK;
 	}
 	if (msg != WM_MOUSEMOVE) {

@@ -27,10 +27,15 @@ FixScript = RemoveAsync = function (s, a) {
 	if (a) {
 		return "(async () => {" + s + "\n})();";
 	}
+	s = s.replace(/([^\.\w])(async |await )/g, "$1");
 	if (window.chrome || document.documentMode == 11) {
-		return s.replace(/([^\.\w])(async |await )/g, "$1");
+		return s;
 	}
-	return s.replace(/([^\.\w])(async |await )/g, "$1").replace(/([^\.\w])(const |let )/g, "$1var ");
+	s = s.replace(/([^\.\w])(const |let )/g, "$1var ");
+	if (document.documentMode > 9) {
+		return s;
+	}
+	return s.replace(/(\s)(setTimeout\()/g, "$1window.$2");
 }
 
 AddEventEx = function (w, Name, fn) {

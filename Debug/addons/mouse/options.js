@@ -13,9 +13,9 @@ AddMouse = function (o) {
 	ChangeX("Mouse");
 }
 
-SaveLocation = function () {
+SaveLocation = async function () {
 	SetChanged(null, document.E);
-	SaveX("Mouse", document.E);
+	await SaveX("Mouse", document.E);
 }
 
 LoadX("Mouse", null, document.E);

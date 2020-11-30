@@ -301,13 +301,17 @@ te.OnArrange = async function (Ctrl, rc) {
 				o.style.display = "";
 			} else {
 				o.style.display = "none";
+				return;
 			}
 			o.style.width = Math.max(r[2] - r[0], 0) + "px";
 			o.style.height = Math.max(r[3] - r[1], 0) + "px";
+			const top = r[1] + document.getElementById("InnerTop_" + Id).offsetHeight + document.getElementById("InnerTop2_" + Id).offsetHeight;
+			const bottom = r[3] - document.getElementById("InnerBottom_" + Id).offsetHeight;
 			rc.left = r[0] + document.getElementById("InnerLeft_" + Id).offsetWidth + document.getElementById("Inner2Left_" + Id).offsetWidth;
-			rc.top = r[1] + document.getElementById("InnerTop_" + Id).offsetHeight + document.getElementById("InnerTop2_" + Id).offsetHeight;
+			rc.top = top;
 			rc.right = r[2] - document.getElementById("InnerRight_" + Id).offsetWidth - document.getElementById("Inner2Right_" + Id).offsetWidth;
-			rc.bottom = r[3] - document.getElementById("InnerBottom_" + Id).offsetHeight;
+			rc.bottom = bottom;
+			document.getElementById("Inner2Center_" + Id).style.height = Math.max(bottom - top, 0) + "px";
 			te.ArrangeCB(Ctrl, rc);
 		});
 	}

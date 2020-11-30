@@ -178,7 +178,7 @@ if (window.Addon == 1) {
 				}
 				s.push('" >', n, '</div></td>');
 				if (bUseClose) {
-					s.push('<td style="vertical-align: middle; width: ', r0, 'px" align="right">', Addons.TabPlus.ImgClose, r0, 'px" onclick="Addons.TabPlus.Close(', Id, ",", i, ')" class="button closecell" title="', Addons.TabPlus.str.CloseTab, '" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', Addons.TabPlus.ImgClose2, '</td>');
+					s.push('<td class="closecell" style="vertical-align: middle; width: ', r0, 'px" align="right">', Addons.TabPlus.ImgClose, r0, 'px" onclick="Addons.TabPlus.Close(', Id, ",", i, ')" class="button" title="', Addons.TabPlus.str.CloseTab, '" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', Addons.TabPlus.ImgClose2, '</td>');
 				}
 				s.push('</tr></table>');
 				if (!o.innerHTML || bRedraw) {
@@ -455,6 +455,7 @@ if (window.Addon == 1) {
 				if (o) {
 					Common.TabPlus.rc[Id] = await GetRect(o);
 					const nCount1 = await TC.Count;
+					api.ObjPutI(Common.TabPlus.rcItem[Id], "length", nCount1);
 					for (let j = 0; j < nCount1; ++j) {
 						o = document.getElementById("tabplus_" + Id + "_" + j);
 						if (o) {

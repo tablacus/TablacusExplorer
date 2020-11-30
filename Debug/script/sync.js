@@ -78,7 +78,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201128 ? te.Version : 20201129;
+		return te.Version < 20201128 ? te.Version : 20201130;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -792,7 +792,7 @@ ShowOptions = function (s) {
 	opt.height = te.Data.Conf_OptHeight;
 	opt.Data = s;
 	opt.event = api.CreateObject("Object");
-	api.Invoke(UI.ShowOptions, [opt]);
+	g_.dlgs.Options = ShowDialog("options.html", opt);
 }
 
 GetAddons = function () {
@@ -889,9 +889,9 @@ ShowError = function (e, s, i) {
 	}
 	if (g_.ShowError) {
 		g_.ShowError = true;
-		UI.ShowError(function (e, s) {
+		setTimeout(function (e, s) {
 			g_.ShowError = MessageBox([e.stack || e.description || e.toString(), s, AboutTE(3)].join("\n\n"), TITLE, MB_OKCANCEL) != IDOK;
-		}, e, s)
+		}, 99, e, s)
 	}
 }
 

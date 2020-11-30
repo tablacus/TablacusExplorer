@@ -38,7 +38,7 @@ if (!window.InitUI && !window.chrome) {
 	}
 }
 
-Invoke = function (args) {
+Invoke = async function (args, cb) {
 	const ar = args.shift().split(".");
 	let fn = window, s, parent;
 	while (s = ar.shift()) {
@@ -48,7 +48,11 @@ Invoke = function (args) {
 			return;
 		}
 	}
-	fn.apply(parent, args);
+	if (cb) {
+		api.Invoke(cb, [await fn.apply(parent, args)]);
+		return;
+	}
+	fn.apply(parent, args);;
 }
 
 GetNum = function (s) {
