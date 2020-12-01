@@ -1,7 +1,7 @@
-var Addon_Id = "addressbar";
-var Default = "ToolBar2Center";
+const Addon_Id = "addressbar";
+const Default = "ToolBar2Center";
 
-var item = await GetAddonElement(Addon_Id);
+let item = await GetAddonElement(Addon_Id);
 if (!item.getAttribute("Set")) {
 	item.setAttribute("Menu", "Edit");
 	item.setAttribute("MenuPos", -1);
@@ -28,7 +28,7 @@ if (window.Addon == 1) {
 			if (ev.keyCode == VK_RETURN || /^Enter/i.test(ev.key)) {
 				setTimeout(async function (o, str) {
 					if (str == o.value) {
-						var pt = GetPos(o, 9);
+						let pt = GetPos(o, 9);
 						$.Input = str;
 						if (await ExecMenu(await te.Ctrl(CTRL_WB), "Alias", pt, 2) != S_OK) {
 							NavigateFV(await te.Ctrl(CTRL_FV), str, await GetNavigateFlags(), true);
@@ -46,24 +46,24 @@ if (window.Addon == 1) {
 
 		Arrange: async function (FV) {
 			Addons.AddressBar.tid = null;
-			var FolderItem = FV && await FV.FolderItem;
+			let FolderItem = FV && await FV.FolderItem;
 			if (FolderItem) {
-				var bRoot = await api.ILIsEmpty(FolderItem);
-				var o = document.getElementById("breadcrumbbuttons");
-				var oAddr = document.F.addressbar;
-				var oImg = document.getElementById("addr_img");
-				var oPopup = document.getElementById("addressbarselect");
-				var width = oAddr.offsetWidth - oImg.offsetWidth + oPopup.offsetWidth - 2;
-				var height = oAddr.offsetHeight - 6;
+				let bRoot = await api.ILIsEmpty(FolderItem);
+				let o = document.getElementById("breadcrumbbuttons");
+				let oAddr = document.F.addressbar;
+				let oImg = document.getElementById("addr_img");
+				let oPopup = document.getElementById("addressbarselect");
+				let width = oAddr.offsetWidth - oImg.offsetWidth + oPopup.offsetWidth - 2;
+				let height = oAddr.offsetHeight - 6;
 				if (Addons.AddressBar.XP) {
 					oAddr.style.color = "";
 				} else {
-					var SessionId = await FV.SessionId;
-					var arHTML = [];
+					let SessionId = await FV.SessionId;
+					let arHTML = [];
 					o.style.width = "auto";
-					var n = 0;
+					let n = 0;
 
-					var Items = [];
+					let Items = [];
 					do {
 						Items.push({
 							next: n || await api.GetAttributesOf(FolderItem, SFGAO_HASSUBFOLDER),
@@ -72,7 +72,7 @@ if (window.Addon == 1) {
 						FolderItem = await api.ILGetParent(FolderItem);
 						n++;
 					} while (!await api.ILIsEmpty(FolderItem) && n < 99);
-					var bEmpty = true;
+					let bEmpty = true;
 					if (o.innerHTML == "" || SessionId == await te.Ctrl(CTRL_FV).SessionId) {
 						o.innerHTML = "";
 						for (n = 0; n < Items.length; ++n) {
@@ -112,7 +112,7 @@ if (window.Addon == 1) {
 		},
 
 		Focus: function () {
-			var o = document.getElementById("addressbar");
+			let o = document.getElementById("addressbar");
 			if (Addons.AddressBar.bClose) {
 				o.blur();
 			} else {
@@ -133,13 +133,13 @@ if (window.Addon == 1) {
 		},
 
 		GoEx: async function (ev, o, n) {
-			if (ev.button == 1) {
+			if ((ev.buttons != null ? ev.buttons : ev.button) == 1) {
 				Addons.AddressBar.Go(n);
 				return false;
-			} else if (ev.button == 2) {
-				var pt = GetPos(o, 9);
+			} else if ((ev.buttons != null ? ev.buttons : ev.button) == 2) {
+				let pt = GetPos(o, 9);
 				MouseOver(o);
-				var hMenu = await api.CreatePopupMenu();
+				let hMenu = await api.CreatePopupMenu();
 				api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, 1, await api.LoadString(hShell32, 33561));
 				api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, 2, await GetText("Copy full path"));
 				api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_SEPARATOR, 0, null);
@@ -147,11 +147,11 @@ if (window.Addon == 1) {
 				api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, 4, await GetText("Open in background"));
 				api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_SEPARATOR, 0, null);
 				api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, 5, await GetText("&Edit"));
-				var nVerb = await api.TrackPopupMenuEx(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, await te.hwnd, null, null);
+				let nVerb = await api.TrackPopupMenuEx(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, await te.hwnd, null, null);
 				api.DestroyMenu(hMenu);
 				switch (nVerb) {
 					case 1:
-						var Items = await api.CreateObject("FolderItems");
+						let Items = await api.CreateObject("FolderItems");
 						Items.AddItem(await Addons.AddressBar.GetPath(n));
 						api.OleSetClipboard(Items);
 						break;
@@ -173,8 +173,8 @@ if (window.Addon == 1) {
 		},
 
 		GetPath: async function (n) {
-			var FolderItem = 0;
-			var FV = await te.Ctrl(CTRL_FV);
+			let FolderItem = 0;
+			let FV = await te.Ctrl(CTRL_FV);
 			if (FV) {
 				for (FolderItem = await FV.FolderItem; n > 0; n--) {
 					FolderItem = await api.ILGetParent(FolderItem);
@@ -184,10 +184,10 @@ if (window.Addon == 1) {
 		},
 
 		SavePos: async function (o) {
-			var rc = await api.CreateObject("Array");
+			let rc = await api.CreateObject("Array");
 			Common.AddressBar.rcItem = rc;
-			for (var i = Addons.AddressBar.nLevel; i >= 0; --i) {
-				var el = document.getElementById("addressbar" + i);
+			for (let i = Addons.AddressBar.nLevel; i >= 0; --i) {
+				let el = document.getElementById("addressbar" + i);
 				if (el && o.id != el.id) {
 					rc[i] = await GetRect(el);
 				}
@@ -197,19 +197,19 @@ if (window.Addon == 1) {
 		Popup: async function (o, n) {
 			if (Addons.AddressBar.CanPopup()) {
 				await Addons.AddressBar.SavePos(o);
-				var pt = GetPos(o, 9);
+				let pt = GetPos(o, 9);
 				MouseOver(o);
 				$.FolderMenu.Invoke(await $.FolderMenu.Open(await Addons.AddressBar.GetPath(n), pt.x, pt.y, null, 1));
 			}
 		},
 
 		Popup2: async function (o) {
-			var FV = await te.Ctrl(CTRL_FV);
+			let FV = await te.Ctrl(CTRL_FV);
 			if (FV) {
-				var FolderItem = await FV.FolderItem;
+				let FolderItem = await FV.FolderItem;
 				await $.FolderMenu.Clear();
-				var hMenu = await api.CreatePopupMenu();
-				var n = 99;
+				let hMenu = await api.CreatePopupMenu();
+				let n = 99;
 				while (!await api.ILIsEmpty(FolderItem) && n--) {
 					FolderItem = await api.ILGetParent(FolderItem);
 					await $.FolderMenu.AddMenuItem(hMenu, FolderItem);
@@ -220,8 +220,8 @@ if (window.Addon == 1) {
 					Common.AddressBar.rcItem = void 0;
 				});
 				MouseOver(o);
-				var pt = GetPos(o, 9);
-				var nVerb = await $.FolderMenu.TrackPopupMenu(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y);
+				let pt = GetPos(o, 9);
+				let nVerb = await $.FolderMenu.TrackPopupMenu(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y);
 				FolderItem = nVerb ? await $.FolderMenu.Items[nVerb - 1] : null;
 				await $.FolderMenu.Clear();
 				$.FolderMenu.Invoke(FolderItem);
@@ -230,7 +230,7 @@ if (window.Addon == 1) {
 
 		Popup3: async function (o) {
 			if (Addons.AddressBar.CanPopup()) {
-				var pt = GetPos(o, 9);
+				let pt = GetPos(o, 9);
 				$.FolderMenu.LocationEx(pt.x + o.offsetWidth, pt.y);
 			}
 		},
@@ -263,7 +263,7 @@ if (window.Addon == 1) {
 		ChangeMenu: function (i) {
 			setTimeout(function (i) {
 				Addons.AddressBar.bClose = false;
-				var el = document.getElementById("addressbar" + i);
+				let el = document.getElementById("addressbar" + i);
 				if (el) {
 					el.click();
 				}
@@ -271,12 +271,10 @@ if (window.Addon == 1) {
 		}
 	};
 
-	AddEvent("ChangeView", async function (Ctrl) {
-		if (await Ctrl.FolderItem && await Ctrl.Id == await Ctrl.Parent.Selected.Id && await Ctrl.Parent.Id == await te.Ctrl(CTRL_TC).Id) {
-			document.F.addressbar.value = await Ctrl.FolderItem.Path;
-			Addons.AddressBar.Arrange(Ctrl);
-			document.getElementById("addr_img").src = await GetIconImage(Ctrl, await GetSysColor(COLOR_WINDOW));
-		}
+	AddEvent("ChangeView1", async function (Ctrl) {
+		document.F.addressbar.value = await Ctrl.FolderItem.Path;
+		Addons.AddressBar.Arrange(Ctrl);
+		document.getElementById("addr_img").src = await GetIconImage(Ctrl, await GetSysColor(COLOR_WINDOW));
 	});
 
 	AddEvent("Resize", async function () {
@@ -302,7 +300,7 @@ if (window.Addon == 1) {
 
 	AddTypeEx("Add-ons", "Address Bar", Addons.AddressBar.Exec);
 
-	var s = item.getAttribute("Width");
+	let s = item.getAttribute("Width");
 	if (s) {
 		if (GetNum(s) == s) {
 			s += "px";
@@ -310,7 +308,7 @@ if (window.Addon == 1) {
 	} else {
 		s = "100%";
 	}
-	var nSize = await api.GetSystemMetrics(SM_CYSMICON);
+	let nSize = await api.GetSystemMetrics(SM_CYSMICON);
 	s = ['<div style="position: relative; overflow: hidden"><div id="breadcrumbbuttons" class="breadcrumb" style="position: absolute; left: 1px; top: 1px; padding-left: ', nSize + 4, 'px" onfocus="Addons.AddressBar.Focus()" onclick="return Addons.AddressBar.Exec();"></div><input id="addressbar" type="text" autocomplate="on" list="AddressList" onkeydown="return Addons.AddressBar.KeyDown(event, this)" onfocus="Addons.AddressBar.Focus()" onblur="Addons.AddressBar.Blur()" onresize="Addons.AddressBar.Resize()" oninput="AdjustAutocomplete(this.value)" oncontextmenu="Addons.AddressBar.ContextMenu(this)" style="width: ', EncodeSC(s), '; vertical-align: middle; padding-left: ', nSize + 4, 'px; padding-right: 16px"><div class="breadcrumb"><div id="addressbarselect" class="button" style="position: absolute; top: 1px" onmouseover="MouseOver(this);" onmouseout="MouseOut()" onclick="Addons.AddressBar.Popup3(this)">', BUTTONS.dropdown, '</div></div>'];
 
 	s.push('<img id="addr_img" src="', await MakeImgSrc("folder:closed"), '"');
@@ -325,15 +323,11 @@ if (window.Addon == 1) {
 	Common.AddressBar.MenuExec = item.getAttribute("MenuExec");
 	Common.AddressBar.strName = item.getAttribute("MenuName") || await GetAddonInfo(Addon_Id).Name;
 	Common.AddressBar.nPos = GetNum(item.getAttribute("MenuPos"));
-	var s = item.getAttribute("MenuName");
-	if (s && s != "") {
+
+	if (s = item.getAttribute("MenuName")) {
 		Common.AddressBar.strName = s;
 	}
-
-
-	importJScript("addons\\" + Addon_Id + "\\sync.js");
-
-
+	$.importScript("addons\\" + Addon_Id + "\\sync.js");
 } else {
 	SetTabContents(0, "General", await ReadTextFile("addons\\" + Addon_Id + "\\options.html"));
 }

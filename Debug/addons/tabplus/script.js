@@ -184,7 +184,7 @@ if (window.Addon == 1) {
 				if (!o.innerHTML || bRedraw) {
 					o.innerHTML = s.join("");
 				}
-				var style = o.style;
+				const style = o.style;
 				if (cl) {
 					if (ui_.IEVer >= 10) {
 						style.background = "none";
@@ -247,7 +247,7 @@ if (window.Addon == 1) {
 		},
 
 		Down: async function (ev, Id) {
-			Addons.TabPlus.buttons = ev.buttons;
+			Addons.TabPlus.buttons = (ev.buttons != null ? ev.buttons : ev.button);
 			Addons.TabPlus.pt.x = ev.screenX * ui_.Zoom;
 			Addons.TabPlus.pt.y = ev.screenY * ui_.Zoom;
 			const TC = await te.Ctrl(CTRL_TC, Id);
@@ -256,7 +256,7 @@ if (window.Addon == 1) {
 				Addons.TabPlus.Click = [Id, n];
 				Addons.TabPlus.Button[Id] = await GetGestureButton();
 				if (n >= 0) {
-					if (ev.button == 0) {
+					if ((ev.buttons != null ? ev.buttons : ev.button) == 1) {
 						TC.SelectedIndex = n;
 						return false;
 					}
@@ -406,9 +406,10 @@ if (window.Addon == 1) {
 					const id = await TC.Id;
 					Addons.TabPlus.Arrange(id);
 					if (Addons.TabPlus.opt.Align > 1) {
-						const o = document.getElementById("Panel_" + id);
-						if (o) {
-							document.getElementById("tabplus_" + id).style.height = o.clientHeight + "px";
+						const elTab = document.getElementById("tabplus_" + id);
+						const elPanel = document.getElementById("Panel_" + id);
+						if (elTab && elPanel) {
+							elTab.style.height = elPanel.clientHeight + "px";
 						}
 					}
 				}

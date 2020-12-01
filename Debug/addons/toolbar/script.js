@@ -1,12 +1,12 @@
-var Addon_Id = "toolbar";
-var Default = "ToolBar2Left";
-var AddonName = "ToolBar";
+const Addon_Id = "toolbar";
+const Default = "ToolBar2Left";
+const AddonName = "ToolBar";
 
 if (window.Addon == 1) {
 	Addons.ToolBar = {
 		Click: async function (i, bNew) {
-			var items = await GetXmlItems(await te.Data.xmlToolBar.getElementsByTagName("Item"));
-			var item = items[i];
+			let items = await GetXmlItems(await te.Data.xmlToolBar.getElementsByTagName("Item"));
+			let item = items[i];
 			if (item) {
 				Exec(te, item.text, (bNew && /^Open$|^Open in background$/i.test(type)) ? "Open in new tab" : item.Type, ui_.hwnd, null);
 			}
@@ -14,7 +14,7 @@ if (window.Addon == 1) {
 		},
 
 		Down: function (ev, i) {
-			if (ev.button == 1) {
+			if ((ev.buttons != null ? ev.buttons : ev.button) == 4) {
 				return this.Click(i, true);
 			}
 		},
@@ -23,16 +23,16 @@ if (window.Addon == 1) {
 			if (Addons.ToolBar.bClose) {
 				return S_OK;
 			}
-			if (ev.button == 0) {
-				var items = await te.Data.xmlToolBar.getElementsByTagName("Item");
-				var item = await items[i];
-				var hMenu = await api.CreatePopupMenu();
-				var arMenu = await api.CreateObject("Array");
-				for (var j = GetLength(items); --j > i;) {
+			if ((ev.buttons != null ? ev.buttons : ev.button) == 1) {
+				let items = await te.Data.xmlToolBar.getElementsByTagName("Item");
+				let item = await items[i];
+				let hMenu = await api.CreatePopupMenu();
+				let arMenu = await api.CreateObject("Array");
+				for (let j = GetLength(items); --j > i;) {
 					await arMenu.unshift(j);
 				}
-				var o = document.getElementById("_toolbar" + i);
-				var pt = GetPosEx(o, 9);
+				let o = document.getElementById("_toolbar" + i);
+				let pt = GetPosEx(o, 9);
 				await MakeMenus(hMenu, null, arMenu, items, te, pt);
 				await AdjustMenuBreak(hMenu);
 				AddEvent("ExitMenuLoop", function () {
@@ -41,7 +41,7 @@ if (window.Addon == 1) {
 						Addons.ToolBar.bClose = false;
 					}, 99);
 				});
-				var nVerb = await api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, await pt.x, await pt.y, ui_.hwnd, null);
+				let nVerb = await api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, await pt.x, await pt.y, ui_.hwnd, null);
 				api.DestroyMenu(hMenu);
 				if (nVerb > 0) {
 					item = await items[nVerb - 1];
@@ -53,10 +53,10 @@ if (window.Addon == 1) {
 
 		Popup: async function (ev, i) {
 			if (i >= 0) {
-				var hMenu = await api.CreatePopupMenu();
+				let hMenu = await api.CreatePopupMenu();
 				await api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, 1, await GetText("&Edit"));
 				await api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, 2, await GetText("Add"));
-				var nVerb = await api.TrackPopupMenuEx(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, ev.screenX * ui_.Zoom, ev.screenY * ui_.Zoom, ui_.hwnd, null, null);
+				let nVerb = await api.TrackPopupMenuEx(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, ev.screenX * ui_.Zoom, ev.screenY * ui_.Zoom, ui_.hwnd, null, null);
 				if (nVerb == 1) {
 					this.ShowOptions(i + 1);
 				}
@@ -84,14 +84,14 @@ if (window.Addon == 1) {
 		},
 
 		Arrange: async function () {
-			var s = [];
-			var items = await GetXmlItems(await te.Data.xmlToolBar.getElementsByTagName("Item"));
-			var menus = 0;
-			var nLen = items.length;
-			for (var i = 0; i < nLen; ++i) {
-				var item = items[i];
-				var strType = item.Type;
-				var strFlag = (SameText(strType, "Menus") ? item.text : "").toLowerCase();
+			let s = [];
+			let items = await GetXmlItems(await te.Data.xmlToolBar.getElementsByTagName("Item"));
+			let menus = 0;
+			let nLen = items.length;
+			for (let i = 0; i < nLen; ++i) {
+				let item = items[i];
+				let strType = item.Type;
+				let strFlag = (SameText(strType, "Menus") ? item.text : "").toLowerCase();
 				if (strFlag == "close" && menus) {
 					menus--;
 					continue;
@@ -103,7 +103,7 @@ if (window.Addon == 1) {
 				} else if (menus) {
 					continue;
 				}
-				var img = EncodeSC(await ExtractMacro(null, item.Name));
+				let img = EncodeSC(await ExtractMacro(null, item.Name));
 				if (img == "/" || strFlag == "break") {
 					s.push('<br class="break">');
 				} else if (img == "//" || strFlag == "barbreak") {
@@ -111,10 +111,10 @@ if (window.Addon == 1) {
 				} else if (img == "-" || strFlag == "separator") {
 					s.push('<span class="separator">|</span>');
 				} else {
-					var icon = item.Icon;
+					let icon = item.Icon;
 					if (icon) {
-						var h = (item.Height * screen.deviceYDPI / 96);
-						var sh = {
+						let h = (item.Height * screen.deviceYDPI / 96);
+						let sh = {
 							src: await api.PathUnquoteSpaces(await ExtractMacro(te, icon))
 						};
 						if (h && isFinite(h)) {
@@ -146,8 +146,8 @@ if (window.Addon == 1) {
 
 		AddEvent("DragOver", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 			if (Ctrl.Type == CTRL_WB) {
-				var items = te.Data.xmlToolBar.getElementsByTagName("Item");
-				var i = Addons.ToolBar.FromPt(items.length + 1, pt);
+				let items = te.Data.xmlToolBar.getElementsByTagName("Item");
+				let i = Addons.ToolBar.FromPt(items.length + 1, pt);
 				if (i >= 0) {
 					if (i == items.length) {
 						pdwEffect[0] = DROPEFFECT_LINK;
@@ -167,12 +167,12 @@ if (window.Addon == 1) {
 		AddEvent("Drop", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 			MouseOut();
 			if (Ctrl.Type == CTRL_WB) {
-				var items = te.Data.xmlToolBar.getElementsByTagName("Item");
-				var i = Addons.ToolBar.FromPt(items.length + 1, pt);
+				let items = te.Data.xmlToolBar.getElementsByTagName("Item");
+				let i = Addons.ToolBar.FromPt(items.length + 1, pt);
 				if (i >= 0) {
 					if (i == items.length) {
-						var xml = te.Data.xmlToolBar;
-						var root = xml.documentElement;
+						let xml = te.Data.xmlToolBar;
+						let root = xml.documentElement;
 						if (!root) {
 							xml.appendChild(xml.createProcessingInstruction("xml", 'version="1.0" encoding="UTF-8"'));
 							root = xml.createElement("TablacusExplorer");
@@ -180,8 +180,8 @@ if (window.Addon == 1) {
 						}
 						if (root) {
 							for (i = 0; i < dataObj.Count; i++) {
-								var FolderItem = dataObj.Item(i);
-								var item = xml.createElement("Item");
+								let FolderItem = dataObj.Item(i);
+								let item = xml.createElement("Item");
 								item.setAttribute("Name", api.GetDisplayNameOf(FolderItem, SHGDN_INFOLDER));
 								item.text = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSINGEX | SHGDN_FORPARSING);
 								if (fso.FileExists(item.text)) {

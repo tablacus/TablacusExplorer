@@ -660,9 +660,9 @@ InsertTab = function (e) {
 	return true;
 }
 
-DetectProcessTag = function (e) {
-	const el = e.srcElement;
-	return /input|textarea/i.test(el.tagName) || /selectable/i.test(el.className);
+DetectProcessTag = function (ev) {
+	const el = (ev || event).srcElement;
+	return el && (/input|textarea/i.test(el.tagName) || /selectable/i.test(el.className));
 }
 
 GetFolderView = GetFolderViewEx = async function (Ctrl, pt, bStrict) {
@@ -782,16 +782,16 @@ GetImgTag = async function (o, h) {
 }
 
 LoadAddon = async function (ext, Id, arError, param, bDisabled) {
-	let r;
+	let r, fn;
 	try {
 		let sc;
 		const ar = ext.split(".");
 		if (ar.length == 1) {
 			ar.unshift("script");
 		}
-		const fn = BuildPath("addons", Id, ar.join("."));
+		fn = BuildPath("addons", Id, ar.join("."));
 		const s = await ReadTextFile(fn);
-		if (s && (!bDisabled || /await/.test(s))) {
+		if (s && (!bDisabled || /await|\$\./.test(s))) {
 			if (ar[1] == "js") {
 				sc = new Function(FixScript(s, window.chrome));
 			} else if (ar[1] == "vbs") {
@@ -1123,6 +1123,10 @@ GetXmlItems = window.chrome ? async function (items) {
 		}
 	}
 	return ar;
+}
+
+SyncExec = async function (cb, el) {
+	cb(await GetFolderViewEx(el));
 }
 
 if (window.chrome) {

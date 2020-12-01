@@ -5,21 +5,20 @@ if ("undefined" === typeof Promise) {
 		this.promise = fn;
 	}
 	Promise.all = function (ar) {
-		return {
-			then: function (fn) {
-				for (var i = 0; i < ar.length; ++i) {
-					if ("function" === typeof ar[i] && ar[i].promise) {
-						(function (ar, i) {
-							ar[i].promise(function (data) {
-								ar[i] = data;
-							});
-						})(ar, i);
-					}
+		ar.then = function (fn) {
+			for (var i = 0; i < ar.length; ++i) {
+				if ("function" === typeof ar[i] && ar[i].promise) {
+					(function (ar, i) {
+						ar[i].promise(function (data) {
+							ar[i] = data;
+						});
+					})(ar, i);
 				}
-				fn(ar);
-				return this;
 			}
+			fn(ar);
+			return ar;
 		}
+		return ar;
 	}
 }
 
@@ -28,21 +27,23 @@ FixScript = RemoveAsync = function (s, a) {
 		return "(async () => {" + s + "\n})();";
 	}
 	s = s.replace(/([^\.\w])(async |await )/g, "$1");
-	if (window.chrome || document.documentMode == 11) {
+	if ("undefined" == typeof ScriptEngineMajorVersion) {
 		return s;
 	}
-	s = s.replace(/([^\.\w])(const |let )/g, "$1var ");
-	if (document.documentMode > 9) {
+	var v = ScriptEngineMajorVersion();
+	s = s.replace(/(\([^\(\)]*\))\s*=>\s*\{/g, "function $1 {");
+	if (v > 10) {
 		return s;
 	}
-	return s.replace(/(\s)(setTimeout\()/g, "$1window.$2");
+	s = s.replace(/([^\.\w])(const |let )/g, "$1var ").replace(/^const |^let /, "var ");
+	return v > 9 ? s : s.replace(/(\s)(setTimeout\()/g, "$1window.$2");
 }
 
 AddEventEx = function (w, Name, fn) {
+	if ("string" === typeof fn) {
+		fn = new Function(FixScript(fn, window.chrome));
+	}
 	if (w.addEventListener) {
-		if ("string" === typeof fn) {
-			fn = new Function(FixScript(fn, window.chrome));
-		}
 		w.addEventListener(Name, fn, false);
 	} else if (w.attachEvent) {
 		w.attachEvent("on" + Name, fn);

@@ -78,7 +78,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201128 ? te.Version : 20201130;
+		return te.Version < 20201128 ? te.Version : 20201201;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -1778,7 +1778,7 @@ ExecScriptEx = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffec
 	var fn = null;
 	try {
 		if (/J.*Script/i.test(type)) {
-			fn = { Handled: new Function(s) };
+			fn = { Handled: new Function(FixScript(s)) };
 		} else if (/VBScript/i.test(type)) {
 			var o = api.CreateObject("Object");
 			o.window = $;

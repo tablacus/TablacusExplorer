@@ -1,7 +1,6 @@
 //Tablacus Explorer
 
-function _s()
-{
+function _s() {
 	try {
 		window.te = external;
 		api = te.WindowsAPI;
@@ -9,13 +8,14 @@ function _s()
 		sha = api.CreateObject("sha");
 		wsh = api.CreateObject("wsh");
 		arg = api.CommandLineToArgv(api.GetCommandLine());
-		location = {href: arg[2], hash: ''};
+		location = { href: arg[2], hash: '' };
 		var parent = fso.GetParentFolderName(arg[0]);
 		if (!/^[A-Z]:\\|^\\\\/i.test(location.href)) {
 			location.href = fso.BuildPath(parent, location.href);
 		}
-		for (var esw = api.CreateObject("Enum", sha.Windows()); !esw.atEnd(); esw.moveNext()) {
-			var x = esw.item();
+		var sw = sha.Windows();
+		for (var i = 0; i < sw.Count; ++i) {
+			var x = sw.item(i);
 			if (x && api.StrCmpI(fso.GetParentFolderName(x.FullName), parent) == 0) {
 				var w = x.Document.parentWindow;
 				if (!window.MainWindow || window.MainWindow.Exchange && window.MainWindow.Exchange[arg[3]]) {
@@ -33,8 +33,7 @@ function _s()
 	}
 }
 
-function _es(fn)
-{
+function _es(fn) {
 	if (!/^[A-Z]:\\|^\\\\/i.test(fn)) {
 		fn = fso.BuildPath(/^\\/.test(fn) ? fso.GetParentFolderName(api.GetModuleFileName(null)) : fso.GetParentFolderName(location.href), fn);
 	}
@@ -54,7 +53,7 @@ function _es(fn)
 	}
 	if (s) {
 		if (!/consts\.js$/i.test(fn)) {
-			s = RemoveAsync(s);
+			s = FixScript(s);
 		}
 		try {
 			return new Function(s)();
@@ -64,13 +63,17 @@ function _es(fn)
 	}
 }
 
-function importScripts()
-{
+function importScripts() {
 	for (var i = 0; i < arguments.length; ++i) {
 		_es(arguments[i]);
 	}
 }
 
-function RemoveAsync(s) {
-	return s.replace(/([^\.\w])(async |await |debugger;)/g, "$1");
+function FixScript(s) {
+	s = s.replace(/([^\.\w])(async |await )/g, "$1");
+	if ("undefined" == typeof ScriptEngineMajorVersion) {
+		return s;
+	}
+	s = s.replace(/(\([^\(\)]*\))\s*=>\s*\{/g, "function $1 {");
+	return ScriptEngineMajorVersion() > 10 ? s : s.replace(/([^\.\w])(const |let )/g, "$1var ").replace(/^const |^let /, "var ");
 }

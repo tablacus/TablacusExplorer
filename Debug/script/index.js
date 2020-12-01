@@ -136,7 +136,7 @@ SetAddon = async function (strName, Location, Tag, strVAlign) {
 }
 
 RunSplitter = async function (ev, n) {
-	if (ev.button == 0) {
+	if ((ev.buttons != null ? ev.buttons : ev.button) == 1) {
 		api.ObjPutI(await g_.mouse, "Capture", n);
 		api.SetCapture(ui_.hwnd);
 	}
@@ -305,13 +305,29 @@ te.OnArrange = async function (Ctrl, rc) {
 			}
 			o.style.width = Math.max(r[2] - r[0], 0) + "px";
 			o.style.height = Math.max(r[3] - r[1], 0) + "px";
-			const top = r[1] + document.getElementById("InnerTop_" + Id).offsetHeight + document.getElementById("InnerTop2_" + Id).offsetHeight;
-			const bottom = r[3] - document.getElementById("InnerBottom_" + Id).offsetHeight;
-			rc.left = r[0] + document.getElementById("InnerLeft_" + Id).offsetWidth + document.getElementById("Inner2Left_" + Id).offsetWidth;
-			rc.top = top;
-			rc.right = r[2] - document.getElementById("InnerRight_" + Id).offsetWidth - document.getElementById("Inner2Right_" + Id).offsetWidth;
-			rc.bottom = bottom;
-			document.getElementById("Inner2Center_" + Id).style.height = Math.max(bottom - top, 0) + "px";
+			let el = document.getElementById("InnerLeft_" + Id);
+			if (!/none/i.test(el.style.display)) {
+				r[0] += el.offsetWidth;
+			}
+			el = document.getElementById("Inner2Left_" + Id);
+			if (!/none/i.test(el.style.display)) {
+				r[0] += el.offsetWidth;
+			}
+			r[1] += document.getElementById("InnerTop_" + Id).offsetHeight + document.getElementById("InnerTop2_" + Id).offsetHeight;
+			el = document.getElementById("InnerRight_" + Id);
+			if (!/none/i.test(el.style.display)) {
+				r[2] -= el.offsetWidth;
+			}
+			el = document.getElementById("Inner2Right_" + Id);
+			if (!/none/i.test(el.style.display)) {
+				r[2] -= el.offsetWidth;
+			}
+			r[3] -= document.getElementById("InnerBottom_" + Id).offsetHeight;
+			rc.left = r[0];
+			rc.top = r[1];
+			rc.right = r[2];
+			rc.bottom = r[3];
+			document.getElementById("Inner2Center_" + Id).style.height = Math.max(r[3] - r[1], 0) + "px";
 			te.ArrangeCB(Ctrl, rc);
 		});
 	}

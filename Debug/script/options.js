@@ -1689,13 +1689,12 @@ InitDialog = async function () {
 	DialogResize();
 }
 
-MouseDown = async function (e) {
+MouseDown = async function (ev) {
 	if (g_Gesture) {
-		var n = 1;
-		var ar = [0, 0, 2, 1];
-		for (i = 1; i < 6; ++i) {
+		let n = 1;
+		for (let i = 1; i < 6; ++i) {
 			if (g_Gesture.indexOf(i + "") < 0) {
-				if ((e.buttons && e.buttons & n) || e.button == ar[i]) {
+				if ((ev.buttons != null ? ev.buttons : ev.button) & n) {
 					returnValue += i + "";
 				}
 			}
@@ -1707,11 +1706,11 @@ MouseDown = async function (e) {
 	}
 	document.F.q.value = returnValue;
 	g_Gesture = returnValue;
-	g_pt.x = e.clientX;
-	g_pt.y = e.clientY;
+	g_pt.x = ev.clientX;
+	g_pt.y = ev.clientY;
 	document.F.ButtonOk.disabled = false;
-	var o = document.getElementById("Gesture");
-	var s = o.style.height;
+	const o = document.getElementById("Gesture");
+	const s = o.style.height;
 	o.style.height = "1px";
 	o.style.height = s;
 	return false;
