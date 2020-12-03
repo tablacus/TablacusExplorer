@@ -879,8 +879,8 @@ RefreshEx = function (FV, tm, df)
 }
 
 ChangeView = function (Ctrl) {
-	var TC = te.Ctrl(CTRL_TC);
-	if (TC && Ctrl && Ctrl.FolderItem) {
+	const TC = te.Ctrl(CTRL_TC);
+	if (TC && Ctrl && Ctrl.FolderItem && Ctrl.FolderItem.Path != null) {
 		ChangeTabName(Ctrl);
 		if (Ctrl.hwndView) {
 			RefreshEx(Ctrl, 5000, 5000);
@@ -892,8 +892,8 @@ ChangeView = function (Ctrl) {
 			}
 			RunEvent1("ChangeView2", Ctrl);
 		}
+		RunEvent1("ConfigChanged", "Window");
 	}
-	RunEvent1("ConfigChanged", "Window");
 }
 
 SetAddress = function (s) {
@@ -1802,7 +1802,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 					iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
 					if (iItem < 0) {
 						api.ScreenToClient(hwnd, pt);
-						return pt.y < screen.logicalYDPI / 4 ? S_FALSE : S_OK;
+						return pt.y < screen.deviceYDPI / 4 ? S_FALSE : S_OK;
 					}
 				}
 				if (te.Data.Conf_Gestures == 3 && Ctrl.Type != CTRL_WB) {
@@ -2785,13 +2785,13 @@ ChangeNotifyFV = function (lEvent, item1, item2) {
 	var fAdd = SHCNE_DRIVEADD | SHCNE_MEDIAINSERTED | SHCNE_NETSHARE | SHCNE_MKDIR | SHCNE_UPDATEDIR | SHCNE_UPDATEITEM;
 	var fRemove = SHCNE_DRIVEREMOVED | SHCNE_MEDIAREMOVED | SHCNE_NETUNSHARE | SHCNE_RENAMEFOLDER | SHCNE_RMDIR | SHCNE_SERVERDISCONNECT | SHCNE_UPDATEDIR;
 	if (lEvent & (SHCNE_DISKEVENTS | fAdd | fRemove) && item1.IsFileSystem) {
-		var path1 = String(api.GetDisplayNameOf(item1, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
+		var path1 = item1.Path;
 		var bNetwork = api.ILIsEqual(item1, ssfNETWORK);
 		var cFV = te.Ctrls(CTRL_FV);
 		for (var i in cFV) {
 			var FV = cFV[i];
 			if (FV && FV.FolderItem) {
-				var path = String(api.GetDisplayNameOf(FV.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
+				var path = FV.FolderItem.Path;
 				var bParent = api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;")) || bNetwork && api.PathIsNetworkPath(path);
 				if (lEvent == SHCNE_RENAMEFOLDER && CanClose(FV) == S_OK) {
 					if (bParent) {
@@ -3271,7 +3271,7 @@ IsHeader = function (Ctrl, pt, hwnd, strClass) {
 	}
 	var pt2 = pt.Clone();
 	api.ScreenToClient(hwnd, pt2);
-	return pt2.y < screen.logicalYDPI / 4;
+	return pt2.y < screen.deviceYDPI / 4;
 }
 
 AutocompleteThread = function () {

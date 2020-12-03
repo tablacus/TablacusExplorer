@@ -158,6 +158,7 @@ int		g_nTCCount = 0;
 int		g_nTCIndex = 0;
 int		g_nWindowTheme = 0;
 int		g_nBlink = 0;
+int		g_nCreateTimer = 100;
 BOOL	g_bArrange = FALSE;
 BOOL	g_nDropState = 0;
 BOOL	g_bLabelsMode;
@@ -1300,6 +1301,9 @@ BOOL tePathMatchSpec(LPCWSTR pszFile, LPWSTR pszSpec)
 
 BOOL tePathIsNetworkPath(LPCWSTR pszPath)//PathIsNetworkPath is slow in DRIVE_NO_ROOT_DIR.
 {
+	if (!pszPath) {
+		return FALSE;
+	}
 	WCHAR pszDrive[4];
 	lstrcpyn(pszDrive, pszPath, 4);
 	if (pszDrive[0] >= 'A' && pszDrive[1] == ':' && pszDrive[2] == '\\') {
@@ -10660,6 +10664,11 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 					DoFunc(TE_OnCreate, g_pWebBrowser, E_NOTIMPL);
 					break;
 				}
+				g_nCreateTimer *= 2;
+				if (g_nCreateTimer < 10000) {
+					SetTimer(g_hwndMain, TET_Create, g_nCreateTimer, teTimerProc);
+					break;
+				}
 				g_bsDocumentWrite = ::SysAllocStringLen(NULL, MAX_STATUS);
 				MultiByteToWideChar(CP_UTF8, 0, lstrcmpi(g_pWebBrowser->m_bstrPath, L"TE32.exe") ? PathFileExists(g_pWebBrowser->m_bstrPath) ?
 					"<h1>500 Internal Script Error</h1>" : "<h1>404 File Not Found</h1>" : "<h1>303 Exec Other</h1>",
@@ -18099,7 +18108,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				}
 				if (g_bInit) {
 					g_bInit = FALSE;
-					SetTimer(g_hwndMain, TET_Create, g_nBlink == 1 ? 500 : 100, teTimerProc);
+					SetTimer(g_hwndMain, TET_Create, g_nCreateTimer, teTimerProc);
 				}
 				if (g_hwndMain != m_hwndParent) {
 					teShowWindow(m_hwndParent, SW_SHOWNORMAL);

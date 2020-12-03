@@ -32,8 +32,8 @@ var ar = [
 	["Shift", 0x1000],
 	["Alt", 0x4000]
 ];
-for (var i in ar) {
-	var a2 = api.CreateObject("Array");
+for (let i in ar) {
+	const a2 = api.CreateObject("Array");
 	a2.push(ar[i][0], ar[i][1]);
 	g_.KeyState.push(a2);
 }
@@ -78,11 +78,11 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201128 ? te.Version : 20201201;
+		return te.Version < 20201203 ? te.Version : 20201203;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
-		return api.sprintf(99, "%d.%d.%d", (v / 10000) % 100, (v / 100) % 100, v % 100);
+		return [parseInt(v / 10000) % 100, parseInt(v / 100) % 100, v % 100].join(".");
 	}
 	if (n == 2) {
 		return "Tablacus Explorer " + AboutTE(1) + " Gaku";
@@ -95,7 +95,7 @@ AboutTE = function (n) {
 			ar.push(s);
 		}
 	} catch (e) { }
-	ar.push(api.sprintf(99, "(%d.%d.%d)", osInfo.dwMajorVersion, osInfo.dwMinorVersion, osInfo.dwBuildNumber));
+	ar.push("(" + [osInfo.dwMajorVersion, osInfo.dwMinorVersion, osInfo.dwBuildNumber].join(".") + ")");
 	if (api.IsWow64Process(api.GetCurrentProcess())) {
 		ar.push("Wow64");
 	}
@@ -2376,7 +2376,7 @@ MenuDbReplace = function (hMenu, oMenu, hMenu2) {
 }
 
 GetAccelerator = function (s) {
-	var res = /&(.)/.exec(s);
+	const res = /&(.)/.exec(s);
 	return res ? res[1] : "";
 }
 
@@ -2427,7 +2427,7 @@ AddMenuImage = function (mii, image, id, nHeight) {
 }
 
 MenusIcon = function (mii, src, nHeight, bIcon) {
-	var image;
+	let image;
 	mii.cbSize = mii.Size;
 	if (src && src !== "-") {
 		if ("string" === typeof src) {
