@@ -112,7 +112,7 @@ InitUI = async function () {
 						dialogArguments = a;
 						MainWindow = w;
 						te = await w.te;
-						AddEventEx(window, "beforeunload", function () {
+						AddEventEx(window, "unload", function () {
 							try {
 								delete MainWindow.Exchange[uid];
 							} catch (e) { }
@@ -909,7 +909,7 @@ AddonOptions = async function (Id, fn, Data, bNew) {
 				opt.height = res[1] - 0;
 			}
 		}
-		opt.event.onbeforeunload = "MainWindow.g_.dlgs['" +Id +"'] = void 0;";
+		opt.event.onunload = "MainWindow.g_.dlgs['" + Id + "'] = void 0;";
 		MainWindow.g_.dlgs[Id] = await ShowDialog(sURL, opt);
 		return;
 	}

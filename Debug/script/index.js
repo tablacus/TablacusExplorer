@@ -438,7 +438,7 @@ AddEventEx(window, "load", async function () {
 
 AddEventEx(window, "resize", Resize);
 
-AddEventEx(window, "beforeunload", Finalize);
+AddEventEx(window, "unload", Finalize);
 
 AddEventEx(window, "blur", ResetScroll);
 
@@ -453,7 +453,7 @@ AddEventEx(document, "FullscreenChange", function () {
 document.F.style.display = "none";
 Init = async function () {
 	te.Data.MainWindow = $;
-	AddEventEx(window, "beforeunload", CloseSubWindows);
+	AddEventEx(window, "unload", CloseSubWindows);
 	await InitCode();
 	DefaultFont = await $.DefaultFont;
 	HOME_PATH = await $.HOME_PATH;

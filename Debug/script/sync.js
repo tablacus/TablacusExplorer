@@ -78,7 +78,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201203 ? te.Version : 20201203;
+		return te.Version < 20201204 ? te.Version : 20201204;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -2597,6 +2597,9 @@ OpenNewProcess = function (fn, ex, mode, vOperation) {
 }
 
 GetAddonInfo = function (Id) {
+	if (isFinite(Id)) {
+		Id = te.Data.Addons.documentElement.childNodes[Id].nodeName;
+	}
 	var info = api.CreateObject("Object");
 
 	var path = te.Data.Installed;
@@ -2624,9 +2627,8 @@ GetAddonInfo = function (Id) {
 	return info;
 }
 
-GetAddonInfoName = function (Id) {
-	var info = GetAddonInfo(Id);
-	return info.Name;
+GetAddonInfoName = function (Id, s) {
+	return GetAddonInfo(Id)[s || "Name"];
 }
 
 OpenXml = function (strFile, bAppData, bEmpty, strInit) {

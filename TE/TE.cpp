@@ -5527,7 +5527,16 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 								if SUCCEEDED(pFV->Item(lpDispInfo->item.iItem, &pidl)) {
 									SHCOLUMNID scid;
 									if SUCCEEDED(pSB->m_pSF2->MapColumnToSCID(ix, &scid)) {
-										pSB->m_pSF2->GetDetailsEx(pidl, &scid, &v);
+										if FAILED(pSB->m_pSF2->GetDetailsEx(pidl, &scid, &v)) {
+											LPITEMIDLIST pidlFull = ILCombine(pSB->m_pidl, pidl);// for Search folder (search-ms:)
+											IShellFolder2 *pSF2;
+											LPCITEMIDLIST pidlPart;
+											if SUCCEEDED(SHBindToParent(pidlFull, IID_PPV_ARGS(&pSF2), &pidlPart)) {
+												pSF2->GetDetailsEx(pidlPart, &scid, &v);
+												pSF2->Release();
+											}
+											teCoTaskMemFree(pidlFull);
+										}
 									}
 									teCoTaskMemFree(pidl);
 									pFV->Release();
@@ -13312,6 +13321,18 @@ VOID CteShellBrowser::SetSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch)
 		if (SUCCEEDED(m_pSF2->GetDetailsEx(pidl, &PKEY_Size, &v))) {
 			teStrFormatSize(GetSizeFormat(), GetLLFromVariant(&v), szText, cch);
 			VariantClear(&v);
+		} else {
+			LPITEMIDLIST pidlFull = ILCombine(m_pidl, pidl);// for Search folder (search-ms:)
+			IShellFolder2 *pSF2;
+			LPCITEMIDLIST pidlPart;
+			if SUCCEEDED(SHBindToParent(pidlFull, IID_PPV_ARGS(&pSF2), &pidlPart)) {
+				if (SUCCEEDED(pSF2->GetDetailsEx(pidlPart, &PKEY_Size, &v))) {
+					teStrFormatSize(GetSizeFormat(), GetLLFromVariant(&v), szText, cch);
+					VariantClear(&v);
+				}
+				pSF2->Release();
+			}
+			teCoTaskMemFree(pidlFull);
 		}
 	}
 }
@@ -13394,28 +13415,24 @@ VOID CteShellBrowser::SetFolderSize(IShellFolder2 *pSF2, LPCITEMIDLIST pidl, LPW
 
 VOID CteShellBrowser::SetLabel(LPCITEMIDLIST pidl, LPWSTR szText, int cch)
 {
-	IShellFolder2 *pSF2;
 	BSTR bs;
 	VARIANT v;
 	VariantInit(&v);
-	if SUCCEEDED(QueryInterface(IID_PPV_ARGS(&pSF2))) {
-		if SUCCEEDED(teGetDisplayNameBSTR(pSF2, pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING, &bs)) {
-			if (::SysStringLen(bs)) {
-				if (g_bLabelsMode) {
-					teGetProperty(g_pOnFunc[TE_Labels], bs, &v);
-				} else {
-					VARIANTARG *pv = GetNewVARIANT(1);
-					teSetBSTR(&pv[0], &bs, -1);
-					Invoke4(g_pOnFunc[TE_Labels], &v, 1, pv);
-				}
-				if (v.vt == VT_BSTR) {
-					lstrcpyn(szText, v.bstrVal, cch);
-				}
-				::VariantClear(&v);
+	if SUCCEEDED(teGetDisplayNameBSTR(m_pSF2, pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING, &bs)) {
+		if (::SysStringLen(bs)) {
+			if (g_bLabelsMode) {
+				teGetProperty(g_pOnFunc[TE_Labels], bs, &v);
+			} else {
+				VARIANTARG *pv = GetNewVARIANT(1);
+				teSetBSTR(&pv[0], &bs, -1);
+				Invoke4(g_pOnFunc[TE_Labels], &v, 1, pv);
 			}
-			teSysFreeString(&bs);
+			if (v.vt == VT_BSTR) {
+				lstrcpyn(szText, v.bstrVal, cch);
+			}
+			::VariantClear(&v);
 		}
-		pSF2->Release();
+		teSysFreeString(&bs);
 	}
 }
 

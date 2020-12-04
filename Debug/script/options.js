@@ -60,8 +60,8 @@ function OpenGroup(id) {
 
 function LoadChecked(form) {
 	for (let i = 0; i < form.length; ++i) {
-		var o = form[i];
-		var ar = o.id.split("=");
+		const o = form[i];
+		let ar = o.id.split("=");
 		if (ar.length > 1 && form[ar[0]].value == Number(ar[1])) {
 			form[i].checked = true;
 		}
@@ -73,38 +73,42 @@ function LoadChecked(form) {
 }
 
 async function ResetForm() {
-	var TV = await te.Ctrl(CTRL_TV);
+	const Ctrl = await Promise.all([te.Ctrl(CTRL_FV), te.Ctrl(CTRL_TC), te.Ctrl(CTRL_TV), te.Data.Conf_SizeFormat]);
+	const TV = Ctrl[2];
 	if (TV) {
-		document.F.Tree_Align.value = await TV.Align;
-		document.F.Tree_Style.value = await TV.Style;
-		document.F.Tree_EnumFlags.value = await TV.EnumFlags;
-		document.F.Tree_RootStyle.value = await TV.RootStyle;
-		if (await TV.Align & 2) {
-			document.F.Tree_Root.value = await TV.Root;
+		const r = await Promise.all([TV.Align, TV.Style, TV.EnumFlags, TV.RootStyle, TV.Align, TV.Root, TV.Width]);
+		document.F.Tree_Align.value = r[0];
+		document.F.Tree_Style.value = r[1];
+		document.F.Tree_EnumFlags.value = r[2];
+		document.F.Tree_RootStyle.value = r[3];
+		if (r[4] & 2) {
+			document.F.Tree_Root.value = r[5];
 		}
-		document.F.Tree_Width.value = await TV.Width;
+		document.F.Tree_Width.value = r[6];
 	}
-	var TC = await te.Ctrl(CTRL_TC);
+	const TC = Ctrl[1];
 	if (TC) {
-		document.F.Tab_Style.value = await TC.Style;
-		document.F.Tab_Align.value = await TC.Align;
-		document.F.Tab_TabWidth.value = await TC.TabWidth;
-		document.F.Tab_TabHeight.value = await TC.TabHeight;
+		const r = await Promise.all([TC.Style, TC.Align, TC.TabWidth, TC.TabHeight, TC.Left, TC.Top, TC.Width, TC.Height]);
+		document.F.Tab_Style.value = r[0];
+		document.F.Tab_Align.value = r[1];
+		document.F.Tab_TabWidth.value = r[2];
+		document.F.Tab_TabHeight.value = r[3];
 
-		document.F.Tab_Left.value = await TC.Left;
-		document.F.Tab_Top.value = await TC.Top;
-		document.F.Tab_Width.value = await TC.Width;
-		document.F.Tab_Height.value = await TC.Height;
+		document.F.Tab_Left.value = r[4];
+		document.F.Tab_Top.value = r[5];
+		document.F.Tab_Width.value = r[6];
+		document.F.Tab_Height.value = r[7];
 	}
-	var FV = await te.Ctrl(CTRL_FV);
+	const FV = Ctrl[0];
 	if (FV) {
-		document.F.View_Type.value = await FV.Type;
-		document.F.View_ViewMode.value = await FV.CurrentViewMode;
-		document.F.View_fFlags.value = await FV.FolderFlags;
-		document.F.View_Options.value = await FV.Options;
-		document.F.View_ViewFlags.value = await FV.ViewFlags;
+		const r = await Promise.all([FV.Type, FV.CurrentViewMode, FV.FolderFlags, FV.Options, FV.ViewFlags]);
+		document.F.View_Type.value = r[0];
+		document.F.View_ViewMode.value = r[1];
+		document.F.View_fFlags.value = r[2];
+		document.F.View_Options.value = r[3];
+		document.F.View_ViewFlags.value = r[4];
 	}
-	document.F.Conf_SizeFormat.value = await te.Data.Conf_SizeFormat || 0;
+	document.F.Conf_SizeFormat.value = Ctrl[3] || 0;
 	for (let i = 0; i < document.F.length; ++i) {
 		o = document.F[i];
 		if (SameText(o.type, 'checkbox')) {
@@ -114,7 +118,7 @@ async function ResetForm() {
 		}
 	}
 	LoadChecked(document.F);
-	var s = GetWebColor(document.F.Conf_TrailColor.value);
+	const s = GetWebColor(document.F.Conf_TrailColor.value);
 	document.F.Conf_TrailColor.value = s;
 	document.F.Color_Conf_TrailColor.style.backgroundColor = s;
 	document.getElementById("_EDIT").checked = true;
@@ -789,7 +793,7 @@ async function LoadMenus(nSelected) {
 
 		for (let j in g_arMenuTypes) {
 			var s = g_arMenuTypes[j];
-			document.getElementById("Menus_List").insertAdjacentHTML("BeforeEnd", ['<select name="Menus_', s, '" size="17" style="width: 12em; height: 32em; height: calc(100vh - 6em); min-height: 20em; display: none" onchange="EditXEx(EditMenus)" ondblclick="EditMenus()" oncontextmenu="CancelX(\'Menus\')" multiple></select>'].join(""));
+			document.getElementById("Menus_List").insertAdjacentHTML("beforeend", ['<select name="Menus_', s, '" size="17" style="width: 12em; height: 32em; height: calc(100vh - 6em); min-height: 20em; display: none" onchange="EditXEx(EditMenus)" ondblclick="EditMenus()" oncontextmenu="CancelX(\'Menus\')" multiple></select>'].join(""));
 			var menus = await teMenuGetElementsByTagName(s);
 			if (menus && await GetLength(menus)) {
 				oa[++oa.length - 1].value = s + "," + await menus[0].getAttribute("Base") + "," + await menus[0].getAttribute("Pos");
@@ -1627,20 +1631,20 @@ InitDialog = async function () {
 		WebBrowser.OnClose = ReturnDialogResult;
 	}
 	if (Query == "about") {
-		var s = ['<table style="border-spacing: 2em; border-collapse: separate; width: 100%"><tr><td>'];
-		var src = await MakeImgSrc(ui_.TEPath, 0, true, 48);
-		s.push('<img src="', src, '"></td><td><span style="font-weight: bold; font-size: 120%">', await AboutTE(2), '</span> (', await GetTextR((await api.sizeof("HANDLE") * 8) + '-bit'), ')<br>');
-		s.push('<br><a href="#" class="link" onclick="Run(0, this)">', ui_.TEPath, '</a> (', await $.fso.GetFileVersion(ui_.TEPath), ')<br>');
+		const promise = [MakeImgSrc(ui_.TEPath, 0, true, 48), AboutTE(2), api.sizeof("HANDLE"), $.fso.GetFileVersion(ui_.TEPath), AboutTE(3)];
+		const s = ['<table style="border-spacing: 2em; border-collapse: separate; width: 100%"><tr><td>'];
+		s.push('<img id="img1"></td><td><span style="font-weight: bold; font-size: 120%" id="about2"></span> (<span id="bit1"></span>)<br>');
+		s.push('<br><a href="#" class="link" onclick="Run(0, this)">', ui_.TEPath, '</a> (<span id="fv1"></span>)<br>');
 		s.push('<br><a href="#" class="link" onclick="Run(1, this)">', BuildPath(await te.Data.DataFolder, "config"), '</a><br>');
-		s.push('<br><label>Information</label><input type="text" value="', await AboutTE(3), '" style="width: 100%" onclick="this.select()" readonly><br>');
-		var root = await te.Data.Addons.documentElement;
-		var promise = [];
+		s.push('<br><label>Information</label><input id="about3" type="text" style="width: 100%" onclick="this.select()" readonly><br>');
+		const nAddon = promise.length;
+		const root = await te.Data.Addons.documentElement;
 		if (root) {
-			var items = await root.childNodes;
+			const items = await root.childNodes;
 			if (items) {
-				var nLen = await GetLength(items);
+				const nLen = await GetLength(items);
 				for (let i = 0; i < nLen; ++i) {
-					promise.push(items[i].getAttribute("Enabled"), items[i].nodeName);
+					promise.push(items[i].getAttribute("Enabled"), items[i].nodeName, GetAddonInfo(i).Version);
 				}
 			}
 			s.push('<br><label>Add-ons</label><input id="UsedAddons" type="text" style="width: 100%" onclick="this.select()"><br>');
@@ -1650,14 +1654,19 @@ InitDialog = async function () {
 		s.push('</td></tr></table>');
 		document.getElementById("Content").innerHTML = s.join("");
 		if (promise.length) {
-			Promise.all(promise).then(function (r) {
-				var ar = [];
-				for (let i = 0; i < r.length; i += 2) {
+			Promise.all(promise).then(async function (r) {
+				document.getElementById("img1").src = r[0];
+				document.getElementById("about2").innerHTML = r[1];
+				document.getElementById("fv1").innerHTML = r[3];
+				document.getElementById("about3").value = r[4];
+				const ar = [];
+				for (let i = nAddon; i < r.length; i += 3) {
 					if (GetNum(r[i])) {
-						ar.push(r[i + 1]);
+						ar.push(r[i + 1] + " " + r[i + 2]);
 					}
 				}
 				document.getElementById("UsedAddons").value = ar.join(",");
+				document.getElementById("bit1").innerHTML = await GetTextR(r[2] * 8 + '-bit');
 			});
 		}
 		document.F.ButtonOk.disabled = false;
@@ -1966,7 +1975,6 @@ InitLocation = async function () {
 		WebBrowser.OnClose = async function (WB) {
 			await SetOptions(TEOk, null, ContinueOptions);
 			if (g_nResult != 4) {
-				FireEvent(window, "beforeunload");
 				WB.Close();
 			}
 			g_nResult = 0;
@@ -2054,24 +2062,24 @@ async function GetAttribEx(item, f, n) {
 
 function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter, f) {
 	setTimeout(async function () {
-		var o = GetElement(Id, f);
+		const o = GetElement(Id, f);
 		if (/Path/.test(Id)) {
-			var s = Id.replace("Path", "Type");
+			const s = Id.replace("Path", "Type");
 			if (o) {
-				var pt = await api.CreateObject("Object");
+				const pt = await api.CreateObject("Object");
 				if (oButton) {
-					var pt1 = GetPos(oButton, 1);
+					const pt1 = GetPos(oButton, 1);
 					pt.x = await pt1.x;
 					pt.y = await pt1.y + oButton.offsetHeight
 					pt.width = oButton.offsetWidth;
 				} else {
 					await api.GetCursorPos(pt);
 				}
-				var oType = o.form[s];
-				var optId = oType ? oType[oType.selectedIndex].value : "exec";
-				var r = await MainWindow.OptionRef(optId, o.value, pt);
+				const oType = o.form[s];
+				const optId = oType ? oType[oType.selectedIndex].value : "exec";
+				const r = await MainWindow.OptionRef(optId, o.value, pt);
 				if ("string" === typeof r) {
-					var p = await api.CreateObject("Object");
+					const p = await api.CreateObject("Object");
 					p.s = r;
 					await MainWindow.OptionDecode(optId, p);
 					if (bMultiLine && await api.GetKeyState(VK_CONTROL) < 0 && await api.ILCreateFromPath(await p.s)) {
@@ -2084,9 +2092,9 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter, f) {
 			}
 		}
 
-		var path = o.value || o.getAttribute("placeholder") || "";
-		var res = /^icon:([^,]*)|^bitmap:([^,]*)/i.exec(path) || [];
-		path = await OpenDialogEx(res[1] || res[2] || path, Filter, GetNum(bFilesOnly));
+		let path = o.value || o.getAttribute("placeholder") || "";
+		const res = /^icon:([^,]*)|^bitmap:([^,]*)/i.exec(path) || [];
+		path = await OpenDialogEx(res[1] || res[2] || path, await Filter, GetNum(bFilesOnly));
 		if (path) {
 			if (bMultiLine) {
 				AddPath(Id, path);
@@ -2094,7 +2102,7 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter, f) {
 			}
 			SetValue(o, path);
 			if (/Icon|Large|Small/i.test(Id)) {
-				var s = await api.PathUnquoteSpaces(ExtractMacro(te, path));
+				const s = await api.PathUnquoteSpaces(await ExtractMacro(te, path));
 				if (await api.ExtractIconEx(s, -1, null, null, 0) > 1) {
 					ShowDialogEx("fileicon", 640, 480, GetElementIdEx(o));
 					return;
@@ -2108,8 +2116,8 @@ async function PortableX(Id) {
 	if (!await confirmOk()) {
 		return;
 	}
-	var o = GetElement(Id);
-	var s = await $.fso.GetDriveName(ui_.TEPath);
+	const o = GetElement(Id);
+	const s = await $.fso.GetDriveName(ui_.TEPath);
 	SetValue(o, o.value.replace(await wsh.ExpandEnvironmentStrings("%UserProfile%"), "%UserProfile%").replace(new RegExp('^("?)' + s, "igm"), "$1%Installed%").replace(new RegExp('( "?)' + s, "igm"), "$1%Installed%").replace(new RegExp('(:)' + s, "igm"), "$1%Installed%"));
 }
 
@@ -2193,7 +2201,6 @@ async function InitAddonOptions(bFlag) {
 		WebBrowser.OnClose = async function (WB) {
 			await SetOptions(TEOk, null, ContinueOptions);
 			if (g_nResult != 4) {
-				FireEvent(window, "beforeunload");
 				WB.Close();
 			}
 			g_nResult = 0;

@@ -107,18 +107,23 @@ if (window.Addon == 1) {
 		},
 
 		Style: async function (TC, i, bRedraw) {
-			let img;
-			const FV = await TC[i];
-			const Id = await TC.Id;
+			let r = await Promise.all([TC[i], TC.Id]);
+			const FV = r[0];
+			const Id = r[1];
 			const o = document.getElementById("tabplus_" + Id + "_" + i);
 			if (FV && o && await FV.FolderItem) {
+				const promise = [FV.FolderItem.Path, RunEvent4("GetTabColor", FV), FV.Data.Lock, FV.Data.Protect, CanClose(FV), GetTabName(FV)]
+				if (Addons.TabPlus.opt.Icon) {
+					promise.push(GetIconImage(FV, Addons.TabPlus.opt.clBtnFace));
+				}
+				r = await Promise.all(promise);
 				const evTop = document.getElementById("tabplus_" + Id);
 				const nOldHeight = evTop.offsetHeight;
-				const path = await FV.FolderItem.Path;
+				const path = r[0];
 				if (Addons.TabPlus.opt.Tooltips) {
 					o.title = path;
 				}
-				const cl = await RunEvent4("GetTabColor", FV);
+				const cl = r[1];
 				const s = ['<table><tr style="width: 100%'];
 				if (/^#/.test(cl)) {
 					let c = Number(cl.replace(/^#/, "0x"));
@@ -126,8 +131,8 @@ if (window.Addon == 1) {
 					s.push(';color:', c > 127000 ? "#000" : "#fff");
 				}
 				s.push('">');
-				const bLock = await FV.Data.Lock;
-				const bProtect = await FV.Data.Protect;
+				const bLock = r[2];
+				const bProtect = r[3];
 				const r0 = Addons.TabPlus.opt.IconSize;
 				let w = (Addons.TabPlus.opt.Close || bLock || bProtect) ? -r0 : 0;
 				if (!Addons.TabPlus.opt.NoLock && bLock) {
@@ -137,7 +142,7 @@ if (window.Addon == 1) {
 					s.push('<td class="protectcell" style="padding-right: 2px; vertical-align: middle; width: ', r0, 'px">', Addons.TabPlus.ImgProtect, '</td>');
 					w -= 2;
 				}
-				if (Addons.TabPlus.opt.Icon && (img = await GetIconImage(await FV, await GetSysColor(COLOR_BTNFACE)))) {
+				if (r[6]) {
 					s.push('<td class="iconcell" style="padding-right: 3px; vertical-align: middle; width:', 20 * screen.deviceYDPI / 96, 'px">');
 					if (Addons.TabPlus.opt.Drive) {
 						const res = /^([A-Z]):/i.exec(path);
@@ -146,7 +151,7 @@ if (window.Addon == 1) {
 						}
 					}
 					const h = GetIconSize(0, 16);
-					s.push('<img draggable="false" src="', img, '" style="width:', h, 'px; height:', h, 'px"></td>');
+					s.push('<img draggable="false" src="', r[6], '" style="width:', h, 'px; height:', h, 'px"></td>');
 					w -= 20;
 				} else if (Addons.TabPlus.opt.Drive) {
 					s.push('<td class="drivecell" style="padding-right: 3px; vertical-align: middle; width: 12px">');
@@ -158,7 +163,7 @@ if (window.Addon == 1) {
 					w -= 12;
 				}
 				s.push('<td class="namecell" style="vertical-align: middle;"><div style="overflow: hidden; white-space: nowrap;');
-				const bUseClose = Addons.TabPlus.opt.Close && await CanClose(FV) == S_OK;
+				const bUseClose = Addons.TabPlus.opt.Close && r[4] == S_OK;
 				if (bUseClose && Addons.TabPlus.opt.Align > 1 && Addons.TabPlus.opt.Width) {
 					w -= r0;
 				}
@@ -169,12 +174,9 @@ if (window.Addon == 1) {
 				if (Addons.TabPlus.opt.Align > 1 && Addons.TabPlus.opt.Width) {
 					s.push('; text-align: left; max-width: 100%');
 				}
-				let n = "";
-				if (await FV.FolderItem) {
-					n = EncodeSC(await GetTabName(FV));
-					if (Addons.TabPlus.opt.Tooltips) {
-						s.push('" title="', EncodeSC(await FV.FolderItem.Path));
-					}
+				const n = EncodeSC(r[5]);
+				if (Addons.TabPlus.opt.Tooltips) {
+					s.push('" title="', EncodeSC(path));
 				}
 				s.push('" >', n, '</div></td>');
 				if (bUseClose) {
@@ -214,27 +216,26 @@ if (window.Addon == 1) {
 					return;
 				}
 			}
-			Promise.all([FV.Data.Lock, FV.Data.Protect, TC.SelectedIndex, TC.Count, TC.Id, i]).then(function (r) {
-				const o = document.getElementById("tabplus_" + r[4] + "_" + r[5]);
-				if (o) {
-					const arClass = [];
-					if (r[0]) {
-						arClass.push("locked");
-					}
-					if (r[1]) {
-						arClass.push("protected");
-					}
-					if (i == r[2]) {
-						arClass.unshift('activetab');
-						o.style.zIndex = r[3] + 1;
-					} else {
-						arClass.push(i < r[2] ? 'tab' : 'tab2');
-						o.style.zIndex = r[3] - r[5];
-					}
-					o.className = arClass.join(" ");
-					Addons.TabPlus.SetRect(r[4], r[5], o);
+			const r = await Promise.all([FV.Data.Lock, FV.Data.Protect, TC.SelectedIndex, TC.Count, TC.Id]);
+			const o = document.getElementById("tabplus_" + r[4] + "_" + i);
+			if (o) {
+				const arClass = [];
+				if (r[0]) {
+					arClass.push("locked");
 				}
-			});
+				if (r[1]) {
+					arClass.push("protected");
+				}
+				if (i == r[2]) {
+					arClass.unshift('activetab');
+					o.style.zIndex = r[3] + 1;
+				} else {
+					arClass.push(i < r[2] ? 'tab' : 'tab2');
+					o.style.zIndex = r[3] - i;
+				}
+				o.className = arClass.join(" ");
+				Addons.TabPlus.SetRect(r[4], i, o);
+			};
 		},
 
 		SetRect: async function (Id, i, o) {
@@ -594,6 +595,9 @@ if (window.Addon == 1) {
 		Addons.TabPlus.ImgProtect = '<img draggable="false" src="' + await MakeImgSrc(s, 0, true, r0) + '" style="width: ' + r0 + 'px">';
 	} else {
 		Addons.TabPlus.ImgProtect = '<span style="font-size: ' + r0 + 'px">&#x2764;</span>';
+	}
+	if (Addons.TabPlus.opt.Icon) {
+		Addons.TabPlus.opt.clBtnFace = await GetSysColor(COLOR_BTNFACE);
 	}
 } else {
 	const Icon = document.F.Icon;
