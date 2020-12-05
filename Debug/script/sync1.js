@@ -2909,7 +2909,7 @@ importScripts = function () {
 }
 
 AddEvent("Arrange", function (Ctrl, rc) {
-	if (Ctrl.Type == CTRL_TE) {
+	if (Ctrl.Type == CTRL_TE && !api.IsIconic(te.hwnd)) {
 		var rcClient = api.Memory("RECT");
 		api.GetClientRect(te.hwnd, rcClient);
 		rcClient.left += te.offsetLeft;
@@ -3593,8 +3593,9 @@ if (!te.Data) {
 	te.Data.SHILS = SHILS;
 	var o = {};
 	try {
-		for (var esw = api.CreateObject("Enum", sha.Windows()); !esw.atEnd(); esw.moveNext()) {
-			var x = esw.item();
+		const sw = sha.Windows();
+		for (let i = 0; i < sw.Count; ++i) {
+			const x = sw.item(i);
 			if (x && x.Document) {
 				var w = x.Document.parentWindow;
 				if (w && w.te && w.te.Data) {
@@ -3605,8 +3606,8 @@ if (!te.Data) {
 	} catch (e) { }
 	api.SetWindowText(te.hwnd, TITLE);
 	te.Data.WindowSetting = BuildPath(te.Data.DataFolder, "config\\window0.xml");
-	for (var i = 1; i < 999; ++i) {
-		var fn = BuildPath(te.Data.DataFolder, "config\\window" + i + ".xml");
+	for (let i = 1; i < 999; ++i) {
+		const fn = BuildPath(te.Data.DataFolder, "config\\window" + i + ".xml");
 		if (!o[fn]) {
 			te.Data.WindowSetting = fn;
 			break;

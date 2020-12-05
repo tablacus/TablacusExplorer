@@ -2221,10 +2221,11 @@ function SetOnChangeHandler() {
 		if (o) {
 			for (let i = o.length; i--;) {
 				if ((o[i].name || o[i].id) && o[i].name != "List" && !/^_/.test(o[i].id)) {
-					AddEventEx(o[i], "change", function (e) {
+					AddEventEx(o[i], "change", function (ev) {
+						ev = ev || event;
 						g_bChanged = true;
-						if (e.srcElement) {
-							var res = /^(Tab|Tree|View|Conf)/.exec(e.srcElement.name || e.srcElement.id);
+						if (ev.srcElement) {
+							var res = /^(Tab|Tree|View|Conf)/.exec(ev.srcElement.name || ev.srcElement.id);
 							if (res) {
 								g_Chg[res[1]] = true;
 							}

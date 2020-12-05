@@ -48,9 +48,9 @@ g_.Autocomplete = api.CreateObject("Object");
 g_.LockUpdate = 0;
 g_.ptMenuDrag = api.Memory("POINT");
 g_.Locations = api.CreateObject("Object");
-g_.IEVer = window.chrome ? (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 : 12) : window.document && (document.documentMode || (/MSIE 6/.test(navigator.appVersion) ? 6 : 7));
+g_.IEVer = window.chrome ? (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 : 12) : ScriptEngineMajorVersion() > 8 ? ScriptEngineMajorVersion() : ScriptEngineMinorVersion();
 
-if (g_.IEVer < 10) {
+if ("undefined" != typeof ScriptEngineMajorVersion && ScriptEngineMajorVersion() < 10) {
 	(function (f) {
 		if (f) {
 			window.setTimeout = function () {
@@ -78,7 +78,7 @@ if (g_.IEVer < 10) {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201204 ? te.Version : 20201204;
+		return te.Version < 20201204 ? te.Version : 20201205;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -106,7 +106,10 @@ AboutTE = function (n) {
 		ar.push("Dark");
 	}
 	const res = window.chrome && /(Edg\/[\d\.]+)/.exec(navigator.appVersion);
-	ar.push(res ? res[1] : 'IE' + g_.IEVer, GetLangId(2), screen.deviceYDPI);
+	ar.push(res ? res[1] : 'IE/' + g_.IEVer);
+	ar.push("JS/" + ("undefined" == typeof ScriptEngineMajorVersion ? "Chakra" : [ScriptEngineMajorVersion(), ScriptEngineMinorVersion(), ScriptEngineBuildVersion()].join(".")));
+	ar.push(GetLangId(2), screen.deviceYDPI);
+
 	const server = te.GetObject("winmgmts:\\\\.\\root\\SecurityCenter" + (WINVER >= 0x600 ? "2" : ""));
 	if (server) {
 		const cols = server.ExecQuery("SELECT * FROM AntiVirusProduct");
@@ -501,19 +504,36 @@ OpenAdodbFromTextFile = function (fn, charset) {
 	return ado;
 }
 
-ReadTextFile = function (fn) {
-	var src;
-	var ado = api.CreateObject("ads");
+ReadTextFile = function (fn, base) {
+	let src;
+	const ado = api.CreateObject("ads");
 	if (ado) {
 		ado.CharSet = "utf-8";
 		ado.Open();
 		try {
-			ado.LoadFromFile(OrganizePath(fn, te.Data.Installed));
+			ado.LoadFromFile(OrganizePath(fn, base || te.Data.Installed));
 			src = ado.ReadText();
 		} catch (e) { }
 		ado.Close();
 	}
 	return src;
+}
+
+WriteTextFile = function (fn, src, base) {
+	let r;
+	const ado = api.CreateObject("ads");
+	if (ado) {
+		ado.CharSet = "utf-8";
+		ado.Open();
+		try {
+			ado.WriteText(src);
+			ado.SaveToFile(OrganizePath(fn, base || te.Data.DataFolder), adSaveCreateOverWrite);
+		} catch (e) {
+			r = "WriteTextFileError: " + fn;
+		}
+		ado.Close();
+	}
+	return r;
 }
 
 AddEvent = function (Name, fn, priority) {
@@ -3218,7 +3238,9 @@ BasicDB = function (name, bLoad) {
 
 	this.ENumCB = function (fncb) {
 		for (var n in this.DB) {
-			api.Invoke(fncb, [n, this.DB[n]]);
+			if (api.Invoke(fncb, [n, this.DB[n]]) < 0) {
+				break;
+			}
 		}
 	}
 
