@@ -78,7 +78,7 @@ if ("undefined" != typeof ScriptEngineMajorVersion && ScriptEngineMajorVersion()
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201204 ? te.Version : 20201205;
+		return te.Version < 20201204 ? te.Version : 20201206;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -507,15 +507,15 @@ OpenAdodbFromTextFile = function (fn, charset) {
 ReadTextFile = function (fn, base) {
 	let src;
 	const ado = api.CreateObject("ads");
-	if (ado) {
-		ado.CharSet = "utf-8";
-		ado.Open();
-		try {
-			ado.LoadFromFile(OrganizePath(fn, base || te.Data.Installed));
-			src = ado.ReadText();
-		} catch (e) { }
-		ado.Close();
+	ado.CharSet = "utf-8";
+	ado.Open();
+	try {
+		ado.LoadFromFile(OrganizePath(fn, base || te.Data.Installed));
+		src = ado.ReadText();
+	} catch (e) {
+		src = "";
 	}
+	ado.Close();
 	return src;
 }
 
@@ -558,7 +558,6 @@ AddEvent = function (Name, fn, priority) {
 		}
 	}
 }
-
 
 ClearEvent = function (Name) {
 	if (Name) {
@@ -798,16 +797,20 @@ SaveXml = function (filename) {
 	}
 }
 
+GetPath = function (path) {
+	return api.PathUnquoteSpaces(ExtractMacro(te, path));
+}
+
 ShowOptions = function (s) {
 	try {
-		var dlg = g_.dlgs.Options;
+		const dlg = g_.dlgs.Options;
 		if (dlg) {
 			dlg.Document.parentWindow.SetTab(s);
 			dlg.Focus();
 			return;
 		}
 	} catch (e) { }
-	var opt = api.CreateObject("Object");
+	const opt = api.CreateObject("Object");
 	opt.width = te.Data.Conf_OptWidth;
 	opt.height = te.Data.Conf_OptHeight;
 	opt.Data = s;
@@ -3214,14 +3217,17 @@ CreateSync = function (n, a, b, c, d, e) {
 	return new fn(a, b ,c ,d , e);
 }
 
-BasicDB = function (name, bLoad) {
+BasicDB = function (name, bLoad, bLC) {
 	this.DB = {};
 
 	this.Get = function (n) {
-		return this.DB[n] || "";
+		return this.DB[this.LC ? n.toLowerCase() : n] || "";
 	}
 
 	this.Set = function (n, s) {
+		if (this.LC) {
+			 n = n.toLowerCase();
+		}
 		var s0 = this.DB[n] || "";
 		if (s0 != s) {
 			if (s) {
@@ -3237,7 +3243,7 @@ BasicDB = function (name, bLoad) {
 	}
 
 	this.ENumCB = function (fncb) {
-		for (var n in this.DB) {
+		for (let n in this.DB) {
 			if (api.Invoke(fncb, [n, this.DB[n]]) < 0) {
 				break;
 			}
@@ -3245,7 +3251,7 @@ BasicDB = function (name, bLoad) {
 	}
 
 	this.Clear = function () {
-		for (var n in this.DB) {
+		for (let n in this.DB) {
 			delete this.DB[n];
 		}
 		return this;
@@ -3266,6 +3272,7 @@ BasicDB = function (name, bLoad) {
 	this.Close = function () { }
 
 	this.path = OrganizePath(name, BuildPath(te.Data.DataFolder, "config")) + ".tsv";
+	this.LC = bLC;
 	if (bLoad) {
 		this.Load();
 	}

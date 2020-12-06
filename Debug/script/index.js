@@ -455,10 +455,12 @@ Init = async function () {
 	te.Data.MainWindow = $;
 	AddEventEx(window, "unload", CloseSubWindows);
 	await InitCode();
-	DefaultFont = await $.DefaultFont;
-	HOME_PATH = await $.HOME_PATH;
+	const r = await Promise.all([te.Data.DataFolder, $.DefaultFont, $.HOME_PATH, $.OpenMode]);
+	ui_.DataFolder = r[0];
+	DefaultFont = r[1];
+	HOME_PATH = r[2];
+	OpenMode = r[3];
 	await InitMouse();
-	OpenMode = await $.OpenMode;
 	await InitMenus();
 	await LoadLang();
 	await ApplyLang();

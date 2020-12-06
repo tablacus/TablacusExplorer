@@ -8,23 +8,21 @@ ui_ = {
 };
 
 InitUI = async function () {
+	let r;
 	if (window.chrome) {
 		te = await parent.chrome.webview.hostObjects.te;
 		api = await te.WindowsAPI0.CreateObject("api");
-		fso = await api.CreateObject("fso");
-		sha = await api.CreateObject("sha");
-		wsh = await api.CreateObject("wsh");
-		$ = await api.CreateObject("Object");
-		WebBrowser = await te.Ctrl(CTRL_WB);
+		r = await Promise.all([api.CreateObject("fso"), api.CreateObject("sha"), api.CreateObject("wsh"), api.CreateObject("Object"), te.Ctrl(CTRL_WB)]);
+		fso = r[0];
+		sha = r[1];
+		wsh = r[2];
+		$ = r[3];
+		WebBrowser = r[4];
 	}
-	system32 = await api.GetDisplayNameOf(ssfSYSTEM, SHGDN_FORPARSING);
-	hShell32 = await api.GetModuleHandle(BuildPath(system32, "shell32.dll"));
-
 	osInfo = await api.Memory("OSVERSIONINFOEX");
 	osInfo.dwOSVersionInfoSize = await osInfo.Size;
 	await api.GetVersionEx(osInfo);
 	WINVER = await osInfo.dwMajorVersion * 0x100 + await osInfo.dwMinorVersion;
-
 	if (WINVER > 0x603) {
 		BUTTONS = {
 			opened: '<b style="font-family: Consolas; transform: scale(1.2,1) rotate(-90deg); display: inline-block">&lt;</b>',
@@ -48,15 +46,17 @@ InitUI = async function () {
 			dropdown: s ? '&#x25bc;' : '<span style="font-family: Marlett">6</span>'
 		};
 	}
-
-	if (await api.SHTestTokenMembership(null, 0x220) && WINVER >= 0x600) {
+	r = await Promise.all([api.GetDisplayNameOf(ssfSYSTEM, SHGDN_FORPARSING), api.GetModuleFileName(null), sha.GetSystemInformation("DoubleClickTime"), te.hwnd, api.SHTestTokenMembership(null, 0x220), te.Arguments, api.CreateObject("Object"), api.CreateObject("Object")]);
+	system32 = r[0];
+	ui_.TEPath = r[1];
+	ui_.Installed = GetParentFolderName(ui_.TEPath);
+	ui_.DoubleClickTime = r[2];
+	ui_.hwnd = r[3];
+	hShell32 = await api.GetModuleHandle(BuildPath(system32, "shell32.dll"));
+	if (r[4] && WINVER >= 0x600) {
 		TITLE += ' [' + (await api.LoadString(hShell32, 25167) || "Admin").replace(/;.*$/, "") + ']';
 	}
-	ui_.TEPath = await api.GetModuleFileName(null);
-	ui_.Installed = GetParentFolderName(ui_.TEPath);
-	ui_.DoubleClickTime = await sha.GetSystemInformation("DoubleClickTime");
-	ui_.hwnd = await te.hwnd;
-	let arg = await te.Arguments;
+	let arg = r[5];
 	if (arg) {
 		window.dialogArguments = arg;
 		$.dialogArguments = arg;
@@ -102,8 +102,10 @@ InitUI = async function () {
 		}
 	}
 	if (uid) {
-		for (let esw = await api.CreateObject("Enum", await sha.Windows()); !await esw.atEnd(); await esw.moveNext()) {
-			x = await esw.item();
+		const sw = await sha.Windows();
+		const nCount = await sw.Count;
+		for (let i = 0; i < nCount; ++i) {
+			x = await sw.item(i);
 			if (x && await x.Document) {
 				const w = await x.Document.parentWindow;
 				if (w && await w.te && await w.Exchange) {
@@ -124,8 +126,8 @@ InitUI = async function () {
 		}
 	}
 
-	UI = await api.CreateObject("Object");
-	UI.Addons = await api.CreateObject("Object");
+	UI = r[6];
+	UI.Addons = r[7];
 
 	UI.Invoke = function () {
 		Invoke(Array.apply(null, arguments));
@@ -881,11 +883,9 @@ AddonOptions = async function (Id, fn, Data, bNew) {
 		}
 		try {
 			const dlg = await MainWindow.g_.dlgs[Id];
-			if (dlg) {
-				if (await api.IsWindowVisible(await dlg.Document.parentWindow.WebBrowser.hwnd)) {
-					dlg.Focus();
-					return;
-				}
+			if (dlg && await api.IsWindowVisible(await dlg.hwnd)) {
+				dlg.Focus();
+				return;
 			}
 		} catch (e) {
 			MainWindow.g_.dlgs[Id] = void 0;

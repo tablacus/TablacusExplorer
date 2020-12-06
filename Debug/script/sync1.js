@@ -880,7 +880,7 @@ RefreshEx = function (FV, tm, df)
 
 ChangeView = function (Ctrl) {
 	const TC = te.Ctrl(CTRL_TC);
-	if (TC && Ctrl && Ctrl.FolderItem && Ctrl.FolderItem.Path != null) {
+	if (TC && !g_.LockUpdate && Ctrl && Ctrl.FolderItem && Ctrl.FolderItem.Path != null) {
 		ChangeTabName(Ctrl);
 		if (Ctrl.hwndView) {
 			RefreshEx(Ctrl, 5000, 5000);
