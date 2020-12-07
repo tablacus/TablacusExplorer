@@ -329,6 +329,41 @@ LoadScripts = async function (js1, js2, cb) {
 	await InitUI();
 	if (window.chrome) {
 		js1.unshift("script/consts.js", "script/common.js", "script/syncb.js");
+		const CopyObj = async function (to, o, ar) {
+			if (!to) {
+				to = await api.CreateObject("Object");
+			}
+			let v = [];
+			const n = ar.length;
+			for (let i = 0; i < n; ++i) {
+				v[i] = o[ar[i]];
+				v[i + n] = to[ar[i]];
+			}
+			v = await Promise.all(v);
+			for (let i = 0; i < n; ++i) {
+				if (v[i] != null && !v[i + n]) {
+					to[ar[i]] = v[i];
+				}
+			}
+			return to;
+		}
+		document.documentMode = (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 : 12);
+		screen.deviceYDPI = parent.deviceYDPI;
+		ui_.Zoom = parent.deviceYDPI / 96;
+		await CopyObj($, window, ["te", "api", "chrome", "document", "UI", "MainWindow"]);
+		let po = [];
+		po.push(CopyObj(null, location, ["hash", "href"]));
+		po.push(CopyObj(null, navigator, ["appVersion", "language"]));
+		po.push(CopyObj(null, screen, ["deviceYDPI"]));
+		po.push(api.CreateObject("Object"));
+		po.push(api.CreateObject("Object"));
+		po = await Promise.all(po);
+		$.location = po.shift();
+		$.navigator = po.shift();
+		$.screen = po.shift();
+		const o = po.shift();
+		const doc = po.shift();
+		o.window = $;
 		const s = [];
 		let arFN = ["fso", "sha", "wsh", "wnw"];
 		let line = 1;
@@ -348,35 +383,13 @@ LoadScripts = async function (js1, js2, cb) {
 					}));
 				}
 				api.OutputDebugString([js1[i], "Start line:", line, "\n"].join(" "));
-				line += src.split("\n").length;
+				line += src.replace(/[^\n]/g, "").length;
 			}
 		}
 		js1.length = 0;
-		const CopyObj = async function (to, o, ar) {
-			if (!to) {
-				to = await api.CreateObject("Object");
-			}
-			ar.forEach(async function (key) {
-				const a = await o[key];
-				if (!await to[key] && a != null) {
-					to[key] = a;
-				}
-			});
-			return to;
-		}
-		document.documentMode = (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 : 12);
-		screen.deviceYDPI = parent.deviceYDPI;
-		ui_.Zoom = parent.deviceYDPI / 96;
-		await CopyObj($, window, ["te", "api", "chrome", "document", "UI", "MainWindow"]);
-		$.location = await CopyObj(null, location, ["hash", "href"]);
-		$.navigator = await CopyObj(null, navigator, ["appVersion", "language"]);
-		$.screen = await CopyObj(null, screen, ["deviceYDPI"]);
-		const o = await api.CreateObject("Object");
-		o.window = $;
 		$.$JS = await api.GetScriptDispatch(s.join(""), "JScript", o);
 		await CopyObj(window, $, ["g_", "Common", "Sync", "Threads"]);
 		await CopyObj(window, $, arFN);
-		const doc = await api.CreateObject("Object");
 		doc.parentWindow = $;
 		WebBrowser.Document = doc;
 	} else {
@@ -957,10 +970,6 @@ GetElementIdEx = function (el) {
 		return el.id;
 	}
 	return el.form.name + "::" + el.name;
-}
-
-SetElement = async function (Id, v) {
-	(GetElementEx(Id) || {}).value = v;
 }
 
 InputMouse = function (o) {

@@ -78,7 +78,7 @@ if ("undefined" != typeof ScriptEngineMajorVersion && ScriptEngineMajorVersion()
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201204 ? te.Version : 20201206;
+		return te.Version < 20201204 ? te.Version : 20201207;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -797,10 +797,6 @@ SaveXml = function (filename) {
 	}
 }
 
-GetPath = function (path) {
-	return api.PathUnquoteSpaces(ExtractMacro(te, path));
-}
-
 ShowOptions = function (s) {
 	try {
 		const dlg = g_.dlgs.Options;
@@ -1288,31 +1284,31 @@ MakeImgData = function (src, index, h) {
 }
 
 MakeImgIcon = function (src, index, h, bIcon) {
-	var hIcon = null;
-	var res = /^bitmap:(.+)/i.exec(src);
+	let hIcon = null;
+	let res = /^bitmap:(.+)/i.exec(src);
 	if (res) {
-		var icon = res[1].split(",");
-		var ar = [
+		const icon = res[1].split(",");
+		const ar = [
 			["bitmap:ieframe.dll,206,16,", "bitmap:ExplorerFrame.dll,264,16,", 16, "browser"],
 			["bitmap:ieframe.dll,204,24,", "bitmap:ExplorerFrame.dll,264,16,", 16, "browser"],
 			["bitmap:ieframe.dll,216,16,", "bitmap:comctl32.dll,130,16,", 16, "general"],
 			["bitmap:ieframe.dll,214,24,", "bitmap:comctl32.dll,131,24,", 24, "general"]
 		];
-		for (var i in ar) {
-			var a2 = ar[i];
+		for (let i in ar) {
+			const a2 = ar[i];
 			if (api.StrCmpNI(src, a2[0], a2[0].length) == 0) {
-				var a3 = src.split(",");
-				var path = BuildPath(te.Data.DataFolder, ["icons", a2[3], a3[3] + ".png"].join("\\"));
-				var image = api.CreateObject("WICBitmap").FromFile(path);
+				const a3 = src.split(",");
+				const path = BuildPath(te.Data.DataFolder, ["icons", a2[3], a3[3] + ".png"].join("\\"));
+				let image = api.CreateObject("WICBitmap").FromFile(path);
 				if (image) {
 					image = GetThumbnail(image, a3[2], true);
 					return image.GetHICON();
 				}
 			}
 		}
-		var hModule = LoadImgDll(icon, index);
+		const hModule = LoadImgDll(icon, index);
 		if (hModule) {
-			var himl = api.ImageList_LoadImage(hModule, isFinite(icon[index * 4 + 1]) ? Number(icon[index * 4 + 1]) : icon[index * 4 + 1], icon[index * 4 + 2], CLR_NONE, CLR_NONE, IMAGE_BITMAP, LR_CREATEDIBSECTION | LR_LOADTRANSPARENT);
+			const himl = api.ImageList_LoadImage(hModule, isFinite(icon[index * 4 + 1]) ? Number(icon[index * 4 + 1]) : icon[index * 4 + 1], icon[index * 4 + 2], CLR_NONE, CLR_NONE, IMAGE_BITMAP, LR_CREATEDIBSECTION | LR_LOADTRANSPARENT);
 			if (himl) {
 				hIcon = api.ImageList_GetIcon(himl, icon[index * 4 + 3], ILD_NORMAL);
 				api.ImageList_Destroy(himl);
@@ -1345,23 +1341,23 @@ MakeImgIcon = function (src, index, h, bIcon) {
 	}
 	res = /^icon:(.+)/i.exec(src);
 	if (res) {
-		var icon = res[1].split(",");
+		const icon = res[1].split(",");
 		if (!/\\/.test(icon[0])) {
-			var path = BuildPath(te.Data.DataFolder, ["icons", icon[0].replace(/\..*/, ""), icon[1] + ".png"].join("\\"));
-			var image = api.CreateObject("WICBitmap").FromFile(path);
+			const path = BuildPath(te.Data.DataFolder, ["icons", icon[0].replace(/\..*/, ""), icon[1] + ".png"].join("\\"));
+			const image = api.CreateObject("WICBitmap").FromFile(path);
 			if (image) {
 				return image.GetHICON();
 			}
 		}
 		if (SameText(icon[0], "shell32.dll")) {
-			var dw = { 3: SHGFI_SYSICONINDEX | SHGFI_USEFILEATTRIBUTES, 4: SHGFI_SYSICONINDEX | SHGFI_OPENICON | SHGFI_USEFILEATTRIBUTES }[res[1]];
+			const dw = { 3: SHGFI_SYSICONINDEX | SHGFI_USEFILEATTRIBUTES, 4: SHGFI_SYSICONINDEX | SHGFI_OPENICON | SHGFI_USEFILEATTRIBUTES }[res[1]];
 			if (dw) {
-				var sfi = api.Memory("SHFILEINFO");
+				const sfi = api.Memory("SHFILEINFO");
 				api.SHGetFileInfo("*", FILE_ATTRIBUTE_DIRECTORY, sfi, sfi.Size, dw);
 				return GetHICON(sfi.iIcon, h, ILD_NORMAL);
 			}
 		}
-		var phIcon = api.Memory("HANDLE");
+		const phIcon = api.Memory("HANDLE");
 		if (icon[index * 4 + 2]) {
 			h = icon[index * 4 + 2];
 		} else if (!h) {
@@ -1377,14 +1373,14 @@ MakeImgIcon = function (src, index, h, bIcon) {
 		}
 	}
 	if (src && (bIcon || /\*/.test(src) || !REGEXP_IMAGE.test(src))) {
-		var sfi = api.Memory("SHFILEINFO");
+		const sfi = api.Memory("SHFILEINFO");
 		if (/\*/.test(src)) {
 			api.SHGetFileInfo(src, 0, sfi, sfi.Size, SHGFI_SYSICONINDEX | SHGFI_USEFILEATTRIBUTES);
 		} else {
 			if (/^file:/i.test(src)) {
 				src = api.PathCreateFromUrl(src) || src;
 			}
-			var pidl = api.ILCreateFromPath(api.PathUnquoteSpaces(src));
+			const pidl = api.ILCreateFromPath(api.PathUnquoteSpaces(src));
 			if (pidl) {
 				api.SHGetFileInfo(pidl, 0, sfi, sfi.Size, SHGFI_SYSICONINDEX | SHGFI_PIDL);
 			}

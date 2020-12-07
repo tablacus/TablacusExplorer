@@ -803,8 +803,8 @@ async function LoadMenus(nSelected) {
 					var i = await GetLength(items);
 					o.length = i;
 					while (--i >= 0) {
-						var item = await items[i];
-						SetMenus(o[i], [await item.getAttribute("Name"), await item.getAttribute("Filter"), await item.text, await item.getAttribute("Type"), await item.getAttribute("Icon"), await item.getAttribute("Org"), await item.getAttribute("Height")]);
+						const item = await items[i];
+						SetMenus(o[i], await Promise.all([item.getAttribute("Name"), item.getAttribute("Filter"), item.text, item.getAttribute("Type"), item.getAttribute("Icon"), item.getAttribute("Org"), item.getAttribute("Height")]));
 					}
 				}
 			} else {
@@ -1446,7 +1446,7 @@ OpenIcon = function (o) {
 					srcs.push(MakeImgSrc("bitmap:" + a.join(","), 0, false, a[2]));
 				}
 				srcs = await Promise.all(srcs);
-				while (srcs.length) {
+				for (a[3] = 0; a[3] < nCount; a[3]++) {
 					data.push('<img src="', srcs.shift(), '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="bitmap:', a.join(","), '"> ');
 				}
 				if (himl) {
@@ -1542,9 +1542,10 @@ InitDialog = async function () {
 						return api.StrCmpLogical(a, b);
 					});
 				}
+				const px = 32 * screen.deviceYDPI / 96;
 				for (let i = 0; i < arfn.length; ++i) {
 					var src = ["icon:" + GetFileName(path2), arfn[i].replace(/\.png$/i, "")].join(",");
-					s.push('<img src="', BuildPath(path2, arfn[i]), '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="', src, '" style="max-height: 24pt"> ');
+					s.push('<img src="', BuildPath(path2, arfn[i]), '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="', src, '" style="max-height:', px, 'px"> ');
 				}
 				s.push("<br>");
 			}
@@ -1755,7 +1756,7 @@ MouseMove = async function (ev) {
 		returnValue = await GetGestureKey() + await GetGestureButton();
 		document.F.q.value = returnValue;
 	}
-	const buttons = ev.buttons != null ? ev.buttons : ev.button; 
+	const buttons = ev.buttons != null ? ev.buttons : ev.button;
 	if (document.F.q.value.length && (buttons & 2 || (await te.Data.Conf_Gestures && buttons & 4))) {
 		const pt = { x: ev.clientX, y: ev.clientY };
 		const x = (pt.x - g_pt.x);
@@ -1811,7 +1812,7 @@ MouseWheel = async function (ev) {
 }
 
 InitLocation = async function () {
-	const r = await Promise.all([api.CreateObject("Array"), api.CreateObject("Object"), dialogArguments.Data.id, te.Data.DataFolder]); 
+	const r = await Promise.all([api.CreateObject("Array"), api.CreateObject("Object"), dialogArguments.Data.id, te.Data.DataFolder]);
 	let ar = r[0];
 	const param = r[1];
 	Addon_Id = r[2];
@@ -2174,11 +2175,15 @@ function AddPath(Id, strValue, f) {
 	}
 }
 
-function SetValue(o, s) {
-	if (o.value != s) {
-		o.value = s;
-		FireEvent(o, "change");
+function SetValue(el, s) {
+	if (el && el.value != s) {
+		el.value = s;
+		FireEvent(el, "change");
 	}
+}
+
+SetElement = async function (Id, v) {
+	SetValue(GetElementEx(Id), v);
 }
 
 async function GetCurrentSetting(s) {
@@ -2320,14 +2325,15 @@ TestX = async function (id, f) {
 }
 
 SetImage = async function (f, n) {
-	var o = document.getElementById(n || "_Icon");
+	const o = document.getElementById(n || "_Icon");
 	if (o) {
 		if (!f) {
 			f = document.F;
 		}
-		var h = GetNum((f.IconSize || f.Height || { value: window.IconSize || 24 }).value);
-		var src = await MakeImgSrc(api.PathUnquoteSpaces(f.Icon.value), 0, true, h);
-		o.innerHTML = src ? '<img src="' + src + '" ' + (h ? 'height="' + h + 'px"' : "") + ' style="max-width: 32pt; max-height: 32pt">' : "";
+		const h = GetNum((f.IconSize || f.Height || { value: window.IconSize || 24 }).value);
+		const src = await MakeImgSrc(await ExtractPath(te, f.Icon.value), 0, true, h);
+		const px = screen.deviceYDPI / 2;
+		o.innerHTML = src ? '<img src="' + src + '" ' + (h ? 'height="' + h + 'px"' : "") + ' style="max-width:' + px + 'px; max-height:' + px + 'px">' : "";
 	}
 }
 
