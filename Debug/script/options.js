@@ -1088,7 +1088,7 @@ async function LoadAddons() {
 		await api.DoEvents();
 	}
 	for (let Id in AddonId) {
-		if (await $.fso.FileExists(BuildPath(path, Id, "config.xml"))) {
+		if (await fso.FileExists(BuildPath(path, Id, "config.xml"))) {
 			AddAddon(table, Id, false);
 		}
 	}
@@ -1359,7 +1359,7 @@ InitOptions = async function () {
 	(async function () {
 		document.getElementById("tab1_3").innerHTML = await api.sprintf(99, await GetText("Get %s"), await GetText("Icon"));
 		document.title = await GetText("Options") + " - " + TITLE;
-		document.F.ButtonInitConfig.disabled = (ui_.Installed == await te.Data.DataFolder) | !await $.fso.FolderExists(BuildPath(ui_.Installed, "layout"));
+		document.F.ButtonInitConfig.disabled = (ui_.Installed == await te.Data.DataFolder) | !await fso.FolderExists(BuildPath(ui_.Installed, "layout"));
 	})();
 	MainWindow.g_.OptionsWindow = $;
 	let data = [];
@@ -1421,18 +1421,18 @@ InitOptions = async function () {
 
 OpenIcon = function (o) {
 	setTimeout(async function () {
-		var data = [];
-		var a = o.id.split(/,/);
+		const data = [];
+		const a = o.id.split(/,/);
 		if (a[0] == "b") {
-			var dllpath = BuildPath(system32, "ieframe.dll");
+			const dllpath = BuildPath(system32, "ieframe.dll");
 			a[0] = GetFileName(dllpath);
-			var a1 = a[1];
-			var hModule = await LoadImgDll(a, 0);
+			const a1 = a[1];
+			const hModule = await LoadImgDll(a, 0);
 			if (hModule) {
-				var lpbmp = isFinite(a[1]) ? a[1] - 0 : a[1];
-				var himl = await api.ImageList_LoadImage(hModule, lpbmp, a[2], CLR_NONE, CLR_NONE, IMAGE_BITMAP, LR_CREATEDIBSECTION | LR_LOADTRANSPARENT);
+				const lpbmp = isFinite(a[1]) ? a[1] - 0 : a[1];
+				const himl = await api.ImageList_LoadImage(hModule, lpbmp, a[2], CLR_NONE, CLR_NONE, IMAGE_BITMAP, LR_CREATEDIBSECTION | LR_LOADTRANSPARENT);
 				a[1] = a1;
-				var nCount = himl ? await api.ImageList_GetImageCount(himl) : 0;
+				let nCount = himl ? await api.ImageList_GetImageCount(himl) : 0;
 				if (nCount == 0) {
 					if (lpbmp == 206 || lpbmp == 204) {
 						nCount = 20;
@@ -1455,7 +1455,7 @@ OpenIcon = function (o) {
 				api.FreeLibrary(hModule);
 			}
 		} else {
-			dllPath = await ExtractMacro(te, a[1]);
+			let dllPath = await ExtractMacro(te, a[1]);
 			if (!/^[A-Z]:\\|^\\\\/i.test(dllPath)) {
 				dllPath = BuildPath(system32, a[1]);
 			}
@@ -1498,7 +1498,7 @@ async function SearchIcon(o) {
 
 ReturnDialogResult = async function (WB) {
 	if (g_nResult == 1) {
-		dialogArguments.InvokeUI("SetElement", await dialogArguments.Id, returnValue);
+		dialogArguments.InvokeUI("SetElement", (await dialogArguments.Id).replace(/\t.*$/, ""), returnValue);
 	}
 	WB.Close();
 }
@@ -1637,15 +1637,15 @@ InitDialog = async function () {
 			WB.Close();
 		};
 	}
-	if (Query == "fileicon" && await dialogArguments.element) {
-		var s = await api.PathUnquoteSpaces(await dialogArguments.element.value);
+	if (Query == "fileicon") {
+		const s = await api.PathUnquoteSpaces((await window.dialogArguments.Id).replace(/^.*\t/, ""));
 		document.title = s + " - " + TITLE;
 		GetElement("Content").innerHTML = '<div id="i,' + s + '" style="cursor: pointer"></div>';
 		await OpenIcon(GetElement("i," + s));
 		WebBrowser.OnClose = ReturnDialogResult;
 	}
 	if (Query == "about") {
-		const promise = [MakeImgSrc(ui_.TEPath, 0, true, 48), AboutTE(2), api.sizeof("HANDLE"), $.fso.GetFileVersion(ui_.TEPath), AboutTE(3), te.Data.DataFolder];
+		const promise = [MakeImgSrc(ui_.TEPath, 0, true, 48), AboutTE(2), GetTextR(ui_.bit + '-bit'), fso.GetFileVersion(ui_.TEPath), AboutTE(3), te.Data.DataFolder];
 		const s = ['<table style="border-spacing: 2em; border-collapse: separate; width: 100%"><tr><td>'];
 		s.push('<img id="img1"></td><td><span style="font-weight: bold; font-size: 120%" id="about2"></span> (<span id="bit1"></span>)<br>');
 		s.push('<br><a href="#" class="link" onclick="Run(0, this)">', ui_.TEPath, '</a> (<span id="fv1"></span>)<br>');
@@ -1671,6 +1671,7 @@ InitDialog = async function () {
 			Promise.all(promise).then(async function (r) {
 				document.getElementById("img1").src = r[0];
 				document.getElementById("about2").innerHTML = r[1];
+				document.getElementById("bit1").innerHTML = r[2];
 				document.getElementById("fv1").innerHTML = r[3];
 				document.getElementById("about3").value = r[4];
 				document.getElementById("df1").innerHTML = BuildPath(r[5], "config");
@@ -1681,7 +1682,6 @@ InitDialog = async function () {
 					}
 				}
 				document.getElementById("UsedAddons").value = ar.join(",");
-				document.getElementById("bit1").innerHTML = await GetTextR(r[2] * 8 + '-bit');
 			});
 		}
 		document.F.ButtonOk.disabled = false;
@@ -2105,9 +2105,9 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter, f) {
 			if (o) {
 				const pt = await api.CreateObject("Object");
 				if (oButton) {
-					const pt1 = GetPos(oButton, 1);
-					pt.x = await pt1.x;
-					pt.y = await pt1.y + oButton.offsetHeight
+					const pt1 = GetPos(oButton, 9);
+					pt.x = pt1.x;
+					pt.y = pt1.y;
 					pt.width = oButton.offsetWidth;
 				} else {
 					await api.GetCursorPos(pt);
@@ -2141,7 +2141,7 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter, f) {
 			if (/Icon|Large|Small/i.test(Id)) {
 				const s = await api.PathUnquoteSpaces(await ExtractMacro(te, path));
 				if (await api.ExtractIconEx(s, -1, null, null, 0) > 1) {
-					ShowDialogEx("fileicon", 640, 480, GetElementIdEx(o));
+					ShowDialogEx("fileicon", 640, 480, [GetElementIdEx(o), o.value].join("\t"));
 					return;
 				}
 			}
@@ -2154,7 +2154,7 @@ async function PortableX(Id) {
 		return;
 	}
 	const o = GetElement(Id);
-	const s = await $.fso.GetDriveName(ui_.TEPath);
+	const s = await fso.GetDriveName(ui_.TEPath);
 	SetValue(o, o.value.replace(await wsh.ExpandEnvironmentStrings("%UserProfile%"), "%UserProfile%").replace(new RegExp('^("?)' + s, "igm"), "$1%Installed%").replace(new RegExp('( "?)' + s, "igm"), "$1%Installed%").replace(new RegExp('(:)' + s, "igm"), "$1%Installed%"));
 }
 
@@ -2398,7 +2398,7 @@ function UpdateAddon(Id, o) {
 }
 
 async function CheckAddon(Id) {
-	return $.fso.FileExists(BuildPath(ui_.Installed, "addons", Id, "config.xml"));
+	return fso.FileExists(BuildPath(ui_.Installed, "addons", Id, "config.xml"));
 }
 
 function AddonsSearch() {
@@ -2515,12 +2515,12 @@ async function ArrangeAddon(xml, td, Progress) {
 					}
 					var path = BuildPath(ui_.Installed, "addons", Id);
 					var wfd = await api.Memory("WIN32_FIND_DATA");
-					var hFind = await api.FindFirstFile(BuildPath(path, "*" + (await api.sizeof("HANDLE") * 8) + ".dll"), wfd);
+					var hFind = await api.FindFirstFile(BuildPath(path, "*" + ui_.bit + ".dll"), wfd);
 					api.FindClose(hFind);
 					if (hFind == INVALID_HANDLE_VALUE) {
 						return;
 					}
-					if (CalcVersion(await installed.DllVersion) <= CalcVersion(await $.fso.GetFileVersion(BuildPath(path, await wfd.cFileName)))) {
+					if (CalcVersion(await installed.DllVersion) <= CalcVersion(await fso.GetFileVersion(BuildPath(path, await wfd.cFileName)))) {
 						return;
 					}
 				} catch (e) {
@@ -2598,7 +2598,7 @@ async function Install2(xhr, url, o) {
 	}
 	var configxml = dest + "\\config.xml";
 	var nDog = 300;
-	while (!await $.fso.FileExists(configxml)) {
+	while (!await fso.FileExists(configxml)) {
 		if (await wsh.Popup(await GetText("Please wait."), 1, TITLE, MB_ICONINFORMATION | MB_OKCANCEL) == IDCANCEL || nDog-- == 0) {
 			return;
 		}

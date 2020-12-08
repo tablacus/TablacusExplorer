@@ -137,7 +137,7 @@ form {
 }
 
 .sidebar2 {
-	min-height: 50pt;
+	min-height: 5.5em;
 }
 
 .sidebar3 {
@@ -248,7 +248,7 @@ a.treebutton:hover {
 	position: absolute;
 	color: windowtext;
 	font-weight: bold;
-	font-size: 6.75pt;
+	font-size: 75%;
 	text-shadow: 1px 1px 0 window, -1px 1px 0 window, 1px -1px 0 window, -1px -1px 0 window;
 	filter: glow(color=window,strength=1);
 }

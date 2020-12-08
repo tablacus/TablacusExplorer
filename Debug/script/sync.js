@@ -78,7 +78,7 @@ if ("undefined" != typeof ScriptEngineMajorVersion && ScriptEngineMajorVersion()
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201204 ? te.Version : 20201207;
+		return te.Version < 20201204 ? te.Version : 20201208;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -1797,9 +1797,15 @@ ExecScriptEx = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffec
 	var fn = null;
 	try {
 		if (/J.*Script/i.test(type)) {
+			if (/^"?[A-Z]:\\.*\.js"?\s*$|^"?\\\\\w.*\.js"?s*$/im.test(s)) {
+				s = ReadTextFile(s);
+			}
 			fn = { Handled: new Function(FixScript(s)) };
 		} else if (/VBScript/i.test(type)) {
-			var o = api.CreateObject("Object");
+			if (/^"?[A-Z]:\\.*\.vbs"?\s*$|^"?\\\\\w.*\.vbs"?s*$/im.test(s)) {
+				s = ReadTextFile(s);
+			}
+			const o = api.CreateObject("Object");
 			o.window = $;
 			fn = api.GetScriptDispatch('Function Handled(Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop, FV)\n' + s + '\nEnd Function', type, o);
 		}

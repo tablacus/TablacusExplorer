@@ -189,8 +189,7 @@ g_.mouse = {
 	}
 };
 
-g_basic =
-{
+g_basic = {
 	FuncI: function (s) {
 		s = s.replace(/&|\.\.\.$/g, "");
 		return this.Func[s] || api.ObjGetI(this.Func, s);
@@ -336,6 +335,9 @@ g_basic =
 
 		JavaScript: {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
+				if (/^"?[A-Z]:\\.*\.js"?\s*$|^"?\\\\\w.*\.js"?s*$/im.test(s)) {
+					s = ReadTextFile(s);
+				}
 				InvokeUI("ExecJavaScript", [s, Ctrl, s, type, hwnd, pt]);
 				return S_OK;
 			},
@@ -2972,24 +2974,25 @@ AddEvent("Arrange", function (Ctrl, rc) {
 });
 
 AddEvent("Exec", function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop) {
-	var FV = GetFolderView(Ctrl, pt);
-	var fn = g_basic.FuncI(type);
+	const FV = GetFolderView(Ctrl, pt);
+	const fn = g_basic.FuncI(type);
 	if (fn) {
 		if (dataObj) {
 			if (fn.Drop) {
-				return fn.Drop(Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop);
+				return api.Invoke(fn.Drop, [Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop]);
 			}
 			pdwEffect[0] = DROPEFFECT_NONE;
 			return E_NOTIMPL;
 		}
 		if (FV && !/Background|Tabs|Tools|View|.*Script/i.test(type)) {
-			var hr = te.OnBeforeGetData(FV, dataObj || FV.SelectedItems(), 3);
+			const hr = te.OnBeforeGetData(FV, dataObj || FV.SelectedItems(), 3);
 			if (hr) {
 				return hr;
 			}
 		}
 		if (fn.Exec) {
-			return fn.Exec(Ctrl, s, type, hwnd, pt);
+			const hr = api.Invoke(fn.Exec, [Ctrl, s, type, hwnd, pt]);
+			return hr != void 0 ? hr : fn.Result;
 		}
 		return g_basic.Exec(Ctrl, s, type, hwnd, pt);
 	}

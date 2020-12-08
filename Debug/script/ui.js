@@ -8,21 +8,19 @@ ui_ = {
 };
 
 InitUI = async function () {
-	let r;
 	if (window.chrome) {
 		te = await parent.chrome.webview.hostObjects.te;
 		api = await te.WindowsAPI0.CreateObject("api");
-		r = await Promise.all([api.CreateObject("fso"), api.CreateObject("sha"), api.CreateObject("wsh"), api.CreateObject("Object"), te.Ctrl(CTRL_WB)]);
-		fso = r[0];
-		sha = r[1];
-		wsh = r[2];
-		$ = r[3];
-		WebBrowser = r[4];
+		fso = api.CreateObject("fso");
+		sha = api.CreateObject("sha");
+		wsh = api.CreateObject("wsh");
+		$ = await api.CreateObject("Object");
+		WebBrowser = await te.Ctrl(CTRL_WB);
+		osInfo = await api.Memory("OSVERSIONINFOEX");
+		osInfo.dwOSVersionInfoSize = await osInfo.Size;
+		await api.GetVersionEx(osInfo);
+		WINVER = await osInfo.dwMajorVersion * 0x100 + await osInfo.dwMinorVersion;
 	}
-	osInfo = await api.Memory("OSVERSIONINFOEX");
-	osInfo.dwOSVersionInfoSize = await osInfo.Size;
-	await api.GetVersionEx(osInfo);
-	WINVER = await osInfo.dwMajorVersion * 0x100 + await osInfo.dwMinorVersion;
 	if (WINVER > 0x603) {
 		BUTTONS = {
 			opened: '<b style="font-family: Consolas; transform: scale(1.2,1) rotate(-90deg); display: inline-block">&lt;</b>',
@@ -46,12 +44,13 @@ InitUI = async function () {
 			dropdown: s ? '&#x25bc;' : '<span style="font-family: Marlett">6</span>'
 		};
 	}
-	r = await Promise.all([api.GetDisplayNameOf(ssfSYSTEM, SHGDN_FORPARSING), api.GetModuleFileName(null), sha.GetSystemInformation("DoubleClickTime"), te.hwnd, api.SHTestTokenMembership(null, 0x220), te.Arguments, api.CreateObject("Object"), api.CreateObject("Object")]);
+	const r = await Promise.all([api.GetDisplayNameOf(ssfSYSTEM, SHGDN_FORPARSING), api.GetModuleFileName(null), sha.GetSystemInformation("DoubleClickTime"), te.hwnd, api.SHTestTokenMembership(null, 0x220), te.Arguments, api.CreateObject("Object"), api.CreateObject("Object"), api.sizeof("HANDLE")]);
 	system32 = r[0];
 	ui_.TEPath = r[1];
 	ui_.Installed = GetParentFolderName(ui_.TEPath);
 	ui_.DoubleClickTime = r[2];
 	ui_.hwnd = r[3];
+	ui_.bit = r[8] * 8;
 	hShell32 = await api.GetModuleHandle(BuildPath(system32, "shell32.dll"));
 	if (r[4] && WINVER >= 0x600) {
 		TITLE += ' [' + (await api.LoadString(hShell32, 25167) || "Admin").replace(/;.*$/, "") + ']';
@@ -292,24 +291,24 @@ CheckUpdate3 = async function (xhr, url, arg) {
 	}
 	let te_exe = await arg.temp + "\\te64.exe";
 	let nDog = 300;
-	while (!await $.fso.FileExists(te_exe)) {
+	while (!await fso.FileExists(te_exe)) {
 		if (await wsh.Popup(await GetText("Please wait."), 1, TITLE, MB_OKCANCEL) == IDCANCEL || nDog-- == 0) {
 			return;
 		}
 	}
 	const arDel = [];
 	const addons = await arg.temp + "\\addons";
-	if (await $.fso.FolderExists(await arg.temp + "\\config")) {
+	if (await fso.FolderExists(await arg.temp + "\\config")) {
 		arDel.push(await arg.temp + "\\config");
 	}
 	for (let i = 32; i <= 64; i += 32) {
 		te_exe = await arg.temp + '\\te' + i + '.exe';
 		const te_old = BuildPath(ui_.Installed, 'te' + i + '.exe');
-		if (!await $.fso.FileExists(te_old) || await $.fso.GetFileVersion(te_exe) == await $.fso.GetFileVersion(te_old)) {
+		if (!await fso.FileExists(te_old) || await fso.GetFileVersion(te_exe) == await fso.GetFileVersion(te_old)) {
 			arDel.push(te_exe);
 		}
 	}
-	for (let list = await api.CreateObject("Enum", await $.fso.GetFolder(addons).SubFolders); !await list.atEnd(); await list.moveNext()) {
+	for (let list = await api.CreateObject("Enum", await fso.GetFolder(addons).SubFolders); !await list.atEnd(); await list.moveNext()) {
 		const n = await list.item().Name;
 		const items = await te.Data.Addons.getElementsByTagName(n);
 		if (!items || GetLength(items) == 0) {
@@ -365,7 +364,7 @@ LoadScripts = async function (js1, js2, cb) {
 		const doc = po.shift();
 		o.window = $;
 		const s = [];
-		let arFN = ["fso", "sha", "wsh", "wnw"];
+		let arFN = [];
 		let line = 1;
 		for (let i = 0; i < js1.length; i++) {
 			const fn = BuildPath(ui_.Installed, js1[i]);
@@ -392,6 +391,34 @@ LoadScripts = async function (js1, js2, cb) {
 		await CopyObj(window, $, arFN);
 		doc.parentWindow = $;
 		WebBrowser.Document = doc;
+		delete fso;
+		Object.defineProperty(window, "fso", {
+			get: function () {
+				return $.fso;
+			}
+		});
+		delete wsh;
+		Object.defineProperty(window, "wsh", {
+			get: function () {
+				return $.wsh;
+			}
+		});
+		delete sha;
+		Object.defineProperty(window, "sha", {
+			get: function () {
+				return $.sha;
+			}
+		});
+		Object.defineProperty(window, "wnw", {
+			get: function () {
+				return $.wnw;
+			}
+		});
+		Object.defineProperty(window, "FolderMenu", {
+			get: function () {
+				return $.FolderMenu;
+			}
+		});
 	} else {
 		$ = window;
 	}
@@ -1156,14 +1183,14 @@ if (window.chrome) {
 				this.item.removeAttribute(s, v);
 			}
 		};
-		o.__defineGetter__("attributes", function () {
-			const ar = [];
-			for (let n in this.db) {
-				ar.push({
-					name: n, value: this.db[n]
-				});
+		Object.defineProperty(o, "attributes", {
+			get: function () {
+				const ar = [];
+				for (let n in this.db) {
+					ar.push({ name: n, value: this.db[n] });
+				}
+				return ar;
 			}
-			return ar;
 		});
 		return o;
 	}
