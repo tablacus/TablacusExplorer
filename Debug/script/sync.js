@@ -78,7 +78,7 @@ if ("undefined" != typeof ScriptEngineMajorVersion && ScriptEngineMajorVersion()
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201204 ? te.Version : 20201208;
+		return te.Version < 20201204 ? te.Version : 20201209;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -1090,7 +1090,7 @@ ColumnsReplace = function (Ctrl, pid, fmt, fn, priority) {
 			return;
 		}
 	}
-	var n = api.PSGetDisplayName(pid);
+	const n = api.PSGetDisplayName(pid);
 	fn.fmt = fmt;
 	if (Ctrl.ColumnsReplace[n] && priority != 2) {
 		if (Ctrl.ColumnsReplace[n] === fn) {
@@ -1938,7 +1938,7 @@ ExecMenu3 = function (Ctrl, Name, x, y) {
 	window.Ctrl = Ctrl;
 	setTimeout(function () {
 		ExecMenu2(Name, x, y);
-	}, 99);;
+	}, 99);
 }
 
 ExecMenu2 = function (Name, x, y) {
@@ -3223,10 +3223,16 @@ BasicDB = function (name, bLoad, bLC) {
 	this.DB = {};
 
 	this.Get = function (n) {
+		if (n.Path) {
+			n =  n.Path;
+		}
 		return this.DB[this.LC ? n.toLowerCase() : n] || "";
 	}
 
 	this.Set = function (n, s) {
+		if (n.Path) {
+			n = n.Path;
+		}
 		if (this.LC) {
 			 n = n.toLowerCase();
 		}

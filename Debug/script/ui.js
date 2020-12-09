@@ -15,6 +15,7 @@ InitUI = async function () {
 		sha = api.CreateObject("sha");
 		wsh = api.CreateObject("wsh");
 		$ = await api.CreateObject("Object");
+		$.Addon = window.Addon;
 		WebBrowser = await te.Ctrl(CTRL_WB);
 		osInfo = await api.Memory("OSVERSIONINFOEX");
 		osInfo.dwOSVersionInfoSize = await osInfo.Size;
@@ -373,7 +374,10 @@ LoadScripts = async function (js1, js2, cb) {
 				ado.CharSet = "utf-8";
 				await ado.Open();
 				await ado.LoadFromFile(fn);
-				const src = FixScript(await ado.ReadText());
+				let src = await ado.ReadText();
+				if (!/consts\.js$/.test(fn)) {
+					src = FixScript(src);
+				}
 				s.push(src);
 				ado.Close();
 				if (src && /sync/.test(fn)) {

@@ -3336,17 +3336,17 @@ FullscreenChanged = function (bFullscreen) {
 ArrangeAddons1 = function (cl) {
 	RunEvent1("Load");
 	ClearEvent("Load");
-	var cHwnd = [te.Ctrl(CTRL_WB).hwnd, te.hwnd];
-	for (var i = cHwnd.length; i--;) {
-		var hOld = api.SetClassLongPtr(cHwnd[i], GCLP_HBRBACKGROUND, api.CreateSolidBrush(cl));
+	const cHwnd = [te.Ctrl(CTRL_WB).hwnd, te.hwnd];
+	for (let i = cHwnd.length; i--;) {
+		const hOld = api.SetClassLongPtr(cHwnd[i], GCLP_HBRBACKGROUND, api.CreateSolidBrush(cl));
 		if (hOld) {
 			api.DeleteObject(hOld);
 		}
 	}
-	var hwnd, p = api.Memory("WCHAR", 11);
+	let hwnd, p = api.Memory("WCHAR", 11);
 	p.Write(0, VT_LPWSTR, "ShellState");
-	var cFV = te.Ctrls(CTRL_FV);
-	for (var i in cFV) {
+	const cFV = te.Ctrls(CTRL_FV);
+	for (let i in cFV) {
 		if (hwnd = cFV[i].hwndView) {
 			api.SendMessage(hwnd, WM_SETTINGCHANGE, 0, p);
 		}
@@ -3354,36 +3354,38 @@ ArrangeAddons1 = function (cl) {
 }
 
 InitCode = function () {
-	var types =
-	{
+	const types = {
 		Key: ["All", "List", "Tree", "Browser", "Edit", "Menus"],
 		Mouse: ["All", "List", "List_Background", "Tree", "Tabs", "Tabs_Background", "Browser"]
 	};
-	var i;
-	for (i = 0; i < 3; ++i) {
+	for (let i = 0; i < 3; ++i) {
 		g_.KeyState[i][0] = api.GetKeyNameText(g_.KeyState[i][0]);
 	}
-	i = g_.KeyState.length;
+	let i = g_.KeyState.length;
 	while (i-- > 4 && g_.KeyState[i][0] == g_.KeyState[i - 4][0]) {
 		g_.KeyState.pop();
 	}
-	for (var j = 256; j >= 0; j -= 256) {
-		for (var i = 128; i > 0; i--) {
-			var v = api.GetKeyNameText((i + j) * 0x10000);
+	for (let j = 256; j >= 0; j -= 256) {
+		for (let i = 128; i > 0; i--) {
+			const v = api.GetKeyNameText((i + j) * 0x10000);
 			if (v && v.charCodeAt(0) > 32) {
 				g_.KeyCode[v.toUpperCase()] = i + j;
 			}
 		}
 	}
-	for (var i in types) {
+	for (let i in types) {
 		eventTE[i] = api.CreateObject("Object");
-		for (var j in types[i]) {
+		for (let j in types[i]) {
 			eventTE[i][types[i][j]] = api.CreateObject("Object");
 		}
 	}
 	DefaultFont = api.Memory("LOGFONT");
 	api.SystemParametersInfo(SPI_GETICONTITLELOGFONT, DefaultFont.Size, DefaultFont, 0);
 	HOME_PATH = te.Data.Conf_NewTab || HOME_PATH;
+	const cFV = te.Ctrls(CTRL_FV);
+	for (let i in cFV) {
+		cFV[i].ColumnsReplace = null;
+	}
 }
 
 InitMouse = function () {
