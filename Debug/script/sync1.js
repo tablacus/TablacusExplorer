@@ -3,7 +3,6 @@
 te.ClearEvents();
 te.About = AboutTE(2);
 Init = false;
-ExtraMenuCommand = [];
 g_arBM = [];
 
 GetAddress = null;

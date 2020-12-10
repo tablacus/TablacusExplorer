@@ -78,7 +78,7 @@ if ("undefined" != typeof ScriptEngineMajorVersion && ScriptEngineMajorVersion()
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201204 ? te.Version : 20201209;
+		return te.Version < 20201204 ? te.Version : 20201210;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -1999,9 +1999,9 @@ AdjustMenuBreak = function (hMenu) {
 }
 
 teMenuGetElementsByTagName = function (Name) {
-	var menus = te.Data.xmlMenus.getElementsByTagName(Name);
+	let menus = te.Data.xmlMenus.getElementsByTagName(Name);
 	if (!menus || !menus.length) {
-		var altMenu = {
+		const altMenu = {
 			"ViewContext": "Background",
 			"Background": "ViewContext",
 			"TaskTray": "Systray",
@@ -2013,37 +2013,37 @@ teMenuGetElementsByTagName = function (Name) {
 }
 
 ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec, ContextMenu) {
-	var items = null;
-	var menus = teMenuGetElementsByTagName(Name);
+	let items = null;
+	const menus = teMenuGetElementsByTagName(Name);
 	if (menus && menus.length) {
 		items = menus[0].getElementsByTagName("Item");
 	}
-	var uCMF = Ctrl.Type != CTRL_TV ? CMF_NORMAL | CMF_CANRENAME : CMF_EXPLORE | CMF_CANRENAME;
+	let uCMF = Ctrl.Type != CTRL_TV ? CMF_NORMAL | CMF_CANRENAME : CMF_EXPLORE | CMF_CANRENAME;
 	if (api.GetKeyState(VK_SHIFT) < 0) {
 		uCMF |= CMF_EXTENDEDVERBS;
 	}
-	var ar = GetSelectedArray(Ctrl, pt);
-	var Selected = ar.shift();
-	var SelItem = ar.shift();
-	var FV = ar.shift();
-	ExtraMenuCommand = api.CreateObject("Array");
-	ExtraMenuData = api.CreateObject("Array");
+	const ar = GetSelectedArray(Ctrl, pt);
+	const Selected = ar.shift();
+	const SelItem = ar.shift();
+	const FV = ar.shift();
+	ExtraMenuCommand = api.CreateObject("Object");
+	ExtraMenuData = api.CreateObject("Object");
 	eventTE.menucommand = api.CreateObject("Array");
 	eventTA.menucommand = api.CreateObject("Array");
-	var arMenu, item;
+	let arMenu, item;
 	if (items) {
 		arMenu = OpenMenu(items, SelItem);
-		for (var i = 0; i < arMenu.length; ++i) {
+		for (let i = 0; i < arMenu.length; ++i) {
 			item = items[arMenu[i]];
 			if (!/^menus$/i.test(item.getAttribute("Type"))) {
 				break;
 			}
 			item = null;
 		}
-		var nBase = GetNum(menus[0].getAttribute("Base"));
+		let nBase = GetNum(menus[0].getAttribute("Base"));
 		if (nBase == 1) {
 			if (GetNum(menus[0].getAttribute("Pos")) < 0) {
-				for (var i = arMenu.length; i-- > 0;) {
+				for (let i = arMenu.length; i-- > 0;) {
 					item = items[arMenu[i]];
 					if (!/^menus$/i.test(item.getAttribute("Type"))) {
 						break;
@@ -2051,10 +2051,10 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec, ContextMenu) {
 					item = null;
 				}
 				if (arMenu.length > 1) {
-					for (var i = arMenu.length; i--;) {
-						var nLevel = 0;
+					for (let i = arMenu.length; i--;) {
+						let nLevel = 0;
 						if (/^menus$/i.test(items[arMenu[i]].getAttribute("Type"))) {
-							var s = String(items[arMenu[i]].text).toLowerCase();
+							const s = String(items[arMenu[i]].text).toLowerCase();
 							if (s == "close") {
 								++nLevel;
 							}
@@ -2071,8 +2071,8 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec, ContextMenu) {
 			}
 		}
 		if (nBase != 1) {
-			var hMenu = api.CreatePopupMenu();
-			var arContextMenu;
+			const hMenu = api.CreatePopupMenu();
+			let arContextMenu;
 			if (ContextMenu && nBase == 2) {
 				arContextMenu = [void 0, ContextMenu];
 			}
@@ -2081,15 +2081,15 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec, ContextMenu) {
 				AdjustMenuBreak(hMenu);
 			}
 			g_nPos = MakeMenus(hMenu, menus, arMenu, items, Ctrl, pt, 0, null, true);
-			var eo = eventTE[Name.toLowerCase()];
-			for (var i in eo) {
+			const eo = eventTE[Name.toLowerCase()];
+			for (let i in eo) {
 				try {
 					g_nPos = eo[i](Ctrl, hMenu, g_nPos, Selected, SelItem, ContextMenu, Name, pt);
 				} catch (e) {
 					ShowError(e, Name, i);
 				}
 			}
-			for (var i in eventTE.menus) {
+			for (let i in eventTE.menus) {
 				try {
 					g_nPos = eventTE.menus[i](Ctrl, hMenu, g_nPos, Selected, SelItem, ContextMenu, Name, pt);
 				} catch (e) {
@@ -2106,7 +2106,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec, ContextMenu) {
 					case CTRL_SB:
 					case CTRL_EB:
 					case CTRL_TV:
-						var rc = api.Memory("RECT");
+						const rc = api.Memory("RECT");
 						if (Ctrl.GetItemRect(SelItem, rc) != S_OK) {
 							api.GetClientRect(Ctrl.hwnd, rc);
 						}
@@ -2125,11 +2125,12 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec, ContextMenu) {
 			}
 			AdjustMenuBreak(hMenu);
 			MainWindow.g_menu_click = bNoExec ? true : 2;
-			var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, ContextMenu);
+			const nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, ContextMenu);
 			if (bNoExec) {
+				api.DestroyMenu(hMenu);
 				return nVerb > 0 ? S_OK : S_FALSE;
 			} else {
-				var hr = ExecMenu4(Ctrl, Name, pt, hMenu, [ContextMenu], nVerb, FV);
+				const hr = ExecMenu4(Ctrl, Name, pt, hMenu, [ContextMenu], nVerb, FV);
 				if (isFinite(hr)) {
 					return hr;
 				}
@@ -2138,7 +2139,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec, ContextMenu) {
 			}
 		}
 		if (item && !bNoExec) {
-			var s = item.getAttribute("Type");
+			const s = item.getAttribute("Type");
 			if (MainWindow.g_menu_button == 2 && api.PathMatchSpec(s, "Open;Open in new tab;Open in background")) {
 				PopupContextMenu(item.text);
 				return S_OK;
@@ -2160,24 +2161,24 @@ ExecMenu4 = function (Ctrl, Name, pt, hMenu, arContextMenu, nVerb, FV) {
 			return S_OK;
 		}
 	}
-	for (var i in eventTE.menucommand) {
-		var hr = eventTE.menucommand[i](Ctrl, pt, Name, nVerb, hMenu);
+	for (let i in eventTE.menucommand) {
+		const hr = eventTE.menucommand[i](Ctrl, pt, Name, nVerb, hMenu);
 		if (isFinite(hr) && hr == S_OK) {
 			api.DestroyMenu(hMenu);
 			return S_OK;
 		}
 	}
-	for (var i in arContextMenu) {
-		var ContextMenu = arContextMenu[i];
+	for (let i in arContextMenu) {
+		const ContextMenu = arContextMenu[i];
 		if (ContextMenu && nVerb >= ContextMenu.idCmdFirst && nVerb <= ContextMenu.idCmdLast) {
-			var FolderView = ContextMenu.FolderView;
+			const FolderView = ContextMenu.FolderView;
 			if (FolderView) {
 				FolderView.Focus();
 			}
 			if (Ctrl.Type == CTRL_TV) {
-				var sVerb = String(ContextMenu.GetCommandString(nVerb - ContextMenu.idCmdFirst, GCS_VERB)).toLowerCase();
+				const sVerb = String(ContextMenu.GetCommandString(nVerb - ContextMenu.idCmdFirst, GCS_VERB)).toLowerCase();
 				if (sVerb == "open") {
-					var FV = FolderView || te.Ctrl(CTRL_FV);
+					const FV = FolderView || te.Ctrl(CTRL_FV);
 					FV.Navigate(Ctrl.SelectedItem, GetNavigateFlags(FV));
 					api.DestroyMenu(hMenu);
 					return S_OK;
@@ -2204,13 +2205,13 @@ ExecMenu4 = function (Ctrl, Name, pt, hMenu, arContextMenu, nVerb, FV) {
 }
 
 CopyMenu = function (hSrc, hDest) {
-	var mii = api.Memory("MENUITEMINFO");
+	const mii = api.Memory("MENUITEMINFO");
 	mii.cbSize = mii.Size;
 	mii.fMask = MIIM_ID | MIIM_TYPE | MIIM_SUBMENU | MIIM_STATE;
-	var n = api.GetMenuItemCount(hSrc);
+	let n = api.GetMenuItemCount(hSrc);
 	while (--n >= 0) {
 		api.GetMenuItemInfo(hSrc, n, true, mii);
-		var hSubMenu = mii.hSubMenu;
+		const hSubMenu = mii.hSubMenu;
 		if (hSubMenu) {
 			mii.hSubMenu = api.CreateMenu();
 		}
@@ -2222,7 +2223,7 @@ CopyMenu = function (hSrc, hDest) {
 }
 
 GetViewMenu = function (arContextMenu, FV, hMenu, uCMF) {
-	var ContextMenu = arContextMenu && arContextMenu[0];
+	let ContextMenu = arContextMenu && arContextMenu[0];
 	if (!ContextMenu) {
 		ContextMenu = FV.ViewMenu();
 		if (arContextMenu) {
@@ -2236,8 +2237,8 @@ GetViewMenu = function (arContextMenu, FV, hMenu, uCMF) {
 }
 
 GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arContextMenu) {
-	var ContextMenu;
-	for (var i in eventTE.getbasemenuex) {
+	let ContextMenu;
+	for (let i in eventTE.getbasemenuex) {
 		ContextMenu = eventTE.getbasemenuex[i](hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arContextMenu);
 		if (ContextMenu !== void 0) {
 			return ContextMenu;
@@ -2246,7 +2247,7 @@ GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arCon
 	switch (nBase) {
 		case 2:
 		case 4:
-			var Items = Selected;
+			let Items = Selected;
 			if (!Items || !Items.Count) {
 				Items = SelItem;
 			}
@@ -2263,10 +2264,10 @@ GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arCon
 				}
 			} else if (FV) {
 				ContextMenu = GetViewMenu(arContextMenu, FV, hMenu, uCMF);
-				var mii = api.Memory("MENUITEMINFO");
+				const mii = api.Memory("MENUITEMINFO");
 				mii.cbSize = mii.Size;
 				mii.fMask = MIIM_FTYPE | MIIM_SUBMENU;
-				for (var i = api.GetMenuItemCount(hMenu); i--;) {
+				for (let i = api.GetMenuItemCount(hMenu); i--;) {
 					api.GetMenuItemInfo(hMenu, 0, true, mii);
 					if (mii.hSubMenu || (mii.fType & MFT_SEPARATOR)) {
 						api.DeleteMenu(hMenu, 0, MF_BYPOSITION);
@@ -2283,17 +2284,17 @@ GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arCon
 			break;
 		case 5:
 		case 6:
-			var id = nBase == 5 ? FCIDM_MENU_EDIT : FCIDM_MENU_VIEW;
+			const id = nBase == 5 ? FCIDM_MENU_EDIT : FCIDM_MENU_VIEW;
 			if (FV) {
 				ContextMenu = GetViewMenu(arContextMenu, FV, hMenu, CMF_DEFAULTONLY);
-				var hMenu2 = te.MainMenu(id);
-				var oMenu = {};
-				var oMenu2 = {};
-				var mii = api.Memory("MENUITEMINFO");
+				const hMenu2 = te.MainMenu(id);
+				const oMenu = {};
+				const oMenu2 = {};
+				const mii = api.Memory("MENUITEMINFO");
 				mii.cbSize = mii.Size;
 				mii.fMask = MIIM_SUBMENU;
-				for (var i = api.GetMenuItemCount(hMenu2); i-- > 0;) {
-					var s = api.GetMenuString(hMenu2, i, MF_BYPOSITION);
+				for (let i = api.GetMenuItemCount(hMenu2); i-- > 0;) {
+					let s = api.GetMenuString(hMenu2, i, MF_BYPOSITION);
 					if (s) {
 						s = s.toLowerCase().replace(/[&\(\)]/g, "");
 						api.GetMenuItemInfo(hMenu2, i, true, mii);
@@ -2303,19 +2304,19 @@ GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arCon
 				MenuDbInit(hMenu, oMenu, oMenu2);
 				MenuDbReplace(hMenu, oMenu, hMenu2);
 			} else {
-				var hMenu1 = te.MainMenu(id);
+				const hMenu1 = te.MainMenu(id);
 				CopyMenu(hMenu1, hMenu);
 				api.DestroyMenu(hMenu1);
 			}
 			break;
 		case 7:
-			var dir = [GetText("Check for updates"), GetText("Get Add-ons..."), api.sprintf(99, GetText("Get %s..."), GetText("Icon")), null, api.sprintf(99, GetText("&About %s"), "Tablacus Explorer")];
-			for (var i = 0; i < dir.length; ++i) {
-				var s = dir[i];
+			const dir = [GetText("Check for updates"), GetText("Get Add-ons..."), api.sprintf(99, GetText("Get %s..."), GetText("Icon")), null, api.sprintf(99, GetText("&About %s"), "Tablacus Explorer")];
+			for (let i = 0; i < dir.length; ++i) {
+				const s = dir[i];
 				api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | (s === null ? MF_SEPARATOR : MF_STRING), i + 0x4011, s);
 			}
 			AddEvent("MenuCommand", function (Ctrl, pt, Name, nVerb) {
-				var s = [CheckUpdate, GetAddons, GetIconPacks, null, ShowAbout][nVerb - 0x4011];
+				const s = [CheckUpdate, GetAddons, GetIconPacks, null, ShowAbout][nVerb - 0x4011];
 				if (s) {
 					s(Ctrl, pt, Name, nVerb);
 					return S_OK;
@@ -2338,11 +2339,11 @@ GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arCon
 }
 
 MenuDbInit = function (hMenu, oMenu, oMenu2) {
-	for (var i = api.GetMenuItemCount(hMenu); i--;) {
-		var mii = api.Memory("MENUITEMINFO");
+	for (let i = api.GetMenuItemCount(hMenu); i--;) {
+		const mii = api.Memory("MENUITEMINFO");
 		mii.cbSize = mii.Size;
 		mii.fMask = MIIM_ID | MIIM_BITMAP | MIIM_SUBMENU | MIIM_DATA | MIIM_FTYPE | MIIM_STATE;
-		var s = api.GetMenuString(hMenu, i, MF_BYPOSITION);
+		let s = api.GetMenuString(hMenu, i, MF_BYPOSITION);
 		api.GetMenuItemInfo(hMenu, i, true, mii);
 		if (s) {
 			s = s.toLowerCase().replace(/[&\(\)]/g, "");
@@ -2358,10 +2359,9 @@ MenuDbInit = function (hMenu, oMenu, oMenu2) {
 }
 
 MenuDbReplace = function (hMenu, oMenu, hMenu2) {
-	for (var i = api.GetMenuItemCount(hMenu2); i-- > 0;) {
-		var s = api.GetMenuString(hMenu2, 0, MF_BYPOSITION);
-		var mii = null;
-		var s2 = null;
+	for (let i = api.GetMenuItemCount(hMenu2); i-- > 0;) {
+		const s = api.GetMenuString(hMenu2, 0, MF_BYPOSITION);
+		let mii, s2;
 		if (s) {
 			s2 = s.toLowerCase().replace(/[&\(\)]/g, "");
 			mii = oMenu[s2];
@@ -2392,7 +2392,7 @@ MenuDbReplace = function (hMenu, oMenu, hMenu2) {
 		}
 		api.InsertMenuItem(hMenu, MAXINT, false, mii);
 	}
-	for (var s in oMenu) {
+	for (let s in oMenu) {
 		if (!/^\t/.test(s)) {
 			api.InsertMenuItem(hMenu2, MAXINT, false, oMenu[s]);
 		}
