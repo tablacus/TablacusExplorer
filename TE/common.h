@@ -445,6 +445,7 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define DISPID_TE_ITEM  0x6001ffff
 #define DISPID_TE_COUNT 0x4001ffff
 #define DISPID_TE_INDEX 0x4001fffe
+#define DISPID_TE_UNDEFIND 0x4001fffd
 #define DISPID_TE_MAX TE_VI
 
 #define DISPID_CB_ARANGE 0x4001fb00

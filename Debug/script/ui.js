@@ -21,6 +21,13 @@ InitUI = async function () {
 		osInfo.dwOSVersionInfoSize = await osInfo.Size;
 		await api.GetVersionEx(osInfo);
 		WINVER = await osInfo.dwMajorVersion * 0x100 + await osInfo.dwMinorVersion;
+		const v = await api.GetScriptDispatch('function v() { return "undefined" != typeof ScriptEngineMajorVersion && ScriptEngineMajorVersion(); }', "JScript").v();
+		if (v) {
+			ui_.ScriptEngineMajorVersion = v;
+			ScriptEngineMajorVersion = function () {
+				return ui_.ScriptEngineMajorVersion;
+			};
+		}
 	}
 	if (WINVER > 0x603) {
 		BUTTONS = {
@@ -163,7 +170,7 @@ InvokeUI = function () {
 ExecJavaScript = async function () {
 	const args = Array.apply(null, arguments);
 	const s = FixScript(args.shift(), window.chrome);
-	new Function(s).apply(null, args);
+	new Function("Ctrl", "FV", "type", "hwnd", "pt", s).apply(null, args);
 }
 
 OpenHttpRequest = async function (url, alt, fn, arg) {
@@ -348,8 +355,10 @@ LoadScripts = async function (js1, js2, cb) {
 			return to;
 		}
 		document.documentMode = (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 : 12);
-		screen.deviceYDPI = parent.deviceYDPI;
-		ui_.Zoom = parent.deviceYDPI / 96;
+		const hdc = await api.GetDC(ui_.hwnd);
+		screen.deviceYDPI = await api.GetDeviceCaps(hdc, 90);
+		api.ReleaseDC(ui_.hwnd, hdc);
+		ui_.Zoom = screen.deviceYDPI / 96;
 		await CopyObj($, window, ["te", "api", "chrome", "document", "UI", "MainWindow"]);
 		let po = [];
 		po.push(CopyObj(null, location, ["hash", "href"]));

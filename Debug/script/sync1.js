@@ -337,7 +337,7 @@ g_basic = {
 				if (/^"?[A-Z]:\\.*\.js"?\s*$|^"?\\\\\w.*\.js"?s*$/im.test(s)) {
 					s = ReadTextFile(s);
 				}
-				InvokeUI("ExecJavaScript", [s, Ctrl, s, type, hwnd, pt]);
+				InvokeUI("ExecJavaScript", [s, Ctrl, GetFolderView(Ctrl, pt), type, hwnd, pt]);
 				return S_OK;
 			},
 			Ref: OpenDialog

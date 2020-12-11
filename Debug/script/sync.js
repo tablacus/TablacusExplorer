@@ -78,7 +78,7 @@ if ("undefined" != typeof ScriptEngineMajorVersion && ScriptEngineMajorVersion()
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201204 ? te.Version : 20201210;
+		return te.Version < 20201211 ? te.Version : 20201211;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -1813,19 +1813,17 @@ ExecScriptEx = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffec
 			var r = fn.Handled(Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop, FV);
 			return isFinite(r) ? r : window.Handled;
 		}
-		api.ExecScript(s, type,
-			{
-				window: window,
-				Ctrl: Ctrl,
-				pt: pt,
-				hwnd: hwnd,
-				dataObj: dataObj,
-				grfKeyState: grfKeyState,
-				pdwEffect: pdwEffect,
-				bDrop: bDrop,
-				FV: FV
-			}
-		);
+		api.ExecScript(s, type, {
+			window: window,
+			Ctrl: Ctrl,
+			pt: pt,
+			hwnd: hwnd,
+			dataObj: dataObj,
+			grfKeyState: grfKeyState,
+			pdwEffect: pdwEffect,
+			bDrop: bDrop,
+			FV: FV
+		});
 	} catch (e) {
 		ShowError(e, s);
 	}

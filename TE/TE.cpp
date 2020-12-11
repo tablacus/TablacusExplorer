@@ -4723,7 +4723,7 @@ IDispatch* teCreateObj(LONG lId, VARIANT *pvArg)
 		return pdisp;
 
 	case TE_ARRAY:
-		if (!g_pSP || g_pSP->QueryService(SID_TablacusArray, IID_PPV_ARGS(&pdisp)) != S_OK) {
+		if (g_nBlink != 1 || g_pSP->QueryService(SID_TablacusArray, IID_PPV_ARGS(&pdisp)) != S_OK) {
 			if (pvArg && pvArg->vt == VT_DISPATCH) {
 				pvArg->pdispVal->QueryInterface(IID_PPV_ARGS(&pdisp));
 			} else {
@@ -10124,6 +10124,9 @@ VOID teApiGetClipboardData(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 VOID teApiSetClipboardData(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	int nSize = ::SysStringByteLen(param[0].bstrVal) + sizeof(WORD);
+	if (nSize == sizeof(WORD)) {
+		return;
+	}
 	HGLOBAL hGlobal = GlobalAlloc(GHND, nSize);
 	if (!hGlobal) {
 		return;
@@ -10145,6 +10148,11 @@ VOID teApiObjDelete(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *
 	if (FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
 		teSetLong(pVarResult, teDelProperty(punk, param[1].lpolestr));
 	}
+}
+
+VOID teApiGetDeviceCaps(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetLong(pVarResult, GetDeviceCaps(param[0].hdc, param[1].intVal));
 }
 
 #ifdef _DEBUG
@@ -10520,6 +10528,7 @@ TEDispatchApi dispAPI[] = {
 	{ 0, -1, -1, -1, "GetClipboardData", teApiGetClipboardData },
 	{ 1,  0, -1, -1, "SetClipboardData", teApiSetClipboardData },
 	{ 2,  1, -1, -1, "ObjDelete", teApiObjDelete },
+	{ 2,  -1, -1, -1, "GetDeviceCaps", teApiGetDeviceCaps },
 		//{ 0, -1, -1, -1, "", teApi },
 #ifdef _DEBUG
 	{ 0, -1, -1, -1, "Test", teApiTest },
@@ -13735,9 +13744,11 @@ STDMETHODIMP CteShellBrowser::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UI
 		if (hr == S_OK && lstrcmpi(*rgszNames, L"SortColumns") == 0) {
 			m_dispidSortColumns = *rgDispId;
 		}
-		return hr;
 	}
-	return hr;
+	if (hr != S_OK) {
+		*rgDispId = DISPID_TE_UNDEFIND;
+	}
+	return S_OK;
 }
 
 VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
@@ -15002,6 +15013,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			//
 		case DISPID_VALUE:
 			teSetObject(pVarResult, this);
+		case DISPID_TE_UNDEFIND:
 			return S_OK;
 			//DIID_DShellFolderViewEvents
 /*///
@@ -17126,7 +17138,10 @@ STDMETHODIMP CTE::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo)
 
 STDMETHODIMP CTE::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	return teGetDispId(methodTE, _countof(methodTE), g_maps[MAP_TE], *rgszNames, rgDispId, TRUE);
+	if (teGetDispId(methodTE, _countof(methodTE), g_maps[MAP_TE], *rgszNames, rgDispId, TRUE) != S_OK) {
+		*rgDispId = DISPID_TE_UNDEFIND;
+	}
+	return S_OK;
 }
 
 STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
@@ -17668,8 +17683,10 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				}
 				return S_OK;
 
-			case DISPID_VALUE://Value
+			case DISPID_VALUE:
 				teSetObject(pVarResult, this);
+			case DISPID_TE_UNDEFIND:
+				return S_OK;
 			case TE_METHOD + 1100://HookDragDrop//Deprecated
 				return S_OK;
 			default:
@@ -17968,7 +17985,10 @@ STDMETHODIMP CteWebBrowser::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTI
 
 STDMETHODIMP CteWebBrowser::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	return teGetDispId(methodWB, 0, NULL, *rgszNames, rgDispId, TRUE);
+	if (teGetDispId(methodWB, 0, NULL, *rgszNames, rgDispId, TRUE) != S_OK) {
+		*rgDispId = DISPID_TE_UNDEFIND;
+	}
+	return S_OK;
 }
 
 STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
@@ -18201,6 +18221,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			return S_OK;
 		case DISPID_VALUE:
 			teSetObject(pVarResult, this);
+		case DISPID_TE_UNDEFIND:
 			return S_OK;
 		default:
 			if (dispIdMember >= START_OnFunc && dispIdMember < START_OnFunc + Count_WBFunc) {
@@ -18870,9 +18891,10 @@ STDMETHODIMP CteTabCtrl::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo
 
 STDMETHODIMP CteTabCtrl::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	return teGetDispId(methodTC, _countof(methodTC), g_maps[MAP_TC], *rgszNames, rgDispId, TRUE);
-//	HRESULT hr = teGetDispId(methodTC, _countof(methodTC), g_maps[MAP_TC], *rgszNames, rgDispId, TRUE);
-//	return hr;
+	if (teGetDispId(methodTC, _countof(methodTC), g_maps[MAP_TC], *rgszNames, rgDispId, TRUE) != S_OK) {
+		*rgDispId = DISPID_TE_UNDEFIND;
+	}
+	return S_OK;
 }
 
 STDMETHODIMP CteTabCtrl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
@@ -19027,6 +19049,7 @@ STDMETHODIMP CteTabCtrl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WOR
 			//this
 		case DISPID_VALUE:
 			teSetObject(pVarResult, this);
+		case DISPID_TE_UNDEFIND:
 			return S_OK;
 		}
 		if (dispIdMember >= TE_OFFSET && dispIdMember <= TE_OFFSET + TC_TabHeight) {
@@ -19470,7 +19493,10 @@ STDMETHODIMP CteFolderItems::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UIN
 	if (m_pFolderItems) {
 		return m_pFolderItems->GetIDsOfNames(riid, rgszNames, cNames, lcid, rgDispId);
 	}
-	return teGetDispId(methodFIs, _countof(methodFIs), g_maps[MAP_FIs], *rgszNames, rgDispId, TRUE);
+	if (teGetDispId(methodFIs, _countof(methodFIs), g_maps[MAP_FIs], *rgszNames, rgDispId, TRUE) != S_OK) {
+		*rgDispId = DISPID_TE_UNDEFIND;
+	}
+	return S_OK;
 }
 
 STDMETHODIMP CteFolderItems::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
@@ -19611,6 +19637,7 @@ STDMETHODIMP CteFolderItems::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 			//this
 		case DISPID_VALUE:
 			teSetObject(pVarResult, this);
+		case DISPID_TE_UNDEFIND:
 			return S_OK;
 		}
 	} catch (...) {
@@ -20325,7 +20352,10 @@ STDMETHODIMP CteMemory::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo)
 
 STDMETHODIMP CteMemory::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	return GetDispID(*rgszNames, 0, rgDispId);
+	if (GetDispID(*rgszNames, 0, rgDispId) != S_OK) {
+		*rgDispId = DISPID_TE_UNDEFIND;
+	}
+	return S_OK;
 }
 
 STDMETHODIMP CteMemory::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
@@ -20415,9 +20445,10 @@ STDMETHODIMP CteMemory::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD
 					}
 				}
 				return S_OK;
-			//Value
+
 			case DISPID_VALUE:
 				teSetObject(pVarResult, this);
+			case DISPID_TE_UNDEFIND:
 				return S_OK;
 			default:
 				if (dispIdMember >= DISPID_COLLECTION_MIN && dispIdMember <= DISPID_TE_MAX) {
@@ -20869,7 +20900,10 @@ STDMETHODIMP CteContextMenu::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppT
 
 STDMETHODIMP CteContextMenu::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	return teGetDispId(methodCM, 0, NULL, *rgszNames, rgDispId, TRUE);
+	if (teGetDispId(methodCM, 0, NULL, *rgszNames, rgDispId, TRUE) != S_OK) {
+		*rgDispId = DISPID_TE_UNDEFIND;
+	}
+	return S_OK;
 }
 
 STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
@@ -21047,6 +21081,7 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 
 		case DISPID_VALUE:
 			teSetObject(pVarResult, this);
+		case DISPID_TE_UNDEFIND:
 			return S_OK;
 		default:
 			if (dispIdMember >= TE_PROPERTY + 10 && dispIdMember <= TE_PROPERTY + 14) {
@@ -21151,7 +21186,10 @@ STDMETHODIMP CteDropTarget::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTI
 
 STDMETHODIMP CteDropTarget::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	return teGetDispId(methodDT, 0, NULL, *rgszNames, rgDispId, TRUE);
+	if (teGetDispId(methodDT, 0, NULL, *rgszNames, rgDispId, TRUE) != S_OK) {
+		*rgDispId = DISPID_TE_UNDEFIND;
+	}
+	return S_OK;
 }
 
 STDMETHODIMP CteDropTarget::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
@@ -21311,6 +21349,7 @@ STDMETHODIMP CteDropTarget::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 
 		case DISPID_VALUE:
 			teSetObject(pVarResult, this);
+		case DISPID_TE_UNDEFIND:
 			return S_OK;
 		}
 	} catch (...) {
@@ -21648,7 +21687,10 @@ STDMETHODIMP CteTreeView::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInf
 
 STDMETHODIMP CteTreeView::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	return teGetDispId(methodTV, _countof(methodTV), g_maps[MAP_TV], *rgszNames, rgDispId, TRUE);
+	if (teGetDispId(methodTV, _countof(methodTV), g_maps[MAP_TV], *rgszNames, rgDispId, TRUE) != S_OK) {
+		*rgDispId = DISPID_TE_UNDEFIND;
+	}
+	return S_OK;
 }
 
 STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
@@ -21970,6 +22012,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 #endif
 		case DISPID_VALUE:
 			teSetObject(pVarResult, this);
+		case DISPID_TE_UNDEFIND:
 			return S_OK;
 		default:
 			if (dispIdMember >= TE_OFFSET && dispIdMember <= TE_OFFSET + SB_RootStyle) {
@@ -22858,7 +22901,10 @@ STDMETHODIMP CteFolderItem::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT
 		Sleep(0);
 	}
 #endif
-	return hr;
+	if (hr != S_OK) {
+		*rgDispId = DISPID_TE_UNDEFIND;
+	}
+	return S_OK;
 }
 
 STDMETHODIMP CteFolderItem::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
@@ -22945,6 +22991,7 @@ STDMETHODIMP CteFolderItem::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			//*/
 		case DISPID_VALUE:
 			teSetObject(pVarResult, this);
+		case DISPID_TE_UNDEFIND:
 			return S_OK;
 		}
 		if (GetFolderItem()) {
@@ -23165,7 +23212,10 @@ STDMETHODIMP CteCommonDialog::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **pp
 
 STDMETHODIMP CteCommonDialog::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	return teGetDispId(methodCD, _countof(methodCD), g_maps[MAP_CD], *rgszNames, rgDispId, TRUE);
+	if (teGetDispId(methodCD, _countof(methodCD), g_maps[MAP_CD], *rgszNames, rgDispId, TRUE) != S_OK) {
+		*rgDispId = DISPID_TE_UNDEFIND;
+	}
+	return S_OK;
 }
 
 STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
@@ -23219,6 +23269,7 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				return S_OK;
 			case DISPID_VALUE:
 				teSetObject(pVarResult, this);
+			case DISPID_TE_UNDEFIND:
 				return S_OK;
 		}
 		if (dispIdMember >= TE_METHOD + 40) {
@@ -23441,7 +23492,10 @@ STDMETHODIMP CteWICBitmap::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTIn
 
 STDMETHODIMP CteWICBitmap::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	return teGetDispId(methodGB, _countof(methodGB), g_maps[MAP_GB], *rgszNames, rgDispId, TRUE);
+	if (teGetDispId(methodGB, _countof(methodGB), g_maps[MAP_GB], *rgszNames, rgDispId, TRUE) != S_OK) {
+		*rgDispId = DISPID_TE_UNDEFIND;
+	}
+	return S_OK;
 }
 
 HBITMAP CteWICBitmap::GetHBITMAP(COLORREF clBk)
@@ -24351,6 +24405,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				return S_OK;
 			case DISPID_VALUE:
 				teSetObject(pVarResult, this);
+			case DISPID_TE_UNDEFIND:
 				return S_OK;
 			default:
 				if (dispIdMember >= START_OnFunc && dispIdMember < START_OnFunc + Count_WICFunc) {
@@ -24423,7 +24478,8 @@ STDMETHODIMP CteWindowsAPI::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT
 		*rgDispId = TE_PROPERTY;
 		return S_OK;
 	}
-	return DISP_E_UNKNOWNNAME;
+	*rgDispId = DISPID_TE_UNDEFIND;
+	return S_OK;
 }
 
 STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
@@ -24447,7 +24503,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 		teSetSZ(pVarResult, L"ADODB.Stream");
 		return S_OK;
 	}
-	return DISP_E_MEMBERNOTFOUND;
+	return S_OK;
 }
 #endif
 //CteDispatch
@@ -25423,7 +25479,10 @@ STDMETHODIMP CteProgressDialog::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **
 
 STDMETHODIMP CteProgressDialog::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	return teGetDispId(methodPD, 0, NULL, *rgszNames, rgDispId, TRUE);
+	if (teGetDispId(methodPD, 0, NULL, *rgszNames, rgDispId, TRUE) != S_OK) {
+		*rgDispId = DISPID_TE_UNDEFIND;
+	}
+	return S_OK;
 }
 
 STDMETHODIMP CteProgressDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
@@ -25504,6 +25563,7 @@ STDMETHODIMP CteProgressDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lc
 				return S_OK;
 			case DISPID_VALUE:
 				teSetObject(pVarResult, this);
+			case DISPID_TE_UNDEFIND:
 				return S_OK;
 		}//end_switch
 	} catch (...) {
@@ -25596,7 +25656,10 @@ STDMETHODIMP CteObject::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo)
 
 STDMETHODIMP CteObject::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	return teGetDispId(methodCO, 0, NULL, *rgszNames, rgDispId, TRUE);
+	if (teGetDispId(methodCO, 0, NULL, *rgszNames, rgDispId, TRUE) != S_OK) {
+		*rgDispId = DISPID_TE_UNDEFIND;
+	}
+	return S_OK;
 }
 
 STDMETHODIMP CteObject::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
@@ -25609,9 +25672,9 @@ STDMETHODIMP CteObject::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD
 		case TE_METHOD + 1:
 			Clear();
 			return S_OK;
-		//this
 		case DISPID_VALUE:
 			teSetObject(pVarResult, this);
+		case DISPID_TE_UNDEFIND:
 			return S_OK;
 	}//end_switch
 	return DISP_E_MEMBERNOTFOUND;
@@ -25744,7 +25807,10 @@ STDMETHODIMP CteEnumerator::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTI
 
 STDMETHODIMP CteEnumerator::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
-	return teGetDispId(methodEN, 0, NULL, *rgszNames, rgDispId, TRUE);
+	if (teGetDispId(methodEN, 0, NULL, *rgszNames, rgDispId, TRUE) != S_OK) {
+		*rgDispId = DISPID_TE_UNDEFIND;
+	}
+	return S_OK;
 }
 
 STDMETHODIMP CteEnumerator::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
@@ -25774,8 +25840,9 @@ STDMETHODIMP CteEnumerator::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 		GetItem();
 		return S_OK;
 
-	case DISPID_VALUE://this
+	case DISPID_VALUE:
 		teSetObject(pVarResult, this);
+	case DISPID_TE_UNDEFIND:
 		return S_OK;
 	}//end_switch
 	return DISP_E_MEMBERNOTFOUND;
