@@ -45,32 +45,34 @@ AddEvent("DragEnter", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 
 AddEvent("DragOver", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 	if (Ctrl.Type == CTRL_WB) {
-		let TC = Sync.TabPlus.TCFromPt(pt);
+		const TC = Sync.TabPlus.TCFromPt(pt);
 		if (TC) {
-			let nIndex = Sync.TabPlus.FromPt(TC.Id, pt);
+			const nIndex = Sync.TabPlus.FromPt(TC.Id, pt);
 			if (nIndex >= 0) {
-				if (!g_.ptDrag || IsDrag(pt, g_.ptDrag)) {
-					let FV = TC[nIndex];
-					if (!Common.TabPlus.opt.NoDragOpen || (!FV.hwndView && FV.FolderItem.Enum)) {
-						g_.ptDrag = pt.Clone();
-						InvokeUI("Addons.TabPlus.DragOver", TC.Id, pt);
-					}
-				}
-				if (Common.TabPlus.Drag5) {
-					pdwEffect[0] = DROPEFFECT_MOVE;
-					return S_OK;
-				}
-				if (dataObj.Count) {
-					let Target = TC[nIndex].FolderItem;
-					if (!api.ILIsEqual(dataObj.Item(-1), Target)) {
-						let DropTarget = api.DropTarget(Target);
-						if (DropTarget) {
-							return DropTarget.DragOver(dataObj, grfKeyState, pt, pdwEffect);
+				const FV = TC[nIndex];
+				if (FV) {
+					if (!g_.ptDrag || IsDrag(pt, g_.ptDrag)) {
+						if (!Common.TabPlus.opt.NoDragOpen || (!FV.hwndView && FV.FolderItem.Enum)) {
+							g_.ptDrag = pt.Clone();
+							InvokeUI("Addons.TabPlus.DragOver", TC.Id, pt);
 						}
 					}
+					if (Common.TabPlus.Drag5) {
+						pdwEffect[0] = DROPEFFECT_MOVE;
+						return S_OK;
+					}
+					if (dataObj.Count) {
+						const Target = FV.FolderItem;
+						if (!api.ILIsEqual(dataObj.Item(-1), Target)) {
+							let DropTarget = api.DropTarget(Target);
+							if (DropTarget) {
+								return DropTarget.DragOver(dataObj, grfKeyState, pt, pdwEffect);
+							}
+						}
+					}
+					pdwEffect[0] = DROPEFFECT_NONE;
+					return S_OK;
 				}
-				pdwEffect[0] = DROPEFFECT_NONE;
-				return S_OK;
 			} else if (dataObj.Count && dataObj.Item(0).IsFolder) {
 				pdwEffect[0] = DROPEFFECT_LINK;
 				return S_OK;
@@ -84,17 +86,17 @@ AddEvent("DragOver", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 
 AddEvent("Drop", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 	if (Ctrl.Type == CTRL_WB) {
-		let TC = Sync.TabPlus.TCFromPt(pt);
+		const TC = Sync.TabPlus.TCFromPt(pt);
 		if (TC) {
 			let nIndex = Sync.TabPlus.FromPt(TC.Id, pt);
 			if (Common.TabPlus.Drag5) {
-				let res = /^tabplus_(\d+)_(\d+)/.exec(Common.TabPlus.Drag5);
+				const res = /^tabplus_(\d+)_(\d+)/.exec(Common.TabPlus.Drag5);
 				if (res) {
 					if (nIndex < 0) {
 						nIndex = TC.Count - 1;
 					}
 					if (res[1] != TC.Id || res[2] != nIndex) {
-						let TC1 = te.Ctrl(CTRL_TC, res[1]);
+						const TC1 = te.Ctrl(CTRL_TC, res[1]);
 						TC1.Move(res[2], nIndex, TC);
 						TC1.SelectedIndex = nIndex;
 					}
@@ -104,7 +106,7 @@ AddEvent("Drop", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 			}
 			if (nIndex >= 0) {
 				let hr = S_FALSE;
-				let DropTarget = TC[nIndex].DropTarget;
+				const DropTarget = TC[nIndex].DropTarget;
 				if (DropTarget) {
 					InvokeUI("Addons.TabPlus.DragLeave");
 					Common.TabPlus.bDropping = true;
@@ -114,7 +116,7 @@ AddEvent("Drop", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 				return hr;
 			} else if (dataObj.Count) {
 				for (let i = 0; i < dataObj.Count; ++i) {
-					let FV = TC.Selected.Navigate(dataObj.Item(i), SBSP_NEWBROWSER);
+					const FV = TC.Selected.Navigate(dataObj.Item(i), SBSP_NEWBROWSER);
 					TC.Move(FV.Index, TC.Count - 1);
 				}
 				return S_OK;

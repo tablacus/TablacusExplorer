@@ -3499,7 +3499,7 @@ Threads.Run = function () {
 Threads.End = function (Id) {
 	for (var i = Threads.Data.Count; i--;) {
 		if (Id === Threads.Data[i].Data.Id) {
-			delete Threads.Data.splice(i, 1);
+			Threads.Data.splice(i, 1);
 			CollectGarbage();
 			return;
 		}
