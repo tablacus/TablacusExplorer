@@ -432,6 +432,11 @@ LoadScripts = async function (js1, js2, cb) {
 				return $.FolderMenu;
 			}
 		});
+		Object.defineProperty(window, "clipboardData", {
+			get: function () {
+				return $.clipboardData;
+			}
+		});
 	} else {
 		$ = window;
 	}

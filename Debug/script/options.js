@@ -340,7 +340,7 @@ async function AddTabControl() {
 }
 
 async function DelTabControl() {
-	var TC = await te.Ctrl(CTRL_TC);
+	const TC = await te.Ctrl(CTRL_TC);
 	if (TC) {
 		TC.Close();
 	}
@@ -349,13 +349,15 @@ async function DelTabControl() {
 async function SetTabControls() {
 	if (g_Chg.Tab) {
 		if (document.getElementById("Conf_TabDefault").checked) {
-			var cTC = await te.Ctrls(CTRL_TC);
-			var nLen = await cTC.Count;
-			for (let i = 0; i < nLen; ++i) {
-				SetTabControl(await cTC[i]);
+			let cTC = await te.Ctrls(CTRL_TC);
+			if (window.chrome) {
+				cTC = await api.CreateObject("SafeArray", cTC);
+			}
+			for (let i = 0; i < cTC.length; ++i) {
+				SetTabControl(cTC[i]);
 			}
 		} else {
-			var TC = await te.Ctrl(CTRL_TC);
+			const TC = await te.Ctrl(CTRL_TC);
 			if (TC) {
 				SetTabControl(TC);
 			}
@@ -393,7 +395,7 @@ async function SetTreeControls() {
 	}
 }
 
-async function SetTabControl(TC) {
+function SetTabControl(TC) {
 	if (TC) {
 		TC.Style = document.F.Tab_Style.value;
 		TC.Align = document.F.Tab_Align.value;

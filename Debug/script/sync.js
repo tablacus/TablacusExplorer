@@ -78,7 +78,7 @@ if ("undefined" != typeof ScriptEngineMajorVersion && ScriptEngineMajorVersion()
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201211 ? te.Version : 20201212;
+		return te.Version < 20201211 ? te.Version : 20201213;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -3285,3 +3285,13 @@ BasicDB = function (name, bLoad, bLC) {
 }
 
 SimpleDB = BasicDB;
+
+if ("undefined" === typeof clipboardData) {
+	clipboardData = {
+		setData: function (format, data) {
+			api.SetClipboardData(data);
+			return true;
+		},
+		getData: api.GetClipboardData
+	}
+}
