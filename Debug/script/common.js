@@ -182,11 +182,8 @@ delamp = function (s) {
 }
 
 GetConsts = function (s) {
-	const Result = window[s.replace(/\s/, "")];
-	if (Result != null) {
-		return Result;
-	}
-	return s;
+	const r = ("string" === typeof s) && window[s.replace(/\s/, "")];
+	return /^string$|^number$/.test(typeof r) ? r : s;
 }
 
 CalcVersion = function (s) {

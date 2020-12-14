@@ -400,7 +400,6 @@ LoadScripts = async function (js1, js2, cb) {
 		}
 		js1.length = 0;
 		$.$JS = await api.GetScriptDispatch(s.join(""), "JScript", o);
-		await CopyObj(window, $, ["g_", "Common", "Sync", "Threads"]);
 		await CopyObj(window, $, arFN);
 		doc.parentWindow = $;
 		WebBrowser.Document = doc;
@@ -427,6 +426,21 @@ LoadScripts = async function (js1, js2, cb) {
 				return $.wnw;
 			}
 		});
+		Object.defineProperty(window, "Common", {
+			get: function () {
+				return $.Common;
+			}
+		});
+		Object.defineProperty(window, "Sync", {
+			get: function () {
+				return $.Sync;
+			}
+		});
+		Object.defineProperty(window, "Threads", {
+			get: function () {
+				return $.g_;
+			}
+		});
 		Object.defineProperty(window, "FolderMenu", {
 			get: function () {
 				return $.FolderMenu;
@@ -435,6 +449,11 @@ LoadScripts = async function (js1, js2, cb) {
 		Object.defineProperty(window, "clipboardData", {
 			get: function () {
 				return $.clipboardData;
+			}
+		});
+		Object.defineProperty(window, "g_", {
+			get: function () {
+				return $.g_;
 			}
 		});
 	} else {

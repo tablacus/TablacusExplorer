@@ -78,7 +78,7 @@ if ("undefined" != typeof ScriptEngineMajorVersion && ScriptEngineMajorVersion()
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201211 ? te.Version : 20201213;
+		return te.Version < 20201211 ? te.Version : 20201214;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
