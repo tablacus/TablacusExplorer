@@ -45,7 +45,7 @@ if (!window.chrome) {
 			if (el) {
 				const res = /^addressbar(\d+)_$/.exec(el.id);
 				if (res) {
-					const Target = Common.AddressBar.GetPath(res[1] - 0);
+					const Target = Addons.AddressBar.GetPath(res[1] - 0);
 					if (!api.ILIsEqual(dataObj.Item(-1), Target)) {
 						const DropTarget = api.DropTarget(Target);
 						if (DropTarget) {
@@ -68,7 +68,7 @@ if (!window.chrome) {
 				const res = /^addressbar(\d+)_$/.exec(el.id);
 				if (res) {
 					let hr = S_FALSE;
-					const Target = Common.AddressBar.GetPath(res[1] - 0);
+					const Target = Addons.AddressBar.GetPath(res[1] - 0);
 					if (!api.ILIsEqual(dataObj.Item(-1), Target)) {
 						const DropTarget = api.DropTarget(Target);
 						if (DropTarget) {
