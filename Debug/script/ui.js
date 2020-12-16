@@ -625,13 +625,21 @@ GetPos = function (o, bScreen, bAbs, bPanel, bBottom) {
 		bBottom = bScreen & 8;
 		bScreen &= 1;
 	}
-	const x = bScreen ? screenLeft * ui_.Zoom : 0;
-	let y = bScreen ? screenTop * ui_.Zoom : 0;
-	if (bBottom) {
-		y += o.offsetHeight;
+	let rc = o.getBoundingClientRect();
+	const pt = { x: rc.left, y: rc.top };
+	if (window.chrome && window.frameElement) {
+		rc = frameElement.getBoundingClientRect();
+		pt.x += rc.left;
+		pt.y += rc.top;
 	}
-	const rc = o.getBoundingClientRect();
-	return { x: x + rc.left, y: y + rc.top };
+	if (bScreen) {
+		pt.x += screenLeft * ui_.Zoom;
+		pt.y += screenTop * ui_.Zoom;
+	}
+	if (bBottom) {
+		pt.y += o.offsetHeight;
+	}
+	return pt;
 }
 
 GetPosEx = async function (el, n) {

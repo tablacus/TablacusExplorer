@@ -78,7 +78,7 @@ if ("undefined" != typeof ScriptEngineMajorVersion && ScriptEngineMajorVersion()
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201211 ? te.Version : 20201214;
+		return te.Version < 20201211 ? te.Version : 20201216;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -210,14 +210,14 @@ ChooseWebColor = function (c) {
 	}
 }
 
-RegEnumKey = function (hKey, Name) {
-	var server = te.GetObject("winmgmts:\\\\.\\root\\default:StdRegProv");
-	var method = server.Methods_.Item("EnumKey");
-	var iParams = method.InParameters.SpawnInstance_();
+RegEnumKey = function (hKey, Name, bSA) {
+	const server = te.GetObject("winmgmts:\\\\.\\root\\default:StdRegProv");
+	const method = server.Methods_.Item("EnumKey");
+	const iParams = method.InParameters.SpawnInstance_();
 	iParams.hDefKey = hKey;
 	iParams.sSubKeyName = Name;
-	var r = server.ExecMethod_(method.Name, iParams).sNames;
-	return r !== null ? r.toArray() : [];
+	const r = server.ExecMethod_(method.Name, iParams).sNames;
+	return bSA ? r : r.toArray ? r.toArray() : api.CreateObject("Array", r);
 }
 
 OpenDialog = function (path, bFilesOnly) {
@@ -465,9 +465,9 @@ OrganizePath = function (fn, base) {
 	return fn;
 }
 
-OpenAdodbFromTextFile = function (fn, charset) {
-	fn = OrganizePath(fn, te.Data.Installed);
-	var ado = api.CreateObject("ads");
+OpenAdodbFromTextFile = function (fn, charset, base) {
+	fn = OrganizePath(fn, base || te.Data.Installed);
+	const ado = api.CreateObject("ads");
 	if (charset) {
 		try {
 			ado.CharSet = charset;
@@ -504,19 +504,14 @@ OpenAdodbFromTextFile = function (fn, charset) {
 	return ado;
 }
 
-ReadTextFile = function (fn, base) {
-	let src;
-	const ado = api.CreateObject("ads");
-	ado.CharSet = "utf-8";
-	ado.Open();
-	try {
-		ado.LoadFromFile(OrganizePath(fn, base || te.Data.Installed));
-		src = ado.ReadText();
-	} catch (e) {
-		src = "";
+ReadTextFile = function (fn, bDetect, base) {
+	const ado = OpenAdodbFromTextFile(fn, bDetect ? null : "utf-8", base);
+	if (ado) {
+		const src = ado.ReadText();
+		ado.Close();
+		return src;
 	}
-	ado.Close();
-	return src;
+	return "";
 }
 
 WriteTextFile = function (fn, src, base) {
@@ -2951,7 +2946,7 @@ SetLang2 = function (s, v) {
 
 LoadDBFromTSV = function (DB, fn) {
 	DB.Clear();
-	var ado = OpenAdodbFromTextFile(fn, "utf-8");
+	const ado = OpenAdodbFromTextFile(fn, "utf-8");
 	if (ado) {
 		while (!ado.EOS) {
 			var res = /^([^\t]*)\t(.*)$/.exec(ado.ReadText(adReadLine));
