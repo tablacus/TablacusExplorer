@@ -78,7 +78,7 @@ if ("undefined" != typeof ScriptEngineMajorVersion && ScriptEngineMajorVersion()
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201211 ? te.Version : 20201216;
+		return te.Version < 20201219 ? te.Version : 20201219;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -2149,13 +2149,13 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec, ContextMenu) {
 
 ExecMenu4 = function (Ctrl, Name, pt, hMenu, arContextMenu, nVerb, FV) {
 	if (ExtraMenuCommand[nVerb]) {
-		if (ExtraMenuCommand[nVerb](Ctrl, pt, Name, nVerb) != S_FALSE) {
+		if (api.Invoke(ExtraMenuCommand[nVerb], [Ctrl, pt, Name, nVerb]) != S_FALSE) {
 			api.DestroyMenu(hMenu);
 			return S_OK;
 		}
 	}
 	for (let i in eventTE.menucommand) {
-		const hr = eventTE.menucommand[i](Ctrl, pt, Name, nVerb, hMenu);
+		const hr = api.Invoke(eventTE.menucommand[i], [Ctrl, pt, Name, nVerb, hMenu]);
 		if (isFinite(hr) && hr == S_OK) {
 			api.DestroyMenu(hMenu);
 			return S_OK;
@@ -2845,10 +2845,10 @@ ShowDialogEx = function (mode, w, h, Id, opt) {
 }
 
 ShowNew = function (Ctrl, pt, Mode) {
-	var FV = GetFolderView(Ctrl, pt);
-	var path = api.GetDisplayNameOf(FV, SHGDN_FORPARSING | SHGDN_ORIGINAL);
+	const FV = GetFolderView(Ctrl, pt);
+	const path = api.GetDisplayNameOf(FV, SHGDN_FORPARSING | SHGDN_ORIGINAL);
 	if (/^[A-Z]:\\|^\\\\/i.test(path)) {
-		var opt = api.CreateObject("Object");
+		const opt = api.CreateObject("Object");
 		opt.Mode = Mode;
 		opt.path = path;
 		opt.FV = FV;

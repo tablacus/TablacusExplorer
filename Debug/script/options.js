@@ -1624,7 +1624,7 @@ InitDialog = async function () {
 
 		WebBrowser.OnClose = async function (WB) {
 			if (g_nResult == 1) {
-				path = document.F.path.value;
+				let path = document.F.path.value;
 				if (path) {
 					if (!/^[A-Z]:\\|^\\/i.test(path)) {
 						path = BuildPath(await dialogArguments.path, path.replace(/^\s+/, ""));
@@ -1701,6 +1701,34 @@ InitDialog = async function () {
 				CloseWindow();
 			}, 500, n, el && el.innerHTML, await GetTopWindow());
 		}
+	}
+	if (Query == "input") {
+		returnValue = false;
+		const s = ['<div style="padding: 8px;" style="display: block;"><label>', EncodeSC(await dialogArguments.text), '<br><input type="text" name="text" style="width: 100%"></div>'];
+		document.getElementById("Content").innerHTML = s.join("");
+		AddEventEx(document.body, "keydown", function (ev) {
+			if (ev.keyCode == VK_RETURN || window.chrome && /^Enter/i.test(ev.key)) {
+				SetResult(1);
+			}
+			if (ev.keyCode == VK_ESCAPE || window.chrome && /^Esc/i.test(ev.key)) {
+				SetResult(2);
+			}
+			return true;
+		});
+
+		setTimeout(async function () {
+			document.F.text.value = await dialogArguments.defaultText;
+			document.F.text.focus();
+			WebBrowser.Focus();
+		}, 99);
+
+		WebBrowser.OnClose = async function (WB) {
+			if (g_nResult == 1) {
+				dialogArguments.callback(document.F.text.value);
+			}
+			WB.Close();
+		};
+		document.F.ButtonOk.disabled = false;
 	}
 
 	DialogResize = function () {

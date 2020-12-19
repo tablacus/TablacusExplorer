@@ -206,9 +206,12 @@ FocusFV = function () {
 			el = document.elementFromPoint(rc.left + 2, rc.top + 2);
 		}
 		if (!el || !/input|textarea/i.test(el.tagName)) {
-			const FV = await GetFolderView();
-			if (FV) {
-				FV.Focus();
+			const hFocus = await api.GetFocus();
+			if (hFocus == ui_.hwnd || await api.IsChild(ui_.hwnd, hFocus)) {
+				const FV = await GetFolderView();
+				if (FV) {
+					FV.Focus();
+				}
 			}
 		}
 	}, ui_.DoubleClickTime);

@@ -18,19 +18,29 @@ Refresh = function (Ctrl, pt) {
 	return RunEvent4("Refresh", Ctrl, pt);
 }
 
-InputDialog = function (text, defaultText) {
-	var r = RunEvent4("InputDialog", text, defaultText);
+InputDialog = function (text, defaultText, cb) {
+	const r = RunEvent4("InputDialog", text, defaultText, cb);
 	if (r !== void 0) {
 		return r;
+	}
+	if (cb) {
+		const opt = api.CreateObject("Object");
+		opt.text = text;
+		opt.defaultText = defaultText;
+		opt.callback = function (text) {
+			setTimeout(cb, 99, text);
+		};
+		ShowDialogEx("input", 480, 120, null, opt);
+		return;
 	}
 	if (window.prompt) {
 		return prompt(GetTextR(text), defaultText);
 	}
-	var rc = api.Memory("RECT");
+	const rc = api.Memory("RECT");
 	api.GetWindowRect(te.hwnd, rc);
-	var t = 1440 / screen.deviceYDPI;
-	var x = Math.min((rc.left + (rc.right - rc.left) / 2 - 186) * t, 32767);
-	var y = Math.min((rc.top + (rc.bottom - rc.top) / 2 - 74) * t, 32767);
+	const t = 1440 / screen.deviceYDPI;
+	const x = Math.min((rc.left + (rc.right - rc.left) / 2 - 186) * t, 32767);
+	const y = Math.min((rc.top + (rc.bottom - rc.top) / 2 - 74) * t, 32767);
 	return api.GetScriptDispatch('Function InputDialog(text, TITLE, defaultText, x, y)\nInputDialog = InputBox(text, TITLE, defaultText, x, y)\nEnd Function', "VBScript").InputDialog(GetTextR(text), TITLE, defaultText, x, y);
 }
 
@@ -2313,9 +2323,9 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					if (wParam & 0xffff) {
 						if (g_.mouse.str == "") {
 							setTimeout(function () {
-								var hFocus = api.GetFocus();
+								const hFocus = api.GetFocus();
 								if (!hFocus || hFocus == te.hwnd) {
-									var FV = te.Ctrl(CTRL_FV);
+									const FV = te.Ctrl(CTRL_FV);
 									if (FV) {
 										FV.Focus();
 									}

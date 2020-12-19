@@ -305,3 +305,7 @@ a.treebutton:hover {
 .disabled {
 	color: gray;
 }
+
+.activecaption {
+  background-color: activecaption;
+}

@@ -3592,6 +3592,7 @@ BOOL teGetIDListFromVariant(LPITEMIDLIST *ppidl, VARIANT *pv, BOOL bForceLimit =
 			}
 			break;
 		case VT_NULL:
+		case VT_EMPTY:
 			return FALSE;
 		case VT_BSTR:
 		case VT_LPWSTR:
