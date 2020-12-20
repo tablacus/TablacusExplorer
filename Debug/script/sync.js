@@ -78,7 +78,7 @@ if ("undefined" != typeof ScriptEngineMajorVersion && ScriptEngineMajorVersion()
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201219 ? te.Version : 20201219;
+		return te.Version < 20201219 ? te.Version : 20201220;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -324,10 +324,10 @@ ShellExecute = function (s, vOperation, nShow, vDir2, pt) {
 }
 
 RunEvent1 = function () {
-	var args = Array.apply(null, arguments);
-	var en = args.shift();
-	var eo = eventTE[en.toLowerCase()];
-	for (var i in eo) {
+	const args = Array.apply(null, arguments);
+	const en = args.shift();
+	const eo = eventTE[en.toLowerCase()];
+	for (let i in eo) {
 		try {
 			api.Invoke(eo[i], args);
 		} catch (e) {
@@ -337,10 +337,10 @@ RunEvent1 = function () {
 }
 
 RunEvent2 = function () {
-	var args = Array.apply(null, arguments);
-	var en = args.shift();
-	var eo = eventTE[en.toLowerCase()];
-	for (var i in eo) {
+	const args = Array.apply(null, arguments);
+	const en = args.shift();
+	const eo = eventTE[en.toLowerCase()];
+	for (let i in eo) {
 		try {
 			var hr = api.Invoke(eo[i], args);
 			if (isFinite(hr) && hr != S_OK) {
@@ -354,12 +354,12 @@ RunEvent2 = function () {
 }
 
 RunEvent3 = function () {
-	var args = Array.apply(null, arguments);
-	var en = args.shift();
-	var eo = eventTE[en.toLowerCase()];
-	for (var i in eo) {
+	const args = Array.apply(null, arguments);
+	const en = args.shift();
+	const eo = eventTE[en.toLowerCase()];
+	for (let i in eo) {
 		try {
-			var hr = api.Invoke(eo[i], args);
+			const hr = api.Invoke(eo[i], args);
 			if (isFinite(hr)) {
 				return hr;
 			}
@@ -370,12 +370,12 @@ RunEvent3 = function () {
 }
 
 RunEvent4 = function () {
-	var args = Array.apply(null, arguments);
-	var en = args.shift();
-	var eo = eventTE[en.toLowerCase()];
-	for (var i in eo) {
+	const args = Array.apply(null, arguments);
+	const en = args.shift();
+	const eo = eventTE[en.toLowerCase()];
+	for (let i in eo) {
 		try {
-			var r = api.Invoke(eo[i], args);
+			const r = api.Invoke(eo[i], args);
 			if (r !== void 0) {
 				return r;
 			}
@@ -386,9 +386,9 @@ RunEvent4 = function () {
 }
 
 RunEventUI = function () {
-	var args = Array.apply(null, arguments);
-	var eo = MainWindow.eventTE[args[0].toLowerCase()];
-	for (var i in eo) {
+	const args = Array.apply(null, arguments);
+	const eo = MainWindow.eventTE[args[0].toLowerCase()];
+	for (let i in eo) {
 		args[0] = eo[i];
 		InvokeUI("ExecJavaScript", args);
 	}
@@ -2077,7 +2077,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec, ContextMenu) {
 			const eo = eventTE[Name.toLowerCase()];
 			for (let i in eo) {
 				try {
-					g_nPos = eo[i](Ctrl, hMenu, g_nPos, Selected, SelItem, ContextMenu, Name, pt);
+					g_nPos = api.Invoke(eo[i], [Ctrl, hMenu, g_nPos, Selected, SelItem, ContextMenu, Name, pt]);
 				} catch (e) {
 					ShowError(e, Name, i);
 				}

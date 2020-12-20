@@ -1052,11 +1052,12 @@ SetGestureText = function (Ctrl, Text) {
 }
 
 IsSavePath = function (path) {
-	var en = "IsSavePath";
-	var eo = eventTE[en.toLowerCase()];
-	for (var i in eo) {
+	const en = "IsSavePath";
+	const eo = eventTE[en.toLowerCase()];
+	const args = [path];
+	for (let i in eo) {
 		try {
-			if (!eo[i](path)) {
+			if (api.Invoke(eo[i], args) === false) {
 				return false;
 			}
 		} catch (e) {
@@ -1066,12 +1067,8 @@ IsSavePath = function (path) {
 	return true;
 }
 
-AddEvent("IsSavePath", function (path) {
-	return true;
-});
-
 Lock = function (Ctrl, nIndex, turn) {
-	var FV = Ctrl[nIndex];
+	const FV = Ctrl[nIndex];
 	if (FV) {
 		if (turn) {
 			FV.Data.Lock = !FV.Data.Lock;
@@ -1080,13 +1077,11 @@ Lock = function (Ctrl, nIndex, turn) {
 	}
 }
 
-GetLock = function (FV)
-{
+GetLock = function (FV) {
 	return FV && FV.Data && FV.Data.Lock;
 }
 
-CanClose = function (FV)
-{
+CanClose = function (FV) {
 	if (FV && FV.Data) {
 		if (GetLock(FV)) {
 			return S_FALSE;
@@ -2060,16 +2055,16 @@ AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, 
 });
 
 te.OnDragEnter = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect) {
-	var hr = E_NOTIMPL;
-	var dwEffect = pdwEffect[0];
-	var en = "DragEnter";
-	var eo = eventTE[en.toLowerCase()];
-	for (var i in eo) {
+	let hr = E_NOTIMPL;
+	const dwEffect = pdwEffect[0];
+	const en = "DragEnter";
+	const eo = eventTE[en.toLowerCase()];
+	for (let i in eo) {
 		try {
 			if (pdwEffect[0]) {
 				pdwEffect[0] = dwEffect;
 			}
-			var hr2 = eo[i](Ctrl, dataObj, pgrfKeyState[0], pt, pdwEffect, pgrfKeyState);
+			const hr2 = api.Invoke(eo[i], [Ctrl, dataObj, pgrfKeyState[0], pt, pdwEffect, pgrfKeyState]);
 			if (isFinite(hr2) && hr != S_OK) {
 				hr = hr2;
 			}
@@ -2082,13 +2077,13 @@ te.OnDragEnter = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect) {
 }
 
 te.OnDragOver = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect) {
-	var dwEffect = pdwEffect[0];
-	var en = "DragOver";
-	var eo = eventTE[en.toLowerCase()];
-	for (var i in eo) {
+	const dwEffect = pdwEffect[0];
+	const en = "DragOver";
+	const eo = eventTE[en.toLowerCase()];
+	for (let i in eo) {
 		try {
 			pdwEffect[0] = dwEffect;
-			var hr = eo[i](Ctrl, dataObj, pgrfKeyState[0], pt, pdwEffect, pgrfKeyState);
+			const hr = api.Invoke(eo[i], [Ctrl, dataObj, pgrfKeyState[0], pt, pdwEffect, pgrfKeyState]);
 			if (isFinite(hr)) {
 				return hr;
 			}
@@ -2096,17 +2091,17 @@ te.OnDragOver = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect) {
 			ShowError(e, en, i);
 		}
 	}
-	return hr;
+	return E_NOTIMPL;
 }
 
 te.OnDrop = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect) {
-	var dwEffect = pdwEffect[0];
-	var en = "Drop";
-	var eo = eventTE[en.toLowerCase()];
-	for (var i in eo) {
+	const dwEffect = pdwEffect[0];
+	const en = "Drop";
+	const eo = eventTE[en.toLowerCase()];
+	for (let i in eo) {
 		try {
 			pdwEffect[0] = dwEffect;
-			var hr = eo[i](Ctrl, dataObj, pgrfKeyState[0], pt, pdwEffect, pgrfKeyState);
+			const hr = api.Invoke(eo[i], [Ctrl, dataObj, pgrfKeyState[0], pt, pdwEffect, pgrfKeyState]);
 			if (isFinite(hr)) {
 				return hr;
 			}
@@ -2118,12 +2113,12 @@ te.OnDrop = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect) {
 }
 
 te.OnDragLeave = function (Ctrl) {
-	var hr = E_NOTIMPL;
-	var en = "DragLeave";
-	var eo = eventTE[en.toLowerCase()];
-	for (var i in eo) {
+	let hr = E_NOTIMPL;
+	const en = "DragLeave";
+	const eo = eventTE[en.toLowerCase()];
+	for (let i in eo) {
 		try {
-			var hr2 = eo[i](Ctrl);
+			const hr2 = api.Invoke(eo[i], [Ctrl]);
 			if (isFinite(hr2) && hr != S_OK) {
 				hr = hr2;
 			}
