@@ -78,7 +78,7 @@ if ("undefined" != typeof ScriptEngineMajorVersion && ScriptEngineMajorVersion()
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201219 ? te.Version : 20201220;
+		return te.Version < 20201219 ? te.Version : 20201221;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -591,11 +591,11 @@ AddonDisabled = function (Id) {
 }
 
 LoadXml = function (filename, nGroup) {
-	var items;
-	var xml = filename;
+	let items;
+	let xml = filename;
 	g_.fTCs = 0;
 	if ("string" === typeof filename) {
-		filename = api.PathUnquoteSpaces(ExtractMacro(te, filename));
+		filename = ExtractPath(te, filename);
 		if (fso.FileExists(filename)) {
 			xml = api.CreateObject("Msxml2.DOMDocument");
 			xml.async = false;
@@ -609,32 +609,32 @@ LoadXml = function (filename, nGroup) {
 	}
 	++g_.LockUpdate;
 	te.LockUpdate();
-	if (!nGroup) {
-		var cTC = te.Ctrls(CTRL_TC);
-		for (i in cTC) {
+	const cTC = te.Ctrls(CTRL_TC);
+	for (let i in cTC) {
+		if (!nGroup || cTC[i].Data.Group == nGroup) {
 			cTC[i].Close();
 		}
 	}
-	for (var i = 0; i < items.length; ++i) {
-		var item = items[i];
+	for (let i = 0; i < items.length; ++i) {
+		const item = items[i];
 		switch (item.getAttribute("Type") - 0) {
 			case CTRL_TC:
-				var TC = te.CreateCtrl(CTRL_TC, item.getAttribute("Left"), item.getAttribute("Top"), item.getAttribute("Width"), item.getAttribute("Height"), item.getAttribute("Style"), item.getAttribute("Align"), item.getAttribute("TabWidth"), item.getAttribute("TabHeight"));
-				TC.Data.Group = nGroup || Number(item.getAttribute("Group")) || 0;
-				var tabs = item.getElementsByTagName('Ctrl');
-				for (var i2 = 0; i2 < tabs.length; ++i2) {
-					var tab = tabs[i2];
-					var Path = tab.getAttribute("Path");
-					var logs = tab.getElementsByTagName('Log');
-					var nLogCount = logs.length;
+				const TC = te.CreateCtrl(CTRL_TC, item.getAttribute("Left"), item.getAttribute("Top"), item.getAttribute("Width"), item.getAttribute("Height"), item.getAttribute("Style"), item.getAttribute("Align"), item.getAttribute("TabWidth"), item.getAttribute("TabHeight"));
+				TC.Data.Group = nGroup || GetNum(item.getAttribute("Group"));
+				const tabs = item.getElementsByTagName('Ctrl');
+				for (let i2 = 0; i2 < tabs.length; ++i2) {
+					const tab = tabs[i2];
+					let Path = tab.getAttribute("Path");
+					const logs = tab.getElementsByTagName('Log');
+					const nLogCount = logs.length;
 					if (nLogCount > 1) {
 						Path = api.CreateObject("FolderItems");
-						for (var i3 = 0; i3 < nLogCount; ++i3) {
+						for (let i3 = 0; i3 < nLogCount; ++i3) {
 							Path.AddItem(logs[i3].getAttribute("Path"));
 						}
 						Path.Index = tab.getAttribute("LogIndex");
 					}
-					var FV = TC.Selected.Navigate2(Path, SBSP_NEWBROWSER, tab.getAttribute("Type"), tab.getAttribute("ViewMode"), tab.getAttribute("FolderFlags"), tab.getAttribute("Options"), tab.getAttribute("ViewFlags"), tab.getAttribute("IconSize"), tab.getAttribute("Align"), tab.getAttribute("Width"), tab.getAttribute("Flags"), tab.getAttribute("EnumFlags"), tab.getAttribute("RootStyle"), tab.getAttribute("Root"));
+					const FV = TC.Selected.Navigate2(Path, SBSP_NEWBROWSER, tab.getAttribute("Type"), tab.getAttribute("ViewMode"), tab.getAttribute("FolderFlags"), tab.getAttribute("Options"), tab.getAttribute("ViewFlags"), tab.getAttribute("IconSize"), tab.getAttribute("Align"), tab.getAttribute("Width"), tab.getAttribute("Flags"), tab.getAttribute("EnumFlags"), tab.getAttribute("RootStyle"), tab.getAttribute("Root"));
 					if (!FV.FilterView) {
 						FV.FilterView = tab.getAttribute("FilterView");
 					}
@@ -675,7 +675,7 @@ SaveXmlTC = function (Ctrl, xml, nGroup) {
 	item.setAttribute("Visible", GetNum(Ctrl.Visible));
 	item.setAttribute("Group", GetNum(nGroup || Ctrl.Data.Group));
 
-	var bEmpty = true;
+	let bEmpty = true;
 	var nCount2 = Ctrl.Count;
 	for (var i2 in Ctrl) {
 		var FV = Ctrl[i2];

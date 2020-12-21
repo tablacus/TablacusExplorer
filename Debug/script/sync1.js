@@ -18,8 +18,8 @@ Refresh = function (Ctrl, pt) {
 	return RunEvent4("Refresh", Ctrl, pt);
 }
 
-InputDialog = function (text, defaultText, cb) {
-	const r = RunEvent4("InputDialog", text, defaultText, cb);
+InputDialog = function (text, defaultText, cb, data) {
+	const r = RunEvent4("InputDialog", text, defaultText, cb, data);
 	if (r !== void 0) {
 		return r;
 	}
@@ -28,9 +28,9 @@ InputDialog = function (text, defaultText, cb) {
 		opt.text = text;
 		opt.defaultText = defaultText;
 		opt.callback = function (text) {
-			setTimeout(cb, 99, text);
+			setTimeout(cb, 9, text, data);
 		};
-		ShowDialogEx("input", 480, 120, null, opt);
+		ShowDialogEx("input", 480, 140, null, opt);
 		return;
 	}
 	if (window.prompt) {
@@ -858,9 +858,8 @@ g_basic = {
 	}
 };
 
-RefreshEx = function (FV, tm, df)
-{
-	if  (FV.Data && FV.FolderItem && /^[A-Z]:\\|^\\\\\w/i.test(FV.FolderItem.Path)) {
+RefreshEx = function (FV, tm, df) {
+	if (FV.Data && FV.FolderItem && /^[A-Z]:\\|^\\\\\w/i.test(FV.FolderItem.Path)) {
 		if (RunEvent4("RefreshEx", FV, tm, df) === void 0) {
 			if (new Date().getTime() - (FV.Data.AccessTime || 0) > (df || 5000) || FV.Data.pathChk != FV.FolderItem.Path) {
 				if (!FV.hwndView || FV.FolderItem.Unavailable || api.ILIsEqual(FV.FolderItem, FV.FolderItem.Alt)) {
@@ -953,7 +952,7 @@ DeviceChanged = function (Ctrl) {
 ListViewCreated = function (Ctrl) {
 	ChangeTabName(Ctrl);
 	Ctrl.Data.AccessTime = "#";
-	var res = /search\-ms:.*?crumb=([^&]+)/.exec(Ctrl.FilterView);
+	const res = /search\-ms:.*?crumb=([^&]+)/.exec(Ctrl.FilterView);
 	if (res) {
 		Ctrl.FilterView = null;
 		Ctrl.Search(decodeURIComponent(res[1]).replace(/~<(\*?)/, "$1"));
@@ -1563,10 +1562,10 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 }
 
 te.OnNavigateComplete = function (Ctrl) {
-	Ctrl.Data.AccessTime = new Date().getTime();
 	if (g_.tid_rf[Ctrl.Id] || !Ctrl.FolderItem) {
 		return S_OK;
 	}
+	Ctrl.Data.AccessTime = new Date().getTime();
 	Ctrl.NavigateComplete();
 	RunEvent1("NavigateComplete", Ctrl);
 	ChangeView(Ctrl);

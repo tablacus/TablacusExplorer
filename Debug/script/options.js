@@ -290,9 +290,9 @@ function AddValue(name, i, min, max) {
 
 function ChooseColor1(o) {
 	setTimeout(async function () {
-		var o2 = o.form[o.id.replace("Color_", "")];
-		var c = await ChooseColor(o2.value || o2.placeholder);
-		if (isFinite(c)) {
+		const o2 = o.form[o.id.replace("Color_", "")];
+		const c = await ChooseColor(o2.value || o2.placeholder);
+		if (c != null) {
 			o2.value = c;
 			o.style.backgroundColor = GetWebColor(c);
 		}
@@ -301,9 +301,9 @@ function ChooseColor1(o) {
 
 function ChooseColor2(o) {
 	setTimeout(async function () {
-		var o2 = o.form[o.id.replace("Color_", "")];
-		var c = await ChooseColor(await GetWinColor(o2.value || o2.placeholder));
-		if (isFinite(c)) {
+		const o2 = o.form[o.id.replace("Color_", "")];
+		let c = await ChooseColor(await GetWinColor(o2.value || o2.placeholder));
+		if (c != null) {
 			c = GetWebColor(c);
 			o2.value = c;
 			o.style.backgroundColor = c;
@@ -1717,15 +1717,15 @@ InitDialog = async function () {
 		});
 
 		setTimeout(async function () {
-			document.F.text.value = await dialogArguments.defaultText;
-			document.F.text.focus();
+			const el = document.F.text;
+			el.value = await dialogArguments.defaultText;
+			el.select();
+			el.focus();
 			WebBrowser.Focus();
 		}, 99);
 
 		WebBrowser.OnClose = async function (WB) {
-			if (g_nResult == 1) {
-				dialogArguments.callback(document.F.text.value);
-			}
+			dialogArguments.callback(g_nResult == 1 ? document.F.text.value : null);
 			WB.Close();
 		};
 		document.F.ButtonOk.disabled = false;
@@ -2009,22 +2009,26 @@ InitLocation = async function () {
 					break;
 				}
 			}
-			var ele = document.F;
+			const ele = document.F;
 			ele.MenuName.value = await GetSourceText(ele._MenuName.value);
 			if (dialogArguments.Data.show == "6") {
 				ele.Set.value = "";
 			}
+			let bConfigChanged = false;
 			for (let i = ele.length; i--;) {
 				var n = ele[i].id || ele[i].name;
 				if (n && n.charAt(0) != "_") {
 					if (n == "Key") {
 						document.F[n].value = await GetKeyKeyG(document.F[n].value);
 					}
-					if (SetAttribEx(item, document.F, n)) {
-						te.Data.bReload = true;
-						MainWindow.RunEvent1("ConfigChanged", "Addons");
+					if (await SetAttribEx(item, document.F, n)) {
+						bConfigChanged = true;
 					}
 				}
+			}
+			if (bConfigChanged) {
+				te.Data.bReload = true;
+				MainWindow.RunEvent1("ConfigChanged", "Addons");
 			}
 		}
 	};
@@ -2100,7 +2104,7 @@ function SetElementValue(o, s) {
 }
 
 async function SetAttribEx(item, f, n) {
-	var s = GetElementValue(f[n]);
+	const s = GetElementValue(f[n]);
 	if (s != await GetAttribEx(item, f, n)) {
 		SetAttrib(item, n, s);
 		return true;

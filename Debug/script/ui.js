@@ -608,24 +608,29 @@ FireEvent = function (o, event) {
 	}
 }
 
-GetRect = async function (o, f) {
+GetRect = async function (el, f) {
 	const rc = await api.Memory("RECT");
-	const pt = GetPos(o, f);
-	rc.left = pt.x;
-	rc.top = pt.y;
-	rc.right = pt.x + o.offsetWidth;
-	rc.bottom = pt.y + o.offsetHeight;
+	if (el) {
+		const pt = GetPos(el, f);
+		rc.left = pt.x;
+		rc.top = pt.y;
+		rc.right = pt.x + el.offsetWidth;
+		rc.bottom = pt.y + el.offsetHeight;
+	}
 	return rc;
 }
 
-GetPos = function (o, bScreen, bAbs, bPanel, bBottom) {
+GetPos = function (el, bScreen, bAbs, bPanel, bBottom) {
+	if (!el) {
+		return { x: -32768, y: -32768 };
+	}
 	if ("number" === typeof bScreen) {
 		bAbs = bScreen & 2;
 		bPanel = bScreen & 4;
 		bBottom = bScreen & 8;
 		bScreen &= 1;
 	}
-	let rc = o.getBoundingClientRect();
+	let rc = el.getBoundingClientRect();
 	const pt = { x: rc.left, y: rc.top };
 	if (window.chrome && window.frameElement) {
 		rc = frameElement.getBoundingClientRect();
@@ -637,7 +642,7 @@ GetPos = function (o, bScreen, bAbs, bPanel, bBottom) {
 		pt.y += screenTop * ui_.Zoom;
 	}
 	if (bBottom) {
-		pt.y += o.offsetHeight;
+		pt.y += el.offsetHeight;
 	}
 	return pt;
 }
