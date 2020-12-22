@@ -50,35 +50,9 @@ g_.ptMenuDrag = api.Memory("POINT");
 g_.Locations = api.CreateObject("Object");
 g_.IEVer = window.chrome ? (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 : 12) : ScriptEngineMajorVersion() > 8 ? ScriptEngineMajorVersion() : ScriptEngineMinorVersion();
 
-if ("undefined" != typeof ScriptEngineMajorVersion && ScriptEngineMajorVersion() < 10) {
-	(function (f) {
-		if (f) {
-			window.setTimeout = function () {
-				var args = Array.apply(null, arguments);
-				var fn = args.shift();
-				var tm = args.shift();
-				try {
-					return f(function () {
-						try {
-							if ("string" === typeof fn) {
-								fn = new Function(fn);
-							}
-							fn.apply(fn, args);
-						} catch (e) {
-							ShowError(e, fn.toString());
-						}
-					}, tm);
-				} catch (e) {
-					ShowError(e);
-				}
-			}
-		}
-	})(setTimeout);
-}
-
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201219 ? te.Version : 20201221;
+		return te.Version < 20201219 ? te.Version : 20201222;
 	}
 	if (n == 1) {
 		var v = AboutTE(0);
@@ -118,6 +92,32 @@ AboutTE = function (n) {
 		}
 	}
 	return ar.join(" ");
+}
+
+if ("undefined" != typeof ScriptEngineMajorVersion && ScriptEngineMajorVersion() < 10) {
+	(function (f) {
+		if (f) {
+			window.setTimeout = function () {
+				var args = Array.apply(null, arguments);
+				var fn = args.shift();
+				var tm = args.shift();
+				try {
+					return f(function () {
+						try {
+							if ("string" === typeof fn) {
+								fn = new Function(fn);
+							}
+							fn.apply(fn, args);
+						} catch (e) {
+							ShowError(e, fn.toString());
+						}
+					}, tm);
+				} catch (e) {
+					ShowError(e);
+				}
+			}
+		}
+	})(setTimeout);
 }
 
 GetFolderView = function (Ctrl, pt, bStrict) {

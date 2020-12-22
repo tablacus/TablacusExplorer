@@ -307,5 +307,6 @@ a.treebutton:hover {
 }
 
 .activecaption {
+  color: captiontext;
   background-color: activecaption;
 }

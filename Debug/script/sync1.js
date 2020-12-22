@@ -19,8 +19,12 @@ Refresh = function (Ctrl, pt) {
 }
 
 InputDialog = function (text, defaultText, cb, data) {
-	const r = RunEvent4("InputDialog", text, defaultText, cb, data);
+	const r = RunEvent4("InputDialog", text, defaultText);
 	if (r !== void 0) {
+		if (cb) {
+			cb(r, data);
+			return;
+		}
 		return r;
 	}
 	if (cb) {

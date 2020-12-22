@@ -468,7 +468,7 @@ function SelectPos(o, s) {
 function SwitchMenus(o) {
 	if (g_x.Menus) {
 		g_x.Menus.style.display = "none";
-		var o = o || document.F.elements.Menus;
+		var o = o || document.F.Menus;
 		for (let i = o.length; i-- > 0;) {
 			var a = o[i].value.split(",");
 			if ("Menus_" + a[0] == g_x.Menus.name) {
@@ -917,7 +917,7 @@ async function SaveMenus() {
 		for (let j in g_arMenuTypes) {
 			const o = document.F["Menus_" + g_arMenuTypes[j]];
 			const items = await xml.createElement(g_arMenuTypes[j]);
-			let a = document.F.elements.Menus[j].value.split(",");
+			let a = document.F.Menus[j].value.split(",");
 			await items.setAttribute("Base", GetNum(a[1]));
 			await items.setAttribute("Pos", GetNum(a[2]));
 			for (let i = 0; i < o.length; ++i) {
@@ -1877,13 +1877,9 @@ InitLocation = async function () {
 		ar.push('<input type="button" value="', await MainWindow.g_.KeyState[i][0], '" title="', s.charAt(i), '" onclick="AddMouse(this)">');
 	}
 	document.getElementById("__MOUSEDATA").innerHTML = ar.join("");
-	var info = await GetAddonInfo(Addon_Id);
-	document.title = await info.Name;
-	var item = await GetAddonElement(Addon_Id);
-	var Location = item.getAttribute("Location");
-	if (!Location) {
-		Location = await param.Default;
-	}
+	document.title = await GetAddonInfo(Addon_Id).Name;
+	const item = await GetAddonElement(Addon_Id);
+	const Location = item.getAttribute("Location") || await param.Default;
 	for (let i = document.L.length; i--;) {
 		if (SameText(Location, document.L[i].value)) {
 			document.L[i].checked = true;
@@ -1913,7 +1909,7 @@ InitLocation = async function () {
 	await ApplyLang(document);
 	let oa = document.F.Menu;
 	oa.length = 0;
-	var o = oa[++oa.length - 1];
+	let o = oa[++oa.length - 1];
 	o.value = "";
 	o.text = await GetText("Select");
 	for (let j in g_arMenuTypes) {
@@ -1997,26 +1993,25 @@ InitLocation = async function () {
 			await SaveLocation();
 		}
 		MainWindow.g_.OptionsWindow = void 0;
-		var items = await te.Data.Addons.getElementsByTagName(Addon_Id);
-		if (GetLength(items)) {
-			var item = await items[0];
+		const items = await te.Data.Addons.getElementsByTagName(Addon_Id);
+		if (await GetLength(items)) {
+			let bConfigChanged = false;
+			const item = await items[0];
 			item.removeAttribute("Location");
-			for (let i = document.L.elements.length; i--;) {
+			for (let i = document.L.length; i--;) {
 				if (document.L[i].checked) {
 					item.setAttribute("Location", document.L[i].value);
-					te.Data.bReload = true;
-					await MainWindow.RunEvent1("ConfigChanged", "Addons");
+					bConfigChanged = true;
 					break;
 				}
 			}
-			const ele = document.F;
-			ele.MenuName.value = await GetSourceText(ele._MenuName.value);
-			if (dialogArguments.Data.show == "6") {
-				ele.Set.value = "";
+			const el = document.F;
+			el.MenuName.value = await GetSourceText(el._MenuName.value);
+			if (await dialogArguments.Data.show == "6") {
+				el.Set.value = "";
 			}
-			let bConfigChanged = false;
-			for (let i = ele.length; i--;) {
-				var n = ele[i].id || ele[i].name;
+			for (let i = el.length; i--;) {
+				const n = el[i].id || el[i].name;
 				if (n && n.charAt(0) != "_") {
 					if (n == "Key") {
 						document.F[n].value = await GetKeyKeyG(document.F[n].value);
@@ -2035,7 +2030,7 @@ InitLocation = async function () {
 
 	if (await WebBrowser.OnClose) {
 		g_Inline = true;
-		var cel = document.getElementsByTagName("input");
+		const cel = document.getElementsByTagName("input");
 		for (let i = cel.length; i-- > 0;) {
 			if (/^ok$|^cancel$/.test(cel[i].className)) {
 				cel[i].style.display = "none";
@@ -2318,9 +2313,9 @@ async function SetAddonOptions() {
 		var items = await te.Data.Addons.getElementsByTagName(Addon_Id);
 		if (GetLength(items)) {
 			var item = await items[0];
-			var ele = document.F.elements;
-			for (let i = ele.length; i--;) {
-				var n = ele[i].id || ele[i].name;
+			var el = document.F;
+			for (let i = el.length; i--;) {
+				var n = el[i].id || el[i].name;
 				if (n) {
 					if (await SetAttribEx(item, document.F, n)) {
 						returnValue = true;
@@ -2786,31 +2781,31 @@ SetResult = async function (i) {
 }
 
 function InitColor1(item) {
-	var ele = document.F.elements;
-	for (let i = ele.length; i--;) {
-		var n = ele[i].id || ele[i].name;
+	var el = document.F;
+	for (let i = el.length; i--;) {
+		var n = el[i].id || el[i].name;
 		if (n) {
 			GetAttribEx(item, document.F, n);
 		}
 	}
-	for (let i = ele.length; i--;) {
-		var n = ele[i].id || ele[i].name;
+	for (let i = el.length; i--;) {
+		var n = el[i].id || el[i].name;
 		if (n) {
 			var res = /^Color_(.*)/.exec(n);
 			if (res) {
 				var o = document.F[res[1]];
 				if (o) {
-					ele[i].style.backgroundColor = GetWebColor(o.value || o.placeholder);
+					el[i].style.backgroundColor = GetWebColor(o.value || o.placeholder);
 				}
 			}
 		}
 	}
 }
 
-function ChangeColor1(ele) {
-	var o = document.getElementById("Color_" + (ele.id || ele.name));
+function ChangeColor1(el) {
+	var o = document.getElementById("Color_" + (el.id || el.name));
 	if (o) {
-		o.style.backgroundColor = GetWebColor(ele.value || ele.placeholder);
+		o.style.backgroundColor = GetWebColor(el.value || el.placeholder);
 	}
 }
 
