@@ -23,7 +23,7 @@ g_ = api.CreateObject("Object");
 g_.Colors = api.CreateObject("Object")
 g_.KeyCode = api.CreateObject("Object");
 g_.KeyState = api.CreateObject("Array");
-var ar = [
+const ar = [
 	[0x1d0000, 0x2000],
 	[0x2a0000, 0x1000],
 	[0x380000, 0x4000],
@@ -52,10 +52,10 @@ g_.IEVer = window.chrome ? (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201219 ? te.Version : 20201222;
+		return te.Version < 20201219 ? te.Version : 20201223;
 	}
 	if (n == 1) {
-		var v = AboutTE(0);
+		const v = AboutTE(0);
 		return [parseInt(v / 10000) % 100, parseInt(v / 100) % 100, v % 100].join(".");
 	}
 	if (n == 2) {
@@ -124,7 +124,7 @@ GetFolderView = function (Ctrl, pt, bStrict) {
 	if (!Ctrl) {
 		return te.Ctrl(CTRL_FV);
 	}
-	var nType = Ctrl.Type;
+	const nType = Ctrl.Type;
 	if (nType <= CTRL_EB) {
 		return Ctrl;
 	}
@@ -135,7 +135,7 @@ GetFolderView = function (Ctrl, pt, bStrict) {
 		return te.Ctrl(CTRL_FV);
 	}
 	if (pt) {
-		var FV = Ctrl.HitTest(pt);
+		const FV = Ctrl.HitTest(pt);
 		if (FV) {
 			return FV;
 		}
@@ -146,9 +146,9 @@ GetFolderView = function (Ctrl, pt, bStrict) {
 }
 
 GetSelectedArray = function (Ctrl, pt, bPlus) {
-	var Selected, SelItem;
-	var FV = null;
-	var bSel = true;
+	let Selected, SelItem;
+	let FV = null;
+	let bSel = true;
 	switch (Ctrl.Type) {
 		case CTRL_SB:
 		case CTRL_EB:
@@ -186,13 +186,13 @@ GetSelectedArray = function (Ctrl, pt, bPlus) {
 			Selected.AddItem(SelItem);
 		}
 	}
-	var r = api.CreateObject("Array");
+	const r = api.CreateObject("Array");
 	r.push(Selected, SelItem, FV);
 	return r;
 }
 
 ChooseColor = function (c) {
-	var cc = api.Memory("CHOOSECOLOR");
+	const cc = api.Memory("CHOOSECOLOR");
 	cc.lStructSize = cc.Size;
 	cc.hwndOwner = api.GetForegroundWindow();
 	cc.Flags = CC_FULLOPEN | CC_RGBINIT;
@@ -205,7 +205,7 @@ ChooseColor = function (c) {
 
 ChooseWebColor = function (c) {
 	c = ChooseColor(GetWinColor(c));
-	if (isFinite(c)) {
+	if (c != null) {
 		return GetWebColor(c);
 	}
 }
@@ -229,7 +229,7 @@ ChooseFolder = function (path, pt, uFlags) {
 		pt = api.Memory("POINT");
 		api.GetCursorPos(pt);
 	}
-	var FolderItem = api.ILCreateFromPath(path);
+	let FolderItem = api.ILCreateFromPath(path);
 	FolderItem = FolderMenu.Open(FolderItem.IsFolder ? FolderItem : ssfDRIVES, pt.x, pt.y);
 	if (FolderItem) {
 		return api.GetDisplayNameOf(FolderItem, uFlags || SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
@@ -533,8 +533,8 @@ WriteTextFile = function (fn, src, base) {
 
 AddEvent = function (Name, fn, priority) {
 	if (Name) {
-		var en = Name.toLowerCase();
-		var s = en.replace(/\d$/g, "");
+		const en = Name.toLowerCase();
+		const s = en.replace(/\d$/g, "");
 		if (g_.event[s] && !te["On" + s]) {
 			te["On" + s] = g_.event[s];
 		}
@@ -864,10 +864,10 @@ AddEvent("ConfigChanged", function (s) {
 
 ExecAddonScript = function (type, s, fn, arError, o, arStack) {
 	if (o === true) {
-		o =  api.CreateObject("Object");
+		o = api.CreateObject("Object");
 		o.window = $;
 	}
-	var sc = api.GetScriptDispatch(s, type, o,
+	const sc = api.GetScriptDispatch(s, type, o,
 		function (ei, SourceLineText, dwSourceContext, lLineNumber, CharacterPosition) {
 			arError.push([api.SysAllocString(ei.bstrDescription), fn, api.sprintf(16, "Line: %d", lLineNumber)].join("\n"));
 		}

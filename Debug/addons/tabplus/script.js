@@ -94,7 +94,7 @@ if (window.Addon == 1) {
 		},
 
 		SetActiveColor2: function (Id, s) {
-			(document.getElementById("Panel_" + Id) || { style: {} }).style.backgroundColor = s;
+			(document.getElementById("Panel_" + Id) || {}).className = s;
 		},
 
 		New: async function (Id) {

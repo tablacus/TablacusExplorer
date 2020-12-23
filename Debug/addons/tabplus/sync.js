@@ -47,6 +47,10 @@ AddEvent("DragOver", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 	if (Ctrl.Type == CTRL_WB) {
 		const TC = Sync.TabPlus.TCFromPt(pt);
 		if (TC) {
+			if (Common.TabPlus.Drag5) {
+				pdwEffect[0] = DROPEFFECT_MOVE;
+				return S_OK;
+			}
 			const nIndex = Sync.TabPlus.FromPt(TC.Id, pt);
 			if (nIndex >= 0) {
 				const FV = TC[nIndex];
@@ -56,10 +60,6 @@ AddEvent("DragOver", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 							g_.ptDrag = pt.Clone();
 							InvokeUI("Addons.TabPlus.DragOver", TC.Id, pt);
 						}
-					}
-					if (Common.TabPlus.Drag5) {
-						pdwEffect[0] = DROPEFFECT_MOVE;
-						return S_OK;
 					}
 					if (dataObj.Count) {
 						const Target = FV.FolderItem;
@@ -77,9 +77,6 @@ AddEvent("DragOver", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 				pdwEffect[0] = DROPEFFECT_LINK;
 				return S_OK;
 			}
-		} else if (Common.TabPlus.Drag5) {
-			pdwEffect[0] = DROPEFFECT_NONE;
-			return S_OK;
 		}
 	}
 });
@@ -93,7 +90,7 @@ AddEvent("Drop", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 				const res = /^tabplus_(\d+)_(\d+)/.exec(Common.TabPlus.Drag5);
 				if (res) {
 					if (nIndex < 0) {
-						nIndex = TC.Count - 1;
+						nIndex = TC.Count;
 					}
 					if (res[1] != TC.Id || res[2] != nIndex) {
 						const TC1 = te.Ctrl(CTRL_TC, res[1]);

@@ -890,7 +890,7 @@ LoadAddon = async function (ext, Id, arError, param, bDisabled) {
 				const o = await api.CreateObject("Object");
 				o["_Addon_Id"] = await api.CreateObject("Object");
 				o["_Addon_Id"].Addon_Id = Id;
-				o.window = window;
+				o.window = $;
 				sc = await ExecAddonScript("VBScript", s, fn, arError, o, Addons["_stack"]);
 			}
 			if (sc) {

@@ -19,8 +19,9 @@ Refresh = function (Ctrl, pt) {
 }
 
 InputDialog = function (text, defaultText, cb, data) {
-	const r = RunEvent4("InputDialog", text, defaultText);
-	if (r !== void 0) {
+	const eo = eventTE.inputdialog;
+	if (eo && eo.length) {
+		const r = api.Invoke(eo[0], [text, defaultText]);
 		if (cb) {
 			cb(r, data);
 			return;
@@ -1286,41 +1287,40 @@ AddEvent("Refresh", function (Ctrl, pt) {
 });
 
 AddFavorite = function (FolderItem) {
-	var xml = te.Data.xmlMenus;
-	var menus = xml.getElementsByTagName("Favorites");
+	const xml = te.Data.xmlMenus;
+	const menus = xml.getElementsByTagName("Favorites");
 	if (menus && menus.length) {
-		var item = xml.createElement("Item");
+		const item = xml.createElement("Item");
 		if (!FolderItem) {
-			var FV = te.Ctrl(CTRL_FV);
+			const FV = te.Ctrl(CTRL_FV);
 			if (FV) {
 				FolderItem = FV.FolderItem;
 			}
 		}
 		if (!FolderItem) {
-			return false;
+			return;
 		}
-		var s = InputDialog("Add Favorite", GetFolderItemName(FolderItem));
-		if (s) {
-			item.setAttribute("Name", s.replace(/\\/g, "/"));
-			item.setAttribute("Filter", "");
-			var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
-			if ("string" === typeof path) {
-				path = FolderItem.Path;
+		InputDialog("Add Favorite", GetFolderItemName(FolderItem), function (s) {
+			if (s) {
+				item.setAttribute("Name", s.replace(/\\/g, "/"));
+				item.setAttribute("Filter", "");
+				let path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
+				if ("string" === typeof path) {
+					path = FolderItem.Path;
+				}
+				if (!FolderItem.Enum && fso.FileExists(path)) {
+					path = api.PathQuoteSpaces(path);
+					item.setAttribute("Type", "Exec");
+				} else {
+					item.setAttribute("Type", "Open");
+				}
+				item.text = path;
+				menus[0].appendChild(item);
+				SaveXmlEx("menus.xml", xml);
+				FavoriteChanged();
 			}
-			if (!FolderItem.Enum && fso.FileExists(path)) {
-				path = api.PathQuoteSpaces(path);
-				item.setAttribute("Type", "Exec");
-			} else {
-				item.setAttribute("Type", "Open");
-			}
-			item.text = path;
-			menus[0].appendChild(item);
-			SaveXmlEx("menus.xml", xml);
-			FavoriteChanged();
-			return true;
-		}
+		});
 	}
-	return false;
 }
 
 CancelFilterView = function (FV) {

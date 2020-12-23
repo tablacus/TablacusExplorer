@@ -2108,8 +2108,8 @@ async function SetAttribEx(item, f, n) {
 }
 
 async function GetAttribEx(item, f, n) {
-	var s;
-	var res = /([^=]*)=(.*)/.exec(n);
+	let s;
+	const res = /([^=]*)=(.*)/.exec(n);
 	if (res) {
 		s = await item.getAttribute(res[1]);
 		if (s == res[2]) {
@@ -2117,7 +2117,7 @@ async function GetAttribEx(item, f, n) {
 		}
 		return;
 	}
-	s = /^!/.test(n) ? !item.getAttribute(n.slice(1)) : item.getAttribute(n);
+	s = /^!/.test(n) ? !await item.getAttribute(n.slice(1)) : await item.getAttribute(n);
 	if (s || s === 0) {
 		if (n == "Key") {
 			s = await GetKeyName(s);
