@@ -354,7 +354,7 @@ ArrangeAddons = async function () {
 		}
 		return;
 	}
-	const AddonId = [];
+	const AddonId = {};
 	const root = await xml.documentElement;
 	if (root) {
 		const items = await root.childNodes;

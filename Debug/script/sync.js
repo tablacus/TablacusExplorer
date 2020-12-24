@@ -52,7 +52,7 @@ g_.IEVer = window.chrome ? (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201219 ? te.Version : 20201223;
+		return te.Version < 20201219 ? te.Version : 20201224;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -910,9 +910,9 @@ ShowError = function (e, s, i) {
 }
 
 OpenXml = function (strFile, bAppData, bEmpty, strInit) {
-	var xml = api.CreateObject("Msxml2.DOMDocument");
+	const xml = api.CreateObject("Msxml2.DOMDocument");
 	xml.async = false;
-	var path = BuildPath(te.Data.DataFolder, "config\\" + strFile);
+	let path = BuildPath(te.Data.DataFolder, "config\\" + strFile);
 	if (fso.FileExists(path) && xml.load(path)) {
 		return xml;
 	}
@@ -2984,9 +2984,9 @@ FolderMenu = {
 	Open: function (FolderItem, x, y, filter, nParent, hParent, wID) {
 		this.Clear();
 		this.Filter = filter;
-		var hMenu = api.CreatePopupMenu();
+		const hMenu = api.CreatePopupMenu();
 		this.OpenMenu(hMenu, FolderItem, hParent, wID, nParent);
-		var Verb = this.TrackPopupMenu(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, x, y);
+		let Verb = this.TrackPopupMenu(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, x, y);
 		Verb = Verb ? this.Items[Verb - 1] : null;
 		this.Clear();
 		return Verb;
@@ -2995,7 +2995,7 @@ FolderMenu = {
 	TrackPopupMenu: function (hMenu, uFlags, x, y) {
 		MainWindow.g_menu_click = true;
 		this.MenuLoop = true;
-		var nVerb = api.TrackPopupMenuEx(hMenu, uFlags, x, y, te.hwnd, null, null);
+		const nVerb = api.TrackPopupMenuEx(hMenu, uFlags, x, y, te.hwnd, null, null);
 		delete this.MenuLoop;
 		api.DestroyMenu(hMenu);
 		return nVerb;
@@ -3006,17 +3006,17 @@ FolderMenu = {
 	},
 
 	OpenMenu: function (hMenu, FolderItem, hParent, wID, nParent) {
-		var Item;
+		let Item;
 		if (!FolderItem) {
 			return;
 		}
 		if (!/object|function/.test(typeof FolderItem)) {
 			FolderItem = api.ILCreateFromPath(FolderItem);
 		}
-		var bSep = false;
+		let bSep = false;
 		if (!nParent && !api.ILIsEmpty(FolderItem) && !api.ILIsParent(1, FolderItem, false)) {
 			Item = api.ILRemoveLastID(FolderItem);
-			var bMatch = IsFolderEx(Item);
+			let bMatch = IsFolderEx(Item);
 			if (this.Filter) {
 				bMatch = PathMatchEx(bMatch ? Item.Name + ".folder" : Item.Name, this.Filter);
 			}
@@ -3025,16 +3025,17 @@ FolderMenu = {
 				bSep = true;
 			}
 		}
-		var Items = this.Enum(FolderItem);
+		const Items = this.Enum(FolderItem);
 		if (Items) {
-			var nCount = Items.Count;
-			var ar = new Array(nCount);
+			const nCount = Items.Count;
+			let ar = new Array(nCount);
 			for (var i = nCount; i--;) {
 				ar[i] = i;
 			}
 			if (this.SortMode >= 0) {
+				let d;
 				try {
-					var d = fso.GetDrive(fso.GetDriveName(FolderItem.Path));
+					d = fso.GetDrive(fso.GetDriveName(FolderItem.Path));
 				} catch (e) {
 					d = { FileSystem: "NTFS" };
 				}
@@ -3045,9 +3046,9 @@ FolderMenu = {
 			if (this.SortReverse) {
 				ar = ar.reverse();
 			}
-			for (var i = 0; i < nCount; ++i) {
+			for (let i = 0; i < nCount; ++i) {
 				Item = Items.Item(ar[i]);
-				var bMatch = IsFolderEx(Item) || api.ILIsParent(MainWindow.g_pidlCP, Item, false);
+				let bMatch = IsFolderEx(Item) || api.ILIsParent(MainWindow.g_pidlCP, Item, false);
 				if (this.Filter) {
 					bMatch = PathMatchEx(bMatch ? Item.Name + ".folder" : Item.Name, this.Filter);
 				}
@@ -3086,13 +3087,13 @@ FolderMenu = {
 	},
 
 	AddMenuItem: function (hMenu, FolderItem, Name, bSelect, bParent) {
-		var mii = api.Memory("MENUITEMINFO");
+		const mii = api.Memory("MENUITEMINFO");
 		mii.cbSize = mii.Size;
 		mii.fMask = MIIM_ID | MIIM_STRING | MIIM_BITMAP | MIIM_SUBMENU;
 		if (bSelect && Name) {
 			mii.dwTypeData = Name;
 		} else {
-			var s = (Name || "") + MainWindow.GetFolderItemName(FolderItem);
+			const s = (Name || "") + MainWindow.GetFolderItemName(FolderItem);
 			if (!s) {
 				return;
 			}
@@ -3101,14 +3102,16 @@ FolderMenu = {
 		AddMenuIconFolderItem(mii, FolderItem);
 		this.Items.push(FolderItem);
 		mii.wID = this.Items.length;
-		var cc = this.Filter ? SFGAO_FOLDER : SFGAO_HASSUBFOLDER;
+		const cc = this.Filter ? SFGAO_FOLDER : SFGAO_HASSUBFOLDER;
 		if (!bSelect && api.GetAttributesOf(FolderItem, cc | SFGAO_BROWSABLE | SFGAO_LINK) == cc) {
+			let o;
 			try {
-				var o = fso.GetDrive(fso.GetDriveName(FolderItem.Path));
+				o = fso.GetDrive(fso.GetDriveName(FolderItem.Path));
 			} catch (e) {
 				o = { IsReady: FolderItem && !FolderItem.Unavailable };
 			}
 			if (o.IsReady) {
+				api.PathIsDirectory(FolderItem.Path, 9, 2);
 				mii.hSubMenu = api.CreateMenu();
 				api.InsertMenu(mii.hSubMenu, 0, MF_BYPOSITION | MF_STRING, 0, api.sprintf(99, '\tJScript\tFolderMenu.OpenSubMenu("%llx",%d,"%llx",%d)', hMenu, mii.wID, mii.hSubMenu, !bParent));
 			}
@@ -3120,26 +3123,26 @@ FolderMenu = {
 
 	Invoke: function (FolderItem, wFlags, FV) {
 		if (FolderItem) {
-			var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL);
-			var bVirtual = api.ILIsParent(1, FolderItem, false) || FolderItem.Unavailable;
+			const path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL);
+			const bVirtual = api.ILIsParent(1, FolderItem, false) || FolderItem.Unavailable;
 			if (MainWindow.g_menu_button == 4) {
 				if (!bVirtual) {
-					var pdwEffect = [DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK];
+					const pdwEffect = [DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK];
 					api.SHDoDragDrop(null, FolderItem, te, pdwEffect[0], pdwEffect, true);
 				}
 				return;
 			}
 			if (MainWindow.g_menu_button == 2) {
-				var pt = api.Memory("POINT");
+				const pt = api.Memory("POINT");
 				api.GetCursorPos(pt);
 				if (bVirtual) {
 					if (!confirmOk(path, TITLE, MB_OK | MB_ICONINFORMATION)) {
 						return;
 					}
 				} else {
-					var FV = te.Ctrl(CTRL_FV);
-					var AltSelectedItems = FV.AltSelectedItems;
-					var Items = api.CreateObject("FolderItems");
+					const FV = te.Ctrl(CTRL_FV);
+					const AltSelectedItems = FV.AltSelectedItems;
+					const Items = api.CreateObject("FolderItems");
 					Items.AddItem(FolderItem);
 					FV.AltSelectedItems = Items;
 					if (ExecMenu(FV, "Context", pt, 1) != S_OK) {
@@ -3169,8 +3172,8 @@ FolderMenu = {
 			if (!FV) {
 				FV = te.Ctrl(CTRL_FV);
 			}
-			var AltSelectedItems = FV.AltSelectedItems;
-			var Items = api.CreateObject("FolderItems");
+			const AltSelectedItems = FV.AltSelectedItems;
+			const Items = api.CreateObject("FolderItems");
 			Items.AddItem(FolderItem);
 			FV.AltSelectedItems = Items;
 			if (ExecMenu(FV, "Default", null, 2) != S_OK) {
@@ -3181,30 +3184,32 @@ FolderMenu = {
 	},
 
 	Location: function (o) {
-		var pt = api.Memory("POINT");
+		let pt;
 		if (window.chrome) {
+			pt = api.Memory("POINT");
 			api.GetCursorPos(pt);
 		} else {
 			pt = GetPos(o, 9);
+			pt.x += o.offsetWidth;
 		}
-		FolderMenu.LocationEx(pt.x + o.offsetWidth, pt.y);
+		FolderMenu.LocationEx(pt.x, pt.y);
 	},
 
 	LocationEx: function (x, y) {
 		FolderMenu.Clear();
-		var hMenu = api.CreatePopupMenu();
+		const hMenu = api.CreatePopupMenu();
 		RunEvent3("LocationPopup", hMenu);
-		var nVerb = FolderMenu.TrackPopupMenu(hMenu, TPM_RIGHTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, x, y);
-		var FolderItem = nVerb ? FolderMenu.Items[nVerb - 1] : null;
+		const nVerb = FolderMenu.TrackPopupMenu(hMenu, TPM_RIGHTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, x, y);
+		const FolderItem = nVerb ? FolderMenu.Items[nVerb - 1] : null;
 		FolderMenu.Clear();
 		FolderMenu.Invoke(FolderItem);
 	}
 };
 
 CreateSync = function (n, a, b, c, d, e) {
-	var ar = n.split(".");
-	var fn = window;
-	var s, parent;
+	const ar = n.split(".");
+	let fn = window;
+	let s, parent;
 	while (s = ar.shift()) {
 		parent = fn;
 		fn = fn[s];

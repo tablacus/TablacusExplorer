@@ -847,32 +847,6 @@ SetCursor = function (o, s) {
 	}
 }
 
-GetImgTag = async function (o, h) {
-	if (o.src) {
-		o.src = await ImgBase64(o, 0, Number(h))
-		const ar = ['<img'];
-		for (let n in o) {
-			if (o[n]) {
-				ar.push(' ', n, '="', EncodeSC(StripAmp(await GetText(await api.PathUnquoteSpaces(o[n])))), '"');
-			}
-		}
-		if (h) {
-			h = Number(h) ? h + 'px' : EncodeSC(h);
-			ar.push(' width="', h, '" height="', h, '"');
-		}
-		ar.push('>');
-		return ar.join("");
-	}
-	const ar = ['<span'];
-	for (let n in o) {
-		if (n != "title" && o[n]) {
-			ar.push(' ', n, '="', EncodeSC(o[n]), '"');
-		}
-	}
-	ar.push('>', EncodeSC(o.title), '</span>');
-	return ar.join("");
-}
-
 LoadAddon = async function (ext, Id, arError, param, bDisabled) {
 	let r, fn;
 	try {
