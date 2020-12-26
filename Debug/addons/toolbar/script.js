@@ -1,6 +1,5 @@
 const Addon_Id = "toolbar";
 const Default = "ToolBar2Left";
-const AddonName = "ToolBar";
 
 if (window.Addon == 1) {
 	Addons.ToolBar = {
@@ -28,11 +27,11 @@ if (window.Addon == 1) {
 				let item = await items[i];
 				let hMenu = await api.CreatePopupMenu();
 				let arMenu = await api.CreateObject("Array");
-				for (let j = GetLength(items); --j > i;) {
+				for (let j = await GetLength(items); --j > i;) {
 					await arMenu.unshift(j);
 				}
 				let o = document.getElementById("_toolbar" + i);
-				let pt = GetPosEx(o, 9);
+				let pt = await GetPosEx(o, 9);
 				await MakeMenus(hMenu, null, arMenu, items, te, pt);
 				await AdjustMenuBreak(hMenu);
 				AddEvent("ExitMenuLoop", function () {
@@ -103,7 +102,7 @@ if (window.Addon == 1) {
 				} else if (menus) {
 					continue;
 				}
-				let img = EncodeSC(await ExtractMacro(null, item.Name));
+				let img = EncodeSC(await ExtractMacro(te, item.Name));
 				if (img == "/" || strFlag == "break") {
 					s.push('<br class="break">');
 				} else if (img == "//" || strFlag == "barbreak") {
@@ -115,7 +114,7 @@ if (window.Addon == 1) {
 					if (icon) {
 						let h = (item.Height * screen.deviceYDPI / 96);
 						let sh = {
-							src: await api.PathUnquoteSpaces(await ExtractMacro(te, icon))
+							src: await ExtractPath(te, icon)
 						};
 						if (h && isFinite(h)) {
 							sh.style = 'width:' + h + 'px; height:' + h + 'px';
@@ -127,88 +126,37 @@ if (window.Addon == 1) {
 				}
 			}
 			if (nLen == 0) {
-				s.push('<label id="_toolbar', nLen, '" title="Edit" onclick="Addons.ToolBar.ShowOptions()" oncontextmenu="Addons.ToolBar.ShowOptions(); return false" onmouseover="MouseOver(this)" onmouseout="MouseOut()" class="button">+</label>');
+				s.push('<label id="_toolbar+" title="Edit" onclick="Addons.ToolBar.ShowOptions()" oncontextmenu="Addons.ToolBar.ShowOptions(); return false" onmouseover="MouseOver(this)" onmouseout="MouseOut()" class="button">+</label>');
 			}
 			document.getElementById('_toolbar').innerHTML = s.join("");
 			Resize();
+		},
+
+
+
+		Changed: function () {
+			Addons.ToolBar.Arrange();
+			ApplyLang(document.getElementById("_toolbar"));
+		},
+
+		SetRects: async function () {
+			const items = await GetXmlItems(await te.Data.xmlToolBar.getElementsByTagName("Item"));
+			Common.ToolBar.Count = items.length;
+			for (let i = 0; i < items.length; ++i) {
+				const el = document.getElementById("_toolbar" + i);
+				if (el) {
+					Common.ToolBar.Items[i] = await GetRect(el);
+				}
+			}
+			Common.ToolBar.Append = await GetRect(document.getElementById('_toolbar'));
 		}
 	}
 	te.Data.xmlToolBar = await OpenXml("toolbar.xml", false, true);
 	SetAddon(Addon_Id, Default, '<span id="_' + Addon_Id + '"></span>');
 	Addons.ToolBar.Arrange();
-
-	if (!window.chrome) {
-		AddEvent("DragEnter", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
-			if (Ctrl.Type == CTRL_WB) {
-				return S_OK;
-			}
-		});
-
-		AddEvent("DragOver", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
-			if (Ctrl.Type == CTRL_WB) {
-				let items = te.Data.xmlToolBar.getElementsByTagName("Item");
-				let i = Addons.ToolBar.FromPt(items.length + 1, pt);
-				if (i >= 0) {
-					if (i == items.length) {
-						pdwEffect[0] = DROPEFFECT_LINK;
-						MouseOver(document.getElementById("_toolbar" + i));
-						return S_OK;
-					}
-					hr = Exec(te, items[i].text, items[i].getAttribute("Type"), te.hwnd, pt, dataObj, grfKeyState, pdwEffect);
-					if (hr == S_OK && pdwEffect[0]) {
-						MouseOver(document.getElementById("_toolbar" + i));
-					}
-					return S_OK;
-				}
-			}
-			MouseOut("_toolbar");
-		});
-
-		AddEvent("Drop", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
-			MouseOut();
-			if (Ctrl.Type == CTRL_WB) {
-				let items = te.Data.xmlToolBar.getElementsByTagName("Item");
-				let i = Addons.ToolBar.FromPt(items.length + 1, pt);
-				if (i >= 0) {
-					if (i == items.length) {
-						let xml = te.Data.xmlToolBar;
-						let root = xml.documentElement;
-						if (!root) {
-							xml.appendChild(xml.createProcessingInstruction("xml", 'version="1.0" encoding="UTF-8"'));
-							root = xml.createElement("TablacusExplorer");
-							xml.appendChild(root);
-						}
-						if (root) {
-							for (i = 0; i < dataObj.Count; i++) {
-								let FolderItem = dataObj.Item(i);
-								let item = xml.createElement("Item");
-								item.setAttribute("Name", api.GetDisplayNameOf(FolderItem, SHGDN_INFOLDER));
-								item.text = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSINGEX | SHGDN_FORPARSING);
-								if (fso.FileExists(item.text)) {
-									item.text = api.PathQuoteSpaces(item.text);
-									item.setAttribute("Type", "Exec");
-								} else {
-									item.setAttribute("Type", "Open");
-								}
-								root.appendChild(item);
-							}
-							SaveXmlEx("toolbar.xml", xml);
-							Addons.ToolBar.Arrange();
-							ApplyLang(document);
-						}
-						return S_OK;
-					}
-					return Exec(te, items[i].text, items[i].getAttribute("Type"), te.hwnd, pt, dataObj, grfKeyState, pdwEffect, true);
-				}
-			}
-		});
-
-		AddEvent("DragLeave", function (Ctrl) {
-			MouseOut();
-			return S_OK;
-		});
-	}
+	$.importScript("addons\\" + Addon_Id + "\\sync.js");
 } else {
+	AddonName = "ToolBar";
 	importScript("addons\\" + Addon_Id + "\\options.js");
 }
 

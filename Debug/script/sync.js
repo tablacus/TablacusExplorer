@@ -52,7 +52,7 @@ g_.IEVer = window.chrome ? (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201219 ? te.Version : 20201224;
+		return te.Version < 20201219 ? te.Version : 20201226;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -70,14 +70,15 @@ AboutTE = function (n) {
 		}
 	} catch (e) { }
 	ar.push("(" + [osInfo.dwMajorVersion, osInfo.dwMinorVersion, osInfo.dwBuildNumber].join(".") + ")");
-	if (api.IsWow64Process(api.GetCurrentProcess())) {
-		ar.push("Wow64");
+	const ext = {
+		Wow64: api.IsWow64Process(api.GetCurrentProcess()),
+		Admin: api.SHTestTokenMembership(null, 0x220),
+		Dark: api.ShouldAppsUseDarkMode()
 	}
-	if (api.SHTestTokenMembership(null, 0x220)) {
-		ar.push("Admin");
-	}
-	if (api.ShouldAppsUseDarkMode()) {
-		ar.push("Dark");
+	for (let s in ext) {
+		if (ext[s]) {
+			ar.push(s);
+		}
 	}
 	const res = window.chrome && /(Edg\/[\d\.]+)/.exec(navigator.appVersion);
 	ar.push(res ? res[1] : 'IE/' + g_.IEVer);
@@ -105,7 +106,7 @@ if ("undefined" != typeof ScriptEngineMajorVersion && ScriptEngineMajorVersion()
 					return f(function () {
 						try {
 							if ("string" === typeof fn) {
-								fn = new Function(fn);
+								fn = new Function(FixScript(fn));
 							}
 							fn.apply(fn, args);
 						} catch (e) {
@@ -1465,7 +1466,7 @@ SendShortcutKeyFV = function (Key) {
 }
 
 CreateTab = function (Ctrl, pt) {
-	var FV = GetFolderView(Ctrl, pt);
+	const FV = GetFolderView(Ctrl, pt);
 	NavigateFV(FV, HOME_PATH || api.ILIsEqual(FV, "about:blank") ? HOME_PATH : FV, SBSP_NEWBROWSER);
 	return S_OK;
 }

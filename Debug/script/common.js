@@ -2,6 +2,14 @@
 
 g_sep = "` ~";
 
+if ("async ") {
+	AsyncFunction = Object.getPrototypeOf(async function () { }).constructor;
+} else {
+	AsyncFunction = function (s) {
+		return Function(FixScript(s));
+	};
+}
+
 importScript = async function (fn) {
 	let hr = E_FAIL, s;
 	if (window.ReadTextFile) {
@@ -19,9 +27,9 @@ importScript = async function (fn) {
 	}
 	if (s) {
 		if (/\.vbs$/i.test(fn)) {
-			hr = ExecScriptEx(await window.Ctrl, s, "VBScript", await $.pt, await $.dataObj, await $.grfKeyState, await $.pdwEffect, await $.bDrop);
+			hr = ExecScriptEx(window.Ctrl, s, "VBScript", await $.pt, await $.dataObj, await $.grfKeyState, await $.pdwEffect, await $.bDrop);
 		} else {
-			new Function(FixScript(s, window.chrome && window.alert))();
+			await new AsyncFunction(s)();
 			hr = S_OK;
 		}
 	}

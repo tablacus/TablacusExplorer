@@ -269,6 +269,10 @@ ShowStatusTextEx = async function (Ctrl, Text, iPart, tm) {
 	}, tm)];
 }
 
+CreateTab = async function (Ctrl, pt) {
+	return await $.CreateTab(await GetFolderView(Ctrl, pt));
+}
+
 importJScript = $.importScript;
 
 te.OnArrange = async function (Ctrl, rc) {
@@ -373,10 +377,10 @@ ArrangeAddons = async function () {
 							LoadLang2(BuildPath(ui_.Installed, "addons", Id, "lang", LangId + ".xml"));
 						}
 						if (Enabled & 8) {
-							LoadAddon("vbs", Id, arError, null, window.chrome && GetNum(await item.getAttribute("Level")) < 2);
+							await LoadAddon("vbs", Id, arError, null, window.chrome && GetNum(await item.getAttribute("Level")) < 2);
 						}
 						if (Enabled & 1) {
-							LoadAddon("js", Id, arError, null, window.chrome && GetNum(await item.getAttribute("Level")) < 2);
+							await LoadAddon("js", Id, arError, null, window.chrome && GetNum(await item.getAttribute("Level")) < 2);
 						}
 					}
 					AddonId[Id] = true;

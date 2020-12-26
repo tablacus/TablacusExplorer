@@ -859,7 +859,7 @@ LoadAddon = async function (ext, Id, arError, param, bDisabled) {
 		const s = await ReadTextFile(fn);
 		if (s && (!bDisabled || /await|\$\./.test(s))) {
 			if (ar[1] == "js") {
-				sc = new Function(FixScript(s, window.chrome));
+				sc = new AsyncFunction(s);
 			} else if (ar[1] == "vbs") {
 				const o = await api.CreateObject("Object");
 				o["_Addon_Id"] = await api.CreateObject("Object");
