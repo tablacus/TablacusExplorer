@@ -684,9 +684,8 @@ CloseWindow = async function () {
 }
 
 CloseSubWindows = async function () {
-	const hwnd = await GetTopWindow();;
-	let hwnd1 = hwnd;
-	while (hwnd1 = await api.FindWindowEx(null, hwnd1, null, null)) {
+	const hwnd = await GetTopWindow();
+	for (let hwnd1 = null; hwnd1 = await api.FindWindowEx(null, hwnd1, null, null);) {
 		if (hwnd == await api.GetWindowLongPtr(hwnd1, GWLP_HWNDPARENT)) {
 			api.PostMessage(hwnd1, WM_CLOSE, 0, 0);
 		}

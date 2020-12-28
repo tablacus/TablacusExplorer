@@ -1483,6 +1483,22 @@ FixIconSpacing = function (Ctrl)
 	}
 }
 
+SelectNext = function (FV) {
+	setTimeout(function () {
+		if (!api.SendMessage(FV.hwndList, LVM_GETEDITCONTROL, 0, 0) || WINVER < 0x600) {
+			const nCount = FV.ItemCount(SVGIO_ALLVIEW);
+			let n = FV.GetFocusedItem + (api.GetKeyState(VK_SHIFT) < 0 ? -1 : 1);
+			if (n < 0) {
+				n = nCount - 1;
+			}
+			if (n >= nCount) {
+				n = 0;
+			}
+			FV.SelectItem(n, SVSI_EDIT | SVSI_FOCUSED | SVSI_SELECT | SVSI_DESELECTOTHERS);
+		}
+	}, window.chrome ? 999 : 99);
+}
+
 //Events
 
 te.OnCreate = function (Ctrl) {
@@ -1587,7 +1603,7 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata) {
 	if (!te.Data) {
 		return S_OK;
 	}
-	var hr = RunEvent3("KeyMessage", Ctrl, hwnd, msg, key, keydata);
+	const hr = RunEvent3("KeyMessage", Ctrl, hwnd, msg, key, keydata);
 	if (isFinite(hr)) {
 		return hr;
 	}
@@ -1595,16 +1611,17 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata) {
 		SetGestureText(Ctrl, GetGestureKey() + g_.mouse.str);
 	}
 	if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) {
-		var nKey = (((keydata >> 16) & 0x17f) || (api.MapVirtualKey(key, 0) | ((key >= 33 && key <= 46 || key >= 91 && key <= 93 || key == 111 || key == 144) ? 256 : 0))) | GetKeyShift();
+		const nKey = (((keydata >> 16) & 0x17f) || (api.MapVirtualKey(key, 0) | ((key >= 33 && key <= 46 || key >= 91 && key <= 93 || key == 111 || key == 144) ? 256 : 0))) | GetKeyShift();
 		if (nKey == 0x15d) {
 			g_.mouse.CancelContextMenu = false;
 		}
 		te.Data.cmdKey = nKey;
 		te.Data.cmdKeyF = true;
+		let strClass;
 		switch (Ctrl.Type) {
 			case CTRL_SB:
 			case CTRL_EB:
-				var strClass = api.GetClassName(hwnd);
+				strClass = api.GetClassName(hwnd);
 				if (api.PathMatchSpec(strClass, WC_LISTVIEW + ";DirectUIHWND")) {
 					if (KeyExecEx(Ctrl, "List", nKey, hwnd) === S_OK) {
 						return S_OK;
@@ -1621,7 +1638,7 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata) {
 				}
 				break;
 			case CTRL_TV:
-				var strClass = api.GetClassName(hwnd);
+				strClass = api.GetClassName(hwnd);
 				if (api.PathMatchSpec(strClass, WC_TREEVIEW)) {
 					if (KeyExecEx(Ctrl, "Tree", nKey, hwnd) === S_OK) {
 						return S_OK;
@@ -2840,15 +2857,15 @@ ChangeNotifyFV = function (lEvent, item1, item2) {
 
 SetKeyExec = function (mode, strKey, path, type, bLast) {
 	if (/,/.test(strKey) && !/,$/.test(strKey)) {
-		var ar = strKey.split(",");
-		for (var i in ar) {
+		const ar = strKey.split(",");
+		for (let i in ar) {
 			SetKeyExec(mode, ar[i], path, type, bLast);
 		}
 		return;
 	}
 	if (strKey) {
 		strKey = GetKeyKey(strKey);
-		var KeyMode = eventTE.Key[mode];
+		const KeyMode = eventTE.Key[mode];
 		if (KeyMode) {
 			if (!KeyMode[strKey]) {
 				KeyMode[strKey] = [];
@@ -2879,8 +2896,8 @@ SetGestureExec = function (mode, strGesture, path, type, bLast, Name) {
 }
 
 ArExec = function (Ctrl, ar, pt, hwnd) {
-	for (var i in ar) {
-		var cmd = ar[i];
+	for (let i in ar) {
+		const cmd = ar[i];
 		if (Exec(Ctrl, cmd[0], cmd[1], hwnd, pt) === S_OK) {
 			return S_OK;
 		}
@@ -2900,9 +2917,9 @@ KeyExec = function (Ctrl, mode, str, hwnd) {
 }
 
 KeyExecEx = function (Ctrl, mode, nKey, hwnd) {
-	var pt = api.Memory("POINT");
+	const pt = api.Memory("POINT");
 	if (Ctrl.Type <= CTRL_EB || Ctrl.Type == CTRL_TV) {
-		var rc = api.Memory("RECT");
+		const rc = api.Memory("RECT");
 		Ctrl.GetItemRect(Ctrl.FocusedItem || Ctrl.SelectedItem, rc);
 		pt.x = rc.left;
 		pt.y = rc.top;
@@ -3105,11 +3122,12 @@ AddEvent("OptionRef", function (Id, s, pt) {
 
 AddEvent("OptionEncode", function (Id, p) {
 	if (Id === "") {
-		var lines = p.s.split(/\r?\n/);
-		for (var i in lines) {
-			var res = /^([^,]+),(.*)$/.exec(lines[i]);
+		const lines = p.s.split(/\r?\n/);
+		for (let i in lines) {
+			const res = /^([^,]+),(.*)$/.exec(lines[i]);
 			if (res) {
-				var p2 = { s: res[2] };
+				const p2 = api.CreateObject("Object");
+				p2.s = res[2];
 				Id = GetSourceText(res[1]);
 				OptionEncode(Id, p2);
 				lines[i] = [Id, p2.s].join(",");
@@ -3118,7 +3136,7 @@ AddEvent("OptionEncode", function (Id, p) {
 		p.s = lines.join("\n");
 		return S_OK;
 	}
-	var type = g_basic.FuncI(Id);
+	const type = g_basic.FuncI(Id);
 	if (type && type.Enc) {
 		p.s = GetSourceText(p.s);
 		return S_OK;
@@ -3127,11 +3145,12 @@ AddEvent("OptionEncode", function (Id, p) {
 
 AddEvent("OptionDecode", function (Id, p) {
 	if (Id === "") {
-		var lines = p.s.split(/\r?\n/);
-		for (var i in lines) {
-			var res = /^([^,]+),(.*)$/.exec(lines[i]);
+		const lines = p.s.split(/\r?\n/);
+		for (let i in lines) {
+			const res = /^([^,]+),(.*)$/.exec(lines[i]);
 			if (res) {
-				var p2 = { s: res[2] };
+				const p2 = api.CreateObject("object");
+				p2.s = res[2];
 				Id = res[1];
 				OptionDecode(Id, p2);
 				lines[i] = [GetText(Id), p2.s].join(",");
@@ -3140,10 +3159,9 @@ AddEvent("OptionDecode", function (Id, p) {
 		p.s = lines.join("\n");
 		return S_OK;
 	}
-	var type = g_basic.FuncI(Id);
+	const type = g_basic.FuncI(Id);
 	if (type && type.Enc) {
-		var s = GetText(p.s);
-		if (SameText(GetSourceText(s), p.s)) {
+		if (SameText(GetSourceText(GetText(p.s)), p.s)) {
 			p.s = GetText(p.s);
 			return S_OK;
 		}

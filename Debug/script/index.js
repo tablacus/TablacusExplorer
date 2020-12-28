@@ -217,14 +217,6 @@ FocusFV = function () {
 	}, ui_.DoubleClickTime);
 }
 
-SelectNext = function (FV) {
-	setTimeout(async function () {
-		if (!await api.SendMessage(await FV.hwndList, LVM_GETEDITCONTROL, 0, 0) || WINVER < 0x600) {
-			FV.SelectItem(FV.Item(await FV.GetFocusedItem + (await api.GetKeyState(VK_SHIFT) < 0 ? -1 : 1)) || await api.GetKeyState(VK_SHIFT) < 0 ? FV.ItemCount(SVGIO_ALLVIEW) - 1 : 0, SVSI_EDIT | SVSI_FOCUSED | SVSI_SELECT | SVSI_DESELECTOTHERS);
-		}
-	}, 99);
-}
-
 CancelWindowRegistered = function () {
 	clearTimeout(ui_.tidWindowRegistered);
 	ui_.bWindowRegistered = false;

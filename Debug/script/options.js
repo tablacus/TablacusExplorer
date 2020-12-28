@@ -2168,7 +2168,7 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter, f) {
 			}
 			SetValue(o, path);
 			if (/Icon|Large|Small/i.test(Id)) {
-				const s = await api.PathUnquoteSpaces(await ExtractMacro(te, path));
+				const s = await ExtractPath(te, path);
 				if (await api.ExtractIconEx(s, -1, null, null, 0) > 1) {
 					ShowDialogEx("fileicon", 640, 480, [GetElementIdEx(o), o.value].join("\t"));
 					return;

@@ -52,7 +52,7 @@ g_.IEVer = window.chrome ? (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201219 ? te.Version : 20201226;
+		return te.Version < 20201219 ? te.Version : 20201228;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -242,17 +242,16 @@ BrowseForFolder = function (path) {
 }
 
 OpenDialogEx = function (path, filter, bFilesOnly) {
-	var commdlg = api.CreateObject("CommonDialog");
-	var te_path = te.Data.Installed;
-	var res = /^\.\.(\/.*)/.exec(path);
+	const commdlg = api.CreateObject("CommonDialog");
+	const res = /^\.\.(\/.*)/.exec(path);
 	if (res) {
-		path = te_path + (res[1].replace(/\//g, "\\"));
+		path = te.Data.Installed + (res[1].replace(/\//g, "\\"));
 	}
-	path = api.PathUnquoteSpaces(ExtractMacro(te, path));
+	path = ExtractPath(te, path);
 	if (!api.PathIsDirectory(path)) {
 		path = GetParentFolderName(path);
 		if (!api.PathIsDirectory(path)) {
-			path = fso.GetDriveName(te_path);
+			path = fso.GetDriveName(te.Data.Installed);
 		}
 	}
 	commdlg.InitDir = path;
@@ -265,9 +264,9 @@ OpenDialogEx = function (path, filter, bFilesOnly) {
 
 InvokeCommand = function (Items, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon, FV, uCMF) {
 	if (Items) {
-		var ContextMenu = api.ContextMenu(Items, FV);
+		const ContextMenu = api.ContextMenu(Items, FV);
 		if (ContextMenu) {
-			var hMenu = api.CreatePopupMenu();
+			const hMenu = api.CreatePopupMenu();
 			ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, uCMF);
 			if (Verb === null) {
 				Verb = api.GetMenuDefaultItem(hMenu, MF_BYCOMMAND, GMDI_USEDISABLED) - 1;
@@ -785,7 +784,7 @@ SaveXml = function (filename) {
 
 	MainWindow.RunEvent1("SaveWindow", xml);
 	try {
-		xml.save(api.PathUnquoteSpaces(ExtractMacro(te, filename)));
+		xml.save(ExtractPath(te, filename));
 	} catch (e) {
 		if (e.number != E_ACCESSDENIED) {
 			ShowError(e, [GetText("Save"), filename].join(": "));
@@ -1227,7 +1226,7 @@ MakeImgDataEx = function (src, bSimple, h) {
 
 MakeImgSrc = function (src, index, bSrc, h) {
 	var fn;
-	src = api.PathUnquoteSpaces(ExtractMacro(te, src));
+	src = ExtractPath(te, src);
 	if (!/^file:/i.test(src) && REGEXP_IMAGE.test(src)) {
 		return src;
 	}
@@ -1778,14 +1777,11 @@ Exec = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop
 	window.Handled = S_OK;
 	window.FV = GetFolderView(Ctrl, pt);
 
-	if (/^Func$/i.test(type)) {
-		return s(Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop, window.FV);
+	if (/^Func$|^Async$/i.test(type)) {
+		const hr = api.Invoke(s, [Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop, window.FV]);
+		return /^Func$/i.test(type) ? hr : S_OK;
 	}
-	if (/^Async$/i.test(type)) {
-		api.Invoke(s, [Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop, window.FV]);
-		return S_OK;
-	}
-	var hr = MainWindow.RunEvent3("Exec", Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop, window.FV);
+	const hr = MainWindow.RunEvent3("Exec", Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop, window.FV);
 	return isFinite(hr) ? hr : window.Handled;
 }
 
@@ -1840,7 +1836,7 @@ DropScript = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect,
 ExtractPath = function (Ctrl, s, pt) {
 	s = api.PathUnquoteSpaces(ExtractMacro(Ctrl, GetConsts(s)));
 	if (/^\.|^\\$/.test(s)) {
-		var FV = GetFolderView(Ctrl, pt);
+		const FV = GetFolderView(Ctrl, pt);
 		if (FV) {
 			if (s == "\\") {
 				return fso.GetDriveName(FV.FolderItem.Path) + s;
@@ -1848,7 +1844,7 @@ ExtractPath = function (Ctrl, s, pt) {
 			if (s == "..") {
 				return api.GetDisplayNameOf(api.ILGetParent(FV), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL);
 			}
-			var res = /\.\.\\(.*)/.exec(s);
+			let res = /\.\.\\(.*)/.exec(s);
 			if (res) {
 				return BuildPath(api.GetDisplayNameOf(api.ILGetParent(FV), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL), res[1]);
 			}
@@ -1862,11 +1858,11 @@ ExtractPath = function (Ctrl, s, pt) {
 }
 
 PathMatchEx = function (path, s) {
-	var hr = MainWindow.RunEvent3("PathMatch", path, s);
+	const hr = MainWindow.RunEvent3("PathMatch", path, s);
 	if (isFinite(hr)) {
 		return hr;
 	}
-	var res = /^\/(.*)\/(.*)/.exec(s);
+	const res = /^\/(.*)\/(.*)/.exec(s);
 	return res ? new RegExp(res[1], res[2]).test(path) : api.PathMatchSpec(path, s);
 }
 
@@ -2450,7 +2446,7 @@ MenusIcon = function (mii, src, nHeight, bIcon) {
 	mii.cbSize = mii.Size;
 	if (src && src !== "-") {
 		if ("string" === typeof src) {
-			src = api.PathUnquoteSpaces(ExtractMacro(te, src));
+			src = ExtractPath(te, src);
 			if (!/:|^\\\\/i.test(src)) {
 				src = BuildPath(te.Data.Installed, "script\\" + src);
 			}

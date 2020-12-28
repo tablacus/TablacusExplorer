@@ -60,10 +60,6 @@ SelectItem = function () {
 	InvokeUI("SelectItem", Array.apply(null, arguments));
 }
 
-SelectNext = function () {
-	InvokeUI("SelectNext", Array.apply(null, arguments));
-}
-
 SetDisplay = function () {
 	InvokeUI("SetDisplay", Array.apply(null, arguments));
 }
