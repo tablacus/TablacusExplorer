@@ -877,7 +877,7 @@ LoadAddon = async function (ext, Id, arError, param, bDisabled) {
 			}
 		}
 	} catch (e) {
-		arError.push([e.stack || e.description || e.toString(), fn].join("\n"));
+		arError.push([e.stack || e.message, fn].join("\n"));
 	}
 	return r;
 }

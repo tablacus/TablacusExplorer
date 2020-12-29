@@ -52,7 +52,7 @@ g_.IEVer = window.chrome ? (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201219 ? te.Version : 20201228;
+		return te.Version < 20201219 ? te.Version : 20201229;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -904,7 +904,7 @@ ShowError = function (e, s, i) {
 	if (g_.ShowError) {
 		g_.ShowError = true;
 		setTimeout(function (e, s) {
-			g_.ShowError = MessageBox([e.stack || e.description || e.toString(), s, AboutTE(3)].join("\n\n"), TITLE, MB_OKCANCEL) != IDOK;
+			g_.ShowError = MessageBox([e.stack || e.message , s, AboutTE(3)].join("\n\n"), TITLE, MB_OKCANCEL) != IDOK;
 		}, 99, e, s)
 	}
 }

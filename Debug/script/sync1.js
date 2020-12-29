@@ -1446,8 +1446,8 @@ EnableDragDrop = function () {
 
 SetFolderViewData = function (FV, FVD) {
 	if (FV && FVD) {
-		var t = FV.Type;
-		for (var i in FVD) {
+		const t = FV.Type;
+		for (let i in FVD) {
 			try {
 				FV[i] = FVD[i];
 			} catch (e) { }
@@ -1459,7 +1459,7 @@ SetFolderViewData = function (FV, FVD) {
 }
 
 SetTreeViewData = function (FV, TVD) {
-	var TV = FV.TreeView;
+	const TV = FV.TreeView;
 	if (TV && TVD) {
 		TV.Align = TVD.Align;
 		TV.Style = TVD.Style;
@@ -1468,35 +1468,18 @@ SetTreeViewData = function (FV, TVD) {
 	}
 }
 
-FixIconSpacing = function (Ctrl)
-{
-	var hwnd = Ctrl.hwndList;
+FixIconSpacing = function (Ctrl) {
+	const hwnd = Ctrl.hwndList;
 	if (hwnd) {
 		if (api.SendMessage(hwnd, LVM_GETVIEW, 0, 0) == 0) {
-			var s = Ctrl.IconSize;
-			var cx = s * 96 / screen.deviceYDPI + (10 + (255 - s) / 10) * screen.deviceYDPI / 96;
-			var cz = s < 96 ? (s - 96) / 5 : (s > 96 ? (96 - s) / 9 : 0);
-			var cy = s * 96 / screen.deviceYDPI + (46 + cz) * screen.deviceYDPI / 96;
+			const s = Ctrl.IconSize;
+			const cx = s * 96 / screen.deviceYDPI + (10 + (255 - s) / 10) * screen.deviceYDPI / 96;
+			const cz = s < 96 ? (s - 96) / 5 : (s > 96 ? (96 - s) / 9 : 0);
+			const cy = s * 96 / screen.deviceYDPI + (46 + cz) * screen.deviceYDPI / 96;
 			api.SendMessage(hwnd, LVM_SETICONSPACING, 0, cx + (cy << 16));
 			api.InvalidateRect(hwnd, null, true);
 		}
 	}
-}
-
-SelectNext = function (FV) {
-	setTimeout(function () {
-		if (!api.SendMessage(FV.hwndList, LVM_GETEDITCONTROL, 0, 0) || WINVER < 0x600) {
-			const nCount = FV.ItemCount(SVGIO_ALLVIEW);
-			let n = FV.GetFocusedItem + (api.GetKeyState(VK_SHIFT) < 0 ? -1 : 1);
-			if (n < 0) {
-				n = nCount - 1;
-			}
-			if (n >= nCount) {
-				n = 0;
-			}
-			FV.SelectItem(n, SVSI_EDIT | SVSI_FOCUSED | SVSI_SELECT | SVSI_DESELECTOTHERS);
-		}
-	}, window.chrome ? 999 : 99);
 }
 
 //Events
@@ -1558,17 +1541,16 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 	if (Ctrl.Data) {
 		Ctrl.Data.Setting = void 0;
 	}
-	var path = api.GetDisplayNameOf(Ctrl.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL);
-	var res = /javascript:(.*)/im.exec(path);
+	const res = /javascript:(.*)/im.exec(api.GetDisplayNameOf(Ctrl.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 	if (res) {
 		try {
-			new Function(res[1])(Ctrl);
+			new AsyncFunction(res[1])(Ctrl);
 		} catch (e) {
 			ShowError(e, res[1]);
 		}
 		return E_NOTIMPL;
 	}
-	var hr = RunEvent2("BeforeNavigate", Ctrl, fs, wFlags, Prev);
+	let hr = RunEvent2("BeforeNavigate", Ctrl, fs, wFlags, Prev);
 	if (hr == S_OK && IsUseExplorer(Ctrl.FolderItem)) {
 		setTimeout(async function (Path) {
 			OpenInExplorer(Path);
@@ -1632,7 +1614,9 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata) {
 						return S_OK;
 					}
 					if (key == VK_TAB && Ctrl.hwndList) {
-						SelectNext(Ctrl);
+						const nCount = Ctrl.ItemCount(SVGIO_ALLVIEW);
+						Ctrl.SelectItem((Ctrl.GetFocusedItem + (api.GetKeyState(VK_SHIFT) < 0 ? -1 : 1) + nCount) % nCount, SVSI_EDIT | SVSI_FOCUSED | SVSI_SELECT | SVSI_DESELECTOTHERS);
+						return S_OK;
 					}
 					return S_FALSE;
 				}
