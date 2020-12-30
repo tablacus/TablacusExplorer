@@ -80,6 +80,13 @@ GetFileName = function (s) {
 	return res ? res[1] : "";
 }
 
+CreateTab = async function (Ctrl, pt) {
+	const FV = await GetFolderView(Ctrl, pt);
+	HOME_PATH = await $.HOME_PATH;
+	NavigateFV(FV, HOME_PATH || await api.ILIsEqual(FV, "about:blank") ? HOME_PATH : FV, SBSP_NEWBROWSER);
+	return S_OK;
+}
+
 StripAmp = function (s) {
 	return String(s).replace(/\(&\w\)|&/, "").replace(/\.\.\.$/, "");
 }

@@ -501,7 +501,7 @@ ApplyLang = async function (doc) {
 	if (!doc) {
 		doc = document;
 	}
-	let i, o, s, h = 0;
+	let s, h = 0;
 	const FaceName = await MainWindow.DefaultFont.lfFaceName;
 	if (doc.body) {
 		doc.body.style.fontFamily = FaceName;
@@ -511,10 +511,10 @@ ApplyLang = async function (doc) {
 	ApplyLangTag(doc.getElementsByTagName("label"));
 	ApplyLangTag(doc.getElementsByTagName("button"));
 	ApplyLangTag(doc.getElementsByTagName("li"));
-	o = doc.getElementsByTagName("a");
+	let o = doc.getElementsByTagName("a");
 	if (o) {
 		ApplyLangTag(o);
-		for (i = o.length; i--;) {
+		for (let i = o.length; i--;) {
 			if (o[i].className == "treebutton" && o[i].innerHTML == "") {
 				o[i].innerHTML = BUTTONS.opened;
 			}
@@ -523,7 +523,7 @@ ApplyLang = async function (doc) {
 	o = doc.getElementsByTagName("input");
 	if (o) {
 		ApplyLangTag(o);
-		for (i = o.length; i--;) {
+		for (let i = o.length; i--;) {
 			(async function (el) {
 				if (!h && SameText(el.type, "text")) {
 					h = el.offsetHeight;
@@ -542,13 +542,14 @@ ApplyLang = async function (doc) {
 						el.style.backgroundImage = "url('" + s + "')";
 					}
 				}
+				el.spellcheck = false;
 			})(o[i]);
 		}
 	}
 	o = doc.getElementsByTagName("img");
 	if (o) {
 		ApplyLangTag(o);
-		for (i = o.length; i--;) {
+		for (let i = o.length; i--;) {
 			(async function (el) {
 				const s = await ImgBase64(el, 0);
 				if (s) {
@@ -562,7 +563,7 @@ ApplyLang = async function (doc) {
 	}
 	o = doc.getElementsByTagName("select");
 	if (o) {
-		for (i = o.length; i--;) {
+		for (let i = o.length; i--;) {
 			(async function (el) {
 				el.title = delamp(await GetTextR(el.title));
 				for (let j = 0; j < el.length; ++j) {
@@ -573,13 +574,15 @@ ApplyLang = async function (doc) {
 	}
 	o = doc.getElementsByTagName("textarea");
 	if (o) {
-		for (i = o.length; i--;) {
+		for (let i = o.length; i--;) {
 			o[i].onkeydown = InsertTab;
+			o[i].spellcheck = false;
+
 		}
 	}
 	o = doc.getElementsByTagName("form");
 	if (o) {
-		for (i = o.length; i--;) {
+		for (let i = o.length; i--;) {
 			o[i].onsubmit = function () { return false };
 		}
 	}
@@ -684,12 +687,7 @@ CloseWindow = async function () {
 }
 
 CloseSubWindows = async function () {
-	const hwnd = await GetTopWindow();
-	for (let hwnd1 = null; hwnd1 = await api.FindWindowEx(null, hwnd1, null, null);) {
-		if (hwnd == await api.GetWindowLongPtr(hwnd1, GWLP_HWNDPARENT)) {
-			api.PostMessage(hwnd1, WM_CLOSE, 0, 0);
-		}
-	}
+	CloseWindows(await GetTopWindow());
 }
 
 MouseOver = async function (o) {

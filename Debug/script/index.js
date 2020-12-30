@@ -261,10 +261,6 @@ ShowStatusTextEx = async function (Ctrl, Text, iPart, tm) {
 	}, tm)];
 }
 
-CreateTab = async function (Ctrl, pt) {
-	return await $.CreateTab(await GetFolderView(Ctrl, pt));
-}
-
 importJScript = $.importScript;
 
 te.OnArrange = async function (Ctrl, rc) {

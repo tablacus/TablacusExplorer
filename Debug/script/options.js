@@ -1704,8 +1704,7 @@ InitDialog = async function () {
 	}
 	if (Query == "input") {
 		returnValue = false;
-		const s = ['<div style="padding: 8px;" style="display: block;"><label>', EncodeSC(await dialogArguments.text), '<br><input type="text" name="text" style="width: 100%"></div>'];
-		document.getElementById("Content").innerHTML = s.join("");
+		document.getElementById("Content").innerHTML = ['<div style="padding: 8px;" style="display: block;"><label>', EncodeSC(await dialogArguments.text).replace(/\r?\n/g, "<br>"), '<br><input type="text" name="text" style="width: 100%"></div>'].join("");
 		AddEventEx(document.body, "keydown", function (ev) {
 			if (ev.keyCode == VK_RETURN || window.chrome && /^Enter/i.test(ev.key)) {
 				SetResult(1);
@@ -1940,9 +1939,6 @@ InitLocation = async function () {
 		const n = el[i].id || el[i].name;
 		if (n && !/=/.test(n)) {
 			let s = (/^!/.test(n) ? !item.getAttribute(n.slice(1)) : item.getAttribute(n)) || "";
-			if (/Name$/.test(n)) {
-				s = await GetText(s);
-			}
 			if (n == "Key") {
 				s = await GetKeyNameG(s);
 			}
@@ -1969,9 +1965,6 @@ InitLocation = async function () {
 		await MakeKeySelect();
 		await SetKeyShift();
 	}
-	ar = document.F.MenuName.value.split(/\t/);
-	document.F._MenuName.value = await GetText(ar[0]);
-
 	ar = (await dialogArguments.Data.show).split(/,/);
 	for (let i in ar) {
 		document.getElementById("tab" + ar[i]).style.display = "inline";
@@ -2006,7 +1999,6 @@ InitLocation = async function () {
 				}
 			}
 			const el = document.F;
-			el.MenuName.value = await GetSourceText(el._MenuName.value);
 			if (await dialogArguments.Data.show == "6") {
 				el.Set.value = "";
 			}

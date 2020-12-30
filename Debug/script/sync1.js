@@ -709,14 +709,15 @@ g_basic = {
 					return S_OK;
 				},
 				Search: function (Ctrl, pt) {
-					var FV = GetFolderView(Ctrl, pt);
+					const FV = GetFolderView(Ctrl, pt);
 					if (FV) {
-						var s = InputDialog("Search", IsSearchPath(FV) ? GetFolderItemName(FV.FolderItem) : "");
-						if (s) {
-							FV.Search(s);
-						} else if (s === "") {
-							CancelFilterView(FV);
-						}
+						InputDialog("Search", IsSearchPath(FV) ? GetFolderItemName(FV.FolderItem) : "", function (r) {
+							if (r) {
+								FV.Search(r);
+							} else if (r === "") {
+								CancelFilterView(FV);
+							}
+						});
 					}
 					return S_OK;
 				},
@@ -993,8 +994,8 @@ Finalize = function () {
 	SaveConfig();
 	Threads.Finalize();
 
-	for (var i in g_.dlgs) {
-		var dlg = g_.dlgs[i];
+	for (let i in g_.dlgs) {
+		const dlg = g_.dlgs[i];
 		try {
 			if (dlg) {
 				if (dlg.oExec) {
@@ -1002,7 +1003,7 @@ Finalize = function () {
 						dlg.oExec.Terminate();
 					}
 				} else if (dlg.Document) {
-					dlg.close();
+					dlg.CloseWindow();
 				}
 			}
 		} catch (e) { }

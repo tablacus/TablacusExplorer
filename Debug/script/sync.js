@@ -52,7 +52,7 @@ g_.IEVer = window.chrome ? (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201219 ? te.Version : 20201229;
+		return te.Version < 20201219 ? te.Version : 20201230;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1462,12 +1462,6 @@ SendShortcutKeyFV = function (Key) {
 		KeyState.Write(VK_CONTROL, VT_UI1, KeyCtrl);
 		api.SetKeyboardState(KeyState);
 	}
-}
-
-CreateTab = function (Ctrl, pt) {
-	const FV = GetFolderView(Ctrl, pt);
-	NavigateFV(FV, HOME_PATH || api.ILIsEqual(FV, "about:blank") ? HOME_PATH : FV, SBSP_NEWBROWSER);
-	return S_OK;
 }
 
 Navigate = function (Path, wFlags) {
@@ -2937,6 +2931,15 @@ SetLang2 = function (s, v) {
 		}
 		if (/\.\.\.$/.test(s)) {
 			SetLang2(StripAmp(s), StripAmp(v));
+		}
+	}
+}
+
+CloseWindows = function (hwnd) {
+	let hwnd1;
+	while (hwnd1 = api.FindWindowEx(null, hwnd1, null, null)) {
+		if (hwnd == api.GetWindowLongPtr(hwnd1, GWLP_HWNDPARENT)) {
+			api.PostMessage(hwnd1, WM_CLOSE, 0, 0);
 		}
 	}
 }
