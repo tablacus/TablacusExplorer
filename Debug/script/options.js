@@ -1423,7 +1423,8 @@ InitOptions = async function () {
 
 OpenIcon = function (o) {
 	setTimeout(async function () {
-		const data = [];
+		o.cursor = "";
+		o.onclick = null;
 		const a = o.id.split(/,/);
 		if (a[0] == "b") {
 			const dllpath = BuildPath(system32, "ieframe.dll");
@@ -1448,8 +1449,9 @@ OpenIcon = function (o) {
 					srcs.push(MakeImgSrc("bitmap:" + a.join(","), 0, false, a[2]));
 				}
 				srcs = await Promise.all(srcs);
+				o.innerHTML = "";
 				for (a[3] = 0; a[3] < nCount; a[3]++) {
-					data.push('<img src="', srcs.shift(), '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="bitmap:', a.join(","), '"> ');
+					o.insertAdjacentHTML("beforeend", '<img src="' + srcs.shift() + '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="bitmap:' + a.join(",") + '"> ');
 				}
 				if (himl) {
 					api.ImageList_Destroy(himl);
@@ -1468,34 +1470,32 @@ OpenIcon = function (o) {
 				srcs.push(MakeImgSrc(["icon:" + a[1], i].join(","), 0, false, 32));
 			}
 			srcs = await Promise.all(srcs);
+			o.innerHTML = "";
 			for (let i = 0; i < nCount; ++i) {
-				data.push('<img src="', srcs.shift(), '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="icon:', a[1], ',', i, '" style="max-height:', px, 'px"> ');
+				o.insertAdjacentHTML("beforeend", '<img src="' + srcs.shift() + '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="icon:' + a[1] + ',' + i + '" style="max-height:' + px + 'px"> ');
 			}
 		}
-		o.innerHTML = data.join("");
-		o.cursor = "";
-		o.onclick = null;
 		document.body.style.cursor = "auto";
-	}, 1);
+	});
 	document.body.style.cursor = "wait";
 }
 
 async function SearchIcon(o) {
+	o.innerHTML = "";
 	o.onclick = null;
-	var s = [];
-	var wfd = await api.Memory("WIN32_FIND_DATA");
-	var hFind = await api.FindFirstFile(BuildPath(system32, "*"), wfd);
-	for (let bFind = hFind != INVALID_HANDLE_VALUE; await bFind; bFind = await api.FindNextFile(hFind, wfd)) {
-		var nCount = await api.ExtractIconEx(BuildPath(system32, await wfd.cFileName), -1, null, null, 0);
+	const wfd = await api.Memory("WIN32_FIND_DATA");
+	const hFind = await api.FindFirstFile(BuildPath(system32, "*"), wfd);
+	for (let bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = await api.FindNextFile(hFind, wfd)) {
+		const fn = await wfd.cFileName;
+		const nCount = await api.ExtractIconEx(BuildPath(system32, fn), -1, null, null, 0);
 		if (nCount) {
-			var id = "i," + await wfd.cFileName.toLowerCase();
+			const id = "i," + fn.toLowerCase();
 			if (!document.getElementById(id)) {
-				s.push('<div id="', id, '" onclick="OpenIcon(this)" style="cursor: pointer"><span class="tab">', await wfd.cFileName, ' : ', nCount, '</span></div>');
+				o.insertAdjacentHTML("beforeend", '<div id="' + id + '" onclick="OpenIcon(this)" style="cursor: pointer"><span class="tab">' + fn + ' : ' + nCount + '</span></div>');
 			}
 		}
 	}
 	api.FindClose(hFind);
-	o.innerHTML = s.join("");
 }
 
 ReturnDialogResult = async function (WB) {

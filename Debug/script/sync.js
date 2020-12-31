@@ -52,7 +52,7 @@ g_.IEVer = window.chrome ? (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201219 ? te.Version : 20201230;
+		return te.Version < 20201219 ? te.Version : 20201231;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);

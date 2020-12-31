@@ -704,7 +704,7 @@ g_basic = {
 					return S_OK;
 				},
 				"Run dialog": function (Ctrl, pt) {
-					var FV = GetFolderView(Ctrl, pt);
+					const FV = GetFolderView(Ctrl, pt);
 					api.ShRunDialog(te.hwnd, 0, FV ? FV.FolderItem.Path : null, null, null, 0);
 					return S_OK;
 				},
@@ -800,18 +800,20 @@ g_basic = {
 	},
 
 	Exec: function (Ctrl, s, type, hwnd, pt) {
-		var fn = g_basic.CmdI(type, s);
+		const fn = g_basic.CmdI(type, s);
 		if (!pt) {
 			pt = api.Memory("POINT");
 			api.GetCursorPos(pt);
 		}
-		fn && fn(Ctrl, pt);
+		if (fn) {
+			api.Invoke(fn, [Ctrl, pt]);
+		}
 		return S_OK;
 	},
 
 	Popup: function (Cmd, strDefault, pt) {
-		var i, j, s;
-		var ar = [];
+		let i, s;
+		let ar = [];
 		if (Cmd.length) {
 			ar = Cmd;
 		} else {
@@ -819,13 +821,13 @@ g_basic = {
 				ar.push(i);
 			}
 		}
-		var hMenu = api.CreatePopupMenu();
+		const hMenu = api.CreatePopupMenu();
 		for (i = 0; i < ar.length; ++i) {
 			if (ar[i]) {
 				api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, i + 1, GetTextR(ar[i]));
 			}
 		}
-		var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD | (pt.width ? TPM_RIGHTALIGN : 0), pt.x + pt.width, pt.y, te.hwnd, null, null);
+		const nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD | (pt.width ? TPM_RIGHTALIGN : 0), pt.x + pt.width, pt.y, te.hwnd, null, null);
 		s = api.GetMenuString(hMenu, nVerb, MF_BYCOMMAND);
 		api.DestroyMenu(hMenu);
 		if (nVerb == 0) {
@@ -835,8 +837,8 @@ g_basic = {
 	},
 
 	PopupMenu: function (hMenu, ContextMenu, pt) {
-		var Verb;
-		for (var i = api.GetMenuItemCount(hMenu); i--;) {
+		let Verb;
+		for (let i = api.GetMenuItemCount(hMenu); i--;) {
 			if (api.GetMenuString(hMenu, i, MF_BYPOSITION)) {
 				api.EnableMenuItem(hMenu, i, MF_ENABLED | MF_BYPOSITION);
 			} else {
@@ -844,7 +846,7 @@ g_basic = {
 			}
 		}
 		window.g_menu_click = true;
-		var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD | (pt.width ? TPM_RIGHTALIGN : 0), pt.x + pt.width, pt.y, te.hwnd, null, ContextMenu);
+		const nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD | (pt.width ? TPM_RIGHTALIGN : 0), pt.x + pt.width, pt.y, te.hwnd, null, ContextMenu);
 		if (nVerb == 0) {
 			api.DestroyMenu(hMenu);
 			return 1;
@@ -854,7 +856,7 @@ g_basic = {
 		}
 		if (!Verb) {
 			Verb = window.g_menu_string;
-			var res = /\t(.*)$/.exec(Verb);
+			const res = /\t(.*)$/.exec(Verb);
 			if (res) {
 				Verb = res[1];
 			}
@@ -3361,6 +3363,23 @@ ArrangeAddons1 = function (cl) {
 			api.SendMessage(hwnd, WM_SETTINGCHANGE, 0, p);
 		}
 	}
+}
+
+SetMenuExec = function (n, strName, strMenu, nPos, strExec) {
+	if (!Common[n]) {
+		Common[n] = api.CreateObject("Object");
+	}
+	Common[n].strName = strName;
+	Common[n].strMenu = strMenu;
+	Common[n].nPos = GetNum(nPos);
+	new AsyncFunction(['AddEvent(Common.', n, '.strMenu, function (Ctrl, hMenu, nPos) {\n',
+		'api.InsertMenu(hMenu, Common.', n, '.nPos, MF_BYPOSITION | MF_STRING, ++nPos, Common.', n, '.strName);\n',
+		'ExtraMenuCommand[nPos] = function () {\n',
+		'	InvokeUI("', strExec || "Addons." + n + ".Exec", '", Array.apply(null, arguments));\n',
+		'	return S_OK;\n',
+		'}\n',
+		'return nPos;\n',
+	'});'].join(""))();
 }
 
 InitCode = function () {
