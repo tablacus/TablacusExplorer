@@ -49,10 +49,11 @@ g_.LockUpdate = 0;
 g_.ptMenuDrag = api.Memory("POINT");
 g_.Locations = api.CreateObject("Object");
 g_.IEVer = window.chrome ? (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 : 12) : ScriptEngineMajorVersion() > 8 ? ScriptEngineMajorVersion() : ScriptEngineMinorVersion();
+g_.bit = api.sizeof("HANDLE") * 8;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201219 ? te.Version : 20201231;
+		return te.Version < 20201219 ? te.Version : 20210105;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -61,7 +62,7 @@ AboutTE = function (n) {
 	if (n == 2) {
 		return "Tablacus Explorer " + AboutTE(1) + " Gaku";
 	}
-	const ar = ["TE" + (api.sizeof("HANDLE") * 8), AboutTE(1)];
+	const ar = ["TE" + g_.bit, AboutTE(1)];
 	let s = "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\";
 	try {
 		ar.push(wsh.regRead(s + "ProductName"));
