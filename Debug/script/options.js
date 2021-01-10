@@ -1640,7 +1640,7 @@ InitDialog = async function () {
 		};
 	}
 	if (Query == "fileicon") {
-		const s = await api.PathUnquoteSpaces((await window.dialogArguments.Id).replace(/^.*\t/, ""));
+		const s = PathUnquoteSpaces((await window.dialogArguments.Id).replace(/^.*\t/, ""));
 		document.title = s + " - " + TITLE;
 		GetElement("Content").innerHTML = '<div id="i,' + s + '" style="cursor: pointer"></div>';
 		await OpenIcon(GetElement("i," + s));
@@ -2211,7 +2211,7 @@ async function GetCurrentSetting(s) {
 	var FV = await te.Ctrl(CTRL_FV);
 
 	if (await confirmOk()) {
-		AddPath(s, await api.PathQuoteSpaces(await api.GetDisplayNameOf(await FV.FolderItem, SHGDN_FORPARSINGEX | SHGDN_FORPARSING)));
+		AddPath(s, PathQuoteSpaces(await api.GetDisplayNameOf(await FV.FolderItem, SHGDN_FORPARSINGEX | SHGDN_FORPARSING)));
 	}
 }
 

@@ -1,17 +1,29 @@
-const Addon_Id = "addressbar";
-const item = GetAddonElement(Addon_Id);
-
-//Menu
-if (Common.AddressBar.MenuExec) {
-    AddEvent(item.getAttribute("Menu"), function (Ctrl, hMenu, nPos) {
-        api.InsertMenu(hMenu, Common.AddressBar.nPos, MF_BYPOSITION | MF_STRING, ++nPos, Common.AddressBar.strName);
-		ExtraMenuCommand[nPos] = function () {
-			InvokeUI("Addons.AddressBar.Exec", arguments);
-			return S_OK;
+Sync.AddressBar = {
+	GetPath: function (n) {
+		let FolderItem = 0;
+		const FV = te.Ctrl(CTRL_FV);
+		if (FV) {
+			for (FolderItem = FV.FolderItem; n > 0; n--) {
+				FolderItem = api.ILGetParent(FolderItem);
+			}
 		}
-		return nPos;
-    });
-}
+		return FolderItem;
+	},
+
+	SplitPath: function (FolderItem) {
+		const Items = [];
+		let n = 0;
+		do {
+			Items.push({
+				next: n || api.GetAttributesOf(FolderItem, SFGAO_HASSUBFOLDER),
+				name: GetFolderItemName(FolderItem)
+			});
+			FolderItem = api.ILGetParent(FolderItem);
+			n++;
+		} while (!api.ILIsEmpty(FolderItem) && n < 99);
+		return JSON.stringify(Items);
+	}
+};
 
 AddEvent("MouseMessage", function (Ctrl, hwnd, msg, mouseData, pt, wHitTestCode, dwExtraInfo) {
 	if (msg == WM_MOUSEMOVE && Ctrl.Type == CTRL_TE && Common.AddressBar.rcItem) {
@@ -30,58 +42,55 @@ AddEvent("MouseMessage", function (Ctrl, hwnd, msg, mouseData, pt, wHitTestCode,
 	}
 });
 
-if (!window.chrome) {
-	AddEvent("DragEnter", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
-		if (Ctrl.Type == CTRL_WB) {
-			return S_OK;
-		}
-	});
-
-	AddEvent("DragOver", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
-		if (Ctrl.Type == CTRL_WB && dataObj.Count) {
-			const ptc = pt.Clone();
-			api.ScreenToClient(WebBrowser.hwnd, ptc);
-			const el = document.elementFromPoint(ptc.x, ptc.y);
-			if (el) {
-				const res = /^addressbar(\d+)_$/.exec(el.id);
-				if (res) {
-					const Target = Addons.AddressBar.GetPath(res[1] - 0);
-					if (!api.ILIsEqual(dataObj.Item(-1), Target)) {
-						const DropTarget = api.DropTarget(Target);
-						if (DropTarget) {
-							return DropTarget.DragOver(dataObj, grfKeyState, pt, pdwEffect);
-						}
-					}
-					pdwEffect[0] = DROPEFFECT_NONE;
-					return S_OK;
-				}
-			}
-		}
-	});
-
-	AddEvent("Drop", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
-		if (Ctrl.Type == CTRL_WB && dataObj.Count) {
-			const ptc = pt.Clone();
-			api.ScreenToClient(WebBrowser.hwnd, ptc);
-			const el = document.elementFromPoint(ptc.x, ptc.y);
-			if (el) {
-				const res = /^addressbar(\d+)_$/.exec(el.id);
-				if (res) {
-					let hr = S_FALSE;
-					const Target = Addons.AddressBar.GetPath(res[1] - 0);
-					if (!api.ILIsEqual(dataObj.Item(-1), Target)) {
-						const DropTarget = api.DropTarget(Target);
-						if (DropTarget) {
-							hr = DropTarget.Drop(dataObj, grfKeyState, pt, pdwEffect);
-						}
-					}
-					return hr;
-				}
-			}
-		}
-	});
-
-	AddEvent("DragLeave", function (Ctrl) {
+AddEvent("DragEnter", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
+	if (Ctrl.Type == CTRL_WB) {
+		InvokeUI("Addons.AddressBar.SetRects");
 		return S_OK;
-	});
-}
+	}
+});
+
+AddEvent("DragOver", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
+	if (Ctrl.Type == CTRL_WB && dataObj.Count && Common.AddressBar.rcDrop) {
+		const ptc = pt.Clone();
+		api.ScreenToClient(WebBrowser.hwnd, ptc);
+		for (let i = Common.AddressBar.rcDrop.length; i-- > 0;) {
+			if (PtInRect(Common.AddressBar.rcDrop[i], ptc)) {
+				const Target = Sync.AddressBar.GetPath(i);
+				if (!api.ILIsEqual(dataObj.Item(-1), Target)) {
+					const DropTarget = api.DropTarget(Target);
+					if (DropTarget) {
+						MouseOver("addressbar" + i + "_");
+						return DropTarget.DragOver(dataObj, grfKeyState, pt, pdwEffect);
+					}
+				}
+				pdwEffect[0] = DROPEFFECT_NONE;
+				return S_OK;
+			}
+		}
+	}
+});
+
+AddEvent("Drop", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
+	if (Ctrl.Type == CTRL_WB && dataObj.Count && Common.AddressBar.rcDrop) {
+		const ptc = pt.Clone();
+		api.ScreenToClient(WebBrowser.hwnd, ptc);
+		for (let i = Common.AddressBar.rcDrop.length; i-- > 0;) {
+			if (PtInRect(Common.AddressBar.rcDrop[i], ptc)) {
+				let hr = S_FALSE;
+				const Target = Sync.AddressBar.GetPath(i);
+				if (!api.ILIsEqual(dataObj.Item(-1), Target)) {
+					const DropTarget = api.DropTarget(Target);
+					if (DropTarget) {
+						hr = DropTarget.Drop(dataObj, grfKeyState, pt, pdwEffect);
+					}
+				}
+				return hr;
+			}
+		}
+	}
+});
+
+AddEvent("DragLeave", function (Ctrl) {
+	MouseOut("addressbar");
+	return S_OK;
+});

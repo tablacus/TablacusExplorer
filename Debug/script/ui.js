@@ -693,6 +693,9 @@ CloseSubWindows = async function () {
 MouseOver = async function (o) {
 	if ("string" === typeof o) {
 		o = document.getElementById(o);
+		if (!o) {
+			return;
+		}
 	}
 	o = o.srcElement || o;
 	if (/^button$|^menu$/i.test(o.className)) {
@@ -1182,8 +1185,12 @@ GetXmlItems = window.chrome ? async function (items) {
 	return ar;
 }
 
-SyncExec = async function (cb, el) {
-	cb(await GetFolderViewEx(el));
+SyncExec = async function (cb, el, n) {
+	cb(await GetFolderViewEx(el), n ? await GetPosEx(el, n) : null);
+}
+
+GetWidth = function (s) {
+	return (s && GetNum(s) == s) ? (s + "px") : s;
 }
 
 if (window.chrome) {

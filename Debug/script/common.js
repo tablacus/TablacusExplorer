@@ -80,6 +80,15 @@ GetFileName = function (s) {
 	return res ? res[1] : "";
 }
 
+PathQuoteSpaces = function (s) {
+	return /\s/.test(s) ? '"' + s + '"' : s;
+}
+
+PathUnquoteSpaces = function (s) {
+	const res = /^"(.*)"$/.exec(s);
+	return res ? res[1] : s;
+}
+
 CreateTab = async function (Ctrl, pt) {
 	const FV = await GetFolderView(Ctrl, pt);
 	HOME_PATH = await $.HOME_PATH;
@@ -117,7 +126,7 @@ GetImgTag = async function (o, h) {
 		const ar = ['<img'];
 		for (let n in o) {
 			if (o[n]) {
-				ar.push(' ', n, '="', EncodeSC(StripAmp(await GetText(await api.PathUnquoteSpaces(o[n])))), '"');
+				ar.push(' ', n, '="', EncodeSC(StripAmp(await GetText(PathUnquoteSpaces(o[n])))), '"');
 			}
 		}
 		if (h) {

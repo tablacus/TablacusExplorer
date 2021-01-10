@@ -53,7 +53,7 @@ g_.bit = api.sizeof("HANDLE") * 8;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201219 ? te.Version : 20210105;
+		return te.Version < 20201219 ? te.Version : 20210110;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -259,7 +259,7 @@ OpenDialogEx = function (path, filter, bFilesOnly) {
 	commdlg.Filter = MakeCommDlgFilter(filter);
 	commdlg.Flags = OFN_FILEMUSTEXIST | OFN_EXPLORER | OFN_ENABLESIZING | (bFilesOnly ? 0 : OFN_ENABLEHOOK);
 	if (commdlg.ShowOpen()) {
-		return api.PathQuoteSpaces(commdlg.FileName);
+		return PathQuoteSpaces(commdlg.FileName);
 	}
 }
 
@@ -456,10 +456,7 @@ ExtractMacro = function (Ctrl, s) {
 }
 
 OrganizePath = function (fn, base) {
-	if (/"/.test(fn)) {
-		fn = api.PathUnquoteSpaces(fn);
-	}
-	fn = ExtractMacro(te, fn);
+	fn = ExtractPath(te, fn);
 	if (base && !/^[A-Z]:\\|^\\\\\w/i.test(fn)) {
 		fn = BuildPath(base, fn);
 	}
@@ -751,7 +748,7 @@ SaveConfigXML = function (filename) {
 
 	MainWindow.RunEvent1("SaveConfig", xml);
 	try {
-		xml.save(api.PathUnquoteSpaces(filename));
+		xml.save(PathUnquoteSpaces(filename));
 	} catch (e) {
 		if (e.number != E_ACCESSDENIED) {
 			ShowError(e, [GetText("Save"), filename].join(": "));
@@ -835,24 +832,24 @@ ShowAbout = function () {
 ApiStruct = function (oTypedef, nAli, oMemory) {
 	this.Size = 0;
 	this.Typedef = oTypedef;
-	for (var i in oTypedef) {
-		var ar = oTypedef[i];
-		var n = ar[1];
+	for (let i in oTypedef) {
+		const ar = oTypedef[i];
+		const n = ar[1];
 		this.Size += (n - (this.Size % n)) % n;
 		ar[3] = this.Size;
 		this.Size += n * (ar[2] || 1);
 	}
-	n = GetNum(nAli);
+	const n = GetNum(nAli);
 	this.Size += (n - (this.Size % n)) % n;
 	this.Memory = "object" === typeof oMemory ? oMemory : api.Memory("BYTE", this.Size);
 	this.Read = function (Id) {
-		var ar = this.Typedef[Id];
+		const ar = this.Typedef[Id];
 		if (ar) {
 			return this.Memory.Read(ar[3], ar[0]);
 		}
 	};
 	this.Write = function (Id, Data) {
-		var ar = this.Typedef[Id];
+		const ar = this.Typedef[Id];
 		if (ar) {
 			this.Memory.Write(ar[3], ar[0], Data);
 		}
@@ -879,11 +876,10 @@ ExecAddonScript = function (type, s, fn, arError, o, arStack) {
 	return sc;
 }
 
-
 AddonBeforeRemove = function (Id) {
 	CollectGarbage();
-	var arError = [];
-	var r = LoadAddon("remove.js", Id, arError);
+	const arError = [];
+	const r = LoadAddon("remove.js", Id, arError);
 	if (arError.length) {
 		MessageBox(arError.join("\n\n"), TITLE, MB_OK);
 	}
@@ -891,13 +887,13 @@ AddonBeforeRemove = function (Id) {
 }
 
 CreateJScript = function (s) {
-	return new Function(s);
+	return new AsyncFunction(s);
 }
 
 ShowError = function (e, s, i) {
-	var sl = (s || "").toLowerCase();
+	const sl = (s || "").toLowerCase();
 	if (isFinite(i)) {
-		var ea = (eventTA[sl] || {})[i];
+		const ea = (eventTA[sl] || {})[i];
 		if (ea) {
 			s = ea + " : " + s;
 		}
@@ -1376,7 +1372,7 @@ MakeImgIcon = function (src, index, h, bIcon) {
 			if (/^file:/i.test(src)) {
 				src = api.PathCreateFromUrl(src) || src;
 			}
-			const pidl = api.ILCreateFromPath(api.PathUnquoteSpaces(src));
+			const pidl = api.ILCreateFromPath(PathUnquoteSpaces(src));
 			if (pidl) {
 				api.SHGetFileInfo(pidl, 0, sfi, sfi.Size, SHGFI_SYSICONINDEX | SHGFI_PIDL);
 			}
@@ -1829,7 +1825,7 @@ DropScript = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect,
 }
 
 ExtractPath = function (Ctrl, s, pt) {
-	s = api.PathUnquoteSpaces(ExtractMacro(Ctrl, GetConsts(s)));
+	s = PathUnquoteSpaces(ExtractMacro(Ctrl, GetConsts(s)));
 	if (/^\.|^\\$/.test(s)) {
 		const FV = GetFolderView(Ctrl, pt);
 		if (FV) {
@@ -2493,7 +2489,7 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem, bTran
 		if (!icon && te.Data.Conf_MenuIcon) {
 			if (api.PathMatchSpec(strType, "Open;Open in new tab;Open in background")) {
 				var pidl = api.ILCreateFromPath(path);
-				if (!api.PathIsNetworkPath(api.PathUnquoteSpaces(path))) {
+				if (!api.PathIsNetworkPath(PathUnquoteSpaces(path))) {
 					if (api.ILIsEmpty(pidl) || pidl.Unavailable) {
 						var res = /(.*?)\n/.exec(path);
 						if (res) {
@@ -2603,7 +2599,7 @@ OpenNewProcess = function (fn, ex, mode, vOperation) {
 		uid = String(Math.random()).replace(/^0?\./, "");
 	} while (MainWindow.Exchange[uid]);
 	MainWindow.Exchange[uid] = ex;
-	return ShellExecute([api.PathQuoteSpaces(api.GetModuleFileName(null)), mode ? '/open' : '/run', fn, uid].join(" "), vOperation, mode ? SW_SHOWNORMAL : SW_SHOWNOACTIVATE);
+	return ShellExecute([PathQuoteSpaces(api.GetModuleFileName(null)), mode ? '/open' : '/run', fn, uid].join(" "), vOperation, mode ? SW_SHOWNORMAL : SW_SHOWNOACTIVATE);
 }
 
 GetAddonInfo = function (Id) {
@@ -3178,7 +3174,7 @@ FolderMenu = {
 			Items.AddItem(FolderItem);
 			FV.AltSelectedItems = Items;
 			if (ExecMenu(FV, "Default", null, 2) != S_OK) {
-				ShellExecute(api.PathQuoteSpaces(api.GetDisplayNameOf(FolderItem, SHGDN_ORIGINAL | SHGDN_FORPARSING)), null, SW_SHOWNORMAL);
+				ShellExecute(PathQuoteSpaces(api.GetDisplayNameOf(FolderItem, SHGDN_ORIGINAL | SHGDN_FORPARSING)), null, SW_SHOWNORMAL);
 			}
 			FV.AltSelectedItems = AltSelectedItems;
 		}

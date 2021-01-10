@@ -312,7 +312,7 @@ g_basic = {
 					pdwEffect[0] = DROPEFFECT_LINK;
 					if (bDrop) {
 						var ar = [];
-						for (var i = dataObj.Count; i > 0; ar.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(dataObj.Item(--i), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)))) {
+						for (var i = dataObj.Count; i > 0; ar.unshift(PathQuoteSpaces(api.GetDisplayNameOf(dataObj.Item(--i), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)))) {
 						}
 						s = s.replace(re, ar.join(" "));
 						ShellExecute(s, null, SW_SHOWNORMAL, Ctrl, pt);
@@ -396,7 +396,7 @@ g_basic = {
 						var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD | (pt.width ? TPM_RIGHTALIGN : 0), pt.x + pt.width, pt.y, te.hwnd, null, null);
 						api.DestroyMenu(hMenu);
 						if (nVerb) {
-							return api.PathQuoteSpaces(Items.Item(nVerb - 1).Path);
+							return PathQuoteSpaces(Items.Item(nVerb - 1).Path);
 						}
 					}
 					return 1;
@@ -698,7 +698,7 @@ g_basic = {
 					if (nCount) {
 						s = te.OnClipboardText(Selected);
 					} else {
-						s = api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
+						s = PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 					}
 					api.SetClipboardData(s);
 					return S_OK;
@@ -1312,7 +1312,7 @@ AddFavorite = function (FolderItem) {
 					path = FolderItem.Path;
 				}
 				if (!FolderItem.Enum && fso.FileExists(path)) {
-					path = api.PathQuoteSpaces(path);
+					path = PathQuoteSpaces(path);
 					item.setAttribute("Type", "Exec");
 				} else {
 					item.setAttribute("Type", "Open");
@@ -2014,7 +2014,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 				}
 				var cmd2 = ExtractMacro(te, cmd);
 				if (!SameText(cmd, cmd2)) {
-					ShellExecute(cmd2.replace(/"?%1"?|%L/g, api.PathQuoteSpaces(path)).replace(/%\*|%I/g, ""), null, nShow, Directory);
+					ShellExecute(cmd2.replace(/"?%1"?|%L/g, PathQuoteSpaces(path)).replace(/%\*|%I/g, ""), null, nShow, Directory);
 					continue;
 				}
 			}
@@ -2560,7 +2560,7 @@ te.OnClipboardText = function (Items) {
 	}
 	var s = [];
 	for (var i = Items.Count; i-- > 0;) {
-		s.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(Items.Item(i), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)))
+		s.unshift(PathQuoteSpaces(api.GetDisplayNameOf(Items.Item(i), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)))
 	}
 	return s.join(" ");
 }
@@ -3217,7 +3217,7 @@ AddEnv("Selected", function (Ctrl) {
 	var ar = [];
 	var Selected = GetSelectedItems(Ctrl);
 	if (Selected) {
-		for (var i = Selected.Count; i > 0; ar.unshift(api.PathQuoteSpaces(api.GetDisplayNameOf(Selected.Item(--i), SHGDN_FORPARSING | SHGDN_ORIGINAL)))) {
+		for (var i = Selected.Count; i > 0; ar.unshift(PathQuoteSpaces(api.GetDisplayNameOf(Selected.Item(--i), SHGDN_FORPARSING | SHGDN_ORIGINAL)))) {
 		}
 	}
 	return ar.join(" ");
@@ -3227,7 +3227,7 @@ AddEnv("Current", function (Ctrl) {
 	var strSel = "";
 	var FV = GetFolderView(Ctrl);
 	if (FV) {
-		strSel = api.PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORPARSING | SHGDN_ORIGINAL));
+		strSel = PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORPARSING | SHGDN_ORIGINAL));
 	}
 	return strSel;
 });
@@ -3241,13 +3241,13 @@ AddEnv("TreeSelected", function (Ctrl) {
 		}
 	}
 	if (Ctrl) {
-		strSel = api.PathQuoteSpaces(api.GetDisplayNameOf(Ctrl.SelectedItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
+		strSel = PathQuoteSpaces(api.GetDisplayNameOf(Ctrl.SelectedItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 	}
 	return strSel;
 });
 
 AddEnv("MenuSelected", function (Ctrl) {
-	return g_.MenuSelected ? api.PathQuoteSpaces(g_.MenuSelected.Path) : "";
+	return g_.MenuSelected ? PathQuoteSpaces(g_.MenuSelected.Path) : "";
 });
 
 AddEnv("Installed", fso.GetDriveName(api.GetModuleFileName(null)));
