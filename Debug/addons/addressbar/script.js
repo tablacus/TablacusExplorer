@@ -23,10 +23,10 @@ if (window.Addon == 1) {
 		strName: "Address bar",
 
 		KeyDown: function (ev, o) {
-			if (ev.keyCode == VK_RETURN || /^Enter/i.test(ev.key)) {
+			if (ev.keyCode ? ev.keyCode == VK_RETURN : /^Enter/i.test(ev.key)) {
 				setTimeout(async function (o, str) {
 					if (str == o.value) {
-						const pt = GetPos(o, 9);
+						const pt = await GetPosEx(o, 9);
 						$.Input = str;
 						if (await ExecMenu(await te.Ctrl(CTRL_WB), "Alias", pt, 2) != S_OK) {
 							NavigateFV(await te.Ctrl(CTRL_FV), str, await GetNavigateFlags(), true);
@@ -54,37 +54,34 @@ if (window.Addon == 1) {
 				if (Addons.AddressBar.XP) {
 					oAddr.style.color = "";
 				} else {
-					const SessionId = await FV.SessionId;
 					const arHTML = [];
 					o.style.width = "auto";
+					const bRoot = api.ILIsEmpty(FolderItem);
 					const Items = JSON.parse(await Sync.AddressBar.SplitPath(FolderItem));
 					let bEmpty = true, n;
-					if (o.innerHTML == "" || SessionId == await te.Ctrl(CTRL_FV).SessionId) {
-						o.innerHTML = "";
-						for (n = 0; n < Items.length; ++n) {
-							if (Items[n].next) {
-								arHTML.unshift('<span id="addressbar' + n + '" class="button" style="line-height: ' + height + 'px; vertical-align: middle" onclick="Addons.AddressBar.Popup(this,' + n + ')" onmouseover="MouseOver(this)" onmouseout="MouseOut()" oncontextmenu="Addons.AddressBar.Exec(); return false;">' + BUTTONS.next + '</span>');
-								o.insertAdjacentHTML("afterbegin", arHTML[0]);
-							}
-							arHTML.unshift('<span id="addressbar' + n + '_" class="button" style="line-height: ' + height + 'px" onmousedown="return Addons.AddressBar.Go(event, this,' + n + ')" onmouseover="MouseOver(this)" onmouseout="MouseOut()" oncontextmenu="Addons.AddressBar.Exec(); return false;">' + EncodeSC(Items[n].name) + '</span>');
-							const nBefore = o.offsetWidth;
+					o.innerHTML = "";
+					for (n = 0; n < Items.length; ++n) {
+						if (Items[n].next) {
+							arHTML.unshift('<span id="addressbar' + n + '" class="button" style="line-height: ' + height + 'px; vertical-align: middle" onclick="Addons.AddressBar.Popup(this,' + n + ')" onmouseover="MouseOver(this)" onmouseout="MouseOut()" oncontextmenu="Addons.AddressBar.Exec(); return false;">' + BUTTONS.next + '</span>');
 							o.insertAdjacentHTML("afterbegin", arHTML[0]);
-							if (nBefore != o.offsetWidth && o.offsetWidth > width && n > 0) {
-								o.innerHTML = arHTML.join("");
-								arHTML.splice(0, 2);
-								o.innerHTML = arHTML.join("");
-								bEmpty = false;
-								break;
-							}
 						}
-						o.style.width = (oAddr.offsetWidth - 2) + "px";
-						if (bEmpty) {
-							if (!await api.ILIsEmpty(FolderItem)) {
-								o.insertAdjacentHTML("afterbegin", '<span id="addressbar' + n + '" class="button" style="line-height: ' + height + 'px" onclick="Addons.AddressBar.Popup(this, ' + n + ')" onmouseover="MouseOver(this)" onmouseout="MouseOut()">' + BUTTONS.next + '</span>');
-							}
-						} else {
-							o.insertAdjacentHTML("afterbegin", '<span id="addressbar' + n + '" class="button" style="line-height: ' + height + 'px" onclick="Addons.AddressBar.Popup2(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()">' + BUTTONS.parent + '</span>');
+						arHTML.unshift('<span id="addressbar' + n + '_" class="button" style="line-height: ' + height + 'px" onmousedown="return Addons.AddressBar.Go(event, this,' + n + ')" onmouseover="MouseOver(this)" onmouseout="MouseOut()" oncontextmenu="Addons.AddressBar.Exec(); return false;">' + EncodeSC(Items[n].name) + '</span>');
+						const nBefore = o.offsetWidth;
+						o.insertAdjacentHTML("afterbegin", arHTML[0]);
+						if (nBefore != o.offsetWidth && o.offsetWidth > width && n > 0) {
+							arHTML.splice(0, 2);
+							o.innerHTML = arHTML.join("");
+							bEmpty = false;
+							break;
 						}
+					}
+					o.style.width = (oAddr.offsetWidth - 2) + "px";
+					if (bEmpty) {
+						if (!await bRoot) {
+							o.insertAdjacentHTML("afterbegin", '<span id="addressbar' + n + '" class="button" style="line-height: ' + height + 'px" onclick="Addons.AddressBar.Popup(this, ' + n + ')" onmouseover="MouseOver(this)" onmouseout="MouseOut()">' + BUTTONS.next + '</span>');
+						}
+					} else {
+						o.insertAdjacentHTML("afterbegin", '<span id="addressbar' + n + '" class="button" style="line-height: ' + height + 'px" onclick="Addons.AddressBar.Popup2(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()">' + BUTTONS.parent + '</span>');
 					}
 					Addons.AddressBar.nLevel = n;
 				}
