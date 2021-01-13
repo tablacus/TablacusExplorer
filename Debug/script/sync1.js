@@ -3265,8 +3265,10 @@ CreateUpdater = function (arg) {
 
 UpdateAndReload = function (arg) {
 	if (arg.pcRef && arg.pcRef[0]) {
-		setTimeout(UpdateAndReload, 500, arg);
-		return;
+		if (!arg.tm || new Date().getTime() < arg.tm) {
+			setTimeout(UpdateAndReload, 999, arg);
+			return;
+		}
 	}
 	if (!IsExists(BuildPath(arg.temp, GetFileName(api.GetModuleFileName(null))))) {
 		api.SHFileOperation(FO_MOVE, arg.temp + "\\*", te.Data.Installed, FOF_NOCONFIRMATION, false);

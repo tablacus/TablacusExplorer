@@ -53,7 +53,7 @@ g_.bit = api.sizeof("HANDLE") * 8;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201219 ? te.Version : 20210110;
+		return te.Version < 20201219 ? te.Version : 20210113;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3212,6 +3212,12 @@ CreateSync = function (n, a, b, c, d, e) {
 		fn = fn[s];
 	}
 	return new fn(a, b ,c ,d , e);
+}
+
+CalcRef = function (o, nPos, nDiff) {
+	if (o) {
+		o[nPos] += nDiff;
+	}
 }
 
 BasicDB = function (name, bLoad, bLC) {

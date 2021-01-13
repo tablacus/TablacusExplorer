@@ -177,9 +177,7 @@ OpenHttpRequest = async function (url, alt, fn, arg) {
 	const xhr = await createHttpRequest();
 	const fnLoaded = async function () {
 		if (fn) {
-			if (arg && await arg.pcRef) {
-				arg.pcRef[0] = await arg.pcRef[0] - 1;
-			}
+			CalcRef(arg && await arg.pcRef, 0, -1);
 			if (await xhr.status == 200) {
 				if (fn) {
 					if ("string" === typeof fn) {
@@ -207,9 +205,7 @@ OpenHttpRequest = async function (url, alt, fn, arg) {
 	if (/ml$/i.test(url)) {
 		url += "?" + Math.floor(new Date().getTime() / 60000);
 	}
-	if (arg && await arg.pcRef) {
-		arg.pcRef[0] = await arg.pcRef[0] + 1;
-	}
+	CalcRef(arg && await arg.pcRef, 0, 1);
 	if (window.chrome && /\.zip$|\.nupkg$/i.test(url)) {
 		xhr.responseType = "blob";
 	}
