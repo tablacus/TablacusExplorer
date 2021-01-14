@@ -2595,30 +2595,29 @@ async function Install(o, bUpdate) {
 	if (!bUpdate && !await confirmOk("Do you want to install it now?")) {
 		return;
 	}
-	var Id = o.title.replace(/_.*$/, "");
+	const Id = o.title.replace(/_.*$/, "");
 	await MainWindow.SaveConfig();
 	await MainWindow.AddonDisabled(Id);
 	if (await AddonBeforeRemove(Id) < 0) {
 		return;
 	}
-	var file = o.title.replace(/\./, "") + '.zip';
-	OpenHttpRequest(urlAddons + Id + '/' + file, "http", Install2, o);
+	OpenHttpRequest(urlAddons + Id + '/' + o.title.replace(/\./, "") + '.zip', "http", Install2, o);
 }
 
 async function Install2(xhr, url, o) {
-	var Id = o.title.replace(/_.*$/, "");
-	var file = o.title.replace(/\./, "") + '.zip';
-	var temp = BuildPath(await ExtractMacro(await te, "%TEMP%"), "tablacus");
+	const Id = o.title.replace(/_.*$/, "");
+	const file = o.title.replace(/\./, "") + '.zip';
+	const temp = BuildPath(await fso.GetSpecialFolder(2).Path, "tablacus");
 	await CreateFolder(temp);
-	var dest = BuildPath(temp, Id);
+	const dest = BuildPath(temp, Id);
 	await DeleteItem(dest);
-	var hr = await (window.chrome ? window : MainWindow).Extract(BuildPath(temp, file), temp, xhr);
+	const hr = await (window.chrome ? window : MainWindow).Extract(BuildPath(temp, file), temp, xhr);
 	if (hr) {
 		MessageBox([await api.LoadString(hShell32, 4228).replace(/^\t/, "").replace("%d", await api.sprintf(99, "0x%08x", hr)), await GetText("Extract"), file].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
 		return;
 	}
-	var configxml = dest + "\\config.xml";
-	var nDog = 300;
+	const configxml = dest + "\\config.xml";
+	let nDog = 300;
 	while (!await fso.FileExists(configxml)) {
 		if (await wsh.Popup(await GetText("Please wait."), 1, TITLE, MB_ICONINFORMATION | MB_OKCANCEL) == IDCANCEL || nDog-- == 0) {
 			return;
@@ -2645,17 +2644,17 @@ async function InstallIcon(o) {
 	if (!await confirmOk("Do you want to install it now?")) {
 		return;
 	}
-	var Id = o.title.replace(/_[^_]*$/, "");
+	const Id = o.title.replace(/_[^_]*$/, "");
 	OpenHttpRequest(urlIcons + Id + '/' + o.title.replace(/\./g, "") + '.zip', "http", InstallIcon2, o);
 }
 
 async function InstallIcon2(xhr, url, o) {
-	var file = o.title.replace(/\./, "") + '.zip';
-	var temp = BuildPath(await ExtractMacro(await te, "%TEMP%"), "tablacus");
+	const file = o.title.replace(/\./, "") + '.zip';
+	const temp = BuildPath(await fso.GetSpecialFolder(2).Path, "tablacus");
 	await CreateFolder(temp);
-	var dest = BuildPath(await te.Data.DataFolder, "icons");
+	const dest = BuildPath(await te.Data.DataFolder, "icons");
 	await CreateFolder(dest);
-	var hr = await (window.chrome ? window : MainWindow).Extract(BuildPath(temp, file), dest, xhr);
+	const hr = await (window.chrome ? window : MainWindow).Extract(BuildPath(temp, file), dest, xhr);
 	if (hr) {
 		MessageBox([(await api.LoadString(hShell32, 4228)).replace(/^\t/, "").replace("%d", await api.sprintf(99, "0x%08x", hr)), await GetText("Extract"), file].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
 		return;
@@ -2756,7 +2755,7 @@ async function DeleteIconPacks() {
 
 async function EnableSelectTag(o) {
 	if (o && !window.chrome) {
-		var hwnd = await WebBrowser.hwnd;
+		const hwnd = await WebBrowser.hwnd;
 		api.SendMessage(hwnd, WM_SETREDRAW, false, 0);
 		o.style.visibility = "hidden";
 		setTimeout(async function () {

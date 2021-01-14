@@ -991,8 +991,15 @@ RestoreFromTray = function () {
 }
 
 Finalize = function () {
-	Finalize = function () {};
+	if (g_.bFinalized) {
+		return;
+	}
+	g_.bFinalized = true;
 	RunEvent1("Finalize");
+	FinalizeEx();
+}
+
+FinalizeEx = function () {
 	SaveConfig();
 	Threads.Finalize();
 
@@ -1501,10 +1508,10 @@ te.OnClose = function (Ctrl) {
 AddEvent("Close", function (Ctrl) {
 	switch (Ctrl.Type) {
 		case CTRL_TE:
-			Finalize();
 			if (api.GetThreadCount() && MessageBox("File is in operation.", TITLE, MB_ABORTRETRYIGNORE) != IDIGNORE) {
 				return S_FALSE;
 			}
+			Finalize();
 			eventTE = { Environment: {} };
 			api.SHChangeNotifyDeregister(te.Data.uRegisterId);
 			DeleteTempFolder();

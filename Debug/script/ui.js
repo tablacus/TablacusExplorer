@@ -882,7 +882,13 @@ LoadAddon = async function (ext, Id, arError, param, bDisabled) {
 ReloadCustomize = async function () {
 	te.Data.bReload = false;
 	await CloseSubWindows();
-	await Finalize();
+	g_.bFinalized = true;
+	const eo = await api.ObjGetI(await $.eventTE, "Finalize");
+	const nLen = await GetLength(eo);
+	for (let i = 0; i < nLen; ++i) {
+		await (await eo[i])();
+	}
+	await FinalizeEx();
 	te.Reload();
 	return S_OK;
 }

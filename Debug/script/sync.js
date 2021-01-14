@@ -53,7 +53,7 @@ g_.bit = api.sizeof("HANDLE") * 8;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201219 ? te.Version : 20210113;
+		return te.Version < 20201219 ? te.Version : 20210114;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -304,8 +304,8 @@ GetNavigateFlags = function (FV, bParent) {
 }
 
 GetSysColor = function (i) {
-	var c = g_.Colors[i];
-	return c !== void 0 ? c : api.GetSysColor(i);
+	const c = g_.Colors[i];
+	return c != null ? c : api.GetSysColor(i);
 }
 
 SetSysColor = function (i, color) {
@@ -881,7 +881,7 @@ AddonBeforeRemove = function (Id) {
 	const arError = [];
 	const r = LoadAddon("remove.js", Id, arError);
 	if (arError.length) {
-		MessageBox(arError.join("\n\n"), TITLE, MB_OK);
+		MessageBox(arError.join("\n\n"), TITLE, MB_ICONSTOP |MB_OK);
 	}
 	return r;
 }
@@ -1514,12 +1514,12 @@ IsDrag = function (pt1, pt2) {
 }
 
 ChangeTab = function (TC, nMove) {
-	var nCount = TC.Count;
+	const nCount = TC.Count;
 	TC.SelectedIndex = (TC.SelectedIndex + nCount + nMove) % nCount;
 }
 
 LoadLayout = function () {
-	var commdlg = api.CreateObject("CommonDialog");
+	const commdlg = api.CreateObject("CommonDialog");
 	commdlg.InitDir = BuildPath(te.Data.DataFolder, "layout");
 	commdlg.Filter = MakeCommDlgFilter("*.xml");
 	commdlg.Flags = OFN_FILEMUSTEXIST;
@@ -1530,7 +1530,7 @@ LoadLayout = function () {
 }
 
 SaveLayout = function () {
-	var commdlg = api.CreateObject("CommonDialog");
+	const commdlg = api.CreateObject("CommonDialog");
 	commdlg.InitDir = BuildPath(te.Data.DataFolder, "layout");
 	commdlg.Filter = MakeCommDlgFilter("*.xml");
 	commdlg.DefExt = "xml";
@@ -1548,8 +1548,8 @@ PtInRect = function (rc, pt) {
 }
 
 IsExists = function (path) {
-	var wfd = api.Memory("WIN32_FIND_DATA");
-	var hFind = api.FindFirstFile(path.replace(/\\$/, ""), wfd);
+	const wfd = api.Memory("WIN32_FIND_DATA");
+	const hFind = api.FindFirstFile(path.replace(/\\$/, ""), wfd);
 	api.FindClose(hFind);
 	return hFind != INVALID_HANDLE_VALUE;
 }
@@ -1560,21 +1560,26 @@ CreateNew = function (path, fn) {
 			fn(path);
 		} catch (e) {
 			if (/^[A-Z]:\\|^\\\\\w/i.test(path)) {
-				var path1, path2, path3, path4;
+				let path1, path2, path3, path4;
 				path1 = path;
 				path2 = "";
 				do {
 					path2 = BuildPath(GetFileName(path1), path2);
 					path1 = GetParentFolderName(path1);
 				} while (path1 && !fso.FolderExists(path1));
-				var ar = path2.split("\\");
+				const ar = path2.split("\\");
 				if (ar[0]) {
 					path = BuildPath(path1, ar[0]);
 					path3 = BuildPath(fso.GetSpecialFolder(2).Path, ar[0]);
 					DeleteItem(path3);
 					path4 = path3;
-					for (var i = 1; i < ar.length; ++i) {
-						fso.CreateFolder(path4);
+					for (let i = 1; i < ar.length; ++i) {
+						try {
+							fso.CreateFolder(path4);
+						} catch (e) {
+							MessageBox([e.message, path4].join("\n\n"), TITLE, MB_ICONSTOP | MB_OK);
+							break;
+						}
 						path4 = BuildPath(path4, ar[i]);
 					}
 					fn(path4);
@@ -1588,7 +1593,7 @@ CreateNew = function (path, fn) {
 }
 
 SetFileTime = function (path, ctime, atime, mtime) {
-	var b = MainWindow.RunEvent3("SetFileTime", path, ctime, atime, mtime);
+	const b = MainWindow.RunEvent3("SetFileTime", path, ctime, atime, mtime);
 	if (isFinite(b)) {
 		return b;
 	}
@@ -1596,7 +1601,7 @@ SetFileTime = function (path, ctime, atime, mtime) {
 }
 
 SetFileAttributes = function (path, attr) {
-	var b = MainWindow.RunEvent3("SetFileAttributes", path, attr);
+	const b = MainWindow.RunEvent3("SetFileAttributes", path, attr);
 	if (isFinite(b)) {
 		return b;
 	}
@@ -1613,18 +1618,22 @@ SetFileAttributes = function (path, attr) {
 }
 
 CreateFolder = function (path) {
-	var r = MainWindow.RunEvent4("CreateFolder", path);
-	if (r !== void 0) {
+	const r = MainWindow.RunEvent4("CreateFolder", path);
+	if (r != null) {
 		return r;
 	}
 	CreateNew(path, function (strPath) {
-		fso.CreateFolder(strPath.replace(/^\s*/, ""));
+		try {
+			fso.CreateFolder(strPath.replace(/^\s*/, ""));
+		} catch (e) {
+			MessageBox([e.message, strPath].join("\n\n"), TITLE, MB_ICONSTOP | MB_OK);
+		}
 	});
 }
 
 CreateFile = function (path) {
-	var r = MainWindow.RunEvent4("CreateFile", path);
-	if (r !== void 0) {
+	const r = MainWindow.RunEvent4("CreateFile", path);
+	if (r != null) {
 		return r;
 	}
 	CreateNew(path, CreateFile2);
@@ -1637,10 +1646,10 @@ CreateFolder2 = function (path) {
 }
 
 CreateFile2 = function (path) {
-	var ext = fso.GetExtensionName(path);
-	if (ext) {
-		var s, r = "HKCR\\." + ext + "\\";
-		try {
+	try {
+		let ext = fso.GetExtensionName(path);
+		if (ext) {
+			let s, r = "HKCR\\." + ext + "\\";
 			s = wsh.regRead(r);
 			try {
 				wsh.RegRead(r + "ShellNew\\");
@@ -1649,8 +1658,8 @@ CreateFile2 = function (path) {
 				wsh.RegRead(r + "\\ShellNew\\");
 			}
 			r += "ShellNew\\";
-			var ar = ['Command', 'Data', 'FileName'];
-			for (var i in ar) {
+			const ar = ['Command', 'Data', 'FileName'];
+			for (let i in ar) {
 				try {
 					s = wsh.RegRead(r + ar[i]);
 				} catch (e) {
@@ -1667,7 +1676,7 @@ CreateFile2 = function (path) {
 						return;
 					}
 					if (i == 1) {
-						var a = fso.CreateTextFile(path);
+						const a = fso.CreateTextFile(path);
 						a.Write(s);
 						a.Close();
 						return;
@@ -1676,9 +1685,11 @@ CreateFile2 = function (path) {
 					return;
 				}
 			}
-		} catch (e) { }
+		}
+		fso.CreateTextFile(path).Close();
+	} catch (e) {
+		MessageBox([e.message, path].join("\n\n"), TITLE, MB_ICONSTOP | MB_OK);
 	}
-	fso.CreateTextFile(path).Close();
 }
 
 FormatDateTime = function (s) {
@@ -1686,9 +1697,9 @@ FormatDateTime = function (s) {
 };
 
 Navigate2 = function (path, NewTab) {
-	var a = path.toString().split("\n");
-	for (var i in a) {
-		var s = a[i].replace(/^\s+/, "");
+	const a = path.toString().split("\n");
+	for (let i in a) {
+		const s = a[i].replace(/^\s+/, "");
 		if (s != "") {
 			Navigate(s, NewTab);
 			NewTab |= SBSP_NEWBROWSER;
