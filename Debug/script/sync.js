@@ -53,7 +53,7 @@ g_.bit = api.sizeof("HANDLE") * 8;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201219 ? te.Version : 20210114;
+		return te.Version < 20201219 ? te.Version : 20210116;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -107,7 +107,7 @@ if ("undefined" != typeof ScriptEngineMajorVersion && ScriptEngineMajorVersion()
 					return f(function () {
 						try {
 							if ("string" === typeof fn) {
-								fn = new Function(FixScript(fn));
+								fn = new AsyncFunction(fn);
 							}
 							fn.apply(fn, args);
 						} catch (e) {
@@ -1650,12 +1650,22 @@ CreateFile2 = function (path) {
 		let ext = fso.GetExtensionName(path);
 		if (ext) {
 			let s, r = "HKCR\\." + ext + "\\";
-			s = wsh.regRead(r);
+			try {
+				s = wsh.regRead(r);
+			} catch (e) {
+				fso.CreateTextFile(path).Close();
+				return;
+			}
 			try {
 				wsh.RegRead(r + "ShellNew\\");
 			} catch (e) {
 				r += s + "\\";
-				wsh.RegRead(r + "\\ShellNew\\");
+				try {
+					wsh.RegRead(r + "\\ShellNew\\");
+				} catch (e) {
+					fso.CreateTextFile(path).Close();
+					return;
+				}
 			}
 			r += "ShellNew\\";
 			const ar = ['Command', 'Data', 'FileName'];
@@ -1708,10 +1718,10 @@ Navigate2 = function (path, NewTab) {
 }
 
 ExecOpen = function (Ctrl, s, type, hwnd, pt, NewTab) {
-	var nLock = 0;
-	var line = s.split("\n");
-	var bRev = (NewTab & SBSP_ACTIVATE_NOFOCUS);
-	var FV = GetFolderView(Ctrl, pt);
+	let nLock = 0;
+	const line = s.split("\n");
+	const bRev = (NewTab & SBSP_ACTIVATE_NOFOCUS);
+	const FV = GetFolderView(Ctrl, pt);
 	if (line.length > 1) {
 		++g_.LockUpdate;
 		++nLock;
@@ -1794,7 +1804,7 @@ ExecScriptEx = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffec
 			if (/^"?[A-Z]:\\.*\.js"?\s*$|^"?\\\\\w.*\.js"?s*$/im.test(s)) {
 				s = ReadTextFile(s);
 			}
-			fn = { Handled: new Function(FixScript(s)) };
+			fn = { Handled: new AsyncFunction(s) };
 		} else if (/VBScript/i.test(type)) {
 			if (/^"?[A-Z]:\\.*\.vbs"?\s*$|^"?\\\\\w.*\.vbs"?s*$/im.test(s)) {
 				s = ReadTextFile(s);

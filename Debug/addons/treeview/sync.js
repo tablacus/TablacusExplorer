@@ -1,5 +1,5 @@
-var Addon_Id = "treeview";
-var item = GetAddonElement(Addon_Id);
+const Addon_Id = "treeview";
+const item = GetAddonElement(Addon_Id);
 
 Sync.TreeView = {
 	strName: "Tree",
@@ -9,10 +9,10 @@ Sync.TreeView = {
 	Depth: GetNum(item.getAttribute("Depth")),
 
 	Exec: function (Ctrl, pt) {
-		var FV = GetFolderView(Ctrl, pt);
+		const FV = GetFolderView(Ctrl, pt);
 		if (FV) {
 			FV.Focus();
-			var TV = FV.TreeView;
+			const TV = FV.TreeView;
 			if (TV) {
 				TV.Visible = !TV.Visible;
 				if (TV.Visible) {
@@ -75,9 +75,9 @@ if (item.getAttribute("MouseExec")) {
 }
 
 SetGestureExec("Tree", "1", function (Ctrl, pt) {
-	var Item = Ctrl.HitTest(pt);
+	const Item = Ctrl.HitTest(pt);
 	if (Item) {
-		var FV = Ctrl.FolderView;
+		const FV = Ctrl.FolderView;
 		if (!api.ILIsEqual(FV.FolderItem, Item)) {
 			setTimeout(function () {
 				FV.Navigate(Item, GetNavigateFlags(FV));
@@ -88,7 +88,7 @@ SetGestureExec("Tree", "1", function (Ctrl, pt) {
 }, "Func", true);
 
 SetGestureExec("Tree", "3", function (Ctrl, pt) {
-	var Item = Ctrl.SelectedItem;
+	const Item = Ctrl.SelectedItem;
 	if (Item) {
 		setTimeout(function () {
 			Ctrl.FolderView.Navigate(Item, SBSP_NEWBROWSER);
@@ -99,14 +99,14 @@ SetGestureExec("Tree", "3", function (Ctrl, pt) {
 
 //Tab
 SetKeyExec("Tree", "$f", function (Ctrl, pt) {
-	var FV = GetFolderView(Ctrl, pt);
+	const FV = GetFolderView(Ctrl, pt);
 	FV.focus();
 	return S_OK;
 }, "Func", true);
 
 //Enter
 SetKeyExec("Tree", "$1c", function (Ctrl, pt) {
-	var FV = GetFolderView(Ctrl, pt);
+	const FV = GetFolderView(Ctrl, pt);
 	FV.Navigate(Ctrl.SelectedItem, GetNavigateFlags(FV));
 	return S_OK;
 }, "Func", true);
@@ -116,12 +116,12 @@ AddTypeEx("Add-ons", "Tree", Sync.TreeView.Exec);
 if (WINVER >= 0x600) {
 	AddEvent("AppMessage", function (Ctrl, hwnd, msg, wParam, lParam) {
 		if (msg == Sync.TreeView.WM) {
-			var pidls = {};
-			var hLock = api.SHChangeNotification_Lock(wParam, lParam, pidls);
+			const pidls = {};
+			const hLock = api.SHChangeNotification_Lock(wParam, lParam, pidls);
 			if (hLock) {
 				api.SHChangeNotification_Unlock(hLock);
-				var cFV = te.Ctrls(CTRL_FV);
-				for (var i in cFV) {
+				const cFV = te.Ctrls(CTRL_FV);
+				for (let i in cFV) {
 					cFV[i].TreeView.Notify(pidls.lEvent, pidls[0], pidls[1], wParam, lParam);
 				}
 			}

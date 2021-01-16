@@ -1195,6 +1195,26 @@ GetWidth = function (s) {
 	return (s && GetNum(s) == s) ? (s + "px") : s;
 }
 
+KeyDownEvent = function (ev, vEnter, vCancel) {
+	if (vEnter != null && ev.keyCode ? ev.keyCode == VK_RETURN : /^Enter/i.test(ev.key)) {
+		if (/object|function/.test(typeof vEnter)) {
+			vEnter();
+			return false;
+		} else {
+			return vEnter;
+		}
+	}
+	if (vCancel && ev.keyCode ? ev.keyCode == VK_ESCAPE : /^Esc/i.test(ev.key)) {
+		if (/object|function/.test(typeof vCancel)) {
+			vCancel();
+			return false;
+		} else {
+			return vCancel;
+		}
+	}
+	return true;
+}
+
 if (window.chrome) {
 	GetAddonElement = async function (id) {
 		const item = await $.GetAddonElement(id);

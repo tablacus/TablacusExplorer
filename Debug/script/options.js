@@ -1601,13 +1601,11 @@ InitDialog = async function () {
 			setTimeout(function () {
 				document.F.ButtonOk.disabled = !document.F.path.value;
 			}, 99);
-			if ((ev.keyCode == VK_RETURN || window.chrome && /^Enter/i.test(ev.key)) && document.F.path.value) {
+			return KeyDownEvent(ev, document.F.path.value && function () {
 				SetResult(1);
-			}
-			if (ev.keyCode == VK_ESCAPE || window.chrome && /^Esc/i.test(ev.key)) {
+			}, function () {
 				SetResult(2);
-			}
-			return true;
+			});
 		});
 
 		AddEventEx(document.body, "paste", function () {
@@ -1706,13 +1704,11 @@ InitDialog = async function () {
 		returnValue = false;
 		document.getElementById("Content").innerHTML = ['<div style="padding: 8px;" style="display: block;"><label>', EncodeSC(await dialogArguments.text).replace(/\r?\n/g, "<br>"), '<br><input type="text" name="text" style="width: 100%"></div>'].join("");
 		AddEventEx(document.body, "keydown", function (ev) {
-			if (ev.keyCode == VK_RETURN || window.chrome && /^Enter/i.test(ev.key)) {
+			return KeyDownEvent(ev, function () {
 				SetResult(1);
-			}
-			if (ev.keyCode == VK_ESCAPE || window.chrome && /^Esc/i.test(ev.key)) {
+			}, function () {
 				SetResult(2);
-			}
-			return true;
+			});
 		});
 
 		setTimeout(async function () {
@@ -2431,13 +2427,6 @@ function AddonsSearch() {
 	return true;
 }
 
-function AddonsKeyDown(e) {
-	if (e.keyCode == VK_RETURN || window.chrome && /^Enter/i.test(e.key)) {
-		AddonsSearch();
-	}
-	return true;
-}
-
 async function AddonsList(xhr2) {
 	if (xmlAddons) {
 		return;
@@ -2633,13 +2622,6 @@ async function Install2(xhr, url, o) {
 	UpdateAddon(Id, o);
 }
 
-function IconsKeyDown(e) {
-	if (e.keyCode == VK_RETURN || window.chrome && /^Enter/i.test(e.key)) {
-		IconPacksList();
-	}
-	return true;
-}
-
 async function InstallIcon(o) {
 	if (!await confirmOk("Do you want to install it now?")) {
 		return;
@@ -2766,25 +2748,25 @@ async function EnableSelectTag(o) {
 	}
 }
 
-SetResult = async function (i) {
+SetResult = function (i) {
 	g_nResult = i;
 	CloseWindow();
 }
 
 function InitColor1(item) {
-	var el = document.F;
+	const el = document.F;
 	for (let i = el.length; i--;) {
-		var n = el[i].id || el[i].name;
+		const n = el[i].id || el[i].name;
 		if (n) {
 			GetAttribEx(item, document.F, n);
 		}
 	}
 	for (let i = el.length; i--;) {
-		var n = el[i].id || el[i].name;
+		const n = el[i].id || el[i].name;
 		if (n) {
-			var res = /^Color_(.*)/.exec(n);
+			const res = /^Color_(.*)/.exec(n);
 			if (res) {
-				var o = document.F[res[1]];
+				const o = document.F[res[1]];
 				if (o) {
 					el[i].style.backgroundColor = GetWebColor(o.value || o.placeholder);
 				}
@@ -2794,7 +2776,7 @@ function InitColor1(item) {
 }
 
 function ChangeColor1(el) {
-	var o = document.getElementById("Color_" + (el.id || el.name));
+	const o = document.getElementById("Color_" + (el.id || el.name));
 	if (o) {
 		o.style.backgroundColor = GetWebColor(el.value || el.placeholder);
 	}
@@ -2805,9 +2787,9 @@ function EnableInner() {
 }
 
 function ChangeForm(ar) {
-	var fn = function () {
+	const fn = function () {
 		for (let i in ar) {
-			var o = document.getElementById(ar[i][0]);
+			let o = document.getElementById(ar[i][0]);
 			if (o) {
 				let s = ar[i][1].split("/");
 				while (s.length > 1) {
@@ -2822,7 +2804,7 @@ function ChangeForm(ar) {
 }
 
 async function SetTabContents(id, name, value) {
-	var oPanel = document.getElementById("panel" + id);
+	const oPanel = document.getElementById("panel" + id);
 	if (name) {
 		document.getElementById("tab" + id).innerHTML = await GetText(name);
 	}
