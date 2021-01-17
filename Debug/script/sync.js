@@ -53,7 +53,7 @@ g_.bit = api.sizeof("HANDLE") * 8;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201219 ? te.Version : 20210116;
+		return te.Version < 20201219 ? te.Version : 20210117;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1570,14 +1570,14 @@ CreateNew = function (path, fn) {
 				const ar = path2.split("\\");
 				if (ar[0]) {
 					path = BuildPath(path1, ar[0]);
-					path3 = BuildPath(fso.GetSpecialFolder(2).Path, ar[0]);
+					path3 = BuildPath(te.Data.TempFolder, ar[0]);
 					DeleteItem(path3);
 					path4 = path3;
 					for (let i = 1; i < ar.length; ++i) {
 						try {
 							fso.CreateFolder(path4);
 						} catch (e) {
-							MessageBox([e.message, path4].join("\n\n"), TITLE, MB_ICONSTOP | MB_OK);
+							MessageBox([e.stack || e.message, path4].join("\n\n"), TITLE, MB_ICONSTOP | MB_OK);
 							break;
 						}
 						path4 = BuildPath(path4, ar[i]);
@@ -1626,7 +1626,7 @@ CreateFolder = function (path) {
 		try {
 			fso.CreateFolder(strPath.replace(/^\s*/, ""));
 		} catch (e) {
-			MessageBox([e.message, strPath].join("\n\n"), TITLE, MB_ICONSTOP | MB_OK);
+			MessageBox([e.stack || e.message, strPath].join("\n\n"), TITLE, MB_ICONSTOP | MB_OK);
 		}
 	});
 }
@@ -1698,7 +1698,7 @@ CreateFile2 = function (path) {
 		}
 		fso.CreateTextFile(path).Close();
 	} catch (e) {
-		MessageBox([e.message, path].join("\n\n"), TITLE, MB_ICONSTOP | MB_OK);
+		MessageBox([e.stack || e.message, path].join("\n\n"), TITLE, MB_ICONSTOP | MB_OK);
 	}
 }
 
@@ -3239,6 +3239,10 @@ CalcRef = function (o, nPos, nDiff) {
 	if (o) {
 		o[nPos] += nDiff;
 	}
+}
+
+GetTEEvent = function (en) {
+	return eventTE[en.toLowerCase()];
 }
 
 BasicDB = function (name, bLoad, bLC) {

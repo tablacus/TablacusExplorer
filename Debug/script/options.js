@@ -2596,7 +2596,7 @@ async function Install(o, bUpdate) {
 async function Install2(xhr, url, o) {
 	const Id = o.title.replace(/_.*$/, "");
 	const file = o.title.replace(/\./, "") + '.zip';
-	const temp = BuildPath(await fso.GetSpecialFolder(2).Path, "tablacus");
+	const temp = await te.Data.TempFolder;
 	await CreateFolder(temp);
 	const dest = BuildPath(temp, Id);
 	await DeleteItem(dest);
@@ -2632,7 +2632,7 @@ async function InstallIcon(o) {
 
 async function InstallIcon2(xhr, url, o) {
 	const file = o.title.replace(/\./, "") + '.zip';
-	const temp = BuildPath(await fso.GetSpecialFolder(2).Path, "tablacus");
+	const temp = await te.Data.TempFolder;
 	await CreateFolder(temp);
 	const dest = BuildPath(await te.Data.DataFolder, "icons");
 	await CreateFolder(dest);

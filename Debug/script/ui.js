@@ -883,7 +883,7 @@ ReloadCustomize = async function () {
 	te.Data.bReload = false;
 	await CloseSubWindows();
 	g_.bFinalized = true;
-	const eo = await api.ObjGetI(await $.eventTE, "Finalize");
+	const eo = await GetTEEvent("Finalize");
 	const nLen = await GetLength(eo);
 	for (let i = 0; i < nLen; ++i) {
 		await (await eo[i])();

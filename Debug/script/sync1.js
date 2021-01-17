@@ -3221,18 +3221,18 @@ if (WINVER >= 0x600 && screen.deviceYDPI > 96) {
 }
 
 AddEnv("Selected", function (Ctrl) {
-	var ar = [];
-	var Selected = GetSelectedItems(Ctrl);
+	const ar = [];
+	const Selected = GetSelectedItems(Ctrl);
 	if (Selected) {
-		for (var i = Selected.Count; i > 0; ar.unshift(PathQuoteSpaces(api.GetDisplayNameOf(Selected.Item(--i), SHGDN_FORPARSING | SHGDN_ORIGINAL)))) {
+		for (let i = Selected.Count; i > 0; ar.unshift(PathQuoteSpaces(api.GetDisplayNameOf(Selected.Item(--i), SHGDN_FORPARSING | SHGDN_ORIGINAL)))) {
 		}
 	}
 	return ar.join(" ");
 });
 
 AddEnv("Current", function (Ctrl) {
-	var strSel = "";
-	var FV = GetFolderView(Ctrl);
+	let strSel = "";
+	const FV = GetFolderView(Ctrl);
 	if (FV) {
 		strSel = PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORPARSING | SHGDN_ORIGINAL));
 	}
@@ -3240,9 +3240,9 @@ AddEnv("Current", function (Ctrl) {
 });
 
 AddEnv("TreeSelected", function (Ctrl) {
-	var strSel = "";
+	let strSel = "";
 	if (!Ctrl || Ctrl.Type != CTRL_TV) {
-		var FV = GetFolderView(Ctrl);
+		const FV = GetFolderView(Ctrl);
 		if (FV) {
 			Ctrl = FV.TreeView;
 		}
@@ -3297,29 +3297,29 @@ IsHeader = function (Ctrl, pt, hwnd, strClass) {
 	if (strClass != "DirectUIHWND") {
 		return false;
 	}
-	var iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
+	const iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
 	if (iItem >= 0) {
 		return false;
 	}
-	var pt2 = pt.Clone();
+	const pt2 = pt.Clone();
 	api.ScreenToClient(hwnd, pt2);
 	return pt2.y < screen.deviceYDPI / 4;
 }
 
 AutocompleteThread = function () {
-	var pid = api.ILCreateFromPath(path);
+	let pid = api.ILCreateFromPath(path);
 	if (!pid.IsFolder) {
 		pid = api.ILCreateFromPath(api.CreateObject("fso").GetParentFolderName(path));
 	}
 	if (pid.IsFolder && pid.Path != Autocomplete.Path) {
 		Autocomplete.Path = pid.Path;
-		var Folder = pid.GetFolder;
+		const Folder = pid.GetFolder;
 		if (Folder) {
-			var Items = Folder.Items();
+			const Items = Folder.Items();
 			try {
 				Items.Filter(fflag, "*");
 			} catch (e) { }
-			for (var i = 0; i < Items.Count; ++i) {
+			for (let i = 0; i < Items.Count; ++i) {
 				if (Items.Item(i).IsFolder) {
 					ar.push(Items.Item(i).Path);
 				}
@@ -3333,7 +3333,7 @@ AdjustAutocomplete = function (path) {
 	if (te.Data.Conf_NoAutocomplete) {
 		return;
 	}
-	var o = api.CreateObject("Object");
+	const o = api.CreateObject("Object");
 	o.Data = api.CreateObject("Object");
 	o.Data.path = path;
 	o.Data.Autocomplete = g_.Autocomplete;
@@ -3348,9 +3348,9 @@ AdjustAutocomplete = function (path) {
 FullscreenChanged = function (bFullscreen) {
 	g_.Fullscreen = bFullscreen;
 	if (bFullscreen) {
-		var cTC = te.Ctrls(CTRL_TC, true);
-		for (var i in cTC) {
-			var TC = cTC[i];
+		const cTC = te.Ctrls(CTRL_TC, true);
+		for (let i in cTC) {
+			const TC = cTC[i];
 			g_.stack_TC.push(TC);
 			TC.Visible = false;
 		}
@@ -3450,8 +3450,8 @@ InitMouse = function () {
 	te.SizeFormat = (te.Data.Conf_SizeFormat || "").replace(/^0x/i, "");
 	te.HiddenFilter = ExtractFilter(te.Data.Conf_HiddenFilter);
 	te.DragIcon = !GetNum(te.Data.Conf_NoDragIcon);
-	var ar = ['AutoArrange', 'ColumnEmphasis', 'DateTimeFormat', 'Layout', 'LibraryFilter', 'NetworkTimeout', 'ShowInternet', 'ViewOrder'];
-	for (var i = ar.length; i--;) {
+	const ar = ['AutoArrange', 'ColumnEmphasis', 'DateTimeFormat', 'Layout', 'LibraryFilter', 'NetworkTimeout', 'ShowInternet', 'ViewOrder'];
+	for (let i = ar.length; i--;) {
 		te[ar[i]] = te.Data['Conf_' + ar[i]];
 	}
 	OpenMode = te.Data.Conf_OpenMode ? SBSP_NEWBROWSER : SBSP_SAMEBROWSER;
@@ -3459,12 +3459,12 @@ InitMouse = function () {
 
 InitMenus = function () {
 	te.Data.xmlMenus = OpenXml("menus.xml", false, true);
-	var root = te.Data.xmlMenus.documentElement;
+	const root = te.Data.xmlMenus.documentElement;
 	if (root) {
 		menus = root.childNodes;
-		for (var i = menus.length; i--;) {
+		for (let i = menus.length; i--;) {
 			items = menus[i].getElementsByTagName("Item");
-			for (var j = api.ObjGetI(items, "length"); j--;) {
+			for (let j = api.ObjGetI(items, "length"); j--;) {
 				a = items[j].getAttribute("Name").split(/\\t/);
 				if (a.length > 1) {
 					SetKeyExec("List", a[1], items[j].text, items[j].getAttribute("Type"), true);
@@ -3481,9 +3481,9 @@ InitWindow = function () {
 	if (g_.xmlWindow && "string" !== typeof g_.xmlWindow) {
 		LoadXml(g_.xmlWindow);
 	}
-	var cTC = te.Ctrls(CTRL_TC);
+	const cTC = te.Ctrls(CTRL_TC);
 	if (cTC.Count == 0) {
-		var TC = te.CreateCtrl(CTRL_TC, 0, 0, "100%", "100%", te.Data.Tab_Style, te.Data.Tab_Align, te.Data.Tab_TabWidth, te.Data.Tab_TabHeight);
+		const TC = te.CreateCtrl(CTRL_TC, 0, 0, "100%", "100%", te.Data.Tab_Style, te.Data.Tab_Align, te.Data.Tab_TabWidth, te.Data.Tab_TabHeight);
 		TC.Selected.Navigate2(HOME_PATH, SBSP_NEWBROWSER, te.Data.View_Type, te.Data.View_ViewMode, te.Data.View_fFlags, te.Data.View_Options, te.Data.View_ViewFlags, te.Data.View_IconSize, te.Data.Tree_Align, te.Data.Tree_Width, te.Data.Tree_Style, te.Data.Tree_EnumFlags, te.Data.Tree_RootStyle, te.Data.Tree_Root);
 	} else if (te.Ctrls(CTRL_TC, true).Count == 0) {
 		cTC[0].Visible = true;
@@ -3491,8 +3491,8 @@ InitWindow = function () {
 	g_.xmlWindow = void 0;
 	setTimeout(function () {
 		Resize();
-		var cTC = te.Ctrls(CTRL_TC);
-		for (var i in cTC) {
+		const cTC = te.Ctrls(CTRL_TC);
+		for (let i in cTC) {
 			if (cTC[i].SelectedIndex >= 0) {
 				ChangeView(cTC[i].Selected);
 			}
@@ -3526,11 +3526,11 @@ Threads.Run = function () {
 	if (Threads.Data.length >= Threads.nMax) {
 		return;
 	}
-	var tm = new Date().getTime();
+	const tm = new Date().getTime();
 	if (Threads.Data.length >= Threads.nBase && tm - Threads.Data[0].Data.tm < Threads.nTI) {
 		return;
 	}
-	var o = api.CreateObject("Object");
+	const o = api.CreateObject("Object");
 	o.Data = api.CreateObject("Object");
 	o.Data.Threads = Threads;
 	o.Data.Id = Math.random();
@@ -3538,13 +3538,13 @@ Threads.Run = function () {
 	o.Data.MainWindow = window;
 	Threads.Data.unshift(o);
 	if (!Threads.src) {
-		Threads.src = ReadTextFile("script\\threads.js");
+		Threads.src = FixScript(ReadTextFile("script\\threads.js"));
 	}
 	api.ExecScript(Threads.src, "JScript", o, true);
 }
 
 Threads.End = function (Id) {
-	for (var i = Threads.Data.Count; i--;) {
+	for (let i = Threads.Data.Count; i--;) {
 		if (Id === Threads.Data[i].Data.Id) {
 			Threads.Data.splice(i, 1);
 			CollectGarbage();
@@ -3597,9 +3597,9 @@ if (!te.Data) {
 	te.Data.DataFolder = te.Data.Installed;
 	te.Data.TempFolder = BuildPath(fso.GetSpecialFolder(2).Path, "tablacus");
 
-	var fn = function () {
+	let fn = function () {
 		te.Data.DataFolder = BuildPath(api.GetDisplayNameOf(ssfAPPDATA, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), "Tablacus\\Explorer");
-		var ParentFolder = GetParentFolderName(te.Data.DataFolder);
+		const ParentFolder = GetParentFolderName(te.Data.DataFolder);
 		if (!fso.FolderExists(ParentFolder)) {
 			if (fso.CreateFolder(ParentFolder)) {
 				CreateFolder2(te.Data.DataFolder);
@@ -3607,17 +3607,17 @@ if (!te.Data) {
 		}
 	}
 
-	var pf = [ssfPROGRAMFILES, ssfPROGRAMFILESx86];
-	var x = api.sizeof("HANDLE") / 4;
-	for (var i = 0; i < x; ++i) {
-		var s = api.GetDisplayNameOf(pf[i], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
-		var l = s.replace(/\s*\(x86\)$/i, "").length;
+	const pf = [ssfPROGRAMFILES, ssfPROGRAMFILESx86];
+	const x = api.sizeof("HANDLE") / 4;
+	for (let i = 0; i < x; ++i) {
+		const s = api.GetDisplayNameOf(pf[i], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
+		const l = s.replace(/\s*\(x86\)$/i, "").length;
 		if (api.StrCmpNI(s, te.Data.DataFolder, l) == 0) {
 			fn();
 			break;
 		}
 	}
-	var s = BuildPath(te.Data.DataFolder, "config");
+	let s = BuildPath(te.Data.DataFolder, "config");
 	CreateFolder2(s);
 	if (!fso.FolderExists(s)) {
 		fn();
@@ -3625,30 +3625,30 @@ if (!te.Data) {
 	}
 	delete fn;
 	if (g_.IEVer < 8) {
-		var s = BuildPath(te.Data.DataFolder, "cache");
+		s = BuildPath(te.Data.DataFolder, "cache");
 		CreateFolder2(s);
 		CreateFolder2(BuildPath(s, "bitmap"));
 		CreateFolder2(BuildPath(s, "icon"));
 		CreateFolder2(BuildPath(s, "file"));
 	}
 	te.Data.Conf_Lang = GetLangId();
-	var SHIL = api.CreateObject("Array");
-	var SHILS = api.CreateObject("Array");
-	for (var i = 0; i < SHIL_JUMBO; ++i) {
-		var il = api.SHGetImageList(i);
+	const SHIL = api.CreateObject("Array");
+	const SHILS = api.CreateObject("Array");
+	for (let i = 0; i < SHIL_JUMBO; ++i) {
+		const il = api.SHGetImageList(i);
 		SHIL.push(il);
 		SHILS.push(api.Memory("SIZE"));
 		api.ImageList_GetIconSize(SHIL[i], SHILS[i]);
 	}
 	te.Data.SHIL = SHIL;
 	te.Data.SHILS = SHILS;
-	var o = {};
+	const o = {};
 	try {
 		const sw = sha.Windows();
 		for (let i = 0; i < sw.Count; ++i) {
 			const x = sw.item(i);
 			if (x && x.Document) {
-				var w = x.Document.parentWindow;
+				const w = x.Document.parentWindow;
 				if (w && w.te && w.te.Data) {
 					o[w.te.Data.WindowSetting] = 1;
 				}
@@ -3671,7 +3671,7 @@ if (!te.Data) {
 	}
 	te.Data.uRegisterId = api.SHChangeNotifyRegister(te.hwnd, SHCNRF_InterruptLevel | SHCNRF_ShellLevel | SHCNRF_NewDelivery, SHCNE_ALLEVENTS & ~SHCNE_UPDATEIMAGE, TWM_CHANGENOTIFY, ssfDESKTOP, true);
 } else {
-	for (var i in te.Data) {
+	for (let i in te.Data) {
 		if (/^xml/.test(i)) {
 			delete te.Data[i];
 		}
