@@ -53,7 +53,7 @@ g_.bit = api.sizeof("HANDLE") * 8;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201219 ? te.Version : 20210117;
+		return te.Version < 20201219 ? te.Version : 20210119;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1734,8 +1734,7 @@ ExecOpen = function (Ctrl, s, type, hwnd, pt, NewTab) {
 	}
 	try {
 		while (line.length) {
-			var s = bRev ? line.pop() : line.shift();
-			if (s) {
+			if (s = bRev ? line.pop() : line.shift()) {
 				NavigateFV(FV, ExtractPath(Ctrl, s, pt), NewTab);
 				NewTab |= SBSP_NEWBROWSER;
 			}

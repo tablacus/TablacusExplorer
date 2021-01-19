@@ -433,7 +433,7 @@ AddEventEx(window, "load", async function () {
 
 AddEventEx(window, "resize", Resize);
 
-AddEventEx(window, "unload", Finalize);
+AddEventEx(window, "unload", FinalizeUI);
 
 AddEventEx(window, "blur", ResetScroll);
 
@@ -448,7 +448,6 @@ AddEventEx(document, "FullscreenChange", function () {
 document.F.style.display = "none";
 Init = async function () {
 	te.Data.MainWindow = $;
-	AddEventEx(window, "unload", CloseSubWindows);
 	await InitCode();
 	const r = await Promise.all([te.Data.DataFolder, $.DefaultFont, $.HOME_PATH, $.OpenMode]);
 	ui_.DataFolder = r[0];

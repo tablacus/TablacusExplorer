@@ -879,16 +879,23 @@ LoadAddon = async function (ext, Id, arError, param, bDisabled) {
 	return r;
 }
 
-ReloadCustomize = async function () {
-	te.Data.bReload = false;
+FinalizeUI = async function () {
 	await CloseSubWindows();
-	g_.bFinalized = true;
-	const eo = await GetTEEvent("Finalize");
+	if (await MainWindow.g_.bFinalized) {
+		return;
+	}
+	MainWindow.g_.bFinalized = true;
+	const eo = await MainWindow.GetTEEvent("Finalize");
 	const nLen = await GetLength(eo);
 	for (let i = 0; i < nLen; ++i) {
 		await (await eo[i])();
 	}
-	await FinalizeEx();
+	await MainWindow.FinalizeEx();
+}
+
+ReloadCustomize = async function () {
+	await FinalizeUI();
+	te.Data.bReload = false;
 	te.Reload();
 	return S_OK;
 }
