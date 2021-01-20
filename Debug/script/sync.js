@@ -53,7 +53,7 @@ g_.bit = api.sizeof("HANDLE") * 8;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201219 ? te.Version : 20210119;
+		return te.Version < 20201219 ? te.Version : 20210120;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1574,12 +1574,7 @@ CreateNew = function (path, fn) {
 					DeleteItem(path3);
 					path4 = path3;
 					for (let i = 1; i < ar.length; ++i) {
-						try {
-							fso.CreateFolder(path4);
-						} catch (e) {
-							MessageBox([e.stack || e.message, path4].join("\n\n"), TITLE, MB_ICONSTOP | MB_OK);
-							break;
-						}
+						fso.CreateFolder(path4);
 						path4 = BuildPath(path4, ar[i]);
 					}
 					fn(path4);
@@ -1618,20 +1613,18 @@ SetFileAttributes = function (path, attr) {
 }
 
 CreateFolder = function (path) {
+	path = path.replace(/^\s*|\\$/g, "");
 	const r = MainWindow.RunEvent4("CreateFolder", path);
 	if (r != null) {
 		return r;
 	}
 	CreateNew(path, function (strPath) {
-		try {
-			fso.CreateFolder(strPath.replace(/^\s*/, ""));
-		} catch (e) {
-			MessageBox([e.stack || e.message, strPath].join("\n\n"), TITLE, MB_ICONSTOP | MB_OK);
-		}
+		fso.CreateFolder(strPath);
 	});
 }
 
 CreateFile = function (path) {
+	path = path.replace(/^\s*|\\$/g, "");
 	const r = MainWindow.RunEvent4("CreateFile", path);
 	if (r != null) {
 		return r;
@@ -1646,26 +1639,16 @@ CreateFolder2 = function (path) {
 }
 
 CreateFile2 = function (path) {
-	try {
-		let ext = fso.GetExtensionName(path);
-		if (ext) {
-			let s, r = "HKCR\\." + ext + "\\";
-			try {
-				s = wsh.regRead(r);
-			} catch (e) {
-				fso.CreateTextFile(path).Close();
-				return;
-			}
+	let ext = fso.GetExtensionName(path);
+	if (ext) {
+		let s, r = "HKCR\\." + ext + "\\";
+		try {
+			s = wsh.regRead(r);
 			try {
 				wsh.RegRead(r + "ShellNew\\");
 			} catch (e) {
 				r += s + "\\";
-				try {
-					wsh.RegRead(r + "\\ShellNew\\");
-				} catch (e) {
-					fso.CreateTextFile(path).Close();
-					return;
-				}
+				wsh.RegRead(r + "\\ShellNew\\");
 			}
 			r += "ShellNew\\";
 			const ar = ['Command', 'Data', 'FileName'];
@@ -1695,11 +1678,9 @@ CreateFile2 = function (path) {
 					return;
 				}
 			}
-		}
-		fso.CreateTextFile(path).Close();
-	} catch (e) {
-		MessageBox([e.stack || e.message, path].join("\n\n"), TITLE, MB_ICONSTOP | MB_OK);
+		} catch (e) { }
 	}
+	fso.CreateTextFile(path).Close();
 }
 
 FormatDateTime = function (s) {
