@@ -1,5 +1,4 @@
 const Addon_Id = "tabplus";
-
 const item = await GetAddonElement(Addon_Id);
 if (!item.getAttribute("Set")) {
 	item.setAttribute("Icon", 1);
@@ -259,6 +258,7 @@ if (window.Addon == 1) {
 				if (n >= 0) {
 					if ((ev.buttons != null ? ev.buttons : ev.button) == 1) {
 						TC.SelectedIndex = n;
+						TC[n].Focus();
 						return false;
 					}
 				}

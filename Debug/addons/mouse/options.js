@@ -1,9 +1,9 @@
 g_Types = { Mouse: ["All", "List", "List_Background", "Tree", "Tabs", "Tabs_Background", "Browser"] };
 
-var src = await ReadTextFile(BuildPath("addons", Addon_Id, "options.html"));
-var ar = [];
-var s = "CSA";
-for (var i = s.length; i--;) {
+const src = await ReadTextFile("addons\\" + Addon_Id + "\\options.html");
+const ar = [];
+const s = "CSA";
+for (let i = s.length; i--;) {
 	ar.unshift('<input type="button" value="', await MainWindow.g_.KeyState[i][0], '" title="', s.charAt(i), '" onclick="AddMouse(this)">');
 }
 await SetTabContents(4, "", src.replace("%s", ar.join("")));

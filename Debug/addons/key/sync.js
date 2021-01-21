@@ -2,52 +2,49 @@ Sync.Key = {
 	Menus: [],
 
 	OpenMenu: function (Ctrl, pt, nIndex) {
-		var ar = this.Menus[nIndex];
-		var items = ar[0];
+		const ar = this.Menus[nIndex];
+		const items = ar[0];
 		if (items) {
-			var arMenu = ar[1];
-			var hMenu = api.CreatePopupMenu();
+			const arMenu = ar[1];
+			const hMenu = api.CreatePopupMenu();
 			MakeMenus(hMenu, null, arMenu, items, Ctrl, pt);
 			AdjustMenuBreak(hMenu);
 			window.g_menu_click = 2;
-			var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null);
+			const nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null);
 			api.DestroyMenu(hMenu);
 			if (nVerb == 0) {
 				return S_OK;
 			}
-			item = items[nVerb - 1];
-			var s = item.getAttribute("Type");
+			const item = items[nVerb - 1];
+			const s = item.getAttribute("Type");
 			Exec(Ctrl, item.text, window.g_menu_button == 3 && Sametext(s, "Open") ? "Open in new tab" : s, Ctrl.hwnd, pt);
 		}
 		return S_OK;
 	}
 }
 
-var xml = OpenXml("key.xml", false, true);
-for (var mode in eventTE.Key) {
-	var items = xml.getElementsByTagName(mode);
-	for (var i = 0; i < items.length; i++) {
-		var item = items[i];
-		var strKey = item.getAttribute("Key");
-		var strType = item.getAttribute("Type");
-		var strOpt = item.text;
+const xml = OpenXml("key.xml", false, true);
+for (let mode in eventTE.Key) {
+	const items = xml.getElementsByTagName(mode);
+	for (let i = 0; i < items.length; i++) {
+		let item = items[i];
+		const strKey = item.getAttribute("Key");
+		let strType = item.getAttribute("Type");
+		let strOpt = item.text;
 		if (SameText(strType, "menus") && SameText(strOpt, "open")) {
-			var arMenu = [];
-			var nLevel = 0;
+			const arMenu = [];
+			let nLevel = 0;
 			while (++i < items.length) {
 				item = items[i];
-				strType = item.getAttribute("Type");
-				strOpt = item.text;
-				if (SameText(strType, "menus")) {
-					if (SameText(strOpt, "open")) {
+				if (SameText(item.getAttribute("Type"), "menus")) {
+					if (SameText(item.text, "open")) {
 						nLevel++;
 					}
-					if (SameText(strOpt, "close")) {
+					if (SameText(item.text, "close")) {
 						if (--nLevel < 0) {
 							break;
 						}
 					}
-					continue;
 				}
 				arMenu.push(i);
 			}
