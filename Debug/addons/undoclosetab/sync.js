@@ -1,15 +1,15 @@
-var Addon_Id = "undoclosetab";
-var item = GetAddonElement(Addon_Id);
+const Addon_Id = "undoclosetab";
+const item = GetAddonElement(Addon_Id);
 
-Sync.UndoCloseTab =
-{
+Common.UndoCloseTab = api.CreateObject("Object");
+Sync.UndoCloseTab = {
 	Items: item.getAttribute("Save") || 30,
 	strName: item.getAttribute("MenuName") || GetAddonInfo(Addon_Id).Name,
 	nPos: GetNum(item.getAttribute("MenuPos")),
 	CONFIG: fso.BuildPath(te.Data.DataFolder, "config\\closedtabs.xml"),
 
 	Exec: function (Ctrl, pt) {
-		var FV = GetFolderView(Ctrl, pt);
+		const FV = GetFolderView(Ctrl, pt);
 		if (FV) {
 			Sync.UndoCloseTab.bLock = true;
 			while (Common.UndoCloseTab.db.length) {
@@ -26,7 +26,7 @@ Sync.UndoCloseTab =
 
 	Open: function (FV, i) {
 		if (FV) {
-			var Items = Sync.UndoCloseTab.Get(i);
+			const Items = Sync.UndoCloseTab.Get(i);
 			Common.UndoCloseTab.db.splice(i, 1);
 			FV.Navigate(Items, SBSP_NEWBROWSER);
 			InvokeUI("Addons.UndoCloseTab.Save");
@@ -35,12 +35,12 @@ Sync.UndoCloseTab =
 
 	Get: function (nIndex) {
 		Common.UndoCloseTab.db.splice(Sync.UndoCloseTab.Items, MAXINT);
-		var s = Common.UndoCloseTab.db[nIndex];
+		let s = Common.UndoCloseTab.db[nIndex];
 		if ("string" === typeof s) {
-			var a = s.split(/\n/);
+			const a = s.split(/\n/);
 			s = api.CreateObject("FolderItems");
 			s.Index = a.pop();
-			for (i in a) {
+			for (let i in a) {
 				s.AddItem(a[i]);
 			}
 			Common.UndoCloseTab.db[nIndex] = s;
@@ -50,10 +50,10 @@ Sync.UndoCloseTab =
 
 	Load: function () {
 		Common.UndoCloseTab.db = api.CreateObject("Array");
-		var xml = OpenXml("closedtabs.xml", true, false);
+		const xml = OpenXml("closedtabs.xml", true, false);
 		if (xml) {
-			var items = xml.getElementsByTagName('Item');
-			for (i = items.length; i--;) {
+			const items = xml.getElementsByTagName('Item');
+			for (let i = items.length; i--;) {
 				Common.UndoCloseTab.db.unshift(items[i].text);
 			}
 		}
@@ -64,18 +64,17 @@ Sync.UndoCloseTab =
 		if (Common.UndoCloseTab.bSave) {
 			Common.UndoCloseTab.bSave = false;
 			InvokeUI("Addons.UndoCloseTab.KillTimer");
-			var xml = CreateXml();
-			var root = xml.createElement("TablacusExplorer");
+			const xml = CreateXml();
+			const root = xml.createElement("TablacusExplorer");
 
-			var db = Common.UndoCloseTab.db;
-			for (var i = 0; i < db.length; i++) {
-				var item = xml.createElement("Item");
-				var s = db[i];
+			const db = Common.UndoCloseTab.db;
+			for (let i = 0; i < db.length; i++) {
+				const item = xml.createElement("Item");
+				let s = db[i];
 				if (s) {
 					if ("string" !== typeof s) {
-						api.OutputDebugString([typeof s].join(",") + "\n");
-						var a = [];
-						for (var j in s) {
+						const a = [];
+						for (let j in s) {
 							a.push(api.GetDisplayNameOf(s[j], SHGDN_FORPARSING | SHGDN_FORPARSINGEX));
 						}
 						a.push(s.Index);
@@ -87,7 +86,6 @@ Sync.UndoCloseTab =
 			}
 			xml.appendChild(root);
 			SaveXmlEx("closedtabs.xml", xml, true);
-			xml = null;
 			Sync.UndoCloseTab.ModifyDate = api.ILCreateFromPath(Sync.UndoCloseTab.CONFIG).ModifyDate;
 		}
 	}
