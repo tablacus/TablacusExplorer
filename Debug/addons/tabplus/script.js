@@ -457,7 +457,7 @@ if (window.Addon == 1) {
 				if (o) {
 					Common.TabPlus.rc[Id] = await GetRect(o);
 					const nCount1 = await TC.Count;
-					api.ObjPutI(Common.TabPlus.rcItem[Id], "length", nCount1);
+					Common.TabPlus.rcItem[Id] = await api.CreateObject("Array");
 					for (let j = 0; j < nCount1; ++j) {
 						o = document.getElementById("tabplus_" + Id + "_" + j);
 						if (o) {

@@ -53,7 +53,7 @@ g_.bit = api.sizeof("HANDLE") * 8;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201219 ? te.Version : 20210120;
+		return te.Version < 20201219 ? te.Version : 20210124;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -589,7 +589,7 @@ AddonDisabled = function (Id) {
 }
 
 LoadXml = function (filename, nGroup) {
-	let items;
+	let items, Installed, re;
 	let xml = filename;
 	g_.fTCs = 0;
 	if ("string" === typeof filename) {
@@ -598,6 +598,15 @@ LoadXml = function (filename, nGroup) {
 			xml = api.CreateObject("Msxml2.DOMDocument");
 			xml.async = false;
 			xml.load(filename);
+		}
+	}
+	try {
+		items = xml.getElementsByTagName('Window');
+	} catch (e) { }
+	if (items && items.length) {
+		Installed = items[0].getAttribute("Installed");
+		if (!SameText(Installed, te.Data.Installed)) {
+			re = Installed + ";" + Installed + "\\*";
 		}
 	}
 	try {
@@ -628,9 +637,15 @@ LoadXml = function (filename, nGroup) {
 					if (nLogCount > 1) {
 						Path = api.CreateObject("FolderItems");
 						for (let i3 = 0; i3 < nLogCount; ++i3) {
-							Path.AddItem(logs[i3].getAttribute("Path"));
+							let path3 = logs[i3].getAttribute("Path");
+							if (re && api.PathMatchSpec(path3, re)) {
+								path3 = te.Data.Installed + path3.substr(Installed.length)
+							}
+							Path.AddItem(path3);
 						}
 						Path.Index = tab.getAttribute("LogIndex");
+					} else if (re && api.PathMatchSpec(Path, re)) {
+						Path = te.Data.Installed + Path.substr(Installed.length)
 					}
 					const FV = TC.Selected.Navigate2(Path, SBSP_NEWBROWSER, tab.getAttribute("Type"), tab.getAttribute("ViewMode"), tab.getAttribute("FolderFlags"), tab.getAttribute("Options"), tab.getAttribute("ViewFlags"), tab.getAttribute("IconSize"), tab.getAttribute("Align"), tab.getAttribute("Width"), tab.getAttribute("Flags"), tab.getAttribute("EnumFlags"), tab.getAttribute("RootStyle"), tab.getAttribute("Root"));
 					if (!FV.FilterView) {
@@ -659,7 +674,7 @@ LoadXml = function (filename, nGroup) {
 }
 
 SaveXmlTC = function (Ctrl, xml, nGroup) {
-	var item = xml.createElement("Ctrl");
+	const item = xml.createElement("Ctrl");
 	item.setAttribute("Type", Ctrl.Type);
 	item.setAttribute("Left", Ctrl.Left);
 	item.setAttribute("Top", Ctrl.Top);
@@ -674,16 +689,16 @@ SaveXmlTC = function (Ctrl, xml, nGroup) {
 	item.setAttribute("Group", GetNum(nGroup || Ctrl.Data.Group));
 
 	let bEmpty = true;
-	var nCount2 = Ctrl.Count;
-	for (var i2 in Ctrl) {
-		var FV = Ctrl[i2];
-		var path = GetSavePath(FV.FolderItem);
-		var bSave = IsSavePath(path);
+	const nCount2 = Ctrl.Count;
+	for (let i2 in Ctrl) {
+		const FV = Ctrl[i2];
+		let path = GetSavePath(FV.FolderItem);
+		let bSave = IsSavePath(path);
 		if (bSave || (bEmpty && i2 == nCount2 - 1)) {
 			if (!bSave) {
 				path = HOME_PATH;
 			}
-			var item2 = xml.createElement("Ctrl");
+			const item2 = xml.createElement("Ctrl");
 			item2.setAttribute("Type", FV.Type);
 			item2.setAttribute("Path", path);
 			item2.setAttribute("FolderFlags", FV.FolderFlags);
@@ -693,22 +708,22 @@ SaveXmlTC = function (Ctrl, xml, nGroup) {
 			item2.setAttribute("ViewFlags", FV.ViewFlags);
 			item2.setAttribute("FilterView", FV.FilterView);
 			item2.setAttribute("Lock", GetNum(FV.Data.Lock));
-			var TV = FV.TreeView;
+			const TV = FV.TreeView;
 			item2.setAttribute("Align", TV.Align);
 			item2.setAttribute("Width", TV.Width);
 			item2.setAttribute("Flags", TV.Style);
 			item2.setAttribute("EnumFlags", TV.EnumFlags);
 			item2.setAttribute("RootStyle", TV.RootStyle);
 			item2.setAttribute("Root", String(TV.Root));
-			var TL = FV.History;
+			const TL = FV.History;
 			if (TL) {
 				if (TL.Count > 1) {
-					var bLogSaved = false;
-					var nLogIndex = TL.Index;
-					for (var i3 in TL) {
+					let bLogSaved = false;
+					let nLogIndex = TL.Index;
+					for (let i3 in TL) {
 						path = GetSavePath(TL[i3]);
 						if (IsSavePath(path)) {
-							var item3 = xml.createElement("Log");
+							const item3 = xml.createElement("Log");
 							item3.setAttribute("Path", path);
 							item2.appendChild(item3);
 							bLogSaved = true;
@@ -757,9 +772,9 @@ SaveConfigXML = function (filename) {
 }
 
 SaveXml = function (filename) {
-	var xml = CreateXml(true);
-	var root = xml.documentElement;
-	var item = xml.createElement("Window");
+	const xml = CreateXml(true);
+	const root = xml.documentElement;
+	const item = xml.createElement("Window");
 	if (!api.IsZoomed(te.hwnd) && !api.IsIconic(te.hwnd)) {
 		api.GetWindowRect(te.hwnd, te.Data.rcWindow);
 	}
@@ -769,11 +784,12 @@ SaveXml = function (filename) {
 	item.setAttribute("Height", te.Data.rcWindow.bottom - te.Data.rcWindow.top);
 	item.setAttribute("CmdShow", api.IsZoomed(te.hwnd) ? SW_SHOWMAXIMIZED : te.CmdShow);
 	item.setAttribute("DPI", screen.deviceYDPI);
+	item.setAttribute("Installed", te.Data.Installed);
 	root.appendChild(item);
 
-	var TC = te.Ctrl(CTRL_TC);
-	var cTC = te.Ctrls(CTRL_TC);
-	for (var i in cTC) {
+	const TC = te.Ctrl(CTRL_TC);
+	const cTC = te.Ctrls(CTRL_TC);
+	for (let i in cTC) {
 		if (cTC[i].Id != TC.Id) {
 			SaveXmlTC(cTC[i], xml);
 		}
@@ -1011,7 +1027,7 @@ DeleteTempFolder = function () {
 }
 
 PerformUpdate = function () {
-	var oExec = wsh.Exec(g_.strUpdate);
+	const oExec = wsh.Exec(g_.strUpdate);
 	wsh.AppActivate(oExec.ProcessID);
 }
 
@@ -1871,15 +1887,15 @@ IsFolderEx = function (Item) {
 }
 
 OpenMenu = function (items, SelItem) {
-	var arMenu;
-	var path = "";
+	let arMenu;
+	let path = "";
 	if (SelItem) {
 		if ("object" === typeof SelItem) {
-			var link = SelItem.ExtendedProperty("linktarget");
+			let link = SelItem.ExtendedProperty("linktarget");
 			path = String(api.GetDisplayNameOf(SelItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX));
 			if (link && /\.lnk$/i.test(path)) {
-				for (var i = items.length; --i >= 0;) {
-					var s = items[i].getAttribute("Filter");
+				for (let i = items.length; --i >= 0;) {
+					const s = items[i].getAttribute("Filter");
 					if (/\.lnk/i.test(s) && PathMatchEx(path, s)) {
 						link = path;
 						break;
@@ -1897,12 +1913,12 @@ OpenMenu = function (items, SelItem) {
 		}
 	}
 	arMenu = [];
-	var arLevel = [];
-	for (var i = 0; i < items.length; ++i) {
-		var item = items[i];
-		var strType = String(item.getAttribute("Type")).toLowerCase();
-		var strFlag = strType == "menus" ? item.text.toLowerCase() : "";
-		var bAdd = SelItem ? PathMatchEx(path, item.getAttribute("Filter")) : /^$|^\/\^\$\//.test(item.getAttribute("Filter"));
+	const arLevel = [];
+	for (let i = 0; i < items.length; ++i) {
+		const item = items[i];
+		const strType = String(item.getAttribute("Type")).toLowerCase();
+		const strFlag = strType == "menus" ? item.text.toLowerCase() : "";
+		let bAdd = SelItem ? PathMatchEx(path, item.getAttribute("Filter")) : /^$|^\/\^\$\//.test(item.getAttribute("Filter"));
 		if (strFlag == "close") {
 			bAdd = arLevel.pop();
 		}
@@ -2468,10 +2484,10 @@ MenusIcon = function (mii, src, nHeight, bIcon) {
 }
 
 MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem, bTrans) {
-	var hMenus = [hMenu];
-	var nPos = menus ? Number(menus[0].getAttribute("Pos")) : 0;
-	var nLen = api.GetMenuItemCount(hMenu);
-	var nResult = 0;
+	const hMenus = [hMenu];
+	let nPos = menus ? Number(menus[0].getAttribute("Pos")) : 0;
+	let nLen = api.GetMenuItemCount(hMenu);
+	let nResult = 0;
 	nMin = nMin || 0;
 	if (nPos < 0) {
 		nPos += nLen + 1;
@@ -2480,19 +2496,19 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem, bTran
 		nPos = nLen;
 	}
 	nLen = arMenu.length;
-	for (var i = 0; i < nLen; ++i) {
-		var item = items[arMenu[i]];
-		var s = (item.getAttribute("Name") || item.getAttribute("Mouse") || GetKeyName(item.getAttribute("Key")) || "").replace(/\\t/i, "\t");
-		var strType = String(item.getAttribute("Type")).toLowerCase();
-		var path = ExtractMacro(te, item.text);
-		var strFlag = strType == "menus" ? item.text.toLowerCase() : "";
-		var icon = item.getAttribute("Icon");
+	for (let i = 0; i < nLen; ++i) {
+		const item = items[arMenu[i]];
+		const s = (item.getAttribute("Name") || item.getAttribute("Mouse") || GetKeyName(item.getAttribute("Key")) || "").replace(/\\t/i, "\t");
+		const strType = String(item.getAttribute("Type")).toLowerCase();
+		const path = ExtractMacro(te, item.text);
+		const strFlag = strType == "menus" ? item.text.toLowerCase() : "";
+		let icon = item.getAttribute("Icon");
 		if (!icon && te.Data.Conf_MenuIcon) {
 			if (api.PathMatchSpec(strType, "Open;Open in new tab;Open in background")) {
-				var pidl = api.ILCreateFromPath(path);
+				let pidl = api.ILCreateFromPath(path);
 				if (!api.PathIsNetworkPath(PathUnquoteSpaces(path))) {
 					if (api.ILIsEmpty(pidl) || pidl.Unavailable) {
-						var res = /(.*?)\n/.exec(path);
+						const res = /(.*?)\n/.exec(path);
 						if (res) {
 							pidl = api.ILCreateFromPath(res[1]);
 						}
@@ -2500,9 +2516,9 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem, bTran
 				}
 				icon = MainWindow.GetIconImage(pidl, GetSysColor(COLOR_WINDOW), true);
 			} else if (api.PathMatchSpec(strType, "Exec;Selected items")) {
-				var arg = api.CommandLineToArgv(path);
+				const arg = api.CommandLineToArgv(path);
 				if (!api.PathIsNetworkPath(arg[0])) {
-					var pidl = api.ILCreateFromPath(arg[0]);
+					const pidl = api.ILCreateFromPath(arg[0]);
 					if (!api.ILIsEmpty(pidl) && !pidl.Unavailable) {
 						icon = MainWindow.GetIconImage(pidl, GetSysColor(COLOR_WINDOW), true);
 					}
@@ -2515,7 +2531,7 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem, bTran
 				break;
 			}
 		} else {
-			var ar = s.split(/\t/);
+			const ar = s.split(/\t/);
 			ar[0] = ExtractMacro(te, ar[0]);
 			if (bTrans && !item.getAttribute("Org")) {
 				ar[0] = GetText(ar[0]);
@@ -2524,7 +2540,7 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem, bTran
 				ar[1] = GetKeyName(ar[1]);
 			}
 			if (strFlag == "open") {
-				var mii = api.Memory("MENUITEMINFO");
+				const mii = api.Memory("MENUITEMINFO");
 				mii.fMask = MIIM_STRING | MIIM_SUBMENU | MIIM_FTYPE;
 				mii.fType = 0;
 				mii.dwTypeData = ar.join("\t");
@@ -2541,7 +2557,7 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem, bTran
 				} else if (s == "-" || strFlag == "separator") {
 					api.InsertMenu(hMenus[hMenus.length - 1], nPos++, MF_BYPOSITION | MF_SEPARATOR, 0, null);
 				} else if (s) {
-					var mii = api.Memory("MENUITEMINFO");
+					const mii = api.Memory("MENUITEMINFO");
 					mii.fMask = MIIM_STRING | MIIM_ID;
 					mii.wID = nResult;
 					mii.dwTypeData = ar.join("\t");
