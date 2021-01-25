@@ -129,3 +129,5 @@ if (item.getAttribute("KeyExec")) {
 if (item.getAttribute("MouseExec")) {
 	SetGestureExec(item.getAttribute("MouseOn"), item.getAttribute("Mouse"), Sync.UndoCloseTab.Exec, "Func");
 }
+
+AddTypeEx("Add-ons", "Undo close tab", Sync.UndoCloseTab.Exec);

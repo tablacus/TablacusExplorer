@@ -32,8 +32,6 @@ if (window.Addon == 1) {
 		}
 	}
 
-	AddTypeEx("Add-ons", "Undo close tab", Addons.UndoCloseTab.Exec);
-
 	const h = GetIconSize(item.getAttribute("IconSize"), item.getAttribute("Location") == "Inner" && 16);
 	const s = item.getAttribute("Icon");
 	SetAddon(Addon_Id, Default, ['<span class="button" onclick="SyncExec(Sync.UndoCloseTab.Exec, this)" oncontextmenu="return false;" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', await GetImgTag({ title: item.getAttribute("MenuName") || await GetAddonInfo(Addon_Id).Name, src: s }, h), '</span>']);
