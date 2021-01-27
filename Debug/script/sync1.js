@@ -3010,7 +3010,7 @@ AddEvent("Exec", function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEff
 		}
 		if (fn.Exec) {
 			const hr = api.Invoke(fn.Exec, [Ctrl, s, type, hwnd, pt]);
-			return hr != void 0 ? hr : fn.Result;
+			return hr != null ? hr : fn.Result;
 		}
 		return g_basic.Exec(Ctrl, s, type, hwnd, pt);
 	}
@@ -3085,7 +3085,7 @@ AddEvent("ChangeNotify", function (Ctrl, pidls, wParam, lParam) {
 });
 
 AddEvent("AddType", function (arFunc) {
-	for (var i in g_basic.Func) {
+	for (let i in g_basic.Func) {
 		arFunc.push(i);
 	}
 });
@@ -3095,16 +3095,15 @@ AddType = function (strType, o) {
 };
 
 AddTypeEx = function (strType, strTitle, fn) {
-	var type = g_basic.FuncI(strType);
+	const type = g_basic.FuncI(strType);
 	if (type && type.Cmd) {
 		api.ObjPutI(type.Cmd, strTitle, fn);
 	}
 };
 
 AddEvent("OptionRef", function (Id, s, pt) {
-	var fn = g_basic.FuncI(Id);
+	const fn = g_basic.FuncI(Id);
 	if (fn) {
-		var r;
 		if (fn.Ref) {
 			return fn.Ref(s, pt);
 		}
