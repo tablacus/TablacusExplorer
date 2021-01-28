@@ -629,8 +629,16 @@ GetPos = function (el, bScreen, bAbs, bPanel, bBottom) {
 		bBottom = bScreen & 8;
 		bScreen &= 1;
 	}
-	let rc = el.getBoundingClientRect();
-	const pt = { x: rc.left, y: rc.top };
+	let rc;
+	const pt = {};
+	try {
+		rc = el.getBoundingClientRect();
+		pt.x = rc.left;
+		pt.y = rc.top;
+	} catch (e) {
+		pt.x = el.offsetLeft;
+		pt.y = el.offsetTop;
+	}
 	if (window.chrome && window.frameElement) {
 		rc = frameElement.getBoundingClientRect();
 		pt.x += rc.left;
