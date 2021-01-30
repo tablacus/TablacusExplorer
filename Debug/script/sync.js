@@ -53,7 +53,7 @@ g_.bit = api.sizeof("HANDLE") * 8;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201219 ? te.Version : 20210128;
+		return te.Version < 20201219 ? te.Version : 20210130;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1570,33 +1570,57 @@ IsExists = function (path) {
 	return hFind != INVALID_HANDLE_VALUE;
 }
 
+GetNonExistent = function (path) {
+	let paths = api.CreateObject("Array");
+	if (/^[A-Z]:\\|^\\\\\w/i.test(path)) {
+		paths[0] = path;
+		paths[1] = "";
+		while (paths[0] && !fso.FolderExists(paths[0])) {
+			paths[1] = BuildPath(GetFileName(paths[0]), paths[1]);
+			paths[0] = GetParentFolderName(paths[0]);
+		}
+	}
+	return paths;
+}
+
+CreateFolders = function (paths) {
+	if ("string" === typeof paths) {
+		paths = GetNonExistent(paths);
+	}
+	const ar = paths[1].split("\\");
+	if (ar[0]) {
+		let path = paths[0];
+		try {
+			for (let i = 0; i < ar.length; ++i) {
+				path = BuildPath(path, ar[i]);
+				fso.CreateFolder(path);
+			}
+		} catch (e) {
+			return E_FAIL;
+		}
+	}
+}
+
 CreateNew = function (path, fn) {
 	if (fn && !IsExists(path)) {
+		let paths;
 		try {
-			fn(path);
-		} catch (e) {
-			if (/^[A-Z]:\\|^\\\\\w/i.test(path)) {
-				let path1, path2, path3, path4;
-				path1 = path;
-				path2 = "";
-				do {
-					path2 = BuildPath(GetFileName(path1), path2);
-					path1 = GetParentFolderName(path1);
-				} while (path1 && !fso.FolderExists(path1));
-				const ar = path2.split("\\");
-				if (ar[0]) {
-					path = BuildPath(path1, ar[0]);
-					path3 = BuildPath(te.Data.TempFolder, ar[0]);
-					DeleteItem(path3);
-					path4 = path3;
-					for (let i = 1; i < ar.length; ++i) {
-						fso.CreateFolder(path4);
-						path4 = BuildPath(path4, ar[i]);
-					}
-					fn(path4);
-					api.SHFileOperation(FO_MOVE, path3, GetParentFolderName(path), FOF_SILENT | FOF_NOCONFIRMATION | FOF_NOERRORUI, false);
+			paths = GetNonExistent(GetParentFolderName(path));
+			if (paths[1]) {
+				if (CreateFolders(paths) < 0) {
+					throw 1;
 				}
 			}
+			fn(path);
+		} catch (e) {
+			paths = GetNonExistent(path);
+			const ar = paths[1].split("\\");
+			const path2 = BuildPath(te.Data.TempFolder, ar[0]);
+			const path3 = BuildPath(te.Data.TempFolder, paths[1]);
+			DeleteItem(path2);
+			CreateFolders(path3);
+			fn(BuildPath(path3, GetFileName(path)));
+			api.SHFileOperation(FO_MOVE, path2, GetParentFolderName(BuildPath(paths[0], ar[0])), FOF_SILENT | FOF_NOCONFIRMATION, false);
 		}
 	}
 	MainWindow.g_.NewItemTime = new Date().getTime() + 5000;

@@ -210,7 +210,9 @@ FocusFV = function () {
 			if (hFocus == ui_.hwnd || await api.IsChild(ui_.hwnd, hFocus)) {
 				const FV = await GetFolderView();
 				if (FV) {
-					FV.Focus();
+					if (!await api.IsChild(await FV.hwnd, hFocus)) {
+						FV.Focus();
+					}
 				}
 			}
 		}
