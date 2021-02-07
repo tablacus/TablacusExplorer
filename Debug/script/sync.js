@@ -53,7 +53,7 @@ g_.bit = api.sizeof("HANDLE") * 8;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201219 ? te.Version : 20210130;
+		return te.Version < 20201219 ? te.Version : 20210207;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -100,9 +100,9 @@ if ("undefined" != typeof ScriptEngineMajorVersion && ScriptEngineMajorVersion()
 	(function (f) {
 		if (f) {
 			window.setTimeout = function () {
-				var args = Array.apply(null, arguments);
-				var fn = args.shift();
-				var tm = args.shift();
+				const args = Array.apply(null, arguments);
+				let fn = args.shift();
+				const tm = args.shift();
 				try {
 					return f(function () {
 						try {
@@ -284,7 +284,7 @@ InvokeCommand = function (Items, fMask, hwnd, Verb, Parameters, Directory, nShow
 }
 
 FindChildByClass = function (hwnd, s) {
-	var hwnd1, hwnd2;
+	let hwnd1, hwnd2;
 	while (hwnd1 = api.FindWindowEx(hwnd, hwnd1, null, null)) {
 		if (api.PathMatchSpec(api.GetClassName(hwnd1), s)) {
 			return hwnd1;
@@ -313,10 +313,10 @@ SetSysColor = function (i, color) {
 }
 
 ShellExecute = function (s, vOperation, nShow, vDir2, pt) {
-	var cmd = ExtractMacro(te, s);
-	var res = /^\s*"([^"]*)"\s*(.*)/.exec(cmd) || /^\s*([^\s]*)\s*(.*)/.exec(cmd);
+	const cmd = ExtractMacro(te, s);
+	const res = /^\s*"([^"]*)"\s*(.*)/.exec(cmd) || /^\s*([^\s]*)\s*(.*)/.exec(cmd);
 	if (res) {
-		var vDir = GetParentFolderName(res[1]) || vDir2;
+		let vDir = GetParentFolderName(res[1]) || vDir2;
 		if (pt && vDir.Type) {
 			vDir = (GetFolderView(Ctrl, pt) || { FolderItem: {} }).FolderItem.Path;
 		}
@@ -343,7 +343,7 @@ RunEvent2 = function () {
 	const eo = eventTE[en.toLowerCase()];
 	for (let i in eo) {
 		try {
-			var hr = api.Invoke(eo[i], args);
+			const hr = api.Invoke(eo[i], args);
 			if (isFinite(hr) && hr != S_OK) {
 				return hr;
 			}
@@ -396,34 +396,34 @@ RunEventUI = function () {
 }
 
 ExtractMacro2 = function (Ctrl, s) {
-	for (var j = 99; j--;) {
-		var s1 = s;
-		for (var i in eventTE.replacemacroex) {
+	for (let j = 99; j--;) {
+		const s1 = s;
+		for (let i in eventTE.replacemacroex) {
 			s = s.replace(eventTE.replacemacroex[i][0], eventTE.replacemacroex[i][1]);
 		}
-		for (var i in eventTE.replacemacro) {
-			var re = eventTE.replacemacro[i][0];
-			var res = re.exec(s);
+		for (let i in eventTE.replacemacro) {
+			const re = eventTE.replacemacro[i][0];
+			const res = re.exec(s);
 			if (res) {
-				var r = eventTE.replacemacro[i][1](Ctrl, re, res);
+				const r = eventTE.replacemacro[i][1](Ctrl, re, res);
 				if (/^string$|^number$/i.test(typeof r)) {
 					s = s.replace(re, r);
 				}
 			}
 		}
-		for (var i in eventTE.extractmacro) {
-			var re = eventTE.extractmacro[i][0];
+		for (let i in eventTE.extractmacro) {
+			const re = eventTE.extractmacro[i][0];
 			if (re.test(s)) {
 				s = eventTE.extractmacro[i][1](Ctrl, s, re);
 			}
 		}
 		s = s.replace(/%([\w\-_]+)%/g, function (strMatch, ref) {
-			var fn = eventTE.Environment[ref.toLowerCase()];
+			const fn = eventTE.Environment[ref.toLowerCase()];
 			if (/^string$|^number$/i.test(typeof fn)) {
 				return fn;
 			} else if (fn) {
 				try {
-					var r = fn(Ctrl);
+					const r = fn(Ctrl);
 					if (/^string$|^number$/i.test(typeof r)) {
 						return r;
 					}
@@ -481,7 +481,7 @@ OpenAdodbFromTextFile = function (fn, charset, base) {
 		ado.Type = adTypeBinary;
 		ado.Open();
 		ado.LoadFromFile(fn);
-		var s = ado.Read(8192);
+		const s = ado.Read(8192);
 	} catch (e) {
 		ado.Close();
 		return;
@@ -554,7 +554,7 @@ AddEvent = function (Name, fn, priority) {
 
 ClearEvent = function (Name) {
 	if (Name) {
-		var en = Name.toLowerCase();
+		const en = Name.toLowerCase();
 		delete eventTE[en];
 		delete eventTA[en];
 	}
@@ -565,7 +565,7 @@ AddEnv = function (Name, fn) {
 }
 
 AddEventId = function (Name, Id, fn) {
-	var en = Name.toLowerCase();
+	const en = Name.toLowerCase();
 	if (!eventTE[en]) {
 		eventTE[en] = api.CreateObject("Object");
 	}
@@ -579,7 +579,7 @@ AddonDisabled = function (Id) {
 		if (Id == "tabgroups") {
 			return;
 		}
-		var fn = eventTE.addondisabledex[Id];
+		const fn = eventTE.addondisabledex[Id];
 		if (fn) {
 			delete eventTE.addondisabledex[Id];
 			AddEvent("Finalize", fn);
@@ -746,14 +746,14 @@ SaveXmlTC = function (Ctrl, xml, nGroup) {
 }
 
 SaveConfigXML = function (filename) {
-	var xml = CreateXml(true);
-	var root = xml.documentElement;
+	const xml = CreateXml(true);
+	const root = xml.documentElement;
 
-	for (var i in te.Data) {
-		var res = /^(Tab|Tree|View|Conf)_(.*)/.exec(i);
+	for (let i in te.Data) {
+		const res = /^(Tab|Tree|View|Conf)_(.*)/.exec(i);
 		if (res) {
 			if (isFinite(te.Data[i]) || te.Data[i] != "") {
-				var item = xml.createElement(res[1]);
+				const item = xml.createElement(res[1]);
 				item.setAttribute("Id", res[2]);
 				item.text = te.Data[i];
 				root.appendChild(item);
@@ -836,7 +836,7 @@ CheckUpdate = function (arg) {
 }
 
 ShowAbout = function () {
-	var opt = api.CreateObject("Object");
+	const opt = api.CreateObject("Object");
 	opt.MainWindow = MainWindow;
 	opt.Query = "about";
 	opt.Modal = false;
@@ -951,7 +951,7 @@ OpenXml = function (strFile, bAppData, bEmpty, strInit) {
 
 LoadLang2 = function (filename) {
 	filename = OrganizePath(filename, te.Data.Installed);
-	var xml = api.CreateObject("Msxml2.DOMDocument");
+	const xml = api.CreateObject("Msxml2.DOMDocument");
 	xml.async = false;
 	if (!fso.FileExists(filename)) {
 		if (/_\w+\.xml$/.test(filename)) {
@@ -964,9 +964,9 @@ LoadLang2 = function (filename) {
 		}
 	}
 	xml.load(filename);
-	var items = xml.getElementsByTagName('text');
-	for (var i = 0; i < api.ObjGetI(items, "length"); ++i) {
-		var item = items[i];
+	const items = xml.getElementsByTagName('text');
+	for (let i = 0; i < api.ObjGetI(items, "length"); ++i) {
+		const item = items[i];
 		SetLang2(item.getAttribute("s").replace("\\t", "\t").replace("\\n", "\n"), item.text.replace("\\t", "\t").replace("\\n", "\n"));
 	}
 }
@@ -980,8 +980,8 @@ LoadLang = function (bAppend) {
 }
 
 CreateFont = function (LogFont) {
-	var key = [LogFont.lfFaceName, LogFont.lfHeight, LogFont.lfCharSet, LogFont.lfWeight, LogFont.lfItalic, LogFont.lfUnderline].join("\t");
-	var hFont = te.Data.Fonts[key];
+	const key = [LogFont.lfFaceName, LogFont.lfHeight, LogFont.lfCharSet, LogFont.lfWeight, LogFont.lfItalic, LogFont.lfUnderline].join("\t");
+	let hFont = te.Data.Fonts[key];
 	if (!hFont) {
 		hFont = api.CreateFontIndirect(LogFont);
 		te.Data.Fonts[key] = hFont;
@@ -990,13 +990,13 @@ CreateFont = function (LogFont) {
 }
 
 GetSavePath = function (FolderItem) {
-	var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
-	var res = IsSearchPath(FolderItem);
+	let path = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
+	const res = IsSearchPath(FolderItem);
 	if (res) {
 		return res[0];
 	}
 	if (/\?/.test(path)) {
-		var nCount = api.ILGetCount(FolderItem);
+		let nCount = api.ILGetCount(FolderItem);
 		path = [];
 		while (nCount-- > 0) {
 			path.unshift(api.GetDisplayNameOf(FolderItem, (nCount > 0 ? SHGDN_FORADDRESSBAR : 0) | SHGDN_FORPARSING | SHGDN_INFOLDER | SHGDN_ORIGINAL));
@@ -1009,10 +1009,10 @@ GetSavePath = function (FolderItem) {
 
 RemoveCommand = function (hMenu, ContextMenu, strDelete) {
 	if (ContextMenu) {
-		var mii = api.Memory("MENUITEMINFO");
+		const mii = api.Memory("MENUITEMINFO");
 		mii.cbSize = mii.Size;
 		mii.fMask = MIIM_ID;
-		for (var i = api.GetMenuItemCount(hMenu); i-- > 0;) {
+		for (let i = api.GetMenuItemCount(hMenu); i-- > 0;) {
 			if (api.GetMenuItemInfo(hMenu, i, true, mii)) {
 				if (api.PathMatchSpec(ContextMenu.GetCommandString(mii.wID - ContextMenu.idCmdFirst, GCS_VERB), strDelete)) {
 					api.DeleteMenu(hMenu, i, MF_BYPOSITION);
@@ -1032,10 +1032,10 @@ PerformUpdate = function () {
 }
 
 OpenContains = function (Ctrl, pt) {
-	var Items = GetSelectedItems(Ctrl, pt);
-	for (var j = 0; j < Items.Count; ++j) {
-		var Item = Items.Item(j);
-		var path = Item.Path;
+	const Items = GetSelectedItems(Ctrl, pt);
+	for (let j = 0; j < Items.Count; ++j) {
+		const Item = Items.Item(j);
+		const path = Item.Path;
 		Navigate(GetParentFolderName(path), SBSP_NEWBROWSER);
 		SelectItem(te.Ctrl(CTRL_FV), path, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS, 99);
 	}
@@ -1043,10 +1043,10 @@ OpenContains = function (Ctrl, pt) {
 
 WmiProcess = function (arg, fn) {
 	try {
-		var server = te.GetObject("winmgmts:\\\\.\\root\\cimv2");
+		const server = te.GetObject("winmgmts:\\\\.\\root\\cimv2");
 		if (server) {
-			var cols = server.ExecQuery("SELECT * FROM Win32_Process " + arg);
-			for (var list = api.CreateObject("Enum", cols); !list.atEnd(); list.moveNext()) {
+			const cols = server.ExecQuery("SELECT * FROM Win32_Process " + arg);
+			for (let list = api.CreateObject("Enum", cols); !list.atEnd(); list.moveNext()) {
 				fn(list.item());
 			}
 		}
@@ -1060,7 +1060,7 @@ AddFavoriteEx = function (Ctrl, pt) {
 }
 
 SameFolderItems = function (Items1, Items2) {
-	var i = Items1.Count;
+	let i = Items1.Count;
 	if (i != Items2.Count) {
 		return false;
 	}
@@ -1073,14 +1073,14 @@ SameFolderItems = function (Items1, Items2) {
 }
 
 GetSelectedItems = function (Ctrl, pt) {
-	var FV = GetFolderView(Ctrl, pt);
+	const FV = GetFolderView(Ctrl, pt);
 	if (FV) {
 		return FV.SelectedItems();
 	}
 }
 
 GetThumbnail = function (image, m, f) {
-	var w = image.GetWidth(), h = image.GetHeight(), z = m / Math.max(w, h);
+	const w = image.GetWidth(), h = image.GetHeight(), z = m / Math.max(w, h);
 	if (z == 1 || (f && z > 1)) {
 		return image;
 	}
@@ -1108,7 +1108,7 @@ ColumnsReplace = function (Ctrl, pid, fmt, fn, priority) {
 			Ctrl.ColumnsReplace[n] = [Ctrl.ColumnsReplace[n]];
 			Ctrl.ColumnsReplace[n].fmt = Ctrl.ColumnsReplace[n][0].fmt;
 		}
-		for (var i = Ctrl.ColumnsReplace[n]; i--;) {
+		for (let i = Ctrl.ColumnsReplace[n]; i--;) {
 			if (Ctrl.ColumnsReplace[n][i] === fn) {
 				return;
 			}
@@ -1124,47 +1124,47 @@ ColumnsReplace = function (Ctrl, pid, fmt, fn, priority) {
 }
 
 CustomSort = function (FV, id, r, fnAdd, fnComp) {
-	var Progress = api.CreateObject("ProgressDialog");
+	const Progress = api.CreateObject("ProgressDialog");
 	Progress.StartProgressDialog(te.hwnd, null, 2);
-	var Name = api.PSGetDisplayName(id) || id;
+	const Name = api.PSGetDisplayName(id) || id;
 	Progress.SetLine(1, api.LoadString(hShell32, 13585) || api.LoadString(hShell32, 6478), true);
 	FV.Parent.LockUpdate();
 	try {
-		var Items = FV.Items();
-		var List = [];
-		for (var i = Items.Count; i--;) {
+		const Items = FV.Items();
+		let List = [];
+		for (let i = Items.Count; i--;) {
 			List.push([i, fnAdd(Items.Item(i), FV)]);
 		}
 		List.sort(fnComp);
 		if (r) {
 			List = List.reverse();
 		}
-		var ViewMode = api.SendMessage(FV.hwndList, LVM_GETVIEW, 0, 0);
+		const ViewMode = api.SendMessage(FV.hwndList, LVM_GETVIEW, 0, 0);
 		if (ViewMode == 1 || ViewMode == 3) {
 			api.SendMessage(FV.hwndList, LVM_SETVIEW, 4, 0);
 		}
-		var FolderFlags = FV.FolderFlags;
+		const FolderFlags = FV.FolderFlags;
 		FV.FolderFlags = FolderFlags | FWF_AUTOARRANGE;
 		FV.GroupBy = "System.Null";
-		var pt = api.Memory("POINT");
+		const pt = api.Memory("POINT");
 		FV.GetItemPosition(Items.Item(0), pt);
-		var nMax = List.length;
-		var p = nMax / 100;
+		const nMax = List.length;
+		const p = nMax / 100;
 		Progress.SetLine(1, api.LoadString(hShell32, 50690) + Name, true);
-		for (var i = 0; i < nMax && !Progress.HasUserCancelled(); ++i) {
+		for (let i = 0; i < nMax && !Progress.HasUserCancelled(); ++i) {
 			Progress.SetTitle((i / p).toFixed(0) + "%");
 			Progress.SetProgress(i, nMax);
 			FV.SelectAndPositionItem(Items.Item(List[i][0]), 0, pt);
 		}
 		api.SendMessage(FV.hwndList, LVM_SETVIEW, ViewMode, 0);
 		FV.FolderFlags = FolderFlags;
-		var hHeader = api.SendMessage(FV.hwndList, LVM_GETHEADER, 0, 0);
-		var item = api.Memory("HDITEM");
+		const hHeader = api.SendMessage(FV.hwndList, LVM_GETHEADER, 0, 0);
+		const item = api.Memory("HDITEM");
 		item.mask = HDI_TEXT | HDI_FORMAT;
 		item.pszText = api.Memory("WCHAR", 260);
 		item.cchTextMax = 260;
 		if (id) {
-			for (var i = api.SendMessage(hHeader, HDM_GETITEMCOUNT, 0, 0); i-- > 0;) {
+			for (let i = api.SendMessage(hHeader, HDM_GETITEMCOUNT, 0, 0); i-- > 0;) {
 				api.SendMessage(hHeader, HDM_GETITEM, i, item);
 				if (Name == api.SysAllocString(item.pszText)) {
 					item.mask = HDI_FORMAT;
@@ -1180,22 +1180,22 @@ CustomSort = function (FV, id, r, fnAdd, fnComp) {
 }
 
 MakeCommDlgFilter = function (arg) {
-	var ar = arg ? arg.join ? arg : [arg] : [];
-	var result = [];
-	var bAll = true;
-	for (var i = 0; i < ar.length; ++i) {
-		var s = ar[i];
+	const ar = arg ? arg.join ? arg : [arg] : [];
+	const result = [];
+	let bAll = true;
+	for (let i = 0; i < ar.length; ++i) {
+		const s = ar[i];
 		bAll &= s.indexOf("*.*") < 0;
 		if (/[\|#]/.test(s)) {
 			result.push(s.replace(/[#\@]/g, "|").replace(/[\0\|]$/, ""));
 			continue;
 		}
-		var res = /\(([^\)]+)\)/.exec(s);
+		const res = /\(([^\)]+)\)/.exec(s);
 		if (res) {
 			result.push(s, res[1]);
 			continue;
 		}
-		var sfi = api.Memory("SHFILEINFO");
+		const sfi = api.Memory("SHFILEINFO");
 		api.SHGetFileInfo(s, 0, sfi, sfi.Size, SHGFI_TYPENAME | SHGFI_USEFILEATTRIBUTES);
 		result.push(sfi.szTypeName + " (" + s + ")", s);
 	}
@@ -1206,8 +1206,9 @@ MakeCommDlgFilter = function (arg) {
 }
 
 GetHICON = function (iIcon, h, flags) {
-	var ar = [SHIL_JUMBO, SHIL_EXTRALARGE, SHIL_LARGE, SHIL_SMALL]
-	for (var i = ar.length; h > te.Data.SHILS[ar[--i]].cy && i;) { }
+	const ar = [SHIL_JUMBO, SHIL_EXTRALARGE, SHIL_LARGE, SHIL_SMALL];
+	let i = ar.length;
+	while (h > te.Data.SHILS[ar[--i]].cy && i) { }
 	return api.ImageList_GetIcon(te.Data.SHIL[ar[i]], iIcon, flags);
 }
 
@@ -1220,9 +1221,9 @@ GetEnum = function (FolderItem, bShowHidden) {
 		return FolderItem.Enum(FolderItem);
 	}
 	if (FolderItem.IsFolder) {
-		var Folder = FolderItem.GetFolder;
+		const Folder = FolderItem.GetFolder;
 		if (Folder) {
-			var Items = Folder.Items();
+			const Items = Folder.Items();
 			if (bShowHidden || api.GetKeyState(VK_SHIFT) < 0) {
 				try {
 					Items.Filter(SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN, "*");
@@ -1238,14 +1239,14 @@ MakeImgDataEx = function (src, bSimple, h) {
 }
 
 MakeImgSrc = function (src, index, bSrc, h) {
-	var fn;
+	let fn;
 	src = ExtractPath(te, src);
 	if (!/^file:/i.test(src) && REGEXP_IMAGE.test(src)) {
 		return src;
 	}
-	var res = /^icon:(.+)/i.exec(src);
+	let res = /^icon:(.+)/i.exec(src);
 	if (res) {
-		var icon = res[1].split(",");
+		const icon = res[1].split(",");
 		if (!/\\/.test(icon[0])) {
 			fn = BuildPath(te.Data.DataFolder, ["icons", icon[0].replace(/\..*/, ""), icon[1] + ".png"].join("\\"));
 			if (fso.FileExists(fn)) {
@@ -1269,7 +1270,7 @@ MakeImgSrc = function (src, index, bSrc, h) {
 			return fn;
 		}
 	}
-	var image = MakeImgData(src, index, h);
+	const image = MakeImgData(src, index, h);
 	if (image) {
 		if (g_.IEVer >= 8) {
 			return image.DataURI("image/png");
@@ -1283,9 +1284,9 @@ MakeImgSrc = function (src, index, bSrc, h) {
 }
 
 MakeImgData = function (src, index, h) {
-	var hIcon = MakeImgIcon(src, index, h);
+	const hIcon = MakeImgIcon(src, index, h);
 	if (hIcon) {
-		var image = api.CreateObject("WICBitmap").FromHICON(hIcon);
+		const image = api.CreateObject("WICBitmap").FromHICON(hIcon);
 		api.DestroyIcon(hIcon);
 		return image;
 	}
@@ -1321,12 +1322,12 @@ MakeImgIcon = function (src, index, h, bIcon) {
 				hIcon = api.ImageList_GetIcon(himl, icon[index * 4 + 3], ILD_NORMAL);
 				api.ImageList_Destroy(himl);
 			} else if (SameText(icon[index * 4], "ieframe.dll")) {
-				for (var i in ar) {
-					var a2 = ar[i];
+				for (let i in ar) {
+					const a2 = ar[i];
 					if (api.StrCmpNI(src, a2[0], a2[0].length) == 0) {
 						src = src.replace(a2[0], a2[1]);
 						if (i > 1) {
-							var a3 = src.split(",");
+							const a3 = src.split(",");
 							if (a3[3] == 43) {
 								a3[3] = 4;
 							} else if (a3[3] > 19) {
@@ -1398,14 +1399,14 @@ MakeImgIcon = function (src, index, h, bIcon) {
 }
 
 GetKeyKey = function (strKey) {
-	var nShift = api.sscanf(strKey, "$%x");
+	let nShift = api.sscanf(strKey, "$%x");
 	if (nShift) {
 		return nShift;
 	}
 	strKey = strKey.toUpperCase();
-	for (var j = 0; j < MainWindow.g_.KeyState.length; ++j) {
-		var s = MainWindow.g_.KeyState[j][0].toUpperCase() + "+";
-		var i = strKey.indexOf(s);
+	for (let j = 0; j < MainWindow.g_.KeyState.length; ++j) {
+		const s = MainWindow.g_.KeyState[j][0].toUpperCase() + "+";
+		const i = strKey.indexOf(s);
 		if (i >= 0) {
 			strKey = strKey.slice(0, i) + strKey.slice(i + s.length);
 			nShift |= MainWindow.g_.KeyState[j][1];
@@ -1415,13 +1416,13 @@ GetKeyKey = function (strKey) {
 }
 
 GetKeyName = function (strKey, bEn) {
-	var nKey = api.sscanf(strKey, "$%x");
+	let nKey = api.sscanf(strKey, "$%x");
 	if (nKey) {
-		var s = api.GetKeyNameText((nKey & 0x17f) << 16);
+		const s = api.GetKeyNameText((nKey & 0x17f) << 16);
 		if (s) {
-			var arKey = [];
-			for (var i = 0, z = MainWindow.g_.KeyState.length; i < z; ++i) {
-				var j = bEn ? (i + 3) % z : i;
+			const arKey = [];
+			for (let i = 0, z = MainWindow.g_.KeyState.length; i < z; ++i) {
+				const j = bEn ? (i + 3) % z : i;
 				if (nKey & MainWindow.g_.KeyState[j][1]) {
 					nKey -= MainWindow.g_.KeyState[j][1];
 					arKey.push(MainWindow.g_.KeyState[j][0]);
@@ -1437,10 +1438,10 @@ GetKeyName = function (strKey, bEn) {
 }
 
 GetKeyShift = function () {
-	var nShift = 0;
-	var n = 0x1000;
-	var vka = [VK_SHIFT, VK_CONTROL, VK_MENU, VK_LWIN];
-	for (var i in vka) {
+	let nShift = 0;
+	let n = 0x1000;
+	const vka = [VK_SHIFT, VK_CONTROL, VK_MENU, VK_LWIN];
+	for (let i in vka) {
 		if (api.GetKeyState(vka[i]) < 0) {
 			nShift += n;
 		}
@@ -1450,7 +1451,7 @@ GetKeyShift = function () {
 }
 
 SetKeyData = function (mode, strKey, path, type, km, o) {
-	var s = "";
+	let s = "";
 	if (!o) {
 		o = te.Data;
 		s = km;
@@ -1463,11 +1464,11 @@ SetKeyData = function (mode, strKey, path, type, km, o) {
 }
 
 SendShortcutKeyFV = function (Key) {
-	var FV = te.Ctrl(CTRL_FV);
+	const FV = te.Ctrl(CTRL_FV);
 	if (FV) {
-		var KeyState = api.Memory("KEYSTATE");
+		const KeyState = api.Memory("KEYSTATE");
 		api.GetKeyboardState(KeyState);
-		var KeyCtrl = KeyState.Read(VK_CONTROL, VT_UI1);
+		const KeyCtrl = KeyState.Read(VK_CONTROL, VT_UI1);
 		KeyState.Write(VK_CONTROL, VT_UI1, 0x80);
 		api.SetKeyboardState(KeyState);
 		FV.TranslateAccelerator(0, WM_KEYDOWN, Key.charCodeAt(0), 0);
@@ -1483,7 +1484,7 @@ Navigate = function (Path, wFlags) {
 
 NavigateFV = function (FV, Path, wFlags, bInputed) {
 	if (!FV) {
-		var TC = te.CreateCtrl(CTRL_TC, 0, 0, "100%", "100%", te.Data.Tab_Style, te.Data.Tab_Align, te.Data.Tab_TabWidth, te.Data.Tab_TabHeight);
+		const TC = te.CreateCtrl(CTRL_TC, 0, 0, "100%", "100%", te.Data.Tab_Style, te.Data.Tab_Align, te.Data.Tab_TabWidth, te.Data.Tab_TabHeight);
 		FV = TC.Selected;
 	}
 	if ("string" === typeof Path) {
@@ -1507,7 +1508,7 @@ NavigateFV = function (FV, Path, wFlags, bInputed) {
 	}
 	if (bInputed) {
 		RunEvent1("LocationEntered", FV, Path, wFlags);
-		var r = MainWindow.RunEvent4("LocationEntered2", FV, Path, wFlags);
+		const r = MainWindow.RunEvent4("LocationEntered2", FV, Path, wFlags);
 		if (r !== void 0) {
 			return r;
 		}
@@ -1771,11 +1772,12 @@ ExecOpen = function (Ctrl, s, type, hwnd, pt, NewTab) {
 }
 
 DropOpen = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop) {
-	var line = s.split("\n");
-	var hr = E_FAIL;
-	var path = ExtractPath(Ctrl, line[0], pt);
-	if (!api.ILIsEqual(dataObj.Item(-1), path)) {
-		var DropTarget = api.DropTarget(path);
+	const line = s.split("\n");
+	let hr = E_FAIL;
+	const pid = api.ILCreateFromPath(ExtractPath(Ctrl, line[0], pt));
+	pid.IsFolder;
+	if (!pid.Unavailable && !api.ILIsEqual(dataObj.Item(-1), pid)) {
+		const DropTarget = api.DropTarget(pid);
 		if (DropTarget) {
 			if (!pdwEffect) {
 				pdwEffect = dataObj.pdwEffect;
@@ -1818,7 +1820,7 @@ Exec = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop
 }
 
 ExecScriptEx = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop, FV) {
-	var fn = null;
+	let fn = null;
 	try {
 		if (/J.*Script/i.test(type)) {
 			if (/^"?[A-Z]:\\.*\.js"?\s*$|^"?\\\\\w.*\.js"?s*$/im.test(s)) {
@@ -1834,7 +1836,7 @@ ExecScriptEx = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffec
 			fn = api.GetScriptDispatch('Function Handled(Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop, FV)\n' + s + '\nEnd Function', type, o);
 		}
 		if (fn) {
-			var r = fn.Handled(Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop, FV);
+			const r = fn.Handled(Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop, FV);
 			return isFinite(r) ? r : window.Handled;
 		}
 		api.ExecScript(s, type, {
@@ -1901,8 +1903,8 @@ PathMatchEx = function (path, s) {
 IsFolderEx = function (Item) {
 	if (Item) {
 		if (Item.IsFolder && !api.ILIsParent(ssfBITBUCKET, Item, true)) {
-			var wfd = api.Memory("WIN32_FIND_DATA");
-			var hr = api.SHGetDataFromIDList(Item, SHGDFIL_FINDDATA, wfd, wfd.Size);
+			const wfd = api.Memory("WIN32_FIND_DATA");
+			const hr = api.SHGetDataFromIDList(Item, SHGDFIL_FINDDATA, wfd, wfd.Size);
 			return (hr < 0) || (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 || !/^[A-Z]:\\|^\\\\\w.*\\.*\\/i.test(Item.Path);
 		}
 		return !Item.IsFileSystem && Item.IsBrowsable;
@@ -1973,10 +1975,10 @@ ExecMenu2 = function (Name, x, y) {
 }
 
 AdjustMenuBreak = function (hMenu) {
-	var mii = api.Memory("MENUITEMINFO");
+	const mii = api.Memory("MENUITEMINFO");
 	mii.cbSize = mii.Size;
-	var uFlags = 0;
-	for (var i = api.GetMenuItemCount(hMenu); i-- > 0;) {
+	let uFlags = 0;
+	for (let i = api.GetMenuItemCount(hMenu); i-- > 0;) {
 		mii.fMask = MIIM_FTYPE | MIIM_SUBMENU;
 		api.GetMenuItemInfo(hMenu, i, true, mii);
 		if (api.GetMenuString(hMenu, i, MF_BYPOSITION) != "") {
@@ -1992,7 +1994,7 @@ AdjustMenuBreak = function (hMenu) {
 			AdjustMenuBreak(mii.hSubMenu);
 			continue;
 		}
-		var u = mii.fType & (MFT_MENUBREAK | MFT_MENUBARBREAK);
+		const u = mii.fType & (MFT_MENUBREAK | MFT_MENUBARBREAK);
 		if (u && api.DeleteMenu(hMenu, i, MF_BYPOSITION)) {
 			++i;
 			uFlags = u;
@@ -2000,7 +2002,7 @@ AdjustMenuBreak = function (hMenu) {
 			uFlags = 0;
 		}
 	}
-	for (var i = api.GetMenuItemCount(hMenu); i--;) {
+	for (let i = api.GetMenuItemCount(hMenu); i--;) {
 		mii.fMask = MIIM_FTYPE;
 		api.GetMenuItemInfo(hMenu, i, true, mii);
 		if ((mii.fType & MFT_SEPARATOR) || api.GetMenuString(hMenu, i, MF_BYPOSITION).charAt(0) == '{') {
@@ -2010,7 +2012,7 @@ AdjustMenuBreak = function (hMenu) {
 		break;
 	}
 	uFlags = 0;
-	for (var i = api.GetMenuItemCount(hMenu); i--;) {
+	for (let i = api.GetMenuItemCount(hMenu); i--;) {
 		mii.fMask = MIIM_FTYPE;
 		api.GetMenuItemInfo(hMenu, i, true, mii);
 		if (uFlags & mii.fType & MFT_SEPARATOR) {
@@ -2444,7 +2446,7 @@ GetNetworkIcon = function (path) {
 
 RemoveSubMenu = function (hMenu, wID) {
 	if (hMenu && wID) {
-		var mii = api.Memory("MENUITEMINFO");
+		const mii = api.Memory("MENUITEMINFO");
 		mii.cbSize = mii.Size;
 		mii.fMask = MIIM_SUBMENU | MIIM_FTYPE;
 		if (api.GetMenuItemInfo(hMenu, wID, false, mii)) {
@@ -2457,7 +2459,7 @@ RemoveSubMenu = function (hMenu, wID) {
 }
 
 AddMenuIconFolderItem = function (mii, FolderItem, nHeight) {
-	var path = MainWindow.GetIconImage(FolderItem, GetSysColor(COLOR_WINDOW), 2);
+	const path = MainWindow.GetIconImage(FolderItem, GetSysColor(COLOR_WINDOW), 2);
 	MenusIcon(mii, path || api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_ORIGINAL), nHeight, !path);
 }
 
@@ -2488,14 +2490,14 @@ MenusIcon = function (mii, src, nHeight, bIcon) {
 				return;
 			}
 		}
-		var h16 = GetIconSize(0, 16);
-		var h = nHeight < h16 ? GetIconSize(0, nHeight || 16) : nHeight || h16;
+		const h16 = GetIconSize(0, 16);
+		const h = nHeight < h16 ? GetIconSize(0, nHeight || 16) : nHeight || h16;
 		if (/^object$/.test(src)) {
 			image = src;
 		} else {
 			image = api.CreateObject("WICBitmap");
 			if (bIcon || !image.FromFile(src)) {
-				var hIcon = MakeImgIcon(src, 0, h, bIcon);
+				const hIcon = MakeImgIcon(src, 0, h, bIcon);
 				image.FromHICON(hIcon);
 				api.DestroyIcon(hIcon);
 			}
@@ -2610,14 +2612,14 @@ SaveXmlEx = function (filename, xml) {
 }
 
 RunCommandLine = function (s) {
-	var re = /\/select,([^,]+)/i.exec(s);
+	const re = /\/select,([^,]+)/i.exec(s);
 	if (re) {
-		var arg = api.CommandLineToArgv(re[1]);
+		const arg = api.CommandLineToArgv(re[1]);
 		Navigate(GetParentFolderName(arg[0]), SBSP_NEWBROWSER);
 		SelectItem(te.Ctrl(CTRL_FV), arg[0], SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS, 99);
 		return;
 	}
-	var arg = api.CommandLineToArgv(s.replace(/^\/e,|^\/n,|^\/root,/ig, ""));
+	const arg = api.CommandLineToArgv(s.replace(/^\/e,|^\/n,|^\/root,/ig, ""));
 	arg.shift();
 	s = arg.join(" ");
 	if (/^[A-Z]:\\|^\\\\/i.test(s) && IsExists(s)) {
@@ -2625,7 +2627,7 @@ RunCommandLine = function (s) {
 		return;
 	}
 	while (s = arg.shift()) {
-		var ar = s.split(",");
+		const ar = s.split(",");
 		if (ar.length > 1) {
 			Exec(te, GetSourceText(ar[1]), GetSourceText(ar[0]), te.hwnd, api.Memory("POINT"));
 			continue;
@@ -2635,7 +2637,7 @@ RunCommandLine = function (s) {
 }
 
 OpenNewProcess = function (fn, ex, mode, vOperation) {
-	var uid;
+	let uid;
 	do {
 		uid = String(Math.random()).replace(/^0?\./, "");
 	} while (MainWindow.Exchange[uid]);
@@ -2647,22 +2649,22 @@ GetAddonInfo = function (Id) {
 	if (isFinite(Id)) {
 		Id = te.Data.Addons.documentElement.childNodes[Id].nodeName;
 	}
-	var info = api.CreateObject("Object");
+	const info = api.CreateObject("Object");
 
-	var path = te.Data.Installed;
-	var xml = api.CreateObject("Msxml2.DOMDocument");
+	const path = te.Data.Installed;
+	const xml = api.CreateObject("Msxml2.DOMDocument");
 	xml.async = false;
-	var xmlfile = BuildPath(path, "addons", Id, "config.xml");
+	const xmlfile = BuildPath(path, "addons", Id, "config.xml");
 	if (fso.FileExists(xmlfile)) {
 		xml.load(xmlfile);
 
 		GetAddonInfo2(xml, info, "General", true);
-		var lang = GetLangId();
+		const lang = GetLangId();
 		if (!/^en/.test(lang)) {
 			GetAddonInfo2(xml, info, "en", true);
 			info.Name = GetTextR(info.Name);
 		}
-		var res = /(\w+)_/.exec(lang);
+		const res = /(\w+)_/.exec(lang);
 		if (res && !/zh_cn/i.test(lang)) {
 			GetAddonInfo2(xml, info, res[1]);
 		}
@@ -2679,9 +2681,9 @@ GetAddonInfoName = function (Id, s) {
 }
 
 OpenXml = function (strFile, bAppData, bEmpty, strInit) {
-	var xml = api.CreateObject("Msxml2.DOMDocument");
+	const xml = api.CreateObject("Msxml2.DOMDocument");
 	xml.async = false;
-	var path = BuildPath(te.Data.DataFolder, "config\\" + strFile);
+	let path = BuildPath(te.Data.DataFolder, "config\\" + strFile);
 	if (fso.FileExists(path) && xml.load(path)) {
 		return xml;
 	}
@@ -2706,7 +2708,7 @@ OpenXml = function (strFile, bAppData, bEmpty, strInit) {
 }
 
 CreateXml = function (bRoot) {
-	var xml = api.CreateObject("Msxml2.DOMDocument");
+	const xml = api.CreateObject("Msxml2.DOMDocument");
 	xml.async = false;
 	xml.appendChild(xml.createProcessingInstruction("xml", 'version="1.0" encoding="UTF-8"'));
 	if (bRoot) {
@@ -2744,13 +2746,13 @@ MessageBox = function (s, title, uType) {
 }
 
 GethwndFromPid = function (ProcessId, nDT) {
-	var hProcess = api.OpenProcess(PROCESS_QUERY_INFORMATION, false, ProcessId);
+	const hProcess = api.OpenProcess(PROCESS_QUERY_INFORMATION, false, ProcessId);
 	if (hProcess) {
 		api.WaitForInputIdle(hProcess, 9999);
 		api.CloseHandle(hProcess);
 	}
-	var hwnd = api.GetTopWindow(null);
-	var ppid = api.Memory("DWORD");
+	let hwnd = api.GetTopWindow(null);
+	const ppid = api.Memory("DWORD");
 	do {
 		if (api.IsWindowVisible(hwnd)) {
 			api.GetWindowThreadProcessId(hwnd, ppid);
@@ -2766,21 +2768,21 @@ GethwndFromPid = function (ProcessId, nDT) {
 
 PopupContextMenu = function (Item, FV) {
 	if ("string" === typeof Item) {
-		var arg = api.CommandLineToArgv(Item);
+		const arg = api.CommandLineToArgv(Item);
 		Item = api.CreateObject("FolderItems");
-		for (var i in arg) {
+		for (let i in arg) {
 			Item.AddItem(arg[i]);
 		}
 	}
-	var hMenu = api.CreatePopupMenu();
-	var ContextMenu = api.ContextMenu(Item, FV);
+	const hMenu = api.CreatePopupMenu();
+	const ContextMenu = api.ContextMenu(Item, FV);
 	if (ContextMenu) {
-		var uCMF = (api.GetKeyState(VK_SHIFT) < 0) ? CMF_EXTENDEDVERBS : CMF_NORMAL;
+		const uCMF = (api.GetKeyState(VK_SHIFT) < 0) ? CMF_EXTENDEDVERBS : CMF_NORMAL;
 		ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, uCMF);
 		RemoveCommand(hMenu, ContextMenu, "delete");
-		var pt = api.Memory("POINT");
+		const pt = api.Memory("POINT");
 		api.GetCursorPos(pt);
-		var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, ContextMenu);
+		const nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, ContextMenu);
 		if (nVerb) {
 			ContextMenu.InvokeCommand(0, te.hwnd, nVerb - 1, null, null, SW_SHOWNORMAL, 0, 0);
 		}
@@ -2789,14 +2791,14 @@ PopupContextMenu = function (Item, FV) {
 }
 
 XmlItem2Json = function (item) {
-	var json = [];
+	const json = [];
 	if (item) {
 		if (item.text) {
 			json.push('"text":"' + EscapeJson(item.text) + '"');
 		}
-		var attrs = item.attributes;
+		const attrs = item.attributes;
 		if (attrs) {
-			for (var i = 0; i < attrs.length; ++i) {
+			for (let i = 0; i < attrs.length; ++i) {
 				json.push('"' + EscapeJson(attrs[i].name) + '":"' + EscapeJson(attrs[i].value) + '"');
 			}
 		}
@@ -2805,9 +2807,9 @@ XmlItem2Json = function (item) {
 }
 
 XmlItems2Json = function (items) {
-	var json = [];
+	const json = [];
 	if (items) {
-		for (var i = 0; i < items.length; ++i) {
+		for (let i = 0; i < items.length; ++i) {
 			json.push(XmlItem2Json(items[i]))
 		}
 	}
@@ -2815,7 +2817,7 @@ XmlItems2Json = function (items) {
 }
 
 GetAddonElement = function (id) {
-	var items = te.Data.Addons.getElementsByTagName(id.toLowerCase());
+	const items = te.Data.Addons.getElementsByTagName(id.toLowerCase());
 	if (items.length) {
 		return items[0];
 	}
@@ -2836,7 +2838,7 @@ GetAddonOptionEx = function (id, strTag) {
 }
 
 GetInnerFV = function (id) {
-	var TC = te.Ctrl(CTRL_TC, id);
+	const TC = te.Ctrl(CTRL_TC, id);
 	if (TC && TC.SelectedIndex >= 0) {
 		return TC.Selected;
 	}
@@ -2855,7 +2857,7 @@ ShowDialog = function (fn, opt) {
 	if (!/:/.test(fn)) {
 		fn = location.href.replace(/[^\/]*$/, fn);
 	}
-	var r = opt.r || Math.abs(MainWindow.DefaultFont.lfHeight) / 12;
+	const r = opt.r || Math.abs(MainWindow.DefaultFont.lfHeight) / 12;
 	return te.CreateCtrl(CTRL_SW, fn, opt, WebBrowser.hwnd, (opt.width > 99 ? opt.width : 750) * r, (opt.height > 99 ? opt.height : 530) * r, opt.left, opt.top);
 }
 
@@ -2900,7 +2902,7 @@ GetLangId = function (nDefault) {
 	if (!nDefault && te.Data.Conf_Lang) {
 		return te.Data.Conf_Lang;
 	}
-	var lang = (navigator.userLanguage || navigator.language).replace(/\-/, '_').toLowerCase();
+	let lang = (navigator.userLanguage || navigator.language).replace(/\-/, '_').toLowerCase();
 	if (nDefault != 2) {
 		if (!fso.FileExists(fso.BuildPath(te.Data.Installed, "lang\\" + lang + ".xml"))) {
 			lang = lang.replace(/_.*/, "");
@@ -2921,13 +2923,13 @@ GetText = function (id) {
 }
 
 GetTextR = function (id) {
-	var res = /^\@(.+),-(\d+)(\[[^\]]+\])?$/i.exec(id);
+	let res = /^\@(.+),-(\d+)(\[[^\]]+\])?$/i.exec(id);
 	if (res) {
-		var hModule = api.LoadLibraryEx(res[1], 0, LOAD_LIBRARY_AS_DATAFILE);
-		var s = api.LoadString(hModule, GetNum(res[2]));
+		const hModule = api.LoadLibraryEx(res[1], 0, LOAD_LIBRARY_AS_DATAFILE);
+		let s = api.LoadString(hModule, GetNum(res[2]));
 		if (!s && res[3]) {
-			var ar = res[3].slice(1, -1).split("|");
-			for (var i = 0; i < ar.length && !s; ++i) {
+			const ar = res[3].slice(1, -1).split("|");
+			for (let i = 0; i < ar.length && !s; ++i) {
 				res = /^-(\d+)$/.exec(ar[i]);
 				s = res ? api.LoadString(hModule, GetNum(res[1])) : GetTextR(ar[i]);
 			}
@@ -2941,7 +2943,7 @@ GetTextR = function (id) {
 	}
 	res = /^({[0-9a-f\-]+} \d+)\|?(.*)$/i.exec(id);
 	if (res) {
-		var s = api.PSGetDisplayName(res[1]);
+		const s = api.PSGetDisplayName(res[1]);
 		return (s && s.indexOf("{") < 0) ? s : GetTextR(res[2]);
 	}
 	res = /^(\d+)\-bit$/i.exec(id);
@@ -2960,7 +2962,7 @@ GetSourceText = function (s) {
 }
 
 SetLang2 = function (s, v) {
-	var sl = s.toLowerCase();
+	const sl = s.toLowerCase();
 	if (!MainWindow.Lang[sl] && !MainWindow.LangSrc[v]) {
 		MainWindow.Lang[sl] = v;
 		MainWindow.LangSrc[v] = s;
@@ -2987,7 +2989,7 @@ LoadDBFromTSV = function (DB, fn) {
 	const ado = OpenAdodbFromTextFile(fn, "utf-8");
 	if (ado) {
 		while (!ado.EOS) {
-			var res = /^([^\t]*)\t(.*)$/.exec(ado.ReadText(adReadLine));
+			const res = /^([^\t]*)\t(.*)$/.exec(ado.ReadText(adReadLine));
 			if (res) {
 				DB.Set(res[1], res[2]);
 			}
@@ -2998,7 +3000,7 @@ LoadDBFromTSV = function (DB, fn) {
 
 SaveDBToTSV = function (DB, fn) {
 	try {
-		var ado = api.CreateObject("ads");
+		const ado = api.CreateObject("ads");
 		ado.CharSet = "utf-8";
 		ado.Open();
 		DB.ENumCB(function (n, s) {
@@ -3067,7 +3069,7 @@ FolderMenu = {
 		if (Items) {
 			const nCount = Items.Count;
 			let ar = new Array(nCount);
-			for (var i = nCount; i--;) {
+			for (let i = nCount; i--;) {
 				ar[i] = i;
 			}
 			if (this.SortMode >= 0) {
@@ -3105,7 +3107,7 @@ FolderMenu = {
 	},
 
 	Enum: function (FolderItem) {
-		var Items = GetEnum(FolderItem, te.Data.Conf_MenuHidden);
+		const Items = GetEnum(FolderItem, te.Data.Conf_MenuHidden);
 		if (Items) {
 			MainWindow.RunEvent1("AddItems", Items, FolderItem);
 			if (!Items.Count) {
@@ -3282,7 +3284,7 @@ BasicDB = function (name, bLoad, bLC) {
 		if (this.LC) {
 			 n = n.toLowerCase();
 		}
-		var s0 = this.DB[n] || "";
+		const s0 = this.DB[n] || "";
 		if (s0 != s) {
 			if (s) {
 				this.DB[n] = s;

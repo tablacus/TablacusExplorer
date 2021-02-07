@@ -1836,209 +1836,210 @@ MouseWheel = async function (ev) {
 	return false;
 }
 
-InitLocation = async function () {
-	const r = await Promise.all([api.CreateObject("Array"), api.CreateObject("Object"), dialogArguments.Data.id, te.Data.DataFolder]);
-	let ar = r[0];
-	const param = r[1];
-	Addon_Id = r[2];
-	ui_.DataFolder = r[3];
-	for (let i = 10; i--;) {
-		const o = document.getElementById('tab' + i);
-		o.className = "tab";
-		o.hidefocus = true;
-		o.style.display = "none";
-		(function (o) {
-			o.onmousedown = function () {
-				ClickTab(o, 1);
-			};
-			o.onfocus = function () {
-				o.blur()
-			};
-		})(o);
-	}
-	await LoadLang2(BuildPath("addons", Addon_Id, "lang", await GetLangId() + ".xml"));
-	await LoadAddon("js", Addon_Id, ar, param);
-	if (window.chrome) {
-		ar = await api.CreateObject("SafeArray", ar);
-	}
-	if (ar.length) {
-		setTimeout(function (ar) {
-			MessageBox(ar.join("\n\n"), TITLE, MB_OK);
-		}, 500, ar);
-	}
-	ar = [];
-	const s = "CSA";
-	for (let i = 0; i < s.length; ++i) {
-		ar.push('<input type="button" value="', await MainWindow.g_.KeyState[i][0], '" title="', s.charAt(i), '" onclick="AddMouse(this)">');
-	}
-	document.getElementById("__MOUSEDATA").innerHTML = ar.join("");
-	document.title = await GetAddonInfo(Addon_Id).Name;
-	const item = await GetAddonElement(Addon_Id);
-	const Location = item.getAttribute("Location") || await param.Default;
-	for (let i = document.L.length; i--;) {
-		if (SameText(Location, document.L[i].value)) {
-			document.L[i].checked = true;
-			break;
+InitLocation = function () {
+	Promise.all([api.CreateObject("Array"), api.CreateObject("Object"), dialogArguments.Data.id, te.Data.DataFolder]).then(async function (r) {
+		let ar = r[0];
+		const param = r[1];
+		Addon_Id = r[2];
+		ui_.DataFolder = r[3];
+		for (let i = 10; i--;) {
+			const o = document.getElementById('tab' + i);
+			o.className = "tab";
+			o.hidefocus = true;
+			o.style.display = "none";
+			(function (o) {
+				o.onmousedown = function () {
+					ClickTab(o, 1);
+				};
+				o.onfocus = function () {
+					o.blur()
+				};
+			})(o);
 		}
-	}
-	const locs = {};
-	const items = await MainWindow.g_.Locations;
-	for (let list = await api.CreateObject("Enum", items); !await list.atEnd(); await list.moveNext()) {
-		const i = await list.item();
-		locs[i] = [];
-		const item1 = await items[i];
-		for (let j = await GetLength(item1); j--;) {
-			const ar = (await item1[j]).split("\t");
-			locs[i].unshift(await GetImgTag({ src: ar[1], title: await GetAddonInfo(ar[0]).Name, "class": ar[1] ? "" : "text1" }, 16) + '<span style="font-size: 1px"> </span>');
+		await LoadLang2(BuildPath("addons", Addon_Id, "lang", await GetLangId() + ".xml"));
+		await LoadAddon("js", Addon_Id, ar, param);
+		if (window.chrome) {
+			ar = await api.CreateObject("SafeArray", ar);
 		}
-	}
-	for (let i in locs) {
-		const s = locs[i].join("");
-		try {
-			const o = document.getElementById('_' + i);
-			await ApplyLang(o);
-			o.parentNode.title = o.innerHTML.replace(/<[^>]*>|[\r\n]|\s\s+/g, "");
-			o.innerHTML = s;
-		} catch (e) { }
-	}
-	await ApplyLang(document);
-	let oa = document.F.Menu;
-	oa.length = 0;
-	let o = oa[++oa.length - 1];
-	o.value = "";
-	o.text = await GetText("Select");
-	for (let j in g_arMenuTypes) {
-		const s = g_arMenuTypes[j];
-		if (!/Default|Alias/.test(s)) {
-			o = oa[++oa.length - 1];
-			o.value = s;
-			o.text = await GetText(s);
+		if (ar.length) {
+			setTimeout(function (ar) {
+				MessageBox(ar.join("\n\n"), TITLE, MB_OK);
+			}, 500, ar);
 		}
-	}
-	ar = ["Key", "Mouse"];
-	for (let i in ar) {
-		const mode = ar[i];
-		oa = document.F[mode + "On"];
+		ar = [];
+		const s = "CSA";
+		for (let i = 0; i < s.length; ++i) {
+			ar.push('<input type="button" value="', await MainWindow.g_.KeyState[i][0], '" title="', s.charAt(i), '" onclick="AddMouse(this)">');
+		}
+		document.getElementById("__MOUSEDATA").innerHTML = ar.join("");
+		document.title = await GetAddonInfo(Addon_Id).Name;
+		const item = await GetAddonElement(Addon_Id);
+		const Location = item.getAttribute("Location") || await param.Default;
+		for (let i = document.L.length; i--;) {
+			if (SameText(Location, document.L[i].value)) {
+				document.L[i].checked = true;
+				break;
+			}
+		}
+		const locs = {};
+		const items = await MainWindow.g_.Locations;
+		for (let list = await api.CreateObject("Enum", items); !await list.atEnd(); await list.moveNext()) {
+			const i = await list.item();
+			locs[i] = [];
+			const item1 = await items[i];
+			for (let j = await GetLength(item1); j--;) {
+				const ar = (await item1[j]).split("\t");
+				locs[i].unshift(await GetImgTag({ src: ar[1], title: await GetAddonInfo(ar[0]).Name, "class": ar[1] ? "" : "text1" }, 16) + '<span style="font-size: 1px"> </span>');
+			}
+		}
+		for (let i in locs) {
+			const s = locs[i].join("");
+			try {
+				const o = document.getElementById('_' + i);
+				await ApplyLang(o);
+				o.parentNode.title = o.innerHTML.replace(/<[^>]*>|[\r\n]|\s\s+/g, "");
+				o.innerHTML = s;
+			} catch (e) { }
+		}
+		await ApplyLang(document);
+		let oa = document.F.Menu;
 		oa.length = 0;
-		o = oa[++oa.length - 1];
+		let o = oa[++oa.length - 1];
 		o.value = "";
 		o.text = await GetText("Select");
-		for (let list = await api.CreateObject("Enum", await MainWindow.eventTE[mode]); !await list.atEnd(); await list.moveNext()) {
-			const j = await list.item();
+		for (let j in g_arMenuTypes) {
+			const s = g_arMenuTypes[j];
+			if (!/Default|Alias/.test(s)) {
+				o = oa[++oa.length - 1];
+				o.value = s;
+				o.text = await GetText(s);
+			}
+		}
+		ar = ["Key", "Mouse"];
+		for (let i in ar) {
+			const mode = ar[i];
+			oa = document.F[mode + "On"];
+			oa.length = 0;
 			o = oa[++oa.length - 1];
-			o.text = await GetTextEx(j);
-			o.value = j;
-		}
-	}
-	const el = document.F;
-	for (let i = el.length; i--;) {
-		const n = el[i].id || el[i].name;
-		if (n && !/=/.test(n)) {
-			let s = (/^!/.test(n) ? !item.getAttribute(n.slice(1)) : item.getAttribute(n)) || "";
-			if (n == "Key") {
-				s = await GetKeyNameG(s);
-			}
-			if (s || s === 0) {
-				SetElementValue(el[n], s);
+			o.value = "";
+			o.text = await GetText("Select");
+			for (let list = await api.CreateObject("Enum", await MainWindow.eventTE[mode]); !await list.atEnd(); await list.moveNext()) {
+				const j = await list.item();
+				o = oa[++oa.length - 1];
+				o.text = await GetTextEx(j);
+				o.value = j;
 			}
 		}
-	}
-	LoadChecked(document.F);
+		const el = document.F;
+		for (let i = el.length; i--;) {
+			const n = el[i].id || el[i].name;
+			if (n && !/=/.test(n)) {
+				let s = (/^!/.test(n) ? !item.getAttribute(n.slice(1)) : item.getAttribute(n)) || "";
+				if (n == "Key") {
+					s = await GetKeyNameG(s);
+				}
+				if (s || s === 0) {
+					SetElementValue(el[n], s);
+				}
+			}
+		}
+		LoadChecked(document.F);
 
-	if (!await dialogArguments.Data.show) {
-		dialogArguments.Data.show = "6";
-		dialogArguments.Data.index = 6;
-	}
-	if (!/,/.test(await dialogArguments.Data.show)) {
-		g_NoTab = true;
-	} else {
-		setTimeout(function () {
+		if (!await dialogArguments.Data.show) {
+			dialogArguments.Data.show = "6";
+			dialogArguments.Data.index = 6;
+		}
+		if (!/,/.test(await dialogArguments.Data.show)) {
+			g_NoTab = true;
+		} else {
+			setTimeout(function () {
+				document.getElementById("tabs").style.display = "block";
+			}, 99);
 			document.getElementById("tabs").style.display = "block";
-		}, 99);
-		document.getElementById("tabs").style.display = "block";
-	}
-	if (/[8]/.test(await dialogArguments.Data.show)) {
-		await MakeKeySelect();
-		await SetKeyShift();
-	}
-	ar = (await dialogArguments.Data.show).split(/,/);
-	for (let i in ar) {
-		document.getElementById("tab" + ar[i]).style.display = "inline";
-	}
-	nTabIndex = await dialogArguments.Data.index;
-
-	await SetOnChangeHandler();
-	AddEventEx(window, "resize", function () {
-		clearTimeout(g_tidResize);
-		g_tidResize = setTimeout(ResizeTabPanel, 500);
-	});
-
-	IsChanged = function () {
-		return g_bChanged || g_Chg.Data;
-	};
-
-	TEOk = async function () {
-		if (window.SaveLocation) {
-			await SaveLocation();
 		}
-		MainWindow.g_.OptionsWindow = void 0;
-		const items = await te.Data.Addons.getElementsByTagName(Addon_Id);
-		if (await GetLength(items)) {
-			let bConfigChanged = false;
-			const item = await items[0];
-			item.removeAttribute("Location");
-			for (let i = document.L.length; i--;) {
-				if (document.L[i].checked) {
-					item.setAttribute("Location", document.L[i].value);
-					bConfigChanged = true;
-					break;
-				}
-			}
-			const el = document.F;
-			if (await dialogArguments.Data.show == "6") {
-				el.Set.value = "";
-			}
-			for (let i = el.length; i--;) {
-				const n = el[i].id || el[i].name;
-				if (n && n.charAt(0) != "_") {
-					if (n == "Key") {
-						document.F[n].value = await GetKeyKeyG(document.F[n].value);
-					}
-					if (await SetAttribEx(item, document.F, n)) {
-						bConfigChanged = true;
-					}
-				}
-			}
-			if (bConfigChanged) {
-				te.Data.bReload = true;
-				MainWindow.RunEvent1("ConfigChanged", "Addons");
-			}
+		if (/[8]/.test(await dialogArguments.Data.show)) {
+			await MakeKeySelect();
+			await SetKeyShift();
 		}
-	};
+		ar = (await dialogArguments.Data.show).split(/,/);
+		for (let i in ar) {
+			document.getElementById("tab" + ar[i]).style.display = "inline";
+		}
+		nTabIndex = await dialogArguments.Data.index;
 
-	if (await WebBrowser.OnClose) {
-		g_Inline = true;
-		const cel = document.getElementsByTagName("input");
-		for (let i = cel.length; i-- > 0;) {
-			if (/^ok$|^cancel$/.test(cel[i].className)) {
-				cel[i].style.display = "none";
-			}
-		}
-	} else {
-		WebBrowser.OnClose = async function (WB) {
-			await SetOptions(TEOk, null, ContinueOptions);
-			if (g_nResult != 4) {
-				FireEvent(window, "unload");
-				WB.Close();
-			}
-			g_nResult = 0;
+		await SetOnChangeHandler();
+		AddEventEx(window, "resize", function () {
+			clearTimeout(g_tidResize);
+			g_tidResize = setTimeout(ResizeTabPanel, 500);
+		});
+
+		IsChanged = function () {
+			return g_bChanged || g_Chg.Data;
 		};
-	}
-	if (item) {
-		InitColor1(item);
-	}
-	ClickTab(null, 1);
-	document.getElementById("P").style.display = "";
+
+		TEOk = async function () {
+			if (window.SaveLocation) {
+				await SaveLocation();
+			}
+			MainWindow.g_.OptionsWindow = void 0;
+			const items = await te.Data.Addons.getElementsByTagName(Addon_Id);
+			if (await GetLength(items)) {
+				let bConfigChanged = false;
+				const item = await items[0];
+				item.removeAttribute("Location");
+				for (let i = document.L.length; i--;) {
+					if (document.L[i].checked) {
+						item.setAttribute("Location", document.L[i].value);
+						bConfigChanged = true;
+						break;
+					}
+				}
+				const el = document.F;
+				if (await dialogArguments.Data.show == "6") {
+					el.Set.value = "";
+				}
+				for (let i = el.length; i--;) {
+					const n = el[i].id || el[i].name;
+					if (n && n.charAt(0) != "_") {
+						if (n == "Key") {
+							document.F[n].value = await GetKeyKeyG(document.F[n].value);
+						}
+						if (await SetAttribEx(item, document.F, n)) {
+							bConfigChanged = true;
+						}
+					}
+				}
+				if (bConfigChanged) {
+					te.Data.bReload = true;
+					MainWindow.RunEvent1("ConfigChanged", "Addons");
+				}
+			}
+		};
+
+		if (await WebBrowser.OnClose) {
+			g_Inline = true;
+			const cel = document.getElementsByTagName("input");
+			for (let i = cel.length; i-- > 0;) {
+				if (/^ok$|^cancel$/.test(cel[i].className)) {
+					cel[i].style.display = "none";
+				}
+			}
+		} else {
+			WebBrowser.OnClose = async function (WB) {
+				await SetOptions(TEOk, null, ContinueOptions);
+				if (g_nResult != 4) {
+					FireEvent(window, "unload");
+					WB.Close();
+				}
+				g_nResult = 0;
+			};
+		}
+		if (item) {
+			InitColor1(item);
+		}
+		ClickTab(null, 1);
+		document.getElementById("P").style.display = "";
+	});
 }
 
 function SetAttrib(item, n, s) {

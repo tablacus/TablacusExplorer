@@ -85,18 +85,17 @@ g_.mouse = {
 
 	RButtonDown: function (mode) {
 		if (this.str == "2") {
-			var item = api.Memory("LVITEM");
+			const item = api.Memory("LVITEM");
 			item.iItem = this.RButton;
 			item.mask = LVIF_STATE;
 			item.stateMask = LVIS_SELECTED;
 			api.SendMessage(this.hwndGesture, LVM_GETITEM, 0, item);
 			if (!(item.state & LVIS_SELECTED)) {
 				if (mode) {
-					var Ctrl = te.CtrlFromWindow(this.hwndGesture);
+					const Ctrl = te.CtrlFromWindow(this.hwndGesture);
 					Ctrl.SelectItem(this.RButton, SVSI_SELECT | SVSI_FOCUSED | SVSI_DESELECTOTHERS);
 				} else {
-					var ptc = api.Memory("POINT");
-					ptc = te.Data.pt.Clone();
+					const ptc = te.Data.pt.Clone();
 					api.ScreenToClient(this.hwndGesture, ptc);
 					api.SendMessage(this.hwndGesture, WM_RBUTTONDOWN, 0, ptc.x + (ptc.y << 16));
 				}
@@ -106,7 +105,7 @@ g_.mouse = {
 	},
 
 	GetButton: function (msg, wParam) {
-		var s = "";
+		let s = "";
 		if (msg >= WM_LBUTTONDOWN && msg <= WM_LBUTTONDBLCLK) {
 			if (api.GetKeyState(VK_RBUTTON) < 0) {
 				g_.mouse.CancelContextMenu = true;
@@ -153,18 +152,18 @@ g_.mouse = {
 	},
 
 	Exec: function (Ctrl, hwnd, pt, str) {
-		var str = GetGestureKey() + (str || this.str);
+		str = GetGestureKey() + (str || this.str);
 		this.EndGesture(false);
 		te.Data.cmdMouse = str;
 		if (!Ctrl) {
 			return S_FALSE;
 		}
-		var s = this.GetMode(Ctrl, pt);
+		const s = this.GetMode(Ctrl, pt);
 		if (s) {
 			if (GestureExec(Ctrl, s, str, pt, hwnd) === S_OK) {
 				return S_OK;
 			}
-			var res = /(.*)_Background/i.exec(s);
+			const res = /(.*)_Background/i.exec(s);
 			if (res) {
 				if (GestureExec(Ctrl, res[1], str, pt, hwnd) === S_OK) {
 					return S_OK;
@@ -175,9 +174,9 @@ g_.mouse = {
 				window.g_menu_button = str;
 				if (window.g_menu_click) {
 					if (window.g_menu_click === true) {
-						var hSubMenu = api.GetSubMenu(g_.menu_handle, g_.menu_pos);
+						const hSubMenu = api.GetSubMenu(g_.menu_handle, g_.menu_pos);
 						if (hSubMenu) {
-							var mii = api.Memory("MENUITEMINFO");
+							const mii = api.Memory("MENUITEMINFO");
 							mii.cbSize = mii.Size;
 							mii.fMask = MIIM_SUBMENU;
 							if (api.SetMenuItemInfo(g_.menu_handle, g_.menu_pos, true, mii)) {
@@ -187,7 +186,7 @@ g_.mouse = {
 					}
 					if (str > 2) {
 						window.g_menu_click = 4;
-						var lParam = pt.x + (pt.y << 16);
+						const lParam = pt.x + (pt.y << 16);
 						api.PostMessage(hwnd, WM_LBUTTONDOWN, 0, lParam);
 						api.PostMessage(hwnd, WM_LBUTTONUP, 0, lParam);
 					}
@@ -210,7 +209,7 @@ g_basic = {
 	},
 
 	CmdI: function (s, s2) {
-		var type = this.FuncI(s);
+		const type = this.FuncI(s);
 		if (type) {
 			return type.Cmd[s2] || api.ObjGetI(type.Cmd, s2);
 		}
@@ -219,11 +218,11 @@ g_basic = {
 	Func: {
 		"": {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
-				var lines = s.split(/\r?\n/);
-				for (var i in lines) {
-					var cmd = lines[i].split(",");
-					var Id = cmd.shift();
-					var hr = Exec(Ctrl, cmd.join(","), Id, hwnd, pt);
+				const lines = s.split(/\r?\n/);
+				for (let i in lines) {
+					const cmd = lines[i].split(",");
+					const Id = cmd.shift();
+					const hr = Exec(Ctrl, cmd.join(","), Id, hwnd, pt);
 					if (hr != S_OK) {
 						break;
 					}
@@ -232,20 +231,20 @@ g_basic = {
 			},
 
 			Ref: function (s, pt) {
-				var lines = s.split(/\r?\n/);
-				var last = lines.length ? lines[lines.length - 1] : "";
-				var res = /^([^,]+),$/.exec(last);
+				const lines = s.split(/\r?\n/);
+				const last = lines.length ? lines[lines.length - 1] : "";
+				const res = /^([^,]+),$/.exec(last);
 				if (res) {
-					var Id = GetSourceText(res[1]);
-					var r = OptionRef(Id, "", pt);
+					const Id = GetSourceText(res[1]);
+					const r = OptionRef(Id, "", pt);
 					if ("string" === typeof r) {
 						return s + r + "\n";
 					}
 					return r;
 				} else {
-					var arFunc = [];
+					const arFunc = [];
 					RunEvent1("AddType", arFunc);
-					var r = g_basic.Popup(arFunc, s, pt);
+					const r = g_basic.Popup(arFunc, s, pt);
 					return r == 1 ? 1 : s + (s.length && !/\n$/.test(s) ? "\n" : "") + r + ",";
 				}
 			}
@@ -280,9 +279,9 @@ g_basic = {
 
 		Filter: {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
-				var FV = GetFolderView(Ctrl, pt);
+				const FV = GetFolderView(Ctrl, pt);
 				if (FV) {
-					var s = ExtractMacro(Ctrl, s);
+					const s = ExtractMacro(Ctrl, s);
 					FV.FilterView = s != "*" ? s : null;
 					FV.Refresh();
 				}
@@ -292,8 +291,8 @@ g_basic = {
 
 		Exec: {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
-				var lines = ExtractMacro(Ctrl, s).split(/\r?\n/);
-				for (var i in lines) {
+				const lines = ExtractMacro(Ctrl, s).split(/\r?\n/);
+				for (let i in lines) {
 					try {
 						ShellExecute(lines[i], null, SW_SHOWNORMAL, Ctrl, pt);
 					} catch (e) {
@@ -307,12 +306,12 @@ g_basic = {
 				if (!pdwEffect) {
 					pdwEffect = api.Memory("DWORD");
 				}
-				var re = /%Selected%/i;
+				const re = /%Selected%/i;
 				if (re.test(s)) {
 					pdwEffect[0] = DROPEFFECT_LINK;
 					if (bDrop) {
-						var ar = [];
-						for (var i = dataObj.Count; i > 0; ar.unshift(PathQuoteSpaces(api.GetDisplayNameOf(dataObj.Item(--i), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)))) {
+						const ar = [];
+						for (let i = dataObj.Count; i > 0; ar.unshift(PathQuoteSpaces(api.GetDisplayNameOf(dataObj.Item(--i), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)))) {
 						}
 						s = s.replace(re, ar.join(" "));
 						ShellExecute(s, null, SW_SHOWNORMAL, Ctrl, pt);
@@ -366,7 +365,7 @@ g_basic = {
 
 		"Selected items": {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
-				var fn = g_basic.CmdI(type, s);
+				const fn = g_basic.CmdI(type, s);
 				if (fn) {
 					return fn(Ctrl, pt);
 				} else {
@@ -375,7 +374,7 @@ g_basic = {
 			},
 
 			Drop: function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop) {
-				var fn = g_basic.CmdI(type, s);
+				const fn = g_basic.CmdI(type, s);
 				if (fn) {
 					pdwEffect[0] = DROPEFFECT_NONE;
 					return S_OK;
@@ -384,16 +383,16 @@ g_basic = {
 			},
 
 			Ref: function (s, pt) {
-				var r = g_basic.Popup(g_basic.Func["Selected items"].Cmd, s, pt);
+				let r = g_basic.Popup(g_basic.Func["Selected items"].Cmd, s, pt);
 				if (SameText(r, GetText("Send to..."))) {
-					var Folder = sha.NameSpace(ssfSENDTO);
+					const Folder = sha.NameSpace(ssfSENDTO);
 					if (Folder) {
-						var Items = Folder.Items();
-						var hMenu = api.CreatePopupMenu();
+						const Items = Folder.Items();
+						const hMenu = api.CreatePopupMenu();
 						for (i = 0; i < Items.Count; ++i) {
 							api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_STRING, i + 1, Items.Item(i).Name);
 						}
-						var nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD | (pt.width ? TPM_RIGHTALIGN : 0), pt.x + pt.width, pt.y, te.hwnd, null, null);
+						const nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD | (pt.width ? TPM_RIGHTALIGN : 0), pt.x + pt.width, pt.y, te.hwnd, null, null);
 						api.DestroyMenu(hMenu);
 						if (nVerb) {
 							return PathQuoteSpaces(Items.Item(nVerb - 1).Path);
@@ -421,7 +420,7 @@ g_basic = {
 					return OpenSelected(Ctrl, SBSP_NEWBROWSER | SBSP_ACTIVATE_NOFOCUS, pt);
 				},
 				Exec: function (Ctrl, pt) {
-					var Selected = GetSelectedArray(Ctrl, pt, true).shift();
+					const Selected = GetSelectedArray(Ctrl, pt, true).shift();
 					if (Selected) {
 						InvokeCommand(Selected, 0, te.hwnd, null, null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
 					}
@@ -435,16 +434,16 @@ g_basic = {
 
 		Tabs: {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
-				var fn = g_basic.CmdI(type, s);
+				const fn = g_basic.CmdI(type, s);
 				if (fn) {
 					fn(Ctrl, pt);
 					return S_OK;
 				}
-				var FV = GetFolderView(Ctrl, pt, true);
+				const FV = GetFolderView(Ctrl, pt, true);
 				if (FV) {
-					var res = /^(\-?)(\d+)/.exec(s);
+					const res = /^(\-?)(\d+)/.exec(s);
 					if (res) {
-						var TC = FV.Parent;
+						const TC = FV.Parent;
 						TC.SelectedIndex = res[1] ? TC.Count - res[2] : res[2];
 					}
 				}
@@ -453,17 +452,17 @@ g_basic = {
 
 			Cmd: {
 				"Close tab": function (Ctrl, pt) {
-					var FV = GetFolderView(Ctrl, pt, true);
+					const FV = GetFolderView(Ctrl, pt, true);
 					FV && FV.Close();
 				},
 				"Close other tabs": function (Ctrl, pt) {
-					var FV = GetFolderView(Ctrl, pt);
+					const FV = GetFolderView(Ctrl, pt);
 					if (FV) {
-						var TC = FV.Parent;
-						var nIndex = GetFolderView(Ctrl, pt, true) ? FV.Index : -1;
+						const TC = FV.Parent;
+						const nIndex = GetFolderView(Ctrl, pt, true) ? FV.Index : -1;
 						TC.LockUpdate();
 						try {
-							for (var i = TC.Count; i--;) {
+							for (let i = TC.Count; i--;) {
 								if (i != nIndex) {
 									TC[i].Close();
 								}
@@ -475,12 +474,12 @@ g_basic = {
 					}
 				},
 				"Close tabs on left": function (Ctrl, pt) {
-					var FV = GetFolderView(Ctrl, pt, true);
+					const FV = GetFolderView(Ctrl, pt, true);
 					if (FV) {
-						var TC = FV.Parent;
+						const TC = FV.Parent;
 						TC.LockUpdate();
 						try {
-							for (var i = FV.Index; i--;) {
+							for (let i = FV.Index; i--;) {
 								TC[i].Close();
 							}
 						} catch (e) {
@@ -490,13 +489,13 @@ g_basic = {
 					}
 				},
 				"Close tabs on right": function (Ctrl, pt) {
-					var FV = GetFolderView(Ctrl, pt, true);
+					const FV = GetFolderView(Ctrl, pt, true);
 					if (FV) {
-						var TC = FV.Parent;
-						var nIndex = FV.Index;
+						const TC = FV.Parent;
+						const nIndex = FV.Index;
 						TC.LockUpdate();
 						try {
-							for (var i = TC.Count; --i > nIndex;) {
+							for (let i = TC.Count; --i > nIndex;) {
 								TC[i].Close();
 							}
 						} catch (e) {
@@ -506,12 +505,12 @@ g_basic = {
 					}
 				},
 				"Close all tabs": function (Ctrl, pt) {
-					var FV = GetFolderView(Ctrl, pt);
+					const FV = GetFolderView(Ctrl, pt);
 					if (FV) {
-						var TC = FV.Parent;
+						const TC = FV.Parent;
 						TC.LockUpdate();
 						try {
-							for (var i = TC.Count; i--;) {
+							for (let i = TC.Count; i--;) {
 								TC[i].Close();
 							}
 						} catch (e) {
@@ -522,27 +521,27 @@ g_basic = {
 				},
 				"New tab": CreateTab,
 				Lock: function (Ctrl, pt) {
-					var FV = GetFolderView(Ctrl, pt);
+					const FV = GetFolderView(Ctrl, pt);
 					FV && Lock(FV.Parent, FV.Index, true);
 				},
 				"Previous tab": function (Ctrl, pt) {
-					var FV = GetFolderView(Ctrl, pt);
+					const FV = GetFolderView(Ctrl, pt);
 					FV && ChangeTab(FV.Parent, -1);
 				},
 				"Next tab": function (Ctrl, pt) {
-					var FV = GetFolderView(Ctrl, pt);
+					const FV = GetFolderView(Ctrl, pt);
 					FV && ChangeTab(FV.Parent, 1);
 				},
 				Up: function (Ctrl, pt) {
-					var FV = GetFolderView(Ctrl, pt);
+					const FV = GetFolderView(Ctrl, pt);
 					FV && FV.Navigate(null, SBSP_PARENT | GetNavigateFlags(FV, true));
 				},
 				Back: function (Ctrl, pt) {
-					var FV = GetFolderView(Ctrl, pt);
+					const FV = GetFolderView(Ctrl, pt);
 					if (FV) {
-						var wFlags = GetNavigateFlags(FV);
+						const wFlags = GetNavigateFlags(FV);
 						if (wFlags & SBSP_NEWBROWSER) {
-							var Log = FV.History;
+							const Log = FV.History;
 							if (Log && Log.Index < Log.Count - 1) {
 								FV.Navigate(Log[Log.Index + 1], wFlags);
 							}
@@ -552,11 +551,11 @@ g_basic = {
 					}
 				},
 				Forward: function (Ctrl, pt) {
-					var FV = GetFolderView(Ctrl, pt);
+					const FV = GetFolderView(Ctrl, pt);
 					if (FV) {
-						var wFlags = GetNavigateFlags(FV);
+						const wFlags = GetNavigateFlags(FV);
 						if (wFlags & SBSP_NEWBROWSER) {
-							var Log = FV.History;
+							const Log = FV.History;
 							if (Log && Log.Index > 0) {
 								FV.Navigate(Log[Log.Index - 1], wFlags);
 							}
@@ -568,19 +567,19 @@ g_basic = {
 				Refresh: Refresh,
 
 				"Show frames": function (Ctrl, pt) {
-					var FV = GetFolderView(Ctrl, pt);
+					const FV = GetFolderView(Ctrl, pt);
 					if (FV) {
 						FV.Type = (FV.Type == CTRL_SB) ? CTRL_EB : CTRL_SB;
 					}
 				},
 				"Switch Explorer engine": function (Ctrl, pt) {
-					var FV = GetFolderView(Ctrl, pt);
+					const FV = GetFolderView(Ctrl, pt);
 					if (FV) {
 						FV.Type = (FV.Type == CTRL_SB) ? CTRL_EB : CTRL_SB;
 					}
 				},
 				"Open in Explorer": function (Ctrl, pt) {
-					var FV = GetFolderView(Ctrl, pt);
+					const FV = GetFolderView(Ctrl, pt);
 					FV && OpenInExplorer(FV);
 				}
 			},
@@ -590,8 +589,8 @@ g_basic = {
 
 		Edit: {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
-				var hMenu = te.MainMenu(FCIDM_MENU_EDIT);
-				var nVerb = GetCommandId(hMenu, s);
+				const hMenu = te.MainMenu(FCIDM_MENU_EDIT);
+				const nVerb = GetCommandId(hMenu, s);
 				SendCommand(Ctrl, nVerb);
 				api.DestroyMenu(hMenu);
 				return S_OK;
@@ -604,8 +603,8 @@ g_basic = {
 
 		View: {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
-				var hMenu = te.MainMenu(FCIDM_MENU_VIEW);
-				var nVerb = GetCommandId(hMenu, s);
+				const hMenu = te.MainMenu(FCIDM_MENU_VIEW);
+				const nVerb = GetCommandId(hMenu, s);
 				SendCommand(Ctrl, nVerb);
 				api.DestroyMenu(hMenu);
 				return S_OK;
@@ -618,8 +617,8 @@ g_basic = {
 
 		Context: {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
-				var Selected;
-				var FV = Ctrl;
+				let Selected;
+				let FV = Ctrl;
 				if (Ctrl.Type <= CTRL_EB || Ctrl.Type == CTRL_TV) {
 					Selected = Ctrl.SelectedItems();
 				} else {
@@ -627,11 +626,11 @@ g_basic = {
 					Selected = FV.SelectedItems();
 				}
 				if (Selected && Selected.Count) {
-					var ContextMenu = api.ContextMenu(Selected, FV);
+					const ContextMenu = api.ContextMenu(Selected, FV);
 					if (ContextMenu) {
-						var hMenu = api.CreatePopupMenu();
+						const hMenu = api.CreatePopupMenu();
 						ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_EXTENDEDVERBS | CMF_CANRENAME);
-						var nVerb = GetCommandId(hMenu, s, ContextMenu);
+						const nVerb = GetCommandId(hMenu, s, ContextMenu);
 						FV.Focus();
 						ContextMenu.InvokeCommand(0, te.hwnd, nVerb ? nVerb - 1 : s, null, null, SW_SHOWNORMAL, 0, 0);
 						api.DestroyMenu(hMenu);
@@ -641,15 +640,15 @@ g_basic = {
 			},
 
 			Ref: function (s, pt) {
-				var FV = te.Ctrl(CTRL_FV);
+				const FV = te.Ctrl(CTRL_FV);
 				if (FV) {
-					var Selected = FV.SelectedItems();
+					let Selected = FV.SelectedItems();
 					if (!Selected.Count) {
 						Selected = api.GetModuleFileName(null);
 					}
-					var ContextMenu = api.ContextMenu(Selected, FV);
+					const ContextMenu = api.ContextMenu(Selected, FV);
 					if (ContextMenu) {
-						var hMenu = api.CreatePopupMenu();
+						const hMenu = api.CreatePopupMenu();
 						ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_EXTENDEDVERBS | CMF_CANRENAME);
 						return g_basic.PopupMenu(hMenu, ContextMenu, pt);
 					}
@@ -659,14 +658,14 @@ g_basic = {
 
 		Background: {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
-				var FV = te.Ctrl(CTRL_FV);
+				const FV = te.Ctrl(CTRL_FV);
 				if (FV) {
-					var ContextMenu = FV.ViewMenu();
+					const ContextMenu = FV.ViewMenu();
 					if (ContextMenu) {
 						FV.Focus();
-						var hMenu = api.CreatePopupMenu();
+						const hMenu = api.CreatePopupMenu();
 						ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_EXTENDEDVERBS);
-						var nVerb = GetCommandId(hMenu, s, ContextMenu);
+						const nVerb = GetCommandId(hMenu, s, ContextMenu);
 						ContextMenu.InvokeCommand(0, te.hwnd, nVerb ? nVerb - 1 : s, null, null, SW_SHOWNORMAL, 0, 0);
 						api.DestroyMenu(hMenu);
 					}
@@ -675,11 +674,11 @@ g_basic = {
 			},
 
 			Ref: function (s, pt) {
-				var FV = te.Ctrl(CTRL_FV);
+				const FV = te.Ctrl(CTRL_FV);
 				if (FV) {
-					var ContextMenu = FV.ViewMenu();
+					const ContextMenu = FV.ViewMenu();
 					if (ContextMenu) {
-						var hMenu = api.CreatePopupMenu();
+						const hMenu = api.CreatePopupMenu();
 						ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_EXTENDEDVERBS);
 						return g_basic.PopupMenu(hMenu, ContextMenu, pt);
 					}
@@ -692,9 +691,9 @@ g_basic = {
 				"New folder": CreateNewFolder,
 				"New file": CreateNewFile,
 				"Copy full path": function (Ctrl, pt) {
-					var Selected = GetSelectedItems(Ctrl, pt);
-					var s = "";
-					var nCount = Selected.Count;
+					const Selected = GetSelectedItems(Ctrl, pt);
+					let s = "";
+					const nCount = Selected.Count;
 					if (nCount) {
 						s = te.OnClipboardText(Selected);
 					} else {
@@ -926,7 +925,7 @@ ChangeTabName = function (Ctrl) {
 
 GetTabName = function (Ctrl) {
 	if (Ctrl.FolderItem) {
-		var res = /search\-ms:.*?crumb=([^&]+)/.exec(Ctrl.FilterView);
+		const res = /search\-ms:.*?crumb=([^&]+)/.exec(Ctrl.FilterView);
 		if (res) {
 			return decodeURIComponent(res[1]).replace(/~<(\*?)/, "$1");
 		}
@@ -939,7 +938,7 @@ GetFolderItemName = function (pid) {
 }
 
 AddEvent("GetFolderItemName", function (pid) {
-	var res = /search\-ms:.*?crumb=([^&]+)/.exec(pid.Path);
+	const res = /search\-ms:.*?crumb=([^&]+)/.exec(pid.Path);
 	if (res) {
 		return decodeURIComponent(res[1]).replace(/~<(\*?)/, "$1");
 	}
@@ -1020,11 +1019,11 @@ FinalizeEx = function () {
 }
 
 SetGestureText = function (Ctrl, Text) {
-	var mode = g_.mouse.GetMode(Ctrl, g_.mouse.ptGesture);
+	const mode = g_.mouse.GetMode(Ctrl, g_.mouse.ptGesture);
 	if (mode) {
-		var s = eventTE.Mouse[mode][Text];
+		let s = eventTE.Mouse[mode][Text];
 		if (!s) {
-			var res = /(.*)_Background/i.exec(mode);
+			const res = /(.*)_Background/i.exec(mode);
 			if (res) {
 				s = eventTE.Mouse[res[1]][Text];
 			}
@@ -1039,9 +1038,9 @@ SetGestureText = function (Ctrl, Text) {
 	RunEvent3("SetGestureText", Ctrl, Text);
 	if (!te.Data.Conf_NoInfotip && Text.length > 1 && !/^[A-Z]+\d$/i.test(Text)) {
 		g_.mouse.bTrail = true;
-		var hdc = api.GetWindowDC(te.hwnd);
+		const hdc = api.GetWindowDC(te.hwnd);
 		if (hdc) {
-			var rc = api.Memory("RECT");
+			const rc = api.Memory("RECT");
 			if (!g_.mouse.ptText) {
 				g_.mouse.ptText = g_.mouse.ptGesture.Clone();
 				api.ScreenToClient(te.hwnd, g_.mouse.ptText);
@@ -1049,7 +1048,7 @@ SetGestureText = function (Ctrl, Text) {
 			}
 			rc.left = g_.mouse.ptText.x;
 			rc.top = g_.mouse.ptText.y;
-			var hOld = api.SelectObject(hdc, CreateFont(DefaultFont));
+			const hOld = api.SelectObject(hdc, CreateFont(DefaultFont));
 			api.DrawText(hdc, Text, -1, rc, DT_CALCRECT | DT_NOPREFIX);
 			if (g_.mouse.right < rc.right) {
 				g_.mouse.right = rc.right;
@@ -1097,7 +1096,7 @@ GetLock = function (FV) {
 
 CanClose = function (FV) {
 	if (FV && FV.Data) {
-		if (GetLock(FV)) {
+		if (FV.Data.Lock) {
 			return S_FALSE;
 		}
 		return RunEvent2("CanClose", FV);
@@ -1115,11 +1114,11 @@ FavoriteChanged = function () {
 }
 
 LoadConfig = function (bDog) {
-	var xml = OpenXml("window.xml", true, false);
+	const xml = OpenXml("window.xml", true, false);
 	if (xml) {
-		var items = xml.getElementsByTagName('Data');
+		const items = xml.getElementsByTagName('Data');
 		if (items.length && !bDog) {
-			var path = items[0].getAttribute("Path");
+			let path = items[0].getAttribute("Path");
 			if (path) {
 				path = ExtractMacro(te, path);
 				if (fso.FolderExists(BuildPath(path, "config"))) {
@@ -1129,16 +1128,16 @@ LoadConfig = function (bDog) {
 				}
 			}
 		}
-		var arKey = ["Conf", "Tab", "Tree", "View"];
-		for (var j in arKey) {
-			var key = arKey[j];
-			var items = xml.getElementsByTagName(key);
+		const arKey = ["Conf", "Tab", "Tree", "View"];
+		for (let j in arKey) {
+			const key = arKey[j];
+			let items = xml.getElementsByTagName(key);
 			if (items.length == 0 && j == 0) {
 				items = xml.getElementsByTagName('Config');
 			}
-			for (var i = 0; i < items.length; ++i) {
-				var item = items[i];
-				var s = item.text;
+			for (let i = 0; i < items.length; ++i) {
+				const item = items[i];
+				let s = item.text;
 				if (s == "0") {
 					s = 0;
 				}
@@ -1166,26 +1165,26 @@ LoadWindowSettings = function (xml) {
 		RunEvent1("ConfigChanged", "Config");
 	}
 	if (xml) {
-		var items = xml.getElementsByTagName('Window');
+		const items = xml.getElementsByTagName('Window');
 		if (items.length) {
-			var item = items[0];
+			const item = items[0];
 			te.CmdShow = item.getAttribute("CmdShow");
-			var x = GetNum(item.getAttribute("Left"));
-			var y = GetNum(item.getAttribute("Top"));
+			let x = GetNum(item.getAttribute("Left"));
+			let y = GetNum(item.getAttribute("Top"));
 			if (x > -30000 && y > -30000) {
-				var w = GetNum(item.getAttribute("Width"));
-				var h = GetNum(item.getAttribute("Height"));
-				var z = GetNum(item.getAttribute("DPI")) / screen.deviceYDPI;
+				let w = GetNum(item.getAttribute("Width"));
+				let h = GetNum(item.getAttribute("Height"));
+				const z = GetNum(item.getAttribute("DPI")) / screen.deviceYDPI;
 				if (z && z != 1) {
 					x /= z;
 					y /= z;
 					w /= z;
 					h /= z;
 				}
-				var pt = { x: x + w / 2, y: y };
+				const pt = { x: x + w / 2, y: y };
 				if (!api.MonitorFromPoint(pt, MONITOR_DEFAULTTONULL)) {
-					var hMonitor = api.MonitorFromPoint(pt, MONITOR_DEFAULTTOPRIMARY);
-					var mi = api.Memory("MONITORINFOEX");
+					const hMonitor = api.MonitorFromPoint(pt, MONITOR_DEFAULTTOPRIMARY);
+					const mi = api.Memory("MONITORINFOEX");
 					mi.cbSize = mi.Size;
 					api.GetMonitorInfo(hMonitor, mi);
 					x = mi.rcWork.left + (mi.rcWork.right - mi.rcWork.left - w) / 2;
@@ -1235,14 +1234,14 @@ SaveConfig = function () {
 
 SaveAddons = function (Addons, bLoading) {
 	if (bLoading) {
-		var root = te.Data.Addons.documentElement;
+		const root = te.Data.Addons.documentElement;
 		if (root) {
-			var items = root.childNodes;
+			const items = root.childNodes;
 			if (items) {
-				var nLen = items.length;
-				for (var i = 0; i < nLen; ++i) {
-					var item = items[i];
-					var Id = item.nodeName;
+				const nLen = items.length;
+				for (let i = 0; i < nLen; ++i) {
+					const item = items[i];
+					const Id = item.nodeName;
 					if (Addons[Id] == null) {
 						Addons[Id] = item.getAttribute("Enabled");
 					}
@@ -1251,37 +1250,39 @@ SaveAddons = function (Addons, bLoading) {
 		}
 	}
 	te.Data.bErrorAddons = false;
-	var xml = CreateXml();
-	var root = xml.createElement("TablacusExplorer");
-	for (var Id in Addons) {
-		var item = null;
-		var items = te.Data.Addons.getElementsByTagName(Id);
-		if (items.length) {
-			item = items[0].cloneNode(true);
-		}
-		if (!item) {
-			item = xml.createElement(Id);
-		}
-		var Enabled = Addons[Id];
-		if (Enabled) {
-			var AddonFolder = BuildPath(te.Data.Installed, "addons", Id);
-			Enabled = fso.FolderExists(AddonFolder + "\\lang") ? 2 : 0;
-			if (fso.FileExists(AddonFolder + "\\script.vbs")) {
-				Enabled |= 8;
+	const xml = CreateXml();
+	const root = xml.createElement("TablacusExplorer");
+	for (let Id in Addons) {
+		let item;
+		try {
+			const items = te.Data.Addons.getElementsByTagName(Id);
+			if (items.length) {
+				item = items[0].cloneNode(true);
 			}
-			if (fso.FileExists(AddonFolder + "\\script.js")) {
-				Enabled |= 1;
+			if (!item) {
+				item = xml.createElement(Id);
 			}
-			Enabled = (Enabled & 9) ? Enabled : 4;
-		} else {
-			AddonDisabled(Id);
-		}
-		item.setAttribute("Enabled", Enabled);
-		var info = await GetAddonInfo(Id);
-		if (info.Level > 0) {
-			item.setAttribute("Level", info.Level);
-		}
-		root.appendChild(item);
+			let Enabled = Addons[Id];
+			if (Enabled) {
+				const AddonFolder = BuildPath(te.Data.Installed, "addons", Id);
+				Enabled = fso.FolderExists(AddonFolder + "\\lang") ? 2 : 0;
+				if (fso.FileExists(AddonFolder + "\\script.vbs")) {
+					Enabled |= 8;
+				}
+				if (fso.FileExists(AddonFolder + "\\script.js")) {
+					Enabled |= 1;
+				}
+				Enabled = (Enabled & 9) ? Enabled : 4;
+			} else {
+				AddonDisabled(Id);
+			}
+			item.setAttribute("Enabled", Enabled);
+			const info = await GetAddonInfo(Id);
+			if (info.Level > 0) {
+				item.setAttribute("Level", info.Level);
+			}
+			root.appendChild(item);
+		} catch (e) { }
 	}
 	xml.appendChild(root);
 	te.Data.Addons = xml;
@@ -1289,7 +1290,7 @@ SaveAddons = function (Addons, bLoading) {
 }
 
 AddEvent("Refresh", function (Ctrl, pt) {
-	var FV = GetFolderView(Ctrl, pt);
+	const FV = GetFolderView(Ctrl, pt);
 	if (FV) {
 		FV.Focus();
 		FV.Refresh();
@@ -1351,11 +1352,11 @@ IsSearchPath = function (pid) {
 }
 
 GetCommandId = function (hMenu, s, ContextMenu) {
-	var arMenu = [hMenu];
-	var wId = 0;
+	const arMenu = [hMenu];
+	let wId = 0;
 	if (s) {
-		var sl = GetTextR(s);
-		var mii = api.Memory("MENUITEMINFO");
+		const sl = GetTextR(s);
+		const mii = api.Memory("MENUITEMINFO");
 		mii.cbSize = mii.Size;
 		mii.fMask = MIIM_SUBMENU | MIIM_ID | MIIM_FTYPE | MIIM_STATE;
 		while (arMenu.length) {
@@ -1363,7 +1364,7 @@ GetCommandId = function (hMenu, s, ContextMenu) {
 			if (ContextMenu) {
 				ContextMenu.HandleMenuMsg(WM_INITMENUPOPUP, hMenu, 0);
 			}
-			var i = api.GetMenuItemCount(hMenu);
+			let i = api.GetMenuItemCount(hMenu);
 			if (i == 1 && ContextMenu && WINVER >= 0x600) {
 				setTimeout(function () {
 					api.EndMenu();
@@ -1373,9 +1374,9 @@ GetCommandId = function (hMenu, s, ContextMenu) {
 			}
 			while (i-- > 0) {
 				if (api.GetMenuItemInfo(hMenu, i, true, mii) && !(mii.fType & MFT_SEPARATOR) && !(mii.fState & MFS_DISABLED)) {
-					var title = api.GetMenuString(hMenu, i, MF_BYPOSITION);
+					const title = api.GetMenuString(hMenu, i, MF_BYPOSITION);
 					if (title) {
-						var a = title.split(/\t/);
+						const a = title.split(/\t/);
 						if (api.PathMatchSpec(a[0], s) || api.PathMatchSpec(a[0], sl) || api.PathMatchSpec(a[1], s) || (ContextMenu && api.PathMatchSpec(ContextMenu.GetCommandString(mii.wID - 1, GCS_VERB), s))) {
 							wId = mii.hSubMenu ? api.TrackPopupMenuEx(mii.hSubMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, ContextMenu) : mii.wID;
 							arMenu.length = 0;
@@ -1396,17 +1397,17 @@ GetCommandId = function (hMenu, s, ContextMenu) {
 };
 
 OpenSelected = function (Ctrl, NewTab, pt) {
-	var ar = GetSelectedArray(Ctrl, pt, true);
-	var Selected = ar.shift();
-	var SelItem = ar.shift();
-	var FV = ar.shift();
+	const ar = GetSelectedArray(Ctrl, pt, true);
+	let Selected = ar.shift();
+	const SelItem = ar.shift();
+	const FV = ar.shift();
 	if (Selected) {
-		var Exec = [];
-		for (var i in Selected) {
-			var Item = Selected.Item(i);
-			var bFolder = Item.IsFolder || (!Item.IsFileSystem && Item.IsBrowsable);
+		const Exec = [];
+		for (let i in Selected) {
+			const Item = Selected.Item(i);
+			let bFolder = Item.IsFolder || (!Item.IsFileSystem && Item.IsBrowsable);
 			if (!bFolder) {
-				var path = Item.ExtendedProperty("linktarget");
+				const path = Item.ExtendedProperty("linktarget");
 				if (path) {
 					bFolder = api.PathIsDirectory(path) === true;
 				}
@@ -1421,7 +1422,7 @@ OpenSelected = function (Ctrl, NewTab, pt) {
 		if (Exec.length) {
 			if (Selected.Count != Exec.length) {
 				Selected = api.CreateObject("FolderItems");
-				for (var i = 0; i < Exec.length; ++i) {
+				for (let i = 0; i < Exec.length; ++i) {
 					Selected.AddItem(Exec[i]);
 				}
 			}
@@ -1433,9 +1434,9 @@ OpenSelected = function (Ctrl, NewTab, pt) {
 
 SendCommand = function (Ctrl, nVerb) {
 	if (nVerb) {
-		var hwnd = Ctrl.hwndView;
+		let hwnd = Ctrl.hwndView;
 		if (!hwnd) {
-			var FV = te.Ctrl(CTRL_FV);
+			const FV = te.Ctrl(CTRL_FV);
 			if (FV) {
 				hwnd = FV.hwndView;
 			}
@@ -1656,9 +1657,9 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata) {
 				break;
 			default:
 				if (key == VK_RETURN && window.g_menu_click === true) {
-					var hSubMenu = api.GetSubMenu(g_.menu_handle, g_.menu_pos);
+					const hSubMenu = api.GetSubMenu(g_.menu_handle, g_.menu_pos);
 					if (hSubMenu) {
-						var mii = api.Memory("MENUITEMINFO");
+						const mii = api.Memory("MENUITEMINFO");
 						mii.cbSize = mii.Size;
 						mii.fMask = MIIM_SUBMENU;
 						api.SetMenuItemInfo(g_.menu_handle, g_.menu_pos, true, mii);
@@ -1667,7 +1668,7 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata) {
 					}
 				}
 				if (g_.menu_loop && key == VK_TAB) {
-					var wParam = api.GetKeyState(VK_SHIFT) < 0 ? VK_UP : VK_DOWN;
+					const wParam = api.GetKeyState(VK_SHIFT) < 0 ? VK_UP : VK_DOWN;
 					api.PostMessage(hwnd, WM_KEYDOWN, wParam, 0);
 					api.PostMessage(hwnd, WM_KEYUP, wParam, 0);
 				}
@@ -1707,7 +1708,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 			g_.mouse.Capture = 0;
 			te.Data.bSaveConfig = true;
 		}
-		var pt2 = pt.Clone();
+		const pt2 = pt.Clone();
 		api.ScreenToClient(te.hwnd, pt2);
 		if (pt2.x < 1) {
 			pt2.x = 1;
@@ -1718,17 +1719,17 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 	if (msg != WM_MOUSEMOVE) {
 		te.Data.cmdKeyF = false;
 	}
-	var hr = RunEvent3("MouseMessage", Ctrl, hwnd, msg, wParam, pt);
+	const hr = RunEvent3("MouseMessage", Ctrl, hwnd, msg, wParam, pt);
 	if (isFinite(hr)) {
 		return hr;
 	}
-	var strClass = api.GetClassName(hwnd);
+	const strClass = api.GetClassName(hwnd);
 	if (strClass == WC_EDIT) {
 		return S_FALSE;
 	}
-	var bLV = Ctrl.Type <= CTRL_EB && api.PathMatchSpec(strClass, WC_LISTVIEW + ";DirectUIHWND");
+	const bLV = Ctrl.Type <= CTRL_EB && api.PathMatchSpec(strClass, WC_LISTVIEW + ";DirectUIHWND");
 	if (msg == WM_MOUSEWHEEL) {
-		var Ctrl2 = te.CtrlFromPoint(pt);
+		const Ctrl2 = te.CtrlFromPoint(pt);
 		if (Ctrl2) {
 			g_.mouse.str = GetGestureButton() + (wParam > 0 ? "8" : "9");
 			if (api.GetKeyState(VK_RBUTTON) < 0) {
@@ -1737,7 +1738,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 			if (g_.mouse.Exec(Ctrl2, hwnd, pt) == S_OK) {
 				return S_OK;
 			}
-			var hwnd2 = api.WindowFromPoint(pt);
+			const hwnd2 = api.WindowFromPoint(pt);
 			if (hwnd2 && hwnd != hwnd2) {
 				api.SetFocus(hwnd2);
 				api.SendMessage(hwnd2, msg, wParam & 0xffff0000, pt.x + (pt.y << 16));
@@ -1747,14 +1748,14 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 	}
 	if (msg == WM_LBUTTONUP || msg == WM_RBUTTONUP || msg == WM_MBUTTONUP || msg == WM_XBUTTONUP) {
 		if (g_.mouse.str.length) {
-			var hr = S_FALSE;
-			var bButton = false;
+			let hr = S_FALSE;
+			let bButton = false;
 			if (msg == WM_RBUTTONUP) {
 				if (g_.mouse.RButton >= 0) {
 					g_.mouse.RButtonDown(true);
 					bButton = (g_.mouse.str == "2");
 				} else if (bLV) {
-					var iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
+					const iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
 					if (iItem < 0 && !IsDrag(pt, te.Data.pt)) {
 						Ctrl.SelectItem(null, SVSI_DESELECTOTHERS);
 					}
@@ -1791,7 +1792,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 		}
 	}
 	if (msg == WM_LBUTTONDOWN || msg == WM_RBUTTONDOWN || msg == WM_MBUTTONDOWN || msg == WM_XBUTTONDOWN) {
-		var s = g_.mouse.GetButton(msg, wParam);
+		const s = g_.mouse.GetButton(msg, wParam);
 		if (g_.mouse.str.indexOf(s) >= 0) {
 			g_.mouse.str = "";
 		}
@@ -1804,7 +1805,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 		g_.mouse.str += s;
 		if (msg == WM_MBUTTONDOWN) {
 			if (bLV && te.Data.Conf_WheelSelect && api.GetKeyState(VK_SHIFT) >= 0 && api.GetKeyState(VK_CONTROL) >= 0) {
-				var iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
+				const iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
 				if (iItem >= 0) {
 					Ctrl.SelectItem(iItem, SVSI_SELECT | SVSI_FOCUSED | SVSI_DESELECTOTHERS);
 				} else {
@@ -1817,7 +1818,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 		if (msg == WM_RBUTTONDOWN) {
 			g_.mouse.CancelContextMenu = api.GetKeyState(VK_LBUTTON) < 0 || api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_XBUTTON1) < 0 || api.GetKeyState(VK_XBUTTON2) < 0;
 			if (te.Data.Conf_Gestures >= 2) {
-				var iItem = -1;
+				let iItem = -1;
 				if (bLV) {
 					iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
 					if (iItem < 0) {
@@ -1833,14 +1834,14 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 			}
 		}
 		if (Ctrl.Type == CTRL_SB && api.SendMessage(hwnd, LVM_GETEDITCONTROL, 0, 0)) {
-			var iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
+			const iItem = Ctrl.HitTest(pt, LVHT_ONITEM);
 			g_.mouse.Select = iItem >= 0 ? Ctrl.Items().Item(iItem) : null;
 			g_.mouse.Deselect = Ctrl;
 		}
 	}
 	if (msg == WM_LBUTTONDBLCLK || msg == WM_RBUTTONDBLCLK || msg == WM_MBUTTONDBLCLK || msg == WM_XBUTTONDBLCLK) {
 		if (!IsHeader(Ctrl, pt, hwnd, strClass)) {
-			var tm = new Date().getTime();
+			const tm = new Date().getTime();
 			if (tm - (g_.mouse.tmDblClick || 0) > sha.GetSystemInformation("DoubleClickTime")) {
 				g_.mouse.tmDblClick = tm;
 				te.Data.pt = pt.Clone();
@@ -1860,9 +1861,9 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 		if (FolderMenu.MenuLoop) {
 			if (api.GetKeyState(VK_LBUTTON) < 0 || api.GetKeyState(VK_RBUTTON) < 0) {
 				if (g_.ptMenuDrag && IsDrag(pt, g_.ptMenuDrag)) {
-					var hSubMenu = api.GetSubMenu(g_.menu_handle, g_.menu_pos);
+					const hSubMenu = api.GetSubMenu(g_.menu_handle, g_.menu_pos);
 					if (hSubMenu) {
-						var mii = api.Memory("MENUITEMINFO");
+						const mii = api.Memory("MENUITEMINFO");
 						mii.cbSize = mii.Size;
 						mii.fMask = MIIM_SUBMENU;
 						api.SetMenuItemInfo(g_.menu_handle, g_.menu_pos, true, mii);
@@ -1870,7 +1871,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 					}
 					window.g_menu_click = 4;
 					window.g_menu_button = 4;
-					var lParam = pt.x + (pt.y << 16);
+					const lParam = pt.x + (pt.y << 16);
 					api.PostMessage(hwnd, WM_LBUTTONDOWN, 0, lParam);
 					api.PostMessage(hwnd, WM_LBUTTONUP, 0, lParam);
 				}
@@ -1882,17 +1883,17 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 			if (g_.mouse.ptGesture.x == -1 && g_.mouse.ptGesture.y == -1) {
 				g_.mouse.ptGesture = pt.Clone();
 			}
-			var x = (pt.x - g_.mouse.ptGesture.x);
-			var y = (pt.y - g_.mouse.ptGesture.y);
+			const x = (pt.x - g_.mouse.ptGesture.x);
+			const y = (pt.y - g_.mouse.ptGesture.y);
 			if (Math.abs(x) + Math.abs(y) >= 20) {
 				if (te.Data.Conf_TrailSize) {
-					var hdc = api.GetWindowDC(te.hwnd);
+					const hdc = api.GetWindowDC(te.hwnd);
 					if (hdc) {
-						var rc = api.Memory("RECT");
+						const rc = api.Memory("RECT");
 						api.GetWindowRect(te.hwnd, rc);
 						api.MoveToEx(hdc, g_.mouse.ptGesture.x - rc.left, g_.mouse.ptGesture.y - rc.top, null);
-						var pen1 = api.CreatePen(PS_SOLID, te.Data.Conf_TrailSize, te.Data.Conf_TrailColor);
-						var hOld = api.SelectObject(hdc, pen1);
+						const pen1 = api.CreatePen(PS_SOLID, te.Data.Conf_TrailSize, te.Data.Conf_TrailColor);
+						const hOld = api.SelectObject(hdc, pen1);
 						api.LineTo(hdc, pt.x - rc.left, pt.y - rc.top);
 						api.SelectObject(hdc, hOld);
 						api.DeleteObject(pen1);
@@ -1901,7 +1902,7 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 					}
 				}
 				g_.mouse.ptGesture = pt.Clone();
-				var s = (Math.abs(x) >= Math.abs(y)) ? ((x < 0) ? "L" : "R") : ((y < 0) ? "U" : "D");
+				const s = (Math.abs(x) >= Math.abs(y)) ? ((x < 0) ? "L" : "R") : ((y < 0) ? "U" : "D");
 
 				if (s != g_.mouse.str.charAt(g_.mouse.str.length - 1)) {
 					g_.mouse.str += s;
@@ -1933,8 +1934,8 @@ te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam) {
 	if (Ctrl.Type <= CTRL_EB) {
 		switch ((wParam & 0xfff) + 1) {
 			case CommandID_DELETE:
-				var Items = Ctrl.SelectedItems();
-				for (var i = Items.Count; i--;) {
+				const Items = Ctrl.SelectedItems();
+				for (let i = Items.Count; i--;) {
 					UnlockFV(Items.Item(i));
 				}
 				break;
@@ -1945,11 +1946,11 @@ te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam) {
 				}
 				break;
 			case CommandID_PASTE:
-				var cFV = te.Ctrls(CTRL_FV);
-				for (var i in cFV) {
-					var FV = cFV[i];
+				const cFV = te.Ctrls(CTRL_FV);
+				for (let i in cFV) {
+					const FV = cFV[i];
 					if (FV.hwndList) {
-						var item = api.Memory("LVITEM");
+						const item = api.Memory("LVITEM");
 						item.stateMask = LVIS_CUT;
 						api.SendMessage(FV.hwndList, LVM_SETITEMSTATE, -1, item);
 					}
@@ -1961,7 +1962,7 @@ te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam) {
 			return S_OK;
 		}
 	}
-	var hr = RunEvent3("Command", Ctrl, hwnd, msg, wParam, lParam);
+	let hr = RunEvent3("Command", Ctrl, hwnd, msg, wParam, lParam);
 	if (!isFinite(hr) && Ctrl.Type <= CTRL_EB && (wParam & 0xfff) + 1 == CommandID_PROPERTIES) {
 		hr = InvokeCommand(Ctrl.SelectedItems(), 0, te.hwnd, "properties", null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
 	}
@@ -1970,20 +1971,20 @@ te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam) {
 }
 
 te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon) {
-	var path;
-	var strVerb = (isFinite(Verb) ? ContextMenu.GetCommandString(Verb, GCS_VERB) : Verb).toLowerCase();
+	let path;
+	let strVerb = (isFinite(Verb) ? ContextMenu.GetCommandString(Verb, GCS_VERB) : Verb).toLowerCase();
 	if (strVerb == "open" && ContextMenu.GetCommandString(Verb, GCS_HELPTEXT) != api.LoadString(hShell32, 12850)) {
 		strVerb = "";
 	}
-	var hr = RunEvent3("InvokeCommand", ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon, strVerb);
+	let hr = RunEvent3("InvokeCommand", ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon, strVerb);
 	if (isNaN(hr) && strVerb == "cut") {
-		var FV = ContextMenu.FolderView;
+		const FV = ContextMenu.FolderView;
 		if (FV && FV.hwndView && SameFolderItems(ContextMenu.Items(), FV.SelectedItems())) {
-			var hMenu = te.MainMenu(FCIDM_MENU_EDIT);
-			var mii = api.Memory("MENUITEMINFO");
+			const hMenu = te.MainMenu(FCIDM_MENU_EDIT);
+			const mii = api.Memory("MENUITEMINFO");
 			mii.cbSize = mii.Size;
 			mii.fMask = MIIM_ID;
-			for (var i = api.GetMenuItemCount(hMenu); i-- > 0;) {
+			for (let i = api.GetMenuItemCount(hMenu); i-- > 0;) {
 				if (api.GetMenuItemInfo(hMenu, i, true, mii)) {
 					if ((mii.wID & 0xfff) == Verb) {
 						api.SendMessage(FV.hwndView, WM_COMMAND, mii.wID, 0);
@@ -2001,25 +2002,25 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 	if ("string" === typeof Directory && !api.PathIsDirectory(Directory)) {
 		return S_FALSE;
 	}
-	var Items = ContextMenu.Items();
-	var Exec = [];
+	const Items = ContextMenu.Items();
+	const Exec = [];
 	if (api.PathMatchSpec(strVerb, "opennewwindow;opennewprocess")) {
 		CancelWindowRegistered();
 	}
 
-	var NewTab = GetNavigateFlags();
-	for (var i = 0; i < Items.Count; ++i) {
+	let NewTab = GetNavigateFlags();
+	for (let i = 0; i < Items.Count; ++i) {
 		if (Verb && strVerb != "runas") {
-			var Item = Items.Item(i);
+			const Item = Items.Item(i);
 			path = Item.ExtendedProperty("linktarget") || Item.Path;
-			var cmd = api.AssocQueryString(ASSOCF_NONE, ASSOCSTR_COMMAND, Item.ExtendedProperty("linktarget") || Item, strVerb == "default" ? null : strVerb);
+			const cmd = api.AssocQueryString(ASSOCF_NONE, ASSOCSTR_COMMAND, Item.ExtendedProperty("linktarget") || Item, strVerb == "default" ? null : strVerb);
 			if (cmd) {
 				if (strVerb == "open" && api.PathMatchSpec(cmd, "?:\\Windows\\Explorer.exe;*\\Explorer.exe /idlist,*;rundll32.exe *fldr.dll,RouteTheCall*")) {
 					Navigate(Items.Item(i), NewTab);
 					NewTab |= SBSP_NEWBROWSER;
 					continue;
 				}
-				var cmd2 = ExtractMacro(te, cmd);
+				const cmd2 = ExtractMacro(te, cmd);
 				if (!SameText(cmd, cmd2)) {
 					ShellExecute(cmd2.replace(/"?%1"?|%L/g, PathQuoteSpaces(path)).replace(/%\*|%I/g, ""), null, nShow, Directory);
 					continue;
@@ -2030,8 +2031,8 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 	}
 	if (Items.Count != Exec.length) {
 		if (Exec.length) {
-			var Selected = api.CreateObject("FolderItems");
-			for (var i = 0; i < Exec.length; ++i) {
+			const Selected = api.CreateObject("FolderItems");
+			for (let i = 0; i < Exec.length; ++i) {
 				Selected.AddItem(Exec[i]);
 			}
 			InvokeCommand(Selected, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon, ContextMenu.FolderView);
@@ -2043,10 +2044,10 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 
 AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon, strVerb) {
 	if (strVerb == "opencontaining") {
-		var Items = ContextMenu.Items();
-		for (var i = 0; i < Items.Count; ++i) {
-			var Item = Items.Item(i);
-			var path = Item.ExtendedProperty("linktarget") || Item.Path;
+		const Items = ContextMenu.Items();
+		for (let i = 0; i < Items.Count; ++i) {
+			const Item = Items.Item(i);
+			const path = Item.ExtendedProperty("linktarget") || Item.Path;
 			Navigate(GetParentFolderName(path), SBSP_NEWBROWSER);
 			setTimeout(function (FV, path) {
 				FV.SelectItem(path, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
@@ -2054,10 +2055,10 @@ AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, 
 			return S_OK;
 		}
 	}
-	var FV = ContextMenu.FolderView;
-	var Items = ContextMenu.Items();
+	const FV = ContextMenu.FolderView;
+	const Items = ContextMenu.Items();
 	if (strVerb == "delete") {
-		for (var i = Items.Count; i--;) {
+		for (let i = Items.Count; i--;) {
 			UnlockFV(Items.Item(i));
 		}
 	}
@@ -2156,7 +2157,7 @@ te.OnFilterChanged = function (Ctrl) {
 	if (/search\-ms:.*?crumb=[^&]+/.test(Ctrl.FilterView) || isFinite(RunEvent3("FilterChanged", Ctrl))) {
 		return;
 	}
-	var res = /\/(.*)\/(.*)/.exec(Ctrl.FilterView);
+	const res = /\/(.*)\/(.*)/.exec(Ctrl.FilterView);
 	if (res) {
 		try {
 			Ctrl.Data.RE = new RegExp((window.migemo && migemo.query(res[1])) || res[1], res[2]);
@@ -2172,14 +2173,14 @@ te.OnShowContextMenu = function (Ctrl, hwnd, msg, wParam, pt, ContextMenu) {
 	if (g_.mouse.CancelContextMenu) {
 		return S_OK;
 	}
-	var hr = RunEvent3("ShowContextMenu", Ctrl, hwnd, msg, wParam, pt, ContextMenu);
+	const hr = RunEvent3("ShowContextMenu", Ctrl, hwnd, msg, wParam, pt, ContextMenu);
 	if (isFinite(hr)) {
 		return hr;
 	}
 	switch (Ctrl.Type) {
 		case CTRL_SB:
 		case CTRL_EB:
-			var Selected = Ctrl.SelectedItems();
+			const Selected = Ctrl.SelectedItems();
 			if (Selected.Count) {
 				if (ExecMenu(Ctrl, "Context", pt, 1) == S_OK) {
 					return S_OK;
@@ -2210,11 +2211,11 @@ te.OnShowContextMenu = function (Ctrl, hwnd, msg, wParam, pt, ContextMenu) {
 			break;
 		case CTRL_TE:
 			api.GetSystemMenu(te.hwnd, true);
-			var hMenu = api.GetSystemMenu(te.hwnd, false);
-			var menus = te.Data.xmlMenus.getElementsByTagName("System");
+			const hMenu = api.GetSystemMenu(te.hwnd, false);
+			const menus = te.Data.xmlMenus.getElementsByTagName("System");
 			if (menus && menus.length) {
-				var items = menus[0].getElementsByTagName("Item");
-				var arMenu = OpenMenu(items, null);
+				const items = menus[0].getElementsByTagName("Item");
+				const arMenu = OpenMenu(items, null);
 				MakeMenus(hMenu, menus, arMenu, items, Ctrl, pt, 0, null, true);
 			}
 			api.DestroyMenu(hMenu);
@@ -2228,8 +2229,8 @@ te.OnDefaultCommand = function (Ctrl) {
 		api.SendMessage(Ctrl.hwndView, WM_COMMAND, CommandID_PROPERTIES - 1, 0);
 		return S_OK;
 	}
-	var Selected = Ctrl.SelectedItems();
-	var hr = RunEvent3("DefaultCommand", Ctrl, Selected);
+	const Selected = Ctrl.SelectedItems();
+	const hr = RunEvent3("DefaultCommand", Ctrl, Selected);
 	if (isFinite(hr)) {
 		return hr;
 	}
@@ -2237,7 +2238,7 @@ te.OnDefaultCommand = function (Ctrl) {
 		return S_OK;
 	}
 	if (Selected.Count == 1) {
-		var pid = api.ILCreateFromPath(api.GetDisplayNameOf(Selected.Item(0), SHGDN_FORPARSING | SHGDN_FORADDRESSBAR | SHGDN_ORIGINAL));
+		const pid = api.ILCreateFromPath(api.GetDisplayNameOf(Selected.Item(0), SHGDN_FORPARSING | SHGDN_FORADDRESSBAR | SHGDN_ORIGINAL));
 		if (pid.Enum) {
 			Ctrl.Navigate(pid, GetNavigateFlags(Ctrl));
 			return S_OK;
@@ -2250,7 +2251,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 	if (!te.Data) {
 		return S_OK;
 	}
-	var hr = RunEvent3("SystemMessage", Ctrl, hwnd, msg, wParam, lParam);
+	const hr = RunEvent3("SystemMessage", Ctrl, hwnd, msg, wParam, lParam);
 	if (isFinite(hr)) {
 		return hr;
 	}
@@ -2258,19 +2259,19 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 		case CTRL_TE:
 			switch (msg) {
 				case WM_DESTROY:
-					var pid = api.Memory("DWORD");
+					const pid = api.Memory("DWORD");
 					api.GetWindowThreadProcessId(te.hwnd, pid);
 					WmiProcess("WHERE ExecutablePath = '" + (api.GetModuleFileName(null).split("\\").join("\\\\")) + "' AND ProcessId!=" + pid[0], function (item) {
-						var hwnd = GethwndFromPid(item.ProcessId);
+						const hwnd = GethwndFromPid(item.ProcessId);
 						api.SetWindowLongPtr(hwnd, GWL_EXSTYLE, api.GetWindowLongPtr(hwnd, GWL_EXSTYLE) & ~0x80);
 						api.ShowWindow(hwnd, SW_SHOWNORMAL);
 						api.SetForegroundWindow(hwnd);
 					});
-					for (var i in te.Data.Fonts) {
+					for (let i in te.Data.Fonts) {
 						api.DeleteObject(te.Data.Fonts[i]);
 					}
 					te.Data.Fonts = null;
-					for (var i = SHIL_JUMBO + 1; i--;) {
+					for (let i = SHIL_JUMBO + 1; i--;) {
 						api.ImageList_Destroy(te.Data.SHIL[i], true);
 					}
 					te.Data.SHIL.length = 0;
@@ -2298,8 +2299,8 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 						ReloadCustomize();
 					}
 					if (g_.TEData) {
-						var FV = te.Ctrl(CTRL_FV);
-						var Layout = g_.TEData.Layout;
+						const FV = te.Ctrl(CTRL_FV);
+						const Layout = g_.TEData.Layout;
 						if (FV) {
 							FV.CurrentViewMode = g_.TEData.ViewMode;
 						}
@@ -2309,8 +2310,8 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					if (g_.FVData) {
 						if (g_.FVData.All) {
 							delete g_.FVData.All;
-							var cFV = te.Ctrls(CTRL_FV);
-							for (var i in cFV) {
+							const cFV = te.Ctrls(CTRL_FV);
+							for (let i in cFV) {
 								SetFolderViewData(cFV[i], g_.FVData);
 							}
 						} else {
@@ -2320,8 +2321,8 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					}
 					if (g_.TVData) {
 						if (g_.TVData.All) {
-							var cFV = te.Ctrls(CTRL_FV);
-							for (var i in cFV) {
+							const cFV = te.Ctrls(CTRL_FV);
+							for (let i in cFV) {
 								SetTreeViewData(cFV[i], g_.TVData);
 							}
 						} else {
@@ -2351,11 +2352,11 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					return true;
 				case WM_SYSCOMMAND:
 					if (wParam < 0xf000) {
-						var menus = te.Data.xmlMenus.getElementsByTagName("System");
+						const menus = te.Data.xmlMenus.getElementsByTagName("System");
 						if (menus && menus.length) {
-							var items = menus[0].getElementsByTagName("Item");
+							const items = menus[0].getElementsByTagName("Item");
 							if (items) {
-								var item = items[wParam - 1];
+								const item = items[wParam - 1];
 								if (item) {
 									Exec(Ctrl, item.text, item.getAttribute("Type"), null);
 									return 1;
@@ -2370,9 +2371,9 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					break;
 				case WM_POWERBROADCAST:
 					if (wParam == PBT_APMRESUMEAUTOMATIC) {
-						var cFV = te.Ctrls(CTRL_FV);
-						for (var i in cFV) {
-							var FV = cFV[i];
+						const cFV = te.Ctrls(CTRL_FV);
+						for (let i in cFV) {
+							const FV = cFV[i];
 							if (FV.hwndView) {
 								if (api.PathIsNetworkPath(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING))) {
 									FV.Suspend();
@@ -2382,9 +2383,9 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					}
 					break;
 				case WM_SYSCOLORCHANGE:
-					var cFV = te.Ctrls(CTRL_FV);
-					for (var i in cFV) {
-						var FV = cFV[i];
+					const cFV = te.Ctrls(CTRL_FV);
+					for (let i in cFV) {
+						const FV = cFV[i];
 						if (FV.hwndView) {
 							FV.Suspend();
 						}
@@ -2405,13 +2406,13 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 			break;
 	}
 	if (msg == WM_COPYDATA) {
-		var cd = api.Memory("COPYDATASTRUCT", 1, lParam);
-		var hr = RunEvent3("CopyData", Ctrl, cd, wParam);
+		const cd = api.Memory("COPYDATASTRUCT", 1, lParam);
+		const hr = RunEvent3("CopyData", Ctrl, cd, wParam);
 		if (isFinite(hr)) {
 			return hr;
 		}
 		if (Ctrl.Type == CTRL_TE && cd.dwData == 0 && cd.cbData) {
-			var strData = api.SysAllocStringByteLen(cd.lpData, cd.cbData, cd.cbData);
+			const strData = api.SysAllocStringByteLen(cd.lpData, cd.cbData, cd.cbData);
 			RestoreFromTray();
 			RunCommandLine(strData);
 			return S_OK;
@@ -2420,17 +2421,17 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 };
 
 te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
-	var pStatus = [null, "", 0];
-	var hr = RunEvent3("MenuMessage", Ctrl, hwnd, msg, wParam, lParam, pStatus);
+	let pStatus = [null, "", 0];
+	const hr = RunEvent3("MenuMessage", Ctrl, hwnd, msg, wParam, lParam, pStatus);
 	if (isFinite(hr)) {
 		ShowStatusText(pStatus[0], pStatus[1], pStatus[2], pStatus[3]);
 		return hr;
 	}
 	switch (msg) {
 		case WM_INITMENUPOPUP:
-			var s = api.GetMenuString(wParam, 0, MF_BYPOSITION);
+			const s = api.GetMenuString(wParam, 0, MF_BYPOSITION);
 			if (api.PathMatchSpec(s, "\t*Script\t*")) {
-				var ar = s.split("\t");
+				const ar = s.split("\t");
 				api.DeleteMenu(wParam, 0, MF_BYPOSITION);
 				ExecScriptEx(Ctrl, ar[2], ar[1], hwnd);
 			}
@@ -2439,10 +2440,10 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 			pStatus[0] = te;
 			RunEvent1("MenuSelect", Ctrl, hwnd, msg, wParam, lParam, pStatus);
 			if (lParam) {
-				var nVerb = wParam & 0xffff;
+				const nVerb = wParam & 0xffff;
 				if (Ctrl) {
-					for (var i in Ctrl) {
-						var CM = Ctrl[i];
+					for (let i in Ctrl) {
+						const CM = Ctrl[i];
 						if (CM && nVerb >= CM.idCmdFirst && nVerb <= CM.idCmdLast) {
 							Text = CM.GetCommandString(nVerb - CM.idCmdFirst, GCS_HELPTEXT);
 							if (Text) {
@@ -2452,23 +2453,23 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 						}
 					}
 				}
-				var mf = wParam >> 16;
+				const mf = wParam >> 16;
 				if (FolderMenu.MenuLoop) {
-					var wId = nVerb;
+					let wId = nVerb;
 					if (mf & MF_POPUP) {
-						var mii = api.Memory("MENUITEMINFO");
+						const mii = api.Memory("MENUITEMINFO");
 						mii.cbSize = mii.Size;
 						mii.fMask = MIIM_ID;
 						api.GetMenuItemInfo(lParam, nVerb, true, mii);
 						wId = mii.wId;
 					}
-					var pid = FolderMenu.Items[wId - 1];
+					const pid = FolderMenu.Items[wId - 1];
 					if (pid) {
 						g_.MenuSelected = pid;
 						pStatus = [pid, pid.Name, 0, 200];
 					}
 				}
-				var hSubMenu = api.GetSubMenu(lParam, nVerb);
+				const hSubMenu = api.GetSubMenu(lParam, nVerb);
 				if (mf & MF_POPUP) {
 					if (hSubMenu) {
 						g_.menu_handle = lParam;
@@ -2488,15 +2489,15 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 			break;
 		case WM_EXITMENULOOP:
 			window.g_menu_click = false;
-			var ar = ["ExitMenuLoop", "EnterMenuLoop", "MenuSelect", "MenuChar"];
+			const ar = ["ExitMenuLoop", "EnterMenuLoop", "MenuSelect", "MenuChar"];
 			RunEvent1(ar[0], Ctrl, hwnd, msg, wParam, lParam);
-			for (var i = ar.length; i--;) {
-				var eo = eventTE[ar[i].toLowerCase()];
+			for (let i = ar.length; i--;) {
+				const eo = eventTE[ar[i].toLowerCase()];
 				if (eo) {
 					eo.length = 0;
 				}
 			}
-			for (var i in g_arBM) {
+			for (let i in g_arBM) {
 				api.DeleteObject(g_arBM[i]);
 			}
 			g_arBM = [];
@@ -2506,7 +2507,7 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 			pStatus = [GetFolderView(), "", 0];
 			break;
 		case WM_MENUCHAR:
-			var hr = RunEvent4("MenuChar", Ctrl, hwnd, msg, wParam, lParam);
+			const hr = RunEvent4("MenuChar", Ctrl, hwnd, msg, wParam, lParam);
 			if (hr !== void 0) {
 				ShowStatusText(pStatus[0], pStatus[1], pStatus[2], pStatus[3]);
 				return hr;
@@ -2522,20 +2523,20 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 };
 
 te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
-	var hr = RunEvent3("AppMessage", Ctrl, hwnd, msg, wParam, lParam);
+	const hr = RunEvent3("AppMessage", Ctrl, hwnd, msg, wParam, lParam);
 	if (isFinite(hr)) {
 		return hr;
 	}
 	if (msg == TWM_CHANGENOTIFY) {
-		var pidls = {};
-		var hLock = api.SHChangeNotification_Lock(wParam, lParam, pidls);
+		const pidls = {};
+		const hLock = api.SHChangeNotification_Lock(wParam, lParam, pidls);
 		if (hLock) {
 			api.SHChangeNotification_Unlock(hLock);
 			ChangeNotifyFV(pidls.lEvent, pidls[0], pidls[1]);
 			RunEvent1("ChangeNotify", Ctrl, pidls, wParam, lParam);
 			if (pidls.lEvent & (SHCNE_UPDATEITEM | SHCNE_RENAMEITEM)) {
-				var n = pidls.lEvent & SHCNE_RENAMEITEM ? 1 : 0;
-				var path = api.GetDisplayNameOf(pidls[n], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL);
+				const n = pidls.lEvent & SHCNE_RENAMEITEM ? 1 : 0;
+				const path = api.GetDisplayNameOf(pidls[n], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL);
 				RunEvent1("ChangeNotifyItem:" + path, api.ILCreateFromPath(path) || pidls[n]);
 			}
 		}
@@ -2545,11 +2546,11 @@ te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 }
 
 te.OnNewWindow = function (Ctrl, dwFlags, UrlContext, Url) {
-	var hr = RunEvent3("NewWindow", Ctrl, dwFlags, UrlContext, Url);
+	const hr = RunEvent3("NewWindow", Ctrl, dwFlags, UrlContext, Url);
 	if (isFinite(hr)) {
 		return hr;
 	}
-	var FolderItem = api.ILCreateFromPath(api.PathCreateFromUrl(Url));
+	const FolderItem = api.ILCreateFromPath(api.PathCreateFromUrl(Url));
 	if (FolderItem.IsFolder) {
 		Navigate(FolderItem, SBSP_NEWBROWSER);
 		return S_OK;
@@ -2561,29 +2562,29 @@ te.OnClipboardText = function (Items) {
 	if (!Items) {
 		return "";
 	}
-	var r = RunEvent4("ClipboardText", Items);
+	const r = RunEvent4("ClipboardText", Items);
 	if (r !== void 0) {
 		return r;
 	}
-	var s = [];
-	for (var i = Items.Count; i-- > 0;) {
+	const s = [];
+	for (let i = Items.Count; i-- > 0;) {
 		s.unshift(PathQuoteSpaces(api.GetDisplayNameOf(Items.Item(i), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)))
 	}
 	return s.join(" ");
 }
 
 te.OnILGetParent = function (FolderItem) {
-	var r = RunEvent4("ILGetParent", FolderItem);
+	const r = RunEvent4("ILGetParent", FolderItem);
 	if (r !== void 0) {
 		return r;
 	}
-	var res = IsSearchPath(FolderItem);
+	const res = IsSearchPath(FolderItem);
 	if (res) {
 		return decodeURIComponent(res[1]);
 	}
 	if (api.ILIsEqual(FolderItem.Alt, ssfRESULTSFOLDER)) {
-		var path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
-		var ar = path.split && path.slice(3).split("\\") || [];
+		const path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
+		const ar = path.split && path.slice(3).split("\\") || [];
 		if (ar.pop() && ar.join("\\")) {
 			return path.slice(0, 3) + ar.join("\\");
 		}
@@ -2593,21 +2594,21 @@ te.OnILGetParent = function (FolderItem) {
 
 te.OnReplacePath = function (Ctrl, Path) {
 	if (/^[A-Z]:\\.+?\\|^\\\\.+?\\/i.test(Path)) {
-		var i = Path.indexOf("\\/");
+		const i = Path.indexOf("\\/");
 		if (i > 0) {
-			var fn = Path.slice(i + 1);
+			const fn = Path.slice(i + 1);
 			if (/\//.test(fn)) {
 				Ctrl.FilterView = fn;
 				return Path.slice(0, i);
 			}
 		}
-		var fn = GetFileName(Path);
+		const fn = GetFileName(Path);
 		if (/[\*\?]/.test(fn)) {
 			Ctrl.FilterView = fn;
 			return GetParentFolderName(Path);
 		}
 	}
-	var res = IsSearchPath(Path);
+	const res = IsSearchPath(Path);
 	if (res) {
 		Ctrl.FilterView = Path.replace(/displayname=[^&]+&|&crumb=location:[^&]+/g, "");
 		return;
@@ -2616,9 +2617,9 @@ te.OnReplacePath = function (Ctrl, Path) {
 }
 
 te.OnGetAlt = function (dwSessionId, s) {
-	var cFV = te.Ctrls(CTRL_FV);
-	for (var i in cFV) {
-		var FV = cFV[i];
+	const cFV = te.Ctrls(CTRL_FV);
+	for (let i in cFV) {
+		const FV = cFV[i];
 		if (dwSessionId == FV.SessionId) {
 			return BuildPath(FV.FolderItem.Path, GetFileName(s));
 		}
@@ -2628,7 +2629,7 @@ te.OnGetAlt = function (dwSessionId, s) {
 te.OnFilterView = function (FV, s)
 {
 	if (GetLock(FV) && !IsSearchPath(FV)) {
-		var fn = function (strMatch, ref) {
+		const fn = function (strMatch, ref) {
 			return encodeURIComponent(ref)
 		};
 		FV.Navigate(["search-ms:crumb=", s.replace(/([ -\\]+)/g, fn), "&crumb=location:", FV.FolderItem.Path.replace(/([ -\\]+)/g, fn)].join(""), SBSP_NEWBROWSER);
@@ -2758,16 +2759,16 @@ g_.event.handleicon = function (Ctrl, pid, iItem) {
 //Tablacus Events
 
 GetIconImage = function (Ctrl, BGColor, bSimple) {
-	var nSize = api.GetSystemMetrics(SM_CYSMICON);
-	var FolderItem = Ctrl.FolderItem || Ctrl;
-	var r = GetNetworkIcon(FolderItem.Path);
+	const nSize = api.GetSystemMetrics(SM_CYSMICON);
+	const FolderItem = Ctrl.FolderItem || Ctrl;
+	const r = GetNetworkIcon(FolderItem.Path);
 	if (r) {
 		if (FolderItem.Unavailable > 500) {
 			return MakeImgDataEx("icon:shell32.dll,234", bSimple, nSize);
 		}
 		return MakeImgDataEx(r, bSimple, nSize);
 	}
-	var img = RunEvent4("GetIconImage", Ctrl, BGColor, bSimple);
+	let img = RunEvent4("GetIconImage", Ctrl, BGColor, bSimple);
 	if (img) {
 		return MakeImgDataEx(img, bSimple, nSize);
 	}
@@ -2779,9 +2780,9 @@ GetIconImage = function (Ctrl, BGColor, bSimple) {
 		if (bSimple) {
 			return bSimple != 2 ? api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_ORIGINAL) : "";
 		}
-		var sfi = api.Memory("SHFILEINFO");
+		const sfi = api.Memory("SHFILEINFO");
 		api.SHGetFileInfo(FolderItem, 0, sfi, sfi.Size, SHGFI_SYSICONINDEX | SHGFI_PIDL);
-		var hIcon = GetHICON(sfi.iIcon, nSize, ILD_NORMAL);
+		const hIcon = GetHICON(sfi.iIcon, nSize, ILD_NORMAL);
 		if (hIcon) {
 			img = api.CreateObject("WICBitmap").FromHICON(hIcon);
 			api.DestroyIcon(hIcon);
@@ -2792,9 +2793,9 @@ GetIconImage = function (Ctrl, BGColor, bSimple) {
 }
 
 UnlockFV = function (Item) {
-	var cFV = te.Ctrls(CTRL_FV);
-	for (var i in cFV) {
-		var FV = cFV[i];
+	const cFV = te.Ctrls(CTRL_FV);
+	for (let i in cFV) {
+		const FV = cFV[i];
 		if (FV.hwndView && api.ILIsParent(Item, FV, false)) {
 			FV.Suspend();
 		}
@@ -2802,17 +2803,17 @@ UnlockFV = function (Item) {
 }
 
 ChangeNotifyFV = function (lEvent, item1, item2) {
-	var fAdd = SHCNE_DRIVEADD | SHCNE_MEDIAINSERTED | SHCNE_NETSHARE | SHCNE_MKDIR | SHCNE_UPDATEDIR | SHCNE_UPDATEITEM;
-	var fRemove = SHCNE_DRIVEREMOVED | SHCNE_MEDIAREMOVED | SHCNE_NETUNSHARE | SHCNE_RENAMEFOLDER | SHCNE_RMDIR | SHCNE_SERVERDISCONNECT | SHCNE_UPDATEDIR;
+	const fAdd = SHCNE_DRIVEADD | SHCNE_MEDIAINSERTED | SHCNE_NETSHARE | SHCNE_MKDIR | SHCNE_UPDATEDIR | SHCNE_UPDATEITEM;
+	const fRemove = SHCNE_DRIVEREMOVED | SHCNE_MEDIAREMOVED | SHCNE_NETUNSHARE | SHCNE_RENAMEFOLDER | SHCNE_RMDIR | SHCNE_SERVERDISCONNECT | SHCNE_UPDATEDIR;
 	if (lEvent & (SHCNE_DISKEVENTS | fAdd | fRemove) && item1.IsFileSystem) {
-		var path1 = item1.Path;
-		var bNetwork = api.ILIsEqual(item1, ssfNETWORK);
-		var cFV = te.Ctrls(CTRL_FV);
-		for (var i in cFV) {
-			var FV = cFV[i];
+		const path1 = item1.Path;
+		const bNetwork = api.ILIsEqual(item1, ssfNETWORK);
+		const cFV = te.Ctrls(CTRL_FV);
+		for (let i in cFV) {
+			const FV = cFV[i];
 			if (FV && FV.FolderItem) {
-				var path = FV.FolderItem.Path;
-				var bParent = api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;")) || bNetwork && api.PathIsNetworkPath(path);
+				const path = FV.FolderItem.Path;
+				const bParent = api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;")) || bNetwork && api.PathIsNetworkPath(path);
 				if (lEvent == SHCNE_RENAMEFOLDER && CanClose(FV) == S_OK) {
 					if (bParent) {
 						FV.Navigate(path.replace(path1, api.GetDisplayNameOf(item2, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)), SBSP_SAMEBROWSER);
@@ -2820,17 +2821,17 @@ ChangeNotifyFV = function (lEvent, item1, item2) {
 					}
 				}
 				if (FV.hwndView) {
-					var bChild = SameText(GetParentFolderName(path1), path);
+					const bChild = SameText(GetParentFolderName(path1), path);
 					if (bChild) {
 						if (FV.hwndList) {
-							var item = api.Memory("LVITEM");
+							const item = api.Memory("LVITEM");
 							item.stateMask = LVIS_CUT;
 							api.SendMessage(FV.hwndList, LVM_SETITEMSTATE, -1, item);
 						}
 						if (WINVER >= 0x600 && (lEvent & (SHCNE_DELETE | SHCNE_RMDIR))) {
-							var nPos = FV.GetFocusedItem - 1;
+							const nPos = FV.GetFocusedItem - 1;
 							if (nPos > 0 && api.ILIsEqual(item1, FV.FocusedItem)) {
-								var nCount = FV.ItemCount && FV.ItemCount(SVGIO_ALLVIEW);
+								const nCount = FV.ItemCount && FV.ItemCount(SVGIO_ALLVIEW);
 								if (nCount) {
 									FV.SelectItem(nPos < nCount ? nPos : nCount - 1, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | (FV.Id == te.Ctrl(CTRL_FV).Id ? 0 : SVSI_NOTAKEFOCUS));
 								}
@@ -2871,15 +2872,15 @@ SetKeyExec = function (mode, strKey, path, type, bLast) {
 
 SetGestureExec = function (mode, strGesture, path, type, bLast, Name) {
 	if (/,/.test(strGesture) && !/,$/.test(strGesture)) {
-		var ar = strGesture.split(",");
-		for (var i in ar) {
+		const ar = strGesture.split(",");
+		for (let i in ar) {
 			SetGestureExec(mode, ar[i], path, type, bLast, Name);
 		}
 		return;
 	}
 	if (strGesture) {
 		strGesture = strGesture.toUpperCase();
-		var MouseMode = eventTE.Mouse[mode];
+		const MouseMode = eventTE.Mouse[mode];
 		if (MouseMode) {
 			if (!MouseMode[strGesture]) {
 				MouseMode[strGesture] = [];
@@ -2923,14 +2924,14 @@ KeyExecEx = function (Ctrl, mode, nKey, hwnd) {
 }
 
 importScripts = function () {
-	for (var i = 0; i < arguments.length; ++i) {
+	for (let i = 0; i < arguments.length; ++i) {
 		importScript(arguments[i]);
 	}
 }
 
 AddEvent("Arrange", function (Ctrl, rc) {
 	if (Ctrl.Type == CTRL_TE && !api.IsIconic(te.hwnd)) {
-		var rcClient = api.Memory("RECT");
+		const rcClient = api.Memory("RECT");
 		api.GetClientRect(te.hwnd, rcClient);
 		rcClient.left += te.offsetLeft;
 		rcClient.top += te.offsetTop;
@@ -2938,13 +2939,13 @@ AddEvent("Arrange", function (Ctrl, rc) {
 		rcClient.bottom -= te.offsetBottom;
 		te.LockUpdate(1);
 		try {
-			var cTC = te.Ctrls(CTRL_TC, true);
-			for (var i = 0; i < cTC.Count; ++i) {
-				var TC = cTC[i];
-				var rc = api.Memory("RECT");
-				var w = (rcClient.right - rcClient.left) / 100;
-				var h = (rcClient.bottom - rcClient.top) / 100;
-				var s = TC.Left;
+			const cTC = te.Ctrls(CTRL_TC, true);
+			for (let i = 0; i < cTC.Count; ++i) {
+				const TC = cTC[i];
+				const rc = api.Memory("RECT");
+				const w = (rcClient.right - rcClient.left) / 100;
+				const h = (rcClient.bottom - rcClient.top) / 100;
+				let s = TC.Left;
 				if ("string" === typeof s) {
 					rc.left = s.replace(/%$/g, "") * w + rcClient.left;
 				} else {
@@ -3017,7 +3018,7 @@ AddEvent("Exec", function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEff
 });
 
 AddEvent("MenuState:Tabs:Close Tab", function (Ctrl, pt, mii) {
-	var FV = GetFolderView(Ctrl, pt);
+	const FV = GetFolderView(Ctrl, pt);
 	if (CanClose(FV)) {
 		mii.fMask |= MIIM_STATE;
 		mii.fState |= MFS_DISABLED;
@@ -3025,7 +3026,7 @@ AddEvent("MenuState:Tabs:Close Tab", function (Ctrl, pt, mii) {
 });
 
 AddEvent("MenuState:Tabs:Close Tabs on Left", function (Ctrl, pt, mii) {
-	var FV = GetFolderView(Ctrl, pt, true);
+	const FV = GetFolderView(Ctrl, pt, true);
 	if (FV && FV.Index == 0) {
 		mii.fMask |= MIIM_STATE;
 		mii.fState = MFS_DISABLED;
@@ -3033,9 +3034,9 @@ AddEvent("MenuState:Tabs:Close Tabs on Left", function (Ctrl, pt, mii) {
 });
 
 AddEvent("MenuState:Tabs:Close Tabs on Right", function (Ctrl, pt, mii) {
-	var FV = GetFolderView(Ctrl, pt, true);
+	const FV = GetFolderView(Ctrl, pt, true);
 	if (FV) {
-		var TC = FV.Parent;
+		const TC = FV.Parent;
 		if (FV.Index >= TC.Count - 1) {
 			mii.fMask |= MIIM_STATE;
 			mii.fState = MFS_DISABLED;
@@ -3044,7 +3045,7 @@ AddEvent("MenuState:Tabs:Close Tabs on Right", function (Ctrl, pt, mii) {
 });
 
 AddEvent("MenuState:Tabs:Up", function (Ctrl, pt, mii) {
-	var FV = GetFolderView(Ctrl, pt);
+	const FV = GetFolderView(Ctrl, pt);
 	if (!FV || api.ILIsEmpty(FV)) {
 		mii.fMask |= MIIM_STATE;
 		mii.fState = MFS_DISABLED;
@@ -3052,7 +3053,7 @@ AddEvent("MenuState:Tabs:Up", function (Ctrl, pt, mii) {
 });
 
 AddEvent("MenuState:Tabs:Lock", function (Ctrl, pt, mii) {
-	var FV = GetFolderView(Ctrl, pt);
+	const FV = GetFolderView(Ctrl, pt);
 	if (FV && FV.Data.Lock) {
 		mii.fMask |= MIIM_STATE;
 		mii.fState = MFS_CHECKED;
@@ -3064,7 +3065,7 @@ AddEvent("MenuState:Tabs:Show frames", function (Ctrl, pt, mii) {
 		mii.fMask = 0;
 		return S_OK;
 	}
-	var FV = GetFolderView(Ctrl, pt);
+	const FV = GetFolderView(Ctrl, pt);
 	if (!FV || FV.Type == CTRL_EB) {
 		mii.fMask |= MIIM_STATE;
 		mii.fState = MFS_CHECKED;
@@ -3073,7 +3074,7 @@ AddEvent("MenuState:Tabs:Show frames", function (Ctrl, pt, mii) {
 
 AddEvent("ChangeNotify", function (Ctrl, pidls, wParam, lParam) {
 	if (pidls.lEvent & (SHCNE_MKDIR | SHCNE_CREATE) && pidls[0].IsFileSystem) {
-		var tm = new Date().getTime();
+		const tm = new Date().getTime();
 		if (g_.NewItemTime > tm) {
 			delete g_.NewItemTime;
 		} else if (g_.NewFolderTime > tm) {
@@ -3163,10 +3164,10 @@ AddEvent("OptionDecode", function (Id, p) {
 });
 
 AddEvent("BeginNavigate", function (Ctrl) {
-	var fn = Ctrl.FolderItem.Enum;
+	const fn = Ctrl.FolderItem.Enum;
 	if (fn) {
-		var SessionId = Ctrl.SessionId;
-		var Items = fn(Ctrl.FolderItem, Ctrl, function (Ctrl, Items) {
+		const SessionId = Ctrl.SessionId;
+		const Items = fn(Ctrl.FolderItem, Ctrl, function (Ctrl, Items) {
 			if (Ctrl.SessionId == SessionId) {
 				Ctrl.AddItems(Items, true, true);
 			}
@@ -3187,12 +3188,12 @@ AddEvent("UseExplorer", function (pid) {
 AddEvent("LocationPopup", function (hMenu) {
 	FolderMenu.AddMenuItem(hMenu, api.ILCreateFromPath(ssfDESKTOP));
 	FolderMenu.AddMenuItem(hMenu, api.ILCreateFromPath(ssfDRIVES));
-	var Items = FolderMenu.Enum(api.ILCreateFromPath(ssfDRIVES));
-	var path0 = api.GetDisplayNameOf(ssfDESKTOP, SHGDN_ORIGINAL | SHGDN_FORPARSING);
-	for (var i = 0; i < Items.Count; ++i) {
-		var Item = Items.Item(i);
+	const Items = FolderMenu.Enum(api.ILCreateFromPath(ssfDRIVES));
+	const path0 = api.GetDisplayNameOf(ssfDESKTOP, SHGDN_ORIGINAL | SHGDN_FORPARSING);
+	for (let i = 0; i < Items.Count; ++i) {
+		const Item = Items.Item(i);
 		if (IsFolderEx(Item)) {
-			var path = api.GetDisplayNameOf(Item, SHGDN_ORIGINAL | SHGDN_FORPARSING);
+			const path = api.GetDisplayNameOf(Item, SHGDN_ORIGINAL | SHGDN_FORPARSING);
 			if (path && path != path0) {
 				FolderMenu.AddMenuItem(hMenu, Item);
 			}
