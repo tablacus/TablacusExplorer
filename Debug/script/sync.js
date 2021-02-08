@@ -53,7 +53,7 @@ g_.bit = api.sizeof("HANDLE") * 8;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20201219 ? te.Version : 20210207;
+		return te.Version < 20201219 ? te.Version : 20210208;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -477,11 +477,12 @@ OpenAdodbFromTextFile = function (fn, charset, base) {
 		}
 		return ado;
 	}
+	let s;
 	try {
 		ado.Type = adTypeBinary;
 		ado.Open();
 		ado.LoadFromFile(fn);
-		const s = ado.Read(8192);
+		s = ado.Read(8192);
 	} catch (e) {
 		ado.Close();
 		return;

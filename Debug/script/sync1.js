@@ -169,27 +169,25 @@ g_.mouse = {
 					return S_OK;
 				}
 			}
-		} else {
-			if (str.length) {
-				window.g_menu_button = str;
-				if (window.g_menu_click) {
-					if (window.g_menu_click === true) {
-						const hSubMenu = api.GetSubMenu(g_.menu_handle, g_.menu_pos);
-						if (hSubMenu) {
-							const mii = api.Memory("MENUITEMINFO");
-							mii.cbSize = mii.Size;
-							mii.fMask = MIIM_SUBMENU;
-							if (api.SetMenuItemInfo(g_.menu_handle, g_.menu_pos, true, mii)) {
-								api.DestroyMenu(hSubMenu);
-							}
+		} else if (str.length) {
+			window.g_menu_button = str;
+			if (window.g_menu_click) {
+				if (window.g_menu_click === true) {
+					const hSubMenu = api.GetSubMenu(g_.menu_handle, g_.menu_pos);
+					if (hSubMenu) {
+						const mii = api.Memory("MENUITEMINFO");
+						mii.cbSize = mii.Size;
+						mii.fMask = MIIM_SUBMENU;
+						if (api.SetMenuItemInfo(g_.menu_handle, g_.menu_pos, true, mii)) {
+							api.DestroyMenu(hSubMenu);
 						}
 					}
-					if (str > 2) {
-						window.g_menu_click = 4;
-						const lParam = pt.x + (pt.y << 16);
-						api.PostMessage(hwnd, WM_LBUTTONDOWN, 0, lParam);
-						api.PostMessage(hwnd, WM_LBUTTONUP, 0, lParam);
-					}
+				}
+				if (str > 2) {
+					window.g_menu_click = 4;
+					const lParam = pt.x + (pt.y << 16);
+					api.PostMessage(hwnd, WM_LBUTTONDOWN, 0, lParam);
+					api.PostMessage(hwnd, WM_LBUTTONUP, 0, lParam);
 				}
 			}
 		}
