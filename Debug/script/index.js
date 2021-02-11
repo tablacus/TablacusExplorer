@@ -210,7 +210,7 @@ FocusFV = function () {
 			if (hFocus == ui_.hwnd || await api.IsChild(ui_.hwnd, hFocus)) {
 				const FV = await GetFolderView();
 				if (FV) {
-					if (!await api.IsChild(await FV.hwnd, hFocus)) {
+					if (!await api.PathMatchSpec(await api.GetClassName(hFocus), WC_EDIT + ";" + WC_TREEVIEW)) {
 						FV.Focus();
 					}
 				}
@@ -391,8 +391,10 @@ ArrangeAddons = async function () {
 		}
 	}
 	RunEventUI("BrowserCreatedEx");
-	const cl = await GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor);
-	ArrangeAddons1(cl);
+	setTimeout(async function () {
+		const cl = await GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor);
+		ArrangeAddons1(cl);
+	}, 99);
 }
 
 // Events
@@ -438,6 +440,8 @@ AddEventEx(window, "resize", Resize);
 AddEventEx(window, "unload", FinalizeUI);
 
 AddEventEx(window, "blur", ResetScroll);
+
+AddEventEx(window, "mouseup", FocusFV);
 
 AddEventEx(document, "MSFullscreenChange", function () {
 	FullscreenChanged(document.msFullscreenElement != null);

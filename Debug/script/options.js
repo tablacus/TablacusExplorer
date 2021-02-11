@@ -1677,7 +1677,7 @@ InitDialog = async function () {
 				document.getElementById("df1").innerHTML = BuildPath(r[5], "config");
 				const ar = [];
 				for (let i = nAddon; i < r.length; i += 3) {
-					if (GetNum(r[i])) {
+					if (GetNum(r[i]) && r[i + 2]) {
 						ar.push(r[i + 1] + " " + r[i + 2]);
 					}
 				}
@@ -1685,7 +1685,11 @@ InitDialog = async function () {
 			});
 		}
 		document.F.ButtonOk.disabled = false;
-		document.getElementById("buttonCancel").style.display = "none";
+		const el = document.getElementById("buttonCancel");
+		el.value = await GetText("Copy");
+		el.onclick = function () {
+			clipboardData.setData("text", document.getElementById("about3").value + "\n" + document.getElementById("UsedAddons").value);
+		}
 
 		Run = async function (n, el) {
 			setTimeout(function (n, path, hwnd) {

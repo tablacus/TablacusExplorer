@@ -1777,9 +1777,6 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 				api.ReleaseCapture();
 				g_.mouse.bCapture = false;
 			}
-			if (Ctrl.Type == CTRL_WB) {
-				FocusFV();
-			}
 			if (bButton) {
 				api.PostMessage(g_.mouse.hwndGesture, WM_CONTEXTMENU, g_.mouse.hwndGesture, pt.x + (pt.y << 16));
 				return S_OK;
