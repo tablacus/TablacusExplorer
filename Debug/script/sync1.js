@@ -3650,7 +3650,6 @@ if (!te.Data) {
 			}
 		}
 	} catch (e) { }
-	api.SetWindowText(te.hwnd, TITLE);
 	te.Data.WindowSetting = BuildPath(te.Data.DataFolder, "config\\window0.xml");
 	for (let i = 1; i < 999; ++i) {
 		const fn = BuildPath(te.Data.DataFolder, "config\\window" + i + ".xml");

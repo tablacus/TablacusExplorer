@@ -23244,10 +23244,7 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					}
 					VariantClear(&vFile);
 				}
-				if (pVarResult) {
-					pVarResult->bstrVal = teSysAllocStringLen(m_ofn.lpstrFile, m_ofn.nMaxFile);
-					pVarResult->vt = VT_BSTR;
-				}
+				teSetSZ(pVarResult, m_ofn.lpstrFile);
 				return S_OK;
 			
 			case TE_PROPERTY + 13://Filter

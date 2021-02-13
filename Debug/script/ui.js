@@ -63,6 +63,7 @@ InitUI = async function () {
 	if (r[4] && WINVER >= 0x600) {
 		TITLE += ' [' + (await api.LoadString(hShell32, 25167) || "Admin").replace(/;.*$/, "") + ']';
 	}
+	document.title = TITLE;
 	let arg = r[5];
 	if (arg) {
 		window.dialogArguments = arg;
