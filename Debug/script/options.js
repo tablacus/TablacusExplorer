@@ -1947,6 +1947,7 @@ InitLocation = function () {
 				}
 			}
 		}
+		SetImage();
 		LoadChecked(document.F);
 
 		if (!await dialogArguments.Data.show) {
