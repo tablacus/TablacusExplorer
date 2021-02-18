@@ -13,11 +13,8 @@ SaveLocation = async function () {
 		for (let i = 0; i < o.length; i++) {
 			const item = await xml.createElement("Item");
 			const a = o[i].value.split(g_sep);
-			await item.setAttribute("Name", a[0]);
 			item.text = a[1];
-			await item.setAttribute("Type", a[2]);
-			await item.setAttribute("Icon", a[3]);
-			await item.setAttribute("Height", a[4]);
+			await Promise.all([item.setAttribute("Name", a[0]), item.setAttribute("Type", a[2]), item.setAttribute("Icon", a[3]), item.setAttribute("Height", a[4])]);
 			await root.appendChild(item);
 		}
 		await xml.appendChild(root);

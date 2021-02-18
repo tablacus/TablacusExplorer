@@ -1,13 +1,12 @@
 const Addon_Id = "toolbar";
 const Default = "ToolBar2Left";
-
 if (window.Addon == 1) {
 	Addons.ToolBar = {
 		Click: async function (i, bNew) {
 			let items = await GetXmlItems(await te.Data.xmlToolBar.getElementsByTagName("Item"));
 			let item = items[i];
 			if (item) {
-				Exec(te, item.text, (bNew && /^Open$|^Open in background$/i.test(type)) ? "Open in new tab" : item.Type, ui_.hwnd, null);
+				Exec(te, item.text, (bNew && /^Open$|^Open in background$/i.test(item.type)) ? "Open in new tab" : item.Type, ui_.hwnd, null);
 			}
 			return false;
 		},
@@ -132,8 +131,6 @@ if (window.Addon == 1) {
 			Resize();
 		},
 
-
-
 		Changed: function () {
 			Addons.ToolBar.Arrange();
 			ApplyLang(document.getElementById("_toolbar"));
@@ -153,10 +150,9 @@ if (window.Addon == 1) {
 	}
 	te.Data.xmlToolBar = await OpenXml("toolbar.xml", false, true);
 	SetAddon(Addon_Id, Default, '<span id="_' + Addon_Id + '"></span>');
-	Addons.ToolBar.Arrange();
+	AddEvent("Load", Addons.ToolBar.Arrange);
 	$.importScript("addons\\" + Addon_Id + "\\sync.js");
 } else {
 	AddonName = "ToolBar";
 	importScript("addons\\" + Addon_Id + "\\options.js");
 }
-
