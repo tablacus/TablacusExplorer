@@ -830,8 +830,8 @@ AddEventEx(window, "load", function () {
 		}, false);
 	} else {
 		document.body.oncontextmenu = DetectProcessTag;
-		document.body.onmousewheel = function (e) {
-			return !e.ctrlKey;
+		document.body.onmousewheel = function (ev) {
+			return ev ? !ev.ctrlKey : api.GetKeyState(VK_CONTROL) >= 0;
 		};
 	}
 });
@@ -1122,7 +1122,7 @@ SetKeyShift = async function () {
 	}
 }
 
-CalcElementHeight = function (o, em) {
+CalcElementHeight = function (o, em, r) {
 	if (o) {
 		if (ui_.IEVer >= 9) {
 			o.style.height = "calc(100vh - " + em + "em)";
@@ -1133,6 +1133,9 @@ CalcElementHeight = function (o, em) {
 		if (h > 0) {
 			o.style.height = h + 'px';
 			o.style.height = 2 * h - o.offsetHeight + "px";
+		}
+		if (!r) {
+			setTimeout(CalcElementHeight, 999, o, em, 1);
 		}
 	}
 }
