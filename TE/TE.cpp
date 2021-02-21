@@ -189,6 +189,7 @@ BOOL	g_bIs2000;
 #ifdef _DEBUG
 LPWSTR	g_strException;
 WCHAR	g_pszException[MAX_PATH];
+HHOOK	g_hMenuGMHook;
 #endif
 #ifdef _CHECK_HANDLELEAK
 int g_nLeak = 0;
@@ -5186,6 +5187,23 @@ LRESULT CALLBACK MenuKeyProc(int nCode, WPARAM wParam, LPARAM lParam)
 	return lResult ? CallNextHookEx(g_hMenuKeyHook, nCode, wParam, lParam) : TRUE;
 }
 
+#ifdef _DEBUG
+LRESULT CALLBACK MenuGMProc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+	LRESULT lResult = 1;
+	if (nCode >= 0) {
+		if (nCode == HC_ACTION) {
+			MSG *msg = (MSG *)lParam;
+			if(msg) {
+				WCHAR pszNum[99];
+				swprintf_s(pszNum, 99, L"%x\n", msg->message);
+//				::OutputDebugString(pszNum);
+			}
+		}
+	}
+	return lResult ? CallNextHookEx(g_hMenuGMHook, nCode, wParam, lParam) : TRUE;
+}
+#endif
 LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
 	static UINT dwDoubleTime;
@@ -8379,8 +8397,14 @@ VOID teApiTrackPopupMenuEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 		}
 	}
 	g_hMenuKeyHook = SetWindowsHookEx(WH_KEYBOARD, (HOOKPROC)MenuKeyProc, hInst, g_dwMainThreadId);
+#ifdef _DEBUG
+	g_hMenuGMHook = SetWindowsHookEx(WH_GETMESSAGE, (HOOKPROC)MenuGMProc, NULL, g_dwMainThreadId);
+#endif
 	teSetLong(pVarResult, TrackPopupMenuEx(param[0].hmenu, param[1].uintVal, param[2].intVal, param[3].intVal,
 		param[4].hwnd, param[5].lptpmparams));
+#ifdef _DEBUG
+	UnhookWindowsHookEx(g_hMenuGMHook);
+#endif
 	UnhookWindowsHookEx(g_hMenuKeyHook);
 	SafeRelease(&g_pCM);
 }
@@ -14593,8 +14617,9 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 			}
 			if (pVarResult) {
-				pVarResult->vt = VT_BSTR;
-				GetSort(&pVarResult->bstrVal, nFormat);
+				BSTR bs;
+				GetSort(&bs, nFormat);
+				teSetBSTR(pVarResult, &bs, -1);
 			}
 			return S_OK;
 			
@@ -20850,6 +20875,7 @@ CteContextMenu::CteContextMenu(IUnknown *punk, IDataObject *pDataObj, IUnknown *
 			IUnknown_SetSite(punk, punkSB);
 		}
 	}
+	::ZeroMemory(m_param, sizeof(m_param));
 }
 
 CteContextMenu::~CteContextMenu()
@@ -20922,10 +20948,12 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 		switch(dispIdMember) {			
 		case TE_METHOD + 1://QueryContextMenu
 			if (nArg >= 4) {
-				for (int i = 5; i--;) {
-					m_param[i].uint_ptr = (UINT_PTR)GetPtrFromVariant(&pDispParams->rgvarg[nArg - i]);
+				if (!m_param[2].uintVal) {
+					for (int i = 5; i--;) {
+						m_param[i].uint_ptr = (UINT_PTR)GetPtrFromVariant(&pDispParams->rgvarg[nArg - i]);
+					}
+					teSetLong(pVarResult, m_pContextMenu->QueryContextMenu(m_param[0].hmenu, m_param[1].uintVal, m_param[2].uintVal, m_param[3].uintVal, m_param[4].uintVal));
 				}
-				teSetLong(pVarResult, m_pContextMenu->QueryContextMenu(m_param[0].hmenu, m_param[1].uintVal, m_param[2].uintVal, m_param[3].uintVal, m_param[4].uintVal));
 			}
 			return S_OK;
 

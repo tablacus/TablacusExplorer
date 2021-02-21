@@ -53,7 +53,7 @@ g_.bit = api.sizeof("HANDLE") * 8;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210213 ? te.Version : 20210220;
+		return te.Version < 20210221 ? te.Version : 20210221;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1610,7 +1610,7 @@ CreateNew = function (path, fn) {
 			paths = GetNonExistent(GetParentFolderName(path));
 			if (paths[1]) {
 				if (CreateFolders(paths) < 0) {
-					throw 1;
+					throw new Error("Cannot create");
 				}
 			}
 			fn(path);
