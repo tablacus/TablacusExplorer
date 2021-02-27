@@ -8,4 +8,4 @@ SaveLocation = async function () {
 }
 
 LoadX("Key", null, document.E);
-MakeKeySelect();
+setTimeout(MakeKeySelect, 99);

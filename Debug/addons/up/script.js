@@ -44,10 +44,9 @@ if (window.Addon == 1) {
 			return false;
 		}
 	};
-	AddEvent("ChangeView", async function (Ctrl) {
-		if (await Ctrl.Id == await Ctrl.Parent.Selected.Id) {
-			DisableImage(document.getElementById("ImgUp"), await api.ILIsEmpty(Ctrl));
-		}
+	AddEvent("ChangeView2", async function (Ctrl) {
+		const el = document.getElementById("ImgUp_$") || document.getElementById("ImgUp_" + await Ctrl.Parent.Id);
+		DisableImage(el, await api.ILIsEmpty(Ctrl));
 	});
 	//Menu
 	const strName = item.getAttribute("MenuName") || await GetText("&Up One Level");
@@ -64,7 +63,7 @@ if (window.Addon == 1) {
 	}
 	const h = GetIconSize(item.getAttribute("IconSize"), item.getAttribute("Location") == "Inner" && 16);
 	const s = item.getAttribute("Icon") || (h <= 16 ? "bitmap:ieframe.dll,216,16,28" : "bitmap:ieframe.dll,214,24,28");
-	SetAddon(Addon_Id, Default, ['<span class="button" id="UpButton" onclick="Addons.Up.Exec(this)" oncontextmenu="return Addons.Up.Popup(event, this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', await GetImgTag({ id: "ImgUp", title: strName, src: s }, h), '</span>']);
+	SetAddon(Addon_Id, Default, ['<span class="button" id="UpButton" onclick="Addons.Up.Exec(this)" oncontextmenu="return Addons.Up.Popup(event, this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', await GetImgTag({ id: "ImgUp_$", title: strName, src: s }, h), '</span>']);
 } else {
 	EnableInner();
 }

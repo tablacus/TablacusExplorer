@@ -53,7 +53,7 @@ g_.bit = api.sizeof("HANDLE") * 8;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210221 ? te.Version : 20210221;
+		return te.Version < 20210221 ? te.Version : 20210227;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);

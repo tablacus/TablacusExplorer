@@ -279,7 +279,7 @@ g_basic = {
 			Exec: function (Ctrl, s, type, hwnd, pt) {
 				const FV = GetFolderView(Ctrl, pt);
 				if (FV) {
-					const s = ExtractMacro(Ctrl, s);
+					s = ExtractMacro(Ctrl, s);
 					FV.FilterView = s != "*" ? s : null;
 					FV.Refresh();
 				}
