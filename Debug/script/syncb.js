@@ -35,6 +35,31 @@ FocusFV = function () {
 	InvokeUI("FocusFV");
 }
 
+GetFolderView = function (Ctrl, pt, bStrict) {
+	if (!Ctrl) {
+		return te.Ctrl(CTRL_FV);
+	}
+	const nType = Ctrl.Type;
+	if (nType <= CTRL_EB) {
+		return Ctrl;
+	}
+	if (nType == CTRL_TV) {
+		return Ctrl.FolderView;
+	}
+	if (nType != CTRL_TC) {
+		return te.Ctrl(CTRL_FV);
+	}
+	if (pt) {
+		const FV = Ctrl.HitTest(pt);
+		if (FV) {
+			return FV;
+		}
+	}
+	if (!bStrict || !pt) {
+		return Ctrl.Selected;
+	}
+};
+
 MouseOut = function () {
 	InvokeUI("MouseOut", Array.apply(null, arguments));
 }

@@ -53,7 +53,7 @@ g_.bit = api.sizeof("HANDLE") * 8;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210221 ? te.Version : 20210227;
+		return te.Version < 20210221 ? te.Version : 20210301;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -120,31 +120,6 @@ if ("undefined" != typeof ScriptEngineMajorVersion && ScriptEngineMajorVersion()
 			}
 		}
 	})(setTimeout);
-}
-
-GetFolderView = function (Ctrl, pt, bStrict) {
-	if (!Ctrl) {
-		return te.Ctrl(CTRL_FV);
-	}
-	const nType = Ctrl.Type;
-	if (nType <= CTRL_EB) {
-		return Ctrl;
-	}
-	if (nType == CTRL_TV) {
-		return Ctrl.FolderView;
-	}
-	if (nType != CTRL_TC) {
-		return te.Ctrl(CTRL_FV);
-	}
-	if (pt) {
-		const FV = Ctrl.HitTest(pt);
-		if (FV) {
-			return FV;
-		}
-	}
-	if (!bStrict || !pt) {
-		return Ctrl.Selected;
-	}
 }
 
 GetSelectedArray = function (Ctrl, pt, bPlus) {
