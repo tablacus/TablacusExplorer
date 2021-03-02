@@ -153,7 +153,7 @@ if (window.Addon == 1) {
 							Navigate(await Sync.AddressBar.GetPath(n), SBSP_NEWBROWSER | SBSP_ACTIVATE_NOFOCUS);
 							break;
 						case 5:
-							Addons.AddressBar.Focus();
+							Addons.AddressBar.Exec();
 							break;
 					}
 				})();

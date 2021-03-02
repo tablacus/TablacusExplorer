@@ -397,6 +397,11 @@ ArrangeAddons = async function () {
 	}, 99);
 }
 
+GetMiscIcon = async function (n) {
+	const s = BuildPath(ui_.DataFolder, "icons\\misc\\" + n + ".png");
+	return await fso.FileExists(s) ? s : "";
+}
+
 // Events
 
 AddEvent("VisibleChanged", async function (Ctrl) {
