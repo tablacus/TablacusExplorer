@@ -120,7 +120,7 @@ DecodeSC = function (s) {
 	});
 }
 
-ExtractAttr = function (o, ar, re) {
+ExtractAttr = async function (o, ar, re) {
 	for (let n in o) {
 		const s = o[n];
 		if (s && (!re || !re.test(s))) {
@@ -144,13 +144,13 @@ GetImgTag = async function (o, h) {
 			let ar = ['font-family:', res[1].replace(/\"/g, '\\"'), '; font-size:', h2, '; line-height:', h, '; height:', h, ';', (o.style || "") ];
 			o.style = ar.join("");
 			ar = ['<span'];
-			ExtractAttr(o, ar, /src/i);
+			await ExtractAttr(o, ar, /src/i);
 			ar.push('>', StringFromCodePoint(parseInt(res[2]) * 256 + parseInt(res[3])), '</span>');
 			return ar.join("");
 		}
 		o.src = await ImgBase64(o, 0, Number(h))
 		const ar = ['<img'];
-		ExtractAttr(o, ar);
+		await ExtractAttr(o, ar);
 		if (h) {
 			h = Number(h) ? h + 'px' : EncodeSC(h);
 			ar.push(' width="', h, '" height="', h, '"');
@@ -159,7 +159,7 @@ GetImgTag = async function (o, h) {
 		return ar.join("");
 	}
 	const ar = ['<span'];
-	ExtractAttr(o, ar, /title/i);
+	await ExtractAttr(o, ar, /title/i);
 	ar.push('>', EncodeSC(o.title), '</span>');
 	return ar.join("");
 }
