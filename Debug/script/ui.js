@@ -788,7 +788,7 @@ GetFolderView = GetFolderViewEx = async function (Ctrl, pt, bStrict) {
 		return await te.Ctrl(CTRL_FV);
 	}
 	if (pt) {
-		const FV = await Ctrl.HitTest(pt);
+		const FV = await pt.Target || await Ctrl.HitTest(pt);
 		if (FV) {
 			return FV;
 		}

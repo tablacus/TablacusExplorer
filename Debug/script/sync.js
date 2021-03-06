@@ -37,7 +37,7 @@ for (let i in ar) {
 	a2.push(ar[i][0], ar[i][1]);
 	g_.KeyState.push(a2);
 }
-g_.stack_TC = api.CreateObject("Object");
+g_.stack_TC = api.CreateObject("Array");
 g_.dlgs = api.CreateObject("Object");
 g_.bWindowRegistered = true;
 g_.xmlWindow = null;
@@ -53,7 +53,7 @@ g_.bit = api.sizeof("HANDLE") * 8;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210221 ? te.Version : 20210302;
+		return te.Version < 20210221 ? te.Version : 20210306;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -132,7 +132,7 @@ GetSelectedArray = function (Ctrl, pt, bPlus) {
 			FV = Ctrl;
 			break;
 		case CTRL_TC:
-			FV = Ctrl.HitTest(pt);
+			FV = pt.Target || Ctrl.HitTest(pt);
 			bSel = false;
 			break;
 		case CTRL_TV:
@@ -279,12 +279,12 @@ GetNavigateFlags = function (FV, bParent) {
 }
 
 GetSysColor = function (i) {
-	const c = g_.Colors[i];
+	const c = MainWindow.g_.Colors[i];
 	return c != null ? c : api.GetSysColor(i);
 }
 
 SetSysColor = function (i, color) {
-	g_.Colors[i] = color;
+	MainWindow.g_.Colors[i] = color;
 }
 
 ShellExecute = function (s, vOperation, nShow, vDir2, pt) {
@@ -1355,6 +1355,38 @@ MakeImgIcon = function (src, index, h, bIcon) {
 		}
 		if (phIcon[0]) {
 			return phIcon[0];
+		}
+	}
+	res = /^font:([^,]*),([\da-fx]*),(\d+)/i.exec(src);
+	if (res) {
+		if (!h) {
+			h = api.GetSystemMetrics(SM_CYSMICON);
+		}
+		const hdc = api.GetDC(te.hwnd);
+		const hbm = api.CreateCompatibleBitmap(hdc, h, h);
+		const hmdc = api.CreateCompatibleDC(hdc);
+		const hOld = api.SelectObject(hmdc, hbm);
+		const rc = api.Memory("RECT");
+		rc.right = h;
+		rc.bottom = h;
+		api.FillRect(hmdc, rc, 0, GetBGRA(GetSysColor(COLOR_MENU), 255));
+		api.SetTextColor(hmdc, GetSysColor(COLOR_WINDOWTEXT));
+		api.SetBkMode(hmdc, 1);
+		const lf = api.Memory("LOGFONT");
+		lf.lfFaceName = res[1],
+		lf.lfHeight = - h * .75;
+		lf.lfWeight = 400;
+		const hFont = CreateFont(lf);
+		const hfontOld = api.SelectObject(hmdc, hFont);
+		rc.top = 0;
+		api.DrawText(hmdc, StringFromCodePoint(parseInt(res[2]) * 256 + parseInt(res[3])), -1, rc, DT_CENTER);
+		api.SelectObject(hmdc, hfontOld);
+		api.SelectObject(hmdc, hOld);
+		api.DeleteDC(hmdc);
+		const image = api.CreateObject("WICBitmap").FromHBITMAP(hbm);
+		api.DeleteObject(hbm);
+		if (image) {
+			return image.GetHICON();
 		}
 	}
 	if (src && (bIcon || /\*/.test(src) || !REGEXP_IMAGE.test(src))) {

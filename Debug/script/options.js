@@ -1460,7 +1460,7 @@ OpenIcon = function (o) {
 				}
 				api.FreeLibrary(hModule);
 			}
-		} else {
+		} else if (a[0] == "i") {
 			let dllPath = await ExtractMacro(te, a[1]);
 			if (!/^[A-Z]:\\|^\\\\/i.test(dllPath)) {
 				dllPath = BuildPath(system32, a[1]);
@@ -1475,6 +1475,23 @@ OpenIcon = function (o) {
 			o.innerHTML = "";
 			for (let i = 0; i < nCount; ++i) {
 				o.insertAdjacentHTML("beforeend", '<img src="' + srcs.shift() + '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="icon:' + a[1] + ',' + i + '" style="max-height:' + px + 'px"> ');
+			}
+		} else {
+			const px = 32 * screen.deviceYDPI / 96;
+			let srcs = [];
+			for (let i = 0; i < 256; ++i) {
+				const tag = {
+					src: "font:" + a[1] + "," + a[2] + "," + i,
+					class: "button",
+					onclick: "SelectIcon(this)"
+				};
+				tag.title = tag.src;
+				srcs.push(GetImgTag(tag, px));
+			}
+			srcs = await Promise.all(srcs);
+			o.innerHTML = "";
+			while (srcs.length) {
+				o.insertAdjacentHTML("beforeend", srcs.shift());
 			}
 		}
 		document.body.style.cursor = "auto";
@@ -1520,13 +1537,21 @@ InitDialog = async function () {
 			"16px ieframe,699": "b,699,16",
 			"24px ieframe,697": "b,697,24",
 
-			"shell32": "i,shell32.dll",
-			"imageres": "i,imageres.dll",
-			"wmploc": "i,wmploc.dll",
-			"setupapi": "i,setupapi.dll",
-			"dsuiext": "i,dsuiext.dll",
-			"inetcpl": "i,inetcpl.cpl"
+			"shell32": "i,shell32.dll"
 		};
+		for (let i = 0xe7; i < 0xf9; ++i) {
+			a["Segoe MDL2 Assets " + i.toString(16)] = "f,Segoe MDL2 Assets,0x" + i.toString(16);
+		}
+		for (let i = 0x1f3; i < 0x1f8; ++i) {
+			a["Segoe UI Emoji " + i.toString(16)] = "f,Segoe UI Emoji,0x" + i.toString(16);
+		}
+
+		a.imageres = "i,imageres.dll";
+		a.wmploc = "i,wmploc.dll";
+		a.setupapi = "i,setupapi.dll";
+		a.dsuiext = "i,dsuiext.dll";
+		a.inetcpl = "i,inetcpl.cpl";
+
 		const s = [];
 		const wfd = await api.Memory("WIN32_FIND_DATA");
 		const path = BuildPath(await te.Data.DataFolder, "icons");
@@ -2327,7 +2352,8 @@ async function SetAddonOptions() {
 	}
 }
 
-function SelectIcon(o) {
+SelectIcon = function (o) {
+	o = o.srcElement || o;
 	returnValue = o.title;
 	document.F.ButtonOk.disabled = false;
 	document.getElementById("Selected").innerHTML = o.outerHTML;
@@ -2356,9 +2382,8 @@ SetImage = async function (f, n) {
 			f = document.F;
 		}
 		const h = GetNum((f.IconSize || f.Height || { value: window.IconSize || 24 }).value);
-		const src = await MakeImgSrc(await ExtractPath(te, f.Icon.value), 0, true, h);
 		const px = screen.deviceYDPI / 2;
-		o.innerHTML = src ? '<img src="' + src + '" ' + (h ? 'height="' + h + 'px"' : "") + ' style="max-width:' + px + 'px; max-height:' + px + 'px">' : "";
+		o.innerHTML = await GetImgTag({ src: await ExtractPath(te, f.Icon.value), "max-width": px + "px", "max-height": px + "px" }, h);
 	}
 }
 

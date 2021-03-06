@@ -145,7 +145,7 @@ g_.mouse = {
 			case CTRL_TV:
 				return "Tree";
 			case CTRL_TC:
-				return Ctrl.HitTest(pt, TCHT_ONITEM) >= 0 ? "Tabs" : "Tabs_Background";
+				return pt.Target || Ctrl.HitTest(pt, TCHT_ONITEM) >= 0 ? "Tabs" : "Tabs_Background";
 			case CTRL_WB:
 				return "Browser";
 		}
@@ -3350,7 +3350,7 @@ FullscreenChanged = function (bFullscreen) {
 			TC.Visible = false;
 		}
 	} else {
-		while (api.ObjGetI(g_.stack_TC, "length")) {
+		while (g_.stack_TC.length) {
 			g_.stack_TC.pop().Visible = true;
 		}
 	}

@@ -120,15 +120,37 @@ DecodeSC = function (s) {
 	});
 }
 
+ExtractAttr = function (o, ar, re) {
+	for (let n in o) {
+		const s = o[n];
+		if (s && (!re || !re.test(s))) {
+			ar.push(' ', n, '="', EncodeSC(StripAmp(await GetText(PathUnquoteSpaces(o[n])))), '"');
+		}
+	}
+}
+
+StringFromCodePoint = function (n) {
+	const cp = n - 0x10000;
+	return cp < 0 ? String.fromCharCode(n) : String.fromCharCode(0xd800 | (cp >> 10), 0xDC00 | (cp & 0x3ff));
+}
+
 GetImgTag = async function (o, h) {
 	if (o.src) {
+		const res = /^font:([^,]*),([\da-fx]*),(\d+)/i.exec(o.src);
+		if (res) {
+			h = h || window.IconSize;
+			const h2 = Number(h) ? h * .75 + "px" : h;
+			h = Number(h) ? h + 'px' : EncodeSC(h);
+			let ar = ['font-family:', res[1].replace(/\"/g, '\\"'), '; font-size:', h2, '; line-height:', h, '; height:', h, ';', (o.style || "") ];
+			o.style = ar.join("");
+			ar = ['<span'];
+			ExtractAttr(o, ar, /src/i);
+			ar.push('>', StringFromCodePoint(parseInt(res[2]) * 256 + parseInt(res[3])), '</span>');
+			return ar.join("");
+		}
 		o.src = await ImgBase64(o, 0, Number(h))
 		const ar = ['<img'];
-		for (let n in o) {
-			if (o[n]) {
-				ar.push(' ', n, '="', EncodeSC(StripAmp(await GetText(PathUnquoteSpaces(o[n])))), '"');
-			}
-		}
+		ExtractAttr(o, ar);
 		if (h) {
 			h = Number(h) ? h + 'px' : EncodeSC(h);
 			ar.push(' width="', h, '" height="', h, '"');
@@ -137,11 +159,7 @@ GetImgTag = async function (o, h) {
 		return ar.join("");
 	}
 	const ar = ['<span'];
-	for (let n in o) {
-		if (n != "title" && o[n]) {
-			ar.push(' ', n, '="', EncodeSC(o[n]), '"');
-		}
-	}
+	ExtractAttr(o, ar, /title/i);
 	ar.push('>', EncodeSC(o.title), '</span>');
 	return ar.join("");
 }

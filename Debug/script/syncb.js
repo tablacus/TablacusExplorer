@@ -50,7 +50,7 @@ GetFolderView = function (Ctrl, pt, bStrict) {
 		return te.Ctrl(CTRL_FV);
 	}
 	if (pt) {
-		const FV = Ctrl.HitTest(pt);
+		const FV = pt.Target || Ctrl.HitTest(pt);
 		if (FV) {
 			return FV;
 		}

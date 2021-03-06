@@ -101,7 +101,11 @@ if (window.Addon == 1) {
 			if (Addons.AddressBar.bClose) {
 				o.blur();
 			} else {
-				o.select();
+				setTimeout(async function () {
+					if (o.selectionEnd == o.selectionStart && await api.GetKeyState(VK_LBUTTON) >= 0) {
+						o.select()
+					}
+				}, ui_.DoubleClickTime);
 				document.getElementById("breadcrumbbuttons").style.display = "none";
 			}
 		},
@@ -243,7 +247,7 @@ if (window.Addon == 1) {
 		},
 
 		ContextMenu: function (o) {
-			if (!window.chrome) {
+			if (!window.chrome && o.selectionEnd == o.selectionStart) {
 				o.select();
 			}
 		},
