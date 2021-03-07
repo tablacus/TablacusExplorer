@@ -136,7 +136,7 @@ StringFromCodePoint = function (n) {
 
 GetImgTag = async function (o, h) {
 	if (o.src) {
-		const res = /^font:([^,]*),([\da-fx]*),(\d+)/i.exec(o.src);
+		const res = /^font:([^,]*),([\da-fx]*),([\da-fx]+)/i.exec(o.src);
 		if (res) {
 			h = h || window.IconSize;
 			const h2 = Number(h) ? h * .75 + "px" : h;
@@ -160,7 +160,7 @@ GetImgTag = async function (o, h) {
 	}
 	const ar = ['<span'];
 	await ExtractAttr(o, ar, /title/i);
-	ar.push('>', EncodeSC(o.title), '</span>');
+	ar.push('>', EncodeSC(o.title || ""), '</span>');
 	return ar.join("");
 }
 

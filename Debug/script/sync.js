@@ -53,7 +53,7 @@ g_.bit = api.sizeof("HANDLE") * 8;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210221 ? te.Version : 20210306;
+		return te.Version < 20210221 ? te.Version : 20210307;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1270,6 +1270,10 @@ MakeImgData = function (src, index, h) {
 
 MakeImgIcon = function (src, index, h, bIcon) {
 	let hIcon = null;
+	src = MainWindow.RunEvent4("ReplaceIcon", src) || src;
+	if ("number" === typeof src) {
+		return src;
+	}
 	let res = /^bitmap:(.+)/i.exec(src);
 	if (res) {
 		const icon = res[1].split(",");
@@ -1357,7 +1361,7 @@ MakeImgIcon = function (src, index, h, bIcon) {
 			return phIcon[0];
 		}
 	}
-	res = /^font:([^,]*),([\da-fx]*),(\d+)/i.exec(src);
+	res = /^font:([^,]*),([\da-fx]*),([\da-fx]+)/i.exec(src);
 	if (res) {
 		if (!h) {
 			h = api.GetSystemMetrics(SM_CYSMICON);

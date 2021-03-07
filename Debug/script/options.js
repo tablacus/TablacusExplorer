@@ -2150,7 +2150,7 @@ async function GetAttribEx(item, f, n) {
 function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter, f) {
 	setTimeout(async function () {
 		const o = GetElement(Id, f);
-		if (/Path/.test(Id)) {
+		if (/Path/.test(Id) && "string" !== typeof Filter) {
 			const s = Id.replace("Path", "Type");
 			if (o) {
 				const pt = await api.CreateObject("Object");
@@ -2181,7 +2181,7 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter, f) {
 
 		let path = o.value || o.getAttribute("placeholder") || "";
 		const res = /^icon:([^,]*)|^bitmap:([^,]*)/i.exec(path) || [];
-		path = await OpenDialogEx(res[1] || res[2] || path, await Filter, GetNum(bFilesOnly));
+		path = await OpenDialogEx(res[1] || res[2] || path, Filter, GetNum(bFilesOnly));
 		if (path) {
 			if (bMultiLine) {
 				AddPath(Id, path);
