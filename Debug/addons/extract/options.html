@@ -1,20 +1,19 @@
-<div class="panel" style="display: block;">
-  <input type="text" id="Path" style="width: 100%">
-  <table>
-    <tr>
-      <td>
-        <input type="button" value="Browse..." onclick="RefX('Path', false, this)">
-      </td>
-      <td>
-        <input type="button" value="Default" title="" onclick="SetExtract(this)">
-      </td>
-      <td>
-        <input type="button" value="Portable" onclick="PortableX('Path')">
-      </td>
-      <td>
-        <input type="button" value="7-Zip" title="7-Zip\7zG.exe x %src% -o%dest% -aoa" onclick="SetExe(this)">
-      </td>
-    </tr>
-  </table>
-</div>
+<input type="text" id="Path" style="width: 100%">
+<table>
+  <tr>
+    <td>
+      <input type="button" value="Browse..." onclick="RefX('Path', false, this)">
+    </td>
+    <td>
+      <input type="button" value="Default" title="" onclick="SetExtract(this)">
+    </td>
+    <td>
+      <input type="button" value="Portable" onclick="PortableX('Path')">
+    </td>
+    <td>
+      <input type="button" value="7-Zip" title="7-Zip\7zG.exe x %src% -o%dest% -aoa" onclick="SetExe(this)">
+    </td>
+  </tr>
+</table>
+<br>
 <input type="button" id="_7zip" value="Get 7-Zip" title="http://www.7-zip.org/" onclick="wsh.Run(this.title)">

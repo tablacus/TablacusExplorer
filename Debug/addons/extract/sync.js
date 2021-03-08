@@ -1,13 +1,13 @@
-var Addon_Id = 'extract';
-var item = GetAddonElement(Addon_Id);
+const Addon_Id = 'extract';
+const item = GetAddonElement(Addon_Id);
 
 if (Sync.Extract = item.getAttribute("Path")) {
 	AddEvent("Extract", function (Src, Dest) {
-		var r = api.CreateProcess(ExtractMacro(te, Sync.Extract.replace(/%src%/i, api.PathQuoteSpaces(Src)).replace(/%dest%|%dist%/i, api.PathQuoteSpaces(Dest))), api.PathUnquoteSpaces(Dest), 0, 0, 0, true);
+		const r = api.CreateProcess(ExtractMacro(te, Sync.Extract.replace(/%src%/i, PathQuoteSpaces(Src)).replace(/%dest%|%dist%/i, PathQuoteSpaces(Dest))), PathUnquoteSpaces(Dest), 0, 0, 0, true);
 		if ("number" === typeof r) {
 			return r;
 		}
-		var bWait;
+		let bWait;
 		do {
 			bWait = false;
 			WmiProcess("WHERE ProcessId=" + r.ProcessId, function (item) {
