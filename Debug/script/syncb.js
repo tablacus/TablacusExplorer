@@ -60,6 +60,10 @@ GetFolderView = function (Ctrl, pt, bStrict) {
 	}
 };
 
+ImgBase64 = function (el, index, h) {
+	return MakeImgSrc(ExtractMacro(te, el.src), index, false, h || el.height);
+}
+
 MouseOut = function () {
 	InvokeUI("MouseOut", Array.apply(null, arguments));
 }
@@ -97,6 +101,4 @@ ShowStatusTextEx = function () {
 	InvokeUI("ShowStatusTextEx", Array.apply(null, arguments));
 }
 
-ImgBase64 = function (el, index, h) {
-	return MakeImgSrc(ExtractMacro(te, el.src), index, false, h || el.height);
-}
+WebBrowser = te.Ctrl(CTRL_WB);

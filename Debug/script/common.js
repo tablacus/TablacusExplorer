@@ -136,16 +136,24 @@ StringFromCodePoint = function (n) {
 
 GetImgTag = async function (o, h) {
 	if (o.src) {
-		const res = /^font:([^,]*),([\da-fx]*),([\da-fx]+)/i.exec(o.src);
+		const res = /^font:([^,]*),([\da-fx,]+)/i.exec(await MainWindow.RunEvent4("ReplaceIcon", o.src) || o.src);
 		if (res) {
+			const FontFace = res[1].replace(/\"/g, '\\"');
+			let c = res[2].split(",");
+			c = StringFromCodePoint(c.length > 1 ? parseInt(c[0]) * 256 + parseInt(c[1]) : parseInt(c[0]));
 			h = h || window.IconSize;
-			const h2 = Number(h) ? h * .75 + "px" : h;
-			h = Number(h) ? h + 'px' : EncodeSC(h);
-			let ar = ['font-family:', res[1].replace(/\"/g, '\\"'), '; font-size:', h2, '; line-height:', h, '; height:', h, ';', (o.style || "") ];
+			let h2 = Number(h) ? await CalcFontSize(FontFace, h, c) + "px" : EncodeSC(h);
+			h = Number(h) ? h + "px" : EncodeSC(h);
+			let ar = ['font-family:', FontFace, '; font-size:', h2, '; line-height:', h, '; height:', h, ';', (o.style || "") ];
 			o.style = ar.join("");
+			if (o.class) {
+				o.class += " fonticon";
+			} else {
+				o.class = "fonticon";
+			}
 			ar = ['<span'];
 			await ExtractAttr(o, ar, /src/i);
-			ar.push('>', StringFromCodePoint(parseInt(res[2]) * 256 + parseInt(res[3])), '</span>');
+			ar.push('>', c, '</span>');
 			return ar.join("");
 		}
 		o.src = await ImgBase64(o, 0, Number(h))

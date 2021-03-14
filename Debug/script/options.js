@@ -1478,21 +1478,17 @@ OpenIcon = function (o) {
 			}
 		} else {
 			const px = 32 * screen.deviceYDPI / 96;
-			let srcs = [];
-			for (let i = 0; i < 256; ++i) {
+			const srcs = [];
+			for (let i = 0; i < a[3]; ++i) {
 				const tag = {
-					src: "font:" + a[1] + "," + a[2] + "," + i,
+					src: "font:" + a[1] + ",0x" + (parseInt(a[2]) + i).toString(16),
 					class: "button",
 					onclick: "SelectIcon(this)"
 				};
 				tag.title = tag.src;
 				srcs.push(GetImgTag(tag, px));
 			}
-			srcs = await Promise.all(srcs);
-			o.innerHTML = "";
-			while (srcs.length) {
-				o.insertAdjacentHTML("beforeend", srcs.shift());
-			}
+			o.innerHTML = (await Promise.all(srcs)).join("");
 		}
 		document.body.style.cursor = "auto";
 	});
@@ -1534,18 +1530,21 @@ InitDialog = async function () {
 			"24px ieframe,214": "b,214,24",
 			"16px ieframe,206": "b,206,16",
 			"24px ieframe,204": "b,204,24",
-			"16px ieframe,699": "b,699,16",
-			"24px ieframe,697": "b,697,24",
 
 			"shell32": "i,shell32.dll"
 		};
 		for (let i = 0xe7; i < 0xf9; ++i) {
-			a["Segoe MDL2 Assets " + i.toString(16)] = "f,Segoe MDL2 Assets,0x" + i.toString(16);
+			a["Segoe MDL2 Assets " + (i * 256).toString(16)] = "f,Segoe MDL2 Assets,0x" + (i * 256).toString(16) + ",256";
 		}
 		for (let i = 0x1f3; i < 0x1f8; ++i) {
-			a["Segoe UI Emoji " + i.toString(16)] = "f,Segoe UI Emoji,0x" + i.toString(16);
+			a["Segoe UI Emoji " + (i * 256).toString(16)] = "f,Segoe UI Emoji,0x" + (i * 256).toString(16) + ",256";
+		}
+		for (let i = 0x26; i < 0x28; ++i) {
+			a["Segoe UI " + (i * 256).toString(16)] = "f,Segoe UI,0x" + (i * 256).toString(16) + ",256";
 		}
 
+		a["16px ieframe,699"] = "b,699,16";
+		a["24px ieframe,697"] = "b,697,24";
 		a.imageres = "i,imageres.dll";
 		a.wmploc = "i,wmploc.dll";
 		a.setupapi = "i,setupapi.dll";

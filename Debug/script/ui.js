@@ -453,6 +453,13 @@ LoadScripts = async function (js1, js2, cb) {
 				return $.g_;
 			}
 		});
+		GetTopWindow = async function (hwnd) {
+			let hwnd1 = hwnd || await WebBrowser.hwnd;
+			while (hwnd1 = await api.GetParent(hwnd1)) {
+				hwnd = hwnd1;
+			}
+			return hwnd;
+		}
 	} else {
 		$ = window;
 	}
@@ -589,7 +596,7 @@ ApplyLang = async function (doc) {
 ImgBase64 = async function (el, index, h) {
 	const org = el.src || el.getAttribute("data-src");
 	const src = await ExtractMacro(te, org);
-	const s = await MakeImgSrc(src, index, false, h || el.height);
+	const s = await MakeImgSrc(src, index, false, h || el.height || window.IconSize);
 	if ("string" === typeof s && org != src) {
 		return src.replace(location.href.replace(/[^\/]*$/, ""), "file:///");
 	}
@@ -675,14 +682,6 @@ HitTest = async function (o, pt) {
 	return false;
 }
 
-GetTopWindow = async function (hwnd) {
-	let hwnd1 = hwnd || await WebBrowser.hwnd;
-	while (hwnd1 = await api.GetParent(hwnd1)) {
-		hwnd = hwnd1;
-	}
-	return hwnd;
-}
-
 CloseWindow = async function () {
 	if (window.chrome) {
 		api.PostMessage(await GetTopWindow(), WM_CLOSE, 0, 0);
@@ -710,9 +709,9 @@ MouseOver = async function (o) {
 		let bHover = window.chrome;
 		if (!bHover) {
 			const pt = await api.Memory("POINT");
-			api.GetCursorPos(pt);
+			await api.GetCursorPos(pt);
 			const ptc = await pt.Clone();
-			await api.ScreenToClient(WebBrowser.hwnd, ptc);
+			await api.ScreenToClient(await WebBrowser.hwnd, ptc);
 			bHover = (o == document.elementFromPoint(ptc.x, ptc.y) || await HitTest(o, pt));
 		}
 		if (bHover) {

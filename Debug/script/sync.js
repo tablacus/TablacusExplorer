@@ -53,7 +53,7 @@ g_.bit = api.sizeof("HANDLE") * 8;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210221 ? te.Version : 20210307;
+		return te.Version < 20210221 ? te.Version : 20210314;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -214,7 +214,7 @@ ChooseFolder = function (path, pt, uFlags) {
 }
 
 BrowseForFolder = function (path) {
-	return OpenDialogEx(path, api.LoadString(hShell32, 4131) + "|<Folder>");
+	return OpenDialogEx(path, "@shell32.dll,-4131\t|<Folder>");
 }
 
 OpenDialogEx = function (path, filter, bFilesOnly) {
@@ -239,6 +239,7 @@ OpenDialogEx = function (path, filter, bFilesOnly) {
 }
 
 InvokeCommand = function (Items, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon, FV, uCMF) {
+	let hr = E_FAIL;
 	if (Items) {
 		const ContextMenu = api.ContextMenu(Items, FV);
 		if (ContextMenu) {
@@ -251,11 +252,19 @@ InvokeCommand = function (Items, fMask, hwnd, Verb, Parameters, Directory, nShow
 					return S_FALSE;
 				}
 			}
-			ContextMenu.InvokeCommand(fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon);
+			hr = ContextMenu.InvokeCommand(fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon);
 			api.DestroyMenu(hMenu);
 		}
 	}
-	return S_OK;
+	return hr;
+}
+
+GetTopWindow = function (hwnd) {
+	let hwnd1 = hwnd || WebBrowser.hwnd;
+	while (hwnd1 = api.GetParent(hwnd1)) {
+		hwnd = hwnd1;
+	}
+	return hwnd;
 }
 
 FindChildByClass = function (hwnd, s) {
@@ -1160,7 +1169,14 @@ MakeCommDlgFilter = function (arg) {
 	const result = [];
 	let bAll = true;
 	for (let i = 0; i < ar.length; ++i) {
-		const s = ar[i];
+		let s = ar[i];
+		if (/^\@/.test(s)) {
+			const a2 = s.split("\t");
+			for (let j = a2.length; j--;) {
+				a2[j] = GetTextR(a2[j]);
+			}
+			s = a2.join("");
+		}
 		bAll &= s.indexOf("*.*") < 0;
 		if (/[\|#]/.test(s)) {
 			result.push(s.replace(/[#\@]/g, "|").replace(/[\0\|]$/, ""));
@@ -1361,7 +1377,7 @@ MakeImgIcon = function (src, index, h, bIcon) {
 			return phIcon[0];
 		}
 	}
-	res = /^font:([^,]*),([\da-fx]*),([\da-fx]+)/i.exec(src);
+	res = /^font:([^,]*),([\da-fx,]+)/i.exec(src);
 	if (res) {
 		if (!h) {
 			h = api.GetSystemMetrics(SM_CYSMICON);
@@ -1371,22 +1387,28 @@ MakeImgIcon = function (src, index, h, bIcon) {
 		const hmdc = api.CreateCompatibleDC(hdc);
 		const hOld = api.SelectObject(hmdc, hbm);
 		const rc = api.Memory("RECT");
-		rc.right = h;
-		rc.bottom = h;
-		api.FillRect(hmdc, rc, 0, GetBGRA(GetSysColor(COLOR_MENU), 255));
 		api.SetTextColor(hmdc, GetSysColor(COLOR_WINDOWTEXT));
 		api.SetBkMode(hmdc, 1);
 		const lf = api.Memory("LOGFONT");
 		lf.lfFaceName = res[1],
-		lf.lfHeight = - h * .75;
+		lf.lfHeight = -h;
 		lf.lfWeight = 400;
-		const hFont = CreateFont(lf);
-		const hfontOld = api.SelectObject(hmdc, hFont);
+		const hfontOld = api.SelectObject(hmdc, CreateFont(lf));
+		let c = res[2].split(",");
+		c = StringFromCodePoint(c.length > 1 ? parseInt(c[0]) * 256 + parseInt(c[1]) : parseInt(c[0]));
+		api.DrawText(hmdc, c, -1, rc, DT_CALCRECT | DT_NOCLIP);
+		lf.lfHeight = -h * (h / (rc.bottom || h));
+		rc.left = 0;
 		rc.top = 0;
-		api.DrawText(hmdc, StringFromCodePoint(parseInt(res[2]) * 256 + parseInt(res[3])), -1, rc, DT_CENTER);
+		rc.right = h;
+		rc.bottom = h;
+		api.FillRect(hmdc, rc, 0, GetBGRA(GetSysColor(COLOR_MENU), 255));
+		api.SelectObject(hmdc, CreateFont(lf));
+		api.DrawText(hmdc, c, -1, rc, DT_CENTER);
 		api.SelectObject(hmdc, hfontOld);
 		api.SelectObject(hmdc, hOld);
 		api.DeleteDC(hmdc);
+		api.ReleaseDC(hwnd, hdc);
 		const image = api.CreateObject("WICBitmap").FromHBITMAP(hbm);
 		api.DeleteObject(hbm);
 		if (image) {
@@ -1408,6 +1430,22 @@ MakeImgIcon = function (src, index, h, bIcon) {
 		}
 		return GetHICON(sfi.iIcon, h, ILD_NORMAL);
 	}
+}
+
+CalcFontSize = function (FaceName, h, c) {
+	const hdc = api.GetDC(te.hwnd);
+	const hmdc = api.CreateCompatibleDC(hdc);
+	const lf = api.Memory("LOGFONT");
+	lf.lfFaceName = FaceName;
+	lf.lfHeight = -h;
+	lf.lfWeight = 400;
+	const hfontOld = api.SelectObject(hmdc, CreateFont(lf));
+	const rc = api.Memory("RECT");
+	api.DrawText(hmdc, c, -1, rc, DT_CALCRECT | DT_NOCLIP);
+	api.SelectObject(hmdc, hfontOld);
+	api.DeleteDC(hmdc);
+	api.ReleaseDC(hwnd, hdc);
+	return Math.min(h, Math.max(h * (h / (rc.bottom || h)), h * .8));
 }
 
 GetKeyKey = function (strKey) {
@@ -2229,6 +2267,15 @@ ExecMenu4 = function (Ctrl, Name, pt, hMenu, arContextMenu, nVerb, FV) {
 			if (ContextMenu.InvokeCommand(0, te.hwnd, nVerb - ContextMenu.idCmdFirst, null, null, SW_SHOWNORMAL, 0, 0) == S_OK) {
 				api.DestroyMenu(hMenu);
 				return S_OK;
+			}
+			if (Ctrl.AltSelectedItems) {
+				const sVerb = ContextMenu.GetCommandString(nVerb - ContextMenu.idCmdFirst, GCS_VERB);
+				if (sVerb) {
+					if (InvokeCommand(Ctrl.AltSelectedItems, 0, te.hwnd, sVerb, null, null, SW_SHOWNORMAL, 0, 0, te, CMF_EXTENDEDVERBS) == S_OK) {
+						api.DestroyMenu(hMenu);
+						return S_OK;
+					}
+				}
 			}
 		}
 	}

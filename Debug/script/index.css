@@ -310,3 +310,7 @@ a.treebutton:hover {
   color: captiontext;
   background-color: activecaption;
 }
+
+.fonticon {
+   vertical-align: middle;
+}
