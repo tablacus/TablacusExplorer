@@ -10180,6 +10180,11 @@ VOID teApiGetDeviceCaps(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 	teSetLong(pVarResult, GetDeviceCaps(param[0].hdc, param[1].intVal));
 }
 
+VOID teApimciSendString(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetLong(pVarResult, mciSendString(param[0].lpcwstr, param[1].lpwstr, param[2].uintVal, param[3].hwnd));
+}
+
 #ifdef _DEBUG
 VOID teApiTest(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -10553,8 +10558,8 @@ TEDispatchApi dispAPI[] = {
 	{ 0, -1, -1, -1, "GetClipboardData", teApiGetClipboardData },
 	{ 1,  0, -1, -1, "SetClipboardData", teApiSetClipboardData },
 	{ 2,  1, -1, -1, "ObjDelete", teApiObjDelete },
-	{ 2,  -1, -1, -1, "GetDeviceCaps", teApiGetDeviceCaps },
-		//{ 0, -1, -1, -1, "", teApi },
+	{ 2, -1, -1, -1, "GetDeviceCaps", teApiGetDeviceCaps },
+	{ 4,  0, -1, -1, "mciSendString", teApimciSendString },
 #ifdef _DEBUG
 	{ 0, -1, -1, -1, "Test", teApiTest },
 #endif
@@ -11991,7 +11996,14 @@ LRESULT CALLBACK WndProc2(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					g_strException = L"WM_CLOSE";
 #endif
 				}
-				DestroyWindow(hWnd);
+				try {
+					DestroyWindow(hWnd);
+				} catch (...) {
+					g_nException = 0;
+#ifdef _DEBUG
+					g_strException = L"DestroyWindow";
+#endif
+				}
 				return 0;
 			case WM_SIZE:
 			case WM_MOVE:
@@ -15710,7 +15722,7 @@ HRESULT CteShellBrowser::OnNavigationPending2(LPITEMIDLIST pidlFolder)
 		}
 	}
 	if FAILED(hr) {
-		if (teILIsBlank(pPrevious) && Close(FALSE)) {
+		if ((hr == E_ABORT || teILIsBlank(pPrevious)) && Close(FALSE)) {
 			return hr;
 		}
 		m_uLogIndex = m_uPrevLogIndex;
@@ -17594,7 +17606,11 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 										y += b / 2;
 									}
 								}
-								HMONITOR hMonitor = MonitorFromRect(&rcWindow, MONITOR_DEFAULTTONEAREST);
+								rc.left = x;
+								rc.top = y;
+								rc.right = x + w;
+								rc.bottom = y + h;
+								HMONITOR hMonitor = MonitorFromRect(&rc, MONITOR_DEFAULTTONEAREST);
 								MONITORINFO mi;
 								mi.cbSize = sizeof(mi);
 								if (GetMonitorInfo(hMonitor, &mi)) {

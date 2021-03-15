@@ -53,7 +53,7 @@ g_.bit = api.sizeof("HANDLE") * 8;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210221 ? te.Version : 20210314;
+		return te.Version < 20210315 ? te.Version : 20210315;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -257,14 +257,6 @@ InvokeCommand = function (Items, fMask, hwnd, Verb, Parameters, Directory, nShow
 		}
 	}
 	return hr;
-}
-
-GetTopWindow = function (hwnd) {
-	let hwnd1 = hwnd || WebBrowser.hwnd;
-	while (hwnd1 = api.GetParent(hwnd1)) {
-		hwnd = hwnd1;
-	}
-	return hwnd;
 }
 
 FindChildByClass = function (hwnd, s) {
