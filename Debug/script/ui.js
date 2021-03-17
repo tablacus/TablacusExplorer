@@ -455,20 +455,6 @@ LoadScripts = async function (js1, js2, cb) {
 		});
 	} else {
 		$ = window;
-		if (document.styleSheets[0].cssRules.length == 0) {
-			setTimeout(async function () {
-				const nCss = document.styleSheets[0].cssRules.length;
-				const el = document.getElementsByTagName("link");
-				for (let i = 0; i < el.length; ++i) {
-					if (el[i].href) {
-						ReadCss(await api.PathCreateFromUrl(el[i].href));
-					}
-				}
-				if (document.styleSheets[0].cssRules.length == nCss) {
-					ReadCss("script/index.css");
-				}
-			}, 99);
-		}
 	}
 	window.Addons = {
 		"_stack": await api.CreateObject("Array")
@@ -485,19 +471,28 @@ async function _InvokeMethod() {
 	}
 }
 
-ReadCss = async function (fn) {
-	let s;
+ReadCss = async function (s) {
 	const css = document.styleSheets.item(0);
-	const ar = (await ReadTextFile(fn)).split(/}\s*/m);
+	const ar = s.split(/}\s*/m);
 	while (s = ar.shift()) {
 		try {
 			const res = /\@import url\("([^"]+)"\);\s*(.*)/m.exec(s);
 			if (res) {
-				ReadCss(res[1]);
+				LoadCss(res[1]);
 			}
-			css.insertRule(s.replace(/^@[^;]*;\s*/gm, "") + "}", css.cssRules.length);
+			s = s.replace(/^@[^;]*;\s*/gm, "");
+			if (css.insertRule) {
+				css.insertRule(s + "}", css.cssRules.length);
+			} else if (css.addRule) {
+				const s2 = s.split("{");
+				css.addRule(s2[0], s2[1]);
+			}
 		} catch (e) { }
 	}
+}
+
+LoadCss = async function (fn) {
+	ReadCss(await ReadTextFile(fn));
 }
 
 ApplyLangTag = async function (o) {

@@ -9744,7 +9744,7 @@ VOID teApiCreateProcess(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 							bsStdOut = bs;
 							bs = NULL;
 						} else {
-							bsStdOut = teMultiByteToWideChar(CP_ACP, (LPCSTR)bs, dwLen);
+							bsStdOut = teMultiByteToWideChar(param[2].uintVal < 3 ? CP_ACP : param[2].uintVal, (LPCSTR)bs, dwLen);
 						}
 					}
 					teSysFreeString(&bs);
