@@ -4504,12 +4504,24 @@ HRESULT DoFunc(int nFunc, PVOID pObj, HRESULT hr)
 	return hr;
 }
 
-VOID teSetProgress(IProgressDialog *ppd, int nCurrent, int nCount)
+VOID teSetProgress(IProgressDialog *ppd, ULONGLONG ullCurrent, ULONGLONG ullTotal, int nMode)
 {
-	WCHAR pszMsg[8];
-	ppd->SetProgress(nCurrent, nCount);
-	swprintf_s(pszMsg, 8, L"%d%%", nCurrent * 100 / nCount);
-	ppd->SetTitle(pszMsg);
+	WCHAR pszMsg[64];
+	ppd->SetProgress64(ullCurrent, ullTotal);
+	if (nMode && ullTotal) {
+		if (nMode > 1 && ullTotal != 100) {
+			swprintf_s(pszMsg, 64, L"%llu%% ( %llu / %llu )", 100 * ullCurrent / ullTotal, ullCurrent, ullTotal);
+		} else {
+			swprintf_s(pszMsg, 64, L"%llu%%", 100 * ullCurrent / ullTotal);
+		}
+		ppd->SetTitle(pszMsg);
+	}
+}
+
+BOOL teSetProgressEx(IProgressDialog *ppd, ULONGLONG ullCurrent, ULONGLONG ullTotal, int nMode)
+{
+	teSetProgress(ppd, ullCurrent, ullTotal, nMode);
+	return ullCurrent < ullTotal && !ppd->HasUserCancelled();
 }
 
 static void threadAddItems(void *args)
@@ -4547,8 +4559,7 @@ static void threadAddItems(void *args)
 				if (lCount) {
 					VARIANT v;
 					v.vt = VT_I4;
-					for (v.lVal = 0; v.lVal < lCount && !ppd->HasUserCancelled(); ++v.lVal) {
-						teSetProgress(ppd, v.lVal, lCount);
+					for (v.lVal = 0; teSetProgressEx(ppd, v.lVal, lCount, 2); ++v.lVal) {
 						FolderItem *pItem;
 						if SUCCEEDED(pItems->Item(v, &pItem)) {
 							BOOL bAdd = TRUE;
@@ -4575,8 +4586,7 @@ static void threadAddItems(void *args)
 				pItems->Release();
 			} else {
 				int nCount = teGetObjectLength(pArray);
-				for (int nCurrent = 0; nCurrent < nCount && !ppd->HasUserCancelled(); ++nCurrent) {
-					teSetProgress(ppd, nCurrent, nCount);
+				for (int nCurrent = 0; teSetProgressEx(ppd, nCurrent, nCount, 2); ++nCurrent) {
 					if (SUCCEEDED(teGetPropertyAt(pArray, nCurrent, &pAddItems->pv[1])) && pAddItems->pv[1].vt != VT_EMPTY) {
 						if (!teGetIDListFromVariant(&pidl, &pAddItems->pv[1], TRUE) && pAddItems->bDeleted && pAddItems->pv[1].vt == VT_BSTR) {
 							pidl = teSHSimpleIDListFromPathEx(pAddItems->pv[1].bstrVal, FILE_ATTRIBUTE_HIDDEN, -1, -1, NULL);
@@ -4592,7 +4602,6 @@ static void threadAddItems(void *args)
 					}
 				}
 			}
-			teSetProgress(ppd, 100, 100);
 			ppd->SetLine(2, L"", TRUE, NULL);
 
 			if (pAddItems->bNavigateComplete) {
@@ -6496,7 +6505,7 @@ HRESULT teExtract(IStorage *pStorage, LPWSTR lpszFolderPath, IProgressDialog *pp
 			if (ppd->HasUserCancelled()) {
 				hr = E_ABORT;
 			} else if (nCount >= 0) {
-				teSetProgress(ppd, pnItems[0], nCount);
+				teSetProgress(ppd, pnItems[0], nCount, 2);
 				hr = pStorage->OpenStream(statstg.pwcsName, NULL, STGM_READ, NULL, &pStream);
 				if SUCCEEDED(hr) {
 					HANDLE hFile = CreateFile(bsPath, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -25542,61 +25551,59 @@ STDMETHODIMP CteProgressDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lc
 		}
 		VARIANT v;
 		switch(dispIdMember) {
-			//HasUserCancelled
-			case TE_METHOD + 1:
+			case TE_METHOD + 1: //HasUserCancelled
 				teSetBool(pVarResult, m_ppd->HasUserCancelled());
+
+			case TE_METHOD + 4: //SetProgress
+				if (nArg >= 1) {
+					teSetProgress(m_ppd, GetLLFromVariant(&pDispParams->rgvarg[nArg]), GetLLFromVariant(&pDispParams->rgvarg[nArg - 1]), nArg >= 2 ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]) : 0);
+				}
 				return S_OK;
-			//SetCancelMsg
-			case TE_METHOD + 2:
+
+			case TE_METHOD + 2: //SetCancelMsg
 				if (nArg >= 0) {
 					teVariantChangeType(&v, &pDispParams->rgvarg[nArg], VT_BSTR);
 					teSetLong(pVarResult, m_ppd->SetCancelMsg(v.bstrVal, NULL));
 					VariantClear(&v);
 				}
 				return S_OK;
-			//SetLine
-			case TE_METHOD + 3:
+
+			case TE_METHOD + 3: //SetLine
 				if (nArg >= 2) {
 					teVariantChangeType(&v, &pDispParams->rgvarg[nArg - 1], VT_BSTR);
 					teSetLong(pVarResult, m_ppd->SetLine(GetIntFromVariant(&pDispParams->rgvarg[nArg]), v.bstrVal, GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]), NULL));
 					VariantClear(&v);
 				}
 				return S_OK;
-			//SetProgress
-			case TE_METHOD + 4:
-				if (nArg >= 1) {
-					teSetLong(pVarResult, m_ppd->SetProgress64(GetLLFromVariant(&pDispParams->rgvarg[nArg]), GetLLFromVariant(&pDispParams->rgvarg[nArg - 1])));
-				}
-				return S_OK;
-			//SetTitle
-			case TE_METHOD + 5:
+
+			case TE_METHOD + 5: //SetTitle
 				if (nArg >= 0) {
 					teVariantChangeType(&v, &pDispParams->rgvarg[nArg], VT_BSTR);
 					teSetLong(pVarResult, m_ppd->SetTitle(v.bstrVal));
 					VariantClear(&v);
 				}
 				return S_OK;
-			//StartProgressDialog
-			case TE_METHOD + 6:
+
+			case TE_METHOD + 6: //StartProgressDialog
 				if (nArg >= 2) {
 					IUnknown *punk = NULL;
 					FindUnknown(&pDispParams->rgvarg[nArg - 1], &punk);
 					teSetLong(pVarResult, m_ppd->StartProgressDialog((HWND)GetPtrFromVariant(&pDispParams->rgvarg[nArg]), punk, GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]), NULL));
 				}
 				return S_OK;
-			//StopProgressDialog
-			case TE_METHOD + 7:
+			
+			case TE_METHOD + 7: //StopProgressDialog
 				m_ppd->SetLine(2, L"", TRUE, NULL);
 				teSetLong(pVarResult, m_ppd->StopProgressDialog());
 				return S_OK;
-			//Timer
-			case TE_METHOD + 8:
+
+			case TE_METHOD + 8: //Timer
 				if (nArg >= 0) {
 					teSetLong(pVarResult, m_ppd->Timer(GetIntFromVariant(&pDispParams->rgvarg[nArg]), NULL));
 				}
 				return S_OK;
-			//SetAnimation
-			case TE_METHOD + 9:
+
+			case TE_METHOD + 9: //SetAnimation
 #ifdef _2000XP
 				if (nArg >= 1) {
 					teSetLong(pVarResult, m_ppd->SetAnimation((HINSTANCE)GetPtrFromVariant(&pDispParams->rgvarg[nArg]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 1])));

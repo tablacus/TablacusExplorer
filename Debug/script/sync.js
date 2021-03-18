@@ -53,7 +53,7 @@ g_.bit = api.sizeof("HANDLE") * 8;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210317 ? te.Version : 20210317;
+		return te.Version < 20210318 ? te.Version : 20210318;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1105,8 +1105,9 @@ CustomSort = function (FV, id, r, fnAdd, fnComp) {
 	Progress.StartProgressDialog(te.hwnd, null, 2);
 	const Name = api.PSGetDisplayName(id) || id;
 	Progress.SetLine(1, api.LoadString(hShell32, 13585) || api.LoadString(hShell32, 6478), true);
-	FV.Parent.LockUpdate();
 	try {
+		const Selected = FV.SelectedItems();
+		FV.SelectItem(null, SVSI_DESELECTOTHERS);
 		const Items = FV.Items();
 		let List = [];
 		for (let i = Items.Count; i--;) {
@@ -1126,12 +1127,13 @@ CustomSort = function (FV, id, r, fnAdd, fnComp) {
 		const pt = api.Memory("POINT");
 		FV.GetItemPosition(Items.Item(0), pt);
 		const nMax = List.length;
-		const p = nMax / 100;
-		Progress.SetLine(1, api.LoadString(hShell32, 50690) + Name, true);
-		for (let i = 0; i < nMax && !Progress.HasUserCancelled(); ++i) {
-			Progress.SetTitle((i / p).toFixed(0) + "%");
-			Progress.SetProgress(i, nMax);
-			FV.SelectAndPositionItem(Items.Item(List[i][0]), 0, pt);
+		Progress.SetLine(1, api.LoadString(hShell32, 50690) + " " + Name, true);
+		for (let i = 0; !Progress.HasUserCancelled(i, nMax, 2) && i < nMax; ++i) {
+			const Item = Items.Item(List[i][0]);
+			FV.SelectAndPositionItem(Item, SVSI_DESELECT, pt);
+		}
+		for (let i = Selected.Count; i-- > 0;) {
+			FV.SelectItem(Selected.Item(i), SVSI_SELECT);
 		}
 		api.SendMessage(FV.hwndList, LVM_SETVIEW, ViewMode, 0);
 		FV.FolderFlags = FolderFlags;
@@ -1152,7 +1154,6 @@ CustomSort = function (FV, id, r, fnAdd, fnComp) {
 			}
 		}
 	} catch (e) { }
-	FV.Parent.UnlockUpdate(true);
 	Progress.StopProgressDialog();
 }
 

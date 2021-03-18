@@ -2499,14 +2499,8 @@ async function AddonsAppend() {
 		Progress.SetAnimation(hShell32, 150);
 		Progress.SetLine(1, await api.LoadString(hShell32, 13585) || await api.LoadString(hShell32, 6478), true);
 		const nLen = await GetLength(xmlAddons);
-		let bCancelled = false;
-		for (let i = 0; i < nLen && !bCancelled; ++i) {
-			await ArrangeAddon(await xmlAddons[i], td, Progress);
-			Progress.SetTitle(Math.floor(100 * i / nLen) + "%");
-			Progress.SetProgress(i, nLen);
-			(async function () {
-				bCancelled = await Progress.HasUserCancelled();
-			})();
+		for (let i = 0; !await Progress.HasUserCancelled(i, nLen, 2) && i < nLen; ++i) {
+			await ArrangeAddon(await xmlAddons[i], td);
 		}
 		td.sort();
 		if (g_nSort["1_1"] == 1) {
@@ -2519,7 +2513,7 @@ async function AddonsAppend() {
 	Progress.StopProgressDialog();
 }
 
-async function ArrangeAddon(xml, td, Progress) {
+async function ArrangeAddon(xml, td) {
 	const Id = await xml.getAttribute("Id");
 	const s = [];
 	let strUpdate = "";
@@ -2530,7 +2524,6 @@ async function ArrangeAddon(xml, td, Progress) {
 		}
 		let pubDate = "";
 		const dt = new Date(info.pubDate);
-		Progress.SetLine(2, info.Name, true);
 		if (info.pubDate) {
 			pubDate = await api.GetDateFormat(LOCALE_USER_DEFAULT, 0, dt.getTime(), await api.GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SSHORTDATE)) + " ";
 		}
@@ -2864,7 +2857,7 @@ function ShowButtons(b1, b2, SortMode) {
 	}
 }
 
-async function SortAddons(n) {
+async function SortAddons(n, el) {
 	if (g_SortMode == 1) {
 		const table = document.getElementById("Addons");
 		if (table.rows.length < 2) {
@@ -2901,29 +2894,23 @@ async function SortAddons(n) {
 			if (g_nSort[1] == 1) {
 				ar = ar.reverse();
 			}
-			let bCancelled = false;
 			const Progress = await api.CreateObject("ProgressDialog");
 			Progress.SetAnimation(hShell32, 150);
+			if (el) {
+				Progress.SetLine(1, await api.LoadString(hShell32, 50690) + " " + el.title, true);
+			}
 			Progress.StartProgressDialog(ui_.hwnd, null, 2);
 			try {
-				for (let i in ar) {
-					(async function () {
-						bCancelled = await Progress.HasUserCancelled();
-					})();
-					if (bCancelled) {
-						break;
-					}
-					Progress.SetTitle(Math.floor(100 * i / ar.length) + "%");
-					Progress.SetProgress(i, ar.length);
+				for (let i = 0; !await Progress.HasUserCancelled(i, ar.length, 2) && i < ar.length; ++i) {
 					const data = ar[i].split("\t");
 					const Id = data[data.length - 1];
-					Progress.SetLine(1, Id, true);
 					AddAddon(sorted, Id, document.getElementById("enable_" + Id).checked, "Sorted_");
 				}
 			} catch (e) {
 				ShowError(e);
 			}
 			Progress.StopProgressDialog();
+			const bCancelled = await Progress.HasUserCancelled();
 			table.style.display = bCancelled ? "" : "none";
 			sorted.style.display = bCancelled ? "none" : "";
 		}
