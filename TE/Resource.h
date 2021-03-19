@@ -9,7 +9,7 @@
 #define STRING2(str) #str
 #define VER_Y		21
 #define VER_M		3
-#define VER_D		18
+#define VER_D		19
 
 //Icon
 #define IDI_TE		1

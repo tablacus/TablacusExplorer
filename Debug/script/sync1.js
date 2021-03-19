@@ -577,8 +577,7 @@ g_basic = {
 					}
 				},
 				"Open in Explorer": function (Ctrl, pt) {
-					const FV = GetFolderView(Ctrl, pt);
-					FV && OpenInExplorer(FV);
+					OpenInExplorer(GetFolderView(Ctrl, pt));
 				}
 			},
 
@@ -1396,9 +1395,8 @@ GetCommandId = function (hMenu, s, ContextMenu) {
 
 OpenSelected = function (Ctrl, NewTab, pt) {
 	const ar = GetSelectedArray(Ctrl, pt, true);
-	let Selected = ar.shift();
-	const SelItem = ar.shift();
-	const FV = ar.shift();
+	let Selected = ar[0];
+	const FV = ar[2];
 	if (Selected) {
 		const Exec = [];
 		for (let i in Selected) {
@@ -1561,10 +1559,8 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 	}
 	let hr = RunEvent2("BeforeNavigate", Ctrl, fs, wFlags, Prev);
 	if (hr == S_OK && IsUseExplorer(Ctrl.FolderItem)) {
-		setTimeout(async function (Path) {
-			OpenInExplorer(Path);
-		}, 99, Ctrl.FolderItem);
-		return E_ABORT;
+		setTimeout(OpenInExplorer, 99, Ctrl.FolderItem);
+		return E_FAIL;
 	}
 	if (GetLock(Ctrl) && (wFlags & SBSP_NEWBROWSER) == 0 && !api.ILIsEqual(Prev, "about:blank")) {
 		hr = E_ACCESSDENIED;
@@ -1999,7 +1995,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 	}
 	const Items = ContextMenu.Items();
 	const Exec = [];
-	if (api.PathMatchSpec(strVerb, "opennewwindow;opennewprocess")) {
+	if (/opennewwindow|opennewprocess/i.test(strVerb)) {
 		CancelWindowRegistered();
 	}
 
@@ -2010,7 +2006,7 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 			path = Item.ExtendedProperty("linktarget") || Item.Path;
 			const cmd = api.AssocQueryString(ASSOCF_NONE, ASSOCSTR_COMMAND, Item.ExtendedProperty("linktarget") || Item, strVerb == "default" ? null : strVerb);
 			if (cmd) {
-				if (strVerb == "open" && api.PathMatchSpec(cmd, "?:\\Windows\\Explorer.exe;*\\Explorer.exe /idlist,*;rundll32.exe *fldr.dll,RouteTheCall*")) {
+				if (strVerb == "open" && api.PathMatchSpec(cmd, wsh.ExpandEnvironmentStrings("%SystemRoot%\\explorer.exe;%SystemRoot%\\explorer.exe /idlist,*;rundll32.exe *fldr.dll,RouteTheCall*"))) {
 					Navigate(Items.Item(i), NewTab);
 					NewTab |= SBSP_NEWBROWSER;
 					continue;
@@ -3203,6 +3199,15 @@ AddEvent("ReplaceMacroEx", [/%res:(.+)%/ig, function (strMatch, ref1) {
 
 AddEvent("ReplaceMacroEx", [/%AddonStatus:([^%]*)%/ig, function (strMatch, ref1) {
 	return GetNum(GetAddonElement(ref1).getAttribute("Enabled")) ? "on" : "off";
+}]);
+
+AddEvent("ReplaceMacroEx", [/"%Current%/ig, function (strMatch, ref1) {
+	let strSel = "";
+	const FV = GetFolderView(Ctrl);
+	if (FV) {
+		strSel = '"' + api.GetDisplayNameOf(FV, SHGDN_FORPARSING | SHGDN_ORIGINAL);
+	}
+	return strSel;
 }]);
 
 if (!window.chrome) {

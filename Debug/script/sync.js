@@ -48,12 +48,12 @@ g_.Autocomplete = api.CreateObject("Object");
 g_.LockUpdate = 0;
 g_.ptMenuDrag = api.Memory("POINT");
 g_.Locations = api.CreateObject("Object");
-g_.IEVer = window.chrome ? (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 : 12) : ScriptEngineMajorVersion() > 8 ? ScriptEngineMajorVersion() : ScriptEngineMinorVersion();
+g_.IEVer = window.chrome ? (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 : 12) : ("undefined" === typeof ScriptEngineMajorVersion ? 12 : (ScriptEngineMajorVersion() > 8 ? ScriptEngineMajorVersion() : ScriptEngineMinorVersion()));
 g_.bit = api.sizeof("HANDLE") * 8;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210318 ? te.Version : 20210318;
+		return te.Version < 20210319 ? te.Version : 20210319;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1104,7 +1104,6 @@ CustomSort = function (FV, id, r, fnAdd, fnComp) {
 	const Progress = api.CreateObject("ProgressDialog");
 	Progress.StartProgressDialog(te.hwnd, null, 2);
 	const Name = api.PSGetDisplayName(id) || id;
-	Progress.SetLine(1, api.LoadString(hShell32, 13585) || api.LoadString(hShell32, 6478), true);
 	try {
 		const Selected = FV.SelectedItems();
 		FV.SelectItem(null, SVSI_DESELECTOTHERS);
@@ -1132,9 +1131,8 @@ CustomSort = function (FV, id, r, fnAdd, fnComp) {
 			const Item = Items.Item(List[i][0]);
 			FV.SelectAndPositionItem(Item, SVSI_DESELECT, pt);
 		}
-		for (let i = Selected.Count; i-- > 0;) {
-			FV.SelectItem(Selected.Item(i), SVSI_SELECT);
-		}
+		Progress.SetLine(1, GetText("Selected items"), true);
+		FV.SelectItem(Selected, SVSI_SELECT);
 		api.SendMessage(FV.hwndList, LVM_SETVIEW, ViewMode, 0);
 		FV.FolderFlags = FolderFlags;
 		const hHeader = api.SendMessage(FV.hwndList, LVM_GETHEADER, 0, 0);
@@ -1921,11 +1919,11 @@ ExtractPath = function (Ctrl, s, pt) {
 			if (s == "..") {
 				return api.GetDisplayNameOf(api.ILGetParent(FV), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL);
 			}
-			let res = /\.\.\\(.*)/.exec(s);
+			let res = /^\.\.\\(.*)/.exec(s);
 			if (res) {
 				return BuildPath(api.GetDisplayNameOf(api.ILGetParent(FV), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL), res[1]);
 			}
-			res = /\.\\(.*)/.exec(s);
+			res = /^\.\\(.*)/.exec(s);
 			if (res) {
 				return BuildPath(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL), res[1]);
 			}
@@ -2900,7 +2898,12 @@ GetInnerFV = function (id) {
 OpenInExplorer = function (pid1) {
 	if (pid1) {
 		CancelWindowRegistered();
-		sha.Explore(pid1.FolderItem || pid1);
+		const pid = pid1.FolderItem || pid1;
+		if (pid && /^[A-Z]:\\|^\\\\\w|^::{/i.test(pid.Path)) {
+			api.CreateProcess(wsh.ExpandEnvironmentStrings("%SystemRoot%\\explorer.exe ") + PathQuoteSpaces(pid.Path), pid.Path);
+			return;
+		}
+		sha.Explore(pid);
 	}
 }
 

@@ -219,6 +219,21 @@ int teGetObjectLength(IDispatch *pdisp);
 
 //Unit
 
+VOID teFixListState(HWND hwnd, int dwFlags) {
+	if (hwnd && (dwFlags & SVSI_FOCUSED)) {// bug fix
+#ifdef _2000XP
+		if (g_bUpperVista) {
+#endif
+			int nFocused = ListView_GetNextItem(hwnd, -1, LVNI_ALL | LVNI_FOCUSED);
+			if (nFocused >= 0) {
+				ListView_SetItemState(hwnd, nFocused, 0, LVIS_FOCUSED);
+			}
+#ifdef _2000XP
+		}
+#endif
+	}
+}
+
 IDispatch* teAddLegacySupport(IDispatch *pdisp)
 {
 	DISPID id;
@@ -4506,13 +4521,18 @@ HRESULT DoFunc(int nFunc, PVOID pObj, HRESULT hr)
 
 VOID teSetProgress(IProgressDialog *ppd, ULONGLONG ullCurrent, ULONGLONG ullTotal, int nMode)
 {
-	WCHAR pszMsg[64];
+	WCHAR pszMsg[128];
 	ppd->SetProgress64(ullCurrent, ullTotal);
 	if (nMode && ullTotal) {
 		if (nMode > 1 && ullTotal != 100) {
-			swprintf_s(pszMsg, 64, L"%llu%% ( %llu / %llu )", 100 * ullCurrent / ullTotal, ullCurrent, ullTotal);
+			WCHAR pszCurrent[32], pszTotal[32];
+			swprintf_s(pszMsg, 32, L"%llu", ullCurrent);
+			teCommaSize(pszMsg, pszCurrent, 32, 0);
+			swprintf_s(pszMsg, 32, L"%llu", ullTotal);
+			teCommaSize(pszMsg, pszTotal, 32, 0);
+			swprintf_s(pszMsg, 128, L"%llu%% ( %s / %s )", 100 * ullCurrent / ullTotal, pszCurrent, pszTotal);
 		} else {
-			swprintf_s(pszMsg, 64, L"%llu%%", 100 * ullCurrent / ullTotal);
+			swprintf_s(pszMsg, 128, L"%llu%%", 100 * ullCurrent / ullTotal);
 		}
 		ppd->SetTitle(pszMsg);
 	}
@@ -15549,22 +15569,12 @@ STDMETHODIMP CteShellBrowser::SelectItem(VARIANT *pvfi, int dwFlags)
 		HRESULT hr = E_FAIL;
 		IFolderView *pFV;
 		if (m_pShellView && SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV)))) {
+			int nIndex = GetIntFromVariant(pvfi);
 			int nCount = 0;
 			pFV->ItemCount(SVGIO_ALLVIEW, &nCount);
-			if (nCount) {
-				if (m_hwndLV && (dwFlags & SVSI_FOCUSED)) {// bug fix
-#ifdef _2000XP
-					if (g_bUpperVista) {
-#endif
-						int nFocused = ListView_GetNextItem(m_hwndLV, -1, LVNI_ALL | LVNI_FOCUSED);
-						if (nFocused >= 0) {
-							ListView_SetItemState(m_hwndLV, nFocused, 0, LVIS_FOCUSED);
-						}
-#ifdef _2000XP
-					}
-#endif
-				}
-				hr = pFV->SelectItem(GetIntFromVariant(pvfi), dwFlags);
+			if (nIndex < nCount) {
+				teFixListState(m_hwndLV, dwFlags);
+				hr = pFV->SelectItem(nIndex, dwFlags);
 			}
 			pFV->Release();
 			if (hr == S_OK) {
@@ -15572,35 +15582,25 @@ STDMETHODIMP CteShellBrowser::SelectItem(VARIANT *pvfi, int dwFlags)
 			}
 		}
 	}
-/*	IDataObject *pDataObj;
+	IDataObject *pDataObj;
 	if (m_pShellView && GetDataObjFromVariant(&pDataObj, pvfi)) {
-		if (m_hwndLV && (dwFlags & SVSI_FOCUSED)) {// bug fix
-#ifdef _2000XP
-			if (g_bUpperVista) {
-#endif
-				int nFocused = ListView_GetNextItem(m_hwndLV, -1, LVNI_ALL | LVNI_FOCUSED);
-				if (nFocused >= 0) {
-					ListView_SetItemState(m_hwndLV, nFocused, 0, LVIS_FOCUSED);
-				}
-#ifdef _2000XP
-			}
-#endif
-		}
 		long nCount;
 		LPITEMIDLIST *ppidllist = IDListFormDataObj(pDataObj, &nCount);
 		if (ppidllist) {
-			if (nCount >= 1 &&  ppidllist[0]) {
-				for (int i = nCount; --i >= 0;) {
-					m_pShellView->SelectItem(ppidllist[i + 1], dwFlags);
-					teCoTaskMemFree(ppidllist[i + 1]);
+			if (ppidllist[0]) {
+				teCoTaskMemFree(ppidllist[0]);
+				teFixListState(m_hwndLV, dwFlags);
+				for (int i = 1; i <=  nCount; ++i) {
+					m_pShellView->SelectItem(ppidllist[i], dwFlags);
+					teCoTaskMemFree(ppidllist[i]);
+					dwFlags &= ~(SVSI_FOCUSED | SVSI_DESELECTOTHERS);
 				}
-				teILFreeClear(&ppidllist[0]);
 			}
 			delete [] ppidllist;
 		}
 		SafeRelease(&pDataObj);
 		return S_OK;
-	}*/
+	}
 	teGetIDListFromVariant(&pidl, pvfi);
 	return SelectItemEx(&pidl, dwFlags, TRUE);
 }
@@ -15609,18 +15609,7 @@ HRESULT CteShellBrowser::SelectItemEx(LPITEMIDLIST *ppidl, int dwFlags, BOOL bFr
 {
 	HRESULT hr = E_FAIL;
 	if (m_pShellView) {
-		if (m_hwndLV && (dwFlags & SVSI_FOCUSED)) {// bug fix
-#ifdef _2000XP
-			if (g_bUpperVista) {
-#endif
-				int nFocused = ListView_GetNextItem(m_hwndLV, -1, LVNI_ALL | LVNI_FOCUSED);
-				if (nFocused >= 0) {
-					ListView_SetItemState(m_hwndLV, nFocused, 0, LVIS_FOCUSED);
-				}
-#ifdef _2000XP
-			}
-#endif
-		}
+		teFixListState(m_hwndLV, dwFlags);
 		hr = m_pShellView->SelectItem(ILFindLastID(*ppidl), dwFlags);
 		if ((dwFlags & (SVSI_SELECTIONMARK | SVSI_SELECT)) == (SVSI_SELECTIONMARK | SVSI_SELECT)) {
 			m_pShellView->SelectItem(ILFindLastID(*ppidl), dwFlags & (SVSI_NOTAKEFOCUS | SVSI_SELECT));
@@ -20994,6 +20983,7 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 					}
 					Invoke4(g_pOnFunc[TE_OnInvokeCommand], &vResult, nArg + 2, pv);
 					if (GetIntFromVariantClear(&vResult) == S_OK) {
+						teSetLong(pVarResult, S_OK);
 						return S_OK;
 					}
 				}

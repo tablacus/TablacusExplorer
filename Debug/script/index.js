@@ -220,7 +220,9 @@ FocusFV = function () {
 }
 
 CancelWindowRegistered = function () {
-	clearTimeout(ui_.tidWindowRegistered);
+	if (ui_.tidWindowRegistered) {
+		clearTimeout(ui_.tidWindowRegistered);
+	}
 	ui_.bWindowRegistered = false;
 	ui_.tidWindowRegistered = setTimeout(function () {
 		ui_.bWindowRegistered = true;
