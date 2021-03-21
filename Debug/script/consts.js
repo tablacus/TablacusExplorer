@@ -105,6 +105,28 @@ LoadScript = function (js, cb) {
 	});
 }
 
+GetFileName = function (s) {
+	const res = /([^\\\/]*)$/.exec(s);
+	return res ? res[1] : "";
+}
+
+PathQuoteSpaces = function (s) {
+	return /\s/.test(s) ? '"' + s + '"' : s;
+}
+
+PathUnquoteSpaces = function (s) {
+	const res = /^"(.*)"$/.exec(s);
+	return res ? res[1] : s;
+}
+
+GetNum = function (s) {
+	return "number" === typeof s ? s : Number("string" === typeof s ? s.replace(/[^\d\-\.].*/, "") : s) || 0;
+}
+
+SameText = function (s1, s2) {
+	return String(s1).toLowerCase() == String(s2).toLowerCase();
+}
+
 //Tablacus
 Ox80000000 = 0x80000000 | 0;
 CTRL_FV = 0;

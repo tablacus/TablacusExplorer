@@ -219,16 +219,6 @@ FocusFV = function () {
 	}, ui_.DoubleClickTime);
 }
 
-CancelWindowRegistered = function () {
-	if (ui_.tidWindowRegistered) {
-		clearTimeout(ui_.tidWindowRegistered);
-	}
-	ui_.bWindowRegistered = false;
-	ui_.tidWindowRegistered = setTimeout(function () {
-		ui_.bWindowRegistered = true;
-	}, 9999);
-}
-
 ExitFullscreen = function () {
 	if (document.msExitFullscreen) {
 		document.msExitFullscreen();
@@ -330,13 +320,6 @@ te.OnArrange = async function (Ctrl, rc) {
 			te.ArrangeCB(Ctrl, rc);
 		});
 	}
-}
-
-g_.event.windowregistered = function (Ctrl) {
-	if (ui_.bWindowRegistered) {
-		RunEvent1("WindowRegistered", Ctrl);
-	}
-	ui_.bWindowRegistered = true;
 }
 
 ArrangeAddons = async function () {

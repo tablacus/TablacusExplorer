@@ -129,18 +129,13 @@ ExtractAttr = async function (o, ar, re) {
 	}
 }
 
-StringFromCodePoint = function (n) {
-	const cp = n - 0x10000;
-	return cp < 0 ? String.fromCharCode(n) : String.fromCharCode(0xd800 | (cp >> 10), 0xDC00 | (cp & 0x3ff));
-}
-
 GetImgTag = async function (o, h) {
 	if (o.src) {
 		const res = /^font:([^,]*),([\da-fx,]+)/i.exec(await MainWindow.RunEvent4("ReplaceIcon", o.src) || o.src);
 		if (res) {
 			const FontFace = res[1].replace(/\"/g, '\\"');
 			let c = res[2].split(",");
-			c = StringFromCodePoint(c.length > 1 ? parseInt(c[0]) * 256 + parseInt(c[1]) : parseInt(c[0]));
+			c = String.fromCodePoint(c.length > 1 ? parseInt(c[0]) * 256 + parseInt(c[1]) : parseInt(c[0]));
 			h = h || window.IconSize;
 			let h2 = Number(h) ? await CalcFontSize(FontFace, h, c) + "px" : EncodeSC(h);
 			h = Number(h) ? h + "px" : EncodeSC(h);
@@ -300,7 +295,7 @@ DeleteItem = async function (path, fFlags) {
 		path = path.split("\0");
 	}
 	if ("string" !== typeof path || await IsExists(path)) {
-		return api.SHFileOperation(FO_DELETE, path, null, fFlags || FOF_SILENT | FOF_NOCONFIRMATION | FOF_NOERRORUI, false);
+		return await api.SHFileOperation(FO_DELETE, path, null, fFlags || FOF_SILENT | FOF_NOCONFIRMATION | FOF_NOERRORUI, false);
 	}
 }
 
@@ -365,5 +360,12 @@ if ("undefined" === typeof JSON) {
 			}
 			return '{' + ar.join(",") + "}";
 		}
+	}
+}
+
+if (!String.fromCodePoint) {
+	String.fromCodePoint = function (n) {
+		const cp = n - 0x10000;
+		return cp < 0 ? String.fromCharCode(n) : String.fromCharCode(0xd800 | (cp >> 10), 0xDC00 | (cp & 0x3ff));
 	}
 }

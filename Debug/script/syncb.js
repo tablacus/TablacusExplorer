@@ -19,10 +19,6 @@ clearTimeout = function () {
 	InvokeUI("clearTimeout", Array.apply(null, arguments));
 }
 
-CancelWindowRegistered = function () {
-	InvokeUI("CancelWindowRegistered");
-}
-
 CloseWindow = function () {
 	InvokeUI("CloseWindow");
 }

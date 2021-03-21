@@ -1044,16 +1044,19 @@ VOID teUnadviseAndRelease(IUnknown *punk, IID diid, PDWORD pdwCookie)
 	*pdwCookie = 0;
 }
 
-VOID teRevoke()
+VOID teRevoke(IShellWindows *pSW)
 {
-	if (g_pSW) {
+	if (pSW) {
+		if (pSW == g_pSW) {
+			g_pSW = NULL;
+		}
 		try {
 			if (g_lSWCookie) {
-				g_pSW->Revoke(g_lSWCookie);
+				pSW->Revoke(g_lSWCookie);
 				g_lSWCookie = 0;
 			}
 			if (g_dwCookieSW) {
-				teUnadviseAndRelease(g_pSW, DIID_DShellWindowsEvents, &g_dwCookieSW);
+				teUnadviseAndRelease(pSW, DIID_DShellWindowsEvents, &g_dwCookieSW);
 			}
 		} catch (...) {
 			g_nException = 0;
@@ -1061,45 +1064,44 @@ VOID teRevoke()
 			g_strException = L"Revoke";
 #endif
 		}
+		SafeRelease(&pSW);
 	}
-	g_pSW = NULL;
 }
 
-VOID teRegister(BOOL bInit)
+VOID teRegister()
 {
-	if (bInit || g_pSW) {
-		IShellWindows *pSW;
-		if (SUCCEEDED(teCreateInstance(CLSID_ShellWindows,
-			NULL, NULL, IID_PPV_ARGS(&pSW)))) {
-			if (pSW != g_pSW) {
-				teRevoke();
-				g_pSW = pSW;
-				if (g_pWebBrowser) {
-					pSW->Register(g_pWebBrowser->m_pWebBrowser, HandleToLong(g_hwndMain), SWC_3RDPARTY, &g_lSWCookie);
-					BSTR bsPath;
-					teGetModuleFileName(NULL, &bsPath);//Executable Path
-					LPITEMIDLIST pidl = SHSimpleIDListFromPath(bsPath);
-					VARIANT v;
-					if (GetVarArrayFromIDList(&v, pidl)) {
+	IShellWindows *pSW;
+	if (SUCCEEDED(teCreateInstance(CLSID_ShellWindows,
+		NULL, NULL, IID_PPV_ARGS(&pSW)))) {
+		if (pSW == g_pSW) {
+			pSW->Release();
+		} else {
+			IShellWindows *pSW2 = g_pSW;
+			g_pSW = pSW;
+			teRevoke(pSW2);
+			if (g_pWebBrowser) {
+				pSW->Register(g_pWebBrowser->m_pWebBrowser, HandleToLong(g_hwndMain), SWC_3RDPARTY, &g_lSWCookie);
+				BSTR bsPath;
+				teGetModuleFileName(NULL, &bsPath);//Executable Path
+				LPITEMIDLIST pidl = SHSimpleIDListFromPath(bsPath);
+				VARIANT v;
+				if (GetVarArrayFromIDList(&v, pidl)) {
 #ifdef _DEBUG
-						HRESULT hr = pSW->OnNavigate(g_lSWCookie, &v);
-						if (hr != S_OK) {
-							WCHAR pszNum[10];
-							swprintf_s(pszNum, 9, L"%08x", hr);
-							MessageBox(g_hwndMain, pszNum, _T(PRODUCTNAME), MB_OK | MB_ICONERROR);
-						}
-#else
-						pSW->OnNavigate(g_lSWCookie, &v);
-#endif
-						::VariantClear(&v);
+					HRESULT hr = pSW->OnNavigate(g_lSWCookie, &v);
+					if (hr != S_OK) {
+						WCHAR pszNum[10];
+						swprintf_s(pszNum, 9, L"%08x", hr);
+						MessageBox(g_hwndMain, pszNum, _T(PRODUCTNAME), MB_OK | MB_ICONERROR);
 					}
-					teCoTaskMemFree(pidl);
-					teSysFreeString(&bsPath);
+#else
+					pSW->OnNavigate(g_lSWCookie, &v);
+#endif
+					::VariantClear(&v);
 				}
-				teAdvise(pSW, DIID_DShellWindowsEvents, static_cast<IDispatch *>(g_pTE), &g_dwCookieSW);
-			} else {
-				pSW->Release();
+				teCoTaskMemFree(pidl);
+				teSysFreeString(&bsPath);
 			}
+			teAdvise(pSW, DIID_DShellWindowsEvents, static_cast<IDispatch *>(g_pTE), &g_dwCookieSW);
 		}
 	}
 }
@@ -1315,18 +1317,20 @@ BOOL tePathMatchSpec(LPCWSTR pszFile, LPWSTR pszSpec)
 	return FALSE;
 }
 
-BOOL tePathIsNetworkPath(LPCWSTR pszPath)//PathIsNetworkPath is slow in DRIVE_NO_ROOT_DIR.
+BOOL tePathIsNetworkPath(LPCWSTR pszPath)
 {
 	if (!pszPath) {
 		return FALSE;
 	}
-	WCHAR pszDrive[4];
+	WCHAR pszDrive[4];//PathIsNetworkPath is slow in DRIVE_NO_ROOT_DIR.
 	lstrcpyn(pszDrive, pszPath, 4);
 	if (pszDrive[0] >= 'A' && pszDrive[1] == ':' && pszDrive[2] == '\\') {
 		UINT uDriveType = GetDriveType(pszDrive);
-		return uDriveType == DRIVE_REMOTE || uDriveType == DRIVE_NO_ROOT_DIR;
+		if (uDriveType == DRIVE_REMOTE || uDriveType == DRIVE_NO_ROOT_DIR) {
+			return TRUE;
+		}
 	}
-	return tePathMatchSpec(pszPath, L"\\\\*;*://*") && !teStartsText(L"\\\\\\", pszPath);
+	return PathIsNetworkPath(pszPath);
 }
 
 HRESULT STDAPICALLTYPE teGetDpiForMonitor(HMONITOR hmonitor, MONITOR_DPI_TYPE dpiType, UINT *dpiX, UINT *dpiY)
@@ -6464,7 +6468,7 @@ HRESULT MessageProc(MSG *pMsg)
 VOID Finalize()
 {
 	try {
-		teRevoke();
+		teRevoke(g_pSW);
 		for (int i = _countof(g_maps); i--;) {
 			delete[] g_maps[i];
 		}
@@ -10757,7 +10761,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 				break;
 			case TET_Reload:
 				if (g_nReload) {
-					teRevoke();
+					teRevoke(g_pSW);
 #ifndef _DEBUG
 					BSTR bsPath, bsQuoted;
 					int i = teGetModuleFileName(NULL, &bsPath);
@@ -11028,13 +11032,6 @@ HRESULT teCreateWebView2(IWebBrowser2 **ppWebBrowser)
 		return hr;
 	}
 	WCHAR pszTEWV2[MAX_PATH];
-#ifdef _DEBUG
-#ifdef _WIN64
-	lstrcpy(pszTEWV2, L"C:\\cpp\\tewv\\x64\\Debug\\tewv64d.dll");
-#else
-	lstrcpy(pszTEWV2, L"C:\\cpp\\tewv\\Debug\\tewv32d.dll");
-#endif
-#else
 	GetModuleFileName(NULL, pszTEWV2, MAX_PATH);
 	PathRemoveFileSpec(pszTEWV2);
 #ifdef _WIN64
@@ -11042,6 +11039,14 @@ HRESULT teCreateWebView2(IWebBrowser2 **ppWebBrowser)
 #else
 	PathAppend(pszTEWV2, L"lib\\tewv32.dll");
 #endif
+#ifdef _DEBUG
+	if (!PathFileExists(pszTEWV2)) {
+#ifdef _WIN64
+		lstrcpy(pszTEWV2, L"C:\\cpp\\tewv\\x64\\Debug\\tewv64d.dll");
+#else
+		lstrcpy(pszTEWV2, L"C:\\cpp\\tewv\\Debug\\tewv32d.dll");
+#endif
+	}
 #endif
 	hr = teCreateInstance(CLSID_WebBrowserExt, pszTEWV2, &g_hTEWV, IID_PPV_ARGS(ppWebBrowser));
 	if (hr == S_OK && !g_pSP) {
@@ -11499,8 +11504,6 @@ function _c(s) {\
 	teSysFreeString(&bsIndex);
 	teSysFreeString(&bsPath);
 
-	// Init ShellWindows
-	teRegister(TRUE);
 	// Main message loop:
 	while (g_bMessageLoop) {
 		try {
@@ -11764,7 +11767,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				g_nLockUpdate += 10000;
 				try {
 					if (CanClose(g_pTE)) {
-						teRevoke();
+						teRevoke(g_pSW);
 						try {
 							DestroyWindow(hWnd);
 						} catch (...) {
@@ -11777,15 +11780,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				g_nLockUpdate -= 10000;
 				return 0;
 			case WM_SIZE:
-				if (g_pWebBrowser) {
-					teSetObjectRects(g_pWebBrowser->m_pWebBrowser, hWnd);
-				}
-				ArrangeWindow();
-				break;
 			case WM_MOVE:
 				if (g_pWebBrowser) {
 					teSetObjectRects(g_pWebBrowser->m_pWebBrowser, hWnd);
 				}
+				ArrangeWindow();
 				break;
 			case WM_DESTROY:
 				try {
@@ -11892,7 +11891,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				break;
 			//System
 			case WM_SETTINGCHANGE:
-				teRegister(FALSE);
+				teRegister();
 				teGetDarkMode();
 				if (_RegenerateUserEnvironment) {
 					try {
@@ -17331,6 +17330,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 			//ClearEvents
 			case TE_METHOD + 1008:
 				ClearEvents();
+				teRegister();
 				g_nReload = 0;
 				return S_OK;
 			//Reload

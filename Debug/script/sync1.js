@@ -2514,6 +2514,9 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 };
 
 te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
+	if (msg == WM_SETTINGCHANGE) {
+		te.Data.tempFolder = GetTempFolder(1);
+	}
 	const hr = RunEvent3("AppMessage", Ctrl, hwnd, msg, wParam, lParam);
 	if (isFinite(hr)) {
 		return hr;
@@ -2700,7 +2703,6 @@ g_.event.begindrag = function (Ctrl) {
 	return !isFinite(RunEvent3("BeginDrag", Ctrl));
 }
 
-
 g_.event.beforegetdata = function (Ctrl, Items, nMode) {
 	return RunEvent2("BeforeGetData", Ctrl, Items, nMode);
 }
@@ -2745,6 +2747,14 @@ g_.event.itempostpaint = function (Ctrl, pid, nmcd, vcd) {
 
 g_.event.handleicon = function (Ctrl, pid, iItem) {
 	return RunEvent3("HandleIcon", Ctrl, pid, iItem);
+}
+
+g_.event.windowregistered = function (Ctrl) {
+	if (!g_.tmWindowRegistered || new Date().getTime() > g_.tmWindowRegistered) {
+		RunEvent1("WindowRegistered", Ctrl);
+	} else {
+		g_.tmWindowRegistered = void 0;
+	}
 }
 
 //Tablacus Events
@@ -2912,6 +2922,10 @@ KeyExecEx = function (Ctrl, mode, nKey, hwnd) {
 	}
 	api.ClientToScreen(Ctrl.hwnd, pt);
 	return ArExec(Ctrl, eventTE.Key[mode][nKey], pt, hwnd);
+}
+
+CancelWindowRegistered = function () {
+	g_.tmWindowRegistered = new Date().getTime() + 9999;
 }
 
 importScripts = function () {
@@ -3277,12 +3291,16 @@ UpdateAndReload = function (arg) {
 			return;
 		}
 	}
-	if (!IsExists(BuildPath(arg.temp, GetFileName(api.GetModuleFileName(null))))) {
+	if (!arg.Boot && !IsExists(BuildPath(arg.temp, GetFileName(api.GetModuleFileName(null))))) {
 		api.SHFileOperation(FO_MOVE, arg.temp + "\\*", te.Data.Installed, FOF_NOCONFIRMATION, false);
 		ReloadCustomize();
 		return;
 	}
-	g_.strUpdate = ['"', api.IsWow64Process(api.GetCurrentProcess()) ? wsh.ExpandEnvironmentStrings("%SystemRoot%\\Sysnative") : system32, "\\", "wscript.exe", '" "', arg.temp, "\\script\\update.js", '" "', api.GetModuleFileName(null), '" "', arg.temp, '" "', api.LoadString(hShell32, 12612), '" "', api.LoadString(hShell32, 12852), '"'].join("");
+	let update = BuildPath(arg.temp, "script\\update.js");
+	if (!fso.FileExists(update)) {
+		update = BuildPath(te.Data.Installed, "script\\update.js");
+	}
+	g_.strUpdate = [PathQuoteSpaces(BuildPath(api.IsWow64Process(api.GetCurrentProcess()) ? wsh.ExpandEnvironmentStrings("%SystemRoot%\\Sysnative") : system32, "wscript.exe")), PathQuoteSpaces(update), PathQuoteSpaces(api.GetModuleFileName(null)), PathQuoteSpaces(arg.temp), PathQuoteSpaces(api.LoadString(hShell32, 12612)), PathQuoteSpaces(api.LoadString(hShell32, 12852))].join(" ");
 	DeleteTempFolder = PerformUpdate;
 	WmiProcess("WHERE ExecutablePath='" + (api.GetModuleFileName(null).split("\\").join("\\\\")) + "' AND ProcessId!=" + arg.pid, function (item) {
 		item.Terminate();
@@ -3595,8 +3613,7 @@ if (!te.Data) {
 
 	te.Data.Installed = GetParentFolderName(api.GetModuleFileName(null));
 	te.Data.DataFolder = te.Data.Installed;
-	te.Data.TempFolder = BuildPath(fso.GetSpecialFolder(2).Path, "tablacus");
-
+	te.Data.TempFolder = GetTempPath(1);
 	let fn = function () {
 		te.Data.DataFolder = BuildPath(api.GetDisplayNameOf(ssfAPPDATA, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), "Tablacus\\Explorer");
 		const ParentFolder = GetParentFolderName(te.Data.DataFolder);

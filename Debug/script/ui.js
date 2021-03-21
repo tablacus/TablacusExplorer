@@ -2,7 +2,6 @@
 
 ui_ = {
 	IEVer: window.chrome ? (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 : 12) : ScriptEngineMajorVersion() > 8 ? ScriptEngineMajorVersion() : ScriptEngineMinorVersion(),
-	bWindowRegistered: true,
 	Zoom: 1,
 	eventTE: {}
 };
@@ -278,13 +277,11 @@ CheckUpdate2 = async function (xhr, url, arg1) {
 			return;
 		}
 	}
-	arg.temp = BuildPath(await wsh.ExpandEnvironmentStrings("%TEMP%"), "tablacus");
-	await CreateFolder2(await arg.temp);
-	arg.InstalledFolder = ui_.Installed;
-	arg.zipfile = BuildPath(await arg.temp, await arg.file);
-	arg.temp = await arg.temp + "\\explorer";
-	await DeleteItem(await arg.temp);
-	await CreateFolder2(await arg.temp);
+	const temp = await GetTempPath(3);
+	await CreateFolder(temp);
+	arg.zipfile = BuildPath(temp, await arg.file);
+	arg.temp = BuildPath(temp, "explorer");
+	await CreateFolder(await arg.temp);
 	OpenHttpRequest(await arg.url, "http://tablacus.github.io/TablacusExplorerAddons/te/" + ((await arg.url).replace(/^.*\//, "")), "CheckUpdate3", arg);
 }
 

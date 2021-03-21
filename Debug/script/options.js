@@ -1125,12 +1125,13 @@ async function SetAddon(Id, bEnable, td, Alt) {
 	const info = await GetAddonInfo(Id);
 	const bLevel = (!window.chrome || await info.Level > 1);
 	const MinVersion = await info.MinVersion;
+	const bConfig = GetNum(await info.Config);
 	const bMinVer = !bLevel || MinVersion && await AboutTE(0) < await CalcVersion(MinVersion);
-	if (bMinVer) {
+	if (bMinVer || bConfig) {
 		bEnable = false;
 	}
 	const s = ['<div ', (Alt ? '' : 'draggable="true" ondragstart="Start5(event, this)" ondragend="End5()"'), ' title="', Id, '" Id="', Alt || "Addons_", Id, '">'];
-	s.push('<table><tr style="border-top: 1px solid buttonshadow"', bEnable ? "" : ' class="disabled"', '><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id + '">'), '</td><td style="width: 100%"><label for="_', Id, '">', await info.Name, "&nbsp;", await info.Version, '<br><a href="#" onclick="return AddonInfo(\'', Id, '\', this)"  class="link" style="font-size: .9em">', await GetText('Details'), ' (', Id, ')</a>');
+	s.push('<table><tr style="border-top: 1px solid buttonshadow"', bEnable || bConfig ? "" : ' class="disabled"', '><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id + '">'), '</td><td style="width: 100%"><label for="_', Id, '">', await info.Name, "&nbsp;", await info.Version, '<br><a href="#" onclick="return AddonInfo(\'', Id, '\', this)"  class="link" style="font-size: .9em">', await GetText('Details'), ' (', Id, ')</a>');
 	s.push(' <a href="#" onclick="AddonRemove(\'', Id, '\'); return false;" style="color: red; font-size: .9em; white-space: nowrap; margin-left: 2em">', await GetText('Delete'), "</a></td>");
 	if (!bLevel) {
 		s.push('<td class="danger" style="align: right; white-space: nowrap; vertical-align: middle">Incompatible&nbsp;</td>');
@@ -1139,8 +1140,9 @@ async function SetAddon(Id, bEnable, td, Alt) {
 	} else if (await info.Options) {
 		s.push('<td style="white-space: nowrap; vertical-align: middle; padding-right: 1em"><a href="#" onclick="AddonOptions(\'', Id, '\'); return false;" class="link" id="opt_', Id, '">', await GetText('Options'), '</td>');
 	}
-	s.push('<td style="vertical-align: middle', bMinVer ? ';display: none"' : "", '"><input type="checkbox" ', (Alt ? "" : 'id="enable_' + Id + '"'), ' onclick="AddonEnable(this, \'', Id, '\')" ', bEnable ? " checked" : "", '></td>');
-	s.push('<td style="vertical-align: middle', bMinVer ? ';display: none"' : "", '"><label for="enable_', Id, '" style="display: block; width: 6em; white-space: nowrap">', await GetText(bEnable ? "Enabled" : "Enable"), '</label></td>');
+	const strEnable = bMinVer || bConfig ? 'visibility: hidden' : "";
+	s.push('<td style="vertical-align: middle"><input type="checkbox" ', (Alt ? "" : 'id="enable_' + Id + '"'), ' onclick="AddonEnable(this, \'', Id, '\')" ', bEnable ? " checked" : "", ' style="', strEnable, '"></td>');
+	s.push('<td style="vertical-align: middle"><label for="enable_', Id, '" style="display: block; width: 6em; white-space: nowrap;', strEnable, '">', await GetText(bEnable ? "Enabled" : "Enable"), '</label></td>');
 	s.push('</tr></table></label></div>');
 	td.innerHTML = s.join("");
 	await ApplyLang(td);
@@ -1536,13 +1538,10 @@ InitDialog = async function () {
 		for (let i = 0xe7; i < 0xf9; ++i) {
 			a["Segoe MDL2 Assets " + (i * 256).toString(16)] = "f,Segoe MDL2 Assets,0x" + (i * 256).toString(16) + ",256";
 		}
-		for (let i = 0x1f3; i < 0x1f8; ++i) {
-			a["Segoe UI Emoji " + (i * 256).toString(16)] = "f,Segoe UI Emoji,0x" + (i * 256).toString(16) + ",256";
+		const sue = [0x1f300, 0x1f400, 0x1f500, 0x1f600, 0x1f700, 0x2600, 0x2700];
+		for (let i = 0; i < sue.length; ++i) {
+			a["Segoe UI Emoji " + sue[i].toString(16)] = "f,Segoe UI Emoji,0x" + sue[i].toString(16) + ",256";
 		}
-		for (let i = 0x26; i < 0x28; ++i) {
-			a["Segoe UI " + (i * 256).toString(16)] = "f,Segoe UI,0x" + (i * 256).toString(16) + ",256";
-		}
-
 		a["16px ieframe,699"] = "b,699,16";
 		a["24px ieframe,697"] = "b,697,24";
 		a.imageres = "i,imageres.dll";
@@ -2617,7 +2616,7 @@ async function Install(o, bUpdate) {
 async function Install2(xhr, url, o) {
 	const Id = o.title.replace(/_.*$/, "");
 	const file = o.title.replace(/\./, "") + '.zip';
-	const temp = await te.Data.TempFolder;
+	const temp = await GetTempPath(3);
 	await CreateFolder(temp);
 	const dest = BuildPath(temp, Id);
 	await DeleteItem(dest);
@@ -2653,7 +2652,7 @@ async function InstallIcon(o) {
 
 async function InstallIcon2(xhr, url, o) {
 	const file = o.title.replace(/\./, "") + '.zip';
-	const temp = await te.Data.TempFolder;
+	const temp = await GetTempPath(3);
 	await CreateFolder(temp);
 	const dest = BuildPath(await te.Data.DataFolder, "icons");
 	await CreateFolder(dest);

@@ -39,7 +39,6 @@ for (let i in ar) {
 }
 g_.stack_TC = api.CreateObject("Array");
 g_.dlgs = api.CreateObject("Object");
-g_.bWindowRegistered = true;
 g_.xmlWindow = null;
 g_.elAddons = api.CreateObject("Object");
 g_.event = api.CreateObject("Object");
@@ -53,7 +52,7 @@ g_.bit = api.sizeof("HANDLE") * 8;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210319 ? te.Version : 20210319;
+		return te.Version < 20210321 ? te.Version : 20210321;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1000,7 +999,15 @@ RemoveCommand = function (hMenu, ContextMenu, strDelete) {
 }
 
 DeleteTempFolder = function () {
-	DeleteItem(te.Data.TempFolder);
+	const path = GetTempPath(1);
+	const wfd = api.Memory("WIN32_FIND_DATA");
+	const hFind = api.FindFirstFile(path + "\\*", wfd);
+	for (let bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = api.FindNextFile(hFind, wfd)) {
+		if (wfd.cFileName != "." && wfd.cFileName != "..") {
+			DeleteItem(BuildPath(path, wfd.cFileName));
+		}
+	}
+	api.FindClose(hFind);
 }
 
 PerformUpdate = function () {
@@ -1064,6 +1071,27 @@ GetThumbnail = function (image, m, f) {
 	return image.GetThumbnailImage(w * z, h * z);
 }
 
+GetTempPath = function (n) {
+	let temp = String(fso.GetSpecialFolder(2).Path);
+	if (temp.indexOf("~") >= 0) {
+		const pid = api.ILCreateFromPath(temp);
+		pid.IsFolder;
+		temp = pid.Path;
+	}
+	if (n & 1) {
+		temp = BuildPath(temp, "tablacus");
+	}
+	if (n & 2) {
+		let name = "";
+		do {
+			const r = Math.floor(Math.random() * 36);
+			name += String.fromCharCode(r > 9 ? r + 87 : r + 48);
+		} while (name.length < 5 || IsExists(BuildPath(temp, name)));
+		temp = BuildPath(temp, name);
+	}
+	return temp;
+}
+
 ColumnsReplace = function (Ctrl, pid, fmt, fn, priority) {
 	if (!Ctrl.ColumnsReplace) {
 		try {
@@ -1116,6 +1144,7 @@ CustomSort = function (FV, id, r, fnAdd, fnComp) {
 		if (r) {
 			List = List.reverse();
 		}
+		const IconSize = FV.IconSize;
 		const ViewMode = api.SendMessage(FV.hwndList, LVM_GETVIEW, 0, 0);
 		if (ViewMode == 1 || ViewMode == 3) {
 			api.SendMessage(FV.hwndList, LVM_SETVIEW, 4, 0);
@@ -1151,6 +1180,7 @@ CustomSort = function (FV, id, r, fnAdd, fnComp) {
 				}
 			}
 		}
+		FV.IconSize = IconSize;
 	} catch (e) { }
 	Progress.StopProgressDialog();
 }
@@ -1386,7 +1416,7 @@ MakeImgIcon = function (src, index, h, bIcon) {
 		lf.lfWeight = 400;
 		const hfontOld = api.SelectObject(hmdc, CreateFont(lf));
 		let c = res[2].split(",");
-		c = StringFromCodePoint(c.length > 1 ? parseInt(c[0]) * 256 + parseInt(c[1]) : parseInt(c[0]));
+		c = String.fromCodePoint(c.length > 1 ? parseInt(c[0]) * 256 + parseInt(c[1]) : parseInt(c[0]));
 		api.DrawText(hmdc, c, -1, rc, DT_CALCRECT | DT_NOCLIP);
 		lf.lfHeight = -h * (h / (rc.bottom || h));
 		rc.left = 0;
@@ -1436,7 +1466,7 @@ CalcFontSize = function (FaceName, h, c) {
 	api.SelectObject(hmdc, hfontOld);
 	api.DeleteDC(hmdc);
 	api.ReleaseDC(hwnd, hdc);
-	return Math.min(h, Math.max(h * (h / (rc.bottom || h)), h * .8));
+	return Math.min(h, Math.ceil(h * (h / (rc.bottom || h))));
 }
 
 GetKeyKey = function (strKey) {
@@ -1657,12 +1687,11 @@ CreateNew = function (path, fn) {
 		} catch (e) {
 			paths = GetNonExistent(path);
 			const ar = paths[1].split("\\");
-			const path2 = BuildPath(te.Data.TempFolder, ar[0]);
-			const path3 = BuildPath(te.Data.TempFolder, paths[1]);
-			DeleteItem(path2);
-			CreateFolders(path3);
-			fn(BuildPath(path3, GetFileName(path)));
-			api.SHFileOperation(FO_MOVE, path2, GetParentFolderName(BuildPath(paths[0], ar[0])), FOF_SILENT | FOF_NOCONFIRMATION, false);
+			const temp = GetTempPath(3);
+			const path3 = BuildPath(temp, paths[1]);
+			CreateFolders(GetParentFolderName(path3));
+			fn(path3);
+			sha.NameSpace(GetParentFolderName(BuildPath(paths[0], ar[0]))).MoveHere(sha.NameSpace(temp).Items(), FOF_SILENT | FOF_NOCONFIRMATION);
 		}
 	}
 	MainWindow.g_.NewItemTime = new Date().getTime() + 5000;
@@ -3272,7 +3301,7 @@ FolderMenu = {
 			Items.AddItem(FolderItem);
 			FV.AltSelectedItems = Items;
 			if (ExecMenu(FV, "Default", null, 2) != S_OK) {
-				ShellExecute(PathQuoteSpaces(api.GetDisplayNameOf(FolderItem, SHGDN_ORIGINAL | SHGDN_FORPARSING)), null, SW_SHOWNORMAL);
+				InvokeCommand(Items, 0, te.hwnd, null, null, null, SW_SHOWNORMAL, 0, 0, FV, CMF_DEFAULTONLY);
 			}
 			FV.AltSelectedItems = AltSelectedItems;
 		}
