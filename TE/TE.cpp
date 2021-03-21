@@ -1330,7 +1330,7 @@ BOOL tePathIsNetworkPath(LPCWSTR pszPath)
 			return TRUE;
 		}
 	}
-	return PathIsNetworkPath(pszPath);
+	return !teStartsText(L"\\\\\\", pszPath) && PathIsNetworkPath(pszPath);
 }
 
 HRESULT STDAPICALLTYPE teGetDpiForMonitor(HMONITOR hmonitor, MONITOR_DPI_TYPE dpiType, UINT *dpiX, UINT *dpiY)
