@@ -1,14 +1,10 @@
 // Tablacus Explorer
 
-async function Resize2() {
-	if (ui_.tidResize) {
-		clearTimeout(ui_.tidResize);
-		ui_.tidResize = void 0;
-	}
+Resize2 = async function () {
+	delete ui_.tmResize;
 	ResetScroll();
 	let o = document.getElementById("toolbar");
 	const offsetTop = o ? o.offsetHeight : 0;
-
 	let h = 0;
 	o = document.getElementById("bottombar");
 	const offsetBottom = o.offsetHeight;
@@ -21,8 +17,7 @@ async function Resize2() {
 		}
 		o.style.height = h + "px";
 	}
-	await ResizeSideBar("Left", h);
-	await ResizeSideBar("Right", h);
+	await Promise.all([ResizeSideBar("Left", h), ResizeSideBar("Right", h)]);
 	o = document.getElementById("Background");
 	pt = GetPos(o);
 	te.offsetLeft = pt.x;
@@ -34,9 +29,10 @@ async function Resize2() {
 	api.PostMessage(ui_.hwnd, WM_SIZE, 0, 0);
 }
 
-async function ResizeSideBar(z, h) {
-	let o = await g_.Locations;
-	const w = (await o[z + "Bar1"] || await o[z + "Bar2"] || await o[z + "Bar3"]) ? await te.Data["Conf_" + z + "BarWidth"] : 0;
+ResizeSideBar = async function (z, h) {
+	let o = g_.Locations;
+	const r = await Promise.all([te.Data["Conf_" + z + "BarWidth"], o[z + "Bar1"], o[z + "Bar2"], o[z + "Bar3"]]);
+	const w = (r[1] || r[2] || r[3]) ? r[0] : 0;
 	o = document.getElementById(z.toLowerCase() + "bar");
 	if (w > 0) {
 		o.style.display = "";
@@ -60,17 +56,13 @@ async function ResizeSideBar(z, h) {
 	document.getElementById(z + "Bar2").style.height = h2 + "px";
 }
 
-function ResetScroll () {
+ResetScroll = function () {
 	if (document.documentElement && document.documentElement.scrollLeft) {
 		document.documentElement.scrollLeft = 0;
 	}
 }
 
-function PanelCreated(Ctrl, Id) {
-	if (/none/i.test(document.F.style.display)) {
-		setTimeout(PanelCreated, 500, Ctrl, Id);
-		return;
-	}
+PanelCreated = function (Ctrl, Id) {
 	RunEvent1("PanelCreated", Ctrl, Id);
 	ApplyLang(document.getElementById("Panel_" + Id));
 	Resize();
@@ -143,10 +135,12 @@ RunSplitter = async function (ev, n) {
 }
 
 Resize = function () {
-	if (ui_.tidResize) {
-		clearTimeout(ui_.tidResize);
+	const tm = new Date().getTime();
+	if (tm - ui_.tmResize < 9999) {
+		return;
 	}
-	ui_.tidResize = setTimeout(Resize2, 500);
+	ui_.tmResize = tm;
+	setTimeout(Resize2, 500);
 }
 
 DisableImage = function (img, bDisable) {
@@ -257,7 +251,7 @@ ShowStatusTextEx = async function (Ctrl, Text, iPart, tm) {
 
 importJScript = $.importScript;
 
-te.OnArrange = async function (Ctrl, rc) {
+OnArrange = async function (Ctrl, rc) {
 	const Type = await Ctrl.Type;
 	if (Type == CTRL_TE) {
 		ui_.TCPos = {};
@@ -323,11 +317,12 @@ te.OnArrange = async function (Ctrl, rc) {
 }
 
 ArrangeAddons = async function () {
-	g_.Locations = await api.CreateObject("Object");
-	$.IconSize = IconSize = await te.Data.Conf_IconSize || screen.deviceYDPI / 4;
-	const xml = await OpenXml("addons.xml", false, true);
+	const r = await Promise.all([api.CreateObject("Object"), te.Data.Conf_IconSize, OpenXml("addons.xml", false, true), api.GetKeyState(VK_SHIFT), api.GetKeyState(VK_CONTROL), api.CreateObject("Array"), GetLangId()]);
+	g_.Locations = r[0];
+	$.IconSize = IconSize = r[1] || screen.deviceYDPI / 4;
+	const xml = r[2];
 	te.Data.Addons = xml;
-	if (await api.GetKeyState(VK_SHIFT) < 0 && await api.GetKeyState(VK_CONTROL) < 0) {
+	if (r[3] < 0 && r[4] < 0) {
 		IsSavePath = function (path) {
 			return false;
 		}
@@ -338,9 +333,10 @@ ArrangeAddons = async function () {
 	if (root) {
 		const items = await root.childNodes;
 		if (items) {
-			let arError = await api.CreateObject("Array");
-			const LangId = await GetLangId();
+			let arError = r[5];
+			const LangId = r[6];
 			const nLen = await GetLength(items);
+			document.F.style.visibility = "hidden";
 			for (let i = 0; i < nLen; ++i) {
 				const item = await items[i];
 				const Id = await item.nodeName;
@@ -376,8 +372,15 @@ ArrangeAddons = async function () {
 		}
 	}
 	RunEventUI("BrowserCreatedEx");
+	if (window.chrome) {
+		AddEvent("BrowserCreatedEx", "api.ShowWindow(await GetTopWindow(), SW_SHOWNORMAL);");
+	}
 	setTimeout(async function () {
 		const cl = await GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor);
+		AddEvent("Load", function () {
+			te.OnArrange = OnArrange;
+			document.F.style.visibility = "";
+		});
 		ArrangeAddons1(cl);
 	}, 99);
 }
@@ -441,7 +444,6 @@ AddEventEx(document, "FullscreenChange", function () {
 	FullscreenChanged(document.fullscreenElement != null);
 });
 
-document.F.style.display = "none";
 Init = async function () {
 	te.Data.MainWindow = $;
 	await InitCode();
@@ -457,6 +459,5 @@ Init = async function () {
 	await ArrangeAddons();
 	ApplyLang();
 	await InitWindow();
-	document.F.style.display = "";
 	WebBrowser.DropMode = 1;
 }

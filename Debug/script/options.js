@@ -1535,10 +1535,10 @@ InitDialog = async function () {
 
 			"shell32": "i,shell32.dll"
 		};
-		for (let i = 0xe7; i < 0xf9; ++i) {
-			a["Segoe MDL2 Assets " + (i * 256).toString(16)] = "f,Segoe MDL2 Assets,0x" + (i * 256).toString(16) + ",256";
+		for (let i = 0xe700; i < 0xf900; i += 256) {
+			a["Segoe MDL2 Assets " + i.toString(16)] = "f,Segoe MDL2 Assets,0x" + i.toString(16) + ",256";
 		}
-		const sue = [0x1f300, 0x1f400, 0x1f500, 0x1f600, 0x1f700, 0x2600, 0x2700];
+		const sue = [0x1f300, 0x1f400, 0x1f500, 0x1f600, 0x1f700, 0x1f900, 0x1fa00, 0x2600, 0x2700];
 		for (let i = 0; i < sue.length; ++i) {
 			a["Segoe UI Emoji " + sue[i].toString(16)] = "f,Segoe UI Emoji,0x" + sue[i].toString(16) + ",256";
 		}

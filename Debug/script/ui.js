@@ -838,17 +838,22 @@ SelectItem = function (FV, path, wFlags, tm) {
 
 AddEventEx(window, "load", function () {
 	document.body.onselectstart = DetectProcessTag;
+	AddEventEx(document.body, 'keydown', function (ev) {
+		ev = (ev || event);
+		if (ev.keyCode ? ev.keyCode == VK_F5 : "F5" === ev.key) {
+			if (ev.preventDefault) {
+				ev.preventDefault();
+			 } else {
+				ev.returnValue = false;
+			 }
+		}
+	});
 	if (window.chrome) {
 		document.body.addEventListener('mousewheel', function (ev) {
 			if (ev.ctrlKey) {
 				ev.preventDefault();
 			}
 		}, { passive: false });
-		document.body.addEventListener('keydown', function (ev) {
-			if ("F5" === ev.key) {
-				ev.preventDefault();
-			}
-		}, false);
 	} else {
 		document.body.oncontextmenu = DetectProcessTag;
 		document.body.onmousewheel = function (ev) {
@@ -1031,8 +1036,11 @@ AddonOptions = async function (Id, fn, Data, bNew) {
 		te.Arguments = opt;
 		const el = document.createElement('iframe');
 		el.id = 'panel1_' + Id;
-		el.src = sURL;
 		el.style.cssText = 'width: 100%; border: 0; padding: 0; margin: 0';
+		el.onload = function () {
+			el.contentWindow.document.body.style.backgroundColor = window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor;
+		}
+		el.src = sURL;
 		ui_.elAddons[Id] = el;
 		let o = document.getElementById('panel1_2');
 		o.style.display = "block";

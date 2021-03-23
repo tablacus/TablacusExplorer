@@ -52,7 +52,7 @@ g_.bit = api.sizeof("HANDLE") * 8;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210322 ? te.Version : 20210322;
+		return te.Version < 20210323 ? te.Version : 20210323;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1089,7 +1089,16 @@ GetTempPath = function (n) {
 		} while (name.length < 5 || IsExists(BuildPath(temp, name)));
 		temp = BuildPath(temp, name);
 	}
+	if (n & 4) {
+		if (!/\\$/.test(temp)) {
+			temp += "\\";
+		}
+	}
 	return temp;
+}
+
+GetWindowsPath = function (s) {
+	return s ? BuildPath(fso.GetSpecialFolder(0).Path, s) : String(fso.GetSpecialFolder(0).Path);
 }
 
 ColumnsReplace = function (Ctrl, pid, fmt, fn, priority) {
@@ -1773,7 +1782,7 @@ CreateFile2 = function (path) {
 					if (i == 2) {
 						r = BuildPath(wsh.SpecialFolders("Templates"), s);
 						if (!fso.FileExists(r)) {
-							r = wsh.ExpandEnvironmentStrings("%SystemRoot%\\ShellNew\\") + s;
+							r = GetWindowsPath("ShellNew\\" + s);
 						}
 						fso.CopyFile(r, path);
 						SetFileTime(path, null, null, new Date());
@@ -2928,11 +2937,14 @@ OpenInExplorer = function (pid1) {
 	if (pid1) {
 		CancelWindowRegistered();
 		const pid = pid1.FolderItem || pid1;
-		if (pid && /^[A-Z]:\\|^\\\\\w|^::{/i.test(pid.Path)) {
-			api.CreateProcess(wsh.ExpandEnvironmentStrings("%SystemRoot%\\explorer.exe ") + PathQuoteSpaces(pid.Path), pid.Path);
-			return;
+		if (pid) {
+			const path = api.GetDisplayNameOf(pid, SHGDN_FORPARSING);
+			if (/^[A-Z]:\\|^\\\\\w|^::{/i.test(path)) {
+				api.CreateProcess(GetWindowsPath("explorer.exe") + " " + PathQuoteSpaces(path));
+				return;
+			}
+			sha.Explore(pid);
 		}
-		sha.Explore(pid);
 	}
 }
 
@@ -3249,14 +3261,7 @@ FolderMenu = {
 		if (FolderItem) {
 			const path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL);
 			const bVirtual = api.ILIsParent(1, FolderItem, false) || FolderItem.Unavailable;
-			if (MainWindow.g_menu_button == 4) {
-				if (!bVirtual) {
-					const pdwEffect = [DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK];
-					api.SHDoDragDrop(null, FolderItem, te, pdwEffect[0], pdwEffect, true);
-				}
-				return;
-			}
-			if (MainWindow.g_menu_button == 2) {
+			if (MainWindow.g_menu_button == 2 || /popup/i.test(wFlags)) {
 				const pt = api.Memory("POINT");
 				api.GetCursorPos(pt);
 				if (bVirtual) {
@@ -3277,6 +3282,13 @@ FolderMenu = {
 					return;
 				}
 			}
+			if (MainWindow.g_menu_button == 4) {
+				if (!bVirtual) {
+					const pdwEffect = [DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK];
+					api.SHDoDragDrop(null, FolderItem, te, pdwEffect[0], pdwEffect, true);
+				}
+				return;
+			}
 			if (res = /^`(.*)`$/.exec(path)) {
 				ShellExecute(res[1], null, SW_SHOWNORMAL);
 				return;
@@ -3290,7 +3302,7 @@ FolderMenu = {
 				return;
 			}
 			if (FolderItem.Enum || ((MainWindow.g_menu_button == 3 || isFinite(wFlags)) && (FolderItem.IsFolder || (!FolderItem.IsFileSystem && FolderItem.IsBrowsable)))) {
-				Navigate(FolderItem, isFinite(wFlags) ? wFlags : GetOpenMode());
+				Navigate(FolderItem, (isFinite(wFlags) ? wFlags : GetOpenMode()) | (MainWindow.g_menu_button == 3 ? SBSP_NEWBROWSER : 0));
 				return;
 			}
 			if (!FV) {

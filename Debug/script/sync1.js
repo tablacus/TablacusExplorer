@@ -1542,7 +1542,7 @@ te.OnViewCreated = function (Ctrl) {
 
 te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 	if (g_.tid_rf[Ctrl.Id]) {
-		UI.clearTimeout(g_.tid_rf[Ctrl.Id]);
+		clearTimeout(g_.tid_rf[Ctrl.Id]);
 		delete g_.tid_rf[Ctrl.Id];
 	}
 	if (Ctrl.Data) {
@@ -2006,10 +2006,13 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 			path = Item.ExtendedProperty("linktarget") || Item.Path;
 			const cmd = api.AssocQueryString(ASSOCF_NONE, ASSOCSTR_COMMAND, Item.ExtendedProperty("linktarget") || Item, strVerb == "default" ? null : strVerb);
 			if (cmd) {
-				if (strVerb == "open" && api.PathMatchSpec(cmd, wsh.ExpandEnvironmentStrings("%SystemRoot%\\explorer.exe;%SystemRoot%\\explorer.exe /idlist,*;rundll32.exe *fldr.dll,RouteTheCall*"))) {
-					Navigate(Items.Item(i), NewTab);
-					NewTab |= SBSP_NEWBROWSER;
-					continue;
+				if (strVerb == "open") {
+					const exp = GetWindowsPath("explorer.exe");
+					if (api.PathMatchSpec(cmd, exp + ";" + exp + " /idlist,*;rundll32.exe *fldr.dll,RouteTheCall*")) {
+						Navigate(Items.Item(i), NewTab);
+						NewTab |= SBSP_NEWBROWSER;
+						continue;
+					}
 				}
 				const cmd2 = ExtractMacro(te, cmd);
 				if (!SameText(cmd, cmd2)) {
@@ -3300,7 +3303,7 @@ UpdateAndReload = function (arg) {
 	if (!fso.FileExists(update)) {
 		update = BuildPath(te.Data.Installed, "script\\update.js");
 	}
-	g_.strUpdate = [PathQuoteSpaces(BuildPath(api.IsWow64Process(api.GetCurrentProcess()) ? wsh.ExpandEnvironmentStrings("%SystemRoot%\\Sysnative") : system32, "wscript.exe")), PathQuoteSpaces(update), PathQuoteSpaces(api.GetModuleFileName(null)), PathQuoteSpaces(arg.temp), PathQuoteSpaces(api.LoadString(hShell32, 12612)), PathQuoteSpaces(api.LoadString(hShell32, 12852))].join(" ");
+	g_.strUpdate = [PathQuoteSpaces(BuildPath(api.IsWow64Process(api.GetCurrentProcess()) ? GetWindowsPath("Sysnative") : system32, "wscript.exe")), PathQuoteSpaces(update), PathQuoteSpaces(api.GetModuleFileName(null)), PathQuoteSpaces(arg.temp), PathQuoteSpaces(api.LoadString(hShell32, 12612)), PathQuoteSpaces(api.LoadString(hShell32, 12852))].join(" ");
 	DeleteTempFolder = PerformUpdate;
 	WmiProcess("WHERE ExecutablePath='" + (api.GetModuleFileName(null).split("\\").join("\\\\")) + "' AND ProcessId!=" + arg.pid, function (item) {
 		item.Terminate();

@@ -1317,20 +1317,18 @@ BOOL tePathMatchSpec(LPCWSTR pszFile, LPWSTR pszSpec)
 	return FALSE;
 }
 
-BOOL tePathIsNetworkPath(LPCWSTR pszPath)
+BOOL tePathIsNetworkPath(LPCWSTR pszPath)//PathIsNetworkPath is slow in DRIVE_NO_ROOT_DIR.
 {
 	if (!pszPath) {
 		return FALSE;
 	}
-	WCHAR pszDrive[4];//PathIsNetworkPath is slow in DRIVE_NO_ROOT_DIR.
+	WCHAR pszDrive[4];
 	lstrcpyn(pszDrive, pszPath, 4);
 	if (pszDrive[0] >= 'A' && pszDrive[1] == ':' && pszDrive[2] == '\\') {
 		UINT uDriveType = GetDriveType(pszDrive);
-		if (uDriveType == DRIVE_REMOTE || uDriveType == DRIVE_NO_ROOT_DIR) {
-			return TRUE;
-		}
+		return uDriveType == DRIVE_REMOTE || uDriveType == DRIVE_NO_ROOT_DIR;
 	}
-	return !teStartsText(L"\\\\\\", pszPath) && PathIsNetworkPath(pszPath);
+	return tePathMatchSpec(pszPath, L"\\\\*;*://*") && !teStartsText(L"\\\\\\", pszPath);
 }
 
 HRESULT STDAPICALLTYPE teGetDpiForMonitor(HMONITOR hmonitor, MONITOR_DPI_TYPE dpiType, UINT *dpiX, UINT *dpiY)
@@ -10854,9 +10852,6 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 			case TET_EndThread:
 				DoFunc(TE_OnEndThread, g_pTE, S_OK);
 				break;
-/*			case TET_Redraw:
-				RedrawWindow(g_hwndMain, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
-				break;*/
 		}//end_switch
 	} catch (...) {
 		g_nException = 0;
@@ -11891,7 +11886,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				break;
 			//System
 			case WM_SETTINGCHANGE:
-				teRegister();
+				if (g_pSW) {
+					teRegister();
+				}
 				teGetDarkMode();
 				if (_RegenerateUserEnvironment) {
 					try {
@@ -12046,6 +12043,8 @@ LRESULT CALLBACK WndProc2(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					}
 				}
 				break;
+			case WM_ERASEBKGND:
+				return 1;
 			default:
 				return DefWindowProc(hWnd, message, wParam, lParam);
 		}
@@ -17331,6 +17330,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 			case TE_METHOD + 1008:
 				ClearEvents();
 				teRegister();
+				teGetDarkMode();
 				g_nReload = 0;
 				return S_OK;
 			//Reload
@@ -17587,6 +17587,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 								MyRegisterClass(hInst, WINDOW_CLASS2, WndProc2);
 								HWND hwnd = CreateWindow(WINDOW_CLASS2, g_szTE, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
 									x, y, w, h, hwndParent, NULL, hInst, NULL);
+								teSetDarkMode(hwnd);
 								GetClientRect(hwnd, &rc);
 								int a = w - (rc.right - rc.left);
 								int b = h - (rc.bottom - rc.top);
@@ -17626,7 +17627,6 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 									}
 								}
 								MoveWindow(hwnd, x, y, w, h, TRUE);
-								teSetDarkMode(hwnd);
 								TEWebBrowsers TEWB;
 								TEWB.hwnd = hwnd;
 								TEWB.pWB = new CteWebBrowser(hwnd, v.bstrVal, &pDispParams->rgvarg[nArg - 2]);
@@ -18114,6 +18114,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			
 		case TE_METHOD + 9://Close
 			m_nClose = 1;
+			ShowWindow(m_hwndParent, SW_HIDE);
 			PostMessage(m_hwndParent, WM_CLOSE, 0, 0);
 			return S_OK;
 
@@ -18187,8 +18188,11 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 					g_bInit = FALSE;
 					SetTimer(g_hwndMain, TET_Create, g_nCreateTimer, teTimerProc);
 				}
-				if (g_hwndMain != m_hwndParent) {
+				if (g_hwndMain != m_hwndParent && g_nBlink != 1) {
 					teShowWindow(m_hwndParent, SW_SHOWNORMAL);
+				}
+				if (g_pSW) {
+					teRegister();
 				}
 				return S_OK;
 			}
