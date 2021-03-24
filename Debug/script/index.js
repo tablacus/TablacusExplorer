@@ -1,7 +1,6 @@
 // Tablacus Explorer
 
-Resize2 = async function () {
-	delete ui_.tmResize;
+Resize = async function () {
 	ResetScroll();
 	let o = document.getElementById("toolbar");
 	const offsetTop = o ? o.offsetHeight : 0;
@@ -132,15 +131,6 @@ RunSplitter = async function (ev, n) {
 		api.ObjPutI(await g_.mouse, "Capture", n);
 		api.SetCapture(ui_.hwnd);
 	}
-}
-
-Resize = function () {
-	const tm = new Date().getTime();
-	if (tm - ui_.tmResize < 9999) {
-		return;
-	}
-	ui_.tmResize = tm;
-	setTimeout(Resize2, 500);
 }
 
 DisableImage = function (img, bDisable) {
@@ -422,25 +412,25 @@ AddEvent("SystemMessage", async function (Ctrl, hwnd, msg, wParam, lParam) {
 
 // Browser Events
 
-AddEventEx(window, "load", async function () {
+window.addEventListener("load", async function () {
 	if (await api.GetKeyState(VK_SHIFT) < 0 && await api.GetKeyState(VK_CONTROL) < 0) {
 		ShowOptions("Tab=Add-ons");
 	}
 });
 
-AddEventEx(window, "resize", Resize);
+window.addEventListener("resize", Resize);
 
-AddEventEx(window, "unload", FinalizeUI);
+window.addEventListener("unload", FinalizeUI);
 
-AddEventEx(window, "blur", ResetScroll);
+window.addEventListener("blur", ResetScroll);
 
-AddEventEx(window, "mouseup", FocusFV);
+window.addEventListener("mouseup", FocusFV);
 
-AddEventEx(document, "MSFullscreenChange", function () {
+document.addEventListener("MSFullscreenChange", function () {
 	FullscreenChanged(document.msFullscreenElement != null);
 });
 
-AddEventEx(document, "FullscreenChange", function () {
+document.addEventListener("FullscreenChange", function () {
 	FullscreenChanged(document.fullscreenElement != null);
 });
 

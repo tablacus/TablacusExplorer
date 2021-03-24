@@ -106,7 +106,7 @@ LoadScript = function (js, cb) {
 }
 
 GetFileName = function (s) {
-	const res = /([^\\\/]*)$/.exec(s);
+	var res = /([^\\\/]*)$/.exec(s);
 	return res ? res[1] : "";
 }
 
@@ -115,7 +115,7 @@ PathQuoteSpaces = function (s) {
 }
 
 PathUnquoteSpaces = function (s) {
-	const res = /^"(.*)"$/.exec(s);
+	var res = /^"(.*)"$/.exec(s);
 	return res ? res[1] : s;
 }
 

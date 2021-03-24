@@ -1,5 +1,17 @@
 // Tablacus Explorer
 
+if (!window.addEventListener) {
+	window.addEventListener = function (n, fn) {
+		AddEventEx(window, n, fn);
+	}
+	document.addEventListener = function (n, fn) {
+		AddEventEx(document, n, fn);
+	}
+	document.body.addEventListener = function (n, fn) {
+		AddEventEx(document.body, n, fn);
+	}
+}
+
 ui_ = {
 	IEVer: window.chrome ? (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 : 12) : ScriptEngineMajorVersion() > 8 ? ScriptEngineMajorVersion() : ScriptEngineMinorVersion(),
 	Zoom: 1,
@@ -121,7 +133,7 @@ InitUI = async function () {
 						dialogArguments = a;
 						MainWindow = w;
 						te = await w.te;
-						AddEventEx(window, "unload", function () {
+						window.addEventListener("unload", function () {
 							try {
 								delete MainWindow.Exchange[uid];
 							} catch (e) { }
@@ -836,9 +848,9 @@ SelectItem = function (FV, path, wFlags, tm) {
 	}, tm);
 }
 
-AddEventEx(window, "load", function () {
+window.addEventListener("load", function () {
 	document.body.onselectstart = DetectProcessTag;
-	AddEventEx(document.body, 'keydown', function (ev) {
+	document.body.addEventListener('keydown', function (ev) {
 		ev = (ev || event);
 		if (ev.keyCode ? ev.keyCode == VK_F5 : "F5" === ev.key) {
 			if (ev.preventDefault) {

@@ -52,7 +52,7 @@ g_.bit = api.sizeof("HANDLE") * 8;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210323 ? te.Version : 20210323;
+		return te.Version < 20210323 ? te.Version : 20210324;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -509,6 +509,10 @@ AddEvent = function (Name, fn, priority) {
 	if (Name) {
 		const en = Name.toLowerCase();
 		const s = en.replace(/\d$/g, "");
+		if (en === "layout") {
+			api.Invoke(fn);
+			return;
+		}
 		if (g_.event[s] && !te["On" + s]) {
 			te["On" + s] = g_.event[s];
 		}

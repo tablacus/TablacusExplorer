@@ -41,6 +41,17 @@ RunEventUI("BrowserCreatedEx");
 	arLangs.push("General");
 })();
 
+CloseWB = async function (WB, bForce) {
+	if (bForce || g_nResult != 4) {
+		FireEvent(window, "unload");
+		if (te.Data.bReload) {
+			MainWindow.setTimeout(MainWindow.ReloadCustomize, 999);
+		}
+		WB.Close();
+	}
+	g_nResult = 0;
+}
+
 async function SetDefaultLangID() {
 	SetDefault(document.F.Conf_Lang, await GetLangId(true));
 }
@@ -1343,7 +1354,7 @@ async function OkOptions() {
 
 	te.Data.bReload = true;
 	MainWindow.g_.dlgs.Options = void 0;
-	WebBrowser.Close();
+	CloseWB(WebBrowser, true);
 }
 
 async function CancelOptions() {
@@ -1353,7 +1364,7 @@ async function CancelOptions() {
 		te.Data.bReload = true;
 	}
 	MainWindow.g_.dlgs.Options = void 0;
-	WebBrowser.Close();
+	CloseWB(WebBrowser, true);
 }
 
 async function ContinueOptions() {
@@ -1397,7 +1408,7 @@ InitOptions = async function () {
 	}
 	document.getElementById("tab2_").innerHTML = s.join("");
 
-	AddEventEx(window, "resize", function () {
+	window.addEventListener("resize", function () {
 		clearTimeout(g_tidResize);
 		g_tidResize = setTimeout(function () {
 			ClickTree(null, null, null, true);
@@ -1430,6 +1441,8 @@ OpenIcon = function (o) {
 		o.cursor = "";
 		o.onclick = null;
 		const a = o.id.split(/,/);
+		const px = 32 * screen.deviceYDPI / 96;
+		const srcs = [];
 		if (a[0] == "b") {
 			const dllpath = BuildPath(system32, "ieframe.dll");
 			a[0] = GetFileName(dllpath);
@@ -1438,8 +1451,13 @@ OpenIcon = function (o) {
 			if (hModule) {
 				const lpbmp = isFinite(a[1]) ? a[1] - 0 : a[1];
 				const himl = await api.ImageList_LoadImage(hModule, lpbmp, a[2], CLR_NONE, CLR_NONE, IMAGE_BITMAP, LR_CREATEDIBSECTION | LR_LOADTRANSPARENT);
+				api.FreeLibrary(hModule);
 				a[1] = a1;
-				let nCount = himl ? await api.ImageList_GetImageCount(himl) : 0;
+				let nCount = 0;
+				if (himl) {
+					nCount = await api.ImageList_GetImageCount(himl);
+					api.ImageList_Destroy(himl);
+				}
 				if (nCount == 0) {
 					if (lpbmp == 206 || lpbmp == 204) {
 						nCount = 20;
@@ -1448,19 +1466,15 @@ OpenIcon = function (o) {
 					}
 				}
 				a[0] = GetFileName(dllpath);
-				let srcs = [];
 				for (a[3] = 0; a[3] < nCount; a[3]++) {
-					srcs.push(MakeImgSrc("bitmap:" + a.join(","), 0, false, a[2]));
+					const tag = {
+						class: "button",
+						onclick: "SelectIcon(this)",
+						src: "bitmap:" + a.join(",")
+					}
+					tag.title = tag.src;
+					srcs.push(GetImgTag(tag, a[2]));
 				}
-				srcs = await Promise.all(srcs);
-				o.innerHTML = "";
-				for (a[3] = 0; a[3] < nCount; a[3]++) {
-					o.insertAdjacentHTML("beforeend", '<img src="' + srcs.shift() + '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="bitmap:' + a.join(",") + '"> ');
-				}
-				if (himl) {
-					api.ImageList_Destroy(himl);
-				}
-				api.FreeLibrary(hModule);
 			}
 		} else if (a[0] == "i") {
 			let dllPath = await ExtractMacro(te, a[1]);
@@ -1468,28 +1482,27 @@ OpenIcon = function (o) {
 				dllPath = BuildPath(system32, a[1]);
 			}
 			const nCount = await api.ExtractIconEx(dllPath, -1, null, null, 0);
-			const px = 32 * screen.deviceYDPI / 96;
-			let srcs = [];
 			for (let i = 0; i < nCount; ++i) {
-				srcs.push(MakeImgSrc(["icon:" + a[1], i].join(","), 0, false, 32));
-			}
-			srcs = await Promise.all(srcs);
-			o.innerHTML = "";
-			for (let i = 0; i < nCount; ++i) {
-				o.insertAdjacentHTML("beforeend", '<img src="' + srcs.shift() + '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="icon:' + a[1] + ',' + i + '" style="max-height:' + px + 'px"> ');
-			}
-		} else {
-			const px = 32 * screen.deviceYDPI / 96;
-			const srcs = [];
-			for (let i = 0; i < a[3]; ++i) {
 				const tag = {
-					src: "font:" + a[1] + ",0x" + (parseInt(a[2]) + i).toString(16),
 					class: "button",
-					onclick: "SelectIcon(this)"
-				};
+					onclick: "SelectIcon(this)",
+					src: ["icon:" + a[1], i].join(",")
+				}
 				tag.title = tag.src;
 				srcs.push(GetImgTag(tag, px));
 			}
+		} else {
+			for (let i = 0; i < a[3]; ++i) {
+				const tag = {
+					class: "button",
+					onclick: "SelectIcon(this)",
+					src: "font:" + a[1] + ",0x" + (parseInt(a[2]) + i).toString(16)
+				}
+				tag.title = tag.src;
+				srcs.push(GetImgTag(tag, px));
+			}
+		}
+		if (srcs.length) {
 			o.innerHTML = (await Promise.all(srcs)).join("");
 		}
 		document.body.style.cursor = "auto";
@@ -1535,12 +1548,18 @@ InitDialog = async function () {
 
 			"shell32": "i,shell32.dll"
 		};
-		for (let i = 0xe700; i < 0xf900; i += 256) {
-			a["Segoe MDL2 Assets " + i.toString(16)] = "f,Segoe MDL2 Assets,0x" + i.toString(16) + ",256";
+		const fontDir = await api.ILCreateFromPath(ssfFONTS).Path;
+		if (await fso.FileExists(BuildPath(fontDir, "segmdl2.ttf"))) {
+			for (let i = 0xe700; i < 0xf900; i += 256) {
+				a["Segoe MDL2 Assets " + i.toString(16)] = "f,Segoe MDL2 Assets," + i + ",256";
+			}
 		}
-		const sue = [0x1f300, 0x1f400, 0x1f500, 0x1f600, 0x1f700, 0x1f900, 0x1fa00, 0x2600, 0x2700];
+		const sue = [0x2600, 0x2700];
+		if (await fso.FileExists(BuildPath(fontDir, "seguiemj.ttf"))) {
+			sue.unshift(0x1f300, 0x1f400, 0x1f500, 0x1f600, 0x1f700, 0x1f900, 0x1fa00);
+		}
 		for (let i = 0; i < sue.length; ++i) {
-			a["Segoe UI Emoji " + sue[i].toString(16)] = "f,Segoe UI Emoji,0x" + sue[i].toString(16) + ",256";
+			a["Segoe UI Emoji " + sue[i].toString(16)] = "f,Segoe UI Emoji," + sue[i] + ",256";
 		}
 		a["16px ieframe,699"] = "b,699,16";
 		a["24px ieframe,697"] = "b,697,24";
@@ -1611,8 +1630,8 @@ InitDialog = async function () {
 			document.F.ButtonOk.disabled = false;
 			return false;
 		}
-		AddEventEx(document.body, "keydown", fn);
-		AddEventEx(document.body, "keyup", fn);
+		document.body.addEventListener("keydown", fn);
+		document.body.addEventListener("keyup", fn);
 		setTimeout(function () {
 			WebBrowser.Focus();
 		}, 99);
@@ -1622,7 +1641,7 @@ InitDialog = async function () {
 		returnValue = false;
 		const s = ['<div style="padding: 8px;" style="display: block;"><label><input type="radio" name="mode" id="folder" onclick="document.F.path.focus()">New Folder</label> <label><input type="radio" name="mode" id="file" onclick="document.F.path.focus()">New File</label><br>', await dialogArguments.path, '<br><input type="text" name="path" style="width: 100%"></div>'];
 		document.getElementById("Content").innerHTML = s.join("");
-		AddEventEx(document.body, "keydown", function (ev) {
+		document.body.addEventListener("keydown", function (ev) {
 			setTimeout(function () {
 				document.F.ButtonOk.disabled = !document.F.path.value;
 			}, 99);
@@ -1633,7 +1652,7 @@ InitDialog = async function () {
 			});
 		});
 
-		AddEventEx(document.body, "paste", function () {
+		document.body.addEventListener("paste", function () {
 			setTimeout(function () {
 				document.F.ButtonOk.disabled = !document.F.path.value;
 			}, 99);
@@ -1732,7 +1751,7 @@ InitDialog = async function () {
 	if (Query == "input") {
 		returnValue = false;
 		document.getElementById("Content").innerHTML = ['<div style="padding: 8px;" style="display: block;"><label>', EncodeSC(await dialogArguments.text).replace(/\r?\n/g, "<br>"), '<br><input type="text" name="text" style="width: 100%"></div>'].join("");
-		AddEventEx(document.body, "keydown", function (ev) {
+		document.body.addEventListener("keydown", function (ev) {
 			return KeyDownEvent(ev, function () {
 				SetResult(1);
 			}, function () {
@@ -1758,7 +1777,7 @@ InitDialog = async function () {
 	DialogResize = function () {
 		CalcElementHeight(document.getElementById("panel0"), 3);
 	};
-	AddEventEx(window, "resize", function () {
+	window.addEventListener("resize", function () {
 		clearTimeout(g_tidResize);
 		g_tidResize = setTimeout(DialogResize, 500);
 	});
@@ -1998,7 +2017,7 @@ InitLocation = function () {
 		nTabIndex = await dialogArguments.Data.index;
 
 		await SetOnChangeHandler();
-		AddEventEx(window, "resize", function () {
+		window.addEventListener("resize", function () {
 			clearTimeout(g_tidResize);
 			g_tidResize = setTimeout(ResizeTabPanel, 500);
 		});
@@ -2057,11 +2076,7 @@ InitLocation = function () {
 		} else {
 			WebBrowser.OnClose = async function (WB) {
 				await SetOptions(TEOk, null, ContinueOptions);
-				if (g_nResult != 4) {
-					FireEvent(window, "unload");
-					WB.Close();
-				}
-				g_nResult = 0;
+				CloseWB(WB);
 			};
 		}
 		if (item) {
@@ -2289,11 +2304,7 @@ async function InitAddonOptions(bFlag) {
 	if (!await WebBrowser.OnClose) {
 		WebBrowser.OnClose = async function (WB) {
 			await SetOptions(TEOk, null, ContinueOptions);
-			if (g_nResult != 4) {
-				FireEvent(window, "unload");
-				WB.Close();
-			}
-			g_nResult = 0;
+			CloseWB(WB);
 		};
 	}
 	const items = await te.Data.Addons.getElementsByTagName(Addon_Id);
@@ -2819,7 +2830,7 @@ function ChangeForm(ar) {
 			}
 		}
 	}
-	AddEventEx(window, "load", fn);
+	window.addEventListener("load", fn);
 	fn();
 }
 
@@ -2831,12 +2842,34 @@ async function SetTabContents(id, name, value) {
 	oPanel.innerHTML = value.join ? value.join('') : value;
 }
 
-function ShowButtons(b1, b2, SortMode) {
+async function ShowButtons(b1, b2, SortMode) {
 	if (SortMode) {
 		g_SortMode = SortMode;
 	}
 	let o = document.getElementById("SortButton");
 	o.style.display = b1 ? "inline-block" : "none";
+	if (!document.getElementById("SortButton_0")) {
+		const h = 24 * screen.deviceYDPI / 96;
+		o.innerHTML = (await Promise.all([GetImgTag({
+			id: "SortButton_0",
+			src: "bitmap:ieframe.dll,214,24,24",
+			title: "Name",
+			onclick: "SortAddons(0, this)",
+			class: "button"
+		}, h), GetImgTag({
+			id: "SortButton_1",
+			src: "bitmap:ieframe.dll,214,24,26",
+			title: await GetTextR("{B725F130-47EF-101A-A5F1-02608C9EEBAC} 14"),
+			onclick: "SortAddons(1, this)",
+			class: "button"
+		}, h), GetImgTag({
+			id: "SortButton_2",
+			src: "bitmap:ieframe.dll,214,24,27",
+			title: "Id",
+			onclick: "SortAddons(2, this)",
+			class: "button"
+		}, h)])).join("");
+	}
 	if (g_SortMode == 1) {
 		const table = document.getElementById("Addons");
 		const bSorted = /none/i.test(table.style.display);
