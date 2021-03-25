@@ -240,6 +240,7 @@ a.treebutton:hover {
 
 .favicon {
 	height: 12pt;
+	font-size: 12pt !important;
 }
 
 .drive {

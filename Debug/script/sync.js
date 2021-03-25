@@ -52,7 +52,7 @@ g_.bit = api.sizeof("HANDLE") * 8;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210323 ? te.Version : 20210324;
+		return te.Version < 20210325 ? te.Version : 20210325;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1331,17 +1331,24 @@ MakeImgIcon = function (src, index, h, bIcon) {
 			["bitmap:ieframe.dll,206,16,", "bitmap:ExplorerFrame.dll,264,16,", 16, "browser"],
 			["bitmap:ieframe.dll,204,24,", "bitmap:ExplorerFrame.dll,264,16,", 16, "browser"],
 			["bitmap:ieframe.dll,216,16,", "bitmap:comctl32.dll,130,16,", 16, "general"],
-			["bitmap:ieframe.dll,214,24,", "bitmap:comctl32.dll,131,24,", 24, "general"]
+			["bitmap:ieframe.dll,214,24,", "bitmap:comctl32.dll,131,24,", 24, "general"],
+			["bitmap:ieframe,699,16,", "", 16],
+			["bitmap:ieframe,697,24,", "", 24]
 		];
 		for (let i in ar) {
 			const a2 = ar[i];
 			if (api.StrCmpNI(src, a2[0], a2[0].length) == 0) {
-				const a3 = src.split(",");
-				const path = BuildPath(te.Data.DataFolder, ["icons", a2[3], a3[3] + ".png"].join("\\"));
-				let image = api.CreateObject("WICBitmap").FromFile(path);
-				if (image) {
-					image = GetThumbnail(image, a3[2], true);
-					return image.GetHICON();
+				if (a2[3]) {
+					const a3 = src.split(",");
+					const path = BuildPath(te.Data.DataFolder, ["icons", a2[3], a3[3] + ".png"].join("\\"));
+					let image = api.CreateObject("WICBitmap").FromFile(path);
+					if (image) {
+						image = GetThumbnail(image, a3[2], true);
+						return image.GetHICON();
+					}
+				}
+				if (i & 1 && h && h <= 16) {
+					src = ar[i - 1][0] + src.substr(a2[0].length);
 				}
 			}
 		}
@@ -1354,7 +1361,7 @@ MakeImgIcon = function (src, index, h, bIcon) {
 			} else if (SameText(icon[index * 4], "ieframe.dll")) {
 				for (let i in ar) {
 					const a2 = ar[i];
-					if (api.StrCmpNI(src, a2[0], a2[0].length) == 0) {
+					if (a2[1] && api.StrCmpNI(src, a2[0], a2[0].length) == 0) {
 						src = src.replace(a2[0], a2[1]);
 						if (i > 1) {
 							const a3 = src.split(",");
@@ -1436,7 +1443,7 @@ MakeImgIcon = function (src, index, h, bIcon) {
 		rc.top = 0;
 		rc.right = h;
 		rc.bottom = h;
-		api.FillRect(hmdc, rc, 0, GetBGRA(GetSysColor(COLOR_MENU), 255));
+		api.FillRect(hmdc, rc, 0, GetBGRA(GetSysColor(COLOR_BTNFACE), 255));
 		api.SelectObject(hmdc, CreateFont(lf));
 		api.DrawText(hmdc, c, -1, rc, DT_CENTER);
 		api.SelectObject(hmdc, hfontOld);
@@ -1479,7 +1486,10 @@ CalcFontSize = function (FaceName, h, c) {
 	api.SelectObject(hmdc, hfontOld);
 	api.DeleteDC(hmdc);
 	api.ReleaseDC(hwnd, hdc);
-	return Math.min(h, Math.ceil(h * (h / (rc.bottom || h))));
+	if ((c.length > 1 || c.charCodeAt(0) >= 0xe000) && rc.bottom > rc.right * 1.5) {
+		return 0;
+	}
+	return Math.min(h, Math.ceil(h * (h / (Math.max(rc.bottom, rc.right) || h))));
 }
 
 GetKeyKey = function (strKey) {

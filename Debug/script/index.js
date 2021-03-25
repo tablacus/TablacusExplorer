@@ -65,6 +65,9 @@ PanelCreated = function (Ctrl, Id) {
 	RunEvent1("PanelCreated", Ctrl, Id);
 	ApplyLang(document.getElementById("Panel_" + Id));
 	Resize();
+	setTimeout(async function () {
+		ChangeView(await Ctrl.Selected);
+	}, 99);
 }
 
 Activate = async function (o, id) {

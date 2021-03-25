@@ -120,11 +120,11 @@ DecodeSC = function (s) {
 	});
 }
 
-ExtractAttr = async function (o, ar, re) {
+ExtractAttr = function (o, ar, re) {
 	for (let n in o) {
 		const s = o[n];
 		if (s && (!re || !re.test(s))) {
-			ar.push(' ', n, '="', EncodeSC(StripAmp(await GetText(PathUnquoteSpaces(o[n])))), '"');
+			ar.push(' ', n, '="', EncodeSC(StripAmp(o[n])).replace(/"/g, ""), '"');
 		}
 	}
 }
@@ -138,22 +138,28 @@ GetImgTag = async function (o, h) {
 			c = String.fromCodePoint(c.length > 1 ? parseInt(c[0]) * 256 + parseInt(c[1]) : parseInt(c[0]));
 			h = h || window.IconSize;
 			let h2 = Number(h) ? await CalcFontSize(FontFace, h, c) + "px" : EncodeSC(h);
-			h = Number(h) ? h + "px" : EncodeSC(h);
-			let ar = ['font-family:', FontFace, '; font-size:', h2, '; line-height:', h, '; height:', h, ';', (o.style || "") ];
-			o.style = ar.join("");
-			if (o.class) {
-				o.class += " fonticon";
+			if (h2 != "0px") {
+				h = Number(h) ? h + "px" : EncodeSC(h);
+				const ar = ['font-family:', FontFace, '; font-size:', h2, '; line-height:', h, ';', (o.style || "") ];
+				o.style = ar.join("");
+				if (o.class) {
+					o.class += " fonticon";
+				} else {
+					o.class = "fonticon";
+				}
+			} else if (o.src == o.title) {
+				o.style = "display: none";
 			} else {
-				o.class = "fonticon";
+				c =  o.title;
 			}
-			ar = ['<span'];
-			await ExtractAttr(o, ar, /src/i);
+			const ar = ['<span'];
+			ExtractAttr(o, ar, /src/i);
 			ar.push('>', c, '</span>');
 			return ar.join("");
 		}
 		o.src = await ImgBase64(o, 0, Number(h))
 		const ar = ['<img'];
-		await ExtractAttr(o, ar);
+		ExtractAttr(o, ar);
 		if (h) {
 			h = Number(h) ? h + 'px' : EncodeSC(h);
 			ar.push(' width="', h, '" height="', h, '"');

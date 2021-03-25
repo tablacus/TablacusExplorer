@@ -5,7 +5,6 @@ if (!item.getAttribute("Set")) {
 	item.setAttribute("MenuPos", -1);
 	item.setAttribute("List", 1);
 }
-
 if (window.Addon == 1) {
 	Addons.TreeView = {
 		Popup: async function (o) {
@@ -26,9 +25,13 @@ if (window.Addon == 1) {
 		}
 	};
 
-	const h = GetIconSize(item.getAttribute("IconSize"), item.getAttribute("Location") == "Inner" && 16);
-	const src = item.getAttribute("Icon") || (h <= 16 ? "bitmap:ieframe.dll,216,16,43" : "bitmap:ieframe.dll,214,24,43");
-	SetAddon(Addon_Id, Default, ['<span class="button" onclick="SyncExec(Sync.TreeView.Exec, this)" oncontextmenu="return Addons.TreeView.Popup(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', await GetImgTag({ title: "Tree", src: src }, h), '</span>']);
+	AddEvent("Layout", async function () {
+		const h = GetIconSize(item.getAttribute("IconSize"), item.getAttribute("Location") == "Inner" && 16);
+		SetAddon(Addon_Id, Default, ['<span class="button" onclick="SyncExec(Sync.TreeView.Exec, this)" oncontextmenu="return Addons.TreeView.Popup(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', await GetImgTag({
+			title: await GetText("Tree"),
+			src: item.getAttribute("Icon") || "bitmap:ieframe.dll,214,24,43"
+		}, h), '</span>']);
+	});
 	$.importScript("addons\\" + Addon_Id + "\\sync.js");
 } else {
 	EnableInner();

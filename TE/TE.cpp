@@ -10211,12 +10211,20 @@ VOID teApiGetDeviceCaps(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 	teSetLong(pVarResult, GetDeviceCaps(param[0].hdc, param[1].intVal));
 }
 
+#ifdef _DEBUG
 VOID teApimciSendString(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	teSetLong(pVarResult, mciSendString(param[0].lpcwstr, param[1].lpwstr, param[2].uintVal, param[3].hwnd));
 }
 
-#ifdef _DEBUG
+VOID teApiGetGlyphIndices(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	VARIANT vMem;
+	VariantInit(&vMem);
+	teSetLong(pVarResult, GetGlyphIndices(param[0].hdc, param[1].lpcwstr, lstrlen(param[1].lpcwstr), (LPWORD)GetpcFromVariant(&pDispParams->rgvarg[nArg - 2], &vMem), param[3].dword));
+	VariantClear(&vMem);
+}
+
 VOID teApiTest(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	LONGLONG ll = 0x7f1f2f1f1f1f1f1f;
@@ -10590,8 +10598,9 @@ TEDispatchApi dispAPI[] = {
 	{ 1,  0, -1, -1, "SetClipboardData", teApiSetClipboardData },
 	{ 2,  1, -1, -1, "ObjDelete", teApiObjDelete },
 	{ 2, -1, -1, -1, "GetDeviceCaps", teApiGetDeviceCaps },
-	{ 4,  0, -1, -1, "mciSendString", teApimciSendString },
 #ifdef _DEBUG
+	{ 4,  0, -1, -1, "mciSendString", teApimciSendString },
+	{ 4,  1, -1, -1, "GetGlyphIndices", teApiGetGlyphIndices },
 	{ 0, -1, -1, -1, "Test", teApiTest },
 #endif
 };
@@ -14503,6 +14512,11 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			return S_OK;
 			
+		case TE_METHOD + 0xf026://Focus
+			SetActive(TRUE);
+			CheckChangeTabTC(m_pTC->m_hwnd);
+			return S_OK;
+
 		case TE_METHOD + 0xf031://Close
 			teSetBool(pVarResult, Close(FALSE));
 			if (!m_pTC->m_nLockUpdate) {
@@ -14672,10 +14686,6 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				pVarResult->vt = VT_BSTR;
 				GetGroupBy(&pVarResult->bstrVal);
 			}
-			return S_OK;
-			
-		case TE_METHOD + 0xf106://Focus
-			SetActive(TRUE);
 			return S_OK;
 			
 		case TE_METHOD + 0xf107://HitTest (Screen coordinates)
@@ -18114,7 +18124,6 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			
 		case TE_METHOD + 9://Close
 			m_nClose = 1;
-			ShowWindow(m_hwndParent, SW_HIDE);
 			PostMessage(m_hwndParent, WM_CLOSE, 0, 0);
 			return S_OK;
 

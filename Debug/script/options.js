@@ -44,9 +44,6 @@ RunEventUI("BrowserCreatedEx");
 CloseWB = async function (WB, bForce) {
 	if (bForce || g_nResult != 4) {
 		FireEvent(window, "unload");
-		if (te.Data.bReload) {
-			MainWindow.setTimeout(MainWindow.ReloadCustomize, 999);
-		}
 		WB.Close();
 	}
 	g_nResult = 0;
@@ -1541,10 +1538,8 @@ InitDialog = async function () {
 	const res = /^icon(.*)/.exec(Query);
 	if (res) {
 		const a = {
-			"16px ieframe,216": "b,216,16",
-			"24px ieframe,214": "b,214,24",
-			"16px ieframe,206": "b,206,16",
-			"24px ieframe,204": "b,204,24",
+			"ieframe,214": "b,214,24",
+			"ieframe,204": "b,204,24",
 
 			"shell32": "i,shell32.dll"
 		};
@@ -1561,8 +1556,7 @@ InitDialog = async function () {
 		for (let i = 0; i < sue.length; ++i) {
 			a["Segoe UI Emoji " + sue[i].toString(16)] = "f,Segoe UI Emoji," + sue[i] + ",256";
 		}
-		a["16px ieframe,699"] = "b,699,16";
-		a["24px ieframe,697"] = "b,697,24";
+		a["ieframe,697"] = "b,697,24";
 		a.imageres = "i,imageres.dll";
 		a.wmploc = "i,wmploc.dll";
 		a.setupapi = "i,setupapi.dll";
@@ -2853,20 +2847,20 @@ async function ShowButtons(b1, b2, SortMode) {
 		o.innerHTML = (await Promise.all([GetImgTag({
 			id: "SortButton_0",
 			src: "bitmap:ieframe.dll,214,24,24",
-			title: "Name",
-			onclick: "SortAddons(0, this)",
+			title: await api.LoadString(hShell32, 8976),
+			onclick: "SortAddons(this)",
 			class: "button"
 		}, h), GetImgTag({
 			id: "SortButton_1",
 			src: "bitmap:ieframe.dll,214,24,26",
 			title: await GetTextR("{B725F130-47EF-101A-A5F1-02608C9EEBAC} 14"),
-			onclick: "SortAddons(1, this)",
+			onclick: "SortAddons(this)",
 			class: "button"
 		}, h), GetImgTag({
 			id: "SortButton_2",
 			src: "bitmap:ieframe.dll,214,24,27",
 			title: "Id",
-			onclick: "SortAddons(2, this)",
+			onclick: "SortAddons(this)",
 			class: "button"
 		}, h)])).join("");
 	}
@@ -2889,7 +2883,8 @@ async function ShowButtons(b1, b2, SortMode) {
 	}
 }
 
-async function SortAddons(n, el) {
+async function SortAddons(el) {
+	const n = el.id.replace(/\D/g, "");
 	if (g_SortMode == 1) {
 		const table = document.getElementById("Addons");
 		if (table.rows.length < 2) {
