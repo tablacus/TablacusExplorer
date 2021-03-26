@@ -1438,7 +1438,7 @@ OpenIcon = function (o) {
 		o.cursor = "";
 		o.onclick = null;
 		const a = o.id.split(/,/);
-		const px = 32 * screen.deviceYDPI / 96;
+		const px = screen.deviceYDPI / 3;
 		const srcs = [];
 		if (a[0] == "b") {
 			const dllpath = BuildPath(system32, "ieframe.dll");
@@ -1456,18 +1456,18 @@ OpenIcon = function (o) {
 					api.ImageList_Destroy(himl);
 				}
 				if (nCount == 0) {
-					if (lpbmp == 206 || lpbmp == 204) {
+					if (lpbmp == 204) {
 						nCount = 20;
-					} else if (lpbmp == 216 || lpbmp == 214) {
+					} else if (lpbmp == 214) {
 						nCount = 32;
 					}
 				}
 				a[0] = GetFileName(dllpath);
 				for (a[3] = 0; a[3] < nCount; a[3]++) {
 					const tag = {
-						class: "button",
+						"class": "button",
 						onclick: "SelectIcon(this)",
-						src: "bitmap:" + a.join(",")
+						src: ("bitmap:" + a.join(",")).replace(/^bitmap:ieframe\.dll,214,24,/i, "icon:general,").replace(/^bitmap:ieframe\.dll,204,24,/i, "icon:browser,")
 					}
 					tag.title = tag.src;
 					srcs.push(GetImgTag(tag, a[2]));
@@ -1481,7 +1481,7 @@ OpenIcon = function (o) {
 			const nCount = await api.ExtractIconEx(dllPath, -1, null, null, 0);
 			for (let i = 0; i < nCount; ++i) {
 				const tag = {
-					class: "button",
+					"class": "button",
 					onclick: "SelectIcon(this)",
 					src: ["icon:" + a[1], i].join(",")
 				}
@@ -1491,7 +1491,7 @@ OpenIcon = function (o) {
 		} else {
 			for (let i = 0; i < a[3]; ++i) {
 				const tag = {
-					class: "button",
+					"class": "button",
 					onclick: "SelectIcon(this)",
 					src: "font:" + a[1] + ",0x" + (parseInt(a[2]) + i).toString(16)
 				}
@@ -1573,7 +1573,10 @@ InitDialog = async function () {
 				const path2 = BuildPath(path, await wfd.cFileName);
 				const hFind2 = await api.FindFirstFile(path2 + "\\*.png", wfd);
 				for (let bFind2 = hFind != INVALID_HANDLE_VALUE; bFind2; bFind2 = await api.FindNextFile(hFind2, wfd)) {
-					arfn.push(await wfd.cFileName);
+					const r = await Promise.all([wfd.dwFileAttributes, wfd.cFileName]);
+					if (!(r[0] & FILE_ATTRIBUTE_DIRECTORY)) {
+						arfn.push(r[1]);
+					}
 				}
 				if (window.chrome) {
 					arfn.sort();
@@ -1582,17 +1585,20 @@ InitDialog = async function () {
 						return api.StrCmpLogical(a, b);
 					});
 				}
-				const px = 32 * screen.deviceYDPI / 96;
-				for (let i = 0; i < arfn.length; ++i) {
-					const src = ["icon:" + GetFileName(path2), arfn[i].replace(/\.png$/i, "")].join(",");
-					s.push('<img src="', BuildPath(path2, arfn[i]), '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="', src, '" style="max-height:', px, 'px"> ');
+				if (arfn.length) {
+					const px = screen.deviceYDPI / 3;
+					for (let i = 0; i < arfn.length; ++i) {
+						const src = ["icon:" + GetFileName(path2), arfn[i].replace(/\.png$/i, "")].join(",");
+						s.push('<img src="', BuildPath(path2, arfn[i]), '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="', src, '" style="max-height:', px, 'px"> ');
+					}
+					s.push("<br>");
 				}
-				s.push("<br>");
 			}
 		}
+		const r = await Promise.all([GetText("General"), GetText("Browser")]);
 		for (let i in a) {
 			if (a[i].charAt(0) == "i" || res[1] != "2") {
-				s.push('<div id="', a[i], '" onclick="OpenIcon(this)" style="cursor: pointer"><span class="tab">', i.replace(/ieframe,21\d/, await GetText("General")).replace(/ieframe,20\d/, await GetText("Browser")), '</span></div>');
+				s.push('<div id="', a[i], '" onclick="OpenIcon(this)" style="cursor: pointer"><span class="tab">', i.replace(/ieframe,214/, r[0]).replace(/ieframe,204/, r[1]), '</span></div>');
 			}
 		}
 		s.push('<div onclick="SearchIcon(this)" style="cursor: pointer"><span class="tab">', await GetText("Search"), '</span></div>');
@@ -2384,8 +2390,8 @@ SetImage = async function (f, n) {
 		if (!f) {
 			f = document.F;
 		}
-		const h = GetNum((f.IconSize || f.Height || { value: window.IconSize || 24 }).value);
-		const px = screen.deviceYDPI / 2;
+		const px = screen.deviceYDPI / 3;
+		const h = Math.min(GetNum(f.IconSize || f.Height) || await MainWindow.IconSize, px);
 		o.innerHTML = await GetImgTag({ src: await ExtractPath(te, f.Icon.value), "max-width": px + "px", "max-height": px + "px" }, h);
 	}
 }
@@ -2843,25 +2849,25 @@ async function ShowButtons(b1, b2, SortMode) {
 	let o = document.getElementById("SortButton");
 	o.style.display = b1 ? "inline-block" : "none";
 	if (!document.getElementById("SortButton_0")) {
-		const h = 24 * screen.deviceYDPI / 96;
+		const h = screen.deviceYDPI / 4;
 		o.innerHTML = (await Promise.all([GetImgTag({
 			id: "SortButton_0",
-			src: "bitmap:ieframe.dll,214,24,24",
+			src: "icon:general,24",
 			title: await api.LoadString(hShell32, 8976),
 			onclick: "SortAddons(this)",
-			class: "button"
+			"class": "button"
 		}, h), GetImgTag({
 			id: "SortButton_1",
-			src: "bitmap:ieframe.dll,214,24,26",
+			src: "icon:general,26",
 			title: await GetTextR("{B725F130-47EF-101A-A5F1-02608C9EEBAC} 14"),
 			onclick: "SortAddons(this)",
-			class: "button"
+			"class": "button"
 		}, h), GetImgTag({
 			id: "SortButton_2",
-			src: "bitmap:ieframe.dll,214,24,27",
+			src: "icon:general,27",
 			title: "Id",
 			onclick: "SortAddons(this)",
-			class: "button"
+			"class": "button"
 		}, h)])).join("");
 	}
 	if (g_SortMode == 1) {

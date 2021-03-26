@@ -1,14 +1,14 @@
 // Tablacus Explorer
 
-if (!window.addEventListener) {
+if (!window.addEventListener && window.attachEvent) {
 	window.addEventListener = function (n, fn) {
-		AddEventEx(window, n, fn);
+		window.attachEvent("on" + n, fn);
 	}
 	document.addEventListener = function (n, fn) {
-		AddEventEx(document, n, fn);
+		document.attachEvent("on" + n, fn);
 	}
 	document.body.addEventListener = function (n, fn) {
-		AddEventEx(document.body, n, fn);
+		document.body.attachEvent("on" + n, fn);
 	}
 }
 
@@ -183,6 +183,37 @@ ExecJavaScript = async function () {
 	const args = Array.apply(null, arguments);
 	const s = FixScript(args.shift(), window.chrome);
 	new Function("Ctrl", "FV", "type", "hwnd", "pt", s).apply(null, args);
+}
+
+AddEventUI = function (Name, fn, priority) {
+	if (Name) {
+		const en = Name.toLowerCase();
+		if (en === "layout") {
+			api.Invoke(fn);
+			return;
+		}
+		if (!ui_.eventTE[en]) {
+			ui_.eventTE[en] = [];
+		}
+		if (priority) {
+			ui_.eventTE[en].unshift(fn);
+		} else {
+			ui_.eventTE[en].push(fn);
+		}
+	}
+}
+
+RunEventUI1 = async function () {
+	const args = Array.apply(null, arguments);
+	const en = args.shift();
+	const eo = ui_.eventTE[en.toLowerCase()];
+	for (let i in eo) {
+		try {
+			await eo[i].apply(eo[i], args);
+		} catch (e) {
+			ShowError(e, en, i);
+		}
+	}
 }
 
 OpenHttpRequest = async function (url, alt, fn, arg) {
@@ -621,7 +652,7 @@ ApplyLang = async function (doc) {
 
 ImgBase64 = async function (el, index, h) {
 	const org = el.src || el.getAttribute("data-src");
-	const src = await ExtractMacro(te, org);
+	const src = await ExtractPath(te, org);
 	const s = await MakeImgSrc(src, index, false, h || el.height || window.IconSize);
 	if ("string" === typeof s && org != src) {
 		return src.replace(location.href.replace(/[^\/]*$/, ""), "file:///");
@@ -832,7 +863,7 @@ GetFolderView = GetFolderViewEx = async function (Ctrl, pt, bStrict) {
 }
 
 AddFavoriteEx = async function (Ctrl, pt) {
-	const FV = await GetFolderViewEx(Ctrl, pt);
+	const FV = await GetFolderView(Ctrl, pt);
 	await FV.Focus();
 	AddFavorite();
 	return S_OK
@@ -1248,7 +1279,7 @@ GetXmlItems = window.chrome ? async function (items) {
 }
 
 SyncExec = async function (cb, el, n) {
-	cb(await GetFolderViewEx(el), n ? await GetPosEx(el, n) : null);
+	cb(await GetFolderView(el), n ? await GetPosEx(el, n) : null);
 }
 
 GetWidth = function (s) {

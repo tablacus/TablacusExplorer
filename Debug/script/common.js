@@ -142,10 +142,10 @@ GetImgTag = async function (o, h) {
 				h = Number(h) ? h + "px" : EncodeSC(h);
 				const ar = ['font-family:', FontFace, '; font-size:', h2, '; line-height:', h, ';', (o.style || "") ];
 				o.style = ar.join("");
-				if (o.class) {
-					o.class += " fonticon";
+				if (o.className) {
+					o.className += " fonticon";
 				} else {
-					o.class = "fonticon";
+					o.className = "fonticon";
 				}
 			} else if (o.src == o.title) {
 				o.style = "display: none";

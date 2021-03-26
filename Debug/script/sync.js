@@ -49,10 +49,14 @@ g_.ptMenuDrag = api.Memory("POINT");
 g_.Locations = api.CreateObject("Object");
 g_.IEVer = window.chrome ? (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 : 12) : ("undefined" === typeof ScriptEngineMajorVersion ? 12 : (ScriptEngineMajorVersion() > 8 ? ScriptEngineMajorVersion() : ScriptEngineMinorVersion()));
 g_.bit = api.sizeof("HANDLE") * 8;
+g_.DefaultIcons = {
+	general: "bitmap:ieframe.dll,214,24,",
+	browser: "bitmap:ieframe.dll,204,24,"
+}
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210325 ? te.Version : 20210325;
+		return te.Version < 20210325 ? te.Version : 20210326;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -509,8 +513,8 @@ AddEvent = function (Name, fn, priority) {
 	if (Name) {
 		const en = Name.toLowerCase();
 		const s = en.replace(/\d$/g, "");
-		if (en === "layout") {
-			api.Invoke(fn);
+		if (/^layout$|^panelcreated$/i.test(en)) {
+			InvokeUI("AddEventUI", Array.apply(null, arguments));
 			return;
 		}
 		if (g_.event[s] && !te["On" + s]) {
@@ -1278,6 +1282,9 @@ MakeImgSrc = function (src, index, bSrc, h) {
 			if (fso.FileExists(fn)) {
 				return fn;
 			}
+			if (fn = g_.DefaultIcons[icon[0].toLowerCase()]) {
+				src = fn + icon[1];
+			}
 		}
 	}
 	if (g_.IEVer < 8) {
@@ -2037,7 +2044,8 @@ OpenMenu = function (items, SelItem) {
 		const item = items[i];
 		const strType = String(item.getAttribute("Type")).toLowerCase();
 		const strFlag = strType == "menus" ? item.text.toLowerCase() : "";
-		let bAdd = SelItem ? PathMatchEx(path, item.getAttribute("Filter")) : /^$|^\/\^\$\//.test(item.getAttribute("Filter"));
+		const strFilter = item.getAttribute("Filter");
+		let bAdd = SelItem ? PathMatchEx(path, strFilter) : /^$|^\/\^\$\//.test(strFilter);
 		if (strFlag == "close") {
 			bAdd = arLevel.pop();
 		}
@@ -2045,7 +2053,9 @@ OpenMenu = function (items, SelItem) {
 			arLevel.push(bAdd);
 		}
 		if (bAdd && (arLevel.length == 0 || arLevel[arLevel.length - 1])) {
-			arMenu.push(i);
+			if (strFilter !== "" || item.getAttribute("Name") !== "") {
+				arMenu.push(i);
+			}
 		}
 	}
 	return arMenu;

@@ -1,9 +1,9 @@
 const Addon_Id = "mainmenu";
 const Default = "ToolBar1Left";
-
 if (window.Addon == 1) {
 	Addons.MainMenu = {
 		Menu: [],
+		strMenus: ["&File", "&Edit", "&View", "F&avorites", "&Tools", "&Help"],
 
 		Popup: async function (o) {
 			if (!await Common.MainMenu.bClose) {
@@ -40,28 +40,31 @@ if (window.Addon == 1) {
 		Addons.MainMenu.Popup(document.getElementById(s));
 	}
 
-	// Init
-	const used = {};
-	const strMenus = ["&File", "&Edit", "&View", "F&avorites", "&Tools", "&Help"];
-	const s = [];
-	for (let i = 0; i < strMenus.length; i++) {
-		const s1 = strMenus[i].replace("&", "");
-		const strMenu = await GetText(strMenus[i]);
-		const res = /&(.)/.exec(strMenu);
-		if (res) {
-			const c = res[1];
-			if (!used[c]) {
-				used[c] = true;
-				SetKeyExec("All", "Alt+" + c, 'Common.MainMenu.Popup("Menu' + s1 + '");', "JScript");
+	AddEvent("Layout", async function () {
+		const used = {};
+		const strMenus = Addons.MainMenu.strMenus;
+		const s = [];
+		for (let i = 0; i < strMenus.length; i++) {
+			const s1 = strMenus[i].replace("&", "");
+			const strMenu = await GetText(strMenus[i]);
+			const res = /&(.)/.exec(strMenu);
+			if (res) {
+				const c = res[1];
+				if (!used[c]) {
+					used[c] = true;
+					SetKeyExec("All", "Alt+" + c, 'Common.MainMenu.Popup("Menu' + s1 + '");', "JScript");
+				}
 			}
+			s.push('<label class="menu" id="Menu', s1, '" onmousedown="Addons.MainMenu.Popup(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', amp2ul(strMenu), '</label>');
 		}
-		s.push('<label class="menu" id="Menu', s1, '" onmousedown="Addons.MainMenu.Popup(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', amp2ul(strMenu), '</label>');
-	}
-	SetAddon(Addon_Id, Default, s);
+		SetAddon(Addon_Id, Default, s);
+	});
+
+	const strMenus = Addons.MainMenu.strMenus;
 	for (let i = strMenus.length; i--;) {
 		const s1 = strMenus[i].replace("&", "");
 		Addons.MainMenu.Menu[i] = document.getElementById('Menu' + s1);
 		Common.MainMenu.Menu[i] = 'Menu' + s1;
 	}
-	importJScript("addons\\" + Addon_Id + "\\sync.js");
+	$.importScript("addons\\" + Addon_Id + "\\sync.js");
 }

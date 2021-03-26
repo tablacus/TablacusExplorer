@@ -243,6 +243,10 @@ a.treebutton:hover {
 	font-size: 12pt !important;
 }
 
+.fonticon {
+	cursor: default;
+}
+
 .drive {
 	position: absolute;
 	color: windowtext;

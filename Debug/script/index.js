@@ -61,8 +61,8 @@ ResetScroll = function () {
 	}
 }
 
-PanelCreated = function (Ctrl, Id) {
-	RunEvent1("PanelCreated", Ctrl, Id);
+PanelCreated = async function (Ctrl, Id) {
+	await RunEventUI1("PanelCreated", Ctrl, Id);
 	ApplyLang(document.getElementById("Panel_" + Id));
 	Resize();
 	setTimeout(async function () {
@@ -111,7 +111,7 @@ SetAddon = async function (strName, Location, Tag, strVAlign) {
 				o.style.verticalAlign = strVAlign;
 			}
 		} else if (Location == "Inner") {
-			AddEvent("PanelCreated", function (Ctrl, Id) {
+			AddEventUI("PanelCreated", function (Ctrl, Id) {
 				SetAddon(null, "Inner1Left_" + Id, Tag.replace(/\$/g, Id));
 			});
 		}
@@ -262,7 +262,7 @@ OnArrange = async function (Ctrl, rc) {
 			s.push('<div id="InnerBottom_', Id, '"></div></td><td id="InnerRight_', Id, '" class="sidebar" style="width: 0; display: none"></td></tr></table>');
 			document.getElementById("Panel").insertAdjacentHTML("beforeend", s.join(""));
 			o = document.getElementById("Panel_" + Id);
-			PanelCreated(Ctrl, Id);
+			await PanelCreated(Ctrl, Id);
 		}
 		Promise.all([rc.left, rc.top, rc.right, rc.bottom, Ctrl.Visible, Ctrl.Left, Ctrl.Top, Ctrl.Width, Ctrl.Height]).then(function (r) {
 			o.style.left = r[0] + "px";
