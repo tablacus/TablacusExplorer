@@ -832,7 +832,7 @@ GetFolderView = GetFolderViewEx = async function (Ctrl, pt, bStrict) {
 	}
 	const nType = await Ctrl.Type;
 	if (nType == null) {
-		let o = Ctrl.offsetParent;
+		let o = (Ctrl.srcElement || Ctrl).offsetParent;
 		while (o) {
 			const res = /^Panel_(\d+)$/.exec(o.id);
 			if (res) {
@@ -1279,7 +1279,15 @@ GetXmlItems = window.chrome ? async function (items) {
 }
 
 SyncExec = async function (cb, el, n) {
-	cb(await GetFolderView(el), n ? await GetPosEx(el, n) : null);
+	let pt;
+	if (n) {
+		pt = await GetPosEx(el, n);
+	} else if (el.srcElement) {
+		pt = await api.Memory("POINT");
+		pt.x = el.screenX * ui_.Zoom;
+		pt.y = el.screenY * ui_.Zoom;
+	}
+	cb(await GetFolderView(el), pt);
 }
 
 GetWidth = function (s) {

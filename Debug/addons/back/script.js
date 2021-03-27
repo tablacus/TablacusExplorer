@@ -1,37 +1,33 @@
-var Addon_Id = "back";
-var Default = "ToolBar2Left";
-
+const Addon_Id = "back";
+const Default = "ToolBar2Left";
 if (window.Addon == 1) {
-	var item = await GetAddonElement(Addon_Id);
-
 	Addons.Back = {
 		Exec: function (Ctrl, pt) {
 			Exec(Ctrl, "Back", "Tabs", 0, pt);
 		},
 
 		ExecEx: async function (el) {
-			Exec(await GetFolderViewEx(el), "Back", "Tabs", 0);
+			Exec(await GetFolderView(el), "Back", "Tabs", 0);
 		},
 
-		Popup: async function (ev) {
-			var FV = await te.Ctrl(CTRL_FV);
+		Popup: async function (el) {
+			const FV = await te.Ctrl(CTRL_FV);
 			if (FV) {
-				var Log = await FV.History;
-				var hMenu = await api.CreatePopupMenu();
-				var mii = await api.Memory("MENUITEMINFO");
+				const Log = await FV.History;
+				const hMenu = await api.CreatePopupMenu();
+				const mii = await api.Memory("MENUITEMINFO");
 				mii.cbSize = await mii.Size;
 				mii.fMask = MIIM_ID | MIIM_STRING | MIIM_BITMAP;
-				var nCount = await Log.Count;
-				for (var i = await Log.Index + 1; i < nCount; i++) {
-					var FolderItem = await Log[i];
+				const nCount = await Log.Count;
+				for (let i = await Log.Index + 1; i < nCount; i++) {
+					const FolderItem = await Log[i];
 					AddMenuIconFolderItem(mii, FolderItem);
 					mii.dwTypeData = await FolderItem.Name;
 					mii.wID = i;
 					await api.InsertMenuItem(hMenu, MAXINT, false, mii);
 				}
-				var x = ev.screenX * ui_.Zoom;
-				var y = ev.screenY * ui_.Zoom;
-				var nVerb = await api.TrackPopupMenuEx(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, x, y, await te.hwnd, null, null);
+				const pt = GetPos(el, 9);
+				const nVerb = await api.TrackPopupMenuEx(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, ui_.hwnd, null, null);
 				api.DestroyMenu(hMenu);
 				if (nVerb) {
 					var wFlags = await GetNavigateFlags(FV);
@@ -46,13 +42,17 @@ if (window.Addon == 1) {
 		}
 	};
 
-	AddEvent("ChangeView", async function (Ctrl) {
-		if (await Ctrl.Id == await Ctrl.Parent.Selected.Id) {
-			var Log = await Ctrl.History;
-			DisableImage(document.getElementById("ImgBack"), Log && await Log.Index >= await Log.Count - 1);
-		}
+	AddEvent("Layout", async function () {
+		const item = await GetAddonElement(Addon_Id);
+		const h = GetIconSize(item.getAttribute("IconSize"));
+		SetAddon(Addon_Id, Default, ['<span class="button" onclick="Addons.Back.ExecEx(this)" oncontextmenu="Addons.Back.Popup(this); return false;" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', await GetImgTag({ id: "ImgBack",
+			title: await GetText("Back"),
+			src: item.getAttribute("Icon") || "icon:general,0"
+		}, h), '</span>']);
 	});
-	var h = GetIconSize(item.getAttribute("IconSize"));
-	var src = item.getAttribute("Icon") || (h <= 16 ? "bitmap:ieframe.dll,206,16,0" : "bitmap:ieframe.dll,214,24,0");
-	SetAddon(Addon_Id, Default, ['<span class="button" onclick="Addons.Back.ExecEx(this)" oncontextmenu="Addons.Back.Popup(event); return false;" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', await GetImgTag({ id: "ImgBack", title: "Back", src: src }, h), '</span>']);
+
+	AddEvent("ChangeView1", async function (Ctrl) {
+		const Log = await Ctrl.History;
+		DisableImage(document.getElementById("ImgBack"), Log && await Log.Index >= await Log.Count - 1);
+	});
 }

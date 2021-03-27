@@ -27,7 +27,7 @@ FixScript = RemoveAsync = function (s, a) {
 		return "(async () => {" + s + "\n})();";
 	}
 	s = s.replace(/([^\.\w])(async |await )/g, "$1");
-	if ("undefined" == typeof ScriptEngineMajorVersion) {
+	if ("undefined" === typeof ScriptEngineMajorVersion) {
 		return s;
 	}
 	var v = ScriptEngineMajorVersion();
@@ -124,7 +124,7 @@ GetNum = function (s) {
 }
 
 SameText = function (s1, s2) {
-	return String(s1).toLowerCase() == String(s2).toLowerCase();
+	return String(s1).toLowerCase() === String(s2).toLowerCase();
 }
 
 //Tablacus

@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210325 ? te.Version : 20210326;
+		return te.Version < 20210327 ? te.Version : 20210327;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -2042,18 +2042,19 @@ OpenMenu = function (items, SelItem) {
 	const arLevel = [];
 	for (let i = 0; i < items.length; ++i) {
 		const item = items[i];
-		const strType = String(item.getAttribute("Type")).toLowerCase();
-		const strFlag = strType == "menus" ? item.text.toLowerCase() : "";
-		const strFilter = item.getAttribute("Filter");
-		let bAdd = SelItem ? PathMatchEx(path, strFilter) : /^$|^\/\^\$\//.test(strFilter);
-		if (strFlag == "close") {
-			bAdd = arLevel.pop();
-		}
-		if (strFlag == "open") {
-			arLevel.push(bAdd);
+		const sType = item.getAttribute("Type");
+		const sFilter = item.getAttribute("Filter");
+		let bAdd = SelItem ? PathMatchEx(path, sFilter) : /^$|^\/\^\$\//.test(sFilter);
+		if (SameText(sType, "Menus")) {
+			if (SameText(item.text, "close")) {
+				bAdd = arLevel.pop();
+			}
+			if (SameText(item.text, "open")) {
+				arLevel.push(bAdd);
+			}
 		}
 		if (bAdd && (arLevel.length == 0 || arLevel[arLevel.length - 1])) {
-			if (strFilter !== "" || item.getAttribute("Name") !== "") {
+			if (!SameText(sType, "") || !SameText(sFilter, "") || !SameText(item.text, "") || !SameText(item.getAttribute("Name"), "")) {
 				arMenu.push(i);
 			}
 		}
@@ -3325,8 +3326,9 @@ FolderMenu = {
 				}
 				return;
 			}
-			if (FolderItem.Enum || ((MainWindow.g_menu_button == 3 || isFinite(wFlags)) && (FolderItem.IsFolder || (!FolderItem.IsFileSystem && FolderItem.IsBrowsable)))) {
-				Navigate(FolderItem, (isFinite(wFlags) ? wFlags : GetOpenMode()) | (MainWindow.g_menu_button == 3 ? SBSP_NEWBROWSER : 0));
+			const bNewTab = MainWindow.g_menu_button == 3 || api.GetKeyState(VK_CONTROL) < 0;
+			if (FolderItem.Enum || ((bNewTab || isFinite(wFlags)) && (FolderItem.IsFolder || (!FolderItem.IsFileSystem && FolderItem.IsBrowsable)))) {
+				Navigate(FolderItem, (isFinite(wFlags) ? wFlags : GetOpenMode()) | (bNewTab ? SBSP_NEWBROWSER : 0));
 				return;
 			}
 			if (!FV) {

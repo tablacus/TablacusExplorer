@@ -2341,6 +2341,9 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 						SetGestureText(Ctrl, "");
 					}
 					break;
+				case WM_MOVE:
+					RunEvent1("ConfigChanged", "Window");
+					break;
 				case WM_QUERYENDSESSION:
 					SaveConfig();
 					return true;
