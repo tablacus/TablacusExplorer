@@ -766,7 +766,7 @@ MouseOver = async function (o) {
 			return;
 		}
 	}
-	o = o.srcElement || o;
+	o = o.target || o.srcElement || o;
 	if (/^button$|^menu$/i.test(o.className)) {
 		if (ui_.objHover && o != ui_.objHover) {
 			MouseOut();
@@ -800,9 +800,9 @@ MouseOut = function (s) {
 	return S_OK;
 }
 
-InsertTab = function (e) {
-	const ot = e.srcElement;
-	if (e.keyCode == VK_TAB) {
+InsertTab = function (ev) {
+	const ot = ev.target || ev.srcElement;
+	if (ev.keyCode ? ev.keyCode == VK_TAB : "Tab" === ev.key) {
 		ot.focus();
 		if (document.all && document.selection) {
 			const selection = document.selection.createRange();
@@ -822,7 +822,8 @@ InsertTab = function (e) {
 }
 
 DetectProcessTag = function (ev) {
-	const el = (ev || event).srcElement;
+	ev = (ev || event);
+	const el = ev.target || ev.srcElement;
 	return el && (/input|textarea/i.test(el.tagName) || /selectable/i.test(el.className));
 }
 
@@ -832,7 +833,7 @@ GetFolderView = GetFolderViewEx = async function (Ctrl, pt, bStrict) {
 	}
 	const nType = await Ctrl.Type;
 	if (nType == null) {
-		let o = (Ctrl.srcElement || Ctrl).offsetParent;
+		let o = (Ctrl.target || Ctrl.srcElement || Ctrl).offsetParent;
 		while (o) {
 			const res = /^Panel_(\d+)$/.exec(o.id);
 			if (res) {
@@ -1278,16 +1279,16 @@ GetXmlItems = window.chrome ? async function (items) {
 	return ar;
 }
 
-SyncExec = async function (cb, el, n) {
+SyncExec = async function (cb, o, n) {
 	let pt;
 	if (n) {
-		pt = await GetPosEx(el, n);
-	} else if (el.srcElement) {
+		pt = await GetPosEx(o, n);
+	} else if (o.target || o.srcElement) {
 		pt = await api.Memory("POINT");
-		pt.x = el.screenX * ui_.Zoom;
-		pt.y = el.screenY * ui_.Zoom;
+		pt.x = o.screenX * ui_.Zoom;
+		pt.y = o.screenY * ui_.Zoom;
 	}
-	cb(await GetFolderView(el), pt);
+	cb(await GetFolderView(o), pt);
 }
 
 GetWidth = function (s) {

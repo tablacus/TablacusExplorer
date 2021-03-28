@@ -1,6 +1,6 @@
 const Addon_Id = "up";
 const Default = "ToolBar2Left";
-const item = await GetAddonElement(Addon_Id);
+let item = await GetAddonElement(Addon_Id);
 if (!item.getAttribute("Set")) {
 	item.setAttribute("Menu", "View");
 	item.setAttribute("MenuPos", -1);
@@ -14,13 +14,13 @@ if (!item.getAttribute("Set")) {
 if (window.Addon == 1) {
 	Addons.Up = {
 		Exec: async function (Ctrl, pt) {
-			const FV = await GetFolderViewEx(Ctrl, pt);
+			const FV = await GetFolderView(Ctrl, pt);
 			FV.Focus();
 			Exec(FV, "Up", "Tabs", 0, pt);
 		},
 
-		Popup: async function (ev, el) {
-			const FV = await GetFolderViewEx(el);
+		Popup: async function (el) {
+			const FV = await GetFolderView(el);
 			if (FV) {
 				FV.Focus();
 				await FolderMenu.Clear();
@@ -33,8 +33,8 @@ if (window.Addon == 1) {
 					FolderItem = await api.ILRemoveLastID(FolderItem);
 					FolderMenu.AddMenuItem(hMenu, FolderItem);
 				}
-				const x = ev.screenX * ui_.Zoom, y = ev.screenY * ui_.Zoom;
-				const nVerb = await FolderMenu.TrackPopupMenu(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, x, y);
+				const pt = GetPos(el, 9);
+				const nVerb = await FolderMenu.TrackPopupMenu(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y);
 				api.DestroyMenu(hMenu);
 				if (nVerb) {
 					await FolderMenu.Invoke(await FolderMenu.Items[nVerb - 1]);
@@ -44,10 +44,6 @@ if (window.Addon == 1) {
 			return false;
 		}
 	};
-	AddEvent("ChangeView2", async function (Ctrl) {
-		const el = document.getElementById("ImgUp_$") || document.getElementById("ImgUp_" + await Ctrl.Parent.Id);
-		DisableImage(el, await api.ILIsEmpty(Ctrl));
-	});
 	//Menu
 	const strName = item.getAttribute("MenuName") || await GetText("&Up One Level");
 	if (item.getAttribute("MenuExec")) {
@@ -61,9 +57,25 @@ if (window.Addon == 1) {
 	if (item.getAttribute("MouseExec")) {
 		SetGestureExec(item.getAttribute("MouseOn"), item.getAttribute("Mouse"), Addons.Up.Exec, "Async", true);
 	}
-	const h = GetIconSize(item.getAttribute("IconSize"), item.getAttribute("Location") == "Inner" && 16);
-	const s = item.getAttribute("Icon") || (h <= 16 ? "bitmap:ieframe.dll,216,16,28" : "bitmap:ieframe.dll,214,24,28");
-	SetAddon(Addon_Id, Default, ['<span class="button" id="UpButton" onclick="Addons.Up.Exec(this)" oncontextmenu="return Addons.Up.Popup(event, this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', await GetImgTag({ id: "ImgUp_$", title: strName, src: s }, h), '</span>']);
+
+	if (item.getAttribute("Location") == "Inner") {
+		AddEvent("ChangeView2", async function (Ctrl) {
+			DisableImage(document.getElementById("ImgUp_" + await Ctrl.Parent.Id), await api.ILIsEmpty(Ctrl));
+		});
+	} else {
+		AddEvent("ChangeView1", async function (Ctrl) {
+			DisableImage(document.getElementById("ImgUp_$"), await api.ILIsEmpty(Ctrl));
+		});
+	}
+
+	AddEvent("Layout", async function () {
+		SetAddon(Addon_Id, Default, ['<span class="button" id="UpButton" onclick="Addons.Up.Exec(this)" oncontextmenu="return Addons.Up.Popup(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', await GetImgTag({
+			id: "ImgUp_$",
+			title: strName,
+			src: item.getAttribute("Icon") || "icon:general,28"
+		}, GetIconSize(item.getAttribute("IconSize"), item.getAttribute("Location") == "Inner" && 16)), '</span>']);
+		delete item;
+	});
 } else {
 	EnableInner();
 }

@@ -139,35 +139,26 @@ RunSplitter = async function (ev, n) {
 DisableImage = function (img, bDisable) {
 	if (img) {
 		if (window.chrome) {
-			if (bDisable) {
-				const ar = [];
-				for (let i = 0; i < img.style.length; ++i) {
-					if (img.style[i] != "filter") {
-						ar.push(img.style[i] + ":" + img.style[img.style[i]]);
-					}
-				}
-				ar.push("filter:grayscale(1);");
-				img.style = ar.join(";");
-				img.style.opacity = .5;
-			} else {
-				img.style.filter  = "";
-				img.style.opacity = 1;
-			}
+			img.style.filter = bDisable ? "grayscale(1) opacity(.5)" : "";
 		} else if (ui_.IEVer >= 10) {
 			let s = decodeURIComponent(img.src);
 			const res = /^data:image\/svg.*?href="([^"]*)/i.exec(s);
 			if (bDisable) {
-				if (!res) {
+				if (!res && /^IMG$/i.test(img.tagName)) {
 					if (/^file:/i.test(s)) {
 						let image;
 						if (image = api.CreateObject("WICBitmap").FromFile(api.PathCreateFromUrl(s))) {
 							s = image.DataURI("image/png");
 						}
 					}
-					img.src = "data:image/svg+xml," + encodeURIComponent(['<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ', img.offsetWidth, ' ', img.offsetHeight, '"><filter id="G"><feColorMatrix type="saturate" values="0.1" /></filter><image width="', img.width, '" height="', img.height, '" opacity=".5" xlink:href="', s, '" filter="url(#G)"></image></svg>'].join(""));
+					img.src = "data:image/svg+xml," + encodeURIComponent(['<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ', img.offsetWidth, ' ', img.offsetHeight, '"><filter id="G"><feColorMatrix type="saturate" values="0.1" /></filter><image width="', img.width, '" height="', img.height, '" xlink:href="', s, '" filter="url(#G)"></image></svg>'].join(""));
 				}
-			} else if (res) {
-				img.src = res[1];
+				img.style.opacity = .5;
+			} else {
+				if (res) {
+					img.src = res[1];
+				}
+				img.style.opacity = 1;
 			}
 		} else {
 			img.style.filter = bDisable ? "gray(), alpha(style=0,opacity=50);" : "";

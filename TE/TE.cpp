@@ -1057,6 +1057,7 @@ VOID teRevoke(IShellWindows *pSW)
 			}
 			if (g_dwCookieSW) {
 				teUnadviseAndRelease(pSW, DIID_DShellWindowsEvents, &g_dwCookieSW);
+				g_dwCookieSW = 0;
 			}
 		} catch (...) {
 			g_nException = 0;
@@ -1101,7 +1102,9 @@ VOID teRegister()
 				teCoTaskMemFree(pidl);
 				teSysFreeString(&bsPath);
 			}
-			teAdvise(pSW, DIID_DShellWindowsEvents, static_cast<IDispatch *>(g_pTE), &g_dwCookieSW);
+			if (g_dwCookieSW) {
+				teAdvise(pSW, DIID_DShellWindowsEvents, static_cast<IDispatch *>(g_pTE), &g_dwCookieSW);
+			}
 		}
 	}
 }
@@ -4824,6 +4827,11 @@ VOID ClearEvents()
 	g_param[TE_LibraryFilter] = FALSE;
 	g_param[TE_AutoArrange] = FALSE;
 	g_param[TE_ShowInternet] = FALSE;
+
+	if (g_dwCookieSW) {
+		teUnadviseAndRelease(g_pSW, DIID_DShellWindowsEvents, &g_dwCookieSW);
+		g_dwCookieSW = 0;
+	}
 
 	EnableWindow(g_pWebBrowser->get_HWND(), TRUE);
 	SetWindowPos(g_hwndMain, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
@@ -9048,22 +9056,29 @@ VOID teApiSHChangeNotification_Lock(int nArg, teParam *param, DISPPARAMS *pDispP
 	if (GetDispatch(&pDispParams->rgvarg[nArg - 2], &pdisp)) {
 		PIDLIST_ABSOLUTE *ppidl;
 		LONG lEvent;
-		HANDLE hLock = SHChangeNotification_Lock(param[0].handle, param[1].dword, &ppidl, &lEvent);
-		if (hLock) {
-			VARIANT v;
-			VariantInit(&v);
-			if (ppidl) {
-				for (int i = (lEvent & (SHCNE_RENAMEFOLDER | SHCNE_RENAMEITEM)) ? 2 : 1; i--;) {
-					CteFolderItem *pPF = new CteFolderItem(NULL);
-					pPF->Initialize(ppidl[i]);
-					teSetObjectRelease(&v, pPF);
-					tePutPropertyAt(pdisp, i, &v);
+		HANDLE hLock;
+		try {
+			if (hLock = SHChangeNotification_Lock(param[0].handle, param[1].dword, &ppidl, &lEvent)) {
+				VARIANT v;
+				VariantInit(&v);
+				if (ppidl) {
+					for (int i = (lEvent & (SHCNE_RENAMEFOLDER | SHCNE_RENAMEITEM)) ? 2 : 1; i--;) {
+						CteFolderItem *pPF = new CteFolderItem(NULL);
+						pPF->Initialize(ppidl[i]);
+						teSetObjectRelease(&v, pPF);
+						tePutPropertyAt(pdisp, i, &v);
+					}
 				}
+				SHChangeNotification_Unlock(hLock);
+				teSetPtr(pVarResult, hLock);
+				teSetLong(&v, lEvent);
+				tePutProperty(pdisp, L"lEvent", &v);
 			}
-			SHChangeNotification_Unlock(hLock);
-			teSetPtr(pVarResult, hLock);
-			teSetLong(&v, lEvent);
-			tePutProperty(pdisp, L"lEvent", &v);
+		} catch (...) {
+			g_nException = 0;
+#ifdef _DEBUG
+			g_strException = L"SHChangeNotification_Lock";
+#endif
 		}
 		pdisp->Release();
 	}
@@ -10861,6 +10876,9 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 			case TET_EndThread:
 				DoFunc(TE_OnEndThread, g_pTE, S_OK);
 				break;
+			case TET_WindowRegistered:
+				DoFunc(TE_OnWindowRegistered, g_pTE, S_OK);
+				break;
 		}//end_switch
 	} catch (...) {
 		g_nException = 0;
@@ -11784,7 +11802,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				g_nLockUpdate -= 10000;
 				return 0;
 			case WM_SIZE:
-			case WM_MOVE:
 				if (g_pWebBrowser) {
 					teSetObjectRects(g_pWebBrowser->m_pWebBrowser, hWnd);
 				}
@@ -11918,6 +11935,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				if (g_nReload) {
 					return E_FAIL;
 				}
+			case WM_MOVE:
 			case WM_POWERBROADCAST:
 			case WM_TIMER:
 			case WM_DROPFILES:
@@ -12040,7 +12058,7 @@ LRESULT CALLBACK WndProc2(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				}
 				return 0;
 			case WM_SIZE:
-			case WM_MOVE:
+//			case WM_MOVE:
 				if (teGetSubWindow(hWnd, &pWB)) {
 					teSetObjectRects(pWB->m_pWebBrowser, hWnd);
 				}
@@ -17359,7 +17377,8 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				return S_OK;
 			//DIID_DShellWindowsEvents
 			case DISPID_WINDOWREGISTERED:
-				DoFunc(TE_OnWindowRegistered, g_pTE, S_OK);
+				SetTimer(g_hwndMain, TET_WindowRegistered, 100, teTimerProc);
+			case DISPID_WINDOWREVOKED:
 				return S_OK;
 			//GetObject
 			case TE_METHOD + 1020:
@@ -17744,6 +17763,9 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 					teInvokeObject(&g_pOnFunc[dispIdMember - START_OnFunc], wFlags, pVarResult, nArg, pDispParams->rgvarg);
 					if (nArg >= 0 && dispIdMember == TE_Labels + START_OnFunc && g_pOnFunc[TE_Labels]) {
 						g_bLabelsMode = !teHasProperty(g_pOnFunc[TE_Labels], L"call");
+					}
+					if (dispIdMember == START_OnFunc + TE_OnWindowRegistered && !g_dwCookieSW) {
+						teAdvise(g_pSW, DIID_DShellWindowsEvents, static_cast<IDispatch *>(g_pTE), &g_dwCookieSW);
 					}
 					return S_OK;
 				}
@@ -23555,6 +23577,13 @@ STDMETHODIMP CteWICBitmap::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT 
 HBITMAP CteWICBitmap::GetHBITMAP(COLORREF clBk)
 {
 	WICPixelFormatGUID guidPF;
+	if (clBk == -4) {
+#ifdef _WIN64
+		clBk = -2;
+#else
+		clBk = g_bUpperVista ? -2 : GetSysColor(COLOR_MENU);
+#endif
+	}
 	m_pImage->GetPixelFormat(&guidPF);
 	BOOL bAlphaBlend = (int)clBk >= 0 && !IsEqualGUID(guidPF, GUID_WICPixelFormat24bppBGR);
 	Get((int)clBk != -2 ? GUID_WICPixelFormat32bppBGRA : GUID_WICPixelFormat32bppPBGRA);
@@ -24129,8 +24158,6 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 			case TE_METHOD + 90:
 				if (nArg >= 1) {
 					IWICBitmap *pIBitmap;
-					int x = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
-					int y = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
 					HRESULT hr = m_pWICFactory->CreateBitmap(GetIntFromVariant(&pDispParams->rgvarg[nArg]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]),
 						GUID_WICPixelFormat32bppBGRA, WICBitmapCacheOnLoad, &pIBitmap);
 					if SUCCEEDED(hr) {

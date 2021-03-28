@@ -2325,8 +2325,9 @@ function SetOnChangeHandler() {
 					AddEventEx(o[i], "change", function (ev) {
 						ev = ev || event;
 						g_bChanged = true;
-						if (ev.srcElement) {
-							const res = /^(Tab|Tree|View|Conf)/.exec(ev.srcElement.name || ev.srcElement.id);
+						const target = ev.target || ev.srcElement;
+						if (target) {
+							const res = /^(Tab|Tree|View|Conf)/.exec(target.name || target.id);
 							if (res) {
 								g_Chg[res[1]] = true;
 							}
@@ -2362,7 +2363,7 @@ async function SetAddonOptions() {
 }
 
 SelectIcon = function (o) {
-	o = o.srcElement || o;
+	o = o.target || o.srcElement || o;
 	returnValue = o.title;
 	document.F.ButtonOk.disabled = false;
 	document.getElementById("Selected").innerHTML = o.outerHTML;

@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210327 ? te.Version : 20210327;
+		return te.Version < 20210328 ? te.Version : 20210328;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1396,8 +1396,7 @@ MakeImgIcon = function (src, index, h, bIcon) {
 	if (res) {
 		const icon = res[1].split(",");
 		if (!/\\/.test(icon[0])) {
-			const path = BuildPath(te.Data.DataFolder, ["icons", icon[0].replace(/\..*/, ""), icon[1] + ".png"].join("\\"));
-			const image = api.CreateObject("WICBitmap").FromFile(path);
+			const image = api.CreateObject("WICBitmap").FromFile(BuildPath(te.Data.DataFolder, "icons", icon[0].replace(/\..*/, ""), icon[1] + ".png"));
 			if (image) {
 				return image.GetHICON();
 			}
@@ -2577,7 +2576,7 @@ AddMenuIconFolderItem = function (mii, FolderItem, nHeight) {
 }
 
 AddMenuImage = function (mii, image, id, nHeight) {
-	mii.hbmpItem = image.GetHBITMAP(WINVER >= 0x600 ? -2 : GetSysColor(COLOR_MENU));
+	mii.hbmpItem = image.GetHBITMAP(-4);
 	if (mii.hbmpItem) {
 		mii.fMask |= MIIM_BITMAP;
 		if (id) {

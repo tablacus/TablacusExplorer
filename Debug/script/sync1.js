@@ -2775,7 +2775,7 @@ GetIconImage = function (Ctrl, BGColor, bSimple) {
 		}
 		return MakeImgDataEx(r, bSimple, nSize);
 	}
-	let img = RunEvent4("GetIconImage", Ctrl, BGColor, bSimple);
+	let img = RunEvent4("GetIconImage", Ctrl, BGColor < 0 ? GetSysColor(BGColor & 31): BGColor, bSimple);
 	if (img) {
 		return MakeImgDataEx(img, bSimple, nSize);
 	}
