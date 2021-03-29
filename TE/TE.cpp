@@ -8712,7 +8712,6 @@ VOID teApiSHChangeNotifyRegister(int nArg, teParam *param, DISPPARAMS *pDispPara
 	if (entry.pidl) {
 		teSetLong(pVarResult, SHChangeNotifyRegister(param[0].hwnd, param[1].intVal, param[2].lVal, param[3].uintVal, 1, &entry));
 		teChangeWindowMessageFilterEx(param[0].hwnd, param[3].uintVal, MSGFLT_ALLOW, NULL);
-		teCoTaskMemFree(const_cast<LPITEMIDLIST>(entry.pidl));
 	}
 }
 
@@ -10876,9 +10875,6 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 			case TET_EndThread:
 				DoFunc(TE_OnEndThread, g_pTE, S_OK);
 				break;
-			case TET_WindowRegistered:
-				DoFunc(TE_OnWindowRegistered, g_pTE, S_OK);
-				break;
 		}//end_switch
 	} catch (...) {
 		g_nException = 0;
@@ -11936,6 +11932,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					return E_FAIL;
 				}
 			case WM_MOVE:
+				if (message == WM_MOVE && g_pWebBrowser) {
+					teSetObjectRects(g_pWebBrowser->m_pWebBrowser, hWnd);
+				}
 			case WM_POWERBROADCAST:
 			case WM_TIMER:
 			case WM_DROPFILES:
@@ -12058,7 +12057,7 @@ LRESULT CALLBACK WndProc2(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				}
 				return 0;
 			case WM_SIZE:
-//			case WM_MOVE:
+			case WM_MOVE:
 				if (teGetSubWindow(hWnd, &pWB)) {
 					teSetObjectRects(pWB->m_pWebBrowser, hWnd);
 				}
@@ -17377,8 +17376,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				return S_OK;
 			//DIID_DShellWindowsEvents
 			case DISPID_WINDOWREGISTERED:
-				SetTimer(g_hwndMain, TET_WindowRegistered, 100, teTimerProc);
-			case DISPID_WINDOWREVOKED:
+				DoFunc(TE_OnWindowRegistered, g_pTE, S_OK);
 				return S_OK;
 			//GetObject
 			case TE_METHOD + 1020:
