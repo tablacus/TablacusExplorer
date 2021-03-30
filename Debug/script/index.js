@@ -245,7 +245,7 @@ OnArrange = async function (Ctrl, rc) {
 		const Id = await Ctrl.Id;
 		let o = document.getElementById("Panel_" + Id);
 		if (!o) {
-			const s = ['<table id="Panel_', Id, '" class="layout" style="position: absolute; z-index: 1;">'];
+			const s = ['<table id="Panel_', Id, '" class="layout" style="position: absolute; z-index: 1; color: inherit">'];
 			s.push('<tr><td id="InnerLeft_', Id, '" class="sidebar" style="width: 0; display: none; overflow: auto"></td><td style="width: 100%"><div id="InnerTop_', Id, '" style="display: none"></div>');
 			s.push('<table id="InnerTop2_', Id, '" class="layout">');
 			s.push('<tr><td id="Inner1Left_', Id, '" class="toolbar1"></td><td id="Inner1Center_', Id, '" class="toolbar2" style="white-space: nowrap"></td><td id="Inner1Right_', Id, '" class="toolbar3"></td></tr></table>');

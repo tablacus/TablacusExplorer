@@ -4524,6 +4524,20 @@ HRESULT DoFunc(int nFunc, PVOID pObj, HRESULT hr)
 	return hr;
 }
 
+VARIANT_BOOL OpenNewWindowV(VARIANT *pv) {
+	VARIANT_BOOL bFolder = VARIANT_FALSE;
+	FolderItem *pid = new CteFolderItem(pv);
+	pid->get_IsFolder(&bFolder);
+	if (bFolder && g_pOnFunc[TE_OnNewWindow]) {
+		VARIANTARG *pv = GetNewVARIANT(2);
+		teSetObject(&pv[1], g_pWebBrowser);
+		teSetObject(&pv[0], pid);
+		Invoke4(g_pOnFunc[TE_OnNewWindow], NULL, 2, pv);
+	}
+	pid->Release();
+	return bFolder;
+}
+
 VOID teSetProgress(IProgressDialog *ppd, ULONGLONG ullCurrent, ULONGLONG ullTotal, int nMode)
 {
 	WCHAR pszMsg[128];
@@ -4847,7 +4861,7 @@ VOID teArrayPush(IDispatch *pdisp, PVOID pObj)
 HRESULT DoStatusText(PVOID pObj, LPCWSTR lpszStatusText, int iPart)
 {
 	HRESULT hr = E_NOTIMPL;
-	if (g_pOnFunc[TE_OnStatusText]) {
+	if (g_pOnFunc[TE_OnStatusText] && g_pOnFunc[TE_OnArrange]) {
 		VARIANT vResult;
 		VariantInit(&vResult);
 		VARIANTARG *pv = GetNewVARIANT(3);
@@ -7495,6 +7509,10 @@ VOID teApiGetShortPathName(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 VOID teApiPathCreateFromUrl(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	if (param[0].bstrVal) {
+		if (teIsFileSystem(param[0].bstrVal)) {
+			teSetSZ(pVarResult, param[0].bstrVal);
+			return;
+		}
 		DWORD dwLen = ::SysStringLen(param[0].bstrVal) + MAX_PATH;
 		BSTR bsResult = ::SysAllocStringLen(NULL, dwLen);
 		if SUCCEEDED(PathCreateFromUrl(param[0].lpcwstr, bsResult, &dwLen, NULL)) {
@@ -12409,7 +12427,9 @@ STDMETHODIMP CteShellBrowser::BrowseObject(PCUIDLIST_RELATIVE pidl, UINT wFlags)
 	if (!pid) {
 		GetFolderItemFromIDList(&pid, const_cast<LPITEMIDLIST>(pidl));
 	}
-	return BrowseObject2(pid, wFlags);
+	HRESULT hr = BrowseObject2(pid, wFlags);
+	SafeRelease(&pid);
+	return hr;
 }
 
 HRESULT CteShellBrowser::BrowseObject2(FolderItem *pid, UINT wFlags)
@@ -12480,7 +12500,6 @@ HRESULT CteShellBrowser::Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		g_strException = L"Navigate3";
 #endif
 	}
-	SafeRelease(&pFolderItem);
 	return hr;
 }
 
@@ -14256,6 +14275,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				param[SB_DoFunc] = 1;
 				if (pFolderItem || wFlags & (SBSP_PARENT | SBSP_NAVIGATEBACK | SBSP_NAVIGATEFORWARD | SBSP_RELATIVE)) {
 					Navigate3(pFolderItem, wFlags, param, &pSB, pFolderItems);
+					SafeRelease(&pFolderItem);
 				}
 
 				if (pVarResult) {
@@ -14351,6 +14371,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				param[SB_DoFunc] = 0;
 				CteShellBrowser *pSB = NULL;
 				Navigate3(pFolderItem, wFlags, param, &pSB, pFolderItems);
+				SafeRelease(&pFolderItem);
 				if (!pSB) {
 					pSB = this;
 				}
@@ -18184,22 +18205,10 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				if (pDispParams->rgvarg[nArg - 6].vt == (VT_BYREF | VT_BOOL)) {
 					VARIANT vURL;
 					teVariantChangeType(&vURL, &pDispParams->rgvarg[nArg - 1], VT_BSTR);
-					VARIANT_BOOL bSB = VARIANT_FALSE;
-					FolderItem *pid = new CteFolderItem(&vURL);
-					pid->get_IsFolder(&bSB);
-					if (bSB || (StrChr(vURL.bstrVal, '/') && !tePathMatchSpec(vURL.bstrVal, L"file://*;data:*"))) {
-						*pDispParams->rgvarg[nArg - 6].pboolVal = VARIANT_TRUE;
-						if (bSB) {
-							CteShellBrowser *pSB = NULL;
-							if (g_pTC) {
-								pSB = g_pTC->GetShellBrowser(g_pTC->m_nIndex);
-								if (pSB) {
-									pSB->BrowseObject2(pid, SBSP_SAMEBROWSER);
-								}
-							}
-						}
+					if (teIsFileSystem(vURL.bstrVal) || teStartsText(L"::{", vURL.bstrVal) ||
+						(StrChr(vURL.bstrVal, '/') && !tePathMatchSpec(vURL.bstrVal, L"file://*;data:*"))) {
+						*pDispParams->rgvarg[nArg - 6].pboolVal = OpenNewWindowV(&vURL);
 					}
-					pid->Release();
 					VariantClear(&vURL);
 				}
 			}
@@ -18258,18 +18267,9 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			return S_OK;
 			//*///
 		case DISPID_NEWWINDOW3:
-			if (g_pOnFunc[TE_OnNewWindow]) {
-				VARIANT vResult;
-				VariantInit(&vResult);
-				VARIANTARG *pv = GetNewVARIANT(4);
-				teSetObject(&pv[3], g_pWebBrowser);
-				for (int i = 3; i--;) {
-					VariantCopy(&pv[2 - i], &pDispParams->rgvarg[nArg - i - 2]);
-				}
-				Invoke4(g_pOnFunc[TE_OnNewWindow], &vResult, 4, pv);
-				if (GetIntFromVariantClear(&vResult) == S_OK) {
-					*pDispParams->rgvarg[nArg - 1].pboolVal = VARIANT_TRUE;
-				}
+			if (nArg >= 4 && pDispParams->rgvarg[nArg - 1].vt == (VT_BYREF | VT_BOOL)) {
+				*pDispParams->rgvarg[nArg - 1].pboolVal = VARIANT_TRUE;
+				OpenNewWindowV(&pDispParams->rgvarg[nArg - 4]);
 			}
 			return S_OK;
 			/*			case DISPID_QUIT:

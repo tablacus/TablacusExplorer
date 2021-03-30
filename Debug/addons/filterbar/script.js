@@ -1,7 +1,6 @@
 const Addon_Id = "filterbar";
 const Default = "ToolBar2Right";
-
-const item = await GetAddonElement(Addon_Id);
+let item = await GetAddonElement(Addon_Id);
 if (!item.getAttribute("Set")) {
 	item.setAttribute("MenuPos", -1);
 
@@ -15,6 +14,7 @@ if (window.Addon == 1) {
 		tid: null,
 		filter: null,
 		iCaret: -1,
+		RE: item.getAttribute("RE"),
 
 		KeyDown: function (ev, o) {
 			const k = ev.keyCode;
@@ -149,16 +149,6 @@ if (window.Addon == 1) {
 
 	};
 
-	AddEvent("ChangeView1", Addons.FilterBar.GetFilter);
-	AddEvent("Command", Addons.FilterBar.GetFilter);
-
-	let width = "176px";
-	const s = item.getAttribute("Width");
-	if (s) {
-		width = GetNum(s) == s ? (s + "px") : s;
-	}
-	const icon = item.getAttribute("Icon") ? EncodeSC(await ExtractPath(te, item.getAttribute("Icon"))) : await MakeImgSrc("bitmap:comctl32.dll,140,13,0", 0, false, 13);
-	Addons.FilterBar.RE = item.getAttribute("RE");
 	//Menu
 	if (item.getAttribute("MenuExec")) {
 		SetMenuExec("FilterBar", item.getAttribute("MenuName") || await GetAddonInfo(Addon_Id).Name, item.getAttribute("Menu"), item.getAttribute("MenuPos"));
@@ -171,11 +161,28 @@ if (window.Addon == 1) {
 	if (item.getAttribute("MouseExec")) {
 		SetGestureExec(item.getAttribute("MouseOn"), item.getAttribute("Mouse"), Addons.FilterBar.Exec, "Async");
 	}
-	AddTypeEx("Add-ons", "Filter Bar", Addons.FilterBar.Exec);
 
-	const z = screen.deviceYDPI / 96;
-	const nSize = item.getAttribute("Icon") ? 16 : 13;
-	SetAddon(Addon_Id, Default, ['<input type="text" name="filter" placeholder="Filter" onkeydown="return Addons.FilterBar.KeyDown(event, this)" onkeyup="return Addons.FilterBar.KeyUp(event)" onfocus="Addons.FilterBar.Focus(this)" onblur="Addons.FilterBar.ShowButton()" onmouseup="Addons.FilterBar.KeyDown(event, this)" ondblclick="return Addons.FilterBar.FilterList(event, this)" style="width:', EncodeSC(width), '; padding-right:', nSize * z, 'px; vertical-align: middle"><span style="position: relative"><input type="image" src="', icon, '" id="ButtonFilter" hidefocus="true" style="position: absolute; left:', -(nSize + 2) * z, 'px; top:', (18 - nSize) / 2 * z, 'px; width:', nSize * z, 'px; height:', nSize * z, 'px" onclick="return Addons.FilterBar.FilterList(event, this,1)" oncontextmenu="return Addons.FilterBar.FilterList(event, this)"><span id="ButtonFilterClear" class="button" style="font-family: marlett; font-size:', 9 * z, 'px; display: none; position: absolute; left:', -(nSize + 12) * z, 'px; top:', 4 * z, 'px" onclick="Addons.FilterBar.Clear(true)">r</span></span>'], "middle");
+	AddEvent("Layout", async function () {
+		const z = screen.deviceYDPI / 96;
+		const s = item.getAttribute("Width") || 176;
+		const width = GetNum(s) == s ? ((s * z) + "px") : s;
+		const nSize = item.getAttribute("Icon") ? 16 : 13;
+		SetAddon(Addon_Id, Default, ['<input type="text" name="filter" placeholder="Filter" onkeydown="return Addons.FilterBar.KeyDown(event, this)" onkeyup="return Addons.FilterBar.KeyUp(event)" onfocus="Addons.FilterBar.Focus(this)" onblur="Addons.FilterBar.ShowButton()" onmouseup="Addons.FilterBar.KeyDown(event, this)" ondblclick="return Addons.FilterBar.FilterList(event, this)" style="width:', EncodeSC(width), '; padding-right:', nSize * z, 'px; vertical-align: middle"><span style="position: relative">', await GetImgTag({
+			id: "ButtonFilter",
+			hidefocus: "true",
+			style: ['position: absolute; left:', -(nSize + 2) * z, 'px; top:', (18 - nSize) / 2 * z, 'px; width:', nSize * z, 'px; height:', nSize * z, 'px'].join(""),
+			onclick: "return Addons.FilterBar.FilterList(event, this, 1)",
+			oncontextmenu: "return Addons.FilterBar.FilterList(event, this)",
+			src: item.getAttribute("Icon") || (WINVER >= 0xa00 ? "font:Segoe MDL2 Assets,0xe71c" : "bitmap:comctl32.dll,140,13,0")
+		}, nSize * z), '<span id="ButtonFilterClear" class="button" style="font-family: marlett; font-size:', 9 * z, 'px; display: none; position: absolute; left:', -(nSize + 12) * z, 'px; top:', 4 * z, 'px" onclick="Addons.FilterBar.Clear(true)">r</span></span>'], "middle");
+		delete item;
+	});
+
+	AddEvent("ChangeView1", Addons.FilterBar.GetFilter);
+
+	AddEvent("Command", Addons.FilterBar.GetFilter);
+
+	AddTypeEx("Add-ons", "Filter Bar", Addons.FilterBar.Exec);
 } else {
 	SetTabContents(0, "General", '<table style="width: 100%"><tr><td><label>Width</label></td></tr><tr><td><input type="text" name="Width" size="10"></td><td><input type="button" value="Default" onclick="document.F.Width.value=\'\'"></td></tr><tr><td><label>Filter</label></td></tr><tr><td><input type="checkbox" id="RE" name="RE"><label for="RE">Regular Expression</label>/<label for="RE">Migemo</label></td></tr></table>');
 	ChangeForm([["__IconSize", "style/display", "none"]]);

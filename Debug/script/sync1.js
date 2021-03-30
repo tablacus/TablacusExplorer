@@ -894,7 +894,7 @@ RefreshEx = function (FV, tm, df) {
 
 ChangeView = function (Ctrl) {
 	const TC = te.Ctrl(CTRL_TC);
-	if (TC && !g_.LockUpdate && Ctrl && Ctrl.FolderItem && Ctrl.FolderItem.Path != null) {
+	if (TC && !g_.LockUpdate && Ctrl && Ctrl.FolderItem && Ctrl.FolderItem.Path != null && te.OnArrange) {
 		ChangeTabName(Ctrl);
 		if (Ctrl.hwndView) {
 			RefreshEx(Ctrl, 5000, 5000);
@@ -2545,17 +2545,13 @@ te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 	return S_FALSE;
 }
 
-te.OnNewWindow = function (Ctrl, dwFlags, UrlContext, Url) {
-	const hr = RunEvent3("NewWindow", Ctrl, dwFlags, UrlContext, Url);
+te.OnNewWindow = function (Ctrl, FolderItem) {
+	const hr = RunEvent3("NewWindow", Ctrl, FolderItem);
 	if (isFinite(hr)) {
 		return hr;
 	}
-	const FolderItem = api.ILCreateFromPath(api.PathCreateFromUrl(Url));
-	if (FolderItem.IsFolder) {
-		Navigate(FolderItem, SBSP_NEWBROWSER);
-		return S_OK;
-	}
-	return S_FALSE;
+	Navigate(FolderItem, SBSP_NEWBROWSER);
+	return S_OK;
 }
 
 te.OnClipboardText = function (Items) {
@@ -2626,8 +2622,7 @@ te.OnGetAlt = function (dwSessionId, s) {
 	}
 }
 
-te.OnFilterView = function (FV, s)
-{
+te.OnFilterView = function (FV, s) {
 	if (GetLock(FV) && !IsSearchPath(FV)) {
 		const fn = function (strMatch, ref) {
 			return encodeURIComponent(ref)
