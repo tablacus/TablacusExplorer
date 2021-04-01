@@ -1288,7 +1288,9 @@ SyncExec = async function (cb, o, n) {
 		pt.x = o.screenX * ui_.Zoom;
 		pt.y = o.screenY * ui_.Zoom;
 	}
-	cb(await GetFolderView(o), pt);
+	const FV = await GetFolderView(o);
+	await FV.Focus();
+	cb(FV, pt);
 }
 
 GetWidth = function (s) {
@@ -1313,6 +1315,10 @@ KeyDownEvent = function (ev, vEnter, vCancel) {
 		}
 	}
 	return true;
+}
+
+GetIconSizeEx = function (item) {
+	return GetIconSize(item.getAttribute("IconSize"), item.getAttribute("Location") == "Inner" && 16);
 }
 
 if (window.chrome) {

@@ -1069,6 +1069,7 @@ TEmethod methodGB[] = {
 	{ TE_METHOD + 113, "SetPixel" },
 	{ TE_METHOD + 114, "GetPixelFormat" },
 	{ TE_METHOD + 115, "FillRect" },
+	{ TE_METHOD + 116, "Mask" },
 	{ TE_METHOD + 120, "GetThumbnailImage" },
 	{ TE_METHOD + 130, "RotateFlip" },
 	{ TE_METHOD + 140, "GetFrameCount" },

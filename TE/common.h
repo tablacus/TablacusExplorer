@@ -203,6 +203,7 @@ union teParam
 	VARIANT variant;
 	EXCEPINFO *pExcepInfo;
 	MONITOR_DPI_TYPE MonitorDpiType;
+	RGBQUAD rgbquad;
 };
 
 

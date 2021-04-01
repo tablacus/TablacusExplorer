@@ -2760,23 +2760,29 @@ g_.event.windowregistered = function (Ctrl) {
 
 //Tablacus Events
 
-GetIconImage = function (Ctrl, BGColor, bSimple) {
+GetIconImage = function (Ctrl, clBk, bSimple) {
+	if ("number" !== typeof clBk) {
+		clBk = -COLOR_WINDOW;
+	}
+	if (clBk < 0) {
+		clBk = GetSysColor(clBk & 31);
+	}
 	const nSize = api.GetSystemMetrics(SM_CYSMICON);
 	const FolderItem = Ctrl.FolderItem || Ctrl;
 	const r = GetNetworkIcon(FolderItem.Path);
 	if (r) {
 		if (FolderItem.Unavailable > 500) {
-			return MakeImgDataEx("icon:shell32.dll,234", bSimple, nSize);
+			return MakeImgDataEx("icon:shell32.dll,234", bSimple, nSize, clBk);
 		}
-		return MakeImgDataEx(r, bSimple, nSize);
+		return MakeImgDataEx(r, bSimple, nSize, clBk);
 	}
-	let img = RunEvent4("GetIconImage", Ctrl, BGColor < 0 ? GetSysColor(BGColor & 31): BGColor, bSimple);
+	let img = RunEvent4("GetIconImage", Ctrl, clBk, bSimple);
 	if (img) {
-		return MakeImgDataEx(img, bSimple, nSize);
+		return MakeImgDataEx(img, bSimple, nSize, clBk);
 	}
 	api.ILIsEmpty(FolderItem);
 	if (FolderItem.Unavailable) {
-		return MakeImgDataEx("icon:shell32.dll,234", bSimple, nSize);
+		return MakeImgDataEx("icon:shell32.dll,234", bSimple, nSize, clBk);
 	}
 	if (g_.IEVer >= 8) {
 		if (bSimple) {
@@ -2791,7 +2797,7 @@ GetIconImage = function (Ctrl, BGColor, bSimple) {
 			return img.DataURI();
 		}
 	}
-	return MakeImgDataEx("icon:shell32.dll,3", bSimple, nSize);
+	return MakeImgDataEx("icon:shell32.dll,3", bSimple, nSize, clBk);
 }
 
 UnlockFV = function (Item) {

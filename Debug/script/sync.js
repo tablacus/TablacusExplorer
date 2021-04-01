@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210330 ? te.Version : 20210330;
+		return te.Version < 20210401 ? te.Version : 20210401;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -284,7 +284,7 @@ GetNavigateFlags = function (FV, bParent) {
 
 GetSysColor = function (i) {
 	const c = MainWindow.g_.Colors[i];
-	return c != null ? c : api.GetSysColor(i);
+	return c != null ? c : (i == COLOR_MENU && api.ShouldAppsUseDarkMode() ? 0x2b2b2b : api.GetSysColor(i));
 }
 
 SetSysColor = function (i, color) {
@@ -1264,11 +1264,11 @@ GetEnum = function (FolderItem, bShowHidden) {
 	}
 }
 
-MakeImgDataEx = function (src, bSimple, h) {
-	return bSimple || REGEXP_IMAGE.test(src) ? src : MakeImgSrc(src, 0, false, h);
+MakeImgDataEx = function (src, bSimple, h, clBk) {
+	return bSimple || REGEXP_IMAGE.test(src) ? src : MakeImgSrc(src, 0, false, h, clBk);
 }
 
-MakeImgSrc = function (src, index, bSrc, h) {
+MakeImgSrc = function (src, index, bSrc, h, clBk) {
 	let fn;
 	src = ExtractPath(te, src);
 	if (!/^file:/i.test(src) && REGEXP_IMAGE.test(src)) {
@@ -1303,7 +1303,7 @@ MakeImgSrc = function (src, index, bSrc, h) {
 			return fn;
 		}
 	}
-	const image = MakeImgData(src, index, h);
+	const image = MakeImgData(src, index, h, clBk);
 	if (image) {
 		if (g_.IEVer >= 8) {
 			return image.DataURI("image/png");
@@ -1316,8 +1316,8 @@ MakeImgSrc = function (src, index, bSrc, h) {
 	return bSrc ? src : "";
 }
 
-MakeImgData = function (src, index, h) {
-	const hIcon = MakeImgIcon(src, index, h);
+MakeImgData = function (src, index, h, clBk) {
+	const hIcon = MakeImgIcon(src, index, h, false, clBk);
 	if (hIcon) {
 		const image = api.CreateObject("WICBitmap").FromHICON(hIcon);
 		api.DestroyIcon(hIcon);
@@ -1325,7 +1325,7 @@ MakeImgData = function (src, index, h) {
 	}
 }
 
-MakeImgIcon = function (src, index, h, bIcon) {
+MakeImgIcon = function (src, index, h, bIcon, clBk) {
 	let hIcon = null;
 	src = MainWindow.RunEvent4("ReplaceIcon", src) || src;
 	if ("number" === typeof src) {
@@ -1383,7 +1383,7 @@ MakeImgIcon = function (src, index, h, bIcon) {
 							}
 							src = a3.join(",");
 						}
-						hIcon = MakeImgIcon(src, index, a2[2], bIcon);
+						hIcon = MakeImgIcon(src, index, a2[2], bIcon, clBk);
 						break;
 					}
 				}
@@ -1434,7 +1434,15 @@ MakeImgIcon = function (src, index, h, bIcon) {
 		const hmdc = api.CreateCompatibleDC(hdc);
 		const hOld = api.SelectObject(hmdc, hbm);
 		const rc = api.Memory("RECT");
-		api.SetTextColor(hmdc, GetSysColor(COLOR_WINDOWTEXT));
+		if ("number" !== typeof clBk) {
+			clBk = -COLOR_WINDOW;
+		}
+		if (clBk < 0) {
+			clBk = GetSysColor(clBk & 31);
+		}
+		const clBk1 = GetBGRA(clBk, 255);
+		const cl = (clBk1 & 0xff0000) * .0045623779296875 + (clBk1 & 0xff00) * 2.29296875 + (clBk1 & 0xff) * 114 > 127000 ? 0 : 0xffffff;
+		api.SetTextColor(hmdc, 0xffffff);
 		api.SetBkMode(hmdc, 1);
 		const lf = api.Memory("LOGFONT");
 		lf.lfFaceName = res[1],
@@ -1449,16 +1457,16 @@ MakeImgIcon = function (src, index, h, bIcon) {
 		rc.top = 0;
 		rc.right = h;
 		rc.bottom = h;
-		api.FillRect(hmdc, rc, 0, GetBGRA(GetSysColor(COLOR_BTNFACE), 255));
 		api.SelectObject(hmdc, CreateFont(lf));
 		api.DrawText(hmdc, c, -1, rc, DT_CENTER);
 		api.SelectObject(hmdc, hfontOld);
 		api.SelectObject(hmdc, hOld);
 		api.DeleteDC(hmdc);
 		api.ReleaseDC(hwnd, hdc);
-		const image = api.CreateObject("WICBitmap").FromHBITMAP(hbm);
+		const image = api.CreateObject("WICBitmap").FromHBITMAP(hbm, 0, 2);
 		api.DeleteObject(hbm);
 		if (image) {
+			image.Mask(cl, clBk1);
 			return image.GetHICON();
 		}
 	}
@@ -2571,7 +2579,7 @@ RemoveSubMenu = function (hMenu, wID) {
 }
 
 AddMenuIconFolderItem = function (mii, FolderItem, nHeight) {
-	const path = MainWindow.GetIconImage(FolderItem, GetSysColor(COLOR_WINDOW), 2);
+	const path = MainWindow.GetIconImage(FolderItem, CLR_DEFAULT | COLOR_MENU, 2);
 	MenusIcon(mii, path || api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_ORIGINAL), nHeight, !path);
 }
 
@@ -2604,12 +2612,12 @@ MenusIcon = function (mii, src, nHeight, bIcon) {
 		}
 		const h16 = GetIconSize(0, 16);
 		const h = nHeight < h16 ? GetIconSize(0, nHeight || 16) : nHeight || h16;
-		if (/^object$/.test(src)) {
+		if ("object" === typeof src) {
 			image = src;
 		} else {
 			image = api.CreateObject("WICBitmap");
 			if (bIcon || !image.FromFile(src)) {
-				const hIcon = MakeImgIcon(src, 0, h, bIcon);
+				const hIcon = MakeImgIcon(src, 0, h, bIcon, CLR_DEFAULT | COLOR_MENU);
 				image.FromHICON(hIcon);
 				api.DestroyIcon(hIcon);
 			}
@@ -2652,13 +2660,13 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem, bTran
 						}
 					}
 				}
-				icon = MainWindow.GetIconImage(pidl, GetSysColor(COLOR_WINDOW), true);
+				icon = MainWindow.GetIconImage(pidl, CLR_DEFAULT | COLOR_MENU, true);
 			} else if (api.PathMatchSpec(strType, "Exec;Selected items")) {
 				const arg = api.CommandLineToArgv(path);
 				if (!api.PathIsNetworkPath(arg[0])) {
 					const pidl = api.ILCreateFromPath(arg[0]);
 					if (!api.ILIsEmpty(pidl) && !pidl.Unavailable) {
-						icon = MainWindow.GetIconImage(pidl, GetSysColor(COLOR_WINDOW), true);
+						icon = MainWindow.GetIconImage(pidl, CLR_DEFAULT | COLOR_MENU, true);
 					}
 				}
 			}

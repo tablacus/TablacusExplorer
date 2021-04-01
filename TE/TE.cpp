@@ -8176,13 +8176,13 @@ VOID teApiFillRect(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *p
 	HDC hmdc = CreateCompatibleDC(param[0].hdc);
 	HGDIOBJ hOld = SelectObject(hmdc, hBM);
 	pcl->rgbReserved = 0xff;
-	pcl->rgbRed = GetRValue(param[3].colorref);
-	pcl->rgbGreen = GetGValue(param[3].colorref);
-	pcl->rgbBlue = GetBValue(param[3].colorref);
+	pcl->rgbRed = param[3].rgbquad.rgbRed;
+	pcl->rgbGreen = param[3].rgbquad.rgbGreen;
+	pcl->rgbBlue = param[3].rgbquad.rgbBlue;
 	BLENDFUNCTION blendFunction;
 	blendFunction.BlendOp = AC_SRC_OVER;
 	blendFunction.BlendFlags = 0;
-	blendFunction.SourceConstantAlpha = LOBYTE(param[3].colorref >> 24);
+	blendFunction.SourceConstantAlpha = param[3].rgbquad.rgbReserved;
 	blendFunction.AlphaFormat = 0;
 	AlphaBlend(param[0].hdc, param[1].lprect->left, param[1].lprect->top, param[1].lprect->right - param[1].lprect->left, param[1].lprect->bottom - param[1].lprect->top,
 		hmdc, 0, 0, 1, 1, blendFunction);
@@ -24334,12 +24334,16 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 									h0 -= y0;
 									y0 = 0;
 								}
-								UINT cl = GetIntFromVariant(&pDispParams->rgvarg[nArg - 4]);
+								LONG cl = GetIntFromVariant(&pDispParams->rgvarg[nArg - 4]);
+								LONG clBk = nArg >= 5 ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 5]) : 0;
 								for (int j = h0, y = y0; --j >= 0; ++y) {
 									if (y < h) {
 										for (int i = w0, x = x0; --i >= 0; ++x) {
 											if (x < w) {
-												pbData[x + y * w] = cl;
+												LONG *pcl = &pbData[x + y * w];
+												if (nArg < 5 || *pcl == clBk) {
+													*pcl = cl;
+												}
 											} else {
 												break;
 											}
@@ -24354,8 +24358,65 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					}
 				}
 				return S_OK;
-			//GetThumbnailImage
-			case TE_METHOD + 120:
+				
+			case TE_METHOD + 116: //Mask
+				if (nArg >= 1) {
+					DWORD cl = GetIntFromVariant(&pDispParams->rgvarg[nArg]) & 0xffffff;
+					DWORD clBk = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) & 0xffffff;	
+					if (Get(GUID_WICPixelFormat32bppBGRA)) {
+						int w = 0, h = 0;
+						m_pImage->GetSize((UINT *)&w, (UINT *)&h);
+						IWICBitmapLock *pBitmapLock;
+						WICRect rc = {0, 0, w, h};
+						if SUCCEEDED(m_pImage->Lock(&rc, WICBitmapLockWrite, &pBitmapLock)) {
+							UINT cbSize = 0;
+							DWORD *pdwData = NULL;
+							if SUCCEEDED(pBitmapLock->GetDataPointer(&cbSize, (PBYTE *)&pdwData)) {
+								LONG clBk = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+								for (int y = h; --y >= 0;) {
+									for (int x = w; --x >= 0;) {
+										DWORD *pcl = &pdwData[x + y * w];
+										DWORD a = *pcl << 24;
+										*pcl = a ? a | cl : clBk;
+									}
+								}
+							}
+							SafeRelease(&pBitmapLock);
+						}
+					}
+				}
+				return S_OK;
+/*				if (nArg >= 0) {
+					if (Get(GUID_WICPixelFormat32bppBGRA)) {
+						int w = 0, h = 0;
+						m_pImage->GetSize((UINT *)&w, (UINT *)&h);
+						IWICBitmapLock *pBitmapLock;
+						WICRect rc = {0, 0, w, h};
+						if SUCCEEDED(m_pImage->Lock(&rc, WICBitmapLockWrite, &pBitmapLock)) {
+							UINT cbSize = 0;
+							LONG *pbData = NULL;
+							if SUCCEEDED(pBitmapLock->GetDataPointer(&cbSize, (PBYTE *)&pbData)) {
+								LONG clBk = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+								for (int y = h; --y >= 0;) {
+									for (int x = w; --x >= 0;) {
+										LONG *pcl = &pbData[x + y * w];
+										if (((*pcl - clBk) & 0xffffff) == 0 &&
+										(y <= 0 || ((pbData[x + (y - 1) * w] - clBk) & 0xffffff) == 0) && //Top
+										(x <= 0 || ((pbData[x - 1 + y * w] - clBk) & 0xffffff) == 0) && //Left
+										(x >= w - 1 || ((pbData[x + 1 + y * w] - clBk) & 0xffffff) == 0) && //Right
+										(y >= h - 1 || ((pbData[x + (y + 1) * w] - clBk) & 0xffffff) == 0)) { //Down
+											*pcl &= 0xffffff;
+										}
+									}
+								}
+							}
+							SafeRelease(&pBitmapLock);
+						}
+					}
+				}
+				return S_OK;*/
+				
+			case TE_METHOD + 120: //GetThumbnailImage
 				if (nArg >= 1) {
 					//WIC
 					UINT w = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
