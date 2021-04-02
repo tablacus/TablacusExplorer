@@ -219,6 +219,14 @@ int teGetObjectLength(IDispatch *pdisp);
 
 //Unit
 
+VOID teSetExStyleOr(HWND hwnd, LONG l) {
+	SetWindowLong(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) | l);
+}
+
+VOID teSetExStyleAnd(HWND hwnd, LONG l) {
+	SetWindowLongPtr(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) & l);
+}
+
 VOID teFixListState(HWND hwnd, int dwFlags) {
 	if (hwnd && (dwFlags & SVSI_FOCUSED)) {// bug fix
 #ifdef _2000XP
@@ -978,7 +986,7 @@ BOOL teSetForegroundWindow(HWND hwnd)
 				Sleep(500);
 				bResult = SetForegroundWindow(hwnd);
 				if (!bResult && hwnd == g_hwndMain) {
-					SetWindowLong(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) & ~WS_EX_TOOLWINDOW);
+					teSetExStyleAnd(hwnd, ~WS_EX_TOOLWINDOW);
 					ShowWindow(hwnd, SW_SHOWNORMAL);
 					bResult = SetForegroundWindow(hwnd);
 				}
@@ -2189,6 +2197,21 @@ HRESULT tePutPropertyAt(PVOID pObj, int i, VARIANT *pv)
 	wchar_t pszName[8];
 	swprintf_s(pszName, 8, L"%d", i);
 	return tePutProperty((IUnknown *)pObj, pszName, pv);
+}
+
+VOID teCreateSafeArrayFromVariantArray(IDispatch *pdisp, VARIANT *pVarResult) {
+	LONG nLen = teGetObjectLength(pdisp);
+	SAFEARRAY *psa = SafeArrayCreateVector(VT_VARIANT, 0, nLen);
+	VARIANT v;
+	VariantInit(&v);
+	while (--nLen >= 0) {
+		if SUCCEEDED(teGetPropertyAt(pdisp, nLen, &v)) {
+			::SafeArrayPutElement(psa, &nLen, &v);
+			::VariantClear(&v);
+		}
+	}
+	pVarResult->vt = VT_ARRAY | VT_VARIANT;
+	pVarResult->parray = psa;
 }
 
 char* GetpcFromVariant(VARIANT *pv, VARIANT *pvMem)
@@ -9853,18 +9876,7 @@ VOID teApiCreateObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIAN
 		if (pVarResult) {
 			IDispatch *pdisp;
 			if (GetDispatch(&pDispParams->rgvarg[nArg - 1], &pdisp)) {
-				LONG nLen = teGetObjectLength(pdisp);
-				SAFEARRAY *psa = SafeArrayCreateVector(VT_VARIANT, 0, nLen);
-				VARIANT v;
-				VariantInit(&v);
-				while (--nLen >= 0) {
-					if SUCCEEDED(teGetPropertyAt(pdisp, nLen, &v)) {
-						::SafeArrayPutElement(psa, &nLen, &v);
-						::VariantClear(&v);
-					}
-				}
-				pVarResult->vt = VT_ARRAY | VT_VARIANT;
-				pVarResult->parray = psa;
+				teCreateSafeArrayFromVariantArray(pdisp, pVarResult);
 				SafeRelease(&pdisp);
 				return;
 			}
@@ -10241,6 +10253,11 @@ VOID teApiObjDelete(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *
 VOID teApiGetDeviceCaps(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	teSetLong(pVarResult, GetDeviceCaps(param[0].hdc, param[1].intVal));
+}
+
+VOID teApiSetLayeredWindowAttributes(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetBool(pVarResult, SetLayeredWindowAttributes(param[0].hwnd, param[1].colorref, param[2].bVal, param[3].dword));
 }
 
 #ifdef _DEBUG
@@ -10630,6 +10647,7 @@ TEDispatchApi dispAPI[] = {
 	{ 1,  0, -1, -1, "SetClipboardData", teApiSetClipboardData },
 	{ 2,  1, -1, -1, "ObjDelete", teApiObjDelete },
 	{ 2, -1, -1, -1, "GetDeviceCaps", teApiGetDeviceCaps },
+	{ 4, -1, -1, -1, "SetLayeredWindowAttributes", teApiSetLayeredWindowAttributes },
 #ifdef _DEBUG
 	{ 4,  0, -1, -1, "mciSendString", teApimciSendString },
 	{ 4,  1, -1, -1, "GetGlyphIndices", teApiGetGlyphIndices },
@@ -11795,8 +11813,13 @@ static void threadParseDisplayName(void *args)
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	MSG msg1;
+	HRESULT hr;
 
 	try {
+		msg1.hwnd = hWnd;
+		msg1.message = message;
+		msg1.wParam = wParam;
+		msg1.lParam = lParam;
 		switch (message)
 		{
 			case WM_CLOSE:
@@ -11823,13 +11846,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				break;
 			case WM_DESTROY:
 				try {
-					if (g_pOnFunc[TE_OnSystemMessage]) {
-						msg1.hwnd = hWnd;
-						msg1.message = message;
-						msg1.wParam = wParam;
-						msg1.lParam = lParam;
-						MessageSub(TE_OnSystemMessage, g_pTE, &msg1, NULL);
-					}
+					MessageSub(TE_OnSystemMessage, g_pTE, &msg1, NULL);
 					//Close Tab controls
 					g_pTC = NULL;
 					for (int i = int(g_ppTC.size()); --i >= 0;) {
@@ -11855,10 +11872,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				PostQuitMessage(0);
 				return 0;
 			case WM_CONTEXTMENU:	//System Menu
-				MSG msg1;
-				msg1.hwnd = hWnd;
-				msg1.message = message;
-				msg1.wParam = wParam;
 				msg1.pt.x = GET_X_LPARAM(lParam);
 				msg1.pt.y = GET_Y_LPARAM(lParam);
 				MessageSubPt(TE_OnShowContextMenu, g_pTE, &msg1);
@@ -11878,10 +11891,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			case WM_MENUGETOBJECT:
 			case WM_UNINITMENUPOPUP:
 			case WM_MENUCOMMAND:
-				msg1.hwnd = hWnd;
-				msg1.message = message;
-				msg1.wParam = wParam;
-				msg1.lParam = lParam;
 				BOOL bDone;
 				bDone = TRUE;
 
@@ -11950,9 +11959,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					return E_FAIL;
 				}
 			case WM_MOVE:
-				if (message == WM_MOVE && g_pWebBrowser) {
-					teSetObjectRects(g_pWebBrowser->m_pWebBrowser, hWnd);
-				}
+				teSetObjectRects(g_pWebBrowser->m_pWebBrowser, hWnd);
 			case WM_POWERBROADCAST:
 			case WM_TIMER:
 			case WM_DROPFILES:
@@ -11970,15 +11977,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			case WM_DPICHANGED:
 			case WM_NCCALCSIZE:
 			case TWM_CLIPBOARDUPDATE:
-				if (g_pOnFunc[TE_OnSystemMessage]) {
-					msg1.hwnd = hWnd;
-					msg1.message = message;
-					msg1.wParam = wParam;
-					msg1.lParam = lParam;
-					HRESULT hr;
-					if (MessageSub(TE_OnSystemMessage, g_pTE, &msg1, &hr)) {
-						return hr;
-					}
+				if (MessageSub(TE_OnSystemMessage, g_pTE, &msg1, &hr)) {
+					return hr;
 				}
 				break;
 			case WM_COMMAND:
@@ -12006,15 +12006,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				return (LRESULT)GetClassLongPtr(hWnd, GCLP_HBRBACKGROUND);
 			default:
 				if ((message > WM_APP && message <= MAXWORD)) {
-					if (g_pOnFunc[TE_OnAppMessage]) {
-						msg1.hwnd = hWnd;
-						msg1.message = message;
-						msg1.wParam = wParam;
-						msg1.lParam = lParam;
-						HRESULT hr;
-						if (MessageSub(TE_OnAppMessage, g_pTE, &msg1, &hr) && hr == S_OK) {
-							return hr;
-						}
+					if (MessageSub(TE_OnAppMessage, g_pTE, &msg1, &hr) && hr == S_OK) {
+						return hr;
 					}
 				}
 				return DefWindowProc(hWnd, message, wParam, lParam);
@@ -16669,7 +16662,7 @@ VOID CteShellBrowser::SetPropEx()
 		m_hwndLV = FindWindowExA(m_hwndDV, 0, WC_LISTVIEWA, NULL);
 		m_hwndDT = m_hwndLV;
 		if (m_param[SB_Type] != CTRL_EB || m_param[SB_FolderFlags] & FWF_NOCLIENTEDGE) {
-			SetWindowLong(m_hwnd, GWL_EXSTYLE, GetWindowLong(m_hwnd, GWL_EXSTYLE) & ~WS_EX_CLIENTEDGE);
+			teSetExStyleAnd(m_hwnd, ~WS_EX_CLIENTEDGE);
 		}
 		if (m_param[SB_Type] <= CTRL_SB) {
 			if (m_param[SB_FolderFlags] & FWF_NOCLIENTEDGE) {
@@ -16681,9 +16674,9 @@ VOID CteShellBrowser::SetPropEx()
 		if (m_hwndLV) {
 			SetWindowLong(m_hwndLV, GWL_STYLE, GetWindowLong(m_hwndLV, GWL_STYLE) & ~WS_BORDER);
 			if (m_param[SB_Type] <= CTRL_SB || m_param[SB_FolderFlags] & FWF_NOCLIENTEDGE) {
-				SetWindowLong(m_hwndLV, GWL_EXSTYLE, GetWindowLong(m_hwndLV, GWL_EXSTYLE) & ~WS_EX_CLIENTEDGE);
+				teSetExStyleAnd(m_hwndLV, ~WS_EX_CLIENTEDGE);
 			} else {
-				SetWindowLong(m_hwndLV, GWL_EXSTYLE, GetWindowLong(m_hwndLV, GWL_EXSTYLE) | WS_EX_CLIENTEDGE);
+				teSetExStyleOr(m_hwndLV, WS_EX_CLIENTEDGE);
 			}
 			SendMessage(m_hwndLV, WM_CHANGEUISTATE, MAKELONG(UIS_SET, UISF_HIDEFOCUS), 0);
 			if (SetWindowLongPtr(m_hwndLV, GWLP_USERDATA, (LONG_PTR)this) != (LONG_PTR)this) {
@@ -17370,6 +17363,11 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 							}
 							break;
 					}//end_switch
+					if (nArg >= 2 && GetIntFromVariant(&pDispParams->rgvarg[nArg - 2])) {
+						teCreateSafeArrayFromVariantArray(pArray, pVarResult);
+						SafeRelease(&pArray);
+						return S_OK;
+					} 
 					teSetObjectRelease(pVarResult, teAddLegacySupport(pArray));
 				}
 				return S_OK;
@@ -17636,6 +17634,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 								HWND hwnd = CreateWindow(WINDOW_CLASS2, g_szTE, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
 									x, y, w, h, hwndParent, NULL, hInst, NULL);
 								teSetDarkMode(hwnd);
+								SetClassLongPtr(hwnd, GCLP_HBRBACKGROUND, GetClassLongPtr(g_hwndMain, GCLP_HBRBACKGROUND));
 								GetClientRect(hwnd, &rc);
 								int a = w - (rc.right - rc.left);
 								int b = h - (rc.bottom - rc.top);
@@ -18165,6 +18164,8 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			
 		case TE_METHOD + 9://Close
 			m_nClose = 1;
+			teSetExStyleOr(m_hwndParent, WS_EX_LAYERED);
+			SetLayeredWindowAttributes(m_hwndParent, 0, 0, LWA_ALPHA);
 			PostMessage(m_hwndParent, WM_CLOSE, 0, 0);
 			return S_OK;
 
@@ -20360,6 +20361,11 @@ CteMemory::CteMemory(int nSize, void *pc, int nCount, LPWSTR lpStruct)
 				} else {
 					::ZeroMemory(m_pc, nSize);
 				}
+				if (m_nStructIndex >= 0) {
+					if (PathMatchSpecA(pTEStructs[m_nStructIndex].pMethod[0].name, "*Size")) {
+						*(int *)m_pc = nSize;
+					}
+				}
 			}
 		}
 	}
@@ -21683,13 +21689,11 @@ VOID CteTreeView::Create()
 			}
 			dwStyle ^= (TVS_NOHSCROLL | TVS_INFOTIP | TVS_NONEVENHEIGHT | TVS_EDITLABELS);//Opposite
 			SetWindowLongPtr(m_hwndTV, GWL_STYLE, dwStyle & ~WS_BORDER);
-			DWORD dwExStyle = GetWindowLong(m_hwnd, GWL_EXSTYLE);
 			if (dwStyle & WS_BORDER) {
-				dwExStyle |= WS_EX_CLIENTEDGE;
+				teSetExStyleOr(m_hwnd, WS_EX_CLIENTEDGE);
 			} else {
-				dwExStyle &= ~WS_EX_CLIENTEDGE;
+				teSetExStyleAnd(m_hwnd, ~WS_EX_CLIENTEDGE);
 			}
-			SetWindowLong(m_hwnd, GWL_EXSTYLE, dwExStyle);
 		}
 		BringWindowToTop(m_hwnd);
 		ArrangeWindow();
@@ -22522,7 +22526,7 @@ VOID CteTreeView::SetRoot()
 					pszPath = &bs[i + 1];
 					if (pidl) {
 						if SUCCEEDED(_SHCreateItemFromIDList(pidl, IID_PPV_ARGS(&pShellItem))) {
-							hr = m_pNameSpaceTreeControl->AppendRoot(pShellItem, m_param[SB_EnumFlags], m_param[SB_RootStyle], this);
+							hr = m_pNameSpaceTreeControl->AppendRoot(pShellItem, m_param[SB_EnumFlags] | SHCONTF_ENABLE_ASYNC, m_param[SB_RootStyle], this);
 							pShellItem->Release();
 							if SUCCEEDED(hr) {
 								++nRoots;

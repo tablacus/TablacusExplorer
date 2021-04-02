@@ -29,7 +29,6 @@ InitUI = async function () {
 		$.Addon = window.Addon;
 		WebBrowser = await te.Ctrl(CTRL_WB);
 		osInfo = await api.Memory("OSVERSIONINFOEX");
-		osInfo.dwOSVersionInfoSize = await osInfo.Size;
 		await api.GetVersionEx(osInfo);
 		WINVER = await osInfo.dwMajorVersion * 0x100 + await osInfo.dwMinorVersion;
 		const v = await api.GetScriptDispatch('function v() { return "undefined" != typeof ScriptEngineMajorVersion && ScriptEngineMajorVersion(); }', "JScript").v();

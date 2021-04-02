@@ -1,5 +1,7 @@
 //Tablacus Explorer
 
+RunEventUI("BrowserCreatedEx");
+
 nTabMax = 0;
 TabIndex = -1;
 g_x = { Menu: null, Addons: null };
@@ -27,19 +29,18 @@ urlAddons = "https://tablacus.github.io/TablacusExplorerAddons/";
 urlIcons = urlAddons + "te/iconpacks/";
 xhr = null;
 xmlAddons = null;
+arLangs = ["General"];
 
-RunEventUI("BrowserCreatedEx");
-(async function () {
-	arLangs = [await GetLangId()];
-	const res = /(\w+)_/.exec(arLangs[0]);
-	if (res && !/zh_cn/i.test(arLangs[0])) {
-		arLangs.push(res[1]);
+Promise.all([GetLangId()]).then(function (r) {
+	if (!/^en/.test(r[0])) {
+		arLangs.unshift("en");
 	}
-	if (!/^en/.test(arLangs[0])) {
-		arLangs.push("en");
+	const res = /(\w+)_/.exec(r[0]);
+	if (res && !/zh_cn/i.test(r[0])) {
+		arLangs.unshift(res[1]);
 	}
-	arLangs.push("General");
-})();
+	arLangs.unshift(r[0]);
+});
 
 CloseWB = async function (WB, bForce) {
 	if (bForce || g_nResult != 4) {
@@ -357,10 +358,7 @@ async function DelTabControl() {
 async function SetTabControls() {
 	if (g_Chg.Tab) {
 		if (document.getElementById("Conf_TabDefault").checked) {
-			let cTC = await te.Ctrls(CTRL_TC);
-			if (window.chrome) {
-				cTC = await api.CreateObject("SafeArray", cTC);
-			}
+			const cTC = await te.Ctrls(CTRL_TC, false, window.chrome);
 			for (let i = 0; i < cTC.length; ++i) {
 				SetTabControl(cTC[i]);
 			}

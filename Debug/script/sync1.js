@@ -176,7 +176,6 @@ g_.mouse = {
 					const hSubMenu = api.GetSubMenu(g_.menu_handle, g_.menu_pos);
 					if (hSubMenu) {
 						const mii = api.Memory("MENUITEMINFO");
-						mii.cbSize = mii.Size;
 						mii.fMask = MIIM_SUBMENU;
 						if (api.SetMenuItemInfo(g_.menu_handle, g_.menu_pos, true, mii)) {
 							api.DestroyMenu(hSubMenu);
@@ -1182,7 +1181,6 @@ LoadWindowSettings = function (xml) {
 				if (!api.MonitorFromPoint(pt, MONITOR_DEFAULTTONULL)) {
 					const hMonitor = api.MonitorFromPoint(pt, MONITOR_DEFAULTTOPRIMARY);
 					const mi = api.Memory("MONITORINFOEX");
-					mi.cbSize = mi.Size;
 					api.GetMonitorInfo(hMonitor, mi);
 					x = mi.rcWork.left + (mi.rcWork.right - mi.rcWork.left - w) / 2;
 					y = mi.rcWork.top + (mi.rcWork.bottom - mi.rcWork.top - h) / 2;
@@ -1354,7 +1352,6 @@ GetCommandId = function (hMenu, s, ContextMenu) {
 	if (s) {
 		const sl = GetTextR(s);
 		const mii = api.Memory("MENUITEMINFO");
-		mii.cbSize = mii.Size;
 		mii.fMask = MIIM_SUBMENU | MIIM_ID | MIIM_FTYPE | MIIM_STATE;
 		while (arMenu.length) {
 			hMenu = arMenu.pop();
@@ -1508,6 +1505,8 @@ AddEvent("Close", function (Ctrl) {
 			if (api.GetThreadCount() && MessageBox("File is in operation.", TITLE, MB_ABORTRETRYIGNORE) != IDIGNORE) {
 				return S_FALSE;
 			}
+			api.SetWindowLongPtr(te.hwnd, GWL_EXSTYLE, api.GetWindowLongPtr(te.hwnd, GWL_EXSTYLE) | 0x80000);
+			api.SetLayeredWindowAttributes(te.hwnd, 0, 0, 2);
 			Finalize();
 			eventTE = { Environment: {} };
 			api.SHChangeNotifyDeregister(te.Data.uRegisterId);
@@ -1654,7 +1653,6 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata) {
 					const hSubMenu = api.GetSubMenu(g_.menu_handle, g_.menu_pos);
 					if (hSubMenu) {
 						const mii = api.Memory("MENUITEMINFO");
-						mii.cbSize = mii.Size;
 						mii.fMask = MIIM_SUBMENU;
 						api.SetMenuItemInfo(g_.menu_handle, g_.menu_pos, true, mii);
 						api.DestroyMenu(hSubMenu);
@@ -1855,7 +1853,6 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 					const hSubMenu = api.GetSubMenu(g_.menu_handle, g_.menu_pos);
 					if (hSubMenu) {
 						const mii = api.Memory("MENUITEMINFO");
-						mii.cbSize = mii.Size;
 						mii.fMask = MIIM_SUBMENU;
 						api.SetMenuItemInfo(g_.menu_handle, g_.menu_pos, true, mii);
 						api.DestroyMenu(hSubMenu);
@@ -1973,7 +1970,6 @@ te.OnInvokeCommand = function (ContextMenu, fMask, hwnd, Verb, Parameters, Direc
 		if (FV && FV.hwndView && SameFolderItems(ContextMenu.Items(), FV.SelectedItems())) {
 			const hMenu = te.MainMenu(FCIDM_MENU_EDIT);
 			const mii = api.Memory("MENUITEMINFO");
-			mii.cbSize = mii.Size;
 			mii.fMask = MIIM_ID;
 			for (let i = api.GetMenuItemCount(hMenu); i-- > 0;) {
 				if (api.GetMenuItemInfo(hMenu, i, true, mii)) {
@@ -2455,7 +2451,6 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					let wId = nVerb;
 					if (mf & MF_POPUP) {
 						const mii = api.Memory("MENUITEMINFO");
-						mii.cbSize = mii.Size;
 						mii.fMask = MIIM_ID;
 						api.GetMenuItemInfo(lParam, nVerb, true, mii);
 						wId = mii.wId;
@@ -3522,12 +3517,12 @@ InitWindow = function () {
 				ChangeView(cTC[i].Selected);
 			}
 		}
-		api.ShowWindow(te.hwnd, te.CmdShow);
-		if (te.CmdShow == SW_SHOWNOACTIVATE) {
-			api.SetWindowPos(te.hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-		}
-		te.CmdShow = SW_SHOWNORMAL;
 		setTimeout(function () {
+			api.ShowWindow(te.hwnd, te.CmdShow);
+			if (te.CmdShow == SW_SHOWNOACTIVATE) {
+				api.SetWindowPos(te.hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+			}
+			te.CmdShow = SW_SHOWNORMAL;
 			Resize();
 			RunCommandLine(api.GetCommandLine());
 		}, 500);

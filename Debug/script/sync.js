@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210401 ? te.Version : 20210401;
+		return te.Version < 20210402 ? te.Version : 20210402;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -173,7 +173,6 @@ GetSelectedArray = function (Ctrl, pt, bPlus) {
 
 ChooseColor = function (c) {
 	const cc = api.Memory("CHOOSECOLOR");
-	cc.lStructSize = cc.Size;
 	cc.hwndOwner = api.GetForegroundWindow();
 	cc.Flags = CC_FULLOPEN | CC_RGBINIT;
 	cc.rgbResult = c;
@@ -994,7 +993,6 @@ GetSavePath = function (FolderItem) {
 RemoveCommand = function (hMenu, ContextMenu, strDelete) {
 	if (ContextMenu) {
 		const mii = api.Memory("MENUITEMINFO");
-		mii.cbSize = mii.Size;
 		mii.fMask = MIIM_ID;
 		for (let i = api.GetMenuItemCount(hMenu); i-- > 0;) {
 			if (api.GetMenuItemInfo(hMenu, i, true, mii)) {
@@ -2087,7 +2085,6 @@ ExecMenu2 = function (Name, x, y) {
 
 AdjustMenuBreak = function (hMenu) {
 	const mii = api.Memory("MENUITEMINFO");
-	mii.cbSize = mii.Size;
 	let uFlags = 0;
 	for (let i = api.GetMenuItemCount(hMenu); i-- > 0;) {
 		mii.fMask = MIIM_FTYPE | MIIM_SUBMENU;
@@ -2350,7 +2347,6 @@ ExecMenu4 = function (Ctrl, Name, pt, hMenu, arContextMenu, nVerb, FV) {
 
 CopyMenu = function (hSrc, hDest) {
 	const mii = api.Memory("MENUITEMINFO");
-	mii.cbSize = mii.Size;
 	mii.fMask = MIIM_ID | MIIM_TYPE | MIIM_SUBMENU | MIIM_STATE;
 	let n = api.GetMenuItemCount(hSrc);
 	while (--n >= 0) {
@@ -2409,7 +2405,6 @@ GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arCon
 			} else if (FV) {
 				ContextMenu = GetViewMenu(arContextMenu, FV, hMenu, uCMF);
 				const mii = api.Memory("MENUITEMINFO");
-				mii.cbSize = mii.Size;
 				mii.fMask = MIIM_FTYPE | MIIM_SUBMENU;
 				for (let i = api.GetMenuItemCount(hMenu); i--;) {
 					api.GetMenuItemInfo(hMenu, 0, true, mii);
@@ -2435,7 +2430,6 @@ GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arCon
 				const oMenu = {};
 				const oMenu2 = {};
 				const mii = api.Memory("MENUITEMINFO");
-				mii.cbSize = mii.Size;
 				mii.fMask = MIIM_SUBMENU;
 				for (let i = api.GetMenuItemCount(hMenu2); i-- > 0;) {
 					let s = api.GetMenuString(hMenu2, i, MF_BYPOSITION);
@@ -2485,7 +2479,6 @@ GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arCon
 MenuDbInit = function (hMenu, oMenu, oMenu2) {
 	for (let i = api.GetMenuItemCount(hMenu); i--;) {
 		const mii = api.Memory("MENUITEMINFO");
-		mii.cbSize = mii.Size;
 		mii.fMask = MIIM_ID | MIIM_BITMAP | MIIM_SUBMENU | MIIM_DATA | MIIM_FTYPE | MIIM_STATE;
 		let s = api.GetMenuString(hMenu, i, MF_BYPOSITION);
 		api.GetMenuItemInfo(hMenu, i, true, mii);
@@ -2519,7 +2512,6 @@ MenuDbReplace = function (hMenu, oMenu, hMenu2) {
 			api.DeleteMenu(hMenu2, 0, MF_BYPOSITION);
 		} else {
 			mii = api.Memory("MENUITEMINFO");
-			mii.cbSize = mii.Size;
 			mii.fMask = MIIM_ID | MIIM_BITMAP | MIIM_SUBMENU | MIIM_DATA | MIIM_FTYPE | MIIM_STATE;
 			api.GetMenuItemInfo(hMenu2, 0, true, mii);
 			if (mii.hSubMenu) {
@@ -2567,7 +2559,6 @@ GetNetworkIcon = function (path) {
 RemoveSubMenu = function (hMenu, wID) {
 	if (hMenu && wID) {
 		const mii = api.Memory("MENUITEMINFO");
-		mii.cbSize = mii.Size;
 		mii.fMask = MIIM_SUBMENU | MIIM_FTYPE;
 		if (api.GetMenuItemInfo(hMenu, wID, false, mii)) {
 			api.DestroyMenu(mii.hSubMenu);
@@ -2597,7 +2588,6 @@ AddMenuImage = function (mii, image, id, nHeight) {
 
 MenusIcon = function (mii, src, nHeight, bIcon) {
 	let image;
-	mii.cbSize = mii.Size;
 	if (src && src !== "-") {
 		if ("string" === typeof src) {
 			src = ExtractPath(te, src);
@@ -3256,7 +3246,6 @@ FolderMenu = {
 
 	AddMenuItem: function (hMenu, FolderItem, Name, bSelect, bParent) {
 		const mii = api.Memory("MENUITEMINFO");
-		mii.cbSize = mii.Size;
 		mii.fMask = MIIM_ID | MIIM_STRING | MIIM_BITMAP | MIIM_SUBMENU;
 		if (bSelect && Name) {
 			mii.dwTypeData = Name;

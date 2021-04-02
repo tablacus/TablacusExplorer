@@ -441,7 +441,7 @@ Init = async function () {
 	await LoadLang();
 	await ApplyLang();
 	await ArrangeAddons();
-	ApplyLang();
+	await ApplyLang();
 	await InitWindow();
 	WebBrowser.DropMode = 1;
 }
