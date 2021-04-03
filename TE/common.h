@@ -244,9 +244,6 @@ typedef HRESULT (STDAPICALLTYPE* LPFNSHGetIDListFromObject)(__in IUnknown *punk,
 typedef BOOL (WINAPI* LPFNChangeWindowMessageFilter)(__in UINT message, __in DWORD dwFlag);
 typedef BOOL (WINAPI* LPFNAddClipboardFormatListener)(__in HWND hwnd);
 typedef BOOL (WINAPI* LPFNRemoveClipboardFormatListener)(__in HWND hwnd);
-//typedef HTHEME (WINAPI * LPFNGetWindowTheme)(HWND hwnd);
-//typedef HRESULT(WINAPI * LPFNCloseThemeData)(HTHEME hTheme);
-//typedef HRESULT (WINAPI * LPFNGetThemeColor)(HTHEME hTheme, int iPartId, int iStateId, int iPropId, COLORREF *pColor);
 //typedef HRESULT (STDAPICALLTYPE * LPFNPSFormatForDisplayAlloc)(__in REFPROPERTYKEY key, __in REFPROPVARIANT propvar, __in PROPDESC_FORMAT_FLAGS pdff, __deref_out PWSTR *ppszDisplay);
 //typedef BOOL (WINAPI * LPFNChangeWindowMessageFilter)(UINT message, DWORD dwFlag);
 #endif

@@ -26,7 +26,7 @@ Sync.ToolBar = {
 				item.setAttribute("Name", api.GetDisplayNameOf(FolderItem, SHGDN_INFOLDER));
 				item.text = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSINGEX | SHGDN_FORPARSING);
 				if (fso.FileExists(item.text)) {
-					item.text = api.PathQuoteSpaces(item.text);
+					item.text = PathQuoteSpaces(item.text);
 					item.setAttribute("Type", "Exec");
 				} else {
 					item.setAttribute("Type", "Open");

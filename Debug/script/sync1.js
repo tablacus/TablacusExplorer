@@ -2792,7 +2792,7 @@ GetIconImage = function (Ctrl, clBk, bSimple) {
 			return img.DataURI();
 		}
 	}
-	return MakeImgDataEx("icon:shell32.dll,3", bSimple, nSize, clBk);
+	return MakeImgDataEx("folder:closed", bSimple, nSize, clBk);
 }
 
 UnlockFV = function (Item) {

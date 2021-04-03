@@ -562,11 +562,11 @@ ApplyLang = async function (doc) {
 		doc = document;
 	}
 	let s, h = 0;
-	const FaceName = await MainWindow.DefaultFont.lfFaceName;
 	if (doc.body) {
-		doc.body.style.fontFamily = FaceName;
-		doc.body.style.fontSize = Math.abs(await MainWindow.DefaultFont.lfHeight) + "px";
-		doc.body.style.fontWeight = await MainWindow.DefaultFont.lfWeight;
+		const r = await Promise.all([MainWindow.DefaultFont.lfFaceName, MainWindow.DefaultFont.lfHeight, MainWindow.DefaultFont.lfWeight]);
+		doc.body.style.fontFamily = r[0];
+		doc.body.style.fontSize = Math.abs(r[1]) + "px";
+		doc.body.style.fontWeight = r[2];
 	}
 	ApplyLangTag(doc.getElementsByTagName("label"));
 	ApplyLangTag(doc.getElementsByTagName("button"));

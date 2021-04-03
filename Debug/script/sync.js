@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210402 ? te.Version : 20210402;
+		return te.Version < 20210403 ? te.Version : 20210403;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -73,9 +73,10 @@ AboutTE = function (n) {
 			ar.push(s);
 		}
 	} catch (e) { }
-	ar.push("(" + [osInfo.dwMajorVersion, osInfo.dwMinorVersion, osInfo.dwBuildNumber].join(".") + ")");
+	ForEachWmi("winmgmts:\\\\.\\root\\cimv2", "SELECT * FROM Win32_OperatingSystem", function (item) {
+		ar.push(item.OSArchitecture, "(" + item.Version + ")");
+	});
 	const ext = {
-		Wow64: api.IsWow64Process(api.GetCurrentProcess()),
 		Admin: api.SHTestTokenMembership(null, 0x220),
 		Dark: api.ShouldAppsUseDarkMode()
 	}
@@ -88,14 +89,9 @@ AboutTE = function (n) {
 	ar.push(res ? res[1] : 'IE/' + g_.IEVer);
 	ar.push("JS/" + ("undefined" == typeof ScriptEngineMajorVersion ? "Chakra" : [ScriptEngineMajorVersion(), ScriptEngineMinorVersion(), ScriptEngineBuildVersion()].join(".")));
 	ar.push(GetLangId(2), screen.deviceYDPI);
-
-	const server = te.GetObject("winmgmts:\\\\.\\root\\SecurityCenter" + (WINVER >= 0x600 ? "2" : ""));
-	if (server) {
-		const cols = server.ExecQuery("SELECT * FROM AntiVirusProduct");
-		for (let list = api.CreateObject("Enum", cols); !list.atEnd(); list.moveNext()) {
-			ar.push(list.item().displayName);
-		}
-	}
+	ForEachWmi("winmgmts:\\\\.\\root\\SecurityCenter" + (WINVER >= 0x600 ? "2" : ""), "SELECT * FROM AntiVirusProduct", function (item) {
+		ar.push(item.displayName);
+	});
 	return ar.join(" ");
 }
 
@@ -283,7 +279,18 @@ GetNavigateFlags = function (FV, bParent) {
 
 GetSysColor = function (i) {
 	const c = MainWindow.g_.Colors[i];
-	return c != null ? c : (i == COLOR_MENU && api.ShouldAppsUseDarkMode() ? 0x2b2b2b : api.GetSysColor(i));
+	if (c != null) {
+		return c;
+	}
+	if (api.ShouldAppsUseDarkMode()) {
+		if (i == COLOR_MENU) {
+			return 0x2b2b2b;
+		}
+		if (i == COLOR_MENUTEXT) {
+			return 0xffffff;
+		}
+	}
+	return api.GetSysColor(i);
 }
 
 SetSysColor = function (i, color) {
@@ -1031,16 +1038,20 @@ OpenContains = function (Ctrl, pt) {
 	}
 }
 
-WmiProcess = function (arg, fn) {
+ForEachWmi = function (sv, cmd, fn) {
 	try {
-		const server = te.GetObject("winmgmts:\\\\.\\root\\cimv2");
+		const server = te.GetObject(sv);
 		if (server) {
-			const cols = server.ExecQuery("SELECT * FROM Win32_Process " + arg);
+			const cols = server.ExecQuery(cmd);
 			for (let list = api.CreateObject("Enum", cols); !list.atEnd(); list.moveNext()) {
 				fn(list.item());
 			}
 		}
 	} catch (e) { }
+}
+
+WmiProcess = function (arg, fn) {
+	ForEachWmi("winmgmts:\\\\.\\root\\cimv2", "SELECT * FROM Win32_Process " + arg, fn);
 }
 
 AddFavoriteEx = function (Ctrl, pt) {
@@ -2876,7 +2887,7 @@ GethwndFromPid = function (ProcessId, nDT) {
 	return null;
 }
 
-PopupContextMenu = function (Item, FV) {
+PopupContextMenu = function (Item, FV, pt) {
 	if ("string" === typeof Item) {
 		const arg = api.CommandLineToArgv(Item);
 		Item = api.CreateObject("FolderItems");
@@ -2890,8 +2901,10 @@ PopupContextMenu = function (Item, FV) {
 		const uCMF = (api.GetKeyState(VK_SHIFT) < 0) ? CMF_EXTENDEDVERBS : CMF_NORMAL;
 		ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, uCMF);
 		RemoveCommand(hMenu, ContextMenu, "delete");
-		const pt = api.Memory("POINT");
-		api.GetCursorPos(pt);
+		if (!pt) {
+			pt = api.Memory("POINT");
+			api.GetCursorPos(pt);
+		}
 		const nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, ContextMenu);
 		if (nVerb) {
 			ContextMenu.InvokeCommand(0, te.hwnd, nVerb - 1, null, null, SW_SHOWNORMAL, 0, 0);

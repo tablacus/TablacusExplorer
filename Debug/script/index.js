@@ -63,7 +63,6 @@ ResetScroll = function () {
 
 PanelCreated = async function (Ctrl, Id) {
 	await RunEventUI1("PanelCreated", Ctrl, Id);
-	ApplyLang(document.getElementById("Panel_" + Id));
 	Resize();
 	setTimeout(async function () {
 		ChangeView(await Ctrl.Selected);
@@ -98,6 +97,11 @@ SetAddon = async function (strName, Location, Tag, strVAlign) {
 	if (Tag) {
 		if (Tag.join) {
 			Tag = Tag.join("");
+		}
+		const re = /(<[^<>]*placeholder=")([^"<>]+)/;
+		const res = re.exec(Tag);
+		if (res) {
+			Tag = Tag.replace(re, res[1] + await GetTextR(res[2]));
 		}
 		const o = document.getElementById(Location);
 		if (o) {
@@ -431,17 +435,15 @@ document.addEventListener("FullscreenChange", function () {
 Init = async function () {
 	te.Data.MainWindow = $;
 	await InitCode();
-	const r = await Promise.all([te.Data.DataFolder, $.DefaultFont, $.HOME_PATH, $.OpenMode]);
+	const r = await Promise.all([te.Data.DataFolder, $.DefaultFont, $.HOME_PATH, $.OpenMode, $.DefaultFont.lfFaceName, $.DefaultFont.lfHeight, $.DefaultFont.lfWeight, InitMouse(), InitMenus(), LoadLang()]);
 	ui_.DataFolder = r[0];
 	DefaultFont = r[1];
 	HOME_PATH = r[2];
 	OpenMode = r[3];
-	await InitMouse();
-	await InitMenus();
-	await LoadLang();
-	await ApplyLang();
+	document.body.style.fontFamily = r[4];
+	document.body.style.fontSize = Math.abs(r[5]) + "px";
+	document.body.style.fontWeight = r[6];
 	await ArrangeAddons();
-	await ApplyLang();
 	await InitWindow();
 	WebBrowser.DropMode = 1;
 }

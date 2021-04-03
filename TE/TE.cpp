@@ -52,9 +52,6 @@ LPFNSHGetIDListFromObject _SHGetIDListFromObject = NULL;
 LPFNChangeWindowMessageFilter _ChangeWindowMessageFilter = NULL;
 LPFNAddClipboardFormatListener _AddClipboardFormatListener = NULL;
 LPFNRemoveClipboardFormatListener _RemoveClipboardFormatListener = NULL;
-//LPFNGetWindowTheme _GetWindowTheme = NULL;
-//LPFNGetThemeColor _GetThemeColor = NULL;
-//LPFNCloseThemeData _CloseThemeData = NULL;
 #else
 #define _PSPropertyKeyFromString PSPropertyKeyFromString
 #define _PSGetPropertyKeyFromName PSGetPropertyKeyFromName
@@ -64,8 +61,6 @@ LPFNRemoveClipboardFormatListener _RemoveClipboardFormatListener = NULL;
 #define _SHGetIDListFromObject SHGetIDListFromObject
 #define _PropVariantToVariant PropVariantToVariant
 #define _VariantToPropVariant VariantToPropVariant
-//#define lpgnGetWindowTheme GetWindowTheme
-//#define _GetThemeColor GetThemeColor
 #endif
 #ifdef _USE_APIHOOK
 LPFNRegQueryValueExW _RegQueryValueExW = NULL;
@@ -1765,7 +1760,7 @@ LPITEMIDLIST teILCreateFromPath3(IShellFolder *pSF, LPWSTR pszPath, HWND hwnd, i
 		int ashgdn[] = { SHGDN_FORPARSING, SHGDN_INFOLDER, SHGDN_INFOLDER | SHGDN_FORPARSING, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_INFOLDER };
 		BSTR bstr = NULL;
 		LPWSTR lpfn = NULL;
-		LPITEMIDLIST pidlPart;
+		LPITEMIDLIST pidlPart = NULL;
 		while (!pidlResult && peidl->Next(1, &pidlPart, NULL) == S_OK) {
 			for (int j = _countof(ashgdn); !pidlResult && j--; teSysFreeString(&bstr)) {
 				if SUCCEEDED(teGetDisplayNameBSTR(pSF, pidlPart, ashgdn[j], &bstr)) {
@@ -2612,7 +2607,7 @@ HRESULT teILFolderExists(LPITEMIDLIST pidl)
 			IEnumIDList *peidl = NULL;
 			hr = pSF1->EnumObjects(NULL, SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN | SHCONTF_INCLUDESUPERHIDDEN | SHCONTF_NAVIGATION_ENUM, &peidl);
 			if (peidl) {
-				LPITEMIDLIST pidlPart;
+				LPITEMIDLIST pidlPart = NULL;
 				hr = peidl->Next(1, &pidlPart, NULL);
 				if (hr == S_FALSE) {
 					hr = S_OK;
@@ -8318,6 +8313,12 @@ VOID teApiGetSystemMetrics(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 
 VOID teApiGetSysColor(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
+/*	HTHEME hTheme = OpenThemeData(g_hwndMain, L"menu");// Doesn't work on dark mode.
+	if (hTheme) {
+		teSetLong(pVarResult, GetThemeSysColor(hTheme, param[0].intVal + TMT_SCROLLBAR));
+		CloseThemeData(hTheme);
+		return;
+	}*/
 	teSetLong(pVarResult, GetSysColor(param[0].intVal));
 }
 
@@ -11258,11 +11259,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	if (teVerifyVersion(10, 0, 17763)) {
 		if (hDll = teLoadLibrary(L"uxtheme.dll")) {
-#ifdef _2000XP
-//			*(FARPROC *)&_GetWindowTheme = GetProcAddress(hDll, "GetWindowTheme");
-//			*(FARPROC *)&_CloseThemeData = GetProcAddress(hDll, "CloseThemeData");
-//			*(FARPROC *)&_GetThemeColor = GetProcAddress(hDll, "GetThemeColor");
-#endif
 			*(FARPROC *)&_ShouldAppsUseDarkMode = GetProcAddress(hDll, MAKEINTRESOURCEA(132));
 			*(FARPROC *)&_AllowDarkModeForWindow = GetProcAddress(hDll, MAKEINTRESOURCEA(133));
 			*(FARPROC *)&_SetPreferredAppMode = GetProcAddress(hDll, MAKEINTRESOURCEA(135));
@@ -15629,16 +15625,17 @@ STDMETHODIMP CteShellBrowser::SelectItem(VARIANT *pvfi, int dwFlags)
 			if (ppidllist[0]) {
 				teCoTaskMemFree(ppidllist[0]);
 				teFixListState(m_hwndLV, dwFlags);
-				for (int i = 1; i <=  nCount; ++i) {
+				for (int i = 1; i <= nCount; ++i) {
 					m_pShellView->SelectItem(ppidllist[i], dwFlags);
 					teCoTaskMemFree(ppidllist[i]);
 					dwFlags &= ~(SVSI_FOCUSED | SVSI_DESELECTOTHERS);
 				}
 			}
 			delete [] ppidllist;
+			SafeRelease(&pDataObj);
+			return S_OK;
 		}
 		SafeRelease(&pDataObj);
-		return S_OK;
 	}
 	teGetIDListFromVariant(&pidl, pvfi);
 	return SelectItemEx(&pidl, dwFlags, TRUE);
@@ -15660,7 +15657,7 @@ HRESULT CteShellBrowser::SelectItemEx(LPITEMIDLIST *ppidl, int dwFlags, BOOL bFr
 	if (bFree) {
 		teILFreeClear(ppidl);
 		CteFolderItem *pid1 = NULL;
-		if SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1)) {
+		if (m_pFolderItem && SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1))) {
 			teILFreeClear(&pid1->m_pidlFocused);
 			pid1->Release();
 		}
@@ -16517,7 +16514,7 @@ STDMETHODIMP CteShellBrowser::MessageSFVCB(UINT uMsg, WPARAM wParam, LPARAM lPar
 							}
 							IEnumIDList *peidl;
 							if SUCCEEDED(m_pSF2->EnumObjects(NULL, grfFlags, &peidl)) {
-								LPITEMIDLIST pidlPart;
+								LPITEMIDLIST pidlPart = NULL;
 								while (iNew <= iExists && peidl->Next(1, &pidlPart, NULL) == S_OK) {
 									if (IncludeObject2(m_pSF2, pidlPart) == S_OK) {
 										iNew++;
@@ -19894,6 +19891,9 @@ HDROP CteFolderItems::GethDrop(int x, int y, BOOL fNC)
 			}
 		}
 	}
+	if (m_nCount == 0) {
+		return NULL;
+	}
 	BSTR *pbslist = new BSTR[m_nCount];
 	UINT uSize = sizeof(WCHAR);
 	VARIANT v;
@@ -19926,7 +19926,7 @@ HDROP CteFolderItems::GethDrop(int x, int y, BOOL fNC)
 		lpDropFiles->fWide = TRUE;
 
 		LPWSTR lp = (LPWSTR)&lpDropFiles[1];
-		for (int i = 0; i< m_nCount; ++i) {
+		for (int i = 0; i < m_nCount; ++i) {
 			if (pbslist[i]) {
 				lstrcpy(lp, pbslist[i]);
 				lp += (SysStringByteLen(pbslist[i]) / 2) + 1;
@@ -20030,21 +20030,22 @@ STDMETHODIMP CteFolderItems::GetData(FORMATETC *pformatetcIn, STGMEDIUM *pmedium
 	}
 	if (pformatetcIn->cfFormat == CF_HDROP) {
 		pmedium->tymed = TYMED_HGLOBAL;
-		pmedium->hGlobal = (HGLOBAL)GethDrop(0, 0, FALSE);
-		pmedium->pUnkForRelease = NULL;
-		BSTR bs = NULL;
-		teGetRootFromDataObj(&bs, this);
-		if (teStrSameIFree(bs, g_bsClipRoot)) {
-			if (g_pOnFunc[TE_OnBeforeGetData]) {
-				VARIANTARG *pv = GetNewVARIANT(3);
-				teSetObject(&pv[2], g_pTE);
-				teSetObjectRelease(&pv[1], this);
-				teSetLong(&pv[0], 5);
-				Invoke4(g_pOnFunc[TE_OnBeforeGetData], NULL, 3, pv);
+		if (pmedium->hGlobal = (HGLOBAL)GethDrop(0, 0, FALSE)) {
+			pmedium->pUnkForRelease = NULL;
+			BSTR bs = NULL;
+			teGetRootFromDataObj(&bs, this);
+			if (teStrSameIFree(bs, g_bsClipRoot)) {
+				if (g_pOnFunc[TE_OnBeforeGetData]) {
+					VARIANTARG *pv = GetNewVARIANT(3);
+					teSetObject(&pv[2], g_pTE);
+					teSetObjectRelease(&pv[1], this);
+					teSetLong(&pv[0], 5);
+					Invoke4(g_pOnFunc[TE_OnBeforeGetData], NULL, 3, pv);
+				}
 			}
+			teSysFreeString(&g_bsClipRoot);
+			return S_OK;
 		}
-		teSysFreeString(&g_bsClipRoot);
-		return S_OK;
 	}
 
 	if (pformatetcIn->cfFormat == CF_UNICODETEXT || pformatetcIn->cfFormat == CF_TEXT) {
