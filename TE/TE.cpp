@@ -2297,11 +2297,11 @@ LONGLONG GetLLFromVariantClear(VARIANT *pv)
 	return ll;
 }
 
-LONGLONG GetLLPFromVariant(VARIANT *pv, VARIANT *pvMem)
+LONGLONG GetParamFromVariant(VARIANT *pv, VARIANT *pvMem)
 {
 	if (pv) {
 		if (pv->vt == (VT_VARIANT | VT_BYREF)) {
-			return GetLLPFromVariant(pv->pvarVal, pvMem);
+			return GetParamFromVariant(pv->pvarVal, pvMem);
 		}
 		LONGLONG ll = 0;
 		if (GetLLFromVariant2(&ll, pv)) {
@@ -2311,18 +2311,19 @@ LONGLONG GetLLPFromVariant(VARIANT *pv, VARIANT *pvMem)
 		if (pc) {
 			return (LONGLONG)pc;
 		}
-		if (pv->vt != VT_DISPATCH) {
-			VARIANT vo;
-			VariantInit(&vo);
-			if SUCCEEDED(VariantChangeType(&vo, pv, 0, VT_I8)) {
-				return vo.llVal;
-			}
-#ifdef _W2000
-			if SUCCEEDED(VariantChangeType(&vo, pv, 0, VT_R8)) {
-				return (LONGLONG)vo.dblVal;
-			}
-#endif
+		if (pv->vt == VT_DISPATCH || pv->vt == VT_UNKNOWN) {
+			return TRUE;
 		}
+		VARIANT vo;
+		VariantInit(&vo);
+		if SUCCEEDED(VariantChangeType(&vo, pv, 0, VT_I8)) {
+			return vo.llVal;
+		}
+#ifdef _W2000
+		if SUCCEEDED(VariantChangeType(&vo, pv, 0, VT_R8)) {
+			return (LONGLONG)vo.dblVal;
+		}
+#endif
 	}
 	return 0;
 }
@@ -2441,7 +2442,7 @@ HRESULT teInvokeAPI(TEDispatchApi *pApi, DISPPARAMS *pDispParams, VARIANT *pVarR
 				}
 				param[i].bstrVal = vParam[i].bstrVal;
 			} else {
-				param[i].llVal = GetLLPFromVariant(&pDispParams->rgvarg[nArg - i], &vParam[i]);
+				param[i].llVal = GetParamFromVariant(&pDispParams->rgvarg[nArg - i], &vParam[i]);
 			}
 		}
 #ifdef _CHECK_HANDLELEAK
@@ -3538,6 +3539,17 @@ int GetIntFromVariant(VARIANT *pv)
 				return (int)(LONGLONG)vo.dblVal;
 			}
 		}
+	}
+	return 0;
+}
+
+BOOL GetBoolFromVariant(VARIANT *pv)
+{
+	if (pv) {
+		if (pv->vt == (VT_VARIANT | VT_BYREF)) {
+			return GetBoolFromVariant(pv->pvarVal);
+		}
+		return pv->vt == VT_DISPATCH || pv->vt == VT_UNKNOWN || GetIntFromVariant(pv);
 	}
 	return 0;
 }
@@ -12974,29 +12986,30 @@ VOID CteShellBrowser::SaveFocusedItemToHistory()
 	}
 }
 
-VOID CteShellBrowser::FocusItem(BOOL bFree)
+VOID CteShellBrowser::FocusItem()
 {
 	CteFolderItem *pid;
 	if (m_pFolderItem && !m_dwUnavailable && SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid))) {
 		if (pid->m_pidlFocused) {
-			SelectItemEx(&pid->m_pidlFocused, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK | SVSI_SELECT, bFree);
+			if ((m_param[SB_FolderFlags] & FWF_AUTOCHECKSELECT) == 0) { //21.4.4 (5ch#7-933)
+				SelectItemEx(pid->m_pidlFocused, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK | SVSI_SELECT);
+			}
+			teILFreeClear(&pid->m_pidlFocused);
 		}
 		m_dwUnavailable = pid->m_dwUnavailable;
 		pid->Release();
 	}
-	if (!bFree) {
-		int nTop = -1;
-		IFolderView *pFV;
-		if (m_pShellView && SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV)))) {
-			if (SUCCEEDED(pFV->GetFocusedItem(&nTop)) && nTop < 0) {
-				if (SUCCEEDED(pFV->ItemCount(SVGIO_ALLVIEW, &nTop)) && nTop) {
-					pFV->SelectItem(0, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
-				}
+	int nTop = -1;
+	IFolderView *pFV;
+	if (m_pShellView && SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV)))) {
+		if (SUCCEEDED(pFV->GetFocusedItem(&nTop)) && nTop < 0) {
+			if (SUCCEEDED(pFV->ItemCount(SVGIO_ALLVIEW, &nTop)) && nTop) {
+				pFV->SelectItem(0, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
 			}
-			pFV->Release();
 		}
-		m_nFocusItem = 0;
+		pFV->Release();
 	}
+	m_nFocusItem = 0;
 }
 
 HRESULT CteShellBrowser::GetAbsPath(FolderItem *pid, UINT wFlags, FolderItems *pFolderItems, FolderItem *pPrevious, CteShellBrowser *pHistSB)
@@ -14822,7 +14835,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			return S_OK;
 			
 		case TE_METHOD + 0xf206://Refresh
-			if (!m_bVisible && nArg >= 0 && GetIntFromVariant(&pDispParams->rgvarg[nArg])) {
+			if (!m_bVisible && nArg >= 0 && GetBoolFromVariant(&pDispParams->rgvarg[nArg])) {
 				m_bRefreshLator = TRUE;
 				return S_OK;
 			}
@@ -14985,7 +14998,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 		case TE_METHOD + 0xf300://Notify
 			if (nArg >= 2) {
 				long lEvent = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
-				BOOL bTFS = (nArg >= 3 && GetIntFromVariant(&pDispParams->rgvarg[nArg - 3]));
+				BOOL bTFS = (nArg >= 3 && GetBoolFromVariant(&pDispParams->rgvarg[nArg - 3]));
 				for (int i = 1; i < (lEvent & (SHCNE_RENAMEITEM | SHCNE_RENAMEFOLDER) ? 3 : 2); ++i) {
 					LPITEMIDLIST pidl;
 					if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg - i])) {
@@ -15089,7 +15102,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					pdisp->Release();
 					pAddItems->pv = GetNewVARIANT(2);
 					teSetLong(&pAddItems->pv[0], m_dwSessionId);
-					pAddItems->bDeleted = nArg >= 1 && GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
+					pAddItems->bDeleted = nArg >= 1 && GetBoolFromVariant(&pDispParams->rgvarg[nArg - 1]);
 					pAddItems->bNavigateComplete = FALSE;
 					pAddItems->pStrmOnCompleted = NULL;
 					if (nArg >= 2) {
@@ -15097,7 +15110,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						if (FindUnknown(&pDispParams->rgvarg[nArg - 2], &punk)) {
 							CoMarshalInterThreadInterfaceInStream(IID_IDispatch, punk, &pAddItems->pStrmOnCompleted);
 						} else {
-							pAddItems->bNavigateComplete = GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]);
+							pAddItems->bNavigateComplete = GetBoolFromVariant(&pDispParams->rgvarg[nArg - 2]);
 						}
 					}
 					_beginthread(&threadAddItems, 0, pAddItems);
@@ -15239,7 +15252,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 			}
 			if (m_nFocusItem < 0) {
-				FocusItem(FALSE);
+				FocusItem();
 			}
 			IFolderView *pFV;
 			if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
@@ -15638,28 +15651,28 @@ STDMETHODIMP CteShellBrowser::SelectItem(VARIANT *pvfi, int dwFlags)
 		SafeRelease(&pDataObj);
 	}
 	teGetIDListFromVariant(&pidl, pvfi);
-	return SelectItemEx(&pidl, dwFlags, TRUE);
+	HRESULT hr = SelectItemEx(pidl, dwFlags);
+	teILFreeClear(&pidl);
+	CteFolderItem *pid1 = NULL;
+	if (m_pFolderItem && SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1))) {
+		teILFreeClear(&pid1->m_pidlFocused);
+		pid1->Release();
+	}
+	return hr;
 }
 
-HRESULT CteShellBrowser::SelectItemEx(LPITEMIDLIST *ppidl, int dwFlags, BOOL bFree)
+HRESULT CteShellBrowser::SelectItemEx(LPITEMIDLIST pidl, int dwFlags)
 {
 	HRESULT hr = E_FAIL;
 	if (m_pShellView) {
 		teFixListState(m_hwndLV, dwFlags);
-		hr = m_pShellView->SelectItem(ILFindLastID(*ppidl), dwFlags);
+		LPITEMIDLIST pidlLast = ILFindLastID(pidl);
+		hr = m_pShellView->SelectItem(pidlLast, dwFlags);
 		if ((dwFlags & (SVSI_SELECTIONMARK | SVSI_SELECT)) == (SVSI_SELECTIONMARK | SVSI_SELECT)) {
-			m_pShellView->SelectItem(ILFindLastID(*ppidl), dwFlags & (SVSI_NOTAKEFOCUS | SVSI_SELECT));
+			m_pShellView->SelectItem(pidlLast, dwFlags & (SVSI_NOTAKEFOCUS | SVSI_SELECT));
 		}
 		if (m_hwndLV && (dwFlags & (SVSI_FOCUSED | SVSI_ENSUREVISIBLE)) == (SVSI_FOCUSED | SVSI_ENSUREVISIBLE)) {
-			m_pShellView->SelectItem(ILFindLastID(*ppidl), dwFlags);
-		}
-	}
-	if (bFree) {
-		teILFreeClear(ppidl);
-		CteFolderItem *pid1 = NULL;
-		if (m_pFolderItem && SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1))) {
-			teILFreeClear(&pid1->m_pidlFocused);
-			pid1->Release();
+			m_pShellView->SelectItem(pidlLast, dwFlags);
 		}
 	}
 	return hr;
@@ -15960,7 +15973,7 @@ VOID CteShellBrowser::OnNavigationComplete2()
 	m_nFocusItem = 1;
 	NavigateComplete(TRUE);
 	if (m_nFocusItem > 0) {
-		FocusItem(FALSE);
+		FocusItem();
 	}
 	m_bCheckLayout = TRUE;
 	SetFolderFlags(FALSE);
@@ -17313,7 +17326,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 			case TE_METHOD + 1006:
 				if (nArg >= 0) {
 					int nCtrl = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
-					BOOL bAll = nArg >= 1 ? !GetIntFromVariant(&pDispParams->rgvarg[nArg -  1]) : TRUE;
+					BOOL bAll = nArg >= 1 ? !GetBoolFromVariant(&pDispParams->rgvarg[nArg -  1]) : TRUE;
 					IDispatch *pArray = teCreateObj(TE_ARRAY, NULL);
 					switch (nCtrl) {
 						case CTRL_FV:
@@ -17360,7 +17373,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 							}
 							break;
 					}//end_switch
-					if (nArg >= 2 && GetIntFromVariant(&pDispParams->rgvarg[nArg - 2])) {
+					if (nArg >= 2 && GetBoolFromVariant(&pDispParams->rgvarg[nArg - 2])) {
 						teCreateSafeArrayFromVariantArray(pArray, pVarResult);
 						SafeRelease(&pArray);
 						return S_OK;
@@ -17379,7 +17392,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 			//Reload
 			case TE_METHOD + 1009:
 				g_nReload = 1;
-				if (g_nException-- <= 0 || (nArg >= 0 && GetIntFromVariant(&pDispParams->rgvarg[nArg]))) {
+				if (g_nException-- <= 0 || (nArg >= 0 && GetBoolFromVariant(&pDispParams->rgvarg[nArg]))) {
 #ifdef _DEBUG
 					if (g_strException) {
 						MessageBox(NULL, g_strException, NULL, MB_OK);
@@ -17540,7 +17553,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 
 			case 1160://DragIcon
 				if (nArg >= 0) {
-					g_bDragIcon = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+					g_bDragIcon = GetBoolFromVariant(&pDispParams->rgvarg[nArg]);
 #ifdef _2000XP
 					if (g_bUpperVista) {
 #endif
@@ -21311,7 +21324,7 @@ STDMETHODIMP CteDropTarget::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 								teGetPropertyAt(pEffect, 0, &v);
 								dwEffect1 = GetIntFromVariantClear(&v);
 								if (nArg >= 4) {
-									bSingle = GetIntFromVariant(&pDispParams->rgvarg[nArg - 4]);
+									bSingle = GetBoolFromVariant(&pDispParams->rgvarg[nArg - 4]);
 									if (nArg >= 5) {
 										IUnknown *punk;
 										if (FindUnknown(&pDispParams->rgvarg[nArg - 5], &punk)) {
@@ -21853,7 +21866,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 
 		case TE_PROPERTY + 0x1009://Visible
 			if (nArg >= 0) {
-				m_param[SB_TreeAlign] = GetIntFromVariant(&pDispParams->rgvarg[nArg]) ? 3 : 1;
+				m_param[SB_TreeAlign] = GetBoolFromVariant(&pDispParams->rgvarg[nArg]) ? 3 : 1;
 				ArrangeWindow();
 				Show();
 			}
@@ -21971,16 +21984,16 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 				}
 			}
 			return S_OK;
-			//SelectedItem
-		case TE_PROPERTY + 0x2000:
+
+		case TE_PROPERTY + 0x2000://SelectedItem
 			IDispatch *pdisp;
 			if (getSelected(&pdisp) == S_OK) {
 				teSetObjectRelease(pVarResult, pdisp);
 				return S_OK;
 			}
 			break;
-			//SelectedItems
-		case TE_METHOD + 0x2001:
+
+		case TE_METHOD + 0x2001://SelectedItems
 			if (getSelected(&pdisp) == S_OK) {
 				CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL);
 				VARIANT v;
@@ -21992,16 +22005,16 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 				return S_OK;
 			}
 			break;
-			//Root
-		case TE_PROPERTY + 0x2002:
+
+		case TE_PROPERTY + 0x2002://Root
 			if (pVarResult) {
 				teSetSZ(pVarResult, m_bsRoot);
 				if (nArg < 0) {
 					return S_OK;
 				}
 			}
-			//SetRoot
-		case TE_METHOD + 0x2003:
+
+		case TE_METHOD + 0x2003://SetRoot
 			if (nArg >= 0) {
 				m_param[SB_EnumFlags] = g_paramFV[SB_EnumFlags];
 				m_param[SB_RootStyle] = g_paramFV[SB_RootStyle];
@@ -22023,8 +22036,8 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 				return S_OK;
 			}
 			break;
-			//Expand
-		case TE_METHOD + 0x2004:
+
+		case TE_METHOD + 0x2004://Expand
 			if (nArg >= 1) {
 				FolderItem *pid;
 				GetFolderItemFromVariant(&pid, &pDispParams->rgvarg[nArg]);
@@ -24391,7 +24404,9 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					}
 				}
 				return S_OK;
-/*				if (nArg >= 0) {
+
+			case TE_METHOD + 117://AlphaBlend
+				if (nArg >= 1) {
 					if (Get(GUID_WICPixelFormat32bppBGRA)) {
 						int w = 0, h = 0;
 						m_pImage->GetSize((UINT *)&w, (UINT *)&h);
@@ -24399,19 +24414,19 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 						WICRect rc = {0, 0, w, h};
 						if SUCCEEDED(m_pImage->Lock(&rc, WICBitmapLockWrite, &pBitmapLock)) {
 							UINT cbSize = 0;
-							LONG *pbData = NULL;
+							RGBQUAD *pbData = NULL;
 							if SUCCEEDED(pBitmapLock->GetDataPointer(&cbSize, (PBYTE *)&pbData)) {
-								LONG clBk = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
-								for (int y = h; --y >= 0;) {
-									for (int x = w; --x >= 0;) {
-										LONG *pcl = &pbData[x + y * w];
-										if (((*pcl - clBk) & 0xffffff) == 0 &&
-										(y <= 0 || ((pbData[x + (y - 1) * w] - clBk) & 0xffffff) == 0) && //Top
-										(x <= 0 || ((pbData[x - 1 + y * w] - clBk) & 0xffffff) == 0) && //Left
-										(x >= w - 1 || ((pbData[x + 1 + y * w] - clBk) & 0xffffff) == 0) && //Right
-										(y >= h - 1 || ((pbData[x + (y + 1) * w] - clBk) & 0xffffff) == 0)) { //Down
-											*pcl &= 0xffffff;
-										}
+								RECT rcFill = { 0, 0, w, h };
+								LPRECT prc = (LPRECT)GetpcFromVariant(&pDispParams->rgvarg[nArg - 1], NULL);
+								if (prc) {
+									CopyRect(&rcFill, prc);
+								}
+								LONG mix = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
+								LONG max = nArg >= 2 ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]) : 100;
+								for (int y = rcFill.top; y < rcFill.bottom; ++y) {
+									for (int x = rcFill.left; x < rcFill.right; ++x) {
+										RGBQUAD *pcl = &pbData[x + y * w];
+										pcl->rgbReserved = pcl->rgbReserved * mix / max;
 									}
 								}
 							}
@@ -24419,8 +24434,8 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 						}
 					}
 				}
-				return S_OK;*/
-				
+				return S_OK;
+
 			case TE_METHOD + 120: //GetThumbnailImage
 				if (nArg >= 1) {
 					//WIC

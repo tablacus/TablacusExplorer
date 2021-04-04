@@ -525,7 +525,7 @@ public:
 	BSTR GetColumnsStr(int nFormat);
 	VOID GetDefaultColumns();
 	VOID SaveFocusedItemToHistory();
-	VOID FocusItem(BOOL bFree);
+	VOID FocusItem();
 	HRESULT GetAbsPath(FolderItem *pid, UINT wFlags, FolderItems *pFolderItems, FolderItem *pPrevious, CteShellBrowser *pHistSB);
 	VOID EBNavigate();
 	VOID SetHistory(FolderItems *pFolderItems, UINT wFlags);
@@ -538,7 +538,7 @@ public:
 	VOID SetFolderFlags(BOOL bGetIconSize);
 	VOID GetViewModeAndIconSize(BOOL bGetIconSize);
 	HRESULT Items(UINT uItem, FolderItems **ppid);
-	HRESULT SelectItemEx(LPITEMIDLIST *ppidl, int dwFlags, BOOL bFree);
+	HRESULT SelectItemEx(LPITEMIDLIST pidl, int dwFlags);
 	VOID InitFolderSize();
 	VOID SetSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch);
 	VOID SetFolderSize(IShellFolder2 *pSF2, LPCITEMIDLIST pidl, LPWSTR szText, int cch);
