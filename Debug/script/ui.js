@@ -650,13 +650,7 @@ ApplyLang = async function (doc) {
 }
 
 ImgBase64 = async function (el, index, h) {
-	const org = el.src || el.getAttribute("data-src");
-	const src = await ExtractPath(te, org);
-	const s = await MakeImgSrc(src, index, false, h || el.height || window.IconSize);
-	if ("string" === typeof s && org != src) {
-		return src.replace(location.href.replace(/[^\/]*$/, ""), "file:///");
-	}
-	return s;
+	return await MakeImgSrc(el.src || el.getAttribute("data-src"), index, false, h || el.height || window.IconSize);
 }
 
 FireEvent = function (o, event) {

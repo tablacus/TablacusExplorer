@@ -56,6 +56,11 @@ GetFolderView = function (Ctrl, pt, bStrict) {
 	}
 };
 
+GetMiscIcon = function (n) {
+	const s = BuildPath(te.Data.DataFolder, "icons\\misc\\" + n + ".png");
+	return fso.FileExists(s) ? s : "";
+}
+
 ImgBase64 = function (el, index, h) {
 	return MakeImgSrc(ExtractMacro(te, el.src), index, false, h || el.height);
 }

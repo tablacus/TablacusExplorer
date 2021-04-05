@@ -1,6 +1,5 @@
 const Addon_Id = "addressbar";
 const Default = "ToolBar2Center";
-
 const item = await GetAddonElement(Addon_Id);
 if (!item.getAttribute("Set")) {
 	item.setAttribute("Menu", "Edit");
@@ -20,7 +19,6 @@ if (window.Addon == 1) {
 		XP: item.getAttribute("XP"),
 		nPos: 0,
 		nWidth: 0,
-		strName: "Address bar",
 
 		KeyDown: function (ev, o) {
 			if (ev.keyCode ? ev.keyCode == VK_RETURN : /^Enter/i.test(ev.key)) {
@@ -56,6 +54,7 @@ if (window.Addon == 1) {
 				} else {
 					const arHTML = [];
 					o.style.width = "auto";
+					o.style.height = (oAddr.offsetHeight - 2) + "px";
 					const bRoot = api.ILIsEmpty(FolderItem);
 					const Items = JSON.parse(await Sync.AddressBar.SplitPath(FolderItem));
 					let bEmpty = true, n;
@@ -105,6 +104,7 @@ if (window.Addon == 1) {
 					o.select()
 				}
 				o.focus();
+				o.style.color = "";
 				document.getElementById("breadcrumbbuttons").style.display = "none";
 			}
 		},
@@ -265,7 +265,7 @@ if (window.Addon == 1) {
 	AddEvent("ChangeView1", async function (Ctrl) {
 		document.F.addressbar.value = await Ctrl.FolderItem.Path;
 		Addons.AddressBar.Arrange(Ctrl);
-		document.getElementById("addr_img").src = await GetIconImage(Ctrl, await GetSysColor(COLOR_WINDOW));
+		document.getElementById("addr_img").src = await GetIconImage(Ctrl, CLR_DEFAULT | COLOR_WINDOW);
 	});
 
 	AddEvent("Resize", Addons.AddressBar.Resize);
@@ -292,30 +292,32 @@ if (window.Addon == 1) {
 		SetGestureExec(item.getAttribute("MouseOn"), item.getAttribute("Mouse"), Addons.AddressBar.Exec, "Async");
 	}
 
-	AddTypeEx("Add-ons", "Address Bar", Addons.AddressBar.Exec);
-
-	let s = item.getAttribute("Width");
-	if (s) {
-		if (GetNum(s) == s) {
-			s += "px";
+	AddEvent("Layout", async function () {
+		let s = item.getAttribute("Width");
+		if (s) {
+			if (GetNum(s) == s) {
+				s += "px";
+			}
+		} else {
+			s = "100%";
 		}
-	} else {
-		s = "100%";
-	}
-	const nSize = await api.GetSystemMetrics(SM_CYSMICON);
-	s = ['<div style="position: relative; overflow: hidden"><div id="breadcrumbbuttons" class="breadcrumb" style="position: absolute; left: 1px; top: 1px; padding-left: ', nSize + 4, 'px" onfocus="Addons.AddressBar.Focus()" onclick="return Addons.AddressBar.Exec();"></div><input id="addressbar" type="text" autocomplate="on" list="AddressList" onkeydown="return Addons.AddressBar.KeyDown(event, this)" onfocus="Addons.AddressBar.Focus()" onblur="Addons.AddressBar.Blur()" onresize="Addons.AddressBar.Resize()" oninput="AdjustAutocomplete(this.value)" oncontextmenu="Addons.AddressBar.ContextMenu(this)" style="width: ', EncodeSC(s), '; vertical-align: middle; padding-left: ', nSize + 4, 'px; padding-right: 16px"><div class="breadcrumb"><div id="addressbarselect" class="button" style="position: absolute; top: 1px" onmouseover="MouseOver(this);" onmouseout="MouseOut()" onclick="Addons.AddressBar.Popup3(this)">', BUTTONS.dropdown, '</div></div>'];
+		const nSize = await api.GetSystemMetrics(SM_CYSMICON);
+		s = ['<div style="position: relative; overflow: hidden"><div id="breadcrumbbuttons" class="breadcrumb" style="position: absolute; left: 1px; top: 1px; padding-left: ', nSize + 4, 'px" onfocus="Addons.AddressBar.Focus()" onclick="return Addons.AddressBar.Exec();"></div><input id="addressbar" type="text" autocomplate="on" list="AddressList" onkeydown="return Addons.AddressBar.KeyDown(event, this)" onfocus="Addons.AddressBar.Focus()" onblur="Addons.AddressBar.Blur()" onresize="Addons.AddressBar.Resize()" oninput="AdjustAutocomplete(this.value)" oncontextmenu="Addons.AddressBar.ContextMenu(this)" style="width: ', EncodeSC(s), '; vertical-align: middle; padding-left: ', nSize + 4, 'px; padding-right: 16px"><div class="breadcrumb"><div id="addressbarselect" class="button" style="position: absolute; top: 1px" onmouseover="MouseOver(this);" onmouseout="MouseOut()" onclick="Addons.AddressBar.Popup3(this)">', BUTTONS.dropdown, '</div></div>'];
 
-	s.push('<img id="addr_img" src="', await MakeImgSrc("folder:closed"), '"');
-	s.push(' onclick="return Addons.AddressBar.Exec();"');
-	s.push(' oncontextmenu="Addons.AddressBar.Exec(); return false;"');
-	s.push(' style="position: absolute; left: 4px; top: 1.5pt; width: ', nSize, 'px; height: ', nSize, 'px; z-index: 3; border: 0px"></div>');
+		s.push('<img id="addr_img" src="', await MakeImgSrc("folder:closed"), '"');
+		s.push(' onclick="return Addons.AddressBar.Exec();"');
+		s.push(' oncontextmenu="Addons.AddressBar.Exec(); return false;"');
+		s.push(' style="position: absolute; left: 4px; top: 1.5pt; width: ', nSize, 'px; height: ', nSize, 'px; z-index: 3; border: 0px"></div>');
 
-	SetAddon(Addon_Id, Default, s, "middle");
+		SetAddon(Addon_Id, Default, s, "middle");
+	});
 
 	Common.AddressBar = await api.CreateObject("Object");
 	Common.AddressBar.MenuExec = item.getAttribute("MenuExec");
 	Common.AddressBar.strName = item.getAttribute("MenuName") || await GetAddonInfo(Addon_Id).Name;
 	Common.AddressBar.nPos = GetNum(item.getAttribute("MenuPos"));
+
+	AddTypeEx("Add-ons", "Address Bar", Addons.AddressBar.Exec);
 
 	if (s = item.getAttribute("MenuName")) {
 		Common.AddressBar.strName = s;

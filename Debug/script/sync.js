@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210404 ? te.Version : 20210404;
+		return te.Version < 20210405 ? te.Version : 20210405;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -686,7 +686,7 @@ SaveXmlTC = function (Ctrl, xml, nGroup) {
 		let bSave = IsSavePath(path);
 		if (bSave || (bEmpty && i2 == nCount2 - 1)) {
 			if (!bSave) {
-				path = HOME_PATH;
+				path = "about:blank";
 			}
 			const item2 = xml.createElement("Ctrl");
 			item2.setAttribute("Type", FV.Type);

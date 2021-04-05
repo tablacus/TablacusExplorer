@@ -1,24 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <TablacusExplorer>
   <General>
-    <Version>1.62</Version>
+    <Version>1.00</Version>
     <MinVersion>2021.4.4</MinVersion>
     <pubDate>Mon, 05 Apr 2021 00:00:00 GMT</pubDate>
-    <Options>Common:0,6,7,8,9:0</Options>
     <Level>2</Level>
     <Creator>Gaku</Creator>
     <URL>https://tablacus.github.io/TablacusExplorerAddons/</URL>
     <License>MIT License</License>
   </General>
   <en>
-    <Name>Address bar</Name>
-    <Description>Breadcrumbs and XP style is available.</Description>
+    <Name>Blank page</Name>
+    <Description>Blank page</Description>
   </en>
   <ja>
-    <Name>アドレスバー</Name>
-    <Description>パンくずリスト、XPスタイルが選べます。</Description>
+    <Name>空白ページ</Name>
   </ja>
-  <zh>
-    <Name>位址列</Name>
-  </zh>
 </TablacusExplorer>

@@ -23093,7 +23093,7 @@ STDMETHODIMP CteFolderItem::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			if (dispIdMember > 10) {
 				dispIdMember -= 10;
 			}
-			hr = m_pFolderItem->Invoke(dispIdMember, riid, lcid, wFlags, pDispParams, pVarResult, pExcepInfo, puArgErr);
+			m_pFolderItem->Invoke(dispIdMember, riid, lcid, wFlags, pDispParams, pVarResult, pExcepInfo, puArgErr);
 			if (dispIdMember == m_dispExtendedProperty && pVarResult && nArg >= 0 && !pVarResult->bstrVal && pDispParams->rgvarg[nArg].vt == VT_BSTR) {
 				PROPERTYKEY propKey;
 				if SUCCEEDED(_PSPropertyKeyFromStringEx(pDispParams->rgvarg[nArg].bstrVal, &propKey)) {
@@ -23109,7 +23109,7 @@ STDMETHODIMP CteFolderItem::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 					}
 				}
 			}
-			return hr;
+			return S_OK;
 		}
 	} catch (...) {
 		return teException(pExcepInfo, "FolderItem", methodFI, dispIdMember);
