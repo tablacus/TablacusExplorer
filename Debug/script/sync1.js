@@ -3452,9 +3452,6 @@ InitCode = function () {
 	for (let i in cFV) {
 		cFV[i].ColumnsReplace = null;
 	}
-}
-
-InitMouse = function () {
 	te.Data.Conf_Gestures = isFinite(te.Data.Conf_Gestures) ? Number(te.Data.Conf_Gestures) : 2;
 	if ("string" === typeof te.Data.Conf_TrailColor) {
 		te.Data.Conf_TrailColor = GetWinColor(te.Data.Conf_TrailColor);

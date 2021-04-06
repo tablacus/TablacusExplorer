@@ -38,6 +38,10 @@ InitUI = async function () {
 				return ui_.ScriptEngineMajorVersion;
 			};
 		}
+	} else {
+		try {
+			ui_.NoCssFont = await wsh.regRead("HKCU\\Software\\Microsoft\\Internet Explorer\\Settings\\Always Use My Font Face");
+		} catch (e) { }
 	}
 	if (WINVER > 0x603) {
 		BUTTONS = {
@@ -48,18 +52,12 @@ InitUI = async function () {
 			dropdown: '<b style="font-family: Consolas; transform: scale(1.2,1) rotate(-90deg) translateX(2px); opacity: 0.6; width: 1em; display: inline-block">&lt;</b>'
 		};
 	} else {
-		let s;
-		try {
-			s = await wsh.regRead("HKCU\\Software\\Microsoft\\Internet Explorer\\Settings\\Always Use My Font Face");
-		} catch (e) {
-			s = 0;
-		}
 		BUTTONS = {
 			opened: '<span style="font-size: 10pt; transform: translateY(-2pt)">&#x25e2;</span>',
 			closed: '<span style="font-size: 10pt; transform: scale(1,1.4)">&#x25b7;</span>',
 			parent: '&laquo;',
-			next: s ? '&#x25ba;' : '<span style="font-family: Marlett">4</span>',
-			dropdown: s ? '&#x25bc;' : '<span style="font-family: Marlett">6</span>'
+			next: ui_.NoCssFont ? '&#x25ba;' : '<span style="font-family: Marlett">4</span>',
+			dropdown: ui_.NoCssFont ? '&#x25bc;' : '<span style="font-family: Marlett">6</span>'
 		};
 	}
 	const r = await Promise.all([api.GetDisplayNameOf(ssfSYSTEM, SHGDN_FORPARSING), api.GetModuleFileName(null), sha.GetSystemInformation("DoubleClickTime"), te.hwnd, api.SHTestTokenMembership(null, 0x220), te.Arguments, api.CreateObject("Object"), api.CreateObject("Object"), api.sizeof("HANDLE")]);
@@ -669,10 +667,7 @@ GetRect = async function (el, f) {
 	const rc = await api.Memory("RECT");
 	if (el) {
 		const pt = GetPos(el, f);
-		rc.left = pt.x;
-		rc.top = pt.y;
-		rc.right = pt.x + el.offsetWidth;
-		rc.bottom = pt.y + el.offsetHeight;
+		await api.SetRect(rc, pt.x, pt.y, pt.x + el.offsetWidth, pt.y + el.offsetHeight);
 	}
 	return rc;
 }

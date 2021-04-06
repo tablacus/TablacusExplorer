@@ -113,7 +113,7 @@ if (window.Addon == 1) {
 			if (FV && o && await FV.FolderItem) {
 				const promise = [FV.FolderItem.Path, RunEvent4("GetTabColor", FV), FV.Data.Lock, FV.Data.Protect, CanClose(FV), GetTabName(FV)]
 				if (Addons.TabPlus.opt.Icon) {
-					promise.push(GetIconImage(FV, Addons.TabPlus.opt.clBtnFace));
+					promise.push(GetIconImage(FV, CLR_DEFAULT | COLOR_BTNFACE));
 				}
 				r = await Promise.all(promise);
 				const evTop = document.getElementById("tabplus_" + Id);
@@ -401,10 +401,9 @@ if (window.Addon == 1) {
 			}
 			Addons.TabPlus.tidResize = setTimeout(async function () {
 				Addons.TabPlus.tidResize = null;
-				const cTC = await te.Ctrls(CTRL_TC, true);
-				for (let j = await GetLength(cTC); j-- > 0;) {
-					const TC = await cTC[j];
-					const id = await TC.Id;
+				const cTC = await te.Ctrls(CTRL_TC, true, window.chrome);
+				for (let j = cTC.length; j-- > 0;) {
+					const id = await cTC[j].Id;
 					Addons.TabPlus.Arrange(id);
 					if (Addons.TabPlus.opt.Align > 1) {
 						const elTab = document.getElementById("tabplus_" + id);
@@ -448,10 +447,9 @@ if (window.Addon == 1) {
 		},
 
 		SetRects: async function () {
-			const cTC = await te.Ctrls(CTRL_TC, true);
-			const nCount = await cTC.Count;
-			for (let i = 0; i < nCount; ++i) {
-				const TC = await cTC[i];
+			const cTC = await te.Ctrls(CTRL_TC, true, window.chrome);
+			for (let i = 0; i < cTC.length; ++i) {
+				const TC = cTC[i];
 				const Id = await TC.Id;
 				let o = document.getElementById("tabplus_" + Id);
 				if (o) {
@@ -595,9 +593,6 @@ if (window.Addon == 1) {
 		Addons.TabPlus.ImgProtect = '<img draggable="false" src="' + await MakeImgSrc(s, 0, true, r0) + '" style="width: ' + r0 + 'px">';
 	} else {
 		Addons.TabPlus.ImgProtect = '<span style="font-size: ' + r0 + 'px">&#x2764;</span>';
-	}
-	if (Addons.TabPlus.opt.Icon) {
-		Addons.TabPlus.opt.clBtnFace = await GetSysColor(COLOR_BTNFACE);
 	}
 } else {
 	const Icon = document.F.Icon;

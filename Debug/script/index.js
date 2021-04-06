@@ -294,10 +294,7 @@ OnArrange = async function (Ctrl, rc) {
 				r[2] -= el.offsetWidth;
 			}
 			r[3] -= document.getElementById("InnerBottom_" + Id).offsetHeight;
-			rc.left = r[0];
-			rc.top = r[1];
-			rc.right = r[2];
-			rc.bottom = r[3];
+			api.SetRect(rc, r[0], r[1], r[2], r[3]);
 			document.getElementById("Inner2Center_" + Id).style.height = Math.max(r[3] - r[1], 0) + "px";
 			te.ArrangeCB(Ctrl, rc);
 		});
@@ -434,8 +431,9 @@ document.addEventListener("FullscreenChange", function () {
 
 Init = async function () {
 	te.Data.MainWindow = $;
+	te.Data.NoCssFont = ui_.NoCssFont;
 	await InitCode();
-	const r = await Promise.all([te.Data.DataFolder, $.DefaultFont, $.HOME_PATH, $.OpenMode, $.DefaultFont.lfFaceName, $.DefaultFont.lfHeight, $.DefaultFont.lfWeight, InitMouse(), InitMenus(), LoadLang()]);
+	const r = await Promise.all([te.Data.DataFolder, $.DefaultFont, $.HOME_PATH, $.OpenMode, $.DefaultFont.lfFaceName, $.DefaultFont.lfHeight, $.DefaultFont.lfWeight, InitMenus(), LoadLang()]);
 	ui_.DataFolder = r[0];
 	DefaultFont = r[1];
 	HOME_PATH = r[2];

@@ -68,6 +68,7 @@ LPFNRegQueryValueW _RegQueryValueW = NULL;
 LPFNGetSysColor _GetSysColor = NULL;
 LPFNOpenNcThemeData _OpenNcThemeData = NULL;
 #endif
+#define teVariantCopy(d, s)     if (d) { VariantCopy(d, s); }
 
 FORMATETC HDROPFormat = {CF_HDROP, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
 FORMATETC IDLISTFormat = {0, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
@@ -6675,7 +6676,7 @@ VOID teGetDisplayNameOf(VARIANT *pv, int uFlags, VARIANT *pVarResult)
 		IUnknown *punk;
 		if (pv->vt == VT_BSTR) {
 			if (!(uFlags & SHGDN_INFOLDER)) {
-				VariantCopy(pVarResult, pv);
+				teVariantCopy(pVarResult, pv);
 				return;
 			}
 		} else if (FindUnknown(pv, &punk)) {
@@ -7438,7 +7439,7 @@ VOID teApiGetProcObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 		LPFNGetProcObjectW _GetProcObjectW = (LPFNGetProcObjectW)GetProcAddress(hDll, lpProcNameA);
 		if (_GetProcObjectW) {
 			if (nArg >= 2) {
-				VariantCopy(pVarResult, &pDispParams->rgvarg[nArg - 2]);
+				teVariantCopy(pVarResult, &pDispParams->rgvarg[nArg - 2]);
 			}
 			_GetProcObjectW(pVarResult);
 			IDispatch *pdisp;
@@ -10273,6 +10274,12 @@ VOID teApiSetLayeredWindowAttributes(int nArg, teParam *param, DISPPARAMS *pDisp
 	teSetBool(pVarResult, SetLayeredWindowAttributes(param[0].hwnd, param[1].colorref, param[2].bVal, param[3].dword));
 }
 
+VOID teApiSetRect(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	SetRect(param[0].lprect, param[1].intVal, param[2].intVal, param[3].intVal, param[4].intVal);
+	teVariantCopy(pVarResult, &pDispParams->rgvarg[nArg]);
+}
+
 #ifdef _DEBUG
 VOID teApimciSendString(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -10661,6 +10668,7 @@ TEDispatchApi dispAPI[] = {
 	{ 2,  1, -1, -1, "ObjDelete", teApiObjDelete },
 	{ 2, -1, -1, -1, "GetDeviceCaps", teApiGetDeviceCaps },
 	{ 4, -1, -1, -1, "SetLayeredWindowAttributes", teApiSetLayeredWindowAttributes },
+	{ 1, -1, -1, -1, "SetRect", teApiSetRect },
 #ifdef _DEBUG
 	{ 4,  0, -1, -1, "mciSendString", teApimciSendString },
 	{ 4,  1, -1, -1, "GetGlyphIndices", teApiGetGlyphIndices },
@@ -12965,35 +12973,43 @@ HRESULT CteShellBrowser::OnBeforeNavigate(FolderItem *pPrevious, UINT wFlags)
 	return hr;
 }
 
+VOID CteShellBrowser::GetFocusedItem(LPITEMIDLIST *ppidl)
+{
+	if (!m_pShellView) {
+		return;
+	}
+	IFolderView *pFV;
+	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
+		int i = 0;
+		pFV->ItemCount(SVGIO_SELECTION, &i);
+		if (i == 1) {
+			if SUCCEEDED(pFV->GetFocusedItem(&i)) {
+				teILFreeClear(ppidl);
+				pFV->Item(i, ppidl);
+			}
+		}
+		pFV->Release();
+	}
+}
+
 VOID CteShellBrowser::SaveFocusedItemToHistory()
 {
-	if (m_uLogIndex < m_ppLog.size() && m_pShellView) {
-		IFolderView *pFV;
-		if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
-			int i = 0;
-			pFV->ItemCount(SVGIO_SELECTION, &i);
-			if (i == 1) {
-				if SUCCEEDED(pFV->GetFocusedItem(&i)) {
-					CteFolderItem *pid1 = NULL;
-					teQueryFolderItem(&m_ppLog[m_uLogIndex], &pid1);
-					teILFreeClear(&pid1->m_pidlFocused);
-					pFV->Item(i, &pid1->m_pidlFocused);
-					pid1->Release();
-				}
-			}
-			pFV->Release();
-		}
+	if (m_uLogIndex < m_ppLog.size()) {
+		CteFolderItem *pid1 = NULL;
+		teQueryFolderItem(&m_ppLog[m_uLogIndex], &pid1);
+		GetFocusedItem(&pid1->m_pidlFocused);
 	}
 }
 
 VOID CteShellBrowser::FocusItem()
 {
+	if (!m_pShellView) {
+		return;
+	}
 	CteFolderItem *pid;
 	if (m_pFolderItem && !m_dwUnavailable && SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid))) {
 		if (pid->m_pidlFocused) {
-			if ((m_param[SB_FolderFlags] & FWF_AUTOCHECKSELECT) == 0) { //21.4.4 (5ch#7-933)
-				SelectItemEx(pid->m_pidlFocused, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK | SVSI_SELECT);
-			}
+			SelectItemEx(pid->m_pidlFocused, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK | SVSI_SELECT);
 			teILFreeClear(&pid->m_pidlFocused);
 		}
 		m_dwUnavailable = pid->m_dwUnavailable;
@@ -14234,9 +14250,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				VariantClear(&m_vData);
 				VariantCopy(&m_vData, &pDispParams->rgvarg[nArg]);
 			}
-			if (pVarResult) {
-				VariantCopy(pVarResult, &m_vData);
-			}
+			teVariantCopy(pVarResult, &m_vData);
 			return S_OK;
 			
 		case TE_PROPERTY + 0xf002://hwnd
@@ -15622,7 +15636,10 @@ STDMETHODIMP CteShellBrowser::SelectItem(VARIANT *pvfi, int dwFlags)
 			pFV->ItemCount(SVGIO_ALLVIEW, &nCount);
 			if (nIndex < nCount) {
 				teFixListState(m_hwndLV, dwFlags);
-				hr = pFV->SelectItem(nIndex, dwFlags);
+				if (dwFlags & SVSI_SELECTIONMARK) {
+					pFV->SelectItem(nIndex, SVSI_SELECTIONMARK | SVSI_NOTAKEFOCUS);
+				}
+				hr = pFV->SelectItem(nIndex, dwFlags & ~SVSI_SELECTIONMARK);
 			}
 			pFV->Release();
 			if (hr == S_OK) {
@@ -15639,9 +15656,12 @@ STDMETHODIMP CteShellBrowser::SelectItem(VARIANT *pvfi, int dwFlags)
 				teCoTaskMemFree(ppidllist[0]);
 				teFixListState(m_hwndLV, dwFlags);
 				for (int i = 1; i <= nCount; ++i) {
-					m_pShellView->SelectItem(ppidllist[i], dwFlags);
+					if (dwFlags & SVSI_SELECTIONMARK) {
+						m_pShellView->SelectItem(ppidllist[i], SVSI_SELECTIONMARK | SVSI_NOTAKEFOCUS);
+					}
+					m_pShellView->SelectItem(ppidllist[i], dwFlags & ~SVSI_SELECTIONMARK);
 					teCoTaskMemFree(ppidllist[i]);
-					dwFlags &= ~(SVSI_FOCUSED | SVSI_DESELECTOTHERS);
+					dwFlags &= ~(SVSI_FOCUSED | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK);
 				}
 			}
 			delete [] ppidllist;
@@ -15667,13 +15687,10 @@ HRESULT CteShellBrowser::SelectItemEx(LPITEMIDLIST pidl, int dwFlags)
 	if (m_pShellView) {
 		teFixListState(m_hwndLV, dwFlags);
 		LPITEMIDLIST pidlLast = ILFindLastID(pidl);
-		hr = m_pShellView->SelectItem(pidlLast, dwFlags);
-		if ((dwFlags & (SVSI_SELECTIONMARK | SVSI_SELECT)) == (SVSI_SELECTIONMARK | SVSI_SELECT)) {
-			m_pShellView->SelectItem(pidlLast, dwFlags & (SVSI_NOTAKEFOCUS | SVSI_SELECT));
+		if (dwFlags & SVSI_SELECTIONMARK) {
+			m_pShellView->SelectItem(pidlLast, SVSI_SELECTIONMARK | SVSI_NOTAKEFOCUS);
 		}
-		if (m_hwndLV && (dwFlags & (SVSI_FOCUSED | SVSI_ENSUREVISIBLE)) == (SVSI_FOCUSED | SVSI_ENSUREVISIBLE)) {
-			m_pShellView->SelectItem(pidlLast, dwFlags);
-		}
+		hr = m_pShellView->SelectItem(pidlLast, dwFlags & ~SVSI_SELECTIONMARK);
 	}
 	return hr;
 }
@@ -17250,9 +17267,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 					VariantClear(&g_vData);
 					VariantCopy(&g_vData, &pDispParams->rgvarg[nArg]);
 				}
-				if (pVarResult) {
-					VariantCopy(pVarResult, &g_vData);
-				}
+				teVariantCopy(pVarResult, &g_vData);
 				return S_OK;
 			//hwnd
 			case 1002:
@@ -17518,7 +17533,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 					VariantClear(&g_vArguments);
 					VariantCopy(&g_vArguments, &pDispParams->rgvarg[nArg]);
 				} else {
-					VariantCopy(pVarResult, &g_vArguments);
+					teVariantCopy(pVarResult, &g_vArguments);
 					VariantClear(&g_vArguments);
 				}
 				return S_OK;
@@ -18108,9 +18123,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				VariantClear(&m_vData);
 				VariantCopy(&m_vData, &pDispParams->rgvarg[nArg]);
 			}
-			if (pVarResult) {
-				VariantCopy(pVarResult, &m_vData);
-			}
+			teVariantCopy(pVarResult, &m_vData);
 			return S_OK;
 			
 		case TE_PROPERTY + 2://hwnd
@@ -19000,9 +19013,7 @@ STDMETHODIMP CteTabCtrl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WOR
 				VariantClear(&m_vData);
 				VariantCopy(&m_vData, &pDispParams->rgvarg[nArg]);
 			}
-			if (pVarResult) {
-				VariantCopy(pVarResult, &m_vData);
-			}
+			teVariantCopy(pVarResult, &m_vData);
 			return S_OK;
 
 		case TE_PROPERTY + 2://hwnd
@@ -19707,9 +19718,7 @@ STDMETHODIMP CteFolderItems::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 				VariantClear(&m_vData);
 				VariantCopy(&m_vData, &pDispParams->rgvarg[nArg]);
 			}
-			if (pVarResult) {
-				VariantCopy(pVarResult, &m_vData);
-			}
+			teVariantCopy(pVarResult, &m_vData);
 			return S_OK;
 
 		case TE_PROPERTY + 0x1004://Text
@@ -20783,7 +20792,7 @@ VOID CteMemory::Read(int nIndex, int nLen, VARIANT *pVarResult)
 				teCoTaskMemFree(lpsz);
 				break;
 			case VT_VARIANT:
-				VariantCopy(pVarResult, (VARIANT *)pFrom);
+				teVariantCopy(pVarResult, (VARIANT *)pFrom);
 				break;
 /*			case VT_RECORD:
 				teSetIDList(pVarResult, *(LPITEMIDLIST *)&m_pc[nIndex]);
@@ -20904,7 +20913,7 @@ VOID CteMemory::Write(int nIndex, int nLen, VARTYPE vt, VARIANT *pv)
 				}
 				break;
 			case VT_VARIANT:
-				VariantCopy((VARIANT *)pDest, pv);
+				teVariantCopy((VARIANT *)pDest, pv);
 				break;
 /*			case VT_RECORD:
 				LPITEMIDLIST *ppidl;
@@ -21821,9 +21830,7 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 				VariantClear(&m_vData);
 				VariantCopy(&m_vData, &pDispParams->rgvarg[nArg]);
 			}
-			if (pVarResult) {
-				VariantCopy(pVarResult, &m_vData);
-			}
+			teVariantCopy(pVarResult, &m_vData);
 			return S_OK;
 
 		case TE_PROPERTY + 0x1002://Type
@@ -25983,7 +25990,7 @@ STDMETHODIMP CteEnumerator::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 		return S_OK;
 
 	case TE_METHOD + 2://item
-		VariantCopy(pVarResult, &m_vItem);
+		teVariantCopy(pVarResult, &m_vItem);
 		return S_OK;
 
 	case TE_METHOD + 3://moveFirst

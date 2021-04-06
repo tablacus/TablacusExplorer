@@ -524,6 +524,7 @@ public:
 	VOID SetColumnsStr(BSTR bsColumns);
 	BSTR GetColumnsStr(int nFormat);
 	VOID GetDefaultColumns();
+	VOID GetFocusedItem(LPITEMIDLIST *ppidl);
 	VOID SaveFocusedItemToHistory();
 	VOID FocusItem();
 	HRESULT GetAbsPath(FolderItem *pid, UINT wFlags, FolderItems *pFolderItems, FolderItem *pPrevious, CteShellBrowser *pHistSB);

@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210405 ? te.Version : 20210405;
+		return te.Version < 20210406 ? te.Version : 20210406;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -973,6 +973,7 @@ CreateFont = function (LogFont) {
 	const key = [LogFont.lfFaceName, LogFont.lfHeight, LogFont.lfCharSet, LogFont.lfWeight, LogFont.lfItalic, LogFont.lfUnderline].join("\t");
 	let hFont = te.Data.Fonts[key];
 	if (!hFont) {
+		LogFont.lfCharSet = 1;
 		hFont = api.CreateFontIndirect(LogFont);
 		te.Data.Fonts[key] = hFont;
 	}
@@ -1291,9 +1292,6 @@ MakeImgSrc = function (src, index, bSrc, h, clBk) {
 			if (fso.FileExists(fn)) {
 				return fn;
 			}
-			if (fn = g_.DefaultIcons[icon[0].toLowerCase()]) {
-				src = fn + icon[1];
-			}
 		}
 	}
 	if (g_.IEVer < 8) {
@@ -1340,9 +1338,48 @@ MakeImgIcon = function (src, index, h, bIcon, clBk) {
 	if ("number" === typeof src) {
 		return src;
 	}
-	let res = /^bitmap:(.+)/i.exec(src);
+	let res = /^icon:(.+)/i.exec(src);
 	if (res) {
 		const icon = res[1].split(",");
+		if (!/\\/.test(icon[0])) {
+			let image = api.CreateObject("WICBitmap").FromFile(BuildPath(te.Data.DataFolder, "icons", icon[0].replace(/\..*/, ""), icon[1] + ".png"));
+			if (image) {
+				if (h) {
+					image = GetThumbnail(image, h, true);
+				}
+				return image.GetHICON();
+			}
+			const fn = g_.DefaultIcons[icon[0].toLowerCase()];
+			if (fn) {
+				src = fn + icon[1];
+			}
+		}
+		if (SameText(icon[0], "shell32.dll")) {
+			const dw = { 3: SHGFI_SYSICONINDEX | SHGFI_USEFILEATTRIBUTES, 4: SHGFI_SYSICONINDEX | SHGFI_OPENICON | SHGFI_USEFILEATTRIBUTES }[res[1]];
+			if (dw) {
+				const sfi = api.Memory("SHFILEINFO");
+				api.SHGetFileInfo("*", FILE_ATTRIBUTE_DIRECTORY, sfi, sfi.Size, dw);
+				return GetHICON(sfi.iIcon, h, ILD_NORMAL);
+			}
+		}
+		const phIcon = api.Memory("HANDLE");
+		if (icon[index * 4 + 2]) {
+			h = icon[index * 4 + 2];
+		} else if (!h) {
+			h = api.GetSystemMetrics(SM_CYSMICON);
+		}
+		if (h > 16) {
+			api.SHDefExtractIcon(icon[index * 4], icon[index * 4 + 1], 0, phIcon, null, h);
+		} else {
+			api.SHDefExtractIcon(icon[index * 4], icon[index * 4 + 1], 0, null, phIcon, h << 16);
+		}
+		if (phIcon[0]) {
+			return phIcon[0];
+		}
+	}
+	res = /^bitmap:(.+)/i.exec(src);
+	if (res) {
+		let icon = res[1].split(",");
 		const ar = [
 			["bitmap:ieframe.dll,206,16,", "bitmap:ExplorerFrame.dll,264,16,", 16, "browser"],
 			["bitmap:ieframe.dll,204,24,", "bitmap:ExplorerFrame.dll,264,16,", 16, "browser"],
@@ -1366,6 +1403,7 @@ MakeImgIcon = function (src, index, h, bIcon, clBk) {
 				if (i & 1 && h && h <= 16) {
 					src = ar[i - 1][0] + src.substr(a2[0].length);
 				}
+				icon = src.replace(/^bitmap:/, "").split(",");
 			}
 		}
 		const hModule = LoadImgDll(icon, index);
@@ -1401,39 +1439,7 @@ MakeImgIcon = function (src, index, h, bIcon, clBk) {
 			return hIcon;
 		}
 	}
-	res = /^icon:(.+)/i.exec(src);
-	if (res) {
-		const icon = res[1].split(",");
-		if (!/\\/.test(icon[0])) {
-			const image = api.CreateObject("WICBitmap").FromFile(BuildPath(te.Data.DataFolder, "icons", icon[0].replace(/\..*/, ""), icon[1] + ".png"));
-			if (image) {
-				return image.GetHICON();
-			}
-		}
-		if (SameText(icon[0], "shell32.dll")) {
-			const dw = { 3: SHGFI_SYSICONINDEX | SHGFI_USEFILEATTRIBUTES, 4: SHGFI_SYSICONINDEX | SHGFI_OPENICON | SHGFI_USEFILEATTRIBUTES }[res[1]];
-			if (dw) {
-				const sfi = api.Memory("SHFILEINFO");
-				api.SHGetFileInfo("*", FILE_ATTRIBUTE_DIRECTORY, sfi, sfi.Size, dw);
-				return GetHICON(sfi.iIcon, h, ILD_NORMAL);
-			}
-		}
-		const phIcon = api.Memory("HANDLE");
-		if (icon[index * 4 + 2]) {
-			h = icon[index * 4 + 2];
-		} else if (!h) {
-			h = api.GetSystemMetrics(SM_CYSMICON);
-		}
-		if (h > 16) {
-			api.SHDefExtractIcon(icon[index * 4], icon[index * 4 + 1], 0, phIcon, null, h);
-		} else {
-			api.SHDefExtractIcon(icon[index * 4], icon[index * 4 + 1], 0, null, phIcon, h << 16);
-		}
-		if (phIcon[0]) {
-			return phIcon[0];
-		}
-	}
-	res = /^font:([^,]*),([\da-fx,]+)/i.exec(src);
+	res = /^font2?:([^,]*),([\da-fx,]+)/i.exec(src);
 	if (res) {
 		if (!h) {
 			h = api.GetSystemMetrics(SM_CYSMICON);
@@ -1461,12 +1467,12 @@ MakeImgIcon = function (src, index, h, bIcon, clBk) {
 		let c = res[2].split(",");
 		c = String.fromCodePoint(c.length > 1 ? parseInt(c[0]) * 256 + parseInt(c[1]) : parseInt(c[0]));
 		api.DrawText(hmdc, c, -1, rc, DT_CALCRECT | DT_NOCLIP);
-		lf.lfHeight = -h * (h / (rc.bottom || h));
-		rc.left = 0;
-		rc.top = 0;
-		rc.right = h;
-		rc.bottom = h;
-		api.SelectObject(hmdc, CreateFont(lf));
+		const h2 = Math.min(h, Math.ceil(h * (h / (Math.max(rc.bottom, rc.right) || h))));
+		if (h != h2) {
+			lf.lfHeight = -h2;
+			api.SelectObject(hmdc, CreateFont(lf));
+		}
+		api.SetRect(rc, 0, 0, h, h);
 		api.DrawText(hmdc, c, -1, rc, DT_CENTER);
 		api.SelectObject(hmdc, hfontOld);
 		api.SelectObject(hmdc, hOld);

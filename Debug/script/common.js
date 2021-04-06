@@ -131,7 +131,7 @@ ExtractAttr = function (o, ar, re) {
 
 GetImgTag = async function (o, h) {
 	if (o.src) {
-		const res = /^font:([^,]*),([\da-fx,]+)/i.exec(await MainWindow.RunEvent4("ReplaceIcon", o.src) || o.src);
+		const res = !(window.ui_ || te.Data).NoCssFont && /^font:([^,]*),([\da-fx,]+)/i.exec(await MainWindow.RunEvent4("ReplaceIcon", o.src) || o.src);
 		if (res) {
 			const FontFace = res[1].replace(/\"/g, '\\"');
 			let c = res[2].split(",");
