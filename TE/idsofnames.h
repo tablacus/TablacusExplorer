@@ -906,6 +906,7 @@ TEmethod methodTC[] = {
 	{ TE_PROPERTY + 12, "Id" },
 	{ TE_METHOD + 13, "LockUpdate" },
 	{ TE_METHOD + 14, "UnlockUpdate" },
+	{ TE_METHOD + 15, "SetOrder" },
 	{ DISPID_NEWENUM, "_NewEnum" },
 	{ DISPID_TE_ITEM, "Item" },
 	{ DISPID_TE_COUNT, "Count" },

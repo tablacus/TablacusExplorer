@@ -13009,6 +13009,7 @@ VOID CteShellBrowser::FocusItem()
 	CteFolderItem *pid;
 	if (m_pFolderItem && !m_dwUnavailable && SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid))) {
 		if (pid->m_pidlFocused) {
+			teFixListState(m_hwndLV, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK | SVSI_SELECT);
 			SelectItemEx(pid->m_pidlFocused, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK | SVSI_SELECT);
 			teILFreeClear(&pid->m_pidlFocused);
 		}
@@ -15626,17 +15627,20 @@ STDMETHODIMP CteShellBrowser::get_FocusedItem(FolderItem **ppid)
 
 STDMETHODIMP CteShellBrowser::SelectItem(VARIANT *pvfi, int dwFlags)
 {
+	if (!m_pShellView) {
+		return E_FAIL;
+	}
 	LPITEMIDLIST pidl;
 	if (teVarIsNumber(pvfi)) {
 		HRESULT hr = E_FAIL;
 		IFolderView *pFV;
-		if (m_pShellView && SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV)))) {
+		if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
 			int nIndex = GetIntFromVariant(pvfi);
 			int nCount = 0;
 			pFV->ItemCount(SVGIO_ALLVIEW, &nCount);
 			if (nIndex < nCount) {
 				teFixListState(m_hwndLV, dwFlags);
-				if (dwFlags & SVSI_SELECTIONMARK) {
+				if (dwFlags & SVSI_SELECTIONMARK) {//21.4.7
 					pFV->SelectItem(nIndex, SVSI_SELECTIONMARK | SVSI_NOTAKEFOCUS);
 				}
 				hr = pFV->SelectItem(nIndex, dwFlags & ~SVSI_SELECTIONMARK);
@@ -15652,17 +15656,12 @@ STDMETHODIMP CteShellBrowser::SelectItem(VARIANT *pvfi, int dwFlags)
 		long nCount;
 		LPITEMIDLIST *ppidllist = IDListFormDataObj(pDataObj, &nCount);
 		if (ppidllist) {
-			if (ppidllist[0]) {
-				teCoTaskMemFree(ppidllist[0]);
-				teFixListState(m_hwndLV, dwFlags);
-				for (int i = 1; i <= nCount; ++i) {
-					if (dwFlags & SVSI_SELECTIONMARK) {
-						m_pShellView->SelectItem(ppidllist[i], SVSI_SELECTIONMARK | SVSI_NOTAKEFOCUS);
-					}
-					m_pShellView->SelectItem(ppidllist[i], dwFlags & ~SVSI_SELECTIONMARK);
-					teCoTaskMemFree(ppidllist[i]);
-					dwFlags &= ~(SVSI_FOCUSED | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK);
-				}
+			teCoTaskMemFree(ppidllist[0]);
+			teFixListState(m_hwndLV, dwFlags);
+			for (int i = 1; i <= nCount; ++i) {
+				SelectItemEx(ppidllist[i], dwFlags);
+				teCoTaskMemFree(ppidllist[i]);
+				dwFlags &= ~(SVSI_FOCUSED | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK);
 			}
 			delete [] ppidllist;
 			SafeRelease(&pDataObj);
@@ -15685,9 +15684,8 @@ HRESULT CteShellBrowser::SelectItemEx(LPITEMIDLIST pidl, int dwFlags)
 {
 	HRESULT hr = E_FAIL;
 	if (m_pShellView) {
-		teFixListState(m_hwndLV, dwFlags);
 		LPITEMIDLIST pidlLast = ILFindLastID(pidl);
-		if (dwFlags & SVSI_SELECTIONMARK) {
+		if (dwFlags & SVSI_SELECTIONMARK) {//21.4.7
 			m_pShellView->SelectItem(pidlLast, SVSI_SELECTIONMARK | SVSI_NOTAKEFOCUS);
 		}
 		hr = m_pShellView->SelectItem(pidlLast, dwFlags & ~SVSI_SELECTIONMARK);
@@ -19117,21 +19115,60 @@ STDMETHODIMP CteTabCtrl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WOR
 		case TE_PROPERTY + 12://Id
 			teSetLong(pVarResult, m_nTC);
 			return S_OK;
-			//LockUpdate
-		case TE_METHOD + 13:
+
+		case TE_METHOD + 13://LockUpdate
 			LockUpdate();
 			return S_OK;
-			//UnlockUpdate
-		case TE_METHOD + 14:
+
+		case TE_METHOD + 14://UnlockUpdate
 			UnlockUpdate();
 			return S_OK;
-			//Item
-		case DISPID_TE_ITEM:
+
+		case TE_METHOD + 15://SetOrder
+			if (nArg >= 0) {
+				IDispatch *pdisp;
+				if (GetDispatch(&pDispParams->rgvarg[nArg], &pdisp)) {
+					int nTabs = teGetObjectLength(pdisp);
+					if (nTabs == TabCtrl_GetItemCount(m_hwnd)) {
+						TC_ITEM *tabs = new TC_ITEM[nTabs];
+						LPWSTR *ppszText = new LPWSTR[nTabs];
+						for (int i = nTabs; --i >= 0;) {
+							ppszText[i] = new WCHAR[MAX_PATH];
+							tabs[i].cchTextMax = MAX_PATH;
+							tabs[i].pszText = ppszText[i];
+							tabs[i].mask = TCIF_IMAGE | TCIF_PARAM | TCIF_TEXT;
+							TabCtrl_GetItem(m_hwnd, i, &tabs[i]);
+						}
+						int nSel = TabCtrl_GetCurFocus(m_hwnd);
+						int nNew = -1;
+						VARIANT v;
+						VariantInit(&v);
+						for (int i = 0; i < nTabs; ++i) {
+							teGetPropertyAt(pdisp, i, &v);
+							int j = GetIntFromVariantClear(&v);
+							if (i != j) {
+								TabCtrl_SetItem(m_hwnd, i, &tabs[j]);
+							}
+							if (j == nSel) {
+								nNew = i;
+							}
+							delete[] ppszText[j];
+						}
+						delete[] ppszText;
+						delete[] tabs;
+						TabCtrl_SetCurFocus(m_hwnd, nNew);
+						ArrangeWindow();
+					}
+				}
+			}
+			return S_OK;
+
+		case DISPID_TE_ITEM://Item
 			if (nArg >= 0) {
 				GetItem(GetIntFromVariant(&pDispParams->rgvarg[nArg]), pVarResult);
 			}
-			return S_OK;
-			//Count
+			return S_OK;//Count
+
 		case DISPID_TE_COUNT:
 			if (pVarResult) {
 				teSetLong(pVarResult, TabCtrl_GetItemCount(m_hwnd));

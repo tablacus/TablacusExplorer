@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210406 ? te.Version : 20210406;
+		return te.Version < 20210407 ? te.Version : 20210407;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1456,7 +1456,7 @@ MakeImgIcon = function (src, index, h, bIcon, clBk) {
 			clBk = GetSysColor(clBk & 31);
 		}
 		const clBk1 = GetBGRA(clBk, 255);
-		const cl = (clBk1 & 0xff0000) * .0045623779296875 + (clBk1 & 0xff00) * 2.29296875 + (clBk1 & 0xff) * 114 > 127000 ? 0 : 0xffffff;
+		const cl = (clBk1 & 0xff0000) * .0045623779296875 + (clBk1 & 0xff00) * 2.29296875 + (clBk1 & 0xff) * 114 > 127500 ? 0 : 0xffffff;
 		api.SetTextColor(hmdc, 0xffffff);
 		api.SetBkMode(hmdc, 1);
 		const lf = api.Memory("LOGFONT");
@@ -2102,31 +2102,6 @@ ExecMenu2 = function (Name, x, y) {
 
 AdjustMenuBreak = function (hMenu) {
 	const mii = api.Memory("MENUITEMINFO");
-	let uFlags = 0;
-	for (let i = api.GetMenuItemCount(hMenu); i-- > 0;) {
-		mii.fMask = MIIM_FTYPE | MIIM_SUBMENU;
-		api.GetMenuItemInfo(hMenu, i, true, mii);
-		if (api.GetMenuString(hMenu, i, MF_BYPOSITION) != "") {
-			mii.fType |= uFlags;
-			api.SetMenuItemInfo(hMenu, i, true, mii);
-			uFlags = 0;
-			if (mii.hSubMenu) {
-				AdjustMenuBreak(mii.hSubMenu);
-			}
-			continue;
-		}
-		if (mii.hSubMenu) {
-			AdjustMenuBreak(mii.hSubMenu);
-			continue;
-		}
-		const u = mii.fType & (MFT_MENUBREAK | MFT_MENUBARBREAK);
-		if (u && api.DeleteMenu(hMenu, i, MF_BYPOSITION)) {
-			++i;
-			uFlags = u;
-		} else {
-			uFlags = 0;
-		}
-	}
 	for (let i = api.GetMenuItemCount(hMenu); i--;) {
 		mii.fMask = MIIM_FTYPE;
 		api.GetMenuItemInfo(hMenu, i, true, mii);
@@ -2136,14 +2111,42 @@ AdjustMenuBreak = function (hMenu) {
 		}
 		break;
 	}
-	uFlags = 0;
-	for (let i = api.GetMenuItemCount(hMenu); i--;) {
-		mii.fMask = MIIM_FTYPE;
+	let uFlags = 0, i = 0, j = 0;
+	while (i < api.GetMenuItemCount(hMenu)) {
+		mii.fMask = MIIM_FTYPE | MIIM_SUBMENU;
 		api.GetMenuItemInfo(hMenu, i, true, mii);
-		if (uFlags & mii.fType & MFT_SEPARATOR) {
-			api.DeleteMenu(hMenu, i, MF_BYPOSITION);
+		if (mii.hSubMenu) {
+			AdjustMenuBreak(mii.hSubMenu);
 		}
-		uFlags = mii.fType;
+		if (uFlags) {
+			if (mii.fType & MFT_SEPARATOR) {
+				api.DeleteMenu(hMenu, i, MF_BYPOSITION);
+				continue;
+			}
+			if (uFlags & MFT_SEPARATOR) {
+				if (mii.fType & (MFT_MENUBREAK | MFT_MENUBARBREAK)) {
+					if (api.DeleteMenu(hMenu, j, MF_BYPOSITION)) {
+						--i;
+					}
+				}
+			}
+			if (uFlags & (MFT_MENUBREAK | MFT_MENUBARBREAK)) {
+				if (api.GetMenuString(hMenu, i, MF_BYPOSITION) != "") {
+					mii.fType |= uFlags;
+					api.SetMenuItemInfo(hMenu, i, true, mii);
+					uFlags = 0;
+				}
+				++i;
+				continue;
+			}
+		}
+		const u = mii.fType & (MFT_MENUBREAK | MFT_MENUBARBREAK);
+		if (u && api.DeleteMenu(hMenu, i, MF_BYPOSITION)) {
+			uFlags = u;
+			continue;
+		}
+		uFlags = mii.fType & MFT_SEPARATOR;
+		j = i++;
 	}
 }
 
