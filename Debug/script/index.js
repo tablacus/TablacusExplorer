@@ -360,13 +360,13 @@ ArrangeAddons = async function () {
 	if (window.chrome) {
 		AddEvent("BrowserCreatedEx", "api.ShowWindow(await GetTopWindow(), SW_SHOWNORMAL);");
 	}
+	await RunEventUI1("Layout");
 	setTimeout(async function () {
-		const cl = await GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor);
 		AddEvent("Load", function () {
 			te.OnArrange = OnArrange;
 			document.F.style.visibility = "";
 		});
-		ArrangeAddons1(cl);
+		ArrangeAddons1(await GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor));
 	}, 99);
 }
 

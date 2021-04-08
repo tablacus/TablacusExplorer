@@ -185,10 +185,6 @@ ExecJavaScript = async function () {
 AddEventUI = function (Name, fn, priority) {
 	if (Name) {
 		const en = Name.toLowerCase();
-		if (en === "layout") {
-			api.Invoke(fn);
-			return;
-		}
 		if (!ui_.eventTE[en]) {
 			ui_.eventTE[en] = [];
 		}

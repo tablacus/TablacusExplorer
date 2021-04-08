@@ -566,6 +566,7 @@ public:
 	BOOL HasFilter();
 	int GetSizeFormat();
 	VOID SetObjectRect();
+	int GetFolderViewAndItemCount(IFolderView **ppFV, UINT uFlags);
 #if defined(_USE_SHELLBROWSER) || defined(_2000XP)
 	HRESULT NavigateSB(IShellView *pPreviousView, FolderItem *pPrevious);
 #endif
