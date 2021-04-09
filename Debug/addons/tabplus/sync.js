@@ -26,6 +26,54 @@ Sync.TabPlus = {
 				return TC;
 			}
 		}
+	},
+
+	DropTab: function (FV, hwnd, pt) {
+		const sw = sha.Windows();
+		for (let i = 0; i < sw.Count; ++i) {
+			const x = sw.item(i);
+			if (x) {
+				const w = x.Document.parentWindow;
+				if (w && w.te && w.te.hwnd) {
+					if (w.te.hwnd || hwnd, api.IsChild(w.te.hwnd, hwnd)) {
+						const ptc = pt.Clone();
+						api.ScreenToClient(w.WebBrowser.hwnd, ptc);
+						const rc = api.Memory("RECT");
+						api.GetClientRect(w.te.hwnd, rc);
+						rc.left += w.te.offsetLeft;
+						rc.top += w.te.offsetTop;
+						rc.right -= w.te.offsetRight;
+						rc.bottom -= w.te.offsetBottom;
+						const cTC = w.te.Ctrls(CTRL_TC, true);
+						for (let i = 0; i < cTC.length; ++i) {
+							const TC = cTC[i];
+							const left = Sync.TabPlus.GetData(rc, TC.Left);
+							const top = Sync.TabPlus.GetData(rc, TC.Top);
+							const right = left + Sync.TabPlus.GetData(rc, TC.Width);
+							const bottom = top + Sync.TabPlus.GetData(rc, TC.Height);
+							if (ptc.x >= left && ptc.x < right && ptc.y >= top && ptc.y < bottom) {
+								w.NavigateFV(TC.Selected, FV.FolderItem.Path, SBSP_NEWBROWSER);
+								FV.Close();
+								return;
+							}
+						}
+						w.Navigate(FV.FolderItem.Path, SBSP_NEWBROWSER);
+						FV.Close();
+						return;
+					}
+				}
+			}
+		}
+		($.OpenInNewWindow || OpenInExplorer)(FV);
+		FV.Close();
+	},
+
+	GetData: function (rc, i) {
+		const res = /^([\d\.]+)%$/.exec(i);
+		if (res) {
+			i = (rc.right - rc.left) * res[1] / 100;
+		}
+		return i;
 	}
 }
 
@@ -46,6 +94,10 @@ AddEvent("DragEnter", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 AddEvent("DragOver", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 	if (Ctrl.Type == CTRL_WB) {
 		const TC = Sync.TabPlus.TCFromPt(pt);
+		if (/\ntabplus_\d+_\d+$/.test(dataObj.GetData())) {
+			pdwEffect[0] = DROPEFFECT_MOVE;
+			return S_OK;
+		}
 		if (TC) {
 			if (Common.TabPlus.Drag5) {
 				pdwEffect[0] = DROPEFFECT_MOVE;

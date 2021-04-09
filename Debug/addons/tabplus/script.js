@@ -1,11 +1,13 @@
 const Addon_Id = "tabplus";
-const item = await GetAddonElement(Addon_Id);
+let item = await GetAddonElement(Addon_Id);
 if (!item.getAttribute("Set")) {
 	item.setAttribute("Icon", 1);
 	item.setAttribute("Drive", 1);
 	item.setAttribute("New", 1);
 }
 if (window.Addon == 1) {
+	te.Tab = false;
+
 	Addons.TabPlus = {
 		Click: [],
 		Button: [],
@@ -99,9 +101,7 @@ if (window.Addon == 1) {
 		New: async function (Id) {
 			const TC = await te.Ctrl(CTRL_TC, Id);
 			if (TC) {
-				const FV = await TC.Selected;
-				await CreateTab(FV);
-				TC.Move(await TC.SelectedIndex, await TC.Count - 1);
+				CreateTab(await TC.Selected);
 			}
 		},
 
@@ -110,8 +110,8 @@ if (window.Addon == 1) {
 			const FV = r[0];
 			const Id = r[1];
 			const o = document.getElementById("tabplus_" + Id + "_" + i);
-			if (FV && o && await FV.FolderItem) {
-				const promise = [FV.FolderItem.Path, RunEvent4("GetTabColor", FV), FV.Data.Lock, FV.Data.Protect, CanClose(FV), GetTabName(FV)]
+			if (FV && o) {
+				const promise = [api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), RunEvent4("GetTabColor", FV), FV.Data.Lock, FV.Data.Protect, CanClose(FV), GetTabName(FV)]
 				if (Addons.TabPlus.opt.Icon) {
 					promise.push(GetIconImage(FV, CLR_DEFAULT | COLOR_BTNFACE));
 				}
@@ -127,7 +127,7 @@ if (window.Addon == 1) {
 				if (/^#/.test(cl)) {
 					let c = Number(cl.replace(/^#/, "0x"));
 					c = (c & 0xff0000) * .0045623779296875 + (c & 0xff00) * 2.29296875 + (c & 0xff) * 114;
-					s.push(';color:', c > 127000 ? "#000" : "#fff");
+					s.push(';color:', c > 127500 ? "#000" : "#fff");
 				}
 				s.push('">');
 				const bLock = r[2];
@@ -179,7 +179,7 @@ if (window.Addon == 1) {
 				}
 				s.push('" >', n, '</div></td>');
 				if (bUseClose) {
-					s.push('<td class="closecell" style="vertical-align: middle; width: ', r0, 'px" align="right">', Addons.TabPlus.ImgClose, r0, 'px" onclick="Addons.TabPlus.Close(', Id, ",", i, ')" class="button" title="', Addons.TabPlus.str.CloseTab, '" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', Addons.TabPlus.ImgClose2, '</td>');
+					s.push('<td class="closecell" style="vertical-align: middle; width: ', r0, 'px" align="right">', Addons.TabPlus.ImgClose.replace("`~`Arguments`~`", Id + "," + i), '</td>');
 				}
 				s.push('</tr></table>');
 				if (!o.innerHTML || bRedraw) {
@@ -339,7 +339,7 @@ if (window.Addon == 1) {
 		Start5: function (ev, o) {
 			if (Addons.TabPlus.buttons == 1) {
 				ev.dataTransfer.effectAllowed = 'move';
-				ev.dataTransfer.setData("text", o.title);
+				ev.dataTransfer.setData("text", o.title + "\n" + o.id);
 				Common.TabPlus.Drag5 = o.id;
 				return true;
 			}
@@ -353,11 +353,9 @@ if (window.Addon == 1) {
 					const pt = await api.Memory("POINT");
 					pt.x = ev.screenX * ui_.Zoom;
 					pt.y = ev.screenY * ui_.Zoom;
-					const hwnd1 = await api.WindowFromPoint(pt);
-					if (ui_.hwnd != hwnd1 && !await api.IsChild(ui_.hwnd, hwnd1)) {
-						const FV = await te.Ctrl(CTRL_TC, res[1])[res[2]];
-						await OpenInExplorer(FV);
-						FV.Close();
+					const hwnd = await api.WindowFromPoint(pt);
+					if (ui_.hwnd != hwnd && !await api.IsChild(ui_.hwnd, hwnd)) {
+						Sync.TabPlus.DropTab(await te.Ctrl(CTRL_TC, res[1])[res[2]], hwnd, pt);
 					}
 				}
 			}
@@ -562,38 +560,41 @@ if (window.Addon == 1) {
 		Addons.TabPlus.Resize();
 	});
 
-	//Init
-	te.Tab = false;
 	const attrs = item.attributes;
 	for (let i = attrs.length; i-- > 0;) {
 		Common.TabPlus.opt[attrs[i].name] = Addons.TabPlus.opt[attrs[i].name] = attrs[i].value;
 	}
-	if (Addons.TabPlus.opt.Tooltips) {
-		Addons.TabPlus.str.CloseTab = await GetText("Close Tab");
-		Addons.TabPlus.str.NewTab = await GetText("New tab");
-	}
 	Addons.TabPlus.opt.Width = GetNum(Addons.TabPlus.opt.Width);
-	Addons.TabPlus.opt.IconSize = GetNum(Addons.TabPlus.opt.IconSize) || 13;
+	Addons.TabPlus.opt.IconSize = GetNum(Addons.TabPlus.opt.IconsSize) || 13;
+	Addons.TabPlus.ImgLock = Addons.TabPlus.opt.IconLock || (WINVER >= 0x0602 ? "font:Segoe UI Emoji,0x1f4cc" : "bitmap:ieframe.dll,545,13,2");
 	const r0 = Math.round(Addons.TabPlus.opt.IconSize * screen.deviceYDPI / 96);
-	let s = Addons.TabPlus.opt.IconLock;
-	Addons.TabPlus.ImgLock = await MakeImgSrc(s || "bitmap:ieframe.dll,545,13,2", 0, true, r0);
-	if (s || WINVER < 0x0602) {
-		Addons.TabPlus.ImgLock2 = '<img draggable="false" src="' + Addons.TabPlus.ImgLock + '" style="width: ' + r0 + 'px">';
-	} else {
-		Addons.TabPlus.ImgLock2 = '<span style="font-size: ' + r0 + 'px">&#128204;</span>';
+	const r = [GetImgTag({
+		draggable: "false",
+		src: Addons.TabPlus.ImgLock
+	}, r0),
+	GetImgTag({
+		draggable: "false",
+		onclick: "Addons.TabPlus.Close(`~`Arguments`~`)",
+		class: "button",
+		title: await GetText("Close Tab"),
+		onmouseover: "MouseOver(this)",
+		onmouseout: "MouseOut()",
+		src: Addons.TabPlus.opt.IconClose || "font:marlett,0x72"
+	}, r0),
+	GetImgTag({
+		draggable: "false",
+		src: Addons.TabPlus.opt.IconProtect || (WINVER >= 0x0a00 ? "font:Segoe MDL2 Assets,0xea18" : ((WINVER >= 0x0602 ? "font:Segoe UI Emoji,0x26c9" : "bitmap:ieframe.dll,545,13,1")))
+	}, r0)];
+	if (Addons.TabPlus.opt.New) {
+		r.push(GetText("New tab"));
 	}
-	if (s = Addons.TabPlus.opt.IconClose) {
-		Addons.TabPlus.ImgClose = '<img draggable="false" src="' + await MakeImgSrc(s, 0, true, r0) + '" style="width: ';
-		Addons.TabPlus.ImgClose2 = '';
-	} else {
-		Addons.TabPlus.ImgClose = '<span style="font-family: marlett; font-size: ';
-		Addons.TabPlus.ImgClose2 = '&#x72;</span>';
-	}
-	if (s = Addons.TabPlus.opt.IconProtect) {
-		Addons.TabPlus.ImgProtect = '<img draggable="false" src="' + await MakeImgSrc(s, 0, true, r0) + '" style="width: ' + r0 + 'px">';
-	} else {
-		Addons.TabPlus.ImgProtect = '<span style="font-size: ' + r0 + 'px">&#x2764;</span>';
-	}
+	Promise.all(r).then(function (r) {
+		Addons.TabPlus.ImgLock2 = r.shift();
+		Addons.TabPlus.ImgClose = r.shift();
+		Addons.TabPlus.ImgProtect = r.shift();
+		Addons.TabPlus.str.NewTab = r.shift();
+	});
+	delete item;
 } else {
 	const Icon = document.F.Icon;
 	if (Icon) {

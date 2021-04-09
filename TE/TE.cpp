@@ -15588,52 +15588,47 @@ STDMETHODIMP CteShellBrowser::get_FocusedItem(FolderItem **ppid)
 
 STDMETHODIMP CteShellBrowser::SelectItem(VARIANT *pvfi, int dwFlags)
 {
-	if (!m_pShellView) {
-		return E_FAIL;
-	}
-	LPITEMIDLIST pidl;
-	if (teVarIsNumber(pvfi)) {
-		HRESULT hr = E_FAIL;
-		IFolderView *pFV = NULL;
-		int nIndex = GetIntFromVariant(pvfi);
-		int nCount = GetFolderViewAndItemCount(&pFV, SVGIO_ALLVIEW);
-		if (nIndex < nCount) {
-			teFixListState(m_hwndLV, dwFlags);
-			if (dwFlags & SVSI_SELECTIONMARK) {//21.4.7
-				pFV->SelectItem(nIndex, SVSI_SELECTIONMARK | SVSI_NOTAKEFOCUS);
+	HRESULT hr = E_FAIL;
+	if (m_pShellView) {
+		teFixListState(m_hwndLV, dwFlags);
+		IDataObject *pDataObj;
+		if (GetDataObjFromVariant(&pDataObj, pvfi)) {
+			long nCount;
+			LPITEMIDLIST *ppidllist = IDListFormDataObj(pDataObj, &nCount);
+			if (ppidllist) {
+				teCoTaskMemFree(ppidllist[0]);
+				for (int i = 1; i <= nCount; ++i) {
+					hr = SelectItemEx(ppidllist[i], dwFlags);
+					teCoTaskMemFree(ppidllist[i]);
+					dwFlags &= ~(SVSI_FOCUSED | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK);
+				}
+				delete[] ppidllist;
 			}
-			hr = pFV->SelectItem(nIndex, dwFlags & ~SVSI_SELECTIONMARK);
-		}
-		SafeRelease(&pFV);
-		if (hr == S_OK) {
-			return hr;
-		}
-	}
-	IDataObject *pDataObj;
-	if (m_pShellView && GetDataObjFromVariant(&pDataObj, pvfi)) {
-		long nCount;
-		LPITEMIDLIST *ppidllist = IDListFormDataObj(pDataObj, &nCount);
-		if (ppidllist) {
-			teCoTaskMemFree(ppidllist[0]);
-			teFixListState(m_hwndLV, dwFlags);
-			for (int i = 1; i <= nCount; ++i) {
-				SelectItemEx(ppidllist[i], dwFlags);
-				teCoTaskMemFree(ppidllist[i]);
-				dwFlags &= ~(SVSI_FOCUSED | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK);
-			}
-			delete [] ppidllist;
 			SafeRelease(&pDataObj);
-			return S_OK;
 		}
-		SafeRelease(&pDataObj);
-	}
-	teGetIDListFromVariant(&pidl, pvfi);
-	HRESULT hr = SelectItemEx(pidl, dwFlags);
-	teILFreeClear(&pidl);
-	CteFolderItem *pid1 = NULL;
-	if (m_pFolderItem && SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1))) {
-		teILFreeClear(&pid1->m_pidlFocused);
-		pid1->Release();
+		if (teVarIsNumber(pvfi)) {
+			IFolderView *pFV = NULL;
+			int nIndex = GetIntFromVariant(pvfi);
+			int nCount = GetFolderViewAndItemCount(&pFV, SVGIO_ALLVIEW);
+			if (nIndex < nCount) {
+				if (dwFlags & SVSI_SELECTIONMARK) {//21.4.7
+					pFV->SelectItem(nIndex, SVSI_SELECTIONMARK | SVSI_NOTAKEFOCUS);
+				}
+				hr = pFV->SelectItem(nIndex, dwFlags & ~SVSI_SELECTIONMARK);
+			}
+			SafeRelease(&pFV);
+		}
+		if FAILED(hr) {
+			LPITEMIDLIST pidl;
+			teGetIDListFromVariant(&pidl, pvfi);
+			hr = SelectItemEx(pidl, dwFlags);
+			teCoTaskMemFree(pidl);
+		}
+		CteFolderItem *pid1 = NULL;
+		if (m_pFolderItem && SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1))) {
+			teILFreeClear(&pid1->m_pidlFocused);
+			pid1->Release();
+		}
 	}
 	return hr;
 }
@@ -15647,6 +15642,9 @@ HRESULT CteShellBrowser::SelectItemEx(LPITEMIDLIST pidl, int dwFlags)
 			m_pShellView->SelectItem(pidlLast, SVSI_SELECTIONMARK | SVSI_NOTAKEFOCUS);
 		}
 		hr = m_pShellView->SelectItem(pidlLast, dwFlags & ~SVSI_SELECTIONMARK);
+		if (FAILED(hr) && (dwFlags & SVSI_DESELECTOTHERS)) {
+			hr = m_pShellView->SelectItem(pidlLast, SVSI_DESELECTOTHERS);
+		}
 	}
 	return hr;
 }

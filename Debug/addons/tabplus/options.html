@@ -29,36 +29,53 @@
   <input type="text" name="IconsSize" style="width: 3em" placeholder="13">
   <label>@mspaint.exe,-50047[px]</label>
   <br>
-  <label>Lock</label>
-  <table style="width: 100%; line-height: 1.2em">
+  <table class="full" style="line-height: 1.2em">
     <tr>
-      <td style="width: 100%">
-        <input type="text" name="IconLock" onchange="SetImage();" style="width: 100%">
+      <td class="full" style="vertical-align: bottom">
+        <label>Lock</label>
+      </td>
+      <td  style="white-space: nowrap">
+        <input type="button" value="Select" onclick="ShowIcon(document.F.IconLock, 'List');">
       </td>
       <td style="white-space: nowrap">
         <input type="button" value="Browse..." onclick="RefX('IconLock');">
       </td>
     </tr>
-  </table>
-  <label>Close</label>
-  <table style="width: 100%; line-height: 1.2em">
     <tr>
-      <td style="width: 100%">
-        <input type="text" name="IconClose" onchange="SetImage();" style="width: 100%">
+      <td class="full" colspan="3">
+        <input type="text" name="IconLock" onchange="SetImage();" class="full">
+      </td>
+    </tr>
+    <tr>
+      <td class="full" style="vertical-align: bottom">
+        <label>Close</label>
+      </td>
+      <td style="white-space: nowrap">
+        <input type="button" value="Select" onclick="ShowIcon(document.F.IconClose, 'List');">
       </td>
       <td style="white-space: nowrap">
         <input type="button" value="Browse..." onclick="RefX('IconClose');">
       </td>
     </tr>
-  </table>
-  <label>@wmploc.dll,-1714[Protected]</label>
-  <table style="width: 100%; line-height: 1.2em">
     <tr>
-      <td style="width: 100%">
-        <input type="text" name="IconProtect" onchange="SetImage();" style="width: 100%">
+      <td class="full" colspan="3">
+        <input type="text" name="IconClose" onchange="SetImage();" class="full">
+      </td>
+    </tr>
+    <tr>
+      <td class="full" style="vertical-align: bottom">
+        <label>@wmploc.dll,-1714[Protected]</label>
+      </td>
+      <td style="white-space: nowrap">
+        <input type="button" value="Select" onclick="ShowIcon(document.F.IconProtect, 'List');">
       </td>
       <td style="white-space: nowrap">
         <input type="button" value="Browse..." onclick="RefX('IconProtect');">
+      </td>
+    </tr>
+    <tr>
+      <td class="full" colspan="3">
+        <input type="text" name="IconProtect" onchange="SetImage();" class="full">
       </td>
     </tr>
   </table>
