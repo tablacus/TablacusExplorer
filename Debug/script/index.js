@@ -26,7 +26,7 @@ Resize = async function () {
 	te.offsetBottom = ode.offsetHeight - pt.y;
 	RunEvent1("Resize");
 	api.PostMessage(ui_.hwnd, WM_SIZE, 0, 0);
-	if (!ui_.tidResize || !await te.OnArrange) {
+	if (!ui_.tidResize) {
 		return;
 	}
 	if (ui_.tidResize == "Init") {
