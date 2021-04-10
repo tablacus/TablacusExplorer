@@ -16,6 +16,12 @@ if (!item.getAttribute("Set")) {
 }
 if (window.Addon == 1) {
 	Addons.UndoCloseTab = {
+		Popup: async function (Ctrl, pt) {
+			if (Addons.RecentlyClosedTabs) {
+				Addons.RecentlyClosedTabs.Exec(Ctrl, pt);
+			}
+		},
+
 		KillTimer: function () {
 			if (Addons.UndoCloseTab.tid) {
 				clearTimeout(Addons.UndoCloseTab.tid);
@@ -32,9 +38,12 @@ if (window.Addon == 1) {
 		}
 	}
 
-	const h = GetIconSize(item.getAttribute("IconSize"), item.getAttribute("Location") == "Inner" && 16);
-	const s = item.getAttribute("Icon");
-	SetAddon(Addon_Id, Default, ['<span class="button" onclick="SyncExec(Sync.UndoCloseTab.Exec, this)" oncontextmenu="return false;" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', await GetImgTag({ title: item.getAttribute("MenuName") || await GetAddonInfo(Addon_Id).Name, src: s }, h), '</span>']);
+	AddEvent("Layout", async function () {
+		SetAddon(Addon_Id, Default, ['<span class="button" onclick="SyncExec(Sync.UndoCloseTab.Exec, this)" oncontextmenu="SyncExec(Addons.UndoCloseTab.Popup, this, 9); return false" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', await GetImgTag({
+			title: item.getAttribute("MenuName") || await GetAddonInfo(Addon_Id).Name,
+			src: item.getAttribute("Icon") || "icon:browser,16"
+		}, GetIconSizeEx(item)), '</span>']);
+	});
 
 	$.importScript("addons\\" + Addon_Id + "\\sync.js");
 } else {

@@ -45,6 +45,7 @@ Sync.TabPlus = {
 						rc.right -= w.te.offsetRight;
 						rc.bottom -= w.te.offsetBottom;
 						const cTC = w.te.Ctrls(CTRL_TC, true);
+						let destFV;
 						for (let i = 0; i < cTC.length; ++i) {
 							const TC = cTC[i];
 							const left = Sync.TabPlus.GetData(rc, TC.Left);
@@ -52,20 +53,23 @@ Sync.TabPlus = {
 							const right = left + Sync.TabPlus.GetData(rc, TC.Width);
 							const bottom = top + Sync.TabPlus.GetData(rc, TC.Height);
 							if (ptc.x >= left && ptc.x < right && ptc.y >= top && ptc.y < bottom) {
-								w.NavigateFV(TC.Selected, FV.FolderItem.Path, SBSP_NEWBROWSER);
-								FV.Close();
-								return;
+								destFV = TC.Selected;
+								break;
 							}
 						}
-						w.Navigate(FV.FolderItem.Path, SBSP_NEWBROWSER);
-						FV.Close();
+						w.NavigateFV(destFV || te.Ctrl(CTRL_FV), FV.FolderItem.Path, SBSP_NEWBROWSER);
+						if (api.GetKeyState(VK_CONTROL) >= 0) {
+							FV.Close();
+						}
 						return;
 					}
 				}
 			}
 		}
 		($.OpenInNewWindow || OpenInExplorer)(FV);
-		FV.Close();
+		if (api.GetKeyState(VK_CONTROL) >= 0) {
+			FV.Close();
+		}
 	},
 
 	GetData: function (rc, i) {

@@ -19119,7 +19119,7 @@ STDMETHODIMP CteTabCtrl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WOR
 						delete[] tabs;
 						if (bChanged) {
 							if (nSel != nNew) {
-								TabCtrl_SetCurFocus(m_hwnd, nNew);
+								TabCtrl_SetCurSel(m_hwnd, nNew);
 							}
 							ArrangeWindow();
 						}

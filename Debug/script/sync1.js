@@ -3392,6 +3392,9 @@ ArrangeAddons1 = function (cl) {
 			api.DeleteObject(hOld);
 		}
 	}
+}
+
+InitFolderView = function () {
 	let hwnd, p = api.Memory("WCHAR", 11);
 	p.Write(0, VT_LPWSTR, "ShellState");
 	const cFV = te.Ctrls(CTRL_FV);
@@ -3581,6 +3584,7 @@ Threads.Finalize = function () {
 
 if (!te.Data) {
 	te.Data = api.CreateObject("Object");
+	te.Data.Load = 1;
 	te.Data.CustColors = api.Memory("int", 16);
 	te.Data.AddonsData = api.CreateObject("Object");
 	te.Data.Fonts = api.CreateObject("Object");
@@ -3686,6 +3690,7 @@ if (!te.Data) {
 	}
 	te.Data.uRegisterId = api.SHChangeNotifyRegister(te.hwnd, SHCNRF_InterruptLevel | SHCNRF_ShellLevel | SHCNRF_NewDelivery, SHCNE_ALLEVENTS & ~SHCNE_UPDATEIMAGE, TWM_CHANGENOTIFY, ssfDESKTOP, true);
 } else {
+	++te.Data.Load;
 	for (let i in te.Data) {
 		if (/^xml/.test(i)) {
 			delete te.Data[i];

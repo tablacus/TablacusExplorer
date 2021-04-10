@@ -26,6 +26,22 @@ Resize = async function () {
 	te.offsetBottom = ode.offsetHeight - pt.y;
 	RunEvent1("Resize");
 	api.PostMessage(ui_.hwnd, WM_SIZE, 0, 0);
+	if (!ui_.tidResize || !await te.OnArrange) {
+		return;
+	}
+	if (ui_.tidResize == "Init") {
+		if (await te.Data.Load > 1) {
+			delete ui_.tidResize;
+			InitFolderView();
+			return;
+		}
+	} else {
+		clearTimeout(ui_.tidResize);
+	}
+	ui_.tidResize = setTimeout(function () {
+		delete ui_.tidResize;
+		InitFolderView();
+	}, window.chrome ? 3000 : 999);
 }
 
 ResizeSideBar = async function (z, h) {
@@ -356,18 +372,6 @@ ArrangeAddons = async function () {
 			}
 		}
 	}
-	RunEventUI("BrowserCreatedEx");
-	if (window.chrome) {
-		AddEvent("BrowserCreatedEx", "api.ShowWindow(await GetTopWindow(), SW_SHOWNORMAL);");
-	}
-	await RunEventUI1("Layout");
-	setTimeout(async function () {
-		AddEvent("Load", function () {
-			te.OnArrange = OnArrange;
-			document.F.style.visibility = "";
-		});
-		ArrangeAddons1(await GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor));
-	}, 99);
 }
 
 GetMiscIcon = async function (n) {
@@ -442,6 +446,15 @@ Init = async function () {
 	document.body.style.fontSize = Math.abs(r[5]) + "px";
 	document.body.style.fontWeight = r[6];
 	await ArrangeAddons();
+	RunEventUI("BrowserCreatedEx");
+	await RunEventUI1("Layout");
+	await ArrangeAddons1(await GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor));
 	await InitWindow();
+	te.OnArrange = OnArrange;
+	document.F.style.visibility = "";
 	WebBrowser.DropMode = 1;
+	if (window.chrome) {
+		AddEvent("BrowserCreatedEx", "api.ShowWindow(await GetTopWindow(), SW_SHOWNORMAL);");
+	}
+	ui_.tidResize = "Init";
 }
