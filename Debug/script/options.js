@@ -1543,7 +1543,7 @@ InitDialog = async function () {
 		};
 		const fontDir = await api.ILCreateFromPath(ssfFONTS).Path;
 		if (await fso.FileExists(BuildPath(fontDir, "segmdl2.ttf"))) {
-			for (let i = 0xe700; i < 0xf900; i += 256) {
+			for (let i = 0xe700; i < 0xf8ff; i += 256) {
 				a["Segoe MDL2 Assets " + i.toString(16)] = "f,Segoe MDL2 Assets," + i + ",256";
 			}
 		}
@@ -1554,6 +1554,14 @@ InitDialog = async function () {
 		for (let i = 0; i < sue.length; ++i) {
 			a["Segoe UI Emoji " + sue[i].toString(16)] = "f,Segoe UI Emoji," + sue[i] + ",256";
 		}
+		if (await fso.FileExists(BuildPath(fontDir, "seguisym.ttf"))) {
+			for (let i = 0xe000; i < 0xe1ff; i += 256) {
+				a["Segoe UI Symbol " + i.toString(16)] = "f,Segoe UI Symbol," + i + ",256";
+			}
+		}
+		a.Webdings = "f,Webdings,33,223";
+		a.Wingdings = "f,Wingdings,33,224";
+		a.Marlett = "f,Marlett,48,74";
 		a["ieframe,697"] = "b,697,24";
 		a.imageres = "i,imageres.dll";
 		a.wmploc = "i,wmploc.dll";

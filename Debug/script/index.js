@@ -10,10 +10,7 @@ Resize = async function () {
 	o = document.getElementById("client");
 	const ode = document.documentElement || document.body;
 	if (o) {
-		h = ode.offsetHeight - offsetBottom - offsetTop;
-		if (h < 0) {
-			h = 0;
-		}
+		h = Math.max(ode.offsetHeight - offsetBottom - offsetTop, 0);
 		o.style.height = h + "px";
 	}
 	await Promise.all([ResizeSideBar("Left", h), ResizeSideBar("Right", h)]);

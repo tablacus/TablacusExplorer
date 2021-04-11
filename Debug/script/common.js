@@ -310,23 +310,6 @@ amp2ul = function (s) {
 	return s.replace(/&amp;|&/ig, "");
 }
 
-EscapeJsonObj = {
-	"\\": "\\\\",
-	'"': '\\"',
-	"/": "\\/",
-	"\b": "\\b",
-	"\f": "\\f",
-	"\n": "\\n",
-	"\r": "\\r",
-	"\t": "\\t"
-}
-
-EscapeJson = function (s) {
-	return s.replace(/([\\"\/\b\f\n\r\t])/g, function (all, s) {
-		return EscapeJsonObj[s];
-	});
-};
-
 GetAddonInfo2 = async function (xml, info, Tag, bTrans) {
 	const items = await xml.getElementsByTagName(Tag);
 	if (await GetLength(items)) {
@@ -340,6 +323,31 @@ GetAddonInfo2 = async function (xml, info, Tag, bTrans) {
 		}
 	}
 }
+
+GetWinIcon = function () {
+	for (let i = 0; i < arguments.length; i += 2) {
+		if (WINVER >= arguments[i]) {
+			return arguments[i + 1];
+		}
+	}
+}
+
+EscapeJsonObj = {
+	"\\": "\\\\",
+	'"': '\\"',
+	"/": "\\/",
+	"\b": "\\b",
+	"\f": "\\f",
+	"\n": "\\n",
+	"\r": "\\r",
+	"\t": "\\t"
+}
+
+EscapeJson = function (s) {
+	return String(s).replace(/([\\"\/\b\f\n\r\t])/g, function (all, s) {
+		return EscapeJsonObj[s];
+	});
+};
 
 if ("undefined" === typeof JSON) {
 	JSON = {

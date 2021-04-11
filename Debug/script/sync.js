@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210410 ? te.Version : 20210410;
+		return te.Version < 20210410 ? te.Version : 20210411;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1466,14 +1466,14 @@ MakeImgIcon = function (src, index, h, bIcon, clBk) {
 		const hfontOld = api.SelectObject(hmdc, CreateFont(lf));
 		let c = res[2].split(",");
 		c = String.fromCodePoint(c.length > 1 ? parseInt(c[0]) * 256 + parseInt(c[1]) : parseInt(c[0]));
-		api.DrawText(hmdc, c, -1, rc, DT_CALCRECT | DT_NOCLIP);
+		api.DrawText(hmdc, c, -1, rc, DT_CALCRECT | DT_NOCLIP | DT_NOPREFIX);
 		const h2 = Math.min(h, Math.ceil(h * (h / (Math.max(rc.bottom, rc.right) || h))));
 		if (h != h2) {
 			lf.lfHeight = -h2;
 			api.SelectObject(hmdc, CreateFont(lf));
 		}
 		api.SetRect(rc, 0, 0, h, h);
-		api.DrawText(hmdc, c, -1, rc, DT_CENTER);
+		api.DrawText(hmdc, c, -1, rc, DT_CENTER | DT_NOPREFIX);
 		api.SelectObject(hmdc, hfontOld);
 		api.SelectObject(hmdc, hOld);
 		api.DeleteDC(hmdc);
@@ -1511,7 +1511,7 @@ CalcFontSize = function (FaceName, h, c) {
 	lf.lfWeight = 400;
 	const hfontOld = api.SelectObject(hmdc, CreateFont(lf));
 	const rc = api.Memory("RECT");
-	api.DrawText(hmdc, c, -1, rc, DT_CALCRECT | DT_NOCLIP);
+	api.DrawText(hmdc, c, -1, rc, DT_CALCRECT | DT_NOCLIP | DT_NOPREFIX);
 	api.SelectObject(hmdc, hfontOld);
 	api.DeleteDC(hmdc);
 	api.ReleaseDC(hwnd, hdc);
