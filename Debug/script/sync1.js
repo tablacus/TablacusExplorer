@@ -895,11 +895,11 @@ ChangeView = function (Ctrl) {
 	const TC = te.Ctrl(CTRL_TC);
 	if (TC && !g_.LockUpdate && Ctrl && Ctrl.FolderItem && Ctrl.FolderItem.Path != null && te.OnArrange) {
 		ChangeTabName(Ctrl);
-		if (Ctrl.hwndView) {
-			RefreshEx(Ctrl, 5000, 5000);
-		}
 		RunEvent1("ChangeView", Ctrl);
 		if (Ctrl.Id == Ctrl.Parent.Selected.Id) {
+			if (Ctrl.hwndView) {
+				RefreshEx(Ctrl, 5000, 5000);
+			}
 			if (Ctrl.Parent.Id == TC.Id) {
 				RunEvent1("ChangeView1", Ctrl);
 			}
@@ -1505,7 +1505,6 @@ AddEvent("Close", function (Ctrl) {
 			if (api.GetThreadCount() && MessageBox("File is in operation.", TITLE, MB_ABORTRETRYIGNORE) != IDIGNORE) {
 				return S_FALSE;
 			}
-			api.SetWindowLongPtr(te.hwnd, GWL_EXSTYLE, api.GetWindowLongPtr(te.hwnd, GWL_EXSTYLE) | 0x80000);
 			api.SetLayeredWindowAttributes(te.hwnd, 0, 0, 2);
 			Finalize();
 			eventTE = { Environment: {} };
@@ -3382,29 +3381,6 @@ FullscreenChanged = function (bFullscreen) {
 	RunEvent1("FullscreenChanged", bFullscreen);
 }
 
-ArrangeAddons1 = function (cl) {
-	RunEvent1("Load");
-	ClearEvent("Load");
-	const cHwnd = [te.Ctrl(CTRL_WB).hwnd, te.hwnd];
-	for (let i = cHwnd.length; i--;) {
-		const hOld = api.SetClassLongPtr(cHwnd[i], GCLP_HBRBACKGROUND, api.CreateSolidBrush(cl));
-		if (hOld) {
-			api.DeleteObject(hOld);
-		}
-	}
-}
-
-InitFolderView = function () {
-	let hwnd, p = api.Memory("WCHAR", 11);
-	p.Write(0, VT_LPWSTR, "ShellState");
-	const cFV = te.Ctrls(CTRL_FV);
-	for (let i in cFV) {
-		if (hwnd = cFV[i].hwndView) {
-			api.SendMessage(hwnd, WM_SETTINGCHANGE, 0, p);
-		}
-	}
-}
-
 SetMenuExec = function (n, strName, strMenu, nPos, strExec) {
 	if (!Common[n]) {
 		Common[n] = api.CreateObject("Object");
@@ -3494,7 +3470,24 @@ InitMenus = function () {
 	}
 }
 
+InitLoad = function (cl) {
+	RunEvent1("Load");
+	ClearEvent("Load");
+	const cHwnd = [te.Ctrl(CTRL_WB).hwnd, te.hwnd];
+	for (let i = cHwnd.length; i--;) {
+		const hOld = api.SetClassLongPtr(cHwnd[i], GCLP_HBRBACKGROUND, api.CreateSolidBrush(cl));
+		if (hOld) {
+			api.DeleteObject(hOld);
+		}
+	}
+}
+
 InitWindow = function () {
+	api.ShowWindow(te.hwnd, te.CmdShow);
+	if (te.CmdShow == SW_SHOWNOACTIVATE) {
+		api.SetWindowPos(te.hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+	}
+	te.CmdShow = SW_SHOWNORMAL;
 	if (api.GetKeyState(VK_SHIFT) < 0 && api.GetKeyState(VK_CONTROL) < 0) {
 		ShowOptions("Tab=Add-ons");
 	}
@@ -3509,24 +3502,25 @@ InitWindow = function () {
 		cTC[0].Visible = true;
 	}
 	g_.xmlWindow = void 0;
-	setTimeout(function () {
-		Resize();
-		const cTC = te.Ctrls(CTRL_TC);
-		for (let i in cTC) {
-			if (cTC[i].SelectedIndex >= 0) {
-				ChangeView(cTC[i].Selected);
-			}
+}
+
+InitFolderView = function () {
+	let hwnd, p = api.Memory("WCHAR", 11);
+	p.Write(0, VT_LPWSTR, "ShellState");
+	let cFV = te.Ctrls(CTRL_FV);
+	for (let i in cFV) {
+		if (hwnd = cFV[i].hwndView) {
+			api.SendMessage(hwnd, WM_SETTINGCHANGE, 0, p);
 		}
-		setTimeout(function () {
-			api.ShowWindow(te.hwnd, te.CmdShow);
-			if (te.CmdShow == SW_SHOWNOACTIVATE) {
-				api.SetWindowPos(te.hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-			}
-			te.CmdShow = SW_SHOWNORMAL;
-			Resize();
-			RunCommandLine(api.GetCommandLine());
-		}, 500);
-	}, 99);
+	}
+	cFV = te.Ctrls(CTRL_FV, true);
+	for (let i in cFV) {
+		ChangeView(cFV[i]);
+	}
+	if (te.Data.Load < 2) {
+		api.SetLayeredWindowAttributes(te.hwnd, 0, 255, 2);
+		RunCommandLine(api.GetCommandLine());
+	}
 }
 
 Threads = api.CreateObject("Object");

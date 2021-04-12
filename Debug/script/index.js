@@ -23,22 +23,6 @@ Resize = async function () {
 	te.offsetBottom = ode.offsetHeight - pt.y;
 	RunEvent1("Resize");
 	api.PostMessage(ui_.hwnd, WM_SIZE, 0, 0);
-	if (!ui_.tidResize) {
-		return;
-	}
-	if (ui_.tidResize == "Init") {
-		if (await te.Data.Load > 1) {
-			delete ui_.tidResize;
-			InitFolderView();
-			return;
-		}
-	} else {
-		clearTimeout(ui_.tidResize);
-	}
-	ui_.tidResize = setTimeout(function () {
-		delete ui_.tidResize;
-		InitFolderView();
-	}, window.chrome ? 3000 : 999);
 }
 
 ResizeSideBar = async function (z, h) {
@@ -336,20 +320,21 @@ ArrangeAddons = async function () {
 			const nLen = await GetLength(items);
 			document.F.style.visibility = "hidden";
 			for (let i = 0; i < nLen; ++i) {
-				const item = await items[i];
-				const Id = await item.nodeName;
+				const item = items[i];
+				const r = await Promise.all([item.nodeName, item.getAttribute("Enabled"), item.getAttribute("Level")]);
+				const Id = r[0];
 				g_.Error_source = Id;
 				if (!AddonId[Id]) {
-					const Enabled = GetNum(await item.getAttribute("Enabled"));
+					const Enabled = GetNum(r[1]);
 					if (Enabled) {
 						if (Enabled & 6) {
 							LoadLang2(BuildPath(ui_.Installed, "addons", Id, "lang", LangId + ".xml"));
 						}
 						if (Enabled & 8) {
-							await LoadAddon("vbs", Id, arError, null, window.chrome && GetNum(await item.getAttribute("Level")) < 2);
+							await LoadAddon("vbs", Id, arError, null, window.chrome && GetNum(r[2]) < 2);
 						}
 						if (Enabled & 1) {
-							await LoadAddon("js", Id, arError, null, window.chrome && GetNum(await item.getAttribute("Level")) < 2);
+							await LoadAddon("js", Id, arError, null, window.chrome && GetNum(r[2]) < 2);
 						}
 					}
 					AddonId[Id] = true;
@@ -445,13 +430,11 @@ Init = async function () {
 	await ArrangeAddons();
 	RunEventUI("BrowserCreatedEx");
 	await RunEventUI1("Layout");
-	await ArrangeAddons1(await GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor));
+	document.F.style.visibility = "";
+	await InitLoad(await GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor));
 	await InitWindow();
 	te.OnArrange = OnArrange;
-	document.F.style.visibility = "";
+	InitFolderView();
 	WebBrowser.DropMode = 1;
-	if (window.chrome) {
-		AddEvent("BrowserCreatedEx", "api.ShowWindow(await GetTopWindow(), SW_SHOWNORMAL);");
-	}
-	ui_.tidResize = "Init";
+	AddEvent("BrowserCreatedEx", "setTimeout(async function () { api.SetLayeredWindowAttributes(await GetTopWindow(), 0, 255, 2); });");
 }

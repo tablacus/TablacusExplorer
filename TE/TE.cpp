@@ -195,7 +195,6 @@ int g_nLeak = 0;
 ATOM MyRegisterClass(HINSTANCE hInstance, LPWSTR szClassName, WNDPROC lpfnWndProc);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 VOID ArrangeWindow();
-
 BOOL teGetIDListFromObject(IUnknown *punk, LPITEMIDLIST *ppidl);
 VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime);
 VOID CALLBACK teTimerProcParse(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime);
@@ -5990,6 +5989,11 @@ LRESULT CALLBACK TELVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 				}
 			}
 			break;
+		case WM_SETTINGCHANGE:
+			pSB->SetRedraw(FALSE);
+			pSB->InitFolderSize();
+			ArrangeWindow();
+			break;
 		}
 	} catch (...) {
 		g_nException = 0;
@@ -11383,8 +11387,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	g_bsTitle = ::SysAllocString(g_szTE);
 	if (bVisible) {
 		g_bInit = !bNewProcess;
-		g_hwndMain = CreateWindow(szClass, g_szTE, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
+		g_hwndMain = CreateWindowEx(WS_EX_LAYERED, szClass, g_szTE, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
 		  CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
+		SetLayeredWindowAttributes(g_hwndMain, 0, 0, LWA_ALPHA);
 		if (!bNewProcess) {
 			SetWindowLongPtr(g_hwndMain, GWLP_USERDATA, nHash);
 		}
@@ -15591,38 +15596,39 @@ STDMETHODIMP CteShellBrowser::SelectItem(VARIANT *pvfi, int dwFlags)
 	HRESULT hr = E_FAIL;
 	if (m_pShellView) {
 		teFixListState(m_hwndLV, dwFlags);
-		IDataObject *pDataObj;
-		if (GetDataObjFromVariant(&pDataObj, pvfi)) {
-			long nCount;
-			LPITEMIDLIST *ppidllist = IDListFormDataObj(pDataObj, &nCount);
-			if (ppidllist) {
-				teCoTaskMemFree(ppidllist[0]);
-				for (int i = 1; i <= nCount; ++i) {
-					hr = SelectItemEx(ppidllist[i], dwFlags);
-					teCoTaskMemFree(ppidllist[i]);
-					dwFlags &= ~(SVSI_FOCUSED | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK);
-				}
-				delete[] ppidllist;
-			}
-			SafeRelease(&pDataObj);
-		}
-		if (teVarIsNumber(pvfi)) {
+		if (teVarIsNumber(pvfi) && pvfi->vt != VT_BSTR) {
 			IFolderView *pFV = NULL;
 			int nIndex = GetIntFromVariant(pvfi);
 			int nCount = GetFolderViewAndItemCount(&pFV, SVGIO_ALLVIEW);
 			if (nIndex < nCount) {
-				if (dwFlags & SVSI_SELECTIONMARK) {//21.4.7
-					pFV->SelectItem(nIndex, SVSI_SELECTIONMARK | SVSI_NOTAKEFOCUS);
+				if (dwFlags & (SVSI_SELECTIONMARK | (SVSI_KEYBOARDSELECT & ~SVSI_SELECT))) {//21.4.7
+					pFV->SelectItem(nIndex, dwFlags & (SVSI_SELECTIONMARK | SVSI_KEYBOARDSELECT | SVSI_NOTAKEFOCUS));
 				}
-				hr = pFV->SelectItem(nIndex, dwFlags & ~SVSI_SELECTIONMARK);
+				hr = pFV->SelectItem(nIndex, dwFlags & ~(SVSI_SELECTIONMARK | (SVSI_KEYBOARDSELECT & ~SVSI_SELECT)));
 			}
 			SafeRelease(&pFV);
-		}
-		if FAILED(hr) {
-			LPITEMIDLIST pidl;
-			teGetIDListFromVariant(&pidl, pvfi);
-			hr = SelectItemEx(pidl, dwFlags);
-			teCoTaskMemFree(pidl);
+		} else {
+			IDataObject *pDataObj;
+			if (GetDataObjFromVariant(&pDataObj, pvfi)) {
+				long nCount;
+				LPITEMIDLIST *ppidllist = IDListFormDataObj(pDataObj, &nCount);
+				if (ppidllist) {
+					teCoTaskMemFree(ppidllist[0]);
+					for (int i = 1; i <= nCount; ++i) {
+						hr = SelectItemEx(ppidllist[i], dwFlags);
+						teCoTaskMemFree(ppidllist[i]);
+						dwFlags &= ~(SVSI_FOCUSED | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK);
+					}
+					delete[] ppidllist;
+				}
+				SafeRelease(&pDataObj);
+			}
+			if FAILED(hr) {
+				LPITEMIDLIST pidl;
+				teGetIDListFromVariant(&pidl, pvfi);
+				hr = SelectItemEx(pidl, dwFlags);
+				teCoTaskMemFree(pidl);
+			}
 		}
 		CteFolderItem *pid1 = NULL;
 		if (m_pFolderItem && SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1))) {
@@ -15638,10 +15644,10 @@ HRESULT CteShellBrowser::SelectItemEx(LPITEMIDLIST pidl, int dwFlags)
 	HRESULT hr = E_FAIL;
 	if (m_pShellView) {
 		LPITEMIDLIST pidlLast = ILFindLastID(pidl);
-		if (dwFlags & SVSI_SELECTIONMARK) {//21.4.7
-			m_pShellView->SelectItem(pidlLast, SVSI_SELECTIONMARK | SVSI_NOTAKEFOCUS);
+		if (dwFlags & (SVSI_SELECTIONMARK | (SVSI_KEYBOARDSELECT & ~SVSI_SELECT))) {//21.4.7
+			m_pShellView->SelectItem(pidlLast, dwFlags & (SVSI_SELECTIONMARK | SVSI_KEYBOARDSELECT | SVSI_NOTAKEFOCUS));
 		}
-		hr = m_pShellView->SelectItem(pidlLast, dwFlags & ~SVSI_SELECTIONMARK);
+		hr = m_pShellView->SelectItem(pidlLast, dwFlags & ~(SVSI_SELECTIONMARK | (SVSI_KEYBOARDSELECT & ~SVSI_SELECT)));
 		if (FAILED(hr) && (dwFlags & SVSI_DESELECTOTHERS)) {
 			hr = m_pShellView->SelectItem(pidlLast, SVSI_DESELECTOTHERS);
 		}
@@ -17613,8 +17619,10 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 								int x = nArg >= 6 ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 6]) : 0;
 								int y = nArg >= 7 ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 7]) : 0;
 								MyRegisterClass(hInst, WINDOW_CLASS2, WndProc2);
-								HWND hwnd = CreateWindow(WINDOW_CLASS2, g_szTE, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
+								HWND hwnd = CreateWindowEx(WS_EX_LAYERED, WINDOW_CLASS2, g_szTE, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
 									x, y, w, h, hwndParent, NULL, hInst, NULL);
+								SetLayeredWindowAttributes(hwnd, 0, 0, LWA_ALPHA);
+								teShowWindow(hwnd, SW_SHOWNORMAL);
 								teSetDarkMode(hwnd);
 								SetClassLongPtr(hwnd, GCLP_HBRBACKGROUND, GetClassLongPtr(g_hwndMain, GCLP_HBRBACKGROUND));
 								GetClientRect(hwnd, &rc);
@@ -18206,9 +18214,6 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				if (g_bInit) {
 					g_bInit = FALSE;
 					SetTimer(g_hwndMain, TET_Create, g_nCreateTimer, teTimerProc);
-				}
-				if (g_hwndMain != m_hwndParent && g_nBlink != 1) {
-					teShowWindow(m_hwndParent, SW_SHOWNORMAL);
 				}
 				if (g_pSW) {
 					teRegister();
