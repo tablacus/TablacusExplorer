@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210412 ? te.Version : 20210412;
+		return te.Version < 20210413 ? te.Version : 20210413;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -2894,6 +2894,16 @@ GethwndFromPid = function (ProcessId, nDT) {
 		}
 	} while (hwnd = api.GetWindow(hwnd, GW_HWNDNEXT));
 	return null;
+}
+
+SetWindowAlpha = function (hwnd, a) {
+	const exStyle = api.GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+	if (a >= 255) {
+		api.SetWindowLongPtr(hwnd, GWL_EXSTYLE, exStyle & ~0x80000);
+	} else {
+		api.SetWindowLongPtr(hwnd, GWL_EXSTYLE, exStyle | 0x80000);
+	}
+	api.SetLayeredWindowAttributes(hwnd, 0, a, 2);
 }
 
 PopupContextMenu = function (Item, FV, pt) {

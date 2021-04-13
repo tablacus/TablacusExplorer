@@ -1505,7 +1505,7 @@ AddEvent("Close", function (Ctrl) {
 			if (api.GetThreadCount() && MessageBox("File is in operation.", TITLE, MB_ABORTRETRYIGNORE) != IDIGNORE) {
 				return S_FALSE;
 			}
-			api.SetLayeredWindowAttributes(te.hwnd, 0, 0, 2);
+			SetWindowAlpha(te.hwnd, 0);
 			Finalize();
 			eventTE = { Environment: {} };
 			api.SHChangeNotifyDeregister(te.Data.uRegisterId);
@@ -3399,6 +3399,11 @@ SetMenuExec = function (n, strName, strMenu, nPos, strExec) {
 }
 
 InitCode = function () {
+	api.ShowWindow(te.hwnd, te.CmdShow);
+	if (te.CmdShow == SW_SHOWNOACTIVATE) {
+		api.SetWindowPos(te.hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+	}
+	te.CmdShow = SW_SHOWNORMAL;
 	const types = {
 		Key: ["All", "List", "Tree", "Browser", "Edit", "Menus"],
 		Mouse: ["All", "List", "List_Background", "Tree", "Tabs", "Tabs_Background", "Browser"]
@@ -3470,9 +3475,7 @@ InitMenus = function () {
 	}
 }
 
-InitLoad = function (cl) {
-	RunEvent1("Load");
-	ClearEvent("Load");
+InitWindow = function (cl) {
 	const cHwnd = [te.Ctrl(CTRL_WB).hwnd, te.hwnd];
 	for (let i = cHwnd.length; i--;) {
 		const hOld = api.SetClassLongPtr(cHwnd[i], GCLP_HBRBACKGROUND, api.CreateSolidBrush(cl));
@@ -3480,14 +3483,8 @@ InitLoad = function (cl) {
 			api.DeleteObject(hOld);
 		}
 	}
-}
-
-InitWindow = function () {
-	api.ShowWindow(te.hwnd, te.CmdShow);
-	if (te.CmdShow == SW_SHOWNOACTIVATE) {
-		api.SetWindowPos(te.hwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-	}
-	te.CmdShow = SW_SHOWNORMAL;
+	RunEvent1("Load");
+	ClearEvent("Load");
 	if (api.GetKeyState(VK_SHIFT) < 0 && api.GetKeyState(VK_CONTROL) < 0) {
 		ShowOptions("Tab=Add-ons");
 	}
@@ -3502,24 +3499,27 @@ InitWindow = function () {
 		cTC[0].Visible = true;
 	}
 	g_.xmlWindow = void 0;
+	if (te.Data.Load < 2) {
+		RunCommandLine(api.GetCommandLine());
+	} else {
+		InitFolderView();
+		const cFV = te.Ctrls(CTRL_FV, true);
+		for (let i in cFV) {
+			ChangeView(cFV[i]);
+		}
+	}
+	WebBrowser.DropMode = 1;
 }
 
 InitFolderView = function () {
-	let hwnd, p = api.Memory("WCHAR", 11);
+	let hwnd;
+	const p = api.Memory("WCHAR", 11);
 	p.Write(0, VT_LPWSTR, "ShellState");
-	let cFV = te.Ctrls(CTRL_FV);
+	const cFV = te.Ctrls(CTRL_FV);
 	for (let i in cFV) {
 		if (hwnd = cFV[i].hwndView) {
 			api.SendMessage(hwnd, WM_SETTINGCHANGE, 0, p);
 		}
-	}
-	cFV = te.Ctrls(CTRL_FV, true);
-	for (let i in cFV) {
-		ChangeView(cFV[i]);
-	}
-	if (te.Data.Load < 2) {
-		api.SetLayeredWindowAttributes(te.hwnd, 0, 255, 2);
-		RunCommandLine(api.GetCommandLine());
 	}
 }
 

@@ -21,17 +21,16 @@ if (window.Addon == 1) {
 		opt: {},
 		str: {},
 		tids: [],
-		tidResize: null,
 		nSelected: [],
 
 		Arrange: async function (Id) {
 			delete Addons.TabPlus.tids[Id];
 			const o = document.getElementById("tabplus_" + Id);
 			if (o) {
+				const wait = [];
 				const TC = await te.Ctrl(CTRL_TC, Id);
 				if (TC && await TC.Visible) {
 					const nCount = await TC.Count;
-					Addons.TabPlus.tids[Id] = null;
 					Addons.TabPlus.nIndex[Id] = await TC.SelectedIndex;
 					Addons.TabPlus.nCount[Id] = nCount;
 					if (o.lastChild && Addons.TabPlus.opt.New) {
@@ -67,9 +66,13 @@ if (window.Addon == 1) {
 					Addons.TabPlus.SetActiveColor(Id);
 					const bRedraw = await api.GetKeyState(VK_LBUTTON) >= 0;
 					for (let i = 0; i < nCount; ++i) {
-						Addons.TabPlus.Style(TC, i, bRedraw);
+						wait.push(Addons.TabPlus.Style(TC, i, bRedraw, wait));
 					}
 					Common.TabPlus.rc[Id] = await GetRect(o);
+				}
+				if (/hidden/i.test(o.style.visibility)) {
+					await Promise.all(wait);
+					o.style.visibility = "visible";
 				}
 			}
 		},
@@ -105,7 +108,7 @@ if (window.Addon == 1) {
 			}
 		},
 
-		Style: async function (TC, i, bRedraw) {
+		Style: async function (TC, i, bRedraw, wait) {
 			let r = await Promise.all([TC[i], TC.Id]);
 			const FV = r[0];
 			const Id = r[1];
@@ -201,7 +204,10 @@ if (window.Addon == 1) {
 					}
 					style.backgroundColor = "";
 				}
-				Addons.TabPlus.Class(TC, i, FV);
+				const p = Addons.TabPlus.Class(TC, i, FV);
+				if (wait) {
+					wait.push(p);
+				}
 				if (nOldHeight != evTop.offsetHeight) {
 					Resize();
 				}
@@ -393,25 +399,19 @@ if (window.Addon == 1) {
 			return -1;
 		},
 
-		Resize: function () {
-			if (Addons.TabPlus.tidResize) {
-				return;
-			}
-			Addons.TabPlus.tidResize = setTimeout(async function () {
-				Addons.TabPlus.tidResize = null;
-				const cTC = await te.Ctrls(CTRL_TC, true, window.chrome);
-				for (let j = cTC.length; j-- > 0;) {
-					const id = await cTC[j].Id;
-					Addons.TabPlus.Arrange(id);
-					if (Addons.TabPlus.opt.Align > 1) {
-						const elTab = document.getElementById("tabplus_" + id);
-						const elPanel = document.getElementById("Panel_" + id);
-						if (elTab && elPanel) {
-							elTab.style.height = elPanel.clientHeight + "px";
-						}
+		Resize: async function () {
+			const cTC = await te.Ctrls(CTRL_TC, true, window.chrome);
+			for (let j = cTC.length; j-- > 0;) {
+				const id = await cTC[j].Id;
+				Addons.TabPlus.Arrange(id);
+				if (Addons.TabPlus.opt.Align > 1) {
+					const elTab = document.getElementById("tabplus_" + id);
+					const elPanel = document.getElementById("Panel_" + id);
+					if (elTab && elPanel) {
+						elTab.style.height = elPanel.clientHeight + "px";
 					}
 				}
-			}, 500);
+			}
 		},
 
 		Over: async function (Id, pt) {
@@ -471,7 +471,7 @@ if (window.Addon == 1) {
 	$.importScript("addons\\" + Addon_Id + "\\sync.js");
 
 	AddEvent("PanelCreated", function (Ctrl, Id) {
-		const s = ['<ul id="tabplus_$" class="tab0" oncontextmenu="Addons.TabPlus.Popup(event, $);return false"'];
+		const s = ['<ul id="tabplus_$" class="tab0" style="visibility: hidden" oncontextmenu="Addons.TabPlus.Popup(event, $);return false"'];
 		s.push(' ondblclick="Addons.TabPlus.DblClick(event, $);return false" onmousewheel="Addons.TabPlus.Wheel(event, $)" onresize="Resize();"');
 		s.push(' onmousedown="Addons.TabPlus.Down(event, $)" onmouseup="return Addons.TabPlus.Up(event, $)" onclick="return false;" style="width: 100%"></ul>');
 		const n = Addons.TabPlus.opt.Align || 0;
@@ -556,9 +556,7 @@ if (window.Addon == 1) {
 		}
 	});
 
-	AddEvent("Resize", function () {
-		Addons.TabPlus.Resize();
-	});
+	AddEvent("Resize", Addons.TabPlus.Resize);
 
 	const attrs = item.attributes;
 	for (let i = attrs.length; i-- > 0;) {

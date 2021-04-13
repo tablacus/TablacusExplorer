@@ -215,11 +215,17 @@ int teGetObjectLength(IDispatch *pdisp);
 //Unit
 
 VOID teSetExStyleOr(HWND hwnd, LONG l) {
-	SetWindowLong(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) | l);
+	LONG exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
+	if (exStyle != (exStyle | l)) {
+		SetWindowLong(hwnd, GWL_EXSTYLE, exStyle | l);
+	}
 }
 
 VOID teSetExStyleAnd(HWND hwnd, LONG l) {
-	SetWindowLongPtr(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) & l);
+	LONG exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
+	if (exStyle != (exStyle & l)) {
+		SetWindowLongPtr(hwnd, GWL_EXSTYLE, exStyle & l);
+	}
 }
 
 VOID teFixListState(HWND hwnd, int dwFlags) {
@@ -5990,7 +5996,6 @@ LRESULT CALLBACK TELVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 			}
 			break;
 		case WM_SETTINGCHANGE:
-			pSB->SetRedraw(FALSE);
 			pSB->InitFolderSize();
 			ArrangeWindow();
 			break;
@@ -18876,7 +18881,7 @@ VOID CteTabCtrl::CreateTC()
 BOOL CteTabCtrl::Create()
 {
 	m_hwndStatic = CreateWindowEx(
-		WS_EX_TOPMOST, WC_STATIC, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | SS_NOTIFY,
+		WS_EX_TOPMOST | WS_EX_LAYERED, WC_STATIC, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | SS_NOTIFY,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, g_hwndMain, (HMENU)0, hInst, NULL);
 	SetWindowLongPtr(m_hwndStatic, GWLP_USERDATA, (LONG_PTR)this);
 	SetWindowSubclass(m_hwndStatic, TESTProc, 1, 0);
@@ -19340,6 +19345,7 @@ VOID CteTabCtrl::RedrawUpdate()
 		return;
 	}
 	SendMessage(m_hwndStatic, WM_SETREDRAW, TRUE, 0);
+	teSetExStyleAnd(m_hwndStatic, ~WS_EX_LAYERED);
 	CteShellBrowser *pSB = GetShellBrowser(m_nIndex);
 	if (!pSB) {
 		return;

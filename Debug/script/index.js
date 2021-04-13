@@ -23,6 +23,26 @@ Resize = async function () {
 	te.offsetBottom = ode.offsetHeight - pt.y;
 	RunEvent1("Resize");
 	api.PostMessage(ui_.hwnd, WM_SIZE, 0, 0);
+	if (!ui_.Init) {
+		return;
+	}
+	if (window.chrome) {
+		if (ui_.Init === true) {
+			setTimeout(function () {
+				SetWindowAlpha(ui_.hwnd, 255);
+			}, 999);
+		} else {
+			clearTimeout(ui_.Init);
+		}
+		ui_.Init = setTimeout(function () {
+			delete ui_.Init;
+			InitFolderView();
+		}, 3000);
+		return;
+	}
+	delete ui_.Init;
+	InitFolderView();
+	SetWindowAlpha(ui_.hwnd, 255);
 }
 
 ResizeSideBar = async function (z, h) {
@@ -63,7 +83,7 @@ PanelCreated = async function (Ctrl, Id) {
 	Resize();
 	setTimeout(async function () {
 		ChangeView(await Ctrl.Selected);
-	}, 99);
+	});
 }
 
 Activate = async function (o, id) {
@@ -74,7 +94,7 @@ Activate = async function (o, id) {
 			FV.Focus();
 			setTimeout(function () {
 				o.focus();
-			}, 99);
+			});
 		}
 	}
 }
@@ -246,7 +266,7 @@ OnArrange = async function (Ctrl, rc) {
 		const Id = await Ctrl.Id;
 		let o = document.getElementById("Panel_" + Id);
 		if (!o) {
-			const s = ['<table id="Panel_', Id, '" class="layout" style="position: absolute; z-index: 1; color: inherit">'];
+			const s = ['<table id="Panel_', Id, '" class="layout" style="position: absolute; z-index: 1; color: inherit; visibility: hidden">'];
 			s.push('<tr><td id="InnerLeft_', Id, '" class="sidebar" style="width: 0; display: none; overflow: auto"></td><td style="width: 100%"><div id="InnerTop_', Id, '" style="display: none"></div>');
 			s.push('<table id="InnerTop2_', Id, '" class="layout">');
 			s.push('<tr><td id="Inner1Left_', Id, '" class="toolbar1"></td><td id="Inner1Center_', Id, '" class="toolbar2" style="white-space: nowrap"></td><td id="Inner1Right_', Id, '" class="toolbar3"></td></tr></table>');
@@ -259,6 +279,7 @@ OnArrange = async function (Ctrl, rc) {
 		Promise.all([rc.left, rc.top, rc.right, rc.bottom, Ctrl.Visible, Ctrl.Left, Ctrl.Top, Ctrl.Width, Ctrl.Height]).then(function (r) {
 			o.style.left = r[0] + "px";
 			o.style.top = r[1] + "px";
+			o.style.visibility = "visible";
 			if (r[4]) {
 				const s = r.slice(5, 8).join(",");
 				if (ui_.TCPos[s] && ui_.TCPos[s] != Id) {
@@ -431,10 +452,9 @@ Init = async function () {
 	RunEventUI("BrowserCreatedEx");
 	await RunEventUI1("Layout");
 	document.F.style.visibility = "";
-	await InitLoad(await GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor));
-	await InitWindow();
 	te.OnArrange = OnArrange;
-	InitFolderView();
-	WebBrowser.DropMode = 1;
-	AddEvent("BrowserCreatedEx", "setTimeout(async function () { api.SetLayeredWindowAttributes(await GetTopWindow(), 0, 255, 2); });");
+	await InitWindow(await GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor));
+	AddEvent("BrowserCreatedEx", "setTimeout(async function () { SetWindowAlpha(await GetTopWindow(), 255); });");
+	ui_.Init = await te.Data.Load < 2;
+	setTimeout(Resize);
 }
