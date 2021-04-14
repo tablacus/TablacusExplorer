@@ -23,26 +23,6 @@ Resize = async function () {
 	te.offsetBottom = ode.offsetHeight - pt.y;
 	RunEvent1("Resize");
 	api.PostMessage(ui_.hwnd, WM_SIZE, 0, 0);
-	if (!ui_.Init) {
-		return;
-	}
-	if (window.chrome) {
-		if (ui_.Init === true) {
-			setTimeout(function () {
-				SetWindowAlpha(ui_.hwnd, 255);
-			}, 999);
-		} else {
-			clearTimeout(ui_.Init);
-		}
-		ui_.Init = setTimeout(function () {
-			delete ui_.Init;
-			InitFolderView();
-		}, 3000);
-		return;
-	}
-	delete ui_.Init;
-	InitFolderView();
-	SetWindowAlpha(ui_.hwnd, 255);
 }
 
 ResizeSideBar = async function (z, h) {
@@ -83,7 +63,7 @@ PanelCreated = async function (Ctrl, Id) {
 	Resize();
 	setTimeout(async function () {
 		ChangeView(await Ctrl.Selected);
-	});
+	}, 99);
 }
 
 Activate = async function (o, id) {
@@ -94,7 +74,7 @@ Activate = async function (o, id) {
 			FV.Focus();
 			setTimeout(function () {
 				o.focus();
-			});
+			}, 99);
 		}
 	}
 }
@@ -133,7 +113,7 @@ SetAddon = async function (strName, Location, Tag, strVAlign) {
 			}
 		} else if (Location == "Inner") {
 			AddEventUI("PanelCreated", function (Ctrl, Id) {
-				SetAddon(null, "Inner1Left_" + Id, Tag.replace(/\$/g, Id));
+				return SetAddon(null, "Inner1Left_" + Id, Tag.replace(/\$/g, Id));
 			});
 		}
 		if (strName) {
@@ -261,8 +241,9 @@ OnArrange = async function (Ctrl, rc) {
 	if (Type == CTRL_TE) {
 		ui_.TCPos = {};
 	}
-	await RunEvent1("Arrange", Ctrl, rc);
+	await RunEventUI1("Arrange", Ctrl, rc);
 	if (Type == CTRL_TC) {
+		const p = [rc.left, rc.top, rc.right, rc.bottom, Ctrl.Visible, Ctrl.Left, Ctrl.Top, Ctrl.Width, Ctrl.Height];
 		const Id = await Ctrl.Id;
 		let o = document.getElementById("Panel_" + Id);
 		if (!o) {
@@ -274,9 +255,9 @@ OnArrange = async function (Ctrl, rc) {
 			s.push('<div id="InnerBottom_', Id, '"></div></td><td id="InnerRight_', Id, '" class="sidebar" style="width: 0; display: none"></td></tr></table>');
 			document.getElementById("Panel").insertAdjacentHTML("beforeend", s.join(""));
 			o = document.getElementById("Panel_" + Id);
-			await PanelCreated(Ctrl, Id);
+			p.push(PanelCreated(Ctrl, Id));
 		}
-		Promise.all([rc.left, rc.top, rc.right, rc.bottom, Ctrl.Visible, Ctrl.Left, Ctrl.Top, Ctrl.Width, Ctrl.Height]).then(function (r) {
+		Promise.all(p).then(function (r) {
 			o.style.left = r[0] + "px";
 			o.style.top = r[1] + "px";
 			o.style.visibility = "visible";
@@ -314,7 +295,14 @@ OnArrange = async function (Ctrl, rc) {
 			r[3] -= document.getElementById("InnerBottom_" + Id).offsetHeight;
 			api.SetRect(rc, r[0], r[1], r[2], r[3]);
 			document.getElementById("Inner2Center_" + Id).style.height = Math.max(r[3] - r[1], 0) + "px";
-			te.ArrangeCB(Ctrl, rc);
+			const p = te.ArrangeCB(Ctrl, rc);
+			if (ui_.Init) {
+				delete ui_.Init;
+				(async function () {
+					await p;
+					InitFolderView();
+				})();
+			}
 		});
 	}
 }
@@ -453,8 +441,13 @@ Init = async function () {
 	await RunEventUI1("Layout");
 	document.F.style.visibility = "";
 	te.OnArrange = OnArrange;
-	await InitWindow(await GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor));
-	AddEvent("BrowserCreatedEx", "setTimeout(async function () { SetWindowAlpha(await GetTopWindow(), 255); });");
-	ui_.Init = await te.Data.Load < 2;
-	setTimeout(Resize);
+	await InitBG(await GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor));
+	await RunEventUI1("Load");
+	await InitWindow();
+	AddEvent("BrowserCreatedEx", "setTimeout(async function () { SetWindowAlpha(await GetTopWindow(), 255); }, 99);");
+	ui_.Init = true;
+	Resize();
+	setTimeout(function () {
+		SetWindowAlpha(ui_.hwnd, 255);
+	});
 }

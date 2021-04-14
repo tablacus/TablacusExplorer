@@ -11395,6 +11395,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		g_hwndMain = CreateWindowEx(WS_EX_LAYERED, szClass, g_szTE, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
 		  CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
 		SetLayeredWindowAttributes(g_hwndMain, 0, 0, LWA_ALPHA);
+		ShowWindow(g_hwndMain, SW_SHOWNORMAL);
 		if (!bNewProcess) {
 			SetWindowLongPtr(g_hwndMain, GWLP_USERDATA, nHash);
 		}
@@ -11980,7 +11981,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					return E_FAIL;
 				}
 			case WM_MOVE:
-				teSetObjectRects(g_pWebBrowser->m_pWebBrowser, hWnd);
+				if (g_pWebBrowser) {
+					teSetObjectRects(g_pWebBrowser->m_pWebBrowser, hWnd);
+				}
 			case WM_POWERBROADCAST:
 			case WM_TIMER:
 			case WM_DROPFILES:
@@ -15920,8 +15923,8 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 		}
 	}
 #endif
-	SetTheme();
 	SetTabName();
+	SetTheme();
 	if (m_bVisible && m_hwndDV) { // #290
 		RECT rc1, rc2;
 		GetWindowRect(m_hwnd, &rc1);// 5ch#6-896
@@ -16181,7 +16184,8 @@ VOID CteShellBrowser::AddItem(LPITEMIDLIST pidl)
 					g_strException = L"AddItem";
 #endif
 				}
-				if (!(GetFolderViewAndItemCount(NULL, SVGIO_ALLVIEW) & 0xff)) {
+				int i = GetFolderViewAndItemCount(NULL, SVGIO_ALLVIEW);
+				if (i == 6 || i == 26 || i == 51 || ((i - 1) % 100) == 0) {
 					SetRedraw(TRUE);
 				}
 			}
@@ -16217,6 +16221,7 @@ VOID CteShellBrowser::NavigateComplete(BOOL bBeginNavigate)
 			}
 		}
 	}
+	teSetExStyleAnd(m_pTC->m_hwndStatic, ~WS_EX_LAYERED);
 }
 
 VOID CteShellBrowser::InitFilter()
@@ -17627,7 +17632,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 								HWND hwnd = CreateWindowEx(WS_EX_LAYERED, WINDOW_CLASS2, g_szTE, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
 									x, y, w, h, hwndParent, NULL, hInst, NULL);
 								SetLayeredWindowAttributes(hwnd, 0, 0, LWA_ALPHA);
-								teShowWindow(hwnd, SW_SHOWNORMAL);
+								ShowWindow(hwnd, SW_SHOWNORMAL);
 								teSetDarkMode(hwnd);
 								SetClassLongPtr(hwnd, GCLP_HBRBACKGROUND, GetClassLongPtr(g_hwndMain, GCLP_HBRBACKGROUND));
 								GetClientRect(hwnd, &rc);
@@ -18213,7 +18218,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				if (g_bsDocumentWrite) {
 					g_pWebBrowser->write(g_bsDocumentWrite);
 					teSysFreeString(&g_bsDocumentWrite);
-					teShowWindow(m_hwndParent, SW_SHOWNORMAL);
+					teSetExStyleAnd(m_hwndParent, ~WS_EX_LAYERED);
 					return S_OK;
 				}
 				if (g_bInit) {
@@ -18881,10 +18886,12 @@ VOID CteTabCtrl::CreateTC()
 BOOL CteTabCtrl::Create()
 {
 	m_hwndStatic = CreateWindowEx(
-		WS_EX_TOPMOST | WS_EX_LAYERED, WC_STATIC, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | SS_NOTIFY,
+		WS_EX_TOPMOST, WC_STATIC, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | SS_NOTIFY,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, g_hwndMain, (HMENU)0, hInst, NULL);
 	SetWindowLongPtr(m_hwndStatic, GWLP_USERDATA, (LONG_PTR)this);
 	SetWindowSubclass(m_hwndStatic, TESTProc, 1, 0);
+	teSetExStyleOr(m_hwndStatic, WS_EX_LAYERED);
+	SetLayeredWindowAttributes(m_hwndStatic, 0, 0, LWA_ALPHA);
 
 	m_hwndButton = CreateWindowEx(
 		WS_EX_TOPMOST, WC_BUTTON, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | BS_OWNERDRAW,
@@ -19345,7 +19352,6 @@ VOID CteTabCtrl::RedrawUpdate()
 		return;
 	}
 	SendMessage(m_hwndStatic, WM_SETREDRAW, TRUE, 0);
-	teSetExStyleAnd(m_hwndStatic, ~WS_EX_LAYERED);
 	CteShellBrowser *pSB = GetShellBrowser(m_nIndex);
 	if (!pSB) {
 		return;

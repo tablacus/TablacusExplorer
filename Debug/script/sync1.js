@@ -2522,7 +2522,7 @@ te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 		return hr;
 	}
 	if (msg == TWM_CHANGENOTIFY) {
-		const pidls = {};
+		const pidls = api.CreateObject("Object");
 		const hLock = api.SHChangeNotification_Lock(wParam, lParam, pidls);
 		if (hLock) {
 			api.SHChangeNotification_Unlock(hLock);
@@ -3475,7 +3475,7 @@ InitMenus = function () {
 	}
 }
 
-InitWindow = function (cl) {
+InitBG = function (cl) {
 	const cHwnd = [te.Ctrl(CTRL_WB).hwnd, te.hwnd];
 	for (let i = cHwnd.length; i--;) {
 		const hOld = api.SetClassLongPtr(cHwnd[i], GCLP_HBRBACKGROUND, api.CreateSolidBrush(cl));
@@ -3483,8 +3483,9 @@ InitWindow = function (cl) {
 			api.DeleteObject(hOld);
 		}
 	}
-	RunEvent1("Load");
-	ClearEvent("Load");
+}
+
+InitWindow = function () {
 	if (api.GetKeyState(VK_SHIFT) < 0 && api.GetKeyState(VK_CONTROL) < 0) {
 		ShowOptions("Tab=Add-ons");
 	}
@@ -3502,7 +3503,6 @@ InitWindow = function (cl) {
 	if (te.Data.Load < 2) {
 		RunCommandLine(api.GetCommandLine());
 	} else {
-		InitFolderView();
 		const cFV = te.Ctrls(CTRL_FV, true);
 		for (let i in cFV) {
 			ChangeView(cFV[i]);
@@ -3512,6 +3512,10 @@ InitWindow = function (cl) {
 }
 
 InitFolderView = function () {
+	const cTC = te.Ctrls(CTRL_TC, true);
+	for (let i in cTC) {
+		cTC[i].LockUpdate();
+	}
 	let hwnd;
 	const p = api.Memory("WCHAR", 11);
 	p.Write(0, VT_LPWSTR, "ShellState");
@@ -3520,6 +3524,9 @@ InitFolderView = function () {
 		if (hwnd = cFV[i].hwndView) {
 			api.SendMessage(hwnd, WM_SETTINGCHANGE, 0, p);
 		}
+	}
+	for (let i in cTC) {
+		cTC[i].UnlockUpdate();
 	}
 }
 
