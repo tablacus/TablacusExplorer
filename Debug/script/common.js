@@ -63,6 +63,18 @@ Invoke = async function (args, cb) {
 	fn.apply(parent, args);;
 }
 
+AddEvent = function (Name, fn, priority) {
+	if (/^arrange$|^layout$|^load$|^panelcreated$|^resize$/i.test(Name)) {
+		if (window.AddEventUI) {
+			AddEventUI(Name, fn, priority);
+			return;
+		}
+		InvokeUI("AddEventUI", Array.apply(null, arguments));
+		return;
+	}
+	AddEvent2(Name, fn, priority);
+}
+
 GetNum = function (s) {
 	return "number" === typeof s ? s : Number("string" === typeof s ? s.replace(/[^\d\-\.].*/, "") : s) || 0;
 }

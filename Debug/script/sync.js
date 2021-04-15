@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210414 ? te.Version : 20210414;
+		return te.Version < 20210415 ? te.Version : 20210415;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -87,7 +87,7 @@ AboutTE = function (n) {
 	}
 	const res = window.chrome && /(Edg\/[\d\.]+)/.exec(navigator.appVersion);
 	ar.push(res ? res[1] : 'IE/' + g_.IEVer);
-	ar.push("JS/" + ("undefined" == typeof ScriptEngineMajorVersion ? "Chakra" : [ScriptEngineMajorVersion(), ScriptEngineMinorVersion(), ScriptEngineBuildVersion()].join(".")));
+	ar.push("JS/" + ("undefined" == typeof ScriptEngineMajorVersion ? "Chakra.dll" : [ScriptEngineMajorVersion(), ScriptEngineMinorVersion(), ScriptEngineBuildVersion()].join(".")));
 	ar.push(GetLangId(2), screen.deviceYDPI);
 	ForEachWmi("winmgmts:\\\\.\\root\\SecurityCenter" + (WINVER >= 0x600 ? "2" : ""), "SELECT * FROM AntiVirusProduct", function (item) {
 		ar.push(item.displayName);
@@ -515,14 +515,10 @@ WriteTextFile = function (fn, src, base) {
 	return r;
 }
 
-AddEvent = function (Name, fn, priority) {
+AddEvent2 = function (Name, fn, priority) {
 	if (Name) {
 		const en = Name.toLowerCase();
 		const s = en.replace(/\d$/g, "");
-		if (/^arrange$|^layout$|^load$|^panelcreated$/i.test(en)) {
-			InvokeUI("AddEventUI", Array.apply(null, arguments));
-			return;
-		}
 		if (g_.event[s] && !te["On" + s]) {
 			te["On" + s] = g_.event[s];
 		}

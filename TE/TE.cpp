@@ -2589,7 +2589,7 @@ HWND teFindChildByClassA(HWND hwnd, LPCSTR lpClassA)
 BOOL teSetRect(HWND hwnd, int left, int top, int right, int bottom)
 {
 	RECT rc;
-	GetClientRect(hwnd, &rc);
+	GetWindowRect(hwnd, &rc);
 	MoveWindow(hwnd, left, top, right - left, bottom - top, TRUE);
 	return (rc.right - rc.left != right - left || rc.bottom - rc.top != bottom - top);
 }
@@ -6155,7 +6155,7 @@ VOID ArrangeWindowTC(CteTabCtrl *pTC, RECT *prc)
 				if (pSB->m_param[SB_TreeAlign] & 2) {
 					RECT rcTree = *prc;
 					rcTree.right = prc->left + pSB->m_param[SB_TreeWidth] - 2;
-					MoveWindow(pSB->m_pTV->m_hwnd, rcTree.left, rcTree.top, rcTree.right - rcTree.left, rcTree.bottom - rcTree.top, TRUE);
+					teSetRect(pSB->m_pTV->m_hwnd, rcTree.left, rcTree.top, rcTree.right, rcTree.bottom);
 #ifdef _2000XP
 					pSB->m_pTV->SetObjectRect();
 #endif
@@ -6171,13 +6171,9 @@ VOID ArrangeWindowTC(CteTabCtrl *pTC, RECT *prc)
 				if (pSB->m_hwnd) {
 					CopyRect(&pSB->m_rc, prc);
 					pSB->SetObjectRect();
-					if (pSB->m_hwndAlt) {
-						MoveWindow(pSB->m_hwndAlt, 0, 0, prc->right - prc->left, prc->bottom - prc->top, TRUE);
-					}
 				}
 			}
-			MoveWindow(pTC->m_hwndButton, rcTab.left, rcTab.top,
-				rcTab.right - rcTab.left, rcTab.bottom - rcTab.top, TRUE);
+			teSetRect(pTC->m_hwndButton, rcTab.left, rcTab.top, rcTab.right, rcTab.bottom);
 			BringWindowToTop(pTC->m_hwndStatic);
 			while (--nCount >= 0) {
 				if (nCount != pTC->m_nIndex) {
@@ -10289,6 +10285,20 @@ VOID teApiSetRect(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pV
 	teVariantCopy(pVarResult, &pDispParams->rgvarg[nArg]);
 }
 
+VOID teApiSendMessageTimeout(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	DWORD_PTR dwResult = 0;
+	teSetPtr(pVarResult, SendMessageTimeout(param[0].hwnd, param[1].uintVal, param[2].wparam, param[3].lparam, param[4].uintVal, param[5].uintVal, &dwResult));
+	IUnknown *punk = NULL;
+	if (nArg >= 6 && FindUnknown(&pDispParams->rgvarg[nArg - 6], &punk)) {
+		VARIANT v;
+		VariantInit(&v);
+		teSetPtr(&v, dwResult);
+		tePutPropertyAt(punk, 0, &v);
+		VariantClear(&v);
+	}
+}
+
 #ifdef _DEBUG
 VOID teApimciSendString(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -10678,6 +10688,7 @@ TEDispatchApi dispAPI[] = {
 	{ 2, -1, -1, -1, "GetDeviceCaps", teApiGetDeviceCaps },
 	{ 4, -1, -1, -1, "SetLayeredWindowAttributes", teApiSetLayeredWindowAttributes },
 	{ 1, -1, -1, -1, "SetRect", teApiSetRect },
+	{ 6, -1, -1, -1, "SendMessageTimeout", teApiSendMessageTimeout },
 #ifdef _DEBUG
 	{ 4,  0, -1, -1, "mciSendString", teApimciSendString },
 	{ 4,  1, -1, -1, "GetGlyphIndices", teApiGetGlyphIndices },
@@ -10981,6 +10992,23 @@ VOID CALLBACK teTimerProcGroupBy(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD d
 #endif
 	}
 }
+
+VOID CALLBACK teTimerProcSW2(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+{
+	try {
+		KillTimer(hwnd, idEvent);
+		if (hwnd == (HWND)idEvent) {
+			LONG exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
+			teSetExStyleAnd(hwnd, ~WS_EX_LAYERED);
+		}
+	} catch (...) {
+		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"teTimerProcSW2";
+#endif
+	}
+}
+
 
 LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
@@ -11395,7 +11423,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		g_hwndMain = CreateWindowEx(WS_EX_LAYERED, szClass, g_szTE, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
 		  CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
 		SetLayeredWindowAttributes(g_hwndMain, 0, 0, LWA_ALPHA);
-		ShowWindow(g_hwndMain, SW_SHOWNORMAL);
 		if (!bNewProcess) {
 			SetWindowLongPtr(g_hwndMain, GWLP_USERDATA, nHash);
 		}
@@ -15856,10 +15883,23 @@ int CteShellBrowser::GetSizeFormat()
 
 VOID CteShellBrowser::SetObjectRect()
 {
+	RECT rc;
+	GetWindowRect(m_hwnd, &rc);
 	if (m_hwndDV) {
 		MoveWindow(m_hwnd, m_rc.left, m_rc.top, m_rc.right - m_rc.left, m_rc.bottom - m_rc.top + 1, TRUE);
 	}
 	MoveWindow(m_hwnd, m_rc.left, m_rc.top, m_rc.right - m_rc.left, m_rc.bottom - m_rc.top, TRUE);
+	if (m_hwndAlt) {
+		teSetRect(m_hwndAlt, 0, 0, m_rc.right - m_rc.left, m_rc.bottom - m_rc.top);
+	}
+	if (m_hwndLV) {
+		if (rc.right - rc.left != m_rc.right - m_rc.left || rc.bottom - rc.top != m_rc.bottom - m_rc.top) {
+			int nFocused = ListView_GetNextItem(m_hwndLV, -1, LVNI_ALL | LVNI_FOCUSED | LVNI_SELECTED);
+			if (nFocused >= 0) {
+				PostMessage(m_hwndLV, LVM_ENSUREVISIBLE, nFocused, FALSE);
+			}
+		}
+	}
 }
 
 int CteShellBrowser::GetFolderViewAndItemCount(IFolderView **ppFV, UINT uFlags)
@@ -18227,6 +18267,9 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				}
 				if (g_pSW) {
 					teRegister();
+				}
+				if (g_hwndMain != m_hwndParent) {
+					SetTimer(m_hwndParent, (UINT_PTR)m_hwndParent, 1000, teTimerProcSW2);
 				}
 				return S_OK;
 			}

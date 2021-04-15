@@ -3503,31 +3503,20 @@ InitWindow = function () {
 	if (te.Data.Load < 2) {
 		RunCommandLine(api.GetCommandLine());
 	} else {
-		const cFV = te.Ctrls(CTRL_FV, true);
+		let hwnd;
+		const p = api.Memory("WCHAR", 11);
+		p.Write(0, VT_LPWSTR, "ShellState");
+		const cFV = te.Ctrls(CTRL_FV);
 		for (let i in cFV) {
-			ChangeView(cFV[i]);
+			if (hwnd = cFV[i].hwndView) {
+				api.SendMessage(hwnd, WM_SETTINGCHANGE, 0, p);
+			}
+			if (cFV[i].Visible) {
+				ChangeView(cFV[i]);
+			}
 		}
 	}
 	WebBrowser.DropMode = 1;
-}
-
-InitFolderView = function () {
-	const cTC = te.Ctrls(CTRL_TC, true);
-	for (let i in cTC) {
-		cTC[i].LockUpdate();
-	}
-	let hwnd;
-	const p = api.Memory("WCHAR", 11);
-	p.Write(0, VT_LPWSTR, "ShellState");
-	const cFV = te.Ctrls(CTRL_FV);
-	for (let i in cFV) {
-		if (hwnd = cFV[i].hwndView) {
-			api.SendMessage(hwnd, WM_SETTINGCHANGE, 0, p);
-		}
-	}
-	for (let i in cTC) {
-		cTC[i].UnlockUpdate();
-	}
 }
 
 Threads = api.CreateObject("Object");

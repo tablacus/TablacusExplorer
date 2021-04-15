@@ -91,7 +91,11 @@ LoadScript = function (js, cb) {
 			if (ado) {
 				ado.CharSet = "utf-8";
 				ado.Open();
-				ado.LoadFromFile(fn);
+				try {
+					ado.LoadFromFile(fn);
+				} catch (e) {
+					wsh.Popup([e.stack || e.message, fn].join("\n\n"));
+				}
 				var src = FixScript(ado.ReadText());
 				ado.Close();
 				document.write('<script type="text/javascript">\n' + src + '\n</script>');

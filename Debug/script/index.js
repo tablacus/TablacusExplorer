@@ -60,7 +60,7 @@ ResetScroll = function () {
 
 PanelCreated = async function (Ctrl, Id) {
 	await RunEventUI1("PanelCreated", Ctrl, Id);
-	Resize();
+	await Resize();
 	setTimeout(async function () {
 		ChangeView(await Ctrl.Selected);
 	}, 99);
@@ -81,7 +81,7 @@ Activate = async function (o, id) {
 
 GetAddonLocation = async function (strName) {
 	const items = await te.Data.Addons.getElementsByTagName(strName);
-	return (await GetLength(items) ? await items[0].getAttribute("Location") : null);
+	return await GetLength(items) && await items[0].getAttribute("Location");
 }
 
 SetAddon = async function (strName, Location, Tag, strVAlign) {
@@ -295,15 +295,12 @@ OnArrange = async function (Ctrl, rc) {
 			r[3] -= document.getElementById("InnerBottom_" + Id).offsetHeight;
 			api.SetRect(rc, r[0], r[1], r[2], r[3]);
 			document.getElementById("Inner2Center_" + Id).style.height = Math.max(r[3] - r[1], 0) + "px";
-			const p = te.ArrangeCB(Ctrl, rc);
-			if (ui_.Init) {
-				delete ui_.Init;
-				(async function () {
-					await p;
-					InitFolderView();
-				})();
-			}
+			te.ArrangeCB(Ctrl, rc);
 		});
+	}
+	if (ui_.Show) {
+		SetWindowAlpha(ui_.hwnd, 255);
+		delete ui_.Show;
 	}
 }
 
@@ -442,12 +439,9 @@ Init = async function () {
 	document.F.style.visibility = "";
 	te.OnArrange = OnArrange;
 	await InitBG(await GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor));
-	await RunEventUI1("Load");
 	await InitWindow();
-	AddEvent("BrowserCreatedEx", "setTimeout(async function () { SetWindowAlpha(await GetTopWindow(), 255); }, 99);");
-	ui_.Init = true;
+	await RunEventUI1("Load");
+	ui_.Show = true;
 	Resize();
-	setTimeout(function () {
-		SetWindowAlpha(ui_.hwnd, 255);
-	});
+	AddEvent("BrowserCreatedEx", "setTimeout(async function () { SetWindowAlpha(await GetTopWindow(), 255); }, 99);");
 }
