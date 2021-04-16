@@ -75,6 +75,18 @@ AddEvent = function (Name, fn, priority) {
 	AddEvent2(Name, fn, priority);
 }
 
+ClearEvent = function (Name) {
+	if (/^arrange$|^layout$|^load$|^panelcreated$|^resize$/i.test(Name)) {
+		if (window.ui_) {
+			delete ui_.eventTE[Name.toLowerCase()];
+			return;
+		}
+		InvokeUI("ClearEvent", Array.apply(null, arguments));
+		return;
+	}
+	ClearEvent2(Name);
+}
+
 GetNum = function (s) {
 	return "number" === typeof s ? s : Number("string" === typeof s ? s.replace(/[^\d\-\.].*/, "") : s) || 0;
 }

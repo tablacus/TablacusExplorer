@@ -6054,7 +6054,7 @@ VOID ArrangeWindowTC(CteTabCtrl *pTC, RECT *prc)
 	if (!pTC->m_bEmpty && pTC->m_bVisible) {
 		RECT rcTab;
 		int nAlign = g_param[TE_Tab] ? pTC->m_param[TC_Align] : 0;
-		teSetRect(pTC->m_hwndStatic, prc->left, prc->top, prc->right, prc->bottom);
+		MoveWindow(pTC->m_hwndStatic, prc->left, prc->top, prc->right - prc->left, prc->bottom - prc->top, FALSE);
 		pTC->LockUpdate();
 		try {
 			int left = prc->left;
@@ -6153,9 +6153,7 @@ VOID ArrangeWindowTC(CteTabCtrl *pTC, RECT *prc)
 			}
 			if (pSB) {
 				if (pSB->m_param[SB_TreeAlign] & 2) {
-					RECT rcTree = *prc;
-					rcTree.right = prc->left + pSB->m_param[SB_TreeWidth] - 2;
-					teSetRect(pSB->m_pTV->m_hwnd, rcTree.left, rcTree.top, rcTree.right, rcTree.bottom);
+					MoveWindow(pSB->m_pTV->m_hwnd, prc->left, prc->top, pSB->m_param[SB_TreeWidth] - 2, prc->bottom - prc->top, FALSE);
 #ifdef _2000XP
 					pSB->m_pTV->SetObjectRect();
 #endif
@@ -6173,7 +6171,7 @@ VOID ArrangeWindowTC(CteTabCtrl *pTC, RECT *prc)
 					pSB->SetObjectRect();
 				}
 			}
-			teSetRect(pTC->m_hwndButton, rcTab.left, rcTab.top, rcTab.right, rcTab.bottom);
+			MoveWindow(pTC->m_hwndButton, rcTab.left, rcTab.top, rcTab.right - rcTab.left, rcTab.bottom - rcTab.top, TRUE);
 			BringWindowToTop(pTC->m_hwndStatic);
 			while (--nCount >= 0) {
 				if (nCount != pTC->m_nIndex) {
@@ -13345,7 +13343,7 @@ VOID CteShellBrowser::SetFolderFlags(BOOL bGetIconSize)
 	}
 	IFolderView2 *pFV2;
 	if (SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2)))) {
-		pFV2->SetCurrentFolderFlags(~(FWF_NOENUMREFRESH | FWF_USESEARCHFOLDER), m_param[SB_FolderFlags]);
+		pFV2->SetCurrentFolderFlags(~0, (m_param[SB_FolderFlags] | FWF_USESEARCHFOLDER) & ~FWF_NOENUMREFRESH);
 		SafeRelease(&pFV2);
 #ifdef _2000XP
 	} else {
@@ -15886,11 +15884,11 @@ VOID CteShellBrowser::SetObjectRect()
 	RECT rc;
 	GetWindowRect(m_hwnd, &rc);
 	if (m_hwndDV) {
-		MoveWindow(m_hwnd, m_rc.left, m_rc.top, m_rc.right - m_rc.left, m_rc.bottom - m_rc.top + 1, TRUE);
+		MoveWindow(m_hwnd, m_rc.left, m_rc.top, m_rc.right - m_rc.left, m_rc.bottom - m_rc.top + 1, FALSE);
 	}
 	MoveWindow(m_hwnd, m_rc.left, m_rc.top, m_rc.right - m_rc.left, m_rc.bottom - m_rc.top, TRUE);
 	if (m_hwndAlt) {
-		teSetRect(m_hwndAlt, 0, 0, m_rc.right - m_rc.left, m_rc.bottom - m_rc.top);
+		MoveWindow(m_hwndAlt, 0, 0, m_rc.right - m_rc.left, m_rc.bottom - m_rc.top, TRUE);
 	}
 	if (m_hwndLV) {
 		if (rc.right - rc.left != m_rc.right - m_rc.left || rc.bottom - rc.top != m_rc.bottom - m_rc.top) {
@@ -16261,7 +16259,6 @@ VOID CteShellBrowser::NavigateComplete(BOOL bBeginNavigate)
 			}
 		}
 	}
-	teSetExStyleAnd(m_pTC->m_hwndStatic, ~WS_EX_LAYERED);
 }
 
 VOID CteShellBrowser::InitFilter()
@@ -17672,7 +17669,6 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 								HWND hwnd = CreateWindowEx(WS_EX_LAYERED, WINDOW_CLASS2, g_szTE, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
 									x, y, w, h, hwndParent, NULL, hInst, NULL);
 								SetLayeredWindowAttributes(hwnd, 0, 0, LWA_ALPHA);
-								ShowWindow(hwnd, SW_SHOWNORMAL);
 								teSetDarkMode(hwnd);
 								SetClassLongPtr(hwnd, GCLP_HBRBACKGROUND, GetClassLongPtr(g_hwndMain, GCLP_HBRBACKGROUND));
 								GetClientRect(hwnd, &rc);
@@ -17713,7 +17709,8 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 										y = mi.rcWork.top;
 									}
 								}
-								MoveWindow(hwnd, x, y, w, h, TRUE);
+								MoveWindow(hwnd, x, y, w, h, FALSE);
+								ShowWindow(hwnd, SW_SHOWNORMAL);
 								TEWebBrowsers TEWB;
 								TEWB.hwnd = hwnd;
 								TEWB.pWB = new CteWebBrowser(hwnd, v.bstrVal, &pDispParams->rgvarg[nArg - 2]);
@@ -18256,6 +18253,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			if (m_nClose != 2) {
 				IUnknown_GetWindow(m_pWebBrowser, &m_hwndBrowser);
 				if (g_bsDocumentWrite) {
+					ShowWindow(g_hwndMain, SW_SHOWNORMAL);
 					g_pWebBrowser->write(g_bsDocumentWrite);
 					teSysFreeString(&g_bsDocumentWrite);
 					teSetExStyleAnd(m_hwndParent, ~WS_EX_LAYERED);
@@ -18814,7 +18812,7 @@ VOID CteTabCtrl::Show(BOOL bVisible)
 	} else {
 		RECT rc;
 		GetWindowRect(m_hwndStatic, &rc);
-		MoveWindow(m_hwndStatic, rc.left - rc.right, rc.top - rc.bottom, rc.right - rc.left, rc.bottom - rc.top, TRUE);
+		MoveWindow(m_hwndStatic, rc.left - rc.right, rc.top - rc.bottom, rc.right - rc.left, rc.bottom - rc.top, FALSE);
 		ShowWindow(m_hwndStatic, SW_HIDE);
 	}
 	if (bVisible ^ m_bVisible) {
@@ -18933,8 +18931,6 @@ BOOL CteTabCtrl::Create()
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, g_hwndMain, (HMENU)0, hInst, NULL);
 	SetWindowLongPtr(m_hwndStatic, GWLP_USERDATA, (LONG_PTR)this);
 	SetWindowSubclass(m_hwndStatic, TESTProc, 1, 0);
-	teSetExStyleOr(m_hwndStatic, WS_EX_LAYERED);
-	SetLayeredWindowAttributes(m_hwndStatic, 0, 0, LWA_ALPHA);
 
 	m_hwndButton = CreateWindowEx(
 		WS_EX_TOPMOST, WC_BUTTON, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | BS_OWNERDRAW,

@@ -21,7 +21,7 @@ Resize = async function () {
 	te.offsetTop = pt.y;
 	pt = GetPos(document.getElementById("bottombar"));
 	te.offsetBottom = ode.offsetHeight - pt.y;
-	RunEvent1("Resize");
+	RunEventUI1("Resize");
 	api.PostMessage(ui_.hwnd, WM_SIZE, 0, 0);
 }
 
@@ -444,4 +444,6 @@ Init = async function () {
 	ui_.Show = true;
 	Resize();
 	AddEvent("BrowserCreatedEx", "setTimeout(async function () { SetWindowAlpha(await GetTopWindow(), 255); }, 99);");
+	ClearEvent("Layout");
+	ClearEvent("Load");
 }

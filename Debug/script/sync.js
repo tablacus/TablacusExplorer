@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210415 ? te.Version : 20210415;
+		return te.Version < 20210416 ? te.Version : 20210416;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -538,7 +538,7 @@ AddEvent2 = function (Name, fn, priority) {
 	}
 }
 
-ClearEvent = function (Name) {
+ClearEvent2 = function (Name) {
 	if (Name) {
 		const en = Name.toLowerCase();
 		delete eventTE[en];
