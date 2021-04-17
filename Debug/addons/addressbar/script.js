@@ -125,10 +125,8 @@ if (window.Addon == 1) {
 			const el = document.elementFromPoint(ev.clientX, ev.clientY);
 			const res = el && /^addressbar(\d+)_$/.exec(el.id);
 			if (res) {
-				const ev1 = Addons.AddressBar.ev || {};
-				const buttons = ev1.buttons != null ? ev1.buttons : ev1.button;
 				Promise.all([Sync.AddressBar.GetPath(res[1]), GetNavigateFlags()]).then(function (r) {
-					Navigate(r[0], r[1] | ((buttons & 4) ? SBSP_NEWBROWSER : 0));
+					Navigate(r[0], r[1]);
 				});
 				return;
 			}
@@ -210,7 +208,19 @@ if (window.Addon == 1) {
 			}
 		},
 
-		Up1: function () {
+		Up1: function (ev) {
+			const ev1 = Addons.AddressBar.ev || {};
+			const buttons = ev1.buttons != null ? ev1.buttons : ev1.button;
+			if ((buttons & 4) && Math.abs(ev.screenX - ev1.screenX) < 4 && Math.abs(ev.screenY - ev1.screenY) < 4) {
+				const el = document.elementFromPoint(ev.clientX, ev.clientY);
+				const res = el && /^addressbar(\d+)_$/.exec(el.id);
+				if (res) {
+					Promise.all([Sync.AddressBar.GetPath(res[1]), GetNavigateFlags()]).then(function (r) {
+						Navigate(r[0], r[1] | SBSP_NEWBROWSER);
+					});
+					return;
+				}
+			}
 			setTimeout(function () {
 				delete Addons.AddressBar.ev;
 			}, 99);
@@ -354,7 +364,7 @@ if (window.Addon == 1) {
 			s = "100%";
 		}
 		const nSize = await api.GetSystemMetrics(SM_CYSMICON);
-		s = ['<div style="position: relative; overflow: hidden"><div id="breadcrumbbuttons" class="breadcrumb" style="position: absolute; left: 1px; top: 1px; padding-left: ', nSize + 4, 'px" onclick="Addons.AddressBar.Click1(event)" oncontextmenu="Addons.AddressBar.Popup1(event); return false;" onmousedown="Addons.AddressBar.Down1(event)" onmouseup="return Addons.AddressBar.Up1(); return false" onmouseover="Addons.AddressBar.Over1()" onmouseout="Addons.AddressBar.Out1(event)"></div><input id="addressbar" type="text" autocomplate="on" list="AddressList" onkeydown="return Addons.AddressBar.KeyDown(event, this)" onfocus="Addons.AddressBar.Focus()" onblur="Addons.AddressBar.Blur()" onresize="Addons.AddressBar.Resize()" oninput="AdjustAutocomplete(this.value)" oncontextmenu="Addons.AddressBar.ContextMenu(this)" style="width: ', EncodeSC(s), '; vertical-align: middle; padding-left: ', nSize + 4, 'px; padding-right: 16px"><div class="breadcrumb"><div id="addressbarselect" class="button" style="position: absolute; top: 1px" onmouseover="MouseOver(this);" onmouseout="MouseOut()" onclick="Addons.AddressBar.Popup3(this)">', BUTTONS.dropdown, '</div></div>'];
+		s = ['<div style="position: relative; overflow: hidden"><div id="breadcrumbbuttons" class="breadcrumb" style="position: absolute; left: 1px; top: 1px; padding-left: ', nSize + 4, 'px" onclick="Addons.AddressBar.Click1(event)" oncontextmenu="Addons.AddressBar.Popup1(event); return false;" onmousedown="Addons.AddressBar.Down1(event)" onmouseup="return Addons.AddressBar.Up1(event); return false" onmouseover="Addons.AddressBar.Over1()" onmouseout="Addons.AddressBar.Out1(event)"></div><input id="addressbar" type="text" autocomplate="on" list="AddressList" onkeydown="return Addons.AddressBar.KeyDown(event, this)" onfocus="Addons.AddressBar.Focus()" onblur="Addons.AddressBar.Blur()" onresize="Addons.AddressBar.Resize()" oninput="AdjustAutocomplete(this.value)" oncontextmenu="Addons.AddressBar.ContextMenu(this)" style="width: ', EncodeSC(s), '; vertical-align: middle; padding-left: ', nSize + 4, 'px; padding-right: 16px"><div class="breadcrumb"><div id="addressbarselect" class="button" style="position: absolute; top: 1px" onmouseover="MouseOver(this);" onmouseout="MouseOut()" onclick="Addons.AddressBar.Popup3(this)">', BUTTONS.dropdown, '</div></div>'];
 
 		s.push('<img id="addr_img" src="', await MakeImgSrc("folder:closed"), '"');
 		s.push(' onclick="return Addons.AddressBar.Exec();"');
