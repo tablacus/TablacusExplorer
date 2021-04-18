@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210416 ? te.Version : 20210416;
+		return te.Version < 20210418 ? te.Version : 20210418;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -119,6 +119,10 @@ if ("undefined" != typeof ScriptEngineMajorVersion && ScriptEngineMajorVersion()
 			}
 		}
 	})(setTimeout);
+}
+
+InvokeFunc = window.chrome ? api.Invoke : function (fn, args) {
+	return fn.apply(fn, args);
 }
 
 GetSelectedArray = function (Ctrl, pt, bPlus) {
@@ -315,7 +319,7 @@ RunEvent1 = function () {
 	const eo = eventTE[en.toLowerCase()];
 	for (let i in eo) {
 		try {
-			api.Invoke(eo[i], args);
+			InvokeFunc(eo[i], args);
 		} catch (e) {
 			ShowError(e, en, i);
 		}
@@ -328,7 +332,7 @@ RunEvent2 = function () {
 	const eo = eventTE[en.toLowerCase()];
 	for (let i in eo) {
 		try {
-			const hr = api.Invoke(eo[i], args);
+			const hr = InvokeFunc(eo[i], args);
 			if (isFinite(hr) && hr != S_OK) {
 				return hr;
 			}
@@ -345,7 +349,7 @@ RunEvent3 = function () {
 	const eo = eventTE[en.toLowerCase()];
 	for (let i in eo) {
 		try {
-			const hr = api.Invoke(eo[i], args);
+			const hr = InvokeFunc(eo[i], args);
 			if (isFinite(hr)) {
 				return hr;
 			}
@@ -361,7 +365,7 @@ RunEvent4 = function () {
 	const eo = eventTE[en.toLowerCase()];
 	for (let i in eo) {
 		try {
-			const r = api.Invoke(eo[i], args);
+			const r = InvokeFunc(eo[i], args);
 			if (r !== void 0) {
 				return r;
 			}
@@ -572,6 +576,10 @@ AddonDisabled = function (Id) {
 		}
 	}
 	CollectGarbage();
+}
+
+IsSearchPath = function (pid) {
+	return /^search\-ms:.*?&crumb=location:([^&]*)/.exec("string" === typeof pid ? pid : api.GetDisplayNameOf(pid, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
 }
 
 LoadXml = function (filename, nGroup) {
@@ -1483,6 +1491,9 @@ MakeImgIcon = function (src, index, h, bIcon, clBk) {
 	}
 	if (src && (bIcon || /\*/.test(src) || !REGEXP_IMAGE.test(src))) {
 		const sfi = api.Memory("SHFILEINFO");
+		if (IsSearchPath(src)) {
+			src = "search-ms:";
+		}
 		if (/\*/.test(src)) {
 			api.SHGetFileInfo(src, 0, sfi, sfi.Size, SHGFI_SYSICONINDEX | SHGFI_USEFILEATTRIBUTES);
 		} else {
@@ -1930,7 +1941,7 @@ Exec = function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop
 	window.FV = GetFolderView(Ctrl, pt);
 
 	if (/^Func$|^Async$/i.test(type)) {
-		const hr = api.Invoke(s, [Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop, window.FV]);
+		const hr = InvokeFunc(s, [Ctrl, pt, hwnd, dataObj, grfKeyState, pdwEffect, bDrop, window.FV]);
 		return /^Func$/i.test(type) ? hr : S_OK;
 	}
 	const hr = MainWindow.RunEvent3("Exec", Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop, window.FV);
@@ -2232,7 +2243,7 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec, ContextMenu) {
 			const eo = eventTE[Name.toLowerCase()];
 			for (let i in eo) {
 				try {
-					g_nPos = api.Invoke(eo[i], [Ctrl, hMenu, g_nPos, Selected, SelItem, ContextMenu, Name, pt]);
+					g_nPos = InvokeFunc(eo[i], [Ctrl, hMenu, g_nPos, Selected, SelItem, ContextMenu, Name, pt]);
 				} catch (e) {
 					ShowError(e, Name, i);
 				}
@@ -2304,13 +2315,13 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec, ContextMenu) {
 
 ExecMenu4 = function (Ctrl, Name, pt, hMenu, arContextMenu, nVerb, FV) {
 	if (ExtraMenuCommand[nVerb]) {
-		if (api.Invoke(ExtraMenuCommand[nVerb], [Ctrl, pt, Name, nVerb]) != S_FALSE) {
+		if (InvokeFunc(ExtraMenuCommand[nVerb], [Ctrl, pt, Name, nVerb]) != S_FALSE) {
 			api.DestroyMenu(hMenu);
 			return S_OK;
 		}
 	}
 	for (let i in eventTE.menucommand) {
-		const hr = api.Invoke(eventTE.menucommand[i], [Ctrl, pt, Name, nVerb, hMenu]);
+		const hr = InvokeFunc(eventTE.menucommand[i], [Ctrl, pt, Name, nVerb, hMenu]);
 		if (isFinite(hr) && hr == S_OK) {
 			api.DestroyMenu(hMenu);
 			return S_OK;
@@ -2587,7 +2598,7 @@ RemoveSubMenu = function (hMenu, wID) {
 
 AddMenuIconFolderItem = function (mii, FolderItem, nHeight) {
 	const path = MainWindow.GetIconImage(FolderItem, CLR_DEFAULT | COLOR_MENU, 2);
-	MenusIcon(mii, path || api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_ORIGINAL), nHeight, !path);
+	MenusIcon(mii, path || api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), nHeight, !path);
 }
 
 AddMenuImage = function (mii, image, id, nHeight) {
@@ -2607,8 +2618,11 @@ MenusIcon = function (mii, src, nHeight, bIcon) {
 	if (src && src !== "-") {
 		if ("string" === typeof src) {
 			src = ExtractPath(te, src);
-			if (!/:|^\\\\/i.test(src)) {
-				src = BuildPath(te.Data.Installed, "script\\" + src);
+			if (!/:|^\\\\/i.test(src) && /\./.test(src)) {
+				const src2 = BuildPath(te.Data.Installed, "script", src);
+				if (fso.FileExists(src2)) {
+					src = src2;
+				}
 			}
 			mii.hbmpItem = MainWindow.g_arBM[[src, nHeight].join("\t")];
 			if (mii.hbmpItem) {
@@ -2628,10 +2642,7 @@ MenusIcon = function (mii, src, nHeight, bIcon) {
 				api.DestroyIcon(hIcon);
 			}
 		}
-		if (h != image.GetHeight()) {
-			image = image.GetThumbnailImage(h * image.GetWidth() / image.GetHeight(), h) || image;
-		}
-		AddMenuImage(mii, image, src);
+		AddMenuImage(mii, GetThumbnail(image, h), src);
 	}
 }
 
@@ -3439,14 +3450,14 @@ BasicDB = function (name, bLoad, bLC) {
 			}
 			this.bChanged = true;
 			if (this.OnChange) {
-				api.Invoke(this.OnChange, [n, s, s0]);
+				InvokeFunc(this.OnChange, [n, s, s0]);
 			}
 		}
 	}
 
 	this.ENumCB = function (fncb) {
 		for (let n in this.DB) {
-			if (api.Invoke(fncb, [n, this.DB[n]]) < 0) {
+			if (InvokeFunc(fncb, [n, this.DB[n]]) < 0) {
 				break;
 			}
 		}

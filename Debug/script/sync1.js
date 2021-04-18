@@ -21,7 +21,7 @@ Refresh = function (Ctrl, pt) {
 InputDialog = function (text, defaultText, cb, data) {
 	const eo = eventTE.inputdialog;
 	if (eo && eo.length) {
-		const r = api.Invoke(eo[0], [text, defaultText]);
+		const r = InvokeFunc(eo[0], [text, defaultText]);
 		if (cb) {
 			cb(r, data);
 			return;
@@ -801,7 +801,7 @@ g_basic = {
 			api.GetCursorPos(pt);
 		}
 		if (fn) {
-			api.Invoke(fn, [Ctrl, pt]);
+			InvokeFunc(fn, [Ctrl, pt]);
 		}
 		return S_OK;
 	},
@@ -921,10 +921,6 @@ ChangeTabName = function (Ctrl) {
 
 GetTabName = function (Ctrl) {
 	if (Ctrl.FolderItem) {
-		const res = /search\-ms:.*?crumb=([^&]+)/.exec(Ctrl.FilterView);
-		if (res) {
-			return decodeURIComponent(res[1]).replace(/~<(\*?)/, "$1");
-		}
 		return RunEvent4("GetTabName", Ctrl) || GetFolderItemName(Ctrl.FolderItem);
 	}
 }
@@ -932,13 +928,6 @@ GetTabName = function (Ctrl) {
 GetFolderItemName = function (pid) {
 	return pid ? RunEvent4("GetFolderItemName", pid) || api.GetDisplayNameOf(pid, SHGDN_INFOLDER | SHGDN_ORIGINAL) : "";
 }
-
-AddEvent("GetFolderItemName", function (pid) {
-	const res = /search\-ms:.*?crumb=([^&]+)/.exec(pid.Path);
-	if (res) {
-		return decodeURIComponent(res[1]).replace(/~<(\*?)/, "$1");
-	}
-});
 
 IsUseExplorer = function (pid) {
 	return RunEvent3("UseExplorer", pid);
@@ -955,12 +944,6 @@ DeviceChanged = function (Ctrl) {
 ListViewCreated = function (Ctrl) {
 	ChangeTabName(Ctrl);
 	Ctrl.Data.AccessTime = "#";
-	const res = /search\-ms:.*?crumb=([^&]+)/.exec(Ctrl.FilterView);
-	if (res) {
-		Ctrl.FilterView = null;
-		Ctrl.Search(decodeURIComponent(res[1]).replace(/~<(\*?)/, "$1"));
-		return S_OK;
-	}
 	RunEvent1("ListViewCreated", Ctrl);
 }
 
@@ -1066,7 +1049,7 @@ IsSavePath = function (path) {
 	const args = [path];
 	for (let i in eo) {
 		try {
-			if (api.Invoke(eo[i], args) === false) {
+			if (InvokeFunc(eo[i], args) === false) {
 				return false;
 			}
 		} catch (e) {
@@ -1342,10 +1325,6 @@ CancelFilterView = function (FV) {
 	return S_FALSE;
 }
 
-IsSearchPath = function (pid) {
-	return /^search\-ms:.*?&crumb=location:([^&]*)/.exec("string" === typeof pid ? pid : api.GetDisplayNameOf(pid, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
-}
-
 GetCommandId = function (hMenu, s, ContextMenu) {
 	const arMenu = [hMenu];
 	let wId = 0;
@@ -1560,7 +1539,7 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 		setTimeout(OpenInExplorer, 99, Ctrl.FolderItem);
 		return E_FAIL;
 	}
-	if (GetLock(Ctrl) && (wFlags & SBSP_NEWBROWSER) == 0 && !api.ILIsEqual(Prev, "about:blank")) {
+	if (GetLock(Ctrl) && (wFlags & SBSP_NEWBROWSER) == 0 && !api.ILIsEqual(Prev, "about:blank") && !api.ILIsEqual(Ctrl.FolderItem, Prev)) {
 		hr = E_ACCESSDENIED;
 	}
 	return hr;
@@ -1618,7 +1597,10 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata) {
 					}
 					if (key == VK_TAB && Ctrl.hwndList) {
 						const nCount = Ctrl.ItemCount(SVGIO_ALLVIEW);
-						Ctrl.SelectItem((Ctrl.GetFocusedItem + (api.GetKeyState(VK_SHIFT) < 0 ? -1 : 1) + nCount) % nCount, SVSI_EDIT | SVSI_FOCUSED | SVSI_SELECT | SVSI_DESELECTOTHERS);
+						Ctrl.SelectItem((Ctrl.GetFocusedItem + (api.GetKeyState(VK_SHIFT) < 0 || api.GetKeyState(VK_CONTROL) < 0 ? -1 : 1) + nCount) % nCount, SVSI_EDIT | SVSI_FOCUSED | SVSI_SELECT | SVSI_DESELECTOTHERS);
+						setTimeout(function () {
+							api.SetFocus(hwnd);
+						}, 500);
 						return S_OK;
 					}
 					return S_FALSE;
@@ -2068,7 +2050,7 @@ te.OnDragEnter = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect) {
 			if (pdwEffect[0]) {
 				pdwEffect[0] = dwEffect;
 			}
-			const hr2 = api.Invoke(eo[i], [Ctrl, dataObj, pgrfKeyState[0], pt, pdwEffect, pgrfKeyState]);
+			const hr2 = InvokeFunc(eo[i], [Ctrl, dataObj, pgrfKeyState[0], pt, pdwEffect, pgrfKeyState]);
 			if (isFinite(hr2) && hr != S_OK) {
 				hr = hr2;
 			}
@@ -2087,7 +2069,7 @@ te.OnDragOver = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect) {
 	for (let i in eo) {
 		try {
 			pdwEffect[0] = dwEffect;
-			const hr = api.Invoke(eo[i], [Ctrl, dataObj, pgrfKeyState[0], pt, pdwEffect, pgrfKeyState]);
+			const hr = InvokeFunc(eo[i], [Ctrl, dataObj, pgrfKeyState[0], pt, pdwEffect, pgrfKeyState]);
 			if (isFinite(hr)) {
 				return hr;
 			}
@@ -2105,7 +2087,7 @@ te.OnDrop = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect) {
 	for (let i in eo) {
 		try {
 			pdwEffect[0] = dwEffect;
-			const hr = api.Invoke(eo[i], [Ctrl, dataObj, pgrfKeyState[0], pt, pdwEffect, pgrfKeyState]);
+			const hr = InvokeFunc(eo[i], [Ctrl, dataObj, pgrfKeyState[0], pt, pdwEffect, pgrfKeyState]);
 			if (isFinite(hr)) {
 				return hr;
 			}
@@ -2122,7 +2104,7 @@ te.OnDragLeave = function (Ctrl) {
 	const eo = eventTE[en.toLowerCase()];
 	for (let i in eo) {
 		try {
-			const hr2 = api.Invoke(eo[i], [Ctrl]);
+			const hr2 = InvokeFunc(eo[i], [Ctrl]);
 			if (isFinite(hr2) && hr != S_OK) {
 				hr = hr2;
 			}
@@ -2598,11 +2580,6 @@ te.OnReplacePath = function (Ctrl, Path) {
 			return GetParentFolderName(Path);
 		}
 	}
-	const res = IsSearchPath(Path);
-	if (res) {
-		Ctrl.FilterView = Path.replace(/displayname=[^&]+&|&crumb=location:[^&]+/g, "");
-		return;
-	}
 	return RunEvent4("ReplacePath", Ctrl, Path);
 }
 
@@ -2617,13 +2594,6 @@ te.OnGetAlt = function (dwSessionId, s) {
 }
 
 te.OnFilterView = function (FV, s) {
-	if (GetLock(FV) && !IsSearchPath(FV)) {
-		const fn = function (strMatch, ref) {
-			return encodeURIComponent(ref)
-		};
-		FV.Navigate(["search-ms:crumb=", s.replace(/([ -\\]+)/g, fn), "&crumb=location:", FV.FolderItem.Path.replace(/([ -\\]+)/g, fn)].join(""), SBSP_NEWBROWSER);
-		return S_OK;
-	}
 	return S_FALSE;
 }
 
@@ -3004,7 +2974,7 @@ AddEvent("Exec", function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEff
 	if (fn) {
 		if (dataObj) {
 			if (fn.Drop) {
-				return api.Invoke(fn.Drop, [Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop]);
+				return InvokeFunc(fn.Drop, [Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEffect, bDrop]);
 			}
 			pdwEffect[0] = DROPEFFECT_NONE;
 			return E_NOTIMPL;
@@ -3016,7 +2986,7 @@ AddEvent("Exec", function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEff
 			}
 		}
 		if (fn.Exec) {
-			const hr = api.Invoke(fn.Exec, [Ctrl, s, type, hwnd, pt]);
+			const hr = InvokeFunc(fn.Exec, [Ctrl, s, type, hwnd, pt]);
 			return hr != null ? hr : fn.Result;
 		}
 		return g_basic.Exec(Ctrl, s, type, hwnd, pt);
@@ -3344,7 +3314,7 @@ AutocompleteThread = function () {
 				}
 			}
 		}
-		api.Invoke(UI.Autocomplete, ar.join("\t"), pid.Path);
+		api.Invoke(UI.Autocomplete, [ar.join("\t"), pid.Path]);
 	}
 }
 

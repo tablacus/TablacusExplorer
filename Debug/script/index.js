@@ -21,7 +21,7 @@ Resize = async function () {
 	te.offsetTop = pt.y;
 	pt = GetPos(document.getElementById("bottombar"));
 	te.offsetBottom = ode.offsetHeight - pt.y;
-	RunEventUI1("Resize");
+	await RunEventUI1("Resize");
 	api.PostMessage(ui_.hwnd, WM_SIZE, 0, 0);
 }
 
@@ -299,8 +299,8 @@ OnArrange = async function (Ctrl, rc) {
 		});
 	}
 	if (ui_.Show) {
-		SetWindowAlpha(ui_.hwnd, 255);
 		delete ui_.Show;
+		SetWindowAlpha(ui_.hwnd, 255);
 	}
 }
 

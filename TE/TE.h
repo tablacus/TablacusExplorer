@@ -638,7 +638,6 @@ private:
 	std::vector< PROPERTYKEY> m_pDefultColumns;
 	CteDropTarget2 *m_pDropTarget2;
 	BSTR		m_bsFilter;
-	BSTR		m_bsNextFilter;
 	BSTR		m_bsAltSortColumn;
 
 	LONG		m_cRef;

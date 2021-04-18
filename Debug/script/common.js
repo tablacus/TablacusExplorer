@@ -57,32 +57,28 @@ Invoke = async function (args, cb) {
 		}
 	}
 	if (cb) {
-		api.Invoke(cb, [await fn.apply(parent, args)]);
+		InvokeFunc(cb, [await fn.apply(parent, args)]);
 		return;
 	}
-	fn.apply(parent, args);;
+	fn.apply(parent, args);
 }
 
 AddEvent = function (Name, fn, priority) {
-	if (/^arrange$|^layout$|^load$|^panelcreated$|^resize$/i.test(Name)) {
-		if (window.AddEventUI) {
-			AddEventUI(Name, fn, priority);
+	if (/^arrange$|^finalize$|^layout$|^load$|^panelcreated$|^resize$/i.test(Name)) {
+		InvokeUI("AddEventUI", Array.apply(null, arguments));
+		if (/^finalize$/.test(Name)) {
 			return;
 		}
-		InvokeUI("AddEventUI", Array.apply(null, arguments));
-		return;
 	}
 	AddEvent2(Name, fn, priority);
 }
 
 ClearEvent = function (Name) {
-	if (/^arrange$|^layout$|^load$|^panelcreated$|^resize$/i.test(Name)) {
-		if (window.ui_) {
-			delete ui_.eventTE[Name.toLowerCase()];
+	if (/^arrange$||^finalize$^layout$|^load$|^panelcreated$|^resize$/i.test(Name)) {
+		InvokeUI("ClearEventUI", [Name]);
+		if (/^finalize$/.test(Name)) {
 			return;
 		}
-		InvokeUI("ClearEvent", Array.apply(null, arguments));
-		return;
 	}
 	ClearEvent2(Name);
 }

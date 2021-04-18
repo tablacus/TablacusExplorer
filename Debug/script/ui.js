@@ -196,6 +196,10 @@ AddEventUI = function (Name, fn, priority) {
 	}
 }
 
+ClearEventUI = function (Name) {
+	delete ui_.eventTE[Name.toLowerCase()];
+}
+
 RunEventUI1 = async function () {
 	const args = Array.apply(null, arguments);
 	const en = args.shift();
@@ -944,16 +948,12 @@ LoadAddon = async function (ext, Id, arError, param, bDisabled) {
 
 FinalizeUI = async function () {
 	await CloseSubWindows();
-	if (await MainWindow.g_.bFinalized) {
+	if (await g_.bFinalized) {
 		return;
 	}
-	MainWindow.g_.bFinalized = true;
-	const eo = await MainWindow.GetTEEvent("Finalize");
-	const nLen = await GetLength(eo);
-	for (let i = 0; i < nLen; ++i) {
-		await (await eo[i])();
-	}
-	await MainWindow.FinalizeEx();
+	g_.bFinalized = true;
+	await RunEventUI1("Finalize");
+	await FinalizeEx();
 }
 
 ReloadCustomize = async function () {
