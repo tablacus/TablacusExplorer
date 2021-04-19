@@ -295,12 +295,14 @@ OnArrange = async function (Ctrl, rc) {
 			r[3] -= document.getElementById("InnerBottom_" + Id).offsetHeight;
 			api.SetRect(rc, r[0], r[1], r[2], r[3]);
 			document.getElementById("Inner2Center_" + Id).style.height = Math.max(r[3] - r[1], 0) + "px";
-			te.ArrangeCB(Ctrl, rc);
+			Promise.all([te.ArrangeCB(Ctrl, rc)]).then(function () {
+				if (ui_.Show) {
+					delete ui_.Show;
+					SetWindowAlpha(ui_.hwnd, 255);
+					RunEvent1("VisibleChanged", te, true);
+				}
+			});
 		});
-	}
-	if (ui_.Show) {
-		delete ui_.Show;
-		SetWindowAlpha(ui_.hwnd, 255);
 	}
 }
 

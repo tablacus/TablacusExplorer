@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210418 ? te.Version : 20210418;
+		return te.Version < 20210419 ? te.Version : 20210419;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -986,20 +986,16 @@ CreateFont = function (LogFont) {
 
 GetSavePath = function (FolderItem) {
 	let path = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
-	const res = IsSearchPath(FolderItem);
-	if (res) {
-		return res[0];
+	if (!/\?/.test(path) || IsSearchPath(path)) {
+		return path;
 	}
-	if (/\?/.test(path)) {
-		let nCount = api.ILGetCount(FolderItem);
-		path = [];
-		while (nCount-- > 0) {
-			path.unshift(api.GetDisplayNameOf(FolderItem, (nCount > 0 ? SHGDN_FORADDRESSBAR : 0) | SHGDN_FORPARSING | SHGDN_INFOLDER | SHGDN_ORIGINAL));
-			FolderItem = api.ILRemoveLastID(FolderItem);
-		}
-		return path.join("\\")
+	let nCount = api.ILGetCount(FolderItem);
+	path = [];
+	while (nCount-- > 0) {
+		path.unshift(api.GetDisplayNameOf(FolderItem, (nCount > 0 ? SHGDN_FORADDRESSBAR : 0) | SHGDN_FORPARSING | SHGDN_INFOLDER | SHGDN_ORIGINAL));
+		FolderItem = api.ILRemoveLastID(FolderItem);
 	}
-	return path;
+	return path.join("\\")
 }
 
 RemoveCommand = function (hMenu, ContextMenu, strDelete) {
@@ -1338,6 +1334,7 @@ MakeImgData = function (src, index, h, clBk) {
 
 MakeImgIcon = function (src, index, h, bIcon, clBk) {
 	let hIcon = null;
+	src = PathUnquoteSpaces(src);
 	src = MainWindow.RunEvent4("ReplaceIcon", src) || src;
 	if ("number" === typeof src) {
 		return src;
@@ -1500,9 +1497,11 @@ MakeImgIcon = function (src, index, h, bIcon, clBk) {
 			if (/^file:/i.test(src)) {
 				src = api.PathCreateFromUrl(src) || src;
 			}
-			const pidl = api.ILCreateFromPath(PathUnquoteSpaces(src));
+			const pidl = api.ILCreateFromPath(src);
 			if (pidl) {
 				api.SHGetFileInfo(pidl, 0, sfi, sfi.Size, SHGFI_SYSICONINDEX | SHGFI_PIDL);
+			} else {
+				api.SHGetFileInfo(src, 0, sfi, sfi.Size, SHGFI_SYSICONINDEX);
 			}
 		}
 		return GetHICON(sfi.iIcon, h, ILD_NORMAL);
@@ -2598,7 +2597,7 @@ RemoveSubMenu = function (hMenu, wID) {
 
 AddMenuIconFolderItem = function (mii, FolderItem, nHeight) {
 	const path = MainWindow.GetIconImage(FolderItem, CLR_DEFAULT | COLOR_MENU, 2);
-	MenusIcon(mii, path || api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), nHeight, !path);
+	MenusIcon(mii, path || api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_ORIGINAL), nHeight, !path);
 }
 
 AddMenuImage = function (mii, image, id, nHeight) {

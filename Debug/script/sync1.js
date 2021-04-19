@@ -2597,8 +2597,8 @@ te.OnFilterView = function (FV, s) {
 	return S_FALSE;
 }
 
-te.OnVisibleChanged = function (Ctrl) {
-	RunEvent1("VisibleChanged", Ctrl);
+te.OnVisibleChanged = function (Ctrl, Visible) {
+	RunEvent1("VisibleChanged", Ctrl, Visible);
 }
 
 ShowStatusText = function (Ctrl, Text, iPart, tm) {

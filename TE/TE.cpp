@@ -9170,10 +9170,30 @@ VOID teApiLoadCursorFromFile(int nArg, teParam *param, DISPPARAMS *pDispParams, 
 	teSetPtr(pVarResult, LoadCursorFromFile(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1])));
 }
 
+VOID teReleaseInvoke(TEInvoke *pInvoke)
+{
+	try {
+		if (::InterlockedDecrement(&pInvoke->cRef) == 0) {
+			SafeRelease(&pInvoke->pdisp);
+			teClearVariantArgs(pInvoke->cArgs, pInvoke->pv);
+			teILFreeClear(&pInvoke->pidl);
+			teSysFreeString(&pInvoke->pszPath);
+			delete [] pInvoke;
+		}
+	} catch (...) {
+		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"teReleaseInvoke";
+#endif
+	}
+}
+
 VOID teAsyncInvoke(WORD wMode, int nArg, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	TEInvoke *pInvoke = new TEInvoke[1];
-	if (GetDispatch(&pDispParams->rgvarg[nArg], &pInvoke->pdisp)) {
+	IDispatch *pdisp;
+	if (GetDispatch(&pDispParams->rgvarg[nArg], &pdisp)) {
+		TEInvoke *pInvoke = new TEInvoke[1];
+		pInvoke->pdisp = pdisp;
 		int dwms = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
 		if (dwms == 0) {
 			dwms = g_param[TE_NetworkTimeout];
@@ -9191,21 +9211,25 @@ VOID teAsyncInvoke(WORD wMode, int nArg, DISPPARAMS *pDispParams, VARIANT *pVarR
 			VariantCopy(&pInvoke->pv[i], &pDispParams->rgvarg[i]);
 		}
 		if ((pInvoke->pv[pInvoke->cArgs - 1].vt == VT_BSTR) || (wMode && teGetIDListFromVariant(&pInvoke->pidl, &pInvoke->pv[pInvoke->cArgs - 1]))) {
+			pInvoke->pszPath = (pInvoke->pv[pInvoke->cArgs - 1].vt == VT_BSTR) ? ::SysAllocString(pInvoke->pv[pInvoke->cArgs - 1].bstrVal) : NULL;
 			if (dwms > 0) {
 				SetTimer(g_hwndMain, (UINT_PTR)pInvoke, dwms, teTimerProcParse);
 			}
-			teSetPtr(pVarResult, _beginthread(&threadParseDisplayName, 0, pInvoke));
-			return;
+			uintptr_t uResult = _beginthread(&threadParseDisplayName, 0, pInvoke);
+			if (uResult != -1) {
+				teSetPtr(pVarResult, uResult);
+				return;
+			}
 		}
 		FolderItem *pid;
 		GetFolderItemFromVariant(&pid, &pInvoke->pv[pInvoke->cArgs - 1]);
 		VariantClear(&pInvoke->pv[pInvoke->cArgs - 1]);
 		teSetObjectRelease(&pInvoke->pv[pInvoke->cArgs - 1], pid);
-		Invoke5(pInvoke->pdisp, DISPID_VALUE, DISPATCH_METHOD, NULL, pInvoke->cArgs, pInvoke->pv);
-		pInvoke->pdisp->Release();
+		Invoke5(pdisp, DISPID_VALUE, DISPATCH_METHOD, NULL, -pInvoke->cArgs, pInvoke->pv);
+		--pInvoke->cRef;
+		teReleaseInvoke(pInvoke);
 		teSetPtr(pVarResult, 0);
 	}
-	delete [] pInvoke;
 }
 
 VOID teApiSHParseDisplayName(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -11263,14 +11287,13 @@ HRESULT teCreateWebView2(IWebBrowser2 **ppWebBrowser)
 		VariantInit(&v);
 		(*ppWebBrowser)->GetProperty(L"version", &v);
 		if (GetIntFromVariantClear(&v) >= 20112000) {
-			g_nBlink = 1;
 			(*ppWebBrowser)->QueryInterface(IID_PPV_ARGS(&g_pSP));
 		} else {
 			(*ppWebBrowser)->Release();
-			g_nBlink = 2;
 			hr = E_FAIL;
 		}
 	}
+	g_nBlink = hr == S_OK ? 1 : 2;
 	return hr;
 }
 
@@ -11840,16 +11863,14 @@ VOID CALLBACK teTimerProcParse(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 					}
 					teSetObjectRelease(&pInvoke->pv[pInvoke->cArgs - 1], pid1);
 				}
-				Invoke5(pInvoke->pdisp, pInvoke->dispid, DISPATCH_METHOD, NULL, pInvoke->cArgs, pInvoke->pv);
-				pInvoke->cArgs = 0;
+				Invoke5(pInvoke->pdisp, pInvoke->dispid, DISPATCH_METHOD, NULL, -pInvoke->cArgs, pInvoke->pv);
 			} else if (pInvoke->wErrorHandling == 1) {
 				VARIANT *pv = &pInvoke->pv[pInvoke->cArgs - 1];
 				CteFolderItem *pid = new CteFolderItem(pv);
 				pid->MakeUnavailable();
 				VariantClear(pv);
 				teSetObjectRelease(pv, pid);
-				Invoke5(pInvoke->pdisp, pInvoke->dispid, DISPATCH_METHOD, NULL, pInvoke->cArgs, pInvoke->pv);
-				pInvoke->cArgs = 0;
+				Invoke5(pInvoke->pdisp, pInvoke->dispid, DISPATCH_METHOD, NULL, -pInvoke->cArgs, pInvoke->pv);
 			} else if (pInvoke->wErrorHandling == 2) {
 				if (g_bShowParseError) {
 					CteShellBrowser *pSB = NULL;
@@ -11867,9 +11888,9 @@ VOID CALLBACK teTimerProcParse(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 									::InterlockedIncrement(&pInvoke->cDo);
 									_beginthread(&threadParseDisplayName, 0, pInvoke);
 									g_bShowParseError = TRUE;
-									return;
+								} else {
+									g_bShowParseError = (r != IDIGNORE);
 								}
-								g_bShowParseError = (r != IDIGNORE);
 							}
 						}
 					}
@@ -11883,19 +11904,7 @@ VOID CALLBACK teTimerProcParse(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 		g_strException = L"teTimerProcParse";
 #endif
 	}
-	try {
-		if (::InterlockedDecrement(&pInvoke->cRef) == 0) {
-			SafeRelease(&pInvoke->pdisp);
-			teClearVariantArgs(pInvoke->cArgs, pInvoke->pv);
-			teILFreeClear(&pInvoke->pidl);
-			delete [] pInvoke;
-		}
-	} catch (...) {
-		g_nException = 0;
-#ifdef _DEBUG
-		g_strException = L"teTimerProcParse2";
-#endif
-	}
+	teReleaseInvoke(pInvoke);
 }
 
 VOID CALLBACK teTimerProcForTree(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
@@ -11928,9 +11937,14 @@ static void threadParseDisplayName(void *args)
 {
 	::CoInitialize(NULL);
 	TEInvoke *pInvoke = (TEInvoke *)args;
+#ifdef _DEBUG
+	WCHAR pszDebug[2048];
+	swprintf_s(pszDebug, 2048, L"%s:%d:%d\n", pInvoke->pszPath, pInvoke->wMode, pInvoke->wErrorHandling);
+	::OutputDebugString(pszDebug);
+#endif
 	try {
-		if (!pInvoke->pidl) {
-			pInvoke->pidl = teILCreateFromPath1(pInvoke->pv[pInvoke->cArgs - 1].bstrVal);
+		if (!pInvoke->pidl && pInvoke->pszPath) {
+			pInvoke->pidl = teILCreateFromPath1(pInvoke->pszPath);
 		}
 		if (pInvoke->wMode) {
 			pInvoke->hr = E_PATH_NOT_FOUND;
@@ -12695,7 +12709,7 @@ VOID CteShellBrowser::Navigate1Ex(LPOLESTR pstr, FolderItems *pFolderItems, UINT
 {
 	TEInvoke *pInvoke = new TEInvoke[1];
 	QueryInterface(IID_PPV_ARGS(&pInvoke->pdisp));
-	pInvoke->cRef = 2;
+	pInvoke->cRef = 1;
 	pInvoke->cDo = 1;
 	pInvoke->dispid = TE_METHOD + 0xfb07;//Navigate2Ex
 	pInvoke->cArgs = 4;
@@ -12703,7 +12717,7 @@ VOID CteShellBrowser::Navigate1Ex(LPOLESTR pstr, FolderItems *pFolderItems, UINT
 	pInvoke->wErrorHandling = g_nLockUpdate || m_nUnload == 2 || !g_bShowParseError ? 1 : nErrorHandling;
 	pInvoke->wMode = 0;
 	pInvoke->pidl = NULL;
-	teSetSZ(&pInvoke->pv[3], pstr);
+	pInvoke->pszPath = ::SysAllocString(pstr);
 	teSetLong(&pInvoke->pv[2], wFlags);
 	teSetObject(&pInvoke->pv[1], pFolderItems);
 	teSetObject(&pInvoke->pv[0], pPrevious);
@@ -13286,15 +13300,14 @@ VOID CteShellBrowser::Refresh(BOOL bCheck)
 					TEInvoke *pInvoke = new TEInvoke[1];
 					QueryInterface(IID_PPV_ARGS(&pInvoke->pdisp));
 					pInvoke->dispid = TE_METHOD + 0xfb06;//Refresh2Ex
-					pInvoke->cRef = 2;
+					pInvoke->cRef = 1;
 					pInvoke->cDo = 1;
 					pInvoke->cArgs = 1;
 					pInvoke->pv = GetNewVARIANT(1);
 					pInvoke->wErrorHandling = 1;
 					pInvoke->wMode = 0;
 					pInvoke->pidl = NULL;
-					pInvoke->pv[0].vt = VT_BSTR;
-					pInvoke->pv[0].bstrVal = ::SysAllocString(vResult.bstrVal);
+					pInvoke->pszPath = ::SysAllocString(vResult.bstrVal);
 					VariantClear(&vResult);
 					_beginthread(&threadParseDisplayName, 0, pInvoke);
 					return;
@@ -16370,7 +16383,7 @@ VOID CteShellBrowser::AddItem(LPITEMIDLIST pidl)
 #endif
 				}
 				int i = GetFolderViewAndItemCount(NULL, SVGIO_ALLVIEW);
-				if (i == 6 || i == 26 || i == 51 || ((i - 1) % 100) == 0) {
+				if ((i % 100) == 0) {
 					SetRedraw(TRUE);
 				}
 			}
@@ -18970,7 +18983,12 @@ VOID CteTabCtrl::Show(BOOL bVisible)
 			}
 		}
 		m_bVisible = bVisible;
-		DoFunc(TE_OnVisibleChanged, this, E_NOTIMPL);
+		if (g_pOnFunc[TE_OnVisibleChanged]) {
+			VARIANTARG *pv = GetNewVARIANT(2);
+			teSetObject(&pv[1], this);
+			teSetBool(&pv[0], bVisible);
+			Invoke4(g_pOnFunc[TE_OnVisibleChanged], NULL, 2, pv);
+		}
 	}
 }
 

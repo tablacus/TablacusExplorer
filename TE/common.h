@@ -561,6 +561,7 @@ struct TEInvoke
 {
 	VARIANT *pv;
 	IDispatch *pdisp;
+	LPWSTR	pszPath;
 	LPITEMIDLIST	pidl;
 	DISPID dispid;
 	int	cArgs;
