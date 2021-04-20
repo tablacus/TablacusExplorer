@@ -863,7 +863,7 @@ g_basic = {
 
 RefreshEx = function (FV, tm, df) {
 	if (FV.Data && FV.FolderItem && /^[A-Z]:\\|^\\\\\w/i.test(FV.FolderItem.Path)) {
-		if (RunEvent4("RefreshEx", FV, tm, df) === void 0) {
+		if (RunEvent4("RefreshEx", FV, tm, df) == null && FV.Data) {
 			if (new Date().getTime() - (FV.Data.AccessTime || 0) > (df || 5000) || FV.Data.pathChk != FV.FolderItem.Path) {
 				if (!FV.hwndView || FV.FolderItem.Unavailable || api.ILIsEqual(FV.FolderItem, FV.FolderItem.Alt)) {
 					FV.Data.AccessTime = "!";
@@ -874,7 +874,7 @@ RefreshEx = function (FV, tm, df) {
 							FV.Data.pathChk = void 0;
 							if (Path == FV.FolderItem.Path) {
 								if (hr < 0) {
-									if (RunEvent4("Error", FV) === void 0) {
+									if (RunEvent4("Error", FV) == null) {
 										if (FV.Unavailable > 3000) {
 											FV.Suspend(2);
 										}
@@ -1597,7 +1597,7 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata) {
 					}
 					if (key == VK_TAB && Ctrl.hwndList) {
 						const nCount = Ctrl.ItemCount(SVGIO_ALLVIEW);
-						Ctrl.SelectItem((Ctrl.GetFocusedItem + (api.GetKeyState(VK_SHIFT) < 0 || api.GetKeyState(VK_CONTROL) < 0 ? -1 : 1) + nCount) % nCount, SVSI_EDIT | SVSI_FOCUSED | SVSI_SELECT | SVSI_DESELECTOTHERS);
+						Ctrl.SelectItem((Ctrl.GetFocusedItem + (api.GetKeyState(VK_SHIFT) < 0 ? -1 : 1) + nCount) % nCount, SVSI_EDIT | SVSI_FOCUSED | SVSI_SELECT | SVSI_DESELECTOTHERS);
 						setTimeout(function () {
 							api.SetFocus(hwnd);
 						}, 500);
@@ -2726,12 +2726,15 @@ g_.event.windowregistered = function (Ctrl) {
 
 GetIconImage = function (Ctrl, clBk, bSimple) {
 	if ("number" !== typeof clBk) {
-		clBk = -COLOR_WINDOW;
+		clBk = CLR_DEFAULT | COLOR_WINDOW;
 	}
-	if (clBk < 0) {
-		clBk = GetSysColor(clBk & 31);
+	if ((clBk & CLR_DEFAULT) == CLR_DEFAULT) {
+		clBk = GetSysColor(clBk & ~CLR_DEFAULT);
 	}
 	const nSize = api.GetSystemMetrics(SM_CYSMICON);
+	if (!Ctrl) {
+		return MakeImgDataEx("icon:shell32.dll,234", bSimple, nSize, clBk);
+	}
 	const FolderItem = Ctrl.FolderItem || Ctrl;
 	const r = GetNetworkIcon(FolderItem.Path);
 	if (r) {

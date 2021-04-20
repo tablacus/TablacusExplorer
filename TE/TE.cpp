@@ -9177,7 +9177,7 @@ VOID teReleaseInvoke(TEInvoke *pInvoke)
 			SafeRelease(&pInvoke->pdisp);
 			teClearVariantArgs(pInvoke->cArgs, pInvoke->pv);
 			teILFreeClear(&pInvoke->pidl);
-			teSysFreeString(&pInvoke->pszPath);
+			teSysFreeString(&pInvoke->bsPath);
 			delete [] pInvoke;
 		}
 	} catch (...) {
@@ -9211,7 +9211,7 @@ VOID teAsyncInvoke(WORD wMode, int nArg, DISPPARAMS *pDispParams, VARIANT *pVarR
 			VariantCopy(&pInvoke->pv[i], &pDispParams->rgvarg[i]);
 		}
 		if ((pInvoke->pv[pInvoke->cArgs - 1].vt == VT_BSTR) || (wMode && teGetIDListFromVariant(&pInvoke->pidl, &pInvoke->pv[pInvoke->cArgs - 1]))) {
-			pInvoke->pszPath = (pInvoke->pv[pInvoke->cArgs - 1].vt == VT_BSTR) ? ::SysAllocString(pInvoke->pv[pInvoke->cArgs - 1].bstrVal) : NULL;
+			pInvoke->bsPath = (pInvoke->pv[pInvoke->cArgs - 1].vt == VT_BSTR) ? ::SysAllocString(pInvoke->pv[pInvoke->cArgs - 1].bstrVal) : NULL;
 			if (dwms > 0) {
 				SetTimer(g_hwndMain, (UINT_PTR)pInvoke, dwms, teTimerProcParse);
 			}
@@ -11546,7 +11546,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	if (bVisible) {
 		g_bInit = !bNewProcess;
 		g_hwndMain = CreateWindowEx(WS_EX_LAYERED, szClass, g_szTE, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
-		  CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInstance, NULL);
+		  CW_USEDEFAULT, CW_USEDEFAULT, 1, 1, NULL, NULL, hInstance, NULL);
 		SetLayeredWindowAttributes(g_hwndMain, 0, 0, LWA_ALPHA);
 		if (!bNewProcess) {
 			SetWindowLongPtr(g_hwndMain, GWLP_USERDATA, nHash);
@@ -11939,12 +11939,12 @@ static void threadParseDisplayName(void *args)
 	TEInvoke *pInvoke = (TEInvoke *)args;
 #ifdef _DEBUG
 	WCHAR pszDebug[2048];
-	swprintf_s(pszDebug, 2048, L"%s:%d:%d\n", pInvoke->pszPath, pInvoke->wMode, pInvoke->wErrorHandling);
+	swprintf_s(pszDebug, 2048, L"%s:%d:%d\n", pInvoke->bsPath, pInvoke->wMode, pInvoke->wErrorHandling);
 	::OutputDebugString(pszDebug);
 #endif
 	try {
-		if (!pInvoke->pidl && pInvoke->pszPath) {
-			pInvoke->pidl = teILCreateFromPath1(pInvoke->pszPath);
+		if (!pInvoke->pidl && pInvoke->bsPath) {
+			pInvoke->pidl = teILCreateFromPath1(pInvoke->bsPath);
 		}
 		if (pInvoke->wMode) {
 			pInvoke->hr = E_PATH_NOT_FOUND;
@@ -12717,7 +12717,7 @@ VOID CteShellBrowser::Navigate1Ex(LPOLESTR pstr, FolderItems *pFolderItems, UINT
 	pInvoke->wErrorHandling = g_nLockUpdate || m_nUnload == 2 || !g_bShowParseError ? 1 : nErrorHandling;
 	pInvoke->wMode = 0;
 	pInvoke->pidl = NULL;
-	pInvoke->pszPath = ::SysAllocString(pstr);
+	pInvoke->bsPath = ::SysAllocString(pstr);
 	teSetLong(&pInvoke->pv[2], wFlags);
 	teSetObject(&pInvoke->pv[1], pFolderItems);
 	teSetObject(&pInvoke->pv[0], pPrevious);
@@ -13307,7 +13307,7 @@ VOID CteShellBrowser::Refresh(BOOL bCheck)
 					pInvoke->wErrorHandling = 1;
 					pInvoke->wMode = 0;
 					pInvoke->pidl = NULL;
-					pInvoke->pszPath = ::SysAllocString(vResult.bstrVal);
+					pInvoke->bsPath = ::SysAllocString(vResult.bstrVal);
 					VariantClear(&vResult);
 					_beginthread(&threadParseDisplayName, 0, pInvoke);
 					return;
@@ -17944,13 +17944,14 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				}
 				return S_OK;
 
-			case TE_METHOD + 1091:
+			case TE_METHOD + 1091://ArrangeCB
 				if (nArg >= 1) {
 					IUnknown *punk;
 					if (FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
 						CteTabCtrl *pTC;
 						if SUCCEEDED(punk->QueryInterface(g_ClsIdTC, (LPVOID *)&pTC)) {
 							ArrangeWindowTC(pTC, (LPRECT)GetpcFromVariant(&pDispParams->rgvarg[nArg - 1], NULL));
+							pTC->Release();
 						}
 					}
 				}
@@ -17958,8 +17959,10 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 
 			case DISPID_VALUE:
 				teSetObject(pVarResult, this);
+
 			case DISPID_TE_UNDEFIND:
 				return S_OK;
+
 			case TE_METHOD + 1100://HookDragDrop//Deprecated
 				return S_OK;
 			default:
@@ -24225,7 +24228,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 						if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pIBitmap))) {
 							int nOpt = (nArg >= 1) ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) : 2;
 							m_pWICFactory->CreateBitmapFromSource(pIBitmap, (WICBitmapCreateCacheOption)nOpt, &m_pImage);
-							SafeRelease(&pIBitmap);
+							pIBitmap->Release();
 							teSetObject(pVarResult, GetBitmapObj());
 							return S_OK;
 						}

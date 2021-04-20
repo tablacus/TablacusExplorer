@@ -19,6 +19,14 @@ clearTimeout = function () {
 	InvokeUI("clearTimeout", Array.apply(null, arguments));
 }
 
+clipboardData = {
+	setData: function (format, data) {
+		api.SetClipboardData(data);
+		return true;
+	},
+	getData: api.GetClipboardData
+}
+
 CloseWindow = function () {
 	InvokeUI("CloseWindow");
 }

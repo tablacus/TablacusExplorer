@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210419 ? te.Version : 20210419;
+		return te.Version < 20210420 ? te.Version : 20210420;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -68,13 +68,16 @@ AboutTE = function (n) {
 	const ar = ["TE" + g_.bit, AboutTE(1)];
 	let s = "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\";
 	try {
-		ar.push(wsh.regRead(s + "ProductName"));
-		if (s = wsh.regRead(s + "ReleaseId")) {
+		s = wsh.regRead(s + "DisplayVersion") || wsh.regRead(s + "ReleaseId");
+	} catch (e) {
+		s = "";
+	}
+	ForEachWmi("winmgmts:\\\\.\\root\\cimv2", "SELECT * FROM Win32_OperatingSystem", function (item) {
+		ar.push(item.Caption, item.OSArchitecture);
+		if (s) {
 			ar.push(s);
 		}
-	} catch (e) { }
-	ForEachWmi("winmgmts:\\\\.\\root\\cimv2", "SELECT * FROM Win32_OperatingSystem", function (item) {
-		ar.push(item.OSArchitecture, "(" + item.Version + ")");
+		ar.push("(" + item.Version + ")");
 	});
 	const ext = {
 		Admin: api.SHTestTokenMembership(null, 0x220),
@@ -89,6 +92,9 @@ AboutTE = function (n) {
 	ar.push(res ? res[1] : 'IE/' + g_.IEVer);
 	ar.push("JS/" + ("undefined" == typeof ScriptEngineMajorVersion ? "Chakra.dll" : [ScriptEngineMajorVersion(), ScriptEngineMinorVersion(), ScriptEngineBuildVersion()].join(".")));
 	ar.push(GetLangId(2), screen.deviceYDPI);
+	ForEachWmi("winmgmts:\\\\.\\root\\cimv2", "SELECT * FROM Win32_Processor", function (item) {
+		ar.push(item.Name);
+	});
 	ForEachWmi("winmgmts:\\\\.\\root\\SecurityCenter" + (WINVER >= 0x600 ? "2" : ""), "SELECT * FROM AntiVirusProduct", function (item) {
 		ar.push(item.displayName);
 	});
@@ -2596,8 +2602,15 @@ RemoveSubMenu = function (hMenu, wID) {
 }
 
 AddMenuIconFolderItem = function (mii, FolderItem, nHeight) {
-	const path = MainWindow.GetIconImage(FolderItem, CLR_DEFAULT | COLOR_MENU, 2);
-	MenusIcon(mii, path || api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_ORIGINAL), nHeight, !path);
+	let path = MainWindow.GetIconImage(FolderItem, CLR_DEFAULT | COLOR_MENU, 2);
+	const bIcon = !path;
+	if (bIcon) {
+		path = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_ORIGINAL);
+		if (!/^::{/.test(path)) {
+			path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL);
+		}
+	}
+	MenusIcon(mii, path, nHeight, bIcon);
 }
 
 AddMenuImage = function (mii, image, id, nHeight) {
@@ -3491,13 +3504,3 @@ BasicDB = function (name, bLoad, bLC) {
 }
 
 SimpleDB = BasicDB;
-
-if ("undefined" === typeof clipboardData) {
-	clipboardData = {
-		setData: function (format, data) {
-			api.SetClipboardData(data);
-			return true;
-		},
-		getData: api.GetClipboardData
-	}
-}

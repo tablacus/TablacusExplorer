@@ -53,10 +53,10 @@ if (window.Addon == 1) {
 					oAddr.style.color = "";
 				} else {
 					const arHTML = [];
-					o.style.width = "auto";
 					o.style.height = (oAddr.offsetHeight - 2) + "px";
 					const bRoot = api.ILIsEmpty(FolderItem);
 					const Items = JSON.parse(await Sync.AddressBar.SplitPath(FolderItem));
+					o.style.width = "auto";
 					let bEmpty = true, n;
 					o.innerHTML = "";
 					for (n = 0; n < Items.length; ++n) {
@@ -325,8 +325,8 @@ if (window.Addon == 1) {
 	};
 
 	AddEvent("ChangeView1", async function (Ctrl) {
+		await Addons.AddressBar.Arrange(Ctrl);
 		document.F.addressbar.value = await Ctrl.FolderItem.Path;
-		Addons.AddressBar.Arrange(Ctrl);
 		document.getElementById("addr_img").src = await GetIconImage(Ctrl, CLR_DEFAULT | COLOR_WINDOW);
 	});
 
@@ -371,7 +371,7 @@ if (window.Addon == 1) {
 		s.push(' oncontextmenu="Addons.AddressBar.Exec(); return false;"');
 		s.push(' style="position: absolute; left: 4px; top: 1.5pt; width: ', nSize, 'px; height: ', nSize, 'px; z-index: 3; border: 0px"></div>');
 
-		SetAddon(Addon_Id, Default, s, "middle");
+		await SetAddon(Addon_Id, Default, s, "middle");
 	});
 
 	Common.AddressBar = await api.CreateObject("Object");

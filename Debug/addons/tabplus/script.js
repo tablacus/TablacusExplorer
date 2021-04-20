@@ -23,7 +23,7 @@ if (window.Addon == 1) {
 		tids: [],
 		nSelected: [],
 
-		Arrange: async function (Id) {
+		Arrange: async function (Id, bWait) {
 			delete Addons.TabPlus.tids[Id];
 			const o = document.getElementById("tabplus_" + Id);
 			if (o) {
@@ -64,25 +64,26 @@ if (window.Addon == 1) {
 						o.insertAdjacentHTML("beforeend", s.join(""));
 					}
 					Addons.TabPlus.SetActiveColor(Id);
-					const bRedraw = await api.GetKeyState(VK_LBUTTON) >= 0;
+					const bRedraw = bWait || await api.GetKeyState(VK_LBUTTON) >= 0;
 					for (let i = 0; i < nCount; ++i) {
 						wait.push(Addons.TabPlus.Style(TC, i, bRedraw, wait));
 					}
 					Common.TabPlus.rc[Id] = await GetRect(o);
 				}
-				if (/hidden/i.test(o.style.visibility)) {
+				if (bWait) {
 					await Promise.all(wait);
-					o.style.visibility = "visible";
 				}
 			}
 		},
 
-		SelectionChanged: async function (TC, Id) {
-			if (await TC.Type == CTRL_TC && await TC.Visible && !Addons.TabPlus.tids[Id]) {
-				Addons.TabPlus.tids[Id] = setTimeout(function () {
-					Addons.TabPlus.Arrange(Id);
-				}, 99);
-			}
+		SelectionChanged: function (TC) {
+			Promise.all([TC.Type, TC.Id, TC.Visible]).then(function (r) {
+				if (r[0] == CTRL_TC && r[2] && !Addons.TabPlus.tids[r[1]]) {
+					Addons.TabPlus.tids[r[1]] = setTimeout(function () {
+						Addons.TabPlus.Arrange(r[1]);
+					}, 99);
+				}
+			});
 		},
 
 		SetActiveColor: async function (Id) {
@@ -470,13 +471,13 @@ if (window.Addon == 1) {
 
 	$.importScript("addons\\" + Addon_Id + "\\sync.js");
 
-	AddEvent("PanelCreated", function (Ctrl, Id) {
-		const s = ['<ul id="tabplus_$" class="tab0" style="visibility: hidden" oncontextmenu="Addons.TabPlus.Popup(event, $);return false"'];
-		s.push(' ondblclick="Addons.TabPlus.DblClick(event, $);return false" onmousewheel="Addons.TabPlus.Wheel(event, $)" onresize="Resize();"');
-		s.push(' onmousedown="Addons.TabPlus.Down(event, $)" onmouseup="return Addons.TabPlus.Up(event, $)" onclick="return false;" style="width: 100%"></ul>');
+	AddEvent("PanelCreated", async function (Ctrl, Id) {
+		const s = ['<ul id="tabplus_', Id, '" class="tab0" oncontextmenu="Addons.TabPlus.Popup(event,', Id, ');return false"'];
+		s.push(' ondblclick="Addons.TabPlus.DblClick(event,', Id, ');return false" onmousewheel="Addons.TabPlus.Wheel(event,', Id, ')" onresize="Resize();"');
+		s.push(' onmousedown="Addons.TabPlus.Down(event,', Id, ')" onmouseup="return Addons.TabPlus.Up(event,', Id, ')" onclick="return false;" style="width: 100%"></ul>');
 		const n = Addons.TabPlus.opt.Align || 0;
 		const arAlign = ["InnerTop_", "InnerBottom_", "InnerLeft_", "InnerRight_"];
-		let o = document.getElementById(SetAddon(null, arAlign[n] + Id, s.join("").replace(/\$/g, Id)));
+		let o = document.getElementById(await SetAddon(null, arAlign[n] + Id, s.join("")));
 		if (n > 1) {
 			const w = (Number(Addons.TabPlus.opt.Width || 84) + 17) + "px";
 			o.style.width = w;
@@ -488,34 +489,40 @@ if (window.Addon == 1) {
 			o.style.overflow = "hidden";
 		}
 		o.style.overflowX = "hidden";
+		await Addons.TabPlus.Arrange(Ctrl.Id, true);
 	});
 
 	AddEvent("Lock", function (Ctrl, i, bLock) {
 		Addons.TabPlus.Style(Ctrl, i, true)
 	});
 
-	AddEvent("VisibleChanged", async function (Ctrl) {
-		if (await Ctrl.Type == CTRL_TC) {
-			if (await Ctrl.Visible) {
-				Addons.TabPlus.SetActiveColor(await Ctrl.Id);
+	AddEvent("VisibleChanged", async function (Ctrl, Visible) {
+		Promise.all([Ctrl.Type, Ctrl.Visible, Ctrl.Id]).then(function (r) {
+			if (r[0] == CTRL_TC) {
+				if (r[1]) {
+					Addons.TabPlus.SetActiveColor(r[2]);
+				}
+				Addons.TabPlus.Resize();
 			}
-			Addons.TabPlus.Resize();
-		}
+		});
 	});
 
-	AddEvent("SelectionChanging", async function (Ctrl) {
-		if (await Ctrl.Type == CTRL_TC) {
-			Addons.TabPlus.nSelected[await Ctrl.Id] = await Ctrl.SelectedIndex;
-		}
+	AddEvent("SelectionChanging", function (Ctrl) {
+		Promise.all([Ctrl.Type, Ctrl.Id, Ctrl.SelectedIndex]).then(function (r) {
+			if (r[0] == CTRL_TC) {
+				Addons.TabPlus.nSelected[r[1]] = r[2];
+			}
+		});
 	});
 
-	AddEvent("SelectionChanged", async function (Ctrl) {
-		if (await Ctrl.Type == CTRL_TC) {
-			const Id = await Ctrl.Id;
-			Addons.TabPlus.Class(Ctrl, await Ctrl.SelectedIndex);
-			Addons.TabPlus.Class(Ctrl, Addons.TabPlus.nSelected[Id]);
-			Addons.TabPlus.Arrange(Id);
-		}
+	AddEvent("SelectionChanged", function (Ctrl) {
+		Promise.all([Ctrl.Type, Ctrl.Id, Ctrl.SelectedIndex]).then(function (r) {
+			if (r[0] == CTRL_TC) {
+				Addons.TabPlus.Class(Ctrl, Addons.TabPlus.nSelected[r[1]]);
+				Addons.TabPlus.Class(Ctrl, r[2]);
+				Addons.TabPlus.Arrange(r[1]);
+			}
+		});
 	});
 
 	AddEvent("Arrange", async function (Ctrl) {
@@ -540,19 +547,19 @@ if (window.Addon == 1) {
 				}
 			}
 			if (!o) {
-				Addons.TabPlus.SelectionChanged(TC, Id);
+				Addons.TabPlus.SelectionChanged(TC);
 			}
 		}
 	});
 
 	AddEvent("Create", async function (Ctrl) {
-		Addons.TabPlus.SelectionChanged(Ctrl, await Ctrl.Id);
+		Addons.TabPlus.SelectionChanged(Ctrl);
 	});
 
 	AddEvent("CloseView", async function (Ctrl) {
 		const TC = await Ctrl.Parent;
 		if (TC) {
-			Addons.TabPlus.SelectionChanged(TC, await TC.Id);
+			Addons.TabPlus.SelectionChanged(TC);
 		}
 	});
 
@@ -564,7 +571,7 @@ if (window.Addon == 1) {
 	}
 	Addons.TabPlus.opt.Width = GetNum(Addons.TabPlus.opt.Width);
 	Addons.TabPlus.opt.IconSize = GetNum(Addons.TabPlus.opt.IconsSize) || 13;
-	Addons.TabPlus.ImgLock = Addons.TabPlus.opt.IconLock || (WINVER >= 0x0602 ? "font:Segoe UI Emoji,0x1f4cc" : "bitmap:ieframe.dll,545,13,2");
+	Addons.TabPlus.ImgLock = Addons.TabPlus.opt.IconLock || GetWinIcon(0x602, "font:Segoe UI Emoji,0x1f4cc", 0, "bitmap:ieframe.dll,545,13,2");
 	const r0 = Math.round(Addons.TabPlus.opt.IconSize * screen.deviceYDPI / 96);
 	const r = [GetImgTag({
 		draggable: "false",
@@ -573,15 +580,15 @@ if (window.Addon == 1) {
 	GetImgTag({
 		draggable: "false",
 		onclick: "Addons.TabPlus.Close(`~`Arguments`~`)",
-		class: "button",
-		title: await GetText("Close Tab"),
+		"class": "button",
+		title: await GetText("Close tab"),
 		onmouseover: "MouseOver(this)",
 		onmouseout: "MouseOut()",
-		src: Addons.TabPlus.opt.IconClose || "font:marlett,0x72"
+		src: Addons.TabPlus.opt.IconClose || "font:Marlett,0x72"
 	}, r0),
 	GetImgTag({
 		draggable: "false",
-		src: Addons.TabPlus.opt.IconProtect || (WINVER >= 0x0a00 ? "font:Segoe MDL2 Assets,0xea18" : ((WINVER >= 0x0602 ? "font:Segoe UI Emoji,0x26c9" : "bitmap:ieframe.dll,545,13,1")))
+		src: Addons.TabPlus.opt.IconProtect || GetWinIcon(0xa00, "font:Segoe MDL2 Assets,0xea18", 0x602, "font:Segoe UI Emoji,0x26c9", 0, "font:Webdings,0x64")
 	}, r0)];
 	if (Addons.TabPlus.opt.New) {
 		r.push(GetText("New tab"));
