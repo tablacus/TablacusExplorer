@@ -253,8 +253,7 @@ OnArrange = async function (Ctrl, rc) {
 			s.push('<table id="InnerView_', Id, '" class="layout" style="width: 100%"><tr><td id="Inner2Left_', Id, '" style="width: 0"></td><td id="Inner2Center_', Id, '" style="width: 100%"></td><td id="Inner2Right_', Id, '" style="width: 0; overflow: auto"></td></tr></table>');
 			s.push('<div id="InnerBottom_', Id, '"></div></td><td id="InnerRight_', Id, '" class="sidebar" style="width: 0; display: none"></td></tr></table>');
 			document.getElementById("Panel").insertAdjacentHTML("beforeend", s.join(""));
-			PanelCreated(Ctrl, Id);
-			return;
+			p.push(PanelCreated(Ctrl, Id));
 		}
 		Promise.all(p).then(function (r) {
 			const o = document.getElementById("Panel_" + Id);
