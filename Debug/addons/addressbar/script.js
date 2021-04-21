@@ -36,10 +36,11 @@ if (window.Addon == 1) {
 		},
 
 		Resize: async function () {
-			Addons.AddressBar.tid = setTimeout(Addons.AddressBar.Arrange, 500, await te.Ctrl(CTRL_FV));
+			Addons.AddressBar.tid = setTimeout(Addons.AddressBar.Arrange, 500);
 		},
 
-		Arrange: async function (FV) {
+		Arrange: async function () {
+			const FV = await te.Ctrl(CTRL_FV);
 			clearTimeout(Addons.AddressBar.tid);
 			const FolderItem = FV && await FV.FolderItem;
 			if (FolderItem) {
@@ -325,7 +326,7 @@ if (window.Addon == 1) {
 	};
 
 	AddEvent("ChangeView1", async function (Ctrl) {
-		await Addons.AddressBar.Arrange(Ctrl);
+		await Addons.AddressBar.Arrange();
 		document.F.addressbar.value = await Ctrl.FolderItem.Path;
 		document.getElementById("addr_img").src = await GetIconImage(Ctrl, CLR_DEFAULT | COLOR_WINDOW);
 	});
