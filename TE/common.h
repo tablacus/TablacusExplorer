@@ -282,6 +282,9 @@ typedef void (__stdcall* LPFNEntryPointW)(HWND hwnd, HINSTANCE hinst, LPWSTR lps
 typedef HRESULT(WINAPI* LPFNGetArchive)(LPCWSTR lpArcPath, LPCWSTR lpItem, IStream **ppStream, LPVOID lpReserved);
 //Plug in(Image)
 typedef HRESULT (WINAPI* LPFNGetImage)(IStream *pStream, LPCWSTR lpPath, int cx, HBITMAP *phBM, int *pnAlpha);
+//Plug in (MessageSFVCB)
+typedef HRESULT (WINAPI* LPFNMessageSFVCB)(IShellFolder2 *pSF2, IShellView *pSV, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
 #ifdef _USE_APIHOOK
 //API Hook
 typedef LSTATUS (APIENTRY* LPFNRegQueryValueExW)(HKEY hKey, LPCWSTR lpValueName, LPDWORD lpReserved, LPDWORD lpType, LPBYTE lpData, LPDWORD lpcbData);
