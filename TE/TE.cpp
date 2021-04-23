@@ -4969,6 +4969,7 @@ VOID ClearEvents()
 
 	g_ppGetImage.clear();
 	g_ppGetArchive.clear();
+	g_ppMessageSFVCB.clear();
 
 	g_param[TE_Tab] = TRUE;
 	g_param[TE_Version] = 20000000 + VER_Y * 10000 + VER_M * 100 + VER_D;
@@ -11026,7 +11027,6 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 						SetTimer(g_hwndMain, TET_Refresh, 100, teTimerProc);
 						return;
 					}
-					ClearEvents();
 					g_pWebBrowser->m_pWebBrowser->Refresh();
 				}
 				break;
@@ -17608,6 +17608,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 					SetTimer(g_hwndMain, TET_Reload, 100, teTimerProc);
 					return S_OK;
 				}
+				ClearEvents();
 				SetTimer(g_hwndMain, TET_Refresh, 100, teTimerProc);
 				return S_OK;
 			//DIID_DShellWindowsEvents

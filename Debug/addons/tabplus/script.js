@@ -134,14 +134,12 @@ if (window.Addon == 1) {
 					s.push(';color:', c > 127500 ? "#000" : "#fff");
 				}
 				s.push('">');
-				const bLock = r[2];
-				const bProtect = r[3];
 				const r0 = Addons.TabPlus.opt.IconSize;
-				let w = (Addons.TabPlus.opt.Close || bLock || bProtect) ? -r0 : 0;
-				if (!Addons.TabPlus.opt.NoLock && bLock) {
+				let w = (Addons.TabPlus.opt.Close || r[2] || r[3]) ? -r0 : 0;
+				if (!Addons.TabPlus.opt.NoLock && r[2]) {
 					s.push('<td class="lockcell" style="padding-right: 2px; vertical-align: middle; width: ', r0, 'px">', Addons.TabPlus.ImgLock2, '</td>');
 					w -= 2;
-				} else if (Addons.TabPlus.opt.Protected && bProtect) {
+				} else if (Addons.TabPlus.opt.Protected && r[3]) {
 					s.push('<td class="protectcell" style="padding-right: 2px; vertical-align: middle; width: ', r0, 'px">', Addons.TabPlus.ImgProtect, '</td>');
 					w -= 2;
 				}
@@ -210,7 +208,7 @@ if (window.Addon == 1) {
 					wait.push(p);
 				}
 				if (nOldHeight != evTop.offsetHeight) {
-					Resize();
+					Addons.TabPlus.SetHeight(Id);
 				}
 			}
 		},
@@ -400,17 +398,28 @@ if (window.Addon == 1) {
 			return -1;
 		},
 
-		Resize: async function () {
-			const cTC = await te.Ctrls(CTRL_TC, true, window.chrome);
-			for (let j = cTC.length; j-- > 0;) {
-				const id = await cTC[j].Id;
-				Addons.TabPlus.Arrange(id);
-				if (Addons.TabPlus.opt.Align > 1) {
-					const elTab = document.getElementById("tabplus_" + id);
-					const elPanel = document.getElementById("Panel_" + id);
-					if (elTab && elPanel) {
-						elTab.style.height = elPanel.clientHeight + "px";
-					}
+		Resize: function () {
+			if (Addons.TabPlus.tidResize) {
+				return;
+			}
+			Addons.TabPlus.tidResize = setTimeout(async function () {
+				delete Addons.TabPlus.tidResize;
+				const cTC = await te.Ctrls(CTRL_TC, true, window.chrome);
+				for (let j = cTC.length; j-- > 0;) {
+					const Id = await cTC[j].Id;
+					Addons.TabPlus.Arrange(Id);
+					Addons.TabPlus.SetHeight(Id);
+				}
+			}, 500);
+		},
+
+
+		SetHeight: function (Id) {
+			if (Addons.TabPlus.opt.Align > 1) {
+				const elTab = document.getElementById("tabplus_" + Id);
+				const elPanel = document.getElementById("Panel_" + Id);
+				if (elTab && elPanel) {
+					elTab.style.height = elPanel.style.height;
 				}
 			}
 		},
@@ -489,7 +498,7 @@ if (window.Addon == 1) {
 			o.style.overflow = "hidden";
 		}
 		o.style.overflowX = "hidden";
-		await Addons.TabPlus.Arrange(Ctrl.Id, true);
+		await Addons.TabPlus.Arrange(Id, true);
 	});
 
 	AddEvent("Lock", function (Ctrl, i, bLock) {
