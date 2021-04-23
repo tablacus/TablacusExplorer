@@ -16703,7 +16703,7 @@ STDMETHODIMP CteShellBrowser::MessageSFVCB(UINT uMsg, WPARAM wParam, LPARAM lPar
 	if (m_pSF2) {
 		for (size_t i = 0; i < g_ppMessageSFVCB.size(); ++i) {
 			LPFNMessageSFVCB _MessageSFVCB = (LPFNMessageSFVCB)g_ppMessageSFVCB[i];
-			HRESULT hr = _MessageSFVCB(m_pSF2, m_pShellView, uMsg, wParam, lParam);
+			HRESULT hr = _MessageSFVCB(this, m_pSF2, m_pShellView, uMsg, wParam, lParam);
 			if (hr != S_OK) {
 				return hr;
 			}

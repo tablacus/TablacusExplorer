@@ -283,7 +283,7 @@ typedef HRESULT(WINAPI* LPFNGetArchive)(LPCWSTR lpArcPath, LPCWSTR lpItem, IStre
 //Plug in(Image)
 typedef HRESULT (WINAPI* LPFNGetImage)(IStream *pStream, LPCWSTR lpPath, int cx, HBITMAP *phBM, int *pnAlpha);
 //Plug in (MessageSFVCB)
-typedef HRESULT (WINAPI* LPFNMessageSFVCB)(IShellFolder2 *pSF2, IShellView *pSV, UINT uMsg, WPARAM wParam, LPARAM lParam);
+typedef HRESULT (WINAPI* LPFNMessageSFVCB)(ICommDlgBrowser2 *pSB, IShellFolder2 *pSF2, IShellView *pSV, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 #ifdef _USE_APIHOOK
 //API Hook
