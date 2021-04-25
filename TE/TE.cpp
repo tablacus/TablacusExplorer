@@ -219,11 +219,11 @@ BOOL teILIsSearchFolder(LPITEMIDLIST pidl);
 VOID teAddRemoveProc(std::vector<LONG_PTR> *pppProc, LONG_PTR lpProc, BOOL bAdd)
 {
 	if (bAdd) {
-		pppProc[0].push_back(lpProc);
+		pppProc->push_back(lpProc);
 	} else {//Remove
-		for (size_t u = pppProc[0].size(); u--;) {
-			if (pppProc[0][u] == lpProc) {
-				pppProc[0].erase(pppProc[0].begin() + u);
+		for (size_t u = pppProc->size(); u--;) {
+			if (pppProc->at(u) == lpProc) {
+				pppProc->erase(pppProc->begin() + u);
 			}
 		}
 	}
@@ -521,6 +521,11 @@ VOID SafeRelease(PVOID ppObj)
 HRESULT teSetSFVCB(IShellView *pSV, IShellFolderViewCB* pNewCB, IShellFolderViewCB** ppOldCB)
 {
 	HRESULT hr = E_NOTIMPL;
+#ifdef _2000XP
+	if (!g_bUpperVista) {
+		return hr;
+	}
+#endif
 	IShellFolderView *pSFV;
 	if (pSV->QueryInterface(IID_PPV_ARGS(&pSFV)) == S_OK) {
 		IShellFolderViewCB *pSFVCB = NULL;
@@ -6177,7 +6182,7 @@ VOID ArrangeWindowTC(CteTabCtrl *pTC, RECT *prc)
 	if (!pTC->m_bEmpty && pTC->m_bVisible) {
 		RECT rcTab;
 		int nAlign = g_param[TE_Tab] ? pTC->m_param[TC_Align] : 0;
-		MoveWindow(pTC->m_hwndStatic, prc->left, prc->top, prc->right - prc->left, prc->bottom - prc->top, FALSE);
+		MoveWindow(pTC->m_hwndStatic, prc->left, prc->top, prc->right - prc->left, prc->bottom - prc->top, TRUE);
 		pTC->LockUpdate();
 		try {
 			int left = prc->left;
@@ -15585,8 +15590,8 @@ HRESULT CteShellBrowser::Items(UINT uItem, FolderItems **ppid)
 VOID CteShellBrowser::AddPathXP(CteFolderItems *pFolderItems, IShellFolderView *pSFV, int nIndex, BOOL bResultsFolder)
 {
 	try {
-		LPCITEMIDLIST pidl;
-		if SUCCEEDED(pSFV->GetObjectW(const_cast<LPITEMIDLIST *>(&pidl), nIndex)) {
+		LPITEMIDLIST pidl;
+		if SUCCEEDED(pSFV->GetObjectW(&pidl, nIndex)) {
 			VARIANT v;
 			VariantInit(&v);
 			if (bResultsFolder) {
@@ -15606,6 +15611,7 @@ VOID CteShellBrowser::AddPathXP(CteFolderItems *pFolderItems, IShellFolderView *
 				pFolderItems->ItemEx(-1, NULL, &v);
 				VariantClear(&v);
 			}
+			teILFreeClear(&pidl);
 		}
 	} catch (...) {
 		g_nException = 0;
@@ -16048,7 +16054,7 @@ VOID CteShellBrowser::SetObjectRect()
 	RECT rc;
 	GetWindowRect(m_hwnd, &rc);
 	if (m_hwndDV) {
-		MoveWindow(m_hwnd, m_rc.left, m_rc.top, m_rc.right - m_rc.left, m_rc.bottom - m_rc.top + 1, FALSE);
+		MoveWindow(m_hwnd, m_rc.left, m_rc.top, m_rc.right - m_rc.left, m_rc.bottom - m_rc.top + 1, TRUE);
 	}
 	MoveWindow(m_hwnd, m_rc.left, m_rc.top, m_rc.right - m_rc.left, m_rc.bottom - m_rc.top, TRUE);
 	if (m_hwndAlt) {
@@ -16544,11 +16550,6 @@ STDMETHODIMP CteShellBrowser::CreateViewObject(HWND hwndOwner, REFIID riid, void
 {
 	if (IsEqualIID(riid, IID_IShellView)) {
 		SafeRelease(&m_pSFVCB);
-		SFV_CREATE sfvc;
-		sfvc.cbSize = sizeof(SFV_CREATE);
-		sfvc.pshf = static_cast<IShellFolder *>(this);
-		sfvc.psfvcb = static_cast<IShellFolderViewCB *>(this);
-		sfvc.psvOuter = NULL;
 		IShellView *pSV;
 		if SUCCEEDED(m_pSF2->CreateViewObject(hwndOwner, IID_PPV_ARGS(&pSV))) {
 			if (teSetSFVCB(pSV, NULL, &m_pSFVCB) == S_OK) {
@@ -16557,6 +16558,11 @@ STDMETHODIMP CteShellBrowser::CreateViewObject(HWND hwndOwner, REFIID riid, void
 			}
 			pSV->Release();
 		}
+		SFV_CREATE sfvc;
+		sfvc.cbSize = sizeof(SFV_CREATE);
+		sfvc.pshf = static_cast<IShellFolder *>(this);
+		sfvc.psfvcb = static_cast<IShellFolderViewCB *>(this);
+		sfvc.psvOuter = NULL;
 		return SHCreateShellFolderView(&sfvc, (IShellView **)ppv);
 	}
 	return m_pSF2->CreateViewObject(hwndOwner, riid, ppv);
@@ -18984,7 +18990,7 @@ VOID CteTabCtrl::Show(BOOL bVisible)
 	} else {
 		RECT rc;
 		GetWindowRect(m_hwndStatic, &rc);
-		MoveWindow(m_hwndStatic, rc.left - rc.right, rc.top - rc.bottom, rc.right - rc.left, rc.bottom - rc.top, FALSE);
+		MoveWindow(m_hwndStatic, rc.left - rc.right, rc.top - rc.bottom, rc.right - rc.left, rc.bottom - rc.top, TRUE);
 		ShowWindow(m_hwndStatic, SW_HIDE);
 	}
 	if (bVisible ^ m_bVisible) {

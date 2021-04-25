@@ -3,7 +3,7 @@ SetTabContents(0, "View", ar[0]);
 SetTabContents(4, "General", ar[1]);
 
 SaveLocation = async function () {
-	if (g_bChanged) {
+	if (g_bChanged && document.E.Name.value) {
 		await ReplaceTB('List');
 	}
 	if (g_Chg["List"]) {

@@ -1231,15 +1231,9 @@ SaveAddons = function (Addons, bLoading) {
 	const xml = CreateXml();
 	const root = xml.createElement("TablacusExplorer");
 	for (let Id in Addons) {
-		let item;
 		try {
 			const items = te.Data.Addons.getElementsByTagName(Id);
-			if (items.length) {
-				item = items[0].cloneNode(true);
-			}
-			if (!item) {
-				item = xml.createElement(Id);
-			}
+			const item = items.length ? items[0].cloneNode(true) : xml.createElement(Id);
 			let Enabled = Addons[Id];
 			if (Enabled) {
 				const AddonFolder = BuildPath(te.Data.Installed, "addons", Id);
@@ -1255,7 +1249,7 @@ SaveAddons = function (Addons, bLoading) {
 				AddonDisabled(Id);
 			}
 			item.setAttribute("Enabled", Enabled);
-			const info = await GetAddonInfo(Id);
+			const info = GetAddonInfo(Id);
 			if (info.Level > 0) {
 				item.setAttribute("Level", info.Level);
 			}

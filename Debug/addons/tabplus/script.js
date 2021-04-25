@@ -263,7 +263,6 @@ if (window.Addon == 1) {
 				if (n >= 0) {
 					if ((ev.buttons != null ? ev.buttons : ev.button) == 1) {
 						TC.SelectedIndex = n;
-						TC[n].Focus();
 						return false;
 					}
 				}
@@ -277,6 +276,12 @@ if (window.Addon == 1) {
 				if (/3/.test(Addons.TabPlus.Button[Id])) {
 					Addons.TabPlus.GestureExec(TC, ev, Addons.TabPlus.Button[Id]);
 					return false;
+				}
+			}
+			if (Addons.TabPlus.Button[Id] == "1") {
+				const n = await Addons.TabPlus.FromPt(Id, Addons.TabPlus.pt, true);
+				if (n >= 0) {
+					TC[n].Focus();
 				}
 			}
 			Addons.TabPlus.Click = [];

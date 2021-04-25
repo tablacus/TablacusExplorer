@@ -151,9 +151,8 @@ if (window.Addon == 1) {
 
 	AddEvent("Layout", function () {
 		SetAddon(Addon_Id, Default, '<span id="_' + Addon_Id + '"></span>');
+		Addons.ToolBar.Arrange();
 	});
-
-	AddEvent("Load", Addons.ToolBar.Arrange);
 
 	te.Data.xmlToolBar = await OpenXml("toolbar.xml", false, true);
 	$.importScript("addons\\" + Addon_Id + "\\sync.js");
