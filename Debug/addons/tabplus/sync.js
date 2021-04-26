@@ -8,7 +8,7 @@ Sync.TabPlus = {
 		const Items = Common.TabPlus.rcItem[Id];
 		const TC = te.Ctrl(CTRL_TC, Id);
 		if (TC) {
-			for (let i = Items.length; i-- > 0;) {
+			for (let i = Math.min(Items.length, TC.Count); i-- > 0;) {
 				if (PtInRect(Items[i], ptc)) {
 					return i;
 				}

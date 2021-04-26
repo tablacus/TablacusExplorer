@@ -111,6 +111,13 @@ SetAddon = async function (strName, Location, Tag, strVAlign) {
 			if (strVAlign && !o.style.verticalAlign) {
 				o.style.verticalAlign = strVAlign;
 			}
+			const res = /^(LeftBar|RightBar)/.exec(Location);
+			if (res) {
+				const s = "Conf_" + res[1] + "Width";
+				if (!await te.Data[s]) {
+					te.Data[s] = 178;
+				}
+			}
 		} else if (Location == "Inner") {
 			AddEventUI("PanelCreated", function (Ctrl, Id) {
 				return SetAddon(null, "Inner1Left_" + Id, Tag.replace(/\$/g, Id));

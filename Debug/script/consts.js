@@ -56,7 +56,7 @@ BuildPath = function () {
 	for (var i = 0; i < arguments.length; ++i) {
 		if (q = arguments[i].replace(/[\/\\]$/, "")) {
 			if (s) {
-				s += "\\" + q;
+				s += "\\" + (q.replace(/^[\/\\]+/, ""));
 			} else {
 				s = q;
 			}

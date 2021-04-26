@@ -273,19 +273,26 @@ if (window.Addon == 1) {
 		Up: async function (ev, Id) {
 			const TC = await te.Ctrl(CTRL_TC, Id);
 			if (TC) {
-				if (/3/.test(Addons.TabPlus.Button[Id])) {
-					Addons.TabPlus.GestureExec(TC, ev, Addons.TabPlus.Button[Id]);
-					return false;
-				}
-			}
-			if (Addons.TabPlus.Button[Id] == "1") {
-				const n = await Addons.TabPlus.FromPt(Id, Addons.TabPlus.pt, true);
-				if (n >= 0) {
-					TC[n].Focus();
+				if (Addons.TabPlus.Button[Id] == 1) {
+					const n = await Addons.TabPlus.FromPt(Id, Addons.TabPlus.pt, true);
+					if (n >= 0) {
+						const pt = await api.Memory("POINT");
+						pt.x = ev.screenX * ui_.Zoom;
+						pt.y = ev.screenY * ui_.Zoom;
+						if (!await IsDrag(pt, Addons.TabPlus.pt)) {
+							(await TC[n]).Focus();
+						}
+					}
+				} else if (Addons.TabPlus.Button[Id] == 3) {
+					const pt = await api.Memory("POINT");
+					pt.x = ev.screenX * ui_.Zoom;
+					pt.y = ev.screenY * ui_.Zoom;
+					if (!await IsDrag(pt, Addons.TabPlus.pt)) {
+						Addons.TabPlus.GestureExec(TC, ev, Addons.TabPlus.Button[Id]);
+					}
 				}
 			}
 			Addons.TabPlus.Click = [];
-			return true;
 		},
 
 		Move: async function (ev, el) {

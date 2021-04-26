@@ -16838,7 +16838,7 @@ VOID CteShellBrowser::Suspend(int nMode)
 			if (nMode != 2) {
 				CteFolderItem *pid1 = NULL;
 				if SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1)) {
-					if (pid1->m_v.vt == VT_BSTR) {
+					if (pid1->m_v.vt == VT_BSTR && pid1->m_v.bstrVal) {
 						teILFreeClear(&m_pidl);
 						pid1->Clear();
 						pid1->Release();

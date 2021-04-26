@@ -863,7 +863,7 @@ g_basic = {
 
 RefreshEx = function (FV, tm, df) {
 	if (FV.Data && FV.FolderItem && /^[A-Z]:\\|^\\\\\w/i.test(FV.FolderItem.Path)) {
-		if (RunEvent4("RefreshEx", FV, tm, df) == null && FV.Data) {
+		if (RunEvent4("RefreshEx", FV, tm, df) == null) {
 			if (new Date().getTime() - (FV.Data.AccessTime || 0) > (df || 5000) || FV.Data.pathChk != FV.FolderItem.Path) {
 				if (!FV.hwndView || FV.FolderItem.Unavailable || api.ILIsEqual(FV.FolderItem, FV.FolderItem.Alt)) {
 					FV.Data.AccessTime = "!";
@@ -2809,7 +2809,7 @@ ChangeNotifyFV = function (lEvent, item1, item2) {
 					}
 					if (bChild || bParent) {
 						if ((lEvent & fRemove) || ((lEvent & fAdd) && FV.FolderItem.Unavailable)) {
-							RefreshEx(FV, 500, 500);
+							RefreshEx(FV, 5000, 5000);
 						}
 					}
 					FV.Notify(lEvent, item1, item2);
