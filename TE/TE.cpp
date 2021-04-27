@@ -5161,7 +5161,7 @@ HRESULT tePSFormatForDisplay(PROPERTYKEY *ppropKey, VARIANT *pv, DWORD pdfFlags,
 		}
 		return hr;
 	}
-	if (nSizeFormat && IsEqualPropertyKey(*ppropKey, PKEY_Size)) {
+	if (nSizeFormat && IsEqualPropertyKey(*ppropKey, PKEY_Size) && teVarIsNumber(pv)) {
 		*ppszDisplay = (LPWSTR)::CoTaskMemAlloc(MAX_PROP);
 		teStrFormatSize(nSizeFormat, GetLLFromVariant(pv), *ppszDisplay, MAX_PROP);
 		return S_OK;
@@ -11883,7 +11883,7 @@ VOID CALLBACK teTimerProcParse(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 				} else if (pInvoke->pidl) {
 					CteFolderItem *pid1 = new CteFolderItem(NULL);
 					if SUCCEEDED(pid1->Initialize(pInvoke->pidl)) {
-						teSetSZ(&pid1->m_v, pInvoke->pv[pInvoke->cArgs - 1].bstrVal);
+						teSetSZ(&pid1->m_v, pInvoke->bsPath);
 					}
 					teSetObjectRelease(&pInvoke->pv[pInvoke->cArgs - 1], pid1);
 				}
@@ -12795,7 +12795,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 					}
 				}
 			}
-			if (pid1->m_v.vt == VT_BSTR) {
+			if (g_pOnFunc[TE_OnReplacePath] && pid1->m_v.vt == VT_BSTR) {
 				VARIANTARG *pv = GetNewVARIANT(2);
 				teSetObject(&pv[1], this);
 				teSetSZ(&pv[0], pid1->m_v.bstrVal);
@@ -12818,10 +12818,6 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		}
 		if (teILIsBlank(m_pFolderItem1)) {
 			teILCloneReplace(&pidl, g_pidls[CSIDL_RESULTSFOLDER]);
-		}
-		if SUCCEEDED(m_pFolderItem1->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1)) {
-			m_dwUnavailable = pid1->m_dwUnavailable;
-			pid1->Release();
 		}
 	}
 	if (!m_dwUnavailable) {
@@ -13639,9 +13635,14 @@ VOID CteShellBrowser::SetSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch)
 	if (m_pSF2) {
 		VARIANT v;
 		VariantInit(&v);
-		if (SUCCEEDED(m_pSF2->GetDetailsEx(pidl, &PKEY_Size, &v))) {
-			teStrFormatSize(GetSizeFormat(), GetLLFromVariant(&v), szText, cch);
-			VariantClear(&v);
+		WIN32_FIND_DATA wfd = { 0 };
+		if SUCCEEDED(teSHGetDataFromIDList(m_pSF2, pidl, SHGDFIL_FINDDATA, &wfd, sizeof(WIN32_FIND_DATA))) {
+			if (!(wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+				ULARGE_INTEGER uli;
+				uli.HighPart = wfd.nFileSizeHigh;
+				uli.LowPart = wfd.nFileSizeLow;
+				teStrFormatSize(GetSizeFormat(), uli.QuadPart, szText, cch);
+			}
 		} else {
 			LPITEMIDLIST pidlFull = ILCombine(m_pidl, pidl);// for Search folder (search-ms:)
 			IShellFolder2 *pSF2;
@@ -14241,7 +14242,7 @@ VOID CteShellBrowser::SetColumnsStr(BSTR bsColumns)
 						if (hHeader) {
 							UINT nHeader = Header_GetItemCount(hHeader);
 							if (nHeader == nCount) {
-								SetRedraw(false);
+								SetRedraw(FALSE);
 								int *piOrderArray = new int[nHeader];
 								try {
 									for (int i = nHeader; --i >= 0;) {
@@ -16448,6 +16449,9 @@ VOID CteShellBrowser::NavigateComplete(BOOL bBeginNavigate)
 				m_bRefreshing = TRUE;
 			}
 		}
+		if (ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
+			ArrangeWindow();
+		}
 	}
 }
 
@@ -16838,7 +16842,7 @@ VOID CteShellBrowser::Suspend(int nMode)
 			if (nMode != 2) {
 				CteFolderItem *pid1 = NULL;
 				if SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1)) {
-					if (pid1->m_v.vt == VT_BSTR && pid1->m_v.bstrVal) {
+					if (pid1->m_v.vt == VT_BSTR) {
 						teILFreeClear(&m_pidl);
 						pid1->Clear();
 						pid1->Release();

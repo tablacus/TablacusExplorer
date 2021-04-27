@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210426 ? te.Version : 20210426;
+		return te.Version < 20210427 ? te.Version : 20210427;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1267,16 +1267,13 @@ GetEnum = function (FolderItem, bShowHidden) {
 		return FolderItem.Enum(FolderItem);
 	}
 	if (FolderItem.IsFolder) {
-		const Folder = FolderItem.GetFolder;
-		if (Folder) {
-			const Items = Folder.Items();
-			if (bShowHidden || api.GetKeyState(VK_SHIFT) < 0) {
-				try {
-					Items.Filter(SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN, "*");
-				} catch (e) { }
-			}
-			return api.CreateObject("FolderItems", Items);
+		const Items = FolderItem.GetFolder.Items();
+		if (bShowHidden || api.GetKeyState(VK_SHIFT) < 0) {
+			try {
+				Items.Filter(SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN, "*");
+			} catch (e) { }
 		}
+		return api.CreateObject("FolderItems", Items);
 	}
 }
 

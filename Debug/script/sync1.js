@@ -898,7 +898,8 @@ ChangeView = function (Ctrl) {
 		RunEvent1("ChangeView", Ctrl);
 		if (Ctrl.Id == Ctrl.Parent.Selected.Id) {
 			if (Ctrl.hwndView) {
-				RefreshEx(Ctrl, 5000, 5000);
+				const tm = Math.max(5000, te.Data.Conf_NetworkTimeout);
+				RefreshEx(Ctrl, tm, tm);
 			}
 			if (Ctrl.Parent.Id == TC.Id) {
 				RunEvent1("ChangeView1", Ctrl);
@@ -2809,7 +2810,8 @@ ChangeNotifyFV = function (lEvent, item1, item2) {
 					}
 					if (bChild || bParent) {
 						if ((lEvent & fRemove) || ((lEvent & fAdd) && FV.FolderItem.Unavailable)) {
-							RefreshEx(FV, 5000, 5000);
+							const tm = Math.max(500, te.Data.Conf_NetworkTimeout);
+							RefreshEx(FV, tm, tm);
 						}
 					}
 					FV.Notify(lEvent, item1, item2);
@@ -3299,16 +3301,13 @@ AutocompleteThread = function () {
 	}
 	if (pid.IsFolder && pid.Path != Autocomplete.Path) {
 		Autocomplete.Path = pid.Path;
-		const Folder = pid.GetFolder;
-		if (Folder) {
-			const Items = Folder.Items();
-			try {
-				Items.Filter(fflag, "*");
-			} catch (e) { }
-			for (let i = 0; i < Items.Count; ++i) {
-				if (Items.Item(i).IsFolder) {
-					ar.push(Items.Item(i).Path);
-				}
+		const Items = pid.GetFolder.Items();
+		try {
+			Items.Filter(fflag, "*");
+		} catch (e) { }
+		for (let i = 0; i < Items.Count; ++i) {
+			if (Items.Item(i).IsFolder) {
+				ar.push(Items.Item(i).Path);
 			}
 		}
 		api.Invoke(UI.Autocomplete, [ar.join("\t"), pid.Path]);
