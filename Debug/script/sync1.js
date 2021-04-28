@@ -903,6 +903,7 @@ ChangeView = function (Ctrl) {
 			}
 			if (Ctrl.Parent.Id == TC.Id) {
 				RunEvent1("ChangeView1", Ctrl);
+				Ctrl.Focus();
 			}
 			RunEvent1("ChangeView2", Ctrl);
 		}

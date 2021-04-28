@@ -16827,7 +16827,6 @@ VOID CteShellBrowser::Suspend(int nMode)
 		SaveFocusedItemToHistory();
 		teDoCommand(this, m_hwnd, WM_NULL, 0, 0);//Save folder setings
 	}
-	teSysFreeString(&m_bsFilter);
 	m_pTC->LockUpdate();
 	try {
 		DestroyView(0);
