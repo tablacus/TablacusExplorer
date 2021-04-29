@@ -576,28 +576,6 @@ VOID teCopyStream(IStream *pSrc, IStream *pDst)
 	pDst->Seek(liDst, STREAM_SEEK_SET, NULL);
 }
 
-BOOL teShowWindow(HWND hWnd, int nCmdShow)
-{
-	ANIMATIONINFO ai;
-	ai.cbSize = sizeof(ANIMATIONINFO);
-	int iMinAnimate = 0;
-	if (nCmdShow != SW_SHOWMINIMIZED || IsIconic(hWnd)) {
-		if (SystemParametersInfo(SPI_GETANIMATION, sizeof(ai), &ai, 0)) {
-			iMinAnimate = ai.iMinAnimate;
-		}
-		if (iMinAnimate) {
-			ai.iMinAnimate = FALSE;
-			SystemParametersInfo(SPI_SETANIMATION, sizeof(ai), &ai, 0);
-		}
-	}
-	BOOL bResult = ShowWindow(hWnd, nCmdShow);
-	if (iMinAnimate) {
-		ai.iMinAnimate = iMinAnimate;
-		SystemParametersInfo(SPI_SETANIMATION, sizeof(ai), &ai, 0);
-	}
-	return bResult;
-}
-
 VOID teCommaSize(LPWSTR pszIn, LPWSTR pszOut, UINT cchBuf, int nDigits)
 {
 	NUMBERFMT nbf;
@@ -1921,7 +1899,7 @@ HRESULT teGetDisplayNameFromIDList(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags)
 	LPCITEMIDLIST pidlPart;
 
 	if SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &pidlPart)) {
-		hr = teGetDisplayNameBSTR(pSF, pidlPart, uFlags & (~(SHGDN_FORPARSINGEX | SHGDN_ORIGINAL)), pbs);
+		hr = teGetDisplayNameBSTR(pSF, pidlPart, uFlags & (~SHGDN_FORPARSINGEX), pbs);
 		if (hr == S_OK) {
 			BSTR bs = NULL;
 			teGetDisplayNameBSTR(pSF, pidlPart, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING, &bs);
@@ -1951,7 +1929,7 @@ HRESULT teGetDisplayNameFromIDList(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags)
 									teSysFreeString(pbs);
 									while (!ILIsEmpty(pidl2)) {
 										BSTR bs, bs2;
-										if SUCCEEDED(teGetDisplayNameFromIDList(&bs, pidl2, SHGDN_INFOLDER | SHGDN_FORPARSING | SHGDN_ORIGINAL)) {
+										if SUCCEEDED(teGetDisplayNameFromIDList(&bs, pidl2, SHGDN_INFOLDER | SHGDN_FORPARSING)) {
 											if (teIsSearchFolder(bs)) {
 												teSysFreeString(&bs);
 												teSysFreeString(pbs);
@@ -1981,7 +1959,7 @@ HRESULT teGetDisplayNameFromIDList(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags)
 						LPITEMIDLIST pidl2 = teILCreateFromPath2(g_pidls[CSIDL_DESKTOP], *pbs, NULL);
 						if (!ILIsEqual(pidl, pidl2)) {
 							teSysFreeString(pbs);
-							hr = teGetDisplayNameBSTR(pSF, pidlPart, uFlags & (~(SHGDN_FORPARSINGEX | SHGDN_ORIGINAL | SHGDN_FORADDRESSBAR)), pbs);
+							hr = teGetDisplayNameBSTR(pSF, pidlPart, uFlags & (~(SHGDN_FORPARSINGEX | SHGDN_FORADDRESSBAR)), pbs);
 						}
 						teCoTaskMemFree(pidl2);
 					}
@@ -1990,36 +1968,14 @@ HRESULT teGetDisplayNameFromIDList(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags)
 		}
 		pSF->Release();
 	}
-	if (hr == S_OK && !(uFlags & SHGDN_ORIGINAL)) {
-		int j = 0;
-		for (int i = ::SysStringLen(*pbs); --i >= 0;) {
-			if (pbs[0][i] < 0x20 || StrChr(L"\"<>|", pbs[0][i])) {
-				++j;
-			}
-		}
-		if (j) {
-			BSTR bs = ::SysAllocStringLen(NULL, ::SysStringLen(*pbs) + j * 2);
-			j = 0;
-			for (UINT i = 0; i < ::SysStringLen(*pbs); ++i) {
-				if (pbs[0][i] < 0x20 || StrChr(L"\"<>|", pbs[0][i])) {
-					swprintf_s(&bs[j], 4, L"%%%02hhX", pbs[0][i]);
-					j += 3;
-				} else {
-					bs[j++] = pbs[0][i];
-				}
-			}
-			teSysFreeString(pbs);
-			*pbs = bs;
-		}
-	}
-	return hr;
+ 	return hr;
 }
 
 BOOL teILIsSearchFolder(LPITEMIDLIST pidl)
 {
 	BOOL bResult = FALSE;
 	BSTR bs;
-	if SUCCEEDED(teGetDisplayNameFromIDList(&bs, pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)) {
+	if SUCCEEDED(teGetDisplayNameFromIDList(&bs, pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)) {
 		bResult = teIsSearchFolder(bs);
 		::SysFreeString(bs);
 	}
@@ -2598,7 +2554,7 @@ LPWSTR teGetCommandLine()
 				LPITEMIDLIST pidl = (LPITEMIDLIST)SHLockShared((HANDLE)hData, dwProcessId);
 				if (pidl) {
 					VARIANT v, v2;
-					GetVarPathFromIDList(&v, pidl, SHGDN_FORPARSING | SHGDN_FORPARSINGEX | SHGDN_ORIGINAL);
+					GetVarPathFromIDList(&v, pidl, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
 					SHUnlockShared(pidl);
 					SHFreeShared((HANDLE)hData, dwProcessId);
 					teVariantChangeType(&v2, &v, VT_BSTR);
@@ -2889,7 +2845,7 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 								lstrcat(bsPath4, pszPath);
 								pidl = teILCreateFromPathEx(bsPath4);
 								::SysFreeString(bsPath4);
-								if SUCCEEDED(teGetDisplayNameFromIDList(&bsPath4, pidl, SHGDN_INFOLDER | SHGDN_ORIGINAL)) {
+								if SUCCEEDED(teGetDisplayNameFromIDList(&bsPath4, pidl, SHGDN_INFOLDER)) {
 									::SysFreeString(bsPath4);
 								} else {
 									teILFreeClear(&pidl);
@@ -6859,7 +6815,7 @@ BOOL GetVarPathFromFolderItem(FolderItem *pFolderItem, VARIANT *pVarResult)
 		if SUCCEEDED(pFolderItem->QueryInterface(IID_PPV_ARGS(&v.pdispVal))) {
 			v.vt = VT_DISPATCH;
 			VariantInit(pVarResult);
-			teGetDisplayNameOf(&v, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX | SHGDN_ORIGINAL, pVarResult);
+			teGetDisplayNameOf(&v, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX, pVarResult);
 			VariantClear(&v);
 			if (pVarResult->vt == VT_BSTR && teIsSearchFolder(pVarResult->bstrVal)) {
 				LPITEMIDLIST pidl;
@@ -7996,7 +7952,7 @@ VOID teApiSetMenuItemBitmaps(int nArg, teParam *param, DISPPARAMS *pDispParams, 
 
 VOID teApiShowWindow(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetBool(pVarResult, teShowWindow(param[0].hwnd, param[1].intVal));
+	teSetBool(pVarResult, ShowWindow(param[0].hwnd, param[1].intVal));
 }
 
 VOID teApiDeleteMenu(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -8788,8 +8744,8 @@ VOID teApiCompareIDs(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 					hr = 1;
 				} else {
 					BSTR bs1, bs2;
-					if SUCCEEDED(teGetDisplayNameFromIDList(&bs1, pidl1, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)) {
-						if SUCCEEDED(teGetDisplayNameFromIDList(&bs2, pidl2, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)) {
+					if SUCCEEDED(teGetDisplayNameFromIDList(&bs1, pidl1, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)) {
+						if SUCCEEDED(teGetDisplayNameFromIDList(&bs2, pidl2, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)) {
 							hr = (WORD)StrCmpLogicalW(bs1, bs2);
 							teSysFreeString(&bs2);
 						}
@@ -10940,7 +10896,7 @@ BOOL teFindType(LPWSTR pszText, LPWSTR pszFind)
 BOOL teIsHighContrast()
 {
 	HIGHCONTRAST highContrast = { sizeof(HIGHCONTRAST) };
-	return SystemParametersInfoW(SPI_GETHIGHCONTRAST, sizeof(highContrast), &highContrast, FALSE) && (highContrast.dwFlags & HCF_HIGHCONTRASTON);
+	return SystemParametersInfo(SPI_GETHIGHCONTRAST, sizeof(highContrast), &highContrast, FALSE) && (highContrast.dwFlags & HCF_HIGHCONTRASTON);
 }
 
 VOID teGetDarkMode()
@@ -12601,7 +12557,7 @@ STDMETHODIMP CteShellBrowser::BrowseObject(PCUIDLIST_RELATIVE pidl, UINT wFlags)
 			} else {
 				VARIANT v;
 				if (!GetVarPathFromFolderItem(m_pFolderItem, &v)) {
-					GetVarPathFromIDList(&v, m_pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX | SHGDN_ORIGINAL);
+					GetVarPathFromIDList(&v, m_pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
 				}
 				pid = new CteFolderItem(&v);
 				VariantClear(&v);
@@ -16240,7 +16196,7 @@ HRESULT CteShellBrowser::GetShellFolder2(LPITEMIDLIST *ppidl)
 	GetShellFolder(&pSF, *ppidl);
 	if (g_param[TE_LibraryFilter] && pSF && teCompareSFClass(pSF, &CLSID_LibraryFolder)) {//The library cannot be filtered, so convert it to an actual folder.
 		BSTR bs;
-		teGetDisplayNameFromIDList(&bs, *ppidl, SHGDN_FORPARSING | SHGDN_ORIGINAL);
+		teGetDisplayNameFromIDList(&bs, *ppidl, SHGDN_FORPARSING);
 		if (teIsFileSystem(bs)) {
 			LPITEMIDLIST pidl2 = teILCreateFromPath(bs);
 			if (pidl2) {
@@ -17223,7 +17179,7 @@ FOLDERVIEWOPTIONS CteShellBrowser::teGetFolderViewOptions(LPITEMIDLIST pidl, UIN
 	}
 	if (g_bsExplorerBrowserFilter) {
 		BSTR bsPath;
-		if SUCCEEDED(teGetDisplayNameFromIDList(&bsPath, pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)) {
+		if SUCCEEDED(teGetDisplayNameFromIDList(&bsPath, pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)) {
 			FOLDERVIEWOPTIONS fvo = tePathMatchSpec(bsPath, g_bsExplorerBrowserFilter) ? FVO_DEFAULT : FVO_VISTALAYOUT;
 			teSysFreeString(&bsPath);
 			return fvo;

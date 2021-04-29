@@ -78,6 +78,9 @@
               <label><input type="checkbox" id="Conf_MenuHidden">Include hidden items</label>&nbsp;
               <label><input type="checkbox" id="Conf_MenuIcon">Icon</label>
               <br><br>
+              <label>Number of items</label><br>
+              <input type="text" id="Conf_MenuItemCount" style="width: 9em; text-align:right">
+              <br><br>
               <label>Input</label><br>
               <label><input type="checkbox" id="!Conf_NoAutocomplete">Autocomplete</label>
               <br><br>
@@ -542,7 +545,7 @@
                 <label><input type="checkbox" id="View_fFlags:0x40000" onclick="SetCheckbox(this)">Check select</label><br>
                 <label><input type="checkbox" id="View_fFlags:0x100000" onclick="SetCheckbox(this)">No grouping</label>(*)<br>
                 <label><input type="checkbox" id="View_fFlags:0x800000" onclick="SetCheckbox(this)">No column header</label>(*)<br>
-                <label><input type="checkbox" id="View_fFlags:0x1000000" onclick="SetCheckbox(this)">No header in all views</label>(*)<br>
+                <label><input type="checkbox" id="View_fFlags:0x1000000" onclick="SetCheckbox(this)">Column header details only</label>(*)<br>
                 <label><input type="checkbox" id="View_fFlags:0x2000000" onclick="SetCheckbox(this)">Extended tiles</label>(*)<br>
                 <label><input type="checkbox" id="View_fFlags:0x10000000" onclick="SetCheckbox(this)">No browser view state</label>(*)<br>
                 <label><input type="checkbox" id="View_fFlags:0x20000000" onclick="SetCheckbox(this)">Subset groups</label>(*)<br>

@@ -308,7 +308,7 @@ g_basic = {
 					pdwEffect[0] = DROPEFFECT_LINK;
 					if (bDrop) {
 						const ar = [];
-						for (let i = dataObj.Count; i > 0; ar.unshift(PathQuoteSpaces(api.GetDisplayNameOf(dataObj.Item(--i), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)))) {
+						for (let i = dataObj.Count; i > 0; ar.unshift(PathQuoteSpaces(api.GetDisplayNameOf(dataObj.Item(--i), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)))) {
 						}
 						s = s.replace(re, ar.join(" "));
 						ShellExecute(s, null, SW_SHOWNORMAL, Ctrl, pt);
@@ -693,7 +693,7 @@ g_basic = {
 					if (nCount) {
 						s = te.OnClipboardText(Selected);
 					} else {
-						s = PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
+						s = PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
 					}
 					api.SetClipboardData(s);
 					return S_OK;
@@ -928,7 +928,7 @@ GetTabName = function (Ctrl) {
 }
 
 GetFolderItemName = function (pid) {
-	return pid ? RunEvent4("GetFolderItemName", pid) || api.GetDisplayNameOf(pid, SHGDN_INFOLDER | SHGDN_ORIGINAL) : "";
+	return pid ? RunEvent4("GetFolderItemName", pid) || api.GetDisplayNameOf(pid, SHGDN_INFOLDER) : "";
 }
 
 IsUseExplorer = function (pid) {
@@ -1521,7 +1521,7 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 	if (Ctrl.Data) {
 		Ctrl.Data.Setting = void 0;
 	}
-	const res = /javascript:(.*)/im.exec(api.GetDisplayNameOf(Ctrl.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
+	const res = /javascript:(.*)/im.exec(api.GetDisplayNameOf(Ctrl.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
 	if (res) {
 		try {
 			new AsyncFunction(res[1])(Ctrl);
@@ -2205,7 +2205,7 @@ te.OnDefaultCommand = function (Ctrl) {
 		return S_OK;
 	}
 	if (Selected.Count == 1) {
-		const pid = api.ILCreateFromPath(api.GetDisplayNameOf(Selected.Item(0), SHGDN_FORPARSING | SHGDN_FORADDRESSBAR | SHGDN_ORIGINAL));
+		const pid = api.ILCreateFromPath(api.GetDisplayNameOf(Selected.Item(0), SHGDN_FORPARSING | SHGDN_FORADDRESSBAR));
 		if (pid.Enum) {
 			Ctrl.Navigate(pid, GetNavigateFlags(Ctrl));
 			return S_OK;
@@ -2508,7 +2508,7 @@ te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 			RunEvent1("ChangeNotify", Ctrl, pidls, wParam, lParam);
 			if (pidls.lEvent & (SHCNE_UPDATEITEM | SHCNE_RENAMEITEM)) {
 				const n = pidls.lEvent & SHCNE_RENAMEITEM ? 1 : 0;
-				const path = api.GetDisplayNameOf(pidls[n], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL);
+				const path = api.GetDisplayNameOf(pidls[n], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
 				RunEvent1("ChangeNotifyItem:" + path, api.ILCreateFromPath(path) || pidls[n]);
 			}
 		}
@@ -2536,7 +2536,7 @@ te.OnClipboardText = function (Items) {
 	}
 	const s = [];
 	for (let i = Items.Count; i-- > 0;) {
-		s.unshift(PathQuoteSpaces(api.GetDisplayNameOf(Items.Item(i), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)))
+		s.unshift(PathQuoteSpaces(api.GetDisplayNameOf(Items.Item(i), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)))
 	}
 	return s.join(" ");
 }
@@ -2749,7 +2749,7 @@ GetIconImage = function (Ctrl, clBk, bSimple) {
 	}
 	if (g_.IEVer >= 8) {
 		if (bSimple) {
-			return bSimple != 2 ? api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_ORIGINAL) : "";
+			return bSimple != 2 ? api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING) : "";
 		}
 		const sfi = api.Memory("SHFILEINFO");
 		api.SHGetFileInfo(FolderItem, 0, sfi, sfi.Size, SHGFI_SYSICONINDEX | SHGFI_PIDL);
@@ -2787,7 +2787,7 @@ ChangeNotifyFV = function (lEvent, item1, item2) {
 				const bParent = api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;")) || bNetwork && api.PathIsNetworkPath(path);
 				if (lEvent == SHCNE_RENAMEFOLDER && CanClose(FV) == S_OK) {
 					if (bParent) {
-						FV.Navigate(path.replace(path1, api.GetDisplayNameOf(item2, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL)), SBSP_SAMEBROWSER);
+						FV.Navigate(path.replace(path1, api.GetDisplayNameOf(item2, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)), SBSP_SAMEBROWSER);
 						continue;
 					}
 				}
@@ -3165,11 +3165,11 @@ AddEvent("LocationPopup", function (hMenu) {
 	FolderMenu.AddMenuItem(hMenu, api.ILCreateFromPath(ssfDESKTOP));
 	FolderMenu.AddMenuItem(hMenu, api.ILCreateFromPath(ssfDRIVES));
 	const Items = FolderMenu.Enum(api.ILCreateFromPath(ssfDRIVES));
-	const path0 = api.GetDisplayNameOf(ssfDESKTOP, SHGDN_ORIGINAL | SHGDN_FORPARSING);
+	const path0 = api.GetDisplayNameOf(ssfDESKTOP, SHGDN_FORPARSING);
 	for (let i = 0; i < Items.Count; ++i) {
 		const Item = Items.Item(i);
 		if (IsFolderEx(Item)) {
-			const path = api.GetDisplayNameOf(Item, SHGDN_ORIGINAL | SHGDN_FORPARSING);
+			const path = api.GetDisplayNameOf(Item, SHGDN_FORPARSING);
 			if (path && path != path0) {
 				FolderMenu.AddMenuItem(hMenu, Item);
 			}
@@ -3190,7 +3190,7 @@ AddEvent("ReplaceMacroEx", [/"%Current%/ig, function (strMatch, ref1) {
 	let strSel = "";
 	const FV = GetFolderView(Ctrl);
 	if (FV) {
-		strSel = '"' + api.GetDisplayNameOf(FV, SHGDN_FORPARSING | SHGDN_ORIGINAL);
+		strSel = '"' + api.GetDisplayNameOf(FV, SHGDN_FORPARSING);
 	}
 	return strSel;
 }]);
@@ -3209,7 +3209,7 @@ AddEnv("Selected", function (Ctrl) {
 	const ar = [];
 	const Selected = GetSelectedItems(Ctrl);
 	if (Selected) {
-		for (let i = Selected.Count; i > 0; ar.unshift(PathQuoteSpaces(api.GetDisplayNameOf(Selected.Item(--i), SHGDN_FORPARSING | SHGDN_ORIGINAL)))) {
+		for (let i = Selected.Count; i > 0; ar.unshift(PathQuoteSpaces(api.GetDisplayNameOf(Selected.Item(--i), SHGDN_FORPARSING)))) {
 		}
 	}
 	return ar.join(" ");
@@ -3219,7 +3219,7 @@ AddEnv("Current", function (Ctrl) {
 	let strSel = "";
 	const FV = GetFolderView(Ctrl);
 	if (FV) {
-		strSel = PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORPARSING | SHGDN_ORIGINAL));
+		strSel = PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORPARSING));
 	}
 	return strSel;
 });
@@ -3233,7 +3233,7 @@ AddEnv("TreeSelected", function (Ctrl) {
 		}
 	}
 	if (Ctrl) {
-		strSel = PathQuoteSpaces(api.GetDisplayNameOf(Ctrl.SelectedItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_ORIGINAL));
+		strSel = PathQuoteSpaces(api.GetDisplayNameOf(Ctrl.SelectedItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
 	}
 	return strSel;
 });
@@ -3415,6 +3415,7 @@ InitCode = function () {
 	te.Data.Conf_Layout = isFinite(te.Data.Conf_Layout) ? Number(te.Data.Conf_Layout) : 0x80;
 	te.Data.Conf_NetworkTimeout = isFinite(te.Data.Conf_NetworkTimeout) ? Number(te.Data.Conf_NetworkTimeout) : 2000;
 	te.Data.Conf_WheelSelect = isFinite(te.Data.Conf_WheelSelect) ? Number(te.Data.Conf_WheelSelect) : 1;
+	te.Data.Conf_MenuItemCount = isFinite(te.Data.Conf_MenuItemCount) ? Number(te.Data.Conf_MenuItemCount) : 256;
 	te.SizeFormat = (te.Data.Conf_SizeFormat || "").replace(/^0x/i, "");
 	te.HiddenFilter = ExtractFilter(te.Data.Conf_HiddenFilter);
 	te.DragIcon = !GetNum(te.Data.Conf_NoDragIcon);

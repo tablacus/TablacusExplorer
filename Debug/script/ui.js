@@ -622,12 +622,14 @@ ApplyLang = async function (doc) {
 	o = doc.getElementsByTagName("select");
 	if (o) {
 		for (let i = o.length; i--;) {
-			(async function (el) {
-				el.title = delamp(await GetTextR(el.title));
-				for (let j = 0; j < el.length; ++j) {
-					el[j].text = (await GetTextR(el[j].text)).replace(/^\n/, "").replace(/\n$/, "");
-				}
-			})(o[i]);
+			if (/^select\-one$/i.test(o[i].type)) {
+				(async function (el) {
+					el.title = delamp(await GetTextR(el.title));
+					for (let j = 0; j < el.length; ++j) {
+						el[j].text = (await GetTextR(el[j].text)).replace(/^\n/, "").replace(/\n$/, "");
+					}
+				})(o[i]);
+			}
 		}
 	}
 	o = doc.getElementsByTagName("textarea");
