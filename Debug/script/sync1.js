@@ -1477,7 +1477,23 @@ te.OnClose = function (Ctrl) {
 AddEvent("Close", function (Ctrl) {
 	switch (Ctrl.Type) {
 		case CTRL_TE:
-			if (api.GetThreadCount() && MessageBox("File is in operation.", TITLE, MB_ABORTRETRYIGNORE) != IDIGNORE) {
+			let bBusy = api.GetThreadCount();
+			if (!bBusy) {
+				let hwnd1 = null;
+				const pid = api.Memory("DWORD");
+				api.GetWindowThreadProcessId(te.hwnd, pid);
+				const pid0 = pid[0];
+				while (hwnd1 = api.FindWindowEx(null, hwnd1, null, null)) {
+					if (!/tablacus|_hidden/i.test(api.GetClassName(hwnd1)) && api.IsWindowVisible(hwnd1)) {
+						api.GetWindowThreadProcessId(hwnd1, pid);
+						if (pid[0] == pid0) {
+							bBusy = true;
+							break;
+						}
+					}
+				}
+			}
+			if (bBusy && MessageBox("File is in operation.", TITLE, MB_ABORTRETRYIGNORE) != IDIGNORE) {
 				return S_FALSE;
 			}
 			SetWindowAlpha(te.hwnd, 0);
@@ -2359,6 +2375,12 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 						if (FV.hwndView) {
 							FV.Suspend();
 						}
+					}
+					break;
+				case WM_TIMER:
+					if (wParam == TTID_SHOW) {
+						api.KillTimer(hwnd, TTID_SHOW);
+						SetWindowAlpha(FolderMenu.hwnd, 255);
 					}
 					break;
 			}
@@ -3415,7 +3437,6 @@ InitCode = function () {
 	te.Data.Conf_Layout = isFinite(te.Data.Conf_Layout) ? Number(te.Data.Conf_Layout) : 0x80;
 	te.Data.Conf_NetworkTimeout = isFinite(te.Data.Conf_NetworkTimeout) ? Number(te.Data.Conf_NetworkTimeout) : 2000;
 	te.Data.Conf_WheelSelect = isFinite(te.Data.Conf_WheelSelect) ? Number(te.Data.Conf_WheelSelect) : 1;
-	te.Data.Conf_MenuItemCount = isFinite(te.Data.Conf_MenuItemCount) ? Number(te.Data.Conf_MenuItemCount) : 256;
 	te.SizeFormat = (te.Data.Conf_SizeFormat || "").replace(/^0x/i, "");
 	te.HiddenFilter = ExtractFilter(te.Data.Conf_HiddenFilter);
 	te.DragIcon = !GetNum(te.Data.Conf_NoDragIcon);

@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210429 ? te.Version : 20210429;
+		return te.Version < 20210429 ? te.Version : 20210430;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3275,7 +3275,10 @@ FolderMenu = {
 			if (FolderMenu.SortReverse) {
 				ar = ar.reverse();
 			}
-			for (let i = 0; i < Math.min(nCount, te.Data.Conf_MenuItemCount); ++i) {
+			if (FolderMenu.hwnd = Items2 && api.FindWindow("#32768", null)) {
+				SetWindowAlpha(FolderMenu.hwnd, 0);
+			}
+			for (let i = 0, nAdd = 0; i < nCount; ++i) {
 				Item = Items.Item(ar[i]);
 				let bMatch = IsFolderEx(Item) || api.ILIsParent(MainWindow.g_pidlCP, Item, false);
 				if (FolderMenu.Filter) {
@@ -3288,7 +3291,13 @@ FolderMenu = {
 					}
 					FolderMenu.AddMenuItem(hMenu, Item);
 					wID = null;
+					if (++nAdd > (te.Data.Conf_MenuItemCount || 100)) {
+						break;
+					}
 				}
+			}
+			if (FolderMenu.hwnd) {
+				api.SetTimer(te.hwnd, TTID_SHOW, 1, null);
 			}
 		}
 		RemoveSubMenu(hParent, wID);

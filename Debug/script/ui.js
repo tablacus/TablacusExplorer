@@ -622,7 +622,7 @@ ApplyLang = async function (doc) {
 	o = doc.getElementsByTagName("select");
 	if (o) {
 		for (let i = o.length; i--;) {
-			if (/^select\-one$/i.test(o[i].type)) {
+			if (/translate/i.test(o[i].className)) {
 				(async function (el) {
 					el.title = delamp(await GetTextR(el.title));
 					for (let j = 0; j < el.length; ++j) {
