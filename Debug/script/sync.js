@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210429 ? te.Version : 20210430;
+		return te.Version < 20210429 ? te.Version : 20210501;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3198,6 +3198,18 @@ FolderMenu = {
 		return Verb;
 	},
 
+	OpenEx: function (FolderItem, x, y, filter, nParent, hParent, wID, cb) {
+		this.Clear();
+		this.Filter = filter;
+		const hMenu = api.CreatePopupMenu();
+		this.OpenMenuEx(hMenu, FolderItem, hParent, wID, nParent, function (hMenu) {
+			let Verb = FolderMenu.TrackPopupMenu(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, x, y);
+			Verb = Verb ? FolderMenu.Items[Verb - 1] : null;
+			FolderMenu.Clear();
+			api.Invoke(cb, [Verb]);
+		});
+	},
+
 	TrackPopupMenu: function (hMenu, uFlags, x, y) {
 		MainWindow.g_menu_click = true;
 		this.MenuLoop = true;
@@ -3208,100 +3220,129 @@ FolderMenu = {
 	},
 
 	OpenSubMenu: function (hMenu, wID, hSubMenu, nParent) {
-		const o = api.CreateObject("Object");
-		o.Data = api.CreateObject("Object");
-		o.Data.hMenu = api.sscanf(hSubMenu, "%llx");
-		o.Data.FolderItem = this.Items[wID - 1];
-		o.Data.hParent = api.sscanf(hMenu, "%llx");
-		o.Data.wID = wID;
-		o.Data.nParent = nParent;
-		o.Data.OpenMenu = FolderMenu.OpenMenu;
-		o.Data.path = api.GetDisplayNameOf(o.Data.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
-		o.Data.MainWindow = window;
-		if (o.Data.FolderItem.IsFolder) {
-			api.InsertMenu(o.Data.hMenu, 0, MF_BYPOSITION | MF_DISABLED, 0, api.LoadString(hShell32, 13585) || api.LoadString(hShell32, 4223));
-			api.ExecScript('var Items = (api.ILCreateFromPath(path) || FolderItem).GetFolder.Items(); OpenMenu(hMenu, FolderItem, hParent, wID, nParent, MainWindow.api.CreateObject("FolderItems", Items.Count ? Items : null));', "JScript", o, true);
-		} else if (o.Data.FolderItem.Enum) {
-			o.Data.OpenMenu(o.Data.hMenu, o.Data.FolderItem, o.Data.hParent, wID, nParent);
-		};
+		api.InsertMenu(api.sscanf(hSubMenu, "%llx"), 0, MF_BYPOSITION | MF_DISABLED, -2, api.LoadString(hShell32, 13585) || api.LoadString(hShell32, 4223));
+		FolderMenu.OpenMenuEx(api.sscanf(hSubMenu, "%llx"), api.GetDisplayNameOf(this.Items[wID - 1], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), api.sscanf(hMenu, "%llx"), wID, nParent, true);
 	},
 
-	OpenMenu: function (hMenu, FolderItem, hParent, wID, nParent, Items2) {
-		let Item;
-		if (!FolderItem) {
-			return;
-		}
-		if (!/object|function/.test(typeof FolderItem)) {
-			FolderItem = api.ILCreateFromPath(FolderItem);
-		}
-		if (Items2) {
-			api.DeleteMenu(hMenu, 0, MF_BYPOSITION);
-		}
-		let bSep = false;
-		if (!nParent && !api.ILIsEmpty(FolderItem) && !api.ILIsParent(1, FolderItem, false)) {
-			Item = api.ILRemoveLastID(FolderItem);
-			let bMatch = IsFolderEx(Item);
-			if (FolderMenu.Filter) {
-				bMatch = PathMatchEx(bMatch ? Item.Name + ".folder" : Item.Name, FolderMenu.Filter);
+	OpenMenuEx: function (hMenu, FolderItem, hParent, wID, nParent, cb) {
+		const o = api.CreateObject("Object");
+		o.Data = api.CreateObject("Object");
+		o.Data.hMenu = hMenu;
+		o.Data.FolderItem = FolderItem;
+		o.Data.hParent = hParent;
+		o.Data.wID = wID;
+		o.Data.nParent = nParent;
+		o.Data.FolderMenu = FolderMenu;
+		o.Data.$ = MainWindow;
+		o.Data.cb = cb;
+		api.ExecScript(FixScript(FolderMenu.OpenMenu.toString().replace(/^[^{]+{|}$/g, "")), "JScript", o, true);
+	},
+
+	OpenMenu: function (hMenu, FolderItem, hParent, wID, nParent, cb) {
+		let Items, Item;
+		if (FolderItem) {
+			if (!/object|function/.test(typeof FolderItem)) {
+				FolderItem = api.ILCreateFromPath(FolderItem);
 			}
-			if (bMatch) {
-				FolderMenu.AddMenuItem(hMenu, Item, "../", false, true);
-				bSep = true;
-			}
-		}
-		if (Items2) {
-			FolderItem.Enum = function (pid, Ctrl, fncb) {
-				return Items2;
-			};
-		}
-		Items = FolderMenu.Enum(FolderItem);
-		if (Items) {
-			const nCount = Items.Count;
-			let ar = new Array(nCount);
-			for (let i = nCount; i--;) {
-				ar[i] = i;
-			}
-			if (FolderMenu.SortMode >= 0) {
-				let d;
-				try {
-					d = fso.GetDrive(fso.GetDriveName(FolderItem.Path));
-				} catch (e) {
-					d = { FileSystem: "NTFS" };
-				}
-				if (!/NTFS/i.test(d.FileSystem) || FolderMenu.SortMode || FolderMenu.Filter || FolderItem.IsBrowsable) {
-					FolderMenu.Sort(Items, ar);
-				}
-			}
-			if (FolderMenu.SortReverse) {
-				ar = ar.reverse();
-			}
-			if (FolderMenu.hwnd = Items2 && api.FindWindow("#32768", null)) {
-				SetWindowAlpha(FolderMenu.hwnd, 0);
-			}
-			for (let i = 0, nAdd = 0; i < nCount; ++i) {
-				Item = Items.Item(ar[i]);
-				let bMatch = IsFolderEx(Item) || api.ILIsParent(MainWindow.g_pidlCP, Item, false);
+			let bSep = false;
+			if (!nParent && !api.ILIsEmpty(FolderItem) && !api.ILIsParent(1, FolderItem, false)) {
+				Item = api.ILRemoveLastID(FolderItem);
+				let bMatch = $.IsFolderEx(Item);
 				if (FolderMenu.Filter) {
-					bMatch = PathMatchEx(bMatch ? Item.Name + ".folder" : Item.Name, FolderMenu.Filter);
+					bMatch = $.PathMatchEx(bMatch ? Item.Name + ".folder" : Item.Name, FolderMenu.Filter);
 				}
 				if (bMatch) {
-					if (bSep) {
-						api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | MF_SEPARATOR, 0, null);
-						bSep = false;
-					}
-					FolderMenu.AddMenuItem(hMenu, Item);
-					wID = null;
-					if (++nAdd > (te.Data.Conf_MenuItemCount || 100)) {
-						break;
-					}
+					FolderMenu.AddMenuItem(hMenu, Item, "../", false, true);
+					bSep = true;
 				}
 			}
-			if (FolderMenu.hwnd) {
-				api.SetTimer(te.hwnd, TTID_SHOW, 1, null);
+			if (FolderItem.Enum) {
+				Items = FolderItem.Enum(FolderItem);
+			}
+			if (FolderItem.IsFolder) {
+				Items = FolderItem.GetFolder.Items();
+				if ($.te.Data.Conf_MenuHidden || api.GetKeyState($.VK_SHIFT) < 0) {
+					try {
+						Items.Filter($.SHCONTF_FOLDERS | $.SHCONTF_NONFOLDERS | $.SHCONTF_INCLUDEHIDDEN, "*");
+					} catch (e) { }
+				}
+			}
+			if (Items = api.CreateObject("FolderItems", Items)) {
+				$.RunEvent1("AddItems", Items, FolderItem);
+				if (!Items.Count) {
+					Items.Item = function (i) {
+						return api.ILCreateFromPath(Items[i]);
+					}
+					Items.Count = Items.length;
+				}
+				const nCount = Items.Count;
+				let ar = new Array(nCount);
+				for (let i = nCount; i--;) {
+					ar[i] = i;
+				}
+				if (FolderMenu.SortMode >= 0) {
+					let d;
+					try {
+						d = fso.GetDrive(fso.GetDriveName(FolderItem.Path));
+					} catch (e) {
+						d = { FileSystem: "NTFS" };
+					}
+					if (!/NTFS/i.test(d.FileSystem) || FolderMenu.SortMode || FolderMenu.Filter || FolderItem.IsBrowsable) {
+						FolderMenu.Sort(Items, ar);
+					}
+				}
+				if (FolderMenu.SortReverse) {
+					ar = ar.reverse();
+				}
+				for (let i = 0, nAdd = 0; i < nCount; ++i) {
+					const Item = Items.Item(ar[i]);
+					let bMatch = $.IsFolderEx(Item) || api.ILIsParent($.g_pidlCP, Item, false);
+					if (FolderMenu.Filter) {
+						bMatch = $.PathMatchEx(bMatch ? Item.Name + ".folder" : Item.Name, FolderMenu.Filter);
+					}
+					if (bMatch) {
+						if (bSep) {
+							api.InsertMenu(hMenu, $.MAXINT, $.MF_BYPOSITION | $.MF_SEPARATOR, 0, null);
+							bSep = false;
+						}
+						FolderMenu.AddMenuItem(hMenu, api.ILCreateFromPath(Item, true));
+						if (++nAdd == 1) {
+							wID = null;
+							if (cb === true) {
+								const hwnd = api.FindWindow("#32768", null);
+								if (hwnd) {
+									if (FolderMenu.hwnd) {
+										$.SetWindowAlpha(FolderMenu.hwnd, 255);
+									}
+									$.SetWindowAlpha(hwnd, 0);
+									FolderMenu.hwnd = hwnd;
+								}
+								api.DeleteMenu(hMenu, -2, $.MF_BYCOMMAND);
+							}
+						}
+						if (FolderMenu.hwnd) {
+							if (nAdd == 64) {
+								$.SetWindowAlpha(FolderMenu.hwnd, 255);
+								delete FolderMenu.hwnd;
+							} else {
+								api.SetTimer($.te.hwnd, $.TTID_SHOW, 500, null);
+							}
+						}
+					}
+				}
+				if (cb === true) {
+					api.DeleteMenu(hMenu, -2, $.MF_BYCOMMAND);
+					if (FolderMenu.hwnd) {
+						api.SetTimer($.te.hwnd, $.TTID_SHOW, 99, null);
+					}
+				}
+				$.RemoveSubMenu(hParent, wID);
+				$.RunEvent1("FolderMenuCreated", hMenu, FolderItem, hParent);
+				if (/object|function/.test(typeof cb)) {
+					api.Invoke(cb, [hMenu, FolderItem, hParent]);
+				}
 			}
 		}
-		RemoveSubMenu(hParent, wID);
-		MainWindow.RunEvent1("FolderMenuCreated", hMenu, FolderItem, hParent);
 	},
 
 	Enum: function (FolderItem) {
@@ -3325,6 +3366,9 @@ FolderMenu = {
 	},
 
 	AddMenuItem: function (hMenu, FolderItem, Name, bSelect, bParent) {
+		if (!/object|function/.test(typeof FolderItem)) {
+			FolderItem = api.ILCreateFromPath(FolderItem);
+		}
 		const mii = api.Memory("MENUITEMINFO");
 		mii.fMask = MIIM_ID | MIIM_STRING | MIIM_BITMAP | MIIM_SUBMENU;
 		if (bSelect && Name) {

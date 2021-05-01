@@ -1477,25 +1477,32 @@ te.OnClose = function (Ctrl) {
 AddEvent("Close", function (Ctrl) {
 	switch (Ctrl.Type) {
 		case CTRL_TE:
-			let bBusy = api.GetThreadCount();
-			if (!bBusy) {
-				let hwnd1 = null;
-				const pid = api.Memory("DWORD");
-				api.GetWindowThreadProcessId(te.hwnd, pid);
-				const pid0 = pid[0];
-				while (hwnd1 = api.FindWindowEx(null, hwnd1, null, null)) {
-					if (!/tablacus|_hidden/i.test(api.GetClassName(hwnd1)) && api.IsWindowVisible(hwnd1)) {
-						api.GetWindowThreadProcessId(hwnd1, pid);
-						if (pid[0] == pid0) {
-							bBusy = true;
-							break;
+			let bRetry = false;
+			do {
+				let bBusy = api.GetThreadCount();
+				if (!bBusy) {
+					let hwnd1 = null;
+					const pid = api.Memory("DWORD");
+					api.GetWindowThreadProcessId(te.hwnd, pid);
+					const pid0 = pid[0];
+					while (hwnd1 = api.FindWindowEx(null, hwnd1, null, null)) {
+						if (!/tablacus|_hidden/i.test(api.GetClassName(hwnd1)) && api.IsWindowVisible(hwnd1)) {
+							api.GetWindowThreadProcessId(hwnd1, pid);
+							if (pid[0] == pid0) {
+								bBusy = true;
+								break;
+							}
 						}
 					}
 				}
-			}
-			if (bBusy && MessageBox("File is in operation.", TITLE, MB_ABORTRETRYIGNORE) != IDIGNORE) {
-				return S_FALSE;
-			}
+				if (bBusy) {
+					const r = MessageBox("File is in operation.", TITLE, MB_ABORTRETRYIGNORE);
+					if (r == IDABORT) {
+						return S_FALSE;
+					}
+					bRetry = r == IDRETRY;
+				}
+			} while (bRetry);
 			SetWindowAlpha(te.hwnd, 0);
 			Finalize();
 			eventTE = { Environment: {} };
@@ -2381,6 +2388,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					if (wParam == TTID_SHOW) {
 						api.KillTimer(hwnd, TTID_SHOW);
 						SetWindowAlpha(FolderMenu.hwnd, 255);
+						delete FolderMenu.hwnd;
 					}
 					break;
 			}
