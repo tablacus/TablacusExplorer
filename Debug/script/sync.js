@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210429 ? te.Version : 20210501;
+		return te.Version < 20210429 ? te.Version : 20210502;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3252,7 +3252,7 @@ FolderMenu = {
 					bMatch = $.PathMatchEx(bMatch ? Item.Name + ".folder" : Item.Name, FolderMenu.Filter);
 				}
 				if (bMatch) {
-					FolderMenu.AddMenuItem(hMenu, Item, "../", false, true);
+					FolderMenu.AddMenuItem(hMenu, api.ILCreateFromPath(Item, true), "../", false, true);
 					bSep = true;
 				}
 			}

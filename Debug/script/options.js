@@ -1640,6 +1640,7 @@ InitDialog = async function () {
 		document.body.addEventListener("keyup", fn);
 		setTimeout(function () {
 			WebBrowser.Focus();
+			document.F.q.focus();
 		}, 99);
 		WebBrowser.OnClose = ReturnDialogResult;
 	}
