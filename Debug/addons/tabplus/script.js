@@ -209,6 +209,7 @@ if (window.Addon == 1) {
 				}
 				if (nOldHeight != evTop.offsetHeight) {
 					Addons.TabPlus.SetHeight(Id);
+					Resize();
 				}
 			}
 		},
