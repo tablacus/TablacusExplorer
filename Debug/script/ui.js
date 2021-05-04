@@ -757,7 +757,7 @@ MouseOver = async function (o) {
 		}
 	}
 	o = o.target || o.srcElement || o;
-	if (/^button$|^menu$/i.test(o.className)) {
+	if (/button|menu/.test(o.className)) {
 		if (ui_.objHover && o != ui_.objHover) {
 			MouseOut();
 		}
@@ -771,7 +771,13 @@ MouseOver = async function (o) {
 		}
 		if (bHover) {
 			ui_.objHover = o;
-			o.className = 'hover' + o.className;
+			const ar = o.className.split(/\s+/);
+			for (let i = ar.length; --i >= 0;) {
+				if (/^button$|^menu$/.test(ar[i])) {
+					ar[i] = 'hover' + ar[i];
+				}
+			}
+			o.className = ar.join(" ");
 		}
 	}
 }
@@ -779,11 +785,15 @@ MouseOver = async function (o) {
 MouseOut = function (s) {
 	if (ui_.objHover) {
 		if ("string" !== typeof s || ui_.objHover.id.indexOf(s) >= 0) {
-			if (ui_.objHover.className == 'hoverbutton') {
-				ui_.objHover.className = 'button';
-			} else if (ui_.objHover.className == 'hovermenu') {
-				ui_.objHover.className = 'menu';
+			const ar = ui_.objHover.className.split(/\s+/);
+			for (let i = ar.length; --i >= 0;) {
+				if (ar[i] == 'hoverbutton') {
+					ar[i] = 'button';
+				} else if (ar[i] == 'hovermenu') {
+					ar[i] = 'menu';
+				}
 			}
+			ui_.objHover.className = ar.join(" ");
 			ui_.objHover = null;
 		}
 	}

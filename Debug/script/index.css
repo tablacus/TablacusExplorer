@@ -54,7 +54,7 @@ form {
 	vertical-align: middle;
 }
 
-.button:hover, .hoverbutton, .activebutton {
+.hoverbutton, .activebutton {
 	display: inline-block; *display: inline; *zoom: 1;
 	text-decoration: none;
 	color: buttontext;
@@ -76,7 +76,7 @@ form {
 	white-space: nowrap;
 }
 
-.menu:hover, .hovermenu, .activemenu {
+.hovermenu, .activemenu {
 	display: inline-block; *display: inline; *zoom: 1;
 	cursor: default;
 	text-decoration: none;

@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210429 ? te.Version : 20210502;
+		return te.Version < 20210429 ? te.Version : 20210504;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3187,41 +3187,40 @@ FolderMenu = {
 		delete this.Filter;
 	},
 
-	Open: function (FolderItem, x, y, filter, nParent, hParent, wID) {
+	Open: function (FolderItem, x, y, filter, nParent, hParent, wID, cb) {
 		this.Clear();
 		this.Filter = filter;
 		const hMenu = api.CreatePopupMenu();
+		if (cb) {
+			this.OpenMenuEx(hMenu, FolderItem, hParent, wID, nParent, function (hMenu) {
+				const pid = FolderMenu.TrackPopupMenu(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, x, y, true);
+				if (pid) {
+					InvokeFunc(cb, [pid]);
+				}
+			});
+			return;
+		}
 		this.OpenMenu(hMenu, FolderItem, hParent, wID, nParent);
-		let Verb = this.TrackPopupMenu(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, x, y);
-		Verb = Verb ? this.Items[Verb - 1] : null;
-		this.Clear();
-		return Verb;
+		return this.TrackPopupMenu(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, x, y, true);
 	},
 
-	OpenEx: function (FolderItem, x, y, filter, nParent, hParent, wID, cb) {
-		this.Clear();
-		this.Filter = filter;
-		const hMenu = api.CreatePopupMenu();
-		this.OpenMenuEx(hMenu, FolderItem, hParent, wID, nParent, function (hMenu) {
-			let Verb = FolderMenu.TrackPopupMenu(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, x, y);
-			Verb = Verb ? FolderMenu.Items[Verb - 1] : null;
-			FolderMenu.Clear();
-			api.Invoke(cb, [Verb]);
-		});
-	},
-
-	TrackPopupMenu: function (hMenu, uFlags, x, y) {
+	TrackPopupMenu: function (hMenu, uFlags, x, y, bId) {
 		MainWindow.g_menu_click = true;
 		this.MenuLoop = true;
 		const nVerb = api.TrackPopupMenuEx(hMenu, uFlags, x, y, te.hwnd, null, null);
 		delete this.MenuLoop;
 		api.DestroyMenu(hMenu);
+		if (bId) {
+			const FolderItem = nVerb ? FolderMenu.Items[nVerb - 1] : null;
+			this.Clear();
+			return FolderItem;
+		}
 		return nVerb;
 	},
 
 	OpenSubMenu: function (hMenu, wID, hSubMenu, nParent) {
 		api.InsertMenu(api.sscanf(hSubMenu, "%llx"), 0, MF_BYPOSITION | MF_DISABLED, -2, api.LoadString(hShell32, 13585) || api.LoadString(hShell32, 4223));
-		FolderMenu.OpenMenuEx(api.sscanf(hSubMenu, "%llx"), api.GetDisplayNameOf(this.Items[wID - 1], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), api.sscanf(hMenu, "%llx"), wID, nParent, true);
+		FolderMenu.OpenMenuEx(api.sscanf(hSubMenu, "%llx"), this.Items[wID - 1].Path, api.sscanf(hMenu, "%llx"), wID, nParent, true);
 	},
 
 	OpenMenuEx: function (hMenu, FolderItem, hParent, wID, nParent, cb) {
@@ -3280,23 +3279,30 @@ FolderMenu = {
 				for (let i = nCount; i--;) {
 					ar[i] = i;
 				}
-				if (FolderMenu.SortMode >= 0) {
-					let d;
-					try {
-						d = fso.GetDrive(fso.GetDriveName(FolderItem.Path));
-					} catch (e) {
-						d = { FileSystem: "NTFS" };
+				const SortMode = FolderMenu.SortMode;
+				if (SortMode >= 0) {
+					let d = {};
+					if (!(SortMode || FolderMenu.Filter || FolderItem.IsBrowsable)) {
+						const drv = $.fso.GetDriveName(FolderItem.Path);
+						if (drv) {
+							try {
+								d = $.fso.GetDrive(drv);
+							} catch (e) { }
+						}
 					}
-					if (!/NTFS/i.test(d.FileSystem) || FolderMenu.SortMode || FolderMenu.Filter || FolderItem.IsBrowsable) {
-						FolderMenu.Sort(Items, ar);
+					if (!/NTFS/i.test(d.FileSystem)) {
+						ar.sort(function (a, b) {
+							return api.CompareIDs(SortMode, Items[a], Items[b]);
+						});
 					}
 				}
 				if (FolderMenu.SortReverse) {
 					ar = ar.reverse();
 				}
+				const bCP = api.ILIsParent($.g_pidlCP, FolderItem, false);
 				for (let i = 0, nAdd = 0; i < nCount; ++i) {
-					const Item = Items.Item(ar[i]);
-					let bMatch = $.IsFolderEx(Item) || api.ILIsParent($.g_pidlCP, Item, false);
+					const Item = Items[ar[i]];
+					let bMatch = $.IsFolderEx(Item) || bCP;
 					if (FolderMenu.Filter) {
 						bMatch = $.PathMatchEx(bMatch ? Item.Name + ".folder" : Item.Name, FolderMenu.Filter);
 					}
@@ -3359,12 +3365,6 @@ FolderMenu = {
 		return Items;
 	},
 
-	Sort: function (Items, ar) {
-		ar.sort(function (a, b) {
-			return api.CompareIDs(FolderMenu.SortMode, Items.Item(a), Items.Item(b));
-		});
-	},
-
 	AddMenuItem: function (hMenu, FolderItem, Name, bSelect, bParent) {
 		if (!/object|function/.test(typeof FolderItem)) {
 			FolderItem = api.ILCreateFromPath(FolderItem);
@@ -3384,7 +3384,7 @@ FolderMenu = {
 		this.Items.push(FolderItem);
 		mii.wID = this.Items.length;
 		const cc = this.Filter ? SFGAO_FOLDER : SFGAO_HASSUBFOLDER;
-		if (!bSelect && api.GetAttributesOf(FolderItem, cc | SFGAO_BROWSABLE | SFGAO_LINK) == cc) {
+		if (!bSelect && api.GetAttributesOf(FolderItem, cc | SFGAO_BROWSABLE) == cc) {
 			let o;
 			try {
 				o = fso.GetDrive(fso.GetDriveName(FolderItem.Path));
@@ -3392,7 +3392,6 @@ FolderMenu = {
 				o = { IsReady: FolderItem && !FolderItem.Unavailable };
 			}
 			if (o.IsReady) {
-				api.PathIsDirectory(FolderItem.Path, 9, 2);
 				mii.hSubMenu = api.CreateMenu();
 				api.InsertMenu(mii.hSubMenu, 0, MF_BYPOSITION | MF_STRING, 0, api.sprintf(99, '\tJScript\tFolderMenu.OpenSubMenu("%llx",%d,"%llx",%d)', hMenu, mii.wID, mii.hSubMenu, !bParent));
 			}
