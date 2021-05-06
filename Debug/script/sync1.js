@@ -146,8 +146,6 @@ g_.mouse = {
 				return "Tree";
 			case CTRL_TC:
 				return pt.Target || Ctrl.HitTest(pt, TCHT_ONITEM) >= 0 ? "Tabs" : "Tabs_Background";
-			case CTRL_WB:
-				return "Browser";
 		}
 	},
 
@@ -1641,11 +1639,6 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata) {
 						return S_OK;
 					}
 					return S_FALSE;
-				}
-				break;
-			case CTRL_WB:
-				if (KeyExecEx(Ctrl, "Browser", nKey, hwnd) === S_OK) {
-					return S_OK;
 				}
 				break;
 			default:
@@ -3402,8 +3395,8 @@ InitCode = function () {
 	}
 	te.CmdShow = SW_SHOWNORMAL;
 	const types = {
-		Key: ["All", "List", "Tree", "Browser", "Edit", "Menus"],
-		Mouse: ["All", "List", "List_Background", "Tree", "Tabs", "Tabs_Background", "Browser"]
+		Key: ["All", "List", "Tree", "Edit", "Menus"],
+		Mouse: ["All", "List", "List_Background", "Tree", "Tabs", "Tabs_Background"]
 	};
 	for (let i = 0; i < 3; ++i) {
 		g_.KeyState[i][0] = api.GetKeyNameText(g_.KeyState[i][0]);

@@ -179,6 +179,9 @@ GetImgTag = async function (o, h) {
 			return ar.join("");
 		}
 		o.src = await ImgBase64(o, 0, Number(h))
+		if (!o.ondragstart && !o.draggable) {
+			o.draggable = "false";
+		}
 		const ar = ['<img'];
 		ExtractAttr(o, ar);
 		if (h) {

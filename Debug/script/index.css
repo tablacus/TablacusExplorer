@@ -37,6 +37,7 @@ td, tr {
 img {
 	vertical-align: middle;
 	border: none;
+	pointer-events: none;
 }
 
 form {

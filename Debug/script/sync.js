@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210429 ? te.Version : 20210504;
+		return te.Version < 20210429 ? te.Version : 20210506;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3224,17 +3224,18 @@ FolderMenu = {
 	},
 
 	OpenMenuEx: function (hMenu, FolderItem, hParent, wID, nParent, cb) {
-		const o = api.CreateObject("Object");
-		o.Data = api.CreateObject("Object");
-		o.Data.hMenu = hMenu;
-		o.Data.FolderItem = FolderItem;
-		o.Data.hParent = hParent;
-		o.Data.wID = wID;
-		o.Data.nParent = nParent;
-		o.Data.FolderMenu = FolderMenu;
-		o.Data.$ = MainWindow;
-		o.Data.cb = cb;
-		api.ExecScript(FixScript(FolderMenu.OpenMenu.toString().replace(/^[^{]+{|}$/g, "")), "JScript", o, true);
+		api.ExecScript(FixScript(FolderMenu.OpenMenu.toString().replace(/^[^{]+{|}$/g, "")), "JScript", {
+			q: {
+				hMenu: hMenu,
+				FolderItem: FolderItem,
+				hParent: hParent,
+				wID: wID,
+				nParent: nParent,
+				FolderMenu: FolderMenu,
+				$: MainWindow,
+				cb: cb
+			}
+		}, true);
 	},
 
 	OpenMenu: function (hMenu, FolderItem, hParent, wID, nParent, cb) {
@@ -3506,6 +3507,19 @@ CalcRef = function (o, nPos, nDiff) {
 
 GetTEEvent = function (en) {
 	return eventTE[en.toLowerCase()];
+}
+
+DoDragDrop = function (Items, dwEffect, DropState, cb) {
+	api.ExecScript("$.api.SHDoDragDrop(null, Items, $.te, pdwEffect[0], pdwEffect, DropState); InvokeFunc(cb);", "JScript", {
+		q: {
+			$: $,
+			Items: Items,
+			pdwEffect: [dwEffect],
+			DropState: DropState,
+			InvokeFunc: InvokeFunc,
+			cb: cb
+		}
+	}, window.chrome);
 }
 
 BasicDB = function (name, bLoad, bLC) {
