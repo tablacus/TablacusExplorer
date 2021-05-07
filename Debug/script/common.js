@@ -130,11 +130,11 @@ DecodeSC = function (s) {
 	return String(s).replace(/&([\w#]{1,5});/g, function (strMatch, ref) {
 		let res = /^#x([\da-f]+)$/i.exec(ref)
 		if (res) {
-			return String.fromCharCode(parseInt(res[1], 16));
+			return String.fromCodePoint(parseInt(res[1], 16));
 		}
 		res = /^#(\d+)$/.exec(ref)
 		if (res) {
-			return String.fromCharCode(res[1]);
+			return String.fromCodePoint(res[1]);
 		}
 		return { quot: '"', amp: '&', lt: '<', gt: '>' }[ref.toLowerCase()] || '&' + ref + ';';
 	});
@@ -143,13 +143,21 @@ DecodeSC = function (s) {
 ExtractAttr = function (o, ar, re) {
 	for (let n in o) {
 		const s = o[n];
-		if (s && (!re || !re.test(s))) {
-			ar.push(' ', n, '="', EncodeSC(StripAmp(o[n])).replace(/"/g, ""), '"');
+		if (s != null && (!re || !re.test(s))) {
+			ar.push(' ', n, '="', EncodeSC(StripAmp(s)).replace(/"/g, ""), '"');
 		}
 	}
 }
 
 GetImgTag = async function (o, h) {
+	if (o.onclick) {
+		if (!o.onmouseover) {
+			o.onmouseover = "MouseOver(this)";
+		}
+		if (!o.nmouseout) {
+			o.onmouseout = "MouseOut()";
+		}
+	}
 	if (o.src) {
 		const res = !(window.ui_ || te.Data).NoCssFont && /^font:([^,]*),([\da-fx,]+)/i.exec(await MainWindow.RunEvent4("ReplaceIcon", o.src) || o.src);
 		if (res) {
@@ -179,8 +187,8 @@ GetImgTag = async function (o, h) {
 			return ar.join("");
 		}
 		o.src = await ImgBase64(o, 0, Number(h))
-		if (!o.ondragstart && !o.draggable) {
-			o.draggable = "false";
+		if (!o.draggable) {
+			o.draggable = o.ondragstart != null;
 		}
 		const ar = ['<img'];
 		ExtractAttr(o, ar);

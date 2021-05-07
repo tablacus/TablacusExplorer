@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210429 ? te.Version : 20210506;
+		return te.Version < 20210429 ? te.Version : 20210507;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -128,7 +128,7 @@ if ("undefined" != typeof ScriptEngineMajorVersion && ScriptEngineMajorVersion()
 }
 
 InvokeFunc = window.chrome ? api.Invoke : function (fn, args) {
-	return fn.apply(fn, args);
+	return fn && fn.apply(fn, args);
 }
 
 GetSelectedArray = function (Ctrl, pt, bPlus) {
@@ -3429,8 +3429,7 @@ FolderMenu = {
 			}
 			if (MainWindow.g_menu_button == 4) {
 				if (!bVirtual) {
-					const pdwEffect = [DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK];
-					api.SHDoDragDrop(null, FolderItem, te, pdwEffect[0], pdwEffect, true);
+					DoDragDrop(FolderItem, DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK, true);
 				}
 				return;
 			}
@@ -3519,7 +3518,7 @@ DoDragDrop = function (Items, dwEffect, DropState, cb) {
 			InvokeFunc: InvokeFunc,
 			cb: cb
 		}
-	}, window.chrome);
+	}, true);
 }
 
 BasicDB = function (name, bLoad, bLC) {

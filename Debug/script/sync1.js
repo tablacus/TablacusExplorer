@@ -53,6 +53,7 @@ g_.mouse = {
 	str: "",
 	CancelContextMenu: false,
 	ptGesture: api.Memory("POINT"),
+	ptDown: api.Memory("POINT"),
 	hwndGesture: null,
 	tidGesture: null,
 	bCapture: false,
@@ -2764,7 +2765,7 @@ GetIconImage = function (Ctrl, clBk, bSimple) {
 	}
 	let img = RunEvent4("GetIconImage", Ctrl, clBk, bSimple);
 	if (img) {
-		return MakeImgDataEx(img, bSimple, nSize, clBk);
+		return MakeImgDataEx(ExtractMacro(te, img), bSimple, nSize, clBk);
 	}
 	api.ILIsEmpty(FolderItem);
 	if (FolderItem.Unavailable) {

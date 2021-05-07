@@ -149,9 +149,9 @@ if (window.Addon == 1) {
 		}
 	}
 
-	AddEvent("Layout", function () {
-		SetAddon(Addon_Id, Default, '<span id="_' + Addon_Id + '"></span>');
-		Addons.ToolBar.Arrange();
+	AddEvent("Layout", async function () {
+		await SetAddon(Addon_Id, Default, '<span id="_' + Addon_Id + '"></span>');
+		await Addons.ToolBar.Arrange();
 	});
 
 	te.Data.xmlToolBar = await OpenXml("toolbar.xml", false, true);
