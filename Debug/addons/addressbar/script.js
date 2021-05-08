@@ -65,7 +65,7 @@ if (window.Addon == 1) {
 							arHTML.unshift('<span id="addressbar' + n + '" class="button" style="line-height: ' + height + 'px; vertical-align: middle" onclick="Addons.AddressBar.Popup(this,' + n + ')" onmouseover="MouseOver(this)" onmouseout="MouseOut()" oncontextmenu="Addons.AddressBar.Exec(); return false;">' + BUTTONS.next + '</span>');
 							o.insertAdjacentHTML("afterbegin", arHTML[0]);
 						}
-						arHTML.unshift('<span id="addressbar' + n + '_" class="button" style="line-height: ' + height + 'px" onmouseover="MouseOver(this)" onmouseout="MouseOut()" oncontextmenu="Addons.AddressBar.Exec(); return false;">' + EncodeSC(Items[n].name) + '</span>');
+						arHTML.unshift('<span id="addressbar' + n + '_" class="button" style="line-height: ' + height + 'px" onmouseover="MouseOver(this)" onmouseout="MouseOut()" oncontextmenu="Addons.AddressBar.Exec(); return false;" ondragstart="Addons.AddressBar.Drag(event,' + n + '); return false" draggable="true">' + EncodeSC(Items[n].name) + '</span>');
 						const nBefore = o.offsetWidth;
 						o.insertAdjacentHTML("afterbegin", arHTML[0]);
 						if (nBefore != o.offsetWidth && o.offsetWidth > width && n > 0) {
@@ -176,24 +176,11 @@ if (window.Addon == 1) {
 			}
 		},
 
-		Over1: function () {
-			delete Addons.AddressBar.ev;
-		},
-
-		Out1: async function (ev) {
-			const ev1 = Addons.AddressBar.ev;
-			if (ev1) {
-				delete Addons.AddressBar.ev;
-				const buttons = ev.buttons != null ? ev.buttons : ev.button;
-				if (buttons == 1) {
-					const el = document.elementFromPoint(ev1.clientX, ev1.clientY);
-					const res = el && /^addressbar(\d+)_$/.exec(el.id)
-					if (res) {
-						const pdwEffect = [DROPEFFECT_LINK];
-						api.SHDoDragDrop(null, await Sync.AddressBar.GetPath(res[1]), te, pdwEffect[0], pdwEffect);
-					}
-				}
-			}
+		Drag: async function (ev, n) {
+			const DataObj = await api.CreateObject("FolderItems");
+			DataObj.AddItem(await Sync.AddressBar.GetPath(n));
+			DataObj.dwEffect = DROPEFFECT_LINK;
+			DoDragDrop(DataObj, DROPEFFECT_LINK | DROPEFFECT_COPY | DROPEFFECT_MOVE);
 		},
 
 		Down1: function (ev) {
@@ -365,11 +352,12 @@ if (window.Addon == 1) {
 			s = "100%";
 		}
 		const nSize = await api.GetSystemMetrics(SM_CYSMICON);
-		s = ['<div style="position: relative; overflow: hidden"><div id="breadcrumbbuttons" class="breadcrumb" style="position: absolute; left: 1px; top: 1px; padding-left: ', nSize + 4, 'px" onclick="Addons.AddressBar.Click1(event)" oncontextmenu="Addons.AddressBar.Popup1(event); return false;" onmousedown="Addons.AddressBar.Down1(event)" onmouseup="return Addons.AddressBar.Up1(event); return false" onmouseover="Addons.AddressBar.Over1()" onmouseout="Addons.AddressBar.Out1(event)"></div><input id="addressbar" type="text" autocomplate="on" list="AddressList" onkeydown="return Addons.AddressBar.KeyDown(event, this)" onfocus="Addons.AddressBar.Focus()" onblur="Addons.AddressBar.Blur()" onresize="Addons.AddressBar.Resize()" oninput="AdjustAutocomplete(this.value)" oncontextmenu="Addons.AddressBar.ContextMenu(this)" style="width: ', EncodeSC(s), '; vertical-align: middle; padding-left: ', nSize + 4, 'px; padding-right: 16px"><div class="breadcrumb"><div id="addressbarselect" class="button" style="position: absolute; top: 1px" onmouseover="MouseOver(this);" onmouseout="MouseOut()" onclick="Addons.AddressBar.Popup3(this)">', BUTTONS.dropdown, '</div></div>'];
+		s = ['<div style="position: relative; overflow: hidden"><div id="breadcrumbbuttons" class="breadcrumb" style="position: absolute; left: 1px; top: 1px; padding-left: ', nSize + 4, 'px" onclick="Addons.AddressBar.Click1(event)" oncontextmenu="Addons.AddressBar.Popup1(event); return false;" onmousedown="Addons.AddressBar.Down1(event)" onmouseup="return Addons.AddressBar.Up1(event); return false"></div><input id="addressbar" type="text" autocomplate="on" list="AddressList" onkeydown="return Addons.AddressBar.KeyDown(event, this)" onfocus="Addons.AddressBar.Focus()" onblur="Addons.AddressBar.Blur()" onresize="Addons.AddressBar.Resize()" oninput="AdjustAutocomplete(this.value)" oncontextmenu="Addons.AddressBar.ContextMenu(this)" style="width: ', EncodeSC(s), '; vertical-align: middle; padding-left: ', nSize + 4, 'px; padding-right: 16px"><div class="breadcrumb"><div id="addressbarselect" class="button" style="position: absolute; top: 1px" onmouseover="MouseOver(this);" onmouseout="MouseOut()" onclick="Addons.AddressBar.Popup3(this)">', BUTTONS.dropdown, '</div></div>'];
 
 		s.push('<img id="addr_img" src="', await MakeImgSrc("folder:closed"), '"');
 		s.push(' onclick="return Addons.AddressBar.Exec();"');
 		s.push(' oncontextmenu="Addons.AddressBar.Exec(); return false;"');
+		s.push(' ondragstart="Addons.AddressBar.Drag(event, 0); return false;" draggable="true"');
 		s.push(' style="position: absolute; left: 4px; top: 1.5pt; width: ', nSize, 'px; height: ', nSize, 'px; z-index: 3; border: 0px"></div>');
 
 		await SetAddon(Addon_Id, Default, s, "middle");

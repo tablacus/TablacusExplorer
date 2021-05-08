@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210429 ? te.Version : 20210507;
+		return te.Version < 20210429 ? te.Version : 20210508;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3241,8 +3241,8 @@ FolderMenu = {
 	OpenMenu: function (hMenu, FolderItem, hParent, wID, nParent, cb) {
 		let Items, Item;
 		if (FolderItem) {
-			if (!/object|function/.test(typeof FolderItem)) {
-				FolderItem = api.ILCreateFromPath(FolderItem);
+			if (!/^object$|^function$/.test(typeof FolderItem)) {
+				FolderItem = api.ILCreateFromPath("string" === typeof FolderItem ? $.ExtractMacro(null, FolderItem) : FolderItem);
 			}
 			let bSep = false;
 			if (!nParent && !api.ILIsEmpty(FolderItem) && !api.ILIsParent(1, FolderItem, false)) {
@@ -3345,7 +3345,7 @@ FolderMenu = {
 				}
 				$.RemoveSubMenu(hParent, wID);
 				$.RunEvent1("FolderMenuCreated", hMenu, FolderItem, hParent);
-				if (/object|function/.test(typeof cb)) {
+				if (/^object$|^function$/.test(typeof cb)) {
 					api.Invoke(cb, [hMenu, FolderItem, hParent]);
 				}
 			}
@@ -3367,8 +3367,8 @@ FolderMenu = {
 	},
 
 	AddMenuItem: function (hMenu, FolderItem, Name, bSelect, bParent) {
-		if (!/object|function/.test(typeof FolderItem)) {
-			FolderItem = api.ILCreateFromPath(FolderItem);
+		if (!/^object$|^function$/.test(typeof FolderItem)) {
+			FolderItem = api.ILCreateFromPath("string" === typeof FolderItem ? ExtractMacro(te, FolderItem) : FolderItem);
 		}
 		const mii = api.Memory("MENUITEMINFO");
 		mii.fMask = MIIM_ID | MIIM_STRING | MIIM_BITMAP | MIIM_SUBMENU;
@@ -3509,7 +3509,8 @@ GetTEEvent = function (en) {
 }
 
 DoDragDrop = function (Items, dwEffect, DropState, cb) {
-	api.ExecScript("$.api.SHDoDragDrop(null, Items, $.te, pdwEffect[0], pdwEffect, DropState); InvokeFunc(cb);", "JScript", {
+	MainWindow.g_.mouse.EndGesture(true);
+	api.ExecScript("InvokeFunc(cb, [$.api.SHDoDragDrop(null, Items, $.te, pdwEffect[0], pdwEffect, DropState)]);", "JScript", {
 		q: {
 			$: $,
 			Items: Items,

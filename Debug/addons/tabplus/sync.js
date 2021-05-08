@@ -98,12 +98,8 @@ AddEvent("DragEnter", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 AddEvent("DragOver", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 	if (Ctrl.Type == CTRL_WB) {
 		const TC = Sync.TabPlus.TCFromPt(pt);
-		if (/\ntabplus_\d+_\d+$/.test(dataObj.GetData())) {
-			pdwEffect[0] = DROPEFFECT_MOVE;
-			return S_OK;
-		}
 		if (TC) {
-			if (Common.TabPlus.Drag5) {
+			if (Common.TabPlus.Drag5 || /\ntabplus_\d+_\d+$/.test(dataObj.GetData())) {
 				pdwEffect[0] = DROPEFFECT_MOVE;
 				return S_OK;
 			}

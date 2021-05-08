@@ -299,16 +299,20 @@ if (window.Addon == 1) {
 		Move: async function (ev, el) {
 			const res = /^tabplus_(\d+)_(\d+)/.exec(el.id);
 			if (res) {
-				if (await api.GetKeyState(VK_LBUTTON) < 0) {
+				const buttons = ev.buttons != null ? ev.buttons : ev.button;
+				if (buttons & 3) {
 					const pt = await api.Memory("POINT");
 					pt.x = ev.screenX * ui_.Zoom;
 					pt.y = ev.screenY * ui_.Zoom;
-					if (await IsDrag(pt, Addons.TabPlus.pt)) {
+					if (await IsDrag(pt, Addons.TabPlus.pt) && !await IsDrag(await g_.mouse.ptDown, Addons.TabPlus.pt)) {
 						Common.TabPlus.Drag5 = el.id;
-						const pdwEffect = [DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK];
-						api.SHDoDragDrop(null, await te.Ctrl(CTRL_TC, res[1])[res[2]].FolderItem, te, pdwEffect[0], pdwEffect);
-						Common.TabPlus.Drag5 = void 0;
-						Addons.TabPlus.pt = pt;
+						const DataObj = await api.CreateObject("FolderItems");
+						DataObj.AddItem(await te.Ctrl(CTRL_TC, res[1])[res[2]].FolderItem);
+						DataObj.dwEffect = DROPEFFECT_LINK;
+						DoDragDrop(DataObj, DROPEFFECT_LINK | DROPEFFECT_COPY | DROPEFFECT_MOVE, false, function () {
+							Common.TabPlus.Drag5 = void 0;
+							Addons.TabPlus.pt = pt;
+						});
 					}
 				}
 			}
