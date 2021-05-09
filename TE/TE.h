@@ -110,6 +110,7 @@ public:
 	VOID ItemEx(long nIndex, VARIANT *pVarResult, VARIANT *pVarNew);
 	BOOL CanIDListFormat();
 	VOID AdjustIDListEx();
+	VOID CreateDataObj();
 	VOID Clear();
 	HRESULT QueryGetData2(FORMATETC *pformatetc);
 public:

@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210429 ? te.Version : 20210508;
+		return te.Version < 20210509 ? te.Version : 20210509;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3510,7 +3510,7 @@ GetTEEvent = function (en) {
 
 DoDragDrop = function (Items, dwEffect, DropState, cb) {
 	MainWindow.g_.mouse.EndGesture(true);
-	api.ExecScript("InvokeFunc(cb, [$.api.SHDoDragDrop(null, Items, $.te, pdwEffect[0], pdwEffect, DropState)]);", "JScript", {
+	api.ExecScript("InvokeFunc(cb, [$.api.SHDoDragDrop($.te.hwnd, Items, $.te, pdwEffect[0], pdwEffect, DropState)]);", "JScript", {
 		q: {
 			$: $,
 			Items: Items,

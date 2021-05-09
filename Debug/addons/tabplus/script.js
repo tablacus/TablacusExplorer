@@ -44,7 +44,7 @@ if (window.Addon == 1) {
 					while (nDisp < nCount) {
 						let s = ['<li id="tabplus_', Id, '_', nDisp, '"'];
 						if (Addons.TabPlus.opt.DragFolder || ui_.IEVer < 10) {
-							s.push(' onmousemove="Addons.TabPlus.Move(event, this)"');
+							s.push(' onmousedown="Addons.TabPlus.Down1(this)" onmousemove="Addons.TabPlus.Move(event, this)"');
 						} else {
 							s.push(' draggable = "true" ondragstart = "return Addons.TabPlus.Start5(event, this)" ondragend = "Addons.TabPlus.End5(event)"');
 						}
@@ -296,24 +296,32 @@ if (window.Addon == 1) {
 			Addons.TabPlus.Click = [];
 		},
 
+		Down1: async function (el) {
+			Addons.TabPlus.idDown = el.id;
+		},
+
 		Move: async function (ev, el) {
-			const res = /^tabplus_(\d+)_(\d+)/.exec(el.id);
+			const res = /^tabplus_(\d+)_(\d+)/.exec(Addons.TabPlus.idDown);
 			if (res) {
 				const buttons = ev.buttons != null ? ev.buttons : ev.button;
 				if (buttons & 3) {
-					const pt = await api.Memory("POINT");
-					pt.x = ev.screenX * ui_.Zoom;
-					pt.y = ev.screenY * ui_.Zoom;
-					if (await IsDrag(pt, Addons.TabPlus.pt) && !await IsDrag(await g_.mouse.ptDown, Addons.TabPlus.pt)) {
-						Common.TabPlus.Drag5 = el.id;
-						const DataObj = await api.CreateObject("FolderItems");
-						DataObj.AddItem(await te.Ctrl(CTRL_TC, res[1])[res[2]].FolderItem);
-						DataObj.dwEffect = DROPEFFECT_LINK;
-						DoDragDrop(DataObj, DROPEFFECT_LINK | DROPEFFECT_COPY | DROPEFFECT_MOVE, false, function () {
-							Common.TabPlus.Drag5 = void 0;
-							Addons.TabPlus.pt = pt;
-						});
+					if (!await Common.TabPlus.Drag5) {
+						const pt = await api.Memory("POINT");
+						pt.x = ev.screenX * ui_.Zoom;
+						pt.y = ev.screenY * ui_.Zoom;
+						if (await IsDrag(pt, Addons.TabPlus.pt) && !await IsDrag(await g_.mouse.ptDown, Addons.TabPlus.pt)) {
+							Common.TabPlus.Drag5 = Addons.TabPlus.idDown;
+							const DataObj = await api.CreateObject("FolderItems");
+							DataObj.AddItem(await te.Ctrl(CTRL_TC, res[1])[res[2]].FolderItem);
+							DataObj.dwEffect = DROPEFFECT_LINK;
+							DoDragDrop(DataObj, DROPEFFECT_LINK | DROPEFFECT_COPY | DROPEFFECT_MOVE, false, function () {
+								Common.TabPlus.Drag5 = void 0;
+								Addons.TabPlus.pt = pt;
+							});
+						}
 					}
+				} else {
+					Common.TabPlus.Drag5 = void 0;
 				}
 			}
 		},

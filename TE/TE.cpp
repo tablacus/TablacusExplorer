@@ -75,6 +75,8 @@ FORMATETC IDLISTFormat = {0, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
 FORMATETC DROPEFFECTFormat = {0, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
 FORMATETC UNICODEFormat = {CF_UNICODETEXT, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
 FORMATETC TEXTFormat = {CF_TEXT, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
+FORMATETC DRAGWINDOWFormat = {0, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
+FORMATETC IsShowingLayeredFormat = {0, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
 GUID		g_ClsIdStruct;
 GUID		g_ClsIdSB;
 GUID		g_ClsIdTC;
@@ -216,6 +218,25 @@ BOOL teILIsSearchFolder(LPITEMIDLIST pidl);
 
 //Unit
 
+LONG teGetLongFromDataObj(IDataObject *pDataObj, FORMATETC *pformatetcIn)
+{
+	LONG lr = 0;
+	STGMEDIUM Medium;
+	if (pDataObj->GetData(pformatetcIn, &Medium) == S_OK) {
+		try {
+			lr = *(LONG *)GlobalLock(Medium.hGlobal);
+		} catch (...) {
+			g_nException = 0;
+#ifdef _DEBUG
+			g_strException = L"GetLongFromDataObj";
+#endif
+		}
+		GlobalUnlock(Medium.hGlobal);
+		ReleaseStgMedium(&Medium);
+	}
+	return lr;
+}
+
 VOID teAddRemoveProc(std::vector<LONG_PTR> *pppProc, LONG_PTR lpProc, BOOL bAdd)
 {
 	if (bAdd) {
@@ -289,9 +310,16 @@ VOID teSetTreeTheme(HWND hwnd, COLORREF cl)
 HRESULT teDoDragDrop(HWND hwnd, IDataObject *pDataObj, DWORD *pdwEffect)
 {
 	if (g_bDragIcon) {
-		return SHDoDragDrop(hwnd, pDataObj, static_cast<IDropSource *>(g_pTE), *pdwEffect, pdwEffect);
+		IDragSourceHelper *pDragSourceHelper;
+		if SUCCEEDED(g_pDropTargetHelper->QueryInterface(IID_PPV_ARGS(&pDragSourceHelper))) {
+			pDragSourceHelper->InitializeFromWindow(hwnd, NULL, pDataObj);
+			pDragSourceHelper->Release();
+		}
 	}
-	return DoDragDrop(pDataObj, static_cast<IDropSource *>(g_pTE), *pdwEffect, pdwEffect);
+	g_bDragging = TRUE;
+	HRESULT hr = DoDragDrop(pDataObj, static_cast<IDropSource *>(g_pTE), *pdwEffect, pdwEffect);
+	g_bDragging = FALSE;
+	return hr;
 }
 
 BOOL teGetSubWindow(HWND hwnd, CteWebBrowser **ppWB)
@@ -7223,24 +7251,11 @@ VOID teApiOleGetClipboard(int nArg, teParam *param, DISPPARAMS *pDispParams, VAR
 		if (OleGetClipboard(&pDataObj) == S_OK) {
 			FolderItems *pFolderItems = new CteFolderItems(pDataObj, NULL);
 			if (teSetObject(pVarResult, pFolderItems)) {
-				STGMEDIUM Medium;
-				if (pDataObj->GetData(&DROPEFFECTFormat, &Medium) == S_OK) {
-					VARIANT v;
-					DWORD *pdwEffect = (DWORD *)GlobalLock(Medium.hGlobal);
-					try {
-						teSetLong(&v, *pdwEffect);
-					} catch (...) {
-						g_nException = 0;
-#ifdef _DEBUG
-						g_strException = L"ApiOleGetClipboard";
-#endif
-					}
-					GlobalUnlock(Medium.hGlobal);
-					ReleaseStgMedium(&Medium);
-					IUnknown *punk;
-					if (FindUnknown(pVarResult, &punk)) {
-						tePutProperty(punk, L"dwEffect", &v);
-					}
+				VARIANT v;
+				teSetLong(&v, teGetLongFromDataObj(pDataObj, &DROPEFFECTFormat));
+				IUnknown *punk;
+				if (FindUnknown(pVarResult, &punk)) {
+					tePutProperty(punk, L"dwEffect", &v);
 				}
 			}
 			pFolderItems->Release();
@@ -11544,6 +11559,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	// ClipboardFormat
 	IDLISTFormat.cfFormat = (CLIPFORMAT)RegisterClipboardFormat(CFSTR_SHELLIDLIST);
 	DROPEFFECTFormat.cfFormat = (CLIPFORMAT)RegisterClipboardFormat(CFSTR_PREFERREDDROPEFFECT);
+	DRAGWINDOWFormat.cfFormat = (CLIPFORMAT)RegisterClipboardFormat(L"DragWindow");
+	IsShowingLayeredFormat.cfFormat = (CLIPFORMAT)RegisterClipboardFormat(L"IsShowingLayered");
 	// Hook
 	g_hHook = SetWindowsHookEx(WH_CALLWNDPROC, (HOOKPROC)HookProc, hInst, g_dwMainThreadId);
 	g_hMouseHook = SetWindowsHookEx(WH_MOUSE, (HOOKPROC)MouseProc, hInst, g_dwMainThreadId);
@@ -18022,6 +18039,20 @@ STDMETHODIMP CTE::QueryContinueDrag(BOOL fEscapePressed, DWORD grfKeyState)
 
 STDMETHODIMP CTE::GiveFeedback(DWORD dwEffect)
 {
+	if (g_pDraggingItems) {
+		WPARAM wpEffect[] = { 1, 3, 2, 0, 4, 0, 0, 0 };
+		WPARAM wParam = wpEffect[dwEffect & 7];
+		if (wParam) {
+			if (teGetLongFromDataObj(g_pDraggingItems, &IsShowingLayeredFormat)) {
+				HWND hwnd = (HWND)LongToHandle(teGetLongFromDataObj(g_pDraggingItems, &DRAGWINDOWFormat));
+				if (hwnd) {
+					SendMessage(hwnd, WM_USER + 2, wParam, 0);
+					SetCursor(LoadCursor(NULL, IDC_ARROW));
+					return S_OK;
+				}
+			}
+		}
+	}
 	return DRAGDROP_S_USEDEFAULTCURSORS;
 }
 
@@ -19509,11 +19540,11 @@ VOID CteTabCtrl::Move(int nSrc, int nDest, CteTabCtrl *pDestTab)
 
 VOID CteTabCtrl::LockUpdate()
 {
-	m_bRedraw = TRUE;
 	if (InterlockedIncrement(&m_nLockUpdate) == 1) {
-		if (g_nBlink == 1) {
+		if (g_bDragging || g_nBlink == 1) {
 			return;
 		}
+		m_bRedraw = TRUE;
 		SendMessage(m_hwndStatic, WM_SETREDRAW, FALSE, 0);
 	}
 }
@@ -19602,6 +19633,20 @@ CteFolderItems::CteFolderItems(IDataObject *pDataObj, FolderItems *pFolderItems)
 CteFolderItems::~CteFolderItems()
 {
 	Clear();
+}
+
+VOID CteFolderItems::CreateDataObj()
+{
+	if (!m_pDataObj) {
+		AdjustIDListEx();
+		if (m_pidllist && m_nCount > 0) {
+			IShellFolder *pSF;
+			if (GetShellFolder(&pSF, m_pidllist[0])) {
+				pSF->GetUIObjectOf(g_hwndMain, m_nCount, const_cast<LPCITEMIDLIST *>(&m_pidllist[1]), IID_IDataObject, NULL, (LPVOID *)&m_pDataObj);
+				pSF->Release();
+			}
+		}
+	}
 }
 
 VOID CteFolderItems::Clear()
@@ -20331,6 +20376,7 @@ STDMETHODIMP CteFolderItems::GetData(FORMATETC *pformatetcIn, STGMEDIUM *pmedium
 
 STDMETHODIMP CteFolderItems::GetDataHere(FORMATETC *pformatetc, STGMEDIUM *pmedium)
 {
+	CreateDataObj();
 	if (m_pDataObj) {
 		return m_pDataObj->GetDataHere(pformatetc, pmedium);
 	}
@@ -20375,6 +20421,7 @@ HRESULT CteFolderItems::QueryGetData2(FORMATETC *pformatetc)
 
 STDMETHODIMP CteFolderItems::GetCanonicalFormatEtc(FORMATETC *pformatectIn, FORMATETC *pformatetcOut)
 {
+	CreateDataObj();
 	if (m_pDataObj) {
 		return m_pDataObj->GetCanonicalFormatEtc(pformatectIn, pformatetcOut);
 	}
@@ -20383,6 +20430,7 @@ STDMETHODIMP CteFolderItems::GetCanonicalFormatEtc(FORMATETC *pformatectIn, FORM
 
 STDMETHODIMP CteFolderItems::SetData(FORMATETC *pformatetc, STGMEDIUM *pmedium, BOOL fRelease)
 {
+	CreateDataObj();
 	if (m_pDataObj) {
 		return m_pDataObj->SetData(pformatetc, pmedium, fRelease);
 	}
@@ -20391,6 +20439,7 @@ STDMETHODIMP CteFolderItems::SetData(FORMATETC *pformatetc, STGMEDIUM *pmedium, 
 
 STDMETHODIMP CteFolderItems::EnumFormatEtc(DWORD dwDirection, IEnumFORMATETC **ppenumFormatEtc)
 {
+	CreateDataObj();
 	if (dwDirection == DATADIR_GET) {
 		BOOL bIDListFormat = CanIDListFormat();
 		BOOL bHDROPFormat = m_nCount > 0;
@@ -20399,13 +20448,6 @@ STDMETHODIMP CteFolderItems::EnumFormatEtc(DWORD dwDirection, IEnumFORMATETC **p
 		BOOL bDROPEFFECTFormat = m_dwEffect != (DWORD)-1;
 		std::vector<FORMATETC> formats;
 		formats.reserve(m_nCount);
-		if (!m_pDataObj && m_pidllist && m_nCount > 0) {
-			IShellFolder *pSF;
-			if (GetShellFolder(&pSF, m_pidllist[0])) {
-				pSF->GetUIObjectOf(g_hwndMain, m_nCount, const_cast<LPCITEMIDLIST *>(&m_pidllist[1]), IID_IDataObject, NULL, (LPVOID *)&m_pDataObj);
-				pSF->Release();
-			}
-		}
 		if (m_pDataObj) {
 			IEnumFORMATETC *penumFormatEtc;
 			if SUCCEEDED(m_pDataObj->EnumFormatEtc(DATADIR_GET, &penumFormatEtc)) {
@@ -20468,6 +20510,7 @@ STDMETHODIMP CteFolderItems::EnumFormatEtc(DWORD dwDirection, IEnumFORMATETC **p
 
 STDMETHODIMP CteFolderItems::DAdvise(FORMATETC *pformatetc, DWORD advf, IAdviseSink *pAdvSink, DWORD *pdwConnection)
 {
+	CreateDataObj();
 	if (m_pDataObj) {
 		return m_pDataObj->DAdvise(pformatetc, advf, pAdvSink, pdwConnection);
 	}
@@ -20484,6 +20527,7 @@ STDMETHODIMP CteFolderItems::DUnadvise(DWORD dwConnection)
 
 STDMETHODIMP CteFolderItems::EnumDAdvise(IEnumSTATDATA **ppenumAdvise)
 {
+	CreateDataObj();
 	if (m_pDataObj) {
 		return m_pDataObj->EnumDAdvise(ppenumAdvise);
 	}
