@@ -158,8 +158,8 @@ int		g_nTCIndex = 0;
 int		g_nWindowTheme = 0;
 int		g_nBlink = 0;
 int		g_nCreateTimer = 100;
+int		g_nDropState = 0;
 BOOL	g_bArrange = FALSE;
-BOOL	g_nDropState = 0;
 BOOL	g_bLabelsMode;
 BOOL	g_bMessageLoop = TRUE;
 BOOL	g_bDialogOk = FALSE;
@@ -307,18 +307,28 @@ VOID teSetTreeTheme(HWND hwnd, COLORREF cl)
 	}
 }
 
-HRESULT teDoDragDrop(HWND hwnd, IDataObject *pDataObj, DWORD *pdwEffect)
+HRESULT teDoDragDrop(HWND hwnd, IDataObject *pDataObj, DWORD *pdwEffect, BOOL bDropState)
 {
-	if (g_bDragIcon) {
-		IDragSourceHelper *pDragSourceHelper;
-		if SUCCEEDED(g_pDropTargetHelper->QueryInterface(IID_PPV_ARGS(&pDragSourceHelper))) {
-			pDragSourceHelper->InitializeFromWindow(hwnd, NULL, pDataObj);
-			pDragSourceHelper->Release();
+	HRESULT hr;
+	try {
+		g_nDropState = bDropState ? 2 : 1;
+		if (g_bDragIcon) {
+			IDragSourceHelper *pDragSourceHelper;
+			if SUCCEEDED(g_pDropTargetHelper->QueryInterface(IID_PPV_ARGS(&pDragSourceHelper))) {
+				pDragSourceHelper->InitializeFromWindow(hwnd, NULL, pDataObj);
+				pDragSourceHelper->Release();
+			}
 		}
+		g_pDraggingItems = pDataObj;
+		hr = DoDragDrop(pDataObj, static_cast<IDropSource *>(g_pTE), *pdwEffect, pdwEffect);
+	} catch(...) {
+		hr = E_UNEXPECTED;
+		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"DoDragDrop";
+#endif
 	}
-	g_bDragging = TRUE;
-	HRESULT hr = DoDragDrop(pDataObj, static_cast<IDropSource *>(g_pTE), *pdwEffect, pdwEffect);
-	g_bDragging = FALSE;
+	g_pDraggingItems = NULL;
 	return hr;
 }
 
@@ -5839,7 +5849,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 					}
 				}
 			} else if (((LPNMHDR)lParam)->code == LVN_ENDLABELEDIT) {
-				if (g_nWindowTheme == 1) { // Bug: Classic style and Shift + Tab 
+				if (g_nWindowTheme == 1) { // Bug: Classic style and Shift + Tab
 					HWND hHeader = ListView_GetHeader(pSB->m_hwndLV);
 					if (hHeader) {
 						EnableWindow(hHeader, FALSE);
@@ -8691,15 +8701,7 @@ VOID teApiDoDragDrop(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 	IDataObject *pDataObj;
 	if (GetDataObjFromVariant(&pDataObj, &pDispParams->rgvarg[nArg])) {
 		DWORD dwEffect = param[1].dword;
-		g_nDropState = 1;
-		try {
-			teSetLong(pVarResult, teDoDragDrop(NULL, pDataObj, &dwEffect));
-		} catch(...) {
-			g_nException = 0;
-#ifdef _DEBUG
-			g_strException = L"DoDragDrop";
-#endif
-		}
+		teSetLong(pVarResult, teDoDragDrop(g_hwndMain, pDataObj, &dwEffect, FALSE));
 		IDispatch *pEffect;
 		if (nArg >= 2 && GetDispatch(&pDispParams->rgvarg[nArg - 2], &pEffect)) {
 			VARIANT v;
@@ -8715,20 +8717,10 @@ VOID teApiSHDoDragDrop(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIAN
 {
 	IDataObject *pDataObj;
 	if (GetDataObjFromVariant(&pDataObj, &pDispParams->rgvarg[nArg - 1])) {
-		g_pDraggingItems = pDataObj;
 		FindUnknown(&pDispParams->rgvarg[nArg - 2], &g_pDraggingCtrl);
 		DWORD dwEffect = param[3].dword;
-		g_nDropState = param[5].boolVal ? 2 : 1;
-		try {
-			teSetLong(pVarResult, teDoDragDrop(param[0].hwnd, pDataObj, &dwEffect));
-		} catch(...) {
-			g_nException = 0;
-#ifdef _DEBUG
-			g_strException = L"SHDoDragDrop";
-#endif
-		}
+		teSetLong(pVarResult, teDoDragDrop(param[0].hwnd, pDataObj, &dwEffect, param[5].boolVal));
 		g_pDraggingCtrl = NULL;
-		g_pDraggingItems = NULL;
 		IDispatch *pEffect;
 		if (nArg >= 4 && GetDispatch(&pDispParams->rgvarg[nArg - 4], &pEffect)) {
 			VARIANT v;
@@ -14408,11 +14400,11 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			teVariantCopy(pVarResult, &m_vData);
 			return S_OK;
-			
+
 		case TE_PROPERTY + 0xf002://hwnd
 			teSetPtr(pVarResult, m_hwnd);
 			return S_OK;
-			
+
 		case TE_PROPERTY + 0xf003://Type
 			if (nArg >= 0) {
 				DWORD dwType = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
@@ -14427,7 +14419,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			teSetLong(pVarResult, m_param[SB_Type]);
 			return S_OK;
 
-			
+
 		case TE_METHOD + 0xf004://Navigate
 		case TE_PROPERTY + 0xf00B://History
 			if (nArg >= 0) {
@@ -14481,7 +14473,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 			}
 			return S_OK;
-			
+
 		case TE_METHOD + 0xfb07://Navigate2Ex
 			if (nArg >= 3) {
 				FolderItem *pFolderItem = NULL;
@@ -14511,7 +14503,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 			}
 			return S_OK;
-			
+
 		case TE_METHOD + 0xf007://Navigate2
 			if (nArg >= 0) {
 				DWORD param[SB_Count];
@@ -14553,7 +14545,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				teSetObject(pVarResult, pSB);
 			}
 			return S_OK;
-			
+
 		case TE_PROPERTY + 0xf008://Index
 			if (nArg >= 0) {
 				m_pTC->Move(GetTabIndex(), GetIntFromVariant(&pDispParams->rgvarg[nArg]), m_pTC);
@@ -14562,7 +14554,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				teSetLong(pVarResult, GetTabIndex());
 			}
 			return S_OK;
-			
+
 		case TE_PROPERTY + 0xf009://FolderFlags
 			if (nArg >= 0) {
 				m_param[SB_FolderFlags] = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
@@ -14570,7 +14562,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			teSetLong(pVarResult, m_param[SB_FolderFlags]);
 			return S_OK;
-			
+
 		case TE_PROPERTY + 0xf010://CurrentViewMode
 		case TE_METHOD + 0xf010://SetViewMode
 			if (nArg >= 0) {
@@ -14583,7 +14575,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			SetFolderFlags(FALSE);
 			teSetLong(pVarResult, m_param[SB_ViewMode]);
 			return S_OK;
-			
+
 		case TE_PROPERTY + 0xf011://IconSize
 			if (m_pShellView && m_bIconSize) {
 				GetViewModeAndIconSize(TRUE);
@@ -14605,7 +14597,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			teSetLong(pVarResult, m_param[SB_IconSize]);
 			return S_OK;
-			
+
 		case TE_PROPERTY + 0xf012://Options
 			if (nArg >= 0) {
 				m_param[SB_Options] = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
@@ -14621,7 +14613,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				teSetLong(pVarResult, m_param[SB_Options]);
 			}
 			return S_OK;
-			
+
 		case TE_PROPERTY + 0xf013://SizeFormat
 			if (nArg >= 0) {
 				m_nSizeFormat = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
@@ -14631,10 +14623,10 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			teSetLong(pVarResult, m_nSizeFormat);
 			return S_OK;
-			
+
 		case TE_PROPERTY + 0xf014://NameFormat //Deprecated
 			return S_OK;
-			
+
 		case TE_PROPERTY + 0xf016://ViewFlags
 			if (nArg >= 0) {
 				m_param[SB_ViewFlags] = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
@@ -14644,11 +14636,11 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			teSetLong(pVarResult, m_param[SB_ViewFlags]);
 			return S_OK;
-			
+
 		case TE_PROPERTY + 0xf017://Id
 			teSetLong(pVarResult, m_nSB);
 			return S_OK;
-			
+
 		case TE_PROPERTY + 0xf018://FilterView
 		case TE_METHOD + 0xf018://Search
 			if (nArg >= 0) {
@@ -14723,22 +14715,22 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			teSetSZ(pVarResult, m_bsFilter);
 			return S_OK;
-			
+
 		case  TE_PROPERTY + 0xf020://FolderItem
 			teSetObject(pVarResult, m_pFolderItem);
 			return S_OK;
-			
+
 		case  TE_PROPERTY + 0xf021://TreeView
 			teSetObject(pVarResult, m_pTV);
 			return S_OK;
-			
+
 		case  TE_PROPERTY + 0xf024://Parent
 			IDispatch *pdisp;
 			if SUCCEEDED(get_Parent(&pdisp)) {
 				teSetObjectRelease(pVarResult, pdisp);
 			}
 			return S_OK;
-			
+
 		case TE_METHOD + 0xf026://Focus
 			SetActive(TRUE);
 			CheckChangeTabTC(m_pTC->m_hwnd);
@@ -14750,7 +14742,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				ArrangeWindowEx();
 			}
 			return S_OK;
-			
+
 		case TE_PROPERTY + 0xf032://Title
 			nIndex = GetTabIndex();
 			if (nIndex >= 0) {
@@ -14784,28 +14776,28 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 			}
 			return S_OK;
-			
+
 		case TE_METHOD + 0xf033://Suspend
 			Suspend(nArg >= 0 ? GetIntFromVariant(&pDispParams->rgvarg[nArg]) : 0);
 			return S_OK;
-			
+
 		case TE_METHOD + 0xf040://Items
 			FolderItems *pFolderItems;
 			if SUCCEEDED(Items(nArg >= 0 ? GetIntFromVariant(&pDispParams->rgvarg[nArg]) : SVGIO_ALLVIEW | SVGIO_FLAG_VIEWORDER, &pFolderItems)) {
 				teSetObjectRelease(pVarResult, pFolderItems);
 			}
 			return S_OK;
-			
+
 		case TE_METHOD + 0xf041://SelectedItems
 			if SUCCEEDED(SelectedItems(&pFolderItems)) {
 				teSetObjectRelease(pVarResult, pFolderItems);
 			}
 			return S_OK;
-			
+
 		case TE_PROPERTY + 0xf050://ShellFolderView
 			teSetObject(pVarResult, m_pdisp);
 			return S_OK;
-			
+
 		case TE_PROPERTY + 0xf058://DropTarget
 			IDropTarget *pDT;
 			pDT = NULL;
@@ -14826,7 +14818,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				pDT->Release();
 			}
 			return S_OK;
-			
+
 		case TE_PROPERTY + 0xf059://Columns
 		case TE_METHOD + 0xf059://GetColumns
 			if (m_hwndDV) {
@@ -14864,7 +14856,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 							}
 							teSetObjectRelease(pVarResult, pArray);
 							return S_OK;*/
-							
+
 		case TE_METHOD + 0xf05B://MapColumnToSCID
 			if (nArg >= 1 && pVarResult) {
 				SHCOLUMNID scid;
@@ -14878,15 +14870,15 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 			}
 			return S_OK;
-			
+
 		case TE_PROPERTY + 0xf102://hwndList
 			teSetPtr(pVarResult, m_hwndLV);
 			return S_OK;
-			
+
 		case TE_PROPERTY + 0xf103://hwndView
 			teSetPtr(pVarResult, m_hwndDV);
 			return S_OK;
-			
+
 		case TE_PROPERTY + 0xf104://SortColumn
 		case TE_METHOD + 0xf104://GetSortColumn
 			if (nArg >= 0) {
@@ -14902,7 +14894,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				teSetBSTR(pVarResult, &bs, -1);
 			}
 			return S_OK;
-			
+
 		case TE_PROPERTY + 0xf105://GroupBy
 			if (nArg >= 0) {
 				if (pDispParams->rgvarg[nArg].vt == VT_BSTR) {
@@ -14914,7 +14906,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				GetGroupBy(&pVarResult->bstrVal);
 			}
 			return S_OK;
-			
+
 		case TE_METHOD + 0xf107://HitTest (Screen coordinates)
 			if (nArg >= 0 && pVarResult) {
 				LVHITTESTINFO info;
@@ -14974,7 +14966,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 			}
 			return S_OK;
-			
+
 		case TE_PROPERTY + 0xf108://hwndAlt
 			if (nArg >= 0) {
 				m_hwndAlt = (HWND)GetPtrFromVariant(&pDispParams->rgvarg[nArg]);
@@ -14982,7 +14974,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			teSetPtr(pVarResult, m_hwndAlt);
 			return S_OK;
-			
+
 		case TE_METHOD + 0xf110://ItemCount
 			if (pVarResult && m_pShellView) {
 				UINT uItem = (nArg >= 0) ? GetIntFromVariant(&pDispParams->rgvarg[nArg]) : SVGIO_ALLVIEW;
@@ -14999,7 +14991,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				teSetLong(pVarResult, GetFolderViewAndItemCount(NULL, uItem));
 			}
 			return S_OK;
-			
+
 		case TE_METHOD + 0xf111://Item
 			if (pVarResult && m_pShellView && nArg >= 0) {
 				IFolderView *pFV;
@@ -15014,7 +15006,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 			}
 			return S_OK;
-			
+
 		case TE_METHOD + 0xf206://Refresh
 			if (!m_bVisible && nArg >= 0 && GetBoolFromVariant(&pDispParams->rgvarg[nArg])) {
 				m_bRefreshLator = TRUE;
@@ -15022,7 +15014,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			Refresh(TRUE);
 			return S_OK;
-			
+
 		case TE_METHOD + 0xfb06://Refresh2Ex
 			if (nArg >= 0) {
 				FolderItem *pid = NULL;
@@ -15038,7 +15030,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				Refresh(FALSE);
 			}
 			return S_OK;
-			
+
 		case TE_METHOD + 0xf207://ViewMenu
 			IContextMenu *pCM;
 			CteContextMenu *pdispCM;
@@ -15058,7 +15050,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			SafeRelease(&pdispCM);
 			SafeRelease(&pCM);
 			return S_OK;
-			
+
 		case TE_METHOD + 0xf208://TranslateAccelerator
 			HRESULT hr;
 			hr = E_NOTIMPL;
@@ -15094,7 +15086,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			teSetLong(pVarResult, hr);
 			return S_OK;
-			
+
 		case TE_METHOD + 0xf20A://SelectAndPositionItem
 			hr = E_NOTIMPL;
 			if (m_pShellView) {
@@ -15119,27 +15111,27 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			teSetLong(pVarResult, hr);
 			return S_OK;
-			
+
 		case TE_METHOD + 0xf280://SelectItem
 			if (nArg >= 1) {
 				SelectItem(&pDispParams->rgvarg[nArg], GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]));
 			}
 			return S_OK;
-			
+
 		case TE_PROPERTY + 0xf281://FocusedItem
 			FolderItem *pFolderItem;
 			if (get_FocusedItem(&pFolderItem) == S_OK) {
 				teSetObjectRelease(pVarResult, pFolderItem);
 			}
 			return S_OK;
-			
+
 		case TE_PROPERTY + 0xf282://GetFocusedItem
 			if (pVarResult) {
 				GetFocusedIndex(&pVarResult->intVal);
 				pVarResult->vt = VT_I4;
 			}
 			return S_OK;
-			
+
 		case TE_METHOD + 0xf283://GetItemRect
 			hr = E_NOTIMPL;
 			if (m_pShellView && m_hwndLV) {
@@ -15172,7 +15164,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			teSetLong(pVarResult, hr);
 			return S_OK;
-			
+
 		case TE_METHOD + 0xf300://Notify
 			if (nArg >= 2) {
 				long lEvent = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
@@ -15206,15 +15198,15 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 			}
 			return S_OK;
-			
+
 		case TE_METHOD + 0xf400://NavigateComplete
 			m_bBeforeNavigate = FALSE;
 			return S_OK;
-			
+
 		case TE_METHOD + 0xf500://NavigationComplete
 			NavigateComplete(FALSE);
 			return S_OK;
-			
+
 		case TE_METHOD + 0xf501://AddItem
 			if (nArg >= 0) {
 				if (nArg >= 1) {
@@ -15229,7 +15221,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 			}
 			return S_OK;
-			
+
 		case TE_METHOD + 0xf502://RemoveItem
 			hr = E_NOTIMPL;
 			if (nArg >= 0 && m_pShellView) {
@@ -15266,7 +15258,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				SetTimer(g_hwndMain, TET_Status, 500, teTimerProc);
 			}
 			return S_OK;
-			
+
 		case TE_METHOD + 0xf503://AddItems
 			if (nArg >= 0) {
 				if (GetDispatch(&pDispParams->rgvarg[nArg], &pdisp) || teGetDispatchFromString(&pDispParams->rgvarg[nArg], &pdisp)) {
@@ -15295,11 +15287,11 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 			}
 			return S_OK;
-			
+
 		case TE_METHOD + 0xf504://RemoveAll
 			teSetLong(pVarResult, RemoveAll());
 			return S_OK;
-			
+
 		case TE_PROPERTY + 0xf505://SessionId
 			teSetLong(pVarResult, m_dwSessionId);
 			return S_OK;
@@ -15383,15 +15375,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						IDataObject *pDataObj = NULL;
 						if SUCCEEDED(pid->QueryInterface(IID_PPV_ARGS(&pDataObj))) {
 							DWORD dwEffect = DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK;
-							g_nDropState = 1;
-							try {
-								teDoDragDrop(NULL, pDataObj, &dwEffect);
-							} catch (...) {
-								g_nException = 0;
-#ifdef _DEBUG
-								g_strException = L"BeginDrag";
-#endif
-							}
+							teDoDragDrop(g_hwndMain, pDataObj, &dwEffect, FALSE);
 							teSetBool(pVarResult, FALSE);
 							pDataObj->Release();
 						}
@@ -17566,7 +17550,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 						teCreateSafeArrayFromVariantArray(pArray, pVarResult);
 						SafeRelease(&pArray);
 						return S_OK;
-					} 
+					}
 					teSetObjectRelease(pVarResult, teAddLegacySupport(pArray));
 				}
 				return S_OK;
@@ -17799,7 +17783,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 							if (nArg >= 5) {
 								VARIANT v;
 								teVariantChangeType(&v, &pDispParams->rgvarg[nArg - 1], VT_BSTR);
-								HWND hwnd1 = (HWND)GetPtrFromVariant(&pDispParams->rgvarg[nArg - 3]);							
+								HWND hwnd1 = (HWND)GetPtrFromVariant(&pDispParams->rgvarg[nArg - 3]);
 								if (FindUnknown(&pDispParams->rgvarg[nArg - 3], &punk)) {
 									IUnknown_GetWindow(punk, &hwnd1);
 								}
@@ -18297,7 +18281,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			teSetObjectRelease(pVarResult, new CteDispatch(this, 0, dispIdMember));
 			return S_OK;
 		}
-		switch(dispIdMember) {		
+		switch(dispIdMember) {
 		case TE_PROPERTY + 1://Data
 			if (nArg >= 0) {
 				VariantClear(&m_vData);
@@ -18305,15 +18289,15 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			}
 			teVariantCopy(pVarResult, &m_vData);
 			return S_OK;
-			
+
 		case TE_PROPERTY + 2://hwnd
 			teSetPtr(pVarResult, get_HWND());
 			return S_OK;
-			
+
 		case TE_PROPERTY + 3://Type
 			teSetLong(pVarResult, m_hwndParent == g_hwndMain ? CTRL_WB : CTRL_SW);
 			return S_OK;
-			
+
 		case TE_METHOD + 4://TranslateAccelerator
 			HRESULT hr;
 			hr = E_NOTIMPL;
@@ -18331,7 +18315,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			}
 			teSetLong(pVarResult, hr);
 			return S_OK;
-			
+
 		case TE_PROPERTY + 5://Application
 			IDispatch *pdisp;
 			if SUCCEEDED(m_pWebBrowser->get_Application(&pdisp)) {
@@ -18364,7 +18348,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 				teSetForegroundWindow(m_hwndParent);
 			}
 			return S_OK;
-			
+
 		case TE_METHOD + 9://Close
 			m_nClose = 1;
 			teSetExStyleOr(m_hwndParent, WS_EX_LAYERED);
@@ -19193,7 +19177,7 @@ STDMETHODIMP CteTabCtrl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WOR
 			teSetObjectRelease(pVarResult, new CteDispatch(this, 0, dispIdMember));
 			return S_OK;
 		}
-		switch(dispIdMember) {			
+		switch(dispIdMember) {
 		case TE_PROPERTY + 1://Data
 			if (nArg >= 0) {
 				VariantClear(&m_vData);
@@ -19541,7 +19525,7 @@ VOID CteTabCtrl::Move(int nSrc, int nDest, CteTabCtrl *pDestTab)
 VOID CteTabCtrl::LockUpdate()
 {
 	if (InterlockedIncrement(&m_nLockUpdate) == 1) {
-		if (g_bDragging || g_nBlink == 1) {
+		if (g_bDragging || g_nDropState || g_nBlink == 1) {
 			return;
 		}
 		m_bRedraw = TRUE;
@@ -21265,7 +21249,7 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 			teSetObjectRelease(pVarResult, new CteDispatch(this, 0, dispIdMember));
 			return S_OK;
 		}
-		switch(dispIdMember) {			
+		switch(dispIdMember) {
 		case TE_METHOD + 1://QueryContextMenu
 			if (nArg >= 4) {
 				if (!m_param[2].uintVal) {
@@ -23586,7 +23570,7 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 				teSetSZ(pVarResult, m_ofn.lpstrFile);
 				return S_OK;
-			
+
 			case TE_PROPERTY + 13://Filter
 				if (nArg >= 0) {
 					teSysFreeString(const_cast<BSTR *>(&m_ofn.lpstrFilter));
@@ -24622,11 +24606,11 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					}
 				}
 				return S_OK;
-				
+
 			case TE_METHOD + 116: //Mask
 				if (nArg >= 1) {
 					DWORD cl = GetIntFromVariant(&pDispParams->rgvarg[nArg]) & 0xffffff;
-					DWORD clBk = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) & 0xffffff;	
+					DWORD clBk = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) & 0xffffff;
 					if (Get(GUID_WICPixelFormat32bppBGRA)) {
 						int w = 0, h = 0;
 						m_pImage->GetSize((UINT *)&w, (UINT *)&h);
@@ -25946,7 +25930,7 @@ STDMETHODIMP CteProgressDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lc
 					teSetLong(pVarResult, m_ppd->StartProgressDialog((HWND)GetPtrFromVariant(&pDispParams->rgvarg[nArg]), punk, GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]), NULL));
 				}
 				return S_OK;
-			
+
 			case TE_METHOD + 7: //StopProgressDialog
 				m_ppd->SetLine(2, L"", TRUE, NULL);
 				teSetLong(pVarResult, m_ppd->StopProgressDialog());

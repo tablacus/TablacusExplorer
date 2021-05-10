@@ -2791,7 +2791,7 @@ UnlockFV = function (Item) {
 	const cFV = te.Ctrls(CTRL_FV);
 	for (let i in cFV) {
 		const FV = cFV[i];
-		if (FV.hwndView && api.ILIsParent(Item, FV, false)) {
+		if (FV.hwndView && api.ILIsParent(Item, FV, false) && !api.ILIsEqual(FV.FolderItem.Alt, ssfRESULTSFOLDER)) {
 			FV.Suspend();
 		}
 	}
