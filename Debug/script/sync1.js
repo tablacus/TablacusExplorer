@@ -1074,12 +1074,34 @@ GetLock = function (FV) {
 	return FV && FV.Data && FV.Data.Lock;
 }
 
-CanClose = function (FV) {
-	if (FV && FV.Data) {
-		if (FV.Data.Lock) {
-			return S_FALSE;
+CanClose = function (Ctrl) {
+	if (Ctrl && Ctrl.Data) {
+		switch (Ctrl.Type) {
+			case CTRL_TE:
+				if (api.GetThreadCount()) {
+					return S_FALSE;
+				}
+				let hwnd1 = null;
+				const pid = api.Memory("DWORD");
+				api.GetWindowThreadProcessId(te.hwnd, pid);
+				const pid0 = pid[0];
+				while (hwnd1 = api.FindWindowEx(null, hwnd1, null, null)) {
+					if (!/tablacus|_hidden/i.test(api.GetClassName(hwnd1)) && api.IsWindowVisible(hwnd1)) {
+						api.GetWindowThreadProcessId(hwnd1, pid);
+						if (pid[0] == pid0) {
+							return S_FALSE;
+						}
+					}
+				}
+				break;
+			case CTRL_SB:
+			case CTRL_EB:
+				if (Ctrl.Data.Lock) {
+					return S_FALSE;
+				}
+				break;
 		}
-		return RunEvent2("CanClose", FV);
+		return RunEvent2("CanClose", Ctrl) || S_OK;
 	}
 	return S_OK;
 }
@@ -1476,32 +1498,18 @@ te.OnClose = function (Ctrl) {
 AddEvent("Close", function (Ctrl) {
 	switch (Ctrl.Type) {
 		case CTRL_TE:
-			let bRetry = false;
-			do {
-				let bBusy = api.GetThreadCount();
-				if (!bBusy) {
-					let hwnd1 = null;
-					const pid = api.Memory("DWORD");
-					api.GetWindowThreadProcessId(te.hwnd, pid);
-					const pid0 = pid[0];
-					while (hwnd1 = api.FindWindowEx(null, hwnd1, null, null)) {
-						if (!/tablacus|_hidden/i.test(api.GetClassName(hwnd1)) && api.IsWindowVisible(hwnd1)) {
-							api.GetWindowThreadProcessId(hwnd1, pid);
-							if (pid[0] == pid0) {
-								bBusy = true;
-								break;
-							}
-						}
-					}
+			if (CanClose(Ctrl)) {
+				const r = MessageBox("File is in operation.", TITLE, MB_ABORTRETRYIGNORE);
+				if (r == IDABORT) {
+					return S_FALSE;
 				}
-				if (bBusy) {
-					const r = MessageBox("File is in operation.", TITLE, MB_ABORTRETRYIGNORE);
-					if (r == IDABORT) {
-						return S_FALSE;
-					}
-					bRetry = r == IDRETRY;
+				if (r == IDRETRY) {
+					setTimeout(function () {
+						api.PostMessage(te.hwnd, WM_CLOSE, 0, 0);
+					}, 999);
+					return S_FALSE;
 				}
-			} while (bRetry);
+			}
 			SetWindowAlpha(te.hwnd, 0);
 			Finalize();
 			eventTE = { Environment: {} };
@@ -3285,6 +3293,10 @@ UpdateAndReload = function (arg) {
 			setTimeout(UpdateAndReload, 999, arg);
 			return;
 		}
+	}
+	if (CanClose(te)) {
+		setTimeout(UpdateAndReload, 999, arg);
+		return;
 	}
 	if (!arg.Boot && !IsExists(BuildPath(arg.temp, GetFileName(api.GetModuleFileName(null))))) {
 		api.SHFileOperation(FO_MOVE, arg.temp + "\\*", te.Data.Installed, FOF_NOCONFIRMATION, false);

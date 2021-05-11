@@ -312,12 +312,10 @@ HRESULT teDoDragDrop(HWND hwnd, IDataObject *pDataObj, DWORD *pdwEffect, BOOL bD
 	HRESULT hr;
 	try {
 		g_nDropState = bDropState ? 2 : 1;
-		if (g_bDragIcon) {
-			IDragSourceHelper *pDragSourceHelper;
-			if SUCCEEDED(g_pDropTargetHelper->QueryInterface(IID_PPV_ARGS(&pDragSourceHelper))) {
-				pDragSourceHelper->InitializeFromWindow(hwnd, NULL, pDataObj);
-				pDragSourceHelper->Release();
-			}
+		IDragSourceHelper *pDragSourceHelper;
+		if SUCCEEDED(g_pDropTargetHelper->QueryInterface(IID_PPV_ARGS(&pDragSourceHelper))) {
+			pDragSourceHelper->InitializeFromWindow(hwnd, NULL, pDataObj);
+			pDragSourceHelper->Release();
 		}
 		g_pDraggingItems = pDataObj;
 		hr = DoDragDrop(pDataObj, static_cast<IDropSource *>(g_pTE), *pdwEffect, pdwEffect);
@@ -11720,6 +11718,7 @@ function _c(s) {\
 
 	teSysFreeString(&bsIndex);
 	teSysFreeString(&bsPath);
+	teCreateInstance(CLSID_DragDropHelper, NULL, NULL, IID_PPV_ARGS(&g_pDropTargetHelper));
 
 	// Main message loop:
 	while (g_bMessageLoop) {
@@ -15358,29 +15357,29 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 		case DISPID_BEGINDRAG://XP+
 			DoFunc1(TE_OnBeginDrag, this, pVarResult);
 			if (pVarResult->vt != VT_BOOL || pVarResult->boolVal) {
-				BOOL bHandled = !g_bDragIcon || m_bRegenerateItems || ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER]);
-				FolderItems *pid;
-				if SUCCEEDED(SelectedItems(&pid)) {
-					if (g_param[TE_ViewOrder] && !bHandled) {
-						VARIANT v;
-						teSetLong(&v, 0);
-						FolderItem *pFolderItem;
-						if SUCCEEDED(pid->Item(v, &pFolderItem)) {
-							teSetObjectRelease(&v, pFolderItem);
-							SelectItem(&v, SVSI_SELECT | SVSI_FOCUSED | SVSI_NOTAKEFOCUS);
-							VariantClear(&v);
+				if (m_bRegenerateItems || g_param[TE_ViewOrder]) {
+					FolderItems *pid;
+					if SUCCEEDED(SelectedItems(&pid)) {
+						if (m_bRegenerateItems) {
+							IDataObject *pDataObj = NULL;
+							if SUCCEEDED(pid->QueryInterface(IID_PPV_ARGS(&pDataObj))) {
+								DWORD dwEffect = DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK;
+								teDoDragDrop(g_hwndMain, pDataObj, &dwEffect, FALSE);
+								teSetBool(pVarResult, FALSE);
+								pDataObj->Release();
+							}
+						} else if (g_param[TE_ViewOrder]) {
+							VARIANT v;
+							teSetLong(&v, 0);
+							FolderItem *pFolderItem;
+							if SUCCEEDED(pid->Item(v, &pFolderItem)) {
+								teSetObjectRelease(&v, pFolderItem);
+								SelectItem(&v, SVSI_SELECT | SVSI_FOCUSED | SVSI_NOTAKEFOCUS);
+								VariantClear(&v);
+							}
 						}
+						pid->Release();
 					}
-					if (bHandled) {
-						IDataObject *pDataObj = NULL;
-						if SUCCEEDED(pid->QueryInterface(IID_PPV_ARGS(&pDataObj))) {
-							DWORD dwEffect = DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK;
-							teDoDragDrop(g_hwndMain, pDataObj, &dwEffect, FALSE);
-							teSetBool(pVarResult, FALSE);
-							pDataObj->Release();
-						}
-					}
-					pid->Release();
 				}
 			}
 			return S_OK;
@@ -17714,19 +17713,6 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 			case 1160://DragIcon
 				if (nArg >= 0) {
 					g_bDragIcon = GetBoolFromVariant(&pDispParams->rgvarg[nArg]);
-#ifdef _2000XP
-					if (g_bUpperVista) {
-#endif
-						if (g_bDragIcon) {
-							if (!g_pDropTargetHelper) {
-								teCreateInstance(CLSID_DragDropHelper, NULL, NULL, IID_PPV_ARGS(&g_pDropTargetHelper));
-							}
-						} else {
-							SafeRelease(&g_pDropTargetHelper);
-						}
-#ifdef _2000XP
-					}
-#endif
 				}
 				teSetBool(pVarResult, g_bDragIcon);
 				return S_OK;
@@ -17997,43 +17983,42 @@ STDMETHODIMP CTE::QueryContinueDrag(BOOL fEscapePressed, DWORD grfKeyState)
 {
 	if (fEscapePressed || !g_nDropState || (grfKeyState & (MK_LBUTTON | MK_RBUTTON)) == (MK_LBUTTON | MK_RBUTTON)) {
 		g_nDropState = 0;
-		g_bDragging = FALSE;
 		return DRAGDROP_S_CANCEL;
 	}
-	if ((grfKeyState & (MK_LBUTTON | MK_RBUTTON)) == 0) {
-		VARIANT v;
-		VariantInit(&v);
-		if (g_nDropState == 2 && g_pOnFunc[TE_OnBeforeGetData]) {
-			g_nDropState = 0;
-			if (g_pDropTargetHelper) {
-				g_pDropTargetHelper->DragLeave();
-			}
-			VARIANTARG *pv = GetNewVARIANT(3);
-			teSetObject(&pv[2], g_pDraggingCtrl);
-			teSetObjectRelease(&pv[1], new CteFolderItems(g_pDraggingItems, NULL));
-			teSetLong(&pv[0], 4);
-			Invoke4(g_pOnFunc[TE_OnBeforeGetData], &v, 3, pv);
-		}
-		g_nDropState = 0;
-		g_bDragging = FALSE;
-		return GetIntFromVariantClear(&v) ? DRAGDROP_S_CANCEL : DRAGDROP_S_DROP;
+	if (grfKeyState & (MK_LBUTTON | MK_RBUTTON)) {
+		return S_OK;
 	}
-	return S_OK;
+	if (GetKeyState(VK_LBUTTON) < 0 || GetKeyState(VK_RBUTTON) < 0) {//21.5.11
+		return S_OK;
+	}
+	VARIANT v;
+	VariantInit(&v);
+	if (g_nDropState == 2 && g_pOnFunc[TE_OnBeforeGetData]) {
+		g_nDropState = 0;
+		if (g_pDropTargetHelper) {
+			g_pDropTargetHelper->DragLeave();
+		}
+		VARIANTARG *pv = GetNewVARIANT(3);
+		teSetObject(&pv[2], g_pDraggingCtrl);
+		teSetObjectRelease(&pv[1], new CteFolderItems(g_pDraggingItems, NULL));
+		teSetLong(&pv[0], 4);
+		Invoke4(g_pOnFunc[TE_OnBeforeGetData], &v, 3, pv);
+	}
+	g_nDropState = 0;
+	g_bDragging = FALSE;
+	return GetIntFromVariantClear(&v) ? DRAGDROP_S_CANCEL : DRAGDROP_S_DROP;
 }
 
 STDMETHODIMP CTE::GiveFeedback(DWORD dwEffect)
 {
 	if (g_pDraggingItems) {
-		WPARAM wpEffect[] = { 1, 3, 2, 0, 4, 0, 0, 0 };
-		WPARAM wParam = wpEffect[dwEffect & 7];
-		if (wParam) {
-			if (teGetLongFromDataObj(g_pDraggingItems, &IsShowingLayeredFormat)) {
-				HWND hwnd = (HWND)LongToHandle(teGetLongFromDataObj(g_pDraggingItems, &DRAGWINDOWFormat));
-				if (hwnd) {
-					SendMessage(hwnd, WM_USER + 2, wParam, 0);
-					SetCursor(LoadCursor(NULL, IDC_ARROW));
-					return S_OK;
-				}
+		WPARAM wpEffect[] = { 1, 3, 2, 3, 4, 4, 4, 4 };
+		if (teGetLongFromDataObj(g_pDraggingItems, &IsShowingLayeredFormat)) {
+			HWND hwnd = (HWND)LongToHandle(teGetLongFromDataObj(g_pDraggingItems, &DRAGWINDOWFormat));
+			if (hwnd) {
+				SendMessage(hwnd, WM_USER + 2, wpEffect[dwEffect & 7], 0);
+				SetCursor(LoadCursor(NULL, IDC_ARROW));
+				return S_OK;
 			}
 		}
 	}
@@ -18755,9 +18740,15 @@ STDMETHODIMP CteWebBrowser::DragEnter(IDataObject *pDataObj, DWORD grfKeyState, 
 		if (m_pDropTarget->DragEnter(pDataObj, grfKeyState, pt, pdwEffect) == S_OK) {
 			hr = S_OK;
 		}
-	}
-	if (g_pDropTargetHelper && g_nBlink == 1) {
-		g_pDropTargetHelper->DragEnter(m_hwndBrowser, pDataObj, (LPPOINT)&pt, *pdwEffect);
+		if (g_pDropTargetHelper) {
+			if (g_bDragIcon) {
+				if (g_nBlink == 1) {
+					g_pDropTargetHelper->DragEnter(m_hwndBrowser, pDataObj, (LPPOINT)&pt, *pdwEffect);
+				}
+			} else {
+				g_pDropTargetHelper->DragLeave();
+			}
+		}
 	}
 	return hr;
 }
@@ -18776,12 +18767,18 @@ STDMETHODIMP CteWebBrowser::DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEff
 		} else {
 			m_dwEffect = DROPEFFECT_NONE;
 		}
+		if (g_pDropTargetHelper) {
+			if (g_bDragIcon) {
+				if (g_nBlink == 1) {
+					g_pDropTargetHelper->DragOver((LPPOINT)&pt, *pdwEffect);
+				}
+			} else {
+				g_pDropTargetHelper->DragLeave();
+			}
+		}
 	}
 	*pdwEffect |= m_dwEffect;
 	m_grfKeyState = grfKeyState;
-	if (g_pDropTargetHelper && g_nBlink == 1) {
-		g_pDropTargetHelper->DragOver((LPPOINT)&pt, *pdwEffect);
-	}
 	return hr;
 }
 
@@ -19525,7 +19522,7 @@ VOID CteTabCtrl::Move(int nSrc, int nDest, CteTabCtrl *pDestTab)
 VOID CteTabCtrl::LockUpdate()
 {
 	if (InterlockedIncrement(&m_nLockUpdate) == 1) {
-		if (g_bDragging || g_nDropState || g_nBlink == 1) {
+		if (g_nBlink == 1) {
 			return;
 		}
 		m_bRedraw = TRUE;
@@ -25566,6 +25563,9 @@ STDMETHODIMP CteDropTarget2::DragEnter(IDataObject *pDataObj, DWORD grfKeyState,
 			g_pDropTargetHelper->DragEnter(m_hwnd, pDataObj, (LPPOINT)&pt, *pdwEffect);
 		}
 	}
+	if (!g_bDragIcon && g_pDropTargetHelper) {
+		g_pDropTargetHelper->DragLeave();
+	}
 	return hr;
 }
 
@@ -25576,10 +25576,13 @@ STDMETHODIMP CteDropTarget2::DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEf
 	if (m_pDropTarget && dwEffect == *pdwEffect) {
 		hr = m_pDropTarget->DragOver(grfKeyState, pt, pdwEffect);
 	} else if (hr == S_OK) {
-		if (g_pDropTargetHelper) {
+		if (g_bDragIcon && g_pDropTargetHelper) {
 			m_bUseHelper = TRUE;
 			g_pDropTargetHelper->DragOver((LPPOINT)&pt, *pdwEffect);
 		}
+	}
+	if (!g_bDragIcon && g_pDropTargetHelper) {
+		g_pDropTargetHelper->DragLeave();
 	}
 	m_grfKeyState = grfKeyState;
 	return hr;
