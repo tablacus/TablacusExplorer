@@ -218,21 +218,22 @@ BOOL teILIsSearchFolder(LPITEMIDLIST pidl);
 
 //Unit
 
-LONG teGetLongFromDataObj(IDataObject *pDataObj, FORMATETC *pformatetcIn)
+LONG teGetLongFromDataObj(IDataObject *pDataObj, FORMATETC *pformatetcIn, LONG lr)
 {
-	LONG lr = 0;
-	STGMEDIUM Medium;
-	if (pDataObj->GetData(pformatetcIn, &Medium) == S_OK) {
-		try {
-			lr = *(LONG *)GlobalLock(Medium.hGlobal);
-		} catch (...) {
-			g_nException = 0;
+	if (pDataObj) {
+		STGMEDIUM Medium;
+		if (pDataObj->GetData(pformatetcIn, &Medium) == S_OK) {
+			try {
+				lr = *(LONG *)GlobalLock(Medium.hGlobal);
+			} catch (...) {
+				g_nException = 0;
 #ifdef _DEBUG
-			g_strException = L"GetLongFromDataObj";
+				g_strException = L"GetLongFromDataObj";
 #endif
+			}
+			GlobalUnlock(Medium.hGlobal);
+			ReleaseStgMedium(&Medium);
 		}
-		GlobalUnlock(Medium.hGlobal);
-		ReleaseStgMedium(&Medium);
 	}
 	return lr;
 }
@@ -7257,16 +7258,7 @@ VOID teApiOleGetClipboard(int nArg, teParam *param, DISPPARAMS *pDispParams, VAR
 	if (pVarResult) {
 		IDataObject *pDataObj;
 		if (OleGetClipboard(&pDataObj) == S_OK) {
-			FolderItems *pFolderItems = new CteFolderItems(pDataObj, NULL);
-			if (teSetObject(pVarResult, pFolderItems)) {
-				VARIANT v;
-				teSetLong(&v, teGetLongFromDataObj(pDataObj, &DROPEFFECTFormat));
-				IUnknown *punk;
-				if (FindUnknown(pVarResult, &punk)) {
-					tePutProperty(punk, L"dwEffect", &v);
-				}
-			}
-			pFolderItems->Release();
+			teSetObjectRelease(pVarResult, new CteFolderItems(pDataObj, NULL));
 			pDataObj->Release();
 		}
 	}
@@ -18013,8 +18005,8 @@ STDMETHODIMP CTE::GiveFeedback(DWORD dwEffect)
 {
 	if (g_pDraggingItems) {
 		WPARAM wpEffect[] = { 1, 3, 2, 3, 4, 4, 4, 4 };
-		if (teGetLongFromDataObj(g_pDraggingItems, &IsShowingLayeredFormat)) {
-			HWND hwnd = (HWND)LongToHandle(teGetLongFromDataObj(g_pDraggingItems, &DRAGWINDOWFormat));
+		if (teGetLongFromDataObj(g_pDraggingItems, &IsShowingLayeredFormat, FALSE)) {
+			HWND hwnd = (HWND)LongToHandle(teGetLongFromDataObj(g_pDraggingItems, &DRAGWINDOWFormat, NULL));
 			if (hwnd) {
 				SendMessage(hwnd, WM_USER + 2, wpEffect[dwEffect & 7], 0);
 				SetCursor(LoadCursor(NULL, IDC_ARROW));
@@ -19600,13 +19592,13 @@ CteFolderItems::CteFolderItems(IDataObject *pDataObj, FolderItems *pFolderItems)
 		m_oFolderItems = TRUE;
 		m_pDataObj = NULL;
 	}
+	m_dwEffect = (DWORD)teGetLongFromDataObj(m_pDataObj, &DROPEFFECTFormat, -1);
 	m_pidllist = NULL;
 	m_nCount = -1;
 	m_bsText = NULL;
 	m_bUseText = FALSE;
 	m_pFolderItems = pFolderItems;
 	m_nIndex = 0;
-	m_dwEffect = (DWORD)-1;
 	m_nUseIDListFormat = -1;
 	VariantInit(&m_vData);
 }
