@@ -218,24 +218,19 @@ BOOL teILIsSearchFolder(LPITEMIDLIST pidl);
 
 //Unit
 
-LONG teGetLongFromDataObj(IDataObject *pDataObj, FORMATETC *pformatetcIn, LONG lr)
+DWORD teGetDWordFromDataObj(IDataObject *pDataObj, FORMATETC *pformatetcIn, DWORD dw)
 {
 	if (pDataObj) {
 		STGMEDIUM Medium;
 		if (pDataObj->GetData(pformatetcIn, &Medium) == S_OK) {
-			try {
-				lr = *(LONG *)GlobalLock(Medium.hGlobal);
-			} catch (...) {
-				g_nException = 0;
-#ifdef _DEBUG
-				g_strException = L"GetLongFromDataObj";
-#endif
+			if (::GlobalSize(Medium.hGlobal) >= sizeof(DWORD)) {
+				dw = *(DWORD *)::GlobalLock(Medium.hGlobal);
+				::GlobalUnlock(Medium.hGlobal);
 			}
-			GlobalUnlock(Medium.hGlobal);
-			ReleaseStgMedium(&Medium);
+			::ReleaseStgMedium(&Medium);
 		}
 	}
-	return lr;
+	return dw;
 }
 
 VOID teAddRemoveProc(std::vector<LONG_PTR> *pppProc, LONG_PTR lpProc, BOOL bAdd)
@@ -3311,7 +3306,7 @@ LPITEMIDLIST* IDListFormDataObj(IDataObject *pDataObj, long *pnCount)
 		STGMEDIUM Medium;
 		if (pDataObj->GetData(&IDLISTFormat, &Medium) == S_OK) {
 			try {
-				CIDA *pIDA = (CIDA *)GlobalLock(Medium.hGlobal);
+				CIDA *pIDA = (CIDA *)::GlobalLock(Medium.hGlobal);
 				if (pIDA) {
 					*pnCount = pIDA->cidl;
 					ppidllist = new LPITEMIDLIST[*pnCount + 1];
@@ -3326,8 +3321,8 @@ LPITEMIDLIST* IDListFormDataObj(IDataObject *pDataObj, long *pnCount)
 				}
 				*pnCount = 0;
 			}
-			GlobalUnlock(Medium.hGlobal);
-			ReleaseStgMedium(&Medium);
+			::GlobalUnlock(Medium.hGlobal);
+			::ReleaseStgMedium(&Medium);
 			if (ppidllist) {
 				return ppidllist;
 			}
@@ -3342,7 +3337,7 @@ LPITEMIDLIST* IDListFormDataObj(IDataObject *pDataObj, long *pnCount)
 				ppidllist[i + 1] = teILCreateFromPath(bsPath);
 				::SysFreeString(bsPath);
 			}
-			ReleaseStgMedium(&Medium);
+			::ReleaseStgMedium(&Medium);
 		}
 	}
 	return ppidllist;
@@ -3417,11 +3412,11 @@ LPITEMIDLIST teILCreateResultsXP(LPITEMIDLIST pidl)
 		SFGAOF sfAttr = SFGAO_FILESYSTEM | SFGAO_FILESYSANCESTOR | SFGAO_STORAGE | SFGAO_STREAM;
 		if (SUCCEEDED(pSF->GetAttributesOf(1, &pidlLast, &sfAttr)) &&
 			(sfAttr & (SFGAO_FILESYSTEM | SFGAO_FILESYSANCESTOR | SFGAO_STORAGE | SFGAO_STREAM))) {
-			UINT uSize = ILGetSize(pidl) + 28;
+			UINT uSize = ::ILGetSize(pidl) + 28;
 			pidl2 = (LPITEMIDLIST)::CoTaskMemAlloc(uSize + sizeof(USHORT));
 			::ZeroMemory(pidl2, uSize + sizeof(USHORT));
 
-			UINT uSize2 = ILGetSize(pidlLast);
+			UINT uSize2 = ::ILGetSize(pidlLast);
 			::CopyMemory(pidl2, pidlLast, uSize2);
 			*(PUSHORT)pidl2 = uSize - 2;
 			UINT uSize3 = uSize - uSize2 - 28;
@@ -3799,7 +3794,7 @@ BOOL teCreateSafeArray(VARIANT *pv, PVOID pSrc, DWORD dwSize, BOOL bBSTR)
 
 BOOL GetVarArrayFromIDList(VARIANT *pv, LPITEMIDLIST pidl)
 {
-	return teCreateSafeArray(pv, pidl, ILGetSize(pidl), FALSE);
+	return teCreateSafeArray(pv, pidl, ::ILGetSize(pidl), FALSE);
 }
 
 HRESULT GetFolderObjFromIDList(LPITEMIDLIST pidl, Folder** ppsdf)
@@ -7257,7 +7252,7 @@ VOID teApiOleGetClipboard(int nArg, teParam *param, DISPPARAMS *pDispParams, VAR
 {
 	if (pVarResult) {
 		IDataObject *pDataObj;
-		if (OleGetClipboard(&pDataObj) == S_OK) {
+		if (::OleGetClipboard(&pDataObj) == S_OK) {
 			teSetObjectRelease(pVarResult, new CteFolderItems(pDataObj, NULL));
 			pDataObj->Release();
 		}
@@ -7269,7 +7264,7 @@ VOID teApiOleSetClipboard(int nArg, teParam *param, DISPPARAMS *pDispParams, VAR
 	LONG lResult = E_FAIL;
 	IDataObject *pDataObj;
 	if (GetDataObjFromVariant(&pDataObj, &pDispParams->rgvarg[nArg])) {
-		lResult = OleSetClipboard(pDataObj);
+		lResult = ::OleSetClipboard(pDataObj);
 		teSysFreeString(&g_bsClipRoot);
 		teGetRootFromDataObj(&g_bsClipRoot, pDataObj);
 //		Don't release pDataObj.
@@ -10329,16 +10324,16 @@ VOID teApiInvoke(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVa
 VOID teApiGetClipboardData(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 
-	if (!IsClipboardFormatAvailable(CF_UNICODETEXT)) {
+	if (!::IsClipboardFormatAvailable(CF_UNICODETEXT)) {
 		return;
 	}
-	OpenClipboard(g_hwndMain);
-	HGLOBAL hGlobal = (HGLOBAL)GetClipboardData(CF_UNICODETEXT);
+	::OpenClipboard(g_hwndMain);
+	HGLOBAL hGlobal = (HGLOBAL)::GetClipboardData(CF_UNICODETEXT);
 	if (hGlobal) {
-		teSetSZ(pVarResult, (LPWSTR)GlobalLock(hGlobal));
+		teSetSZ(pVarResult, (LPWSTR)::GlobalLock(hGlobal));
 	}
-	CloseClipboard();
-	GlobalUnlock(hGlobal);
+	::CloseClipboard();
+	::GlobalUnlock(hGlobal);
 }
 
 VOID teApiSetClipboardData(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -10347,18 +10342,18 @@ VOID teApiSetClipboardData(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 	if (nSize == sizeof(WORD)) {
 		return;
 	}
-	HGLOBAL hGlobal = GlobalAlloc(GHND, nSize);
+	HGLOBAL hGlobal = ::GlobalAlloc(GHND, nSize);
 	if (!hGlobal) {
 		return;
 	}
 	::CopyMemory(::GlobalLock(hGlobal), param[0].bstrVal, nSize);
-	GlobalUnlock(hGlobal);
-	if (OpenClipboard(g_hwndMain) == 0) {
-		GlobalFree(hGlobal);
+	::GlobalUnlock(hGlobal);
+	if (::OpenClipboard(g_hwndMain) == 0) {
+		::GlobalFree(hGlobal);
 		return;
 	}
-	EmptyClipboard();
-	SetClipboardData(CF_UNICODETEXT, hGlobal);
+	::EmptyClipboard();
+	::SetClipboardData(CF_UNICODETEXT, hGlobal);
 	CloseClipboard();
 }
 
@@ -15349,10 +15344,11 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 		case DISPID_BEGINDRAG://XP+
 			DoFunc1(TE_OnBeginDrag, this, pVarResult);
 			if (pVarResult->vt != VT_BOOL || pVarResult->boolVal) {
-				if (m_bRegenerateItems || g_param[TE_ViewOrder]) {
+				BOOL bHandled = m_bRegenerateItems || ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER]);
+				if (bHandled || g_param[TE_ViewOrder]) {
 					FolderItems *pid;
 					if SUCCEEDED(SelectedItems(&pid)) {
-						if (m_bRegenerateItems) {
+						if (bHandled) {
 							IDataObject *pDataObj = NULL;
 							if SUCCEEDED(pid->QueryInterface(IID_PPV_ARGS(&pDataObj))) {
 								DWORD dwEffect = DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK;
@@ -15875,6 +15871,9 @@ int CteShellBrowser::GetTabIndex()
 STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 {
 	if (ILIsEqual(m_pidl, pidlFolder)) {
+		return S_OK;
+	}
+	if (teILIsSearchFolder(m_pidl) && teILIsSearchFolder((LPITEMIDLIST)pidlFolder)) {
 		return S_OK;
 	}
 	if (!m_pFolderItem1 && !m_dwUnavailable && ILIsEqual(pidlFolder, g_pidls[CSIDL_RESULTSFOLDER])) {
@@ -18005,8 +18004,8 @@ STDMETHODIMP CTE::GiveFeedback(DWORD dwEffect)
 {
 	if (g_pDraggingItems) {
 		WPARAM wpEffect[] = { 1, 3, 2, 3, 4, 4, 4, 4 };
-		if (teGetLongFromDataObj(g_pDraggingItems, &IsShowingLayeredFormat, FALSE)) {
-			HWND hwnd = (HWND)LongToHandle(teGetLongFromDataObj(g_pDraggingItems, &DRAGWINDOWFormat, NULL));
+		if (teGetDWordFromDataObj(g_pDraggingItems, &IsShowingLayeredFormat, FALSE)) {
+			HWND hwnd = (HWND)ULongToHandle(teGetDWordFromDataObj(g_pDraggingItems, &DRAGWINDOWFormat, NULL));
 			if (hwnd) {
 				SendMessage(hwnd, WM_USER + 2, wpEffect[dwEffect & 7], 0);
 				SetCursor(LoadCursor(NULL, IDC_ARROW));
@@ -19592,7 +19591,7 @@ CteFolderItems::CteFolderItems(IDataObject *pDataObj, FolderItems *pFolderItems)
 		m_oFolderItems = TRUE;
 		m_pDataObj = NULL;
 	}
-	m_dwEffect = (DWORD)teGetLongFromDataObj(m_pDataObj, &DROPEFFECTFormat, -1);
+	m_dwEffect = teGetDWordFromDataObj(m_pDataObj, &DROPEFFECTFormat, -1);
 	m_pidllist = NULL;
 	m_nCount = -1;
 	m_bsText = NULL;
@@ -19719,18 +19718,17 @@ VOID CteFolderItems::ItemEx(long nIndex, VARIANT *pVarResult, VARIANT *pVarNew)
 
 BOOL CteFolderItems::CanIDListFormat()
 {
-	if (m_nUseIDListFormat >= 0) {
-		return m_nUseIDListFormat;
-	}
-	AdjustIDListEx();
-	for (int i = m_nCount; i > 0; --i) {
-		if (ILGetCount(m_pidllist[i]) != 1) {
-			m_nUseIDListFormat = 0;
-			return FALSE;
+	if (m_nUseIDListFormat < 0) {
+		AdjustIDListEx();
+		for (int i = m_nCount; i > 0; --i) {
+			if (ILGetCount(m_pidllist[i]) != 1) {
+				m_nUseIDListFormat = 0;
+				return FALSE;
+			}
 		}
+		m_nUseIDListFormat = m_nCount;
 	}
-	m_nUseIDListFormat = 1;
-	return TRUE;
+	return m_nUseIDListFormat;
 }
 
 VOID CteFolderItems::AdjustIDListEx()
@@ -19887,14 +19885,14 @@ STDMETHODIMP CteFolderItems::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 				if SUCCEEDED(QueryInterface(IID_PPV_ARGS(&pDataObj))) {
 					STGMEDIUM Medium;
 					if (pDataObj->GetData(&UNICODEFormat, &Medium) == S_OK) {
-						teSetSZ(pVarResult, static_cast<LPCWSTR>(GlobalLock(Medium.hGlobal)));
-						GlobalUnlock(Medium.hGlobal);
-						ReleaseStgMedium(&Medium);
+						teSetSZ(pVarResult, static_cast<LPCWSTR>(::GlobalLock(Medium.hGlobal)));
+						::GlobalUnlock(Medium.hGlobal);
+						::ReleaseStgMedium(&Medium);
 					} else if (pDataObj->GetData(&TEXTFormat, &Medium) == S_OK) {
-						pVarResult->bstrVal = teMultiByteToWideChar(CP_ACP, static_cast<LPCSTR>(GlobalLock(Medium.hGlobal)), -1);
+						pVarResult->bstrVal = teMultiByteToWideChar(CP_ACP, static_cast<LPCSTR>(::GlobalLock(Medium.hGlobal)), -1);
 						pVarResult->vt = VT_BSTR;
-						GlobalUnlock(Medium.hGlobal);
-						ReleaseStgMedium(&Medium);
+						::GlobalUnlock(Medium.hGlobal);
+						::ReleaseStgMedium(&Medium);
 					}
 					pDataObj->Release();
 				}
@@ -19908,6 +19906,7 @@ STDMETHODIMP CteFolderItems::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 				teVariantChangeType(&v, &pDispParams->rgvarg[0], VT_BSTR);
 				m_bsText = v.bstrVal;
 				v.bstrVal = NULL;
+				m_bUseText = TRUE;
 			}
 			return S_OK;
 
@@ -19939,7 +19938,7 @@ STDMETHODIMP CteFolderItems::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 			teVariantCopy(pVarResult, &m_vData);
 			return S_OK;
 
-		case TE_PROPERTY + 0x1004://Text
+		case TE_PROPERTY + 0x1004://UseText
 			if (nArg >= 0) {
 				m_bUseText = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 			}
@@ -19970,13 +19969,13 @@ STDMETHODIMP CteFolderItems::get_Count(long *plCount)
 		if (m_pDataObj) {
 			STGMEDIUM Medium;
 			if (m_pDataObj->GetData(&IDLISTFormat, &Medium) == S_OK) {
-				CIDA *pIDA = (CIDA *)GlobalLock(Medium.hGlobal);
+				CIDA *pIDA = (CIDA *)::GlobalLock(Medium.hGlobal);
 				m_nCount = pIDA ? pIDA->cidl : 0;
-				GlobalUnlock(Medium.hGlobal);
-				ReleaseStgMedium(&Medium);
+				::GlobalUnlock(Medium.hGlobal);
+				::ReleaseStgMedium(&Medium);
 			} else if (m_pDataObj->GetData(&HDROPFormat, &Medium) == S_OK) {
 				m_nCount = DragQueryFile((HDROP)Medium.hGlobal, (UINT)-1, NULL, 0);
-				ReleaseStgMedium(&Medium);
+				::ReleaseStgMedium(&Medium);
 			}
 		} else {
 			m_nCount = 0;
@@ -20106,7 +20105,7 @@ HDROP CteFolderItems::GethDrop(int x, int y, BOOL fNC)
 		if (m_pDataObj->GetData(&HDROPFormat, &Medium) == S_OK) {
 			HDROP hDrop = (HDROP)Medium.hGlobal;
 			if (fNC) {
-				LPDROPFILES lpDropFiles = (LPDROPFILES)GlobalLock(hDrop);
+				LPDROPFILES lpDropFiles = (LPDROPFILES)::GlobalLock(hDrop);
 				try {
 					lpDropFiles->pt.x = x;
 					lpDropFiles->pt.y = y;
@@ -20117,7 +20116,7 @@ HDROP CteFolderItems::GethDrop(int x, int y, BOOL fNC)
 					g_strException = L"lpDropFiles";
 #endif
 				}
-				GlobalUnlock(hDrop);
+				::GlobalUnlock(hDrop);
 			}
 			return hDrop;
 		}
@@ -20156,8 +20155,8 @@ HDROP CteFolderItems::GethDrop(int x, int y, BOOL fNC)
 			pid->Release();
 		}
 	}
-	HDROP hDrop = (HDROP)GlobalAlloc(GHND, sizeof(DROPFILES) + uSize);
-	LPDROPFILES lpDropFiles = (LPDROPFILES)GlobalLock(hDrop);
+	HDROP hDrop = (HDROP)::GlobalAlloc(GHND, sizeof(DROPFILES) + uSize);
+	LPDROPFILES lpDropFiles = (LPDROPFILES)::GlobalLock(hDrop);
 	try {
 		lpDropFiles->pFiles = sizeof(DROPFILES);
 		lpDropFiles->pt.x = x;
@@ -20181,7 +20180,7 @@ HDROP CteFolderItems::GethDrop(int x, int y, BOOL fNC)
 		g_strException = L"GethDrop";
 #endif
 	}
-	GlobalUnlock(hDrop);
+	::GlobalUnlock(hDrop);
 	return hDrop;
 }
 
@@ -20189,8 +20188,8 @@ HDROP CteFolderItems::GethDrop(int x, int y, BOOL fNC)
 STDMETHODIMP CteFolderItems::GetData(FORMATETC *pformatetcIn, STGMEDIUM *pmedium)
 {
 	if (m_dwEffect != (DWORD)-1 && pformatetcIn->cfFormat == DROPEFFECTFormat.cfFormat) {
-		HGLOBAL hGlobal = GlobalAlloc(GHND | GMEM_SHARE, sizeof(DWORD));
-		DWORD *pdwEffect = (DWORD *)GlobalLock(hGlobal);
+		HGLOBAL hGlobal = ::GlobalAlloc(GHND, sizeof(DWORD));
+		DWORD *pdwEffect = (DWORD *)::GlobalLock(hGlobal);
 		try {
 			if (pdwEffect) {
 				*pdwEffect = m_dwEffect;
@@ -20201,7 +20200,7 @@ STDMETHODIMP CteFolderItems::GetData(FORMATETC *pformatetcIn, STGMEDIUM *pmedium
 			g_strException = L"pdwEffect";
 #endif
 		}
-		GlobalUnlock(hGlobal);
+		::GlobalUnlock(hGlobal);
 
 		pmedium->tymed = TYMED_HGLOBAL;
 		pmedium->hGlobal = hGlobal;
@@ -20241,16 +20240,16 @@ STDMETHODIMP CteFolderItems::GetData(FORMATETC *pformatetcIn, STGMEDIUM *pmedium
 		UINT uIndex = sizeof(UINT) * (m_nCount + 2);
 		UINT uSize = uIndex;
 		for (int i = 0; i <= m_nCount; ++i) {
-			uSize += ILGetSize(m_pidllist[i]);
+			uSize += ::ILGetSize(m_pidllist[i]);
 		}
-		HGLOBAL hGlobal = GlobalAlloc(GHND, uSize);
-		CIDA *pIDA = (CIDA *)GlobalLock(hGlobal);
+		HGLOBAL hGlobal = ::GlobalAlloc(GHND, uSize);
+		CIDA *pIDA = (CIDA *)::GlobalLock(hGlobal);
 		try {
 			if (pIDA) {
 				pIDA->cidl = m_nCount;
 				for (int i = 0; i <= m_nCount; ++i) {
 					pIDA->aoffset[i] = uIndex;
-					UINT u = ILGetSize(m_pidllist[i]);
+					UINT u = ::ILGetSize(m_pidllist[i]);
 					char *pc = (char *)pIDA + uIndex;
 					::CopyMemory(pc, m_pidllist[i], u);
 					uIndex += u;
@@ -20262,7 +20261,7 @@ STDMETHODIMP CteFolderItems::GetData(FORMATETC *pformatetcIn, STGMEDIUM *pmedium
 			g_strException = L"CIDA";
 #endif
 		}
-		GlobalUnlock(hGlobal);
+		::GlobalUnlock(hGlobal);
 		pmedium->tymed = TYMED_HGLOBAL;
 		pmedium->hGlobal = hGlobal;
 		pmedium->pUnkForRelease = NULL;
@@ -20310,9 +20309,9 @@ STDMETHODIMP CteFolderItems::GetData(FORMATETC *pformatetcIn, STGMEDIUM *pmedium
 		int nLen = ::SysStringLen(m_bsText) + 1;
 		if (pformatetcIn->cfFormat == CF_UNICODETEXT) {
 			nLen = ::SysStringByteLen(m_bsText) + sizeof(WCHAR);
-			hMem = GlobalAlloc(GHND, nLen);
+			hMem = ::GlobalAlloc(GHND, nLen);
 			try {
-				LPWSTR lp = static_cast<LPWSTR>(GlobalLock(hMem));
+				LPWSTR lp = static_cast<LPWSTR>(::GlobalLock(hMem));
 				if (lp) {
 					::CopyMemory(lp, m_bsText, nLen);
 				}
@@ -20324,9 +20323,9 @@ STDMETHODIMP CteFolderItems::GetData(FORMATETC *pformatetcIn, STGMEDIUM *pmedium
 			}
 		} else {
 			int nLenA = ::WideCharToMultiByte(CP_ACP, 0, (LPCWSTR)m_bsText, nLen, NULL, 0, NULL, NULL);
-			hMem = GlobalAlloc(GHND, nLenA);
+			hMem = ::GlobalAlloc(GHND, nLenA);
 			try {
-				LPSTR lpA = static_cast<LPSTR>(GlobalLock(hMem));
+				LPSTR lpA = static_cast<LPSTR>(::GlobalLock(hMem));
 				if (lpA) {
 					::WideCharToMultiByte(CP_ACP, 0, (LPCWSTR)m_bsText, nLen, lpA, nLenA, NULL, NULL);
 				}
@@ -20338,7 +20337,7 @@ STDMETHODIMP CteFolderItems::GetData(FORMATETC *pformatetcIn, STGMEDIUM *pmedium
 			}
 		}
 
-		GlobalUnlock(hMem);
+		::GlobalUnlock(hMem);
 		pmedium->tymed = TYMED_HGLOBAL;
 		pmedium->hGlobal = hMem;
 		pmedium->pUnkForRelease = NULL;
@@ -20379,7 +20378,6 @@ HRESULT CteFolderItems::QueryGetData2(FORMATETC *pformatetc)
 		if (pformatetc->cfFormat == CF_TEXT) {
 			return S_OK;
 		}
-
 	}
 	if (m_nCount > 0) {
 		if (pformatetc->cfFormat == CF_HDROP) {
@@ -24381,7 +24379,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				return S_OK;
 			//FromClipboard
 			case TE_METHOD + 8:
-				if (IsClipboardFormatAvailable(CF_BITMAP)) {
+				if (::IsClipboardFormatAvailable(CF_BITMAP)) {
 					::OpenClipboard(NULL);
 					HBITMAP hBM = (HBITMAP)::GetClipboardData(CF_BITMAP);
 					CreateBitmapFromHBITMAP(hBM, 0, nArg >= 0 ? GetIntFromVariant(&pDispParams->rgvarg[nArg]) : 2);
