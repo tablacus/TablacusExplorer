@@ -1939,6 +1939,14 @@ HRESULT teGetDisplayNameFromIDList(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags)
 				if (uFlags & SHGDN_FORPARSING) {
 					BSTR bsSearch = NULL;
 					teGetDisplayNameBSTR(pSF, pidlPart, SHGDN_INFOLDER, &bsSearch);
+					BSTR bsSearch2 = NULL;
+					teGetDisplayNameBSTR(pSF, pidlPart, SHGDN_INFOLDER | SHGDN_FORPARSING, &bsSearch2);
+					int nPos = ::SysStringLen(bsSearch2) - ::SysStringLen(bsSearch);
+					if (nPos >= 0 && lstrcmpi(bsSearch, &bsSearch2[nPos])) {
+						teSysFreeString(&bsSearch);
+						teGetSearchArg(&bsSearch, bsSearch2, L"crumb=");
+					}
+					teSysFreeString(&bsSearch2);
 					BSTR bsPath = NULL;
 					teGetSearchArg(&bsPath, bs, L"&crumb=location:");
 					teCreateSearchPath(pbs, bsPath, bsSearch);
@@ -14665,13 +14673,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 								}
 								teSysFreeString(&bs);
 							}
-							IShellFolderViewDual3 *pSFVD3;
-							if SUCCEEDED(m_pdisp->QueryInterface(IID_PPV_ARGS(&pSFVD3))) {
-								SetRedraw(FALSE);
-								pSFVD3->FilterView(v.bstrVal);
-								pSFVD3->Release();
+							if (Search(v.bstrVal) != S_OK) {
 #ifdef _2000XP
-							} else {
 								teSysFreeString(&m_bsFilter);
 								if (lstrlen(v.bstrVal)) {
 									if (StrChr(v.bstrVal, '*')) {
@@ -15874,6 +15877,21 @@ STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 		return S_OK;
 	}
 	if (teILIsSearchFolder(m_pidl) && teILIsSearchFolder((LPITEMIDLIST)pidlFolder)) {
+		BOOL bDiff = TRUE;
+		LPITEMIDLIST pidl = ILClone(pidlFolder);
+		BSTR bsSearch = NULL;
+		teGetDisplayNameFromIDList(&bsSearch, m_pidl, SHGDN_INFOLDER);
+		do {
+			BSTR bsSearch2 = NULL;
+			teGetDisplayNameFromIDList(&bsSearch2, pidl, SHGDN_INFOLDER);
+			ILRemoveLastID(pidl);
+			bDiff = !teStrSameIFree(bsSearch2, bsSearch);
+		} while (bDiff && teILIsSearchFolder(pidl));
+		teILFreeClear(&pidl);
+		if (bDiff) {
+			Search(bsSearch);
+		}
+		teSysFreeString(&bsSearch);
 		return S_OK;
 	}
 	if (!m_pFolderItem1 && !m_dwUnavailable && ILIsEqual(pidlFolder, g_pidls[CSIDL_RESULTSFOLDER])) {
@@ -16035,6 +16053,17 @@ int CteShellBrowser::GetFolderViewAndItemCount(IFolderView **ppFV, UINT uFlags)
 	return iItems;
 }
 
+HRESULT CteShellBrowser::Search(LPWSTR pszSearch) {
+	IShellFolderViewDual3 *pSFVD3;
+	if SUCCEEDED(m_pdisp->QueryInterface(IID_PPV_ARGS(&pSFVD3))) {
+		SetRedraw(FALSE);
+		pSFVD3->FilterView(pszSearch);
+		pSFVD3->Release();
+		return S_OK;
+	}
+	return E_NOTIMPL;
+}
+
 STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 {
 	m_bViewCreated = FALSE;
@@ -16102,12 +16131,7 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 				BSTR bsSearch = NULL;
 				teGetSearchArg(&bsSearch, bs, L"crumb=");
 				if (bsSearch) {
-					IShellFolderViewDual3 *pSFVD3;
-					if SUCCEEDED(m_pdisp->QueryInterface(IID_PPV_ARGS(&pSFVD3))) {
-						SetRedraw(FALSE);
-						pSFVD3->FilterView(bsSearch);
-						pSFVD3->Release();
-					}
+					Search(bsSearch);
 					teSysFreeString(&bsSearch);
 				}
 			}

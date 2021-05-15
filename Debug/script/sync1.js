@@ -705,7 +705,8 @@ g_basic = {
 				Search: function (Ctrl, pt) {
 					const FV = GetFolderView(Ctrl, pt);
 					if (FV) {
-						InputDialog("Search", IsSearchPath(FV) ? GetFolderItemName(FV.FolderItem) : "", function (r) {
+						const res = /^search\-ms:.*?crumb=([^&]*)/.exec(FV.FolderItem.Path);
+						InputDialog("Search", res ? decodeURIComponent(res[1]) : "", function (r) {
 							if (r) {
 								FV.Search(r);
 							} else if (r === "") {
