@@ -1285,6 +1285,22 @@ SaveAddons = function (Addons, bLoading) {
 	RunEvent1("ConfigChanged", "Addons");
 }
 
+AddonDisabled = function (Id) {
+	RunEvent1("AddonDisabled", Id);
+	if (eventTE.addondisabledex) {
+		Id = Id.toLowerCase();
+		if (Id == "tabgroups") {
+			return;
+		}
+		const fn = eventTE.addondisabledex[Id];
+		if (fn) {
+			delete eventTE.addondisabledex[Id];
+			AddEvent("Finalize", fn);
+		}
+	}
+	CollectGarbage();
+}
+
 AddEvent("Refresh", function (Ctrl, pt) {
 	const FV = GetFolderView(Ctrl, pt);
 	if (FV) {
@@ -3227,6 +3243,10 @@ AddEvent("ReplaceMacroEx", [/"%Current%/ig, function (strMatch, ref1) {
 	}
 	return strSel;
 }]);
+
+AddEvent("ConfigChanged", function (s) {
+	te.Data["bSave" + s] = true;
+});
 
 if (!window.chrome) {
 	AddEvent("BrowserCreatedEx", 'MainWindow.RunEvent1("BrowserCreated", document);');

@@ -1762,12 +1762,12 @@ VOID teSetParent(HWND hwnd, HWND hwndParent)
 	}
 }
 
-int ILGetCount(LPITEMIDLIST pidl)
+int ILGetCount(LPCITEMIDLIST pidl)
 {
 	if (ILIsEmpty(pidl)) {
 		return 0;
 	}
-	return ILGetCount(ILGetNext(pidl)) + 1;
+	return ILGetCount(::ILGetNext(pidl)) + 1;
 }
 
 HRESULT teGetDisplayNameBSTR(IShellFolder *pSF, PCUITEMID_CHILD pidl, SHGDNF uFlags, BSTR *pbs)
@@ -2723,6 +2723,9 @@ HRESULT teILFolderExists(LPITEMIDLIST pidl)
 
 HRESULT tePathIsDirectory2(LPWSTR pszPath, int iUseFS)
 {
+	if (!pszPath) {
+		return E_FAIL;
+	}
 	if (!(iUseFS & 2)) {
 		WCHAR pszDrive[0x80];
 		lstrcpyn(pszDrive, pszPath, 4);
@@ -3767,8 +3770,8 @@ BOOL teGetIDListFromVariant(LPITEMIDLIST *ppidl, VARIANT *pv, BOOL bForceLimit =
 		VARIANT v;
 		VariantInit(&v);
 		if (SUCCEEDED(VariantChangeType(&v, pv, 0, VT_I4))) {
-			if (v.lVal < MAX_CSIDL2) {
-				*ppidl = ::ILClone(g_pidls[v.lVal]);
+			if (v.uintVal < MAX_CSIDL2) {
+				*ppidl = ::ILClone(g_pidls[v.uintVal]);
 			}
 		}
 	}
@@ -11864,11 +11867,12 @@ VOID CALLBACK teTimerProcParse(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 						WCHAR pszFormat[MAX_STATUS];
 						if (LoadString(g_hShell32, 6456, pszFormat, MAX_STATUS)) {
 							if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY,
-								pszFormat, 0, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&lpBuf, MAX_STATUS, (va_list *)&pInvoke->pv[pInvoke->cArgs - 1].bstrVal)) {
+								pszFormat, 0, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&lpBuf, MAX_STATUS, (va_list *)&pInvoke->bsPath)) {
 								int r = MessageBox(g_hwndMain, lpBuf, _T(PRODUCTNAME), MB_ABORTRETRYIGNORE);
 								LocalFree(lpBuf);
 								if (r == IDRETRY) {
 									::InterlockedIncrement(&pInvoke->cDo);
+									::InterlockedIncrement(&pInvoke->cRef);
 									_beginthread(&threadParseDisplayName, 0, pInvoke);
 									g_bShowParseError = TRUE;
 								} else {
@@ -15877,13 +15881,18 @@ STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 		return S_OK;
 	}
 	if (teILIsSearchFolder(m_pidl) && teILIsSearchFolder((LPITEMIDLIST)pidlFolder)) {
-		BOOL bDiff = TRUE;
 		LPITEMIDLIST pidl = ILClone(pidlFolder);
+		BOOL bDiff = TRUE;
 		BSTR bsSearch = NULL;
-		teGetDisplayNameFromIDList(&bsSearch, m_pidl, SHGDN_INFOLDER);
+		BSTR bs = NULL;
+		teGetDisplayNameFromIDList(&bs, m_pidl, SHGDN_FORPARSING);
+		tePathGetFileName(&bsSearch, bs);
+		teSysFreeString(&bs);
 		do {
 			BSTR bsSearch2 = NULL;
-			teGetDisplayNameFromIDList(&bsSearch2, pidl, SHGDN_INFOLDER);
+			teGetDisplayNameFromIDList(&bs, pidl, SHGDN_FORPARSING);
+			tePathGetFileName(&bsSearch2, bs);
+			teSysFreeString(&bs);
 			ILRemoveLastID(pidl);
 			bDiff = !teStrSameIFree(bsSearch2, bsSearch);
 		} while (bDiff && teILIsSearchFolder(pidl));
@@ -16129,7 +16138,7 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 		if SUCCEEDED(m_pFolderItem->get_Path(&bs)) {
 			if (teIsSearchFolder(bs)) {
 				BSTR bsSearch = NULL;
-				teGetSearchArg(&bsSearch, bs, L"crumb=");
+				tePathGetFileName(&bsSearch, bs);
 				if (bsSearch) {
 					Search(bsSearch);
 					teSysFreeString(&bsSearch);

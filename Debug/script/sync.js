@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210515 ? te.Version : 20210515;
+		return te.Version < 20210516 ? te.Version : 20210516;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -568,22 +568,6 @@ AddEventId = function (Name, Id, fn) {
 	eventTE[en][Id.toLowerCase()] = fn;
 }
 
-AddonDisabled = function (Id) {
-	RunEvent1("AddonDisabled", Id);
-	if (eventTE.addondisabledex) {
-		Id = Id.toLowerCase();
-		if (Id == "tabgroups") {
-			return;
-		}
-		const fn = eventTE.addondisabledex[Id];
-		if (fn) {
-			delete eventTE.addondisabledex[Id];
-			AddEvent("Finalize", fn);
-		}
-	}
-	CollectGarbage();
-}
-
 IsSearchPath = function (pid) {
 	return /^search\-ms:.*?&crumb=location:([^&]*)/.exec("string" === typeof pid ? pid : api.GetDisplayNameOf(pid, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
 }
@@ -871,10 +855,6 @@ ApiStruct = function (oTypedef, nAli, oMemory) {
 		}
 	};
 }
-
-AddEvent("ConfigChanged", function (s) {
-	te.Data["bSave" + s] = true;
-});
 
 ExecAddonScript = function (type, s, fn, arError, o, arStack) {
 	if (o === true) {
@@ -2765,9 +2745,10 @@ RunCommandLine = function (s) {
 		SelectItem(te.Ctrl(CTRL_FV), arg[0], SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS, 99);
 		return;
 	}
-	const arg = api.CommandLineToArgv(s.replace(/^\/e,|^\/n,|^\/root,/ig, ""));
-	arg.shift();
-	s = arg.join(" ");
+	s = s.replace(/^\/e,|^\/n,|^\/root,/ig, "");
+	const arg = api.CommandLineToArgv(s);
+	const exe = arg.shift().replace(/[-\/\\^$*+?.()|\[\]{}]/g, '\\$&');
+	s = s.replace(new RegExp('^"?' + exe + '"?\\s+', ""), "");
 	if (/^[A-Z]:\\|^\\\\/i.test(s) && IsExists(s)) {
 		Navigate(s, SBSP_NEWBROWSER);
 		return;
