@@ -2596,7 +2596,7 @@ te.OnILGetParent = function (FolderItem) {
 		return r;
 	}
 	const res = IsSearchPath(FolderItem);
-	if (res) {
+	if (res && api.ILIsEmpty(api.ILRemoveLastID(FolderItem))) {
 		return decodeURIComponent(res[1]);
 	}
 	if (api.ILIsEqual(FolderItem.Alt, ssfRESULTSFOLDER)) {
@@ -3205,7 +3205,7 @@ AddEvent("BeginNavigate", function (Ctrl) {
 });
 
 AddEvent("UseExplorer", function (pid) {
-	if (pid && pid.Path && !api.GetAttributesOf(pid.Alt || pid, SFGAO_FILESYSTEM | SFGAO_FILESYSANCESTOR | SFGAO_STORAGEANCESTOR | SFGAO_NONENUMERATED | SFGAO_DROPTARGET) && !api.ILIsParent(1, pid, false)) {
+	if (pid && pid.Path && !api.GetAttributesOf(pid.Alt || pid, SFGAO_FILESYSTEM | SFGAO_FILESYSANCESTOR | SFGAO_STORAGEANCESTOR | SFGAO_NONENUMERATED | SFGAO_DROPTARGET) && !api.ILIsParent(1, pid, false) && !IsSearchPath(pid)) {
 		return true;
 	}
 });
