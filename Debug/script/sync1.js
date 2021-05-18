@@ -2596,7 +2596,7 @@ te.OnILGetParent = function (FolderItem) {
 		return r;
 	}
 	const res = IsSearchPath(FolderItem);
-	if (res && api.ILIsEmpty(api.ILRemoveLastID(FolderItem))) {
+	if (res && api.ILIsEmpty(api.ILRemoveLastID(api.ILRemoveLastID(FolderItem)))) {
 		return decodeURIComponent(res[1]);
 	}
 	if (api.ILIsEqual(FolderItem.Alt, ssfRESULTSFOLDER)) {
