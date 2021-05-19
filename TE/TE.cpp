@@ -16,6 +16,9 @@ WCHAR	g_szTE[MAX_LOADSTRING];
 WCHAR	g_szText[MAX_STATUS];
 WCHAR	g_szStatus[MAX_STATUS];
 BSTR	g_bsTitle = NULL;
+BSTR	g_bsName = NULL;
+BSTR	g_bsAnyText = NULL;
+BSTR	g_bsAnyTextId = NULL;
 HWND	g_hwndMain = NULL;
 CteTabCtrl *g_pTC = NULL;
 std::vector<CteTabCtrl *> g_ppTC;
@@ -1921,36 +1924,64 @@ VOID teCreateSearchPath(BSTR *pbs, LPWSTR pszPath, LPWSTR pszSearch)
 	teSysFreeString(&bsSearch3);
 }
 
-VOID teGetSearchText(BSTR *pbs, LPCITEMIDLIST pidl)
+BSTR teGetSearchText1(LPCITEMIDLIST pidl, BOOL bColumnFilter)
 {
+	BSTR bsSearch = NULL;
 	IShellFolder *pSF;
 	LPCITEMIDLIST pidlPart;
+	if SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &pidlPart)) {
+		teGetDisplayNameBSTR(pSF, pidlPart, SHGDN_INFOLDER | SHGDN_FORPARSING, &bsSearch);
+		pSF->Release();
+		BSTR bsSearch1 = NULL;
+		BSTR bsSearch2 = NULL;
+		teGetSearchArg(&bsSearch1, bsSearch, L"displayname=");
+		teGetSearchArg(&bsSearch2, bsSearch, L"crumb=");
+		teSysFreeString(&bsSearch);
+		if (bsSearch2) {
+			int nPos = ::SysStringLen(bsSearch2) - ::SysStringLen(bsSearch1);
+			if (nPos <= 0) {
+				nPos = 0;
+			} else if (!StrChr(bsSearch2, '~') && !teStartsText(g_bsAnyText, bsSearch2) && !teStartsText(g_bsAnyTextId, bsSearch2)) {
+				nPos = 0;
+			}
+			if (lstrcmpi(bsSearch1, &bsSearch2[nPos])) {
+				if (bColumnFilter) {
+					bsSearch = bsSearch2;
+					bsSearch2 = NULL;
+					if (!StrChr(bsSearch, '"')) {
+						for (int i = 0; i < ::SysStringLen(bsSearch); ++i) {
+							if (bsSearch[i] == ':' || bsSearch[i] == 0xff1a) {
+								if (StrCmpNI(bsSearch, bsSearch1, i)) {
+									int nLen = lstrlen(&bsSearch[i + 1]);
+									if (nLen >= 32 && bsSearch[i + 1] != '=' && lstrlen(bsSearch1) <= nLen) {
+										lstrcpy(&bsSearch[i + 1], bsSearch1);
+										if (StrCmpNI(bsSearch, g_bsName, i) == 0 && bsSearch[i + 2] == ' ' && bsSearch[i + 4] == ' ' && bsSearch[i + 6] == NULL) {// name:0 - 9
+											swprintf_s(&bsSearch[i + 1], ::SysStringLen(bsSearch) - i - 1, L"(>=%c <=%c%c)", bsSearch[i + 1], bsSearch[i + 5], 0xd7fb);
+										}
+									}
+								}
+								break;
+							}
+						}
+					}
+				}
+			} else {
+				bsSearch = bsSearch1;
+				bsSearch1 = NULL;
+			}
+		}
+		teSysFreeString(&bsSearch2);
+		teSysFreeString(&bsSearch1);
+	}
+	return bsSearch;
+}
+
+VOID teGetSearchText(BSTR *pbs, LPCITEMIDLIST pidl)
+{
 	LPITEMIDLIST pidl1 = ILClone(pidl);
 	*pbs = NULL;
-	while (teILIsSearchFolder(pidl1)) {
-		if SUCCEEDED(SHBindToParent(pidl1, IID_PPV_ARGS(&pSF), &pidlPart)) {
-			BSTR bsSearch = NULL;
-			teGetDisplayNameBSTR(pSF, pidlPart, SHGDN_INFOLDER | SHGDN_FORPARSING, &bsSearch);
-			pSF->Release();
-			BSTR bsSearch1 = NULL;
-			BSTR bsSearch2 = NULL;
-			teGetSearchArg(&bsSearch1, bsSearch, L"displayname=");
-			teGetSearchArg(&bsSearch2, bsSearch, L"crumb=");
-			teSysFreeString(&bsSearch);
-			if (bsSearch2) {
-				int nPos = ::SysStringLen(bsSearch2) - ::SysStringLen(bsSearch1);
-				if (nPos < 0 || StrChr(bsSearch2, '=')) {
-					nPos = 0;
-				}
-				if (lstrcmpi(bsSearch1, &bsSearch2[nPos]) == 0) {
-					teSysFreeString(&bsSearch2);
-					*pbs = bsSearch1;
-					break;
-				}
-				teSysFreeString(&bsSearch2);
-			}
-			teSysFreeString(&bsSearch1);
-		}
+	while (!*pbs && teILIsSearchFolder(pidl1)) {
+		*pbs = teGetSearchText1(pidl1, FALSE);
 		ILRemoveLastID(pidl1);
 	}
 	teILFreeClear(&pidl1);
@@ -1959,8 +1990,8 @@ VOID teGetSearchText(BSTR *pbs, LPCITEMIDLIST pidl)
 HRESULT teGetDisplayNameFromIDList(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags)
 {
 	HRESULT hr = E_FAIL;
-	IShellFolder *pSF, *pSF1;
-	LPCITEMIDLIST pidlPart, pidlPart1;
+	IShellFolder *pSF;
+	LPCITEMIDLIST pidlPart;
 
 	if SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &pidlPart)) {
 		hr = teGetDisplayNameBSTR(pSF, pidlPart, uFlags & (~SHGDN_FORPARSINGEX), pbs);
@@ -1972,59 +2003,17 @@ HRESULT teGetDisplayNameFromIDList(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags)
 					BSTR bsSearchX = NULL;
 					LPITEMIDLIST pidl1 = ILClone(pidl);
 					while (teILIsSearchFolder(pidl1)) {
-						if SUCCEEDED(SHBindToParent(pidl1, IID_PPV_ARGS(&pSF1), &pidlPart1)) {
-							BSTR bsSearch = NULL;
-							teGetDisplayNameBSTR(pSF1, pidlPart1, SHGDN_INFOLDER | SHGDN_FORPARSING, &bsSearch);
-							pSF1->Release();
-							BSTR bsSearch1 = NULL;
-							BSTR bsSearch2 = NULL;
-							teGetSearchArg(&bsSearch1, bsSearch, L"displayname=");
-							teGetSearchArg(&bsSearch2, bsSearch, L"crumb=");
-							teSysFreeString(&bsSearch);
-							if (bsSearch2) {
-								int nPos = ::SysStringLen(bsSearch2) - ::SysStringLen(bsSearch1);
-								if (nPos < 0 || StrChr(bsSearch2, '=')) {
-									nPos = 0;
-								}
-								if (lstrcmpi(bsSearch1, &bsSearch2[nPos])) {
-									bsSearch = bsSearch2;
-									if (!StrChr(bsSearch, '"')) {
-										for (int i = 0; i < ::SysStringLen(bsSearch); ++i) {
-											if (bsSearch[i] == ':' || bsSearch[i] == 0xff1a) {
-												if (StrCmpNI(bsSearch, bsSearch1, i)) {
-													int nLen = lstrlen(&bsSearch[i + 1]);
-													if (nLen >= 32 && bsSearch[i + 1] != '=' && lstrlen(bsSearch1) <= nLen) {
-														lstrcpy(&bsSearch[i + 1], bsSearch1);
-														WCHAR pszName[MAX_LOADSTRING];
-														LoadString(g_hShell32, 8976, pszName, MAX_LOADSTRING);
-														if (StrCmpNI(bsSearch, pszName, i) == 0 && bsSearch[i + 2] == ' ' && bsSearch[i + 4] == ' ' && bsSearch[i + 6] == NULL) {// name:0 - 9
-															swprintf_s(&bsSearch[i + 1], ::SysStringLen(bsSearch) - i - 1, L"(>=%c <=%c%c)", bsSearch[i + 1], bsSearch[i + 5], 0xd7fb);
-														}
-													}
-												}
-												break;
-											}
-										}
-									}
-									teSysFreeString(&bsSearch1);
-								} else {
-									teSysFreeString(&bsSearch2);
-									bsSearch = bsSearch1;
-								}
+						BSTR bsSearch = teGetSearchText1(pidl1, TRUE);
+						if (bsSearch) {
+							if (bsSearchX) {
+								BSTR bs = teSysAllocStringLen(bsSearchX, ::SysStringLen(bsSearchX) + ::SysStringLen(bsSearch) + 1);
+								lstrcat(bs, L" ");
+								lstrcat(bs, bsSearch);
+								teSysFreeString(&bsSearch);
+								teSysFreeString(&bsSearchX);
+								bsSearchX = bs;
 							} else {
-								teSysFreeString(&bsSearch1);
-							}
-							if (bsSearch) {
-								if (bsSearchX) {
-									BSTR bs = teSysAllocStringLen(bsSearchX, ::SysStringLen(bsSearchX) + ::SysStringLen(bsSearch) + 1);
-									lstrcat(bs, L" ");
-									lstrcat(bs, bsSearch);
-									teSysFreeString(&bsSearch);
-									teSysFreeString(&bsSearchX);
-									bsSearchX = bs;
-								} else {
-									bsSearchX = bsSearch;
-								}
+								bsSearchX = bsSearch;
 							}
 						}
 						ILRemoveLastID(pidl1);
@@ -6752,6 +6741,9 @@ VOID Finalize()
 		}
 		teSysFreeString(&g_bsCmdLine);
 		teSysFreeString(&g_bsTitle);
+		teSysFreeString(&g_bsAnyTextId);
+		teSysFreeString(&g_bsAnyText);
+		teSysFreeString(&g_bsName);
 	} catch (...) {
 		g_nException = 0;
 #ifdef _DEBUG
@@ -11534,8 +11526,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	}
 	if (!_GetDpiForMonitor) {
 		_GetDpiForMonitor = teGetDpiForMonitor;
-	}
-
+	}	
 #ifdef _2000XP
 	if (g_bUpperVista) {
 #endif
@@ -11543,6 +11534,13 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 #ifdef _2000XP
 	}
 #endif
+	g_bsName = tePSGetNameFromPropertyKeyEx(PKEY_ItemNameDisplay, 0, NULL);
+	PROPERTYKEY AnyText;
+	AnyText.fmtid = PKEY_FullText.fmtid;
+	AnyText.pid = 12;
+	g_bsAnyText = tePSGetNameFromPropertyKeyEx(AnyText, 0, NULL);
+	g_bsAnyTextId = tePSGetNameFromPropertyKeyEx(AnyText, 1, NULL);
+
 	InitCommonControls();
 
 	for (UINT i = 0; i < 256; ++i) {
@@ -16252,7 +16250,7 @@ VOID CteShellBrowser::SetTabName()
 
 STDMETHODIMP CteShellBrowser::OnNavigationComplete(PCIDLIST_ABSOLUTE pidlFolder)
 {
-	if (!teILIsFileSystemEx(pidlFolder)) {
+	if (!teILIsFileSystemEx(pidlFolder) || teILIsSearchFolder((LPITEMIDLIST)pidlFolder)) {
 		OnNavigationComplete2();
 	}
 	return S_OK;
