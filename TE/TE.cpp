@@ -1939,35 +1939,58 @@ BSTR teGetSearchText1(LPCITEMIDLIST pidl, BOOL bColumnFilter)
 		teSysFreeString(&bsSearch);
 		if (bsSearch2) {
 			int nPos = ::SysStringLen(bsSearch2) - ::SysStringLen(bsSearch1);
-			if (nPos <= 0) {
-				nPos = 0;
-			} else if (!StrChr(bsSearch2, '~') && !teStartsText(g_bsAnyText, bsSearch2) && !teStartsText(g_bsAnyTextId, bsSearch2)) {
-				nPos = 0;
-			}
-			if (lstrcmpi(bsSearch1, &bsSearch2[nPos])) {
-				if (bColumnFilter) {
-					bsSearch = bsSearch2;
-					bsSearch2 = NULL;
-					if (!StrChr(bsSearch, '"')) {
-						for (int i = 0; i < ::SysStringLen(bsSearch); ++i) {
-							if (bsSearch[i] == ':' || bsSearch[i] == 0xff1a) {
-								if (StrCmpNI(bsSearch, bsSearch1, i)) {
-									int nLen = lstrlen(&bsSearch[i + 1]);
-									if (nLen >= 32 && bsSearch[i + 1] != '=' && lstrlen(bsSearch1) <= nLen) {
-										lstrcpy(&bsSearch[i + 1], bsSearch1);
-										if (StrCmpNI(bsSearch, g_bsName, i) == 0 && bsSearch[i + 2] == ' ' && bsSearch[i + 4] == ' ' && bsSearch[i + 6] == NULL) {// name:0 - 9
-											swprintf_s(&bsSearch[i + 1], ::SysStringLen(bsSearch) - i - 1, L"(>=%c <=%c%c)", bsSearch[i + 1], bsSearch[i + 5], 0xd7fb);
+			if (!lstrcmpi(bsSearch1, &bsSearch2[nPos >= 0 && StrChr(bsSearch2, '~') ? nPos : 0]) || StrStrI(bsSearch2, g_bsAnyText)|| StrStrI(bsSearch2, g_bsAnyTextId)) {
+				bsSearch = bsSearch1;
+				bsSearch1 = NULL;
+			} else if (bColumnFilter) {
+				bsSearch = bsSearch2;
+				bsSearch2 = NULL;
+				if (!StrChr(bsSearch, '"')) {
+					for (int i = 0; i < ::SysStringLen(bsSearch); ++i) {
+						if (bsSearch[i] == ':' || bsSearch[i] == 0xff1a) {
+							if (StrCmpNI(bsSearch, bsSearch1, i)) {
+								if (lstrlen(bsSearch1) <= lstrlen(&bsSearch[i + 1]) - 2) {
+									BOOL bName = !StrCmpNI(bsSearch, g_bsName, i);
+									if (bName || StrChr(&bsSearch[i + 1], ':')) {
+										LPWSTR pszHasComma = StrChr(bsSearch1, ',');
+										if (pszHasComma) {
+											lstrcpy(&bsSearch[i + 1], L"(");
+										} else {
+											bsSearch[i + 1] = NULL;
+										}
+										for (LPWSTR pszSearch = bsSearch1;;) {
+											while (pszSearch[0] == ' ') {
+												++pszSearch;
+											}
+											LPWSTR pszComma = StrChr(pszSearch, ',');
+											i = lstrlen(bsSearch);
+											if (bName && pszSearch[1] == ' ' && pszSearch[3] == ' ') {// name:0 - 9
+												swprintf_s(&bsSearch[i], ::SysStringLen(bsSearch) - i, L"%c..%c%c", pszSearch[0], pszSearch[4], 0xd7fb);
+											} else {
+												if (pszComma) {
+													StrNCpy(&bsSearch[i], pszSearch, pszComma - pszSearch + 1);
+												} else {
+													lstrcpy(&bsSearch[i], pszSearch);
+												}
+												for (LPWSTR pszSpace = &bsSearch[i]; pszSpace = StrChr(pszSpace, ' '); lstrcpy(pszSpace, &pszSpace[1]));
+											}
+											if (pszComma) {
+												lstrcat(bsSearch, L" OR ");
+												pszSearch = pszComma + 1;
+											} else {
+												break;
+											}
+										}
+										if (pszHasComma) {
+											lstrcat(bsSearch, L")");
 										}
 									}
 								}
-								break;
 							}
+							break;
 						}
 					}
 				}
-			} else {
-				bsSearch = bsSearch1;
-				bsSearch1 = NULL;
 			}
 		}
 		teSysFreeString(&bsSearch2);
@@ -3198,8 +3221,10 @@ VOID ToMinus(BSTR *pbs)
 	int nLen = SysStringByteLen(*pbs) + sizeof(WCHAR);
 	BSTR bs = SysAllocStringByteLen(NULL, nLen);
 	bs[0] = L'-';
-	::CopyMemory(&bs[1], *pbs, nLen);
-	::SysFreeString(*pbs);
+	if (*pbs) {
+		::CopyMemory(&bs[1], *pbs, nLen);
+		teSysFreeString(pbs);
+	}
 	*pbs = bs;
 }
 
@@ -11539,6 +11564,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	AnyText.fmtid = PKEY_FullText.fmtid;
 	AnyText.pid = 12;
 	g_bsAnyText = tePSGetNameFromPropertyKeyEx(AnyText, 0, NULL);
+	for (LPWSTR pszSpace = g_bsAnyText; pszSpace = StrChr(pszSpace, ' '); lstrcpy(pszSpace, &pszSpace[1]));
 	g_bsAnyTextId = tePSGetNameFromPropertyKeyEx(AnyText, 1, NULL);
 
 	InitCommonControls();
@@ -13603,8 +13629,8 @@ VOID CteShellBrowser::InitFolderSize()
 				hdi.mask = HDI_TEXT | HDI_FORMAT;
 				Header_GetItem(hHeader, i, &hdi);
 				int fmt = hdi.fmt;
+				pColumns[i].name = ::SysAllocString(szText);
 				if (szText[0]) {
-					pColumns[i].name = ::SysAllocString(szText);
 					if (m_ppDispatch[SB_ColumnsReplace]) {
 						teGetProperty(m_ppDispatch[SB_ColumnsReplace], szText, &v);
 					}
@@ -13672,7 +13698,7 @@ VOID CteShellBrowser::InitFolderSize()
 				delete [] piColumns;
 			}
 			for (int i = nHeader; --i >= 0;) {
-				SysFreeString(pColumns[i].name);
+				teSysFreeString(&pColumns[i].name);
 			}
 			delete pColumns;
 			teSysFreeString(&bsLinkTarget);
@@ -14046,7 +14072,7 @@ STDMETHODIMP CteShellBrowser::OnStateChange(IShellView *ppshv, ULONG uChange)
 
 STDMETHODIMP CteShellBrowser::IncludeObject(IShellView *ppshv, LPCITEMIDLIST pidl)
 {
-	return IncludeObject2(m_pSF2, pidl);
+	return IncludeObject2(m_pSF2, pidl, NULL);
 }
 
 //ICommDlgBrowser2
@@ -16046,7 +16072,7 @@ HRESULT CteShellBrowser::OnNavigationPending2(LPITEMIDLIST pidlFolder)
 	return hr;
 }
 
-HRESULT CteShellBrowser::IncludeObject2(IShellFolder *pSF, LPCITEMIDLIST pidl)
+HRESULT CteShellBrowser::IncludeObject2(IShellFolder *pSF, LPCITEMIDLIST pidl, LPITEMIDLIST pidlFull)
 {
 	HRESULT hr = S_OK;
 	if (pSF) {
@@ -16070,8 +16096,9 @@ HRESULT CteShellBrowser::IncludeObject2(IShellFolder *pSF, LPCITEMIDLIST pidl)
 			teSetObject(&pv[3], this);
 			teSetSZ(&pv[2], bs);
 			teSetSZ(&pv[1], bs2);
-			LPITEMIDLIST pidlFull = ILCombine(m_pidl, pidl);
 			if (pidlFull) {
+				teSetIDList(&pv[0], pidlFull);
+			} else if (pidlFull = ILCombine(m_pidl, pidl)) {
 				teSetIDListRelease(&pv[0], &pidlFull);
 			}
 			Invoke4(m_ppDispatch[SB_OnIncludeObject], &vResult, 4, pv);
@@ -16435,7 +16462,7 @@ VOID CteShellBrowser::AddItem(LPITEMIDLIST pidl)
     if (!ILIsEmpty(pidl)) {
 		if SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &pidlPart)) {
 		    LPITEMIDLIST pidlChild = NULL;
-			if (IncludeObject2(pSF, pidlPart) == S_OK) {
+			if (IncludeObject2(pSF, pidlPart, pidl) == S_OK) {
 				m_bRedraw = TRUE;
 				SetRedraw(FALSE);
 				try {
@@ -16816,7 +16843,7 @@ STDMETHODIMP CteShellBrowser::MessageSFVCB(UINT uMsg, WPARAM wParam, LPARAM lPar
 							if SUCCEEDED(m_pSF2->EnumObjects(NULL, grfFlags, &peidl)) {
 								LPITEMIDLIST pidlPart = NULL;
 								while (iNew <= iExists && peidl->Next(1, &pidlPart, NULL) == S_OK) {
-									if (IncludeObject2(m_pSF2, pidlPart) == S_OK) {
+									if (IncludeObject2(m_pSF2, pidlPart, NULL) == S_OK) {
 										iNew++;
 									}
 									teCoTaskMemFree(pidlPart);

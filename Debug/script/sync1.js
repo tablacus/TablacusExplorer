@@ -947,6 +947,7 @@ ListViewCreated = function (Ctrl) {
 	ChangeTabName(Ctrl);
 	Ctrl.Data.AccessTime = "#";
 	RunEvent1("ListViewCreated", Ctrl);
+	te.OnFilterChanged(Ctrl);
 }
 
 TabViewCreated = function (Ctrl) {

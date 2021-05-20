@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210519 ? te.Version : 20210519;
+		return te.Version < 20210520 ? te.Version : 20210520;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1434,7 +1434,7 @@ MakeImgIcon = function (src, index, h, bIcon, clBk) {
 		const hOld = api.SelectObject(hmdc, hbm);
 		const rc = api.Memory("RECT");
 		if ("number" !== typeof clBk) {
-			clBk = -COLOR_WINDOW;
+			clBk = CLR_DEFAULT | COLOR_WINDOW;
 		}
 		if (clBk < 0) {
 			clBk = GetSysColor(clBk & 31);
@@ -2003,12 +2003,15 @@ ExtractPath = function (Ctrl, s, pt) {
 }
 
 PathMatchEx = function (path, s) {
-	const hr = MainWindow.RunEvent3("PathMatch", path, s);
-	if (isFinite(hr)) {
-		return hr;
-	}
-	const res = /^\/(.*)\/(.*)/.exec(s);
-	return res ? new RegExp(res[1], res[2]).test(path) : api.PathMatchSpec(path, s);
+	try {
+		const hr = MainWindow.RunEvent3("PathMatch", path, s);
+		if (isFinite(hr)) {
+			return hr;
+		}
+		const res = /^\/(.*)\/(.*)/.exec(s);
+		return res ? new RegExp(res[1], res[2]).test(path) : api.PathMatchSpec(path, s);
+	} catch (e) { }
+	return true;
 }
 
 IsFolderEx = function (Item) {
