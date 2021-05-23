@@ -705,7 +705,7 @@ g_basic = {
 				Search: function (Ctrl, pt) {
 					const FV = GetFolderView(Ctrl, pt);
 					if (FV) {
-						const res = /^search\-ms:.*?crumb=([^&]*)/.exec(FV.FolderItem.Path);
+						const res = IsSearchPath(FV.FolderItem, true);
 						InputDialog("Search", res ? decodeURIComponent(res[1]) : "", function (r) {
 							if (r) {
 								FV.Search(r);
@@ -2164,7 +2164,7 @@ te.OnSelectionChanged = function (Ctrl, uChange) {
 }
 
 te.OnFilterChanged = function (Ctrl) {
-	if (/search\-ms:.*?crumb=[^&]+/.test(Ctrl.FilterView) || isFinite(RunEvent3("FilterChanged", Ctrl))) {
+	if (isFinite(RunEvent3("FilterChanged", Ctrl))) {
 		return;
 	}
 	const res = /\/(.*)\/(.*)/.exec(Ctrl.FilterView);
@@ -2597,8 +2597,12 @@ te.OnILGetParent = function (FolderItem) {
 		return r;
 	}
 	const res = IsSearchPath(FolderItem);
-	if (res && api.ILIsEmpty(api.ILRemoveLastID(api.ILRemoveLastID(FolderItem)))) {
-		return decodeURIComponent(res[1]);
+	if (res) {
+		const pid = api.ILRemoveLastID(FolderItem);
+		const res1 = IsSearchPath(pid, true);
+		if ((res1 && !res1[1]) || api.ILIsEmpty(pid)) {
+			return decodeURIComponent(res[1]);
+		}
 	}
 	if (api.ILIsEqual(FolderItem.Alt, ssfRESULTSFOLDER)) {
 		const path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);

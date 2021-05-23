@@ -29,6 +29,7 @@
 #include <mmsystem.h>
 #include <WinIoCtl.h>
 #include <tlhelp32.h>
+#include <structuredquery.h>
 //#include <Vssym32.h>
 #include <vector>
 #ifdef _USE_TEOBJ
@@ -249,6 +250,7 @@ typedef BOOL (WINAPI* LPFNRemoveClipboardFormatListener)(__in HWND hwnd);
 #endif
 typedef BOOL(WINAPI* LPFNSetWindowCompositionAttribute)(HWND hWnd, WINCOMPATTRDATA*);
 typedef HRESULT (STDAPICALLTYPE * LPFNDwmSetWindowAttribute)(HWND hwnd, DWORD dwAttribute, LPCVOID pvAttribute, DWORD   cbAttribute);
+typedef HRESULT (STDAPICALLTYPE * LPFNSHCreateShellItemArrayFromShellItem)(IShellItem *psi, REFIID riid, void **ppv);
 
 //7 or higher
 typedef BOOL (WINAPI* LPFNChangeWindowMessageFilterEx)(__in HWND hwnd, __in UINT message, __in DWORD action, __inout_opt PCHANGEFILTERSTRUCT pChangeFilterStruct);

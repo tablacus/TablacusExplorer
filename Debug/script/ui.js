@@ -312,7 +312,11 @@ CheckUpdate2 = async function (xhr, url, arg1) {
 		}
 	}
 	if (!(arg1 && GetNum(await arg1.noconfirm))) {
-		const s = (await api.LoadString(hShell32, 60) || "%").replace(/%.*/, await api.sprintf(99, "%d.%d.%d (%.1lfKB)", ver / 10000 % 100, ver / 100 % 100, ver % 100, await arg.size));
+		let s = (await api.LoadString(hShell32, 60) || "%").replace(/%.*/, await api.sprintf(99, "%d.%d.%d (%.1lfKB)", ver / 10000 % 100, ver / 100 % 100, ver % 100, await arg.size));
+		const lang = (await GetLangId()).replace(/\W.*$/, "");
+		if (res = new RegExp("__" + lang + ":([^_]+)__", "i").exec(json.body) || /__([^_]+)__/.exec(json.body)) {
+			s += "\n" + res[1] + "\n";
+		}
 		if (!await confirmOk([await GetText("Update available"), s, await GetText("Do you want to install it now?")].join("\n"))) {
 			return;
 		}

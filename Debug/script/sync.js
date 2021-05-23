@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210520 ? te.Version : 20210520;
+		return te.Version < 20210523 ? te.Version : 20210523;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -568,8 +568,8 @@ AddEventId = function (Name, Id, fn) {
 	eventTE[en][Id.toLowerCase()] = fn;
 }
 
-IsSearchPath = function (pid) {
-	return /^search\-ms:.*?&crumb=location:([^&]*)/.exec("string" === typeof pid ? pid : api.GetDisplayNameOf(pid, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
+IsSearchPath = function (pid, bText) {
+	return (bText ? /^search\-ms:.*?crumb=([^&]*).*?&crumb=location:([^&]*)/ : /^search\-ms:.*?&crumb=location:([^&]*)/).exec("string" === typeof pid ? pid : api.GetDisplayNameOf(pid, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
 }
 
 LoadXml = function (filename, nGroup) {
@@ -1184,13 +1184,15 @@ CustomSort = function (FV, id, r, fnAdd, fnComp) {
 		item.cchTextMax = 260;
 		if (id) {
 			for (let i = api.SendMessage(hHeader, HDM_GETITEMCOUNT, 0, 0); i-- > 0;) {
+				item.mask = HDI_TEXT | HDI_FORMAT;
 				api.SendMessage(hHeader, HDM_GETITEM, i, item);
 				if (Name == api.SysAllocString(item.pszText)) {
-					item.mask = HDI_FORMAT;
 					item.fmt |= r ? HDF_SORTDOWN : HDF_SORTUP;
-					api.SendMessage(hHeader, HDM_SETITEM, i, item);
-					break;
+				} else {
+					item.fmt &= ~(HDF_SORTDOWN | HDF_SORTUP);
 				}
+				item.mask = HDI_FORMAT;
+				api.SendMessage(hHeader, HDM_SETITEM, i, item);
 			}
 		}
 		FV.IconSize = IconSize;
@@ -1471,9 +1473,6 @@ MakeImgIcon = function (src, index, h, bIcon, clBk) {
 	}
 	if (src && (bIcon || /\*/.test(src) || !REGEXP_IMAGE.test(src))) {
 		const sfi = api.Memory("SHFILEINFO");
-		if (IsSearchPath(src)) {
-			src = "search-ms:";
-		}
 		if (/\*/.test(src)) {
 			api.SHGetFileInfo(src, 0, sfi, sfi.Size, SHGFI_SYSICONINDEX | SHGFI_USEFILEATTRIBUTES);
 		} else {

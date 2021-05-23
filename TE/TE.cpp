@@ -55,6 +55,7 @@ LPFNSHGetIDListFromObject _SHGetIDListFromObject = NULL;
 LPFNChangeWindowMessageFilter _ChangeWindowMessageFilter = NULL;
 LPFNAddClipboardFormatListener _AddClipboardFormatListener = NULL;
 LPFNRemoveClipboardFormatListener _RemoveClipboardFormatListener = NULL;
+LPFNSHCreateShellItemArrayFromShellItem _SHCreateShellItemArrayFromShellItem = NULL;
 #else
 #define _PSPropertyKeyFromString PSPropertyKeyFromString
 #define _PSGetPropertyKeyFromName PSGetPropertyKeyFromName
@@ -64,6 +65,7 @@ LPFNRemoveClipboardFormatListener _RemoveClipboardFormatListener = NULL;
 #define _SHGetIDListFromObject SHGetIDListFromObject
 #define _PropVariantToVariant PropVariantToVariant
 #define _VariantToPropVariant VariantToPropVariant
+#define _SHCreateShellItemArrayFromShellItem SHCreateShellItemArrayFromShellItem
 #endif
 #ifdef _USE_APIHOOK
 LPFNRegQueryValueExW _RegQueryValueExW = NULL;
@@ -1931,12 +1933,27 @@ BSTR teGetSearchText1(LPCITEMIDLIST pidl, BOOL bColumnFilter)
 	LPCITEMIDLIST pidlPart;
 	if SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &pidlPart)) {
 		teGetDisplayNameBSTR(pSF, pidlPart, SHGDN_INFOLDER | SHGDN_FORPARSING, &bsSearch);
-		pSF->Release();
 		BSTR bsSearch1 = NULL;
 		BSTR bsSearch2 = NULL;
+		teGetDisplayNameBSTR(pSF, pidlPart, SHGDN_INFOLDER | SHGDN_FORPARSING, &bsSearch);
 		teGetSearchArg(&bsSearch1, bsSearch, L"displayname=");
 		teGetSearchArg(&bsSearch2, bsSearch, L"crumb=");
 		teSysFreeString(&bsSearch);
+		if (!bsSearch1 || !bsSearch2) {
+			teGetDisplayNameBSTR(pSF, pidlPart, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING, &bsSearch);
+			if (!bsSearch1) {
+				teGetSearchArg(&bsSearch1, bsSearch, L"displayname=");
+			}
+			if (!bsSearch2) {
+				LPWSTR psz = StrStr(bsSearch, L"&crumb=location:");
+				if (psz) {
+					*psz = NULL;
+				}
+				teGetSearchArg(&bsSearch2, bsSearch, L"crumb=");
+			}
+			teSysFreeString(&bsSearch);
+		}
+		pSF->Release();
 		if (bsSearch2) {
 			int nPos = ::SysStringLen(bsSearch2) - ::SysStringLen(bsSearch1);
 			if (!lstrcmpi(bsSearch1, &bsSearch2[nPos >= 0 && StrChr(bsSearch2, '~') ? nPos : 0]) || StrStrI(bsSearch2, g_bsAnyText)|| StrStrI(bsSearch2, g_bsAnyTextId)) {
@@ -1965,7 +1982,8 @@ BSTR teGetSearchText1(LPCITEMIDLIST pidl, BOOL bColumnFilter)
 											LPWSTR pszComma = StrChr(pszSearch, ',');
 											i = lstrlen(bsSearch);
 											if (bName && pszSearch[1] == ' ' && pszSearch[3] == ' ') {// name:0 - 9
-												swprintf_s(&bsSearch[i], ::SysStringLen(bsSearch) - i, L"%c..%c%c", pszSearch[0], pszSearch[4], 0xd7fb);
+//												swprintf_s(&bsSearch[i], ::SysStringLen(bsSearch) - i, L"%c..%c%c", pszSearch[0], pszSearch[4], 0xd7fb);
+												swprintf_s(&bsSearch[i], ::SysStringLen(bsSearch) - i, L"(%c..%c OR ~<%c)", pszSearch[0], pszSearch[4], pszSearch[4]);
 											} else {
 												if (pszComma) {
 													StrNCpy(&bsSearch[i], pszSearch, pszComma - pszSearch + 1);
@@ -1973,6 +1991,9 @@ BSTR teGetSearchText1(LPCITEMIDLIST pidl, BOOL bColumnFilter)
 													lstrcpy(&bsSearch[i], pszSearch);
 												}
 												for (LPWSTR pszSpace = &bsSearch[i]; pszSpace = StrChr(pszSpace, ' '); lstrcpy(pszSpace, &pszSpace[1]));
+												if (LPWSTR psz = StrChr(&bsSearch[i], '(')) {
+													psz[0] = NULL;
+												}
 											}
 											if (pszComma) {
 												lstrcat(bsSearch, L" OR ");
@@ -2044,12 +2065,13 @@ HRESULT teGetDisplayNameFromIDList(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags)
 					teILFreeClear(&pidl1);
 					BSTR bsPath = NULL;
 					teGetSearchArg(&bsPath, bs, L"&crumb=location:");
+					/*
 					WCHAR pszTemp[MAX_LOADSTRING], pszNull[MAX_PATH];
 					LoadString(g_hShell32, 34132, pszTemp, MAX_LOADSTRING);
 					swprintf_s(pszNull, MAX_PATH, pszTemp, PathFindFileName(bsPath));
 					if (lstrcmpi(bsSearchX, pszNull) == 0) {
 						teSysFreeString(&bsSearchX);
-					}
+					}*/
 					teCreateSearchPath(pbs, bsPath, bsSearchX);
 					teSysFreeString(&bsPath);
 					teSysFreeString(&bsSearchX);
@@ -2918,15 +2940,49 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 			pszPath = bsPath2;
 		}
 		BSTR bsPath3 = NULL;
-		LPWSTR pszPath1 = StrStrI(pszPath, L"&crumb=location:");
-		if (pszPath1 && teIsSearchFolder(pszPath)) {
-			bsPath3 = ::SysAllocString(pszPath1 + 16);
-			if (pszPath1 = StrChr(bsPath3, '&')) {
-				pszPath1[0] = NULL;
+		if (teIsSearchFolder(pszPath)) {
+			teGetSearchArg(&bsPath3, pszPath, L"&crumb=location:");
+			ISearchFolderItemFactory *psfif = NULL;
+			IQueryParserManager *pqpm = NULL;
+			if SUCCEEDED(teCreateInstance(CLSID_SearchFolderItemFactory, NULL, NULL, IID_PPV_ARGS(&psfif))) {
+				if SUCCEEDED(CoCreateInstance(__uuidof(QueryParserManager), NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pqpm))) {
+					if (pidl = teILCreateFromPath(bsPath3)) {
+						teSysFreeString(&bsPath3);
+						IShellItem *psi = NULL;
+						if SUCCEEDED(SHCreateShellItem(NULL, NULL, pidl, &psi)) {
+							teILFreeClear(&pidl);
+							IShellItemArray *psia;
+							if (
+#ifdef _2000XP
+								_SHCreateShellItemArrayFromShellItem &&
+#endif
+								SUCCEEDED(_SHCreateShellItemArrayFromShellItem(psi, IID_PPV_ARGS(&psia)))) {
+								teGetSearchArg(&bsPath3, pszPath, L"crumb=");
+								psfif->SetScope(psia);
+								psia->Release();
+								IQueryParser *pqp;
+								if SUCCEEDED(pqpm->CreateLoadedParser(L"SystemIndex", LOCALE_USER_DEFAULT, IID_PPV_ARGS(&pqp))) {
+									IQuerySolution *pqs = NULL;
+									ICondition *pCondition;
+									if (SUCCEEDED(pqp->Parse(bsPath3, NULL, &pqs)) && SUCCEEDED(pqs->GetQuery(&pCondition, NULL))) {
+										psfif->SetDisplayName(bsPath3);
+										psfif->SetCondition(pCondition);
+										psfif->GetIDList(&pidl);
+									}
+									pqp->Release();
+									teSysFreeString(&bsPath3);
+									SafeRelease(&pqs);
+								}
+							}
+							SafeRelease(&psi);
+						} else {
+							teILFreeClear(&pidl);
+						}
+					}
+				}
+				SafeRelease(&pqpm);
 			}
-			if SUCCEEDED(UrlUnescape(bsPath3, NULL, NULL, URL_UNESCAPE_INPLACE)) {
-				pszPath = bsPath3;
-			}
+			SafeRelease(&psfif);
 		} else if (tePathMatchSpec(pszPath, L"*\\..\\*;*\\..;*\\.\\*;*\\.;*%*%*")) {
 			DWORD dwLen = lstrlen(pszPath) + MAX_PATH;
 			bsPath3 = ::SysAllocStringLen(NULL, dwLen);
@@ -2938,7 +2994,7 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 			bsPath3[0] = pszPath[0];
 			pszPath = bsPath3;
 		}
-		if (GetCSIDLFromPath(&n, pszPath)) {
+		if (!pidl && GetCSIDLFromPath(&n, pszPath)) {
 			pidl = ::ILClone(g_pidls[n]);
 			pszPath = NULL;
 		}
@@ -11461,6 +11517,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 #ifdef _2000XP
 		*(FARPROC *)&_SHCreateItemFromIDList = GetProcAddress(g_hShell32, "SHCreateItemFromIDList");
 		*(FARPROC *)&_SHGetIDListFromObject = GetProcAddress(g_hShell32, "SHGetIDListFromObject");
+		*(FARPROC *)&_SHCreateShellItemArrayFromShellItem = GetProcAddress(g_hShell32, "SHCreateShellItemArrayFromShellItem");
 #endif
 		*(FARPROC *)&_SHRunDialog = GetProcAddress(g_hShell32, MAKEINTRESOURCEA(61));
 		*(FARPROC *)&_RegenerateUserEnvironment = GetProcAddress(g_hShell32, "RegenerateUserEnvironment");
@@ -13716,15 +13773,17 @@ VOID CteShellBrowser::SetSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch)
 		VARIANT v;
 		VariantInit(&v);
 		WIN32_FIND_DATA wfd = { 0 };
-		if SUCCEEDED(teSHGetDataFromIDList(m_pSF2, pidl, SHGDFIL_FINDDATA, &wfd, sizeof(WIN32_FIND_DATA))) {
+		HRESULT hr = teSHGetDataFromIDList(m_pSF2, pidl, SHGDFIL_FINDDATA, &wfd, sizeof(WIN32_FIND_DATA));
+		if SUCCEEDED(hr) {
 			if (!(wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
 				ULARGE_INTEGER uli;
 				uli.HighPart = wfd.nFileSizeHigh;
 				uli.LowPart = wfd.nFileSizeLow;
 				teStrFormatSize(GetSizeFormat(), uli.QuadPart, szText, cch);
 			}
-		} else {
-			LPITEMIDLIST pidlFull = ILCombine(m_pidl, pidl);// for Search folder (search-ms:)
+		}
+		if (FAILED(hr) || (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+			LPITEMIDLIST pidlFull = ILCombine(m_pidl, pidl);// for Search folder (search-ms:) and Folder in Bitbucket
 			IShellFolder2 *pSF2;
 			LPCITEMIDLIST pidlPart;
 			if SUCCEEDED(SHBindToParent(pidlFull, IID_PPV_ARGS(&pSF2), &pidlPart)) {
@@ -14088,8 +14147,7 @@ STDMETHODIMP CteShellBrowser::GetDefaultMenuText(IShellView *ppshv, LPWSTR pszTe
 
 STDMETHODIMP CteShellBrowser::GetViewFlags(DWORD *pdwFlags)
 {
-//	*pdwFlags = (m_param[SB_ViewFlags] & (~(CDB2GVF_NOINCLUDEITEM | CDB2GVF_NOSELECTVERB))) | (((m_bsFilter || m_ppDispatch[SB_OnIncludeObject]) && !ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) ? 0 : CDB2GVF_NOINCLUDEITEM);
-	*pdwFlags = (m_param[SB_ViewFlags] & (~(CDB2GVF_NOINCLUDEITEM | CDB2GVF_NOSELECTVERB)));
+	*pdwFlags = m_param[SB_ViewFlags] & CDB2GVF_SHOWALLFILES;
 	return S_OK;
 }
 /*/// ICommDlgBrowser3
@@ -14774,26 +14832,6 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 							hr = GetIntFromVariantClear(&vResult);
 						}
 						if (hr != S_OK) {
-							BSTR bs;
-							if SUCCEEDED(m_pFolderItem->get_Path(&bs)) {
-								if (teIsSearchFolder(bs)) {
-									BSTR bsPath = NULL;
-									teGetSearchArg(&bsPath, bs, L"&crumb=location:");
-									VARIANT vPath;
-									vPath.vt = VT_BSTR;
-									vPath.bstrVal = NULL;
-									teCreateSearchPath(&vPath.bstrVal, bsPath, v.bstrVal);
-									CteFolderItem *pid = new CteFolderItem(&vPath);
-									VariantClear(&vPath);
-									teSysFreeString(&bsPath);
-									teSysFreeString(&bs);
-									BrowseObject2(pid, SBSP_SAMEBROWSER | SBSP_WRITENOHISTORY);
-									pid->Release();
-									VariantClear(&v);
-									return S_OK;
-								}
-								teSysFreeString(&bs);
-							}
 							if (Search(v.bstrVal) != S_OK) {
 #ifdef _2000XP
 								teSysFreeString(&m_bsFilter);
@@ -15997,20 +16035,6 @@ STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 	if (ILIsEqual(m_pidl, pidlFolder)) {
 		return S_OK;
 	}
-	if (m_nSetSearch && teILIsSearchFolder(m_pidl) && teILIsSearchFolder((LPITEMIDLIST)pidlFolder)) {
-		BSTR bsSearch = NULL;
-		teGetSearchText(&bsSearch, m_pidl);
-		if (bsSearch) {
-			BSTR bsSearch2 = NULL;
-			teGetSearchText(&bsSearch2, pidlFolder);
-			if (bsSearch2) {
-				teSysFreeString(&bsSearch2);
-			} else if (lstrcmpi(bsSearch, L"*")) {
-				Search(bsSearch);
-			}
-			teSysFreeString(&bsSearch);
-		}
-	}
 	if (!m_pFolderItem1 && !m_dwUnavailable && ILIsEqual(pidlFolder, g_pidls[CSIDL_RESULTSFOLDER])) {
 		m_nSuspendMode = 4;
 		return E_FAIL;
@@ -16172,12 +16196,39 @@ int CteShellBrowser::GetFolderViewAndItemCount(IFolderView **ppFV, UINT uFlags)
 }
 
 HRESULT CteShellBrowser::Search(LPWSTR pszSearch) {
-	IShellFolderViewDual3 *pSFVD3;
-	if SUCCEEDED(m_pdisp->QueryInterface(IID_PPV_ARGS(&pSFVD3))) {
-		SetRedraw(FALSE);
-		m_nSetSearch = 2;
-		pSFVD3->FilterView(pszSearch);
-		pSFVD3->Release();
+	if (ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
+		return S_OK;
+	}
+#ifdef _2000XP
+	if (!_SHCreateShellItemArrayFromShellItem) {
+		return E_NOTIMPL;
+	}
+#endif
+	ISearchFolderItemFactory *psfif = NULL;
+	if SUCCEEDED(teCreateInstance(CLSID_SearchFolderItemFactory, NULL, NULL, IID_PPV_ARGS(&psfif))) {
+		psfif->Release();
+		BSTR bsPath;
+		if SUCCEEDED(m_pFolderItem->get_Path(&bsPath)) {
+			if (teIsSearchFolder(bsPath)) {
+				BSTR bs = NULL;
+				teGetSearchArg(&bs, bsPath, L"&crumb=location:");
+				if (bs) {
+					teSysFreeString(&bsPath);
+					bsPath = bs;
+				}
+			}
+		}
+		BSTR bsSearch = NULL;
+		teCreateSearchPath(&bsSearch, bsPath, pszSearch);
+		teSysFreeString(&bsPath);
+		LPITEMIDLIST pidl = teILCreateFromPath(bsSearch);
+		teSysFreeString(&bsSearch);
+		if (pidl) {
+			if (!ILIsEqual(m_pidl, pidl)) {
+				BrowseObject(pidl, SBSP_SAMEBROWSER);
+			}
+			teILFreeClear(&pidl);
+		}
 		return S_OK;
 	}
 	return E_NOTIMPL;
@@ -16186,9 +16237,6 @@ HRESULT CteShellBrowser::Search(LPWSTR pszSearch) {
 STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 {
 	m_bViewCreated = FALSE;
-	if (--m_nSetSearch < 0) {
-		m_nSetSearch = 0;
-	}
 	if (psv) {
 		if (m_pShellView) {
 			if (m_pSFVCB) {
@@ -16244,21 +16292,6 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 	SetRedraw(TRUE);
 	if (!m_pTC->m_nLockUpdate) {
 		ArrangeWindowEx();
-	}
-
-	if (!teILIsSearchFolder(m_pidl)) {
-		BSTR bs;
-		if SUCCEEDED(m_pFolderItem->get_Path(&bs)) {
-			if (teIsSearchFolder(bs)) {
-				BSTR bsSearch = NULL;
-				tePathGetFileName(&bsSearch, bs);
-				if (bsSearch) {
-					Search(bsSearch);
-					teSysFreeString(&bsSearch);
-				}
-			}
-			teSysFreeString(&bs);
-		}
 	}
 	return S_OK;
 }
