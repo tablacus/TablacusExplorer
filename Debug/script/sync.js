@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210523 ? te.Version : 20210523;
+		return te.Version < 20210524 ? te.Version : 20210524;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1473,7 +1473,7 @@ MakeImgIcon = function (src, index, h, bIcon, clBk) {
 	}
 	if (src && (bIcon || /\*/.test(src) || !REGEXP_IMAGE.test(src))) {
 		const sfi = api.Memory("SHFILEINFO");
-		if (/\*/.test(src)) {
+		if (/\*/.test(src) && !IsSearchPath(src)) {
 			api.SHGetFileInfo(src, 0, sfi, sfi.Size, SHGFI_SYSICONINDEX | SHGFI_USEFILEATTRIBUTES);
 		} else {
 			if (/^file:/i.test(src)) {
@@ -1602,8 +1602,7 @@ NavigateFV = function (FV, Path, wFlags, bInputed) {
 		Path = ExtractMacro(FV, Path).replace(/^\s+|\s*$/g, "");
 		if (/\?|\*/.test(Path)) {
 			if (!/\\\\\?\\|:/.test(Path)) {
-				FV.FilterView = Path;
-				FV.Refresh();
+				SetFilterView(FV, Path);
 				return;
 			}
 		}
@@ -1626,6 +1625,20 @@ NavigateFV = function (FV, Path, wFlags, bInputed) {
 	}
 	FV.Navigate(Path, wFlags);
 	FV.Focus();
+}
+
+SetFilterView = function (FV, s) {
+	FV.FilterView = s || null;
+	if (IsSearchPath(FV)) {
+		return;
+	}
+	if (s) {
+		FV.Refresh();
+		return;
+	}
+	setTimeout(function () {
+		FV.Refresh();
+	}, 99);
 }
 
 GetOpenMode = function (FV) {

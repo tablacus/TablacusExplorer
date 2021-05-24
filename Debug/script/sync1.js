@@ -278,8 +278,7 @@ g_basic = {
 				const FV = GetFolderView(Ctrl, pt);
 				if (FV) {
 					s = ExtractMacro(Ctrl, s);
-					FV.FilterView = s != "*" ? s : null;
-					FV.Refresh();
+					SetFilterView(FV, s != "*" ? s : null);
 				}
 				return S_OK;
 			}
@@ -1353,8 +1352,7 @@ CancelFilterView = function (FV) {
 		return S_OK;
 	}
 	if (FV.FilterView) {
-		FV.FilterView = null;
-		FV.Refresh();
+		SetFilterView(FV);
 		return S_OK;
 	}
 	return S_FALSE;

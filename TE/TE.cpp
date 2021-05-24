@@ -12579,7 +12579,7 @@ STDMETHODIMP CteShellBrowser::QueryInterface(REFIID riid, void **ppvObject)
 		QITABENT(CteShellBrowser, IPersistFolder),
 		QITABENT(CteShellBrowser, IPersistFolder2),
 		QITABENT(CteShellBrowser, IShellFolderViewCB),
-		{ 0 },
+	{ 0 },
 	};
 	HRESULT hr = QISearch(this, qit, riid, ppvObject);
 	if SUCCEEDED(hr) {
@@ -12904,6 +12904,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	SafeRelease(&m_ppDispatch[SB_TotalFileSize]);
 	m_ppDispatch[SB_TotalFileSize] = teCreateObj(TE_OBJECT, NULL);
 	SafeRelease(&m_ppDispatch[SB_AltSelectedItems]);
+	teSysFreeString(&m_bsAltSortColumn);
 	CteFolderItem *pid1 = NULL;
 	if (m_hwnd) {
 		KillTimer(m_hwnd, (UINT_PTR)this);
@@ -13775,15 +13776,19 @@ VOID CteShellBrowser::SetSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch)
 		WIN32_FIND_DATA wfd = { 0 };
 		HRESULT hr = teSHGetDataFromIDList(m_pSF2, pidl, SHGDFIL_FINDDATA, &wfd, sizeof(WIN32_FIND_DATA));
 		if SUCCEEDED(hr) {
-			if (!(wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+			if (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+				if (ILIsEqual(m_pidl, g_pidls[CSIDL_BITBUCKET])) {
+					hr = E_FAIL;
+				}
+			} else {
 				ULARGE_INTEGER uli;
 				uli.HighPart = wfd.nFileSizeHigh;
 				uli.LowPart = wfd.nFileSizeLow;
 				teStrFormatSize(GetSizeFormat(), uli.QuadPart, szText, cch);
 			}
 		}
-		if (FAILED(hr) || (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-			LPITEMIDLIST pidlFull = ILCombine(m_pidl, pidl);// for Search folder (search-ms:) and Folder in Bitbucket
+		if FAILED(hr) {
+			LPITEMIDLIST pidlFull = ILCombine(m_pidl, pidl);// for Search folder (search-ms:) and Folder in Recycle bin
 			IShellFolder2 *pSF2;
 			LPCITEMIDLIST pidlPart;
 			if SUCCEEDED(SHBindToParent(pidlFull, IID_PPV_ARGS(&pSF2), &pidlPart)) {
