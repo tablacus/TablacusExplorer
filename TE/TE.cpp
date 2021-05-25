@@ -219,7 +219,7 @@ VOID teArrayPush(IDispatch *pdisp, PVOID pObj);
 HRESULT teExecMethod(IDispatch *pdisp, LPOLESTR sz, VARIANT *pvResult, int nArg, VARIANTARG *pvArgs);
 VOID Invoke4(IDispatch *pdisp, VARIANT *pvResult, int nArgs, VARIANTARG *pvArgs);
 int teGetObjectLength(IDispatch *pdisp);
-BOOL teILIsSearchFolder(LPITEMIDLIST pidl);
+BOOL teILIsSearchFolder(LPCITEMIDLIST pidl);
 
 //Unit
 
@@ -2134,7 +2134,7 @@ HRESULT teGetDisplayNameFromIDList(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags)
  	return hr;
 }
 
-BOOL teILIsSearchFolder(LPITEMIDLIST pidl)
+BOOL teILIsSearchFolder(LPCITEMIDLIST pidl)
 {
 	BOOL bResult = FALSE;
 	IShellFolder *pSF;
@@ -12029,6 +12029,7 @@ VOID CALLBACK teTimerProcParse(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 				CteFolderItem *pid = new CteFolderItem(pv);
 				pid->MakeUnavailable();
 				VariantClear(pv);
+				teSetSZ(&pid->m_v, pInvoke->bsPath);
 				teSetObjectRelease(pv, pid);
 				Invoke5(pInvoke->pdisp, pInvoke->dispid, DISPATCH_METHOD, NULL, -pInvoke->cArgs, pInvoke->pv);
 			} else if (pInvoke->wErrorHandling == 2) {
@@ -12579,7 +12580,7 @@ STDMETHODIMP CteShellBrowser::QueryInterface(REFIID riid, void **ppvObject)
 		QITABENT(CteShellBrowser, IPersistFolder),
 		QITABENT(CteShellBrowser, IPersistFolder2),
 		QITABENT(CteShellBrowser, IShellFolderViewCB),
-	{ 0 },
+		{ 0 },
 	};
 	HRESULT hr = QISearch(this, qit, riid, ppvObject);
 	if SUCCEEDED(hr) {
@@ -14153,6 +14154,9 @@ STDMETHODIMP CteShellBrowser::GetDefaultMenuText(IShellView *ppshv, LPWSTR pszTe
 STDMETHODIMP CteShellBrowser::GetViewFlags(DWORD *pdwFlags)
 {
 	*pdwFlags = m_param[SB_ViewFlags] & CDB2GVF_SHOWALLFILES;
+	if (teCompareSFClass(m_pSF2, &CLSID_LibraryFolder) || teCompareSFClass(m_pSF2, &CLSID_DBFolder)) {
+		*pdwFlags |= CDB2GVF_NOINCLUDEITEM;
+	}
 	return S_OK;
 }
 /*/// ICommDlgBrowser3
@@ -16251,7 +16255,7 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 			SafeRelease(&m_pShellView);
 		}
 		psv->QueryInterface(IID_PPV_ARGS(&m_pShellView));
-		if (teCompareSFClass(m_pSF2, &CLSID_ShellFSFolder) && !teILIsSearchFolder(m_pidl)) {
+		if (teCompareSFClass(m_pSF2, &CLSID_ShellFSFolder)) {
 			teSetSFVCB(psv, (IShellFolderViewCB *)this, &m_pSFVCB);
 		}
 	}
@@ -16315,7 +16319,7 @@ VOID CteShellBrowser::SetTabName()
 
 STDMETHODIMP CteShellBrowser::OnNavigationComplete(PCIDLIST_ABSOLUTE pidlFolder)
 {
-	if (!teILIsFileSystemEx(pidlFolder) || teILIsSearchFolder((LPITEMIDLIST)pidlFolder)) {
+	if (!teILIsFileSystemEx(pidlFolder) || teILIsSearchFolder(pidlFolder)) {
 		OnNavigationComplete2();
 	}
 	return S_OK;
@@ -17368,17 +17372,19 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 	if (!m_pShellView || lstrlen(bs) == 0) {
 		return;
 	}
-	teSysFreeString(&m_bsAltSortColumn);
-	if (g_pOnFunc[TE_OnSorting]) {
-		VARIANT v;
-		VariantInit(&v);
-		VARIANTARG *pv = GetNewVARIANT(2);
-		teSetObject(&pv[1], this);
-		teSetSZ(&pv[0], bs);
-		Invoke4(g_pOnFunc[TE_OnSorting], &v, 2, pv);
-		if (GetIntFromVariantClear(&v)) {
-			m_bsAltSortColumn = ::SysAllocString(bs);
-			return;
+	if (lstrcmpi(bs, L"System.Null")) {
+		teSysFreeString(&m_bsAltSortColumn);
+		if (g_pOnFunc[TE_OnSorting]) {
+			VARIANT v;
+			VariantInit(&v);
+			VARIANTARG *pv = GetNewVARIANT(2);
+			teSetObject(&pv[1], this);
+			teSetSZ(&pv[0], bs);
+			Invoke4(g_pOnFunc[TE_OnSorting], &v, 2, pv);
+			if (GetIntFromVariantClear(&v)) {
+				m_bsAltSortColumn = ::SysAllocString(bs);
+				return;
+			}
 		}
 	}
 	IFolderView2 *pFV2;
