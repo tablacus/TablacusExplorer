@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210525 ? te.Version : 20210525;
+		return te.Version < 20210526 ? te.Version : 20210526;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1141,27 +1141,6 @@ ColumnsReplace = function (Ctrl, pid, fmt, fn, priority) {
 	}
 }
 
-CustomSortHeader = function (FV, id, r, Name, SessionId) {
-	const hHeader = api.SendMessage(FV.hwndList, LVM_GETHEADER, 0, 0);
-	const item = api.Memory("HDITEM");
-	item.mask = HDI_TEXT | HDI_FORMAT;
-	item.pszText = api.Memory("WCHAR", 260);
-	item.cchTextMax = 260;
-	if (id && FV.SessionId == SessionId) {
-		for (let i = api.SendMessage(hHeader, HDM_GETITEMCOUNT, 0, 0); i-- > 0;) {
-			item.mask = HDI_TEXT | HDI_FORMAT;
-			api.SendMessage(hHeader, HDM_GETITEM, i, item);
-			if (Name == api.SysAllocString(item.pszText)) {
-				item.fmt |= r ? HDF_SORTDOWN : HDF_SORTUP;
-			} else {
-				item.fmt &= ~(HDF_SORTDOWN | HDF_SORTUP);
-			}
-			item.mask = HDI_FORMAT;
-			api.SendMessage(hHeader, HDM_SETITEM, i, item);
-		}
-	}
-}
-
 CustomSort = function (FV, id, r, fnAdd, fnComp) {
 	const Progress = api.CreateObject("ProgressDialog");
 	Progress.StartProgressDialog(te.hwnd, null, 2);
@@ -1199,14 +1178,29 @@ CustomSort = function (FV, id, r, fnAdd, fnComp) {
 		api.SendMessage(FV.hwndList, LVM_SETVIEW, ViewMode, 0);
 		FV.FolderFlags = FolderFlags;
 		FV.IconSize = IconSize;
+		if (FV.SortColumns) {
+			FV.SortColumn = "System.Null";
+		}
+		if (id) {
+			const hHeader = api.SendMessage(FV.hwndList, LVM_GETHEADER, 0, 0);
+			const item = api.Memory("HDITEM");
+			item.mask = HDI_TEXT | HDI_FORMAT;
+			item.pszText = api.Memory("WCHAR", 260);
+			item.cchTextMax = 260;
+			for (let i = api.SendMessage(hHeader, HDM_GETITEMCOUNT, 0, 0); i-- > 0;) {
+				item.mask = HDI_TEXT | HDI_FORMAT;
+				api.SendMessage(hHeader, HDM_GETITEM, i, item);
+				if (Name == api.SysAllocString(item.pszText)) {
+					item.fmt |= r ? HDF_SORTDOWN : HDF_SORTUP;
+				} else {
+					item.fmt &= ~(HDF_SORTDOWN | HDF_SORTUP);
+				}
+				item.mask = HDI_FORMAT;
+				api.SendMessage(hHeader, HDM_SETITEM, i, item);
+			}
+		}
 	} catch (e) { }
 	Progress.StopProgressDialog();
-	if (FV.ItemCount(SVGIO_ALLVIEW) > 1) {
-		CustomSortHeader(FV, id, r, Name, FV.SessionId);
-	} else {
-		FV.SortColumn = "System.Null";
-		setTimeout(CustomSortHeader, 99, FV, id, r, Name, FV.SessionId);
-	}
 }
 
 MakeCommDlgFilter = function (arg) {

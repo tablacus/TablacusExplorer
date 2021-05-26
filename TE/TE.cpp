@@ -15560,7 +15560,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			m_pTC->RedrawUpdate();
 			if (m_bRefreshing) {
 				m_bRefreshing = FALSE;
-			} else if (m_pShellView) {
+			} else if (m_pShellView && m_bsAltSortColumn) {
 				IFolderView2 *pFV2;
 				if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
 					BSTR bs = NULL;
@@ -17372,24 +17372,29 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 	if (!m_pShellView || lstrlen(bs) == 0) {
 		return;
 	}
-	if (lstrcmpi(bs, L"System.Null")) {
-		teSysFreeString(&m_bsAltSortColumn);
-		if (g_pOnFunc[TE_OnSorting]) {
-			VARIANT v;
-			VariantInit(&v);
-			VARIANTARG *pv = GetNewVARIANT(2);
-			teSetObject(&pv[1], this);
-			teSetSZ(&pv[0], bs);
-			Invoke4(g_pOnFunc[TE_OnSorting], &v, 2, pv);
-			if (GetIntFromVariantClear(&v)) {
-				m_bsAltSortColumn = ::SysAllocString(bs);
-				return;
-			}
-		}
-	}
 	IFolderView2 *pFV2;
 	SORTCOLUMN pCol1[1];
 	SORTCOLUMN *pCol = pCol1;
+	if (lstrcmpi(bs, L"System.Null") == 0) {
+		if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
+			pFV2->SetSortColumns(NULL, 0);
+			pFV2->Release();
+		}
+		return;
+	}
+	teSysFreeString(&m_bsAltSortColumn);
+	if (g_pOnFunc[TE_OnSorting]) {
+		VARIANT v;
+		VariantInit(&v);
+		VARIANTARG *pv = GetNewVARIANT(2);
+		teSetObject(&pv[1], this);
+		teSetSZ(&pv[0], bs);
+		Invoke4(g_pOnFunc[TE_OnSorting], &v, 2, pv);
+		if (GetIntFromVariantClear(&v)) {
+			m_bsAltSortColumn = ::SysAllocString(bs);
+			return;
+		}
+	}
 	int nSortColumns = _countof(pCol1);
 	int dir = (bs[0] == '-') ? 1 : 0;
 	LPWSTR szNew = &bs[dir];
@@ -25737,11 +25742,9 @@ STDMETHODIMP CteDropTarget2::DragEnter(IDataObject *pDataObj, DWORD grfKeyState,
 	HRESULT hr = DragSub(TE_OnDragEnter, m_punk, m_pDragItems, &grfKeyState, pt, pdwEffect);
 	if (m_pDropTarget && dwEffect == *pdwEffect) {
 		hr = m_pDropTarget->DragEnter(pDataObj, grfKeyState, pt, pdwEffect);
-	} else if (hr == S_OK) {
-		if (g_pDropTargetHelper) {
-			m_bUseHelper = TRUE;
-			g_pDropTargetHelper->DragEnter(m_hwnd, pDataObj, (LPPOINT)&pt, *pdwEffect);
-		}
+	} else if (g_bDragIcon && g_pDropTargetHelper) {
+		m_bUseHelper = TRUE;
+		hr = g_pDropTargetHelper->DragEnter(m_hwnd, pDataObj, (LPPOINT)&pt, *pdwEffect);
 	}
 	if (!g_bDragIcon && g_pDropTargetHelper) {
 		g_pDropTargetHelper->DragLeave();
@@ -25755,11 +25758,9 @@ STDMETHODIMP CteDropTarget2::DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEf
 	HRESULT hr = DragSub(TE_OnDragOver, m_punk, m_pDragItems, &grfKeyState, pt, pdwEffect);
 	if (m_pDropTarget && dwEffect == *pdwEffect) {
 		hr = m_pDropTarget->DragOver(grfKeyState, pt, pdwEffect);
-	} else if (hr == S_OK) {
-		if (g_bDragIcon && g_pDropTargetHelper) {
-			m_bUseHelper = TRUE;
-			g_pDropTargetHelper->DragOver((LPPOINT)&pt, *pdwEffect);
-		}
+	} else if (g_bDragIcon && g_pDropTargetHelper) {
+		m_bUseHelper = TRUE;
+		g_pDropTargetHelper->DragOver((LPPOINT)&pt, *pdwEffect);
 	}
 	if (!g_bDragIcon && g_pDropTargetHelper) {
 		g_pDropTargetHelper->DragLeave();

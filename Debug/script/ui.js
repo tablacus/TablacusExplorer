@@ -298,11 +298,7 @@ CheckUpdate2 = async function (xhr, url, arg1) {
 		return;
 	}
 	arg.file = GetFileName((await arg.url).replace(/\//g, "\\"));
-	let ver = 0;
-	res = /(\d+)/.exec(await arg.file);
-	if (res) {
-		ver = await api.Add(20000000, res[1]);
-	}
+	const ver = (res = /(\d+)/.exec(await arg.file)) ? GetNum(res[1]) + 2e7 : 0;
 	if (ver <= await AboutTE(0)) {
 		if ((arg1 && GetNum(await arg1.silent)) || await MessageBox(await AboutTE(2) + "\n" + await GetText("the latest version"), TITLE, MB_ICONINFORMATION)) {
 			if (await api.GetKeyState(VK_SHIFT) >= 0 || await api.GetKeyState(VK_CONTROL) >= 0) {

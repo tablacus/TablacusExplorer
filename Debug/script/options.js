@@ -1743,16 +1743,20 @@ InitDialog = async function () {
 		}
 
 		Run = async function (n, el) {
-			setTimeout(function (n, path, hwnd) {
+			setTimeout(function (n, path) {
 				if (n == 2) {
 					wsh.Run("https://tablacus.github.io/explorer_en.html");
 				} else if (n == 3) {
-					MainWindow.CheckUpdate();
+					if (window.chrome) {
+						MainWindow.CheckUpdate();
+					} else {
+						MainWindow.setTimeout(MainWindow.CheckUpdate);
+					}
 				} else {
 					MainWindow.Navigate(path + (n ? "" : "\\\\.."), SBSP_NEWBROWSER);
 				}
 				CloseWindow();
-			}, 500, n, el && el.innerHTML, await GetTopWindow());
+			}, 500, n, el && el.innerHTML);
 		}
 	}
 	if (Query == "input") {

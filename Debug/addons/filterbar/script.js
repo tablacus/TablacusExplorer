@@ -22,7 +22,7 @@ if (window.Addon == 1) {
 				this.filter = o.value;
 				clearTimeout(this.tid);
 				if (k == VK_RETURN) {
-					this.Change();
+					this.Change(ev.ctrlKey);
 					return false;
 				} else {
 					this.tid = setTimeout(this.Change, 500);
@@ -43,10 +43,21 @@ if (window.Addon == 1) {
 			}
 		},
 
-		Change: async function () {
+		Change: async function (bSearch) {
 			Addons.FilterBar.ShowButton();
 			const FV = await GetFolderView();
 			let s = document.F.filter.value;
+			const res = await IsSearchPath(FV, true);
+			if (res || bSearch) {
+				if (!res || decodeURIComponent(await res[1]) != s) {
+					FV.Search(s);
+					setTimeout(function (o) {
+						WebBrowser.Focus();
+						o.focus();
+					}, 999, document.F.filter);
+				}
+				return;
+			}
 			if (s) {
 				if (Addons.FilterBar.RE && !/^\*|\//.test(s)) {
 					s = "/" + s + "/i";
@@ -63,14 +74,13 @@ if (window.Addon == 1) {
 					}
 				}
 			}
-			if (!SameText(s, await FV.FilterView)) {
-				FV.FilterView = s || null;
-				FV.Refresh();
-			}
+			SetFilterView(FV, s);
 		},
 
-		Focus: function (o) {
-			o.select();
+		Focus: async function (o) {
+			if (!await IsSearchPath(await GetFolderView())) {
+				o.select();
+			}
 			if (this.iCaret >= 0) {
 				const range = o.createTextRange();
 				range.move("character", this.iCaret);
@@ -84,9 +94,7 @@ if (window.Addon == 1) {
 			document.F.filter.value = "";
 			this.ShowButton();
 			if (flag) {
-				const FV = await GetFolderView();
-				FV.FilterView = null;
-				FV.Refresh();
+				SetFilterView(await GetFolderView());
 			}
 		},
 
@@ -105,21 +113,27 @@ if (window.Addon == 1) {
 		GetFilter: async function (Ctrl) {
 			if (await Ctrl.Type <= CTRL_EB && await Ctrl.Id == await Ctrl.Parent.Selected.Id && await Ctrl.Parent.Id == await te.Ctrl(CTRL_TC).Id) {
 				clearTimeout(Addons.FilterBar.tid);
-				const s = Addons.FilterBar.GetString(await Ctrl.FilterView);
-				if (s != Addons.FilterBar.GetString(document.F.filter.value)) {
+				const bSearch = await IsSearchPath(Ctrl, true);
+				const s = Addons.FilterBar.GetString(bSearch ? decodeURIComponent(await bSearch[1]) : await Ctrl.FilterView, bSearch);
+				if (s != Addons.FilterBar.GetString(document.F.filter.value, bSearch)) {
 					document.F.filter.value = s;
 					Addons.FilterBar.ShowButton();
 				}
 			}
 		},
 
-		GetString: function (s) {
+		GetString: function (s, bSearch) {
+			if (bSearch) {
+				return s;
+			}
 			if (Addons.FilterBar.RE) {
 				const res = /^\/(.*)\/i/.exec(s);
 				if (res) {
 					s = res[1];
 				}
-			} else if (s && !/^\//.test(s)) {
+				return s;
+			}
+			if (s && !/^\//.test(s)) {
 				const ar = s.split(/;/);
 				for (let i in ar) {
 					const res = /^\*([^/?/*]+)\*$/.exec(ar[i]);
@@ -127,7 +141,7 @@ if (window.Addon == 1) {
 						ar[i] = res[1];
 					}
 				}
-				s = ar.join(";");
+				return ar.join(";");
 			}
 			return s;
 		},
