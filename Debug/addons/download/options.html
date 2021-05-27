@@ -12,7 +12,12 @@
         &nbsp;
       </td>
       <td>
-        <input type="button" value="PowerShell" title='powershell [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri "%url%" -OutFile "%file%"' onclick="SetDL(this)">
+        <input type="button" value="PowerShell" title='powershell Invoke-WebRequest -Uri "%url%" -OutFile "%file%"' onclick="SetDL(this)">
+      </td>
+      <td>
+        <input type="button" value="PowerShell (TLS1.2)"
+          title='powershell [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri "%url%" -OutFile "%file%"'
+          onclick="SetDL(this)">
       </td>
       <td>
         <input type="button" value="cURL" title='cURL "%url%" -o "%file%" -L' onclick="SetDL(this)">
