@@ -1911,11 +1911,10 @@ VOID teCreateSearchPath(BSTR *pbs, LPWSTR pszPath, LPWSTR pszSearch)
 	LPWSTR pszLocation = L"&crumb=location:";
 	DWORD dw = 2048;
 	BSTR bsSearch3 = teSysAllocStringLen(L"", dw);
-	UrlEscape(pszSearch, bsSearch3, &dw, 0);
+	UrlEscape(pszSearch, bsSearch3, &dw, URL_ESCAPE_SEGMENT_ONLY);
 	dw = 2048;
-	BSTR bsPath3 = ::SysAllocStringLen(NULL, dw);
-	UrlEscape(pszPath, bsPath3, &dw, 0);
-
+	BSTR bsPath3 = ::SysAllocStringLen(L"", dw);
+	UrlEscape(pszPath, bsPath3, &dw, URL_ESCAPE_SEGMENT_ONLY);
 	teSysFreeString(pbs);
 	*pbs = ::SysAllocStringLen(NULL, lstrlen(pszHeader) + lstrlen(bsSearch3) + lstrlen(pszLocation) + lstrlen(bsPath3));
 	lstrcpy(*pbs, pszHeader);

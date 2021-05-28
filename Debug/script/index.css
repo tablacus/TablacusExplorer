@@ -39,13 +39,20 @@ img {
 	border: none;
 }
 
+img.button, img.button1 {
+	box-sizing: content-box;
+}
+
+img.hoverbutton, img.activebutton {
+	box-sizing: content-box;
+}
+
 form {
 	display: inline;
 	margin: 0;
 }
 
 .button, .button1 {
-	box-sizing: content-box;
 	display: inline-block; *display: inline; *zoom: 1;
 	padding: 1px 1px;
 	text-decoration: none;
@@ -56,7 +63,6 @@ form {
 }
 
 .hoverbutton, .activebutton {
-	box-sizing: content-box;
 	display: inline-block; *display: inline; *zoom: 1;
 	text-decoration: none;
 	color: buttontext;
@@ -70,7 +76,6 @@ form {
 }
 
 .menu {
-	box-sizing: content-box;
 	display: inline-block; *display: inline; *zoom: 1;
 	margin: 1px 5px;
 	text-decoration: none;
@@ -80,7 +85,6 @@ form {
 }
 
 .hovermenu, .activemenu {
-	box-sizing: content-box;
 	display: inline-block; *display: inline; *zoom: 1;
 	cursor: default;
 	text-decoration: none;
