@@ -209,6 +209,7 @@ VOID CALLBACK teTimerProcParse(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 VOID CALLBACK teTimerProcForTree(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime);
 static void threadParseDisplayName(void *args);
 LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath);
+LPITEMIDLIST teSimpleILCreateFromPath(LPWSTR pszPath);
 int teGetModuleFileName(HMODULE hModule, BSTR *pbsPath);
 BOOL GetVarArrayFromIDList(VARIANT *pv, LPITEMIDLIST pidl);
 HRESULT teGetDisplayNameFromIDList(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags);
@@ -1981,7 +1982,6 @@ BSTR teGetSearchText1(LPCITEMIDLIST pidl, BOOL bColumnFilter)
 											LPWSTR pszComma = StrChr(pszSearch, ',');
 											i = lstrlen(bsSearch);
 											if (bName && pszSearch[1] == ' ' && pszSearch[3] == ' ') {// name:0 - 9
-//												swprintf_s(&bsSearch[i], ::SysStringLen(bsSearch) - i, L"%c..%c%c", pszSearch[0], pszSearch[4], 0xd7fb);
 												swprintf_s(&bsSearch[i], ::SysStringLen(bsSearch) - i, L"(%c..%c OR ~<%c)", pszSearch[0], pszSearch[4], pszSearch[4]);
 											} else {
 												if (pszComma) {
@@ -1989,9 +1989,16 @@ BSTR teGetSearchText1(LPCITEMIDLIST pidl, BOOL bColumnFilter)
 												} else {
 													lstrcpy(&bsSearch[i], pszSearch);
 												}
-												for (LPWSTR pszSpace = &bsSearch[i]; pszSpace = StrChr(pszSpace, ' '); lstrcpy(pszSpace, &pszSpace[1]));
-												if (LPWSTR psz = StrChr(&bsSearch[i], '(')) {
-													psz[0] = NULL;
+												for (LPWSTR pszIn = &bsSearch[i], pszOut = pszIn;;) {
+													WCHAR wc = *pszIn++;
+													if (wc == ' ') {
+														continue;
+													}
+													if (!wc || wc == '(') {
+														*pszOut = NULL;
+														break;
+													}
+													*pszOut++ = tolower(wc);
 												}
 											}
 											if (pszComma) {
@@ -2945,7 +2952,7 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 			IQueryParserManager *pqpm = NULL;
 			if SUCCEEDED(teCreateInstance(CLSID_SearchFolderItemFactory, NULL, NULL, IID_PPV_ARGS(&psfif))) {
 				if SUCCEEDED(CoCreateInstance(__uuidof(QueryParserManager), NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pqpm))) {
-					if (pidl = teILCreateFromPath(bsPath3)) {
+					if (pidl = teSimpleILCreateFromPath(bsPath3)) {
 						teSysFreeString(&bsPath3);
 						IShellItem *psi = NULL;
 						if SUCCEEDED(SHCreateShellItem(NULL, NULL, pidl, &psi)) {
@@ -3120,6 +3127,14 @@ LPITEMIDLIST teILCreateFromPath0(LPWSTR pszPath, BOOL bForceLimit)
 
 LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath)
 {
+	return teILCreateFromPath0(pszPath, FALSE);
+}
+
+LPITEMIDLIST teSimpleILCreateFromPath(LPWSTR pszPath)
+{
+	if (teIsFileSystem(pszPath)) {
+		return teSHSimpleIDListFromPathEx(pszPath, FILE_ATTRIBUTE_DIRECTORY, 0, 0, NULL);
+	}
 	return teILCreateFromPath0(pszPath, FALSE);
 }
 
