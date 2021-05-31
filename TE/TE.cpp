@@ -9447,6 +9447,22 @@ VOID teApiGetWindowText(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 
 VOID teApiGetClassName(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
+	IUnknown *punk;
+	if (FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
+		IPersist *pPersist;
+		if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pPersist))) {
+			CLSID clsid;
+			HRESULT hr = pPersist->GetClassID(&clsid);
+			pPersist->Release();
+			if SUCCEEDED(hr) {
+				LPOLESTR lpsz;
+				StringFromCLSID(clsid, &lpsz);
+				teSetSZ(pVarResult, lpsz);
+				teCoTaskMemFree(lpsz);
+				return;
+			}
+		}
+	}
 	BSTR bsResult = ::SysAllocStringLen(NULL, MAX_CLASS_NAME);
 	int nLen = GetClassName(param[0].hwnd, bsResult, MAX_CLASS_NAME);
 	teSetBSTR(pVarResult, &bsResult, nLen);
@@ -12863,16 +12879,14 @@ BOOL CteShellBrowser::Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItem
 	CteFolderItem *pid = NULL;
 	if (pFolderItem) {
 		if SUCCEEDED(pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
-			if (!pid->m_pidl && !pid->m_pidlAlt) {
-				if (pid->m_v.vt == VT_BSTR) {
-					if ((tePathIsNetworkPath(pid->m_v.bstrVal) && tePathIsDirectory(pid->m_v.bstrVal, 100, 3) != S_OK) || (m_pShellView && pid->m_dwUnavailable)) {
-						if (m_nUnload || g_nLockUpdate <= 1) {
-							Navigate1Ex(pid->m_v.bstrVal, pFolderItems, wFlags, pPrevious, nErrorHandling);
-						} else {
-							m_nUnload = 9;
-						}
-						bResult = TRUE;
+			if (!pid->m_pidl && pid->m_v.vt == VT_BSTR && !pid->GetAlt()) {
+				if (tePathIsNetworkPath(pid->m_v.bstrVal) || (m_pShellView && pid->m_dwUnavailable)) {
+					if (m_nUnload || g_nLockUpdate <= 1) {
+						Navigate1Ex(pid->m_v.bstrVal, pFolderItems, wFlags, pPrevious, nErrorHandling);
+					} else {
+						m_nUnload = 9;
 					}
+					bResult = TRUE;
 				}
 			}
 			pid->Release();
