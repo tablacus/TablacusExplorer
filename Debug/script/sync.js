@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210531 ? te.Version : 20210531;
+		return te.Version < 20210601 ? te.Version : 20210601;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3011,6 +3011,16 @@ OpenInExplorer = function (pid1) {
 		const pid = pid1.FolderItem || pid1;
 		if (pid) {
 			const path = api.GetDisplayNameOf(pid, SHGDN_FORPARSING);
+			const res = IsSearchPath(path, true)
+			if (res) {
+				const exp = api.CreateObject("new:{C08AFD90-F2A1-11D1-8455-00A0C91F3880}");
+				exp.Navigate2(decodeURIComponent(res[2]));
+				exp.Visible = true;
+				setTimeout(function () {
+					exp.Document.FilterView(decodeURIComponent(res[1]));
+				}, 999);
+				return;
+			}
 			if (/^[A-Z]:\\|^\\\\\w|^::{/i.test(path)) {
 				api.CreateProcess(GetWindowsPath("explorer.exe") + " " + PathQuoteSpaces(path));
 				return;

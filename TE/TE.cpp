@@ -116,6 +116,7 @@ IUnknown	*g_pDraggingCtrl = NULL;
 IDataObject	*g_pDraggingItems = NULL;
 IDispatchEx *g_pCM = NULL;
 IServiceProvider *g_pSP = NULL;
+IQueryParser *g_pqp = NULL;
 ULONG_PTR g_Token;
 HHOOK	g_hHook;
 HHOOK	g_hMouseHook;
@@ -2949,44 +2950,70 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 		if (teIsSearchFolder(pszPath)) {
 			teGetSearchArg(&bsPath3, pszPath, L"&crumb=location:");
 			ISearchFolderItemFactory *psfif = NULL;
-			IQueryParserManager *pqpm = NULL;
 			if SUCCEEDED(teCreateInstance(CLSID_SearchFolderItemFactory, NULL, NULL, IID_PPV_ARGS(&psfif))) {
-				if SUCCEEDED(CoCreateInstance(__uuidof(QueryParserManager), NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pqpm))) {
-					if (pidl = teSimpleILCreateFromPath(bsPath3)) {
-						teSysFreeString(&bsPath3);
-						IShellItem *psi = NULL;
-						if SUCCEEDED(SHCreateShellItem(NULL, NULL, pidl, &psi)) {
-							teILFreeClear(&pidl);
-							IShellItemArray *psia;
-							if (
+				if (pidl = teSimpleILCreateFromPath(bsPath3)) {
+					teSysFreeString(&bsPath3);
+					IShellItem *psi = NULL;
+					if SUCCEEDED(SHCreateShellItem(NULL, NULL, pidl, &psi)) {
+						teILFreeClear(&pidl);
+						IShellItemArray *psia;
+						if (
 #ifdef _2000XP
-								_SHCreateShellItemArrayFromShellItem &&
+							_SHCreateShellItemArrayFromShellItem &&
 #endif
-								SUCCEEDED(_SHCreateShellItemArrayFromShellItem(psi, IID_PPV_ARGS(&psia)))) {
-								teGetSearchArg(&bsPath3, pszPath, L"crumb=");
-								psfif->SetScope(psia);
-								psia->Release();
-								IQueryParser *pqp;
-								if SUCCEEDED(pqpm->CreateLoadedParser(L"SystemIndex", LOCALE_USER_DEFAULT, IID_PPV_ARGS(&pqp))) {
-									IQuerySolution *pqs = NULL;
-									ICondition *pCondition;
-									if (SUCCEEDED(pqp->Parse(bsPath3, NULL, &pqs)) && SUCCEEDED(pqs->GetQuery(&pCondition, NULL))) {
-										psfif->SetDisplayName(bsPath3);
-										psfif->SetCondition(pCondition);
-										psfif->GetIDList(&pidl);
+							SUCCEEDED(_SHCreateShellItemArrayFromShellItem(psi, IID_PPV_ARGS(&psia)))) {
+							teGetSearchArg(&bsPath3, pszPath, L"crumb=");
+							psfif->SetDisplayName(bsPath3);
+							psfif->SetScope(psia);
+							psia->Release();
+							if (!g_pqp) {
+								IQueryParserManager *pqpm = NULL;
+								if SUCCEEDED(CoCreateInstance(__uuidof(QueryParserManager), NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pqpm))) {
+									if SUCCEEDED(pqpm->CreateLoadedParser(L"SystemIndex", MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL), IID_PPV_ARGS(&g_pqp))) {
+										pqpm->InitializeOptions(FALSE, TRUE, g_pqp);
+										pqpm->SetOption(QPMO_PRELOCALIZED_SCHEMA_BINARY_PATH, FALSE);
+										for (int i = 0; i < ARRAYSIZE(g_rgGenericProperties); ++i) {
+											PROPVARIANT propvar;
+											propvar.pwszVal = const_cast<LPWSTR>(g_rgGenericProperties[i].pszPropertyName);
+											propvar.vt = VT_LPWSTR;
+											g_pqp->SetMultiOption(SQMO_DEFAULT_PROPERTY, g_rgGenericProperties[i].pszSemanticType, &propvar);
+										}
 									}
-									pqp->Release();
-									teSysFreeString(&bsPath3);
-									SafeRelease(&pqs);
+									pqpm->Release();
 								}
 							}
-							SafeRelease(&psi);
-						} else {
-							teILFreeClear(&pidl);
+							if (g_pqp) {
+								IQuerySolution *pqs = NULL;
+								ICondition *pc, *pc1;
+								if (SUCCEEDED(g_pqp->Parse(bsPath3, NULL, &pqs)) && SUCCEEDED(pqs->GetQuery(&pc, NULL))) {
+									SYSTEMTIME st;
+									GetLocalTime(&st);
+									IConditionFactory2* pcf2;
+									if SUCCEEDED(pqs->QueryInterface(IID_PPV_ARGS(&pcf2))) {
+										ICondition2* pc2;
+										if SUCCEEDED(pcf2->ResolveCondition(pc, SQRO_DEFAULT, &st, IID_PPV_ARGS(&pc2))) {
+											psfif->SetCondition(pc2);
+											pc2->Release();
+										}
+										pcf2->Release();																	   
+									} else if SUCCEEDED(pqs->Resolve(pc, SQRO_DONT_SPLIT_WORDS, &st, &pc1)) {
+										psfif->SetCondition(pc1);
+										pc1->Release();
+									} else {
+										psfif->SetCondition(pc);
+									}
+									pc->Release();
+									psfif->GetIDList(&pidl);
+								}
+								teSysFreeString(&bsPath3);
+								SafeRelease(&pqs);
+							}
 						}
+						SafeRelease(&psi);
+					} else {
+						teILFreeClear(&pidl);
 					}
 				}
-				SafeRelease(&pqpm);
 			}
 			SafeRelease(&psfif);
 		} else if (tePathMatchSpec(pszPath, L"*\\..\\*;*\\..;*\\.\\*;*\\.;*%*%*")) {
@@ -11968,6 +11995,7 @@ function _c(s) {\
 #endif
 		pGlobalInterfaceTable->RevokeInterfaceFromGlobal(g_dwCookieJS);
 		pGlobalInterfaceTable->Release();
+		SafeRelease(&g_pqp);
 		SafeRelease(&g_pJS);
 		SafeRelease(&g_pAutomation);
 		SafeRelease(&g_pDropTargetHelper);
@@ -12880,7 +12908,7 @@ BOOL CteShellBrowser::Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItem
 	if (pFolderItem) {
 		if SUCCEEDED(pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
 			if (!pid->m_pidl && pid->m_v.vt == VT_BSTR && !pid->GetAlt()) {
-				if (tePathIsNetworkPath(pid->m_v.bstrVal) || (m_pShellView && pid->m_dwUnavailable)) {
+				if ((tePathIsNetworkPath(pid->m_v.bstrVal) && tePathIsDirectory(pid->m_v.bstrVal, 100, 3) != S_OK) || (m_pShellView && pid->m_dwUnavailable)) {
 					if (m_nUnload || g_nLockUpdate <= 1) {
 						Navigate1Ex(pid->m_v.bstrVal, pFolderItems, wFlags, pPrevious, nErrorHandling);
 					} else {
@@ -16255,17 +16283,15 @@ HRESULT CteShellBrowser::Search(LPWSTR pszSearch) {
 				}
 			}
 		}
-		BSTR bsSearch = NULL;
-		teCreateSearchPath(&bsSearch, bsPath, pszSearch);
+		VARIANT v;
+		v.vt = VT_BSTR;
+		v.bstrVal = NULL;
+		teCreateSearchPath(&v.bstrVal, bsPath, pszSearch);
 		teSysFreeString(&bsPath);
-		LPITEMIDLIST pidl = teILCreateFromPath(bsSearch);
-		teSysFreeString(&bsSearch);
-		if (pidl) {
-			if (!ILIsEqual(m_pidl, pidl)) {
-				BrowseObject(pidl, SBSP_SAMEBROWSER);
-			}
-			teILFreeClear(&pidl);
-		}
+		CteFolderItem *pid = new CteFolderItem(&v);
+		VariantClear(&v);
+		BrowseObject2(pid, SBSP_SAMEBROWSER);
+		pid->Release();
 		return S_OK;
 	}
 	return E_NOTIMPL;

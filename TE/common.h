@@ -637,6 +637,20 @@ struct TESortColumns
 	DWORD dwSessionId;
 };
 
+struct
+{
+	PCWSTR pszPropertyName;
+	PCWSTR pszSemanticType;
+}
+const g_rgGenericProperties[] =
+{
+	{ L"System.Generic.String",          L"System.StructuredQueryType.String" },
+	{ L"System.Generic.Integer",         L"System.StructuredQueryType.Integer" },
+	{ L"System.Generic.DateTime",        L"System.StructuredQueryType.DateTime" },
+	{ L"System.Generic.Boolean",         L"System.StructuredQueryType.Boolean" },
+	{ L"System.Generic.FloatingPoint",   L"System.StructuredQueryType.FloatingPoint" }
+};
+
 typedef struct _REPARSE_DATA_BUFFER {
 	ULONG  ReparseTag;
 	USHORT ReparseDataLength;
