@@ -996,6 +996,7 @@ TEmethod methodFI[] = {
 //	{ 4, "FocusedItem" },
 	{ 5, "Unavailable" },
 	{ 6, "Enum" },
+	{ 7, "Id" },
 	{ 9, "_BLOB" },	//To be necessary
 	{ 9, "FolderItem" }, // Reserved future
 	{ 0, NULL }

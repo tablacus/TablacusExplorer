@@ -436,6 +436,7 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define CTRL_TC    0x30000
 #define CTRL_TV    0x40000
 #define CTRL_DT    0x80000
+#define CTRL_FI    0xF0000
 
 #define TE_VT 24
 #define TE_VI 0xffffff

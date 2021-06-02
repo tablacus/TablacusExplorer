@@ -2631,13 +2631,10 @@ te.OnReplacePath = function (Ctrl, Path) {
 	return RunEvent4("ReplacePath", Ctrl, Path);
 }
 
-te.OnGetAlt = function (dwSessionId, s) {
-	const cFV = te.Ctrls(CTRL_FV);
-	for (let i in cFV) {
-		const FV = cFV[i];
-		if (dwSessionId == FV.SessionId) {
-			return BuildPath(FV.FolderItem.Path, GetFileName(s));
-		}
+te.OnGetAlt = function (SessionId, s) {
+	const pid = te.Ctrl(CTRL_FI, SessionId);
+	if (pid) {
+		return BuildPath(pid.Path, GetFileName(s));
 	}
 }
 

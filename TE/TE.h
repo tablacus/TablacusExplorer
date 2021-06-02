@@ -59,9 +59,9 @@ public:
 	int				m_nSelected;
 	BOOL			m_bStrict;
 	DWORD			m_dwUnavailable;
+	DWORD			m_dwSessionId;
 private:
 	LONG			m_cRef;
-	DWORD			m_dwSessionId;
 	DISPID			m_dispExtendedProperty;
 };
 
@@ -611,7 +611,6 @@ public:
 	DWORD		m_param[SB_Count];
 	DWORD		m_nOpenedType;
 	DWORD		m_dwCookie;
-	DWORD		m_dwSessionId;
 	DWORD		m_dwTickNotify;
 	COLORREF	m_clrBk, m_clrTextBk, m_clrText;
 	DISPID      m_dispidSortColumns;
