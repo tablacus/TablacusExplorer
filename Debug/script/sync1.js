@@ -2594,6 +2594,13 @@ te.OnILGetParent = function (FolderItem) {
 	if (r !== void 0) {
 		return r;
 	}
+	if (FolderItem.Unavailable) {
+		const path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
+		if (/^[A-Z]:\\/i.test(path)) {
+			return api.PathIsNetworkPath(path) ? ssfDRIVES : GetParentFolderName(path) || ssfDRIVES;
+		}
+		return /^\\\\\w/i.test(path) ? ssfNETWORK : ssfDESKTOP;
+	}
 	const res = IsSearchPath(FolderItem);
 	if (res) {
 		const pid = api.ILRemoveLastID(FolderItem);
@@ -2601,14 +2608,6 @@ te.OnILGetParent = function (FolderItem) {
 		if ((res1 && !res1[1]) || api.ILIsEmpty(pid)) {
 			return decodeURIComponent(res[1]);
 		}
-	}
-	if (api.ILIsEqual(FolderItem.Alt, ssfRESULTSFOLDER)) {
-		const path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
-		const ar = path.split && path.slice(3).split("\\") || [];
-		if (ar.pop() && ar.join("\\")) {
-			return path.slice(0, 3) + ar.join("\\");
-		}
-		return /^[A-Z]:\\/i.test(path) ? ssfDRIVES : /^\\\\\w/i.test(path) ? ssfNETWORK : ssfDESKTOP;
 	}
 }
 

@@ -3807,23 +3807,24 @@ BOOL teILIsEqual(IUnknown *punk1, IUnknown *punk2)
 {
 	BOOL bResult = FALSE;
 	if (punk1 && punk2) {
-		LPITEMIDLIST pidl1, pidl2;
-		if (teGetIDListFromObject(punk1, &pidl1)) {
-			if (teGetIDListFromObject(punk2, &pidl2)) {
-				BSTR bs1, bs2;
-				teGetPath(&bs1, punk1);
-				teGetPath(&bs2, punk2);
-				if (::ILIsEqual(pidl1, g_pidls[CSIDL_RESULTSFOLDER]) || ILIsEmpty(pidl1) || teIsSearchFolder(bs1) || teIsSearchFolder(bs2)) {
-					bResult = lstrcmpi(bs1, bs2) == 0;
-				} else {
-					bResult = ::ILIsEqual(pidl1, pidl2);
+		BSTR bs1, bs2;
+		teGetPath(&bs1, punk1);
+		teGetPath(&bs2, punk2);
+		bResult = lstrcmpi(bs1, bs2) == 0;
+		if (bResult && !teIsSearchFolder(bs1) && !teIsSearchFolder(bs2)) {
+			LPITEMIDLIST pidl1, pidl2;
+			if (teGetIDListFromObject(punk1, &pidl1)) {
+				if (!ILIsEmpty(pidl1) && !::ILIsEqual(pidl1, g_pidls[CSIDL_RESULTSFOLDER])) {
+					if (teGetIDListFromObject(punk2, &pidl2)) {
+						bResult = ::ILIsEqual(pidl1, pidl2);
+						teCoTaskMemFree(pidl2);
+					}
 				}
-				teSysFreeString(&bs2);
-				teSysFreeString(&bs1);
-				teCoTaskMemFree(pidl2);
+				teCoTaskMemFree(pidl1);
 			}
-			teCoTaskMemFree(pidl1);
 		}
+		teSysFreeString(&bs2);
+		teSysFreeString(&bs1);
 	}
 	return bResult;
 }
@@ -7611,8 +7612,8 @@ VOID teApiILFindLastID(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIAN
 VOID teApiILIsEmpty(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	FolderItem *pid1, *pid2;
-	GetFolderItemFromVariant(&pid1, &pDispParams->rgvarg[nArg]);
-	GetFolderItemFromIDList(&pid2, g_pidls[CSIDL_DESKTOP]);
+	GetFolderItemFromIDList(&pid1, g_pidls[CSIDL_DESKTOP]);
+	GetFolderItemFromVariant(&pid2, &pDispParams->rgvarg[nArg]);
 	teSetBool(pVarResult, teILIsEqual(pid1, pid2));
 	pid2->Release();
 	pid1->Release();
@@ -15439,6 +15440,9 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 		case TE_METHOD + 0xf501://AddItem
 			if (nArg >= 0) {
 				if (nArg >= 1) {
+					if (!m_pFolderItem) {
+						return E_ACCESSDENIED;
+					}
 					CteFolderItem *pid1;
 					teQueryFolderItem(&m_pFolderItem, &pid1);
 					DWORD dwSessionId = pid1->m_dwSessionId;
@@ -23293,11 +23297,11 @@ LPITEMIDLIST CteFolderItem::GetPidl()
 					}
 				}
 			}
-			if (!teGetIDListFromVariant(&m_pidl, &m_v)) {
+			if (m_dwUnavailable || !teGetIDListFromVariant(&m_pidl, &m_v)) {
 				if (m_v.vt == VT_BSTR) {
 					m_pidl = teSHSimpleIDListFromPathEx(m_v.bstrVal, FILE_ATTRIBUTE_HIDDEN, -1, -1, NULL);
 				}
-				if (!m_pidlAlt) {
+				if (!m_pidlAlt && !m_dwUnavailable) {
 					m_dwUnavailable = GetTickCount();
 				}
 			}
