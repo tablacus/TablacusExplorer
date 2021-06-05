@@ -210,7 +210,7 @@ VOID CALLBACK teTimerProcParse(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 VOID CALLBACK teTimerProcForTree(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime);
 static void threadParseDisplayName(void *args);
 LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath);
-LPITEMIDLIST teSimpleILCreateFromPath(LPWSTR pszPath);
+BOOL teCreateItemFromPath(LPWSTR pszPath, IShellItem **ppSI);
 int teGetModuleFileName(HMODULE hModule, BSTR *pbsPath);
 BOOL GetVarArrayFromIDList(VARIANT *pv, LPITEMIDLIST pidl);
 HRESULT teGetDisplayNameFromIDList(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags);
@@ -222,6 +222,7 @@ HRESULT teExecMethod(IDispatch *pdisp, LPOLESTR sz, VARIANT *pvResult, int nArg,
 VOID Invoke4(IDispatch *pdisp, VARIANT *pvResult, int nArgs, VARIANTARG *pvArgs);
 int teGetObjectLength(IDispatch *pdisp);
 BOOL teILIsSearchFolder(LPCITEMIDLIST pidl);
+BOOL teIsFileSystem(LPOLESTR pszPath);
 
 //Unit
 
@@ -1144,7 +1145,7 @@ VOID teRegister()
 				pSW->Register(g_pWebBrowser->m_pWebBrowser, HandleToLong(g_hwndMain), SWC_3RDPARTY, &g_lSWCookie);
 				BSTR bsPath;
 				teGetModuleFileName(NULL, &bsPath);//Executable Path
-				LPITEMIDLIST pidl = SHSimpleIDListFromPath(bsPath);
+				LPITEMIDLIST pidl = ::SHSimpleIDListFromPath(bsPath);
 				VARIANT v;
 				if (GetVarArrayFromIDList(&v, pidl)) {
 #ifdef _DEBUG
@@ -1488,6 +1489,9 @@ BOOL GetShellFolder(IShellFolder **ppSF, LPCITEMIDLIST pidl)
 
 LPITEMIDLIST teSHSimpleIDListFromPathEx(LPWSTR lpstr, DWORD dwAttr, DWORD nSizeLow, DWORD nSizeHigh, FILETIME *pft)
 {
+	if (!teIsFileSystem(lpstr)) {
+		return teIsSearchFolder(lpstr) ? NULL : ::SHSimpleIDListFromPath(lpstr);
+	}
 	LPITEMIDLIST pidl = NULL;
 	IBindCtx *pbc = NULL;
 	ULONG chEaten;
@@ -1814,6 +1818,13 @@ LPITEMIDLIST teILCreateFromPathEx(LPWSTR pszPath)
 		SafeRelease(&pbc);
 		pSF->Release();
 	}
+#ifdef _DEBUG
+	if (g_dwMainThreadId == GetCurrentThreadId()) {
+		if (teStartsText(L"\\\\", pszPath)) {
+			Sleep(0);
+		}
+	}
+#endif
 	return pidl;
 }
 
@@ -2089,7 +2100,7 @@ HRESULT teGetDisplayNameFromIDList(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags)
 					if (uFlags & SHGDN_FORPARSINGEX) {
 						BOOL bSpecial = FALSE;
 						if (teIsFileSystem(*pbs)) {
-							LPITEMIDLIST pidl2 = SHSimpleIDListFromPath(*pbs);
+							LPITEMIDLIST pidl2 = ::SHSimpleIDListFromPath(*pbs);
 							if (!ILIsEqual(pidl, pidl2)) {
 								teILFreeClear(&pidl2);
 								int n;
@@ -2184,7 +2195,7 @@ void GetVarPathFromIDList(VARIANT *pVarResult, LPITEMIDLIST pidl, int uFlags)
 	if (uFlags & SHGDN_FORPARSINGEX) {
 		for (i = 0; i < MAX_CSIDL; ++i) {
 			if (g_pidls[i] && ::ILIsEqual(pidl, g_pidls[i])) {
-				LPITEMIDLIST pidl2 = SHSimpleIDListFromPath(g_bsPidls[i]);
+				LPITEMIDLIST pidl2 = ::SHSimpleIDListFromPath(g_bsPidls[i]);
 				if (!::ILIsEqual(pidl, pidl2)) {
 					teSetLong(pVarResult, i);
 				}
@@ -2951,72 +2962,71 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 			teGetSearchArg(&bsPath3, pszPath, L"&crumb=location:");
 			ISearchFolderItemFactory *psfif = NULL;
 			if SUCCEEDED(teCreateInstance(CLSID_SearchFolderItemFactory, NULL, NULL, IID_PPV_ARGS(&psfif))) {
-				if (pidl = teSimpleILCreateFromPath(bsPath3)) {
+				IShellItem *psi = NULL;
+				if (teCreateItemFromPath(bsPath3, &psi)) {
 					teSysFreeString(&bsPath3);
-					IShellItem *psi = NULL;
-					if SUCCEEDED(_SHCreateItemFromIDList(pidl, IID_PPV_ARGS(&psi))) {
-						teILFreeClear(&pidl);
-						IShellItemArray *psia;
-						if (
+					IShellItemArray *psia;
+					if (
 #ifdef _2000XP
-							_SHCreateShellItemArrayFromShellItem &&
+						_SHCreateShellItemArrayFromShellItem &&
 #endif
-							SUCCEEDED(_SHCreateShellItemArrayFromShellItem(psi, IID_PPV_ARGS(&psia)))) {
-							teGetSearchArg(&bsPath3, pszPath, L"crumb=");
-							psfif->SetDisplayName(bsPath3);
-							psfif->SetScope(psia);
-							psia->Release();
-							if (!g_pqp) {
-								IQueryParserManager *pqpm = NULL;
-								if SUCCEEDED(CoCreateInstance(__uuidof(QueryParserManager), NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pqpm))) {
-									if SUCCEEDED(pqpm->CreateLoadedParser(L"SystemIndex", MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL), IID_PPV_ARGS(&g_pqp))) {
-										pqpm->InitializeOptions(FALSE, TRUE, g_pqp);
-										pqpm->SetOption(QPMO_PRELOCALIZED_SCHEMA_BINARY_PATH, FALSE);
-										for (int i = 0; i < ARRAYSIZE(g_rgGenericProperties); ++i) {
-											PROPVARIANT propvar;
-											propvar.pwszVal = const_cast<LPWSTR>(g_rgGenericProperties[i].pszPropertyName);
-											propvar.vt = VT_LPWSTR;
-											g_pqp->SetMultiOption(SQMO_DEFAULT_PROPERTY, g_rgGenericProperties[i].pszSemanticType, &propvar);
-										}
+						SUCCEEDED(_SHCreateShellItemArrayFromShellItem(psi, IID_PPV_ARGS(&psia)))) {
+						psfif->SetScope(psia);
+						psia->Release();
+						teGetSearchArg(&bsPath3, pszPath, L"crumb=");
+						psfif->SetDisplayName(bsPath3);
+						if (!g_pqp) {
+							IQueryParserManager *pqpm = NULL;
+							if SUCCEEDED(CoCreateInstance(__uuidof(QueryParserManager), NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pqpm))) {
+								if SUCCEEDED(pqpm->CreateLoadedParser(L"SystemIndex", MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL), IID_PPV_ARGS(&g_pqp))) {
+									pqpm->InitializeOptions(FALSE, TRUE, g_pqp);
+									pqpm->SetOption(QPMO_PRELOCALIZED_SCHEMA_BINARY_PATH, FALSE);
+									for (int i = 0; i < ARRAYSIZE(g_rgGenericProperties); ++i) {
+										PROPVARIANT propvar;
+										propvar.pwszVal = const_cast<LPWSTR>(g_rgGenericProperties[i].pszPropertyName);
+										propvar.vt = VT_LPWSTR;
+										g_pqp->SetMultiOption(SQMO_DEFAULT_PROPERTY, g_rgGenericProperties[i].pszSemanticType, &propvar);
 									}
-									pqpm->Release();
 								}
-							}
-							if (g_pqp) {
-								IQuerySolution *pqs = NULL;
-								ICondition *pc, *pc1;
-								if (SUCCEEDED(g_pqp->Parse(bsPath3, NULL, &pqs)) && SUCCEEDED(pqs->GetQuery(&pc, NULL))) {
-									SYSTEMTIME st;
-									GetLocalTime(&st);
-									IConditionFactory2* pcf2;
-									if SUCCEEDED(pqs->QueryInterface(IID_PPV_ARGS(&pcf2))) {
-										ICondition2* pc2;
-										if SUCCEEDED(pcf2->ResolveCondition(pc, SQRO_DEFAULT, &st, IID_PPV_ARGS(&pc2))) {
-											psfif->SetCondition(pc2);
-											pc2->Release();
-										}
-										pcf2->Release();																	   
-									} else if SUCCEEDED(pqs->Resolve(pc, SQRO_DONT_SPLIT_WORDS, &st, &pc1)) {
-										psfif->SetCondition(pc1);
-										pc1->Release();
-									} else {
-										psfif->SetCondition(pc);
-									}
-									pc->Release();
-									psfif->GetIDList(&pidl);
-								}
-								teSysFreeString(&bsPath3);
-								SafeRelease(&pqs);
+								pqpm->Release();
 							}
 						}
-						SafeRelease(&psi);
-					} else {
-						teILFreeClear(&pidl);
+						if (g_pqp) {
+							IQuerySolution *pqs = NULL;
+							ICondition *pc, *pc1;
+							if (SUCCEEDED(g_pqp->Parse(bsPath3, NULL, &pqs)) && SUCCEEDED(pqs->GetQuery(&pc, NULL))) {
+								SYSTEMTIME st;
+								GetLocalTime(&st);
+								IConditionFactory2* pcf2;
+								if SUCCEEDED(pqs->QueryInterface(IID_PPV_ARGS(&pcf2))) {
+									ICondition2* pc2;
+									if SUCCEEDED(pcf2->ResolveCondition(pc, SQRO_DEFAULT, &st, IID_PPV_ARGS(&pc2))) {
+										psfif->SetCondition(pc2);
+										pc2->Release();
+									}
+									pcf2->Release();																	   
+								} else if SUCCEEDED(pqs->Resolve(pc, SQRO_DONT_SPLIT_WORDS, &st, &pc1)) {
+									psfif->SetCondition(pc1);
+									pc1->Release();
+								} else {
+									psfif->SetCondition(pc);
+								}
+								pc->Release();
+								psfif->GetIDList(&pidl);
+							}
+							teSysFreeString(&bsPath3);
+							SafeRelease(&pqs);
+						}
 					}
+					SafeRelease(&psi);
 				}
 			}
 			SafeRelease(&psfif);
-		} else if (tePathMatchSpec(pszPath, L"*\\..\\*;*\\..;*\\.\\*;*\\.;*%*%*")) {
+			teSysFreeString(&bsPath3);
+			teSysFreeString(&bsPath2);
+			return pidl;
+		}
+		if (tePathMatchSpec(pszPath, L"*\\..\\*;*\\..;*\\.\\*;*\\.;*%*%*")) {
 			DWORD dwLen = lstrlen(pszPath) + MAX_PATH;
 			bsPath3 = ::SysAllocStringLen(NULL, dwLen);
 			if (PathSearchAndQualify(pszPath, bsPath3, dwLen)) {
@@ -3135,11 +3145,8 @@ LPITEMIDLIST teILCreateFromPath0(LPWSTR pszPath, BOOL bForceLimit)
 		LPITEMIDLIST pidl = NULL;
 		if (_beginthread(&threadILCreate, 0, pILC) != -1) {
 			if (WaitForSingleObject(pILC->hEvent, dwms) != WAIT_TIMEOUT) {
-				pidl = pILC->pidlResult;
-				if (pidl) {
+				if (pidl = pILC->pidlResult) {
 					pILC->pidlResult = NULL;
-				} else {
-					pidl = teILCreateFromPath1(pszPath);
 				}
 			}
 		} else {
@@ -3156,7 +3163,7 @@ LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath)
 {
 	return teILCreateFromPath0(pszPath, FALSE);
 }
-
+/*
 LPITEMIDLIST teSimpleILCreateFromPath(LPWSTR pszPath)
 {
 	if (teIsFileSystem(pszPath)) {
@@ -3164,7 +3171,7 @@ LPITEMIDLIST teSimpleILCreateFromPath(LPWSTR pszPath)
 	}
 	return teILCreateFromPath(pszPath);
 }
-
+*/
 BOOL teCreateItemFromPath(LPWSTR pszPath, IShellItem **ppSI)
 {
 	BOOL Result = FALSE;
@@ -3807,24 +3814,40 @@ BOOL teILIsEqual(IUnknown *punk1, IUnknown *punk2)
 {
 	BOOL bResult = FALSE;
 	if (punk1 && punk2) {
-		BSTR bs1, bs2;
-		teGetPath(&bs1, punk1);
-		teGetPath(&bs2, punk2);
-		bResult = lstrcmpi(bs1, bs2) == 0;
-		if (bResult && !teIsSearchFolder(bs1) && !teIsSearchFolder(bs2)) {
-			LPITEMIDLIST pidl1, pidl2;
-			if (teGetIDListFromObject(punk1, &pidl1)) {
-				if (!ILIsEmpty(pidl1) && !::ILIsEqual(pidl1, g_pidls[CSIDL_RESULTSFOLDER])) {
-					if (teGetIDListFromObject(punk2, &pidl2)) {
-						bResult = ::ILIsEqual(pidl1, pidl2);
-						teCoTaskMemFree(pidl2);
-					}
-				}
-				teCoTaskMemFree(pidl1);
-			}
+		LPITEMIDLIST pidl1 = NULL, pidl2 = NULL;
+		DWORD dwUnavailable = 0;
+		CteFolderItem *pid;
+		if SUCCEEDED(punk1->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
+			pidl1 = pid->m_pidl;
+			dwUnavailable = pid->m_dwUnavailable;
+			pid->Release();
 		}
-		teSysFreeString(&bs2);
-		teSysFreeString(&bs1);
+		if SUCCEEDED(punk2->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
+			pidl2 = pid->m_pidl;
+			dwUnavailable |= pid->m_dwUnavailable;
+			pid->Release();
+		}
+		if (pidl1 && pidl2 && !ILIsEqual(pidl1, g_pidls[CSIDL_RESULTSFOLDER])) {
+			bResult = ::ILIsEqual(pidl1, pidl2);
+		} else {
+			BSTR bs1, bs2;
+			teGetPath(&bs1, punk1);
+			teGetPath(&bs2, punk2);
+			bResult = lstrcmpi(bs1, bs2) == 0;
+			if (bResult && !dwUnavailable) {
+				pidl1 = ::ILClone(pidl1);
+				if (pidl1 || teGetIDListFromObject(punk1, &pidl1)) {
+					pidl2 = ::ILClone(pidl2);
+					if (pidl2 || teGetIDListFromObject(punk2, &pidl2)) {
+						bResult = ::ILIsEqual(pidl1, pidl2);
+					}
+					teILFreeClear(&pidl2);
+				}
+				teILFreeClear(&pidl1);
+			}
+			teSysFreeString(&bs2);
+			teSysFreeString(&bs1);
+		}
 	}
 	return bResult;
 }
@@ -3987,7 +4010,7 @@ BOOL teCreateItemFromVariant(VARIANT *pv, IShellItem **ppSI)
 {
 	BOOL Result = FALSE;
 	LPITEMIDLIST pidl = NULL;
-	if (teGetIDListFromVariant(&pidl, pv)) {
+	if (teGetIDListFromVariant(&pidl, pv, TRUE)) {
 		Result = SUCCEEDED(_SHCreateItemFromIDList(pidl, IID_PPV_ARGS(ppSI)));
 	}
 	teILFreeClear(&pidl);
@@ -7057,7 +7080,7 @@ VOID teGetDisplayNameOf(VARIANT *pv, int uFlags, VARIANT *pVarResult)
 			}
 		}
 		LPITEMIDLIST pidl;
-		if (teGetIDListFromVariant(&pidl, pv)) {
+		if (teGetIDListFromVariant(&pidl, pv, TRUE)) {
 			GetVarPathFromIDList(pVarResult, pidl, uFlags);
 			teCoTaskMemFree(pidl);
 		}
@@ -13932,11 +13955,12 @@ VOID CteShellBrowser::SetFolderSize(IShellFolder2 *pSF2, LPCITEMIDLIST pidl, LPW
 				tePutProperty(m_ppDispatch[SB_TotalFileSize], bsPath, &v);
 				TEFS *pFS = new TEFS[1];
 				pFS->bsPath = ::SysAllocString(bsPath);
-				CteFolderItem *pid1;
-				teQueryFolderItem(&m_pFolderItem, &pid1);
-				pFS->pdwSessionId = &pid1->m_dwSessionId;
-				pFS->dwSessionId = pid1->m_dwSessionId;
-				pid1->Release();
+				CteFolderItem *pid;
+				if SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
+					pFS->pdwSessionId = &pid->m_dwSessionId;
+					pFS->dwSessionId = pid->m_dwSessionId;
+					pid->Release();
+				}
 				pFS->hwnd = m_hwndLV;
 				CoMarshalInterThreadInterfaceInStream(IID_IDispatch, m_ppDispatch[SB_TotalFileSize], &pFS->pStrmTotalFileSize);
 				PushFolderSizeList(pFS);
@@ -15249,15 +15273,10 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			if (nArg >= 0) {
 				FolderItem *pid = NULL;
 				GetFolderItemFromVariant(&pid, &pDispParams->rgvarg[nArg]);
-				if (pid && m_pFolderItem) {
-					m_pFolderItem->Release();
-					m_pFolderItem = pid;
-					if (ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
-						teILFreeClear(&m_pidl);
-						teGetIDListFromObject(m_pFolderItem, &m_pidl);
-					}
+				if (pid) {
+					BrowseObject2(pid, SBSP_SAMEBROWSER);
+					pid->Release();
 				}
-				Refresh(FALSE);
 			}
 			return S_OK;
 
@@ -15443,10 +15462,12 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					if (!m_pFolderItem) {
 						return E_ACCESSDENIED;
 					}
-					CteFolderItem *pid1;
-					teQueryFolderItem(&m_pFolderItem, &pid1);
-					DWORD dwSessionId = pid1->m_dwSessionId;
-					pid1->Release();
+					DWORD dwSessionId = 0;
+					CteFolderItem *pid;
+					if SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
+						dwSessionId = pid->m_dwSessionId;
+						pid->Release();
+					}
 					if (dwSessionId != GetIntFromVariant(&pDispParams->rgvarg[0])) {
 						return E_ACCESSDENIED;
 					}
@@ -15507,10 +15528,11 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 					CoMarshalInterThreadInterfaceInStream(IID_IDispatch, pdisp, &pAddItems->pStrmArray);
 					pdisp->Release();
 					pAddItems->pv = GetNewVARIANT(2);
-					CteFolderItem *pid1;
-					teQueryFolderItem(&m_pFolderItem, &pid1);
-					teSetLong(&pAddItems->pv[0], pid1->m_dwSessionId);
-					pid1->Release();
+					CteFolderItem *pid;
+					if SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
+						teSetLong(&pAddItems->pv[0], pid->m_dwSessionId);
+						pid->Release();
+					}
 					pAddItems->bDeleted = nArg >= 1 && GetBoolFromVariant(&pDispParams->rgvarg[nArg - 1]);
 					pAddItems->bNavigateComplete = FALSE;
 					pAddItems->pStrmOnCompleted = NULL;
@@ -16503,10 +16525,11 @@ HRESULT CteShellBrowser::RemoveAll()
 		IFolderView2 *pFV2 = NULL;
 		IResultsFolder *pRF;
 		m_nGroupByDelay = 1;
-		CteFolderItem *pid1;
-		teQueryFolderItem(&m_pFolderItem, &pid1);
-		pid1->m_dwSessionId = MAKELONG(GetTickCount(), rand());
-		pid1->Release();
+		CteFolderItem *pid;
+		if SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
+			pid->m_dwSessionId = MAKELONG(GetTickCount(), rand());
+			pid->Release();
+		}
 		if (SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) && SUCCEEDED(pFV2->GetFolder(IID_PPV_ARGS(&pRF)))) {
 			hr = pRF->RemoveAll();
 			pRF->Release();
@@ -23297,7 +23320,7 @@ LPITEMIDLIST CteFolderItem::GetPidl()
 					}
 				}
 			}
-			if (m_dwUnavailable || !teGetIDListFromVariant(&m_pidl, &m_v)) {
+			if (m_dwUnavailable || !teGetIDListFromVariant(&m_pidl, &m_v, TRUE)) {
 				if (m_v.vt == VT_BSTR) {
 					m_pidl = teSHSimpleIDListFromPathEx(m_v.bstrVal, FILE_ATTRIBUTE_HIDDEN, -1, -1, NULL);
 				}

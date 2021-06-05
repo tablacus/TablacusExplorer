@@ -39,11 +39,7 @@ img {
 	border: none;
 }
 
-img.button, img.button1 {
-	box-sizing: content-box;
-}
-
-img.hoverbutton, img.activebutton {
+img.button, img.button1, img.hoverbutton, img.activebutton {
 	box-sizing: content-box;
 }
 
@@ -253,6 +249,7 @@ a.treebutton:hover {
 
 .fonticon {
 	cursor: default;
+	vertical-align: middle;
 }
 
 .drive {
@@ -318,10 +315,6 @@ a.treebutton:hover {
 }
 
 .activecaption {
-  color: captiontext;
-  background-color: activecaption;
-}
-
-.fonticon {
-   vertical-align: middle;
+	color: captiontext;
+	background-color: activecaption;
 }

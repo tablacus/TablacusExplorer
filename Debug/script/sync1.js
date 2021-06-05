@@ -3620,7 +3620,7 @@ if (!te.Data) {
 	te.Data.Tree_Width = 200;
 	te.Data.Tree_Style = NSTCS_HASEXPANDOS | NSTCS_SHOWSELECTIONALWAYS | NSTCS_HASLINES | NSTCS_BORDER | NSTCS_NOINFOTIP | NSTCS_HORIZONTALSCROLL;
 	te.Data.Tree_EnumFlags = SHCONTF_FOLDERS;
-	te.Data.Tree_RootStyle = NSTCRS_VISIBLE | NSTCRS_EXPANDED;
+	te.Data.Tree_RootStyle = NSTCRS_EXPANDED;
 	te.Data.Tree_Root = 0;
 
 	te.Data.Conf_TabDefault = true;
