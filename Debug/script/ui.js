@@ -217,9 +217,9 @@ OpenHttpRequest = async function (url, alt, fn, arg) {
 	const xhr = await createHttpRequest();
 	const fnLoaded = async function () {
 		if (fn) {
-			CalcRef(arg && await arg.pcRef, 0, -1);
 			if (await xhr.status == 200) {
 				if (fn) {
+					CalcRef(arg && await arg.pcRef, 0, -1);
 					if ("string" === typeof fn) {
 						InvokeUI(fn, [xhr, url, arg]);
 					} else {
@@ -230,6 +230,7 @@ OpenHttpRequest = async function (url, alt, fn, arg) {
 				return;
 			}
 			if (/^http/.test(alt)) {
+				CalcRef(arg && await arg.pcRef, 0, -1);
 				OpenHttpRequest(/^https/.test(url) && alt == "http" ? url.replace(/^https/, alt) : alt, '', fn, arg);
 				return;
 			}

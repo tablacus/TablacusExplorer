@@ -3308,7 +3308,7 @@ CreateUpdater = function (arg) {
 };
 
 UpdateAndReload = function (arg) {
-	if (arg.pcRef && arg.pcRef[0]) {
+	if (arg.pcRef && arg.pcRef[0] > 0) {
 		if (!arg.tm || new Date().getTime() < arg.tm) {
 			setTimeout(UpdateAndReload, 999, arg);
 			return;

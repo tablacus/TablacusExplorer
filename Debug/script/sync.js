@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210605 ? te.Version : 20210605;
+		return te.Version < 20210607 ? te.Version : 20210607;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3010,7 +3010,7 @@ OpenInExplorer = function (pid1) {
 		CancelWindowRegistered();
 		const pid = pid1.FolderItem || pid1;
 		if (pid) {
-			const path = api.GetDisplayNameOf(pid, SHGDN_FORPARSING);
+			const path = api.ILIsEmpty(pid) ? "shell:Desktop" : api.GetDisplayNameOf(pid, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
 			const res = IsSearchPath(path, true)
 			if (res) {
 				const exp = api.CreateObject("new:{C08AFD90-F2A1-11D1-8455-00A0C91F3880}");

@@ -5630,12 +5630,12 @@ LRESULT CALLBACK MenuGMProc(int nCode, WPARAM wParam, LPARAM lParam)
 	LRESULT lResult = 1;
 	if (nCode >= 0) {
 		if (nCode == HC_ACTION) {
-			MSG *msg = (MSG *)lParam;
+			WCHAR pszNum[99];
+			swprintf_s(pszNum, 99, L"%x\n", wParam);
+			::OutputDebugString(pszNum);
+/*			CWPRETSTRUCT *msg = (CWPRETSTRUCT *)lParam;
 			if(msg) {
-				WCHAR pszNum[99];
-				swprintf_s(pszNum, 99, L"%x\n", msg->message);
-//				::OutputDebugString(pszNum);
-			}
+			}*/
 		}
 	}
 	return lResult ? CallNextHookEx(g_hMenuGMHook, nCode, wParam, lParam) : TRUE;
@@ -8843,7 +8843,7 @@ VOID teApiTrackPopupMenuEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 	}
 	g_hMenuKeyHook = SetWindowsHookEx(WH_KEYBOARD, (HOOKPROC)MenuKeyProc, hInst, g_dwMainThreadId);
 #ifdef _DEBUG
-	g_hMenuGMHook = SetWindowsHookEx(WH_GETMESSAGE, (HOOKPROC)MenuGMProc, NULL, g_dwMainThreadId);
+	g_hMenuGMHook = SetWindowsHookEx(WH_DEBUG, (HOOKPROC)MenuGMProc, NULL, g_dwMainThreadId);
 #endif
 	teSetLong(pVarResult, TrackPopupMenuEx(param[0].hmenu, param[1].uintVal, param[2].intVal, param[3].intVal,
 		param[4].hwnd, param[5].lptpmparams));
@@ -15274,8 +15274,27 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				FolderItem *pid = NULL;
 				GetFolderItemFromVariant(&pid, &pDispParams->rgvarg[nArg]);
 				if (pid) {
-					BrowseObject2(pid, SBSP_SAMEBROWSER);
-					pid->Release();
+					DWORD dwUnavailable = m_dwUnavailable;
+					if (!dwUnavailable) {
+						CteFolderItem *pid1;
+						if SUCCEEDED(m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid1)) {
+							dwUnavailable = pid1->m_dwUnavailable;
+							pid1->m_dwUnavailable = 0;
+							pid1->Release();
+						}
+					}
+					if (dwUnavailable) {
+						BrowseObject2(pid, SBSP_SAMEBROWSER);
+						pid->Release();
+					} else if (m_pFolderItem) {
+						m_pFolderItem->Release();
+						m_pFolderItem = pid;
+						if (ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
+							teILFreeClear(&m_pidl);
+							teGetIDListFromObject(m_pFolderItem, &m_pidl);
+						}
+						Refresh(FALSE);
+					}
 				}
 			}
 			return S_OK;
