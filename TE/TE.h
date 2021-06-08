@@ -511,7 +511,7 @@ public:
 	HRESULT BrowseObject2(FolderItem *pid, UINT wFlags);
 	BOOL Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItems *pFolderItems, FolderItem *pPrevious, int nErrorHandling);
 	VOID Navigate1Ex(LPOLESTR pstr, FolderItems *pFolderItems, UINT wFlags, FolderItem *pPrevious, int nErrorHandleing);
-	HRESULT Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *param, FolderItems *pFolderItems, FolderItem *pPrevious, CteShellBrowser *pHistSB);
+	HRESULT Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *param, FolderItems *pFolderItems, CteFolderItem *pPrevious, CteShellBrowser *pHistSB);
 	HRESULT Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *param, CteShellBrowser **ppSB, FolderItems *pFolderItems);
 	HRESULT NavigateEB(DWORD dwFrame);
 	HRESULT OnBeforeNavigate(FolderItem *pPrevious, UINT wFlags);
@@ -589,8 +589,8 @@ public:
 	IShellView  *m_pShellView;
 	IDispatch	*m_ppDispatch[Count_SBFunc];
 	std::vector<IDispatch *> m_ppColumns;
-	FolderItem *m_pFolderItem;
-	FolderItem *m_pFolderItem1;
+	CteFolderItem *m_pFolderItem;
+	CteFolderItem *m_pFolderItem1;
 	IExplorerBrowser *m_pExplorerBrowser;
 	LPITEMIDLIST m_pidl;
 	IShellFolder2 *m_pSF2;
@@ -634,7 +634,7 @@ public:
 #endif
 private:
 	VARIANT		m_vData;
-	std::vector<FolderItem *> m_ppLog;
+	std::vector<CteFolderItem *> m_ppLog;
 	IDispatch	*m_pdisp;
 	std::vector< PROPERTYKEY> m_pDefultColumns;
 	CteDropTarget2 *m_pDropTarget2;
