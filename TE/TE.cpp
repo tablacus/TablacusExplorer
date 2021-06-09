@@ -117,6 +117,7 @@ IUnknown	*g_pDraggingCtrl = NULL;
 IDataObject	*g_pDraggingItems = NULL;
 IDispatchEx *g_pCM = NULL;
 IServiceProvider *g_pSP = NULL;
+IQueryParser *g_pqp = NULL;
 ULONG_PTR g_Token;
 HHOOK	g_hHook;
 HHOOK	g_hMouseHook;
@@ -2989,45 +2990,56 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 						psia->Release();
 						teGetSearchArg(&bsPath3, pszPath, L"crumb=");
 						psfif->SetDisplayName(bsPath3);
-						IQueryParser *pqp = NULL;
-						IQueryParserManager *pqpm = NULL;
-						if SUCCEEDED(CoCreateInstance(__uuidof(QueryParserManager), NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pqpm))) {
-							if SUCCEEDED(pqpm->CreateLoadedParser(L"SystemIndex", MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL), IID_PPV_ARGS(&pqp))) {
-								pqpm->InitializeOptions(FALSE, !StrChr(bsPath3, '*'), pqp);
-								pqpm->SetOption(QPMO_PRELOCALIZED_SCHEMA_BINARY_PATH, FALSE);
-								for (int i = 0; i < ARRAYSIZE(g_rgGenericProperties); ++i) {
-									PROPVARIANT propvar;
-									propvar.pwszVal = const_cast<LPWSTR>(g_rgGenericProperties[i].pszPropertyName);
-									propvar.vt = VT_LPWSTR;
-									pqp->SetMultiOption(SQMO_DEFAULT_PROPERTY, g_rgGenericProperties[i].pszSemanticType, &propvar);
-								}
-								IQuerySolution *pqs = NULL;
-								ICondition *pc, *pc1;
-								if (SUCCEEDED(pqp->Parse(bsPath3, NULL, &pqs)) && SUCCEEDED(pqs->GetQuery(&pc, NULL))) {
-									SYSTEMTIME st;
-									GetLocalTime(&st);
-									IConditionFactory2* pcf2;
-									if SUCCEEDED(pqs->QueryInterface(IID_PPV_ARGS(&pcf2))) {
-										ICondition2* pc2;
-										if SUCCEEDED(pcf2->ResolveCondition(pc, SQRO_DEFAULT, &st, IID_PPV_ARGS(&pc2))) {
-											psfif->SetCondition(pc2);
-											pc2->Release();
-										}
-										pcf2->Release();																	   
-									} else if SUCCEEDED(pqs->Resolve(pc, SQRO_DONT_SPLIT_WORDS, &st, &pc1)) {
-										psfif->SetCondition(pc1);
-										pc1->Release();
-									} else {
-										psfif->SetCondition(pc);
+						if (!g_pqp) {
+							IQueryParserManager *pqpm = NULL;
+							if SUCCEEDED(CoCreateInstance(__uuidof(QueryParserManager), NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pqpm))) {
+								if SUCCEEDED(pqpm->CreateLoadedParser(L"SystemIndex", MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL), IID_PPV_ARGS(&g_pqp))) {
+									BOOL fUnderstandNQS = FALSE;
+									BOOL fAutoWildCard = TRUE;
+									HKEY hKey;
+									if (RegOpenKeyExA(HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Search\\Preferences", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+										DWORD dwSize = sizeof(BOOL);
+										RegQueryValueExA(hKey, "EnableNaturalQuerySyntax", NULL, NULL, (LPBYTE)&fUnderstandNQS, &dwSize);
+										RegQueryValueExA(hKey, "AutoWildCard", NULL, NULL, (LPBYTE)&fAutoWildCard, &dwSize);
+										RegCloseKey(hKey);
 									}
-									pc->Release();
-									psfif->GetIDList(&pidl);
+									pqpm->InitializeOptions(fUnderstandNQS, fAutoWildCard, g_pqp);
+									pqpm->SetOption(QPMO_PRELOCALIZED_SCHEMA_BINARY_PATH, FALSE);
+									for (int i = 0; i < ARRAYSIZE(g_rgGenericProperties); ++i) {
+										PROPVARIANT propvar;
+										propvar.pwszVal = const_cast<LPWSTR>(g_rgGenericProperties[i].pszPropertyName);
+										propvar.vt = VT_LPWSTR;
+										g_pqp->SetMultiOption(SQMO_DEFAULT_PROPERTY, g_rgGenericProperties[i].pszSemanticType, &propvar);
+									}
 								}
-								teSysFreeString(&bsPath3);
-								SafeRelease(&pqs);
-								pqp->Release();
+								pqpm->Release();
 							}
-							pqpm->Release();
+						}
+						if (g_pqp) {
+							IQuerySolution *pqs = NULL;
+							ICondition *pc, *pc1;
+							if (SUCCEEDED(g_pqp->Parse(bsPath3, NULL, &pqs)) && SUCCEEDED(pqs->GetQuery(&pc, NULL))) {
+								SYSTEMTIME st;
+								GetLocalTime(&st);
+								IConditionFactory2* pcf2;
+								if SUCCEEDED(pqs->QueryInterface(IID_PPV_ARGS(&pcf2))) {
+									ICondition2* pc2;
+									if SUCCEEDED(pcf2->ResolveCondition(pc, SQRO_DEFAULT, &st, IID_PPV_ARGS(&pc2))) {
+										psfif->SetCondition(pc2);
+										pc2->Release();
+									}
+									pcf2->Release();																	   
+								} else if SUCCEEDED(pqs->Resolve(pc, SQRO_DONT_SPLIT_WORDS, &st, &pc1)) {
+									psfif->SetCondition(pc1);
+									pc1->Release();
+								} else {
+									psfif->SetCondition(pc);
+								}
+								pc->Release();
+								psfif->GetIDList(&pidl);
+							}
+							teSysFreeString(&bsPath3);
+							SafeRelease(&pqs);
 						}
 					}
 					SafeRelease(&psi);
@@ -12045,6 +12057,7 @@ function _c(s) {\
 #endif
 		pGlobalInterfaceTable->RevokeInterfaceFromGlobal(g_dwCookieJS);
 		pGlobalInterfaceTable->Release();
+		SafeRelease(&g_pqp);
 		SafeRelease(&g_pJS);
 		SafeRelease(&g_pAutomation);
 		SafeRelease(&g_pDropTargetHelper);
@@ -12369,6 +12382,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				break;
 			//System
 			case WM_SETTINGCHANGE:
+				SafeRelease(&g_pqp);
 				if (g_pSW) {
 					teRegister();
 				}
@@ -16980,6 +16994,7 @@ STDMETHODIMP CteShellBrowser::MessageSFVCB(UINT uMsg, WPARAM wParam, LPARAM lPar
 										grfFlags |= SHCONTF_INCLUDESUPERHIDDEN;
 									}
 								}
+								RegCloseKey(hKey);
 							}
 							IEnumIDList *peidl;
 							if SUCCEEDED(m_pSF2->EnumObjects(NULL, grfFlags, &peidl)) {
