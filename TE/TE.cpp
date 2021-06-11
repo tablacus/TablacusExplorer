@@ -25910,7 +25910,7 @@ STDMETHODIMP CteDropTarget2::Drop(IDataObject *pDataObj, DWORD grfKeyState, POIN
 {
 	GetDragItems(&m_pDragItems, pDataObj);
 	DWORD dwEffect = *pdwEffect;
-	if (m_bUseHelper && g_pDropTargetHelper) {
+	if (g_pDropTargetHelper) {
 		g_pDropTargetHelper->DragLeave();
 	}
 	HRESULT hr = DragSub(TE_OnDrop, m_punk, m_pDragItems, &m_grfKeyState, pt, pdwEffect);

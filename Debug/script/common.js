@@ -409,6 +409,12 @@ if ("undefined" === typeof JSON) {
 	}
 }
 
+if ("undefined" === typeof ActiveXObject) {
+	ActiveXObject = function (s) {
+		return api.CreateObject(s);
+	}
+}
+
 if (!String.fromCodePoint) {
 	String.fromCodePoint = function (n) {
 		const cp = n - 0x10000;
