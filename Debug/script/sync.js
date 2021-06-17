@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210611 ? te.Version : 20210611;
+		return te.Version < 20210611 ? te.Version : 20210617;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -201,7 +201,10 @@ RegEnumKey = function (hKey, Name, bSA) {
 	const iParams = method.InParameters.SpawnInstance_();
 	iParams.hDefKey = hKey;
 	iParams.sSubKeyName = Name;
-	const r = server.ExecMethod_(method.Name, iParams).sNames;
+	let r = server.ExecMethod_(method.Name, iParams).sNames;
+	if (r == null) {
+		r = api.CreateObject("SafeArray", []);
+	}
 	return bSA ? r : r.toArray ? r.toArray() : api.CreateObject("Array", r);
 }
 
@@ -2378,14 +2381,14 @@ ExecMenu4 = function (Ctrl, Name, pt, hMenu, arContextMenu, nVerb, FV) {
 CopyMenu = function (hSrc, hDest) {
 	const mii = api.Memory("MENUITEMINFO");
 	mii.fMask = MIIM_ID | MIIM_TYPE | MIIM_SUBMENU | MIIM_STATE;
-	let n = api.GetMenuItemCount(hSrc);
-	while (--n >= 0) {
+	const nCount = api.GetMenuItemCount(hSrc);
+	for (let n = 0; n < nCount; ++n) {
 		api.GetMenuItemInfo(hSrc, n, true, mii);
 		const hSubMenu = mii.hSubMenu;
 		if (hSubMenu) {
 			mii.hSubMenu = api.CreateMenu();
 		}
-		api.InsertMenuItem(hDest, 0, true, mii);
+		api.InsertMenuItem(hDest, MAXINT, true, mii);
 		if (hSubMenu) {
 			CopyMenu(hSubMenu, mii.hSubMenu);
 		}

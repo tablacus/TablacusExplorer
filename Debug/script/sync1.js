@@ -306,7 +306,7 @@ g_basic = {
 					pdwEffect[0] = DROPEFFECT_LINK;
 					if (bDrop) {
 						const ar = [];
-						for (let i = dataObj.Count; i > 0; ar.unshift(PathQuoteSpaces(api.GetDisplayNameOf(dataObj.Item(--i), SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)))) {
+						for (let i = dataObj.Count; i > 0; ar.unshift(PathQuoteSpaces(dataObj.Item(--i).Path))) {
 						}
 						s = s.replace(re, ar.join(" "));
 						ShellExecute(s, null, SW_SHOWNORMAL, Ctrl, pt);
