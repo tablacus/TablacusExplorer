@@ -3838,40 +3838,35 @@ BOOL teILIsEqual(IUnknown *punk1, IUnknown *punk2)
 {
 	BOOL bResult = FALSE;
 	if (punk1 && punk2) {
-		LPITEMIDLIST pidl1 = NULL, pidl2 = NULL;
-		DWORD dwUnavailable = 0;
-		CteFolderItem *pid;
-		if SUCCEEDED(punk1->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
-			pidl1 = pid->m_pidl;
-			dwUnavailable = pid->m_dwUnavailable;
-			pid->Release();
-		}
-		if SUCCEEDED(punk2->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
-			pidl2 = pid->m_pidl;
-			dwUnavailable |= pid->m_dwUnavailable;
-			pid->Release();
-		}
-		if (pidl1 && pidl2 && !ILIsEqual(pidl1, g_pidls[CSIDL_RESULTSFOLDER])) {
-			bResult = ::ILIsEqual(pidl1, pidl2);
-		} else {
-			BSTR bs1, bs2;
-			teGetPath(&bs1, punk1);
-			teGetPath(&bs2, punk2);
-			bResult = lstrcmpi(bs1, bs2) == 0;
-			if (bResult && !dwUnavailable) {
-				pidl1 = ::ILClone(pidl1);
-				if (pidl1 || teGetIDListFromObject(punk1, &pidl1)) {
-					pidl2 = ::ILClone(pidl2);
-					if (pidl2 || teGetIDListFromObject(punk2, &pidl2)) {
+		BSTR bs1, bs2;
+		teGetPath(&bs1, punk1);
+		teGetPath(&bs2, punk2);
+		bResult = lstrcmpi(bs1, bs2) == 0;
+		if (bResult) {
+			DWORD dwUnavailable = 0;
+			CteFolderItem *pid;
+			if SUCCEEDED(punk1->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
+				dwUnavailable = pid->m_dwUnavailable;
+				pid->Release();
+			}
+			if SUCCEEDED(punk2->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
+				dwUnavailable |= pid->m_dwUnavailable;
+				pid->Release();
+			}
+			if (!dwUnavailable) {
+				LPITEMIDLIST pidl1 = NULL;
+				if (teGetIDListFromObject(punk1, &pidl1)) {
+					LPITEMIDLIST pidl2 = NULL;
+					if (teGetIDListFromObject(punk2, &pidl2)) {
 						bResult = ::ILIsEqual(pidl1, pidl2);
 					}
 					teILFreeClear(&pidl2);
 				}
 				teILFreeClear(&pidl1);
 			}
-			teSysFreeString(&bs2);
-			teSysFreeString(&bs1);
 		}
+		teSysFreeString(&bs2);
+		teSysFreeString(&bs1);
 	}
 	return bResult;
 }
