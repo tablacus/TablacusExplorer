@@ -222,6 +222,9 @@ g_basic = {
 					if (hr != S_OK) {
 						break;
 					}
+					if (Ctrl.Type <= CTRL_EB) {
+						Ctrl = GetFolderView();
+					}
 				}
 				return S_OK;
 			},

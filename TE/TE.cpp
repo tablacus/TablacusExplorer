@@ -6879,8 +6879,26 @@ HRESULT MessageProc(MSG *pMsg)
 					if (hrResult != S_OK) {
 						if SUCCEEDED(pdisp->QueryInterface(IID_PPV_ARGS(&pSB))) {
 							if SUCCEEDED(pSB->QueryActiveShellView(&pSV)) {
+								HWND hwnd = NULL;
+								if (pMsg->message == WM_KEYDOWN) {
+									CteShellBrowser *pSB1;
+									if SUCCEEDED(pSB->QueryInterface(g_ClsIdSB, (LPVOID *)&pSB1)) {
+										if (pSB1->m_hwndLV && !pSB1->m_bRedraw) {
+											if ((pMsg->wParam == VK_PRIOR || pMsg->wParam == VK_NEXT) ||
+												((pMsg->wParam == VK_LEFT || pMsg->wParam == VK_RIGHT) && pSB1->m_param[SB_ViewMode] == FVM_LIST)) {
+												hwnd = pSB1->m_hwnd;
+												SendMessage(hwnd, WM_SETREDRAW, FALSE, 0);
+											}
+										}
+										pSB1->Release();
+									}
+								}
 								if (pSV->TranslateAcceleratorW(pMsg) == S_OK) {
 									hrResult = S_OK;
+								}
+								if (hwnd) {
+									SendMessage(hwnd, WM_SETREDRAW, TRUE, 0);
+									RedrawWindow(hwnd, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
 								}
 								pSV->Release();
 							}
@@ -16043,10 +16061,17 @@ STDMETHODIMP CteShellBrowser::SelectItem(VARIANT *pvfi, int dwFlags)
 			int nIndex = GetIntFromVariant(pvfi);
 			int nCount = GetFolderViewAndItemCount(&pFV, SVGIO_ALLVIEW);
 			if (nIndex < nCount) {
+				if (m_hwndLV && !m_bRedraw) {
+					SendMessage(m_hwnd, WM_SETREDRAW, FALSE, 0);
+				}
 				if (dwFlags & (SVSI_SELECTIONMARK | (SVSI_KEYBOARDSELECT & ~SVSI_SELECT))) {//21.4.7
 					pFV->SelectItem(nIndex, dwFlags & (SVSI_SELECTIONMARK | SVSI_KEYBOARDSELECT | SVSI_NOTAKEFOCUS));
 				}
 				hr = pFV->SelectItem(nIndex, dwFlags & ~(SVSI_SELECTIONMARK | (SVSI_KEYBOARDSELECT & ~SVSI_SELECT)));
+				if (m_hwndLV && !m_bRedraw) {
+					SendMessage(m_hwnd, WM_SETREDRAW, TRUE, 0);
+					RedrawWindow(m_hwnd, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+				}
 			}
 			SafeRelease(&pFV);
 		} else {
@@ -16084,6 +16109,9 @@ HRESULT CteShellBrowser::SelectItemEx(LPITEMIDLIST pidl, int dwFlags)
 {
 	HRESULT hr = E_FAIL;
 	if (m_pShellView) {
+		if (m_hwndLV && !m_bRedraw) {
+			SendMessage(m_hwnd, WM_SETREDRAW, FALSE, 0);
+		}
 		LPITEMIDLIST pidlLast = ILFindLastID(pidl);
 		if (dwFlags & (SVSI_SELECTIONMARK | (SVSI_KEYBOARDSELECT & ~SVSI_SELECT))) {//21.4.7
 			m_pShellView->SelectItem(pidlLast, dwFlags & (SVSI_SELECTIONMARK | SVSI_KEYBOARDSELECT | SVSI_NOTAKEFOCUS));
@@ -16091,6 +16119,10 @@ HRESULT CteShellBrowser::SelectItemEx(LPITEMIDLIST pidl, int dwFlags)
 		hr = m_pShellView->SelectItem(pidlLast, dwFlags & ~(SVSI_SELECTIONMARK | (SVSI_KEYBOARDSELECT & ~SVSI_SELECT)));
 		if (FAILED(hr) && (dwFlags & SVSI_DESELECTOTHERS)) {
 			hr = m_pShellView->SelectItem(pidlLast, SVSI_DESELECTOTHERS);
+		}
+		if (m_hwndLV && !m_bRedraw) {
+			SendMessage(m_hwnd, WM_SETREDRAW, TRUE, 0);
+			RedrawWindow(m_hwnd, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
 		}
 	}
 	return hr;
