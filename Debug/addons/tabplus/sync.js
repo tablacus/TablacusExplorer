@@ -110,7 +110,7 @@ AddEvent("DragOver", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 					if (!g_.ptDrag || IsDrag(pt, g_.ptDrag)) {
 						if (!Common.TabPlus.opt.NoDragOpen || (!FV.hwndView && FV.FolderItem.Enum)) {
 							g_.ptDrag = pt.Clone();
-							InvokeUI("Addons.TabPlus.DragOver", TC.Id, pt);
+							InvokeUI("Addons.TabPlus.DragOver", TC.Id);
 						}
 					}
 					if (dataObj.Count) {

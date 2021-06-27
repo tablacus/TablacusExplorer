@@ -114,7 +114,7 @@ if (window.Addon == 1) {
 			const FV = r[0];
 			const Id = r[1];
 			const o = document.getElementById("tabplus_" + Id + "_" + i);
-			if (FV && o) {
+			if (FV && o && await FV.Data) {
 				const promise = [api.GetDisplayNameOf(FV, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), RunEvent4("GetTabColor", FV), FV.Data.Lock, FV.Data.Protect, CanClose(FV), GetTabName(FV)]
 				if (Addons.TabPlus.opt.Icon) {
 					promise.push(GetIconImage(FV, CLR_DEFAULT | COLOR_BTNFACE));
@@ -449,10 +449,12 @@ if (window.Addon == 1) {
 			}
 		},
 
-		Over: async function (Id, pt) {
+		Over: async function (Id) {
 			if (await Common.TabPlus.bDropping) {
 				return;
 			}
+			const pt = await api.Memory("POINT");
+			await api.GetCursorPos(pt);
 			if (!await IsDrag(pt, await g_.ptDrag)) {
 				const nIndex = await Addons.TabPlus.FromPt(Id, pt);
 				if (nIndex >= 0) {
@@ -465,11 +467,11 @@ if (window.Addon == 1) {
 			}
 		},
 
-		DragOver: function (Id, pt) {
+		DragOver: function (Id) {
 			if (Addons.TabPlus.tid) {
 				clearTimeout(Addons.TabPlus.tid);
 			}
-			Addons.TabPlus.tid = setTimeout(Addons.TabPlus.Over, 300, Id, pt);
+			Addons.TabPlus.tid = setTimeout(Addons.TabPlus.Over, 300, Id);
 		},
 
 		DragLeave: function () {
