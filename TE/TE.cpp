@@ -194,7 +194,7 @@ BOOL	g_bIs2000;
 #ifdef _DEBUG
 LPWSTR	g_strException;
 WCHAR	g_pszException[MAX_PATH];
-HHOOK	g_hMenuGMHook;
+//HHOOK	g_hMenuGMHook;
 #endif
 #ifdef _CHECK_HANDLELEAK
 int g_nLeak = 0;
@@ -881,9 +881,11 @@ HRESULT teCreateInstance(CLSID clsid, LPWSTR lpszDllFile, HMODULE *phDll, REFIID
 					pCF->Release();
 					if (hr == S_OK && phDll) {
 						*phDll = hDll;
+						hDll = NULL;
 					}
 				}
-			} else {
+			}
+			if (hDll) {
 				FreeLibrary(hDll);
 			}
 		}
@@ -5644,6 +5646,7 @@ LRESULT CALLBACK MenuKeyProc(int nCode, WPARAM wParam, LPARAM lParam)
 }
 
 #ifdef _DEBUG
+/*
 LRESULT CALLBACK MenuGMProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
 	LRESULT lResult = 1;
@@ -5652,13 +5655,10 @@ LRESULT CALLBACK MenuGMProc(int nCode, WPARAM wParam, LPARAM lParam)
 			WCHAR pszNum[99];
 			swprintf_s(pszNum, 99, L"%x\n", wParam);
 			::OutputDebugString(pszNum);
-/*			CWPRETSTRUCT *msg = (CWPRETSTRUCT *)lParam;
-			if(msg) {
-			}*/
 		}
 	}
 	return lResult ? CallNextHookEx(g_hMenuGMHook, nCode, wParam, lParam) : TRUE;
-}
+}*/
 #endif
 LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
@@ -8880,12 +8880,12 @@ VOID teApiTrackPopupMenuEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 	}
 	g_hMenuKeyHook = SetWindowsHookEx(WH_KEYBOARD, (HOOKPROC)MenuKeyProc, hInst, g_dwMainThreadId);
 #ifdef _DEBUG
-	g_hMenuGMHook = SetWindowsHookEx(WH_DEBUG, (HOOKPROC)MenuGMProc, NULL, g_dwMainThreadId);
+//	g_hMenuGMHook = SetWindowsHookEx(WH_DEBUG, (HOOKPROC)MenuGMProc, NULL, g_dwMainThreadId);
 #endif
 	teSetLong(pVarResult, TrackPopupMenuEx(param[0].hmenu, param[1].uintVal, param[2].intVal, param[3].intVal,
 		param[4].hwnd, param[5].lptpmparams));
 #ifdef _DEBUG
-	UnhookWindowsHookEx(g_hMenuGMHook);
+//	UnhookWindowsHookEx(g_hMenuGMHook);
 #endif
 	UnhookWindowsHookEx(g_hMenuKeyHook);
 	SafeRelease(&g_pCM);
@@ -11741,6 +11741,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	if (!_GetDpiForMonitor) {
 		_GetDpiForMonitor = teGetDpiForMonitor;
 	}	
+	teLoadLibrary(L"mscoree.dll");//for .NET Shell exetension
 #ifdef _2000XP
 	if (g_bUpperVista) {
 #endif

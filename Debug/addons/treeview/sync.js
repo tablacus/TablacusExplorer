@@ -74,7 +74,7 @@ if (item.getAttribute("MouseExec")) {
 	SetGestureExec(item.getAttribute("MouseOn"), item.getAttribute("Mouse"), Sync.TreeView.Exec, "Func");
 }
 
-SetGestureExec("Tree", "1", function (Ctrl, pt) {
+SetGestureExec("Tree", Sync.TreeView.List ? "1" : "11", function (Ctrl, pt) {
 	const Item = Ctrl.HitTest(pt);
 	if (Item) {
 		const FV = Ctrl.FolderView;

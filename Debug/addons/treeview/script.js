@@ -8,7 +8,7 @@ if (!item.getAttribute("Set")) {
 if (window.Addon == 1) {
 	Addons.TreeView = {
 		Popup: async function (o) {
-			const FV = await GetFolderViewEx(o);
+			const FV = await GetFolderView(o);
 			if (FV) {
 				FV.Focus();
 				const TV = await FV.TreeView;
@@ -26,7 +26,7 @@ if (window.Addon == 1) {
 	};
 
 	AddEvent("Layout", async function () {
-		const h = GetIconSize(item.getAttribute("IconSize"), item.getAttribute("Location") == "Inner" && 16);
+		const h = GetIconSizeEx(item);
 		SetAddon(Addon_Id, Default, ['<span class="button" onclick="SyncExec(Sync.TreeView.Exec, this)" oncontextmenu="return Addons.TreeView.Popup(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()">', await GetImgTag({
 			title: await GetText("Tree"),
 			src: item.getAttribute("Icon") || "bitmap:ieframe.dll,214,24,43"
