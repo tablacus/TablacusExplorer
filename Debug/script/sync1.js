@@ -1657,8 +1657,18 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata) {
 					if (KeyExecEx(Ctrl, "Tree", nKey, hwnd) === S_OK) {
 						return S_OK;
 					}
+					let nCmd;
 					if (key == VK_DELETE) {
-						InvokeCommand(Ctrl.SelectedItem, 0, te.hwnd, CommandID_DELETE - 1, null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
+						nCmd = CommandID_DELETE;
+					} else if (nKey == 0x202d) {
+						nCmd = CommandID_CUT;
+					} else if (nKey == 0x202e) {
+						nCmd = CommandID_COPY;
+					} else if (nKey == 0x202f) {
+						nCmd = CommandID_PASTE;
+					}
+					if (nCmd) {
+						InvokeCommand(Ctrl.SelectedItem, 0, te.hwnd, nCmd - 1, null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
 						return S_OK;
 					}
 				}

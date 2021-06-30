@@ -569,6 +569,7 @@ public:
 	VOID SetObjectRect();
 	int GetFolderViewAndItemCount(IFolderView **ppFV, UINT uFlags);
 	HRESULT Search(LPWSTR pszSearch);
+	VOID RedrawUpdate();
 #if defined(_USE_SHELLBROWSER) || defined(_2000XP)
 	HRESULT NavigateSB(IShellView *pPreviousView, FolderItem *pPrevious);
 #endif
@@ -612,6 +613,7 @@ public:
 	DWORD		m_nOpenedType;
 	DWORD		m_dwCookie;
 	DWORD		m_dwTickNotify;
+	DWORD		m_dwRedraw;
 	COLORREF	m_clrBk, m_clrTextBk, m_clrText;
 	DISPID      m_dispidSortColumns;
 	BOOL		m_bSetListColumnWidth;
@@ -623,11 +625,9 @@ public:
 	BOOL		m_bRefreshing;
 	BOOL		m_bAutoVM;
 	BOOL		m_bBeforeNavigate;
-	BOOL		m_bRedraw;
 	BOOL		m_bViewCreated;
 	BOOL		m_bFiltered;
 	BOOL		m_bNavigateComplete;
-	BOOL		m_bSetRedraw;
 #ifdef _2000XP
 	TEColumn	*m_pColumns;
 	UINT		m_nColumns;

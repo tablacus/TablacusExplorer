@@ -5908,7 +5908,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 		BOOL bDoCallProc = TRUE;
 		LRESULT lResult = S_FALSE;
 		if (msg == WM_NOTIFY) {
-			if (((LPNMHDR)lParam)->code == LVN_GETDISPINFO) {
+			if (((LPNMHDR)lParam)->code == LVN_GETDISPINFO && !(pSB->m_dwRedraw & 1)) {
 				NMLVDISPINFO *lpDispInfo = (NMLVDISPINFO *)lParam;
 				if (lpDispInfo->item.mask & LVIF_TEXT) {
 					if (pSB->m_param[SB_ViewMode] == FVM_DETAILS || lpDispInfo->item.iSubItem == 0) {
@@ -6050,7 +6050,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 						}
 					}
 				}
-				if (lpDispInfo->item.mask & LVIF_IMAGE && g_pOnFunc[TE_OnHandleIcon]) {
+				if ((lpDispInfo->item.mask & LVIF_IMAGE) && g_pOnFunc[TE_OnHandleIcon] && !(pSB->m_dwRedraw & 1)) {
 					IFolderView *pFV;
 					LPITEMIDLIST pidl;
 					if SUCCEEDED(pSB->m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
@@ -6161,14 +6161,12 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 				}
 			} else if (((LPNMHDR)lParam)->code == LVN_BEGINSCROLL) {
 				if (abs(((LPNMLVSCROLL)lParam)->dy) > (pSB->m_param[SB_ViewMode] == FVM_DETAILS ? 16 : 256) || pSB->m_param[SB_ViewMode] == FVM_LIST) {
+					pSB->m_dwRedraw |= 2;
 					SendMessage(pSB->m_hwnd, WM_SETREDRAW, FALSE, 0);
 				}
 			} else if (((LPNMHDR)lParam)->code == LVN_ENDSCROLL) {
 				if (abs(((LPNMLVSCROLL)lParam)->dy) > (pSB->m_param[SB_ViewMode] == FVM_DETAILS ? 16 : 256) || pSB->m_param[SB_ViewMode] == FVM_LIST) {
-					if (!pSB->m_bRedraw) {
-						SendMessage(pSB->m_hwnd, WM_SETREDRAW, TRUE, 0);
-						RedrawWindow(hwnd, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
-					}
+					pSB->RedrawUpdate();
 				}
 			} else if (((LPNMHDR)lParam)->code == HDN_ITEMCHANGED) {
 				pSB->FixColumnEmphasis();
@@ -6890,25 +6888,23 @@ HRESULT MessageProc(MSG *pMsg)
 					if (hrResult != S_OK) {
 						if SUCCEEDED(pdisp->QueryInterface(IID_PPV_ARGS(&pSB))) {
 							if SUCCEEDED(pSB->QueryActiveShellView(&pSV)) {
-								HWND hwnd = NULL;
+								CteShellBrowser *pSB1 = NULL;
 								if (pMsg->message == WM_KEYDOWN) {
-									CteShellBrowser *pSB1;
 									if SUCCEEDED(pSB->QueryInterface(g_ClsIdSB, (LPVOID *)&pSB1)) {
-										if (pSB1->m_hwndLV && !pSB1->m_bRedraw) {
+										if (pSB1->m_hwndLV) {
 											if ((pMsg->wParam == VK_PRIOR || pMsg->wParam == VK_NEXT)) {
-												hwnd = pSB1->m_hwnd;
-												SendMessage(hwnd, WM_SETREDRAW, FALSE, 0);
+												pSB1->m_dwRedraw |= 2;
+												SendMessage(pSB1->m_hwnd, WM_SETREDRAW, FALSE, 0);
 											}
 										}
-										pSB1->Release();
 									}
 								}
 								if (pSV->TranslateAcceleratorW(pMsg) == S_OK) {
 									hrResult = S_OK;
 								}
-								if (hwnd) {
-									SendMessage(hwnd, WM_SETREDRAW, TRUE, 0);
-									RedrawWindow(hwnd, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+								if (pSB1) {
+									pSB1->RedrawUpdate();
+									pSB1->Release();
 								}
 								pSV->Release();
 							}
@@ -11321,15 +11317,11 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 				}
 				pSB = g_pTC->GetShellBrowser(g_pTC->m_nIndex);
 				if (pSB) {
-					if (pSB->m_bBeforeNavigate) {
+					if (pSB->m_bBeforeNavigate || (pSB->m_dwRedraw & 1)) {
 						SetTimer(g_hwndMain, TET_Status, 1000, teTimerProc);
 						break;
 					}
-					if (pSB->m_bRedraw) {
-						pSB->m_bRedraw = FALSE;
-						pSB->SetRedraw(TRUE);
-						RedrawWindow(pSB->m_hwnd, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
-					}
+					pSB->RedrawUpdate();
 					g_szStatus[0] = NULL;
 					int nCount = pSB->GetFolderViewAndItemCount(NULL, SVGIO_SELECTION);
 					UINT uID = 0;
@@ -12632,6 +12624,7 @@ void CteShellBrowser::Init(CteTabCtrl *pTC, BOOL bNew)
 	m_bRefreshLator = FALSE;
 	m_nCreate = 0;
 	m_bNavigateComplete = FALSE;
+	m_dwRedraw &= ~3;
 	m_dwUnavailable = 0;
 	m_dwTickNotify = 0;
 	VariantClear(&m_vData);
@@ -16236,7 +16229,7 @@ HRESULT CteShellBrowser::OnNavigationPending2(LPITEMIDLIST pidlFolder)
 	if (!m_bAutoVM) {
 		SetViewModeAndIconSize(TRUE);
 	}
-	m_bSetRedraw = FALSE;
+	m_dwRedraw |= 4;
 	SetRedraw(FALSE);
 	return hr;
 }
@@ -16382,6 +16375,15 @@ HRESULT CteShellBrowser::Search(LPWSTR pszSearch) {
 	return S_OK;
 */
 
+VOID CteShellBrowser::RedrawUpdate()
+{
+	if (m_dwRedraw & 3) {
+		SetRedraw(TRUE);
+		m_dwRedraw &= ~3;
+		RedrawWindow(m_hwnd, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+	}
+}
+
 STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 {
 	m_bViewCreated = FALSE;
@@ -16435,7 +16437,7 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 			ArrangeWindow();
 		}
 	}
-	m_bSetRedraw = TRUE;
+	m_dwRedraw &= ~4;
 	SetRedraw(TRUE);
 	if (!m_pTC->m_nLockUpdate) {
 		ArrangeWindowEx();
@@ -16471,7 +16473,7 @@ VOID CteShellBrowser::OnNavigationComplete2()
 	m_bNavigateComplete = FALSE;
 	SetViewModeAndIconSize(TRUE);
 	m_bIconSize = TRUE;
-	m_bSetRedraw = TRUE;
+	m_dwRedraw &= ~4;
 	SetRedraw(TRUE);
 	SetActive(FALSE);
 	m_nFocusItem = 1;
@@ -16643,7 +16645,7 @@ VOID CteShellBrowser::AddItem(LPITEMIDLIST pidl)
 		if SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &pidlPart)) {
 		    LPITEMIDLIST pidlChild = NULL;
 			if (IncludeObject2(pSF, pidlPart, pidl) == S_OK) {
-				m_bRedraw = TRUE;
+				m_dwRedraw |= 2;
 				SetRedraw(FALSE);
 				try {
 					IResultsFolder *pRF;
@@ -17654,9 +17656,15 @@ VOID CteShellBrowser::SetGroupBy(BSTR bs)
 
 VOID CteShellBrowser::SetRedraw(BOOL bRedraw)
 {
-	SendMessage(m_hwnd, WM_SETREDRAW, m_bSetRedraw && (bRedraw || !m_bRedraw), 0);
-	if (m_hwndAlt) {
-		BringWindowToTop(m_hwndAlt);
+	BOOL b = !(m_dwRedraw & 4) && (bRedraw || !(m_dwRedraw & 3));
+	SendMessage(m_hwnd, WM_SETREDRAW, b, 0);
+	if (b) {
+		m_dwRedraw &= ~1;
+		if (m_hwndAlt) {
+			BringWindowToTop(m_hwndAlt);
+		}
+	} else {
+		m_dwRedraw |= 1;
 	}
 }
 

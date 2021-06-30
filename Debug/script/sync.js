@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210629 ? te.Version : 20210629;
+		return te.Version < 20210630 ? te.Version : 20210630;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -2769,15 +2769,15 @@ RunCommandLine = function (s) {
 		SelectItem(te.Ctrl(CTRL_FV), arg[0], SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS, 99);
 		return;
 	}
-	s = s.replace(/^\/e,|^\/n,|^\/root,/ig, "");
 	const arg = api.CommandLineToArgv(s);
-	const exe = arg.shift().replace(/[-\/\\^$*+?.()|\[\]{}]/g, '\\$&');
-	s = s.replace(new RegExp('^"?' + exe + '"?\\s+', ""), "");
+	arg.shift();
+	s = arg.length ? (s.charAt(0) == '"' ? s.replace(/"[^"]*"\s*/, "") : s.replace(/^[^\s]+\s*/, "")) : "";
 	if (/^[A-Z]:\\|^\\\\/i.test(s) && IsExists(s)) {
 		Navigate(s, SBSP_NEWBROWSER);
 		return;
 	}
 	while (s = arg.shift()) {
+		s = s.replace(/^\/e,|^\/n,|^\/root,/i, "");
 		const ar = s.split(",");
 		if (ar.length > 1) {
 			Exec(te, GetSourceText(ar[1]), GetSourceText(ar[0]), te.hwnd, api.Memory("POINT"));
