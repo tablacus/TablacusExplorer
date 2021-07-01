@@ -870,7 +870,9 @@ HRESULT teCreateInstance(CLSID clsid, LPWSTR lpszDllFile, HMODULE *phDll, REFIID
 				RegCloseKey(hKey);
 			}
 		}
-		hDll = LoadLibrary(lpszDllFile);
+		try {
+			hDll = LoadLibrary(lpszDllFile);
+		} catch (...) {}
 		if (hDll) {
 			LPFNDllGetClassObject _DllGetClassObject = (LPFNDllGetClassObject)GetProcAddress(hDll, "DllGetClassObject");
 			if (_DllGetClassObject) {
@@ -7077,13 +7079,16 @@ HMODULE teLoadLibrary(LPWSTR lpszName)
 	BSTR bsSystem;
 	teGetDisplayNameFromIDList(&bsSystem, g_pidls[CSIDL_SYSTEM], SHGDN_FORPARSING);
 	tePathAppend(&bsPath, bsSystem, lpszName);
-	HMODULE hModule = GetModuleHandle(bsPath);
-	if (!hModule) {
-		hModule = LoadLibrary(bsPath);
-		if (hModule) {
-			g_phModule.push_back(hModule);
+	HMODULE hModule = NULL;
+	try {
+		hModule = GetModuleHandle(bsPath);
+		if (!hModule) {
+			hModule = LoadLibrary(bsPath);
+			if (hModule) {
+				g_phModule.push_back(hModule);
+			}
 		}
-	}
+	} catch (...) {}
 	teSysFreeString(&bsPath);
 	teSysFreeString(&bsSystem);
 	return hModule;
@@ -7821,7 +7826,10 @@ VOID teApiILCreateFromPath(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 
 VOID teApiGetProcObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	HMODULE hDll = LoadLibrary(param[0].lpcwstr);
+	HMODULE hDll = NULL;
+	try {
+		hDll = LoadLibrary(param[0].lpcwstr);
+	} catch (...) {}
 	if (hDll) {
 		CHAR szProcNameA[MAX_LOADSTRING];
 		LPSTR lpProcNameA = szProcNameA;
@@ -9378,7 +9386,11 @@ VOID teApiLoadIcon(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *p
 
 VOID teApiLoadLibraryEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetPtr(pVarResult, LoadLibraryEx(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]), param[1].handle, param[2].dword));
+	HMODULE hDll = NULL;
+	try {
+		hDll = LoadLibraryEx(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]), param[1].handle, param[2].dword);
+	} catch (...) {}
+	teSetPtr(pVarResult, hDll);
 }
 
 VOID teApiLoadImage(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
