@@ -870,9 +870,7 @@ HRESULT teCreateInstance(CLSID clsid, LPWSTR lpszDllFile, HMODULE *phDll, REFIID
 				RegCloseKey(hKey);
 			}
 		}
-		try {
-			hDll = LoadLibrary(lpszDllFile);
-		} catch (...) {}
+		hDll = LoadLibrary(lpszDllFile);
 		if (hDll) {
 			LPFNDllGetClassObject _DllGetClassObject = (LPFNDllGetClassObject)GetProcAddress(hDll, "DllGetClassObject");
 			if (_DllGetClassObject) {
@@ -7080,15 +7078,13 @@ HMODULE teLoadLibrary(LPWSTR lpszName)
 	teGetDisplayNameFromIDList(&bsSystem, g_pidls[CSIDL_SYSTEM], SHGDN_FORPARSING);
 	tePathAppend(&bsPath, bsSystem, lpszName);
 	HMODULE hModule = NULL;
-	try {
-		hModule = GetModuleHandle(bsPath);
-		if (!hModule) {
-			hModule = LoadLibrary(bsPath);
-			if (hModule) {
-				g_phModule.push_back(hModule);
-			}
+	hModule = GetModuleHandle(bsPath);
+	if (!hModule) {
+		hModule = LoadLibrary(bsPath);
+		if (hModule) {
+			g_phModule.push_back(hModule);
 		}
-	} catch (...) {}
+	}
 	teSysFreeString(&bsPath);
 	teSysFreeString(&bsSystem);
 	return hModule;
@@ -7826,10 +7822,7 @@ VOID teApiILCreateFromPath(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 
 VOID teApiGetProcObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	HMODULE hDll = NULL;
-	try {
-		hDll = LoadLibrary(param[0].lpcwstr);
-	} catch (...) {}
+	HMODULE hDll = LoadLibrary(param[0].lpcwstr);
 	if (hDll) {
 		CHAR szProcNameA[MAX_LOADSTRING];
 		LPSTR lpProcNameA = szProcNameA;
@@ -9386,11 +9379,7 @@ VOID teApiLoadIcon(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *p
 
 VOID teApiLoadLibraryEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	HMODULE hDll = NULL;
-	try {
-		hDll = LoadLibraryEx(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]), param[1].handle, param[2].dword);
-	} catch (...) {}
-	teSetPtr(pVarResult, hDll);
+	teSetPtr(pVarResult, LoadLibraryEx(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]), param[1].handle, param[2].dword));
 }
 
 VOID teApiLoadImage(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -11329,7 +11318,7 @@ VOID CALLBACK teTimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
 				}
 				pSB = g_pTC->GetShellBrowser(g_pTC->m_nIndex);
 				if (pSB) {
-					if (pSB->m_bBeforeNavigate || (pSB->m_dwRedraw & 1)) {
+					if (pSB->m_bBeforeNavigate) {
 						SetTimer(g_hwndMain, TET_Status, 1000, teTimerProc);
 						break;
 					}
@@ -11755,7 +11744,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	if (!_GetDpiForMonitor) {
 		_GetDpiForMonitor = teGetDpiForMonitor;
 	}	
-	teLoadLibrary(L"mscoree.dll");//for .NET Shell exetension
 #ifdef _2000XP
 	if (g_bUpperVista) {
 #endif
@@ -16390,8 +16378,8 @@ HRESULT CteShellBrowser::Search(LPWSTR pszSearch) {
 VOID CteShellBrowser::RedrawUpdate()
 {
 	if (m_dwRedraw & 3) {
-		SetRedraw(TRUE);
 		m_dwRedraw &= ~3;
+		SetRedraw(TRUE);
 		RedrawWindow(m_hwnd, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
 	}
 }

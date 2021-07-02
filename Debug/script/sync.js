@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210701 ? te.Version : 20210701;
+		return te.Version < 20210702 ? te.Version : 20210702;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -205,7 +205,7 @@ RegEnumKey = function (hKey, Name, bSA) {
 	if (r == null) {
 		r = api.CreateObject("SafeArray", []);
 	}
-	return bSA ? r : r.toArray ? r.toArray() : api.CreateObject("Array", r);
+	return bSA ? r : !window.chrome && r.toArray ? r.toArray() : api.CreateObject("Array", r);
 }
 
 OpenDialog = function (path, bFilesOnly) {
