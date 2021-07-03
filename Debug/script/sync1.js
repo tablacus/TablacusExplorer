@@ -3715,13 +3715,6 @@ if (!te.Data) {
 		LoadConfig();
 	}
 	te.Data.uRegisterId = api.SHChangeNotifyRegister(te.hwnd, SHCNRF_InterruptLevel | SHCNRF_ShellLevel | SHCNRF_NewDelivery, SHCNE_ALLEVENTS & ~SHCNE_UPDATEIMAGE, TWM_CHANGENOTIFY, ssfDESKTOP, true);
-	const ar = RegEnumKey(HKEY_CURRENT_USER, "SOFTWARE\\Classes\\*\\shellex\\ContextMenuHandlers");
-	for (let i = ar.length; i--;) {
-		if (/^{/.test(ar[i])) {
-			api.DllGetClassObject(null, ar[i]);
-		}
-	}
-
 } else {
 	++te.Data.Load;
 	for (let i in te.Data) {
