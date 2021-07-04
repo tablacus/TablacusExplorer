@@ -881,11 +881,9 @@ HRESULT teCreateInstance(CLSID clsid, LPWSTR lpszDllFile, HMODULE *phDll, REFIID
 					pCF->Release();
 					if (hr == S_OK && phDll) {
 						*phDll = hDll;
-						hDll = NULL;
 					}
 				}
-			}
-			if (hDll) {
+			} else {
 				FreeLibrary(hDll);
 			}
 		}
@@ -11744,6 +11742,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	if (!_GetDpiForMonitor) {
 		_GetDpiForMonitor = teGetDpiForMonitor;
 	}	
+	teLoadLibrary(L"mscoree.dll");//for .NET Shell exetension
 #ifdef _2000XP
 	if (g_bUpperVista) {
 #endif
