@@ -10709,6 +10709,14 @@ VOID teApiSendMessageTimeout(int nArg, teParam *param, DISPPARAMS *pDispParams, 
 	}
 }
 
+VOID teApiGetUserName(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	WCHAR pszName[MAX_PROP];
+	DWORD dwSize = MAX_PROP;
+	GetUserName(pszName, &dwSize);
+	teSetSZ(pVarResult, pszName);
+}
+
 #ifdef _DEBUG
 VOID teApimciSendString(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
@@ -11104,6 +11112,7 @@ TEDispatchApi dispAPI[] = {
 	{ 4, -1, -1, -1, "SetLayeredWindowAttributes", teApiSetLayeredWindowAttributes },
 	{ 1, -1, -1, -1, "SetRect", teApiSetRect },
 	{ 6, -1, -1, -1, "SendMessageTimeout", teApiSendMessageTimeout },
+	{ 0, -1, -1, -1, "GetUserName", teApiGetUserName },
 #ifdef _DEBUG
 	{ 4,  0, -1, -1, "mciSendString", teApimciSendString },
 	{ 4,  1, -1, -1, "GetGlyphIndices", teApiGetGlyphIndices },
@@ -11568,7 +11577,7 @@ HRESULT teCreateWebView2(IWebBrowser2 **ppWebBrowser)
 		VARIANT v;
 		VariantInit(&v);
 		(*ppWebBrowser)->GetProperty(L"version", &v);
-		if (GetIntFromVariantClear(&v) >= 20112000) {
+		if (GetIntFromVariantClear(&v) >= 21070900) {
 			(*ppWebBrowser)->QueryInterface(IID_PPV_ARGS(&g_pSP));
 		} else {
 			(*ppWebBrowser)->Release();

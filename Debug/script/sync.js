@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210704 ? te.Version : 20210704;
+		return te.Version < 20210709 ? te.Version : 20210709;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -205,7 +205,7 @@ RegEnumKey = function (hKey, Name, bSA) {
 	if (r == null) {
 		r = api.CreateObject("SafeArray", []);
 	}
-	return bSA ? r : !window.chrome && r.toArray ? r.toArray() : api.CreateObject("Array", r);
+	return bSA ? r : "undefined" !== typeof ScriptEngineMajorVersion && r.toArray ? r.toArray() : api.CreateObject("Array", r);
 }
 
 OpenDialog = function (path, bFilesOnly) {
@@ -3536,6 +3536,33 @@ DoDragDrop = function (Items, dwEffect, DropState, cb) {
 			cb: cb
 		}
 	}, true);
+}
+
+GetAccess = function (Path, arg, fn) {
+	const server = te.GetObject("winmgmts:\\\\.\\root\\cimv2:Win32_LogicalFileSecuritySetting='" + Path + "'");
+	const method = server.Methods_.Item("GetSecurityDescriptor");
+	let dacl = server.ExecMethod_(method.Name).Descriptor.dacl;
+	if (dacl == null) {
+		return;
+	}
+	dacl = "undefined" !== typeof ScriptEngineMajorVersion && dacl.toArray ? dacl.toArray() : api.CreateObject("Array", dacl);
+	for (let i = 0; i < dacl.length; ++i) {
+		const r = fn(dacl[i], arg);
+		if (r) {
+			return r;
+		}
+	}
+	return /^object$|^function$/.test(typeof arg) && arg.result;
+}
+
+HasAccess = function (Path, Flags) {
+	return WINVER < 0x600 ? fso.FolderExists(Path) : GetAccess(Path, {
+		Name: api.GetUserName(), result: 0
+	}, function (ace, arg) {
+		if (ace.trustee.Name == arg.Name || ace.trustee.SidString == "S-1-5-11") {
+			arg.result |= ace.AccessMask & Flags;
+		}
+	})
 }
 
 BasicDB = function (name, bLoad, bLC) {

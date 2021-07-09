@@ -3647,9 +3647,11 @@ if (!te.Data) {
 		te.Data.DataFolder = BuildPath(api.GetDisplayNameOf(ssfAPPDATA, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), "Tablacus\\Explorer");
 		const ParentFolder = GetParentFolderName(te.Data.DataFolder);
 		if (!fso.FolderExists(ParentFolder)) {
-			if (fso.CreateFolder(ParentFolder)) {
-				CreateFolder2(te.Data.DataFolder);
-			}
+			try {
+				if (fso.CreateFolder(ParentFolder)) {
+					CreateFolder2(te.Data.DataFolder);
+				}
+			} catch (e) { }
 		}
 	}
 
@@ -3664,8 +3666,10 @@ if (!te.Data) {
 		}
 	}
 	let s = BuildPath(te.Data.DataFolder, "config");
-	CreateFolder2(s);
-	if (!fso.FolderExists(s)) {
+	try {
+		fso.CreateFolder(s);
+	} catch (e) { }
+	if (!HasAccess(s, 2)) {
 		fn();
 		CreateFolder2(BuildPath(te.Data.DataFolder, "config"));
 	}
