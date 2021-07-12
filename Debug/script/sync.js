@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210709 ? te.Version : 20210709;
+		return te.Version < 20210712 ? te.Version : 20210712;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3540,6 +3540,9 @@ DoDragDrop = function (Items, dwEffect, DropState, cb) {
 
 GetAccess = function (Path, arg, fn) {
 	const server = te.GetObject("winmgmts:\\\\.\\root\\cimv2:Win32_LogicalFileSecuritySetting='" + Path + "'");
+	if (!server) {
+		return;
+	}
 	const method = server.Methods_.Item("GetSecurityDescriptor");
 	let dacl = server.ExecMethod_(method.Name).Descriptor.dacl;
 	if (dacl == null) {
@@ -3556,10 +3559,10 @@ GetAccess = function (Path, arg, fn) {
 }
 
 HasAccess = function (Path, Flags) {
-	return WINVER < 0x600 ? fso.FolderExists(Path) : GetAccess(Path, {
+	return WINVER < 0x600 || api.PathIsNetworkPath(Path) ? fso.FolderExists(Path) : GetAccess(Path, {
 		Name: api.GetUserName(), result: 0
 	}, function (ace, arg) {
-		if (ace.trustee.Name == arg.Name || ace.trustee.SidString == "S-1-5-11") {
+		if (ace.trustee.Name == arg.Name || api.PathMatchSpec(ace.trustee.SidString, "S-1-5-11;S-1-1-0")) {
 			arg.result |= ace.AccessMask & Flags;
 		}
 	})

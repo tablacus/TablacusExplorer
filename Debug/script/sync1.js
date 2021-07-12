@@ -3117,7 +3117,9 @@ AddEvent("ChangeNotify", function (Ctrl, pidls, wParam, lParam) {
 		} else if (g_.NewFolderTime > tm) {
 			delete g_.NewFolderTime;
 			g_.NewFolderTV.Expand(pidls[0], 0);
-			wsh.SendKeys("{F2}");
+			setTimeout(function () {
+				wsh.SendKeys("{F2}");
+			}, 99);
 		}
 	}
 });

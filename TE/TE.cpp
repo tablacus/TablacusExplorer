@@ -12229,6 +12229,10 @@ VOID CALLBACK teTimerProcForTree(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD d
 			case TET_Expand:
 				pTV->Expand();
 				break;
+			case TET_Redraw:
+				SendMessage(pTV->m_hwnd, WM_SETREDRAW, TRUE, 0);
+				RedrawWindow(pTV->m_hwnd, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+				break;
 			}
 		}
 	} catch (...) {
@@ -22784,6 +22788,8 @@ STDMETHODIMP CteTreeView::OnKeyboardInput(UINT uMsg, WPARAM wParam, LPARAM lPara
 
 STDMETHODIMP CteTreeView::OnBeforeExpand(IShellItem *psi)
 {
+	SendMessage(m_hwnd, WM_SETREDRAW, FALSE, 0);
+	SetTimer(m_hwndTV, TET_Redraw, 100, teTimerProcForTree);
 	return S_OK;
 }
 
@@ -22825,11 +22831,15 @@ STDMETHODIMP CteTreeView::OnGetToolTip(IShellItem *psi, LPWSTR pszTip, int cchTi
 
 STDMETHODIMP CteTreeView::OnBeforeItemDelete(IShellItem *psi)
 {
+	SendMessage(m_hwnd, WM_SETREDRAW, FALSE, 0);
+	SetTimer(m_hwndTV, TET_Redraw, 100, teTimerProcForTree);
 	return E_NOTIMPL;
 }
 
 STDMETHODIMP CteTreeView::OnItemAdded(IShellItem *psi, BOOL fIsRoot)
 {
+	SendMessage(m_hwnd, WM_SETREDRAW, FALSE, 0);
+	SetTimer(m_hwndTV, TET_Redraw, 100, teTimerProcForTree);
 	return E_NOTIMPL;
 }
 
