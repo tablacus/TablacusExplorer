@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210712 ? te.Version : 20210712;
+		return te.Version < 20210712 ? te.Version : 20210713;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3541,17 +3541,17 @@ DoDragDrop = function (Items, dwEffect, DropState, cb) {
 GetAccess = function (Path, arg, fn) {
 	const server = te.GetObject("winmgmts:\\\\.\\root\\cimv2:Win32_LogicalFileSecuritySetting='" + Path + "'");
 	if (!server) {
-		return;
+		return IsExists(Path);
 	}
 	const method = server.Methods_.Item("GetSecurityDescriptor");
 	let dacl = server.ExecMethod_(method.Name).Descriptor.dacl;
 	if (dacl == null) {
-		return;
+		return IsExists(Path);
 	}
 	dacl = "undefined" !== typeof ScriptEngineMajorVersion && dacl.toArray ? dacl.toArray() : api.CreateObject("Array", dacl);
 	for (let i = 0; i < dacl.length; ++i) {
 		const r = fn(dacl[i], arg);
-		if (r) {
+		if (r != null) {
 			return r;
 		}
 	}
@@ -3559,7 +3559,7 @@ GetAccess = function (Path, arg, fn) {
 }
 
 HasAccess = function (Path, Flags) {
-	return WINVER < 0x600 || api.PathIsNetworkPath(Path) ? fso.FolderExists(Path) : GetAccess(Path, {
+	return GetAccess(Path, {
 		Name: api.GetUserName(), result: 0
 	}, function (ace, arg) {
 		if (ace.trustee.Name == arg.Name || api.PathMatchSpec(ace.trustee.SidString, "S-1-5-11;S-1-1-0")) {

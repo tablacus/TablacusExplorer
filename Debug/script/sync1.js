@@ -3671,7 +3671,7 @@ if (!te.Data) {
 	try {
 		fso.CreateFolder(s);
 	} catch (e) { }
-	if (!HasAccess(s, 2)) {
+	if (!fso.FolderExists(s)) {
 		fn();
 		CreateFolder2(BuildPath(te.Data.DataFolder, "config"));
 	}
