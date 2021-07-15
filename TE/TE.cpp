@@ -16201,6 +16201,7 @@ HRESULT CteShellBrowser::OnNavigationPending2(LPITEMIDLIST pidlFolder)
 		m_pFolderItem = m_pFolderItem1;
 		m_pFolderItem1 = NULL;
 	} else if (!m_dwUnavailable) {
+		m_pFolderItem = new CteFolderItem(NULL);
 		m_pFolderItem->Initialize(m_pidl);
 	}
 
