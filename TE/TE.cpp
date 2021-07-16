@@ -16207,18 +16207,17 @@ HRESULT CteShellBrowser::OnNavigationPending2(LPITEMIDLIST pidlFolder)
 
 	HRESULT hr = OnBeforeNavigate(pPrevious, SBSP_SAMEBROWSER | SBSP_ABSOLUTE);
 	if FAILED(hr) {
-		if ((hr == E_ABORT || teILIsBlank(pPrevious)) && Close(FALSE)) {
-			return hr;
-		}
 		m_uLogIndex = m_uPrevLogIndex;
 		teCoTaskMemFree(m_pidl);
 		m_pidl = pidlPrevius;
 		GetShellFolder2(&m_pidl);
-//		pidlPrevius = NULL;
-		FolderItem *pid;
-		m_pFolderItem->QueryInterface(IID_PPV_ARGS(&pid));
+		FolderItem *pid = m_pFolderItem;
 		m_pFolderItem = pPrevious;
-//		pPrevious = NULL;
+		if (hr == E_ABORT || teILIsBlank(m_pFolderItem)) {
+			if (Close(FALSE)) {
+				return hr;
+			}
+		}
 		if (hr == E_ACCESSDENIED) {
 			HRESULT hr2 = BrowseObject2(pid, SBSP_NEWBROWSER | SBSP_ABSOLUTE);
 			if (ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
@@ -16227,7 +16226,6 @@ HRESULT CteShellBrowser::OnNavigationPending2(LPITEMIDLIST pidlFolder)
 		}
 		InitFilter();
 		InitFolderSize();
-		pid->Release();
 		m_nSuspendMode = 0;
 		return hr;
 	}
