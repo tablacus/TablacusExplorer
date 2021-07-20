@@ -1,5 +1,4 @@
 const Addon_Id = "aboutblank";
-const item = GetAddonElement(Addon_Id);
 
 Sync.AboutBlank = {
 	dir: [ssfDRIVES, "shell:downloads", ssfPERSONAL, "shell:my music", "shell:my pictures", "shell:my video"],
@@ -16,6 +15,9 @@ AddEvent("TranslatePath", function (Ctrl, Path) {
 			for (let i = 0; i < Sync.AboutBlank.dir.length; ++i) {
 				Items.AddItem(Sync.AboutBlank.dir[i]);
 			}
+			for (const e = api.CreateObject("Enum", fso.Drives); !e.atEnd(); e.moveNext()) {
+				Items.AddItem(e.item().Path);
+			}
 			return Items;
 		};
 		return ssfRESULTSFOLDER;
@@ -24,7 +26,7 @@ AddEvent("TranslatePath", function (Ctrl, Path) {
 
 AddEvent("GetTabName", function (Ctrl) {
 	if (Sync.AboutBlank.IsHandle(Ctrl)) {
-		return GetText("New Tab");
+		return GetText("New tab");
 	}
 }, true);
 

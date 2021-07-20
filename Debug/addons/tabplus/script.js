@@ -369,7 +369,9 @@ if (window.Addon == 1) {
 		Start5: function (ev, o) {
 			if (Addons.TabPlus.buttons == 1) {
 				ev.dataTransfer.effectAllowed = 'move';
-				ev.dataTransfer.setData("text", o.title + "\n" + o.id);
+				if (window.chrome) {
+					ev.dataTransfer.setData("text/plain", o.title + "\n" + o.id);
+				}
 				Common.TabPlus.Drag5 = o.id;
 				return true;
 			}
