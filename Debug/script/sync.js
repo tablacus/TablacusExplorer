@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210716 ? te.Version : 20210716;
+		return te.Version < 20210716 ? te.Version : 20210723;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -2615,8 +2615,7 @@ AddMenuIconFolderItem = function (mii, FolderItem, nHeight) {
 }
 
 AddMenuImage = function (mii, image, id, nHeight) {
-	mii.hbmpItem = image.GetHBITMAP(-4);
-	if (mii.hbmpItem) {
+	if (mii.hbmpItem = image && image.GetHBITMAP(-4)) {
 		mii.fMask |= MIIM_BITMAP;
 		if (id) {
 			MainWindow.g_arBM[[id, nHeight].join("\t")] = mii.hbmpItem;
