@@ -517,7 +517,7 @@ if (window.Addon == 1) {
 		const arAlign = ["InnerTop_", "InnerBottom_", "InnerLeft_", "InnerRight_"];
 		let o = document.getElementById(await SetAddon(null, arAlign[n] + Id, s.join("")));
 		if (n > 1) {
-			const w = (Number(Addons.TabPlus.opt.Width || 84) + 17) + "px";
+			const w = (Number(Addons.TabPlus.opt.Width || 84) + 17 * screen.deviceYDPI / 96) + "px";
 			o.style.width = w;
 			o = document.getElementById("tabplus_" + Id);
 			o.style.width = w;
