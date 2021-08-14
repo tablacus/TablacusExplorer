@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210716 ? te.Version : 20210811;
+		return te.Version < 20210716 ? te.Version : 20210814;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -2797,7 +2797,7 @@ OpenNewProcess = function (fn, ex, mode, vOperation) {
 
 GetAddonInfo = function (Id) {
 	if (isFinite(Id)) {
-		Id = te.Data.Addons.documentElement.childNodes[Id].nodeName;
+		Id = (te.Data.Addons.documentElement.childNodes[Id] || {}).nodeName;
 	}
 	const info = api.CreateObject("Object");
 
