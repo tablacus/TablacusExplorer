@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <resources>
-	<lang author="Olivier Wuillemin/bufferUnderrun" en="French">Français</lang>
+	<lang author="Olivier Wuillemin/bufferUnderrun/Lidgeu" en="French">Français</lang>
 	<text s="&amp;File">&amp;Fichier</text>
 	<text s="&amp;Edit">&amp;Edition</text>
 	<text s="&amp;View">Aff&amp;ichage</text>
@@ -21,7 +21,7 @@
 	<text s="&amp;Options...">&amp;Préférences...</text>
 	<text s="&amp;Close tab">&amp;Fermer l'onglet</text>
 	<text s="Cl&amp;ose other tabs">F&amp;ermer les autres onglets</text>
-	<text s="Close all tabs">Fermer les tous onglets</text>
+	<text s="Close all tabs">Fermer tous les onglets</text>
 	<text s="Close tabs on left">Fermer les onglets à gauche</text>
 	<text s="Close tabs on right">Fermer les onglets à droite</text>
 	<text s="&amp;New tab">&amp;Nouvel onglet</text>
@@ -68,12 +68,12 @@
 	<text s="Please enter the height.">Saisissez la hauteur.</text>
 	<text s="Please wait.">Attendez.</text>
 	<text s="Completed.">Terminé.</text>
-	<text s="Set default">Par défaut</text>
-	<text s="Select">Selectionnez</text>
+	<text s="Set default">Définir par défaut</text>
+	<text s="Select">Sélectionner</text>
 	<text s="Browse...">Parcourir...</text>
 	<text s="Reference...">Référence...</text>
-	<text s="Selected items">Sélectionnez un élément</text>
-	<text s="Default LanguageID">Identitifant de language par défaut</text>
+	<text s="Selected items">Eléments sélectionnés</text>
+	<text s="Default LanguageID">Identitifant de la langue par défaut</text>
 	<text s="New folder">Nouveau dossier</text>
 	<text s="New file">Nouveau fichier</text>
 	<text s="Name">Nom</text>
@@ -90,7 +90,7 @@
 	<text s="Normal">Normal</text>
 	<text s="Help">Aide</text>
 	<text s="Link">Lien</text>
-	<text s="Are you sure?">Êtes vous sûr ?</text>
+	<text s="Are you sure?">Êtes-vous sûr ?</text>
 	<text s="Do you want to replace?">Voulez-vous remplacer ?</text>
 	<text s="Menus">Menus</text>
 	<text s="Context">Contexte</text>
@@ -101,8 +101,8 @@
 	<text s="Alias">Alias</text>
 	<text s="&amp;Add-ons...">&amp;Compléments...</text>
 	<text s="Get Add-ons...">Obtenir des compléments...</text>
+	<text s="Enable">Activer</text>
 	<text s="Enabled">Activée</text>
-  <text s="Enable">Activer</text>
 	<text s="Visit website">Visiter le site web</text>
 	<text s="Information...">Information...</text>
 	<text s="Title bar">Barre de titre</text>
@@ -111,21 +111,21 @@
 	<text s="Right bar">Barre de doite</text>
 	<text s="Bottom bar">Barre du bas</text>
 	<text s="Center">Centrer</text>
-	<text s="Background">Arrière plan</text>
+	<text s="Background">Arrière-plan</text>
 	<text s="Advanced">Avancé</text>
 
 	<text s="Lines">Lignes</text>
-	<text s="No edit labels">Pas d'édition des labels</text>
-	<text s="Disable Drag-and-Drop">Désactiver le Glisser-Déplacer</text>
-	<text s="No infotip">Pas d'info-bulles</text>
-	<text s="Single click expand">Agrandissement par simple click</text>
-	<text s="Spring expand">Agrandissement par bondissement</text>
+	<text s="No edit labels">Pas d'édition d'étiquettes</text>
+	<text s="Disable Drag-and-Drop">Désactiver le Glisser-Déposer</text>
+	<text s="No infotip">Pas d'info-bulle</text>
+	<text s="Single click expand">Déplier par simple click</text>
+	<text s="Spring expand">Déplier par bondissement</text>
 	<text s="Full row select">Sélection ligne entière</text>
-	<text s="Show selection always">Afficher toujours la sélection</text>
+	<text s="Show selection always">Toujours afficher toujours la sélection</text>
 	<text s="Border">Bordure</text>
 	<text s="Horizontal scroll">Défilement horizontal</text>
 
-	<text s="Enumeration">Énumeration</text>
+	<text s="Enumeration">Inventaire</text>
 	<text s="Folders">Dossiers</text>
 	<text s="Not folders">Autres</text>
 	<text s="Include hidden items">Inclure les éléments cachés</text>
@@ -139,7 +139,7 @@
 	<text s="Scroll opposite">Défilement opposé</text>
 	<text s="Multi line">Multi-ligne</text>
 	<text s="Fixed width">Largeur fixe</text>
-	<text s="Ragged right">Droite irréguliere</text>
+	<text s="Ragged right">Droite irrégulière</text>
 	<text s="Right/Bottom">Droit/bas</text>
 	<text s="Vertical">Vertical</text>
 	<text s="Hot track">Sélection au vol</text>
@@ -153,12 +153,12 @@
 	<text s="Auto arrange">Réorganisation automatique</text>
 	<text s="Single selection">Sélection unique</text>
 	<text s="No client edge">Pas de bords en creux</text>
-	<text s="Show selection always">Montre toujours la sélection</text>
-	<text s="Single click activate">Activation par simple-clic</text>
+	<text s="Show selection always">Toujours afficher la sélection</text>
+	<text s="Single click activate">Activer par simple-clic</text>
 
-	<text s="Show frames">Afficher les cadres explorateurs</text>
+	<text s="Show frames">Afficher en mode Explorateur</text>
 
-	<text s="View flags">Afficher les drapeaux</text>
+	<text s="View flags">Afficher les marqueurs</text>
 	<text s="Show all files">Afficher tous les fichiers</text>
 
 	<text s="Icon">Icônes</text>
@@ -169,7 +169,7 @@
 	<text s="Tile">Tuile</text>
 	<text s="Thumbstrip">Bande de miniatures</text>
 	<text s="Content">Contenu</text>
-	<text s="or higher.">ou plus grand.</text>
+	<text s="or higher.">ou plus récent.</text>
 	<text s="Check for updates">Vérifier les mises à jour</text>
 	<text s="the latest version">la dernière version</text>
 	<text s="Update available">Mise à jour disponible</text>
@@ -180,7 +180,7 @@
 	<text s="is required.">est nécessaire.</text>
 	<text s="File is in operation.">Fichier en cours de traitement.</text>
 	<text s="Mouse">Souris</text>
-	<text s="Gestures">Gestes</text>
+	<text s="Gestures">Manipulations</text>
 	<text s="Trails">Trainée</text>
 	<text s="Color">Couleur</text>
 	<text s="Priority">Priorité</text>
@@ -204,7 +204,7 @@
 	<text s="Delete">Supprimer</text>
 	<text s="Rename">Renommer</text>
 	<text s="Extract">Extraire</text>
-	<text s="Save">Enregistrer</text>
+	<text s="Save">Sauvegarder</text>
 	<text s="Load">Charger</text>
 	<text s="Get %s...">Obtenir des %s...</text>
 	<text s="Results">Résultats</text>

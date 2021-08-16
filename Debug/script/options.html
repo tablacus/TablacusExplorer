@@ -64,7 +64,7 @@
               <input type="text" name="Conf_Lang" size="3">
               <input type="button" value="Browse..." onclick="SelectLangID(this)">
               <label>Default</label>:
-              <span id="DefaultLangID"></span>&nbsp;<input type="button" value="Set Default" onclick="SetDefaultLangID()"><br>
+              <span id="DefaultLangID"></span>&nbsp;<input type="button" value="Default" onclick="SetDefaultLangID()"><br>
               <br>
               <label>Left bar</label><br>
               <label>Width</label><input type="text" id="Conf_LeftBarWidth" align="right" size="4"><label>@mspaint.exe,-50047[px]</label><br><br>
@@ -72,7 +72,7 @@
               <label>Width</label><input type="text" id="Conf_RightBarWidth" align="right" size="4"><label>@mspaint.exe,-50047[px]</label><br><br>
               <label>Tool bar<i> </i>Icon</label><br>
               <label>Size</label><input type="text" id="Conf_IconSize" align="right" size="4"><label>@mspaint.exe,-50047[px]</label>
-              <input type="button" value="Set Default" onclick="SetDefault(document.F.Conf_IconSize, '');">
+              <input type="button" value="Default" onclick="SetDefault(document.F.Conf_IconSize, '');">
               <br><br>
               <label>Menus</label><br>
               <label><input type="checkbox" id="Conf_MenuHidden">Include hidden items</label>&nbsp;
@@ -325,7 +325,7 @@
                     <input type="button" value="Browse..." onclick="ChooseFolder1(document.F.Conf_NewTab)">
                   </td>
                   <td>
-                    <input type="button" value="Set Default" onclick="SetDefault(document.F.Conf_NewTab, '');">
+                    <input type="button" value="Default" onclick="SetDefault(document.F.Conf_NewTab, '');">
                   </td>
                 </tr>
               </table>
@@ -416,7 +416,7 @@
               </div>
               <br>
               <div>
-                <label><input type="checkbox" id="Conf_TreeDefault">Set Default</label>
+                <label><input type="checkbox" id="Conf_TreeDefault">Default</label>
               </div>
               <div>
                 (*)Windows Vista <label>or higher.</label>
@@ -433,7 +433,7 @@
                     <input type="button" value="Browse..." onclick="ChooseFolder1(document.F.Tree_Root)">
                   </td>
                   <td>
-                    <input type="button" value="Set Default" onclick="SetDefault(document.F.Tree_Root, '::{679F85CB-0220-4080-B29B-5540CC05AAB6}\n0');">
+                    <input type="button" value="Default" onclick="SetDefault(document.F.Tree_Root, '::{679F85CB-0220-4080-B29B-5540CC05AAB6}\n0');">
                   </td>
                 </tr>
               </table>
@@ -507,7 +507,7 @@
               <input type="text" id="Conf_NetworkTimeout" style="width: 6em; text-align:right"><label>@calc.exe,-1721[ms]</label>
               <br><br>
               <div>
-                <label><input type="checkbox" id="Conf_ListDefault">Set Default</label>
+                <label><input type="checkbox" id="Conf_ListDefault">Default</label>
               </div>
               <div>
                 (*)Windows Vista <label>or higher.</label>

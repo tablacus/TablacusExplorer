@@ -15500,6 +15500,9 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 
 		case TE_METHOD + 0xf400://NavigateComplete
 			m_bBeforeNavigate = FALSE;
+			if (m_bVisible && !IsWindowVisible(m_hwnd)) {
+				ShowWindow(m_hwnd, SW_SHOWNA);
+			}
 			return S_OK;
 
 		case TE_METHOD + 0xf500://NavigationComplete
@@ -16472,6 +16475,9 @@ STDMETHODIMP CteShellBrowser::OnNavigationComplete(PCIDLIST_ABSOLUTE pidlFolder)
 {
 	if (!teILIsFileSystemEx(pidlFolder) || teILIsSearchFolder(pidlFolder)) {
 		OnNavigationComplete2();
+	}
+	if (m_bVisible && !IsWindowVisible(m_hwnd)) {
+		ShowWindow(m_hwnd, SW_SHOWNA);
 	}
 	return S_OK;
 }
