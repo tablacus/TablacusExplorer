@@ -35,7 +35,7 @@ Sync.MultiThread = {
 							strTemp2 = GetTempPath(7);
 							CreateFolder(strTemp2);
 						}
-						path1 = strTemp2 + fso.GetFileName(path1);
+						path1 = strTemp2 + GetFileName(path1);
 					}
 					arFrom.push(path1);
 				} else {

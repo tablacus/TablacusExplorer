@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <TablacusExplorer>
   <General>
-    <Version>1.39</Version>
-    <MinVersion>2020.11.9</MinVersion>
-    <pubDate>Tue, 10 Nov 2020 00:00:00 GMT</pubDate>
+    <Version>1.40</Version>
+    <MinVersion>2021.7.23</MinVersion>
+    <pubDate>Tue, 17 Aug 2021 00:00:00 GMT</pubDate>
     <Options>Common:0:0</Options>
     <Level>2</Level>
     <Creator>Gaku</Creator>
@@ -14,6 +14,10 @@
     <Name>Remember folder view settings</Name>
     <Description>Automatically remember folder view settings.</Description>
   </en>
+  <fr>
+    <Name>Mémoriser la configuration d'affichage de dossier</Name>
+    <Description>Enregistre automatiquement les paramètres d'affichage des dossiers.</Description>
+  </fr>
   <ja>
     <Name>フォルダの表示設定を覚える</Name>
     <Description>自動的にフォルダの表示設定を覚えます。</Description>

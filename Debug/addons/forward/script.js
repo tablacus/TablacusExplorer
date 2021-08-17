@@ -16,7 +16,6 @@ if (window.Addon == 1) {
 				const Log = await FV.History;
 				const hMenu = await api.CreatePopupMenu();
 				const mii = await api.Memory("MENUITEMINFO");
-				mii.cbSize = await mii.Size;
 				mii.fMask = MIIM_ID | MIIM_STRING | MIIM_BITMAP;
 				for (let i = await Log.Index; i-- > 0;) {
 					const FolderItem = await Log[i];

@@ -20,7 +20,7 @@ Sync.Remember = {
 				var col = FV.Columns(Sync.Remember.nFormat);
 				if (col) {
 					var ar = api.CreateObject("Array");
-					ar.push(new Date().getTime(), FV.CurrentViewMode, FV.IconSize, col, FV.SortColumn(Sync.Remember.nFormat), FV.GroupBy, FV.SortColumns);
+					ar.push(new Date().getTime(), FV.CurrentViewMode, FV.IconSize, col, FV.GetSortColumn(Sync.Remember.nFormat), FV.GroupBy, FV.SortColumns);
 					Common.Remember.db[path] = ar;
 				}
 			}
@@ -60,7 +60,7 @@ AddEvent("BeforeNavigate", function (Ctrl, fs, wFlags, Prev) {
 			var col = Ctrl.Columns(Sync.Remember.nFormat);
 			if (col && PathMatchEx(path, Sync.Remember.Filter) && !PathMatchEx(path, Sync.Remember.Disable)) {
 				var ar = api.CreateObject("Array");
-				ar.push(new Date().getTime(), Ctrl.CurrentViewMode, Ctrl.IconSize, col, Ctrl.SortColumn(Sync.Remember.nFormat), Ctrl.GroupBy, Ctrl.SortColumns);
+				ar.push(new Date().getTime(), Ctrl.CurrentViewMode, Ctrl.IconSize, col, Ctrl.GetSortColumn(Sync.Remember.nFormat), Ctrl.GroupBy, Ctrl.SortColumns);
 				Common.Remember.db[path] = ar;
 			}
 		}
@@ -92,7 +92,7 @@ AddEvent("NavigateComplete", function (Ctrl) {
 				if (ar[2] > Sync.Remember.nIcon && (ar[1] > FVM_ICON && ar[1] <= FVM_DETAILS)) {
 					ar[2] = Sync.Remember.nSM;
 				}
-				Ctrl.CurrentViewMode(ar[1], ar[2]);
+				Ctrl.SetViewMode(ar[1], ar[2]);
 				Ctrl.Columns = ar[3];
 				if (Ctrl.GroupBy && ar[5]) {
 					Ctrl.GroupBy = ar[5];

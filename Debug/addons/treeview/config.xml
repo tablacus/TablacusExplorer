@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <TablacusExplorer>
   <General>
-    <Version>1.39</Version>
+    <Version>1.40</Version>
     <MinVersion>2021.6.17</MinVersion>
-    <pubDate>Mon, 28 Jun 2021 00:00:00 GMT</pubDate>
+    <pubDate>Tue, 17 Aug 2021 00:00:00 GMT</pubDate>
     <Options>Common:0,5,6,7,8,9:0</Options>
     <Level>2</Level>
     <Creator>Gaku</Creator>
@@ -14,6 +14,10 @@
     <Name>Tree view</Name>
     <Description>Tree view</Description>
   </en>
+  <fr>
+    <Name>Arborescence</Name>
+    <Description>Définition de la vue arborescente</Description>
+  </fr>
   <ja>
     <Name>ツリー</Name>
   </ja>

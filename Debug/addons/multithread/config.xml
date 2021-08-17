@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <TablacusExplorer>
   <General>
-    <Version>1.25</Version>
-    <MinVersion>2021.3.30</MinVersion>
-    <pubDate>Wed, 31 Mar 2021 00:00:00 GMT</pubDate>
+    <Version>1.26</Version>
+    <MinVersion>2021.7.23</MinVersion>
+    <pubDate>Tue, 17 Aug 2021 00:00:00 GMT</pubDate>
     <Options>Common:0:0</Options>
     <Level>2</Level>
     <Creator>Gaku</Creator>
@@ -14,6 +14,10 @@
     <Name>Multi thread</Name>
     <Description>Multi-threaded file operation.</Description>
   </en>
+  <fr>
+    <Name>Multi-fils</Name>
+    <Description>Opérations sur fichier parallélisées.</Description>
+  </fr>
   <ja>
     <Name>マルチスレッド</Name>
     <Description>マルチスレッドでファイル操作を行います。</Description>

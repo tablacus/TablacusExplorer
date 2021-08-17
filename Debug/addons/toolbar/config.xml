@@ -14,6 +14,10 @@
     <Name>Tool bar</Name>
     <Description>Tool bar</Description>
   </en>
+  <fr>
+    <Name>Barre d'outils</Name>
+    <Description>Définition de la barre d'outils</Description>
+  </fr>
   <ja>
     <Name>ツールバー</Name>
   </ja>

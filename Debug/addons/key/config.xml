@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <TablacusExplorer>
   <General>
-    <Version>1.24</Version>
+    <Version>1.25</Version>
     <MinVersion>2021.2.21</MinVersion>
-    <pubDate>Fri, 26 Feb 2021 00:00:00 GMT</pubDate>
+    <pubDate>Tue, 17 Aug 2021 00:00:00 GMT</pubDate>
     <Options>Common:4:4</Options>
     <Level>2</Level>
     <Creator>Gaku</Creator>
@@ -12,8 +12,12 @@
   </General>
   <en>
     <Name>Key</Name>
-    <Description>Key</Description>
+    <Description>Definition of keyboard shortcuts</Description>
   </en>
+  <fr>
+    <Name>Raccourci clavier</Name>
+    <Description>Définition de raccourci(s) clavier</Description>
+  </fr>
   <ja>
     <Name>キー</Name>
   </ja>

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <TablacusExplorer>
   <General>
-    <Version>1.13</Version>
+    <Version>1.14</Version>
     <MinVersion>2021.3.7</MinVersion>
-    <pubDate>Mon, 08 Mar 2021 00:00:00 GMT</pubDate>
+    <pubDate>Tue, 17 Aug 2021 00:00:00 GMT</pubDate>
     <Options>Common:0:0</Options>
     <Level>2</Level>
     <Creator>Gaku</Creator>
@@ -14,6 +14,10 @@
     <Name>Extract</Name>
     <Description>Extract the compressed files.</Description>
   </en>
+  <fr>
+    <Name>Extraire</Name>
+    <Description>Extraire le contenu de fichiers compressés.</Description>
+  </fr>
   <ja>
     <Name>展開</Name>
     <Description>圧縮ファイルの展開</Description>

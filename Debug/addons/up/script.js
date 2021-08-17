@@ -73,7 +73,7 @@ if (window.Addon == 1) {
 			id: "ImgUp_$",
 			title: strName,
 			src: item.getAttribute("Icon") || "icon:general,28"
-		}, GetIconSize(item.getAttribute("IconSize"), item.getAttribute("Location") == "Inner" && 16)), '</span>']);
+		}, GetIconSizeEx(item)), '</span>']);
 		delete item;
 	});
 } else {

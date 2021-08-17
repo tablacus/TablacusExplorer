@@ -16,7 +16,6 @@ if (window.Addon == 1) {
 				const Log = await FV.History;
 				const hMenu = await api.CreatePopupMenu();
 				const mii = await api.Memory("MENUITEMINFO");
-				mii.cbSize = await mii.Size;
 				mii.fMask = MIIM_ID | MIIM_STRING | MIIM_BITMAP;
 				const nCount = await Log.Count;
 				for (let i = await Log.Index + 1; i < nCount; i++) {

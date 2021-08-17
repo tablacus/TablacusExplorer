@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <TablacusExplorer>
   <General>
-    <Version>1.17</Version>
+    <Version>1.18</Version>
     <MinVersion>2021.3.26</MinVersion>
-    <pubDate>Sat, 27 Mar 2021 00:00:00 GMT</pubDate>
+    <pubDate>Tue, 17 Aug 2021 00:00:00 GMT</pubDate>
     <Options>Common:5,6:5</Options>
     <Level>2</Level>
     <Creator>Gaku</Creator>
@@ -14,6 +14,10 @@
     <Name>Back</Name>
     <Description>Back</Description>
   </en>
+  <fr>
+    <Name>Reculer - global</Name>
+    <Description>Place le bouton "Reculer" dans la barre d'outils principale</Description>
+  </fr>
   <ja>
     <Name>戻る</Name>
   </ja>

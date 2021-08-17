@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <TablacusExplorer>
   <General>
-    <Version>1.67</Version>
+    <Version>1.68</Version>
     <MinVersion>2021.5.7</MinVersion>
-    <pubDate>Sat, 08 May 2021 00:00:00 GMT</pubDate>
+    <pubDate>Tue, 17 Aug 2021 00:00:00 GMT</pubDate>
     <Options>Common:0,6,7,8,9:0</Options>
     <Level>2</Level>
     <Creator>Gaku</Creator>
@@ -14,6 +14,10 @@
     <Name>Address bar</Name>
     <Description>Breadcrumbs and XP style is available.</Description>
   </en>
+  <fr>
+    <Name>Barre d'adresse</Name>
+    <Description>Les styles "XP" et "Fil d'Ariane" sont disponibles.</Description>
+  </fr>
   <ja>
     <Name>アドレスバー</Name>
     <Description>パンくずリスト、XPスタイルが選べます。</Description>

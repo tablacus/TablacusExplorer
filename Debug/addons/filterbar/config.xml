@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <TablacusExplorer>
   <General>
-    <Version>1.36</Version>
+    <Version>1.37</Version>
     <MinVersion>2021.5.25</MinVersion>
-    <pubDate>Wed, 26 May 2021 00:00:00 GMT</pubDate>
+    <pubDate>Tue, 17 Aug 2021 00:00:00 GMT</pubDate>
     <Options>Common:0,5,6,7,8,9:0</Options>
     <Level>2</Level>
     <Creator>Gaku</Creator>
@@ -14,6 +14,10 @@
     <Name>Filter bar</Name>
     <Description>Filter bar</Description>
   </en>
+  <fr>
+    <Name>Barre de filtre</Name>
+    <Description>Champ d'entrée de filtre - global.</Description>
+  </fr>
   <ja>
     <Name>フィルターバー</Name>
   </ja>
