@@ -101,7 +101,7 @@
 	<text s="Alias">Alias</text>
 	<text s="&amp;Add-ons...">&amp;Estensioni...</text>
 	<text s="Get Add-ons...">Ottieni estensioni...</text>
-  <text s="Enabled">Attiva</text>
+	<text s="Enabled">Attiva</text>
 	<text s="Enable">Abilita</text>
 	<text s="Visit website">Visita il sito web</text>
 	<text s="Information...">Informazioni...</text>
@@ -211,10 +211,11 @@
 	<text s="Number of items">Numero di elementi</text>
 	<text s="&amp;About %s">A proposito di %s</text>
 	<text s="Get">Ottieni</text>
+ 	<text s="Drag-and-Drop">Drag-and-Drop</text>
+	<text s="Swap">Scambio</text>
 
 	<text s="Location">Percorso</text>
 	<text s="Root style">Stile Radice</text>
 	<text s="View mode">Modifica visualizzazione</text>
-  <text s="Disable">Disabilita</text>
- 	<text s="Drag-and-Drop">Drag-and-Drop</text>
+	<text s="Disable">Disabilita</text>
 </resources>

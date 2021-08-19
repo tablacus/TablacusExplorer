@@ -211,10 +211,11 @@
 	<text s="Number of items">Aantal items</text>
 	<text s="&amp;About %s">&amp;Over %s</text>
 	<text s="Get">Verkrijg</text>
+ 	<text s="Drag-and-Drop">Drag-en-Drop</text>
+  	<text s="Swap">Ruil</text>
 
 	<text s="Location">Locatie</text>
 	<text s="Root style">Root stijl</text>
 	<text s="View mode">Beeldmodus</text>
 	<text s="Disable">Uitschakelen</text>
- 	<text s="Drag-and-Drop">Drag-en-Drop</text>
 </resources>

@@ -211,10 +211,11 @@
 	<text s="Number of items">Число объектов</text>
 	<text s="&amp;About %s">&amp;О %s</text>
 	<text s="Get">Получить</text>
+	<text s="Drag-and-Drop">Drag-and-Drop</text>
+  	<text s="Swap">Менять</text>
 
 	<text s="Location">Локация</text>
 	<text s="Root style">Стиль корневой папки</text>
 	<text s="View mode">Режим просмотра</text>
 	<text s="Disable">Отключить</text>
-	<text s="Drag-and-Drop">Drag-and-Drop</text>
 </resources>

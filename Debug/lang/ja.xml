@@ -211,10 +211,11 @@
 	<text s="Number of items">項目数</text>
 	<text s="&amp;About %s">%s について(&amp;A)</text>
 	<text s="Get">取得</text>
+	<text s="Drag-and-Drop">ドラッグ＆ドロップ</text>
+ 	<text s="Swap">入れ替え</text>
 
 	<text s="Location">場所</text>
 	<text s="Root style">ルートスタイル</text>
 	<text s="View mode">表示モード</text>
 	<text s="Disable">無効にする</text>
-	<text s="Drag-and-Drop">ドラッグ＆ドロップ</text>
 </resources>

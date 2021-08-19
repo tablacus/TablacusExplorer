@@ -212,10 +212,11 @@
 	<text s="Number of items">Broj stavki</text>
 	<text s="&amp;About %s">&amp;Informacije o programu %s</text>
 	<text s="Get">Pristupi</text>
+ 	<text s="Drag-and-Drop">Prevlačenje</text>
+  	<text s="Swap">Свап</text>
 
 	<text s="Location">Položaj</text>
 	<text s="Root style">Osnovni stil</text>
 	<text s="View mode">Način prikaza</text>
 	<text s="Disable">Isključi</text>
- 	<text s="Drag-and-Drop">Prevlačenje</text>
 </resources>

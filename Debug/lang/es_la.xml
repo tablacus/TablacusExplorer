@@ -211,10 +211,11 @@
 	<text s="Number of items">Número de elementos</text>
 	<text s="&amp;About %s">&amp;Acerca de %s</text>
 	<text s="Get">Obtener</text>
+ 	<text s="Drag-and-Drop">Arrastar-soltar</text>
+ 	<text s="Swap">Intercambio</text>
 
 	<text s="Location">Ubicación</text>
 	<text s="Root style">Estilo de la raíz</text>
 	<text s="View mode">Modo de vista</text>
-  <text s="Disable">Deshabilitar</text>
- 	<text s="Drag-and-Drop">Arrastar-soltar</text>
+	<text s="Disable">Deshabilitar</text>
 </resources>

@@ -211,10 +211,11 @@
 	<text s="Number of items">öğe sayısı</text>
 	<text s="&amp;About %s">%s,</text>
 	<text s="Get">Almak</text>
+	<text s="Drag-and-Drop">Sürükle bırak</text>
+  	<text s="Swap">Takas</text>
 
 	<text s="Location">Yer</text>
 	<text s="Root style">Kök sitili</text>
 	<text s="View mode">Görünüm türü</text>
 	<text s="Disable">Pasif</text>
-	<text s="Drag-and-Drop">Sürükle bırak</text>
 </resources>

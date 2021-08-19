@@ -66,10 +66,10 @@ BuildPath = function () {
 };
 
 GetParentFolderName = function (s) {
-	var res = /^(\\\\+.*)([\\\/]?)/.exec(s) || /^(.*)([\\\/])/.exec(s);
+	var res = /^(.*)([\\\/])/.exec(s);
 	var d = res && /^[A-Z]:/i.test(res[1]) ? 3 : 1;
 	var r = res ? res[1].length < d ? res[1] + res[2] : res[1] : "";
-	return r != s && r.length >= d ? r : "";
+	return r != s && r != "\\" && r.length >= d ? r : "";
 }
 
 LoadScript = function (js, cb) {

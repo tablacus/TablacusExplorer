@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210816 ? te.Version : 20210816;
+		return te.Version < 20210816 ? te.Version : 20210819;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3034,7 +3034,7 @@ OpenInExplorer = function (pid1) {
 
 ShowDialog = function (fn, opt) {
 	opt.opener = window;
-	if (!/:/.test(fn)) {
+	if (!/:|\\\\/.test(fn)) {
 		fn = location.href.replace(/[^\/]*$/, fn);
 	}
 	const r = opt.r || Math.abs(MainWindow.DefaultFont.lfHeight) / 12;

@@ -211,10 +211,11 @@
 	<text s="Number of items">Кількість об'єктів</text>
 	<text s="&amp;About %s">&amp;Про %s</text>
 	<text s="Get">Отримати</text>
+	<text s="Drag-and-Drop">Drag-and-Drop</text>
+  	<text s="Swap">Поміняти місцями</text>
 
 	<text s="Location">Локація</text>
 	<text s="Root style">Стиль кореневої папки</text>
 	<text s="View mode">Режим перегляду</text>
 	<text s="Disable">Вимкнути</text>
-	<text s="Drag-and-Drop">Drag-and-Drop</text>
 </resources>
