@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210816 ? te.Version : 20210819;
+		return te.Version < 20210816 ? te.Version : 20210905;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1757,7 +1757,7 @@ CreateNew = function (path, fn) {
 		}
 	}
 	MainWindow.g_.NewItemTime = new Date().getTime() + 5000;
-	MainWindow.SelectItem(te.Ctrl(CTRL_FV), path, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK | SVSI_SELECT, 800);
+	MainWindow.SelectItem(te.Ctrl(CTRL_FV), path, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_DESELECTOTHERS | SVSI_SELECTIONMARK | SVSI_SELECT, 800, true);
 }
 
 SetFileTime = function (path, ctime, atime, mtime) {
@@ -1791,9 +1791,7 @@ CreateFolder = function (path) {
 	if (r != null) {
 		return r;
 	}
-	CreateNew(path, function (strPath) {
-		fso.CreateFolder(strPath);
-	});
+	CreateNew(path, CreateFolder1);
 }
 
 CreateFile = function (path) {
@@ -1802,7 +1800,11 @@ CreateFile = function (path) {
 	if (r != null) {
 		return r;
 	}
-	CreateNew(path, CreateFile2);
+	CreateNew(path, CreateFile1);
+}
+
+CreateFolder1 = function (strPath) {
+	fso.CreateFolder(strPath);
 }
 
 CreateFolder2 = function (path) {
@@ -1811,7 +1813,7 @@ CreateFolder2 = function (path) {
 	}
 }
 
-CreateFile2 = function (path) {
+CreateFile1 = function (path) {
 	let ext = fso.GetExtensionName(path);
 	if (ext) {
 		let s, r = "HKCR\\." + ext + "\\";

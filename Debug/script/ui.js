@@ -871,11 +871,19 @@ AddFavoriteEx = async function (Ctrl, pt) {
 	return S_OK
 }
 
-SelectItem = function (FV, path, wFlags, tm) {
+SelectItem = function (FV, path, wFlags, tm, bCheck) {
 	setTimeout(async function () {
 		if (FV) {
 			if (SameText(await FV.FolderItem.Path, GetParentFolderName(path))) {
-				FV.SelectItem(path, wFlags);
+				await FV.SelectItem(path, wFlags);
+				if (bCheck && (wFlags & SVSI_FOCUSED)) {
+					setTimeout(async function () {
+						if (!await api.ILIsEqual(path, await FV.FocusedItem)) {
+							await FV.Refresh();
+							SelectItem(FV, path, wFlags, tm);
+						}
+					}, 500);
+				}
 			}
 		}
 	}, tm);

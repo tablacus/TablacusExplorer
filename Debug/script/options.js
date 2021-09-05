@@ -1542,6 +1542,11 @@ InitDialog = async function () {
 			"shell32": "i,shell32.dll"
 		};
 		const fontDir = await api.ILCreateFromPath(ssfFONTS).Path;
+		if (await fso.FileExists(BuildPath(fontDir, "SegoeIcons.ttf")) || await fso.FileExists(await ExtractMacro(te, "%AppData%\\..\\Local\\Microsoft\\Windows\\Fonts\\Segoe Fluent Icons.ttf"))) {
+			for (let i = 0xe700; i < 0xf8ff; i += 256) {
+				a["Segoe Fluent Icons " + i.toString(16)] = "f,Segoe Fluent Icons," + i + ",256";
+			}
+		}
 		if (await fso.FileExists(BuildPath(fontDir, "segmdl2.ttf"))) {
 			for (let i = 0xe700; i < 0xf8ff; i += 256) {
 				a["Segoe MDL2 Assets " + i.toString(16)] = "f,Segoe MDL2 Assets," + i + ",256";
