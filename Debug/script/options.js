@@ -2867,47 +2867,56 @@ async function ShowButtons(b1, b2, SortMode) {
 	o.style.display = b1 ? "inline-block" : "none";
 	if (!document.getElementById("SortButton_0")) {
 		const h = screen.deviceYDPI / 4;
-		o.innerHTML = (await Promise.all([GetImgTag({
+		o.innerHTML = await GetImgTag({
 			id: "SortButton_0",
 			src: "icon:general,24",
-			title: await api.LoadString(hShell32, 8976),
+			title: await GetTextR("@shell32.dll,-50690[Arrange by:]"),
 			onclick: "SortAddons(this)",
 			"class": "button"
-		}, h), GetImgTag({
-			id: "SortButton_1",
-			src: "icon:general,26",
-			title: await GetTextR("{B725F130-47EF-101A-A5F1-02608C9EEBAC} 14"),
-			onclick: "SortAddons(this)",
-			"class": "button"
-		}, h), GetImgTag({
-			id: "SortButton_2",
-			src: "icon:general,27",
-			title: "Id",
-			onclick: "SortAddons(this)",
-			"class": "button"
-		}, h)])).join("");
+		}, h);
 	}
 	if (g_SortMode == 1) {
 		const table = document.getElementById("Addons");
 		const bSorted = /none/i.test(table.style.display);
 		document.getElementById("MoveButton").style.display = (b1 || b2) && !bSorted ? "inline-block" : "none";
-		for (let i = 3; i--;) {
-			o = document.getElementById("SortButton_" + i);
-			o.style.border = bSorted && g_nSort[1] == i ? "1px solid highlight" : "";
-			o.style.padding = bSorted && g_nSort[1] == i ? "0" : "";
-		}
-	} else {
-		document.getElementById("MoveButton").style.display = b2 ? "inline-block" : "none";
-		for (let i = 3; i--;) {
-			o = document.getElementById("SortButton_" + i);
-			o.style.border = g_nSort[g_SortMode] == i ? "1px solid highlight" : "";
-			o.style.padding = g_nSort[g_SortMode] == i ? "0" : "";
-		}
 	}
 }
 
 async function SortAddons(el) {
-	const n = el.id.replace(/\D/g, "");
+	let ar = [8976, 8980, 8977];
+	if (g_SortMode == 1) {
+		ar.push(9808);
+	}
+	for (let i = ar.length; i--;) {
+		ar[i] = api.LoadString(hShell32, ar[i]);
+	}
+	ar.push(api.CreatePopupMenu());
+	ar = await Promise.all(ar);
+	const hMenu = ar.pop();
+	for (let i = 0; i < ar.length; ++i) {
+		let uFlags = MF_BYPOSITION | MF_STRING;
+		if (g_SortMode == 1) {
+			const table = document.getElementById("Addons");
+			if (/none/i.test(table.style.display)) {
+				if (g_nSort[1] == i) {
+					uFlags |= MF_CHECKED | MFT_RADIOCHECK;
+				}
+			} else if (i == 3) {
+				uFlags |= MF_CHECKED | MFT_RADIOCHECK;
+			}
+		} else {
+			if (g_nSort[g_SortMode] == i) {
+				uFlags |= MF_CHECKED | MFT_RADIOCHECK;
+			}
+		}
+		await api.InsertMenu(hMenu, i, uFlags, i + 1, ar[i]);
+	}
+	const pt = GetPos(el, 1);
+	const n = await api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y + o.offsetHeight, ui_.hwnd, null, null) - 1;
+	api.DestroyMenu(hMenu);
+	if (n < 0) {
+		return;
+	}
 	if (g_SortMode == 1) {
 		const table = document.getElementById("Addons");
 		if (table.rows.length < 2) {
@@ -2917,7 +2926,7 @@ async function SortAddons(el) {
 		while (sorted.rows.length > 0) {
 			sorted.deleteRow(0);
 		}
-		if (/none/i.test(table.style.display) && g_nSort[1] == n) {
+		if (n == 3 && /none/i.test(table.style.display)) {
 			table.style.display = "";
 			sorted.style.display = "none";
 		} else {

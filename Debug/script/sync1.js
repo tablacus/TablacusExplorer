@@ -1517,17 +1517,11 @@ te.OnClose = function (Ctrl) {
 AddEvent("Close", function (Ctrl) {
 	switch (Ctrl.Type) {
 		case CTRL_TE:
-			if (CanClose(Ctrl)) {
-				const r = MessageBox("File is in operation.", TITLE, MB_ABORTRETRYIGNORE);
-				if (r == IDABORT) {
-					return S_FALSE;
-				}
-				if (r == IDRETRY) {
-					setTimeout(function () {
-						api.PostMessage(te.hwnd, WM_CLOSE, 0, 0);
-					}, 999);
-					return S_FALSE;
-				}
+			if (CanClose(Ctrl) && api.GetKeyState(VK_SHIFT) >= 0) {
+				setTimeout(function () {
+					api.PostMessage(te.hwnd, WM_CLOSE, 0, 0);
+				}, 999);
+				return S_FALSE;
 			}
 			SetWindowAlpha(te.hwnd, 0);
 			Finalize();
