@@ -560,12 +560,35 @@ ApplyLang = async function (doc) {
 	if (!doc) {
 		doc = document;
 	}
+	const ButtonIcon = {
+		"Up": 0xe74a,
+		"Down": 0xe74b,
+		"Remove": 0xe74d,
+		"Delete": 0xe74d,
+		"Portable": 0xe821,
+		"Select": 0xea37,
+		"Add": 0xe710,
+		"Replace": 0xe74e,
+		"Browse": 0xe712,
+		"Search": 0xe721,
+		"Default": 0xe777,
+		"Input": 0xe961,
+		"Details": 0xe946,
+		"Options": 0xe713,
+		"Refresh": 0xe72c,
+		"Open": 0xe8e5,
+		"Test": 0xe768,
+		"None": 0xe75c
+	}
 	let s, h = 0;
 	if (doc.body) {
 		const r = await Promise.all([MainWindow.DefaultFont.lfFaceName, MainWindow.DefaultFont.lfHeight, MainWindow.DefaultFont.lfWeight]);
 		doc.body.style.fontFamily = r[0];
 		doc.body.style.fontSize = Math.abs(r[1]) + "px";
 		doc.body.style.fontWeight = r[2];
+	}
+	if (ui_.IconFont == null) {
+		ui_.IconFont = (await MainWindow.g_.IconFont) || "";
 	}
 	ApplyLangTag(doc.getElementsByTagName("label"));
 	ApplyLangTag(doc.getElementsByTagName("button"));
@@ -592,7 +615,16 @@ ApplyLang = async function (doc) {
 				}
 				if (SameText(el.type, "button")) {
 					if (s = el.value) {
-						el.value = (await GetTextR(s)).replace(/\(&\w\)|&/, "");
+						const icon = ui_.IconFont && ButtonIcon[s.replace(/\.+$/, "")];
+						s = (await GetTextR(s)).replace(/\(&\w\)|&/, "");
+						if (icon) {
+							el.value = String.fromCodePoint(icon);
+							el.style.fontFamily = ui_.IconFont;
+							el.title = s;
+							el.className += " fonticonbutton";
+						} else {
+							el.value = s;
+						}
 					}
 				}
 				if (s = await ImgBase64(el, 0)) {

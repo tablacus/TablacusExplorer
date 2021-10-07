@@ -87,12 +87,13 @@ for (let n in Sync.SegoeIcons) {
 	}
 }
 if (fso.FileExists(BuildPath(fontDir, "SegoeIcons.ttf")) || fso.FileExists(ExtractMacro(te, "%AppData%\\..\\Local\\Microsoft\\Windows\\Fonts\\Segoe Fluent Icons.ttf"))) {
-	Sync.SegoeIcons.Name = "font:Segoe Fluent Icons,";
+	g_.IconFont = "Segoe Fluent Icons";
 } else if (fso.FileExists(BuildPath(fontDir, "segmdl2.ttf"))) {
-	Sync.SegoeIcons.Name = "font:Segoe MDL2 Assets,";
+	g_.IconFont = "Segoe MDL2 Assets";
 } else {
 	return;
 }
+Sync.SegoeIcons.Name = "font:" + g_.IconFont + ",";
 
 AddEvent("ReplaceIcon", function (s) {
 	let res = /^icon:general,(\d+)|^bitmap:ieframe.dll,214,24,(\d+)|^bitmap:ieframe.dll,216,16,(\d+)/.exec(s);

@@ -252,6 +252,14 @@ a.treebutton:hover {
 	vertical-align: middle;
 }
 
+.fonticonbutton {
+	font-size: 150%;
+}
+
+.addonbutton {
+	padding: 1px
+}
+
 .drive {
 	position: absolute;
 	color: windowtext;

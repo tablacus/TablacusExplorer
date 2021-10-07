@@ -267,19 +267,23 @@
                     <textarea name="Menus_Path" style="width: 100%; height: 16em; height: calc(100vh - 24em); min-height: 2em" onchange="ChangeX('Menus')"></textarea>
                     <table class="layout">
                       <tr>
-                        <td style="vertical-align: bottom; white-space: nowrap">
+                        <td style="vertical-align: bottom; white-space: nowrap; width: 100%">
                           <label>Icon</label><input type="hidden" name="Height" value="16">
                         </td>
                         <td id="_Icon" style="width: 15pt; height: 15pt; overflow: hidden; vertical-align: middle" align="left">
                         </td>
-                        <td style="white-space: nowrap" align="right">
+                        <td class="buttons">
                           <input type="button" value="Portable" onclick="PortableX('Icon')" title="Icon">
+                        </td>
+                        <td class="buttons">
                           <input type="button" value="Select" onclick="ShowIcon();" title="Icon">
+                        </td>
+                        <td>
                           <input type="button" value="Browse..." onclick="RefX('Icon',0,0,1)" title="Icon">
                         </td>
                       </tr>
                       <tr>
-                        <td style="width: 100%" colspan="3">
+                        <td style="width: 100%" colspan="5">
                           <input type="text" name="Icon" onchange="ChangeX('Menus');SetImage();" style="width: 100%">
                         </td>
                       </tr>

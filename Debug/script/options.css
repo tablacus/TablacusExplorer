@@ -8,6 +8,10 @@ input[type="text"] {
 	min-height: 1.4em;
 }
 
+input[type="button"] {
+	vertical-align: top;
+}
+
 textarea {
   min-height: 2em
 }

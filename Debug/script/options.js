@@ -1137,14 +1137,14 @@ async function SetAddon(Id, bEnable, td, Alt) {
 		bEnable = false;
 	}
 	const s = ['<div ', (Alt ? '' : 'draggable="true" ondragstart="Start5(event, this)" ondragend="End5()"'), ' title="', Id, '" Id="', Alt || "Addons_", Id, '">'];
-	s.push('<table><tr style="border-top: 1px solid buttonshadow"', bEnable || bConfig ? "" : ' class="disabled"', '><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id + '">'), '</td><td style="width: 100%"><label for="_', Id, '">', await info.Name, "&nbsp;", await info.Version, '<br><a href="#" onclick="return AddonInfo(\'', Id, '\', this)"  class="link" style="font-size: .9em">', await GetText('Details'), ' (', Id, ')</a>');
-	s.push(' <a href="#" onclick="AddonRemove(\'', Id, '\'); return false;" style="color: red; font-size: .9em; white-space: nowrap; margin-left: 2em">', await GetText('Delete'), "</a></td>");
+	s.push('<table><tr style="border-top: 1px solid buttonshadow"', bEnable || bConfig ? "" : ' class="disabled"', '><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id + '">'), '</td><td style="width: 100%"><label for="_', Id, '">', await info.Name, "&nbsp;", await info.Version, '<br><input type="button" class="addonbutton" onclick="return AddonInfo(\'', Id, '\', this)" value="Details">');
+	s.push(' <input type="button" class="addonbutton" onclick="AddonRemove(\'', Id, '\');" value="Delete">&nbsp;', Id, '<div id="i_', Id, '"></div></td>');
 	if (!bLevel) {
 		s.push('<td class="danger" style="align: right; white-space: nowrap; vertical-align: middle">Incompatible&nbsp;</td>');
 	} else if (bMinVer) {
 		s.push('<td class="danger" style="align: right; white-space: nowrap; vertical-align: middle">', MinVersion.replace(/^20/, (await api.LoadString(hShell32, 60) || "%").replace(/%.*/, "")).replace(/\.0/g, '.'), ' ', await GetText("is required."), '</td>');
 	} else if (await info.Options) {
-		s.push('<td style="white-space: nowrap; vertical-align: middle; padding-right: 1em"><a href="#" onclick="AddonOptions(\'', Id, '\'); return false;" class="link" id="opt_', Id, '">', await GetText('Options'), '</td>');
+		s.push('<td style="white-space: nowrap; vertical-align: middle; padding-right: 1em"><input type="button" onclick="AddonOptions(\'', Id, '\')" class="addonbuttonopt" id="opt_', Id, '" value="Options"></td>');
 	}
 	const strEnable = bMinVer || bConfig ? 'visibility: hidden' : "";
 	s.push('<td style="vertical-align: middle"><input type="checkbox" ', (Alt ? "" : 'id="enable_' + Id + '"'), ' onclick="AddonEnable(this, \'', Id, '\')" ', bEnable ? " checked" : "", ' style="', strEnable, '"></td>');
@@ -1208,13 +1208,9 @@ function GetRowIndexById(id) {
 }
 
 async function AddonInfo(Id, o) {
-	o.style.textDecoration = "none";
-	o.style.color = GetWebColor(MainWindow.GetSysColor(COLOR_WINDOWTEXT));
-	o.style.cursor = "default";
-	o.onclick = null;
+	o.disabled = true;
 	const info = await GetAddonInfo(Id);
-	o.innerHTML = await info.Description;
-	return false;
+	document.getElementById("i_" + Id).innerHTML = await info.Description;
 }
 
 async function AddonWebsite(Id) {
@@ -2879,6 +2875,8 @@ async function ShowButtons(b1, b2, SortMode) {
 		const table = document.getElementById("Addons");
 		const bSorted = /none/i.test(table.style.display);
 		document.getElementById("MoveButton").style.display = (b1 || b2) && !bSorted ? "inline-block" : "none";
+	} else {
+		document.getElementById("MoveButton").style.display = b2 ? "inline-block" : "none";
 	}
 }
 
