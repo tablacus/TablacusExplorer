@@ -616,14 +616,16 @@ ApplyLang = async function (doc) {
 				if (SameText(el.type, "button")) {
 					if (s = el.value) {
 						const icon = ui_.IconFont && ButtonIcon[s.replace(/\.+$/, "")];
-						s = (await GetTextR(s)).replace(/\(&\w\)|&/, "");
+						const v = (await GetTextR(s)).replace(/\(&\w\)|&/, "");
 						if (icon) {
 							el.value = String.fromCodePoint(icon);
 							el.style.fontFamily = ui_.IconFont;
-							el.title = s;
+							if (!el.title) {
+								el.title = v;
+							}
 							el.className += " fonticonbutton";
 						} else {
-							el.value = s;
+							el.value = v;
 						}
 					}
 				}

@@ -1137,8 +1137,8 @@ async function SetAddon(Id, bEnable, td, Alt) {
 		bEnable = false;
 	}
 	const s = ['<div ', (Alt ? '' : 'draggable="true" ondragstart="Start5(event, this)" ondragend="End5()"'), ' title="', Id, '" Id="', Alt || "Addons_", Id, '">'];
-	s.push('<table><tr style="border-top: 1px solid buttonshadow"', bEnable || bConfig ? "" : ' class="disabled"', '><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id + '">'), '</td><td style="width: 100%"><label for="_', Id, '">', await info.Name, "&nbsp;", await info.Version, '<br><input type="button" class="addonbutton" onclick="return AddonInfo(\'', Id, '\', this)" value="Details">');
-	s.push(' <input type="button" class="addonbutton" onclick="AddonRemove(\'', Id, '\');" value="Delete">&nbsp;', Id, '<div id="i_', Id, '"></div></td>');
+	s.push('<table><tr style="border-top: 1px solid buttonshadow"', bEnable || bConfig ? "" : ' class="disabled"', '><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id + '">'), '</td><td style="width: 100%"><label for="_', Id, '">', await info.Name, "&nbsp;", await info.Version, '<br><input type="button" class="addonbutton" onclick="AddonInfo(\'', Id, '\')" value="Details">');
+	s.push(' <input type="button" class="addonbutton" onclick="AddonRemove(\'', Id, '\');" value="Delete">&nbsp;(', Id, ')<div id="i_', Id, '"></div></td>');
 	if (!bLevel) {
 		s.push('<td class="danger" style="align: right; white-space: nowrap; vertical-align: middle">Incompatible&nbsp;</td>');
 	} else if (bMinVer) {
@@ -1148,10 +1148,12 @@ async function SetAddon(Id, bEnable, td, Alt) {
 	}
 	const strEnable = bMinVer || bConfig ? 'visibility: hidden' : "";
 	s.push('<td style="vertical-align: middle"><input type="checkbox" ', (Alt ? "" : 'id="enable_' + Id + '"'), ' onclick="AddonEnable(this, \'', Id, '\')" ', bEnable ? " checked" : "", ' style="', strEnable, '"></td>');
-	s.push('<td style="vertical-align: middle"><label for="enable_', Id, '" style="display: block; width: 6em; white-space: nowrap;', strEnable, '">', await GetText(bEnable ? "Enabled" : "Enable"), '</label></td>');
+	s.push('<td style="vertical-align: middle"><label for="enable_', Id, '" style="display: block; width: 6em; white-space: nowrap;', strEnable, '">', bEnable ? "Enabled" : "Enable", '</label></td>');
 	s.push('</tr></table></label></div>');
+	td.style.visibility = "hidden";
 	td.innerHTML = s.join("");
 	await ApplyLang(td);
+	td.style.visibility = "";
 	if (!Alt) {
 		const div = document.getElementById("Sorted_" + Id);
 		if (div) {
@@ -1207,10 +1209,14 @@ function GetRowIndexById(id) {
 	} catch (e) { }
 }
 
-async function AddonInfo(Id, o) {
-	o.disabled = true;
+async function AddonInfo(Id) {
+	const o = document.getElementById("i_" + Id);
+	if (o.innerHTML) {
+		o.style.display = o.style.display ? "" : "none";
+		return;
+	}
 	const info = await GetAddonInfo(Id);
-	document.getElementById("i_" + Id).innerHTML = await info.Description;
+	o.innerHTML = await info.Description;
 }
 
 async function AddonWebsite(Id) {
