@@ -289,24 +289,11 @@
             </td>
           </tr>
         </table>
-        <table style="width: 100%" id="__IconSize">
-          <tr>
-            <td>
-              <label>Size</label>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <input type="text" name="IconSize" size="4" onchange="SetImage();">
-            </td>
-            <td>
-              <label>@mspaint.exe,-50047[px]</label>&nbsp;
-            </td>
-            <td style="width: 100%">
-              <input type="button" value="Default" onclick="SetDefault(document.F.IconSize, '');">
-            </td>
-          </tr>
-        </table>
+        <div id="__IconSize">
+          <label>Size</label><br>
+          <input type="text" name="IconSize" size="4" onchange="SetImage();"><label>@mspaint.exe,-50047[px]</label>
+          <input type="button" value="Default" onclick="SetDefault(document.F.IconSize, '');">
+       </div>
       </div>
       <!--panel_end-->
 

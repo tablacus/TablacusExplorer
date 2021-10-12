@@ -1212,11 +1212,18 @@ function GetRowIndexById(id) {
 async function AddonInfo(Id) {
 	const o = document.getElementById("i_" + Id);
 	if (o.innerHTML) {
-		o.style.display = o.style.display ? "" : "none";
-		return;
+		if (!o.style.display) {
+			o.style.display = "none";
+			return;
+		}
+		o.style.display = "";
+	} else {
+		const info = await GetAddonInfo(Id);
+		o.innerHTML = await info.Description;
 	}
-	const info = await GetAddonInfo(Id);
-	o.innerHTML = await info.Description;
+	if (o.getBoundingClientRect().bottom > document.getElementById("panel1").offsetHeight) {
+		o.scrollIntoView(false);
+	}
 }
 
 async function AddonWebsite(Id) {
@@ -1225,7 +1232,6 @@ async function AddonWebsite(Id) {
 }
 
 function AddonEnable(o, Id) {
-	const div = document.getElementById("Addons_" + Id);
 	SetAddon(Id, o.checked);
 	document.getElementById("enable_" + Id).checked = o.checked;
 	g_Chg.Addons = true;
