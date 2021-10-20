@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210816 ? te.Version : 20211012;
+		return te.Version < 20210816 ? te.Version : 20211020;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -80,6 +80,7 @@ AboutTE = function (n) {
 		ar.push("(" + item.Version + ")");
 	});
 	const ext = {
+		Rundll32: arg = /rundll32\.?(exe)?"?$/i.test(api.CommandLineToArgv(api.GetCommandLine())[0]),
 		Admin: api.SHTestTokenMembership(null, 0x220),
 		Dark: api.ShouldAppsUseDarkMode()
 	}
@@ -828,7 +829,7 @@ ShowAbout = function () {
 	opt.Query = "about";
 	opt.Modal = false;
 	opt.width = 640;
-	opt.height = 360;
+	opt.height = 400;
 	ShowDialog(BuildPath(te.Data.Installed, "script\\dialog.html"), opt);
 }
 
@@ -2771,7 +2772,9 @@ RunCommandLine = function (s) {
 		return;
 	}
 	const arg = api.CommandLineToArgv(s);
-	arg.shift();
+	if (/rundll32\.?(exe)?"?$/i.test(arg.shift())) {
+		arg.shift();
+	}
 	s = arg.length ? (s.charAt(0) == '"' ? s.replace(/"[^"]*"\s*/, "") : s.replace(/^[^\s]+\s*/, "")) : "";
 	if (/^[A-Z]:\\|^\\\\/i.test(s) && IsExists(s)) {
 		Navigate(s, SBSP_NEWBROWSER);
@@ -2794,7 +2797,12 @@ OpenNewProcess = function (fn, ex, mode, vOperation) {
 		uid = String(Math.random()).replace(/^0?\./, "");
 	} while (MainWindow.Exchange[uid]);
 	MainWindow.Exchange[uid] = ex;
-	return ShellExecute([PathQuoteSpaces(api.GetModuleFileName(null)), mode ? '/open' : '/run', fn, uid].join(" "), vOperation, mode ? SW_SHOWNORMAL : SW_SHOWNOACTIVATE);
+	const ar = [mode ? '/open' : '/run', fn, uid];
+	if (/rundll32\.?(exe)?"?$/i.test(api.CommandLineToArgv(api.GetCommandLine())[0])) {
+		ar.unshift(PathQuoteSpaces(BuildPath(ui_.Installed, "lib", "te" + ui_.bit + ".dll")) + ",Run");
+	}
+	ar.unshift(PathQuoteSpaces(api.GetModuleFileName(api.GetModuleHandle(null))));
+	return ShellExecute(ar.join(" "), vOperation, mode ? SW_SHOWNORMAL : SW_SHOWNOACTIVATE);
 }
 
 GetAddonInfo = function (Id) {
@@ -3474,7 +3482,8 @@ FolderMenu = {
 			const Items = api.CreateObject("FolderItems");
 			Items.AddItem(FolderItem);
 			FV.AltSelectedItems = Items;
-			if (ExecMenu(FV, "Default", null, 2) != S_OK) {
+			if (isFinite(RunEvent3("DefaultCommand", FV, Items))) {
+			} else if (ExecMenu(FV, "Default", null, 2) != S_OK) {
 				InvokeCommand(Items, 0, te.hwnd, null, null, null, SW_SHOWNORMAL, 0, 0, FV, CMF_DEFAULTONLY);
 			}
 			FV.AltSelectedItems = AltSelectedItems;

@@ -3310,6 +3310,51 @@ AddEnv("TE_Config", function () {
 });
 
 CreateUpdater = function (arg) {
+	let te_new = BuildPath(arg.temp, "te64.exe");
+	let nDog = 300;
+	while (!fso.FileExists(te_new)) {
+		if (wsh.Popup(GetText("Please wait."), 1, TITLE, MB_OKCANCEL) == IDCANCEL || nDog-- == 0) {
+			return;
+		}
+	}
+	const arDel = [];
+	const addons = BuildPath(arg.temp, "addons");
+	if (fso.FolderExists(BuildPath(arg.temp, "config"))) {
+		arDel.push(BuildPath(arg.temp, "config"));
+	}
+	for (let i = 32; i <= 64; i += 32) {
+		te_new = BuildPath(arg.temp, "te" + i + ".exe");
+		let te_old = BuildPath(ui_.Installed, "te" + i + ".exe");
+		if (!fso.FileExists(te_old) || fso.GetFileVersion(te_new) == fso.GetFileVersion(te_old)) {
+			arDel.push(te_new);
+			arDel.push(BuildPath(arg.temp, "lib", "*" + i + ".dll"));
+		} else {
+			const wfd = api.Memory("WIN32_FIND_DATA");
+			const hFind = api.FindFirstFile(BuildPath(arg.temp, "lib", "*" + i + ".dll"), wfd);
+			for (let bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = api.FindNextFile(hFind, wfd)) {
+				te_new = BuildPath(arg.temp, "lib", wfd.cFileName);
+				te_old = BuildPath(ui_.Installed, "lib", wfd.cFileName);
+				if (fso.FileExists(te_old) && fso.GetFileVersion(te_new) == fso.GetFileVersion(te_old)) {
+					arDel.push(te_new);
+				}
+			}
+			api.FindClose(hFind);
+		}
+	}
+	for (let list = api.CreateObject("Enum", fso.GetFolder(addons).SubFolders); !list.atEnd(); list.moveNext()) {
+		const n = list.item().Name;
+		const items = te.Data.Addons.getElementsByTagName(n);
+		if (!items || GetLength(items) == 0) {
+			arDel.push(BuildPath(addons, n));
+		}
+	}
+	if (arDel.length) {
+		api.SHFileOperation(FO_DELETE, arDel, null, FOF_SILENT | FOF_NOCONFIRMATION, false);
+	}
+	const ppid = api.Memory("DWORD");
+	api.GetWindowThreadProcessId(ui_.hwnd, ppid);
+	arg.pid = ppid[0];
+
 	if (isFinite(RunEvent3("CreateUpdater", arg))) {
 		return;
 	}
@@ -3327,10 +3372,17 @@ UpdateAndReload = function (arg) {
 		setTimeout(UpdateAndReload, 999, arg);
 		return;
 	}
-	if (!arg.Boot && !IsExists(BuildPath(arg.temp, GetFileName(api.GetModuleFileName(null))))) {
-		api.SHFileOperation(FO_MOVE, arg.temp + "\\*", te.Data.Installed, FOF_NOCONFIRMATION, false);
-		ReloadCustomize();
-		return;
+	if (!arg.Boot) {
+		if (!IsExists(BuildPath(arg.temp, GetFileName(api.GetModuleFileName(null))))) {
+			const wfd = api.Memory("WIN32_FIND_DATA");
+			const hFind = api.FindFirstFile(BuildPath(arg.temp, "lib", "*" + g_.bit + ".dll"), wfd);
+			if (hFind == INVALID_HANDLE_VALUE) {
+				api.SHFileOperation(FO_MOVE, arg.temp + "\\*", te.Data.Installed, FOF_NOCONFIRMATION, false);
+				ReloadCustomize();
+				return;
+			}
+			api.FindClose(hFind);
+		}
 	}
 	let update = BuildPath(arg.temp, "script\\update.js");
 	if (!fso.FileExists(update)) {

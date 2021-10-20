@@ -332,38 +332,6 @@ CheckUpdate3 = async function (xhr, url, arg) {
 		await MessageBox([(await api.LoadString(hShell32, 4228)).replace(/^\t/, "").replace("%d", await api.sprintf(99, "0x%08x", hr)), await GetText("Extract"), GetFileName(arg.zipfile)].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
 		return;
 	}
-	let te_exe = await arg.temp + "\\te64.exe";
-	let nDog = 300;
-	while (!await fso.FileExists(te_exe)) {
-		if (await wsh.Popup(await GetText("Please wait."), 1, TITLE, MB_OKCANCEL) == IDCANCEL || nDog-- == 0) {
-			return;
-		}
-	}
-	const arDel = [];
-	const addons = await arg.temp + "\\addons";
-	if (await fso.FolderExists(await arg.temp + "\\config")) {
-		arDel.push(await arg.temp + "\\config");
-	}
-	for (let i = 32; i <= 64; i += 32) {
-		te_exe = await arg.temp + '\\te' + i + '.exe';
-		const te_old = BuildPath(ui_.Installed, 'te' + i + '.exe');
-		if (!await fso.FileExists(te_old) || await fso.GetFileVersion(te_exe) == await fso.GetFileVersion(te_old)) {
-			arDel.push(te_exe);
-		}
-	}
-	for (let list = await api.CreateObject("Enum", await fso.GetFolder(addons).SubFolders); !await list.atEnd(); await list.moveNext()) {
-		const n = await list.item().Name;
-		const items = await te.Data.Addons.getElementsByTagName(n);
-		if (!items || GetLength(items) == 0) {
-			arDel.push(BuildPath(addons, n));
-		}
-	}
-	if (arDel.length) {
-		await api.SHFileOperation(FO_DELETE, arDel, null, FOF_SILENT | FOF_NOCONFIRMATION, false);
-	}
-	const ppid = await api.Memory("DWORD");
-	await api.GetWindowThreadProcessId(ui_.hwnd, ppid);
-	arg.pid = await ppid[0];
 	MainWindow.CreateUpdater(arg);
 }
 

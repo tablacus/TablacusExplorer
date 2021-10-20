@@ -74,13 +74,28 @@ if (item.getAttribute("MouseExec")) {
 	SetGestureExec(item.getAttribute("MouseOn"), item.getAttribute("Mouse"), Sync.TreeView.Exec, "Func");
 }
 
-SetGestureExec("Tree", Sync.TreeView.List ? "1" : "11", function (Ctrl, pt) {
+if (Sync.TreeView.List) {
+	SetGestureExec("Tree", "1", function (Ctrl, pt) {
+		const Item = Ctrl.HitTest(pt);
+		if (Item) {
+			const FV = Ctrl.FolderView;
+			if (!api.ILIsEqual(FV.FolderItem, Item) && Item.IsFolder) {
+				setTimeout(function () {
+					FV.Navigate(Item, GetNavigateFlags(FV));
+				}, 99);
+			}
+		}
+		return S_OK;
+	}, "Func", true);
+}
+
+SetGestureExec("Tree", "11", function (Ctrl, pt) {
 	const Item = Ctrl.HitTest(pt);
 	if (Item) {
 		const FV = Ctrl.FolderView;
 		if (!api.ILIsEqual(FV.FolderItem, Item)) {
 			setTimeout(function () {
-				FV.Navigate(Item, GetNavigateFlags(FV));
+				FolderMenu.Invoke(Item, void 0, FV);
 			}, 99);
 		}
 	}

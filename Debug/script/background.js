@@ -8,17 +8,20 @@ function _s() {
 		sha = api.CreateObject("sha");
 		wsh = api.CreateObject("wsh");
 		arg = api.CommandLineToArgv(api.GetCommandLine());
+		if (/rundll32\.?(exe)?"?$/i.test(arg[0])) {
+			arg.shift();
+		}
 		location = { href: arg[2], hash: '' };
-		var parent = fso.GetParentFolderName(arg[0]);
+		var parent = fso.GetParentFolderName(api.GetModuleFileName(null));
 		if (!/^[A-Z]:\\|^\\\\/i.test(location.href)) {
 			location.href = fso.BuildPath(parent, location.href);
 		}
 		var sw = sha.Windows();
 		for (var i = 0; i < sw.Count; ++i) {
 			var x = sw.item(i);
-			if (x && api.StrCmpI(fso.GetParentFolderName(x.FullName), parent) == 0) {
+			if (x) {
 				var w = x.Document.parentWindow;
-				if (!window.MainWindow || window.MainWindow.Exchange && window.MainWindow.Exchange[arg[3]]) {
+				if (w && w.Exchange && w.Exchange[arg[3]]) {
 					window.MainWindow = w;
 					var rc = api.Memory('RECT');
 					api.GetWindowRect(w.te.hwnd, rc);

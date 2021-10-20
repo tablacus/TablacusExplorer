@@ -1709,10 +1709,10 @@ InitDialog = async function () {
 		WebBrowser.OnClose = ReturnDialogResult;
 	}
 	if (Query == "about") {
-		const promise = [MakeImgSrc(ui_.TEPath, 0, true, 48), AboutTE(2), GetTextR(ui_.bit + '-bit'), fso.GetFileVersion(ui_.TEPath), AboutTE(3), te.Data.DataFolder];
+		const promise = [MakeImgSrc(ui_.TEPath, 0, true, 48), AboutTE(2), GetTextR(ui_.bit + '-bit'), te.Data.DataFolder, AboutTE(3)];
 		const s = ['<table style="border-spacing: 2em; border-collapse: separate; width: 100%"><tr><td>'];
 		s.push('<img id="img1"></td><td><span style="font-weight: bold; font-size: 120%" id="about2"></span> (<span id="bit1"></span>)<br>');
-		s.push('<br><a href="#" class="link" onclick="Run(0, this)">', ui_.TEPath, '</a> (<span id="fv1"></span>)<br>');
+		s.push('<br><div id="lib"></div>');
 		s.push('<br><a href="#" class="link" onclick="Run(1, this)" id="df1"></a><br>');
 		s.push('<br><label>Information</label><input id="about3" type="text" style="width: 100%" onclick="this.select()" readonly><br>');
 		const nAddon = promise.length;
@@ -1736,9 +1736,8 @@ InitDialog = async function () {
 				document.getElementById("img1").src = r[0];
 				document.getElementById("about2").innerHTML = r[1];
 				document.getElementById("bit1").innerHTML = r[2];
-				document.getElementById("fv1").innerHTML = r[3];
 				document.getElementById("about3").value = r[4];
-				document.getElementById("df1").innerHTML = BuildPath(r[5], "config");
+				document.getElementById("df1").innerHTML = BuildPath(r[3], "config");
 				const ar = [];
 				for (let i = nAddon; i < r.length; i += 3) {
 					if (GetNum(r[i]) && r[i + 2]) {
@@ -1771,6 +1770,21 @@ InitDialog = async function () {
 				CloseWindow();
 			}, 500, n, el && el.innerHTML);
 		}
+
+		s.length = 0;
+		if (await api.GetModuleHandle(ui_.TEPath)) {
+			s.push('<a href="#" class="link" onclick="Run(0, this)">', ui_.TEPath, "</a> (", await fso.GetFileVersion(ui_.TEPath), ")<br>");
+		}
+		const wfd = await api.Memory("WIN32_FIND_DATA");
+		const hFind = await api.FindFirstFile(BuildPath(ui_.Installed, "lib\\*.dll"), wfd);
+		for (let bFind = hFind != INVALID_HANDLE_VALUE; await bFind; bFind = await api.FindNextFile(hFind, wfd)) {
+			const dll = BuildPath(ui_.Installed, "lib", await wfd.cFileName);
+			if (await api.GetModuleHandle(dll)) {
+				s.push('<a href="#" class="link" onclick="Run(0, this)">', dll, "</a> (", await fso.GetFileVersion(dll), ")<br>");
+			}
+		}
+		api.FindClose(hFind);
+		document.getElementById("lib").innerHTML = s.join("");
 	}
 	if (Query == "input") {
 		returnValue = false;
