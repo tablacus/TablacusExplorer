@@ -3322,24 +3322,29 @@ CreateUpdater = function (arg) {
 	if (fso.FolderExists(BuildPath(arg.temp, "config"))) {
 		arDel.push(BuildPath(arg.temp, "config"));
 	}
+	const wfd = api.Memory("WIN32_FIND_DATA");
 	for (let i = 32; i <= 64; i += 32) {
 		te_new = BuildPath(arg.temp, "te" + i + ".exe");
-		let te_old = BuildPath(ui_.Installed, "te" + i + ".exe");
-		if (!fso.FileExists(te_old) || fso.GetFileVersion(te_new) == fso.GetFileVersion(te_old)) {
+		let te_old = BuildPath(te.Data.Installed, "te" + i + ".exe");
+		const hFind = api.FindFirstFile(BuildPath(arg.temp, "lib", "*" + i + ".dll"), wfd);
+		if (!fso.FileExists(te_old)) {
 			arDel.push(te_new);
-			arDel.push(BuildPath(arg.temp, "lib", "*" + i + ".dll"));
+			for (let bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = api.FindNextFile(hFind, wfd)) {
+				arDel.push(BuildPath(arg.temp, "lib", wfd.cFileName));
+			}
 		} else {
-			const wfd = api.Memory("WIN32_FIND_DATA");
-			const hFind = api.FindFirstFile(BuildPath(arg.temp, "lib", "*" + i + ".dll"), wfd);
+			if (fso.GetFileVersion(te_new) == fso.GetFileVersion(te_old)) {
+				arDel.push(te_new);
+			}
 			for (let bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = api.FindNextFile(hFind, wfd)) {
 				te_new = BuildPath(arg.temp, "lib", wfd.cFileName);
-				te_old = BuildPath(ui_.Installed, "lib", wfd.cFileName);
+				te_old = BuildPath(te.Data.Installed, "lib", wfd.cFileName);
 				if (fso.FileExists(te_old) && fso.GetFileVersion(te_new) == fso.GetFileVersion(te_old)) {
 					arDel.push(te_new);
 				}
 			}
-			api.FindClose(hFind);
 		}
+		api.FindClose(hFind);
 	}
 	for (let list = api.CreateObject("Enum", fso.GetFolder(addons).SubFolders); !list.atEnd(); list.moveNext()) {
 		const n = list.item().Name;
@@ -3352,7 +3357,7 @@ CreateUpdater = function (arg) {
 		api.SHFileOperation(FO_DELETE, arDel, null, FOF_SILENT | FOF_NOCONFIRMATION, false);
 	}
 	const ppid = api.Memory("DWORD");
-	api.GetWindowThreadProcessId(ui_.hwnd, ppid);
+	api.GetWindowThreadProcessId(te.hwnd, ppid);
 	arg.pid = ppid[0];
 
 	if (isFinite(RunEvent3("CreateUpdater", arg))) {
