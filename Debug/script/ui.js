@@ -13,7 +13,7 @@ if (!window.addEventListener && window.attachEvent) {
 }
 
 ui_ = {
-	IEVer: window.chrome ? (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 : 12) : ScriptEngineMajorVersion() > 8 ? ScriptEngineMajorVersion() : ScriptEngineMinorVersion(),
+	IEVer: window.chrome ? 12 : ScriptEngineMajorVersion() > 8 ? ScriptEngineMajorVersion() : ScriptEngineMinorVersion(),
 	Zoom: 1,
 	eventTE: {}
 };
@@ -357,7 +357,7 @@ LoadScripts = async function (js1, js2, cb) {
 			}
 			return to;
 		}
-		document.documentMode = (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 : 12);
+		document.documentMode = 12;
 		const hdc = await api.GetDC(ui_.hwnd);
 		screen.deviceYDPI = await api.GetDeviceCaps(hdc, 90);
 		api.ReleaseDC(ui_.hwnd, hdc);
@@ -365,7 +365,7 @@ LoadScripts = async function (js1, js2, cb) {
 		await CopyObj($, window, ["te", "api", "chrome", "document", "UI", "MainWindow"]);
 		let po = [];
 		po.push(CopyObj(null, location, ["hash", "href"]));
-		po.push(CopyObj(null, navigator, ["appVersion", "language"]));
+		po.push(CopyObj(null, navigator, ["language"]));
 		po.push(CopyObj(null, screen, ["deviceYDPI"]));
 		po.push(api.CreateObject("Object"));
 		po.push(api.CreateObject("Object"));

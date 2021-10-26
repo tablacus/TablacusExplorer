@@ -47,7 +47,7 @@ g_.Autocomplete = api.CreateObject("Object");
 g_.LockUpdate = 0;
 g_.ptMenuDrag = api.Memory("POINT");
 g_.Locations = api.CreateObject("Object");
-g_.IEVer = window.chrome ? (/Edg\/(\d+)/.test(navigator.appVersion) ? RegExp.$1 : 12) : ("undefined" === typeof ScriptEngineMajorVersion ? 12 : (ScriptEngineMajorVersion() > 8 ? ScriptEngineMajorVersion() : ScriptEngineMinorVersion()));
+g_.IEVer = window.chrome ? 12 : ("undefined" === typeof ScriptEngineMajorVersion ? 12 : (ScriptEngineMajorVersion() > 8 ? ScriptEngineMajorVersion() : ScriptEngineMinorVersion()));
 g_.bit = api.sizeof("HANDLE") * 8;
 g_.DefaultIcons = {
 	general: "bitmap:ieframe.dll,214,24,",
@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210816 ? te.Version : 20211022;
+		return te.Version < 20210816 ? te.Version : 20211026;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -89,8 +89,7 @@ AboutTE = function (n) {
 			ar.push(s);
 		}
 	}
-	const res = window.chrome && /(Edg\/[\d\.]+)/.exec(navigator.appVersion);
-	ar.push(res ? res[1] : 'IE/' + g_.IEVer);
+	ar.push(window.chrome ? (te.Ctrl(CTRL_WB).Application || { Name: "WebView2" }).Name : 'IE/' + g_.IEVer);
 	ar.push("JS/" + ("undefined" == typeof ScriptEngineMajorVersion ? "Chakra.dll" : [ScriptEngineMajorVersion(), ScriptEngineMinorVersion(), ScriptEngineBuildVersion()].join(".")));
 	ar.push(GetLangId(2), screen.deviceYDPI);
 	ForEachWmi("winmgmts:\\\\.\\root\\cimv2", "SELECT * FROM Win32_Processor", function (item) {
@@ -1072,7 +1071,21 @@ GetSelectedItems = function (Ctrl, pt) {
 }
 
 GetThumbnail = function (image, m, f) {
-	const w = image.GetWidth(), h = image.GetHeight(), z = m / Math.max(w, h);
+	let w = image.GetWidth(), h = image.GetHeight(), c = image.GetFrameCount();
+	if (c > 1) {
+		let i = 0;
+		while (--c && w != m) {
+			image.Frame = c;
+			const w1 = image.GetWidth();
+			if (w <= w1 || m == w1) {
+				i = c;
+				w = image.GetWidth();
+				h = image.GetHeight();
+			}
+		}
+		image.Frame = i;
+	}
+	const z = m / Math.max(w, h);
 	if (z == 1 || (f && z > 1)) {
 		return image;
 	}
