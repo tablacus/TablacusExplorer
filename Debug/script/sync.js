@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210816 ? te.Version : 20211026;
+		return te.Version < 20210816 ? te.Version : 20211027;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1071,20 +1071,20 @@ GetSelectedItems = function (Ctrl, pt) {
 }
 
 GetThumbnail = function (image, m, f) {
-	let w = image.GetWidth(), h = image.GetHeight(), c = image.GetFrameCount();
+	let w = -1, h, c = image.GetFrameCount();
 	if (c > 1) {
 		let i = 0;
-		while (--c && w != m) {
-			image.Frame = c;
-			const w1 = image.GetWidth();
-			if (w <= w1 || m == w1) {
-				i = c;
-				w = image.GetWidth();
-				h = image.GetHeight();
+		for (image.Frame = 0; --c && w !== m; ++image.Frame) {
+			const w1 = image.GetWidth() * image.GetHeight();
+			if (w < w1 || m * m === w1) {
+				i = image.Frame;
+				w = w1;
 			}
 		}
 		image.Frame = i;
 	}
+	w = image.GetWidth();
+	h = image.GetHeight();
 	const z = m / Math.max(w, h);
 	if (z == 1 || (f && z > 1)) {
 		return image;
