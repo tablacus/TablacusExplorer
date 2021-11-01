@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <TablacusExplorer>
   <General>
-    <Version>1.01</Version>
+    <Version>1.02</Version>
     <MinVersion>2021.9.5</MinVersion>
-    <pubDate>Thu, 07 Oct 2021 00:00:00 GMT</pubDate>
+    <pubDate>Mon, 01 Nov 2021 00:00:00 GMT</pubDate>
     <Level>2</Level>
     <Creator>Gaku</Creator>
     <URL>https://tablacus.github.io/TablacusExplorerAddons/</URL>
@@ -13,6 +13,10 @@
     <Name>Segoe Fluent Icons</Name>
     <Description>Replace the standard icon with Segoe Fluent Icons or Segoe UI MDL2 Assets. *Windows 10 or higher is required</Description>
   </en>
+  <fr>
+    <Name>Segoe Fluent Icons</Name>
+    <Description>Remplace les icônes standards par les icônes fluides Segoe ou les disponibilités Segoe UI MDL2. *Windows 10 ou plus requis !!</Description>
+  </fr>
   <en>
     <Name>Segoe Fluent Icons</Name>
     <Description>標準アイコンをSegoe Fluent Icons / Segoe UI MDL2 Assets に置き換えます。※Windows 10 以降が必要</Description>

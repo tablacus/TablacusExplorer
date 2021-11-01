@@ -201,7 +201,7 @@
 
 	<text s="Move">Déplacer</text>
 	<text s="Copy">Copier</text>
-	<text s="Delete">Supprimer</text>
+	<text s="Delete">Retirer</text>
 	<text s="Rename">Renommer</text>
 	<text s="Extract">Extraire</text>
 	<text s="Save">Sauvegarder</text>
