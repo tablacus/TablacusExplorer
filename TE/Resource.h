@@ -7,9 +7,17 @@
 //Version
 #define STRING(str) STRING2(str)
 #define STRING2(str) #str
+#ifdef _EXE
+//Version(EXE)
 #define VER_Y		21
-#define VER_M		8
-#define VER_D		16
+#define VER_M		11
+#define VER_D		1
+#else
+//Version(DLL)
+#define VER_Y		21
+#define VER_M		11
+#define VER_D		6
+#endif
 
 //Icon
 #define IDI_TE		1
@@ -30,4 +38,7 @@
 #ifndef _WIN64
 #define _2000XP
 //#define _W2000
+#endif
+#ifdef _DEBUG
+#define _EXEONLY
 #endif

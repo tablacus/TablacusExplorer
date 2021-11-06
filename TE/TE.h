@@ -513,6 +513,7 @@ public:
 	VOID Navigate1Ex(LPOLESTR pstr, FolderItems *pFolderItems, UINT wFlags, FolderItem *pPrevious, int nErrorHandleing);
 	HRESULT Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *param, FolderItems *pFolderItems, CteFolderItem *pPrevious, CteShellBrowser *pHistSB);
 	HRESULT Navigate3(FolderItem *pFolderItem, UINT wFlags, DWORD *param, CteShellBrowser **ppSB, FolderItems *pFolderItems);
+	VOID GetInitFS(FOLDERSETTINGS *pfs);
 	HRESULT NavigateEB(DWORD dwFrame);
 	HRESULT OnBeforeNavigate(FolderItem *pPrevious, UINT wFlags);
 //	void InitializeMenuItem(HMENU hmenu, LPTSTR lpszItemName, int nId, HMENU hmenuSub);
@@ -1194,3 +1195,4 @@ public:
 	HRESULT m_hr;
 	DISPID m_dispIdMember;
 };
+

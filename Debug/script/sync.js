@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20210816 ? te.Version : 20211101;
+		return te.Version < 20211106 ? te.Version : 20211106;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -2812,7 +2812,7 @@ OpenNewProcess = function (fn, ex, mode, vOperation) {
 	MainWindow.Exchange[uid] = ex;
 	const ar = [mode ? '/open' : '/run', fn, uid];
 	if (/rundll32\.?(exe)?"?$/i.test(api.CommandLineToArgv(api.GetCommandLine())[0])) {
-		ar.unshift(PathQuoteSpaces(BuildPath(ui_.Installed, "lib", "te" + ui_.bit + ".dll")) + ",Run");
+		ar.unshift(PathQuoteSpaces(BuildPath(ui_.Installed, "lib", "te" + ui_.bit + ".dll")) + ",RunDLL");
 	}
 	ar.unshift(PathQuoteSpaces(api.GetModuleFileName(api.GetModuleHandle(null))));
 	return ShellExecute(ar.join(" "), vOperation, mode ? SW_SHOWNORMAL : SW_SHOWNOACTIVATE);

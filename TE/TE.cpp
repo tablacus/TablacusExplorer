@@ -2,16 +2,82 @@
 // Tablacus Explorer (C)2011 Gaku
 // MIT Lisence
 // Visual Studio Express 2017 for Windows Desktop
-// Windows SDK v7.1
+// Windows SDK v7.1 - x64 exe
+// Visual Studio 2017 (v141) - x64 dll
+// Visual Studio 2015 - Windows XP (v140_xp) - x86 exe dll
+
 // https://tablacus.github.io/
 
 #include "stdafx.h"
 #include "common.h"
+#if !defined(_WINDLL) && !defined(_EXEONLY)
+
+int APIENTRY _tWinMain(HINSTANCE hInstance,
+	HINSTANCE hPrevInstance,
+	LPTSTR    lpCmdLine,
+	int       nCmdShow)
+{
+	__security_init_cookie();
+	HINSTANCE hDll = ::GetModuleHandleA("kernel32.dll");
+	LPFNSetDefaultDllDirectories _SetDefaultDllDirectories = (LPFNSetDefaultDllDirectories)::GetProcAddress(hDll, "SetDefaultDllDirectories");
+	if (_SetDefaultDllDirectories) {
+		_SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32);
+	}
+	lpCmdLine = ::GetCommandLine();
+	lpCmdLine = ::StrChr(&lpCmdLine[1], lpCmdLine[0] == '"' ? '"' : 0x20);
+	do {
+		++lpCmdLine;
+	} while (*lpCmdLine == 0x20);
+	WCHAR pszPath[MAX_PATHEX];
+	::GetModuleFileName(NULL, pszPath, MAX_PATHEX);
+	::PathRemoveFileSpec(pszPath);
+#ifdef _WIN64
+#ifdef _DEBUG
+	::PathAppend(pszPath, L"lib\\TEd64.dll");
+#else
+	::PathAppend(pszPath, L"lib\\TE64.dll");
+#endif
+#else
+#ifdef _DEBUG
+	::PathAppend(pszPath, L"lib\\TEd32.dll");
+#else
+	::PathAppend(pszPath, L"lib\\TE32.dll");
+#endif
+#endif
+	LPWSTR pszError = L"404 File Not Found";
+	hDll = ::LoadLibrary(pszPath);
+	if (hDll) {
+		pszError = L"501 Not Implemented";
+		LPFNEntryPointW _RunDLLW = (LPFNEntryPointW)::GetProcAddress(hDll, "RunDLLW");
+		if (_RunDLLW) {
+			_RunDLLW(NULL, hDll, lpCmdLine, nCmdShow);
+			pszError = NULL;
+		}
+		::FreeLibrary(hDll);
+	}
+	if (pszError) {
+#ifdef _WIN64
+		hDll = LoadLibrary(L"user32.dll");
+#endif
+		LPFNMessageBoxW _MessageBoxW = (LPFNMessageBoxW)::GetProcAddress(hDll, "MessageBoxW");
+		if (_MessageBoxW) {
+			_MessageBoxW(NULL, pszPath, pszError, MB_OK | MB_ICONERROR);
+		}
+		::FreeLibrary(hDll);
+		::ExitProcess(-1);
+	}
+	::ExitProcess(0);
+}
+
+#else
 #include "idsofnames.h"
 #include "TE.h"
 
 // Global Variables:
 HINSTANCE hInst;								// current instance
+#ifdef _WINDLL
+HINSTANCE g_hinstDll = NULL;
+#endif
 WCHAR	g_szTE[MAX_LOADSTRING];
 WCHAR	g_szText[MAX_STATUS];
 WCHAR	g_szStatus[MAX_STATUS];
@@ -1447,6 +1513,27 @@ int teGetModuleFileName(HMODULE hModule, BSTR *pbsPath)
 			break;
 		}
 	}
+#ifdef _WINDLL
+	if (!hModule) {
+		teGetModuleFileName(g_hinstDll, pbsPath);
+		::PathRemoveFileSpec(*pbsPath);
+		::PathRemoveFileSpec(*pbsPath);
+#ifdef _WIN64
+#ifdef _DEBUG
+		PathAppend(*pbsPath, L"TEd64.exe");
+#else
+		::PathAppend(*pbsPath, L"TE64.exe");
+#endif
+#else
+#ifdef _DEBUG
+		PathAppend(*pbsPath, L"TEd32.exe");
+#else
+		PathAppend(*pbsPath, L"TE32.exe");
+#endif
+#endif
+		i = lstrlen(*pbsPath);
+	}
+#endif
 	return i;
 }
 
@@ -10249,7 +10336,7 @@ VOID teApiCreateProcess(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 	}
 	if (CreateProcess(NULL, param[0].lpwstr, NULL, NULL, TRUE, nArg >= 4 ? param[4].dword : CREATE_NO_WINDOW, NULL, param[1].lpwstr, &si, &pi)) {
 		BSTR bsStdOut = NULL;
-		if (WaitForInputIdle(pi.hProcess, dwms)) {
+		if (pVarResult && WaitForInputIdle(pi.hProcess, dwms)) {
 			if (WaitForSingleObject(pi.hProcess, dwms) != WAIT_TIMEOUT) {
 				if (PeekNamedPipe(hRead, NULL, 0, NULL, &dwLen, NULL)) {
 					BSTR bs = ::SysAllocStringByteLen(NULL, dwLen);
@@ -11179,8 +11266,13 @@ ATOM MyRegisterClass(HINSTANCE hInstance, LPWSTR szClassName, WNDPROC lpfnWndPro
 	wcex.cbClsExtra		= 0;
 	wcex.cbWndExtra		= 0;
 	wcex.hInstance		= hInstance;
+#ifdef _WINDLL
+	wcex.hIcon			= LoadIcon(g_hinstDll, MAKEINTRESOURCE(IDI_TE));
+	wcex.hIconSm		= LoadIcon(g_hinstDll, MAKEINTRESOURCE(IDI_TE));
+#else
 	wcex.hIcon			= LoadIcon(hInstance, MAKEINTRESOURCE(IDI_TE));
 	wcex.hIconSm		= LoadIcon(hInstance, MAKEINTRESOURCE(IDI_TE));
+#endif
 	wcex.hCursor		= LoadCursor(NULL, IDC_ARROW);
 	wcex.hbrBackground  = (HBRUSH)(COLOR_BTNFACE + 1);
 	wcex.lpszMenuName	= 0;
@@ -11555,24 +11647,25 @@ HRESULT teCreateWebView2(IWebBrowser2 **ppWebBrowser)
 	if (g_nBlink == 2) {
 		return hr;
 	}
-	WCHAR pszTEWV2[MAX_PATH];
-	GetModuleFileName(NULL, pszTEWV2, MAX_PATH);
-	PathRemoveFileSpec(pszTEWV2);
+	BSTR bsTEWV2;
+	teGetModuleFileName(NULL, &bsTEWV2);
+	PathRemoveFileSpec(bsTEWV2);
 #ifdef _WIN64
-	PathAppend(pszTEWV2, L"lib\\tewv64.dll");
+	PathAppend(bsTEWV2, L"lib\\tewv64.dll");
 #else
-	PathAppend(pszTEWV2, L"lib\\tewv32.dll");
+	PathAppend(bsTEWV2, L"lib\\tewv32.dll");
 #endif
 #ifdef _DEBUG
-	if (!PathFileExists(pszTEWV2)) {
+	if (!PathFileExists(bsTEWV2)) {
 #ifdef _WIN64
-		lstrcpy(pszTEWV2, L"C:\\cpp\\tewv\\x64\\Debug\\tewv64d.dll");
+		lstrcpy(bsTEWV2, L"C:\\cpp\\tewv\\x64\\Debug\\tewv64d.dll");
 #else
-		lstrcpy(pszTEWV2, L"C:\\cpp\\tewv\\Debug\\tewv32d.dll");
+		lstrcpy(bsTEWV2, L"C:\\cpp\\tewv\\Debug\\tewv32d.dll");
 #endif
 	}
 #endif
-	hr = teCreateInstance(CLSID_WebBrowserExt, pszTEWV2, &g_hTEWV, IID_PPV_ARGS(ppWebBrowser));
+	hr = teCreateInstance(CLSID_WebBrowserExt, bsTEWV2, &g_hTEWV, IID_PPV_ARGS(ppWebBrowser));
+	teSysFreeString(&bsTEWV2);
 	if (hr == S_OK && !g_pSP) {
 		VARIANT v;
 		VariantInit(&v);
@@ -11588,14 +11681,33 @@ HRESULT teCreateWebView2(IWebBrowser2 **ppWebBrowser)
 	return hr;
 }
 
+#ifdef _WINDLL
+BOOL WINAPI DllMain(HINSTANCE hinstDll, DWORD dwReason, LPVOID lpReserved)
+{
+	switch (dwReason) {
+	case DLL_PROCESS_ATTACH:
+		g_hinstDll = hinstDll;
+		break;
+	case DLL_PROCESS_DETACH:
+		break;
+	}
+	return TRUE;
+}
+#endif
+
+#ifdef _WINDLL
+extern "C" void CALLBACK RunDLLW(HWND hWnd, HINSTANCE hInstance, LPWSTR lpCmdLine, int nCmdShow)
+{
+	DLLEXPORT;
+#else
 int APIENTRY _tWinMain(HINSTANCE hInstance,
-					HINSTANCE hPrevInstance,
-					LPTSTR    lpCmdLine,
-					int       nCmdShow)
+	HINSTANCE hPrevInstance,
+	LPTSTR    lpCmdLine,
+	int       nCmdShow)
 {
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
-
+#endif
 	BSTR bsIndex = NULL;
 	BSTR bsScript = NULL;
 	hInst = hInstance;
@@ -11810,7 +11922,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 					SysFreeString(bsPath);
 					Finalize();
 					teSetForegroundWindow(hwndTE);
+#ifdef _WINDLL
+					return;
+#else
 					return FALSE;
+#endif
 				}
 			}
 		}
@@ -11855,10 +11971,13 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		g_hwndMain = CreateWindowEx(WS_EX_TOOLWINDOW, szClass, g_szTE, WS_POPUP,
 		  CW_USEDEFAULT, CW_USEDEFAULT, 0, 0, NULL, NULL, hInstance, NULL);
 	}
-	if (!g_hwndMain)
-	{
+	if (!g_hwndMain) {
 		Finalize();
+#ifdef _WINDLL
+		return;
+#else
 		return FALSE;
+#endif
 	}
 	teGetDarkMode();
 	// ClipboardFormat
@@ -11918,7 +12037,11 @@ function _c(s) {\
 		PostMessage(g_hwndMain, WM_CLOSE, 0, 0);
 		Finalize();
 		MessageBoxA(NULL, "503 Script Engine Unavalable", NULL, MB_OK | MB_ICONERROR);
+#ifdef _WINDLL
+		return;
+#else
 		return FALSE;
+#endif
 	}
 	teSysFreeString(&bsScript);
 	IGlobalInterfaceTable *pGlobalInterfaceTable;
@@ -12104,8 +12227,11 @@ function _c(s) {\
 	Finalize();
 	SafeRelease(&g_pTE);
 	VariantClear(&g_vData);
+#ifndef _WINDLL
 	return (int) msg.wParam;
+#endif
 }
+
 VOID ArrangeWindow()
 {
 	if (g_bArrange || !g_pOnFunc[TE_OnArrange]) {
@@ -12730,7 +12856,11 @@ STDMETHODIMP CteShellBrowser::QueryInterface(REFIID riid, void **ppvObject)
 		QITABENT(CteShellBrowser, IPersistFolder2),
 		QITABENT(CteShellBrowser, IShellFolderViewCB),
 		{ 0 },
-	};
+#pragma warning( push )
+#pragma warning( disable: 4838 )
+	}
+#pragma warning( pop )
+	;
 	HRESULT hr = QISearch(this, qit, riid, ppvObject);
 	if SUCCEEDED(hr) {
 		return hr;
@@ -13318,6 +13448,17 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	return S_OK;
 }
 
+VOID CteShellBrowser::GetInitFS(FOLDERSETTINGS *pfs)
+{
+	if (m_nForceViewMode != FVM_AUTO) {
+		m_param[SB_ViewMode] = m_nForceViewMode;
+		m_bAutoVM = FALSE;
+		m_nForceViewMode = FVM_AUTO;
+	}
+	pfs->ViewMode = !m_bAutoVM || ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER]) ? m_param[SB_ViewMode] : FVM_AUTO;
+	pfs->fFlags = (m_param[SB_FolderFlags] | FWF_USESEARCHFOLDER) & ~FWF_NOENUMREFRESH;
+}
+
 HRESULT CteShellBrowser::NavigateEB(DWORD dwFrame)
 {
 	HRESULT hr = E_FAIL;
@@ -13328,12 +13469,8 @@ HRESULT CteShellBrowser::NavigateEB(DWORD dwFrame)
 				DestroyView(CTRL_SB);
 			}
 			if (SUCCEEDED(teCreateInstance(CLSID_ExplorerBrowser, NULL, NULL, IID_PPV_ARGS(&m_pExplorerBrowser)))) {
-				if (m_nForceViewMode != FVM_AUTO) {
-					m_param[SB_ViewMode] = m_nForceViewMode;
-					m_bAutoVM = FALSE;
-					m_nForceViewMode = FVM_AUTO;
-				}
-				FOLDERSETTINGS fs = { !m_bAutoVM || ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER]) ? m_param[SB_ViewMode] : FVM_AUTO, (m_param[SB_FolderFlags] | FWF_USESEARCHFOLDER) & ~FWF_NOENUMREFRESH };
+				FOLDERSETTINGS fs;
+				GetInitFS(&fs);
 				if (SUCCEEDED(m_pExplorerBrowser->Initialize(m_pTC->m_hwndStatic, &rc, &fs))) {
 					hr = GetShellFolder2(&m_pidl);
 					if (hr == S_OK) {
@@ -15996,15 +16133,10 @@ HRESULT CteShellBrowser::CreateViewWindowEx(IShellView *pPreviousView)
 				if (::InterlockedIncrement(&m_nCreate) <= 1) {
 					m_hwnd = NULL;
 					IEnumIDList *peidl = NULL;
-					BOOL bResultsFolder = ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER]);
-					hr =  bResultsFolder ? S_OK : m_pSF2->EnumObjects(g_hwndMain, SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN | SHCONTF_INCLUDESUPERHIDDEN | SHCONTF_NAVIGATION_ENUM, &peidl);
+					hr =  ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER]) ? S_OK : m_pSF2->EnumObjects(g_hwndMain, SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN | SHCONTF_INCLUDESUPERHIDDEN | SHCONTF_NAVIGATION_ENUM, &peidl);
 					if (hr == S_OK) {
-						if (m_nForceViewMode != FVM_AUTO) {
-							m_param[SB_ViewMode] = m_nForceViewMode;
-							m_bAutoVM = FALSE;
-							m_nForceViewMode = FVM_AUTO;
-						}
-						FOLDERSETTINGS fs = { m_bAutoVM && !bResultsFolder ? FVM_AUTO : m_param[SB_ViewMode], (m_param[SB_FolderFlags] | FWF_USESEARCHFOLDER) & ~FWF_NOENUMREFRESH };
+						FOLDERSETTINGS fs;
+						GetInitFS(&fs);
 						hr = m_pShellView->CreateViewWindow(pPreviousView, &fs, static_cast<IShellBrowser *>(this), &rc, &m_hwnd);
 					} else {
 						hr = E_FAIL;
@@ -16240,9 +16372,22 @@ HRESULT CteShellBrowser::OnNavigationPending2(LPITEMIDLIST pidlFolder)
 	//History / Management
 	SetHistory(NULL, SBSP_SAMEBROWSER | SBSP_ABSOLUTE);
 	SafeRelease(&pPrevious);
-	if (!m_bAutoVM) {
-		SetViewModeAndIconSize(TRUE);
+	if (m_bAutoVM) {
+		if (m_pExplorerBrowser) {
+			FOLDERSETTINGS fs;
+			GetInitFS(&fs);
+			m_pExplorerBrowser->SetFolderSettings(&fs);
+		}
+		IFolderView2 *pFV2;
+		if (m_pShellView && SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2)))) {
+			pFV2->GetViewModeAndIconSize((FOLDERVIEWMODE *)&m_param[SB_ViewMode], (int *)&m_param[SB_IconSize]);
+			pFV2->Release();
+			if (m_param[SB_ViewMode] == FVM_ICON && m_param[SB_IconSize] < 96) {
+				m_param[SB_IconSize] = 96;
+			}
+		}
 	}
+	SetViewModeAndIconSize(TRUE);
 	m_dwRedraw |= 4;
 	SetRedraw(FALSE);
 	return hr;
@@ -17704,7 +17849,11 @@ STDMETHODIMP CTE::QueryInterface(REFIID riid, void **ppvObject)
 		QITABENT(CTE, IDispatch),
 		QITABENT(CTE, IDropSource),
 		{ 0 },
-	};
+#pragma warning( push )
+#pragma warning( disable: 4838 )
+	}
+#pragma warning( pop )
+	;
 	return QISearch(this, qit, riid, ppvObject);
 }
 
@@ -18391,7 +18540,11 @@ STDMETHODIMP CteInternetSecurityManager::QueryInterface(REFIID riid, void **ppvO
 	{
 		QITABENT(CteInternetSecurityManager, IInternetSecurityManager),
 		{ 0 },
-	};
+#pragma warning( push )
+#pragma warning( disable: 4838 )
+	}
+#pragma warning( pop )
+	;
 	return QISearch(this, qit, riid, ppvObject);
 }
 
@@ -18470,7 +18623,11 @@ STDMETHODIMP CteNewWindowManager::QueryInterface(REFIID riid, void **ppvObject)
 	{
 		QITABENT(CteNewWindowManager, INewWindowManager),
 		{ 0 },
-	};
+#pragma warning( push )
+#pragma warning( disable: 4838 )
+	}
+#pragma warning( pop )
+	;
 	return QISearch(this, qit, riid, ppvObject);
 }
 
@@ -18557,7 +18714,11 @@ STDMETHODIMP CteWebBrowser::QueryInterface(REFIID riid, void **ppvObject)
 		QITABENT(CteWebBrowser, IDocHostShowUI),
 //		QITABENT(CteWebBrowser, IOleCommandTarget),
 		{ 0 },
-	};
+#pragma warning( push )
+#pragma warning( disable: 4838 )
+	}
+#pragma warning( pop )
+	;
 	*ppvObject = NULL;
 	if (IsEqualIID(riid, IID_IServiceProvider)) {
 		*ppvObject = static_cast<IServiceProvider *>(new CteServiceProvider(static_cast<IDispatch *>(this), m_pWebBrowser));
@@ -19468,7 +19629,11 @@ STDMETHODIMP CteTabCtrl::QueryInterface(REFIID riid, void **ppvObject)
 		QITABENT(CteTabCtrl, IDispatch),
 		QITABENT(CteTabCtrl, IDispatchEx),
 		{ 0 },
-	};
+#pragma warning( push )
+#pragma warning( disable: 4838 )
+	}
+#pragma warning( pop )
+	;
 	if (IsEqualIID(riid, g_ClsIdTC)) {
 		*ppvObject = this;
 		AddRef();
@@ -20126,7 +20291,11 @@ STDMETHODIMP CteFolderItems::QueryInterface(REFIID riid, void **ppvObject)
 		QITABENT(CteFolderItems, FolderItems),
 		QITABENT(CteFolderItems, IDataObject),
 		{ 0 },
-	};
+#pragma warning( push )
+#pragma warning( disable: 4838 )
+	}
+#pragma warning( pop )
+	;
 	return QISearch(this, qit, riid, ppvObject);
 }
 
@@ -20871,7 +21040,11 @@ STDMETHODIMP CteServiceProvider::QueryInterface(REFIID riid, void **ppvObject)
 	{
 		QITABENT(CteServiceProvider, IServiceProvider),
 		{ 0 },
-	};
+#pragma warning( push )
+#pragma warning( disable: 4838 )
+	}
+#pragma warning( pop )
+	;
 	HRESULT hr = QISearch(this, qit, riid, ppvObject);
 	return SUCCEEDED(hr) ? hr : m_pUnk->QueryInterface(riid, ppvObject);
 }
@@ -20991,7 +21164,11 @@ STDMETHODIMP CteMemory::QueryInterface(REFIID riid, void **ppvObject)
 		QITABENT(CteMemory, IDispatch),
 		QITABENT(CteMemory, IDispatchEx),
 		{ 0 },
-	};
+#pragma warning( push )
+#pragma warning( disable: 4838 )
+	}
+#pragma warning( pop )
+	;
 	if (IsEqualIID(riid, g_ClsIdStruct)) {
 		*ppvObject = this;
 		AddRef();
@@ -21543,7 +21720,11 @@ STDMETHODIMP CteContextMenu::QueryInterface(REFIID riid, void **ppvObject)
 		QITABENT(CteContextMenu, IDispatch),
 //		QITABENT(CteContextMenu, IContextMenu),
 		{ 0 },
-	};
+#pragma warning( push )
+#pragma warning( disable: 4838 )
+	}
+#pragma warning( pop )
+	;
 	if (IsEqualIID(riid, IID_IContextMenu) || IsEqualIID(riid, IID_IContextMenu2) || IsEqualIID(riid, IID_IContextMenu3)) {
 		return m_pContextMenu->QueryInterface(riid, ppvObject);
 	}
@@ -21831,7 +22012,11 @@ STDMETHODIMP CteDropTarget::QueryInterface(REFIID riid, void **ppvObject)
 	{
 		QITABENT(CteDropTarget, IDispatch),
 		{ 0 },
-	};
+#pragma warning( push )
+#pragma warning( disable: 4838 )
+	}
+#pragma warning( pop )
+	;
 
 	if (m_pFolderItem && (IsEqualIID(riid, IID_FolderItem) || IsEqualIID(riid, g_ClsIdFI))) {
 		return m_pFolderItem->QueryInterface(riid, ppvObject);
@@ -22316,8 +22501,12 @@ STDMETHODIMP CteTreeView::QueryInterface(REFIID riid, void **ppvObject)
 //		QITABENT(CteTreeView, IOleControlSite),
 #endif
 		{ 0 },
-	};
-/*	if (IsEqualIID(riid, IID_IServiceProvider)) {
+#pragma warning( push )
+#pragma warning( disable: 4838 )
+	}
+#pragma warning( pop )
+	;
+	/*	if (IsEqualIID(riid, IID_IServiceProvider)) {
 		*ppvObject = static_cast<IServiceProvider *>(new CteServiceProvider(static_cast<IDispatch *>(this), static_cast<IDispatch *>(m_pFV)));
 		return S_OK;
 	}*/
@@ -23459,7 +23648,11 @@ STDMETHODIMP CteFolderItem::QueryInterface(REFIID riid, void **ppvObject)
 		QITABENT(CteFolderItem, IPersistFolder2),
 		QITABENT(CteFolderItem, IParentAndItem),
 		{ 0 },
-	};
+#pragma warning( push )
+#pragma warning( disable: 4838 )
+	}
+#pragma warning( pop )
+	;
 	if (IsEqualIID(riid, g_ClsIdFI)) {
 		*ppvObject = this;
 		AddRef();
@@ -23861,7 +24054,11 @@ STDMETHODIMP CteCommonDialog::QueryInterface(REFIID riid, void **ppvObject)
 	{
 		QITABENT(CteCommonDialog, IDispatch),
 		{ 0 },
-	};
+#pragma warning( push )
+#pragma warning( disable: 4838 )
+	}
+#pragma warning( pop )
+	;
 	return QISearch(this, qit, riid, ppvObject);
 }
 
@@ -24139,7 +24336,11 @@ STDMETHODIMP CteWICBitmap::QueryInterface(REFIID riid, void **ppvObject)
 	{
 		QITABENT(CteWICBitmap, IDispatch),
 		{ 0 },
-	};
+#pragma warning( push )
+#pragma warning( disable: 4838 )
+	}
+#pragma warning( pop )
+	;
 	return QISearch(this, qit, riid, ppvObject);
 }
 
@@ -25183,7 +25384,11 @@ STDMETHODIMP CteWindowsAPI::QueryInterface(REFIID riid, void **ppvObject)
 	{
 		QITABENT(CteWindowsAPI, IDispatch),
 		{ 0 },
-	};
+#pragma warning( push )
+#pragma warning( disable: 4838 )
+	}
+#pragma warning( pop )
+	;
 	return QISearch(this, qit, riid, ppvObject);
 }
 
@@ -25485,7 +25690,11 @@ STDMETHODIMP CteActiveScriptSite::QueryInterface(REFIID riid, void **ppvObject)
 		QITABENT(CteActiveScriptSite, IActiveScriptSite),
 		QITABENT(CteActiveScriptSite, IActiveScriptSiteWindow),
 		{ 0 },
-	};
+#pragma warning( push )
+#pragma warning( disable: 4838 )
+	}
+#pragma warning( pop )
+	;
 	return QISearch(this, qit, riid, ppvObject);
 }
 
@@ -25706,7 +25915,11 @@ STDMETHODIMP CteDispatchEx::QueryInterface(REFIID riid, void **ppvObject)
 		QITABENT(CteDispatchEx, IDispatch),
 		QITABENT(CteDispatchEx, IDispatchEx),
 		{ 0 },
-	};
+#pragma warning( push )
+#pragma warning( disable: 4838 )
+	}
+#pragma warning( pop )
+	;
 	if (IsEqualIID(riid, IID_IDispatchEx)) {
 		m_bDispathEx = TRUE;
 	}
@@ -26195,7 +26408,11 @@ STDMETHODIMP CteProgressDialog::QueryInterface(REFIID riid, void **ppvObject)
 	{
 		QITABENT(CteProgressDialog, IDispatch),
 		{ 0 },
-	};
+#pragma warning( push )
+#pragma warning( disable: 4838 )
+	}
+#pragma warning( pop )
+	;
 	return QISearch(this, qit, riid, ppvObject);
 }
 
@@ -26442,7 +26659,11 @@ STDMETHODIMP CteFileSystemBindData::QueryInterface(REFIID riid, void **ppvObject
 	{
 		QITABENT(CteFileSystemBindData, IFileSystemBindData),
 		{ 0 },
-	};
+#pragma warning( push )
+#pragma warning( disable: 4838 )
+	}
+#pragma warning( pop )
+	;
 	return QISearch(this, qit, riid, ppvObject);
 }
 
@@ -26521,7 +26742,11 @@ STDMETHODIMP CteEnumerator::QueryInterface(REFIID riid, void **ppvObject)
 	{
 		QITABENT(CTE, IDispatch),
 		{ 0 },
-	};
+#pragma warning( push )
+#pragma warning( disable: 4838 )
+	}
+#pragma warning( pop )
+	;
 	return QISearch(this, qit, riid, ppvObject);
 }
 
@@ -26612,3 +26837,4 @@ VOID CteEnumerator::GetItem()
 		}
 	}
 }
+#endif
