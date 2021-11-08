@@ -125,7 +125,7 @@ if (window.Addon == 1) {
 				}
 			}
 			if (nLen == 0) {
-				s.push('<label id="_toolbar+" title="Edit" onclick="Addons.ToolBar.ShowOptions()" oncontextmenu="Addons.ToolBar.ShowOptions(); return false" onmouseover="MouseOver(this)" onmouseout="MouseOut()" class="button">+</label>');
+				s.push('<label id="_toolbar+" title="', await GetText("Add"), '" onclick="Addons.ToolBar.ShowOptions()" oncontextmenu="Addons.ToolBar.ShowOptions(); return false" onmouseover="MouseOver(this)" onmouseout="MouseOut()" class="button">+</label>');
 			}
 			document.getElementById('_toolbar').innerHTML = s.join("");
 			Resize();
