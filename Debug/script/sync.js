@@ -56,7 +56,7 @@ g_.DefaultIcons = {
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20211106 ? te.Version : 20211106;
+		return te.Version < 20211106 ? te.Version : 20211109;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);

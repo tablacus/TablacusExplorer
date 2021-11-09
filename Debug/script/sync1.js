@@ -2634,7 +2634,11 @@ te.OnReplacePath = function (Ctrl, Path) {
 			return GetParentFolderName(Path);
 		}
 	}
-	return RunEvent4("ReplacePath", Ctrl, Path);
+	let r = RunEvent4("ReplacePath", Ctrl, Path);
+	if (!r && /\//.test(Path) && !/^[0-9A-Z]{2,}:/i.test(Path)) {
+		r = Path.replace(/\//g, "\\").replace(/^\\([A-Z])(\\.*)$/i, "$1:$2");
+	}
+	return r;
 }
 
 te.OnGetAlt = function (SessionId, s) {
