@@ -583,7 +583,7 @@ ApplyLang = async function (doc) {
 				}
 				if (SameText(el.type, "button")) {
 					if (s = el.value) {
-						const icon = ui_.IconFont && ButtonIcon[s.replace(/\.+$/, "")];
+						const icon = ui_.IconFont && !ui_.NoCssFont && ButtonIcon[s.replace(/\.+$/, "")];
 						const v = (await GetTextR(s)).replace(/\(&\w\)|&/, "");
 						if (icon) {
 							el.value = String.fromCodePoint(icon);

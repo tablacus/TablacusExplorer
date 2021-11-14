@@ -924,7 +924,6 @@ private:
 	UINT m_uFrameCount, m_uFrame;
 };
 
-#ifdef _USE_BSEARCHAPI
 class CteWindowsAPI : public IDispatch
 {
 public:
@@ -943,7 +942,7 @@ private:
 	TEDispatchApi *m_pApi;
 	LONG	m_cRef;
 };
-#endif
+
 #ifdef _USE_OBJECTAPI
 class CteAPI : public IDispatch
 {

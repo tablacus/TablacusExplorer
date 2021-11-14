@@ -2635,8 +2635,8 @@ te.OnReplacePath = function (Ctrl, Path) {
 		}
 	}
 	let r = RunEvent4("ReplacePath", Ctrl, Path);
-	if (!r && /\//.test(Path) && !/^[0-9A-Z]{2,}:/i.test(Path)) {
-		r = Path.replace(/\//g, "\\").replace(/^\\([A-Z])(\\.*)$/i, "$1:$2");
+	if (/\//.test(r || Path) && !/^[0-9A-Z]{2,}:/i.test(r || Path)) {
+		r = (r || Path).replace(/\//g, "\\").replace(/^\\([A-Z])(\\.*)$/i, "$1:$2");
 	}
 	return r;
 }

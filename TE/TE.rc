@@ -21,7 +21,11 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
     FILEVERSION     VER_Y,VER_M,VER_D,0
     PRODUCTVERSION  VER_Y,VER_M,VER_D,0
     FILEOS          VOS_NT_WINDOWS32
-    FILETYPE        VFT_APP
+#ifdef _WINDLL
+	FILETYPE        VFT_DLL
+#else
+	FILETYPE        VFT_APP
+#endif
     FILESUBTYPE     VFT2_UNKNOWN
     FILEFLAGSMASK   0x00000000
     FILEFLAGS       0x00000000
@@ -35,12 +39,20 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
             VALUE "FileVersion", STRING(VER_Y) "." STRING(VER_M) "." STRING(VER_D) "\0"
             VALUE "InternalName", "TE\0"
             VALUE "LegalCopyright", "(C) Gaku\0"
+#ifdef _WINDLL
 #ifdef _WIN64
-            VALUE "OriginalFilename", "TE64.exe\0"
+				VALUE "OriginalFilename", "te64.dll\0"
 #else
-            VALUE "OriginalFilename", "TE32.exe\0"
+				VALUE "OriginalFilename", "te32.dll\0"
 #endif
-            VALUE "ProductName", PRODUCTNAME "\0"
+#else
+#ifdef _WIN64
+				VALUE "OriginalFilename", "TE64.exe\0"
+#else
+				VALUE "OriginalFilename", "TE32.exe\0"
+#endif
+#endif
+			VALUE "ProductName", PRODUCTNAME "\0"
             VALUE "ProductVersion", STRING(VER_Y) "." STRING(VER_M) "." STRING(VER_D) "\0"
         }
     }

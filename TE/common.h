@@ -32,6 +32,7 @@
 #include <structuredquery.h>
 //#include <Vssym32.h>
 #include <vector>
+#include <unordered_map>
 #ifdef _USE_TEOBJ
 #include <map>
 #endif
@@ -59,11 +60,30 @@
 #ifdef _USE_APIHOOK
 #pragma comment(lib, "imagehlp.lib")
 #endif
+#ifdef _WINDLL
+#ifdef __EDG__
+#define DLLEXPORT
+#else
+#define DLLEXPORT __pragma(comment(linker, "/EXPORT:" __FUNCTION__ "=" __FUNCDNAME__))
+#endif
+
+#ifdef _WIN64
+//#pragma comment(linker, "/DEF:\"te64.def\"")
+#else
+//#pragma comment(linker, "/DEF:\"te32.def\"")
+#endif
+#endif
+#if !defined(_WINDLL) || defined(_EXEONLY)
 #ifdef _WIN64
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #else
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #endif
+#ifndef _EXEONLY
+#pragma comment(linker, "/entry:\"wWinMain\"")
+#endif
+#endif
+
 #if _MSC_VER >=1600
 #pragma execution_character_set("utf-8")
 #define CP_TE CP_UTF8
@@ -216,6 +236,8 @@ enum PreferredAppMode
 	APPMODE_FORCELIGHT = 3,
 	APPMODE_MAX = 4
 };
+
+typedef int (WINAPI* LPFNMessageBoxW)(HWND hWnd, LPCWSTR lpText, LPCWSTR lpCaption, UINT uType);
 
 //Unnamed function
 typedef VOID (WINAPI * LPFNSHRunDialog)(HWND hwnd, HICON hIcon, LPWSTR pszPath, LPWSTR pszTitle, LPWSTR pszPrompt, DWORD dwFlags);
@@ -507,17 +529,10 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define MAP_SB	1
 #define MAP_TC	2
 #define MAP_TV	3
-#define MAP_CD	4
+#define MAP_GB	4
 #define MAP_SS	5
-#define MAP_Mem	6
-#define MAP_GB	7
-#define MAP_FIs	8
-#ifdef _USE_BSEARCHAPI
-#define MAP_API	9
-#define MAP_LENGTH	10
-#else
-#define MAP_LENGTH	9
-#endif
+#define MAP_API	6
+#define MAP_LENGTH	7
 #define TE_API_RESULT	12
 #define TE_EXCEPINFO	13
 #ifndef offsetof
@@ -546,7 +561,9 @@ struct TEmethod
 
 struct TEStruct
 {
-	LONG   lSize;
+	LONG lSize;
+	WORD bSize;
+	WORD nCount;
 	LPSTR name;
 	TEmethod *pMethod;
 };
