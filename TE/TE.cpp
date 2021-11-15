@@ -293,10 +293,15 @@ BOOL teIsFileSystem(LPOLESTR pszPath);
 //Unit
 
 int teStrCmpIWA(LPCWSTR lpStringW, LPCSTR lpStringA) {
-	int result = 0;
-	for (int i = 0;; ++i) {
-		int wc1 = lpStringW ? tolower(lpStringW[i]) : NULL;
-		int wc2 = lpStringA ? tolower(lpStringA[i]) : NULL;
+	int wc1 = lpStringW ? tolower(*lpStringW) : NULL;
+	int wc2 = lpStringA ? tolower(*lpStringA) : NULL;
+	int result = wc1 - wc2;
+	if (result || wc1 == NULL || wc2 == NULL) {
+		return result;
+	}
+	for (int i = 1;;++i) {
+		wc1 = tolower(lpStringW[i]);
+		wc2 = tolower(lpStringA[i]);
 		result = wc1 - wc2;
 		if (result || wc1 == NULL || wc2 == NULL) {
 			break;
@@ -306,10 +311,15 @@ int teStrCmpIWA(LPCWSTR lpStringW, LPCSTR lpStringA) {
 }
 
 int teStrCmpI(LPCWSTR lpStringW, LPCWSTR lpString2) {
-	int result = 0;
-	for (int i = 0;; ++i) {
-		int wc1 = lpStringW ? tolower(lpStringW[i]) : NULL;
-		int wc2 = lpString2 ? tolower(lpString2[i]) : NULL;
+	int wc1 = lpStringW ? tolower(*lpStringW) : NULL;
+	int wc2 = lpString2 ? tolower(*lpString2) : NULL;
+	int result = wc1 - wc2;
+	if (result || wc1 == NULL || wc2 == NULL) {
+		return result;
+	}
+	for (int i = 1;;++i) {
+		wc1 = tolower(lpStringW[i]);
+		wc2 = tolower(lpString2[i]);
 		result = wc1 - wc2;
 		if (result || wc1 == NULL || wc2 == NULL) {
 			break;
@@ -4461,11 +4471,18 @@ int teBSearch(TEmethod *method, int nSize, LPOLESTR bs)
 int teLSearch(TEmethod *method, int nSize, LPOLESTR bs)
 {
 	WCHAR pszPath[32];
+	CHAR pszPath1[32], pszPath2[32];
+//	for (int j = 0; pszPath1[j] = (bs && j < _countof(pszPath1) - 1) ? tolower(bs[j]) : NULL; ++j);
+	for (int j = 0; pszPath1[j] = (bs && j < _countof(pszPath1) - 1) ? bs[j] : NULL; ++j);
+
 	for (int i = 0; i < nSize; ++i) {
 		::MultiByteToWideChar(CP_UTF8, 0, method[i].name, -1, pszPath, 32);
+//		for (int j = 0; pszPath2[j] = (j < _countof(pszPath2) - 1) ? tolower(pszPath[j]) : NULL; ++j);
 //		if (lstrcmpi(bs, pszPath) == 0) {
-		if (teStrCmpI(bs, pszPath) == 0) {
+//		if (teStrCmpI(bs, pszPath) == 0) {
 //		if (StrCmpI(bs, pszPath) == 0) {
+//		if (teStrCmpI(bs, pszPath) == 0) {
+		if (strcmp(pszPath1, method[i].name) == 0) {
 			return i;
 		}
 	}
@@ -10744,8 +10761,8 @@ VOID teApiTest(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarR
 	for (int j = 0; j < 10000; ++j) {
 		for (int i = 0; i < _countof(methodTE); ++i) {
 			BSTR bs = teMultiByteToWideChar(CP_ACP, methodTE[i].name, -1);
-			t += teUMSearch(MAP_TE, bs);
-//			t += teLSearch(methodTE, _countof(methodTE), bs);
+//			t += teUMSearch(MAP_TE, bs);
+			t += teLSearch(methodTE, _countof(methodTE), bs);
 			::SysFreeString(bs);
 		}
 	}

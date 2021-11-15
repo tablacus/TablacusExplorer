@@ -290,7 +290,10 @@ Extract = async function (Src, Dest, xhr) {
 CheckUpdate2 = async function (xhr, url, arg1) {
 	const arg = await api.CreateObject("Object");
 	const Text = await xhr.get_responseText ? await xhr.get_responseText() : xhr.responseText;
-	const json = JSON.parse(Text);
+	let json = JSON.parse(Text);
+	if (json.length) {
+		json = json[0];
+	}
 	if (json.assets && json.assets[0]) {
 		arg.size = json.assets[0].size / 1024;
 		arg.url = json.assets[0].browser_download_url;
@@ -893,6 +896,7 @@ SelectItem = function (FV, path, wFlags, tm, bCheck) {
 
 window.addEventListener("load", function () {
 	document.body.onselectstart = DetectProcessTag;
+	document.body.oncontextmenu = DetectProcessTag;
 	document.body.addEventListener('keydown', function (ev) {
 		ev = (ev || event);
 		if (ev.keyCode ? ev.keyCode == VK_F5 : "F5" === ev.key) {
@@ -909,8 +913,12 @@ window.addEventListener("load", function () {
 				ev.preventDefault();
 			}
 		}, { passive: false });
+		document.body.addEventListener('mousedown', function (ev) {
+			if (ev.buttons & 4) {
+				ev.preventDefault();
+			}
+		}, { passive: false });
 	} else {
-		document.body.oncontextmenu = DetectProcessTag;
 		document.body.onmousewheel = function (ev) {
 			return ev ? !ev.ctrlKey : api.GetKeyState(VK_CONTROL) >= 0;
 		};

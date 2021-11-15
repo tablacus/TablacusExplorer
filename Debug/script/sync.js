@@ -53,10 +53,11 @@ g_.DefaultIcons = {
 	general: "bitmap:ieframe.dll,214,24,",
 	browser: "bitmap:ieframe.dll,204,24,"
 }
+g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/releases/latest";
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20211114 ? te.Version : 20211114;
+		return te.Version < 20211115 ? te.Version : 20211115;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -819,7 +820,7 @@ GetIconPacks = function () {
 }
 
 CheckUpdate = function (arg) {
-	OpenHttpRequest("https://api.github.com/repos/tablacus/TablacusExplorer/releases/latest", "http://tablacus.github.io/TablacusExplorerAddons/te/releases.json", "CheckUpdate2", arg);
+	OpenHttpRequest(g_.updateJSONURL, "http://tablacus.github.io/TablacusExplorerAddons/te/releases.json", "CheckUpdate2", arg);
 }
 
 ShowAbout = function () {
