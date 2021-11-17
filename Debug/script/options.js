@@ -74,9 +74,11 @@ function LoadChecked(form) {
 		if (ar.length > 1 && form[ar[0]].value == Number(ar[1])) {
 			form[i].checked = true;
 		}
-		ar = o.id.split(":");
-		if (ar.length > 1 && form[ar[0]].value & Number(ar[1])) {
-			form[i].checked = true;
+		ar = o.id.split(/:!?/);
+		if (ar.length > 1) {
+			if ((form[ar[0]].value & Number(ar[1]) ? 1 : 0) ^ (/!/.test(o.id) ? 1 : 0)) {
+				form[i].checked = true;
+			}
 		}
 	}
 }
@@ -276,9 +278,9 @@ function SetRadio(o) {
 }
 
 async function SetCheckbox(o) {
-	const ar = o.id.split(":");
+	const ar = o.id.split(/:!?/);
 	const el = o.form[ar[0]];
-	if (o.checked) {
+	if ((o.checked ? 1 : 0) ^ (/!/.test(o.id) ? 1 : 0)) {
 		el.value |= Number(ar[1]);
 	} else {
 		el.value &= ~Number(ar[1]);
@@ -1140,7 +1142,7 @@ async function SetAddon(Id, bEnable, td, Alt) {
 	s.push('<table><tr style="border-top: 1px solid buttonshadow"', bEnable || bConfig ? "" : ' class="disabled"', '><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id + '">'), '</td><td style="width: 100%"><label for="_', Id, '">', await info.Name, "&nbsp;", await info.Version, '<br><input type="button" class="addonbutton" onclick="AddonInfo(\'', Id, '\')" value="Details">');
 	s.push(' <input type="button" class="addonbutton" onclick="AddonRemove(\'', Id, '\');" value="Delete">&nbsp;(', Id, ')<div id="i_', Id, '"></div></td>');
 	if (!bLevel) {
-		s.push('<td class="danger" style="align: right; white-space: nowrap; vertical-align: middle">Incompatible&nbsp;</td>');
+		s.push('<td class="danger" style="align: right; white-space: nowrap; vertical-align: middle">', await GetTextR("@comres.dll,-1845"), '&nbsp;</td>');
 	} else if (bMinVer) {
 		s.push('<td class="danger" style="align: right; white-space: nowrap; vertical-align: middle">', MinVersion.replace(/^20/, (await api.LoadString(hShell32, 60) || "%").replace(/%.*/, "")).replace(/\.0/g, '.'), ' ', await GetText("is required."), '</td>');
 	} else if (await info.Options) {
@@ -1541,7 +1543,7 @@ ReturnDialogResult = async function (WB) {
 InitDialog = async function () {
 	document.title = TITLE;
 	const Query = String(await window.dialogArguments.Query || location.search.replace(/\?/, "")).toLowerCase();
-	const res = /^icon(.*)/.exec(Query);
+	let res = /^icon(.*)/.exec(Query);
 	if (res) {
 		const a = {
 			"ieframe,214": "b,214,24",
@@ -1810,6 +1812,10 @@ InitDialog = async function () {
 			WB.Close();
 		};
 		document.F.ButtonOk.disabled = false;
+	}
+	res = /^importScript:(.*)/.exec(Query);
+	if (res) {
+		importScript(res[1]);
 	}
 
 	DialogResize = function () {

@@ -13398,7 +13398,7 @@ VOID CteShellBrowser::GetInitFS(FOLDERSETTINGS *pfs)
 		m_nForceViewMode = FVM_AUTO;
 	}
 	pfs->ViewMode = !m_bAutoVM || ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER]) ? m_param[SB_ViewMode] : FVM_AUTO;
-	pfs->fFlags = (m_param[SB_FolderFlags] | FWF_USESEARCHFOLDER) & ~FWF_NOENUMREFRESH;
+	pfs->fFlags = (m_param[SB_FolderFlags] | FWF_USESEARCHFOLDER | FWF_SNAPTOGRID | FWF_NOBROWSERVIEWSTATE) & ~FWF_NOENUMREFRESH;
 }
 
 HRESULT CteShellBrowser::NavigateEB(DWORD dwFrame)
@@ -13859,7 +13859,7 @@ VOID CteShellBrowser::SetFolderFlags(BOOL bGetIconSize)
 	if (SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2)))) {
 		DWORD dwMask;
 		pFV2->GetCurrentFolderFlags(&dwMask);
-		dwMask = (dwMask ^ m_param[SB_FolderFlags]) & (~(FWF_NOENUMREFRESH | FWF_USESEARCHFOLDER));
+		dwMask = (dwMask ^ m_param[SB_FolderFlags]) & (~(FWF_NOENUMREFRESH | FWF_USESEARCHFOLDER | FWF_SNAPTOGRID| FWF_NOBROWSERVIEWSTATE));
 		if (dwMask) {
 			pFV2->SetCurrentFolderFlags(dwMask, m_param[SB_FolderFlags]);
 		}

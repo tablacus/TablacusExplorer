@@ -70,13 +70,13 @@
               <label>Width</label><input type="text" id="Conf_LeftBarWidth" align="right" size="4"><label>@mspaint.exe,-50047[px]</label><br><br>
               <label>Right bar</label><br>
               <label>Width</label><input type="text" id="Conf_RightBarWidth" align="right" size="4"><label>@mspaint.exe,-50047[px]</label><br><br>
-              <label>Tool bar<i> </i>Icon</label><br>
+              <label>Tool bar<i> </i>@mmcbase.dll,-106</label><br>
               <label>Size</label><input type="text" id="Conf_IconSize" align="right" size="4"><label>@mspaint.exe,-50047[px]</label>
               <input type="button" value="Default" onclick="SetDefault(document.F.Conf_IconSize, '');">
               <br><br>
               <label>Menus</label><br>
               <label><input type="checkbox" id="Conf_MenuHidden">Include hidden items</label>&nbsp;
-              <label><input type="checkbox" id="Conf_MenuIcon">Icon</label>
+              <label><input type="checkbox" id="Conf_MenuIcon">@mmcbase.dll,-106</label>
               <br><br>
               <label>Input</label><br>
               <label><input type="checkbox" id="!Conf_NoAutocomplete">Autocomplete</label>
@@ -110,7 +110,7 @@
               <br><br>
               <label><input type="checkbox" id="!Conf_NoInfotip">Tooltips</label><br><br>
               <label>Drag-and-Drop</label><br>
-              <label><input type="checkbox" id="!Conf_NoDragIcon">Icon</label>
+              <label><input type="checkbox" id="!Conf_NoDragIcon">@mmcbase.dll,-106</label>
             </div>
             <!--panel_end-->
 
@@ -268,7 +268,7 @@
                     <table class="layout">
                       <tr>
                         <td style="vertical-align: bottom; white-space: nowrap; width: 100%">
-                          <label>Icon</label><input type="hidden" name="Height" value="16">
+                          <label>@mmcbase.dll,-106</label><input type="hidden" name="Height" value="16">
                         </td>
                         <td id="_Icon" style="width: 15pt; height: 15pt; overflow: hidden; vertical-align: middle" align="left">
                         </td>
@@ -386,7 +386,7 @@
               <label><input type="checkbox" id="Tree_Style:2" onclick="SetCheckbox(this)">Lines</label><br>
               <label><input type="checkbox" id="Tree_Style:0x10000" onclick="SetCheckbox(this)">No edit labels</label><br>
               <label><input type="checkbox" id="Tree_Style:0x1000" onclick="SetCheckbox(this)">Disable Drag-and-Drop</label><br>
-              <label><input type="checkbox" id="Tree_Style:0x200" onclick="SetCheckbox(this)">No infotip</label><br>
+              <label><input type="checkbox" id="Tree_Style:!0x200" onclick="SetCheckbox(this)">Tooltips</label><br>
               <label><input type="checkbox" id="Tree_Style:4" onclick="SetCheckbox(this)">Single click expand</label><br>
               <label><input type="checkbox" id="Tree_Style:0x10" onclick="SetCheckbox(this)">Spring expand</label><br>
               <label><input type="checkbox" id="Tree_Style:8" onclick="SetCheckbox(this)">Full row select</label><br>
@@ -478,10 +478,10 @@
               <br><br>
               <label>View</label><br>
               <input type="hidden" name="View_ViewMode">
-              <label><input type="radio" name="View_ViewMode_" id="View_ViewMode=1" onclick="SetRadio(this)">Icon</label>
-              <label><input type="radio" name="View_ViewMode_" id="View_ViewMode=2" onclick="SetRadio(this)">Small icon</label>
-              <label><input type="radio" name="View_ViewMode_" id="View_ViewMode=3" onclick="SetRadio(this)">List</label>
-              <label><input type="radio" name="View_ViewMode_" id="View_ViewMode=4" onclick="SetRadio(this)">Details</label>
+              <label><input type="radio" name="View_ViewMode_" id="View_ViewMode=1" onclick="SetRadio(this)">@mmcbase.dll,-106</label>
+              <label><input type="radio" name="View_ViewMode_" id="View_ViewMode=2" onclick="SetRadio(this)">@shell32.dll,-33578</label>
+              <label><input type="radio" name="View_ViewMode_" id="View_ViewMode=3" onclick="SetRadio(this)">@shell32.dll,-33579</label>
+              <label><input type="radio" name="View_ViewMode_" id="View_ViewMode=4" onclick="SetRadio(this)">@shell32.dll,-33580</label>
               <label><input type="radio" name="View_ViewMode_" id="View_ViewMode=5" onclick="SetRadio(this)">Thumbnail</label>
               <br>
               <label><input type="radio" name="View_ViewMode_" id="View_ViewMode=6" onclick="SetRadio(this)">Tile</label>
@@ -524,9 +524,8 @@
               <label>Style</label><br>
               <input type="hidden" name="View_fFlags">
               <label><input type="checkbox" id="View_fFlags:0x1" onclick="SetCheckbox(this)">@shell32.dll,-31157[-4433]</label><br>
-              <label><input type="checkbox" id="View_fFlags:0x4" onclick="SetCheckbox(this)">@shell32.dll,-31158[-4434]</label><br>
               <label><input type="checkbox" id="View_fFlags:0x40" onclick="SetCheckbox(this)">Single selection</label><br>
-              <label><input type="checkbox" id="View_fFlags:0x200" onclick="SetCheckbox(this)">No client edge</label><br>
+              <label><input type="checkbox" id="View_fFlags:!0x200" onclick="SetCheckbox(this)">Border</label><br>
               <label><input type="checkbox" id="View_fFlags:0x2000" onclick="SetCheckbox(this)">Show selection always</label><br>
               <label><input type="checkbox" id="View_fFlags:0x8000" onclick="SetCheckbox(this)">Single click activate</label><br>
               <label><input type="checkbox" id="View_fFlags:0x200000" onclick="SetCheckbox(this)">Full row select</label><br>
@@ -535,29 +534,28 @@
               <label><input type="checkbox" id="Conf_LibraryFilter">@shell32.dll,-23349[Library]<i> </i>Filter</label>(*)<br>
               <label><input type="checkbox" id="Conf_AutoArrange">Auto arrange<span>(</span>Refresh<span>)</span></label><br>
               <label><input type="checkbox" id="View_fFlags:0x8000000" onclick="SetCheckbox(this)">@shell32.dll,-37588[Auto check select]</label>(*)<br>
-              <label><input type="checkbox" id="Conf_ColumnEmphasis">@ieframe.dll,-38071[Highlighting]</label>
+              <label><input type="checkbox" id="View_fFlags:!0x100000" onclick="SetCheckbox(this)">{30C8EEF4-A832-41E2-AB32-E3C3CA28FD29} 2[Grouping]</label>(*)<br>
+              <label><input type="checkbox" id="Conf_ColumnEmphasis">@UIAutomationCore.dll,-283[Emphasis]<span>(</span>@oleaccrc.dll,-1127<span>)</span></label>
               <div>
                 <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_FWF")'>
               </div>
               <div class="group" id="_Advanced_FWF">
-                <label><input type="checkbox" id="View_fFlags:0x80" onclick="SetCheckbox(this)">No subfolders</label><br>
-                <label><input type="checkbox" id="View_fFlags:0x800" onclick="SetCheckbox(this)">Align left</label><br>
-                <label><input type="checkbox" id="View_fFlags:0x20000" onclick="SetCheckbox(this)">Hide filenames</label><br>
+                <label><input type="checkbox" id="View_fFlags:0x800" onclick="SetCheckbox(this)">@inetres.dll,-5232[Align Left]</label><br>
+                <label><input type="checkbox" id="View_fFlags:!0x80" onclick="SetCheckbox(this)">Folders</label><br>
+                <label><input type="checkbox" id="View_fFlags:!0x20000" onclick="SetCheckbox(this)">{41CF5AE0-F75A-4806-BD87-59C7D9248EB9} 100[File name]</label><br>
                 <label><input type="checkbox" id="View_fFlags:0x40000" onclick="SetCheckbox(this)">Check select</label><br>
-                <label><input type="checkbox" id="View_fFlags:0x100000" onclick="SetCheckbox(this)">No grouping</label>(*)<br>
-                <label><input type="checkbox" id="View_fFlags:0x800000" onclick="SetCheckbox(this)">No column header</label>(*)<br>
+                <label><input type="checkbox" id="View_fFlags:!0x800000" onclick="SetCheckbox(this)">@taskmgr.exe,-37223[Column header]</label>(*)<br>
                 <label><input type="checkbox" id="View_fFlags:0x1000000" onclick="SetCheckbox(this)">Column header details only</label>(*)<br>
                 <label><input type="checkbox" id="View_fFlags:0x2000000" onclick="SetCheckbox(this)">Extended tiles</label>(*)<br>
-                <label><input type="checkbox" id="View_fFlags:0x10000000" onclick="SetCheckbox(this)">No browser view state</label>(*)<br>
                 <label><input type="checkbox" id="View_fFlags:0x20000000" onclick="SetCheckbox(this)">Subset groups</label>(*)<br>
                 <label><input type="checkbox" id="View_fFlags:0x80000000" onclick="SetCheckbox(this)">Allow RTL reading</label>(*)
               </div>
               <label>Explorer Browser</label>(*7)<br>
               <input type="text" name="Conf_Layout" style="display: none">
-              <label><input type="checkbox" id="Conf_Layout:0x1" onclick="SetCheckbox(this)">Icon</label><br>
-              <label><input type="checkbox" id="Conf_Layout:0x2" onclick="SetCheckbox(this)">Small icon</label><br>
-              <label><input type="checkbox" id="Conf_Layout:0x4" onclick="SetCheckbox(this)">List</label><br>
-              <label><input type="checkbox" id="Conf_Layout:0x8" onclick="SetCheckbox(this)">Details</label><br>
+              <label><input type="checkbox" id="Conf_Layout:0x1" onclick="SetCheckbox(this)">@mmcbase.dll,-106</label><br>
+              <label><input type="checkbox" id="Conf_Layout:0x2" onclick="SetCheckbox(this)">@shell32.dll,-33578</label><br>
+              <label><input type="checkbox" id="Conf_Layout:0x4" onclick="SetCheckbox(this)">@shell32.dll,-33579</label><br>
+              <label><input type="checkbox" id="Conf_Layout:0x8" onclick="SetCheckbox(this)">@shell32.dll,-33580</label><br>
               <label><input type="checkbox" id="Conf_Layout:0x20" onclick="SetCheckbox(this)">Tile</label><br>
               <label><input type="checkbox" id="Conf_Layout:0x40" onclick="SetCheckbox(this)">Thumbstrip</label><br>
               <label><input type="checkbox" id="Conf_Layout:0x80" onclick="SetCheckbox(this)">Content</label><br>
