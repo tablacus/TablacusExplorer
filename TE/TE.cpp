@@ -50,15 +50,15 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		pszError = L"501 Not Implemented";
 		LPFNEntryPointW _RunDLLW = (LPFNEntryPointW)::GetProcAddress(hDll, "RunDLLW");
 		if (_RunDLLW) {
-			_RunDLLW(NULL, hDll, lpCmdLine, nCmdShow);
+			STARTUPINFO si;
+			::GetStartupInfo(&si);
+			_RunDLLW(NULL, hDll, lpCmdLine, (si.dwFlags & STARTF_USESHOWWINDOW) ? si.wShowWindow : SW_SHOWDEFAULT);
 			pszError = NULL;
 		}
 		::FreeLibrary(hDll);
 	}
 	if (pszError) {
-#ifdef _WIN64
 		hDll = LoadLibrary(L"user32.dll");
-#endif
 		LPFNMessageBoxW _MessageBoxW = (LPFNMessageBoxW)::GetProcAddress(hDll, "MessageBoxW");
 		if (_MessageBoxW) {
 			_MessageBoxW(NULL, pszPath, pszError, MB_OK | MB_ICONERROR);
@@ -23247,7 +23247,7 @@ VOID CteTreeView::SetRoot()
 		teSysFreeString(&bs);
 		if (!nRoots) {
 			if SUCCEEDED(_SHCreateItemFromIDList(g_pidls[CSIDL_DESKTOP], IID_PPV_ARGS(&pShellItem))) {
-				hr = m_pNameSpaceTreeControl->AppendRoot(pShellItem, m_param[SB_EnumFlags], m_param[SB_RootStyle], this);
+				hr = m_pNameSpaceTreeControl->AppendRoot(pShellItem, m_param[SB_EnumFlags] | SHCONTF_ENABLE_ASYNC, m_param[SB_RootStyle], this);
 				pShellItem->Release();
 			}
 		}

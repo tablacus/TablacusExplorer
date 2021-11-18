@@ -60,7 +60,7 @@
           <td style="width: 100%">
             <!--panel_start-->
             <div class="panel hide" id="panel0">
-              <label>@wmploc.dll,-1735[Language]</label><br>
+              <label>@docprop.dll,-107</label><br>
               <input type="text" name="Conf_Lang" size="5">
               <input type="button" value="Browse..." onclick="SelectLangID(this)">
               <label>Default</label>:
@@ -405,7 +405,7 @@
                 <label><input type="checkbox" id="Tree_Style:0x4000" onclick="SetCheckbox(this)">Rich tooltip</label>(*)<br>
                 <label><input type="checkbox" id="Tree_Style:0x20000" onclick="SetCheckbox(this)">Tab stop</label><br>
                 <label><input type="checkbox" id="Tree_Style:0x40000" onclick="SetCheckbox(this)">Favorites mode</label><br>
-                <label><input type="checkbox" id="Tree_Style:0x100000" onclick="SetCheckbox(this)">Auto H scroll</label><br>
+                <label><input type="checkbox" id="Tree_Style:0x100000" onclick="SetCheckbox(this)">Auto<i> </i>Horizontal scroll</label><br>
                 <label><input type="checkbox" id="Tree_Style:0x200000" onclick="SetCheckbox(this)">Fade in out expandos</label>(*)<br>
                 <label><input type="checkbox" id="Tree_Style:0x400000" onclick="SetCheckbox(this)">Empty text</label>(*)<br>
                 <label><input type="checkbox" id="Tree_Style:0x800000" onclick="SetCheckbox(this)">@shell32.dll,-37588[Checkboxes]</label><br>
@@ -453,13 +453,12 @@
               <div class="group" id="_Advanced_Tree_EnumFlags">
                 <label><input type="checkbox" id="Tree_EnumFlags:0x10" onclick="SetCheckbox(this)">Checking for children</label>(*7)<br>
                 <label><input type="checkbox" id="Tree_EnumFlags:0x100" onclick="SetCheckbox(this)">Init on first next</label><br>
-                <label><input type="checkbox" id="Tree_EnumFlags:0x200" onclick="SetCheckbox(this)">Net printer search</label><br>
+                <label><input type="checkbox" id="Tree_EnumFlags:0x200" onclick="SetCheckbox(this)">@printui.dll,-12021[Net printer search]</label><br>
                 <label><input type="checkbox" id="Tree_EnumFlags:0x400" onclick="SetCheckbox(this)">Shareable</label><br>
-                <label><input type="checkbox" id="Tree_EnumFlags:0x800" onclick="SetCheckbox(this)">Storage</label><br>
+                <label><input type="checkbox" id="Tree_EnumFlags:0x800" onclick="SetCheckbox(this)">@mycomput.dll,-192</label><br>
                 <label><input type="checkbox" id="Tree_EnumFlags:0x1000" onclick="SetCheckbox(this)">Navigation emun</label>(*7)<br>
                 <label><input type="checkbox" id="Tree_EnumFlags:0x2000" onclick="SetCheckbox(this)">Fast items</label>(*)<br>
                 <label><input type="checkbox" id="Tree_EnumFlags:0x4000" onclick="SetCheckbox(this)">Flat</label>(*)<br>
-                <label><input type="checkbox" id="Tree_EnumFlags:0x8000" onclick="SetCheckbox(this)">Enable async</label>(*)<br>
                 <label><input type="checkbox" id="Tree_EnumFlags:0x10000" onclick="SetCheckbox(this)">Include super hidden</label>(*7)
               </div>
               <div>
@@ -493,10 +492,10 @@
               <label>Size</label><br>
               <label><input type="radio" name="Conf_SizeFormat_" id="Conf_SizeFormat=0" onclick="SetRadio(this)">Default</label>
               <label><input type="radio" name="Conf_SizeFormat_" id="Conf_SizeFormat=2" onclick="SetRadio(this)">Auto</label>
-              <label><input type="radio" name="Conf_SizeFormat_" id="Conf_SizeFormat=3" onclick="SetRadio(this)">@dskquota.dll,-14472[123]</label>
-              <label><input type="radio" name="Conf_SizeFormat_" id="Conf_SizeFormat=1" onclick="SetRadio(this)">@dskquota.dll,-14473[KB]</label>
-              <label><input type="radio" name="Conf_SizeFormat_" id="Conf_SizeFormat=22" onclick="SetRadio(this)">@dskquota.dll,-14474[MB]</label>
-              <label><input type="radio" name="Conf_SizeFormat_" id="Conf_SizeFormat=32" onclick="SetRadio(this)">@dskquota.dll,-14475[GB]</label>
+              <label><input type="radio" name="Conf_SizeFormat_" id="Conf_SizeFormat=3" onclick="SetRadio(this)">@docprop.dll,-5</label>
+              <label><input type="radio" name="Conf_SizeFormat_" id="Conf_SizeFormat=1" onclick="SetRadio(this)">@docprop.dll,-6</label>
+              <label><input type="radio" name="Conf_SizeFormat_" id="Conf_SizeFormat=22" onclick="SetRadio(this)">@docprop.dll,-7</label>
+              <label><input type="radio" name="Conf_SizeFormat_" id="Conf_SizeFormat=32" onclick="SetRadio(this)">@docprop.dll,-8</label>
               <div>
                 <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_Conf_SizeFormat")'>
               </div>
@@ -530,12 +529,12 @@
               <label><input type="checkbox" id="View_fFlags:0x8000" onclick="SetCheckbox(this)">Single click activate</label><br>
               <label><input type="checkbox" id="View_fFlags:0x200000" onclick="SetCheckbox(this)">Full row select</label><br>
               <label><input type="checkbox" id="Conf_WheelSelect">Wheel<i> </i>Select</label><br>
-              <label><input type="checkbox" id="Conf_ViewOrder">@shell32.dll,-50690[Arrange by:]<i> </i>View<span>(</span>Selected items<span>)</span></label><br>
+              <label><input type="checkbox" id="Conf_ViewOrder">@shell32.dll,-50690[Arrange by:]<i> </i>View<span> (</span>Selected items<span>)</span></label><br>
               <label><input type="checkbox" id="Conf_LibraryFilter">@shell32.dll,-23349[Library]<i> </i>Filter</label>(*)<br>
-              <label><input type="checkbox" id="Conf_AutoArrange">Auto arrange<span>(</span>Refresh<span>)</span></label><br>
+              <label><input type="checkbox" id="Conf_AutoArrange">Auto arrange<span> (</span>Refresh<span>)</span></label><br>
               <label><input type="checkbox" id="View_fFlags:0x8000000" onclick="SetCheckbox(this)">@shell32.dll,-37588[Auto check select]</label>(*)<br>
-              <label><input type="checkbox" id="View_fFlags:!0x100000" onclick="SetCheckbox(this)">{30C8EEF4-A832-41E2-AB32-E3C3CA28FD29} 2[Grouping]</label>(*)<br>
-              <label><input type="checkbox" id="Conf_ColumnEmphasis">@UIAutomationCore.dll,-283[Emphasis]<span>(</span>@oleaccrc.dll,-1127<span>)</span></label>
+              <label><input type="checkbox" id="View_fFlags:!0x100000" onclick="SetCheckbox(this)">@docprop.dll,-106</label>(*)<br>
+              <label><input type="checkbox" id="Conf_ColumnEmphasis">@UIAutomationCore.dll,-283[Emphasis]<span> (</span>@oleaccrc.dll,-1127<span>)</span></label>
               <div>
                 <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_FWF")'>
               </div>
@@ -545,8 +544,8 @@
                 <label><input type="checkbox" id="View_fFlags:!0x20000" onclick="SetCheckbox(this)">{41CF5AE0-F75A-4806-BD87-59C7D9248EB9} 100[File name]</label><br>
                 <label><input type="checkbox" id="View_fFlags:0x40000" onclick="SetCheckbox(this)">Check select</label><br>
                 <label><input type="checkbox" id="View_fFlags:!0x800000" onclick="SetCheckbox(this)">@taskmgr.exe,-37223[Column header]</label>(*)<br>
-                <label><input type="checkbox" id="View_fFlags:0x1000000" onclick="SetCheckbox(this)">Column header details only</label>(*)<br>
-                <label><input type="checkbox" id="View_fFlags:0x2000000" onclick="SetCheckbox(this)">Extended tiles</label>(*)<br>
+                <label><input type="checkbox" id="View_fFlags:0x1000000" onclick="SetCheckbox(this)">@taskmgr.exe,-37223[Column header]<span> (</span>@certutil.exe,-2922[Only Allow]<span>: </span>@shell32.dll,-33580<span>)</span></label>(*)<br>
+                <label><input type="checkbox" id="View_fFlags:0x2000000" onclick="SetCheckbox(this)">@shell32.dll,-32770[Extended Tiles]</label>(*)<br>
                 <label><input type="checkbox" id="View_fFlags:0x20000000" onclick="SetCheckbox(this)">Subset groups</label>(*)<br>
                 <label><input type="checkbox" id="View_fFlags:0x80000000" onclick="SetCheckbox(this)">Allow RTL reading</label>(*)
               </div>

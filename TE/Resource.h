@@ -11,12 +11,12 @@
 //Version(EXE)
 #define VER_Y		21
 #define VER_M		11
-#define VER_D		1
+#define VER_D		18
 #else
 //Version(DLL)
 #define VER_Y		21
 #define VER_M		11
-#define VER_D		17
+#define VER_D		18
 #endif
 
 //Icon
