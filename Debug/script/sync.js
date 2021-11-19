@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20211118 ? te.Version : 20211118;
+		return te.Version < 20211119 ? te.Version : 20211119;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -891,18 +891,22 @@ CreateJScript = function (s) {
 }
 
 ShowError = function (e, s, i) {
-	const sl = (s || "").toLowerCase();
-	if (isFinite(i)) {
-		const ea = (eventTA[sl] || {})[i];
-		if (ea) {
-			s = ea + " : " + s;
-		}
-	}
 	if (g_.ShowError) {
-		g_.ShowError = true;
-		setTimeout(function (e, s) {
-			g_.ShowError = MessageBox([e.stack || e.message , s, AboutTE(3)].join("\n\n"), TITLE, MB_OKCANCEL) != IDOK;
-		}, 99, e, s)
+		g_.ShowError = false;
+		const sl = (s || "").toLowerCase();
+		if (isFinite(i)) {
+			const ea = (eventTA[sl] || {})[i];
+			if (ea) {
+				s = ea + " : " + s;
+			}
+		}
+		setTimeout(function (s) {
+			const nId = MessageBox(s, TITLE, MB_ABORTRETRYIGNORE, { 4: GetText("Copy") });
+			g_.ShowError = nId != IDIGNORE;
+			if (nId == IDRETRY) {
+				clipboardData.setData("text", s);
+			}
+		}, 99, [e.stack || e.message, s, AboutTE(3)].join("\n\n"))
 	}
 }
 
@@ -2915,8 +2919,8 @@ confirmOk = function (s, title) {
 	return MessageBox(s || "Are you sure?", title, MB_ICONQUESTION | MB_OKCANCEL) == IDOK;
 }
 
-MessageBox = function (s, title, uType) {
-	return api.MessageBox(api.GetForegroundWindow(), GetTextR(s), GetTextR(title) || TITLE, uType);
+MessageBox = function (s, title, uType, oBTN) {
+	return api.MessageBox(api.GetForegroundWindow(), GetTextR(s), GetTextR(title) || TITLE, uType, oBTN);
 }
 
 GethwndFromPid = function (ProcessId, nDT) {

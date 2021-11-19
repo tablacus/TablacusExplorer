@@ -1713,9 +1713,9 @@ InitDialog = async function () {
 	if (Query == "about") {
 		const promise = [MakeImgSrc(ui_.TEPath, 0, true, 48), AboutTE(2), GetTextR(ui_.bit + '-bit'), te.Data.DataFolder, AboutTE(3)];
 		const s = ['<table style="border-spacing: 2em; border-collapse: separate; width: 100%"><tr><td>'];
-		s.push('<img id="img1"></td><td><span style="font-weight: bold; font-size: 120%" id="about2"></span> (<span id="bit1"></span>)<br>');
+		s.push('<img id="img1"></td><td style="width: 100%"><div style="white-space: nowrap"><span style="font-weight: bold; font-size: 120%" id="about2"></span> (<span id="bit1"></span>)</div>');
 		s.push('<br><div id="lib"></div>');
-		s.push('<br><a href="#" class="link" onclick="Run(1, this)" id="df1"></a><br>');
+		s.push('<br><label>@sqlsrv32.rll,-40028</label><br><a href="#" class="link" onclick="Run(1, this)" id="df1"></a><br>');
 		s.push('<br><label>Information</label><input id="about3" type="text" style="width: 100%" onclick="this.select()" readonly><br>');
 		const nAddon = promise.length;
 		const root = await te.Data.Addons.documentElement;

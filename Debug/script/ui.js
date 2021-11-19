@@ -178,8 +178,12 @@ InvokeUI = function () {
 
 ExecJavaScript = async function () {
 	const args = Array.apply(null, arguments);
-	const s = FixScript(args.shift(), window.chrome);
-	new Function("Ctrl", "FV", "type", "hwnd", "pt", s).apply(null, args);
+	const s = '{' + FixScript(args.shift(), window.chrome) + '}';
+	try {
+		new Function("Ctrl", "FV", "type", "hwnd", "pt", s).apply(null, args);
+	} catch (e) {
+		ShowError(e, s);
+	}
 }
 
 AddEventUI = function (Name, fn, priority) {
@@ -207,8 +211,8 @@ RunEventUI1 = async function () {
 	for (let i in eo) {
 		try {
 			await eo[i].apply(eo[i], args);
-		} catch (e) {
-			ShowError(e, en, i);
+		} catch (e) { 
+			await api.Invoke(eo[i], args);
 		}
 	}
 }

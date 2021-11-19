@@ -86,6 +86,7 @@ BSTR	g_bsName = NULL;
 BSTR	g_bsAnyText = NULL;
 BSTR	g_bsAnyTextId = NULL;
 HWND	g_hwndMain = NULL;
+HWND	g_hwndMB = NULL;
 CteTabCtrl *g_pTC = NULL;
 std::vector<CteTabCtrl *> g_ppTC;
 HINSTANCE	g_hShell32 = NULL;
@@ -184,11 +185,13 @@ IDataObject	*g_pDraggingItems = NULL;
 IDispatchEx *g_pCM = NULL;
 IServiceProvider *g_pSP = NULL;
 IQueryParser *g_pqp = NULL;
+IDispatch *g_pMBText = NULL;
 ULONG_PTR g_Token;
 HHOOK	g_hHook;
 HHOOK	g_hMouseHook;
 HHOOK	g_hMessageHook;
 HHOOK	g_hMenuKeyHook;
+HHOOK	g_hMBCBTHook = NULL;
 HMENU	g_hMenu = NULL;
 BSTR	g_bsCmdLine = NULL;
 BSTR	g_bsDocumentWrite = NULL;
@@ -242,6 +245,7 @@ BOOL	g_bCanLayout = FALSE;
 BOOL	g_bUpper10;
 BOOL	g_bDarkMode = FALSE;
 BOOL	g_bDragIcon = TRUE;
+BOOL	g_bHookMB;
 #ifdef _2000XP
 std::vector <IUnknown *> g_pRelease;
 int		g_nCharWidth = 7;
@@ -5445,7 +5449,7 @@ HRESULT tePSFormatForDisplay(PROPERTYKEY *ppropKey, VARIANT *pv, DWORD pdfFlags,
 		}
 		return hr;
 	}
-	if (nSizeFormat && IsEqualPropertyKey(*ppropKey, PKEY_Size) && teVarIsNumber(pv)) {
+	if (nSizeFormat && (IsEqualPropertyKey(*ppropKey, PKEY_Size) || IsEqualPropertyKey(*ppropKey, PKEY_TotalFileSize)) && teVarIsNumber(pv)) {
 		*ppszDisplay = (LPWSTR)::CoTaskMemAlloc(MAX_PROP);
 		teStrFormatSize(nSizeFormat, GetLLFromVariant(pv), *ppszDisplay, MAX_PROP);
 		return S_OK;
@@ -5627,6 +5631,73 @@ VOID teSetDarkMode(HWND hwnd)
 	} else if (_DwmSetWindowAttribute) {
 		_DwmSetWindowAttribute(hwnd, 19, &g_bDarkMode, sizeof(g_bDarkMode));
 	}
+}
+
+LRESULT CALLBACK TEMBProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+{
+	switch (msg) {
+		case WM_CTLCOLORSTATIC:
+			SetTextColor((HDC)wParam, 0xffffff);
+			SetBkMode((HDC)wParam, TRANSPARENT);
+			return (LRESULT)GetStockBrush(NULL_BRUSH);
+		case WM_ERASEBKGND:
+			RECT rc;
+			GetClientRect(hwnd, &rc);
+			FillRect((HDC)wParam, &rc, (HBRUSH)GetStockBrush(DKGRAY_BRUSH));
+		case WM_PAINT:
+			return 1;
+	}
+	return DefSubclassProc(hwnd, msg, wParam, lParam);
+}
+
+LRESULT CALLBACK MBCBTProc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+	if (nCode >= 0) {
+		if (nCode == HCBT_ACTIVATE) {
+			g_hwndMB = (HWND)wParam;
+			if (g_bDarkMode) {
+				teSetDarkMode(g_hwndMB);
+				SetWindowSubclass(g_hwndMB, TEMBProc, 1, 0);
+				g_bHookMB = TRUE;
+			}
+			for (int i = 1; i < 12; ++i) {
+				HWND hButton = GetDlgItem(g_hwndMB, i);
+				if (hButton) {
+					if (g_bDarkMode) {
+						SetWindowTheme(hButton, L"darkmode_explorer", NULL);
+					}
+					if (g_pMBText) {
+						VARIANT v;
+						VariantInit(&v);
+						if SUCCEEDED(teGetPropertyAt(g_pMBText, i, &v)) {
+							if (v.vt == VT_BSTR) {
+								SetDlgItemText(g_hwndMB, i, v.bstrVal);
+							}
+							VariantClear(&v);
+						}
+					}
+				}
+			}
+		}
+	}
+	return CallNextHookEx(g_hMBCBTHook, nCode, wParam, lParam);
+}
+
+int teMessageBox(HWND hwnd, LPCWSTR lpText, LPCWSTR lpCaption, UINT uType)
+{
+	g_bHookMB = FALSE;
+	if (g_bDarkMode || g_pMBText) {
+		g_hMBCBTHook = SetWindowsHookEx(WH_CBT, (HOOKPROC)MBCBTProc, NULL, g_dwMainThreadId);
+	}
+	int iResult = MessageBox(hwnd, lpText, lpCaption, uType);
+	if (g_hMBCBTHook) {
+		UnhookWindowsHookEx(g_hMBCBTHook);
+		g_hMBCBTHook = NULL;
+	}
+	if (g_bHookMB) {
+		RemoveWindowSubclass(g_hwndMB, TEMBProc, 1);
+	}
+	return iResult;
 }
 
 BOOL teVerifyVersion(DWORD dwMajor, DWORD dwMinor, DWORD dwBuild)
@@ -9173,7 +9244,11 @@ VOID teApiSHChangeNotifyRegister(int nArg, teParam *param, DISPPARAMS *pDispPara
 
 VOID teApiMessageBox(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLong(pVarResult, MessageBox(param[0].hwnd, param[1].lpcwstr, param[2].lpcwstr, param[3].uintVal));
+	if (nArg >= 4) {
+		GetDispatch(&pDispParams->rgvarg[nArg - 4], &g_pMBText);
+	}
+	teSetLong(pVarResult, teMessageBox(param[0].hwnd, param[1].lpcwstr, param[2].lpcwstr, param[3].uintVal));
+	SafeRelease(&g_pMBText);
 }
 
 VOID teApiImageList_GetIcon(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -12255,7 +12330,7 @@ VOID CALLBACK teTimerProcParse(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 						if (LoadString(g_hShell32, 6456, pszFormat, MAX_STATUS)) {
 							if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY,
 								pszFormat, 0, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&lpBuf, MAX_STATUS, (va_list *)&pInvoke->bsPath)) {
-								int r = MessageBox(g_hwndMain, lpBuf, _T(PRODUCTNAME), MB_ABORTRETRYIGNORE);
+								int r = teMessageBox(g_hwndMain, lpBuf, _T(PRODUCTNAME), MB_ABORTRETRYIGNORE);
 								LocalFree(lpBuf);
 								if (r == IDRETRY) {
 									::InterlockedIncrement(&pInvoke->cDo);
@@ -18007,7 +18082,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				if (g_nException-- <= 0 || (nArg >= 0 && GetBoolFromVariant(&pDispParams->rgvarg[nArg]))) {
 #ifdef _DEBUG
 					if (g_strException) {
-						MessageBox(NULL, g_strException, NULL, MB_OK);
+						teMessageBox(NULL, g_strException, NULL, MB_OK);
 					}
 #endif
 					SetTimer(g_hwndMain, TET_Reload, 100, teTimerProc);
@@ -19168,7 +19243,7 @@ STDMETHODIMP CteWebBrowser::ShowMessage(HWND hwnd, LPOLESTR lpstrText, LPOLESTR 
 		*plResult = IDNO;
 		return S_OK;
 	}
-	*plResult = MessageBox(hwnd, lpstrText, _T(PRODUCTNAME), dwType);
+	*plResult = teMessageBox(hwnd, lpstrText, _T(PRODUCTNAME), dwType);
 	return S_OK;
 }
 
@@ -25696,13 +25771,13 @@ STDMETHODIMP CteActiveScriptSite::OnScriptError(IActiveScriptError *pscripterror
 		teSysFreeString(&m_pExcepInfo->bstrDescription);
 		m_pExcepInfo->bstrDescription = bs;
 		if (m_pExcepInfo == &g_ExcepInfo) {
-			MessageBox(NULL, bs, _T(PRODUCTNAME), MB_OK | MB_ICONERROR);
+			teMessageBox(NULL, bs, _T(PRODUCTNAME), MB_OK | MB_ICONERROR);
 			teSysFreeString(&m_pExcepInfo->bstrDescription);
 		}
 #ifdef _DEBUG
 		::OutputDebugString(bs);
 		if (g_nBlink == 1) {
-			MessageBox(NULL, bs, L"Tablacus Explorer", MB_OK);
+			teMessageBox(NULL, bs, L"Tablacus Explorer", MB_OK);
 		}
 #endif
 		*m_phr = m_pExcepInfo->scode;

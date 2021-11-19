@@ -79,7 +79,7 @@
               <label><input type="checkbox" id="Conf_MenuIcon">@mmcbase.dll,-106</label>
               <br><br>
               <label>Input</label><br>
-              <label><input type="checkbox" id="!Conf_NoAutocomplete">Autocomplete</label>
+              <label><input type="checkbox" id="!Conf_NoAutocomplete">@ieframe.dll,-12806[Autocomplete]</label>
               <br><br>
               <div class="block">
                 <input type="button" name="ButtonInitConfig" value="Initialize config folder" onclick="InitConfig(this);">
@@ -459,7 +459,7 @@
                 <label><input type="checkbox" id="Tree_EnumFlags:0x1000" onclick="SetCheckbox(this)">Navigation emun</label>(*7)<br>
                 <label><input type="checkbox" id="Tree_EnumFlags:0x2000" onclick="SetCheckbox(this)">Fast items</label>(*)<br>
                 <label><input type="checkbox" id="Tree_EnumFlags:0x4000" onclick="SetCheckbox(this)">Flat</label>(*)<br>
-                <label><input type="checkbox" id="Tree_EnumFlags:0x10000" onclick="SetCheckbox(this)">Include super hidden</label>(*7)
+                <label><input type="checkbox" id="Tree_EnumFlags:0x10000" onclick="SetCheckbox(this)">Include hidden items<span> (</span>System<span>)</span></label>(*7)
               </div>
               <div>
                 (*)Windows Vista <label>or higher.</label>
@@ -532,15 +532,15 @@
               <label><input type="checkbox" id="Conf_ViewOrder">@shell32.dll,-50690[Arrange by:]<i> </i>View<span> (</span>Selected items<span>)</span></label><br>
               <label><input type="checkbox" id="Conf_LibraryFilter">@shell32.dll,-23349[Library]<i> </i>Filter</label>(*)<br>
               <label><input type="checkbox" id="Conf_AutoArrange">Auto arrange<span> (</span>Refresh<span>)</span></label><br>
-              <label><input type="checkbox" id="View_fFlags:0x8000000" onclick="SetCheckbox(this)">@shell32.dll,-37588[Auto check select]</label>(*)<br>
+              <label><input type="checkbox" id="View_fFlags:0x8000000" onclick="SetCheckbox(this)">@shell32.dll,-37588[Item check boxes]</label>(*)<br>
               <label><input type="checkbox" id="View_fFlags:!0x100000" onclick="SetCheckbox(this)">@docprop.dll,-106</label>(*)<br>
-              <label><input type="checkbox" id="Conf_ColumnEmphasis">@UIAutomationCore.dll,-283[Emphasis]<span> (</span>@oleaccrc.dll,-1127<span>)</span></label>
+              <label><input type="checkbox" id="Conf_ColumnEmphasis">@UIAutomationCore.dll,-283[Emphasis]<span> (</span>@sqlsrv32.rll,-40033<span>)</span></label>
               <div>
                 <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_FWF")'>
               </div>
               <div class="group" id="_Advanced_FWF">
                 <label><input type="checkbox" id="View_fFlags:0x800" onclick="SetCheckbox(this)">@inetres.dll,-5232[Align Left]</label><br>
-                <label><input type="checkbox" id="View_fFlags:!0x80" onclick="SetCheckbox(this)">Folders</label><br>
+                <label><input type="checkbox" id="View_fFlags:0x80" onclick="SetCheckbox(this)">@comdlg32.dll,-780[Hide Folders]</label><br>
                 <label><input type="checkbox" id="View_fFlags:!0x20000" onclick="SetCheckbox(this)">{41CF5AE0-F75A-4806-BD87-59C7D9248EB9} 100[File name]</label><br>
                 <label><input type="checkbox" id="View_fFlags:0x40000" onclick="SetCheckbox(this)">Check select</label><br>
                 <label><input type="checkbox" id="View_fFlags:!0x800000" onclick="SetCheckbox(this)">@taskmgr.exe,-37223[Column header]</label>(*)<br>
