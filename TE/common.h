@@ -500,6 +500,8 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define Count_TE_params		17
 
 #define	TE_AutoViewMode	0x10000
+#define TECL_DARKTEXT 0xffffff
+#define TECL_DARKBG 0x222222
 
 #define TC_Flags	5
 #define TC_Align	6

@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20211119 ? te.Version : 20211119;
+		return te.Version < 20211120 ? te.Version : 20211120;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);

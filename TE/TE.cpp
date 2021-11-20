@@ -86,7 +86,6 @@ BSTR	g_bsName = NULL;
 BSTR	g_bsAnyText = NULL;
 BSTR	g_bsAnyTextId = NULL;
 HWND	g_hwndMain = NULL;
-HWND	g_hwndMB = NULL;
 CteTabCtrl *g_pTC = NULL;
 std::vector<CteTabCtrl *> g_ppTC;
 HINSTANCE	g_hShell32 = NULL;
@@ -191,7 +190,8 @@ HHOOK	g_hHook;
 HHOOK	g_hMouseHook;
 HHOOK	g_hMessageHook;
 HHOOK	g_hMenuKeyHook;
-HHOOK	g_hMBCBTHook = NULL;
+HHOOK	g_hCBTHook = NULL;
+HBRUSH	g_hbrDarkBackground;
 HMENU	g_hMenu = NULL;
 BSTR	g_bsCmdLine = NULL;
 BSTR	g_bsDocumentWrite = NULL;
@@ -245,7 +245,6 @@ BOOL	g_bCanLayout = FALSE;
 BOOL	g_bUpper10;
 BOOL	g_bDarkMode = FALSE;
 BOOL	g_bDragIcon = TRUE;
-BOOL	g_bHookMB;
 #ifdef _2000XP
 std::vector <IUnknown *> g_pRelease;
 int		g_nCharWidth = 7;
@@ -5633,71 +5632,77 @@ VOID teSetDarkMode(HWND hwnd)
 	}
 }
 
-LRESULT CALLBACK TEMBProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+VOID SetDlgButtonsTheme(HWND hwnd)
 {
-	switch (msg) {
+	HWND hwnd1 = NULL;
+	while (hwnd1 = FindWindowExA(hwnd, hwnd1, WC_BUTTONA, NULL)) {
+		SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
+	}
+	hwnd1 = NULL;
+	while (hwnd1 = FindWindowExA(hwnd, hwnd1, WC_COMBOBOXA, NULL)) {
+		SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_cfd" : L"cfd", NULL);
+	}
+}
+
+LRESULT CALLBACK TEDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+{
+	if (msg == WM_INITDIALOG || msg == WM_SETTINGCHANGE) {
+		teGetDarkMode();
+		teSetDarkMode(hwnd);
+		SetDlgButtonsTheme(hwnd);
+		RedrawWindow(hwnd, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+	} else  if (msg == WM_DESTROY) {
+		LRESULT lResult = DefSubclassProc(hwnd, msg, wParam, lParam);
+		RemoveWindowSubclass(hwnd, TEDlgProc, 1);
+		return lResult;
+	}
+	if (g_bDarkMode) {
+		CHAR pszClassA[MAX_CLASS_NAME];
+		switch (msg) {
+		case WM_CTLCOLORBTN:
 		case WM_CTLCOLORSTATIC:
-			SetTextColor((HDC)wParam, 0xffffff);
+			SetTextColor((HDC)wParam, TECL_DARKTEXT);
 			SetBkMode((HDC)wParam, TRANSPARENT);
-			return (LRESULT)GetStockBrush(NULL_BRUSH);
+			return (LRESULT)g_hbrDarkBackground;
+		case WM_CTLCOLOREDIT:
+			SetTextColor((HDC)wParam, TECL_DARKTEXT);
+			SetBkMode((HDC)wParam, TRANSPARENT);
+			return (LRESULT)GetStockObject(BLACK_BRUSH);
 		case WM_ERASEBKGND:
 			RECT rc;
 			GetClientRect(hwnd, &rc);
-			FillRect((HDC)wParam, &rc, (HBRUSH)GetStockBrush(DKGRAY_BRUSH));
-		case WM_PAINT:
+			FillRect((HDC)wParam, &rc, g_hbrDarkBackground);
 			return 1;
+		case WM_PAINT:
+			HWND hwndChild;
+			hwndChild = NULL;
+			BOOL bHandle;
+			bHandle = TRUE;
+			while (hwndChild = FindWindowEx(hwnd, hwndChild, NULL, NULL)) {
+				GetClassNameA(hwndChild, pszClassA, MAX_CLASS_NAME);
+				if (bHandle && !PathMatchSpecA(pszClassA, WC_STATICA ";" WC_BUTTONA)) {
+					bHandle = FALSE;
+				}
+			}
+			if (bHandle) {
+				return 1;
+			}
+		}
 	}
 	return DefSubclassProc(hwnd, msg, wParam, lParam);
 }
 
-LRESULT CALLBACK MBCBTProc(int nCode, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK CBTProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
-	if (nCode >= 0) {
-		if (nCode == HCBT_ACTIVATE) {
-			g_hwndMB = (HWND)wParam;
-			if (g_bDarkMode) {
-				teSetDarkMode(g_hwndMB);
-				SetWindowSubclass(g_hwndMB, TEMBProc, 1, 0);
-				g_bHookMB = TRUE;
-			}
-			for (int i = 1; i < 12; ++i) {
-				HWND hButton = GetDlgItem(g_hwndMB, i);
-				if (hButton) {
-					if (g_bDarkMode) {
-						SetWindowTheme(hButton, L"darkmode_explorer", NULL);
-					}
-					if (g_pMBText) {
-						VARIANT v;
-						VariantInit(&v);
-						if SUCCEEDED(teGetPropertyAt(g_pMBText, i, &v)) {
-							if (v.vt == VT_BSTR) {
-								SetDlgItemText(g_hwndMB, i, v.bstrVal);
-							}
-							VariantClear(&v);
-						}
-					}
-				}
-			}
+	if (nCode == HCBT_CREATEWND) {
+		CHAR pszClassA[MAX_CLASS_NAME];
+		HWND hwnd = (HWND)wParam;
+		GetClassNameA(hwnd, pszClassA, MAX_CLASS_NAME);
+		if (!lstrcmpiA(pszClassA, "#32770")) {
+			SetWindowSubclass(hwnd, TEDlgProc, 1, 0);
 		}
 	}
-	return CallNextHookEx(g_hMBCBTHook, nCode, wParam, lParam);
-}
-
-int teMessageBox(HWND hwnd, LPCWSTR lpText, LPCWSTR lpCaption, UINT uType)
-{
-	g_bHookMB = FALSE;
-	if (g_bDarkMode || g_pMBText) {
-		g_hMBCBTHook = SetWindowsHookEx(WH_CBT, (HOOKPROC)MBCBTProc, NULL, g_dwMainThreadId);
-	}
-	int iResult = MessageBox(hwnd, lpText, lpCaption, uType);
-	if (g_hMBCBTHook) {
-		UnhookWindowsHookEx(g_hMBCBTHook);
-		g_hMBCBTHook = NULL;
-	}
-	if (g_bHookMB) {
-		RemoveWindowSubclass(g_hwndMB, TEMBProc, 1);
-	}
-	return iResult;
+	return CallNextHookEx(g_hCBTHook, nCode, wParam, lParam);
 }
 
 BOOL teVerifyVersion(DWORD dwMajor, DWORD dwMinor, DWORD dwBuild)
@@ -6471,6 +6476,11 @@ LRESULT CALLBACK TELVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 				pSB->m_bSetListColumnWidth = FALSE;
 			}
 			break;
+		case LVM_SETSELECTEDCOLUMN:
+			if (!g_param[TE_ColumnEmphasis]) {
+				wParam = -1;
+			}
+			break;
 		case WM_NOTIFY:
 			if (_AllowDarkModeForWindow && ((LPNMHDR)lParam)->code == NM_CUSTOMDRAW) {
 				if (teIsDarkColor(pSB->m_clrBk)) {
@@ -6479,7 +6489,7 @@ LRESULT CALLBACK TELVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 						return CDRF_NOTIFYITEMDRAW;
 					}
 					if (pnmcd->dwDrawStage == CDDS_ITEMPREPAINT) {
-						SetTextColor(pnmcd->hdc, 0xffffff);
+						SetTextColor(pnmcd->hdc, TECL_DARKTEXT);
 						return CDRF_DODEFAULT;
 					}
 				}
@@ -9247,7 +9257,7 @@ VOID teApiMessageBox(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 	if (nArg >= 4) {
 		GetDispatch(&pDispParams->rgvarg[nArg - 4], &g_pMBText);
 	}
-	teSetLong(pVarResult, teMessageBox(param[0].hwnd, param[1].lpcwstr, param[2].lpcwstr, param[3].uintVal));
+	teSetLong(pVarResult, MessageBox(param[0].hwnd, param[1].lpcwstr, param[2].lpcwstr, param[3].uintVal));
 	SafeRelease(&g_pMBText);
 }
 
@@ -11595,6 +11605,7 @@ UINT_PTR CALLBACK OFNHookProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		switch(msg){
 			case WM_INITDIALOG:
 				g_hDialog = GetParent(hwnd);
+				teSetDarkMode(g_hDialog);
 				return TRUE;
 			case WM_NOTIFY:
 				pNotify = (LPOFNOTIFY)lParam;
@@ -12005,6 +12016,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	// Hook
 	g_hHook = SetWindowsHookEx(WH_CALLWNDPROC, (HOOKPROC)HookProc, hInst, g_dwMainThreadId);
 	g_hMouseHook = SetWindowsHookEx(WH_MOUSE, (HOOKPROC)MouseProc, hInst, g_dwMainThreadId);
+	g_hCBTHook = SetWindowsHookEx(WH_CBT, (HOOKPROC)CBTProc, hInst, g_dwMainThreadId);
+	//Brush
+	g_hbrDarkBackground = CreateSolidBrush(TECL_DARKBG);
 	// Create own class
 	CoCreateGuid(&g_ClsIdSB);
 	CoCreateGuid(&g_ClsIdTC);
@@ -12226,8 +12240,10 @@ function _c(s) {\
 		SafeRelease(&g_pAutomation);
 		SafeRelease(&g_pDropTargetHelper);
 		DeleteCriticalSection(&g_csFolderSize);
+		UnhookWindowsHookEx(g_hCBTHook);
 		UnhookWindowsHookEx(g_hMouseHook);
 		UnhookWindowsHookEx(g_hHook);
+		DeleteObject(g_hbrDarkBackground);
 		if (g_hMenu) {
 			DestroyMenu(g_hMenu);
 		}
@@ -12330,7 +12346,7 @@ VOID CALLBACK teTimerProcParse(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 						if (LoadString(g_hShell32, 6456, pszFormat, MAX_STATUS)) {
 							if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY,
 								pszFormat, 0, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&lpBuf, MAX_STATUS, (va_list *)&pInvoke->bsPath)) {
-								int r = teMessageBox(g_hwndMain, lpBuf, _T(PRODUCTNAME), MB_ABORTRETRYIGNORE);
+								int r = MessageBox(g_hwndMain, lpBuf, _T(PRODUCTNAME), MB_ABORTRETRYIGNORE);
 								LocalFree(lpBuf);
 								if (r == IDRETRY) {
 									::InterlockedIncrement(&pInvoke->cDo);
@@ -13305,6 +13321,26 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	DWORD dwFrame = 0;
 	UINT uViewMode = m_param[SB_ViewMode];
 	m_nGroupByDelay = 0;
+#ifdef _USE_SHELLBROWSER
+	BOOL bUseEB = dwFrame || teGetFolderViewOptions(pidl, m_param[SB_ViewMode]) == FVO_DEFAULT;
+	if (!bUseEB
+#ifdef _2000XP
+		&& g_bUpperVista
+#endif
+		) {
+		BSTR bsNext, bsNow = NULL;
+		teGetPath(&bsNext, (IDispatch *)m_pFolderItem1);
+		bUseEB = !tePathIsNetworkPath(bsNext);
+		if (!bUseEB) {
+			if (m_pFolderItem) {
+				teGetPath(&bsNow, (IDispatch *)m_pFolderItem);
+				bUseEB = PathIsSameRoot(bsNext, bsNow);
+				teSysFreeString(&bsNow);
+			}
+		}
+		teSysFreeString(&bsNext);
+	}
+#endif
 #ifdef _2000XP
 	if (g_bUpperVista) {
 #endif
@@ -13314,7 +13350,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		//ExplorerBrowser
 		if (m_pExplorerBrowser && !pFolderItems
 #ifdef _USE_SHELLBROWSER
-			&& (dwFrame || teGetFolderViewOptions(pidl, m_param[SB_ViewMode]) == FVO_DEFAULT)
+			&& bUseEB
 #endif
 		) {
 			m_pExplorerBrowser->GetOptions((EXPLORER_BROWSER_OPTIONS *)&m_param[SB_Options]);
@@ -13412,7 +13448,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	try {
 #ifdef _USE_SHELLBROWSER
 		hr = E_FAIL;
-		if (dwFrame || teGetFolderViewOptions(m_pidl, m_param[SB_ViewMode]) == FVO_DEFAULT) {
+		if (bUseEB) {
 			//ExplorerBrowser
 			hr = NavigateEB(dwFrame);
 		}
@@ -18082,7 +18118,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				if (g_nException-- <= 0 || (nArg >= 0 && GetBoolFromVariant(&pDispParams->rgvarg[nArg]))) {
 #ifdef _DEBUG
 					if (g_strException) {
-						teMessageBox(NULL, g_strException, NULL, MB_OK);
+						MessageBox(NULL, g_strException, NULL, MB_OK);
 					}
 #endif
 					SetTimer(g_hwndMain, TET_Reload, 100, teTimerProc);
@@ -19243,7 +19279,7 @@ STDMETHODIMP CteWebBrowser::ShowMessage(HWND hwnd, LPOLESTR lpstrText, LPOLESTR 
 		*plResult = IDNO;
 		return S_OK;
 	}
-	*plResult = teMessageBox(hwnd, lpstrText, _T(PRODUCTNAME), dwType);
+	*plResult = MessageBox(hwnd, lpstrText, _T(PRODUCTNAME), dwType);
 	return S_OK;
 }
 
@@ -25771,13 +25807,13 @@ STDMETHODIMP CteActiveScriptSite::OnScriptError(IActiveScriptError *pscripterror
 		teSysFreeString(&m_pExcepInfo->bstrDescription);
 		m_pExcepInfo->bstrDescription = bs;
 		if (m_pExcepInfo == &g_ExcepInfo) {
-			teMessageBox(NULL, bs, _T(PRODUCTNAME), MB_OK | MB_ICONERROR);
+			MessageBox(NULL, bs, _T(PRODUCTNAME), MB_OK | MB_ICONERROR);
 			teSysFreeString(&m_pExcepInfo->bstrDescription);
 		}
 #ifdef _DEBUG
 		::OutputDebugString(bs);
 		if (g_nBlink == 1) {
-			teMessageBox(NULL, bs, L"Tablacus Explorer", MB_OK);
+			MessageBox(NULL, bs, L"Tablacus Explorer", MB_OK);
 		}
 #endif
 		*m_phr = m_pExcepInfo->scode;

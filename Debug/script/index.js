@@ -461,5 +461,7 @@ Init = async function () {
 	AddEvent("BrowserCreatedEx", "setTimeout(async function () { SetWindowAlpha(await GetTopWindow(), 255); }, 99);");
 	ClearEvent("Layout");
 	ClearEvent("Load");
-	g_.ShowError = true;
+	setTimeout(function () {
+		g_.ShowError = true;
+	}, 9999);
 }
