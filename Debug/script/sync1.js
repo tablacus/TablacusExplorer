@@ -2703,8 +2703,8 @@ g_.event.columnclick = function (Ctrl, iItem) {
 	return RunEvent3("ColumnClick", Ctrl, iItem);
 }
 
-g_.event.tooltip = function (Ctrl, Index) {
-	return RunEvent4("ToolTip", Ctrl, Index);
+g_.event.tooltip = function (Ctrl, Index, hwnd) {
+	return RunEvent4("ToolTip", Ctrl, Index, hwnd);
 }
 
 g_.event.hittest = function (Ctrl, pt, flags) {
@@ -3569,6 +3569,7 @@ InitMenus = function () {
 }
 
 InitBG = function (cl) {
+	api.SendMessage(te.hwnd, 0x2001, 0, cl);
 	const cHwnd = [te.Ctrl(CTRL_WB).hwnd, te.hwnd];
 	for (let i = cHwnd.length; i--;) {
 		const hOld = api.SetClassLongPtr(cHwnd[i], GCLP_HBRBACKGROUND, api.CreateSolidBrush(cl));

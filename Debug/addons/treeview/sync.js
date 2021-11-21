@@ -7,6 +7,7 @@ Sync.TreeView = {
 	nPos: 0,
 	WM: TWM_APP++,
 	Depth: GetNum(item.getAttribute("Depth")),
+	Collapse: GetNum(item.getAttribute("Collapse")),
 
 	Exec: function (Ctrl, pt) {
 		const FV = GetFolderView(Ctrl, pt);
@@ -30,6 +31,27 @@ Sync.TreeView = {
 		if (Sync.TreeView.List && Ctrl.FolderItem) {
 			var TV = Ctrl.TreeView;
 			if (TV) {
+				if (Sync.TreeView.Collapse) {
+					const hwnd = TV.hwndTree;
+					let hItem = api.SendMessage(hwnd, TVM_GETNEXTITEM, 9, null);
+					let Now = TV.SelectedItem;
+					let New = Ctrl.FolderItem;
+					while (api.ILGetCount(New) > api.ILGetCount(Now)) {
+						New = api.ILRemoveLastID(New);
+					}
+					while (api.ILGetCount(Now) > api.ILGetCount(New)) {
+						Now = api.ILRemoveLastID(Now);
+						hItem = api.SendMessage(hwnd, TVM_GETNEXTITEM, 3, hItem);
+					}
+					while (!api.ILIsEqual(Now, New) && api.ILGetCount(Now) > 1) {
+						New = api.ILRemoveLastID(New);
+						Now = api.ILRemoveLastID(Now);
+						hItem = api.SendMessage(hwnd, TVM_GETNEXTITEM, 3, hItem);
+					}
+					do {
+						api.PostMessage(hwnd, TVM_EXPAND, 0x8001, hItem);
+					} while (hItem = api.SendMessage(hwnd, TVM_GETNEXTITEM, 1, hItem));
+				}
 				TV.Expand(Ctrl.FolderItem, Sync.TreeView.Depth);
 			}
 		}

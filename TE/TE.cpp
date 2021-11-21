@@ -245,6 +245,7 @@ BOOL	g_bCanLayout = FALSE;
 BOOL	g_bUpper10;
 BOOL	g_bDarkMode = FALSE;
 BOOL	g_bDragIcon = TRUE;
+COLORREF g_clrBackground = GetSysColor(COLOR_WINDOW);
 #ifdef _2000XP
 std::vector <IUnknown *> g_pRelease;
 int		g_nCharWidth = 7;
@@ -5646,60 +5647,116 @@ VOID SetDlgButtonsTheme(HWND hwnd)
 
 LRESULT CALLBACK TEDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
 {
-	if (msg == WM_INITDIALOG || msg == WM_SETTINGCHANGE) {
-		teGetDarkMode();
-		teSetDarkMode(hwnd);
-		SetDlgButtonsTheme(hwnd);
-		RedrawWindow(hwnd, NULL, 0, RDW_NOERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
-	} else  if (msg == WM_DESTROY) {
-		LRESULT lResult = DefSubclassProc(hwnd, msg, wParam, lParam);
-		RemoveWindowSubclass(hwnd, TEDlgProc, 1);
-		return lResult;
-	}
-	if (g_bDarkMode) {
-		CHAR pszClassA[MAX_CLASS_NAME];
+	try {
 		switch (msg) {
-		case WM_CTLCOLORBTN:
-		case WM_CTLCOLORSTATIC:
-			SetTextColor((HDC)wParam, TECL_DARKTEXT);
-			SetBkMode((HDC)wParam, TRANSPARENT);
-			return (LRESULT)g_hbrDarkBackground;
-		case WM_CTLCOLOREDIT:
-			SetTextColor((HDC)wParam, TECL_DARKTEXT);
-			SetBkMode((HDC)wParam, TRANSPARENT);
-			return (LRESULT)GetStockObject(BLACK_BRUSH);
-		case WM_ERASEBKGND:
-			RECT rc;
-			GetClientRect(hwnd, &rc);
-			FillRect((HDC)wParam, &rc, g_hbrDarkBackground);
-			return 1;
-		case WM_PAINT:
-			HWND hwndChild;
-			hwndChild = NULL;
-			BOOL bHandle;
-			bHandle = TRUE;
-			while (hwndChild = FindWindowEx(hwnd, hwndChild, NULL, NULL)) {
-				GetClassNameA(hwndChild, pszClassA, MAX_CLASS_NAME);
-				if (bHandle && !PathMatchSpecA(pszClassA, WC_STATICA ";" WC_BUTTONA)) {
-					bHandle = FALSE;
+		case WM_INITDIALOG:
+			if (g_pMBText) {
+				for (int i = 1; i < 12; ++i) {
+					HWND hButton = GetDlgItem(hwnd, i);
+					VARIANT v;
+					VariantInit(&v);
+					if SUCCEEDED(teGetPropertyAt(g_pMBText, i, &v)) {
+						if (v.vt == VT_BSTR) {
+							SetDlgItemText(hwnd, i, v.bstrVal);
+						}
+						VariantClear(&v);
+					}
 				}
 			}
-			if (bHandle) {
+		case WM_SETTINGCHANGE:
+			teGetDarkMode();
+			teSetDarkMode(hwnd);
+			SetDlgButtonsTheme(hwnd);
+			UpdateWindow(hwnd);
+			break;
+		}
+		if (g_bDarkMode) {
+			CHAR pszClassA[MAX_CLASS_NAME];
+			switch (msg) {
+			case WM_CTLCOLORBTN:
+			case WM_CTLCOLORSTATIC:
+				SetTextColor((HDC)wParam, TECL_DARKTEXT);
+				SetBkMode((HDC)wParam, TRANSPARENT);
+				return (LRESULT)g_hbrDarkBackground;
+			case WM_CTLCOLOREDIT:
+				SetTextColor((HDC)wParam, TECL_DARKTEXT);
+				SetBkMode((HDC)wParam, TRANSPARENT);
+				return (LRESULT)GetStockObject(BLACK_BRUSH);
+			case WM_ERASEBKGND:
+				RECT rc;
+				GetClientRect(hwnd, &rc);
+				FillRect((HDC)wParam, &rc, g_hbrDarkBackground);
 				return 1;
+			case WM_PAINT:
+				HWND hwndChild;
+				hwndChild = NULL;
+				BOOL bHandle;
+				bHandle = TRUE;
+				while (hwndChild = FindWindowEx(hwnd, hwndChild, NULL, NULL)) {
+					GetClassNameA(hwndChild, pszClassA, MAX_CLASS_NAME);
+					if (bHandle && !PathMatchSpecA(pszClassA, WC_STATICA ";" WC_BUTTONA ";" WC_COMBOBOXA)) {
+						bHandle = FALSE;
+					}
+				}
+				if (bHandle) {
+					return 0;
+				}
 			}
 		}
+	} catch (...) {
+		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"TEDlgProc";
+#endif
+	}
+	return DefSubclassProc(hwnd, msg, wParam, lParam);
+}
+
+LRESULT CALLBACK TETTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+{
+	try {
+		if (g_pOnFunc[TE_OnToolTip]) {
+			if (msg == WM_PAINT || msg == WM_ERASEBKGND || msg == TTM_ACTIVATE) {
+				VARIANTARG *pv = GetNewVARIANT(3);
+				teSetObject(&pv[2], g_pTE);
+				teSetLong(&pv[1], msg);
+				teSetPtr(&pv[0], hwnd);
+				VARIANT vResult;
+				VariantInit(&vResult);
+				Invoke4(g_pOnFunc[TE_OnToolTip], &vResult, 3, pv);
+				if (teVarIsNumber(&vResult)) {
+					return GetIntFromVariantClear(&vResult);
+				}
+				VariantClear(&vResult);
+			}
+		}
+	} catch (...) {
+		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"TETTProc";
+#endif
 	}
 	return DefSubclassProc(hwnd, msg, wParam, lParam);
 }
 
 LRESULT CALLBACK CBTProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
+	CHAR pszClassA[MAX_CLASS_NAME];
 	if (nCode == HCBT_CREATEWND) {
-		CHAR pszClassA[MAX_CLASS_NAME];
 		HWND hwnd = (HWND)wParam;
 		GetClassNameA(hwnd, pszClassA, MAX_CLASS_NAME);
-		if (!lstrcmpiA(pszClassA, "#32770")) {
-			SetWindowSubclass(hwnd, TEDlgProc, 1, 0);
+		if (!lstrcmpA(pszClassA, "#32770")) {
+			SetWindowSubclass(hwnd, TEDlgProc, (UINT_PTR)TEDlgProc, 0);
+		} else if (!lstrcmpA(pszClassA, TOOLTIPS_CLASSA)) {
+			SetWindowSubclass(hwnd, TETTProc, (UINT_PTR)TETTProc, 0);
+		}
+	} else if (nCode == HCBT_DESTROYWND) {
+		HWND hwnd = (HWND)wParam;
+		GetClassNameA(hwnd, pszClassA, MAX_CLASS_NAME);
+		if (!lstrcmpA(pszClassA, "#32770")) {
+			RemoveWindowSubclass(hwnd, TEDlgProc, (UINT_PTR)TEDlgProc);
+		} else if (!lstrcmpA(pszClassA, TOOLTIPS_CLASSA)) {
+			RemoveWindowSubclass(hwnd, TETTProc, (UINT_PTR)TETTProc);
 		}
 	}
 	return CallNextHookEx(g_hCBTHook, nCode, wParam, lParam);
@@ -12661,6 +12718,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				break;
 			case WM_CTLCOLORSTATIC:
 				return (LRESULT)GetClassLongPtr(hWnd, GCLP_HBRBACKGROUND);
+			case CCM_SETBKCOLOR:
+				g_clrBackground = lParam;
+				break;
 			default:
 				if ((message > WM_APP && message <= MAXWORD)) {
 					if (MessageSub(TE_OnAppMessage, g_pTE, &msg1, &hr) && hr == S_OK) {
@@ -13279,11 +13339,9 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		}
 	}
 	if (hr != S_OK) {
-		if (hr == S_FALSE) {
-			if (!m_pFolderItem) {
-				if SUCCEEDED(teQueryFolderItem(pFolderItem, &m_pFolderItem)) {
-					m_pFolderItem->MakeUnavailable();
-				}
+		if (hr == S_FALSE && !m_pFolderItem) {
+			if SUCCEEDED(teQueryFolderItem(pFolderItem, &m_pFolderItem)) {
+				teILCloneReplace(&m_pFolderItem->m_pidlAlt, g_pidls[CSIDL_RESULTSFOLDER]);
 			}
 		}
 		teCoTaskMemFree(pidl);
@@ -13318,7 +13376,11 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		}
 		pSF2->Release();
 	}
-	DWORD dwFrame = 0;
+	DWORD dwFrame = (m_param[SB_Type] == CTRL_EB
+#ifdef _2000XP
+		&& g_bUpperVista
+#endif
+	) ? EBO_SHOWFRAMES : 0;
 	UINT uViewMode = m_param[SB_ViewMode];
 	m_nGroupByDelay = 0;
 #ifdef _USE_SHELLBROWSER
@@ -13329,32 +13391,25 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 #endif
 		) {
 		BSTR bsNext, bsNow = NULL;
-		teGetPath(&bsNext, (IDispatch *)m_pFolderItem1);
+		m_pFolderItem1->get_Path(&bsNext);
 		bUseEB = !tePathIsNetworkPath(bsNext);
-		if (!bUseEB) {
-			if (m_pFolderItem) {
-				teGetPath(&bsNow, (IDispatch *)m_pFolderItem);
-				bUseEB = PathIsSameRoot(bsNext, bsNow);
-				teSysFreeString(&bsNow);
-			}
+		if (!bUseEB && m_pFolderItem) {
+			m_pFolderItem->get_Path(&bsNow);
+			bUseEB = PathIsSameRoot(bsNext, bsNow);
+			teSysFreeString(&bsNow);
 		}
 		teSysFreeString(&bsNext);
 	}
 #endif
-#ifdef _2000XP
-	if (g_bUpperVista) {
-#endif
-		if (m_param[SB_Type] == CTRL_EB) {
-			dwFrame = EBO_SHOWFRAMES;
-		}
-		//ExplorerBrowser
-		if (m_pExplorerBrowser && !pFolderItems
+	//ExplorerBrowser
+	if (m_pExplorerBrowser && !pFolderItems) {
+		BOOL bNowIsResultsFolder = ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER]);
+		BOOL bNextIsResultsFolder = ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER]);
 #ifdef _USE_SHELLBROWSER
-			&& bUseEB
+		if (bUseEB && (!dwFrame || !bNowIsResultsFolder || bNextIsResultsFolder)) {
 #endif
-		) {
 			m_pExplorerBrowser->GetOptions((EXPLORER_BROWSER_OPTIONS *)&m_param[SB_Options]);
-			if (!ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER]) || !ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
+			if (!bNextIsResultsFolder || !bNowIsResultsFolder) {
 				if (GetShellFolder2(&pidl) == S_OK) {
 					IFolderViewOptions *pOptions;
 					if SUCCEEDED(m_pExplorerBrowser->QueryInterface(IID_PPV_ARGS(&pOptions))) {
@@ -13376,7 +13431,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 				return hr;
 			}
 		}
-#ifdef _2000XP
+#ifdef _USE_SHELLBROWSER
 	}
 #endif
 	m_clrText = GetSysColor(COLOR_WINDOWTEXT);
@@ -17367,10 +17422,16 @@ VOID CteShellBrowser::SetPropEx()
 {
 	if (m_pShellView && m_pShellView->GetWindow(&m_hwndDV) == S_OK) {
 		if (SetWindowLongPtr(m_hwndDV, GWLP_USERDATA, (LONG_PTR)this) != (LONG_PTR)this) {
-			SetWindowSubclass(m_hwndDV, TELVProc, 1, 0);
+			SetWindowSubclass(m_hwndDV, TELVProc, (UINT_PTR)TELVProc, 0);
 			for (int i = WM_USER + 173; i <= WM_USER + 175; ++i) {
 				teChangeWindowMessageFilterEx(m_hwndDV, i, MSGFLT_ALLOW, NULL);
 			}
+/*			HWND hwndDUI = FindWindowExA(GetParent(m_hwndDV), NULL, "DUIViewWndClassName", NULL);
+			if (hwndDUI) {
+				if (hwndDUI = FindWindowExA(hwndDUI, NULL, "DirectUIHWND", NULL)) {
+					SendMessage(hwndDUI, WM_SETTINGCHANGE, 0, (LPARAM)L"ShellState");
+				}
+			}*/
 		}
 		m_hwndLV = FindWindowExA(m_hwndDV, 0, WC_LISTVIEWA, NULL);
 		m_hwndDT = m_hwndLV;
@@ -17393,7 +17454,7 @@ VOID CteShellBrowser::SetPropEx()
 			}
 			SendMessage(m_hwndLV, WM_CHANGEUISTATE, MAKELONG(UIS_SET, UISF_HIDEFOCUS), 0);
 			if (SetWindowLongPtr(m_hwndLV, GWLP_USERDATA, (LONG_PTR)this) != (LONG_PTR)this) {
-				SetWindowSubclass(m_hwndLV, TELVProc2, 1, 0);
+				SetWindowSubclass(m_hwndLV, TELVProc2, (UINT_PTR)TELVProc2, 0);
 			}
 			FixColumnEmphasis();
 		} else {
@@ -17409,9 +17470,9 @@ VOID CteShellBrowser::SetPropEx()
 
 VOID CteShellBrowser::ResetPropEx()
 {
-	RemoveWindowSubclass(m_hwndLV, TELVProc2, 1);
+	RemoveWindowSubclass(m_hwndLV, TELVProc2, (UINT_PTR)TELVProc2);
 	SetWindowLongPtr(m_hwndLV, GWLP_USERDATA, 0);
-	RemoveWindowSubclass(m_hwndDV, TELVProc, 1);
+	RemoveWindowSubclass(m_hwndDV, TELVProc, (UINT_PTR)TELVProc);
 	SetWindowLongPtr(m_hwndDV, GWLP_USERDATA, 0);
 	if (m_pDropTarget2) {
 //		SetProp(m_hwndDT, L"OleDropTargetInterface", (HANDLE)m_pDropTarget2->m_pDropTarget);
@@ -19567,16 +19628,16 @@ BOOL CteTabCtrl::Close(BOOL bForce)
 			}
 		}
 		RevokeDragDrop(m_hwnd);
-		RemoveWindowSubclass(m_hwnd, TETCProc, 1);
+		RemoveWindowSubclass(m_hwnd, TETCProc, (UINT_PTR)TETCProc);
 		DestroyWindow(m_hwnd);
 		m_hwnd = NULL;
 
 		RevokeDragDrop(m_hwndButton);
-		RemoveWindowSubclass(m_hwndButton, TEBTProc, 1);
+		RemoveWindowSubclass(m_hwndButton, TEBTProc, (UINT_PTR)TEBTProc);
 		DestroyWindow(m_hwndButton);
 		m_hwndButton = NULL;
 
-		RemoveWindowSubclass(m_hwndStatic, TESTProc, 1);
+		RemoveWindowSubclass(m_hwndStatic, TESTProc, (UINT_PTR)TESTProc);
 		DestroyWindow(m_hwndStatic);
 		m_hwndStatic = NULL;
 		m_bEmpty = TRUE;
@@ -19634,7 +19695,7 @@ VOID CteTabCtrl::CreateTC()
 	ArrangeWindow();
 	SetItemSize();
 	SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG_PTR)this);
-	SetWindowSubclass(m_hwnd, TETCProc, 1, 0);
+	SetWindowSubclass(m_hwnd, TETCProc, (UINT_PTR)TETCProc, 0);
 	RegisterDragDrop(m_hwnd, m_pDropTarget2);
 	BringWindowToTop(m_hwnd);
 }
@@ -19645,7 +19706,7 @@ BOOL CteTabCtrl::Create()
 		WS_EX_TOPMOST, WC_STATIC, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | SS_NOTIFY,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, g_hwndMain, (HMENU)0, hInst, NULL);
 	SetWindowLongPtr(m_hwndStatic, GWLP_USERDATA, (LONG_PTR)this);
-	SetWindowSubclass(m_hwndStatic, TESTProc, 1, 0);
+	SetWindowSubclass(m_hwndStatic, TESTProc, (UINT_PTR)TESTProc, 0);
 
 	m_hwndButton = CreateWindowEx(
 		WS_EX_TOPMOST, WC_BUTTON, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | BS_OWNERDRAW,
@@ -19653,7 +19714,7 @@ BOOL CteTabCtrl::Create()
 		m_hwndStatic, (HMENU)0, hInst, NULL);
 
 	SetWindowLongPtr(m_hwndButton, GWLP_USERDATA, (LONG_PTR)this);
-	SetWindowSubclass(m_hwndButton, TEBTProc, 1, 0);
+	SetWindowSubclass(m_hwndButton, TEBTProc, (UINT_PTR)TEBTProc, 0);
 	m_pDropTarget2 = new CteDropTarget2(m_hwndButton, static_cast<IDispatch *>(this), TRUE);
 	RegisterDragDrop(m_hwndButton, m_pDropTarget2);
 	BringWindowToTop(m_hwndButton);
@@ -19948,7 +20009,7 @@ STDMETHODIMP CteTabCtrl::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WOR
 									HIMAGELIST hImage = TabCtrl_GetImageList(m_hwnd);
 									HFONT hFont = (HFONT)SendMessage(m_hwnd, WM_GETFONT, 0, 0);
 									RevokeDragDrop(m_hwnd);
-									RemoveWindowSubclass(m_hwnd, TETCProc, 1);
+									RemoveWindowSubclass(m_hwnd, TETCProc, (UINT_PTR)TETCProc);
 									DestroyWindow(m_hwnd);
 
 									CreateTC();
@@ -22319,10 +22380,10 @@ VOID CteTreeView::Close()
 {
 #ifdef _2000XP
 	if (!g_bUpperVista) {
-		RemoveWindowSubclass(m_hwnd, TETVProc, 1);
+		RemoveWindowSubclass(m_hwnd, TETVProc, (UINT_PTR)TETVProc);
 	}
 #endif
-	RemoveWindowSubclass(m_hwndTV, TETVProc2, 1);
+	RemoveWindowSubclass(m_hwndTV, TETVProc2, (UINT_PTR)TETVProc2);
 	if (m_pDropTarget2) {
 //		SetProp(m_hwndTV, L"OleDropTargetInterface", (HANDLE)m_pDropTarget2->m_pDropTarget);
 		RevokeDragDrop(m_hwndTV);
@@ -22374,7 +22435,7 @@ VOID CteTreeView::Create()
 				if (m_hwndTV) {
 					teSetTreeTheme(m_hwndTV, SendMessage(m_hwndTV, TVM_GETBKCOLOR, 0, 0));
 					SetWindowLongPtr(m_hwndTV, GWLP_USERDATA, (LONG_PTR)this);
-					SetWindowSubclass(m_hwndTV, TETVProc2, 1, 0);
+					SetWindowSubclass(m_hwndTV, TETVProc2, (UINT_PTR)TETVProc2, 0);
 					if (!m_pDropTarget2) {
 						m_pDropTarget2 = new CteDropTarget2(m_hwndTV, static_cast<IDispatch *>(this), FALSE);
 						teRegisterDragDrop(m_hwndTV, m_pDropTarget2, &m_pDropTarget2->m_pDropTarget);
@@ -22466,9 +22527,9 @@ VOID CteTreeView::Create()
 		if (m_hwndTV) {
 			HWND hwndParent = GetParent(m_hwndTV);
 			SetWindowLongPtr(hwndParent, GWLP_USERDATA, (LONG_PTR)this);
-			SetWindowSubclass(hwndParent, TETVProc, 1, 0);
+			SetWindowSubclass(hwndParent, TETVProc, (UINT_PTR)TETVProc, 0);
 			SetWindowLongPtr(m_hwndTV, GWLP_USERDATA, (LONG_PTR)this);
-			SetWindowSubclass(m_hwndTV, TETVProc2, 1, 0);
+			SetWindowSubclass(m_hwndTV, TETVProc2, (UINT_PTR)TETVProc2, 0);
 			if (!m_pDropTarget2) {
 				m_pDropTarget2 = new CteDropTarget2(m_hwndTV, static_cast<IDispatch *>(this), FALSE);
 				teRegisterDragDrop(m_hwndTV, m_pDropTarget2, &m_pDropTarget2->m_pDropTarget);
