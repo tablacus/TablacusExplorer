@@ -3196,8 +3196,11 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 			if (!pidl) {
 				pidl = teILCreateFromPathEx(pszPath);
 				if (pidl) {
-					if (tePathIsNetworkPath(pszPath) && PathIsRoot(pszPath) && FAILED(tePathIsDirectory(pszPath, 0, 3))) {
-						teILFreeClear(&pidl);
+					if (tePathIsNetworkPath(pszPath) && PathIsRoot(pszPath)) {
+						HRESULT hr = tePathIsDirectory(pszPath, 0, 3);
+						if (FAILED(hr) && hr != E_ACCESSDENIED) {
+							teILFreeClear(&pidl);
+						}
 					}
 				} else if (PathGetDriveNumber(pszPath) >= 0 && !PathIsRoot(pszPath)) {
 					WCHAR pszDrive[4];
@@ -13383,57 +13386,35 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	) ? EBO_SHOWFRAMES : 0;
 	UINT uViewMode = m_param[SB_ViewMode];
 	m_nGroupByDelay = 0;
-#ifdef _USE_SHELLBROWSER
-	BOOL bUseEB = dwFrame || teGetFolderViewOptions(pidl, m_param[SB_ViewMode]) == FVO_DEFAULT;
-	if (!bUseEB
+	//ExplorerBrowser
+	if (m_pExplorerBrowser && !pFolderItems
 #ifdef _2000XP
 		&& g_bUpperVista
 #endif
-		) {
-		BSTR bsNext, bsNow = NULL;
-		m_pFolderItem1->get_Path(&bsNext);
-		bUseEB = !tePathIsNetworkPath(bsNext);
-		if (!bUseEB && m_pFolderItem) {
-			m_pFolderItem->get_Path(&bsNow);
-			bUseEB = PathIsSameRoot(bsNext, bsNow);
-			teSysFreeString(&bsNow);
-		}
-		teSysFreeString(&bsNext);
-	}
-#endif
-	//ExplorerBrowser
-	if (m_pExplorerBrowser && !pFolderItems) {
-		BOOL bNowIsResultsFolder = ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER]);
-		BOOL bNextIsResultsFolder = ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER]);
-#ifdef _USE_SHELLBROWSER
-		if (bUseEB && (!dwFrame || !bNowIsResultsFolder || bNextIsResultsFolder)) {
-#endif
-			m_pExplorerBrowser->GetOptions((EXPLORER_BROWSER_OPTIONS *)&m_param[SB_Options]);
-			if (!bNextIsResultsFolder || !bNowIsResultsFolder) {
-				if (GetShellFolder2(&pidl) == S_OK) {
-					IFolderViewOptions *pOptions;
-					if SUCCEEDED(m_pExplorerBrowser->QueryInterface(IID_PPV_ARGS(&pOptions))) {
-						pOptions->SetFolderViewOptions(FVO_VISTALAYOUT, teGetFolderViewOptions(pidl, m_param[SB_ViewMode]));
-						pOptions->Release();
-					}
-					BrowseToObject();
-					teCoTaskMemFree(pidl);
-					return S_OK;
+	&& (!dwFrame || !ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER]))) {
+		m_pExplorerBrowser->GetOptions((EXPLORER_BROWSER_OPTIONS *)&m_param[SB_Options]);
+		if (!ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER]) || !ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
+			if (GetShellFolder2(&pidl) == S_OK) {
+				IFolderViewOptions *pOptions;
+				if SUCCEEDED(m_pExplorerBrowser->QueryInterface(IID_PPV_ARGS(&pOptions))) {
+					pOptions->SetFolderViewOptions(FVO_VISTALAYOUT, teGetFolderViewOptions(pidl, m_param[SB_ViewMode]));
+					pOptions->Release();
 				}
-			} else {
-				m_bBeforeNavigate = TRUE;
-				hr = OnNavigationPending2(pidl);
-				if SUCCEEDED(hr) {
-					RemoveAll();
-					OnViewCreated(NULL);
-					OnNavigationComplete2();
-				}
-				return hr;
+				BrowseToObject();
+				teCoTaskMemFree(pidl);
+				return S_OK;
 			}
+		} else {
+			m_bBeforeNavigate = TRUE;
+			hr = OnNavigationPending2(pidl);
+			if SUCCEEDED(hr) {
+				RemoveAll();
+				OnViewCreated(NULL);
+				OnNavigationComplete2();
+			}
+			return hr;
 		}
-#ifdef _USE_SHELLBROWSER
 	}
-#endif
 	m_clrText = GetSysColor(COLOR_WINDOWTEXT);
 	m_clrBk = GetSysColor(COLOR_WINDOW);
 	m_clrTextBk = m_clrBk;
@@ -13514,6 +13495,9 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 #else
 #ifdef _2000XP
 		hr = g_bUpperVista ? NavigateEB(dwFrame) : NavigateSB(pPreviousView, pPrevious);
+		if (hr == E_ACCESSDENIED) {
+			hr = E_FAIL;
+		}
 #else
 		hr =  NavigateEB(dwFrame);
 #endif
@@ -13598,14 +13582,7 @@ HRESULT CteShellBrowser::NavigateEB(DWORD dwFrame)
 							pFolderFilterSite->SetFilter(static_cast<IFolderFilter *>(this));
 						}
 *///
-						try {
-							hr = BrowseToObject();
-						} catch (...) {
-							g_nException = 0;
-#ifdef _DEBUG
-							g_strException = L"NavigateEB/BrowseToObject";
-#endif
-						}
+						hr = BrowseToObject();
 					}
 					if (hr == S_OK) {
 						if (m_pShellView) {
@@ -16433,6 +16410,11 @@ STDMETHODIMP CteShellBrowser::OnNavigationPending(PCIDLIST_ABSOLUTE pidlFolder)
 		m_nSuspendMode = 4;
 		return E_FAIL;
 	}
+	if (ILIsEqual(pidlFolder, g_pidls[CSIDL_CDBURN_AREA])) {
+		if (teCompareSFClass(m_pSF2, &CLSID_ResultsFolder)) {
+			return S_OK;
+		}
+	}
 	return OnNavigationPending2((LPITEMIDLIST)pidlFolder);
 }
 
@@ -16766,9 +16748,35 @@ VOID CteShellBrowser::OnNavigationComplete2()
 
 HRESULT CteShellBrowser::BrowseToObject()
 {
+	HRESULT hr;
 	m_nSuspendMode = 2;
 	::InterlockedIncrement(&m_pTC->m_lNavigating);
-	HRESULT hr = m_pExplorerBrowser->BrowseToObject(m_pSF2, SBSP_ABSOLUTE);
+	try {
+		if (!m_hwnd) {
+			if (m_param[SB_Type] == CTRL_SB) {
+				IEnumIDList *peidl = NULL;
+				if (m_pSF2->EnumObjects(NULL, SHCONTF_FOLDERS | SHCONTF_NONFOLDERS, &peidl) == S_OK) {
+					peidl->Release();
+				} else {
+					m_pFolderItem->MakeUnavailable();
+					teILCloneReplace(&m_pidl, g_pidls[CSIDL_RESULTSFOLDER]);
+					GetShellFolder2(&m_pidl);
+				}
+			}
+		}
+		if (m_param[SB_Type] == CTRL_EB) {
+			if (teCompareSFClass(m_pSF2, &CLSID_ResultsFolder)) {
+				m_pExplorerBrowser->BrowseToIDList(g_pidls[CSIDL_CDBURN_AREA], SBSP_ABSOLUTE);
+			}
+		}
+		hr = m_pExplorerBrowser->BrowseToObject(m_pSF2, SBSP_ABSOLUTE);
+	} catch (...) {
+		hr = E_FAIL;
+		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"BrowseToObject";
+#endif
+	}
 	::InterlockedDecrement(&m_pTC->m_lNavigating);
 	if SUCCEEDED(hr) {
 		IUnknown_GetWindow(m_pExplorerBrowser, &m_hwnd);
@@ -24249,77 +24257,41 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			BOOL bResult = FALSE;
 			switch (dispIdMember) {
-				//ShowOpen
-				case TE_METHOD + 40:
-					if (m_ofn.Flags & OFN_ENABLEHOOK) {
-						m_ofn.lpfnHook = OFNHookProc;
-					}
-					g_bDialogOk = FALSE;
-					bResult = GetOpenFileName(&m_ofn) || g_bDialogOk;
-					break;
-				//ShowSave
-				case TE_METHOD + 41:
-					bResult = GetSaveFileName(&m_ofn);
-					break;
-/*/// IFileOpenDialog
-				case 42:
-					{
-						IFileOpenDialog *pFileOpenDialog;
-						if (_SHCreateItemFromIDList && SUCCEEDED(teCreateInstance(CLSID_FileOpenDialog, NULL, NULL, IID_PPV_ARGS(&pFileOpenDialog)))) {
-							IShellItem *psi;
-							LPITEMIDLIST pidl = teILCreateFromPath(const_cast<LPWSTR>(m_ofn.lpstrInitialDir));
-							if (pidl) {
-								if SUCCEEDED(_SHCreateItemFromIDList(pidl, IID_PPV_ARGS(&psi))) {
-									pFileOpenDialog->SetFolder(psi);
-									psi->Release();
-								}
-								teCoTaskMemFree(pidl);
-							}
-							pFileOpenDialog->SetFileName(m_ofn.lpstrFile);
-							DWORD dwOptions;
-							pFileOpenDialog->GetOptions(&dwOptions);
-							pFileOpenDialog->SetOptions(dwOptions | FOS_PICKFOLDERS);
-							if SUCCEEDED(pFileOpenDialog->Show(g_hwndMain)) {
-								if SUCCEEDED(pFileOpenDialog->GetResult(&psi)) {
-									if (GetIDListFromObject(psi, &pidl)) {
-										BSTR bs;
-										teGetDisplayNameFromIDList(&bs, pidl, SHGDN_FORPARSING);
-										teCoTaskMemFree(pidl);
-										lstrcpyn(m_ofn.lpstrFile, bs, m_ofn.nMaxFile);
-										bResult = TRUE;
-									}
-									psi->Release();
-								}
-							}
-							pFileOpenDialog->Release();
-							break;
+
+			case TE_METHOD + 40://ShowOpen
+				if (m_ofn.Flags & OFN_ENABLEHOOK) {
+					IFileOpenDialog *pFileOpenDialog;
+					if (_SHCreateItemFromIDList && SUCCEEDED(teCreateInstance(CLSID_FileOpenDialog, NULL, NULL, IID_PPV_ARGS(&pFileOpenDialog)))) {
+						IShellItem *psi;
+						if (teCreateItemFromPath(const_cast<LPWSTR>(m_ofn.lpstrInitialDir), &psi)) {
+							pFileOpenDialog->SetFolder(psi);
+							psi->Release();
 						}
-#ifdef _2000XP
-						m_ofn.Flags |= OFN_ENABLEHOOK;
-						m_ofn.lpfnHook = OFNHookProc;
-						g_bDialogOk = FALSE;
-						bResult = GetOpenFileName(&m_ofn) || g_bDialogOk;
+						pFileOpenDialog->SetFileName(m_ofn.lpstrFile);
+						pFileOpenDialog->SetOptions(m_ofn.Flags & (FOS_OVERWRITEPROMPT	| FOS_NOCHANGEDIR | FOS_PICKFOLDERS | FOS_NOVALIDATE | FOS_ALLOWMULTISELECT | FOS_PATHMUSTEXIST | FOS_FILEMUSTEXIST | FOS_CREATEPROMPT | FOS_SHAREAWARE | FOS_NOREADONLYRETURN));
+						if SUCCEEDED(pFileOpenDialog->Show(g_hwndMain)) {
+							if SUCCEEDED(pFileOpenDialog->GetResult(&psi)) {
+								LPWSTR pszPath;
+								if SUCCEEDED(psi->GetDisplayName(SIGDN_DESKTOPABSOLUTEEDITING, &pszPath)) {
+									lstrcpyn(m_ofn.lpstrFile, pszPath, m_ofn.nMaxFile);
+									::CoTaskMemFree(pszPath);
+									bResult = TRUE;
+								}
+								psi->Release();
+							}
+						}
+						pFileOpenDialog->Release();
 						break;
-						BROWSEINFO bi;
-						bi.hwndOwner = g_hwndMain;
-						bi.pidlRoot = NULL;
-						bi.pszDisplayName =	m_ofn.lpstrFile;
-						bi.lpszTitle = m_ofn.lpstrFileTitle;
-						bi.ulFlags = BIF_EDITBOX;
-						bi.lpfn = NULL;
-						LPITEMIDLIST pidl =	SHBrowseForFolder(&bi);
-						if (pidl) {
-							BSTR bs;
-							teGetDisplayNameFromIDList(&bs, pidl, SHGDN_FORPARSING);
-							teCoTaskMemFree(pidl);
-							lstrcpyn(m_ofn.lpstrFile, bs, m_ofn.nMaxFile);
-							::SysFreeString(bs);
-							bResult = TRUE;
-						}
-#endif
 					}
-					break;
-//*/
+					m_ofn.lpfnHook = OFNHookProc;
+				}
+				g_bDialogOk = FALSE;
+				bResult = GetOpenFileName(&m_ofn) || g_bDialogOk;
+				break;
+
+			case TE_METHOD + 41://ShowSave
+				bResult = GetSaveFileName(&m_ofn);
+				break;
 			}//end_switch
 			teSetBool(pVarResult, bResult);
 			return S_OK;

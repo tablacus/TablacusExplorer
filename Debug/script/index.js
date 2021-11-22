@@ -304,8 +304,8 @@ OnArrange = async function (Ctrl, rc) {
 			document.getElementById("Inner2Center_" + Id).style.height = Math.max(r[3] - r[1], 0) + "px";
 			Promise.all([te.ArrangeCB(Ctrl, rc)]).then(function () {
 				o.style.visibility = "visible";
-				if (ui_.Show) {
-					delete ui_.Show;
+				if (ui_.Show == 1) {
+					ui_.Show = 2;
 					SetWindowAlpha(ui_.hwnd, 255);
 					RunEvent1("VisibleChanged", te, true);
 				}
@@ -458,7 +458,7 @@ Init = async function () {
 	await InitBG(await GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor));
 	await InitWindow();
 	await RunEventUI1("Load");
-	ui_.Show = true;
+	ui_.Show = 1;
 	Resize();
 	AddEvent("BrowserCreatedEx", "setTimeout(async function () { SetWindowAlpha(await GetTopWindow(), 255); }, 99);");
 	ClearEvent("Layout");

@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20211121 ? te.Version : 20211121;
+		return te.Version < 20211122 ? te.Version : 20211122;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -209,8 +209,8 @@ RegEnumKey = function (hKey, Name, bSA) {
 	return bSA ? r : "undefined" !== typeof ScriptEngineMajorVersion && r.toArray ? r.toArray() : api.CreateObject("Array", r);
 }
 
-OpenDialog = function (path, bFilesOnly) {
-	return OpenDialogEx(path, null, bFilesOnly);
+OpenDialog = function (path) {
+	return OpenDialogEx(path, null);
 }
 
 ChooseFolder = function (path, pt, uFlags) {
@@ -229,7 +229,12 @@ BrowseForFolder = function (path) {
 	return OpenDialogEx(path, "@shell32.dll,-4131\t|<Folder>");
 }
 
-OpenDialogEx = function (path, filter, bFilesOnly) {
+OpenDialogEx = function (path, filter) {
+	if (api.GetKeyState(VK_SHIFT) < 0) {
+		filter = "";
+	} else if (api.getKeyState(VK_CONTROL) < 0) {
+		filter = "@shell32.dll,-4131\t|<Folder>";
+	}
 	const commdlg = api.CreateObject("CommonDialog");
 	const res = /^\.\.(\/.*)/.exec(path);
 	if (res) {
@@ -244,7 +249,7 @@ OpenDialogEx = function (path, filter, bFilesOnly) {
 	}
 	commdlg.InitDir = path;
 	commdlg.Filter = MakeCommDlgFilter(filter);
-	commdlg.Flags = OFN_FILEMUSTEXIST | OFN_EXPLORER | OFN_ENABLESIZING | (bFilesOnly ? 0 : OFN_ENABLEHOOK);
+	commdlg.Flags = OFN_FILEMUSTEXIST | OFN_EXPLORER | OFN_ENABLESIZING | OFN_HIDEREADONLY | OFN_NODEREFERENCELINKS | (filter == "@shell32.dll,-4131\t|<Folder>" ? OFN_ENABLEHOOK : 0);
 	if (commdlg.ShowOpen()) {
 		return PathQuoteSpaces(commdlg.FileName);
 	}

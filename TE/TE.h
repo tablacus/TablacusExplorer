@@ -397,8 +397,10 @@ class CteShellBrowser : public IShellBrowser, public ICommDlgBrowser2,
 	public IShellFolderViewCB,
 #ifdef _2000XP
 	public IShellFolder2,
-#else if _USE_SHELLBROWSER
+#else
+#ifdef _USE_SHELLBROWSER
 	public IShellFolder,
+#endif
 #endif
 	public IPersistFolder2
 {

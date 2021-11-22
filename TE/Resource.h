@@ -16,7 +16,7 @@
 //Version(DLL)
 #define VER_Y		21
 #define VER_M		11
-#define VER_D		21
+#define VER_D		22
 #endif
 
 //Icon
@@ -24,7 +24,7 @@
 
 //Define
 //#define _USE_TEOBJ
-#define _USE_SHELLBROWSER
+//#define _USE_SHELLBROWSER
 //#define _USE_OBJECTAPI
 //#define _USE_APIHOOK
 //#define _USE_HTMLDOC

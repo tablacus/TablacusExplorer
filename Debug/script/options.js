@@ -2238,7 +2238,7 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter, f) {
 
 		let path = o.value || o.getAttribute("placeholder") || "";
 		const res = /^icon:([^,]*)|^bitmap:([^,]*)/i.exec(path) || [];
-		path = await OpenDialogEx(res[1] || res[2] || path, Filter, GetNum(bFilesOnly));
+		path = await OpenDialogEx(res[1] || res[2] || path, Filter);
 		if (path) {
 			if (bMultiLine) {
 				AddPath(Id, path);

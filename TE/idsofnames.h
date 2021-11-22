@@ -1024,7 +1024,6 @@ TEmethod methodCD[] = {
 	{ TE_PROPERTY + 31, "FlagsEx" },
 	{ TE_PROPERTY + 20, "InitDir" },
 	{ TE_PROPERTY + 30, "MaxFileSize" },
-//	{ TE_METHOD + 42, "ShowFolder" },
 	{ TE_METHOD + 40, "ShowOpen" },
 	{ TE_METHOD + 41, "ShowSave" },
 	{ TE_PROPERTY + 22, "Title" },

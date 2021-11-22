@@ -36,16 +36,20 @@ Sync.TreeView = {
 					let hItem = api.SendMessage(hwnd, TVM_GETNEXTITEM, 9, null);
 					let Now = TV.SelectedItem;
 					let New = Ctrl.FolderItem;
+					let nUp = Sync.TreeView.Depth ? 0 : 1;
 					while (api.ILGetCount(New) > api.ILGetCount(Now)) {
 						New = api.ILRemoveLastID(New);
 					}
 					while (api.ILGetCount(Now) > api.ILGetCount(New)) {
 						Now = api.ILRemoveLastID(Now);
-						hItem = api.SendMessage(hwnd, TVM_GETNEXTITEM, 3, hItem);
+						++nUp;
 					}
 					while (!api.ILIsEqual(Now, New) && api.ILGetCount(Now) > 1) {
 						New = api.ILRemoveLastID(New);
 						Now = api.ILRemoveLastID(Now);
+						++nUp;
+					}
+					while (--nUp > 0) {
 						hItem = api.SendMessage(hwnd, TVM_GETNEXTITEM, 3, hItem);
 					}
 					do {
