@@ -289,7 +289,7 @@ typedef PreferredAppMode (WINAPI* LPFNSetPreferredAppMode)(PreferredAppMode appM
 typedef bool (WINAPI* LPFNAllowDarkModeForWindow)(HWND hwnd, BOOL allow);
 typedef bool (WINAPI* LPFNShouldAppsUseDarkMode)();
 typedef void (WINAPI* LPFNRefreshImmersiveColorPolicyState)();
-//typedef bool (WINAPI* LPFNIsDarkModeAllowedForWindow)(HWND hwnd);
+typedef bool (WINAPI* LPFNIsDarkModeAllowedForWindow)(HWND hwnd);
 //Scroll bar
 typedef HTHEME (WINAPI *LPFNOpenNcThemeData)(HWND hWnd, LPCWSTR pszClassList);
 
@@ -501,7 +501,7 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 
 #define	TE_AutoViewMode	0x10000
 #define TECL_DARKTEXT 0xffffff
-#define TECL_DARKBG 0x222222
+#define TECL_DARKBG 0x202020
 
 #define TC_Flags	5
 #define TC_Align	6

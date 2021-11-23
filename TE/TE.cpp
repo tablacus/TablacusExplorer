@@ -104,7 +104,7 @@ LPFNSetWindowCompositionAttribute _SetWindowCompositionAttribute = NULL;
 LPFNDwmSetWindowAttribute _DwmSetWindowAttribute = NULL;
 LPFNShouldAppsUseDarkMode _ShouldAppsUseDarkMode = NULL;
 LPFNRefreshImmersiveColorPolicyState _RefreshImmersiveColorPolicyState = NULL;
-//LPFNIsDarkModeAllowedForWindow _IsDarkModeAllowedForWindow = NULL;
+LPFNIsDarkModeAllowedForWindow _IsDarkModeAllowedForWindow = NULL;
 LPFNGetDpiForMonitor _GetDpiForMonitor = NULL;
 #ifdef _2000XP
 LPFNSetDllDirectoryW _SetDllDirectoryW = NULL;
@@ -204,6 +204,7 @@ SORTCOLUMN g_pSortColumnNull[3];
 VARIANT g_vData;
 VARIANT g_vArguments;
 CteDropTarget2 *g_pDropTarget2;
+OPENFILENAME *g_pofn = NULL;
 
 UINT	g_uCrcTable[256];
 LONG	g_nLockUpdate = 0;
@@ -5640,11 +5641,15 @@ VOID SetDlgButtonsTheme(HWND hwnd)
 {
 	HWND hwnd1 = NULL;
 	while (hwnd1 = FindWindowExA(hwnd, hwnd1, WC_BUTTONA, NULL)) {
-		SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
+		if ((GetWindowLong(hwnd1, GWL_STYLE) & BS_TYPEMASK) <= BS_DEFPUSHBUTTON) {
+			SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
+		}
 	}
-	hwnd1 = NULL;
 	while (hwnd1 = FindWindowExA(hwnd, hwnd1, WC_COMBOBOXA, NULL)) {
 		SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_cfd" : L"cfd", NULL);
+	}
+	while (hwnd1 = FindWindowExA(hwnd, hwnd1, WC_SCROLLBARA, NULL)) {
+		SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
 	}
 }
 
@@ -5672,19 +5677,83 @@ LRESULT CALLBACK TEDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 			SetDlgButtonsTheme(hwnd);
 			UpdateWindow(hwnd);
 			break;
+		case WM_CTLCOLORLISTBOX:
+			if (_IsDarkModeAllowedForWindow && _AllowDarkModeForWindow) {
+				if ((_IsDarkModeAllowedForWindow((HWND)lParam) ? 1 : 0) ^ (g_bDarkMode ? 1 : 0)) {
+					_AllowDarkModeForWindow((HWND)lParam, g_bDarkMode);
+					SetWindowTheme((HWND)lParam, L"explorer", NULL);
+				}
+			}
+			break;
+		case WM_COMMAND:
+			if (wParam == IDOK && g_pofn) {
+				IShellBrowser *pSB = (IShellBrowser *)SendMessage(hwnd, WM_USER + 7, 0, 0);
+				if (pSB) {
+					LPITEMIDLIST pidlParent = NULL;
+					if (teGetIDListFromObject(pSB, &pidlParent)) {
+						LPITEMIDLIST pidlChild = NULL;
+						IShellView *pSV;
+						if SUCCEEDED(pSB->QueryActiveShellView(&pSV)) {
+							IFolderView *pFV;
+							if SUCCEEDED(pSV->QueryInterface(IID_PPV_ARGS(&pFV))) {
+								int iItem;
+								if SUCCEEDED(pFV->ItemCount(SVGIO_SELECTION, &iItem)) {
+									if (iItem > 0) {
+										pFV->GetFocusedItem(&iItem);
+										if (iItem >= 0) {
+											pFV->Item(iItem, &pidlChild);
+										}
+									}
+								}
+								SafeRelease(&pFV);
+							}
+							SafeRelease(&pSV);
+						}
+						LPITEMIDLIST pidl = pidlParent;
+						if (pidlChild) {
+							pidl = ILCombine(pidlParent, pidlChild);
+							teCoTaskMemFree(pidlChild);
+							teCoTaskMemFree(pidlParent);
+						}
+						BSTR bs;
+						teGetDisplayNameFromIDList(&bs, pidl, SHGDN_FORPARSING | SHGDN_FORADDRESSBAR);
+						teCoTaskMemFree(pidl);
+						lstrcpyn(g_pofn->lpstrFile, bs, g_pofn->nMaxFile);
+						::SysFreeString(bs);
+						g_bDialogOk = TRUE;
+						wParam = IDCANCEL;
+					}
+				}
+			}
+			break;
 		}
 		if (g_bDarkMode) {
+			HWND hwnd1;
 			CHAR pszClassA[MAX_CLASS_NAME];
 			switch (msg) {
-			case WM_CTLCOLORBTN:
 			case WM_CTLCOLORSTATIC:
-				SetTextColor((HDC)wParam, TECL_DARKTEXT);
-				SetBkMode((HDC)wParam, TRANSPARENT);
-				return (LRESULT)g_hbrDarkBackground;
+				GetClassNameA((HWND)lParam, pszClassA, MAX_CLASS_NAME);
+				if (lstrcmpA(pszClassA, WC_BUTTONA)) {
+					SetTextColor((HDC)wParam, TECL_DARKTEXT);
+					SetBkMode((HDC)wParam, TRANSPARENT);
+					return (LRESULT)g_hbrDarkBackground;
+				}
+				if ((GetWindowLong((HWND)lParam, GWL_STYLE) & BS_TYPEMASK) > BS_DEFPUSHBUTTON) {
+					return (LRESULT)GetStockObject(GRAY_BRUSH);// Group button(BS_GROUP)
+				}
+				break;
+			case WM_CTLCOLORLISTBOX://Combobox
 			case WM_CTLCOLOREDIT:
 				SetTextColor((HDC)wParam, TECL_DARKTEXT);
 				SetBkMode((HDC)wParam, TRANSPARENT);
 				return (LRESULT)GetStockObject(BLACK_BRUSH);
+			case WM_NCPAINT:
+				if (hwnd1 = teFindChildByClassA(hwnd, WC_TREEVIEWA)) {
+					SetWindowTheme(hwnd1, L"darkmode_explorer", NULL);
+					TreeView_SetTextColor(hwnd1, TECL_DARKTEXT);
+					TreeView_SetBkColor(hwnd1, TECL_DARKBG);
+				}
+				break;
 			case WM_ERASEBKGND:
 				RECT rc;
 				GetClientRect(hwnd, &rc);
@@ -5704,6 +5773,51 @@ LRESULT CALLBACK TEDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 				if (bHandle) {
 					return 0;
 				}
+				break;
+			case WM_DRAWITEM:
+				PDRAWITEMSTRUCT pdis;
+				pdis = (PDRAWITEMSTRUCT)lParam;
+				if (pdis->CtlType == ODT_COMBOBOX) {
+					int w = pdis->rcItem.right - pdis->rcItem.left;
+					int h = pdis->rcItem.bottom - pdis->rcItem.top;
+					BITMAPINFO bmi;
+					RGBQUAD *pcl = NULL;
+					::ZeroMemory(&bmi.bmiHeader, sizeof(BITMAPINFOHEADER));
+					bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+					bmi.bmiHeader.biWidth = w;
+					bmi.bmiHeader.biHeight = -(LONG)h;
+					bmi.bmiHeader.biPlanes = 1;
+					bmi.bmiHeader.biBitCount = 32;
+					HBITMAP hBM = CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, (void **)&pcl, NULL, 0);
+					//HBITMAP hBM = CreateCompatibleBitmap(pdis->hDC, w, h);
+					HDC hmdc = CreateCompatibleDC(pdis->hDC);
+					HGDIOBJ hOld = SelectObject(hmdc, hBM);
+					HDC hdc1 = pdis->hDC;
+					pdis->hDC = hmdc;
+					CopyRect(&rc, &pdis->rcItem);
+					pdis->rcItem.left = 0;
+					pdis->rcItem.top = 0;
+					pdis->rcItem.right = w;
+					pdis->rcItem.bottom = h;
+					LRESULT lResult = DefSubclassProc(hwnd, msg, wParam, lParam);
+					pdis->hDC = hdc1;
+					CopyRect(&pdis->rcItem, &rc);
+					COLORREF cl = GetPixel(hmdc, 0, 0);
+					if (!teIsDarkColor(cl)) {
+						for (int i = w * h; --i >= 0; ++pcl) {
+							BYTE cl1 = 255 - (299 * pcl->rgbRed + 587 * pcl->rgbGreen + 114 * pcl->rgbBlue) / (299 + 587 + 114);
+							pcl->rgbRed = cl1;
+							pcl->rgbGreen = cl1;
+							pcl->rgbBlue = cl1;
+						}
+					}
+					BitBlt(pdis->hDC, pdis->rcItem.left, pdis->rcItem.top, w, h, hmdc, 0, 0, SRCCOPY);
+					SelectObject(hmdc, hOld);
+					DeleteDC(hmdc);
+					DeleteObject(hBM);
+					return lResult;
+				}
+				break;
 			}
 		}
 	} catch (...) {
@@ -5732,6 +5846,9 @@ LRESULT CALLBACK TETTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 				}
 				VariantClear(&vResult);
 			}
+		}
+		if (msg == WM_NCPAINT) {
+			SetWindowTheme(hwnd, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
 		}
 	} catch (...) {
 		g_nException = 0;
@@ -11638,13 +11755,6 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 								}
 							}
 							break;
-						case WM_COMMAND:
-							if (pcwp->message == WM_COMMAND && g_hDialog == pcwp->hwnd) {
-								if (LOWORD(pcwp->wParam) == IDOK) {
-									g_bDialogOk = TRUE;
-								}
-							}
-							break;
 					}//end_switch
 				}
 			}
@@ -11658,44 +11768,6 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 	return CallNextHookEx(g_hHook, nCode, wParam, lParam);
 }
 
-UINT_PTR CALLBACK OFNHookProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	LPOFNOTIFY pNotify;
-	try {
-		switch(msg){
-			case WM_INITDIALOG:
-				g_hDialog = GetParent(hwnd);
-				teSetDarkMode(g_hDialog);
-				return TRUE;
-			case WM_NOTIFY:
-				pNotify = (LPOFNOTIFY)lParam;
-				if (pNotify->hdr.code == CDN_FOLDERCHANGE) {
-					if (g_bDialogOk) {
-						HWND hDlg = GetParent(hwnd);
-						LRESULT nLen = SendMessage(hDlg, CDM_GETFOLDERIDLIST, 0, NULL);
-						if (nLen) {
-							LPITEMIDLIST pidl = (LPITEMIDLIST)::CoTaskMemAlloc(nLen);
-							SendMessage(hDlg, CDM_GETFOLDERIDLIST, nLen, (LPARAM)pidl);
-							BSTR bs;
-							teGetDisplayNameFromIDList(&bs, pidl, SHGDN_FORPARSING | SHGDN_FORADDRESSBAR);
-							teCoTaskMemFree(pidl);
-							lstrcpyn(pNotify->lpOFN->lpstrFile, bs, pNotify->lpOFN->nMaxFile);
-							::SysFreeString(bs);
-							PostMessage(GetParent(hwnd), WM_CLOSE, 0, 0);
-							return TRUE;
-						}
-					}
-				}
-				break;
-		}
-	} catch (...) {
-		g_nException = 0;
-#ifdef _DEBUG
-		g_strException = L"OFNHookProc";
-#endif
-	}
-    return FALSE;
-}
 #ifdef _USE_APIHOOK
 VOID teAPIHook(LPWSTR pszTargetDll, LPVOID lpfnSrcProc, LPVOID lpfnNewProc)
 {
@@ -11932,7 +12004,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 			*(FARPROC *)&_AllowDarkModeForWindow = GetProcAddress(hDll, MAKEINTRESOURCEA(133));
 			*(FARPROC *)&_SetPreferredAppMode = GetProcAddress(hDll, MAKEINTRESOURCEA(135));
 			*(FARPROC *)&_RefreshImmersiveColorPolicyState = GetProcAddress(hDll, MAKEINTRESOURCEA(104));
-//			*(FARPROC *)&_IsDarkModeAllowedForWindow = (LPFNIsDarkModeAllowedForWindow)GetProcAddress(hDll, MAKEINTRESOURCEA(137));
+			*(FARPROC *)&_IsDarkModeAllowedForWindow = GetProcAddress(hDll, MAKEINTRESOURCEA(137));
 #ifdef _USE_APIHOOK
 			*(FARPROC *)&_OpenNcThemeData = GetProcAddress(hDll, MAKEINTRESOURCEA(49));
 			teAPIHook(L"comctl32.dll", (LPVOID)_OpenNcThemeData, &teOpenNcThemeData);
@@ -24260,8 +24332,11 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 
 			case TE_METHOD + 40://ShowOpen
 				if (m_ofn.Flags & OFN_ENABLEHOOK) {
+					g_pofn = &m_ofn;
+					m_ofn.Flags &= ~OFN_ENABLEHOOK;
+/*
 					IFileOpenDialog *pFileOpenDialog;
-					if (_SHCreateItemFromIDList && SUCCEEDED(teCreateInstance(CLSID_FileOpenDialog, NULL, NULL, IID_PPV_ARGS(&pFileOpenDialog)))) {
+					if (FALSE && _SHCreateItemFromIDList && SUCCEEDED(teCreateInstance(CLSID_FileOpenDialog, NULL, NULL, IID_PPV_ARGS(&pFileOpenDialog)))) {
 						IShellItem *psi;
 						if (teCreateItemFromPath(const_cast<LPWSTR>(m_ofn.lpstrInitialDir), &psi)) {
 							pFileOpenDialog->SetFolder(psi);
@@ -24283,10 +24358,11 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 						pFileOpenDialog->Release();
 						break;
 					}
-					m_ofn.lpfnHook = OFNHookProc;
+					m_ofn.lpfnHook = OFNHookProc;*/
 				}
 				g_bDialogOk = FALSE;
 				bResult = GetOpenFileName(&m_ofn) || g_bDialogOk;
+				g_pofn = NULL;
 				break;
 
 			case TE_METHOD + 41://ShowSave
@@ -26451,6 +26527,7 @@ CteProgressDialog::CteProgressDialog(IProgressDialog *ppd)
 {
 	m_cRef = 1;
 	m_ppd = NULL;
+//	m_hwnd = NULL;
 	if (ppd) {
 		ppd->QueryInterface(IID_PPV_ARGS(&m_ppd));
 	}
@@ -26523,6 +26600,16 @@ STDMETHODIMP CteProgressDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lc
 			teSetObjectRelease(pVarResult, new CteDispatch(this, 0, dispIdMember));
 			return S_OK;
 		}
+/*		if (!m_hwnd) {
+			if SUCCEEDED(IUnknown_GetWindow(m_ppd, &m_hwnd)) {
+				CHAR szClassA[MAX_CLASS_NAME];
+				GetClassNameA(m_hwnd, szClassA, MAX_CLASS_NAME);
+				teSetDarkMode(m_hwnd);
+				SetDlgButtonsTheme(m_hwnd);
+			} else {
+				Sleep(0);
+			}
+		}*/
 		VARIANT v;
 		switch(dispIdMember) {
 			case TE_METHOD + 1: //HasUserCancelled

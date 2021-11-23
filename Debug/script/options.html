@@ -340,7 +340,7 @@
             <!--panel_end-->
 
             <div class="panel hide" id="panel3_1">
-              <label>Position</label>
+              <label>Position</label> (<label>@explorerframe.dll,-49936[Panes]</label>)
               <br>
               <label>Left</label>
               <input type="text" name="Tab_Left" size="4">
@@ -404,7 +404,7 @@
                 <label><input type="checkbox" id="Tree_Style:0x2000" onclick="SetCheckbox(this)">No order stream</label>(*)<br>
                 <label><input type="checkbox" id="Tree_Style:0x4000" onclick="SetCheckbox(this)">Rich tooltip</label>(*)<br>
                 <label><input type="checkbox" id="Tree_Style:0x20000" onclick="SetCheckbox(this)">Tab stop</label><br>
-                <label><input type="checkbox" id="Tree_Style:0x40000" onclick="SetCheckbox(this)">Favorites mode</label><br>
+                <label><input type="checkbox" id="Tree_Style:0x40000" onclick="SetCheckbox(this)">Favorites</label><br>
                 <label><input type="checkbox" id="Tree_Style:0x100000" onclick="SetCheckbox(this)">Auto<i> </i>Horizontal scroll</label><br>
                 <label><input type="checkbox" id="Tree_Style:0x200000" onclick="SetCheckbox(this)">Fade in out expandos</label>(*)<br>
                 <label><input type="checkbox" id="Tree_Style:0x400000" onclick="SetCheckbox(this)">Empty text</label>(*)<br>
@@ -534,20 +534,20 @@
               <label><input type="checkbox" id="Conf_AutoArrange">Auto arrange<span> (</span>Refresh<span>)</span></label><br>
               <label><input type="checkbox" id="View_fFlags:0x8000000" onclick="SetCheckbox(this)">@shell32.dll,-37588[Item check boxes]</label>(*)<br>
               <label><input type="checkbox" id="View_fFlags:!0x100000" onclick="SetCheckbox(this)">@docprop.dll,-106</label>(*)<br>
+              <label><input type="checkbox" id="View_fFlags:0x20000000" onclick="SetCheckbox(this)">Number of items<span> (</span>@docprop.dll,-106<span>)</span></label>(*)<br>
+                <label><input type="checkbox" id="View_fFlags:!0x800000" onclick="SetCheckbox(this)">@taskmgr.exe,-37223[Column header]</label>(*)<br>
+                <label><input type="checkbox" id="View_fFlags:0x1000000" onclick="SetCheckbox(this)">@taskmgr.exe,-37223[Column header]<span> (</span>@certutil.exe,-2922[Only Allow]<span>: </span>@shell32.dll,-33580<span>)</span></label>(*)<br>
               <label><input type="checkbox" id="Conf_ColumnEmphasis">@UIAutomationCore.dll,-283[Emphasis]<span> (</span>@sqlsrv32.rll,-40033<span>)</span></label>
               <div>
                 <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_FWF")'>
               </div>
               <div class="group" id="_Advanced_FWF">
                 <label><input type="checkbox" id="View_fFlags:0x800" onclick="SetCheckbox(this)">@inetres.dll,-5232[Align Left]</label><br>
+                <label><input type="checkbox" id="View_fFlags:0x2000000" onclick="SetCheckbox(this)">@shell32.dll,-32770[Extended Tiles]</label>(*)<br>
                 <label><input type="checkbox" id="View_fFlags:0x80" onclick="SetCheckbox(this)">@comdlg32.dll,-780[Hide Folders]</label><br>
                 <label><input type="checkbox" id="View_fFlags:!0x20000" onclick="SetCheckbox(this)">{41CF5AE0-F75A-4806-BD87-59C7D9248EB9} 100[File name]</label><br>
+                <label><input type="checkbox" id="View_fFlags:0x80000000" onclick="SetCheckbox(this)">@oleaccrc.dll,-4045</label>(*)<br>
                 <label><input type="checkbox" id="View_fFlags:0x40000" onclick="SetCheckbox(this)">Check select</label><br>
-                <label><input type="checkbox" id="View_fFlags:!0x800000" onclick="SetCheckbox(this)">@taskmgr.exe,-37223[Column header]</label>(*)<br>
-                <label><input type="checkbox" id="View_fFlags:0x1000000" onclick="SetCheckbox(this)">@taskmgr.exe,-37223[Column header]<span> (</span>@certutil.exe,-2922[Only Allow]<span>: </span>@shell32.dll,-33580<span>)</span></label>(*)<br>
-                <label><input type="checkbox" id="View_fFlags:0x2000000" onclick="SetCheckbox(this)">@shell32.dll,-32770[Extended Tiles]</label>(*)<br>
-                <label><input type="checkbox" id="View_fFlags:0x20000000" onclick="SetCheckbox(this)">Subset groups</label>(*)<br>
-                <label><input type="checkbox" id="View_fFlags:0x80000000" onclick="SetCheckbox(this)">Allow RTL reading</label>(*)
               </div>
               <label>Explorer Browser</label>(*7)<br>
               <input type="text" name="Conf_Layout" style="display: none">

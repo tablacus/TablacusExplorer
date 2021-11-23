@@ -1130,6 +1130,7 @@ public:
 	~CteProgressDialog();
 private:
 	IProgressDialog *m_ppd;
+//	HWND	m_hwnd;
 	LONG	m_cRef;
 };
 

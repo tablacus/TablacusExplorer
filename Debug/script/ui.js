@@ -211,7 +211,7 @@ RunEventUI1 = async function () {
 	for (let i in eo) {
 		try {
 			await eo[i].apply(eo[i], args);
-		} catch (e) { 
+		} catch (e) {
 			await api.Invoke(eo[i], args);
 		}
 	}
@@ -553,7 +553,8 @@ ApplyLang = async function (doc) {
 		"Refresh": 0xe72c,
 		"Open": 0xe8e5,
 		"Test": 0xe768,
-		"None": 0xe75c
+		"None": 0xe75c,
+		"Swap": 0xe8ab
 	}
 	let s, h = 0;
 	if (doc.body) {

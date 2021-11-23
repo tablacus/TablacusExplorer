@@ -40,7 +40,7 @@ Sync.SegoeIcons = {
 		40: "0xe8fd",
 		43: "0xed43",
 		44: "0xe8de",
-		45: "0xf413",
+		45: "0xf413"
 	},
 	browser: {
 		0: "0xe72b",
@@ -61,7 +61,7 @@ Sync.SegoeIcons = {
 		15: "0xef6b",
 		16: "0xe97a",
 		18: "0xed1e",
-		22: "0xe710",
+		22: "0xe710"
 	},
 	shell32: {
 		0: "0xe7c3",
@@ -74,7 +74,7 @@ Sync.SegoeIcons = {
 		10: "0xe8cd",
 		24: "0xe75a",
 		42: "0xe977",
-		289: "0xe8ec",
+		289: "0xe8ec"
 	}
 }
 
