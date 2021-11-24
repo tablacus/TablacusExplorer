@@ -1983,7 +1983,7 @@ LPITEMIDLIST teILCreateFromPath3(IShellFolder *pSF, LPWSTR pszPath, HWND hwnd, i
 	if (lpDelimiter) {
 		nDelimiter = (int)(lpDelimiter - pszPath);
 	}
-	if SUCCEEDED(pSF->EnumObjects(hwnd, SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN | SHCONTF_INCLUDESUPERHIDDEN | SHCONTF_NAVIGATION_ENUM, &peidl)) {
+	if (pSF->EnumObjects(hwnd, SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN | SHCONTF_INCLUDESUPERHIDDEN | SHCONTF_NAVIGATION_ENUM, &peidl) == S_OK) {
 		int ashgdn[] = { SHGDN_FORPARSING, SHGDN_INFOLDER, SHGDN_INFOLDER | SHGDN_FORPARSING, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_INFOLDER };
 		BSTR bstr = NULL;
 		LPWSTR lpfn = NULL;
@@ -5641,9 +5641,7 @@ VOID SetDlgButtonsTheme(HWND hwnd)
 {
 	HWND hwnd1 = NULL;
 	while (hwnd1 = FindWindowExA(hwnd, hwnd1, WC_BUTTONA, NULL)) {
-		if ((GetWindowLong(hwnd1, GWL_STYLE) & BS_TYPEMASK) <= BS_DEFPUSHBUTTON) {
-			SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
-		}
+		SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
 	}
 	while (hwnd1 = FindWindowExA(hwnd, hwnd1, WC_COMBOBOXA, NULL)) {
 		SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_cfd" : L"cfd", NULL);
@@ -5778,10 +5776,13 @@ LRESULT CALLBACK TEDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 				PDRAWITEMSTRUCT pdis;
 				pdis = (PDRAWITEMSTRUCT)lParam;
 				if (pdis->CtlType == ODT_COMBOBOX) {
+					if (pdis->itemState & ODS_SELECTED) {
+						break;
+					}
 					int w = pdis->rcItem.right - pdis->rcItem.left;
 					int h = pdis->rcItem.bottom - pdis->rcItem.top;
 					BITMAPINFO bmi;
-					RGBQUAD *pcl = NULL;
+					COLORREF *pcl = NULL, *pcl2 = NULL;
 					::ZeroMemory(&bmi.bmiHeader, sizeof(BITMAPINFOHEADER));
 					bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 					bmi.bmiHeader.biWidth = w;
@@ -5789,9 +5790,9 @@ LRESULT CALLBACK TEDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 					bmi.bmiHeader.biPlanes = 1;
 					bmi.bmiHeader.biBitCount = 32;
 					HBITMAP hBM = CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, (void **)&pcl, NULL, 0);
-					//HBITMAP hBM = CreateCompatibleBitmap(pdis->hDC, w, h);
 					HDC hmdc = CreateCompatibleDC(pdis->hDC);
 					HGDIOBJ hOld = SelectObject(hmdc, hBM);
+
 					HDC hdc1 = pdis->hDC;
 					pdis->hDC = hmdc;
 					CopyRect(&rc, &pdis->rcItem);
@@ -5800,17 +5801,31 @@ LRESULT CALLBACK TEDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 					pdis->rcItem.right = w;
 					pdis->rcItem.bottom = h;
 					LRESULT lResult = DefSubclassProc(hwnd, msg, wParam, lParam);
+					/* COLORREF              RGBQUAD
+					rgbRed   =  0x000000FF = rgbBlue
+					rgbGreen =  0x0000FF00 = rgbGreen
+					rgbBlue  =  0x00FF0000 = rgbRed */
+					if (299 * GetBValue(*pcl) + 587 * GetGValue(*pcl) + 114 * GetRValue(*pcl) >= 127500) {
+						HBITMAP hBM2 = CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, (void **)&pcl2, NULL, 0);
+						HDC hmdc2 = CreateCompatibleDC(pdis->hDC);
+						HGDIOBJ hOld2 = SelectObject(hmdc2, hBM2);
+						pdis->hDC = hmdc2;
+						pdis->itemState = ODS_SELECTED;
+						DefSubclassProc(hwnd, msg, wParam, lParam);
+						for (int i = w * h; --i >= 0; ++pcl) {
+							int cl1 = 299 * GetBValue(*pcl) + 587 * GetGValue(*pcl) + 114 * GetRValue(*pcl);
+							int cl2 = 299 * GetBValue(*pcl2) + 587 * GetGValue(*pcl2) + 114 * GetRValue(*pcl2);
+							if (abs(cl1 - cl2) > 10 * (299 + 587 + 114)) {
+								*pcl ^= 0xffffff;
+							}
+							++pcl2;
+						}
+						SelectObject(hmdc2, hOld2);
+						DeleteDC(hmdc2);
+						DeleteObject(hBM2);
+					}
 					pdis->hDC = hdc1;
 					CopyRect(&pdis->rcItem, &rc);
-					COLORREF cl = GetPixel(hmdc, 0, 0);
-					if (!teIsDarkColor(cl)) {
-						for (int i = w * h; --i >= 0; ++pcl) {
-							BYTE cl1 = 255 - (299 * pcl->rgbRed + 587 * pcl->rgbGreen + 114 * pcl->rgbBlue) / (299 + 587 + 114);
-							pcl->rgbRed = cl1;
-							pcl->rgbGreen = cl1;
-							pcl->rgbBlue = cl1;
-						}
-					}
 					BitBlt(pdis->hDC, pdis->rcItem.left, pdis->rcItem.top, w, h, hmdc, 0, 0, SRCCOPY);
 					SelectObject(hmdc, hOld);
 					DeleteDC(hmdc);
@@ -13463,7 +13478,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 #ifdef _2000XP
 		&& g_bUpperVista
 #endif
-	&& (!dwFrame || !ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER]))) {
+		) {
 		m_pExplorerBrowser->GetOptions((EXPLORER_BROWSER_OPTIONS *)&m_param[SB_Options]);
 		if (!ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER]) || !ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
 			if (GetShellFolder2(&pidl) == S_OK) {
@@ -16827,17 +16842,15 @@ HRESULT CteShellBrowser::BrowseToObject()
 		if (!m_hwnd) {
 			if (m_param[SB_Type] == CTRL_SB) {
 				IEnumIDList *peidl = NULL;
-				if (m_pSF2->EnumObjects(NULL, SHCONTF_FOLDERS | SHCONTF_NONFOLDERS, &peidl) == S_OK) {
+				hr = m_pSF2->EnumObjects(NULL, SHCONTF_FOLDERS | SHCONTF_NONFOLDERS, &peidl);
+				if (hr == S_OK) {
 					peidl->Release();
-				} else {
+				} else if (hr != S_FALSE) {
 					m_pFolderItem->MakeUnavailable();
 					teILCloneReplace(&m_pidl, g_pidls[CSIDL_RESULTSFOLDER]);
 					GetShellFolder2(&m_pidl);
 				}
-			}
-		}
-		if (m_param[SB_Type] == CTRL_EB) {
-			if (teCompareSFClass(m_pSF2, &CLSID_ResultsFolder)) {
+			} else if (teCompareSFClass(m_pSF2, &CLSID_ResultsFolder)) {
 				m_pExplorerBrowser->BrowseToIDList(g_pidls[CSIDL_CDBURN_AREA], SBSP_ABSOLUTE);
 			}
 		}
@@ -17374,7 +17387,7 @@ STDMETHODIMP CteShellBrowser::MessageSFVCB(UINT uMsg, WPARAM wParam, LPARAM lPar
 								RegCloseKey(hKey);
 							}
 							IEnumIDList *peidl;
-							if SUCCEEDED(m_pSF2->EnumObjects(NULL, grfFlags, &peidl)) {
+							if (m_pSF2->EnumObjects(NULL, grfFlags, &peidl) == S_OK) {
 								LPITEMIDLIST pidlPart = NULL;
 								while (iNew <= iExists && peidl->Next(1, &pidlPart, NULL) == S_OK) {
 									if (IncludeObject2(m_pSF2, pidlPart, NULL) == S_OK) {
