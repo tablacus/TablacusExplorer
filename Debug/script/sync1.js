@@ -708,7 +708,7 @@ g_basic = {
 					const FV = GetFolderView(Ctrl, pt);
 					if (FV) {
 						const res = IsSearchPath(FV.FolderItem, true);
-						InputDialog("Search", res ? decodeURIComponent(res[1]) : "", function (r) {
+						InputDialog("Search", res ? unescape(res[1]) : "", function (r) {
 							if (r) {
 								FV.Search(r);
 							} else if (r === "") {
@@ -2613,7 +2613,7 @@ te.OnILGetParent = function (FolderItem) {
 		const pid = api.ILRemoveLastID(FolderItem);
 		const res1 = IsSearchPath(pid, true);
 		if ((res1 && !res1[1]) || api.ILIsEmpty(pid)) {
-			return decodeURIComponent(res[1]);
+			return unescape(res[1]);
 		}
 	}
 }

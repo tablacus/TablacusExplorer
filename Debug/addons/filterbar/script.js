@@ -49,7 +49,7 @@ if (window.Addon == 1) {
 			let s = document.F.filter.value;
 			const res = await IsSearchPath(FV, true);
 			if (res || bSearch) {
-				if (!res || decodeURIComponent(await res[1]) != s) {
+				if (!res || unescape(await res[1]) != s) {
 					FV.Search(s);
 					setTimeout(function (o) {
 						WebBrowser.Focus();
@@ -114,7 +114,7 @@ if (window.Addon == 1) {
 			if (await Ctrl.Type <= CTRL_EB && await Ctrl.Id == await Ctrl.Parent.Selected.Id && await Ctrl.Parent.Id == await te.Ctrl(CTRL_TC).Id) {
 				clearTimeout(Addons.FilterBar.tid);
 				const bSearch = await IsSearchPath(Ctrl, true);
-				const s = Addons.FilterBar.GetString(bSearch ? decodeURIComponent(await bSearch[1]) : await Ctrl.FilterView, bSearch);
+				const s = Addons.FilterBar.GetString(bSearch ? unescape(await bSearch[1]) : await Ctrl.FilterView, bSearch);
 				if (s != Addons.FilterBar.GetString(document.F.filter.value, bSearch)) {
 					document.F.filter.value = s;
 					Addons.FilterBar.ShowButton();

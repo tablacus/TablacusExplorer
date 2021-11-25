@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20211124 ? te.Version : 20211124;
+		return te.Version < 20211125 ? te.Version : 20211125;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3044,10 +3044,10 @@ OpenInExplorer = function (pid1) {
 			const res = IsSearchPath(path, true)
 			if (res) {
 				const exp = api.CreateObject("new:{C08AFD90-F2A1-11D1-8455-00A0C91F3880}");
-				exp.Navigate2(decodeURIComponent(res[2]));
+				exp.Navigate2(unescape(res[2]));
 				exp.Visible = true;
 				setTimeout(function () {
-					exp.Document.FilterView(decodeURIComponent(res[1]));
+					exp.Document.FilterView(unescape(res[1]));
 				}, 999);
 				return;
 			}

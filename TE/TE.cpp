@@ -190,7 +190,8 @@ HHOOK	g_hHook;
 HHOOK	g_hMouseHook;
 HHOOK	g_hMessageHook;
 HHOOK	g_hMenuKeyHook;
-HHOOK	g_hCBTHook = NULL;
+std::unordered_map<DWORD, HHOOK> g_umCBTHook;
+std::unordered_map<HWND, HWND> g_umSetTheme;
 HBRUSH	g_hbrDarkBackground;
 HMENU	g_hMenu = NULL;
 BSTR	g_bsCmdLine = NULL;
@@ -246,6 +247,7 @@ BOOL	g_bCanLayout = FALSE;
 BOOL	g_bUpper10;
 BOOL	g_bDarkMode = FALSE;
 BOOL	g_bDragIcon = TRUE;
+DWORD	g_bReplaceButton = FALSE;
 COLORREF g_clrBackground = GetSysColor(COLOR_WINDOW);
 #ifdef _2000XP
 std::vector <IUnknown *> g_pRelease;
@@ -294,6 +296,7 @@ VOID Invoke4(IDispatch *pdisp, VARIANT *pvResult, int nArgs, VARIANTARG *pvArgs)
 int teGetObjectLength(IDispatch *pdisp);
 BOOL teILIsSearchFolder(LPCITEMIDLIST pidl);
 BOOL teIsFileSystem(LPOLESTR pszPath);
+LRESULT CALLBACK CBTProc(int nCode, WPARAM wParam, LPARAM lParam);
 
 //Unit
 
@@ -5637,17 +5640,112 @@ VOID teSetDarkMode(HWND hwnd)
 	}
 }
 
-VOID SetDlgButtonsTheme(HWND hwnd)
+VOID SetDlgContentsTheme(HWND hwnd)
 {
 	HWND hwnd1 = NULL;
-	while (hwnd1 = FindWindowExA(hwnd, hwnd1, WC_BUTTONA, NULL)) {
-		SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
+	while (hwnd1 = FindWindowEx(hwnd, hwnd1, NULL, NULL)) {
+		if (!IsWindowVisible(hwnd1)) {
+			continue;
+		}
+		CHAR szClassA[MAX_CLASS_NAME];
+		GetClassNameA(hwnd1, szClassA, MAX_CLASS_NAME);
+		if (lstrcmpiA(szClassA, WC_BUTTONA) == 0) {
+			if ((GetWindowLong(hwnd1, GWL_STYLE) & BS_TYPEMASK) <= BS_DEFPUSHBUTTON) {
+				if (!GetWindowTheme(hwnd)) {
+					SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
+				}
+			} else {
+				g_bReplaceButton = TRUE;
+			}
+		}
+		if (lstrcmpiA(szClassA, WC_COMBOBOXA) == 0) {
+			if (!GetWindowTheme(hwnd)) {
+				SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_cfd" : L"cfd", NULL);
+			}
+		}
+		if (lstrcmpiA(szClassA, WC_SCROLLBARA) == 0) {
+			if (!GetWindowTheme(hwnd)) {
+				SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
+			}
+		}
+		if (lstrcmpiA(szClassA, WC_TREEVIEWA) == 0) {
+			if (!GetWindowTheme(hwnd)) {
+				SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
+				TreeView_SetTextColor(hwnd1, g_bDarkMode ? TECL_DARKTEXT : GetSysColor(COLOR_WINDOWTEXT));
+				TreeView_SetBkColor(hwnd1, g_bDarkMode ? TECL_DARKBG : GetSysColor(COLOR_WINDOW));
+			}
+		}
+		SetDlgContentsTheme(hwnd1);
 	}
-	while (hwnd1 = FindWindowExA(hwnd, hwnd1, WC_COMBOBOXA, NULL)) {
-		SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_cfd" : L"cfd", NULL);
-	}
-	while (hwnd1 = FindWindowExA(hwnd, hwnd1, WC_SCROLLBARA, NULL)) {
-		SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
+}
+
+VOID ReplaceButtonTextColor(HWND hwnd)
+{
+	try {
+		HDC hdc = NULL;
+		HWND hwnd1 = NULL;
+		POINT pt = { 0, 0 };
+		HBITMAP hBM = NULL;
+		HDC hmdc;
+		HGDIOBJ hOld = NULL;
+		COLORREF *pcl = NULL;
+		SIZE sz;
+		RECT rc0;
+		while (hwnd1 = FindWindowExA(hwnd, hwnd1, WC_BUTTONA, NULL)) {
+			if (IsWindowVisible(hwnd1) && (GetWindowLong(hwnd1, GWL_STYLE) & BS_TYPEMASK) > BS_DEFPUSHBUTTON) {
+				if (!hdc) {
+					hdc = GetDC(hwnd);
+					ClientToScreen(hwnd, &pt);
+					GetClientRect(hwnd, &rc0);
+					BITMAPINFO bmi;
+					::ZeroMemory(&bmi.bmiHeader, sizeof(BITMAPINFOHEADER));
+					bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+					bmi.bmiHeader.biWidth = rc0.right;
+					bmi.bmiHeader.biHeight = -(LONG)rc0.bottom;
+					bmi.bmiHeader.biPlanes = 1;
+					bmi.bmiHeader.biBitCount = 32;
+					HBITMAP hBM = CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, (void **)&pcl, NULL, 0);
+					hmdc = CreateCompatibleDC(hdc);
+					hOld = SelectObject(hmdc, hBM);
+					BitBlt(hmdc, 0, 0, rc0.right, rc0.bottom, hdc, 0, 0, SRCCOPY);
+					GetTextExtentPoint32(hmdc, L"A", 1, &sz);
+				}
+				if (pcl) {
+					RECT rc;
+					GetWindowRect(hwnd1, &rc);
+					rc.left -= pt.x;
+					rc.right -= pt.x;
+					rc.top -= pt.y;
+					rc.bottom = rc.top + sz.cy;
+					if (rc.right > rc0.right) {
+						rc.right = rc0.right;
+					}
+					if (rc.bottom > rc0.bottom) {
+						rc.bottom = rc0.bottom;
+					}
+					for (int y = rc.top; y < rc.bottom; ++y) {
+						for (int x = rc.left; x < rc.right; ++x) {
+							DWORD cl = pcl[x + y * rc0.right];
+							if (GetRValue(cl) + GetGValue(cl) + GetBValue(cl) <
+								GetRValue(TECL_DARKBG) + GetGValue(TECL_DARKBG) + GetBValue(TECL_DARKBG)) {
+								pcl[x + y * rc0.right] = 0xe0e0e0 - cl;
+							}
+						}
+					}
+				}
+			}
+		}
+		if (hdc) {
+			BitBlt(hdc, 0, 0, rc0.right, rc0.bottom, hmdc, 0, 0, SRCCOPY);
+			SelectObject(hmdc, hOld);
+			DeleteObject(hBM);
+			ReleaseDC(hwnd, hdc);
+		}
+	} catch (...) {
+		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"ReplaceButtonTextColor";
+#endif
 	}
 }
 
@@ -5672,14 +5770,16 @@ LRESULT CALLBACK TEDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 		case WM_SETTINGCHANGE:
 			teGetDarkMode();
 			teSetDarkMode(hwnd);
-			SetDlgButtonsTheme(hwnd);
 			UpdateWindow(hwnd);
+		case WM_NCPAINT:
+			SetDlgContentsTheme(hwnd);
 			break;
 		case WM_CTLCOLORLISTBOX:
-			if (_IsDarkModeAllowedForWindow && _AllowDarkModeForWindow) {
-				if ((_IsDarkModeAllowedForWindow((HWND)lParam) ? 1 : 0) ^ (g_bDarkMode ? 1 : 0)) {
-					_AllowDarkModeForWindow((HWND)lParam, g_bDarkMode);
-					SetWindowTheme((HWND)lParam, L"explorer", NULL);
+			if (_AllowDarkModeForWindow) {
+				auto itr = g_umSetTheme.find((HWND)lParam);
+				if (itr == g_umSetTheme.end()) {
+					SetWindowTheme((HWND)lParam, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
+					g_umSetTheme[(HWND)lParam] = hwnd;
 				}
 			}
 			break;
@@ -5724,34 +5824,30 @@ LRESULT CALLBACK TEDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 				}
 			}
 			break;
+		case WM_CLOSE:
+			for (auto itr = g_umSetTheme.begin(); itr != g_umSetTheme.end();) {
+				if (hwnd == itr->second) {
+					itr = g_umSetTheme.erase(itr);
+				} else {
+					++itr;
+				}
+			}
+			g_bReplaceButton = FALSE;
+			break;
 		}
 		if (g_bDarkMode) {
 			HWND hwnd1;
 			CHAR pszClassA[MAX_CLASS_NAME];
 			switch (msg) {
 			case WM_CTLCOLORSTATIC:
-				GetClassNameA((HWND)lParam, pszClassA, MAX_CLASS_NAME);
-				if (lstrcmpA(pszClassA, WC_BUTTONA)) {
-					SetTextColor((HDC)wParam, TECL_DARKTEXT);
-					SetBkMode((HDC)wParam, TRANSPARENT);
-					return (LRESULT)g_hbrDarkBackground;
-				}
-				if ((GetWindowLong((HWND)lParam, GWL_STYLE) & BS_TYPEMASK) > BS_DEFPUSHBUTTON) {
-					return (LRESULT)GetStockObject(GRAY_BRUSH);// Group button(BS_GROUP)
-				}
-				break;
+				SetTextColor((HDC)wParam, TECL_DARKTEXT);
+				SetBkMode((HDC)wParam, TRANSPARENT);
+				return (LRESULT)g_hbrDarkBackground;
 			case WM_CTLCOLORLISTBOX://Combobox
 			case WM_CTLCOLOREDIT:
 				SetTextColor((HDC)wParam, TECL_DARKTEXT);
 				SetBkMode((HDC)wParam, TRANSPARENT);
 				return (LRESULT)GetStockObject(BLACK_BRUSH);
-			case WM_NCPAINT:
-				if (hwnd1 = teFindChildByClassA(hwnd, WC_TREEVIEWA)) {
-					SetWindowTheme(hwnd1, L"darkmode_explorer", NULL);
-					TreeView_SetTextColor(hwnd1, TECL_DARKTEXT);
-					TreeView_SetBkColor(hwnd1, TECL_DARKBG);
-				}
-				break;
 			case WM_ERASEBKGND:
 				RECT rc;
 				GetClientRect(hwnd, &rc);
@@ -5813,10 +5909,8 @@ LRESULT CALLBACK TEDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 						pdis->itemState = ODS_SELECTED;
 						DefSubclassProc(hwnd, msg, wParam, lParam);
 						for (int i = w * h; --i >= 0; ++pcl) {
-							int cl1 = 299 * GetBValue(*pcl) + 587 * GetGValue(*pcl) + 114 * GetRValue(*pcl);
-							int cl2 = 299 * GetBValue(*pcl2) + 587 * GetGValue(*pcl2) + 114 * GetRValue(*pcl2);
-							if (abs(cl1 - cl2) > 10 * (299 + 587 + 114)) {
-								*pcl ^= 0xffffff;
+							if (*pcl != *pcl2) {
+								*pcl = 0xffffff - *pcl;
 							}
 							++pcl2;
 						}
@@ -5833,10 +5927,29 @@ LRESULT CALLBACK TEDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 					return lResult;
 				}
 				break;
+				case WM_TIMER:
+					if (wParam == (WPARAM)g_bReplaceButton) {
+						KillTimer(hwnd, (UINT_PTR)g_bReplaceButton);
+						ReplaceButtonTextColor(hwnd);
+						g_bReplaceButton = TRUE;
+					}
+					break;
+				case WM_NOTIFY:
+					if (g_bReplaceButton) {
+						ReplaceButtonTextColor(hwnd);
+					}
+					break;
+				case WM_SETCURSOR:
+					if (g_bReplaceButton) {
+						g_bReplaceButton = FALSE;
+						SetTimer(hwnd, (UINT_PTR)g_bReplaceButton, 500, NULL);
+					}
+					break;
 			}
 		}
 	} catch (...) {
 		g_nException = 0;
+		g_bReplaceButton = TRUE;
 #ifdef _DEBUG
 		g_strException = L"TEDlgProc";
 #endif
@@ -5884,6 +5997,8 @@ LRESULT CALLBACK CBTProc(int nCode, WPARAM wParam, LPARAM lParam)
 			SetWindowSubclass(hwnd, TEDlgProc, (UINT_PTR)TEDlgProc, 0);
 		} else if (!lstrcmpA(pszClassA, TOOLTIPS_CLASSA)) {
 			SetWindowSubclass(hwnd, TETTProc, (UINT_PTR)TETTProc, 0);
+		/*} else if (!lstrcmpA(pszClassA, "#32768")) {
+			Sleep(0);*/
 		}
 	} else if (nCode == HCBT_DESTROYWND) {
 		HWND hwnd = (HWND)wParam;
@@ -5894,7 +6009,8 @@ LRESULT CALLBACK CBTProc(int nCode, WPARAM wParam, LPARAM lParam)
 			RemoveWindowSubclass(hwnd, TETTProc, (UINT_PTR)TETTProc);
 		}
 	}
-	return CallNextHookEx(g_hCBTHook, nCode, wParam, lParam);
+	auto itr = g_umCBTHook.find(GetCurrentThreadId());
+	return itr != g_umCBTHook.end() ? CallNextHookEx(itr->second, nCode, wParam, lParam) : 0;
 }
 
 BOOL teVerifyVersion(DWORD dwMajor, DWORD dwMinor, DWORD dwBuild)
@@ -11862,8 +11978,24 @@ BOOL WINAPI DllMain(HINSTANCE hinstDll, DWORD dwReason, LPVOID lpReserved)
 	switch (dwReason) {
 	case DLL_PROCESS_ATTACH:
 		g_hinstDll = hinstDll;
+	case DLL_THREAD_ATTACH:
+		{
+			DWORD dwThreadId = GetCurrentThreadId();
+			auto itr = g_umCBTHook.find(dwThreadId);
+			if (itr == g_umCBTHook.end()) {
+				g_umCBTHook[dwThreadId] = SetWindowsHookEx(WH_CBT, (HOOKPROC)CBTProc, NULL, dwThreadId);
+			}
+		}
 		break;
+	case DLL_THREAD_DETACH:
 	case DLL_PROCESS_DETACH:
+		{
+			auto itr = g_umCBTHook.find(GetCurrentThreadId());
+			if (itr != g_umCBTHook.end()) {
+				UnhookWindowsHookEx(itr->second);
+				g_umCBTHook.erase(itr);
+			}
+		}
 		break;
 	}
 	return TRUE;
@@ -12163,7 +12295,13 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	// Hook
 	g_hHook = SetWindowsHookEx(WH_CALLWNDPROC, (HOOKPROC)HookProc, hInst, g_dwMainThreadId);
 	g_hMouseHook = SetWindowsHookEx(WH_MOUSE, (HOOKPROC)MouseProc, hInst, g_dwMainThreadId);
-	g_hCBTHook = SetWindowsHookEx(WH_CBT, (HOOKPROC)CBTProc, hInst, g_dwMainThreadId);
+#ifdef _DEBUG
+	DWORD dwThreadId = GetCurrentThreadId();
+	auto itr = g_umCBTHook.find(dwThreadId);
+	if (itr == g_umCBTHook.end()) {
+		g_umCBTHook[dwThreadId] = SetWindowsHookEx(WH_CBT, (HOOKPROC)CBTProc, NULL, dwThreadId);
+	}
+#endif
 	//Brush
 	g_hbrDarkBackground = CreateSolidBrush(TECL_DARKBG);
 	// Create own class
@@ -12387,7 +12525,13 @@ function _c(s) {\
 		SafeRelease(&g_pAutomation);
 		SafeRelease(&g_pDropTargetHelper);
 		DeleteCriticalSection(&g_csFolderSize);
-		UnhookWindowsHookEx(g_hCBTHook);
+#ifdef _DEBUG
+		auto itr = g_umCBTHook.find(GetCurrentThreadId());
+		if (itr != g_umCBTHook.end()) {
+			UnhookWindowsHookEx(itr->second);
+			g_umCBTHook.erase(itr);
+	}
+#endif
 		UnhookWindowsHookEx(g_hMouseHook);
 		UnhookWindowsHookEx(g_hHook);
 		DeleteObject(g_hbrDarkBackground);
@@ -26613,16 +26757,6 @@ STDMETHODIMP CteProgressDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lc
 			teSetObjectRelease(pVarResult, new CteDispatch(this, 0, dispIdMember));
 			return S_OK;
 		}
-/*		if (!m_hwnd) {
-			if SUCCEEDED(IUnknown_GetWindow(m_ppd, &m_hwnd)) {
-				CHAR szClassA[MAX_CLASS_NAME];
-				GetClassNameA(m_hwnd, szClassA, MAX_CLASS_NAME);
-				teSetDarkMode(m_hwnd);
-				SetDlgButtonsTheme(m_hwnd);
-			} else {
-				Sleep(0);
-			}
-		}*/
 		VARIANT v;
 		switch(dispIdMember) {
 			case TE_METHOD + 1: //HasUserCancelled
