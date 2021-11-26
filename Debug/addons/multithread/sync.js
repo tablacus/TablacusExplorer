@@ -21,6 +21,9 @@ Sync.MultiThread = {
 		if (bDelete || (path && fso.FolderExists(path))) {
 			const arFrom = [];
 			const strTemp = GetTempPath(4);
+			if (Items.Count == 1 && api.PathMatchSpec(Items.Item(0).Path, strTemp + "*.bmp")) {
+				return false;
+			}
 			let strTemp2;
 			for (let i = 0; i < Items.Count; ++i) {
 				let path1 = Items.Item(i).Path;

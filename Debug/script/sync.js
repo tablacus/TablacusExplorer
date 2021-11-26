@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20211125 ? te.Version : 20211125;
+		return te.Version < 20211126 ? te.Version : 20211126;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3041,18 +3041,13 @@ OpenInExplorer = function (pid1) {
 		const pid = pid1.FolderItem || pid1;
 		if (pid) {
 			const path = api.ILIsEmpty(pid) ? "shell:Desktop" : api.GetDisplayNameOf(pid, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
-			const res = IsSearchPath(path, true)
-			if (res) {
-				const exp = api.CreateObject("new:{C08AFD90-F2A1-11D1-8455-00A0C91F3880}");
-				exp.Navigate2(unescape(res[2]));
-				exp.Visible = true;
-				setTimeout(function () {
-					exp.Document.FilterView(unescape(res[1]));
-				}, 999);
-				return;
-			}
 			if (/^[A-Z]:\\|^\\\\\w|^::{/i.test(path)) {
 				api.CreateProcess(GetWindowsPath("explorer.exe") + " " + PathQuoteSpaces(path));
+				return;
+			}
+			const res = IsSearchPath(path);
+			if (res) {
+				api.CreateObject("new:{C08AFD90-F2A1-11D1-8455-00A0C91F3880}").Navigate2(path);
 				return;
 			}
 			sha.Explore(pid);

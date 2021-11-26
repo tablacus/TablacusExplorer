@@ -104,7 +104,7 @@ LPFNSetWindowCompositionAttribute _SetWindowCompositionAttribute = NULL;
 LPFNDwmSetWindowAttribute _DwmSetWindowAttribute = NULL;
 LPFNShouldAppsUseDarkMode _ShouldAppsUseDarkMode = NULL;
 LPFNRefreshImmersiveColorPolicyState _RefreshImmersiveColorPolicyState = NULL;
-LPFNIsDarkModeAllowedForWindow _IsDarkModeAllowedForWindow = NULL;
+//LPFNIsDarkModeAllowedForWindow _IsDarkModeAllowedForWindow = NULL;
 LPFNGetDpiForMonitor _GetDpiForMonitor = NULL;
 #ifdef _2000XP
 LPFNSetDllDirectoryW _SetDllDirectoryW = NULL;
@@ -192,6 +192,7 @@ HHOOK	g_hMessageHook;
 HHOOK	g_hMenuKeyHook;
 std::unordered_map<DWORD, HHOOK> g_umCBTHook;
 std::unordered_map<HWND, HWND> g_umSetTheme;
+std::unordered_map<HWND, HWND> g_umDlgLVProc;
 HBRUSH	g_hbrDarkBackground;
 HMENU	g_hMenu = NULL;
 BSTR	g_bsCmdLine = NULL;
@@ -247,7 +248,6 @@ BOOL	g_bCanLayout = FALSE;
 BOOL	g_bUpper10;
 BOOL	g_bDarkMode = FALSE;
 BOOL	g_bDragIcon = TRUE;
-DWORD	g_bReplaceButton = FALSE;
 COLORREF g_clrBackground = GetSysColor(COLOR_WINDOW);
 #ifdef _2000XP
 std::vector <IUnknown *> g_pRelease;
@@ -2183,7 +2183,7 @@ BSTR teGetSearchText1(LPCITEMIDLIST pidl, BOOL bColumnFilter)
 	}
 	return bsSearch;
 }
-
+/*
 VOID teGetSearchText(BSTR *pbs, LPCITEMIDLIST pidl)
 {
 	LPITEMIDLIST pidl1 = ILClone(pidl);
@@ -2194,7 +2194,7 @@ VOID teGetSearchText(BSTR *pbs, LPCITEMIDLIST pidl)
 	}
 	teILFreeClear(&pidl1);
 }
-
+*/
 HRESULT teGetDisplayNameFromIDList(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags)
 {
 	HRESULT hr = E_FAIL;
@@ -5640,112 +5640,131 @@ VOID teSetDarkMode(HWND hwnd)
 	}
 }
 
+LRESULT CALLBACK TEDlgLVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+{
+	try {
+		switch (msg) {
+		case LVM_SETSELECTEDCOLUMN:
+			if (g_bDarkMode) {
+				wParam = -1;
+			}
+			break;
+		case WM_NOTIFY:
+			if (((LPNMHDR)lParam)->code == NM_CUSTOMDRAW) {
+				if (g_bDarkMode) {
+					LPNMCUSTOMDRAW pnmcd = (LPNMCUSTOMDRAW)lParam;
+					if (pnmcd->dwDrawStage == CDDS_PREPAINT) {
+						return CDRF_NOTIFYITEMDRAW;
+					}
+					if (pnmcd->dwDrawStage == CDDS_ITEMPREPAINT) {
+						SetTextColor(pnmcd->hdc, TECL_DARKTEXT);
+						return CDRF_DODEFAULT;
+					}
+				}
+			}
+			if (g_bDarkMode) {
+				DefSubclassProc(hwnd, LVM_SETSELECTEDCOLUMN, -1, 0);
+			}
+			break;
+
+		}
+	} catch (...) {
+		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"TEDlgLVProc";
+#endif
+	}
+	return DefSubclassProc(hwnd, msg, wParam, lParam);
+}
+
 VOID SetDlgContentsTheme(HWND hwnd)
 {
 	HWND hwnd1 = NULL;
-	while (hwnd1 = FindWindowEx(hwnd, hwnd1, NULL, NULL)) {
-		if (!IsWindowVisible(hwnd1)) {
-			continue;
+	while (hwnd1 = ::FindWindowEx(hwnd, hwnd1, NULL, NULL)) {
+		if (::GetWindowTheme(hwnd)) {
+			break;
 		}
-		CHAR szClassA[MAX_CLASS_NAME];
-		GetClassNameA(hwnd1, szClassA, MAX_CLASS_NAME);
-		if (lstrcmpiA(szClassA, WC_BUTTONA) == 0) {
-			if ((GetWindowLong(hwnd1, GWL_STYLE) & BS_TYPEMASK) <= BS_DEFPUSHBUTTON) {
-				if (!GetWindowTheme(hwnd)) {
-					SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
-				}
-			} else {
-				g_bReplaceButton = TRUE;
-			}
-		}
-		if (lstrcmpiA(szClassA, WC_COMBOBOXA) == 0) {
-			if (!GetWindowTheme(hwnd)) {
-				SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_cfd" : L"cfd", NULL);
-			}
-		}
-		if (lstrcmpiA(szClassA, WC_SCROLLBARA) == 0) {
-			if (!GetWindowTheme(hwnd)) {
-				SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
-			}
-		}
-		if (lstrcmpiA(szClassA, WC_TREEVIEWA) == 0) {
-			if (!GetWindowTheme(hwnd)) {
-				SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
-				TreeView_SetTextColor(hwnd1, g_bDarkMode ? TECL_DARKTEXT : GetSysColor(COLOR_WINDOWTEXT));
-				TreeView_SetBkColor(hwnd1, g_bDarkMode ? TECL_DARKBG : GetSysColor(COLOR_WINDOW));
-			}
-		}
-		SetDlgContentsTheme(hwnd1);
-	}
-}
-
-VOID ReplaceButtonTextColor(HWND hwnd)
-{
-	try {
-		HDC hdc = NULL;
-		HWND hwnd1 = NULL;
-		POINT pt = { 0, 0 };
-		HBITMAP hBM = NULL;
-		HDC hmdc;
-		HGDIOBJ hOld = NULL;
-		COLORREF *pcl = NULL;
-		SIZE sz;
-		RECT rc0;
-		while (hwnd1 = FindWindowExA(hwnd, hwnd1, WC_BUTTONA, NULL)) {
-			if (IsWindowVisible(hwnd1) && (GetWindowLong(hwnd1, GWL_STYLE) & BS_TYPEMASK) > BS_DEFPUSHBUTTON) {
-				if (!hdc) {
-					hdc = GetDC(hwnd);
-					ClientToScreen(hwnd, &pt);
-					GetClientRect(hwnd, &rc0);
-					BITMAPINFO bmi;
-					::ZeroMemory(&bmi.bmiHeader, sizeof(BITMAPINFOHEADER));
-					bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-					bmi.bmiHeader.biWidth = rc0.right;
-					bmi.bmiHeader.biHeight = -(LONG)rc0.bottom;
-					bmi.bmiHeader.biPlanes = 1;
-					bmi.bmiHeader.biBitCount = 32;
-					HBITMAP hBM = CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, (void **)&pcl, NULL, 0);
-					hmdc = CreateCompatibleDC(hdc);
-					hOld = SelectObject(hmdc, hBM);
-					BitBlt(hmdc, 0, 0, rc0.right, rc0.bottom, hdc, 0, 0, SRCCOPY);
-					GetTextExtentPoint32(hmdc, L"A", 1, &sz);
-				}
-				if (pcl) {
-					RECT rc;
-					GetWindowRect(hwnd1, &rc);
-					rc.left -= pt.x;
-					rc.right -= pt.x;
-					rc.top -= pt.y;
-					rc.bottom = rc.top + sz.cy;
-					if (rc.right > rc0.right) {
-						rc.right = rc0.right;
-					}
-					if (rc.bottom > rc0.bottom) {
-						rc.bottom = rc0.bottom;
-					}
-					for (int y = rc.top; y < rc.bottom; ++y) {
-						for (int x = rc.left; x < rc.right; ++x) {
-							DWORD cl = pcl[x + y * rc0.right];
-							if (GetRValue(cl) + GetGValue(cl) + GetBValue(cl) <
-								GetRValue(TECL_DARKBG) + GetGValue(TECL_DARKBG) + GetBValue(TECL_DARKBG)) {
-								pcl[x + y * rc0.right] = 0xe0e0e0 - cl;
-							}
+		CHAR pszClassA[MAX_CLASS_NAME];
+		::GetClassNameA(hwnd1, pszClassA, MAX_CLASS_NAME);
+		if (lstrcmpiA(pszClassA, WC_BUTTONA) == 0) {
+			::SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
+			if (g_bDarkMode) {
+				DWORD dwStyle = GetWindowLong(hwnd1, GWL_STYLE);
+				if ((dwStyle & BS_TYPEMASK) > BS_DEFPUSHBUTTON && !(dwStyle & BS_BITMAP)) {
+					int nLen = ::GetWindowTextLength(hwnd1);
+					if (nLen) {
+						BSTR bs = ::SysAllocStringLen(NULL, nLen + 1);
+						::GetWindowText(hwnd1, bs, nLen + 1);
+						HDC hdc = ::GetDC(hwnd);
+						if (hdc) {
+							HGDIOBJ hFont = (HGDIOBJ)::SendMessage(hwnd1, WM_GETFONT, 0, 0);
+							HGDIOBJ hFontOld = ::SelectObject(hdc, hFont);
+							RECT rc;
+							::GetClientRect(hwnd1, &rc);
+							::DrawText(hdc, bs, nLen + 1, &rc, DT_LEFT | DT_CALCRECT);
+							HBITMAP hBM = ::CreateCompatibleBitmap(hdc, rc.right, rc.bottom);
+							HDC hmdc = ::CreateCompatibleDC(hdc);
+							HGDIOBJ hOld = ::SelectObject(hmdc, hBM);
+							HGDIOBJ hFontOld2 = ::SelectObject(hmdc, hFont);
+							::SetTextColor(hmdc, TECL_DARKTEXT);
+							::SetBkColor(hmdc, TECL_DARKBG);
+							::DrawText(hmdc, bs, nLen + 1, &rc, DT_LEFT);
+							::SelectObject(hmdc, hFontOld2);
+							::SelectObject(hmdc, hOld);
+							::DeleteDC(hmdc);
+							::SelectObject(hdc, hFontOld);
+							::ReleaseDC(hwnd1, hdc);
+							::SetWindowLong(hwnd1, GWL_STYLE, (dwStyle | BS_BITMAP));
+							::SendMessage(hwnd1, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBM);
+							::DeleteObject(hBM);
+							::SysFreeString(bs);
 						}
 					}
 				}
 			}
 		}
-		if (hdc) {
-			BitBlt(hdc, 0, 0, rc0.right, rc0.bottom, hmdc, 0, 0, SRCCOPY);
-			SelectObject(hmdc, hOld);
-			DeleteObject(hBM);
-			ReleaseDC(hwnd, hdc);
+		if (lstrcmpiA(pszClassA, WC_COMBOBOXA) == 0) {
+			::SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_cfd" : L"cfd", NULL);
 		}
-	} catch (...) {
-		g_nException = 0;
-#ifdef _DEBUG
-		g_strException = L"ReplaceButtonTextColor";
-#endif
+		if (lstrcmpiA(pszClassA, WC_SCROLLBARA) == 0) {
+			::SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
+		}
+		if (lstrcmpiA(pszClassA, WC_TREEVIEWA) == 0) {
+			SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
+			TreeView_SetTextColor(hwnd1, g_bDarkMode ? TECL_DARKTEXT : GetSysColor(COLOR_WINDOWTEXT));
+			TreeView_SetBkColor(hwnd1, g_bDarkMode ? TECL_DARKBG : GetSysColor(COLOR_WINDOW));
+		}
+		if (lstrcmpiA(pszClassA, WC_LISTVIEWA) == 0) {
+			SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_itemsview" : L"explorer", NULL);
+			ListView_SetTextColor(hwnd1, g_bDarkMode ? TECL_DARKTEXT : GetSysColor(COLOR_WINDOWTEXT));
+			ListView_SetTextBkColor(hwnd1, g_bDarkMode ? TECL_DARKBG : GetSysColor(COLOR_WINDOW));
+			ListView_SetBkColor(hwnd1, g_bDarkMode ? TECL_DARKBG : GetSysColor(COLOR_WINDOW));
+			if (g_bDarkMode) {
+				HWND hHeader = ListView_GetHeader(hwnd1);
+				if (hHeader) {
+					SetWindowTheme(hHeader, g_bDarkMode ? L"darkmode_itemsview" : L"explorer", NULL);
+				}
+				auto itr = g_umDlgLVProc.find(hwnd1);
+				if (itr == g_umDlgLVProc.end()) {
+					SetWindowSubclass(hwnd1, TEDlgLVProc, (UINT_PTR)TEDlgLVProc, 0);
+					g_umDlgLVProc[hwnd1] = hwnd;
+				}
+				ListView_SetSelectedColumn(hwnd1, -1);
+			}
+		}
+		/*if (lstrcmpiA(pszClassA, WC_TABCONTROLA) == 0) {
+			SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
+			if (_AllowDarkModeForWindow) {
+				_AllowDarkModeForWindow(hwnd1, g_bDarkMode);
+			}
+		}
+		if (lstrcmpiA(pszClassA, "DirectUIHWND") == 0) {
+			SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
+			if (_AllowDarkModeForWindow) {
+				_AllowDarkModeForWindow(hwnd1, g_bDarkMode);
+			}
+		}
+		SetDlgContentsTheme(hwnd1);*/
 	}
 }
 
@@ -5832,7 +5851,14 @@ LRESULT CALLBACK TEDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 					++itr;
 				}
 			}
-			g_bReplaceButton = FALSE;
+			for (auto itr = g_umDlgLVProc.begin(); itr != g_umDlgLVProc.end();) {
+				if (hwnd == itr->second) {
+					RemoveWindowSubclass(itr->first, TEDlgLVProc, (UINT_PTR)TEDlgLVProc);
+					itr = g_umDlgLVProc.erase(itr);
+				} else {
+					++itr;
+				}
+			}
 			break;
 		}
 		if (g_bDarkMode) {
@@ -5865,7 +5891,9 @@ LRESULT CALLBACK TEDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 					}
 				}
 				if (bHandle) {
-					return 0;
+					PAINTSTRUCT ps;
+					HDC hdc = BeginPaint(hwnd, &ps);
+					EndPaint(hwnd, &ps);
 				}
 				break;
 			case WM_DRAWITEM:
@@ -5885,10 +5913,10 @@ LRESULT CALLBACK TEDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 					bmi.bmiHeader.biHeight = -(LONG)h;
 					bmi.bmiHeader.biPlanes = 1;
 					bmi.bmiHeader.biBitCount = 32;
+					HGDIOBJ hFont = (HGDIOBJ)::SendMessage(pdis->hwndItem, WM_GETFONT, 0, 0);
 					HBITMAP hBM = CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, (void **)&pcl, NULL, 0);
 					HDC hmdc = CreateCompatibleDC(pdis->hDC);
 					HGDIOBJ hOld = SelectObject(hmdc, hBM);
-
 					HDC hdc1 = pdis->hDC;
 					pdis->hDC = hmdc;
 					CopyRect(&rc, &pdis->rcItem);
@@ -5896,23 +5924,30 @@ LRESULT CALLBACK TEDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 					pdis->rcItem.top = 0;
 					pdis->rcItem.right = w;
 					pdis->rcItem.bottom = h;
+					HGDIOBJ hFontOld = ::SelectObject(hmdc, hFont);
 					LRESULT lResult = DefSubclassProc(hwnd, msg, wParam, lParam);
+					::SelectObject(hmdc, hFontOld);
 					/* COLORREF              RGBQUAD
 					rgbRed   =  0x000000FF = rgbBlue
 					rgbGreen =  0x0000FF00 = rgbGreen
 					rgbBlue  =  0x00FF0000 = rgbRed */
-					if (299 * GetBValue(*pcl) + 587 * GetGValue(*pcl) + 114 * GetRValue(*pcl) >= 127500) {
+					DWORD cl0 = *pcl;
+					if (299 * GetBValue(cl0) + 587 * GetGValue(cl0) + 114 * GetRValue(cl0) >= 127500) {
 						HBITMAP hBM2 = CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, (void **)&pcl2, NULL, 0);
 						HDC hmdc2 = CreateCompatibleDC(pdis->hDC);
 						HGDIOBJ hOld2 = SelectObject(hmdc2, hBM2);
 						pdis->hDC = hmdc2;
 						pdis->itemState = ODS_SELECTED;
-						DefSubclassProc(hwnd, msg, wParam, lParam);
-						for (int i = w * h; --i >= 0; ++pcl) {
-							if (*pcl != *pcl2) {
-								*pcl = 0xffffff - *pcl;
+						HGDIOBJ hFontOld2 = ::SelectObject(hmdc2, hFont);
+						::DefSubclassProc(hwnd, msg, wParam, lParam);
+						::SelectObject(hmdc2, hFontOld2);
+						if (*pcl != *pcl2) {
+							for (int i = w * h; --i >= 0; ++pcl) {
+								if (*pcl != *pcl2) {
+									*pcl ^= 0xffffff;
+								}
+								++pcl2;
 							}
-							++pcl2;
 						}
 						SelectObject(hmdc2, hOld2);
 						DeleteDC(hmdc2);
@@ -5927,29 +5962,10 @@ LRESULT CALLBACK TEDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 					return lResult;
 				}
 				break;
-				case WM_TIMER:
-					if (wParam == (WPARAM)g_bReplaceButton) {
-						KillTimer(hwnd, (UINT_PTR)g_bReplaceButton);
-						ReplaceButtonTextColor(hwnd);
-						g_bReplaceButton = TRUE;
-					}
-					break;
-				case WM_NOTIFY:
-					if (g_bReplaceButton) {
-						ReplaceButtonTextColor(hwnd);
-					}
-					break;
-				case WM_SETCURSOR:
-					if (g_bReplaceButton) {
-						g_bReplaceButton = FALSE;
-						SetTimer(hwnd, (UINT_PTR)g_bReplaceButton, 500, NULL);
-					}
-					break;
 			}
 		}
 	} catch (...) {
 		g_nException = 0;
-		g_bReplaceButton = TRUE;
 #ifdef _DEBUG
 		g_strException = L"TEDlgProc";
 #endif
@@ -6008,6 +6024,14 @@ LRESULT CALLBACK CBTProc(int nCode, WPARAM wParam, LPARAM lParam)
 		} else if (!lstrcmpA(pszClassA, TOOLTIPS_CLASSA)) {
 			RemoveWindowSubclass(hwnd, TETTProc, (UINT_PTR)TETTProc);
 		}
+/*	} else if (nCode == HCBT_CLICKSKIPPED) {
+		WCHAR pszNum[99];
+		swprintf_s(pszNum, 99, L"%x %x\n", wParam, lParam);
+		::OutputDebugString(pszNum);
+		if (wParam == WM_MOUSEWHEEL) {
+			MOUSEHOOKSTRUCTEX *pMHS = (MOUSEHOOKSTRUCTEX *)lParam;
+			Sleep(0);
+		}*/
 	}
 	auto itr = g_umCBTHook.find(GetCurrentThreadId());
 	return itr != g_umCBTHook.end() ? CallNextHookEx(itr->second, nCode, wParam, lParam) : 0;
@@ -9298,7 +9322,7 @@ VOID teApiTrackPopupMenuEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 			}
 		}
 	}
-	g_hMenuKeyHook = SetWindowsHookEx(WH_KEYBOARD, (HOOKPROC)MenuKeyProc, hInst, g_dwMainThreadId);
+	g_hMenuKeyHook = SetWindowsHookEx(WH_KEYBOARD, (HOOKPROC)MenuKeyProc, NULL, g_dwMainThreadId);
 #ifdef _DEBUG
 //	g_hMenuGMHook = SetWindowsHookEx(WH_DEBUG, (HOOKPROC)MenuGMProc, NULL, g_dwMainThreadId);
 #endif
@@ -12151,7 +12175,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 			*(FARPROC *)&_AllowDarkModeForWindow = GetProcAddress(hDll, MAKEINTRESOURCEA(133));
 			*(FARPROC *)&_SetPreferredAppMode = GetProcAddress(hDll, MAKEINTRESOURCEA(135));
 			*(FARPROC *)&_RefreshImmersiveColorPolicyState = GetProcAddress(hDll, MAKEINTRESOURCEA(104));
-			*(FARPROC *)&_IsDarkModeAllowedForWindow = GetProcAddress(hDll, MAKEINTRESOURCEA(137));
+//			*(FARPROC *)&_IsDarkModeAllowedForWindow = GetProcAddress(hDll, MAKEINTRESOURCEA(137));
 #ifdef _USE_APIHOOK
 			*(FARPROC *)&_OpenNcThemeData = GetProcAddress(hDll, MAKEINTRESOURCEA(49));
 			teAPIHook(L"comctl32.dll", (LPVOID)_OpenNcThemeData, &teOpenNcThemeData);
@@ -12293,8 +12317,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	DRAGWINDOWFormat.cfFormat = (CLIPFORMAT)RegisterClipboardFormat(L"DragWindow");
 	IsShowingLayeredFormat.cfFormat = (CLIPFORMAT)RegisterClipboardFormat(L"IsShowingLayered");
 	// Hook
-	g_hHook = SetWindowsHookEx(WH_CALLWNDPROC, (HOOKPROC)HookProc, hInst, g_dwMainThreadId);
-	g_hMouseHook = SetWindowsHookEx(WH_MOUSE, (HOOKPROC)MouseProc, hInst, g_dwMainThreadId);
+	g_hHook = SetWindowsHookEx(WH_CALLWNDPROC, (HOOKPROC)HookProc, NULL, g_dwMainThreadId);
+	g_hMouseHook = SetWindowsHookEx(WH_MOUSE, (HOOKPROC)MouseProc, NULL, g_dwMainThreadId);
 #ifdef _DEBUG
 	DWORD dwThreadId = GetCurrentThreadId();
 	auto itr = g_umCBTHook.find(dwThreadId);
