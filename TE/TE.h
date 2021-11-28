@@ -1,5 +1,9 @@
 #pragma once
 
+#ifndef IID_IWICBitmap
+const IID IID_IWICBitmap                    = {0x00000121, 0xa8f2, 0x4877, { 0xba, 0x0a, 0xfd, 0x2b, 0x66, 0x45, 0xfb, 0x94}};
+#endif
+
 class CteFolderItem : public FolderItem, public IPersistFolder2, public IParentAndItem
 {
 public:
@@ -925,46 +929,6 @@ private:
 	LONG	m_cRef;
 	UINT m_uFrameCount, m_uFrame;
 };
-
-class CteWindowsAPI : public IDispatch
-{
-public:
-	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
-	STDMETHODIMP_(ULONG) AddRef();
-	STDMETHODIMP_(ULONG) Release();
-	//IDispatch
-	STDMETHODIMP GetTypeInfoCount(UINT *pctinfo);
-	STDMETHODIMP GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo);
-	STDMETHODIMP GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId);
-	STDMETHODIMP Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr);
-
-	CteWindowsAPI(TEDispatchApi *pApi);
-	~CteWindowsAPI();
-private:
-	TEDispatchApi *m_pApi;
-	LONG	m_cRef;
-};
-
-#ifdef _USE_OBJECTAPI
-class CteAPI : public IDispatch
-{
-public:
-	STDMETHODIMP QueryInterface(REFIID riid, void **ppvObject);
-	STDMETHODIMP_(ULONG) AddRef();
-	STDMETHODIMP_(ULONG) Release();
-	//IDispatch
-	STDMETHODIMP GetTypeInfoCount(UINT *pctinfo);
-	STDMETHODIMP GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo);
-	STDMETHODIMP GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId);
-	STDMETHODIMP Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr);
-
-	CteAPI(TEDispatchApi *pApi);
-	~CteAPI();
-private:
-	TEDispatchApi *m_pApi;
-	LONG		m_cRef;
-};
-#endif
 
 class CteDispatch : public IDispatch, public IEnumVARIANT
 {

@@ -501,6 +501,7 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 
 #define	TE_AutoViewMode	0x10000
 #define TECL_DARKTEXT 0xffffff
+#define TECL_DARKTEXT2 0xe0e0e0
 #define TECL_DARKBG 0x202020
 
 #define TC_Flags	5
@@ -707,13 +708,168 @@ const CLSID CLSID_LibraryFolder             = {0xa5a3563a, 0x5755, 0x4a6f, { 0x8
 const CLSID CLSID_DBFolder                  = {0xB2952B16, 0x0E07, 0x4E5A, { 0xB9, 0x93, 0x58, 0xC5, 0x2C, 0xB9, 0x4C, 0xAE}};
 const CLSID CLSID_ResultsFolder             = {0x2965E715, 0xEB66, 0x4719, { 0xB5, 0x3F, 0x16, 0x72, 0x67, 0x3B, 0xBE, 0xFA}};
 
-#ifndef IID_IWICBitmap
-const IID IID_IWICBitmap                    = {0x00000121, 0xa8f2, 0x4877, { 0xba, 0x0a, 0xfd, 0x2b, 0x66, 0x45, 0xfb, 0x94}};
-#endif
-
 //Tablacus Explorer (Edge)
 const CLSID CLSID_WebBrowserExt             = {0x55bbf1b8, 0x0d30, 0x4908, { 0xbe, 0x0c, 0xd5, 0x76, 0x61, 0x2a, 0x0f, 0x48}};
 // {BD34E79B-963F-4AFB-B03E-C5BD289B5080}
 const IID SID_TablacusObject                = {0xbd34e79b, 0x963f, 0x4afb, { 0xb0, 0x3e, 0xc5, 0xbd, 0x28, 0x9b, 0x50, 0x80}};
 // {A7A52B88-B449-47BB-BD92-ABCCD8A6FED7}
 const IID SID_TablacusArray                 = {0xa7a52b88, 0xb449, 0x47bb, { 0xbd, 0x92, 0xab, 0xcc, 0xd8, 0xa6, 0xfe, 0xd7 }};
+
+#define teVariantCopy(d, s)     if (d) { VariantCopy(d, s); }
+//Common functions
+#ifdef _DEBUG
+VOID teCheckMethod(LPSTR name, TEmethod *method, int nCount);
+#endif
+VOID teInitCommon();
+VOID SafeRelease(PVOID ppObj);
+VOID teCoTaskMemFree(LPVOID pv);
+VARIANTARG* GetNewVARIANT(int n);
+BOOL teSetObject(VARIANT *pv, PVOID pObj);
+VOID teSetLong(VARIANT *pv, LONG i);
+VOID teSetBool(VARIANT *pv, BOOL b);
+VOID teSetLL(VARIANT *pv, LONGLONG ll);
+BOOL teVarIsNumber(VARIANT *pv);
+BOOL teStartsText(LPWSTR pszSub, LPCWSTR pszFile);
+int GetIntFromVariantClear(VARIANT *pv);
+int GetIntFromVariant(VARIANT *pv);
+HRESULT teGetPropertyAt(IDispatch *pdisp, int i, VARIANT *pv);
+HRESULT teGetProperty(IDispatch *pdisp, LPOLESTR sz, VARIANT *pv);
+VOID Invoke4(IDispatch *pdisp, VARIANT *pvResult, int nArgs, VARIANTARG *pvArgs);
+HRESULT Invoke5(IDispatch *pdisp, DISPID dispid, WORD wFlags, VARIANT *pvResult, int nArgs, VARIANTARG *pvArgs);
+VOID teClearVariantArgs(int nArgs, VARIANTARG *pvArgs);
+HRESULT teGetDisplayNameFromIDList(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags);
+HRESULT teGetDisplayNameBSTR(IShellFolder *pSF, PCUITEMID_CHILD pidl, SHGDNF uFlags, BSTR *pbs);
+BOOL GetCSIDLFromPath(int *i, LPWSTR pszPath);
+int ILGetCount(LPCITEMIDLIST pidl);
+VOID teCreateSearchPath(BSTR *pbs, LPWSTR pszPath, LPWSTR pszSearch);
+BOOL teGetIDListFromObject(IUnknown *punk, LPITEMIDLIST *ppidl);
+VOID teGetSearchArg(BSTR *pbs, LPWSTR pszPath, LPWSTR pszArg);
+int teStrCmpI(LPCWSTR lpStringW, LPCWSTR lpString2);
+BOOL teILIsBlank(FolderItem *pFolderItem);
+VOID teILCloneReplace(LPITEMIDLIST *ppidl, LPCITEMIDLIST pidl);
+VOID teILFreeClear(LPITEMIDLIST *ppidl);
+LPITEMIDLIST teILCreateFromPath2(LPITEMIDLIST pidlParent, LPWSTR pszPath, HWND hwnd);
+VOID teSysFreeString(BSTR *pbs);
+BOOL GetShellFolder(IShellFolder **ppSF, LPCITEMIDLIST pidl);
+LPITEMIDLIST teILCreateFromPathEx(LPWSTR pszPath);
+BOOL teILIsSearchFolder(LPCITEMIDLIST pidl);
+BOOL teIsFileSystem(LPOLESTR pszPath);
+BOOL teIsSearchFolder(LPWSTR lpszPath);
+BSTR teSysAllocStringLen(const OLECHAR *strIn, UINT uSize);
+VOID tePathAppend(BSTR *pbsPath, LPCWSTR pszPath, LPWSTR pszFile);
+BOOL tePathMatchSpec1(LPCWSTR pszFile, LPWSTR pszSpec, WCHAR wSpecEnd);
+BOOL tePathMatchSpec(LPCWSTR pszFile, LPWSTR pszSpec);
+BOOL teStrSameIFree(BSTR bs, LPWSTR lpstr2);
+int teStrCmpIWA(LPCWSTR lpStringW, LPCSTR lpStringA);
+UINT GetpDataFromVariant(UCHAR **ppc, VARIANT *pv, VARIANT *pvMem);
+BOOL GetDispatch(VARIANT *pv, IDispatch **ppdisp);
+BOOL FindUnknown(VARIANT *pv, IUnknown **ppunk);
+BSTR GetLPWSTRFromVariant(VARIANT *pv);
+LONGLONG GetLLFromVariant(VARIANT *pv);
+LONGLONG GetLLFromVariantClear(VARIANT *pv);
+BOOL GetLLFromVariant2(LONGLONG *pll, VARIANT *pv);
+char* GetpcFromVariant(VARIANT *pv, VARIANT *pvMem);
+int SizeOfvt(VARTYPE vt);
+DWORD teGetDWordFromDataObj(IDataObject *pDataObj, FORMATETC *pformatetcIn, DWORD dw);
+HRESULT teDelProperty(IUnknown *punk, LPOLESTR sz);
+VOID teAddRemoveProc(std::vector<LONG_PTR> *pppProc, LONG_PTR lpProc, BOOL bAdd);
+int teGetObjectLength(IDispatch *pdisp);
+LPITEMIDLIST teILCreateFromPath(LPWSTR pszPath);
+LPITEMIDLIST teILCreateFromPath0(LPWSTR pszPath, BOOL bForceLimit);
+BOOL teCreateItemFromPath(LPWSTR pszPath, IShellItem **ppSI);
+LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath);
+BOOL tePathIsNetworkPath(LPCWSTR pszPath);
+HRESULT teCreateInstance(CLSID clsid, LPWSTR lpszDllFile, HMODULE *phDll, REFIID riid, PVOID *ppvObj);
+BSTR teMultiByteToWideChar(UINT CodePage, LPCSTR lpA, int nLenA);
+LPSTR teWideCharToMultiByte(UINT CodePage, LPCWSTR lpW, int nLenW);
+HRESULT tePathIsDirectory(LPWSTR pszPath, int dwms, int iUseFS);
+VOID CALLBACK teTimerProcParse(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime);
+VOID teAsyncInvoke(WORD wMode, int nArg, DISPPARAMS *pDispParams, VARIANT *pVarResult);
+BOOL teSetObjectRelease(VARIANT *pv, PVOID pObj);
+VOID teReleaseInvoke(TEInvoke *pInvoke);
+HRESULT teILFolderExists(LPITEMIDLIST pidl);
+int teUMSearch(int nMap, LPOLESTR bs);
+VOID teWriteBack(VARIANT *pvArg, VARIANT *pvDat);
+HRESULT tePutProperty(IUnknown *punk, LPOLESTR sz, VARIANT *pv);
+HRESULT tePutProperty0(IUnknown *punk, LPOLESTR sz, VARIANT *pv, DWORD grfdex);
+BOOL teVariantTimeToFileTime(DOUBLE dt, LPFILETIME pft);
+VOID teGetRootFromDataObj(BSTR *pbs, IDataObject *pDataObj);
+BSTR teSysAllocStringLenEx(const BSTR strIn, UINT uSize);
+BSTR teSysAllocStringByteLen(LPCSTR psz, UINT len, UINT org);
+LONGLONG teGetU(LONGLONG ll);
+int CalcCrc32(BYTE *pc, int nLen, UINT c);
+BOOL teFreeLibrary(HMODULE hDll, UINT uElpase);
+VOID teVariantChangeType(VARIANTARG * pvargDest, const VARIANTARG * pvarSrc, VARTYPE vt);
+BOOL teGetVariantTime(VARIANT *pv, DATE *pdt);
+BOOL teGetSystemTime(VARIANT *pv, SYSTEMTIME *pst);
+BOOL teVariantTimeToSystemTime(DATE dt, SYSTEMTIME *pst);
+HRESULT teExecMethod(IDispatch *pdisp, LPOLESTR sz, VARIANT *pvResult, int nArg, VARIANTARG *pvArgs);
+BOOL teFileTimeToVariantTime(LPFILETIME pft, DOUBLE *pdt);
+VOID teExtraLongPath(BSTR *pbs);
+LONGLONG GetParamFromVariant(VARIANT *pv, VARIANT *pvMem);
+HRESULT teExceptionEx(EXCEPINFO *pExcepInfo, LPCSTR pszObjA, LPCSTR pszNameA);
+VOID teSetULL(VARIANT *pv, LONGLONG ll);
+VOID teSetSZ(VARIANT *pv, LPCWSTR lpstr);
+BOOL GetDataObjFromVariant(IDataObject **ppDataObj, VARIANT *pv);
+BOOL GetDataObjFromVariant2(IDataObject **ppDataObj, VARIANT *pv);
+VOID AdjustIDList(LPITEMIDLIST *ppidllist, int nCount);
+LPITEMIDLIST* IDListFormDataObj(IDataObject *pDataObj, long *pnCount);
+int teDragQueryFile(HDROP hDrop, UINT iFile, BSTR *pbsPath);
+VOID teSetBSTR(VARIANT *pv, BSTR *pbs, int nLen);
+BOOL teChangeWindowMessageFilterEx(HWND hwnd, UINT message, DWORD action, PCHANGEFILTERSTRUCT pChangeFilterStruct);
+VOID GetPointFormVariant(POINT *ppt, VARIANT *pv);
+VOID PutPointToVariant(POINT *ppt, VARIANT *pv);
+VOID teSzToArgv(IDispatch *pArray, LPTSTR lpsz);
+HRESULT teDoDragDrop(HWND hwnd, IDataObject *pDataObj, DWORD *pdwEffect, BOOL bDropState);
+HRESULT tePutPropertyAt(PVOID pObj, int i, VARIANT *pv);
+HRESULT teInitStorage(LPVARIANTARG pvDllFile, LPVARIANTARG pvClass, LPWSTR lpwstr, HMODULE *phDll, IStorage **ppStorage);
+HMODULE teCreateInstanceV(LPVARIANTARG pvDllFile, LPVARIANTARG pvClass, REFIID riid, PVOID *ppvObj);
+HRESULT teCLSIDFromProgID(__in LPCOLESTR lpszProgID, __out LPCLSID lpclsid);
+HRESULT teCLSIDFromString(__in LPCOLESTR lpsz, __out LPCLSID lpclsid);
+HRESULT teExtract(IStorage *pStorage, LPWSTR lpszFolderPath, IProgressDialog *ppd, int *pnItems, int nCount, int nBase);
+VOID teSetProgress(IProgressDialog *ppd, ULONGLONG ullCurrent, ULONGLONG ullTotal, int nMode);
+BOOL teSetProgressEx(IProgressDialog *ppd, ULONGLONG ullCurrent, ULONGLONG ullTotal, int nMode);
+VOID teCommaSize(LPWSTR pszIn, LPWSTR pszOut, UINT cchBuf, int nDigits);
+VOID teStrFormatSize(DWORD dwFormat, LONGLONG qdw, LPWSTR pszBuf, UINT cchBuf);
+LPWSTR teGetCommandLine();
+HWND FindTreeWindow(HWND hwnd);
+HWND teFindChildByClassA(HWND hwnd, LPCSTR lpClassA);
+VOID teGetDisplayNameOf(VARIANT *pv, int uFlags, VARIANT *pVarResult);
+void GetVarPathFromIDList(VARIANT *pVarResult, LPITEMIDLIST pidl, int uFlags);
+HRESULT tePathGetFileName(BSTR *pbs, LPWSTR pszPath);
+BOOL teLocalizePath(LPWSTR pszPath, BSTR *pbsPath);
+int teGetMenuString(BSTR *pbs, HMENU hMenu, UINT uIDItem, BOOL fByPosition);
+VOID teMenuText(LPWSTR sz);
+int teGetModuleFileName(HMODULE hModule, BSTR *pbsPath);
+int teGetthreadCount(DWORD dwProcessId);
+BOOL teCreateSafeArray(VARIANT *pv, PVOID pSrc, DWORD dwSize, BOOL bBSTR);
+BOOL GetVarArrayFromIDList(VARIANT *pv, LPITEMIDLIST pidl);
+HRESULT GetFolderItemFromObject(FolderItem **ppid, IUnknown *pid);
+VOID teSetIDList(VARIANT *pv, LPITEMIDLIST pidl);
+VOID teSetIDListRelease(VARIANT *pv, LPITEMIDLIST *ppidl);
+BOOL GetFolderItemFromIDList(FolderItem **ppid, LPITEMIDLIST pidl);
+HRESULT teGetPropertyI(IDispatch *pdisp, LPOLESTR sz, VARIANT *pv);
+HRESULT tePSFormatForDisplay(PROPERTYKEY *ppropKey, VARIANT *pv, DWORD pdfFlags, LPWSTR *ppszDisplay, int nSizeFormat);
+VOID teGetFileTimeFromItem(IShellFolder2 *pSF2, LPCITEMIDLIST pidl, const SHCOLUMNID *pscid, FILETIME *pft);
+BOOL teSetForegroundWindow(HWND hwnd);
+VOID teSetExStyleOr(HWND hwnd, LONG l);
+VOID teSetExStyleAnd(HWND hwnd, LONG l);
+BOOL teGetIDListFromVariant(LPITEMIDLIST *ppidl, VARIANT *pv, BOOL bForceLimit = FALSE);
+BOOL teSetWindowText(HWND hwnd, LPCWSTR lpcwstr);
+LONGLONG teGetStreamPos(IStream *pStream);
+DWORD teGetStreamSize(IStream *pStream);
+VOID teCopyStream(IStream *pSrc, IStream *pDst);
+HRESULT teSHGetDataFromIDList(IShellFolder *pSF, LPCITEMIDLIST pidlPart, int nFormat, void *pv, int cb);
+int GetSizeOfStruct(LPOLESTR bs);
+int GetSizeOf(VARIANT *pv);
+VOID GetNewObject1(LPOLESTR sz, IDispatch **ppdisp);
+VOID GetNewArray(IDispatch **ppArray);
+VOID GetNewObject(IDispatch **ppObj);
+VOID teArrayPush(IDispatch *pdisp, PVOID pObj);
+HRESULT STDAPICALLTYPE teGetDpiForMonitor(HMONITOR hmonitor, MONITOR_DPI_TYPE dpiType, UINT *dpiX, UINT *dpiY);
+HRESULT STDAPICALLTYPE tePSPropertyKeyFromStringEx(__in LPCWSTR pszString, __out PROPERTYKEY *pkey);
+BOOL MessageSub(int nFunc, PVOID pObj, MSG *pMsg, HRESULT *phr);
+VOID teSetUM(int nMap, LPCSTR name, LONG lData);
+VOID teInitUM(int nMap, TEmethod *method, int nCount);
+int teBSearch(TEmethod *method, int nSize, LPOLESTR bs);
+VOID teCreateSafeArrayFromVariantArray(IDispatch *pdisp, VARIANT *pVarResult);

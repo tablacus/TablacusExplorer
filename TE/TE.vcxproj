@@ -314,6 +314,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="api.cpp" />
+    <ClCompile Include="common.cpp" />
+    <ClCompile Include="darkmode.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='DebugExe|Win32'">Create</PrecompiledHeader>
@@ -327,7 +330,9 @@
     <ClCompile Include="TE.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="api.h" />
     <ClInclude Include="common.h" />
+    <ClInclude Include="darkmode.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="idsofnames.h" />
