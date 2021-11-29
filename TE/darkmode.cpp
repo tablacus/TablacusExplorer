@@ -18,7 +18,7 @@ extern LPWSTR	g_strException;
 extern IUnknown* FindUnkTE();
 
 std::unordered_map<HWND, HWND> g_umSetTheme;
-std::unordered_map<HWND, HWND> g_umDlgLVProc;
+std::unordered_map<HWND, HWND> g_umDlgProc;
 
 LPFNSetPreferredAppMode _SetPreferredAppMode = NULL;
 LPFNAllowDarkModeForWindow _AllowDarkModeForWindow = NULL;
@@ -109,6 +109,74 @@ LRESULT CALLBACK TEDlgLVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, 
 	}
 	return DefSubclassProc(hwnd, msg, wParam, lParam);
 }
+LRESULT CALLBACK TabCtrlProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+{
+	try {
+		if (g_bDarkMode && msg == WM_PAINT) {
+			PAINTSTRUCT ps;
+			RECT rc;
+			WCHAR label[MAX_PATH];
+			HDC hdc = BeginPaint(hwnd, &ps);
+			DWORD dwStyle = GetWindowLong(hwnd, GWL_STYLE);
+			SetBkMode(ps.hdc, TRANSPARENT);
+			SetDCPenColor(ps.hdc, TECL_DARKTAB);
+			SelectObject(ps.hdc, GetStockPen(DC_PEN));
+			SelectObject(ps.hdc, g_hbrDarkBackground);
+			::FillRect(ps.hdc, &ps.rcPaint, g_hbrDarkBackground);
+			HGDIOBJ hFont = (HGDIOBJ)::SendMessage(hwnd, WM_GETFONT, 0, 0);
+			::SelectObject(hdc, hFont);
+			int nSelected = TabCtrl_GetCurSel(hwnd);
+			HIMAGELIST himl = TabCtrl_GetImageList(hwnd);
+			int cx, cy;
+			ImageList_GetIconSize(himl, &cx, &cy);
+			for (int i = TabCtrl_GetItemCount(hwnd); i-- > 0;) {
+				TabCtrl_GetItemRect(hwnd, i, &rc);
+				if (!(dwStyle & (TCS_BUTTONS | TCS_FLATBUTTONS))) {
+					++rc.right;
+					--rc.top;
+					rc.bottom += 2;
+				}
+				TC_ITEM tci;
+				tci.mask = TCIF_TEXT | TCIF_IMAGE;
+				tci.pszText = label;
+				tci.cchTextMax = _countof(label) - 1;
+				TabCtrl_GetItem(hwnd, i, &tci);
+				if (i == nSelected) {
+					SetDCBrushColor(ps.hdc, TECL_DARKTAB);
+					::FillRect(ps.hdc, &rc, GetStockBrush(DC_BRUSH));
+					SetTextColor(ps.hdc, TECL_DARKTEXT);
+				} else {
+					if (!(dwStyle & (TCS_BUTTONS | TCS_FLATBUTTONS))) {
+						if (dwStyle & TCS_BOTTOM) {
+							rc.bottom -= 2;
+						} else {
+							rc.top += 2;
+						}
+					}
+					if (!(dwStyle & TCS_FLATBUTTONS)) {
+						Rectangle(ps.hdc, rc.left, rc.top, rc.right, rc.bottom);
+					}
+					SetTextColor(ps.hdc, TECL_DARKTEXT2);
+				}
+				if (tci.iImage >= 0) {
+					int x = rc.left + 6;
+					int y = rc.top + ((rc.bottom - rc.top) - cy) / 2;
+					ImageList_Draw(himl, tci.iImage, ps.hdc, x, y, ILD_TRANSPARENT);
+					rc.left += cx;
+				}
+				::DrawText(ps.hdc, label, -1, &rc, DT_HIDEPREFIX | DT_SINGLELINE | DT_VCENTER | DT_PATH_ELLIPSIS | DT_CENTER);
+			}
+			EndPaint(hwnd, &ps);
+			return 0;
+		}
+	} catch (...) {
+		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"TabCtrlProc";
+#endif
+	}
+	return DefSubclassProc(hwnd, msg, wParam, lParam);
+}
 
 VOID FixChildren(HWND hwnd)
 {
@@ -121,37 +189,50 @@ VOID FixChildren(HWND hwnd)
 		::GetClassNameA(hwnd1, pszClassA, MAX_CLASS_NAME);
 		if (lstrcmpiA(pszClassA, WC_BUTTONA) == 0) {
 			::SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
-			if (g_bDarkMode) {
-				DWORD dwStyle = GetWindowLong(hwnd1, GWL_STYLE);
-				if ((dwStyle & BS_TYPEMASK) > BS_DEFPUSHBUTTON && !(dwStyle & BS_BITMAP)) {
-					int nLen = ::GetWindowTextLength(hwnd1);
-					if (nLen) {
-						BSTR bs = ::SysAllocStringLen(NULL, nLen + 1);
-						::GetWindowText(hwnd1, bs, nLen + 1);
-						HDC hdc = ::GetDC(hwnd);
-						if (hdc) {
-							HGDIOBJ hFont = (HGDIOBJ)::SendMessage(hwnd1, WM_GETFONT, 0, 0);
-							HGDIOBJ hFontOld = ::SelectObject(hdc, hFont);
-							RECT rc;
-							::GetClientRect(hwnd1, &rc);
-							::DrawText(hdc, bs, nLen + 1, &rc, DT_HIDEPREFIX | DT_CALCRECT);
-							HBITMAP hBM = ::CreateCompatibleBitmap(hdc, rc.right, rc.bottom);
-							HDC hmdc = ::CreateCompatibleDC(hdc);
-							HGDIOBJ hOld = ::SelectObject(hmdc, hBM);
-							HGDIOBJ hFontOld2 = ::SelectObject(hmdc, hFont);
-							::SetTextColor(hmdc, TECL_DARKTEXT);
-							::SetBkColor(hmdc, TECL_DARKBG);
-							::DrawText(hmdc, bs, nLen + 1, &rc, DT_HIDEPREFIX);
-							::SelectObject(hmdc, hFontOld2);
-							::SelectObject(hmdc, hOld);
-							::DeleteDC(hmdc);
-							::SelectObject(hdc, hFontOld);
-							::ReleaseDC(hwnd1, hdc);
-							::SetWindowLong(hwnd1, GWL_STYLE, (dwStyle | BS_BITMAP));
-							::SendMessage(hwnd1, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBM);
-							::DeleteObject(hBM);
-							::SysFreeString(bs);
+			DWORD dwStyle = GetWindowLong(hwnd1, GWL_STYLE);
+			if ((dwStyle & BS_TYPEMASK) > BS_DEFPUSHBUTTON) {
+				if (g_bDarkMode) {
+					if (!(dwStyle & BS_BITMAP)) {
+						int nLen = ::GetWindowTextLength(hwnd1);
+						if (nLen) {
+							BSTR bs = ::SysAllocStringLen(NULL, nLen + 1);
+							::GetWindowText(hwnd1, bs, nLen + 1);
+							HDC hdc = ::GetDC(hwnd);
+							if (hdc) {
+								HGDIOBJ hFont = (HGDIOBJ)::SendMessage(hwnd1, WM_GETFONT, 0, 0);
+								HGDIOBJ hFontOld = ::SelectObject(hdc, hFont);
+								RECT rc;
+								::GetClientRect(hwnd1, &rc);
+								::DrawText(hdc, bs, nLen + 1, &rc, DT_HIDEPREFIX | DT_CALCRECT);
+								HBITMAP hBM = ::CreateCompatibleBitmap(hdc, rc.right, rc.bottom);
+								HDC hmdc = ::CreateCompatibleDC(hdc);
+								HGDIOBJ hOld = ::SelectObject(hmdc, hBM);
+								HGDIOBJ hFontOld2 = ::SelectObject(hmdc, hFont);
+								::SetTextColor(hmdc, TECL_DARKTEXT);
+								::SetBkColor(hmdc, TECL_DARKBG);
+								::DrawText(hmdc, bs, nLen + 1, &rc, DT_HIDEPREFIX);
+								::SelectObject(hmdc, hFontOld2);
+								::SelectObject(hmdc, hOld);
+								::DeleteDC(hmdc);
+								::SelectObject(hdc, hFontOld);
+								::ReleaseDC(hwnd1, hdc);
+								::SetWindowLong(hwnd1, GWL_STYLE, (dwStyle | BS_BITMAP));
+								::SendMessage(hwnd1, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBM);
+								::DeleteObject(hBM);
+								::SysFreeString(bs);
+								auto itr = g_umDlgProc.find(hwnd1);
+								if (itr == g_umDlgProc.end()) {
+									g_umDlgProc[hwnd1] = hwnd;
+								}
+							}
 						}
+					}
+				} else if (dwStyle & BS_BITMAP) {
+					auto itr = g_umDlgProc.find(hwnd1);
+					if (itr != g_umDlgProc.end()) {
+						::SendMessage(hwnd1, BM_SETIMAGE, IMAGE_BITMAP, NULL);
+						::SetWindowLong(hwnd1, GWL_STYLE, (dwStyle & ~BS_BITMAP));
+						g_umDlgProc.erase(itr);
 					}
 				}
 			}
@@ -172,26 +253,27 @@ VOID FixChildren(HWND hwnd)
 			ListView_SetTextColor(hwnd1, g_bDarkMode ? TECL_DARKTEXT : GetSysColor(COLOR_WINDOWTEXT));
 			ListView_SetTextBkColor(hwnd1, g_bDarkMode ? TECL_DARKBG : GetSysColor(COLOR_WINDOW));
 			ListView_SetBkColor(hwnd1, g_bDarkMode ? TECL_DARKBG : GetSysColor(COLOR_WINDOW));
+			HWND hHeader = ListView_GetHeader(hwnd1);
+			if (hHeader) {
+				SetWindowTheme(hHeader, g_bDarkMode ? L"darkmode_itemsview" : L"explorer", NULL);
+			}
 			if (g_bDarkMode) {
-				HWND hHeader = ListView_GetHeader(hwnd1);
-				if (hHeader) {
-					SetWindowTheme(hHeader, g_bDarkMode ? L"darkmode_itemsview" : L"explorer", NULL);
-				}
-				auto itr = g_umDlgLVProc.find(hwnd1);
-				if (itr == g_umDlgLVProc.end()) {
+				auto itr = g_umDlgProc.find(hwnd1);
+				if (itr == g_umDlgProc.end()) {
 					SetWindowSubclass(hwnd1, TEDlgLVProc, (UINT_PTR)TEDlgLVProc, 0);
-					g_umDlgLVProc[hwnd1] = hwnd;
+					g_umDlgProc[hwnd1] = hwnd;
 				}
 				ListView_SetSelectedColumn(hwnd1, -1);
 			}
 		}
 		if (lstrcmpiA(pszClassA, WC_TABCONTROLA) == 0) {
-			DWORD dwStyle = GetWindowLong(hwnd1, GWL_STYLE);
-			if (g_bDarkMode) {
-				::SetWindowLong(hwnd1, GWL_STYLE, (dwStyle | TCS_OWNERDRAWFIXED));
+			if (g_bDarkMode && !(GetWindowLong(hwnd1, GWL_STYLE) & TCS_OWNERDRAWFIXED)) {
 				::SetClassLongPtr(hwnd1, GCLP_HBRBACKGROUND, (LONG_PTR)g_hbrDarkBackground);
-			} else {
-				::SetWindowLong(hwnd1, GWL_STYLE, (dwStyle & ~TCS_OWNERDRAWFIXED));
+				auto itr = g_umDlgProc.find(hwnd1);
+				if (itr == g_umDlgProc.end()) {
+					SetWindowSubclass(hwnd1, TabCtrlProc, (UINT_PTR)TabCtrlProc, 0);
+					g_umDlgProc[hwnd1] = hwnd;
+				}
 			}
 		}
 		/*if (lstrcmpiA(pszClassA, "DirectUIHWND") == 0) {
@@ -225,7 +307,9 @@ LRESULT CALLBACK TEDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 		case WM_SETTINGCHANGE:
 			teGetDarkMode();
 			teSetDarkMode(hwnd);
-			UpdateWindow(hwnd);
+			FixChildren(hwnd);
+			::RedrawWindow(hwnd, NULL, NULL, RDW_INVALIDATE | RDW_ALLCHILDREN);
+			break;
 		case WM_NCPAINT:
 			FixChildren(hwnd);
 			break;
@@ -287,10 +371,16 @@ LRESULT CALLBACK TEDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 					++itr;
 				}
 			}
-			for (auto itr = g_umDlgLVProc.begin(); itr != g_umDlgLVProc.end();) {
+			for (auto itr = g_umDlgProc.begin(); itr != g_umDlgProc.end();) {
 				if (hwnd == itr->second) {
-					RemoveWindowSubclass(itr->first, TEDlgLVProc, (UINT_PTR)TEDlgLVProc);
-					itr = g_umDlgLVProc.erase(itr);
+					CHAR pszClassA[MAX_CLASS_NAME];
+					GetClassNameA(itr->first, pszClassA, MAX_CLASS_NAME);
+					if (lstrcmpiA(pszClassA, WC_LISTVIEWA) == 0) {
+						RemoveWindowSubclass(itr->first, TEDlgLVProc, (UINT_PTR)TEDlgLVProc);
+					} else if (lstrcmpiA(pszClassA, WC_TABCONTROLA) == 0) {
+						RemoveWindowSubclass(itr->first, TabCtrlProc, (UINT_PTR)TabCtrlProc);
+					}
+					itr = g_umDlgProc.erase(itr);
 				} else {
 					++itr;
 				}

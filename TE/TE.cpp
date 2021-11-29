@@ -143,6 +143,7 @@ extern LPFNShouldAppsUseDarkMode _ShouldAppsUseDarkMode;
 extern LPFNRefreshImmersiveColorPolicyState _RefreshImmersiveColorPolicyState;
 extern TEStruct pTEStructs[];
 extern TEmethod methodObject[];
+extern LRESULT CALLBACK TabCtrlProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 
 FORMATETC HDROPFormat = {CF_HDROP, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
 FORMATETC IDLISTFormat = {0, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
@@ -3776,7 +3777,7 @@ LRESULT CALLBACK TETCProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 		if (Result) {
 			Result = TETCProc2(pTC, hwnd, msg, wParam, lParam);
 		}
-		return Result ? DefSubclassProc(hwnd, msg, wParam, lParam) : 0;
+		return Result ? TabCtrlProc(hwnd, msg, wParam, lParam, uIdSubclass, dwRefData) : 0;
 	} catch (...) {
 		g_nException = 0;
 #ifdef _DEBUG
