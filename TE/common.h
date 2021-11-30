@@ -503,7 +503,8 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TECL_DARKTEXT 0xffffff
 #define TECL_DARKTEXT2 0xe0e0e0
 #define TECL_DARKBG 0x202020
-#define TECL_DARKTAB 0x606060
+#define TECL_DARKEDITBG 0x181818
+#define TECL_DARKSEL 0x606060
 
 #define TC_Flags	5
 #define TC_Align	6

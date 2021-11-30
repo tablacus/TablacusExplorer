@@ -71,6 +71,7 @@ extern LPFNSHCreateShellItemArrayFromShellItem _SHCreateShellItemArrayFromShellI
 
 extern char* GetpcFromVariant(VARIANT *pv, VARIANT *pvMem);
 extern IUnknown* FindUnkTE();
+extern IDropSource* FindDropSource();
 extern IDispatch* teCreateObj(LONG lId, VARIANT *pvArg);
 extern VOID CALLBACK teTimerProcParse(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime);
 extern VOID GetFolderItemFromVariant(FolderItem **ppid, VARIANT *pv);
@@ -2324,7 +2325,7 @@ HRESULT teDoDragDrop(HWND hwnd, IDataObject *pDataObj, DWORD *pdwEffect, BOOL bD
 			pDragSourceHelper->Release();
 		}
 		g_pDraggingItems = pDataObj;
-		hr = DoDragDrop(pDataObj, static_cast<IDropSource *>(FindUnkTE()), *pdwEffect, pdwEffect);
+		hr = DoDragDrop(pDataObj, FindDropSource(), *pdwEffect, pdwEffect);
 	} catch(...) {
 		hr = E_UNEXPECTED;
 		g_nException = 0;

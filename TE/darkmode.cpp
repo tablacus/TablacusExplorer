@@ -16,6 +16,7 @@ extern LPWSTR	g_strException;
 #endif
 
 extern IUnknown* FindUnkTE();
+extern IDropSource* FindDropSource();
 
 std::unordered_map<HWND, HWND> g_umSetTheme;
 std::unordered_map<HWND, HWND> g_umDlgProc;
@@ -119,7 +120,7 @@ LRESULT CALLBACK TabCtrlProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, 
 			HDC hdc = BeginPaint(hwnd, &ps);
 			DWORD dwStyle = GetWindowLong(hwnd, GWL_STYLE);
 			SetBkMode(ps.hdc, TRANSPARENT);
-			SetDCPenColor(ps.hdc, TECL_DARKTAB);
+			SetDCPenColor(ps.hdc, TECL_DARKSEL);
 			SelectObject(ps.hdc, GetStockPen(DC_PEN));
 			SelectObject(ps.hdc, g_hbrDarkBackground);
 			::FillRect(ps.hdc, &ps.rcPaint, g_hbrDarkBackground);
@@ -142,7 +143,7 @@ LRESULT CALLBACK TabCtrlProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, 
 				tci.cchTextMax = _countof(label) - 1;
 				TabCtrl_GetItem(hwnd, i, &tci);
 				if (i == nSelected) {
-					SetDCBrushColor(ps.hdc, TECL_DARKTAB);
+					SetDCBrushColor(ps.hdc, TECL_DARKSEL);
 					::FillRect(ps.hdc, &rc, GetStockBrush(DC_BRUSH));
 					SetTextColor(ps.hdc, TECL_DARKTEXT);
 				} else {
@@ -399,7 +400,8 @@ LRESULT CALLBACK TEDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 			case WM_CTLCOLOREDIT:
 				SetTextColor((HDC)wParam, TECL_DARKTEXT);
 				SetBkMode((HDC)wParam, TRANSPARENT);
-				return (LRESULT)GetStockObject(BLACK_BRUSH);
+				SetDCBrushColor((HDC)wParam, TECL_DARKEDITBG);
+				return (LRESULT)GetStockObject(DC_BRUSH);
 			case WM_ERASEBKGND:
 				RECT rc;
 				GetClientRect(hwnd, &rc);

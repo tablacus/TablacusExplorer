@@ -1520,7 +1520,6 @@ VOID teGetPath(BSTR *pbs, IUnknown *punk)
 	}
 }
 
-
 BOOL teILIsEqual(IUnknown *punk1, IUnknown *punk2)
 {
 	BOOL bResult = FALSE;
@@ -6574,7 +6573,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	try {
 #ifdef _USE_SHELLBROWSER
 		hr = E_FAIL;
-		if (bUseEB) {
+		if (dwFrame) {
 			//ExplorerBrowser
 			hr = NavigateEB(dwFrame);
 		}
@@ -17530,6 +17529,11 @@ STDMETHODIMP CteWICBitmap::GetTypeInfo(UINT iTInfo, LCID lcid, ITypeInfo **ppTIn
 
 STDMETHODIMP CteWICBitmap::GetIDsOfNames(REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid, DISPID *rgDispId)
 {
+#ifdef _DEBUG
+	//::OutputDebugStringA("WICBitmap: ");
+	//::OutputDebugString(*rgszNames);
+	//::OutputDebugStringA("\n");
+#endif
 	teGetDispId(NULL, MAP_GB, *rgszNames, rgDispId, FALSE);
 	return S_OK;
 }
@@ -18022,6 +18026,11 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 								pSF->Release();
 							}
 						}
+#ifdef _DEBUG
+						//::OutputDebugStringA("WICBitmap.FromFile: ");
+						//::OutputDebugString(lpfn);
+						//::OutputDebugStringA("\n");
+#endif
 						if (!pStream) {
 							if FAILED(SHCreateStreamOnFileEx(lpfn, STGM_READ | STGM_SHARE_DENY_NONE, FILE_ATTRIBUTE_NORMAL, FALSE, NULL, &pStream)) {
 								pStream = SHCreateMemStream(NULL, NULL);
@@ -19831,4 +19840,10 @@ IUnknown* FindUnkTE()
 {
 	return static_cast<IDispatch *>(g_pTE);
 }
+
+IDropSource* FindDropSource()
+{
+	return static_cast<IDropSource *>(g_pTE);
+}
+
 #endif

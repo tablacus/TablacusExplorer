@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20211129 ? te.Version : 20211129;
+		return te.Version < 20211130 ? te.Version : 20211130;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -574,6 +574,10 @@ AddEventId = function (Name, Id, fn) {
 
 IsSearchPath = function (pid, bText) {
 	return (bText ? /^search\-ms:.*?crumb=([^&]*).*?&crumb=location:([^&]*)/ : /^search\-ms:.*?&crumb=location:([^&]*)/).exec("string" === typeof pid ? pid : api.GetDisplayNameOf(pid, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
+}
+
+IsCloud = function (Item) {
+	return Item && /[NO]/i.test(Item.ExtendedProperty("Attributes"));
 }
 
 LoadXml = function (filename, nGroup) {

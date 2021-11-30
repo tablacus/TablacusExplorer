@@ -1060,6 +1060,11 @@ VOID teApiCreateMenu(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 
 VOID teApiCreateObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
+#ifdef _DEBUG
+	::OutputDebugStringA("CreateObject: ");
+	::OutputDebugString(param[0].lpwstr);
+	::OutputDebugStringA("\n");
+#endif
 	int nIndex = teBSearch(methodObject, _countof(methodObject), param[0].lpwstr);
 	if (nIndex >= 0) {
 		int id = methodObject[nIndex].id;
@@ -4184,6 +4189,11 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 	if (wFlags & DISPATCH_METHOD) {
 		TEDispatchApi *pApi = (dispIdMember >= TE_METHOD && dispIdMember < _countof(dispAPI) + TE_METHOD) ? &dispAPI[dispIdMember - TE_METHOD] : m_pApi;
 		if (pApi) {
+#ifdef _DEBUG
+			//::OutputDebugStringA("API: ");
+			//::OutputDebugStringA(pApi->name);
+			//::OutputDebugStringA("\n");
+#endif
 			try {
 				return teInvokeAPI(pApi, pDispParams, pVarResult, pExcepInfo);
 			} catch (...) {
