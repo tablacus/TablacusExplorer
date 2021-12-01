@@ -1,8 +1,8 @@
 #include "stdafx.h"
-#if defined(_WINDLL) || defined(_DEBUG)
-
 #include "common.h"
+#if defined(_WINDLL) || defined(_EXEONLY)
 #include "api.h"
+#include "objects.h"
 
 extern HWND g_hwndMain;
 extern TEDispatchApi dispAPI[];
@@ -23,6 +23,8 @@ extern HHOOK	g_hMenuKeyHook;
 extern DWORD	g_dwMainThreadId;
 extern long	g_nProcKey;
 extern DWORD	g_dwTickKey;
+extern LPFNGetDpiForMonitor _GetDpiForMonitor;
+
 #ifdef _2000XP
 extern LPFNIsWow64Process _IsWow64Process;
 extern LPFNPSPropertyKeyFromString _PSPropertyKeyFromStringEx;
@@ -34,33 +36,18 @@ extern LPFNSetDllDirectoryW _SetDllDirectoryW;
 extern LPWSTR	g_strException;
 #endif
 
-extern IUnknown* FindUnkTE();
+extern IDropSource* teFindDropSource();
 extern HRESULT MessageProc(MSG *pMsg);
 extern IDispatch* teCreateObj(LONG lId, VARIANT *pvArg);
-extern IDispatch* teAddLegacySupport(IDispatch *pdisp);//CteDispatchEx
-extern VOID GetFolderItemFromVariant(FolderItem **ppid, VARIANT *pv);//CteFolderItem
 extern HRESULT ParseScript(LPOLESTR lpScript, LPOLESTR lpLang, VARIANT *pv, IDispatch **ppdisp, EXCEPINFO *pExcepInfo);//CteActiveScriptSite,CteDispatch
-extern BOOL teILGetParent(FolderItem *pid, FolderItem **ppid);//CteFolderItem
-extern BOOL GetFolderItemFromIDList(FolderItem **ppid, LPITEMIDLIST pidl);//CteFolderItem
-extern BOOL teILIsEqual(IUnknown *punk1, IUnknown *punk2);//CteFolderItem
-extern LPITEMIDLIST teSHSimpleIDListFromPathEx(LPWSTR lpstr, DWORD dwAttr, DWORD nSizeLow, DWORD nSizeHigh, FILETIME *pft);//CteFileSystemBindData
 
 extern VOID teApiContextMenu(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult);//CteContextMenu
-extern VOID teApiDataObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult);//CteFolderItems
-extern VOID teApiDllGetClassObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult);//CteDispatch
-extern VOID teApiDropTarget(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult);//CteDropTarget
-extern VOID teApiExecScript(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult);//TEExecScript
-extern VOID teApiGetDpiForMonitor(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult);//CteMemory(POINT)
-extern VOID teApiGetDispatch(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult);//CteDispatch
-extern VOID teApiGetProcObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult);//CteDispatch
-extern VOID teApiMemory(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult);//CteMemory
+extern VOID teApiExecScript(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult);//_beginthread
 extern VOID teApiMoveWindow(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult);//CteTreeView(XP)
-extern VOID teApiOleGetClipboard(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult);//CteFolderItems
 extern VOID teApiPSGetDisplayName(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult);//CteShellBrowser
 extern VOID teApiSetFocus(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult);//CteShellBrowser
 extern VOID teApiSetWindowTheme(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult);//CteShellBrowser
-extern VOID teApiSHCreateStreamOnFileEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult);//CteObject
-extern VOID teApiSHFileOperation(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult);//thread
+extern VOID teApiSHFileOperation(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult);//_beginthread
 extern VOID teApiGetProcAddress(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult);//GetImage
 
 TEmethod tesNULL[] =
@@ -781,7 +768,7 @@ LRESULT CALLBACK MenuKeyProc(int nCode, WPARAM wParam, LPARAM lParam)
 			msg.lParam = lParam;
 			try {
 				if (InterlockedIncrement(&g_nProcKey) < 5) {
-					MessageSub(TE_OnKeyMessage, FindUnkTE(), &msg, (HRESULT *)&lResult);
+					MessageSub(TE_OnKeyMessage, teFindDropSource(), &msg, (HRESULT *)&lResult);
 				}
 			} catch(...) {
 				g_nException = 0;
@@ -1208,6 +1195,11 @@ VOID teApiCryptUnprotectData(int nArg, teParam *param, DISPPARAMS *pDispParams, 
 	VariantClear(&vMem);
 }
 
+VOID teApiDataObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetObjectRelease(pVarResult, new CteFolderItems(NULL, NULL));
+}
+
 VOID teApiDeleteDC(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	teSetBool(pVarResult, DeleteDC(param[0].hdc));
@@ -1251,6 +1243,18 @@ VOID teApiDestroyWindow(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 VOID teApiDispatchMessage(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	teSetPtr(pVarResult, ::DispatchMessage(param[0].lpmsg));
+}
+
+VOID teApiDllGetClassObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	IDispatch *pdisp;
+	HMODULE hDll = teCreateInstanceV(&pDispParams->rgvarg[nArg], &pDispParams->rgvarg[nArg - 1], IID_PPV_ARGS(&pdisp));
+	if (hDll) {
+		CteDispatch *odisp = new CteDispatch(pdisp, 4, DISPID_UNKNOWN);
+		pdisp->Release();
+		odisp->m_hDll = hDll;
+		teSetObjectRelease(pVarResult, odisp);
+	}
 }
 
 VOID teApiDoDragDrop(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -1318,6 +1322,26 @@ VOID teApiDrawIconEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 VOID teApiDrawText(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	teSetLong(pVarResult, DrawText(param[0].hdc, param[1].lpcwstr, param[2].intVal, param[3].lprect, param[4].uintVal));
+}
+
+VOID teApiDropTarget(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	FolderItem *pid;
+	GetFolderItemFromVariant(&pid, &pDispParams->rgvarg[nArg]);
+	LPITEMIDLIST pidl;
+	if (teGetIDListFromObject(pid, &pidl)) {
+		IShellFolder *pSF;
+		LPCITEMIDLIST pidlPart;
+		if SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &pidlPart)) {
+			IDropTarget *pDT = NULL;
+			pSF->GetUIObjectOf(g_hwndMain, 1, &pidlPart, IID_IDropTarget, NULL, (LPVOID*)&pDT);
+			teSetObjectRelease(pVarResult, new CteDropTarget(pDT, pid));
+			pDT && pDT->Release();
+			pSF->Release();
+		}
+		teCoTaskMemFree(pidl);
+	}
+	pid->Release();
 }
 
 VOID teApiEnableMenuItem(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -1649,9 +1673,43 @@ VOID teApiGetDiskFreeSpaceEx(int nArg, teParam *param, DISPPARAMS *pDispParams, 
 	}
 }
 
+VOID teApiGetDispatch(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	if (pVarResult) {
+		IDispatch *pdisp;
+		if (GetDispatch(&pDispParams->rgvarg[nArg], &pdisp)) {
+			DISPID dispid = DISPID_UNKNOWN;
+			LPOLESTR lp = param[1].lpolestr;
+			if (pdisp->GetIDsOfNames(IID_NULL, &lp, 1, LOCALE_USER_DEFAULT, &dispid) == S_OK) {
+				teSetObjectRelease(pVarResult, new CteDispatch(pdisp, 0, dispid));
+				pdisp->Release();
+			}
+			pdisp->Release();
+		}
+	}
+}
+
 VOID teApiGetDisplayNameOf(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	teGetDisplayNameOf(&pDispParams->rgvarg[nArg], param[1].intVal, pVarResult);
+}
+
+VOID teApiGetDpiForMonitor(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	HMONITOR hMonitor = param[0].hmonitor;
+	if (!hMonitor || nArg == 0) {
+		RECT rc;
+		POINT pt;
+		GetWindowRect(g_hwndMain, &rc);
+		pt.x = rc.left;
+		pt.y = rc.top;
+		hMonitor = MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
+	}
+	CteMemory *pstPt = new CteMemory(2 * sizeof(int), NULL, 1, L"POINT");
+	UINT ux, uy;
+	_GetDpiForMonitor(hMonitor, nArg >= 1 ? param[1].MonitorDpiType : MDT_EFFECTIVE_DPI, &ux, &uy);
+	pstPt->SetPoint(ux, uy);
+	teSetObjectRelease(pVarResult, pstPt);
 }
 
 VOID teApiGetFocus(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -1773,6 +1831,37 @@ VOID teApiGetParent(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *
 VOID teApiGetPixel(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	teSetLong(pVarResult, ::GetPixel(param[0].hdc, param[1].intVal, param[2].intVal));
+}
+
+VOID teApiGetProcObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	HMODULE hDll = LoadLibrary(param[0].lpcwstr);
+	if (hDll) {
+		CHAR szProcNameA[MAX_LOADSTRING];
+		LPSTR lpProcNameA = szProcNameA;
+		if (pDispParams->rgvarg[nArg - 1].vt == VT_BSTR) {
+			::WideCharToMultiByte(CP_ACP, 0, (LPCWSTR)pDispParams->rgvarg[nArg - 1].bstrVal, -1, lpProcNameA, MAX_LOADSTRING, NULL, NULL);
+		} else {
+			lpProcNameA = MAKEINTRESOURCEA(param[1].word);
+		}
+		LPFNGetProcObjectW _GetProcObjectW = (LPFNGetProcObjectW)GetProcAddress(hDll, lpProcNameA);
+		if (_GetProcObjectW) {
+			if (nArg >= 2) {
+				teVariantCopy(pVarResult, &pDispParams->rgvarg[nArg - 2]);
+			}
+			_GetProcObjectW(pVarResult);
+			IDispatch *pdisp;
+			if (GetDispatch(pVarResult, &pdisp)) {
+				CteDispatch *odisp = new CteDispatch(pdisp, 4, DISPID_UNKNOWN);
+				pdisp->Release();
+				odisp->m_hDll = hDll;
+				hDll = NULL;
+				VariantClear(pVarResult);
+				teSetObjectRelease(pVarResult, odisp);
+			}
+		}
+		teFreeLibrary(hDll, 0);
+	}
 }
 
 VOID teApiGetProp(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -2439,6 +2528,68 @@ VOID teApiMapVirtualKey(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 	teSetLong(pVarResult, MapVirtualKey(param[0].uintVal, param[1].uintVal));
 }
 
+VOID teApiMemory(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	CteMemory *pMem;
+	char *pc = NULL;;
+	LPWSTR sz = NULL;
+	int nCount = 1;
+	IUnknown *punk;
+	IStream *pStream = NULL;
+	int i = 0;
+	if (pDispParams->rgvarg[nArg].vt == VT_BSTR) {
+		sz = pDispParams->rgvarg[nArg].bstrVal;
+		i = GetSizeOfStruct(sz);
+	} else if (pDispParams->rgvarg[nArg].vt & VT_ARRAY) {
+		pc = pDispParams->rgvarg[nArg].pcVal;
+		nCount = pDispParams->rgvarg[nArg].parray->rgsabound[0].cElements;
+		i = SizeOfvt(pDispParams->rgvarg[nArg].vt);
+		sz = L"SAFEARRAY";
+	} else if (nArg >= 1 && FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
+		if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pStream))) {
+			sz = L"IStream";
+			i = 1;
+			ULARGE_INTEGER uliSize;
+			LARGE_INTEGER liOffset;
+			liOffset.QuadPart = 0;
+			pStream->Seek(liOffset, STREAM_SEEK_END, &uliSize);
+			pStream->Seek(liOffset, STREAM_SEEK_SET, NULL);
+			nCount = uliSize.QuadPart < param[1].lVal ? uliSize.LowPart : param[1].lVal;
+		}
+	}
+	if (i == 0) {
+		i = param[0].lVal;
+		if (i == 0) {
+			return;
+		}
+	}
+	BSTR bs = NULL;
+	if (nArg >= 1 && !pStream) {
+		if (i == 2 && pDispParams->rgvarg[nArg - 1].vt == VT_BSTR) {
+			bs = pDispParams->rgvarg[nArg - 1].bstrVal;
+			nCount = SysStringByteLen(bs) / 2 + 1;
+		} else {
+			nCount = param[1].lVal;
+		}
+		if (nCount < 1) {
+			nCount = 1;
+		}
+		if (nArg >= 2) {
+			pc = param[2].pcVal;
+		}
+	}
+	pMem = new CteMemory(i * nCount, pc, nCount, sz);
+	if (bs) {
+		::CopyMemory(pMem->m_pc, bs, nCount * 2);
+	}
+	if (pStream) {
+		ULONG ulBytesRead;
+		pStream->Read(pMem->m_pc, nCount, &ulBytesRead);
+		pStream->Release();
+	}
+	teSetObjectRelease(pVarResult, pMem);
+}
+
 VOID teApiMessageBox(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	if (nArg >= 4) {
@@ -2552,6 +2703,17 @@ VOID teApiOleCmdExec(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 			teCLSIDFromString(param[1].lpcolestr, pguid);
 			pCT->Exec(pguid, param[2].olecmdid, param[3].olecmdexecopt, &pDispParams->rgvarg[nArg - 4], pVarResult);
 			pCT->Release();
+		}
+	}
+}
+
+VOID teApiOleGetClipboard(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	if (pVarResult) {
+		IDataObject *pDataObj;
+		if (::OleGetClipboard(&pDataObj) == S_OK) {
+			teSetObjectRelease(pVarResult, new CteFolderItems(pDataObj, NULL));
+			pDataObj->Release();
 		}
 	}
 }
@@ -2903,6 +3065,11 @@ VOID teApiSetClipboardData(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 	CloseClipboard();
 }
 
+VOID teApiSetCurrentDirectory(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetBool(pVarResult, SetCurrentDirectory(param[0].lpcwstr));//use wsh.CurrentDirectory
+}
+
 VOID teApiSetCursor(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	teSetPtr(pVarResult, SetCursor(param[0].hcursor));
@@ -3141,6 +3308,32 @@ VOID teApiSHChangeNotifyRegister(int nArg, teParam *param, DISPPARAMS *pDispPara
 		teSetLong(pVarResult, SHChangeNotifyRegister(param[0].hwnd, param[1].intVal, param[2].lVal, param[3].uintVal, 1, &entry));
 		teChangeWindowMessageFilterEx(param[0].hwnd, param[3].uintVal, MSGFLT_ALLOW, NULL);
 	}
+}
+
+VOID teApiSHCreateStreamOnFileEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	IUnknown *punk = NULL;
+	IStream *pStream0 = NULL;
+	if (nArg >= 4 && FindUnknown(&pDispParams->rgvarg[nArg - 4], &punk)) {
+		punk->QueryInterface(IID_PPV_ARGS(&pStream0));
+	}
+	IStream *pStream = NULL;
+	if (nArg >= 5) {
+		teSetLong(pVarResult, SHCreateStreamOnFileEx(param[0].lpcwstr, param[1].dword, param[2].dword, param[3].boolVal, pStream0, &pStream));
+		if (pStream) {
+			if (FindUnknown(&pDispParams->rgvarg[nArg - 5], &punk)) {
+				VARIANT v;
+				v.vt = VT_DISPATCH;
+				v.pdispVal = new CteObject(pStream);
+				tePutPropertyAt(punk, 0, &v);
+			}
+			pStream->Release();
+		}
+		return;
+	}
+	SHCreateStreamOnFileEx(param[0].lpcwstr, param[1].dword, param[2].dword, param[3].boolVal, pStream0, &pStream);
+	teSetObjectRelease(pVarResult, new CteObject(pStream));
+	SafeRelease(&pStream);
 }
 
 VOID teApiSHDefExtractIcon(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -4012,6 +4205,7 @@ TEDispatchApi dispAPI[] = {
 	{ 1, -1, -1, -1, "SetCapture", teApiSetCapture },
 	{ 3, -1, -1, -1, "SetClassLongPtr", teApiSetClassLongPtr },
 	{ 1,  0, -1, -1, "SetClipboardData", teApiSetClipboardData },
+	{ 1,  0, -1, -1, "SetCurrentDirectory", teApiSetCurrentDirectory },//use wsh.CurrentDirectory
 	{ 1, -1, -1, -1, "SetCursor", teApiSetCursor },
 	{ 2, -1, -1, -1, "SetCursorPos", teApiSetCursorPos },
 	{ 2, -1, -1, -1, "SetDCBrushColor", teApiSetDCBrushColor },

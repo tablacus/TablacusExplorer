@@ -1,6 +1,7 @@
 #pragma once
 
 #include "resource.h"
+#include "objects.h"
 #include <Mshtml.h>
 #include <mshtmhst.h>
 #include "mshtmdid.h"
@@ -226,7 +227,6 @@ union teParam
 	MONITOR_DPI_TYPE MonitorDpiType;
 	RGBQUAD rgbquad;
 };
-
 
 enum PreferredAppMode
 {
@@ -875,3 +875,27 @@ VOID teSetUM(int nMap, LPCSTR name, LONG lData);
 VOID teInitUM(int nMap, TEmethod *method, int nCount);
 int teBSearch(TEmethod *method, int nSize, LPOLESTR bs);
 VOID teCreateSafeArrayFromVariantArray(IDispatch *pdisp, VARIANT *pVarResult);
+HRESULT teGetDispId(TEmethod *method, int n, LPOLESTR bs, DISPID *rgDispId, BOOL bNum);
+HRESULT teGetMemberName(DISPID id, BSTR *pbstrName);
+HRESULT teException(EXCEPINFO *pExcepInfo, LPCSTR pszObjA, TEmethod* pMethod, int nCount, DISPID dispIdMember);
+VOID teInvokeObject(IDispatch **ppdisp, WORD wFlags, VARIANT *pVarResult, int nArg, VARIANTARG *pvArgs);
+BOOL GetFolderItemFromIDList2(FolderItem **ppid, LPITEMIDLIST pidl);
+HRESULT GetFolderObjFromIDList(LPITEMIDLIST pidl, Folder** ppsdf);
+LPITEMIDLIST teSHSimpleIDListFromPathEx(LPWSTR lpstr, DWORD dwAttr, DWORD nSizeLow, DWORD nSizeHigh, FILETIME *pft);
+VOID teGetJunctionLinkTarget(BSTR bsPath, LPWSTR *ppszText, int cchTextMax);
+VOID GetFolderItemFromVariant(FolderItem **ppid, VARIANT *pv);
+BOOL teILGetParent(FolderItem *pid, FolderItem **ppid);
+HRESULT DoFunc1(int nFunc, PVOID pObj, VARIANT *pVarResult);
+HRESULT DoFunc(int nFunc, PVOID pObj, HRESULT hr);
+BOOL teGetStrFromFolderItem(BSTR *pbs, IUnknown *punk);
+BOOL GetFolderItemFromIDList(FolderItem **ppid, LPITEMIDLIST pidl);
+BOOL teILIsEqual(IUnknown *punk1, IUnknown *punk2);
+VOID teGetPath(BSTR *pbs, IUnknown *punk);
+IDispatch* teAddLegacySupport(IDispatch *pdisp);
+VOID teQueryFolderItemReplace(FolderItem **ppfi, CteFolderItem **ppid);
+BOOL GetVarPathFromFolderItem(FolderItem *pFolderItem, VARIANT *pVarResult);
+VOID GetDragItems(CteFolderItems **ppDragItems, IDataObject *pDataObj);
+HRESULT DragSub(int nFunc, PVOID pObj, CteFolderItems *pDragItems, PDWORD pgrfKeyState, POINTL pt, PDWORD pdwEffect);
+HRESULT DragLeaveSub(PVOID pObj, CteFolderItems **ppDragItems);
+BOOL GetBoolFromVariant(VARIANT *pv);
+

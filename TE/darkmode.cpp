@@ -1,7 +1,6 @@
 #include "stdafx.h"
-#if defined(_WINDLL) || defined(_DEBUG)
-
 #include "common.h"
+#if defined(_WINDLL) || defined(_EXEONLY)
 
 extern HWND g_hwndMain;
 extern std::unordered_map<DWORD, HHOOK> g_umCBTHook;
@@ -15,8 +14,7 @@ extern HBRUSH	g_hbrDarkBackground;
 extern LPWSTR	g_strException;
 #endif
 
-extern IUnknown* FindUnkTE();
-extern IDropSource* FindDropSource();
+extern IDropSource* teFindDropSource();
 
 std::unordered_map<HWND, HWND> g_umSetTheme;
 std::unordered_map<HWND, HWND> g_umDlgProc;
@@ -518,7 +516,7 @@ LRESULT CALLBACK TETTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 		if (g_pOnFunc[TE_OnToolTip]) {
 			if (msg == WM_PAINT || msg == WM_ERASEBKGND || msg == TTM_ACTIVATE) {
 				VARIANTARG *pv = GetNewVARIANT(3);
-				teSetObject(&pv[2], FindUnkTE());
+				teSetObject(&pv[2], teFindDropSource());
 				teSetLong(&pv[1], msg);
 				teSetPtr(&pv[0], hwnd);
 				VARIANT vResult;

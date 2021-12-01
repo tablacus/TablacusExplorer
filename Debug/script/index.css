@@ -326,3 +326,7 @@ a.treebutton:hover {
 	color: captiontext;
 	background-color: activecaption;
 }
+
+.fixed {
+  table-layout: fixed;
+}

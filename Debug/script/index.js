@@ -255,7 +255,7 @@ OnArrange = async function (Ctrl, rc) {
 		const Id = await Ctrl.Id;
 		const p = [rc.left, rc.top, rc.right, rc.bottom, Ctrl.Visible, Ctrl.Left, Ctrl.Top, Ctrl.Width, Ctrl.Height];
 		if (!document.getElementById("Panel_" + Id)) {
-			const s = ['<table id="Panel_', Id, '" class="layout" style="position: absolute; z-index: 1; color: inherit; visibility: hidden">'];
+			const s = ['<table id="Panel_', Id, '" class="layout fixed" style="position: absolute; z-index: 1; color: inherit; visibility: hidden">'];
 			s.push('<tr><td id="InnerLeft_', Id, '" class="sidebar" style="width: 0; display: none; overflow: auto"></td><td style="width: 100%"><div id="InnerTop_', Id, '" style="display: none"></div>');
 			s.push('<table id="InnerTop2_', Id, '" class="layout">');
 			s.push('<tr><td id="Inner1Left_', Id, '" class="toolbar1"></td><td id="Inner1Center_', Id, '" class="toolbar2" style="white-space: nowrap"></td><td id="Inner1Right_', Id, '" class="toolbar3"></td></tr></table>');
@@ -280,8 +280,15 @@ OnArrange = async function (Ctrl, rc) {
 				o.style.display = "none";
 				return;
 			}
-			o.style.width = Math.max(r[2] - r[0], 0) + "px";
-			o.style.height = Math.max(r[3] - r[1], 0) + "px";
+			let bResize, w = Math.max(r[2] - r[0], 0) + "px", h = Math.max(r[3] - r[1], 0) + "px";
+			if (o.style.width != w) {
+				o.style.width = w;
+				bResize = true;
+			}
+			if (o.style.height != h) {
+				o.style.height = h;
+				bResize = true;
+			}
 			let el = document.getElementById("InnerLeft_" + Id);
 			if (!/none/i.test(el.style.display)) {
 				r[0] += el.offsetWidth;
@@ -308,6 +315,9 @@ OnArrange = async function (Ctrl, rc) {
 					ui_.Show = 2;
 					SetWindowAlpha(ui_.hwnd, 255);
 					RunEvent1("VisibleChanged", te, true);
+				}
+				if (bResize) {
+					RunEventUI1("Resize");
 				}
 			});
 		});

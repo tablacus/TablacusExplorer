@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20211130 ? te.Version : 20211130;
+		return te.Version < 20211201 ? te.Version : 20211201;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -577,7 +577,7 @@ IsSearchPath = function (pid, bText) {
 }
 
 IsCloud = function (Item) {
-	return Item && /[NO]/i.test(Item.ExtendedProperty("Attributes"));
+	return Item && /[NO]|D.*I/i.test(Item.ExtendedProperty("Attributes"));
 }
 
 LoadXml = function (filename, nGroup) {
