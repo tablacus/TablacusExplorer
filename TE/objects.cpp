@@ -5033,7 +5033,7 @@ STDMETHODIMP CteNewWindowManager::EvaluateNewWindow(LPCWSTR pszUrl, LPCWSTR pszN
 	return teStartsText(L"http", pszUrl) ? S_FALSE : S_OK;
 }
 
-#ifdef _USE_HTMLDOC
+#ifdef USE_HTMLDOC
 // CteDocHostUIHandler
 CteDocHostUIHandler::CteDocHostUIHandler()
 {
@@ -5152,7 +5152,7 @@ STDMETHODIMP CteDocHostUIHandler::FilterDataObject(IDataObject *pDO, IDataObject
 	return E_NOTIMPL;
 }
 #endif
-#ifdef _USE_TESTOBJECT
+#ifdef USE_TESTOBJECT
 //CteTest
 CteTest::CteTest()
 {

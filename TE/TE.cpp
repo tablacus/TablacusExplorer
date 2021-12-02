@@ -69,7 +69,7 @@ LPFNSHCreateShellItemArrayFromShellItem _SHCreateShellItemArrayFromShellItem = N
 #define _VariantToPropVariant VariantToPropVariant
 #define _SHCreateShellItemArrayFromShellItem SHCreateShellItemArrayFromShellItem
 #endif
-#ifdef _USE_APIHOOK
+#ifdef USE_APIHOOK
 LPFNRegQueryValueExW _RegQueryValueExW = NULL;
 LPFNRegQueryValueW _RegQueryValueW = NULL;
 LPFNGetSysColor _GetSysColor = NULL;
@@ -106,7 +106,7 @@ std::vector<LONG_PTR> g_ppGetImage;
 std::vector<LONG_PTR> g_ppMessageSFVCB;
 std::vector<CteFolderItem *> g_ppENum;
 CteWebBrowser *g_pWebBrowser = NULL;
-#ifdef _USE_OBJECTAPI
+#ifdef USE_OBJECTAPI
 IDispatch	*g_pAPI = NULL;
 #endif
 
@@ -204,7 +204,7 @@ LPWSTR	g_strException;
 WCHAR	g_pszException[MAX_PATH];
 //HHOOK	g_hMenuGMHook;
 #endif
-#ifdef _CHECK_HANDLELEAK
+#ifdef CHECK_HANDLELEAK
 int g_nLeak = 0;
 #endif
 
@@ -245,7 +245,7 @@ TEmethod methodTE[] = {
 	{ TE_METHOD + 1090, "UnlockUpdate" },
 	{ TE_METHOD + 1091, "ArrangeCB" },
 	{ TE_METHOD + 1100, "HookDragDrop" },//Deprecated
-#ifdef _USE_TESTOBJECT
+#ifdef USE_TESTOBJECT
 	{ 1200, "TestObj" },
 #endif
 	{ TE_OFFSET + TE_Type   , "Type" },
@@ -922,7 +922,7 @@ VOID teUnlockUpdate(int nStep)
 	}
 }
 
-#ifdef _USE_TESTPATHMATCHSPEC
+#ifdef USE_TESTPATHMATCHSPEC
 BOOL tePathMatchSpec2(LPCWSTR pszFile, LPWSTR pszSpec)
 {
 	switch (*pszSpec)
@@ -1343,7 +1343,7 @@ VOID CheckChangeTabTC(HWND hwnd)
 	}
 }
 
-#ifdef _USE_APIHOOK
+#ifdef USE_APIHOOK
 
 HTHEME WINAPI teOpenNcThemeData(HWND hWnd, LPCWSTR pszClassList)
 {
@@ -1763,7 +1763,7 @@ VOID teCustomDraw(int nFunc, CteShellBrowser *pSB, CteTreeView *pTV, IShellItem 
 	}
 }
 
-#ifdef _LOG
+#ifdef USE_LOG
 VOID teLog(HANDLE hFile, LPWSTR lpLog)
 {
 	DWORD dwWriteByte;
@@ -4231,7 +4231,7 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 	return CallNextHookEx(g_hHook, nCode, wParam, lParam);
 }
 
-#ifdef _USE_APIHOOK
+#ifdef USE_APIHOOK
 VOID teAPIHook(LPWSTR pszTargetDll, LPVOID lpfnSrcProc, LPVOID lpfnNewProc)
 {
 	HMODULE hDll = pszTargetDll ? teLoadLibrary(pszTargetDll) : GetModuleHandle(NULL);
@@ -4453,7 +4453,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 			*(FARPROC *)&_AddClipboardFormatListener = GetProcAddress(hDll, "AddClipboardFormatListener");
 		}
 #endif
-#ifdef _USE_APIHOOK
+#ifdef USE_APIHOOK
 		*(FARPROC *)&_GetSysColor = GetProcAddress(hDll, "GetSysColor");
 //		teAPIHook(L"shell32.dll", (LPVOID)_GetSysColor, &teGetSysColor);
 //		teAPIHook(L"ieframe.dll", (LPVOID)_GetSysColor, &teGetSysColor);
@@ -4484,7 +4484,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 			*(FARPROC *)&_SetPreferredAppMode = GetProcAddress(hDll, MAKEINTRESOURCEA(135));
 			*(FARPROC *)&_RefreshImmersiveColorPolicyState = GetProcAddress(hDll, MAKEINTRESOURCEA(104));
 //			*(FARPROC *)&_IsDarkModeAllowedForWindow = GetProcAddress(hDll, MAKEINTRESOURCEA(137));
-#ifdef _USE_APIHOOK
+#ifdef USE_APIHOOK
 			*(FARPROC *)&_OpenNcThemeData = GetProcAddress(hDll, MAKEINTRESOURCEA(49));
 			teAPIHook(L"comctl32.dll", (LPVOID)_OpenNcThemeData, &teOpenNcThemeData);
 #endif
@@ -4691,7 +4691,7 @@ function _c(s) {\
 	pGlobalInterfaceTable->RegisterInterfaceInGlobal(g_pJS, IID_IDispatch, &g_dwCookieJS);
 	InitializeCriticalSection(&g_csFolderSize);
 	//WindowsAPI
-#ifdef _USE_OBJECTAPI
+#ifdef USE_OBJECTAPI
 	GetNewObject(&g_pAPI);
 	VARIANT v;
 	for (int i = _countof(dispAPI); i--;) {
@@ -4715,7 +4715,7 @@ function _c(s) {\
 	RegisterDragDrop(g_hwndMain, g_pDropTarget2);
 
 	IDispatch *pJS = NULL;
-#ifdef _USE_HTMLDOC
+#ifdef USE_HTMLDOC
 	IHTMLDocument2	*pHtmlDoc = NULL;
 #else
 	VARIANT vWindow;
@@ -4749,7 +4749,7 @@ function _c(s) {\
 		bsScript = teLoadFromFile(bsIndex);
 		VARIANT vResult;
 		VariantInit(&vResult);
-#ifdef _USE_HTMLDOC
+#ifdef USE_HTMLDOC
 		// CLSID_HTMLDocument
 		if SUCCEEDED(teCreateInstance(CLSID_HTMLDocument, NULL, NULL, IID_PPV_ARGS(&pHtmlDoc))) {
 			ICustomDoc *pCD = NULL;
@@ -4823,7 +4823,7 @@ function _c(s) {\
 		g_bMessageLoop = FALSE;
 		RevokeDragDrop(g_hwndMain);
 		SafeRelease(&g_pDropTarget2);
-#ifdef _USE_HTMLDOC
+#ifdef USE_HTMLDOC
 		SafeRelease(&pHtmlDoc);
 #else
 		SafeRelease(&pJS);
@@ -4841,7 +4841,7 @@ function _c(s) {\
 			itr->second->Release();
 		}
 		g_umSubWindows.clear();
-#ifdef _USE_OBJECTAPI
+#ifdef USE_OBJECTAPI
 		SafeRelease(&g_pAPI);
 #endif
 		pGlobalInterfaceTable->RevokeInterfaceFromGlobal(g_dwCookieJS);
@@ -6044,7 +6044,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 #endif
 	}
 	try {
-#ifdef _USE_SHELLBROWSER
+#ifdef USE_SHELLBROWSER
 		hr = E_FAIL;
 		if (dwFrame) {
 			//ExplorerBrowser
@@ -8709,7 +8709,7 @@ VOID CteShellBrowser::AddColumnDataXP(LPWSTR pszColumns, LPWSTR pszName, int nWi
 }
 #endif
 
-#if defined(_USE_SHELLBROWSER) || defined(_2000XP)
+#if defined(USE_SHELLBROWSER) || defined(_2000XP)
 HRESULT CteShellBrowser::NavigateSB(IShellView *pPreviousView, FolderItem *pPrevious)
 {
 	HRESULT hr = E_FAIL;
@@ -8764,7 +8764,7 @@ HRESULT CteShellBrowser::NavigateSB(IShellView *pPreviousView, FolderItem *pPrev
 }
 #endif
 
-#if defined(_USE_SHELLBROWSER) || defined(_2000XP)
+#if defined(USE_SHELLBROWSER) || defined(_2000XP)
 HRESULT CteShellBrowser::CreateViewWindowEx(IShellView *pPreviousView)
 {
 	HRESULT hr = E_FAIL;
@@ -9637,7 +9637,7 @@ STDMETHODIMP CteShellBrowser::GetPaneState(REFEXPLORERPANE ep, EXPLORERPANESTATE
 	return E_NOTIMPL;
 }
 
-#if defined(_USE_SHELLBROWSER) || defined(_2000XP)
+#if defined(USE_SHELLBROWSER) || defined(_2000XP)
 //IShellFolder
 STDMETHODIMP CteShellBrowser::ParseDisplayName(HWND hwnd, IBindCtx *pbc, LPWSTR pszDisplayName, ULONG *pchEaten, PIDLIST_RELATIVE *ppidl, ULONG *pdwAttributes)
 {
@@ -10804,7 +10804,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				return S_OK;
 
 			case 1030://WindowsAPI
-#ifdef _USE_OBJECTAPI
+#ifdef USE_OBJECTAPI
 				teSetObject(pVarResult, g_pAPI);
 #else
 				teSetObjectRelease(pVarResult, new CteWindowsAPI(NULL));
@@ -10905,7 +10905,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				teSetSZ(pVarResult, g_bsExplorerBrowserFilter);
 				return S_OK;
 
-#ifdef _USE_TESTOBJECT
+#ifdef USE_TESTOBJECT
 			//TestObj
 			case 1200:
 				teSetObjectRelease(pVarResult, new CteTest());
@@ -13040,7 +13040,7 @@ VOID CteTreeView::Close()
 
 VOID CteTreeView::Create()
 {
-	if (_Emulate_XP_ SUCCEEDED(teCreateInstance(CLSID_NamespaceTreeControl, NULL, NULL, IID_PPV_ARGS(&m_pNameSpaceTreeControl)))) {
+	if (EMULATE_XP SUCCEEDED(teCreateInstance(CLSID_NamespaceTreeControl, NULL, NULL, IID_PPV_ARGS(&m_pNameSpaceTreeControl)))) {
 		RECT rc;
 		SetRectEmpty(&rc);
 		if SUCCEEDED(m_pNameSpaceTreeControl->Initialize(m_hwndParent, &rc, m_param[SB_TreeFlags])) {

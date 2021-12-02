@@ -180,7 +180,7 @@ class CteShellBrowser : public IShellBrowser, public ICommDlgBrowser2,
 #ifdef _2000XP
 	public IShellFolder2,
 #else
-#ifdef _USE_SHELLBROWSER
+#ifdef USE_SHELLBROWSER
 	public IShellFolder,
 #endif
 #endif
@@ -244,7 +244,7 @@ public:
 	STDMETHODIMP OnNavigationFailed(PCIDLIST_ABSOLUTE pidlFolder);
 	//IExplorerPaneVisibility
 	STDMETHODIMP GetPaneState(REFEXPLORERPANE ep, EXPLORERPANESTATE *peps);
-#if defined(_USE_SHELLBROWSER) || defined(_2000XP)
+#if defined(USE_SHELLBROWSER) || defined(_2000XP)
 	//IShellFolder
 	STDMETHODIMP ParseDisplayName(HWND hwnd, IBindCtx *pbc, LPWSTR pszDisplayName, ULONG *pchEaten, PIDLIST_RELATIVE *ppidl, ULONG *pdwAttributes);
 	STDMETHODIMP EnumObjects(HWND hwndOwner, SHCONTF grfFlags, IEnumIDList **ppenumIDList);
@@ -355,7 +355,7 @@ public:
 	int GetFolderViewAndItemCount(IFolderView **ppFV, UINT uFlags);
 	HRESULT Search(LPWSTR pszSearch);
 	VOID RedrawUpdate();
-#if defined(_USE_SHELLBROWSER) || defined(_2000XP)
+#if defined(USE_SHELLBROWSER) || defined(_2000XP)
 	HRESULT NavigateSB(IShellView *pPreviousView, FolderItem *pPrevious);
 #endif
 #ifdef _2000XP

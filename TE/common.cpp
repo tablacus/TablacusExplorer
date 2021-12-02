@@ -739,7 +739,7 @@ BOOL teGetIDListFromObject(IUnknown *punk, LPITEMIDLIST *ppidl)
 	if (!punk) {
 		return FALSE;
 	}
-#ifdef _CHECK_HANDLELEAK
+#ifdef CHECK_HANDLELEAK
 	if SUCCEEDED(teGetIDListFromObjectXP(punk, ppidl)) {
 		return TRUE;
 	}
@@ -959,7 +959,7 @@ BOOL tePathMatchSpec(LPCWSTR pszFile, LPWSTR pszSpec)
 	}
 	do {
 		pszSpecEnd = StrChr(pszSpec, ';');
-#ifdef _USE_TESTPATHMATCHSPEC
+#ifdef USE_TESTPATHMATCHSPEC
 		BOOL b1 = !!tePathMatchSpec1(pszFile, pszSpec, pszSpecEnd ? ';' : NULL);
 		BOOL b2 = !!tePathMatchSpec2(pszFile, pszSpec);
 		if (b1 != b2) {
@@ -1342,7 +1342,7 @@ HRESULT tePathIsDirectory(LPWSTR pszPath, int dwms, int iUseFS)
 		if (dwms <= 0) {
 			dwms = g_param[TE_NetworkTimeout];
 		}
-#ifdef _CHECK_HANDLELEAK
+#ifdef CHECK_HANDLELEAK
 		dwms = 0;
 #endif
 		if (dwms) {
@@ -1586,7 +1586,7 @@ LPITEMIDLIST teILCreateFromPath0(LPWSTR pszPath, BOOL bForceLimit)
 	if (bForceLimit && (!dwms || dwms > 500)) {
 		dwms = 500;
 	}
-#ifdef _CHECK_HANDLELEAK
+#ifdef CHECK_HANDLELEAK
 	dwms = 0;
 #endif
 	if (dwms && (bForceLimit || g_dwMainThreadId == GetCurrentThreadId())) {

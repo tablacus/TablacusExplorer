@@ -520,7 +520,7 @@ private:
 };
 
 
-#ifdef _USE_HTMLDOC
+#ifdef USE_HTMLDOC
 // DocHostUIHandler
 class CteDocHostUIHandler : public IDocHostUIHandler
 {
@@ -551,7 +551,7 @@ public:
 	LONG	m_cRef;
 };
 #endif
-#ifdef _USE_TESTOBJECT
+#ifdef USE_TESTOBJECT
 class CteTest : public IDispatch
 {
 public:

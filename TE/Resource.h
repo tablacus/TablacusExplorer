@@ -16,24 +16,23 @@
 //Version(DLL)
 #define VER_Y		21
 #define VER_M		12
-#define VER_D		1
+#define VER_D		2
 #endif
 
 //Icon
 #define IDI_TE		1
 
 //Define
-//#define _USE_TEOBJ
-//#define _USE_SHELLBROWSER
-//#define _USE_OBJECTAPI
-//#define _USE_APIHOOK
-//#define _USE_HTMLDOC
-//#define _USE_TESTOBJECT
-//#define _USE_TESTPATHMATCHSPEC
-//#define _USE_FAKESHELLFOLDER2
-//#define _CHECK_HANDLELEAK
-//#define _LOG
-#define _Emulate_XP_	//FALSE &&
+//#define USE_TEOBJ
+//#define USE_SHELLBROWSER
+//#define USE_OBJECTAPI
+//#define USE_APIHOOK
+//#define USE_HTMLDOC
+//#define USE_TESTOBJECT
+//#define USE_TESTPATHMATCHSPEC
+//#define CHECK_HANDLELEAK
+//#define USE_LOG
+#define EMULATE_XP	//FALSE &&
 #ifndef _WIN64
 #define _2000XP
 //#define _W2000

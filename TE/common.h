@@ -34,14 +34,14 @@
 //#include <Vssym32.h>
 #include <vector>
 #include <unordered_map>
-#ifdef _USE_TEOBJ
+#ifdef USE_TEOBJ
 #include <map>
 #endif
 #ifndef _2000XP
 #include <Propsys.h>
 #include <Propvarutil.h>
 #endif
-#ifdef _USE_APIHOOK
+#ifdef USE_APIHOOK
 #include <imagehlp.h>
 #endif
 
@@ -58,7 +58,7 @@
 #ifndef _2000XP
 #pragma comment(lib, "Propsys.lib")
 #endif
-#ifdef _USE_APIHOOK
+#ifdef USE_APIHOOK
 #pragma comment(lib, "imagehlp.lib")
 #endif
 #ifdef _WINDLL
@@ -309,7 +309,7 @@ typedef HRESULT (WINAPI* LPFNGetImage)(IStream *pStream, LPCWSTR lpPath, int cx,
 //Plug in (MessageSFVCB)
 typedef HRESULT (WINAPI* LPFNMessageSFVCB)(ICommDlgBrowser2 *pSB, IShellFolder2 *pSF2, IShellView *pSV, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-#ifdef _USE_APIHOOK
+#ifdef USE_APIHOOK
 //API Hook
 typedef LSTATUS (APIENTRY* LPFNRegQueryValueExW)(HKEY hKey, LPCWSTR lpValueName, LPDWORD lpReserved, LPDWORD lpType, LPBYTE lpData, LPDWORD lpcbData);
 typedef LSTATUS(APIENTRY* LPFNRegQueryValueW)(HKEY hKey, LPCWSTR lpSubKey, LPWSTR lpData, PLONG lpcbData);

@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20211201 ? te.Version : 20211201;
+		return te.Version < 20211202 ? te.Version : 20211202;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1695,7 +1695,7 @@ LoadLayout = function () {
 	const commdlg = api.CreateObject("CommonDialog");
 	commdlg.InitDir = BuildPath(te.Data.DataFolder, "layout");
 	commdlg.Filter = MakeCommDlgFilter("*.xml");
-	commdlg.Flags = OFN_FILEMUSTEXIST;
+	commdlg.Flags = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
 	if (commdlg.ShowOpen()) {
 		LoadXml(commdlg.FileName);
 	}

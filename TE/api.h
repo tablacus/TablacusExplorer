@@ -19,7 +19,7 @@ private:
 	LONG	m_cRef;
 };
 
-#ifdef _USE_OBJECTAPI
+#ifdef USE_OBJECTAPI
 class CteAPI : public IDispatch
 {
 public:

@@ -713,7 +713,7 @@ HRESULT teInvokeAPI(TEDispatchApi *pApi, DISPPARAMS *pDispParams, VARIANT *pVarR
 				param[i].llVal = GetParamFromVariant(&pDispParams->rgvarg[nArg - i], &vParam[i]);
 			}
 		}
-#ifdef _CHECK_HANDLELEAK
+#ifdef CHECK_HANDLELEAK
 		HANDLE hProcess;
 		DWORD dwHandle1, dwHandle2;
 		if (hProcess = OpenProcess(PROCESS_QUERY_INFORMATION,FALSE, GetCurrentProcessId())) {
@@ -724,7 +724,7 @@ HRESULT teInvokeAPI(TEDispatchApi *pApi, DISPPARAMS *pDispParams, VARIANT *pVarR
 			}
 #endif
 			pApi->fn(nArg, param, pDispParams, pVarResult);
-#ifdef _CHECK_HANDLELEAK
+#ifdef CHECK_HANDLELEAK
 			GetProcessHandleCount(hProcess, &dwHandle2);
 			if (dwHandle2 > dwHandle1) {
 				LPWSTR lpwstr = param[0].lpwstr;
@@ -4407,7 +4407,7 @@ STDMETHODIMP CteWindowsAPI::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 	return S_OK;
 }
 
-#ifdef _USE_OBJECTAPI
+#ifdef USE_OBJECTAPI
 //CteAPI
 CteAPI::CteAPI(TEDispatchApi *pApi)
 {

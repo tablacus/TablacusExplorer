@@ -186,10 +186,11 @@ VOID FixChildren(HWND hwnd)
 		}
 		CHAR pszClassA[MAX_CLASS_NAME];
 		::GetClassNameA(hwnd1, pszClassA, MAX_CLASS_NAME);
-		if (lstrcmpiA(pszClassA, WC_BUTTONA) == 0) {
+		if (::PathMatchSpecA(pszClassA, WC_BUTTONA)) {
 			::SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
 			DWORD dwStyle = GetWindowLong(hwnd1, GWL_STYLE);
-			if ((dwStyle & BS_TYPEMASK) > BS_DEFPUSHBUTTON) {
+			DWORD dwButton = dwStyle & BS_TYPEMASK;
+			if (dwButton > BS_DEFPUSHBUTTON && dwButton < BS_OWNERDRAW) {
 				if (g_bDarkMode) {
 					if (!(dwStyle & BS_BITMAP)) {
 						int nLen = ::GetWindowTextLength(hwnd1);
@@ -235,19 +236,15 @@ VOID FixChildren(HWND hwnd)
 					}
 				}
 			}
-		}
-		if (lstrcmpiA(pszClassA, WC_COMBOBOXA) == 0) {
+		} else if (::PathMatchSpecA(pszClassA, WC_EDITA ";" WC_COMBOBOXA)) {
 			::SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_cfd" : L"cfd", NULL);
-		}
-		if (lstrcmpiA(pszClassA, WC_SCROLLBARA) == 0) {
+		} else if (::PathMatchSpecA(pszClassA, WC_SCROLLBARA)) {
 			::SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
-		}
-		if (lstrcmpiA(pszClassA, WC_TREEVIEWA) == 0) {
+		} else if (::PathMatchSpecA(pszClassA, WC_TREEVIEWA)) {
 			SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
 			TreeView_SetTextColor(hwnd1, g_bDarkMode ? TECL_DARKTEXT : GetSysColor(COLOR_WINDOWTEXT));
 			TreeView_SetBkColor(hwnd1, g_bDarkMode ? TECL_DARKBG : GetSysColor(COLOR_WINDOW));
-		}
-		if (lstrcmpiA(pszClassA, WC_LISTVIEWA) == 0) {
+		} else if (::PathMatchSpecA(pszClassA, WC_LISTVIEWA)) {
 			SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_itemsview" : L"explorer", NULL);
 			ListView_SetTextColor(hwnd1, g_bDarkMode ? TECL_DARKTEXT : GetSysColor(COLOR_WINDOWTEXT));
 			ListView_SetTextBkColor(hwnd1, g_bDarkMode ? TECL_DARKBG : GetSysColor(COLOR_WINDOW));
@@ -264,8 +261,7 @@ VOID FixChildren(HWND hwnd)
 				}
 				ListView_SetSelectedColumn(hwnd1, -1);
 			}
-		}
-		if (lstrcmpiA(pszClassA, WC_TABCONTROLA) == 0) {
+		} else if (::PathMatchSpecA(pszClassA, WC_TABCONTROLA)) {
 			if (g_bDarkMode && !(GetWindowLong(hwnd1, GWL_STYLE) & TCS_OWNERDRAWFIXED)) {
 				::SetClassLongPtr(hwnd1, GCLP_HBRBACKGROUND, (LONG_PTR)g_hbrDarkBackground);
 				auto itr = g_umDlgProc.find(hwnd1);
@@ -390,14 +386,15 @@ LRESULT CALLBACK TEDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 			HWND hwnd1;
 			CHAR pszClassA[MAX_CLASS_NAME];
 			switch (msg) {
+			case WM_CTLCOLORBTN:
 			case WM_CTLCOLORSTATIC:
 				SetTextColor((HDC)wParam, TECL_DARKTEXT);
-				SetBkMode((HDC)wParam, TRANSPARENT);
+				SetBkColor((HDC)wParam, TECL_DARKBG);
 				return (LRESULT)g_hbrDarkBackground;
 			case WM_CTLCOLORLISTBOX://Combobox
 			case WM_CTLCOLOREDIT:
 				SetTextColor((HDC)wParam, TECL_DARKTEXT);
-				SetBkMode((HDC)wParam, TRANSPARENT);
+				SetBkColor((HDC)wParam, TECL_DARKBG);
 				SetDCBrushColor((HDC)wParam, TECL_DARKEDITBG);
 				return (LRESULT)GetStockObject(DC_BRUSH);
 			case WM_ERASEBKGND:
