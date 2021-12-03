@@ -26,6 +26,7 @@
               <div id="tab1_" style="margin-left: 1.667em; display: none">
                 <label id="tab1_1" class="button" style="width: 100%" onmousedown="ClickTree(this);">Get Add-ons</label><br>
                 <label id="tab1_3" class="button" style="width: 100%" onmousedown="ClickTree(this);">Get Icons</label><br>
+                <label id="tab1_4" class="button" style="width: 100%" onmousedown="ClickTree(this);">Get Lang</label><br>
               </div>
               <a id="tabbtn2" class="treebutton" onclick="ClickButton(2);"></a>
               <label id="tab2" class="button" style="width: 88%" onmousedown="ClickButton(2, true);ClickTree(document.getElementById('tab2_0'), null, 'Menus');">Menus</label>
@@ -61,10 +62,13 @@
             <!--panel_start-->
             <div class="panel hide" id="panel0">
               <label>@docprop.dll,-107</label><br>
-              <input type="text" name="Conf_Lang" size="5">
+              <input type="text" name="Conf_Lang" style="width: 50%">
               <input type="button" value="Browse..." onclick="SelectLangID(this)">
+              <br>
               <label>Default</label>:
-              <span id="DefaultLangID"></span>&nbsp;<input type="button" value="Default" onclick="SetDefaultLangID()"><br>
+              <span id="DefaultLangID"></span>&nbsp;<input type="button" value="Default" onclick="SetDefaultLangID()">
+              <input type="button" value="Get Lang" id="AddLang" onclick="ClickTree('tab1_4')">
+              <br>
               <br>
               <label>Left bar</label><br>
               <label>Width</label><input type="text" id="Conf_LeftBarWidth" align="right" size="4"><label>@mspaint.exe,-50047[px]</label><br><br>
@@ -171,6 +175,19 @@
               </div>
               <div id="panel1_3_1" style="width: 100%">
                 <table id="IconPacks1" style="width: 100%">
+                  <tr>
+                    <td>
+                      <label>Please wait.</label>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+            <!--panel_end-->
+
+            <div class="panel hide" id="panel1_4">
+              <div id="panel1_4_1" style="width: 100%">
+                <table id="LangPacks1" style="width: 100%">
                   <tr>
                     <td>
                       <label>Please wait.</label>

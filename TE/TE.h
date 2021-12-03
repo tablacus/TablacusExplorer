@@ -334,7 +334,7 @@ public:
 	HRESULT PropertyKeyFromName(BSTR bs, PROPERTYKEY *pkey);
 	FOLDERVIEWOPTIONS teGetFolderViewOptions(LPITEMIDLIST pidl, UINT uViewMode);
 	VOID OnNavigationComplete2();
-	HRESULT BrowseToObject();
+	HRESULT BrowseToObject(DWORD dwFrame, FOLDERVIEWOPTIONS fvoFlags);
 	HRESULT GetShellFolder2(LPITEMIDLIST *ppidl);
 	HRESULT CreateViewWindowEx(IShellView *pPreviousView);
 	VOID SetTabName();
@@ -355,6 +355,7 @@ public:
 	int GetFolderViewAndItemCount(IFolderView **ppFV, UINT uFlags);
 	HRESULT Search(LPWSTR pszSearch);
 	VOID RedrawUpdate();
+	VOID SetEmptyText();
 #if defined(USE_SHELLBROWSER) || defined(_2000XP)
 	HRESULT NavigateSB(IShellView *pPreviousView, FolderItem *pPrevious);
 #endif
@@ -384,6 +385,8 @@ public:
 	BSTR		m_bsNextGroup;
 	RECT		m_rc;
 	int			m_nForceViewMode;
+	int			m_nForceIconSize;
+	DWORD		m_dwTickForceVM;
 	int			m_nFolderSizeIndex;
 	int			m_nLabelIndex;
 	int			m_nSizeIndex;

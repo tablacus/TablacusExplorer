@@ -146,9 +146,12 @@ SORTCOLUMN g_pSortColumnNull[3];
 VARIANT g_vData;
 VARIANT g_vArguments;
 CteDropTarget2 *g_pDropTarget2;
+POINT	g_ptDouble;
+WPARAM	g_wParam2;
 
 LONG	g_nLockUpdate = 0;
 LONG    g_nCountOfThreadFolderSize = 0;
+UINT	g_dwDoubleTime;
 DWORD	g_paramFV[SB_Count];
 DWORD	g_dwMainThreadId;
 DWORD	g_dwCookieSW = 0;
@@ -2311,9 +2314,6 @@ LRESULT CALLBACK MenuGMProc(int nCode, WPARAM wParam, LPARAM lParam)
 #endif
 LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
-	static UINT dwDoubleTime;
-	static WPARAM wParam2;
-
 	HRESULT hrResult = S_FALSE;
 	try {
 		IDispatch *pdisp = NULL;
@@ -2330,8 +2330,8 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 						MOUSEHOOKSTRUCTEX *pMHS = (MOUSEHOOKSTRUCTEX *)lParam;
 						if (ControlFromhwnd(&pdisp, pMHS->hwnd) == S_OK) {
 							try {
-								if (InterlockedIncrement(&g_nProcMouse) < 5 || wParam != wParam2) {
-									wParam2 = wParam;
+								if (InterlockedIncrement(&g_nProcMouse) < 5 || wParam != g_wParam2) {
+									g_wParam2 = wParam;
 									CteTreeView *pTV = NULL;
 									TVHITTESTINFO ht;
 									pTV = TVfromhwnd(pMHS->hwnd);
@@ -2361,25 +2361,30 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 									MSG msg;
 									msg.hwnd = pMHS->hwnd;
 									msg.message = (LONG)wParam;
-									if (msg.message == WM_LBUTTONDOWN) {
-										CHAR szClassA[MAX_CLASS_NAME];
-										GetClassNameA(msg.hwnd, szClassA, MAX_CLASS_NAME);
-										if (lstrcmpA(szClassA, WC_LISTVIEWA) == 0) {
-											msg.hwnd = WindowFromPoint(pMHS->pt);
-										} else if (lstrcmpA(szClassA, "DirectUIHWND") == 0) {
-											DWORD dwTick = GetTickCount();
-											if (dwTick - dwDoubleTime < GetDoubleClickTime()) {
-												msg.message = WM_LBUTTONDBLCLK;
-											} else {
-												dwDoubleTime = dwTick;
-											}
-											msg.hwnd = WindowFromPoint(pMHS->pt);
-										}
-									}
-
 									msg.wParam = pMHS->mouseData;
 									msg.pt.x = pMHS->pt.x;
 									msg.pt.y = pMHS->pt.y;
+									CHAR szClassA[MAX_CLASS_NAME];
+									GetClassNameA(msg.hwnd, szClassA, MAX_CLASS_NAME);
+									if (lstrcmpA(szClassA, WC_LISTVIEWA) == 0) {
+										if (msg.message == WM_LBUTTONDOWN) {
+											msg.hwnd = WindowFromPoint(pMHS->pt);
+										}
+									} else if (lstrcmpA(szClassA, "DirectUIHWND") == 0) {
+										if (msg.message == WM_LBUTTONDOWN) {
+											if (GetTickCount() - g_dwDoubleTime < GetDoubleClickTime() &&
+												abs(g_ptDouble.x - msg.pt.x) < GetSystemMetrics(SM_CXDRAG) &&
+												abs(g_ptDouble.y - msg.pt.y) < GetSystemMetrics(SM_CXDRAG)) {
+												msg.message = WM_LBUTTONDBLCLK;
+											} else {
+												g_ptDouble.x = msg.pt.x;
+												g_ptDouble.y = msg.pt.y;
+											}
+											msg.hwnd = WindowFromPoint(pMHS->pt);
+										} else if (msg.message == WM_LBUTTONUP) {
+											g_dwDoubleTime = GetTickCount();
+										}
+									}
 									hrResult = MessageSubPt(TE_OnMouseMessage, pdisp, &msg);
 #ifdef _2000XP
 									if (hrResult != S_OK && pTV) {
@@ -5957,12 +5962,7 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 		m_pExplorerBrowser->GetOptions((EXPLORER_BROWSER_OPTIONS *)&m_param[SB_Options]);
 		if (!ILIsEqual(pidl, g_pidls[CSIDL_RESULTSFOLDER]) || !ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
 			if (GetShellFolder2(&pidl) == S_OK) {
-				IFolderViewOptions *pOptions;
-				if SUCCEEDED(m_pExplorerBrowser->QueryInterface(IID_PPV_ARGS(&pOptions))) {
-					pOptions->SetFolderViewOptions(FVO_VISTALAYOUT, teGetFolderViewOptions(pidl, m_param[SB_ViewMode]));
-					pOptions->Release();
-				}
-				BrowseToObject();
+				BrowseToObject(dwFrame, teGetFolderViewOptions(pidl, m_param[SB_ViewMode]));
 				teCoTaskMemFree(pidl);
 				return S_OK;
 			}
@@ -6106,8 +6106,8 @@ VOID CteShellBrowser::GetInitFS(FOLDERSETTINGS *pfs)
 {
 	if (m_nForceViewMode != FVM_AUTO) {
 		m_param[SB_ViewMode] = m_nForceViewMode;
+		m_param[SB_IconSize] = m_nForceIconSize;
 		m_bAutoVM = FALSE;
-		m_nForceViewMode = FVM_AUTO;
 	}
 	pfs->ViewMode = !m_bAutoVM || ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER]) ? m_param[SB_ViewMode] : FVM_AUTO;
 	pfs->fFlags = (m_param[SB_FolderFlags] | FWF_USESEARCHFOLDER | FWF_SNAPTOGRID | FWF_NOBROWSERVIEWSTATE) & ~FWF_NOENUMREFRESH;
@@ -6129,11 +6129,6 @@ HRESULT CteShellBrowser::NavigateEB(DWORD dwFrame)
 					hr = GetShellFolder2(&m_pidl);
 					if (hr == S_OK) {
 						m_pExplorerBrowser->Advise(static_cast<IExplorerBrowserEvents *>(this), &m_dwEventCookie);
-						IFolderViewOptions *pOptions;
-						if SUCCEEDED(m_pExplorerBrowser->QueryInterface(IID_PPV_ARGS(&pOptions))) {
-							pOptions->SetFolderViewOptions(FVO_VISTALAYOUT, teGetFolderViewOptions(m_pidl, m_param[SB_ViewMode]));
-							pOptions->Release();
-						}
 						m_pExplorerBrowser->SetOptions(static_cast<EXPLORER_BROWSER_OPTIONS>((m_param[SB_Options] & ~(EBO_SHOWFRAMES | EBO_NAVIGATEONCE | EBO_ALWAYSNAVIGATE)) | dwFrame | EBO_NOTRAVELLOG));
 						IServiceProvider *pSP = new CteServiceProvider(static_cast<IShellBrowser *>(this), NULL);
 						IUnknown_SetSite(m_pExplorerBrowser, pSP);
@@ -6144,7 +6139,8 @@ HRESULT CteShellBrowser::NavigateEB(DWORD dwFrame)
 							pFolderFilterSite->SetFilter(static_cast<IFolderFilter *>(this));
 						}
 *///
-						hr = BrowseToObject();
+						m_hwnd = NULL;
+						hr = BrowseToObject(dwFrame, teGetFolderViewOptions(m_pidl, m_param[SB_ViewMode]));
 					}
 					if (hr == S_OK) {
 						if (m_pShellView) {
@@ -6901,6 +6897,7 @@ VOID CteShellBrowser::GetViewModeAndIconSize(BOOL bGetIconSize)
 					m_pExplorerBrowser->GetOptions((EXPLORER_BROWSER_OPTIONS *)&m_param[SB_Options]);
 					if ((fvo ^ fvo0 & FVO_VISTALAYOUT) || (m_param[SB_Options] & EBO_SHOWFRAMES) != (m_param[SB_Type] == CTRL_EB ? EBO_SHOWFRAMES : 0)) {
 						m_bCheckLayout = FALSE;
+						m_nForceViewMode = FVM_AUTO;
 					}
 					pOptions->Release();
 				}
@@ -6908,8 +6905,21 @@ VOID CteShellBrowser::GetViewModeAndIconSize(BOOL bGetIconSize)
 				m_bCheckLayout = FALSE;
 			}
 			if (!m_bCheckLayout) {
-				m_nForceViewMode = uViewMode;
-				Suspend(4);
+				DWORD dwTick = GetTickCount();
+				if (dwTick - m_dwTickForceVM > 3000) {
+					m_nForceViewMode = FVM_AUTO;
+				}
+				if (m_nForceViewMode == FVM_AUTO) {
+					m_nForceViewMode = uViewMode;
+					m_nForceIconSize = m_param[SB_IconSize];
+					m_dwTickForceVM = dwTick;
+					Suspend(4);
+				} else {
+					m_param[SB_ViewMode] = m_nForceViewMode;
+					m_param[SB_IconSize] = m_nForceIconSize;
+					m_nForceViewMode = FVM_AUTO;
+					SetViewModeAndIconSize(TRUE);
+				}
 			}
 			m_bCheckLayout = FALSE;
 		}
@@ -8397,21 +8407,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			return DoFunc(TE_OnSelectionChanged, this, S_OK);
 
 		case DISPID_CONTENTSCHANGED://XP-
-			if (m_pShellView) {
-				IFolderView2 *pFV2;
-				if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
-					WCHAR pszFormat[MAX_STATUS];
-					pszFormat[0] = NULL;
-					LPWSTR lpBuf = pszFormat;
-					if (m_dwUnavailable) {
-						LoadString(g_hShell32, 4157, pszFormat, MAX_STATUS);
-					} else if (!m_bFiltered) {
-						lpBuf = NULL;
-					}
-					pFV2->SetText(FVST_EMPTYTEXT, lpBuf);
-					pFV2->Release();
-				}
-			}
+			SetEmptyText();
 			return DoFunc(TE_OnContentsChanged, this, S_OK);
 
 		case DISPID_FILELISTENUMDONE://XP+
@@ -9196,6 +9192,25 @@ VOID CteShellBrowser::RedrawUpdate()
 	}
 }
 
+VOID CteShellBrowser::SetEmptyText()
+{
+	if (m_pShellView) {
+		IFolderView2 *pFV2;
+		if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
+			WCHAR pszFormat[MAX_STATUS];
+			pszFormat[0] = NULL;
+			LPWSTR lpBuf = pszFormat;
+			if (m_dwUnavailable) {
+				LoadString(g_hShell32, 4157, pszFormat, MAX_STATUS);
+			} else if (!m_bFiltered) {
+				lpBuf = NULL;
+			}
+			pFV2->SetText(FVST_EMPTYTEXT, lpBuf);
+			pFV2->Release();
+		}
+	}
+}
+
 STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 {
 	m_bViewCreated = FALSE;
@@ -9254,6 +9269,9 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 	if (!m_pTC->m_nLockUpdate) {
 		ArrangeWindowEx();
 	}
+	if (m_dwUnavailable) {
+		SetEmptyText();
+	}
 	return S_OK;
 }
 
@@ -9308,24 +9326,28 @@ VOID CteShellBrowser::OnNavigationComplete2()
 	}
 }
 
-HRESULT CteShellBrowser::BrowseToObject()
+HRESULT CteShellBrowser::BrowseToObject(DWORD dwFrame, FOLDERVIEWOPTIONS fvoFlags)
 {
 	HRESULT hr;
 	m_nSuspendMode = 2;
 	::InterlockedIncrement(&m_pTC->m_lNavigating);
 	try {
+		IFolderViewOptions *pOptions;
+		if SUCCEEDED(m_pExplorerBrowser->QueryInterface(IID_PPV_ARGS(&pOptions))) {
+			pOptions->SetFolderViewOptions(FVO_VISTALAYOUT, fvoFlags);
+			pOptions->Release();
+		}
 		if (!m_hwnd) {
-			if (m_param[SB_Type] == CTRL_SB) {
-				IEnumIDList *peidl = NULL;
-				hr = m_pSF2->EnumObjects(NULL, SHCONTF_FOLDERS | SHCONTF_NONFOLDERS, &peidl);
-				if (hr == S_OK) {
-					peidl->Release();
-				} else if (hr != S_FALSE) {
-					m_pFolderItem->MakeUnavailable();
-					teILCloneReplace(&m_pidl, g_pidls[CSIDL_RESULTSFOLDER]);
-					GetShellFolder2(&m_pidl);
-				}
-			} else if (teCompareSFClass(m_pSF2, &CLSID_ResultsFolder)) {
+			IEnumIDList *peidl = NULL;
+			hr = m_pSF2->EnumObjects(NULL, SHCONTF_FOLDERS | SHCONTF_NONFOLDERS, &peidl);
+			if (hr == S_OK) {
+				peidl->Release();
+			} else if (hr != S_FALSE) {
+				m_pFolderItem->MakeUnavailable();
+				teILCloneReplace(&m_pidl, g_pidls[CSIDL_RESULTSFOLDER]);
+				GetShellFolder2(&m_pidl);
+			}
+			if (dwFrame && teCompareSFClass(m_pSF2, &CLSID_ResultsFolder)) {
 				m_pExplorerBrowser->BrowseToIDList(g_pidls[CSIDL_CDBURN_AREA], SBSP_ABSOLUTE);
 			}
 		}
@@ -10320,6 +10342,9 @@ VOID CteShellBrowser::GetGroupBy(BSTR* pbs)
 FOLDERVIEWOPTIONS CteShellBrowser::teGetFolderViewOptions(LPITEMIDLIST pidl, UINT uViewMode)
 {
 	if (m_param[SB_FolderFlags] & FWF_CHECKSELECT) {
+		return FVO_VISTALAYOUT;
+	}
+	if (m_dwUnavailable) {
 		return FVO_VISTALAYOUT;
 	}
 	if (g_bCanLayout) {
@@ -12823,7 +12848,7 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 						szNameA[0] = NULL;
 						if ((UINT_PTR)cmi.lpVerb <= MAXWORD) {
 							m_pContextMenu->GetCommandString((UINT_PTR)cmi.lpVerb, GCS_VERBA, NULL, szNameA, MAX_PATH);
-							if (lstrcmpiA((UINT_PTR)cmi.lpVerb <= MAXWORD ? szNameA : cmi.lpVerb , "mount") == 0) {
+							if (lstrcmpiA(szNameA, "mount") == 0) {
 								g_dwTickMount = GetTickCount();
 							}
 						}
