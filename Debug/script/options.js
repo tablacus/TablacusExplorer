@@ -463,13 +463,13 @@ async function SwapTabControl() {
 }
 
 async function InitConfig(o) {
-	if (ui_.Installed == ui_.DataFolder) {
+	if (ui_.Installed == await te.Data.DataFolder) {
 		return;
 	}
 	if (!await confirmOk()) {
 		return;
 	}
-	await api.SHFileOperation(FO_MOVE, BuildPath(ui_.Installed, "layout"), ui_.DataFolder, 0, false);
+	await api.SHFileOperation(FO_MOVE, BuildPath(ui_.Installed, "layout"), await te.Data.DataFolder, 0, false);
 	o.disabled = true;
 }
 
@@ -1392,7 +1392,7 @@ InitOptions = async function () {
 		document.getElementById("tab1_4").innerHTML = sl;
 		document.getElementById("AddLang").value = sl;
 		document.title = await GetText("Options") + " - " + TITLE;
-		document.F.ButtonInitConfig.disabled = (ui_.Installed == ui_.DataFolder) | !await fso.FolderExists(BuildPath(ui_.Installed, "layout"));
+		document.F.ButtonInitConfig.disabled = (ui_.Installed == await te.Data.DataFolder) | !await fso.FolderExists(BuildPath(ui_.Installed, "layout"));
 	})();
 	MainWindow.g_.OptionsWindow = $;
 	let data = [];
@@ -1597,7 +1597,7 @@ InitDialog = async function () {
 
 		const s = [];
 		const wfd = await api.Memory("WIN32_FIND_DATA");
-		const path = BuildPath(ui_.DataFolder, "icons");
+		const path = BuildPath(await te.Data.DataFolder, "icons");
 		const hFind = await api.FindFirstFile(path + "\\*", wfd);
 		for (let bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = await api.FindNextFile(hFind, wfd)) {
 			if ((await wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && /^[a-z]/i.test(await wfd.cFileName)) {
@@ -2732,7 +2732,7 @@ async function InstallIcon2(xhr, url, o) {
 	const file = o.title.replace(/\./, "") + '.zip';
 	const temp = await GetTempPath(3);
 	await CreateFolder(temp);
-	const dest = BuildPath(ui_.DataFolder, "icons");
+	const dest = BuildPath(await te.Data.DataFolder, "icons");
 	await CreateFolder(dest);
 	const hr = await (window.chrome ? window : MainWindow).Extract(BuildPath(temp, file), dest, xhr);
 	if (hr) {
@@ -2785,7 +2785,7 @@ async function IconPacksList(xhr) {
 	if (!xhr) {
 		return;
 	}
-	let s = await ReadTextFile(BuildPath(ui_.DataFolder, "icons\\config.json"));
+	let s = await ReadTextFile(BuildPath(await te.Data.DataFolder, "icons\\config.json"));
 	const json1 = JSON.parse(s || '{}');
 	const text = await xhr.get_responseText ? await xhr.get_responseText() : xhr.responseText;
 	const json = JSON.parse(text);
@@ -2828,12 +2828,17 @@ async function IconPacksList(xhr) {
 
 async function DeleteIconPacks() {
 	if (await confirmOk()) {
-		await DeleteItem(BuildPath(ui_.DataFolder, "icons"));
+		await DeleteItem(BuildPath(await te.Data.DataFolder, "icons"));
 		IconPacksList();
 	}
 }
 
 async function LangPacksList(xhr) {
+	if (xhr) {
+		g_xhrLang = xhr;
+	} else {
+		xhr = window.g_xhrLang;
+	}
 	if (!xhr) {
 		return;
 	}
@@ -2842,10 +2847,13 @@ async function LangPacksList(xhr) {
 	const td = [];
 	const li = await api.GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SSHORTDATE);
 	const bt = await GetText("Install");
+	const q = document.getElementById('_GetLangQ').value;
 	for (let n in json) {
 		const info = json[n];
-		const tm = new Date(info.pubDate).getTime();
-		td.push([tm, info.name, " / ", info.en, "<br>", info.author, '	<input type="button" onclick="InstallLang(this)" title="', n, "\n", info.pubDate, '" value="', bt, '" style="float: right"><br>', await api.GetDateFormat(LOCALE_USER_DEFAULT, 0, tm, li)]);
+		if (!q || await api.PathMatchSpec(JSON.stringify(info), "*" + q + "*")) {
+			const tm = new Date(info.pubDate).getTime();
+			td.push([tm, '<b style="font-size: 1.3em">', info.name, " / ", info.en, "</b><br>", info.author, '	<input type="button" onclick="InstallLang(this)" title="', n, "\n", info.pubDate, '" value="', bt, '" style="float: right"><br>', await api.GetDateFormat(LOCALE_USER_DEFAULT, 0, tm, li)]);
+		}
 	}
 	SetTable(document.getElementById("LangPacks1"), td);
 }
@@ -2854,16 +2862,19 @@ async function InstallLang2(xhr, url, s) {
 	if (!xhr) {
 		return;
 	}
-	const text = await xhr.get_responseText ? await xhr.get_responseText() : xhr.responseText;
 	const temp = await GetTempPath(3);
 	await CreateFolder(temp);
 	const ar = s.split("\n");
 	const src = BuildPath(temp, ar[0]);
-	await WriteTextFile(src, text);
-	await SetFileTime(src, null, null, new Date(ar[1]).getTime());
-	await api.SHFileOperation(FO_MOVE, src, BuildPath(ui_.Installed, "lang"), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, false);
-	MessageBox("Completed.", TITLE, MB_OK);
-	ClickTree("tab0");
+	if (window.chrome && await xhr.response) {
+		xhr = await ReadAsDataURL(xhr.response);
+	}
+	if (await DownloadFile(xhr, src) == S_OK) {
+		await SetFileTime(src, null, null, new Date(ar[1]).getTime());
+		await api.SHFileOperation(FO_MOVE, src, BuildPath(ui_.Installed, "lang"), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, false);
+		MessageBox("Completed.", TITLE, MB_OK);
+		ClickTree("tab0");
+	}
 }
 
 async function EnableSelectTag(o) {

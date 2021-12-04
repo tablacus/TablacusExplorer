@@ -4670,8 +4670,7 @@ STDMETHODIMP CteProgressDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lc
 			return S_OK;
 
 		case TE_METHOD + 7: //StopProgressDialog
-			m_ppd->SetLine(2, L"", TRUE, NULL);
-			teSetLong(pVarResult, m_ppd->StopProgressDialog());
+			teSetLong(pVarResult, teStopProgressDialog(m_ppd));
 			return S_OK;
 
 		case TE_METHOD + 8: //Timer

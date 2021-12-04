@@ -1048,9 +1048,9 @@ VOID teApiCreateMenu(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 VOID teApiCreateObject(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 #ifdef _DEBUG
-	::OutputDebugStringA("CreateObject: ");
-	::OutputDebugString(param[0].lpwstr);
-	::OutputDebugStringA("\n");
+	//::OutputDebugStringA("CreateObject: ");
+	//::OutputDebugString(param[0].lpwstr);
+	//::OutputDebugStringA("\n");
 #endif
 	int nIndex = teBSearch(methodObject, _countof(methodObject), param[0].lpwstr);
 	if (nIndex >= 0) {
@@ -1418,7 +1418,7 @@ VOID teApiExtract(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pV
 	SafeRelease(&pStorage);
 	teFreeLibrary(hDll, 0);
 	if (ppd) {
-		ppd->StopProgressDialog();
+		teStopProgressDialog(ppd);
 		SafeRelease(&ppd);
 	}
 	teSetLong(pVarResult, hr);

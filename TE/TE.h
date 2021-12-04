@@ -386,7 +386,6 @@ public:
 	RECT		m_rc;
 	int			m_nForceViewMode;
 	int			m_nForceIconSize;
-	DWORD		m_dwTickForceVM;
 	int			m_nFolderSizeIndex;
 	int			m_nLabelIndex;
 	int			m_nSizeIndex;

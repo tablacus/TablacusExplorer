@@ -2512,6 +2512,15 @@ BOOL teSetProgressEx(IProgressDialog *ppd, ULONGLONG ullCurrent, ULONGLONG ullTo
 	return ullCurrent < ullTotal && !ppd->HasUserCancelled();
 }
 
+HRESULT teStopProgressDialog(IProgressDialog *ppd)
+{
+	HWND hwnd;
+	if (IUnknown_GetWindow(ppd, &hwnd) == S_OK) {
+		ShowWindow(hwnd, SW_HIDE);
+	}
+	return ppd->StopProgressDialog();
+}
+
 VOID teCommaSize(LPWSTR pszIn, LPWSTR pszOut, UINT cchBuf, int nDigits)
 {
 	NUMBERFMT nbf;

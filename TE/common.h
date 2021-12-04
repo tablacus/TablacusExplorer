@@ -831,6 +831,7 @@ HRESULT teCLSIDFromString(__in LPCOLESTR lpsz, __out LPCLSID lpclsid);
 HRESULT teExtract(IStorage *pStorage, LPWSTR lpszFolderPath, IProgressDialog *ppd, int *pnItems, int nCount, int nBase);
 VOID teSetProgress(IProgressDialog *ppd, ULONGLONG ullCurrent, ULONGLONG ullTotal, int nMode);
 BOOL teSetProgressEx(IProgressDialog *ppd, ULONGLONG ullCurrent, ULONGLONG ullTotal, int nMode);
+HRESULT teStopProgressDialog(IProgressDialog *ppd);
 VOID teCommaSize(LPWSTR pszIn, LPWSTR pszOut, UINT cchBuf, int nDigits);
 VOID teStrFormatSize(DWORD dwFormat, LONGLONG qdw, LPWSTR pszBuf, UINT cchBuf);
 LPWSTR teGetCommandLine();

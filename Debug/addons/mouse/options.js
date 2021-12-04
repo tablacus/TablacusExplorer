@@ -1,4 +1,4 @@
-g_Types = { Mouse: ["All", "List", "List_Background", "Tree", "Tabs", "Tabs_Background", "Browser"] };
+g_Types = { Mouse: ["All", "List", "List_Background", "Tree", "Tabs", "Tabs_Background"] };
 
 const src = await ReadTextFile("addons\\" + Addon_Id + "\\options.html");
 const ar = [];

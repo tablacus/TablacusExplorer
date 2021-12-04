@@ -1,4 +1,4 @@
-g_Types = { Key: ["All", "List", "Tree", "Browser", "Edit", "Menus"] };
+g_Types = { Key: ["All", "List", "Tree", "Edit", "Menus"] };
 
 await SetTabContents(4, "", await ReadTextFile("addons\\" + Addon_Id + "\\options.html"));
 
