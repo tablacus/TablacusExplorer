@@ -3640,7 +3640,7 @@ HMODULE teLoadLibrary(LPWSTR lpszName)
 
 //WIC GetImage
 #ifdef _WINDLL
-extern "C" HRESULT WINAPI GetImage(IStream *pStream, LPWSTR lpfn, int cx, HBITMAP *phBM, int *pnAlpha)
+EXTERN_C HRESULT WINAPI GetImage(IStream *pStream, LPWSTR lpfn, int cx, HBITMAP *phBM, int *pnAlpha)
 {
 	DLLEXPORT;
 #else
@@ -4311,22 +4311,17 @@ HRESULT teCreateWebView2(IWebBrowser2 **ppWebBrowser)
 #ifdef _WINDLL
 BOOL WINAPI DllMain(HINSTANCE hinstDll, DWORD dwReason, LPVOID lpReserved)
 {
+	DWORD dwThreadId = GetCurrentThreadId();
 	switch (dwReason) {
 	case DLL_PROCESS_ATTACH:
 		g_hinstDll = hinstDll;
 	case DLL_THREAD_ATTACH:
-		{
-			DWORD dwThreadId = GetCurrentThreadId();
-			auto itr = g_umCBTHook.find(dwThreadId);
-			if (itr == g_umCBTHook.end()) {
-				g_umCBTHook[dwThreadId] = SetWindowsHookEx(WH_CBT, (HOOKPROC)CBTProc, NULL, dwThreadId);
-			}
-		}
+		g_umCBTHook.try_emplace(dwThreadId, SetWindowsHookEx(WH_CBT, (HOOKPROC)CBTProc, NULL, dwThreadId));
 		break;
 	case DLL_THREAD_DETACH:
 	case DLL_PROCESS_DETACH:
 		{
-			auto itr = g_umCBTHook.find(GetCurrentThreadId());
+			auto itr = g_umCBTHook.find(dwThreadId);
 			if (itr != g_umCBTHook.end()) {
 				UnhookWindowsHookEx(itr->second);
 				g_umCBTHook.erase(itr);
@@ -4339,7 +4334,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDll, DWORD dwReason, LPVOID lpReserved)
 #endif
 
 #ifdef _WINDLL
-extern "C" void CALLBACK RunDLLW(HWND hWnd, HINSTANCE hInstance, LPWSTR lpCmdLine, int nCmdShow)
+EXTERN_C void CALLBACK RunDLLW(HWND hWnd, HINSTANCE hInstance, LPWSTR lpCmdLine, int nCmdShow)
 {
 	DLLEXPORT;
 #else

@@ -225,6 +225,21 @@ TEmethod tesLVBKIMAGE[] =
 	{ (VT_I4 << TE_VT) + offsetof(LVBKIMAGE, yOffsetPercent), "yOffsetPercent" },
 };
 
+TEmethod tesLVCOLUMN[] =
+{
+	{ (VT_I4 << TE_VT) + offsetof(LVCOLUMN, cchTextMax), "cchTextMax" },
+	{ (VT_I4 << TE_VT) + offsetof(LVCOLUMN, cx), "cx" },
+	{ (VT_I4 << TE_VT) + offsetof(LVCOLUMN, cxDefault), "cxDefault" },
+	{ (VT_I4 << TE_VT) + offsetof(LVCOLUMN, cxIdeal), "cxIdeal" },
+	{ (VT_I4 << TE_VT) + offsetof(LVCOLUMN, cxMin), "cxMin" },
+	{ (VT_I4 << TE_VT) + offsetof(LVCOLUMN, fmt), "fmt" },
+	{ (VT_I4 << TE_VT) + offsetof(LVCOLUMN, iImage), "iImage" },
+	{ (VT_I4 << TE_VT) + offsetof(LVCOLUMN, iOrder), "iOrder" },
+	{ (VT_I4 << TE_VT) + offsetof(LVCOLUMN, iSubItem), "iSubItem" },
+	{ (VT_I4 << TE_VT) + offsetof(LVCOLUMN, mask), "mask" },
+	{ (VT_BSTR << TE_VT) + offsetof(LVCOLUMN, pszText), "pszText" },
+};
+
 TEmethod tesLVFINDINFO[] =
 {
 	{ (VT_I4 << TE_VT) + offsetof(LVFINDINFO, flags), "flags" },
@@ -643,6 +658,7 @@ TEStruct pTEStructs[] = {
 	{ sizeof(LOGFONT), FALSE, _countof(tesLOGFONT), "LOGFONT", tesLOGFONT },
 	{ sizeof(LPWSTR), FALSE, 0, "LPWSTR", tesNULL },
 	{ sizeof(LVBKIMAGE), FALSE, _countof(tesLVBKIMAGE), "LVBKIMAGE", tesLVBKIMAGE },
+	{ sizeof(LVCOLUMN), FALSE, _countof(tesLVCOLUMN), "LVCOLUMN", tesLVCOLUMN },
 	{ sizeof(LVFINDINFO), FALSE, _countof(tesLVFINDINFO), "LVFINDINFO", tesLVFINDINFO },
 	{ sizeof(LVGROUP), TRUE, _countof(tesLVGROUP), "LVGROUP", tesLVGROUP },
 	{ sizeof(LVHITTESTINFO), FALSE, _countof(tesLVHITTESTINFO), "LVHITTESTINFO", tesLVHITTESTINFO },

@@ -18,6 +18,7 @@ extern IDropSource* teFindDropSource();
 
 std::unordered_map<HWND, HWND> g_umSetTheme;
 std::unordered_map<HWND, HWND> g_umDlgProc;
+std::unordered_map<HBITMAP, HWND> g_umBitmap;
 
 LPFNSetPreferredAppMode _SetPreferredAppMode = NULL;
 LPFNAllowDarkModeForWindow _AllowDarkModeForWindow = NULL;
@@ -218,12 +219,9 @@ VOID FixChildren(HWND hwnd)
 								::ReleaseDC(hwnd1, hdc);
 								::SetWindowLong(hwnd1, GWL_STYLE, (dwStyle | BS_BITMAP));
 								::SendMessage(hwnd1, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBM);
-								::DeleteObject(hBM);
 								::SysFreeString(bs);
-								auto itr = g_umDlgProc.find(hwnd1);
-								if (itr == g_umDlgProc.end()) {
-									g_umDlgProc[hwnd1] = hwnd;
-								}
+								g_umDlgProc.try_emplace(hwnd1, hwnd);
+								g_umBitmap.try_emplace(hBM, hwnd);
 							}
 						}
 					}
@@ -376,6 +374,14 @@ LRESULT CALLBACK TEDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 						RemoveWindowSubclass(itr->first, TabCtrlProc, (UINT_PTR)TabCtrlProc);
 					}
 					itr = g_umDlgProc.erase(itr);
+				} else {
+					++itr;
+				}
+			}
+			for (auto itr = g_umBitmap.begin(); itr != g_umBitmap.end();) {
+				if (hwnd == itr->second) {
+					DeleteObject(itr->first);
+					itr = g_umBitmap.erase(itr);
 				} else {
 					++itr;
 				}
