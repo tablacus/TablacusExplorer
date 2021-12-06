@@ -1273,7 +1273,7 @@ CteShellBrowser* SBfromhwnd(HWND hwnd)
 {
 	for (size_t i = 0; i < g_ppSB.size(); ++i) {
 		CteShellBrowser *pSB = g_ppSB[i];
-		if (pSB->m_hwnd == hwnd || IsChild(pSB->m_hwnd, hwnd)) {
+		if (teIsClan(pSB->m_hwnd, hwnd)) {
 			return pSB;
 		}
 	}
@@ -1298,8 +1298,7 @@ CteTreeView* TVfromhwnd2(HWND hwnd)
 {
 	for (size_t i = 0; i < g_ppTV.size(); ++i) {
 		CteTreeView *pTV = g_ppTV[i];
-		HWND hwndTV = pTV->m_hwnd;
-		if (hwndTV == hwnd || IsChild(hwndTV, hwnd)) {
+		if (teIsClan(pTV->m_hwnd, hwnd)) {
 			return pTV->m_bMain ? pTV : NULL;
 		}
 	}
@@ -1310,8 +1309,7 @@ CteTreeView* TVfromhwnd(HWND hwnd)
 {
 	for (size_t i = 0; i < g_ppSB.size(); ++i) {
 		CteShellBrowser *pSB = g_ppSB[i];
-		HWND hwndTV = pSB->m_pTV->m_hwnd;
-		if (hwndTV == hwnd || IsChild(hwndTV, hwnd)) {
+		if (teIsClan(pSB->m_pTV->m_hwnd, hwnd)) {
 			return pSB->m_pTV->m_bMain ? pSB->m_pTV : NULL;
 		}
 	}
@@ -2278,8 +2276,7 @@ HRESULT ControlFromhwnd(IDispatch **ppdisp, HWND hwnd)
 		return g_pTE->QueryInterface(IID_PPV_ARGS(ppdisp));
 	}
 	if (g_pWebBrowser) {
-		HWND hwndBrowser = g_pWebBrowser->get_HWND();
-		if (hwnd == hwndBrowser || IsChild(hwndBrowser, hwnd)) {
+		if (teIsClan(g_pWebBrowser->get_HWND(), hwnd)) {
 			return g_pWebBrowser->QueryInterface(IID_PPV_ARGS(ppdisp));
 		}
 	}
@@ -2696,9 +2693,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 							}
 							if (v.vt != VT_EMPTY) {
 								VariantClear(&v);
-								if ((size_t)lpDispInfo->item.iSubItem < pSB->m_pDTColumns.size()) {
-									pSB->m_pDTColumns[lpDispInfo->item.iSubItem] = 0;
-								}
+								pSB->m_pDTColumns[lpDispInfo->item.iSubItem] = 0;
 							}
 						}
 					}
@@ -2828,46 +2823,8 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 			if (pSB->m_pShellView) {
 				LPNMLVCUSTOMDRAW lplvcd = (LPNMLVCUSTOMDRAW)lParam;
 				if (lplvcd->nmcd.hdr.code == NM_CUSTOMDRAW) {
-					if (g_nWindowTheme != 2 && teIsDarkColor(pSB->m_clrBk) && lplvcd->dwItemType == LVCDI_GROUP) { //Fix groups in dark background
-						if (lplvcd->nmcd.dwDrawStage == CDDS_PREPAINT) {
-							FillRect(lplvcd->nmcd.hdc, &lplvcd->rcText, GetStockBrush(WHITE_BRUSH));
-						} else if (lplvcd->nmcd.dwDrawStage == CDDS_POSTPAINT) {
-							int w = lplvcd->rcText.right - lplvcd->rcText.left;
-							int h = lplvcd->rcText.bottom - lplvcd->rcText.top;
-							BYTE r0 = GetRValue(pSB->m_clrBk);
-							BYTE g0 = GetGValue(pSB->m_clrBk);
-							BYTE b0 = GetBValue(pSB->m_clrBk);
-							BITMAPINFO bmi;
-							RGBQUAD *pcl = NULL;
-							::ZeroMemory(&bmi.bmiHeader, sizeof(BITMAPINFOHEADER));
-							bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-							bmi.bmiHeader.biWidth = w;
-							bmi.bmiHeader.biHeight = -(LONG)h;
-							bmi.bmiHeader.biPlanes = 1;
-							bmi.bmiHeader.biBitCount = 32;
-							HBITMAP hBM = CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, (void **)&pcl, NULL, 0);
-							HDC hmdc = CreateCompatibleDC(lplvcd->nmcd.hdc);
-							HGDIOBJ hOld = SelectObject(hmdc, hBM);
-							BitBlt(hmdc, 0, 0, w, h, lplvcd->nmcd.hdc, lplvcd->rcText.left, lplvcd->rcText.top, NOTSRCCOPY);
-							for (int i = w * h; --i >= 0; ++pcl) {
-								if (pcl->rgbRed || pcl->rgbGreen || pcl->rgbBlue) {
-									WORD cl = pcl->rgbRed > pcl->rgbGreen ? pcl->rgbRed : pcl->rgbGreen;
-									if (cl < pcl->rgbBlue) {
-										cl = pcl->rgbBlue;
-									}
-									cl += 48;
-									pcl->rgbRed = pcl->rgbGreen = pcl->rgbBlue = cl > 0xff ? 0xff : cl;
-								} else {
-									pcl->rgbRed = r0;
-									pcl->rgbGreen = g0;
-									pcl->rgbBlue = b0;
-								}
-							}
-							BitBlt(lplvcd->nmcd.hdc, lplvcd->rcText.left, lplvcd->rcText.top, w, h, hmdc, 0, 0, SRCCOPY);
-							SelectObject(hmdc, hOld);
-							DeleteDC(hmdc);
-							DeleteObject(hBM);
-						}
+					if (g_nWindowTheme != 2 && teIsDarkColor(pSB->m_clrBk)) { //Fix groups in dark background
+						teFixGroup(lplvcd, pSB->m_clrBk);
 					}
 					if (g_pOnFunc[TE_OnItemPrePaint] || g_pOnFunc[TE_OnItemPostPaint]) {
 						if (lplvcd->nmcd.dwDrawStage == CDDS_PREPAINT) {
@@ -4203,7 +4160,7 @@ LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam)
 						case WM_SETFOCUS:
 							CheckChangeTabSB(pcwp->hwnd);
 						case WM_KILLFOCUS:
-							if (g_pWebBrowser && !IsChild(g_pWebBrowser->get_HWND(), pcwp->hwnd)) {
+							if (g_pWebBrowser && !teIsClan(g_pWebBrowser->get_HWND(), pcwp->hwnd)) {
 								break;
 							}
 						case WM_SHOWWINDOW:
@@ -6443,12 +6400,12 @@ BOOL CteShellBrowser::SetActive(BOOL bForce)
 	HWND hwnd = GetFocus();
 	if (!bForce) {
 		if (hwnd) {
-			if (IsChild(g_pWebBrowser->m_hwndBrowser, hwnd) || (m_pTV && IsChild(m_pTV->m_hwnd, hwnd))) {
+			if (teIsClan(g_pWebBrowser->m_hwndBrowser, hwnd) || (m_pTV && teIsClan(m_pTV->m_hwnd, hwnd))) {
 				return FALSE;
 			}
 			CHAR szClassA[MAX_CLASS_NAME];
 			GetClassNameA(hwnd, szClassA, MAX_CLASS_NAME);
-			if (lstrcmpA(szClassA, WC_TREEVIEWA) == 0) {
+			if (::PathMatchSpecA(szClassA, WC_TREEVIEWA)) {
 				return FALSE;
 			}
 		}
@@ -6461,7 +6418,7 @@ BOOL CteShellBrowser::SetActive(BOOL bForce)
 			lpKeyState[VK_SHIFT] &= ~0x80;
 			SetKeyboardState(lpKeyState);
 		}
-		if (IsChild(m_hwnd, hwnd)) {
+		if (teIsClan(m_hwnd, hwnd)) {
 			SetFocus(m_hwnd);
 		}
 		try {
@@ -6650,6 +6607,8 @@ VOID CteShellBrowser::InitFolderSize()
 					hdi.mask = HDI_FORMAT;
 					Header_SetItem(hHeader, i, &hdi);
 				}
+				LVCOLUMN col = { LVCF_MINWIDTH };
+				ListView_SetColumn(m_hwndLV, i, &col);
 			}
 
 			if (g_bsDateTimeFormat && m_pSF2) {

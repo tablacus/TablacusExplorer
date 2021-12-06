@@ -3850,4 +3850,15 @@ BOOL GetBoolFromVariant(VARIANT *pv)
 	return 0;
 }
 
+BOOL teIsClan(HWND hwndRoot, HWND hwnd)
+{
+	while (hwnd != hwndRoot) {
+		hwnd = GetParent(hwnd);
+		if (!hwnd) {
+			return FALSE;
+		}
+	}
+	return TRUE;
+}
+
 #endif

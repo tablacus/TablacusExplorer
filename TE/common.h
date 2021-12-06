@@ -899,4 +899,5 @@ VOID GetDragItems(CteFolderItems **ppDragItems, IDataObject *pDataObj);
 HRESULT DragSub(int nFunc, PVOID pObj, CteFolderItems *pDragItems, PDWORD pgrfKeyState, POINTL pt, PDWORD pdwEffect);
 HRESULT DragLeaveSub(PVOID pObj, CteFolderItems **ppDragItems);
 BOOL GetBoolFromVariant(VARIANT *pv);
+BOOL teIsClan(HWND hwndRoot, HWND hwnd);
 
