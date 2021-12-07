@@ -2506,7 +2506,7 @@ GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arCon
 			}
 			break;
 		case 7:
-			const dir = [GetText("Check for updates"), GetText("Get Add-ons..."), api.sprintf(99, GetText("Get %s..."), GetText("Icon")), null, api.sprintf(99, GetText("&About %s"), "Tablacus Explorer")];
+			const dir = [GetText("Check for updates"), GetText("Get Add-ons..."), api.sprintf(99, GetText("Get %s..."), GetTextR("@taskbarcpl.dll,-502[Icons]")), null, api.sprintf(99, GetText("&About %s"), "Tablacus Explorer")];
 			for (let i = 0; i < dir.length; ++i) {
 				const s = dir[i];
 				api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | (s === null ? MF_SEPARATOR : MF_STRING), i + 0x4011, s);
@@ -3166,6 +3166,13 @@ GetSourceText = function (s) {
 	} catch (e) {
 		return s;
 	}
+}
+
+GetAltText = function (id) {
+	try {
+		id = id.replace(/&amp;/g, "&");
+		return MainWindow.Lang[id.toLowerCase()] || (/^en/i.test(GetLangId()) ? id : "");
+	} catch (e) { }
 }
 
 SetLang2 = function (s, v) {

@@ -14,7 +14,7 @@
 	<text s="Go">行く</text>
 	<text s="&amp;Close application">アプリケーションの終了(&amp;C)</text>
 	<text s="&amp;Up one level">１つ上の階層へ(&amp;U)</text>
-	<text s="&amp;Refresh">最新の情報に更新(&amp;R)</text>
+	<text s="&amp;Refresh">更新(&amp;R)</text>
 	<text s="&amp;Reload customize">カスタマイズの再読込(&amp;R)</text>
 	<text s="&amp;Load layout...">レイアウトの読み込み(&amp;L)...</text>
 	<text s="&amp;Save layout...">レイアウトを保存(&amp;S)...</text>
@@ -122,7 +122,7 @@
 	<text s="Spring expand">スプリングエクスパンド</text>
 	<text s="Full row select">一行選択</text>
 	<text s="Show selection always">常に選択を表示</text>
-	<text s="Border">外枠</text>
+	<text s="Border">境界線</text>
 	<text s="Horizontal scroll">水平スクロール</text>
 
 	<text s="Enumeration">列挙</text>

@@ -512,19 +512,25 @@ ApplyLangTag = async function (o) {
 	if (o) {
 		for (let i = 0; i < o.length; ++i) {
 			(async function (el) {
-				let s;
+				let s, alt;
+				if (s = el.title) {
+					el.title = (await GetTextR(s)).replace(/\(&\w\)|&/, "");
+				}
+				if (s = el.getAttribute("alt")) {
+					if (SameText(el.tagName, "label")) {
+						if (s = await GetAltText(s)) {
+							const res = /(<input[^>]*>)/i.exec(el.innerHTML);
+							el.innerHTML = (res ? res[1] : "") + s.replace(/\(&\w\)|&/, "");
+							return;
+						}
+					}
+				}
 				if (s = el.childNodes) {
 					for (let j = s.length; j-- > 0;) {
 						if (!s[j].tagName) {
 							s[j].data = amp2ul(await GetTextR(s[j].data.replace(/&amp;/ig, "&")));
 						}
 					}
-				}
-				if (s = el.title) {
-					el.title = (await GetTextR(s)).replace(/\(&\w\)|&/, "");
-				}
-				if (s = el.alt) {
-					el.alt = (await GetTextR(s)).replace(/\(&\w\)|&/, "");
 				}
 			})(o[i]);
 		}

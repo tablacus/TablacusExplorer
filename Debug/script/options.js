@@ -1386,13 +1386,13 @@ async function ContinueOptions() {
 InitOptions = async function () {
 	ApplyLang(document);
 	(async function () {
-		const s = await GetText("Get %s");
-		document.getElementById("tab1_3").innerHTML = await api.sprintf(99, s, await GetText("Icon"));
-		const sl = await api.sprintf(99, s, await GetTextR("@docprop.dll,-107"));
+		const r = await Promise.all([GetText("Get %s"), GetTextR("@taskbarcpl.dll,-502[Icons]"), GetTextR("@docprop.dll,-107"), GetText("File"), te.Data.DataFolder, fso.FolderExists(BuildPath(ui_.Installed, "layout"))]);
+		document.getElementById("tab1_3").innerHTML = await api.sprintf(99, r[0], r[1]);
+		const sl = await api.sprintf(99, r[0], r[2] + " " + (r[3].toLowerCase()));
 		document.getElementById("tab1_4").innerHTML = sl;
 		document.getElementById("AddLang").value = sl;
 		document.title = await GetText("Options") + " - " + TITLE;
-		document.F.ButtonInitConfig.disabled = (ui_.Installed == await te.Data.DataFolder) | !await fso.FolderExists(BuildPath(ui_.Installed, "layout"));
+		document.F.ButtonInitConfig.disabled = (ui_.Installed == r[4]) || !r[5];
 	})();
 	MainWindow.g_.OptionsWindow = $;
 	let data = [];
@@ -2866,15 +2866,11 @@ async function InstallLang2(xhr, url, s) {
 	await CreateFolder(temp);
 	const ar = s.split("\n");
 	const src = BuildPath(temp, ar[0]);
-	if (window.chrome && await xhr.response) {
-		xhr = await ReadAsDataURL(xhr.response);
-	}
-	if (await DownloadFile(xhr, src) == S_OK) {
-		await SetFileTime(src, null, null, new Date(ar[1]).getTime());
-		await api.SHFileOperation(FO_MOVE, src, BuildPath(ui_.Installed, "lang"), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, false);
-		MessageBox("Completed.", TITLE, MB_OK);
-		ClickTree("tab0");
-	}
+	await WriteTextFile(src, await xhr.get_responseText ? await xhr.get_responseText() : xhr.responseText);
+	await SetFileTime(src, null, null, new Date(ar[1]).getTime());
+	await api.SHFileOperation(FO_MOVE, src, BuildPath(ui_.Installed, "lang"), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, false);
+	MessageBox("Completed.", TITLE, MB_OK);
+	ClickTree("tab0");
 }
 
 async function EnableSelectTag(o) {

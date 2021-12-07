@@ -2990,7 +2990,7 @@ LRESULT CALLBACK TELVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 			}
 			break;
 		case LVM_SETSELECTEDCOLUMN:
-			if (!g_param[TE_ColumnEmphasis]) {
+			if (teIsDarkColor(pSB->m_clrBk)) {
 				wParam = -1;
 			}
 			break;
@@ -7687,9 +7687,6 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 		case TE_PROPERTY + 0xf016://ViewFlags
 			if (nArg >= 0) {
 				m_param[SB_ViewFlags] = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
-				if (m_param[SB_ViewFlags] & CDB2GVF_NOSELECTVERB) {
-					g_param[TE_ColumnEmphasis] = FALSE;
-				}
 			}
 			teSetLong(pVarResult, m_param[SB_ViewFlags]);
 			return S_OK;
@@ -9584,7 +9581,7 @@ LPWSTR CteShellBrowser::GetThemeName()
 
 VOID CteShellBrowser::FixColumnEmphasis()
 {
-	if (!g_param[TE_ColumnEmphasis] && (int)ListView_GetSelectedColumn(m_hwndLV) >= 0) {
+	if (teIsDarkColor(m_clrBk) && (int)ListView_GetSelectedColumn(m_hwndLV) >= 0) {
 		ListView_SetSelectedColumn(m_hwndLV, -1);
 	}
 }

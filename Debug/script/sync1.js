@@ -3544,7 +3544,7 @@ InitCode = function () {
 	te.SizeFormat = (te.Data.Conf_SizeFormat || "").replace(/^0x/i, "");
 	te.HiddenFilter = ExtractFilter(te.Data.Conf_HiddenFilter);
 	te.DragIcon = !GetNum(te.Data.Conf_NoDragIcon);
-	const ar = ['AutoArrange', 'ColumnEmphasis', 'DateTimeFormat', 'Layout', 'LibraryFilter', 'NetworkTimeout', 'ShowInternet', 'ViewOrder'];
+	const ar = ['AutoArrange', 'DateTimeFormat', 'Layout', 'LibraryFilter', 'NetworkTimeout', 'ShowInternet', 'ViewOrder'];
 	for (let i = ar.length; i--;) {
 		te[ar[i]] = te.Data['Conf_' + ar[i]];
 	}

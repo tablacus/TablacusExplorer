@@ -427,14 +427,13 @@ LRESULT CALLBACK TEDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 				FillRect((HDC)wParam, &rc, g_hbrDarkBackground);
 				return 1;
 			case WM_PAINT:
-				HWND hwndChild;
-				hwndChild = NULL;
 				BOOL bHandle;
 				bHandle = TRUE;
-				while (hwndChild = FindWindowEx(hwnd, hwndChild, NULL, NULL)) {
+				for (HWND hwndChild = NULL; hwndChild = FindWindowEx(hwnd, hwndChild, NULL, NULL);) {
 					GetClassNameA(hwndChild, pszClassA, MAX_CLASS_NAME);
-					if (bHandle && !PathMatchSpecA(pszClassA, WC_STATICA ";" WC_BUTTONA ";" WC_COMBOBOXA)) {
+					if (!PathMatchSpecA(pszClassA, WC_STATICA ";" WC_BUTTONA ";" WC_COMBOBOXA)) {
 						bHandle = FALSE;
+						break;
 					}
 				}
 				if (bHandle) {
@@ -507,17 +506,6 @@ LRESULT CALLBACK TEDlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 					DeleteDC(hmdc);
 					DeleteObject(hBM);
 					return lResult;
-				} else if (pdis->CtlType == ODT_TAB) {
-					::FillRect(pdis->hDC, &pdis->rcItem, g_hbrDarkBackground);
-					WCHAR label[64];
-					TC_ITEM tci;
-					tci.mask = TCIF_TEXT;
-					tci.pszText = label;
-					tci.cchTextMax = 63;
-					TabCtrl_GetItem(pdis->hwndItem, pdis->itemID, &tci);
-					SetTextColor(pdis->hDC, (pdis->itemState & (ODS_SELECTED | ODS_HOTLIGHT)) ? TECL_DARKTEXT : TECL_DARKTEXT2);
-					SetBkMode(pdis->hDC, TRANSPARENT);
-					::DrawText(pdis->hDC, label, -1, &pdis->rcItem, DT_HIDEPREFIX | DT_SINGLELINE | DT_CENTER | ((pdis->itemState & ODS_SELECTED) ? DT_VCENTER : DT_BOTTOM));
 				}
 				break;
 			case WM_NOTIFY:

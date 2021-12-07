@@ -74,7 +74,7 @@
               <label>Width</label><input type="text" id="Conf_LeftBarWidth" align="right" size="4"><label>@mspaint.exe,-50047[px]</label><br><br>
               <label>Right bar</label><br>
               <label>Width</label><input type="text" id="Conf_RightBarWidth" align="right" size="4"><label>@mspaint.exe,-50047[px]</label><br><br>
-              <label>Tool bar<i> </i>@mmcbase.dll,-106</label><br>
+              <label alt="Tool bar icon">Tool bar<i> </i>Icon</label><br>
               <label>Size</label><input type="text" id="Conf_IconSize" align="right" size="4"><label>@mspaint.exe,-50047[px]</label>
               <input type="button" value="Default" onclick="SetDefault(document.F.Conf_IconSize, '');">
               <br><br>
@@ -434,7 +434,7 @@
                 <label><input type="checkbox" id="Tree_Style:0x4000" onclick="SetCheckbox(this)">Rich tooltip</label>(*)<br>
                 <label><input type="checkbox" id="Tree_Style:0x20000" onclick="SetCheckbox(this)">Tab stop</label><br>
                 <label><input type="checkbox" id="Tree_Style:0x40000" onclick="SetCheckbox(this)">Favorites</label><br>
-                <label><input type="checkbox" id="Tree_Style:0x100000" onclick="SetCheckbox(this)">Auto<span> (</span>Horizontal scroll<span>)</span></label><br>
+                <label alt="Auto horizontal scroll"><input type="checkbox" id="Tree_Style:0x100000" onclick="SetCheckbox(this)">Auto<i> </i>Horizontal scroll</label><br>
                 <label><input type="checkbox" id="Tree_Style:0x200000" onclick="SetCheckbox(this)">Fade in out expandos</label>(*)<br>
                 <label><input type="checkbox" id="Tree_Style:0x400000" onclick="SetCheckbox(this)">Empty text</label>(*)<br>
                 <label><input type="checkbox" id="Tree_Style:0x800000" onclick="SetCheckbox(this)">@shell32.dll,-37588[Checkboxes]</label><br>
@@ -488,7 +488,7 @@
                 <label><input type="checkbox" id="Tree_EnumFlags:0x1000" onclick="SetCheckbox(this)">Navigation emun</label>(*7)<br>
                 <label><input type="checkbox" id="Tree_EnumFlags:0x2000" onclick="SetCheckbox(this)">Fast items</label>(*)<br>
                 <label><input type="checkbox" id="Tree_EnumFlags:0x4000" onclick="SetCheckbox(this)">Flat</label>(*)<br>
-                <label><input type="checkbox" id="Tree_EnumFlags:0x10000" onclick="SetCheckbox(this)">Include hidden items<span> (</span>System<span>)</span></label>(*7)
+                <label><input type="checkbox" id="Tree_EnumFlags:!0x10000" onclick="SetCheckbox(this)">@shell32.dll,-30508[Hide protected operating system files]</label>(*7)
               </div>
               <div>
                 (*)Windows Vista <label>or higher.</label>
@@ -557,16 +557,15 @@
               <label><input type="checkbox" id="View_fFlags:0x2000" onclick="SetCheckbox(this)">Show selection always</label><br>
               <label><input type="checkbox" id="View_fFlags:0x8000" onclick="SetCheckbox(this)">Single click activate</label><br>
               <label><input type="checkbox" id="View_fFlags:0x200000" onclick="SetCheckbox(this)">Full row select</label><br>
-              <label><input type="checkbox" id="Conf_WheelSelect">Select<span> (</span>Wheel<span>)</span></label><br>
-              <label><input type="checkbox" id="Conf_ViewOrder">@shell32.dll,-50690[Arrange by:]<i> </i>View<span> (</span>Selected items<span>)</span></label><br>
-              <label><input type="checkbox" id="Conf_LibraryFilter">@shell32.dll,-23349[Library]<i> </i>Filter</label>(*)<br>
-              <label><input type="checkbox" id="Conf_AutoArrange">Auto arrange<span> (</span>Refresh<span>)</span></label><br>
-              <label><input type="checkbox" id="View_fFlags:0x8000000" onclick="SetCheckbox(this)">@shell32.dll,-37588[Item check boxes]</label>(*)<br>
-              <label><input type="checkbox" id="View_fFlags:!0x100000" onclick="SetCheckbox(this)">@docprop.dll,-106</label>(*)<br>
-              <label><input type="checkbox" id="View_fFlags:0x20000000" onclick="SetCheckbox(this)">Number of items<span> (</span>@docprop.dll,-106<span>)</span></label>(*)<br>
+              <label alt="Select by middle button"><input type="checkbox" id="Conf_WheelSelect">Wheel<i> </i>@oleaccrc.dll,-266<i> </i>Select</label><br>
+              <label alt="Process selected items in view sequence"><input type="checkbox" id="Conf_ViewOrder">@shell32.dll,-50690[Arrange by:]<i> </i>View<span> (</span>Selected items<span>)</span></label><br>
+              <label alt="Apply Filter to Libraries"><input type="checkbox" id="Conf_LibraryFilter">@shell32.dll,-23349[Library]<i> </i>Filter</label>(*)<br>
+              <label alt="Auto arrange upon refresh"><input type="checkbox" id="Conf_AutoArrange">Auto arrange<span> (</span>Refresh<span>)</span></label><br>
+              <label><input type="checkbox" id="View_fFlags:0x8000000" onclick="SetCheckbox(this)">@shell32.dll,-30522[Item check boxes]</label>(*)<br>
+              <label alt="Group"><input type="checkbox" id="View_fFlags:!0x100000" onclick="SetCheckbox(this)">@fde.dll,-22</label>(*)<br>
+              <label alt="Subset groups"><input type="checkbox" id="View_fFlags:0x20000000" onclick="SetCheckbox(this)">Number of items<span> (</span>@fde.dll,-22<span>)</span></label>(*)<br>
                 <label><input type="checkbox" id="View_fFlags:!0x800000" onclick="SetCheckbox(this)">@taskmgr.exe,-37223[Column header]</label>(*)<br>
-                <label><input type="checkbox" id="View_fFlags:0x1000000" onclick="SetCheckbox(this)">@taskmgr.exe,-37223[Column header]<span> (</span>@certutil.exe,-2922[Only Allow]<span>: </span>@shell32.dll,-33580<span>)</span></label>(*)<br>
-              <label><input type="checkbox" id="Conf_ColumnEmphasis">@UIAutomationCore.dll,-283[Emphasis]<span> (</span>@sqlsrv32.rll,-40033<span>)</span></label>
+                <label alt="Column header details only"><input type="checkbox" id="View_fFlags:0x1000000" onclick="SetCheckbox(this)">@taskmgr.exe,-37223[Column header]<span> (</span>@certutil.exe,-2922[Only Allow]<span>: </span>@shell32.dll,-33580<span>)</span></label>(*)<br>
               <div>
                 <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_FWF")'>
               </div>
@@ -576,7 +575,7 @@
                 <label><input type="checkbox" id="View_fFlags:0x80" onclick="SetCheckbox(this)">@comdlg32.dll,-780[Hide Folders]</label><br>
                 <label><input type="checkbox" id="View_fFlags:!0x20000" onclick="SetCheckbox(this)">{41CF5AE0-F75A-4806-BD87-59C7D9248EB9} 100[File name]</label><br>
                 <label><input type="checkbox" id="View_fFlags:0x80000000" onclick="SetCheckbox(this)">@oleaccrc.dll,-4045</label>(*)<br>
-                <label><input type="checkbox" id="View_fFlags:0x40000" onclick="SetCheckbox(this)">Check select</label><br>
+                <label><input type="checkbox" id="View_fFlags:0x40000" onclick="SetCheckbox(this)">@shell32.dll,-37588[Check boxes]<i> </i>(XP)</label><br>
               </div>
               <label>Explorer Browser</label>(*7)<br>
               <input type="text" name="Conf_Layout" style="display: none">

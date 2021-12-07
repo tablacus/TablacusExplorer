@@ -89,12 +89,12 @@ if (window.Addon == 1) {
 			for (let i = 0; i < nLen; ++i) {
 				const item = items[i];
 				const strType = item.Type;
-				const strFlag = (SameText(strType, "Menus") ? item.text : "").toLowerCase();
-				if (strFlag == "close" && menus) {
+				const strFlag = SameText(strType, "Menus") ? item.text : "";
+				if (SameText(strFlag, "close") && menus) {
 					menus--;
 					continue;
 				}
-				if (strFlag == "open") {
+				if (SameText(strFlag, "open")) {
 					if (menus++) {
 						continue;
 					}
@@ -102,11 +102,11 @@ if (window.Addon == 1) {
 					continue;
 				}
 				let img = EncodeSC(await ExtractMacro(te, item.Name));
-				if (img == "/" || strFlag == "break") {
+				if (img == "/" || SameText(strFlag, "break")) {
 					s.push('<br class="break">');
-				} else if (img == "//" || strFlag == "barbreak") {
+				} else if (img == "//" || SameText(strFlag, "barbreak")) {
 					s.push('<hr class="barbreak">');
-				} else if (img == "-" || strFlag == "separator") {
+				} else if (img == "-" || SameText(strFlag, "separator")) {
 					s.push('<span class="separator">|</span>');
 				} else {
 					let icon = item.Icon;

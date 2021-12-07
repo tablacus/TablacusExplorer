@@ -444,7 +444,7 @@ document.addEventListener("MSFullscreenChange", function () {
 	FullscreenChanged(document.msFullscreenElement != null);
 });
 
-document.addEventListener("FullscreenChange", function () {
+document.addEventListener("fullscreenchange", function () {
 	FullscreenChanged(document.fullscreenElement != null);
 });
 
