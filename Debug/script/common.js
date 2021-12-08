@@ -338,7 +338,7 @@ DeleteItem = async function (path, fFlags) {
 }
 
 amp2ul = function (s) {
-	return s.replace(/&amp;|&/ig, "").replace(/\([A-Z]\)$/, "");
+	return s.replace(/&amp;|&/ig, "");
 }
 
 GetAddonInfo2 = async function (xml, info, Tag, bTrans) {

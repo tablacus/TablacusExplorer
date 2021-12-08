@@ -1386,7 +1386,7 @@ async function ContinueOptions() {
 InitOptions = async function () {
 	ApplyLang(document);
 	(async function () {
-		const r = await Promise.all([GetText("Get %s"), GetTextR("@taskbarcpl.dll,-502[Icons]"), GetTextR("@docprop.dll,-107"), GetText("File"), te.Data.DataFolder, fso.FolderExists(BuildPath(ui_.Installed, "layout"))]);
+		const r = await Promise.all([GetText("Get %s"), GetTextR("@UIAutomationCore.dll,-220[Icons]"), GetTextR("@docprop.dll,-107"), GetText("File"), te.Data.DataFolder, fso.FolderExists(BuildPath(ui_.Installed, "layout"))]);
 		document.getElementById("tab1_3").innerHTML = await api.sprintf(99, r[0], r[1]);
 		const sl = await api.sprintf(99, r[0], r[2] + " " + (r[3].toLowerCase()));
 		document.getElementById("tab1_4").innerHTML = sl;

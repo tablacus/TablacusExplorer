@@ -55,7 +55,6 @@ VOID teGetDarkMode()
 		if (_RefreshImmersiveColorPolicyState) {
 			_RefreshImmersiveColorPolicyState();
 		}
-		teSetDarkMode(g_hwndMain);
 	}
 }
 

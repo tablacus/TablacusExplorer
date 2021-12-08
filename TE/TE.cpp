@@ -2990,7 +2990,7 @@ LRESULT CALLBACK TELVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 			}
 			break;
 		case LVM_SETSELECTEDCOLUMN:
-			if (teIsDarkColor(pSB->m_clrBk)) {
+			if (!g_param[TE_ColumnEmphasis]) {
 				wParam = -1;
 			}
 			break;
@@ -4444,7 +4444,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 			*(FARPROC *)&_OpenNcThemeData = GetProcAddress(hDll, MAKEINTRESOURCEA(49));
 			teAPIHook(L"comctl32.dll", (LPVOID)_OpenNcThemeData, &teOpenNcThemeData);
 #endif
-			teGetDarkMode();
 		}
 	}
 	if (!_SetWindowCompositionAttribute) {
@@ -4568,7 +4567,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		return FALSE;
 #endif
 	}
-	teGetDarkMode();
 	// ClipboardFormat
 	IDLISTFormat.cfFormat = (CLIPFORMAT)RegisterClipboardFormat(CFSTR_SHELLIDLIST);
 	DROPEFFECTFormat.cfFormat = (CLIPFORMAT)RegisterClipboardFormat(CFSTR_PREFERREDDROPEFFECT);
@@ -5147,6 +5145,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					teRegister();
 				}
 				teGetDarkMode();
+				teSetDarkMode(hWnd);
 				if (_RegenerateUserEnvironment) {
 					try {
 						if (teStrCmpIWA((LPCWSTR)lParam, "Environment") == 0) {
@@ -5320,6 +5319,9 @@ LRESULT CALLBACK WndProc2(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				break;
 			case WM_ERASEBKGND:
 				return 1;
+			case WM_SETTINGCHANGE:
+				teGetDarkMode();
+				teSetDarkMode(hWnd);
 			default:
 				return DefWindowProc(hWnd, message, wParam, lParam);
 		}
@@ -9581,7 +9583,7 @@ LPWSTR CteShellBrowser::GetThemeName()
 
 VOID CteShellBrowser::FixColumnEmphasis()
 {
-	if (teIsDarkColor(m_clrBk) && (int)ListView_GetSelectedColumn(m_hwndLV) >= 0) {
+	if (!g_param[TE_ColumnEmphasis] && (int)ListView_GetSelectedColumn(m_hwndLV) >= 0) {
 		ListView_SetSelectedColumn(m_hwndLV, -1);
 	}
 }
@@ -10722,6 +10724,7 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				ClearEvents();
 				teRegister();
 				teGetDarkMode();
+				teSetDarkMode(g_hwndMain);
 				g_nReload = 0;
 				return S_OK;
 			//Reload
@@ -13028,7 +13031,7 @@ VOID CteTreeView::Create()
 	if (EMULATE_XP SUCCEEDED(teCreateInstance(CLSID_NamespaceTreeControl, NULL, NULL, IID_PPV_ARGS(&m_pNameSpaceTreeControl)))) {
 		RECT rc;
 		SetRectEmpty(&rc);
-		if SUCCEEDED(m_pNameSpaceTreeControl->Initialize(m_hwndParent, &rc, m_param[SB_TreeFlags])) {
+		if SUCCEEDED(m_pNameSpaceTreeControl->Initialize(m_hwndParent, &rc, m_param[SB_TreeFlags] & ~(NSTCS_CHECKBOXES | NSTCS_PARTIALCHECKBOXES | NSTCS_EXCLUSIONCHECKBOXES | NSTCS_DIMMEDCHECKBOXES | NSTCS_NOINDENTCHECKS | NSTCS_NOREPLACEOPEN))) {
 			m_pNameSpaceTreeControl->TreeAdvise(static_cast<INameSpaceTreeControlEvents *>(this), &m_dwCookie);
 			if (IUnknown_GetWindow(m_pNameSpaceTreeControl, &m_hwnd) == S_OK) {
 				m_hwndTV = FindTreeWindow(m_hwnd);

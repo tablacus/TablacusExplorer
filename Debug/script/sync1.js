@@ -2266,6 +2266,9 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 	if (!te.Data) {
 		return S_OK;
 	}
+	if (msg == WM_SETTINGCHANGE) {
+		te.Data.TempFolder = GetTempPath(1);
+	}
 	const hr = RunEvent3("SystemMessage", Ctrl, hwnd, msg, wParam, lParam);
 	if (isFinite(hr)) {
 		return hr;
@@ -2547,9 +2550,6 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 };
 
 te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
-	if (msg == WM_SETTINGCHANGE) {
-		te.Data.tempFolder = GetTempFolder(1);
-	}
 	const hr = RunEvent3("AppMessage", Ctrl, hwnd, msg, wParam, lParam);
 	if (isFinite(hr)) {
 		return hr;
@@ -3568,8 +3568,10 @@ InitMenus = function () {
 	}
 }
 
-InitBG = function (cl) {
-	api.SendMessage(te.hwnd, 0x2001, 0, cl);
+InitBG = function (cl, bWC) {
+	if (bWC) {
+		cl = GetWinColor(cl);
+	}
 	const cHwnd = [te.Ctrl(CTRL_WB).hwnd, te.hwnd];
 	for (let i = cHwnd.length; i--;) {
 		const hOld = api.SetClassLongPtr(cHwnd[i], GCLP_HBRBACKGROUND, api.CreateSolidBrush(cl));
@@ -3577,6 +3579,7 @@ InitBG = function (cl) {
 			api.DeleteObject(hOld);
 		}
 	}
+	api.SendMessage(te.hwnd, 0x2001, 0, cl);
 }
 
 InitWindow = function () {

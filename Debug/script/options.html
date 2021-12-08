@@ -79,7 +79,7 @@
               <input type="button" value="Default" onclick="SetDefault(document.F.Conf_IconSize, '');">
               <br><br>
               <label>Menus</label><br>
-              <label><input type="checkbox" id="Conf_MenuHidden">Include hidden items</label>&nbsp;
+              <label><input type="checkbox" id="Conf_MenuHidden">Include hidden items</label><br>
               <label><input type="checkbox" id="Conf_MenuIcon">@mmcbase.dll,-106</label>
               <br><br>
               <label>Input</label><br>
@@ -97,11 +97,11 @@
             <div class="panel hide" id="panel0_1">
               <label>Gestures</label><br>
               <input type="text" name="Conf_Gestures" style="display: none">
-              <label><input type="radio" name="Conf_Gestures_" id="Conf_Gestures=0" onclick="SetRadio(this)">None</label>
-              <label><input type="radio" name="Conf_Gestures_" id="Conf_Gestures=1" onclick="SetRadio(this)">Wheel</label>
-              <label><input type="radio" name="Conf_Gestures_" id="Conf_Gestures=2" onclick="SetRadio(this)">Normal</label>
-              <label><input type="radio" name="Conf_Gestures_" id="Conf_Gestures=3" onclick="SetRadio(this)">Priority</label>
-              <br><br>
+              <label><input type="radio" name="Conf_Gestures_" id="Conf_Gestures=0" onclick="SetRadio(this)">None</label><br>
+              <label><input type="radio" name="Conf_Gestures_" id="Conf_Gestures=1" onclick="SetRadio(this)">Wheel</label><br>
+              <label><input type="radio" name="Conf_Gestures_" id="Conf_Gestures=2" onclick="SetRadio(this)">Normal</label><br>
+              <label><input type="radio" name="Conf_Gestures_" id="Conf_Gestures=3" onclick="SetRadio(this)">Priority</label><br>
+              <br>
               <label>Timeout</label><br>
               <input type="text" id="Conf_GestureTimeout" style="width: 6em; text-align:right"><label>@calc.exe,-1721[ms]</label>
               <br><br>
@@ -405,8 +405,20 @@
               <label><input type="checkbox" id="Tree_EnumFlags:0x20" onclick="SetCheckbox(this)">Folders</label><br>
               <label><input type="checkbox" id="Tree_EnumFlags:0x40" onclick="SetCheckbox(this)">Not folders</label><br>
               <label><input type="checkbox" id="Tree_EnumFlags:0x80" onclick="SetCheckbox(this)">Include hidden items</label><br>
-              <label><input type="checkbox" id="Tree_EnumFlags:0x10000" onclick="SetCheckbox(this)">System</label><br>
-              <label><input type="checkbox" id="Conf_ShowInternet">@shell32.dll,-4262</label><br>
+              <label><input type="checkbox" id="Tree_EnumFlags:!0x10000" onclick="SetCheckbox(this)">@shell32.dll,-30508[Hide protected operating system files]</label>(*7)<br>
+              <div>
+                <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_Tree_EnumFlags")'>
+              </div>
+              <div class="group" id="_Advanced_Tree_EnumFlags">
+                <label><input type="checkbox" id="Conf_ShowInternet">@shell32.dll,-4262</label><br>
+                <label><input type="checkbox" id="Tree_EnumFlags:0x200" onclick="SetCheckbox(this)">@printui.dll,-12021[Net printer search]</label><br>
+                <label><input type="checkbox" id="Tree_EnumFlags:0x400" onclick="SetCheckbox(this)">@pmcsnap.dll,-881[Shareable]</label><br>
+                <label><input type="checkbox" id="Tree_EnumFlags:0x800" onclick="SetCheckbox(this)">@mycomput.dll,-192</label><br>
+                <label alt="Navigation enumeration"><input type="checkbox" id="Tree_EnumFlags:0x1000" onclick="SetCheckbox(this)">@mmcbase.dll,-14157[Navigation]<i> </i>enumeration</label>(*7)<br>
+                <label alt="Fast items"><input type="checkbox" id="Tree_EnumFlags:0x2000" onclick="SetCheckbox(this)">@accessibilitycpl.dll,-1228[Fast]<i> </i>@SRH.dll,-3904[items]</label>(*)<br>
+                <label><input type="checkbox" id="Tree_EnumFlags:0x4000" onclick="SetCheckbox(this)">Flat</label>(*)<br>
+                <label alt="Checking for children"><input type="checkbox" id="Tree_EnumFlags:0x10" onclick="SetCheckbox(this)">{D5CDD502-2E9C-101B-9397-08002B2CF9AE} 27[Checking for children]</label>(*7)<br>
+              </div>
               <br>
               <label>Style</label>
               <br>
@@ -422,30 +434,23 @@
               <label><input type="checkbox" id="Tree_Style:0x80" onclick="SetCheckbox(this)">Show selection always</label><br>
               <label><input type="checkbox" id="Tree_Style:0x20" onclick="SetCheckbox(this)">Horizontal scroll</label><br>
               <label><input type="checkbox" id="Tree_Style:0x8000" onclick="SetCheckbox(this)">Border</label><br>
-              <label><input type="checkbox" id="Tree_Style:0x40" onclick="SetCheckbox(this)">Root</label>(*)<br>
+              <label alt="Root has expando"><input type="checkbox" id="Tree_Style:0x40" onclick="SetCheckbox(this)">Root<i> </i>@mmcndmgr.dll,-30013</label>(*)<br>
               <div>
                 <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_Tree_Style")'>
               </div>
               <div class="group" id="_Advanced_Tree_Style">
-                <label><input type="checkbox" id="Tree_Style:0x400" onclick="SetCheckbox(this)">Even height</label>
-                <br>
-                <label><input type="checkbox" id="Tree_Style:0x800" onclick="SetCheckbox(this)">No replace open</label>(*)<br>
+                <label alt="Auto horizontal scroll"><input type="checkbox" id="Tree_Style:0x100000" onclick="SetCheckbox(this)">Auto<i> </i>Horizontal scroll</label><br>
+                <label alt="Fade in out expandos"><input type="checkbox" id="Tree_Style:0x200000" onclick="SetCheckbox(this)">@msctfuimanager.dll,-16202<span> (</span>Buttons<span>)</span></label>(*)<br>
+                <label><input type="checkbox" id="Tree_Style:0x10000000" onclick="SetCheckbox(this)">Allow junctions</label>(*)<br>
+                <label alt="Empty text"><input type="checkbox" id="Tree_Style:0x400000" onclick="SetCheckbox(this)">@iscsicli.exe,-1148[Empty]<i> </i>@docprop.dll,-21</label>(*)<br>
+                <label><input type="checkbox" id="Tree_Style:0x40000" onclick="SetCheckbox(this)">Favorites</label><br>
                 <label><input type="checkbox" id="Tree_Style:0x2000" onclick="SetCheckbox(this)">No order stream</label>(*)<br>
                 <label><input type="checkbox" id="Tree_Style:0x4000" onclick="SetCheckbox(this)">Rich tooltip</label>(*)<br>
-                <label><input type="checkbox" id="Tree_Style:0x20000" onclick="SetCheckbox(this)">Tab stop</label><br>
-                <label><input type="checkbox" id="Tree_Style:0x40000" onclick="SetCheckbox(this)">Favorites</label><br>
-                <label alt="Auto horizontal scroll"><input type="checkbox" id="Tree_Style:0x100000" onclick="SetCheckbox(this)">Auto<i> </i>Horizontal scroll</label><br>
-                <label><input type="checkbox" id="Tree_Style:0x200000" onclick="SetCheckbox(this)">Fade in out expandos</label>(*)<br>
-                <label><input type="checkbox" id="Tree_Style:0x400000" onclick="SetCheckbox(this)">Empty text</label>(*)<br>
-                <label><input type="checkbox" id="Tree_Style:0x800000" onclick="SetCheckbox(this)">@shell32.dll,-37588[Checkboxes]</label><br>
-                <label><input type="checkbox" id="Tree_Style:0x1000000" onclick="SetCheckbox(this)">Partial checkboxes</label><br>
-                <label><input type="checkbox" id="Tree_Style:0x2000000" onclick="SetCheckbox(this)">Exclusion checkboxes</label>(*)<br>
-                <label><input type="checkbox" id="Tree_Style:0x4000000" onclick="SetCheckbox(this)">Dimmed checkboxes</label>(*)<br>
-                <label><input type="checkbox" id="Tree_Style:0x8000000" onclick="SetCheckbox(this)">No indent checks</label>(*)<br>
-                <label><input type="checkbox" id="Tree_Style:0x10000000" onclick="SetCheckbox(this)">Allow junctions</label>(*)<br>
-                <label><input type="checkbox" id="Tree_Style:0x20000000" onclick="SetCheckbox(this)">Tabs</label>(*)<br>
-                <label><input type="checkbox" id="Tree_Style:0x40000000" onclick="SetCheckbox(this)">Delete</label>(*)<br>
-                <label><input type="checkbox" id="Tree_Style:0x80000000" onclick="SetCheckbox(this)">Refresh</label>(*)<br>
+                <label alt="Even height"><input type="checkbox" id="Tree_Style:0x400" onclick="SetCheckbox(this)">Height<span> (</span>@serialui.dll,-250<span>)</span></label><br><br>
+                <label>Buttons</label>(*)<br>
+                <label><input type="checkbox" id="Tree_Style:0x20000000" onclick="SetCheckbox(this)">Tabs</label><br> 
+                <label><input type="checkbox" id="Tree_Style:0x40000000" onclick="SetCheckbox(this)">Delete</label><br>
+                <label><input type="checkbox" id="Tree_Style:0x80000000" onclick="SetCheckbox(this)">Refresh</label><br>
               </div>
               <br>
               <div>
@@ -470,26 +475,12 @@
                   </td>
                 </tr>
               </table>
-              <textarea name="Tree_Root" style="width: 100%; height: 16em"></textarea>
+              <textarea name="Tree_Root" style="width: 100%; height: 16em"></textarea><br><br>
               <label>Style</label><br>
               <input type="hidden" name="Tree_RootStyle">
-              <label><input type="radio" name="Tree_RootStyle_" id="Tree_RootStyle=0" onclick="SetRadio(this)">Visible</label>
-              <label><input type="radio" name="Tree_RootStyle_" id="Tree_RootStyle=1" onclick="SetRadio(this)">Hidden</label>
-              <label><input type="radio" name="Tree_RootStyle_" id="Tree_RootStyle=2" onclick="SetRadio(this)">Expanded</label>
-              <div>
-                <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_Tree_EnumFlags")'>
-              </div>
-              <div class="group" id="_Advanced_Tree_EnumFlags">
-                <label><input type="checkbox" id="Tree_EnumFlags:0x10" onclick="SetCheckbox(this)">Checking for children</label>(*7)<br>
-                <label><input type="checkbox" id="Tree_EnumFlags:0x100" onclick="SetCheckbox(this)">Init on first next</label><br>
-                <label><input type="checkbox" id="Tree_EnumFlags:0x200" onclick="SetCheckbox(this)">@printui.dll,-12021[Net printer search]</label><br>
-                <label><input type="checkbox" id="Tree_EnumFlags:0x400" onclick="SetCheckbox(this)">Shareable</label><br>
-                <label><input type="checkbox" id="Tree_EnumFlags:0x800" onclick="SetCheckbox(this)">@mycomput.dll,-192</label><br>
-                <label><input type="checkbox" id="Tree_EnumFlags:0x1000" onclick="SetCheckbox(this)">Navigation emun</label>(*7)<br>
-                <label><input type="checkbox" id="Tree_EnumFlags:0x2000" onclick="SetCheckbox(this)">Fast items</label>(*)<br>
-                <label><input type="checkbox" id="Tree_EnumFlags:0x4000" onclick="SetCheckbox(this)">Flat</label>(*)<br>
-                <label><input type="checkbox" id="Tree_EnumFlags:!0x10000" onclick="SetCheckbox(this)">@shell32.dll,-30508[Hide protected operating system files]</label>(*7)
-              </div>
+              <label><input type="radio" name="Tree_RootStyle_" id="Tree_RootStyle=0" onclick="SetRadio(this)">Visible</label><br>
+              <label><input type="radio" name="Tree_RootStyle_" id="Tree_RootStyle=1" onclick="SetRadio(this)">Hidden</label><br>
+              <label><input type="radio" name="Tree_RootStyle_" id="Tree_RootStyle=2" onclick="SetRadio(this)">Expanded</label><br><br>
               <div>
                 (*)Windows Vista <label>or higher.</label>
                 (*7)Windows 7 <label>or higher.</label>
@@ -564,12 +555,13 @@
               <label><input type="checkbox" id="View_fFlags:0x8000000" onclick="SetCheckbox(this)">@shell32.dll,-30522[Item check boxes]</label>(*)<br>
               <label alt="Group"><input type="checkbox" id="View_fFlags:!0x100000" onclick="SetCheckbox(this)">@fde.dll,-22</label>(*)<br>
               <label alt="Subset groups"><input type="checkbox" id="View_fFlags:0x20000000" onclick="SetCheckbox(this)">Number of items<span> (</span>@fde.dll,-22<span>)</span></label>(*)<br>
-                <label><input type="checkbox" id="View_fFlags:!0x800000" onclick="SetCheckbox(this)">@taskmgr.exe,-37223[Column header]</label>(*)<br>
-                <label alt="Column header details only"><input type="checkbox" id="View_fFlags:0x1000000" onclick="SetCheckbox(this)">@taskmgr.exe,-37223[Column header]<span> (</span>@certutil.exe,-2922[Only Allow]<span>: </span>@shell32.dll,-33580<span>)</span></label>(*)<br>
+              <label><input type="checkbox" id="View_fFlags:!0x800000" onclick="SetCheckbox(this)">@taskmgr.exe,-37223[Column header]</label>(*)<br>
+              <label alt="Column header details only"><input type="checkbox" id="View_fFlags:0x1000000" onclick="SetCheckbox(this)">@taskmgr.exe,-37223[Column header]<span> (</span>@certutil.exe,-2922[Only Allow]<span>: </span>@shell32.dll,-33580<span>)</span></label>(*)<br>
               <div>
                 <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_FWF")'>
               </div>
               <div class="group" id="_Advanced_FWF">
+                <label alt="Background color on sorted column"><input type="checkbox" id="Conf_ColumnEmphasis">@UIAutomationCore.dll,-283[Emphasis]<span> (</span>@sqlsrv32.rll,-40033<span>)</span></label><br>
                 <label><input type="checkbox" id="View_fFlags:0x800" onclick="SetCheckbox(this)">@inetres.dll,-5232[Align Left]</label><br>
                 <label><input type="checkbox" id="View_fFlags:0x2000000" onclick="SetCheckbox(this)">@shell32.dll,-32770[Extended Tiles]</label>(*)<br>
                 <label><input type="checkbox" id="View_fFlags:0x80" onclick="SetCheckbox(this)">@comdlg32.dll,-780[Hide Folders]</label><br>
