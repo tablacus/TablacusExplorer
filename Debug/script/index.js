@@ -124,14 +124,28 @@ SetAddon = async function (strName, Location, Tag, strVAlign) {
 			AddEventUI("PanelCreated", function (Ctrl, Id) {
 				return SetAddon(null, "Inner1Left_" + Id, Tag.replace(/\$/g, Id));
 			});
+		} else if (Location == "InnerRight") {
+			AddEventUI("PanelCreated", function (Ctrl, Id) {
+				return SetAddon(null, "Inner1Right_" + Id, Tag.replace(/\$/g, Id));
+			});
+		} else if (Location == "InnerBottom") {
+			AddEventUI("PanelCreated", function (Ctrl, Id) {
+				return SetAddon(null, "InnerBottom2Left_" + Id, Tag.replace(/\$/g, Id));
+			});
+		} else if (Location == "InnerBottomRight") {
+			AddEventUI("PanelCreated", function (Ctrl, Id) {
+				return SetAddon(null, "InnerBottom2Right_" + Id, Tag.replace(/\$/g, Id));
+			});
 		}
 		if (strName) {
 			if (!await g_.Locations[Location]) {
 				g_.Locations[Location] = await api.CreateObject("Array");
 			}
-			const res = /<img.*?src=["'](.*?)["']/i.exec(String(Tag));
-			if (res) {
-				strName += "\t" + res[1];
+			if ("string" === typeof Tag) {
+				const res = /<img.*?org=["'](.*?)["']/i.exec(Tag) || /<span.*?src=["'](.*?)["']/i.exec(Tag);
+				if (res) {
+					strName += "\t" + res[1];
+				}
 			}
 			await g_.Locations[Location].push(strName);
 		}
@@ -256,11 +270,11 @@ OnArrange = async function (Ctrl, rc) {
 		const p = [rc.left, rc.top, rc.right, rc.bottom, Ctrl.Visible, Ctrl.Left, Ctrl.Top, Ctrl.Width, Ctrl.Height];
 		if (!document.getElementById("Panel_" + Id)) {
 			const s = ['<table id="Panel_', Id, '" class="layout fixed" style="position: absolute; z-index: 1; color: inherit; visibility: hidden">'];
-			s.push('<tr><td id="InnerLeft_', Id, '" class="sidebar" style="width: 0; display: none; overflow: auto"></td><td style="width: 100%"><div id="InnerTop_', Id, '" style="display: none"></div>');
+			s.push('<tr><td id="InnerLeft_', Id, '" class="sidebar" style="width: 0; display: none; overflow: auto"></td><td class="full"><div id="InnerTop_', Id, '" style="display: none"></div>');
 			s.push('<table id="InnerTop2_', Id, '" class="layout">');
 			s.push('<tr><td id="Inner1Left_', Id, '" class="toolbar1"></td><td id="Inner1Center_', Id, '" class="toolbar2" style="white-space: nowrap"></td><td id="Inner1Right_', Id, '" class="toolbar3"></td></tr></table>');
-			s.push('<table id="InnerView_', Id, '" class="layout" style="width: 100%"><tr><td id="Inner2Left_', Id, '" style="width: 0"></td><td id="Inner2Center_', Id, '" style="width: 100%"></td><td id="Inner2Right_', Id, '" style="width: 0; overflow: auto"></td></tr></table>');
-			s.push('<div id="InnerBottom_', Id, '"></div></td><td id="InnerRight_', Id, '" class="sidebar" style="width: 0; display: none"></td></tr></table>');
+			s.push('<table id="InnerView_', Id, '" class="layout full"><tr><td id="Inner2Left_', Id, '" style="width: 0"></td><td id="Inner2Center_', Id, '" class="full"></td><td id="Inner2Right_', Id, '" style="width: 0; overflow: auto"></td></tr></table>');
+			s.push('<table id="InnerBottomT_', Id, '" class="layout full"><tr><td id="InnerBottom_', Id, '"></td></tr><tr><td id="InnerBottom2Left_', Id, '" class="toolbar1 full"></td><td id="InnerBottom2Right_', Id, '" class="toolbar3"></td></tr></table></td><td id="InnerRight_', Id, '" class="sidebar" style="width: 0; display: none"></td></tr></table>');
 			document.getElementById("Panel").insertAdjacentHTML("beforeend", s.join(""));
 			p.push(PanelCreated(Ctrl, Id));
 		}
@@ -306,7 +320,7 @@ OnArrange = async function (Ctrl, rc) {
 			if (!/none/i.test(el.style.display)) {
 				r[2] -= el.offsetWidth;
 			}
-			r[3] -= document.getElementById("InnerBottom_" + Id).offsetHeight;
+			r[3] -= document.getElementById("InnerBottomT_" + Id).offsetHeight;
 			api.SetRect(rc, r[0], r[1], r[2], r[3]);
 			document.getElementById("Inner2Center_" + Id).style.height = Math.max(r[3] - r[1], 0) + "px";
 			Promise.all([te.ArrangeCB(Ctrl, rc)]).then(function () {
@@ -403,16 +417,14 @@ AddEvent("VisibleChanged", async function (Ctrl) {
 	}
 });
 
-AddEvent("SystemMessage", async function (Ctrl, hwnd, msg, wParam, lParam) {
-	if (await Ctrl.Type == CTRL_WB) {
-		if (msg == WM_KILLFOCUS) {
-			const o = document.activeElement;
-			if (o) {
-				const s = o.style.visibility;
-				o.style.visibility = "hidden";
-				o.style.visibility = s;
-				FireEvent(o, "blur");
-			}
+AddEvent(WM_KILLFOCUS + "!", function (Ctrl, Type, hwnd, msg, wParam, lParam) {
+	if (Type == CTRL_WB) {
+		const o = document.activeElement;
+		if (o) {
+			const s = o.style.visibility;
+			o.style.visibility = "hidden";
+			o.style.visibility = s;
+			FireEvent(o, "blur");
 		}
 	}
 });

@@ -186,6 +186,7 @@ GetImgTag = async function (o, h) {
 			ar.push('>', c, '</span>');
 			return ar.join("");
 		}
+		o.org = o.src;
 		o.src = await ImgBase64(o, 0, Number(h))
 		if (!o.draggable) {
 			o.draggable = o.ondragstart != null;

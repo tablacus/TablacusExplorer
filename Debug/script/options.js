@@ -1386,9 +1386,12 @@ async function ContinueOptions() {
 InitOptions = async function () {
 	ApplyLang(document);
 	(async function () {
-		const r = await Promise.all([GetText("Get %s"), GetTextR("@UIAutomationCore.dll,-220[Icons]"), GetTextR("@docprop.dll,-107"), GetText("File"), te.Data.DataFolder, fso.FolderExists(BuildPath(ui_.Installed, "layout"))]);
+		const r = await Promise.all([GetText("Get %s"), GetTextR("@UIAutomationCore.dll,-220[Icons]"), GetTextR("@docprop.dll,-107"), GetText("File"), te.Data.DataFolder, fso.FolderExists(BuildPath(ui_.Installed, "layout")), GetLangId()]);
+		if (/^zh/i.test(r[6])) {
+			r[0] = r[0].replace(" ", "");
+		}
 		document.getElementById("tab1_3").innerHTML = await api.sprintf(99, r[0], r[1]);
-		const sl = await api.sprintf(99, r[0], r[2] + " " + (r[3].toLowerCase()));
+		const sl = await api.sprintf(99, r[0], r[2] + (/^ja|^zh/i.test(r[6]) ? "" : " ") + (r[3].toLowerCase()));
 		document.getElementById("tab1_4").innerHTML = sl;
 		document.getElementById("AddLang").value = sl;
 		document.title = await GetText("Options") + " - " + TITLE;
@@ -1940,7 +1943,7 @@ MouseWheel = async function (ev) {
 }
 
 InitLocation = function () {
-	Promise.all([api.CreateObject("Array"), api.CreateObject("Object"), dialogArguments.Data.id, te.Data.DataFolder]).then(async function (r) {
+	Promise.all([api.CreateObject("Array"), api.CreateObject("Object"), dialogArguments.Data.id, te.Data.DataFolder, GetLangId()]).then(async function (r) {
 		let ar = r[0];
 		const param = r[1];
 		Addon_Id = r[2];
@@ -1959,7 +1962,7 @@ InitLocation = function () {
 				};
 			})(o);
 		}
-		await LoadLang2(BuildPath("addons", Addon_Id, "lang", await GetLangId() + ".xml"));
+		await LoadLang2(BuildPath("addons", Addon_Id, "lang", r[4] + ".xml"));
 		await LoadAddon("js", Addon_Id, ar, param);
 		if (window.chrome) {
 			ar = await api.CreateObject("SafeArray", ar);
@@ -1989,19 +1992,21 @@ InitLocation = function () {
 		for (let list = await api.CreateObject("Enum", items); !await list.atEnd(); await list.moveNext()) {
 			const i = await list.item();
 			locs[i] = [];
-			const item1 = await items[i];
-			for (let j = await GetLength(item1); j--;) {
-				const ar = (await item1[j]).split("\t");
+			const dup = {};
+			const item1 = window.chrome ? await api.CreateObject("SafeArray", await items[i]) : items[i];
+			for (let j = item1.length; j--;) {
+				const ar = item1[j].split("\t");
+				if (dup[ar[0]]) {
+					continue;
+				}
+				dup[ar[0]] = true;
 				locs[i].unshift(await GetImgTag({ src: ar[1], title: await GetAddonInfo(ar[0]).Name, "class": ar[1] ? "" : "text1" }, 16) + '<span style="font-size: 1px"> </span>');
 			}
 		}
 		for (let i in locs) {
 			const s = locs[i].join("");
 			try {
-				const o = document.getElementById('_' + i);
-				await ApplyLang(o);
-				o.parentNode.title = o.innerHTML.replace(/<[^>]*>|[\r\n]|\s\s+/g, "");
-				o.innerHTML = s;
+				document.getElementById('_' + i).innerHTML = s;
 			} catch (e) { }
 		}
 		await ApplyLang(document);
@@ -2921,7 +2926,12 @@ function ChangeColor1(el) {
 }
 
 function EnableInner() {
-	ChangeForm([["__Inner", "disabled", false]]);
+	ChangeForm([
+		["__Inner", "disabled", false],
+		["__InnerRight", "disabled", false],
+		["__InnerBottom", "disabled", false],
+		["__InnerBottomRight", "disabled", false]
+	]);
 }
 
 function ChangeForm(ar) {

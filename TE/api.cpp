@@ -3723,8 +3723,15 @@ VOID teApiTrackPopupMenuEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 #ifdef _DEBUG
 	//	g_hMenuGMHook = SetWindowsHookEx(WH_DEBUG, (HOOKPROC)MenuGMProc, NULL, g_dwMainThreadId);
 #endif
-	teSetLong(pVarResult, TrackPopupMenuEx(param[0].hmenu, param[1].uintVal, param[2].intVal, param[3].intVal,
-		param[4].hwnd, param[5].lptpmparams));
+	try {
+		teSetLong(pVarResult, TrackPopupMenuEx(param[0].hmenu, param[1].uintVal, param[2].intVal, param[3].intVal,
+			param[4].hwnd, param[5].lptpmparams));
+	} catch (...) {
+		g_nException = 0;
+#ifdef _DEBUG
+		g_strException = L"TrackPopupMenuEx";
+#endif
+	}
 #ifdef _DEBUG
 	//	UnhookWindowsHookEx(g_hMenuGMHook);
 #endif

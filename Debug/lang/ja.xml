@@ -105,11 +105,11 @@
 	<text s="Enable">有効にする</text>
 	<text s="Visit website">サイトを表示</text>
 	<text s="Information...">情報...</text>
-	<text s="Title bar">タイトル バー</text>
-	<text s="Tool bar">ツール バー</text>
-	<text s="Left bar">レフト バー</text>
-	<text s="Right bar">ライト バー</text>
-	<text s="Bottom bar">ボトム バー</text>
+	<text s="Title bar">タイトルバー</text>
+	<text s="Tool bar">ツールバー</text>
+	<text s="Left bar">レフトバー</text>
+	<text s="Right bar">ライトバー</text>
+	<text s="Bottom bar">ボトムバー</text>
 	<text s="Center">中央</text>
 	<text s="Background">バックグラウンド</text>
 	<text s="Advanced">高度</text>
@@ -171,7 +171,7 @@
 	<text s="or higher.">以降 </text>
 	<text s="Input">入力</text>
 	<text s="Check for updates">最新版の確認</text>
-	<text s="the latest version">最新バージョン</text>
+	<text s="the latest version">最新版</text>
 	<text s="Update available">アップデートあり</text>
 	<text s="Do you want to install it now?">インストールしますか？</text>
 	<text s="Search">検索</text>

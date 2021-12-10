@@ -3005,6 +3005,9 @@ LRESULT CALLBACK TELVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 						SetTextColor(pnmcd->hdc, TECL_DARKTEXT);
 						return CDRF_DODEFAULT;
 					}
+					if (pnmcd->dwDrawStage == CDDS_ITEMPOSTPAINT) {
+						return CDRF_DODEFAULT;
+					}
 				}
 			}
 			break;

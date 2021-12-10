@@ -308,7 +308,7 @@ CheckUpdate2 = async function (xhr, url, arg1) {
 	arg.file = GetFileName((await arg.url).replace(/\//g, "\\"));
 	const ver = (res = /(\d+)/.exec(await arg.file)) ? GetNum(res[1]) + 2e7 : 0;
 	if (ver <= await AboutTE(0)) {
-		if ((arg1 && GetNum(await arg1.silent)) || await MessageBox(await AboutTE(2) + "\n" + await GetText("the latest version"), TITLE, MB_ICONINFORMATION)) {
+		if ((arg1 && GetNum(await arg1.silent)) || await MessageBox(await AboutTE(2) + "\n\n(" + await GetText("the latest version") + ")", TITLE, MB_ICONINFORMATION)) {
 			if (await api.GetKeyState(VK_SHIFT) >= 0 || await api.GetKeyState(VK_CONTROL) >= 0) {
 				MainWindow.RunEvent1("CheckUpdate", arg1);
 				return;
@@ -1018,6 +1018,9 @@ SetDisplay = function (Id, s) {
 
 //Options
 AddonOptions = async function (Id, fn, Data, bNew) {
+	if (await api.GetKeyState(VK_CONTROL) >= 0) {
+		wsh.SendKeys("{ESC}");
+	}
 	await LoadLang2(BuildPath("addons", Id, "lang", await GetLangId() + ".xml"));
 	const items = await te.Data.Addons.getElementsByTagName(Id);
 	if (!GetLength(items)) {
@@ -1344,7 +1347,7 @@ KeyDownEvent = function (ev, vEnter, vCancel) {
 }
 
 GetIconSizeEx = function (item) {
-	return GetIconSize(item.getAttribute("IconSize"), item.getAttribute("Location") == "Inner" && 16);
+	return GetIconSize(item.getAttribute("IconSize"), /Inner/i.test(item.getAttribute("Location")) && 16);
 }
 
 if (window.chrome) {

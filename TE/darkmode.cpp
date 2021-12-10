@@ -160,11 +160,11 @@ LRESULT CALLBACK TabCtrlProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, 
 			WCHAR label[MAX_PATH];
 			HDC hdc = BeginPaint(hwnd, &ps);
 			DWORD dwStyle = GetWindowLong(hwnd, GWL_STYLE);
-			SetBkMode(ps.hdc, TRANSPARENT);
-			SetDCPenColor(ps.hdc, TECL_DARKSEL);
-			SelectObject(ps.hdc, GetStockPen(DC_PEN));
-			SelectObject(ps.hdc, g_hbrDarkBackground);
-			::FillRect(ps.hdc, &ps.rcPaint, g_hbrDarkBackground);
+			SetBkMode(hdc, TRANSPARENT);
+			SetDCPenColor(hdc, TECL_DARKSEL);
+			SelectObject(hdc, GetStockPen(DC_PEN));
+			SelectObject(hdc, g_hbrDarkBackground);
+			::FillRect(hdc, &ps.rcPaint, g_hbrDarkBackground);
 			HGDIOBJ hFont = (HGDIOBJ)::SendMessage(hwnd, WM_GETFONT, 0, 0);
 			::SelectObject(hdc, hFont);
 			int nSelected = TabCtrl_GetCurSel(hwnd);
@@ -184,9 +184,9 @@ LRESULT CALLBACK TabCtrlProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, 
 				tci.cchTextMax = _countof(label) - 1;
 				TabCtrl_GetItem(hwnd, i, &tci);
 				if (i == nSelected) {
-					SetDCBrushColor(ps.hdc, TECL_DARKSEL);
-					::FillRect(ps.hdc, &rc, GetStockBrush(DC_BRUSH));
-					SetTextColor(ps.hdc, TECL_DARKTEXT);
+					SetDCBrushColor(hdc, TECL_DARKSEL);
+					::FillRect(hdc, &rc, GetStockBrush(DC_BRUSH));
+					SetTextColor(hdc, TECL_DARKTEXT);
 				} else {
 					if (!(dwStyle & (TCS_BUTTONS | TCS_FLATBUTTONS))) {
 						if (dwStyle & TCS_BOTTOM) {
@@ -196,17 +196,17 @@ LRESULT CALLBACK TabCtrlProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, 
 						}
 					}
 					if (!(dwStyle & TCS_FLATBUTTONS)) {
-						Rectangle(ps.hdc, rc.left, rc.top, rc.right, rc.bottom);
+						Rectangle(hdc, rc.left, rc.top, rc.right, rc.bottom);
 					}
-					SetTextColor(ps.hdc, TECL_DARKTEXT2);
+					SetTextColor(hdc, TECL_DARKTEXT2);
 				}
 				if (tci.iImage >= 0) {
 					int x = rc.left + 6;
 					int y = rc.top + ((rc.bottom - rc.top) - cy) / 2;
-					ImageList_Draw(himl, tci.iImage, ps.hdc, x, y, ILD_TRANSPARENT);
+					ImageList_Draw(himl, tci.iImage, hdc, x, y, ILD_TRANSPARENT);
 					rc.left += cx;
 				}
-				::DrawText(ps.hdc, label, -1, &rc, DT_HIDEPREFIX | DT_SINGLELINE | DT_VCENTER | DT_PATH_ELLIPSIS | DT_CENTER);
+				::DrawText(hdc, label, -1, &rc, DT_HIDEPREFIX | DT_SINGLELINE | DT_VCENTER | DT_PATH_ELLIPSIS | DT_CENTER);
 			}
 			EndPaint(hwnd, &ps);
 			return 0;
@@ -278,7 +278,13 @@ VOID FixChildren(HWND hwnd)
 					}
 				}
 			}
-		} else if (::PathMatchSpecA(pszClassA, WC_EDITA ";" WC_COMBOBOXA)) {
+		} else if (::PathMatchSpecA(pszClassA, WC_EDITA)) {
+			if (GetWindowLong(hwnd1, GWL_STYLE) & ES_MULTILINE) {
+				::SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
+			} else {
+				::SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_cfd" : L"cfd", NULL);
+			}
+		} else if (::PathMatchSpecA(pszClassA, WC_COMBOBOXA)) {
 			::SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_cfd" : L"cfd", NULL);
 		} else if (::PathMatchSpecA(pszClassA, WC_SCROLLBARA)) {
 			::SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);

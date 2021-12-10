@@ -2269,7 +2269,11 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 	if (msg == WM_SETTINGCHANGE) {
 		te.Data.TempFolder = GetTempPath(1);
 	}
-	const hr = RunEvent3("SystemMessage", Ctrl, hwnd, msg, wParam, lParam);
+	let hr = RunEvent3(msg + "!", Ctrl, Ctrl.Type, hwnd, msg, wParam, lParam);
+	if (isFinite(hr)) {
+		return hr;
+	}
+	hr = RunEvent3("SystemMessage", Ctrl, hwnd, msg, wParam, lParam, Ctrl.Type);
 	if (isFinite(hr)) {
 		return hr;
 	}
@@ -2450,7 +2454,12 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 
 te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 	let pStatus = [null, "", 0];
-	const hr = RunEvent3("MenuMessage", Ctrl, hwnd, msg, wParam, lParam, pStatus);
+	let hr = RunEvent3(msg + "!", Ctrl, (Ctrl || te).Type, hwnd, msg, wParam, lParam, pStatus);
+	if (isFinite(hr)) {
+		ShowStatusText(pStatus[0], pStatus[1], pStatus[2], pStatus[3]);
+		return hr;
+	}
+	hr = RunEvent3("MenuMessage", Ctrl, hwnd, msg, wParam, lParam, pStatus);
 	if (isFinite(hr)) {
 		ShowStatusText(pStatus[0], pStatus[1], pStatus[2], pStatus[3]);
 		return hr;
@@ -2550,7 +2559,11 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 };
 
 te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
-	const hr = RunEvent3("AppMessage", Ctrl, hwnd, msg, wParam, lParam);
+	let hr = RunEvent3(msg + "!", Ctrl, Ctrl.Type, hwnd, msg, wParam, lParam);
+	if (isFinite(hr)) {
+		return hr;
+	}
+	hr = RunEvent3("AppMessage", Ctrl, hwnd, msg, wParam, lParam, Ctrl.Type);
 	if (isFinite(hr)) {
 		return hr;
 	}
@@ -2664,7 +2677,7 @@ ShowStatusText = function (Ctrl, Text, iPart, tm) {
 		ShowStatusTextEx(Ctrl, Text, iPart, tm);
 		return S_OK;
 	}
-	RunEvent1("StatusText", Ctrl, Text, iPart);
+	RunEvent1("StatusText", Ctrl, Text, iPart, Ctrl.Type);
 	return S_OK;
 }
 
