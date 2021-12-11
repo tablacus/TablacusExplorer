@@ -71,7 +71,6 @@
 	<text s="Set default">Set default</text>
 	<text s="Select">Select</text>
 	<text s="Browse...">Browse...</text>
-	<text s="Reference...">Reference...</text>
 	<text s="Selected items">Selected items</text>
 	<text s="Default LanguageID">Default LanguageID</text>
 	<text s="New folder">New folder</text>
@@ -88,7 +87,6 @@
 	<text s="Exec">Exec</text>
 	<text s="Base">Base</text>
 	<text s="Normal">Normal</text>
-	<text s="Help">Help</text>
 	<text s="Link">Link</text>
 	<text s="Are you sure?">Are you sure?</text>
 	<text s="Do you want to replace?">Do you want to replace?</text>
@@ -126,7 +124,6 @@
 	<text s="Horizontal scroll">Horizontal scroll</text>
 
 	<text s="Enumeration">Enumeration</text>
-	<text s="Folders">Folders</text>
 	<text s="Not folders">Not folders</text>
 	<text s="Include hidden items">Include hidden items</text>
 
@@ -153,7 +150,6 @@
 	<text s="Auto arrange">Auto arrange</text>
 	<text s="Single selection">Single selection</text>
 	<text s="No client edge">No client edge</text>
-	<text s="Show selection always">Show selection always</text>
 	<text s="Single click activate">Single click activate</text>
 
 	<text s="Show frames">Show frames</text>
@@ -171,7 +167,7 @@
 	<text s="Content">Content</text>
 	<text s="or higher.">or higher.</text>
 	<text s="Check for updates">Check for updates</text>
-	<text s="the latest version">the latest version</text>
+	<text s="%s is up to date.">%s is up to date.</text>
 	<text s="Update available">Update available</text>
 	<text s="Do you want to install it now?">Do you want to install it now?</text>
 	<text s="Search">Search</text>
@@ -179,12 +175,10 @@
 	<text s="Installed">Installed</text>
 	<text s="is required.">is required.</text>
 	<text s="File is in operation.">File is in operation.</text>
-	<text s="Mouse">Mouse</text>
 	<text s="Gestures">Gestures</text>
 	<text s="Trails">Trails</text>
 	<text s="Color">Color</text>
 	<text s="Priority">Priority</text>
-	<text s="Timeout">Timeout</text>
 	<text s="Wheel">Wheel</text>
 	<text s="Add before">Add before</text>
 	<text s="Add after">Add after</text>
@@ -213,9 +207,8 @@
 	<text s="Get">Get</text>
  	<text s="Drag-and-Drop">Drag-and-Drop</text>
  	<text s="Swap">Swap</text>
-
-	<text s="Location">Location</text>
-	<text s="Root style">Root style</text>
-	<text s="View mode">View mode</text>
 	<text s="Disable">Disable</text>
+
+	<text s="Folders">Folders</text>
+	<text s="Timeout">Timeout</text>
 </resources>

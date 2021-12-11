@@ -71,7 +71,6 @@
 	<text s="Set default">Imposta Predefinita</text>
 	<text s="Select">Seleziona</text>
 	<text s="Browse...">Sfoglia...</text>
-	<text s="Reference...">Riferimento...</text>
 	<text s="Selected items">Elementi selezionati</text>
 	<text s="Default LanguageID">ID Lingua Predefinita</text>
 	<text s="New folder">Nuova cartella</text>
@@ -88,7 +87,6 @@
 	<text s="Exec">Esegui</text>
 	<text s="Base">Base</text>
 	<text s="Normal">Normale</text>
-	<text s="Help">Aiuto</text>
 	<text s="Link">Collegamento</text>
 	<text s="Are you sure?">Sei sicuro?</text>
 	<text s="Do you want to replace?">Vuoi sostituire?</text>
@@ -126,7 +124,6 @@
 	<text s="Horizontal scroll">Scorrimento orizzontale</text>
 
 	<text s="Enumeration">Numera</text>
-	<text s="Folders">Cartelle</text>
 	<text s="Not folders">Non cartelle</text>
 	<text s="Include hidden items">Includi elementi nascosti</text>
 
@@ -153,7 +150,6 @@
 	<text s="Auto arrange">Disponi automaticamente</text>
 	<text s="Single selection">Selezione singola</text>
 	<text s="No client edge">No bordo cliente</text>
-	<text s="Show selection always">Mostra selezione sempre</text>
 	<text s="Single click activate">Attiva con click singolo</text>
 
 	<text s="Show frames">Mostra Riquadro</text>
@@ -171,7 +167,7 @@
 	<text s="Content">Contenuto</text>
 	<text s="or higher.">o superiore.</text>
 	<text s="Check for updates">Controlla gli aggiornamenti</text>
-	<text s="the latest version">l'ultima versione</text>
+	<text s="%s is up to date.">%s è aggiornato.</text>
 	<text s="Update available">Aggiornamento disponibile</text>
 	<text s="Do you want to install it now?">Vuoi installarlo ora?</text>
 	<text s="Search">Ricerca</text>
@@ -179,12 +175,10 @@
 	<text s="Installed">Installato</text>
 	<text s="is required.">è richiesto.</text>
 	<text s="File is in operation.">Il file è in uso.</text>
-	<text s="Mouse">Mouse</text>
 	<text s="Gestures">Gesti</text>
 	<text s="Trails">Tracce</text>
 	<text s="Color">Colore</text>
 	<text s="Priority">Priorità</text>
-	<text s="Timeout">Pausa</text>
 	<text s="Wheel">Rotella</text>
 	<text s="Add before">Aggiungi prima</text>
 	<text s="Add after">Aggiungere dopo</text>
@@ -213,9 +207,8 @@
 	<text s="Get">Ottieni</text>
  	<text s="Drag-and-Drop">Drag-and-Drop</text>
 	<text s="Swap">Scambio</text>
-
-	<text s="Location">Percorso</text>
-	<text s="Root style">Stile Radice</text>
-	<text s="View mode">Modifica visualizzazione</text>
 	<text s="Disable">Disabilita</text>
+
+	<text s="Folders">Cartelle</text>
+	<text s="Timeout">Pausa&#160;</text>
 </resources>

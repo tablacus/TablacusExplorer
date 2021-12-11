@@ -71,7 +71,6 @@
 	<text s="Set default">既定値に設定</text>
 	<text s="Select">選択</text>
 	<text s="Browse...">参照...</text>
-	<text s="Reference...">参照....</text>
 	<text s="Selected items">選択項目</text>
 	<text s="Default LanguageID">既定のLanguageID</text>
 	<text s="New folder">新規フォルダ</text>
@@ -88,7 +87,6 @@
 	<text s="Exec">実行</text>
 	<text s="Base">ベース</text>
 	<text s="Normal">標準</text>
-	<text s="Help">ヘルプ</text>
 	<text s="Link">リンク</text>
 	<text s="Are you sure?">よろしいですか？</text>
 	<text s="Do you want to replace?">置き換えますか？</text>
@@ -126,7 +124,6 @@
 	<text s="Horizontal scroll">水平スクロール</text>
 
 	<text s="Enumeration">列挙</text>
-	<text s="Folders">フォルダー</text>
 	<text s="Not folders">フォルダ以外</text>
 	<text s="Include hidden items">隠し項目を表示</text>
 
@@ -153,7 +150,6 @@
 	<text s="Auto arrange">自動的に整列</text>
 	<text s="Single selection">シングルセレクト</text>
 	<text s="No client edge">エッジを隠す</text>
-	<text s="Show selection always">常に選択を表示</text>
 	<text s="Single click activate">ポイントで選択、クリックで実行</text>
 
 	<text s="Show frames">フレームを表示</text>
@@ -171,7 +167,7 @@
 	<text s="or higher.">以降 </text>
 	<text s="Input">入力</text>
 	<text s="Check for updates">最新版の確認</text>
-	<text s="the latest version">最新版</text>
+	<text s="%s is up to date.">%sは最新です。</text>
 	<text s="Update available">アップデートあり</text>
 	<text s="Do you want to install it now?">インストールしますか？</text>
 	<text s="Search">検索</text>
@@ -179,12 +175,10 @@
 	<text s="Installed">インストール済</text>
 	<text s="is required.">が必要です。</text>
 	<text s="File is in operation.">ファイル操作中です。</text>
-	<text s="Mouse">マウス</text>
 	<text s="Gestures">ジェスチャ</text>
 	<text s="Trails">軌跡</text>
 	<text s="Color">色</text>
 	<text s="Priority">優先</text>
-	<text s="Timeout">タイムアウト</text>
 	<text s="Wheel">ホイール</text>
 	<text s="Add before">前に追加</text>
 	<text s="Add after">後に追加</text>
@@ -213,9 +207,8 @@
 	<text s="Get">取得</text>
 	<text s="Drag-and-Drop">ドラッグ＆ドロップ</text>
  	<text s="Swap">入れ替え</text>
-
-	<text s="Location">場所</text>
-	<text s="Root style">ルートスタイル</text>
-	<text s="View mode">表示モード</text>
 	<text s="Disable">無効にする</text>
+
+	<text s="Folders">フォルダー</text>
+	<text s="Timeout">タイムアウト</text>
 </resources>

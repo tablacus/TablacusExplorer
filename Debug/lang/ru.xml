@@ -9,8 +9,8 @@
 	<text s="&amp;Help">&amp;Быстрый доступ</text>
 	<text s="Back">Назад</text>
 	<text s="Forward">Вперёд</text>
-	<text s="Up">Вверх</text>
-	<text s="Down">Вниз</text>
+	<text s="Up">Вверх&#160;</text>
+	<text s="Down">Вниз&#160;</text>
 	<text s="Go">Выполнить</text>
 	<text s="&amp;Close application">&amp;Закрыть программу</text>
 	<text s="&amp;Up one level">&amp;Вверх на один уровень</text>
@@ -71,7 +71,6 @@
 	<text s="Set default">Установить по умолчанию</text>
 	<text s="Select">Выбрать</text>
 	<text s="Browse...">Просмотр...</text>
-	<text s="Reference...">Ссылка...</text>
 	<text s="Selected items">Выбранные элементы</text>
 	<text s="Default LanguageID">Идентификатор языка по-умолчанию</text>
 	<text s="New folder">Новая папка</text>
@@ -80,7 +79,7 @@
 	<text s="Path">Путь</text>
 	<text s="Filter">Фильтр</text>
 	<text s="Folder">Папка</text>
-	<text s="Remove">Удалить</text>
+	<text s="Remove">Удалить&#160;</text>
 	<text s="Add">Добавить</text>
 	<text s="Replace">Заменить</text>
 	<text s="All">Всё</text>
@@ -88,7 +87,6 @@
 	<text s="Exec">Исполнить</text>
 	<text s="Base">База</text>
 	<text s="Normal">Стандарт</text>
-	<text s="Help">Помощь</text>
 	<text s="Link">Ссылка</text>
 	<text s="Are you sure?">Вы уверены?</text>
 	<text s="Do you want to replace?">Хотите заменить?</text>
@@ -126,7 +124,6 @@
 	<text s="Horizontal scroll">Горизонтальная прокрутка</text>
 
 	<text s="Enumeration">Перечисление</text>
-	<text s="Folders">Папки</text>
 	<text s="Not folders">Не папки</text>
 	<text s="Include hidden items">Включить скрытые элементы</text>
 
@@ -153,7 +150,6 @@
 	<text s="Auto arrange">Упорядочить автоматически</text>
 	<text s="Single selection">Одиночный выбор</text>
 	<text s="No client edge">Без рамки</text>
-	<text s="Show selection always">Всегда показывать выбранное</text>
 	<text s="Single click activate">Выбор одним кликом</text>
 
 	<text s="Show frames">Окно предпросмотра</text>
@@ -171,7 +167,7 @@
 	<text s="Content">Содержимое</text>
 	<text s="or higher.">и выше.</text>
 	<text s="Check for updates">Проверить наличие обновлений</text>
-	<text s="the latest version">последняя версия</text>
+	<text s="%s is up to date.">%s не требует обновления.</text>
 	<text s="Update available">Доступно обновление</text>
 	<text s="Do you want to install it now?">Вы хотите установить это сейчас?</text>
 	<text s="Search">Поиск</text>
@@ -179,12 +175,10 @@
 	<text s="Installed">Установлено</text>
 	<text s="is required.">требуется.</text>
 	<text s="File is in operation.">Файл находится в эксплуатации.</text>
-	<text s="Mouse">Мышь</text>
 	<text s="Gestures">Жесты</text>
 	<text s="Trails">Трек</text>
 	<text s="Color">Цвет</text>
 	<text s="Priority">Приоритет</text>
-	<text s="Timeout">Задержка</text>
 	<text s="Wheel">Штурвал</text>
 	<text s="Add before">Добавить перед</text>
 	<text s="Add after">Добавить после</text>
@@ -212,10 +206,9 @@
 	<text s="&amp;About %s">&amp;О %s</text>
 	<text s="Get">Получить</text>
 	<text s="Drag-and-Drop">Drag-and-Drop</text>
-  	<text s="Swap">Менять</text>
-
-	<text s="Location">Локация</text>
-	<text s="Root style">Стиль корневой папки</text>
-	<text s="View mode">Режим просмотра</text>
+ 	<text s="Swap">Менять</text>
 	<text s="Disable">Отключить</text>
+
+	<text s="Folders">Папки</text>
+	<text s="Timeout">Задержка</text>
 </resources>

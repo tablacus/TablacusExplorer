@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
-<!--Računarski rečnik Mikro knjige https://www.mikroknjiga.rs/pub/rmk/index.php English-Serbian Computer Dictionary | Englesko-srpski / srpsko-engleski rečnik računarskih (kompjuterskih) termina --> 
+﻿<?xml version="1.0" encoding="UTF-8"?><!--Računarski rečnik Mikro knjige https://www.mikroknjiga.rs/pub/rmk/index.php English-Serbian Computer Dictionary | Englesko-srpski / srpsko-engleski rečnik računarskih (kompjuterskih) termina -->
 <resources>
 	<lang author="Ognjen Ninić" en="Serbian">Srpski</lang>
 	<text s="&amp;File">&amp;Datoteka</text>
@@ -72,7 +71,6 @@
 	<text s="Set default">Vrati predefinisano</text>
 	<text s="Select">Izaberi</text>
 	<text s="Browse...">Pregledati...</text>
-	<text s="Reference...">Referenca...</text>
 	<text s="Selected items">Izabrane stavke</text>
 	<text s="Default LanguageID">Predefinisani IDJezika</text>
 	<text s="New folder">Novi direktorijum</text>
@@ -89,7 +87,6 @@
 	<text s="Exec">Exec</text>
 	<text s="Base">Osnova</text>
 	<text s="Normal">Normalno</text>
-	<text s="Help">Pomoć</text>
 	<text s="Link">Link</text>
 	<text s="Are you sure?">Da li ste sigurni?</text>
 	<text s="Do you want to replace?">Da li želite da zamenite?</text>
@@ -127,7 +124,6 @@
 	<text s="Horizontal scroll">Horizontalno pomeranje</text>
 
 	<text s="Enumeration">Prebrojavanje</text>
-	<text s="Folders">Direktorijumi</text>
 	<text s="Not folders">Bez direktorijuma</text>
 	<text s="Include hidden items">Uključi skrivene stavke</text>
 
@@ -154,7 +150,6 @@
 	<text s="Auto arrange">Automatski raspored</text>
 	<text s="Single selection">Izbor jednog elementa</text>
 	<text s="No client edge">Nema ivice klijenta</text>
-	<text s="Show selection always">Uvek prikaži izabrano</text>
 	<text s="Single click activate">Pritisnuti mišem jednom</text>
 
 	<text s="Show frames">Pokaži okvire</text>
@@ -172,7 +167,7 @@
 	<text s="Content">Sadržaj</text>
 	<text s="or higher.">ili više.</text>
 	<text s="Check for updates">Proverite ažuriranje</text>
-	<text s="the latest version">Poslednja verzija</text>
+	<text s="%s is up to date.">%s je ažuran.</text>
 	<text s="Update available">Ažuriranje dostupno</text>
 	<text s="Do you want to install it now?">Da li želite da instalirate sad?</text>
 	<text s="Search">Pretraži</text>
@@ -180,12 +175,10 @@
 	<text s="Installed">Instalirano</text>
 	<text s="is required.">je obavezujuće.</text>
 	<text s="File is in operation.">Datoteka se trenutno koristi.</text>
-	<text s="Mouse">Miš</text>
 	<text s="Gestures">Pokreti prstiju</text>
 	<text s="Trails">Tragovi</text>
 	<text s="Color">Boja</text>
 	<text s="Priority">Prioritet</text>
-	<text s="Timeout">Vremensko odlaganje</text>
 	<text s="Wheel">Točkić</text>
 	<text s="Add before">Dodaj pre</text>
 	<text s="Add after">Dodaj posle</text>
@@ -197,7 +190,7 @@
 	<text s="Test">Test</text>
 	<text s="Close">Zatvori</text>
 	<text s="Separator">Razdelnik</text>
-	<text s="Break">Prekid</text>
+	<text s="Break">Prekid&#160;</text>
 	<text s="BarBreak">Prekid trake</text>
 
 	<text s="Move">Pomeri</text>
@@ -213,10 +206,9 @@
 	<text s="&amp;About %s">&amp;Informacije o programu %s</text>
 	<text s="Get">Pristupi</text>
  	<text s="Drag-and-Drop">Prevlačenje</text>
-  	<text s="Swap">Свап</text>
-
-	<text s="Location">Položaj</text>
-	<text s="Root style">Osnovni stil</text>
-	<text s="View mode">Način prikaza</text>
+ 	<text s="Swap">Свап</text>
 	<text s="Disable">Isključi</text>
+
+	<text s="Folders">Direktorijumi</text>
+	<text s="Timeout">Vremensko odlaganje</text>
 </resources>

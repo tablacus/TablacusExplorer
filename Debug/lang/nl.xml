@@ -71,7 +71,6 @@
 	<text s="Set default">Als standaard instellen</text>
 	<text s="Select">Selecteer</text>
 	<text s="Browse...">Bladeren...</text>
-	<text s="Reference...">Referentie...</text>
 	<text s="Selected items">Geselecteerde items</text>
 	<text s="Default LanguageID">Standaard Taal</text>
 	<text s="New folder">Nieuwe map</text>
@@ -88,7 +87,6 @@
 	<text s="Exec">Uitvoeren</text>
 	<text s="Base">Base</text>
 	<text s="Normal">Normaal</text>
-	<text s="Help">Help</text>
 	<text s="Link">Link</text>
 	<text s="Are you sure?">Weet u het zeker?</text>
 	<text s="Do you want to replace?">Wilt u vervangen?</text>
@@ -126,7 +124,6 @@
 	<text s="Horizontal scroll">Horizontale scroll</text>
 
 	<text s="Enumeration">Enummeratie</text>
-	<text s="Folders">Mappen</text>
 	<text s="Not folders">Geen mappen</text>
 	<text s="Include hidden items">Inclusief verborgen items</text>
 
@@ -153,7 +150,6 @@
 	<text s="Auto arrange">Automatisch rangschikken</text>
 	<text s="Single selection">Enkele selectie</text>
 	<text s="No client edge">Geen client edge</text>
-	<text s="Show selection always">Selectie altijd tonen</text>
 	<text s="Single click activate">Activeer met enkele klik</text>
 
 	<text s="Show frames">Toon frames</text>
@@ -171,7 +167,7 @@
 	<text s="Content">Inhoud</text>
 	<text s="or higher.">of hoger.</text>
 	<text s="Check for updates">Controleer op updates</text>
-	<text s="the latest version">de laatste versie</text>
+	<text s="%s is up to date.">%s is up-to-date.</text>
 	<text s="Update available">Update beschikbaar</text>
 	<text s="Do you want to install it now?">Wilt u dit nu installeren?</text>
 	<text s="Search">Zoek</text>
@@ -179,12 +175,10 @@
 	<text s="Installed">Geinstalleerd</text>
 	<text s="is required.">is benodigd.</text>
 	<text s="File is in operation.">Bestand is in bewerking.</text>
-	<text s="Mouse">Muis</text>
 	<text s="Gestures">Gebaren</text>
 	<text s="Trails">Trails</text>
 	<text s="Color">Kleur</text>
 	<text s="Priority">Prioriteit</text>
-	<text s="Timeout">Timeout</text>
 	<text s="Wheel">Wiel</text>
 	<text s="Add before">Toevoegen voor</text>
 	<text s="Add after">Toevoegen na</text>
@@ -212,10 +206,9 @@
 	<text s="&amp;About %s">&amp;Over %s</text>
 	<text s="Get">Verkrijg</text>
  	<text s="Drag-and-Drop">Drag-en-Drop</text>
-  	<text s="Swap">Ruil</text>
-
-	<text s="Location">Locatie</text>
-	<text s="Root style">Root stijl</text>
-	<text s="View mode">Beeldmodus</text>
+ 	<text s="Swap">Ruil</text>
 	<text s="Disable">Uitschakelen</text>
+
+	<text s="Folders">Mappen</text>
+	<text s="Timeout">Timeout</text>
 </resources>

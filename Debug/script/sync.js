@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20211210 ? te.Version : 20211210;
+		return te.Version < 20211210 ? te.Version : 20211211;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -2506,7 +2506,7 @@ GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arCon
 			}
 			break;
 		case 7:
-			const dir = [GetText("Check for updates"), GetText("Get Add-ons..."), api.sprintf(99, GetText("Get %s..."), GetTextR("@UIAutomationCore.dll,-220[Icons]")), null, api.sprintf(99, GetText("&About %s"), "Tablacus Explorer")];
+			const dir = [GetText("Check for updates"), GetText("Get Add-ons..."), GetAltText("Get Icons...") || api.sprintf(99, GetText("Get %s..."), GetTextR("@UIAutomationCore.dll,-220[Icons]")), null, api.sprintf(99, GetText("&About %s"), "Tablacus Explorer")];
 			for (let i = 0; i < dir.length; ++i) {
 				const s = dir[i];
 				api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | (s === null ? MF_SEPARATOR : MF_STRING), i + 0x4011, s);
@@ -3106,7 +3106,7 @@ CreateNewFile = function (Ctrl, pt) {
 }
 
 GetLangId = function (nDefault) {
-	if (!nDefault && te.Data.Conf_Lang) {
+	if (!nDefault && te.Data.Conf_Lang && !/^auto/i.test(te.Data.Conf_Lang)) {
 		return te.Data.Conf_Lang;
 	}
 	let lang = (navigator.userLanguage || navigator.language).replace(/\-/, '_').toLowerCase();

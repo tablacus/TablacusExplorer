@@ -10,7 +10,7 @@
 	<text s="Back">Wstecz</text>
 	<text s="Forward">Naprzód</text>
 	<text s="Up">Góra</text>
-	<text s="Down">Dół</text>
+	<text s="Down">Dół&#160;</text>
 	<text s="Go">Przejdź</text>
 	<text s="&amp;Close application">&amp;Zamknij aplikację</text>
 	<text s="&amp;Up one level">&amp;Jeden poziom w górę</text>
@@ -71,7 +71,6 @@
 	<text s="Set default">Ustaw domyślne</text>
 	<text s="Select">Wybierz</text>
 	<text s="Browse...">Przeglądaj...</text>
-	<text s="Reference...">Odniesienie...</text>
 	<text s="Selected items">Wybrane elementy</text>
 	<text s="Default LanguageID">Domyślny LanguageID</text>
 	<text s="New folder">Nowy folder</text>
@@ -80,7 +79,7 @@
 	<text s="Path">Ścieżka</text>
 	<text s="Filter">Filtr</text>
 	<text s="Folder">Folder</text>
-	<text s="Remove">Usuń</text>
+	<text s="Remove">Usuń&#160;</text>
 	<text s="Add">Dodaj</text>
 	<text s="Replace">Zamień</text>
 	<text s="All">Wszystkie</text>
@@ -88,7 +87,6 @@
 	<text s="Exec">Wykonaj</text>
 	<text s="Base">Baza</text>
 	<text s="Normal">Normalny</text>
-	<text s="Help">Pomoc</text>
 	<text s="Link">Łącze</text>
 	<text s="Are you sure?">Czy jesteś pewien?</text>
 	<text s="Do you want to replace?">Czy chcesz zastąpić?</text>
@@ -126,7 +124,6 @@
 	<text s="Horizontal scroll">Poziome przewijanie</text>
 
 	<text s="Enumeration">Wyliczenie</text>
-	<text s="Folders">Foldery</text>
 	<text s="Not folders">Nie foldery</text>
 	<text s="Include hidden items">Dołącz elementy ukryte</text>
 
@@ -153,7 +150,6 @@
 	<text s="Auto arrange">Automatycznie układaj</text>
 	<text s="Single selection">Pojedynczy wybór</text>
 	<text s="No client edge">Brak krawędzi klienta</text>
-	<text s="Show selection always">Zawsze pokazuj zaznaczenie</text>
 	<text s="Single click activate">Pojedyncze kliknięcie aktywuje</text>
 
 	<text s="Show frames">Pokaż ramki</text>
@@ -171,7 +167,7 @@
 	<text s="Content">Zawartość</text>
 	<text s="or higher.">albo wyższa.</text>
 	<text s="Check for updates">Sprawdź aktualizacje</text>
-	<text s="the latest version">Aktualna wersja</text>
+	<text s="%s is up to date.">%s jest aktualny.</text>
 	<text s="Update available">Dostępna aktualizacja</text>
 	<text s="Do you want to install it now?">Czy chcesz ją teraz zainstalować?</text>
 	<text s="Search">Szukaj</text>
@@ -179,12 +175,10 @@
 	<text s="Installed">Zainstalowano</text>
 	<text s="is required.">jest wymagany.</text>
 	<text s="File is in operation.">Plik jest w trakcie operacji.</text>
-	<text s="Mouse">Mysz</text>
 	<text s="Gestures">Gesty</text>
 	<text s="Trails">Ślady</text>
 	<text s="Color">Kolor</text>
 	<text s="Priority">Priorytet</text>
-	<text s="Timeout">Limit czasu</text>
 	<text s="Wheel">Kółko</text>
 	<text s="Add before">Dodaj przed</text>
 	<text s="Add after">Dodaj po</text>
@@ -212,10 +206,9 @@
 	<text s="&amp;About %s">&amp;O %s</text>
 	<text s="Get">Pobierz</text>
  	<text s="Drag-and-Drop">Przeciągnij i upuść</text>
-  	<text s="Swap">Zamiana</text>
-
-	<text s="Location">Lokalizacja</text>
-	<text s="Root style">Styl główny</text>
-	<text s="View mode">Tryb widoku</text>
+ 	<text s="Swap">Zamiana</text>
 	<text s="Disable">Wyłącz</text>
+
+	<text s="Folders">Foldery</text>
+	<text s="Timeout">Limit czasu</text>
 </resources>

@@ -71,7 +71,6 @@
 	<text s="Set default">Встановити типові налаштування</text>
 	<text s="Select">Обрати</text>
 	<text s="Browse...">Перегляд...</text>
-	<text s="Reference...">Посилання...</text>
 	<text s="Selected items">Обрані елементи</text>
 	<text s="Default LanguageID">Ідентифікатор типової мови</text>
 	<text s="New folder">Нова папка</text>
@@ -88,7 +87,6 @@
 	<text s="Exec">Виконати</text>
 	<text s="Base">База</text>
 	<text s="Normal">Стандарт</text>
-	<text s="Help">Допомога</text>
 	<text s="Link">Посилання</text>
 	<text s="Are you sure?">Ви впевнені?</text>
 	<text s="Do you want to replace?">Бажаєте замінити?</text>
@@ -126,7 +124,6 @@
 	<text s="Horizontal scroll">Горизонтальна прокрутка</text>
 
 	<text s="Enumeration">Перелік</text>
-	<text s="Folders">Папки</text>
 	<text s="Not folders">Не папки</text>
 	<text s="Include hidden items">Включити приховані елементи</text>
 
@@ -153,7 +150,6 @@
 	<text s="Auto arrange">Впорядкувати автоматично</text>
 	<text s="Single selection">Одиночний вибір</text>
 	<text s="No client edge">Без рамки</text>
-	<text s="Show selection always">Завжди показувати обране</text>
 	<text s="Single click activate">Вибір одним кліком</text>
 
 	<text s="Show frames">Вікно передперегляду</text>
@@ -171,7 +167,7 @@
 	<text s="Content">Вміст</text>
 	<text s="or higher.">або вище.</text>
 	<text s="Check for updates">Перевірити наявність оновлень</text>
-	<text s="the latest version">остання версія</text>
+	<text s="%s is up to date.">%s не потребує оновлення.</text>
 	<text s="Update available">Є оновлення</text>
 	<text s="Do you want to install it now?">Бажаєте встановити його зараз?</text>
 	<text s="Search">Пошук</text>
@@ -179,12 +175,10 @@
 	<text s="Installed">Встановлено</text>
 	<text s="is required.">потрібне.</text>
 	<text s="File is in operation.">Файл наразі використовується.</text>
-	<text s="Mouse">Миша</text>
 	<text s="Gestures">Жести</text>
 	<text s="Trails">Трек</text>
 	<text s="Color">Колір</text>
 	<text s="Priority">Пріоритет</text>
-	<text s="Timeout">Затримка</text>
 	<text s="Wheel">Штурвал</text>
 	<text s="Add before">Додати перед</text>
 	<text s="Add after">Додати після</text>
@@ -212,10 +206,9 @@
 	<text s="&amp;About %s">&amp;Про %s</text>
 	<text s="Get">Отримати</text>
 	<text s="Drag-and-Drop">Drag-and-Drop</text>
-  	<text s="Swap">Поміняти місцями</text>
-
-	<text s="Location">Локація</text>
-	<text s="Root style">Стиль кореневої папки</text>
-	<text s="View mode">Режим перегляду</text>
+ 	<text s="Swap">Поміняти місцями</text>
 	<text s="Disable">Вимкнути</text>
+
+	<text s="Folders">Папки</text>
+	<text s="Timeout">Затримка</text>
 </resources>

@@ -67,6 +67,7 @@
               <br>
               <label>Default</label>:
               <span id="DefaultLangID"></span>&nbsp;<input type="button" value="Default" onclick="SetDefaultLangID()">
+              <input type="button" value="Open" onclick="MainWindow.Navigate(BuildPath(ui_.Installed, 'lang'), SBSP_NEWBROWSER)">
               <input type="button" value="Get Lang" id="AddLang" onclick="ClickTree('tab1_4')">
               <br>
               <br>
@@ -75,7 +76,7 @@
               <label>Right bar</label><br>
               <label>Width</label><input type="text" id="Conf_RightBarWidth" align="right" size="4"><label>@mspaint.exe,-50047[px]</label><br><br>
               <label alt="Tool bar icon">Tool bar<i> </i>Icon</label><br>
-              <label>Size</label><input type="text" id="Conf_IconSize" align="right" size="4"><label>@mspaint.exe,-50047[px]</label>
+              <label>Size</label><input type="text" id="Conf_IconSize" align="right" size="4" placeholder="Auto"><label>@mspaint.exe,-50047[px]</label>
               <input type="button" value="Default" onclick="SetDefault(document.F.Conf_IconSize, '');">
               <br><br>
               <label>Menus</label><br>
@@ -102,7 +103,7 @@
               <label><input type="radio" name="Conf_Gestures_" id="Conf_Gestures=2" onclick="SetRadio(this)">Normal</label><br>
               <label><input type="radio" name="Conf_Gestures_" id="Conf_Gestures=3" onclick="SetRadio(this)">Priority</label><br>
               <br>
-              <label>Timeout</label><br>
+              <label>@comres.dll,-1953</label><br>
               <input type="text" id="Conf_GestureTimeout" style="width: 6em; text-align:right"><label>@calc.exe,-1721[ms]</label>
               <br><br>
               <label>Trails</label><br>
@@ -402,7 +403,7 @@
               <br>
               <label>Enumeration</label><br>
               <input type="hidden" name="Tree_EnumFlags">
-              <label><input type="checkbox" id="Tree_EnumFlags:0x20" onclick="SetCheckbox(this)">Folders</label><br>
+              <label><input type="checkbox" id="Tree_EnumFlags:0x20" onclick="SetCheckbox(this)">@mmcndmgr.dll,-30048</label><br>
               <label><input type="checkbox" id="Tree_EnumFlags:0x40" onclick="SetCheckbox(this)">Not folders</label><br>
               <label><input type="checkbox" id="Tree_EnumFlags:0x80" onclick="SetCheckbox(this)">Include hidden items</label><br>
               <label><input type="checkbox" id="Tree_EnumFlags:!0x10000" onclick="SetCheckbox(this)">@shell32.dll,-30508[Hide protected operating system files]</label>(*7)<br>
@@ -448,7 +449,7 @@
                 <label><input type="checkbox" id="Tree_Style:0x4000" onclick="SetCheckbox(this)">Rich tooltip</label>(*)<br>
                 <label alt="Even height"><input type="checkbox" id="Tree_Style:0x400" onclick="SetCheckbox(this)">Height<span> (</span>@serialui.dll,-250<span>)</span></label><br><br>
                 <label>Buttons</label>(*)<br>
-                <label><input type="checkbox" id="Tree_Style:0x20000000" onclick="SetCheckbox(this)">Tabs</label><br> 
+                <label><input type="checkbox" id="Tree_Style:0x20000000" onclick="SetCheckbox(this)">Tabs</label><br>
                 <label><input type="checkbox" id="Tree_Style:0x40000000" onclick="SetCheckbox(this)">Delete</label><br>
                 <label><input type="checkbox" id="Tree_Style:0x80000000" onclick="SetCheckbox(this)">Refresh</label><br>
               </div>
@@ -526,7 +527,7 @@
               <label>{F7DB74B4-4287-4103-AFBA-F1B13DCD75CF} 100|@shell32.dll,-32522</label><br>
               <input type="text" id="Conf_DateTimeFormat" style="width: 100%">
               <br><br>
-              <label>Timeout</label><br>
+              <label>@comres.dll,-1953</label><br>
               <input type="text" id="Conf_NetworkTimeout" style="width: 6em; text-align:right"><label>@calc.exe,-1721[ms]</label>
               <br><br>
               <div>

@@ -71,7 +71,6 @@
 	<text s="Set default">Definir padrão</text>
 	<text s="Select">Selecionar</text>
 	<text s="Browse...">Procurar...</text>
-	<text s="Reference...">Referência...</text>
 	<text s="Selected items">Itens selecionados</text>
 	<text s="Default LanguageID">Idioma padrão</text>
 	<text s="New folder">Nova pasta</text>
@@ -88,7 +87,6 @@
 	<text s="Exec">Executar</text>
 	<text s="Base">Base</text>
 	<text s="Normal">Normal</text>
-	<text s="Help">Ajuda</text>
 	<text s="Link">Link</text>
 	<text s="Are you sure?">Tem certeza?</text>
 	<text s="Do you want to replace?">Quer substituir?</text>
@@ -126,7 +124,6 @@
 	<text s="Horizontal scroll">Rolagem horizontal</text>
 
 	<text s="Enumeration">Enumeradores</text>
-	<text s="Folders">Pastas</text>
 	<text s="Not folders">Não pastas</text>
 	<text s="Include hidden items">Incluir itens ocultos</text>
 
@@ -153,7 +150,6 @@
 	<text s="Auto arrange">Auto-organizar</text>
 	<text s="Single selection">Seleção única</text>
 	<text s="No client edge">Sem borda de cliente</text>
-	<text s="Show selection always">Sempre exibir seleção</text>
 	<text s="Single click activate">Ativar clique único</text>
 
 	<text s="Show frames">Exibir molduras</text>
@@ -171,7 +167,7 @@
 	<text s="Content">Conteúdo</text>
 	<text s="or higher.">ou posterior.</text>
 	<text s="Check for updates">Verificar atualizações</text>
-	<text s="the latest version">a última versão</text>
+	<text s="%s is up to date.">O %s está atualizado.</text>
 	<text s="Update available">Atualização disponível</text>
 	<text s="Do you want to install it now?">Pretende instalar agora?</text>
 	<text s="Search">Pesquisar</text>
@@ -179,12 +175,10 @@
 	<text s="Installed">Instalado</text>
 	<text s="is required.">necessário.</text>
 	<text s="File is in operation.">Arquivo em execução.</text>
-	<text s="Mouse">Mouse</text>
 	<text s="Gestures">Gestos</text>
 	<text s="Trails">Trilhas</text>
 	<text s="Color">Cor</text>
 	<text s="Priority">Prioridade</text>
-	<text s="Timeout">Tempo esgotado</text>
 	<text s="Wheel">Roda</text>
 	<text s="Add before">Adicionar antes</text>
 	<text s="Add after">Adicionar depois</text>
@@ -212,10 +206,9 @@
 	<text s="&amp;About %s">&amp;Sobre %s</text>
 	<text s="Get">Obter</text>
 	<text s="Drag-and-Drop">Arrastar-e-soltar</text>
-  	<text s="Swap">Troca</text>
-
-	<text s="Location">Localização</text>
-	<text s="Root style">Estilo raiz</text>
-	<text s="View mode">Modo de visualização</text>
+ 	<text s="Swap">Troca</text>
 	<text s="Disable">Desabilitar</text>
+
+	<text s="Folders">Pastas</text>
+	<text s="Timeout">Tempo esgotado</text>
 </resources>

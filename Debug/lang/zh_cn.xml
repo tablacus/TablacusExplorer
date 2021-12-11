@@ -34,7 +34,7 @@
 	<text s="Browser">浏览器</text>
 	<text s="Default">默认</text>
 	<text s="Key">键值</text>
-	<text s="Mouse">默认</text>
+	<text s="Mouse">鼠标</text>
 	<text s="Init">初始化</text>
 	<text s="OK">确定</text>
 	<text s="Cancel">取消</text>
@@ -71,7 +71,6 @@
 	<text s="Set default">设为默认</text>
 	<text s="Select">选择</text>
 	<text s="Browse...">浏览...</text>
-	<text s="Reference...">设置...</text>
 	<text s="Selected items">选择项目</text>
 	<text s="Default LanguageID">默认语言值</text>
 	<text s="New folder">新建文件夹</text>
@@ -87,8 +86,7 @@
 	<text s="Open">打开</text>
 	<text s="Exec">执行</text>
 	<text s="Base">基础</text>
-	<text s="Normal">常规</text>
-	<text s="Help">帮助</text>
+	<text s="Normal">常规&#160;</text>
 	<text s="Link">链接</text>
 	<text s="Are you sure?">你确定吗？</text>
 	<text s="Do you want to replace?">确认替换？</text>
@@ -126,7 +124,6 @@
 	<text s="Horizontal scroll">水平滚动条</text>
 
 	<text s="Enumeration">列举</text>
-	<text s="Folders">文件夹</text>
 	<text s="Not folders">非文件夹</text>
 	<text s="Include hidden items">包含隐藏项目</text>
 
@@ -153,7 +150,6 @@
 	<text s="Auto arrange">自动整理</text>
 	<text s="Single selection">单个选区</text>
 	<text s="No client edge">无客户端边界</text>
-	<text s="Show selection always">总是显示选区</text>
 	<text s="Single click activate">单击激活</text>
 
 	<text s="Show frames">显示框架</text>
@@ -171,7 +167,7 @@
 	<text s="Content">内容</text>
 	<text s="or higher.">或更高版本。</text>
 	<text s="Check for updates">检查更新</text>
-	<text s="the latest version">最新版本</text>
+	<text s="%s is up to date.">%s 是最新版本。</text>
 	<text s="Update available">有可用更新</text>
 	<text s="Do you want to install it now?">你想要立即安装？</text>
 	<text s="Search">搜索</text>
@@ -179,12 +175,10 @@
 	<text s="Installed">已安装</text>
 	<text s="is required.">是必须的。</text>
 	<text s="File is in operation.">文件被占用。</text>
-	<text s="Mouse">鼠标</text>
 	<text s="Gestures">手势</text>
 	<text s="Trails">轨迹</text>
 	<text s="Color">颜色</text>
 	<text s="Priority">优先</text>
-	<text s="Timeout">超时</text>
 	<text s="Wheel">滚轮</text>
 	<text s="Add before">添加上一个</text>
 	<text s="Add after">添加下一个</text>
@@ -213,9 +207,8 @@
 	<text s="Get">获取</text>
 	<text s="Drag-and-Drop">拖放</text>
 	<text s="Swap">交换</text>
-
-	<text s="Location">定位</text>
-	<text s="Root style">根目录样式</text>
-	<text s="View mode">查看模式</text>
 	<text s="Disable">禁用</text>
+
+	<text s="Folders">文件夹&#160;</text>
+	<text s="Timeout">超时</text>
 </resources>

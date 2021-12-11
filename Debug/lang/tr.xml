@@ -10,7 +10,7 @@
 	<text s="Back">Geri</text>
 	<text s="Forward">İleri</text>
 	<text s="Up">Üst</text>
-	<text s="Down">Alt</text>
+	<text s="Down">Alt&#160;</text>
 	<text s="Go">Git</text>
 	<text s="&amp;Close application">&amp;Uygulamayı Kapat</text>
 	<text s="&amp;Up one level">&amp;Bir üste çık</text>
@@ -71,7 +71,6 @@
 	<text s="Set default">Varsayılanı ayarla</text>
 	<text s="Select">Seç</text>
 	<text s="Browse...">Gözat...</text>
-	<text s="Reference...">Referans...</text>
 	<text s="Selected items">Seçili nesneler</text>
 	<text s="Default LanguageID">varsayılan DilNo</text>
 	<text s="New folder">Yeni klasör</text>
@@ -80,7 +79,7 @@
 	<text s="Path">Yol</text>
 	<text s="Filter">Filtre</text>
 	<text s="Folder">Klasör</text>
-	<text s="Remove">Sil</text>
+	<text s="Remove">Sil&#160;</text>
 	<text s="Add">Ekle</text>
 	<text s="Replace">Değiştir</text>
 	<text s="All">Hepsi</text>
@@ -88,7 +87,6 @@
 	<text s="Exec">Çalıştır</text>
 	<text s="Base">Temel</text>
 	<text s="Normal">Normal</text>
-	<text s="Help">Yardım</text>
 	<text s="Link">Link</text>
 	<text s="Are you sure?">Emin misiniz?</text>
 	<text s="Do you want to replace?">Değiştirmek istiyor musunuz?</text>
@@ -126,7 +124,6 @@
 	<text s="Horizontal scroll">Dikey kaydırma çubuğu</text>
 
 	<text s="Enumeration">Numaralandırma</text>
-	<text s="Folders">Klasörler</text>
 	<text s="Not folders">Klasörler hariç</text>
 	<text s="Include hidden items">Gizli nesneleri içer</text>
 
@@ -153,7 +150,6 @@
 	<text s="Auto arrange">Otomatik düzenleme</text>
 	<text s="Single selection">Tekli seçim</text>
 	<text s="No client edge">Bağlanan üstünlüğü yok</text>
-	<text s="Show selection always">Seçimi daima göster</text>
 	<text s="Single click activate">Tek tıklama ile aktif</text>
 
 	<text s="Show frames">Çerçeveleri göster</text>
@@ -171,7 +167,7 @@
 	<text s="Content">İçerik</text>
 	<text s="or higher.">ya da daha fazla.</text>
 	<text s="Check for updates">Güncellemeleri kontrol et</text>
-	<text s="the latest version">son sürüm</text>
+	<text s="%s is up to date.">%s güncel.</text>
 	<text s="Update available">Güncelleme var</text>
 	<text s="Do you want to install it now?">Şimdi yüklemek ister misiniz?</text>
 	<text s="Search">Ara</text>
@@ -179,12 +175,10 @@
 	<text s="Installed">Yüklendi</text>
 	<text s="is required.">gerekli.</text>
 	<text s="File is in operation.">Dosya kullanımda.</text>
-	<text s="Mouse">Fare</text>
 	<text s="Gestures">Hareketler</text>
 	<text s="Trails">Kuyruklar</text>
 	<text s="Color">Renk</text>
 	<text s="Priority">Öncelik</text>
-	<text s="Timeout">Zaman aşımı</text>
 	<text s="Wheel">Tekerlek</text>
 	<text s="Add before">Önüne ekle</text>
 	<text s="Add after">Arkasına ekle</text>
@@ -205,17 +199,16 @@
 	<text s="Rename">Yeniden adlandır</text>
 	<text s="Extract">Çıkar</text>
 	<text s="Save">Kaydet</text>
-	<text s="Load">Yükle</text>
+	<text s="Load">Yükle&#160;</text>
 	<text s="Get %s...">Al %s...</text>
 	<text s="Results">Sonuçlar</text>
 	<text s="Number of items">öğe sayısı</text>
 	<text s="&amp;About %s">%s,</text>
 	<text s="Get">Almak</text>
 	<text s="Drag-and-Drop">Sürükle bırak</text>
-  	<text s="Swap">Takas</text>
-
-	<text s="Location">Yer</text>
-	<text s="Root style">Kök sitili</text>
-	<text s="View mode">Görünüm türü</text>
+	<text s="Swap">Takas</text>
 	<text s="Disable">Pasif</text>
+
+	<text s="Folders">Klasörler</text>
+ 	<text s="Timeout">Zaman aşımı</text>
 </resources>

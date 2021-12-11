@@ -11,7 +11,7 @@
 	<text s="Forward">Μπροστά</text>
 	<text s="Up">Πάνω</text>
 	<text s="Down">Κάτω</text>
-	<text s="Go">Εκτέλεση</text>
+	<text s="Go">Εκτέλεση&#160;</text>
 	<text s="&amp;Close Application">&amp;Κλείσιμο εφαρμογής</text>
 	<text s="&amp;Up One Level">Ένα επίπεδο &amp;πάνω</text>
 	<text s="&amp;Refresh">Α&amp;νανέωση</text>
@@ -19,7 +19,6 @@
 	<text s="&amp;Load Layout...">&amp;Φόρτωση διάταξης...</text>
 	<text s="&amp;Save Layout...">&amp;Αποθήκευση διάταξης...</text>
 	<text s="&amp;Options...">Επι&amp;λογές...</text>
-	<text s="Undo close tab">Αναίρεση κλεισίματος καρτέλας</text>
 	<text s="&amp;Close Tab">&amp;Κλείσιμο καρτέλας</text>
 	<text s="Cl&amp;ose Other Tabs">Κ&amp;λείσιμο των άλλων καρτελών</text>
 	<text s="Close all tabs">Κλείσιμο όλων των καρτελών</text>
@@ -31,7 +30,6 @@
 	<text s="General">Γενικά</text>
 	<text s="Tabs">Καρτέλες</text>
 	<text s="Tree">Δέντρο</text>
-	<text s="Edit">Επεξεργασία</text>
 	<text s="List">Λίστα</text>
 	<text s="Browser">Πρόγραμμα περιήγησης</text>
 	<text s="Default">Προεπιλογή</text>
@@ -55,8 +53,6 @@
 	<text s="Height">Ύψος</text>
 	<text s="None">Καμία</text>
 	<text s="Auto">Αυτόματα</text>
-   	<text s="Swap">Αντιμετάθεση</text>
-
 
 	<text s="Action">Ενέργεια</text>
 	<text s="Open in New &amp;Tab">Άνοιγμα σε νέα &amp;καρτέλα</text>
@@ -75,7 +71,6 @@
 	<text s="Set Default">Ορισμός ως προεπιλογής</text>
 	<text s="Select">Επιλογή</text>
 	<text s="Browse...">Εύρεση...</text>
-	<text s="Reference...">Αναφορά...</text>
 	<text s="Selected Items">Επιλεγμένα στοιχεία</text>
 	<text s="Default LanguageID">Προεπιλεγμένο LanguageID</text>
 	<text s="New Folder">Νέος φάκελος</text>
@@ -92,7 +87,6 @@
 	<text s="Exec">Εκτέλεση</text>
 	<text s="Base">Βάση</text>
 	<text s="Normal">Κανονική</text>
-	<text s="Help">Βοήθεια</text>
 	<text s="Link">Σύνδεσμος</text>
 	<text s="Are you sure?">Είστε βέβαιος;</text>
 	<text s="Do you want to replace?">Θέλετε να το αντικαταστήσετε;</text>
@@ -110,25 +104,13 @@
 	<text s="Visit website">Επίσκεψη ιστοσελίδας</text>
 	<text s="Information...">Πληροφορίες...</text>
 	<text s="Title Bar">Γραμμή τίτλου</text>
-	<text s="Main menu">Κεντρικό μενού</text>
-	<text s="Filter bar">Γραμμή φίλτρου</text>
 	<text s="Tool Bar">Γραμμή εργαλείων</text>
 	<text s="Left Bar">Αριστερή γραμμή</text>
 	<text s="Right Bar">Δεξιά γραμμή</text>
 	<text s="Bottom Bar">Κάτω γραμμή</text>
-    <text s="Inner bar">Εσωτερική γραμμή</text>
 	<text s="Center">Κέντρο</text>
 	<text s="Background">Παρασκήνιο</text>
 	<text s="Advanced">Προηγμένες</text>
-	<text s="Split">Διαίρεση</text>
-	<text s="Clipboard Copy">Αντιγραφή πρόχειρου</text>
-	<text s="Download">Λήψη</text>
-	<text s="Tab plus">Καρτέλα+</text>
-	<text s="Multi thread">Πολυνηματική λειτουργία</text>
-	<text s="Tree view">Προβολή δέντρου</text>
-	<text s="Regular Expression">Κανονική έκφραση</text>
-	<text s="Address bar">Γραμμή διευθύνσεων</text>
-	<text s="Remember folder view settings">Απομνημόνευση ρυθμίσεων προβολής φακέλου</text>
 
 	<text s="Lines">Γραμμές</text>
 	<text s="No edit labels">Χωρίς επεξεργασία ετικετών</text>
@@ -140,10 +122,8 @@
 	<text s="Show selection always">Εμφάνιση επιλεγμένου πάντα</text>
 	<text s="Border">Περίγραμμα</text>
 	<text s="Horizontal scroll">Οριζόντια κύλιση</text>
-	<text s="Root has expando">Η ρίζα έχει επέκταση</text>
 
 	<text s="Enumeration">Απαρίθμηση</text>
-	<text s="Folders">Φάκελοι</text>
 	<text s="Not folders">Μη φάκελοι</text>
 	<text s="Include hidden items">Συμπερίληψη κρυφών στοιχείων</text>
 
@@ -170,7 +150,6 @@
 	<text s="Auto arrange">Αυτόματη τακτοποίηση</text>
 	<text s="Single selection">Μία επιλογή</text>
 	<text s="No client edge">Απόκρυψη άκρων</text>
-	<text s="Show selection always">Εμφάνιση επιλεγμένου πάντα</text>
 	<text s="Single click activate">Ενεργοποίηση με μονό κλικ</text>
 
 	<text s="Show frames">Εμφάνιση πλαισίων</text>
@@ -180,7 +159,6 @@
 
 	<text s="Icon">Εικονίδια</text>
 	<text s="Small icon">Μικρά εικονίδια</text>
-	<text s="List">Λίστα</text>
 	<text s="Details">Λεπτομέρειες</text>
 	<text s="Thumbnail">Μικρογραφίες</text>
 	<text s="Tile">Πλακίδια</text>
@@ -188,9 +166,8 @@
 	<text s="Content">Περιεχόμενο</text>
 	<text s="or higher.">ή νεότερα.</text>
 	<text s="Input">Εισαγωγή</text>
-    <text s="Autocomplete">Αυτόματη συμπλήρωση</text>
 	<text s="Check for updates">Έλεγχος για ενημερώσεις</text>
-	<text s="the latest version">είναι η τελευταία έκδοση.</text>
+	<text s="%s is up to date.">Το %s είναι ενημερωμένο.</text>
 	<text s="Update available">Διαθέσιμη ενημέρωση</text>
 	<text s="Do you want to install it now?">Θέλετε να την εγκαταστήσετε τώρα;</text>
 	<text s="Search">Αναζήτηση</text>
@@ -198,19 +175,17 @@
 	<text s="Installed">Εγκατεστημένο</text>
 	<text s="is required.">είναι απαιτούμενη.</text>
 	<text s="File is in operation.">Το αρχείο είναι σε λειτουργία.</text>
-	<text s="Mouse">Ποντίκι</text>
 	<text s="Gestures">Χειρονομίες</text>
 	<text s="Trails">Ίχνη</text>
 	<text s="Color">Χρώμα</text>
 	<text s="Priority">Προτεραιότητα</text>
-	<text s="Timeout">Χρονικό όριο</text>
 	<text s="Wheel">Ρόδα</text>
 	<text s="Add before">Προσθήκη πριν</text>
 	<text s="Add after">Προσθήκη μετά</text>
 	<text s="Systray">Περιοχή ειδοποιήσεων</text>
 	<text s="Next tab">Επόμενη καρτέλα</text>
 	<text s="Previous tab">Προηγούμενη καρτέλα</text>
-	<text s="Run dialog">Εκτέλεση</text>
+	<text s="Run dialog">Εκτέλεση&#160;&#160;</text>
 	<text s="Copy full path">Αντιγραφή πλήρους διαδρομής</text>
 	<text s="Test">Δοκιμή</text>
 	<text s="Close">Κλείσιμο</text>
@@ -230,50 +205,10 @@
 	<text s="Number of items">Αριθμός στοιχείων</text>
 	<text s="&amp;About %s">&amp;Περί %s</text>
 	<text s="Get">Ληψη</text>
-
-	<text s="Location">Θέση</text>
-	<text s="Root style">Στυλ ρίζας</text>
-	<text s="View mode">Κατάσταση προβολής</text>
-	<text s="Disable">Απενεργοποίηση</text>
  	<text s="Drag-and-Drop">Μεταφορά και Απόθεση</text>
+ 	<text s="Swap">Αντιμετάθεση</text>
+	<text s="Disable">Απενεργοποίηση</text>
 
-	<text s="Even height">Ίσο ύψος</text>
-	<text s="Column emphasis">Έμφαση στήλης</text>
-	<text s="No replace open">Όχι αντικατάσταση ανοιχτού</text>
-	<text s="No order stream">Όχι κατάταξη ροής</text>
-	<text s="Rich tooltip">Αναλυτική συμβουλή εργαλείου</text>
-	<text s="Tab stop">Στηλοθέτης</text>
-	<text s="Favorites mode">Λειτουργία αγαπημένων</text>
-	<text s="Auto H scroll">Αυτόματη κύλιση οριζόντια</text>
-	<text s="Fade in out expandos">Εξασθένηση επέκτασης</text>
-	<text s="Empty text">Κενό κείμενο</text>
-	<text s="Checkboxes">Πλαίσια ελέγχου</text>
-	<text s="Partialcheckboxes">Τμηματικά πλαίσια ελέγχου</text>
-	<text s="Exclusion checkboxes">Εξαιρούμενα πλαίσια ελέγχου</text>
-	<text s="Dimmed checkboxes">Ανενεργά πλαίσια ελέγχου</text>
-	<text s="No indent checks">Σημάνσεις χωρίς εσοχή</text>
-	<text s="Allow junctions">Να επιτρέπονται διασταυρώσεις</text>
-	<text s="Show tabs button">Εμφάνιση κουμπιού καρτελών</text>
-	<text s="Show delete button">Εμφάνιση κουμπιού διαγραφής</text>
-	<text s="Show refresh button">Εμφάνιση κουμπιού ανανέωσης</text>
-	<text s="Checking for children">Έλεγχος για θυγατρικό</text>
-	<text s="Init on first next">Init την αμέσως επόμενη</text>
-	<text s="Net printer search">Αναζήτηση εκτυπωτή δικτύου</text>
-	<text s="Shareable">Κοινόχρηστα</text>
-	<text s="Storage">Αποθηκευτικός χώρος</text>
-	<text s="Navigation emun">Απαρίθμηση πλοήγησης</text>
-	<text s="Fast items">Γρήγορα στοιχεία</text>
-	<text s="Enable async">Ενεργοποίηση ασύγχρονης</text>
-	<text s="Include super hidden">Συμπερίληψη εξαιρετικά κρυφών</text>
-	<text s="No subfolders">Χωρίς υποφακέλους</text>
-	<text s="Align left">Στοίχιση αριστερά</text>
-	<text s="Hide filenames">Απόκρυψη ονομάτων αρχείων</text>
-	<text s="Check select">Σήμανση επιλεγμένου</text>
-	<text s="No grouping">Μη ομαδοποίηση</text>
-	<text s="No column header">Χωρίς κεφαλίδα στήλης</text>
-	<text s="No header in all views">Χωρίς κεφαλίδα σε όλες τις προβολές</text>
-	<text s="Extended tiles">Εκτεταμένα πλακίδια</text>
-	<text s="No browser view state">Κατάσταση προβολής χωρίς περιηγητή</text>
-	<text s="Subset groups">Υποσύνολα ομάδων</text>
-	<text s="Allow RTL reading">Να επιτρέπετε ανάγνωση προς τα αριστερά</text>
+	<text s="Folders">Φάκελοι</text>
+	<text s="Timeout">Χρονικό όριο</text>
 </resources>
