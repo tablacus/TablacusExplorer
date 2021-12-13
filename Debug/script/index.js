@@ -339,9 +339,10 @@ OnArrange = async function (Ctrl, rc) {
 }
 
 ArrangeAddons = async function () {
-	const r = await Promise.all([api.CreateObject("Object"), te.Data.Conf_IconSize, OpenXml("addons.xml", false, true), api.GetKeyState(VK_SHIFT), api.GetKeyState(VK_CONTROL), api.CreateObject("Array"), GetLangId()]);
+	const r = await Promise.all([api.CreateObject("Object"), te.Data.Conf_IconSize, OpenXml("addons.xml", false, true), api.GetKeyState(VK_SHIFT), api.GetKeyState(VK_CONTROL), api.CreateObject("Array"), GetLangId(), te.Data.Conf_InnerIconSize]);
 	g_.Locations = r[0];
 	$.IconSize = IconSize = r[1] || screen.deviceYDPI / 4;
+	ui_.InnerIconSize = r[7] || screen.deviceYDPI / 6;
 	const xml = r[2];
 	te.Data.Addons = xml;
 	if (r[3] < 0 && r[4] < 0) {

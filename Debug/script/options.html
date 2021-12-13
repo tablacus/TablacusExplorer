@@ -71,14 +71,16 @@
               <input type="button" value="Get Lang" id="AddLang" onclick="ClickTree('tab1_4')">
               <br>
               <br>
-              <label>Left bar</label><br>
-              <label>Width</label><input type="text" id="Conf_LeftBarWidth" align="right" size="4"><label>@mspaint.exe,-50047[px]</label><br><br>
-              <label>Right bar</label><br>
-              <label>Width</label><input type="text" id="Conf_RightBarWidth" align="right" size="4"><label>@mspaint.exe,-50047[px]</label><br><br>
+              <label>Left bar<i> </i>Width</label><br>
+              <input type="text" id="Conf_LeftBarWidth" style="width: 6em; text-align: right"><label>@mspaint.exe,-50047[px]</label><br><br>
+              <label>Right bar<i> </i>Width</label><br>
+              <input type="text" id="Conf_RightBarWidth" style="width: 6em; text-align: right"><label>@mspaint.exe,-50047[px]</label><br><br>
               <label alt="Tool bar icon">Tool bar<i> </i>Icon</label><br>
-              <label>Size</label><input type="text" id="Conf_IconSize" align="right" size="4" placeholder="Auto"><label>@mspaint.exe,-50047[px]</label>
-              <input type="button" value="Default" onclick="SetDefault(document.F.Conf_IconSize, '');">
-              <br><br>
+              <input type="text" id="Conf_IconSize" style="width: 6em; text-align: right"><label>@mspaint.exe,-50047[px]</label>
+              <input type="button" value="Default" onclick="SetDefault(document.F.Conf_IconSize, '');"><br><br>
+              <label alt="Internal Tool bar icon">@mmsys.cpl,-551[Internal]<i> </i>Tool bar<i> </i>Icon</label><br>
+              <input type="text" id="Conf_InnerIconSize" style="width: 6em; text-align: right"><label>@mspaint.exe,-50047[px]</label>
+              <input type="button" value="Default" onclick="SetDefault(document.F.Conf_InnerIconSize, '');"><br><br>
               <label>Menus</label><br>
               <label><input type="checkbox" id="Conf_MenuHidden">Include hidden items</label><br>
               <label><input type="checkbox" id="Conf_MenuIcon">@mmcbase.dll,-106</label>
@@ -104,12 +106,12 @@
               <label><input type="radio" name="Conf_Gestures_" id="Conf_Gestures=3" onclick="SetRadio(this)">Priority</label><br>
               <br>
               <label>@comres.dll,-1953</label><br>
-              <input type="text" id="Conf_GestureTimeout" style="width: 6em; text-align:right"><label>@calc.exe,-1721[ms]</label>
+              <input type="text" id="Conf_GestureTimeout" style="width: 6em; text-align: right"><label>@calc.exe,-1721[ms]</label>
               <br><br>
               <label>Trails</label><br>
               <input type="text" id="Conf_TrailColor" title="Color" placeholder="#00ff00" style="width: 9em" onchange="ChangeColor1(this)">
               <input id="Color_Conf_TrailColor" type="button" value=" " class="color" onclick="ChooseColor2(this)"><br>
-              <input type="text" name="Conf_TrailSize" title="Size" placeholder="Size" style="width: 2em; text-align:right"><label>@mspaint.exe,-50047[px]</label>
+              <input type="text" name="Conf_TrailSize" title="Size" placeholder="Size" style="width: 2em; text-align: right"><label>@mspaint.exe,-50047[px]</label>
               <input type="button" value="-" onclick="AddValue('Conf_TrailSize', -1, 0, 16)">
               <input type="button" value="+" onclick="AddValue('Conf_TrailSize', 1, 0, 16)">
               <br><br>
@@ -398,7 +400,7 @@
               <br><br>
               <label>Width</label>
               <br>
-              <input type="text" name="Tree_Width" size="4">
+              <input type="text" name="Tree_Width" style="width: 6em; text-align: right">
               <br>
               <br>
               <label>Enumeration</label><br>
@@ -528,7 +530,7 @@
               <input type="text" id="Conf_DateTimeFormat" style="width: 100%">
               <br><br>
               <label>@comres.dll,-1953</label><br>
-              <input type="text" id="Conf_NetworkTimeout" style="width: 6em; text-align:right"><label>@calc.exe,-1721[ms]</label>
+              <input type="text" id="Conf_NetworkTimeout" style="width: 6em; text-align: right"><label>@calc.exe,-1721[ms]</label>
               <br><br>
               <div>
                 <label><input type="checkbox" id="Conf_ListDefault">Default</label>

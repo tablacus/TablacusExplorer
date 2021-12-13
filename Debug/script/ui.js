@@ -1352,7 +1352,7 @@ KeyDownEvent = function (ev, vEnter, vCancel) {
 }
 
 GetIconSizeEx = function (item) {
-	return GetIconSize(item.getAttribute("IconSize"), /Inner/i.test(item.getAttribute("Location")) && 16);
+	return GetIconSize(item.getAttribute("IconSize"), /Inner/i.test(item.getAttribute("Location")) && ui_.InnerIconSize);
 }
 
 if (window.chrome) {

@@ -1439,6 +1439,8 @@ InitOptions = async function () {
 		ClickButton(i, false);
 	}
 	SetTab(await dialogArguments.Data);
+	document.F.Conf_IconSize.placeholder = screen.deviceYDPI / 4;
+	document.F.Conf_InnerIconSize.placeholder = screen.deviceYDPI / 6;
 	document.F.style.display = "";
 	WebBrowser.OnClose = async function (WB) {
 		g_bChanged |= g_Chg.Addons || g_Chg.Menus || g_Chg.Tab || g_Chg.Tree || g_Chg.View;
