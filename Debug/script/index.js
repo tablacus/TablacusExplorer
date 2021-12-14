@@ -272,7 +272,7 @@ OnArrange = async function (Ctrl, rc) {
 			const s = ['<table id="Panel_', Id, '" class="layout fixed" style="position: absolute; z-index: 1; color: inherit; visibility: hidden">'];
 			s.push('<tr><td id="InnerLeft_', Id, '" class="sidebar" style="width: 0; display: none; overflow: auto"></td><td class="full"><div id="InnerTop_', Id, '" style="display: none"></div>');
 			s.push('<table id="InnerTop2_', Id, '" class="layout">');
-			s.push('<tr><td id="Inner1Left_', Id, '" class="toolbar1"></td><td id="Inner1Center_', Id, '" class="toolbar2" style="white-space: nowrap"></td><td id="Inner1Right_', Id, '" class="toolbar3"></td></tr></table>');
+			s.push('<tr><td id="Inner1Left_', Id, '" class="toolbar1"></td><td id="Inner1Center_', Id, '" class="toolbar2 nowrap"></td><td id="Inner1Right_', Id, '" class="toolbar3"></td></tr></table>');
 			s.push('<table id="InnerView_', Id, '" class="layout full"><tr><td id="Inner2Left_', Id, '" style="width: 0"></td><td id="Inner2Center_', Id, '" class="full"></td><td id="Inner2Right_', Id, '" style="width: 0; overflow: auto"></td></tr></table>');
 			s.push('<table id="InnerBottomT_', Id, '" class="layout full"><tr><td id="InnerBottom_', Id, '"></td></tr><tr><td id="InnerBottom2Left_', Id, '" class="toolbar1 full"></td><td id="InnerBottom2Right_', Id, '" class="toolbar3"></td></tr></table></td><td id="InnerRight_', Id, '" class="sidebar" style="width: 0; display: none"></td></tr></table>');
 			document.getElementById("Panel").insertAdjacentHTML("beforeend", s.join(""));
@@ -342,7 +342,7 @@ ArrangeAddons = async function () {
 	const r = await Promise.all([api.CreateObject("Object"), te.Data.Conf_IconSize, OpenXml("addons.xml", false, true), api.GetKeyState(VK_SHIFT), api.GetKeyState(VK_CONTROL), api.CreateObject("Array"), GetLangId(), te.Data.Conf_InnerIconSize]);
 	g_.Locations = r[0];
 	$.IconSize = IconSize = r[1] || screen.deviceYDPI / 4;
-	ui_.InnerIconSize = r[7] || screen.deviceYDPI / 6;
+	ui_.InnerIconSize = r[7] ? r[7] * 96 / screen.deviceYDPI : 16;
 	const xml = r[2];
 	te.Data.Addons = xml;
 	if (r[3] < 0 && r[4] < 0) {

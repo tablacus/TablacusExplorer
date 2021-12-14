@@ -96,11 +96,11 @@ form {
 	display: none;
 	margin: 1px 1px 1px 0;
 	padding: 1px 1px 1px 0;
+	vertical-align: middle;
 }
 
 .toolbar1 {
 	white-space: nowrap;
-	vertical-align: middle;
 }
 
 .toolbar2 {
@@ -110,7 +110,6 @@ form {
 .toolbar3 {
 	text-align: right;
 	white-space: nowrap;
-	vertical-align: middle;
 }
 
 .layout {
@@ -328,5 +327,29 @@ a.treebutton:hover {
 }
 
 .fixed {
-  table-layout: fixed;
+	table-layout: fixed;
+}
+
+.top {
+	vertical-align: top;
+}
+
+.middle {
+	vertical-align: middle;
+}
+
+.bottom {
+	vertical-align: bottom;
+}
+
+.nowrap {
+	white-space: nowrap;
+}
+
+.right {
+	text-align: right;
+}
+
+.number {
+	width: 6em; text-align: right
 }

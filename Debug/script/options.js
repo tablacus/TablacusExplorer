@@ -51,16 +51,39 @@ CloseWB = async function (WB, bForce) {
 	g_nResult = 0;
 }
 
-async function SetDefaultLangID() {
-	SetDefault(document.F.Conf_Lang, await GetLangId(true));
+async function GetElementFromPos() {
+	const ptc = await api.Memory("POINT");
+	await api.GetCursorPos(ptc);
+	await api.ScreenToClient(await WebBrowser.hwnd, ptc);
+	return document.elementFromPoint(await ptc.x, await ptc.y);
 }
 
-function SetDefault(o, v) {
-	setTimeout(async function () {
-		if (await confirmOk()) {
-			SetValue(o, "function" === typeof v ? await v : v);
-		}
-	}, 99);
+async function ConfirmThenExec(msg, fn, arg) {
+	const el = await GetElementFromPos();
+	if (el == ui_.elConfirm && ui_.ConfirmMenu && (new Date().getTime() - ui_.ConfirmMenu) < 500) {
+		return;
+	}
+	const hMenu = await api.CreatePopupMenu();
+	await api.InsertMenu(hMenu, 0, MF_BYPOSITION | MF_STRING, 1, msg);
+	await api.InsertMenu(hMenu, 1, MF_BYPOSITION | MF_STRING, 0, await GetText("Cancel"));
+	const pt = GetPos(el || o, 9);
+	if (await api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, ui_.hwnd, null, null)) {
+		fn.apply(null, arg);
+	} else {
+		ui_.ConfirmMenu = new Date().getTime();
+		ui_.elConfirm = el;
+	}
+	api.DestroyMenu(hMenu);
+}
+
+async function SetDefaultLangID(el) {
+	SetDefault(document.F.Conf_Lang, await GetLangId(true), el);
+}
+
+async function SetDefault(o, v) {
+	ConfirmThenExec(await GetText("Set default"), async function () {
+		SetValue(o, "function" === typeof v ? await v : v);
+	});
 }
 
 function OpenGroup(id) {
@@ -733,25 +756,27 @@ async function ReplaceX(mode, form) {
 
 async function RemoveX(mode) {
 	ClearX(mode);
-	if (g_x[mode].selectedIndex < 0 || !await confirmOk()) {
+	if (g_x[mode].selectedIndex < 0) {
 		return;
 	}
-	let i = g_x[mode].selectedIndex;
-	let j = i;
-	while (j >= 0 && g_x[mode][j]) {
-		g_x[mode][j] = null;
-		j = g_x[mode].selectedIndex;
-	}
-	g_Chg[mode] = true;
-	g_bChanged = true;
-	if (i >= g_x[mode].length) {
-		i = g_x[mode].length - 1;
-	}
-	if (i >= 0) {
-		g_x[mode].selectedIndex = i;
-		FireEvent(g_x[mode][i], "change");
-	}
-	g_bChanged = false;
+	ConfirmThenExec(await GetText("Remove"), function () {
+		let i = g_x[mode].selectedIndex;
+		let j = i;
+		while (j >= 0 && g_x[mode][j]) {
+			g_x[mode][j] = null;
+			j = g_x[mode].selectedIndex;
+		}
+		g_Chg[mode] = true;
+		g_bChanged = true;
+		if (i >= g_x[mode].length) {
+			i = g_x[mode].length - 1;
+		}
+		if (i >= 0) {
+			g_x[mode].selectedIndex = i;
+			FireEvent(g_x[mode][i], "change");
+		}
+		g_bChanged = false;
+	});
 }
 
 function MoveX(mode, n) {
@@ -1138,26 +1163,26 @@ async function SetAddon(Id, bEnable, td, Alt) {
 		td = document.getElementById(Alt || "Addons_" + Id).parentNode;
 	}
 	const info = await GetAddonInfo(Id);
-	const bLevel = (!window.chrome || await info.Level > 1);
-	const MinVersion = await info.MinVersion;
-	const bConfig = GetNum(await info.Config);
-	const bMinVer = !bLevel || MinVersion && await AboutTE(0) < await CalcVersion(MinVersion);
+	const r = await Promise.all([info.Level, info.MinVersion, info.Config, AboutTE(0), info.Name, info.Version, info.Options]);
+	const bLevel = (!window.chrome || r[0] > 1);
+	const bConfig = GetNum(r[2]);
+	const bMinVer = !bLevel || r[1] && r[3] < CalcVersion(r[1]);
 	if (bMinVer || bConfig) {
 		bEnable = false;
 	}
 	const s = ['<div ', (Alt ? '' : 'draggable="true" ondragstart="Start5(event, this)" ondragend="End5()"'), ' title="', Id, '" Id="', Alt || "Addons_", Id, '">'];
-	s.push('<table><tr style="border-top: 1px solid buttonshadow"', bEnable || bConfig ? "" : ' class="disabled"', '><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id + '">'), '</td><td style="width: 100%"><label for="_', Id, '">', await info.Name, "&nbsp;", await info.Version, '<br><input type="button" class="addonbutton" onclick="AddonInfo(\'', Id, '\')" value="Details">');
+	s.push('<table><tr style="border-top: 1px solid buttonshadow"', bEnable || bConfig ? "" : ' class="disabled"', '><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id + '">'), '</td><td style="width: 100%"><label for="_', Id, '">', r[4], "&nbsp;", r[5], '<br><input type="button" class="addonbutton" onclick="AddonInfo(\'', Id, '\')" value="Details">');
 	s.push(' <input type="button" class="addonbutton" onclick="AddonRemove(\'', Id, '\');" value="Delete">&nbsp;(', Id, ')<div id="i_', Id, '"></div></td>');
 	if (!bLevel) {
-		s.push('<td class="danger" style="align: right; white-space: nowrap; vertical-align: middle">', await GetTextR("@comres.dll,-1845"), '&nbsp;</td>');
+		s.push('<td class="danger middle nowrap right">', await GetTextR("@comres.dll,-1845"), '&nbsp;</td>');
 	} else if (bMinVer) {
-		s.push('<td class="danger" style="align: right; white-space: nowrap; vertical-align: middle">', MinVersion.replace(/^20/, (await api.LoadString(hShell32, 60) || "%").replace(/%.*/, "")).replace(/\.0/g, '.'), ' ', await GetText("is required."), '</td>');
-	} else if (await info.Options) {
-		s.push('<td style="white-space: nowrap; vertical-align: middle; padding-right: 1em"><input type="button" onclick="AddonOptions(\'', Id, '\')" class="addonbuttonopt" id="opt_', Id, '" value="Options"></td>');
+		s.push('<td class="danger middle nowrap right">', await GetTextR("@appmgr.dll,-3"), ' ', r[1].replace(/^20/, ""), ' ', await GetText("is required."), '</td>');
+	} else if (r[6]) {
+		s.push('<td class="nowrap middle" style="padding-right: 1em"><input type="button" onclick="AddonOptions(\'', Id, '\')" class="addonbuttonopt" id="opt_', Id, '" value="Options"></td>');
 	}
 	const strEnable = bMinVer || bConfig ? 'visibility: hidden' : "";
-	s.push('<td style="vertical-align: middle"><input type="checkbox" ', (Alt ? "" : 'id="enable_' + Id + '"'), ' onclick="AddonEnable(this, \'', Id, '\')" ', bEnable ? " checked" : "", ' style="', strEnable, '"></td>');
-	s.push('<td style="vertical-align: middle"><label for="enable_', Id, '" style="display: block; width: 6em; white-space: nowrap;', strEnable, '">', bEnable ? "Enabled" : "Enable", '</label></td>');
+	s.push('<td class="middle"><input type="checkbox" ', (Alt ? "" : 'id="enable_' + Id + '"'), ' onclick="AddonEnable(this, \'', Id, '\')" ', bEnable ? " checked" : "", ' style="', strEnable, '"></td>');
+	s.push('<td class="middle"><label for="enable_', Id, '" class="nowrap" style="display: block; width: 6em;', strEnable, '">', bEnable ? "Enabled" : "Enable", '</label></td>');
 	s.push('</tr></table></label></div>');
 	td.style.visibility = "hidden";
 	td.innerHTML = s.join("");
@@ -1304,27 +1329,26 @@ function AddonMoveEx(src, dest) {
 }
 
 async function AddonRemove(Id) {
-	if (!await confirmOk()) {
-		return;
-	}
-	MainWindow.SaveConfig();
-	MainWindow.AddonDisabled(Id);
-	if (await AddonBeforeRemove(Id) < 0) {
-		return;
-	}
-	const path = BuildPath(ui_.Installed, "addons", Id);
-	await DeleteItem(path, 0);
-	setTimeout(async function () {
-		if (!await IsExists(path)) {
-			let table = document.getElementById("Addons");
-			table.deleteRow(GetRowIndexById("Addons_" + Id));
-			table = document.getElementById("SortedAddons");
-			if (table.rows.length) {
-				table.deleteRow(GetRowIndexById("Sorted_" + Id));
-			}
-			g_Chg.Addons = true;
+	ConfirmThenExec(await GetText("Delete"), async function () {
+		MainWindow.SaveConfig();
+		MainWindow.AddonDisabled(Id);
+		if (await AddonBeforeRemove(Id) < 0) {
+			return;
 		}
-	}, 500);
+		const path = BuildPath(ui_.Installed, "addons", Id);
+		await DeleteItem(path, 0);
+		setTimeout(async function () {
+			if (!await IsExists(path)) {
+				let table = document.getElementById("Addons");
+				table.deleteRow(GetRowIndexById("Addons_" + Id));
+				table = document.getElementById("SortedAddons");
+				if (table.rows.length) {
+					table.deleteRow(GetRowIndexById("Sorted_" + Id));
+				}
+				g_Chg.Addons = true;
+			}
+		}, 500);
+	});
 }
 
 async function SetAddonsRssults() {
@@ -1729,7 +1753,7 @@ InitDialog = async function () {
 	if (Query == "about") {
 		const promise = [MakeImgSrc(ui_.TEPath, 0, true, 48), AboutTE(2), GetTextR(ui_.bit + '-bit'), te.Data.DataFolder, AboutTE(3)];
 		const s = ['<table style="border-spacing: 2em; border-collapse: separate; width: 100%"><tr><td>'];
-		s.push('<img id="img1"></td><td style="width: 100%"><div style="white-space: nowrap"><span style="font-weight: bold; font-size: 120%" id="about2"></span> (<span id="bit1"></span>)</div>');
+		s.push('<img id="img1"></td><td style="width: 100%"><div class="nowrap"><span style="font-weight: bold; font-size: 120%" id="about2"></span> (<span id="bit1"></span>)</div>');
 		s.push('<br><div id="lib"></div>');
 		s.push('<br><label>@sqlsrv32.rll,-40028</label><br><a href="#" class="link" onclick="Run(1, this)" id="df1"></a><br>');
 		s.push('<br><label>Information</label><input id="about3" type="text" style="width: 100%" onclick="this.select()" readonly><br>');
@@ -1985,6 +2009,7 @@ InitLocation = function () {
 		const Location = item.getAttribute("Location") || await param.Default;
 		for (let i = document.L.length; i--;) {
 			if (SameText(Location, document.L[i].value)) {
+				document.L[i].disabled = false;
 				document.L[i].checked = true;
 				break;
 			}
@@ -2275,12 +2300,11 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter, f) {
 }
 
 async function PortableX(Id) {
-	if (!await confirmOk()) {
-		return;
-	}
-	const o = GetElement(Id);
-	const s = await fso.GetDriveName(ui_.TEPath);
-	SetValue(o, o.value.replace(await wsh.ExpandEnvironmentStrings("%UserProfile%"), "%UserProfile%").replace(new RegExp('^("?)' + s, "igm"), "$1%Installed%").replace(new RegExp('( "?)' + s, "igm"), "$1%Installed%").replace(new RegExp('(:)' + s, "igm"), "$1%Installed%"));
+	ConfirmThenExec(await GetText("Portable"), function () {
+		const o = GetElement(Id);
+		const s = await fso.GetDriveName(ui_.TEPath);
+		SetValue(o, o.value.replace(await wsh.ExpandEnvironmentStrings("%UserProfile%"), "%UserProfile%").replace(new RegExp('^("?)' + s, "igm"), "$1%Installed%").replace(new RegExp('( "?)' + s, "igm"), "$1%Installed%").replace(new RegExp('(:)' + s, "igm"), "$1%Installed%"));
+	});
 }
 
 function GetElement(Id, o) {
@@ -2436,7 +2460,7 @@ SelectIcon = function (o) {
 }
 
 TestX = async function (id, f) {
-	if (await confirmOk()) {
+	ConfirmThenExec(await GetText("Test"), function () {
 		if (!f) {
 			f = document.F;
 		}
@@ -2447,7 +2471,7 @@ TestX = async function (id, f) {
 		await MainWindow.InvokeUI("window.focus");
 		await MainWindow.Exec(await te.Ctrl(CTRL_FV), await p.s, o[o.selectedIndex].value);
 		focus();
-	}
+	});
 }
 
 SetImage = async function (f, n) {
@@ -2465,13 +2489,20 @@ SetImage = async function (f, n) {
 ShowIcon = ShowIconEx;
 
 async function SelectLangID(o) {
-	const Langs = [];
+	const el = await GetElementFromPos();
+	if (el == ui_.elConfirm && ui_.ConfirmMenu && (new Date().getTime() - ui_.ConfirmMenu) < 500) {
+		return;
+	}
+	let Langs = [];
 	const wfd = await api.Memory("WIN32_FIND_DATA");
 	const hFind = await api.FindFirstFile(BuildPath(ui_.Installed, "lang\\*.xml"), wfd);
 	for (let bFind = hFind != INVALID_HANDLE_VALUE; await bFind; bFind = await api.FindNextFile(hFind, wfd)) {
-		Langs.push((await wfd.cFileName).replace(/\..*$/, ""));
+		Langs.push(wfd.cFileName);
 	}
 	api.FindClose(hFind);
+	if (window.chrome) {
+		Langs = await Promise.all(Langs);
+	}
 	Langs.sort();
 	const path = BuildPath(ui_.Installed, "lang");
 	const hMenu = await api.CreatePopupMenu();
@@ -2479,7 +2510,8 @@ async function SelectLangID(o) {
 		const xml = await api.CreateObject("Msxml2.DOMDocument");
 		xml.async = false;
 		let title = Langs[i];
-		await xml.load(BuildPath(path, title + '.xml'));
+		await xml.load(BuildPath(path, title));
+		Langs[i] = title = title.replace(/\..*$/, "");
 		const items = await xml.getElementsByTagName('lang');
 		if (items && await GetLength(items)) {
 			const item = await items[0];
@@ -2489,11 +2521,14 @@ async function SelectLangID(o) {
 		}
 		await api.InsertMenu(hMenu, i, MF_BYPOSITION | MF_STRING, GetNum(i) + 1, title);
 	}
-	const pt = GetPos(o, 1);
-	const nVerb = await api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y + o.offsetHeight, ui_.hwnd, null, null);
+	const pt = GetPos(o, 9);
+	const nVerb = await api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RIGHTALIGN | TPM_RETURNCMD, pt.x + o.offsetWidth, pt.y, ui_.hwnd, null, null);
 	if (nVerb) {
 		document.F.Conf_Lang.value = Langs[nVerb - 1];
 		g_bChanged = true;
+	} else {
+		ui_.ConfirmMenu = new Date().getTime();
+		ui_.elConfirm = el;
 	}
 	api.DestroyMenu(hMenu);
 }
@@ -2642,7 +2677,7 @@ async function ArrangeAddon(xml, td) {
 					return;
 				}
 			}
-			strUpdate = '<br><b id="_Addons_' + Id + '"  class="danger" style="white-space: nowrap;">' + await GetText('Update available') + '</b>';
+			strUpdate = '<br><b id="_Addons_' + Id + '"  class="danger nowrap">' + await GetText('Update available') + '</b>';
 			dt2 += MAXINT * 2;
 			bUpdate = true;
 		} else {
@@ -2771,7 +2806,7 @@ async function IconPacksList1(s, Id, info, json) {
 		s.push(await GetText("Installed"));
 		s.push('<input type="button" onclick="DeleteIconPacks()" value="Delete" style="float: right;">');
 		if (json[Id] && Number(json[Id].info.version) > Number(info.version)) {
-			s.push('<hr><b class="danger" style="white-space: nowrap;">', await GetText('Update available'), '</b> ', json[Id].info.version);
+			s.push('<hr><b class="danger nowrap">', await GetText('Update available'), '</b> ', json[Id].info.version);
 			info = json[Id].info;
 			json = false;
 		}

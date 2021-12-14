@@ -9,24 +9,24 @@
   </head>
   <body>
     <form name="F" onsubmit="return false">
-      <table class="layout" style="width: 100%">
+      <table class="layout" class="full">
         <tr>
-          <td style="vertical-align: top">
-            <div id="tab_" class="pane" style="width: 12em; white-space: nowrap; overflow-x: hidden; overflow-y: auto;">
+          <td class="top">
+            <div id="tab_" class="pane nowrap" style="width: 12em; overflow-x: hidden; overflow-y: auto;">
               <a id="tabbtn0" class="treebutton" onclick="ClickButton(0);"></a>
               <label id="tab0" class="button" style="width: 88%" onmousedown="ClickTree(this);">General</label>
               <br>
               <div id="tab0_" style="margin-left: 1.667em; display: none">
-                <label id="tab0_1" class="button" style="width: 100%" onmousedown="ClickTree(this);">Mouse</label>
+                <label id="tab0_1" class="button" class="full" onmousedown="ClickTree(this);">Mouse</label>
                 <br>
               </div>
               <a id="tabbtn1" class="treebutton" onclick="ClickButton(1);"></a>
               <label id="tab1" class="button" style="width: 88%" onmousedown="ClickTree(this);">Add-ons</label>
               <br>
               <div id="tab1_" style="margin-left: 1.667em; display: none">
-                <label id="tab1_1" class="button" style="width: 100%" onmousedown="ClickTree(this);">Get Add-ons</label><br>
-                <label id="tab1_3" class="button" style="width: 100%" onmousedown="ClickTree(this);">Get Icons</label><br>
-                <label id="tab1_4" class="button" style="width: 100%" onmousedown="ClickTree(this);">Get Lang</label><br>
+                <label id="tab1_1" class="button" class="full" onmousedown="ClickTree(this);">Get Add-ons</label><br>
+                <label id="tab1_3" class="button" class="full" onmousedown="ClickTree(this);">Get Icons</label><br>
+                <label id="tab1_4" class="button" class="full" onmousedown="ClickTree(this);">Get Lang</label><br>
               </div>
               <a id="tabbtn2" class="treebutton" onclick="ClickButton(2);"></a>
               <label id="tab2" class="button" style="width: 88%" onmousedown="ClickButton(2, true);ClickTree(document.getElementById('tab2_0'), null, 'Menus');">Menus</label>
@@ -37,28 +37,28 @@
               <label id="tab4" class="button" style="width: 88%" onmousedown="ClickTree(this, null, 'Tree');">Tree</label>
               <br>
               <div id="tab4_" style="margin-left: 1.667em; display: none">
-                <label id="tab4_1" class="button" style="width: 100%" onmousedown="ClickTree(this, null, 'Tree');">Root</label>
+                <label id="tab4_1" class="button" class="full" onmousedown="ClickTree(this, null, 'Tree');">Root</label>
                 <br>
               </div>
               <a id="tabbtn5" class="treebutton" onclick="ClickButton(5);"></a>
               <label id="tab5" class="button" style="width: 88%" onmousedown="ClickTree(this, null, 'View');">List</label>
               <br>
               <div id="tab5_" style="margin-left: 1.667em; display: none">
-                <label id="tab5_1" class="button" style="width: 100%" onmousedown="ClickTree(this, null, 'List');">Style</label>
+                <label id="tab5_1" class="button" class="full" onmousedown="ClickTree(this, null, 'List');">Style</label>
                 <br>
-                <label id="tab5_2" class="button" style="width: 100%" onmousedown="ClickTree(this, null, 'List');">Filter</label>
+                <label id="tab5_2" class="button" class="full" onmousedown="ClickTree(this, null, 'List');">Filter</label>
                 <br>
               </div>
               <a id="tabbtn3" class="treebutton" onclick="ClickButton(3);"></a>
               <label id="tab3" class="button" style="width: 88%" onmousedown="ClickTree(this, null, 'Tab');">Tabs</label>
               <br>
               <div id="tab3_" style="margin-left: 1.667em; display: none">
-                <label id="tab3_1" class="button" style="width: 100%" onmousedown="ClickTree(this, null, 'Tab');">Advanced</label>
+                <label id="tab3_1" class="button" class="full" onmousedown="ClickTree(this, null, 'Tab');">Advanced</label>
                 <br>
               </div>
             </div>
           </td>
-          <td style="width: 100%">
+          <td class="full">
             <!--panel_start-->
             <div class="panel hide" id="panel0">
               <label>@docprop.dll,-107</label><br>
@@ -72,14 +72,14 @@
               <br>
               <br>
               <label>Left bar<i> </i>Width</label><br>
-              <input type="text" id="Conf_LeftBarWidth" style="width: 6em; text-align: right"><label>@mspaint.exe,-50047[px]</label><br><br>
+              <input type="text" id="Conf_LeftBarWidth" class="number"><label>@mspaint.exe,-50047[px]</label><br><br>
               <label>Right bar<i> </i>Width</label><br>
-              <input type="text" id="Conf_RightBarWidth" style="width: 6em; text-align: right"><label>@mspaint.exe,-50047[px]</label><br><br>
+              <input type="text" id="Conf_RightBarWidth" class="number"><label>@mspaint.exe,-50047[px]</label><br><br>
               <label alt="Tool bar icon">Tool bar<i> </i>Icon</label><br>
-              <input type="text" id="Conf_IconSize" style="width: 6em; text-align: right"><label>@mspaint.exe,-50047[px]</label>
+              <input type="text" id="Conf_IconSize" class="number"><label>@mspaint.exe,-50047[px]</label>
               <input type="button" value="Default" onclick="SetDefault(document.F.Conf_IconSize, '');"><br><br>
               <label alt="Internal Tool bar icon">@mmsys.cpl,-551[Internal]<i> </i>Tool bar<i> </i>Icon</label><br>
-              <input type="text" id="Conf_InnerIconSize" style="width: 6em; text-align: right"><label>@mspaint.exe,-50047[px]</label>
+              <input type="text" id="Conf_InnerIconSize" class="number"><label>@mspaint.exe,-50047[px]</label>
               <input type="button" value="Default" onclick="SetDefault(document.F.Conf_InnerIconSize, '');"><br><br>
               <label>Menus</label><br>
               <label><input type="checkbox" id="Conf_MenuHidden">Include hidden items</label><br>
@@ -106,12 +106,12 @@
               <label><input type="radio" name="Conf_Gestures_" id="Conf_Gestures=3" onclick="SetRadio(this)">Priority</label><br>
               <br>
               <label>@comres.dll,-1953</label><br>
-              <input type="text" id="Conf_GestureTimeout" style="width: 6em; text-align: right"><label>@calc.exe,-1721[ms]</label>
+              <input type="text" id="Conf_GestureTimeout" class="number"><label>@calc.exe,-1721[ms]</label>
               <br><br>
               <label>Trails</label><br>
               <input type="text" id="Conf_TrailColor" title="Color" placeholder="#00ff00" style="width: 9em" onchange="ChangeColor1(this)">
               <input id="Color_Conf_TrailColor" type="button" value=" " class="color" onclick="ChooseColor2(this)"><br>
-              <input type="text" name="Conf_TrailSize" title="Size" placeholder="Size" style="width: 2em; text-align: right"><label>@mspaint.exe,-50047[px]</label>
+              <input type="text" name="Conf_TrailSize" title="Size" placeholder="Size" class="number"><label>@mspaint.exe,-50047[px]</label>
               <input type="button" value="-" onclick="AddValue('Conf_TrailSize', -1, 0, 16)">
               <input type="button" value="+" onclick="AddValue('Conf_TrailSize', 1, 0, 16)">
               <br><br>
@@ -122,14 +122,14 @@
             <!--panel_end-->
 
             <div class="panel hide" id="panel1">
-              <table id="Addons" style="width: 100%">
+              <table id="Addons" class="full">
                 <tr>
                   <th>
                     <label>Please wait.</label>
                   </th>
                 </tr>
               </table>
-              <table id="SortedAddons" style="width: 100%">
+              <table id="SortedAddons" class="full">
               </table>
             </div>
             <!--panel_end-->
@@ -138,8 +138,8 @@
               <div id="bar">
                 <table>
                   <tr>
-                    <td style="width: 100%">
-                      <input type="text" name="_GetAddonsQ" id="_GetAddonsQ" style="width: 100%" onkeydown="KeyDownEvent(event, AddonsSearch)">
+                    <td class="full">
+                      <input type="text" name="_GetAddonsQ" id="_GetAddonsQ" class="full" onkeydown="KeyDownEvent(event, AddonsSearch)">
                     </td>
                     <td>
                       <input type="button" value="Search" onclick="AddonsSearch()">
@@ -147,8 +147,8 @@
                   </tr>
                 </table>
               </div>
-              <div id="panel1_1_1" style="width: 100%">
-                <table id="Addons1" style="width: 100%">
+              <div id="panel1_1_1" class="full">
+                <table id="Addons1" class="full">
                   <tr>
                     <td>
                       <label>Please wait.</label>
@@ -167,8 +167,8 @@
               <div>
                 <table>
                   <tr>
-                    <td style="width: 100%">
-                      <input type="text" id="_GetIconsQ" style="width: 100%" onkeydown="KeyDownEvent(event, IconPacksList)">
+                    <td class="full">
+                      <input type="text" id="_GetIconsQ" class="full" onkeydown="KeyDownEvent(event, IconPacksList)">
                     </td>
                     <td>
                       <input type="button" value="Search" onclick="IconPacksList()">
@@ -176,8 +176,8 @@
                   </tr>
                 </table>
               </div>
-              <div id="panel1_3_1" style="width: 100%">
-                <table id="IconPacks1" style="width: 100%">
+              <div id="panel1_3_1" class="full">
+                <table id="IconPacks1" class="full">
                   <tr>
                     <td>
                       <label>Please wait.</label>
@@ -192,8 +192,8 @@
               <div>
                 <table>
                   <tr>
-                    <td style="width: 100%">
-                      <input type="text" id="_GetLangQ" style="width: 100%" onkeydown="KeyDownEvent(event, LangPacksList)">
+                    <td class="full">
+                      <input type="text" id="_GetLangQ" class="full" onkeydown="KeyDownEvent(event, LangPacksList)">
                     </td>
                     <td>
                       <input type="button" value="Search" onclick="LangPacksList()">
@@ -201,8 +201,8 @@
                   </tr>
                 </table>
               </div>
-              <div id="panel1_4_1" style="width: 100%">
-                <table id="LangPacks1" style="width: 100%">
+              <div id="panel1_4_1" class="full">
+                <table id="LangPacks1" class="full">
                   <tr>
                     <td>
                       <label>Please wait.</label>
@@ -214,21 +214,21 @@
             <!--panel_end-->
 
             <div class="panel hide" id="panel2">
-              <table style="width: 100%">
+              <table class="full">
                 <tr>
-                  <td style="width: 12em; vertical-align: top">
+                  <td class="top" style="width: 12em">
                     <select name="Menus" style="display: none">
                     </select>
                     <div id="Menus_List">
                     </div>
                   </td>
                   <td valign="top">
-                    <table style="width: 100%">
+                    <table class="full">
                       <tr>
-                        <td style="white-space: nowrap; vertical-align: bottom">
+                        <td class="nowrap bottom">
                           <label>Name</label>
                         </td>
-                        <td align="right" style="vertical-align: bottom">
+                        <td align="right" class="bottom">
                           <label>Base</label>
                           <select name="Menus_Base" onchange="SwitchMenus();" class="translate">
                             <option value="Normal">Normal
@@ -247,10 +247,10 @@
                     <table class="layout">
                       <tr>
                         <td>
-                          <input type="text" name="Menus_Name" style="width: 100%" onchange="ChangeX('Menus')">
+                          <input type="text" name="Menus_Name" class="full" onchange="ChangeX('Menus')">
                         </td>
                         <td style="width: 6.667em">
-                          <input type="text" name="Menus_Key" placeholder="Key" title="Key" style="width: 100%" onchange="ChangeX('Menus')">
+                          <input type="text" name="Menus_Key" placeholder="Key" title="Key" class="full" onchange="ChangeX('Menus')">
                         </td>
                         <td style="width: 1.667em">
                           <input type="button" value="..." title="Key" style="line-height: 1.1em" onclick="InputKey(document.F['Menus_Key']);">
@@ -258,16 +258,16 @@
                       </tr>
                     </table>
 
-                    <table style="width: 100%">
+                    <table class="full">
                       <tr>
-                        <td style="width: 100%; white-space: nowrap; vertical-align: bottom">
+                        <td class="full nowrap bottom">
                           <label>Filter</label>
                         </td>
-                        <td class="buttons" style="vertical-align: bottom">
+                        <td class="buttons bottom">
                           <label>Position</label>
                         </td>
                         <td class="buttons">
-                          <input type="text" name="Menus_Pos" size="2" onchange="SwitchMenus();">
+                          <input type="text" name="Menus_Pos" class="number" onchange="SwitchMenus();">
                         </td>
                         <td>
                           <select onchange="SelectPos(this, 'Menus_Pos');SwitchMenus();" title="Position" class="translate">
@@ -278,14 +278,14 @@
                         </td>
                       </tr>
                     </table>
-                    <input type="text" name="Menus_Filter" style="width: 100%" onchange="ChangeX('Menus')">
+                    <input type="text" name="Menus_Filter" class="full" onchange="ChangeX('Menus')">
                     <label>Type</label>
                     <br>
                     <select name="Menus_Type" onchange="ChangeX('Menus')">
                     </select>
                     <table class="layout">
                       <tr>
-                        <td style="width: 100%; vertical-align: bottom">
+                        <td class="full bottom">
                           <label>Options</label>
                         </td>
                         <td class="buttons">
@@ -299,41 +299,38 @@
                     <textarea name="Menus_Path" style="width: 100%; height: 16em; height: calc(100vh - 24em); min-height: 2em" onchange="ChangeX('Menus')"></textarea>
                     <table class="layout">
                       <tr>
-                        <td style="vertical-align: bottom; white-space: nowrap; width: 100%">
-                          <label>@mmcbase.dll,-106</label><input type="hidden" name="Height" value="16">
+                        <td class="bottom nowrap">
+                          <label>@mmcbase.dll,-106</label><input type="hidden" name="Height" value="16">&nbsp;
                         </td>
-                        <td id="_Icon" style="width: 15pt; height: 15pt; overflow: hidden; vertical-align: middle" align="left">
+                        <td id="_Icon" class="middle full" style="width: 15pt; height: 15pt; overflow: hidden;" align="left">
                         </td>
-                        <td class="buttons">
+                        <td class="full"></td>
+                        <td class="bottom nowrap buttons">
+                          <label>Height</label>
+                          <input type="text" name="IconSize" class="number" onchange="ChangeX('Menus'); SetImage();">
+                        </td>
+                        <td class="bottom nowrap">
                           <input type="button" value="Portable" onclick="PortableX('Icon')">
-                        </td>
-                        <td class="buttons">
                           <input type="button" value="Select" onclick="ShowIcon();">
-                        </td>
-                        <td>
                           <input type="button" value="Browse..." onclick="RefX('Icon',0,0,1)">
                         </td>
                       </tr>
                       <tr>
-                        <td style="width: 100%" colspan="5">
-                          <input type="text" name="Icon" onchange="ChangeX('Menus');SetImage();" style="width: 100%">
+                        <td class="full" colspan="5">
+                          <input type="text" name="Icon" onchange="ChangeX('Menus');SetImage();" class="full">
                         </td>
                       </tr>
                     </table>
                   </td>
                 </tr>
               </table>
-              <table style="width: 100%">
+              <table class="full">
                 <tr>
                   <td style="width: 12em">
                     <input type="button" value="Remove" onclick="RemoveX('Menus')">
                     <label><input type="checkbox" id="_EDIT">Edit</label>
                   </td>
-                  <td align="left" style="white-space: nowrap">
-                    <label>Height</label>
-                    <input type="text" name="IconSize" style="width: 4em" onchange="ChangeX('Menus'); SetImage();">
-                  </td>
-                  <td align="center">
+                  <td align="left" class="nowrap">
                     <input type="button" value="Test" onclick="TestX('Menus_')">
                   </td>
                   <td align="right">
@@ -352,10 +349,10 @@
               <div>
                 <label>New Tab</label>
               </div>
-              <table style="width: 100%">
+              <table class="full">
                 <tr>
-                  <td style="width: 100%">
-                    <input type="text" name="Conf_NewTab" style="width: 100%">
+                  <td class="full">
+                    <input type="text" name="Conf_NewTab" class="full">
                   </td>
                   <td>
                     <input type="button" value="Browse..." onclick="ChooseFolder1(document.F.Conf_NewTab)">
@@ -400,7 +397,7 @@
               <br><br>
               <label>Width</label>
               <br>
-              <input type="text" name="Tree_Width" style="width: 6em; text-align: right">
+              <input type="text" name="Tree_Width" class="number"><label>@mspaint.exe,-50047[px]</label>
               <br>
               <br>
               <label>Enumeration</label><br>
@@ -466,9 +463,9 @@
             <!--panel_end-->
 
             <div class="panel hide" id="panel4_1">
-              <table style="width: 100%">
+              <table class="full">
                 <tr>
-                  <td style="width: 100%"><label>Root</label>
+                  <td class="full"><label>Root</label>
                   </td>
                   <td>
                     <input type="button" value="Browse..." onclick="ChooseFolder1(document.F.Tree_Root)">
@@ -523,14 +520,14 @@
                 <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_Conf_SizeFormat")'>
               </div>
               <div class="group" id="_Advanced_Conf_SizeFormat">
-                <input type="text" name="Conf_SizeFormat" style="width: 100%">
+                <input type="text" name="Conf_SizeFormat" class="full">
               </div>
               <br>
               <label>{F7DB74B4-4287-4103-AFBA-F1B13DCD75CF} 100|@shell32.dll,-32522</label><br>
-              <input type="text" id="Conf_DateTimeFormat" style="width: 100%">
+              <input type="text" id="Conf_DateTimeFormat" class="full">
               <br><br>
               <label>@comres.dll,-1953</label><br>
-              <input type="text" id="Conf_NetworkTimeout" style="width: 6em; text-align: right"><label>@calc.exe,-1721[ms]</label>
+              <input type="text" id="Conf_NetworkTimeout" class="number"><label>@calc.exe,-1721[ms]</label>
               <br><br>
               <div>
                 <label><input type="checkbox" id="Conf_ListDefault">Default</label>
@@ -614,8 +611,6 @@
               <tr>
                 <td class="buttons">
                   <input type="button" value="OK" class="ok" onclick="SetResult(1)" autofocus>
-                </td>
-                <td class="buttons">
                   <input type="button" value="Cancel" class="cancel" onclick="SetResult(2)">
                 </td>
               </tr>
