@@ -2266,9 +2266,6 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 	if (!te.Data) {
 		return S_OK;
 	}
-	if (msg == WM_SETTINGCHANGE) {
-		te.Data.TempFolder = GetTempPath(1);
-	}
 	let hr = RunEvent3(msg + "!", Ctrl, Ctrl.Type, hwnd, msg, wParam, lParam);
 	if (isFinite(hr)) {
 		return hr;
@@ -3131,6 +3128,19 @@ AddEvent("ChangeNotify", function (Ctrl, pidls, wParam, lParam) {
 			setTimeout(function () {
 				wsh.SendKeys("{F2}");
 			}, 99);
+		}
+	}
+});
+
+AddEvent(WM_SETTINGCHANGE + "!", function (Ctrl, Type, hwnd, msg, wParam, lParam) {
+	te.Data.TempFolder = GetTempPath(1);
+	const cFV = te.Ctrls(CTRL_FV);
+	for (let i in cFV) {
+		const hList = cFV[i].hwndList;
+		if (hList) {
+			api.SendMessage(hwnd, LVM_SETTEXTCOLOR, 0, GetSysColor(COLOR_WINDOWTEXT));
+			api.SendMessage(hwnd, LVM_SETBKCOLOR, 0, GetSysColor(COLOR_WINDOW));
+			api.SendMessage(hwnd, LVM_SETTEXTBKCOLOR, 0, GetSysColor(COLOR_WINDOW));
 		}
 	}
 });

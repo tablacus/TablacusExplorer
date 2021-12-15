@@ -524,7 +524,7 @@ VOID teFixListState(HWND hwnd, int dwFlags) {
 #ifdef _2000XP
 		if (g_bUpperVista) {
 #endif
-			int nFocused = ListView_GetNextItem(hwnd, -1, LVNI_ALL | LVNI_FOCUSED);
+			int nFocused = ListView_GetNextItem(hwnd, -1, LVNI_FOCUSED);
 			if (nFocused >= 0) {
 				ListView_SetItemState(hwnd, nFocused, 0, LVIS_FOCUSED);
 			}
@@ -2866,7 +2866,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 									msg1.pt.y = 0;
 									if (hwndLV) {
 										ClientToScreen(hwndLV, &msg1.pt);
-										int nSelected = ListView_GetNextItem(hwndLV, -1, LVNI_ALL | LVNI_SELECTED);
+										int nSelected = ListView_GetNextItem(hwndLV, -1, LVNI_SELECTED);
 										if (nSelected >= 0) {
 											RECT rc;
 											ListView_GetItemRect(hwndLV, nSelected, &rc, LVIR_ICON);
@@ -2878,10 +2878,10 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 										ClientToScreen(pSB->m_hwndDV, &msg1.pt);
 									}
 								} else {
-									if (GetKeyState(VK_SHIFT) < 0 && ListView_GetNextItem(hwndLV, -1, LVNI_ALL | LVNI_SELECTED) >= 0) {
-										int nFocused = ListView_GetNextItem(hwndLV, -1, LVNI_ALL | LVNI_FOCUSED);
+									if (GetKeyState(VK_SHIFT) < 0 && ListView_GetNextItem(hwndLV, -1, LVNI_SELECTED) >= 0) {
+										int nFocused = ListView_GetNextItem(hwndLV, -1, LVNI_FOCUSED);
 										if (!ListView_GetItemState(hwndLV, nFocused, LVIS_SELECTED)) {
-											ListView_SetItemState(hwndLV, ListView_GetNextItem(hwndLV, -1, LVNI_ALL | LVNI_SELECTED), LVIS_FOCUSED, LVIS_FOCUSED);
+											ListView_SetItemState(hwndLV, ListView_GetNextItem(hwndLV, -1, LVNI_SELECTED), LVIS_FOCUSED, LVIS_FOCUSED);
 											ListView_SetItemState(hwndLV, nFocused, 0, LVIS_FOCUSED);
 										}
 									}
@@ -6492,7 +6492,7 @@ VOID CteShellBrowser::GetFocusedIndex(int *piItem)
 #ifdef _W2000
 	if (g_bIs2000) {
 		//Windows 2000
-		*piItem = ListView_GetNextItem(m_hwndLV, -1, LVNI_ALL | LVNI_FOCUSED);
+		*piItem = ListView_GetNextItem(m_hwndLV, -1, LVNI_FOCUSED);
 		return;
 	}
 #endif
@@ -8545,10 +8545,10 @@ HRESULT CteShellBrowser::Items(UINT uItem, FolderItems **ppid)
 						if (uItem & SVGIO_SELECTION) {
 							int nIndex = -1, nFocus = -1;
 							if ((uItem & SVGIO_FLAG_VIEWORDER) == 0) {
-								nFocus = ListView_GetNextItem(m_hwndLV, -1, LVNI_FOCUSED | LVNI_ALL);
+								nFocus = ListView_GetNextItem(m_hwndLV, -1, LVNI_FOCUSED);
 								AddPathXP(pFolderItems, pSFV, nFocus, bResultsFolder);
 							}
-							while ((nIndex = ListView_GetNextItem(m_hwndLV, nIndex, LVNI_SELECTED | LVNI_ALL)) >= 0) {
+							while ((nIndex = ListView_GetNextItem(m_hwndLV, nIndex, LVNI_SELECTED)) >= 0) {
 								if (nIndex != nFocus) {
 									AddPathXP(pFolderItems, pSFV, nIndex, bResultsFolder);
 								}
@@ -8811,6 +8811,12 @@ STDMETHODIMP CteShellBrowser::SelectItem(VARIANT *pvfi, int dwFlags)
 					pFV->SelectItem(nIndex, dwFlags & (SVSI_SELECTIONMARK | SVSI_KEYBOARDSELECT | SVSI_NOTAKEFOCUS));
 				}
 				hr = pFV->SelectItem(nIndex, dwFlags & ~(SVSI_SELECTIONMARK | (SVSI_KEYBOARDSELECT & ~SVSI_SELECT)));
+				if (dwFlags == SVSI_DESELECT && m_hwndLV) {//21.12.15
+					if (ListView_GetNextItem(m_hwndLV, -1, LVNI_SELECTED) < 0) {
+						pFV->SelectItem(nIndex, SVSI_SELECT);
+						m_pShellView->SelectItem(NULL, SVSI_DESELECTOTHERS);
+					}
+				}
 			}
 			SafeRelease(&pFV);
 		} else {
@@ -8855,6 +8861,12 @@ HRESULT CteShellBrowser::SelectItemEx(LPITEMIDLIST pidl, int dwFlags)
 		hr = m_pShellView->SelectItem(pidlLast, dwFlags & ~(SVSI_SELECTIONMARK | (SVSI_KEYBOARDSELECT & ~SVSI_SELECT)));
 		if (FAILED(hr) && (dwFlags & SVSI_DESELECTOTHERS)) {
 			hr = m_pShellView->SelectItem(pidlLast, SVSI_DESELECTOTHERS);
+		}
+		if (dwFlags == SVSI_DESELECT && m_hwndLV) {//21.12.15
+			if (ListView_GetNextItem(m_hwndLV, -1, LVNI_SELECTED) < 0) {
+				m_pShellView->SelectItem(pidlLast, SVSI_SELECT);
+				m_pShellView->SelectItem(pidlLast, SVSI_DESELECTOTHERS);
+			}
 		}
 	}
 	return hr;
@@ -9067,7 +9079,7 @@ VOID CteShellBrowser::SetObjectRect()
 	}
 	if (m_hwndLV) {
 		if (rc.right - rc.left != m_rc.right - m_rc.left || rc.bottom - rc.top != m_rc.bottom - m_rc.top) {
-			int nFocused = ListView_GetNextItem(m_hwndLV, -1, LVNI_ALL | LVNI_FOCUSED | LVNI_SELECTED);
+			int nFocused = ListView_GetNextItem(m_hwndLV, -1, LVNI_FOCUSED | LVNI_SELECTED);
 			if (nFocused >= 0) {
 				PostMessage(m_hwndLV, LVM_ENSUREVISIBLE, nFocused, FALSE);
 			}
@@ -9449,7 +9461,7 @@ VOID CteShellBrowser::SetListColumnWidth()
 			if (nWidth > nOrgWidth) {
 				ListView_SetColumnWidth(m_hwndLV, 0, 1);
 				ListView_SetColumnWidth(m_hwndLV, 0, nWidth);
-				ListView_EnsureVisible(m_hwndLV, ListView_GetNextItem(m_hwndLV, -1, LVNI_ALL | LVNI_FOCUSED), FALSE);
+				ListView_EnsureVisible(m_hwndLV, ListView_GetNextItem(m_hwndLV, -1, LVNI_FOCUSED), FALSE);
 			}
 			SafeRelease(&pFV);
 		}
@@ -9815,9 +9827,9 @@ STDMETHODIMP CteShellBrowser::MessageSFVCB(UINT uMsg, WPARAM wParam, LPARAM lPar
 			}
 		}
 		if (uMsg == SFVM_FSNOTIFY) {
-			if (lParam & (SHCNE_DELETE | SHCNE_RMDIR)) {//21.12.4
-				if (m_hwndLV) {
-					SelectItemEx(NULL, SVSI_DESELECTOTHERS);
+			if (m_hwndLV) {
+				if (lParam & (SHCNE_DELETE | SHCNE_RMDIR)) {//21.12.4
+					SelectItemEx(NULL, SVSI_DESELECTOTHERS | SVSI_NOTAKEFOCUS);
 				}
 			}
 			if (!g_param[TE_AutoArrange]) {

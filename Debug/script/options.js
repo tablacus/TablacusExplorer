@@ -51,16 +51,9 @@ CloseWB = async function (WB, bForce) {
 	g_nResult = 0;
 }
 
-async function GetElementFromPos() {
-	const ptc = await api.Memory("POINT");
-	await api.GetCursorPos(ptc);
-	await api.ScreenToClient(await WebBrowser.hwnd, ptc);
-	return document.elementFromPoint(await ptc.x, await ptc.y);
-}
-
 async function ConfirmThenExec(msg, fn, arg) {
-	const el = await GetElementFromPos();
-	if (el == ui_.elConfirm && ui_.ConfirmMenu && (new Date().getTime() - ui_.ConfirmMenu) < 500) {
+	const el = document.activeElement;
+	if (!el || el == ui_.elConfirm && ui_.ConfirmMenu && (new Date().getTime() - ui_.ConfirmMenu) < 500) {
 		return;
 	}
 	const hMenu = await api.CreatePopupMenu();
@@ -987,7 +980,7 @@ async function SaveMenus() {
 
 async function GetKeyKeyEx(s) {
 	const n = await GetKeyKey(s);
-	return n & 0xff ? await api.sprintf(9, "$%x", n) : s;
+	return n & 0xff ? "$" + n.toString(16) : s;
 }
 
 async function GetKeyKeyG(s) {
@@ -1171,12 +1164,12 @@ async function SetAddon(Id, bEnable, td, Alt) {
 		bEnable = false;
 	}
 	const s = ['<div ', (Alt ? '' : 'draggable="true" ondragstart="Start5(event, this)" ondragend="End5()"'), ' title="', Id, '" Id="', Alt || "Addons_", Id, '">'];
-	s.push('<table><tr style="border-top: 1px solid buttonshadow"', bEnable || bConfig ? "" : ' class="disabled"', '><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id + '">'), '</td><td style="width: 100%"><label for="_', Id, '">', r[4], "&nbsp;", r[5], '<br><input type="button" class="addonbutton" onclick="AddonInfo(\'', Id, '\')" value="Details">');
-	s.push(' <input type="button" class="addonbutton" onclick="AddonRemove(\'', Id, '\');" value="Delete">&nbsp;(', Id, ')<div id="i_', Id, '"></div></td>');
+	s.push('<table><tr style="border-top: 1px solid buttonshadow"', bEnable || bConfig ? "" : ' class="disabled"', '><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id + '">'), '</td><td style="width: 100%"><label for="_', Id, '">', r[4], "&nbsp;", r[5], '<br><input type="button" class="addonbutton" onclick="AddonInfo(\'', Id, '\',\'', Alt || "", '\')" value="Details">');
+	s.push(' <input type="button" class="addonbutton" onclick="AddonRemove(\'', Id, '\');" value="Delete">&nbsp;(', Id, ')<div id="', Alt || "", "i_", Id, '"></div></td>');
 	if (!bLevel) {
 		s.push('<td class="danger middle nowrap right">', await GetTextR("@comres.dll,-1845"), '&nbsp;</td>');
 	} else if (bMinVer) {
-		s.push('<td class="danger middle nowrap right">', await GetTextR("@appmgr.dll,-3"), ' ', r[1].replace(/^20/, ""), ' ', await GetText("is required."), '</td>');
+		s.push('<td class="danger middle nowrap right">', await GetTextR("@mstask.dll,-319"), " ", r[1].replace(/^20/, ""), ' ', await GetText("is required."), '</td>');
 	} else if (r[6]) {
 		s.push('<td class="nowrap middle" style="padding-right: 1em"><input type="button" onclick="AddonOptions(\'', Id, '\')" class="addonbuttonopt" id="opt_', Id, '" value="Options"></td>');
 	}
@@ -1243,8 +1236,8 @@ function GetRowIndexById(id) {
 	} catch (e) { }
 }
 
-async function AddonInfo(Id) {
-	const o = document.getElementById("i_" + Id);
+async function AddonInfo(Id, Alt) {
+	const o = document.getElementById(Alt + "i_" + Id);
 	if (o.innerHTML) {
 		if (!o.style.display) {
 			o.style.display = "none";
@@ -1409,18 +1402,17 @@ async function ContinueOptions() {
 
 InitOptions = async function () {
 	ApplyLang(document);
-	(async function () {
-		const r = await Promise.all([GetText("Get %s"), GetTextR("@UIAutomationCore.dll,-220[Icons]"), GetTextR("@docprop.dll,-107"), GetText("File"), te.Data.DataFolder, fso.FolderExists(BuildPath(ui_.Installed, "layout")), GetLangId(), GetAltText("Get Icons"), GetAltText("Get Language file")]);
+	Promise.all([GetText("Get %s"), GetTextR("@UIAutomationCore.dll,-220[Icons]"), GetTextR("@docprop.dll,-107"), GetText("File"), te.Data.DataFolder, fso.FolderExists(BuildPath(ui_.Installed, "layout")), GetLangId(), GetAltText("Get Icons"), GetAltText("Get Language file"), GetText("Options")]).then(function (r) {
 		if (/^zh/i.test(r[6])) {
 			r[0] = r[0].replace(" ", "");
 		}
-		document.getElementById("tab1_3").innerHTML = r[7] || await api.sprintf(99, r[0], r[1]);
-		const sl = r[8] || await api.sprintf(99, r[0], r[2] + (/^ja|^zh/i.test(r[6]) ? "" : " ") + (r[3].toLowerCase()));
+		document.getElementById("tab1_3").innerHTML = r[7] || r[0].replace("%s", r[1]);
+		const sl = r[8] || r[0].replace("%s", r[2] + (/^ja|^zh/i.test(r[6]) ? "" : " ") + (r[3].toLowerCase()));
 		document.getElementById("tab1_4").innerHTML = sl;
 		document.getElementById("AddLang").value = sl;
-		document.title = await GetText("Options") + " - " + TITLE;
+		document.title = r[9] + " - " + TITLE;
 		document.F.ButtonInitConfig.disabled = (ui_.Installed == r[4]) || !r[5];
-	})();
+	});
 	MainWindow.g_.OptionsWindow = $;
 	let data = [];
 	const data1 = [];
@@ -1681,7 +1673,7 @@ InitDialog = async function () {
 			if (k == 42 || k == 29 || k == 56 || k == 347) {
 				return false;
 			}
-			const s = await api.sprintf(10, "$%x", k | await GetKeyShift());
+			const s = "$" + ((k | await GetKeyShift()).toString(16));
 			returnValue = await GetKeyName(s);
 			if (/^\$\w02a$|^\$\w01d$|^\$\w038$/i.test(returnValue)) {
 				returnValue = await GetKeyName(s.slice(0, 3) + "1e").replace(/\+A$/, "");
@@ -2300,7 +2292,7 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter, f) {
 }
 
 async function PortableX(Id) {
-	ConfirmThenExec(await GetText("Portable"), function () {
+	ConfirmThenExec(await GetText("Portable"), async function () {
 		const o = GetElement(Id);
 		const s = await fso.GetDriveName(ui_.TEPath);
 		SetValue(o, o.value.replace(await wsh.ExpandEnvironmentStrings("%UserProfile%"), "%UserProfile%").replace(new RegExp('^("?)' + s, "igm"), "$1%Installed%").replace(new RegExp('( "?)' + s, "igm"), "$1%Installed%").replace(new RegExp('(:)' + s, "igm"), "$1%Installed%"));
@@ -2460,7 +2452,7 @@ SelectIcon = function (o) {
 }
 
 TestX = async function (id, f) {
-	ConfirmThenExec(await GetText("Test"), function () {
+	ConfirmThenExec(await GetText("Test"), async function () {
 		if (!f) {
 			f = document.F;
 		}
@@ -2489,8 +2481,8 @@ SetImage = async function (f, n) {
 ShowIcon = ShowIconEx;
 
 async function SelectLangID(o) {
-	const el = await GetElementFromPos();
-	if (el == ui_.elConfirm && ui_.ConfirmMenu && (new Date().getTime() - ui_.ConfirmMenu) < 500) {
+	const el = document.activeElement;
+	if (!el || el == ui_.elConfirm && ui_.ConfirmMenu && (new Date().getTime() - ui_.ConfirmMenu) < 500) {
 		return;
 	}
 	let Langs = [];

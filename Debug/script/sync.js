@@ -2506,7 +2506,7 @@ GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arCon
 			}
 			break;
 		case 7:
-			const dir = [GetText("Check for updates"), GetText("Get Add-ons..."), GetAltText("Get Icons...") || api.sprintf(99, GetText("Get %s..."), GetTextR("@UIAutomationCore.dll,-220[Icons]")), null, api.sprintf(99, GetText("&About %s"), "Tablacus Explorer")];
+			const dir = [GetText("Check for updates"), GetText("Get Add-ons..."), GetAltText("Get Icons...") || api.sprintf(99, GetText("Get %s..."), GetTextR("@UIAutomationCore.dll,-220[Icons]")), null, GetText("&About %s").replace("%s", "Tablacus Explorer")];
 			for (let i = 0; i < dir.length; ++i) {
 				const s = dir[i];
 				api.InsertMenu(hMenu, MAXINT, MF_BYPOSITION | (s === null ? MF_SEPARATOR : MF_STRING), i + 0x4011, s);

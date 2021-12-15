@@ -311,7 +311,7 @@ CheckUpdate2 = async function (xhr, url, arg1) {
 		let bUpdate = arg1 && GetNum(await arg1.silent);
 		if (!bUpdate) {
 			const res = /^(.*) (\d.*)/i.exec(await AboutTE(2));
-			bUpdate = await MessageBox(await api.sprintf(99, await GetText("%s is up to date."), res[1]) + "\n" + res[2], TITLE, MB_ICONINFORMATION);
+			bUpdate = await MessageBox(amp2ul(await GetText("%s is up to date.")).replace("%s", res[1]) + "\n" + res[2], TITLE, MB_ICONINFORMATION);
 		}
 		if (bUpdate) {
 			if (await api.GetKeyState(VK_SHIFT) >= 0 || await api.GetKeyState(VK_CONTROL) >= 0) {
@@ -321,12 +321,12 @@ CheckUpdate2 = async function (xhr, url, arg1) {
 		}
 	}
 	if (!(arg1 && GetNum(await arg1.noconfirm))) {
-		let s = (await api.LoadString(hShell32, 60) || "%").replace(/%.*/, await api.sprintf(99, "%d.%d.%d (%.1lfKB)", ver / 10000 % 100, ver / 100 % 100, ver % 100, await arg.size));
+		const s = [await GetTextR("@mstask.dll,-319"), " ", Math.floor(ver / 10000) % 100, ".", Math.floor(ver / 100) % 100, ".", ver % 100, " (", (await arg.size).toFixed(1), "KB)"];
 		const lang = (await GetLangId()).replace(/\W.*$/, "");
 		if (res = new RegExp("__" + lang + ":([^_]+)__", "i").exec(json.body) || /__([^_]+)__/.exec(json.body)) {
-			s += "\n" + res[1] + "\n";
+			s.push("\n", res[1]);
 		}
-		if (!await confirmOk([await GetText("Update available"), s, await GetText("Do you want to install it now?")].join("\n"))) {
+		if (!await confirmOk([await GetText("Update available"), s.join(""), "", await GetText("Do you want to install it now?")].join("\n"))) {
 			return;
 		}
 	}

@@ -14,46 +14,46 @@
           <td class="top">
             <div id="tab_" class="pane nowrap" style="width: 12em; overflow-x: hidden; overflow-y: auto;">
               <a id="tabbtn0" class="treebutton" onclick="ClickButton(0);"></a>
-              <label id="tab0" class="button" style="width: 88%" onmousedown="ClickTree(this);">General</label>
+              <label id="tab0" class="button" style="width: 91%" onmousedown="ClickTree(this);">General</label>
               <br>
               <div id="tab0_" style="margin-left: 1.667em; display: none">
-                <label id="tab0_1" class="button" class="full" onmousedown="ClickTree(this);">Mouse</label>
+                <label id="tab0_1" class="button" style="width: 100%" onmousedown="ClickTree(this);">Mouse</label>
                 <br>
               </div>
               <a id="tabbtn1" class="treebutton" onclick="ClickButton(1);"></a>
-              <label id="tab1" class="button" style="width: 88%" onmousedown="ClickTree(this);">Add-ons</label>
+              <label id="tab1" class="button" style="width: 91%" onmousedown="ClickTree(this);">Add-ons</label>
               <br>
               <div id="tab1_" style="margin-left: 1.667em; display: none">
-                <label id="tab1_1" class="button" class="full" onmousedown="ClickTree(this);">Get Add-ons</label><br>
-                <label id="tab1_3" class="button" class="full" onmousedown="ClickTree(this);">Get Icons</label><br>
-                <label id="tab1_4" class="button" class="full" onmousedown="ClickTree(this);">Get Lang</label><br>
+                <label id="tab1_1" class="button" style="width: 100%" onmousedown="ClickTree(this);">Get Add-ons</label><br>
+                <label id="tab1_3" class="button" style="width: 100%" onmousedown="ClickTree(this);">Get Icons</label><br>
+                <label id="tab1_4" class="button" style="width: 100%" onmousedown="ClickTree(this);">Get Lang</label><br>
               </div>
               <a id="tabbtn2" class="treebutton" onclick="ClickButton(2);"></a>
-              <label id="tab2" class="button" style="width: 88%" onmousedown="ClickButton(2, true);ClickTree(document.getElementById('tab2_0'), null, 'Menus');">Menus</label>
+              <label id="tab2" class="button" style="width: 91%" onmousedown="ClickButton(2, true);ClickTree(document.getElementById('tab2_0'), null, 'Menus');">Menus</label>
               <br>
               <div id="tab2_" style="margin-left: 1.667em; display: none">
               </div>
               <a id="tabbtn4" class="treebutton" onclick="ClickButton(4);"></a>
-              <label id="tab4" class="button" style="width: 88%" onmousedown="ClickTree(this, null, 'Tree');">Tree</label>
+              <label id="tab4" class="button" style="width: 91%" onmousedown="ClickTree(this, null, 'Tree');">Tree</label>
               <br>
               <div id="tab4_" style="margin-left: 1.667em; display: none">
-                <label id="tab4_1" class="button" class="full" onmousedown="ClickTree(this, null, 'Tree');">Root</label>
+                <label id="tab4_1" class="button" style="width: 100%" onmousedown="ClickTree(this, null, 'Tree');">Root</label>
                 <br>
               </div>
               <a id="tabbtn5" class="treebutton" onclick="ClickButton(5);"></a>
-              <label id="tab5" class="button" style="width: 88%" onmousedown="ClickTree(this, null, 'View');">List</label>
+              <label id="tab5" class="button" style="width: 91%" onmousedown="ClickTree(this, null, 'View');">List</label>
               <br>
               <div id="tab5_" style="margin-left: 1.667em; display: none">
-                <label id="tab5_1" class="button" class="full" onmousedown="ClickTree(this, null, 'List');">Style</label>
+                <label id="tab5_1" class="button" style="width: 100%" onmousedown="ClickTree(this, null, 'List');">Style</label>
                 <br>
-                <label id="tab5_2" class="button" class="full" onmousedown="ClickTree(this, null, 'List');">Filter</label>
+                <label id="tab5_2" class="button" style="width: 100%" onmousedown="ClickTree(this, null, 'List');">Filter</label>
                 <br>
               </div>
               <a id="tabbtn3" class="treebutton" onclick="ClickButton(3);"></a>
-              <label id="tab3" class="button" style="width: 88%" onmousedown="ClickTree(this, null, 'Tab');">Tabs</label>
+              <label id="tab3" class="button" style="width: 91%" onmousedown="ClickTree(this, null, 'Tab');">Tabs</label>
               <br>
               <div id="tab3_" style="margin-left: 1.667em; display: none">
-                <label id="tab3_1" class="button" class="full" onmousedown="ClickTree(this, null, 'Tab');">Advanced</label>
+                <label id="tab3_1" class="button" style="width: 100%" onmousedown="ClickTree(this, null, 'Tab');">Advanced</label>
                 <br>
               </div>
             </div>
@@ -78,7 +78,7 @@
               <label alt="Tool bar icon">Tool bar<i> </i>Icon</label><br>
               <input type="text" id="Conf_IconSize" class="number"><label>@mspaint.exe,-50047[px]</label>
               <input type="button" value="Default" onclick="SetDefault(document.F.Conf_IconSize, '');"><br><br>
-              <label alt="Internal Tool bar icon">@mmsys.cpl,-551[Internal]<i> </i>Tool bar<i> </i>Icon</label><br>
+              <label alt="Internal Tool bar icon">@ifmon.dll,-9010<i> </i>Tool bar<i> </i>Icon</label><br>
               <input type="text" id="Conf_InnerIconSize" class="number"><label>@mspaint.exe,-50047[px]</label>
               <input type="button" value="Default" onclick="SetDefault(document.F.Conf_InnerIconSize, '');"><br><br>
               <label>Menus</label><br>
@@ -111,7 +111,7 @@
               <label>Trails</label><br>
               <input type="text" id="Conf_TrailColor" title="Color" placeholder="#00ff00" style="width: 9em" onchange="ChangeColor1(this)">
               <input id="Color_Conf_TrailColor" type="button" value=" " class="color" onclick="ChooseColor2(this)"><br>
-              <input type="text" name="Conf_TrailSize" title="Size" placeholder="Size" class="number"><label>@mspaint.exe,-50047[px]</label>
+              <input type="text" name="Conf_TrailSize" title="Size" class="number"><label>@mspaint.exe,-50047[px]</label>
               <input type="button" value="-" onclick="AddValue('Conf_TrailSize', -1, 0, 16)">
               <input type="button" value="+" onclick="AddValue('Conf_TrailSize', 1, 0, 16)">
               <br><br>
