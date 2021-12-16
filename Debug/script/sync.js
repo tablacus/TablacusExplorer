@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20211210 ? te.Version : 20211215;
+		return te.Version < 20211215 ? te.Version : 20211216;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -2833,10 +2833,9 @@ GetAddonInfo = function (Id) {
 	}
 	const info = api.CreateObject("Object");
 
-	const path = te.Data.Installed;
 	const xml = api.CreateObject("Msxml2.DOMDocument");
 	xml.async = false;
-	const xmlfile = BuildPath(path, "addons", Id, "config.xml");
+	const xmlfile = BuildPath(te.Data.Installed, "addons", Id, "config.xml");
 	if (fso.FileExists(xmlfile)) {
 		xml.load(xmlfile);
 
@@ -2856,6 +2855,17 @@ GetAddonInfo = function (Id) {
 		}
 	}
 	return info;
+}
+
+FindAddonInfo = function (Id, q) {
+	const info = GetAddonInfo(Id);
+	for (let id in info) {
+		const s = info[id];
+		if ((s + GetAltText(s, true)).toUpperCase().indexOf(q) >= 0) {
+			return true;
+		}
+	}
+	return false;
 }
 
 GetAddonInfoName = function (Id, s) {
@@ -3168,10 +3178,10 @@ GetSourceText = function (s) {
 	}
 }
 
-GetAltText = function (id) {
+GetAltText = function (id, bNull) {
 	try {
 		id = id.replace(/&amp;/g, "&");
-		return MainWindow.Lang[id.toLowerCase()] || (/^en/i.test(GetLangId()) ? id : "");
+		return MainWindow.Lang[id.toLowerCase()] || !bNull && (/^en/i.test(GetLangId()) ? id : "");
 	} catch (e) { }
 }
 

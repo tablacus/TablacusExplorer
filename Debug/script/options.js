@@ -1130,6 +1130,10 @@ async function LoadAddons() {
 		}
 	}
 	OpenAddonsOptions();
+	const nSort = await te.Data.Conf_AddonsSort;
+	if (nSort) {
+		SortAddons1(nSort - 1);
+	}
 }
 
 function OpenAddonsOptions() {
@@ -1245,8 +1249,7 @@ async function AddonInfo(Id, Alt) {
 		}
 		o.style.display = "";
 	} else {
-		const info = await GetAddonInfo(Id);
-		o.innerHTML = await info.Description;
+		o.innerHTML = await GetAddonInfo(Id).Description;
 	}
 	if (o.getBoundingClientRect().bottom > document.getElementById("panel1").offsetHeight) {
 		o.scrollIntoView(false);
@@ -1254,8 +1257,7 @@ async function AddonInfo(Id, Alt) {
 }
 
 async function AddonWebsite(Id) {
-	const info = await GetAddonInfo(Id);
-	wsh.run(await info.URL);
+	wsh.run(await GetAddonInfo(Id).URL);
 }
 
 function AddonEnable(o, Id) {
@@ -2375,8 +2377,7 @@ async function InitAddonOptions(bFlag) {
 	returnValue = false;
 	await LoadLang2(BuildPath(ui_.Installed, "addons", Addon_Id, "lang", await GetLangId() + ".xml"));
 	await ApplyLang(document);
-	info = await GetAddonInfo(Addon_Id);
-	document.title = await info.Name;
+	document.title = await GetAddonInfo(Addon_Id).Name;
 	SetOnChangeHandler();
 	IsChanged = function () {
 		return g_bChanged || g_Chg.Data;
@@ -2562,24 +2563,46 @@ async function CheckAddon(Id) {
 }
 
 function AddonsSearch() {
-	if (xmlAddons) {
-		AddonsAppend()
-	} else {
-		GetAddons();
+	if (g_SortMode == 1) {
+		SortAddons1(g_nSort[1]);
+	} else if (g_SortMode == "1_1") {
+		if (xmlAddons) {
+			AddonsAppend()
+		} else {
+			GetAddons();
+		}
 	}
 	return true;
 }
 
+async function ClearSearch(el, Id) {
+	const elText = document.getElementById(Id);
+	if (elText.value) {
+		ConfirmThenExec(await GetTextR("@dinput8.dll,-6300"), async function () {
+			elText.value = "";
+			FireEvent(el, "click");
+		});
+	}
+}
+
 async function AddonsList(xhr2) {
+	if (await api.GetKeyState(VK_CONTROL) >= 0) {
+		wsh.SendKeys("{ESC}");
+	}
 	if (xmlAddons) {
 		return;
 	}
 	if (await xhr2) {
 		xhr = await xhr2;
 	}
-	const xml = await xhr.get_responseXML ? await xhr.get_responseXML() : await xhr.responseXML;
+	let xml;
+	if (window.chrome) {
+		xml = new DOMParser().parseFromString(await xhr.get_responseText ? await xhr.get_responseText() : xhr.responseText, "application/xml");
+	} else {
+		xml = xhr.get_responseXML ? xhr.get_responseXML() : xhr.responseXML;
+	}
 	if (xml) {
-		xmlAddons = await xml.getElementsByTagName("Item");
+		xmlAddons = xml.getElementsByTagName("Item");
 		AddonsAppend()
 	}
 }
@@ -2609,9 +2632,12 @@ async function AddonsAppend() {
 	try {
 		Progress.SetAnimation(hShell32, 150);
 		Progress.SetLine(1, await api.LoadString(hShell32, 13585) || await api.LoadString(hShell32, 6478), true);
-		const nLen = await GetLength(xmlAddons);
-		for (let i = 0; !await Progress.HasUserCancelled(i, nLen, 2) && i < nLen; ++i) {
-			await ArrangeAddon(await xmlAddons[i], td);
+		let bCancelled = false;
+		for (let i = 0; !bCancelled && i < xmlAddons.length; ++i) {
+			Promise.all([Progress.HasUserCancelled(i, xmlAddons.length, 2)]).then(function (r) {
+				bCancelled = r[0];
+			});
+			await ArrangeAddon(xmlAddons[i], td);
 		}
 		td.sort();
 		if (g_nSort["1_1"] == 1) {
@@ -2625,10 +2651,11 @@ async function AddonsAppend() {
 }
 
 async function ArrangeAddon(xml, td) {
-	const Id = await xml.getAttribute("Id");
+	const Id = xml.getAttribute("Id");
 	const s = [];
 	let strUpdate = "";
-	if (await Search(xml)) {
+	const q = document.getElementById("_GetAddonsQ").value.toUpperCase();
+	if (!q || await Search(xml, q)) {
 		const info = {};
 		for (let i = arLangs.length; i--;) {
 			await GetAddonInfo2(xml, info, arLangs[i]);
@@ -2686,23 +2713,16 @@ async function ArrangeAddon(xml, td) {
 	}
 }
 
-async function Search(xml) {
-	let q = document.getElementById('_GetAddonsQ');
-	if (!q) {
-		return true;
-	}
-	q = q.value.toUpperCase();
-	if (q == "") {
-		return true;
-	}
+async function Search(xml, q) {
 	for (let k = arLangs.length; k-- > 0;) {
 		const items = xml.getElementsByTagName(arLangs[k]);
-		if (await GetLength(items)) {
-			const item = await items[0].childNodes;
-			for (let i = await GetLength(item); i-- > 0;) {
-				const item1 = await item[i];
-				if (await item1.tagName) {
-					if ((await item1.textContent || await item1.text).toUpperCase().indexOf(q) >= 0) {
+		if (items.length) {
+			const item = items[0].childNodes;
+			for (let i = item.length; i-- > 0;) {
+				const item1 = item[i];
+				if (item1.tagName) {
+					const s = item1.textContent || item1.text;
+					if ((s + await GetAltText(s, true)).toUpperCase().indexOf(q) >= 0) {
 						return true;
 					}
 				}
@@ -2811,6 +2831,9 @@ async function IconPacksList1(s, Id, info, json) {
 }
 
 async function IconPacksList(xhr) {
+	if (await api.GetKeyState(VK_CONTROL) >= 0) {
+		wsh.SendKeys("{ESC}");
+	}
 	if (xhr) {
 		g_xhrIcons = xhr;
 	} else {
@@ -2868,6 +2891,9 @@ async function DeleteIconPacks() {
 }
 
 async function LangPacksList(xhr) {
+	if (await api.GetKeyState(VK_CONTROL) >= 0) {
+		wsh.SendKeys("{ESC}");
+	}
 	if (xhr) {
 		g_xhrLang = xhr;
 	} else {
@@ -2879,14 +2905,29 @@ async function LangPacksList(xhr) {
 	const text = await xhr.get_responseText ? await xhr.get_responseText() : xhr.responseText;
 	const json = JSON.parse(text);
 	const td = [];
-	const li = await api.GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SSHORTDATE);
-	const bt = await GetText("Install");
+	const bt = await Promise.all([GetText("Install"), GetText("Installed"), api.GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SSHORTDATE), api.Memory("WIN32_FIND_DATA")]);
 	const q = document.getElementById('_GetLangQ').value;
+	const wfd = bt[3];
 	for (let n in json) {
 		const info = json[n];
 		if (!q || await api.PathMatchSpec(JSON.stringify(info), "*" + q + "*")) {
 			const tm = new Date(info.pubDate).getTime();
-			td.push([tm, '<b style="font-size: 1.3em">', info.name, " / ", info.en, "</b><br>", info.author, '	<input type="button" onclick="InstallLang(this)" title="', n, "\n", info.pubDate, '" value="', bt, '" style="float: right"><br>', await api.GetDateFormat(LOCALE_USER_DEFAULT, 0, tm, li)]);
+			let strUpdate = "", nButton = 0;
+			const hFind = await api.FindFirstFile(BuildPath(ui_.Installed, "lang", n), wfd);
+			if (hFind != INVALID_HANDLE_VALUE) {
+				api.FindClose(hFind);
+				if (tm > new Date(await wfd.ftLastWriteTime).getTime() + 2000) {
+					strUpdate = ['<b class="danger nowrap" style="float: right">', await GetText('Update available'), '&nbsp;&nbsp;</b>'].join("");
+				} else {
+					nButton = 1;
+				}
+			}
+			const ar = [tm, '<b style="font-size: 1.3em">', info.name, " / ", info.en, "</b><br>", info.author, '<input type="button" onclick="InstallLang(this)" title="', n, "\n", info.pubDate, '" value="', bt[nButton], '" style="float: right"', nButton ? " disabled" : "", '>', strUpdate, '<br>', await api.GetDateFormat(LOCALE_USER_DEFAULT, 0, tm, bt[2])];
+			if (strUpdate || nButton) {
+				td.unshift(ar);
+			} else {
+				td.push(ar);
+			}
 		}
 	}
 	SetTable(document.getElementById("LangPacks1"), td);
@@ -3045,8 +3086,17 @@ async function SortAddons(el) {
 	const pt = GetPos(el, 1);
 	const n = await api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y + o.offsetHeight, ui_.hwnd, null, null) - 1;
 	api.DestroyMenu(hMenu);
-	if (n < 0) {
-		return;
+	if (n >= 0) {
+		SortAddons1(n);
+	}
+}
+
+async function SortAddons1(n) {
+	if (await api.GetKeyState(VK_CONTROL) >= 0) {
+		wsh.SendKeys("{ESC}");
+	}
+	if ("number" !== typeof n) {
+		n = 3;
 	}
 	if (g_SortMode == 1) {
 		const table = document.getElementById("Addons");
@@ -3057,41 +3107,49 @@ async function SortAddons(el) {
 		while (sorted.rows.length > 0) {
 			sorted.deleteRow(0);
 		}
-		if (n == 3 && /none/i.test(table.style.display)) {
+		const q = document.getElementById("_AddonsQ").value.toUpperCase();
+		if (n == 3 && !q) {
 			table.style.display = "";
 			sorted.style.display = "none";
 		} else {
-			g_nSort[1] = n;
-			let s, ar = [];
-			for (let j = table.rows.length; j--;) {
-				const div = table.rows[j].cells[0].firstChild || {};
-				const Id = (div.id || "").replace("Addons_", "").toLowerCase();
-				if (g_nSort[1] == 0) {
-					s = table.rows[j].cells[0].innerText;
-				} else if (g_nSort[1] == 1) {
-					s = "";
-					const info = await GetAddonInfo(Id);
-					const pubDate = await info.pubDate;
-					if (pubDate) {
-						s = await api.GetDateFormat(LOCALE_USER_DEFAULT, 0, new Date(pubDate).getTime(), "yyyyMMdd");
-					}
-				} else {
-					s = Id;
-				}
-				ar.push(s + "\t" + Id);
-			}
-			ar.sort();
-			if (g_nSort[1] == 1) {
-				ar = ar.reverse();
-			}
+			let s, ar = [], bCancelled = false, nTotal = table.rows.length;
 			const Progress = await api.CreateObject("ProgressDialog");
-			Progress.SetAnimation(hShell32, 150);
-			if (el) {
-				Progress.SetLine(1, await api.LoadString(hShell32, 50690) + " " + el.title, true);
-			}
-			Progress.StartProgressDialog(ui_.hwnd, null, 2);
 			try {
-				for (let i = 0; !await Progress.HasUserCancelled(i, ar.length, 2) && i < ar.length; ++i) {
+				Progress.SetAnimation(hShell32, 150);
+				Progress.SetLine(1, await api.LoadString(hShell32, 13585) || await api.LoadString(hShell32, 6478), true);
+				Progress.StartProgressDialog(ui_.hwnd, null, 2);
+				for (let j = 0; !bCancelled && j < table.rows.length; ++j) {
+					Promise.all([Progress.HasUserCancelled(j, nTotal, 2)]).then(function (r) {
+						bCancelled = r[0];
+					});
+					const div = table.rows[j].cells[0].firstChild || {};
+					const Id = (div.id || "").replace("Addons_", "").toLowerCase();
+					if (!q || await FindAddonInfo(Id, q)) {
+						if (n == 0) {
+							s = table.rows[j].cells[0].innerText;
+						} else if (n == 1) {
+							s = "";
+							const pubDate = await GetAddonInfo(Id).pubDate;
+							if (pubDate) {
+								s = await api.GetDateFormat(LOCALE_USER_DEFAULT, 0, new Date(pubDate).getTime(), "yyyyMMdd");
+							}
+						} else {
+							s = Id;
+						}
+						ar.push(s + "\t" + Id);
+						++nTotal;
+					}
+				}
+				if (n != 3) {
+					ar.sort();
+				}
+				if (n == 1) {
+					ar = ar.reverse();
+				}
+				for (let i = 0; !bCancelled && i < ar.length; ++i) {
+					Promise.all([Progress.HasUserCancelled(table.rows.length + i, nTotal, 2)]).then(function (r) {
+						bCancelled = r[0];
+					});
 					const data = ar[i].split("\t");
 					const Id = data[data.length - 1];
 					AddAddon(sorted, Id, document.getElementById("enable_" + Id).checked, "Sorted_");
@@ -3100,9 +3158,13 @@ async function SortAddons(el) {
 				ShowError(e);
 			}
 			Progress.StopProgressDialog();
-			const bCancelled = await Progress.HasUserCancelled();
 			table.style.display = bCancelled ? "" : "none";
 			sorted.style.display = bCancelled ? "none" : "";
+		}
+		if (g_nSort[1] !== n) {
+			g_nSort[1] = n;
+			te.Data.Conf_AddonsSort = (n + 1) % 4;
+			g_bChanged = true;
 		}
 	} else if (g_SortMode == "1_1") {
 		if (n != g_nSort["1_1"]) {

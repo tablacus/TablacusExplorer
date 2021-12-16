@@ -110,7 +110,7 @@
               <br><br>
               <label>Trails</label><br>
               <input type="text" id="Conf_TrailColor" title="Color" placeholder="#00ff00" style="width: 9em" onchange="ChangeColor1(this)">
-              <input id="Color_Conf_TrailColor" type="button" value=" " class="color" onclick="ChooseColor2(this)"><br>
+              <input id="Color_Conf_TrailColor" type="button" value=" " class="color" title="Color" onclick="ChooseColor2(this)"><br>
               <input type="text" name="Conf_TrailSize" title="Size" class="number"><label>@mspaint.exe,-50047[px]</label>
               <input type="button" value="-" onclick="AddValue('Conf_TrailSize', -1, 0, 16)">
               <input type="button" value="+" onclick="AddValue('Conf_TrailSize', 1, 0, 16)">
@@ -122,15 +122,30 @@
             <!--panel_end-->
 
             <div class="panel hide" id="panel1">
-              <table id="Addons" class="full">
-                <tr>
-                  <th>
-                    <label>Please wait.</label>
-                  </th>
-                </tr>
-              </table>
-              <table id="SortedAddons" class="full">
-              </table>
+              <div id="bar">
+                <table>
+                  <tr>
+                    <td class="full">
+                      <input type="text" name="_AddonsQ" id="_AddonsQ" class="full"
+                        onkeydown="KeyDownEvent(event, AddonsSearch)">
+                    </td>
+                    <td>
+                      <input type="button" value="Search" onclick="AddonsSearch()" oncontextmenu="ClearSearch(this, '_AddonsQ'); return false">
+                    </td>
+                  </tr>
+                </table>
+              </div>
+              <div id="panel1_" class="full">
+                <table id="Addons" class="full">
+                  <tr>
+                    <th>
+                      <label>Please wait.</label>
+                    </th>
+                  </tr>
+                </table>
+                <table id="SortedAddons" class="full">
+                </table>
+              </div>
             </div>
             <!--panel_end-->
 
@@ -142,7 +157,7 @@
                       <input type="text" name="_GetAddonsQ" id="_GetAddonsQ" class="full" onkeydown="KeyDownEvent(event, AddonsSearch)">
                     </td>
                     <td>
-                      <input type="button" value="Search" onclick="AddonsSearch()">
+                      <input type="button" value="Search" onclick="AddonsSearch()" oncontextmenu="ClearSearch(this, '_GetAddonsQ'); return false">
                     </td>
                   </tr>
                 </table>
@@ -171,7 +186,7 @@
                       <input type="text" id="_GetIconsQ" class="full" onkeydown="KeyDownEvent(event, IconPacksList)">
                     </td>
                     <td>
-                      <input type="button" value="Search" onclick="IconPacksList()">
+                      <input type="button" value="Search" onclick="IconPacksList()" oncontextmenu="ClearSearch(this, '_GetIconsQ'); return false">
                     </td>
                   </tr>
                 </table>
@@ -196,7 +211,7 @@
                       <input type="text" id="_GetLangQ" class="full" onkeydown="KeyDownEvent(event, LangPacksList)">
                     </td>
                     <td>
-                      <input type="button" value="Search" onclick="LangPacksList()">
+                      <input type="button" value="Search" onclick="LangPacksList()" oncontextmenu="ClearSearch(this, '_GetLangQ'); return false">
                     </td>
                   </tr>
                 </table>

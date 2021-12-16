@@ -343,15 +343,19 @@ amp2ul = function (s) {
 }
 
 GetAddonInfo2 = async function (xml, info, Tag, bTrans) {
-	const items = await xml.getElementsByTagName(Tag);
-	if (await GetLength(items)) {
-		const item = await items[0].childNodes;
-		const nLen = await GetLength(item);
-		for (let i = 0; i < nLen; ++i) {
-			const item1 = await item[i];
-			const n = await item1.tagName;
-			const s = await item1.text || await item1.textContent;
-			info[n] = (bTrans && /Name|Description/i.test(n) ? await GetText(s) : s);
+	const items = xml.getElementsByTagName(Tag);
+	if (items.length) {
+		const item = items[0].childNodes;
+		for (let i = 0; i < item.length; ++i) {
+			const item1 = item[i];
+			const n = item1.tagName;
+			const s = item1.text || item1.textContent;
+			if (bTrans && /Name|Description/i.test(n)) {
+				info[n] = await GetText(s);
+				info['$' + n] = s;
+			} else {
+				info[n] = s;
+			}
 		}
 	}
 }
