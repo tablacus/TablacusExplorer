@@ -426,3 +426,9 @@ if (!String.fromCodePoint) {
 		return cp < 0 ? String.fromCharCode(n) : String.fromCharCode(0xd800 | (cp >> 10), 0xDC00 | (cp & 0x3ff));
 	}
 }
+
+if (!Array.isArray) {
+	Array.isArray = function (arg) {
+		return Object.prototype.toString.call(arg) === '[object Array]';
+	};
+}

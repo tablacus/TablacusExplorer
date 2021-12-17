@@ -8807,16 +8807,17 @@ STDMETHODIMP CteShellBrowser::SelectItem(VARIANT *pvfi, int dwFlags)
 			int nIndex = GetIntFromVariant(pvfi);
 			int nCount = GetFolderViewAndItemCount(&pFV, SVGIO_ALLVIEW);
 			if (nIndex < nCount) {
+				if (m_hwndLV && !(dwFlags & (SVSI_SELECT | SVSI_DESELECTOTHERS))) {//21.12.15
+					if (nIndex == ListView_GetNextItem(m_hwndLV, -1, LVNI_SELECTED)) {
+						if (ListView_GetNextItem(m_hwndLV, nIndex, LVNI_SELECTED) < 0) {
+							dwFlags |= SVSI_DESELECTOTHERS;
+						}
+					}
+				}
 				if (dwFlags & (SVSI_SELECTIONMARK | (SVSI_KEYBOARDSELECT & ~SVSI_SELECT))) {//21.4.7
 					pFV->SelectItem(nIndex, dwFlags & (SVSI_SELECTIONMARK | SVSI_KEYBOARDSELECT | SVSI_NOTAKEFOCUS));
 				}
 				hr = pFV->SelectItem(nIndex, dwFlags & ~(SVSI_SELECTIONMARK | (SVSI_KEYBOARDSELECT & ~SVSI_SELECT)));
-				if (dwFlags == SVSI_DESELECT && m_hwndLV) {//21.12.15
-					if (ListView_GetNextItem(m_hwndLV, -1, LVNI_SELECTED) < 0) {
-						pFV->SelectItem(nIndex, SVSI_SELECT);
-						m_pShellView->SelectItem(NULL, SVSI_DESELECTOTHERS);
-					}
-				}
 			}
 			SafeRelease(&pFV);
 		} else {
@@ -8855,18 +8856,29 @@ HRESULT CteShellBrowser::SelectItemEx(LPITEMIDLIST pidl, int dwFlags)
 	HRESULT hr = E_FAIL;
 	if (m_pShellView) {
 		LPITEMIDLIST pidlLast = ILFindLastID(pidl);
+
+		if (m_hwndLV && !(dwFlags & (SVSI_SELECT | SVSI_DESELECTOTHERS))) {//21.12.15
+			int nSel = ListView_GetNextItem(m_hwndLV, -1, LVNI_SELECTED);
+			if (nSel >= 0) {
+				IFolderView *pFV = NULL;
+				if (GetFolderViewAndItemCount(&pFV, SVGIO_SELECTION) == 1) {
+					LPITEMIDLIST pidlSel = NULL;
+					if SUCCEEDED(pFV->Item(nSel, &pidlSel)) {
+						if (ILIsEqual(pidlLast, pidlSel)) {
+							dwFlags |= SVSI_DESELECTOTHERS;
+						}
+						teILFreeClear(&pidlSel);
+					}
+				}
+				SafeRelease(&pFV);
+			}
+		}
 		if (dwFlags & (SVSI_SELECTIONMARK | (SVSI_KEYBOARDSELECT & ~SVSI_SELECT))) {//21.4.7
 			m_pShellView->SelectItem(pidlLast, dwFlags & (SVSI_SELECTIONMARK | SVSI_KEYBOARDSELECT | SVSI_NOTAKEFOCUS));
 		}
 		hr = m_pShellView->SelectItem(pidlLast, dwFlags & ~(SVSI_SELECTIONMARK | (SVSI_KEYBOARDSELECT & ~SVSI_SELECT)));
 		if (FAILED(hr) && (dwFlags & SVSI_DESELECTOTHERS)) {
 			hr = m_pShellView->SelectItem(pidlLast, SVSI_DESELECTOTHERS);
-		}
-		if (dwFlags == SVSI_DESELECT && m_hwndLV) {//21.12.15
-			if (ListView_GetNextItem(m_hwndLV, -1, LVNI_SELECTED) < 0) {
-				m_pShellView->SelectItem(pidlLast, SVSI_SELECT);
-				m_pShellView->SelectItem(pidlLast, SVSI_DESELECTOTHERS);
-			}
 		}
 	}
 	return hr;
@@ -9323,7 +9335,7 @@ HRESULT CteShellBrowser::BrowseToObject(DWORD dwFrame, FOLDERVIEWOPTIONS fvoFlag
 				m_pExplorerBrowser->BrowseToIDList(g_pidls[CSIDL_CDBURN_AREA], SBSP_ABSOLUTE);
 			}
 		}
-		hr = m_pExplorerBrowser->BrowseToObject(m_pSF2, SBSP_ABSOLUTE | SBSP_NOAUTOSELECT);
+		hr = m_pExplorerBrowser->BrowseToObject(m_pSF2, SBSP_ABSOLUTE);
 	} catch (...) {
 		hr = E_FAIL;
 		g_nException = 0;
@@ -9827,11 +9839,6 @@ STDMETHODIMP CteShellBrowser::MessageSFVCB(UINT uMsg, WPARAM wParam, LPARAM lPar
 			}
 		}
 		if (uMsg == SFVM_FSNOTIFY) {
-			if (m_hwndLV) {
-				if (lParam & (SHCNE_DELETE | SHCNE_RMDIR)) {//21.12.4
-					SelectItemEx(NULL, SVSI_DESELECTOTHERS | SVSI_NOTAKEFOCUS);
-				}
-			}
 			if (!g_param[TE_AutoArrange]) {
 				if (lParam & (SHCNE_CREATE | SHCNE_MKDIR)) {
 					m_dwTickNotify = GetTickCount();

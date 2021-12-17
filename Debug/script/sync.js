@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20211215 ? te.Version : 20211216;
+		return te.Version < 20211217 ? te.Version : 20211217;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1724,7 +1724,7 @@ IsExists = function (path) {
 	const wfd = api.Memory("WIN32_FIND_DATA");
 	const hFind = api.FindFirstFile(path.replace(/\\$/, ""), wfd);
 	api.FindClose(hFind);
-	return hFind != INVALID_HANDLE_VALUE;
+	return hFind != INVALID_HANDLE_VALUE && wfd;
 }
 
 GetNonExistent = function (path) {
@@ -1883,6 +1883,11 @@ CreateFile1 = function (path) {
 
 FormatDateTime = function (s) {
 	return new Date(s).getTime() > 0 ? (api.GetDateFormat(LOCALE_USER_DEFAULT, 0, s, api.GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SSHORTDATE)) + " " + api.GetTimeFormat(LOCALE_USER_DEFAULT, 0, s, api.GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_STIMEFORMAT))) : "";
+};
+
+FormatDate = function (s) {
+	const tm = new Date(s).getTime();
+	return tm > 0 ? (api.GetDateFormat(LOCALE_USER_DEFAULT, 0, tm, api.GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SSHORTDATE))) : "";
 };
 
 Navigate2 = function (path, NewTab) {

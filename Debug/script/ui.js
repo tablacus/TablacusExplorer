@@ -517,23 +517,37 @@ ApplyLangTag = async function (o) {
 	if (o) {
 		for (let i = 0; i < o.length; ++i) {
 			(async function (el) {
-				let s, alt;
+				let s, cn;
 				if (s = el.title) {
 					el.title = (await GetTextR(s)).replace(/\(&\w\)|&/, "");
 				}
 				if (s = el.getAttribute("alt")) {
 					if (SameText(el.tagName, "label")) {
 						if (s = await GetAltText(s)) {
-							const res = /(<input[^>]*>)/i.exec(el.innerHTML);
-							el.innerHTML = (res ? res[1] : "") + s.replace(/\(&\w\)|&/, "");
+							if (cn = el.childNodes) {
+								for (let j = cn.length; j-- > 0;) {
+									const tn = cn[j].tagName;
+									if (tn) {
+										if (SameText(tn, "input")) {
+											continue;
+										}
+									} else if (s) {
+										cn[j].data = s.replace(/\(&\w\)|&/, "");
+										s = "";
+										continue;
+									}
+									el.removeChild(cn[j]);
+								}
+							}
+							el.removeAttribute("alt");
 							return;
 						}
 					}
 				}
-				if (s = el.childNodes) {
-					for (let j = s.length; j-- > 0;) {
-						if (!s[j].tagName) {
-							s[j].data = amp2ul(await GetTextR(s[j].data.replace(/&amp;/ig, "&")));
+				if (cn = el.childNodes) {
+					for (let j = cn.length; j-- > 0;) {
+						if (!cn[j].tagName) {
+							cn[j].data = amp2ul(await GetTextR(cn[j].data.replace(/&amp;/ig, "&")));
 						}
 					}
 				}
@@ -1353,6 +1367,24 @@ KeyDownEvent = function (ev, vEnter, vCancel) {
 
 GetIconSizeEx = function (item) {
 	return GetIconSize(item.getAttribute("IconSize"), /Inner/i.test(item.getAttribute("Location")) && ui_.InnerIconSize);
+}
+
+ConfirmThenExec = async function (msg, fn, arg) {
+	const el = document.activeElement;
+	if (!el || el == ui_.elConfirm && ui_.ConfirmMenu && (new Date().getTime() - ui_.ConfirmMenu) < 500) {
+		return;
+	}
+	const hMenu = await api.CreatePopupMenu();
+	await api.InsertMenu(hMenu, 0, MF_BYPOSITION | MF_STRING, 1, await msg);
+	await api.InsertMenu(hMenu, 1, MF_BYPOSITION | MF_STRING, 0, await GetText("Cancel"));
+	const pt = GetPos(el || o, 9);
+	if (await api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, ui_.hwnd, null, null)) {
+		fn.apply(null, arg);
+	} else {
+		ui_.ConfirmMenu = new Date().getTime();
+		ui_.elConfirm = el;
+	}
+	api.DestroyMenu(hMenu);
 }
 
 if (window.chrome) {
