@@ -1198,8 +1198,13 @@ MakeKeySelect = async function () {
 	oa[oa.length - 1].text = await GetText("Select");
 	s = [];
 	for (let j = 256; j >= 0; j -= 256) {
+		let r = [];
 		for (let i = 128; i > 0; i--) {
-			const v = await api.GetKeyNameText((i + j) * 0x10000);
+			r[i] = api.GetKeyNameText((i + j) * 0x10000);
+		}
+		r = await Promise.all(r);
+		for (let i = 128; i > 0; i--) {
+			const v = r[i];
 			if (v && v.charCodeAt(0) > 32) {
 				s.push(v);
 			}
@@ -1217,7 +1222,7 @@ MakeKeySelect = async function () {
 			j = s[i];
 			const o = oa[++oa.length - 1];
 			o.value = j;
-			o.text = j + "\x20";
+			o.text = j;
 		}
 	}
 }

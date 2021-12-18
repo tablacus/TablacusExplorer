@@ -644,7 +644,7 @@ EditX = async function (mode, form) {
 	}
 	const o = form[mode + "Name"];
 	if (o) {
-		o.value = await GetText(a[3] || "");
+		o.value = a[3] ? await GetText(a[3]) : "";
 	}
 }
 
@@ -1141,7 +1141,7 @@ async function SetAddon(Id, bEnable, td, Alt) {
 	if (!td) {
 		td = document.getElementById(Alt || "Addons_" + Id).parentNode;
 	}
-	const info = await GetAddonInfo(Id);
+	const info = GetAddonInfo(Id);
 	const r = await Promise.all([info.Level, info.MinVersion, info.Config, AboutTE(0), info.Name, info.Version, info.Options]);
 	const bLevel = (!window.chrome || r[0] > 1);
 	const bConfig = GetNum(r[2]);
@@ -1153,9 +1153,18 @@ async function SetAddon(Id, bEnable, td, Alt) {
 	s.push('<table><tr style="border-top: 1px solid buttonshadow"', bEnable || bConfig ? "" : ' class="disabled"', '><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id + '">'), '</td><td style="width: 100%"><label for="_', Id, '">', r[4], "&nbsp;", r[5], '<br><input type="button" class="addonbutton" onclick="AddonInfo(\'', Id, '\',\'', Alt || "", '\')" value="Details">');
 	s.push(' <input type="button" class="addonbutton" onclick="AddonRemove(\'', Id, '\');" value="Delete">&nbsp;(', Id, ')<div id="', Alt || "", "i_", Id, '"></div></td>');
 	if (!bLevel) {
-		s.push('<td class="danger middle nowrap right">', await GetTextR("@comres.dll,-1845"), '&nbsp;</td>');
+		if (ui_.strNotSupported) {
+			ui_.strNotSupported = await GetTextR("@comres.dll,-1845");
+		}
+		s.push('<td class="danger middle nowrap right">', ui_.strNotSupported, '&nbsp;</td>');
 	} else if (bMinVer) {
-		s.push('<td class="danger middle nowrap right">', await GetTextR("@mstask.dll,-319"), " ", r[1].replace(/^20/, ""), ' ', await GetText("is required."), '</td>');
+		if (ui_.strVersion) {
+			ui_.strVersion = await GetTextR("@mstask.dll,-319");
+		}
+		if (ui_.strIsRequired) {
+			ui_.strIsRequired = await GetText("is required.");
+		}
+		s.push('<td class="danger middle nowrap right">', ui_.strVersion, " ", r[1].replace(/^20/, ""), ' ', ui_.strIsRequired, '</td>');
 	} else if (r[6]) {
 		s.push('<td class="nowrap middle" style="padding-right: 1em"><input type="button" onclick="AddonOptions(\'', Id, '\')" class="addonbuttonopt" id="opt_', Id, '" value="Options"></td>');
 	}
@@ -2607,6 +2616,9 @@ async function AddonsAppend() {
 	const td = [];
 	Progress.StartProgressDialog(ui_.hwnd, null, 2);
 	try {
+		if (!ui_.nTEVer) {
+			ui_.nTEVer = await AboutTE(0);
+		}
 		Progress.SetAnimation(hShell32, 150);
 		Progress.SetLine(1, await api.LoadString(hShell32, 13585) || await api.LoadString(hShell32, 6478), true);
 		let bCancelled = false;
@@ -2643,20 +2655,23 @@ async function ArrangeAddon(xml, td) {
 		s.push(info.Creator, "<br>")
 		s.push(info.Description, "<br>");
 		if (info.Details) {
-			s.push('<a href="#" title="', info.Details, '" class="link" onclick="wsh.run(this.title); return false;">', await GetText('Details'), '</a><br>');
+			if (!ui_.strDetails) {
+				ui_.strDetails = await GetText('Details');
+			}
+			s.push('<a href="#" title="', info.Details, '" class="link" onclick="wsh.run(this.title); return false;">', ui_.strDetails, '</a><br>');
 		}
 		s.push(await FormatDate(dt), '</td><td align="right">');
 		let dt2 = (dt.getTime() / (24 * 60 * 60 * 1000)) - info.Version;
 		let bUpdate = false;
 		if (await CheckAddon(Id)) {
-			const installed = await GetAddonInfo(Id);
+			const installed = GetAddonInfo(Id);
 			if (await installed.Version >= info.Version) {
 				try {
 					if (!await installed.DllVersion) {
 						return;
 					}
 					const path = BuildPath(ui_.Installed, "addons", Id);
-					const wfd = await IsExists(BuildPath(path, "*" + ui_.bit + ".dll"));
+					const wfd = await IsExists(BuildPath(path, "*" + ui_.bit + ".dll"), true);
 					if (!wfd) {
 						return;
 					}
@@ -2673,10 +2688,19 @@ async function ArrangeAddon(xml, td) {
 		} else {
 			dt2 += MAXINT;
 		}
-		if (info.MinVersion && await AboutTE(0) >= CalcVersion(info.MinVersion)) {
-			s.push('<input type="button" onclick="Install(this,', bUpdate, ')" title="', Id, '_', info.Version, '" value="', await GetText("Install"), '">');
+		if (info.MinVersion && ui_.nTEVer >= CalcVersion(info.MinVersion)) {
+			if (!ui_.strInstall) {
+				ui_.strInstall = await GetText("Install");
+			}
+			s.push('<input type="button" onclick="Install(this,', bUpdate, ')" title="', Id, '_', info.Version, '" value="', ui_.strInstall, '">');
 		} else {
-			s.push('<input type="button"  class="danger" onclick="MainWindow.CheckUpdate()" value="', info.MinVersion.replace(/^20/, (await api.LoadString(hShell32, 60) || "%").replace(/%.*/, "")).replace(/\.0/g, '.'), ' ', await GetText("is required."), '">');
+			if (ui_.strVersion) {
+				ui_.strVersion = await GetTextR("@mstask.dll,-319");
+			}
+			if (ui_.strIsRequired) {
+				ui_.strIsRequired = await GetText("is required.");
+			}
+			s.push('<input type="button"  class="danger" onclick="MainWindow.CheckUpdate()" value="', ui_.strVersion, " ", info.MinVersion.replace(/^20/, "").replace(/\.0/g, '.'), ' ', ui_.strIsRequired, '">');
 		}
 		s.push(strUpdate, '</td></tr></table>');
 		s.unshift(g_nSort["1_1"] == 1 ? dt2 : g_nSort["1_1"] ? Id : info.Name);
@@ -2737,7 +2761,10 @@ async function Install2(xhr, url, o) {
 	}
 	await api.SHFileOperation(FO_MOVE, dest, BuildPath(ui_.Installed, "addons"), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, false);
 	o.disabled = true;
-	o.value = await GetText("Installed");
+	if (!ui_.strInstalled) {
+		ui_.strInstalled = await GetText("Installed");
+	}
+	o.value = ui_.strInstalled;
 	o = document.getElementById('_Addons_' + Id);
 	if (o) {
 		o.style.display = "none";
@@ -2786,8 +2813,10 @@ async function IconPacksList1(s, Id, info, json) {
 	}
 	s.push("<br>", info.descprition[langId] || info.descprition.en, "<br>");
 	if (json) {
-		s.push(await GetText("Installed"));
-		s.push('<input type="button" onclick="DeleteIconPacks()" value="Delete" style="float: right;">');
+		if (!ui_.strInstalled) {
+			ui_.strInstalled = await GetText("Installed");
+		}
+		s.push(ui_.strInstalled, '<input type="button" onclick="DeleteIconPacks()" value="Delete" style="float: right;">');
 		if (json[Id] && Number(json[Id].info.version) > Number(info.version)) {
 			s.push('<hr><b class="danger nowrap">', await GetText('Update available'), '</b> ', json[Id].info.version);
 			info = json[Id].info;
@@ -2795,7 +2824,10 @@ async function IconPacksList1(s, Id, info, json) {
 		}
 	}
 	if (!json) {
-		s.push('<input type="button" onclick="InstallIcon(this)" title="', Id, '_', info.version, '" value="', await GetText("Install"), '" style="float: right;">');
+		if (!ui_.strInstall) {
+			ui_.strInstall = await GetText("Install");
+		}
+		s.push('<input type="button" onclick="InstallIcon(this)" title="', Id, '_', info.version, '" value="', ui_.strInstall, '" style="float: right;">');
 	}
 	s.push("<br>", await FormatDate(info.pubDate));
 	return true;
@@ -2822,6 +2854,7 @@ async function IconPacksList(xhr) {
 	if (json1.info) {
 		Installed = json1.info.id || json1.info.name.en.replace(/\W/g, "_");
 	}
+	const LangId = await GetLangId();
 	for (let n in json) {
 		if (n != Installed) {
 			let s1;
@@ -2829,10 +2862,10 @@ async function IconPacksList(xhr) {
 			info = json[n].info;
 			if (await IconPacksList1(s, n, info)) {
 				if (g_nSort["1_3"] == 0) {
-					s1 = info.name[await GetLangId()] || info.name.en;
+					s1 = info.name[LangId] || info.name.en;
 				} else if (g_nSort["1_3"] == 1) {
 					if (json.pubDate) {
-						s1 = await api.GetDateFormat(LOCALE_USER_DEFAULT, 0, new Date(info.pubDate).getTime(), "yyyyMMdd");
+						s1 = ("0000000" + (99999999 - Math.floor(new Date(json.pubDate).getTime() / 86400000))).slice(-8);
 					}
 				} else {
 					s1 = n;
@@ -2842,9 +2875,6 @@ async function IconPacksList(xhr) {
 		}
 	}
 	td.sort();
-	if (g_nSort["1_3"] == 1) {
-		td.reverse();
-	}
 	if (json1.info) {
 		s = [];
 		if (await IconPacksList1(s, Installed, json1.info, json)) {
@@ -2883,7 +2913,7 @@ async function LangPacksList(xhr) {
 		if (!q || await api.PathMatchSpec(JSON.stringify(info), "*" + q + "*")) {
 			const tm = new Date(info.pubDate).getTime();
 			let strUpdate = "", nButton = 0;
-			const wfd = await IsExists(BuildPath(ui_.Installed, "lang", n));
+			const wfd = await IsExists(BuildPath(ui_.Installed, "lang", n), true);
 			if (wfd) {
 				if (tm > new Date(await wfd.ftLastWriteTime).getTime() + 1999) {
 					strUpdate = ['<b class="danger nowrap" style="float: right">', await GetText('Update available'), '&nbsp;&nbsp;</b>'].join("");
@@ -3106,7 +3136,7 @@ async function SortAddons1(n) {
 							s = "";
 							const pubDate = await GetAddonInfo(Id).pubDate;
 							if (pubDate) {
-								s = await api.GetDateFormat(LOCALE_USER_DEFAULT, 0, new Date(pubDate).getTime(), "yyyyMMdd");
+								s = ("0000000" + (99999999 - Math.floor(new Date(pubDate).getTime() / 86400000))).slice(-8);
 							}
 						} else {
 							s = Id;
@@ -3117,9 +3147,6 @@ async function SortAddons1(n) {
 				}
 				if (n != 3) {
 					ar.sort();
-				}
-				if (n == 1) {
-					ar = ar.reverse();
 				}
 				for (let i = 0; !bCancelled && i < ar.length; ++i) {
 					Promise.all([Progress.HasUserCancelled(table.rows.length + i, nTotal, 2)]).then(function (r) {

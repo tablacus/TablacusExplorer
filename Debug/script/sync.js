@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20211217 ? te.Version : 20211217;
+		return te.Version < 20211217 ? te.Version : 20211218;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1720,11 +1720,11 @@ PtInRect = function (rc, pt) {
 	}
 }
 
-IsExists = function (path) {
+IsExists = function (path, bGetWfd) {
 	const wfd = api.Memory("WIN32_FIND_DATA");
 	const hFind = api.FindFirstFile(path.replace(/\\$/, ""), wfd);
 	api.FindClose(hFind);
-	return hFind != INVALID_HANDLE_VALUE && wfd;
+	return hFind != INVALID_HANDLE_VALUE && (bGetWfd ? wfd : true);
 }
 
 GetNonExistent = function (path) {
