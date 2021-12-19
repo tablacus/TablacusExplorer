@@ -251,7 +251,7 @@ OpenHttpRequest = async function (url, alt, fn, arg) {
 		url += "?" + Math.floor(new Date().getTime() / 60000);
 	}
 	CalcRef(arg && await arg.pcRef, 0, 1);
-	if (window.chrome && /\.zip$|\.nupkg$/i.test(url)) {
+	if (window.chrome && /\.zip$|\.exe$/i.test(url)) {
 		xhr.responseType = "blob";
 	}
 	xhr.open("GET", url, true);
@@ -756,10 +756,11 @@ GetPosEx = async function (el, n) {
 HitTest = async function (o, pt) {
 	if (o) {
 		let p = GetPos(o, 1);
-		if (await pt.x >= p.x && await pt.x < p.x + o.offsetWidth && await pt.y >= p.y && await pt.y < p.y + o.offsetHeight) {
+		const r = await Promise.all([pt.x, pt.y]);
+		if (r[0] >= p.x && r[0] < p.x + o.offsetWidth && r[1] >= p.y && r[1] < p.y + o.offsetHeight) {
 			o = o.offsetParent;
 			p = GetPos(o, 1);
-			return await pt.x >= p.x && await pt.x < p.x + o.offsetWidth && await pt.y >= p.y && await pt.y < p.y + o.offsetHeight;
+			return r[0] >= p.x && r[0] < p.x + o.offsetWidth && r[1] >= p.y && r[1] < p.y + o.offsetHeight;
 		}
 	}
 	return false;
@@ -803,7 +804,7 @@ MouseOver = async function (o) {
 			await api.GetCursorPos(pt);
 			const ptc = await pt.Clone();
 			await api.ScreenToClient(await WebBrowser.hwnd, ptc);
-			bHover = (o == document.elementFromPoint(ptc.x, ptc.y) || await HitTest(o, pt));
+			bHover = (o == document.elementFromPoint(await ptc.x, await ptc.y) || await HitTest(o, pt));
 		}
 		if (bHover) {
 			ui_.objHover = o;
@@ -1007,6 +1008,18 @@ LoadAddon = async function (ext, Id, arError, param, bDisabled) {
 	return r;
 }
 
+AddonBeforeRemove = async function (Id) {
+	let arError = await api.CreateObject("Array");
+	const r = LoadAddon("remove.js", Id, arError);
+	arError = await api.CreateObject("SafeArray", arError);
+	if (arError.length) {
+		setTimeout(async function (arError) {
+			MessageBox(arError.join("\n\n"), TITLE, MB_ICONSTOP | MB_OK);
+		}, 500, arError);
+	}
+	return r;
+}
+
 FinalizeUI = async function () {
 	await CloseSubWindows();
 	if (await g_.bFinalized) {
@@ -1037,9 +1050,7 @@ SetDisplay = function (Id, s) {
 
 //Options
 AddonOptions = async function (Id, fn, Data, bNew) {
-	if (await api.GetKeyState(VK_CONTROL) >= 0) {
-		wsh.SendKeys("{ESC}");
-	}
+	CloseFindDialog();
 	await LoadLang2(BuildPath("addons", Id, "lang", await GetLangId() + ".xml"));
 	const items = await te.Data.Addons.getElementsByTagName(Id);
 	if (!GetLength(items)) {
@@ -1048,7 +1059,7 @@ AddonOptions = async function (Id, fn, Data, bNew) {
 			root.appendChild(await te.Data.Addons.createElement(Id));
 		}
 	}
-	const info = await GetAddonInfo(Id);
+	const info = GetAddonInfo(Id);
 	let sURL = "addons\\" + Id + "\\options.html";
 	if (!Data) {
 		Data = await api.CreateObject("Object");;
@@ -1390,35 +1401,4 @@ ConfirmThenExec = async function (msg, fn, arg) {
 		ui_.elConfirm = el;
 	}
 	api.DestroyMenu(hMenu);
-}
-
-if (window.chrome) {
-	GetAddonElement = async function (id) {
-		const item = await $.GetAddonElement(id);
-		const o = {
-			item: item,
-			db: JSON.parse(await XmlItem2Json(item)),
-			getAttribute: function (s) {
-				return this.db[s];
-			},
-			setAttribute: function (s, v) {
-				this.db[s] = v;
-				this.item.setAttribute(s, v);
-			},
-			removeAttribute: function (s) {
-				delete this.db[s];
-				this.item.removeAttribute(s, v);
-			}
-		};
-		Object.defineProperty(o, "attributes", {
-			get: function () {
-				const ar = [];
-				for (let n in this.db) {
-					ar.push({ name: n, value: this.db[n] });
-				}
-				return ar;
-			}
-		});
-		return o;
-	}
 }

@@ -31,6 +31,8 @@
 #include <WinIoCtl.h>
 #include <tlhelp32.h>
 #include <structuredquery.h>
+#include <d2d1.h>
+#include <dwrite.h>
 //#include <Vssym32.h>
 #include <vector>
 #include <unordered_map>
@@ -115,6 +117,11 @@ struct WINCOMPATTRDATA
 	SIZE_T cbData;
 };
 #endif
+
+#ifndef D2D1_DRAW_TEXT_OPTIONS_ENABLE_COLOR_FONT
+#define D2D1_DRAW_TEXT_OPTIONS_ENABLE_COLOR_FONT 0x00000004
+#endif
+
 //#define FVO_TABLACUS (FVO_VISTALAYOUT | FVO_CUSTOMPOSITION | FVO_CUSTOMORDERING)
 
 union teParam
@@ -295,6 +302,12 @@ typedef HTHEME (WINAPI *LPFNOpenNcThemeData)(HWND hWnd, LPCWSTR pszClassList);
 
 //RTL
 typedef NTSTATUS (WINAPI* LPFNRtlGetVersion)(PRTL_OSVERSIONINFOEXW lpVersionInformation);
+
+//Direct2D
+typedef HRESULT (WINAPI* LPFND2D1CreateFactory)(D2D1_FACTORY_TYPE factoryType, REFIID riid, D2D1_FACTORY_OPTIONS *pFactoryOptions, LPVOID* ppv);
+
+//DirectWrite
+typedef HRESULT (WINAPI* LPFNDWriteCreateFactory)(DWRITE_FACTORY_TYPE factoryType, REFIID iid, LPVOID* ppv);
 
 //DLL
 typedef HRESULT (STDAPICALLTYPE* LPFNDllGetClassObject)(REFCLSID rclsid, REFIID riid, LPVOID* ppv);

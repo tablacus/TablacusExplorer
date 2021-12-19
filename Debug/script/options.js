@@ -51,6 +51,37 @@ CloseWB = async function (WB, bForce) {
 	g_nResult = 0;
 }
 
+if (window.chrome) {
+	GetAddonElement = async function (id) {
+		const item = await $.GetAddonElement(id);
+		const o = {
+			item: item,
+			db: JSON.parse(await XmlItem2Json(item)),
+			getAttribute: function (s) {
+				return this.db[s];
+			},
+			setAttribute: function (s, v) {
+				this.db[s] = v;
+				this.item.setAttribute(s, v);
+			},
+			removeAttribute: function (s) {
+				delete this.db[s];
+				this.item.removeAttribute(s, v);
+			}
+		};
+		Object.defineProperty(o, "attributes", {
+			get: function () {
+				const ar = [];
+				for (let n in this.db) {
+					ar.push({ name: n, value: this.db[n] });
+				}
+				return ar;
+			}
+		});
+		return o;
+	}
+}
+
 async function SetDefaultLangID(el) {
 	SetDefault(document.F.Conf_Lang, await GetLangId(true), el);
 }
@@ -2577,9 +2608,7 @@ function ClearSearch(el, Id) {
 }
 
 async function AddonsList(xhr2) {
-	if (await api.GetKeyState(VK_CONTROL) >= 0) {
-		wsh.SendKeys("{ESC}");
-	}
+	CloseFindDialog();
 	if (xmlAddons) {
 		return;
 	}
@@ -2834,9 +2863,7 @@ async function IconPacksList1(s, Id, info, json) {
 }
 
 async function IconPacksList(xhr) {
-	if (await api.GetKeyState(VK_CONTROL) >= 0) {
-		wsh.SendKeys("{ESC}");
-	}
+	CloseFindDialog();
 	if (xhr) {
 		g_xhrIcons = xhr;
 	} else {
@@ -2847,8 +2874,7 @@ async function IconPacksList(xhr) {
 	}
 	let s = await ReadTextFile(BuildPath(await te.Data.DataFolder, "icons\\config.json"));
 	const json1 = JSON.parse(s || '{}');
-	const text = await xhr.get_responseText ? await xhr.get_responseText() : xhr.responseText;
-	const json = JSON.parse(text);
+	const json = JSON.parse(await xhr.get_responseText ? await xhr.get_responseText() : xhr.responseText);
 	const td = [];
 	let Installed = "";
 	if (json1.info) {
@@ -2892,9 +2918,7 @@ async function DeleteIconPacks() {
 }
 
 async function LangPacksList(xhr) {
-	if (await api.GetKeyState(VK_CONTROL) >= 0) {
-		wsh.SendKeys("{ESC}");
-	}
+	CloseFindDialog();
 	if (xhr) {
 		g_xhrLang = xhr;
 	} else {
@@ -3097,9 +3121,7 @@ async function SortAddons(el) {
 }
 
 async function SortAddons1(n) {
-	if (await api.GetKeyState(VK_CONTROL) >= 0) {
-		wsh.SendKeys("{ESC}");
-	}
+	CloseFindDialog();
 	if ("number" !== typeof n) {
 		n = 3;
 	}

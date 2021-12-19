@@ -25,6 +25,8 @@ extern BSTR	g_bsClipRoot;
 extern BOOL	g_bDragging;
 extern BOOL	g_bDragIcon;
 extern IDropTargetHelper *g_pDropTargetHelper;
+extern LPFND2D1CreateFactory _D2D1CreateFactory;
+extern LPFNDWriteCreateFactory _DWriteCreateFactory;
 
 extern FORMATETC HDROPFormat;
 extern FORMATETC IDLISTFormat;
@@ -100,6 +102,7 @@ TEmethod methodGB[] = {
 	{ TE_METHOD + 210, "GetHBITMAP" },
 	{ TE_METHOD + 211, "GetHICON" },
 	{ TE_METHOD + 212, "DrawEx" },
+	{ TE_METHOD + 213, "DrawText" },
 
 	{ TE_METHOD + 900, "GetCodecInfo" },
 	{ START_OnFunc + WIC_OnGetAlt, "OnGetAlt" },
@@ -2833,12 +2836,9 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 			return S_OK;
 		}
 		switch(dispIdMember) {
-			//FromHBITMAP
-		case TE_METHOD + 1:
-			//FromStream
-		case TE_METHOD + 5:
-			//FromSource
-		case TE_METHOD + 9:
+		case TE_METHOD + 1://FromHBITMAP
+		case TE_METHOD + 5://FromStream
+		case TE_METHOD + 9://FromSource
 			if (nArg >= 0) {
 				IUnknown *punk;
 				if (FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
@@ -2869,8 +2869,8 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				teSetObject(pVarResult, GetBitmapObj());
 			}
 			return S_OK;
-			//FromHICON
-		case TE_METHOD + 2:
+
+		case TE_METHOD + 2://FromHICON
 			if (nArg >= 0) {
 				m_pWICFactory->CreateBitmapFromHICON((HICON)GetPtrFromVariant(&pDispParams->rgvarg[nArg]), &m_pImage);
 				teSetObject(pVarResult, GetBitmapObj());
@@ -2973,8 +2973,8 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				teSetObject(pVarResult, GetBitmapObj());
 			}
 			return S_OK;
-			//FromArchive
-		case TE_METHOD + 6:
+
+		case TE_METHOD + 6://FromArchive
 			if (nArg >= 3) {
 				IStorage *pStorage = NULL;
 				HMODULE hDll;
@@ -3009,11 +3009,11 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				teSetObject(pVarResult, GetBitmapObj());
 			}
 			return S_OK;
-			//FromItem//Deprecated
-		case TE_METHOD + 7:
+
+		case TE_METHOD + 7://FromItem//Deprecated
 			return S_OK;
-			//FromClipboard
-		case TE_METHOD + 8:
+
+		case TE_METHOD + 8://FromClipboard
 			if (::IsClipboardFormatAvailable(CF_BITMAP)) {
 				::OpenClipboard(NULL);
 				HBITMAP hBM = (HBITMAP)::GetClipboardData(CF_BITMAP);
@@ -3022,8 +3022,8 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 			}
 			teSetObject(pVarResult, GetBitmapObj());
 			return S_OK;
-			//Create
-		case TE_METHOD + 90:
+
+		case TE_METHOD + 90://Create
 			if (nArg >= 1) {
 				IWICBitmap *pIBitmap;
 				HRESULT hr = m_pWICFactory->CreateBitmap(GetIntFromVariant(&pDispParams->rgvarg[nArg]), GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]),
@@ -3035,11 +3035,11 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				teSetObject(pVarResult, GetBitmapObj());
 			}
 			return S_OK;
-			//Free
-		case TE_METHOD + 99:
+
+		case TE_METHOD + 99://Free
 			return S_OK;
-			//Save
-		case TE_METHOD + 100:
+
+		case TE_METHOD + 100://Save
 			if (nArg >= 0) {
 				VARIANT vText;
 				teVariantChangeType(&vText, &pDispParams->rgvarg[nArg], VT_BSTR);
@@ -3057,12 +3057,10 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 			}
 			teSetLong(pVarResult, hr);
 			return S_OK;
-			//Base64
-		case TE_METHOD + 101:
-			//DataURI
-		case TE_METHOD + 102:
-			//GetStream
-		case TE_METHOD + 103:
+			
+		case TE_METHOD + 101://Base64
+		case TE_METHOD + 102://DataURI
+		case TE_METHOD + 103://GetStream
 			VARIANT vText;
 			vText.bstrVal = NULL;
 			vText.vt = VT_BSTR;
@@ -3078,7 +3076,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 			WCHAR szMime[16];
 			if (GetEncoderClsid(vText.bstrVal, &encoderClsid, szMime)) {
 				hr = CreateStream(pStream, encoderClsid, 0);
-				//					hr = CreateBMPStream(pStream, szMime);
+				//hr = CreateBMPStream(pStream, szMime);
 			}
 			if SUCCEEDED(hr) {
 				if (dispIdMember == TE_METHOD + 103) { //GetStream
@@ -3111,21 +3109,21 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 			}
 			VariantClear(&vText);
 			return S_OK;
-			//GetWidth
-		case TE_METHOD + 110:
+			
+		case TE_METHOD + 110://GetWidth
 			UINT w, h;
 			w = 0;
 			m_pImage->GetSize(&w, &h);
 			teSetLong(pVarResult, w);
 			return S_OK;
-			//GetHeight
-		case TE_METHOD + 111:
+			
+		case TE_METHOD + 111://GetHeight
 			h = 0;
 			m_pImage->GetSize(&w, &h);
 			teSetLong(pVarResult, h);
 			return S_OK;
-			//GetPixel
-		case TE_METHOD + 112:
+			
+		case TE_METHOD + 112://GetPixel
 			if (nArg >= 1 && Get(GUID_WICPixelFormat32bppBGRA)) {
 				UINT w = 0, h = 0;
 				m_pImage->GetSize(&w, &h);
@@ -3147,8 +3145,8 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				}
 			}
 			return S_OK;
-			//SetPixel
-		case TE_METHOD + 113:
+			
+		case TE_METHOD + 113://SetPixel
 			if (nArg >= 2) {
 				if (Get(GUID_WICPixelFormat32bppBGRA)) {
 					UINT w = 0, h = 0;
@@ -3172,16 +3170,16 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				}
 			}
 			return S_OK;
-			//GetPixelFormat
-		case TE_METHOD + 114:
+			
+		case TE_METHOD + 114://GetPixelFormat
 			WICPixelFormatGUID guidPF;
 			m_pImage->GetPixelFormat(&guidPF);
 			WCHAR pszBuff[40];
 			StringFromGUID2(guidPF, pszBuff, 39);
 			teSetSZ(pVarResult, pszBuff);
 			return S_OK;
-			//FillRect
-		case TE_METHOD + 115:
+			
+		case TE_METHOD + 115://FillRect
 			if (nArg >= 4) {
 				if (Get(GUID_WICPixelFormat32bppBGRA)) {
 					int w = 0, h = 0;
@@ -3229,7 +3227,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 			}
 			return S_OK;
 
-		case TE_METHOD + 116: //Mask
+		case TE_METHOD + 116://Mask
 			if (nArg >= 1) {
 				DWORD cl = GetIntFromVariant(&pDispParams->rgvarg[nArg]) & 0xffffff;
 				DWORD clBk = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) & 0xffffff;
@@ -3308,8 +3306,8 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				}
 			}
 			return S_OK;
-			//RotateFlip
-		case TE_METHOD + 130:
+			
+		case TE_METHOD + 130://RotateFlip
 			if (nArg >= 0) {
 				IWICBitmapFlipRotator *pFlipRotator;
 				if SUCCEEDED(m_pWICFactory->CreateBitmapFlipRotator(&pFlipRotator)) {
@@ -3324,12 +3322,12 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				}
 			}
 			return S_OK;
-			//GetFrameCount
-		case TE_METHOD + 140:
+			
+		case TE_METHOD + 140://GetFrameCount
 			teSetLong(pVarResult, HasImage() ? m_uFrameCount : 1);
 			return S_OK;
-			//Frame
-		case TE_PROPERTY + 150:
+			
+		case TE_PROPERTY + 150://Frame
 			if (nArg >= 0 && m_pStream) {
 				UINT uFrame = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 				if (m_uFrame != uFrame) {
@@ -3340,10 +3338,9 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				teSetLong(pVarResult, m_uFrame);
 			}
 			return S_OK;
-			//GetMetadata
-		case TE_METHOD + 160:
-			//GetFrameMetadata
-		case TE_METHOD + 161:
+			
+		case TE_METHOD + 160://GetMetadata
+		case TE_METHOD + 161://GetFrameMetadata
 			if (nArg >= 0 && pVarResult) {
 				if (m_ppMetadataQueryReader[dispIdMember - TE_METHOD - 160]) {
 					PROPVARIANT propVar;
@@ -3355,14 +3352,13 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				}
 			}
 			return S_OK;
-			//GetHBITMAP
-		case TE_METHOD + 210:
+
+		case TE_METHOD + 210://GetHBITMAP
 			teSetPtr(pVarResult, GetHBITMAP(nArg >= 0 ? GetIntFromVariant(&pDispParams->rgvarg[nArg]) : -1));
 			return S_OK;
-			//GetHICON
-		case TE_METHOD + 211:
-			//DrawEx
-		case TE_METHOD + 212:
+			
+		case TE_METHOD + 211://GetHICON	
+		case TE_METHOD + 212://DrawEx
 			HBITMAP hBM;
 			if (hBM = GetHBITMAP(-1)) {
 				BITMAP bm;
@@ -3383,8 +3379,49 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				ImageList_Destroy(himl);
 			}
 			return S_OK;
-			//GetCodecInfo
-		case TE_METHOD + 900:
+
+		case TE_METHOD + 213://DrawText
+			if (_D2D1CreateFactory && _DWriteCreateFactory) {
+				if (nArg >= 7 && Get(GUID_WICPixelFormat32bppPBGRA)) {
+					ID2D1Factory* pD2d1Factory = NULL;
+					if SUCCEEDED(_D2D1CreateFactory(D2D1_FACTORY_TYPE_MULTI_THREADED, __uuidof(ID2D1Factory), NULL, (LPVOID *)&pD2d1Factory)) {
+						ID2D1RenderTarget* pRenderTarget = NULL;
+						if SUCCEEDED(pD2d1Factory->CreateWicBitmapRenderTarget(m_pImage, D2D1::RenderTargetProperties(), &pRenderTarget)) {
+							IDWriteFactory* pDWFactory = NULL;
+							if SUCCEEDED(_DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, IID_PPV_ARGS(&pDWFactory))) {
+								ID2D1SolidColorBrush* pBrush = NULL;
+								LPWSTR pszText = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]);
+								LPWSTR pszFont = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]);
+								int n = GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]);
+								DWRITE_FONT_WEIGHT fw = (DWRITE_FONT_WEIGHT)GetIntFromVariant(&pDispParams->rgvarg[nArg - 3]);
+								DWRITE_FONT_STYLE fs = (DWRITE_FONT_STYLE)GetIntFromVariant(&pDispParams->rgvarg[nArg - 4]);
+								int cl = GetIntFromVariant(&pDispParams->rgvarg[nArg - 5]);
+								int x = GetIntFromVariant(&pDispParams->rgvarg[nArg - 6]);
+								int y = GetIntFromVariant(&pDispParams->rgvarg[nArg - 7]);
+								if SUCCEEDED(pRenderTarget->CreateSolidColorBrush(D2D1::ColorF(cl), &pBrush)) {
+									IDWriteTextFormat* pTextFormat = NULL;
+									if SUCCEEDED(pDWFactory->CreateTextFormat(pszFont, NULL, fw, fs, DWRITE_FONT_STRETCH_NORMAL, n, L"", &pTextFormat)) {
+										m_pImage->GetSize(&w, &h);
+										pRenderTarget->BeginDraw();
+										pRenderTarget->DrawText(pszText, lstrlen(pszText), pTextFormat, &D2D1::RectF(x, y, w, h), pBrush,
+											(D2D1_DRAW_TEXT_OPTIONS)D2D1_DRAW_TEXT_OPTIONS_ENABLE_COLOR_FONT
+										);
+										pRenderTarget->EndDraw();
+										pTextFormat->Release();
+									}
+									pBrush->Release();
+								}
+								pDWFactory->Release();
+							}
+							pRenderTarget->Release();
+						}
+						pD2d1Factory->Release();
+					}
+				}
+			}
+			return S_OK;
+
+		case TE_METHOD + 900://GetCodecInfo
 			IDispatch *pdisp;
 			if (nArg >= 2 && GetDispatch(&pDispParams->rgvarg[nArg - 2], &pdisp)) {
 				IEnumUnknown *pEnum;

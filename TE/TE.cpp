@@ -42,6 +42,8 @@ LPFNChangeWindowMessageFilterEx _ChangeWindowMessageFilterEx = NULL;
 LPFNRtlGetVersion _RtlGetVersion = NULL;
 LPFNSetDefaultDllDirectories _SetDefaultDllDirectories = NULL;
 LPFNGetDpiForMonitor _GetDpiForMonitor = NULL;
+LPFND2D1CreateFactory _D2D1CreateFactory = NULL;
+LPFNDWriteCreateFactory _DWriteCreateFactory = NULL;
 #ifdef _2000XP
 LPFNSetDllDirectoryW _SetDllDirectoryW = NULL;
 LPFNIsWow64Process _IsWow64Process = NULL;
@@ -1789,6 +1791,7 @@ HRESULT ParseScript(LPOLESTR lpScript, LPOLESTR lpLang, VARIANT *pv, IDispatch *
 	HRESULT hr = E_FAIL;
 	CLSID clsid;
 	IActiveScript *pas = NULL;
+	HRESULT *phr = &hr;
 
 	BOOL bChakra = tePathMatchSpec(lpLang, L"J*Script");
 	if (g_nBlink == 1 && bChakra) {
@@ -1815,7 +1818,7 @@ HRESULT ParseScript(LPOLESTR lpScript, LPOLESTR lpLang, VARIANT *pv, IDispatch *
 		}
 		IUnknown *punk = NULL;
 		FindUnknown(pv, &punk);
-		CteActiveScriptSite *pass = new CteActiveScriptSite(punk, pExcepInfo, &hr);
+		CteActiveScriptSite *pass = new CteActiveScriptSite(punk, pExcepInfo, &phr);
 		pas->SetScriptSite(pass);
 		pass->Release();
 		IActiveScriptParse *pasp;
@@ -1868,6 +1871,7 @@ HRESULT ParseScript(LPOLESTR lpScript, LPOLESTR lpLang, VARIANT *pv, IDispatch *
 		}
 		pas->Release();
 	}
+	*phr = NULL;
 	return hr;
 }
 
@@ -3215,7 +3219,11 @@ VOID ArrangeWindowEx()
 		return;
 	}
 	g_bArrange = FALSE;
-	DoFunc(TE_OnArrange, g_pTE, E_NOTIMPL);
+
+	VARIANTARG *pv = GetNewVARIANT(3);
+	teSetObject(&pv[2], g_pTE);
+	teSetLong(&pv[0], CTRL_TE);
+	Invoke4(g_pOnFunc[TE_OnArrange], NULL, 3, pv);
 }
 
 LRESULT CALLBACK TESTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
@@ -4459,7 +4467,13 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	}
 	if (!_GetDpiForMonitor) {
 		_GetDpiForMonitor = teGetDpiForMonitor;
-	}	
+	}
+	if (hDll = teLoadLibrary(L"D2d1.dll")) {
+		*(FARPROC *)&_D2D1CreateFactory = GetProcAddress(hDll, "D2D1CreateFactory");
+	}
+	if (hDll = teLoadLibrary(L"Dwrite.dll")) {
+		*(FARPROC *)&_DWriteCreateFactory = GetProcAddress(hDll, "DWriteCreateFactory");
+	}
 	teLoadLibrary(L"mscoree.dll");//for .NET Shell exetension
 #ifdef _2000XP
 	if (g_bUpperVista) {
@@ -12049,12 +12063,7 @@ VOID CteTabCtrl::Show(BOOL bVisible)
 			}
 		}
 		m_bVisible = bVisible;
-		if (g_pOnFunc[TE_OnVisibleChanged]) {
-			VARIANTARG *pv = GetNewVARIANT(2);
-			teSetObject(&pv[1], this);
-			teSetBool(&pv[0], bVisible);
-			Invoke4(g_pOnFunc[TE_OnVisibleChanged], NULL, 2, pv);
-		}
+		DoFunc(TE_OnVisibleChanged, this, E_NOTIMPL);
 	}
 }
 
@@ -14213,10 +14222,10 @@ STDMETHODIMP CteTreeView::GetCurFolder(PIDLIST_ABSOLUTE *ppidl)
 }
 
 //CteActiveScriptSite
-CteActiveScriptSite::CteActiveScriptSite(IUnknown *punk, EXCEPINFO *pExcepInfo, HRESULT *phr)
+CteActiveScriptSite::CteActiveScriptSite(IUnknown *punk, EXCEPINFO *pExcepInfo, HRESULT **pphr)
 {
 	m_cRef = 1;
-	m_phr = phr;
+	m_pphr = pphr;
 	m_pDispatchEx = NULL;
 	if (punk) {
 		punk->QueryInterface(IID_PPV_ARGS(&m_pDispatchEx));
@@ -14324,17 +14333,20 @@ STDMETHODIMP CteActiveScriptSite::OnScriptError(IActiveScriptError *pscripterror
 		}
 		teSysFreeString(&m_pExcepInfo->bstrDescription);
 		m_pExcepInfo->bstrDescription = bs;
+#ifdef _DEBUG
+		::OutputDebugString(bs);
+#endif
 		if (m_pExcepInfo == &g_ExcepInfo) {
 			MessageBox(NULL, bs, _T(PRODUCTNAME), MB_OK | MB_ICONERROR);
 			teSysFreeString(&m_pExcepInfo->bstrDescription);
+			teSysFreeString(&bs);
 		}
-#ifdef _DEBUG
-		::OutputDebugString(bs);
-		if (g_nBlink == 1) {
-			MessageBox(NULL, bs, L"Tablacus Explorer", MB_OK);
+		if (*m_pphr) {
+			**m_pphr = m_pExcepInfo->scode;
+		} else if (bs) {
+			MessageBox(NULL, bs, _T(PRODUCTNAME), MB_OK | MB_ICONERROR);
 		}
-#endif
-		*m_phr = m_pExcepInfo->scode;
+		teSysFreeString(&bs);
 	}
 	return S_OK;
 }

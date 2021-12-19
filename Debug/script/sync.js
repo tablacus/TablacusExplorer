@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20211217 ? te.Version : 20211218;
+		return te.Version < 20211219 ? te.Version : 20211219;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -880,16 +880,6 @@ ExecAddonScript = function (type, s, fn, arError, o, arStack) {
 	return sc;
 }
 
-AddonBeforeRemove = function (Id) {
-	CollectGarbage();
-	const arError = [];
-	const r = LoadAddon("remove.js", Id, arError);
-	if (arError.length) {
-		MessageBox(arError.join("\n\n"), TITLE, MB_ICONSTOP |MB_OK);
-	}
-	return r;
-}
-
 CreateJScript = function (s) {
 	return new AsyncFunction(s);
 }
@@ -1252,9 +1242,7 @@ MakeCommDlgFilter = function (arg) {
 			result.push(s, res[1]);
 			continue;
 		}
-		const sfi = api.Memory("SHFILEINFO");
-		api.SHGetFileInfo(s, 0, sfi, sfi.Size, SHGFI_TYPENAME | SHGFI_USEFILEATTRIBUTES);
-		result.push(sfi.szTypeName + " (" + s + ")", s);
+		result.push(SHGetFileInfo(s, 0, SHGFI_TYPENAME | SHGFI_USEFILEATTRIBUTES).szTypeName + " (" + s + ")", s);
 	}
 	if (bAll) {
 		result.push(api.LoadString(hShell32, 34193) || "All files", "*.*");
@@ -1372,9 +1360,7 @@ MakeImgIcon = function (src, index, h, bIcon, clBk) {
 		if (SameText(icon[0], "shell32.dll")) {
 			const dw = { 3: SHGFI_SYSICONINDEX | SHGFI_USEFILEATTRIBUTES, 4: SHGFI_SYSICONINDEX | SHGFI_OPENICON | SHGFI_USEFILEATTRIBUTES }[res[1]];
 			if (dw) {
-				const sfi = api.Memory("SHFILEINFO");
-				api.SHGetFileInfo("*", FILE_ATTRIBUTE_DIRECTORY, sfi, sfi.Size, dw);
-				return GetHICON(sfi.iIcon, h, ILD_NORMAL);
+				return GetHICON(SHGetFileInfo("*", FILE_ATTRIBUTE_DIRECTORY, dw).iIcon, h, ILD_NORMAL);
 			}
 		}
 		const phIcon = api.Memory("HANDLE");
@@ -1483,12 +1469,14 @@ MakeImgIcon = function (src, index, h, bIcon, clBk) {
 		c = String.fromCodePoint(c.length > 1 ? parseInt(c[0]) * 256 + parseInt(c[1]) : parseInt(c[0]));
 		api.DrawText(hmdc, c, -1, rc, DT_CALCRECT | DT_NOCLIP | DT_NOPREFIX);
 		const h2 = Math.min(h, Math.ceil(h * (h / (Math.max(rc.bottom, rc.right) || h))));
-		if (h != h2) {
-			lf.lfHeight = -h2;
-			api.SelectObject(hmdc, CreateFont(lf));
+		if (WINVER < 0x603) {
+			if (h != h2) {
+				lf.lfHeight = -h2;
+				api.SelectObject(hmdc, CreateFont(lf));
+			}
+			api.SetRect(rc, 0, 0, h, h);
+			api.DrawText(hmdc, c, -1, rc, DT_NOPREFIX);
 		}
-		api.SetRect(rc, 0, 0, h, h);
-		api.DrawText(hmdc, c, -1, rc, DT_CENTER | DT_NOPREFIX);
 		api.SelectObject(hmdc, hfontOld);
 		api.SelectObject(hmdc, hOld);
 		api.DeleteDC(hmdc);
@@ -1497,6 +1485,9 @@ MakeImgIcon = function (src, index, h, bIcon, clBk) {
 		api.DeleteObject(hbm);
 		if (image) {
 			image.Mask(cl, clBk1);
+			if (WINVER >= 0x603) {
+				image.DrawText(c, res[1], h2, lf.lfWeight, 0, cl, 0, 0);
+			}
 			return image.GetHICON();
 		}
 	}
@@ -3027,11 +3018,8 @@ XmlItems2Json = function (items) {
 
 GetAddonElement = function (id) {
 	const items = te.Data.Addons.getElementsByTagName(id.toLowerCase());
-	if (items.length) {
-		return items[0];
-	}
-	return {
-		getAttribute: function (s) {
+	return items.length ? items[0] : {
+		getAttribute: function () {
 			return "";
 		},
 		setAttribute: function () { }
@@ -3615,6 +3603,18 @@ HasAccess = function (Path, Flags) {
 			arg.result |= ace.AccessMask & Flags;
 		}
 	})
+}
+
+SHGetFileInfo = function (pid, attr, Flags) {
+	const sfi = api.Memory("SHFILEINFO");
+	api.SHGetFileInfo(pid, attr, sfi, sfi.Size, Flags);
+	return sfi;
+}
+
+CloseFindDialog = function () {
+	if (api.GetKeyState(VK_CONTROL) >= 0) {
+		wsh.SendKeys("{ESC}");
+	}
 }
 
 BasicDB = function (name, bLoad, bLC) {

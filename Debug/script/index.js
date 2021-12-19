@@ -81,11 +81,6 @@ Activate = async function (o, id) {
 	}
 }
 
-GetAddonLocation = async function (strName) {
-	const items = await te.Data.Addons.getElementsByTagName(strName);
-	return await GetLength(items) && await items[0].getAttribute("Location");
-}
-
 SetAddon = async function (strName, Location, Tag, strVAlign) {
 	if (strName) {
 		const s = await GetAddonLocation(strName);
@@ -138,16 +133,13 @@ SetAddon = async function (strName, Location, Tag, strVAlign) {
 			});
 		}
 		if (strName) {
-			if (!await g_.Locations[Location]) {
-				g_.Locations[Location] = await api.CreateObject("Array");
-			}
 			if ("string" === typeof Tag) {
 				const res = /<img.*?org=["'](.*?)["']/i.exec(Tag) || /<span.*?src=["'](.*?)["']/i.exec(Tag);
 				if (res) {
 					strName += "\t" + res[1];
 				}
 			}
-			await g_.Locations[Location].push(strName);
+			await SetAddonLocation(Location, strName);
 		}
 	}
 	return Location;
@@ -201,22 +193,14 @@ StartGestureTimer = async function () {
 }
 
 FocusFV = function () {
-	setTimeout(async function () {
+	setTimeout(function () {
 		let el;
 		if (document.activeElement) {
 			const rc = document.activeElement.getBoundingClientRect();
 			el = document.elementFromPoint(rc.left + 2, rc.top + 2);
 		}
 		if (!el || !/input|textarea/i.test(el.tagName)) {
-			const hFocus = await api.GetFocus();
-			if (hFocus == ui_.hwnd || await api.IsChild(ui_.hwnd, hFocus)) {
-				const FV = await GetFolderView();
-				if (FV) {
-					if (!await api.PathMatchSpec(await api.GetClassName(hFocus), WC_EDIT + ";" + WC_TREEVIEW)) {
-						FV.Focus();
-					}
-				}
-			}
+			FocusFV2();
 		}
 	}, ui_.DoubleClickTime);
 }
@@ -229,7 +213,7 @@ ExitFullscreen = function () {
 	}
 }
 
-MoveSplitter = async function (x, n) {
+MoveSplitter = function (x, n) {
 	const w = document.documentElement.offsetWidth || document.body.offsetWidth;
 	if (x >= w) {
 		x = w - 1;
@@ -242,7 +226,7 @@ MoveSplitter = async function (x, n) {
 	Resize();
 }
 
-ShowStatusTextEx = async function (Ctrl, Text, iPart, tm) {
+ShowStatusTextEx = function (Ctrl, Text, iPart, tm) {
 	if (ui_.Status && ui_.Status[5]) {
 		clearTimeout(ui_.Status[5]);
 		delete ui_.Status;
@@ -259,14 +243,12 @@ ShowStatusTextEx = async function (Ctrl, Text, iPart, tm) {
 
 importJScript = $.importScript;
 
-OnArrange = async function (Ctrl, rc) {
-	const Type = await Ctrl.Type;
+OnArrange = async function (Ctrl, rc, Type, Id, FV) {
 	if (Type == CTRL_TE) {
 		ui_.TCPos = {};
 	}
-	await RunEventUI1("Arrange", Ctrl, rc);
+	await RunEventUI1("Arrange", Ctrl, rc, Type, Id, FV);
 	if (Type == CTRL_TC) {
-		const Id = await Ctrl.Id;
 		const p = [rc.left, rc.top, rc.right, rc.bottom, Ctrl.Visible, Ctrl.Left, Ctrl.Top, Ctrl.Width, Ctrl.Height];
 		if (!document.getElementById("Panel_" + Id)) {
 			const s = ['<table id="Panel_', Id, '" class="layout fixed" style="position: absolute; z-index: 1; color: inherit; visibility: hidden">'];
@@ -339,43 +321,40 @@ OnArrange = async function (Ctrl, rc) {
 }
 
 ArrangeAddons = async function () {
-	const r = await Promise.all([api.CreateObject("Object"), te.Data.Conf_IconSize, OpenXml("addons.xml", false, true), api.GetKeyState(VK_SHIFT), api.GetKeyState(VK_CONTROL), api.CreateObject("Array"), GetLangId(), te.Data.Conf_InnerIconSize]);
-	g_.Locations = r[0];
-	$.IconSize = IconSize = r[1] || screen.deviceYDPI / 4;
-	ui_.InnerIconSize = r[7] ? r[7] * 96 / screen.deviceYDPI : 16;
-	const xml = r[2];
-	te.Data.Addons = xml;
-	if (r[3] < 0 && r[4] < 0) {
+	let r = await Promise.all([InitAddonsXML(), api.CreateObject("Object"), api.GetKeyState(VK_SHIFT), api.GetKeyState(VK_CONTROL), GetLangId(), api.CreateObject("Array")]);
+	const xml = window.chrome ? new DOMParser().parseFromString(r[0], "application/xml") : te.Data.Addons;
+	ui_.Addons = xml;
+	g_.Locations = r[1];
+	if (r[2] < 0 && r[3] < 0) {
 		IsSavePath = function (path) {
 			return false;
 		}
 		return;
 	}
+	const LangId = r[4];
+	let arError = r[5];
+	delete r;
 	const AddonId = {};
-	const root = await xml.documentElement;
+	const root = xml.documentElement;
 	if (root) {
-		const items = await root.childNodes;
+		const items = root.childNodes;
 		if (items) {
-			let arError = r[5];
-			const LangId = r[6];
-			const nLen = await GetLength(items);
 			document.F.style.visibility = "hidden";
-			for (let i = 0; i < nLen; ++i) {
+			for (let i = 0; i < items.length; ++i) {
 				const item = items[i];
-				const r = await Promise.all([item.nodeName, item.getAttribute("Enabled"), item.getAttribute("Level")]);
-				const Id = r[0];
+				const Id = item.nodeName;
 				g_.Error_source = Id;
 				if (!AddonId[Id]) {
-					const Enabled = GetNum(r[1]);
+					const Enabled = GetNum(item.getAttribute("Enabled"));
 					if (Enabled) {
 						if (Enabled & 6) {
 							LoadLang2(BuildPath(ui_.Installed, "addons", Id, "lang", LangId + ".xml"));
 						}
 						if (Enabled & 8) {
-							await LoadAddon("vbs", Id, arError, null, window.chrome && GetNum(r[2]) < 2);
+							await LoadAddon("vbs", Id, arError, null, window.chrome && GetNum(item.getAttribute("Level")) < 2);
 						}
 						if (Enabled & 1) {
-							await LoadAddon("js", Id, arError, null, window.chrome && GetNum(r[2]) < 2);
+							await LoadAddon("js", Id, arError, null, window.chrome && GetNum(item.getAttribute("Level")) < 2);
 						}
 					}
 					AddonId[Id] = true;
@@ -400,6 +379,18 @@ ArrangeAddons = async function () {
 GetMiscIcon = async function (n) {
 	const s = BuildPath(ui_.DataFolder, "icons\\misc\\" + n + ".png");
 	return await fso.FileExists(s) ? s : "";
+}
+
+if (window.chrome) {
+	GetAddonElement = function (id) {
+		const items = ui_.Addons.getElementsByTagName(id.toLowerCase());
+		return  items.length ? items[0] : {
+			getAttribute: function () {
+				return "";
+			},
+			setAttribute: function () { }
+		}
+	}
 }
 
 // Events
@@ -465,7 +456,7 @@ Init = async function () {
 	te.Data.MainWindow = $;
 	te.Data.NoCssFont = ui_.NoCssFont;
 	await InitCode();
-	const r = await Promise.all([te.Data.DataFolder, $.DefaultFont, $.HOME_PATH, $.OpenMode, $.DefaultFont.lfFaceName, $.DefaultFont.lfHeight, $.DefaultFont.lfWeight, InitMenus(), LoadLang()]);
+	const r = await Promise.all([te.Data.DataFolder, $.DefaultFont, $.HOME_PATH, $.OpenMode, $.DefaultFont.lfFaceName, $.DefaultFont.lfHeight, $.DefaultFont.lfWeight, te.Data.Conf_IconSize, te.Data.Conf_InnerIconSize, InitMenus(), LoadLang()]);
 	ui_.DataFolder = r[0];
 	DefaultFont = r[1];
 	HOME_PATH = r[2];
@@ -473,6 +464,8 @@ Init = async function () {
 	document.body.style.fontFamily = r[4];
 	document.body.style.fontSize = Math.abs(r[5]) + "px";
 	document.body.style.fontWeight = r[6];
+	$.IconSize = IconSize = r[7] || screen.deviceYDPI / 4;
+	ui_.InnerIconSize = r[8] ? r[8] * 96 / screen.deviceYDPI : 16;
 	await ArrangeAddons();
 	RunEventUI("BrowserCreatedEx");
 	await RunEventUI1("Layout");

@@ -2662,8 +2662,8 @@ te.OnFilterView = function (FV, s) {
 	return S_FALSE;
 }
 
-te.OnVisibleChanged = function (Ctrl, Visible) {
-	RunEvent1("VisibleChanged", Ctrl, Visible);
+te.OnVisibleChanged = function (Ctrl) {
+	RunEvent1("VisibleChanged", Ctrl, Ctrl.Visible, Ctrl.Type, Ctrl.Id);
 }
 
 ShowStatusText = function (Ctrl, Text, iPart, tm) {
@@ -2820,9 +2820,7 @@ GetIconImage = function (Ctrl, clBk, bSimple) {
 		if (bSimple) {
 			return bSimple != 2 ? api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING) : "";
 		}
-		const sfi = api.Memory("SHFILEINFO");
-		api.SHGetFileInfo(FolderItem, 0, sfi, sfi.Size, SHGFI_SYSICONINDEX | SHGFI_PIDL);
-		const hIcon = GetHICON(sfi.iIcon, nSize, ILD_NORMAL);
+		const hIcon = GetHICON(SHGetFileInfo(FolderItem, 0, SHGFI_SYSICONINDEX | SHGFI_PIDL).iIcon, nSize, ILD_NORMAL);
 		if (hIcon) {
 			img = api.CreateObject("WICBitmap").FromHICON(hIcon);
 			api.DestroyIcon(hIcon);
@@ -2974,8 +2972,8 @@ importScripts = function () {
 	}
 }
 
-AddEvent("Arrange", function (Ctrl, rc) {
-	if (Ctrl.Type == CTRL_TE && !api.IsIconic(te.hwnd)) {
+AddEvent("Arrange", function (Ctrl, rc, Type, Id, FV) {
+	if (Type == CTRL_TE && !api.IsIconic(te.hwnd)) {
 		const rcClient = api.Memory("RECT");
 		api.GetClientRect(te.hwnd, rcClient);
 		rcClient.left += te.offsetLeft;
@@ -3030,7 +3028,7 @@ AddEvent("Arrange", function (Ctrl, rc) {
 				} else {
 					--rc.bottom;
 				}
-				te.OnArrange(TC, rc);
+				te.OnArrange(TC, rc, TC.Type, TC.Id, TC.Selected);
 			}
 		} catch (e) { }
 		te.UnlockUpdate(1);
@@ -3497,6 +3495,30 @@ FullscreenChanged = function (bFullscreen) {
 	RunEvent1("FullscreenChanged", bFullscreen);
 }
 
+GetAddonLocation = function (strName) {
+	const items = te.Data.Addons.getElementsByTagName(strName);
+	return items.length && items[0].getAttribute("Location");
+}
+
+SetAddonLocation = function (Location, strName) {
+	if (!g_.Locations[Location]) {
+		g_.Locations[Location] = api.CreateObject("Array");
+	}
+	g_.Locations[Location].push(strName);
+}
+
+FocusFV2 = function () {
+	const hFocus = api.GetFocus();
+	if (hFocus == te.hwnd || api.IsChild(te.hwnd, hFocus)) {
+		const FV = GetFolderView();
+		if (FV) {
+			if (!api.PathMatchSpec(api.GetClassName(hFocus), WC_EDIT + ";" + WC_TREEVIEW)) {
+				FV.Focus();
+			}
+		}
+	}
+}
+
 SetMenuExec = function (n, strName, strMenu, nPos, strExec) {
 	if (!Common[n]) {
 		Common[n] = api.CreateObject("Object");
@@ -3512,6 +3534,15 @@ SetMenuExec = function (n, strName, strMenu, nPos, strExec) {
 		'}\n',
 		'return nPos;\n',
 	'});'].join(""))();
+}
+
+InitAddonsXML = function () {
+	const xml = api.CreateObject("Msxml2.DOMDocument");
+	xml.async = false;
+	const s = ReadTextFile(BuildPath(te.Data.DataFolder, "config\\addons.xml")) || "<xml></xml>";
+	xml.loadXML(s);
+	te.Data.Addons = xml;
+	return window.chrome && s;
 }
 
 InitCode = function () {

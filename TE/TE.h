@@ -595,7 +595,7 @@ public:
 	STDMETHODIMP_(ULONG) AddRef();
 	STDMETHODIMP_(ULONG) Release();
 
-	CteActiveScriptSite(IUnknown *punk, EXCEPINFO *pExcepInfo, HRESULT *phr);
+	CteActiveScriptSite(IUnknown *punk, EXCEPINFO *pExcepInfo, HRESULT **pphr);
 	~CteActiveScriptSite();
 	//ActiveScriptSite
 	STDMETHODIMP GetLCID(LCID *plcid);
@@ -616,7 +616,7 @@ public:
 public:
 	IDispatchEx	*m_pDispatchEx;
 	EXCEPINFO *m_pExcepInfo;
-	HRESULT	*m_phr;
+	HRESULT	**m_pphr;
 	LONG		m_cRef;
 };
 
