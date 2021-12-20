@@ -1,6 +1,6 @@
 const Addon_Id = "multithread";
-const item = await $.GetAddonElement(Addon_Id);
-if (!await item.getAttribute("Set")) {
+const item = await GetAddonElement(Addon_Id);
+if (!item.getAttribute("Set")) {
 	item.setAttribute("Copy", 1);
 	item.setAttribute("Move", 1);
 	item.setAttribute("Delete", 1);

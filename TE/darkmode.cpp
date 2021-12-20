@@ -565,9 +565,6 @@ LRESULT CALLBACK TETTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 				VariantClear(&vResult);
 			}
 		}
-		if (msg == WM_NCPAINT) {
-			SetWindowTheme(hwnd, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
-		}
 	} catch (...) {
 		g_nException = 0;
 #ifdef _DEBUG
@@ -587,8 +584,8 @@ LRESULT CALLBACK CBTProc(int nCode, WPARAM wParam, LPARAM lParam)
 			SetWindowSubclass(hwnd, TEDlgProc, (UINT_PTR)TEDlgProc, 0);
 		} else if (::PathMatchSpecA(pszClassA, TOOLTIPS_CLASSA)) {
 			SetWindowSubclass(hwnd, TETTProc, (UINT_PTR)TETTProc, 0);
-			/*} else if (!lstrcmpA(pszClassA, "#32768")) {
-			Sleep(0);*/
+			SetWindowTheme(hwnd, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
+			g_umDlgProc.try_emplace(hwnd, hwnd);
 		}
 	} else if (nCode == HCBT_DESTROYWND) {
 		HWND hwnd = (HWND)wParam;

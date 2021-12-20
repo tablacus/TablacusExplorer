@@ -187,6 +187,7 @@ BOOL	g_bDragging = FALSE;
 BOOL	g_bCanLayout = FALSE;
 BOOL	g_bUpper10;
 extern BOOL	g_bDarkMode;
+extern std::unordered_map<HWND, HWND> g_umDlgProc;
 BOOL	g_bDragIcon = TRUE;
 COLORREF g_clrBackground = GetSysColor(COLOR_WINDOW);
 #ifdef _2000XP
@@ -5163,6 +5164,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				}
 				teGetDarkMode();
 				teSetDarkMode(hWnd);
+				CHAR pszClassA[MAX_CLASS_NAME];
+				for (auto itr = g_umDlgProc.begin(); itr != g_umDlgProc.end(); ++itr) {
+					GetClassNameA(itr->second, pszClassA, MAX_CLASS_NAME);
+					if (::PathMatchSpecA(pszClassA, TOOLTIPS_CLASSA)) {
+						SetWindowTheme(itr->second, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
+					}
+				}
 				if (_RegenerateUserEnvironment) {
 					try {
 						if (teStrCmpIWA((LPCWSTR)lParam, "Environment") == 0) {

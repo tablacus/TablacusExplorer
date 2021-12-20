@@ -1278,10 +1278,6 @@ async function AddonInfo(Id, Alt) {
 	}
 }
 
-async function AddonWebsite(Id) {
-	wsh.run(await GetAddonInfo(Id).URL);
-}
-
 function AddonEnable(o, Id) {
 	SetAddon(Id, o.checked);
 	document.getElementById("enable_" + Id).checked = o.checked;
@@ -1767,35 +1763,42 @@ InitDialog = async function () {
 		WebBrowser.OnClose = ReturnDialogResult;
 	}
 	if (Query == "about") {
-		const promise = [MakeImgSrc(ui_.TEPath, 0, true, 48), AboutTE(2), GetTextR(ui_.bit + '-bit'), te.Data.DataFolder, AboutTE(3)];
+		const r = [MakeImgSrc(ui_.TEPath, 0, true, 48), AboutTE(2), GetTextR(ui_.bit + '-bit'), te.Data.DataFolder, AboutTE(3), GetLangId()];
 		const s = ['<table style="border-spacing: 2em; border-collapse: separate; width: 100%"><tr><td>'];
 		s.push('<img id="img1"></td><td style="width: 100%"><div class="nowrap"><span style="font-weight: bold; font-size: 120%" id="about2"></span> (<span id="bit1"></span>)</div>');
 		s.push('<br><div id="lib"></div>');
-		s.push('<br><label>@sqlsrv32.rll,-40028</label><br><a href="#" class="link" onclick="Run(1, this)" id="df1"></a><br>');
+		s.push('<br><label>@sqlsrv32.rll,-40028</label><br><a class="link" onclick="Run(1, this); return false" id="df1"></a><br>');
 		s.push('<br><label>Information</label><input id="about3" type="text" style="width: 100%" onclick="this.select()" readonly><br>');
-		const nAddon = promise.length;
+		const nAddon = r.length;
 		const root = await te.Data.Addons.documentElement;
 		if (root) {
 			const items = await root.childNodes;
 			if (items) {
 				const nLen = await GetLength(items);
 				for (let i = 0; i < nLen; ++i) {
-					promise.push(items[i].getAttribute("Enabled"), items[i].nodeName, GetAddonInfo(i).Version);
+					r.push(items[i].getAttribute("Enabled"), items[i].nodeName, GetAddonInfo(i).Version);
 				}
 			}
 			s.push('<br><label>Add-ons</label><input id="UsedAddons" type="text" style="width: 100%" onclick="this.select()"><br>');
 		}
-		s.push('<br><input type="button" value="Visit website" onclick="Run(2)">');
+		s.push('<br><input type="button" value="Visit website" id="ws1" onclick="Run(2)">');
 		s.push('&nbsp;<input type="button" value="Check for updates" onclick="Run(3)">');
 		s.push('</td></tr></table>');
 		document.getElementById("Content").innerHTML = s.join("");
-		if (promise.length) {
-			Promise.all(promise).then(async function (r) {
+		let website = "https://tablacus.github.io/explorer_en.html"; 
+		if (r.length) {
+			Promise.all(r).then(async function (r) {
 				document.getElementById("img1").src = r[0];
 				document.getElementById("about2").innerHTML = r[1];
 				document.getElementById("bit1").innerHTML = r[2];
 				document.getElementById("about3").value = r[4];
-				document.getElementById("df1").innerHTML = BuildPath(r[3], "config");
+				if (/^ja/i.test(r[5])) {
+					website = website.replace("_en", "");
+				}
+				document.getElementById("ws1").title = website;
+
+				const el = document.getElementById("df1");
+				el.innerHTML = el.href = BuildPath(r[3], "config");
 				const ar = [];
 				for (let i = nAddon; i < r.length; i += 3) {
 					if (GetNum(r[i]) && r[i + 2]) {
@@ -1815,7 +1818,7 @@ InitDialog = async function () {
 		Run = async function (n, el) {
 			setTimeout(function (n, path) {
 				if (n == 2) {
-					wsh.Run("https://tablacus.github.io/explorer_en.html");
+					wsh.Run(website);
 				} else if (n == 3) {
 					if (window.chrome) {
 						MainWindow.CheckUpdate();
@@ -1831,14 +1834,14 @@ InitDialog = async function () {
 
 		s.length = 0;
 		if (await api.GetModuleHandle(ui_.TEPath)) {
-			s.push('<a href="#" class="link" onclick="Run(0, this)">', ui_.TEPath, "</a> (", await fso.GetFileVersion(ui_.TEPath), ")<br>");
+			s.push('<a href="', ui_.TEPath,'" class="link" onclick="Run(0, this);return false">', ui_.TEPath, "</a> (", await fso.GetFileVersion(ui_.TEPath), ")<br>");
 		}
 		const wfd = await api.Memory("WIN32_FIND_DATA");
 		const hFind = await api.FindFirstFile(BuildPath(ui_.Installed, "lib\\*.dll"), wfd);
 		for (let bFind = hFind != INVALID_HANDLE_VALUE; await bFind; bFind = await api.FindNextFile(hFind, wfd)) {
 			const dll = BuildPath(ui_.Installed, "lib", await wfd.cFileName);
 			if (await api.GetModuleHandle(dll)) {
-				s.push('<a href="#" class="link" onclick="Run(0, this)">', dll, "</a> (", await fso.GetFileVersion(dll), ")<br>");
+				s.push('<a href="', dll, '" class="link" onclick="Run(0, this); return false">', dll, "</a> (", await fso.GetFileVersion(dll), ")<br>");
 			}
 		}
 		api.FindClose(hFind);
@@ -2687,7 +2690,7 @@ async function ArrangeAddon(xml, td) {
 			if (!ui_.strDetails) {
 				ui_.strDetails = await GetText('Details');
 			}
-			s.push('<a href="#" title="', info.Details, '" class="link" onclick="wsh.run(this.title); return false;">', ui_.strDetails, '</a><br>');
+			s.push('<a href="', info.Details, '" title="', info.Details, '" class="link" onclick="wsh.run(this.title); return false;">', ui_.strDetails, '</a><br>');
 		}
 		s.push(await FormatDate(dt), '</td><td align="right">');
 		let dt2 = (dt.getTime() / (24 * 60 * 60 * 1000)) - info.Version;
@@ -2834,7 +2837,7 @@ async function IconPacksList1(s, Id, info, json) {
 	s.push('<img src="', urlIcons, Id, '/preview.png" align="left" style="margin-right: 8px"><b style="font-size: 1.3em">', info.name[langId] || info.name.en, '</b> ');
 	s.push(info.version, " ");
 	if (info.URL) {
-		s.push('<a href="#" class="link" onclick="wsh.run(\'', info.URL, '\'); return false;">');
+		s.push('<a href="', info.URL, '" title="', info.URL, '" class="link" onclick="wsh.run(this.title); return false;">');
 	}
 	s.push(info.creator[langId] || info.creator.en);
 	if (info.URL) {

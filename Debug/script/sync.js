@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20211219 ? te.Version : 20211219;
+		return te.Version < 20211220 ? te.Version : 20211220;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3192,11 +3192,13 @@ SetLang2 = function (s, v) {
 	}
 }
 
-CloseWindows = function (hwnd) {
+CloseWindows = function (hwnd, s) {
 	let hwnd1;
 	while (hwnd1 = api.FindWindowEx(null, hwnd1, null, null)) {
 		if (hwnd == api.GetWindowLongPtr(hwnd1, GWLP_HWNDPARENT)) {
-			api.PostMessage(hwnd1, WM_CLOSE, 0, 0);
+			if (api.PathMatchSpec(api.GetClassName(hwnd1), s)) {
+				api.PostMessage(hwnd1, WM_CLOSE, 0, 0);
+			}
 		}
 	}
 }
@@ -3457,7 +3459,13 @@ FolderMenu = {
 	Invoke: function (FolderItem, wFlags, FV) {
 		if (FolderItem) {
 			const path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
-			const bVirtual = api.ILIsParent(1, FolderItem, false) || FolderItem.Unavailable;
+			let bVirtual = FolderItem.Unavailable;
+			if (api.ILIsParent(1, FolderItem, false)) {
+				bVirtual = true;
+				if (!FolderItem.Enum) {
+					FolderItem = api.ILCreateFromPath(path);
+				}
+			}
 			if (MainWindow.g_menu_button == 2 || /popup/i.test(wFlags)) {
 				const pt = api.Memory("POINT");
 				api.GetCursorPos(pt);

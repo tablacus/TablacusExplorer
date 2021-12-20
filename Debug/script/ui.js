@@ -783,7 +783,7 @@ CloseWindow = async function () {
 }
 
 CloseSubWindows = async function () {
-	CloseWindows(await GetTopWindow());
+	CloseWindows(await GetTopWindow(), "TablacusExplorer*");
 }
 
 MouseOver = async function (o) {
