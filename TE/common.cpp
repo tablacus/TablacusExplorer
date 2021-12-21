@@ -292,8 +292,9 @@ HRESULT Invoke5(IDispatch *pdisp, DISPID dispid, WORD wFlags, VARIANT *pvResult,
 		dispParams.cNamedArgs = 0;
 	}
 	try {
-		hr = pdisp->Invoke(dispid, IID_NULL, LOCALE_USER_DEFAULT,
-			wFlags, &dispParams, pvResult, NULL, NULL);
+		if (pdisp) {
+			hr = pdisp->Invoke(dispid, IID_NULL, LOCALE_USER_DEFAULT, wFlags, &dispParams, pvResult, NULL, NULL);
+		}
 #ifdef _DEBUG
 		if (hr) {
 			WCHAR pszFunc[99];
@@ -2452,7 +2453,7 @@ HRESULT teExtract(IStorage *pStorage, LPWSTR lpszFolderPath, IProgressDialog *pp
 				teSetProgress(ppd, pnItems[0], nCount, 2);
 				hr = pStorage->OpenStream(statstg.pwcsName, NULL, STGM_READ, NULL, &pStream);
 				if SUCCEEDED(hr) {
-					HANDLE hFile = CreateFile(bsPath, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+					HANDLE hFile = CreateFile(bsPath, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_ARCHIVE, NULL);
 					if (hFile != INVALID_HANDLE_VALUE) {
 						while (SUCCEEDED(pStream->Read(pszData, SIZE_BUFF, &uRead)) && uRead) {
 							WriteFile(hFile, pszData, uRead, &dwWriteByte, NULL);

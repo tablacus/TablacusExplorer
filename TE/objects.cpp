@@ -2931,7 +2931,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					::OutputDebugStringA("\n");
 #endif
 					if (!pStream) {
-						if FAILED(SHCreateStreamOnFileEx(lpfn, STGM_READ | STGM_SHARE_DENY_NONE, FILE_ATTRIBUTE_NORMAL, FALSE, NULL, &pStream)) {
+						if FAILED(SHCreateStreamOnFileEx(lpfn, STGM_READ | STGM_SHARE_DENY_NONE, FILE_ATTRIBUTE_ARCHIVE, FALSE, NULL, &pStream)) {
 							pStream = SHCreateMemStream(NULL, NULL);
 						}
 					}
@@ -3047,7 +3047,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				if (GetEncoderClsid(vText.bstrVal, &encoderClsid, NULL)) {
 					LONG lQuality = nArg ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) : 0;
 					IStream *pStream;
-					hr = SHCreateStreamOnFileEx(vText.bstrVal, STGM_WRITE | STGM_CREATE | STGM_SHARE_DENY_WRITE, FILE_ATTRIBUTE_NORMAL, TRUE, NULL, &pStream);
+					hr = SHCreateStreamOnFileEx(vText.bstrVal, STGM_WRITE | STGM_CREATE | STGM_SHARE_DENY_WRITE, FILE_ATTRIBUTE_ARCHIVE, TRUE, NULL, &pStream);
 					if SUCCEEDED(hr) {
 						hr = CreateStream(pStream, encoderClsid, lQuality);
 						SafeRelease(&pStream);

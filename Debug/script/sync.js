@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20211220 ? te.Version : 20211220;
+		return te.Version < 20211221 ? te.Version : 20211221;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -207,6 +207,14 @@ RegEnumKey = function (hKey, Name, bSA) {
 		r = api.CreateObject("SafeArray", []);
 	}
 	return bSA ? r : "undefined" !== typeof ScriptEngineMajorVersion && r.toArray ? r.toArray() : api.CreateObject("Array", r);
+}
+
+ObjectKeys = function (o, bSA) {
+	const r = [];
+	for (let s in o) {
+		r.push(s);
+	}
+	return bSA ? api.CreateObject("SafeArray", r) : r;
 }
 
 OpenDialog = function (path, bFilesOnly) {
@@ -577,7 +585,17 @@ IsSearchPath = function (pid, bText) {
 }
 
 IsCloud = function (Item) {
-	return Item && /[NO]|D.*I/i.test(Item.ExtendedProperty("Attributes"));
+	if (Item) {
+		if (/O|D.*I/i.test(Item.ExtendedProperty("Attributes"))) {
+			return true;
+		}
+		const res = /^([A-Z]):\\/i.exec(Item.Path);
+		if (res) {
+			const d = fso.GetDrive(res[1]);
+			return d && /Google Drive|\@gmail\.com/i.test(d.VolumeName);
+		}
+	}
+	return false;
 }
 
 LoadXml = function (filename, nGroup) {
@@ -1001,6 +1019,25 @@ RemoveCommand = function (hMenu, ContextMenu, strDelete) {
 }
 
 DeleteTempFolder = function () {
+	if (g_.strUpdate) {
+		PerformUpdate();
+		return;
+	}
+	let nTE = 0;
+	try {
+		const sw = sha.Windows();
+		for (let i = sw.Count; --i >= 0;) {
+			const x = sw.item(i);
+			if (x && x.Document) {
+				const w = x.Document.parentWindow;
+				if (w && w.te && w.te.Data) {
+					if (++nTE == 2) {
+						return;
+					}
+				}
+			}
+		}
+	} catch (e) { }
 	const path = GetTempPath(1);
 	const wfd = api.Memory("WIN32_FIND_DATA");
 	const hFind = api.FindFirstFile(path + "\\*", wfd);

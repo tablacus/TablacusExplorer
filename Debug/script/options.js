@@ -1785,7 +1785,7 @@ InitDialog = async function () {
 		s.push('&nbsp;<input type="button" value="Check for updates" onclick="Run(3)">');
 		s.push('</td></tr></table>');
 		document.getElementById("Content").innerHTML = s.join("");
-		let website = "https://tablacus.github.io/explorer_en.html"; 
+		let website = "https://tablacus.github.io/explorer_en.html";
 		if (r.length) {
 			Promise.all(r).then(async function (r) {
 				document.getElementById("img1").src = r[0];
@@ -1987,6 +1987,31 @@ MouseWheel = async function (ev) {
 	return false;
 }
 
+SetLocations = async function () {
+	const locs = {};
+	const items = await MainWindow.g_.Locations;
+	const r = await ObjectKeys(items, window.chrome);
+	for (let i = 0; i < r.length; ++i) {
+		locs[r[i]] = [];
+		const dup = {};
+		const item1 = window.chrome ? await api.CreateObject("SafeArray", await items[r[i]]) : items[r[i]];
+		for (let j = item1.length; j--;) {
+			const ar = item1[j].split("\t");
+			if (dup[ar[0]]) {
+				continue;
+			}
+			dup[ar[0]] = true;
+			locs[r[i]].unshift(await GetImgTag({ src: ar[1], title: await GetAddonInfo(ar[0]).Name, "class": ar[1] ? "" : "text1" }, 16) + '<span style="font-size: 1px"> </span>');
+		}
+	}
+	for (let i in locs) {
+		const s = locs[i].join("");
+		try {
+			document.getElementById('_' + i).innerHTML = s;
+		} catch (e) { }
+	}
+}
+
 InitLocation = function () {
 	Promise.all([api.CreateObject("Array"), api.CreateObject("Object"), dialogArguments.Data.id, te.Data.DataFolder, GetLangId()]).then(async function (r) {
 		let ar = r[0];
@@ -2034,28 +2059,7 @@ InitLocation = function () {
 				break;
 			}
 		}
-		const locs = {};
-		const items = await MainWindow.g_.Locations;
-		for (let list = await api.CreateObject("Enum", items); !await list.atEnd(); await list.moveNext()) {
-			const i = await list.item();
-			locs[i] = [];
-			const dup = {};
-			const item1 = window.chrome ? await api.CreateObject("SafeArray", await items[i]) : items[i];
-			for (let j = item1.length; j--;) {
-				const ar = item1[j].split("\t");
-				if (dup[ar[0]]) {
-					continue;
-				}
-				dup[ar[0]] = true;
-				locs[i].unshift(await GetImgTag({ src: ar[1], title: await GetAddonInfo(ar[0]).Name, "class": ar[1] ? "" : "text1" }, 16) + '<span style="font-size: 1px"> </span>');
-			}
-		}
-		for (let i in locs) {
-			const s = locs[i].join("");
-			try {
-				document.getElementById('_' + i).innerHTML = s;
-			} catch (e) { }
-		}
+		SetLocations();
 		let oa = document.F.Menu;
 		oa.length = 0;
 		let o = oa[++oa.length - 1];
@@ -2077,11 +2081,11 @@ InitLocation = function () {
 			o = oa[++oa.length - 1];
 			o.value = "";
 			o.text = await GetText("Select");
-			for (let list = await api.CreateObject("Enum", await MainWindow.eventTE[mode]); !await list.atEnd(); await list.moveNext()) {
-				const j = await list.item();
+			const r = await ObjectKeys(await MainWindow.eventTE[mode], window.chrome);
+			for (j = 0; j < r.length; ++j) {
 				o = oa[++oa.length - 1];
-				o.text = await GetTextEx(j);
-				o.value = j;
+				o.value = r[j];
+				o.text = await GetTextEx(r[j]);
 			}
 		}
 		const el = document.F;

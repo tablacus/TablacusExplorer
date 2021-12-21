@@ -635,7 +635,7 @@ BOOL teGetHTMLWindow(IWebBrowser2 *pWB2, REFIID riid, void **ppvObject)
 BSTR teLoadFromFile(BSTR bsFile)
 {
 	BSTR bsResult = NULL;
-	HANDLE hFile = CreateFile(bsFile, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	HANDLE hFile = CreateFile(bsFile, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_ARCHIVE, NULL);
 	if (hFile != INVALID_HANDLE_VALUE) {
 		DWORD dwFileSize, dwFileSize2;
 		dwFileSize = GetFileSize(hFile, &dwFileSize2);
@@ -6983,7 +6983,7 @@ VOID CteShellBrowser::SetHistory(FolderItems *pFolderItems, UINT wFlags)
 
 STDMETHODIMP CteShellBrowser::GetViewStateStream(DWORD grfMode, IStream **ppStrm)
 {
-//	return SHCreateStreamOnFileEx(L"", STGM_READWRITE | STGM_SHARE_DENY_WRITE, FILE_ATTRIBUTE_NORMAL, TRUE, NULL, ppStrm);
+//	return SHCreateStreamOnFileEx(L"", STGM_READWRITE | STGM_SHARE_DENY_WRITE, FILE_ATTRIBUTE_ARCHIVE, TRUE, NULL, ppStrm);
 	return E_NOTIMPL;
 }
 
@@ -8362,7 +8362,9 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			return S_OK;
 
 		case TE_PROPERTY + 0xf505://SessionId
-			teSetLong(pVarResult, m_pFolderItem->m_dwSessionId);
+			if (m_pFolderItem) {
+				teSetLong(pVarResult, m_pFolderItem->m_dwSessionId);
+			}
 			return S_OK;
 
 		case DISPID_VALUE:

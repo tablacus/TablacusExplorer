@@ -3419,7 +3419,6 @@ UpdateAndReload = function (arg) {
 		update = BuildPath(te.Data.Installed, "script\\update.js");
 	}
 	g_.strUpdate = [PathQuoteSpaces(BuildPath(api.IsWow64Process(api.GetCurrentProcess()) ? GetWindowsPath("Sysnative") : system32, "wscript.exe")), PathQuoteSpaces(update), PathQuoteSpaces(api.GetModuleFileName(null)), PathQuoteSpaces(arg.temp), PathQuoteSpaces(api.LoadString(hShell32, 12612)), PathQuoteSpaces(api.LoadString(hShell32, 12852))].join(" ");
-	DeleteTempFolder = PerformUpdate;
 	WmiProcess("WHERE ExecutablePath='" + (api.GetModuleFileName(null).split("\\").join("\\\\")) + "' AND ProcessId!=" + arg.pid, function (item) {
 		item.Terminate();
 	});
@@ -3539,7 +3538,7 @@ SetMenuExec = function (n, strName, strMenu, nPos, strExec) {
 InitAddonsXML = function () {
 	const xml = api.CreateObject("Msxml2.DOMDocument");
 	xml.async = false;
-	const s = ReadTextFile(BuildPath(te.Data.DataFolder, "config\\addons.xml")) || "<xml></xml>";
+	const s = ReadTextFile(BuildPath(te.Data.DataFolder, "config\\addons.xml")) || ReadTextFile(BuildPath(te.Data.DataFolder, "init\\addons.xml")) || "<xml></xml>";
 	xml.loadXML(s);
 	te.Data.Addons = xml;
 	return window.chrome && s;
@@ -3562,11 +3561,11 @@ InitCode = function () {
 	while (i-- > 4 && g_.KeyState[i][0] == g_.KeyState[i - 4][0]) {
 		g_.KeyState.pop();
 	}
-	for (let j = 256; j >= 0; j -= 256) {
-		for (let i = 128; i > 0; i--) {
-			const v = api.GetKeyNameText((i + j) * 0x10000);
+	for (let i = 384; i > 0; i--) {
+		if (!(i & 128)) {
+			const v = api.GetKeyNameText(i * 0x10000);
 			if (v && v.charCodeAt(0) > 32) {
-				g_.KeyCode[v.toUpperCase()] = i + j;
+				g_.KeyCode[v.toUpperCase()] = i;
 			}
 		}
 	}
@@ -3845,4 +3844,3 @@ if (!te.Data) {
 	delete g_.xmlWindow;
 }
 Exchange = te.Data.Exchange;
-

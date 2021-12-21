@@ -1208,18 +1208,13 @@ MakeKeySelect = async function () {
 	oa[++oa.length - 1].value = "";
 	oa[oa.length - 1].text = await GetText("Select");
 	s = [];
-	for (let j = 256; j >= 0; j -= 256) {
-		let r = [];
-		for (let i = 128; i > 0; i--) {
-			r[i] = api.GetKeyNameText((i + j) * 0x10000);
+	for (let i = 384; i > 0; i--) {
+		if (!(i & 128)) {
+			s.push(api.GetKeyNameText(i * 0x10000));
 		}
-		r = await Promise.all(r);
-		for (let i = 128; i > 0; i--) {
-			const v = r[i];
-			if (v && v.charCodeAt(0) > 32) {
-				s.push(v);
-			}
-		}
+	}
+	if (window.chrome) {
+		s = await Promise.all(s);
 	}
 	s.sort(function (a, b) {
 		if (a.length != b.length && (a.length == 1 || b.length == 1)) {
@@ -1227,13 +1222,15 @@ MakeKeySelect = async function () {
 		}
 		return a > b ? 1 : a < b ? -1 : 0;
 	});
-	let j = "";
+	let v = "";
 	for (i in s) {
-		if (j != s[i]) {
-			j = s[i];
-			const o = oa[++oa.length - 1];
-			o.value = j;
-			o.text = j;
+		if (v != s[i]) {
+			if (v = s[i]) {
+				if (v.charCodeAt(0) > 32) {
+					const o = oa[++oa.length - 1];
+					o.text = o.value = v;
+				}
+			}
 		}
 	}
 }

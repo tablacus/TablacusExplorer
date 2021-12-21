@@ -3816,7 +3816,7 @@ VOID teApiURLDownloadToFile(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 		IStream *pDst, *pSrc;
 		hr = punk->QueryInterface(IID_PPV_ARGS(&pSrc));
 		if SUCCEEDED(hr) {
-			hr = SHCreateStreamOnFileEx(param[2].bstrVal, STGM_WRITE | STGM_CREATE | STGM_SHARE_DENY_WRITE, FILE_ATTRIBUTE_NORMAL, TRUE, NULL, &pDst);
+			hr = SHCreateStreamOnFileEx(param[2].bstrVal, STGM_WRITE | STGM_CREATE | STGM_SHARE_DENY_WRITE, FILE_ATTRIBUTE_ARCHIVE, TRUE, NULL, &pDst);
 			if SUCCEEDED(hr) {
 				teCopyStream(pSrc, pDst);
 				pDst->Release();
@@ -3834,7 +3834,7 @@ VOID teApiURLDownloadToFile(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 					VariantInit(&vMem);
 					UINT nLen = GetpDataFromVariant(&pc, &v, &vMem);
 					if (nLen) {
-						HANDLE hFile = CreateFile(param[2].bstrVal, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+						HANDLE hFile = CreateFile(param[2].bstrVal, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_ARCHIVE, NULL);
 						if (hFile != INVALID_HANDLE_VALUE) {
 							DWORD dwWriteByte;
 							if (WriteFile(hFile, pc, nLen, &dwWriteByte, NULL)) {
@@ -3860,7 +3860,7 @@ VOID teApiURLDownloadToFile(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 			if (CryptStringToBinary(lpBase64, dwLen, CRYPT_STRING_BASE64, NULL, &dwData, NULL, NULL) && dwData > 0) {
 				BSTR bs = ::SysAllocStringByteLen(NULL, dwData);
 				CryptStringToBinary(lpBase64, dwLen, CRYPT_STRING_BASE64, (BYTE *)bs, &dwData, NULL, NULL);
-				HANDLE hFile = CreateFile(param[2].bstrVal, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+				HANDLE hFile = CreateFile(param[2].bstrVal, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_ARCHIVE, NULL);
 				if (hFile != INVALID_HANDLE_VALUE) {
 					DWORD dwWriteByte;
 					if (WriteFile(hFile, bs, dwData, &dwWriteByte, NULL)) {
