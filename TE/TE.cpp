@@ -3220,11 +3220,12 @@ VOID ArrangeWindowEx()
 		return;
 	}
 	g_bArrange = FALSE;
-
-	VARIANTARG *pv = GetNewVARIANT(3);
-	teSetObject(&pv[2], g_pTE);
-	teSetLong(&pv[0], CTRL_TE);
-	Invoke4(g_pOnFunc[TE_OnArrange], NULL, 3, pv);
+	if (g_pOnFunc[TE_OnArrange]) {
+		VARIANTARG *pv = GetNewVARIANT(3);
+		teSetObject(&pv[2], g_pTE);
+		teSetLong(&pv[0], CTRL_TE);
+		Invoke4(g_pOnFunc[TE_OnArrange], NULL, 3, pv);
+	}
 }
 
 LRESULT CALLBACK TESTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
@@ -4856,7 +4857,7 @@ function _c(s) {\
 
 VOID ArrangeWindow()
 {
-	if (g_bArrange || !g_pOnFunc[TE_OnArrange]) {
+	if (g_bArrange) {
 		return;
 	}
 	g_bArrange = TRUE;
@@ -4910,6 +4911,17 @@ static void threadParseDisplayName(void *args)
 	try {
 		if (!pInvoke->pidl && pInvoke->bsPath) {
 			pInvoke->pidl = teILCreateFromPath1(pInvoke->bsPath);
+			IShellFolder *pSF;
+			if (GetShellFolder(&pSF, pInvoke->pidl)) {
+				IEnumIDList *peidl = NULL;
+				HRESULT hr = pSF->EnumObjects(NULL, SHCONTF_FOLDERS | SHCONTF_NONFOLDERS, &peidl);
+				if (hr == S_OK) {
+					peidl->Release();
+				} else if (hr == WININET_E_CANNOT_CONNECT) {
+					teILFreeClear(&pInvoke->pidl);
+				}
+				pSF->Release();
+			}
 		}
 		if (pInvoke->wMode) {
 			pInvoke->hr = E_PATH_NOT_FOUND;
@@ -6303,7 +6315,12 @@ HRESULT CteShellBrowser::GetAbsPath(FolderItem *pid, UINT wFlags, FolderItems *p
 	}
 	LPITEMIDLIST pidl = NULL;
 	if (Navigate1(pid, wFlags, pFolderItems, pPrevious, 2)) {
-		return S_FALSE;
+		if (m_pShellView || g_nLockUpdate > 1) {
+			return S_FALSE;
+		}
+		teQueryFolderItem(pid, &m_pFolderItem1);
+		teILCloneReplace(&m_pFolderItem1->m_pidlAlt, g_pidls[CSIDL_RESULTSFOLDER]);
+		return S_OK;
 	}
 	if (wFlags & SBSP_RELATIVE) {
 		LPITEMIDLIST pidlPrevius = NULL;

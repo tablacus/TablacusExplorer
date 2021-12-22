@@ -3060,6 +3060,11 @@ AddEvent("Exec", function (Ctrl, s, type, hwnd, pt, dataObj, grfKeyState, pdwEff
 	}
 });
 
+AddEvent("GetFolderItemName", function (pid) {
+	const res = /^ftp:\/\/([^:\/]+)[^\/]*\/$/i.exec(pid.Path);
+	return res && res[1];
+});
+
 AddEvent("MenuState:Tabs:Close Tab", function (Ctrl, pt, mii) {
 	const FV = GetFolderView(Ctrl, pt);
 	if (CanClose(FV)) {

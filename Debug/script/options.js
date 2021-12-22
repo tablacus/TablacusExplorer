@@ -2974,7 +2974,9 @@ async function InstallLang2(xhr, url, s) {
 	await WriteTextFile(src, await xhr.get_responseText ? await xhr.get_responseText() : xhr.responseText);
 	await SetFileTime(src, null, null, new Date(ar[1]).getTime());
 	await api.SHFileOperation(FO_MOVE, src, BuildPath(ui_.Installed, "lang"), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, false);
-	MessageBox("Completed.", TITLE, MB_OK);
+	document.F.Conf_Lang.value = ar[0].replace(/\.xml$/i, "");
+	g_bChanged = true;
+	await MessageBox("Completed.", TITLE, MB_OK);
 	ClickTree("tab0");
 }
 

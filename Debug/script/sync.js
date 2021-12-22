@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20211221 ? te.Version : 20211221;
+		return te.Version < 20211222 ? te.Version : 20211222;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -2100,6 +2100,9 @@ IsFolderEx = function (Item) {
 			const hr = api.SHGetDataFromIDList(Item, SHGDFIL_FINDDATA, wfd, wfd.Size);
 			return (hr < 0) || (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 || !/^[A-Z]:\\|^\\\\\w.*\\.*\\/i.test(Item.Path);
 		}
+		if (/^ftp:|^https?:/i.test(Item.Path)) {
+			return Item.IsFolder;
+		}
 		return !Item.IsFileSystem && Item.IsBrowsable;
 	}
 	return false;
@@ -2633,7 +2636,7 @@ GetAccelerator = function (s) {
 }
 
 GetNetworkIcon = function (path) {
-	if (api.PathIsNetworkPath(path)) {
+	if (api.PathIsNetworkPath(path) && !/^ftp:|^https?:/.test(path)) {
 		if (/^\\\\[^\\]+$/.test(path)) {
 			return "icon:shell32.dll,15";
 		}

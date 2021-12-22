@@ -1,5 +1,5 @@
-var Addon_Id = "remember";
-var item = GetAddonElement(Addon_Id);
+const Addon_Id = "remember";
+let item = GetAddonElement(Addon_Id);
 
 Common.Remember = api.CreateObject("Object");
 Common.Remember.db = api.CreateObject("Object");
@@ -15,11 +15,11 @@ Sync.Remember = {
 
 	RememberFolder: function (FV) {
 		if (FV && FV.FolderItem && !FV.FolderItem.Unavailable && FV.Data && FV.Data.Remember) {
-			var path = Sync.Remember.GetPath(FV);
+			const path = Sync.Remember.GetPath(FV);
 			if (path == FV.Data.Remember && PathMatchEx(path, Sync.Remember.Filter) && !PathMatchEx(path, Sync.Remember.Disable)) {
-				var col = FV.Columns(Sync.Remember.nFormat);
+				const col = FV.Columns(Sync.Remember.nFormat);
 				if (col) {
-					var ar = api.CreateObject("Array");
+					const ar = api.CreateObject("Array");
 					ar.push(new Date().getTime(), FV.CurrentViewMode, FV.IconSize, col, FV.GetSortColumn(Sync.Remember.nFormat), FV.GroupBy, FV.SortColumns);
 					Common.Remember.db[path] = ar;
 				}
@@ -28,23 +28,28 @@ Sync.Remember = {
 	},
 
 	GetPath: function (pid) {
-		var path = ("string" === typeof pid ? pid : String(api.GetDisplayNameOf(pid, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX))).toLowerCase();
-		var res = /^([a-z][a-z\-_]+:).*/i.exec(path);
-		return res ? res[1] : path;
+		const path = ("string" === typeof pid ? pid : String(api.GetDisplayNameOf(pid, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX))).toLowerCase();
+		if (!/^ftp:|^https?:/i.test(path)) {
+			const res = /^([a-z][a-z\-_]+:).*/i.exec(path);
+			if (res) {
+				return res[1];
+			}
+		}
+		return path;
 	}
 };
 
-var xml = OpenXml("remember.xml", true, false);
+let xml = OpenXml("remember.xml", true, false);
 if (xml) {
-	var items = xml.getElementsByTagName('Item');
-	for (var i = items.length; i-- > 0;) {
-		var item = items[i];
-		var ar = api.CreateObject("Array");
-		for (var j = Sync.Remember.ID.length; j--;) {
+	const items = xml.getElementsByTagName('Item');
+	for (let i = items.length; i-- > 0;) {
+		const item = items[i];
+		const ar = api.CreateObject("Array");
+		for (let j = Sync.Remember.ID.length; j--;) {
 			ar[j] = item.getAttribute(Sync.Remember.ID[j]);
 		}
 		if (ar[1]) {
-			var path = Sync.Remember.GetPath(String(ar.pop()));
+			const path = Sync.Remember.GetPath(String(ar.pop()));
 			if (PathMatchEx(path, Sync.Remember.Filter) && !PathMatchEx(path, Sync.Remember.Disable)) {
 				Common.Remember.db[path] = ar;
 			}
@@ -56,16 +61,16 @@ if (xml) {
 AddEvent("BeforeNavigate", function (Ctrl, fs, wFlags, Prev) {
 	if (Ctrl.Data && !Ctrl.Data.Setting) {
 		if (Prev && !Prev.Unavailable) {
-			var path = Sync.Remember.GetPath(Prev);
-			var col = Ctrl.Columns(Sync.Remember.nFormat);
+			const path = Sync.Remember.GetPath(Prev);
+			const col = Ctrl.Columns(Sync.Remember.nFormat);
 			if (col && PathMatchEx(path, Sync.Remember.Filter) && !PathMatchEx(path, Sync.Remember.Disable)) {
-				var ar = api.CreateObject("Array");
+				const ar = api.CreateObject("Array");
 				ar.push(new Date().getTime(), Ctrl.CurrentViewMode, Ctrl.IconSize, col, Ctrl.GetSortColumn(Sync.Remember.nFormat), Ctrl.GroupBy, Ctrl.SortColumns);
 				Common.Remember.db[path] = ar;
 			}
 		}
-		var path = Sync.Remember.GetPath(Ctrl);
-		var ar = Common.Remember.db[path];
+		const path = Sync.Remember.GetPath(Ctrl);
+		const ar = Common.Remember.db[path];
 		if (ar) {
 			if (PathMatchEx(path, Sync.Remember.Filter) && !PathMatchEx(path, Sync.Remember.Disable)) {
 				fs.ViewMode = ar[1];
@@ -83,11 +88,11 @@ AddEvent("BeforeNavigate", function (Ctrl, fs, wFlags, Prev) {
 });
 
 AddEvent("NavigateComplete", function (Ctrl) {
-	var path = Sync.Remember.GetPath(Ctrl);
+	const path = Sync.Remember.GetPath(Ctrl);
 	if (path && PathMatchEx(path, Sync.Remember.Filter) && !PathMatchEx(path, Sync.Remember.Disable)) {
 		Ctrl.Data.Remember = path;
 		if (Ctrl.Data && Ctrl.Data.Setting == 'Remember') {
-			var ar = Common.Remember.db[Ctrl.Data.Remember];
+			const ar = Common.Remember.db[Ctrl.Data.Remember];
 			if (ar) {
 				if (ar[2] > Sync.Remember.nIcon && (ar[1] > FVM_ICON && ar[1] <= FVM_DETAILS)) {
 					ar[2] = Sync.Remember.nSM;
@@ -115,7 +120,7 @@ AddEvent("ViewModeChanged", Sync.Remember.RememberFolder);
 AddEvent("ColumnsChanged", Sync.Remember.RememberFolder);
 
 AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, Directory, nShow, dwHotKey, hIcon) {
-	var Ctrl = te.Ctrl(CTRL_FV);
+	const Ctrl = te.Ctrl(CTRL_FV);
 	if (Ctrl) {
 		Sync.Remember.RememberFolder(Ctrl);
 	}
@@ -124,10 +129,10 @@ AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, 
 AddEvent("SaveConfig", function () {
 	Sync.Remember.RememberFolder(te.Ctrl(CTRL_FV));
 
-	var arFV = [];
-	for (var path in Common.Remember.db) {
+	const arFV = [];
+	for (let path in Common.Remember.db) {
 		if (path && PathMatchEx(path, Sync.Remember.Filter) && !PathMatchEx(path, Sync.Remember.Disable)) {
-			var ar = Common.Remember.db[path];
+			const ar = Common.Remember.db[path];
 			if (ar) {
 				ar.push(path);
 				arFV.push(ar);
@@ -141,13 +146,13 @@ AddEvent("SaveConfig", function () {
 		}
 	);
 	arFV.splice(Sync.Remember.nSave, arFV.length);
-	var xml = CreateXml();
-	var root = xml.createElement("TablacusExplorer");
+	const xml = CreateXml();
+	const root = xml.createElement("TablacusExplorer");
 
 	while (arFV.length) {
-		var ar = arFV.shift();
-		var item = xml.createElement("Item");
-		for (var j in Sync.Remember.ID) {
+		const ar = arFV.shift();
+		const item = xml.createElement("Item");
+		for (let j in Sync.Remember.ID) {
 			item.setAttribute(Sync.Remember.ID[j], ar[j] || "");
 		}
 		root.appendChild(item);

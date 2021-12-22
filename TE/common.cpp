@@ -278,7 +278,7 @@ VOID Invoke4(IDispatch *pdisp, VARIANT *pvResult, int nArgs, VARIANTARG *pvArgs)
 
 HRESULT Invoke5(IDispatch *pdisp, DISPID dispid, WORD wFlags, VARIANT *pvResult, int nArgs, VARIANTARG *pvArgs)
 {
-	HRESULT hr;
+	HRESULT hr = E_UNEXPECTED;
 	// DISPPARAMS
 	DISPPARAMS dispParams;
 	dispParams.rgvarg = pvArgs;
@@ -296,6 +296,9 @@ HRESULT Invoke5(IDispatch *pdisp, DISPID dispid, WORD wFlags, VARIANT *pvResult,
 			hr = pdisp->Invoke(dispid, IID_NULL, LOCALE_USER_DEFAULT, wFlags, &dispParams, pvResult, NULL, NULL);
 		}
 #ifdef _DEBUG
+		else {
+			Sleep(1);
+		}
 		if (hr) {
 			WCHAR pszFunc[99];
 			swprintf_s(pszFunc, 99, L"Invoke: %x\n", hr);
@@ -309,7 +312,7 @@ HRESULT Invoke5(IDispatch *pdisp, DISPID dispid, WORD wFlags, VARIANT *pvResult,
 		}
 #endif
 	} catch (...) {
-		hr = E_FAIL;
+		hr = E_UNEXPECTED;
 	}
 #ifdef _USE_SYNC
 	if (hr == HRESULT_FROM_WIN32(ERROR_POSSIBLE_DEADLOCK)) {
