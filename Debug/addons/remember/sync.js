@@ -103,7 +103,11 @@ AddEvent("NavigateComplete", function (Ctrl) {
 					Ctrl.GroupBy = ar[5];
 				}
 				if ((ar[6] || "").split(/;/).length > 2 && Ctrl.SortColumns) {
-					Ctrl.SortColumns = ar[6];
+					try {
+						Ctrl.SortColumns = ar[6];
+					} catch (e) {
+						Ctrl.SortColumn = ar[4];
+					}
 				} else {
 					Ctrl.SortColumn = ar[4];
 				}

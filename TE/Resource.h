@@ -16,7 +16,7 @@
 //Version(DLL)
 #define VER_Y		21
 #define VER_M		12
-#define VER_D		22
+#define VER_D		23
 #endif
 
 //Icon
@@ -39,4 +39,5 @@
 #endif
 #ifdef _DEBUG
 #define _EXEONLY
+//#define USE_VS_COLUMNSREPLACE
 #endif

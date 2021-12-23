@@ -327,10 +327,17 @@ public:
 	HRESULT Items(UINT uItem, FolderItems **ppid);
 	HRESULT SelectItemEx(LPITEMIDLIST pidl, int dwFlags);
 	VOID InitFolderSize();
+	BOOL SetColumnsProperties(HWND hHeader, int iItem);
 	VOID SetSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch);
 	VOID SetFolderSize(IShellFolder2 *pSF2, LPCITEMIDLIST pidl, LPWSTR szText, int cch);
+	BOOL SetFolderSizeProperties();
 	VOID SetLabel(LPCITEMIDLIST pidl, LPWSTR szText, int cch);
-	BOOL ReplaceColumns(IDispatch *pdisp, NMLVDISPINFO *lpDispInfo);
+	VOID SetLabelProperties();
+	BOOL ReplaceColumns(IDispatch *pdisp, LVITEM *plvi, LPITEMIDLIST pidl);
+	VOID ReplaceColumnsEx(IDispatch *pdisp, LVITEM *plvi, LPITEMIDLIST *ppidl);
+#ifdef USE_VS_COLUMNSREPLACE
+	VOID SetReplaceColumnsProperties(IDispatch *pdisp, PROPERTYKEY propKey);
+#endif
 	HRESULT PropertyKeyFromName(BSTR bs, PROPERTYKEY *pkey);
 	FOLDERVIEWOPTIONS teGetFolderViewOptions(LPITEMIDLIST pidl, UINT uViewMode);
 	VOID OnNavigationComplete2();

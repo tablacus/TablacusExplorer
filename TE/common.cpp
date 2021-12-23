@@ -1288,7 +1288,7 @@ HRESULT teILFolderExists(LPITEMIDLIST pidl)
 				teCoTaskMemFree(pidlPart);
 				peidl->Release();
 			}
-			if (hr == E_INVALID_PASSWORD || hr == E_CANCELLED) {
+			if (hr == E_INVALID_PASSWORD || hr == E_CANCELLED || E_LOGON_FAILURE) {
 				hr &= MAXWORD;
 			}
 			pSF1->Release();

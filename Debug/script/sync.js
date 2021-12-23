@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20211222 ? te.Version : 20211222;
+		return te.Version < 20211223 ? te.Version : 20211223;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1477,7 +1477,7 @@ MakeImgIcon = function (src, index, h, bIcon, clBk) {
 			return hIcon;
 		}
 	}
-	res = /^font2?:([^,]*),([\da-fx,]+)/i.exec(src);
+	res = /^font2?:([^,]*),(.+)/i.exec(src);
 	if (res) {
 		if (!h) {
 			h = api.GetSystemMetrics(SM_CYSMICON);
@@ -1502,8 +1502,11 @@ MakeImgIcon = function (src, index, h, bIcon, clBk) {
 		lf.lfHeight = -h;
 		lf.lfWeight = 400;
 		const hfontOld = api.SelectObject(hmdc, CreateFont(lf));
-		let c = res[2].split(",");
-		c = String.fromCodePoint(c.length > 1 ? parseInt(c[0]) * 256 + parseInt(c[1]) : parseInt(c[0]));
+		let c = res[2];
+		if (/[\da-fx,]+/.test(c)) {
+			c = c.split(",");
+			c = String.fromCodePoint(c.length > 1 ? parseInt(c[0]) * 256 + parseInt(c[1]) : parseInt(c[0]));
+		}
 		api.DrawText(hmdc, c, -1, rc, DT_CALCRECT | DT_NOCLIP | DT_NOPREFIX);
 		const h2 = Math.min(h, Math.ceil(h * (h / (Math.max(rc.bottom, rc.right) || h))));
 		if (WINVER < 0x603) {
@@ -1665,6 +1668,9 @@ NavigateFV = function (FV, Path, wFlags, bInputed) {
 		}
 		if (/^file:/.test(Path)) {
 			Path = decodeURI(Path);
+		}
+		if (/^ftp:.*[^\/]$/.test(Path)) {
+			Path += "/";
 		}
 	}
 	if (wFlags == null) {

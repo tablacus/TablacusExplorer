@@ -159,11 +159,14 @@ GetImgTag = async function (o, h) {
 		}
 	}
 	if (o.src) {
-		const res = !(window.ui_ || te.Data).NoCssFont && /^font:([^,]*),([\da-fx,]+)/i.exec(await MainWindow.RunEvent4("ReplaceIcon", o.src) || o.src);
+		const res = !(window.ui_ || te.Data).NoCssFont && /^font:([^,]*),(.+)/i.exec(await MainWindow.RunEvent4("ReplaceIcon", o.src) || o.src);
 		if (res) {
 			const FontFace = res[1].replace(/\"/g, '\\"');
-			let c = res[2].split(",");
-			c = String.fromCodePoint(c.length > 1 ? parseInt(c[0]) * 256 + parseInt(c[1]) : parseInt(c[0]));
+			let c = res[2];
+			if (/[\da-fx,]+/.test(c)) {
+				c = c.split(",");
+				c = String.fromCodePoint(c.length > 1 ? parseInt(c[0]) * 256 + parseInt(c[1]) : parseInt(c[0]));
+			}
 			h = h || window.IconSize;
 			let h2 = Number(h) ? await CalcFontSize(FontFace, h, c) + "px" : EncodeSC(h);
 			if (h2 != "0px") {
