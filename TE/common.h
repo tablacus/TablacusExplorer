@@ -374,6 +374,8 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define CSIDL_USER				0x3f
 #define CSIDL_RESULTSFOLDER		0x40
 #define MAX_CSIDL2				0x41
+#define CSIDL_UNAVAILABLE		CSIDL_RESULTSFOLDER
+#define CLSID_Unavailable		CLSID_ResultsFolder
 
 #define MAX_PATHEX				32768
 #define MAX_PROP				4096

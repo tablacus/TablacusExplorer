@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20211223 ? te.Version : 20211223;
+		return te.Version < 20211224 ? te.Version : 20211224;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1665,12 +1665,6 @@ NavigateFV = function (FV, Path, wFlags, bInputed) {
 				SetFilterView(FV, Path);
 				return;
 			}
-		}
-		if (/^file:/.test(Path)) {
-			Path = decodeURI(Path);
-		}
-		if (/^ftp:.*[^\/]$/.test(Path)) {
-			Path += "/";
 		}
 	}
 	if (wFlags == null) {

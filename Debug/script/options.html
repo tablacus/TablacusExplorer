@@ -106,7 +106,8 @@
               <label><input type="radio" name="Conf_Gestures_" id="Conf_Gestures=3" onclick="SetRadio(this)">Priority</label><br>
               <br>
               <label>@comres.dll,-1953</label><br>
-              <input type="text" id="Conf_GestureTimeout" class="number"><label>@calc.exe,-1721[ms]</label>
+              <input type="text" id="Conf_GestureTimeout" class="number" placeholder="3000"><label>@calc.exe,-1721[ms]</label>
+              <input type="button" value="Default" onclick="SetDefault(document.F.Conf_GestureTimeout, '');">
               <br><br>
               <label>Trails</label><br>
               <input type="text" id="Conf_TrailColor" title="Color" placeholder="#00ff00" style="width: 9em" onchange="ChangeColor1(this)">
@@ -542,7 +543,8 @@
               <input type="text" id="Conf_DateTimeFormat" class="full">
               <br><br>
               <label>@comres.dll,-1953</label><br>
-              <input type="text" id="Conf_NetworkTimeout" class="number"><label>@calc.exe,-1721[ms]</label>
+              <input type="text" id="Conf_NetworkTimeout" class="number" placeholder="2000"><label>@calc.exe,-1721[ms]</label>
+              <input type="button" value="Default" onclick="SetDefault(document.F.Conf_NetworkTimeout, '');">
               <br><br>
               <div>
                 <label><input type="checkbox" id="Conf_ListDefault">Default</label>

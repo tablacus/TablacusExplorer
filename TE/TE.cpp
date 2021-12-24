@@ -4982,20 +4982,19 @@ VOID CALLBACK teTimerProcParse(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 					if (pSB == g_pTC->GetShellBrowser(g_pTC->m_nIndex)) {
 						g_bShowParseError = FALSE;
 						LPWSTR lpBuf;
-						WCHAR pszFormat[MAX_STATUS];
-						if (LoadString(g_hShell32, 6456, pszFormat, MAX_STATUS)) {
-							if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY,
-								pszFormat, 0, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&lpBuf, MAX_STATUS, (va_list *)&pInvoke->bsPath)) {
-								int r = MessageBox(g_hwndMain, lpBuf, _T(PRODUCTNAME), MB_ABORTRETRYIGNORE);
-								LocalFree(lpBuf);
-								if (r == IDRETRY) {
-									::InterlockedIncrement(&pInvoke->cDo);
-									::InterlockedIncrement(&pInvoke->cRef);
-									_beginthread(&threadParseDisplayName, 0, pInvoke);
-									g_bShowParseError = TRUE;
-								} else {
-									g_bShowParseError = (r != IDIGNORE);
-								}
+						WCHAR pszError[SIZE_BUFF];
+						if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+							NULL, pInvoke->hr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&lpBuf, SIZE_BUFF, NULL)) {
+							swprintf_s(pszError, MAX_COLUMNS, L"%s (0x%x)\n\n%s", lpBuf, pInvoke->hr, pInvoke->bsPath);
+							int r = MessageBox(g_hwndMain, pszError, _T(PRODUCTNAME), MB_ABORTRETRYIGNORE);
+							LocalFree(lpBuf);
+							if (r == IDRETRY) {
+								::InterlockedIncrement(&pInvoke->cDo);
+								::InterlockedIncrement(&pInvoke->cRef);
+								_beginthread(&threadParseDisplayName, 0, pInvoke);
+								g_bShowParseError = TRUE;
+							} else {
+								g_bShowParseError = (r != IDIGNORE);
 							}
 						}
 					}
@@ -6322,7 +6321,12 @@ HRESULT CteShellBrowser::GetAbsPath(FolderItem *pid, UINT wFlags, FolderItems *p
 	}
 	LPITEMIDLIST pidl = NULL;
 	if (Navigate1(pid, wFlags, pFolderItems, pPrevious, 2)) {
-		return S_FALSE;
+		if (m_pShellView || g_nLockUpdate > 1) {
+			return S_FALSE;
+		}
+		teQueryFolderItem(pid, &m_pFolderItem1);
+		m_pFolderItem1->MakeUnavailable();
+		return S_OK;
 	}
 	if (wFlags & SBSP_RELATIVE) {
 		LPITEMIDLIST pidlPrevius = NULL;
@@ -9233,6 +9237,13 @@ HRESULT CteShellBrowser::IncludeObject2(IShellFolder *pSF, LPCITEMIDLIST pidl, L
 {
 	HRESULT hr = S_OK;
 	if (pSF) {
+#if CLSID_Unavailable != CLSID_ResultsFolder
+		if (m_dwUnavailable) {
+			if (teCompareSFClass(pSF, &CLSID_Unavailable)) {
+				return S_FALSE;
+			}
+		}
+#endif
 		if (!(m_param[SB_ViewFlags] & CDB2GVF_SHOWALLFILES)) {
 			WIN32_FIND_DATA wfd;
 			if SUCCEEDED(SHGetDataFromIDList(pSF, pidl, SHGDFIL_FINDDATA, &wfd, sizeof(WIN32_FIND_DATA))) {
@@ -9540,10 +9551,10 @@ HRESULT CteShellBrowser::BrowseToObject(DWORD dwFrame, FOLDERVIEWOPTIONS fvoFlag
 				peidl->Release();
 			} else if (hr != S_FALSE) {
 				m_pFolderItem->MakeUnavailable();
-				teILCloneReplace(&m_pidl, g_pidls[CSIDL_RESULTSFOLDER]);
+				teILCloneReplace(&m_pidl, g_pidls[CSIDL_UNAVAILABLE]);
 				GetShellFolder2(&m_pidl);
 			}
-			if (teCompareSFClass(m_pSF2, &CLSID_ResultsFolder)) {
+			if ((dwFrame && g_bDarkMode || m_dwUnavailable) && teCompareSFClass(m_pSF2, &CLSID_ResultsFolder)) {
 				m_pExplorerBrowser->BrowseToIDList(g_pidls[CSIDL_CDBURN_AREA], SBSP_ABSOLUTE);
 			}
 		}
@@ -9588,8 +9599,8 @@ HRESULT CteShellBrowser::GetShellFolder2(LPITEMIDLIST *ppidl)
 		::SysFreeString(bs);
 	}
 	if (!pSF) {
-		GetShellFolder(&pSF, g_pidls[CSIDL_RESULTSFOLDER]);
-		teILCloneReplace(ppidl, g_pidls[CSIDL_RESULTSFOLDER]);
+		GetShellFolder(&pSF, g_pidls[CSIDL_UNAVAILABLE]);
+		teILCloneReplace(ppidl, g_pidls[CSIDL_UNAVAILABLE]);
 		m_dwUnavailable = GetTickCount();
 	}
 	if (pSF) {
@@ -9597,8 +9608,8 @@ HRESULT CteShellBrowser::GetShellFolder2(LPITEMIDLIST *ppidl)
 		hr = pSF->QueryInterface(IID_PPV_ARGS(&m_pSF2));
 		pSF->Release();
 		if FAILED(hr) {
-			GetShellFolder(&pSF, g_pidls[CSIDL_RESULTSFOLDER]);
-			teILCloneReplace(ppidl, g_pidls[CSIDL_RESULTSFOLDER]);
+			GetShellFolder(&pSF, g_pidls[CSIDL_UNAVAILABLE]);
+			teILCloneReplace(ppidl, g_pidls[CSIDL_UNAVAILABLE]);
 			m_dwUnavailable = GetTickCount();
 			hr = pSF->QueryInterface(IID_PPV_ARGS(&m_pSF2));
 		}
@@ -10154,7 +10165,7 @@ VOID CteShellBrowser::Suspend(int nMode)
 		}
 		Show(FALSE, 0);
 		m_dwUnavailable = GetTickCount();
-		teILCloneReplace(&m_pidl, g_pidls[CSIDL_RESULTSFOLDER]);
+		teILCloneReplace(&m_pidl, g_pidls[CSIDL_UNAVAILABLE]);
 	}
 	if (!m_dwUnavailable) {
 		SaveFocusedItemToHistory();

@@ -83,10 +83,6 @@ ClearEvent = function (Name) {
 	ClearEvent2(Name);
 }
 
-GetNum = function (s) {
-	return "number" === typeof s ? s : Number("string" === typeof s ? s.replace(/[^\d\-\.].*/, "") : s) || 0;
-}
-
 SameText = function (s1, s2) {
 	return String(s1).toLowerCase() == String(s2).toLowerCase();
 }

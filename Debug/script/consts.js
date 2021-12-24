@@ -128,8 +128,8 @@ PathUnquoteSpaces = function (s) {
 	return res ? res[1] : s;
 }
 
-GetNum = function (s) {
-	return "number" === typeof s ? s : Number("string" === typeof s ? s.replace(/[^\d\-\.].*/, "") : s) || 0;
+GetNum = function (s, d) {
+	return "number" === typeof s ? s : Number("string" === typeof s ? s.replace(/[^\d\-\.].*/, "") : s) || d || 0;
 }
 
 SameText = function (s1, s2) {

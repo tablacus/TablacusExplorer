@@ -1585,7 +1585,7 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 }
 
 te.OnNavigateComplete = function (Ctrl) {
-	if (g_.tid_rf[Ctrl.Id] || !Ctrl.FolderItem) {
+	if (g_.tid_rf[Ctrl.Id] || !Ctrl.FolderItem || !Ctrl.Data) {
 		return S_OK;
 	}
 	Ctrl.Data.AccessTime = new Date().getTime();
@@ -2690,19 +2690,27 @@ g_.event.selectionchanging = function (Ctrl) {
 }
 
 g_.event.viewmodechanged = function (Ctrl) {
-	RunEvent1("ViewModeChanged", Ctrl);
+	if (Ctrl.Data) {
+		RunEvent1("ViewModeChanged", Ctrl);
+	}
 }
 
 g_.event.columnschanged = function (Ctrl) {
-	RunEvent1("ColumnsChanged", Ctrl);
+	if (Ctrl.Data) {
+		RunEvent1("ColumnsChanged", Ctrl);
+	}
 }
 
 g_.event.contentschanged = function (Ctrl) {
-	RunEvent1("ContentsChanged", Ctrl);
+	if (Ctrl.Data) {
+		RunEvent1("ContentsChanged", Ctrl);
+	}
 }
 
 g_.event.iconsizechanged = function (Ctrl) {
-	RunEvent1("IconSizeChanged", Ctrl);
+	if (Ctrl.Data) {
+		RunEvent1("IconSizeChanged", Ctrl);
+	}
 }
 
 g_.event.itemclick = function (Ctrl, Item, HitTest, Flags) {
@@ -2813,7 +2821,7 @@ GetIconImage = function (Ctrl, clBk, bSimple) {
 		return MakeImgDataEx(ExtractMacro(te, img), bSimple, nSize, clBk);
 	}
 	api.ILIsEmpty(FolderItem);
-	if (FolderItem.Unavailable) {
+	if (FolderItem.Unavailable > 500) {
 		return MakeImgDataEx("icon:shell32.dll,234", bSimple, nSize, clBk);
 	}
 	if (g_.IEVer >= 8) {
@@ -3132,6 +3140,15 @@ AddEvent("ChangeNotify", function (Ctrl, pidls, wParam, lParam) {
 				wsh.SendKeys("{F2}");
 			}, 99);
 		}
+	}
+});
+
+AddEvent("ReplacePath", function (FolderItem, Path) {
+	if (/^file:/.test(Path)) {
+		return decodeURI(Path);
+	}
+	if (/^ftp:.*[^\/]$/.test(Path)) {
+		return Path + "/";
 	}
 });
 
@@ -3587,18 +3604,16 @@ InitCode = function () {
 	for (let i in cFV) {
 		cFV[i].ColumnsReplace = null;
 	}
-	te.Data.Conf_Gestures = isFinite(te.Data.Conf_Gestures) ? Number(te.Data.Conf_Gestures) : 2;
+	te.Data.Conf_Gestures = GetNum(te.Data.Conf_Gestures, 2);
 	if ("string" === typeof te.Data.Conf_TrailColor) {
 		te.Data.Conf_TrailColor = GetWinColor(te.Data.Conf_TrailColor);
 	}
-	if (!isFinite(te.Data.Conf_TrailColor) || te.Data.Conf_TrailColor === "") {
-		te.Data.Conf_TrailColor = 0xff00;
-	}
-	te.Data.Conf_TrailSize = isFinite(te.Data.Conf_TrailSize) ? Number(te.Data.Conf_TrailSize) : 2;
-	te.Data.Conf_GestureTimeout = isFinite(te.Data.Conf_GestureTimeout) ? Number(te.Data.Conf_GestureTimeout) : 3000;
-	te.Data.Conf_Layout = isFinite(te.Data.Conf_Layout) ? Number(te.Data.Conf_Layout) : 0x80;
-	te.Data.Conf_NetworkTimeout = isFinite(te.Data.Conf_NetworkTimeout) ? Number(te.Data.Conf_NetworkTimeout) : 2000;
-	te.Data.Conf_WheelSelect = isFinite(te.Data.Conf_WheelSelect) ? Number(te.Data.Conf_WheelSelect) : 1;
+	te.Data.Conf_TrailColor = GetNum(te.Data.Conf_TrailColor, 0xff00);
+	te.Data.Conf_TrailSize = GetNum(te.Data.Conf_TrailSize, 2);
+	te.Data.Conf_GestureTimeout = GetNum(te.Data.Conf_GestureTimeout, 3000);
+	te.Data.Conf_Layout = GetNum(te.Data.Conf_Layout, 0x80);
+	te.Data.Conf_NetworkTimeout = GetNum(te.Data.Conf_NetworkTimeout, 2000);
+	te.Data.Conf_WheelSelect = GetNum(te.Data.Conf_WheelSelect, 1);
 	te.SizeFormat = (te.Data.Conf_SizeFormat || "").replace(/^0x/i, "");
 	te.HiddenFilter = ExtractFilter(te.Data.Conf_HiddenFilter);
 	te.DragIcon = !GetNum(te.Data.Conf_NoDragIcon);

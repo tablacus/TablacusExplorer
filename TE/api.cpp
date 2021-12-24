@@ -1516,8 +1516,19 @@ VOID teApiFindWindowEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIAN
 VOID teApiFormatMessage(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	LPWSTR lpBuf;
-	if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY,
-		param[0].lpwstr, 0, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&lpBuf, MAX_STATUS, (va_list *)&param[1])) {
+	DWORD dwFlags;
+	LPWSTR lpSource;
+	va_list *lpList;
+	if (nArg >= 1) {
+		dwFlags = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY;
+		lpSource = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]);
+		lpList = (va_list *)&param[1];
+	} else {
+		dwFlags = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM;
+		lpSource = NULL;
+		lpList = NULL;
+	}
+	if (FormatMessage(dwFlags, lpSource, param[0].intVal, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&lpBuf, SIZE_BUFF, lpList)) {
 		teSetSZ(pVarResult, lpBuf);
 		LocalFree(lpBuf);
 	}
@@ -1677,15 +1688,17 @@ VOID teApiGetDiskFreeSpaceEx(int nArg, teParam *param, DISPPARAMS *pDispParams, 
 	ULARGE_INTEGER FreeBytesOfAvailable;
 	ULARGE_INTEGER TotalNumberOfBytes;
 	ULARGE_INTEGER TotalNumberOfFreeBytes;
-	if (pVarResult && GetDiskFreeSpaceEx(param[0].lpcwstr, &FreeBytesOfAvailable, &TotalNumberOfBytes, &TotalNumberOfFreeBytes)) {
-		teSetObjectRelease(pVarResult, teCreateObj(TE_OBJECT, NULL));
-		VARIANT v;
-		teSetLL(&v, FreeBytesOfAvailable.QuadPart);
-		tePutProperty(pVarResult->pdispVal, L"FreeBytesOfAvailable", &v);
-		teSetLL(&v, TotalNumberOfBytes.QuadPart);
-		tePutProperty(pVarResult->pdispVal, L"TotalNumberOfBytes", &v);
-		teSetLL(&v, TotalNumberOfFreeBytes.QuadPart);
-		tePutProperty(pVarResult->pdispVal, L"TotalNumberOfFreeBytes", &v);
+	if (pVarResult && tePathIsDirectory(param[0].lpwstr, 0, 3) == S_OK) {
+		if (GetDiskFreeSpaceEx(param[0].lpcwstr, &FreeBytesOfAvailable, &TotalNumberOfBytes, &TotalNumberOfFreeBytes)) {
+			teSetObjectRelease(pVarResult, teCreateObj(TE_OBJECT, NULL));
+			VARIANT v;
+			teSetLL(&v, FreeBytesOfAvailable.QuadPart);
+			tePutProperty(pVarResult->pdispVal, L"FreeBytesOfAvailable", &v);
+			teSetLL(&v, TotalNumberOfBytes.QuadPart);
+			tePutProperty(pVarResult->pdispVal, L"TotalNumberOfBytes", &v);
+			teSetLL(&v, TotalNumberOfFreeBytes.QuadPart);
+			tePutProperty(pVarResult->pdispVal, L"TotalNumberOfFreeBytes", &v);
+		}
 	}
 }
 
@@ -4034,7 +4047,7 @@ TEDispatchApi dispAPI[] = {
 	{ 1, -1, -1, -1, "FindText", teApiFindText },
 	{ 2,  0,  1, -1, "FindWindow", teApiFindWindow },
 	{ 4,  2,  3, -1, "FindWindowEx", teApiFindWindowEx },
-	{ 2,  0,  1,  2, "FormatMessage", teApiFormatMessage },
+	{ 1,  1,  2,  3, "FormatMessage", teApiFormatMessage },
 	{ 1, -1, -1, -1, "FreeLibrary", teApiFreeLibrary },
 	{ 1, -1, -1, -1, "GetAsyncKeyState", teApiGetAsyncKeyState },
 	{ 2, -1, -1, -1, "GetAttributesOf", teApiGetAttributesOf },

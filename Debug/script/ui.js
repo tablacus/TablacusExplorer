@@ -341,7 +341,7 @@ CheckUpdate2 = async function (xhr, url, arg1) {
 CheckUpdate3 = async function (xhr, url, arg) {
 	let hr = await Extract(await arg.zipfile, await arg.temp, xhr);
 	if (hr) {
-		await MessageBox([(await api.LoadString(hShell32, 4228)).replace(/^\t/, "").replace("%d", await api.sprintf(99, "0x%08x", hr)), await GetText("Extract"), GetFileName(arg.zipfile)].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
+		await MessageBox([(await api.FormatMessage(hr)) + "(0x" + (hr.toString(16)) + ")", await GetText("Extract"), GetFileName(arg.zipfile)].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
 		return;
 	}
 	MainWindow.CreateUpdater(arg);
