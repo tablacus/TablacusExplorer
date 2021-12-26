@@ -2679,8 +2679,8 @@ async function ArrangeAddon(xml, td) {
 	const Id = xml.getAttribute("Id");
 	const s = [];
 	let strUpdate = "";
-	const q = document.getElementById("_GetAddonsQ").value.toUpperCase();
-	if (!q || await Search(xml, q)) {
+	const q = document.getElementById("_GetAddonsQ").value.toLowerCase();
+	if (!q || Id.toLowerCase().indexOf(q) >= 0 || await Search(xml, q)) {
 		const info = {};
 		for (let i = arLangs.length; i--;) {
 			await GetAddonInfo2(xml, info, arLangs[i]);
@@ -2753,7 +2753,7 @@ async function Search(xml, q) {
 				const item1 = item[i];
 				if (item1.tagName) {
 					const s = item1.textContent || item1.text;
-					if ((s + await GetAltText(s, true)).toUpperCase().indexOf(q) >= 0) {
+					if ((s + await GetAltText(s, true)).toLowerCase().indexOf(q) >= 0) {
 						return true;
 					}
 				}
@@ -2937,23 +2937,22 @@ async function LangPacksList(xhr) {
 	const text = await xhr.get_responseText ? await xhr.get_responseText() : xhr.responseText;
 	const json = JSON.parse(text);
 	const td = [];
-	const bt = await Promise.all([GetText("Install"), GetText("Installed")]);
+	const bt = await GetText("Install");
 	const q = document.getElementById('_GetLangQ').value;
 	for (let n in json) {
 		const info = json[n];
 		if (!q || await api.PathMatchSpec(JSON.stringify(info), "*" + q + "*")) {
 			const tm = new Date(info.pubDate).getTime();
-			let strUpdate = "", nButton = 0;
+			let strUpdate = "";
 			const wfd = await IsExists(BuildPath(ui_.Installed, "lang", n), true);
 			if (wfd) {
-				if (tm > new Date(await wfd.ftLastWriteTime).getTime() + 1999) {
-					strUpdate = ['<b class="danger nowrap" style="float: right">', await GetText('Update available'), '&nbsp;&nbsp;</b>'].join("");
-				} else {
-					nButton = 1;
+				if (tm < new Date(await wfd.ftLastWriteTime).getTime() + 2000) {
+					continue;
 				}
+				strUpdate = ['<b class="danger nowrap" style="float: right">', await GetText('Update available'), '&nbsp;&nbsp;</b>'].join("");
 			}
-			const ar = [tm, '<b style="font-size: 1.3em">', info.name, " / ", info.en, "</b><br>", info.author, '<input type="button" onclick="InstallLang(this)" title="', n, "\n", info.pubDate, '" value="', bt[nButton], '" style="float: right"', nButton ? " disabled" : "", '>', strUpdate, '<br>', await FormatDate(tm)];
-			if (strUpdate || nButton) {
+			const ar = [tm, '<b style="font-size: 1.3em">', info.name, " / ", info.en, "</b><br>", info.author, '<input type="button" onclick="InstallLang(this)" title="', n, "\n", info.pubDate, '" value="', bt, '" style="float: right">', strUpdate, '<br>', await FormatDate(tm)];
+			if (strUpdate) {
 				td.unshift(ar);
 			} else {
 				td.push(ar);
@@ -3143,7 +3142,7 @@ async function SortAddons1(n) {
 		while (sorted.rows.length > 0) {
 			sorted.deleteRow(0);
 		}
-		const q = document.getElementById("_AddonsQ").value.toUpperCase();
+		const q = document.getElementById("_AddonsQ").value.toLowerCase();
 		if (n == 3 && !q) {
 			table.style.display = "";
 			sorted.style.display = "none";
@@ -3160,7 +3159,7 @@ async function SortAddons1(n) {
 					});
 					const div = table.rows[j].cells[0].firstChild || {};
 					const Id = (div.id || "").replace("Addons_", "").toLowerCase();
-					if (!q || await FindAddonInfo(Id, q)) {
+					if (!q || Id.indexOf(q) >= 0 || await FindAddonInfo(Id, q)) {
 						if (n == 0) {
 							s = table.rows[j].cells[0].innerText;
 						} else if (n == 1) {

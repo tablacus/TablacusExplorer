@@ -402,7 +402,6 @@ public:
 	int			m_nFocusItem;
 	int			m_nSizeFormat;
 	int			m_nGroupByDelay;
-	LONG		m_dwUnavailable;
 	DWORD		m_param[SB_Count];
 	DWORD		m_nOpenedType;
 	DWORD		m_dwCookie;

@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20211224 ? te.Version : 20211224;
+		return te.Version < 20211226 ? te.Version : 20211226;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -586,7 +586,7 @@ IsSearchPath = function (pid, bText) {
 
 IsCloud = function (Item) {
 	if (Item) {
-		if (/O|D.*I/i.test(Item.ExtendedProperty("Attributes"))) {
+		if ((Item.ExtendedProperty("Attributes") || "").indexOf("O") >= 0) {
 			return true;
 		}
 		const res = /^([A-Z]):\\/i.exec(Item.Path);
@@ -2897,7 +2897,7 @@ FindAddonInfo = function (Id, q) {
 	const info = GetAddonInfo(Id);
 	for (let id in info) {
 		const s = info[id];
-		if ((s + GetAltText(s, true)).toUpperCase().indexOf(q) >= 0) {
+		if ((s + GetAltText(s, true)).toLowerCase().indexOf(q) >= 0) {
 			return true;
 		}
 	}

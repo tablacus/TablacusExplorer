@@ -436,7 +436,9 @@ BSTR CteFolderItem::GetStrPath()
 VOID CteFolderItem::MakeUnavailable()
 {
 	teILCloneReplace(&m_pidlAlt, g_pidls[CSIDL_UNAVAILABLE]);
-	m_dwUnavailable = GetTickCount();
+	if (!m_dwUnavailable) {
+		m_dwUnavailable = GetTickCount();
+	}
 }
 
 STDMETHODIMP CteFolderItem::QueryInterface(REFIID riid, void **ppvObject)

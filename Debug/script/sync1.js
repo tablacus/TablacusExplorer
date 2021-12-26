@@ -2811,7 +2811,7 @@ GetIconImage = function (Ctrl, clBk, bSimple) {
 	const FolderItem = Ctrl.FolderItem || Ctrl;
 	const r = GetNetworkIcon(FolderItem.Path);
 	if (r) {
-		if (FolderItem.Unavailable > 500) {
+		if (FolderItem.Unavailable > 999) {
 			return MakeImgDataEx("icon:shell32.dll,234", bSimple, nSize, clBk);
 		}
 		return MakeImgDataEx(r, bSimple, nSize, clBk);
@@ -2821,7 +2821,7 @@ GetIconImage = function (Ctrl, clBk, bSimple) {
 		return MakeImgDataEx(ExtractMacro(te, img), bSimple, nSize, clBk);
 	}
 	api.ILIsEmpty(FolderItem);
-	if (FolderItem.Unavailable > 500) {
+	if (FolderItem.Unavailable > 999) {
 		return MakeImgDataEx("icon:shell32.dll,234", bSimple, nSize, clBk);
 	}
 	if (g_.IEVer >= 8) {
