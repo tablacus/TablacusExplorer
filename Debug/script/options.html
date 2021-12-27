@@ -127,8 +127,7 @@
                 <table>
                   <tr>
                     <td class="full">
-                      <input type="text" name="_AddonsQ" id="_AddonsQ" class="full"
-                        onkeydown="KeyDownEvent(event, AddonsSearch)">
+                      <input type="text" name="_AddonsQ" id="_AddonsQ" class="full" onkeydown="return KeyDownEvent(event, AddonsSearch)">
                     </td>
                     <td>
                       <input type="button" value="Search" onclick="AddonsSearch()" oncontextmenu="ClearSearch(this, '_AddonsQ'); return false">
@@ -155,7 +154,7 @@
                 <table>
                   <tr>
                     <td class="full">
-                      <input type="text" name="_GetAddonsQ" id="_GetAddonsQ" class="full" onkeydown="KeyDownEvent(event, AddonsSearch)">
+                      <input type="text" name="_GetAddonsQ" id="_GetAddonsQ" class="full" onkeydown="return KeyDownEvent(event, AddonsSearch)">
                     </td>
                     <td>
                       <input type="button" value="Search" onclick="AddonsSearch()" oncontextmenu="ClearSearch(this, '_GetAddonsQ'); return false">
@@ -184,7 +183,7 @@
                 <table>
                   <tr>
                     <td class="full">
-                      <input type="text" id="_GetIconsQ" class="full" onkeydown="KeyDownEvent(event, IconPacksList)">
+                      <input type="text" id="_GetIconsQ" class="full" onkeydown="return KeyDownEvent(event, IconPacksList)">
                     </td>
                     <td>
                       <input type="button" value="Search" onclick="IconPacksList()" oncontextmenu="ClearSearch(this, '_GetIconsQ'); return false">
@@ -209,7 +208,7 @@
                 <table>
                   <tr>
                     <td class="full">
-                      <input type="text" id="_GetLangQ" class="full" onkeydown="KeyDownEvent(event, LangPacksList)">
+                      <input type="text" id="_GetLangQ" class="full" onkeydown="return KeyDownEvent(event, LangPacksList)">
                     </td>
                     <td>
                       <input type="button" value="Search" onclick="LangPacksList()" oncontextmenu="ClearSearch(this, '_GetLangQ'); return false">

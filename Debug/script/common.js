@@ -242,7 +242,7 @@ GetWebColor = function (c) {
 	if (res) {
 		c = res[3] * 65536 + res[2] * 256 + res[1] * 1;
 	}
-	return isNaN(c) && /^#[0-9a-f]{3,6}$/i ? c : "#" + (('00000' + (((c & 0xff) << 16) | (c & 0xff00) | ((c & 0xff0000) >> 16)).toString(16)).substr(-6));
+	return isNaN(c) && /^#[0-9a-f]{3,6}$/i ? c : "#" + (('00000' + (((c & 0xff) << 16) | (c & 0xff00) | ((c & 0xff0000) >> 16)).toString(16)).slice(-6));
 }
 
 GetWinColor = async function (c) {
@@ -269,6 +269,7 @@ GetWinColor = async function (c) {
 
 FindText = async function () {
 	if (window.chrome || ui_.IEVer < 8) {
+		SetModifierKeys(0);
 		wsh.SendKeys("^f");
 	} else {
 		api.OleCmdExec(document, null, 32, 0, 0);
@@ -341,7 +342,8 @@ amp2ul = function (s) {
 	return s.replace(/&amp;|&/ig, "");
 }
 
-GetAddonInfo2 = async function (xml, info, Tag, bTrans) {
+GetAddonInfo2 = async function (xml, info, Tag) {
+	let b = false;
 	const items = xml.getElementsByTagName(Tag);
 	if (items.length) {
 		const item = items[0].childNodes;
@@ -349,14 +351,19 @@ GetAddonInfo2 = async function (xml, info, Tag, bTrans) {
 			const item1 = item[i];
 			const n = item1.tagName;
 			const s = item1.text || item1.textContent;
-			if (bTrans && /Name|Description/i.test(n)) {
-				info[n] = await GetText(s);
-				info['$' + n] = s;
+			if (/^en/i.test(Tag) && /Name|Description/i.test(n)) {
+				const st = await GetAltText(s, true);
+				info[n] = st || s;
+				if (st) {
+					info['$' + n] = s;
+					b = true;
+				}
 			} else {
 				info[n] = s;
 			}
 		}
 	}
+	return b;
 }
 
 GetWinIcon = function () {

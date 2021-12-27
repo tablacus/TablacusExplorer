@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20211226 ? te.Version : 20211226;
+		return te.Version < 20211226 ? te.Version : 20211227;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -2874,18 +2874,19 @@ GetAddonInfo = function (Id) {
 	const xmlfile = BuildPath(te.Data.Installed, "addons", Id, "config.xml");
 	if (fso.FileExists(xmlfile)) {
 		xml.load(xmlfile);
-
-		GetAddonInfo2(xml, info, "General", true);
+		let i18 = false;
+		GetAddonInfo2(xml, info, "General");
 		const lang = GetLangId();
 		if (!/^en/.test(lang)) {
-			GetAddonInfo2(xml, info, "en", true);
-			info.Name = GetTextR(info.Name);
+			i18 = GetAddonInfo2(xml, info, "en");
 		}
-		const res = /(\w+)_/.exec(lang);
-		if (res && !/zh_cn/i.test(lang)) {
-			GetAddonInfo2(xml, info, res[1]);
+		if (!i18) {
+			const res = /(\w+)_/.exec(lang);
+			if (res && !/zh_cn/i.test(lang)) {
+				GetAddonInfo2(xml, info, res[1]);
+			}
+			GetAddonInfo2(xml, info, lang);
 		}
-		GetAddonInfo2(xml, info, lang);
 		if (!info.Name) {
 			info.Name = Id;
 		}
@@ -3660,9 +3661,29 @@ SHGetFileInfo = function (pid, attr, Flags) {
 }
 
 CloseFindDialog = function () {
-	if (api.GetKeyState(VK_CONTROL) >= 0) {
+	if (window.chrome) {
+		SetModifierKeys(0);
 		wsh.SendKeys("{ESC}");
 	}
+}
+
+SetModifierKeys = function (f) {
+	const ar = [VK_SHIFT, VK_CONTROL, VK_MENU, VK_LWIN];
+	let n = 1;
+	for (let i = 0; i < ar.length; ++i) {
+		if (f & n) {
+			if (api.GetKeyState(ar[i]) >= 0) {
+				api.keybd_event(ar[i], 0, 1, 0);
+			}
+		} else if (api.GetKeyState(ar[i]) < 0) {
+			api.keybd_event(ar[i], 0, 3, 0);
+		}
+		n *= 2;
+	}
+}
+
+ShowExtractError = function (hr, file) {
+	MessageBox([(api.FormatMessage(hr) || (GetTextR("@shell32.dll,-4228") || "").replace(/\t|\(%d\)/g, "")) + api.sprintf(16, "(0x%08x)", hr), GetText("Extract"), file].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
 }
 
 BasicDB = function (name, bLoad, bLC) {

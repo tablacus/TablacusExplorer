@@ -21,6 +21,7 @@ ui_ = {
 InitUI = async function () {
 	if (window.chrome) {
 		te = await parent.chrome.webview.hostObjects.te;
+		parent.chrome.webview.hostObjects.options.shouldSerializeDates = true;
 		api = await te.WindowsAPI0.CreateObject("api");
 		fso = api.CreateObject("fso");
 		sha = api.CreateObject("sha");
@@ -242,9 +243,11 @@ OpenHttpRequest = async function (url, alt, fn, arg) {
 		}
 	}
 	xhr.onload = fnLoaded;
-	xhr.onreadystatechange = async function () {
-		if (await xhr.readyState == 4) {
-			fnLoaded();
+	if (!window.chrome) {
+		xhr.onreadystatechange = async function () {
+			if (await xhr.readyState == 4) {
+				fnLoaded();
+			}
 		}
 	}
 	if (/ml$/i.test(url)) {
@@ -288,7 +291,7 @@ Extract = async function (Src, Dest, xhr) {
 		}
 	}
 	hr = await MainWindow.RunEvent4("Extract", Src, Dest);
-	return hr != null ? hr : api.Extract(BuildPath(system32, "zipfldr.dll"), "{E88DCCE0-B7B3-11d1-A9F0-00AA0060FA31}", Src, Dest);
+	return hr != null ? hr : await api.Extract(BuildPath(system32, "zipfldr.dll"), "{E88DCCE0-B7B3-11d1-A9F0-00AA0060FA31}", Src, Dest);
 }
 
 CheckUpdate2 = async function (xhr, url, arg1) {
@@ -339,9 +342,9 @@ CheckUpdate2 = async function (xhr, url, arg1) {
 }
 
 CheckUpdate3 = async function (xhr, url, arg) {
-	let hr = await Extract(await arg.zipfile, await arg.temp, xhr);
+	const hr = await Extract(await arg.zipfile, await arg.temp, xhr);
 	if (hr) {
-		await MessageBox([(await api.FormatMessage(hr)) + "(0x" + (hr.toString(16)) + ")", await GetText("Extract"), GetFileName(arg.zipfile)].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
+		ShowExtractError(hr, GetFileName(arg.zipfile));
 		return;
 	}
 	MainWindow.CreateUpdater(arg);
@@ -1305,7 +1308,7 @@ createHttpRequest = async function () {
 }
 
 ShowXHRError = async function (url, status) {
-	MessageBox([await api.sprintf(999, (await api.LoadString(hShell32, 4227)).replace(/^\t/, ""), status), url].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
+	MessageBox([(await GetTextR("@shell32,-4227")).replace(/^\t/, "").replace("%d", status), url].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
 }
 
 ClearAutocomplete = function () {

@@ -208,6 +208,7 @@ async function ClickTab(o, nMode) {
 }
 
 async function ClickTree(o, nMode, strChg, bForce) {
+	CloseFindDialog();
 	if ("string" === typeof o) {
 		o = document.getElementById(o);
 	}
@@ -1285,6 +1286,7 @@ function AddonEnable(o, Id) {
 }
 
 async function OptionMove(dir) {
+	CloseFindDialog();
 	if (/^1/.test(TabIndex)) {
 		const r = document.F.AddonId;
 		for (let i = 0; i < r.length; ++i) {
@@ -2594,6 +2596,7 @@ async function CheckAddon(Id) {
 function AddonsSearch() {
 	if (g_SortMode == 1) {
 		SortAddons1(g_nSort[1]);
+		document.getElementById("_AddonsQ").focus();
 	} else if (g_SortMode == "1_1") {
 		if (xmlAddons) {
 			AddonsAppend()
@@ -2615,7 +2618,6 @@ function ClearSearch(el, Id) {
 }
 
 async function AddonsList(xhr2) {
-	CloseFindDialog();
 	if (xmlAddons) {
 		return;
 	}
@@ -2683,7 +2685,9 @@ async function ArrangeAddon(xml, td) {
 	if (!q || Id.toLowerCase().indexOf(q) >= 0 || await Search(xml, q)) {
 		const info = {};
 		for (let i = arLangs.length; i--;) {
-			await GetAddonInfo2(xml, info, arLangs[i]);
+			if (await GetAddonInfo2(xml, info, arLangs[i])) {
+				break;
+			}
 		}
 		const dt = new Date(info.pubDate);
 		s.push('<table width="100%"><tr><td width="100%"><b style="font-size: 1.3em">', info.Name, "</b>&nbsp;");
@@ -2783,9 +2787,9 @@ async function Install2(xhr, url, o) {
 	await CreateFolder(temp);
 	const dest = BuildPath(temp, Id);
 	await DeleteItem(dest);
-	const hr = await (window.chrome ? window : MainWindow).Extract(BuildPath(temp, file), temp, xhr);
+	const hr = await Extract(BuildPath(temp, file), temp, xhr);
 	if (hr) {
-		MessageBox([await api.LoadString(hShell32, 4228).replace(/^\t/, "").replace("%d", await api.sprintf(99, "0x%08x", hr)), await GetText("Extract"), file].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
+		ShowExtractError(hr, file);
 		return;
 	}
 	const configxml = dest + "\\config.xml";
@@ -2822,18 +2826,18 @@ async function InstallIcon2(xhr, url, o) {
 	await CreateFolder(temp);
 	const dest = BuildPath(await te.Data.DataFolder, "icons");
 	await CreateFolder(dest);
-	const hr = await (window.chrome ? window : MainWindow).Extract(BuildPath(temp, file), dest, xhr);
+	const hr = await Extract(BuildPath(temp, file), dest, xhr);
 	if (hr) {
-		MessageBox([(await api.LoadString(hShell32, 4228)).replace(/^\t/, "").replace("%d", await api.sprintf(99, "0x%08x", hr)), await GetText("Extract"), file].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
+		ShowExtractError(hr, file);
 		return;
 	}
 	IconPacksList();
 }
 
 async function IconPacksList1(s, Id, info, json) {
-	const q = document.getElementById('_GetIconsQ').value;
+	const q = document.getElementById('_GetIconsQ').value.toLowerCase();
 	if (q && !json) {
-		if (!await api.PathMatchSpec(JSON.stringify(info), "*" + q + "*")) {
+		if (JSON.stringify(info).toLowerCase().indexOf(q) < 0) {
 			return false;
 		}
 	}
@@ -2870,7 +2874,6 @@ async function IconPacksList1(s, Id, info, json) {
 }
 
 async function IconPacksList(xhr) {
-	CloseFindDialog();
 	if (xhr) {
 		g_xhrIcons = xhr;
 	} else {
@@ -2925,7 +2928,6 @@ async function DeleteIconPacks() {
 }
 
 async function LangPacksList(xhr) {
-	CloseFindDialog();
 	if (xhr) {
 		g_xhrLang = xhr;
 	} else {
@@ -2938,10 +2940,10 @@ async function LangPacksList(xhr) {
 	const json = JSON.parse(text);
 	const td = [];
 	const bt = await GetText("Install");
-	const q = document.getElementById('_GetLangQ').value;
+	const q = document.getElementById('_GetLangQ').value.toLowerCase();
 	for (let n in json) {
 		const info = json[n];
-		if (!q || await api.PathMatchSpec(JSON.stringify(info), "*" + q + "*")) {
+		if (!q || JSON.stringify(info).toLowerCase().indexOf(q) >= 0) {
 			const tm = new Date(info.pubDate).getTime();
 			let strUpdate = "";
 			const wfd = await IsExists(BuildPath(ui_.Installed, "lang", n), true);
@@ -3129,7 +3131,6 @@ async function SortAddons(el) {
 }
 
 async function SortAddons1(n) {
-	CloseFindDialog();
 	if ("number" !== typeof n) {
 		n = 3;
 	}
@@ -3151,7 +3152,7 @@ async function SortAddons1(n) {
 			const Progress = await api.CreateObject("ProgressDialog");
 			try {
 				Progress.SetAnimation(hShell32, 150);
-				Progress.SetLine(1, await api.LoadString(hShell32, 13585) || await api.LoadString(hShell32, 6478), true);
+				Progress.SetLine(1, await GetTextR("@shell32.dll,-13585[-6478]"), true);
 				Progress.StartProgressDialog(ui_.hwnd, null, 2);
 				for (let j = 0; !bCancelled && j < table.rows.length; ++j) {
 					Promise.all([Progress.HasUserCancelled(j, nTotal, 2)]).then(function (r) {
