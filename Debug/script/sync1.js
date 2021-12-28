@@ -1976,8 +1976,12 @@ te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam) {
 		}
 	}
 	let hr = RunEvent3("Command", Ctrl, hwnd, msg, wParam, lParam);
-	if (!isFinite(hr) && Ctrl.Type <= CTRL_EB && (wParam & 0xfff) + 1 == CommandID_PROPERTIES) {
-		hr = InvokeCommand(Ctrl.SelectedItems(), 0, te.hwnd, "properties", null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
+	if (!isFinite(hr) && Ctrl.Type <= CTRL_EB) {
+		if ((wParam & 0xfff) + 1 == CommandID_PROPERTIES) {
+			hr = InvokeCommand(Ctrl.SelectedItems(), 0, te.hwnd, "properties", null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
+		} else if (wParam == 0x7032) {
+			hr = InvokeCommand(Ctrl.FolderItem, 0, te.hwnd, "properties", null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
+		}
 	}
 	RunEvent1("ConfigChanged", "Window");
 	return hr;

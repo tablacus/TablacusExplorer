@@ -121,6 +121,11 @@ LRESULT CALLBACK TEDlgLVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, 
 {
 	try {
 		switch (msg) {
+		case WM_ERASEBKGND:
+			RECT rc;
+			GetClientRect(hwnd, &rc);
+			FillRect((HDC)wParam, &rc, g_hbrDarkBackground);
+			return 1;
 		case LVM_SETSELECTEDCOLUMN:
 			if (g_bDarkMode) {
 				wParam = -1;
@@ -293,6 +298,7 @@ VOID FixChildren(HWND hwnd)
 			TreeView_SetTextColor(hwnd1, g_bDarkMode ? TECL_DARKTEXT : GetSysColor(COLOR_WINDOWTEXT));
 			TreeView_SetBkColor(hwnd1, g_bDarkMode ? TECL_DARKBG : GetSysColor(COLOR_WINDOW));
 		} else if (::PathMatchSpecA(pszClassA, WC_LISTVIEWA)) {
+			ListView_SetExtendedListViewStyle(hwnd1, ListView_GetExtendedListViewStyle(hwnd1) | LVS_EX_DOUBLEBUFFER);
 			if (_AllowDarkModeForWindow) {
 				_AllowDarkModeForWindow(hwnd1, g_bDarkMode);
 				SetWindowTheme(hwnd1, L"explorer", NULL);

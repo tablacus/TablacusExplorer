@@ -8022,12 +8022,22 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 		case TE_METHOD + 0xf040://Items
 			FolderItems *pFolderItems;
 			if SUCCEEDED(Items(nArg >= 0 ? GetIntFromVariant(&pDispParams->rgvarg[nArg]) : SVGIO_ALLVIEW | SVGIO_FLAG_VIEWORDER, &pFolderItems)) {
+				if (nArg >= 1 && GetBoolFromVariant(&pDispParams->rgvarg[nArg - 1])) {
+					teCreateSafeArrayFromVariantArray(pFolderItems, pVarResult);
+					SafeRelease(&pFolderItems);
+					return S_OK;
+				}
 				teSetObjectRelease(pVarResult, pFolderItems);
 			}
 			return S_OK;
 
 		case TE_METHOD + 0xf041://SelectedItems
 			if SUCCEEDED(SelectedItems(&pFolderItems)) {
+				if (nArg >= 0 && GetBoolFromVariant(&pDispParams->rgvarg[nArg])) {
+					teCreateSafeArrayFromVariantArray(pFolderItems, pVarResult);
+					SafeRelease(&pFolderItems);
+					return S_OK;
+				}
 				teSetObjectRelease(pVarResult, pFolderItems);
 			}
 			return S_OK;
