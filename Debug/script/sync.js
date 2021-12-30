@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20211228 ? te.Version : 20211228;
+		return te.Version < 20211230 ? te.Version : 20211230;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -530,7 +530,7 @@ WriteTextFile = function (fn, src, base) {
 			ado.WriteText(src);
 			ado.SaveToFile(OrganizePath(fn, base || te.Data.DataFolder), adSaveCreateOverWrite);
 		} catch (e) {
-			r = "WriteTextFileError: " + fn;
+			r = [e.number, e.stack || e.message, fn].join("\t");
 		}
 		ado.Close();
 	}
@@ -923,30 +923,36 @@ ShowError = function (e, s, i) {
 }
 
 OpenXml = function (strFile, bAppData, bEmpty, strInit) {
-	const xml = api.CreateObject("Msxml2.DOMDocument");
-	xml.async = false;
-	let path = BuildPath(te.Data.DataFolder, "config\\" + strFile);
-	if (fso.FileExists(path) && xml.load(path)) {
+	const s = ReadXmlFile(strFile, bAppData, bEmpty, strInit);
+	if (s) {
+		const xml = api.CreateObject("Msxml2.DOMDocument");
+		xml.async = false;
+		xml.loadXML(s);
 		return xml;
 	}
-	if (!bAppData) {
-		path = BuildPath(te.Data.Installed, "config\\" + strFile);
-		if (fso.FileExists(path) && xml.load(path)) {
+}
+
+ReadXmlFile = function (strFile, bAppData, bEmpty, strInit) {
+	let s;
+	if (s = ReadTextFile(BuildPath(te.Data.DataFolder, "config\\" + strFile))) {
+		return s;
+	}
+	if (!bAppData && !SameText(te.Data.DataFolder, te.Data.Installed)) {
+		const path = BuildPath(te.Data.Installed, "config\\" + strFile);
+		if (s = ReadTextFile(path)) {
 			api.SHFileOperation(FO_MOVE, path, BuildPath(te.Data.DataFolder, "config"), FOF_SILENT | FOF_NOCONFIRMATION, false);
-			return xml;
+			return s;
 		}
 	}
 	if (strInit) {
-		path = BuildPath(strInit, strFile);
-		if (fso.FileExists(path) && xml.load(path)) {
-			return xml;
+		if (s = ReadTextFile(BuildPath(strInit, strFile))) {
+			return s;
 		}
 	}
-	path = BuildPath(te.Data.Installed, "init\\" + strFile);
-	if (fso.FileExists(path) && xml.load(path)) {
-		return xml;
+	if (s = ReadTextFile(BuildPath(te.Data.Installed, "init\\" + strFile))) {
+		return s;
 	}
-	return bEmpty ? xml : null;
+	return bEmpty && "<xml/>";
 }
 
 LoadLang2 = function (filename) {
@@ -2400,6 +2406,12 @@ ExecMenu4 = function (Ctrl, Name, pt, hMenu, arContextMenu, nVerb, FV) {
 			const FolderView = ContextMenu.FolderView;
 			if (FolderView) {
 				FolderView.Focus();
+				if (Ctrl.Type <= CTRL_EB) {
+					const sVerb = String(ContextMenu.GetCommandString(nVerb - ContextMenu.idCmdFirst, GCS_VERB)).toLowerCase();
+					if (sVerb == "rename") {
+						FolderView.SelectItem(FolderView.GetFocusedItem, SVSI_EDIT);
+					}
+				}
 			}
 			if (Ctrl.Type == CTRL_TV) {
 				const sVerb = String(ContextMenu.GetCommandString(nVerb - ContextMenu.idCmdFirst, GCS_VERB)).toLowerCase();
@@ -2810,13 +2822,13 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem, bTran
 	return nResult > nMin ? nResult : nMin;
 }
 
-SaveXmlEx = function (filename, xml) {
+SaveXmlEx = function (fn, xml) {
 	try {
-		filename = BuildPath(te.Data.DataFolder, "config\\" + filename);
-		xml.save(filename);
+		fn = BuildPath(te.Data.DataFolder, "config\\" + fn);
+		xml.save(fn);
 	} catch (e) {
 		if (e.number != E_ACCESSDENIED) {
-			ShowError(e, [GetText("Save"), filename].join(": "));
+			ShowError(e, [GetText("Save"), fn].join(": "));
 		}
 	}
 }
@@ -2867,6 +2879,9 @@ GetAddonInfo = function (Id) {
 	if (isFinite(Id)) {
 		Id = (te.Data.Addons.documentElement.childNodes[Id] || {}).nodeName;
 	}
+	if (!Id) {
+		return;
+	}
 	const info = api.CreateObject("Object");
 
 	const xml = api.CreateObject("Msxml2.DOMDocument");
@@ -2897,9 +2912,11 @@ GetAddonInfo = function (Id) {
 FindAddonInfo = function (Id, q) {
 	const info = GetAddonInfo(Id);
 	for (let id in info) {
-		const s = info[id];
-		if ((s + GetAltText(s, true)).toLowerCase().indexOf(q) >= 0) {
-			return true;
+		if (/Name|Description/.test(id)) {
+			const s = info[id];
+			if ((s + GetAltText(s, true)).toLowerCase().indexOf(q) >= 0) {
+				return true;
+			}
 		}
 	}
 	return false;
@@ -2939,7 +2956,6 @@ OpenXml = function (strFile, bAppData, bEmpty, strInit) {
 CreateXml = function (bRoot) {
 	const xml = api.CreateObject("Msxml2.DOMDocument");
 	xml.async = false;
-	xml.appendChild(xml.createProcessingInstruction("xml", 'version="1.0" encoding="UTF-8"'));
 	if (bRoot) {
 		xml.appendChild(xml.createElement("TablacusExplorer"));
 	}
@@ -3034,8 +3050,9 @@ PopupContextMenu = function (Item, FV, pt) {
 XmlItem2Json = function (item) {
 	const json = [];
 	if (item) {
-		if (item.text) {
-			json.push('"text":"' + EscapeJson(item.text) + '"');
+		const s = item.text || item.textContent;
+		if (s) {
+			json.push('"text":"' + EscapeJson(s) + '"');
 		}
 		const attrs = item.attributes;
 		if (attrs) {

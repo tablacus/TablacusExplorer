@@ -1255,8 +1255,8 @@ SaveAddons = function (Addons, bLoading) {
 		}
 	}
 	te.Data.bErrorAddons = false;
-	const xml = CreateXml();
-	const root = xml.createElement("TablacusExplorer");
+	const xml = CreateXml(true);
+	const root = xml.documentElement;
 	for (let Id in Addons) {
 		try {
 			const items = te.Data.Addons.getElementsByTagName(Id);
@@ -1283,7 +1283,6 @@ SaveAddons = function (Addons, bLoading) {
 			root.appendChild(item);
 		} catch (e) { }
 	}
-	xml.appendChild(root);
 	te.Data.Addons = xml;
 	RunEvent1("ConfigChanged", "Addons");
 }
@@ -3563,9 +3562,9 @@ SetMenuExec = function (n, strName, strMenu, nPos, strExec) {
 }
 
 InitAddonsXML = function () {
+	const s = ReadXmlFile("addons.xml", false, true);
 	const xml = api.CreateObject("Msxml2.DOMDocument");
 	xml.async = false;
-	const s = ReadTextFile(BuildPath(te.Data.DataFolder, "config\\addons.xml")) || ReadTextFile(BuildPath(te.Data.DataFolder, "init\\addons.xml")) || "<xml></xml>";
 	xml.loadXML(s);
 	te.Data.Addons = xml;
 	return window.chrome && s;

@@ -1199,10 +1199,13 @@ MakeKeySelect = async function () {
 	let s;
 	let oa = document.getElementById("_KeyState");
 	if (oa) {
-		const ar = [];
+		let ar = [];
 		for (let i = 0; i < 4; ++i) {
-			s = await MainWindow.g_.KeyState[i][0];
-			ar.push('<label><input type="checkbox" onclick="KeyShift(this)" id="_Key', s, '">', s, '&nbsp;</label>');
+			ar[i] = MainWindow.g_.KeyState[i][0];
+		}
+		ar = await Promise.all(ar);
+		for (let i = 0; i < 4; ++i) {
+			ar[i] = '<label><input type="checkbox" onclick="KeyShift(this)" id="_Key' + ar[i] + '">' + ar[i] + '&nbsp;</label>';
 		}
 		oa.insertAdjacentHTML("AfterBegin", ar.join(""));
 	}
@@ -1242,9 +1245,13 @@ SetKeyShift = async function () {
 	let key = ((document.E && document.E.KeyKey) || document.F.KeyKey || document.F.Key).value;
 	key = key.replace(/^(.+),.+/, "$1");
 	const nLen = await GetLength(await MainWindow.g_.KeyState);
-	let o;
+	let o, r = [];
 	for (let i = 0; i < nLen; ++i) {
-		const s = await MainWindow.g_.KeyState[i][0];
+		r.push(MainWindow.g_.KeyState[i][0]);
+	}
+	r = await Promise.all(r);
+	for (let i = 0; i < nLen; ++i) {
+		const s = r[i];
 		if (o = document.getElementById("_Key" + s)) {
 			o.checked = key.indexOf(s + "+") >= 0;
 		}
@@ -1318,6 +1325,40 @@ ClearAutocomplete = function () {
 	g_.Autocomplete.Path = "";
 }
 
+OpenXmlUI = async function (strFile, bAppData, bEmpty, strInit) {
+	const s = await ReadXmlFile(strFile, bAppData, bEmpty, strInit);
+	if (s) {
+		if (window.DOMParser) {
+			return new DOMParser().parseFromString(s, "application/xml");
+		}
+		const xml = api.CreateObject("Msxml2.DOMDocument");
+		xml.async = false;
+		xml.loadXML(s);
+		return xml;
+	}
+}
+
+CreateXmlUI = function (bRoot) {
+	if (window.DOMParser) {
+		const xml = new DOMParser().parseFromString('<TablacusExplorer/>', "application/xml");
+		if (!bRoot) {
+			xml.removeChild(xml.documentElement);
+		}
+		return xml;
+	}
+	return CreateXml(bRoot);
+}
+
+SaveXmlExUI = async function (fn, xml) {
+	fn = BuildPath(await te.Data.DataFolder, "config\\" + fn);
+	const r = (await WriteTextFile(fn, window.XMLSerializer ? new XMLSerializer().serializeToString(xml) : xml.xml) || "").split("\t");
+	if (r[0] && r[0] != E_ACCESSDENIED) {
+		const e = await api.CreateObject("Object");
+		e.message = r[1];
+		ShowError(e, [await GetText("Save"), fn].join(": "));
+	}
+}
+
 GetXmlItems = window.chrome ? async function (items) {
 	return JSON.parse(await XmlItems2Json(items));
 } : function (items) {
@@ -1341,6 +1382,24 @@ GetXmlItems = window.chrome ? async function (items) {
 		}
 	}
 	return ar;
+}
+
+MenuGetElementsByTagNameUI = async function (Name) {
+	if (window.chrome) {
+		const xml = new DOMParser().parseFromString(await te.Data.xmlMenus.xml, "application/xml");
+		let menus = xml.getElementsByTagName(Name);
+		if (!menus || !menus.length) {
+			const altMenu = {
+				"ViewContext": "Background",
+				"Background": "ViewContext",
+				"TaskTray": "Systray",
+				"Systray": "TaskTray"
+			}
+			menus = xml.getElementsByTagName(altMenu[Name]);
+		}
+		return menus;
+	}
+	return teMenuGetElementsByTagName(Name);
 }
 
 SyncExec = async function (cb, o, n) {

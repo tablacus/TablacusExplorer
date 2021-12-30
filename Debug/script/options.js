@@ -23,6 +23,7 @@ g_nSort = {
 	"1_3" : 1
 };
 g_ovPanel = null;
+g_.ShowError = true;
 ui_.elAddons = {};
 
 urlAddons = "https://tablacus.github.io/TablacusExplorerAddons/";
@@ -412,17 +413,16 @@ async function SetTabControls() {
 
 async function SetFolderViews() {
 	if (g_Chg.View) {
-		let o = await api.CreateObject("Object");
-		o.Layout = await te.Data.Conf_Layout;
-		o.ViewMode = document.F.View_ViewMode.value;
-		MainWindow.g_.TEData = o;
-		o = await api.CreateObject("Object");
-		o.All = document.getElementById("Conf_ListDefault").checked;
-		o.FolderFlags = document.F.View_fFlags.value;
-		o.Options = document.F.View_Options.value;
-		o.ViewFlags = document.F.View_ViewFlags.value;
-		o.Type = document.F.View_Type.value;
-		MainWindow.g_.FVData = o;
+		const r = await Promise.all([api.CreateObject("Object"), api.CreateObject("Object"), te.Data.Conf_Layout]);
+		r[0].Layout = r[2];
+		r[0].ViewMode = document.F.View_ViewMode.value;
+		MainWindow.g_.TEData = r[0];
+		r[1].All = document.getElementById("Conf_ListDefault").checked;
+		r[1].FolderFlags = document.F.View_fFlags.value;
+		r[1].Options = document.F.View_Options.value;
+		r[1].ViewFlags = document.F.View_ViewFlags.value;
+		r[1].Type = document.F.View_Type.value;
+		MainWindow.g_.FVData = r[1];
 	}
 }
 
@@ -452,10 +452,11 @@ function SetTabControl(TC) {
 async function GetTabControl() {
 	const TC = await te.Ctrl(CTRL_TC);
 	if (TC) {
-		document.F.Tab_Left.value = await TC.Left;
-		document.F.Tab_Top.value = await TC.Top;
-		document.F.Tab_Width.value = await TC.Width;
-		document.F.Tab_Height.value = await TC.Height;
+		const r = Promise.all([TC.Left, TC.Top, TC.Width, TC.Height]);
+		document.F.Tab_Left.value = r[0];
+		document.F.Tab_Top.value = r[1];
+		document.F.Tab_Width.value = r[2];
+		document.F.Tab_Height.value = r[3];
 	}
 }
 
@@ -473,10 +474,10 @@ async function MoveTabControl() {
 
 async function SwapTabControl() {
 	const TC1 = await te.Ctrl(CTRL_TC);
-	const cTC = await te.Ctrls(CTRL_TC, true);
-	const nLen = await cTC.Count;
+	const cTC = await te.Ctrls(CTRL_TC, true, window.chrome);
+	const nLen = cTC.Count;
 	for (let i = 0; i < nLen; ++i) {
-		const TC = await cTC[i];
+		const TC = cTC[i];
 		if (await TC.Id != await TC1.Id && await TC.Left == document.F.Tab_Left.value && await TC.Top == document.F.Tab_Top.value &&
 			await TC.Width == document.F.Tab_Width.value && await TC.Height == document.F.Tab_Height.value) {
 			TC.Left = await TC1.Left;
@@ -846,17 +847,17 @@ async function LoadMenus(nSelected) {
 		for (let j in g_arMenuTypes) {
 			const s = g_arMenuTypes[j];
 			document.getElementById("Menus_List").insertAdjacentHTML("beforeend", ['<select name="Menus_', s, '" size="17" style="width: 12em; height: 32em; height: calc(100vh - 6em); min-height: 20em; display: none" onchange="EditXEx(EditMenus)" ondblclick="EditMenus()" oncontextmenu="CancelX(\'Menus\')" multiple></select>'].join(""));
-			const menus = await teMenuGetElementsByTagName(s);
-			if (menus && await GetLength(menus)) {
-				oa[++oa.length - 1].value = s + "," + await menus[0].getAttribute("Base") + "," + await menus[0].getAttribute("Pos");
+			const menus = await MenuGetElementsByTagNameUI(s);
+			if (menus && menus.length) {
+				oa[++oa.length - 1].value = s + "," + menus[0].getAttribute("Base") + "," + menus[0].getAttribute("Pos");
 				const o = document.F["Menus_" + s];
-				const items = await menus[0].getElementsByTagName("Item");
+				const items = menus[0].getElementsByTagName("Item");
 				if (items) {
-					let i = await GetLength(items);
+					let i = items.length;
 					o.length = i;
 					while (--i >= 0) {
-						const item = await items[i];
-						SetMenus(o[i], await Promise.all([item.getAttribute("Name"), item.getAttribute("Filter"), item.text, item.getAttribute("Type"), item.getAttribute("Icon"), item.getAttribute("Org"), item.getAttribute("Height")]));
+						const item = items[i];
+						SetMenus(o[i], [item.getAttribute("Name"), item.getAttribute("Filter"), item.text || item.textContent, item.getAttribute("Type"), item.getAttribute("Icon"), item.getAttribute("Org"), item.getAttribute("Height")]);
 					}
 				}
 			} else {
@@ -909,22 +910,22 @@ async function LoadX(mode, fn, form) {
 		if (g_x[mode]) {
 			oa = form[mode];
 			oa.length = 0;
-			const xml = await OpenXml(mode + ".xml", false, true);
+			const xml = await OpenXmlUI(mode + ".xml", false, true);
 			for (let j in g_Types[mode]) {
 				let o = oa[++oa.length - 1];
 				o.text = await GetTextEx(g_Types[mode][j]);
 				o.value = g_Types[mode][j];
 				o = form[mode + g_Types[mode][j]];
-				let items = await xml.getElementsByTagName(g_Types[mode][j]);
-				let i = await GetLength(items);
+				let items = xml.getElementsByTagName(g_Types[mode][j]);
+				let i = items.length;
 				if (i == 0 && g_Types[mode][j] == "List") {
-					items = await xml.getElementsByTagName("Folder");
-					i = await GetLength(items);
+					items = xml.getElementsByTagName("Folder");
+					i = items.length;
 				}
 				o.length = i;
 				while (--i >= 0) {
-					const item = await items[i];
-					let s = await item.getAttribute(mode);
+					const item = items[i];
+					let s = item.getAttribute(mode);
 					if (SameText(mode, "Key")) {
 						const ar = /,$/.test(s) ? [s] : s.split(",");
 						for (let k = ar.length; k--;) {
@@ -932,28 +933,20 @@ async function LoadX(mode, fn, form) {
 						}
 						s = ar.join(",");
 					}
-					SetData(o[i], [s, await item.text, await item.getAttribute("Type"), await item.getAttribute("Name")]);
+					SetData(o[i], [s, item.text || item.textContent, item.getAttribute("Type"), item.getAttribute("Name")]);
 				}
 			}
 		} else {
 			g_x[mode] = form.List;
 			g_x[mode].length = 0;
-			let xml = await te.Data["xml" + AddonName];
-			if (!xml) {
-				xml = await api.CreateObject("Msxml2.DOMDocument");
-				xml.async = false;
-				await xml.load(BuildPath(ui_.Installed, "config", AddonName + ".xml"));
-				te.Data["xml" + AddonName] = xml;
-			}
-
-			const items = await xml.getElementsByTagName("Item");
-			let i = await GetLength(items);
+			const xml = await OpenXmlUI(AddonName + ".xml", false, true);
+			const items = xml.getElementsByTagName("Item");
+			let i = items.length;
 			g_x[mode].length = i;
 			while (--i >= 0) {
-				const item = await items[i];
-				SetData(g_x[mode][i], [await item.getAttribute("Name"), await item.text, await item.getAttribute("Type"), await item.getAttribute("Icon"), await item.getAttribute("Height")]);
+				const item = items[i];
+				SetData(g_x[mode][i], [item.getAttribute("Name"), item.text || item.textContent, item.getAttribute("Type"), item.getAttribute("Icon"), item.getAttribute("Height")]);
 			}
-			xml = null;
 		}
 		EnableSelectTag(g_x[mode]);
 		fn && fn();
@@ -962,33 +955,33 @@ async function LoadX(mode, fn, form) {
 
 async function SaveMenus() {
 	if (g_Chg.Menus) {
-		const xml = await CreateXml();
-		const root = await xml.createElement("TablacusExplorer");
+		const xml = CreateXmlUI(true);
+		const root = xml.documentElement;
 		for (let j in g_arMenuTypes) {
 			const o = document.F["Menus_" + g_arMenuTypes[j]];
-			const items = await xml.createElement(g_arMenuTypes[j]);
+			const items = xml.createElement(g_arMenuTypes[j]);
 			let a = document.F.Menus[j].value.split(",");
-			await items.setAttribute("Base", GetNum(a[1]));
-			await items.setAttribute("Pos", GetNum(a[2]));
+			items.setAttribute("Base", GetNum(a[1]));
+			items.setAttribute("Pos", GetNum(a[2]));
 			for (let i = 0; i < o.length; ++i) {
-				const item = await xml.createElement("Item");
+				const item = xml.createElement("Item");
 				a = o[i].value.split(g_sep);
-				item.text = a[2];
-				const r = [item.setAttribute("Name", a[0]), item.setAttribute("Filter", a[1]), item.setAttribute("Type", a[3]), item.setAttribute("Icon", a[4])];
+				SetXmlText(item, a[2]);
+				item.setAttribute("Name", a[0]);
+				item.setAttribute("Filter", a[1]);
+				item.setAttribute("Type", a[3]);
+				item.setAttribute("Icon", a[4]);
 				if (a[5]) {
-					r.push(item.setAttribute("Org", 1));
+					item.setAttribute("Org", 1);
 				}
 				if (a[6]) {
-					r.push(item.setAttribute("Height", a[6]));
+					item.setAttribute("Height", a[6]);
 				}
-				await Promise.all(r);
-				await items.appendChild(item);
+				items.appendChild(item);
 			}
-			await root.appendChild(items);
+			root.appendChild(items);
 		}
-		await xml.appendChild(root);
-		te.Data.xmlMenus = xml;
-		await MainWindow.RunEvent1("ConfigChanged", "Menus");
+		await SaveXmlExUI("menus.xml", xml);
 	}
 }
 
@@ -1009,15 +1002,14 @@ async function GetKeyNameG(s) {
 
 async function SaveX(mode, form) {
 	if (g_Chg[mode]) {
-		const xml = await CreateXml();
-		const root = await xml.createElement("TablacusExplorer");
+		const xml = CreateXmlUI(true);
+		const root = xml.documentElement;
 		for (let j in g_Types[mode]) {
 			const o = (form || document.F)[mode + g_Types[mode][j]];
 			for (let i = 0; i < o.length; ++i) {
-				const item = await xml.createElement(g_Types[mode][j]);
+				const item = xml.createElement(g_Types[mode][j]);
 				const a = o[i].value.split(g_sep);
-				const r = [];
-				item.text = a[1];
+				SetXmlText(item, a[1]);
 				let s = a[0];
 				if (SameText(mode, "key")) {
 					const ar = /,$/.test(s) ? [s] : s.split(",");
@@ -1026,15 +1018,14 @@ async function SaveX(mode, form) {
 					}
 					s = ar.join(",");
 				} else {
-					r.push(item.setAttribute("Name", a[3]));
+					item.setAttribute("Name", a[3]);
 				}
-				r.push(item.setAttribute(mode, s), item.setAttribute("Type", a[2]));
-				await Promise.all(r);
-				await root.appendChild(item);
+				item.setAttribute(mode, s);
+				item.setAttribute("Type", a[2]);
+				root.appendChild(item);
 			}
 		}
-		await xml.appendChild(root);
-		await SaveXmlEx(mode.toLowerCase() + ".xml", xml);
+		SaveXmlExUI(mode.toLowerCase() + ".xml", xml);
 	}
 }
 
@@ -2755,7 +2746,7 @@ async function Search(xml, q) {
 			const item = items[0].childNodes;
 			for (let i = item.length; i-- > 0;) {
 				const item1 = item[i];
-				if (item1.tagName) {
+				if (/Name|Description/.test(item1.tagName)) {
 					const s = item1.textContent || item1.text;
 					if ((s + await GetAltText(s, true)).toLowerCase().indexOf(q) >= 0) {
 						return true;
@@ -2834,12 +2825,21 @@ async function InstallIcon2(xhr, url, o) {
 	IconPacksList();
 }
 
+function JsonSearch(info, q) {
+	if (!q) {
+		return true;
+	}
+	let s = "";
+	for (let i in info) {
+		s += info[i] + "\n";
+	}
+	return s.toLowerCase().indexOf(q) >= 0
+}
+
 async function IconPacksList1(s, Id, info, json) {
 	const q = document.getElementById('_GetIconsQ').value.toLowerCase();
-	if (q && !json) {
-		if (JSON.stringify(info).toLowerCase().indexOf(q) < 0) {
-			return false;
-		}
+	if (!json && !JsonSearch(info, q)) {
+		return false;
 	}
 	const langId = await GetLangId();
 	s.push('<img src="', urlIcons, Id, '/preview.png" align="left" style="margin-right: 8px"><b style="font-size: 1.3em">', info.name[langId] || info.name.en, '</b> ');
@@ -2943,7 +2943,7 @@ async function LangPacksList(xhr) {
 	const q = document.getElementById('_GetLangQ').value.toLowerCase();
 	for (let n in json) {
 		const info = json[n];
-		if (!q || JSON.stringify(info).toLowerCase().indexOf(q) >= 0) {
+		if (JsonSearch(info, q)) {
 			const tm = new Date(info.pubDate).getTime();
 			let strUpdate = "";
 			const wfd = await IsExists(BuildPath(ui_.Installed, "lang", n), true);

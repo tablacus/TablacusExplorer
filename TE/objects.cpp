@@ -2755,22 +2755,22 @@ VOID CteWICBitmap::GetFrameFromStream(IStream *pStream, UINT uFrame, BOOL bInit)
 	}
 }
 
-VOID CteWICBitmap::FromStreamRelease(IStream *pStream, LPWSTR lpfn, BOOL bExtend, int cx)
+VOID CteWICBitmap::FromStreamRelease(IStream **ppStream, LPWSTR lpfn, BOOL bExtend, int cx)
 {
 	SafeRelease(&m_pStream);
 	m_uFrameCount = 1;
 	LARGE_INTEGER liOffset;
 	liOffset.QuadPart = 0;
-	GetFrameFromStream(pStream, 0, TRUE);
+	GetFrameFromStream(*ppStream, 0, TRUE);
 	if (!HasImage()) {
 		HRESULT hr = E_FAIL;
 		try {
 			for (size_t i = 0; i < g_ppGetImage.size(); ++i) {
-				pStream->Seek(liOffset, STREAM_SEEK_SET, NULL);
+				(*ppStream)->Seek(liOffset, STREAM_SEEK_SET, NULL);
 				HBITMAP hBM = NULL;
 				int nAlpha = 3;
 				LPFNGetImage _GetImage = (LPFNGetImage)g_ppGetImage[i];
-				hr = _GetImage(pStream, lpfn, cx, &hBM, &nAlpha);
+				hr = _GetImage(*ppStream, lpfn, cx, &hBM, &nAlpha);
 				if (hr == S_OK) {
 					CreateBitmapFromHBITMAP(hBM, 0, nAlpha);
 					::DeleteObject(hBM);
@@ -2784,7 +2784,7 @@ VOID CteWICBitmap::FromStreamRelease(IStream *pStream, LPWSTR lpfn, BOOL bExtend
 #endif
 		}
 	}
-	SafeRelease(&pStream);
+	SafeRelease(ppStream);
 }
 
 HRESULT CteWICBitmap::GetArchive(LPWSTR lpfn, int cx)
@@ -2799,7 +2799,7 @@ HRESULT CteWICBitmap::GetArchive(LPWSTR lpfn, int cx)
 				LPFNGetArchive lpfnGetArchive = (LPFNGetArchive)g_ppGetArchive[i];
 				hr = lpfnGetArchive(bsArcPath, bsItem, &pStreamOut, NULL);
 				if (hr == S_OK) {
-					FromStreamRelease(pStreamOut, bsItem, NULL, cx);
+					FromStreamRelease(&pStreamOut, bsItem, NULL, cx);
 					break;
 				}
 			}
@@ -2852,7 +2852,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 							lpfn = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]);
 							cx = (nArg >= 2) ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]) : 0;
 						}
-						FromStreamRelease(pStream, lpfn, TRUE, cx);
+						FromStreamRelease(&pStream, lpfn, TRUE, cx);
 						teSetObject(pVarResult, GetBitmapObj());
 						return S_OK;
 					}
@@ -2913,31 +2913,31 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 							CryptStringToBinary(lpBase64, dwLen, CRYPT_STRING_BASE64, (BYTE *)bs, &dwData, NULL, NULL);
 							IStream *pStream = SHCreateMemStream((BYTE *)bs, dwData);
 							::SysFreeString(bs);
-							FromStreamRelease(pStream, lpfn, TRUE, cx);
+							FromStreamRelease(&pStream, lpfn, TRUE, cx);
 						}
 					}
 				}
 				if (!HasImage()) {
 					IStream *pStream = NULL;
-					if (pidl) {
-						IShellFolder *pSF;
-						LPCITEMIDLIST pidlPart;
-						if SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &pidlPart)) {
-							pSF->BindToStorage(pidlPart, NULL, IID_PPV_ARGS(&pStream));
-							pSF->Release();
-						}
-					}
 #ifdef _DEBUG
 					::OutputDebugStringA("WICBitmap.FromFile: ");
 					::OutputDebugString(lpfn);
 					::OutputDebugStringA("\n");
 #endif
-					if (!pStream) {
-						if FAILED(SHCreateStreamOnFileEx(lpfn, STGM_READ | STGM_SHARE_DENY_NONE, FILE_ATTRIBUTE_ARCHIVE, FALSE, NULL, &pStream)) {
+					if FAILED(SHCreateStreamOnFileEx(lpfn, STGM_READ | STGM_SHARE_DENY_NONE, FILE_ATTRIBUTE_ARCHIVE, FALSE, NULL, &pStream)) {
+						if (pidl) {
+							IShellFolder *pSF;
+							LPCITEMIDLIST pidlPart;
+							if SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &pidlPart)) {
+								pSF->BindToStorage(pidlPart, NULL, IID_PPV_ARGS(&pStream));
+								pSF->Release();
+							}
+						}
+						if (!pStream) {
 							pStream = SHCreateMemStream(NULL, NULL);
 						}
 					}
-					FromStreamRelease(pStream, lpfn, FALSE, cx);
+					FromStreamRelease(&pStream, lpfn, FALSE, cx);
 					if (!HasImage()) {
 						VARIANT vAlt;
 						vAlt.bstrVal = NULL;
@@ -3002,7 +3002,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					hr = pStorage->OpenStream(lpPath1, NULL, STGM_READ, NULL, &pStream);
 					if SUCCEEDED(hr) {
 						int cx = (nArg >= 4) ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 4]) : 0;
-						FromStreamRelease(pStream, lpPath1, TRUE, cx);
+						FromStreamRelease(&pStream, lpPath1, TRUE, cx);
 					}
 					VariantClear(&v);
 				}

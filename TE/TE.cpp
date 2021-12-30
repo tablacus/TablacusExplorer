@@ -170,6 +170,7 @@ long	g_lSWCookie = 0;
 int		g_nReload = 0;
 int		g_nException = 256;
 std::unordered_map<std::string, LONG> g_maps[MAP_LENGTH];
+std::unordered_map<IUnknown *, HRESULT> g_umScriptError;
 int		g_param[Count_TE_params];
 int		g_x = MAXINT;
 int		g_nTCCount = 0;
@@ -1822,9 +1823,9 @@ HRESULT ParseScript(LPOLESTR lpScript, LPOLESTR lpLang, VARIANT *pv, IDispatch *
 		}
 		IUnknown *punk = NULL;
 		FindUnknown(pv, &punk);
-		CteActiveScriptSite *pass = new CteActiveScriptSite(punk, pExcepInfo, &phr);
+		CteActiveScriptSite *pass = new CteActiveScriptSite(punk, pExcepInfo);
+		g_umScriptError.try_emplace(static_cast<IActiveScriptSite *>(pass), S_OK);
 		pas->SetScriptSite(pass);
-		pass->Release();
 		IActiveScriptParse *pasp;
 		if SUCCEEDED(pas->QueryInterface(IID_PPV_ARGS(&pasp))) {
 			hr = pasp->InitNew();
@@ -1868,6 +1869,14 @@ HRESULT ParseScript(LPOLESTR lpScript, LPOLESTR lpLang, VARIANT *pv, IDispatch *
 				}
 			}
 			pasp->Release();
+			auto itr = g_umScriptError.find(static_cast<IActiveScriptSite *>(pass));
+			if (itr != g_umScriptError.end()) {
+				if (itr->second) {
+					hr = itr->second;
+				}
+				g_umScriptError.erase(itr);
+			}
+			pass->Release();
 		}
 		if (!ppdisp || !*ppdisp) {
 			pas->SetScriptState(SCRIPTSTATE_CLOSED);
@@ -1875,7 +1884,6 @@ HRESULT ParseScript(LPOLESTR lpScript, LPOLESTR lpLang, VARIANT *pv, IDispatch *
 		}
 		pas->Release();
 	}
-	*phr = NULL;
 	return hr;
 }
 
@@ -3623,7 +3631,7 @@ HRESULT WINAPI GetImage(IStream *pStream, LPWSTR lpfn, int cx, HBITMAP *phBM, in
 	HRESULT hr = E_FAIL;
 	CteWICBitmap *pWB = new CteWICBitmap();
 	pStream->AddRef();
-	pWB->FromStreamRelease(pStream, lpfn, FALSE, cx);
+	pWB->FromStreamRelease(&pStream, lpfn, FALSE, cx);
 	if (pWB->HasImage()) {
 		*phBM = pWB->GetHBITMAP(-1);
 		*pnAlpha = 0;
@@ -14446,10 +14454,9 @@ STDMETHODIMP CteTreeView::GetCurFolder(PIDLIST_ABSOLUTE *ppidl)
 }
 
 //CteActiveScriptSite
-CteActiveScriptSite::CteActiveScriptSite(IUnknown *punk, EXCEPINFO *pExcepInfo, HRESULT **pphr)
+CteActiveScriptSite::CteActiveScriptSite(IUnknown *punk, EXCEPINFO *pExcepInfo)
 {
 	m_cRef = 1;
-	m_pphr = pphr;
 	m_pDispatchEx = NULL;
 	if (punk) {
 		punk->QueryInterface(IID_PPV_ARGS(&m_pDispatchEx));
@@ -14565,8 +14572,10 @@ STDMETHODIMP CteActiveScriptSite::OnScriptError(IActiveScriptError *pscripterror
 			teSysFreeString(&m_pExcepInfo->bstrDescription);
 			teSysFreeString(&bs);
 		}
-		if (*m_pphr) {
-			**m_pphr = m_pExcepInfo->scode;
+		IUnknown *punk = static_cast<IActiveScriptSite *>(this);
+		auto itr = g_umScriptError.find(punk);
+		if (itr != g_umScriptError.end()) {
+			g_umScriptError.try_emplace(punk, m_pExcepInfo->scode);
 		} else if (bs) {
 			MessageBox(NULL, bs, _T(PRODUCTNAME), MB_OK | MB_ICONERROR);
 		}

@@ -366,6 +366,14 @@ GetAddonInfo2 = async function (xml, info, Tag) {
 	return b;
 }
 
+SetXmlText = function (item, s) {
+	if ("string" === typeof item.text) {
+		item.text = s;
+	} else {
+		item.textContent = s;
+	}
+}
+
 GetWinIcon = function () {
 	for (let i = 0; i < arguments.length; i += 2) {
 		if (WINVER >= arguments[i]) {
