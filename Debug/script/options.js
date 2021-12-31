@@ -2429,7 +2429,7 @@ function SetOnChangeHandler() {
 					AddEventEx(o[i], "change", function (ev) {
 						ev = ev || event;
 						g_bChanged = true;
-						const target = ev.target || ev.srcElement;
+						const target = ev.srcElement || ev.target;
 						if (target) {
 							const res = /^(Tab|Tree|View|Conf)/.exec(target.name || target.id);
 							if (res) {
@@ -2676,9 +2676,7 @@ async function ArrangeAddon(xml, td) {
 	if (!q || Id.toLowerCase().indexOf(q) >= 0 || await Search(xml, q)) {
 		const info = {};
 		for (let i = arLangs.length; i--;) {
-			if (await GetAddonInfo2(xml, info, arLangs[i])) {
-				break;
-			}
+			await GetAddonInfo2(xml, info, arLangs[i]);
 		}
 		const dt = new Date(info.pubDate);
 		s.push('<table width="100%"><tr><td width="100%"><b style="font-size: 1.3em">', info.Name, "</b>&nbsp;");
@@ -2747,8 +2745,11 @@ async function Search(xml, q) {
 			for (let i = item.length; i-- > 0;) {
 				const item1 = item[i];
 				if (/Name|Description/.test(item1.tagName)) {
-					const s = item1.textContent || item1.text;
-					if ((s + await GetAltText(s, true)).toLowerCase().indexOf(q) >= 0) {
+					const s = item1.text || item1.textContent;
+					if (s.toLowerCase().indexOf(q) >= 0) {
+						return true;
+					}
+					if (arLangs[k] == "en" && (await GetAltText(s, true)).toLowerCase().indexOf(q) >= 0) {
 						return true;
 					}
 				}

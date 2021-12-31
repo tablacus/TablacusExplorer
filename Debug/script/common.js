@@ -343,27 +343,24 @@ amp2ul = function (s) {
 }
 
 GetAddonInfo2 = async function (xml, info, Tag) {
-	let b = false;
 	const items = xml.getElementsByTagName(Tag);
 	if (items.length) {
 		const item = items[0].childNodes;
 		for (let i = 0; i < item.length; ++i) {
 			const item1 = item[i];
 			const n = item1.tagName;
-			const s = item1.text || item1.textContent;
+			const s = item1.text || item1.textContent || "";
 			if (/^en/i.test(Tag) && /Name|Description/i.test(n)) {
-				const st = await GetAltText(s, true);
+				const st = await GetAltText(s);
 				info[n] = st || s;
 				if (st) {
 					info['$' + n] = s;
-					b = true;
 				}
 			} else {
 				info[n] = s;
 			}
 		}
 	}
-	return b;
 }
 
 SetXmlText = function (item, s) {

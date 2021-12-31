@@ -796,7 +796,7 @@ MouseOver = async function (o) {
 			return;
 		}
 	}
-	o = o.target || o.srcElement || o;
+	o = o.srcElement || o.target || o;
 	if (/button|menu/.test(o.className)) {
 		if (ui_.objHover && o != ui_.objHover) {
 			MouseOut();
@@ -841,7 +841,7 @@ MouseOut = function (s) {
 }
 
 InsertTab = function (ev) {
-	const ot = ev.target || ev.srcElement;
+	const ot = ev.srcElement || ev.target;
 	if (ev.keyCode ? ev.keyCode == VK_TAB : "Tab" === ev.key) {
 		ot.focus();
 		if (document.all && document.selection) {
@@ -863,7 +863,7 @@ InsertTab = function (ev) {
 
 DetectProcessTag = function (ev) {
 	ev = (ev || event);
-	const el = ev.target || ev.srcElement;
+	const el = ev.srcElement || ev.target;
 	return el && (/input|textarea/i.test(el.tagName) || /selectable/i.test(el.className));
 }
 
@@ -873,7 +873,7 @@ GetFolderView = GetFolderViewEx = async function (Ctrl, pt, bStrict) {
 	}
 	const nType = await Ctrl.Type;
 	if (nType == null) {
-		let o = (Ctrl.target || Ctrl.srcElement || Ctrl).offsetParent;
+		let o = (Ctrl.srcElement || Ctrl.target || Ctrl).offsetParent;
 		while (o) {
 			const res = /^Panel_(\d+)$/.exec(o.id);
 			if (res) {
@@ -1406,7 +1406,7 @@ SyncExec = async function (cb, o, n) {
 	let pt;
 	if (n) {
 		pt = await GetPosEx(o, n);
-	} else if (o.target || o.srcElement) {
+	} else if (o.srcElement || o.target) {
 		pt = await api.Memory("POINT");
 		pt.x = o.screenX * ui_.Zoom;
 		pt.y = o.screenY * ui_.Zoom;

@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20211230 ? te.Version : 20211230;
+		return te.Version < 20211230 ? te.Version : 20211231;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -2403,18 +2403,12 @@ ExecMenu4 = function (Ctrl, Name, pt, hMenu, arContextMenu, nVerb, FV) {
 	for (let i in arContextMenu) {
 		const ContextMenu = arContextMenu[i];
 		if (ContextMenu && nVerb >= ContextMenu.idCmdFirst && nVerb <= ContextMenu.idCmdLast) {
+			const sVerb = String(ContextMenu.GetCommandString(nVerb - ContextMenu.idCmdFirst, GCS_VERB)).toLowerCase();
 			const FolderView = ContextMenu.FolderView;
 			if (FolderView) {
 				FolderView.Focus();
-				if (Ctrl.Type <= CTRL_EB) {
-					const sVerb = String(ContextMenu.GetCommandString(nVerb - ContextMenu.idCmdFirst, GCS_VERB)).toLowerCase();
-					if (sVerb == "rename") {
-						FolderView.SelectItem(FolderView.GetFocusedItem, SVSI_EDIT);
-					}
-				}
 			}
 			if (Ctrl.Type == CTRL_TV) {
-				const sVerb = String(ContextMenu.GetCommandString(nVerb - ContextMenu.idCmdFirst, GCS_VERB)).toLowerCase();
 				if (sVerb == "open") {
 					const FV = FolderView || te.Ctrl(CTRL_FV);
 					FV.Navigate(Ctrl.SelectedItem, GetNavigateFlags(FV));
@@ -2427,6 +2421,8 @@ ExecMenu4 = function (Ctrl, Name, pt, hMenu, arContextMenu, nVerb, FV) {
 					g_.NewFolderTV = Ctrl;
 					g_.NewFolderTime = new Date().getTime() + 500;
 				}
+			} else if (sVerb == "rename" && FolderView) {
+				FV.SelectItem(FolderView.GetFocusedItem, SVSI_EDIT);
 			}
 			if (ContextMenu.InvokeCommand(0, te.hwnd, nVerb - ContextMenu.idCmdFirst, null, null, SW_SHOWNORMAL, 0, 0) == S_OK) {
 				api.DestroyMenu(hMenu);
@@ -2889,18 +2885,22 @@ GetAddonInfo = function (Id) {
 	const xmlfile = BuildPath(te.Data.Installed, "addons", Id, "config.xml");
 	if (fso.FileExists(xmlfile)) {
 		xml.load(xmlfile);
-		let i18 = false;
 		GetAddonInfo2(xml, info, "General");
 		const lang = GetLangId();
 		if (!/^en/.test(lang)) {
-			i18 = GetAddonInfo2(xml, info, "en");
+			GetAddonInfo2(xml, info, "en");
 		}
-		if (!i18) {
-			const res = /(\w+)_/.exec(lang);
-			if (res && !/zh_cn/i.test(lang)) {
-				GetAddonInfo2(xml, info, res[1]);
+		const res = /(\w+)_/.exec(lang);
+		if (res && !/zh_cn/i.test(lang)) {
+			GetAddonInfo2(xml, info, res[1]);
+		}
+		GetAddonInfo2(xml, info, lang);
+		const ar = ["Name", "Description"];
+		for (let i = ar.length; i--;) {
+			const s = info["$" + ar[i]];
+			if (s) {
+				info[ar[i]] = GetText(s);
 			}
-			GetAddonInfo2(xml, info, lang);
 		}
 		if (!info.Name) {
 			info.Name = Id;
@@ -2913,8 +2913,7 @@ FindAddonInfo = function (Id, q) {
 	const info = GetAddonInfo(Id);
 	for (let id in info) {
 		if (/Name|Description/.test(id)) {
-			const s = info[id];
-			if ((s + GetAltText(s, true)).toLowerCase().indexOf(q) >= 0) {
+			if (info[id].toLowerCase().indexOf(q) >= 0) {
 				return true;
 			}
 		}
@@ -3232,7 +3231,7 @@ GetSourceText = function (s) {
 GetAltText = function (id, bNull) {
 	try {
 		id = id.replace(/&amp;/g, "&");
-		return MainWindow.Lang[id.toLowerCase()] || !bNull && (/^en/i.test(GetLangId()) ? id : "");
+		return MainWindow.Lang[id.toLowerCase()] || !bNull && (/^en/i.test(GetLangId()) ? id : "") || "";
 	} catch (e) { }
 }
 
