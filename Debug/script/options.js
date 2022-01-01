@@ -2429,7 +2429,7 @@ function SetOnChangeHandler() {
 					AddEventEx(o[i], "change", function (ev) {
 						ev = ev || event;
 						g_bChanged = true;
-						const target = ev.srcElement || ev.target;
+						const target = ev.target || ev.srcElement;
 						if (target) {
 							const res = /^(Tab|Tree|View|Conf)/.exec(target.name || target.id);
 							if (res) {

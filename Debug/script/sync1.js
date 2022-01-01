@@ -2469,7 +2469,12 @@ te.OnMenuMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 			const s = api.GetMenuString(wParam, 0, MF_BYPOSITION);
 			if (api.PathMatchSpec(s, "\t*Script\t*")) {
 				const ar = s.split("\t");
-				api.DeleteMenu(wParam, 0, MF_BYPOSITION);
+				const mii = api.Memory("MENUITEMINFO");
+				mii.fMask = MIIM_ID | MIIM_STATE | MIIM_STRING;
+				mii.wId = -2;
+				mii.fState = MFS_DISABLED;
+				mii.dwTypeData = GetTextR("@shell32,-13585[-4223]");
+				api.SetMenuItemInfo(wParam, 0, true, mii);
 				ExecScriptEx(Ctrl, ar[2], ar[1], hwnd);
 			}
 			break;

@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20211230 ? te.Version : 20211231;
+		return te.Version < 20211230 ? te.Version : 20220101;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3329,7 +3329,6 @@ FolderMenu = {
 	},
 
 	OpenSubMenu: function (hMenu, wID, hSubMenu, nParent) {
-		api.InsertMenu(api.sscanf(hSubMenu, "%llx"), 0, MF_BYPOSITION | MF_DISABLED, -2, api.LoadString(hShell32, 13585) || api.LoadString(hShell32, 4223));
 		FolderMenu.OpenMenuEx(api.sscanf(hSubMenu, "%llx"), this.Items[wID - 1].Path, api.sscanf(hMenu, "%llx"), wID, nParent, true);
 	},
 

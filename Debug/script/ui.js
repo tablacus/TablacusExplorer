@@ -796,7 +796,7 @@ MouseOver = async function (o) {
 			return;
 		}
 	}
-	o = o.srcElement || o.target || o;
+	o = o.target || o.srcElement || o;
 	if (/button|menu/.test(o.className)) {
 		if (ui_.objHover && o != ui_.objHover) {
 			MouseOut();
@@ -841,7 +841,8 @@ MouseOut = function (s) {
 }
 
 InsertTab = function (ev) {
-	const ot = ev.srcElement || ev.target;
+	ev = ev || event;
+	const ot = ev.target || ev.srcElement;
 	if (ev.keyCode ? ev.keyCode == VK_TAB : "Tab" === ev.key) {
 		ot.focus();
 		if (document.all && document.selection) {
@@ -862,8 +863,8 @@ InsertTab = function (ev) {
 }
 
 DetectProcessTag = function (ev) {
-	ev = (ev || event);
-	const el = ev.srcElement || ev.target;
+	ev = ev || event;
+	const el = ev.target || ev.srcElement;
 	return el && (/input|textarea/i.test(el.tagName) || /selectable/i.test(el.className));
 }
 
@@ -873,7 +874,7 @@ GetFolderView = GetFolderViewEx = async function (Ctrl, pt, bStrict) {
 	}
 	const nType = await Ctrl.Type;
 	if (nType == null) {
-		let o = (Ctrl.srcElement || Ctrl.target || Ctrl).offsetParent;
+		let o = (Ctrl.target || Ctrl.srcElement || Ctrl).offsetParent;
 		while (o) {
 			const res = /^Panel_(\d+)$/.exec(o.id);
 			if (res) {
@@ -932,7 +933,7 @@ window.addEventListener("load", function () {
 	document.body.onselectstart = DetectProcessTag;
 	document.body.oncontextmenu = DetectProcessTag;
 	document.body.addEventListener('keydown', function (ev) {
-		ev = (ev || event);
+		ev = ev || event;
 		if (ev.keyCode ? ev.keyCode == VK_F5 : "F5" === ev.key) {
 			if (ev.preventDefault) {
 				ev.preventDefault();
@@ -1406,7 +1407,7 @@ SyncExec = async function (cb, o, n) {
 	let pt;
 	if (n) {
 		pt = await GetPosEx(o, n);
-	} else if (o.srcElement || o.target) {
+	} else if (o.target || o.srcElement) {
 		pt = await api.Memory("POINT");
 		pt.x = o.screenX * ui_.Zoom;
 		pt.y = o.screenY * ui_.Zoom;
@@ -1453,11 +1454,11 @@ ConfirmThenExec = async function (msg, fn, arg) {
 	await api.InsertMenu(hMenu, 0, MF_BYPOSITION | MF_STRING, 1, await msg);
 	await api.InsertMenu(hMenu, 1, MF_BYPOSITION | MF_STRING, 0, await GetText("Cancel"));
 	const pt = GetPos(el || o, 9);
-	if (await api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, ui_.hwnd, null, null)) {
-		fn.apply(null, arg);
-	} else {
-		ui_.ConfirmMenu = new Date().getTime();
-		ui_.elConfirm = el;
-	}
+	const n = await api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, ui_.hwnd, null, null);
 	api.DestroyMenu(hMenu);
+	if (n) {
+		return fn.apply(fn, arg || []);
+	}
+	ui_.ConfirmMenu = new Date().getTime();
+	ui_.elConfirm = el;
 }
