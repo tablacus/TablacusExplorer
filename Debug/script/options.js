@@ -52,37 +52,6 @@ CloseWB = async function (WB, bForce) {
 	g_nResult = 0;
 }
 
-if (window.chrome) {
-	GetAddonElement = async function (id) {
-		const item = await $.GetAddonElement(id);
-		const o = {
-			item: item,
-			db: JSON.parse(await XmlItem2Json(item)),
-			getAttribute: function (s) {
-				return this.db[s];
-			},
-			setAttribute: function (s, v) {
-				this.db[s] = v;
-				this.item.setAttribute(s, v);
-			},
-			removeAttribute: function (s) {
-				delete this.db[s];
-				this.item.removeAttribute(s, v);
-			}
-		};
-		Object.defineProperty(o, "attributes", {
-			get: function () {
-				const ar = [];
-				for (let n in this.db) {
-					ar.push({ name: n, value: this.db[n] });
-				}
-				return ar;
-			}
-		});
-		return o;
-	}
-}
-
 async function SetDefaultLangID(el) {
 	SetDefault(document.F.Conf_Lang, await GetLangId(true), el);
 }
@@ -956,7 +925,6 @@ async function LoadX(mode, fn, form) {
 async function SaveMenus() {
 	if (g_Chg.Menus) {
 		const xml = CreateXmlUI(true);
-		const root = xml.documentElement;
 		for (let j in g_arMenuTypes) {
 			const o = document.F["Menus_" + g_arMenuTypes[j]];
 			const items = xml.createElement(g_arMenuTypes[j]);
@@ -979,7 +947,7 @@ async function SaveMenus() {
 				}
 				items.appendChild(item);
 			}
-			root.appendChild(items);
+			xml.documentElement.appendChild(items);
 		}
 		await SaveXmlExUI("menus.xml", xml);
 	}
@@ -1003,7 +971,6 @@ async function GetKeyNameG(s) {
 async function SaveX(mode, form) {
 	if (g_Chg[mode]) {
 		const xml = CreateXmlUI(true);
-		const root = xml.documentElement;
 		for (let j in g_Types[mode]) {
 			const o = (form || document.F)[mode + g_Types[mode][j]];
 			for (let i = 0; i < o.length; ++i) {
@@ -1022,7 +989,7 @@ async function SaveX(mode, form) {
 				}
 				item.setAttribute(mode, s);
 				item.setAttribute("Type", a[2]);
-				root.appendChild(item);
+				xml.documentElement.appendChild(item);
 			}
 		}
 		SaveXmlExUI(mode.toLowerCase() + ".xml", xml);
@@ -1079,26 +1046,22 @@ async function LoadAddons() {
 	g_x.Addons = true;
 
 	const AddonId = {};
-	const wfd = await api.Memory("WIN32_FIND_DATA");
 	const path = BuildPath(ui_.Installed, "addons");
-	const hFind = await api.FindFirstFile(path + "\\*", wfd);
-	for (let bFind = hFind != INVALID_HANDLE_VALUE; await bFind; bFind = await api.FindNextFile(hFind, wfd)) {
-		const Id = await wfd.cFileName;
+	for (let Id, FileList = await GetFileList(BuildPath(path, "*"), false, window.chrome); Id = FileList.shift();) {
 		if (Id != "." && Id != ".." && !AddonId[Id]) {
 			AddonId[Id] = 1;
 		}
 	}
-	api.FindClose(hFind);
 	const table = document.getElementById("Addons");
 	table.ondragover = Over5;
 	table.ondrop = Drop5;
 	table.deleteRow(0);
-	const root = await te.Data.Addons.documentElement;
-	if (root) {
-		const items = await root.childNodes;
+	
+	const xml = window.chrome ? new DOMParser().parseFromString(await te.Data.Addons.xml, "application/xml") : te.Data.Addons;
+	if (xml.documentElement) {
+		const items = xml.documentElement.childNodes;
 		if (items) {
-			const nLen = await GetLength(items);
-			g_bAddonLoading = nLen;
+			const nLen = items.length;
 			const sorted = document.getElementById("SortedAddons");
 			const tcell = [];
 			const scell = [];
@@ -1109,28 +1072,27 @@ async function LoadAddons() {
 				}
 			}
 			for (let i = 0; i < nLen; ++i) {
-				Promise.all([i, items[i].nodeName, items[i].getAttribute("Enabled")]).then(function (r) {
-					const i = r[0];
-					const Id = r[1];
-					if (AddonId[Id]) {
-						const bEnable = GetNum(r[2]);
-						SetAddon(Id, bEnable, tcell[i]);
-						if (sorted.rows.length) {
-							SetAddon(Id, bEnable, scell[i], "Sorted_");
-						}
-						delete AddonId[Id];
+				const Id = items[i].nodeName;
+				if (AddonId[Id]) {
+					const bEnable = GetNum(items[i].getAttribute("Enabled"));
+					SetAddon(Id, bEnable, tcell[i]);
+					if (sorted.rows.length) {
+						SetAddon(Id, bEnable, scell[i], "Sorted_");
 					}
-					--g_bAddonLoading;
-				});
+					delete AddonId[Id];
+				}
 			}
 		}
 	}
-	for (let nDog = 99; nDog && g_bAddonLoading; --nDog) {
-		await api.Sleep(500);
-		await api.DoEvents();
+	let r = [];
+	for (let Id in AddonId) {
+		r.push(fso.FileExists(BuildPath(path, Id, "config.xml")));
+	}
+	if (window.chrome) {
+		r = await Promise.all(r);
 	}
 	for (let Id in AddonId) {
-		if (await fso.FileExists(BuildPath(path, Id, "config.xml"))) {
+		if (r.shift()) {
 			AddAddon(table, Id, false);
 		}
 	}
@@ -1563,10 +1525,7 @@ OpenIcon = function (o) {
 async function SearchIcon(o) {
 	o.innerHTML = "";
 	o.onclick = null;
-	const wfd = await api.Memory("WIN32_FIND_DATA");
-	const hFind = await api.FindFirstFile(BuildPath(system32, "*"), wfd);
-	for (let bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = await api.FindNextFile(hFind, wfd)) {
-		const fn = await wfd.cFileName;
+	for (let fn, FileList = await GetFileList(BuildPath(system32, "*"), false, window.chrome); fn = FileList.shift();) {
 		const nCount = await api.ExtractIconEx(BuildPath(system32, fn), -1, null, null, 0);
 		if (nCount) {
 			const id = "i," + fn.toLowerCase();
@@ -1575,7 +1534,6 @@ async function SearchIcon(o) {
 			}
 		}
 	}
-	api.FindClose(hFind);
 }
 
 ReturnDialogResult = async function (WB) {
@@ -1630,32 +1588,28 @@ InitDialog = async function () {
 		a.inetcpl = "i,inetcpl.cpl";
 
 		const s = [];
-		const wfd = await api.Memory("WIN32_FIND_DATA");
 		const path = BuildPath(await te.Data.DataFolder, "icons");
-		const hFind = await api.FindFirstFile(path + "\\*", wfd);
-		for (let bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = await api.FindNextFile(hFind, wfd)) {
-			if ((await wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && /^[a-z]/i.test(await wfd.cFileName)) {
+		for (let fn, FileList = await GetFileList(BuildPath(path, "*"), true, window.chrome); fn = FileList.shift();) {
+			const wfd = fn.split("\n");
+			if ((wfd[1] & FILE_ATTRIBUTE_DIRECTORY) && /^[a-z]/i.test(wfd[0])) {
 				const arfn = [];
-				const path2 = BuildPath(path, await wfd.cFileName);
-				const hFind2 = await api.FindFirstFile(path2 + "\\*.png", wfd);
-				for (let bFind2 = hFind != INVALID_HANDLE_VALUE; bFind2; bFind2 = await api.FindNextFile(hFind2, wfd)) {
-					const r = await Promise.all([wfd.dwFileAttributes, wfd.cFileName]);
-					if (!(r[0] & FILE_ATTRIBUTE_DIRECTORY)) {
-						arfn.push(r[1]);
+				const path2 = BuildPath(path, wfd[0]);
+				for (let fn2, FileList2 = await GetFileList(BuildPath(path2, "*.png"), true, window.chrome); fn2 = FileList2.shift();) {
+					const wfd2 = fn2.split("\n");
+					if (!(wfd2[1] & FILE_ATTRIBUTE_DIRECTORY)) {
+						arfn.push(wfd2[0].replace(/\.png$/i, ""));
 					}
 				}
-				if (window.chrome) {
-					arfn.sort();
-				} else {
-					arfn.sort(function (a, b) {
-						return api.StrCmpLogical(a, b);
-					});
-				}
 				if (arfn.length) {
+					arfn.sort(
+						function (a, b) {
+							return a - b || (a < b ? -1 : a > b ? 1 : 0);
+						}
+					);
 					const px = screen.deviceYDPI / 3;
 					for (let i = 0; i < arfn.length; ++i) {
-						const src = ["icon:" + GetFileName(path2), arfn[i].replace(/\.png$/i, "")].join(",");
-						s.push('<img src="', BuildPath(path2, arfn[i]), '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="', src, '" style="max-height:', px, 'px"> ');
+						const src = ["icon:" + GetFileName(path2), arfn[i]].join(",");
+						s.push('<img src="', BuildPath(path2, arfn[i] + ".png"), '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="', src, '" style="max-height:', px, 'px"> ');
 					}
 					s.push("<br>");
 				}
@@ -1829,15 +1783,12 @@ InitDialog = async function () {
 		if (await api.GetModuleHandle(ui_.TEPath)) {
 			s.push('<a href="', ui_.TEPath,'" class="link" onclick="Run(0, this);return false">', ui_.TEPath, "</a> (", await fso.GetFileVersion(ui_.TEPath), ")<br>");
 		}
-		const wfd = await api.Memory("WIN32_FIND_DATA");
-		const hFind = await api.FindFirstFile(BuildPath(ui_.Installed, "lib\\*.dll"), wfd);
-		for (let bFind = hFind != INVALID_HANDLE_VALUE; await bFind; bFind = await api.FindNextFile(hFind, wfd)) {
-			const dll = BuildPath(ui_.Installed, "lib", await wfd.cFileName);
+		for (let fn, FileList = await GetFileList(BuildPath(ui_.Installed, "lib", "*.dll"), false, window.chrome); fn = FileList.shift();) {
+			const dll = BuildPath(ui_.Installed, "lib", fn);
 			if (await api.GetModuleHandle(dll)) {
 				s.push('<a href="', dll, '" class="link" onclick="Run(0, this); return false">', dll, "</a> (", await fso.GetFileVersion(dll), ")<br>");
 			}
 		}
-		api.FindClose(hFind);
 		document.getElementById("lib").innerHTML = s.join("");
 	}
 	if (Query == "input") {
@@ -2006,7 +1957,7 @@ SetLocations = async function () {
 }
 
 InitLocation = function () {
-	Promise.all([api.CreateObject("Array"), api.CreateObject("Object"), dialogArguments.Data.id, te.Data.DataFolder, GetLangId()]).then(async function (r) {
+	Promise.all([api.CreateObject("Array"), api.CreateObject("Object"), dialogArguments.Data.id, te.Data.DataFolder, te.Data.Addons.xml, GetLangId()]).then(async function (r) {
 		let ar = r[0];
 		const param = r[1];
 		Addon_Id = r[2];
@@ -2025,7 +1976,10 @@ InitLocation = function () {
 				};
 			})(o);
 		}
-		await LoadLang2(BuildPath("addons", Addon_Id, "lang", r[4] + ".xml"));
+		if (window.chrome) {
+			ui_.Addons = new DOMParser().parseFromString(r[4], "application/xml");
+		}
+		await LoadLang2(BuildPath("addons", Addon_Id, "lang", r[5] + ".xml"));
 		await LoadAddon("js", Addon_Id, ar, param);
 		if (window.chrome) {
 			ar = await api.CreateObject("SafeArray", ar);
@@ -2508,16 +2462,7 @@ async function SelectLangID(o) {
 	if (!el || el == ui_.elConfirm && ui_.ConfirmMenu && (new Date().getTime() - ui_.ConfirmMenu) < 500) {
 		return;
 	}
-	let Langs = [];
-	const wfd = await api.Memory("WIN32_FIND_DATA");
-	const hFind = await api.FindFirstFile(BuildPath(ui_.Installed, "lang\\*.xml"), wfd);
-	for (let bFind = hFind != INVALID_HANDLE_VALUE; await bFind; bFind = await api.FindNextFile(hFind, wfd)) {
-		Langs.push(wfd.cFileName);
-	}
-	api.FindClose(hFind);
-	if (window.chrome) {
-		Langs = await Promise.all(Langs);
-	}
+	const Langs = await GetFileList(BuildPath(ui_.Installed, "lang", "*.xml"), false, window.chrome);
 	Langs.sort();
 	const path = BuildPath(ui_.Installed, "lang");
 	const hMenu = await api.CreatePopupMenu();

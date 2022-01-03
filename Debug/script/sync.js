@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20211230 ? te.Version : 20220101;
+		return te.Version < 20220103 ? te.Version : 20220103;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -783,7 +783,6 @@ SaveConfigXML = function (filename) {
 
 SaveXml = function (filename) {
 	const xml = CreateXml(true);
-	const root = xml.documentElement;
 	const item = xml.createElement("Window");
 	if (!api.IsZoomed(te.hwnd) && !api.IsIconic(te.hwnd)) {
 		api.GetWindowRect(te.hwnd, te.Data.rcWindow);
@@ -795,7 +794,7 @@ SaveXml = function (filename) {
 	item.setAttribute("CmdShow", api.IsZoomed(te.hwnd) ? SW_SHOWMAXIMIZED : te.CmdShow);
 	item.setAttribute("DPI", screen.deviceYDPI);
 	item.setAttribute("Installed", te.Data.Installed);
-	root.appendChild(item);
+	xml.documentElement.appendChild(item);
 
 	const TC = te.Ctrl(CTRL_TC);
 	const cTC = te.Ctrls(CTRL_TC);
@@ -1437,11 +1436,9 @@ MakeImgIcon = function (src, index, h, bIcon, clBk) {
 			if (api.StrCmpNI(src, a2[0], a2[0].length) == 0) {
 				if (a2[3]) {
 					const a3 = src.split(",");
-					const path = BuildPath(te.Data.DataFolder, ["icons", a2[3], a3[3] + ".png"].join("\\"));
-					let image = api.CreateObject("WICBitmap").FromFile(path);
+					const image = api.CreateObject("WICBitmap").FromFile(BuildPath(te.Data.DataFolder, "icons", a2[3], a3[3] + ".png"));
 					if (image) {
-						image = GetThumbnail(image, a3[2], true);
-						return image.GetHICON();
+						return GetThumbnail(image, a3[2], true).GetHICON();
 					}
 				}
 				if (i & 1 && h && h <= 16) {
@@ -1759,6 +1756,21 @@ IsExists = function (path, bGetWfd) {
 	const hFind = api.FindFirstFile(path.replace(/\\$/, ""), wfd);
 	api.FindClose(hFind);
 	return hFind != INVALID_HANDLE_VALUE && (bGetWfd ? wfd : true);
+}
+
+GetFileList = function (path, bAttr, bSA) {
+	let r = [];
+	const wfd = api.Memory("WIN32_FIND_DATA");
+	const hFind = api.FindFirstFile(path, wfd);
+	for (let bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = api.FindNextFile(hFind, wfd)) {
+		if (bAttr) {
+			r.push([wfd.cFileName, wfd.dwFileAttributes].join("\n"));
+		} else {
+			r.push(wfd.cFileName);
+		}
+	}
+	api.FindClose(hFind);
+	return bSA ? api.CreateObject("SafeArray", r) : r;
 }
 
 GetNonExistent = function (path) {
@@ -3075,12 +3087,12 @@ XmlItems2Json = function (items) {
 
 GetAddonElement = function (id) {
 	const items = te.Data.Addons.getElementsByTagName(id.toLowerCase());
-	return items.length ? items[0] : {
-		getAttribute: function () {
-			return "";
-		},
-		setAttribute: function () { }
+	if (items.length) {
+		return items[0];
 	}
+	const item = te.Data.Addons.createElement(id.toLowerCase());
+	te.Data.Addons.documentElement.appendChild(item);
+	return item;
 }
 
 GetAddonOption = function (id, strTag) {

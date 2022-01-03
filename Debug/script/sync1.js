@@ -1256,7 +1256,6 @@ SaveAddons = function (Addons, bLoading) {
 	}
 	te.Data.bErrorAddons = false;
 	const xml = CreateXml(true);
-	const root = xml.documentElement;
 	for (let Id in Addons) {
 		try {
 			const items = te.Data.Addons.getElementsByTagName(Id);
@@ -1280,7 +1279,7 @@ SaveAddons = function (Addons, bLoading) {
 			if (info.Level > 0) {
 				item.setAttribute("Level", info.Level);
 			}
-			root.appendChild(item);
+			xml.documentElement.appendChild(item);
 		} catch (e) { }
 	}
 	te.Data.Addons = xml;
@@ -1974,7 +1973,11 @@ te.OnCommand = function (Ctrl, hwnd, msg, wParam, lParam) {
 			return S_OK;
 		}
 	}
-	let hr = RunEvent3("Command", Ctrl, hwnd, msg, wParam, lParam);
+	let hr = RunEvent3(msg + "!", Ctrl, Ctrl.Type, hwnd, msg, wParam, lParam);
+	if (isFinite(hr)) {
+		return hr;
+	}
+	hr = RunEvent3("Command", Ctrl, hwnd, msg, wParam, lParam);
 	if (!isFinite(hr) && Ctrl.Type <= CTRL_EB) {
 		if ((wParam & 0xfff) + 1 == CommandID_PROPERTIES) {
 			hr = InvokeCommand(Ctrl.SelectedItems(), 0, te.hwnd, "properties", null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);

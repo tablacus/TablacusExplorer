@@ -54,16 +54,12 @@ BuildPath = function () {
 	var s = "";
 	var q;
 	for (var i = 0; i < arguments.length; ++i) {
-		try {
-			if (q = arguments[i].replace(/[\/\\]$/, "")) {
-				if (s) {
-					s += "\\" + (q.replace(/^[\/\\]+/, ""));
-				} else {
-					s = q;
-				}
+		if (q = String(arguments[i]).replace(/[\/\\]$/, "")) {
+			if (s) {
+				s += "\\" + (q.replace(/^[\/\\]+/, ""));
+			} else {
+				s = q;
 			}
-		} catch (e) {
-			wsh.Popup(e.stack || e.message);
 		}
 	}
 	return s.replace(/\//g, "\\");

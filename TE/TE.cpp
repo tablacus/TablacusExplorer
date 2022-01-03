@@ -3049,7 +3049,7 @@ VOID teSetTreeWidth(CteShellBrowser	*pSB, HWND hwnd, LPARAM lParam)
 	} else if (nWidth < 3) {
 		nWidth = 3;
 	} else {
-		g_x =GET_X_LPARAM(lParam);
+		g_x = GET_X_LPARAM(lParam);
 	}
 	if (pSB->m_param[SB_TreeWidth] != nWidth) {
 		pSB->m_param[SB_TreeWidth] = nWidth;
@@ -3267,6 +3267,7 @@ LRESULT CALLBACK TESTProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 						ReleaseCapture();
 						teSetTreeWidth(pSB, hwnd, lParam);
 						g_x = MAXINT;
+						teDoCommand(pSB->m_pTV, hwnd, WM_SIZE, 0, 0);//Resize
 					}
 					break;
 			}//end_switch
@@ -3491,7 +3492,7 @@ LRESULT CALLBACK TETCProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 					Result = 0;
 				}
 				bCancelPaint = TRUE;
-			} else if (msg != WM_ERASEBKGND && msg != WM_NCPAINT && msg != TCM_GETITEM) {
+			} else if (msg != TCM_GETITEM) {
 				bCancelPaint = FALSE;
 			}
 		}
@@ -13603,9 +13604,14 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 
 		case TE_PROPERTY + 0x1009://Visible
 			if (nArg >= 0) {
-				m_param[SB_TreeAlign] = GetBoolFromVariant(&pDispParams->rgvarg[nArg]) ? 3 : 1;
+				int n = GetBoolFromVariant(&pDispParams->rgvarg[nArg]) ? 3 : 1;
+				BOOL bChanged = m_param[SB_TreeAlign] != n;
+				m_param[SB_TreeAlign] = n;
 				ArrangeWindow();
 				Show();
+				if (bChanged) {
+					DoFunc(TE_OnVisibleChanged, this, E_NOTIMPL);
+				}
 			}
 			teSetBool(pVarResult, m_param[SB_TreeAlign] & 2);
 			return S_OK;

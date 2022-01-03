@@ -41,7 +41,7 @@ InitUI = async function () {
 		}
 	} else {
 		try {
-			ui_.NoCssFont = await wsh.regRead("HKCU\\Software\\Microsoft\\Internet Explorer\\Settings\\Always Use My Font Face");
+			ui_.NoCssFont = wsh.regRead("HKCU\\Software\\Microsoft\\Internet Explorer\\Settings\\Always Use My Font Face");
 		} catch (e) { }
 	}
 	if (WINVER > 0x603) {
@@ -91,7 +91,7 @@ InitUI = async function () {
 	}
 	let x;
 	if (!window.MainWindow) {
-		window.MainWindow = await $;
+		window.MainWindow = $;
 		while (x = await MainWindow.dialogArguments || await MainWindow.opener) {
 			MainWindow = x;
 			if (x = await MainWindow.MainWindow) {
@@ -586,13 +586,13 @@ ApplyLang = async function (doc) {
 	}
 	let s, h = 0;
 	if (doc.body) {
-		const r = await Promise.all([MainWindow.DefaultFont.lfFaceName, MainWindow.DefaultFont.lfHeight, MainWindow.DefaultFont.lfWeight]);
+		const r = await Promise.all([MainWindow.DefaultFont.lfFaceName, MainWindow.DefaultFont.lfHeight, MainWindow.DefaultFont.lfWeight, MainWindow.g_.IconFont]);
 		doc.body.style.fontFamily = r[0];
 		doc.body.style.fontSize = Math.abs(r[1]) + "px";
 		doc.body.style.fontWeight = r[2];
-	}
-	if (ui_.IconFont == null) {
-		ui_.IconFont = (await MainWindow.g_.IconFont) || "";
+		if (!ui_.NoCssFont) {
+			ui_.IconFont = r[3];
+		}
 	}
 	ApplyLangTag(doc.getElementsByTagName("label"));
 	ApplyLangTag(doc.getElementsByTagName("button"));
@@ -619,7 +619,7 @@ ApplyLang = async function (doc) {
 				}
 				if (SameText(el.type, "button")) {
 					if (s = el.value) {
-						const icon = ui_.IconFont && !ui_.NoCssFont && ButtonIcon[s.replace(/\.+$/, "")];
+						const icon = ui_.IconFont && ButtonIcon[s.replace(/\.+$/, "")];
 						const v = (await GetTextR(s)).replace(/\(&\w\)|&/, "");
 						if (icon) {
 							el.value = String.fromCodePoint(icon);
@@ -1049,6 +1049,18 @@ SetDisplay = function (Id, s) {
 	const o = document.getElementById(Id);
 	if (o) {
 		o.style.display = s;
+	}
+}
+
+if (window.chrome) {
+	GetAddonElement = function (id) {
+		const items = ui_.Addons.getElementsByTagName(id.toLowerCase());
+		if (items.length) {
+			return items[0];
+		}
+		const item = ui_.Addons.createElement(id.toLowerCase());
+		ui_.Addons.documentElement.appendChild(item);
+		return item;
 	}
 }
 

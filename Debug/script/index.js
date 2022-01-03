@@ -276,14 +276,14 @@ OnArrange = async function (Ctrl, rc, Type, Id, FV) {
 				o.style.display = "none";
 				return;
 			}
-			let bResize, w = Math.max(r[2] - r[0], 0) + "px", h = Math.max(r[3] - r[1], 0) + "px";
+			let w = Math.max(r[2] - r[0], 0) + "px", h = Math.max(r[3] - r[1], 0) + "px";
 			if (o.style.width != w) {
 				o.style.width = w;
-				bResize = true;
+				ui_.bResize = true;
 			}
 			if (o.style.height != h) {
 				o.style.height = h;
-				bResize = true;
+				ui_.bResize = true;
 			}
 			let el = document.getElementById("InnerLeft_" + Id);
 			if (!/none/i.test(el.style.display)) {
@@ -310,10 +310,11 @@ OnArrange = async function (Ctrl, rc, Type, Id, FV) {
 				if (ui_.Show == 1) {
 					ui_.Show = 2;
 					SetWindowAlpha(ui_.hwnd, 255);
-					RunEvent1("VisibleChanged", te, true);
+					RunEvent1("VisibleChanged", te, true, CTRL_TE);
 				}
-				if (bResize) {
+				if (ui_.bResize) {
 					RunEventUI1("Resize");
+					ui_.bResize = false;
 				}
 			});
 		});
@@ -381,31 +382,21 @@ GetMiscIcon = async function (n) {
 	return await fso.FileExists(s) ? s : "";
 }
 
-if (window.chrome) {
-	GetAddonElement = function (id) {
-		const items = ui_.Addons.getElementsByTagName(id.toLowerCase());
-		return  items.length ? items[0] : {
-			getAttribute: function () {
-				return "";
-			},
-			setAttribute: function () { }
-		}
-	}
-}
-
 // Events
 
-AddEvent("VisibleChanged", async function (Ctrl) {
-	if (await Ctrl.Type == CTRL_TC) {
-		const o = document.getElementById("Panel_" + await Ctrl.Id);
+AddEvent("VisibleChanged", async function (Ctrl, Visible, Type, Id) {
+	if ((Type != null ? Type : await Ctrl.Type) == CTRL_TC) {
+		const o = document.getElementById("Panel_" + (Id != null ? Id : await Ctrl.Id));
 		if (o) {
-			if (await Ctrl.Visible) {
+			if (Visible != null ? Visible : await Ctrl.Visible) {
 				o.style.display = "";
 				ChangeView(await Ctrl.Selected);
 			} else {
 				o.style.display = "none";
 			}
 		}
+	} else if (Type == CTRL_TV) {
+		ui_.bResize = true;
 	}
 });
 
@@ -418,6 +409,12 @@ AddEvent(WM_KILLFOCUS + "!", function (Ctrl, Type, hwnd, msg, wParam, lParam) {
 			o.style.visibility = s;
 			FireEvent(o, "blur");
 		}
+	}
+});
+
+AddEvent(WM_SIZE + "!", function (Ctrl, Type, hwnd, msg, wParam, lParam) {
+	if (Type == CTRL_TV) {
+		Resize();
 	}
 });
 
