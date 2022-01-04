@@ -174,10 +174,17 @@ g_.mouse = {
 				if (window.g_menu_click === true) {
 					const hSubMenu = api.GetSubMenu(g_.menu_handle, g_.menu_pos);
 					if (hSubMenu) {
-						const mii = api.Memory("MENUITEMINFO");
-						mii.fMask = MIIM_SUBMENU;
-						if (api.SetMenuItemInfo(g_.menu_handle, g_.menu_pos, true, mii)) {
-							api.DestroyMenu(hSubMenu);
+						const rc = api.Memory("RECT");
+						for (let i = g_.menu_pos; i >= 0; i--) {
+							api.GetMenuItemRect(null, g_.menu_handle, i, rc);
+							if (PtInRect(rc, pt)) {
+								const mii = api.Memory("MENUITEMINFO");
+								mii.fMask = MIIM_SUBMENU;
+								if (api.SetMenuItemInfo(g_.menu_handle, g_.menu_pos, true, mii)) {
+									api.DestroyMenu(hSubMenu);
+								}
+								break;
+							}
 						}
 					}
 				}

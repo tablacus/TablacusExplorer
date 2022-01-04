@@ -1813,6 +1813,11 @@ VOID teApiGetMenuItemInfo(int nArg, teParam *param, DISPPARAMS *pDispParams, VAR
 	teSetBool(pVarResult, GetMenuItemInfo(param[0].hmenu, param[1].uintVal, param[2].boolVal, param[3].lpmenuiteminfo));
 }
 
+VOID teApiGetMenuItemRect(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetBool(pVarResult, GetMenuItemRect (param[0].hwnd, param[1].hmenu, param[2].uintVal, param[3].lprect));
+}
+
 VOID teApiGetMenuString(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	BSTR bsResult = NULL;
@@ -4081,6 +4086,7 @@ TEDispatchApi dispAPI[] = {
 	{ 1, -1, -1, -1, "GetMenuItemCount", teApiGetMenuItemCount },
 	{ 2, -1, -1, -1, "GetMenuItemID", teApiGetMenuItemID },
 	{ 4, -1, -1, -1, "GetMenuItemInfo", teApiGetMenuItemInfo },
+	{ 4, -1, -1, -1, "GetMenuItemRect", teApiGetMenuItemRect },
 	{ 3, -1, -1, -1, "GetMenuString", teApiGetMenuString },
 	{ 4, -1, -1, -1, "GetMessage", teApiGetMessage },
 	{ 0, -1, -1, -1, "GetMessagePos", teApiGetMessagePos },
