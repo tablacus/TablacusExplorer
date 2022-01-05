@@ -623,5 +623,6 @@ public:
 	IDispatchEx	*m_pDispatchEx;
 	EXCEPINFO *m_pExcepInfo;
 	LONG		m_cRef;
+	HRESULT m_hr;
 };
 

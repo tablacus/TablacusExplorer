@@ -172,7 +172,7 @@
 	<text s="Search">Ara</text>
 	<text s="Install">Yükle</text>
 	<text s="Installed">Yüklendi</text>
-	<text s="is required.">gerekli.</text>
+	<text s="%s is required.">%s gerekli.</text>
 	<text s="File is in operation.">Dosya kullanımda.</text>
 	<text s="Gestures">Hareketler</text>
 	<text s="Trails">Kuyruklar</text>

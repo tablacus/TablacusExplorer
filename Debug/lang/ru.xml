@@ -172,7 +172,7 @@
 	<text s="Search">Поиск</text>
 	<text s="Install">Установка</text>
 	<text s="Installed">Установлено</text>
-	<text s="is required.">требуется.</text>
+	<text s="%s is required.">%s требуется.</text>
 	<text s="File is in operation.">Файл находится в эксплуатации.</text>
 	<text s="Gestures">Жесты</text>
 	<text s="Trails">Трек</text>

@@ -1,5 +1,5 @@
 const Addon_Id = "tabplus";
-let item = await GetAddonElement(Addon_Id);
+let item = GetAddonElement(Addon_Id);
 if (!item.getAttribute("Set")) {
 	item.setAttribute("Icon", 1);
 	item.setAttribute("Drive", 1);
@@ -274,22 +274,19 @@ if (window.Addon == 1) {
 		Up: async function (ev, Id) {
 			const TC = await te.Ctrl(CTRL_TC, Id);
 			if (TC) {
-				if (Addons.TabPlus.Button[Id] == 1) {
+				const btn = Addons.TabPlus.Button[Id];
+				if (btn == 1) {
 					const n = await Addons.TabPlus.FromPt(Id, Addons.TabPlus.pt, true);
 					if (n >= 0) {
-						const pt = await api.Memory("POINT");
-						pt.x = ev.screenX * ui_.Zoom;
-						pt.y = ev.screenY * ui_.Zoom;
-						if (!await IsDrag(pt, Addons.TabPlus.pt)) {
+						if (await Addons.TabPlus.IsClick(ev)) {
 							(await TC[n]).Focus();
 						}
+					} else if (await Addons.TabPlus.IsClick(ev)) {
+						Addons.TabPlus.GestureExec(TC, ev, btn);
 					}
-				} else if (Addons.TabPlus.Button[Id] == 3) {
-					const pt = await api.Memory("POINT");
-					pt.x = ev.screenX * ui_.Zoom;
-					pt.y = ev.screenY * ui_.Zoom;
-					if (!await IsDrag(pt, Addons.TabPlus.pt)) {
-						Addons.TabPlus.GestureExec(TC, ev, Addons.TabPlus.Button[Id]);
+				} else if (btn == 3) {
+					if (await Addons.TabPlus.IsClick(ev)) {
+						Addons.TabPlus.GestureExec(TC, ev, btn);
 					}
 				}
 			}
@@ -352,18 +349,21 @@ if (window.Addon == 1) {
 		},
 
 		DblClick: async function (ev, Id) {
+			if (await Addons.TabPlus.IsClick(ev)) {
+				const TC = await te.Ctrl(CTRL_TC, Id);
+				Addons.TabPlus.GestureExec(TC, ev, Addons.TabPlus.Button[Id] + Addons.TabPlus.Button[Id]);
+			}
+		},
+
+		IsClick: async function (ev) {
 			const pt = await api.Memory("POINT");
 			pt.x = ev.screenX * ui_.Zoom;
 			pt.y = ev.screenY * ui_.Zoom;
-			if (await IsDrag(pt, Addons.TabPlus.pt)) {
-				return;
-			}
-			const TC = await te.Ctrl(CTRL_TC, Id);
-			Addons.TabPlus.GestureExec(TC, ev, Addons.TabPlus.Button[Id] + Addons.TabPlus.Button[Id]);
+			return !await IsDrag(pt, Addons.TabPlus.pt);
 		},
 
-		Select: function (Id, nIndex) {
-			te.Ctrl(CTRL_TC, Id).SelectedIndex = nIndex;
+		Select: function (id, nIndex) {
+			te.Ctrl(CTRL_TC, id).SelectedIndex = nIndex;
 		},
 
 		Start5: function (ev, o) {

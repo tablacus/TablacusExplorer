@@ -172,7 +172,7 @@
 	<text s="Search">搜尋</text>
 	<text s="Install">安裝</text>
 	<text s="Installed">已安裝</text>
-	<text s="is required.">為必要的。</text>
+	<text s="%s is required.">%s 為必要的。</text>
 	<text s="File is in operation.">檔案正被操作。</text>
 	<text s="Gestures">手勢</text>
 	<text s="Trails">軌跡</text>

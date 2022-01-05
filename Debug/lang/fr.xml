@@ -172,7 +172,7 @@
 	<text s="Search">Rechercher</text>
 	<text s="Install">Installer</text>
 	<text s="Installed">Installé</text>
-	<text s="is required.">est nécessaire.</text>
+	<text s="%s is required.">%s est nécessaire.</text>
 	<text s="File is in operation.">Fichier en cours de traitement.</text>
 	<text s="Gestures">Manipulations</text>
 	<text s="Trails">Trainée</text>

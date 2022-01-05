@@ -98,7 +98,6 @@ GUID		g_ClsIdTC;
 GUID		g_ClsIdFI;
 IUIAutomation *g_pAutomation = NULL;
 PROPERTYID	g_PID_ItemIndex;
-EXCEPINFO   g_ExcepInfo;
 
 CTE			*g_pTE;
 std::vector<CteShellBrowser *> g_ppSB;
@@ -170,7 +169,6 @@ long	g_lSWCookie = 0;
 int		g_nReload = 0;
 int		g_nException = 256;
 std::unordered_map<std::string, LONG> g_maps[MAP_LENGTH];
-std::unordered_map<IUnknown *, HRESULT> g_umScriptError;
 int		g_param[Count_TE_params];
 int		g_x = MAXINT;
 int		g_nTCCount = 0;
@@ -1824,7 +1822,6 @@ HRESULT ParseScript(LPOLESTR lpScript, LPOLESTR lpLang, VARIANT *pv, IDispatch *
 		IUnknown *punk = NULL;
 		FindUnknown(pv, &punk);
 		CteActiveScriptSite *pass = new CteActiveScriptSite(punk, pExcepInfo);
-		g_umScriptError.try_emplace(static_cast<IActiveScriptSite *>(pass), S_OK);
 		pas->SetScriptSite(pass);
 		IActiveScriptParse *pasp;
 		if SUCCEEDED(pas->QueryInterface(IID_PPV_ARGS(&pasp))) {
@@ -1869,12 +1866,9 @@ HRESULT ParseScript(LPOLESTR lpScript, LPOLESTR lpLang, VARIANT *pv, IDispatch *
 				}
 			}
 			pasp->Release();
-			auto itr = g_umScriptError.find(static_cast<IActiveScriptSite *>(pass));
-			if (itr != g_umScriptError.end()) {
-				if (itr->second) {
-					hr = itr->second;
-				}
-				g_umScriptError.erase(itr);
+			pass->m_pExcepInfo = NULL;
+			if (pass->m_hr != S_OK) {
+				hr = pass->m_hr;
 			}
 			pass->Release();
 		}
@@ -6108,7 +6102,7 @@ VOID CteShellBrowser::GetInitFS(FOLDERSETTINGS *pfs)
 		m_bAutoVM = FALSE;
 	}
 	pfs->ViewMode = !m_bAutoVM || ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER]) ? m_param[SB_ViewMode] : FVM_AUTO;
-	pfs->fFlags = (m_param[SB_FolderFlags] | FWF_USESEARCHFOLDER | FWF_SNAPTOGRID | FWF_NOBROWSERVIEWSTATE) & ~FWF_NOENUMREFRESH;
+	pfs->fFlags = (m_param[SB_FolderFlags] | FWF_USESEARCHFOLDER | FWF_SNAPTOGRID) & ~FWF_NOENUMREFRESH;
 }
 
 HRESULT CteShellBrowser::NavigateEB(DWORD dwFrame)
@@ -6562,7 +6556,7 @@ VOID CteShellBrowser::SetFolderFlags(BOOL bGetIconSize)
 	if (SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2)))) {
 		DWORD dwMask;
 		pFV2->GetCurrentFolderFlags(&dwMask);
-		dwMask = (dwMask ^ m_param[SB_FolderFlags]) & (~(FWF_NOENUMREFRESH | FWF_USESEARCHFOLDER | FWF_SNAPTOGRID| FWF_NOBROWSERVIEWSTATE));
+		dwMask = (dwMask ^ m_param[SB_FolderFlags]) & (~(FWF_NOENUMREFRESH | FWF_USESEARCHFOLDER | FWF_SNAPTOGRID));
 		if (dwMask) {
 			pFV2->SetCurrentFolderFlags(dwMask, m_param[SB_FolderFlags]);
 		}
@@ -14468,9 +14462,7 @@ CteActiveScriptSite::CteActiveScriptSite(IUnknown *punk, EXCEPINFO *pExcepInfo)
 		punk->QueryInterface(IID_PPV_ARGS(&m_pDispatchEx));
 	}
 	m_pExcepInfo = pExcepInfo;
-	if (!pExcepInfo) {
-		m_pExcepInfo = &g_ExcepInfo;
-	}
+	m_hr = S_OK;
 }
 
 CteActiveScriptSite::~CteActiveScriptSite()
@@ -14549,43 +14541,39 @@ STDMETHODIMP CteActiveScriptSite::GetDocVersionString(BSTR *pbstrVersion)
 
 STDMETHODIMP CteActiveScriptSite::OnScriptError(IActiveScriptError *pscripterror)
 {
+	EXCEPINFO ExcepInfo;
 	if (!pscripterror) {
 		return E_POINTER;
 	}
-	if (m_pExcepInfo && (SUCCEEDED(pscripterror->GetExceptionInfo(m_pExcepInfo)))) {
+	EXCEPINFO *pExcepInfo = m_pExcepInfo ? m_pExcepInfo : &ExcepInfo;
+	if SUCCEEDED(pscripterror->GetExceptionInfo(pExcepInfo)) {
+		m_hr = pExcepInfo->scode;
 		BSTR bsSrcText = NULL;
 		pscripterror->GetSourceLineText(&bsSrcText);
 		DWORD dw1 = 0;
 		ULONG ulLine = 0;
 		LONG ulColumn = 0;
 		pscripterror->GetSourcePosition(&dw1, &ulLine, &ulColumn);
-		WCHAR pszLine[32];
-		swprintf_s(pszLine, 32, L"\nLine: %d\n", ulLine);
-		BSTR bs = ::SysAllocStringLen(NULL, ::SysStringLen(m_pExcepInfo->bstrDescription) + ::SysStringLen(bsSrcText) + lstrlen(pszLine));
-		lstrcpy(bs, m_pExcepInfo->bstrDescription);
+		WCHAR pszLine[64];
+		swprintf_s(pszLine, _countof(pszLine), L"\n(0x%08x) Line: %d\n", m_hr, ulLine);
+		BSTR bs = ::SysAllocStringLen(NULL, ::SysStringLen(pExcepInfo->bstrDescription) + ::SysStringLen(bsSrcText) + lstrlen(pszLine));
+		lstrcpy(bs, pExcepInfo->bstrDescription);
 		lstrcat(bs, pszLine);
 		if (bsSrcText) {
 			lstrcat(bs, bsSrcText);
 			::SysFreeString(bsSrcText);
 		}
-		teSysFreeString(&m_pExcepInfo->bstrDescription);
-		m_pExcepInfo->bstrDescription = bs;
+		teSysFreeString(&pExcepInfo->bstrDescription);
+		pExcepInfo->bstrDescription = bs;
 #ifdef _DEBUG
 		::OutputDebugString(bs);
 #endif
-		if (m_pExcepInfo == &g_ExcepInfo) {
+		if (!m_pExcepInfo) {
 			MessageBox(NULL, bs, _T(PRODUCTNAME), MB_OK | MB_ICONERROR);
-			teSysFreeString(&m_pExcepInfo->bstrDescription);
-			teSysFreeString(&bs);
+			teSysFreeString(&pExcepInfo->bstrDescription);
+			teSysFreeString(&pExcepInfo->bstrHelpFile);
+			teSysFreeString(&pExcepInfo->bstrSource);
 		}
-		IUnknown *punk = static_cast<IActiveScriptSite *>(this);
-		auto itr = g_umScriptError.find(punk);
-		if (itr != g_umScriptError.end()) {
-			g_umScriptError.try_emplace(punk, m_pExcepInfo->scode);
-		} else if (bs) {
-			MessageBox(NULL, bs, _T(PRODUCTNAME), MB_OK | MB_ICONERROR);
-		}
-		teSysFreeString(&bs);
 	}
 	return S_OK;
 }

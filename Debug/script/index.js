@@ -68,14 +68,15 @@ PanelCreated = async function (Ctrl, Id) {
 	}, 99);
 }
 
-Activate = async function (o, id) {
+Activate = async function (el, id) {
 	const TC = await te.Ctrl(CTRL_TC);
 	if (TC && await TC.Id != id) {
 		const FV = await GetInnerFV(id);
 		if (FV) {
 			FV.Focus();
 			setTimeout(function () {
-				o.focus();
+				WebBrowser.Focus();
+				el.focus();
 			}, 99);
 		}
 	}
@@ -192,17 +193,17 @@ StartGestureTimer = async function () {
 	}
 }
 
-FocusFV = function () {
-	setTimeout(function () {
+FocusFV = function (Id) {
+	setTimeout(function (Id) {
 		let el;
 		if (document.activeElement) {
 			const rc = document.activeElement.getBoundingClientRect();
 			el = document.elementFromPoint(rc.left + 2, rc.top + 2);
 		}
 		if (!el || !/input|textarea/i.test(el.tagName)) {
-			FocusFV2();
+			FocusFV2(Id);
 		}
-	}, ui_.DoubleClickTime);
+	}, ui_.DoubleClickTime, "number" === typeof Id ? Id : null);
 }
 
 ExitFullscreen = function () {
@@ -251,7 +252,7 @@ OnArrange = async function (Ctrl, rc, Type, Id, FV) {
 	if (Type == CTRL_TC) {
 		const p = [rc.left, rc.top, rc.right, rc.bottom, Ctrl.Visible, Ctrl.Left, Ctrl.Top, Ctrl.Width, Ctrl.Height];
 		if (!document.getElementById("Panel_" + Id)) {
-			const s = ['<table id="Panel_', Id, '" class="layout fixed" style="position: absolute; z-index: 1; color: inherit; visibility: hidden">'];
+			const s = ['<table id="Panel_', Id, '" class="layout fixed" style="position: absolute; z-index: 1; color: inherit; visibility: hidden" onclick="FocusFV(', Id, ')">'];
 			s.push('<tr><td id="InnerLeft_', Id, '" class="sidebar" style="width: 0; display: none; overflow: auto"></td><td class="full"><div id="InnerTop_', Id, '" style="display: none"></div>');
 			s.push('<table id="InnerTop2_', Id, '" class="layout">');
 			s.push('<tr><td id="Inner1Left_', Id, '" class="toolbar1"></td><td id="Inner1Center_', Id, '" class="toolbar2 nowrap"></td><td id="Inner1Right_', Id, '" class="toolbar3"></td></tr></table>');

@@ -3547,10 +3547,10 @@ SetAddonLocation = function (Location, strName) {
 	g_.Locations[Location].push(strName);
 }
 
-FocusFV2 = function () {
+FocusFV2 = function (Id) {
 	const hFocus = api.GetFocus();
 	if (hFocus == te.hwnd || api.IsChild(te.hwnd, hFocus)) {
-		const FV = GetFolderView();
+		const FV = Id ? te.Ctrl(CTRL_TC, Id).Selected : GetFolderView();
 		if (FV) {
 			if (!api.PathMatchSpec(api.GetClassName(hFocus), WC_EDIT + ";" + WC_TREEVIEW)) {
 				FV.Focus();

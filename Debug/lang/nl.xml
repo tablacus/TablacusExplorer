@@ -172,7 +172,7 @@
 	<text s="Search">Zoek</text>
 	<text s="Install">Installeer</text>
 	<text s="Installed">Geinstalleerd</text>
-	<text s="is required.">is benodigd.</text>
+	<text s="%s is required.">%s is benodigd.</text>
 	<text s="File is in operation.">Bestand is in bewerking.</text>
 	<text s="Gestures">Gebaren</text>
 	<text s="Trails">Trails</text>

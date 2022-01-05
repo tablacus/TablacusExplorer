@@ -1,5 +1,4 @@
-<!--Računarski rečnik Mikro knjige https://www.mikroknjiga.rs/pub/rmk/index.php English-Serbian Computer Dictionary | Englesko-srpski / srpsko-engleski rečnik računarskih (kompjuterskih) termina -->
-<resources>
+<!--Računarski rečnik Mikro knjige https://www.mikroknjiga.rs/pub/rmk/index.php English-Serbian Computer Dictionary | Englesko-srpski / srpsko-engleski rečnik računarskih (kompjuterskih) termina --><resources>
 	<lang author="Ognjen Ninić" en="Serbian">Srpski</lang>
 	<text s="&amp;File">&amp;Datoteka</text>
 	<text s="&amp;Edit">&amp;Izmena</text>
@@ -173,7 +172,7 @@
 	<text s="Search">Pretraži</text>
 	<text s="Install">Instaliraj</text>
 	<text s="Installed">Instalirano</text>
-	<text s="is required.">je obavezujuće.</text>
+	<text s="%s is required.">%s je obavezujuće.</text>
 	<text s="File is in operation.">Datoteka se trenutno koristi.</text>
 	<text s="Gestures">Pokreti prstiju</text>
 	<text s="Trails">Tragovi</text>

@@ -172,7 +172,7 @@
 	<text s="Search">Αναζήτηση</text>
 	<text s="Install">Εγκατάσταση</text>
 	<text s="Installed">Εγκατεστημένο</text>
-	<text s="is required.">είναι απαιτούμενη.</text>
+	<text s="%s is required.">%s είναι απαιτούμενη.</text>
 	<text s="File is in operation.">Το αρχείο είναι σε λειτουργία.</text>
 	<text s="Gestures">Χειρονομίες</text>
 	<text s="Trails">Ίχνη</text>

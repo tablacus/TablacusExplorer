@@ -172,7 +172,7 @@
 	<text s="Search">検索</text>
 	<text s="Install">インストール</text>
 	<text s="Installed">インストール済</text>
-	<text s="is required.">が必要です。</text>
+	<text s="%s is required.">%s が必要です。</text>
 	<text s="File is in operation.">ファイル操作中です。</text>
 	<text s="Gestures">ジェスチャ</text>
 	<text s="Trails">軌跡</text>

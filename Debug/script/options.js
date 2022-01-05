@@ -1056,7 +1056,7 @@ async function LoadAddons() {
 	table.ondragover = Over5;
 	table.ondrop = Drop5;
 	table.deleteRow(0);
-	
+
 	const xml = window.chrome ? new DOMParser().parseFromString(await te.Data.Addons.xml, "application/xml") : te.Data.Addons;
 	if (xml.documentElement) {
 		const items = xml.documentElement.childNodes;
@@ -1143,13 +1143,16 @@ async function SetAddon(Id, bEnable, td, Alt) {
 		}
 		s.push('<td class="danger middle nowrap right">', ui_.strNotSupported, '&nbsp;</td>');
 	} else if (bMinVer) {
-		if (ui_.strVersion) {
+		if (!ui_.strVersion) {
 			ui_.strVersion = await GetTextR("@mstask.dll,-319");
 		}
-		if (ui_.strIsRequired) {
-			ui_.strIsRequired = await GetText("is required.");
+		if (!ui_.strIsRequired) {
+			ui_.strIsRequired = (await GetAltText("%s is required.")) || (await GetText("is required."));
+			if (!/%s/.test(ui_.strIsRequired)) {
+				ui_.strIsRequired = "%s " + ui_.strIsRequired;
+			}
 		}
-		s.push('<td class="danger middle nowrap right">', ui_.strVersion, " ", r[1].replace(/^20/, ""), ' ', ui_.strIsRequired, '</td>');
+		s.push('<td class="danger middle nowrap right">', ui_.strIsRequired.replace("%s", ui_.strVersion + " " + (r[1].replace(/^20/, ""))), '</td>');
 	} else if (r[6]) {
 		s.push('<td class="nowrap middle" style="padding-right: 1em"><input type="button" onclick="AddonOptions(\'', Id, '\')" class="addonbuttonopt" id="opt_', Id, '" value="Options"></td>');
 	}
@@ -2668,13 +2671,16 @@ async function ArrangeAddon(xml, td) {
 			}
 			s.push('<input type="button" onclick="Install(this,', bUpdate, ')" title="', Id, '_', info.Version, '" value="', ui_.strInstall, '">');
 		} else {
-			if (ui_.strVersion) {
+			if (!ui_.strVersion) {
 				ui_.strVersion = await GetTextR("@mstask.dll,-319");
 			}
-			if (ui_.strIsRequired) {
-				ui_.strIsRequired = await GetText("is required.");
+			if (!ui_.strIsRequired) {
+				ui_.strIsRequired = await GetAltText("%s is required.") || await GetText("is required.");
+				if (!/%s/.test(ui_.strIsRequired)) {
+					ui_.strIsRequired = "%s " + ui_.strIsRequired;
+				}
 			}
-			s.push('<input type="button"  class="danger" onclick="MainWindow.CheckUpdate()" value="', ui_.strVersion, " ", info.MinVersion.replace(/^20/, "").replace(/\.0/g, '.'), ' ', ui_.strIsRequired, '">');
+			s.push('<input type="button"  class="danger" onclick="MainWindow.CheckUpdate()" value="', ui_.strIsRequired.replace("%s", ui_.strVersion + " " + (info.MinVersion.replace(/^20/, "").replace(/\.0/g, '.'))), '">');
 		}
 		s.push(strUpdate, '</td></tr></table>');
 		s.unshift(g_nSort["1_1"] == 1 ? dt2 : g_nSort["1_1"] ? Id : info.Name);
@@ -3105,21 +3111,22 @@ async function SortAddons1(n) {
 						bCancelled = r[0];
 					});
 					const div = table.rows[j].cells[0].firstChild || {};
-					const Id = (div.id || "").replace("Addons_", "").toLowerCase();
-					if (!q || Id.indexOf(q) >= 0 || await FindAddonInfo(Id, q)) {
-						if (n == 0) {
-							s = table.rows[j].cells[0].innerText;
-						} else if (n == 1) {
-							s = "";
-							const pubDate = await GetAddonInfo(Id).pubDate;
-							if (pubDate) {
-								s = ("0000000" + (99999999 - Math.floor(new Date(pubDate).getTime() / 86400000))).slice(-8);
+					const Id = (div.id || "").replace("Addons_", "").toLowerCase(); if (Id) {
+						if (!q || Id.indexOf(q) >= 0 || await FindAddonInfo(Id, q)) {
+							if (n == 0) {
+								s = table.rows[j].cells[0].innerText;
+							} else if (n == 1) {
+								s = "";
+								const pubDate = await GetAddonInfo(Id).pubDate;
+								if (pubDate) {
+									s = ("0000000" + (99999999 - Math.floor(new Date(pubDate).getTime() / 86400000))).slice(-8);
+								}
+							} else {
+								s = Id;
 							}
-						} else {
-							s = Id;
+							ar.push(s + "\t" + Id);
+							++nTotal;
 						}
-						ar.push(s + "\t" + Id);
-						++nTotal;
 					}
 				}
 				if (n != 3) {
