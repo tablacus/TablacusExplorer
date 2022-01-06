@@ -63,9 +63,7 @@ ResetScroll = function () {
 PanelCreated = async function (Ctrl, Id) {
 	await RunEventUI1("PanelCreated", Ctrl, Id);
 	await Resize();
-	setTimeout(async function () {
-		ChangeView(await Ctrl.Selected);
-	}, 99);
+	setTimeout(ChangeView, 9, await Ctrl.Selected);
 }
 
 Activate = async function (el, id) {
@@ -74,10 +72,7 @@ Activate = async function (el, id) {
 		const FV = await GetInnerFV(id);
 		if (FV) {
 			FV.Focus();
-			setTimeout(function () {
-				WebBrowser.Focus();
-				el.focus();
-			}, 99);
+			setTimeout(FocusElement, 9, el);
 		}
 	}
 }
@@ -193,17 +188,19 @@ StartGestureTimer = async function () {
 	}
 }
 
+FocusFV1 = function (Id) {
+	let el;
+	if (document.activeElement) {
+		const rc = document.activeElement.getBoundingClientRect();
+		el = document.elementFromPoint(rc.left + 2, rc.top + 2);
+	}
+	if (!el || !/input|textarea/i.test(el.tagName)) {
+		FocusFV2("number" === typeof Id ? Id : null);
+	}
+}
+
 FocusFV = function (Id) {
-	setTimeout(function (Id) {
-		let el;
-		if (document.activeElement) {
-			const rc = document.activeElement.getBoundingClientRect();
-			el = document.elementFromPoint(rc.left + 2, rc.top + 2);
-		}
-		if (!el || !/input|textarea/i.test(el.tagName)) {
-			FocusFV2(Id);
-		}
-	}, ui_.DoubleClickTime, "number" === typeof Id ? Id : null);
+	setTimeout(FocusFV1, ui_.DoubleClickTime, Id);
 }
 
 ExitFullscreen = function () {
@@ -252,7 +249,7 @@ OnArrange = async function (Ctrl, rc, Type, Id, FV) {
 	if (Type == CTRL_TC) {
 		const p = [rc.left, rc.top, rc.right, rc.bottom, Ctrl.Visible, Ctrl.Left, Ctrl.Top, Ctrl.Width, Ctrl.Height];
 		if (!document.getElementById("Panel_" + Id)) {
-			const s = ['<table id="Panel_', Id, '" class="layout fixed" style="position: absolute; z-index: 1; color: inherit; visibility: hidden" onclick="FocusFV(', Id, ')">'];
+			const s = ['<table id="Panel_', Id, '" class="layout fixed" style="position: absolute; z-index: 1; color: inherit; visibility: hidden" onclick="FocusFV1(', Id, ')">'];
 			s.push('<tr><td id="InnerLeft_', Id, '" class="sidebar" style="width: 0; display: none; overflow: auto"></td><td class="full"><div id="InnerTop_', Id, '" style="display: none"></div>');
 			s.push('<table id="InnerTop2_', Id, '" class="layout">');
 			s.push('<tr><td id="Inner1Left_', Id, '" class="toolbar1"></td><td id="Inner1Center_', Id, '" class="toolbar2 nowrap"></td><td id="Inner1Right_', Id, '" class="toolbar3"></td></tr></table>');

@@ -1655,10 +1655,7 @@ InitDialog = async function () {
 		}
 		document.body.addEventListener("keydown", fn);
 		document.body.addEventListener("keyup", fn);
-		setTimeout(function () {
-			WebBrowser.Focus();
-			document.F.q.focus();
-		}, 99);
+		setTimeout(FocusElement, 9, document.F.q);
 		WebBrowser.OnClose = ReturnDialogResult;
 	}
 	if (Query == "new") {
@@ -1684,8 +1681,7 @@ InitDialog = async function () {
 
 		setTimeout(async function () {
 			document.F[await dialogArguments.Mode].checked = true;
-			WebBrowser.Focus();
-			document.F.path.focus();
+			FocusElement(document.F.path);
 		}, 99);
 
 		WebBrowser.OnClose = async function (WB) {
@@ -1809,8 +1805,7 @@ InitDialog = async function () {
 			const el = document.F.text;
 			el.value = await dialogArguments.defaultText;
 			el.select();
-			el.focus();
-			WebBrowser.Focus();
+			FocusElement(el);
 		}, 99);
 
 		WebBrowser.OnClose = async function (WB) {

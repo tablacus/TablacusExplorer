@@ -1052,6 +1052,11 @@ SetDisplay = function (Id, s) {
 	}
 }
 
+FocusElement = function (el) {
+	WebBrowser.Focus();
+	el.focus();
+}
+
 if (window.chrome) {
 	GetAddonElement = function (id) {
 		const items = ui_.Addons.getElementsByTagName(id.toLowerCase());
