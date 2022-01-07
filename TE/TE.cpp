@@ -4905,6 +4905,34 @@ VOID teDelayRelease(PVOID ppObj)
 }
 #endif
 
+BOOL teResolveLink(LPITEMIDLIST *ppidl)
+{
+	BOOL bResult = FALSE;
+	IShellFolder2 *pSF2;
+	LPCITEMIDLIST pidlPart;
+	if SUCCEEDED(SHBindToParent(*ppidl, IID_PPV_ARGS(&pSF2), &pidlPart)) {
+		SFGAOF sfAttr = SFGAO_LINK | SFGAO_FOLDER;
+		if SUCCEEDED(pSF2->GetAttributesOf(1, &pidlPart, &sfAttr)) {
+			if ((sfAttr & (SFGAO_LINK | SFGAO_FOLDER)) == SFGAO_LINK) {
+				IShellLink *pSL;
+				if SUCCEEDED(pSF2->GetUIObjectOf(NULL, 1, &pidlPart, IID_IShellLink, NULL, (LPVOID *)&pSL)) {
+					if (pSL->Resolve(NULL, SLR_NO_UI) == S_OK) {
+						LPITEMIDLIST pidl;
+						if (pSL->GetIDList(&pidl) == S_OK) {
+							teCoTaskMemFree(*ppidl);
+							*ppidl = pidl;
+							bResult = TRUE;
+						}
+					}
+					pSL->Release();
+				}
+			}
+		}
+		pSF2->Release();
+	}
+	return bResult;
+}
+
 static void threadParseDisplayName(void *args)
 {
 	::CoInitialize(NULL);
@@ -4922,6 +4950,7 @@ static void threadParseDisplayName(void *args)
 			}
 			pInvoke->hr = E_PATH_NOT_FOUND;
 			if (pInvoke->pidl) {
+				teResolveLink(&pInvoke->pidl);
 				IShellFolder *pSF;
 				if (GetShellFolder(&pSF, pInvoke->pidl)) {
 					IEnumIDList *peidl = NULL;
@@ -5789,7 +5818,9 @@ BOOL CteShellBrowser::Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItem
 	if (pFolderItem) {
 		if SUCCEEDED(pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
 			if (!pid->m_pidl && pid->m_v.vt == VT_BSTR && !pid->GetAlt()) {
-				if ((tePathIsNetworkPath(pid->m_v.bstrVal) && tePathIsDirectory(pid->m_v.bstrVal, 100, 3) != S_OK) || (m_pShellView && pid->m_dwUnavailable)) {
+				if ((m_pShellView && pid->m_dwUnavailable) ||
+					tePathMatchSpec(pid->m_v.bstrVal, L"*.lnk") ||
+					(tePathIsNetworkPath(pid->m_v.bstrVal) && tePathIsDirectory(pid->m_v.bstrVal, 100, 3) != S_OK)) {
 					if (m_nUnload || g_nLockUpdate <= 1) {
 						Navigate1Ex(pid->m_v.bstrVal, pFolderItems, wFlags, pPrevious, nErrorHandling);
 					} else {
@@ -5913,30 +5944,10 @@ HRESULT CteShellBrowser::Navigate2(FolderItem *pFolderItem, UINT wFlags, DWORD *
 	if (!pidl) {
 		return S_OK;
 	}
-	IShellFolder2 *pSF2;
-	LPCITEMIDLIST pidlPart;
-	if SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF2), &pidlPart)) {
-		SFGAOF sfAttr = SFGAO_LINK | SFGAO_FOLDER;
-		if SUCCEEDED(pSF2->GetAttributesOf(1, &pidlPart, &sfAttr)) {
-			if ((sfAttr & (SFGAO_LINK | SFGAO_FOLDER)) == SFGAO_LINK) {
-				VARIANT v;
-				VariantInit(&v);
-				if (SUCCEEDED(pSF2->GetDetailsEx(pidlPart, &PKEY_Link_TargetParsingPath, &v))) {
-					if (v.vt == VT_BSTR) {
-						LPITEMIDLIST pidl2 = teILCreateFromPath(v.bstrVal);
-						if (pidl2) {
-							teILFreeClear(&pidl);
-							pidl = pidl2;
-							if (m_pFolderItem1) {
-								m_pFolderItem1->Initialize(pidl);
-							}
-						}
-					}
-					VariantClear(&v);
-				}
-			}
+	if (teResolveLink(&pidl)) {
+		if (m_pFolderItem1) {
+			m_pFolderItem1->Initialize(pidl);
 		}
-		pSF2->Release();
 	}
 	DWORD dwFrame = (m_param[SB_Type] == CTRL_EB
 #ifdef _2000XP
