@@ -4,42 +4,11 @@ Copyright (c) 2011 Gaku
 Licensed under the MIT License:
 http://www.opensource.org/licenses/mit-license.php
 
-//Author of Language file
-Español / Spanish
-Patricio M. Ros
+//Language file
+https://tablacus.github.io/TablacusExplorerAddons/language.html
 
-简体中文 / Simplified Chinese
-秋寥
-
-正體中文 / Traditional Chinese
-風逸蘭
-
-Deutsch / German
-LightTempler
-
-Português / Portuguese
-Sérgio Nova
-
-Italiano / Italian
-Michele Pezza
-
-Français / French
-Olivier Wuillemin / bufferUnderrun
-
-русский / Russian
-Hunter User
-
-Türkçe / Turkish
-Ferhat Aydin
-
-Español latino / Spanish la
-DasinFlameS
-
-українська / Ukrainian
-Henaro aka Ironwool
-
-Nederlands / Nederlands
-mlohnen
+//Icon packs
+https://tablacus.github.io/TablacusExplorerAddons/iconpacks.html
 
 //Wiki
 https://github.com/tablacus/TablacusExplorer/wiki

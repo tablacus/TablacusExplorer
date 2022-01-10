@@ -1138,7 +1138,7 @@ async function SetAddon(Id, bEnable, td, Alt) {
 	s.push('<table><tr style="border-top: 1px solid buttonshadow"', bEnable || bConfig ? "" : ' class="disabled"', '><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id + '">'), '</td><td style="width: 100%"><label for="_', Id, '">', r[4], "&nbsp;", r[5], '<br><input type="button" class="addonbutton" onclick="AddonInfo(\'', Id, '\',\'', Alt || "", '\')" value="Details">');
 	s.push(' <input type="button" class="addonbutton" onclick="AddonRemove(\'', Id, '\');" value="Delete">&nbsp;(', Id, ')<div id="', Alt || "", "i_", Id, '"></div></td>');
 	if (!bLevel) {
-		if (ui_.strNotSupported) {
+		if (!ui_.strNotSupported) {
 			ui_.strNotSupported = await GetTextR("@comres.dll,-1845");
 		}
 		s.push('<td class="danger middle nowrap right">', ui_.strNotSupported, '&nbsp;</td>');
@@ -1147,10 +1147,7 @@ async function SetAddon(Id, bEnable, td, Alt) {
 			ui_.strVersion = await GetTextR("@mstask.dll,-319");
 		}
 		if (!ui_.strIsRequired) {
-			ui_.strIsRequired = (await GetAltText("%s is required.")) || (await GetText("is required."));
-			if (!/%s/.test(ui_.strIsRequired)) {
-				ui_.strIsRequired = "%s " + ui_.strIsRequired;
-			}
+			ui_.strIsRequired = await GetText("%s is required.");
 		}
 		s.push('<td class="danger middle nowrap right">', ui_.strIsRequired.replace("%s", ui_.strVersion + " " + (r[1].replace(/^20/, ""))), '</td>');
 	} else if (r[6]) {
@@ -1631,12 +1628,12 @@ InitDialog = async function () {
 	if (Query == "mouse") {
 		document.body.oncontextmenu = DetectProcessTag;
 		document.getElementById("Content").innerHTML = '<canvas id="Gesture" style="width: 100%; height: 100%; text-align: center;" onmousedown="return MouseDown(event)" onmouseup="return MouseUp(event)" onmousemove="return MouseMove(event)" ondblclick="MouseDbl(event)" onmousewheel="return MouseWheel(event)"></canvas>';
-		document.getElementById("Selected").innerHTML = '<input type="text" name="q" style="width: 100%" autocomplete="off" onkeydown="setTimeout(\'returnValue=document.F.q.value\',100)">';
+		document.getElementById("Selected").innerHTML = '<input type="text" name="q" class="full" autocomplete="off" onkeydown="setTimeout(\'returnValue=document.F.q.value\',100)">';
 		WebBrowser.OnClose = ReturnDialogResult;
 	}
 	if (Query == "key") {
 		returnValue = false;
-		document.getElementById("Content").innerHTML = '<div style="padding: 8px;" style="display: block;"><label>Key</label><br><input type="text" name="q" autocomplete="off" style="width: 100%; ime-mode: disabled" onfocus="this.blur()"></div>';
+		document.getElementById("Content").innerHTML = '<div style="padding: 8px;" style="display: block;"><label>Key</label><br><input type="text" name="q" autocomplete="off" class="full" style="ime-mode: disabled" onfocus="this.blur()"></div>';
 		const fn = async function (ev) {
 			const key = ev.keyCode;
 			const k = await api.MapVirtualKey(key, 0) | ((key >= 33 && key <= 46 || key >= 91 && key <= 93 || key == 111 || key == 144) ? 256 : 0);
@@ -1653,8 +1650,8 @@ InitDialog = async function () {
 			document.F.ButtonOk.disabled = false;
 			return false;
 		}
-		document.body.addEventListener("keydown", fn);
-		document.body.addEventListener("keyup", fn);
+		window.addEventListener("keydown", fn);
+		window.addEventListener("keyup", fn);
 		setTimeout(FocusElement, 9, document.F.q);
 		WebBrowser.OnClose = ReturnDialogResult;
 	}
@@ -1792,7 +1789,7 @@ InitDialog = async function () {
 	}
 	if (Query == "input") {
 		returnValue = false;
-		document.getElementById("Content").innerHTML = ['<div style="padding: 8px;" style="display: block;"><label>', EncodeSC(await dialogArguments.text).replace(/\r?\n/g, "<br>"), '<br><input type="text" name="text" style="width: 100%"></div>'].join("");
+		document.getElementById("Content").innerHTML = ['<div style="padding: 8px;" style="display: block;"><label>', EncodeSC(await dialogArguments.text).replace(/\r?\n/g, "<br>"), '<br><input type="text" name="text" class="full"></div>'].join("");
 		document.body.addEventListener("keydown", function (ev) {
 			return KeyDownEvent(ev, function () {
 				SetResult(1);
@@ -2632,7 +2629,7 @@ async function ArrangeAddon(xml, td) {
 			}
 			s.push('<a href="', info.Details, '" title="', info.Details, '" class="link" onclick="wsh.run(this.title); return false;">', ui_.strDetails, '</a><br>');
 		}
-		s.push(await FormatDate(dt), '</td><td align="right">');
+		s.push(dt.toLocaleDateString(), '</td><td align="right">');
 		let dt2 = (dt.getTime() / (24 * 60 * 60 * 1000)) - info.Version;
 		let bUpdate = false;
 		if (await CheckAddon(Id)) {
@@ -2670,10 +2667,7 @@ async function ArrangeAddon(xml, td) {
 				ui_.strVersion = await GetTextR("@mstask.dll,-319");
 			}
 			if (!ui_.strIsRequired) {
-				ui_.strIsRequired = await GetAltText("%s is required.") || await GetText("is required.");
-				if (!/%s/.test(ui_.strIsRequired)) {
-					ui_.strIsRequired = "%s " + ui_.strIsRequired;
-				}
+				ui_.strIsRequired = await GetText("%s is required.");
 			}
 			s.push('<input type="button"  class="danger" onclick="MainWindow.CheckUpdate()" value="', ui_.strIsRequired.replace("%s", ui_.strVersion + " " + (info.MinVersion.replace(/^20/, "").replace(/\.0/g, '.'))), '">');
 		}
@@ -2816,7 +2810,7 @@ async function IconPacksList1(s, Id, info, json) {
 		}
 		s.push('<input type="button" onclick="InstallIcon(this)" title="', Id, '_', info.version, '" value="', ui_.strInstall, '" style="float: right;">');
 	}
-	s.push("<br>", await FormatDate(info.pubDate));
+	s.push("<br>", new Date(info.pubDate).toLocaleDateString());
 	return true;
 }
 
@@ -2900,7 +2894,10 @@ async function LangPacksList(xhr) {
 				}
 				strUpdate = ['<b class="danger nowrap" style="float: right">', await GetText('Update available'), '&nbsp;&nbsp;</b>'].join("");
 			}
-			const ar = [tm, '<b style="font-size: 1.3em">', info.name, " / ", info.en, "</b><br>", info.author, '<input type="button" onclick="InstallLang(this)" title="', n, "\n", info.pubDate, '" value="', bt, '" style="float: right">', strUpdate, '<br>', await FormatDate(tm)];
+			const ar = [tm, '<b style="font-size: 1.3em">', info.name, " / ", info.en, "</b><br>", info.author, '<input type="button" onclick="InstallLang(this)" title="', n, "\n", info.pubDate, '" value="', bt, '" style="float: right">', strUpdate, '<br>', new Date(tm).toLocaleDateString()];
+			if (info.size) {
+				ar.push("<br>", (info.size / 1024).toFixed(1), " KB");
+			}
 			if (strUpdate) {
 				td.unshift(ar);
 			} else {

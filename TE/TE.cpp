@@ -545,7 +545,7 @@ VOID teTranslateAccelerator(IDispatch *pdisp, MSG *pMsg, HRESULT *phr)
 	if SUCCEEDED(pdisp->QueryInterface(IID_PPV_ARGS(&pWB))) {
 		IOleInPlaceActiveObject *pActiveObject = NULL;
 		if SUCCEEDED(pWB->QueryInterface(IID_PPV_ARGS(&pActiveObject))) {
-			if (pActiveObject->TranslateAcceleratorW(pMsg) == S_OK) {
+			if SUCCEEDED(pActiveObject->TranslateAcceleratorW(pMsg)) {
 				*phr = S_OK;
 			}
 			pActiveObject->Release();

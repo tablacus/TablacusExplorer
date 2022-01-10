@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20220107 ? te.Version : 20220107;
+		return te.Version < 20220110 ? te.Version : 20220110;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -982,6 +982,12 @@ LoadLang = function (bAppend) {
 		MainWindow.LangSrc = api.CreateObject("Object");
 	}
 	LoadLang2(BuildPath(te.Data.Installed, "lang", GetLangId() + ".xml"));
+	if (!bAppend && !GetAltText("%s is required.")) {
+		const s = GetAltText("is required.");
+		if (s) {
+			Lang["%s is required."] = "%s " + GetText("is required.");
+		}
+	}
 }
 
 CreateFont = function (LogFont) {
@@ -3438,32 +3444,13 @@ FolderMenu = {
 						if (++nAdd == 1) {
 							wID = null;
 							if (cb === true) {
-								const hwnd = api.FindWindow("#32768", null);
-								if (hwnd) {
-									if (FolderMenu.hwnd) {
-										$.SetWindowAlpha(FolderMenu.hwnd, 255);
-									}
-									$.SetWindowAlpha(hwnd, 0);
-									FolderMenu.hwnd = hwnd;
-								}
 								api.DeleteMenu(hMenu, -2, $.MF_BYCOMMAND);
-							}
-						}
-						if (FolderMenu.hwnd) {
-							if (nAdd == 64) {
-								$.SetWindowAlpha(FolderMenu.hwnd, 255);
-								delete FolderMenu.hwnd;
-							} else {
-								api.SetTimer($.te.hwnd, $.TTID_SHOW, 500, null);
 							}
 						}
 					}
 				}
 				if (cb === true) {
 					api.DeleteMenu(hMenu, -2, $.MF_BYCOMMAND);
-					if (FolderMenu.hwnd) {
-						api.SetTimer($.te.hwnd, $.TTID_SHOW, 99, null);
-					}
 				}
 				$.RemoveSubMenu(hParent, wID);
 				$.RunEvent1("FolderMenuCreated", hMenu, FolderItem, hParent);

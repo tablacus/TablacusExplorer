@@ -2426,13 +2426,6 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 						}
 					}
 					break;
-				case WM_TIMER:
-					if (wParam == TTID_SHOW) {
-						api.KillTimer(hwnd, TTID_SHOW);
-						SetWindowAlpha(FolderMenu.hwnd, 255);
-						delete FolderMenu.hwnd;
-					}
-					break;
 			}
 			break;
 		case CTRL_TC:
@@ -3415,7 +3408,7 @@ CreateUpdater = function (arg) {
 	for (let list = api.CreateObject("Enum", fso.GetFolder(addons).SubFolders); !list.atEnd(); list.moveNext()) {
 		const n = list.item().Name;
 		const items = te.Data.Addons.getElementsByTagName(n);
-		if (!items || GetLength(items) == 0) {
+		if (!items || items.length == 0) {
 			arDel.push(BuildPath(addons, n));
 		}
 	}
