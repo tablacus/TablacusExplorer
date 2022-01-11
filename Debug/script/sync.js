@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20220110 ? te.Version : 20220110;
+		return te.Version < 20220111 ? te.Version : 20220111;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -2483,14 +2483,11 @@ CopyMenu = function (hSrc, hDest) {
 }
 
 GetViewMenu = function (arContextMenu, FV, hMenu, uCMF) {
-	let ContextMenu = arContextMenu && arContextMenu[0];
-	if (!ContextMenu) {
-		ContextMenu = FV.ViewMenu();
+	const ContextMenu = FV.ViewMenu();
+	if (ContextMenu) {
 		if (arContextMenu) {
 			arContextMenu[0] = ContextMenu;
 		}
-	}
-	if (ContextMenu) {
 		ContextMenu.QueryContextMenu(hMenu, 0, 0x5001, 0x5fff, uCMF);
 	}
 	return ContextMenu;
@@ -2545,7 +2542,7 @@ GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arCon
 		case 6:
 			const id = nBase == 5 ? FCIDM_MENU_EDIT : FCIDM_MENU_VIEW;
 			if (FV) {
-				ContextMenu = GetViewMenu(arContextMenu, FV, hMenu, CMF_DEFAULTONLY);
+				ContextMenu = GetViewMenu(arContextMenu, FV, hMenu, uCMF);
 				const hMenu2 = te.MainMenu(id);
 				const oMenu = {};
 				const oMenu2 = {};
