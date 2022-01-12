@@ -934,7 +934,7 @@ window.addEventListener("load", function () {
 	document.body.oncontextmenu = DetectProcessTag;
 	document.body.addEventListener('keydown', function (ev) {
 		ev = ev || event;
-		if (ev.keyCode ? ev.keyCode == VK_F5 : "F5" === ev.key) {
+		if ((ev.keyCode ? ev.keyCode == VK_F5 : "F5" === ev.key) || (ev.ctrlKey && "r" === ev.key)) {
 			if (ev.preventDefault) {
 				ev.preventDefault();
 			 } else {
