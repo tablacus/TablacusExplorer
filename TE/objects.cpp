@@ -373,7 +373,7 @@ LPITEMIDLIST CteFolderItem::GetPidl()
 LPITEMIDLIST CteFolderItem::GetAlt()
 {
 	if (m_pidlAlt == NULL) {
-		if (m_v.vt == VT_BSTR) {
+		if (m_v.vt == VT_BSTR && !tePathMatchSpec(m_v.bstrVal, L"*\\..")) {
 			if (g_pOnFunc[TE_OnTranslatePath]) {
 				try {
 					if (InterlockedIncrement(&g_nProcFI) < 5) {

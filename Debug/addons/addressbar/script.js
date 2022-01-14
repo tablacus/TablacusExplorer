@@ -1,6 +1,6 @@
 const Addon_Id = "addressbar";
 const Default = "ToolBar2Center";
-const item = await GetAddonElement(Addon_Id);
+const item = GetAddonElement(Addon_Id);
 if (!item.getAttribute("Set")) {
 	item.setAttribute("Menu", "Edit");
 	item.setAttribute("MenuPos", -1);
@@ -236,12 +236,14 @@ if (window.Addon == 1) {
 			}
 		},
 
-		Popup: async function (o, n) {
+		Popup: function (o, n) {
 			if (Addons.AddressBar.CanPopup()) {
-				await Addons.AddressBar.SavePos(o);
-				const pt = GetPos(o, 9);
-				MouseOver(o);
-				FolderMenu.Invoke(await FolderMenu.Open(await Sync.AddressBar.GetPath(n), pt.x, pt.y, null, 1));
+				setTimeout(async function (o, n) {
+					await Addons.AddressBar.SavePos(o);
+					const pt = GetPos(o, 9);
+					MouseOver(o);
+					FolderMenu.Invoke(await FolderMenu.Open(await Sync.AddressBar.GetPath(n), pt.x, pt.y, null, 1));
+				}, 9, o, n);
 			}
 		},
 

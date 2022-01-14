@@ -8241,15 +8241,21 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 		case TE_METHOD + 0xf110://ItemCount
 			if (pVarResult && m_pShellView) {
 				UINT uItem = (nArg >= 0) ? GetIntFromVariant(&pDispParams->rgvarg[nArg]) : SVGIO_ALLVIEW;
-				if (m_ppDispatch[SB_AltSelectedItems] && uItem == SVGIO_SELECTION) {
-					FolderItems *pid;
-					if SUCCEEDED(m_ppDispatch[SB_AltSelectedItems]->QueryInterface(IID_PPV_ARGS(&pid))) {
-						if SUCCEEDED(pid->get_Count(&pVarResult->lVal)) {
-							pVarResult->vt = VT_I4;
+				if (uItem == SVGIO_SELECTION) {
+					if (m_ppDispatch[SB_AltSelectedItems]) {
+						FolderItems *pid;
+						if SUCCEEDED(m_ppDispatch[SB_AltSelectedItems]->QueryInterface(IID_PPV_ARGS(&pid))) {
+							if SUCCEEDED(pid->get_Count(&pVarResult->lVal)) {
+								pVarResult->vt = VT_I4;
+							}
+							pid->Release();
 						}
-						pid->Release();
+						return S_OK;
 					}
-					return S_OK;
+					if (m_pFolderItem->m_pidlFocused && m_pFolderItem->m_pidl) {
+						teSetLong(pVarResult, 1);
+						return S_OK;
+					}
 				}
 				teSetLong(pVarResult, GetFolderViewAndItemCount(NULL, uItem));
 			}
@@ -8755,8 +8761,22 @@ STDMETHODIMP CteShellBrowser::SelectedItems(FolderItems **ppid)
 
 HRESULT CteShellBrowser::Items(UINT uItem, FolderItems **ppid)
 {
-	if (m_ppDispatch[SB_AltSelectedItems] && (uItem & SVGIO_SELECTION)) {
-		return m_ppDispatch[SB_AltSelectedItems]->QueryInterface(IID_PPV_ARGS(ppid));
+	if (uItem & SVGIO_SELECTION) {
+		if (m_ppDispatch[SB_AltSelectedItems]) {
+			return m_ppDispatch[SB_AltSelectedItems]->QueryInterface(IID_PPV_ARGS(ppid));
+		}
+		if (m_pFolderItem->m_pidlFocused && m_pFolderItem->m_pidl) {
+			CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL);
+			VARIANT v;
+			VariantInit(&v);
+			LPITEMIDLIST pidl = ILCombine(m_pFolderItem->m_pidl, m_pFolderItem->m_pidlFocused);
+			teSetIDList(&v, pidl);
+			teILFreeClear(&pidl);
+			pFolderItems->ItemEx(-1, NULL, &v);
+			VariantClear(&v);
+			*ppid = pFolderItems;
+			return S_OK;
+		}
 	}
 	FolderItems *pItems = NULL;
 	IDataObject *pDataObj = NULL;
@@ -9009,7 +9029,17 @@ STDMETHODIMP CteShellBrowser::get_FocusedItem(FolderItem **ppid)
 			hr = pItems->Item(v, ppid);
 			pItems->Release();
 		}
-	} else if (m_pdisp) {
+		return hr;
+	}
+	if (m_pFolderItem->m_pidlFocused && m_pFolderItem->m_pidl) {
+		CteFolderItem *pid1 = new CteFolderItem(NULL);
+		LPITEMIDLIST pidl = ILCombine(m_pFolderItem->m_pidl, m_pFolderItem->m_pidlFocused);
+		hr = pid1->Initialize(m_pidl);
+		teILFreeClear(&pidl);
+		*ppid = pid1;
+		return hr;
+	}
+	if (m_pdisp) {
 		IShellFolderViewDual *pSFVD;
 		if SUCCEEDED(m_pdisp->QueryInterface(IID_PPV_ARGS(&pSFVD))) {
 			hr = pSFVD->get_FocusedItem(ppid);

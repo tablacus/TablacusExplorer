@@ -1769,7 +1769,7 @@ InitDialog = async function () {
 						MainWindow.setTimeout(MainWindow.CheckUpdate);
 					}
 				} else {
-					MainWindow.Navigate(path + (n ? "" : "\\\\.."), SBSP_NEWBROWSER);
+					MainWindow.Navigate(path + (n ? "" : "\\.."), SBSP_NEWBROWSER);
 				}
 				CloseWindow();
 			}, 500, n, el && el.innerHTML);

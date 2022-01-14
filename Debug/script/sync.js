@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20220111 ? te.Version : 20220112;
+		return te.Version < 20220114 ? te.Version : 20220114;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1674,6 +1674,10 @@ NavigateFV = function (FV, Path, wFlags, bInputed) {
 				SetFilterView(FV, Path);
 				return;
 			}
+		}
+	} else if (api.ILIsParent(1, Path, false)) {
+		if (!Path.Enum) {
+			Path = Path.Path;
 		}
 	}
 	if (wFlags == null) {
@@ -3511,13 +3515,7 @@ FolderMenu = {
 	Invoke: function (FolderItem, wFlags, FV) {
 		if (FolderItem) {
 			const path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
-			let bVirtual = FolderItem.Unavailable;
-			if (api.ILIsParent(1, FolderItem, false)) {
-				bVirtual = true;
-				if (!FolderItem.Enum) {
-					FolderItem = api.ILCreateFromPath(path);
-				}
-			}
+			const bVirtual = FolderItem.Unavailable || api.ILIsParent(1, FolderItem, false);
 			if (MainWindow.g_menu_button == 2 || /popup/i.test(wFlags)) {
 				const pt = api.Memory("POINT");
 				api.GetCursorPos(pt);
