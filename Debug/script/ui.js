@@ -29,16 +29,21 @@ InitUI = async function () {
 		$ = await api.CreateObject("Object");
 		$.Addon = window.Addon;
 		WebBrowser = await te.Ctrl(CTRL_WB);
-		osInfo = await api.Memory("OSVERSIONINFOEX");
-		await api.GetVersionEx(osInfo);
-		WINVER = await osInfo.dwMajorVersion * 0x100 + await osInfo.dwMinorVersion;
-		const v = await api.GetScriptDispatch('function v() { return "undefined" != typeof ScriptEngineMajorVersion && ScriptEngineMajorVersion(); }', "JScript").v();
-		if (v) {
-			ui_.ScriptEngineMajorVersion = v;
+		const fn = function R(api) {
+			var r = ["undefined" != typeof ScriptEngineMajorVersion && ScriptEngineMajorVersion(), api.Memory("OSVERSIONINFOEX")];
+			api.GetVersionEx(r[1]);
+			r.push(r[1].dwMajorVersion * 0x100 + r[1].dwMinorVersion);
+			return api.CreateObject("SafeArray", r);
+		}
+		const r = await api.GetScriptDispatch(fn.toString(), "JScript").R(api);
+		if (r[0]) {
+			ui_.ScriptEngineMajorVersion = r[0];
 			ScriptEngineMajorVersion = function () {
 				return ui_.ScriptEngineMajorVersion;
 			};
 		}
+		osInfo = r[1];
+		WINVER = r[2];
 	} else {
 		try {
 			ui_.NoCssFont = wsh.regRead("HKCU\\Software\\Microsoft\\Internet Explorer\\Settings\\Always Use My Font Face");
@@ -254,15 +259,25 @@ OpenHttpRequest = async function (url, alt, fn, arg) {
 		url += "?" + Math.floor(new Date().getTime() / 60000);
 	}
 	CalcRef(arg && await arg.pcRef, 0, 1);
-	if (window.chrome && /\.zip$|\.exe$/i.test(url)) {
-		xhr.responseType = "blob";
+	if (window.chrome) {
+		const rt = arg && await arg.responseType;
+		if (rt) {
+			xhr.responseType = rt;
+		} else if (/\.zip$|\.exe$/i.test(url)) {
+			xhr.responseType = "blob";
+		}
 	}
 	xhr.open("GET", url, true);
 	xhr.send();
 }
 
 DownloadFile = async function (url, fn) {
-	const hr = await MainWindow.RunEvent4("DownloadFile", url, fn);
+	let hr;
+	if (window.chrome && await url.response) {
+		url = await ReadAsDataURL(url.response);
+	} else {
+		hr = await MainWindow.RunEvent4("DownloadFile", url, fn);
+	}
 	return hr != null ? hr : await api.URLDownloadToFile(null, url, fn);
 }
 
@@ -282,9 +297,6 @@ ReadAsDataURL = function (blob) {
 Extract = async function (Src, Dest, xhr) {
 	let hr;
 	if (xhr) {
-		if (window.chrome && await xhr.response) {
-			xhr = await ReadAsDataURL(xhr.response);
-		}
 		hr = await DownloadFile(xhr, Src);
 		if (hr) {
 			return hr;
@@ -456,7 +468,7 @@ LoadScripts = async function (js1, js2, cb) {
 		});
 		Object.defineProperty(window, "Threads", {
 			get: function () {
-				return $.g_;
+				return $.Threads;
 			}
 		});
 		Object.defineProperty(window, "FolderMenu", {
@@ -1241,10 +1253,10 @@ MakeKeySelect = async function () {
 		s = await Promise.all(s);
 	}
 	s.sort(function (a, b) {
-		if (a.length != b.length && (a.length == 1 || b.length == 1)) {
-			return a.length - b.length;
+		if (a.length == 1 || b.length == 1) {
+			return a.length - b.length || a.localeCompare(b);
 		}
-		return a > b ? 1 : a < b ? -1 : 0;
+		return ui_.IEVer > 10 ? a.localeCompare(b, {}, { numeric: true }) : api.StrCmpLogical(a, b);
 	});
 	let v = "";
 	for (i in s) {

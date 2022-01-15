@@ -1601,11 +1601,9 @@ InitDialog = async function () {
 					}
 				}
 				if (arfn.length) {
-					arfn.sort(
-						function (a, b) {
-							return a - b || (a < b ? -1 : a > b ? 1 : 0);
-						}
-					);
+					arfn.sort(function (a, b) {
+						return a - b || a.localeCompare(b);
+					});
 					const px = screen.deviceYDPI / 3;
 					for (let i = 0; i < arfn.length; ++i) {
 						const src = ["icon:" + GetFileName(path2), arfn[i]].join(",");
@@ -2458,7 +2456,9 @@ async function SelectLangID(o) {
 		return;
 	}
 	const Langs = await GetFileList(BuildPath(ui_.Installed, "lang", "*.xml"), false, window.chrome);
-	Langs.sort();
+	Langs.sort(function (a, b) {
+		return a.localeCompare(b);
+	});
 	const path = BuildPath(ui_.Installed, "lang");
 	const hMenu = await api.CreatePopupMenu();
 	for (let i in Langs) {
@@ -2509,8 +2509,11 @@ function GetLangPacks() {
 	OpenHttpRequest(urlLang + "index.json", "http", LangPacksList);
 }
 
-function InstallLang(el) {
-	OpenHttpRequest(urlLang + el.title.replace(/\n.*/, ""), "http", InstallLang2, el.title);
+async function InstallLang(el) {
+	const arg = await api.CreateObject("Object");
+	arg.responseType = "blob";
+	arg.title = el.title
+	OpenHttpRequest(urlLang + el.title.replace(/\n.*/, ""), "http", InstallLang2, arg);
 }
 
 function UpdateAddon(Id, o) {
@@ -2530,7 +2533,7 @@ function AddonsSearch() {
 		document.getElementById("_AddonsQ").focus();
 	} else if (g_SortMode == "1_1") {
 		if (xmlAddons) {
-			AddonsAppend()
+			AddonsAppend(xmlAddons.getElementsByTagName("Item"))
 		} else {
 			GetAddons();
 		}
@@ -2555,10 +2558,19 @@ async function AddonsList(xhr2) {
 	if (await xhr2) {
 		xhr = await xhr2;
 	}
-	const xml = window.chrome && await xhr.get_responseText ? new DOMParser().parseFromString(await xhr.get_responseText(), "application/xml") : xhr.responseXML;
+	let xml = await xhr.responseXML;
+	if (!xml) {
+		if (window.DOMParser) {
+			xml = new DOMParser().parseFromString(await xhr.get_responseText(), "application/xml");
+		} else {
+			xml = api.CreateObject("Msxml2.DOMDocument");
+			xml.async = false;
+			xml.loadXML(xhr.get_responseText());
+		}
+	}
 	if (xml) {
-		xmlAddons = xml.getElementsByTagName("Item");
-		AddonsAppend()
+		xmlAddons = xml;
+		AddonsAppend(xml.getElementsByTagName("Item"));
 	}
 }
 
@@ -2580,7 +2592,7 @@ function SetTable(table, td) {
 	}
 }
 
-async function AddonsAppend() {
+async function AddonsAppend(Items) {
 	const Progress = await api.CreateObject("ProgressDialog");
 	const td = [];
 	Progress.StartProgressDialog(ui_.hwnd, null, 2);
@@ -2591,16 +2603,15 @@ async function AddonsAppend() {
 		Progress.SetAnimation(hShell32, 150);
 		Progress.SetLine(1, await api.LoadString(hShell32, 13585) || await api.LoadString(hShell32, 6478), true);
 		let bCancelled = false;
-		for (let i = 0; !bCancelled && i < xmlAddons.length; ++i) {
-			Promise.all([Progress.HasUserCancelled(i, xmlAddons.length, 2)]).then(function (r) {
+		for (let i = 0; !bCancelled && i < Items.length; ++i) {
+			Promise.all([Progress.HasUserCancelled(i, Items.length, 2)]).then(function (r) {
 				bCancelled = r[0];
 			});
-			await ArrangeAddon(xmlAddons[i], td);
+			await ArrangeAddon(Items[i], td);
 		}
-		td.sort();
-		if (g_nSort["1_1"] == 1) {
-			td.reverse();
-		}
+		td.sort(function (a, b) {
+			return a[0] - b[0] || String(a[0]).localeCompare(b[0]);
+		});
 		SetTable(document.getElementById("Addons1"), td);
 	} catch (e) {
 		ShowError(e);
@@ -2672,7 +2683,7 @@ async function ArrangeAddon(xml, td) {
 			s.push('<input type="button"  class="danger" onclick="MainWindow.CheckUpdate()" value="', ui_.strIsRequired.replace("%s", ui_.strVersion + " " + (info.MinVersion.replace(/^20/, "").replace(/\.0/g, '.'))), '">');
 		}
 		s.push(strUpdate, '</td></tr></table>');
-		s.unshift(g_nSort["1_1"] == 1 ? dt2 : g_nSort["1_1"] ? Id : info.Name);
+		s.unshift(g_nSort["1_1"] == 1 ? -dt2 : g_nSort["1_1"] ? Id : info.Name);
 		td.push(s);
 	}
 }
@@ -2851,7 +2862,9 @@ async function IconPacksList(xhr) {
 			}
 		}
 	}
-	td.sort();
+	td.sort(function (a, b) {
+		a[0].localeCompare(b[0]);
+	});
 	if (json1.info) {
 		s = [];
 		if (await IconPacksList1(s, Installed, json1.info, json)) {
@@ -2908,15 +2921,15 @@ async function LangPacksList(xhr) {
 	SetTable(document.getElementById("LangPacks1"), td);
 }
 
-async function InstallLang2(xhr, url, s) {
+async function InstallLang2(xhr, url, arg) {
 	if (!xhr) {
 		return;
 	}
 	const temp = await GetTempPath(3);
 	await CreateFolder(temp);
-	const ar = s.split("\n");
+	const ar = (await arg.title).split("\n");
 	const src = BuildPath(temp, ar[0]);
-	await WriteTextFile(src, await xhr.get_responseText ? await xhr.get_responseText() : xhr.responseText);
+	await DownloadFile(xhr, src);
 	await SetFileTime(src, null, null, new Date(ar[1]).getTime());
 	await api.SHFileOperation(FO_MOVE, src, BuildPath(ui_.Installed, "lang"), FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR, false);
 	document.F.Conf_Lang.value = ar[0].replace(/\.xml$/i, "");
@@ -3122,7 +3135,9 @@ async function SortAddons1(n) {
 					}
 				}
 				if (n != 3) {
-					ar.sort();
+					ar.sort(function (a, b) {
+						return a.localeCompare(b);
+					});
 				}
 				for (let i = 0; !bCancelled && i < ar.length; ++i) {
 					Promise.all([Progress.HasUserCancelled(table.rows.length + i, nTotal, 2)]).then(function (r) {
