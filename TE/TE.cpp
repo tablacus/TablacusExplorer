@@ -8589,6 +8589,9 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 //*///
 		case DISPID_SELECTIONCHANGED://XP+
 			SetStatusTextSB(NULL);
+			if (m_pFolderItem) {
+				teILFreeClear(&m_pFolderItem->m_pidlFocused);
+			}
 			return DoFunc(TE_OnSelectionChanged, this, S_OK);
 
 		case DISPID_CONTENTSCHANGED://XP-
