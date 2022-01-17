@@ -31,13 +31,6 @@ if (Common.Download.Path) {
 			return ReadTextFile(o.fn);
 		}
 
-		o.get_responseXML = function () {
-			var xml = api.CreateObject("Msxml2.DOMDocument");
-			xml.async = false;
-			xml.load(o.fn);
-			return xml;
-		}
-
 		return o;
 	});
 
