@@ -2287,6 +2287,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 	if (isFinite(hr)) {
 		return hr;
 	}
+	let cFV;
 	switch (Ctrl.Type) {
 		case CTRL_TE:
 			switch (msg) {
@@ -2342,7 +2343,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					if (g_.FVData) {
 						if (g_.FVData.All) {
 							delete g_.FVData.All;
-							const cFV = te.Ctrls(CTRL_FV);
+							cFV = te.Ctrls(CTRL_FV);
 							for (let i in cFV) {
 								SetFolderViewData(cFV[i], g_.FVData);
 							}
@@ -2353,7 +2354,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					}
 					if (g_.TVData) {
 						if (g_.TVData.All) {
-							const cFV = te.Ctrls(CTRL_FV);
+							cFV = te.Ctrls(CTRL_FV);
 							for (let i in cFV) {
 								SetTreeViewData(cFV[i], g_.TVData);
 							}
@@ -2406,7 +2407,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					break;
 				case WM_POWERBROADCAST:
 					if (wParam == PBT_APMRESUMEAUTOMATIC) {
-						const cFV = te.Ctrls(CTRL_FV);
+						cFV = te.Ctrls(CTRL_FV);
 						for (let i in cFV) {
 							const FV = cFV[i];
 							if (FV.hwndView) {
@@ -2418,11 +2419,23 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					}
 					break;
 				case WM_SYSCOLORCHANGE:
-					const cFV = te.Ctrls(CTRL_FV);
+					cFV = te.Ctrls(CTRL_FV);
 					for (let i in cFV) {
 						const FV = cFV[i];
 						if (FV.hwndView) {
 							FV.Suspend();
+						}
+					}
+					break;
+				case WM_SETTINGCHANGE:
+					te.Data.TempFolder = GetTempPath(1);
+					cFV = te.Ctrls(CTRL_FV);
+					for (let i in cFV) {
+						const hList = cFV[i].hwndList;
+						if (hList) {
+							api.SendMessage(hwnd, LVM_SETTEXTCOLOR, 0, GetSysColor(COLOR_WINDOWTEXT));
+							api.SendMessage(hwnd, LVM_SETBKCOLOR, 0, GetSysColor(COLOR_WINDOW));
+							api.SendMessage(hwnd, LVM_SETTEXTBKCOLOR, 0, GetSysColor(COLOR_WINDOW));
 						}
 					}
 					break;
@@ -3164,19 +3177,6 @@ AddEvent("ReplacePath", function (FolderItem, Path) {
 	}
 });
 
-AddEvent(WM_SETTINGCHANGE + "!", function (Ctrl, Type, hwnd, msg, wParam, lParam) {
-	te.Data.TempFolder = GetTempPath(1);
-	const cFV = te.Ctrls(CTRL_FV);
-	for (let i in cFV) {
-		const hList = cFV[i].hwndList;
-		if (hList) {
-			api.SendMessage(hwnd, LVM_SETTEXTCOLOR, 0, GetSysColor(COLOR_WINDOWTEXT));
-			api.SendMessage(hwnd, LVM_SETBKCOLOR, 0, GetSysColor(COLOR_WINDOW));
-			api.SendMessage(hwnd, LVM_SETTEXTBKCOLOR, 0, GetSysColor(COLOR_WINDOW));
-		}
-	}
-});
-
 AddEvent("AddType", function (arFunc) {
 	for (let i in g_basic.Func) {
 		arFunc.push(i);
@@ -3685,17 +3685,9 @@ InitWindow = function () {
 	if (te.Data.Load < 2) {
 		RunCommandLine(api.GetCommandLine());
 	} else {
-		let hwnd;
-		const p = api.Memory("WCHAR", 11);
-		p.Write(0, VT_LPWSTR, "ShellState");
-		const cFV = te.Ctrls(CTRL_FV);
+		const cFV = te.Ctrls(CTRL_FV, true);
 		for (let i in cFV) {
-			if (hwnd = cFV[i].hwndView) {
-				api.SendMessage(hwnd, WM_SETTINGCHANGE, 0, p);
-			}
-			if (cFV[i].Visible) {
-				ChangeView(cFV[i]);
-			}
+			ChangeView(cFV[i]);
 		}
 	}
 	WebBrowser.DropMode = 1;

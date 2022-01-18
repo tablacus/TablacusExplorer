@@ -281,8 +281,10 @@ if (window.Addon == 1) {
 						if (await Addons.TabPlus.IsClick(ev)) {
 							(await TC[n]).Focus();
 						}
-					} else if (await Addons.TabPlus.IsClick(ev)) {
-						Addons.TabPlus.GestureExec(TC, ev, btn);
+					} else if ((ev.target || ev.srcElement).className === "tab0") {
+						if (await Addons.TabPlus.IsClick(ev)) {
+							Addons.TabPlus.GestureExec(TC, ev, btn);
+						}
 					}
 				} else if (btn == 3) {
 					if (await Addons.TabPlus.IsClick(ev)) {
