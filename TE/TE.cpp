@@ -4376,6 +4376,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		g_pidls[CSIDL_RESULTSFOLDER] = ILCreateFromPathA("shell:::{2965E715-EB66-4719-B53F-1672673BBEFA}");
 	} else {
 		g_pidls[CSIDL_RESULTSFOLDER] = ILCreateFromPathA("::{E17D4FC0-5564-11D1-83F2-00A0C90DC849}");
+		g_pidls[CSIDL_UNAVAILABLE] = ILClone(g_pidls[CSIDL_RESULTSFOLDER]);
 		g_bCharWidth = TRUE;
 	}
 #endif
@@ -4506,6 +4507,28 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	VariantInit(&g_vArguments);
 	BSTR bsPath = NULL;
 	teGetModuleFileName(NULL, &bsPath);//Executable Path
+	if (!g_pidls[CSIDL_UNAVAILABLE]) {
+		ISearchFolderItemFactory *psfif = NULL;
+		if SUCCEEDED(teCreateInstance(CLSID_SearchFolderItemFactory, NULL, NULL, IID_PPV_ARGS(&psfif))) {
+			IShellItem *psi = NULL;
+			if (teCreateItemFromPath(bsPath, &psi)) {
+				IShellItemArray *psia;
+				if (
+#ifdef _2000XP
+					_SHCreateShellItemArrayFromShellItem &&
+#endif
+					SUCCEEDED(_SHCreateShellItemArrayFromShellItem(psi, IID_PPV_ARGS(&psia)))) {
+					psfif->SetScope(psia);
+					psia->Release();
+				}
+			}
+			psfif->GetIDList(&g_pidls[CSIDL_UNAVAILABLE]);
+			psfif->Release();
+		}
+	}
+	if (!g_pidls[CSIDL_UNAVAILABLE]) {
+		g_pidls[CSIDL_UNAVAILABLE] = ILClone(g_pidls[CSIDL_RESULTSFOLDER]);
+	}
 	for (int i = 0; bsPath[i]; ++i) {
 		if (bsPath[i] == '\\') {
 			bsPath[i] = '/';
@@ -6769,6 +6792,17 @@ static void threadFolderSize(void *args)
 	::_endthread();
 }
 
+HRESULT CteShellBrowser::GetPropertyKey(HWND hHeader, int iItem, PROPERTYKEY *pPropKey)
+{
+	HDITEM hdi;
+	WCHAR pszText[MAX_COLUMN_NAME_LEN];
+	hdi.cchTextMax = MAX_COLUMN_NAME_LEN;
+	hdi.pszText = pszText;
+	hdi.mask = HDI_TEXT;
+	Header_GetItem(hHeader, iItem, &hdi);
+	return teGetPropertyKeyFromName(m_pSF2, pszText, pPropKey);
+}
+
 BOOL CteShellBrowser::SetColumnsProperties(HWND hHeader, int iItem)
 {
 	if (iItem == m_nLabelIndex) {
@@ -6782,14 +6816,8 @@ BOOL CteShellBrowser::SetColumnsProperties(HWND hHeader, int iItem)
 	else {
 		IDispatch *pdisp = (size_t)iItem < m_ppColumns.size() ? m_ppColumns[iItem] : NULL;
 		if (pdisp) {
-			HDITEM hdi;
-			WCHAR pszText[MAX_COLUMN_NAME_LEN];
-			hdi.cchTextMax = MAX_COLUMN_NAME_LEN;
-			hdi.pszText = pszText;
-			hdi.mask = HDI_TEXT;
-			Header_GetItem(hHeader, iItem, &hdi);
 			PROPERTYKEY propKey;
-			if SUCCEEDED(teGetPropertyKeyFromName(m_pSF2, pszText, &propKey)) {
+			if SUCCEEDED(GetPropertyKey(hHeader, iItem, &propKey)) {
 				SetReplaceColumnsProperties(pdisp, propKey);
 			}
 		}
@@ -6950,6 +6978,7 @@ VOID CteShellBrowser::ReplaceColumnsEx(IDispatch *pdisp, LVITEM *plvi, LPITEMIDL
 	if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) {
 		LPITEMIDLIST pidl;
 		if SUCCEEDED(pFV->Item(plvi->iItem, &pidl)) {
+			BOOL bResult = FALSE;
 			if (teHasProperty(pdisp, L"push")) {
 				VARIANT v;
 				VariantInit(&v);
@@ -6957,7 +6986,7 @@ VOID CteShellBrowser::ReplaceColumnsEx(IDispatch *pdisp, LVITEM *plvi, LPITEMIDL
 					if SUCCEEDED(teGetPropertyAt(pdisp, nLen, &v)) {
 						IDispatch *pdisp2;
 						if (GetDispatch(&v, &pdisp2)) {
-							if (ReplaceColumns(pdisp2, plvi, pidl)) {
+							if (bResult = ReplaceColumns(pdisp2, plvi, pidl)) {
 								nLen = 0;
 							}
 							pdisp2->Release();
@@ -6966,11 +6995,23 @@ VOID CteShellBrowser::ReplaceColumnsEx(IDispatch *pdisp, LVITEM *plvi, LPITEMIDL
 					}
 				}
 			} else {
-				ReplaceColumns(pdisp, plvi, pidl);
+				bResult = ReplaceColumns(pdisp, plvi, pidl);
 			}
 			if (ppidl) {
 				*ppidl = pidl;
 			} else {
+				if (!bResult && plvi->cchTextMax >= 0) {
+					PROPERTYKEY propKey;
+					if SUCCEEDED(GetPropertyKey(ListView_GetHeader(m_hwndLV), plvi->iSubItem, &propKey)) {
+						VARIANT v;
+						VariantInit(&v);
+						m_pSF2->GetDetailsEx(pidl, &propKey, &v);
+						if (v.vt == VT_BSTR) {
+							lstrcpyn(plvi->pszText, v.bstrVal, plvi->cchTextMax);
+						}
+						VariantClear(&v);
+					}
+				}
 				teILFreeClear(&pidl);
 			}
 		}
@@ -7000,7 +7041,7 @@ VOID CteShellBrowser::SetReplaceColumnsProperties(IDispatch *pdisp, PROPERTYKEY 
 		PropVariantClear(&propVar);
 		return;
 	}
-	if (lstrcmpi(propVar.bstrVal, pszDisplay)) {
+	if (lstrcmp(propVar.bstrVal, pszDisplay)) {
 		teCoTaskMemFree(pszDisplay);
 		PropVariantClear(&propVar);
 		return;
@@ -7020,9 +7061,25 @@ VOID CteShellBrowser::SetReplaceColumnsProperties(IDispatch *pdisp, PROPERTYKEY 
 			if (propVar.vt != VT_EMPTY) {
 				pFV2->SetViewProperty(pidl, propKey, propVar);
 				PropVariantClear(&propVar);
+			} else {
+				pFV2->GetViewProperty(pidl, propKey, &propVar);
+				if (propVar.vt == VT_BSTR) {
+					VARIANT v;
+					VariantInit(&v);
+					m_pSF2->GetDetailsEx(pidl, &propKey, &v);
+					if (v.vt == VT_BSTR) {
+						if (lstrcmp(propVar.bstrVal, v.bstrVal)) {
+							teSysFreeString(&propVar.bstrVal);
+							propVar.bstrVal = v.bstrVal;
+							pFV2->SetViewProperty(pidl, propKey, propVar);
+							v.vt = VT_EMPTY;
+						}
+					}
+					VariantClear(&v);
+				}
+				PropVariantClear(&propVar);
 			}
 			teILFreeClear(&pidl);
-			teCoTaskMemFree(pidl);
 		}
 		pFV2->Release();
 	}
@@ -7699,7 +7756,6 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			teSetLong(pVarResult, m_param[SB_Type]);
 			return S_OK;
-
 
 		case TE_METHOD + 0xf004://Navigate
 		case TE_PROPERTY + 0xf00B://History
@@ -9281,11 +9337,6 @@ HRESULT CteShellBrowser::IncludeObject2(IShellFolder *pSF, LPCITEMIDLIST pidl, L
 {
 	HRESULT hr = S_OK;
 	if (pSF) {
-		/*if ( m_pFolderItem->m_dwUnavailable || m_pFolderItem->m_pidlAlt) {
-			if (teCompareSFClass(pSF, &CLSID_Unavailable)) {
-				return S_FALSE;
-			}
-		}*/
 		if (!(m_param[SB_ViewFlags] & CDB2GVF_SHOWALLFILES)) {
 			WIN32_FIND_DATA wfd;
 			if SUCCEEDED(SHGetDataFromIDList(pSF, pidl, SHGDFIL_FINDDATA, &wfd, sizeof(WIN32_FIND_DATA))) {
@@ -9440,7 +9491,7 @@ VOID CteShellBrowser::SetEmptyText()
 			WCHAR pszFormat[MAX_STATUS];
 			pszFormat[0] = NULL;
 			LPWSTR lpBuf = pszFormat;
-			if (m_pFolderItem->m_dwUnavailable && GetTickCount() - m_pFolderItem->m_dwUnavailable > 500) {
+			if (m_pFolderItem->m_dwUnavailable) {
 				LoadString(g_hShell32, 4157, pszFormat, MAX_STATUS);
 			} else if (!m_bFiltered) {
 				lpBuf = NULL;
@@ -9596,7 +9647,7 @@ HRESULT CteShellBrowser::BrowseToObject(DWORD dwFrame, FOLDERVIEWOPTIONS fvoFlag
 				teILCloneReplace(&m_pidl, g_pidls[CSIDL_UNAVAILABLE]);
 				GetShellFolder2(&m_pidl);
 			}
-			if ((dwFrame && g_bDarkMode) || m_pFolderItem->m_dwUnavailable) {
+			if (dwFrame && g_bDarkMode) {
 				if (teCompareSFClass(m_pSF2, &CLSID_ResultsFolder)) {
 					m_pExplorerBrowser->BrowseToIDList(g_pidls[CSIDL_CDBURN_AREA], SBSP_ABSOLUTE);
 				}

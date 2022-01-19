@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20220116 ? te.Version : 20220118;
+		return te.Version < 20220119 ? te.Version : 20220119;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -2493,6 +2493,9 @@ GetViewMenu = function (arContextMenu, FV, hMenu, uCMF) {
 			arContextMenu[0] = ContextMenu;
 		}
 		ContextMenu.QueryContextMenu(hMenu, 0, 0x5001, 0x5fff, uCMF);
+		if (FV.FolderItem.Unavailable) {
+			RemoveCommand(hMenu, ContextMenu, "savesearch");
+		}
 	}
 	return ContextMenu;
 }

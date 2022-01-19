@@ -16,7 +16,7 @@
 //Version(DLL)
 #define VER_Y		22
 #define VER_M		1
-#define VER_D		16
+#define VER_D		19
 #endif
 
 //Icon
@@ -32,6 +32,7 @@
 //#define USE_TESTPATHMATCHSPEC
 //#define CHECK_HANDLELEAK
 //#define USE_LOG
+#define USE_VS_COLUMNSREPLACE
 #define EMULATE_XP	//FALSE &&
 #ifndef _WIN64
 #define _2000XP
@@ -39,5 +40,4 @@
 #endif
 #ifdef _DEBUG
 #define _EXEONLY
-//#define USE_VS_COLUMNSREPLACE
 #endif

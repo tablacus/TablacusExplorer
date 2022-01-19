@@ -1579,7 +1579,7 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 		return E_NOTIMPL;
 	}
 	let hr = RunEvent2("BeforeNavigate", Ctrl, fs, wFlags, Prev);
-	if (hr == S_OK && IsUseExplorer(Ctrl.FolderItem)) {
+	if (hr == S_OK && !Ctrl.FolderItem.Unavailable && IsUseExplorer(Ctrl.FolderItem)) {
 		setTimeout(OpenInExplorer, 99, Ctrl.FolderItem);
 		return E_FAIL;
 	}
@@ -3272,7 +3272,7 @@ AddEvent("BeginNavigate", function (Ctrl) {
 });
 
 AddEvent("UseExplorer", function (pid) {
-	if (pid && pid.Path && !api.GetAttributesOf(pid.Alt || pid, SFGAO_FILESYSTEM | SFGAO_FILESYSANCESTOR | SFGAO_STORAGEANCESTOR | SFGAO_NONENUMERATED | SFGAO_DROPTARGET) && !api.ILIsParent(1, pid, false) && !IsSearchPath(pid)) {
+	if (pid && pid.Path && !pid.Unavailable && !api.GetAttributesOf(pid.Alt || pid, SFGAO_FILESYSTEM | SFGAO_FILESYSANCESTOR | SFGAO_STORAGEANCESTOR | SFGAO_NONENUMERATED | SFGAO_DROPTARGET) && !api.ILIsParent(1, pid, false) && !IsSearchPath(pid)) {
 		return true;
 	}
 });

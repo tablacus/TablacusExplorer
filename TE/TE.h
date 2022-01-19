@@ -327,6 +327,7 @@ public:
 	HRESULT Items(UINT uItem, FolderItems **ppid);
 	HRESULT SelectItemEx(LPITEMIDLIST pidl, int dwFlags);
 	VOID InitFolderSize();
+	HRESULT GetPropertyKey(HWND hHeader, int iItem, PROPERTYKEY *pPropKey);
 	BOOL SetColumnsProperties(HWND hHeader, int iItem);
 	VOID SetSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch);
 	VOID SetFolderSize(IShellFolder2 *pSF2, LPCITEMIDLIST pidl, LPWSTR szText, int cch);
