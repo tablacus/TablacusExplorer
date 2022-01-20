@@ -5013,6 +5013,17 @@ VOID CALLBACK teTimerProcParse(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 	KillTimer(hwnd, idEvent);
 	TEInvoke *pInvoke = (TEInvoke *)idEvent;
 	try {
+		if (pInvoke->dispid == TE_METHOD + 0xfb07) {/*Navigate2Ex*/
+			CteShellBrowser *pSB = NULL;
+			if SUCCEEDED(pInvoke->pdisp->QueryInterface(g_ClsIdSB, (LPVOID *)&pSB)) {
+				LONG lNavigating = pSB->m_pTC->m_lNavigating;
+				pSB->Release();
+				if (lNavigating) {
+					SetTimer(g_hwndMain, (UINT_PTR)pInvoke, 100 * lNavigating, teTimerProcParse);
+					return;
+				}
+			}
+		}
 		if (::InterlockedDecrement(&pInvoke->cDo) == 0) {
 			if (pInvoke->pidl || pInvoke->wErrorHandling == 3) {
 				VariantClear(&pInvoke->pv[pInvoke->cArgs - 1]);
@@ -5056,6 +5067,7 @@ VOID CALLBACK teTimerProcParse(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 								g_bShowParseError = (r != IDIGNORE);
 							}
 						}
+						pSB->SetEmptyText();
 					}
 					SafeRelease(&pSB);
 				}
@@ -9492,7 +9504,9 @@ VOID CteShellBrowser::SetEmptyText()
 			pszFormat[0] = NULL;
 			LPWSTR lpBuf = pszFormat;
 			if (m_pFolderItem->m_dwUnavailable) {
-				LoadString(g_hShell32, 4157, pszFormat, MAX_STATUS);
+				if (GetTickCount() - m_pFolderItem->m_dwUnavailable > 500) {
+					LoadString(g_hShell32, 4157, pszFormat, MAX_STATUS);
+				}
 			} else if (!m_bFiltered) {
 				lpBuf = NULL;
 			}

@@ -90,7 +90,6 @@ public:
 	FolderItem		*m_pFolderItem;
 	LPITEMIDLIST	m_pidlFocused;
 	IDispatch		*m_pEnum;
-	int				m_nSelected;
 	BOOL			m_bStrict;
 	DWORD			m_dwUnavailable;
 	DWORD			m_dwSessionId;

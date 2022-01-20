@@ -419,7 +419,6 @@ VOID CteFolderItem::Clear()
 	teILFreeClear(&m_pidl);
 	teILFreeClear(&m_pidlAlt);
 	SafeRelease(&m_pEnum);
-	m_dwUnavailable = 0;
 	m_dispExtendedProperty = -1;
 }
 
