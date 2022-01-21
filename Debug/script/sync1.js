@@ -3272,7 +3272,7 @@ AddEvent("BeginNavigate", function (Ctrl) {
 });
 
 AddEvent("UseExplorer", function (pid) {
-	if (pid && pid.Path && !pid.Unavailable && !api.GetAttributesOf(pid.Alt || pid, SFGAO_FILESYSTEM | SFGAO_FILESYSANCESTOR | SFGAO_STORAGEANCESTOR | SFGAO_NONENUMERATED | SFGAO_DROPTARGET) && !api.ILIsParent(1, pid, false) && !IsSearchPath(pid)) {
+	if (pid && pid.Path && !/^ftp:|^https?:/i.test(pid.Path) && !api.GetAttributesOf(pid.Alt || pid, SFGAO_FILESYSTEM | SFGAO_FILESYSANCESTOR | SFGAO_STORAGEANCESTOR | SFGAO_NONENUMERATED | SFGAO_DROPTARGET) && !api.ILIsEqual(pid, ssfUNAVAILABLE) && !api.ILIsParent(1, pid, false) && !IsSearchPath(pid)) {
 		return true;
 	}
 });

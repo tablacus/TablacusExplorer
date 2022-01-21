@@ -384,6 +384,7 @@ TEmethod methodSB[] = {
 	{ TE_PROPERTY + 0xf281, "FocusedItem" },
 	{ TE_PROPERTY + 0xf282, "GetFocusedItem" },
 	{ TE_METHOD + 0xf283, "GetItemRect" },
+//	{ TE_METHOD + 0xf284, "ViewProperty" },
 	{ TE_METHOD + 0xf300, "Notify" },
 	{ TE_METHOD + 0xf400, "NavigateComplete" },
 	{ TE_METHOD + 0xf501, "AddItem" },
@@ -2731,7 +2732,6 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 							VARIANTARG *pv = GetNewVARIANT(2);
 							teSetObject(&pv[1], pSB);
 							teSetLong(&pv[0], piOrderArray[pnmv->iSubItem]);
-							int iItem = piOrderArray[pnmv->iSubItem];
 							delete [] piOrderArray;
 							VARIANT vResult;
 							VariantInit(&vResult);
@@ -2741,7 +2741,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 									return 1;
 								}
 							}
-							pSB->SetColumnsProperties(hHeader, iItem);
+							pSB->SetColumnsProperties(pnmv->iSubItem);
 						}
 					}
 					pSB->FixColumnEmphasis();
@@ -3007,18 +3007,8 @@ LRESULT CALLBACK TELVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 			} else if (((LPNMHDR)lParam)->code == HDN_ITEMCHANGED) {
 				pSB->FixColumnEmphasis();
 			} else if (((LPNMHDR)lParam)->code == HDN_DROPDOWN) {
-				HWND hHeader = ListView_GetHeader(pSB->m_hwndLV);
-				if (hHeader) {
-					UINT nHeader = Header_GetItemCount(hHeader);
-					if (nHeader) {
-						int *piOrderArray = new int[nHeader];
-						ListView_GetColumnOrderArray(pSB->m_hwndLV, nHeader, piOrderArray);
-						int  iItem = piOrderArray[((LPNMHEADER)lParam)->iItem];
-						delete[] piOrderArray;
-						if (pSB->SetColumnsProperties(hHeader, iItem)) {
-							return 0;
-						}
-					}
+				if (pSB->SetColumnsProperties(((LPNMHEADER)lParam)->iItem)) {
+					return 0;
 				}
 			}
 			break;
@@ -5853,7 +5843,7 @@ BOOL CteShellBrowser::Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItem
 	CteFolderItem *pid = NULL;
 	if (pFolderItem) {
 		if SUCCEEDED(pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
-			if (!pid->m_pidl && pid->m_v.vt == VT_BSTR && !pid->GetAlt()) {
+			if (pid->m_dwUnavailable || (!pid->m_pidl && pid->m_v.vt == VT_BSTR && !pid->GetAlt())) {
 				if ((m_pShellView && pid->m_dwUnavailable) ||
 					tePathMatchSpec(pid->m_v.bstrVal, L"*.lnk") ||
 					(tePathIsNetworkPath(pid->m_v.bstrVal) && tePathIsDirectory(pid->m_v.bstrVal, 100, 3) != S_OK)) {
@@ -6804,18 +6794,45 @@ static void threadFolderSize(void *args)
 	::_endthread();
 }
 
-HRESULT CteShellBrowser::GetPropertyKey(HWND hHeader, int iItem, PROPERTYKEY *pPropKey)
+HRESULT CteShellBrowser::GetPropertyKey(int iItem, PROPERTYKEY *pPropKey)
 {
+	UINT uCount = 0;
+	IColumnManager *pColumnManager;
+	if (m_pShellView && SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pColumnManager)))) {
+		if SUCCEEDED(pColumnManager->GetColumnCount(CM_ENUM_VISIBLE, &uCount)) {
+			if (iItem < uCount) {
+				PROPERTYKEY *pPropKeyList = new PROPERTYKEY[uCount];
+				if SUCCEEDED(pColumnManager->GetColumns(CM_ENUM_VISIBLE, pPropKeyList, uCount)) {
+					*pPropKey = pPropKeyList[iItem];
+				}
+				delete[] pPropKeyList;
+			}
+		}
+		pColumnManager->Release();
+	}
+	if (iItem < uCount) {
+		return S_OK;
+	}
+	HWND hHeader = ListView_GetHeader(m_hwndLV);
+	if (hHeader) {
+		UINT nHeader = Header_GetItemCount(hHeader);
+		if (nHeader) {
+			int *piOrderArray = new int[nHeader];
+			ListView_GetColumnOrderArray(m_hwndLV, nHeader, piOrderArray);
+			iItem = piOrderArray[iItem];
+			delete[] piOrderArray;
+		}
+	}
 	HDITEM hdi;
 	WCHAR pszText[MAX_COLUMN_NAME_LEN];
 	hdi.cchTextMax = MAX_COLUMN_NAME_LEN;
 	hdi.pszText = pszText;
 	hdi.mask = HDI_TEXT;
-	Header_GetItem(hHeader, iItem, &hdi);
+	Header_GetItem(ListView_GetHeader(m_hwndLV), iItem, &hdi);
 	return teGetPropertyKeyFromName(m_pSF2, pszText, pPropKey);
 }
 
-BOOL CteShellBrowser::SetColumnsProperties(HWND hHeader, int iItem)
+BOOL CteShellBrowser::SetColumnsProperties(int iItem)
 {
 	if (iItem == m_nLabelIndex) {
 		SetLabelProperties();
@@ -6823,18 +6840,15 @@ BOOL CteShellBrowser::SetColumnsProperties(HWND hHeader, int iItem)
 		if (!SetFolderSizeProperties()) {
 			return TRUE;
 		}
-	}
-#ifdef USE_VS_COLUMNSREPLACE
-	else {
+	} else {
 		IDispatch *pdisp = (size_t)iItem < m_ppColumns.size() ? m_ppColumns[iItem] : NULL;
 		if (pdisp) {
 			PROPERTYKEY propKey;
-			if SUCCEEDED(GetPropertyKey(hHeader, iItem, &propKey)) {
+			if SUCCEEDED(GetPropertyKey(iItem, &propKey)) {
 				SetReplaceColumnsProperties(pdisp, propKey);
 			}
 		}
 	}
-#endif
 	return FALSE;
 }
 
@@ -7014,7 +7028,7 @@ VOID CteShellBrowser::ReplaceColumnsEx(IDispatch *pdisp, LVITEM *plvi, LPITEMIDL
 			} else {
 				if (!bResult && plvi->cchTextMax >= 0) {
 					PROPERTYKEY propKey;
-					if SUCCEEDED(GetPropertyKey(ListView_GetHeader(m_hwndLV), plvi->iSubItem, &propKey)) {
+					if SUCCEEDED(GetPropertyKey(plvi->iSubItem, &propKey)) {
 						VARIANT v;
 						VariantInit(&v);
 						m_pSF2->GetDetailsEx(pidl, &propKey, &v);
@@ -7031,7 +7045,6 @@ VOID CteShellBrowser::ReplaceColumnsEx(IDispatch *pdisp, LVITEM *plvi, LPITEMIDL
 	}
 }
 
-#ifdef USE_VS_COLUMNSREPLACE
 VOID CteShellBrowser::SetReplaceColumnsProperties(IDispatch *pdisp, PROPERTYKEY propKey)
 {
 	PROPVARIANT propVar;
@@ -7096,7 +7109,6 @@ VOID CteShellBrowser::SetReplaceColumnsProperties(IDispatch *pdisp, PROPERTYKEY 
 		pFV2->Release();
 	}
 }
-#endif
 
 VOID CteShellBrowser::GetViewModeAndIconSize(BOOL bGetIconSize)
 {
@@ -7787,6 +7799,13 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 				param[SB_DoFunc] = 1;
 				if (pFolderItem || wFlags & (SBSP_PARENT | SBSP_NAVIGATEBACK | SBSP_NAVIGATEFORWARD | SBSP_RELATIVE)) {
+					CteFolderItem *pid;
+					teQueryFolderItem(pFolderItem, &pid);
+					if (pid->m_dwUnavailable && pid->m_v.vt == VT_BSTR) {
+						pid->Clear();
+						pid->m_dwUnavailable = NULL;
+					}
+					pid->Release();
 					Navigate3(pFolderItem, wFlags, param, &pSB, pFolderItems);
 					SafeRelease(&pFolderItem);
 				}
@@ -8509,7 +8528,36 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			teSetLong(pVarResult, hr);
 			return S_OK;
-
+#ifdef USE_VIEWPROPERTY
+		case TE_METHOD + 0xf284://ViewProperty
+			if (m_pShellView && nArg >= 1 && pDispParams->rgvarg[nArg - 1].vt == VT_BSTR) {
+				PROPERTYKEY propKey;
+				if SUCCEEDED(teGetPropertyKeyFromName(m_pSF2, pDispParams->rgvarg[nArg - 1].bstrVal, &propKey)) {
+					IFolderView2 *pFV2;
+					if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2))) {
+						LPITEMIDLIST pidl = NULL;
+						if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
+							LPCITEMIDLIST pidlLast = ILFindLastID(pidl);
+							PROPVARIANT propVar;
+							PropVariantInit(&propVar);
+							if (nArg >= 2) {
+								_VariantToPropVariant(&pDispParams->rgvarg[nArg - 2], &propVar);
+								pFV2->SetViewProperty(pidlLast, propKey, propVar);
+								PropVariantClear(&propVar);
+							}
+							if (pVarResult) {
+								pFV2->GetViewProperty(pidlLast, propKey, &propVar);
+								_PropVariantToVariant(&propVar, pVarResult);
+								PropVariantClear(&propVar);
+							}
+							teILFreeClear(&pidl);
+						}
+						pFV2->Release();
+					}
+				}
+			}
+			return S_OK;
+#endif
 		case TE_METHOD + 0xf300://Notify
 			if (nArg >= 2) {
 				long lEvent = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
@@ -8830,6 +8878,36 @@ STDMETHODIMP CteShellBrowser::SelectedItems(FolderItems **ppid)
 	return Items(g_param[TE_ViewOrder] ? SVGIO_SELECTION | SVGIO_FLAG_VIEWORDER : SVGIO_SELECTION, ppid);
 }
 
+VOID CteShellBrowser::ExItems(CteFolderItems *pFolderItems, IFolderView *pFV, int nCount, UINT uItem)
+{
+	BOOL bResultsFolder = ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER]);
+	if (uItem & SVGIO_SELECTION) {
+		if (m_hwndLV) {
+			int nIndex = -1, nFocus = -1;
+			if ((uItem & SVGIO_FLAG_VIEWORDER) == 0) {
+				nFocus = ListView_GetNextItem(m_hwndLV, -1, LVNI_FOCUSED);
+				if (ListView_GetItemState(m_hwndLV, nFocus, LVIS_SELECTED) & LVIS_SELECTED) {
+					AddPathEx(pFolderItems, pFV, nFocus, bResultsFolder);
+				}
+			}
+			while ((nIndex = ListView_GetNextItem(m_hwndLV, nIndex, LVNI_SELECTED)) >= 0) {
+				if (nIndex != nFocus) {
+					AddPathEx(pFolderItems, pFV, nIndex, bResultsFolder);
+				}
+			}
+		} else {
+			int i;
+			if SUCCEEDED(pFV->GetFocusedItem(&i)) {
+				AddPathEx(pFolderItems, pFV, i, bResultsFolder);
+			}
+		}
+	} else {
+		for (int i = 0; i < nCount; ++i) {
+			AddPathEx(pFolderItems, pFV, i, bResultsFolder);
+		}
+	}
+}
+
 HRESULT CteShellBrowser::Items(UINT uItem, FolderItems **ppid)
 {
 	if (uItem & SVGIO_SELECTION) {
@@ -8851,37 +8929,17 @@ HRESULT CteShellBrowser::Items(UINT uItem, FolderItems **ppid)
 	}
 	FolderItems *pItems = NULL;
 	IDataObject *pDataObj = NULL;
-	if (m_pShellView) {
-		int nCount = ListView_GetSelectedCount(m_hwndLV);
+	IFolderView *pFV = NULL;
+	int nCount = GetFolderViewAndItemCount(&pFV, uItem);
+	if (pFV) {
 		if (nCount || !m_hwndLV || (uItem & SVGIO_TYPE_MASK) != SVGIO_SELECTION) {
 #ifdef _2000XP
 			if (!g_bUpperVista && nCount > 1) {
 				BOOL bResultsFolder = ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER]);
 				if (bResultsFolder || (uItem & (SVGIO_TYPE_MASK | SVGIO_FLAG_VIEWORDER)) == (SVGIO_SELECTION | SVGIO_FLAG_VIEWORDER)) {
 					CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL);
-					IShellFolderView *pSFV;
-					if SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pSFV))) {
-						if (uItem & SVGIO_SELECTION) {
-							int nIndex = -1, nFocus = -1;
-							if ((uItem & SVGIO_FLAG_VIEWORDER) == 0) {
-								nFocus = ListView_GetNextItem(m_hwndLV, -1, LVNI_FOCUSED);
-								AddPathXP(pFolderItems, pSFV, nFocus, bResultsFolder);
-							}
-							while ((nIndex = ListView_GetNextItem(m_hwndLV, nIndex, LVNI_SELECTED)) >= 0) {
-								if (nIndex != nFocus) {
-									AddPathXP(pFolderItems, pSFV, nIndex, bResultsFolder);
-								}
-							}
-						} else {
-							UINT uCount = 0;
-							pSFV->GetObjectCount(&uCount);
-							for (UINT u = 0; u < uCount; ++u) {
-								AddPathXP(pFolderItems, pSFV, u, bResultsFolder);
-							}
-						}
-						pSFV->Release();
-					}
-					*ppid = pFolderItems;
+					ExItems(pFolderItems, pFV, nCount, uItem);
+					pFV->Release();
 					return S_OK;
 				}
 			}
@@ -8890,6 +8948,12 @@ HRESULT CteShellBrowser::Items(UINT uItem, FolderItems **ppid)
 		}
 	}
 	CteFolderItems *pid = new CteFolderItems(pDataObj, pItems);
+	if (pFV) {
+		if (!pDataObj && !pItems && nCount) {
+			ExItems(pid, pFV, nCount, uItem);
+		}
+		pFV->Release();
+	}
 	if (m_bRegenerateItems) {
 		pid->Regenerate(TRUE);
 	}
@@ -8898,12 +8962,11 @@ HRESULT CteShellBrowser::Items(UINT uItem, FolderItems **ppid)
 	return S_OK;
 }
 
-#ifdef _2000XP
-VOID CteShellBrowser::AddPathXP(CteFolderItems *pFolderItems, IShellFolderView *pSFV, int nIndex, BOOL bResultsFolder)
+VOID CteShellBrowser::AddPathEx(CteFolderItems *pFolderItems, IFolderView *pFV, int nIndex, BOOL bResultsFolder)
 {
 	try {
 		LPITEMIDLIST pidl;
-		if SUCCEEDED(pSFV->GetObjectW(&pidl, nIndex)) {
+		if SUCCEEDED(pFV->Item(nIndex, &pidl)) {
 			VARIANT v;
 			VariantInit(&v);
 			if (bResultsFolder) {
@@ -8928,11 +8991,12 @@ VOID CteShellBrowser::AddPathXP(CteFolderItems *pFolderItems, IShellFolderView *
 	} catch (...) {
 		g_nException = 0;
 #ifdef _DEBUG
-		g_strException = L"AddPathXP";
+		g_strException = L"AddPathEx";
 #endif
 	}
 }
 
+#ifdef _2000XP
 int CteShellBrowser::PSGetColumnIndexXP(LPWSTR pszName, int *pcxChar)
 {
 	SHELLDETAILS sd;
@@ -10719,12 +10783,11 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 				SetLabelProperties();
 			} else if (IsEqualPropertyKey(pCol1[0].propkey, PKEY_TotalFileSize)) {
 				SetFolderSizeProperties();
-			}
-#ifdef USE_VS_COLUMNSREPLACE
-			else {
+			} else {
 				BSTR bs = tePSGetNameFromPropertyKeyEx(pCol1[0].propkey, 0, NULL);
 				if (bs) {
 					VARIANT v;
+					VariantInit(&v);
 					if (m_ppDispatch[SB_ColumnsReplace]) {
 						teGetProperty(m_ppDispatch[SB_ColumnsReplace], bs, &v);
 					}
@@ -10739,7 +10802,6 @@ VOID CteShellBrowser::SetSort(BSTR bs)
 					VariantClear(&v);
 				}
 			}
-#endif
 			if (!teIsSameSort(pFV2, pCol, nSortColumns)) {
 				m_nGroupByDelay += 10;
 				m_nFocusItem = -1;

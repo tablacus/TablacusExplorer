@@ -164,6 +164,7 @@ SHGDN_FORPARSINGEX = 0x80000000;
 HOME_PATH = 0;//Desktop
 TITLE = "Tablacus Explorer";
 ssfRESULTSFOLDER = 0x40;
+ssfUNAVAILABLE = 0x41;
 FILTER_IMAGE = "*.jpg;*.jpeg;*.png;*.bmp;*.gif;*.ico;data:*";
 REGEXP_IMAGE = /^data:|\.jpe?g$|\.png$|\.bmp$|\.gif$|\.ico$/i;
 

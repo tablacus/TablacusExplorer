@@ -1990,7 +1990,7 @@ InitLocation = function () {
 		document.getElementById("__MOUSEDATA").innerHTML = ar.join("");
 		document.title = await GetAddonInfo(Addon_Id).Name;
 		await ApplyLang(document);
-		const item = await GetAddonElement(Addon_Id);
+		const item = GetAddonElement(Addon_Id);
 		const Location = item.getAttribute("Location") || await param.Default;
 		for (let i = document.L.length; i--;) {
 			if (SameText(Location, document.L[i].value)) {
@@ -2030,16 +2030,7 @@ InitLocation = function () {
 		}
 		const el = document.F;
 		for (let i = el.length; i--;) {
-			const n = el[i].id || el[i].name;
-			if (n && !/=/.test(n)) {
-				let s = (/^!/.test(n) ? !item.getAttribute(n.slice(1)) : item.getAttribute(n)) || "";
-				if (n == "Key") {
-					s = await GetKeyNameG(s);
-				}
-				if (s || s === 0) {
-					SetElementValue(el[n], s);
-				}
-			}
+			GetAttribEx(item, el, el[i].id || el[i].name);
 		}
 		SetImage();
 		LoadChecked(document.F);
@@ -2137,12 +2128,21 @@ InitLocation = function () {
 	});
 }
 
-function SetAttrib(item, n, s) {
+async function SetAttrib(item, n, s) {
 	if (/^!/.test(n)) {
 		n = n.slice(1);
 		s = !s;
 	}
-	if (s) {
+	if (window.SetXmlAttr) {
+		s = await SetXmlAttr(item, n, s);
+	}
+	if (n == "TextContent") {
+		if ("string" === typeof (await item.text)) {
+			item.text = s;
+		} else {
+			item.textContent = s;
+		}
+	} else if (s) {
 		item.setAttribute(n, s);
 	} else {
 		item.removeAttribute(n);
@@ -2185,13 +2185,16 @@ function SetElementValue(o, s) {
 async function SetAttribEx(item, f, n) {
 	const s = GetElementValue(f[n]);
 	if (s != await GetAttribEx(item, f, n)) {
-		SetAttrib(item, n, s);
+		await SetAttrib(item, n, s);
 		return true;
 	}
 	return false;
 }
 
 async function GetAttribEx(item, f, n) {
+	if (!n) {
+		return;
+	}
 	let s;
 	const res = /([^=]*)=(.*)/.exec(n);
 	if (res) {
@@ -2201,7 +2204,17 @@ async function GetAttribEx(item, f, n) {
 		}
 		return;
 	}
-	s = /^!/.test(n) ? !await item.getAttribute(n.slice(1)) : await item.getAttribute(n);
+	if (n == "TextContent") {
+		s = await item.text;
+		if ("string" !== typeof s) {
+			s = item.textContent;
+		}
+	} else {
+		s = /^!/.test(n) ? !await item.getAttribute(n.slice(1)) : await item.getAttribute(n);
+	}
+	if (window.GetXmlAttr) {
+		s = await GetXmlAttr(item, n, s);
+	}
 	if (s || s === 0) {
 		if (n == "Key") {
 			s = await GetKeyName(s);

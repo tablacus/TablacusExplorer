@@ -324,11 +324,12 @@ public:
 	VOID GetFocusedIndex(int *piItem);
 	VOID SetFolderFlags(BOOL bGetIconSize);
 	VOID GetViewModeAndIconSize(BOOL bGetIconSize);
+	VOID ExItems(CteFolderItems *pFolderItems, IFolderView *pFV, int nCount, UINT uItem);
 	HRESULT Items(UINT uItem, FolderItems **ppid);
 	HRESULT SelectItemEx(LPITEMIDLIST pidl, int dwFlags);
 	VOID InitFolderSize();
-	HRESULT GetPropertyKey(HWND hHeader, int iItem, PROPERTYKEY *pPropKey);
-	BOOL SetColumnsProperties(HWND hHeader, int iItem);
+	HRESULT GetPropertyKey(int iItem, PROPERTYKEY *pPropKey);
+	BOOL SetColumnsProperties(int iItem);
 	VOID SetSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch);
 	VOID SetFolderSize(IShellFolder2 *pSF2, LPCITEMIDLIST pidl, LPWSTR szText, int cch);
 	BOOL SetFolderSizeProperties();
@@ -336,9 +337,7 @@ public:
 	VOID SetLabelProperties();
 	BOOL ReplaceColumns(IDispatch *pdisp, LVITEM *plvi, LPITEMIDLIST pidl);
 	VOID ReplaceColumnsEx(IDispatch *pdisp, LVITEM *plvi, LPITEMIDLIST *ppidl);
-#ifdef USE_VS_COLUMNSREPLACE
 	VOID SetReplaceColumnsProperties(IDispatch *pdisp, PROPERTYKEY propKey);
-#endif
 	HRESULT PropertyKeyFromName(BSTR bs, PROPERTYKEY *pkey);
 	FOLDERVIEWOPTIONS teGetFolderViewOptions(LPITEMIDLIST pidl, UINT uViewMode);
 	VOID OnNavigationComplete2();
@@ -367,8 +366,8 @@ public:
 #if defined(USE_SHELLBROWSER) || defined(_2000XP)
 	HRESULT NavigateSB(IShellView *pPreviousView, FolderItem *pPrevious);
 #endif
+	VOID AddPathEx(CteFolderItems *pFolderItems, IFolderView *pFV, int nIndex, BOOL bResultsFolder);
 #ifdef _2000XP
-	VOID AddPathXP(CteFolderItems *pFolderItems, IShellFolderView *pSFV, int nIndex, BOOL bResultsFolder);
 	int PSGetColumnIndexXP(LPWSTR pszName, int *pcxChar);
 	BSTR PSGetNameXP(LPWSTR pszName, int nFormat);
 	VOID AddColumnDataXP(LPWSTR pszColumns, LPWSTR pszName, int nWidth, int nFormat);
