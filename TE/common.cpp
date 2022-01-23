@@ -3704,17 +3704,7 @@ BOOL teILIsEqual(IUnknown *punk1, IUnknown *punk2)
 		teGetPath(&bs2, punk2);
 		bResult = teStrCmpI(bs1, bs2) == 0;
 		if (bResult) {
-			DWORD dwUnavailable = 0;
-			CteFolderItem *pid;
-			if SUCCEEDED(punk1->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
-				dwUnavailable = pid->m_dwUnavailable;
-				pid->Release();
-			}
-			if SUCCEEDED(punk2->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
-				dwUnavailable |= pid->m_dwUnavailable;
-				pid->Release();
-			}
-			if (!dwUnavailable) {
+			if (!teGetUnavailable(punk1) && !teGetUnavailable(punk2)) {
 				LPITEMIDLIST pidl1 = NULL;
 				if (teGetIDListFromObject(punk1, &pidl1)) {
 					LPITEMIDLIST pidl2 = NULL;
@@ -3738,7 +3728,19 @@ VOID teGetPath(BSTR *pbs, IUnknown *punk)
 	FolderItem *pid;
 	if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pid))) {
 		pid->get_Path(pbs);
+		pid->Release();
 	}
+}
+
+DWORD teGetUnavailable(IUnknown *punk)
+{
+	DWORD dwUnavailable = 0;
+	CteFolderItem *pid;
+	if SUCCEEDED(punk->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
+		dwUnavailable = pid->m_dwUnavailable;
+		pid->Release();
+	}
+	return dwUnavailable;
 }
 
 IDispatch* teAddLegacySupport(IDispatch *pdisp)

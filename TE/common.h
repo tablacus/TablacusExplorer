@@ -921,4 +921,4 @@ HRESULT DragSub(int nFunc, PVOID pObj, CteFolderItems *pDragItems, PDWORD pgrfKe
 HRESULT DragLeaveSub(PVOID pObj, CteFolderItems **ppDragItems);
 BOOL GetBoolFromVariant(VARIANT *pv);
 BOOL teIsClan(HWND hwndRoot, HWND hwnd);
-
+DWORD teGetUnavailable(IUnknown *punk);

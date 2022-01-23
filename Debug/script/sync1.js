@@ -1579,7 +1579,7 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 		return E_NOTIMPL;
 	}
 	let hr = RunEvent2("BeforeNavigate", Ctrl, fs, wFlags, Prev);
-	if (hr == S_OK && !Ctrl.FolderItem.Unavailable && IsUseExplorer(Ctrl.FolderItem)) {
+	if (hr == S_OK && IsUseExplorer(Ctrl.FolderItem)) {
 		setTimeout(OpenInExplorer, 99, Ctrl.FolderItem);
 		return E_FAIL;
 	}
@@ -2690,6 +2690,15 @@ te.OnVisibleChanged = function (Ctrl) {
 	RunEvent1("VisibleChanged", Ctrl, Ctrl.Visible, Ctrl.Type, Ctrl.Id);
 }
 
+te.OnColumnClick = function (Ctrl, iItem) {
+	const hr = RunEvent3("ColumnClick", Ctrl, iItem);
+	if (isFinite(hr)) {
+		return hr;
+	}
+	const cColumns = api.CommandLineToArgv(Ctrl.Columns(1));
+	return SetSortColumn(Ctrl, cColumns[iItem * 2]);
+}
+
 ShowStatusText = function (Ctrl, Text, iPart, tm) {
 	if (!Ctrl) {
 		return;
@@ -2739,10 +2748,6 @@ g_.event.iconsizechanged = function (Ctrl) {
 
 g_.event.itemclick = function (Ctrl, Item, HitTest, Flags) {
 	return RunEvent3("ItemClick", Ctrl, Item, HitTest, Flags);
-}
-
-g_.event.columnclick = function (Ctrl, iItem) {
-	return RunEvent3("ColumnClick", Ctrl, iItem);
 }
 
 g_.event.tooltip = function (Ctrl, Index, hwnd) {
@@ -3272,7 +3277,7 @@ AddEvent("BeginNavigate", function (Ctrl) {
 });
 
 AddEvent("UseExplorer", function (pid) {
-	if (pid && pid.Path && !/^ftp:|^https?:/i.test(pid.Path) && !api.GetAttributesOf(pid.Alt || pid, SFGAO_FILESYSTEM | SFGAO_FILESYSANCESTOR | SFGAO_STORAGEANCESTOR | SFGAO_NONENUMERATED | SFGAO_DROPTARGET) && !api.ILIsEqual(pid, ssfUNAVAILABLE) && !api.ILIsParent(1, pid, false) && !IsSearchPath(pid)) {
+	if (pid && pid.Path && !/^ftp:|^https?:/i.test(pid.Path) && !pid.Unavailable && !api.GetAttributesOf(pid.Alt || pid, SFGAO_FILESYSTEM | SFGAO_FILESYSANCESTOR | SFGAO_STORAGEANCESTOR | SFGAO_NONENUMERATED | SFGAO_DROPTARGET) && !api.ILIsParent(1, pid, false) && !IsSearchPath(pid)) {
 		return true;
 	}
 });

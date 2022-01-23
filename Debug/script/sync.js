@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20220121 ? te.Version : 20220121;
+		return te.Version < 20220123 ? te.Version : 20220123;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1023,6 +1023,20 @@ RemoveCommand = function (hMenu, ContextMenu, strDelete) {
 			if (api.GetMenuItemInfo(hMenu, i, true, mii)) {
 				if (api.PathMatchSpec(ContextMenu.GetCommandString(mii.wID - ContextMenu.idCmdFirst, GCS_VERB), strDelete)) {
 					api.DeleteMenu(hMenu, i, MF_BYPOSITION);
+				}
+			}
+		}
+	}
+}
+
+FindMenuByCommand = function (hMenu, ContextMenu, strFind) {
+	if (ContextMenu) {
+		const mii = api.Memory("MENUITEMINFO");
+		mii.fMask = MIIM_ID;
+		for (let i = api.GetMenuItemCount(hMenu); i-- > 0;) {
+			if (api.GetMenuItemInfo(hMenu, i, true, mii)) {
+				if (api.PathMatchSpec(ContextMenu.GetCommandString(mii.wID - ContextMenu.idCmdFirst, GCS_VERB), strFind)) {
+					return i;
 				}
 			}
 		}
@@ -2443,8 +2457,25 @@ ExecMenu4 = function (Ctrl, Name, pt, hMenu, arContextMenu, nVerb, FV) {
 					g_.NewFolderTV = Ctrl;
 					g_.NewFolderTime = new Date().getTime() + 500;
 				}
-			} else if (sVerb == "rename" && FolderView) {
-				FV.SelectItem(FolderView.GetFocusedItem, SVSI_EDIT);
+			} else if (FolderView) {
+				if (sVerb == "rename") {
+					FolderView.SelectItem(FolderView.GetFocusedItem, SVSI_EDIT);
+				} else if (sVerb == "sortascending") {
+					FolderView.SortColumn = FolderView.GetSortColumn(1).replace(/^-/, "");
+					return S_OK;
+				} else if (sVerb == "sortdescending") {
+					FolderView.SortColumn = "-" + FolderView.GetSortColumn(1).replace(/^-/, "");
+					return S_OK;
+				} else if (!sVerb && WINVER >= 0x600) {
+					const nArrange = FindMenuByCommand(hMenu, ContextMenu, "arrange");
+					if (nArrange) {
+						const hArrange = api.GetSubMenu(hMenu, nArrange);
+						const s = api.GetMenuString(hArrange, nVerb, MF_BYCOMMAND);
+						if (s && s == api.PSGetDisplayName(s, 0)) {
+							return SetSortColumn(FolderView, api.PSGetDisplayName(s, 1));
+						}
+					}
+				}
 			}
 			if (ContextMenu.InvokeCommand(0, te.hwnd, nVerb - ContextMenu.idCmdFirst, null, null, SW_SHOWNORMAL, 0, 0) == S_OK) {
 				api.DestroyMenu(hMenu);
@@ -2598,6 +2629,19 @@ GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arCon
 			break;
 	}
 	return ContextMenu;
+}
+
+SetSortColumn = function (FV, s) {
+	if (/date/i.test(s)) {
+		const res = /^(\-?)(.*)$/.exec(FV.GetSortColumn(1));
+		if (res[2] != s || !res[1]) {
+			s = "-" + s;
+		}
+	} else if (FV.GetSortColumn(1) == s) {
+		s = "-" + s;
+	}
+	FV.SortColumn = s;
+	return S_OK;
 }
 
 MenuDbInit = function (hMenu, oMenu, oMenu2) {

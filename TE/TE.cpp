@@ -1544,10 +1544,11 @@ BOOL GetFolderItemFromFolderItems(FolderItem **ppFolderItem, FolderItems *pFolde
 {
 	VARIANT v;
 	teSetLong(&v, nIndex);
-	if (pFolderItems->Item(v, ppFolderItem) == S_OK) {
-		return TRUE;
+	if (pFolderItems->Item(v, ppFolderItem) != S_OK) {
+		teSetSZ(&v, PATH_BLANK);
+		*ppFolderItem = new CteFolderItem(&v);
+		VariantClear(&v);
 	}
-	GetFolderItemFromIDList(ppFolderItem, g_pidls[CSIDL_DESKTOP]);
 	return TRUE;
 }
 
@@ -1937,11 +1938,7 @@ static void threadAddItems(void *args)
 						if SUCCEEDED(pItems->Item(v, &pItem)) {
 							BOOL bAdd = TRUE;
 							if (!pAddItems->bDeleted) {
-								CteFolderItem *pid;
-								if SUCCEEDED(pItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
-									bAdd = !pid->m_dwUnavailable;
-									pid->Release();
-								}
+								bAdd = !teGetUnavailable(pItem);
 							}
 							if (bAdd) {
 								VariantClear(&pAddItems->pv[1]);
@@ -5843,10 +5840,11 @@ BOOL CteShellBrowser::Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItem
 	CteFolderItem *pid = NULL;
 	if (pFolderItem) {
 		if SUCCEEDED(pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
-			if (pid->m_dwUnavailable || (!pid->m_pidl && pid->m_v.vt == VT_BSTR && !pid->GetAlt())) {
+			if ((!pid->m_pidl && pid->m_v.vt == VT_BSTR && !pid->GetAlt()) ||
+				(pid->m_dwUnavailable && (GetTickCount() - pid->m_dwUnavailable > 500))) {
 				if ((m_pShellView && pid->m_dwUnavailable) ||
 					tePathMatchSpec(pid->m_v.bstrVal, L"*.lnk") ||
-					(tePathIsNetworkPath(pid->m_v.bstrVal) && tePathIsDirectory(pid->m_v.bstrVal, 100, 3) != S_OK)) {
+					tePathIsNetworkPath(pid->m_v.bstrVal)) {
 					if (m_nUnload || g_nLockUpdate <= 1) {
 						Navigate1Ex(pid->m_v.bstrVal, pFolderItems, wFlags, pPrevious, nErrorHandling);
 					} else {
@@ -6262,6 +6260,10 @@ VOID CteShellBrowser::GetFocusedItem(LPITEMIDLIST *ppidl)
 VOID CteShellBrowser::SaveFocusedItemToHistory()
 {
 	if (m_uLogIndex < m_ppLog.size()) {
+		if (m_pFolderItem != m_ppLog[m_uLogIndex]) {
+			m_ppLog[m_uLogIndex]->Release();
+			m_pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&m_ppLog[m_uLogIndex]);
+		}
 		GetFocusedItem(&m_ppLog[m_uLogIndex]->m_pidlFocused);
 	}
 }
@@ -7800,12 +7802,13 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				param[SB_DoFunc] = 1;
 				if (pFolderItem || wFlags & (SBSP_PARENT | SBSP_NAVIGATEBACK | SBSP_NAVIGATEFORWARD | SBSP_RELATIVE)) {
 					CteFolderItem *pid;
-					teQueryFolderItem(pFolderItem, &pid);
-					if (pid->m_dwUnavailable && pid->m_v.vt == VT_BSTR) {
-						pid->Clear();
-						pid->m_dwUnavailable = NULL;
+					if SUCCEEDED(pFolderItem->QueryInterface(g_ClsIdFI, (LPVOID *)&pid)) {
+						if (pid->m_dwUnavailable && pid->m_v.vt == VT_BSTR) {
+							pid->Clear();
+							pid->m_dwUnavailable = NULL;
+						}
+						pid->Release();
 					}
-					pid->Release();
 					Navigate3(pFolderItem, wFlags, param, &pSB, pFolderItems);
 					SafeRelease(&pFolderItem);
 				}
@@ -7822,6 +7825,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			//History
 			if (dispIdMember == TE_PROPERTY + 0xf00B) {
 				if (pVarResult) {
+					SaveFocusedItemToHistory();
 					CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL);
 					VARIANT v;
 					for (size_t i = 1; i <= m_ppLog.size(); ++i) {
@@ -9821,6 +9825,9 @@ VOID CteShellBrowser::SetViewModeAndIconSize(BOOL bSetIconSize)
 			FOLDERVIEWMODE uViewMode;
 			int iImageSize;
 			if (FAILED(pFV2->GetViewModeAndIconSize(&uViewMode, &iImageSize)) || uViewMode != m_param[SB_ViewMode] || iImageSize != m_param[SB_IconSize]) {
+				if (iImageSize != m_param[SB_IconSize] && uViewMode == m_param[SB_ViewMode] && !m_pFolderItem->m_pidlFocused) {
+					GetFocusedItem(&m_pFolderItem->m_pidlFocused);
+				}
 				pFV2->SetViewModeAndIconSize(static_cast<FOLDERVIEWMODE>(m_param[SB_ViewMode]), m_param[SB_IconSize]);
 			}
 			pFV2->Release();
