@@ -1468,6 +1468,26 @@ IncludeObject = function (FV, Item) {
 EnableDragDrop = function () {
 }
 
+GetDropTargetItem = function (Ctrl, hList, pt) {
+	const Dest = Ctrl.HitTest(pt);
+	if (Dest) {
+		if (hList) {
+			if (api.SendMessage(hList, LVM_GETITEMSTATE, Ctrl.HitTest(pt, LVHT_ONITEM), LVIS_DROPHILITED)) {
+				return Dest;
+			}
+			return Ctrl.FolderItem;
+		}
+		if (!fso.FolderExists(Dest.Path)) {
+			if (api.DropTarget(Dest)) {
+				return;
+			}
+			return Ctrl.FolderItem;
+		}
+		return Dest;
+	}
+	return Ctrl.FolderItem;
+}
+
 SetFolderViewData = function (FV, FVD) {
 	if (FV && FVD) {
 		const t = FV.Type;

@@ -1268,36 +1268,36 @@ HRESULT teILFolderExists(LPITEMIDLIST pidl)
 	if FAILED(hr) {
 		return hr & MAXWORD;
 	}
-	SFGAOF sfAttr = SFGAO_FOLDER | SFGAO_FILESYSTEM;
-	if FAILED(pSF->GetAttributesOf(1, &pidlPart, &sfAttr)) {
-		sfAttr = 0;
-	}
-	hr = sfAttr & SFGAO_FILESYSTEM ? E_FAIL : S_FALSE;
-	if ((sfAttr & SFGAO_FOLDER) && FAILED(hr)) {
-		IShellFolder *pSF1;
-		hr = pSF->BindToObject(pidlPart, NULL, IID_PPV_ARGS(&pSF1));
-		if SUCCEEDED(hr) {
-			IEnumIDList *peidl = NULL;
-			hr = pSF1->EnumObjects(NULL, SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN | SHCONTF_INCLUDESUPERHIDDEN | SHCONTF_NAVIGATION_ENUM, &peidl);
-			if (peidl) {
-				LPITEMIDLIST pidlPart = NULL;
-				hr = peidl->Next(1, &pidlPart, NULL);
-				if (hr == S_FALSE) {
-					hr = S_OK;
-				}
-				teCoTaskMemFree(pidlPart);
-				peidl->Release();
+	IShellFolder *pSF1;
+	hr = pSF->BindToObject(pidlPart, NULL, IID_PPV_ARGS(&pSF1));
+	if SUCCEEDED(hr) {
+		IEnumIDList *peidl = NULL;
+		hr = pSF1->EnumObjects(NULL, SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN | SHCONTF_INCLUDESUPERHIDDEN | SHCONTF_NAVIGATION_ENUM, &peidl);
+		if (peidl) {
+			LPITEMIDLIST pidlPart = NULL;
+			hr = peidl->Next(1, &pidlPart, NULL);
+			if (hr == S_FALSE) {
+				hr = S_OK;
 			}
-			if (hr == E_INVALID_PASSWORD || hr == E_CANCELLED || E_LOGON_FAILURE) {
-				hr &= MAXWORD;
-			}
-			pSF1->Release();
+			teCoTaskMemFree(pidlPart);
+			peidl->Release();
+		}
+		if (hr == E_INVALID_PASSWORD || hr == E_CANCELLED || hr == E_LOGON_FAILURE) {
+			hr &= MAXWORD;
+		}
+		pSF1->Release();
+	} else {
+		SFGAOF sfAttr = SFGAO_FILESYSTEM;
+		if FAILED(pSF->GetAttributesOf(1, &pidlPart, &sfAttr)) {
+			sfAttr = 0;
+		}
+		if (!(sfAttr & SFGAO_FILESYSTEM)) {
+			hr = S_FALSE;
 		}
 	}
 	pSF->Release();
 	return hr;
 }
-
 
 HRESULT tePathIsDirectory2(LPWSTR pszPath, int iUseFS)
 {
@@ -1313,7 +1313,7 @@ HRESULT tePathIsDirectory2(LPWSTR pszPath, int iUseFS)
 			}
 		}
 	}
-	LPITEMIDLIST pidl = iUseFS ? teILCreateFromPathEx(pszPath) : teILCreateFromPath(pszPath);
+	LPITEMIDLIST pidl = (iUseFS & 1) ? teILCreateFromPathEx(pszPath) : teILCreateFromPath(pszPath);
 	if (pidl) {
 		HRESULT hr = teILFolderExists(pidl);
 		teCoTaskMemFree(pidl);
