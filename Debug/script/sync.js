@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20220124 ? te.Version : 20220124;
+		return te.Version < 20220125 ? te.Version : 20220125;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -2632,7 +2632,7 @@ GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arCon
 }
 
 SetSortColumn = function (FV, s) {
-	if (/date/i.test(s)) {
+	if (/date|size/i.test(s)) {
 		const res = /^(\-?)(.*)$/.exec(FV.GetSortColumn(1));
 		if (res[2] != s || !res[1]) {
 			s = "-" + s;

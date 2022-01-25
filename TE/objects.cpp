@@ -2720,7 +2720,7 @@ CteWICBitmap* CteWICBitmap::GetBitmapObj()
 	return HasImage() ? this : NULL;
 }
 
-VOID CteWICBitmap::GetFrameFromStream(IStream *pStream, UINT uFrame, BOOL bInit)
+VOID CteWICBitmap::GetFrameFromStream(IStream *pStream, UINT uFrame, BOOL bKeepStream)
 {
 	m_uFrame = uFrame;
 	LARGE_INTEGER liOffset;
@@ -2743,10 +2743,12 @@ VOID CteWICBitmap::GetFrameFromStream(IStream *pStream, UINT uFrame, BOOL bInit)
 				pFrameDecode->GetMetadataQueryReader(&m_ppMetadataQueryReader[1]);
 				SafeRelease(&pFrameDecode);
 			}
-			if (m_uFrameCount > 1 && bInit) {
-				if (m_pStream = SHCreateMemStream(NULL, NULL)) {
-					teCopyStream(pStream, m_pStream);
-					pDecoder->GetContainerFormat(&m_guidSrc);
+			if (!m_pStream && m_ppMetadataQueryReader[1]) {
+				if (bKeepStream || m_uFrameCount > 1 || g_dwMainThreadId != GetCurrentThreadId()) {
+					if (m_pStream = ::SHCreateMemStream(NULL, NULL)) {
+						teCopyStream(pStream, m_pStream);
+						pDecoder->GetContainerFormat(&m_guidSrc);
+					}
 				}
 			}
 		}
@@ -2754,13 +2756,13 @@ VOID CteWICBitmap::GetFrameFromStream(IStream *pStream, UINT uFrame, BOOL bInit)
 	}
 }
 
-VOID CteWICBitmap::FromStreamRelease(IStream **ppStream, LPWSTR lpfn, BOOL bExtend, int cx)
+VOID CteWICBitmap::FromStreamRelease(IStream **ppStream, LPWSTR lpfn, BOOL bKeepStream, int cx)
 {
 	SafeRelease(&m_pStream);
 	m_uFrameCount = 1;
 	LARGE_INTEGER liOffset;
 	liOffset.QuadPart = 0;
-	GetFrameFromStream(*ppStream, 0, TRUE);
+	GetFrameFromStream(*ppStream, 0, bKeepStream);
 	if (!HasImage()) {
 		HRESULT hr = E_FAIL;
 		try {
@@ -2798,7 +2800,7 @@ HRESULT CteWICBitmap::GetArchive(LPWSTR lpfn, int cx)
 				LPFNGetArchive lpfnGetArchive = (LPFNGetArchive)g_ppGetArchive[i];
 				hr = lpfnGetArchive(bsArcPath, bsItem, &pStreamOut, NULL);
 				if (hr == S_OK) {
-					FromStreamRelease(&pStreamOut, bsItem, NULL, cx);
+					FromStreamRelease(&pStreamOut, bsItem, FALSE, cx);
 					break;
 				}
 			}
@@ -2847,11 +2849,17 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pStream))) {
 						LPWSTR lpfn = NULL;
 						int cx = 0;
-						if (dispIdMember == TE_METHOD + 5 && nArg >= 1) {
-							lpfn = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]);
-							cx = (nArg >= 2) ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]) : 0;
+						BOOL bKeepStream = FALSE;
+						if (nArg >= 1) {
+							if (dispIdMember == TE_METHOD + 5) {//FromStream
+								lpfn = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]);
+								cx = (nArg >= 2) ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 2]) : 0;
+							}
+							if (dispIdMember == TE_METHOD + 9) {//FromSource
+								bKeepStream = GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]);
+							}
 						}
-						FromStreamRelease(&pStream, lpfn, TRUE, cx);
+						FromStreamRelease(&pStream, lpfn, bKeepStream, cx);
 						teSetObject(pVarResult, GetBitmapObj());
 						return S_OK;
 					}
@@ -2912,7 +2920,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 							CryptStringToBinary(lpBase64, dwLen, CRYPT_STRING_BASE64, (BYTE *)bs, &dwData, NULL, NULL);
 							IStream *pStream = SHCreateMemStream((BYTE *)bs, dwData);
 							::SysFreeString(bs);
-							FromStreamRelease(&pStream, lpfn, TRUE, cx);
+							FromStreamRelease(&pStream, lpfn, FALSE, cx);
 						}
 					}
 				}

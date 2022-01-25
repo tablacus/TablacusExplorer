@@ -4,10 +4,16 @@ try {
 		var image = api.CreateObject("WICBitmap");
 		image.OnGetAlt = o.OnGetAlt;
 		if (image.FromFile(o.path, o.cx)) {
+			if (!o.meta) {
+				var r = image.GetFrameMetadata("/app1/ifd/{ushort=274}");
+				if (r > 1) {
+					image.RotateFlip([0, 0, 8, 2, 10, 11, 1, 9, 3][r]);
+				}
+			}
 			if (o.cx) {
 				image = GetThumbnail(image, o.cx, o.f);
 			}
-			o.out = MainWindow.api.CreateObject("WICBitmap").FromSource(image);
+			o.out = MainWindow.api.CreateObject("WICBitmap").FromSource(image, o.meta);
 			api.Invoke(o.onload || o.callback, o);
 		} else if (o.onerror) {
 			api.Invoke(o.onerror, o);
