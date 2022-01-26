@@ -5,6 +5,14 @@ Sync.AboutBlank = {
 
 	IsHandle: function (Ctrl) {
 		return SameText("string" === typeof Ctrl ? Ctrl : api.GetDisplayNameOf(Ctrl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING), "about:blank");
+	},
+
+	ProcessMenu: function (Ctrl, hMenu, nPos, Selected, item, ContextMenu) {
+		const FV = GetFolderView(Ctrl);
+		if (Sync.AboutBlank.IsHandle(FV)) {
+			RemoveCommand(hMenu, ContextMenu, "delete;rename");
+		}
+		return nPos;
 	}
 }
 
@@ -36,12 +44,9 @@ AddEvent("GetIconImage", function (Ctrl, clBk, bSimple) {
 	}
 });
 
-AddEvent("Context", function (Ctrl, hMenu, nPos, Selected, item, ContextMenu) {
-	if (Sync.AboutBlank.IsHandle(Ctrl)) {
-		RemoveCommand(hMenu, ContextMenu, "delete;rename");
-	}
-	return nPos;
-});
+AddEvent("Context", Sync.ProcessMenu);
+
+AddEvent("File", Sync.ProcessMenu);
 
 AddEvent("Command", function (Ctrl, hwnd, msg, wParam, lParam) {
 	if (Ctrl.Type == CTRL_SB || Ctrl.Type == CTRL_EB) {
@@ -61,3 +66,12 @@ AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, 
 		}
 	}
 }, true);
+
+AddEvent("BeginLabelEdit", function (Ctrl, Name) {
+	if (Ctrl.Type <= CTRL_EB) {
+		if (Sync.AboutBlank.IsHandle(Ctrl)) {
+			return 1;
+		}
+	}
+});
+

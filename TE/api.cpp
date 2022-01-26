@@ -3737,10 +3737,7 @@ VOID teApiTrackPopupMenuEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 			}
 		}
 	}
-	g_hMenuKeyHook = SetWindowsHookEx(WH_KEYBOARD, (HOOKPROC)MenuKeyProc, NULL, g_dwMainThreadId);
-#ifdef _DEBUG
-	//	g_hMenuGMHook = SetWindowsHookEx(WH_DEBUG, (HOOKPROC)MenuGMProc, NULL, g_dwMainThreadId);
-#endif
+	g_hMenuKeyHook = ::SetWindowsHookEx(WH_KEYBOARD, (HOOKPROC)MenuKeyProc, NULL, g_dwMainThreadId);
 	try {
 		teSetLong(pVarResult, TrackPopupMenuEx(param[0].hmenu, param[1].uintVal, param[2].intVal, param[3].intVal,
 			param[4].hwnd, param[5].lptpmparams));
@@ -3750,10 +3747,8 @@ VOID teApiTrackPopupMenuEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 		g_strException = L"TrackPopupMenuEx";
 #endif
 	}
-#ifdef _DEBUG
-	//	UnhookWindowsHookEx(g_hMenuGMHook);
-#endif
-	UnhookWindowsHookEx(g_hMenuKeyHook);
+	::UnhookWindowsHookEx(g_hMenuKeyHook);
+	g_hMenuKeyHook = NULL;
 	SafeRelease(&g_pCM);
 }
 

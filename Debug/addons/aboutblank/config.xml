@@ -1,9 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <TablacusExplorer>
   <General>
-    <Version>1.02</Version>
-    <MinVersion>2021.7.4</MinVersion>
-    <pubDate>Tue, 17 Aug 2021 00:00:00 GMT</pubDate>
+    <Version>1.03</Version>
+    <MinVersion>2022.1.25</MinVersion>
+    <pubDate>Wed, 26 Jan 2022 00:00:00 GMT</pubDate>
     <Level>2</Level>
     <Creator>Gaku</Creator>
     <URL>https://tablacus.github.io/TablacusExplorerAddons/</URL>
@@ -15,9 +14,11 @@
   </en>
   <fr>
     <Name>Page blanche</Name>
-    <Description>Page blanche</Description>
   </fr>
   <ja>
     <Name>空白ページ</Name>
   </ja>
+  <zh>
+    <Name>起始分頁</Name>
+  </zh>
 </TablacusExplorer>

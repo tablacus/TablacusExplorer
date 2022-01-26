@@ -2926,11 +2926,6 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				}
 				if (!HasImage()) {
 					IStream *pStream = NULL;
-#ifdef _DEBUG
-					::OutputDebugStringA("WICBitmap.FromFile: ");
-					::OutputDebugString(lpfn);
-					::OutputDebugStringA("\n");
-#endif
 					if FAILED(SHCreateStreamOnFileEx(lpfn, STGM_READ | STGM_SHARE_DENY_NONE, FILE_ATTRIBUTE_ARCHIVE, FALSE, NULL, &pStream)) {
 						if (pidl) {
 							IShellFolder *pSF;

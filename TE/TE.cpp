@@ -132,7 +132,7 @@ ULONG_PTR g_Token;
 HHOOK	g_hHook;
 HHOOK	g_hMouseHook;
 HHOOK	g_hMessageHook;
-HHOOK	g_hMenuKeyHook;
+HHOOK	g_hMenuKeyHook = NULL;
 std::unordered_map<DWORD, HHOOK> g_umCBTHook;
 HBRUSH	g_hbrDarkBackground;
 HMENU	g_hMenu = NULL;
@@ -160,6 +160,7 @@ DWORD   g_dwCookieJS = 0;
 DWORD	g_dwTickKey;
 DWORD	g_dwFreeLibrary = 0;
 DWORD	g_dwTickMount = 0;
+DWORD	g_dwTickWheel;
 long	g_nProcKey	   = 0;
 long	g_nProcMouse   = 0;
 long	g_nProcFV      = 0;
@@ -2325,6 +2326,9 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 		if (nCode >= 0 && g_x == MAXINT) {
 			if (nCode == HC_ACTION) {
 				g_dwTickKey = 0;
+				if (g_hMenuKeyHook && ::GetTickCount() - g_dwTickWheel < 500) {
+					return 1;
+				}
 				if (!g_nDropState) {
 					if (g_bDragging) {
 						if (wParam == WM_LBUTTONUP || wParam == WM_RBUTTONUP) {
@@ -4611,6 +4615,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	// Hook
 	g_hHook = SetWindowsHookEx(WH_CALLWNDPROC, (HOOKPROC)HookProc, NULL, g_dwMainThreadId);
 	g_hMouseHook = SetWindowsHookEx(WH_MOUSE, (HOOKPROC)MouseProc, NULL, g_dwMainThreadId);
+	RAWINPUTDEVICE rid;
+	rid.usUsagePage = 0x01;
+	rid.usUsage = 0x02;
+	rid.dwFlags = RIDEV_INPUTSINK;
+	rid.hwndTarget = g_hwndMain;
+	::RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));
 #ifdef _DEBUG
 	DWORD dwThreadId = GetCurrentThreadId();
 	auto itr = g_umCBTHook.find(dwThreadId);
@@ -5314,6 +5324,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			case WM_COMMAND:
 				if (teDoCommand(g_pTE, hWnd, message, wParam, lParam) == S_OK) {
 					return 1;
+				}
+				break;
+			case WM_INPUT:
+				if (g_hMenuKeyHook) {
+					HRAWINPUT hRawInput = (HRAWINPUT)lParam;
+					UINT dwSize = 0;
+					::GetRawInputData(hRawInput, RID_INPUT, NULL, &dwSize, sizeof(RAWINPUTHEADER));
+					char *buf = new char[dwSize];
+					::GetRawInputData(hRawInput, RID_INPUT, buf, &dwSize, sizeof(RAWINPUTHEADER));
+					RAWINPUT *pInput = (RAWINPUT*)buf;
+					if (pInput->header.dwType == RIM_TYPEMOUSE) {
+						if (pInput->data.mouse.usButtonFlags & RI_MOUSE_WHEEL) {
+							HWND hwndMenu = ::FindWindowA("#32768", NULL);
+							if (hwndMenu) {
+								BYTE key = (((short)pInput->data.mouse.usButtonData) < 0) ? VK_DOWN : VK_UP;
+								::PostMessage(hwndMenu, WM_KEYDOWN, key, 0);
+								::PostMessage(hwndMenu, WM_KEYUP, key, 0);
+								g_dwTickWheel = ::GetTickCount();
+							}
+						}
+					}
+					delete[] buf;
 				}
 				break;
 #ifdef	_2000XP
@@ -9763,23 +9795,26 @@ HRESULT CteShellBrowser::GetShellFolder2(LPITEMIDLIST *ppidl)
 {
 	HRESULT hr = E_FAIL;
 	IShellFolder *pSF = NULL;
-	GetShellFolder(&pSF, *ppidl);
-	if (g_param[TE_LibraryFilter] && pSF && teCompareSFClass(pSF, &CLSID_LibraryFolder)) {//The library cannot be filtered, so convert it to an actual folder.
-		BSTR bs;
-		teGetDisplayNameFromIDList(&bs, *ppidl, SHGDN_FORPARSING);
-		if (teIsFileSystem(bs)) {
-			LPITEMIDLIST pidl2 = teILCreateFromPath(bs);
-			if (pidl2) {
-				IShellFolder *pSF1;
-				if (GetShellFolder(&pSF1, pidl2)) {
-					teILCloneReplace(ppidl, pidl2);
-					SafeRelease(&pSF);
-					pSF = pSF1;
+
+	if (!ILIsParent(g_pidls[CSIDL_INTERNET], *ppidl, TRUE)) {
+		GetShellFolder(&pSF, *ppidl);
+		if (g_param[TE_LibraryFilter] && pSF && teCompareSFClass(pSF, &CLSID_LibraryFolder)) {//The library cannot be filtered, so convert it to an actual folder.
+			BSTR bs;
+			teGetDisplayNameFromIDList(&bs, *ppidl, SHGDN_FORPARSING);
+			if (teIsFileSystem(bs)) {
+				LPITEMIDLIST pidl2 = teILCreateFromPath(bs);
+				if (pidl2) {
+					IShellFolder *pSF1;
+					if (GetShellFolder(&pSF1, pidl2)) {
+						teILCloneReplace(ppidl, pidl2);
+						SafeRelease(&pSF);
+						pSF = pSF1;
+					}
+					teILFreeClear(&pidl2);
 				}
-				teILFreeClear(&pidl2);
 			}
+			::SysFreeString(bs);
 		}
-		::SysFreeString(bs);
 	}
 	SafeRelease(&m_pSF2);
 	if (pSF) {
