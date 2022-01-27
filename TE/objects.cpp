@@ -2742,6 +2742,20 @@ VOID CteWICBitmap::GetFrameFromStream(IStream *pStream, UINT uFrame, BOOL bKeepS
 				SafeRelease(&m_ppMetadataQueryReader[1]);
 				pFrameDecode->GetMetadataQueryReader(&m_ppMetadataQueryReader[1]);
 				SafeRelease(&pFrameDecode);
+				if (m_ppMetadataQueryReader[1]) {
+					PROPVARIANT propVar;
+					PropVariantInit(&propVar);
+					if SUCCEEDED(m_ppMetadataQueryReader[1]->GetMetadataByName(L"/app1/ifd/{ushort=274}", &propVar)) {
+						VARIANT v;
+						_PropVariantToVariant(&propVar, &v);
+						PropVariantClear(&propVar);
+						int i = GetIntFromVariantClear(&v);
+						if (i > 1 && i < 9) {
+							int r[] = { 0, 0, 8, 2, 10, 11, 1, 9, 3 };
+							RotateFlip(r[i], FALSE);
+						}
+					}
+				}
 			}
 			if (!m_pStream && m_ppMetadataQueryReader[1]) {
 				if (bKeepStream || m_uFrameCount > 1 || g_dwMainThreadId != GetCurrentThreadId()) {
@@ -2815,6 +2829,21 @@ HRESULT CteWICBitmap::GetArchive(LPWSTR lpfn, int cx)
 	teSysFreeString(&bsArcPath);
 	teSysFreeString(&bsItem);
 	return hr;
+}
+
+VOID CteWICBitmap::RotateFlip(int n, BOOL bClearMeta)
+{
+	IWICBitmapFlipRotator *pFlipRotator;
+	if SUCCEEDED(m_pWICFactory->CreateBitmapFlipRotator(&pFlipRotator)) {
+		if SUCCEEDED(pFlipRotator->Initialize(m_pImage, static_cast<WICBitmapTransformOptions>(n))) {
+			IWICBitmap *pIBitmap;
+			if SUCCEEDED(m_pWICFactory->CreateBitmapFromSource(pFlipRotator, WICBitmapCacheOnDemand, &pIBitmap)) {
+				ClearImage(bClearMeta);
+				m_pImage = pIBitmap;
+			}
+		}
+		SafeRelease(&pFlipRotator);
+	}
 }
 
 STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult, EXCEPINFO *pExcepInfo, UINT *puArgErr)
@@ -3313,17 +3342,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 			
 		case TE_METHOD + 130://RotateFlip
 			if (nArg >= 0) {
-				IWICBitmapFlipRotator *pFlipRotator;
-				if SUCCEEDED(m_pWICFactory->CreateBitmapFlipRotator(&pFlipRotator)) {
-					if SUCCEEDED(pFlipRotator->Initialize(m_pImage, static_cast<WICBitmapTransformOptions>(GetIntFromVariant(&pDispParams->rgvarg[nArg])))) {
-						IWICBitmap *pIBitmap;
-						if SUCCEEDED(m_pWICFactory->CreateBitmapFromSource(pFlipRotator, WICBitmapCacheOnDemand, &pIBitmap)) {
-							ClearImage(TRUE);
-							m_pImage = pIBitmap;
-						}
-					}
-					SafeRelease(&pFlipRotator);
-				}
+				RotateFlip(GetIntFromVariant(&pDispParams->rgvarg[nArg]), nArg >= 1 ? !GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) : TRUE);
 			}
 			return S_OK;
 			

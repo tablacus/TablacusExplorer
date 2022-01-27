@@ -5342,6 +5342,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 								::PostMessage(hwndMenu, WM_KEYDOWN, key, 0);
 								::PostMessage(hwndMenu, WM_KEYUP, key, 0);
 								g_dwTickWheel = ::GetTickCount();
+								/*
+								IUIAutomationElement *pElement;
+								if SUCCEEDED(g_pAutomation->GetFocusedElement(&pElement)) {
+									IUIAutomationScrollPattern *pScroll = NULL;
+									pElement->GetCurrentPatternAs(UIA_ScrollPatternId, IID_PPV_ARGS(&pScroll));
+								}
+								//*/
 							}
 						}
 					}
@@ -9013,10 +9020,12 @@ VOID CteShellBrowser::AddPathEx(CteFolderItems *pFolderItems, IFolderView *pFV, 
 			VariantInit(&v);
 			LPITEMIDLIST pidlFull = ILCombine(m_pidl, pidl);
 			if (bResultsFolder) {
-				if SUCCEEDED(teGetDisplayNameFromIDList(&v.bstrVal, pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)) {
+				if (SUCCEEDED(teGetDisplayNameFromIDList(&v.bstrVal, pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)) ||
+					SUCCEEDED(teGetDisplayNameBSTR(m_pSF2, pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING, &v.bstrVal))) {
 					v.vt = VT_BSTR;
 				}
-			} else {
+			}
+			if (v.vt == VT_EMPTY) {
 				FolderItem *pid;
 				if (GetFolderItemFromIDList(&pid, pidlFull)) {
 					teSetObject(&v, pid);
@@ -9796,25 +9805,23 @@ HRESULT CteShellBrowser::GetShellFolder2(LPITEMIDLIST *ppidl)
 	HRESULT hr = E_FAIL;
 	IShellFolder *pSF = NULL;
 
-	if (!ILIsParent(g_pidls[CSIDL_INTERNET], *ppidl, TRUE)) {
-		GetShellFolder(&pSF, *ppidl);
-		if (g_param[TE_LibraryFilter] && pSF && teCompareSFClass(pSF, &CLSID_LibraryFolder)) {//The library cannot be filtered, so convert it to an actual folder.
-			BSTR bs;
-			teGetDisplayNameFromIDList(&bs, *ppidl, SHGDN_FORPARSING);
-			if (teIsFileSystem(bs)) {
-				LPITEMIDLIST pidl2 = teILCreateFromPath(bs);
-				if (pidl2) {
-					IShellFolder *pSF1;
-					if (GetShellFolder(&pSF1, pidl2)) {
-						teILCloneReplace(ppidl, pidl2);
-						SafeRelease(&pSF);
-						pSF = pSF1;
-					}
-					teILFreeClear(&pidl2);
+	GetShellFolder(&pSF, *ppidl);
+	if (g_param[TE_LibraryFilter] && pSF && teCompareSFClass(pSF, &CLSID_LibraryFolder)) {//The library cannot be filtered, so convert it to an actual folder.
+		BSTR bs;
+		teGetDisplayNameFromIDList(&bs, *ppidl, SHGDN_FORPARSING);
+		if (teIsFileSystem(bs)) {
+			LPITEMIDLIST pidl2 = teILCreateFromPath(bs);
+			if (pidl2) {
+				IShellFolder *pSF1;
+				if (GetShellFolder(&pSF1, pidl2)) {
+					teILCloneReplace(ppidl, pidl2);
+					SafeRelease(&pSF);
+					pSF = pSF1;
 				}
+				teILFreeClear(&pidl2);
 			}
-			::SysFreeString(bs);
 		}
+		::SysFreeString(bs);
 	}
 	SafeRelease(&m_pSF2);
 	if (pSF) {

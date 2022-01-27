@@ -44,9 +44,9 @@ AddEvent("GetIconImage", function (Ctrl, clBk, bSimple) {
 	}
 });
 
-AddEvent("Context", Sync.ProcessMenu);
+AddEvent("Context", Sync.AboutBlank.ProcessMenu);
 
-AddEvent("File", Sync.ProcessMenu);
+AddEvent("File", Sync.AboutBlank.ProcessMenu);
 
 AddEvent("Command", function (Ctrl, hwnd, msg, wParam, lParam) {
 	if (Ctrl.Type == CTRL_SB || Ctrl.Type == CTRL_EB) {

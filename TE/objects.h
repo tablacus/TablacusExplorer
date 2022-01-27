@@ -235,6 +235,7 @@ public:
 	HRESULT CreateBitmapFromHBITMAP(HBITMAP hBitmap, HPALETTE hPalette, int nAlpha);
 	HRESULT CreateStream(IStream *pStream, CLSID encoderClsid, LONG lQuality);
 	//	HRESULT CreateBMPStream(IStream *pStream, LPWSTR szMime);
+	VOID RotateFlip(int n, BOOL bClearMeta);
 private:
 	IWICBitmap *m_pImage;
 	IWICImagingFactory *m_pWICFactory;
