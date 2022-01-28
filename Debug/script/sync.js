@@ -1349,7 +1349,8 @@ MakeImgSrc = function (src, index, bSrc, h, clBk) {
 		if (window.chrome || api.ILCreateFromPath(src).ExtendedProperty("System.Photo.Orientation") < 2) {
 			return src;
 		}
-		return api.CreateObject("WICBitmap").FromFile(src).DataURI("image/png");
+		const image = api.CreateObject("WICBitmap").FromFile(src);
+		return image ? image.DataURI("image/png") : src;
 	}
 	let res = /^icon:(.+)/i.exec(src);
 	if (res) {
