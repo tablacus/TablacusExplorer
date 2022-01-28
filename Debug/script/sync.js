@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20220127 ? te.Version : 20220127;
+		return te.Version < 20220128 ? te.Version : 20220128;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1346,7 +1346,10 @@ MakeImgSrc = function (src, index, bSrc, h, clBk) {
 	let fn;
 	src = ExtractPath(te, src);
 	if (!/^file:/i.test(src) && REGEXP_IMAGE.test(src)) {
-		return src;
+		if (window.chrome || api.ILCreateFromPath(src).ExtendedProperty("System.Photo.Orientation") < 2) {
+			return src;
+		}
+		return api.CreateObject("WICBitmap").FromFile(src).DataURI("image/png");
 	}
 	let res = /^icon:(.+)/i.exec(src);
 	if (res) {

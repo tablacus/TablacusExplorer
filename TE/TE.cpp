@@ -6258,13 +6258,15 @@ HRESULT CteShellBrowser::OnBeforeNavigate(FolderItem *pPrevious, UINT wFlags)
 		DWORD nViewMode = m_param[SB_ViewMode];
 		m_param[SB_ViewMode] = FVM_AUTO;
 		m_bInit = TRUE;
-		try {
-			Invoke4(g_pOnFunc[TE_OnBeforeNavigate], &vResult, 4, pv);
-		} catch (...) {
-			g_nException = 0;
+		if (!m_pFolderItem->m_dwUnavailable) {
+			try {
+				Invoke4(g_pOnFunc[TE_OnBeforeNavigate], &vResult, 4, pv);
+			} catch (...) {
+				g_nException = 0;
 #ifdef _DEBUG
-			g_strException = L"OnBeforeNavigate";
+				g_strException = L"OnBeforeNavigate";
 #endif
+			}
 		}
 		m_bInit = FALSE;
 		hr = GetIntFromVariantClear(&vResult);
@@ -9999,6 +10001,9 @@ BOOL CteShellBrowser::HasFilter()
 
 VOID CteShellBrowser::NavigateComplete(BOOL bBeginNavigate)
 {
+	if (m_pFolderItem->m_dwUnavailable) {
+		return;
+	}
 	if (!bBeginNavigate || DoFunc(TE_OnBeginNavigate, this, S_OK) != S_FALSE) {
 		BSTR bsAltSortColumn = NULL;
 		if (m_bRefreshing) {
