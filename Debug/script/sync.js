@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20220128 ? te.Version : 20220128;
+		return te.Version < 20220128 ? te.Version : 20220129;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1346,11 +1346,11 @@ MakeImgSrc = function (src, index, bSrc, h, clBk) {
 	let fn;
 	src = ExtractPath(te, src);
 	if (!/^file:/i.test(src) && REGEXP_IMAGE.test(src)) {
-		if (window.chrome || api.ILCreateFromPath(src).ExtendedProperty("System.Photo.Orientation") < 2) {
+		if (window.chrome || GetNum(api.ILCreateFromPath(src).ExtendedProperty("System.Photo.Orientation")) < 2) {
 			return src;
 		}
 		const image = api.CreateObject("WICBitmap").FromFile(src);
-		return image ? image.DataURI("image/png") : src;
+		return image ? image.DataURI(/\.jpe?g?$/i.test(src) ? "image/jpeg" : "image/png") : src;
 	}
 	let res = /^icon:(.+)/i.exec(src);
 	if (res) {
@@ -1381,7 +1381,7 @@ MakeImgSrc = function (src, index, bSrc, h, clBk) {
 	const image = MakeImgData(src, index, h, clBk);
 	if (image) {
 		if (g_.IEVer >= 8) {
-			return image.DataURI("image/png");
+			return image.DataURI(/\.jpe?g?$/i.test(src) ? "image/jpeg" : "image/png");
 		}
 		if (fn) {
 			image.Save(fn);
