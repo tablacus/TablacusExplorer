@@ -1,6 +1,6 @@
 const Addon_Id = "filterbar";
 const Default = "ToolBar2Right";
-let item = await GetAddonElement(Addon_Id);
+let item = GetAddonElement(Addon_Id);
 if (!item.getAttribute("Set")) {
 	item.setAttribute("MenuPos", -1);
 
@@ -50,7 +50,11 @@ if (window.Addon == 1) {
 			const res = await IsSearchPath(FV, true);
 			if (res || bSearch) {
 				if (!res || unescape(await res[1]) != s) {
-					FV.Search(s);
+					if (s) {
+						FV.Search(s);
+					} else {
+						CancelFilterView(FV);
+					}
 					setTimeout(function (o) {
 						WebBrowser.Focus();
 						o.focus();
