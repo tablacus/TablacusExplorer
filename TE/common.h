@@ -922,3 +922,4 @@ HRESULT DragLeaveSub(PVOID pObj, CteFolderItems **ppDragItems);
 BOOL GetBoolFromVariant(VARIANT *pv);
 BOOL teIsClan(HWND hwndRoot, HWND hwnd);
 DWORD teGetUnavailable(IUnknown *punk);
+BOOL teResolveLink(LPITEMIDLIST *ppidl);

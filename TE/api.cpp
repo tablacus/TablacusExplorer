@@ -2624,6 +2624,11 @@ VOID teApiMemory(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVa
 	teSetObjectRelease(pVarResult, pMem);
 }
 
+VOID teApiMenuItemFromPoint(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetLong(pVarResult, MenuItemFromPoint(param[0].hwnd, param[1].hmenu, *param[2].lppoint));
+}
+
 VOID teApiMessageBox(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	if (nArg >= 4) {
@@ -3738,6 +3743,12 @@ VOID teApiTrackPopupMenuEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 		}
 	}
 	g_hMenuKeyHook = ::SetWindowsHookEx(WH_KEYBOARD, (HOOKPROC)MenuKeyProc, NULL, g_dwMainThreadId);
+	RAWINPUTDEVICE rid[1];
+	rid[0].usUsagePage = 0x01;
+	rid[0].usUsage = 0x02;
+	rid[0].dwFlags = 0;
+	rid[0].hwndTarget = g_hwndMain;
+	::RegisterRawInputDevices(rid, _countof(rid), sizeof(RAWINPUTDEVICE));
 	try {
 		teSetLong(pVarResult, TrackPopupMenuEx(param[0].hmenu, param[1].uintVal, param[2].intVal, param[3].intVal,
 			param[4].hwnd, param[5].lptpmparams));
@@ -3747,6 +3758,9 @@ VOID teApiTrackPopupMenuEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 		g_strException = L"TrackPopupMenuEx";
 #endif
 	}
+	rid[0].dwFlags = RIDEV_REMOVE;
+	rid[0].hwndTarget = NULL;
+	::RegisterRawInputDevices(rid, _countof(rid), sizeof(RAWINPUTDEVICE));
 	::UnhookWindowsHookEx(g_hMenuKeyHook);
 	g_hMenuKeyHook = NULL;
 	SafeRelease(&g_pCM);
@@ -4183,6 +4197,7 @@ TEDispatchApi dispAPI[] = {
 	{ 1, -1, -1, -1, "LowPart", teApiLowPart },
 	{ 2, -1, -1, -1, "MapVirtualKey", teApiMapVirtualKey },
 	{ 1, -1, -1, -1, "Memory", teApiMemory },
+	{ 3, -1, -1, -1, "MenuItemFromPoint", teApiMenuItemFromPoint },
 	{ 4,  1,  2, -1, "MessageBox", teApiMessageBox },
 	{ 2, -1, -1, -1, "MonitorFromPoint", teApiMonitorFromPoint },
 	{ 2, -1, -1, -1, "MonitorFromRect", teApiMonitorFromRect },

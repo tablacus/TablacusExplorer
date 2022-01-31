@@ -1354,6 +1354,23 @@ AddFavorite = function (FolderItem) {
 	}
 }
 
+SetFilterView = function (FV, s) {
+	if (SameText(s, FV.FilterView)) {
+		return;
+	}
+	FV.FilterView = s || null;
+	if (IsSearchPath(FV)) {
+		return;
+	}
+	if (s) {
+		FV.Refresh();
+		return;
+	}
+	setTimeout(function () {
+		FV.Refresh();
+	}, 99);
+}
+
 CancelFilterView = function (FV) {
 	if (IsSearchPath(FV)) {
 		FV.Navigate(null, SBSP_PARENT);

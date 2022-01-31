@@ -1315,6 +1315,9 @@ HRESULT tePathIsDirectory2(LPWSTR pszPath, int iUseFS)
 	}
 	LPITEMIDLIST pidl = (iUseFS & 1) ? teILCreateFromPathEx(pszPath) : teILCreateFromPath(pszPath);
 	if (pidl) {
+		if (iUseFS & 4) {
+			teResolveLink(&pidl);
+		}
 		HRESULT hr = teILFolderExists(pidl);
 		teCoTaskMemFree(pidl);
 		return hr;
@@ -3865,6 +3868,34 @@ BOOL teIsClan(HWND hwndRoot, HWND hwnd)
 		}
 	}
 	return TRUE;
+}
+
+BOOL teResolveLink(LPITEMIDLIST *ppidl)
+{
+	BOOL bResult = FALSE;
+	IShellFolder2 *pSF2;
+	LPCITEMIDLIST pidlPart;
+	if SUCCEEDED(SHBindToParent(*ppidl, IID_PPV_ARGS(&pSF2), &pidlPart)) {
+		SFGAOF sfAttr = SFGAO_LINK | SFGAO_FOLDER;
+		if SUCCEEDED(pSF2->GetAttributesOf(1, &pidlPart, &sfAttr)) {
+			if ((sfAttr & (SFGAO_LINK | SFGAO_FOLDER)) == SFGAO_LINK) {
+				IShellLink *pSL;
+				if SUCCEEDED(pSF2->GetUIObjectOf(NULL, 1, &pidlPart, IID_IShellLink, NULL, (LPVOID *)&pSL)) {
+					if (pSL->Resolve(NULL, SLR_NO_UI) == S_OK) {
+						LPITEMIDLIST pidl;
+						if (pSL->GetIDList(&pidl) == S_OK) {
+							teCoTaskMemFree(*ppidl);
+							*ppidl = pidl;
+							bResult = TRUE;
+						}
+					}
+					pSL->Release();
+				}
+			}
+		}
+		pSF2->Release();
+	}
+	return bResult;
 }
 
 #endif

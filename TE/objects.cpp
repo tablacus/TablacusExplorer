@@ -2935,6 +2935,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				if (pDispParams->rgvarg[nArg].vt == VT_BSTR) {
 					lpfn = pDispParams->rgvarg[nArg].bstrVal;
 				} else if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
+					teResolveLink(&pidl);
 					if SUCCEEDED(teGetDisplayNameFromIDList(&bsfn, pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)) {
 						lpfn = bsfn;
 					}

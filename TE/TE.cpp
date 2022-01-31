@@ -190,6 +190,7 @@ extern BOOL	g_bDarkMode;
 extern std::unordered_map<HWND, HWND> g_umDlgProc;
 BOOL	g_bDragIcon = TRUE;
 COLORREF g_clrBackground = GetSysColor(COLOR_WINDOW);
+SHORT	g_nDelta = 0;
 #ifdef _2000XP
 std::vector <IUnknown *> g_pRelease;
 int		g_nCharWidth = 7;
@@ -4615,12 +4616,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	// Hook
 	g_hHook = SetWindowsHookEx(WH_CALLWNDPROC, (HOOKPROC)HookProc, NULL, g_dwMainThreadId);
 	g_hMouseHook = SetWindowsHookEx(WH_MOUSE, (HOOKPROC)MouseProc, NULL, g_dwMainThreadId);
-	RAWINPUTDEVICE rid;
-	rid.usUsagePage = 0x01;
-	rid.usUsage = 0x02;
-	rid.dwFlags = RIDEV_INPUTSINK;
-	rid.hwndTarget = g_hwndMain;
-	::RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));
 #ifdef _DEBUG
 	DWORD dwThreadId = GetCurrentThreadId();
 	auto itr = g_umCBTHook.find(dwThreadId);
@@ -4925,34 +4920,6 @@ VOID teDelayRelease(PVOID ppObj)
 	}
 }
 #endif
-
-BOOL teResolveLink(LPITEMIDLIST *ppidl)
-{
-	BOOL bResult = FALSE;
-	IShellFolder2 *pSF2;
-	LPCITEMIDLIST pidlPart;
-	if SUCCEEDED(SHBindToParent(*ppidl, IID_PPV_ARGS(&pSF2), &pidlPart)) {
-		SFGAOF sfAttr = SFGAO_LINK | SFGAO_FOLDER;
-		if SUCCEEDED(pSF2->GetAttributesOf(1, &pidlPart, &sfAttr)) {
-			if ((sfAttr & (SFGAO_LINK | SFGAO_FOLDER)) == SFGAO_LINK) {
-				IShellLink *pSL;
-				if SUCCEEDED(pSF2->GetUIObjectOf(NULL, 1, &pidlPart, IID_IShellLink, NULL, (LPVOID *)&pSL)) {
-					if (pSL->Resolve(NULL, SLR_NO_UI) == S_OK) {
-						LPITEMIDLIST pidl;
-						if (pSL->GetIDList(&pidl) == S_OK) {
-							teCoTaskMemFree(*ppidl);
-							*ppidl = pidl;
-							bResult = TRUE;
-						}
-					}
-					pSL->Release();
-				}
-			}
-		}
-		pSF2->Release();
-	}
-	return bResult;
-}
 
 static void threadParseDisplayName(void *args)
 {
@@ -5327,7 +5294,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				}
 				break;
 			case WM_INPUT:
-				if (g_hMenuKeyHook) {
+				if (g_hMenuKeyHook && GET_RAWINPUT_CODE_WPARAM(wParam) == RIM_INPUT) {
 					HRAWINPUT hRawInput = (HRAWINPUT)lParam;
 					UINT dwSize = 0;
 					::GetRawInputData(hRawInput, RID_INPUT, NULL, &dwSize, sizeof(RAWINPUTHEADER));
@@ -5338,18 +5305,48 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 						if (pInput->data.mouse.usButtonFlags & RI_MOUSE_WHEEL) {
 							HWND hwndMenu = ::FindWindowA("#32768", NULL);
 							if (hwndMenu) {
-								BYTE key = (((short)pInput->data.mouse.usButtonData) < 0) ? VK_DOWN : VK_UP;
+								DWORD dwTick = ::GetTickCount();
+								SHORT nDelta = (SHORT)pInput->data.mouse.usButtonData;
+								DWORD dwDiff = dwTick - g_dwTickWheel;
+								if (dwDiff > 500) {
+									g_nDelta = 0;
+								} else if (dwDiff < 32) {
+									nDelta /= 2;
+								}
+								g_nDelta += nDelta;
+								while (g_nDelta >= WHEEL_DELTA) {
+									::PostMessage(hwndMenu, WM_KEYDOWN, VK_UP, 0);
+									::PostMessage(hwndMenu, WM_KEYUP, VK_UP, 0);
+									g_nDelta -= WHEEL_DELTA;
+								}
+								while (g_nDelta <= -WHEEL_DELTA) {
+									::PostMessage(hwndMenu, WM_KEYDOWN, VK_DOWN, 0);
+									::PostMessage(hwndMenu, WM_KEYUP, VK_DOWN, 0);
+									g_nDelta += WHEEL_DELTA;
+								}
+								if (dwDiff < 32) {
+									g_nDelta += nDelta;
+								}
+								g_dwTickWheel = dwTick;
+							}
+							/*
+							keybd_event(key, 0, 0, NULL);
+							keybd_event(key, 0, KEYEVENTF_KEYUP, NULL);
+							HWND hwndMenu = ::FindWindowA("#32768", NULL);
+							if (hwndMenu) {
+							::ScrollWindow(hwndMenu, 0, (short)pInput->data.mouse.usButtonData, NULL, NULL);
+							}
+							HWND hwndMenu = ::FindWindowA("#32768", NULL);
+							if (hwndMenu) {
 								::PostMessage(hwndMenu, WM_KEYDOWN, key, 0);
 								::PostMessage(hwndMenu, WM_KEYUP, key, 0);
-								g_dwTickWheel = ::GetTickCount();
-								/*
-								IUIAutomationElement *pElement;
-								if SUCCEEDED(g_pAutomation->GetFocusedElement(&pElement)) {
-									IUIAutomationScrollPattern *pScroll = NULL;
-									pElement->GetCurrentPatternAs(UIA_ScrollPatternId, IID_PPV_ARGS(&pScroll));
-								}
-								//*/
 							}
+							IUIAutomationElement *pElement;
+							if SUCCEEDED(g_pAutomation->GetFocusedElement(&pElement)) {
+								IUIAutomationScrollPattern *pScroll = NULL;
+								pElement->GetCurrentPatternAs(UIA_ScrollPatternId, IID_PPV_ARGS(&pScroll));
+							}
+							//*/
 						}
 					}
 					delete[] buf;
@@ -5882,7 +5879,7 @@ BOOL CteShellBrowser::Navigate1(FolderItem *pFolderItem, UINT wFlags, FolderItem
 			if ((!pid->m_pidl && pid->m_v.vt == VT_BSTR && !pid->GetAlt()) ||
 				(pid->m_dwUnavailable && (GetTickCount() - pid->m_dwUnavailable > 500))) {
 				if ((m_pShellView && pid->m_dwUnavailable) ||
-					tePathMatchSpec(pid->m_v.bstrVal, L"*.lnk") ||
+					(tePathMatchSpec(pid->m_v.bstrVal, L"*.lnk") && tePathIsDirectory(pid->m_v.bstrVal, 100, 7) != S_OK) ||
 					(tePathIsNetworkPath(pid->m_v.bstrVal) && tePathIsDirectory(pid->m_v.bstrVal, 100, 3) != S_OK)) {
 					if (m_nUnload || g_nLockUpdate <= 1) {
 						Navigate1Ex(pid->m_v.bstrVal, pFolderItems, wFlags, pPrevious, nErrorHandling);

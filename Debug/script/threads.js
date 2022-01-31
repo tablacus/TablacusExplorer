@@ -7,7 +7,7 @@ try {
 			if (o.cx) {
 				image = GetThumbnail(image, o.cx, o.f);
 			}
-			o.out = MainWindow.api.CreateObject("WICBitmap").FromSource(image, o.meta);
+			o.out = o.type ? image.DataURI(o.type) : MainWindow.api.CreateObject("WICBitmap").FromSource(image, o.meta);
 			api.Invoke(o.onload || o.callback, o);
 		} else if (o.onerror) {
 			api.Invoke(o.onerror, o);

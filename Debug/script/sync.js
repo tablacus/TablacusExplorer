@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20220128 ? te.Version : 20220129;
+		return te.Version < 20220131 ? te.Version : 20220131;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1713,23 +1713,6 @@ NavigateFV = function (FV, Path, wFlags, bInputed) {
 	}
 	FV.Navigate(Path, wFlags);
 	FV.Focus();
-}
-
-SetFilterView = function (FV, s) {
-	if (SameText(s, FV.FilterView)) {
-		return;
-	}
-	FV.FilterView = s || null;
-	if (IsSearchPath(FV)) {
-		return;
-	}
-	if (s) {
-		FV.Refresh();
-		return;
-	}
-	setTimeout(function () {
-		FV.Refresh();
-	}, 99);
 }
 
 GetOpenMode = function (FV) {
