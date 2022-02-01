@@ -21,6 +21,7 @@ extern LPITEMIDLIST g_pidls[MAX_CSIDL2];
 extern std::vector<CteFolderItem *> g_ppENum;
 extern GUID		g_ClsIdFI;
 extern GUID		g_ClsIdStruct;
+extern GUID		g_clsidWBM;
 extern BSTR	g_bsClipRoot;
 extern BOOL	g_bDragging;
 extern BOOL	g_bDragIcon;
@@ -2393,6 +2394,11 @@ STDMETHODIMP CteWICBitmap::QueryInterface(REFIID riid, void **ppvObject)
 	if (m_pStream && IsEqualIID(riid, IID_IStream)) {
 		return m_pStream->QueryInterface(riid, ppvObject);
 	}
+	if (IsEqualIID(riid, g_clsidWBM)) {
+		*ppvObject = this;
+		AddRef();
+		return S_OK;
+	}
 	static const QITAB qit[] =
 	{
 		QITABENT(CteWICBitmap, IDispatch),
@@ -2605,7 +2611,7 @@ HRESULT CteWICBitmap::CreateStream(IStream *pStream, CLSID encoderClsid, LONG lQ
 	if (pStream) {
 		IWICBitmapEncoder *pEncoder;
 		if SUCCEEDED(m_pWICFactory->CreateEncoder(encoderClsid, NULL, &pEncoder)) {
-			if (lQuality == 0 && m_pStream && IsEqualGUID(encoderClsid, m_guidSrc)) {
+			if (m_pStream && (lQuality == -2 || ((lQuality == 0 || lQuality == 100) && IsEqualGUID(encoderClsid, m_guidSrc)))) {
 				teCopyStream(m_pStream, pStream);
 				hr = S_OK;
 			} else {
@@ -2618,7 +2624,7 @@ HRESULT CteWICBitmap::CreateStream(IStream *pStream, CLSID encoderClsid, LONG lQ
 				IPropertyBag2 *pPropBag;
 				hr = pEncoder->CreateNewFrame(&pFrameEncode, &pPropBag);
 				if SUCCEEDED(hr) {
-					if (lQuality) {
+					if (lQuality > 0 && lQuality <= 100) {
 						PROPBAG2 option = { 0 };
 						option.pstrName = L"ImageQuality";
 						VARIANT v;
@@ -2874,6 +2880,11 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 			if (nArg >= 0) {
 				IUnknown *punk;
 				if (FindUnknown(&pDispParams->rgvarg[nArg], &punk)) {
+					CteWICBitmap *pWBM;
+					if SUCCEEDED(punk->QueryInterface(g_clsidWBM, (PVOID *)&pWBM)) {
+						teSetObjectRelease(pVarResult, pWBM);
+						return S_OK;
+					}
 					IStream *pStream;
 					if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pStream))) {
 						LPWSTR lpfn = NULL;
@@ -2894,8 +2905,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 					}
 					IWICBitmap *pIBitmap;
 					if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pIBitmap))) {
-						int nOpt = (nArg >= 1) ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) : 2;
-						m_pWICFactory->CreateBitmapFromSource(pIBitmap, (WICBitmapCreateCacheOption)nOpt, &m_pImage);
+						m_pWICFactory->CreateBitmapFromSource(pIBitmap, WICBitmapCacheOnLoad, &m_pImage);
 						pIBitmap->Release();
 						teSetObject(pVarResult, GetBitmapObj());
 						return S_OK;
@@ -3109,7 +3119,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 			pStream = SHCreateMemStream(NULL, NULL);
 			WCHAR szMime[16];
 			if (GetEncoderClsid(vText.bstrVal, &encoderClsid, szMime)) {
-				hr = CreateStream(pStream, encoderClsid, 0);
+				hr = CreateStream(pStream, encoderClsid, nArg >= 1 ? GetIntFromVariant(&pDispParams->rgvarg[nArg - 1]) : 0);
 				//hr = CreateBMPStream(pStream, szMime);
 			}
 			if SUCCEEDED(hr) {

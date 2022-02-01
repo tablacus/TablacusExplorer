@@ -5,9 +5,20 @@ try {
 		image.OnGetAlt = o.OnGetAlt;
 		if (image.FromFile(o.path, o.cx)) {
 			if (o.cx) {
-				image = GetThumbnail(image, o.cx, o.f);
+				if (!o.anime || image.GetFrameCount() < 2) {
+					image = GetThumbnail(image, o.cx, o.f);
+				}
 			}
-			o.out = o.type ? image.DataURI(o.type) : MainWindow.api.CreateObject("WICBitmap").FromSource(image, o.meta);
+			if (o.mix) {
+				image.AlphaBlend(o.rc, o.mix, o.max || 100);
+			}
+			if ("string" === typeof o.type) {
+				o.out = image.DataURI(o.type, o.anime && o.quality != -2 && image.GetFrameCount() > 1 ? -2 : o.quality);
+			} else if ("number" === typeof o.type) {
+				o.out = image.GetHBITMAP(o.type);
+			} else {
+				o.out = MainWindow.api.CreateObject("WICBitmap").FromStream(image.GetStream("image/png", -2));
+			}
 			api.Invoke(o.onload || o.callback, o);
 		} else if (o.onerror) {
 			api.Invoke(o.onerror, o);

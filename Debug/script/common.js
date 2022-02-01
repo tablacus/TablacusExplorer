@@ -379,6 +379,16 @@ GetWinIcon = function () {
 	}
 }
 
+GetEncodeType = function (fn) {
+	if (/\.jpe?g?$|\.jfif$/i.test(fn)) {
+		return "image/jpeg";
+	}
+	if (/\.gif$/i.test(fn)) {
+		return "image/gif";
+	}
+	return "image/png";
+}
+
 EscapeJsonObj = {
 	"\\": "\\\\",
 	'"': '\\"',

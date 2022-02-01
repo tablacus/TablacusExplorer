@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20220131 ? te.Version : 20220131;
+		return te.Version < 20220201 ? te.Version : 20220201;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1350,7 +1350,7 @@ MakeImgSrc = function (src, index, bSrc, h, clBk) {
 			return src;
 		}
 		const image = api.CreateObject("WICBitmap").FromFile(src);
-		return image ? image.DataURI(/\.jpe?g?$/i.test(src) ? "image/jpeg" : "image/png") : src;
+		return image ? image.DataURI(GetEncodeType(src)) : src;
 	}
 	let res = /^icon:(.+)/i.exec(src);
 	if (res) {

@@ -96,6 +96,7 @@ GUID		g_ClsIdStruct;
 GUID		g_ClsIdSB;
 GUID		g_ClsIdTC;
 GUID		g_ClsIdFI;
+GUID		g_clsidWBM;
 IUIAutomation *g_pAutomation = NULL;
 PROPERTYID	g_PID_ItemIndex;
 
@@ -4630,6 +4631,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	CoCreateGuid(&g_ClsIdTC);
 	CoCreateGuid(&g_ClsIdStruct);
 	CoCreateGuid(&g_ClsIdFI);
+	CoCreateGuid(&g_clsidWBM);
 	// IUIAutomation
 	if FAILED(teCreateInstance(CLSID_CUIAutomation, NULL, NULL, IID_PPV_ARGS(&g_pAutomation))) {
 		g_pAutomation = NULL;
@@ -5308,9 +5310,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 								DWORD dwTick = ::GetTickCount();
 								SHORT nDelta = (SHORT)pInput->data.mouse.usButtonData;
 								DWORD dwDiff = dwTick - g_dwTickWheel;
-								if (dwDiff > 500) {
+								if (dwDiff > 200) {
 									g_nDelta = 0;
-								} else if (dwDiff < 32) {
+								} else if (dwDiff < 16) {
 									nDelta /= 2;
 								}
 								g_nDelta += nDelta;
@@ -5324,7 +5326,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 									::PostMessage(hwndMenu, WM_KEYUP, VK_DOWN, 0);
 									g_nDelta += WHEEL_DELTA;
 								}
-								if (dwDiff < 32) {
+								if (dwDiff < 16) {
 									g_nDelta += nDelta;
 								}
 								g_dwTickWheel = dwTick;
@@ -13293,17 +13295,17 @@ STDMETHODIMP CteContextMenu::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid,
 					cmi.nShow = GetIntFromVariant(&pDispParams->rgvarg[nArg - 5]);
 					cmi.dwHotKey = (DWORD)GetIntFromVariant(&pDispParams->rgvarg[nArg - 6]);
 					cmi.hIcon =(HANDLE)GetPtrFromVariant(&pDispParams->rgvarg[nArg - 7]);
-					if (cmi.lpVerb) {//#248
-						CHAR szNameA[MAX_PATH];
-						szNameA[0] = NULL;
-						if ((UINT_PTR)cmi.lpVerb <= MAXWORD) {
-							m_pContextMenu->GetCommandString((UINT_PTR)cmi.lpVerb, GCS_VERBA, NULL, szNameA, MAX_PATH);
-							if (lstrcmpiA(szNameA, "mount") == 0) {
-								g_dwTickMount = GetTickCount();
+					try {
+						if (cmi.lpVerb) {//#248
+							CHAR szNameA[MAX_PATH];
+							szNameA[0] = NULL;
+							if ((UINT_PTR)cmi.lpVerb <= MAXWORD) {
+								m_pContextMenu->GetCommandString((UINT_PTR)cmi.lpVerb, GCS_VERBA, NULL, szNameA, MAX_PATH);
+								if (lstrcmpiA(szNameA, "mount") == 0) {
+									g_dwTickMount = GetTickCount();
+								}
 							}
 						}
-					}
-					try {
 						hr = m_pContextMenu->InvokeCommand((LPCMINVOKECOMMANDINFO)&cmi);
 					} catch (...) {
 						hr = E_UNEXPECTED;
