@@ -443,7 +443,7 @@ document.addEventListener("MSFullscreenChange", function () {
 	FullscreenChanged(document.msFullscreenElement != null);
 });
 
-document.addEventListener("fullscreenchange", function () {
+document.addEventListener("webkitfullscreenchange", function () {
 	FullscreenChanged(document.fullscreenElement != null);
 });
 

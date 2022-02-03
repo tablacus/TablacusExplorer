@@ -2942,10 +2942,11 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				LPWSTR lpfn = NULL;
 				LPWSTR bsfn = NULL;
 				LPITEMIDLIST pidl = NULL;
+				BOOL bLink = FALSE;
 				if (pDispParams->rgvarg[nArg].vt == VT_BSTR) {
 					lpfn = pDispParams->rgvarg[nArg].bstrVal;
 				} else if (teGetIDListFromVariant(&pidl, &pDispParams->rgvarg[nArg])) {
-					teResolveLink(&pidl);
+					bLink = teResolveLink(&pidl);
 					if SUCCEEDED(teGetDisplayNameFromIDList(&bsfn, pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)) {
 						lpfn = bsfn;
 					}
@@ -2958,7 +2959,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 						if (CryptStringToBinary(lpBase64, dwLen, CRYPT_STRING_BASE64, NULL, &dwData, NULL, NULL) && dwData > 0) {
 							BSTR bs = ::SysAllocStringByteLen(NULL, dwData);
 							CryptStringToBinary(lpBase64, dwLen, CRYPT_STRING_BASE64, (BYTE *)bs, &dwData, NULL, NULL);
-							IStream *pStream = SHCreateMemStream((BYTE *)bs, dwData);
+							IStream *pStream = ::SHCreateMemStream((BYTE *)bs, dwData);
 							::SysFreeString(bs);
 							FromStreamRelease(&pStream, lpfn, FALSE, cx);
 						}
@@ -2966,17 +2967,22 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				}
 				if (!HasImage()) {
 					IStream *pStream = NULL;
-					if FAILED(SHCreateStreamOnFileEx(lpfn, STGM_READ | STGM_SHARE_DENY_NONE, FILE_ATTRIBUTE_ARCHIVE, FALSE, NULL, &pStream)) {
+					if (!bLink) {
+						::SHCreateStreamOnFileEx(lpfn, STGM_READ | STGM_SHARE_DENY_NONE, FILE_ATTRIBUTE_ARCHIVE, FALSE, NULL, &pStream);
+					}
+					if (!pStream) {
+						pStream = ::SHCreateMemStream(NULL, NULL);
 						if (pidl) {
 							IShellFolder *pSF;
 							LPCITEMIDLIST pidlPart;
-							if SUCCEEDED(SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &pidlPart)) {
-								pSF->BindToStorage(pidlPart, NULL, IID_PPV_ARGS(&pStream));
+							if SUCCEEDED(::SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &pidlPart)) {
+								IStream *pStream1 = NULL;
+								if SUCCEEDED(pSF->BindToStorage(pidlPart, NULL, IID_PPV_ARGS(&pStream1))) {
+									teCopyStream(pStream1, pStream);
+									pStream1->Release();
+								}
 								pSF->Release();
 							}
-						}
-						if (!pStream) {
-							pStream = SHCreateMemStream(NULL, NULL);
 						}
 					}
 					FromStreamRelease(&pStream, lpfn, FALSE, cx);

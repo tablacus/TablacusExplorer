@@ -8959,7 +8959,7 @@ HRESULT CteShellBrowser::Items(UINT uItem, FolderItems **ppid)
 		if (m_ppDispatch[SB_AltSelectedItems]) {
 			return m_ppDispatch[SB_AltSelectedItems]->QueryInterface(IID_PPV_ARGS(ppid));
 		}
-		if (m_pFolderItem->m_pidlFocused && m_pFolderItem->m_pidl) {
+		if (m_pFolderItem && m_pFolderItem->m_pidlFocused && m_pFolderItem->m_pidl) {
 			CteFolderItems *pFolderItems = new CteFolderItems(NULL, NULL);
 			VARIANT v;
 			VariantInit(&v);
@@ -9719,7 +9719,7 @@ VOID CteShellBrowser::SetTabName()
 
 STDMETHODIMP CteShellBrowser::OnNavigationComplete(PCIDLIST_ABSOLUTE pidlFolder)
 {
-	if (!teILIsFileSystemEx(pidlFolder) || teILIsSearchFolder(pidlFolder)) {
+	if (!teILIsFileSystemEx(pidlFolder)) {
 		OnNavigationComplete2();
 	}
 	if (m_bVisible && !IsWindowVisible(m_hwnd)) {
@@ -10000,7 +10000,7 @@ BOOL CteShellBrowser::HasFilter()
 
 VOID CteShellBrowser::NavigateComplete(BOOL bBeginNavigate)
 {
-	if (m_pFolderItem->m_dwUnavailable) {
+	if (!m_pFolderItem || m_pFolderItem->m_dwUnavailable) {
 		return;
 	}
 	if (!bBeginNavigate || DoFunc(TE_OnBeginNavigate, this, S_OK) != S_FALSE) {

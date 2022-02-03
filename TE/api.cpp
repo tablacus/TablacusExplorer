@@ -3842,6 +3842,18 @@ VOID teApiURLDownloadToFile(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 	if (FindUnknown(&pDispParams->rgvarg[nArg - 1], &punk)) {
 		IStream *pDst, *pSrc;
 		hr = punk->QueryInterface(IID_PPV_ARGS(&pSrc));
+		if FAILED(hr) {
+			LPITEMIDLIST pidl;
+			if (teGetIDListFromObject(punk, &pidl)) {
+				IShellFolder *pSF;
+				LPCITEMIDLIST pidlPart;
+				if SUCCEEDED(::SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &pidlPart)) {
+					hr = pSF->BindToStorage(pidlPart, NULL, IID_PPV_ARGS(&pSrc));
+					pSF->Release();
+				}
+				teILFreeClear(&pidl);
+			}
+		}
 		if SUCCEEDED(hr) {
 			hr = SHCreateStreamOnFileEx(param[2].bstrVal, STGM_WRITE | STGM_CREATE | STGM_SHARE_DENY_WRITE, FILE_ATTRIBUTE_ARCHIVE, TRUE, NULL, &pDst);
 			if SUCCEEDED(hr) {
