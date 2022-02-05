@@ -457,13 +457,25 @@ STDMETHODIMP CteFolderItem::QueryInterface(REFIID riid, void **ppvObject)
 	}
 #pragma warning( pop )
 	;
-	if (IsEqualIID(riid, g_ClsIdFI)) {
-		*ppvObject = this;
-		AddRef();
-		return S_OK;
-	}
 	HRESULT hr = QISearch(this, qit, riid, ppvObject);
 	if FAILED(hr) {
+		if (IsEqualIID(riid, g_ClsIdFI)) {
+			*ppvObject = this;
+			AddRef();
+			return S_OK;
+		}
+		if (IsEqualIID(riid, IID_IStream)) {
+			GetPidl();
+			if (m_pidl) {
+				IShellFolder *pSF;
+				LPCITEMIDLIST pidlPart;
+				if SUCCEEDED(::SHBindToParent(m_pidl, IID_PPV_ARGS(&pSF), &pidlPart)) {
+					hr = pSF->BindToStorage(pidlPart, NULL, IID_IStream, ppvObject);
+					pSF->Release();
+				}
+				return hr;
+			}
+		}
 		if (IsEqualIID(riid, IID_FolderItem2) || IsEqualIID(riid, CLSID_ShellFolderItem)) {
 			GetFolderItem();
 		}

@@ -203,11 +203,25 @@ FocusFV = function (Id) {
 	setTimeout(FocusFV1, ui_.DoubleClickTime, Id);
 }
 
-ExitFullscreen = function () {
-	if (document.msExitFullscreen) {
+ToggleFullscreen = async function () {
+	if (await ExitFullscreen()) {
+		return;
+	}
+	FullscreenChanged(true, true);
+}
+
+ExitFullscreen = async function () {
+	if (document.msFullscreenElement != null) {
 		document.msExitFullscreen();
-	} else if (document.exitFullscreen) {
-		document.exitFullscreen();
+		return true;
+	}
+	if (document.fullscreenElement != null) {
+		document.webkitCancelFullScreen();
+		return true;
+	}
+	if (await g_.Fullscreen) {
+		FullscreenChanged(false, true);
+		return true;
 	}
 }
 
@@ -440,11 +454,11 @@ if (window.chrome) {
 }
 
 document.addEventListener("MSFullscreenChange", function () {
-	FullscreenChanged(document.msFullscreenElement != null);
+	FullscreenChanged(document.msFullscreenElement != null, document.msFullscreenElement == document.body);
 });
 
 document.addEventListener("webkitfullscreenchange", function () {
-	FullscreenChanged(document.fullscreenElement != null);
+	FullscreenChanged(document.fullscreenElement != null, document.fullscreenElement == document.body);
 });
 
 Init = async function () {

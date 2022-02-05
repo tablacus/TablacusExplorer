@@ -2594,6 +2594,7 @@ VOID teApiMemory(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVa
 	if (i == 0) {
 		i = param[0].lVal;
 		if (i == 0) {
+			SafeRelease(&pStream);
 			return;
 		}
 	}
@@ -2946,6 +2947,7 @@ VOID teApiReadFile(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *p
 		IStream *pStream;
 		if (FindUnknown(&pDispParams->rgvarg[nArg], &punk) && SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pStream)))) {
 			bOK = SUCCEEDED(pStream->Read(pVarResult->bstrVal, param[1].uintVal, &dwReadByte));
+			pStream->Release();
 		} else {
 			bOK = ::ReadFile(param[0].handle, pVarResult->bstrVal, param[1].uintVal, &dwReadByte, NULL);
 		}
@@ -3154,6 +3156,7 @@ VOID teApiSetFilePointer(int nArg, teParam *param, DISPPARAMS *pDispParams, VARI
 		if SUCCEEDED(pStream->Seek(param[1].li, param[2].dword, &uli)) {
 			teSetLL(pVarResult, uli.QuadPart);
 		}
+		pStream->Release();
 	} else {
 		LARGE_INTEGER li;
 		li.HighPart = param[1].li.HighPart;
@@ -3359,6 +3362,7 @@ VOID teApiSHCreateStreamOnFileEx(int nArg, teParam *param, DISPPARAMS *pDispPara
 	IStream *pStream = NULL;
 	if (nArg >= 5) {
 		teSetLong(pVarResult, SHCreateStreamOnFileEx(param[0].lpcwstr, param[1].dword, param[2].dword, param[3].boolVal, pStream0, &pStream));
+		SafeRelease(&pStream0);
 		if (pStream) {
 			if (FindUnknown(&pDispParams->rgvarg[nArg - 5], &punk)) {
 				VARIANT v;
@@ -3372,6 +3376,7 @@ VOID teApiSHCreateStreamOnFileEx(int nArg, teParam *param, DISPPARAMS *pDispPara
 	}
 	SHCreateStreamOnFileEx(param[0].lpcwstr, param[1].dword, param[2].dword, param[3].boolVal, pStream0, &pStream);
 	teSetObjectRelease(pVarResult, new CteObject(pStream));
+	SafeRelease(&pStream0);
 	SafeRelease(&pStream);
 }
 
@@ -3842,18 +3847,6 @@ VOID teApiURLDownloadToFile(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 	if (FindUnknown(&pDispParams->rgvarg[nArg - 1], &punk)) {
 		IStream *pDst, *pSrc;
 		hr = punk->QueryInterface(IID_PPV_ARGS(&pSrc));
-		if FAILED(hr) {
-			LPITEMIDLIST pidl;
-			if (teGetIDListFromObject(punk, &pidl)) {
-				IShellFolder *pSF;
-				LPCITEMIDLIST pidlPart;
-				if SUCCEEDED(::SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &pidlPart)) {
-					hr = pSF->BindToStorage(pidlPart, NULL, IID_PPV_ARGS(&pSrc));
-					pSF->Release();
-				}
-				teILFreeClear(&pidl);
-			}
-		}
 		if SUCCEEDED(hr) {
 			hr = SHCreateStreamOnFileEx(param[2].bstrVal, STGM_WRITE | STGM_CREATE | STGM_SHARE_DENY_WRITE, FILE_ATTRIBUTE_ARCHIVE, TRUE, NULL, &pDst);
 			if SUCCEEDED(hr) {
@@ -3973,6 +3966,7 @@ VOID teApiWriteFile(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *
 		IStream *pStream;
 		if (FindUnknown(&pDispParams->rgvarg[nArg], &punk) && SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pStream)))) {
 			teSetLong(pVarResult, pStream->Write(pc, nLen, &dwWriteByte));
+			pStream->Release();
 		} else {
 			teSetBool(pVarResult, ::WriteFile(param[0].handle, pc, nLen, &dwWriteByte, NULL));
 		}
