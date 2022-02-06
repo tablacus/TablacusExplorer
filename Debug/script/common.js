@@ -155,7 +155,7 @@ GetImgTag = async function (o, h) {
 		}
 	}
 	if (o.src) {
-		const res = !(window.ui_ || te.Data).NoCssFont && /^font:([^,]*),(.+)/i.exec(await MainWindow.RunEvent4("ReplaceIcon", o.src) || o.src);
+		let res = !(window.ui_ || te.Data).NoCssFont && /^font:([^,]*),(.+)/i.exec(await MainWindow.RunEvent4("ReplaceIcon", o.src) || o.src);
 		if (res) {
 			const FontFace = res[1].replace(/\"/g, '\\"');
 			let c = res[2];
@@ -186,6 +186,17 @@ GetImgTag = async function (o, h) {
 			return ar.join("");
 		}
 		o.org = o.src;
+		if (window.chrome || g_.IEVer > 8) {
+			if (res = /(<svg)([\w\W]*?<\/svg[^>]*>)/i.exec(/\.svg$/.test(o.src) ? await ReadTextFile(o.src) : o.src)) {
+				const ar = ['<span'];
+				h = h || window.IconSize;
+				h = Number(h) ? h + "px" : EncodeSC(h);
+				ExtractAttr(o, ar, /src/i);
+				ar.push('>', res[1], ' style="max-width:' + h + ';height:' + h + '" ');
+				ar.push(res[2], '</span>');
+				return ar.join("");
+			}
+		}
 		o.src = await ImgBase64(o, 0, Number(h))
 		if (!o.draggable) {
 			o.draggable = o.ondragstart != null;
@@ -268,7 +279,7 @@ GetWinColor = async function (c) {
 }
 
 FindText = async function () {
-	if (window.chrome || ui_.IEVer < 8) {
+	if (window.chrome || g_.IEVer < 8) {
 		SetModifierKeys(0);
 		wsh.SendKeys("^f");
 	} else {

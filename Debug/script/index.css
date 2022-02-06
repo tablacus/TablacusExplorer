@@ -43,6 +43,10 @@ img.button, img.button1, img.hoverbutton, img.activebutton {
 	box-sizing: content-box;
 }
 
+svg {
+  fill: currentColor;
+}
+
 form {
 	display: inline;
 	margin: 0;
@@ -344,6 +348,10 @@ a.treebutton:hover {
 
 .nowrap {
 	white-space: nowrap;
+}
+
+.center {
+	text-align: center;
 }
 
 .right {
