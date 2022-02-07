@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20220205 ? te.Version : 20220206;
+		return te.Version < 20220205 ? te.Version : 20220207;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -591,8 +591,12 @@ IsCloud = function (Item) {
 		}
 		const res = /^([A-Z]):\\/i.exec(Item.Path);
 		if (res) {
-			const d = fso.GetDrive(res[1]);
-			return d && /Google Drive|\@gmail\.com/i.test(d.VolumeName);
+			try {
+				const d = fso.GetDrive(res[1]);
+				return d && /Google Drive|\@gmail\.com/i.test(d.VolumeName);
+			} catch (e) {
+				return true;
+			}
 		}
 	}
 	return false;
@@ -784,7 +788,7 @@ SaveConfigXML = function (filename) {
 SaveXml = function (filename) {
 	const xml = CreateXml(true);
 	const item = xml.createElement("Window");
-	if (!api.IsZoomed(te.hwnd) && !api.IsIconic(te.hwnd)) {
+	if (!g_.Fullscreen && !api.IsZoomed(te.hwnd) && !api.IsIconic(te.hwnd)) {
 		api.GetWindowRect(te.hwnd, te.Data.rcWindow);
 	}
 	item.setAttribute("Left", te.Data.rcWindow.left);

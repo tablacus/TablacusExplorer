@@ -2436,13 +2436,8 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 								}
 							}
 						}
-					} else {
-						if (wParam == SC_RESTORE || wParam == SC_MINIMIZE) {
-							InvokeUI("ExitFullscreen");
-						}
-						if (!api.IsZoomed(te.hwnd) && !api.IsIconic(te.hwnd)) {
-							api.GetWindowRect(te.hwnd, te.Data.rcWindow);
-						}
+					} else if (!g_.Fullscreen && !api.IsZoomed(te.hwnd) && !api.IsIconic(te.hwnd)) {
+						api.GetWindowRect(te.hwnd, te.Data.rcWindow);
 					}
 					break;
 				case WM_POWERBROADCAST:
@@ -2478,6 +2473,9 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 							api.SendMessage(hwnd, LVM_SETTEXTBKCOLOR, 0, GetSysColor(COLOR_WINDOW));
 						}
 					}
+					break;
+				case WM_NCLBUTTONDOWN:
+					ExitFullscreen();
 					break;
 			}
 			break;
@@ -3557,42 +3555,51 @@ AdjustAutocomplete = function (path) {
 }
 
 FullscreenChanged = function (bFullscreen, bBody) {
-	g_.Fullscreen = bFullscreen;
-	const dwStyle = api.GetWindowLongPtr(te.hwnd, GWL_STYLE);
-	if (bFullscreen) {
-		if (!bBody) {
-			const cTC = te.Ctrls(CTRL_TC, true);
-			for (let i in cTC) {
-				const TC = cTC[i];
-				g_.stack_TC.push(TC);
-				TC.Visible = false;
-			}
-		}
-		g_.FullscreenWS = dwStyle;
-		if (dwStyle & WS_CAPTION) {
-			api.SetWindowLongPtr(te.hwnd, GWL_STYLE, g_.FullscreenWS & ~WS_CAPTION);
-		}
-		api.SendMessage(te.hwnd, WM_SYSCOMMAND, SC_MAXIMIZE, 0);
-	} else {
-		while (g_.stack_TC.length) {
-			g_.stack_TC.pop().Visible = true;
-		}
-		const x = te.Data.rcWindow.left;
-		const y = te.Data.rcWindow.top;
-		const w = te.Data.rcWindow.right - x;
-		const h = te.Data.rcWindow.bottom - y;
-		if (g_.FullscreenWS != null) {
-			api.SetWindowLongPtr(te.hwnd, GWL_STYLE, g_.FullscreenWS);
-		}
-		if (w && h) {
-			api.MoveWindow(te.hwnd, x, y, w, h - 1, true);
-		}
-		api.SendMessage(te.hwnd, WM_SYSCOMMAND, SC_RESTORE, 0);
-		if (w && h) {
-			api.MoveWindow(te.hwnd, x, y, w, h, true);
+	if (bFullscreen && !bBody) {
+		const cTC = te.Ctrls(CTRL_TC, true);
+		for (let i in cTC) {
+			const TC = cTC[i];
+			g_.stack_TC.push(TC);
+			TC.Visible = false;
 		}
 	}
-	RunEvent1("FullscreenChanged", bFullscreen, bBody);
+	if (!g_.Fullscreen != !bFullscreen) {
+		let rc;
+		const dwStyle = api.GetWindowLongPtr(te.hwnd, GWL_STYLE);
+		if (bFullscreen) {
+			if (!bBody) {
+				const cTC = te.Ctrls(CTRL_TC, true);
+				for (let i in cTC) {
+					const TC = cTC[i];
+					g_.stack_TC.push(TC);
+					TC.Visible = false;
+				}
+			}
+			g_.FullscreenWS = dwStyle;
+			api.SetWindowLongPtr(te.hwnd, GWL_STYLE, g_.FullscreenWS & ~(WS_CAPTION | WS_THICKFRAME));
+			const hMonitor = api.MonitorFromRect(te.Data.rcWindow, MONITOR_DEFAULTTOPRIMARY);
+			const mi = api.Memory("MONITORINFOEX");
+			api.GetMonitorInfo(hMonitor, mi);
+			rc = mi.rcMonitor;
+		} else {
+			while (g_.stack_TC.length) {
+				g_.stack_TC.pop().Visible = true;
+			}
+			if (g_.FullscreenWS != null) {
+				api.SetWindowLongPtr(te.hwnd, GWL_STYLE, g_.FullscreenWS);
+			}
+			rc = te.Data.rcWindow;
+		}
+		const x = rc.left;
+		const y = rc.top;
+		const w = rc.right - x;
+		const h = rc.bottom - y;
+		if (w > 0 && h > 0) {
+			api.MoveWindow(te.hwnd, x, y, w, h, true);
+		}
+		RunEvent1("FullscreenChanged", bFullscreen, bBody);
+		g_.Fullscreen = bFullscreen;
+	}
 }
 
 GetAddonLocation = function (strName) {
