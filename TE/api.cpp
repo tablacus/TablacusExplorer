@@ -2651,6 +2651,11 @@ VOID teApiMonitorFromRect(int nArg, teParam *param, DISPPARAMS *pDispParams, VAR
 	teSetPtr(pVarResult, MonitorFromRect(param[0].lpcrect, param[1].dword));
 }
 
+VOID teApiMonitorFromWindow(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetPtr(pVarResult, MonitorFromWindow(param[0].hwnd, param[1].dword));
+}
+
 VOID teApimouse_event(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	mouse_event(param[0].dword, param[1].dword, param[2].dword, param[3].dword, param[4].ulong_ptr);
@@ -4207,6 +4212,7 @@ TEDispatchApi dispAPI[] = {
 	{ 4,  1,  2, -1, "MessageBox", teApiMessageBox },
 	{ 2, -1, -1, -1, "MonitorFromPoint", teApiMonitorFromPoint },
 	{ 2, -1, -1, -1, "MonitorFromRect", teApiMonitorFromRect },
+	{ 2, -1, -1, -1, "MonitorFromWindow", teApiMonitorFromWindow },
 	{ 2, -1, -1, -1, "mouse_event", teApimouse_event },
 	{ 3,  0,  1, -1, "MoveFileEx", teApiMoveFileEx },
 	{ 4, -1, -1, -1, "MoveToEx", teApiMoveToEx },

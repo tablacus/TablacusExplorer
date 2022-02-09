@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20220205 ? te.Version : 20220207;
+		return te.Version < 20220209 ? te.Version : 20220209;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1356,11 +1356,12 @@ MakeImgSrc = function (src, index, bSrc, h, clBk) {
 		const image = api.CreateObject("WICBitmap").FromFile(src);
 		return image ? image.DataURI(GetEncodeType(src)) : src;
 	}
-	let res = /^icon:(.+)/i.exec(src);
+	let res = MainWindow.g_.IconExt && /^icon:(.+)/i.exec(src);
 	if (res) {
 		const icon = res[1].split(",");
 		if (!/\\/.test(icon[0])) {
-			fn = BuildPath(te.Data.DataFolder, ["icons", icon[0].replace(/\..*/, ""), icon[1] + ".png"].join("\\"));
+			fn = BuildPath(te.Data.DataFolder, ["icons", icon[0].replace(/\..*/, ""), icon[1] + MainWindow.g_.IconExt].join("\\"));
+			api.OutputDebugString(fn + "\n");
 			if (fso.FileExists(fn)) {
 				return fn;
 			}
@@ -1415,7 +1416,7 @@ MakeImgIcon = function (src, index, h, bIcon, clBk) {
 	if (res) {
 		const icon = res[1].split(",");
 		if (!/\\/.test(icon[0])) {
-			let image = api.CreateObject("WICBitmap").FromFile(BuildPath(te.Data.DataFolder, "icons", icon[0].replace(/\..*/, ""), icon[1] + ".png"));
+			let image = MainWindow.g_.IconExt && api.CreateObject("WICBitmap").FromFile(BuildPath(te.Data.DataFolder, "icons", icon[0].replace(/\..*/, ""), icon[1] + MainWindow.g_.IconExt));
 			if (image) {
 				if (h) {
 					image = GetThumbnail(image, h, true);
@@ -1464,7 +1465,7 @@ MakeImgIcon = function (src, index, h, bIcon, clBk) {
 			if (api.StrCmpNI(src, a2[0], a2[0].length) == 0) {
 				if (a2[3]) {
 					const a3 = src.split(",");
-					const image = api.CreateObject("WICBitmap").FromFile(BuildPath(te.Data.DataFolder, "icons", a2[3], a3[3] + ".png"));
+					const image = MainWindow.g_.IconExt && api.CreateObject("WICBitmap").FromFile(BuildPath(te.Data.DataFolder, "icons", a2[3], a3[3] + MainWindow.g_.IconExt));
 					if (image) {
 						return GetThumbnail(image, a3[2], true).GetHICON();
 					}
@@ -1774,10 +1775,17 @@ IsExists = function (path, bGetWfd) {
 }
 
 GetFileList = function (path, bAttr, bSA) {
-	let r = [];
+	let filter, r = [];
+	if (/;/.test(path)) {
+		filter = GetFileName(path);
+		path = BuildPath(GetParentFolderName(path), "*");
+	}
 	const wfd = api.Memory("WIN32_FIND_DATA");
 	const hFind = api.FindFirstFile(path, wfd);
 	for (let bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = api.FindNextFile(hFind, wfd)) {
+		if (filter && !api.PathMatchSpec(wfd.cFileName, filter)) {
+			continue;
+		}
 		if (bAttr) {
 			r.push([wfd.cFileName, wfd.dwFileAttributes].join("\n"));
 		} else {
@@ -2452,18 +2460,24 @@ ExecMenu4 = function (Ctrl, Name, pt, hMenu, arContextMenu, nVerb, FV) {
 				if (sVerb == "rename") {
 					FolderView.SelectItem(FolderView.GetFocusedItem, SVSI_EDIT);
 				} else if (sVerb == "sortascending") {
-					FolderView.SortColumn = FolderView.GetSortColumn(1).replace(/^-/, "");
-					return S_OK;
+					if (!/;/.test(FolderView.SortColumns)) {
+						FolderView.SortColumn = FolderView.GetSortColumn(1).replace(/^-/, "");
+						return S_OK;
+					}
 				} else if (sVerb == "sortdescending") {
-					FolderView.SortColumn = "-" + FolderView.GetSortColumn(1).replace(/^-/, "");
-					return S_OK;
+					if (!/;/.test(FolderView.SortColumns)) {
+						FolderView.SortColumn = "-" + FolderView.GetSortColumn(1).replace(/^-/, "");
+						return S_OK;
+					}
 				} else if (!sVerb && WINVER >= 0x600) {
 					const nArrange = FindMenuByCommand(hMenu, ContextMenu, "arrange");
 					if (nArrange) {
 						const hArrange = api.GetSubMenu(hMenu, nArrange);
 						const s = api.GetMenuString(hArrange, nVerb, MF_BYCOMMAND);
 						if (s && s == api.PSGetDisplayName(s, 0)) {
-							return SetSortColumn(FolderView, api.PSGetDisplayName(s, 1));
+							if (HasCustomSort(FolderView, api.PSGetDisplayName(s, 1))) {
+								return S_OK;
+							}
 						}
 					}
 				}
@@ -2622,7 +2636,7 @@ GetBaseMenuEx = function (hMenu, nBase, FV, Selected, uCMF, Mode, SelItem, arCon
 	return ContextMenu;
 }
 
-SetSortColumn = function (FV, s) {
+HasCustomSort = function (FV, s) {
 	if (/date|size/i.test(s)) {
 		const res = /^(\-?)(.*)$/.exec(FV.GetSortColumn(1));
 		if (res[2] != s || !res[1]) {
@@ -2631,8 +2645,10 @@ SetSortColumn = function (FV, s) {
 	} else if (FV.GetSortColumn(1) == s) {
 		s = "-" + s;
 	}
-	FV.SortColumn = s;
-	return S_OK;
+	if (isFinite(RunEvent3("Sorting", FV, s))) {
+		FV.AltSortColumn = s;
+		return true;
+	}
 }
 
 MenuDbInit = function (hMenu, oMenu, oMenu2) {

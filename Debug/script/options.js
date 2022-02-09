@@ -1594,10 +1594,10 @@ InitDialog = async function () {
 			if ((wfd[1] & FILE_ATTRIBUTE_DIRECTORY) && /^[a-z]/i.test(wfd[0])) {
 				const arfn = [];
 				const path2 = BuildPath(path, wfd[0]);
-				for (let fn2, FileList2 = await GetFileList(BuildPath(path2, "*.png"), true, window.chrome); fn2 = FileList2.shift();) {
+				for (let fn2, FileList2 = await GetFileList(BuildPath(path2, "*" + await MainWindow.g_.IconExt), true, window.chrome); fn2 = FileList2.shift();) {
 					const wfd2 = fn2.split("\n");
 					if (!(wfd2[1] & FILE_ATTRIBUTE_DIRECTORY)) {
-						arfn.push(wfd2[0].replace(/\.png$/i, ""));
+						arfn.push(wfd2[0]);
 					}
 				}
 				if (arfn.length) {
@@ -1606,8 +1606,8 @@ InitDialog = async function () {
 					});
 					const px = screen.deviceYDPI / 3;
 					for (let i = 0; i < arfn.length; ++i) {
-						const src = ["icon:" + GetFileName(path2), arfn[i]].join(",");
-						s.push('<img src="', BuildPath(path2, arfn[i] + ".png"), '" class="button" onclick="SelectIcon(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()" title="', src, '" style="max-height:', px, 'px"> ');
+						const src = ["icon:" + GetFileName(path2), arfn[i].replace(/\.[^\.]*$/i, "")].join(",");
+						s.push(await GetImgTag({ src: src, title: src, "class": "button", onclick: "SelectIcon(this)" }, px));
 					}
 					s.push("<br>");
 				}

@@ -2418,7 +2418,21 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					}
 					break;
 				case WM_MOVE:
-					RunEvent1("ConfigChanged", "Window");
+					if (g_.Fullscreen && api.GetKeyState(VK_LBUTTON) >= 0) {
+						const hMonitor = api.MonitorFromWindow(te.hwnd, MONITOR_DEFAULTTOPRIMARY);
+						const mi = api.Memory("MONITORINFOEX");
+						api.GetMonitorInfo(hMonitor, mi);
+						const rc = mi.rcMonitor;
+						const x = rc.left;
+						const y = rc.top;
+						const w = rc.right - x;
+						const h = rc.bottom - y;
+						if (w > 0 && h > 0) {
+							api.MoveWindow(te.hwnd, x, y, w, h, true);
+						}
+					} else {
+						RunEvent1("ConfigChanged", "Window");
+					}
 					break;
 				case WM_QUERYENDSESSION:
 					SaveConfig();
@@ -2729,12 +2743,14 @@ te.OnVisibleChanged = function (Ctrl) {
 }
 
 te.OnColumnClick = function (Ctrl, iItem) {
-	const hr = RunEvent3("ColumnClick", Ctrl, iItem);
+	let hr = RunEvent3("ColumnClick", Ctrl, iItem);
 	if (isFinite(hr)) {
 		return hr;
 	}
 	const cColumns = api.CommandLineToArgv(Ctrl.Columns(1));
-	return SetSortColumn(Ctrl, cColumns[iItem * 2]);
+	if (HasCustomSort(Ctrl, cColumns[iItem * 2])) {
+		return S_OK;
+	}
 }
 
 ShowStatusText = function (Ctrl, Text, iPart, tm) {
@@ -3576,8 +3592,8 @@ FullscreenChanged = function (bFullscreen, bBody) {
 				}
 			}
 			g_.FullscreenWS = dwStyle;
-			api.SetWindowLongPtr(te.hwnd, GWL_STYLE, g_.FullscreenWS & ~(WS_CAPTION | WS_THICKFRAME));
-			const hMonitor = api.MonitorFromRect(te.Data.rcWindow, MONITOR_DEFAULTTOPRIMARY);
+			api.SetWindowLongPtr(te.hwnd, GWL_STYLE, g_.FullscreenWS & ~0xCF0000);
+			const hMonitor = api.MonitorFromWindow(te.hwnd, MONITOR_DEFAULTTOPRIMARY);
 			const mi = api.Memory("MONITORINFOEX");
 			api.GetMonitorInfo(hMonitor, mi);
 			rc = mi.rcMonitor;
@@ -3594,11 +3610,11 @@ FullscreenChanged = function (bFullscreen, bBody) {
 		const y = rc.top;
 		const w = rc.right - x;
 		const h = rc.bottom - y;
+		g_.Fullscreen = bFullscreen;
 		if (w > 0 && h > 0) {
 			api.MoveWindow(te.hwnd, x, y, w, h, true);
 		}
 		RunEvent1("FullscreenChanged", bFullscreen, bBody);
-		g_.Fullscreen = bFullscreen;
 	}
 }
 
@@ -3708,6 +3724,11 @@ InitCode = function () {
 		te[ar[i]] = te.Data['Conf_' + ar[i]];
 	}
 	OpenMode = te.Data.Conf_OpenMode ? SBSP_NEWBROWSER : SBSP_SAMEBROWSER;
+	const s = ReadTextFile(BuildPath(te.Data.DataFolder, "icons\\config.json"));
+	if (s) {
+		const json = JSON.parse(s);
+		g_.IconExt = json.info.ext || ".png";
+	}
 }
 
 InitMenus = function () {

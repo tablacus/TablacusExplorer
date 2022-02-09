@@ -79,10 +79,12 @@ Sync.SegoeIcons = {
 }
 
 const fontDir = api.ILCreateFromPath(ssfFONTS).Path;
-for (let n in Sync.SegoeIcons) {
-	for (let i in Sync.SegoeIcons[n]) {
-		if (fso.FileExists(BuildPath(te.Data.DataFolder, "icons", n, i + ".png"))) {
-			delete Sync.SegoeIcons[n][i];
+if (g_.IconExt) {
+	for (let n in Sync.SegoeIcons) {
+		for (let i in Sync.SegoeIcons[n]) {
+			if (fso.FileExists(BuildPath(te.Data.DataFolder, "icons", n, i + g_.IconExt))) {
+				delete Sync.SegoeIcons[n][i];
+			}
 		}
 	}
 }

@@ -376,6 +376,7 @@ TEmethod methodSB[] = {
 	{ TE_PROPERTY + 0xf105, "GroupBy" },
 	{ TE_METHOD + 0xf107, "HitTest" },
 	{ TE_PROPERTY + 0xf108, "hwndAlt" },
+	{ TE_PROPERTY + 0xf109, "AltSortColumn" },
 	{ TE_METHOD + 0xf110, "ItemCount" },
 	{ TE_METHOD + 0xf111, "Item" },
 	{ TE_METHOD + 0xf206, "Refresh" },
@@ -5260,6 +5261,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			case WM_HOTKEY:
 			case WM_DPICHANGED:
 			case WM_NCCALCSIZE:
+			case WM_NCLBUTTONDOWN:
 			case TWM_CLIPBOARDUPDATE:
 				if (MessageSub(TE_OnSystemMessage, g_pTE, &msg1, &hr)) {
 					return hr;
@@ -8368,6 +8370,16 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				ArrangeWindow();
 			}
 			teSetPtr(pVarResult, m_hwndAlt);
+			return S_OK;
+
+		case TE_PROPERTY + 0xf109://AltSortColumn
+			if (nArg >= 0) {
+				teSysFreeString(&m_bsAltSortColumn);
+				VARIANT v;
+				teVariantChangeType(&v, &pDispParams->rgvarg[nArg], VT_BSTR);
+				m_bsAltSortColumn = v.bstrVal;
+			}
+			teSetSZ(pVarResult, m_bsAltSortColumn);
 			return S_OK;
 
 		case TE_METHOD + 0xf110://ItemCount

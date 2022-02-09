@@ -32,6 +32,7 @@ CloseWindow = function () {
 }
 
 ExitFullscreen = function () {
+	FullscreenChanged(false);
 	InvokeUI("ExitFullscreen");
 }
 
@@ -65,7 +66,7 @@ GetFolderView = function (Ctrl, pt, bStrict) {
 };
 
 GetMiscIcon = function (n) {
-	const s = BuildPath(te.Data.DataFolder, "icons\\misc\\" + n + ".png");
+	const s = BuildPath(te.Data.DataFolder, "icons\\misc\\" + n + MainWindow.g_.IconExt);
 	return fso.FileExists(s) ? s : "";
 }
 

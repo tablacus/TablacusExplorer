@@ -16,8 +16,10 @@ try {
 				o.out = image.DataURI(o.type, o.anime && o.quality != -2 && image.GetFrameCount() > 1 ? -2 : o.quality);
 			} else if ("number" === typeof o.type) {
 				o.out = image.GetHBITMAP(o.type);
+			} else if (MainWindow.WINVER > 0x601) {
+				o.out = MainWindow.api.CreateObject("WICBitmap").FromStream(image.GetStream("", -2));
 			} else {
-				o.out = MainWindow.api.CreateObject("WICBitmap").FromStream(image.GetStream("image/png", -2));
+				o.out = MainWindow.api.CreateObject("WICBitmap").FromFile(image.DataURI());
 			}
 			api.Invoke(o.onload || o.callback, o);
 		} else if (o.onerror) {

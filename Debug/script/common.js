@@ -186,9 +186,16 @@ GetImgTag = async function (o, h) {
 			return ar.join("");
 		}
 		o.org = o.src;
+		o.src = await ImgBase64(o, 0, Number(h))
 		if (window.chrome || g_.IEVer > 8) {
 			if (res = /(<svg)([\w\W]*?<\/svg[^>]*>)/i.exec(/\.svg$/.test(o.src) ? await ReadTextFile(o.src) : o.src)) {
-				const ar = ['<span'];
+				let ar = [];
+				if (o.className || o["class"]) {
+					ar.push(o.className || o["class"]);
+				}
+				ar.push("svgicon");
+				o["class"] = ar.join(" ");
+				ar = ['<span'];
 				h = h || window.IconSize;
 				h = Number(h) ? h + "px" : EncodeSC(h);
 				ExtractAttr(o, ar, /src/i);
@@ -197,7 +204,6 @@ GetImgTag = async function (o, h) {
 				return ar.join("");
 			}
 		}
-		o.src = await ImgBase64(o, 0, Number(h))
 		if (!o.draggable) {
 			o.draggable = o.ondragstart != null;
 		}
