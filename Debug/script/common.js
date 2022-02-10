@@ -186,23 +186,32 @@ GetImgTag = async function (o, h) {
 			return ar.join("");
 		}
 		o.org = o.src;
-		o.src = await ImgBase64(o, 0, Number(h))
-		if (window.chrome || g_.IEVer > 8) {
-			if (res = /(<svg)([\w\W]*?<\/svg[^>]*>)/i.exec(/\.svg$/.test(o.src) ? await ReadTextFile(o.src) : o.src)) {
-				let ar = [];
-				if (o.className || o["class"]) {
-					ar.push(o.className || o["class"]);
-				}
-				ar.push("svgicon");
-				o["class"] = ar.join(" ");
-				ar = ['<span'];
-				h = h || window.IconSize;
-				h = Number(h) ? h + "px" : EncodeSC(h);
-				ExtractAttr(o, ar, /src/i);
-				ar.push('>', res[1], ' style="max-width:' + h + ';height:' + h + '" ');
-				ar.push(res[2], '</span>');
-				return ar.join("");
+		res = /\.svg$/i.test(o.src);
+		if (!res) {
+			o.src = await ImgBase64(o, 0, Number(h));
+			res = /\.svg$/i.test(o.src);
+		}
+		if (res) {
+			let ar = [];
+			if (o.className || o["class"]) {
+				ar.push(o.className || o["class"]);
 			}
+			ar.push("svgicon");
+			o["class"] = ar.join(" ");
+			ar = ['<span'];
+			h = h || window.IconSize;
+			h = Number(h) ? h + "px" : EncodeSC(h);
+			ExtractAttr(o, ar, /src/i);
+			ar.push('>');
+			if (window.chrome || g_.IEVer > 8) {
+				if (res = /(<svg)([\w\W]*?>)([\w\W]*?<\/svg[^>]*>)/i.exec(await ReadTextFile(o.src))) {
+					ar.push(res[1], ' style="max-width:' + h + ';height:' + h + '" ', res[2].replace(/\s+width="[^"]*"|\s+height="[^"]*"/ig, ""), res[3]);
+				}
+			} else {
+				ar.push('<embed src="', EncodeSC(o.src),'" width="' + h + '" height="' + h + '">');
+			}
+			ar.push("</span>");
+			return ar.join("");
 		}
 		if (!o.draggable) {
 			o.draggable = o.ondragstart != null;
