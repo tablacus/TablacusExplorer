@@ -2376,18 +2376,21 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
 									msg.wParam = pMHS->mouseData;
 									msg.pt.x = pMHS->pt.x;
 									msg.pt.y = pMHS->pt.y;
-									CHAR szClassA[MAX_CLASS_NAME];
-									GetClassNameA(msg.hwnd, szClassA, MAX_CLASS_NAME);
-									if (lstrcmpA(szClassA, WC_LISTVIEWA) == 0) {
+									CHAR pszClassA[MAX_CLASS_NAME];
+									GetClassNameA(msg.hwnd, pszClassA, MAX_CLASS_NAME);
+									if (lstrcmpA(pszClassA, WC_LISTVIEWA) == 0) {
 										if (msg.message == WM_LBUTTONDOWN) {
 											msg.hwnd = WindowFromPoint(pMHS->pt);
 										}
-									} else if (lstrcmpA(szClassA, "DirectUIHWND") == 0) {
+									} else if (lstrcmpA(pszClassA, "DirectUIHWND") == 0) {
 										if (msg.message == WM_LBUTTONDOWN) {
 											if (GetTickCount() - g_dwDoubleTime < GetDoubleClickTime() &&
-												abs(g_ptDouble.x - msg.pt.x) < GetSystemMetrics(SM_CXDRAG) &&
-												abs(g_ptDouble.y - msg.pt.y) < GetSystemMetrics(SM_CXDRAG)) {
-												msg.message = WM_LBUTTONDBLCLK;
+												abs(g_ptDouble.x - msg.pt.x) <= GetSystemMetrics(SM_CXDRAG) &&
+												abs(g_ptDouble.y - msg.pt.y) <= GetSystemMetrics(SM_CYDRAG)) {
+												CteShellBrowser *pSB = SBfromhwnd(msg.hwnd);
+												if (pSB && pSB->GetFolderViewAndItemCount(NULL, SVGIO_SELECTION) == 0) {
+													msg.message = WM_LBUTTONDBLCLK;
+												}
 											} else {
 												g_ptDouble.x = msg.pt.x;
 												g_ptDouble.y = msg.pt.y;

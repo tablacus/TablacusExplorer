@@ -166,7 +166,7 @@ if (window.Addon == 1) {
 				s.push('<td class="namecell" style="vertical-align: middle;"><div style="overflow: hidden; white-space: nowrap;');
 				const bUseClose = Addons.TabPlus.opt.Close && r[4] == S_OK;
 				if (bUseClose && Addons.TabPlus.opt.Align > 1 && Addons.TabPlus.opt.Width) {
-					w -= r0;
+					w -= r0 * ui_.Zoom;
 				}
 				w += Addons.TabPlus.opt.Width;
 				if (w > 0) {
