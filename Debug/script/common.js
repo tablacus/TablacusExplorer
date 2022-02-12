@@ -186,10 +186,10 @@ GetImgTag = async function (o, h) {
 			return ar.join("");
 		}
 		o.org = o.src;
-		res = /\.svg$/i.test(o.src);
+		res = (window.chrome || g_.IEVer > 8) && /\.svg$/i.test(o.src);
 		if (!res) {
 			o.src = await ImgBase64(o, 0, Number(h));
-			res = /\.svg$/i.test(o.src);
+			res = (window.chrome || g_.IEVer > 8) && /\.svg$/i.test(o.src);
 		}
 		if (res) {
 			let ar = [];
@@ -203,12 +203,8 @@ GetImgTag = async function (o, h) {
 			h = Number(h) ? h + "px" : EncodeSC(h);
 			ExtractAttr(o, ar, /src/i);
 			ar.push('>');
-			if (window.chrome || g_.IEVer > 8) {
-				if (res = /(<svg)([\w\W]*?>)([\w\W]*?<\/svg[^>]*>)/i.exec(await ReadTextFile(o.src))) {
-					ar.push(res[1], ' style="max-width:' + h + ';height:' + h + '" ', res[2].replace(/\s+width="[^"]*"|\s+height="[^"]*"/ig, ""), res[3]);
-				}
-			} else {
-				ar.push('<embed src="', EncodeSC(o.src),'" width="' + h + '" height="' + h + '">');
+			if (res = /(<svg)([\w\W]*?>)([\w\W]*?<\/svg[^>]*>)/i.exec(await ReadTextFile(o.src))) {
+				ar.push(res[1], ' style="max-width:' + h + ';height:' + h + '" ', res[2].replace(/\s+width="[^"]*"|\s+height="[^"]*"/ig, ""), res[3]);
 			}
 			ar.push("</span>");
 			return ar.join("");

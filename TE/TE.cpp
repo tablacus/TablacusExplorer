@@ -9437,10 +9437,7 @@ HRESULT CteShellBrowser::OnNavigationPending2(LPITEMIDLIST pidlFolder)
 			}
 		}
 		if (hr == E_ACCESSDENIED) {
-			HRESULT hr2 = BrowseObject2(pid, SBSP_NEWBROWSER | SBSP_ABSOLUTE);
-			if (ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
-				hr = hr2;
-			}
+			BrowseObject2(pid, SBSP_NEWBROWSER | SBSP_ABSOLUTE);
 		}
 		InitFilter();
 		InitFolderSize();
@@ -10048,6 +10045,9 @@ VOID CteShellBrowser::InitFilter()
 
 HRESULT CteShellBrowser::SetTheme()
 {
+	if (!m_hwndLV) {
+		return E_NOTIMPL;
+	}
 	if (_AllowDarkModeForWindow) {
 		BOOL bDarkMode = teIsDarkColor(m_clrBk);
 		HWND hHeader = ListView_GetHeader(m_hwndLV);

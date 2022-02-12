@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20220211 ? te.Version : 20220211;
+		return te.Version < 20220212 ? te.Version : 20220212;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3486,7 +3486,7 @@ FolderMenu = {
 				const bCP = api.ILIsParent($.g_pidlCP, FolderItem, false);
 				for (let i = 0, nAdd = 0; i < nCount; ++i) {
 					const Item = Items[ar[i]];
-					let bMatch = $.IsFolderEx(Item) || bCP;
+					let bMatch = bCP || $.IsFolderEx(Item);
 					if (FolderMenu.Filter) {
 						bMatch = $.PathMatchEx(bMatch ? Item.Name + ".folder" : Item.Name, FolderMenu.Filter);
 					}

@@ -362,3 +362,11 @@ a.treebutton:hover {
 .number {
 	width: 6em; text-align: right
 }
+
+.lightbg {
+  color: #000
+}
+
+.darkbg {
+  color: #fff
+}

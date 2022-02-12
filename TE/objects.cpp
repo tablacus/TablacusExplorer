@@ -600,9 +600,7 @@ STDMETHODIMP CteFolderItem::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			}
 			if (pVarResult) {
 				hr = get_Name(&pVarResult->bstrVal);
-				if SUCCEEDED(hr) {
-					pVarResult->vt = VT_BSTR;
-				}
+				pVarResult->vt = VT_BSTR;
 			}
 			return hr;
 
@@ -728,7 +726,11 @@ STDMETHODIMP CteFolderItem::get_Name(BSTR *pbs)
 	if SUCCEEDED(tePathGetFileName(pbs, GetStrPath())) {
 		return S_OK;
 	}
-	return teGetDisplayNameFromIDList(pbs, GetPidl(), SHGDN_INFOLDER);
+	if SUCCEEDED(teGetDisplayNameFromIDList(pbs, GetPidl(), SHGDN_INFOLDER)) {
+		return S_OK;
+	}
+	*pbs = NULL;
+	return S_OK;
 }
 
 STDMETHODIMP CteFolderItem::put_Name(BSTR bs)
