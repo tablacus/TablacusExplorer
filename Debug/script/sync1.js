@@ -425,7 +425,7 @@ g_basic = {
 					return OpenSelected(Ctrl, SBSP_NEWBROWSER | SBSP_ACTIVATE_NOFOCUS, pt);
 				},
 				Exec: function (Ctrl, pt) {
-					const Selected = GetSelectedArray(Ctrl, pt, true).shift();
+					const Selected = GetSelectedItems(Ctrl, pt);
 					if (Selected) {
 						InvokeCommand(Selected, 0, te.hwnd, null, null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
 					}
@@ -1428,7 +1428,7 @@ GetCommandId = function (hMenu, s, ContextMenu) {
 };
 
 OpenSelected = function (Ctrl, NewTab, pt) {
-	const ar = GetSelectedArray(Ctrl, pt, true);
+	const ar = GetSelectedArray(Ctrl, pt);
 	let Selected = ar[0];
 	const FV = ar[2];
 	if (Selected) {
@@ -3423,7 +3423,7 @@ AddEnv("MenuSelected", function (Ctrl) {
 
 AddEnv("Installed", fso.GetDriveName(api.GetModuleFileName(null)));
 
-AddEnv("TE_Config", function () {
+AddEnv("TE_Config", function (Ctrl) {
 	return BuildPath(te.Data.DataFolder, "config");
 });
 

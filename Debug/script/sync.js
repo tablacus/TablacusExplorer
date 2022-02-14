@@ -57,7 +57,7 @@ g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/relea
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20220212 ? te.Version : 20220212;
+		return te.Version < 20220212 ? te.Version : 20220214;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -132,7 +132,7 @@ InvokeFunc = window.chrome ? api.Invoke : function (fn, args) {
 	return fn && fn.apply(fn, args);
 }
 
-GetSelectedArray = function (Ctrl, pt, bPlus) {
+GetSelectedArray = function (Ctrl, pt) {
 	let Selected, SelItem;
 	let FV = null;
 	let bSel = true;
@@ -169,7 +169,7 @@ GetSelectedArray = function (Ctrl, pt, bPlus) {
 	}
 	if (!Selected || Selected.Count == 0) {
 		Selected = api.CreateObject("FolderItems");
-		if (bPlus) {
+		if (Ctrl.Type == CTRL_TV) {
 			Selected.AddItem(SelItem);
 		}
 	}
@@ -1129,10 +1129,7 @@ SameFolderItems = function (Items1, Items2) {
 }
 
 GetSelectedItems = function (Ctrl, pt) {
-	const FV = GetFolderView(Ctrl, pt);
-	if (FV) {
-		return FV.SelectedItems();
-	}
+	return GetSelectedArray(Ctrl, pt)[0];
 }
 
 GetThumbnail = function (image, m, f) {
@@ -2290,9 +2287,9 @@ ExecMenu = function (Ctrl, Name, pt, Mode, bNoExec, ContextMenu) {
 		uCMF |= CMF_EXTENDEDVERBS;
 	}
 	const ar = GetSelectedArray(Ctrl, pt);
-	const Selected = ar.shift();
-	const SelItem = ar.shift();
-	const FV = ar.shift();
+	const Selected = ar[0];
+	const SelItem = ar[1];
+	const FV = ar[2];
 	ExtraMenuCommand = api.CreateObject("Object");
 	ExtraMenuData = api.CreateObject("Object");
 	eventTE.menucommand = api.CreateObject("Array");
