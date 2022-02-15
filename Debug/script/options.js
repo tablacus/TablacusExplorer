@@ -1602,6 +1602,8 @@ InitDialog = async function () {
 				}
 				if (arfn.length) {
 					arfn.sort(function (a, b) {
+						a = a.replace(/\..*/, "");
+						b = b.replace(/\..*/, "");
 						return a - b || a.localeCompare(b);
 					});
 					const px = screen.deviceYDPI / 3;
