@@ -241,7 +241,6 @@ private:
 	IWICImagingFactory *m_pWICFactory;
 	IStream *m_pStream;
 	CLSID m_guidSrc;
-	IWICMetadataQueryReader *m_ppMetadataQueryReader[2];
 	IDispatch	*m_ppDispatch[Count_WICFunc];
 	LONG	m_cRef;
 	UINT m_uFrameCount, m_uFrame;

@@ -54,10 +54,18 @@ g_.DefaultIcons = {
 	browser: "bitmap:ieframe.dll,204,24,"
 }
 g_.updateJSONURL = "https://api.github.com/repos/tablacus/TablacusExplorer/releases/latest";
+g_.IconChg = [
+	["bitmap:ieframe.dll,206,16,", "bitmap:ExplorerFrame.dll,264,16,", 16, "browser"],
+	["bitmap:ieframe.dll,204,24,", "bitmap:ExplorerFrame.dll,264,16,", 16, "browser"],
+	["bitmap:ieframe.dll,216,16,", "bitmap:comctl32.dll,130,16,", 16, "general"],
+	["bitmap:ieframe.dll,214,24,", "bitmap:comctl32.dll,131,24,", 24, "general"],
+	["bitmap:ieframe,699,16,", "", 16],
+	["bitmap:ieframe,697,24,", "", 24]
+];
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20220212 ? te.Version : 20220215;
+		return te.Version < 20220216 ? te.Version : 20220216;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1344,7 +1352,7 @@ MakeImgDataEx = function (src, bSimple, h, clBk) {
 }
 
 MakeImgSrc = function (src, index, bSrc, h, clBk) {
-	let fn;
+	let fn, res;
 	src = ExtractPath(te, src);
 	if (!/^file:/i.test(src) && REGEXP_IMAGE.test(src)) {
 		if (window.chrome || GetNum(api.ILCreateFromPath(src).ExtendedProperty("System.Photo.Orientation")) < 2) {
@@ -1353,18 +1361,36 @@ MakeImgSrc = function (src, index, bSrc, h, clBk) {
 		const image = api.CreateObject("WICBitmap").FromFile(src);
 		return image ? image.DataURI(GetEncodeType(src)) : src;
 	}
-	let res = MainWindow.g_.IconExt && /^icon:(.+)/i.exec(src);
-	if (res) {
-		const icon = res[1].split(",");
-		if (!/\\/.test(icon[0])) {
-			fn = BuildPath(te.Data.DataFolder, ["icons", icon[0].replace(/\..*/, ""), icon[1] + MainWindow.g_.IconExt].join("\\"));
-			api.OutputDebugString(fn + "\n");
-			if (fso.FileExists(fn)) {
-				return fn;
+	if (MainWindow.g_.IconExt) {
+		res = /^icon:(.+)/i.exec(src);
+		if (res) {
+			const icon = res[1].split(",");
+			if (!/\\/.test(icon[0])) {
+				fn = BuildPath(te.Data.DataFolder, ["icons", icon[0].replace(/\..*/, ""), icon[1] + MainWindow.g_.IconExt].join("\\"));
+				if (fso.FileExists(fn)) {
+					return fn;
+				}
+			}
+		}
+		res = /^bitmap:(.+)/i.exec(src);
+		if (res) {
+			const ar = g_.IconChg;
+			for (let i in ar) {
+				const a2 = ar[i];
+				if (api.StrCmpNI(src, a2[0], a2[0].length) == 0) {
+					if (a2[3]) {
+						const a3 = src.split(",");
+						fn = BuildPath(te.Data.DataFolder, "icons", a2[3], a3[3] + MainWindow.g_.IconExt);
+						if (fso.FileExists(fn)) {
+							return fn;
+						}
+					}
+				}
 			}
 		}
 	}
 	if (g_.IEVer < 8) {
+		delete fn;
 		res = /^bitmap:(.+)/i.exec(src);
 		if (res) {
 			fn = BuildPath(te.Data.DataFolder, "cache\\bitmap\\" + res[1].replace(/[:\\\/]/g, "$") + ".png");
@@ -1449,14 +1475,7 @@ MakeImgIcon = function (src, index, h, bIcon, clBk) {
 	res = /^bitmap:(.+)/i.exec(src);
 	if (res) {
 		let icon = res[1].split(",");
-		const ar = [
-			["bitmap:ieframe.dll,206,16,", "bitmap:ExplorerFrame.dll,264,16,", 16, "browser"],
-			["bitmap:ieframe.dll,204,24,", "bitmap:ExplorerFrame.dll,264,16,", 16, "browser"],
-			["bitmap:ieframe.dll,216,16,", "bitmap:comctl32.dll,130,16,", 16, "general"],
-			["bitmap:ieframe.dll,214,24,", "bitmap:comctl32.dll,131,24,", 24, "general"],
-			["bitmap:ieframe,699,16,", "", 16],
-			["bitmap:ieframe,697,24,", "", 24]
-		];
+		const ar = g_.IconChg;
 		for (let i in ar) {
 			const a2 = ar[i];
 			if (api.StrCmpNI(src, a2[0], a2[0].length) == 0) {

@@ -97,7 +97,7 @@ TEmethod methodGB[] = {
 	{ TE_METHOD + 130, "RotateFlip" },
 	{ TE_METHOD + 140, "GetFrameCount" },
 	{ TE_PROPERTY + 150, "Frame" },
-	{ TE_METHOD + 160, "GetMetadata" },
+//	{ TE_METHOD + 160, "GetMetadata" },
 	{ TE_METHOD + 161, "GetFrameMetadata" },
 
 	{ TE_METHOD + 210, "GetHBITMAP" },
@@ -2362,8 +2362,6 @@ CteWICBitmap::CteWICBitmap()
 	m_guidSrc = GUID_NULL;
 	m_pImage = NULL;
 	m_pStream = NULL;
-	m_ppMetadataQueryReader[0] = NULL;
-	m_ppMetadataQueryReader[1] = NULL;
 	if FAILED(teCreateInstance(CLSID_WICImagingFactory, NULL, NULL, IID_PPV_ARGS(&m_pWICFactory))) {
 		m_pWICFactory = NULL;
 	}
@@ -2394,8 +2392,6 @@ VOID CteWICBitmap::ClearImage(BOOL bAll)
 		m_uFrame = 0;
 		m_uFrameCount = 1;
 		SafeRelease(&m_pStream);
-		SafeRelease(&m_ppMetadataQueryReader[0]);
-		SafeRelease(&m_ppMetadataQueryReader[1]);
 	}
 	SafeRelease(&m_pImage);
 }
@@ -2748,8 +2744,6 @@ VOID CteWICBitmap::GetFrameFromStream(IStream *pStream, UINT uFrame, BOOL bKeepS
 	pStream->Seek(liOffset, SEEK_SET, NULL);
 	IWICBitmapDecoder *pDecoder;
 	if SUCCEEDED(m_pWICFactory->CreateDecoderFromStream(pStream, NULL, WICDecodeMetadataCacheOnDemand, &pDecoder)) {
-		SafeRelease(&m_ppMetadataQueryReader[0]);
-		pDecoder->GetMetadataQueryReader(&m_ppMetadataQueryReader[0]);
 		IWICBitmapFrameDecode *pFrameDecode;
 		pDecoder->GetFrameCount(&m_uFrameCount);
 		if (m_uFrameCount) {
@@ -2759,13 +2753,13 @@ VOID CteWICBitmap::GetFrameFromStream(IStream *pStream, UINT uFrame, BOOL bKeepS
 					ClearImage(FALSE);
 					m_pImage = pIBitmap;
 				}
-				SafeRelease(&m_ppMetadataQueryReader[1]);
-				pFrameDecode->GetMetadataQueryReader(&m_ppMetadataQueryReader[1]);
+				IWICMetadataQueryReader *pMetadataQueryReader = NULL;
+				pFrameDecode->GetMetadataQueryReader(&pMetadataQueryReader);
 				SafeRelease(&pFrameDecode);
-				if (m_ppMetadataQueryReader[1]) {
+				if (pMetadataQueryReader) {
 					PROPVARIANT propVar;
 					PropVariantInit(&propVar);
-					if SUCCEEDED(m_ppMetadataQueryReader[1]->GetMetadataByName(L"/app1/ifd/{ushort=274}", &propVar)) {
+					if SUCCEEDED(pMetadataQueryReader->GetMetadataByName(L"/app1/ifd/{ushort=274}", &propVar)) {
 						VARIANT v;
 						_PropVariantToVariant(&propVar, &v);
 						PropVariantClear(&propVar);
@@ -2775,14 +2769,15 @@ VOID CteWICBitmap::GetFrameFromStream(IStream *pStream, UINT uFrame, BOOL bKeepS
 							RotateFlip(r[i], FALSE);
 						}
 					}
-				}
-			}
-			if (!m_pStream && m_ppMetadataQueryReader[1]) {
-				if (bKeepStream || m_uFrameCount > 1 || g_dwMainThreadId != GetCurrentThreadId()) {
-					if (m_pStream = ::SHCreateMemStream(NULL, NULL)) {
-						teCopyStream(pStream, m_pStream);
-						pDecoder->GetContainerFormat(&m_guidSrc);
+					if (!m_pStream && pMetadataQueryReader) {
+						if (bKeepStream || m_uFrameCount > 1 || g_dwMainThreadId != GetCurrentThreadId()) {
+							if (m_pStream = ::SHCreateMemStream(NULL, NULL)) {
+								teCopyStream(pStream, m_pStream);
+								pDecoder->GetContainerFormat(&m_guidSrc);
+							}
+						}
 					}
+					pMetadataQueryReader->Release();
 				}
 			}
 		}
@@ -2985,18 +2980,16 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 						::SHCreateStreamOnFileEx(lpfn, STGM_READ | STGM_SHARE_DENY_NONE, FILE_ATTRIBUTE_ARCHIVE, FALSE, NULL, &pStream);
 					}
 					if (!pStream) {
-						pStream = ::SHCreateMemStream(NULL, NULL);
 						if (pidl) {
 							IShellFolder *pSF;
 							LPCITEMIDLIST pidlPart;
 							if SUCCEEDED(::SHBindToParent(pidl, IID_PPV_ARGS(&pSF), &pidlPart)) {
-								IStream *pStream1 = NULL;
-								if SUCCEEDED(pSF->BindToStorage(pidlPart, NULL, IID_PPV_ARGS(&pStream1))) {
-									teCopyStream(pStream1, pStream);
-									pStream1->Release();
-								}
+								pSF->BindToStorage(pidlPart, NULL, IID_PPV_ARGS(&pStream));
 								pSF->Release();
 							}
+						}
+						if (!pStream) {
+							pStream = ::SHCreateMemStream(NULL, NULL);
 						}
 					}
 					FromStreamRelease(&pStream, lpfn, FALSE, cx);
@@ -3393,16 +3386,29 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 			}
 			return S_OK;
 			
-		case TE_METHOD + 160://GetMetadata
+//		case TE_METHOD + 160://GetMetadata
 		case TE_METHOD + 161://GetFrameMetadata
-			if (nArg >= 0 && pVarResult) {
-				if (m_ppMetadataQueryReader[dispIdMember - TE_METHOD - 160]) {
-					PROPVARIANT propVar;
-					PropVariantInit(&propVar);
-					if SUCCEEDED(m_ppMetadataQueryReader[dispIdMember - TE_METHOD - 160]->GetMetadataByName(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]), &propVar)) {
-						_PropVariantToVariant(&propVar, pVarResult);
-						PropVariantClear(&propVar);
+			if (nArg >= 0 && pVarResult && m_pStream && m_uFrameCount) {
+				LARGE_INTEGER liOffset;
+				liOffset.QuadPart = 0;
+				m_pStream->Seek(liOffset, SEEK_SET, NULL);
+				IWICBitmapDecoder *pDecoder;
+				if SUCCEEDED(m_pWICFactory->CreateDecoderFromStream(m_pStream, NULL, WICDecodeMetadataCacheOnDemand, &pDecoder)) {
+					IWICBitmapFrameDecode *pFrameDecode;
+					if SUCCEEDED(pDecoder->GetFrame(m_uFrame, &pFrameDecode)) {
+						IWICMetadataQueryReader *pMetadataQueryReader = NULL;
+						if SUCCEEDED(pFrameDecode->GetMetadataQueryReader(&pMetadataQueryReader)) {
+							PROPVARIANT propVar;
+							PropVariantInit(&propVar);
+							if SUCCEEDED(pMetadataQueryReader->GetMetadataByName(GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg]), &propVar)) {
+								_PropVariantToVariant(&propVar, pVarResult);
+								PropVariantClear(&propVar);
+							}
+							pMetadataQueryReader->Release();
+						}
+						pFrameDecode->Release();
 					}
+					pDecoder->Release();
 				}
 			}
 			return S_OK;
