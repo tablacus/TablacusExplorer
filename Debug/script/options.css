@@ -8,7 +8,7 @@ input[type="text"] {
 	min-height: 1.4em;
 }
 
-input[type="button"] {
+input[type="button"], button {
 	vertical-align: top;
 }
 

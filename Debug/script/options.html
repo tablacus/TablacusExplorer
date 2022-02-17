@@ -63,12 +63,12 @@
             <!--panel_start-->
             <div class="panel hide" id="panel0">
               <label>@docprop.dll,-107</label><br>
-              <input type="text" name="Conf_Lang" style="width: 50%; min-width: 20em"><input type="button" value="Browse..." onclick="SelectLangID(this)">
+              <input type="text" name="Conf_Lang" style="width: 50%; min-width: 20em"><button onclick="SelectLangID(this)">Browse...</button>
               <br>
               <label>Default</label>:
-              <span id="DefaultLangID"></span>&nbsp;<input type="button" value="Default" onclick="SetDefaultLangID()">
-              <input type="button" value="Open" onclick="MainWindow.Navigate(BuildPath(ui_.Installed, 'lang'), SBSP_NEWBROWSER)">
-              <input type="button" value="Get Lang" id="AddLang" onclick="ClickTree('tab1_4')">
+              <span id="DefaultLangID"></span>&nbsp;<button onclick="SetDefaultLangID()">Default</button>
+              <button onclick="MainWindow.Navigate(BuildPath(ui_.Installed, 'lang'), SBSP_NEWBROWSER)">Open</button>
+              <button id="AddLang" onclick="ClickTree('tab1_4')">Get Lang</button>
               <br>
               <br>
               <label>Left bar<i> </i>Width</label><br>
@@ -77,10 +77,10 @@
               <input type="text" id="Conf_RightBarWidth" class="number"><label>@mspaint.exe,-50047[px]</label><br><br>
               <label alt="Tool bar icon">Tool bar<i> </i>Icon</label><br>
               <input type="text" id="Conf_IconSize" class="number"><label>@mspaint.exe,-50047[px]</label>
-              <input type="button" value="Default" onclick="SetDefault(document.F.Conf_IconSize, '');"><br><br>
+              <button onclick="SetDefault(document.F.Conf_IconSize, '');">Default</button><br><br>
               <label alt="Internal Tool bar icon">@ifmon.dll,-9010<i> </i>Tool bar<i> </i>Icon</label><br>
               <input type="text" id="Conf_InnerIconSize" class="number"><label>@mspaint.exe,-50047[px]</label>
-              <input type="button" value="Default" onclick="SetDefault(document.F.Conf_InnerIconSize, '');"><br><br>
+              <button onclick="SetDefault(document.F.Conf_InnerIconSize, '');">Default</button><br><br>
               <label>Menus</label><br>
               <label><input type="checkbox" id="Conf_MenuHidden">Include hidden items</label><br>
               <label><input type="checkbox" id="Conf_MenuIcon">@mmcbase.dll,-106</label>
@@ -89,7 +89,7 @@
               <label><input type="checkbox" id="!Conf_NoAutocomplete">@ieframe.dll,-12806[Autocomplete]</label>
               <br><br>
               <div class="block">
-                <input type="button" name="ButtonInitConfig" value="Initialize config folder" onclick="InitConfig(this);">
+                <button name="ButtonInitConfig" onclick="InitConfig(this);">Initialize config folder</button>
                 <br>
                 <label>If you installed Tablacus Explorer to the Program Files directory, please press this button.</label>
               </div>
@@ -107,14 +107,14 @@
               <br>
               <label>@comres.dll,-1953</label><br>
               <input type="text" id="Conf_GestureTimeout" class="number" placeholder="3000"><label>@powrprof.dll,-82[ms]</label>
-              <input type="button" value="Default" onclick="SetDefault(document.F.Conf_GestureTimeout, '');">
+              <button onclick="SetDefault(document.F.Conf_GestureTimeout, '');">Default</button>
               <br><br>
               <label>Trails</label><br>
               <input type="text" id="Conf_TrailColor" title="Color" placeholder="#00ff00" style="width: 9em" onchange="ChangeColor1(this)">
               <input id="Color_Conf_TrailColor" type="button" value=" " class="color" title="Color" onclick="ChooseColor2(this)"><br>
               <input type="text" name="Conf_TrailSize" title="Size" class="number"><label>@mspaint.exe,-50047[px]</label>
-              <input type="button" value="-" onclick="AddValue('Conf_TrailSize', -1, 0, 16)">
-              <input type="button" value="+" onclick="AddValue('Conf_TrailSize', 1, 0, 16)">
+              <button onclick="AddValue('Conf_TrailSize', -1, 0, 16)">-</button>
+              <button onclick="AddValue('Conf_TrailSize', 1, 0, 16)">+</button>
               <br><br>
               <label><input type="checkbox" id="!Conf_NoInfotip">Tooltips</label><br><br>
               <label>Drag-and-Drop</label><br>
@@ -130,7 +130,7 @@
                       <input type="text" name="_AddonsQ" id="_AddonsQ" class="full" onkeydown="return KeyDownEvent(event, AddonsSearch)">
                     </td>
                     <td>
-                      <input type="button" value="Search" onclick="AddonsSearch()" oncontextmenu="ClearSearch(this, '_AddonsQ'); return false">
+                      <button onclick="AddonsSearch()" oncontextmenu="ClearSearch(this, '_AddonsQ'); return false">Search</button>
                     </td>
                   </tr>
                 </table>
@@ -157,7 +157,7 @@
                       <input type="text" name="_GetAddonsQ" id="_GetAddonsQ" class="full" onkeydown="return KeyDownEvent(event, AddonsSearch)">
                     </td>
                     <td>
-                      <input type="button" value="Search" onclick="AddonsSearch()" oncontextmenu="ClearSearch(this, '_GetAddonsQ'); return false">
+                      <button onclick="AddonsSearch()" oncontextmenu="ClearSearch(this, '_GetAddonsQ'); return false">Search</button>
                     </td>
                   </tr>
                 </table>
@@ -186,7 +186,7 @@
                       <input type="text" id="_GetIconsQ" class="full" onkeydown="return KeyDownEvent(event, IconPacksList)">
                     </td>
                     <td>
-                      <input type="button" value="Search" onclick="IconPacksList()" oncontextmenu="ClearSearch(this, '_GetIconsQ'); return false">
+                      <button onclick="IconPacksList()" oncontextmenu="ClearSearch(this, '_GetIconsQ'); return false">Search</button>
                     </td>
                   </tr>
                 </table>
@@ -211,7 +211,7 @@
                       <input type="text" id="_GetLangQ" class="full" onkeydown="return KeyDownEvent(event, LangPacksList)">
                     </td>
                     <td>
-                      <input type="button" value="Search" onclick="LangPacksList()" oncontextmenu="ClearSearch(this, '_GetLangQ'); return false">
+                      <button onclick="LangPacksList()" oncontextmenu="ClearSearch(this, '_GetLangQ'); return false">Search</button>
                     </td>
                   </tr>
                 </table>
@@ -268,7 +268,7 @@
                           <input type="text" name="Menus_Key" placeholder="Key" title="Key" class="full" onchange="ChangeX('Menus')">
                         </td>
                         <td style="width: 1.667em">
-                          <input type="button" value="..." title="Key" style="line-height: 1.1em" onclick="InputKey(document.F['Menus_Key']);">
+                          <button title="Key" style="line-height: 1.1em" onclick="InputKey(document.F['Menus_Key']);">...</button>
                         </td>
                       </tr>
                     </table>
@@ -304,10 +304,10 @@
                           <label>Options</label>
                         </td>
                         <td class="buttons">
-                          <input type="button" value="Portable" onclick="PortableX('Menus_Path')">
+                          <button onclick="PortableX('Menus_Path')">Portable</button>
                         </td>
                         <td>
-                          <input type="button" value="Browse..." onclick="RefX('Menus_Path', true, this)">
+                          <button onclick="RefX('Menus_Path', true, this)">Browse...</button>
                         </td>
                       </tr>
                     </table>
@@ -325,9 +325,9 @@
                           <input type="text" name="IconSize" class="number" onchange="ChangeX('Menus'); SetImage();">
                         </td>
                         <td class="bottom nowrap">
-                          <input type="button" value="Portable" onclick="PortableX('Icon')">
-                          <input type="button" value="Select" onclick="ShowIcon();">
-                          <input type="button" value="Browse..." onclick="RefX('Icon',0,0,1)">
+                          <button onclick="PortableX('Icon')">Portable</button>
+                          <button onclick="ShowIcon();">Select</button>
+                          <button onclick="RefX('Icon',0,0,1)">Browse...</button>
                         </td>
                       </tr>
                       <tr>
@@ -342,15 +342,15 @@
               <table class="full">
                 <tr>
                   <td style="width: 12em">
-                    <input type="button" value="Remove" onclick="RemoveX('Menus')">
+                    <button onclick="RemoveX('Menus')">Remove</button>
                     <label><input type="checkbox" id="_EDIT">Edit</label>
                   </td>
                   <td align="left" class="nowrap" style="padding-left: 2pt">
-                    <input type="button" value="Test" onclick="TestX('Menus_')">
+                    <button onclick="TestX('Menus_')">Test</button>
                   </td>
                   <td align="right">
-                    <input type="button" value="Add" onclick="AddX('Menus',ReplaceMenus)">
-                    <input type="button" value="Replace" onclick="ReplaceMenus()">
+                    <button onclick="AddX('Menus',ReplaceMenus)">Add</button>
+                    <button onclick="ReplaceMenus()">Replace</button>
                   </td>
                 </tr>
               </table>
@@ -370,10 +370,10 @@
                     <input type="text" name="Conf_NewTab" class="full">
                   </td>
                   <td>
-                    <input type="button" value="Browse..." onclick="ChooseFolder1(document.F.Conf_NewTab)">
+                    <button onclick="ChooseFolder1(document.F.Conf_NewTab)">Browse...</button>
                   </td>
                   <td>
-                    <input type="button" value="Default" onclick="SetDefault(document.F.Conf_NewTab, '');">
+                    <button onclick="SetDefault(document.F.Conf_NewTab, '');">Default</button>
                   </td>
                 </tr>
               </table>
@@ -395,11 +395,11 @@
               <label>Height</label>
               <input type="text" name="Tab_Height" size="4">
               <br>
-              <input type="button" value="Get" onclick="GetTabControl();">
-              <input type="button" value="Move" onclick="MoveTabControl();">
-              <input type="button" value="Add" onclick="AddTabControl();">
-              <input type="button" value="Remove" onclick="DelTabControl();">
-              <input type="button" value="Swap" onclick="SwapTabControl();">
+              <button onclick="GetTabControl();">Get</button>
+              <button onclick="MoveTabControl();">Move</button>
+              <button onclick="AddTabControl();">Add</button>
+              <button onclick="DelTabControl();">Remove</button>
+              <button onclick="SwapTabControl();">Swap</button>
             </div>
             <!--panel_end-->
 
@@ -422,7 +422,7 @@
               <label><input type="checkbox" id="Tree_EnumFlags:0x80" onclick="SetCheckbox(this)">Include hidden items</label><br>
               <label><input type="checkbox" id="Tree_EnumFlags:!0x10000" onclick="SetCheckbox(this)">@shell32.dll,-30508[Hide protected operating system files]</label>(*7)<br>
               <div>
-                <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_Tree_EnumFlags")'>
+                <button class="groupbutton" onclick='OpenGroup("_Advanced_Tree_EnumFlags")'>Advanced</button>
               </div>
               <div class="group" id="_Advanced_Tree_EnumFlags">
                 <label><input type="checkbox" id="Conf_ShowInternet">@shell32.dll,-4262</label><br>
@@ -451,7 +451,7 @@
               <label><input type="checkbox" id="Tree_Style:0x8000" onclick="SetCheckbox(this)">Border</label><br>
               <label alt="Root has expando"><input type="checkbox" id="Tree_Style:0x40" onclick="SetCheckbox(this)">Root<i> </i>@mmcndmgr.dll,-30013</label>(*)<br>
               <div>
-                <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_Tree_Style")'>
+                <button class="groupbutton" onclick='OpenGroup("_Advanced_Tree_Style")'>Advanced</button>
               </div>
               <div class="group" id="_Advanced_Tree_Style">
                 <label alt="Auto horizontal scroll"><input type="checkbox" id="Tree_Style:0x100000" onclick="SetCheckbox(this)">Auto<i> </i>Horizontal scroll</label><br>
@@ -483,10 +483,10 @@
                   <td class="full"><label>Root</label>
                   </td>
                   <td>
-                    <input type="button" value="Browse..." onclick="ChooseFolder1(document.F.Tree_Root)">
+                    <button onclick="ChooseFolder1(document.F.Tree_Root)">Browse...</button>
                   </td>
                   <td>
-                    <input type="button" value="Default" onclick="SetDefault(document.F.Tree_Root, '::{679F85CB-0220-4080-B29B-5540CC05AAB6}\n0');">
+                    <button onclick="SetDefault(document.F.Tree_Root, '::{679F85CB-0220-4080-B29B-5540CC05AAB6}\n0');">Default</button>
                   </td>
                 </tr>
               </table>
@@ -532,7 +532,7 @@
               <label><input type="radio" name="Conf_SizeFormat_" id="Conf_SizeFormat=22" onclick="SetRadio(this)">@docprop.dll,-7</label>
               <label><input type="radio" name="Conf_SizeFormat_" id="Conf_SizeFormat=32" onclick="SetRadio(this)">@docprop.dll,-8</label>
               <div>
-                <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_Conf_SizeFormat")'>
+                <button class="groupbutton" onclick='OpenGroup("_Advanced_Conf_SizeFormat")'>Advanced</button>
               </div>
               <div class="group" id="_Advanced_Conf_SizeFormat">
                 <input type="text" name="Conf_SizeFormat" class="full">
@@ -543,7 +543,7 @@
               <br><br>
               <label>@comres.dll,-1953</label><br>
               <input type="text" id="Conf_NetworkTimeout" class="number" placeholder="2000"><label>@powrprof.dll,-82[ms]</label>
-              <input type="button" value="Default" onclick="SetDefault(document.F.Conf_NetworkTimeout, '');">
+              <button onclick="SetDefault(document.F.Conf_NetworkTimeout, '');">Default</button>
               <br><br>
               <div>
                 <label><input type="checkbox" id="Conf_ListDefault">Default</label>
@@ -575,7 +575,7 @@
               <label alt="Column header details only"><input type="checkbox" id="View_fFlags:0x1000000" onclick="SetCheckbox(this)">@taskmgr.exe,-37223[Column header]<span> (</span>@certutil.exe,-2922[Only Allow]<span>: </span>@shell32.dll,-33580<span>)</span></label>(*)<br>
               <label><input type="checkbox" id="View_fFlags:!0x10000000" onclick="SetCheckbox(this)">@shell32.dll,-30272[File Explorer Options]</label>(*)<br>
               <div>
-                <input type="button" value="Advanced" class="groupbutton" onclick='OpenGroup("_Advanced_FWF")'>
+                <button class="groupbutton" onclick='OpenGroup("_Advanced_FWF")'>Advanced</button>
               </div>
               <div class="group" id="_Advanced_FWF">
                 <label alt="Background color on sorted column"><input type="checkbox" id="Conf_ColumnEmphasis">@UIAutomationCore.dll,-283[Emphasis]<span> (</span>@sqlsrv32.rll,-40033<span>)</span></label><br>
@@ -614,21 +614,21 @@
       <table class="footer">
         <tr>
           <td style="width: 12em">
-            <input type="button" style="width: 100%; padding-right: 12pt" value="Search" onclick="FindText()">
+            <button style="width: 100%; padding-right: 12pt" onclick="FindText()">Search</button>
           </td>
           <td id="SortButton" align="left" style="display: none; padding-left: 8pt">
           </td>
           <td id="MoveButton" align="left" style="display: none; height: 18pt; padding-left: 3pt">
-            <input type="button" value="Up" onclick="OptionMove(-1)">
-            <input type="button" value="Down" onclick="OptionMove(1)">
+            <button onclick="OptionMove(-1)">Up</button>
+            <button onclick="OptionMove(1)">Down</button>
           </td>
           <td id="STATUS" align="center"></td>
           <td align="right">
             <table>
               <tr>
                 <td class="buttons">
-                  <input type="button" value="OK" class="ok" onclick="SetResult(1)" autofocus>
-                  <input type="button" value="Cancel" class="cancel" onclick="SetResult(2)">
+                  <button class="ok" onclick="SetResult(1)" autofocus>OK</button>
+                  <button class="cancel" onclick="SetResult(2)">Cancel</button>
                 </td>
               </tr>
             </table>

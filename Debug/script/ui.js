@@ -15,7 +15,8 @@ if (!window.addEventListener && window.attachEvent) {
 ui_ = {
 	IEVer: window.chrome ? 12 : ScriptEngineMajorVersion() > 8 ? ScriptEngineMajorVersion() : ScriptEngineMinorVersion(),
 	Zoom: 1,
-	eventTE: {}
+	eventTE: {},
+	MiscIcon: {}
 };
 
 InitUI = async function () {
@@ -607,7 +608,6 @@ ApplyLang = async function (doc) {
 		}
 	}
 	ApplyLangTag(doc.getElementsByTagName("label"));
-	ApplyLangTag(doc.getElementsByTagName("button"));
 	ApplyLangTag(doc.getElementsByTagName("li"));
 	let o = doc.getElementsByTagName("a");
 	if (o) {
@@ -617,6 +617,47 @@ ApplyLang = async function (doc) {
 				o[i].innerHTML = BUTTONS.opened;
 			}
 		}
+	}
+	o = doc.getElementsByTagName("button");
+	if (o) {
+		let r = [];
+		for (let i = o.length; i--;) {
+			let s = o[i].innerHTML;
+			if (s) {
+				r[i * 2] = GetTextR(s);
+				const n = s.replace(/\.+$/, "").toLowerCase();
+				r[i * 2 + 1] = "string" === ui_.MiscIcon[n] ? ui_.MiscIcon[n] : GetMiscIcon(n);
+			}
+		}
+		(async function (o, r) {
+			if (window.chrome) {
+				r = await Promise.all(r);
+			}
+			for (let i = o.length; i--;) {
+				const el = o[i];
+				let s = el.innerHTML;
+				if (s) {
+					const v = r[i * 2].replace(/\(&\w\)|&/, "");
+					let icon = r[i * 2 + 1];
+					if (icon) {
+						el.innerHTML = await GetImgTag({
+							title: v,
+							src: icon
+						}, GetNum(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('font-size') : document.body.currentStyle.fontSize) * 4 / 3);
+						el.className += " svgiconbutton";
+					} else if (icon = ui_.IconFont && ButtonIcon[s.replace(/\.+$/, "")]) {
+						el.innerHTML = String.fromCodePoint(icon);
+						el.style.fontFamily = ui_.IconFont;
+						if (!el.title) {
+							el.title = v;
+						}
+						el.className += " fonticonbutton";
+					} else if (s != v) {
+						el.innerHTML = v;
+					}
+				}
+			}
+		})(o, r);
 	}
 	o = doc.getElementsByTagName("input");
 	if (o) {
@@ -1082,6 +1123,15 @@ if (window.chrome) {
 }
 
 //Options
+AddRule = function (s) {
+	const css = document.styleSheets.item(0);
+	if (css.insertRule) {
+		css.insertRule(s, css.cssRules.length);
+	} else if (css.addRule) {
+		css.addRule(s);
+	}
+}
+
 AddonOptions = async function (Id, fn, Data, bNew) {
 	CloseFindDialog();
 	await LoadLang2(BuildPath("addons", Id, "lang", await GetLangId() + ".xml"));
@@ -1160,12 +1210,7 @@ AddonOptions = async function (Id, fn, Data, bNew) {
 	if (!ui_.elAddons[Id]) {
 		if (!/location\.html$/.test(sURL)) {
 			opt.event.onload = function () {
-				const cInput = el.contentWindow.document.getElementsByTagName('input');
-				for (let i in cInput) {
-					if (/^ok$|^cancel$/i.test(cInput[i].className)) {
-						cInput[i].style.display = 'none';
-					}
-				}
+				AddRule(".ok, .cancel { display: none }");
 				el.contentWindow.g_Inline = true;
 			}
 		}
@@ -1490,4 +1535,8 @@ ConfirmThenExec = async function (msg, fn, arg) {
 	}
 	ui_.ConfirmMenu = new Date().getTime();
 	ui_.elConfirm = el;
+}
+
+SetMiscIcon = function (n, s) {
+	ui_.MiscIcon[n] = s;
 }

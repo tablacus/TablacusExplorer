@@ -65,7 +65,7 @@ g_.IconChg = [
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20220216 ? te.Version : 20220216;
+		return te.Version < 20220217 ? te.Version : 20220217;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3347,6 +3347,15 @@ CloseWindows = function (hwnd, s) {
 			}
 		}
 	}
+}
+
+GetMiscIcon = function (n) {
+	let s = BuildPath(te.Data.DataFolder, "icons\\misc\\" + n + MainWindow.g_.IconExt);
+	if (!fso.FileExists(s)) {
+		s = "";
+	}
+	InvokeUI("SetMiscIcon", [n, s]);
+	return s;
 }
 
 LoadDBFromTSV = function (DB, fn) {

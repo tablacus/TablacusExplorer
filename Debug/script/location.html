@@ -234,16 +234,16 @@
               <input type="text" name="Icon" onchange="SetImage();" style="width: 100%">
             </td>
             <td class="nowrap">
-              <input type="button" value="Portable" onclick="PortableX('Icon')">
-              <input type="button" value="Select" onclick="ShowIcon();">
-              <input type="button" value="Browse..." onclick="RefX('Icon', 0, 0, 1);">
+              <button onclick="PortableX('Icon')">Portable</button>
+              <button onclick="ShowIcon();">Select</button>
+              <button onclick="RefX('Icon', 0, 0, 1);">Browse...</button>
             </td>
           </tr>
         </table>
         <div id="__IconSize">
           <label>Size</label><br>
           <input type="text" name="IconSize" size="4" onchange="SetImage();"><label>@mspaint.exe,-50047[px]</label>
-          <input type="button" value="Default" onclick="SetDefault(document.F.IconSize, '');">
+          <button onclick="SetDefault(document.F.IconSize, '');">Default</button>
        </div>
       </div>
       <!--panel_end-->
@@ -287,7 +287,7 @@
               <input type="text" name="Key" onchange="SetKeyShift()" style="width: 100%">
             </td>
             <td style="width: 2em">
-              <input type="button" value="Input" title="Key" onclick="InputKey(document.F.Key);">
+              <button title="Key" onclick="InputKey(document.F.Key);">Input</button>
             </td>
           </tr>
         </table>
@@ -312,7 +312,7 @@
                     <label>Mouse</label>
                   </td>
                   <td>
-                    <input type="button" value="Input" title="Mouse" onclick="InputMouse();">
+                    <button title="Mouse" onclick="InputMouse();">Input</button>
                   </td>
                   <td align="right" id="__MOUSEDATA">
                   </td>
@@ -320,13 +320,13 @@
               </table>
             </td>
             <td align="center">
-              <input type="button" value="&#9716;" title="1" onclick="AddMouse(this)">
+              <button title="1" onclick="AddMouse(this)">&#9716;</button>
             </td>
             <td align="center">
-              <input type="button" value="&Theta;" title="3" onclick="AddMouse(this)">
+              <button title="3" onclick="AddMouse(this)">&Theta;</button>
             </td>
             <td align="center">
-              <input type="button" value="&#9719;" title="2" onclick="AddMouse(this)">
+              <button title="2" onclick="AddMouse(this)">&#9719;</button>
             </td>
           </tr>
           <tr>
@@ -334,30 +334,30 @@
               <input type="text" name="Mouse" style="width: 100%">
             </td>
             <td align="center">
-              <input type="button" value="X1" title="4" onclick="AddMouse(this)">
+              <button title="4" onclick="AddMouse(this)">X1</button>
             </td>
             <td align="center">
-              <input type="button" value="&#9650;" title="8" onclick="AddMouse(this)">
+              <button title="8" onclick="AddMouse(this)">&#9650;</button>
             </td>
             <td align="right" rowspan="2" class="middle">
-              <input type="button" value="&larr;" title="L" onclick="AddMouse(this)">
+              <button title="L" onclick="AddMouse(this)">&larr;</button>
             </td>
             <td align="center" rowspan="2">
-              <input type="button" value="&uarr;" title="U" onclick="AddMouse(this)">
+              <button title="U" onclick="AddMouse(this)">&uarr;</button>
               <br>
-              <input type="button" value="&darr;" title="D" onclick="AddMouse(this)" width="100%">
+              <button title="D" onclick="AddMouse(this)" width="100%">&darr;</button>
             </td>
             <td align="left" rowspan="2" class="middle">
-              <input type="button" value="&rarr;" title="R" onclick="AddMouse(this)">
+              <button title="R" onclick="AddMouse(this)">&rarr;</button>
             </td>
           </tr>
           <tr>
             <td></td>
             <td align="center">
-              <input type="button" value="X2" title="5" onclick="AddMouse(this)">
+              <button title="5" onclick="AddMouse(this)">X2</button>
             </td>
             <td align="center">
-              <input type="button" value="&#9660;" title="9" onclick="AddMouse(this)">
+              <button title="9" onclick="AddMouse(this)">&#9660;</button>
             </td>
           </tr>
         </table>
@@ -371,10 +371,10 @@
         <td id="toolbar" class="full nowrap">
         </td>
         <td class="buttons">
-          <input type="button" value="OK" class="ok" onclick="SetResult(1)" autofocus>
+          <button class="ok" onclick="SetResult(1)" autofocus>OK</button>
         </td>
         <td class="buttons">
-          <input type="button" value="Cancel" class="cancel" onclick="SetResult(2)">
+          <button class="cancel" onclick="SetResult(2)">Cancel</button>
         </td>
       </tr>
     </table></div>

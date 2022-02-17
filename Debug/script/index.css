@@ -53,6 +53,10 @@ form {
 	margin: 0;
 }
 
+button {
+	white-space: nowrap;
+}
+
 .button, .button1 {
 	display: inline-block; *display: inline; *zoom: 1;
 	padding: 1px 1px;
@@ -256,7 +260,7 @@ a.treebutton:hover {
 	vertical-align: middle;
 }
 
-.fonticonbutton {
+.fonticonbutton, .svgiconbutton {
 	font-size: 150%;
 }
 

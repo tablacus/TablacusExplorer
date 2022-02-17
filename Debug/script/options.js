@@ -1135,8 +1135,8 @@ async function SetAddon(Id, bEnable, td, Alt) {
 		bEnable = false;
 	}
 	const s = ['<div ', (Alt ? '' : 'draggable="true" ondragstart="Start5(event, this)" ondragend="End5()"'), ' title="', Id, '" Id="', Alt || "Addons_", Id, '">'];
-	s.push('<table><tr style="border-top: 1px solid buttonshadow"', bEnable || bConfig ? "" : ' class="disabled"', '><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id + '">'), '</td><td style="width: 100%"><label for="_', Id, '">', r[4], "&nbsp;", r[5], '<br><input type="button" class="addonbutton" onclick="AddonInfo(\'', Id, '\',\'', Alt || "", '\')" value="Details">');
-	s.push(' <input type="button" class="addonbutton" onclick="AddonRemove(\'', Id, '\');" value="Delete">&nbsp;(', Id, ')<div id="', Alt || "", "i_", Id, '"></div></td>');
+	s.push('<table><tr style="border-top: 1px solid buttonshadow"', bEnable || bConfig ? "" : ' class="disabled"', '><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id + '">'), '</td><td style="width: 100%"><label for="_', Id, '">', r[4], "&nbsp;", r[5], '<br><button class="addonbutton" onclick="AddonInfo(\'', Id, '\',\'', Alt || "", '\')">Details</button>');
+	s.push(' <button class="addonbutton" onclick="AddonRemove(\'', Id, '\');">Delete</button>&nbsp;(', Id, ')<div id="', Alt || "", "i_", Id, '"></div></td>');
 	if (!bLevel) {
 		if (!ui_.strNotSupported) {
 			ui_.strNotSupported = await GetTextR("@comres.dll,-1845");
@@ -1151,7 +1151,7 @@ async function SetAddon(Id, bEnable, td, Alt) {
 		}
 		s.push('<td class="danger middle nowrap right">', ui_.strIsRequired.replace("%s", ui_.strVersion + " " + (r[1].replace(/^20/, ""))), '</td>');
 	} else if (r[6]) {
-		s.push('<td class="nowrap middle" style="padding-right: 1em"><input type="button" onclick="AddonOptions(\'', Id, '\')" class="addonbuttonopt" id="opt_', Id, '" value="Options"></td>');
+		s.push('<td class="nowrap middle" style="padding-right: 1em"><button onclick="AddonOptions(\'', Id, '\')" class="addonbuttonopt" id="opt_', Id, '">Options</button></td>');
 	}
 	const strEnable = bMinVer || bConfig ? 'visibility: hidden' : "";
 	s.push('<td class="middle"><input type="checkbox" ', (Alt ? "" : 'id="enable_' + Id + '"'), ' onclick="AddonEnable(this, \'', Id, '\')" ', bEnable ? " checked" : "", ' style="', strEnable, '"></td>');
@@ -1384,7 +1384,7 @@ InitOptions = async function () {
 		document.getElementById("tab1_3").innerHTML = r[7] || r[0].replace("%s", r[1]);
 		const sl = r[8] || r[0].replace("%s", r[2] + (/^ja|^zh/i.test(r[6]) ? "" : " ") + (r[3].toLowerCase()));
 		document.getElementById("tab1_4").innerHTML = sl;
-		document.getElementById("AddLang").value = sl;
+		document.getElementById("AddLang").innerHTML = sl;
 		document.title = r[9] + " - " + TITLE;
 		document.F.ButtonInitConfig.disabled = (ui_.Installed == r[4]) || !r[5];
 	});
@@ -1724,8 +1724,8 @@ InitDialog = async function () {
 			}
 			s.push('<br><label>Add-ons</label><input id="UsedAddons" type="text" style="width: 100%" onclick="this.select()"><br>');
 		}
-		s.push('<br><input type="button" value="Visit website" id="ws1" onclick="Run(2)">');
-		s.push('&nbsp;<input type="button" value="Check for updates" onclick="Run(3)">');
+		s.push('<br><button id="ws1" onclick="Run(2)">Visit website</button>');
+		s.push('&nbsp;<button onclick="Run(3)">Check for updates</button>');
 		s.push('</td></tr></table>');
 		document.getElementById("Content").innerHTML = s.join("");
 		let website = "https://tablacus.github.io/explorer_en.html";
@@ -1753,7 +1753,7 @@ InitDialog = async function () {
 		}
 		document.F.ButtonOk.disabled = false;
 		const el = document.getElementById("buttonCancel");
-		el.value = await GetText("Copy");
+		el.innerHTML = await GetText("Copy");
 		el.onclick = function () {
 			clipboardData.setData("text", document.getElementById("about3").value + "\n" + document.getElementById("UsedAddons").value);
 		}
@@ -1987,7 +1987,7 @@ InitLocation = function () {
 		ar = [];
 		const s = "CSA";
 		for (let i = 0; i < s.length; ++i) {
-			ar.push('<input type="button" value="', await MainWindow.g_.KeyState[i][0], '" title="', s.charAt(i), '" onclick="AddMouse(this)">');
+			ar.push('<button " title="', s.charAt(i), '" onclick="AddMouse(this)">', await MainWindow.g_.KeyState[i][0], "</button>");
 		}
 		document.getElementById("__MOUSEDATA").innerHTML = ar.join("");
 		document.title = await GetAddonInfo(Addon_Id).Name;
@@ -2110,12 +2110,7 @@ InitLocation = function () {
 
 		if (await WebBrowser.OnClose) {
 			g_Inline = true;
-			const cel = document.getElementsByTagName("input");
-			for (let i = cel.length; i-- > 0;) {
-				if (/^ok$|^cancel$/.test(cel[i].className)) {
-					cel[i].style.display = "none";
-				}
-			}
+			AddRule(".ok, .cancel { display: none }");
 		} else {
 			WebBrowser.OnClose = async function (WB) {
 				await SetOptions(TEOk, null, ContinueOptions);
@@ -2687,7 +2682,7 @@ async function ArrangeAddon(xml, td) {
 			if (!ui_.strInstall) {
 				ui_.strInstall = await GetText("Install");
 			}
-			s.push('<input type="button" onclick="Install(this,', bUpdate, ')" title="', Id, '_', info.Version, '" value="', ui_.strInstall, '">');
+			s.push('<button onclick="Install(this,', bUpdate, ')" title="', Id, '_', info.Version, '">', ui_.strInstall, '</button>');
 		} else {
 			if (!ui_.strVersion) {
 				ui_.strVersion = await GetTextR("@mstask.dll,-319");
@@ -2695,7 +2690,7 @@ async function ArrangeAddon(xml, td) {
 			if (!ui_.strIsRequired) {
 				ui_.strIsRequired = await GetText("%s is required.");
 			}
-			s.push('<input type="button"  class="danger" onclick="MainWindow.CheckUpdate()" value="', ui_.strIsRequired.replace("%s", ui_.strVersion + " " + (info.MinVersion.replace(/^20/, "").replace(/\.0/g, '.'))), '">');
+			s.push('<button class="danger" onclick="MainWindow.CheckUpdate()">', ui_.strIsRequired.replace("%s", ui_.strVersion + " " + (info.MinVersion.replace(/^20/, "").replace(/\.0/g, '.'))), '</button>');
 		}
 		s.push(strUpdate, '</td></tr></table>');
 		s.unshift(g_nSort["1_1"] == 1 ? -dt2 : g_nSort["1_1"] ? Id : info.Name);
@@ -2823,7 +2818,7 @@ async function IconPacksList1(s, Id, info, json) {
 		if (!ui_.strInstalled) {
 			ui_.strInstalled = await GetText("Installed");
 		}
-		s.push(ui_.strInstalled, '<input type="button" onclick="DeleteIconPacks()" value="Delete" style="float: right;">');
+		s.push(ui_.strInstalled, '<button onclick="DeleteIconPacks()" style="float: right;">Delete</button>>');
 		if (json[Id] && Number(json[Id].info.version) > Number(info.version)) {
 			s.push('<hr><b class="danger nowrap">', await GetText('Update available'), '</b> ', json[Id].info.version);
 			info = json[Id].info;
@@ -2834,7 +2829,7 @@ async function IconPacksList1(s, Id, info, json) {
 		if (!ui_.strInstall) {
 			ui_.strInstall = await GetText("Install");
 		}
-		s.push('<input type="button" onclick="InstallIcon(this)" title="', Id, '_', info.version, '" value="', ui_.strInstall, '" style="float: right;">');
+		s.push('<button onclick="InstallIcon(this)" title="', Id, '_', info.version, '" style="float: right;">', ui_.strInstall, '</button>');
 	}
 	s.push("<br>", new Date(info.pubDate).toLocaleDateString());
 	return true;
@@ -2922,7 +2917,7 @@ async function LangPacksList(xhr) {
 				}
 				strUpdate = ['<b class="danger nowrap" style="float: right">', await GetText('Update available'), '&nbsp;&nbsp;</b>'].join("");
 			}
-			const ar = [tm, '<b style="font-size: 1.3em">', info.name, " / ", info.en, "</b><br>", info.author, '<input type="button" onclick="InstallLang(this)" title="', n, "\n", info.pubDate, '" value="', bt, '" style="float: right">', strUpdate, '<br>', new Date(tm).toLocaleDateString()];
+			const ar = [tm, '<b style="font-size: 1.3em">', info.name, " / ", info.en, "</b><br>", info.author, '<button onclick="InstallLang(this)" title="', n, "\n", info.pubDate, '" style="float: right">', bt, '</button>', strUpdate, '<br>', new Date(tm).toLocaleDateString()];
 			if (info.size) {
 				ar.push("<br>", (info.size / 1024).toFixed(1), " KB");
 			}
@@ -3026,12 +3021,13 @@ function ChangeForm(ar) {
 	fn();
 }
 
-async function SetTabContents(id, name, value) {
-	const oPanel = document.getElementById("panel" + id);
+function SetTabContents(id, name, value) {
 	if (name) {
-		document.getElementById("tab" + id).innerHTML = await GetText(name);
+		Promise.all([GetText(name)]).then(function (r) {
+			document.getElementById("tab" + id).innerHTML = r[0];
+		});
 	}
-	oPanel.innerHTML = value.join ? value.join('') : value;
+	document.getElementById("panel" + id).innerHTML = (value.join ? value.join("") : value).replace(/<input type="button"(.*?)value="([^"]*)"\s?([^>]*)>/ig, "<button$1$3>$2</button>");
 }
 
 async function ShowButtons(b1, b2, SortMode) {

@@ -1615,7 +1615,6 @@ VOID teApiGetClientRect(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIA
 
 VOID teApiGetClipboardData(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-
 	if (!::IsClipboardFormatAvailable(CF_UNICODETEXT)) {
 		return;
 	}

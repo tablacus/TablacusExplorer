@@ -187,6 +187,7 @@ BOOL	g_bShowParseError = TRUE;
 BOOL	g_bDragging = FALSE;
 BOOL	g_bCanLayout = FALSE;
 BOOL	g_bUpper10;
+BOOL	g_bSetActve = FALSE;
 extern BOOL	g_bDarkMode;
 extern std::unordered_map<HWND, HWND> g_umDlgProc;
 BOOL	g_bDragIcon = TRUE;
@@ -6506,6 +6507,7 @@ VOID CteShellBrowser::Refresh(BOOL bCheck)
 			}
 			m_pTC->UnlockUpdate();
 			ArrangeWindow();
+			g_bSetActve = TRUE;
 		} else if (m_nUnload == 0) {
 			m_nUnload = 4;
 		}
@@ -10034,6 +10036,7 @@ VOID CteShellBrowser::NavigateComplete(BOOL bBeginNavigate)
 		if (ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
 			ArrangeWindow();
 		}
+		g_bSetActve = TRUE;
 	}
 }
 
@@ -10077,6 +10080,13 @@ VOID CteShellBrowser::FixColumnEmphasis()
 {
 	if (!g_param[TE_ColumnEmphasis] && (int)ListView_GetSelectedColumn(m_hwndLV) >= 0) {
 		ListView_SetSelectedColumn(m_hwndLV, -1);
+	}
+	if (g_bSetActve && m_hwndLV == GetFocus()) {
+		SetActive(FALSE);
+		g_bSetActve = FALSE;
+#ifdef _DEBUG
+		::OutputDebugString(L"Focus\n");
+#endif
 	}
 }
 
