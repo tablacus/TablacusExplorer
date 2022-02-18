@@ -1384,7 +1384,9 @@ InitOptions = async function () {
 		document.getElementById("tab1_3").innerHTML = r[7] || r[0].replace("%s", r[1]);
 		const sl = r[8] || r[0].replace("%s", r[2] + (/^ja|^zh/i.test(r[6]) ? "" : " ") + (r[3].toLowerCase()));
 		document.getElementById("tab1_4").innerHTML = sl;
-		document.getElementById("AddLang").innerHTML = sl;
+		setTimeout(function (sl) {
+			document.getElementById("AddLang").innerHTML = sl;
+		}, 99, sl);
 		document.title = r[9] + " - " + TITLE;
 		document.F.ButtonInitConfig.disabled = (ui_.Installed == r[4]) || !r[5];
 	});
@@ -2818,7 +2820,7 @@ async function IconPacksList1(s, Id, info, json) {
 		if (!ui_.strInstalled) {
 			ui_.strInstalled = await GetText("Installed");
 		}
-		s.push(ui_.strInstalled, '<button onclick="DeleteIconPacks()" style="float: right;">Delete</button>>');
+		s.push(ui_.strInstalled, '<button onclick="DeleteIconPacks()" style="float: right;">Delete</button>');
 		if (json[Id] && Number(json[Id].info.version) > Number(info.version)) {
 			s.push('<hr><b class="danger nowrap">', await GetText('Update available'), '</b> ', json[Id].info.version);
 			info = json[Id].info;

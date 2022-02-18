@@ -127,11 +127,11 @@ if (window.Addon == 1) {
 					o.title = path;
 				}
 				const cl = r[1];
-				const s = ['<table><tr style="width: 100%'];
+				const s = ['<table><tr class="full'];
 				if (/^#/.test(cl)) {
 					let c = Number(cl.replace(/^#/, "0x"));
 					c = (c & 0xff0000) * .0045623779296875 + (c & 0xff00) * 2.29296875 + (c & 0xff) * 114;
-					s.push(';color:', c > 127500 ? "#000" : "#fff");
+					s.push(c > 127500 ? " lightbg" : " darkbg");
 				}
 				s.push('">');
 				const r0 = Addons.TabPlus.opt.IconSize;
@@ -611,7 +611,7 @@ if (window.Addon == 1) {
 	}
 	Addons.TabPlus.opt.Width = GetNum(Addons.TabPlus.opt.Width);
 	Addons.TabPlus.opt.IconSize = GetNum(Addons.TabPlus.opt.IconsSize) || 13;
-	Addons.TabPlus.ImgLock = Addons.TabPlus.opt.IconLock || GetWinIcon(0x602, "font:Segoe UI Emoji,0x1f4cc", 0, "bitmap:ieframe.dll,545,13,2");
+	Addons.TabPlus.ImgLock = Addons.TabPlus.opt.IconLock || ("string" === ui_.MiscIcon["lock"] ? ui_.MiscIcon["lock"] : await GetMiscIcon("lock")) || GetWinIcon(0x602, "font:Segoe UI Emoji,0x1f4cc", 0, "bitmap:ieframe.dll,545,13,2");
 	const r0 = Math.round(Addons.TabPlus.opt.IconSize * screen.deviceYDPI / 96);
 	const r = [GetImgTag({
 		draggable: "false",

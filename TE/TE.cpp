@@ -187,7 +187,6 @@ BOOL	g_bShowParseError = TRUE;
 BOOL	g_bDragging = FALSE;
 BOOL	g_bCanLayout = FALSE;
 BOOL	g_bUpper10;
-BOOL	g_bSetActve = FALSE;
 extern BOOL	g_bDarkMode;
 extern std::unordered_map<HWND, HWND> g_umDlgProc;
 BOOL	g_bDragIcon = TRUE;
@@ -6507,7 +6506,6 @@ VOID CteShellBrowser::Refresh(BOOL bCheck)
 			}
 			m_pTC->UnlockUpdate();
 			ArrangeWindow();
-			g_bSetActve = TRUE;
 		} else if (m_nUnload == 0) {
 			m_nUnload = 4;
 		}
@@ -8798,6 +8796,15 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 			}
 			SetTimer(g_hwndMain, TET_Status, 500, teTimerProc);
+			if (m_hwndLV == GetFocus()) {
+				SetActive(TRUE);
+				if (ListView_IsGroupViewEnabled(m_hwndLV) && ListView_GetNextItem(m_hwndLV, -1, LVNI_FOCUSED) <= 0) {
+					int nFocused = ListView_GetNextItem(m_hwndLV, -1, LVNI_SELECTED);
+					if (nFocused > 0) {
+						ListView_SetItemState(m_hwndLV, nFocused, LVIS_FOCUSED, LVIS_FOCUSED);
+					}
+				}
+			}
 			return S_OK;
 		case DISPID_VIEWMODECHANGED://XP+
 			m_bCheckLayout = TRUE;
@@ -10036,7 +10043,6 @@ VOID CteShellBrowser::NavigateComplete(BOOL bBeginNavigate)
 		if (ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
 			ArrangeWindow();
 		}
-		g_bSetActve = TRUE;
 	}
 }
 
@@ -10081,12 +10087,14 @@ VOID CteShellBrowser::FixColumnEmphasis()
 	if (!g_param[TE_ColumnEmphasis] && (int)ListView_GetSelectedColumn(m_hwndLV) >= 0) {
 		ListView_SetSelectedColumn(m_hwndLV, -1);
 	}
-	if (g_bSetActve && m_hwndLV == GetFocus()) {
-		SetActive(FALSE);
-		g_bSetActve = FALSE;
-#ifdef _DEBUG
-		::OutputDebugString(L"Focus\n");
-#endif
+	if (m_param[SB_FolderFlags] & FWF_HIDEFILENAMES) {
+		if (m_pShellView) {
+			IFolderView2 *pFV2;
+			if (SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV2)))) {
+				pFV2->SetCurrentFolderFlags(FWF_HIDEFILENAMES, FWF_HIDEFILENAMES);
+				pFV2->Release();
+			}
+		}
 	}
 }
 
