@@ -1683,17 +1683,19 @@ InitDialog = async function () {
 			FocusElement(document.F.path);
 		}, 99);
 
-		WebBrowser.OnClose = async function (WB) {
+		ui_.ArgPath = await dialogArguments.path;
+
+		WebBrowser.OnClose = function (WB) {
 			if (g_nResult == 1) {
 				let path = document.F.path.value;
 				if (path) {
 					if (!/^[A-Z]:\\|^\\/i.test(path)) {
-						path = BuildPath(await dialogArguments.path, path.replace(/^\s+/, ""));
+						path = BuildPath(ui_.ArgPath, path.replace(/^\s+/, ""));
 					}
 					if (GetElement("folder").checked) {
-						await CreateFolder(path);
+						MainWindow.CreateFolder(path);
 					} else if (GetElement("file").checked) {
-						await CreateFile(path);
+						MainWindow.CreateFile(path);
 					}
 				}
 			}
