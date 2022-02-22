@@ -65,7 +65,7 @@ g_.IconChg = [
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20220218 ? te.Version : 20220221;
+		return te.Version < 20220218 ? te.Version : 20220222;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1366,8 +1366,7 @@ MakeImgSrc = function (src, index, bSrc, h, clBk) {
 		if (res) {
 			const icon = res[1].split(",");
 			if (!/\\/.test(icon[0])) {
-				fn = BuildPath(te.Data.DataFolder, ["icons", icon[0].replace(/\..*/, ""), icon[1] + MainWindow.g_.IconExt].join("\\"));
-				if (fso.FileExists(fn)) {
+				if (fn = GetExistsIcon(icon[0].replace(/\..*$/, ""), icon[1])) {
 					return fn;
 				}
 			}
@@ -1380,8 +1379,7 @@ MakeImgSrc = function (src, index, bSrc, h, clBk) {
 				if (api.StrCmpNI(src, a2[0], a2[0].length) == 0) {
 					if (a2[3]) {
 						const a3 = src.split(",");
-						fn = BuildPath(te.Data.DataFolder, "icons", a2[3], a3[3] + MainWindow.g_.IconExt);
-						if (fso.FileExists(fn)) {
+						if (fn = GetExistsIcon(a2[3], a3[3])) {
 							return fn;
 						}
 					}
@@ -1439,12 +1437,17 @@ MakeImgIcon = function (src, index, h, bIcon, clBk) {
 	if (res) {
 		const icon = res[1].split(",");
 		if (!/\\/.test(icon[0])) {
-			let image = MainWindow.g_.IconExt && api.CreateObject("WICBitmap").FromFile(BuildPath(te.Data.DataFolder, "icons", icon[0].replace(/\..*/, ""), icon[1] + MainWindow.g_.IconExt));
-			if (image) {
-				if (h) {
-					image = GetThumbnail(image, h, true);
+			if (MainWindow.g_.IconExt) {
+				const fn = GetExistsIcon(icon[0].replace(/\..*$/, ""), icon[1]);
+				if (fn) {
+					let image = api.CreateObject("WICBitmap").FromFile(fn);
+					if (image) {
+						if (h) {
+							image = GetThumbnail(image, h, true);
+						}
+						return image.GetHICON();
+					}
 				}
-				return image.GetHICON();
 			}
 			const fn = g_.DefaultIcons[icon[0].toLowerCase()];
 			if (fn) {
@@ -1480,10 +1483,15 @@ MakeImgIcon = function (src, index, h, bIcon, clBk) {
 			const a2 = ar[i];
 			if (api.StrCmpNI(src, a2[0], a2[0].length) == 0) {
 				if (a2[3]) {
-					const a3 = src.split(",");
-					const image = MainWindow.g_.IconExt && api.CreateObject("WICBitmap").FromFile(BuildPath(te.Data.DataFolder, "icons", a2[3], a3[3] + MainWindow.g_.IconExt));
-					if (image) {
-						return GetThumbnail(image, a3[2], true).GetHICON();
+					if (MainWindow.g_.IconExt) {
+						const a3 = src.split(",");
+						const fn = GetExistsIcon(a2[3], a3[3]);
+						if (fn) {
+							const image = api.CreateObject("WICBitmap").FromFile(fn);
+							if (image) {
+								return GetThumbnail(image, a3[2], true).GetHICON();
+							}
+						}
 					}
 				}
 				if (i & 1 && h && h <= 16) {
@@ -3349,11 +3357,19 @@ CloseWindows = function (hwnd, s) {
 	}
 }
 
-GetMiscIcon = function (n) {
-	let s = BuildPath(te.Data.DataFolder, "icons\\misc\\" + n + MainWindow.g_.IconExt);
-	if (!fso.FileExists(s)) {
-		s = "";
+GetExistsIcon = function (j, n) {
+	const wfd = n && IsExists(BuildPath(te.Data.DataFolder, "icons", j, n + ".*"), true);
+	if (wfd) {
+		if (wfd.cFileName.indexOf(g_.IconExt) < 0 && fso.FileExists(BuildPath(te.Data.DataFolder, "icons", j, n + MainWindow.g_.IconExt))) {
+			return BuildPath(te.Data.DataFolder, "icons", j, n + MainWindow.g_.IconExt);
+		}
+		return BuildPath(te.Data.DataFolder, "icons", j, wfd.cFileName);
 	}
+	return "";
+}
+
+GetMiscIcon = function (n) {
+	const s = GetExistsIcon("misc", n);
 	InvokeUI("SetMiscIcon", [n, s]);
 	return s;
 }

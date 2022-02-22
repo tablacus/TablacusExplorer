@@ -1596,22 +1596,24 @@ InitDialog = async function () {
 			if ((wfd[1] & FILE_ATTRIBUTE_DIRECTORY) && /^[a-z]/i.test(wfd[0])) {
 				const arfn = [];
 				const path2 = BuildPath(path, wfd[0]);
-				for (let fn2, FileList2 = await GetFileList(BuildPath(path2, "*" + await MainWindow.g_.IconExt), true, window.chrome); fn2 = FileList2.shift();) {
+				for (let fn2, FileList2 = await GetFileList(BuildPath(path2, "*"), true, window.chrome); fn2 = FileList2.shift();) {
 					const wfd2 = fn2.split("\n");
 					if (!(wfd2[1] & FILE_ATTRIBUTE_DIRECTORY)) {
-						arfn.push(wfd2[0]);
+						arfn.push(wfd2[0].replace(/\..*$/, ""));
 					}
 				}
 				if (arfn.length) {
 					arfn.sort(function (a, b) {
-						a = a.replace(/\..*/, "");
-						b = b.replace(/\..*/, "");
 						return a - b || a.localeCompare(b);
 					});
 					const px = screen.deviceYDPI / 3;
+					let n;
 					for (let i = 0; i < arfn.length; ++i) {
-						const src = ["icon:" + GetFileName(path2), arfn[i].replace(/\.[^\.]*$/i, "")].join(",");
-						s.push(await GetImgTag({ src: src, title: src, "class": "button", onclick: "SelectIcon(this)" }, px));
+						if (n != arfn[i]) {
+							n = arfn[i];
+							const src = ["icon:" + GetFileName(path2), n].join(",");
+							s.push(await GetImgTag({ src: src, title: src, "class": "button", onclick: "SelectIcon(this)" }, px));
+						}
 					}
 					s.push("<br>");
 				}
@@ -1659,6 +1661,20 @@ InitDialog = async function () {
 	}
 	if (Query == "new") {
 		returnValue = false;
+		ui_.ArgPath = await dialogArguments.path;
+		CreateNewItem = function () {
+			let path = document.F.path.value;
+			if (path) {
+				if (!/^[A-Z]:\\|^\\/i.test(path)) {
+					path = BuildPath(ui_.ArgPath, path.replace(/^\s+/, ""));
+				}
+				if (GetElement("folder").checked) {
+					MainWindow.CreateFolder(path);
+				} else if (GetElement("file").checked) {
+					MainWindow.CreateFile(path);
+				}
+			}
+		}
 		const s = ['<div style="padding: 8px;" style="display: block;"><label><input type="radio" name="mode" id="folder" onclick="document.F.path.focus()">New Folder</label> <label><input type="radio" name="mode" id="file" onclick="document.F.path.focus()">New File</label><br>', await dialogArguments.path, '<br><input type="text" name="path" style="width: 100%"></div>'];
 		document.getElementById("Content").innerHTML = s.join("");
 		document.body.addEventListener("keydown", function (ev) {
@@ -1666,7 +1682,8 @@ InitDialog = async function () {
 				document.F.ButtonOk.disabled = !document.F.path.value;
 			}, 99);
 			return KeyDownEvent(ev, document.F.path.value && function () {
-				SetResult(1);
+				CreateNewItem();
+				SetResult(2);
 			}, function () {
 				SetResult(2);
 			});
@@ -1683,21 +1700,9 @@ InitDialog = async function () {
 			FocusElement(document.F.path);
 		}, 99);
 
-		ui_.ArgPath = await dialogArguments.path;
-
 		WebBrowser.OnClose = function (WB) {
 			if (g_nResult == 1) {
-				let path = document.F.path.value;
-				if (path) {
-					if (!/^[A-Z]:\\|^\\/i.test(path)) {
-						path = BuildPath(ui_.ArgPath, path.replace(/^\s+/, ""));
-					}
-					if (GetElement("folder").checked) {
-						MainWindow.CreateFolder(path);
-					} else if (GetElement("file").checked) {
-						MainWindow.CreateFile(path);
-					}
-				}
+				CreateNewItem();
 			}
 			WB.Close();
 		};

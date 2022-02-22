@@ -747,12 +747,15 @@ ImgBase64 = async function (el, index, h) {
 
 FireEvent = function (o, event) {
 	if (o) {
-		if (o.fireEvent) {
-			return o.fireEvent('on' + event);
+		if (window.chrome) {
+			const evt = new Event(event);
+			return !o.dispatchEvent(evt);
 		} else if (document.createEvent) {
 			const evt = document.createEvent("HTMLEvents");
 			evt.initEvent(event, true, true);
 			return !o.dispatchEvent(evt);
+		} else if (o.fireEvent) {
+			return o.fireEvent('on' + event);
 		}
 	}
 }
