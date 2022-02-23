@@ -145,6 +145,15 @@ ExtractAttr = function (o, ar, re) {
 	}
 }
 
+AddClass = function (o, s) {
+	const ar = [];
+	if (o.className || o["class"]) {
+		ar.push(o.className || o["class"]);
+	}
+	ar.push(s);
+	o["class"] = ar.join(" ");
+}
+
 GetImgTag = async function (o, h) {
 	if (o.onclick) {
 		if (!o.onmouseover) {
@@ -169,12 +178,7 @@ GetImgTag = async function (o, h) {
 				h = Number(h) ? h + "px" : EncodeSC(h);
 				const ar = ['font-family:', FontFace, '; font-size:', h2, '; line-height:', h, ';', (o.style || "") ];
 				o.style = ar.join("");
-				ar.length = 0;
-				if (o.className || o["class"]) {
-					ar.push(o.className || o["class"]);
-				}
-				ar.push("fonticon");
-				o["class"] = ar.join(" ");
+				AddClass(o, "fonticon");
 			} else if (o.src == o.title) {
 				o.style = "display: none";
 			} else {
@@ -192,13 +196,9 @@ GetImgTag = async function (o, h) {
 			res = (window.chrome || g_.IEVer > 8) && /\.svg$/i.test(o.src);
 		}
 		if (res) {
-			let ar = [];
-			if (o.className || o["class"]) {
-				ar.push(o.className || o["class"]);
-			}
-			ar.push("svgicon");
-			o["class"] = ar.join(" ");
-			ar = ['<span'];
+			AddClass(o, "svgicon");
+			o.org = void 0;
+			const ar = ['<span'];
 			h = h || window.IconSize;
 			h = Number(h) ? h + "px" : EncodeSC(h);
 			ExtractAttr(o, ar, /src/i);
@@ -213,6 +213,7 @@ GetImgTag = async function (o, h) {
 			o.draggable = o.ondragstart != null;
 		}
 		const ar = ['<img'];
+		AddClass(o, "imgicon");
 		ExtractAttr(o, ar);
 		if (h) {
 			h = Number(h) ? h + 'px' : EncodeSC(h);

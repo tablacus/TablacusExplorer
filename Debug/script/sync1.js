@@ -3623,11 +3623,35 @@ GetAddonLocation = function (strName) {
 	return items.length && items[0].getAttribute("Location");
 }
 
+GetAddonIcon = function (Id) {
+	return g_.AddonsIcon[Id] || GetMiscIcon(Id);
+}
+
+SetAddonIcon = function (Id, s) {
+	g_.AddonsIcon[Id] = s;
+}
+
+GetAddonIconImg = function (Id, json, n, text) {
+	const o = JSON.parse(json || {});
+	o.src = GetAddonIcon(Id);
+	if (!o.src) {
+		if (!text) {
+			return "";
+		}
+		AddClass(o, text);
+	}
+	return GetImgTag(o, GetIconSize(0, n));
+}
+
 SetAddonLocation = function (Location, strName) {
 	if (!g_.Locations[Location]) {
 		g_.Locations[Location] = api.CreateObject("Array");
 	}
-	g_.Locations[Location].push(strName);
+	const ar = strName.split(/\t/);
+	g_.Locations[Location].push(ar[0]);
+	if (ar.length > 1 && !g_.AddonsIcon[ar[0]]) {
+		SetAddonIcon(ar[0], ar[1]);
+	}
 }
 
 FocusFV2 = function (Id) {

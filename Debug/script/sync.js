@@ -47,6 +47,7 @@ g_.Autocomplete = api.CreateObject("Object");
 g_.LockUpdate = 0;
 g_.ptMenuDrag = api.Memory("POINT");
 g_.Locations = api.CreateObject("Object");
+g_.AddonsIcon = api.CreateObject("Object");
 g_.IEVer = window.chrome ? 12 : ("undefined" === typeof ScriptEngineMajorVersion ? 12 : (ScriptEngineMajorVersion() > 8 ? ScriptEngineMajorVersion() : ScriptEngineMinorVersion()));
 g_.bit = api.sizeof("HANDLE") * 8;
 g_.DefaultIcons = {
@@ -65,7 +66,7 @@ g_.IconChg = [
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20220218 ? te.Version : 20220222;
+		return te.Version < 20220218 ? te.Version : 20220223;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3369,7 +3370,7 @@ GetExistsIcon = function (j, n) {
 }
 
 GetMiscIcon = function (n) {
-	const s = GetExistsIcon("misc", n);
+	const s = GetExistsIcon("misc", n) || RunEvent4("GetMiscIcon", n);
 	InvokeUI("SetMiscIcon", [n, s]);
 	return s;
 }

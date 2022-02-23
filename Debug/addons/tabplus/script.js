@@ -126,10 +126,10 @@ if (window.Addon == 1) {
 				if (Addons.TabPlus.opt.Tooltips) {
 					o.title = path;
 				}
-				const cl = r[1];
+				const cl = (r[1] || "").split(/\s/);
 				const s = ['<table><tr class="full'];
-				if (/^#/.test(cl)) {
-					let c = Number(cl.replace(/^#/, "0x"));
+				if (/^#/.test(cl[0]) && !cl[1]) {
+					let c = Number(cl[0].replace(/^#/, "0x"));
 					c = (c & 0xff0000) * .0045623779296875 + (c & 0xff00) * 2.29296875 + (c & 0xff) * 114;
 					s.push(c > 127500 ? " lightbg" : " darkbg");
 				}
@@ -188,20 +188,23 @@ if (window.Addon == 1) {
 					o.innerHTML = s.join("");
 				}
 				const style = o.style;
-				if (cl) {
-					if (ui_.IEVer >= 10) {
+				if (cl[0]) {
+					if (ui_.IEVer > 9) {
 						style.background = "none";
 					} else {
 						style.filter = "none";
 					}
-					style.backgroundColor = cl;
+					style.backgroundColor = cl[0];
 				} else {
-					if (ui_.IEVer >= 10) {
+					if (ui_.IEVer > 9) {
 						style.background = "";
 					} else if (style.filter) {
 						style.filter = "";
 					}
 					style.backgroundColor = "";
+				}
+				if (cl[1]) {
+					style.color = cl[1];
 				}
 				const p = Addons.TabPlus.Class(TC, i, FV);
 				if (wait) {

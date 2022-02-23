@@ -12,6 +12,10 @@ if (!window.addEventListener && window.attachEvent) {
 	}
 }
 
+if (!window.devicePixelRatio) {
+	window.devicePixelRatio = 1;
+}
+
 ui_ = {
 	IEVer: window.chrome ? 12 : ScriptEngineMajorVersion() > 8 ? ScriptEngineMajorVersion() : ScriptEngineMinorVersion(),
 	Zoom: 1,
@@ -256,7 +260,7 @@ OpenHttpRequest = async function (url, alt, fn, arg) {
 			}
 		}
 	}
-	if (/ml$/i.test(url)) {
+	if (/ml$|\.json$/i.test(url)) {
 		url += "?" + Math.floor(new Date().getTime() / 60000);
 	}
 	CalcRef(arg && await arg.pcRef, 0, 1);
@@ -505,8 +509,17 @@ async function _InvokeMethod() {
 	}
 }
 
-ReadCss = async function (s) {
+AddRule = function (s) {
 	const css = document.styleSheets.item(0);
+	if (css.insertRule) {
+		css.insertRule(s, css.cssRules.length);
+	} else if (css.addRule) {
+		const s2 = s.split(/\s*{\s*/);
+		css.addRule(s2[0], s2[1].replace(/}.*/m, ""));
+	}
+}
+
+ReadCss = async function (s) {
 	const ar = s.split(/}\s*/m);
 	while (s = ar.shift()) {
 		try {
@@ -514,13 +527,7 @@ ReadCss = async function (s) {
 			if (res) {
 				LoadCss(res[1]);
 			}
-			s = s.replace(/^@[^;]*;\s*/gm, "");
-			if (css.insertRule) {
-				css.insertRule(s + "}", css.cssRules.length);
-			} else if (css.addRule) {
-				const s2 = s.split("{");
-				css.addRule(s2[0], s2[1]);
-			}
+			AddRule(s.replace(/^@[^;]*;\s*/gm, "") + "}");
 		} catch (e) { }
 	}
 }
@@ -1126,15 +1133,6 @@ if (window.chrome) {
 }
 
 //Options
-AddRule = function (s) {
-	const css = document.styleSheets.item(0);
-	if (css.insertRule) {
-		css.insertRule(s, css.cssRules.length);
-	} else if (css.addRule) {
-		css.addRule(s);
-	}
-}
-
 AddonOptions = async function (Id, fn, Data, bNew) {
 	CloseFindDialog();
 	await LoadLang2(BuildPath("addons", Id, "lang", await GetLangId() + ".xml"));

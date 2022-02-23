@@ -1127,7 +1127,7 @@ async function SetAddon(Id, bEnable, td, Alt) {
 		td = document.getElementById(Alt || "Addons_" + Id).parentNode;
 	}
 	const info = GetAddonInfo(Id);
-	const r = await Promise.all([info.Level, info.MinVersion, info.Config, AboutTE(0), info.Name, info.Version, info.Options]);
+	const r = await Promise.all([info.Level, info.MinVersion, info.Config, AboutTE(0), info.Name, info.Version, info.Options, MainWindow.GetAddonIconImg(Id, '{ "style": "vertical-align: bottom" }', 24)]);
 	const bLevel = (!window.chrome || r[0] > 1);
 	const bConfig = GetNum(r[2]);
 	const bMinVer = !bLevel || r[1] && r[3] < CalcVersion(r[1]);
@@ -1135,7 +1135,11 @@ async function SetAddon(Id, bEnable, td, Alt) {
 		bEnable = false;
 	}
 	const s = ['<div ', (Alt ? '' : 'draggable="true" ondragstart="Start5(event, this)" ondragend="End5()"'), ' title="', Id, '" Id="', Alt || "Addons_", Id, '">'];
-	s.push('<table><tr style="border-top: 1px solid buttonshadow"', bEnable || bConfig ? "" : ' class="disabled"', '><td>', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id + '">'), '</td><td style="width: 100%"><label for="_', Id, '">', r[4], "&nbsp;", r[5], '<br><button class="addonbutton" onclick="AddonInfo(\'', Id, '\',\'', Alt || "", '\')">Details</button>');
+	s.push('<table><tr style="border-top: 1px solid buttonshadow"', bEnable || bConfig ? "" : ' class="disabled"', '><td class="middle">', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id + '">'), '</td><td style="width: 100%; padding: .3em 0"><label for="_', Id, '">');
+	if (r[7]) {
+		s.push(r[7], "&nbsp;");
+	}
+	s.push('<b>', r[4], "</b>&nbsp;", r[5], '<br><button class="addonbutton" onclick="AddonInfo(\'', Id, '\',\'', Alt || "", '\')">Details</button>');
 	s.push(' <button class="addonbutton" onclick="AddonRemove(\'', Id, '\');">Delete</button>&nbsp;(', Id, ')<div id="', Alt || "", "i_", Id, '"></div></td>');
 	if (!bLevel) {
 		if (!ui_.strNotSupported) {
@@ -1159,8 +1163,9 @@ async function SetAddon(Id, bEnable, td, Alt) {
 	s.push('</tr></table></label></div>');
 	td.style.visibility = "hidden";
 	td.innerHTML = s.join("");
-	await ApplyLang(td);
-	td.style.visibility = "";
+	Promise.all([ApplyLang(td), td]).then(function (r) {
+		r[1].style.visibility = "";
+	});
 	if (!Alt) {
 		const div = document.getElementById("Sorted_" + Id);
 		if (div) {
@@ -1949,7 +1954,7 @@ SetLocations = async function () {
 				continue;
 			}
 			dup[ar[0]] = true;
-			locs[r[i]].unshift(await GetImgTag({ src: ar[1], title: await GetAddonInfo(ar[0]).Name, "class": ar[1] ? "" : "text1" }, 16) + '<span style="font-size: 1px"> </span>');
+			locs[r[i]].unshift(await MainWindow.GetAddonIconImg(ar[0], JSON.stringify({ title: await GetAddonInfo(ar[0]).Name }), 16, "text1") + '<span style="font-size: 1px"> </span>');
 		}
 	}
 	for (let i in locs) {
