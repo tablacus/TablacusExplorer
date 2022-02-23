@@ -3249,7 +3249,7 @@ ShowNew = function (Ctrl, pt, Mode) {
 		opt.path = path;
 		opt.FV = FV;
 		opt.Modal = false;
-		ShowDialogEx("new", 480, 120, null, opt);
+		ShowDialogEx("new", 480, 140, null, opt);
 	}
 }
 
