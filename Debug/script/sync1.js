@@ -2478,7 +2478,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					break;
 				case WM_SETTINGCHANGE:
 					te.Data.TempFolder = GetTempPath(1);
-					cFV = te.Ctrls(CTRL_FV);
+					cFV = te.Ctrls(CTRL_FV, true);
 					for (let i in cFV) {
 						const hList = cFV[i].hwndList;
 						if (hList) {
