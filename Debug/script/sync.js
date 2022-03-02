@@ -66,7 +66,7 @@ g_.IconChg = [
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20220218 ? te.Version : 20220227;
+		return te.Version < 20220302 ? te.Version : 20220302;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1729,17 +1729,50 @@ NavigateFV = function (FV, Path, wFlags, bInputed) {
 		}
 	}
 	if (wFlags == null) {
+		if (bInputed) {
+			MainWindow.g_menu_button = 0;
+		}
 		wFlags = GetOpenMode(FV);
 	}
 	if (GetLock(FV)) {
 		wFlags |= SBSP_NEWBROWSER;
 	}
 	if (bInputed) {
-		RunEvent1("LocationEntered", FV, Path, wFlags);
-		const r = MainWindow.RunEvent4("LocationEntered2", FV, Path, wFlags);
-		if (r !== void 0) {
-			return r;
+		if (/^object$|^function$/.test(typeof bInputed)) {
+			Input = Path;
+			if (ExecMenu(te.Ctrl(CTRL_WB), "Alias", bInputed, 2) == S_OK) {
+				return S_OK;
+			}
 		}
+		api.SHParseDisplayName(function (pid, FV, Path, wFlags) {
+			if (pid) {
+				if ((pid.IsFolder && !pid.Unavailable) || pid.Enum) {
+					RunEvent1("LocationEntered", FV, Path, wFlags);
+					const r = MainWindow.RunEvent4("LocationEntered2", FV, Path, wFlags);
+					if (r === void 0) {
+						FV.Navigate(pid, wFlags);
+						FV.Focus();
+					}
+					return;
+				}
+				if (!pid.Unavailable) {
+					const bak = FV.AltSelectedItems;
+					const sid = FV.SessionId;
+					const Items = api.CreateObject("FolderItems");
+					Items.AddItem(pid);
+					FV.AltSelectedItems = Items;
+					const hr = ExecMenu(FV, "Default", null, 2);
+					if (sid == FV.SessionId) {
+						FV.AltSelectedItems = bak;
+					}
+					if (hr == S_OK) {
+						return;
+					}
+				}
+			}
+			ShellExecute(Path, null, SW_SHOWNORMAL, FV.FolderItem.Path);
+		}, 0, Path, FV, Path, wFlags);
+		return S_OK;
 	}
 	FV.Navigate(Path, wFlags);
 	FV.Focus();

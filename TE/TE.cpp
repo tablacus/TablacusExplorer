@@ -4942,21 +4942,23 @@ static void threadParseDisplayName(void *args)
 			if (!pInvoke->pidl && teIsFileSystem(pInvoke->bsPath)) {
 				pInvoke->pidl = ::SHSimpleIDListFromPath(pInvoke->bsPath);
 			}
-			pInvoke->hr = E_PATH_NOT_FOUND;
-			if (pInvoke->pidl) {
-				teResolveLink(&pInvoke->pidl);
-				IShellFolder *pSF;
-				if (GetShellFolder(&pSF, pInvoke->pidl)) {
-					IEnumIDList *peidl = NULL;
-					pInvoke->hr = pSF->EnumObjects(NULL, SHCONTF_FOLDERS | SHCONTF_NONFOLDERS, &peidl);
-					if (pInvoke->hr == S_OK) {
-						peidl->Release();
+			if (pInvoke->wMode) {
+				pInvoke->hr = E_PATH_NOT_FOUND;
+				if (pInvoke->pidl) {
+					teResolveLink(&pInvoke->pidl);
+					IShellFolder *pSF;
+					if (GetShellFolder(&pSF, pInvoke->pidl)) {
+						IEnumIDList *peidl = NULL;
+						pInvoke->hr = pSF->EnumObjects(NULL, SHCONTF_FOLDERS | SHCONTF_NONFOLDERS, &peidl);
+						if (pInvoke->hr == S_OK) {
+							peidl->Release();
+						}
+						pSF->Release();
 					}
-					pSF->Release();
-				}
-				if (pInvoke->hr == E_PATH_NOT_FOUND || pInvoke->hr == WININET_E_CANNOT_CONNECT ||
-					pInvoke->hr == E_BAD_NET_NAME ||pInvoke->hr == E_NOT_READY || pInvoke->hr == E_BAD_NETPATH) {
-					teILFreeClear(&pInvoke->pidl);
+					if (pInvoke->hr == E_PATH_NOT_FOUND || pInvoke->hr == WININET_E_CANNOT_CONNECT ||
+						pInvoke->hr == E_BAD_NET_NAME || pInvoke->hr == E_NOT_READY || pInvoke->hr == E_BAD_NETPATH) {
+						teILFreeClear(&pInvoke->pidl);
+					}
 				}
 			}
 		}

@@ -3041,7 +3041,7 @@ function SetTabContents(id, name, value) {
 			document.getElementById("tab" + id).innerHTML = r[0];
 		});
 	}
-	document.getElementById("panel" + id).innerHTML = (value.join ? value.join("") : value).replace(/<input type="button"(.*?)value="([^"]*)"\s?([^>]*)>/ig, "<button$1$3>$2</button>");
+	document.getElementById("panel" + id).innerHTML = (value.join ? value.join("") : value).replace(/<input type="button"([^>]*?)value="([^"]*)"\s?([^>]*)>/ig, "<button$1$3>$2</button>");
 }
 
 async function ShowButtons(b1, b2, SortMode) {
