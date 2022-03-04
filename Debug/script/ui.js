@@ -1209,12 +1209,6 @@ AddonOptions = async function (Id, fn, Data, bNew) {
 		return;
 	}
 	if (!ui_.elAddons[Id]) {
-		if (!/location\.html$/.test(sURL)) {
-			opt.event.onload = function () {
-				AddRule(".ok, .cancel { display: none }");
-				el.contentWindow.g_Inline = true;
-			}
-		}
 		te.Arguments = opt;
 		const el = document.createElement('iframe');
 		el.id = 'panel1_' + Id;
