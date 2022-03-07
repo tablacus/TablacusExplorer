@@ -66,7 +66,7 @@ g_.IconChg = [
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20220302 ? te.Version : 20220304;
+		return te.Version < 20220302 ? te.Version : 20220307;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3321,10 +3321,10 @@ GetText = function (id) {
 }
 
 GetTextR = function (id) {
-	let res = /^\@(.+),-(\d+)(\[[^\]]+\])?$/i.exec(id);
+	let s, res = /^\@(.+),-(\d+)(\[[^\]]+\])?$/i.exec(id);
 	if (res) {
 		const hModule = api.LoadLibraryEx(res[1], 0, LOAD_LIBRARY_AS_DATAFILE);
-		let s = api.LoadString(hModule, GetNum(res[2]));
+		s = api.LoadString(hModule, GetNum(res[2]));
 		if (!s && res[3]) {
 			const ar = res[3].slice(1, -1).split("|");
 			for (let i = 0; i < ar.length && !s; ++i) {
@@ -3348,7 +3348,14 @@ GetTextR = function (id) {
 	if (res) {
 		return (api.LoadString(hShell32, 31092) || "%s (32-bit)").replace(/^%s\s\(|\)$/g, "").replace(/\d+/, res[1]);
 	}
-	return GetText(id) || "";
+	s = GetText(id) || "";
+	if (res = /^Get ([^\.]+)\.\.\./.exec(s)) {
+		const lang = GetLangId();
+		if (!/^en/i.test(lang)) {
+			s = GetText("Get %s...").replace("%s", GetTextR(res[1]));
+		}
+	}
+	return s;
 }
 
 GetSourceText = function (s) {

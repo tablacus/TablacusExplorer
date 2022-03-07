@@ -19,7 +19,7 @@ function _s() {
 		var sw = sha.Windows();
 		for (var i = 0; i < sw.Count; ++i) {
 			var x = sw.item(i);
-			if (x) {
+			if (x && x.Document) {
 				var w = x.Document.parentWindow;
 				if (w && w.Exchange && w.Exchange[arg[3]]) {
 					window.MainWindow = w;
