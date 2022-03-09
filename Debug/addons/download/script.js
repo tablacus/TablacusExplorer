@@ -6,13 +6,9 @@ if (window.Addon == 1) {
 	const el = document.getElementById("_curl");
 	if (await fso.FileExists(BuildPath(system32, "curl.exe"))) {
 		el.style.display = "none";
-	} else {
-		el.value = (await GetText("Get %s...")).replace("%s", "cURL");
 	}
-	document.getElementById("_wget").value = (await GetText("Get %s...")).replace("%s", "Wget");
-
-	SetDL = async function (el) {
-		ConfirmThenExec(el.value, function () {
+	SetDL = function (el) {
+		ConfirmThenExec(el.innerText || GetText("Select"), function () {
 			document.F.Path.value = el.title;
 		});
 	}
