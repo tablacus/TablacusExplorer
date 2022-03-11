@@ -2,18 +2,18 @@
 <table>
   <tr>
     <td>
-      <input type="button" value="Browse..." onclick="RefX('Path', false, this)">
+      <button onclick="RefX('Path', false, this)">Browse...</button>
     </td>
     <td>
-      <input type="button" value="Default" title="" onclick="SetExtract(this)">
+      <button onclick="SetDefault(document.F.Path, '')">Default</button>
     </td>
     <td>
-      <input type="button" value="Portable" onclick="PortableX('Path')">
+      <button onclick="PortableX('Path')">Portable</button>
     </td>
     <td>
-      <input type="button" value="7-Zip" title="7-Zip\7zG.exe x %src% -o%dest% -aoa" onclick="SetExe(this)">
+      <button title="7-Zip\7zG.exe x %src% -o%dest% -aoa" onclick="SetExe(this)">7-Zip</button>
     </td>
   </tr>
 </table>
 <br>
-<input type="button" id="_7zip" value="Get 7-Zip" title="http://www.7-zip.org/" onclick="wsh.Run(this.title)">
+<button title="http://www.7-zip.org/" onclick="wsh.Run(this.title)">Get 7-Zip...</button>
