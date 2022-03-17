@@ -4087,7 +4087,7 @@ TEDispatchApi dispAPI[] = {
 	{ 0, -1, -1, -1, "GetCurrentDirectory", teApiGetCurrentDirectory },//use wsh.CurrentDirectory
 	{ 0, -1, -1, -1, "GetCurrentProcess", teApiGetCurrentProcess },
 	{ 0, -1, -1, -1, "GetCurrentThreadId", teApiGetCurrentThreadId },
-	{ 1, -1, -1, -1, "GetCursorPos", teApiGetCursorPos },
+	{ 0, -1, -1, -1, "GetCursorPos", teApiGetCursorPos },
 	{ 4,  3, -1, -1, "GetDateFormat", teApiGetDateFormat },
 	{ 1, -1, -1, -1, "GetDC", teApiGetDC },
 	{ 2, -1, -1, -1, "GetDeviceCaps", teApiGetDeviceCaps },
