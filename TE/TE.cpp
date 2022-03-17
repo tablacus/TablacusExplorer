@@ -2128,10 +2128,7 @@ LONG_PTR DoHitTest(PVOID pObj, POINT pt, UINT flags)
 		VariantInit(&vResult);
 		VARIANTARG *pv = GetNewVARIANT(3);
 		teSetObject(&pv[2], pObj);
-		CteMemory *pstPt = new CteMemory(2 * sizeof(int), NULL, 1, L"POINT");
-		pstPt->SetPoint(pt.x, pt.y);
-		teSetObject(&pv[1], pstPt);
-		pstPt->Release();
+		teSetPoint(&pv[1], pt.x, pt.y);
 		teSetLong(&pv[0], flags);
 		Invoke4(g_pOnFunc[TE_OnHitTest], &vResult, 3, pv);
 		if (vResult.vt != VT_EMPTY) {
@@ -2166,9 +2163,7 @@ HRESULT MessageSubPtV(int nFunc, PVOID pObj, MSG *pMsg, VARIANT* pv0)
 		teSetPtr(&pv[4], pMsg->hwnd);
 		teSetLong(&pv[3], pMsg->message);
 		teSetLong(&pv[2], (LONG)pMsg->wParam);
-		CteMemory *pstPt = new CteMemory(2 * sizeof(int), NULL, 1, L"POINT");
-		pstPt->SetPoint(pMsg->pt.x, pMsg->pt.y);
-		teSetObjectRelease(&pv[1], pstPt);
+		teSetPoint(&pv[1], pMsg->pt.x, pMsg->pt.y);
 		VariantCopy(&pv[0], pv0);
 		VariantClear(pv0);
 		Invoke4(g_pOnFunc[nFunc], &vResult, 6, pv);
@@ -2189,9 +2184,7 @@ HRESULT MessageSubPt(int nFunc, PVOID pObj, MSG *pMsg)
 		teSetPtr(&pv[3], pMsg->hwnd);
 		teSetLong(&pv[2], pMsg->message);
 		teSetLong(&pv[1], (LONG)pMsg->wParam);
-		CteMemory *pstPt = new CteMemory(2 * sizeof(int), NULL, 1, L"POINT");
-		pstPt->SetPoint(pMsg->pt.x, pMsg->pt.y);
-		teSetObjectRelease(&pv[0], pstPt);
+		teSetPoint(&pv[0], pMsg->pt.x, pMsg->pt.y);
 		Invoke4(g_pOnFunc[nFunc], &vResult, 5, pv);
 		if (vResult.vt != VT_EMPTY) {
 			return GetIntFromVariantClear(&vResult);
@@ -5412,17 +5405,21 @@ LRESULT CALLBACK WndProc2(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					if (itr != g_umSubWindows.end()) {
 						CteWebBrowser *pWB = itr->second;
 						if (pWB->m_nClose == 0) {
-							pWB->m_nClose = 1;
 							if (pWB->m_ppDispatch[WB_OnClose]) {
+								pWB->m_nClose = 1;
 								VARIANT v;
 								v.vt = VT_DISPATCH;
 								v.pdispVal = pWB;
 								Invoke4(pWB->m_ppDispatch[WB_OnClose], NULL, -1, &v);
 								return 0;
 							}
+							pWB->m_nClose = 2;
 						}
 						if (pWB->m_nClose == 1) {
-							pWB->m_nClose = 2;
+							return 0;
+						}
+						if (pWB->m_nClose == 2) {
+							pWB->m_nClose = 3;
 							::SysReAllocString(&pWB->m_bstrPath, PATH_BLANK);
 							pWB->m_pWebBrowser->Navigate(pWB->m_bstrPath, NULL, NULL, NULL, NULL);
 							return 0;
@@ -11908,7 +11905,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			return S_OK;
 
 		case TE_METHOD + 9://Close
-			m_nClose = 1;
+			m_nClose = 2;
 			teSetExStyleOr(m_hwndParent, WS_EX_LAYERED);
 			SetLayeredWindowAttributes(m_hwndParent, 0, 0, LWA_ALPHA);
 			PostMessage(m_hwndParent, WM_CLOSE, 0, 0);
@@ -11960,7 +11957,7 @@ STDMETHODIMP CteWebBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, 
 			}
 			break;
 		case DISPID_DOCUMENTCOMPLETE:
-			if (m_nClose != 2) {
+			if (m_nClose != 3) {
 				IUnknown_GetWindow(m_pWebBrowser, &m_hwndBrowser);
 				if (g_bsDocumentWrite) {
 					ShowWindow(g_hwndMain, SW_SHOWNORMAL);

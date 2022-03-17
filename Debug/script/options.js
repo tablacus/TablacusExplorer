@@ -1667,19 +1667,6 @@ InitDialog = async function () {
 	if (Query == "new") {
 		returnValue = false;
 		ui_.ArgPath = await dialogArguments.path;
-		CreateNewItem = function () {
-			let path = document.F.path.value;
-			if (path) {
-				if (!/^[A-Z]:\\|^\\/i.test(path)) {
-					path = BuildPath(ui_.ArgPath, path.replace(/^\s+/, ""));
-				}
-				if (GetElement("folder").checked) {
-					MainWindow.CreateFolder(path);
-				} else if (GetElement("file").checked) {
-					MainWindow.CreateFile(path);
-				}
-			}
-		}
 		const s = ['<div style="padding: 8px;" style="display: block;"><label><input type="radio" name="mode" id="folder" onclick="document.F.path.focus()">New Folder</label> <label><input type="radio" name="mode" id="file" onclick="document.F.path.focus()">New File</label><br>', await dialogArguments.path, '<br><input type="text" name="path" style="width: 100%"></div>'];
 		document.getElementById("Content").innerHTML = s.join("");
 		document.body.addEventListener("keydown", function (ev) {
@@ -1687,8 +1674,7 @@ InitDialog = async function () {
 				document.F.ButtonOk.disabled = !document.F.path.value;
 			}, 99);
 			return KeyDownEvent(ev, document.F.path.value && function () {
-				CreateNewItem();
-				SetResult(2);
+				SetResult(1);
 			}, function () {
 				SetResult(2);
 			});
@@ -1707,7 +1693,17 @@ InitDialog = async function () {
 
 		WebBrowser.OnClose = function (WB) {
 			if (g_nResult == 1) {
-				CreateNewItem();
+				let path = document.F.path.value;
+				if (path) {
+					if (!/^[A-Z]:\\|^\\/i.test(path)) {
+						path = BuildPath(ui_.ArgPath, path.replace(/^\s+/, ""));
+					}
+					if (GetElement("folder").checked) {
+						MainWindow.CreateFolder(path);
+					} else if (GetElement("file").checked) {
+						MainWindow.CreateFile(path);
+					}
+				}
 			}
 			WB.Close();
 		};
@@ -2240,14 +2236,15 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter, f) {
 		if (/Path/.test(Id) && "string" !== typeof Filter) {
 			const s = Id.replace("Path", "Type");
 			if (o) {
-				const pt = await api.CreateObject("Object");
+				let pt;
 				if (oButton) {
+					pt = await api.CreateObject("Object");
 					const pt1 = GetPos(oButton, 9);
 					pt.x = pt1.x;
 					pt.y = pt1.y;
 					pt.width = oButton.offsetWidth;
 				} else {
-					await api.GetCursorPos(pt);
+					pt = await api.GetCursorPos();
 				}
 				const oType = o.form[s];
 				const optId = oType ? oType[oType.selectedIndex].value : "exec";

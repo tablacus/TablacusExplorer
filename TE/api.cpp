@@ -1655,8 +1655,13 @@ VOID teApiGetCurrentThreadId(int nArg, teParam *param, DISPPARAMS *pDispParams, 
 VOID teApiGetCursorPos(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	POINT pt;
-	teSetBool(pVarResult, GetCursorPos(&pt));
-	PutPointToVariant(&pt, &pDispParams->rgvarg[nArg]);
+	if (nArg >= 0) {
+		teSetBool(pVarResult, GetCursorPos(&pt));
+		PutPointToVariant(&pt, &pDispParams->rgvarg[nArg]);
+		return;
+	}
+	GetCursorPos(&pt);
+	teSetPoint(pVarResult, pt.x, pt.y);
 }
 
 VOID teApiGetDateFormat(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -1733,11 +1738,9 @@ VOID teApiGetDpiForMonitor(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 		pt.y = rc.top;
 		hMonitor = MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
 	}
-	CteMemory *pstPt = new CteMemory(2 * sizeof(int), NULL, 1, L"POINT");
 	UINT ux, uy;
 	_GetDpiForMonitor(hMonitor, nArg >= 1 ? param[1].MonitorDpiType : MDT_EFFECTIVE_DPI, &ux, &uy);
-	pstPt->SetPoint(ux, uy);
-	teSetObjectRelease(pVarResult, pstPt);
+	teSetPoint(pVarResult, ux, uy);
 }
 
 VOID teApiGetFocus(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)

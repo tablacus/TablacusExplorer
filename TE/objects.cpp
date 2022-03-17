@@ -2111,7 +2111,6 @@ BSTR CteMemory::AddBSTR(BSTR bs)
 
 VOID CteMemory::Read(int nIndex, int nLen, VARIANT *pVarResult)
 {
-	CteMemory *pMem;
 	try {
 		if (pVarResult->vt & VT_ARRAY) {
 			VARTYPE vt = LOBYTE(pVarResult->vt);
@@ -2186,17 +2185,16 @@ VOID CteMemory::Read(int nIndex, int nLen, VARIANT *pVarResult)
 			break;
 		case VT_FILETIME://UNIX EPOCH
 			teSetLL(pVarResult, *(ULONGLONG *)pFrom / 10000 - 11644473600000LL);
-			//				teFileTimeToVariantTime((LPFILETIME)pFrom, &pVarResult->date);
-			//				pVarResult->vt = VT_DATE;
+			//teFileTimeToVariantTime((LPFILETIME)pFrom, &pVarResult->date);
+			//pVarResult->vt = VT_DATE;
 			break;
 		case VT_CY:
 			POINT *ppt;
 			ppt = (POINT *)pFrom;
-			pMem = new CteMemory(sizeof(POINT), NULL, 1, L"POINT");
-			pMem->SetPoint(ppt->x, ppt->y);
-			teSetObjectRelease(pVarResult, pMem);
+			teSetPoint(pVarResult, ppt->x, ppt->y);
 			break;
 		case VT_CARRAY:
+			CteMemory *pMem;
 			pMem = new CteMemory(sizeof(RECT), NULL, 1, L"RECT");
 			::CopyMemory(pMem->m_pc, pFrom, sizeof(RECT));
 			teSetObjectRelease(pVarResult, pMem);

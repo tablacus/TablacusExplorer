@@ -923,3 +923,4 @@ BOOL GetBoolFromVariant(VARIANT *pv);
 BOOL teIsClan(HWND hwndRoot, HWND hwnd);
 DWORD teGetUnavailable(IUnknown *punk);
 BOOL teResolveLink(LPITEMIDLIST *ppidl);
+BOOL teSetPoint(VARIANT *pv, int x, int y);

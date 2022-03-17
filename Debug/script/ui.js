@@ -841,11 +841,11 @@ GetTopWindow = async function (hwnd) {
 }
 
 CloseWindow = async function () {
-	if (window.chrome) {
-		api.PostMessage(await GetTopWindow(), WM_CLOSE, 0, 0);
-		return;
+	const OnClose = await WebBrowser.OnClose;
+	if (OnClose) {
+		await OnClose(WebBrowser);
 	}
-	window.close();
+	WebBrowser.Close();
 }
 
 CloseSubWindows = async function () {
@@ -866,8 +866,7 @@ MouseOver = async function (o) {
 		}
 		let bHover = window.chrome;
 		if (!bHover) {
-			const pt = await api.Memory("POINT");
-			await api.GetCursorPos(pt);
+			const pt = await api.GetCursorPos();
 			const ptc = await pt.Clone();
 			await api.ScreenToClient(await WebBrowser.hwnd, ptc);
 			bHover = (o == document.elementFromPoint(await ptc.x, await ptc.y) || await HitTest(o, pt));

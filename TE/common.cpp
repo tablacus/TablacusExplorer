@@ -1741,6 +1741,13 @@ BOOL teSetObjectRelease(VARIANT *pv, PVOID pObj)
 	return FALSE;
 }
 
+BOOL teSetPoint(VARIANT *pv, int x, int y)
+{
+	CteMemory *pstPt = new CteMemory(2 * sizeof(int), NULL, 1, L"POINT");
+	pstPt->SetPoint(x, y);
+	return teSetObjectRelease(pv, pstPt);
+}
+
 int teUMSearch(int nMap, LPOLESTR bs)
 {
 	CHAR pszName[32];
@@ -3811,7 +3818,6 @@ HRESULT DragSub(int nFunc, PVOID pObj, CteFolderItems *pDragItems, PDWORD pgrfKe
 	HRESULT hr = E_FAIL;
 	VARIANT vResult;
 	VARIANTARG *pv;
-	CteMemory *pstPt;
 
 	if (g_pOnFunc[nFunc]) {
 		try {
@@ -3820,9 +3826,7 @@ HRESULT DragSub(int nFunc, PVOID pObj, CteFolderItems *pDragItems, PDWORD pgrfKe
 				teSetObject(&pv[4], pObj);
 				teSetObject(&pv[3], pDragItems);
 				teSetObjectRelease(&pv[2], new CteMemory(sizeof(int), pgrfKeyState, 1, L"DWORD"));
-				pstPt = new CteMemory(2 * sizeof(int), NULL, 1, L"POINT");
-				pstPt->SetPoint(pt.x, pt.y);
-				teSetObjectRelease(&pv[1], pstPt);
+				teSetPoint(&pv[1], pt.x, pt.y);
 				teSetObjectRelease(&pv[0], new CteMemory(sizeof(int), pdwEffect, 1, L"DWORD"));
 				Invoke4(g_pOnFunc[nFunc], &vResult, 5, pv);
 				hr = GetIntFromVariant(&vResult);
