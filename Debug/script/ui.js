@@ -841,11 +841,11 @@ GetTopWindow = async function (hwnd) {
 }
 
 CloseWindow = async function () {
-	const OnClose = await WebBrowser.OnClose;
-	if (OnClose) {
-		await OnClose(WebBrowser);
+	if (window.chrome) {
+		api.PostMessage(await GetTopWindow(), WM_CLOSE, 0, 0);
+		return;
 	}
-	WebBrowser.Close();
+	window.close();
 }
 
 CloseSubWindows = async function () {
