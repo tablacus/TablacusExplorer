@@ -2402,15 +2402,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					}
 					if (wParam & 0xffff) {
 						if (g_.mouse.str == "") {
-							setTimeout(function () {
-								const hFocus = api.GetFocus();
-								if (!hFocus || hFocus == te.hwnd) {
-									const FV = te.Ctrl(CTRL_FV);
-									if (FV) {
-										FV.Focus();
-									}
-								}
-							}, 99);
+							FocusFV();
 						}
 					} else {
 						g_.mouse.str = "";
@@ -2753,6 +2745,11 @@ te.OnColumnClick = function (Ctrl, iItem) {
 	}
 }
 
+te.OnEndThread = function (Ctrl) {
+	FocusFV2();
+	return RunEvent1("EndThread", api.GetThreadCount());
+}
+
 ShowStatusText = function (Ctrl, Text, iPart, tm) {
 	if (!Ctrl) {
 		return;
@@ -2850,10 +2847,6 @@ g_.event.setname = function (pid, Name) {
 
 g_.event.includeitem = function (Ctrl, pid) {
 	return RunEvent2("IncludeItem", Ctrl, pid);
-}
-
-g_.event.endthread = function (Ctrl) {
-	return RunEvent1("EndThread", api.GetThreadCount());
 }
 
 g_.event.itemprepaint = function (Ctrl, pid, nmcd, vcd, plRes) {
