@@ -163,7 +163,7 @@ GetImgTag = async function (o, h) {
 			o.onmouseout = "MouseOut()";
 		}
 	}
-	if (o.src) {
+	if (o.src = PathUnquoteSpaces(o.src)) {
 		let res = !(window.ui_ || te.Data).NoCssFont && /^font:([^,]*),(.+)/i.exec(await MainWindow.RunEvent4("ReplaceIcon", o.src) || o.src);
 		if (res) {
 			const FontFace = res[1].replace(/\"/g, '\\"');
