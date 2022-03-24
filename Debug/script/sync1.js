@@ -806,8 +806,7 @@ g_basic = {
 	Exec: function (Ctrl, s, type, hwnd, pt) {
 		const fn = g_basic.CmdI(type, s);
 		if (!pt) {
-			pt = api.Memory("POINT");
-			api.GetCursorPos(pt);
+			pt = api.GetCursorPos();
 		}
 		if (fn) {
 			InvokeFunc(fn, [Ctrl, pt]);

@@ -66,7 +66,7 @@ g_.IconChg = [
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20220318 ? te.Version : 20220321;
+		return te.Version < 20220318 ? te.Version : 20220324;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -232,8 +232,7 @@ OpenDialog = function (path, bFilesOnly) {
 
 ChooseFolder = function (path, pt, uFlags) {
 	if (!pt) {
-		pt = api.Memory("POINT");
-		api.GetCursorPos(pt);
+		pt = api.GetCursorPos();
 	}
 	let FolderItem = api.ILCreateFromPath(path);
 	FolderItem = FolderMenu.Open(FolderItem.IsFolder ? FolderItem : ssfDRIVES, pt.x, pt.y);
@@ -1631,7 +1630,7 @@ GetKeyKey = function (strKey) {
 	if (nShift) {
 		return nShift;
 	}
-	strKey = strKey.toUpperCase();
+	strKey = (strKey || "").toUpperCase();
 	for (let j = 0; j < MainWindow.g_.KeyState.length; ++j) {
 		const s = MainWindow.g_.KeyState[j][0].toUpperCase() + "+";
 		const i = strKey.indexOf(s);
@@ -3097,11 +3096,27 @@ OptionRef = function (Id, s, pt) {
 }
 
 OptionDecode = function (Id, p) {
-	return MainWindow.RunEvent3("OptionDecode", Id, p);
+	if (/^object$|^function$/.test(typeof p)) {
+		return MainWindow.RunEvent3("OptionDecode", Id, p);
+	}
+	if ("string" === typeof p) {
+		const o = api.CreateObject("Object");
+		o.s = p;
+		MainWindow.RunEvent3("OptionDecode", Id, o);
+		return o.s;
+	}
 }
 
 OptionEncode = function (Id, p) {
-	return MainWindow.RunEvent3("OptionEncode", Id, p);
+	if (/^object$|^function$/.test(typeof p)) {
+		return MainWindow.RunEvent3("OptionEncode", Id, p);
+	}
+	if ("string" === typeof p) {
+		const o = api.CreateObject("Object");
+		o.s = p;
+		MainWindow.RunEvent3("OptionEncode", Id, o);
+		return o.s;
+	}
 }
 
 EscapeUpdateFile = function (s) {
@@ -3166,8 +3181,7 @@ PopupContextMenu = function (Item, FV, pt) {
 		ContextMenu.QueryContextMenu(hMenu, 0, 1, 0x7FFF, uCMF);
 		RemoveCommand(hMenu, ContextMenu, "delete");
 		if (!pt) {
-			pt = api.Memory("POINT");
-			api.GetCursorPos(pt);
+			pt = api.GetCursorPos();
 		}
 		const nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, ContextMenu);
 		if (nVerb) {
@@ -3653,8 +3667,7 @@ FolderMenu = {
 			const path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
 			const bVirtual = FolderItem.Unavailable || api.ILIsParent(1, FolderItem, false);
 			if (MainWindow.g_menu_button == 2 || /popup/i.test(wFlags)) {
-				const pt = api.Memory("POINT");
-				api.GetCursorPos(pt);
+				const pt = api.GetCursorPos();
 				if (bVirtual) {
 					if (!confirmOk(path, TITLE, MB_OK | MB_ICONINFORMATION)) {
 						return;
@@ -3714,8 +3727,7 @@ FolderMenu = {
 	Location: function (o) {
 		let pt;
 		if (window.chrome) {
-			pt = api.Memory("POINT");
-			api.GetCursorPos(pt);
+			pt = api.GetCursorPos();
 		} else {
 			pt = GetPos(o, 9);
 			pt.x += o.offsetWidth;

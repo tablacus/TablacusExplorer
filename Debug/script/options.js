@@ -610,10 +610,7 @@ async function EditMenus() {
 	document.F.Menus_Key.value = a2.length > 1 ? await GetKeyName(a2.pop()) : "";
 	document.F.Menus_Name.value = a2.join("\\t");
 	document.F.Menus_Filter.value = a[1];
-	const p = await api.CreateObject("Object");
-	p.s = a[2];
-	await MainWindow.OptionDecode(a[3], p);
-	document.F.Menus_Path.value = await p.s;
+	document.F.Menus_Path.value = await MainWindow.OptionDecode(a[3], a[2]);
 	SetType(document.F.Menus_Type, a[3]);
 	document.F.Icon.value = a[4] || "";
 	document.F.IconSize.value = a[6] || "";
@@ -636,10 +633,7 @@ EditX = async function (mode, form) {
 	ClearX(mode);
 	const a = g_x[mode][g_x[mode].selectedIndex].value.split(g_sep);
 	form[mode + mode].value = a[0];
-	const p = await api.CreateObject("Object");
-	p.s = a[1];
-	await MainWindow.OptionDecode(a[2], p);
-	form[mode + "Path"].value = await p.s;
+	form[mode + "Path"].value = await MainWindow.OptionDecode(a[2], a[1]);
 	SetType(form[mode + "Type"], a[2]);
 	if (SameText(mode, "key")) {
 		SetKeyShift();
@@ -701,10 +695,7 @@ async function ReplaceMenus() {
 	if (document.F.Menus_Key.value.length) {
 		s += "\\t" + await GetKeyKeyG(document.F.Menus_Key.value);
 	}
-	const p = await api.CreateObject("Object");
-	p.s = document.F.Menus_Path.value;
-	await MainWindow.OptionEncode(o[o.selectedIndex].value, p);
-	SetMenus(sel, [s, document.F.Menus_Filter.value, await p.s, o[o.selectedIndex].value, document.F.Icon.value, org, document.F.IconSize.value]);
+	SetMenus(sel, [s, document.F.Menus_Filter.value, await MainWindow.OptionEncode(o[o.selectedIndex].value, document.F.Menus_Path.value), o[o.selectedIndex].value, document.F.Icon.value, org, document.F.IconSize.value]);
 	g_Chg.Menus = true;
 }
 
@@ -722,11 +713,8 @@ async function ReplaceX(mode, form) {
 	}
 	const sel = g_x[mode][g_x[mode].selectedIndex];
 	const o = form[mode + "Type"];
-	const p = await api.CreateObject("Object");
-	p.s = form[mode + "Path"].value;
-	await MainWindow.OptionEncode(o[o.selectedIndex].value, p);
 	const o2 = form[mode + "Name"];
-	SetData(sel, [form[mode + mode].value, await p.s, o[o.selectedIndex].value, o2 ? await GetSourceText(o2.value) : ""]);
+	SetData(sel, [form[mode + mode].value, await MainWindow.OptionEncode(o[o.selectedIndex].value, form[mode + "Path"].value), o[o.selectedIndex].value, o2 ? await GetSourceText(o2.value) : ""]);
 	g_Chg[mode] = true;
 	g_bChanged = true;
 }
@@ -954,7 +942,7 @@ async function SaveMenus() {
 }
 
 async function GetKeyKeyEx(s) {
-	const n = await GetKeyKey(s);
+	const n = await MainWindow.GetKeyKey(s);
 	return n & 0xff ? "$" + n.toString(16) : s;
 }
 
@@ -2078,7 +2066,7 @@ InitLocation = function () {
 		IsChanged = function () {
 			return g_bChanged || g_Chg.Data;
 		};
-
+		const TEOk1 = window.TEOk;
 		TEOk = async function () {
 			if (window.SaveLocation) {
 				await SaveLocation();
@@ -2111,7 +2099,13 @@ InitLocation = function () {
 						}
 					}
 				}
-				if (bConfigChanged) {
+				if (TEOk1) {
+					if ("string" === typeof TEOk1) {
+						MainWindow.InvokeUI(TEOk1);
+					} else {
+						TEOk1();
+					}
+				} else if (bConfigChanged) {
 					te.Data.bReload = true;
 					MainWindow.RunEvent1("ConfigChanged", "Addons");
 				}
@@ -2250,13 +2244,11 @@ function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter, f) {
 				const optId = oType ? oType[oType.selectedIndex].value : "exec";
 				const r = await MainWindow.OptionRef(optId, o.value, pt);
 				if ("string" === typeof r) {
-					const p = await api.CreateObject("Object");
-					p.s = r;
-					await MainWindow.OptionDecode(optId, p);
-					if (bMultiLine && await api.GetKeyState(VK_CONTROL) < 0 && await api.ILCreateFromPath(await p.s)) {
-						AddPath(Id, await p.s, f);
+					const ps = await MainWindow.OptionDecode(optId, r);
+					if (bMultiLine && await api.GetKeyState(VK_CONTROL) < 0 && await api.ILCreateFromPath(ps)) {
+						AddPath(Id, ps, f);
 					} else {
-						SetValue(o, await p.s);
+						SetValue(o, ps);
 					}
 				}
 				return;
@@ -2448,11 +2440,8 @@ TestX = function (id, f) {
 			f = document.F;
 		}
 		const o = f[id + "Type"];
-		const p = await api.CreateObject("Object");
-		p.s = f[id + "Path"].value;
-		await MainWindow.OptionEncode(o[o.selectedIndex].value, p);
 		await MainWindow.InvokeUI("window.focus");
-		await MainWindow.Exec(await te.Ctrl(CTRL_FV), await p.s, o[o.selectedIndex].value);
+		await MainWindow.Exec(await te.Ctrl(CTRL_FV), await MainWindow.OptionEncode(o[o.selectedIndex].value, f[id + "Path"].value), o[o.selectedIndex].value);
 		focus();
 	});
 }

@@ -1475,7 +1475,7 @@ SyncExec = async function (cb, o, n) {
 	let pt;
 	if (n) {
 		pt = await GetPosEx(o, n);
-	} else if (o.target || o.srcElement) {
+	} else if (o && (o.target || o.srcElement)) {
 		pt = await api.Memory("POINT");
 		pt.x = o.screenX * ui_.Zoom;
 		pt.y = o.screenY * ui_.Zoom;
