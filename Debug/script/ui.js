@@ -19,6 +19,7 @@ if (!window.devicePixelRatio) {
 ui_ = {
 	IEVer: window.chrome ? 12 : ScriptEngineMajorVersion() > 8 ? ScriptEngineMajorVersion() : ScriptEngineMinorVersion(),
 	Zoom: 1,
+	tmDown: 0,
 	eventTE: {},
 	MiscIcon: {}
 };

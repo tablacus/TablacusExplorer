@@ -66,7 +66,7 @@ g_.IconChg = [
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20220318 ? te.Version : 20220324;
+		return te.Version < 20220318 ? te.Version : 20220327;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);

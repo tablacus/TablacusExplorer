@@ -2744,8 +2744,8 @@ te.OnColumnClick = function (Ctrl, iItem) {
 	}
 }
 
-te.OnEndThread = function (Ctrl) {
-	FocusFV2();
+te.OnEndThread = function () {
+	FocusFV();
 	return RunEvent1("EndThread", api.GetThreadCount());
 }
 

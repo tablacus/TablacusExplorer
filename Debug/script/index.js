@@ -200,7 +200,8 @@ FocusFV1 = function (Id) {
 }
 
 FocusFV = function (Id) {
-	setTimeout(FocusFV1, ui_.DoubleClickTime, Id);
+	const tm = new Date().getTime() - ui_.tmDown;
+	setTimeout(FocusFV1, tm < ui_.DoubleClickTime ? tm : 9, Id);
 }
 
 ToggleFullscreen = async function () {
@@ -441,12 +442,13 @@ window.addEventListener("blur", ResetScroll);
 
 window.addEventListener("mouseup", FocusFV);
 
-if (window.chrome) {
-	window.addEventListener("mousedown", function (ev) {
+window.addEventListener("mousedown", function (ev) {
+	ui_.tmDown = new Date().getTime();
+	if (window.chrome) {
 		g_.mouse.ptDown.x = ev.screenX * ui_.Zoom;
 		g_.mouse.ptDown.y = ev.screenY * ui_.Zoom;
-	});
-}
+	}
+});
 
 document.addEventListener("MSFullscreenChange", function () {
 	FullscreenChanged(document.msFullscreenElement != null, document.msFullscreenElement == document.body);
