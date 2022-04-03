@@ -65,11 +65,15 @@ if (window.Addon == 1) {
 			}
 		},
 
-		ShowOptions: function (nEdit) {
-			AddonOptions("toolbar", function () {
-				Addons.ToolBar.Arrange();
-				ApplyLang(document);
-			}, { nEdit: nEdit });
+		ShowOptions: async function (nEdit) {
+			const opt = await api.CreateObject("Object");
+			opt.nEdit = nEdit;
+			AddonOptions("toolbar", "Addons.ToolBar.Changed", opt);
+		},
+
+		Changed: function () {
+			Addons.ToolBar.Arrange();
+			ApplyLang(document);
 		},
 
 		FromPt: function (n, pt) {
