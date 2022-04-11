@@ -447,6 +447,7 @@ window.addEventListener("mousedown", function (ev) {
 	if (window.chrome) {
 		g_.mouse.ptDown.x = ev.screenX * ui_.Zoom;
 		g_.mouse.ptDown.y = ev.screenY * ui_.Zoom;
+		g_.mouse.CancelContextMenu = false;
 	}
 });
 
