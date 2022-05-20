@@ -10494,12 +10494,10 @@ VOID CteShellBrowser::SetPropEx()
 		if (m_param[SB_Type] != CTRL_EB || m_param[SB_FolderFlags] & FWF_NOCLIENTEDGE) {
 			teSetExStyleAnd(m_hwnd, ~WS_EX_CLIENTEDGE);
 		}
-		if (m_param[SB_Type] <= CTRL_SB) {
-			if (m_param[SB_FolderFlags] & FWF_NOCLIENTEDGE) {
-				SetWindowLong(m_hwnd, GWL_STYLE, GetWindowLong(m_hwnd, GWL_STYLE) & ~WS_BORDER);
-			} else {
-				SetWindowLong(m_hwnd, GWL_STYLE, GetWindowLong(m_hwnd, GWL_STYLE) | WS_BORDER);
-			}
+		if (m_param[SB_FolderFlags] & FWF_NOCLIENTEDGE) {
+			SetWindowLong(m_hwnd, GWL_STYLE, GetWindowLong(m_hwnd, GWL_STYLE) & ~WS_BORDER);
+		} else {
+			SetWindowLong(m_hwnd, GWL_STYLE, GetWindowLong(m_hwnd, GWL_STYLE) | WS_BORDER);
 		}
 		if (m_hwndLV) {
 			SetWindowLong(m_hwndLV, GWL_STYLE, GetWindowLong(m_hwndLV, GWL_STYLE) & ~WS_BORDER);
