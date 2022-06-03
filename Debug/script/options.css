@@ -17,8 +17,8 @@ textarea {
 }
 
 .oddline {
-	color: infotext;
-	background-color: infobackground;
+	color: #000;
+	background-color: #ffffe1;
 }
 
 .color {
@@ -26,11 +26,11 @@ textarea {
 }
 
 .window {
-	border: 1px solid buttonshadow;
+	border: 1px solid #a0a0a0;
 }
 
 .window td {
-	border: 1px solid buttonshadow;
+	border: 1px solid #a0a0a0;
 }
 
 .footer {
@@ -39,9 +39,9 @@ textarea {
 }
 
 .text1 {
-	color: windowtext;
-	background-color: window;
-	border: 1px solid buttonshadow;
+	color: #000;
+	background-color: #fff;
+	border: 1px solid #a0a0a0;
 	white-space: nowrap;
 }
 
