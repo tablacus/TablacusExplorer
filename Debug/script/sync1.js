@@ -207,7 +207,7 @@ g_.mouse = {
 
 g_basic = {
 	FuncI: function (s) {
-		s = s.replace(/&|\.\.\.$/g, "");
+		s = (s || "").replace(/&|\.\.\.$/g, "");
 		return this.Func[s] || api.ObjGetI(this.Func, s);
 	},
 
