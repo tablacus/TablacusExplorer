@@ -10371,6 +10371,9 @@ STDMETHODIMP CteShellBrowser::MessageSFVCB(UINT uMsg, WPARAM wParam, LPARAM lPar
 #endif
 					}
 				}
+				if (lParam & SHCNE_EXTENDED_EVENT) {
+					return S_FALSE;
+				}
 			}
 		}
 	}

@@ -1012,11 +1012,13 @@ function SetChanged(fn, form) {
 }
 
 function SetData(sel, a, t) {
-	sel.value = PackData(a);
-	if ("boolean" === typeof t) {
-		t = (t ? String.fromCharCode(9745, 32) : String.fromCharCode(9744, 32)) + a[0];
+	if (sel) {
+		sel.value = PackData(a);
+		if ("boolean" === typeof t) {
+			t = (t ? String.fromCharCode(9745, 32) : String.fromCharCode(9744, 32)) + a[0];
+		}
+		sel.text = t || a[0];
 	}
-	sel.text = t || a[0];
 }
 
 function PackData(a) {
