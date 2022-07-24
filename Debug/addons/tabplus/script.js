@@ -203,9 +203,7 @@ if (window.Addon == 1) {
 					}
 					style.backgroundColor = "";
 				}
-				if (cl[1]) {
-					style.color = cl[1];
-				}
+				style.color = cl[1] || "";
 				const p = Addons.TabPlus.Class(TC, i, FV);
 				if (wait) {
 					wait.push(p);
@@ -460,8 +458,7 @@ if (window.Addon == 1) {
 			if (await Common.TabPlus.bDropping) {
 				return;
 			}
-			const pt = await api.Memory("POINT");
-			await api.GetCursorPos(pt);
+			const pt = await api.GetCursorPos();
 			if (!await IsDrag(pt, await g_.ptDrag)) {
 				const nIndex = await Addons.TabPlus.FromPt(Id, pt);
 				if (nIndex >= 0) {
