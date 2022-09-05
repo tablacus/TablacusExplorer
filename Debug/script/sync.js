@@ -66,7 +66,7 @@ g_.IconChg = [
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20220627 ? te.Version : 20220627;
+		return te.Version < 20220627 ? te.Version : 20220905;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -2176,7 +2176,7 @@ ExtractPath = function (Ctrl, s, pt) {
 			}
 		}
 	}
-	return s;
+	return /\\\.\.?\\/.test(s) ? api.PathSearchAndQualify(s) : s;
 }
 
 PathMatchEx = function (path, s) {
