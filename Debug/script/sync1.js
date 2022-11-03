@@ -2636,12 +2636,14 @@ te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 		const hLock = api.SHChangeNotification_Lock(wParam, lParam, pidls);
 		if (hLock) {
 			api.SHChangeNotification_Unlock(hLock);
-			ChangeNotifyFV(pidls.lEvent, pidls[0], pidls[1]);
-			RunEvent1("ChangeNotify", Ctrl, pidls, wParam, lParam);
-			if (pidls.lEvent & (SHCNE_UPDATEITEM | SHCNE_RENAMEITEM)) {
-				const n = pidls.lEvent & SHCNE_RENAMEITEM ? 1 : 0;
-				const path = api.GetDisplayNameOf(pidls[n], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
-				RunEvent1("ChangeNotifyItem:" + path, api.ILCreateFromPath(path) || pidls[n]);
+			if (pidls[0] && /^[A-Z]:\\|^\\\\\w/i.test(pidls[0].Path) && !IsCloud(pidls[0])) {
+				ChangeNotifyFV(pidls.lEvent, pidls[0], pidls[1]);
+				RunEvent1("ChangeNotify", Ctrl, pidls, wParam, lParam);
+				if (pidls.lEvent & (SHCNE_UPDATEITEM | SHCNE_RENAMEITEM)) {
+					const n = pidls.lEvent & SHCNE_RENAMEITEM ? 1 : 0;
+					const path = api.GetDisplayNameOf(pidls[n], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
+					RunEvent1("ChangeNotifyItem:" + path, api.ILCreateFromPath(path) || pidls[n]);
+				}
 			}
 		}
 		return S_OK;
@@ -2932,7 +2934,7 @@ ChangeNotifyFV = function (lEvent, item1, item2) {
 		const cFV = te.Ctrls(CTRL_FV);
 		for (let i in cFV) {
 			const FV = cFV[i];
-			if (FV && FV.FolderItem) {
+			if (FV && FV.FolderItem && !IsCloud(FV.FolderItem)) {
 				const path = FV.FolderItem.Path;
 				const bParent = api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;")) || bNetwork && api.PathIsNetworkPath(path);
 				if (lEvent == SHCNE_RENAMEFOLDER && CanClose(FV) == S_OK) {
