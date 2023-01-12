@@ -2931,7 +2931,7 @@ ChangeNotifyFV = function (lEvent, item1, item2) {
 	if (lEvent & (SHCNE_DISKEVENTS | fAdd | fRemove) && item1.IsFileSystem) {
 		const path1 = item1.Path;
 		const bNetwork = api.ILIsEqual(item1, ssfNETWORK);
-		const cFV = te.Ctrls(CTRL_FV);
+		const cFV = te.Ctrls(CTRL_FV, true);
 		for (let i in cFV) {
 			const FV = cFV[i];
 			if (FV && FV.FolderItem && !IsCloud(FV.FolderItem)) {
