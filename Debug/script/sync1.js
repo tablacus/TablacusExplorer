@@ -1076,7 +1076,7 @@ Lock = function (Ctrl, nIndex, turn) {
 		if (turn) {
 			FV.Data.Lock = !FV.Data.Lock;
 		}
-		RunEvent1("Lock", Ctrl, nIndex, FV.Data.Lock);
+		RunEvent1("Lock", Ctrl, nIndex, GetLock(FV));
 	}
 }
 
@@ -1106,7 +1106,7 @@ CanClose = function (Ctrl) {
 				break;
 			case CTRL_SB:
 			case CTRL_EB:
-				if (Ctrl.Data.Lock) {
+				if (GetLock(Ctrl)) {
 					return S_FALSE;
 				}
 				break;
@@ -3187,7 +3187,7 @@ AddEvent("MenuState:Tabs:Up", function (Ctrl, pt, mii) {
 
 AddEvent("MenuState:Tabs:Lock", function (Ctrl, pt, mii) {
 	const FV = GetFolderView(Ctrl, pt);
-	if (FV && FV.Data.Lock) {
+	if (GetLock(FV)) {
 		mii.fMask |= MIIM_STATE;
 		mii.fState = MFS_CHECKED;
 	}

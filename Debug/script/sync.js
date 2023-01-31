@@ -66,7 +66,7 @@ g_.IconChg = [
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20220627 ? te.Version : 20230112;
+		return te.Version < 20220627 ? te.Version : 20230131;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1743,35 +1743,37 @@ NavigateFV = function (FV, Path, wFlags, bInputed) {
 				return S_OK;
 			}
 		}
-		api.SHParseDisplayName(function (pid, FV, Path, wFlags) {
-			if (pid) {
-				if ((pid.IsFolder && !pid.Unavailable) || pid.Enum) {
-					RunEvent1("LocationEntered", FV, Path, wFlags);
-					const r = MainWindow.RunEvent4("LocationEntered2", FV, Path, wFlags);
-					if (r === void 0) {
-						FV.Navigate(pid, wFlags);
-						FV.Focus();
-					}
-					return;
-				}
-				if (!pid.Unavailable) {
-					const bak = FV.AltSelectedItems;
-					const sid = FV.SessionId;
-					const Items = api.CreateObject("FolderItems");
-					Items.AddItem(pid);
-					FV.AltSelectedItems = Items;
-					const hr = ExecMenu(FV, "Default", null, 2);
-					if (sid == FV.SessionId) {
-						FV.AltSelectedItems = bak;
-					}
-					if (hr == S_OK) {
+		if (!/^\\\\\\/.test(Path)) {
+			api.SHParseDisplayName(function (pid, FV, Path, wFlags) {
+				if (pid) {
+					if ((pid.IsFolder && !pid.Unavailable) || pid.Enum) {
+						RunEvent1("LocationEntered", FV, Path, wFlags);
+						const r = MainWindow.RunEvent4("LocationEntered2", FV, Path, wFlags);
+						if (r === void 0) {
+							FV.Navigate(pid, wFlags);
+							FV.Focus();
+						}
 						return;
 					}
+					if (!pid.Unavailable) {
+						const bak = FV.AltSelectedItems;
+						const sid = FV.SessionId;
+						const Items = api.CreateObject("FolderItems");
+						Items.AddItem(pid);
+						FV.AltSelectedItems = Items;
+						const hr = ExecMenu(FV, "Default", null, 2);
+						if (sid == FV.SessionId) {
+							FV.AltSelectedItems = bak;
+						}
+						if (hr == S_OK) {
+							return;
+						}
+					}
 				}
-			}
-			ShellExecute(Path, null, SW_SHOWNORMAL, FV.FolderItem.Path);
-		}, 0, Path, FV, Path, wFlags);
-		return S_OK;
+				ShellExecute(Path, null, SW_SHOWNORMAL, FV.FolderItem.Path);
+			}, 0, Path, FV, Path, wFlags);
+			return S_OK;
+		}
 	}
 	FV.Navigate(Path, wFlags);
 	FV.Focus();
