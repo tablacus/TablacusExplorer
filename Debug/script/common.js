@@ -101,7 +101,7 @@ PathQuoteSpaces = function (s) {
 }
 
 PathUnquoteSpaces = function (s) {
-	const res = /^"(.*)"$/.exec(s);
+	const res = /^"(.*)"\0?$/.exec(s);
 	return res ? res[1] : s;
 }
 

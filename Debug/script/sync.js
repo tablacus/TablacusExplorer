@@ -66,7 +66,7 @@ g_.IconChg = [
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20220627 ? te.Version : 20230131;
+		return te.Version < 20220627 ? te.Version : 20230625;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -2973,7 +2973,7 @@ RunCommandLine = function (s) {
 	if (/rundll32\.?(exe)?"?$/i.test(arg.shift())) {
 		arg.shift();
 	}
-	s = arg.length ? (s.charAt(0) == '"' ? s.replace(/"[^"]*"\s*/, "") : s.replace(/^[^\s]+\s*/, "")) : "";
+	s = arg.length ? PathUnquoteSpaces(s.charAt(0) == '"' ? s.replace(/"[^"]*"\s*/, "") : s.replace(/^[^\s]+\s*/, "")) : "";
 	if (/^[A-Z]:\\|^\\\\/i.test(s) && IsExists(s)) {
 		Navigate(s, SBSP_NEWBROWSER);
 		return;
