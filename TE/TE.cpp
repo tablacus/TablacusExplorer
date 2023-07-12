@@ -14812,31 +14812,36 @@ STDMETHODIMP CteActiveScriptSite::OnScriptError(IActiveScriptError *pscripterror
 	EXCEPINFO *pExcepInfo = m_pExcepInfo ? m_pExcepInfo : &ExcepInfo;
 	if SUCCEEDED(pscripterror->GetExceptionInfo(pExcepInfo)) {
 		m_hr = pExcepInfo->scode;
-		BSTR bsSrcText = NULL;
-		pscripterror->GetSourceLineText(&bsSrcText);
-		DWORD dw1 = 0;
-		ULONG ulLine = 0;
-		LONG ulColumn = 0;
-		pscripterror->GetSourcePosition(&dw1, &ulLine, &ulColumn);
-		WCHAR pszLine[64];
-		swprintf_s(pszLine, _countof(pszLine), L"\n(0x%08x) Line: %d\n", m_hr, ulLine);
-		BSTR bs = ::SysAllocStringLen(NULL, ::SysStringLen(pExcepInfo->bstrDescription) + ::SysStringLen(bsSrcText) + lstrlen(pszLine));
-		lstrcpy(bs, pExcepInfo->bstrDescription);
-		lstrcat(bs, pszLine);
-		if (bsSrcText) {
-			lstrcat(bs, bsSrcText);
-			::SysFreeString(bsSrcText);
-		}
-		teSysFreeString(&pExcepInfo->bstrDescription);
-		pExcepInfo->bstrDescription = bs;
-#ifdef _DEBUG
-		::OutputDebugString(bs);
-#endif
-		if (!m_pExcepInfo) {
-			MessageBox(NULL, bs, _T(PRODUCTNAME), MB_OK | MB_ICONERROR);
+		if (m_hr == 0x800a01c) {	//Out of stack trace
+			g_nReload = 1;
+			SetTimer(g_hwndMain, TET_Reload, 100, teTimerProc);
+		} else {
+			BSTR bsSrcText = NULL;
+			pscripterror->GetSourceLineText(&bsSrcText);
+			DWORD dw1 = 0;
+			ULONG ulLine = 0;
+			LONG ulColumn = 0;
+			pscripterror->GetSourcePosition(&dw1, &ulLine, &ulColumn);
+			WCHAR pszLine[64];
+			swprintf_s(pszLine, _countof(pszLine), L"\n(0x%08x) Line: %d\n", m_hr, ulLine);
+			BSTR bs = ::SysAllocStringLen(NULL, ::SysStringLen(pExcepInfo->bstrDescription) + ::SysStringLen(bsSrcText) + lstrlen(pszLine));
+			lstrcpy(bs, pExcepInfo->bstrDescription);
+			lstrcat(bs, pszLine);
+			if (bsSrcText) {
+				lstrcat(bs, bsSrcText);
+				::SysFreeString(bsSrcText);
+			}
 			teSysFreeString(&pExcepInfo->bstrDescription);
-			teSysFreeString(&pExcepInfo->bstrHelpFile);
-			teSysFreeString(&pExcepInfo->bstrSource);
+			pExcepInfo->bstrDescription = bs;
+#ifdef _DEBUG
+			::OutputDebugString(bs);
+#endif
+			if (!m_pExcepInfo) {
+				MessageBox(NULL, bs, _T(PRODUCTNAME), MB_OK | MB_ICONERROR);
+				teSysFreeString(&pExcepInfo->bstrDescription);
+				teSysFreeString(&pExcepInfo->bstrHelpFile);
+				teSysFreeString(&pExcepInfo->bstrSource);
+			}
 		}
 	}
 	return S_OK;
