@@ -14812,7 +14812,7 @@ STDMETHODIMP CteActiveScriptSite::OnScriptError(IActiveScriptError *pscripterror
 	EXCEPINFO *pExcepInfo = m_pExcepInfo ? m_pExcepInfo : &ExcepInfo;
 	if SUCCEEDED(pscripterror->GetExceptionInfo(pExcepInfo)) {
 		m_hr = pExcepInfo->scode;
-		if (m_hr == 0x800a01c) {	//Out of stack trace
+		if (m_hr == 0x800a001c) {	//Out of stack trace
 			g_nReload = 1;
 			SetTimer(g_hwndMain, TET_Reload, 100, teTimerProc);
 		} else {

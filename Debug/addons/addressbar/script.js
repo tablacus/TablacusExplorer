@@ -171,6 +171,7 @@ if (window.Addon == 1) {
 						break;
 					case 5:
 						Addons.AddressBar.Exec();
+						Addons.AddressBar.Focus();
 						break;
 				}
 			}

@@ -66,7 +66,7 @@ g_.IconChg = [
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20230712 ? te.Version : 20230712;
+		return te.Version < 20230710 ? te.Version : 20230819;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -392,7 +392,7 @@ RunEvent4 = function () {
 	for (let i in eo) {
 		try {
 			const r = InvokeFunc(eo[i], args);
-			if (r !== void 0) {
+			if (r != null) {
 				return r;
 			}
 		} catch (e) {
@@ -592,10 +592,19 @@ IsSearchPath = function (pid, bText) {
 	return (bText ? /^search\-ms:.*?crumb=([^&]*).*?&crumb=location:([^&]*)/ : /^search\-ms:.*?&crumb=location:([^&]*)/).exec("string" === typeof pid ? pid : api.GetDisplayNameOf(pid, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
 }
 
-IsCloud = function (Item) {
+IsCloud = function (Item, bFolder) {
 	if (Item) {
-		if ((Item.ExtendedProperty("Attributes") || "").indexOf("O") >= 0) {
+		const attr = Item.ExtendedProperty("Attributes") || "";
+		if (attr.indexOf("O") >= 0) {
 			return true;
+		}
+		if (bFolder) {
+			if (attr.indexOf("D") < 0) {
+				return true;
+			}
+			if (attr.indexOf("L") >= 0) {
+				return true;
+			}
 		}
 		const res = /^([A-Z]):\\/i.exec(Item.Path);
 		if (res) {
