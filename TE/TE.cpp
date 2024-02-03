@@ -6179,7 +6179,7 @@ VOID CteShellBrowser::GetInitFS(FOLDERSETTINGS *pfs)
 		m_bAutoVM = FALSE;
 	}
 	pfs->ViewMode = !m_bAutoVM || ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER]) ? m_param[SB_ViewMode] : FVM_AUTO;
-	pfs->fFlags = (m_param[SB_FolderFlags] | FWF_USESEARCHFOLDER | FWF_SNAPTOGRID) & ~FWF_NOENUMREFRESH;
+	pfs->fFlags = (m_param[SB_FolderFlags] | FWF_USESEARCHFOLDER | FWF_SNAPTOGRID) & FWF_NOENUMREFRESH;
 }
 
 HRESULT CteShellBrowser::NavigateEB(DWORD dwFrame)
@@ -7187,7 +7187,7 @@ VOID CteShellBrowser::GetViewModeAndIconSize(BOOL bGetIconSize)
 		}
 		m_param[SB_IconSize] = iImageSize;
 		m_param[SB_ViewMode] = fs.ViewMode;
-		if (m_bCheckLayout && !m_bViewCreated) {
+		if (m_bCheckLayout && !m_bViewCreated && !m_bBeforeNavigating) {
 			FOLDERVIEWOPTIONS fvo = teGetFolderViewOptions(m_pidl, fs.ViewMode);
 			if (m_pExplorerBrowser) {
 				IFolderViewOptions *pOptions;
@@ -9430,8 +9430,9 @@ HRESULT CteShellBrowser::OnNavigationPending2(LPITEMIDLIST pidlFolder)
 		m_pFolderItem = new CteFolderItem(NULL);
 		m_pFolderItem->Initialize(m_pidl);
 	}
-
+	m_bBeforeNavigating = TRUE;
 	HRESULT hr = OnBeforeNavigate(pPrevious, SBSP_SAMEBROWSER | SBSP_ABSOLUTE);
+	m_bBeforeNavigating = FALSE;
 	if FAILED(hr) {
 		m_uLogIndex = m_uPrevLogIndex;
 		teCoTaskMemFree(m_pidl);
@@ -10328,6 +10329,9 @@ STDMETHODIMP CteShellBrowser::MessageSFVCB(UINT uMsg, WPARAM wParam, LPARAM lPar
 				if (lParam & SHCNE_UPDATEITEM) {
 					try {
 						if (ILIsEqual(m_pidl, *(LPITEMIDLIST *)wParam)) {
+							if (m_param[SB_FolderFlags] & FWF_NOENUMREFRESH) {
+								return S_FALSE;
+							}
 							if (m_dwTickNotify && GetTickCount() - m_dwTickNotify < 500) {
 								m_dwTickNotify = 0;
 								return S_FALSE;

@@ -4,6 +4,7 @@ te.ClearEvents();
 te.About = AboutTE(2);
 Init = false;
 g_arBM = [];
+g_tmWindowRegistered = -1;
 
 GetAddress = null;
 ShowContextMenu = null;
@@ -46,7 +47,10 @@ InputDialog = function (text, defaultText, cb, data) {
 	const t = 1440 / screen.deviceYDPI;
 	const x = Math.min((rc.left + (rc.right - rc.left) / 2 - 186) * t, 32767);
 	const y = Math.min((rc.top + (rc.bottom - rc.top) / 2 - 74) * t, 32767);
-	return api.GetScriptDispatch('Function InputDialog(text, TITLE, defaultText, x, y)\nInputDialog = InputBox(text, TITLE, defaultText, x, y)\nEnd Function', "VBScript").InputDialog(GetTextR(text), TITLE, defaultText, x, y);
+	const hwnd = api.GetFocus();
+	const r = api.GetScriptDispatch('Function InputDialog(text, TITLE, defaultText, x, y)\nInputDialog = InputBox(text, TITLE, defaultText, x, y)\nEnd Function', "VBScript").InputDialog(GetTextR(text), TITLE, defaultText, x, y);
+	api.SetFocus(hwnd);
+	return r;
 }
 
 g_.mouse = {
@@ -1622,6 +1626,13 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 	if (GetLock(Ctrl) && (wFlags & SBSP_NEWBROWSER) == 0 && !api.ILIsEqual(Prev, "about:blank") && !api.ILIsEqual(Ctrl.FolderItem, Prev)) {
 		hr = E_ACCESSDENIED;
 	}
+	if (hr == S_OK) {
+		if (IsCloud(Ctrl.FolderItem)) {
+			Ctrl.FolderFlags |= FWF_NOENUMREFRESH;
+		} else {
+			Ctrl.FolderFlags &= ~FWF_NOENUMREFRESH;
+		}
+	}
 	return hr;
 }
 
@@ -2113,9 +2124,7 @@ AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, 
 			const Item = Items.Item(i);
 			const path = Item.ExtendedProperty("linktarget") || Item.Path;
 			Navigate(GetParentFolderName(path), SBSP_NEWBROWSER);
-			setTimeout(function (FV, path) {
-				FV.SelectItem(path, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
-			}, 99, te.Ctrl(CTRL_FV), path);
+			SelectItem(te.Ctrl(CTRL_FV), path, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS | SVSI_DESELECTOTHERS, 99, true);
 			return S_OK;
 		}
 	}
@@ -2865,10 +2874,8 @@ g_.event.handleicon = function (Ctrl, pid, iItem) {
 }
 
 g_.event.windowregistered = function (Ctrl) {
-	if (!g_.tmWindowRegistered || new Date().getTime() > g_.tmWindowRegistered) {
+	if (g_tmWindowRegistered > 0 && new Date().getTime() > g_tmWindowRegistered) {
 		RunEvent1("WindowRegistered", Ctrl);
-	} else {
-		g_.tmWindowRegistered = void 0;
 	}
 }
 
@@ -2934,7 +2941,7 @@ ChangeNotifyFV = function (lEvent, item1, item2) {
 		const cFV = te.Ctrls(CTRL_FV, true);
 		for (let i in cFV) {
 			const FV = cFV[i];
-			if (FV && FV.FolderItem && !IsCloud(FV.FolderItem, true)) {
+			if (FV && FV.FolderItem && !IsCloud(FV.FolderItem)) {
 				const path = FV.FolderItem.Path;
 				const bParent = api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;")) || bNetwork && api.PathIsNetworkPath(path);
 				if (lEvent == SHCNE_RENAMEFOLDER && CanClose(FV) == S_OK) {
@@ -3048,7 +3055,9 @@ KeyExecEx = function (Ctrl, mode, nKey, hwnd) {
 }
 
 CancelWindowRegistered = function () {
-	g_.tmWindowRegistered = new Date().getTime() + 9999;
+	if (g_tmWindowRegistered > 0) {
+		g_tmWindowRegistered = new Date().getTime() + 3000;
+	}
 }
 
 importScripts = function () {

@@ -33,7 +33,8 @@ xhr = null;
 xmlAddons = null;
 arLangs = ["General"];
 
-Promise.all([GetLangId()]).then(function (r) {
+Promise.all([GetLangId(), MainWindow.IconSize]).then(function (r) {
+	ui_.IconSize = r[1];
 	if (!/^en/.test(r[0])) {
 		arLangs.unshift("en");
 	}
@@ -503,6 +504,7 @@ function SwitchMenus(o) {
 		g_x.Menus = o.form["Menus_" + a[0]];
 		g_x.Menus.style.display = "inline";
 		o.form["Menus_Base"].selectedIndex = a[1];
+		o.form["Menus_Base"].disabled = /Default|Alias/.test(a[0]);
 		o.form["Menus_Pos"].value = GetNum(a[2]);
 		CancelX("Menus");
 	}
@@ -696,6 +698,7 @@ async function ReplaceMenus() {
 		s += "\\t" + await GetKeyKeyG(document.F.Menus_Key.value);
 	}
 	SetMenus(sel, [s, document.F.Menus_Filter.value, await MainWindow.OptionEncode(o[o.selectedIndex].value, document.F.Menus_Path.value), o[o.selectedIndex].value, document.F.Icon.value, org, document.F.IconSize.value]);
+	EnableSelectTag(g_x.Menus);
 	g_Chg.Menus = true;
 }
 
@@ -709,12 +712,12 @@ async function ReplaceX(mode, form) {
 	ClearX(mode);
 	if (g_x[mode].selectedIndex < 0) {
 		InsertX(g_x[mode]);
-		EnableSelectTag(g_x[mode]);
 	}
 	const sel = g_x[mode][g_x[mode].selectedIndex];
 	const o = form[mode + "Type"];
 	const o2 = form[mode + "Name"];
 	SetData(sel, [form[mode + mode].value, await MainWindow.OptionEncode(o[o.selectedIndex].value, form[mode + "Path"].value), o[o.selectedIndex].value, o2 ? await GetSourceText(o2.value) : ""]);
+	EnableSelectTag(g_x[mode]);
 	g_Chg[mode] = true;
 	g_bChanged = true;
 }
@@ -741,6 +744,7 @@ function RemoveX(mode) {
 			FireEvent(g_x[mode][i], "change");
 		}
 		g_bChanged = false;
+		EnableSelectTag(g_x[mode]);
 	});
 }
 
@@ -775,6 +779,57 @@ function MoveX(mode, n) {
 	EnableSelectTag(g_x[mode]);
 }
 
+function CreateMenuX (mode) {
+	const sel = g_x[mode];
+	if (sel && sel.selectedIndex >= 0) {
+		MainWindow.InputDialog([GetText("Menus"), GetText("Name")], "", function (sName) {
+			WebBrowser.Focus();
+		    if (sName) {
+				const sOrg = (api.GetKeyState(VK_SHIFT) >= 0) ? "1" : "";
+				CreateMenu(mode, sName, sOrg);
+			}
+		});
+	}
+}
+
+function CreateMenu (mode, sName, sOrg) {
+	const sel = g_x[mode];
+	if (sel && sel.selectedIndex >= 0) {
+
+		ClearX(mode);
+		let iFirst = 0;
+		let iLast  = sel.length - 1;
+		while (!sel[iFirst].selected) {++iFirst;}
+		while (!sel[iLast].selected)  {--iLast; }
+
+		sel.length += 2;
+		for (let i = sel.length - 3; i > iLast; --i) {
+			sel[i + 2].text  = sel[i].text;
+			sel[i + 2].value = sel[i].value;
+		}
+		for (let i = iLast; i >= iFirst; --i) {
+			sel[i + 1].text  = sel[i].text;
+			sel[i + 1].value = sel[i].value;
+			sel[i + 1].selected = false;
+		}
+
+		iLast += 2;
+		if (mode == "Menus") {
+			SetMenus(sel[iFirst], [sName, "", "Open",  "Menus", "", sOrg, ""]);
+			SetMenus(sel[iLast],  [sName, "", "Close", "Menus", "", sOrg, ""]);
+		} else {
+			SetData(sel[iFirst], [sName, "Open",  "Menus", "", ""]);
+			SetData(sel[iLast],  [sName, "Close", "Menus", "", ""]);
+		}
+		g_Chg[mode] = true;
+		g_bChanged = true;
+		sel[iLast].selected  = true;
+		sel[iFirst].selected = true;
+		FireEvent(sel[iFirst], "change");
+		EnableSelectTag(sel);
+	}
+}
+
 async function SetMenus(sel, a) {
 	sel.value = PackData(a);
 	const a2 = a[0].split(/\\t/);
@@ -803,7 +858,7 @@ async function LoadMenus(nSelected) {
 
 		for (let j in g_arMenuTypes) {
 			const s = g_arMenuTypes[j];
-			document.getElementById("Menus_List").insertAdjacentHTML("beforeend", ['<select name="Menus_', s, '" size="17" style="width: 12em; height: 32em; height: calc(100vh - 6em); min-height: 20em; display: none" onchange="EditXEx(EditMenus)" ondblclick="EditMenus()" oncontextmenu="CancelX(\'Menus\')" multiple></select>'].join(""));
+			document.getElementById("Menus_List").insertAdjacentHTML("beforeend", ['<select name="Menus_', s, '" size="17" style="width: 12em; height: 32em; height: calc(100vh - 6em); min-height: 20em; display: none" onchange="EditXEx(EditMenus)" ondblclick="EditMenus()" oncontextmenu="CancelX(\'Menus\')" data-menu multiple></select>'].join(""));
 			const menus = await MenuGetElementsByTagNameUI(s);
 			if (menus && menus.length) {
 				oa[++oa.length - 1].value = s + "," + menus[0].getAttribute("Base") + "," + menus[0].getAttribute("Pos");
@@ -1117,7 +1172,7 @@ async function SetAddon(Id, bEnable, td, Alt) {
 		td = document.getElementById(Alt || "Addons_" + Id).parentNode;
 	}
 	const info = GetAddonInfo(Id);
-	const r = await Promise.all([info.Level, info.MinVersion, info.Config, AboutTE(0), info.Name, info.Version, info.Options, MainWindow.GetAddonIconImg(Id, '{ "style": "vertical-align: bottom" }', 24)]);
+	const r = await Promise.all([info.Level, info.MinVersion, info.Config, AboutTE(0), info.Name, info.Version, info.Options, MainWindow.GetAddonIconImg(Id, '{ "style": "vertical-align: bottom" }', ui_.IconSize)]);
 	const bLevel = (!window.chrome || r[0] > 1);
 	const bConfig = GetNum(r[2]);
 	const bMinVer = !bLevel || r[1] && r[3] < CalcVersion(r[1]);
@@ -1125,7 +1180,7 @@ async function SetAddon(Id, bEnable, td, Alt) {
 		bEnable = false;
 	}
 	const s = ['<div ', (Alt ? '' : 'draggable="true" ondragstart="Start5(event, this)" ondragend="End5()"'), ' title="', Id, '" Id="', Alt || "Addons_", Id, '">'];
-	s.push('<table><tr style="border-top: 1px solid buttonshadow"', bEnable || bConfig ? "" : ' class="disabled"', '><td class="middle">', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id + '">'), '</td><td style="width: 100%; padding: .3em 0"><label for="_', Id, '">');
+	s.push('<table><tr class="', bEnable || bConfig ? "box" : 'box disabled', '"><td class="middle">', (Alt ? '&nbsp;' : '<input type="radio" name="AddonId" id="_' + Id + '">'), '</td><td style="width: 100%; padding: .3em 0"><label for="_', Id, '">');
 	if (r[7]) {
 		s.push(r[7], "&nbsp;");
 	}
@@ -1520,17 +1575,26 @@ OpenIcon = function (o) {
 }
 
 async function SearchIcon(o) {
-	o.innerHTML = "";
-	o.onclick = null;
-	for (let fn, FileList = await GetFileList(BuildPath(system32, "*"), false, window.chrome); fn = FileList.shift();) {
-		const nCount = await api.ExtractIconEx(BuildPath(system32, fn), -1, null, null, 0);
-		if (nCount) {
-			const id = "i," + fn.toLowerCase();
-			if (!document.getElementById(id)) {
-				o.insertAdjacentHTML("beforeend", '<div id="' + id + '" onclick="OpenIcon(this)" style="cursor: pointer"><span class="tab">' + fn + ' : ' + nCount + '</span></div>');
+	document.F.ButtonSearch.disabled = true;
+	MainWindow.InputDialog(system32, "*.exe;*.cpl", async function (sFilter) {
+		WebBrowser.Focus();
+	    if (sFilter) {
+	    	const eFN = document.getElementById("footnote");
+			for (let fn, FileList = await GetFileList(BuildPath(system32, sFilter), false, window.chrome); fn = FileList.shift();) {
+				eFN.innerText = GetTextR("@shell32.dll,-13581") + " " + FileList.length;
+				const nCount = await api.ExtractIconEx(BuildPath(system32, fn), -1, null, null, 0);
+				if (nCount) {
+					const id = "i," + fn.toLowerCase();
+					if (!document.getElementById(id)) {
+						o.insertAdjacentHTML("beforeend", '<div id="' + id + '" onclick="OpenIcon(this)" style="cursor: pointer"><span class="tab">' + fn + ' : ' + nCount + '</span></div>');
+						document.getElementById(id).scrollIntoView(false);
+					}
+				}
 			}
+			eFN.innerText = "";
 		}
-	}
+		document.F.ButtonSearch.disabled = false;
+	});
 }
 
 ReturnDialogResult = async function (WB) {
@@ -1620,8 +1684,8 @@ InitDialog = async function () {
 				s.push('<div id="', a[i], '" onclick="OpenIcon(this)" style="cursor: pointer"><span class="tab">', i.replace(/ieframe,214/, r[0]).replace(/ieframe,204/, r[1]), '</span></div>');
 			}
 		}
-		s.push('<div onclick="SearchIcon(this)" style="cursor: pointer"><span class="tab">', await GetText("Search"), '</span></div>');
 		document.getElementById("Content").innerHTML = s.join("");
+		document.getElementById("ButtonSearch").style.display = "inline-block";
 		WebBrowser.OnClose = ReturnDialogResult;
 	}
 	if (Query == "mouse") {
@@ -1700,7 +1764,7 @@ InitDialog = async function () {
 	}
 	if (Query == "fileicon") {
 		const s = PathUnquoteSpaces((await window.dialogArguments.Id).replace(/^.*\t/, ""));
-		document.title = s + " - " + TITLE;
+		document.title = s;
 		GetElement("Content").innerHTML = '<div id="i,' + s + '" style="cursor: pointer"></div>';
 		await OpenIcon(GetElement("i," + s));
 		WebBrowser.OnClose = ReturnDialogResult;
@@ -1722,7 +1786,7 @@ InitDialog = async function () {
 					r.push(items[i].getAttribute("Enabled"), items[i].nodeName, GetAddonInfo(i).Version);
 				}
 			}
-			s.push('<br><label>Add-ons</label><input id="UsedAddons" type="text" style="width: 100%" onclick="this.select()"><br>');
+			s.push('<br><label>Add-ons</label><input id="UsedAddons" type="text" style="width: 100%" onclick="this.select()" readonly><br>');
 		}
 		s.push('<br><button id="ws1" onclick="Run(2)">Visit website</button>');
 		s.push('&nbsp;<button onclick="Run(3)">Check for updates</button>');
@@ -1789,6 +1853,7 @@ InitDialog = async function () {
 	}
 	if (Query == "input") {
 		returnValue = false;
+		document.title = await window.dialogArguments.Id || TITLE;
 		document.getElementById("Content").innerHTML = ['<div style="padding: 8px;" style="display: block;"><label>', EncodeSC(await dialogArguments.text).replace(/\r?\n/g, "<br>"), '<br><input type="text" name="text" class="full"></div>'].join("");
 		document.body.addEventListener("keydown", function (ev) {
 			return KeyDownEvent(ev, function () {
@@ -2226,11 +2291,13 @@ async function GetAttribEx(item, f, n) {
 	}
 }
 
-function RefX(Id, bMultiLine, oButton, bFilesOnly, Filter, f) {
+function RefX(IdList, bMultiLine, oButton, bFilesOnly, Filter, f) {
 	setTimeout(async function () {
+		const ar = IdList.split(";");
+		const Id = ar[0];
+		const s = (ar.length > 1) ? ar[1] : Id.replace("Path", "Type");
 		const o = GetElement(Id, f);
-		if (/Path/.test(Id) && "string" !== typeof Filter) {
-			const s = Id.replace("Path", "Type");
+		if ((/Path/.test(Id) || (ar.length > 1)) && "string" !== typeof Filter) {
 			if (o) {
 				let pt;
 				if (oButton) {
@@ -2432,6 +2499,7 @@ SelectIcon = function (o) {
 	o = o.target || o.srcElement || o;
 	returnValue = o.title;
 	document.F.ButtonOk.disabled = false;
+	document.F.ButtonOk.focus();
 	document.getElementById("Selected").innerHTML = o.outerHTML;
 	DialogResize();
 }
@@ -2455,7 +2523,7 @@ SetImage = async function (f, n) {
 			f = document.F;
 		}
 		const px = screen.deviceYDPI / 3;
-		const h = Math.min(GetNum(f.IconSize || f.Height) || await MainWindow.IconSize, px);
+		const h = Math.min(GetNum(f.IconSize || f.Height) || ui_.IconSize, px);
 		o.innerHTML = await GetImgTag({ src: await ExtractPath(te, f.Icon.value), "max-width": px + "px", "max-height": px + "px" }, h);
 	}
 }
@@ -2597,8 +2665,7 @@ function SetTable(table, td) {
 			td[i].shift();
 			td1.innerHTML = td[i].join("");
 			ApplyLang(td1);
-			td1.className = (i & 1) ? "oddline" : "";
-			td1.style.borderTop = "1px solid buttonshadow";
+			td1.className = (i & 1) ? "box oddline" : "box";
 			td1.style.padding = "3px";
 		}
 	}
@@ -2663,11 +2730,11 @@ async function ArrangeAddon(xml, td) {
 						return;
 					}
 					const path = BuildPath(ui_.Installed, "addons", Id);
-					const wfd = await IsExists(BuildPath(path, "*" + ui_.bit + ".dll"), true);
-					if (!wfd) {
+					const cFileName = await IsExists(BuildPath(path, "*" + ui_.bit + ".dll"), "cFileName");
+					if (!cFileName) {
 						return;
 					}
-					if (CalcVersion(await installed.DllVersion) <= CalcVersion(await fso.GetFileVersion(BuildPath(path, await wfd.cFileName)))) {
+					if (CalcVersion(await installed.DllVersion) <= CalcVersion(await fso.GetFileVersion(BuildPath(path, cFileName)))) {
 						return;
 					}
 				} catch (e) {
@@ -2912,9 +2979,9 @@ async function LangPacksList(xhr) {
 		if (JsonSearch(info, q)) {
 			const tm = new Date(info.pubDate).getTime();
 			let strUpdate = "";
-			const wfd = await IsExists(BuildPath(ui_.Installed, "lang", n), true);
-			if (wfd) {
-				if (tm < new Date(await wfd.ftLastWriteTime).getTime() + 2000) {
+			const ftLastWriteTime = await IsExists(BuildPath(ui_.Installed, "lang", n), "ftLastWriteTime");
+			if (ftLastWriteTime) {
+				if (tm < new Date(ftLastWriteTime).getTime() + 2000) {
 					continue;
 				}
 				strUpdate = ['<b class="danger nowrap" style="float: right">', await GetText('Update available'), '&nbsp;&nbsp;</b>'].join("");
@@ -2950,7 +3017,39 @@ async function InstallLang2(xhr, url, arg) {
 	ClickTree("tab0");
 }
 
+function repeat(strIn, nTimes) {
+	let strOut = "";
+	for (let n = 0; n < nTimes; ++n) {
+		strOut += strIn;
+	}
+	return strOut;
+}
+
+function IndentMenuItems(o) {
+	if (o && o.hasAttribute("data-menu")) {
+		const INDENT = String.fromCharCode(8195);	//EMSP
+		const MenusOpen  = new RegExp(g_sep + "Open"  + g_sep + "Menus" + g_sep, "i");
+		const MenusClose = new RegExp(g_sep + "Close" + g_sep + "Menus" + g_sep, "i");
+		let nLevel = 0;
+		for (let i = 0; i < o.length; ++i) {
+			o[i].style.color = "";
+			if (MenusClose.test(o[i].value)) {
+				if (nLevel) {
+					--nLevel;
+				} else {
+					o[i].style.color = "red";
+				}
+			}
+			o[i].label = repeat(INDENT, nLevel) + o[i].text;
+			if (MenusOpen.test(o[i].value)) {
+				++nLevel;
+			}
+		}
+	}
+}
+
 async function EnableSelectTag(o) {
+	await IndentMenuItems(o);
 	if (o && !window.chrome) {
 		const hwnd = await WebBrowser.hwnd;
 		api.SendMessage(hwnd, WM_SETREDRAW, false, 0);

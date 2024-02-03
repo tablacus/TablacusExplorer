@@ -74,7 +74,7 @@ AddEvent = function (Name, fn, priority) {
 }
 
 ClearEvent = function (Name) {
-	if (/^arrange$||^finalize$^layout$|^load$|^panelcreated$|^resize$/i.test(Name)) {
+	if (/^arrange$|^finalize$|^layout$|^load$|^panelcreated$|^resize$/i.test(Name)) {
 		InvokeUI("ClearEventUI", [Name]);
 		if (/^finalize$/.test(Name)) {
 			return;
@@ -85,6 +85,10 @@ ClearEvent = function (Name) {
 
 SameText = function (s1, s2) {
 	return String(s1).toLowerCase() == String(s2).toLowerCase();
+}
+
+StartsText = function (s1, s2) {
+	return String(s1).toLowerCase() == String(s2).slice(0, s1.length).toLowerCase();
 }
 
 GetLength = async function (o) {
@@ -113,7 +117,7 @@ CreateTab = async function (Ctrl, pt) {
 }
 
 StripAmp = function (s) {
-	return String(s).replace(/\(&\w\)|&/, "").replace(/\.\.\.$/, "");
+	return String(s).replace(/\(&\w\)|&/, "").replace(/ ?\.\.\.$/, "");
 }
 
 EncodeSC = function (s) {
@@ -325,7 +329,7 @@ CalcVersion = function (s) {
 	if (res) {
 		r = "";
 		for (let i = 1; i < 5; ++i) {
-			r += ('00000' + res[i]).substr(-6);
+			r += ('00000' + res[i]).slice(-6);
 		}
 		return r;
 	}

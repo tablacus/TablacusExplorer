@@ -21,6 +21,10 @@ textarea {
 	background-color: #ffffe1;
 }
 
+.box {
+  border-top: 1px solid #888;
+}
+
 .color {
 	border-radius: 2px;
 }

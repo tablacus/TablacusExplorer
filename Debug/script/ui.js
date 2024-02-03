@@ -601,6 +601,7 @@ ApplyLang = async function (doc) {
 		"Options": 0xe713,
 		"Refresh": 0xe72c,
 		"Open": 0xe8e5,
+		"Menus": 0xed0e,
 		"Test": 0xe768,
 		"None": 0xe75c,
 		"Swap": 0xe8ab

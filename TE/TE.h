@@ -418,6 +418,7 @@ public:
 	BOOL		m_bRefreshing;
 	BOOL		m_bAutoVM;
 	BOOL		m_bBeforeNavigate;
+	BOOL		m_bBeforeNavigating;
 	BOOL		m_bViewCreated;
 	BOOL		m_bFiltered;
 	BOOL		m_bNavigateComplete;
@@ -626,3 +627,8 @@ public:
 	HRESULT m_hr;
 };
 
+// Compile Options: /GX
+namespace std
+{
+#include <cstdlib>
+};

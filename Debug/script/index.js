@@ -481,7 +481,7 @@ Init = async function () {
 	await RunEventUI1("Layout");
 	document.F.style.visibility = "";
 	te.OnArrange = OnArrange;
-	await InitBG(await GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor));
+	await InitBG(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor, true);
 	await InitWindow();
 	await RunEventUI1("Load");
 	ui_.Show = 1;

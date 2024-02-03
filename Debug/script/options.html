@@ -83,7 +83,7 @@
               <button onclick="SetDefault(document.F.Conf_InnerIconSize, '');">Default</button><br><br>
               <label>Menus</label><br>
               <label><input type="checkbox" id="Conf_MenuHidden">Include hidden items</label><br>
-              <label><input type="checkbox" id="Conf_MenuIcon">@mmcbase.dll,-106</label>
+              <label><input type="checkbox" id="Conf_MenuIcon">Icon</label>
               <br><br>
               <label>Input</label><br>
               <label><input type="checkbox" id="!Conf_NoAutocomplete">@ieframe.dll,-12806[Autocomplete]</label>
@@ -111,14 +111,14 @@
               <br><br>
               <label>Trails</label><br>
               <input type="text" id="Conf_TrailColor" title="Color" placeholder="#00ff00" style="width: 9em" onchange="ChangeColor1(this)">
-              <button id="Color_Conf_TrailColor" class="color" title="Color" onclick="ChooseColor2(this)">&ensp;</button><br>
+              <button id="Color_Conf_TrailColor" class="color" onclick="ChooseColor2(this)">&ensp;</button><br>
               <input type="text" name="Conf_TrailSize" title="Size" class="number"><label>@mspaint.exe,-50047[px]</label>
               <button onclick="AddValue('Conf_TrailSize', -1, 0, 16)">-</button>
               <button onclick="AddValue('Conf_TrailSize', 1, 0, 16)">+</button>
               <br><br>
               <label><input type="checkbox" id="!Conf_NoInfotip">Tooltips</label><br><br>
               <label>Drag-and-Drop</label><br>
-              <label><input type="checkbox" id="!Conf_NoDragIcon">@mmcbase.dll,-106</label>
+              <label><input type="checkbox" id="!Conf_NoDragIcon">Icon</label>
             </div>
             <!--panel_end-->
 
@@ -247,7 +247,7 @@
                           <label>Base</label>
                           <select name="Menus_Base" onchange="SwitchMenus();" class="translate">
                             <option value="Normal">Normal
-                            <option value="Exec">Exec
+                            <option value="Exec" disabled>Exec
                             <option value="Context">Context
                             <option value="Background">Background
                             <option value="File">File
@@ -268,7 +268,7 @@
                           <input type="text" name="Menus_Key" placeholder="Key" title="Key" class="full" onchange="ChangeX('Menus')">
                         </td>
                         <td style="width: 1.667em">
-                          <button title="Key" style="line-height: 1.1em" onclick="InputKey(document.F['Menus_Key']);">...</button>
+                          <button style="line-height: 1.1em" onclick="InputKey(document.F['Menus_Key']);">...</button>
                         </td>
                       </tr>
                     </table>
@@ -311,11 +311,11 @@
                         </td>
                       </tr>
                     </table>
-                    <textarea name="Menus_Path" style="width: 100%; height: 16em; height: calc(100vh - 24em); min-height: 2em" onchange="ChangeX('Menus')"></textarea>
+                    <textarea name="Menus_Path" style="width: 100%; height: 16em; height: calc(100vh - 23em); min-height: 2em" onchange="ChangeX('Menus')"></textarea>
                     <table class="layout">
                       <tr>
                         <td class="bottom nowrap">
-                          <label>@mmcbase.dll,-106</label><input type="hidden" name="Height" value="16">&nbsp;
+                          <label>Icon</label><input type="hidden" name="Height" value="16">&nbsp;
                         </td>
                         <td id="_Icon" class="middle full" style="width: 15pt; height: 15pt; overflow: hidden;" align="left">
                         </td>
@@ -341,11 +341,10 @@
               </table>
               <table class="full">
                 <tr>
-                  <td style="width: 12em">
+                  <td>
                     <button onclick="RemoveX('Menus')">Remove</button>
-                    <label><input type="checkbox" id="_EDIT">Edit</label>
-                  </td>
-                  <td align="left" class="nowrap" style="padding-left: 2pt">
+                    <button onclick="CreateMenuX('Menus')">Menus</button>
+                    <label><input type="checkbox" id="_EDIT">Edit</label>&nbsp;
                     <button onclick="TestX('Menus_')">Test</button>
                   </td>
                   <td align="right">
@@ -473,6 +472,7 @@
               </div>
               <div>
                 (*)Windows Vista <label>or higher.</label>
+                (*7)Windows 7 <label>or higher.</label>
               </div>
             </div>
             <!--panel_end-->
@@ -496,10 +496,6 @@
               <label><input type="radio" name="Tree_RootStyle_" id="Tree_RootStyle=0" onclick="SetRadio(this)">Visible</label><br>
               <label><input type="radio" name="Tree_RootStyle_" id="Tree_RootStyle=1" onclick="SetRadio(this)">Hidden</label><br>
               <label><input type="radio" name="Tree_RootStyle_" id="Tree_RootStyle=2" onclick="SetRadio(this)">Expanded</label><br><br>
-              <div>
-                (*)Windows Vista <label>or higher.</label>
-                (*7)Windows 7 <label>or higher.</label>
-              </div>
             </div>
             <!--panel_end-->
 
@@ -512,14 +508,14 @@
               <br><br>
               <label>View</label><br>
               <input type="hidden" name="View_ViewMode">
-              <label><input type="radio" name="View_ViewMode_" id="View_ViewMode=1" onclick="SetRadio(this)">@mmcbase.dll,-106</label>
+              <label><input type="radio" name="View_ViewMode_" id="View_ViewMode=1" onclick="SetRadio(this)">Icon</label>
               <label><input type="radio" name="View_ViewMode_" id="View_ViewMode=2" onclick="SetRadio(this)">@shell32.dll,-33578</label>
               <label><input type="radio" name="View_ViewMode_" id="View_ViewMode=3" onclick="SetRadio(this)">@shell32.dll,-33579</label>
               <label><input type="radio" name="View_ViewMode_" id="View_ViewMode=4" onclick="SetRadio(this)">@shell32.dll,-33580</label>
               <label><input type="radio" name="View_ViewMode_" id="View_ViewMode=5" onclick="SetRadio(this)">Thumbnail</label>
               <br>
               <label><input type="radio" name="View_ViewMode_" id="View_ViewMode=6" onclick="SetRadio(this)">Tile</label>
-              <label><input type="radio" name="View_ViewMode_" id="View_ViewMode=7" onclick="SetRadio(this)">Thumbstrip</label>(*)
+              <label><input type="radio" name="View_ViewMode_" id="View_ViewMode=7" onclick="SetRadio(this)">Thumbstrip</label>
               <label><input type="radio" name="View_ViewMode_" id="View_ViewMode=8" onclick="SetRadio(this)">Content</label>(*7)
               <br>
               <label><input type="checkbox" id="Conf_Layout:0x10000" onclick="SetCheckbox(this)">Auto</label>(*)
@@ -588,7 +584,7 @@
               </div>
               <label>Explorer Browser</label>(*7)<br>
               <input type="text" name="Conf_Layout" style="display: none">
-              <label><input type="checkbox" id="Conf_Layout:0x1" onclick="SetCheckbox(this)">@mmcbase.dll,-106</label><br>
+              <label><input type="checkbox" id="Conf_Layout:0x1" onclick="SetCheckbox(this)">Icon</label><br>
               <label><input type="checkbox" id="Conf_Layout:0x2" onclick="SetCheckbox(this)">@shell32.dll,-33578</label><br>
               <label><input type="checkbox" id="Conf_Layout:0x4" onclick="SetCheckbox(this)">@shell32.dll,-33579</label><br>
               <label><input type="checkbox" id="Conf_Layout:0x8" onclick="SetCheckbox(this)">@shell32.dll,-33580</label><br>
@@ -598,6 +594,7 @@
               <br>
               <div>
                 (*)Windows Vista <label>or higher.</label>
+                (*7)Windows 7 <label>or higher.</label>
               </div>
             </div>
             <input type="hidden" name="View_Options">
