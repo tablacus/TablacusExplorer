@@ -19,40 +19,6 @@ Refresh = function (Ctrl, pt) {
 	return RunEvent4("Refresh", Ctrl, pt);
 }
 
-InputDialog = function (text, defaultText, cb, data) {
-	const eo = eventTE.inputdialog;
-	if (eo && eo.length) {
-		const r = InvokeFunc(eo[0], [text, defaultText]);
-		if (cb) {
-			cb(r, data);
-			return;
-		}
-		return r;
-	}
-	if (cb) {
-		const opt = api.CreateObject("Object");
-		opt.text = text;
-		opt.defaultText = defaultText;
-		opt.callback = function (text) {
-			setTimeout(cb, 9, text, data);
-		};
-		ShowDialogEx("input", 480, 140, null, opt);
-		return;
-	}
-	if (window.prompt) {
-		return prompt(GetTextR(text), defaultText);
-	}
-	const rc = api.Memory("RECT");
-	api.GetWindowRect(te.hwnd, rc);
-	const t = 1440 / screen.deviceYDPI;
-	const x = Math.min((rc.left + (rc.right - rc.left) / 2 - 186) * t, 32767);
-	const y = Math.min((rc.top + (rc.bottom - rc.top) / 2 - 74) * t, 32767);
-	const hwnd = api.GetFocus();
-	const r = api.GetScriptDispatch('Function InputDialog(text, TITLE, defaultText, x, y)\nInputDialog = InputBox(text, TITLE, defaultText, x, y)\nEnd Function', "VBScript").InputDialog(GetTextR(text), TITLE, defaultText, x, y);
-	api.SetFocus(hwnd);
-	return r;
-}
-
 g_.mouse = {
 	str: "",
 	CancelContextMenu: false,

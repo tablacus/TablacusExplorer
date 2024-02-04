@@ -2092,7 +2092,7 @@ VOID ClearEvents()
 	g_param[TE_ColumnEmphasis] = FALSE;
 	g_param[TE_ViewOrder] = FALSE;
 	g_param[TE_LibraryFilter] = FALSE;
-	g_param[TE_AutoArrange] = FALSE;
+	g_param[TE_AutoArrange] = 0;
 	g_param[TE_ShowInternet] = FALSE;
 
 	if (g_dwCookieSW) {
@@ -10322,62 +10322,70 @@ STDMETHODIMP CteShellBrowser::MessageSFVCB(UINT uMsg, WPARAM wParam, LPARAM lPar
 			}
 		}
 		if (uMsg == SFVM_FSNOTIFY) {
-			if (!g_param[TE_AutoArrange]) {
-				if (lParam & (SHCNE_CREATE | SHCNE_MKDIR)) {
-					m_dwTickNotify = GetTickCount();
-				}
-				if (lParam & SHCNE_UPDATEITEM) {
-					try {
-						if (ILIsEqual(m_pidl, *(LPITEMIDLIST *)wParam)) {
-							if (m_param[SB_FolderFlags] & FWF_NOENUMREFRESH) {
-								return S_FALSE;
-							}
-							if (m_dwTickNotify && GetTickCount() - m_dwTickNotify < 500) {
-								m_dwTickNotify = 0;
-								return S_FALSE;
-							}
-							int iExists = GetFolderViewAndItemCount(NULL, SVGIO_ALLVIEW);
-							int iNew = 0;
-							if (iExists > 99999) {
-								return S_FALSE;
-							}
-							SHCONTF grfFlags = SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN;
-							HKEY hKey;
-							if (RegOpenKeyExA(HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-								DWORD dwData;
-								DWORD dwSize = sizeof(DWORD);
-								if (RegQueryValueExA(hKey, "ShowSuperHidden", NULL, NULL, (LPBYTE)&dwData, &dwSize) == S_OK) {
-									if (dwData) {
-										grfFlags |= SHCONTF_INCLUDESUPERHIDDEN;
-									}
-								}
-								RegCloseKey(hKey);
-							}
-							IEnumIDList *peidl;
-							if (m_pSF2->EnumObjects(NULL, grfFlags, &peidl) == S_OK) {
-								LPITEMIDLIST pidlPart = NULL;
-								while (iNew <= iExists && peidl->Next(1, &pidlPart, NULL) == S_OK) {
-									if (IncludeObject2(m_pSF2, pidlPart, NULL) == S_OK) {
-										iNew++;
-									}
-									teCoTaskMemFree(pidlPart);
-								}
-								peidl->Release();
-							}
-							if (iExists == iNew) {
+			try {
+				if (!(g_param[TE_AutoArrange] & 2)) {//Cloud Witness
+					if (lParam & (SHCNE_UPDATEDIR | SHCNE_UPDATEITEM)) {
+						if (m_param[SB_FolderFlags] & FWF_NOENUMREFRESH) {
+							if (ILIsEqual(m_pidl, *(LPITEMIDLIST *)wParam)) {
 								return S_FALSE;
 							}
 						}
-					} catch (...) {
-						g_nException = 0;
-#ifdef _DEBUG
-						g_strException = L"MessageSFVCB";
-#endif
 					}
 				}
-				if (lParam & SHCNE_EXTENDED_EVENT) {
-					return S_FALSE;
+				if (!(g_param[TE_AutoArrange] & 1)) {//Auto arrange upon refresh
+					if (lParam & (SHCNE_CREATE | SHCNE_MKDIR)) {
+						m_dwTickNotify = GetTickCount();
+					}
+					if (lParam & (SHCNE_UPDATEDIR | SHCNE_UPDATEITEM)) {
+						if (ILIsEqual(m_pidl, *(LPITEMIDLIST *)wParam)) {
+							if (m_dwTickNotify && GetTickCount() - m_dwTickNotify < 500) {
+								return S_FALSE;
+							}
+							m_dwTickNotify = GetTickCount();
+							if (lParam & SHCNE_UPDATEITEM) {
+								int iExists = GetFolderViewAndItemCount(NULL, SVGIO_ALLVIEW);
+								int iNew = 0;
+								if (iExists > 99999) {
+									return S_FALSE;
+								}
+								SHCONTF grfFlags = SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN;
+								HKEY hKey;
+								if (RegOpenKeyExA(HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+									DWORD dwData;
+									DWORD dwSize = sizeof(DWORD);
+									if (RegQueryValueExA(hKey, "ShowSuperHidden", NULL, NULL, (LPBYTE)&dwData, &dwSize) == S_OK) {
+										if (dwData) {
+											grfFlags |= SHCONTF_INCLUDESUPERHIDDEN;
+										}
+									}
+									RegCloseKey(hKey);
+								}
+								IEnumIDList *peidl;
+								if (m_pSF2->EnumObjects(NULL, grfFlags, &peidl) == S_OK) {
+									LPITEMIDLIST pidlPart = NULL;
+									while (iNew <= iExists && peidl->Next(1, &pidlPart, NULL) == S_OK) {
+										if (IncludeObject2(m_pSF2, pidlPart, NULL) == S_OK) {
+											iNew++;
+										}
+										teCoTaskMemFree(pidlPart);
+									}
+									peidl->Release();
+								}
+								if (iExists == iNew) {
+									return S_FALSE;
+								}
+							}
+						}
+					}
+					if (lParam & SHCNE_EXTENDED_EVENT) {
+						return S_FALSE;
+					}
 				}
+			} catch (...) {
+					g_nException = 0;
+		#ifdef _DEBUG
+					g_strException = L"MessageSFVCB2";
+		#endif
 			}
 		}
 	}

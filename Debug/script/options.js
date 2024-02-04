@@ -779,20 +779,22 @@ function MoveX(mode, n) {
 	EnableSelectTag(g_x[mode]);
 }
 
-function CreateMenuX (mode) {
+async function CreateMenuX(mode) {
 	const sel = g_x[mode];
 	if (sel && sel.selectedIndex >= 0) {
-		MainWindow.InputDialog([GetText("Menus"), GetText("Name")], "", function (sName) {
-			WebBrowser.Focus();
-		    if (sName) {
-				const sOrg = (api.GetKeyState(VK_SHIFT) >= 0) ? "1" : "";
-				CreateMenu(mode, sName, sOrg);
-			}
-		});
+		InputDialog((await Promise.all([GetText("Menus"), GetText("Name")])).join("\n"), "", "callback_CreateMenuX", mode);
 	}
 }
 
-function CreateMenu (mode, sName, sOrg) {
+async function callback_CreateMenuX(sName, mode) {
+	WebBrowser.Focus();
+	if (sName) {
+		const sOrg = (await api.GetKeyState(VK_SHIFT) >= 0) ? "1" : "";
+		CreateMenu(mode, sName, sOrg);
+	}
+}
+
+function CreateMenu(mode, sName, sOrg) {
 	const sel = g_x[mode];
 	if (sel && sel.selectedIndex >= 0) {
 
@@ -1576,25 +1578,32 @@ OpenIcon = function (o) {
 
 async function SearchIcon(o) {
 	document.F.ButtonSearch.disabled = true;
-	MainWindow.InputDialog(system32, "*.exe;*.cpl", async function (sFilter) {
-		WebBrowser.Focus();
-	    if (sFilter) {
-	    	const eFN = document.getElementById("footnote");
-			for (let fn, FileList = await GetFileList(BuildPath(system32, sFilter), false, window.chrome); fn = FileList.shift();) {
-				eFN.innerText = GetTextR("@shell32.dll,-13581") + " " + FileList.length;
-				const nCount = await api.ExtractIconEx(BuildPath(system32, fn), -1, null, null, 0);
-				if (nCount) {
-					const id = "i," + fn.toLowerCase();
-					if (!document.getElementById(id)) {
-						o.insertAdjacentHTML("beforeend", '<div id="' + id + '" onclick="OpenIcon(this)" style="cursor: pointer"><span class="tab">' + fn + ' : ' + nCount + '</span></div>');
-						document.getElementById(id).scrollIntoView(false);
-					}
+	InputDialog(system32, "*.exe;*.cpl", "callback_SearchIcon", o.id)
+}
+
+async function callback_SearchIcon (sFilter, id1) {
+	WebBrowser.Focus();
+	if (sFilter) {
+		if (!/^[A-Z]:\\|^\\\\/i.test(sFilter)) {
+			dllPath = BuildPath(system32, sFilter);
+		}
+		const eFN = document.getElementById("footnote");
+		const str = await GetTextR("@shell32.dll,-13581");
+		eFN.innerHTML = str;
+		for (let fn, FileList = await GetFileList(BuildPath(system32, sFilter), false, window.chrome); fn = FileList.shift();) {
+			eFN.innerText = str + " " + FileList.length;
+			const nCount = await api.ExtractIconEx(BuildPath(system32, fn), -1, null, null, 0);
+			if (nCount) {
+				const id = "i," + fn.toLowerCase();
+				if (!document.getElementById(id)) {
+					document.getElementById(id1).insertAdjacentHTML("beforeend", '<div id="' + id + '" onclick="OpenIcon(this)" style="cursor: pointer"><span class="tab">' + fn + ' : ' + nCount + '</span></div>');
+					document.getElementById(id).scrollIntoView(false);
 				}
 			}
-			eFN.innerText = "";
 		}
-		document.F.ButtonSearch.disabled = false;
-	});
+		eFN.innerText = "";
+	}
+	document.F.ButtonSearch.disabled = false;
 }
 
 ReturnDialogResult = async function (WB) {

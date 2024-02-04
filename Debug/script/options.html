@@ -311,7 +311,7 @@
                         </td>
                       </tr>
                     </table>
-                    <textarea name="Menus_Path" style="width: 100%; height: 16em; height: calc(100vh - 23em); min-height: 2em" onchange="ChangeX('Menus')"></textarea>
+                    <textarea name="Menus_Path" style="width: 100%; height: 16em; height: calc(100vh - 24em); min-height: 2em" onchange="ChangeX('Menus')"></textarea>
                     <table class="layout">
                       <tr>
                         <td class="bottom nowrap">
@@ -563,7 +563,9 @@
               <label alt="Select by middle button"><input type="checkbox" id="Conf_WheelSelect">Wheel<i> </i>@oleaccrc.dll,-266<i> </i>Select</label><br>
               <label alt="Process selected items in view sequence"><input type="checkbox" id="Conf_ViewOrder">@shell32.dll,-50690[Arrange by:]<i> </i>View<span> (</span>Selected items<span>)</span></label><br>
               <label alt="Apply Filter to Libraries"><input type="checkbox" id="Conf_LibraryFilter">@shell32.dll,-23349[Library]<i> </i>Filter</label>(*)<br>
-              <label alt="Auto arrange upon refresh"><input type="checkbox" id="Conf_AutoArrange">Auto arrange<span> (</span>Refresh<span>)</span></label><br>
+              <input type="text" name="Conf_AutoArrange" style="display: none">
+              <label alt="Auto arrange upon refresh"><input type="checkbox" id="Conf_AutoArrange:0x1" onclick="SetCheckbox(this)">Auto arrange<span> (</span>Refresh<span>)</span></label><br>
+              <label><input type="checkbox" id="Conf_AutoArrange:0x2" onclick="SetCheckbox(this)">@clusapi.dll,-14338[Cloud Witness]</span></label><br>
               <label><input type="checkbox" id="View_fFlags:0x8000000" onclick="SetCheckbox(this)">@shell32.dll,-30522[Item check boxes]</label>(*)<br>
               <label alt="Group"><input type="checkbox" id="View_fFlags:!0x100000" onclick="SetCheckbox(this)">@fde.dll,-22</label>(*)<br>
               <label alt="Subset groups"><input type="checkbox" id="View_fFlags:0x20000000" onclick="SetCheckbox(this)">Number of items<span> (</span>@fde.dll,-22<span>)</span></label>(*)<br>
