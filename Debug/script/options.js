@@ -1695,6 +1695,7 @@ InitDialog = async function () {
 		}
 		document.getElementById("Content").innerHTML = s.join("");
 		document.getElementById("ButtonSearch").style.display = "inline-block";
+		document.F.ButtonSearch.disabled = false;
 		WebBrowser.OnClose = ReturnDialogResult;
 	}
 	if (Query == "mouse") {
