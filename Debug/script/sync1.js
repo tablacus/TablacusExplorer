@@ -1593,7 +1593,7 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 		hr = E_ACCESSDENIED;
 	}
 	if (hr == S_OK) {
-		if (IsCloud(Ctrl.FolderItem)) {
+		if (IsCloudFV(Ctrl)) {
 			Ctrl.FolderFlags |= FWF_NOENUMREFRESH;
 		} else {
 			Ctrl.FolderFlags &= ~FWF_NOENUMREFRESH;
@@ -2907,7 +2907,7 @@ ChangeNotifyFV = function (lEvent, item1, item2) {
 		const cFV = te.Ctrls(CTRL_FV, true);
 		for (let i in cFV) {
 			const FV = cFV[i];
-			if (FV && FV.FolderItem && !IsCloud(FV.FolderItem)) {
+			if (FV && FV.FolderItem && !IsCloudFV(FV)) {
 				const path = FV.FolderItem.Path;
 				const bParent = api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;")) || bNetwork && api.PathIsNetworkPath(path);
 				if (lEvent == SHCNE_RENAMEFOLDER && CanClose(FV) == S_OK) {

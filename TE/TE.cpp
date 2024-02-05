@@ -6179,7 +6179,7 @@ VOID CteShellBrowser::GetInitFS(FOLDERSETTINGS *pfs)
 		m_bAutoVM = FALSE;
 	}
 	pfs->ViewMode = !m_bAutoVM || ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER]) ? m_param[SB_ViewMode] : FVM_AUTO;
-	pfs->fFlags = (m_param[SB_FolderFlags] | FWF_USESEARCHFOLDER | FWF_SNAPTOGRID) & FWF_NOENUMREFRESH;
+	pfs->fFlags = (m_param[SB_FolderFlags] | FWF_USESEARCHFOLDER | FWF_SNAPTOGRID) & ~FWF_NOENUMREFRESH;
 }
 
 HRESULT CteShellBrowser::NavigateEB(DWORD dwFrame)
@@ -10406,7 +10406,7 @@ STDMETHODIMP CteShellBrowser::MessageSFVCB(UINT uMsg, WPARAM wParam, LPARAM lPar
 STDMETHODIMP CteShellBrowser::GetClassID(CLSID *pClassID)
 {
 	IPersist *pPersist;
-	HRESULT hr = m_pSF2->QueryInterface(IID_PPV_ARGS(&pPersist));
+	HRESULT hr = m_pSF2 ? m_pSF2->QueryInterface(IID_PPV_ARGS(&pPersist)) : E_NOTIMPL;
 	if SUCCEEDED(hr) {
 		hr = pPersist->GetClassID(pClassID);
 		pPersist->Release();
