@@ -7974,8 +7974,11 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 
 		case TE_PROPERTY + 0xf009://FolderFlags
 			if (nArg >= 0) {
+				DWORD dwOld = m_param[SB_FolderFlags];
 				m_param[SB_FolderFlags] = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
-				SetFolderFlags(FALSE);
+				if ((dwOld ^ m_param[SB_FolderFlags]) & (~(FWF_NOENUMREFRESH | FWF_USESEARCHFOLDER | FWF_SNAPTOGRID))) {
+					SetFolderFlags(FALSE);
+				}
 			}
 			teSetLong(pVarResult, m_param[SB_FolderFlags]);
 			return S_OK;

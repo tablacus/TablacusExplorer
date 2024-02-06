@@ -1592,13 +1592,6 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 	if (GetLock(Ctrl) && (wFlags & SBSP_NEWBROWSER) == 0 && !api.ILIsEqual(Prev, "about:blank") && !api.ILIsEqual(Ctrl.FolderItem, Prev)) {
 		hr = E_ACCESSDENIED;
 	}
-	if (hr == S_OK) {
-		if (IsCloudFV(Ctrl)) {
-			Ctrl.FolderFlags |= FWF_NOENUMREFRESH;
-		} else {
-			Ctrl.FolderFlags &= ~FWF_NOENUMREFRESH;
-		}
-	}
 	return hr;
 }
 
@@ -1616,6 +1609,11 @@ te.OnNavigateComplete = function (Ctrl) {
 		if (--g_.fTCs <= 0) {
 			delete g_.focused;
 		}
+	}
+	if (IsCloudFV(Ctrl)) {
+		Ctrl.FolderFlags |= FWF_NOENUMREFRESH;
+	} else {
+		Ctrl.FolderFlags &= ~FWF_NOENUMREFRESH;
 	}
 	return S_OK;
 }
@@ -3722,6 +3720,17 @@ InitCode = function () {
 		const json = JSON.parse(s);
 		g_.IconExt = json.info.ext || ".png";
 	}
+	const cloud = ["HKCU\\Environment\\OneDrive", "HKCR\\CLSID\\{E31EA727-12ED-4702-820C-4B6445F28E1A}\\Instance\\InitPropertyBag\\TargetFolderPath", "HKCU\\SOFTWARE\\Box\\Box\\preferences\\sync_directory_path"];
+	const r = [];
+	for (let i = cloud.length; i--;) {
+		try {
+			const s = wsh.RegRead(cloud[i]);
+			if (s) {
+				r.unshift(PathQuoteSpaces(s) + "*");
+			}
+		} catch (e) { }
+	}
+	g_.cloud = r.length ? r.join(";") : '-';
 }
 
 InitMenus = function () {

@@ -66,7 +66,7 @@ g_.IconChg = [
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20240205 ? te.Version : 20240205;
+		return te.Version < 20240206 ? te.Version : 20240206;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -598,17 +598,13 @@ IsCloud = function (Item) {
 		if (attr.indexOf("O") >= 0) {
 			return true;
 		}
-		if (attr.indexOf("D") >= 0 && /[AL]/.test(attr)) {
-			return true;
-		}
-		if (Item.IsFolder && !attr) {
+		if (Item.ExtendedProperty("System.StorageProviderState")) {
 			return true;
 		}
 		const path = api.GetDisplayNameOf(Item, SHGDN_FORPARSING);
 		const res = /^([A-Z]):\\/i.exec(path);
 		if (res) {
-			const user = wsh.ExpandEnvironmentStrings("%USERPROFILE%") || "";
-			if (StartsText(user, path)) {
+			if (api.PathMatchSpec(path, g_.cloud)) {
 				return true;
 			}
 			try {
