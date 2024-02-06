@@ -3343,7 +3343,11 @@ InputDialog = function (text, defaultText, cb, data) {
 	if (eo && eo.length) {
 		const r = InvokeFunc(eo[0], [text, defaultText]);
 		if (cb) {
-			setTimeout(InvokeUI, 9, cb, r, data);
+			if ("string" === typeof cb) {
+				setTimeout(InvokeUI, 9, cb, r, data);
+			} else {
+				setTimeout(cb, 9, r, data);
+			}
 			return;
 		}
 		return r;
@@ -3353,7 +3357,11 @@ InputDialog = function (text, defaultText, cb, data) {
 		opt.text = text;
 		opt.defaultText = defaultText;
 		opt.callback = function (text) {
-			setTimeout(InvokeUI, 9, cb, text, data);
+			if ("string" === typeof cb) {
+				setTimeout(InvokeUI, 9, cb, text, data);
+			} else {
+				setTimeout(cb, 9, text, data);
+			}
 		};
 		ShowDialogEx("input", 480, 140, null, opt);
 		return;
