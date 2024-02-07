@@ -4,7 +4,6 @@ te.ClearEvents();
 te.About = AboutTE(2);
 Init = false;
 g_arBM = [];
-g_tmWindowRegistered = -1;
 
 GetAddress = null;
 ShowContextMenu = null;
@@ -2838,8 +2837,10 @@ g_.event.handleicon = function (Ctrl, pid, iItem) {
 }
 
 g_.event.windowregistered = function (Ctrl) {
-	if (g_tmWindowRegistered > 0 && new Date().getTime() > g_tmWindowRegistered) {
+	if (!g_.tmWindowRegistered || new Date().getTime() > g_.tmWindowRegistered) {
 		RunEvent1("WindowRegistered", Ctrl);
+	} else {
+		g_.tmWindowRegistered = void 0;
 	}
 }
 
@@ -3019,9 +3020,7 @@ KeyExecEx = function (Ctrl, mode, nKey, hwnd) {
 }
 
 CancelWindowRegistered = function () {
-	if (g_tmWindowRegistered > 0) {
-		g_tmWindowRegistered = new Date().getTime() + 3000;
-	}
+	g_.tmWindowRegistered = new Date().getTime() + 9999;
 }
 
 importScripts = function () {

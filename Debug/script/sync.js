@@ -66,7 +66,7 @@ g_.IconChg = [
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20240206 ? te.Version : 20240206;
+		return te.Version < 20240206 ? te.Version : 20240207;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3343,11 +3343,7 @@ InputDialog = function (text, defaultText, cb, data) {
 	if (eo && eo.length) {
 		const r = InvokeFunc(eo[0], [text, defaultText]);
 		if (cb) {
-			if ("string" === typeof cb) {
-				setTimeout(InvokeUI, 9, cb, r, data);
-			} else {
-				setTimeout(cb, 9, r, data);
-			}
+			InvokeFunc(cb, [r, data]);
 			return;
 		}
 		return r;
