@@ -3297,8 +3297,9 @@ AddEvent("BeginNavigate", function (Ctrl) {
 });
 
 AddEvent("UseExplorer", function (pid) {
-	if (pid && pid.Path && !/^ftp:|^https?:/i.test(pid.Path) && !pid.Unavailable && !api.GetAttributesOf(pid.Alt || pid, SFGAO_FILESYSTEM | SFGAO_FILESYSANCESTOR | SFGAO_STORAGEANCESTOR | SFGAO_NONENUMERATED | SFGAO_DROPTARGET) && !api.ILIsParent(1, pid, false) && !IsSearchPath(pid)) {
-		return true;
+	if (pid && pid.Path && !/^ftp:|^https?:/i.test(pid.Path) && !pid.Unavailable && !api.GetAttributesOf(pid.Alt || pid, SFGAO_FILESYSTEM | SFGAO_FILESYSANCESTOR | SFGAO_STORAGEANCESTOR | SFGAO_NONENUMERATED | SFGAO_DROPTARGET) && !api.ILIsParent(1, pid, false) && !IsSearchPath(pid) && api.GetDisplayNameOf(pid, SHGDN_FORPARSING) != "::{F874310E-B6B7-47DC-BC84-B9E6B38F5903}") {
+		wsh.Popup(api.GetDisplayNameOf(pid, SHGDN_FORPARSING));
+		return false;
 	}
 });
 
@@ -3720,16 +3721,16 @@ InitCode = function () {
 		g_.IconExt = json.info.ext || ".png";
 	}
 	const cloud = ["HKCU\\Environment\\OneDrive", "HKCR\\CLSID\\{E31EA727-12ED-4702-820C-4B6445F28E1A}\\Instance\\InitPropertyBag\\TargetFolderPath", "HKCU\\SOFTWARE\\Box\\Box\\preferences\\sync_directory_path"];
-	const r = [];
+	const r = [BuildPath(wsh.ExpandEnvironmentStrings("%USERPROFILE%") || "-", "*")];
 	for (let i = cloud.length; i--;) {
 		try {
 			const s = wsh.RegRead(cloud[i]);
-			if (s) {
-				r.unshift(PathQuoteSpaces(s) + "*");
+			if (s && !api.PathMatchSpec(s, r[0])) {
+				r.unshift(PathUnquoteSpaces(s) + "*");
 			}
 		} catch (e) { }
 	}
-	g_.cloud = r.length ? r.join(";") : '-';
+	g_.cloud = r.join(";");
 }
 
 InitMenus = function () {
