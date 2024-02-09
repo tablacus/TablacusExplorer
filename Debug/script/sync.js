@@ -63,6 +63,7 @@ g_.IconChg = [
 	["bitmap:ieframe,699,16,", "", 16],
 	["bitmap:ieframe,697,24,", "", 24]
 ];
+g_.Notify = {};
 
 AboutTE = function (n) {
 	if (n == 0) {

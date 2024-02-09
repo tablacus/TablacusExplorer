@@ -1387,6 +1387,7 @@ async function OkOptions() {
 		te.Data.Conf_OptWidth = GetNum(document.documentElement.offsetWidth || document.body.offsetWidth) * r;
 		te.Data.Conf_OptHeight = GetNum(document.documentElement.offsetHeight || document.body.offsetHeight) * r;
 	}
+	api.ShowWindow(hwnd, SW_HIDE);
 	SetChanged(ReplaceMenus);
 	for (let i = 0; i < document.F.length; ++i) {
 		const o = document.F[i];

@@ -2608,13 +2608,31 @@ te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 		const hLock = api.SHChangeNotification_Lock(wParam, lParam, pidls);
 		if (hLock) {
 			api.SHChangeNotification_Unlock(hLock);
-			if (pidls[0] && /^[A-Z]:\\|^\\\\\w/i.test(pidls[0].Path) && !IsCloud(pidls[0])) {
-				ChangeNotifyFV(pidls.lEvent, pidls[0], pidls[1]);
-				RunEvent1("ChangeNotify", Ctrl, pidls, wParam, lParam);
-				if (pidls.lEvent & (SHCNE_UPDATEITEM | SHCNE_RENAMEITEM)) {
-					const n = pidls.lEvent & SHCNE_RENAMEITEM ? 1 : 0;
-					const path = api.GetDisplayNameOf(pidls[n], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
-					RunEvent1("ChangeNotifyItem:" + path, api.ILCreateFromPath(path) || pidls[n]);
+			if (pidls[0] && ((te.Data.Conf_AutoArrange & 2) || !IsCloud(pidls[0]))) {
+				let path = pidls[0].Path;
+				if (/^[A-Z]:\\|^\\\\\w/i.test(path)) {
+					for (let key in g_.Notify) {
+						if (new Date().getTime() > g_.Notify[key]) {
+							delete g_.Notify[key];
+						}
+					}
+					const lEvent = pidls.lEvent;
+					const key = lEvent + ":" + path;
+					if (!g_.Notify[key]) {
+						g_.Notify[key] = new Date().getTime() + 999;
+						ChangeNotifyFV(lEvent, pidls[0], pidls[1]);
+						RunEvent1("ChangeNotify", Ctrl, pidls, wParam, lParam);
+						if (lEvent & (SHCNE_UPDATEITEM | SHCNE_CREATE | SHCNE_MKDIR)) {
+							RunEvent1("ChangeNotifyItem:" + path, pidls[0]);
+						}
+						if ((lEvent & (SHCNE_RENAMEITEM | SHCNE_RENAMEFOLDER)) && pidls[1]) {
+							path = pidls[1].Path;
+							const pid = api.ILCreateFromPath(path);
+							if (pid) {
+								RunEvent1("ChangeNotifyItem:" + path, pid);
+							}
+						}
+					}
 				}
 			}
 		}
@@ -2906,7 +2924,7 @@ ChangeNotifyFV = function (lEvent, item1, item2) {
 		const cFV = te.Ctrls(CTRL_FV, true);
 		for (let i in cFV) {
 			const FV = cFV[i];
-			if (FV && FV.FolderItem && !IsCloudFV(FV)) {
+			if (FV && FV.FolderItem && ((te.Data.Conf_AutoArrange & 2) || !IsCloudFV(FV))) {
 				const path = FV.FolderItem.Path;
 				const bParent = api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;")) || bNetwork && api.PathIsNetworkPath(path);
 				if (lEvent == SHCNE_RENAMEFOLDER && CanClose(FV) == S_OK) {

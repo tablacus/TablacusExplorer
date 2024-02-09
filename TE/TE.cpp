@@ -10326,6 +10326,9 @@ STDMETHODIMP CteShellBrowser::MessageSFVCB(UINT uMsg, WPARAM wParam, LPARAM lPar
 		}
 		if (uMsg == SFVM_FSNOTIFY) {
 			try {
+				if (lParam & SHCNE_EXTENDED_EVENT) {
+					return S_FALSE;
+				}
 				if (!(g_param[TE_AutoArrange] & 2)) {//Cloud Witness
 					if (lParam & (SHCNE_UPDATEDIR | SHCNE_UPDATEITEM)) {
 						if (m_param[SB_FolderFlags] & FWF_NOENUMREFRESH) {
@@ -10337,51 +10340,48 @@ STDMETHODIMP CteShellBrowser::MessageSFVCB(UINT uMsg, WPARAM wParam, LPARAM lPar
 				}
 				if (!(g_param[TE_AutoArrange] & 1)) {//Auto arrange upon refresh
 					if (lParam & (SHCNE_CREATE | SHCNE_MKDIR)) {
-						m_dwTickNotify = GetTickCount();
-					}
-					if (lParam & (SHCNE_UPDATEDIR | SHCNE_UPDATEITEM)) {
-						if (ILIsEqual(m_pidl, *(LPITEMIDLIST *)wParam)) {
-							if (m_dwTickNotify && GetTickCount() - m_dwTickNotify < 500) {
-								return S_FALSE;
-							}
+						if (ILIsParent(m_pidl, *(LPITEMIDLIST *)wParam, TRUE)) {
 							m_dwTickNotify = GetTickCount();
-							if (lParam & SHCNE_UPDATEITEM) {
-								int iExists = GetFolderViewAndItemCount(NULL, SVGIO_ALLVIEW);
-								int iNew = 0;
-								if (iExists > 99999) {
-									return S_FALSE;
-								}
-								SHCONTF grfFlags = SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN;
-								HKEY hKey;
-								if (RegOpenKeyExA(HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-									DWORD dwData;
-									DWORD dwSize = sizeof(DWORD);
-									if (RegQueryValueExA(hKey, "ShowSuperHidden", NULL, NULL, (LPBYTE)&dwData, &dwSize) == S_OK) {
-										if (dwData) {
-											grfFlags |= SHCONTF_INCLUDESUPERHIDDEN;
-										}
-									}
-									RegCloseKey(hKey);
-								}
-								IEnumIDList *peidl;
-								if (m_pSF2->EnumObjects(NULL, grfFlags, &peidl) == S_OK) {
-									LPITEMIDLIST pidlPart = NULL;
-									while (iNew <= iExists && peidl->Next(1, &pidlPart, NULL) == S_OK) {
-										if (IncludeObject2(m_pSF2, pidlPart, NULL) == S_OK) {
-											iNew++;
-										}
-										teCoTaskMemFree(pidlPart);
-									}
-									peidl->Release();
-								}
-								if (iExists == iNew) {
-									return S_FALSE;
-								}
-							}
 						}
 					}
-					if (lParam & SHCNE_EXTENDED_EVENT) {
-						return S_FALSE;
+					if (lParam & SHCNE_UPDATEITEM) {
+						if (ILIsEqual(m_pidl, *(LPITEMIDLIST *)wParam)) {
+							if (m_dwTickNotify && GetTickCount() - m_dwTickNotify < 500) {
+								m_dwTickNotify = 0;
+								return S_FALSE;
+							}
+							int iExists = GetFolderViewAndItemCount(NULL, SVGIO_ALLVIEW);
+							int iNew = 0;
+							if (iExists > 99999) {
+								return S_FALSE;
+							}
+							SHCONTF grfFlags = SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN;
+							HKEY hKey;
+							if (RegOpenKeyExA(HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+								DWORD dwData;
+								DWORD dwSize = sizeof(DWORD);
+								if (RegQueryValueExA(hKey, "ShowSuperHidden", NULL, NULL, (LPBYTE)&dwData, &dwSize) == S_OK) {
+									if (dwData) {
+										grfFlags |= SHCONTF_INCLUDESUPERHIDDEN;
+									}
+								}
+								RegCloseKey(hKey);
+							}
+							IEnumIDList *peidl;
+							if (m_pSF2->EnumObjects(NULL, grfFlags, &peidl) == S_OK) {
+								LPITEMIDLIST pidlPart = NULL;
+								while (iNew <= iExists && peidl->Next(1, &pidlPart, NULL) == S_OK) {
+									if (IncludeObject2(m_pSF2, pidlPart, NULL) == S_OK) {
+										iNew++;
+									}
+									teCoTaskMemFree(pidlPart);
+								}
+								peidl->Release();
+							}
+							if (iExists == iNew) {
+								return S_FALSE;
+							}
+						}
 					}
 				}
 			} catch (...) {
