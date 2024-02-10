@@ -1381,14 +1381,14 @@ async function SetAddonsRssults() {
 
 async function OkOptions() {
 	await SetAddonsRssults();
-	const hwnd = await GetTopWindow(document);
+	const hwnd = await GetTopWindow();
 	if (await api.GetKeyState(VK_SHIFT) >= 0 && !await api.IsZoomed(hwnd) && !await api.IsIconic(hwnd)) {
 		const r = 12 / (Math.abs(await MainWindow.DefaultFont.lfHeight) || 12);
 		te.Data.Conf_OptWidth = GetNum(document.documentElement.offsetWidth || document.body.offsetWidth) * r;
 		te.Data.Conf_OptHeight = GetNum(document.documentElement.offsetHeight || document.body.offsetHeight) * r;
 	}
-	api.ShowWindow(hwnd, SW_HIDE);
 	SetChanged(ReplaceMenus);
+	SetWindowAlpha(hwnd, 0);
 	for (let i = 0; i < document.F.length; ++i) {
 		const o = document.F[i];
 		const Id = o.name || o.id;

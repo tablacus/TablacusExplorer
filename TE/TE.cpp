@@ -6433,6 +6433,9 @@ HRESULT CteShellBrowser::GetAbsPath(FolderItem *pid, UINT wFlags, FolderItems *p
 VOID CteShellBrowser::Refresh(BOOL bCheck)
 {
 	m_bRefreshLator = FALSE;
+	if (!m_pFolderItem) {
+		return;
+	}
 	if (!m_pFolderItem->m_dwUnavailable) {
 		SaveFocusedItemToHistory();
 		teDoCommand(this, m_hwnd, WM_NULL, 0, 0);//Save folder setings
@@ -6470,44 +6473,45 @@ VOID CteShellBrowser::Refresh(BOOL bCheck)
 			VariantClear(&vResult);
 		}
 	}
-	if (m_pShellView) {
-		if (m_bVisible) {
-			if (m_nUnload == 4) {
-				m_nUnload = 0;
-			}
-			if (m_pFolderItem->m_dwUnavailable || ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
-				BrowseObject(NULL, SBSP_RELATIVE | SBSP_SAMEBROWSER);
-				return;
-			}
-			if (GetFolderViewAndItemCount(NULL, SVGIO_ALLVIEW) == 0) {
-				BSTR bs;
-				if SUCCEEDED(teGetDisplayNameFromIDList(&bs, m_pidl, SHGDN_FORPARSING)) {
-					BOOL bNetWork = tePathIsNetworkPath(bs);
-					teSysFreeString(&bs);
-					if (bNetWork) {
-						Suspend(0);
-						return;
-					}
+	if (!m_pShellView) {
+		return;
+	}
+	if (m_bVisible) {
+		if (m_nUnload == 4) {
+			m_nUnload = 0;
+		}
+		if (m_pFolderItem->m_dwUnavailable || ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER])) {
+			BrowseObject(NULL, SBSP_RELATIVE | SBSP_SAMEBROWSER);
+			return;
+		}
+		if (GetFolderViewAndItemCount(NULL, SVGIO_ALLVIEW) == 0) {
+			BSTR bs;
+			if SUCCEEDED(teGetDisplayNameFromIDList(&bs, m_pidl, SHGDN_FORPARSING)) {
+				BOOL bNetWork = tePathIsNetworkPath(bs);
+				teSysFreeString(&bs);
+				if (bNetWork) {
+					Suspend(0);
+					return;
 				}
 			}
-			m_bRefreshing = TRUE;
-			m_bFiltered = FALSE;
-			m_pTC->LockUpdate();
-			try {
-				m_pShellView->Refresh();
-				InitFolderSize();
-				SetFolderFlags(FALSE);
-			} catch (...) {
-				g_nException = 0;
-#ifdef _DEBUG
-				g_strException = L"Refresh";
-#endif
-			}
-			m_pTC->UnlockUpdate();
-			ArrangeWindow();
-		} else if (m_nUnload == 0) {
-			m_nUnload = 4;
 		}
+		m_bRefreshing = TRUE;
+		m_bFiltered = FALSE;
+		m_pTC->LockUpdate();
+		try {
+			m_pShellView->Refresh();
+			InitFolderSize();
+			SetFolderFlags(FALSE);
+		} catch (...) {
+			g_nException = 0;
+#ifdef _DEBUG
+			g_strException = L"Refresh";
+#endif
+		}
+		m_pTC->UnlockUpdate();
+		ArrangeWindow();
+	} else if (m_nUnload == 0) {
+		m_nUnload = 4;
 	}
 }
 
