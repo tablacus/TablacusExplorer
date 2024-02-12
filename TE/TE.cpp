@@ -7191,7 +7191,7 @@ VOID CteShellBrowser::GetViewModeAndIconSize(BOOL bGetIconSize)
 		}
 		m_param[SB_IconSize] = iImageSize;
 		m_param[SB_ViewMode] = fs.ViewMode;
-		if (m_bCheckLayout && !m_bViewCreated && !m_bBeforeNavigating) {
+		if (m_bCheckLayout && !m_bViewCreated) {
 			FOLDERVIEWOPTIONS fvo = teGetFolderViewOptions(m_pidl, fs.ViewMode);
 			if (m_pExplorerBrowser) {
 				IFolderViewOptions *pOptions;
@@ -9437,9 +9437,8 @@ HRESULT CteShellBrowser::OnNavigationPending2(LPITEMIDLIST pidlFolder)
 		m_pFolderItem = new CteFolderItem(NULL);
 		m_pFolderItem->Initialize(m_pidl);
 	}
-	m_bBeforeNavigating = TRUE;
+
 	HRESULT hr = OnBeforeNavigate(pPrevious, SBSP_SAMEBROWSER | SBSP_ABSOLUTE);
-	m_bBeforeNavigating = FALSE;
 	if FAILED(hr) {
 		m_uLogIndex = m_uPrevLogIndex;
 		teCoTaskMemFree(m_pidl);

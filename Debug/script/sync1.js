@@ -3739,16 +3739,16 @@ InitCode = function () {
 		g_.IconExt = json.info.ext || ".png";
 	}
 	const cloud = ["HKCU\\Environment\\OneDrive", "HKCR\\CLSID\\{E31EA727-12ED-4702-820C-4B6445F28E1A}\\Instance\\InitPropertyBag\\TargetFolderPath", "HKCU\\SOFTWARE\\Box\\Box\\preferences\\sync_directory_path"];
-	const r = [BuildPath(wsh.ExpandEnvironmentStrings("%USERPROFILE%") || "-", "*")];
+	const r = [];
 	for (let i = cloud.length; i--;) {
 		try {
 			const s = wsh.RegRead(cloud[i]);
-			if (s && !api.PathMatchSpec(s, r[0])) {
+			if (s) {
 				r.unshift(PathUnquoteSpaces(s) + "*");
 			}
 		} catch (e) { }
 	}
-	g_.cloud = r.join(";");
+	g_.cloud = r.length ? r.join(";") : '-';
 }
 
 InitMenus = function () {

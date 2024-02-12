@@ -67,7 +67,7 @@ g_.Notify = {};
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20240210 ? te.Version : 20240210;
+		return te.Version < 20240212 ? te.Version : 20240212;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -605,7 +605,7 @@ IsCloud = function (Item) {
 		const path = api.GetDisplayNameOf(Item, SHGDN_FORPARSING);
 		const res = /^([A-Z]):\\/i.exec(path);
 		if (res) {
-			if (api.PathMatchSpec(path, g_.cloud)) {
+			if (api.PathMatchSpec(path, MainWindow.g_.cloud)) {
 				return true;
 			}
 			try {
