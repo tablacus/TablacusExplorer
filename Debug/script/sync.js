@@ -67,7 +67,7 @@ g_.Notify = {};
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20240212 ? te.Version : 20240212;
+		return te.Version < 20240212 ? te.Version : 20240213;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -594,33 +594,15 @@ IsSearchPath = function (pid, bText) {
 }
 
 IsCloud = function (Item) {
-	if (Item) {
-		const attr = Item.ExtendedProperty("Attributes") || "";
-		if (attr.indexOf("O") >= 0) {
-			return true;
-		}
-		if (Item.ExtendedProperty("System.StorageProviderState")) {
-			return true;
-		}
-		const path = api.GetDisplayNameOf(Item, SHGDN_FORPARSING);
-		const res = /^([A-Z]):\\/i.exec(path);
-		if (res) {
-			if (api.PathMatchSpec(path, MainWindow.g_.cloud)) {
-				return true;
-			}
-			try {
-				const d = fso.GetDrive(res[1]);
-				return d && /Google Drive|\@gmail\.com/i.test(d.VolumeName);
-			} catch (e) {
-				return true;
-			}
-		}
-	}
-	return false;
+	return Item && IsCloudPath(api.GetDisplayNameOf(Item, SHGDN_FORPARSING));
 }
 
-IsCloudFV = function (FV) {
-	return IsCloud(FV.FolderItem) || api.PathMatchEx(api.GetClassName(FV), "{345B91D6-935F-4773-9926-210C335241F9};{F178C11B-B6C5-4D71-B528-64381D2024FC}");
+IsCloudPath = function (path) {
+	return MainWindow.g_.cloud && api.PathMatchSpec(path, MainWindow.g_.cloud);
+}
+
+IsNetworkOrCloud = function (path) {
+	return api.PathIsNetworkPath(path) || IsCloudPath(path);
 }
 
 LoadXml = function (filename, nGroup) {
@@ -2815,6 +2797,9 @@ GetNetworkIcon = function (path) {
 		}
 		return "folder:closed";
 	}
+	if (IsCloudPath(path)) {
+		return "folder:closed";
+	}
 }
 
 RemoveSubMenu = function (hMenu, wID) {
@@ -2909,7 +2894,7 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem, bTran
 		if (!icon && te.Data.Conf_MenuIcon) {
 			if (api.PathMatchSpec(strType, "Open;Open in new tab;Open in background")) {
 				let pidl = api.ILCreateFromPath(path);
-				if (!api.PathIsNetworkPath(PathUnquoteSpaces(path))) {
+				if (!IsNetworkOrCloud(PathUnquoteSpaces(path))) {
 					if (api.ILIsEmpty(pidl) || pidl.Unavailable) {
 						const res = /(.*?)\n/.exec(path);
 						if (res) {
@@ -2920,7 +2905,7 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem, bTran
 				icon = MainWindow.GetIconImage(pidl, CLR_DEFAULT | COLOR_MENU, true);
 			} else if (api.PathMatchSpec(strType, "Exec;Selected items")) {
 				const arg = api.CommandLineToArgv(path);
-				if (!api.PathIsNetworkPath(arg[0])) {
+				if (!IsNetworkOrCloud(arg[0])) {
 					const pidl = api.ILCreateFromPath(arg[0]);
 					if (!api.ILIsEmpty(pidl) && !pidl.Unavailable) {
 						icon = MainWindow.GetIconImage(pidl, CLR_DEFAULT | COLOR_MENU, true);

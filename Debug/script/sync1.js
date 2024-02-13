@@ -111,6 +111,9 @@ g_.mouse = {
 		switch (Ctrl ? Ctrl.Type : 0) {
 			case CTRL_SB:
 			case CTRL_EB:
+				if (api.GetClassName(api.WindowFromPoint(pt) || Ctrl.hwnd) == WC_TREEVIEW) {
+					return;
+				}
 				return Ctrl.ItemCount && Ctrl.ItemCount(SVGIO_SELECTION) ? "List" : "List_Background";
 			case CTRL_TV:
 				return "Tree";
@@ -1588,8 +1591,10 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 		setTimeout(OpenInExplorer, 99, Ctrl.FolderItem);
 		return E_FAIL;
 	}
-	if (GetLock(Ctrl) && (wFlags & SBSP_NEWBROWSER) == 0 && !api.ILIsEqual(Prev, "about:blank") && !api.ILIsEqual(Ctrl.FolderItem, Prev)) {
-		hr = E_ACCESSDENIED;
+	if (GetLock(Ctrl) || api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_CONTROL) < 0) {
+		if ((wFlags & SBSP_NEWBROWSER) == 0 && !api.ILIsEqual(Prev, "about:blank") && !api.ILIsEqual(Ctrl.FolderItem, Prev)) {
+			hr = E_ACCESSDENIED;
+		}
 	}
 	return hr;
 }
@@ -1609,7 +1614,7 @@ te.OnNavigateComplete = function (Ctrl) {
 			delete g_.focused;
 		}
 	}
-	if (IsCloudFV(Ctrl)) {
+	if (IsCloud(Ctrl.FolderItem)) {
 		Ctrl.FolderFlags |= FWF_NOENUMREFRESH;
 	} else {
 		Ctrl.FolderFlags &= ~FWF_NOENUMREFRESH;
@@ -2924,7 +2929,7 @@ ChangeNotifyFV = function (lEvent, item1, item2) {
 		const cFV = te.Ctrls(CTRL_FV, true);
 		for (let i in cFV) {
 			const FV = cFV[i];
-			if (FV && FV.FolderItem && ((te.Data.Conf_AutoArrange & 2) || !IsCloudFV(FV))) {
+			if (FV && FV.FolderItem && ((te.Data.Conf_AutoArrange & 2) || !IsCloud(FV.FolderItem))) {
 				const path = FV.FolderItem.Path;
 				const bParent = api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;")) || bNetwork && api.PathIsNetworkPath(path);
 				if (lEvent == SHCNE_RENAMEFOLDER && CanClose(FV) == S_OK) {
@@ -3748,7 +3753,12 @@ InitCode = function () {
 			}
 		} catch (e) { }
 	}
-	g_.cloud = r.length ? r.join(";") : '-';
+	ForEachWmi("winmgmts:\\\\.\\root\\cimv2", "SELECT * FROM Win32_LogicalDisk", function (item) {
+		if (/Google Drive|\@gmail\.com/i.test(item.VolumeName)) {
+			r.push(item.DeviceID + "\\*");
+		}
+	});
+	g_.cloud = r.join(";");
 }
 
 InitMenus = function () {
