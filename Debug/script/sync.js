@@ -598,7 +598,7 @@ IsCloud = function (Item) {
 }
 
 IsCloudPath = function (path) {
-	return MainWindow.g_.cloud && api.PathMatchSpec(path, MainWindow.eventTE.Environment.cloud);
+	return MainWindow.eventTE.Environment.cloud && api.PathMatchSpec(path, MainWindow.eventTE.Environment.cloud);
 }
 
 IsNetworkOrCloud = function (path) {
