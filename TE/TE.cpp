@@ -60,6 +60,7 @@ LPFNChangeWindowMessageFilter _ChangeWindowMessageFilter = NULL;
 LPFNAddClipboardFormatListener _AddClipboardFormatListener = NULL;
 LPFNRemoveClipboardFormatListener _RemoveClipboardFormatListener = NULL;
 LPFNSHCreateShellItemArrayFromShellItem _SHCreateShellItemArrayFromShellItem = NULL;
+LPFNGetFinalPathNameByHandle _GetFinalPathNameByHandle = NULL;
 #else
 #define _PSPropertyKeyFromString PSPropertyKeyFromString
 #define _PSGetPropertyKeyFromName PSGetPropertyKeyFromName
@@ -4331,6 +4332,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 			_SetDllDirectoryW(L"");
 		}
 		*(FARPROC *)&_IsWow64Process = GetProcAddress(hDll, "IsWow64Process");
+		*(FARPROC *)&_GetFinalPathNameByHandle = GetProcAddress(hDll, "GetFinalPathNameByHandleW");
 #else
 		SetDllDirectory(L"");
 #endif
@@ -6495,6 +6497,9 @@ VOID CteShellBrowser::Refresh(BOOL bCheck)
 				}
 			}
 		}
+		if (m_dwRefresh == 2 && CheckItemCount()) {
+			return;
+		}
 		m_bRefreshing = TRUE;
 		m_bFiltered = FALSE;
 		m_pTC->LockUpdate();
@@ -8430,7 +8435,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			return S_OK;
 
 		case TE_METHOD + 0xf206://Refresh
-			if (!m_bVisible && nArg >= 0 && GetBoolFromVariant(&pDispParams->rgvarg[nArg])) {
+			m_dwRefresh = nArg >= 0 ? GetIntFromVariant(&pDispParams->rgvarg[nArg]) : 0;
+			if (!m_bVisible && m_dwRefresh) {
 				m_bRefreshLator = TRUE;
 				return S_OK;
 			}
@@ -9659,6 +9665,39 @@ VOID CteShellBrowser::SetEmptyText()
 	}
 }
 
+HRESULT CteShellBrowser::CheckItemCount()
+{
+	int iExists = GetFolderViewAndItemCount(NULL, SVGIO_ALLVIEW);
+	int iNew = 0;
+	if (iExists > 99999) {
+		return E_FAIL;
+	}
+	SHCONTF grfFlags = SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN;
+	HKEY hKey;
+	if (RegOpenKeyExA(HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+		DWORD dwData;
+		DWORD dwSize = sizeof(DWORD);
+		if (RegQueryValueExA(hKey, "ShowSuperHidden", NULL, NULL, (LPBYTE)&dwData, &dwSize) == S_OK) {
+			if (dwData) {
+				grfFlags |= SHCONTF_INCLUDESUPERHIDDEN;
+			}
+		}
+		RegCloseKey(hKey);
+	}
+	IEnumIDList *peidl;
+	if (m_pSF2->EnumObjects(NULL, grfFlags, &peidl) == S_OK) {
+		LPITEMIDLIST pidlPart = NULL;
+		while (iNew <= iExists && peidl->Next(1, &pidlPart, NULL) == S_OK) {
+			if (IncludeObject2(m_pSF2, pidlPart, NULL) == S_OK) {
+				iNew++;
+			}
+			teCoTaskMemFree(pidlPart);
+		}
+		peidl->Release();
+	}
+	return iExists == iNew ? S_FALSE : S_OK;
+}
+
 STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 {
 	m_bViewCreated = FALSE;
@@ -10353,35 +10392,7 @@ STDMETHODIMP CteShellBrowser::MessageSFVCB(UINT uMsg, WPARAM wParam, LPARAM lPar
 								m_dwTickNotify = 0;
 								return S_FALSE;
 							}
-							int iExists = GetFolderViewAndItemCount(NULL, SVGIO_ALLVIEW);
-							int iNew = 0;
-							if (iExists > 99999) {
-								return S_FALSE;
-							}
-							SHCONTF grfFlags = SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN;
-							HKEY hKey;
-							if (RegOpenKeyExA(HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-								DWORD dwData;
-								DWORD dwSize = sizeof(DWORD);
-								if (RegQueryValueExA(hKey, "ShowSuperHidden", NULL, NULL, (LPBYTE)&dwData, &dwSize) == S_OK) {
-									if (dwData) {
-										grfFlags |= SHCONTF_INCLUDESUPERHIDDEN;
-									}
-								}
-								RegCloseKey(hKey);
-							}
-							IEnumIDList *peidl;
-							if (m_pSF2->EnumObjects(NULL, grfFlags, &peidl) == S_OK) {
-								LPITEMIDLIST pidlPart = NULL;
-								while (iNew <= iExists && peidl->Next(1, &pidlPart, NULL) == S_OK) {
-									if (IncludeObject2(m_pSF2, pidlPart, NULL) == S_OK) {
-										iNew++;
-									}
-									teCoTaskMemFree(pidlPart);
-								}
-								peidl->Release();
-							}
-							if (iExists == iNew) {
+							if (CheckItemCount()) {
 								return S_FALSE;
 							}
 						}

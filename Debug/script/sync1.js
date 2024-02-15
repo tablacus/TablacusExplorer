@@ -3743,6 +3743,9 @@ InitCode = function () {
 		const json = JSON.parse(s);
 		g_.IconExt = json.info.ext || ".png";
 	}
+}
+
+InitCloud = function () {
 	const cloud = ["HKCU\\Environment\\OneDrive", "HKCR\\CLSID\\{E31EA727-12ED-4702-820C-4B6445F28E1A}\\Instance\\InitPropertyBag\\TargetFolderPath", "HKCU\\SOFTWARE\\Box\\Box\\preferences\\sync_directory_path"];
 	const r = [];
 	for (let i = cloud.length; i--;) {
@@ -3756,9 +3759,17 @@ InitCode = function () {
 	ForEachWmi("winmgmts:\\\\.\\root\\cimv2", "SELECT * FROM Win32_LogicalDisk", function (item) {
 		if (/Google Drive|\@gmail\.com/i.test(item.VolumeName)) {
 			r.push(item.DeviceID + "\\*");
+		} else if (item.DriveType == 3 && r.length) {
+			const h = api.CreateFile(item.DeviceID, 0x80000000, 7, null, 3, 0x02000000, null);
+			if (h != INVALID_HANDLE_VALUE) {
+				if (api.PathMatchSpec(api.GetFinalPathNameByHandle(h, 0), r.join(";"))) {
+					r.push(item.DeviceID + "\\*");
+				}
+				api.CloseHandle(h);
+			}
 		}
 	});
-	g_.cloud = r.join(";");
+	AddEnv('cloud', r.join(";"));
 }
 
 InitMenus = function () {

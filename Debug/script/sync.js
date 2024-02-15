@@ -67,7 +67,7 @@ g_.Notify = {};
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20240212 ? te.Version : 20240213;
+		return te.Version < 20240215 ? te.Version : 20240215;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -598,7 +598,7 @@ IsCloud = function (Item) {
 }
 
 IsCloudPath = function (path) {
-	return MainWindow.g_.cloud && api.PathMatchSpec(path, MainWindow.g_.cloud);
+	return MainWindow.g_.cloud && api.PathMatchSpec(path, MainWindow.eventTE.Environment.cloud);
 }
 
 IsNetworkOrCloud = function (path) {

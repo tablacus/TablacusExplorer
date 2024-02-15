@@ -466,6 +466,7 @@ Init = async function () {
 	te.Data.MainWindow = $;
 	te.Data.NoCssFont = ui_.NoCssFont;
 	await InitCode();
+	InitCloud();
 	const r = await Promise.all([te.Data.DataFolder, $.DefaultFont, $.HOME_PATH, $.OpenMode, $.DefaultFont.lfFaceName, $.DefaultFont.lfHeight, $.DefaultFont.lfWeight, te.Data.Conf_IconSize, te.Data.Conf_InnerIconSize, InitMenus(), LoadLang()]);
 	ui_.DataFolder = r[0];
 	DefaultFont = r[1];
