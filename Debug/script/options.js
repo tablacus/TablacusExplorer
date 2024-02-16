@@ -13,7 +13,6 @@ g_dlgAddons = null;
 g_bDrag = false;
 g_pt = { x: 0, y: 0 };
 g_Gesture = null;
-g_tidResize = null;
 g_drag5 = false;
 g_nResult = 0;
 g_bChanged = true;
@@ -422,7 +421,7 @@ function SetTabControl(TC) {
 async function GetTabControl() {
 	const TC = await te.Ctrl(CTRL_TC);
 	if (TC) {
-		const r = Promise.all([TC.Left, TC.Top, TC.Width, TC.Height]);
+		const r = await Promise.all([TC.Left, TC.Top, TC.Width, TC.Height]);
 		document.F.Tab_Left.value = r[0];
 		document.F.Tab_Top.value = r[1];
 		document.F.Tab_Width.value = r[2];
@@ -1471,13 +1470,14 @@ InitOptions = async function () {
 	}
 	document.getElementById("tab2_").innerHTML = s.join("");
 
-	window.addEventListener("resize", function () {
-		clearTimeout(g_tidResize);
-		g_tidResize = setTimeout(function () {
-			ClickTree(null, null, null, true);
-		}, 500);
-	});
-
+	if (ui_.IEVer < 9) {
+		window.addEventListener("resize", function () {
+			clearTimeout(g_tidResize);
+			g_tidResize = setTimeout(function () {
+				ClickTree(null, null, null, true);
+			}, 500);
+		});
+	}
 	SetOnChangeHandler();
 	for (let i = 6; i--;) {
 		ClickButton(i, false);
@@ -1491,7 +1491,7 @@ InitOptions = async function () {
 		if (!g_bChanged) {
 			for (let i in ui_.elAddons) {
 				const w = ui_.elAddons[i].contentWindow;
-				if (!w.IsChanged || await w.IsChanged()) {
+				if (!await w.IsChanged || await w.IsChanged()) {
 					g_bChanged = true;
 					break;
 				}
@@ -1891,10 +1891,13 @@ InitDialog = async function () {
 	DialogResize = function () {
 		CalcElementHeight(document.getElementById("panel0"), 3);
 	};
-	window.addEventListener("resize", function () {
-		clearTimeout(g_tidResize);
-		g_tidResize = setTimeout(DialogResize, 500);
-	});
+
+	if (ui_.IEVer < 9) {
+		window.addEventListener("resize", function () {
+			clearTimeout(g_tidResize);
+			g_tidResize = setTimeout(DialogResize, 500);
+		});
+	}
 	await ApplyLang(document);
 	document.F.style.display = "";
 	DialogResize();
@@ -2132,11 +2135,13 @@ InitLocation = function () {
 		nTabIndex = await dialogArguments.Data.index;
 
 		await SetOnChangeHandler();
-		window.addEventListener("resize", function () {
-			clearTimeout(g_tidResize);
-			g_tidResize = setTimeout(ResizeTabPanel, 500);
-		});
 
+		if (ui_.IEVer < 9) {
+			window.addEventListener("resize", function () {
+				clearTimeout(g_tidResize);
+				g_tidResize = setTimeout(ResizeTabPanel, 500);
+			});
+		}
 		IsChanged = function () {
 			return g_bChanged || g_Chg.Data;
 		};

@@ -67,7 +67,7 @@ g_.Notify = {};
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20240215 ? te.Version : 20240215;
+		return te.Version < 20240215 ? te.Version : 20240216;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -594,7 +594,7 @@ IsSearchPath = function (pid, bText) {
 }
 
 IsCloud = function (Item) {
-	return Item && IsCloudPath(api.GetDisplayNameOf(Item, SHGDN_FORPARSING));
+	return Item && (Item.ExtendedProperty("System.StorageProviderState") || IsCloudPath(api.GetDisplayNameOf(Item, SHGDN_FORPARSING)));
 }
 
 IsCloudPath = function (path) {
@@ -1342,10 +1342,21 @@ GetEnum = function (FolderItem, bShowHidden) {
 	}
 	if (FolderItem.IsFolder) {
 		const Items = FolderItem.GetFolder.Items();
+		const bZip = (FolderItem.IsBrowsable || !FolderItem.IsFileSystem && /^[A-Z]:\\|^\\\\\w.*\\/i.test(FolderItem.Path));
 		if (bShowHidden || api.GetKeyState(VK_SHIFT) < 0) {
-			try {
-				Items.Filter(SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN, "*");
-			} catch (e) { }
+			if (!bZip) {
+				try {
+					Items.Filter(SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN, "*");
+				} catch (e) { }
+			}
+		} else if (bZip) {
+			const out = api.CreateObject("FolderItems");
+			for (let i = 0; i < Items.Count; ++i) {
+				if (!api.GetAttributesOf(Items[i], SFGAO_HIDDEN)) {
+					out.AddItem(Items[i]);
+				}
+			}
+			return out;
 		}
 		return api.CreateObject("FolderItems", Items);
 	}

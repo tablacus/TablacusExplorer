@@ -3321,8 +3321,7 @@ AddEvent("BeginNavigate", function (Ctrl) {
 
 AddEvent("UseExplorer", function (pid) {
 	if (pid && pid.Path && !/^ftp:|^https?:/i.test(pid.Path) && !pid.Unavailable && !api.GetAttributesOf(pid.Alt || pid, SFGAO_FILESYSTEM | SFGAO_FILESYSANCESTOR | SFGAO_STORAGEANCESTOR | SFGAO_NONENUMERATED | SFGAO_DROPTARGET) && !api.ILIsParent(1, pid, false) && !IsSearchPath(pid) && api.GetDisplayNameOf(pid, SHGDN_FORPARSING) != "::{F874310E-B6B7-47DC-BC84-B9E6B38F5903}") {
-		wsh.Popup(api.GetDisplayNameOf(pid, SHGDN_FORPARSING));
-		return false;
+		return true;
 	}
 });
 
