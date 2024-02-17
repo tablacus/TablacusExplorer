@@ -1218,8 +1218,8 @@ async function SetAddon(Id, bEnable, td, Alt) {
 	}
 }
 
-function Start5(e, o) {
-	e.dataTransfer.effectAllowed = 'move';
+function Start5(ev, o) {
+	ev.dataTransfer.effectAllowed= 'move';
 	g_drag5 = o.id;
 	return true;
 }
@@ -1228,19 +1228,15 @@ function End5() {
 	g_drag5 = false;
 }
 
-function Over5(e) {
+function Over5(ev) {
 	if (g_drag5) {
-		if (e.preventDefault) {
-			e.preventDefault();
-		} else {
-			e.returnValue = false;
-		}
+		PreventDefault(ev);
 	}
 }
 
-function Drop5(e) {
+function Drop5(ev) {
 	if (g_drag5) {
-		let o = document.elementFromPoint(e.clientX, e.clientY);
+		let o = document.elementFromPoint(ev.clientX, ev.clientY);
 		do {
 			if (/Addons_/i.test(o.id)) {
 				setTimeout(function (src, dest) {
@@ -1697,7 +1693,7 @@ InitDialog = async function () {
 	}
 	if (Query == "mouse") {
 		document.body.oncontextmenu = DetectProcessTag;
-		document.getElementById("Content").innerHTML = '<canvas id="Gesture" style="width: 100%; height: 100%; text-align: center;" onmousedown="return MouseDown(event)" onmouseup="return MouseUp(event)" onmousemove="return MouseMove(event)" ondblclick="MouseDbl(event)" onmousewheel="return MouseWheel(event)"></canvas>';
+		document.getElementById("Content").innerHTML = '<canvas id="Gesture" style="width: 100%; height: 99%; text-align: center;" onmousedown="return MouseDown(event)" onmouseup="return MouseUp(event)" onmousemove="return MouseMove(event)" ondblclick="MouseDbl(event)" onmousewheel="return MouseWheel(event)"></canvas>';
 		document.getElementById("Selected").innerHTML = '<input type="text" name="q" class="full" autocomplete="off" onkeydown="setTimeout(\'returnValue=document.F.q.value\',100)">';
 		WebBrowser.OnClose = ReturnDialogResult;
 	}

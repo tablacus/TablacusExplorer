@@ -926,6 +926,15 @@ InsertTab = function (ev) {
 	return true;
 }
 
+PreventDefault = function (ev) {
+	ev = ev || event;
+	if (ev.preventDefault) {
+		ev.preventDefault();
+	} else {
+		ev.returnValue = false;
+	}
+}
+
 DetectProcessTag = function (ev) {
 	ev = ev || event;
 	const el = ev.target || ev.srcElement;
@@ -999,13 +1008,12 @@ window.addEventListener("load", function () {
 	document.body.addEventListener('keydown', function (ev) {
 		ev = ev || event;
 		if ((ev.keyCode ? ev.keyCode == VK_F5 : "F5" === ev.key) || (ev.ctrlKey && "r" === ev.key)) {
-			if (ev.preventDefault) {
-				ev.preventDefault();
-			 } else {
-				ev.returnValue = false;
-			 }
+			PreventDefault(ev);
 		}
 	});
+	window.addEventListener('dragover', PreventDefault);
+	window.addEventListener('drop', PreventDefault);
+
 	if (window.chrome) {
 		document.body.addEventListener('mousewheel', function (ev) {
 			if (ev.ctrlKey) {

@@ -2614,7 +2614,7 @@ te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 		if (hLock) {
 			api.SHChangeNotification_Unlock(hLock);
 			if (pidls[0] && ((te.Data.Conf_AutoArrange & 2) || !IsCloud(pidls[0]))) {
-				let path = pidls[0].Path;
+				const path = pidls[0].Path;
 				if (/^[A-Z]:\\|^\\\\\w/i.test(path)) {
 					for (let key in g_.Notify) {
 						if (new Date().getTime() > g_.Notify[key]) {
@@ -2627,15 +2627,11 @@ te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 						g_.Notify[key] = new Date().getTime() + 999;
 						ChangeNotifyFV(lEvent, pidls[0], pidls[1]);
 						RunEvent1("ChangeNotify", Ctrl, pidls, wParam, lParam);
-						if (lEvent & (SHCNE_UPDATEITEM | SHCNE_CREATE | SHCNE_MKDIR)) {
-							RunEvent1("ChangeNotifyItem:" + path, pidls[0]);
+						if (lEvent & (SHCNE_UPDATEITEM | SHCNE_UPDATEDIR | SHCNE_CREATE | SHCNE_MKDIR)) {
+							RunEvent1("ChangeNotifyItem:" + path, pidls[0], 0, lEvent);
 						}
 						if ((lEvent & (SHCNE_RENAMEITEM | SHCNE_RENAMEFOLDER)) && pidls[1]) {
-							path = pidls[1].Path;
-							const pid = api.ILCreateFromPath(path);
-							if (pid) {
-								RunEvent1("ChangeNotifyItem:" + path, pid);
-							}
+							RunEvent1("ChangeNotifyItem:" + pidls[1].Path, pidls[1], 1, lEvent);
 						}
 					}
 				}
