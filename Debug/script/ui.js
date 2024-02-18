@@ -1011,8 +1011,6 @@ window.addEventListener("load", function () {
 			PreventDefault(ev);
 		}
 	});
-	window.addEventListener('dragover', PreventDefault);
-	window.addEventListener('drop', PreventDefault);
 
 	if (window.chrome) {
 		document.body.addEventListener('mousewheel', function (ev) {
@@ -1025,6 +1023,10 @@ window.addEventListener("load", function () {
 				ev.preventDefault();
 			}
 		}, { passive: false });
+		if (window.Addon != 1) {
+			window.addEventListener('dragover', PreventDefault);
+			window.addEventListener('drop', PreventDefault);
+		}
 	} else {
 		document.body.onmousewheel = function (ev) {
 			return ev ? !ev.ctrlKey : api.GetKeyState(VK_CONTROL) >= 0;
