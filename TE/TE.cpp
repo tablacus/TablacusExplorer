@@ -10508,7 +10508,7 @@ VOID CteShellBrowser::Suspend(int nMode)
 
 VOID CteShellBrowser::SetPropEx()
 {
-	if (m_pShellView && m_pShellView->GetWindow(&m_hwndDV) == S_OK) {
+	if (IUnknown_GetWindow(m_pShellView, &m_hwndDV) == S_OK) {
 		if (SetWindowLongPtr(m_hwndDV, GWLP_USERDATA, (LONG_PTR)this) != (LONG_PTR)this) {
 			SetWindowSubclass(m_hwndDV, TELVProc, (UINT_PTR)TELVProc, 0);
 			for (int i = WM_USER + 173; i <= WM_USER + 175; ++i) {
@@ -10835,6 +10835,17 @@ VOID CteShellBrowser::GetGroupBy(BSTR* pbs)
 #endif
 }
 
+BOOL IsUseExplorerBrowser(LPITEMIDLIST pidl, SHGDNF uFlags)
+{
+	BOOL bResult = FALSE;
+	BSTR bsPath;
+	if SUCCEEDED(teGetDisplayNameFromIDList(&bsPath, pidl, uFlags)) {
+		bResult = tePathMatchSpec(bsPath, g_bsExplorerBrowserFilter);
+		teSysFreeString(&bsPath);
+	}
+	return bResult;
+}
+
 FOLDERVIEWOPTIONS CteShellBrowser::teGetFolderViewOptions(LPITEMIDLIST pidl, UINT uViewMode)
 {
 	if (m_param[SB_FolderFlags] & FWF_CHECKSELECT) {
@@ -10853,11 +10864,9 @@ FOLDERVIEWOPTIONS CteShellBrowser::teGetFolderViewOptions(LPITEMIDLIST pidl, UIN
 		}
 	}
 	if (g_bsExplorerBrowserFilter) {
-		BSTR bsPath;
-		if SUCCEEDED(teGetDisplayNameFromIDList(&bsPath, pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING)) {
-			FOLDERVIEWOPTIONS fvo = tePathMatchSpec(bsPath, g_bsExplorerBrowserFilter) ? FVO_DEFAULT : FVO_VISTALAYOUT;
-			teSysFreeString(&bsPath);
-			return fvo;
+		if (IsUseExplorerBrowser(pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING) ||
+			IsUseExplorerBrowser(pidl, SHGDN_FORPARSING)) {
+				return FVO_DEFAULT;
 		}
 	}
 	return FVO_VISTALAYOUT;

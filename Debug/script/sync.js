@@ -67,7 +67,7 @@ g_.Notify = {};
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20240215 ? te.Version : 20240218;
+		return te.Version < 20240222 ? te.Version : 20240223;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -591,6 +591,10 @@ AddEventId = function (Name, Id, fn) {
 
 IsSearchPath = function (pid, bText) {
 	return (bText ? /^search\-ms:.*?crumb=([^&]*).*?&crumb=location:([^&]*)/ : /^search\-ms:.*?&crumb=location:([^&]*)/).exec("string" === typeof pid ? pid : api.GetDisplayNameOf(pid, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
+}
+
+IsWitness = function (Item) {
+	return (te.Data.Conf_AutoArrange & 2) || !IsCloud(Item);
 }
 
 IsCloud = function (Item) {

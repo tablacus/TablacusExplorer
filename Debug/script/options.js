@@ -2414,7 +2414,7 @@ async function SetTab(s) {
 			const s = await GetText(ar[1]);
 			let ovTab;
 			for (let j = 0; ovTab = document.getElementById('tab' + j); ++j) {
-				if (SameText(s, ovTab.innerText.toLowerCase())) {
+				if (SameText(s, ovTab.innerText)) {
 					o = ovTab;
 					break;
 				}

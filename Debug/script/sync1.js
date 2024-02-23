@@ -842,7 +842,7 @@ g_basic = {
 };
 
 RefreshEx = function (FV, tm, df) {
-	if (FV.Data && FV.FolderItem && /^[A-Z]:\\|^\\\\\w/i.test(FV.FolderItem.Path)) {
+	if (FV.Data && FV.FolderItem && IsWitness(FV.FolderItem) && /^[A-Z]:\\|^\\\\\w/i.test(FV.FolderItem.Path)) {
 		if (RunEvent4("RefreshEx", FV, tm, df) == null) {
 			if (new Date().getTime() - (FV.Data.AccessTime || 0) > (df || 5000) || FV.Data.pathChk != FV.FolderItem.Path) {
 				if (!FV.hwndView || FV.FolderItem.Unavailable || api.ILIsEqual(FV.FolderItem, FV.FolderItem.Alt)) {
@@ -919,8 +919,8 @@ CloseView = function (Ctrl) {
 	return RunEvent2("CloseView", Ctrl);
 }
 
-DeviceChanged = function (Ctrl) {
-	RunEvent1("DeviceChanged", Ctrl);
+DeviceChanged = function (Ctrl, wParam, lParam) {
+	RunEvent1("DeviceChanged", Ctrl, wParam, lParam);
 }
 
 ListViewCreated = function (Ctrl) {
@@ -1604,6 +1604,11 @@ te.OnNavigateComplete = function (Ctrl) {
 		return S_OK;
 	}
 	Ctrl.Data.AccessTime = new Date().getTime();
+	if (IsWitness(Ctrl.FolderItem)) {
+		Ctrl.FolderFlags &= ~FWF_NOENUMREFRESH;
+	} else {
+		Ctrl.FolderFlags |= FWF_NOENUMREFRESH;
+	}
 	Ctrl.NavigateComplete();
 	RunEvent1("NavigateComplete", Ctrl);
 	ChangeView(Ctrl);
@@ -1613,11 +1618,6 @@ te.OnNavigateComplete = function (Ctrl) {
 		if (--g_.fTCs <= 0) {
 			delete g_.focused;
 		}
-	}
-	if (IsCloud(Ctrl.FolderItem)) {
-		Ctrl.FolderFlags |= FWF_NOENUMREFRESH;
-	} else {
-		Ctrl.FolderFlags &= ~FWF_NOENUMREFRESH;
 	}
 	return S_OK;
 }
@@ -2324,7 +2324,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					break;
 				case WM_DEVICECHANGE:
 					if (wParam == DBT_DEVICEARRIVAL || wParam == DBT_DEVICEREMOVECOMPLETE) {
-						DeviceChanged(Ctrl);
+						DeviceChanged(Ctrl, wParam, lParam);
 					}
 					break;
 				case WM_ACTIVATE:
@@ -2383,6 +2383,9 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					} else {
 						g_.mouse.str = "";
 						SetGestureText(Ctrl, "");
+						if (g_.hwndTT && api.IsWindowVisible(g_.hwndTT)) {
+							api.ShowWindow(g_.hwndTT, SW_HIDE);
+						}
 					}
 					break;
 				case WM_MOVE:
@@ -2613,7 +2616,7 @@ te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 		const hLock = api.SHChangeNotification_Lock(wParam, lParam, pidls);
 		if (hLock) {
 			api.SHChangeNotification_Unlock(hLock);
-			if (pidls[0] && ((te.Data.Conf_AutoArrange & 2) || !IsCloud(pidls[0]))) {
+			if (pidls[0] && IsWitness(pidls[0])) {
 				const path = pidls[0].Path;
 				if (/^[A-Z]:\\|^\\\\\w/i.test(path)) {
 					for (let key in g_.Notify) {
@@ -2925,7 +2928,7 @@ ChangeNotifyFV = function (lEvent, item1, item2) {
 		const cFV = te.Ctrls(CTRL_FV, true);
 		for (let i in cFV) {
 			const FV = cFV[i];
-			if (FV && FV.FolderItem && ((te.Data.Conf_AutoArrange & 2) || !IsCloud(FV.FolderItem))) {
+			if (FV && FV.FolderItem && IsWitness(FV.FolderItem)) {
 				const path = FV.FolderItem.Path;
 				const bParent = api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;")) || bNetwork && api.PathIsNetworkPath(path);
 				if (lEvent == SHCNE_RENAMEFOLDER && CanClose(FV) == S_OK) {
@@ -3359,6 +3362,12 @@ AddEvent("ConfigChanged", function (s) {
 	te.Data["bSave" + s] = true;
 });
 
+AddEvent("ToolTip", function (Ctrl, Index, hwnd) {
+	if (Ctrl.Type <= CTRL_EB && Index >= 0) {
+		g_.hwndTT = hwnd;
+	}
+});
+
 if (!window.chrome) {
 	AddEvent("BrowserCreatedEx", 'MainWindow.RunEvent1("BrowserCreated", document);');
 }
@@ -3380,26 +3389,18 @@ AddEnv("Selected", function (Ctrl) {
 });
 
 AddEnv("Current", function (Ctrl) {
-	let strSel = "";
 	const FV = GetFolderView(Ctrl);
-	if (FV) {
-		strSel = PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORPARSING));
-	}
-	return strSel;
+	return FV ? PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORPARSING)) : '';
 });
 
 AddEnv("TreeSelected", function (Ctrl) {
-	let strSel = "";
 	if (!Ctrl || Ctrl.Type != CTRL_TV) {
 		const FV = GetFolderView(Ctrl);
 		if (FV) {
 			Ctrl = FV.TreeView;
 		}
 	}
-	if (Ctrl) {
-		strSel = PathQuoteSpaces(api.GetDisplayNameOf(Ctrl.SelectedItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
-	}
-	return strSel;
+	return Ctrl ? PathQuoteSpaces(Ctrl.SelectedItem.Path) : '';
 });
 
 AddEnv("MenuSelected", function (Ctrl) {
