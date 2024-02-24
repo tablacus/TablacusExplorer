@@ -987,7 +987,8 @@ AddFavoriteEx = async function (Ctrl, pt) {
 SelectItem = function (FV, path, wFlags, tm, bCheck) {
 	setTimeout(async function () {
 		if (FV) {
-			if (SameText(await FV.FolderItem.Path, GetParentFolderName(path))) {
+			const FolderItem = await FV.FolderItem;
+			if (FolderItem && SameText(await FolderItem.Path, GetParentFolderName(path))) {
 				await FV.SelectItem(path, wFlags);
 				if (bCheck && (wFlags & SVSI_FOCUSED)) {
 					setTimeout(async function () {
