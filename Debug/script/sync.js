@@ -67,7 +67,7 @@ g_.Notify = {};
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20240222 ? te.Version : 20240224;
+		return te.Version < 20240222 ? te.Version : 20240225;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
