@@ -118,6 +118,17 @@ struct WINCOMPATTRDATA
 };
 #endif
 
+#ifndef ACCENTPOLICY 
+
+struct ACCENTPOLICY 
+{
+	int nAccentState;
+	int nFlags;
+	int nColor;
+	int nAnimationId;
+};
+#endif
+
 #ifndef D2D1_DRAW_TEXT_OPTIONS_ENABLE_COLOR_FONT
 #define D2D1_DRAW_TEXT_OPTIONS_ENABLE_COLOR_FONT 0x00000004
 #endif

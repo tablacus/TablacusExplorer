@@ -1576,6 +1576,7 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 	}
 	if (Ctrl.Data) {
 		Ctrl.Data.Setting = void 0;
+		Ctrl.Data.hwndBefore = api.GetFocus();
 	}
 	const res = /javascript:(.*)/im.exec(api.GetDisplayNameOf(Ctrl.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
 	if (res) {
@@ -1612,7 +1613,11 @@ te.OnNavigateComplete = function (Ctrl) {
 	Ctrl.NavigateComplete();
 	RunEvent1("NavigateComplete", Ctrl);
 	ChangeView(Ctrl);
-	FocusFV();
+	if (api.GetClassName(Ctrl.Data.hwndBefore) == WC_TREEVIEW) {
+		api.SetFocus(Ctrl.Data.hwndBefore);
+	} else {
+		FocusFV();
+	}
 	if (g_.focused) {
 		g_.focused.Focus();
 		if (--g_.fTCs <= 0) {

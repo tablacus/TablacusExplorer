@@ -564,6 +564,7 @@ public:
 	VOID SetRoot();
 	VOID Show();
 	VOID Expand();
+	int CompareSelected();
 #ifdef _2000XP
 	VOID SetObjectRect();
 #endif

@@ -144,6 +144,7 @@ BSTR	g_bsClipRoot = NULL;
 BSTR	g_bsDateTimeFormat = NULL;
 BSTR	g_bsHiddenFilter = NULL;
 BSTR	g_bsExplorerBrowserFilter = NULL;
+BSTR	g_bsTreeHiddenFilter = NULL;
 HTREEITEM	g_hItemDown = NULL;
 SORTCOLUMN g_pSortColumnNull[3];
 VARIANT g_vData;
@@ -242,6 +243,7 @@ TEmethod methodTE[] = {
 //	{ 1150, "ThumbnailProvider" },//Deprecated
 	{ 1160, "DragIcon" },
 	{ 1180, "ExplorerBrowserFilter" },
+	{ 1190, "TreeHiddenFilter" },
 	{ TE_METHOD + 1133, "FolderItems" },
 	{ TE_METHOD + 1134, "Object" },
 	{ TE_METHOD + 1135, "Array" },
@@ -1354,6 +1356,17 @@ VOID CheckChangeTabTC(HWND hwnd)
 			pTC->TabChanged(FALSE);
 		}
 	}
+}
+
+VOID teSetGetString(int nArg, DISPPARAMS *pDispParams, VARIANT *pVarResult, BSTR *pbs)
+{
+	if (nArg >= 0) {
+		teSysFreeString(pbs);
+		if (pDispParams->rgvarg[nArg].vt == VT_BSTR && ::SysStringLen(pDispParams->rgvarg[nArg].bstrVal)) {
+			*pbs = ::SysAllocString(pDispParams->rgvarg[nArg].bstrVal);
+		}
+	}
+	teSetSZ(pVarResult, *pbs);
 }
 
 #ifdef USE_APIHOOK
@@ -10835,15 +10848,21 @@ VOID CteShellBrowser::GetGroupBy(BSTR* pbs)
 #endif
 }
 
-BOOL IsUseExplorerBrowser(LPITEMIDLIST pidl, SHGDNF uFlags)
+BOOL teIDListMatchSpec(LPITEMIDLIST pidl, SHGDNF uFlags, BSTR bs)
 {
 	BOOL bResult = FALSE;
 	BSTR bsPath;
 	if SUCCEEDED(teGetDisplayNameFromIDList(&bsPath, pidl, uFlags)) {
-		bResult = tePathMatchSpec(bsPath, g_bsExplorerBrowserFilter);
+		bResult = tePathMatchSpec(bsPath, bs);
 		teSysFreeString(&bsPath);
 	}
 	return bResult;
+}
+
+BOOL teIDListMatchSpec2(LPITEMIDLIST pidl, BSTR bs)
+{
+	return teIDListMatchSpec(pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING, bs) ||
+		teIDListMatchSpec(pidl, SHGDN_FORPARSING, bs);
 }
 
 FOLDERVIEWOPTIONS CteShellBrowser::teGetFolderViewOptions(LPITEMIDLIST pidl, UINT uViewMode)
@@ -10864,9 +10883,8 @@ FOLDERVIEWOPTIONS CteShellBrowser::teGetFolderViewOptions(LPITEMIDLIST pidl, UIN
 		}
 	}
 	if (g_bsExplorerBrowserFilter) {
-		if (IsUseExplorerBrowser(pidl, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING) ||
-			IsUseExplorerBrowser(pidl, SHGDN_FORPARSING)) {
-				return FVO_DEFAULT;
+		if (teIDListMatchSpec2(pidl, g_bsExplorerBrowserFilter)) {
+			return FVO_DEFAULT;
 		}
 	}
 	return FVO_VISTALAYOUT;
@@ -11418,24 +11436,13 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				return S_OK;
 
 			case 1138://DateTimeFormat
-				if (nArg >= 0) {
-					teSysFreeString(&g_bsDateTimeFormat);
-					if (pDispParams->rgvarg[nArg].vt == VT_BSTR && ::SysStringLen(pDispParams->rgvarg[nArg].bstrVal)) {
-						g_bsDateTimeFormat = ::SysAllocString(pDispParams->rgvarg[nArg].bstrVal);
-					}
-				}
-				teSetSZ(pVarResult, g_bsDateTimeFormat);
+				teSetGetString(nArg, pDispParams, pVarResult, &g_bsDateTimeFormat);
 				return S_OK;
 
 			case 1139://HiddenFilter
-				if (nArg >= 0) {
-					teSysFreeString(&g_bsHiddenFilter);
-					if (pDispParams->rgvarg[nArg].vt == VT_BSTR && ::SysStringLen(pDispParams->rgvarg[nArg].bstrVal)) {
-						g_bsHiddenFilter = ::SysAllocString(pDispParams->rgvarg[nArg].bstrVal);
-					}
-				}
-				teSetSZ(pVarResult, g_bsHiddenFilter);
+				teSetGetString(nArg, pDispParams, pVarResult, &g_bsHiddenFilter);
 				return S_OK;
+
 			//ThumbnailProvider//Deprecated
 /*			case 1150:
 				teSetPtr(pVarResult, teThumbnailProvider);
@@ -11449,13 +11456,11 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				return S_OK;
 
 			case 1180://ExplorerBrowserFilter
-				if (nArg >= 0) {
-					teSysFreeString(&g_bsExplorerBrowserFilter);
-					if (pDispParams->rgvarg[nArg].vt == VT_BSTR && ::SysStringLen(pDispParams->rgvarg[nArg].bstrVal)) {
-						g_bsExplorerBrowserFilter = ::SysAllocString(pDispParams->rgvarg[nArg].bstrVal);
-					}
-				}
-				teSetSZ(pVarResult, g_bsExplorerBrowserFilter);
+				teSetGetString(nArg, pDispParams, pVarResult, &g_bsExplorerBrowserFilter);
+				return S_OK;
+
+			case 1190://TreeHiddenFilter
+				teSetGetString(nArg, pDispParams, pVarResult, &g_bsTreeHiddenFilter);
 				return S_OK;
 
 #ifdef USE_TESTOBJECT
@@ -14098,6 +14103,10 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 				SafeRelease(&m_psiFocus);
 				_SHCreateItemFromIDList(pidl, IID_PPV_ARGS(&m_psiFocus));
 				teCoTaskMemFree(pidl);
+				if (CompareSelected() == 0) {
+					SafeRelease(&m_psiFocus);
+					return S_OK;
+				}
 				if (m_psiFocus) {
 					m_bExpand = TRUE;
 					SetTimer(m_hwndTV, TET_Expand, 100, teTimerProcForTree);
@@ -14384,6 +14393,16 @@ STDMETHODIMP CteTreeView::ItemPostPaint(HDC hdc, RECT *prc, NSTCCUSTOMDRAW *pnst
 
 STDMETHODIMP CteTreeView::IncludeItem(IShellItem *psi)
 {
+	if (g_bsTreeHiddenFilter) {
+		LPITEMIDLIST pidl = NULL;
+		if (teGetIDListFromObject(psi, &pidl)) {
+			if (teIDListMatchSpec2(pidl, g_bsTreeHiddenFilter)) {
+				teILFreeClear(&pidl);
+				return S_FALSE;
+			}
+			teILFreeClear(&pidl);
+		}
+	}
 	if (g_pOnFunc[TE_OnIncludeItem]) {
 		VARIANT v;
 		VariantInit(&v);
@@ -14638,27 +14657,13 @@ VOID CteTreeView::Show()
 	}
 }
 
-VOID  CteTreeView::Expand()
+VOID CteTreeView::Expand()
 {
 	if (!m_psiFocus || m_bSetRoot) {
 		return;
 	}
 	if (m_pNameSpaceTreeControl) {
-		int iOrder = 1;
-		if (m_bExpand) {
-			IShellItemArray *psia;
-			if SUCCEEDED(m_pNameSpaceTreeControl->GetSelectedItems(&psia)) {
-				IShellItem *psi;
-				if SUCCEEDED(psia->GetItemAt(0, &psi)) {
-					psi->Compare(m_psiFocus, SICHINT_CANONICAL, &iOrder);
-					psi->Release();
-				}
-				psia->Release();
-			}
-		} else {
-			iOrder = 0;
-		}
-		if (iOrder) {
+		if (m_bExpand ? CompareSelected() : 0) {
 			m_pNameSpaceTreeControl->SetItemState(m_psiFocus, m_dwState, m_dwState);
 			SetTimer(m_hwndTV, TET_Expand, 500, teTimerProcForTree);
 		} else {
@@ -14680,6 +14685,21 @@ VOID  CteTreeView::Expand()
 		SafeRelease(&m_psiFocus);
 #endif
 	}
+}
+
+int CteTreeView::CompareSelected()
+{
+	int iOrder = 1;
+	IShellItemArray *psia;
+	if SUCCEEDED(m_pNameSpaceTreeControl->GetSelectedItems(&psia)) {
+		IShellItem *psi;
+		if SUCCEEDED(psia->GetItemAt(0, &psi)) {
+			psi->Compare(m_psiFocus, SICHINT_DISPLAY, &iOrder);
+			psi->Release();
+		}
+		psia->Release();
+	}
+	return iOrder;
 }
 
 #ifdef _2000XP

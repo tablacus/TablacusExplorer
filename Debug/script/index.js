@@ -463,7 +463,6 @@ document.addEventListener("webkitfullscreenchange", function () {
 });
 
 Init = async function () {
-	SetWindowAlpha(ui_.hwnd, 240);
 	te.Data.MainWindow = $;
 	te.Data.NoCssFont = ui_.NoCssFont;
 	await InitCode();
