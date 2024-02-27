@@ -104,9 +104,9 @@
 	<text s="Information...">Informacja...</text>
 	<text s="Title bar">Pasek tytułu</text>
 	<text s="Tool bar">Pasek narzędzi</text>
-	<text s="Left bar">Pasek lewy</text>
-	<text s="Right bar">Pasek prawy</text>
-	<text s="Bottom bar">Pasek dolny</text>
+	<text s="Left bar">Lewy pasek</text>
+	<text s="Right bar">Prawy pasek</text>
+	<text s="Bottom bar">Dolny pasek</text>
 	<text s="Center">Środek</text>
 	<text s="Background">Tło</text>
 	<text s="Advanced">Zaawansowane</text>
@@ -128,7 +128,7 @@
 
 	<text s="Visible">Widoczne</text>
 	<text s="Hidden">Ukryte</text>
-	<text s="Expanded">Rozinięte</text>
+	<text s="Expanded">Rozwinięte</text>
 
 	<text s="Buttons">Przyciski</text>
 	<text s="Flat">Płaskie</text>
@@ -164,8 +164,8 @@
 	<text s="Tile">Kafelek</text>
 	<text s="Thumbstrip">Pasek miniatur</text>
 	<text s="Content">Zawartość</text>
-	<text s="or higher.">albo wyższa.</text>
-	<text s="Check for updates">Sprawdź aktualizacje</text>
+	<text s="or higher.">lub wyżej.</text>
+	<text s="Check for updates">Sprawdź dostępność aktualizacji</text>
 	<text s="%s is up to date.">%s jest aktualny.</text>
 	<text s="Update available">Dostępna aktualizacja</text>
 	<text s="Do you want to install it now?">Czy chcesz ją teraz zainstalować?</text>
@@ -189,8 +189,8 @@
 	<text s="Test">Testuj</text>
 	<text s="Close">Zamknij</text>
 	<text s="Separator">Separator</text>
-	<text s="Break">Przerwa</text>
-	<text s="BarBreak">Przerwa paska</text>
+	<text s="Break">Przełamanie</text>
+	<text s="BarBreak">Przełamanie paska</text>
 
 	<text s="Move">Przenieś</text>
 	<text s="Copy">Kopiuj</text>
