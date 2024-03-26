@@ -4812,7 +4812,7 @@ function _c(s) {\
 	// Main message loop:
 	while (g_bMessageLoop) {
 		try {
-			if (!GetMessage(&msg, NULL, 0, 0)) {
+			if (GetMessage(&msg, NULL, 0, 0) <= 0) {
 				break;
 			}
 			if (MessageProc(&msg) == S_OK) {

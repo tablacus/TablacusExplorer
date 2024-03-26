@@ -1618,6 +1618,8 @@ te.OnNavigateComplete = function (Ctrl) {
 	} else {
 		FocusFV();
 	}
+	Ctrl.Data.hwndBefore = void 0;
+
 	if (g_.focused) {
 		g_.focused.Focus();
 		if (--g_.fTCs <= 0) {

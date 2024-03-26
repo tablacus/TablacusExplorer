@@ -67,7 +67,7 @@ g_.Notify = {};
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20240227 ? te.Version : 20240227;
+		return te.Version < 20240326 ? te.Version : 20240326;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1163,7 +1163,7 @@ GetThumbnail = function (image, m, f) {
 }
 
 GetTempPath = function (n) {
-	let temp = String(fso.GetSpecialFolder(2).Path);
+	let temp = String(fso.GetSpecialFolder(2).Path || "C:\\temp");
 	if (temp.indexOf("~") >= 0) {
 		const pid = api.ILCreateFromPath(temp);
 		pid.IsFolder;

@@ -423,11 +423,16 @@ VOID CteFolderItem::Clear()
 	m_dispExtendedProperty = -1;
 }
 
-BSTR CteFolderItem::GetStrPath()
+BSTR CteFolderItem::GetStrPath(SHGDNF uFlags)
 {
 	if (m_v.vt == VT_BSTR) {
-		if (m_pidl == NULL || (m_pidlAlt && !ILIsEqual(m_pidl, m_pidlAlt)) || teIsSearchFolder(m_v.bstrVal)) {
+		if ((m_pidlAlt && !ILIsEqual(m_pidl, m_pidlAlt)) || teIsSearchFolder(m_v.bstrVal)) {
 			return m_v.bstrVal;
+		}
+		if (m_pidl == NULL) {
+			if (!(uFlags & SHGDN_FORADDRESSBAR) || teIsFileSystem(m_v.bstrVal)) {
+				return m_v.bstrVal;
+			}
 		}
 	}
 	return NULL;
@@ -723,7 +728,7 @@ STDMETHODIMP CteFolderItem::get_Parent(IDispatch **ppid)
 
 STDMETHODIMP CteFolderItem::get_Name(BSTR *pbs)
 {
-	if SUCCEEDED(tePathGetFileName(pbs, GetStrPath())) {
+	if SUCCEEDED(tePathGetFileName(pbs, GetStrPath(SHGDN_INFOLDER))) {
 		return S_OK;
 	}
 	if SUCCEEDED(teGetDisplayNameFromIDList(pbs, GetPidl(), SHGDN_INFOLDER)) {
@@ -771,7 +776,7 @@ STDMETHODIMP CteFolderItem::put_Name(BSTR bs)
 
 STDMETHODIMP CteFolderItem::get_Path(BSTR *pbs)
 {
-	BSTR bs = GetStrPath();
+	BSTR bs = GetStrPath(SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
 	if (bs) {
 		*pbs = ::SysAllocString(bs);
 		return S_OK;
