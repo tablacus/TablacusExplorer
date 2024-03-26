@@ -1,5 +1,5 @@
 <resources>
-	<lang author="Matthaiks" en="Polish">Polski</lang>
+	<lang author="Matthaiks,Piotr Kostrzewski" en="Polish">Polski</lang>
 	<text s="&amp;File">&amp;Plik</text>
 	<text s="&amp;Edit">&amp;Edycja</text>
 	<text s="&amp;View">&amp;Widok</text>
@@ -7,9 +7,9 @@
 	<text s="&amp;Tools">&amp;Narzędzia</text>
 	<text s="&amp;Help">&amp;Pomoc</text>
 	<text s="Back">Wstecz</text>
-	<text s="Forward">Naprzód</text>
-	<text s="Up">Góra</text>
-	<text s="Down">Dół&#160;</text>
+	<text s="Forward">Do przodu</text>
+	<text s="Up">W górę</text>
+	<text s="Down">W dół&#160;</text>
 	<text s="Go">Przejdź</text>
 	<text s="&amp;Close application">&amp;Zamknij aplikację</text>
 	<text s="&amp;Up one level">&amp;Jeden poziom w górę</text>
@@ -170,7 +170,7 @@
 	<text s="Update available">Dostępna aktualizacja</text>
 	<text s="Do you want to install it now?">Czy chcesz ją teraz zainstalować?</text>
 	<text s="Search">Szukaj</text>
-	<text s="Install">Zainistaluj</text>
+	<text s="Install">Zainstaluj</text>
 	<text s="Installed">Zainstalowano</text>
 	<text s="%s is required.">%s jest wymagany.</text>
 	<text s="File is in operation.">Plik jest w trakcie operacji.</text>
