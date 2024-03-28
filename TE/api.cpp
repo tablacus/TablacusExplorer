@@ -1339,7 +1339,12 @@ VOID teApiDrawIconEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 
 VOID teApiDrawText(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLong(pVarResult, DrawText(param[0].hdc, param[1].lpcwstr, param[2].intVal, param[3].lprect, param[4].uintVal));
+	LPWSTR lpwstr = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]);
+	try {
+		teSetLong(pVarResult, DrawText(param[0].hdc, (ULONG_PTR)lpwstr > 0xffff ? lpwstr : param[1].lpcwstr, param[2].intVal, param[3].lprect, param[4].uintVal));
+	} catch (...) {
+		teSetLong(pVarResult, DrawText(param[0].hdc, param[1].lpcwstr, param[2].intVal, param[3].lprect, param[4].uintVal));
+	}
 }
 
 VOID teApiDropTarget(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
