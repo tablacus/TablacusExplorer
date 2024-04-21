@@ -4,7 +4,7 @@ select {
 	min-height: 1.7em;
 }
 
-input[type="text"] {
+input[type="text"], input[type="number"], input[type="search"] {
 	min-height: 1.4em;
 }
 

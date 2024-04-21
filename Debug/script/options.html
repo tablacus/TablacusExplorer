@@ -76,10 +76,10 @@
               <label>Right bar<i> </i>Width</label><br>
               <input type="text" id="Conf_RightBarWidth" class="number"><label>@mspaint.exe,-50047[px]</label><br><br>
               <label alt="Tool bar icon">Tool bar<i> </i>Icon</label><br>
-              <input type="text" id="Conf_IconSize" class="number"><label>@mspaint.exe,-50047[px]</label>
+              <input type="search" id="Conf_IconSize" class="number"><label>@mspaint.exe,-50047[px]</label>
               <button onclick="SetDefault(document.F.Conf_IconSize, '');">Default</button><br><br>
               <label alt="Internal Tool bar icon">@ifmon.dll,-9010<i> </i>Tool bar<i> </i>Icon</label><br>
-              <input type="text" id="Conf_InnerIconSize" class="number"><label>@mspaint.exe,-50047[px]</label>
+              <input type="search" id="Conf_InnerIconSize" class="number"><label>@mspaint.exe,-50047[px]</label>
               <button onclick="SetDefault(document.F.Conf_InnerIconSize, '');">Default</button><br><br>
               <label>Menus</label><br>
               <label><input type="checkbox" id="Conf_MenuHidden">Include hidden items</label><br>
@@ -106,13 +106,13 @@
               <label><input type="radio" name="Conf_Gestures_" id="Conf_Gestures=3" onclick="SetRadio(this)">Priority</label><br>
               <br>
               <label>@comres.dll,-1953</label><br>
-              <input type="text" id="Conf_GestureTimeout" class="number" placeholder="3000"><label>@powrprof.dll,-82[ms]</label>
+              <input type="search" id="Conf_GestureTimeout" class="number" placeholder="3000"><label>@powrprof.dll,-82[ms]</label>
               <button onclick="SetDefault(document.F.Conf_GestureTimeout, '');">Default</button>
               <br><br>
               <label>Trails</label><br>
               <input type="text" id="Conf_TrailColor" title="Color" placeholder="#00ff00" style="width: 9em" onchange="ChangeColor1(this)">
               <button id="Color_Conf_TrailColor" class="color" onclick="ChooseColor2(this)">&ensp;</button><br>
-              <input type="text" name="Conf_TrailSize" title="Size" class="number"><label>@mspaint.exe,-50047[px]</label>
+              <input type="number" name="Conf_TrailSize" title="Size" class="number" placeholder="2"><label>@mspaint.exe,-50047[px]</label>
               <button onclick="AddValue('Conf_TrailSize', -1, 0, 16)">-</button>
               <button onclick="AddValue('Conf_TrailSize', 1, 0, 16)">+</button>
               <br><br>
@@ -366,7 +366,7 @@
               <table class="full">
                 <tr>
                   <td class="full">
-                    <input type="text" name="Conf_NewTab" class="full">
+                    <input type="search" name="Conf_NewTab" class="full">
                   </td>
                   <td>
                     <button onclick="ChooseFolder1(document.F.Conf_NewTab)">Browse...</button>
@@ -538,7 +538,7 @@
               <input type="text" id="Conf_DateTimeFormat" class="full">
               <br><br>
               <label>@comres.dll,-1953</label><br>
-              <input type="text" id="Conf_NetworkTimeout" class="number" placeholder="2000"><label>@powrprof.dll,-82[ms]</label>
+              <input type="search" id="Conf_NetworkTimeout" class="number" placeholder="2000"><label>@powrprof.dll,-82[ms]</label>
               <button onclick="SetDefault(document.F.Conf_NetworkTimeout, '');">Default</button>
               <br><br>
               <div>

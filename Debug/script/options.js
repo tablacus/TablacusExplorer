@@ -2230,7 +2230,7 @@ function GetElementValue(o) {
 		if (/checkbox/i.test(o.type)) {
 			return o.checked ? 1 : 0;
 		}
-		if (/hidden|text|number|url|password|range|color|date|time/i.test(o.type)) {
+		if (/hidden|text|number|url|password|range|color|date|time|search/i.test(o.type)) {
 			return o.value;
 		}
 		if (/select/i.test(o.type)) {
