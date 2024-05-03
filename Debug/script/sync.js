@@ -67,7 +67,7 @@ g_.Notify = {};
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20240328 ? te.Version : 20240421;
+		return te.Version < 20240328 ? te.Version : 20240503;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1337,7 +1337,14 @@ GetHICON = function (iIcon, h, flags) {
 }
 
 ExtractFilter = function (s) {
-	return (ExtractMacro(te, s) || "").replace(/[\r\n;]+/g, ";").replace(/^;+|;+$|"/g, "");
+	const ar = (s || "").split(/[\r\n;]+/);
+	for (let i  = ar.length; i--;) {
+		const path = ar.shift();
+		if (path) {
+			ar.push(ExtractPath(te, path));
+		}
+	}
+	return ar.join(";");
 }
 
 GetEnum = function (FolderItem, bShowHidden) {

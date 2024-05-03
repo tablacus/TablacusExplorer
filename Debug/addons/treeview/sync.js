@@ -155,12 +155,26 @@ SetKeyExec("Tree", "$1c", function (Ctrl, pt) {
 AddTypeEx("Add-ons", "Tree", Sync.TreeView.Exec);
 
 if (WINVER >= 0x600) {
-	AddEvent("ChangeNotify", function (Ctrl, pidls, wParam, lParam) {
-		if (pidls.lEvent & (SHCNE_MKDIR | SHCNE_RMDIR | SHCNE_RENAMEFOLDER)) {
-			const cFV = te.Ctrls(CTRL_FV);
-			for (let i in cFV) {
-				cFV[i].TreeView.Notify(pidls.lEvent, pidls[0], pidls[1], wParam, lParam);
+	AddEvent("AppMessage", function (Ctrl, hwnd, msg, wParam, lParam) {
+		if (msg == Sync.TreeView.WM) {
+			const pidls = {};
+			const hLock = api.SHChangeNotification_Lock(wParam, lParam, pidls);
+			if (hLock) {
+				api.SHChangeNotification_Unlock(hLock);
+				if (pidls[0] && /^[A-Z]:\\|^\\\\\w/i.test(pidls[0].Path) && IsWitness(pidls[0])) {
+					const cFV = te.Ctrls(CTRL_FV);
+					for (let i in cFV) {
+						cFV[i].TreeView.Notify(pidls.lEvent, pidls[0], pidls[1], wParam, lParam);
+					}
+				}
 			}
+			return S_OK;
 		}
 	});
+
+	AddEvent("Finalize", function () {
+		api.SHChangeNotifyDeregister(Sync.TreeView.uRegisterId);
+	});
+
+	Sync.TreeView.uRegisterId = api.SHChangeNotifyRegister(te.hwnd, SHCNRF_InterruptLevel | SHCNRF_NewDelivery, SHCNE_MKDIR | SHCNE_MEDIAINSERTED | SHCNE_DRIVEADD | SHCNE_NETSHARE | SHCNE_DRIVEREMOVED | SHCNE_MEDIAREMOVED | SHCNE_NETUNSHARE | SHCNE_RENAMEFOLDER | SHCNE_RMDIR | SHCNE_SERVERDISCONNECT | SHCNE_UPDATEDIR, Sync.TreeView.WM, ssfDESKTOP, true);
 }
