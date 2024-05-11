@@ -8823,10 +8823,15 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			SetTimer(g_hwndMain, TET_Status, 500, teTimerProc);
 			if (m_hwndLV == GetFocus()) {
 				SetActive(TRUE);
-				if (ListView_IsGroupViewEnabled(m_hwndLV) && ListView_GetNextItem(m_hwndLV, -1, LVNI_FOCUSED) <= 0) {
-					int nFocused = ListView_GetNextItem(m_hwndLV, -1, LVNI_SELECTED);
-					if (nFocused > 0) {
-						ListView_SetItemState(m_hwndLV, nFocused, LVIS_FOCUSED, LVIS_FOCUSED);
+				if (ListView_IsGroupViewEnabled(m_hwndLV)) {
+					int nFocused = ListView_GetNextItem(m_hwndLV, -1, LVNI_FOCUSED);
+					int nSelected = ListView_GetNextItem(m_hwndLV, -1, LVNI_SELECTED);
+					if (nFocused >= 0) {
+						if (nSelected < 0) {
+							ListView_SetItemState(m_hwndLV, 0, LVIS_FOCUSED, LVIS_FOCUSED);
+						}
+					} else if (nSelected >= 0) {
+						ListView_SetItemState(m_hwndLV, nSelected, LVIS_FOCUSED, LVIS_FOCUSED);
 					}
 				}
 			}

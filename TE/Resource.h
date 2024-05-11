@@ -15,8 +15,8 @@
 #else
 //Version(DLL)
 #define VER_Y		24
-#define VER_M		3
-#define VER_D		28
+#define VER_M		5
+#define VER_D		11
 #endif
 
 //Icon
