@@ -29,8 +29,10 @@ extern LPFNGetDpiForMonitor _GetDpiForMonitor;
 extern LPFNIsWow64Process _IsWow64Process;
 extern LPFNPSPropertyKeyFromString _PSPropertyKeyFromStringEx;
 extern LPFNSetDllDirectoryW _SetDllDirectoryW;
+extern LPFNGetFinalPathNameByHandle _GetFinalPathNameByHandle;
 #else
 #define _PSPropertyKeyFromStringEx tePSPropertyKeyFromStringEx
+#define _GetFinalPathNameByHandle GetFinalPathNameByHandle
 #endif
 #ifdef _DEBUG
 extern LPWSTR	g_strException;
@@ -1337,7 +1339,12 @@ VOID teApiDrawIconEx(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 
 VOID teApiDrawText(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
-	teSetLong(pVarResult, DrawText(param[0].hdc, param[1].lpcwstr, param[2].intVal, param[3].lprect, param[4].uintVal));
+	LPWSTR lpwstr = GetLPWSTRFromVariant(&pDispParams->rgvarg[nArg - 1]);
+	try {
+		teSetLong(pVarResult, DrawText(param[0].hdc, (ULONG_PTR)lpwstr > 0xffff ? lpwstr : param[1].lpcwstr, param[2].intVal, param[3].lprect, param[4].uintVal));
+	} catch (...) {
+		teSetLong(pVarResult, DrawText(param[0].hdc, param[1].lpcwstr, param[2].intVal, param[3].lprect, param[4].uintVal));
+	}
 }
 
 VOID teApiDropTarget(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -1741,6 +1748,21 @@ VOID teApiGetDpiForMonitor(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 	UINT ux, uy;
 	_GetDpiForMonitor(hMonitor, nArg >= 1 ? param[1].MonitorDpiType : MDT_EFFECTIVE_DPI, &ux, &uy);
 	teSetPoint(pVarResult, ux, uy);
+}
+
+VOID teApiGetFinalPathNameByHandle(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	if (_GetFinalPathNameByHandle) {
+		int nLen = _GetFinalPathNameByHandle(param[0].handle, NULL, 0, param[1].dword);
+		BSTR bsResult = ::SysAllocStringLen(NULL, nLen);
+		nLen = _GetFinalPathNameByHandle(param[0].handle, bsResult, nLen, param[1].dword);
+		if (param[1].dword || StrCmpNI(bsResult, L"\\\\?\\", 4)) {
+			teSetBSTR(pVarResult, &bsResult, nLen);
+		} else {
+			teSetSZ(pVarResult, &bsResult[4]);
+			teSysFreeString(&bsResult);
+		}
+	}
 }
 
 VOID teApiGetFocus(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -4095,6 +4117,7 @@ TEDispatchApi dispAPI[] = {
 	{ 2,  1, -1, -1, "GetDispatch", teApiGetDispatch },
 	{ 2, -1, -1, -1, "GetDisplayNameOf", teApiGetDisplayNameOf },
 	{ 0, -1, -1, -1, "GetDpiForMonitor", teApiGetDpiForMonitor },
+	{ 2, -1, -1, -1, "GetFinalPathNameByHandle", teApiGetFinalPathNameByHandle },
 	{ 0, -1, -1, -1, "GetFocus", teApiGetFocus },
 	{ 0, -1, -1, -1, "GetForegroundWindow", teApiGetForegroundWindow },
 	{ 2, -1, -1, -1, "GetGUIThreadInfo", teApiGetGUIThreadInfo },

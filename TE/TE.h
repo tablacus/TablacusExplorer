@@ -363,6 +363,7 @@ public:
 	HRESULT Search(LPWSTR pszSearch);
 	VOID RedrawUpdate();
 	VOID SetEmptyText();
+	HRESULT CheckItemCount();
 #if defined(USE_SHELLBROWSER) || defined(_2000XP)
 	HRESULT NavigateSB(IShellView *pPreviousView, FolderItem *pPrevious);
 #endif
@@ -407,6 +408,7 @@ public:
 	DWORD		m_dwCookie;
 	DWORD		m_dwTickNotify;
 	DWORD		m_dwRedraw;
+	DWORD		m_dwRefresh;
 	COLORREF	m_clrBk, m_clrTextBk, m_clrText;
 	DISPID      m_dispidSortColumns;
 	BOOL		m_bSetListColumnWidth;
@@ -562,6 +564,7 @@ public:
 	VOID SetRoot();
 	VOID Show();
 	VOID Expand();
+	int CompareSelected();
 #ifdef _2000XP
 	VOID SetObjectRect();
 #endif
@@ -626,3 +629,8 @@ public:
 	HRESULT m_hr;
 };
 
+// Compile Options: /GX
+namespace std
+{
+#include <cstdlib>
+};

@@ -423,11 +423,16 @@ VOID CteFolderItem::Clear()
 	m_dispExtendedProperty = -1;
 }
 
-BSTR CteFolderItem::GetStrPath()
+BSTR CteFolderItem::GetStrPath(SHGDNF uFlags)
 {
 	if (m_v.vt == VT_BSTR) {
-		if (m_pidl == NULL || (m_pidlAlt && !ILIsEqual(m_pidl, m_pidlAlt)) || teIsSearchFolder(m_v.bstrVal)) {
+		if ((m_pidlAlt && !ILIsEqual(m_pidl, m_pidlAlt)) || teIsSearchFolder(m_v.bstrVal)) {
 			return m_v.bstrVal;
+		}
+		if (m_pidl == NULL) {
+			if (!(uFlags & SHGDN_FORADDRESSBAR) || teIsFileSystem(m_v.bstrVal)) {
+				return m_v.bstrVal;
+			}
 		}
 	}
 	return NULL;
@@ -723,7 +728,7 @@ STDMETHODIMP CteFolderItem::get_Parent(IDispatch **ppid)
 
 STDMETHODIMP CteFolderItem::get_Name(BSTR *pbs)
 {
-	if SUCCEEDED(tePathGetFileName(pbs, GetStrPath())) {
+	if SUCCEEDED(tePathGetFileName(pbs, GetStrPath(SHGDN_INFOLDER))) {
 		return S_OK;
 	}
 	if SUCCEEDED(teGetDisplayNameFromIDList(pbs, GetPidl(), SHGDN_INFOLDER)) {
@@ -771,7 +776,7 @@ STDMETHODIMP CteFolderItem::put_Name(BSTR bs)
 
 STDMETHODIMP CteFolderItem::get_Path(BSTR *pbs)
 {
-	BSTR bs = GetStrPath();
+	BSTR bs = GetStrPath(SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
 	if (bs) {
 		*pbs = ::SysAllocString(bs);
 		return S_OK;
@@ -2469,7 +2474,6 @@ HBITMAP CteWICBitmap::GetHBITMAP(COLORREF clBk)
 	BOOL bAlphaBlend = (int)clBk >= 0 && !IsEqualGUID(guidPF, GUID_WICPixelFormat24bppBGR);
 	Get((int)clBk != -2 ? GUID_WICPixelFormat32bppBGRA : GUID_WICPixelFormat32bppPBGRA);
 
-	HBITMAP hBM = NULL;
 	UINT w = 0, h = 0;
 	if (SUCCEEDED(m_pImage->GetSize(&w, &h)) && w && h) {
 		BITMAPINFO bmi;
@@ -2481,25 +2485,28 @@ HBITMAP CteWICBitmap::GetHBITMAP(COLORREF clBk)
 		bmi.bmiHeader.biHeight = -(LONG)h;
 		bmi.bmiHeader.biPlanes = 1;
 		bmi.bmiHeader.biBitCount = 32;
-		hBM = CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, (void **)&pcl, NULL, 0);
-		if (hBM && pcl) {
-			if SUCCEEDED(m_pImage->CopyPixels(NULL, w * 4, w * h * 4, (LPBYTE)pcl)) {
-				if (bAlphaBlend) {
-					int r0 = GetRValue(clBk);
-					int g0 = GetGValue(clBk);
-					int b0 = GetBValue(clBk);
-					for (int i = w * h; --i >= 0; ++pcl) {
-						int a = pcl->rgbReserved;
-						pcl->rgbBlue = (pcl->rgbBlue - b0) * a / 0xff + b0;
-						pcl->rgbGreen = (pcl->rgbGreen - g0) * a / 0xff + g0;
-						pcl->rgbRed = (pcl->rgbRed - r0) * a / 0xff + r0;
-						pcl->rgbReserved = 0xff;
+		HBITMAP hBM = CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, (void **)&pcl, NULL, 0);
+		if (hBM) {
+			if (pcl) {
+				if SUCCEEDED(m_pImage->CopyPixels(NULL, w * 4, w * h * 4, (LPBYTE)pcl)) {
+					if (bAlphaBlend) {
+						int r0 = GetRValue(clBk);
+						int g0 = GetGValue(clBk);
+						int b0 = GetBValue(clBk);
+						for (int i = w * h; --i >= 0; ++pcl) {
+							int a = pcl->rgbReserved;
+							pcl->rgbBlue = (pcl->rgbBlue - b0) * a / 0xff + b0;
+							pcl->rgbGreen = (pcl->rgbGreen - g0) * a / 0xff + g0;
+							pcl->rgbRed = (pcl->rgbRed - r0) * a / 0xff + r0;
+							pcl->rgbReserved = 0xff;
+						}
 					}
+					return hBM;
 				}
 			}
 		}
 	}
-	return hBM;
+	return NULL;
 }
 
 BOOL CteWICBitmap::Get(WICPixelFormatGUID guidNewPF)
@@ -2790,6 +2797,15 @@ VOID CteWICBitmap::FromStreamRelease(IStream **ppStream, LPWSTR lpfn, BOOL bKeep
 	LARGE_INTEGER liOffset;
 	liOffset.QuadPart = 0;
 	GetFrameFromStream(*ppStream, 0, bKeepStream);
+	if (HasImage()) {
+		IWICBitmapLock *pBitmapLock;
+		WICRect rc = { 0, 0, 1, 1 };
+		if SUCCEEDED(m_pImage->Lock(&rc, WICBitmapLockRead, &pBitmapLock)) {
+			pBitmapLock->Release();
+		} else {
+			ClearImage(TRUE);
+		}
+	}
 	if (!HasImage()) {
 		HRESULT hr = E_FAIL;
 		try {
@@ -3423,7 +3439,7 @@ STDMETHODIMP CteWICBitmap::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, W
 				GetObject(hBM, sizeof(BITMAP), &bm);
 				HIMAGELIST himl = ImageList_Create(bm.bmWidth, bm.bmHeight, ILC_COLOR32, 0, 0);
 				ImageList_Add(himl, hBM, NULL);
-				DeleteObject(hBM);
+				::DeleteObject(hBM);
 				if (dispIdMember == TE_METHOD + 211) {
 					teSetPtr(pVarResult, ImageList_GetIcon(himl, 0, nArg >= 0 ? GetIntFromVariant(&pDispParams->rgvarg[nArg]) : ILD_NORMAL));
 				} else if (dispIdMember == TE_METHOD + 212 && nArg >= 7) {

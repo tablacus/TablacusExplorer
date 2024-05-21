@@ -82,7 +82,7 @@ public:
 	LPITEMIDLIST GetAlt();
 	BOOL GetFolderItem();
 	VOID Clear();
-	BSTR GetStrPath();
+	BSTR GetStrPath(SHGDNF uFlags);
 	VOID MakeUnavailable();
 
 	VARIANT			m_v;

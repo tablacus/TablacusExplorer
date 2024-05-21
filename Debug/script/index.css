@@ -238,7 +238,14 @@ a.treebutton:hover {
 }
 
 .separator {
-	color: #a0a0a0;
+	border-left: 1px solid #888;
+	margin: 0 2px;
+	display: inline-block;
+	vertical-align: middle;
+	color: transparent !important;
+	height: 100%;
+	opacity: .7;
+	filter: alpha(style=0,opacity=70);
 }
 
 .splitter {

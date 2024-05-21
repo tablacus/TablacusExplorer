@@ -2657,7 +2657,7 @@ HWND teFindChildByClassA(HWND hwnd, LPCSTR lpClassA)
 	return NULL;
 }
 
-VOID teGetDisplayNameOf(VARIANT *pv, int uFlags, VARIANT *pVarResult)
+VOID teGetDisplayNameOf(VARIANT *pv, SHGDNF uFlags, VARIANT *pVarResult)
 {
 	try {
 		IUnknown *punk;
@@ -2668,19 +2668,11 @@ VOID teGetDisplayNameOf(VARIANT *pv, int uFlags, VARIANT *pVarResult)
 			}
 		} else if (FindUnknown(pv, &punk)) {
 			BSTR bs;
-			if (teGetStrFromFolderItem(&bs, punk)) {
+			if (teGetStrFromFolderItem(&bs, punk, uFlags)) {
 				if (uFlags & SHGDN_INFOLDER) {
 					BSTR bsName = NULL;
 					if SUCCEEDED(tePathGetFileName(&bsName, bs)) {
 						teSetBSTR(pVarResult, &bsName, -1);
-						return;
-					}
-				}
-				if (uFlags & SHGDN_FORADDRESSBAR) {
-					BSTR bsLocal;
-					if (teLocalizePath(bs, &bsLocal)) {
-						teSetSZ(pVarResult, bsLocal);
-						::SysFreeString(bsLocal);
 						return;
 					}
 				}
@@ -2745,6 +2737,7 @@ HRESULT tePathGetFileName(BSTR *pbs, LPWSTR pszPath)
 	return E_FAIL;
 }
 
+/*
 BOOL teLocalizePath(LPWSTR pszPath, BSTR *pbsPath)
 {
 	*pbsPath = NULL;
@@ -2778,6 +2771,7 @@ BOOL teLocalizePath(LPWSTR pszPath, BSTR *pbsPath)
 	}
 	return *pbsPath != NULL;
 }
+*/
 
 int teGetMenuString(BSTR *pbs, HMENU hMenu, UINT uIDItem, BOOL fByPosition)
 {
@@ -3683,12 +3677,12 @@ HRESULT DoFunc(int nFunc, PVOID pObj, HRESULT hr)
 	return hr;
 }
 
-BOOL teGetStrFromFolderItem(BSTR *pbs, IUnknown *punk)
+BOOL teGetStrFromFolderItem(BSTR *pbs, IUnknown *punk, SHGDNF uFlags)
 {
 	*pbs = NULL;
 	CteFolderItem *pid;
 	if (punk && SUCCEEDED(punk->QueryInterface(g_ClsIdFI, (LPVOID *)&pid))) {
-		*pbs = pid->GetStrPath();
+		*pbs = pid->GetStrPath(uFlags);
 		pid->Release();
 	}
 	return *pbs != NULL;

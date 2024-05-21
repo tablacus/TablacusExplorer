@@ -2,6 +2,8 @@ Common.TabPlus.rc = api.CreateObject("Object");
 Common.TabPlus.rcItem = api.CreateObject("Object");
 
 Sync.TabPlus = {
+	DropTo: !GetAddonOption("tabplus", "NoDropTo"),
+
 	FromPt: function (Id, pt) {
 		const ptc = pt.Clone();
 		api.ScreenToClient(WebBrowser.hwnd, ptc);
@@ -113,7 +115,7 @@ AddEvent("DragOver", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 							InvokeUI("Addons.TabPlus.DragOver", TC.Id);
 						}
 					}
-					if (dataObj.Count) {
+					if (dataObj.Count && Sync.TabPlus.DropTo) {
 						const Target = FV.FolderItem;
 						if (!api.ILIsEqual(dataObj.Item(-1), Target)) {
 							let DropTarget = api.DropTarget(Target);
@@ -122,10 +124,13 @@ AddEvent("DragOver", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 							}
 						}
 					}
+				}
+				if (Sync.TabPlus.DropTo) {
 					pdwEffect[0] = DROPEFFECT_NONE;
 					return S_OK;
 				}
-			} else if (dataObj.Count && dataObj.Item(0).IsFolder) {
+			}
+			if (dataObj.Count && dataObj.Item(0).IsFolder) {
 				pdwEffect[0] = DROPEFFECT_LINK;
 				return S_OK;
 			}
@@ -153,7 +158,7 @@ AddEvent("Drop", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 				Common.TabPlus.Drag5 = void 0;
 				return S_OK;
 			}
-			if (nIndex >= 0) {
+			if (nIndex >= 0 && Sync.TabPlus.DropTo) {
 				let hr = S_FALSE;
 				const DropTarget = TC[nIndex].DropTarget;
 				if (DropTarget) {
@@ -163,10 +168,11 @@ AddEvent("Drop", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 					Common.TabPlus.bDropping = false;
 				}
 				return hr;
-			} else if (dataObj.Count) {
+			}
+			if (dataObj.Count) {
 				for (let i = 0; i < dataObj.Count; ++i) {
 					const FV = TC.Selected.Navigate(dataObj.Item(i), SBSP_NEWBROWSER);
-					TC.Move(FV.Index, TC.Count - 1);
+					TC.Move(FV.Index, nIndex >= 0 ? nIndex : TC.Count - 1);
 				}
 				return S_OK;
 			}

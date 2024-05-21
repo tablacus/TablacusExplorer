@@ -18,37 +18,6 @@ Refresh = function (Ctrl, pt) {
 	return RunEvent4("Refresh", Ctrl, pt);
 }
 
-InputDialog = function (text, defaultText, cb, data) {
-	const eo = eventTE.inputdialog;
-	if (eo && eo.length) {
-		const r = InvokeFunc(eo[0], [text, defaultText]);
-		if (cb) {
-			cb(r, data);
-			return;
-		}
-		return r;
-	}
-	if (cb) {
-		const opt = api.CreateObject("Object");
-		opt.text = text;
-		opt.defaultText = defaultText;
-		opt.callback = function (text) {
-			setTimeout(cb, 9, text, data);
-		};
-		ShowDialogEx("input", 480, 140, null, opt);
-		return;
-	}
-	if (window.prompt) {
-		return prompt(GetTextR(text), defaultText);
-	}
-	const rc = api.Memory("RECT");
-	api.GetWindowRect(te.hwnd, rc);
-	const t = 1440 / screen.deviceYDPI;
-	const x = Math.min((rc.left + (rc.right - rc.left) / 2 - 186) * t, 32767);
-	const y = Math.min((rc.top + (rc.bottom - rc.top) / 2 - 74) * t, 32767);
-	return api.GetScriptDispatch('Function InputDialog(text, TITLE, defaultText, x, y)\nInputDialog = InputBox(text, TITLE, defaultText, x, y)\nEnd Function', "VBScript").InputDialog(GetTextR(text), TITLE, defaultText, x, y);
-}
-
 g_.mouse = {
 	str: "",
 	CancelContextMenu: false,
@@ -142,6 +111,9 @@ g_.mouse = {
 		switch (Ctrl ? Ctrl.Type : 0) {
 			case CTRL_SB:
 			case CTRL_EB:
+				if (api.GetClassName(api.WindowFromPoint(pt) || Ctrl.hwnd) == WC_TREEVIEW) {
+					return;
+				}
 				return Ctrl.ItemCount && Ctrl.ItemCount(SVGIO_SELECTION) ? "List" : "List_Background";
 			case CTRL_TV:
 				return "Tree";
@@ -870,7 +842,7 @@ g_basic = {
 };
 
 RefreshEx = function (FV, tm, df) {
-	if (FV.Data && FV.FolderItem && /^[A-Z]:\\|^\\\\\w/i.test(FV.FolderItem.Path)) {
+	if (FV.Data && FV.FolderItem && IsWitness(FV.FolderItem) && /^[A-Z]:\\|^\\\\\w/i.test(FV.FolderItem.Path)) {
 		if (RunEvent4("RefreshEx", FV, tm, df) == null) {
 			if (new Date().getTime() - (FV.Data.AccessTime || 0) > (df || 5000) || FV.Data.pathChk != FV.FolderItem.Path) {
 				if (!FV.hwndView || FV.FolderItem.Unavailable || api.ILIsEqual(FV.FolderItem, FV.FolderItem.Alt)) {
@@ -947,8 +919,8 @@ CloseView = function (Ctrl) {
 	return RunEvent2("CloseView", Ctrl);
 }
 
-DeviceChanged = function (Ctrl) {
-	RunEvent1("DeviceChanged", Ctrl);
+DeviceChanged = function (Ctrl, wParam, lParam) {
+	RunEvent1("DeviceChanged", Ctrl, wParam, lParam);
 }
 
 ListViewCreated = function (Ctrl) {
@@ -1613,6 +1585,7 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 	}
 	if (Ctrl.Data) {
 		Ctrl.Data.Setting = void 0;
+		Ctrl.Data.hwndBefore = api.GetFocus();
 	}
 	const res = /javascript:(.*)/im.exec(api.GetDisplayNameOf(Ctrl.FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
 	if (res) {
@@ -1628,8 +1601,10 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 		setTimeout(OpenInExplorer, 99, Ctrl.FolderItem);
 		return E_FAIL;
 	}
-	if (GetLock(Ctrl) && (wFlags & SBSP_NEWBROWSER) == 0 && !api.ILIsEqual(Prev, "about:blank") && !api.ILIsEqual(Ctrl.FolderItem, Prev)) {
-		hr = E_ACCESSDENIED;
+	if (GetLock(Ctrl) || api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_CONTROL) < 0) {
+		if ((wFlags & SBSP_NEWBROWSER) == 0 && !api.ILIsEqual(Prev, "about:blank") && !api.ILIsEqual(Ctrl.FolderItem, Prev)) {
+			hr = E_ACCESSDENIED;
+		}
 	}
 	return hr;
 }
@@ -1639,10 +1614,21 @@ te.OnNavigateComplete = function (Ctrl) {
 		return S_OK;
 	}
 	Ctrl.Data.AccessTime = new Date().getTime();
+	if (IsWitness(Ctrl.FolderItem)) {
+		Ctrl.FolderFlags &= ~FWF_NOENUMREFRESH;
+	} else {
+		Ctrl.FolderFlags |= FWF_NOENUMREFRESH;
+	}
 	Ctrl.NavigateComplete();
 	RunEvent1("NavigateComplete", Ctrl);
 	ChangeView(Ctrl);
-	FocusFV();
+	if (api.GetClassName(Ctrl.Data.hwndBefore) == WC_TREEVIEW) {
+		api.SetFocus(Ctrl.Data.hwndBefore);
+	} else {
+		FocusFV();
+	}
+	Ctrl.Data.hwndBefore = void 0;
+
 	if (g_.focused) {
 		g_.focused.Focus();
 		if (--g_.fTCs <= 0) {
@@ -2122,9 +2108,7 @@ AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, 
 			const Item = Items.Item(i);
 			const path = Item.ExtendedProperty("linktarget") || Item.Path;
 			Navigate(GetParentFolderName(path), SBSP_NEWBROWSER);
-			setTimeout(function (FV, path) {
-				FV.SelectItem(path, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS);
-			}, 99, te.Ctrl(CTRL_FV), path);
+			SelectItem(te.Ctrl(CTRL_FV), path, SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS | SVSI_DESELECTOTHERS, 99, true);
 			return S_OK;
 		}
 	}
@@ -2356,7 +2340,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					break;
 				case WM_DEVICECHANGE:
 					if (wParam == DBT_DEVICEARRIVAL || wParam == DBT_DEVICEREMOVECOMPLETE) {
-						DeviceChanged(Ctrl);
+						DeviceChanged(Ctrl, wParam, lParam);
 					}
 					break;
 				case WM_ACTIVATE:
@@ -2415,6 +2399,9 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					} else {
 						g_.mouse.str = "";
 						SetGestureText(Ctrl, "");
+						if (g_.hwndTT && api.IsWindowVisible(g_.hwndTT)) {
+							api.ShowWindow(g_.hwndTT, SW_HIDE);
+						}
 					}
 					break;
 				case WM_MOVE:
@@ -2645,13 +2632,27 @@ te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 		const hLock = api.SHChangeNotification_Lock(wParam, lParam, pidls);
 		if (hLock) {
 			api.SHChangeNotification_Unlock(hLock);
-			if (pidls[0] && /^[A-Z]:\\|^\\\\\w/i.test(pidls[0].Path) && !IsCloud(pidls[0])) {
-				ChangeNotifyFV(pidls.lEvent, pidls[0], pidls[1]);
-				RunEvent1("ChangeNotify", Ctrl, pidls, wParam, lParam);
-				if (pidls.lEvent & (SHCNE_UPDATEITEM | SHCNE_RENAMEITEM)) {
-					const n = pidls.lEvent & SHCNE_RENAMEITEM ? 1 : 0;
-					const path = api.GetDisplayNameOf(pidls[n], SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
-					RunEvent1("ChangeNotifyItem:" + path, api.ILCreateFromPath(path) || pidls[n]);
+			if (pidls[0] && IsWitness(pidls[0])) {
+				const path = pidls[0].Path;
+				if (/^[A-Z]:\\|^\\\\\w/i.test(path)) {
+					for (let key in g_.Notify) {
+						if (new Date().getTime() > g_.Notify[key]) {
+							delete g_.Notify[key];
+						}
+					}
+					const lEvent = pidls.lEvent;
+					const key = lEvent + ":" + path;
+					if (!g_.Notify[key]) {
+						g_.Notify[key] = new Date().getTime() + 999;
+						ChangeNotifyFV(lEvent, pidls[0], pidls[1]);
+						RunEvent1("ChangeNotify", Ctrl, pidls, wParam, lParam);
+						if (lEvent & (SHCNE_UPDATEITEM | SHCNE_UPDATEDIR | SHCNE_CREATE | SHCNE_MKDIR)) {
+							RunEvent1("ChangeNotifyItem:" + path, pidls[0], 0, lEvent);
+						}
+						if ((lEvent & (SHCNE_RENAMEITEM | SHCNE_RENAMEFOLDER)) && pidls[1]) {
+							RunEvent1("ChangeNotifyItem:" + pidls[1].Path, pidls[1], 1, lEvent);
+						}
+					}
 				}
 			}
 		}
@@ -2943,7 +2944,7 @@ ChangeNotifyFV = function (lEvent, item1, item2) {
 		const cFV = te.Ctrls(CTRL_FV, true);
 		for (let i in cFV) {
 			const FV = cFV[i];
-			if (FV && FV.FolderItem && !IsCloud(FV.FolderItem)) {
+			if (FV && FV.FolderItem && IsWitness(FV.FolderItem)) {
 				const path = FV.FolderItem.Path;
 				const bParent = api.PathMatchSpec(path, [path1.replace(/\\$/, ""), path1].join("\\*;")) || bNetwork && api.PathIsNetworkPath(path);
 				if (lEvent == SHCNE_RENAMEFOLDER && CanClose(FV) == S_OK) {
@@ -3334,7 +3335,7 @@ AddEvent("BeginNavigate", function (Ctrl) {
 });
 
 AddEvent("UseExplorer", function (pid) {
-	if (pid && pid.Path && !/^ftp:|^https?:/i.test(pid.Path) && !pid.Unavailable && !api.GetAttributesOf(pid.Alt || pid, SFGAO_FILESYSTEM | SFGAO_FILESYSANCESTOR | SFGAO_STORAGEANCESTOR | SFGAO_NONENUMERATED | SFGAO_DROPTARGET) && !api.ILIsParent(1, pid, false) && !IsSearchPath(pid)) {
+	if (pid && pid.Path && !/^ftp:|^https?:/i.test(pid.Path) && !pid.Unavailable && !api.GetAttributesOf(pid.Alt || pid, SFGAO_FILESYSTEM | SFGAO_FILESYSANCESTOR | SFGAO_STORAGEANCESTOR | SFGAO_NONENUMERATED | SFGAO_DROPTARGET) && !api.ILIsParent(1, pid, false) && !IsSearchPath(pid) && api.GetDisplayNameOf(pid, SHGDN_FORPARSING) != "::{F874310E-B6B7-47DC-BC84-B9E6B38F5903}") {
 		return true;
 	}
 });
@@ -3377,6 +3378,12 @@ AddEvent("ConfigChanged", function (s) {
 	te.Data["bSave" + s] = true;
 });
 
+AddEvent("ToolTip", function (Ctrl, Index, hwnd) {
+	if (Ctrl.Type <= CTRL_EB && Index >= 0) {
+		g_.hwndTT = hwnd;
+	}
+});
+
 if (!window.chrome) {
 	AddEvent("BrowserCreatedEx", 'MainWindow.RunEvent1("BrowserCreated", document);');
 }
@@ -3398,26 +3405,18 @@ AddEnv("Selected", function (Ctrl) {
 });
 
 AddEnv("Current", function (Ctrl) {
-	let strSel = "";
 	const FV = GetFolderView(Ctrl);
-	if (FV) {
-		strSel = PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORPARSING));
-	}
-	return strSel;
+	return FV ? PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORPARSING)) : '';
 });
 
 AddEnv("TreeSelected", function (Ctrl) {
-	let strSel = "";
 	if (!Ctrl || Ctrl.Type != CTRL_TV) {
 		const FV = GetFolderView(Ctrl);
 		if (FV) {
 			Ctrl = FV.TreeView;
 		}
 	}
-	if (Ctrl) {
-		strSel = PathQuoteSpaces(api.GetDisplayNameOf(Ctrl.SelectedItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
-	}
-	return strSel;
+	return Ctrl ? PathQuoteSpaces(Ctrl.SelectedItem.Path) : '';
 });
 
 AddEnv("MenuSelected", function (Ctrl) {
@@ -3756,6 +3755,33 @@ InitCode = function () {
 		const json = JSON.parse(s);
 		g_.IconExt = json.info.ext || ".png";
 	}
+}
+
+InitCloud = function () {
+	const cloud = ["HKCU\\Environment\\OneDrive", "HKCR\\CLSID\\{E31EA727-12ED-4702-820C-4B6445F28E1A}\\Instance\\InitPropertyBag\\TargetFolderPath", "HKCU\\SOFTWARE\\Box\\Box\\preferences\\sync_directory_path"];
+	const r = [];
+	for (let i = cloud.length; i--;) {
+		try {
+			const s = wsh.RegRead(cloud[i]);
+			if (s) {
+				r.unshift(PathUnquoteSpaces(s) + "*");
+			}
+		} catch (e) { }
+	}
+	ForEachWmi("winmgmts:\\\\.\\root\\cimv2", "SELECT * FROM Win32_LogicalDisk", function (item) {
+		if (/Google Drive|\@gmail\.com/i.test(item.VolumeName)) {
+			r.push(item.DeviceID + "\\*");
+		} else if (item.DriveType == 3 && r.length) {
+			const h = api.CreateFile(item.DeviceID, 0x80000000, 7, null, 3, 0x02000000, null);
+			if (h != INVALID_HANDLE_VALUE) {
+				if (api.PathMatchSpec(api.GetFinalPathNameByHandle(h, 0), r.join(";"))) {
+					r.push(item.DeviceID + "\\*");
+				}
+				api.CloseHandle(h);
+			}
+		}
+	});
+	AddEnv('cloud', r.join(";"));
 }
 
 InitMenus = function () {

@@ -4,7 +4,7 @@ select {
 	min-height: 1.7em;
 }
 
-input[type="text"] {
+input[type="text"], input[type="number"], input[type="search"] {
 	min-height: 1.4em;
 }
 
@@ -19,6 +19,10 @@ textarea {
 .oddline {
 	color: #000;
 	background-color: #ffffe1;
+}
+
+.box {
+  border-top: 1px solid #888;
 }
 
 .color {

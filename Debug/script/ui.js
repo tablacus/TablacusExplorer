@@ -601,6 +601,7 @@ ApplyLang = async function (doc) {
 		"Options": 0xe713,
 		"Refresh": 0xe72c,
 		"Open": 0xe8e5,
+		"Menus": 0xed0e,
 		"Test": 0xe768,
 		"None": 0xe75c,
 		"Swap": 0xe8ab
@@ -925,6 +926,15 @@ InsertTab = function (ev) {
 	return true;
 }
 
+PreventDefault = function (ev) {
+	ev = ev || event;
+	if (ev.preventDefault) {
+		ev.preventDefault();
+	} else {
+		ev.returnValue = false;
+	}
+}
+
 DetectProcessTag = function (ev) {
 	ev = ev || event;
 	const el = ev.target || ev.srcElement;
@@ -977,7 +987,8 @@ AddFavoriteEx = async function (Ctrl, pt) {
 SelectItem = function (FV, path, wFlags, tm, bCheck) {
 	setTimeout(async function () {
 		if (FV) {
-			if (SameText(await FV.FolderItem.Path, GetParentFolderName(path))) {
+			const FolderItem = await FV.FolderItem;
+			if (FolderItem && SameText(await FolderItem.Path, GetParentFolderName(path))) {
 				await FV.SelectItem(path, wFlags);
 				if (bCheck && (wFlags & SVSI_FOCUSED)) {
 					setTimeout(async function () {
@@ -998,13 +1009,10 @@ window.addEventListener("load", function () {
 	document.body.addEventListener('keydown', function (ev) {
 		ev = ev || event;
 		if ((ev.keyCode ? ev.keyCode == VK_F5 : "F5" === ev.key) || (ev.ctrlKey && "r" === ev.key)) {
-			if (ev.preventDefault) {
-				ev.preventDefault();
-			 } else {
-				ev.returnValue = false;
-			 }
+			PreventDefault(ev);
 		}
 	});
+
 	if (window.chrome) {
 		document.body.addEventListener('mousewheel', function (ev) {
 			if (ev.ctrlKey) {
@@ -1016,6 +1024,10 @@ window.addEventListener("load", function () {
 				ev.preventDefault();
 			}
 		}, { passive: false });
+		if (window.Addon != 1) {
+			window.addEventListener('dragover', PreventDefault);
+			window.addEventListener('drop', PreventDefault);
+		}
 	} else {
 		document.body.onmousewheel = function (ev) {
 			return ev ? !ev.ctrlKey : api.GetKeyState(VK_CONTROL) >= 0;

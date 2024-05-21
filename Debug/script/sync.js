@@ -63,10 +63,11 @@ g_.IconChg = [
 	["bitmap:ieframe,699,16,", "", 16],
 	["bitmap:ieframe,697,24,", "", 24]
 ];
+g_.Notify = {};
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20220627 ? te.Version : 20230131;
+		return te.Version < 20240511 ? te.Version : 20240511;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -392,7 +393,7 @@ RunEvent4 = function () {
 	for (let i in eo) {
 		try {
 			const r = InvokeFunc(eo[i], args);
-			if (r !== void 0) {
+			if (r != null) {
 				return r;
 			}
 		} catch (e) {
@@ -592,22 +593,20 @@ IsSearchPath = function (pid, bText) {
 	return (bText ? /^search\-ms:.*?crumb=([^&]*).*?&crumb=location:([^&]*)/ : /^search\-ms:.*?&crumb=location:([^&]*)/).exec("string" === typeof pid ? pid : api.GetDisplayNameOf(pid, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING));
 }
 
+IsWitness = function (Item) {
+	return (te.Data.Conf_AutoArrange & 2) || !IsCloud(Item);
+}
+
 IsCloud = function (Item) {
-	if (Item) {
-		if ((Item.ExtendedProperty("Attributes") || "").indexOf("O") >= 0) {
-			return true;
-		}
-		const res = /^([A-Z]):\\/i.exec(Item.Path);
-		if (res) {
-			try {
-				const d = fso.GetDrive(res[1]);
-				return d && /Google Drive|\@gmail\.com/i.test(d.VolumeName);
-			} catch (e) {
-				return true;
-			}
-		}
-	}
-	return false;
+	return Item && (Item.ExtendedProperty("System.StorageProviderState") || IsCloudPath(api.GetDisplayNameOf(Item, SHGDN_FORPARSING)));
+}
+
+IsCloudPath = function (path) {
+	return MainWindow.eventTE.Environment.cloud && api.PathMatchSpec(path, MainWindow.eventTE.Environment.cloud);
+}
+
+IsNetworkOrCloud = function (path) {
+	return api.PathIsNetworkPath(path) || IsCloudPath(path);
 }
 
 LoadXml = function (filename, nGroup) {
@@ -1000,6 +999,7 @@ LoadLang = function (bAppend) {
 			Lang["%s is required."] = "%s " + GetText("is required.");
 		}
 	}
+	ELLIPSIS = (/^fr_/.test(GetLangId()) ? " ..." : "...");
 }
 
 CreateFont = function (LogFont) {
@@ -1163,7 +1163,7 @@ GetThumbnail = function (image, m, f) {
 }
 
 GetTempPath = function (n) {
-	let temp = String(fso.GetSpecialFolder(2).Path);
+	let temp = String(fso.GetSpecialFolder(2).Path || "C:\\temp");
 	if (temp.indexOf("~") >= 0) {
 		const pid = api.ILCreateFromPath(temp);
 		pid.IsFolder;
@@ -1228,6 +1228,10 @@ ColumnsReplace = function (Ctrl, pid, fmt, fn, priority) {
 	}
 }
 
+GetSortColumns = function (FV) {
+	return (FV.SortColumn && FV.SortColumn != "System.Null" && "string" === typeof FV.SortColumns && FV.SortColumns.split(/;/).length > 2) ? FV.SortColumns : "";
+}
+
 CustomSort = function (FV, id, r, fnAdd, fnComp) {
 	const Progress = api.CreateObject("ProgressDialog");
 	Progress.StartProgressDialog(te.hwnd, null, 2);
@@ -1261,7 +1265,11 @@ CustomSort = function (FV, id, r, fnAdd, fnComp) {
 			FV.SelectAndPositionItem(Item, SVSI_DESELECT, pt);
 		}
 		Progress.SetLine(1, GetText("Selected items"), true);
-		FV.SelectItem(Selected, SVSI_SELECT);
+		if (Selected && Selected.Count) {
+			FV.SelectItem(Selected, SVSI_SELECT);
+		} else {
+			FV.SelectItem(0, SVSI_FOCUSED | SVSI_ENSUREVISIBLE);
+		}
 		api.SendMessage(FV.hwndList, LVM_SETVIEW, ViewMode, 0);
 		FV.FolderFlags = FolderFlags;
 		FV.IconSize = IconSize;
@@ -1322,14 +1330,21 @@ MakeCommDlgFilter = function (arg) {
 }
 
 GetHICON = function (iIcon, h, flags) {
-	const ar = [SHIL_JUMBO, SHIL_EXTRALARGE, SHIL_LARGE, SHIL_SMALL];
+	const ar = [SHIL_EXTRALARGE, SHIL_LARGE, SHIL_SMALL];
 	let i = ar.length;
 	while (h > te.Data.SHILS[ar[--i]].cy && i) { }
 	return api.ImageList_GetIcon(te.Data.SHIL[ar[i]], iIcon, flags);
 }
 
 ExtractFilter = function (s) {
-	return (ExtractMacro(te, s) || "").replace(/[\r\n;]+/g, ";").replace(/^;+|;+$|"/g, "");
+	const ar = (s || "").split(/[\r\n;]+/);
+	for (let i  = ar.length; i--;) {
+		const path = ar.shift();
+		if (path) {
+			ar.push(ExtractPath(te, path));
+		}
+	}
+	return ar.join(";");
 }
 
 GetEnum = function (FolderItem, bShowHidden) {
@@ -1338,10 +1353,21 @@ GetEnum = function (FolderItem, bShowHidden) {
 	}
 	if (FolderItem.IsFolder) {
 		const Items = FolderItem.GetFolder.Items();
+		const bZip = (FolderItem.IsBrowsable || !FolderItem.IsFileSystem && /^[A-Z]:\\|^\\\\\w.*\\/i.test(FolderItem.Path));
 		if (bShowHidden || api.GetKeyState(VK_SHIFT) < 0) {
-			try {
-				Items.Filter(SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN, "*");
-			} catch (e) { }
+			if (!bZip) {
+				try {
+					Items.Filter(SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN, "*");
+				} catch (e) { }
+			}
+		} else if (bZip) {
+			const out = api.CreateObject("FolderItems");
+			for (let i = 0; i < Items.Count; ++i) {
+				if (!api.GetAttributesOf(Items[i], SFGAO_HIDDEN)) {
+					out.AddItem(Items[i]);
+				}
+			}
+			return out;
 		}
 		return api.CreateObject("FolderItems", Items);
 	}
@@ -1376,7 +1402,7 @@ MakeImgSrc = function (src, index, bSrc, h, clBk) {
 			const ar = g_.IconChg;
 			for (let i in ar) {
 				const a2 = ar[i];
-				if (api.StrCmpNI(src, a2[0], a2[0].length) == 0) {
+				if (StartsText(a2[0], src)) {
 					if (a2[3]) {
 						const a3 = src.split(",");
 						if (fn = GetExistsIcon(a2[3], a3[3])) {
@@ -1481,7 +1507,7 @@ MakeImgIcon = function (src, index, h, bIcon, clBk) {
 		const ar = g_.IconChg;
 		for (let i in ar) {
 			const a2 = ar[i];
-			if (api.StrCmpNI(src, a2[0], a2[0].length) == 0) {
+			if (StartsText(a2[0], src)) {
 				if (a2[3]) {
 					if (MainWindow.g_.IconExt) {
 						const a3 = src.split(",");
@@ -1509,7 +1535,7 @@ MakeImgIcon = function (src, index, h, bIcon, clBk) {
 			} else if (SameText(icon[index * 4], "ieframe.dll")) {
 				for (let i in ar) {
 					const a2 = ar[i];
-					if (a2[1] && api.StrCmpNI(src, a2[0], a2[0].length) == 0) {
+					if (a2[1] && StartsText(a2[0], src)) {
 						src = src.replace(a2[0], a2[1]);
 						if (i > 1) {
 							const a3 = src.split(",");
@@ -1826,11 +1852,16 @@ PtInRect = function (rc, pt) {
 	}
 }
 
-IsExists = function (path, bGetWfd) {
+IsExists = function (path, GetWfd) {
 	const wfd = api.Memory("WIN32_FIND_DATA");
 	const hFind = api.FindFirstFile(path.replace(/\\$/, ""), wfd);
 	api.FindClose(hFind);
-	return hFind != INVALID_HANDLE_VALUE && (bGetWfd ? wfd : true);
+	if (hFind != INVALID_HANDLE_VALUE) {
+		if ("string" === typeof GetWfd) {
+			return wfd[GetWfd];
+		}
+		return GetWfd == void 0 ? true : wfd;
+	}
 }
 
 GetFileList = function (path, bAttr, bSA) {
@@ -2788,6 +2819,9 @@ GetNetworkIcon = function (path) {
 		}
 		return "folder:closed";
 	}
+	if (IsCloudPath(path)) {
+		return "folder:closed";
+	}
 }
 
 RemoveSubMenu = function (hMenu, wID) {
@@ -2882,7 +2916,7 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem, bTran
 		if (!icon && te.Data.Conf_MenuIcon) {
 			if (api.PathMatchSpec(strType, "Open;Open in new tab;Open in background")) {
 				let pidl = api.ILCreateFromPath(path);
-				if (!api.PathIsNetworkPath(PathUnquoteSpaces(path))) {
+				if (!IsNetworkOrCloud(PathUnquoteSpaces(path))) {
 					if (api.ILIsEmpty(pidl) || pidl.Unavailable) {
 						const res = /(.*?)\n/.exec(path);
 						if (res) {
@@ -2893,7 +2927,7 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem, bTran
 				icon = MainWindow.GetIconImage(pidl, CLR_DEFAULT | COLOR_MENU, true);
 			} else if (api.PathMatchSpec(strType, "Exec;Selected items")) {
 				const arg = api.CommandLineToArgv(path);
-				if (!api.PathIsNetworkPath(arg[0])) {
+				if (!IsNetworkOrCloud(arg[0])) {
 					const pidl = api.ILCreateFromPath(arg[0]);
 					if (!api.ILIsEmpty(pidl) && !pidl.Unavailable) {
 						icon = MainWindow.GetIconImage(pidl, CLR_DEFAULT | COLOR_MENU, true);
@@ -2973,7 +3007,7 @@ RunCommandLine = function (s) {
 	if (/rundll32\.?(exe)?"?$/i.test(arg.shift())) {
 		arg.shift();
 	}
-	s = arg.length ? (s.charAt(0) == '"' ? s.replace(/"[^"]*"\s*/, "") : s.replace(/^[^\s]+\s*/, "")) : "";
+	s = arg.length ? PathUnquoteSpaces(s.charAt(0) == '"' ? s.replace(/"[^"]*"\s*/, "") : s.replace(/^[^\s]+\s*/, "")) : "";
 	if (/^[A-Z]:\\|^\\\\/i.test(s) && IsExists(s)) {
 		Navigate(s, SBSP_NEWBROWSER);
 		return;
@@ -3312,6 +3346,44 @@ CreateNewFile = function (Ctrl, pt) {
 	return S_OK;
 }
 
+InputDialog = function (text, defaultText, cb, data) {
+	const eo = MainWindow.eventTE.inputdialog;
+	if (eo && eo.length) {
+		const r = InvokeFunc(eo[0], [text, defaultText]);
+		if (cb) {
+			InvokeFunc(cb, [r, data]);
+			return;
+		}
+		return r;
+	}
+	if (cb) {
+		const opt = api.CreateObject("Object");
+		opt.text = text;
+		opt.defaultText = defaultText;
+		opt.callback = function (text) {
+			if ("string" === typeof cb) {
+				setTimeout(InvokeUI, 9, cb, text, data);
+			} else {
+				setTimeout(cb, 9, text, data);
+			}
+		};
+		ShowDialogEx("input", 480, 140, null, opt);
+		return;
+	}
+	if (window.prompt) {
+		return prompt(GetTextR(text), defaultText);
+	}
+	const rc = api.Memory("RECT");
+	api.GetWindowRect(te.hwnd, rc);
+	const t = 1440 / screen.deviceYDPI;
+	const x = Math.min((rc.left + (rc.right - rc.left) / 2 - 186) * t, 32767);
+	const y = Math.min((rc.top + (rc.bottom - rc.top) / 2 - 74) * t, 32767);
+	const hwnd = api.GetFocus();
+	const r = api.GetScriptDispatch('Function InputDialog(text, TITLE, defaultText, x, y)\nInputDialog = InputBox(text, TITLE, defaultText, x, y)\nEnd Function', "VBScript").InputDialog(GetTextR(text), TITLE, defaultText, x, y);
+	api.SetFocus(hwnd);
+	return r;
+}
+
 GetLangId = function (nDefault) {
 	if (!nDefault && te.Data.Conf_Lang && !/^auto/i.test(te.Data.Conf_Lang)) {
 		return te.Data.Conf_Lang;
@@ -3415,12 +3487,12 @@ CloseWindows = function (hwnd, s) {
 }
 
 GetExistsIcon = function (j, n) {
-	const wfd = n && IsExists(BuildPath(te.Data.DataFolder, "icons", j, n + ".*"), true);
-	if (wfd) {
-		if (wfd.cFileName.indexOf(g_.IconExt) < 0 && fso.FileExists(BuildPath(te.Data.DataFolder, "icons", j, n + MainWindow.g_.IconExt))) {
+	const cFileName = n && IsExists(BuildPath(te.Data.DataFolder, "icons", j, n + ".*"), "cFileName");
+	if (cFileName) {
+		if (cFileName.indexOf(g_.IconExt) < 0 && fso.FileExists(BuildPath(te.Data.DataFolder, "icons", j, n + MainWindow.g_.IconExt))) {
 			return BuildPath(te.Data.DataFolder, "icons", j, n + MainWindow.g_.IconExt);
 		}
-		return BuildPath(te.Data.DataFolder, "icons", j, wfd.cFileName);
+		return BuildPath(te.Data.DataFolder, "icons", j, cFileName);
 	}
 	return "";
 }

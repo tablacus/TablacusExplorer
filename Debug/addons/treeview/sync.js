@@ -28,8 +28,8 @@ Sync.TreeView = {
 	},
 
 	Expand: function (Ctrl) {
-		if (Sync.TreeView.List && Ctrl.FolderItem) {
-			var TV = Ctrl.TreeView;
+		if (Sync.TreeView.List && Ctrl.FolderItem && IsWitness(Ctrl.FolderItem)) {
+			const TV = Ctrl.TreeView;
 			if (TV) {
 				if (Sync.TreeView.Collapse) {
 					const hwnd = TV.hwndTree;
@@ -62,7 +62,7 @@ Sync.TreeView = {
 	},
 
 	Refresh: function (Ctrl, pt) {
-		var FV = GetFolderView(Ctrl, pt);
+		const FV = GetFolderView(Ctrl, pt);
 		FV.TreeView.Refresh();
 		Sync.TreeView.Expand(FV);
 	}
@@ -161,9 +161,11 @@ if (WINVER >= 0x600) {
 			const hLock = api.SHChangeNotification_Lock(wParam, lParam, pidls);
 			if (hLock) {
 				api.SHChangeNotification_Unlock(hLock);
-				const cFV = te.Ctrls(CTRL_FV);
-				for (let i in cFV) {
-					cFV[i].TreeView.Notify(pidls.lEvent, pidls[0], pidls[1], wParam, lParam);
+				if (pidls[0] && /^[A-Z]:\\|^\\\\\w/i.test(pidls[0].Path) && IsWitness(pidls[0])) {
+					const cFV = te.Ctrls(CTRL_FV);
+					for (let i in cFV) {
+						cFV[i].TreeView.Notify(pidls.lEvent, pidls[0], pidls[1], wParam, lParam);
+					}
 				}
 			}
 			return S_OK;

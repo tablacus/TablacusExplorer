@@ -641,10 +641,5 @@ if (window.Addon == 1) {
 	});
 	delete item;
 } else {
-	const Icon = document.F.Icon;
-	if (Icon) {
-		Icon.name = "Icon_0";
-	}
-	await SetTabContents(0, "General", await ReadTextFile("addons\\" + Addon_Id + "\\options.html"));
-	document.getElementById("_Drive").innerHTML = (await api.LoadString(hShell32, 4122)).replace(/ %c:?/, "");
+	importScript("addons\\" + Addon_Id + "\\options.js");
 }

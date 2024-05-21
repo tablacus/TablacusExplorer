@@ -31,9 +31,35 @@ BOOL g_bDarkMode = FALSE;
 BOOL teIsHighContrast()
 {
 	HIGHCONTRAST highContrast = { sizeof(HIGHCONTRAST) };
-	return SystemParametersInfo(SPI_GETHIGHCONTRAST, sizeof(highContrast), &highContrast, FALSE) && (highContrast.dwFlags & HCF_HIGHCONTRASTON);
+	return SystemParametersInfo(SPI_GETHIGHCONTRAST, sizeof(HIGHCONTRAST), &highContrast, FALSE) && (highContrast.dwFlags & HCF_HIGHCONTRASTON);
 }
-
+/*
+VOID teSetAccentColor(HWND hwnd)
+{
+	if (_SetWindowCompositionAttribute) {
+		HKEY hKey;
+		if (RegOpenKeyExA(HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\DWM", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+			DWORD clAccent;
+			DWORD dwSize = sizeof(DWORD);
+			if (RegQueryValueExA(hKey, "AccentColor", NULL, NULL, (LPBYTE)&clAccent, &dwSize) == ERROR_SUCCESS) {
+				ACCENTPOLICY accent = {
+					4, //ACCENT_ENABLE_ACRYLICBLURBEHIND
+					0x1e0, //DrawLeftBorder or DrawTopBorder or DrawRightBorder or DrawBottomBorder
+					clAccent,
+					0
+				};
+				WINCOMPATTRDATA wcpad = {
+					19, //WCA_ACCENT_POLICY
+					&accent,
+					sizeof(ACCENTPOLICY)
+				};
+				_SetWindowCompositionAttribute(hwnd, &wcpad);
+			}
+			RegCloseKey(hKey);
+		}
+	}
+}
+*/
 VOID teSetDarkMode(HWND hwnd)
 {
 	if (_AllowDarkModeForWindow) {

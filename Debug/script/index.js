@@ -466,6 +466,7 @@ Init = async function () {
 	te.Data.MainWindow = $;
 	te.Data.NoCssFont = ui_.NoCssFont;
 	await InitCode();
+	InitCloud();
 	const r = await Promise.all([te.Data.DataFolder, $.DefaultFont, $.HOME_PATH, $.OpenMode, $.DefaultFont.lfFaceName, $.DefaultFont.lfHeight, $.DefaultFont.lfWeight, te.Data.Conf_IconSize, te.Data.Conf_InnerIconSize, InitMenus(), LoadLang()]);
 	ui_.DataFolder = r[0];
 	DefaultFont = r[1];
@@ -481,7 +482,7 @@ Init = async function () {
 	await RunEventUI1("Layout");
 	document.F.style.visibility = "";
 	te.OnArrange = OnArrange;
-	await InitBG(await GetWinColor(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor));
+	await InitBG(window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor, true);
 	await InitWindow();
 	await RunEventUI1("Load");
 	ui_.Show = 1;

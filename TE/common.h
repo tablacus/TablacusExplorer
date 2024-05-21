@@ -118,6 +118,17 @@ struct WINCOMPATTRDATA
 };
 #endif
 
+#ifndef ACCENTPOLICY 
+
+struct ACCENTPOLICY 
+{
+	int nAccentState;
+	int nFlags;
+	int nColor;
+	int nAnimationId;
+};
+#endif
+
 #ifndef D2D1_DRAW_TEXT_OPTIONS_ENABLE_COLOR_FONT
 #define D2D1_DRAW_TEXT_OPTIONS_ENABLE_COLOR_FONT 0x00000004
 #endif
@@ -284,6 +295,7 @@ typedef BOOL (WINAPI* LPFNRemoveClipboardFormatListener)(__in HWND hwnd);
 typedef BOOL(WINAPI* LPFNSetWindowCompositionAttribute)(HWND hWnd, WINCOMPATTRDATA*);
 typedef HRESULT (STDAPICALLTYPE * LPFNDwmSetWindowAttribute)(HWND hwnd, DWORD dwAttribute, LPCVOID pvAttribute, DWORD   cbAttribute);
 typedef HRESULT (STDAPICALLTYPE * LPFNSHCreateShellItemArrayFromShellItem)(IShellItem *psi, REFIID riid, void **ppv);
+typedef DWORD (STDAPICALLTYPE * LPFNGetFinalPathNameByHandle)(HANDLE hFile, LPWSTR lpszFilePath, DWORD cchFilePath, DWORD dwFlags);
 
 //7 or higher
 typedef BOOL (WINAPI* LPFNChangeWindowMessageFilterEx)(__in HWND hwnd, __in UINT message, __in DWORD action, __inout_opt PCHANGEFILTERSTRUCT pChangeFilterStruct);
@@ -858,7 +870,7 @@ VOID teStrFormatSize(DWORD dwFormat, LONGLONG qdw, LPWSTR pszBuf, UINT cchBuf);
 LPWSTR teGetCommandLine();
 HWND FindTreeWindow(HWND hwnd);
 HWND teFindChildByClassA(HWND hwnd, LPCSTR lpClassA);
-VOID teGetDisplayNameOf(VARIANT *pv, int uFlags, VARIANT *pVarResult);
+VOID teGetDisplayNameOf(VARIANT *pv, SHGDNF uFlags, VARIANT *pVarResult);
 void GetVarPathFromIDList(VARIANT *pVarResult, LPITEMIDLIST pidl, int uFlags);
 HRESULT tePathGetFileName(BSTR *pbs, LPWSTR pszPath);
 BOOL teLocalizePath(LPWSTR pszPath, BSTR *pbsPath);
@@ -909,7 +921,7 @@ VOID GetFolderItemFromVariant(FolderItem **ppid, VARIANT *pv);
 BOOL teILGetParent(FolderItem *pid, FolderItem **ppid);
 HRESULT DoFunc1(int nFunc, PVOID pObj, VARIANT *pVarResult);
 HRESULT DoFunc(int nFunc, PVOID pObj, HRESULT hr);
-BOOL teGetStrFromFolderItem(BSTR *pbs, IUnknown *punk);
+BOOL teGetStrFromFolderItem(BSTR *pbs, IUnknown *punk, SHGDNF uFlags);
 BOOL GetFolderItemFromIDList(FolderItem **ppid, LPITEMIDLIST pidl);
 BOOL teILIsEqual(IUnknown *punk1, IUnknown *punk2);
 VOID teGetPath(BSTR *pbs, IUnknown *punk);
