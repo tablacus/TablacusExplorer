@@ -1288,6 +1288,27 @@ AddEvent("Refresh", function (Ctrl, pt) {
 	}
 });
 
+InsertFavoriteItem = function (xml, menus, item, FolderItem, s) {
+    if (s) {
+        item.setAttribute("Name", s.replace(/\\/g, "/"));
+        item.setAttribute("Filter", "");
+        let path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
+        if ("string" === typeof path) {
+            path = FolderItem.Path;
+        }
+        if (!FolderItem.Enum && fso.FileExists(path)) {
+            path = PathQuoteSpaces(path);
+            item.setAttribute("Type", "Exec");
+        } else {
+            item.setAttribute("Type", "Open");
+        }
+        item.text = path;
+        menus[0].appendChild(item);
+        SaveXmlEx("menus.xml", xml);
+        FavoriteChanged();
+    }
+}
+
 AddFavorite = function (FolderItem) {
 	const xml = te.Data.xmlMenus;
 	const menus = xml.getElementsByTagName("Favorites");
@@ -1302,26 +1323,14 @@ AddFavorite = function (FolderItem) {
 		if (!FolderItem) {
 			return;
 		}
-		InputDialog("Add Favorite", GetFolderItemName(FolderItem), function (s) {
-			if (s) {
-				item.setAttribute("Name", s.replace(/\\/g, "/"));
-				item.setAttribute("Filter", "");
-				let path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
-				if ("string" === typeof path) {
-					path = FolderItem.Path;
-				}
-				if (!FolderItem.Enum && fso.FileExists(path)) {
-					path = PathQuoteSpaces(path);
-					item.setAttribute("Type", "Exec");
-				} else {
-					item.setAttribute("Type", "Open");
-				}
-				item.text = path;
-				menus[0].appendChild(item);
-				SaveXmlEx("menus.xml", xml);
-				FavoriteChanged();
-			}
-		});
+        
+        if (0) {
+            InputDialog("Add Favorite", GetFolderItemName(FolderItem), function (s) {
+                InsertFavoriteItem(xml, menus, item, FolderItem, s);
+            });
+        } else {
+            InsertFavoriteItem(xml, menus, item, FolderItem, GetFolderItemName(FolderItem));
+        }
 	}
 }
 
