@@ -1,4 +1,4 @@
-//Tablacus Explorer
+﻿//Tablacus Explorer
 
 te.ClearEvents();
 te.About = AboutTE(2);
@@ -1555,7 +1555,15 @@ AddEvent("Close", function (Ctrl) {
 			break;
 		case CTRL_SB:
 		case CTRL_EB:
-			return CanClose(Ctrl) || api.ILIsEqual(Ctrl, "about:blank") && Ctrl.Parent.Count < 2 ? S_FALSE : CloseView(Ctrl);
+			// When the user closes the last tab, navigate to "This PC".
+			let retValue = CanClose(Ctrl);
+			if (retValue == S_OK && Ctrl.Parent.Count <= 1) {
+				retValue = (api.ILIsEqual(Ctrl, ssfDRIVES) || api.ILIsEqual(Ctrl, "about:blank")) ? S_FALSE : S_OK;
+				if (!api.ILIsEqual(Ctrl, ssfDRIVES)) {
+					Ctrl.Navigate(ssfDRIVES, SBSP_NEWBROWSER);
+				}
+			}
+			return retValue;
 		case CTRL_TC:
 			SetDisplay("Panel_" + Ctrl.Id, "none");
 			break;
