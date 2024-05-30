@@ -475,6 +475,12 @@ if (!String.fromCodePoint) {
 	}
 }
 
+if (!String.prototype.trim) {
+	String.prototype.trim = function () {
+		return this.replace(/^\s+|\s+$/g, "");
+	}
+}
+
 if (!Array.isArray) {
 	Array.isArray = function (arg) {
 		return Object.prototype.toString.call(arg) === '[object Array]';

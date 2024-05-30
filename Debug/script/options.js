@@ -1753,7 +1753,7 @@ InitDialog = async function () {
 				let path = document.F.path.value;
 				if (path) {
 					if (!/^[A-Z]:\\|^\\/i.test(path)) {
-						path = BuildPath(ui_.ArgPath, path.replace(/^\s+/, ""));
+						path = BuildPath(ui_.ArgPath, path.trim());
 					}
 					if (GetElement("folder").checked) {
 						MainWindow.CreateFolder(path);

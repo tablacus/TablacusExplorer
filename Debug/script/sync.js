@@ -67,7 +67,7 @@ g_.Notify = {};
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20240511 ? te.Version : 20240511;
+		return te.Version < 20240511 ? te.Version : 20240530;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1741,7 +1741,7 @@ NavigateFV = function (FV, Path, wFlags, bInputed) {
 		FV = TC.Selected;
 	}
 	if ("string" === typeof Path) {
-		Path = ExtractMacro(FV, Path).replace(/^\s+|\s*$/g, "");
+		Path = ExtractMacro(FV, Path).trim();
 		if (/\?|\*/.test(Path)) {
 			if (!/\\\\\?\\|:/.test(Path)) {
 				SetFilterView(FV, Path);
@@ -2052,7 +2052,7 @@ FormatDate = function (s) {
 Navigate2 = function (path, NewTab) {
 	const a = path.toString().split("\n");
 	for (let i in a) {
-		const s = a[i].replace(/^\s+/, "");
+		const s = a[i].trim();
 		if (s != "") {
 			Navigate(s, NewTab);
 			NewTab |= SBSP_NEWBROWSER;
