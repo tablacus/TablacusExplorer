@@ -7,6 +7,7 @@ TabIndex = -1;
 g_x = { Menu: null, Addons: null };
 g_Chg = { Menus: false, Addons: false, Tab: false, Tree: false, View: false, Data: null };
 g_arMenuTypes = ["Default", "Context", "Background", "Tabs", "Tree", "File", "Edit", "View", "Favorites", "Tools", "Help", "Systray", "System", "Alias"];
+g_arFields = ["Name", "Path", "Type", "Icon", "Height"];
 g_MenuType = "";
 g_Id = "";
 g_dlgAddons = null;
@@ -898,7 +899,7 @@ async function LoadMenus(nSelected) {
 	}
 }
 
-async function LoadX(mode, fn, form) {
+async function LoadX(mode, fn, form, arExtFields) {
 	if (!g_x[mode]) {
 		if (!form) {
 			form = document.F;
@@ -956,7 +957,21 @@ async function LoadX(mode, fn, form) {
 			g_x[mode].length = i;
 			while (--i >= 0) {
 				const item = items[i];
-				SetData(g_x[mode][i], [item.getAttribute("Name"), item.text || item.textContent, item.getAttribute("Type"), item.getAttribute("Icon"), item.getAttribute("Height")]);
+                const values = [];
+                for (let index = 0; index < g_arFields.length; index++) {
+                    if (index != 1) {
+                        values.push(item.getAttribute(g_arFields[index]));
+                    } else {
+                        values.push(item.text || item.textContent);
+                    }
+                }
+                if (arExtFields) {
+                    for (let index = 0; index < arExtFields.length; index++) {
+                        values.push(item.getAttribute(arExtFields[index]));
+                    }
+                }
+               
+                SetData(g_x[mode][i], values);
 			}
 		}
 		EnableSelectTag(g_x[mode]);
