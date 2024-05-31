@@ -1,9 +1,10 @@
-<div class="panel" style="display: block;">
+﻿<div class="panel" style="display: block;">
   <label>View</label>
   <br>
   <label><input type="checkbox" id="Icon">Icon</label><br>
   <input type="checkbox" id="Drive"><label for="Drive" id="_Drive">Drive</label><br>
   <label><input type="checkbox" id="Close">Close Tab</label><br>
+  <label><input type="checkbox" id="CloseAll">Close all tabs</label><br>
   <label><input type="checkbox" id="!NoLock">Lock</label><br>
   <label><input type="checkbox" id="Protected">@wmploc.dll,-1714[Protected]</label><br>
   <label><input type="checkbox" id="New">New Tab</label><br>
@@ -76,6 +77,22 @@
     <tr>
       <td class="full" colspan="3">
         <input type="text" name="IconProtect" onchange="SetImage();" class="full">
+      </td>
+    </tr>
+    <tr>
+      <td class="full" style="vertical-align: bottom">
+        <label>New tab</label>
+      </td>
+      <td style="white-space: nowrap">
+        <button onclick="ShowIcon(document.F.NewTab, 'List');">Select</button>
+      </td>
+      <td style="white-space: nowrap">
+        <button onclick="RefX('NewTab');">Browse...</button>
+      </td>
+    </tr>
+    <tr>
+      <td class="full" colspan="3">
+        <input type="text" name="NewTab" onchange="SetImage();" class="full">
       </td>
     </tr>
   </table>

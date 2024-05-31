@@ -1,4 +1,4 @@
-const Addon_Id = "tabplus";
+﻿const Addon_Id = "tabplus";
 let item = GetAddonElement(Addon_Id);
 if (!item.getAttribute("Set")) {
 	item.setAttribute("Icon", 1);
@@ -23,6 +23,19 @@ if (window.Addon == 1) {
 		tids: [],
 		nSelected: [],
 
+        IsWin10OrLater: async function () {
+            let appVer, res, osVer;
+            appVer = await navigator.appVersion.split(';');
+            if (appVer[2]) {
+                res = /^\s*Windows NT\s+(\d+\.\d+)/i.exec(appVer[2]);
+                if (res && res[1] && parseFloat(res[1]) >= 10) {
+                    return 1;
+                }                
+            }
+            
+            return 0;
+        },
+
 		Arrange: async function (Id, bWait) {
 			delete Addons.TabPlus.tids[Id];
 			const o = document.getElementById("tabplus_" + Id);
@@ -34,6 +47,9 @@ if (window.Addon == 1) {
 					Addons.TabPlus.nIndex[Id] = await TC.SelectedIndex;
 					Addons.TabPlus.nCount[Id] = nCount;
 					if (o.lastChild && Addons.TabPlus.opt.New) {
+						o.removeChild(o.lastChild);
+					}
+					if (o.lastChild && Addons.TabPlus.opt.CloseAll) {
 						o.removeChild(o.lastChild);
 					}
 					let nDisp = o.getElementsByTagName("li").length;
@@ -60,7 +76,15 @@ if (window.Addon == 1) {
 						if (Addons.TabPlus.opt.Align > 1 && Addons.TabPlus.opt.Width) {
 							s.push(' style="text-align: center; width: 100%"');
 						}
-						s.push('>+</li>');
+                        s.push('>', Addons.TabPlus.ImgNewTab, '</li>');
+						o.insertAdjacentHTML("beforeend", s.join(""));
+					}
+					if (Addons.TabPlus.opt.CloseAll) {
+						let s = ['<li class="tab3" onclick="Addons.TabPlus.CloseAll(', Id, ');return false"'];
+						if (Addons.TabPlus.opt.Align > 1 && Addons.TabPlus.opt.Width) {
+							s.push(' style="text-align: center; width: 100%"');
+						}
+                        s.push('>', Addons.TabPlus.ImgCloseAll, '</li>');
 						o.insertAdjacentHTML("beforeend", s.join(""));
 					}
 					Addons.TabPlus.SetActiveColor(Id);
@@ -107,6 +131,15 @@ if (window.Addon == 1) {
 			if (TC) {
 				CreateTab(await TC.Selected);
 			}
+		},
+
+		CloseAll: async function (Id) {
+            const TC = await te.Ctrl(CTRL_TC, Id);
+            if (TC) {
+                for (var i = TC.Count; i--;) {
+                    TC[i].Close();
+                }
+            }
 		},
 
 		Style: async function (TC, i, bRedraw, wait) {
@@ -511,6 +544,11 @@ if (window.Addon == 1) {
 
 	$.importScript("addons\\" + Addon_Id + "\\sync.js");
 
+    let newTabImage = "font:Segoe UI Emoji,0x271a";
+    if (Addons.TabPlus.IsWin10OrLater()) {
+        newTabImage = "font:Segoe UI Symbol,0xe109";
+    }
+
 	AddEvent("PanelCreated", async function (Ctrl, Id) {
 		const s = ['<ul id="tabplus_', Id, '" class="tab0" oncontextmenu="Addons.TabPlus.Popup(event,', Id, ');return false"'];
 		s.push(' ondblclick="Addons.TabPlus.DblClick(event,', Id, ');return false" onmousewheel="Addons.TabPlus.Wheel(event,', Id, ')" onresize="Resize();"');
@@ -581,7 +619,7 @@ if (window.Addon == 1) {
 				await Addons.TabPlus.Style(TC, i, true)
 				o = document.getElementById("tabplus_" + Id);
 				if (o) {
-					if (await TC.Count + (Addons.TabPlus.opt.New ? 1 : 0) != o.getElementsByTagName("li").length) {
+					if (await TC.Count + (Addons.TabPlus.opt.New ? 1 : 0) + (Addons.TabPlus.opt.CloseAll ? 1 : 0) != o.getElementsByTagName("li").length) {
 						o = null;
 					}
 				}
@@ -628,16 +666,26 @@ if (window.Addon == 1) {
 	}, r0),
 	GetImgTag({
 		draggable: "false",
+		"class": "button",
+		title: await GetText("Close all tabs"),
+		src: Addons.TabPlus.opt.IconClose || "font:Marlett,0x72"
+	}, r0),
+	GetImgTag({
+		draggable: "false",
 		src: Addons.TabPlus.opt.IconProtect || GetWinIcon(0xa00, "font:Segoe MDL2 Assets,0xea18", 0x602, "font:Segoe UI Emoji,0x26c9", 0, "font:Webdings,0x64")
+	}, r0),
+ 	GetImgTag({
+		draggable: "false",
+		"class": "button",
+		title: await GetText("New tab"),
+		src: Addons.TabPlus.opt.NewTab || newTabImage
 	}, r0)];
-	if (Addons.TabPlus.opt.New) {
-		r.push(GetText("New tab"));
-	}
 	Promise.all(r).then(function (r) {
 		Addons.TabPlus.ImgLock2 = r.shift();
 		Addons.TabPlus.ImgClose = r.shift();
+		Addons.TabPlus.ImgCloseAll = r.shift();
 		Addons.TabPlus.ImgProtect = r.shift();
-		Addons.TabPlus.str.NewTab = r.shift();
+        Addons.TabPlus.ImgNewTab = r.shift();
 	});
 	delete item;
 } else {
