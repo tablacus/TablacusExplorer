@@ -3504,7 +3504,7 @@ UpdateAndReload = function (arg) {
 	if (!fso.FileExists(update)) {
 		update = BuildPath(te.Data.Installed, "script\\update.js");
 	}
-	g_.strUpdate = [PathQuoteSpaces(BuildPath(api.IsWow64Process(api.GetCurrentProcess()) ? GetWindowsPath("Sysnative") : system32, "wscript.exe")), PathQuoteSpaces(update), PathQuoteSpaces(api.GetModuleFileName(null)), PathQuoteSpaces(arg.temp), PathQuoteSpaces(api.LoadString(hShell32, 12612)), PathQuoteSpaces(api.LoadString(hShell32, 12852))].join(" ");
+	g_.strUpdate = [PathQuoteSpaces(BuildPath(api.IsWow64Process(api.GetCurrentProcess()) ? GetWindowsPath("Sysnative") : system32, "wscript.exe")), '/E:JScript', PathQuoteSpaces(update), PathQuoteSpaces(api.GetModuleFileName(null)), PathQuoteSpaces(arg.temp), PathQuoteSpaces(api.LoadString(hShell32, 12612)), PathQuoteSpaces(api.LoadString(hShell32, 12852))].join(" ");
 	WmiProcess("WHERE ExecutablePath='" + (api.GetModuleFileName(null).split("\\").join("\\\\")) + "' AND ProcessId!=" + arg.pid, function (item) {
 		item.Terminate();
 	});
