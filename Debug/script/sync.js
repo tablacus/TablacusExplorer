@@ -67,7 +67,7 @@ g_.Notify = {};
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20240616 ? te.Version : 20240621;
+		return te.Version < 20240616 ? te.Version : 20240728;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3736,9 +3736,15 @@ FolderMenu = {
 		}
 	},
 
-	Invoke: function (FolderItem, wFlags, FV) {
-		if (FolderItem) {
-			const path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
+	Invoke: function (path, wFlags, FV) {
+		if (path) {
+			let FolderItem;
+			if ("string" === typeof path) {
+				FolderItem = api.ILCreateFromPath(path);
+			} else {
+				FolderItem = path;
+				path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
+			}
 			const bVirtual = FolderItem.Unavailable || api.ILIsParent(1, FolderItem, false);
 			if (MainWindow.g_menu_button == 2 || /popup/i.test(wFlags)) {
 				const pt = api.GetCursorPos();
