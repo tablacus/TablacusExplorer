@@ -2651,7 +2651,7 @@ async function AddonsList(xhr2) {
 		xhr = await xhr2;
 	}
 	let xml = await xhr.responseXML;
-	if (!xml) {
+	if (!xml && await xhr.get_responseText) {
 		if (window.DOMParser) {
 			xml = new DOMParser().parseFromString(await xhr.get_responseText(), "application/xml");
 		} else {

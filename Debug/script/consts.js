@@ -22,6 +22,15 @@ if ("undefined" === typeof Promise) {
 	}
 }
 
+if ("undefined" === typeof console) {
+	console = {
+		log: function () {
+			const args = Array.apply(null, arguments);
+			api.OutputDebugString(args.join("\n") + "\n");
+		}
+	}
+}
+
 FixScript = RemoveAsync = function (s, a) {
 	if (a) {
 		return "(async () => {" + s + "\n})();";
