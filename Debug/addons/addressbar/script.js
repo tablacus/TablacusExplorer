@@ -50,10 +50,8 @@ if (window.Addon == 1) {
 		},
 
 		Arrange: async function () {
-			const FV = await te.Ctrl(CTRL_FV);
 			clearTimeout(Addons.AddressBar.tid);
-			const FolderItem = FV && await FV.FolderItem;
-			if (FolderItem) {
+			if (Addons.AddressBar.FolderItem) {
 				const o = document.getElementById("breadcrumbbuttons");
 				const oAddr = document.F.addressbar;
 				const oImg = document.getElementById("addr_img");
@@ -65,8 +63,7 @@ if (window.Addon == 1) {
 				} else {
 					const arHTML = [];
 					o.style.height = "auto";
-					const bRoot = api.ILIsEmpty(FolderItem);
-					const Items = JSON.parse(await Sync.AddressBar.SplitPath(FolderItem));
+					const Items = Addons.AddressBar.SplitPathItems;
 					o.style.width = "auto";
 					let bEmpty = true, n;
 					o.innerHTML = "";
@@ -87,7 +84,7 @@ if (window.Addon == 1) {
 					}
 					o.style.width = (oAddr.offsetWidth - 2) + "px";
 					if (bEmpty) {
-						if (!await bRoot) {
+						if (!Addons.AddressBar.Root) {
 							o.insertAdjacentHTML("afterbegin", '<span id="addressbar' + n + '" class="button" style="line-height: ' + height + 'px" onclick="Addons.AddressBar.Popup(this, ' + n + ')" onmouseover="MouseOver(this)" onmouseout="MouseOut()">' + BUTTONS.next + '</span>');
 						}
 					} else {
@@ -325,7 +322,12 @@ if (window.Addon == 1) {
 	};
 
 	AddEvent("ChangeView1", async function (Ctrl) {
-		await Addons.AddressBar.Arrange();
+		Addons.AddressBar.FolderItem = await Ctrl.FolderItem;
+		if (Addons.AddressBar.FolderItem) {
+			Addons.AddressBar.Root = await api.ILIsEmpty(Addons.AddressBar.FolderItem);
+			Addons.AddressBar.SplitPathItems = JSON.parse(await Sync.AddressBar.SplitPath(Addons.AddressBar.FolderItem));
+			await Addons.AddressBar.Arrange();
+		}
 		document.F.addressbar.value = await Ctrl.FolderItem.Path;
 		document.getElementById("addr_img").src = await GetIconImage(Ctrl, CLR_DEFAULT | COLOR_WINDOW);
 	});
