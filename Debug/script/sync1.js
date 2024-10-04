@@ -2285,14 +2285,18 @@ te.OnDefaultCommand = function (Ctrl) {
 	if (ExecMenu(Ctrl, "Default", null, 2) == S_OK) {
 		return S_OK;
 	}
-	if (Selected.Count == 1) {
-		const pid = api.ILCreateFromPath(api.GetDisplayNameOf(Selected.Item(0), SHGDN_FORPARSING | SHGDN_FORADDRESSBAR));
-		if (pid.Enum) {
-			Ctrl.Navigate(pid, GetNavigateFlags(Ctrl));
-			return S_OK;
+	if (Selected.Count) {
+		let path = api.GetDisplayNameOf(Selected.Item(0), SHGDN_FORPARSING | SHGDN_FORADDRESSBAR);
+		if (Selected.Count == 1) {
+			const pid = api.ILCreateFromPath(path);
+			if (pid.Enum) {
+				Ctrl.Navigate(pid, GetNavigateFlags(Ctrl));
+				return S_OK;
+			}
 		}
+		return InvokeCommand(Selected, 0, te.hwnd, null, null, SelectedParent(path), SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
 	}
-	return InvokeCommand(Selected, 0, te.hwnd, null, null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
+	return S_FALSE;
 }
 
 te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {

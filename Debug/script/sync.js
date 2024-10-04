@@ -67,7 +67,7 @@ g_.Notify = {};
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20240616 ? te.Version : 20240806;
+		return te.Version < 20240616 ? te.Version : 20241004;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -477,6 +477,16 @@ OrganizePath = function (fn, base) {
 		fn = BuildPath(base, fn);
 	}
 	return fn;
+}
+
+SelectedParent = function (path) {
+	if ("string" !== typeof path) {
+		if (!path || !path.Count) {
+			return;
+		}
+		path = path.Item(0).Path;
+	}
+	return /^[A-Z]:\\.+?\\|^\\\\.+?\\/i.test(path) ? GetParentFolderName(path) : null;
 }
 
 OpenAdodbFromTextFile = function (fn, charset, base) {
@@ -2572,7 +2582,7 @@ ExecMenu4 = function (Ctrl, Name, pt, hMenu, arContextMenu, nVerb, FV) {
 					}
 				}
 			}
-			if (ContextMenu.InvokeCommand(0, te.hwnd, nVerb - ContextMenu.idCmdFirst, null, null, SW_SHOWNORMAL, 0, 0) == S_OK) {
+			if (ContextMenu.InvokeCommand(0, te.hwnd, nVerb - ContextMenu.idCmdFirst, null, SelectedParent(ContextMenu.Items()), SW_SHOWNORMAL, 0, 0) == S_OK) {
 				api.DestroyMenu(hMenu);
 				return S_OK;
 			}
@@ -3221,7 +3231,7 @@ PopupContextMenu = function (Item, FV, pt) {
 		}
 		const nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, ContextMenu);
 		if (nVerb) {
-			ContextMenu.InvokeCommand(0, te.hwnd, nVerb - 1, null, null, SW_SHOWNORMAL, 0, 0);
+			ContextMenu.InvokeCommand(0, te.hwnd, nVerb - 1, null, SelectedParent(Item), SW_SHOWNORMAL, 0, 0);
 		}
 	}
 	api.DestroyMenu(hMenu);

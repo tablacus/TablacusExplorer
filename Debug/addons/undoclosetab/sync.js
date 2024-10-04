@@ -12,7 +12,8 @@ Sync.UndoCloseTab = {
 		const FV = GetFolderView(Ctrl, pt);
 		if (FV) {
 			Sync.UndoCloseTab.bLock = true;
-			while (Common.UndoCloseTab.db.length) {
+			const db = (Common.UndoCloseTab.db || []);
+			while (db.length) {
 				Sync.UndoCloseTab.bFail = false;
 				Sync.UndoCloseTab.Open(FV, 0);
 				if (!Sync.UndoCloseTab.bFail) {
@@ -27,15 +28,17 @@ Sync.UndoCloseTab = {
 	Open: function (FV, i) {
 		if (FV) {
 			const Items = Sync.UndoCloseTab.Get(i);
-			Common.UndoCloseTab.db.splice(i, 1);
+			const db = (Common.UndoCloseTab.db || []);
+			db.splice(i, 1);
 			FV.Navigate(Items, SBSP_NEWBROWSER);
 			InvokeUI("Addons.UndoCloseTab.Save");
 		}
 	},
 
 	Get: function (nIndex) {
-		Common.UndoCloseTab.db.splice(Sync.UndoCloseTab.Items, MAXINT);
-		let s = Common.UndoCloseTab.db[nIndex];
+		const db = (Common.UndoCloseTab.db || []);
+		db.splice(Sync.UndoCloseTab.Items, MAXINT);
+		let s = db[nIndex];
 		if ("string" === typeof s) {
 			const a = s.split(/\n/);
 			s = api.CreateObject("FolderItems");
@@ -43,20 +46,21 @@ Sync.UndoCloseTab = {
 			for (let i in a) {
 				s.AddItem(a[i]);
 			}
-			Common.UndoCloseTab.db[nIndex] = s;
+			db[nIndex] = s;
 		}
 		return s;
 	},
 
 	Load: function () {
-		Common.UndoCloseTab.db = api.CreateObject("Array");
+		const db = api.CreateObject("Array");
 		const xml = OpenXml("closedtabs.xml", true, false);
 		if (xml) {
 			const items = xml.getElementsByTagName('Item');
 			for (let i = items.length; i--;) {
-				Common.UndoCloseTab.db.unshift(items[i].text);
+				db.unshift(items[i].text);
 			}
 		}
+		Common.UndoCloseTab.db = db;
 		Sync.UndoCloseTab.ModifyDate = api.ILCreateFromPath(Sync.UndoCloseTab.CONFIG).ModifyDate;
 	},
 
@@ -67,7 +71,7 @@ Sync.UndoCloseTab = {
 			const xml = CreateXml();
 			const root = xml.createElement("TablacusExplorer");
 
-			const db = Common.UndoCloseTab.db;
+			const db = (Common.UndoCloseTab.db || []);
 			for (let i = 0; i < db.length; i++) {
 				const item = xml.createElement("Item");
 				let s = db[i];
@@ -97,8 +101,9 @@ AddEvent("CloseView", function (Ctrl) {
 		if (Sync.UndoCloseTab.bLock) {
 			Sync.UndoCloseTab.bFail = true;
 		} else if (Ctrl.History.Count) {
-			Common.UndoCloseTab.db.unshift(Ctrl.History);
-			Common.UndoCloseTab.db.splice(Sync.UndoCloseTab.Items, MAXINT);
+			const db = (Common.UndoCloseTab.db || []);
+			db.unshift(Ctrl.History);
+			db.splice(Sync.UndoCloseTab.Items, MAXINT);
 			InvokeUI("Addons.UndoCloseTab.Save");
 		}
 	}
@@ -116,7 +121,8 @@ AddEvent("ChangeNotifyItem:" + Sync.UndoCloseTab.CONFIG, function (pid) {
 //Menu
 if (item.getAttribute("MenuExec")) {
 	AddEvent(item.getAttribute("Menu"), function (Ctrl, hMenu, nPos) {
-		api.InsertMenu(hMenu, Sync.UndoCloseTab.nPos, MF_BYPOSITION | MF_STRING | ((Common.UndoCloseTab.db.length) ? MF_ENABLED : MF_DISABLED), ++nPos, GetText(Sync.UndoCloseTab.strName));
+		const db = (Common.UndoCloseTab.db || []);
+		api.InsertMenu(hMenu, Sync.UndoCloseTab.nPos, MF_BYPOSITION | MF_STRING | (db.length ? MF_ENABLED : MF_DISABLED), ++nPos, GetText(Sync.UndoCloseTab.strName));
 		ExtraMenuCommand[nPos] = Sync.UndoCloseTab.Exec;
 		return nPos;
 	});
