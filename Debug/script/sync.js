@@ -67,7 +67,7 @@ g_.Notify = {};
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20240616 ? te.Version : 20241004;
+		return te.Version < 20240616 ? te.Version : 20241006;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3296,13 +3296,8 @@ OpenInExplorer = function (pid1) {
 		const pid = pid1.FolderItem || pid1;
 		if (pid) {
 			const path = api.ILIsEmpty(pid) ? "shell:Desktop" : api.GetDisplayNameOf(pid, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
-			if (/^[A-Z]:\\|^\\\\\w|^::{/i.test(path)) {
+			if (/^[A-Z]:\\|^\\\\\w|^::{.*}$/i.test(path)) {
 				api.CreateProcess(GetWindowsPath("explorer.exe") + " " + PathQuoteSpaces(path));
-				return;
-			}
-			const res = IsSearchPath(path);
-			if (res) {
-				api.CreateObject("new:{C08AFD90-F2A1-11D1-8455-00A0C91F3880}").Navigate2(path);
 				return;
 			}
 			sha.Explore(pid);
