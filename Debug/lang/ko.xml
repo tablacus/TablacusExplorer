@@ -1,5 +1,5 @@
 <resources>
-	<lang author="VᴇɴᴜsGɪʀʟ💋비너스걸" en="Korean">한국어</lang>
+	<lang author="비너스걸💋VᴇɴᴜsGɪʀʟ" en="Korean">한국어</lang>
 	<text s="&amp;File">파일(&amp;F)</text>
 	<text s="&amp;Edit">편집(&amp;E)</text>
 	<text s="&amp;View">보기(&amp;V)</text>
@@ -24,7 +24,7 @@
 	<text s="Close tabs on left">왼쪽의 탭 닫기</text>
 	<text s="Close tabs on right">오른쪽의 탭 닫기</text>
 	<text s="&amp;New tab">새 탭(&amp;N)</text>
-	<text s="Switch &amp;Explorer engine">탐색기 엔지 전환(&amp;E)</text>
+	<text s="Switch &amp;Explorer engine">탐색기 엔진 전환(&amp;E)</text>
 	<text s="Open in E&amp;xplorer">탐색기에서 열기(&amp;X)</text>
 	<text s="General">일반</text>
 	<text s="Tabs">탭</text>
@@ -62,9 +62,9 @@
 	<text s="Get the current folder view">현재 폴더 보기 가져오기</text>
 
 	<text s="Initialize config folder">구성 폴더 초기화</text>
-	<text s="If you installed Tablacus Explorer to the Program Files directory, please press this button.">Tablacus Explorer를 Program Files 디렉토리에 설치한 경우 이 버튼을 누르십시오.</text>
-	<text s="Please enter the width.">너비를 입력하십시오.</text>
-	<text s="Please enter the height.">높이를 입력하십시오.</text>
+	<text s="If you installed Tablacus Explorer to the Program Files directory, please press this button.">Tablacus Explorer를 Program Files 디렉터리에 설치한 경우 이 버튼을 누르십시오.</text>
+	<text s="Please enter the width.">너비를 입력하세요.</text>
+	<text s="Please enter the height.">높이를 입력하세요.</text>
 	<text s="Please wait.">기다려 주세요.</text>
 	<text s="Completed.">완료</text>
 	<text s="Set default">기본값 설정</text>
@@ -112,7 +112,7 @@
 	<text s="Advanced">고급</text>
 
 	<text s="Lines">선</text>
-	<text s="No edit labels">편집 레이블 안 함</text>
+	<text s="No edit labels">레이블 편집 안 함</text>
 	<text s="Disable Drag-and-Drop">끌어서 놓기 사용 안 함</text>
 	<text s="No infotip">정보 설명 없음</text>
 	<text s="Single click expand">클릭 한 번으로 확장</text>
@@ -123,7 +123,7 @@
 	<text s="Horizontal scroll">가로 스크롤</text>
 
 	<text s="Enumeration">열거</text>
-	<text s="Not folders">폴더 아님</text>
+	<text s="Not folders">폴더 제외</text>
 	<text s="Include hidden items">숨김 항목 포함</text>
 
 	<text s="Visible">표시</text>
@@ -131,7 +131,7 @@
 	<text s="Expanded">확장</text>
 
 	<text s="Buttons">버튼</text>
-	<text s="Flat">평평</text>
+	<text s="Flat">평면</text>
 	<text s="Scroll opposite">반대쪽으로 이동</text>
 	<text s="Multi line">다중 선</text>
 	<text s="Fixed width">고정된 너비</text>
@@ -148,7 +148,7 @@
 
 	<text s="Auto arrange">자동 배열</text>
 	<text s="Single selection">단일 선택</text>
-	<text s="No client edge">클라이언트 가장자리 없음</text>
+	<text s="No client edge">클라이언트 엣지 없음</text>
 	<text s="Single click activate">클릭 한 번으로 활성화</text>
 
 	<text s="Show frames">프레임 표시</text>
