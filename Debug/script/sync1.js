@@ -2294,7 +2294,7 @@ te.OnDefaultCommand = function (Ctrl) {
 				return S_OK;
 			}
 		}
-		return InvokeCommand(Selected, 0, te.hwnd, null, null, SelectedParent(path), SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
+		return InvokeCommand(Selected, 0, te.hwnd, null, null, Selected.Item(-1).Path, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
 	}
 	return S_FALSE;
 }
