@@ -2294,7 +2294,7 @@ te.OnDefaultCommand = function (Ctrl) {
 				return S_OK;
 			}
 		}
-		return InvokeCommand(Selected, 0, te.hwnd, null, null, Selected.Item(-1).Path, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
+		return InvokeCommand(Selected, 0, te.hwnd, null, null, (Selected.Item(-1) || {}).Path, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
 	}
 	return S_FALSE;
 }
@@ -3330,7 +3330,7 @@ AddEvent("BeginNavigate", function (Ctrl) {
 });
 
 AddEvent("UseExplorer", function (pid) {
-	if (pid && pid.Path && !/^ftp:|^https?:/i.test(pid.Path) && !pid.Unavailable && !api.GetAttributesOf(pid.Alt || pid, SFGAO_FILESYSTEM | SFGAO_FILESYSANCESTOR | SFGAO_STORAGEANCESTOR | SFGAO_NONENUMERATED | SFGAO_STORAGE) && !api.ILIsParent(1, pid, false) && !IsSearchPath(pid) && api.GetDisplayNameOf(pid, SHGDN_FORPARSING) != "::{F874310E-B6B7-47DC-BC84-B9E6B38F5903}") {
+	if (pid && pid.Path && !/^ftp:|^https?:/i.test(pid.Path) && !pid.Unavailable && !api.GetAttributesOf(pid.Alt || pid, SFGAO_FILESYSTEM | SFGAO_FILESYSANCESTOR | SFGAO_STORAGEANCESTOR | SFGAO_NONENUMERATED | SFGAO_DROPTARGET | SFGAO_STORAGE) && !api.ILIsParent(1, pid, false) && !IsSearchPath(pid) && api.GetDisplayNameOf(pid, SHGDN_FORPARSING) != "::{F874310E-B6B7-47DC-BC84-B9E6B38F5903}") {
 		return true;
 	}
 });

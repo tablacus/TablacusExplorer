@@ -67,7 +67,7 @@ g_.Notify = {};
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20240616 ? te.Version : 20241008;
+		return te.Version < 20240616 ? te.Version : 20241009;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -2573,7 +2573,7 @@ ExecMenu4 = function (Ctrl, Name, pt, hMenu, arContextMenu, nVerb, FV) {
 				}
 			}
 			const Items = ContextMenu.Items();
-			if (ContextMenu.InvokeCommand(0, te.hwnd, nVerb - ContextMenu.idCmdFirst, null, Items ? Items.Item(-1).Path : null, SW_SHOWNORMAL, 0, 0) == S_OK) {
+			if (ContextMenu.InvokeCommand(0, te.hwnd, nVerb - ContextMenu.idCmdFirst, null, Items ? (Items.Item(-1) || {}).Path : null, SW_SHOWNORMAL, 0, 0) == S_OK) {
 				api.DestroyMenu(hMenu);
 				return S_OK;
 			}
@@ -3222,7 +3222,7 @@ PopupContextMenu = function (Item, FV, pt) {
 		}
 		const nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, ContextMenu);
 		if (nVerb) {
-			ContextMenu.InvokeCommand(0, te.hwnd, nVerb - 1, null, Item.Item(-1).Path, SW_SHOWNORMAL, 0, 0);
+			ContextMenu.InvokeCommand(0, te.hwnd, nVerb - 1, null, Item ? (Item.Item(-1) || {}).Path : null, SW_SHOWNORMAL, 0, 0);
 		}
 	}
 	api.DestroyMenu(hMenu);
