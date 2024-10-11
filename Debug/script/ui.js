@@ -245,15 +245,19 @@ OpenHttpRequest = async function (url, alt, fn, arg) {
 				}
 				return;
 			}
-			if (/^http/.test(alt)) {
-				CalcRef(arg && await arg.pcRef, 0, -1);
-				OpenHttpRequest(/^https/.test(url) && alt == "http" ? url.replace(/^https/, alt) : alt, '', fn, arg);
-				return;
-			}
-			ShowXHRError(url, await xhr.status);
+			fnError();
 		}
 	}
+	const fnError = async function () {
+		if (/^http/.test(alt)) {
+			CalcRef(arg && await arg.pcRef, 0, -1);
+			OpenHttpRequest(/^https/.test(url) && alt == "http" ? url.replace(/^https/, alt) : alt, '', fn, arg);
+			return;
+		}
+		ShowXHRError(url, await xhr.status);
+	}
 	xhr.onload = fnLoaded;
+	xhr.onerror = fnError;
 	if (!window.chrome) {
 		xhr.onreadystatechange = async function () {
 			if (await xhr.readyState == 4) {
