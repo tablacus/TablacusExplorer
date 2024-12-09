@@ -67,7 +67,7 @@ g_.Notify = {};
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20240616 ? te.Version : 20241011;
+		return te.Version < 20240616 ? te.Version : 20241209;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -660,13 +660,13 @@ LoadXml = function (filename, nGroup) {
 						for (let i3 = 0; i3 < nLogCount; ++i3) {
 							let path3 = logs[i3].getAttribute("Path");
 							if (re && api.PathMatchSpec(path3, re)) {
-								path3 = te.Data.Installed + path3.substr(Installed.length)
+								path3 = te.Data.Installed + path3.slice(Installed.length)
 							}
 							Path.AddItem(path3);
 						}
 						Path.Index = tab.getAttribute("LogIndex");
 					} else if (re && api.PathMatchSpec(Path, re)) {
-						Path = te.Data.Installed + Path.substr(Installed.length)
+						Path = te.Data.Installed + Path.slice(Installed.length)
 					}
 					const FV = TC.Selected.Navigate2(Path, SBSP_NEWBROWSER, tab.getAttribute("Type"), tab.getAttribute("ViewMode"), tab.getAttribute("FolderFlags"), tab.getAttribute("Options"), tab.getAttribute("ViewFlags"), tab.getAttribute("IconSize"), tab.getAttribute("Align"), tab.getAttribute("Width"), tab.getAttribute("Flags"), tab.getAttribute("EnumFlags"), tab.getAttribute("RootStyle"), tab.getAttribute("Root"));
 					if (!FV.FilterView) {
@@ -1521,7 +1521,7 @@ MakeImgIcon = function (src, index, h, bIcon, clBk) {
 					}
 				}
 				if (i & 1 && h && h <= 16) {
-					src = ar[i - 1][0] + src.substr(a2[0].length);
+					src = ar[i - 1][0] + src.slice(a2[0].length);
 				}
 				icon = src.replace(/^bitmap:/, "").split(",");
 			}
