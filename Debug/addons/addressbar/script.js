@@ -27,7 +27,7 @@ if (window.Addon == 1) {
 
 					if (await fso.FileExists(uri)) {
 						let pos = uri.lastIndexOf("\\");
-						uri = uri.substr(0, pos)
+						uri = uri.slice(0, pos)
 					}
 
 					if (await fso.FolderExists(uri)) {
