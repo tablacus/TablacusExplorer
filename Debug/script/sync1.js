@@ -1724,7 +1724,7 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata) {
 				}
 				break;
 		}
-		if (Ctrl.Type != CTRL_TE) {
+		if (Ctrl.Type != CTRL_TE && Ctrl.Type != CTRL_WB) {
 			if (KeyExecEx(Ctrl, "All", nKey, hwnd) === S_OK) {
 				return S_OK;
 			}

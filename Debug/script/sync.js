@@ -67,7 +67,7 @@ g_.Notify = {};
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20240616 ? te.Version : 20241209;
+		return te.Version < 20240616 ? te.Version : 20241223;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1692,13 +1692,16 @@ GetKeyName = function (strKey, bEn) {
 
 GetKeyShift = function () {
 	let nShift = 0;
-	let n = 0x1000;
-	const vka = [VK_SHIFT, VK_CONTROL, VK_MENU, VK_LWIN];
+	const vka = {
+		0x1000: VK_SHIFT,
+		0x2000: VK_CONTROL,
+		0x4000: VK_MENU,
+		0x8000: VK_LWIN
+	};
 	for (let i in vka) {
 		if (api.GetKeyState(vka[i]) < 0) {
-			nShift += n;
+			nShift |= i;
 		}
-		n *= 2;
 	}
 	return nShift;
 }
