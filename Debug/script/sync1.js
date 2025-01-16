@@ -2340,6 +2340,10 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					break;
 				case WM_ACTIVATE:
 					g_.focused = void 0;
+					if (g_.hwndTooltip) {
+						api.ShowWindow(g_.hwndTooltip, SW_HIDE);
+						g_.hwndTooltip = void 0;
+					}
 					if (te.Data.bSaveMenus) {
 						te.Data.bSaveMenus = false;
 						SaveXmlEx("menus.xml", te.Data.xmlMenus);
@@ -3232,6 +3236,12 @@ AddEvent("ReplacePath", function (FolderItem, Path) {
 	}
 	if (/^ftp:.*[^\/]$/.test(Path)) {
 		return Path + "/";
+	}
+});
+
+AddEvent("ToolTip", function (Ctrl, Index, hwnd) {
+	if (Index == WM_PAINT && Ctrl.Type == CTRL_TE) {
+		g_.hwndTooltip = hwnd;
 	}
 });
 
