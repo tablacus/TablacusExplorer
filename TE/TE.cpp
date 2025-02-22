@@ -13601,7 +13601,7 @@ VOID CteTreeView::Create()
 	if (EMULATE_XP SUCCEEDED(teCreateInstance(CLSID_NamespaceTreeControl, NULL, NULL, IID_PPV_ARGS(&m_pNameSpaceTreeControl)))) {
 		RECT rc;
 		SetRectEmpty(&rc);
-		if SUCCEEDED(m_pNameSpaceTreeControl->Initialize(m_hwndParent, &rc, m_param[SB_TreeFlags] & ~(NSTCS_CHECKBOXES | NSTCS_PARTIALCHECKBOXES | NSTCS_EXCLUSIONCHECKBOXES | NSTCS_DIMMEDCHECKBOXES | NSTCS_NOINDENTCHECKS | NSTCS_NOREPLACEOPEN) | NSTCS_NOINFOTIP)) {
+		if SUCCEEDED(m_pNameSpaceTreeControl->Initialize(m_hwndParent, &rc, m_param[SB_TreeFlags] & ~(NSTCS_CHECKBOXES | NSTCS_PARTIALCHECKBOXES | NSTCS_EXCLUSIONCHECKBOXES | NSTCS_DIMMEDCHECKBOXES | NSTCS_NOINDENTCHECKS | NSTCS_NOREPLACEOPEN))) {
 			m_pNameSpaceTreeControl->TreeAdvise(static_cast<INameSpaceTreeControlEvents *>(this), &m_dwCookie);
 			if (IUnknown_GetWindow(m_pNameSpaceTreeControl, &m_hwnd) == S_OK) {
 				m_hwndTV = FindTreeWindow(m_hwnd);
