@@ -22,14 +22,16 @@ if ("undefined" === typeof Promise) {
 	}
 }
 
-if ("undefined" === typeof console) {
-	console = {
-		log: function () {
-			const args = Array.apply(null, arguments);
-			api.OutputDebugString(args.join("\n") + "\n");
+try {
+	if ("undefined" === typeof console) {
+		console = {
+			log: function () {
+				const args = Array.apply(null, arguments);
+				api.OutputDebugString(args.join("\n") + "\n");
+			}
 		}
 	}
-}
+} catch (e) { }
 
 FixScript = RemoveAsync = function (s, a) {
 	if (a) {
