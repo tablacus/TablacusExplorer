@@ -1593,7 +1593,7 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 		return E_FAIL;
 	}
 	if (GetLock(Ctrl) || api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_CONTROL) < 0) {
-		if ((wFlags & SBSP_NEWBROWSER) == 0 && !api.ILIsEqual(Prev, "about:blank") && !api.ILIsEqual(Ctrl.FolderItem, Prev)) {
+		if ((wFlags & SBSP_NEWBROWSER) == 0 && !api.ILIsEqual(Prev, "about:blank") && !api.ILIsEqual(Ctrl.FolderItem, "about:blank")  && !api.ILIsEqual(Ctrl.FolderItem, Prev)) {
 			hr = E_ACCESSDENIED;
 		}
 	}
