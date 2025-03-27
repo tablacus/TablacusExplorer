@@ -67,7 +67,7 @@ g_.Notify = {};
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20250224 ? te.Version : 20250311;
+		return te.Version < 20250227 ? te.Version : 20250311;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1799,7 +1799,7 @@ NavigateFV = function (FV, Path, wFlags, bInputed) {
 						}
 					}
 				}
-				ShellExecute(Path, null, SW_SHOWNORMAL, FV.FolderItem.Path);
+				ShellExecute(Path, null, SW_SHOWNORMAL, api.GetDisplayNameOf(FV, SHGDN_FORPARSING));
 			}, 0, Path, FV, Path, wFlags);
 			return S_OK;
 		}
