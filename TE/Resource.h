@@ -9,9 +9,9 @@
 #define STRING2(str) #str
 #ifdef _EXE
 //Version(EXE)
-#define VER_Y		21
-#define VER_M		12
-#define VER_D		1
+#define VER_Y		25
+#define VER_M		4
+#define VER_D		4
 #else
 //Version(DLL)
 #define VER_Y		25
