@@ -9529,7 +9529,10 @@ HRESULT CteShellBrowser::IncludeObject2(IShellFolder *pSF, LPCITEMIDLIST pidl, L
 		BSTR bs2 = NULL;
 		teGetDisplayNameBSTR(pSF, pidl, SHGDN_NORMAL, &bs);
 		teGetDisplayNameBSTR(pSF, pidl, SHGDN_INFOLDER | SHGDN_FORPARSING, &bs2);
-		if (m_ppDispatch[SB_OnIncludeObject]) {
+		if (teStrCmpI(bs2, L"::{2CC5CA98-6485-489A-920E-B3E88A6CCCE3}") == 0) {
+			//Hide Spotlight Item
+			hr = S_FALSE;
+		} else if (m_ppDispatch[SB_OnIncludeObject]) {
 			VARIANT vResult;
 			VariantInit(&vResult);
 			VARIANTARG *pv = GetNewVARIANT(4);
@@ -10075,11 +10078,6 @@ VOID CteShellBrowser::AddItem(LPITEMIDLIST pidl)
 		pSF->Release();
     }
 	teCoTaskMemFree(pidl);
-}
-
-BOOL CteShellBrowser::HasFilter()
-{
-	return m_bsFilter || m_ppDispatch[SB_OnIncludeObject]|| (g_bsHiddenFilter && g_param[TE_UseHiddenFilter]);
 }
 
 VOID CteShellBrowser::NavigateComplete(BOOL bBeginNavigate)

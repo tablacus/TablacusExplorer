@@ -349,7 +349,9 @@
     <None Include="te.ico" />
   </ItemGroup>
   <ItemGroup>
-    <Manifest Include="TE.manifest" />
+    <Manifest Include="TE.manifest">
+      <SubType>Designer</SubType>
+    </Manifest>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="TE.rc" />
