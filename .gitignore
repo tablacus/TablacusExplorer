@@ -51,7 +51,7 @@ build/
 
 # Debug folder
 [Dd]ebug/config/
-*.exe
+#*.exe
 
 # MSTest test Results
 [Tt]est[Rr]esult*/
