@@ -67,7 +67,7 @@ g_.Notify = {};
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20250408 ? te.Version : 20250408;
+		return te.Version < 20250408 ? te.Version : 20250411;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -695,6 +695,9 @@ LoadXml = function (filename, nGroup) {
 }
 
 SaveXmlTC = function (Ctrl, xml, nGroup) {
+	if (!Ctrl) {
+		return;
+	}
 	const item = xml.createElement("Ctrl");
 	item.setAttribute("Type", Ctrl.Type);
 	item.setAttribute("Left", Ctrl.Left);
@@ -1382,7 +1385,9 @@ MakeImgSrc = function (src, index, bSrc, h, clBk) {
 	src = ExtractPath(te, src);
 	if (!/^file:/i.test(src) && REGEXP_IMAGE.test(src)) {
 		if (window.chrome || GetNum(api.ILCreateFromPath(src).ExtendedProperty("System.Photo.Orientation")) < 2) {
-			return src;
+			if (window.chrome && !/\.ico$/i.test(src)) {
+				return src;
+			}
 		}
 		const image = api.CreateObject("WICBitmap").FromFile(src);
 		return image ? image.DataURI(GetEncodeType(src)) : src;
@@ -1684,6 +1689,14 @@ GetKeyName = function (strKey, bEn) {
 			if (GetKeyKey(s) == nKey) {
 				arKey.push(s);
 				return arKey.join("+");
+			}
+		}
+	} else {
+		nKey = GetKeyKey(strKey);
+		if (nKey) {
+			const s = GetKeyName(api.sprintf(9, "$%x", nKey), bEn);
+			if (s) {
+				return s;
 			}
 		}
 	}
