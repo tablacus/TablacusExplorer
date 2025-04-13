@@ -4,6 +4,27 @@ sha = new ActiveXObject('Shell.Application');
 wsh = new ActiveXObject('WScript.Shell');
 args = WScript.Arguments;
 
+function deleteFolderRecursive(folderPath) {
+	try {
+		if (fso.FolderExists(folderPath)) {
+			var folder = fso.GetFolder(folderPath);
+			var subFolders = new Enumerator(folder.SubFolders);
+			var files = new Enumerator(folder.Files);
+
+			for (; !files.atEnd(); files.moveNext()) {
+				fso.DeleteFile(files.item());
+			}
+
+			for (; !subFolders.atEnd(); subFolders.moveNext()) {
+				deleteFolderRecursive(subFolders.item());
+			}
+
+			fso.DeleteFolder(folderPath);
+		}
+	} catch (e) {
+	}
+}
+
 var server = GetObject("winmgmts:\\\\.\\root\\cimv2");
 var t = new Date().getTime();
 if (server) {
@@ -45,6 +66,12 @@ if (args.length > 5 && args(5)) {
 } else {
 	sha.NameSpace(fso.GetParentFolderName(args(0))).MoveHere(sha.NameSpace(args(1)).Items(), 0x0210);
 }
+
+var tempFolder = wsh.ExpandEnvironmentStrings("%temp%");
+var targetFolder = fso.BuildPath(tempFolder, "tablacus\\EBWebView");
+
+deleteFolderRecursive(targetFolder);
+
 if (!args(3) || sha.NameSpace(args(1)).Items().Count == 0 || wsh.Popup(args(3), 0, TITLE, 0x21) == 1) {
 	wsh.Run('"' + args(0) + '"');
 }
