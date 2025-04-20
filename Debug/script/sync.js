@@ -67,7 +67,7 @@ g_.Notify = {};
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20250408 ? te.Version : 20250414;
+		return te.Version < 20250408 ? te.Version : 20250420;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1078,15 +1078,17 @@ DeleteTempFolder = function () {
 			}
 		}
 	} catch (e) { }
+	const arDel = api.CreateObject("Array");
 	const path = GetTempPath(1);
 	const wfd = api.Memory("WIN32_FIND_DATA");
 	const hFind = api.FindFirstFile(path + "\\*", wfd);
 	for (let bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = api.FindNextFile(hFind, wfd)) {
 		if (wfd.cFileName != "." && wfd.cFileName != "..") {
-			DeleteItem(BuildPath(path, wfd.cFileName));
+			arDel.push(BuildPath(path, wfd.cFileName));
 		}
 	}
 	api.FindClose(hFind);
+	DeleteItem(arDel);
 }
 
 PerformUpdate = function () {

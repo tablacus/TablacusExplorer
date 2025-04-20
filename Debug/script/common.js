@@ -357,12 +357,14 @@ LoadImgDll = async function (icon, index) {
 }
 
 DeleteItem = async function (path, fFlags) {
-	if (/\0/.test(path)) {
-		path = path.split("\0");
+	if ("string" === typeof path) {
+		if (/\0/.test(path)) {
+			path = path.split("\0");
+		} else if (!await IsExists(path)) {
+			return;
+		}
 	}
-	if ("string" !== typeof path || await IsExists(path)) {
-		return await api.SHFileOperation(FO_DELETE, path, null, fFlags || FOF_SILENT | FOF_NOCONFIRMATION | FOF_NOERRORUI, false);
-	}
+	return await api.SHFileOperation(FO_DELETE, path, null, fFlags || FOF_SILENT | FOF_NOCONFIRMATION | FOF_NOERRORUI, false);
 }
 
 amp2ul = function (s) {
