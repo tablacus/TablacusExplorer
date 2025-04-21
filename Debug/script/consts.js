@@ -23,7 +23,7 @@ if ("undefined" === typeof Promise) {
 }
 
 try {
-	if ("undefined" === typeof console) {
+	if ("undefined" === typeof window.console) {
 		console = {
 			log: function () {
 				const args = Array.apply(null, arguments);
