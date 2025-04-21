@@ -67,12 +67,18 @@ PanelCreated = async function (Ctrl, Id) {
 }
 
 Activate = async function (el, id) {
-	const TC = await te.Ctrl(CTRL_TC);
-	if (TC && await TC.Id != id) {
-		const FV = await GetInnerFV(id);
-		if (FV) {
-			FV.Focus();
-			setTimeout(FocusElement, 9, el);
+	if (await HitTest(el, await api.GetCursorPos())) {
+		const TC = await te.Ctrl(CTRL_TC);
+		if (TC && await TC.Id != id) {
+			const FV = await GetInnerFV(id);
+			if (FV) {
+				FV.Focus();
+				if (ui_.tmActivate) {
+					clearTimeout(ui_.tmActivate);
+					delete ui_.tmActivate;
+				}
+				ui_.tmActivate = setTimeout(FocusElement, 99, el);
+			}
 		}
 	}
 }
@@ -448,9 +454,13 @@ window.addEventListener("mouseup", FocusFV);
 window.addEventListener("mousedown", function (ev) {
 	ui_.tmDown = new Date().getTime();
 	if (window.chrome) {
-		g_.mouse.ptDown.x = ev.screenX * ui_.Zoom;
-		g_.mouse.ptDown.y = ev.screenY * ui_.Zoom;
+		g_.mouse.ptDown.x = ev.screenX;
+		g_.mouse.ptDown.y = ev.screenY;
 		g_.mouse.CancelContextMenu = false;
+	}
+	if (ui_.tmActivate) {
+		clearTimeout(ui_.tmActivate);
+		delete ui_.tmActivate;
 	}
 });
 

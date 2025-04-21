@@ -398,7 +398,6 @@ LoadScripts = async function (js1, js2, cb) {
 		const hdc = await api.GetDC(ui_.hwnd);
 		screen.deviceYDPI = await api.GetDeviceCaps(hdc, 90);
 		api.ReleaseDC(ui_.hwnd, hdc);
-		ui_.Zoom = screen.deviceYDPI / 96;
 		await CopyObj($, window, ["te", "api", "chrome", "document", "UI", "MainWindow"]);
 		let po = [];
 		po.push(CopyObj(null, location, ["hash", "href"]));
@@ -808,8 +807,8 @@ GetPos = function (el, bScreen, bAbs, bPanel, bBottom) {
 		pt.y += rc.top;
 	}
 	if (bScreen) {
-		pt.x += screenLeft * ui_.Zoom;
-		pt.y += screenTop * ui_.Zoom;
+		pt.x += screenLeft;
+		pt.y += screenTop;
 	}
 	if (bBottom) {
 		pt.y += el.offsetHeight;
@@ -1132,6 +1131,10 @@ SetDisplay = function (Id, s) {
 }
 
 FocusElement = function (el) {
+	if (ui_.tmActivate) {
+		clearTimeout(ui_.tmActivate);
+		delete ui_.tmActivate;
+	}
 	WebBrowser.Focus();
 	el.focus();
 }
@@ -1494,8 +1497,8 @@ SyncExec = async function (cb, o, n) {
 		pt = await GetPosEx(o, n);
 	} else if (o && (o.target || o.srcElement)) {
 		pt = await api.Memory("POINT");
-		pt.x = o.screenX * ui_.Zoom;
-		pt.y = o.screenY * ui_.Zoom;
+		pt.x = o.screenX;
+		pt.y = o.screenY;
 	}
 	const FV = await GetFolderView(o);
 	await FV.Focus();
