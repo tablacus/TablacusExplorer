@@ -22,17 +22,6 @@ if ("undefined" === typeof Promise) {
 	}
 }
 
-try {
-	if ("undefined" === typeof window.console) {
-		console = {
-			log: function () {
-				const args = Array.apply(null, arguments);
-				api.OutputDebugString(args.join("\n") + "\n");
-			}
-		}
-	}
-} catch (e) { }
-
 FixScript = RemoveAsync = function (s, a) {
 	if (a) {
 		return "(async () => {" + s + "\n})();";
