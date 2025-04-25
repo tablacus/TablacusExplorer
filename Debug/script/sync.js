@@ -64,10 +64,11 @@ g_.IconChg = [
 	["bitmap:ieframe,697,24,", "", 24]
 ];
 g_.Notify = {};
+g_.OpenReverse = SBSP_ACTIVATE_NOFOCUS;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20250408 ? te.Version : 20250422;
+		return te.Version < 20250408 ? te.Version : 20250425;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -598,7 +599,7 @@ IsWitness = function (Item) {
 }
 
 IsCloud = function (Item) {
-	return Item && (Item.ExtendedProperty("System.StorageProviderState") || IsCloudPath(api.GetDisplayNameOf(Item, SHGDN_FORPARSING)));
+	return Item && (Item.ExtendedProperty && (Item.ExtendedProperty("System.StorageProviderState")) || IsCloudPath(api.GetDisplayNameOf(Item, SHGDN_FORPARSING)));
 }
 
 IsCloudPath = function (path) {
@@ -2081,7 +2082,7 @@ Navigate2 = function (path, NewTab) {
 ExecOpen = function (Ctrl, s, type, hwnd, pt, NewTab) {
 	let nLock = 0;
 	const line = s.split("\n");
-	const bRev = (NewTab & SBSP_ACTIVATE_NOFOCUS);
+	const bRev = (NewTab & g_.OpenReverse);
 	const FV = GetFolderView(Ctrl, pt);
 	if (line.length > 1) {
 		++g_.LockUpdate;
@@ -2836,9 +2837,6 @@ GetNetworkIcon = function (path) {
 			}
 			return WINVER >= 0x600 ? "icon:shell32.dll,273" : "icon:shell32.dll,9";
 		}
-		return "folder:closed";
-	}
-	if (IsCloudPath(path)) {
 		return "folder:closed";
 	}
 }

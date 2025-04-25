@@ -1404,20 +1404,17 @@ OpenSelected = function (Ctrl, NewTab, pt) {
 	const FV = ar[2];
 	if (Selected) {
 		const Exec = [];
-		for (let i in Selected) {
-			const Item = Selected.Item(i);
-			let bFolder = Item.IsFolder || (!Item.IsFileSystem && Item.IsBrowsable);
-			if (!bFolder) {
-				const path = Item.ExtendedProperty("linktarget");
-				if (path) {
-					bFolder = api.PathIsDirectory(path) === true;
-				}
+		if (Selected.Count > 1 && (NewTab & g_.OpenReverse)) {
+			const n = api.ILIsEqual(FV, "about:blank") ? 1 : 0;
+			if (n) {
+				OpenSelected1(FV, Selected, 0, SBSP_SAMEBROWSER, Exec);
 			}
-			if (bFolder) {
-				FV.Navigate(Item, NewTab);
-				NewTab |= SBSP_NEWBROWSER;
-			} else {
-				Exec.push(Item);
+			for (let i = Selected.Count; i-- > n;) {
+				OpenSelected1(FV, Selected, i, NewTab, Exec);
+			}
+		} else {
+			for (let i = 0; i < Selected.Count; ++i) {
+				OpenSelected1(FV, Selected, i, NewTab, Exec);
 			}
 		}
 		if (Exec.length) {
@@ -1431,6 +1428,27 @@ OpenSelected = function (Ctrl, NewTab, pt) {
 		}
 	}
 	return S_OK;
+}
+
+OpenSelected1 = function (FV, Selected, i, NewTab, Exec) {
+	const Item = Selected.Item(i);
+	let bFolder = Item.IsFolder || (!Item.IsFileSystem && Item.IsBrowsable);
+	if (!bFolder) {
+		const path = Item.ExtendedProperty("linktarget");
+		if (path) {
+			bFolder = api.PathIsDirectory(path) === true;
+		}
+	}
+	if (bFolder) {
+		FV.Navigate(Item, NewTab);
+		NewTab |= SBSP_NEWBROWSER;
+	} else {
+		if (NewTab & g_.OpenReverse) {
+			Exec.unshift(Item);
+		} else {
+			Exec.push(Item);
+		}
+	}
 }
 
 SendCommand = function (Ctrl, nVerb) {
