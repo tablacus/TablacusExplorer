@@ -58,6 +58,7 @@ if (window.Addon == 1) {
 				const oPopup = document.getElementById("addressbarselect");
 				const width = oAddr.offsetWidth - oImg.offsetWidth + oPopup.offsetWidth - 2;
 				const height = oAddr.offsetHeight - 11;
+				oImg.style.top = Math.abs(oAddr.offsetHeight - oImg.offsetHeight) / 2 + "px";
 				if (Addons.AddressBar.XP) {
 					oAddr.style.color = "";
 				} else {
