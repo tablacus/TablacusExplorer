@@ -198,12 +198,15 @@ FocusFV1 = function (Id) {
 	let el;
 	if (document.activeElement) {
 		if (/input|textarea/i.test(document.activeElement.tagName)) {
+			WebBrowser.Focus();
 			return;
 		}
 		const rc = document.activeElement.getBoundingClientRect();
 		el = document.elementFromPoint((rc.left + rc.right) / 2, (rc.top + rc.bottom) / 2);
 	}
-	if (!el || !/input|textarea/i.test(el.tagName)) {
+	if (el && /input|textarea/i.test(el.tagName)) {
+		WebBrowser.Focus();
+	} else {
 		FocusFV2("number" === typeof Id ? Id : null);
 	}
 }
