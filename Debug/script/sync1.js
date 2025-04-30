@@ -2419,6 +2419,7 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 						if (g_.hwndTT && api.IsWindowVisible(g_.hwndTT)) {
 							api.ShowWindow(g_.hwndTT, SW_HIDE);
 						}
+						g_.InActive = api.GetClassName(api.GetFocus());
 					}
 					break;
 				case WM_MOVE:

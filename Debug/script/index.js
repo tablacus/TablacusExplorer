@@ -194,21 +194,29 @@ StartGestureTimer = async function () {
 	}
 }
 
-FocusFV1 = function (Id) {
-	let el;
-	if (document.activeElement) {
-		if (/input|textarea/i.test(document.activeElement.tagName)) {
-			WebBrowser.Focus();
+FocusFV1 = async function (Id) {
+	if (await g_.InActive != WC_LISTVIEW) {
+		let el;
+		if (document.activeElement) {
+			if (/input|textarea/i.test(document.activeElement.tagName)) {
+				FocusWebBrowser();
+				return;
+			}
+			const rc = document.activeElement.getBoundingClientRect();
+			el = document.elementFromPoint((rc.left + rc.right) / 2, (rc.top + rc.bottom) / 2);
+		}
+		if (el && /input|textarea/i.test(el.tagName)) {
+			FocusWebBrowser();
 			return;
 		}
-		const rc = document.activeElement.getBoundingClientRect();
-		el = document.elementFromPoint((rc.left + rc.right) / 2, (rc.top + rc.bottom) / 2);
 	}
-	if (el && /input|textarea/i.test(el.tagName)) {
-		WebBrowser.Focus();
-	} else {
-		FocusFV2("number" === typeof Id ? Id : null);
-	}
+	g_.InActive = "";
+	FocusFV2("number" === typeof Id ? Id : null);
+}
+
+FocusFV0 = function (Id) {
+	g_.InActive = "";
+	FocusFV(Id);
 }
 
 FocusFV = function (Id) {
@@ -452,7 +460,7 @@ window.addEventListener("unload", FinalizeUI);
 
 window.addEventListener("blur", ResetScroll);
 
-window.addEventListener("mouseup", FocusFV);
+window.addEventListener("mouseup", FocusFV0);
 
 window.addEventListener("mousedown", function (ev) {
 	ui_.tmDown = new Date().getTime();

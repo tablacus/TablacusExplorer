@@ -68,7 +68,7 @@ g_.OpenReverse = SBSP_ACTIVATE_NOFOCUS;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20250408 ? te.Version : 20250428;
+		return te.Version < 20250408 ? te.Version : 20250430;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3935,6 +3935,12 @@ SetModifierKeys = function (f) {
 
 ShowExtractError = function (hr, file) {
 	MessageBox([(api.FormatMessage(hr) || (GetTextR("@shell32.dll,-4228") || "").replace(/\t|\(%d\)/g, "")) + api.sprintf(16, "(0x%08x)", hr), GetText("Extract"), file].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
+}
+
+FocusWebBrowser = function () {
+	if (!/^Chrome|^Internet/i.test(api.GetClassName(api.GetFocus()))) {
+		WebBrowser.Focus();
+	}
 }
 
 BasicDB = function (name, bLoad, bLC) {

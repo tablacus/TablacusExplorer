@@ -1135,7 +1135,7 @@ FocusElement = function (el) {
 		clearTimeout(ui_.tmActivate);
 		delete ui_.tmActivate;
 	}
-	WebBrowser.Focus();
+	FocusWebBrowser();
 	el.focus();
 }
 
