@@ -68,7 +68,7 @@ g_.OpenReverse = SBSP_ACTIVATE_NOFOCUS;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20250408 ? te.Version : 20250430;
+		return te.Version < 20250408 ? te.Version : 20250502;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1084,7 +1084,7 @@ DeleteTempFolder = function () {
 	const wfd = api.Memory("WIN32_FIND_DATA");
 	const hFind = api.FindFirstFile(path + "\\*", wfd);
 	for (let bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = api.FindNextFile(hFind, wfd)) {
-		if (wfd.cFileName != "." && wfd.cFileName != "..") {
+		if (!/^\.$|^\.\.$|^EBWebView$/i.test(wfd.cFileName)) {
 			arDel.push(BuildPath(path, wfd.cFileName));
 		}
 	}
