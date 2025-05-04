@@ -782,7 +782,7 @@ async function CreateMenuX(mode) {
 	const sel = g_x[mode];
 	if (sel && sel.selectedIndex >= 0) {
 		InputDialog((await Promise.all([GetText("Menus"), GetText("Name")])).join("\n"), "", async function (sName, mode) {
-			FocusWebBrowser();
+			WebBrowser.Focus();
 			if (sName) {
 				const sOrg = (await api.GetKeyState(VK_SHIFT) >= 0) ? "1" : "";
 				CreateMenu(mode, sName, sOrg);
@@ -1574,7 +1574,7 @@ OpenIcon = function (o) {
 async function SearchIcon(o) {
 	document.F.ButtonSearch.disabled = true;
 	InputDialog(system32, "*.exe;*.cpl", async function(sFilter, id1) {
-		FocusWebBrowser();
+		WebBrowser.Focus();
 		if (sFilter) {
 			if (!/^[A-Z]:\\|^\\\\/i.test(sFilter)) {
 				dllPath = BuildPath(system32, sFilter);
