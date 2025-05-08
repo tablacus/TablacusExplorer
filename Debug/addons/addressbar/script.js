@@ -129,19 +129,6 @@ if (window.Addon == 1) {
 			}
 		},
 
-		Click1: function (ev) {
-			const el = document.elementFromPoint(ev.clientX, ev.clientY);
-			const res = el && /^addressbar(\d+)_$/.exec(el.id);
-			if (res) {
-				Promise.all([Sync.AddressBar.GetPath(res[1]), GetNavigateFlags()]).then(function (r) {
-					Navigate(r[0], r[1]);
-				});
-				return;
-			}
-			delete Addons.AddressBar.tm;
-			Addons.AddressBar.Focus();
-		},
-
 		Popup1: async function (ev) {
 			const el = document.elementFromPoint(ev.clientX, ev.clientY);
 			const res = el && /^addressbar(\d+)_$/.exec(el.id)
@@ -192,29 +179,28 @@ if (window.Addon == 1) {
 		},
 
 		Down1: function (ev) {
+			Addons.AddressBar.ev = ev;
 			const el = document.elementFromPoint(ev.clientX, ev.clientY);
 			if (el && /^addressbar(\d+)_$/.test(el.id)) {
 				Addons.AddressBar.tm = new Date().getTime();
-				Addons.AddressBar.ev = ev;
-				return;
-			}
-			const buttons = ev.buttons != null ? ev.buttons : ev.button;
-			if (buttons == 2) {
-				Addons.AddressBar.Focus();
 			}
 		},
 
 		Up1: function (ev) {
 			const ev1 = Addons.AddressBar.ev || {};
 			const buttons = ev1.buttons != null ? ev1.buttons : ev1.button;
-			if ((buttons & 4) && Math.abs(ev.screenX - ev1.screenX) < 4 && Math.abs(ev.screenY - ev1.screenY) < 4) {
-				const el = document.elementFromPoint(ev.clientX, ev.clientY);
-				const res = el && /^addressbar(\d+)_$/.exec(el.id);
+			const el = document.elementFromPoint(ev.clientX, ev.clientY);
+			const res = el && /^addressbar(\d+)_$/.exec(el.id);
+			if (Math.abs(ev.screenX - ev1.screenX) < 4 && Math.abs(ev.screenY - ev1.screenY) < 4) {
 				if (res) {
-					Promise.all([Sync.AddressBar.GetPath(res[1]), GetNavigateFlags()]).then(function (r) {
-						Navigate(r[0], r[1] | SBSP_NEWBROWSER);
-					});
-					return;
+					if (buttons & 4) {
+						Promise.all([Sync.AddressBar.GetPath(res[1]), GetNavigateFlags()]).then(function (r) {
+							Navigate(r[0], r[1] | SBSP_NEWBROWSER);
+						});
+						return;
+					}
+				} else {
+					Addons.AddressBar.Focus();
 				}
 			}
 			setTimeout(function () {
@@ -368,7 +354,7 @@ if (window.Addon == 1) {
 		}
 		const z = screen.deviceYDPI / 96;
 		s = ['<div style="position: relative; overflow: hidden">',
-		'<div id="breadcrumbbuttons" class="breadcrumb" style="vertical-align: middle; position: absolute; margin-top:1px; margin-bottom:1px; top:1px; bottom: 1px; left: 1px; padding-left: ', 16 * z + 4, 'px" onclick="Addons.AddressBar.Click1(event)" oncontextmenu="Addons.AddressBar.Popup1(event); return false;" onmousedown="Addons.AddressBar.Down1(event)" onmouseup="return Addons.AddressBar.Up1(event); return false"></div>',
+		'<div id="breadcrumbbuttons" class="breadcrumb" style="vertical-align: middle; position: absolute; margin-top:1px; margin-bottom:1px; top:1px; bottom: 1px; left: 1px; padding-left: ', 16 * z + 4, 'px" oncontextmenu="Addons.AddressBar.Popup1(event); return false;" onmousedown="Addons.AddressBar.Down1(event)" onmouseup="return Addons.AddressBar.Up1(event); return false"></div>',
 		'<input id="addressbar" type="text" autocomplate="on" list="AddressList" onkeydown="return Addons.AddressBar.KeyDown(event, this)" onfocus="Addons.AddressBar.Focus()" onblur="Addons.AddressBar.Blur()" onresize="Addons.AddressBar.Resize()" oninput="AdjustAutocomplete(this.value)" oncontextmenu="Addons.AddressBar.ContextMenu(this)" style="width: ', EncodeSC(s), '; vertical-align: middle; padding-left: ', 16 * z + 4, 'px; padding-top:2px;padding-bottom:2px; padding-right: 16px">',
 		'<div class="breadcrumb"><div id="addressbarselect" class="button" style="vertical-align: middle; position: absolute; margin-top:1px; margin-bottom:1px; top: 1px; bottom: 1px; " onmouseover="MouseOver(this);" onmouseout="MouseOut()" onclick="Addons.AddressBar.Popup3(this)">', BUTTONS.dropdown, '</div></div>'];
 

@@ -214,11 +214,6 @@ FocusFV1 = async function (Id) {
 	FocusFV2("number" === typeof Id ? Id : null);
 }
 
-FocusFV0 = function (Id) {
-	g_.InActive = "";
-	FocusFV(Id);
-}
-
 FocusFV = function (Id) {
 	const tm = new Date().getTime() - ui_.tmDown;
 	setTimeout(FocusFV1, tm < ui_.DoubleClickTime ? tm : 9, Id);
@@ -460,7 +455,10 @@ window.addEventListener("unload", FinalizeUI);
 
 window.addEventListener("blur", ResetScroll);
 
-window.addEventListener("mouseup", FocusFV0);
+window.addEventListener("mouseup", function (ev) {
+	g_.InActive = "";
+	FocusFV();
+});
 
 window.addEventListener("mousedown", function (ev) {
 	ui_.tmDown = new Date().getTime();

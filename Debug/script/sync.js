@@ -68,7 +68,7 @@ g_.OpenReverse = SBSP_ACTIVATE_NOFOCUS;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20250408 ? te.Version : 20250504;
+		return te.Version < 20250408 ? te.Version : 20250508;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);

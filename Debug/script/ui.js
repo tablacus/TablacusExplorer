@@ -1235,7 +1235,7 @@ AddonOptions = async function (Id, fn, Data, bNew) {
 		el.onload = function () {
 			el.contentWindow.document.body.style.backgroundColor = window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor;
 		}
-		el.src = sURL;
+		el.src = window.chrome ? sURL.replace(/%/g, '%25').replace(/#/g, '%23') : sURL;
 		ui_.elAddons[Id] = el;
 		let o = document.getElementById('panel1_2');
 		o.style.display = "block";
