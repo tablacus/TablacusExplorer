@@ -195,7 +195,7 @@ StartGestureTimer = async function () {
 }
 
 FocusFV1 = async function (Id) {
-	if (await g_.InActive != WC_LISTVIEW) {
+	if (await api.GetClassName(await api.GetFocus()) != WC_LISTVIEW) {
 		let el;
 		if (document.activeElement) {
 			if (/input|textarea/i.test(document.activeElement.tagName)) {
@@ -210,7 +210,6 @@ FocusFV1 = async function (Id) {
 			return;
 		}
 	}
-	g_.InActive = "";
 	FocusFV2("number" === typeof Id ? Id : null);
 }
 
@@ -455,10 +454,7 @@ window.addEventListener("unload", FinalizeUI);
 
 window.addEventListener("blur", ResetScroll);
 
-window.addEventListener("mouseup", function (ev) {
-	g_.InActive = "";
-	FocusFV();
-});
+window.addEventListener("mouseup", FocusFV);
 
 window.addEventListener("mousedown", function (ev) {
 	ui_.tmDown = new Date().getTime();

@@ -1135,8 +1135,12 @@ FocusElement = function (el) {
 		clearTimeout(ui_.tmActivate);
 		delete ui_.tmActivate;
 	}
-	WebBrowser.Focus();
-	el.focus();
+	if (el) {
+		WebBrowser.Focus();
+		el.focus();
+	} else if (document.activeElement) {
+		document.activeElement.blur();
+	}
 }
 
 if (window.chrome) {

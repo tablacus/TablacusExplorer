@@ -1780,6 +1780,11 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 	}
 	if (msg != WM_MOUSEMOVE) {
 		te.Data.cmdKeyF = false;
+		if (!/^Chrome|^Internet/i.test(api.GetClassName(hwnd))) {
+			if (/^Chrome|^Internet/i.test(api.GetClassName(api.GetFocus()))) {
+				InvokeUI("FocusElement");
+			}
+		}
 	}
 	const hr = RunEvent3("MouseMessage", Ctrl, hwnd, msg, wParam, pt);
 	if (isFinite(hr)) {
@@ -2419,7 +2424,6 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 						if (g_.hwndTT && api.IsWindowVisible(g_.hwndTT)) {
 							api.ShowWindow(g_.hwndTT, SW_HIDE);
 						}
-						g_.InActive = api.GetClassName(api.GetFocus());
 					}
 					break;
 				case WM_MOVE:
