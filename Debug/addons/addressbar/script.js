@@ -193,9 +193,9 @@ if (window.Addon == 1) {
 			const res = el && /^addressbar(\d+)_$/.exec(el.id);
 			if (Math.abs(ev.screenX - ev1.screenX) < 4 && Math.abs(ev.screenY - ev1.screenY) < 4) {
 				if (res) {
-					if (buttons & 4) {
+					if (buttons & 5) {
 						Promise.all([Sync.AddressBar.GetPath(res[1]), GetNavigateFlags()]).then(function (r) {
-							Navigate(r[0], r[1] | SBSP_NEWBROWSER);
+							Navigate(r[0], r[1] | (buttons & 4 ? SBSP_NEWBROWSER : SBSP_SAMEBROWSER));
 						});
 						return;
 					}
