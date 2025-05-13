@@ -1327,7 +1327,7 @@ HRESULT tePathIsDirectory2(LPWSTR pszPath, int iUseFS)
 
 static void threadExists(void *args)
 {
-	::CoInitialize(NULL);
+	::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
 	try {
 		TEExists *pExists = (TEExists *)args;
 		pExists->hr = tePathIsDirectory2(pExists->pszPath, pExists->iUseFS);
@@ -1571,7 +1571,7 @@ VOID teReleaseILCreate(TEILCreate *pILC)
 
 static void threadILCreate(void *args)
 {
-	::CoInitialize(NULL);
+	::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
 	try {
 		TEILCreate *pILC = (TEILCreate *)args;
 		pILC->pidlResult = teILCreateFromPath1(pILC->pszPath);

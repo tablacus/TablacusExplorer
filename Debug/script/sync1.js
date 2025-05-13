@@ -3543,7 +3543,9 @@ UpdateAndReload = function (arg) {
 	}
 	g_.strUpdate = [PathQuoteSpaces(BuildPath(api.IsWow64Process(api.GetCurrentProcess()) ? GetWindowsPath("Sysnative") : system32, "wscript.exe")), '/E:JScript', PathQuoteSpaces(update), PathQuoteSpaces(api.GetModuleFileName(null)), PathQuoteSpaces(arg.temp), PathQuoteSpaces(api.LoadString(hShell32, 12612)), PathQuoteSpaces(api.LoadString(hShell32, 12852))].join(" ");
 	WmiProcess("WHERE ExecutablePath='" + (api.GetModuleFileName(null).split("\\").join("\\\\")) + "' AND ProcessId!=" + arg.pid, function (item) {
-		item.Terminate();
+		if (!/\/run/i.test(item.CommandLine)) {
+			item.Terminate();
+		}
 	});
 	api.PostMessage(te.hwnd, WM_CLOSE, 0, 0);
 }

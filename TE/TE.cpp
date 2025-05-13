@@ -1216,7 +1216,7 @@ int teSHFileOperation(LPSHFILEOPSTRUCT pFOS)
 
 static void threadFileOperation(void *args)
 {
-	::CoInitialize(NULL);
+	::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
 	LPSHFILEOPSTRUCT pFO = (LPSHFILEOPSTRUCT)args;
 	::InterlockedIncrement(&g_nThreads);
 	try {
@@ -1918,7 +1918,7 @@ VARIANT_BOOL OpenNewWindowV(VARIANT *pv) {
 
 static void threadAddItems(void *args)
 {
-	::CoInitialize(NULL);
+	::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
 	WCHAR pszMsg[MAX_PATH];
 	LPITEMIDLIST pidl;
 	IProgressDialog *ppd = NULL;
@@ -3846,7 +3846,7 @@ VOID teApiSetWindowTheme(int nArg, teParam *param, DISPPARAMS *pDispParams, VARI
 
 static void threadExecScript(void *args)
 {
-	::CoInitialize(NULL);
+	::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
 	VARIANT v;
 	VariantInit(&v);
 	TEExecScript *pES = (TEExecScript *)args;
@@ -4612,6 +4612,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	} else {
 		g_hwndMain = CreateWindowEx(WS_EX_TOOLWINDOW, szClass, g_szTE, WS_POPUP,
 		  CW_USEDEFAULT, CW_USEDEFAULT, 0, 0, NULL, NULL, hInstance, NULL);
+		teGetDarkMode();
+		teSetDarkMode(g_hwndMain);
 	}
 	if (!g_hwndMain) {
 		Finalize();
@@ -4937,7 +4939,7 @@ VOID teDelayRelease(PVOID ppObj)
 
 static void threadParseDisplayName(void *args)
 {
-	::CoInitialize(NULL);
+	::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
 	TEInvoke *pInvoke = (TEInvoke *)args;
 #ifdef _DEBUG
 	WCHAR pszDebug[2048];
@@ -6825,7 +6827,7 @@ VOID CteShellBrowser::SetSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch)
 
 static void threadFolderSize(void *args)
 {
-	::CoInitialize(NULL);
+	::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
 	try {
 		TEFS *pFS;
 		while (PopFolderSizeList(&pFS)) {
