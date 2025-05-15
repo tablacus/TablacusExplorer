@@ -242,6 +242,22 @@ LRESULT CALLBACK TabCtrlProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, 
 			EndPaint(hwnd, &ps);
 			return 0;
 		}
+		if (msg == WM_MOUSEWHEEL) {
+			int count = TabCtrl_GetItemCount(hwnd);
+			if (count > 1) {
+				int current = TabCtrl_GetCurSel(hwnd);
+				int diff = ((LONG)wParam > 0) ? count - 1 : 1;
+				TabCtrl_SetCurSel(hwnd, (current + diff) % count);
+
+				// Notify parent window of the selection change
+				NMHDR nmhdr = {};
+				nmhdr.hwndFrom = hwnd;
+				nmhdr.idFrom = GetDlgCtrlID(hwnd);
+				nmhdr.code = TCN_SELCHANGE;
+				SendMessage(GetParent(hwnd), WM_NOTIFY, nmhdr.idFrom, (LPARAM)&nmhdr);
+			}
+			return 0;
+		}
 	} catch (...) {
 		g_nException = 0;
 #ifdef _DEBUG
@@ -346,8 +362,10 @@ VOID FixChildren(HWND hwnd)
 				ListView_SetSelectedColumn(hwnd1, -1);
 			}
 		} else if (::PathMatchSpecA(pszClassA, WC_TABCONTROLA)) {
-			if (g_bDarkMode && !(GetWindowLong(hwnd1, GWL_STYLE) & TCS_OWNERDRAWFIXED)) {
-				::SetClassLongPtr(hwnd1, GCLP_HBRBACKGROUND, (LONG_PTR)g_hbrDarkBackground);
+			if (!(GetWindowLong(hwnd1, GWL_STYLE) & TCS_OWNERDRAWFIXED)) {
+				if (g_bDarkMode) {
+					::SetClassLongPtr(hwnd1, GCLP_HBRBACKGROUND, (LONG_PTR)g_hbrDarkBackground);
+				}
 				auto itr = g_umDlgProc.find(hwnd1);
 				if (itr == g_umDlgProc.end()) {
 					SetWindowSubclass(hwnd1, TabCtrlProc, (UINT_PTR)TabCtrlProc, 0);
