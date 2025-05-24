@@ -68,7 +68,7 @@ g_.OpenReverse = SBSP_ACTIVATE_NOFOCUS;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20250515 ? te.Version : 20250515;
+		return te.Version < 20250515 ? te.Version : 20250524;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3024,6 +3024,9 @@ RunCommandLine = function (s) {
 	if (/rundll32\.?(exe)?"?$/i.test(arg.shift())) {
 		arg.shift();
 	}
+	if (arg.length && SameText(arg[0], "/nw")) {
+		arg.shift();
+	}
 	s = arg.length ? PathUnquoteSpaces(s.charAt(0) == '"' ? s.replace(/"[^"]*"\s*/, "") : s.replace(/^[^\s]+\s*/, "")) : "";
 	if (/^[A-Z]:\\|^\\\\/i.test(s) && IsExists(s)) {
 		Navigate(s, SBSP_NEWBROWSER);
@@ -3438,7 +3441,7 @@ GetTextR = function (id) {
 			api.FreeLibrary(hModule);
 		}
 		if (s) {
-			return s;
+			return window.Addon ? s : s.replace(/\(\&.\)/g, '');
 		}
 	}
 	res = /^({[0-9a-f\-]+} \d+)\|?(.*)$/i.exec(id);

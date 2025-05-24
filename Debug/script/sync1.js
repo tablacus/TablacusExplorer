@@ -685,7 +685,7 @@ g_basic = {
 				},
 				Search: function (Ctrl, pt) {
 					const FV = GetFolderView(Ctrl, pt);
-					if (FV) {
+					if (FV && FV.FolderItem && FV.FolderItem.IsFolder) {
 						const res = IsSearchPath(FV.FolderItem, true);
 						InputDialog("Search", res ? unescape(res[1]) : "", function (r) {
 							if (r) {
@@ -2282,14 +2282,13 @@ te.OnShowContextMenu = function (Ctrl, hwnd, msg, wParam, pt, ContextMenu) {
 			break;
 		case CTRL_TE:
 			api.GetSystemMenu(te.hwnd, true);
-			const hMenu = api.GetSystemMenu(te.hwnd, false);
 			const menus = te.Data.xmlMenus.getElementsByTagName("System");
 			if (menus && menus.length) {
+				const hMenu = api.GetSystemMenu(te.hwnd, false);
 				const items = menus[0].getElementsByTagName("Item");
 				const arMenu = OpenMenu(items, null);
 				MakeMenus(hMenu, menus, arMenu, items, Ctrl, pt, 0, null, true);
 			}
-			api.DestroyMenu(hMenu);
 			break;
 	}
 	return S_FALSE;

@@ -208,7 +208,7 @@ GetImgTag = async function (o, h) {
 			ExtractAttr(o, ar, /src/i);
 			ar.push('>');
 			if (res = /(<svg)([\w\W]*?>)([\w\W]*?<\/svg[^>]*>)/i.exec(await ReadTextFile(o.src))) {
-				ar.push(res[1], ' style="max-width:' + h + ';height:' + h + '" ', res[2].replace(/\s+width="[^"]*"|\s+height="[^"]*"/ig, ""), res[3]);
+				ar.push(res[1], ' focusable="false" style="max-width:' + h + ';height:' + h + '" ', res[2].replace(/\s+width="[^"]*"|\s+height="[^"]*"/ig, ""), res[3]);
 			}
 			ar.push("</span>");
 			return ar.join("");
@@ -227,7 +227,7 @@ GetImgTag = async function (o, h) {
 		return ar.join("");
 	}
 	const ar = ['<span'];
-	await ExtractAttr(o, ar, /title/i);
+	ExtractAttr(o, ar, /title/i);
 	ar.push('>', EncodeSC(o.title || ""), '</span>');
 	return ar.join("");
 }
