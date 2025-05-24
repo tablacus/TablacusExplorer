@@ -1413,20 +1413,17 @@ OpenSelected = function (Ctrl, NewTab, pt) {
 	const FV = ar[2];
 	if (Selected) {
 		const Exec = [];
-		for (let i in Selected) {
-			const Item = Selected.Item(i);
-			let bFolder = Item.IsFolder || (!Item.IsFileSystem && Item.IsBrowsable);
-			if (!bFolder) {
-				const path = Item.ExtendedProperty("linktarget");
-				if (path) {
-					bFolder = api.PathIsDirectory(path) === true;
-				}
+		if (Selected.Count > 1 && (NewTab & g_.OpenReverse)) {
+			const n = api.ILIsEqual(FV, "about:blank") ? 1 : 0;
+			if (n) {
+				OpenSelected1(FV, Selected, 0, SBSP_SAMEBROWSER, Exec);
 			}
-			if (bFolder) {
-				FV.Navigate(Item, NewTab);
-				NewTab |= SBSP_NEWBROWSER;
-			} else {
-				Exec.push(Item);
+			for (let i = Selected.Count; i-- > n;) {
+				OpenSelected1(FV, Selected, i, NewTab, Exec);
+			}
+		} else {
+			for (let i = 0; i < Selected.Count; ++i) {
+				OpenSelected1(FV, Selected, i, NewTab, Exec);
 			}
 		}
 		if (Exec.length) {
@@ -1440,6 +1437,27 @@ OpenSelected = function (Ctrl, NewTab, pt) {
 		}
 	}
 	return S_OK;
+}
+
+OpenSelected1 = function (FV, Selected, i, NewTab, Exec) {
+	const Item = Selected.Item(i);
+	let bFolder = Item.IsFolder || (!Item.IsFileSystem && Item.IsBrowsable);
+	if (!bFolder) {
+		const path = Item.ExtendedProperty("linktarget");
+		if (path) {
+			bFolder = api.PathIsDirectory(path) === true;
+		}
+	}
+	if (bFolder) {
+		FV.Navigate(Item, NewTab);
+		NewTab |= SBSP_NEWBROWSER;
+	} else {
+		if (NewTab & g_.OpenReverse) {
+			Exec.unshift(Item);
+		} else {
+			Exec.push(Item);
+		}
+	}
 }
 
 SendCommand = function (Ctrl, nVerb) {
@@ -1610,7 +1628,7 @@ te.OnBeforeNavigate = function (Ctrl, fs, wFlags, Prev) {
 		return E_FAIL;
 	}
 	if (GetLock(Ctrl) || api.GetKeyState(VK_MBUTTON) < 0 || api.GetKeyState(VK_CONTROL) < 0) {
-		if ((wFlags & SBSP_NEWBROWSER) == 0 && !api.ILIsEqual(Prev, "about:blank") && !api.ILIsEqual(Ctrl.FolderItem, Prev)) {
+		if ((wFlags & SBSP_NEWBROWSER) == 0 && !api.ILIsEqual(Prev, "about:blank") && !api.ILIsEqual(Ctrl.FolderItem, "about:blank")  && !api.ILIsEqual(Ctrl.FolderItem, Prev)) {
 			hr = E_ACCESSDENIED;
 		}
 	}
@@ -1741,7 +1759,7 @@ te.OnKeyMessage = function (Ctrl, hwnd, msg, key, keydata) {
 				}
 				break;
 		}
-		if (Ctrl.Type != CTRL_TE) {
+		if (Ctrl.Type != CTRL_TE && Ctrl.Type != CTRL_WB) {
 			if (KeyExecEx(Ctrl, "All", nKey, hwnd) === S_OK) {
 				return S_OK;
 			}
@@ -1779,6 +1797,11 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 	}
 	if (msg != WM_MOUSEMOVE) {
 		te.Data.cmdKeyF = false;
+		if (!/^Chrome|^Internet/i.test(api.GetClassName(hwnd))) {
+			if (/^Chrome|^Internet/i.test(api.GetClassName(api.GetFocus()))) {
+				InvokeUI("FocusElement");
+			}
+		}
 	}
 	const hr = RunEvent3("MouseMessage", Ctrl, hwnd, msg, wParam, pt);
 	if (isFinite(hr)) {
@@ -2302,14 +2325,18 @@ te.OnDefaultCommand = function (Ctrl) {
 	if (ExecMenu(Ctrl, "Default", null, 2) == S_OK) {
 		return S_OK;
 	}
-	if (Selected.Count == 1) {
-		const pid = api.ILCreateFromPath(api.GetDisplayNameOf(Selected.Item(0), SHGDN_FORPARSING | SHGDN_FORADDRESSBAR));
-		if (pid.Enum) {
-			Ctrl.Navigate(pid, GetNavigateFlags(Ctrl));
-			return S_OK;
+	if (Selected.Count) {
+		let path = api.GetDisplayNameOf(Selected.Item(0), SHGDN_FORPARSING | SHGDN_FORADDRESSBAR);
+		if (Selected.Count == 1) {
+			const pid = api.ILCreateFromPath(path);
+			if (pid.Enum) {
+				Ctrl.Navigate(pid, GetNavigateFlags(Ctrl));
+				return S_OK;
+			}
 		}
+		return InvokeCommand(Selected, 0, te.hwnd, null, null, (Selected.Item(-1) || {}).Path, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
 	}
-	return InvokeCommand(Selected, 0, te.hwnd, null, null, null, SW_SHOWNORMAL, 0, 0, Ctrl, CMF_DEFAULTONLY);
+	return S_FALSE;
 }
 
 te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
@@ -2353,6 +2380,10 @@ te.OnSystemMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					break;
 				case WM_ACTIVATE:
 					g_.focused = void 0;
+					if (g_.hwndTooltip) {
+						api.ShowWindow(g_.hwndTooltip, SW_HIDE);
+						g_.hwndTooltip = void 0;
+					}
 					if (te.Data.bSaveMenus) {
 						te.Data.bSaveMenus = false;
 						SaveXmlEx("menus.xml", te.Data.xmlMenus);
@@ -3248,6 +3279,12 @@ AddEvent("ReplacePath", function (FolderItem, Path) {
 	}
 });
 
+AddEvent("ToolTip", function (Ctrl, Index, hwnd) {
+	if (Index == WM_PAINT && Ctrl.Type == CTRL_TE) {
+		g_.hwndTooltip = hwnd;
+	}
+});
+
 AddEvent("AddType", function (arFunc) {
 	for (let i in g_basic.Func) {
 		arFunc.push(i);
@@ -3343,7 +3380,7 @@ AddEvent("BeginNavigate", function (Ctrl) {
 });
 
 AddEvent("UseExplorer", function (pid) {
-	if (pid && pid.Path && !/^ftp:|^https?:/i.test(pid.Path) && !pid.Unavailable && !api.GetAttributesOf(pid.Alt || pid, SFGAO_FILESYSTEM | SFGAO_FILESYSANCESTOR | SFGAO_STORAGEANCESTOR | SFGAO_NONENUMERATED | SFGAO_DROPTARGET) && !api.ILIsParent(1, pid, false) && !IsSearchPath(pid) && api.GetDisplayNameOf(pid, SHGDN_FORPARSING) != "::{F874310E-B6B7-47DC-BC84-B9E6B38F5903}") {
+	if (pid && pid.Path && !/^ftp:|^https?:/i.test(pid.Path) && !pid.Unavailable && !api.GetAttributesOf(pid.Alt || pid, SFGAO_FILESYSTEM | SFGAO_FILESYSANCESTOR | SFGAO_STORAGEANCESTOR | SFGAO_NONENUMERATED | SFGAO_DROPTARGET | SFGAO_STORAGE) && !api.ILIsParent(1, pid, false) && !IsSearchPath(pid) && api.GetDisplayNameOf(pid, SHGDN_FORPARSING) != "::{F874310E-B6B7-47DC-BC84-B9E6B38F5903}") {
 		return true;
 	}
 });
@@ -3521,9 +3558,11 @@ UpdateAndReload = function (arg) {
 	if (!fso.FileExists(update)) {
 		update = BuildPath(te.Data.Installed, "script\\update.js");
 	}
-	g_.strUpdate = [PathQuoteSpaces(BuildPath(api.IsWow64Process(api.GetCurrentProcess()) ? GetWindowsPath("Sysnative") : system32, "wscript.exe")), PathQuoteSpaces(update), PathQuoteSpaces(api.GetModuleFileName(null)), PathQuoteSpaces(arg.temp), PathQuoteSpaces(api.LoadString(hShell32, 12612)), PathQuoteSpaces(api.LoadString(hShell32, 12852))].join(" ");
+	g_.strUpdate = [PathQuoteSpaces(BuildPath(api.IsWow64Process(api.GetCurrentProcess()) ? GetWindowsPath("Sysnative") : system32, "wscript.exe")), '/E:JScript', PathQuoteSpaces(update), PathQuoteSpaces(api.GetModuleFileName(null)), PathQuoteSpaces(arg.temp), PathQuoteSpaces(api.LoadString(hShell32, 12612)), PathQuoteSpaces(api.LoadString(hShell32, 12852))].join(" ");
 	WmiProcess("WHERE ExecutablePath='" + (api.GetModuleFileName(null).split("\\").join("\\\\")) + "' AND ProcessId!=" + arg.pid, function (item) {
-		item.Terminate();
+		if (!/\/run/i.test(item.CommandLine)) {
+			item.Terminate();
+		}
 	});
 	api.PostMessage(te.hwnd, WM_CLOSE, 0, 0);
 }

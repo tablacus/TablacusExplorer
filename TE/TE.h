@@ -356,7 +356,6 @@ public:
 	VOID FixColumnEmphasis();
 	HRESULT OnNavigationPending2(LPITEMIDLIST pidlFolder);
 	HRESULT IncludeObject2(IShellFolder *pSF, LPCITEMIDLIST pidl, LPITEMIDLIST pidlFull);
-	BOOL HasFilter();
 	int GetSizeFormat();
 	VOID SetObjectRect();
 	int GetFolderViewAndItemCount(IFolderView **ppFV, UINT uFlags);

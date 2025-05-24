@@ -1216,7 +1216,7 @@ int teSHFileOperation(LPSHFILEOPSTRUCT pFOS)
 
 static void threadFileOperation(void *args)
 {
-	::CoInitialize(NULL);
+	::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
 	LPSHFILEOPSTRUCT pFO = (LPSHFILEOPSTRUCT)args;
 	::InterlockedIncrement(&g_nThreads);
 	try {
@@ -1918,7 +1918,7 @@ VARIANT_BOOL OpenNewWindowV(VARIANT *pv) {
 
 static void threadAddItems(void *args)
 {
-	::CoInitialize(NULL);
+	::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
 	WCHAR pszMsg[MAX_PATH];
 	LPITEMIDLIST pidl;
 	IProgressDialog *ppd = NULL;
@@ -3846,7 +3846,7 @@ VOID teApiSetWindowTheme(int nArg, teParam *param, DISPPARAMS *pDispParams, VARI
 
 static void threadExecScript(void *args)
 {
-	::CoInitialize(NULL);
+	::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
 	VARIANT v;
 	VariantInit(&v);
 	TEExecScript *pES = (TEExecScript *)args;
@@ -4612,6 +4612,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	} else {
 		g_hwndMain = CreateWindowEx(WS_EX_TOOLWINDOW, szClass, g_szTE, WS_POPUP,
 		  CW_USEDEFAULT, CW_USEDEFAULT, 0, 0, NULL, NULL, hInstance, NULL);
+		teGetDarkMode();
+		teSetDarkMode(g_hwndMain);
 	}
 	if (!g_hwndMain) {
 		Finalize();
@@ -4937,7 +4939,7 @@ VOID teDelayRelease(PVOID ppObj)
 
 static void threadParseDisplayName(void *args)
 {
-	::CoInitialize(NULL);
+	::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
 	TEInvoke *pInvoke = (TEInvoke *)args;
 #ifdef _DEBUG
 	WCHAR pszDebug[2048];
@@ -6825,7 +6827,7 @@ VOID CteShellBrowser::SetSize(LPCITEMIDLIST pidl, LPWSTR szText, int cch)
 
 static void threadFolderSize(void *args)
 {
-	::CoInitialize(NULL);
+	::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
 	try {
 		TEFS *pFS;
 		while (PopFolderSizeList(&pFS)) {
@@ -8790,7 +8792,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 //*///
 		case DISPID_SELECTIONCHANGED://XP+
 			SetStatusTextSB(NULL);
-			if (m_pFolderItem) {
+			if (!m_bNavigateComplete && m_pFolderItem) {
 				teILFreeClear(&m_pFolderItem->m_pidlFocused);
 			}
 			return DoFunc(TE_OnSelectionChanged, this, S_OK);
@@ -9529,7 +9531,10 @@ HRESULT CteShellBrowser::IncludeObject2(IShellFolder *pSF, LPCITEMIDLIST pidl, L
 		BSTR bs2 = NULL;
 		teGetDisplayNameBSTR(pSF, pidl, SHGDN_NORMAL, &bs);
 		teGetDisplayNameBSTR(pSF, pidl, SHGDN_INFOLDER | SHGDN_FORPARSING, &bs2);
-		if (m_ppDispatch[SB_OnIncludeObject]) {
+		if (teStrCmpI(bs2, L"::{2CC5CA98-6485-489A-920E-B3E88A6CCCE3}") == 0) {
+			//Hide Spotlight Item
+			hr = S_FALSE;
+		} else if (m_ppDispatch[SB_OnIncludeObject]) {
 			VARIANT vResult;
 			VariantInit(&vResult);
 			VARIANTARG *pv = GetNewVARIANT(4);
@@ -10075,11 +10080,6 @@ VOID CteShellBrowser::AddItem(LPITEMIDLIST pidl)
 		pSF->Release();
     }
 	teCoTaskMemFree(pidl);
-}
-
-BOOL CteShellBrowser::HasFilter()
-{
-	return m_bsFilter || m_ppDispatch[SB_OnIncludeObject]|| (g_bsHiddenFilter && g_param[TE_UseHiddenFilter]);
 }
 
 VOID CteShellBrowser::NavigateComplete(BOOL bBeginNavigate)
@@ -13996,13 +13996,15 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 			return S_OK;
 
 		case TE_METHOD + 0x1300://Notify
-			if (nArg >= 2 && m_hwndTV && m_pNameSpaceTreeControl) {
-				long lEvent = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
-				if (lEvent & (SHCNE_MKDIR | SHCNE_MEDIAINSERTED | SHCNE_DRIVEADD | SHCNE_NETSHARE)) {
-					IShellItem *psi, *psiParent;
-					if (teCreateItemFromVariant(&pDispParams->rgvarg[nArg - 1], &psi)) {
-						DWORD dwState;
-						if FAILED(m_pNameSpaceTreeControl->GetItemState(psi, NSTCIS_EXPANDED, &dwState)) {
+			if (nArg >= 2 && m_pNameSpaceTreeControl) {
+				IShellItem *psi;
+				if (teCreateItemFromVariant(&pDispParams->rgvarg[nArg - 1], &psi)) {
+					DWORD dwState;
+					HRESULT hr = m_pNameSpaceTreeControl->GetItemState(psi, NSTCIS_EXPANDED, &dwState);
+					long lEvent = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
+					if FAILED(hr) {
+						if (lEvent & (SHCNE_MKDIR | SHCNE_MEDIAINSERTED | SHCNE_DRIVEADD | SHCNE_NETSHARE)) {
+							IShellItem *psiParent;
 							if SUCCEEDED(psi->GetParent(&psiParent)) {
 								if SUCCEEDED(m_pNameSpaceTreeControl->GetItemState(psiParent, NSTCIS_EXPANDED, &dwState)) {
 									m_pNameSpaceTreeControl->SetItemState(psi, NSTCIS_EXPANDED, NSTCIS_EXPANDED);
@@ -14010,18 +14012,32 @@ STDMETHODIMP CteTreeView::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WO
 								psiParent->Release();
 							}
 						}
-						psi->Release();
+					} else if (m_hwndTV) {
+						if (lEvent & (SHCNE_DRIVEREMOVED | SHCNE_MEDIAREMOVED | SHCNE_NETUNSHARE | SHCNE_RENAMEFOLDER | SHCNE_RMDIR | SHCNE_SERVERDISCONNECT | SHCNE_UPDATEDIR)) {
+							HTREEITEM hSelected = TreeView_GetSelection(m_hwndTV);
+							if SUCCEEDED(m_pNameSpaceTreeControl->SetItemState(psi, NSTCIS_SELECTED, NSTCIS_SELECTED)) {
+								HTREEITEM hDelete = TreeView_GetSelection(m_hwndTV);
+								TreeView_DeleteItem(m_hwndTV, hDelete);
+								if (hSelected != hDelete) {
+									TreeView_SelectItem(m_hwndTV, hSelected);
+								}
+							}
+						}
 					}
-				}
-				if (nArg >= 4 && lEvent & (SHCNE_DRIVEREMOVED | SHCNE_MEDIAREMOVED | SHCNE_NETUNSHARE | SHCNE_RENAMEFOLDER | SHCNE_RMDIR | SHCNE_SERVERDISCONNECT | SHCNE_UPDATEDIR)) {
-					try {
-						SendMessage(GetParent(m_hwndTV), WM_USER + 1, GetPtrFromVariant(&pDispParams->rgvarg[nArg - 3]), GetPtrFromVariant(&pDispParams->rgvarg[nArg - 4]));
-					} catch (...) {
-						g_nException = 0;
+					/*
+					} else if (nArg >= 4 && m_hwndTV) {
+						if (lEvent & (SHCNE_DRIVEREMOVED | SHCNE_MEDIAREMOVED | SHCNE_NETUNSHARE | SHCNE_RENAMEFOLDER | SHCNE_RMDIR | SHCNE_SERVERDISCONNECT | SHCNE_UPDATEDIR)) {
+							try {
+								SendMessage(GetParent(m_hwndTV), WM_USER + 1, GetPtrFromVariant(&pDispParams->rgvarg[nArg - 3]), GetPtrFromVariant(&pDispParams->rgvarg[nArg - 4]));
+							} catch (...) {
+								g_nException = 0;
 #ifdef _DEBUG
-						g_strException = L"Notify_Tree";
+								g_strException = L"Notify_Tree";
 #endif
-					}
+							}
+						}
+					}*/
+					psi->Release();
 				}
 			}
 			return S_OK;
@@ -14287,6 +14303,8 @@ STDMETHODIMP CteTreeView::OnEndLabelEdit(IShellItem *psi)
 
 STDMETHODIMP CteTreeView::OnGetToolTip(IShellItem *psi, LPWSTR pszTip, int cchTip)
 {
+	//Started to crash, so I commented it out
+	/*
 	if (g_pOnFunc[TE_OnToolTip]) {
 		VARIANTARG *pv = GetNewVARIANT(2);
 		teSetObject(&pv[1], this);
@@ -14303,6 +14321,7 @@ STDMETHODIMP CteTreeView::OnGetToolTip(IShellItem *psi, LPWSTR pszTip, int cchTi
 			return S_OK;
 		}
 	}
+	*/
 	return E_NOTIMPL;
 }
 

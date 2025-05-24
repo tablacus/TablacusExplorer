@@ -64,10 +64,11 @@ g_.IconChg = [
 	["bitmap:ieframe,697,24,", "", 24]
 ];
 g_.Notify = {};
+g_.OpenReverse = SBSP_ACTIVATE_NOFOCUS;
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20240511 ? te.Version : 20240511;
+		return te.Version < 20250515 ? te.Version : 20250515;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -598,7 +599,7 @@ IsWitness = function (Item) {
 }
 
 IsCloud = function (Item) {
-	return Item && (Item.ExtendedProperty("System.StorageProviderState") || IsCloudPath(api.GetDisplayNameOf(Item, SHGDN_FORPARSING)));
+	return Item && (Item.ExtendedProperty && (Item.ExtendedProperty("System.StorageProviderState")) || IsCloudPath(api.GetDisplayNameOf(Item, SHGDN_FORPARSING)));
 }
 
 IsCloudPath = function (path) {
@@ -660,13 +661,13 @@ LoadXml = function (filename, nGroup) {
 						for (let i3 = 0; i3 < nLogCount; ++i3) {
 							let path3 = logs[i3].getAttribute("Path");
 							if (re && api.PathMatchSpec(path3, re)) {
-								path3 = te.Data.Installed + path3.substr(Installed.length)
+								path3 = te.Data.Installed + path3.slice(Installed.length)
 							}
 							Path.AddItem(path3);
 						}
 						Path.Index = tab.getAttribute("LogIndex");
 					} else if (re && api.PathMatchSpec(Path, re)) {
-						Path = te.Data.Installed + Path.substr(Installed.length)
+						Path = te.Data.Installed + Path.slice(Installed.length)
 					}
 					const FV = TC.Selected.Navigate2(Path, SBSP_NEWBROWSER, tab.getAttribute("Type"), tab.getAttribute("ViewMode"), tab.getAttribute("FolderFlags"), tab.getAttribute("Options"), tab.getAttribute("ViewFlags"), tab.getAttribute("IconSize"), tab.getAttribute("Align"), tab.getAttribute("Width"), tab.getAttribute("Flags"), tab.getAttribute("EnumFlags"), tab.getAttribute("RootStyle"), tab.getAttribute("Root"));
 					if (!FV.FilterView) {
@@ -695,6 +696,9 @@ LoadXml = function (filename, nGroup) {
 }
 
 SaveXmlTC = function (Ctrl, xml, nGroup) {
+	if (!Ctrl) {
+		return;
+	}
 	const item = xml.createElement("Ctrl");
 	item.setAttribute("Type", Ctrl.Type);
 	item.setAttribute("Left", Ctrl.Left);
@@ -1075,15 +1079,17 @@ DeleteTempFolder = function () {
 			}
 		}
 	} catch (e) { }
+	const arDel = api.CreateObject("Array");
 	const path = GetTempPath(1);
 	const wfd = api.Memory("WIN32_FIND_DATA");
 	const hFind = api.FindFirstFile(path + "\\*", wfd);
 	for (let bFind = hFind != INVALID_HANDLE_VALUE; bFind; bFind = api.FindNextFile(hFind, wfd)) {
-		if (wfd.cFileName != "." && wfd.cFileName != "..") {
-			DeleteItem(BuildPath(path, wfd.cFileName));
+		if (!/^\.$|^\.\.$|^EBWebView$/i.test(wfd.cFileName)) {
+			arDel.push(BuildPath(path, wfd.cFileName));
 		}
 	}
 	api.FindClose(hFind);
+	DeleteItem(arDel);
 }
 
 PerformUpdate = function () {
@@ -1382,7 +1388,9 @@ MakeImgSrc = function (src, index, bSrc, h, clBk) {
 	src = ExtractPath(te, src);
 	if (!/^file:/i.test(src) && REGEXP_IMAGE.test(src)) {
 		if (window.chrome || GetNum(api.ILCreateFromPath(src).ExtendedProperty("System.Photo.Orientation")) < 2) {
-			return src;
+			if (window.chrome && !/\.ico$/i.test(src)) {
+				return src;
+			}
 		}
 		const image = api.CreateObject("WICBitmap").FromFile(src);
 		return image ? image.DataURI(GetEncodeType(src)) : src;
@@ -1521,7 +1529,7 @@ MakeImgIcon = function (src, index, h, bIcon, clBk) {
 					}
 				}
 				if (i & 1 && h && h <= 16) {
-					src = ar[i - 1][0] + src.substr(a2[0].length);
+					src = ar[i - 1][0] + src.slice(a2[0].length);
 				}
 				icon = src.replace(/^bitmap:/, "").split(",");
 			}
@@ -1686,19 +1694,30 @@ GetKeyName = function (strKey, bEn) {
 				return arKey.join("+");
 			}
 		}
+	} else {
+		nKey = GetKeyKey(strKey);
+		if (nKey) {
+			const s = GetKeyName(api.sprintf(9, "$%x", nKey), bEn);
+			if (s) {
+				return s;
+			}
+		}
 	}
 	return strKey;
 }
 
 GetKeyShift = function () {
 	let nShift = 0;
-	let n = 0x1000;
-	const vka = [VK_SHIFT, VK_CONTROL, VK_MENU, VK_LWIN];
+	const vka = {
+		0x1000: VK_SHIFT,
+		0x2000: VK_CONTROL,
+		0x4000: VK_MENU,
+		0x8000: VK_LWIN
+	};
 	for (let i in vka) {
 		if (api.GetKeyState(vka[i]) < 0) {
-			nShift += n;
+			nShift |= i;
 		}
-		n *= 2;
 	}
 	return nShift;
 }
@@ -1741,7 +1760,7 @@ NavigateFV = function (FV, Path, wFlags, bInputed) {
 		FV = TC.Selected;
 	}
 	if ("string" === typeof Path) {
-		Path = ExtractMacro(FV, Path).replace(/^\s+|\s*$/g, "");
+		Path = ExtractMacro(FV, Path).trim();
 		if (/\?|\*/.test(Path)) {
 			if (!/\\\\\?\\|:/.test(Path)) {
 				SetFilterView(FV, Path);
@@ -1796,7 +1815,7 @@ NavigateFV = function (FV, Path, wFlags, bInputed) {
 						}
 					}
 				}
-				ShellExecute(Path, null, SW_SHOWNORMAL, FV.FolderItem.Path);
+				ShellExecute(Path, null, SW_SHOWNORMAL, api.GetDisplayNameOf(FV, SHGDN_FORPARSING));
 			}, 0, Path, FV, Path, wFlags);
 			return S_OK;
 		}
@@ -2052,7 +2071,7 @@ FormatDate = function (s) {
 Navigate2 = function (path, NewTab) {
 	const a = path.toString().split("\n");
 	for (let i in a) {
-		const s = a[i].replace(/^\s+/, "");
+		const s = a[i].trim();
 		if (s != "") {
 			Navigate(s, NewTab);
 			NewTab |= SBSP_NEWBROWSER;
@@ -2063,7 +2082,7 @@ Navigate2 = function (path, NewTab) {
 ExecOpen = function (Ctrl, s, type, hwnd, pt, NewTab) {
 	let nLock = 0;
 	const line = s.split("\n");
-	const bRev = (NewTab & SBSP_ACTIVATE_NOFOCUS);
+	const bRev = (NewTab & g_.OpenReverse);
 	const FV = GetFolderView(Ctrl, pt);
 	if (line.length > 1) {
 		++g_.LockUpdate;
@@ -2229,7 +2248,7 @@ IsFolderEx = function (Item) {
 		if (Item.IsFolder && !api.ILIsParent(ssfBITBUCKET, Item, true)) {
 			const wfd = api.Memory("WIN32_FIND_DATA");
 			const hr = api.SHGetDataFromIDList(Item, SHGDFIL_FINDDATA, wfd, wfd.Size);
-			return (hr < 0) || (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 || !/^[A-Z]:\\|^\\\\\w.*\\.*\\/i.test(Item.Path);
+			return (hr < 0) || (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 || !/^[A-Z]:\\|^\\\\\w.*\\.*\\/i.test(Item.Path) || !Item.IsFileSystem;
 		}
 		if (/^ftp:|^https?:/i.test(Item.Path)) {
 			return Item.IsFolder;
@@ -2572,7 +2591,8 @@ ExecMenu4 = function (Ctrl, Name, pt, hMenu, arContextMenu, nVerb, FV) {
 					}
 				}
 			}
-			if (ContextMenu.InvokeCommand(0, te.hwnd, nVerb - ContextMenu.idCmdFirst, null, null, SW_SHOWNORMAL, 0, 0) == S_OK) {
+			const Items = ContextMenu.Items();
+			if (ContextMenu.InvokeCommand(0, te.hwnd, nVerb - ContextMenu.idCmdFirst, null, (Items && "object" === typeof Items) ? (Items.Item(-1) || {}).Path : null, SW_SHOWNORMAL, 0, 0) == S_OK) {
 				api.DestroyMenu(hMenu);
 				return S_OK;
 			}
@@ -2817,9 +2837,6 @@ GetNetworkIcon = function (path) {
 			}
 			return WINVER >= 0x600 ? "icon:shell32.dll,273" : "icon:shell32.dll,9";
 		}
-		return "folder:closed";
-	}
-	if (IsCloudPath(path)) {
 		return "folder:closed";
 	}
 }
@@ -3221,7 +3238,7 @@ PopupContextMenu = function (Item, FV, pt) {
 		}
 		const nVerb = api.TrackPopupMenuEx(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, te.hwnd, null, ContextMenu);
 		if (nVerb) {
-			ContextMenu.InvokeCommand(0, te.hwnd, nVerb - 1, null, null, SW_SHOWNORMAL, 0, 0);
+			ContextMenu.InvokeCommand(0, te.hwnd, nVerb - 1, null, "object" === typeof Item ? (Item.Item(-1) || {}).Path : null, SW_SHOWNORMAL, 0, 0);
 		}
 	}
 	api.DestroyMenu(hMenu);
@@ -3285,15 +3302,12 @@ OpenInExplorer = function (pid1) {
 		CancelWindowRegistered();
 		const pid = pid1.FolderItem || pid1;
 		if (pid) {
-			const path = api.ILIsEmpty(pid) ? "shell:Desktop" : api.GetDisplayNameOf(pid, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
-			if (/^[A-Z]:\\|^\\\\\w|^::{/i.test(path)) {
-				api.CreateProcess(GetWindowsPath("explorer.exe") + " " + PathQuoteSpaces(path));
-				return;
-			}
-			const res = IsSearchPath(path);
-			if (res) {
-				api.CreateObject("new:{C08AFD90-F2A1-11D1-8455-00A0C91F3880}").Navigate2(path);
-				return;
+			if (!api.ILIsEmpty(pid)) {
+				const path = api.GetDisplayNameOf(pid, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
+				if (/^[A-Z]:\\|^\\\\\w|^::{[^}]+}$/i.test(path)) {
+					api.CreateProcess(GetWindowsPath("explorer.exe") + " " + PathQuoteSpaces(path));
+					return;
+				}
 			}
 			sha.Explore(pid);
 		}
@@ -3736,9 +3750,15 @@ FolderMenu = {
 		}
 	},
 
-	Invoke: function (FolderItem, wFlags, FV) {
-		if (FolderItem) {
-			const path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
+	Invoke: function (path, wFlags, FV) {
+		if (path) {
+			let FolderItem;
+			if ("string" === typeof path) {
+				FolderItem = api.ILCreateFromPath(path);
+			} else {
+				FolderItem = path;
+				path = api.GetDisplayNameOf(FolderItem, SHGDN_FORADDRESSBAR | SHGDN_FORPARSING);
+			}
 			const bVirtual = FolderItem.Unavailable || api.ILIsParent(1, FolderItem, false);
 			if (MainWindow.g_menu_button == 2 || /popup/i.test(wFlags)) {
 				const pt = api.GetCursorPos();
@@ -3915,6 +3935,12 @@ SetModifierKeys = function (f) {
 
 ShowExtractError = function (hr, file) {
 	MessageBox([(api.FormatMessage(hr) || (GetTextR("@shell32.dll,-4228") || "").replace(/\t|\(%d\)/g, "")) + api.sprintf(16, "(0x%08x)", hr), GetText("Extract"), file].join("\n\n"), TITLE, MB_OK | MB_ICONSTOP);
+}
+
+FocusWebBrowser = function () {
+	if (!/^Chrome|^Internet/i.test(api.GetClassName(api.GetFocus()))) {
+		WebBrowser.Focus();
+	}
 }
 
 BasicDB = function (name, bLoad, bLC) {

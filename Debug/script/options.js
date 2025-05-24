@@ -1708,7 +1708,109 @@ InitDialog = async function () {
 	}
 	if (Query == "mouse") {
 		document.body.oncontextmenu = DetectProcessTag;
-		document.getElementById("Content").innerHTML = '<canvas id="Gesture" style="width: 100%; height: 99%; text-align: center;" onmousedown="return MouseDown(event)" onmouseup="return MouseUp(event)" onmousemove="return MouseMove(event)" ondblclick="MouseDbl(event)" onmousewheel="return MouseWheel(event)"></canvas>';
+		document.getElementById("Content").innerHTML = '<canvas id="Gesture" style="width: 100%; height: 99%; text-align: center;"></canvas>';
+		const el = document.getElementById("Gesture");
+		el.onmousedown = async function (ev) {
+			ev = ev || event;
+			if (g_Gesture) {
+				let n = 1;
+				for (let i = 1; i < 6; ++i) {
+					if (g_Gesture.indexOf(i + "") < 0) {
+						if ((ev.buttons != null ? ev.buttons : ev.button) & n) {
+							returnValue += i + "";
+						}
+					}
+					n *= 2;
+				}
+			} else {
+				returnValue = await GetGestureKey() + await GetGestureButton();
+				api.RedrawWindow(await WebBrowser.hwnd, null, 0, RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN);
+				const el = document.getElementById("Gesture");
+				el.width = el.offsetWidth;
+				el.height = el.offsetHeight;
+				const ctx = el.getContext('2d');
+				ctx.beginPath();
+				ctx.clearRect(0, 0, el.width, el.height);
+			}
+			document.F.q.value = returnValue;
+			g_Gesture = returnValue;
+			g_pt.x = ev.clientX;
+			g_pt.y = ev.clientY;
+			document.F.ButtonOk.disabled = false;
+			const o = document.getElementById("Gesture");
+			const s = o.style.height;
+			o.style.height = "1px";
+			o.style.height = s;
+			return false;
+		}
+
+		el.onmouseup = async function () {
+			g_Gesture = await GetGestureButton();
+			return false;
+		}
+
+		el.onmousemove = async function (ev) {
+			ev = ev || event;
+			if (await api.GetKeyState(VK_XBUTTON1) < 0 || await api.GetKeyState(VK_XBUTTON2) < 0) {
+				returnValue = await GetGestureKey() + await GetGestureButton();
+				document.F.q.value = returnValue;
+			}
+			const buttons = ev.buttons != null ? ev.buttons : ev.button;
+			if (document.F.q.value.length && (buttons & 2 || (await te.Data.Conf_Gestures && buttons & 4))) {
+				const pt = { x: ev.clientX, y: ev.clientY };
+				const x = (pt.x - g_pt.x);
+				const y = (pt.y - g_pt.y);
+				if (Math.abs(x) + Math.abs(y) >= 20) {
+					const nTrail = await te.Data.Conf_TrailSize;
+					if (nTrail) {
+						if (ui_.IEVer > 8) {
+							const el = document.getElementById("Gesture");
+							const ctx = el.getContext('2d');
+							ctx.beginPath();
+							ctx.strokeStyle = GetWebColor(await te.Data.Conf_TrailColor);
+							ctx.lineWidth = nTrail;
+							ctx.moveTo(g_pt.x, g_pt.y);
+							ctx.lineTo(pt.x, pt.y);
+							ctx.stroke();
+						} else {
+							const hwnd = WebBrowser.hwnd;
+							const hdc = api.GetWindowDC(hwnd);
+							if (hdc) {
+								api.MoveToEx(hdc, g_pt.x, g_pt.y, null);
+								const pen1 = api.CreatePen(PS_SOLID, nTrail, te.Data.Conf_TrailColor);
+								const hOld = api.SelectObject(hdc, pen1);
+								api.LineTo(hdc, pt.x, pt.y);
+								api.SelectObject(hdc, hOld);
+								api.DeleteObject(pen1);
+								api.ReleaseDC(hwnd, hdc);
+							}
+						}
+					}
+					g_pt = pt;
+					const s = (Math.abs(x) >= Math.abs(y)) ? ((x < 0) ? "L" : "R") : ((y < 0) ? "U" : "D");
+					if (s != document.F.q.value.charAt(document.F.q.value.length - 1)) {
+						returnValue += s;
+						document.F.q.value = returnValue;
+					}
+				}
+			}
+			return false;
+		}
+
+		el.ondblclick = function () {
+			returnValue += returnValue.replace(/\D/g, "");
+			document.F.q.value = returnValue;
+			return false;
+		}
+
+		el.onmousewheel = async function (ev) {
+			ev = ev || event;
+			returnValue = await GetGestureKey() + await GetGestureButton() + (ev.wheelDelta > 0 ? "8" : "9");
+			document.F.q.value = returnValue;
+			document.F.ButtonOk.disabled = false;
+			return false;
+		}
+
 		document.getElementById("Selected").innerHTML = '<input type="text" name="q" class="full" autocomplete="off" onkeydown="setTimeout(\'returnValue=document.F.q.value\',100)">';
 		WebBrowser.OnClose = ReturnDialogResult;
 	}
@@ -1768,7 +1870,7 @@ InitDialog = async function () {
 				let path = document.F.path.value;
 				if (path) {
 					if (!/^[A-Z]:\\|^\\/i.test(path)) {
-						path = BuildPath(ui_.ArgPath, path.replace(/^\s+/, ""));
+						path = BuildPath(ui_.ArgPath, path.trim());
 					}
 					if (GetElement("folder").checked) {
 						MainWindow.CreateFolder(path);
@@ -1912,104 +2014,6 @@ InitDialog = async function () {
 	await ApplyLang(document);
 	document.F.style.display = "";
 	DialogResize();
-}
-
-MouseDown = async function (ev) {
-	if (g_Gesture) {
-		let n = 1;
-		for (let i = 1; i < 6; ++i) {
-			if (g_Gesture.indexOf(i + "") < 0) {
-				if ((ev.buttons != null ? ev.buttons : ev.button) & n) {
-					returnValue += i + "";
-				}
-			}
-			n *= 2;
-		}
-	} else {
-		returnValue = await GetGestureKey() + await GetGestureButton();
-		api.RedrawWindow(await WebBrowser.hwnd, null, 0, RDW_INVALIDATE | RDW_ERASE | RDW_FRAME | RDW_ALLCHILDREN);
-		const el = document.getElementById("Gesture");
-		el.width = el.offsetWidth;
-		el.height = el.offsetHeight;
-		const ctx = el.getContext('2d');
-		ctx.beginPath();
-		ctx.clearRect(0, 0, el.width, el.height);
-	}
-	document.F.q.value = returnValue;
-	g_Gesture = returnValue;
-	g_pt.x = ev.clientX;
-	g_pt.y = ev.clientY;
-	document.F.ButtonOk.disabled = false;
-	const o = document.getElementById("Gesture");
-	const s = o.style.height;
-	o.style.height = "1px";
-	o.style.height = s;
-	return false;
-}
-
-MouseUp = async function () {
-	g_Gesture = await GetGestureButton();
-	return false;
-}
-
-MouseMove = async function (ev) {
-	if (await api.GetKeyState(VK_XBUTTON1) < 0 || await api.GetKeyState(VK_XBUTTON2) < 0) {
-		returnValue = await GetGestureKey() + await GetGestureButton();
-		document.F.q.value = returnValue;
-	}
-	const buttons = ev.buttons != null ? ev.buttons : ev.button;
-	if (document.F.q.value.length && (buttons & 2 || (await te.Data.Conf_Gestures && buttons & 4))) {
-		const pt = { x: ev.clientX, y: ev.clientY };
-		const x = (pt.x - g_pt.x);
-		const y = (pt.y - g_pt.y);
-		if (Math.abs(x) + Math.abs(y) >= 20) {
-			const nTrail = await te.Data.Conf_TrailSize;
-			if (nTrail) {
-				if (ui_.IEVer > 8) {
-					const el = document.getElementById("Gesture");
-					const ctx = el.getContext('2d');
-					ctx.beginPath();
-					ctx.strokeStyle = GetWebColor(await te.Data.Conf_TrailColor);
-					ctx.lineWidth = nTrail;
-					ctx.moveTo(g_pt.x, g_pt.y);
-					ctx.lineTo(pt.x, pt.y);
-					ctx.stroke();
-				} else {
-					const hwnd = WebBrowser.hwnd;
-					const hdc = api.GetWindowDC(hwnd);
-					if (hdc) {
-						api.MoveToEx(hdc, g_pt.x, g_pt.y, null);
-						const pen1 = api.CreatePen(PS_SOLID, nTrail, te.Data.Conf_TrailColor);
-						const hOld = api.SelectObject(hdc, pen1);
-						api.LineTo(hdc, pt.x, pt.y);
-						api.SelectObject(hdc, hOld);
-						api.DeleteObject(pen1);
-						api.ReleaseDC(hwnd, hdc);
-					}
-				}
-			}
-			g_pt = pt;
-			const s = (Math.abs(x) >= Math.abs(y)) ? ((x < 0) ? "L" : "R") : ((y < 0) ? "U" : "D");
-			if (s != document.F.q.value.charAt(document.F.q.value.length - 1)) {
-				returnValue += s;
-				document.F.q.value = returnValue;
-			}
-		}
-	}
-	return false;
-}
-
-MouseDbl = function () {
-	returnValue += returnValue.replace(/\D/g, "");
-	document.F.q.value = returnValue;
-	return false;
-}
-
-MouseWheel = async function (ev) {
-	returnValue = await GetGestureKey() + await GetGestureButton() + (ev.wheelDelta > 0 ? "8" : "9");
-	document.F.q.value = returnValue;
-	document.F.ButtonOk.disabled = false;
-	return false;
 }
 
 SetLocations = async function () {
@@ -2662,7 +2666,7 @@ async function AddonsList(xhr2) {
 		xhr = await xhr2;
 	}
 	let xml = await xhr.responseXML;
-	if (!xml) {
+	if (!xml && await xhr.get_responseText) {
 		if (window.DOMParser) {
 			xml = new DOMParser().parseFromString(await xhr.get_responseText(), "application/xml");
 		} else {

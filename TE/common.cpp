@@ -1327,7 +1327,7 @@ HRESULT tePathIsDirectory2(LPWSTR pszPath, int iUseFS)
 
 static void threadExists(void *args)
 {
-	::CoInitialize(NULL);
+	::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
 	try {
 		TEExists *pExists = (TEExists *)args;
 		pExists->hr = tePathIsDirectory2(pExists->pszPath, pExists->iUseFS);
@@ -1441,7 +1441,7 @@ LPITEMIDLIST teILCreateFromPath1(LPWSTR pszPath)
 										psfif->SetCondition(pc2);
 										pc2->Release();
 									}
-									pcf2->Release();																	   
+									pcf2->Release();
 								} else if SUCCEEDED(pqs->Resolve(pc, SQRO_DONT_SPLIT_WORDS, &st, &pc1)) {
 									psfif->SetCondition(pc1);
 									pc1->Release();
@@ -1571,7 +1571,7 @@ VOID teReleaseILCreate(TEILCreate *pILC)
 
 static void threadILCreate(void *args)
 {
-	::CoInitialize(NULL);
+	::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
 	try {
 		TEILCreate *pILC = (TEILCreate *)args;
 		pILC->pidlResult = teILCreateFromPath1(pILC->pszPath);
@@ -1990,12 +1990,21 @@ BOOL teFileTimeToVariantTime(LPFILETIME pft, DOUBLE *pdt)
 
 VOID teExtraLongPath(BSTR *pbs)
 {
-	int nLen = lstrlen(*pbs);
-	if (nLen < MAX_PATH || StrChr(*pbs, '?')) {
+	if (!teIsFileSystem(*pbs) || StrChr(*pbs, '?')) {
 		return;
 	}
-	BSTR bs = tePathMatchSpec(*pbs, L"\\\\*\\*") ? teSysAllocStringLen(L"\\\\?\\UNC", nLen + 7) : teSysAllocStringLen(L"\\\\?\\", nLen + 4);
-	lstrcat(bs, *pbs);
+	int nLen = lstrlen(*pbs);
+	if (nLen < MAX_PATH) {
+		return;
+	}
+	BSTR bs;
+	if (tePathMatchSpec(*pbs, L"\\\\*\\*")) {
+		bs = teSysAllocStringLen(L"\\\\?\\UNC", nLen + 6);
+		lstrcat(bs, pbs[1]);
+	} else {
+		bs = teSysAllocStringLen(L"\\\\?\\", nLen + 4);
+		lstrcat(bs, *pbs);
+	}
 	teSysFreeString(pbs);
 	*pbs = bs;
 }

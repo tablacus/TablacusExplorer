@@ -1,4 +1,4 @@
-const Addon_Id = "addressbar";
+﻿const Addon_Id = "addressbar";
 const Default = "ToolBar2Center";
 const item = GetAddonElement(Addon_Id);
 if (!item.getAttribute("Set")) {
@@ -23,11 +23,21 @@ if (window.Addon == 1) {
 		KeyDown: function (ev, o) {
 			if (ev.keyCode ? ev.keyCode == VK_RETURN : /^Enter/i.test(ev.key)) {
 				setTimeout(async function (o, str) {
-					if (str == o.value) {
+					let uri = str.trim().replace(/\//g, "\\");
+
+					if (await fso.FileExists(uri)) {
+						let pos = uri.lastIndexOf("\\");
+						uri = uri.slice(0, pos)
+					}
+
+					if (await fso.FolderExists(uri)) {
+						// If it is a file or folder path, navigate to the folder.
+						Navigate(uri, SBSP_NEWBROWSER);
+					} else if (uri == o.value) {
 						const pt = await GetPosEx(o, 9);
-						$.Input = str;
+						$.Input = uri;
 						if (await ExecMenu(await te.Ctrl(CTRL_WB), "Alias", pt, 2) != S_OK) {
-							NavigateFV(await te.Ctrl(CTRL_FV), str, await GetNavigateFlags(), true);
+							NavigateFV(await te.Ctrl(CTRL_FV), uri, await GetNavigateFlags(), true);
 						}
 					}
 				}, 99, o, o.value);
@@ -40,29 +50,27 @@ if (window.Addon == 1) {
 		},
 
 		Arrange: async function () {
-			const FV = await te.Ctrl(CTRL_FV);
 			clearTimeout(Addons.AddressBar.tid);
-			const FolderItem = FV && await FV.FolderItem;
-			if (FolderItem) {
+			if (Addons.AddressBar.FolderItem) {
 				const o = document.getElementById("breadcrumbbuttons");
 				const oAddr = document.F.addressbar;
 				const oImg = document.getElementById("addr_img");
 				const oPopup = document.getElementById("addressbarselect");
 				const width = oAddr.offsetWidth - oImg.offsetWidth + oPopup.offsetWidth - 2;
 				const height = oAddr.offsetHeight - 11;
+				oImg.style.top = Math.abs(oAddr.offsetHeight - oImg.offsetHeight) / 2 + "px";
 				if (Addons.AddressBar.XP) {
 					oAddr.style.color = "";
 				} else {
 					const arHTML = [];
 					o.style.height = "auto";
-					const bRoot = api.ILIsEmpty(FolderItem);
-					const Items = JSON.parse(await Sync.AddressBar.SplitPath(FolderItem));
+					const Items = Addons.AddressBar.SplitPathItems;
 					o.style.width = "auto";
 					let bEmpty = true, n;
 					o.innerHTML = "";
 					for (n = 0; n < Items.length; ++n) {
 						if (Items[n].next) {
-							arHTML.unshift('<span id="addressbar' + n + '" class="button" style="line-height: ' + height + 'px" onclick="Addons.AddressBar.Popup(this,' + n + ')" onmouseover="MouseOver(this)" onmouseout="MouseOut()" oncontextmenu="Addons.AddressBar.Exec(); return false;">' + BUTTONS.next + '</span>');
+							arHTML.unshift('<span id="addressbar' + n + '" class="button" style="line-height: ' + height + 'px" onclick="Addons.AddressBar.Popup(' + n + ')" onmouseover="MouseOver(this)" onmouseout="MouseOut()" oncontextmenu="Addons.AddressBar.Exec(); return false;">' + BUTTONS.next + '</span>');
 							o.insertAdjacentHTML("afterbegin", arHTML[0]);
 						}
 						arHTML.unshift('<span id="addressbar' + n + '_" class="button" style="line-height: ' + height + 'px" onmouseover="MouseOver(this)" onmouseout="MouseOut()" oncontextmenu="Addons.AddressBar.Exec(); return false;" ondragstart="Addons.AddressBar.Drag(event,' + n + '); return false" draggable="true">' + EncodeSC(Items[n].name) + '</span>');
@@ -77,8 +85,8 @@ if (window.Addon == 1) {
 					}
 					o.style.width = (oAddr.offsetWidth - 2) + "px";
 					if (bEmpty) {
-						if (!await bRoot) {
-							o.insertAdjacentHTML("afterbegin", '<span id="addressbar' + n + '" class="button" style="line-height: ' + height + 'px" onclick="Addons.AddressBar.Popup(this, ' + n + ')" onmouseover="MouseOver(this)" onmouseout="MouseOut()">' + BUTTONS.next + '</span>');
+						if (!Addons.AddressBar.Root) {
+							o.insertAdjacentHTML("afterbegin", '<span id="addressbar' + n + '" class="button" style="line-height: ' + height + 'px" onclick="Addons.AddressBar.Popup(' + n + ')" onmouseover="MouseOver(this)" onmouseout="MouseOut()">' + BUTTONS.next + '</span>');
 						}
 					} else {
 						o.insertAdjacentHTML("afterbegin", '<span id="addressbar' + n + '" class="button" style="line-height: ' + height + 'px" onclick="Addons.AddressBar.Popup2(this)" onmouseover="MouseOver(this)" onmouseout="MouseOut()">' + BUTTONS.parent + '</span>');
@@ -90,8 +98,8 @@ if (window.Addon == 1) {
 			}
 		},
 
-		Exec: function () {
-			WebBrowser.Focus();
+		Exec: async function () {
+			await WebBrowser.Focus();
 			document.F.addressbar.focus();
 		},
 
@@ -119,19 +127,6 @@ if (window.Addon == 1) {
 				ClearAutocomplete();
 				Addons.AddressBar.Arrange();
 			}
-		},
-
-		Click1: function (ev) {
-			const el = document.elementFromPoint(ev.clientX, ev.clientY);
-			const res = el && /^addressbar(\d+)_$/.exec(el.id);
-			if (res) {
-				Promise.all([Sync.AddressBar.GetPath(res[1]), GetNavigateFlags()]).then(function (r) {
-					Navigate(r[0], r[1]);
-				});
-				return;
-			}
-			delete Addons.AddressBar.tm;
-			Addons.AddressBar.Focus();
 		},
 
 		Popup1: async function (ev) {
@@ -184,29 +179,28 @@ if (window.Addon == 1) {
 		},
 
 		Down1: function (ev) {
+			Addons.AddressBar.ev = ev;
 			const el = document.elementFromPoint(ev.clientX, ev.clientY);
 			if (el && /^addressbar(\d+)_$/.test(el.id)) {
 				Addons.AddressBar.tm = new Date().getTime();
-				Addons.AddressBar.ev = ev;
-				return;
-			}
-			const buttons = ev.buttons != null ? ev.buttons : ev.button;
-			if (buttons == 2) {
-				Addons.AddressBar.Focus();
 			}
 		},
 
 		Up1: function (ev) {
 			const ev1 = Addons.AddressBar.ev || {};
 			const buttons = ev1.buttons != null ? ev1.buttons : ev1.button;
-			if ((buttons & 4) && Math.abs(ev.screenX - ev1.screenX) < 4 && Math.abs(ev.screenY - ev1.screenY) < 4) {
-				const el = document.elementFromPoint(ev.clientX, ev.clientY);
-				const res = el && /^addressbar(\d+)_$/.exec(el.id);
+			const el = document.elementFromPoint(ev.clientX, ev.clientY);
+			const res = el && /^addressbar(\d+)_$/.exec(el.id);
+			if (Math.abs(ev.screenX - ev1.screenX) < 4 && Math.abs(ev.screenY - ev1.screenY) < 4) {
 				if (res) {
-					Promise.all([Sync.AddressBar.GetPath(res[1]), GetNavigateFlags()]).then(function (r) {
-						Navigate(r[0], r[1] | SBSP_NEWBROWSER);
-					});
-					return;
+					if (buttons & 5) {
+						Promise.all([Sync.AddressBar.GetPath(res[1]), GetNavigateFlags()]).then(function (r) {
+							Navigate(r[0], r[1] | (buttons & 4 ? SBSP_NEWBROWSER : SBSP_SAMEBROWSER));
+						});
+						return;
+					}
+				} else {
+					Addons.AddressBar.Exec();
 				}
 			}
 			setTimeout(function () {
@@ -236,38 +230,41 @@ if (window.Addon == 1) {
 			}
 		},
 
-		Popup: function (o, n) {
+		Popup: function (n) {
 			if (Addons.AddressBar.CanPopup()) {
-				setTimeout(async function (o, n) {
-					await Addons.AddressBar.SavePos(o);
+				setTimeout(async function (n) {
+					const o = document.getElementById("addressbar" + n);
 					const pt = GetPos(o, 9);
 					MouseOver(o);
+					await Addons.AddressBar.SavePos(o);
 					FolderMenu.Invoke(await FolderMenu.Open(await Sync.AddressBar.GetPath(n), pt.x, pt.y, null, 1));
-				}, 9, o, n);
+				}, 9, n);
 			}
 		},
 
 		Popup2: async function (o) {
-			const FV = await te.Ctrl(CTRL_FV);
-			if (FV) {
-				let FolderItem = await FV.FolderItem;
-				await FolderMenu.Clear();
-				const hMenu = await api.CreatePopupMenu();
-				for (let n = 99; !await api.ILIsEmpty(FolderItem) && n--;) {
-					FolderItem = await api.ILGetParent(FolderItem);
-					await FolderMenu.AddMenuItem(hMenu, FolderItem);
+			if (Addons.AddressBar.CanPopup()) {
+				const FV = await te.Ctrl(CTRL_FV);
+				if (FV) {
+					let FolderItem = await FV.FolderItem;
+					await FolderMenu.Clear();
+					const hMenu = await api.CreatePopupMenu();
+					for (let n = 99; !await api.ILIsEmpty(FolderItem) && n--;) {
+						FolderItem = await api.ILGetParent(FolderItem);
+						await FolderMenu.AddMenuItem(hMenu, FolderItem);
+					}
+					await Addons.AddressBar.SavePos(o);
+					AddEvent("ExitMenuLoop", function () {
+						Addons.AddressBar.bLoop = false;
+						Common.AddressBar.rcItem = void 0;
+					});
+					MouseOver(o);
+					const pt = GetPos(o, 9);
+					const nVerb = await FolderMenu.TrackPopupMenu(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y);
+					FolderItem = nVerb ? await FolderMenu.Items[nVerb - 1] : null;
+					await FolderMenu.Clear();
+					FolderMenu.Invoke(FolderItem);
 				}
-				await Addons.AddressBar.SavePos(o);
-				AddEvent("ExitMenuLoop", function () {
-					Addons.AddressBar.bLoop = false;
-					Common.AddressBar.rcItem = void 0;
-				});
-				MouseOver(o);
-				const pt = GetPos(o, 9);
-				const nVerb = await FolderMenu.TrackPopupMenu(hMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y);
-				FolderItem = nVerb ? await FolderMenu.Items[nVerb - 1] : null;
-				await FolderMenu.Clear();
-				FolderMenu.Invoke(FolderItem);
 			}
 		},
 
@@ -315,7 +312,12 @@ if (window.Addon == 1) {
 	};
 
 	AddEvent("ChangeView1", async function (Ctrl) {
-		await Addons.AddressBar.Arrange();
+		Addons.AddressBar.FolderItem = await Ctrl.FolderItem;
+		if (Addons.AddressBar.FolderItem) {
+			Addons.AddressBar.Root = await api.ILIsEmpty(Addons.AddressBar.FolderItem);
+			Addons.AddressBar.SplitPathItems = JSON.parse(await Sync.AddressBar.SplitPath(Addons.AddressBar.FolderItem));
+			await Addons.AddressBar.Arrange();
+		}
 		document.F.addressbar.value = await Ctrl.FolderItem.Path;
 		document.getElementById("addr_img").src = await GetIconImage(Ctrl, CLR_DEFAULT | COLOR_WINDOW);
 	});
@@ -355,8 +357,8 @@ if (window.Addon == 1) {
 		}
 		const z = screen.deviceYDPI / 96;
 		s = ['<div style="position: relative; overflow: hidden">',
-		'<div id="breadcrumbbuttons" class="breadcrumb" style="vertical-align: middle; position: absolute; margin-top:1px; margin-bottom:1px; top:1px; bottom: 1px; left: 1px; padding-left: ', 16 * z + 4, 'px" onclick="Addons.AddressBar.Click1(event)" oncontextmenu="Addons.AddressBar.Popup1(event); return false;" onmousedown="Addons.AddressBar.Down1(event)" onmouseup="return Addons.AddressBar.Up1(event); return false"></div>',
-		'<input id="addressbar" type="text" autocomplate="on" list="AddressList" onkeydown="return Addons.AddressBar.KeyDown(event, this)" onfocus="Addons.AddressBar.Focus()" onblur="Addons.AddressBar.Blur()" onresize="Addons.AddressBar.Resize()" oninput="AdjustAutocomplete(this.value)" oncontextmenu="Addons.AddressBar.ContextMenu(this)" style="width: ', EncodeSC(s), '; vertical-align: middle; padding-left: ', 16 * z + 4, 'px; padding-top:2px;padding-bottom:2px; padding-right: 16px">',       
+		'<div id="breadcrumbbuttons" class="breadcrumb" style="vertical-align: middle; position: absolute; margin-top:1px; margin-bottom:1px; top:1px; bottom: 1px; left: 1px; padding-left: ', 16 * z + 4, 'px" oncontextmenu="Addons.AddressBar.Popup1(event); return false;" onmousedown="Addons.AddressBar.Down1(event)" onmouseup="return Addons.AddressBar.Up1(event); return false"></div>',
+		'<input id="addressbar" type="text" autocomplate="on" list="AddressList" onkeydown="return Addons.AddressBar.KeyDown(event, this)" onfocus="Addons.AddressBar.Focus()" onblur="Addons.AddressBar.Blur()" onresize="Addons.AddressBar.Resize()" oninput="AdjustAutocomplete(this.value)" oncontextmenu="Addons.AddressBar.ContextMenu(this)" style="width: ', EncodeSC(s), '; vertical-align: middle; padding-left: ', 16 * z + 4, 'px; padding-top:2px;padding-bottom:2px; padding-right: 16px">',
 		'<div class="breadcrumb"><div id="addressbarselect" class="button" style="vertical-align: middle; position: absolute; margin-top:1px; margin-bottom:1px; top: 1px; bottom: 1px; " onmouseover="MouseOver(this);" onmouseout="MouseOut()" onclick="Addons.AddressBar.Popup3(this)">', BUTTONS.dropdown, '</div></div>'];
 
 		s.push('<img id="addr_img"');

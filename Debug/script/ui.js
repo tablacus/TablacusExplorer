@@ -245,15 +245,19 @@ OpenHttpRequest = async function (url, alt, fn, arg) {
 				}
 				return;
 			}
-			if (/^http/.test(alt)) {
-				CalcRef(arg && await arg.pcRef, 0, -1);
-				OpenHttpRequest(/^https/.test(url) && alt == "http" ? url.replace(/^https/, alt) : alt, '', fn, arg);
-				return;
-			}
-			ShowXHRError(url, await xhr.status);
+			fnError();
 		}
 	}
+	const fnError = async function () {
+		if (/^http/.test(alt)) {
+			CalcRef(arg && await arg.pcRef, 0, -1);
+			OpenHttpRequest(/^https/.test(url) && alt == "http" ? url.replace(/^https/, alt) : alt, '', fn, arg);
+			return;
+		}
+		ShowXHRError(url, await xhr.status);
+	}
 	xhr.onload = fnLoaded;
+	xhr.onerror = fnError;
 	if (!window.chrome) {
 		xhr.onreadystatechange = async function () {
 			if (await xhr.readyState == 4) {
@@ -394,7 +398,6 @@ LoadScripts = async function (js1, js2, cb) {
 		const hdc = await api.GetDC(ui_.hwnd);
 		screen.deviceYDPI = await api.GetDeviceCaps(hdc, 90);
 		api.ReleaseDC(ui_.hwnd, hdc);
-		ui_.Zoom = screen.deviceYDPI / 96;
 		await CopyObj($, window, ["te", "api", "chrome", "document", "UI", "MainWindow"]);
 		let po = [];
 		po.push(CopyObj(null, location, ["hash", "href"]));
@@ -804,8 +807,8 @@ GetPos = function (el, bScreen, bAbs, bPanel, bBottom) {
 		pt.y += rc.top;
 	}
 	if (bScreen) {
-		pt.x += screenLeft * ui_.Zoom;
-		pt.y += screenTop * ui_.Zoom;
+		pt.x += screenLeft;
+		pt.y += screenTop;
 	}
 	if (bBottom) {
 		pt.y += el.offsetHeight;
@@ -1128,8 +1131,16 @@ SetDisplay = function (Id, s) {
 }
 
 FocusElement = function (el) {
-	WebBrowser.Focus();
-	el.focus();
+	if (ui_.tmActivate) {
+		clearTimeout(ui_.tmActivate);
+		delete ui_.tmActivate;
+	}
+	if (el) {
+		WebBrowser.Focus();
+		el.focus();
+	} else if (document.activeElement) {
+		document.activeElement.blur();
+	}
 }
 
 if (window.chrome) {
@@ -1228,7 +1239,7 @@ AddonOptions = async function (Id, fn, Data, bNew) {
 		el.onload = function () {
 			el.contentWindow.document.body.style.backgroundColor = window.getComputedStyle ? getComputedStyle(document.body).getPropertyValue('background-color') : document.body.currentStyle.backgroundColor;
 		}
-		el.src = sURL;
+		el.src = window.chrome ? sURL.replace(/%/g, '%25').replace(/#/g, '%23') : sURL;
 		ui_.elAddons[Id] = el;
 		let o = document.getElementById('panel1_2');
 		o.style.display = "block";
@@ -1490,8 +1501,8 @@ SyncExec = async function (cb, o, n) {
 		pt = await GetPosEx(o, n);
 	} else if (o && (o.target || o.srcElement)) {
 		pt = await api.Memory("POINT");
-		pt.x = o.screenX * ui_.Zoom;
-		pt.y = o.screenY * ui_.Zoom;
+		pt.x = o.screenX;
+		pt.y = o.screenY;
 	}
 	const FV = await GetFolderView(o);
 	await FV.Focus();
