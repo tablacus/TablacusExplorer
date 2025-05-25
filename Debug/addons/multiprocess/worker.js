@@ -11,16 +11,20 @@ if (MainWindow.Exchange) {
 				api.GetWindowThreadProcessId(hwnd, pid);
 				const pid0 = pid[0];
 				while (hwnd1 = api.FindWindowEx(null, hwnd1, null, null)) {
-					const strClass = api.GetClassName(hwnd1);
-					if (hwnd1 != hwnd && api.IsWindowVisible(hwnd1) && strClass != "Internet Explorer_Hidden") {
+					const sClass = api.GetClassName(hwnd1);
+					if (hwnd1 != hwnd && api.IsWindowVisible(hwnd1) && sClass != "Internet Explorer_Hidden") {
 						api.GetWindowThreadProcessId(hwnd1, pid);
 						if (pid[0] == pid0) {
-							if (strClass == "#32770") {
+							if (sClass == "#32770") {
 								if (!(api.GetWindowLongPtr(hwnd1, GWL_EXSTYLE) & 8)) {
-									api.SetForegroundWindow(hwnd1);
-									api.SetWindowPos(hwnd1, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-									if (!ex.bClose) {
-										api.SetTimer(te.hwnd, 1, 99999, null);
+									if (ex) {
+										if (!ex.NoFront) {
+											api.SetForegroundWindow(hwnd1);
+											api.SetWindowPos(hwnd1, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+										}
+										if (!ex.bClose) {
+											api.SetTimer(te.hwnd, 1, 99999, null);
+										}
 									}
 								}
 							}
@@ -29,7 +33,7 @@ if (MainWindow.Exchange) {
 						}
 						//Dialog(UAC)
 						if (api.GetWindowLongPtr(hwnd1, GWL_EXSTYLE) & 8) {
-							if (strClass == "#32770") {
+							if (sClass == "#32770") {
 								if (ex) {
 									ex.time = new Date().getTime();
 								}

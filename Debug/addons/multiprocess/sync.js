@@ -1,5 +1,5 @@
 const Addon_Id = "multiprocess";
-const item = GetAddonElement(Addon_Id);
+let item = GetAddonElement(Addon_Id);
 
 Sync.MultiProcess = {
 	NoDelete: item.getAttribute("NoDelete"),
@@ -7,6 +7,10 @@ Sync.MultiProcess = {
 	NoDrop: item.getAttribute("NoDrop"),
 	NoRDrop: item.getAttribute("NoRDrop"),
 	NoTemp: item.getAttribute("NoTemp"),
+	NoFront: item.getAttribute("NoFront"),
+	TimeOver: item.getAttribute("TimeOver"),
+	Sec: item.getAttribute("Sec"),
+
 	pids: {},
 
 	FO: function (Ctrl, Items, Dest, grfKeyState, pt, pdwEffect, nMode) {
@@ -86,17 +90,19 @@ Sync.MultiProcess = {
 				Items = Items2;
 			}
 		}
-		setTimeout(function () {
-			let hwnd = null;
-			while (hwnd = api.FindWindowEx(null, hwnd, null, null)) {
-				if (api.GetClassName(hwnd) == "OperationStatusWindow") {
-					if (!(api.GetWindowLongPtr(hwnd, GWL_EXSTYLE) & 8)) {
-						api.SetForegroundWindow(hwnd);
-						api.SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+		if (!Sync.MultiProcess.NoFront) {
+			setTimeout(function () {
+				let hwnd = null;
+				while (hwnd = api.FindWindowEx(null, hwnd, null, null)) {
+					if (api.GetClassName(hwnd) == "OperationStatusWindow") {
+						if (!(api.GetWindowLongPtr(hwnd, GWL_EXSTYLE) & 8)) {
+							api.SetForegroundWindow(hwnd);
+							api.SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+						}
 					}
 				}
-			}
-		}, 5000);
+			}, 5000);
+		}
 
 		const State = [VK_SHIFT, VK_CONTROL, VK_MENU];
 		for (let i = State.length; i--;) {
@@ -104,20 +110,20 @@ Sync.MultiProcess = {
 				State.splice(i, 1);
 			}
 		}
-		OpenNewProcess("addons\\multiprocess\\worker.js",
-			{
-				Items: Items,
-				Dest: Dest,
-				Mode: nMode,
-				grfKeyState: grfKeyState,
-				pt: pt,
-				dwEffect: dwEffect,
-				TimeOver: item.getAttribute("TimeOver"),
-				Sec: item.getAttribute("Sec"),
-				State: State,
-				pids: Sync.MultiProcess.pids,
-				Callback: Sync.MultiProcess.Player
-			});
+		OpenNewProcess("addons\\multiprocess\\worker.js", {
+			Items: Items,
+			Dest: Dest,
+			Mode: nMode,
+			grfKeyState: grfKeyState,
+			pt: pt,
+			dwEffect: dwEffect,
+			TimeOver: Sync.MultiProcess.TimeOver,
+			Sec: Sync.MultiProcess.Sec,
+			NoFront: Sync.MultiProcess.NoFront,
+			State: State,
+			pids: Sync.MultiProcess.pids,
+			Callback: Sync.MultiProcess.Player
+		});
 		return true;
 	},
 
@@ -125,6 +131,7 @@ Sync.MultiProcess = {
 		InvokeUI("Addons.MultiProcess.Player", autoplay);
 	}
 };
+delete item;
 
 AddEvent("Drop", function (Ctrl, dataObj, grfKeyState, pt, pdwEffect) {
 	switch (Ctrl.Type) {
