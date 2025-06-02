@@ -373,7 +373,7 @@ ArrangeAddons = async function () {
 				const Id = item.nodeName;
 				g_.Error_source = Id;
 				if (!AddonId[Id]) {
-					const Enabled = GetNum(item.getAttribute("Enabled"));
+					const Enabled = /function|unknown|object/i.test(typeof item.getAttribute) && GetNum(item.getAttribute("Enabled"));
 					if (Enabled) {
 						if (Enabled & 6) {
 							LoadLang2(BuildPath(ui_.Installed, "addons", Id, "lang", LangId + ".xml"));
