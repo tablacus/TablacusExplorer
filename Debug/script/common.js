@@ -29,7 +29,15 @@ importScript = async function (fn) {
 		if (/\.vbs$/i.test(fn)) {
 			hr = ExecScriptEx(window.Ctrl, s, "VBScript", await $.pt, await $.dataObj, await $.grfKeyState, await $.pdwEffect, await $.bDrop);
 		} else {
-			await new AsyncFunction(s)();
+			try {
+				await new AsyncFunction(s)();
+			} catch (e) {
+				if (await g_.ShowError == null) {
+					g_.arError.push([e.stack || e.message, fn].join("\n"));
+				} else {
+					ShowError(e.stack || e.message || e.toString(), fn);
+				}
+			}
 			hr = S_OK;
 		}
 	}

@@ -65,10 +65,11 @@ g_.IconChg = [
 ];
 g_.Notify = {};
 g_.OpenReverse = SBSP_ACTIVATE_NOFOCUS;
+g_.arError = api.CreateObject("Array");
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20250515 ? te.Version : 20250602;
+		return te.Version < 20250515 ? te.Version : 20250606;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -917,6 +918,7 @@ CreateJScript = function (s) {
 }
 
 ShowError = function (e, s, i) {
+	const msg = "string" === typeof e ? e : e.stack || e.message;
 	if (g_.ShowError) {
 		g_.ShowError = false;
 		const sl = (s || "").toLowerCase();
@@ -932,7 +934,7 @@ ShowError = function (e, s, i) {
 			if (nId == IDRETRY) {
 				clipboardData.setData("text", s);
 			}
-		}, 99, [e.stack || e.message, s, AboutTE(3)].join("\n\n"))
+		}, 99, [msg, s, AboutTE(3)].join("\n\n"))
 	}
 }
 

@@ -349,7 +349,7 @@ OnArrange = async function (Ctrl, rc, Type, Id, FV) {
 }
 
 ArrangeAddons = async function () {
-	let r = await Promise.all([InitAddonsXML(), api.CreateObject("Object"), api.GetKeyState(VK_SHIFT), api.GetKeyState(VK_CONTROL), GetLangId(), api.CreateObject("Array")]);
+	let r = await Promise.all([InitAddonsXML(), api.CreateObject("Object"), api.GetKeyState(VK_SHIFT), api.GetKeyState(VK_CONTROL), GetLangId(), g_.arError]);
 	const xml = window.chrome ? new DOMParser().parseFromString(r[0], "application/xml") : te.Data.Addons;
 	ui_.Addons = xml;
 	g_.Locations = r[1];
