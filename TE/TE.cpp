@@ -164,6 +164,7 @@ DWORD	g_dwTickKey;
 DWORD	g_dwFreeLibrary = 0;
 DWORD	g_dwTickMount = 0;
 DWORD	g_dwTickWheel;
+DWORD	g_dwScriptCookie = 1000;
 long	g_nProcKey	   = 0;
 long	g_nProcMouse   = 0;
 long	g_nProcFV      = 0;
@@ -189,6 +190,7 @@ BOOL	g_bShowParseError = TRUE;
 BOOL	g_bDragging = FALSE;
 BOOL	g_bCanLayout = FALSE;
 BOOL	g_bUpper10;
+BOOL	g_bScriptError = FALSE;
 extern BOOL	g_bDarkMode;
 extern std::unordered_map<HWND, HWND> g_umDlgProc;
 BOOL	g_bDragIcon = TRUE;
@@ -333,6 +335,7 @@ TEmethod methodTE[] = {
 	{ START_OnFunc + TE_OnIncludeItem, "OnIncludeItem" },
 	{ START_OnFunc + TE_OnContentsChanged, "OnContentsChanged" },
 	{ START_OnFunc + TE_OnFilterView, "OnFilterView" },
+	{ START_OnFunc + TE_OnShowError, "OnShowError" },
 #ifdef _USE_SYNC
 	{ START_OnFunc + TE_FN, "fn" },
 #endif
@@ -1870,8 +1873,9 @@ HRESULT ParseScript(LPOLESTR lpScript, LPOLESTR lpLang, VARIANT *pv, IDispatch *
 			}
 			VARIANT v;
 			VariantInit(&v);
-			pasp->ParseScriptText(lpScript, NULL, NULL, NULL, 0, 0, SCRIPTTEXT_ISPERSISTENT | SCRIPTTEXT_ISVISIBLE, &v, NULL);
+			pasp->ParseScriptText(lpScript, NULL, NULL, NULL, g_dwScriptCookie++, 0, SCRIPTTEXT_ISPERSISTENT | SCRIPTTEXT_ISVISIBLE, &v, NULL);
 			if (hr == S_OK) {
+				pas->SetScriptState(SCRIPTSTATE_STARTED);
 				pas->SetScriptState(SCRIPTSTATE_CONNECTED);
 				if (ppdisp) {
 					hr = E_FAIL;
@@ -1894,6 +1898,7 @@ HRESULT ParseScript(LPOLESTR lpScript, LPOLESTR lpLang, VARIANT *pv, IDispatch *
 			pass->Release();
 		}
 		if (!ppdisp || !*ppdisp) {
+			pas->SetScriptState(SCRIPTSTATE_DISCONNECTED);
 			pas->SetScriptState(SCRIPTSTATE_CLOSED);
 			pas->Close();
 		}
@@ -14887,10 +14892,14 @@ STDMETHODIMP CteActiveScriptSite::GetDocVersionString(BSTR *pbstrVersion)
 
 STDMETHODIMP CteActiveScriptSite::OnScriptError(IActiveScriptError *pscripterror)
 {
+	if (g_bScriptError) {
+		return E_UNEXPECTED;
+	}
 	EXCEPINFO ExcepInfo;
 	if (!pscripterror) {
 		return E_POINTER;
 	}
+	g_bScriptError = TRUE;
 	EXCEPINFO *pExcepInfo = m_pExcepInfo ? m_pExcepInfo : &ExcepInfo;
 	if SUCCEEDED(pscripterror->GetExceptionInfo(pExcepInfo)) {
 		m_hr = pExcepInfo->scode;
@@ -14900,13 +14909,13 @@ STDMETHODIMP CteActiveScriptSite::OnScriptError(IActiveScriptError *pscripterror
 		} else {
 			BSTR bsSrcText = NULL;
 			pscripterror->GetSourceLineText(&bsSrcText);
-			DWORD dw1 = 0;
+			DWORD dwCookie = 0;
 			ULONG ulLine = 0;
 			LONG ulColumn = 0;
-			pscripterror->GetSourcePosition(&dw1, &ulLine, &ulColumn);
+			pscripterror->GetSourcePosition(&dwCookie, &ulLine, &ulColumn);
 			WCHAR pszLine[64];
 			swprintf_s(pszLine, _countof(pszLine), L"\n(0x%08x) Line: %d\n", m_hr, ulLine);
-			BSTR bs = ::SysAllocStringLen(NULL, ::SysStringLen(pExcepInfo->bstrDescription) + ::SysStringLen(bsSrcText) + lstrlen(pszLine));
+			BSTR bs = ::SysAllocStringLen(NULL, ::SysStringLen(pExcepInfo->bstrDescription) + ::SysStringLen(bsSrcText) + lstrlen(pszLine) + 1);
 			lstrcpy(bs, pExcepInfo->bstrDescription);
 			lstrcat(bs, pszLine);
 			if (bsSrcText) {
@@ -14919,13 +14928,26 @@ STDMETHODIMP CteActiveScriptSite::OnScriptError(IActiveScriptError *pscripterror
 			::OutputDebugString(bs);
 #endif
 			if (!m_pExcepInfo) {
-				MessageBox(NULL, bs, _T(PRODUCTNAME), MB_OK | MB_ICONERROR);
+				BOOL bHandle = FALSE;
+				if (g_pOnFunc[TE_OnShowError]) {
+					VARIANT vResult;
+					VariantInit(&vResult);
+					VARIANTARG *pv = GetNewVARIANT(2);
+					teSetSZ(&pv[1], pExcepInfo->bstrSource);
+					teSetSZ(&pv[0], bs);
+					Invoke4(g_pOnFunc[TE_OnShowError], &vResult, 2, pv);
+					bHandle = GetIntFromVariantClear(&vResult);
+				}
+				if (!bHandle) {
+					MessageBox(NULL, bs, pExcepInfo->bstrSource, MB_ABORTRETRYIGNORE | MB_ICONERROR);
+				}
 				teSysFreeString(&pExcepInfo->bstrDescription);
 				teSysFreeString(&pExcepInfo->bstrHelpFile);
 				teSysFreeString(&pExcepInfo->bstrSource);
 			}
 		}
 	}
+	g_bScriptError = FALSE;
 	return S_OK;
 }
 

@@ -69,7 +69,7 @@ g_.arError = api.CreateObject("Array");
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20250515 ? te.Version : 20250606;
+		return te.Version < 20250608 ? te.Version : 20250608;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -936,6 +936,7 @@ ShowError = function (e, s, i) {
 			}
 		}, 99, [msg, s, AboutTE(3)].join("\n\n"))
 	}
+	return true;
 }
 
 OpenXml = function (strFile, bAppData, bEmpty, strInit) {

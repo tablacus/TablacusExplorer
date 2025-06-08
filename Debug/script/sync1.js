@@ -2782,6 +2782,14 @@ te.OnEndThread = function () {
 	return RunEvent1("EndThread", api.GetThreadCount());
 }
 
+te.OnShowError = function (e, s) {
+	let hr = RunEvent3("ShowError", Ctrl, iItem);
+	if (isFinite(hr)) {
+		return hr;
+	}
+	return ShowError(e, s);
+}
+
 ShowStatusText = function (Ctrl, Text, iPart, tm) {
 	if (!Ctrl) {
 		return;
