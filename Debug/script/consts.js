@@ -72,6 +72,22 @@ GetParentFolderName = function (s) {
 	return r != s && r != "\\" && r.length >= d ? r : "";
 }
 
+GetDriveName = function (path) {
+	if ("string" !== typeof path) {
+		return null;
+	}
+	if (path.indexOf("\\\\") === 0) {
+		var parts = path.split("\\");
+		return parts.length >= 4 ? "\\\\" + parts[2] + "\\" + parts[3] : null;
+	}
+	return /^[A-Za-z]:/.test(path) ? path.substring(0, 2) : null;
+}
+
+GetExtensionName = function (path) {
+	var res = /[^\\\/]+\.([^.\\\/]+)$/.exec(path);
+	return res ? res[1] : "";
+}
+
 LoadScript = function (js, cb) {
 	var fn;
 	var promise = [];

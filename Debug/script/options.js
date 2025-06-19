@@ -1130,7 +1130,7 @@ async function LoadAddons() {
 	}
 	let r = [];
 	for (let Id in AddonId) {
-		r.push(fso.FileExists(BuildPath(path, Id, "config.xml")));
+		r.push(api.PathFileExists(BuildPath(path, Id, "config.xml")));
 	}
 	if (window.chrome) {
 		r = await Promise.all(r);
@@ -1423,7 +1423,7 @@ async function ContinueOptions() {
 
 InitOptions = async function () {
 	ApplyLang(document);
-	Promise.all([GetText("Get %s"), GetTextR("@UIAutomationCore.dll,-220[Icons]"), GetTextR("@docprop.dll,-107"), GetText("File"), te.Data.DataFolder, fso.FolderExists(BuildPath(ui_.Installed, "layout")), GetLangId(), GetAltText("Get Icons"), GetAltText("Get Language file"), GetText("Options")]).then(function (r) {
+	Promise.all([GetText("Get %s"), GetTextR("@UIAutomationCore.dll,-220[Icons]"), GetTextR("@docprop.dll,-107"), GetText("File"), te.Data.DataFolder, api.PathIsDirectory(BuildPath(ui_.Installed, "layout")), GetLangId(), GetAltText("Get Icons"), GetAltText("Get Language file"), GetText("Options")]).then(function (r) {
 		if (/^zh/i.test(r[6])) {
 			r[0] = r[0].replace(" ", "");
 		}
@@ -1618,24 +1618,24 @@ InitDialog = async function () {
 			"shell32": "i,shell32.dll"
 		};
 		const fontDir = await api.ILCreateFromPath(ssfFONTS).Path;
-		if (await fso.FileExists(BuildPath(fontDir, "SegoeIcons.ttf")) || await fso.FileExists(await ExtractMacro(te, "%AppData%\\..\\Local\\Microsoft\\Windows\\Fonts\\Segoe Fluent Icons.ttf"))) {
+		if (await api.PathFileExists(BuildPath(fontDir, "SegoeIcons.ttf")) || await api.PathFileExists(await ExtractMacro(te, "%AppData%\\..\\Local\\Microsoft\\Windows\\Fonts\\Segoe Fluent Icons.ttf"))) {
 			for (let i = 0xe700; i < 0xf8ff; i += 256) {
 				a["Segoe Fluent Icons " + i.toString(16)] = "f,Segoe Fluent Icons," + i + ",256";
 			}
 		}
-		if (await fso.FileExists(BuildPath(fontDir, "segmdl2.ttf"))) {
+		if (await api.PathFileExists(BuildPath(fontDir, "segmdl2.ttf"))) {
 			for (let i = 0xe700; i < 0xf8ff; i += 256) {
 				a["Segoe MDL2 Assets " + i.toString(16)] = "f,Segoe MDL2 Assets," + i + ",256";
 			}
 		}
 		const sue = [0x2600, 0x2700];
-		if (await fso.FileExists(BuildPath(fontDir, "seguiemj.ttf"))) {
+		if (await api.PathFileExists(BuildPath(fontDir, "seguiemj.ttf"))) {
 			sue.unshift(0x1f300, 0x1f400, 0x1f500, 0x1f600, 0x1f700, 0x1f900, 0x1fa00);
 		}
 		for (let i = 0; i < sue.length; ++i) {
 			a["Segoe UI Emoji " + sue[i].toString(16)] = "f,Segoe UI Emoji," + sue[i] + ",256";
 		}
-		if (await fso.FileExists(BuildPath(fontDir, "seguisym.ttf"))) {
+		if (await api.PathFileExists(BuildPath(fontDir, "seguisym.ttf"))) {
 			for (let i = 0xe000; i < 0xe1ff; i += 256) {
 				a["Segoe UI Symbol " + i.toString(16)] = "f,Segoe UI Symbol," + i + ",256";
 			}
@@ -1946,12 +1946,12 @@ InitDialog = async function () {
 
 		s.length = 0;
 		if (await api.GetModuleHandle(ui_.TEPath)) {
-			s.push('<a href="', ui_.TEPath,'" class="link" onclick="Run(0, this);return false">', ui_.TEPath, "</a> (", await fso.GetFileVersion(ui_.TEPath), ")<br>");
+			s.push('<a href="', ui_.TEPath,'" class="link" onclick="Run(0, this);return false">', ui_.TEPath, "</a> (", await api.GetFileVersionInfo(ui_.TEPath), ")<br>");
 		}
 		for (let fn, FileList = await GetFileList(BuildPath(ui_.Installed, "lib", "*.dll"), false, window.chrome); fn = FileList.shift();) {
 			const dll = BuildPath(ui_.Installed, "lib", fn);
 			if (await api.GetModuleHandle(dll)) {
-				s.push('<a href="', dll, '" class="link" onclick="Run(0, this); return false">', dll, "</a> (", await fso.GetFileVersion(dll), ")<br>");
+				s.push('<a href="', dll, '" class="link" onclick="Run(0, this); return false">', dll, "</a> (", await api.GetFileVersionInfo(dll), ")<br>");
 			}
 		}
 		document.getElementById("lib").innerHTML = s.join("");
@@ -2359,7 +2359,7 @@ function RefX(IdList, bMultiLine, oButton, bFilesOnly, Filter, f) {
 function PortableX(Id) {
 	ConfirmThenExec(GetText("Portable"), async function () {
 		const o = GetElement(Id);
-		const s = await fso.GetDriveName(ui_.TEPath);
+		const s = GetDriveName(ui_.TEPath);
 		SetValue(o, o.value.replace(await wsh.ExpandEnvironmentStrings("%UserProfile%"), "%UserProfile%").replace(new RegExp('^("?)' + s, "igm"), "$1%Installed%").replace(new RegExp('( "?)' + s, "igm"), "$1%Installed%").replace(new RegExp('(:)' + s, "igm"), "$1%Installed%"));
 	});
 }
@@ -2616,7 +2616,7 @@ function UpdateAddon(Id, o) {
 }
 
 async function CheckAddon(Id) {
-	return fso.FileExists(BuildPath(ui_.Installed, "addons", Id, "config.xml"));
+	return api.PathFileExists(BuildPath(ui_.Installed, "addons", Id, "config.xml"));
 }
 
 function AddonsSearch() {
@@ -2746,7 +2746,7 @@ async function ArrangeAddon(xml, td) {
 					if (!cFileName) {
 						return;
 					}
-					if (CalcVersion(await installed.DllVersion) <= CalcVersion(await fso.GetFileVersion(BuildPath(path, cFileName)))) {
+					if (CalcVersion(await installed.DllVersion) <= CalcVersion(await api.GetFileVersionInfo(BuildPath(path, cFileName)))) {
 						return;
 					}
 				} catch (e) {
@@ -2828,7 +2828,7 @@ async function Install2(xhr, url, o) {
 	}
 	const configxml = dest + "\\config.xml";
 	let nDog = 300;
-	while (!await fso.FileExists(configxml)) {
+	while (!await api.PathFileExists(configxml)) {
 		if (await wsh.Popup(await GetText("Please wait."), 1, TITLE, MB_ICONINFORMATION | MB_OKCANCEL) == IDCANCEL || nDog-- == 0) {
 			return;
 		}

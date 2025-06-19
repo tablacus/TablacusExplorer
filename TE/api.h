@@ -1,5 +1,7 @@
 #pragma once
 
+#pragma comment(lib, "Version.lib")
+
 class CteWindowsAPI : public IDispatch
 {
 public:

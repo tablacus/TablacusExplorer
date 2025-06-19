@@ -475,6 +475,13 @@ TEmethod tesRECT[] =
 	{ (VT_I4 << TE_VT) + offsetof(RECT, top), "top" },
 };
 
+TEmethod tesSECURITY_ATTRIBUTES[] =
+{
+	{ (VT_BOOL << TE_VT) + offsetof(SECURITY_ATTRIBUTES, bInheritHandle), "bInheritHandle" },
+	{ (VT_PTR << TE_VT) + offsetof(SECURITY_ATTRIBUTES, lpSecurityDescriptor), "lpSecurityDescriptor" },
+	{ (VT_I4 << TE_VT) + offsetof(SECURITY_ATTRIBUTES, nLength), "nLength" },
+};
+
 TEmethod tesSHELLEXECUTEINFO[] =
 {
 	{ (VT_I4 << TE_VT) + offsetof(SHELLEXECUTEINFO, cbSize), "cbSize" },
@@ -682,6 +689,7 @@ TEStruct pTEStructs[] = {
 	{ sizeof(PAINTSTRUCT), FALSE, _countof(tesPAINTSTRUCT), "PAINTSTRUCT", tesPAINTSTRUCT },
 	{ sizeof(POINT), FALSE, _countof(tesPOINT), "POINT", tesPOINT },
 	{ sizeof(RECT), FALSE, _countof(tesRECT), "RECT", tesRECT },
+	{ sizeof(SECURITY_ATTRIBUTES), FALSE, _countof(tesSECURITY_ATTRIBUTES), "SECURITY_ATTRIBUTES", tesSECURITY_ATTRIBUTES },
 	{ sizeof(SHELLEXECUTEINFO), TRUE, _countof(tesSHELLEXECUTEINFO), "SHELLEXECUTEINFO", tesSHELLEXECUTEINFO },
 	{ sizeof(SHFILEINFO), FALSE, _countof(tesSHFILEINFO), "SHFILEINFO", tesSHFILEINFO },
 	{ sizeof(SHFILEOPSTRUCT), FALSE, _countof(tesSHFILEOPSTRUCT), "SHFILEOPSTRUCT", tesSHFILEOPSTRUCT },
@@ -1036,6 +1044,11 @@ VOID teApiCreateCompatibleBitmap(int nArg, teParam *param, DISPPARAMS *pDispPara
 VOID teApiCreateCompatibleDC(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	teSetPtr(pVarResult, CreateCompatibleDC(param[0].hdc));
+}
+
+VOID teApiCreateDirectory(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetBool(pVarResult, CreateDirectory(param[0].lpcwstr, param[1].lpSecurityAttributes));
 }
 
 VOID teApiCreateEvent(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -1748,6 +1761,34 @@ VOID teApiGetDpiForMonitor(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 	UINT ux, uy;
 	_GetDpiForMonitor(hMonitor, nArg >= 1 ? param[1].MonitorDpiType : MDT_EFFECTIVE_DPI, &ux, &uy);
 	teSetPoint(pVarResult, ux, uy);
+}
+
+VOID teApiGetFileAttributes(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetLong(pVarResult, GetFileAttributes(param[0].lpwstr));
+}
+
+VOID teApiGetFileVersionInfo(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	DWORD dummy;
+	DWORD size = GetFileVersionInfoSize(param[0].lpwstr, &dummy);
+	if (size) {
+		std::vector<BYTE> buffer(size);
+		if (GetFileVersionInfo(param[0].lpwstr, 0, size, buffer.data())) {
+			VS_FIXEDFILEINFO* fileInfo = nullptr;
+			UINT len = 0;
+			if (VerQueryValue(buffer.data(), L"\\", reinterpret_cast<LPVOID*>(&fileInfo), &len)) {
+				WCHAR pszResult[64];
+				swprintf_s(pszResult, _countof(pszResult), L"%d.%d.%d.%d",
+					HIWORD(fileInfo->dwFileVersionMS),
+					LOWORD(fileInfo->dwFileVersionMS),
+					HIWORD(fileInfo->dwFileVersionLS),
+					LOWORD(fileInfo->dwFileVersionLS)
+				);
+				teSetSZ(pVarResult, pszResult);
+			}
+		}
+	}
 }
 
 VOID teApiGetFinalPathNameByHandle(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -2834,6 +2875,11 @@ VOID teApiPathCreateFromUrl(int nArg, teParam *param, DISPPARAMS *pDispParams, V
 	}
 }
 
+VOID teApiPathFileExists(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetBool(pVarResult, PathFileExists(param[0].lpwstr));
+}
+
 VOID teApiPathIsDirectory(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	if (nArg >= 2 && pDispParams->rgvarg[nArg].vt == VT_DISPATCH) {
@@ -3174,6 +3220,11 @@ VOID teApiSetDllDirectory(int nArg, teParam *param, DISPPARAMS *pDispParams, VAR
 VOID teApiSetEvent(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	teSetBool(pVarResult, SetEvent(param[0].handle));
+}
+
+VOID teApiSetFileAttributes(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetBool(pVarResult, SetFileAttributes(param[0].lpcwstr, param[1].dword));
 }
 
 VOID teApiSetFilePointer(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
@@ -4047,6 +4098,7 @@ TEDispatchApi dispAPI[] = {
 	{ 1, -1, -1, -1, "CRC32", teApiCRC32 },
 	{ 3, -1, -1, -1, "CreateCompatibleBitmap", teApiCreateCompatibleBitmap },
 	{ 1, -1, -1, -1, "CreateCompatibleDC", teApiCreateCompatibleDC },
+	{ 1,  0, -1, -1, "CreateDirectory", teApiCreateDirectory },
 	{ 4,  3, -1, -1, "CreateEvent", teApiCreateEvent },
 	{ 7,  0, -1, -1, "CreateFile", teApiCreateFile },
 	{ 1, -1, -1, -1, "CreateFontIndirect", teApiCreateFontIndirect },
@@ -4117,6 +4169,8 @@ TEDispatchApi dispAPI[] = {
 	{ 2,  1, -1, -1, "GetDispatch", teApiGetDispatch },
 	{ 2, -1, -1, -1, "GetDisplayNameOf", teApiGetDisplayNameOf },
 	{ 0, -1, -1, -1, "GetDpiForMonitor", teApiGetDpiForMonitor },
+	{ 1,  0, -1, -1, "GetFileAttributes", teApiGetFileAttributes },
+	{ 1,  0, -1, -1, "GetFileVersionInfo", teApiGetFileVersionInfo },
 	{ 2, -1, -1, -1, "GetFinalPathNameByHandle", teApiGetFinalPathNameByHandle },
 	{ 0, -1, -1, -1, "GetFocus", teApiGetFocus },
 	{ 0, -1, -1, -1, "GetForegroundWindow", teApiGetForegroundWindow },
@@ -4256,6 +4310,7 @@ TEDispatchApi dispAPI[] = {
 	{ 3, -1, -1, -1, "OpenProcess", teApiOpenProcess },
 	{ 1,  0, -1, -1, "OutputDebugString", teApiOutputDebugString },
 	{ 1,  0, -1, -1, "PathCreateFromUrl", teApiPathCreateFromUrl },
+	{ 1,  0, -1, -1, "PathFileExists", teApiPathFileExists },
 	{ 1, 10, -1, -1, "PathIsDirectory", teApiPathIsDirectory },
 	{ 1,  0, -1, -1, "PathIsNetworkPath", teApiPathIsNetworkPath },
 	{ 1,  0, -1, -1, "PathIsRoot", teApiPathIsRoot },
@@ -4301,6 +4356,7 @@ TEDispatchApi dispAPI[] = {
 	{ 2, -1, -1, -1, "SetDCPenColor", teApiSetDCPenColor },
 	{ 1,  0, -1, -1, "SetDllDirectory", teApiSetDllDirectory },
 	{ 1, -1, -1, -1, "SetEvent", teApiSetEvent },
+	{ 2,  0, -1, -1, "SetFileAttributes", teApiSetFileAttributes },
 	{ 3, -1, -1, -1, "SetFilePointer", teApiSetFilePointer },
 	{ 4, -1, -1, -1, "SetFileTime", teApiSetFileTime },
 	{ 1, -1, -1, -1, "SetFocus", teApiSetFocus },

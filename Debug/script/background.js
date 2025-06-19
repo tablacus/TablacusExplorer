@@ -4,7 +4,6 @@ function _s() {
 	try {
 		window.te = external;
 		api = te.WindowsAPI;
-		fso = api.CreateObject("fso");
 		sha = api.CreateObject("sha");
 		wsh = api.CreateObject("wsh");
 		arg = api.CommandLineToArgv(api.GetCommandLine());
@@ -12,9 +11,9 @@ function _s() {
 			arg.shift();
 		}
 		location = { href: arg[2], hash: '' };
-		var parent = fso.GetParentFolderName(api.GetModuleFileName(null));
+		var parent = GetParentFolderName(api.GetModuleFileName(null));
 		if (!/^[A-Z]:\\|^\\\\/i.test(location.href)) {
-			location.href = fso.BuildPath(parent, location.href);
+			location.href = BuildPath(parent, location.href);
 		}
 		var sw = sha.Windows();
 		for (var i = 0; i < sw.Count; ++i) {
@@ -38,7 +37,7 @@ function _s() {
 
 function _es(fn) {
 	if (!/^[A-Z]:\\|^\\\\/i.test(fn)) {
-		fn = fso.BuildPath(/^\\/.test(fn) ? fso.GetParentFolderName(api.GetModuleFileName(null)) : fso.GetParentFolderName(location.href), fn);
+		fn = BuildPath(/^\\/.test(fn) ? GetParentFolderName(api.GetModuleFileName(null)) : GetParentFolderName(location.href), fn);
 	}
 	var s;
 	try {
@@ -79,4 +78,26 @@ function FixScript(s) {
 	}
 	s = s.replace(/(\([^\(\)]*\))\s*=>\s*\{/g, "function $1 {");
 	return ScriptEngineMajorVersion() > 10 ? s : s.replace(/([^\.\w])(const |let )/g, "$1var ").replace(/^const |^let /, "var ");
+}
+
+BuildPath = function () {
+	var s = "";
+	var q;
+	for (var i = 0; i < arguments.length; ++i) {
+		if (q = String(arguments[i]).replace(/[\/\\]$/, "")) {
+			if (s) {
+				s += "\\" + (q.replace(/^[\/\\]+/, ""));
+			} else {
+				s = q;
+			}
+		}
+	}
+	return s.replace(/\//g, "\\");
+};
+
+GetParentFolderName = function (s) {
+	var res = /^(.*)([\\\/])/.exec(s);
+	var d = res && /^[A-Z]:/i.test(res[1]) ? 3 : 1;
+	var r = res ? res[1].length < d ? res[1] + res[2] : res[1] : "";
+	return r != s && r != "\\" && r.length >= d ? r : "";
 }
