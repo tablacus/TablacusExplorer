@@ -11394,14 +11394,15 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 
 			case 1031://WindowsAPI0
 				IDispatch *pAPI;
-				pAPI = teCreateObj(TE_OBJECT, NULL);
+				pAPI = NULL;
+				GetNewObject(&pAPI);
 				VARIANT v;
 				BSTR bs;
 				bs = ::SysAllocString(L"CreateObject");
 				teSetObjectRelease(&v, new CteWindowsAPI(&dispAPI[teUMSearch(MAP_API, bs)]));
 				tePutProperty(pAPI, bs, &v);
 				::SysFreeString(bs);
-				teSetObjectRelease(pVarResult, pAPI);
+				teSetObject(pVarResult, pAPI);
 				return S_OK;
 
 			case 1131://CommonDialog
