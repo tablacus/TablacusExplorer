@@ -273,10 +273,15 @@ HRESULT teGetPropertyAt(IDispatch *pdisp, int i, VARIANT *pv)
 
 VOID Invoke4(IDispatch *pdisp, VARIANT *pvResult, int nArgs, VARIANTARG *pvArgs)
 {
-	Invoke5(pdisp, DISPID_VALUE, DISPATCH_METHOD, pvResult, nArgs, pvArgs);
+	Invoke6(pdisp, DISPID_VALUE, DISPATCH_METHOD, pvResult, nArgs, pvArgs, NULL);
 }
 
 HRESULT Invoke5(IDispatch *pdisp, DISPID dispid, WORD wFlags, VARIANT *pvResult, int nArgs, VARIANTARG *pvArgs)
+{
+	return Invoke6(pdisp, dispid, wFlags, pvResult, nArgs, pvArgs, NULL);
+}
+
+HRESULT Invoke6(IDispatch *pdisp, DISPID dispid, WORD wFlags, VARIANT *pvResult, int nArgs, VARIANTARG *pvArgs, EXCEPINFO *pExcepInfo)
 {
 	HRESULT hr = E_UNEXPECTED;
 	// DISPPARAMS
@@ -293,7 +298,7 @@ HRESULT Invoke5(IDispatch *pdisp, DISPID dispid, WORD wFlags, VARIANT *pvResult,
 	}
 	try {
 		if (pdisp) {
-			hr = pdisp->Invoke(dispid, IID_NULL, LOCALE_USER_DEFAULT, wFlags, &dispParams, pvResult, NULL, NULL);
+			hr = pdisp->Invoke(dispid, IID_NULL, LOCALE_USER_DEFAULT, wFlags, &dispParams, pvResult, pExcepInfo, NULL);
 		}
 #ifdef _DEBUG
 		else {

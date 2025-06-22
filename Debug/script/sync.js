@@ -69,7 +69,7 @@ g_.arError = api.CreateObject("Array");
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20250619 ? te.Version : 20250619;
+		return te.Version < 20250622 ? te.Version : 20250622;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3666,17 +3666,22 @@ FolderMenu = {
 				}
 				const SortMode = FolderMenu.SortMode;
 				if (SortMode >= 0) {
-					const drv = $.GetDriveName(FolderItem.Path);
-					if (drv) {
-						$.ForEachWmi("winmgmts:\\\\.\\root\\cimv2", 'SELECT * FROM Win32_LogicalDisk WHERE DeviceID="' + drv + '"', function (d) {
-							if (!/NTFS/i.test(d.FileSystem)) {
-								ar.sort(function (a, b) {
-									return api.CompareIDs(SortMode, Items[a], Items[b]);
-								});
-							}
+					let bSort = true;
+					if (!(SortMode || FolderMenu.Filter || FolderItem.IsBrowsable)) {
+						const drv = $.GetDriveName(FolderItem.Path);
+						if (drv) {
+							$.ForEachWmi("winmgmts:\\\\.\\root\\cimv2", 'SELECT * FROM Win32_LogicalDisk WHERE DeviceID="' + drv + '"', function (item) {
+								bSort = !/NTFS/i.test(item.FileSystem);
+							});
+						}
+					}
+					if (bSort) {
+						ar.sort(function (a, b) {
+							return api.CompareIDs(SortMode, Items[a], Items[b]);
 						});
 					}
 				}
+
 				if (FolderMenu.SortReverse) {
 					ar = ar.reverse();
 				}

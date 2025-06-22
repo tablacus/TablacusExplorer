@@ -772,6 +772,7 @@ HRESULT teGetPropertyAt(IDispatch *pdisp, int i, VARIANT *pv);
 HRESULT teGetProperty(IDispatch *pdisp, LPOLESTR sz, VARIANT *pv);
 VOID Invoke4(IDispatch *pdisp, VARIANT *pvResult, int nArgs, VARIANTARG *pvArgs);
 HRESULT Invoke5(IDispatch *pdisp, DISPID dispid, WORD wFlags, VARIANT *pvResult, int nArgs, VARIANTARG *pvArgs);
+HRESULT Invoke6(IDispatch *pdisp, DISPID dispid, WORD wFlags, VARIANT *pvResult, int nArgs, VARIANTARG *pvArgs, EXCEPINFO *pExcepInfo);
 VOID teClearVariantArgs(int nArgs, VARIANTARG *pvArgs);
 HRESULT teGetDisplayNameFromIDList(BSTR *pbs, LPITEMIDLIST pidl, SHGDNF uFlags);
 HRESULT teGetDisplayNameBSTR(IShellFolder *pSF, PCUITEMID_CHILD pidl, SHGDNF uFlags, BSTR *pbs);

@@ -2495,12 +2495,12 @@ VOID teApiInvoke(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVa
 				for (int i = nLen; i > 0; --i) {
 					teGetPropertyAt(pArgs, i - 1, &pvArgs[nLen - i]);
 				}
-				Invoke4(pdisp, pVarResult, nLen, pvArgs);
+				Invoke6(pdisp, DISPID_VALUE, DISPATCH_METHOD, pVarResult, nLen, pvArgs, param[TE_EXCEPINFO].pExcepInfo);
 			}
 			SafeRelease(&pArgs);
 		}
 		if (nLen == 0) {
-			Invoke4(pdisp, pVarResult, -nArg, pDispParams->rgvarg);
+			Invoke6(pdisp, DISPID_VALUE, DISPATCH_METHOD, pVarResult, -nArg, pDispParams->rgvarg, param[TE_EXCEPINFO].pExcepInfo);
 		}
 		pdisp->Release();
 	}
