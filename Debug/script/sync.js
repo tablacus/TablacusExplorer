@@ -69,7 +69,7 @@ g_.arError = api.CreateObject("Array");
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20250622 ? te.Version : 20250622;
+		return te.Version < 20250625 ? te.Version : 20250625;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -2035,12 +2035,8 @@ CreateFile1 = function (path) {
 						if (!api.PathFileExists(r)) {
 							r = GetWindowsPath("ShellNew\\" + s);
 						}
-						const ado = api.CreateObject("ads");
-						ado.Type = 1;
-						ado.Open();
-						ado.LoadFromFile(r);
-						ado.SaveToFile(path, 2);
-						ado.Close();
+						api.CopyFile(r, path, true);
+						SetFileTime(path, null, null, new Date());
 						return;
 					}
 					if (i == 1) {

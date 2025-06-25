@@ -73,19 +73,35 @@ GetParentFolderName = function (s) {
 }
 
 GetDriveName = function (path) {
-	if ("string" !== typeof path) {
-		return null;
-	}
-	if (path.indexOf("\\\\") === 0) {
+	if (/^\\\\/.test(path)) {
 		var parts = path.split("\\");
 		return parts.length >= 4 ? "\\\\" + parts[2] + "\\" + parts[3] : null;
 	}
 	return /^[A-Za-z]:/.test(path) ? path.substring(0, 2) : null;
 }
 
+GetFileName = function (s) {
+	var res = /([^\\\/]*)$/.exec(s);
+	return res ? res[1] : "";
+}
+
+GetBaseName = function (path) {
+	var res = /[^\\\/]+(?=\.[^\\\/.]+$)|[^\\\/]+$/.exec(path);
+	return res ? res[0] : "";
+}
+
 GetExtensionName = function (path) {
 	var res = /[^\\\/]+\.([^.\\\/]+)$/.exec(path);
 	return res ? res[1] : "";
+}
+
+GetTempName = function () {
+	var c = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+	var n = "";
+	for (var i = 8; i--;) {
+		n += c.charAt(Math.floor(Math.random() * c.length));
+	}
+	return n + ".tmp";
 }
 
 LoadScript = function (js, cb) {
@@ -124,11 +140,6 @@ LoadScript = function (js, cb) {
 			cb();
 		}
 	});
-}
-
-GetFileName = function (s) {
-	var res = /([^\\\/]*)$/.exec(s);
-	return res ? res[1] : "";
 }
 
 PathQuoteSpaces = function (s) {

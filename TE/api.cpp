@@ -1016,6 +1016,11 @@ VOID teApiCompareIDs(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 	}
 }
 
+VOID teApiCopyFile(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetBool(pVarResult, CopyFile(param[0].lpcwstr, param[1].lpcwstr, param[2].boolVal));
+}
+
 VOID teApiCopyImage(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	teSetPtr(pVarResult, CopyImage(param[0].handle, param[1].uintVal, param[2].intVal, param[3].intVal, param[4].uintVal));
@@ -4093,6 +4098,7 @@ TEDispatchApi dispAPI[] = {
 	{ 1,  0, -1, -1, "CommandLineToArgv", teApiCommandLineToArgv },
 	{ 3, -1, -1, -1, "CompareIDs", teApiCompareIDs },
 	{ 1,  5, -1, -1, "ContextMenu", teApiContextMenu },
+	{ 3,  0,  1, -1, "CopyFile", teApiCopyFile },
 	{ 5, -1, -1, -1, "CopyImage", teApiCopyImage },
 	{ 1, -1, -1, -1, "CoTaskMemFree", teApiCoTaskMemFree },
 	{ 1, -1, -1, -1, "CRC32", teApiCRC32 },
