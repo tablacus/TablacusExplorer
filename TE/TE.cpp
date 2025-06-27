@@ -3759,6 +3759,47 @@ VOID teApiPSGetDisplayName(int nArg, teParam *param, DISPPARAMS *pDispParams, VA
 	}
 }
 
+BSTR teGetFileList(VARIANT *pv) {
+	BSTR bs = NULL;
+	int nLen = 0;
+	IDispatch *pdisp;
+	if (GetDispatch(pv, &pdisp)) {
+		VARIANT v;
+		VariantInit(&v);
+		int nCount = teGetObjectLength(pdisp);
+		for (int i = 0; i < nCount; ++i) {
+			if SUCCEEDED(teGetPropertyAt(pdisp, i, &v)) {
+				if (v.vt == VT_BSTR) {
+					nLen += ::SysStringByteLen(v.bstrVal);
+				}
+				VariantInit(&v);
+			}
+		}
+		nLen += nCount * sizeof(WORD);
+		bs = ::SysAllocStringByteLen(NULL, nLen);
+		::ZeroMemory(bs, nLen);
+		BYTE *p = (BYTE *)bs;
+		for (int i = 0; i < nCount; ++i) {
+			if SUCCEEDED(teGetPropertyAt(pdisp, i, &v)) {
+				if (v.vt == VT_BSTR) {
+					UINT nSize = ::SysStringByteLen(v.bstrVal);
+					CopyMemory(p, v.bstrVal, nSize);
+					p += nSize;
+				}
+				VariantInit(&v);
+			}
+			p += sizeof(WORD);
+		}
+		pdisp->Release();
+	} else {
+		bs = GetLPWSTRFromVariant(pv);
+		nLen = (pv->vt == VT_BSTR ? ::SysStringLen(bs) : lstrlen(bs)) + 1;
+		bs = teSysAllocStringLenEx(bs, nLen);
+		bs[nLen] = 0;
+	}
+	return bs;
+}
+
 VOID teApiSHFileOperation(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	if (nArg >= 4) {
@@ -3766,51 +3807,8 @@ VOID teApiSHFileOperation(int nArg, teParam *param, DISPPARAMS *pDispParams, VAR
 		::ZeroMemory(pFO, sizeof(SHFILEOPSTRUCT));
 		pFO->hwnd = g_hwndMain;
 		pFO->wFunc = param[0].uintVal;
-		VARIANT *pv = &pDispParams->rgvarg[nArg - 1];
-		BSTR bs = NULL;
-		int nLen = 0;
-		IDispatch *pdisp;
-		if (GetDispatch(pv, &pdisp)) {
-			VARIANT v;
-			VariantInit(&v);
-			int nCount = teGetObjectLength(pdisp);
-			for (int i = 0; i < nCount; ++i) {
-				if SUCCEEDED(teGetPropertyAt(pdisp, i, &v)) {
-					if (v.vt == VT_BSTR) {
-						nLen += ::SysStringByteLen(v.bstrVal);
-					}
-					VariantInit(&v);
-				}
-			}
-			nLen += nCount * sizeof(WORD);
-			bs = ::SysAllocStringByteLen(NULL, nLen);
-			::ZeroMemory(bs, nLen);
-			BYTE *p = (BYTE *)bs;
-			for (int i = 0; i < nCount; ++i) {
-				if SUCCEEDED(teGetPropertyAt(pdisp, i, &v)) {
-					if (v.vt == VT_BSTR) {
-						UINT nSize = ::SysStringByteLen(v.bstrVal);
-						CopyMemory(p, v.bstrVal, nSize);
-						p += nSize;
-					}
-					VariantInit(&v);
-				}
-				p += sizeof(WORD);
-			}
-			pdisp->Release();
-		} else {
-			bs = GetLPWSTRFromVariant(pv);
-			nLen = (pv->vt == VT_BSTR ? ::SysStringLen(bs) : lstrlen(bs)) + 1;
-			bs = teSysAllocStringLenEx(bs, nLen);
-			bs[nLen] = 0;
-		}
-		pFO->pFrom = bs;
-		pv = &pDispParams->rgvarg[nArg - 2];
-		bs = GetLPWSTRFromVariant(pv);
-		nLen = (pv->vt == VT_BSTR ? ::SysStringLen(bs): lstrlen(bs)) + 1;
-		bs = pv->vt == VT_BSTR ? teSysAllocStringLenEx(bs, nLen) : teSysAllocStringLen(bs, nLen);
-		bs[nLen] = 0;
-		pFO->pTo = bs;
+		pFO->pFrom = teGetFileList(&pDispParams->rgvarg[nArg - 1]);
+		pFO->pTo = teGetFileList(&pDispParams->rgvarg[nArg - 2]);
 		pFO->fFlags = param[3].fileop_flags;
 		if (param[4].boolVal) {
 			teSetPtr(pVarResult, _beginthread(&threadFileOperation, 0, pFO));

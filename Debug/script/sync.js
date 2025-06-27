@@ -69,7 +69,7 @@ g_.arError = api.CreateObject("Array");
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20250625 ? te.Version : 20250625;
+		return te.Version < 20250627 ? te.Version : 20250627;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
