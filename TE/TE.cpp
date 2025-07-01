@@ -3793,9 +3793,11 @@ BSTR teGetFileList(VARIANT *pv) {
 		pdisp->Release();
 	} else {
 		bs = GetLPWSTRFromVariant(pv);
-		nLen = (pv->vt == VT_BSTR ? ::SysStringLen(bs) : lstrlen(bs)) + 1;
-		bs = teSysAllocStringLenEx(bs, nLen);
-		bs[nLen] = 0;
+		if (bs) {
+			nLen = (pv->vt == VT_BSTR ? ::SysStringLen(bs) : lstrlen(bs)) + 1;
+			bs = teSysAllocStringLenEx(bs, nLen);
+			bs[nLen] = 0;
+		}
 	}
 	return bs;
 }
@@ -3822,8 +3824,8 @@ VOID teApiSHFileOperation(int nArg, teParam *param, DISPPARAMS *pDispParams, VAR
 			g_strException = L"ApiSHFileOperation";
 #endif
 		}
-		::SysFreeString(const_cast<BSTR>(pFO->pTo));
-		::SysFreeString(const_cast<BSTR>(pFO->pFrom));
+		teSysFreeString(const_cast<BSTR *>(&pFO->pTo));
+		teSysFreeString(const_cast<BSTR *>(&pFO->pFrom));
 		delete [] pFO;
 		return;
 	}
