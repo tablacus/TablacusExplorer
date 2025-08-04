@@ -2663,7 +2663,7 @@ te.OnAppMessage = function (Ctrl, hwnd, msg, wParam, lParam) {
 					}
 					const lEvent = pidls.lEvent;
 					const key = lEvent + ":" + path;
-					if (!g_.Notify[key]) {
+					if (!g_.Notify[key] && !(lEvent == SHCNE_RENAMEFOLDER && api.ILIsEqual(pidls[0], pidls[1]))) {
 						g_.Notify[key] = new Date().getTime() + 999;
 						ChangeNotifyFV(lEvent, pidls[0], pidls[1]);
 						RunEvent1("ChangeNotify", Ctrl, pidls, wParam, lParam);
