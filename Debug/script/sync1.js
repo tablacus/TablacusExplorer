@@ -1310,7 +1310,7 @@ AddFavorite = function (FolderItem) {
 				if ("string" === typeof path) {
 					path = FolderItem.Path;
 				}
-				if (!FolderItem.Enum && api.PathFileExists(path)) {
+				if (!FolderItem.Enum && api.PathFileExists(path) && !api.PathIsDirectory(path)) {
 					path = PathQuoteSpaces(path);
 					item.setAttribute("Type", "Exec");
 				} else {
