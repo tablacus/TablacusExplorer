@@ -20,7 +20,7 @@ Sync.MultiProcess = {
 		const dwEffect = pdwEffect[0];
 		if (Dest !== null) {
 			const path = api.GetDisplayNameOf(Dest, SHGDN_FORPARSING);
-			if (/^::{/.test(path) || (/^[A-Z]:\\|^\\/i.test(path) && !fso.FolderExists(path))) {
+			if (/^::{/.test(path) || (/^[A-Z]:\\|^\\/i.test(path) && !api.PathIsDirectory(path))) {
 				return false;
 			}
 			if (nMode == 0) {
@@ -51,7 +51,6 @@ Sync.MultiProcess = {
 			}
 		}
 		if (Dest !== null) {
-			const wfd = api.Memory("WIN32_FIND_DATA");
 			const strTemp = GetTempPath(4);
 			if (Items.Count == 1 && api.PathMatchSpec(Items.Item(0).Path, strTemp + "*.bmp")) {
 				return false;
@@ -60,9 +59,7 @@ Sync.MultiProcess = {
 			const Items2 = api.CreateObject("FolderItems");
 			for (let i = 0; i < Items.Count; ++i) {
 				let path1 = Items.Item(i).Path;
-				const hFind = api.FindFirstFile(path1, wfd);
-				if (hFind != INVALID_HANDLE_VALUE) {
-					api.FindClose(hFind);
+				if (api.PathFileExists(path1)) {
 					if (!api.StrCmpNI(path1, strTemp, strTemp.length)) {
 						if (!strTemp2) {
 							if (Sync.MultiProcess.NoTemp) {
@@ -71,14 +68,12 @@ Sync.MultiProcess = {
 							strTemp2 = GetTempPath(7);
 							CreateFolder(strTemp2);
 						}
-						if (!api.StrCmpNI(path1, strTemp, strTemp.length)) {
-							if (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-								fso.MoveFolder(path1, strTemp2);
-							} else {
-								fso.MoveFile(path1, strTemp2);
+						const path2 = strTemp2 + GetFileName(path1);
+						if (!SameText(path1, path2)) {
+							if (api.MoveFileEx(path1, path2, 0)) {
+								path1 = path2;
 							}
 						}
-						path1 = strTemp2 + GetFileName(path1);
 					}
 					Items2.AddItem(path1);
 				} else {
@@ -156,7 +151,7 @@ AddEvent("Command", function (Ctrl, hwnd, msg, wParam, lParam) {
 		switch ((wParam & 0xfff) + 1) {
 			case CommandID_PASTE:
 				let Items = api.OleGetClipboard();
-				if (!api.ILIsEmpty(Items.Item(-1)) && Sync.MultiProcess.FO(null, Items, Ctrl.FolderItem, MK_LBUTTON, null, Items.pdwEffect, 2)) {
+				if (Items && !api.ILIsEmpty(Items.Item(-1)) && Sync.MultiProcess.FO(null, Items, Ctrl.FolderItem, MK_LBUTTON, null, Items.pdwEffect, 2)) {
 					return S_OK;
 				}
 				break;
