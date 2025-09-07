@@ -69,7 +69,7 @@ g_.arError = api.CreateObject("Array");
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20250701 ? te.Version : 20250806;
+		return te.Version < 20250701 ? te.Version : 20250907;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -1022,7 +1022,7 @@ CreateFont = function (LogFont) {
 
 GetSavePath = function (FolderItem) {
 	let path = api.GetDisplayNameOf(FolderItem, SHGDN_FORPARSING | SHGDN_FORPARSINGEX);
-	if (!/\?/.test(path) || IsSearchPath(path)) {
+	if (!/\?/.test(path) || IsSearchPath(path) || api.ILIsParent(1, FolderItem, false)) {
 		return path;
 	}
 	let nCount = api.ILGetCount(FolderItem);
