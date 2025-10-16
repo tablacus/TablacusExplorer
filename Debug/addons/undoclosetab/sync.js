@@ -6,7 +6,7 @@ Sync.UndoCloseTab = {
 	Items: item.getAttribute("Save") || 30,
 	strName: item.getAttribute("MenuName") || GetAddonInfo(Addon_Id).Name,
 	nPos: GetNum(item.getAttribute("MenuPos")),
-	CONFIG: fso.BuildPath(te.Data.DataFolder, "config\\closedtabs.xml"),
+	CONFIG: BuildPath(te.Data.DataFolder, "config\\closedtabs.xml"),
 
 	Exec: function (Ctrl, pt) {
 		const FV = GetFolderView(Ctrl, pt);

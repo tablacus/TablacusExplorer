@@ -189,7 +189,8 @@ BOOL	g_bInit = FALSE;
 BOOL	g_bShowParseError = TRUE;
 BOOL	g_bDragging = FALSE;
 BOOL	g_bCanLayout = FALSE;
-BOOL	g_bUpper10;
+BOOL	g_bUpper10 = FALSE;
+BOOL	g_bUpper11 = FALSE;
 BOOL	g_bScriptError = FALSE;
 extern BOOL	g_bDarkMode;
 extern std::unordered_map<HWND, HWND> g_umDlgProc;
@@ -4372,6 +4373,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		}
 	}
 	g_bUpper10 = teVerifyVersion(10, 0, 0);
+	g_bUpper11 = teVerifyVersion(10, 0, 22000);
 #ifdef _2000XP
 	g_bUpperVista = teVerifyVersion(6, 0, 0);
 #else
@@ -10144,7 +10146,7 @@ LPWSTR CteShellBrowser::GetThemeName()
 		return L"explorer";
 	}
 	if (g_nWindowTheme == 1) { //Classic style
-		return bDarkMode ? L"darkmode_explorer" : NULL;
+		return bDarkMode && !g_bUpper11 ? L"darkmode_explorer" : NULL;
 	}
 	//Items view style
 	return bDarkMode ? L"darkmode_itemsview" : L"itemsview";
