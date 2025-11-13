@@ -503,6 +503,7 @@ Init = async function () {
 	ui_.Show = 1;
 	Resize();
 	AddEvent("BrowserCreatedEx", "setTimeout(async function () { SetWindowAlpha(await GetTopWindow(), 255); }, 99);");
+	WebBrowser.DropMode = 1;
 	ClearEvent("Layout");
 	ClearEvent("Load");
 	g_.ShowError = true;

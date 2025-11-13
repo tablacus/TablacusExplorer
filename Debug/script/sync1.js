@@ -3890,7 +3890,6 @@ InitWindow = function () {
 			ChangeView(cFV[i]);
 		}
 	}
-	WebBrowser.DropMode = 1;
 }
 
 Threads = api.CreateObject("Object");
