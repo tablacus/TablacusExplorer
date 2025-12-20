@@ -9,6 +9,7 @@ const IID IID_IWICBitmap                    = {0x00000121, 0xa8f2, 0x4877, { 0xb
 #endif
 
 extern HWND g_hwndMain;
+extern int g_param[Count_TE_params];
 extern int g_nException;
 extern BOOL	g_bUpperVista;
 extern BOOL	g_bUpper10;
@@ -24,7 +25,6 @@ extern GUID		g_ClsIdStruct;
 extern GUID		g_clsidWBM;
 extern BSTR	g_bsClipRoot;
 extern BOOL	g_bDragging;
-extern BOOL	g_bDragIcon;
 extern IDropTargetHelper *g_pDropTargetHelper;
 extern LPFND2D1CreateFactory _D2D1CreateFactory;
 extern LPFNDWriteCreateFactory _DWriteCreateFactory;
@@ -2349,13 +2349,18 @@ VOID CteMemory::Write(int nIndex, int nLen, VARTYPE vt, VARIANT *pv)
 	}
 }
 
-void CteMemory::SetPoint(int x, int y)
+VOID CteMemory::SetPoint(int x, int y)
 {
 	POINT *ppt = (POINT *)m_pc;
 	ppt->x = x;
 	ppt->y = y;
 }
-
+/*
+VOID  CteMemory::GetPoint(POINT* ppt)
+{
+	::CopyMemory(ppt, m_pc, sizeof(POINT));
+}
+*/
 //CteWICBitmap
 CteWICBitmap::CteWICBitmap()
 {
@@ -4218,11 +4223,11 @@ STDMETHODIMP CteDropTarget2::DragEnter(IDataObject *pDataObj, DWORD grfKeyState,
 	HRESULT hr = DragSub(TE_OnDragEnter, m_punk, m_pDragItems, &grfKeyState, pt, pdwEffect);
 	if (m_pDropTarget && dwEffect == *pdwEffect) {
 		hr = m_pDropTarget->DragEnter(pDataObj, grfKeyState, pt, pdwEffect);
-	} else if (g_bDragIcon && g_pDropTargetHelper) {
+	} else if (g_pDropTargetHelper && (g_param[TE_DragIcon] & 1)) {
 		m_bUseHelper = TRUE;
 		hr = g_pDropTargetHelper->DragEnter(m_hwnd, pDataObj, (LPPOINT)&pt, *pdwEffect);
 	}
-	if (!g_bDragIcon && g_pDropTargetHelper) {
+	if (g_pDropTargetHelper && !(g_param[TE_DragIcon] & 1)) {
 		g_pDropTargetHelper->DragLeave();
 	}
 	return hr;
@@ -4234,11 +4239,11 @@ STDMETHODIMP CteDropTarget2::DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEf
 	HRESULT hr = DragSub(TE_OnDragOver, m_punk, m_pDragItems, &grfKeyState, pt, pdwEffect);
 	if (m_pDropTarget && dwEffect == *pdwEffect) {
 		hr = m_pDropTarget->DragOver(grfKeyState, pt, pdwEffect);
-	} else if (g_bDragIcon && g_pDropTargetHelper) {
+	} else if (g_pDropTargetHelper && (g_param[TE_DragIcon] & 1)) {
 		m_bUseHelper = TRUE;
 		g_pDropTargetHelper->DragOver((LPPOINT)&pt, *pdwEffect);
 	}
-	if (!g_bDragIcon && g_pDropTargetHelper) {
+	if (g_pDropTargetHelper && !(g_param[TE_DragIcon] & 1)) {
 		g_pDropTargetHelper->DragLeave();
 	}
 	m_grfKeyState = grfKeyState;

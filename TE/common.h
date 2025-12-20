@@ -34,6 +34,7 @@
 #include <d2d1.h>
 #include <dwrite.h>
 //#include <Vssym32.h>
+#include <string>
 #include <vector>
 #include <unordered_map>
 #ifdef USE_TEOBJ
@@ -466,10 +467,11 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TE_OnContentsChanged	54
 #define TE_OnFilterView			55
 #define TE_OnShowError			56
+#define TE_OnDragImage			57
 #ifdef _USE_SYNC
-#define TE_FN					57
+#define TE_FN					58
 #endif
-#define Count_OnFunc			57
+#define Count_OnFunc			58
 #define SB_TotalFileSize		0
 #define SB_ColumnsReplace		1
 #define SB_AltSelectedItems		2
@@ -531,7 +533,8 @@ typedef VOID (__cdecl * LPFNDispatchAPI)(int nArg, teParam *param, DISPPARAMS *p
 #define TE_LibraryFilter	14
 #define TE_AutoArrange		15
 #define TE_ShowInternet		16
-#define Count_TE_params		17
+#define TE_DragIcon			17
+#define Count_TE_params		18
 
 #define	TE_AutoViewMode	0x10000
 #define TECL_DARKTEXT 0xffffff

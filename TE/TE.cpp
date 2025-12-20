@@ -194,7 +194,6 @@ BOOL	g_bUpper11 = FALSE;
 BOOL	g_bScriptError = FALSE;
 extern BOOL	g_bDarkMode;
 extern std::unordered_map<HWND, HWND> g_umDlgProc;
-BOOL	g_bDragIcon = TRUE;
 COLORREF g_clrBackground = GetSysColor(COLOR_WINDOW);
 SHORT	g_nDelta = 0;
 #ifdef _2000XP
@@ -244,7 +243,6 @@ TEmethod methodTE[] = {
 	{ 1139, "HiddenFilter" },
 //	{ 1140, "Background" },//Deprecated
 //	{ 1150, "ThumbnailProvider" },//Deprecated
-	{ 1160, "DragIcon" },
 	{ 1180, "ExplorerBrowserFilter" },
 	{ 1190, "TreeHiddenFilter" },
 	{ TE_METHOD + 1133, "FolderItems" },
@@ -279,6 +277,7 @@ TEmethod methodTE[] = {
 	{ TE_OFFSET + TE_LibraryFilter, "LibraryFilter" },
 	{ TE_OFFSET + TE_AutoArrange, "AutoArrange" },
 	{ TE_OFFSET + TE_ShowInternet, "ShowInternet" },
+	{ TE_OFFSET + TE_DragIcon,  "DragIcon" },
 
 	{ START_OnFunc + TE_Labels, "Labels" },
 	{ START_OnFunc + TE_ColumnsReplace, "ColumnsReplace" },
@@ -337,6 +336,7 @@ TEmethod methodTE[] = {
 	{ START_OnFunc + TE_OnContentsChanged, "OnContentsChanged" },
 	{ START_OnFunc + TE_OnFilterView, "OnFilterView" },
 	{ START_OnFunc + TE_OnShowError, "OnShowError" },
+	{ START_OnFunc + TE_OnDragImage, "OnDragImage" },
 #ifdef _USE_SYNC
 	{ START_OnFunc + TE_FN, "fn" },
 #endif
@@ -8853,7 +8853,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 		case DISPID_BEGINDRAG://XP+
 			DoFunc1(TE_OnBeginDrag, this, pVarResult);
 			if (pVarResult->vt != VT_BOOL || pVarResult->boolVal) {
-				BOOL bHandled = m_bRegenerateItems || ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER]);
+				BOOL bHandled = m_bRegenerateItems || ILIsEqual(m_pidl, g_pidls[CSIDL_RESULTSFOLDER]) || !(g_param[TE_DragIcon] & 0x80000000);
 				if (bHandled || g_param[TE_ViewOrder]) {
 					FolderItems *pid;
 					if SUCCEEDED(SelectedItems(&pid)) {
@@ -11459,13 +11459,6 @@ STDMETHODIMP CTE::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlag
 				teSetPtr(pVarResult, teThumbnailProvider);
 				return S_OK;*/
 
-			case 1160://DragIcon
-				if (nArg >= 0) {
-					g_bDragIcon = GetBoolFromVariant(&pDispParams->rgvarg[nArg]);
-				}
-				teSetBool(pVarResult, g_bDragIcon);
-				return S_OK;
-
 			case 1180://ExplorerBrowserFilter
 				teSetGetString(nArg, pDispParams, pVarResult, &g_bsExplorerBrowserFilter);
 				return S_OK;
@@ -12366,7 +12359,7 @@ STDMETHODIMP CteWebBrowser::DragEnter(IDataObject *pDataObj, DWORD grfKeyState, 
 			hr = S_OK;
 		}
 		if (g_pDropTargetHelper) {
-			if (g_bDragIcon) {
+			if (g_param[TE_DragIcon] & 8) {
 				if (g_nBlink == 1) {
 					g_pDropTargetHelper->DragEnter(m_hwndBrowser, pDataObj, (LPPOINT)&pt, *pdwEffect);
 				}
@@ -12393,7 +12386,7 @@ STDMETHODIMP CteWebBrowser::DragOver(DWORD grfKeyState, POINTL pt, DWORD *pdwEff
 			m_dwEffect = DROPEFFECT_NONE;
 		}
 		if (g_pDropTargetHelper) {
-			if (g_bDragIcon) {
+			if (g_param[TE_DragIcon] & 8) {
 				if (g_nBlink == 1) {
 					g_pDropTargetHelper->DragOver((LPPOINT)&pt, *pdwEffect);
 				}

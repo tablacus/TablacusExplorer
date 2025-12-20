@@ -2861,6 +2861,10 @@ g_.event.begindrag = function (Ctrl) {
 	return !isFinite(RunEvent3("BeginDrag", Ctrl));
 }
 
+g_.event.dragimage = function (Ctrl, dataObj, di) {
+	return RunEvent4("DragImage", Ctrl, dataObj, di);
+}
+
 g_.event.beforegetdata = function (Ctrl, Items, nMode) {
 	return RunEvent2("BeforeGetData", Ctrl, Items, nMode);
 }
@@ -3796,7 +3800,7 @@ InitCode = function () {
 	te.Data.Conf_WheelSelect = GetNum(te.Data.Conf_WheelSelect, 1);
 	te.SizeFormat = (te.Data.Conf_SizeFormat || "").replace(/^0x/i, "");
 	te.HiddenFilter = ExtractFilter(te.Data.Conf_HiddenFilter);
-	te.DragIcon = !GetNum(te.Data.Conf_NoDragIcon);
+	te.DragIcon = ~GetNum(te.Data.Conf_NoDragIcon);
 	const ar = ['AutoArrange', 'DateTimeFormat', 'Layout', 'LibraryFilter', 'NetworkTimeout', 'ShowInternet', 'ViewOrder'];
 	for (let i = ar.length; i--;) {
 		te[ar[i]] = te.Data['Conf_' + ar[i]];

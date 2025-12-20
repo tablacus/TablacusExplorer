@@ -3,6 +3,8 @@
 
 #include "common.h"
 
+extern class CTE;
+extern CTE* g_pTE;
 extern HWND g_hwndMain;
 extern int g_nException;
 extern int g_nBlink;
@@ -34,6 +36,7 @@ extern IDispatch	*g_pJS;
 extern DWORD   g_dwCookieJS;
 extern IDispatch	*g_pOnFunc[Count_OnFunc];
 extern GUID		g_ClsIdFI;
+extern GUID		g_clsidWBM;
 
 #ifdef _DEBUG
 extern LPWSTR	g_strException;
@@ -2287,9 +2290,9 @@ VOID GetPointFormVariant(POINT *ppt, VARIANT *pv)
 	if (GetDispatch(pv, &pdisp)) {
 		VARIANT v;
 		VariantInit(&v);
-		teGetProperty(pdisp, L"x", &v);
+		teGetPropertyI(pdisp, L"x", &v);
 		ppt->x = GetIntFromVariantClear(&v);
-		teGetProperty(pdisp, L"y", &v);
+		teGetPropertyI(pdisp, L"y", &v);
 		ppt->y = GetIntFromVariantClear(&v);
 		pdisp->Release();
 		return;
@@ -2346,7 +2349,50 @@ HRESULT teDoDragDrop(HWND hwnd, IDataObject *pDataObj, DWORD *pdwEffect, BOOL bD
 		g_nDropState = bDropState ? 2 : 1;
 		IDragSourceHelper *pDragSourceHelper;
 		if SUCCEEDED(g_pDropTargetHelper->QueryInterface(IID_PPV_ARGS(&pDragSourceHelper))) {
-			pDragSourceHelper->InitializeFromWindow(hwnd, NULL, pDataObj);
+			if (g_param[TE_DragIcon] & 0x80000000) {
+				pDragSourceHelper->InitializeFromWindow(hwnd, NULL, pDataObj);
+			} else {
+				SHDRAGIMAGE di = { 0 };
+				if (g_pOnFunc[TE_OnDragImage]) {
+					VARIANTARG* pv = GetNewVARIANT(3);
+					teSetObject(&pv[2], g_pTE);
+					CteFolderItems *pDragItems = new CteFolderItems(pDataObj, NULL);
+					teSetObject(&pv[1], pDragItems);
+					IDispatch *pdi = NULL;
+					GetNewObject(&pdi);
+					teSetObject(&pv[0], pdi);
+					VARIANT v;
+					VariantInit(&v);
+					Invoke4(g_pOnFunc[TE_OnDragImage], &v, 3, pv);
+					VariantClear(&v);
+					teGetProperty(pdi, L"DragImage", &v);
+					IUnknown* punk;
+					if (FindUnknown(&v, &punk)) {
+						CteWICBitmap* pWBM;
+						if SUCCEEDED(punk->QueryInterface(g_clsidWBM, (PVOID*)&pWBM)) {
+							di.hbmpDragImage = pWBM->GetHBITMAP(-1);
+							SafeRelease(&pWBM);
+						}
+						IWICBitmap* pWICBitmap;
+						if SUCCEEDED(punk->QueryInterface(IID_PPV_ARGS(&pWICBitmap))) {
+							pWICBitmap->GetSize((UINT*)&di.sizeDragImage.cx, (UINT*)&di.sizeDragImage.cy);
+							SafeRelease(&pWICBitmap);
+						}
+					}
+					VariantClear(&v);
+
+					teGetProperty(pdi, L"ptOffset", &v);
+					GetPointFormVariant(&di.ptOffset, &v);
+					VariantClear(&v);
+
+					teGetProperty(pdi, L"crColorKey", &v);
+					di.crColorKey = GetIntFromVariantClear(&v);
+				}
+				pDragSourceHelper->InitializeFromBitmap(&di, pDataObj);
+				if (di.hbmpDragImage) {
+					::DeleteObject(di.hbmpDragImage);
+				}
+			}
 			pDragSourceHelper->Release();
 		}
 		g_pDraggingItems = pDataObj;
