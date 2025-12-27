@@ -469,13 +469,19 @@ window.addEventListener("mousedown", function (ev) {
 	}
 });
 
-document.addEventListener("MSFullscreenChange", function () {
-	FullscreenChanged(document.msFullscreenElement != null, document.msFullscreenElement == document.body);
-});
+if (window.chrome) {
+	document.addEventListener("webkitfullscreenchange", function () {
+		FullscreenChanged(document.fullscreenElement != null, document.fullscreenElement == document.body);
+	});
 
-document.addEventListener("webkitfullscreenchange", function () {
-	FullscreenChanged(document.fullscreenElement != null, document.fullscreenElement == document.body);
-});
+	document.addEventListener("dragenter", function () {
+		WebBrowser.DropMode = 1;
+	});
+} else {
+	document.addEventListener("MSFullscreenChange", function () {
+		FullscreenChanged(document.msFullscreenElement != null, document.msFullscreenElement == document.body);
+	});
+}
 
 Init = async function () {
 	te.Data.MainWindow = $;
@@ -503,9 +509,7 @@ Init = async function () {
 	ui_.Show = 1;
 	Resize();
 	AddEvent("BrowserCreatedEx", "setTimeout(async function () { SetWindowAlpha(await GetTopWindow(), 255); }, 99);");
-	setTimeout(function () {
-		WebBrowser.DropMode = 1;
-	}, 999);
+	WebBrowser.DropMode = 1;
 	ClearEvent("Layout");
 	ClearEvent("Load");
 	g_.ShowError = true;

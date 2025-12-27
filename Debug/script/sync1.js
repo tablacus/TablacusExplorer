@@ -2142,6 +2142,7 @@ AddEvent("InvokeCommand", function (ContextMenu, fMask, hwnd, Verb, Parameters, 
 
 te.OnDragEnter = function (Ctrl, dataObj, pgrfKeyState, pt, pdwEffect) {
 	let hr = E_NOTIMPL;
+	WebBrowser.DropMode = 1;
 	const dwEffect = pdwEffect[0];
 	const en = "DragEnter";
 	const eo = eventTE[en.toLowerCase()];
@@ -3608,7 +3609,7 @@ AutocompleteThread = function () {
 				ar.push(Items.Item(i).Path);
 			}
 		}
-		api.Invoke(UI.Autocomplete, [ar.join("\t"), pid.Path]);
+		UI.Autocomplete(ar.join("\t"), pid.Path);
 	}
 }
 

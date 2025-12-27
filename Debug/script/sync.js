@@ -69,7 +69,7 @@ g_.arError = api.CreateObject("Array");
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20251220 ? te.Version : 20251222;
+		return te.Version < 20251220 ? te.Version : 20251227;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -3708,7 +3708,7 @@ FolderMenu = {
 				$.RemoveSubMenu(hParent, wID);
 				$.RunEvent1("FolderMenuCreated", hMenu, FolderItem, hParent);
 				if (/^object$|^function$/.test(typeof cb)) {
-					api.Invoke(cb, [hMenu, FolderItem, hParent]);
+					cb(hMenu, FolderItem, hParent);
 				}
 			}
 		}
