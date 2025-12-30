@@ -1780,9 +1780,11 @@ te.OnMouseMessage = function (Ctrl, hwnd, msg, wParam, pt) {
 	}
 	if (msg != WM_MOUSEMOVE) {
 		te.Data.cmdKeyF = false;
-		if (!/^Chrome|^Internet/i.test(api.GetClassName(hwnd))) {
-			if (/^Chrome|^Internet/i.test(api.GetClassName(api.GetFocus()))) {
-				InvokeUI("FocusElement");
+		if (msg == WM_LBUTTONDOWN || msg == WM_RBUTTONDOWN || msg == WM_MBUTTONDOWN || msg == WM_XBUTTONDOWN) {
+			if (!/^Chrome|^Internet/i.test(api.GetClassName(hwnd))) {
+				if (/^Chrome|^Internet/i.test(api.GetClassName(api.GetFocus()))) {
+					InvokeUI("FocusElement");
+				}
 			}
 		}
 	}
