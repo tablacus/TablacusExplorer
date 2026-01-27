@@ -1444,11 +1444,13 @@ CreateXmlUI = function (bRoot) {
 
 SaveXmlExUI = async function (fn, xml) {
 	fn = BuildPath(await te.Data.DataFolder, "config\\" + fn);
-	const r = (await WriteTextFile(fn, window.XMLSerializer ? new XMLSerializer().serializeToString(xml) : xml.xml) || "").split("\t");
+	const r = (await WriteTextFile(fn + ".tmp", window.XMLSerializer ? new XMLSerializer().serializeToString(xml) : xml.xml) || "").split("\t");
 	if (r[0] && r[0] != E_ACCESSDENIED) {
 		const e = await api.CreateObject("Object");
 		e.message = r[1];
 		ShowError(e, [await GetText("Save"), fn].join(": "));
+	} else {
+		SafeReplaceFile(fn);
 	}
 }
 

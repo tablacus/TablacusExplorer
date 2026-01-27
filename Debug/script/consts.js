@@ -1956,6 +1956,8 @@ STGM_FAILIFTHERE = 0;
 STGM_NOSNAPSHOT = 0x200000;
 STGM_DIRECT_SWMR = 0x400000;
 
+REPLACEFILE_WRITE_THROUGH = 1;
+
 if (!window.chrome || !window.alert) {
 	if (!window.te) {
 		te = external;

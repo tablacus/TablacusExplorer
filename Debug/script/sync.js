@@ -69,7 +69,7 @@ g_.arError = api.CreateObject("Array");
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20251220 ? te.Version : 20251231;
+		return te.Version < 20260127 ? te.Version : 20260127;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -696,6 +696,16 @@ LoadXml = function (filename, nGroup) {
 	--g_.LockUpdate;
 }
 
+SafeReplaceFile = function (path) {
+	if (api.ReplaceFile(path, path + ".tmp", path + ".bak", REPLACEFILE_WRITE_THROUGH)) {
+		if (te.Data.Conf_Backup) {
+			DeleteItem(path + ".bak", te.Data.Conf_Backup == 1 ? 0 : FOF_ALLOWUNDO | FOF_SILENT | FOF_NOCONFIRMATION | FOF_NOERRORUI);
+		}
+	} else {
+		DeleteItem(path + ".tmp");
+	}
+}
+
 SaveXmlTC = function (Ctrl, xml, nGroup) {
 	if (!Ctrl) {
 		return;
@@ -789,7 +799,9 @@ SaveConfigXML = function (filename) {
 
 	MainWindow.RunEvent1("SaveConfig", xml);
 	try {
-		xml.save(PathUnquoteSpaces(filename));
+		const path = PathUnquoteSpaces(filename);
+		xml.save(path + ".tmp");
+		SafeReplaceFile(path);
 	} catch (e) {
 		if (e.number != E_ACCESSDENIED) {
 			ShowError(e, [GetText("Save"), filename].join(": "));
@@ -823,7 +835,9 @@ SaveXml = function (filename) {
 
 	MainWindow.RunEvent1("SaveWindow", xml);
 	try {
-		xml.save(ExtractPath(te, filename));
+		const path = ExtractPath(te, filename);
+		xml.save(path + ".tmp");
+		SafeReplaceFile(path);
 	} catch (e) {
 		if (e.number != E_ACCESSDENIED) {
 			ShowError(e, [GetText("Save"), filename].join(": "));
@@ -3006,7 +3020,8 @@ MakeMenus = function (hMenu, menus, arMenu, items, Ctrl, pt, nMin, arItem, bTran
 SaveXmlEx = function (fn, xml) {
 	try {
 		fn = BuildPath(te.Data.DataFolder, "config\\" + fn);
-		xml.save(fn);
+		xml.save(fn + ".tmp");
+		SafeReplaceFile(fn);
 	} catch (e) {
 		if (e.number != E_ACCESSDENIED) {
 			ShowError(e, [GetText("Save"), fn].join(": "));

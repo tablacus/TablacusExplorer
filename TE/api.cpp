@@ -3083,6 +3083,11 @@ VOID teApiResetEvent(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT 
 	teSetBool(pVarResult, ResetEvent(param[0].handle));
 }
 
+VOID teApiReplaceFile(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
+{
+	teSetBool(pVarResult, ReplaceFile(param[0].lpcwstr, param[1].lpcwstr, param[2].lpcwstr, param[3].dword, NULL, NULL));
+}
+
 VOID teApiRoundRect(int nArg, teParam *param, DISPPARAMS *pDispParams, VARIANT *pVarResult)
 {
 	teSetBool(pVarResult, RoundRect(param[0].hdc, param[1].intVal, param[2].intVal, param[3].intVal, param[4].intVal, param[5].intVal, param[6].intVal));
@@ -4342,6 +4347,7 @@ TEDispatchApi dispAPI[] = {
 	{ 2, -1, -1, -1, "ReleaseDC", teApiReleaseDC },
 	{ 3, -1, -1, -1, "RemoveMenu", teApiRemoveMenu },
 	{ 1, -1, -1, -1, "ResetEvent", teApiResetEvent },
+	{ 4,  0,  1,  2, "ReplaceFile", teApiReplaceFile },
 	{ 7, -1, -1, -1, "RoundRect", teApiRoundRect },
 	{ 6,  4, -1, -1, "RunDLL", teApiRunDLL },
 	{ 2, -1, -1, -1, "ScreenToClient", teApiScreenToClient },

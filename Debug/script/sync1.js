@@ -849,7 +849,7 @@ RefreshEx = function (FV, tm, df) {
 					FV.Data.AccessTime = "!";
 					FV.Data.pathChk = FV.FolderItem.Path;
 					api.PathIsDirectory(function (hr, FV, Path) {
-						if (FV.Data) {
+						if (FV.Data && FV.FolderItem) {
 							FV.Data.AccessTime = new Date().getTime();
 							FV.Data.pathChk = void 0;
 							if (Path == FV.FolderItem.Path) {
@@ -3527,7 +3527,7 @@ CreateUpdater = function (arg) {
 	api.FindClose(hFind);
 
 	if (arDel.length) {
-		api.SHFileOperation(FO_DELETE, arDel, null, FOF_SILENT | FOF_NOCONFIRMATION, false);
+		DeleteItem(arDel);
 	}
 	const ppid = api.Memory("DWORD");
 	api.GetWindowThreadProcessId(te.hwnd, ppid);

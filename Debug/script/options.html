@@ -88,6 +88,12 @@
               <label>Input</label><br>
               <label><input type="checkbox" id="!Conf_NoAutocomplete">@ieframe.dll,-12806[Autocomplete]</label>
               <br><br>
+              <label>@sdclt.exe,-1156[Back Up Files]</label> (*.bak)<br>
+              <input type="text" name="Conf_Backup" style="display: none">
+              <label><input type="radio" name="Conf_Backup_" id="Conf_Backup=0" onclick="SetRadio(this)">@fde.dll,-905[Leave in Existing Location]</label><br>
+              <label><input type="radio" name="Conf_Backup_" id="Conf_Backup=1" onclick="SetRadio(this)">Delete</label><br>
+              <label><input type="radio" name="Conf_Backup_" id="Conf_Backup=2" onclick="SetRadio(this)">@shell32.dll,-37384[-8964]</label><br>
+              <br>
               <div class="block">
                 <button name="ButtonInitConfig" onclick="InitConfig(this);">Initialize config folder</button>
                 <br>
