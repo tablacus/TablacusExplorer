@@ -69,7 +69,7 @@ g_.arError = api.CreateObject("Array");
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20260127 ? te.Version : 20260127;
+		return te.Version < 20260127 ? te.Version : 20260129;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -701,8 +701,8 @@ SafeReplaceFile = function (path) {
 		if (te.Data.Conf_Backup) {
 			DeleteItem(path + ".bak", te.Data.Conf_Backup == 1 ? 0 : FOF_ALLOWUNDO | FOF_SILENT | FOF_NOCONFIRMATION | FOF_NOERRORUI);
 		}
-	} else {
-		DeleteItem(path + ".tmp");
+	} else if (!api.PathFileExists(path)) {
+		api.MoveFileEx(path + ".tmp", path, MOVEFILE_WRITE_THROUGH);
 	}
 }
 
