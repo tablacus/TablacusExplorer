@@ -69,7 +69,7 @@ g_.arError = api.CreateObject("Array");
 
 AboutTE = function (n) {
 	if (n == 0) {
-		return te.Version < 20260127 ? te.Version : 20260129;
+		return te.Version < 20260127 ? te.Version : 20260202;
 	}
 	if (n == 1) {
 		const v = AboutTE(0);
@@ -697,13 +697,24 @@ LoadXml = function (filename, nGroup) {
 }
 
 SafeReplaceFile = function (path) {
-	if (api.ReplaceFile(path, path + ".tmp", path + ".bak", REPLACEFILE_WRITE_THROUGH)) {
-		if (te.Data.Conf_Backup) {
-			DeleteItem(path + ".bak", te.Data.Conf_Backup == 1 ? 0 : FOF_ALLOWUNDO | FOF_SILENT | FOF_NOCONFIRMATION | FOF_NOERRORUI);
-		}
-	} else if (!api.PathFileExists(path)) {
-		api.MoveFileEx(path + ".tmp", path, MOVEFILE_WRITE_THROUGH);
+	const hr = MainWindow.RunEvent3("SafeReplaceFile", path);
+	if (isFinite(hr)) {
+		return hr;
 	}
+	if (te.Data.Conf_BAK) {
+		if (api.ReplaceFile(path, path + ".tmp", path + ".bak", REPLACEFILE_WRITE_THROUGH)) {
+			if (te.Data.Conf_BAK > 1) {
+				DeleteItem(
+					path + ".bak", FOF_ALLOWUNDO | FOF_SILENT | FOF_NOCONFIRMATION | FOF_NOERRORUI
+				);
+			}
+			return;
+		}
+		if (api.PathFileExists(path)) {
+			return;
+		}
+	}
+	api.MoveFileEx(path + ".tmp", path, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
 }
 
 SaveXmlTC = function (Ctrl, xml, nGroup) {
