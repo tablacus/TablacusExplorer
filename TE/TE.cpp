@@ -558,8 +558,15 @@ VOID teTranslateAccelerator(IDispatch *pdisp, MSG *pMsg, HRESULT *phr)
 		IOleInPlaceActiveObject *pActiveObject = NULL;
 		if SUCCEEDED(pWB->QueryInterface(IID_PPV_ARGS(&pActiveObject))) {
 			HRESULT hr = pActiveObject->TranslateAcceleratorW(pMsg);
-			if (hr == S_OK || (SUCCEEDED(hr) && GetKeyState(VK_MENU) < 0)) {
+			if (hr == S_OK) {
 				*phr = S_OK;
+			}
+			if SUCCEEDED(hr) {
+				if (GetKeyState(VK_MENU) < 0) {
+					if (!(GetKeyState(VK_RMENU) < 0 && GetKeyState(VK_LCONTROL) < 0)) {
+						*phr = S_OK;
+					}
+				}
 			}
 			pActiveObject->Release();
 		}
