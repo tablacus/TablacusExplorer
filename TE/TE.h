@@ -327,6 +327,7 @@ public:
 	VOID ExItems(CteFolderItems *pFolderItems, IFolderView *pFV, int nCount, UINT uItem);
 	HRESULT Items(UINT uItem, FolderItems **ppid);
 	HRESULT SelectItemEx(LPITEMIDLIST pidl, int dwFlags);
+	HRESULT SelectItemNum(int nIndex, int dwFlags);
 	VOID InitFolderSize();
 	HRESULT GetPropertyKey(int iItem, PROPERTYKEY *pPropKey);
 	BOOL SetColumnsProperties(int iItem);

@@ -2585,7 +2585,7 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 	static HWND hwndEdit = NULL;
 	static FolderItem *pidEdit = NULL;
 
-	CteShellBrowser *pSB = (CteShellBrowser *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+	CteShellBrowser *pSB = (CteShellBrowser *)dwRefData;
 	try {
 		BOOL bDoCallProc = TRUE;
 		LRESULT lResult = S_FALSE;
@@ -2976,7 +2976,7 @@ LRESULT CALLBACK TELVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UI
 {
 	HWND hTree;
 	try {
-		CteShellBrowser *pSB = (CteShellBrowser *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+		CteShellBrowser *pSB = (CteShellBrowser *)dwRefData;
 		switch (msg)
 		{
 		case LVM_SETTEXTCOLOR:
@@ -6348,7 +6348,7 @@ VOID CteShellBrowser::FocusItem()
 	if (GetFolderViewAndItemCount(&pFV, SVGIO_ALLVIEW)) {
 		int nTop = -1;
 		if (SUCCEEDED(pFV->GetFocusedItem(&nTop)) && nTop < 0) {
-			pFV->SelectItem(0, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS | SVSI_SELECTIONMARK);
+			SelectItemNum(0, SVSI_FOCUSED | SVSI_ENSUREVISIBLE | SVSI_NOTAKEFOCUS | SVSI_SELECTIONMARK);
 		}
 		pFV->Release();
 	}
@@ -8653,8 +8653,9 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			return S_OK;
 #endif
 		case TE_METHOD + 0xf300://Notify
+		{
+			long lEvent = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 			if (nArg >= 2) {
-				long lEvent = GetIntFromVariant(&pDispParams->rgvarg[nArg]);
 				BOOL bTFS = (nArg >= 3 && GetBoolFromVariant(&pDispParams->rgvarg[nArg - 3]));
 				for (int i = 1; i < (lEvent & (SHCNE_RENAMEITEM | SHCNE_RENAMEFOLDER) ? 3 : 2); ++i) {
 					LPITEMIDLIST pidl;
@@ -8666,7 +8667,8 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 								if (bTFS) {
 									WCHAR szBuf[MAX_COLUMN_NAME_LEN];
 									SetFolderSize(pSF2, pidlLast, szBuf, _countof(szBuf));
-								} else {
+								}
+								else {
 									BSTR bsPath;
 									if SUCCEEDED(teGetDisplayNameBSTR(pSF2, pidl, SHGDN_FORPARSING, &bsPath)) {
 										if SUCCEEDED(teDelProperty(m_ppDispatch[SB_TotalFileSize], bsPath)) {
@@ -8685,7 +8687,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 			}
 			return S_OK;
-
+		}
 		case TE_METHOD + 0xf400://NavigateComplete
 			m_bBeforeNavigate = FALSE;
 			if (m_bVisible && !IsWindowVisible(m_hwnd)) {
@@ -8914,7 +8916,7 @@ STDMETHODIMP CteShellBrowser::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 			}
 			IFolderView *pFV;
 			if (GetFolderViewAndItemCount(&pFV,SVGIO_SELECTION) == 0) {
-				pFV->SelectItem(0, SVSI_FOCUSED | SVSI_NOTAKEFOCUS);
+				SelectItemNum(0, SVSI_FOCUSED | SVSI_NOTAKEFOCUS);
 			}
 			SafeRelease(&pFV);
 			return DoFunc(TE_OnSort, this, S_OK);
@@ -9310,23 +9312,8 @@ STDMETHODIMP CteShellBrowser::SelectItem(VARIANT *pvfi, int dwFlags)
 	if (m_pShellView) {
 		teFixListState(m_hwndLV, dwFlags);
 		if (teVarIsNumber(pvfi) && pvfi->vt != VT_BSTR) {
-			IFolderView *pFV = NULL;
 			int nIndex = GetIntFromVariant(pvfi);
-			int nCount = GetFolderViewAndItemCount(&pFV, SVGIO_ALLVIEW);
-			if (nIndex < nCount) {
-				if (m_hwndLV && !(dwFlags & (SVSI_SELECT | SVSI_DESELECTOTHERS))) {//21.12.15
-					if (nIndex == ListView_GetNextItem(m_hwndLV, -1, LVNI_SELECTED)) {
-						if (ListView_GetNextItem(m_hwndLV, nIndex, LVNI_SELECTED) < 0) {
-							dwFlags |= SVSI_DESELECTOTHERS;
-						}
-					}
-				}
-				if (dwFlags & (SVSI_SELECTIONMARK | (SVSI_KEYBOARDSELECT & ~SVSI_SELECT))) {//21.4.7
-					pFV->SelectItem(nIndex, dwFlags & (SVSI_SELECTIONMARK | SVSI_KEYBOARDSELECT | SVSI_NOTAKEFOCUS));
-				}
-				hr = pFV->SelectItem(nIndex, dwFlags & ~(SVSI_SELECTIONMARK | (SVSI_KEYBOARDSELECT & ~SVSI_SELECT)));
-			}
-			SafeRelease(&pFV);
+			hr = SelectItemNum(nIndex, dwFlags);
 		} else {
 			IDataObject *pDataObj;
 			if (GetDataObjFromVariant(&pDataObj, pvfi)) {
@@ -9350,7 +9337,6 @@ STDMETHODIMP CteShellBrowser::SelectItem(VARIANT *pvfi, int dwFlags)
 				teCoTaskMemFree(pidl);
 			}
 		}
-		CteFolderItem *pid1 = NULL;
 		if (m_pFolderItem) {
 			teILFreeClear(&m_pFolderItem->m_pidlFocused);
 		}
@@ -9380,14 +9366,40 @@ HRESULT CteShellBrowser::SelectItemEx(LPITEMIDLIST pidl, int dwFlags)
 				SafeRelease(&pFV);
 			}
 		}
+		BOOL bRedraw = m_hwndLV && (dwFlags & SVSI_ENSUREVISIBLE);
+		if (bRedraw) {
+			m_dwRedraw |= 2;
+			SendMessage(m_hwnd, WM_SETREDRAW, FALSE, 0);
+		}
 		if (dwFlags & (SVSI_SELECTIONMARK | (SVSI_KEYBOARDSELECT & ~SVSI_SELECT))) {//21.4.7
 			m_pShellView->SelectItem(pidlLast, dwFlags & (SVSI_SELECTIONMARK | SVSI_KEYBOARDSELECT | SVSI_NOTAKEFOCUS));
 		}
 		hr = m_pShellView->SelectItem(pidlLast, dwFlags & ~(SVSI_SELECTIONMARK | (SVSI_KEYBOARDSELECT & ~SVSI_SELECT)));
+
 		if (FAILED(hr) && (dwFlags & SVSI_DESELECTOTHERS)) {
 			hr = m_pShellView->SelectItem(pidlLast, SVSI_DESELECTOTHERS);
 		}
+		if (bRedraw) {
+			RedrawUpdate();
+		}
+
 	}
+	return hr;
+}
+
+HRESULT CteShellBrowser::SelectItemNum(int nIndex, int dwFlags)
+{
+	HRESULT hr = E_NOTIMPL;
+	IFolderView *pFV = NULL;
+	int nCount = GetFolderViewAndItemCount(&pFV, SVGIO_ALLVIEW);
+	if (nIndex < nCount) {
+		LPITEMIDLIST pidl;
+		if SUCCEEDED(pFV->Item(nIndex, &pidl)) {
+			SelectItemEx(pidl, dwFlags);
+			teILFreeClear(&pidl);
+		}
+	}
+	SafeRelease(&pFV);
 	return hr;
 }
 
@@ -10034,7 +10046,7 @@ VOID CteShellBrowser::AddItem(LPITEMIDLIST pidl)
 		    LPITEMIDLIST pidlChild = NULL;
 			if (IncludeObject2(pSF, pidlPart, pidl) == S_OK) {
 				m_dwRedraw |= 2;
-				SetRedraw(FALSE);
+				SendMessage(m_hwnd, WM_SETREDRAW, FALSE, 0);
 				try {
 					IResultsFolder *pRF;
 					if (SUCCEEDED(m_pShellView->QueryInterface(IID_PPV_ARGS(&pFV))) && SUCCEEDED(pFV->GetFolder(IID_PPV_ARGS(&pRF)))) {
@@ -10535,7 +10547,7 @@ VOID CteShellBrowser::SetPropEx()
 {
 	if (IUnknown_GetWindow(m_pShellView, &m_hwndDV) == S_OK) {
 		if (SetWindowLongPtr(m_hwndDV, GWLP_USERDATA, (LONG_PTR)this) != (LONG_PTR)this) {
-			SetWindowSubclass(m_hwndDV, TELVProc, (UINT_PTR)TELVProc, 0);
+			SetWindowSubclass(m_hwndDV, TELVProc, (UINT_PTR)TELVProc, (DWORD_PTR)this);
 			for (int i = WM_USER + 173; i <= WM_USER + 175; ++i) {
 				teChangeWindowMessageFilterEx(m_hwndDV, i, MSGFLT_ALLOW, NULL);
 			}
@@ -10565,7 +10577,7 @@ VOID CteShellBrowser::SetPropEx()
 			}
 			SendMessage(m_hwndLV, WM_CHANGEUISTATE, MAKELONG(UIS_SET, UISF_HIDEFOCUS), 0);
 			if (SetWindowLongPtr(m_hwndLV, GWLP_USERDATA, (LONG_PTR)this) != (LONG_PTR)this) {
-				SetWindowSubclass(m_hwndLV, TELVProc2, (UINT_PTR)TELVProc2, 0);
+				SetWindowSubclass(m_hwndLV, TELVProc2, (UINT_PTR)TELVProc2, (LONG_PTR)this);
 			}
 			FixColumnEmphasis();
 		} else {
