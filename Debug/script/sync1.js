@@ -3407,13 +3407,16 @@ AddEvent("ReplaceMacroEx", [/%AddonStatus:([^%]*)%/ig, function (strMatch, ref1)
 	return GetNum(GetAddonElement(ref1).getAttribute("Enabled")) ? "on" : "off";
 }]);
 
+AddEvent("ReplaceMacroEx", [/"%Current%\\/ig, function (strMatch, ref1) {
+	return ('"' + GetCurrentPath(Ctrl) + '\\').replace(/\\\\$/g, '\\');
+}]);
+
 AddEvent("ReplaceMacroEx", [/"%Current%/ig, function (strMatch, ref1) {
-	let strSel = "";
-	const FV = GetFolderView(Ctrl);
-	if (FV) {
-		strSel = '"' + api.GetDisplayNameOf(FV, SHGDN_FORPARSING);
-	}
-	return strSel;
+	return '"' + GetCurrentPath(Ctrl);
+}]);
+
+AddEvent("ReplaceMacroEx", [/%Current%\\/ig, function (strMatch, ref1) {
+	return (GetCurrentPath(Ctrl) + '\\').replace(/\\\\$/g, '\\');;
 }]);
 
 AddEvent("ConfigChanged", function (s) {
@@ -3446,9 +3449,13 @@ AddEnv("Selected", function (Ctrl) {
 	return ar.join(" ");
 });
 
-AddEnv("Current", function (Ctrl) {
+GetCurrentPath = function (Ctrl) {
 	const FV = GetFolderView(Ctrl);
-	return FV ? PathQuoteSpaces(api.GetDisplayNameOf(FV, SHGDN_FORPARSING)) : '';
+	return FV ? api.GetDisplayNameOf(FV, SHGDN_FORPARSING) || '' : '';
+}
+
+AddEnv("Current", function (Ctrl) {
+	return PathQuoteSpaces(GetCurrentPath(Ctrl));
 });
 
 AddEnv("TreeSelected", function (Ctrl) {

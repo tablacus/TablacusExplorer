@@ -6218,6 +6218,7 @@ HRESULT CteShellBrowser::NavigateEB(DWORD dwFrame)
 			if (SUCCEEDED(teCreateInstance(CLSID_ExplorerBrowser, NULL, NULL, IID_PPV_ARGS(&m_pExplorerBrowser)))) {
 				FOLDERSETTINGS fs;
 				GetInitFS(&fs);
+				m_dwRedraw |= 4;
 				if (SUCCEEDED(m_pExplorerBrowser->Initialize(m_pTC->m_hwndStatic, &rc, &fs))) {
 					hr = GetShellFolder2(&m_pidl);
 					if (hr == S_OK) {
@@ -9802,8 +9803,10 @@ STDMETHODIMP CteShellBrowser::OnViewCreated(IShellView *psv)
 			ArrangeWindow();
 		}
 	}
-	m_dwRedraw &= ~4;
-	SetRedraw(TRUE);
+	if (m_hwndAlt) {
+		m_dwRedraw &= ~4;
+		SetRedraw(TRUE);
+	}
 	if (!m_pTC->m_nLockUpdate) {
 		ArrangeWindowEx();
 	}
@@ -10106,6 +10109,8 @@ VOID CteShellBrowser::NavigateComplete(BOOL bBeginNavigate)
 	if (!m_pFolderItem || m_pFolderItem->m_dwUnavailable) {
 		return;
 	}
+	m_dwRedraw &= ~4;
+	SetRedraw(TRUE);
 	if (!bBeginNavigate || DoFunc(TE_OnBeginNavigate, this, S_OK) != S_FALSE) {
 		BSTR bsAltSortColumn = NULL;
 		if (m_bRefreshing) {
