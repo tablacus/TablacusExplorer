@@ -35,6 +35,7 @@ HINSTANCE	g_hShell32 = NULL;
 HINSTANCE	g_hTEWV = NULL;
 HWND		g_hDialog = NULL;
 IShellWindows *g_pSW = NULL;
+IWICImagingFactory *g_pWICFactory = NULL;
 
 LPFNSHRunDialog _SHRunDialog = NULL;
 LPFNRegenerateUserEnvironment _RegenerateUserEnvironment = NULL;
@@ -4868,6 +4869,7 @@ function _c(s) {\
 		SafeRelease(&g_pJS);
 		SafeRelease(&g_pAutomation);
 		SafeRelease(&g_pDropTargetHelper);
+		SafeRelease(&g_pWICFactory);
 #ifdef _DEBUG
 		auto itr = g_umCBTHook.find(GetCurrentThreadId());
 		if (itr != g_umCBTHook.end()) {

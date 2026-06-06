@@ -238,7 +238,6 @@ public:
 	VOID RotateFlip(int n, BOOL bClearMeta);
 private:
 	IWICBitmap *m_pImage;
-	IWICImagingFactory *m_pWICFactory;
 	IStream *m_pStream;
 	CLSID m_guidSrc;
 	IDispatch	*m_ppDispatch[Count_WICFunc];
