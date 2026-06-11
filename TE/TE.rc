@@ -40,13 +40,17 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
             VALUE "InternalName", "TE\0"
             VALUE "LegalCopyright", "(C) Gaku\0"
 #ifdef _WINDLL
-#ifdef _WIN64
+#if defined(_M_ARM64)
+				VALUE "OriginalFilename", "tearm64.dll\0"
+#elif defined(_M_X64)
 				VALUE "OriginalFilename", "te64.dll\0"
 #else
 				VALUE "OriginalFilename", "te32.dll\0"
 #endif
 #else
-#ifdef _WIN64
+#if defined(_M_ARM64)
+				VALUE "OriginalFilename", "TEARM64.exe\0"
+#elif defined(_M_X64)
 				VALUE "OriginalFilename", "TE64.exe\0"
 #else
 				VALUE "OriginalFilename", "TE32.exe\0"

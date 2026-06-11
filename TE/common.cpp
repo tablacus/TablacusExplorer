@@ -2879,7 +2879,13 @@ int teGetModuleFileName(HMODULE hModule, BSTR *pbsPath)
 		teGetModuleFileName(g_hinstDll, pbsPath);
 		::PathRemoveFileSpec(*pbsPath);
 		::PathRemoveFileSpec(*pbsPath);
-#ifdef _WIN64
+#if defined(_M_ARM64)
+#ifdef _DEBUG
+		PathAppend(*pbsPath, L"TEdARM64.exe");
+#else
+		::PathAppend(*pbsPath, L"TEARM64.exe");
+#endif
+#elif defined(_M_X64)
 #ifdef _DEBUG
 		PathAppend(*pbsPath, L"TEd64.exe");
 #else

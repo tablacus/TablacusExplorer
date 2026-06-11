@@ -4265,14 +4265,18 @@ HRESULT teCreateWebView2(IWebBrowser2 **ppWebBrowser)
 	BSTR bsTEWV2;
 	teGetModuleFileName(NULL, &bsTEWV2);
 	PathRemoveFileSpec(bsTEWV2);
-#ifdef _WIN64
+#if defined(_M_ARM64)
+	PathAppend(bsTEWV2, L"lib\\tewvarm64.dll");
+#elif defined(_M_X64)
 	PathAppend(bsTEWV2, L"lib\\tewv64.dll");
 #else
 	PathAppend(bsTEWV2, L"lib\\tewv32.dll");
 #endif
 #ifdef _DEBUG
 	if (!PathFileExists(bsTEWV2)) {
-#ifdef _WIN64
+#if defined(_M_ARM64)
+		lstrcpy(bsTEWV2, L"C:\\cpp\\tewv\\x64\\Debug\\tewvarm64d.dll");
+#elif defined(_M_X64)
 		lstrcpy(bsTEWV2, L"C:\\cpp\\tewv\\x64\\Debug\\tewv64d.dll");
 #else
 		lstrcpy(bsTEWV2, L"C:\\cpp\\tewv\\Debug\\tewv32d.dll");

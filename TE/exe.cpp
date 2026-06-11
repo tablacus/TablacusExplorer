@@ -22,7 +22,14 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	WCHAR pszPath[MAX_PATHEX];
 	::GetModuleFileName(NULL, pszPath, MAX_PATHEX);
 	::PathRemoveFileSpec(pszPath);
-#ifdef _WIN64
+
+#if defined(_M_ARM64)
+#ifdef _DEBUG
+	::PathAppend(pszPath, L"lib\\TEdARM64.dll");
+#else
+	::PathAppend(pszPath, L"lib\\TEARM64.dll");
+#endif
+#elif defined(_M_X64)
 #ifdef _DEBUG
 	::PathAppend(pszPath, L"lib\\TEd64.dll");
 #else

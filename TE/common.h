@@ -61,6 +61,17 @@
 #ifndef _2000XP
 #pragma comment(lib, "Propsys.lib")
 #endif
+#if defined(_M_ARM64)
+#pragma comment(lib, "kernel32.lib")
+#pragma comment(lib, "user32.lib")
+#pragma comment(lib, "gdi32.lib")
+#pragma comment(lib, "advapi32.lib")
+#pragma comment(lib, "shell32.lib")
+#pragma comment(lib, "ole32.lib")
+#pragma comment(lib, "oleaut32.lib")
+#pragma comment(lib, "uuid.lib")
+#pragma comment(lib, "comdlg32.lib")
+#endif
 #ifdef USE_APIHOOK
 #pragma comment(lib, "imagehlp.lib")
 #endif
@@ -78,7 +89,9 @@
 #endif
 #endif
 #if !defined(_WINDLL) || defined(_EXEONLY)
-#ifdef _WIN64
+#if defined(_M_ARM64)
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='arm64' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#elif defined(_M_X64)
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #else
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")

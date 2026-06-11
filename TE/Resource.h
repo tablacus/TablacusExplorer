@@ -9,14 +9,20 @@
 #define STRING2(str) #str
 #ifdef _EXE
 //Version(EXE)
+#if defined(_M_ARM64)
+#define VER_Y		26
+#define VER_M		6
+#define VER_D		11
+#else
 #define VER_Y		25
 #define VER_M		4
 #define VER_D		8
+#endif
 #else
 //Version(DLL)
 #define VER_Y		26
 #define VER_M		6
-#define VER_D		6
+#define VER_D		11
 #endif
 
 //Icon
