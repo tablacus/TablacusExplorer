@@ -361,7 +361,8 @@ VOID FixChildren(HWND hwnd)
 				}
 				ListView_SetSelectedColumn(hwnd1, -1);
 			}
-		} else if (::PathMatchSpecA(pszClassA, WC_TABCONTROLA)) {
+		}
+		else if (::PathMatchSpecA(pszClassA, WC_TABCONTROLA)) {
 			if (!(GetWindowLong(hwnd1, GWL_STYLE) & TCS_OWNERDRAWFIXED)) {
 				if (g_bDarkMode) {
 					::SetClassLongPtr(hwnd1, GCLP_HBRBACKGROUND, (LONG_PTR)g_hbrDarkBackground);
@@ -373,12 +374,6 @@ VOID FixChildren(HWND hwnd)
 				}
 			}
 		}
-		/*if (lstrcmpiA(pszClassA, "DirectUIHWND") == 0) {
-		SetWindowTheme(hwnd1, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
-		if (_AllowDarkModeForWindow) {
-		_AllowDarkModeForWindow(hwnd1, g_bDarkMode);
-		}
-		}*/
 		FixChildren(hwnd1);
 	}
 }

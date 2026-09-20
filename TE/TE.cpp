@@ -2973,6 +2973,20 @@ LRESULT CALLBACK TELVProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UIN
 	return 0;
 }
 
+VOID FixExplorerBrowserDarkMode(HWND hwnd)
+{
+	HWND hwnd1 = NULL;
+	while (hwnd1 = ::FindWindowEx(hwnd, hwnd1, NULL, NULL)) {
+		CHAR pszClassA[MAX_CLASS_NAME];
+		::GetClassNameA(hwnd1, pszClassA, MAX_CLASS_NAME);
+		if (::PathMatchSpecA(pszClassA, "DUIViewWndClassName;DirectUIHWND")) {
+			::SetWindowTheme(hwnd1, nullptr, nullptr);
+			::SendMessage(hwnd1, WM_THEMECHANGED, 0, 0);
+		}
+		FixExplorerBrowserDarkMode(hwnd1);
+	}
+}
+
 LRESULT CALLBACK TELVProc2(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
 {
 	HWND hTree;
@@ -5255,6 +5269,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 						SetWindowTheme(itr->second, g_bDarkMode ? L"darkmode_explorer" : L"explorer", NULL);
 					}
 				}
+				FixExplorerBrowserDarkMode(hWnd);
+				PostMessage(hWnd, WM_SIZE, 0, 0);
+
 				if (_RegenerateUserEnvironment) {
 					try {
 						if (teStrCmpIWA((LPCWSTR)lParam, "Environment") == 0) {
