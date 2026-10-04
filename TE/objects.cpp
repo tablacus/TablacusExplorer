@@ -4542,6 +4542,10 @@ STDMETHODIMP CteCommonDialog::Invoke(DISPID dispIdMember, REFIID riid, LCID lcid
 				}
 				VariantClear(&vFile);
 			}
+			if (m_ofn.Flags & OFN_ALLOWMULTISELECT) {
+				teSetSZZ(pVarResult, m_ofn.lpstrFile, m_ofn.nMaxFile);
+				return S_OK;
+			}
 			teSetSZ(pVarResult, m_ofn.lpstrFile);
 			return S_OK;
 

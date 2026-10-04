@@ -863,6 +863,7 @@ LONGLONG GetParamFromVariant(VARIANT *pv, VARIANT *pvMem);
 HRESULT teExceptionEx(EXCEPINFO *pExcepInfo, LPCSTR pszObjA, LPCSTR pszNameA);
 VOID teSetULL(VARIANT *pv, LONGLONG ll);
 VOID teSetSZ(VARIANT *pv, LPCWSTR lpstr);
+VOID teSetSZZ(VARIANT *pv, LPCWSTR lpstr, DWORD nMax);
 BOOL GetDataObjFromVariant(IDataObject **ppDataObj, VARIANT *pv);
 BOOL GetDataObjFromVariant2(IDataObject **ppDataObj, VARIANT *pv);
 VOID AdjustIDList(LPITEMIDLIST *ppidllist, int nCount);

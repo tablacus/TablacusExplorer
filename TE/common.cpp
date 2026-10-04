@@ -2091,6 +2091,23 @@ VOID teSetSZ(VARIANT *pv, LPCWSTR lpstr)
 	}
 }
 
+VOID teSetSZZ(VARIANT *pv, LPCWSTR lpstr, DWORD nMax)
+{
+	if (!pv) {
+		return;
+	}
+	pv->vt = VT_BSTR;
+	pv->bstrVal = NULL;
+	if (!lpstr || nMax < 2) {
+		pv->bstrVal = ::SysAllocString(lpstr ? lpstr : L"");
+		return;
+	}
+	DWORD i = 0;
+	while (i + 1 < nMax && (lpstr[i] || lpstr[i + 1])) {
+		++i;
+	}
+	pv->bstrVal = ::SysAllocStringLen(lpstr, i + 1);
+}
 BOOL GetDataObjFromVariant2(IDataObject **ppDataObj, VARIANT *pv)
 {
 	*ppDataObj = NULL;
