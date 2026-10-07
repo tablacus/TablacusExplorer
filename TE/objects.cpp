@@ -180,7 +180,7 @@ TEmethod methodCD[] = {
 	{ TE_PROPERTY + 13, "Filter" },
 	{ TE_PROPERTY + 32, "FilterIndex" },
 	{ TE_PROPERTY + 31, "Flags" },
-	{ TE_PROPERTY + 31, "FlagsEx" },
+	{ TE_PROPERTY + 33, "FlagsEx" },
 	{ TE_PROPERTY + 20, "InitDir" },
 	{ TE_PROPERTY + 30, "MaxFileSize" },
 	{ TE_METHOD + 40, "ShowOpen" },
