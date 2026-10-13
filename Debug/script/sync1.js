@@ -1068,7 +1068,7 @@ CanClose = function (Ctrl) {
 				api.GetWindowThreadProcessId(te.hwnd, pid);
 				const pid0 = pid[0];
 				while (hwnd1 = api.FindWindowEx(null, hwnd1, null, null)) {
-					if (!/tablacus|_hidden/i.test(api.GetClassName(hwnd1)) && api.IsWindowVisible(hwnd1)) {
+					if (!/tablacus|_hidden/i.test(api.GetClassName(hwnd1)) && api.IsWindowVisible(hwnd1) && !(api.GetWindowLongPtr(hwnd1, GWL_EXSTYLE) & 0x08000080)) {
 						api.GetWindowThreadProcessId(hwnd1, pid);
 						if (pid[0] == pid0) {
 							return S_FALSE;
