@@ -13,6 +13,9 @@ https://tablacus.github.io/TablacusExplorerAddons/iconpacks.html
 //Wiki
 https://github.com/tablacus/TablacusExplorer/wiki
 
+//Tablacus Explorer Script Reference (Index)
+https://www.tablacus.com/index_en.html
+
 //Build
 Visual Studio Express 2017 Community
 Windows SDK v7.1 - x64 exe
